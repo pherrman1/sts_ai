@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # usage: run_unit.sh REPO RUN UNIT_OUT VARIANT FIRST_SEED COUNT -- COUNT A20 self-play runs of `one_combat silverazgen`
 # (seeds FIRST_SEED.., variant natural or perturbed): flat 10,000-simulation Silver with the g7f_E prior as tree prior
-# (K = 8, no root bonus), production A20 settings otherwise (record_env.sh), student_sel argmax out of combat. Every
-# searched root is one row (state, edges with visits and Q); every fight row carries Silver's own end score `score`.
-# Always exits 0 (rc is in .done).
+# (K = 8, no root bonus), production A20 settings otherwise (record_env.sh), student_sel argmax out of combat through
+# runFullRunOOC's chain (STS_AZGEN_PRODUCTION_OOC=1). Every searched root is one row (state, edges with visits and Q);
+# every fight row carries Silver's own end score `score`. Always exits 0 (rc is in .done; rc=97 when the run's
+# manifest does not say it played the production out-of-combat chain).
 set -uo pipefail
 REPO=$1 RUN=$2 OUT=$3 VARIANT=$4 FIRST=$5 COUNT=$6
 case $VARIANT in natural|perturbed) ;; *) echo "bad variant $VARIANT" >&2; exit 2 ;; esac
@@ -20,5 +21,6 @@ env -i PATH=/usr/local/bin:/usr/bin:/bin "HOME=$HOME" "${SL_ENV[@]}" "STS_OOC_HE
   "STS_EXECUTABLE_GIT_SHA=$CODE" timeout 4h bash tools/seed_guard.sh "$RUN/one_combat" silverazgen "$COUNT" 10000 20 \
   "$base" "$FIRST" "$VARIANT" 8 0 > "$base.log" 2>&1 || rc=$?
 [ -s "$base.jsonl" ] && gzip -f "$base.jsonl"
+[ "$rc" = 0 ] && ! grep -q '"oocPlay": "production_chain"' "$base.manifest.json" 2>/dev/null && rc=97
 echo "tag=$VARIANT-$FIRST rc=$rc roots=$(grep -o 'roots=[0-9]*' "$base.log" | tail -1) start=$start end=$(date -u +%FT%TZ)" > "$base.done"
 exit 0

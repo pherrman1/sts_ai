@@ -1,5 +1,7 @@
 # A20 settings of the endgame study (../endgame_exact_20261022/record_env.sh, production combat and student_sel OOC
 # argmax as in the AZ gen-2 A/B, no OOC MCTS) with the flat exact budgets silverazgen requires: no learned stop.
+# STS_AZGEN_PRODUCTION_OOC=1 makes silverazgen play out of combat through runFullRunOOC's chain (heart1 first);
+# without it the generator's own rules play and student_sel is never consulted (pre-launch review, 2026-10-22).
 # STS_OOC_HEART1 is set by run_unit.sh to the frozen copy of student_sel.bin.
 SL_ENV=(OMP_DYNAMIC=FALSE OMP_NUM_THREADS=1
   STS_COLLECT_KEYS=1 STS_FAIR=1 STS_STOP_AFTER_ACT=0 STS_REST_WIN=0
@@ -14,4 +16,4 @@ SL_ENV=(OMP_DYNAMIC=FALSE OMP_NUM_THREADS=1
   STS_OOC_STRATEGIC_TOK_NN=selfplay/models/ooc_strategic_tok_final.native
   STS_OOC_STRATEGIC_REST=1 STS_OOC_STRATEGIC_EVENT=1 STS_OOC_STRATEGIC_SHOP=1
   STS_OOC_STRATEGIC_TREASURE=1 STS_OOC_STRATEGIC_BOSS_RELIC=1 STS_OOC_STRATEGIC_MARGIN=1.0
-  STS_OOC_MCTS=0)
+  STS_OOC_MCTS=0 STS_AZGEN_PRODUCTION_OOC=1)

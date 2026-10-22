@@ -3,7 +3,11 @@
 ```
 YOUR WORKER NUMBER: W=<n>   (1..8; pass it unpadded, never 03)
 RUN_COMMIT=<sha>  CAMPAIGN=docs/experiments/evidence/silver_leaf_a20_data_20261022
-Work in /home/user/sts_ai.
+Philipp authorized this run (2026-10-22 17:08Z: "you can use up to 8 workers").
+- Do not change seeds, scripts, environments, binary, weights or timeouts.
+- Work in /home/user/sts_ai. Run nothing from /mnt/project-files (noexec).
+- The worker script uploads the finished units to /mnt/project-files/silver-leaf-a20/campaign. Write nothing else to
+  the share.
 
 1. In the FOREGROUND (never as a background task; timeout 10 min):
      cd /home/user/sts_ai && git fetch origin claude/project-thread-kgjoid && git checkout --detach $RUN_COMMIT
