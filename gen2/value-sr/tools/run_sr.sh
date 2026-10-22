@@ -1,6 +1,6 @@
 #!/bin/bash
 # Value-head research: sibling-ranking loss and auxiliary heads on the M0.3 recipe (gen2/value-cf run_cf.sh, M0.3 line).
-# usage: run_sr.sh smoke | all     (tools dir = this script's dir: distill.py, monotone.py, sr_groups.py; student_inputs.py
+# usage: run_sr.sh smoke | all | seeds     (tools dir = this script's dir: distill.py, monotone.py, sr_groups.py; student_inputs.py
 # and capture_provenance.py are copied in from the vdistill worktree; groups in ../data/r2_train_groups.jsonl.gz)
 set -u
 T=$(cd "$(dirname "$0")" && pwd); R=~/h1distill/gen2/valuesr; mkdir -p $R/runs
@@ -17,6 +17,10 @@ run() { n=$1; shift; mkdir -p $R/runs/$n; grep -q "^EXIT 0" $R/runs/$n/train.log
     --seed 0 --init $SEL --value-weight 0.5 --value-teacher-alpha 1 --cf-teacher $H1 --cf-report --mono-report \
     --mono-weight 0.3 --sr-data $D --sr-workers 3 "$@" >> $R/runs/$n/train.log 2>&1 < /dev/null
   echo "EXIT $?" >> $R/runs/$n/train.log; log "run $n $(tail -1 $R/runs/$n/train.log)"; }
+if [ "${1:-}" = seeds ]; then  # PLAN.md gate: a PASS arm gets seeds 1-2 before any online test (SR_w1 passed, 2026-10-22)
+  run SR_w1_s1 --sr-weight 1 --seed 1
+  run SR_w1_s2 --sr-weight 1 --seed 2
+  log "SR SEEDS DONE"; exit; fi
 if [ "${1:-}" = smoke ]; then  # 1 epoch on few files: both new code paths + timing only
   ROWS=$(ls ~/h1distill/gen2/vdistill/rows_T1/*.gz | head -48); run smoke_sr1 --sr-weight 1 --aux-weight 0.3 --stop-after 1; exit; fi
 run SR_w0.3 --sr-weight 0.3     # sibling-ranking loss (all arms: M0.3 recipe, --sr-data reports holdout concordance)
