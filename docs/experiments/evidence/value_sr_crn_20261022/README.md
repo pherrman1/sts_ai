@@ -25,6 +25,9 @@ round 2's stream variance per repeat (§644).
 - **Arms:** both use SR_w1's recipe exactly (§641; seed 0, `--sr-weight 1`). Only the ranking data change.
   - **SR_crn:** the common-seed TRAIN groups.
   - **SR_crn_r2:** those plus round-2 TRAIN (23,587 groups).
+    - `run_sr_crn.sh` concatenates the two files into `crn_r2_train_groups.jsonl.gz`. SR_crn_r2's training log
+      records that file's sha256, `3f78ae0c…`.
+    - `cat crn_train_groups.jsonl.gz r2_train_groups.jsonl.gz` reproduces that hash.
   - Code: `gen2/value-sr-crn/tools/distill.py` (sha256 `40a9d5a3…`; #812's copy plus `--save-epochs`) and
     `run_sr_crn.sh` (`9b9be1cf…`).
 - **Selection:** the fold objective with patience 3, as for SR_w1.
@@ -46,7 +49,9 @@ round 2's stream variance per repeat (§644).
 
 ## Results
 **Training and bars** ([results/train_summaries.json](results/train_summaries.json),
-[results/prices_srcrn.txt](results/prices_srcrn.txt), [results/prices_srcrnr2.txt](results/prices_srcrnr2.txt)):
+[results/prices_srcrn.txt](results/prices_srcrn.txt), [results/prices_srcrnr2.txt](results/prices_srcrnr2.txt), and the
+training logs [results/train_SR_crn.log](results/train_SR_crn.log) and
+[results/train_SR_crn_r2.log](results/train_SR_crn_r2.log), copied from the data branch):
 
 | head | selected / run epochs | selection-fold value BCE (≤ 0.552) | holdout ranking in training | −3 HP sign (≥ 85 %) | gold +50 valued higher | max HP +5 valued higher |
 |---|---|---|---|---|---|---|
@@ -56,7 +61,13 @@ round 2's stream variance per repeat (§644).
 | SR_crn epoch 8 (exploratory) | – | **0.587** | 0.657 | 85.7 % | 84.6 % | 67.0 % |
 | SR_crn_r2 epoch 11 (exploratory) | – | **0.557** | 0.656 | 88.2 % | 84.4 % | 55.5 % |
 
-- SR_crn's training holdout has 2,802 common-seed groups from 40 sources. SR_crn_r2's adds round 2's 1,004 groups.
+- The training holdouts differ.
+  - SR_crn's has 2,802 common-seed groups from 40 sources.
+  - SR_crn_r2's adds round 2's 1,004 groups, for 3,806 groups from 176 sources.
+  - So the "holdout ranking in training" column is not on the same set for the two runs.
+- The exploratory epochs' BCE comes from the training logs.
+  - In the logs, an epoch's "sibling-rank holdout" line comes just before its "ep N" line.
+  - Its "select fold" line, which holds the value BCE, comes just after.
 - **Both runs were stopped while the holdout ranking still rose.**
   - SR_crn: 0.521 at the start, 0.644 at the selected epoch 5, 0.657 at epoch 8.
   - SR_crn_r2: 0.515, 0.646 at the selected epoch 8, and 0.656 at epoch 11.
