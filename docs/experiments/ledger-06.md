@@ -23070,7 +23070,7 @@ was trained on mean-backup trees. The pre-registered A20 A/B
 111149400–463) needs Philipp's go. Flags stay default off.
 Report: `/mnt/project-files/silver-rollout-bias/REPORT.md`. Seeds used 111149100–147, 111149150–389, replays of
 111147001 and 111149600–699.
-## §TBD — OOC value head: the §622 hinge holds over three seeds, and a 15 % logit blend with X2-B ranks leaf siblings better than X2-B alone (offline, exploratory) (2026-10-22)
+## §636 — OOC value head: the §622 hinge holds over three seeds, and a 15 % logit blend with X2-B ranks leaf siblings better than X2-B alone (offline, exploratory) (2026-10-22)
 
 **Question:** (1) is §622's hinge result (M0.3: best selection BCE, monotone prices) more than one seed? (2) the head
 alone ranks rollout siblings worse than X2-B (0.55 vs 0.633, §577 and §622); does a mix of the two rank them better?
