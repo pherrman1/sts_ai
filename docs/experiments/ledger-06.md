@@ -23087,11 +23087,12 @@ c4dcb43c, binary 5d840679.
 **Result:** 723 fights. fix − base10000: score −2.08 [−4.90, +0.64] **NOT_SHOWN**, HP lost +0.28 [−0.28, +0.86]
 **NOT_SHOWN**. fix − base12000 (matched): score −1.94 [−4.16, +0.34] **NOT_SHOWN**, HP lost +0.50
 [+0.04, +0.99] **WORSE**. Bosses (128): fix − base12000 HP +2.16 [+0.01, +4.40], score −9.4 [−19.8, +1.1].
-Elites are neutral. base12000/15000 − base10000 lie within ±0.2 points. CPU fix/base10000 is 1.22 per fight.
+Elites: score +0.03 [−1.95, +2.29], win +0.007 [+0.002, +0.014] (descriptive). base12000/15000 − base10000 lie
+within ±0.2 points (CIs about ±2). CPU fix/base10000 is 1.22 per fight.
 **Interpretation:** the starter-deck gain does not transfer. The candidate costs HP, mostly on bosses.
 **Inference:** a defensive bias (block-first, optimistic max backup) hurts scaling boss fights, which the exact
 benchmarks never covered.
-**Decision:** both flags stay default off; the candidate is closed as specified. Production Silver gains
-nothing from 12k or 15k simulations over 10k here.
+**Decision:** both flags stay default off; the candidate is closed as specified. No detectable gain for
+production Silver from 12k or 15k simulations over 10k here.
 [Result](evidence/silver_maxbackup_ab_20261022/RESULT.md). Seeds used 111149381–382 (smokes), 111149390–393 (CPU
 check), 111149400–463.

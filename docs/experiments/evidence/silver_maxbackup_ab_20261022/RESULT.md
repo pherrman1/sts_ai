@@ -35,7 +35,8 @@ CPU:
 2. **Inference** (no exact solve exists for these fights): the block-first rule and the optimistic max backup
    favour long, defensive lines. In boss fights that scale (damage race, Guardian/Slime Boss/Act 2-3 bosses)
    that is the wrong bias, and the exact benchmarks never measured it.
-3. Extra simulations do nothing for production Silver at 10k: 12k and 15k are within ±0.2 points.
+3. No detectable gain from extra simulations for production Silver at 10k: 12k and 15k are within ±0.2 points
+   (CIs about ±2).
 
 **Decision.** The flags stay default off. This ends the max backup + block-first candidate as specified. Any
 follow-up would need a fight-type gate or a boss-level exact benchmark first.
