@@ -22886,7 +22886,7 @@ twice in play (§414, §560). So this does not show more Heart kills; a paired A
 [Result](evidence/gumbel_root_sh_20261021/RESULT.md). Raw: `/mnt/project-files/az-speed-profile/gumbel-compare/`.
 Seeds 111145010–017 used (010 reused from the speed profile).
 
-## §TBD — Silver attack-over-block bias vs exact solves: max backup + block-first playout halve first-fight regret; fight-level A20 A/B pre-registered (2026-10-22)
+## §624 — Silver attack-over-block bias vs exact solves: max backup + block-first playout halve first-fight regret; fight-level A20 A/B pre-registered (2026-10-22)
 
 **Question (Philipp, 2026-10-21 19:12Z):** why does Silver play Strike over Defend on Jaw Worm turn 2 (seed
 111147001, regret 2.29 points), and is it a systematic leaf or rollout bias he also sees in live play?
