@@ -2,6 +2,9 @@
 
 Plan: `PLAN.md` here. Run on Philipp's GPU 2026-10-22 14:33Z-17:21Z. Results, logs, weights and parity on the data
 branch `claude/az-gen2-data` @ `9866689b` under `gen3/` (`results.md`, `runs/*/summary.json`, `weights/SHA256SUMS`).
+Copies here: `results_data_branch.md` (that `results.md`) and `tools/` (the driver `run_g3.sh`, `calibrate_g3.py`,
+`summarize_g3.py` and `convert_vtargets.py`, the gen-2 converter extended to `E-SEED` files). `distill.py` is the gen-2
+value-target file on the data branch (`gen3/tools/distill.py`, sha256 `8aac69b6…`).
 
 - Calibration (training folds, exploration excluded): nstep_v a −1.534, b 0.581 (n 606,077); root_v a −1.612, b 0.597.
 - **Pick (plan rule): `G3_nstep_noEv`**: n-step value target, exploration runs teach policy only. Selection policy KL

@@ -23291,3 +23291,32 @@ about 0.4 HP in hallway fights) and §530 (the entry
 state, not search, explains about half the excess). At 6.4x CPU per fight even the upper end of the CI would be hard
 to pay for.
 **Decision:** no change; elite rooms keep greedy playouts (ADR-0056). Seeds 111149768–111149895 used.
+## §TBD — AZ gen-3 prior: trained on all 5,760 AZ runs it beats both gen-2 nets offline (selection KL 0.0506 vs 0.0525 / 0.0547), but trained priors change the top choice at only ~3% of decisions, all near-ties under the search; no A/B candidate (offline, NEGATIVE, 2026-10-22)
+
+Authorization: Philipp 2026-10-22 14:16Z ("merge 811 and then go"); flip check after his 17:27Z question (which offline
+values matter for online play). Plan and outputs: `docs/experiments/evidence/az_gen3_train_20261022/` (`PLAN.md`,
+`RESULT.md`, `flip/`, `tools/`); rows, runs, weights and parity on the data branch `claude/az-gen2-data` `9866689b`
+(`gen3/`).
+
+- **Question:** does fine-tuning the OOC prior on the whole AZ window (gen 0, gen-1b A/B, gen-2 A/B, gen-3 exploration
+  §640) give a candidate worth a paired A20 A/B against student_sel?
+- **Setup:** student_sel fine-tuned with the gen-2 pick recipe (d64/L2, lr 1e-4, anchor 0.3, value weight 0.3,
+  `--value-k 32`) in three arms: value target z; calibrated n-step search value (slope 0.58 on non-exploration training
+  folds); n-step with the exploration runs' value rows removed. Folds by run seed (selection % 8 == 6, validation
+  % 8 == 7); gen-2 pick, gen-2 n-step net and student_sel scored on the same folds. Philipp's GPU, 14:33–17:21Z.
+- **Result (offline):** pick (plan rule) = n-step without exploration values: selection KL 0.0506 (seeds 1, 2: 0.0506,
+  0.0509) vs gen-2 n-step 0.0525, gen-2 pick 0.0547, student_sel 0.1052; z arm 0.0521, n-step arm 0.0512. Validation
+  top-1 vs π′ flat at 0.933–0.935 for every net. Export `d5780dee…`, native parity 0 argmax mismatches on 400 records.
+- **Decision-flip check:** on 8,424 validation roots searched with student_sel, the gen-3 net's top choice differs from
+  student_sel's at 3.24% (gen 2: 3.55%); at those flips π′ matches student_sel 132 times and gen 3 120 (neither 21).
+  On 1,995 validation roots searched with the gen-2 prior the trained nets win instead (gen 3 40 vs student_sel 16).
+  π′ sides with the prior that guided its search, so the flips are near-ties it cannot referee. Gen 3 predicts 120 of
+  the 509 roots where the search overrode student_sel, and moves about as many that student_sel had right.
+- **Inference:** the KL gain is mostly confidence in moves the prior already picks. A trained prior changes about 3% of
+  decisions, all close calls under the current search, which fits gen 1b and gen 2 being NOT_SHOWN (§589, §621) and
+  predicts the same for gen 3 at an A/B's resolution (about ±2.7 pp). Play changes where the search's verdict changes,
+  which needs better evaluation (leaf values) or more search rather than a prior closer to π′.
+- **Recommendation (Philipp decides):** no gen-3 A/B; student_sel stays the prior; prior-only AZ generations wait until
+  a better leaf changes the search's verdicts. Future prior candidates report flip rate against an independent referee,
+  not KL alone. No game seeds were used.
+- **Knowledge impact:** `evaluation/current-research.md`.
