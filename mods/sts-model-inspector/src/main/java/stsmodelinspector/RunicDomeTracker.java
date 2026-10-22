@@ -115,10 +115,14 @@ final class RunicDomeTracker {
             knownNextMove=0;pending=true;inRoll=true;++totalRolls;++generation;return;
         }
         if("TorchHead".equals(id) && torchConstructorPredecessor && totalRolls==0 && knownNextMove==1)knownNextMove=0;
+        // AwakenedOne.changeState("REBIRTH") queues its HealAction behind takeTurn's
+        // RollMoveAction, so the roll after Rebirth sees HP 0 (problem 91).
+        boolean rebirthRoll="AwakenedOne".equals(id) && hp==0 && publicMisc==1
+                && !executed.isEmpty() && executed.get(executed.size()-1)==3;
         if(("Shelled Parasite".equals(id) && knownNextMove==1 && shellPredecessor)
                 || ("Hexaghost".equals(id) && knownNextMove==6 && hexPredecessor) || ("Lagavulin".equals(id) && lagaPredecessor)) knownNextMove=0;
         if(source!=monster || inRoll || (pending && !"WrithingMass".equals(id)) || rollHistory.size()>=255 || knownTurn || knownNextMove!=0
-                || (knownLifecycle(id) && completed!=0) || (hp<=0 && !"Darkling".equals(id)) || hp>maxHp || maxHp>999) {
+                || (knownLifecycle(id) && completed!=0) || (hp<=0 && !"Darkling".equals(id) && !rebirthRoll) || hp>maxHp || maxHp>999) {
             invalidate("roll_lifecycle"); return;
         }
         rollGlobalTurn=globalTurn; ++totalRolls; attackPredicate=null; inRoll=true; pending=true; rollHp=hp; rollMaxHp=maxHp; ++generation;

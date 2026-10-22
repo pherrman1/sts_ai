@@ -1678,6 +1678,43 @@ int main(int argc, char **argv) {
                 throw std::runtime_error("captured Runic Dome Byrd grounding did not survive the selection");
             std::cout << "captured Runic Dome Byrd grounding import and search passed: " << path << "\n";
         }
+        // Overnight live seed 111200539, problem 88: Headbutt+ killed the Bronze Orb in slot 0 holding Dark Embrace
+        // (Stasis); StasisPower.onDeath's MakeTempCardInHandAction was queued behind the grid. The capture predates
+        // the producer's STASIS_RETURN, so the grid and the queue are restored in the producer's form.
+        {
+            const std::string path=argc>8?argv[8]:"tests/fixtures/live_automaton_stasis_headbutt_return.json";
+            std::ifstream input(path);
+            if(!input)throw std::runtime_error("cannot read captured Stasis Headbutt fixture: "+path);
+            json observation; input >> observation;
+            auto &combat=observation["silverRoot"]["combat"];
+            combat["cardSelect"]={{"task","HEADBUTT"},{"origin","GRID"},{"pickCount",1},
+                {"canPickZero",false},{"canPickAnyNumber",false},{"selectedBits",0},{"continuation","source_card_actions"},
+                {"cards",json::array()},{"liveChoices",json::array()}};
+            for(const auto &card:combat["discard"])
+                combat["cardSelect"]["liveChoices"].push_back(json{{"uuid",card.at("uuid")},
+                    {"choiceIndex",combat["cardSelect"]["liveChoices"].size()+1}});
+            combat["pendingActionQueue"]=json::array({producerCleanupJson(combat["curCardQueueItem"]),
+                json{{"kind","STASIS_RETURN"},{"slot",0}}});
+            setenv("STS_SILVER_STASIS_RETURN_QUEUE","0",1);
+            const auto legacy=one_combat::advisor::importSilverRoot(observation);
+            unsetenv("STS_SILVER_STASIS_RETURN_QUEUE");
+            if(legacy.ok || legacy.reason!="silver_unmapped_stasis")
+                throw std::runtime_error("captured Stasis Headbutt legacy refusal changed: "+legacy.reason);
+            one_combat::advisor::SilverImportContext context;
+            const auto imported=one_combat::advisor::importSilverRoot(observation,context);
+            if(!imported.ok)throw std::runtime_error("captured Stasis Headbutt import: "+imported.reason);
+            const auto &hand=imported.wire.hand;
+            if(hand.size()!=4 || hand.back().id!=static_cast<std::int16_t>(CardId::DARK_EMBRACE)
+                    || hand.back().cost!=2 || hand.back().costForTurn!=2
+                    || imported.wire.stasisCards[0].id!=static_cast<std::int16_t>(CardId::INVALID)
+                    || imported.wire.stasisCards[1].id!=static_cast<std::int16_t>(CardId::BARRICADE)
+                    || imported.wire.pendingActionQueue.size()!=1)
+                throw std::runtime_error("captured Stasis Headbutt: Dark Embrace did not return to hand like native");
+            SilverSearchSession session;
+            const auto decision=session.decide(imported.wire,1000);
+            if(!decision.accepted)throw std::runtime_error("captured Stasis Headbutt search: "+decision.failureReason);
+            std::cout << "captured Stasis Headbutt import and search passed: " << path << "\n";
+        }
         // Live seed 111200433, problem 40: the first Act 4 elite (SHIELD_AND_SPEAR turn 1). Spire Shield carries
         // Java's BackAttack marker: the Surrounded player faces Spire Spear (slot 1).
         {
@@ -2463,6 +2500,28 @@ int main(int argc, char **argv) {
                 } else if(!boss.hasStatus<MS::MINION_LEADER>() || (phase==1 && boss.moveHistory[0]!=MMID::AWAKENED_ONE_DARK_ECHO)
                         || (phase>1 && boss.moveHistory[0]!=MMID::AWAKENED_ONE_SLUDGE && boss.moveHistory[0]!=MMID::AWAKENED_ONE_TACKLE))
                     throw std::runtime_error("Awakened public second-form semantics lost");
+            }
+            {   // Live problem 91 (seed 111200541): the roll right after Rebirth sees HP 0
+                // (changeState queues the heal behind takeTurn's RollMoveAction).
+                const int completed=3;
+                auto obs=groupDome({"Cultist","Cultist","AwakenedOne"},{{1,1},{1,1},{2,3}});
+                obs["silverRoot"]["act"]=3;obs["silverRoot"]["encounter"]="AWAKENED_ONE";obs["silverRoot"]["playerTurn"]=completed+1;
+                auto &c=obs["silverRoot"]["combat"];c["turn"]=completed+1;
+                for(auto &row:c["runicDomeKnowledge"]["monsters"]) {row["completedTurns"]=completed;row["generation"]=2*completed+1;}
+                auto &m=c["monsters"][2];m["hp"]=320;m["maxHp"]=320;m["halfDead"]=false;
+                auto &k=c["runicDomeKnowledge"]["monsters"][2];k["schemaVersion"]=3;k["totalRolls"]=completed+1;k["knownTransitions"]=2;
+                k["generation"]=2*completed+3;k["publicMisc"]=1;k["rollHp"]=0;k["rollMaxHp"]=320;
+                k["pendingMoveRolls"]=1;k["knownRollPredecessor"]=nullptr;k["knownNextMove"]=nullptr;
+                unsetenv("STS_IMPORTER_RUNIC_DOME_REBIRTH_ROLL");
+                auto imported=one_combat::advisor::importSilverRoot(obs);
+                if(!imported.ok) throw std::runtime_error("Dome Awakened post-Rebirth roll at HP 0: "+imported.reason);
+                auto bc=battleContextFromWire(imported.wire);auto &boss=bc.monsters.arr[2];boss.materializePendingMove(bc);
+                if(boss.moveHistory[0]!=MMID::AWAKENED_ONE_DARK_ECHO) throw std::runtime_error("post-Rebirth roll must be Dark Echo");
+                auto earlier=obs;earlier["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"][2]["executedMoves"]=json::array({3,5});
+                if(one_combat::advisor::importSilverRoot(earlier).ok) throw std::runtime_error("HP-0 roll accepted after a later move");
+                setenv("STS_IMPORTER_RUNIC_DOME_REBIRTH_ROLL","0",1);
+                if(one_combat::advisor::importSilverRoot(obs).ok) throw std::runtime_error("=0 must refuse the HP-0 rebirth roll");
+                unsetenv("STS_IMPORTER_RUNIC_DOME_REBIRTH_ROLL");
             }
             // Ordinary Act 2/3 lifecycles: no queued byte is supplied. Import
             // exactly public execution history, then compare deferred sampling
@@ -4910,6 +4969,136 @@ int main(int argc, char **argv) {
             const auto domeLegacy=one_combat::advisor::importSilverRoot(dome);
             unsetenv("STS_SILVER_AWAKENED_REBIRTH_QUEUE");
             if(domeLegacy.ok) throw std::runtime_error("STS_SILVER_AWAKENED_REBIRTH_QUEUE=0 accepted the Dome window");
+        }
+        {
+            // Problem 88 (live seed 111200539): Headbutt kills a Bronze Orb that
+            // holds a Stasis card. Java's StasisPower.onDeath queues
+            // MakeTempCardInHandAction(card, false, true) behind the grid and the
+            // dead orb still lists the card; native returned it to hand at the death.
+            for (const bool corruption : {false, true}) {
+                GameContext game(CharacterClass::IRONCLAD, 111200071, 0);
+                game.act=2; game.floorNum=33;
+                BattleContext live; live.init(game, MonsterEncounter::AUTOMATON);
+                CombatKnowledgeState spawnKnowledge; spawnKnowledge.initializeFromLiveBattle(live);
+                live.monsters.arr[1].moveHistory[0]=MonsterMoveId::BRONZE_AUTOMATON_SPAWN_ORBS;
+                resolveMonsterTransition(live,1);
+                live.monsters.arr[0].moveHistory[0]=MonsterMoveId::BRONZE_ORB_STASIS;
+                resolveMonsterTransition(live,0);
+                if(live.cards.stasisCards[0].id==CardId::INVALID)
+                    throw std::runtime_error("Stasis Headbutt fixture: the orb holds no card");
+                // A stolen Skill, so the Corruption pass applies to the returned card too.
+                CardInstance stolenSkill(CardId::DEFEND_RED); stolenSkill.uniqueId=990;
+                live.cards.stasisCards[0]=stolenSkill;
+                const auto stolen=stolenSkill;
+                if(stolen.id==CardId::INVALID || !live.monsters.arr[0].hasStatus<MonsterStatus::STASIS>())
+                    throw std::runtime_error("Stasis Headbutt fixture: the orb holds no card");
+                if(corruption) live.player.setHasStatus<PlayerStatus::CORRUPTION>(true);
+                auto &orb=live.monsters.arr[0];
+                orb.block=0; orb.curHp=3;
+                for (int played=0;played<2;++played) {
+                    CardInstance strike(CardId::STRIKE_RED); strike.uniqueId=static_cast<std::int16_t>(950+played);
+                    live.cards.notifyAddCardToCombat(strike); live.cards.moveToHand(strike); live.player.energy=3;
+                    sts::search::Action(sts::search::ActionType::CARD,live.cards.cardsInHand-1,2).execute(live);
+                }
+                CardInstance headbutt(CardId::HEADBUTT); headbutt.uniqueId=960;
+                // Java's hand keeps its pre-death costs until the queued
+                // MakeTempCardInHandAction runs the Corruption pass.
+                const std::vector<CardInstance> preDeathHand(live.cards.hand.begin(),live.cards.hand.begin()+live.cards.cardsInHand);
+                live.cards.moveToHand(headbutt); live.player.energy=3;
+                sts::search::Action(sts::search::ActionType::CARD,live.cards.cardsInHand-1,0).execute(live);
+                if(live.inputState!=InputState::CARD_SELECT || live.cardSelectInfo.cardSelectTask!=CardSelectTask::HEADBUTT
+                        || orb.isAlive() || live.cards.stasisCards[0].id!=CardId::INVALID)
+                    throw std::runtime_error("Stasis Headbutt fixture did not kill the orb into the grid");
+                int returned=-1;
+                for(int i=0;i<live.cards.cardsInHand;++i) if(live.cards.hand[i].uniqueId==stolen.uniqueId) returned=i;
+                if(returned!=live.cards.cardsInHand-1) throw std::runtime_error("native did not return the Stasis card to hand");
+                CombatKnowledgeState knowledge; knowledge.initializeFromLiveBattle(live);
+                auto expected=makeSilverBattleStateWire(live,knowledge,makeSilverRunContext(game),0x71588u);
+                if(!expected.pendingActionQueueObserved || expected.pendingActionQueue.size()!=1)
+                    throw std::runtime_error("native Stasis Headbutt queue is not the cleanup alone");
+                auto observation=javaLikeDynamicObservation(expected,"MonsterRoom","headbutt-stasis-return");
+                setProducerV4CardObservation(observation,expected);
+                auto &combat=observation["silverRoot"]["combat"];
+                combat["cardSelect"]={{"task","HEADBUTT"},{"origin","GRID"},{"pickCount",1},
+                    {"canPickZero",false},{"canPickAnyNumber",false},{"selectedBits",0},{"continuation","source_card_actions"},
+                    {"cards",json::array()},{"liveChoices",json::array()}};
+                for(const auto &card:combat["discard"])
+                    combat["cardSelect"]["liveChoices"].push_back(json{{"uuid",card.at("uuid")},
+                        {"choiceIndex",combat["cardSelect"]["liveChoices"].size()+1}});
+                combat["pendingCardQueue"]=json::array();
+                if(corruption) combat["playerPowers"]=json::array({json{{"id","Corruption"},{"amount",-1}}});
+                // Java form: the card is still the dead orb's, at its stolen cost.
+                auto &hand=combat["hand"];
+                auto javaCard=hand.back();
+                hand.erase(hand.size()-1);
+                javaCard["cost"]=stolen.cost; javaCard["costForTurn"]=stolen.costForTurn;
+                javaCard["slot"]=0;
+                if(hand.size()!=preDeathHand.size()) throw std::runtime_error("Stasis Headbutt pre-death hand size differs");
+                bool passChangedHand=false;
+                for(std::size_t i=0;i<hand.size();++i) {
+                    const auto &card=preDeathHand[i];
+                    if(card.getType()!=CardType::SKILL && hand[i].at("costForTurn")!=card.costForTurn)
+                        throw std::runtime_error("Stasis Headbutt pre-death hand order differs");
+                    passChangedHand|=hand[i].at("costForTurn")!=card.costForTurn || hand[i].at("cost")!=card.cost;
+                    hand[i]["cost"]=card.cost; hand[i]["costForTurn"]=card.costForTurn;
+                }
+                if(corruption!=passChangedHand) throw std::runtime_error("Stasis Headbutt fixture: the Corruption pass did not change a hand Skill");
+                combat["stasis"]=json::array({javaCard});
+                combat["pendingActionQueue"]=json::array({producerCleanupJson(combat["curCardQueueItem"]),
+                    json{{"kind","STASIS_RETURN"},{"slot",0}}});
+                setenv("STS_SILVER_STASIS_RETURN_QUEUE","0",1);
+                const auto legacy=one_combat::advisor::importSilverRoot(observation);
+                unsetenv("STS_SILVER_STASIS_RETURN_QUEUE");
+                if(legacy.ok || legacy.reason!="silver_unmapped_stasis")
+                    throw std::runtime_error("STS_SILVER_STASIS_RETURN_QUEUE=0 did not restore the refusal: "+legacy.reason);
+                const auto imported=one_combat::advisor::importSilverRoot(observation);
+                if(!imported.ok) throw std::runtime_error("Stasis Headbutt import: "+imported.reason);
+                if(json(imported.wire.pendingActionQueue)!=json(expected.pendingActionQueue))
+                    throw std::runtime_error("Stasis Headbutt pending queue differs from native");
+                normalizeDynamicObservationIdentity(expected);
+                const auto adoptIds=[](auto &mine,const auto &theirs) {
+                    if(mine.size()!=theirs.size()) throw std::runtime_error("Stasis Headbutt pile size differs");
+                    for(std::size_t i=0;i<mine.size();++i) {
+                        if(mine[i].id!=theirs[i].id || mine[i].upgraded!=theirs[i].upgraded)
+                            throw std::runtime_error("Stasis Headbutt pile order differs");
+                        mine[i].uniqueId=theirs[i].uniqueId;
+                    }
+                };
+                adoptIds(expected.drawPile.unknown,imported.wire.drawPile.unknown);
+                adoptIds(expected.discardPile.unknown,imported.wire.discardPile.unknown);
+                adoptIds(expected.exhaustPile.unknown,imported.wire.exhaustPile.unknown);
+                adoptIds(expected.hand,imported.wire.hand);
+                expected.curCardQueueItem.card.uniqueId=imported.wire.curCardQueueItem.card.uniqueId;
+                expected.nextUniqueCardId=imported.wire.nextUniqueCardId;
+                expected.isolatedSearchSeed=imported.wire.isolatedSearchSeed;
+                expected.cardSelect.cards=imported.wire.cardSelect.cards;
+                auto actual=battleContextFromWire(imported.wire);
+                auto reference=battleContextFromWire(expected);
+                if(!actual.equalForSearch(reference)) {
+                    const auto context=searchContextFromWire(imported.wire);
+                    std::cerr << json::diff(json(wireFromSearchState(reference,context)),
+                                            json(wireFromSearchState(actual,context))).dump(2) << '\n';
+                    throw std::runtime_error("Stasis Headbutt root parity failed");
+                }
+                const sts::search::Action pick(sts::search::ActionType::SINGLE_CARD_SELECT,0);
+                pick.execute(actual); pick.execute(reference);
+                if(actual.inputState!=InputState::PLAYER_NORMAL || !actual.equalForSearch(reference))
+                    throw std::runtime_error("Stasis Headbutt continuation parity failed");
+                // Fail closed: a return for the living orb's slot, or a full hand
+                // (Java's MakeTempCardInDiscardAction branch).
+                auto broken=observation;
+                broken["silverRoot"]["combat"]["pendingActionQueue"][1]["slot"]=1;
+                if(one_combat::advisor::importSilverRoot(broken).ok)
+                    throw std::runtime_error("Stasis return for a slot without a dead orb was accepted");
+                auto full=observation;
+                auto &fullHand=full["silverRoot"]["combat"]["hand"];
+                while(fullHand.size()<10) {
+                    auto filler=fullHand.back(); filler["uuid"]="stasis-filler-"+std::to_string(fullHand.size());
+                    fullHand.push_back(filler);
+                }
+                if(one_combat::advisor::importSilverRoot(full).ok)
+                    throw std::runtime_error("Stasis return into a full hand was accepted");
+            }
         }
         {
             // Problem 61 (overnight live play 2026-10-20): Headbutt waking a

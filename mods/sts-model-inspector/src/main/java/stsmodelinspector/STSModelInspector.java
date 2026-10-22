@@ -2871,6 +2871,15 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 if(item==null)return refusePending(actionIndex,"half_dead_set_move");
                 if(out.length()>1)out.append(',');out.append(item);continue;
             }
+            // StasisPower.onDeath (a Bronze Orb killed by the card): with fewer
+            // than 10 cards in hand, addToBot(MakeTempCardInHandAction(card,
+            // false, true)) behind the card; native returns the card to hand
+            // at the death (problem 88).
+            if(sourceTask!=null && "com.megacrit.cardcrawl.actions.common.MakeTempCardInHandAction".equals(name)) {
+                String item=stasisReturnJson(action);
+                if(item==null)return refusePending(actionIndex,"stasis_return");
+                if(out.length()>1)out.append(',');out.append(item);continue;
+            }
             // Lagavulin.damage waking it: setMove(4 OPEN) now, then
             // addToBottom(ChangeStateAction("OPEN")), whose changeState
             // queues the Metallicize reduction (problem 61).
@@ -2934,8 +2943,13 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 if(!hasRelic("Toy Ornithopter") || readObjectField(action,"target")!=AbstractDungeon.player
                         || readObjectField(action,"source")!=AbstractDungeon.player || amount==null || amount!=5) return refusePending(actionIndex,"heal");
                 kind="HEAL_PLAYER";
-            } else if("com.megacrit.cardcrawl.actions.common.GainEnergyAction".equals(name)) kind="GAIN_ENERGY";
-            else if("com.megacrit.cardcrawl.actions.unique.GamblingChipAction".equals(name)) kind="GAMBLE";
+            } else if("com.megacrit.cardcrawl.actions.common.GainEnergyAction".equals(name)) {
+                // GainEnergyAction(int) calls setValues(p,p,0) and keeps the gain in
+                // private energyGain; the inherited amount is always 0 (problem 84).
+                amount=readIntField(action,"energyGain");
+                if(amount==null || amount<0 || amount>99) return refusePending(actionIndex,"gain_energy_amount");
+                kind="GAIN_ENERGY";
+            } else if("com.megacrit.cardcrawl.actions.unique.GamblingChipAction".equals(name)) kind="GAMBLE";
             else if("com.megacrit.cardcrawl.actions.common.UpgradeRandomCardAction".equals(name)) kind="UPGRADE_RANDOM";
             else if("com.megacrit.cardcrawl.actions.common.DamageAllEnemiesAction".equals(name)) {
                 Object values=readObjectField(action,"damage");
@@ -3101,7 +3115,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         if(!(value instanceof AbstractMonster))return null;
         AbstractMonster darkling=(AbstractMonster)value;
         Integer slot=emittedMonsterSlots(liveEncounter).get(darkling), move=readIntField(action,"theNextMove");
-        if(!"Darkling".equals(darkling.id) || slot==null || !darkling.halfDead || darkling.isDeadOrEscaped()
+        // AbstractCreature.isDeadOrEscaped() is true for every half-dead
+        // monster (problem 89), so check death and escape directly.
+        if(!"Darkling".equals(darkling.id) || slot==null || !darkling.halfDead || darkling.isDying || darkling.isEscaping || darkling.escaped
                 || move==null || move!=4 || darkling.nextMove!=4
                 || !"UNKNOWN".equals(String.valueOf(readObjectField(action,"theNextIntent"))))return null;
         return monsterSetMoveItemJson(move,slot);
@@ -3132,6 +3148,38 @@ public final class STSModelInspector implements PostInitializeSubscriber,
 
     static String awakenedRebirthItemJson(Integer slot) {
         return slot!=null && slot>=0 && slot<=4 ? "{\"kind\":\"MONSTER_SET_MOVE\",\"move\":3,\"slot\":"+slot+"}" : null;
+    }
+
+    // The returned card must be the one a dead Bronze Orb's Stasis still
+    // holds (same UUID); the dead orb lists the power until it is cleared.
+    private static String stasisReturnJson(Object action) {
+        Object value=readObjectField(action,"c");
+        Integer amount=readIntField(action,"amount");
+        if(!(value instanceof AbstractCard) || amount==null || amount!=1
+                || !Boolean.TRUE.equals(readBooleanField(action,"sameUUID"))
+                || !Boolean.FALSE.equals(readBooleanField(action,"isOtherCardInCenter"))
+                || !Boolean.FALSE.equals(readBooleanField(action,"isDone")))return null;
+        AbstractCard card=(AbstractCard)value;
+        if(AbstractDungeon.player.hand.size()>=10 || AbstractDungeon.getMonsters()==null)return null;
+        IdentityHashMap<AbstractMonster, Integer> slots=emittedMonsterSlots(liveEncounter);
+        Integer slot=null;
+        for(AbstractMonster monster:AbstractDungeon.getMonsters().monsters) {
+            if(monster==null)continue;
+            for(AbstractPower power:monster.powers) {
+                if(!"Stasis".equals(power.ID))continue;
+                Object held=readObjectField(power,"card");
+                if(!(held instanceof AbstractCard) || card.uuid==null || !card.uuid.equals(((AbstractCard)held).uuid))continue;
+                Integer physical=slots.get(monster);
+                if(!"BronzeOrb".equals(monster.id) || !(monster.isDying || monster.currentHealth<=0) || slot!=null
+                        || physical==null || (physical!=0 && physical!=2))return null;
+                slot=physical/2;
+            }
+        }
+        return stasisReturnItemJson(slot);
+    }
+
+    static String stasisReturnItemJson(Integer slot) {
+        return slot!=null && (slot==0 || slot==1) ? "{\"kind\":\"STASIS_RETURN\",\"slot\":"+slot+"}" : null;
     }
 
     private static String slimeSplitJson(Object action) {
