@@ -1,0 +1,4 @@
+M0.3     maxHP+5>0  67.3%  -3HP sign  89.4%  gold+50>0  94.0%  (pos-slope states 2776)
+SR_w1    maxHP+5>0  54.0%  -3HP sign  88.1%  gold+50>0  65.4%  (pos-slope states 2784)
+SR_crn   maxHP+5>0  63.7%  -3HP sign  87.9%  gold+50>0  82.8%  (pos-slope states 2776)
+SR_crn_ep8 maxHP+5>0  67.0%  -3HP sign  85.7%  gold+50>0  84.6%  (pos-slope states 2806)
