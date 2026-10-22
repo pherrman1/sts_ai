@@ -22976,7 +22976,7 @@ twice in play (§414, §560). So this does not show more Heart kills; a paired A
 [Result](evidence/gumbel_root_sh_20261021/RESULT.md). Raw: `/mnt/project-files/az-speed-profile/gumbel-compare/`.
 Seeds 111145010–017 used (010 reused from the speed profile).
 
-## §TBD — Gumbel sequential-halving root at OOC full-budget roots, paired A20 A/B (511 seeds): WORSE, Heart kills 9.4% vs 20.7% (2026-10-22)
+## §635 — Gumbel sequential-halving root at OOC full-budget roots, paired A20 A/B (511 seeds): WORSE, Heart kills 9.4% vs 20.7% (2026-10-22)
 
 **Question (Philipp, 2026-10-21 21:07Z "Jo mach den gepaarten a/b mit 32 wirken nach gen2"):** does the offline
 win of §619 carry over to play? Gumbel SH with M = 16 at 2048 simulations had beaten PUCT@4096 against a uniform
