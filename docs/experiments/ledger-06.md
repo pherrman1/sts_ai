@@ -23353,3 +23353,43 @@ pre-launch review PASS).
   adaptive repeats, a noise model (with its weighting) tested before the run, some labels that do not end in X2-B,
   and coverage of map choices.
 - Seeds 111144512–111144831 used (smoke: 111144900).
+## §643 — AZ gen-3 prior: trained on all 5,760 AZ runs it beats both gen-2 nets offline (selection KL 0.0506 vs 0.0525 / 0.0547), but it changes only ~3% of top choices, mostly the ones gen 2 already changed; no A/B candidate (offline, NEGATIVE, 2026-10-22)
+
+Authorization: Philipp 2026-10-22 14:16Z ("merge 811 and then go"); flip check after his 17:27Z question (which offline
+values matter for online play). Plan and outputs: `docs/experiments/evidence/az_gen3_train_20261022/` (`PLAN.md`,
+`RESULT.md`, `flip/`, `tools/`); rows, runs, weights and parity on the data branch `claude/az-gen2-data` `9866689b`
+(`gen3/`).
+
+- **Question:** does fine-tuning the OOC prior on the whole AZ window (gen 0, gen-1b A/B, gen-2 A/B, gen-3 exploration
+  §640) give a candidate worth a paired A20 A/B against student_sel?
+- **Setup:** student_sel fine-tuned with the gen-2 pick recipe (d64/L2, lr 1e-4, anchor 0.3, value weight 0.3,
+  `--value-k 32`) in three arms: value target z; calibrated n-step search value (slope 0.58 on non-exploration training
+  folds); n-step with the exploration runs' value rows removed. Folds by run seed (selection % 8 == 6, validation
+  % 8 == 7); gen-2 pick, gen-2 n-step net and student_sel scored on the same folds. Philipp's GPU, 14:33–17:21Z.
+- **Result (offline):** pick (plan rule) = n-step without exploration values: selection KL 0.0506 (seeds 1, 2: 0.0506,
+  0.0509) vs gen-2 n-step 0.0525, gen-2 pick 0.0547, student_sel 0.1052; z arm 0.0521, n-step arm 0.0512. Validation
+  top-1 vs π′ flat at 0.933–0.935 for every net. Export `d5780dee…`, native parity 0 argmax mismatches on 400 records.
+- **Decision-flip check** (validation-fold roots searched with student_sel, matched to the raw captures):
+  - How often the top choice changes: gen 3's top choice differs from student_sel's at 3.24% of 8,424 full-budget
+    roots and 3.48% of 25,150 fast roots. Gen 2 differs at 3.55% / 3.61%; gen 3 and gen 2 differ at 2.1%.
+  - Overlap with gen 2: gen 2 picks the same move at 72% of gen 3's departures (fast roots 70%).
+  - How close the departures are: both moves are well searched (median visits ~1,700 each at full budget, ~510 at fast
+    roots). Root q separates them by a median of 0.015 (fast roots 0.020), against 0.011 between the two best moves
+    at all roots, so they are not near-ties.
+  - What the search already does: it plays gen 3's move at 120 of the 273 full-budget departures, where its q prefers
+    that move. It keeps student_sel's move at 126, where its q prefers student_sel's (calibrated −1.1 pp; fast roots
+    −0.6 pp).
+  - π′ is biased toward the prior that guided its search (it carries that prior's log-ratio), so π′ agreement cannot
+    referee: student_sel 132 vs gen 3 120 on student_sel-searched roots, but gen 3 40 vs student_sel 16 on
+    gen-2-searched roots.
+- **Inference:**
+  - The KL gain is mostly confidence in moves student_sel already picks.
+  - A trained prior changes ~3% of top choices, and the search already plays about half of them. The rest are where
+    the search's own q prefers student_sel's move, so any gain there depends on the evaluation being wrong, not on the
+    prior.
+  - Gen 3 repeats most of gen 2's departures, and gen 2 was NOT_SHOWN (§621), so a gen-3 A/B would most likely be
+    NOT_SHOWN again at about ±2.7 pp.
+- **Recommendation (Philipp decides):** no gen-3 A/B; student_sel stays the prior; prior-only AZ generations wait until
+  the evaluation (leaf values) changes. Future prior candidates report their departures from the current prior, the
+  overlap with earlier candidates, and the search's verdict at those roots, not KL alone. No game seeds were used.
+- **Knowledge impact:** `evaluation/current-research.md`.
