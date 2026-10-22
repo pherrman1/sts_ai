@@ -1,0 +1,12 @@
+[collect keys ON]
+[CompactTreeNet: 1060 trees, 448 feats from models/v_win_trees.txt]
+[CompactTreeNet: 1256 trees, 448 feats from models/v_rich_trees.txt]
+[native OOC floor/win GBMs ON; no v_server required]
+[native OOC optional Ruby Recall excluded when keys off and another action is legal]
+[native OOC fallback REMOVE ranks low acquisition weight first; Bonfire unchanged]
+[native OOC public encounter mixture: 8 futures]
+[native OOC shop deck-size correction ON]
+[research Silver root prior ON: models/combat_policy_mlp_g7f_E.txt weight 400; tree prior K=8]
+[Native Silver combat backend: Silver search on the main engine; flat budget; exact root budgets]
+[silver] rollout root table model loaded: models/combat_policy_mlp_g7f_E.txt
+act4replay states=32 replicates=4 -> /tmp/claude-0/-home-user-sts-ai/cbf6dcc2-01d6-5260-ac1b-f327e87f9ba1/scratchpad/ss/ss_greedy.csv
