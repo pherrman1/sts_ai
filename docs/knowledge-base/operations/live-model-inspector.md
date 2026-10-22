@@ -1,6 +1,6 @@
 # Live model inspector
 
-Last verified: 2026-10-20 for the Act 4 map import; 2026-10-19 for the Lagavulin sleep import, the driver's Smoke Bomb escape wait, in-combat potion discards and exhaust-pile display resets in the driver state identity; 2026-10-18 for unadvertised out-of-combat potion discards, the reloaded boss marker in `?`-room history and the ADR-0047 card-select student in the advisor; 2026-10-17 for the live-bridge audit fixes (keys, research search stack, X2-B leaf, 10k Silver, strict driver, Silver session retention); 2026-10-17 for explicit Arm C tree-prior loading, qualified A0/A20 CTM packaging and ascension dispatch; 2026-10-01 for the issue #368 power-ID, selector, history, chest, combat-offer and forced-transition projections; 2026-09-27 for the combat final-HP panel and OOC endpoint HP; 2026-09-26 for two-offer Neow capture/import; 2026-09-25 for the native Silver evaluator; 2026-09-23 otherwise. This page describes the private integration
+Last verified: 2026-10-22 for the Awakened One Rebirth pending item (`STS_SILVER_AWAKENED_REBIRTH_QUEUE`); 2026-10-22 for the `STS_SILVER_STASIS_RETURN_QUEUE` pending item and the half-dead Darkling `SetMoveAction` producer fix; 2026-10-20 for the Act 4 map import; 2026-10-19 for the Lagavulin sleep import, the driver's Smoke Bomb escape wait, in-combat potion discards and exhaust-pile display resets in the driver state identity; 2026-10-18 for unadvertised out-of-combat potion discards, the reloaded boss marker in `?`-room history and the ADR-0047 card-select student in the advisor; 2026-10-17 for the live-bridge audit fixes (keys, research search stack, X2-B leaf, 10k Silver, strict driver, Silver session retention); 2026-10-17 for explicit Arm C tree-prior loading, qualified A0/A20 CTM packaging and ascension dispatch; 2026-10-01 for the issue #368 power-ID, selector, history, chest, combat-offer and forced-transition projections; 2026-09-27 for the combat final-HP panel and OOC endpoint HP; 2026-09-26 for two-offer Neow capture/import; 2026-09-25 for the native Silver evaluator; 2026-09-23 otherwise. This page describes the private integration
 boundary currently present in the repository; it is not a claim that every
 game boundary has a qualified live evaluator.
 
@@ -145,7 +145,15 @@ executing a choice. A selected smith, peace-pipe, shop-removal, or supported
 event transaction records a session/sequence-bound pending compound plan; the
 next matching selector must resolve the same physical card identity before a
 selector action is emitted. Missing, ambiguous, stale, or interrupted plans
-fail closed.
+fail closed. The single-card selector's confirm screen then confirms the card
+the advisor's previous answer picked on that grid, with no new search
+(`STS_LIVE_SELECTOR_PREVIEW_RETAIN`, default on; `=0` restores the fresh
+confirm search; problem 92). Overnight, the fresh search over
+near-tied cards cancelled 106 of 119 retained removals and removed a different
+card (often a better one) instead of the planned Strike. A sole-choice event
+Continue between the source option and its selector (Offer Gold, Pray) keeps
+the pending plan (`STS_LIVE_PASS_THROUGH_KEEPS_PLAN`, default on; `=0` restores
+dropping it; problem 95).
 
 The Java frontend is under `mods/sts-model-inspector/`. It uses BaseMod
 post-update/render subscribers and captures detached Ironclad-compatible
@@ -301,6 +309,18 @@ offer refused for pending actions carries a diagnostic `pendingActionsBlocker`.
 When the public pending-action projection itself refused, the blocker ends in
 `;refusal=<queue index>:<check>` (e.g. `3:batch_power_fields`), naming the
 first failed check (problem 74, Toolbox's offer with Red Mask's Weak queued).
+Red Skull's battle-start anonymous action (`relics.RedSkull$1`) is a no-op
+unless the player is bloodied and the relic inactive. The projection omits the
+no-op and otherwise sends Strength 3 as `BUFF_PLAYER` (problem 74). The blocker
+names anonymous classes by their full class name.
+Cultist Mask's battle-start caw (`SFXAction` "VO_CULTIST_*" followed by the
+player's `TalkAction`) is cosmetic and omitted as a pair; any other pending
+`SFXAction` refuses with `cultist_mask` (problem 93, seed 111200551).
+`GAIN_ENERGY` reads its amount from `GainEnergyAction.energyGain`: the
+`GainEnergyAction(int)` constructor calls `setValues(p,p,0)`, so the inherited
+`amount` is always 0. A missing or out-of-range (0-99) gain refuses with check
+`gain_energy_amount` (problem 84, seed 111200510: Nunchaku's GainEnergyAction(1)
+behind Headbutt's put-on-top choice was exported as 0, so energy was 1 short).
 Pen Nib's pending power gain/removal and Orange Pellets' player debuff removal
 are qualified by their exact vanilla relic, action and recipient.
 Exact vanilla action classes,
@@ -339,6 +359,13 @@ snapshot is serialized with a default `Gson`, which omits null members such as
 an unexecuted initial occupant as global turn 0 and a missing nullable member as
 null (`STS_IMPORTER_RUNIC_DOME_WIRE_FIX`, default on; `=0` restores the strict
 reading, which refused every first-turn Dome root).
+Awakened One's Rebirth turn queues `ChangeStateAction("REBIRTH")`, whose heal
+lands behind takeTurn's `RollMoveAction`. So the roll right after Rebirth sees
+HP 0 of 320. The tracker accepts that one roll (Awakened One, `publicMisc` 1,
+last executed move 3), and the importer accepts its `rollHp` 0
+(`STS_IMPORTER_RUNIC_DOME_REBIRTH_ROLL`, default on; `=0` restores the
+refusal). Phase two's first move, Dark Echo, does not depend on HP. Problem 91
+(seed 111200541) refused with `silver_runic_dome_incomplete_history`.
 The combat fingerprint includes the payload, so successive decisions are not
 collapsed into one observation. A battle-start hook can precede encounter
 population, so combat-entry and Silver-root identity are captured lazily at the
@@ -1217,6 +1244,13 @@ must be available in MCP. A verified unopened BossChest uses an explicit
 public-reveal action: Open reveals the offers while retaining the later Skip
 decision. This is an informational policy step, not a claim that Proceed is
 unavailable. Unknown chest classes remain unsupported.
+After the boss relic offer was skipped, vanilla keeps `BossChest.isOpen`
+false and the chest clickable. The capture remembers the room whose offer it
+published and treats the skip as final. It publishes the completed room's
+Proceed (`opened: true`, `bossRewardSkipped: true`), which the advisor passes
+through like an opened chest. Before this fix the reveal was published again
+and looped open -> skip -> open until the cycle guard abandoned the step
+(problem 87, seed 111200537).
 Direct V4 returns `PUBLIC_TREASURE_CONTENTS_UNQUALIFIED`, and differential
 tracing returns `DIFFERENTIAL_HIDDEN_TREASURE_UNREPRESENTABLE` rather than
 claiming an exact hidden chest state.
@@ -1397,10 +1431,12 @@ itself by shifting and queueing the 20 block behind the tail). The
 first three become native `MonsterGainBlock`/`ReactiveRollMove`/`DamagePlayer` queue items
 (Reactive's scalar counts the queued rolls); the Plated Armor and Flight losses are folded
 into the imported monster because native applies them at the hit. A reduction
-that would remove the power with a side effect (Shelled Parasite stun, Byrd grounding) stays unsupported;
+that would remove the power with a side effect (Shelled Parasite stun) stays unsupported; a living Byrd's
+grounding at Flight 1 folds in as native applies it at the hit (Flight removed, a deferred Runic Dome roll cancelled,
+Stunned next; `STS_SILVER_BYRD_GROUNDING_QUEUE`);
 removing Plated Armor 1 from another monster (Donu, Deca) folds in (`STS_SILVER_PLATED_ARMOR_REMOVAL_QUEUE`). A lethal hit
 still queues the reduction; it folds into the dead monster (`STS_SILVER_LETHAL_REACTION_QUEUE`). Also unsupported is
-any other queued monster action. A Headbutt that kills a Darkling to half-dead leaves `SetMoveAction(Darkling, 4, UNKNOWN)` queued; the producer emits `MONSTER_SET_MOVE {move:4, slot}`, imported as native `SetMonsterMove(Regrow)` (`STS_SILVER_HALF_DEAD_SET_MOVE_QUEUE`). A Headbutt that takes a large slime or the Slime Boss to half HP leaves `TextAboveCreatureAction` + `SetMoveAction(3)` queued (the split is already the current move); the producer emits `MONSTER_SPLIT_SET_MOVE {slot}`, and the importer writes the split as the previous move too (`STS_SILVER_SLIME_SPLIT_QUEUE`). A Headbutt that kills the Gremlin Leader leaves a `ShoutAction` then an `EscapeAction` per surviving minion queued; the producer emits `MINION_LEADER_ESCAPE {slots}` (refused unless the shouts and escapes name the same creatures in order and those are exactly the surviving gremlins), and the advisor answers the grid with `choose 1` as a forced pass-through, since native already ended the combat at the kill (`STS_SILVER_LEADER_ESCAPE_PASS_THROUGH`). A Headbutt that wakes a sleeping Lagavulin leaves `ChangeStateAction("OPEN")` queued (OPEN is already set); the producer emits `MONSTER_LAGAVULIN_OPEN {amount, slot:0}` with the unreduced Metallicize, and the importer folds the wake's Metallicize reduction by native's rule (`STS_SILVER_LAGAVULIN_OPEN_QUEUE`). In the wire, a pending action's JSON now carries `monster` (native
+any other queued monster action. A Headbutt that kills a Darkling to half-dead leaves `SetMoveAction(Darkling, 4, UNKNOWN)` queued; the producer emits `MONSTER_SET_MOVE {move:4, slot}`, imported as native `SetMonsterMove(Regrow)` (`STS_SILVER_HALF_DEAD_SET_MOVE_QUEUE`); the producer checks only `isDying`/`isEscaping`/`escaped` for that Darkling, since `isDeadOrEscaped()` is true for every half-dead monster and refused the item (`half_dead_set_move`, problem 89, 2026-10-22). A Headbutt that kills a Bronze Orb holding a Stasis card leaves `MakeTempCardInHandAction(card, false, true)` queued (`StasisPower.onDeath`, hand under 10 cards); the producer emits `STASIS_RETURN {slot}` (orb slot 0 or 2 as Stasis slot 0 or 1; refused unless the card's uuid is that dead orb's Stasis card), and the importer moves the card to hand as native does at the death (`STS_SILVER_STASIS_RETURN_QUEUE`). A Headbutt that kills Awakened One's first form leaves `ShoutAction` + `SetMoveAction(3, UNKNOWN)` queued; the producer emits `MONSTER_SET_MOVE {move:3, slot}` for that pair (refused unless the shout and the setter name the half-dead first form and `nextMove` is 3), imported as native `SetMonsterMove(Rebirth)` (`STS_SILVER_AWAKENED_REBIRTH_QUEUE`). Under Runic Dome the tracker reports that window as complete with one known transition, and the importer accepts it only with the queued item. A `ShoutAction` that is neither this pair nor the Gremlin Leader's escape run now reports `refusal=…:leader_escape` in `pendingActionsBlocker` (problem 90 had no refusal tag). A Headbutt that takes a large slime or the Slime Boss to half HP leaves `TextAboveCreatureAction` + `SetMoveAction(3)` queued (the split is already the current move); the producer emits `MONSTER_SPLIT_SET_MOVE {slot}`, and the importer writes the split as the previous move too (`STS_SILVER_SLIME_SPLIT_QUEUE`). A Headbutt that kills the Gremlin Leader leaves a `ShoutAction` then an `EscapeAction` per surviving minion queued; the producer emits `MINION_LEADER_ESCAPE {slots}` (refused unless the shouts and escapes name the same creatures in order and those are exactly the surviving gremlins), and the advisor answers the grid with `choose 1` as a forced pass-through, since native already ended the combat at the kill (`STS_SILVER_LEADER_ESCAPE_PASS_THROUGH`). A Headbutt that wakes a sleeping Lagavulin leaves `ChangeStateAction("OPEN")` queued (OPEN is already set); the producer emits `MONSTER_LAGAVULIN_OPEN {amount, slot:0}` with the unreduced Metallicize, and the importer folds the wake's Metallicize reduction by native's rule (`STS_SILVER_LAGAVULIN_OPEN_QUEUE`). In the wire, a pending action's JSON now carries `monster` (native
 index, `0` when absent). Native
 conversions capture the same two queue items as an exact tail
 (`STS_SILVER_MONSTER_REACTION_QUEUE`, default on; `=0` restores the legacy
@@ -1471,6 +1507,19 @@ first snapshotted with its in-use cost 0, playability and hand stats (all 36
 transient dumps of seeds 450-519). Upgrades, UUIDs, order, the hand
 and every other field stay strict. The match only discards the decision and
 re-reads, within the same three-refresh limit.
+OOC correlation takes act, floor, HP, max HP and gold from MCP `game_state`
+when get_screen's copy differs (`STS_LIVE_OOC_GAME_STATE_STATS`, default on;
+`=0` restores the screen-first merge; problem 86, seed 111200523). After
+Ceramic Fish's +9 gold at the Transmogrifier, get_screen kept 229 for the
+whole wait, while game_state, the inspector's `publicState` and its captured
+`mcpState` all said 238.
+Inspector correlation also accepts the Awakened One rebirth window
+(`STS_LIVE_REBIRTH_CORRELATION`, default on; `=0` restores the refusal;
+problem 85, seed 111200512). MCP lists no monsters while all of them are dead
+or halfDead, so neither the hand nor the monster comparison could run. When
+both hands are empty, the MCP monster list is empty and every inspector
+monster is dead or halfDead, the snapshot counts as correlated. A stale
+snapshot that still shows a live monster keeps failing.
 MCP also reports exhaust-pile cards with stale displayed values (overnight
 2026-10-19: `damage` 10 vs 4 with `base_damage` 4), so the exhaust pile is treated like draw
 and discard: a positive explicit base replaces a different displayed stat in

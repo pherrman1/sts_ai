@@ -52,11 +52,13 @@ namespace sts::search {
                 case K::REACTIVE_ROLL_MOVE: return Actions::ReactiveRollMove();
                 // Sharp Hide's THORNS hit on the player (not self-damage).
                 case K::MONSTER_THORNS: return Actions::DamagePlayer(in.amount);
-                // Only the half-dead Darkling's re-queued Regrow is representable.
+                // Only the re-queued half-death moves are representable: the
+                // Darkling's Regrow and Awakened One's Rebirth.
                 case K::MONSTER_SET_MOVE:
-                    if (in.amount != static_cast<int>(MonsterMoveId::DARKLING_REGROW))
+                    if (in.amount != static_cast<int>(MonsterMoveId::DARKLING_REGROW)
+                            && in.amount != static_cast<int>(MonsterMoveId::AWAKENED_ONE_REBIRTH))
                         throw std::invalid_argument("unsupported Silver pending monster move");
-                    return Actions::SetMonsterMove(in.monster, MonsterMoveId::DARKLING_REGROW);
+                    return Actions::SetMonsterMove(in.monster, static_cast<MonsterMoveId>(in.amount));
                 case K::BUFF_PLAYER: {
                     const auto status = static_cast<PlayerStatus>(in.status);
                     switch (status) {
@@ -440,6 +442,7 @@ namespace sts::search {
     }
 
     BattleContext battleContextFromWire(const BattleStateWire &in) {
+        refreshEngineFlags();   // an imported combat starts here, like BattleContext::init
         if ((in.version != BattleStateWire::kVersion && !(in.version == 2 && !in.intentsHidden)) || !in.valid) {
             throw std::invalid_argument("invalid or incompatible Silver state wire");
         }

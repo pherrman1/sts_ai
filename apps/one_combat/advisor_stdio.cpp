@@ -53,6 +53,26 @@ std::uint64_t stableHash(const std::string &value) {
     return hash;
 }
 
+// STS_LIVE_SELECTOR_PREVIEW_RETAIN: unset/1 (default) = the confirm screen of a
+// single-card selector confirms the card this advisor picked on the grid
+// instead of searching again (problem 92); 0 restores the fresh search.
+bool g_selectorPreviewRetain = true;
+
+// STS_LIVE_PASS_THROUGH_KEEPS_PLAN: unset/1 (default) = a sole-choice event
+// Continue between a compound source and its selector keeps the pending plan
+// (problem 95); 0 restores dropping it.
+bool g_passThroughKeepsPlan = true;
+
+// The deck card the previous OOC answer picked on a single-card selector grid.
+struct SelectorPick {
+    bool active = false;
+    std::string session;
+    std::int64_t sequence = 0;
+    int selectScreenType = -1;
+    int deckIdx = -1;
+};
+SelectorPick g_selectorPick;
+
 struct PendingCompoundPlan {
     bool active = false;
     std::string session;
@@ -230,6 +250,8 @@ json oocResponse(const one_combat::advisor::Request &request,
                  PendingCompoundPlan &pending, const one_combat::heart1::Net *armC) {
     using namespace one_combat;
     const auto started = std::chrono::steady_clock::now();
+    const auto lastPick = g_selectorPick;
+    g_selectorPick = SelectorPick{};
     json evaluator = {{"id", "live_ooc_decision_v1"}, {"scope", "ooc_decision"},
                       {"policy", policy.name()}, {"status", "UNSUPPORTED"}};
     advisor::LiveOocStateV1 state;
@@ -275,39 +297,52 @@ json oocResponse(const one_combat::advisor::Request &request,
             try {
                 if(const char *flag=std::getenv("STS_DIFFERENTIAL_TRACE");flag && std::string(flag)=="1")
                     throw std::runtime_error("DIFFERENTIAL_SELECTOR_PREVIEW_UNREPRESENTABLE");
-                if(std::string(policy.name())=="mcts_ctm" && !state.mctsRoot.supported)
-                    throw std::runtime_error(state.mctsRoot.reason);
-                std::vector<std::uint32_t> targets;
-                for(const auto &action:v4CandidateActions(state.mctsRoot.state)) targets.push_back(action.bits);
-                policy.setRootPrimitiveBits(targets);
-                policy.setRewardPityHistoryComplete(state.rewardPityHistoryComplete);
-                policy.setExactRewardPity(state.exactRewardPity);
-                policy.setQuestionHistoryComplete(state.mctsRoot.questionHistoryComplete);
-                policy.setQuestionChancePosterior(state.mctsRoot.questionChancePosterior);
-                policy.setMapHistoryComplete(state.mctsRoot.mapHistoryComplete);
-                policy.setSearchSeed(stableHash(differential::canonicalOocState(
-                    state.mctsRoot.state,state.mctsRoot.path).dump()+":selector"));
-                policy.setTreeCapture(false,0);
-                const auto decision=policy.score(state.mctsRoot.state,state.mctsRoot.path,state.mctsRoot.currentActEventVisits);
-                if(!decision.supported || decision.selectedIndex<0
-                        || decision.selectedIndex>=static_cast<int>(decision.candidates.size()))
-                    throw std::runtime_error(decision.reason.empty()?"SELECTOR_PREVIEW_VALUE_UNAVAILABLE":decision.reason);
-                const auto &candidate=decision.candidates[decision.selectedIndex];
-                const auto index=sts::search::GameAction(candidate.primitiveBits).getIdx1();
-                if(index<0 || index>=static_cast<int>(state.mctsRoot.state.info.toSelectCards.size()))
-                    throw std::runtime_error("SELECTOR_PREVIEW_TARGET_UNREPRESENTABLE");
-                const bool confirm=state.mctsRoot.state.info.toSelectCards[index].deckIdx==state.selectorPreviewDeckIndex;
+                // The grid click was this advisor's pick (a retained shop/event
+                // plan or a selector search): a fresh near-tied search here
+                // cancelled 106 of 119 overnight removals (problem 92).
+                const bool retained=g_selectorPreviewRetain && lastPick.active && lastPick.session==request.session
+                    && request.sequence>lastPick.sequence && lastPick.deckIdx==state.selectorPreviewDeckIndex
+                    && lastPick.selectScreenType==static_cast<int>(state.projected.info.selectScreenType);
+                // One visit on the sole candidate keeps the root distribution
+                // complete for the driver's MCTS validator, as retained
+                // compound targets do.
+                double q=0.0;int visits=1;bool confirm=true;
+                if(!retained) {
+                    if(std::string(policy.name())=="mcts_ctm" && !state.mctsRoot.supported)
+                        throw std::runtime_error(state.mctsRoot.reason);
+                    std::vector<std::uint32_t> targets;
+                    for(const auto &action:v4CandidateActions(state.mctsRoot.state)) targets.push_back(action.bits);
+                    policy.setRootPrimitiveBits(targets);
+                    policy.setRewardPityHistoryComplete(state.rewardPityHistoryComplete);
+                    policy.setExactRewardPity(state.exactRewardPity);
+                    policy.setQuestionHistoryComplete(state.mctsRoot.questionHistoryComplete);
+                    policy.setQuestionChancePosterior(state.mctsRoot.questionChancePosterior);
+                    policy.setMapHistoryComplete(state.mctsRoot.mapHistoryComplete);
+                    policy.setSearchSeed(stableHash(differential::canonicalOocState(
+                        state.mctsRoot.state,state.mctsRoot.path).dump()+":selector"));
+                    policy.setTreeCapture(false,0);
+                    const auto decision=policy.score(state.mctsRoot.state,state.mctsRoot.path,state.mctsRoot.currentActEventVisits);
+                    if(!decision.supported || decision.selectedIndex<0
+                            || decision.selectedIndex>=static_cast<int>(decision.candidates.size()))
+                        throw std::runtime_error(decision.reason.empty()?"SELECTOR_PREVIEW_VALUE_UNAVAILABLE":decision.reason);
+                    const auto &candidate=decision.candidates[decision.selectedIndex];
+                    const auto index=sts::search::GameAction(candidate.primitiveBits).getIdx1();
+                    if(index<0 || index>=static_cast<int>(state.mctsRoot.state.info.toSelectCards.size()))
+                        throw std::runtime_error("SELECTOR_PREVIEW_TARGET_UNREPRESENTABLE");
+                    confirm=state.mctsRoot.state.info.toSelectCards[index].deckIdx==state.selectorPreviewDeckIndex;
+                    q=candidate.q;visits=candidate.visits;
+                }
                 const auto action=state.ooc.at("liveChoices").at(confirm?0:1).at("liveAction");
                 const std::string key=confirm?"ooc-live:v1:preview:confirm":"ooc-live:v1:preview:cancel";
                 evaluator["status"]="OK";
-                evaluator["mode"]="selector_preview_policy";
-                evaluator["valueSemantics"]="native_selector_value";
+                evaluator["mode"]=retained?"selector_preview_retained":"selector_preview_policy";
+                evaluator["valueSemantics"]=retained?"retained_grid_pick_no_search":"native_selector_value";
                 evaluator["selectedSemanticKey"]=key;
                 evaluator["selectedLabel"]=confirm?"Confirm selected card":"Return to card selection";
                 evaluator["selectedLiveAction"]=action;
                 evaluator["candidateSummaries"]=json::array({json{
                     {"semanticKey",key},{"semanticPayload",{{"type","selector_preview"},{"confirm",confirm}}},
-                    {"label",evaluator["selectedLabel"]},{"q",candidate.q},{"visits",candidate.visits},
+                    {"label",evaluator["selectedLabel"]},{"q",q},{"visits",visits},
                     {"visitShare",1.0},{"prior",1.0},{"liveAction",action}}});
             } catch(const std::exception &error) {evaluator["reason"]=error.what();}
             policy.setRootPrimitiveBits(advisor::liveOocPrimitiveBits(state));
@@ -386,7 +421,10 @@ json oocResponse(const one_combat::advisor::Request &request,
             const auto transition = state.ooc.at("details").at("mechanicalTransition").get<std::string>();
             const bool reveal = transition == "boss_chest_reveal";
             const std::string key = (reveal ? "ooc-live:v1:reveal:" : "ooc-live:v1:mechanical:") + transition;
-            pending = PendingCompoundPlan{};
+            // An event's Continue page can sit between its removal option and
+            // the grid (Offer Gold, Pray; problem 95); the plan outlives it.
+            if (!(g_passThroughKeepsPlan && state.mechanicalEventTransition && transition == "event_continue"))
+                pending = PendingCompoundPlan{};
             evaluator["status"] = "OK";
             evaluator["mode"] = "native_pass_through";
             evaluator["valueSemantics"] = reveal ? "public_reveal_no_search" : "forced_no_search";
@@ -570,6 +608,11 @@ json oocResponse(const one_combat::advisor::Request &request,
         json appliedTarget;
         if (pending.active && pending.session != request.session) pending = PendingCompoundPlan{};
         if (pending.active && request.sequence <= pending.sequence) pending = PendingCompoundPlan{};
+        // A plan kept across a Continue page applies only to its own selector
+        // type; any other selector searches afresh, as when the plan is dropped.
+        if (g_passThroughKeepsPlan && pending.active && state.projected.screenState == sts::ScreenState::CARD_SELECT
+                && pending.selectorType != static_cast<int>(state.projected.info.selectScreenType))
+            pending = PendingCompoundPlan{};
         if (pending.active && state.projected.screenState == sts::ScreenState::CARD_SELECT) {
             const auto scoreStarted = std::chrono::steady_clock::now();
             decision = retainedCompoundDecision(state, pending);
@@ -578,6 +621,7 @@ json oocResponse(const one_combat::advisor::Request &request,
             appliedPending = decision.supported;
             appliedTarget = pending.card;
         } else {
+            const auto heldPlan = pending;
             if (pending.active) pending = PendingCompoundPlan{};
             policy.setSearchSeed(stableHash(state.projected.screenState==sts::ScreenState::CARD_SELECT
                 ? differential::canonicalOocState(state.mctsRoot.state,state.mctsRoot.path).dump()+":selector"
@@ -587,6 +631,9 @@ json oocResponse(const one_combat::advisor::Request &request,
                                     state.mctsRoot.currentActEventVisits);
             evaluator["scorerLatencyMicros"] = std::chrono::duration_cast<std::chrono::microseconds>(
                 std::chrono::steady_clock::now() - scoreStarted).count();
+            if (g_passThroughKeepsPlan && heldPlan.active && decision.supported && decision.trivialRootBypass
+                    && state.projected.screenState == sts::ScreenState::EVENT_SCREEN)
+                pending = heldPlan;
         }
         // Qualified candidate identities remain checkable without model weights.
         // A missing model must not turn corrupt live mappings into fallback.
@@ -697,6 +744,14 @@ json oocResponse(const one_combat::advisor::Request &request,
                 evaluator["selectedSemanticKey"] = selected.semanticKey;
                 evaluator["selectedLabel"] = selected.semanticKey;
                 evaluator["selectedLiveAction"] = advisor::lowerLiveOocAction(state, selected.primitiveBits);
+                if (state.projected.screenState == sts::ScreenState::CARD_SELECT
+                        && state.projected.info.toSelectCount == 1) {
+                    const auto index = sts::search::GameAction(selected.primitiveBits).getIdx1();
+                    if (index >= 0 && index < static_cast<int>(state.projected.info.toSelectCards.size()))
+                        g_selectorPick = SelectorPick{true, request.session, request.sequence,
+                            static_cast<int>(state.projected.info.selectScreenType),
+                            state.projected.info.toSelectCards[index].deckIdx};
+                }
                 if (appliedPending) {
                     evaluator["compoundPlan"] = json{{"status", "APPLIED"},
                         {"selectorType", pending.selectorName}, {"target", appliedTarget},
@@ -1059,6 +1114,20 @@ int main() {
         }
         g_collectKeys = std::string(raw) == "1";
     } else g_collectKeys = true;
+    if (const char *raw = std::getenv("STS_LIVE_PASS_THROUGH_KEEPS_PLAN")) {
+        if (std::string(raw) != "" && std::string(raw) != "0" && std::string(raw) != "1") {
+            std::cerr << "STS_LIVE_PASS_THROUGH_KEEPS_PLAN must be 0 or 1\n";
+            return 2;
+        }
+        g_passThroughKeepsPlan = std::string(raw) != "0";
+    }
+    if (const char *raw = std::getenv("STS_LIVE_SELECTOR_PREVIEW_RETAIN")) {
+        if (std::string(raw) != "" && std::string(raw) != "0" && std::string(raw) != "1") {
+            std::cerr << "STS_LIVE_SELECTOR_PREVIEW_RETAIN must be 0 or 1\n";
+            return 2;
+        }
+        g_selectorPreviewRetain = std::string(raw) != "0";
+    }
     try {
         (void)one_combat::liveOocResearchStack();
         (void)liveSilverSimulations();

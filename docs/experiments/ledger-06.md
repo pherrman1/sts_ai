@@ -22239,6 +22239,130 @@ Seeds: none.
 Seeds: none new (live seed 111200502 and the canary's dumps of seeds 111200450-519; unit tests only).
 **Knowledge impact:** `operations/live-model-inspector.md`.
 
+## §618 — Live problem 74 resolved: Red Skull's anonymous battle-start action refused Toolbox's offer (2026-10-21)
+
+**Observation.** The §604 diagnostic fired on live A20 seed 111200504 (release 010d797c, act 2 Chosen, turn 1, Red Skull and Toolbox, HP 74/85). Toolbox's offer was refused with `pendingActionsBlocker` `actions=[DrawCardAction,EnableEndTurnButtonAction,];refusal=2:unknown_action`. Index 2 has an empty simple name: it is `relics.RedSkull$1`, the anonymous action `RedSkull.atBattleStart` queues with `addToBot`. The original problem-74 blocker (seed 111200473, which owned Red Skull) also ended in an empty name after Red Mask's actions (`...,ApplyPowerAction(...),]`). So Red Mask was never the refusing action.
+
+**Cause.** The producer's public-queue projection had no case for the anonymous Red Skull action. Per the canary's javap reading, it adds Strength 3 if `!isActive && player.isBloodied`, and otherwise does nothing. It uses no RNG.
+
+**Change (producer-only mod fix, no flag).** The projection omits `RedSkull$1` when the player is not bloodied or the relic is already active. Otherwise it sends `BUFF_PLAYER Strength 3`, which the importer already supports in `toolbox_actions`. The blocker names anonymous classes by their full class name.
+
+**Knowledge impact:** `operations/live-model-inspector.md`.
+Seeds: none new (live seeds 111200473 and 111200504).
+
+## §620 — Live problem 83: Corruption's hand pass zeroes a generated skill's cost for the combat (2026-10-21)
+
+**Question:** Why did seed 111200508 (A20 Heart kill, Snecko Eye + Corruption + Dead Branch) show 88 `hand[].cost` mismatches (game 0, native base cost) with `costForTurn` agreeing?
+
+**Evidence:** The canary's extract (issue83/p83-verdicts.json) shows every mismatched card was a SKILL newly made in hand while Corruption was active. In step 856, Fiend Fire's exhausts fed Dead Branch, and the five skills among the ten new cards mismatched; Entrench in step 494 was likewise new. The javap (issue83/javap3-root-cause.md, desktop jar cfad868a) shows the mechanism. `ShowCardAndAddToHandEffect` first runs `hand.addToHand`, then `player.onCardDrawOrDiscard()`, then its own `if Corruption && SKILL: setCostForTurn(-9)`. `AbstractPlayer.onCardDrawOrDiscard` runs `modifyCostForCombat(-9)` on every SKILL in hand with `costForTurn != 0`. The fresh card still has `costForTurn` = base, so `cost` becomes 0 for the combat. Native `moveToHandHelper` ran only `setCostForTurn(-9)`. Confusion then rerolls against the zero cost, so the cost shows up once the card is drawn again.
+
+**Change:** `STS_CORRUPTION_HAND_COST_FIX` (default on, `=0` restores) adds `BattleContext::corruptionHandCostPass` and `CardInstance::modifyCostForCombat`. `ActData_MakeTempCardInHand` (when the card fits in hand) and `chooseDiscoveryCard` add the card first and then run the pass. No RNG draw changes. Test: `tests/corruption_hand_cost_test.cpp` (Entrench 0/0 vs legacy 2/0; Double Tap 0/0 vs 1/0; attacks and no-Corruption unchanged).
+
+**Interpretation:** This is a play-changing engine fix for Corruption decks: generated skills that Snecko later rerolls start from 0. Not done: Java also runs the pass after each `draw()` and discard. That only matters for a hand skill with `costForTurn != 0` under Corruption, which is not seen live (Exhume and Liquid Memories set it to 0).
+
+**Status:** Draft PR; the Debug smoke suite passes (live_silver_importer failed once under `-j4` and passed on rerun).
+
+## §627 — Live problem 86: the OOC correlation trusted get_screen's stale gold (2026-10-22)
+
+**Question:** Why did seed 111200523 stop at the Transmogrifier with "inspector OOC gold does not match MCP state"?
+
+**Evidence:** Ceramic Fish gave +9 gold (229 -> 238). MCP get_screen stayed at 229 for the whole wait, while game_state, the inspector's `publicState` and its captured `mcpState` all said 238. The driver correlated the snapshot against `{**game_state, **screen}`, so the stale screen value won. The stop is deterministic and reproduces from saved-111200523-seg1/-seg2 on the PC.
+
+**Change:** `STS_LIVE_OOC_GAME_STATE_STATS` (default on, `=0` restores). The new `ooc_inspector_state` builds the OOC correlation state with `game_state`'s act/floor/HP/max HP/gold winning over get_screen's. It is used at the three OOC `read_for` call sites (the reward-reveal read, the decision read and the differential post read); combat keeps the old merge. Test: `test_ooc_correlation_prefers_game_state_run_stats` (driver suite OK).
+
+**Interpretation:** A driver-only fix. It removes a stop that cost seed 523. A genuinely stale inspector snapshot (wrong gold against game_state) still fails.
+
+**Status:** Draft PR.
+## §629 — Live problem 91: Runic Dome lost Awakened One's roll after Rebirth (2026-10-22)
+
+**Question:** Why did seed 111200541 seg 2 (Awakened One with Runic Dome) refuse with `silver_runic_dome_incomplete_history` after a normal phase-1 death and Rebirth?
+
+**Evidence:** The AwakenedOne dome row was `{complete:false, generation:18, reason:"roll_lifecycle"}`, while the Cultist rows were complete. The REBIRTH takeTurn queues `ChangeStateAction("REBIRTH")`, and its `changeState` sets maxHealth 320 and queues the heal with `addToBottom`, behind takeTurn's `RollMoveAction`. So the roll right after Rebirth runs at HP 0, and `RunicDomeTracker.beginRoll` rejected `hp<=0`. The importer also refused any `rollHp` 0 outside a half-dead Darkling. The native engine instead heals inside REBIRTH and then rolls Dark Echo, which does not depend on HP.
+
+**Change:**
+- Tracker (producer, no flag): `beginRoll` accepts HP 0 for Awakened One only when `publicMisc` is 1 and the last executed move is 3 (Rebirth).
+- Importer: `STS_IMPORTER_RUNIC_DOME_REBIRTH_ROLL` (default on, `=0` restores) accepts `rollHp` 0 for that pending roll (not half-dead, one pending roll).
+- Tests: `RunicDomeTrackerTest` covers the post-Rebirth HP-0 roll and refuses a first-form HP-0 roll. `live_silver_importer_test` imports it, materializes Dark Echo, refuses it after a later move, and refuses it with `=0`.
+
+**Interpretation:** Under Runic Dome, Silver keeps playing phase two of Awakened One instead of refusing.
+
+**Status:** Draft PR; javap confirmation and PC `test.sh` requested from the canary.
+## §628 — Live problem 87: a skipped boss relic offer re-published the boss chest reveal (2026-10-22)
+
+**Question:** Why did seed 111200537 get stuck at the act-1 boss chest after the OOC skipped the boss relic?
+
+**Evidence:** Skipping leaves `BossChest.isOpen` false, so `LiveOocCapture.captureBossChestReveal` published `mechanicalTransition=boss_chest_reveal` again. The advisor passes "Open boss chest" through with prior 1.0, so the run looped open -> skip -> open until the cycle guard abandoned the step. Proceed was the correct play.
+
+**Change:** A producer-only fix (no flag). `boss()` records the room whose boss relic offer it captured. `treasure()` publishes `captureSkippedBossChest` for an unopened BossChest in that same room when MCP can proceed. That is the completed room's Proceed (`opened: true`, `bossRewardSkipped: true`), which the advisor's existing opened-chest pass-through returns. Test: `test_skipped_boss_chest_is_native_proceed_passthrough` (`tests/live_ooc_protocol.py`, 63 OK).
+
+**Interpretation:** The skip decision of the boss relic screen is final, as in a human's play. Reopening would only show the same three relics again.
+## §626 — Live problem 85: the Awakened One rebirth window could not be correlated (2026-10-21)
+
+**Question:** Why did seed 111200512 (seg1 s831, act 3 floor 50) stop with "no fresh inspector response for current state: cannot correlate inspector observation with MCP-visible state" right after Uppercut+ killed Awakened One's first form?
+
+**Evidence:** The inspector's observation was valid: hand empty, AwakenedOne hp 0 and halfDead, both Cultists dead. MCP showed hand `[]` and monsters `[]`, since it lists no monsters during the rebirth. In `InspectorSnapshot.validate_current` both comparisons need non-empty lists on both sides, so `compared` stayed False. Without session/sequence keys in the MCP state, the driver refused. Awakened One stays halfDead until its own turn, so waiting would not end the window.
+
+**Change:** `STS_LIVE_REBIRTH_CORRELATION` (default on, `=0` restores). When both hands are empty, the MCP monster list is empty and every inspector monster is dead or halfDead, the snapshot counts as correlated. A stale snapshot that still shows a live monster keeps failing. Test: `test_inspector_correlates_the_awakened_one_rebirth_window` (96 driver tests OK).
+
+**Interpretation:** A driver-only fix. It removes a stop that could end a live run at the Act 3 boss. Engine play is unchanged.
+
+**Status:** Draft PR.
+## §625 — Live problem 84: a pending GainEnergyAction was exported with amount 0 (2026-10-21)
+
+**Question:** Why did seed 111200510 at steps 749 and 922 show player energy game 3 vs native 2 (and 7 vs 6) after Headbutt's put-on-top choice?
+
+**Evidence:** In both cases Nunchaku's 10th attack was a Headbutt. Its `GainEnergyAction(1)` was queued behind the put-on-top grid. The projection exported `GAIN_ENERGY` with the inherited `AbstractGameAction.amount`, but `GainEnergyAction(int)` calls `setValues(p,p,0)` and keeps the gain in `private int energyGain`. So the importer folded a +0 gain, and Silver planned with one energy too few.
+
+**Change:** A producer-only fix in `STSModelInspector.publicPendingActionsJson`. `GAIN_ENERGY` now reads `energyGain` reflectively and refuses (`gain_energy_amount`) when it is missing or outside 0-99. There is no native change and no flag: the old output was always wrong.
+
+**Interpretation:** Every projected pending energy gain (Nunchaku, and any other public `GainEnergyAction` behind a selection) now reaches the importer with its real amount.
+
+**Status:** Draft PR; PC `test.sh` requested from the canary.
+
+## §632 — Live problem 92: the shop-removal confirm screen re-searched and removed a different card (2026-10-22)
+
+**Question:** Why did the live AI choose "remove Strike" at shops but then remove a different card, usually a better one (Philipp's report; 88 of 95 overnight removals)?
+
+**Evidence:** The shop answer records a pending compound plan, and the grid click correctly picks the planned Strike. The single-card selector then shows its confirm screen. There `advisor_stdio.cpp` cleared the plan and ran a fresh 512-simulation search over the whole deck (about 28 near-tied cards), confirming only if its argmax was the previewed card; otherwise it cancelled and the next grid answer removed the fresh pick. Retained-target outcomes overnight: remove 106 cancel / 13 proceed, transform 12 / 1, upgrade 14 / 427.
+
+**Change:** `STS_LIVE_SELECTOR_PREVIEW_RETAIN` (default on, `=0` restores). The advisor remembers the deck card its previous OOC answer picked on a single-card selector grid (a retained plan or a selector search), bound to session, sequence and selector type. When the next answer is that selector's confirm screen for the same card, it confirms without searching (`mode` `selector_preview_retained`). Any other preview keeps the fresh search. Test: `test_selector_preview_confirms_the_retained_grid_pick` in `tests/live_ooc_protocol.py`.
+
+**Interpretation:** Live play-changing: shop/event removals, transforms and upgrades now carry out the card the source decision chose, as the simulator does (it has no confirm screen). It also saves one 512-simulation search per selector.
+
+**Status:** Draft PR.
+## §633 — Live problem 93: Cultist Mask's battle-start caw refused Toolbox's offer (2026-10-22)
+
+**Question:** Why was seed 111200551 abandoned at the act 2 Slavers elite, where Toolbox's combat-start colorless offer was refused with `silver_card_reward_pending_actions` and `refusal=9:unknown_action`?
+
+**Evidence:** The queue behind the offer was `DrawCardAction`, `EnableEndTurnButtonAction`, Red Mask's `RelicAboveCreatureAction` and three Weakened `ApplyPowerAction`s, then `SFXAction` and `TalkAction`. Those last two come from `CultistMask.atBattleStart`: a cultist sound and a player speech bubble, with no game state. The public pending-action projection (§618) had no case for them, so it refused at the `SFXAction`.
+
+**Change:** A producer-only fix in `STSModelInspector.publicPendingActionsJson`. An `SFXAction` whose key starts with `VO_CULTIST`, immediately followed by a not-done `TalkAction` from the player while Cultist Mask is owned, is omitted as a pair. Any other pending `SFXAction` refuses with `cultist_mask`. There is no native change and no flag: the omitted actions change no state.
+
+**Interpretation:** Toolbox (and any other projected offer) with Cultist Mask no longer abandons the fight.
+
+**Status:** Draft PR; javap confirmation and PC `test.sh` requested from the canary.
+## §634 — Live problem 92 follow-up: the retained confirm answer failed the driver's MCTS validator (2026-10-22)
+
+**Question:** Why was seed 111200553, the first live run on c4dcb43c (§632), abandoned at its first single-card selector confirm (an event transform of Defend)?
+
+**Evidence:** The advisor answered as §632 intended (`selector_preview_retained`), but its sole candidate carried `visits` 0 with `visitShare` 1.0. For `mcts_ctm` the driver's `ooc_evaluator` requires total visits > 0 unless the sole-legal-action no-search contract applies, so it stopped with "OOC MCTS root visits/shares do not form a complete root distribution". §632's protocol test checked the advisor answer but not the driver's validation of it.
+
+**Change:** The retained confirm reports one visit on its sole candidate, as retained compound targets already do. `test_selector_preview_confirms_the_retained_grid_pick` now also validates the advisor response with the driver's `InspectorSnapshot.ooc_evaluator`; it reproduced the live error before the fix and passes after it (64 protocol tests OK).
+
+**Interpretation:** No decision changes; the §632 retained confirm now reaches the game.
+
+**Status:** Draft PR.
+## §637 — Live problem 95: an event removal plan was dropped at a Continue page (2026-10-22)
+
+**Question:** Why did seed 111200559 (main f1badc29) remove Corruption after choosing Offer Gold's removal of a Strike?
+
+**Evidence:** Step 225 chose Offer Gold with `compoundPlan` remove, target Strike, PENDING. Step 226 answered the sole [Continue] as `native_pass_through`, and that answer cleared the pending plan. Step 227's grid therefore ran a fresh selector search, which picked Corruption, and step 228 removed it. Seed 554's Pray removal has the same shape.
+
+**Change:** `STS_LIVE_PASS_THROUGH_KEEPS_PLAN` (default on, `=0` restores). The mechanical `event_continue` pass-through, and a sole-legal-action pass-through on an event screen, leave the pending plan in place; every other answer still drops it, and the session/sequence binding and the selector's exact-target check are unchanged. A pending plan that meets a selector of another type (e.g. a Living Wall removal plan then an upgrade grid) is dropped and the grid searches afresh, as with `=0`, instead of answering `COMPOUND_TARGET_UNAVAILABLE`. Test: `test_compound_plan_survives_an_event_continue_page` under the live `mcts` policy: source, Continue page or sole-choice event, matching grid applies the retained target; a grid of another type searches afresh; `=0` reproduces the drop; every executed answer passes the driver's `ooc_evaluator`. 65 protocol tests OK.
+
+**Interpretation:** Live play-changing: event removals behind a Continue page now remove the card the event decision chose.
+
+**Status:** Draft PR.
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with
@@ -22633,6 +22757,26 @@ other pending item. Changes only which live grids the advisor answers.
 Gremlin Leader Headbutt kill confirms the live path.
 Seeds: none new (live seed 111200472 as reported; unit test seed 111200071 from this thread's block).
 **Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.
+## §617 — Live advisor: Headbutt grounding a living Byrd was refused (2026-10-21)
+
+**Question:** why did live seed 111200490 (release 8aa99624) stop at Headbutt's grid with
+`silver_selection_pending_actions` after a non-lethal hit on the last Byrd at Flight 1 (problem 80 in
+`engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's observation (`issue80-byrd/p90-observation.json` on the share, kept as
+`tests/fixtures/live_runic_dome_byrd_headbutt_grounded.json`); `live_silver_importer_test` (Ironclad seed 111200071,
+THREE_BYRDS; no gameplay runs).
+**Result:** the importer folded a queued `MONSTER_REDUCE_FLIGHT` at Flight 1 only into a dead Byrd (§581,
+`STS_SILVER_LETHAL_REACTION_QUEUE`) and refused it for a living one. Native `Monster::damage` grounds at the
+hit: it cancels any deferred roll, sets Stunned and removes Flight. The fight had Runic Dome, so the Byrd's turn-4
+roll was still deferred in the mod's history (`pendingMoveRolls` 1).
+**Interpretation:** under `STS_SILVER_BYRD_GROUNDING_QUEUE` (default on, `=0` restores the refusal) the importer folds
+the grounding the same way: Stunned next, Flight removed (under `STS_BYRD_GROUNDED_FLIGHT_FIX`), and under Runic Dome
+the deferred roll cancelled after the history import. The importer test's Headbutt loop gains a living-Byrd variant
+with native parity before and after the pick, and the captured observation imports and searches. Play-changing only
+where the advisor used to refuse.
+Seeds: none new (live seed 111200490 as reported; unit test seed 111200071 from this thread's block).
+**Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.
+
 ## §611 — Live combat parity: unupgraded True Grit drew cardRandomRng for a lone hand card (2026-10-21)
 
 **Question:** why did live seed 111200476 parity2 s517 (release 0ba0e9a9, AWAKENED_ONE) end with `rng.cardRandomRng.counter`
@@ -22763,6 +22907,34 @@ draw) is not this path and stays open.
 Seeds: none new (live seeds 111200476 and 111200481 as reported; unit test seed 111200071 from this thread's block).
 **Knowledge impact:** `operations/environment-variables.md`.
 
+## §623 — Exact expectimax vs native Silver on A20 first fights: Silver is near-optimal (2026-10-21)
+
+**Question:** does native Silver, at the configs we run, play the early A20 combats suboptimally compared with an exact
+solve of the same objective?
+**Setup:** `exact_combat_solver` (new, research tooling, built only with `-DSTS_EXACT_CHANCE`). It does exact
+expectimax over Silver's information-set root state. Draws, monster rolls and other RNG calls are enumerated exactly
+with their probabilities. Silver's `scoreEndState` is the objective, with the energy-waste term dropped, and the turn
+cap is 8. Each fight is solved once at its first searched root; every searched decision of every config is then scored.
+End-of-turn dominance pruning and Star1 alpha pruning are exact only where the value is monotone (`monotone()`, turn
+cap ≤ 8). Against the unpruned solve they give max |ΔQ| 5e-7 on Cultist and 6e-14 on Two Louse. The fights are the A20
+Ironclad first Act-1 encounter, starter deck, no Neow bonus, seeds 111147000-111147009. The configs are: prod
+(learned stop, g7f_E root+tree prior), live (flat 10k, no prior; the advisor's search emulated in the sim), flat 2.5k
+and flat 10k with the prior.
+**Result:** Silver won all 10 fights in every config, and the optimum's win probability was never higher. Agreement
+with the optimal action over 90 decisions: prod 98.9%, flat-prior 10k 98.9%, live 97.8%, flat-prior 2.5k 97.8%. Regret
+per fight is 0.23 / 0.23 / 0.33 / 0.33 Silver points, and HP lost per fight is 0.28 / 0.28 / 0.38 / 0.38. Two
+decisions were wrong; every other decision lost less than 0.01:
+- Jaw Worm 111147001, game turn 2, 1 energy: all configs played Strike (Q* 116.68) over Defend (118.98). That is about
+  2.8 HP, with visits 1.6-2.2:1 for Strike at every budget.
+- Cultist 111147000, game turn 3: live and 2.5k only, Strike over Defend, 1 HP.
+Small Slimes 111147005 and 008 exceeded 80M states from turn 1 and were solved from turn 2 (3 turn-1 roots each
+unscored).
+**Interpretation:** these first fights show no systematic suboptimal play at any budget. The one repeatable mistake is
+budget-independent, which points to a leaf or rollout bias. The sample is small, and later fights are out of reach of
+full enumeration.
+[Result](evidence/exact_combat_baseline_20261021/RESULT.md), rows `evidence/exact_combat_baseline_20261021/rows.jsonl`.
+Raw: `/mnt/project-files/exact-combat-baseline/`. Seeds 111147000-111147009 used.
+**Knowledge impact:** none yet. The Jaw Worm bias is a follow-up for the leaf-evaluation investigation.
 ## §615 — AZ gen 1b value head as the rollout3 end value: NOT_SHOWN on 512 paired A20 seeds, +3.1 pp Heart kills [−1.0, +7.2] at 1.07× wall (2026-10-21)
 
 Authorization: Philipp 2026-10-21 06:49Z ("Just update to main, then go 32 workers"), learned OOC stop off (05:22Z),
@@ -22792,3 +22964,221 @@ Authorization: Philipp 2026-10-21 06:49Z ("Just update to main, then go 32 worke
   §522. The compressed value scale makes the prior weigh more at the same cpuct (fewer overrides).
 - **Knowledge impact:** `evaluation/current-research.md`.
 
+
+## §619 — Gumbel sequential halving at OOC full-budget roots: offline target quality (116 A20 roots): SH beats PUCT against a uniform reference, play A/B pending (2026-10-21)
+
+**Question (Philipp, 2026-10-21 15:04Z):** full-budget OOC roots are ~59% of run CPU. Does a Gumbel AlphaZero root
+with sequential halving (SH) give better root choices and targets than PUCT at matched or lower budget?
+**Design:** new opt-in `STS_OOC_MCTS_GUMBEL_ROOT=M[:SCALE]` (full-budget roots only, default off, byte-identical) and
+research `STS_OOC_MCTS_ROOT_COMPARE`. At each full root it runs a uniform 8192-sim reference (even split over all
+root actions, own seed) and SH with M = 4/16 at 512/1024/2048. PUCT@k is the main 4096 search's checkpoint.
+Combined-stack A20 config, seeds 111145010–017 (014–017 cut short by a container restart), 116 full roots.
+**Result:** paired regret in reference Q (×1e-3, SH − PUCT, matched sims): M16@2048 −6.91 [−10.33, −3.83],
+M16@1024 −4.92 [−8.37, −1.75], M16@512 −4.40 [−7.43, −1.50]. Every SH cell is below 0, and M16@2048 also beats
+PUCT@4096 (−6.30) at half the root CPU. Agreement with the reference's best action: M16@2048 0.69, PUCT@4096 0.44,
+prior argmax 0.41. Target KL(π'_ref‖π'): M16@2048 0.030 vs PUCT@2048 0.091 (paired −0.062 [−0.112, −0.021]) and
+PUCT@4096 0.060. At 512/1024 KL shows no difference. Flag-off identity run and compare-mode non-intrusion are
+byte-identical on seed 111145010.
+**Interpretation:** PUCT at 4096 barely leaves student_sel's ~0.99 prior. SH explores the sampled candidates and plays
+by Q.
+**Inference:** offline only. The reference shares the leaf evaluator (rollout3 + X2-B), and Q-based root selection lost
+twice in play (§414, §560). So this does not show more Heart kills; a paired A20 play A/B (GUMBEL_ROOT=16, full roots
+2048, vs current) must decide. The flag stays default off.
+[Result](evidence/gumbel_root_sh_20261021/RESULT.md). Raw: `/mnt/project-files/az-speed-profile/gumbel-compare/`.
+Seeds 111145010–017 used (010 reused from the speed profile).
+
+## §635 — Gumbel sequential-halving root at OOC full-budget roots, paired A20 A/B (511 seeds): WORSE, Heart kills 9.4% vs 20.7% (2026-10-22)
+
+**Question (Philipp, 2026-10-21 21:07Z "Jo mach den gepaarten a/b mit 32 wirken nach gen2"):** does the offline
+win of §619 carry over to play? Gumbel SH with M = 16 at 2048 simulations had beaten PUCT@4096 against a uniform
+leaf-Q reference.
+**Design:** [PREREG](evidence/az_gumbel_root_ab_20261021/PREREG.md), pre-launch review PASS (C). A is the gen-2 A/B
+arm A config (student_sel, PUCT, full roots 4096). B adds `STS_OOC_MCTS_GUMBEL_ROOT=16` and
+`STS_OOC_MCTS_FULL_ROOT_SIMS=2048` (#791) on full-budget roots only. Seeds 111153152–663, RUN_COMMIT `3baca749`
+(code main `b0a8f596`, v3 binary `be70a1c1…`), 32 workers on the queue schedule.
+**Result: WORSE.** 511 valid pairs; unit 111153366 used up its queue attempts and is reported missing.
+
+| | A (PUCT 4096) | B (Gumbel SH 2048) | B − A |
+|---|---|---|---|
+| Heart kills | 106 (20.7%) | 48 (9.4%) | −11.4 pp [−14.8, −7.9], McNemar p = 2.6e-10 |
+| Reached Act 4 | 39.3% | 26.8% | −12.5 pp [−17.2, −7.9] |
+| Wall | | | 0.60× |
+| Played action ≠ prior argmax | 6.5% of searched roots | 17.3% of searched roots | |
+
+**Interpretation:** B overrides student_sel's prior much more often, and the overrides lose: deaths move from Act 4
+into Acts 2–3. Root selection that follows leaf Q (rollout3 + X2-B) is worse than the prior. This is the third loss
+for Q-based root selection, after §414 and §560.
+**Inference:** offline agreement with a leaf-Q reference (§619) is not a valid gate for root-selection changes. The
+flag stays default off. A Gumbel-style root needs a value signal that beats the prior, or must keep the prior
+dominant, and either needs a play A/B.
+[Result](evidence/az_gumbel_root_ab_20261021/RESULT.md), [result.json](evidence/az_gumbel_root_ab_20261021/result.json).
+Raw: `/mnt/project-files/az-gumbel-root-ab/units/`. Seeds 111153152–663 and smokes 111145018–019 used.
+## §631 — Live advisor: Headbutt killing Awakened One's first form was refused (2026-10-22)
+
+**Question:** why did overnight live seed 111200541 seg 1 stop with `silver_selection_pending_actions` after Headbutt+
+killed Awakened One's first form (`actions=[UseCardAction,ShoutAction,SetMoveAction]`, no refusal tag; problem 90 in
+`engine-parity/overnight-20261019/ISSUES.md` on the share)?
+**Setup:** the canary's observation (`issue90/p90-observation.json` on the share) and `AwakenedOne` javap
+(`issue91/javap.md`); `live_silver_importer_test` (Ironclad seed 111200071, AWAKENED_ONE; no gameplay runs).
+**Result:** `AwakenedOne.damage` at the first-form death sets Rebirth (3), `addToTop(ClearCardQueueAction)`, then
+`addToBottom(ShoutAction)` and `addToBottom(SetMoveAction(this, 3, UNKNOWN))`. The producer's `ShoutAction` branch only
+knew the Gremlin Leader's escape run and returned without a refusal tag. Native `Monster::die` sets Rebirth, clears the
+card queue and queues `SetMonsterMove(Rebirth)` alike, but the wire conversion only accepted the Darkling's Regrow.
+The fight had Runic Dome, and the tracker reported the AwakenedOne row as `roll_unsettled` while the duplicate setter was
+queued.
+**Interpretation:** the producer emits `MONSTER_SET_MOVE {move:3, slot}` for the pair. Under
+`STS_SILVER_AWAKENED_REBIRTH_QUEUE` (default on, `=0` restores the refusal) the importer imports it as native
+`SetMonsterMove(Rebirth)`. The tracker reports the window as complete with one known transition; the importer accepts
+that row only with the queued item. The importer test gains the Headbutt kill with native parity before and after the
+pick, and the Runic Dome form, with fail-closed cases. Play-changing only where the advisor used to refuse.
+Seeds: none new (live seed 111200541 as reported; unit test seed 111200071 from this thread's block).
+**Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.
+## §630 — Live advisor: Headbutt killing a Bronze Orb holding Stasis, and a half-dead Darkling's Regrow, were refused (2026-10-22)
+
+**Question:** why did overnight live seed 111200539 stop at Headbutt's grid with `silver_selection_pending_actions`
+after Headbutt+ killed the Bronze Orb holding Dark Embrace (problem 88: `refusal=1:unknown_action`), and after
+Headbutt took a Darkling to half-dead (problem 89, seg 2: `refusal=1:half_dead_set_move`), in
+`engine-parity/overnight-20261019/ISSUES.md` on the share?
+**Setup:** the canary's observation, field dump and javap (`issue88-89/` on the share; the p88 observation kept as
+`tests/fixtures/live_automaton_stasis_headbutt_return.json`); `live_silver_importer_test` (Ironclad seed 111200071,
+AUTOMATON; no gameplay runs).
+**Result:** problem 88: `StasisPower.onDeath` queues `MakeTempCardInHandAction(card, false, true)` (hand under 10;
+otherwise `MakeTempCardInDiscardAction`) behind the grid, which the producer did not know. Native `returnStasisCard`
+moves the card at the death. Under Corruption, native zeroed only `costForTurn`, while Java's add-to-hand runs the
+`onCardDrawOrDiscard` pass (`STS_CORRUPTION_HAND_COST_FIX`, problem 83). Problem 89: the producer's check used
+`isDeadOrEscaped()`, which is true for every half-dead monster (`AbstractCreature` checks `halfDead`; javap), so the
+existing `MONSTER_SET_MOVE` fold was never reached.
+**Interpretation:** the producer now emits `STASIS_RETURN {slot}` only for the dead orb whose Stasis card has that uuid,
+and checks `isDying`/`isEscaping`/`escaped` for the Darkling. Under `STS_SILVER_STASIS_RETURN_QUEUE` (default on, `=0`
+restores the `silver_unmapped_stasis` refusal) the importer moves the card to hand as native does; a full hand stays
+refused. Native's Stasis return under Corruption now runs the hand cost pass (under `STS_CORRUPTION_HAND_COST_FIX`).
+The importer test gains a Headbutt-kills-orb case with and without Corruption, with native parity before and after the
+pick, and the captured observation imports and searches. Play-changing only where the advisor used to refuse, plus
+generated-skill costs after a Stasis return under Corruption.
+Seeds: none new (live seed 111200539 as reported; unit test seed 111200071 from this thread's block).
+**Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.
+## §624 — Silver attack-over-block bias vs exact solves: max backup + block-first playout halve first-fight regret; fight-level A20 A/B pre-registered (2026-10-22)
+
+**Question (Philipp, 2026-10-21 19:12Z):** why does Silver play Strike over Defend on Jaw Worm turn 2 (seed
+111147001, regret 2.29 points), and is it a systematic leaf or rollout bias he also sees in live play?
+**Design:** exact expectimax from the exact-combat tools (#794 and the research branch's abstract solvers) scores
+every root Silver searches. New opt-in flags, default off and bit-identical when off:
+`STS_SILVER_MAX_BACKUP=m` (a decision node's selection value is its best child with at least m simulations, a
+chance node's the visit-weighted mean of its outcomes) and `STS_SILVER_ROLLOUT_BLOCK_FIRST=<margin>` (+ `_BLOCK_OFFSET`,
+`_BLOCK_LETHAL=0`; one_combat's ADR-0022 env allowlist refuses all four, so they act only through the
+`maxbackup` armset or in `exact_combat_solver`): the playout plays its best defensive card first while incoming damage exceeds block by more than
+the margin and its affordable attacks cannot kill a lone monster. The margin was fit by exact policy evaluation on
+111149120–143; m on Jaw Worm 111149150–249.
+**Result:** paired regret per fight (Silver points, ±1 SE), both flags (m = 4, margin 3) vs today:
+Jaw Worm fresh 111149250–349 prod 1.57 → 0.74 (−0.83 ± 0.15), live 1.54 → 0.67 (−0.86 ± 0.14); Two Louse
+111149600–699 prod 0.35 → 0.12, live 0.44 → 0.12; Cultist 111149350–369 6 → 0 wrong decisions. Each flag alone
+helps less; higher exploration c is worse. CPU about +20% per simulation (A20 smoke 1.20x).
+**Interpretation:** two causes. The greedy playout never blocks because it is hit, and mean backups undervalue the
+less-visited, longer line (Defend's mean 5–10 points below exact). More simulations do not fix it.
+**Inference:** only starter-deck first fights are measured. Whole-run fight score is untested, and the learned stop
+was trained on mean-backup trees. The pre-registered A20 A/B
+([PREREG](evidence/silver_maxbackup_ab_20261022/PREREG.md), arms base10000 / base12000 / fix10000, sources
+111149400–463) needs Philipp's go. Flags stay default off.
+Report: `/mnt/project-files/silver-rollout-bias/REPORT.md`. Seeds used 111149100–147, 111149150–389, replays of
+111147001 and 111149600–699.
+## §636 — OOC value head: the §622 hinge holds over three seeds, and a 15 % logit blend with X2-B ranks leaf siblings better than X2-B alone (offline, exploratory) (2026-10-22)
+
+**Question:** (1) is §622's hinge result (M0.3: best selection BCE, monotone prices) more than one seed? (2) the head
+alone ranks rollout siblings worse than X2-B (0.55 vs 0.633, §577 and §622); does a mix of the two rank them better?
+Authorization for the GPU runs: Philipp 2026-10-22 06:48Z ("Merge 799 and go for gpu").
+**Setup:** M0.3 (`--mono-weight 0.3`) seeds 1 and 2 and a control seed 1 on the §622 recipe, GPU on Philipp's PC;
+`prices.py` (2,916 round-2 REWARDS states) and the §577 sibling/outcome tool. Blend v = sigmoid((1 − w) logit(X2-B) +
+w logit(head)) on the §577 data with the tool's aggregation (w = 0 reproduces X2-B), w picked on round-2 TRAIN per head,
+reported on round-2 VALIDATION and §494 with a 2,000-sample source bootstrap.
+**Result:** M0.3 vs control (seed means): sel BCE 0.539 vs 0.542, val BCE 0.510 vs 0.513; HP monotone 89 % on every
+seed vs 52-55 %, max HP +5 priced > 0 51-67 % vs 18-19 %, −3 HP sign right 89-90 % vs 81-82 %; round-2 sibling
+concordance 0.551-0.554 vs 0.549, outcome AUC 0.758-0.764 vs 0.758-0.761. Blend, w 0.15 picked for all three heads:
+round-2 VALIDATION concordance − X2-B +0.011 [+0.001, +0.021] (M0.3 s0), +0.012 [+0.002, +0.021] (s1), +0.010
+[−0.000, +0.020] (control); §494 +0.011 to +0.015, regret −0.0005 to −0.0006 (CIs include 0); Heart-kill AUC on
+VALIDATION 0.698-0.699 vs 0.683, on all round-2 sources 0.715-0.716 vs 0.694 (CIs exclude 0); mean leaf 0.73 vs 0.79.
+Act-1 sibling concordance 0.669 vs X2-B 0.663 (head alone 0.537).
+**Interpretation:** the hinge's monotonicity gain holds on 3 / 3 seeds; its BCE gain is small. Inference: the head adds
+run-level information X2-B lacks, a small weight keeps X2-B's act-1 ranking, and the head's training barely matters
+for the blend (control ≈ M0.3). Exploratory: w was not pre-registered, the sibling target ends in X2-B, the online leaf
+is a rollout3 end state that these data do not score, and the learned OOC stop was trained on X2-B's scale.
+`STS_OOC_MCTS_LEAF_HEART1_VALUE_WEIGHT` (default off; [smoke](evidence/value_leaf_blend_20261022/SMOKE.md): unset
+reproduces main's decisions exactly) makes the blend testable in an A20 A/B, which needs a pre-registration and
+Philipp's go. [Offline report](evidence/value_leaf_blend_20261022/OFFLINE.md); weights on data
+branch `claude/az-gen2-data` `c3bd827a`, `gen2/value-cf/`.
+Seeds: none (offline scoring of stored states and training on stored rows).
+**Knowledge impact:** none yet (default-off option; no play change).
+
+## §622 — OOC value head: counterfactual raw-heart1 delta distillation fixes the slopes but fails the BCE gate; the hinge on the T1 recipe is the best head so far (2026-10-22)
+
+**Question:** can the value head learn raw heart1's clean HP / max HP / gold slopes (handoff from the gen-2 thread:
+distilling heart1's absolute values did not transfer them, §609's hinge flattened the head) without losing the
+T1-teacher accuracy (VDF_T1 v0.5, sel BCE 0.542)?
+**Setup:** [PLAN](evidence/value_cf_distill_20261022/PLAN.md) (gate pre-registered). New loss on value-logit
+*differences*: per batch one rule (hp, mhp, gold, round robin) with random deltas on 64 rows, target = 1.3587 × raw
+heart1's delta, loss Σ(Δs − Δt)² / ΣΔt², fp32 without TF32. Weights 0.3 / 1 / 3, a control, and the #777 hinge at 0.3
+on the same recipe; seed 0; GPU on Philipp's PC; `prices.py` and the §577 sibling tool in the cloud.
+**Result:** sel BCE control / 0.3 / 1 / 3 / hinge 0.542 / 0.571 / 0.596 / 0.618 / 0.5365 (AUC 0.766 / 0.730 / 0.709 /
+0.682 / 0.770). CF sign agreement with heart1 rises from 67 / 30 / 72 % (hp / mhp / gold) to 85-91 %; max-HP price
+> 0 from 19 % to 92-96 %; −3 HP sign right 81 → 89-90 % (REWARDS states). Round-2 sibling
+concordance 0.549 → 0.548-0.558 (X2-B 0.633). The hinge: max-HP price > 0 67 %, HP monotone 89 % vs 52 %, sibling
+0.553, outcome AUC 0.764.
+**Interpretation:** FAIL (BCE ≤ 0.545 and KL ≤ 0.0600 missed by every CF weight; −3 HP ≥ 95 % likely out of
+reach with heart1 as the teacher, which is wrong-signed in 19 % of selection-fold states). Inference: correct end-state slopes are not why the head ranks siblings poorly (+0.009 at best). Unlike
+§609 on z targets, the hinge on T1 targets costs no BCE (one seed). Options stay off.
+[Result](evidence/value_cf_distill_20261022/RESULT.md). Runs and weights: data branch `claude/az-gen2-data`
+`02f2c60d`, `gen2/value-cf/`.
+Seeds: none (offline training).
+**Knowledge impact:** none (default-off training options; no play change).
+
+## §621 — AZ gen 2 (prior fine-tuned on gen 0 + gen-1b A/B self-play) vs student_sel: NOT_SHOWN on 1,024 paired A20 seeds, +0.6 pp Heart kills [−2.2, +3.3] at 1.01× wall (2026-10-22)
+
+Authorization: Philipp 2026-10-21 19:08Z ("Kk. Then let's go on 32 workers"). Pre-registration and outputs:
+`docs/experiments/evidence/az_gen2_ab_20261021/` (`PREREG.md`, `run_unit.sh`, `analyze.py`, `RESULT.md`, `result.json`,
+`verify.txt`, `tars.sha256`, `smoke/SMOKE.md`). Training: `docs/experiments/evidence/az_gen2_prior_sweep_20261021/`.
+
+- **Candidate:** gen 2 = student_sel fine-tuned on all 2,688 runs of gen 0 and both gen-1b A/B arms (Gumbel π' targets +
+  Heart-kill z, d64/L2, lr 1e-4, anchor 0.3, value weight 0.3, 32 value rows/run/epoch), export `fc32d8f4…`. Offline
+  selection-fold policy KL 0.0554 vs gen 1b 0.0654 and student_sel 0.103.
+- **Freeze:** RUN_COMMIT `712d4def` (main `844bd923` plus the campaign dir); v3 binary `23a09099…`. Smoke 111149992–993
+  (all rc 0); 111149990–991 were pre-freeze smokes.
+- **Arms:** gen 0's search stack with the 2026-10-21 defaults (learned Silver stop in real combats, fast-root cap 1024,
+  boss-only prior playouts set explicitly, X2-B rollout3 end value since §615 was NOT_SHOWN). A uses student_sel as OOC
+  prior and rollout net, B gen 2; nothing else differs.
+- **Run:** seeds 111142888–111143911, 32 workers × 4 lanes, `schedule queue` (with #773). 1,024 of 1,024 units OK, no
+  duplicates; 1,024 of 1,024 seeds valid.
+- **Result:**
+
+  | arm | Heart kills | reached Act 4 | mean floor | wall s/run (mean, max) |
+  |---|---|---|---|---|
+  | A student_sel | 214 (20.9%) | 399 (39.0%) | 43.15 | 773, 2,554 |
+  | B gen 2 | 220 (21.5%) | 408 (39.8%) | 43.08 | 777, 2,739 |
+
+  Heart kills B − A +0.6 pp [−2.2, +3.3], discordant 107 / 101, exact McNemar p 0.73. Act 4 +0.9 pp [−2.1, +3.9],
+  p 0.61. Wall B/A 1.006. Search overrides of the prior's argmax 7.9% (B) vs 6.6% (A) of searched roots.
+- **Verdict: NOT_SHOWN** (pre-registered rule). Below the +1.0 pp trigger, so the pre-registered extension does not run.
+  student_sel stays the OOC prior.
+- **Inference:** a much better offline fit to the search's targets did not show up as Heart kills within ±2.8 pp. Mean
+  run wall 773-777 s vs ~1,480 s in §589, from the 2026-10-21 speed defaults.
+- **Knowledge impact:** `evaluation/current-research.md`.
+
+## §638 — Max backup + block-first playouts vs production Silver at A20 fight level: NOT_SHOWN, HP WORSE vs CPU-matched, bosses worse (2026-10-22)
+
+**Question:** do the §624 flags (`STS_SILVER_MAX_BACKUP=4` + `STS_SILVER_ROLLOUT_BLOCK_FIRST=3`), which halved
+exact first-fight regret, improve real A20 fights?
+**Design:** [PREREG](evidence/silver_maxbackup_ab_20261022/PREREG.md). `ctmsilvergen` armset `maxbackup`, 64
+student C sources 111149400–463, every 3rd hallway fight plus elites and bosses, R = 2. Arms: base10000,
+base12000, base15000 (production) and fix10000. The matched arm is chosen by CPU alone (fix/base per fight ≤
+1.10): base12000 (1.009). Authorized by Philipp 2026-10-22 08:05Z, 32 workers. RUN_COMMIT 661602c8, main
+c4dcb43c, binary 5d840679.
+**Result:** 723 fights. fix − base10000: score −2.08 [−4.90, +0.64] **NOT_SHOWN**, HP lost +0.28 [−0.28, +0.86]
+**NOT_SHOWN**. fix − base12000 (matched): score −1.94 [−4.16, +0.34] **NOT_SHOWN**, HP lost +0.50
+[+0.04, +0.99] **WORSE**. Bosses (128): fix − base12000 HP +2.16 [+0.01, +4.40], score −9.4 [−19.8, +1.1].
+Elites: score +0.03 [−1.95, +2.29], win +0.007 [+0.002, +0.014] (descriptive). base12000/15000 − base10000 lie
+within ±0.2 points (CIs about ±2). CPU fix/base10000 is 1.22 per fight.
+**Interpretation:** the starter-deck gain does not transfer. The candidate costs HP, mostly on bosses.
+**Inference:** a defensive bias (block-first, optimistic max backup) hurts scaling boss fights, which the exact
+benchmarks never covered.
+**Decision:** both flags stay default off; the candidate is closed as specified. No detectable gain for
+production Silver from 12k or 15k simulations over 10k here.
+[Result](evidence/silver_maxbackup_ab_20261022/RESULT.md). Seeds used 111149381–382 (smokes), 111149390–393 (CPU
+check), 111149400–463.

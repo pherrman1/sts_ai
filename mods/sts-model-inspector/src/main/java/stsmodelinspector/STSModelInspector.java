@@ -2815,8 +2815,26 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             Integer amount=readIntField(action,"amount");
             if(!Boolean.FALSE.equals(readBooleanField(action,"isDone"))) return refusePending(actionIndex,"isDone");
             if("com.megacrit.cardcrawl.actions.common.EnableEndTurnButtonAction".equals(name)) {++enables;continue;}
+            // RedSkull.atBattleStart: addToBot(new AbstractGameAction(){...}),
+            // which adds Strength 3 if the player is bloodied and the relic is
+            // inactive, else does nothing (problem 74; it trailed Toolbox's offer).
+            if("com.megacrit.cardcrawl.relics.RedSkull$1".equals(name)) {
+                com.megacrit.cardcrawl.relics.AbstractRelic skull=AbstractDungeon.player.getRelic("Red Skull");
+                Boolean active=readBooleanField(skull,"isActive");
+                if(skull==null || active==null)return refusePending(actionIndex,"red_skull");
+                if(active || !AbstractDungeon.player.isBloodied)continue;
+                if(out.length()>1)out.append(',');out.append(publicPendingActionJson("BUFF_PLAYER",3,"Strength"));continue;
+            }
             if("com.megacrit.cardcrawl.actions.common.RelicAboveCreatureAction".equals(name)
                     || "com.megacrit.cardcrawl.actions.utility.WaitAction".equals(name)) continue;
+            // CultistMask.atBattleStart: addToBot(SFXAction("VO_CULTIST_1A")) then
+            // addToBot(TalkAction(true, DESCRIPTIONS[1], 1.0F, 2.0F)), a sound and
+            // a speech bubble with no game state (problem 93; it trailed Toolbox's offer).
+            if(isActionClass(name,"SFXAction")) {
+                if(actionIndex+1>=manager.actions.size() || !cultistMaskCaw(action,manager.actions.get(actionIndex+1)))
+                    return refusePending(actionIndex,"cultist_mask");
+                ++actionIndex;continue;
+            }
             // Vanilla decrements copy charges synchronously, then queues a
             // removal with no onRemove override. The zero charge and its
             // visual removal are jointly omitted from the native projection.
@@ -2840,10 +2858,18 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             // GremlinLeader.die (killed by Headbutt): addToBottom(ShoutAction)
             // then addToBottom(EscapeAction) for each surviving minion behind
             // the card; native ends the combat at the kill (problem 72).
+            // AwakenedOne.damage at the first-form death: setMove(3) now, then
+            // addToBottom(ShoutAction) and addToBottom(SetMoveAction(this, 3,
+            // UNKNOWN)) behind the card (problem 90).
+            if(sourceTask!=null && isActionClass(name,"ShoutAction") && awakenedRebirthShout(action)) {
+                String item=actionIndex+1<manager.actions.size()?awakenedRebirthJson(action,manager.actions.get(actionIndex+1)):null;
+                if(item==null)return refusePending(actionIndex,"awakened_rebirth");
+                if(out.length()>1)out.append(',');out.append(item);++actionIndex;continue;
+            }
             if(sourceTask!=null && isActionClass(name,"ShoutAction")) {
                 int next=leaderEscapeEnd(manager.actions,actionIndex);
                 String item=next<0?null:leaderEscapeJson(manager.actions,actionIndex,next);
-                if(item==null)return null;
+                if(item==null)return refusePending(actionIndex,"leader_escape");
                 if(out.length()>1)out.append(',');out.append(item);actionIndex=next-1;continue;
             }
             // Darkling.damage at a half-death: setMove(4) now, then
@@ -2851,6 +2877,15 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             if(sourceTask!=null && "com.megacrit.cardcrawl.actions.common.SetMoveAction".equals(name)) {
                 String item=halfDeadSetMoveJson(action);
                 if(item==null)return refusePending(actionIndex,"half_dead_set_move");
+                if(out.length()>1)out.append(',');out.append(item);continue;
+            }
+            // StasisPower.onDeath (a Bronze Orb killed by the card): with fewer
+            // than 10 cards in hand, addToBot(MakeTempCardInHandAction(card,
+            // false, true)) behind the card; native returns the card to hand
+            // at the death (problem 88).
+            if(sourceTask!=null && "com.megacrit.cardcrawl.actions.common.MakeTempCardInHandAction".equals(name)) {
+                String item=stasisReturnJson(action);
+                if(item==null)return refusePending(actionIndex,"stasis_return");
                 if(out.length()>1)out.append(',');out.append(item);continue;
             }
             // Lagavulin.damage waking it: setMove(4 OPEN) now, then
@@ -2916,8 +2951,13 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 if(!hasRelic("Toy Ornithopter") || readObjectField(action,"target")!=AbstractDungeon.player
                         || readObjectField(action,"source")!=AbstractDungeon.player || amount==null || amount!=5) return refusePending(actionIndex,"heal");
                 kind="HEAL_PLAYER";
-            } else if("com.megacrit.cardcrawl.actions.common.GainEnergyAction".equals(name)) kind="GAIN_ENERGY";
-            else if("com.megacrit.cardcrawl.actions.unique.GamblingChipAction".equals(name)) kind="GAMBLE";
+            } else if("com.megacrit.cardcrawl.actions.common.GainEnergyAction".equals(name)) {
+                // GainEnergyAction(int) calls setValues(p,p,0) and keeps the gain in
+                // private energyGain; the inherited amount is always 0 (problem 84).
+                amount=readIntField(action,"energyGain");
+                if(amount==null || amount<0 || amount>99) return refusePending(actionIndex,"gain_energy_amount");
+                kind="GAIN_ENERGY";
+            } else if("com.megacrit.cardcrawl.actions.unique.GamblingChipAction".equals(name)) kind="GAMBLE";
             else if("com.megacrit.cardcrawl.actions.common.UpgradeRandomCardAction".equals(name)) kind="UPGRADE_RANDOM";
             else if("com.megacrit.cardcrawl.actions.common.DamageAllEnemiesAction".equals(name)) {
                 Object values=readObjectField(action,"damage");
@@ -3074,6 +3114,14 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return monsterReactionItemJson("MONSTER_REDUCE_PLATED_ARMOR",amount,slot);
     }
 
+    private static boolean cultistMaskCaw(Object sfx,Object talk) {
+        String key=readStringField(sfx,"key");
+        return hasRelic("CultistMask") && key!=null && key.startsWith("VO_CULTIST")
+                && Boolean.FALSE.equals(readBooleanField(talk,"isDone"))
+                && "com.megacrit.cardcrawl.actions.animations.TalkAction".equals(talk.getClass().getName())
+                && readObjectField(talk,"source")==AbstractDungeon.player;
+    }
+
     private static boolean isActionClass(String name,String simpleName) {
         return name.startsWith("com.megacrit.cardcrawl.actions.") && name.endsWith("."+simpleName);
     }
@@ -3083,10 +3131,71 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         if(!(value instanceof AbstractMonster))return null;
         AbstractMonster darkling=(AbstractMonster)value;
         Integer slot=emittedMonsterSlots(liveEncounter).get(darkling), move=readIntField(action,"theNextMove");
-        if(!"Darkling".equals(darkling.id) || slot==null || !darkling.halfDead || darkling.isDeadOrEscaped()
+        // AbstractCreature.isDeadOrEscaped() is true for every half-dead
+        // monster (problem 89), so check death and escape directly.
+        if(!"Darkling".equals(darkling.id) || slot==null || !darkling.halfDead || darkling.isDying || darkling.isEscaping || darkling.escaped
                 || move==null || move!=4 || darkling.nextMove!=4
                 || !"UNKNOWN".equals(String.valueOf(readObjectField(action,"theNextIntent"))))return null;
         return monsterSetMoveItemJson(move,slot);
+    }
+
+    private static boolean awakenedRebirthShout(Object shout) {
+        Object source=readObjectField(shout,"source");
+        return source instanceof AbstractMonster && "AwakenedOne".equals(((AbstractMonster)source).id);
+    }
+
+    // The first-form death's [ShoutAction, SetMoveAction(3, UNKNOWN)] pair.
+    // halfDead makes isDeadOrEscaped() true, so only isDying/escape are checked.
+    private static String awakenedRebirthJson(Object shout,Object action) {
+        if(!"com.megacrit.cardcrawl.actions.animations.ShoutAction".equals(shout.getClass().getName())
+                || action==null || !"com.megacrit.cardcrawl.actions.common.SetMoveAction".equals(action.getClass().getName())
+                || !Boolean.FALSE.equals(readBooleanField(shout,"isDone")) || !Boolean.FALSE.equals(readBooleanField(action,"isDone")))return null;
+        Object source=readObjectField(shout,"source"), value=readObjectField(action,"monster");
+        if(!(source instanceof AbstractMonster) || readObjectField(shout,"target")!=source || value!=source)return null;
+        AbstractMonster awakened=(AbstractMonster)source;
+        Integer slot=emittedMonsterSlots(liveEncounter).get(awakened), move=readIntField(action,"theNextMove");
+        Boolean form1=readBooleanField(awakened,"form1");
+        if(slot==null || !awakened.halfDead || awakened.isDying || awakened.isEscaping || awakened.escaped
+                || awakened.currentHealth>0 || !Boolean.FALSE.equals(form1)
+                || move==null || move!=3 || awakened.nextMove!=3
+                || !"UNKNOWN".equals(String.valueOf(readObjectField(action,"theNextIntent"))))return null;
+        return awakenedRebirthItemJson(slot);
+    }
+
+    static String awakenedRebirthItemJson(Integer slot) {
+        return slot!=null && slot>=0 && slot<=4 ? "{\"kind\":\"MONSTER_SET_MOVE\",\"move\":3,\"slot\":"+slot+"}" : null;
+    }
+
+    // The returned card must be the one a dead Bronze Orb's Stasis still
+    // holds (same UUID); the dead orb lists the power until it is cleared.
+    private static String stasisReturnJson(Object action) {
+        Object value=readObjectField(action,"c");
+        Integer amount=readIntField(action,"amount");
+        if(!(value instanceof AbstractCard) || amount==null || amount!=1
+                || !Boolean.TRUE.equals(readBooleanField(action,"sameUUID"))
+                || !Boolean.FALSE.equals(readBooleanField(action,"isOtherCardInCenter"))
+                || !Boolean.FALSE.equals(readBooleanField(action,"isDone")))return null;
+        AbstractCard card=(AbstractCard)value;
+        if(AbstractDungeon.player.hand.size()>=10 || AbstractDungeon.getMonsters()==null)return null;
+        IdentityHashMap<AbstractMonster, Integer> slots=emittedMonsterSlots(liveEncounter);
+        Integer slot=null;
+        for(AbstractMonster monster:AbstractDungeon.getMonsters().monsters) {
+            if(monster==null)continue;
+            for(AbstractPower power:monster.powers) {
+                if(!"Stasis".equals(power.ID))continue;
+                Object held=readObjectField(power,"card");
+                if(!(held instanceof AbstractCard) || card.uuid==null || !card.uuid.equals(((AbstractCard)held).uuid))continue;
+                Integer physical=slots.get(monster);
+                if(!"BronzeOrb".equals(monster.id) || !(monster.isDying || monster.currentHealth<=0) || slot!=null
+                        || physical==null || (physical!=0 && physical!=2))return null;
+                slot=physical/2;
+            }
+        }
+        return stasisReturnItemJson(slot);
+    }
+
+    static String stasisReturnItemJson(Integer slot) {
+        return slot!=null && (slot==0 || slot==1) ? "{\"kind\":\"STASIS_RETURN\",\"slot\":"+slot+"}" : null;
     }
 
     private static String slimeSplitJson(Object action) {
@@ -3252,7 +3361,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             if(i>0)out.append(',');
             Object action=manager.actions.get(i);
             String className=action.getClass().getName();
-            out.append(className.startsWith("com.megacrit.cardcrawl.")?action.getClass().getSimpleName():className);
+            String simple=action.getClass().getSimpleName();
+            out.append(className.startsWith("com.megacrit.cardcrawl.") && !simple.isEmpty()?simple:className);
             if(className.endsWith("PowerAction"))out.append('(').append(powerActionDetail(action)).append(')');
         }
         if(manager.actions.size()>16)out.append(",...");

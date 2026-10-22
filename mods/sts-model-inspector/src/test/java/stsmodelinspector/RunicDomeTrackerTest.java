@@ -377,7 +377,11 @@ public final class RunicDomeTrackerTest {
             awake.beginRoll(monster,300,300);awake.endRoll(monster);
             for(int i=0;i<deathTurn;++i) {awake.execute(monster,i==0?1:2);awake.beginRoll(monster,200,300);awake.endRoll(monster);}
             awake.beginRebirth(monster,3);awake.setMove(monster);awake.endKnownTurn(monster);
-            if(Boolean.TRUE.equals(awake.snapshot(monster,deathTurn+1,2,false).get("complete"))) throw new AssertionError("missing duplicate rebirth callback accepted");
+            // The window before the queued duplicate (a source card's grid,
+            // problem 90): complete with one known transition; the importer
+            // accepts it only with the pending MONSTER_SET_MOVE.
+            Map<String,Object> window=awake.snapshot(monster,deathTurn+1,2,false);complete(window);
+            if(!window.get("knownTransitions").equals(1)) throw new AssertionError("rebirth window claimed the duplicate");
             awake.knownOverride(monster,3);awake.setMove(monster);awake.endKnownTurn(monster);
             complete(awake.snapshot(monster,deathTurn+1,2,false));
             awake.execute(monster,3);awake.beginRoll(monster,300,300);awake.endRoll(monster);
@@ -385,6 +389,16 @@ public final class RunicDomeTrackerTest {
             if(!reborn.get("publicMisc").equals(1) || !reborn.get("knownTransitions").equals(2)) throw new AssertionError("public rebirth phase lost");
             awake.execute(monster,5);awake.beginRoll(monster,200,300);awake.endRoll(monster);complete(awake.snapshot(monster,deathTurn+3,2,false));
         }
+        // Problem 91: the roll right after Rebirth runs before the queued heal (HP 0 of 320).
+        RunicDomeTracker healAwake=new RunicDomeTracker(monster,"AwakenedOne",47,3,3);
+        healAwake.beginRoll(monster,300,300);healAwake.endRoll(monster);healAwake.execute(monster,1);
+        healAwake.beginRebirth(monster,3);healAwake.setMove(monster);healAwake.endKnownTurn(monster);
+        healAwake.knownOverride(monster,3);healAwake.setMove(monster);healAwake.endKnownTurn(monster);
+        healAwake.execute(monster,3);healAwake.beginRoll(monster,0,320);healAwake.endRoll(monster);
+        complete(healAwake.snapshot(monster,3,2,false));
+        RunicDomeTracker deadRoll=new RunicDomeTracker(monster,"AwakenedOne",48,3,3);
+        deadRoll.beginRoll(monster,300,300);deadRoll.endRoll(monster);deadRoll.execute(monster,1);deadRoll.beginRoll(monster,0,300);
+        if(Boolean.TRUE.equals(deadRoll.snapshot(monster,2,2,false).get("complete"))) throw new AssertionError("first-form HP-0 roll accepted");
         RunicDomeTracker thornsAwake=new RunicDomeTracker(monster,"AwakenedOne",46,3,3);
         thornsAwake.beginRoll(monster,300,300);thornsAwake.endRoll(monster);thornsAwake.execute(monster,1);
         thornsAwake.beginRebirth(monster,3);thornsAwake.setMove(monster);thornsAwake.endKnownTurn(monster);

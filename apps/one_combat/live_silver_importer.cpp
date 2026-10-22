@@ -409,6 +409,18 @@ bool backAttackFix() {
     throw std::runtime_error("STS_IMPORTER_BACK_ATTACK_FIX must be 0 or 1");
 }
 
+// STS_SILVER_STASIS_RETURN_QUEUE: unset/1 (default) = a Bronze Orb killed by
+// a source card queues StasisPower.onDeath's MakeTempCardInHandAction behind
+// it; native returnStasisCard puts the card in hand at the death, so the
+// importer folds it into the hand (the producer's STASIS_RETURN, problem 88);
+// 0 = legacy refusal (silver_unmapped_stasis).
+bool stasisReturnQueue() {
+    const char *value = std::getenv("STS_SILVER_STASIS_RETURN_QUEUE");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_SILVER_STASIS_RETURN_QUEUE must be 0 or 1");
+}
+
 // STS_SILVER_SPIRE_DEATH_QUEUE: unset/1 (default) = a Spire Shield/Spear that
 // died to a source card queues RemoveSpecificPowerAction(player, "Surrounded")
 // (and the survivor's "BackAttack") behind it (SpireShield/SpireSpear.die());
@@ -490,6 +502,18 @@ bool halfDeadSetMoveQueue() {
     throw std::runtime_error("STS_SILVER_HALF_DEAD_SET_MOVE_QUEUE must be 0 or 1");
 }
 
+// STS_SILVER_AWAKENED_REBIRTH_QUEUE: unset/1 (default) = a source-card
+// selection whose pending tail holds Awakened One's first-form death
+// SetMoveAction(3) (Headbutt killing it, problem 90) imports it as a native
+// SetMonsterMove(Rebirth), and under Runic Dome accepts the row from before
+// that duplicate setter; 0 = legacy refusal as silver_selection_pending_actions.
+bool awakenedRebirthQueue() {
+    const char *value = std::getenv("STS_SILVER_AWAKENED_REBIRTH_QUEUE");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_SILVER_AWAKENED_REBIRTH_QUEUE must be 0 or 1");
+}
+
 // STS_SILVER_LAGAVULIN_OPEN_QUEUE: unset/1 (default) = a source-card
 // selection whose pending tail holds the ChangeStateAction("OPEN") of a
 // Lagavulin woken by the hit folds its Metallicize reduction into the
@@ -558,6 +582,19 @@ bool lethalReactionQueue() {
     if (!value || !*value || std::string(value) == "1") return true;
     if (std::string(value) == "0") return false;
     throw std::runtime_error("STS_SILVER_LETHAL_REACTION_QUEUE must be 0 or 1");
+}
+
+// STS_SILVER_BYRD_GROUNDING_QUEUE: unset/1 (default) = a source-card
+// selection whose non-lethal hit took a living Byrd's Flight from 1 to 0
+// still carries the queued ReducePowerAction (Java grounds the Byrd only when
+// it runs); it folds into the Byrd as native applies it at the hit: Flight
+// removed, any deferred Runic Dome roll cancelled, Stunned next (live problem
+// 80); 0 = legacy refusal (silver_selection_pending_actions).
+bool byrdGroundingQueue() {
+    const char *value = std::getenv("STS_SILVER_BYRD_GROUNDING_QUEUE");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_SILVER_BYRD_GROUNDING_QUEUE must be 0 or 1");
 }
 
 // STS_SILVER_PLATED_ARMOR_REMOVAL_QUEUE: unset/1 (default) = a queued
@@ -890,6 +927,18 @@ bool domeAct4Fix() {
     throw std::runtime_error("STS_IMPORTER_RUNIC_DOME_ACT4 must be 0 or 1");
 }
 
+// STS_IMPORTER_RUNIC_DOME_REBIRTH_ROLL: unset/1 (default) accepts Awakened One's
+// pending roll made right after its Rebirth executed with rollHp 0: the REBIRTH
+// changeState queues the heal behind takeTurn's RollMoveAction, and phase two's
+// first move (Dark Echo) does not depend on HP (live problem 91, seed 111200541).
+// =0 restores the refusal (silver_runic_dome_history_gap).
+bool domeRebirthRollFix() {
+    const char *value = std::getenv("STS_IMPORTER_RUNIC_DOME_REBIRTH_ROLL");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_IMPORTER_RUNIC_DOME_REBIRTH_ROLL must be 0 or 1");
+}
+
 // The public result of the Act 4 roll made after `done` executions (Java
 // getMove), 0 if that roll is random, or -1 if it needs an unknown last move.
 int domeAct4Cycle(const std::string &id,int done,int last) {
@@ -1123,8 +1172,15 @@ std::string importBoundedRunicDome(const json &combat, silver_bridge::BattleStat
                     || (wire.monsterCount!=1 && (wire.monsterCount!=3 || slot!=2
                         || wire.monsters[0].id!=static_cast<int>(sts::MonsterId::CULTIST)
                         || wire.monsters[1].id!=static_cast<int>(sts::MonsterId::CULTIST)))) return "silver_runic_dome_encounter_domain";
+            // Under a source card's grid the duplicate Rebirth setter is still
+            // queued (problem 90): one known transition, with the pending item.
+            const auto queue=combat.find("pendingActionQueue");
+            const bool rebirthWindow=m.halfDead && queue!=combat.end() && queue->is_array() && awakenedRebirthQueue()
+                && std::any_of(queue->begin(),queue->end(),[&](const json &item) {
+                    return item.is_object() && item.value("kind","")=="MONSTER_SET_MOVE"
+                        && item.value("move",-1)==3 && item.value("slot",-1)==slot;});
             if((m.halfDead && (misc!=0 || m.curHp>0 || !knownNext))
-                    || (knownNext && !m.halfDead) || k.at("knownTransitions")!=((misc || m.halfDead)?2:0)) return "silver_runic_dome_history_gap";
+                    || (knownNext && !m.halfDead) || k.at("knownTransitions")!=((misc || m.halfDead)?(rebirthWindow?1:2):0)) return "silver_runic_dome_history_gap";
             if(!misc && std::any_of(moves.begin(),moves.end(),[](const json &v){return v!=1 && v!=2;})) return "silver_runic_dome_history_gap";
         }
         if(laga) {
@@ -1140,7 +1196,9 @@ std::string importBoundedRunicDome(const json &combat, silver_bridge::BattleStat
         if(darkling && ((knownNext && (!m.halfDead || m.curHp!=0))
                 || (!knownNext && m.halfDead && (moves.empty() || moves.back()!=4 || k.at("rollHp")!=0))))return "silver_runic_dome_history_gap";
         if(split && knownNext && k.at("knownNextMove").at("move")==3 && m.curHp*2>m.maxHp)return "silver_runic_dome_history_gap";
-        if(k.at("rollHp")==0 && !(darkling && m.halfDead))return "silver_runic_dome_history_gap";
+        const bool rebirthRoll=awakened && misc==1 && !m.halfDead && pending==1 && !moves.empty() && moves.back()==3
+                && domeRebirthRollFix();
+        if(k.at("rollHp")==0 && !(darkling && m.halfDead) && !rebirthRoll)return "silver_runic_dome_history_gap";
         if(hex && (completed==0?misc!=0:misc<1 || misc>834)) return "silver_runic_dome_history_gap";
         if(guardian && (misc<(wire.ascension>=19?40:wire.ascension>=9?35:30)
                 || (misc-(wire.ascension>=19?40:wire.ascension>=9?35:30))%10 || misc>(wire.ascension>=19?40:wire.ascension>=9?35:30)+10*completed))
@@ -1503,6 +1561,16 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         }
     }
     if (stasis.size() > wire.stasisCards.size()) return unsupported("silver_unmapped_stasis");
+    // Stasis returns still queued behind a source card (STASIS_RETURN).
+    std::array<bool, 2> stasisReturnPending {}, stasisReturnFolded {};
+    if (stasisReturnQueue() && combat.contains("pendingActionQueue") && combat.at("pendingActionQueue").is_array())
+        for (const auto &entry : combat.at("pendingActionQueue")) {
+            if (!entry.is_object() || entry.value("kind", std::string()) != "STASIS_RETURN") continue;
+            const auto slot = entry.find("slot");
+            if (slot == entry.end() || !slot->is_number_integer() || *slot < 0 || *slot > 1
+                || stasisReturnPending[slot->get<int>()]) return unsupported("silver_selection_pending_actions");
+            stasisReturnPending[slot->get<int>()] = true;
+        }
     if (!stasis.empty()) {
         std::array<CardRecord, 2> orderedStasis;
         std::array<bool, 2> seenStasis {};
@@ -1534,6 +1602,35 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                     || orb.value("slot", orb.value("idx", static_cast<int>(m))) != slot * 2) continue;
                 orbDead = orb.value("dead", false)
                     || (orb.value("hp", 1) <= 0 && !orb.value("halfDead", false));
+            }
+            if (orbDead && stasisReturnPending[slot]) {
+                // StasisPower.onDeath with fewer than 10 cards in hand queued
+                // MakeTempCardInHandAction(card, false, true); native
+                // returnStasisCard already moved it to hand. Under Corruption
+                // that runs the onCardDrawOrDiscard pass over the hand's
+                // Skills (STS_CORRUPTION_HAND_COST_FIX; legacy: the returned
+                // Skill's costForTurn only).
+                if (returnedElsewhere(stasis[i].uuid) || hand.size() >= 10) return unsupported("silver_unmapped_stasis");
+                const json playerPowers = combat.value("playerPowers", json::array());
+                const bool corruption = playerPowers.is_array() && std::any_of(playerPowers.begin(), playerPowers.end(),
+                    [](const json &power) { return power.is_object() && power.value("id", std::string()) == "Corruption"; });
+                const auto skill = [](const CardRecord &card) {
+                    return sts::CardInstance(static_cast<sts::CardId>(card.wire.id)).getType() == sts::CardType::SKILL;
+                };
+                hand.push_back(std::move(stasis[i]));
+                if (corruption && sts::corruptionHandCostFix()) {
+                    for (auto &card : hand) {
+                        if (!skill(card) || card.wire.costForTurn == 0) continue;
+                        // CardInstance::modifyCostForCombat(-9)
+                        auto &w = card.wire;
+                        if (w.costForTurn > 0) { w.costForTurn = 0; w.cost = 0; }
+                        else if (w.cost >= 0) { w.cost = 0; w.costForTurn = 0; }
+                    }
+                } else if (corruption && hand.back().wire.costForTurn >= 0 && skill(hand.back())) {
+                    hand.back().wire.costForTurn = 0;
+                }
+                stasisReturnFolded[slot] = true;
+                continue;
             }
             if (orbDead) {
                 if (!returnedElsewhere(stasis[i].uuid)) return unsupported("silver_unmapped_stasis");
@@ -2231,6 +2328,7 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         wire.pendingCardQueueObserved = true;
     }
     bool guardianShift=false;
+    std::vector<int> groundedByrds;
     if (combat.contains("pendingActionQueue")) {
         using K=silver_bridge::PendingActionKind;
         const auto &queue=combat.at("pendingActionQueue");
@@ -2268,6 +2366,13 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
             // Armor loss at the hit, so the queued reduction is folded into
             // the imported monster instead of replayed.
             const auto kindName=entry.at("kind").get<std::string>();
+            if(kindName=="STASIS_RETURN") {
+                // Folded into the hand with the stasis slots above.
+                int slot=-1;
+                if(!sourceCard || !requiredInt(entry,"slot",slot) || slot<0 || slot>1 || !stasisReturnFolded[slot])
+                    return unsupported("silver_selection_pending_actions");
+                continue;
+            }
             if(kindName=="PLAYER_REMOVE_SURROUNDED" || kindName=="MONSTER_REMOVE_BACK_ATTACK") {
                 // SpireShield/SpireSpear.die() queue these behind the killing
                 // card; native removes Surrounded at the death itself.
@@ -2319,10 +2424,26 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                 // Darkling.damage sets Regrow at the half-death and queues the
                 // same SetMoveAction behind the card; native does the same.
                 int slot=-1,move=-1;
-                if(!sourceCard || !halfDeadSetMoveQueue() || !requiredInt(entry,"slot",slot) || !requiredInt(entry,"move",move)
-                        || slot<0 || slot>=wire.monsterCount || move!=4)
+                if(!sourceCard || !requiredInt(entry,"slot",slot) || !requiredInt(entry,"move",move)
+                        || slot<0 || slot>=wire.monsterCount)
                     return unsupported("silver_selection_pending_actions");
                 const auto &monster=wire.monsters[slot];
+                // AwakenedOne.damage at the first-form death likewise sets
+                // Rebirth and queues the same SetMoveAction(3) (problem 90).
+                if(move==3) {
+                    if(!awakenedRebirthQueue() || monster.idx!=slot || monster.id!=static_cast<std::int16_t>(sts::MonsterId::AWAKENED_ONE)
+                            || !monster.halfDead || monster.curHp>0 || monster.miscInfo!=0
+                            // Under Runic Dome the history import below derives
+                            // Rebirth and requires this item for its row.
+                            || (!runicDome && monster.moveHistory[0]!=static_cast<std::int16_t>(sts::MonsterMoveId::AWAKENED_ONE_REBIRTH)))
+                        return unsupported("silver_selection_pending_actions");
+                    silver_bridge::PendingActionWire action;action.kind=K::MONSTER_SET_MOVE;
+                    action.amount=static_cast<int>(sts::MonsterMoveId::AWAKENED_ONE_REBIRTH);action.monster=slot;
+                    wire.pendingActionQueue.push_back(action);
+                    continue;
+                }
+                if(!halfDeadSetMoveQueue() || move!=4)
+                    return unsupported("silver_selection_pending_actions");
                 if(monster.idx!=slot || monster.id!=static_cast<std::int16_t>(sts::MonsterId::DARKLING) || !monster.halfDead
                         || monster.moveHistory[0]!=static_cast<std::int16_t>(sts::MonsterMoveId::DARKLING_REGROW))
                     return unsupported("silver_selection_pending_actions");
@@ -2405,14 +2526,18 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                 }
                 if(kindName=="MONSTER_REDUCE_FLIGHT") {
                     // Native Flight loss happens at the hit, like Plated Armor;
-                    // reaching 0 grounds (stuns) the Byrd and stays unsupported
-                    // unless the hit was lethal: native then sets the stun and
-                    // Flight 0 before the death (live seed 111200460).
+                    // reaching 0 grounds (stuns) the Byrd: native sets the stun
+                    // and Flight 0 at the hit, before a lethal hit's death (live
+                    // seed 111200460) and on a living Byrd (problem 80).
                     auto &flight=monster.uniquePower0;
                     if(amount!=1 || monster.id!=static_cast<std::int16_t>(sts::MonsterId::BYRD)
-                            || !has(sts::MonsterStatus::FLIGHT) || flight<1 || (flight==1 && !lethalReduce))
+                            || !has(sts::MonsterStatus::FLIGHT) || flight<1
+                            || (flight==1 && !lethalReduce && (monster.curHp<=0 || !byrdGroundingQueue())))
                         return unsupported("silver_selection_pending_actions");
                     if(flight==1) {
+                        // Under Runic Dome the history import below rebuilds
+                        // the moves and the deferred roll; the stun follows it.
+                        if(runicDome && monster.curHp>0) groundedByrds.push_back(slot);
                         monster.moveHistory[1]=monster.moveHistory[0];
                         monster.moveHistory[0]=static_cast<std::int16_t>(sts::MonsterMoveId::BYRD_STUNNED);
                         // Native removes the grounded Byrd's Flight (STS_BYRD_GROUNDED_FLIGHT_FIX).
@@ -2621,6 +2746,14 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
     wire.fullDrawOrderObserved = frozenEye; wire.intentsHidden = false;
     if(runicDome) {
         if(const auto reason=importBoundedRunicDome(combat,wire); !reason.empty()) return unsupported(reason);
+        // Native Monster::damage cancels the deferred roll before the stun.
+        for(const int slot:groundedByrds) {
+            auto &m=wire.monsters[slot];
+            m.pendingMoveRolls=0; m.pendingDirectMoveChoice=0; m.pendingRollInputs={};
+            m.pendingRollInputHistory.clear(); m.pendingAttackPredicates.clear();
+            m.moveHistory[1]=m.moveHistory[0];
+            m.moveHistory[0]=static_cast<std::int16_t>(sts::MonsterMoveId::BYRD_STUNNED);
+        }
     }
     wire.isolatedSearchSeed = fnv1a(entry + ":silver-live-v2");
     wire.observedGeneration = observation.value("sequence", 0ULL);

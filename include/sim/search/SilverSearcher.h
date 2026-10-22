@@ -189,6 +189,8 @@ namespace sts::search {
             int outcomesGenerated = 0;
             std::uint64_t randomnessBase = 0;
             std::vector<double> prior;        // tree prior (research), indexed like edges; empty = none
+            double backedValue = 0;           // max-backup value (research, maxBackupMinVisits > 0)
+            bool hasBackedValue = false;
         };
 
         double explorationParameter = 25.0;
@@ -221,6 +223,9 @@ namespace sts::search {
             // PLAYER_NORMAL step plays the rolloutPrior argmax over card plays and END_TURN
             // (no potions); card selects stay greedy. Needs rolloutPrior.
             bool prior = false;
+            // Research (STS_SILVER_ROLLOUT_BLOCK_FIRST / _BLOCK_OFFSET / _BLOCK_LETHAL):
+            // SilverRolloutAgent::blockRule; the default is the production rule.
+            SilverRolloutAgent::BlockRule blockRule;
         };
         static const RolloutConfig &envRolloutConfig();
         RolloutConfig rolloutConfig = envRolloutConfig();
@@ -248,6 +253,13 @@ namespace sts::search {
         // prior order instead of enumeration order.
         std::function<std::vector<double>(const BattleContext &, const std::vector<Edge> &)> nodePrior;
         int treePriorMinVisits = 1;
+        // Research (STS_SILVER_MAX_BACKUP=m, default 0 = off): selection values a child by a
+        // max backup instead of its mean playout value. A decision node is worth its best
+        // child with at least m simulations (its mean while none has), a chance node the
+        // visit-weighted mean of its outcomes' values. Values are refreshed along each
+        // simulation's path; the root still plays the most-visited edge.
+        int maxBackupMinVisits = envMaxBackupMinVisits();
+        static int envMaxBackupMinVisits();
         // Research-only playout policy for RolloutConfig::prior (same signature as nodePrior).
         std::function<std::vector<double>(const BattleContext &, const std::vector<Edge> &)> rolloutPrior;
 
@@ -343,6 +355,7 @@ namespace sts::search {
 
         void step();
         void updateFromPlayout(const std::vector<Node *> &stack, double evaluation);
+        [[nodiscard]] double selectionValue(const Node &node) const;
         double evaluateEdge(const Node &parent, int edgeIdx, double logParentVisits) const;
         int selectBestEdgeToSearch(const Node &cur) const;
         int wideningCap(int category, std::int64_t visits);

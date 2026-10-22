@@ -157,6 +157,9 @@ namespace sts::search {
     // Research-only (§479 rollout arms): when set, replaces the env rollout options
     // (SilverSearcher::envRolloutConfig) for the current thread's searches. Unset elsewhere.
     extern thread_local std::optional<SilverSearcher::RolloutConfig> g_nativeSilverRolloutOverride;
+    // Research-only (maxbackup armset): when set, replaces STS_SILVER_MAX_BACKUP
+    // (SilverSearcher::maxBackupMinVisits; 0 = off) for the current thread's searches. Unset elsewhere.
+    extern thread_local std::optional<int> g_nativeSilverMaxBackupOverride;
     // Bundled default model of the rollout root table (ADR-0046; gen-7f E since ADR-TBD), relative to the repository root.
     inline constexpr const char *kDefaultRolloutRootTableModel = "models/combat_policy_mlp_g7f_E.txt";
     // Rollout root table (STS_SILVER_ROLLOUT_ROOT_TABLE: unset = kDefaultRolloutRootTableModel,

@@ -1,0 +1,6 @@
+tag=A-111153366 rc=0 start=2026-10-22T06:32:53Z wall=1845
+tag=B-111153366 rc=0 start=2026-10-22T07:03:38Z wall=841
+A footer: complete integrityPassed heartKilled=True finalAct=4 finalFloor=56
+B footer: complete integrityPassed heartKilled=False finalAct=4 finalFloor=56
+Lead rerun 2026-10-22 06:32-07:17Z in the lead container with the frozen binary be70a1c1 at RUN_COMMIT 3baca749 (run_unit.sh unchanged). Tar: /mnt/project-files/az-gumbel-root-ab-lead/lead-111153366.tar sha256 77687f8bd8328be22e5b9185f735db9883691623fe313619b42cd9d9f04d83a1
+Including it: Heart A 107/512 (20.9%) vs B 48/512 (9.4%); verdict unchanged.

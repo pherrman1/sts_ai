@@ -5,6 +5,7 @@
 #ifndef STS_LIGHTSPEED_BATTLECONTEXT_H
 #define STS_LIGHTSPEED_BATTLECONTEXT_H
 
+#include <cstdint>
 #include <vector>
 #include <array>
 #include <functional>
@@ -54,6 +55,17 @@ namespace sts {
     extern thread_local std::function<void(const BattleContext &, GameContext &)> g_onBattleExitRaw;
 
     extern thread_local BattleContext *g_debug_bc;
+
+    // Engine fix flags (the *Fix() switches below and STS_ACTIVE_POWER_FEATURES)
+    // are read from the environment once per epoch per thread. BattleContext::init
+    // and search::battleContextFromWire call refreshEngineFlags(), so a flag set
+    // before a combat starts takes effect in that combat. Code that changes a flag
+    // with setenv at any other point (tests) must call refreshEngineFlags() itself.
+    struct CachedFixFlag { std::uint32_t epoch = 0; bool value = false; };
+    // Unset, empty or 1 = true, 0 = false, anything else throws "NAME must be 0 or 1".
+    bool cachedFixFlag(CachedFixFlag &cache, const char *name);
+    std::uint32_t engineFlagEpoch();
+    void refreshEngineFlags();
 
     // STS_DEAD_TARGET_DEBUFF_FIX: unset or 1 = a debuff or buff on a dead,
     // half-dead or escaped monster does nothing, as in the game
@@ -218,6 +230,18 @@ namespace sts {
     // engine, which kept the turn cost until the end of turn. Other values are
     // fatal. Read only when a moved card's costForTurn differs from its cost.
     bool pileCostResetFix();
+
+    // STS_CORRUPTION_HAND_COST_FIX: unset/1 (default) = a card made in hand
+    // (MakeTempCardInHand: Dead Branch etc.; Discovery-style choices) under
+    // Corruption runs the game's AbstractPlayer.onCardDrawOrDiscard pass first:
+    // every SKILL in hand with costForTurn != 0 gets modifyCostForCombat(-9),
+    // so a generated skill ends at cost 0 / costForTurn 0 for the rest of the
+    // combat (ShowCardAndAddToHandEffect calls the pass before its own
+    // setCostForTurn(-9); live parity problem 83, seed 111200508: Dead Branch
+    // skills game 0/0, native base/0). 0 = the legacy engine, which zeroed only
+    // costForTurn. Other values are fatal. Read only when a card is made in
+    // hand while the player has Corruption.
+    bool corruptionHandCostFix();
 
     // STS_HAND_UPGRADE_ALL_FIX: unset/1 (default) = upgrading every card in
     // hand (Armaments+, Blessing of the Forge) skips cards that cannot be
@@ -453,6 +477,7 @@ namespace sts {
         void playTopCardInDrawPile(int monsterTargetIdx, bool exhausts);
 
         void moveToHandHelper(CardInstance c);
+        void corruptionHandCostPass(); // AbstractPlayer.onCardDrawOrDiscard's Corruption loop
         void exhaustSpecificCardInHand(int idx, std::int16_t uniqueId);
         void restoreRetainedCards(int count);
         void exhaustTopCardInHand();

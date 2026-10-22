@@ -1,0 +1,18 @@
+M0.3 w 0     conc r2tr 0.6328 r2va 0.6330 s494 0.6008 | regret r2va 0.0232 s494 0.0278
+M0.3 w 0.05  conc r2tr 0.6368 r2va 0.6475 s494 0.6090 | regret r2va 0.0230 s494 0.0281
+M0.3 w 0.1   conc r2tr 0.6373 r2va 0.6488 s494 0.6134 | regret r2va 0.0225 s494 0.0281
+M0.3 w 0.15  conc r2tr 0.6388 r2va 0.6443 s494 0.6152 | regret r2va 0.0227 s494 0.0276
+M0.3 w 0.2   conc r2tr 0.6361 r2va 0.6436 s494 0.6146 | regret r2va 0.0225 s494 0.0271
+M0.3 w 0.25  conc r2tr 0.6339 r2va 0.6405 s494 0.6126 | regret r2va 0.0221 s494 0.0279
+M0.3 w 0.33  conc r2tr 0.6253 r2va 0.6292 s494 0.6025 | regret r2va 0.0230 s494 0.0290
+M0.3 w 0.5   conc r2tr 0.6093 r2va 0.6123 s494 0.5886 | regret r2va 0.0249 s494 0.0287
+M0.3 w 0.67  conc r2tr 0.5925 r2va 0.5931 s494 0.5834 | regret r2va 0.0263 s494 0.0281
+M0.3 w 1     conc r2tr 0.5529 r2va 0.5554 s494 0.5628 | regret r2va 0.0321 s494 0.0317
+chosen on r2 train: 0.15
+w 0.15: r2va conc - x2b +0.0112 [0.0013 0.0207] regret -0.0005 [-0.0017  0.0006]; s494 conc - x2b +0.0145 [-0.0031  0.0356]; outcome AUC val 0.699 vs 0.683 [+0.002, +0.034], all 0.716 vs 0.694 [+0.018, +0.027]; mean leaf 0.725
+w 0.2: r2va conc - x2b +0.0105 [-0.0002  0.0209] regret -0.0007 [-0.002   0.0004]; s494 conc - x2b +0.0138 [-0.0103  0.0378]; outcome AUC val 0.704 vs 0.683 [+0.002, +0.043], all 0.723 vs 0.694 [+0.024, +0.036]; mean leaf 0.701
+w 0.33: r2va conc - x2b -0.0039 [-0.0167  0.0094] regret -0.0003 [-0.0018  0.0013]; s494 conc - x2b +0.0017 [-0.023   0.0269]; outcome AUC val 0.714 vs 0.683 [+0.003, +0.064], all 0.741 vs 0.694 [+0.038, +0.057]; mean leaf 0.633
+act 1: r2va groups 1203 conc x2b 0.6628 w0.15 0.6687 head 0.5369
+act 2: r2va groups 830 conc x2b 0.6253 w0.15 0.6370 head 0.5837
+act 3: r2va groups 464 conc x2b 0.5874 w0.15 0.6079 head 0.5736
+act 4: r2va groups 62 conc x2b 0.5355 w0.15 0.5448 head 0.5434

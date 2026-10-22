@@ -178,6 +178,14 @@ add_test(NAME anger_copy_cost COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.
 set_tests_properties(anger_copy_cost PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(corruption_hand_cost_test tests/corruption_hand_cost_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(corruption_hand_cost_test PRIVATE include json/include)
+add_test(NAME corruption_hand_cost COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:corruption_hand_cost_test>)
+set_tests_properties(corruption_hand_cost PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(upgrade_cost_delta_test tests/upgrade_cost_delta_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(upgrade_cost_delta_test PRIVATE include json/include)
@@ -656,7 +664,9 @@ add_test(NAME live_silver_importer COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_g
     ${CMAKE_SOURCE_DIR}/tests/fixtures/live_runic_dome_two_thieves_turn1.json
     ${CMAKE_SOURCE_DIR}/tests/fixtures/live_runic_dome_three_byrds_turn1.json
     ${CMAKE_SOURCE_DIR}/tests/fixtures/live_runic_dome_writhing_mass_headbutt_turn2.json
-    ${CMAKE_SOURCE_DIR}/tests/fixtures/live_shield_spear_back_attack_turn1.json)
+    ${CMAKE_SOURCE_DIR}/tests/fixtures/live_shield_spear_back_attack_turn1.json
+    ${CMAKE_SOURCE_DIR}/tests/fixtures/live_runic_dome_byrd_headbutt_grounded.json
+    ${CMAKE_SOURCE_DIR}/tests/fixtures/live_automaton_stasis_headbutt_return.json)
 
 add_executable(ritual_dagger_persistence_test apps/ritual_dagger_persistence_test.cpp
     apps/one_combat/combat_transition.cpp

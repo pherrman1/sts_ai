@@ -118,6 +118,20 @@ struct OocMctsConfig {
     double rootNoiseFraction = 0;
     double rootNoiseAlpha = 0.3;
     std::uint64_t rootNoiseSeed = 0;
+    // Opt-in Gumbel AlphaZero root (STS_OOC_MCTS_GUMBEL_ROOT; Danihelka et al. 2022): when
+    // gumbelRootActions > 0 the root samples that many actions without replacement by
+    // gumbelScale * Gumbel(0,1) + log prior (drawn from gumbelSeed, not the search RNG) and
+    // splits the simulations over them by sequential halving, ranking by
+    // g + log prior + (gumbelCVisit + max root visits) * gumbelCScale * Q. The final action is
+    // the best remaining one by that score. Below the root the search stays PUCT. 0 is off.
+    std::uint32_t gumbelRootActions = 0;
+    double gumbelScale = 1.0;
+    double gumbelCVisit = 50.0;
+    double gumbelCScale = 1.0;
+    std::uint64_t gumbelSeed = 0;
+    // Research reference (STS_OOC_MCTS_ROOT_COMPARE): with a Gumbel root, never halve; the
+    // simulations are split evenly over the sampled actions (scale 0 and M >= legal = all of them).
+    bool gumbelUniform = false;
     // Diagnostic only: retain a bounded view of the completed search tree.
     bool profileSearch = false; // exact expansion histogram; observation only
     bool captureTree = false;

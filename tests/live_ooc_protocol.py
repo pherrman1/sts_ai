@@ -322,6 +322,36 @@ class LiveOocProtocol(unittest.TestCase):
         response, = self.run_rows([observation], policy="v4", differential=True)
         self.assertEqual(response["evaluators"][0]["reason"], "DIFFERENTIAL_SELECTOR_PREVIEW_UNREPRESENTABLE")
 
+    def test_selector_preview_confirms_the_retained_grid_pick(self):
+        # Problem 92: the confirm screen re-searched near-tied cards and
+        # cancelled most shop removals the grid click had just picked.
+        grid = self.fixtures["remove_selector"]
+        preview_template = self.fixtures["selector_preview_4"]
+        self.assertEqual(grid["ooc"]["details"]["cards"], preview_template["ooc"]["details"]["cards"])
+        first, = self.run_rows([grid], policy="mcts")
+        choice = first["evaluators"][0]["selectedLiveAction"]
+        self.assertEqual(choice["kind"], "choose", first)
+        picked = grid["ooc"]["details"]["cards"][choice["choiceIndex"] - 1]["deckIndex"]
+        def preview(deck_index):
+            row = copy.deepcopy(preview_template)
+            row["ooc"]["details"]["previewDeckIndex"] = deck_index
+            return row
+        other = next(card["deckIndex"] for card in grid["ooc"]["details"]["cards"] if card["deckIndex"] != picked)
+        _, retained = self.run_rows([grid, preview(picked)], policy="mcts")
+        evaluator = retained["evaluators"][0]
+        self.assertEqual(evaluator["mode"], "selector_preview_retained", retained)
+        self.assertEqual(evaluator["selectedLiveAction"], dict(kind="proceed"))
+        # The live driver must accept the answer it executes (seed 111200553).
+        sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+        from tools.live_game_driver import InspectorSnapshot
+        snapshot = InspectorSnapshot({}, "ooc-protocol", 2, "fixture-1", {}, retained)
+        self.assertEqual(snapshot.ooc_evaluator(evaluator["policy"])["selectedLiveAction"], dict(kind="proceed"))
+        _, searched = self.run_rows([grid, preview(other)], policy="mcts")
+        self.assertEqual(searched["evaluators"][0]["mode"], "selector_preview_policy", searched)
+        _, legacy = self.run_rows([grid, preview(picked)], policy="mcts",
+                                  extra_env={"STS_LIVE_SELECTOR_PREVIEW_RETAIN": "0"})
+        self.assertEqual(legacy["evaluators"][0]["mode"], "selector_preview_policy", legacy)
+
     def test_searing_blow_upgrades_remain_supported(self):
         response, = self.run_rows([self.fixtures["upgraded_searing_blow"]],
                                   policy="v4")
@@ -613,6 +643,51 @@ class LiveOocProtocol(unittest.TestCase):
         self.assertEqual(chosen["visits"], max(c["visits"]
                                                 for c in retained_eval["candidateSummaries"]))
 
+    def test_compound_plan_survives_an_event_continue_page(self):
+        # Problem 95 (seed 111200559): Beggar's removal plan was dropped at the
+        # sole [Continue] page before the grid, which then searched afresh.
+        sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+        from tools.live_game_driver import InspectorSnapshot
+        def driver_accepts(responses):
+            # The live driver must accept every answer it executes.
+            for sequence, response in enumerate(responses, 1):
+                evaluator = response["evaluators"][0]
+                self.assertEqual(evaluator["status"], "OK", response)
+                snapshot = InspectorSnapshot({}, "ooc-protocol", sequence, f"fixture-{sequence - 1}", {}, response)
+                self.assertEqual(snapshot.ooc_evaluator(evaluator["policy"])["selectedLiveAction"],
+                                 evaluator["selectedLiveAction"])
+        continue_page = copy.deepcopy(self.fixtures["neow"])
+        ooc = continue_page["ooc"]
+        ooc["details"].update(event="Designer", eventContract="vanilla_v1", mechanicalTransition="event_continue")
+        ooc["event"] = dict(id="Designer", phase="INTRO", options=[dict(index=0, disabled=False)])
+        ooc["liveChoices"] = [dict(nativeAction=dict(kind="option", index=0, group=0),
+                                   liveAction=dict(kind="choose", choiceIndex=1))]
+        source = self.fixtures["event_living_wall"]
+        planned, = self.run_rows([source], policy="mcts")
+        plan = planned["evaluators"][0]["compoundPlan"]
+        self.assertEqual(plan["status"], "PENDING", planned)
+        grids = {"remove": "remove_selector", "upgrade": "upgrade_duplicate_physical_cards",
+                 "transform": "transform_selector"}
+        matching = self.fixtures[grids[plan["selectorType"]]]
+        other = self.fixtures[next(name for kind, name in grids.items() if kind != plan["selectorType"])]
+        # The mechanical event_continue page and a sole-choice event screen
+        # (a native pass-through without search) both keep the plan.
+        for middle in (continue_page, self.fixtures["cursed_tome_stage_1"]):
+            rows = self.run_rows([source, middle, matching], policy="mcts")
+            self.assertEqual(rows[1]["evaluators"][0]["mode"], "native_pass_through", rows[1])
+            self.assertEqual(rows[2]["evaluators"][0]["compoundPlan"]["selectionMode"],
+                             "retained_compound_target", rows[2])
+            self.assertEqual(rows[2]["evaluators"][0]["compoundPlan"]["target"], plan["target"])
+            driver_accepts(rows)
+        # A grid of another selector type drops the kept plan and searches.
+        rows = self.run_rows([source, continue_page, other], policy="mcts")
+        self.assertNotIn("compoundPlan", rows[2]["evaluators"][0], rows[2])
+        driver_accepts(rows)
+        # =0 restores dropping the plan at the Continue page.
+        rows = self.run_rows([source, continue_page, matching], policy="mcts",
+                             extra_env={"STS_LIVE_PASS_THROUGH_KEEPS_PLAN": "0"})
+        self.assertNotIn("compoundPlan", rows[2]["evaluators"][0], rows[2])
+
     def test_semantic_only_roots_use_uniform_prior_and_checkpoint_leaf(self):
         rows = self.run_rows([self.fixtures["remove_selector"]])
         for response in rows:
@@ -825,6 +900,21 @@ class LiveOocProtocol(unittest.TestCase):
         response, = self.run_rows([observation], policy="v4")
         evaluator = response["evaluators"][0]
         self.assertEqual(evaluator["status"], "OK")
+        self.assertEqual(evaluator["mode"], "native_pass_through")
+        self.assertEqual(evaluator["selectedLiveAction"], {"kind": "proceed"})
+
+    def test_skipped_boss_chest_is_native_proceed_passthrough(self):
+        # Problem 87 (seed 111200537): after a skipped boss relic offer the
+        # capture publishes the completed room's Proceed, not another reveal.
+        observation = copy.deepcopy(self.fixtures["map_multiple_children"])
+        ooc = observation["ooc"]
+        ooc["screen"] = "treasure"
+        ooc["details"] = {"chestType": "BossChest", "opened": True, "bossRewardSkipped": True}
+        ooc["liveChoices"] = [{"liveAction": {"kind": "proceed"},
+                               "nativeAction": {"kind": "option", "index": 1, "group": 0}}]
+        response, = self.run_rows([observation], policy="v4")
+        evaluator = response["evaluators"][0]
+        self.assertEqual(evaluator["status"], "OK", response)
         self.assertEqual(evaluator["mode"], "native_pass_through")
         self.assertEqual(evaluator["selectedLiveAction"], {"kind": "proceed"})
 
