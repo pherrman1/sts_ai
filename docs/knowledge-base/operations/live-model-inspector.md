@@ -1496,6 +1496,12 @@ first snapshotted with its in-use cost 0, playability and hand stats (all 36
 transient dumps of seeds 450-519). Upgrades, UUIDs, order, the hand
 and every other field stay strict. The match only discards the decision and
 re-reads, within the same three-refresh limit.
+OOC correlation takes act, floor, HP, max HP and gold from MCP `game_state`
+when get_screen's copy differs (`STS_LIVE_OOC_GAME_STATE_STATS`, default on;
+`=0` restores the screen-first merge; problem 86, seed 111200523). After
+Ceramic Fish's +9 gold at the Transmogrifier, get_screen kept 229 for the
+whole wait, while game_state, the inspector's `publicState` and its captured
+`mcpState` all said 238.
 Inspector correlation also accepts the Awakened One rebirth window
 (`STS_LIVE_REBIRTH_CORRELATION`, default on; `=0` restores the refusal;
 problem 85, seed 111200512). MCP lists no monsters while all of them are dead

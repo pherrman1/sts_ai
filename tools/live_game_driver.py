@@ -292,6 +292,33 @@ def transition_identity(screen: Mapping[str, Any], game_state: Mapping[str, Any]
 _ABSENT = object()
 
 
+def ooc_game_state_stats_fix() -> bool:
+    """STS_LIVE_OOC_GAME_STATE_STATS: unset/1 (default) correlates the OOC
+    inspector with game_state's act/floor/hp/maxHp/gold when get_screen's copy
+    lags (problem 86, Ceramic Fish gold); 0 restores the screen-first merge."""
+    value = os.environ.get("STS_LIVE_OOC_GAME_STATE_STATS", "1")
+    if value in ("", "1"):
+        return True
+    if value == "0":
+        return False
+    raise DriverError("STS_LIVE_OOC_GAME_STATE_STATS must be 0 or 1")
+
+
+_OOC_RUN_STAT_KEYS = ("act", "act_num", "floor", "floor_num", "hp", "current_hp", "current_health",
+                      "maxHp", "max_hp", "max_health", "gold")
+
+
+def ooc_inspector_state(game_state: Mapping[str, Any], screen: Mapping[str, Any]) -> dict[str, Any]:
+    """The MCP state an OOC inspector snapshot is correlated against. get_screen
+    can keep a stale gold/HP for the whole wait after a relic changes it
+    (Ceramic Fish: screen 229, game_state and the inspector 238), so game_state
+    wins for those run stats."""
+    state = {**game_state, **screen}
+    if ooc_game_state_stats_fix():
+        state.update({key: game_state[key] for key in _OOC_RUN_STAT_KEYS if key in game_state})
+    return state
+
+
 def rebirth_correlation_fix() -> bool:
     """STS_LIVE_REBIRTH_CORRELATION: unset/1 (default) correlates an empty MCP
     monster list and hand with an inspector combat whose hand is empty and whose
@@ -1632,7 +1659,7 @@ class Driver:
         if action is None:
             reveal_candidates = candidates
             if self.declined_rewards and screen.get("screen_type") == "COMBAT_REWARD":
-                snapshot = await self.inspector.read_for({**game_state, **screen, "_expected_boundary": "ooc"}, self.previous_inspector)
+                snapshot = await self.inspector.read_for({**ooc_inspector_state(game_state, screen), "_expected_boundary": "ooc"}, self.previous_inspector)
                 ooc = _mapping(_mapping(snapshot.raw.get("observation")).get("ooc"))
                 declined_indexes = {item["index"] + 1 for item in _list(ooc.get("rewardOccurrences"))
                     if isinstance(item, Mapping) and type(item.get("index")) is int
@@ -1659,7 +1686,8 @@ class Driver:
                 row["shop_entry_room"] = list(shop_entry_key)
         else:
             combat = _is_combat(screen)
-            inspector_state = {**game_state, **screen, "_expected_boundary": "combat" if combat else "ooc"}
+            inspector_state = {**({**game_state, **screen} if combat else ooc_inspector_state(game_state, screen)),
+                               "_expected_boundary": "combat" if combat else "ooc"}
             if combat and _list(game_state.get("monsters")):
                 inspector_state["monsters"] = game_state["monsters"]
             advisor_started = time.monotonic()
@@ -1846,7 +1874,8 @@ class Driver:
         if (self.differential_trace and row.get("decision_source") != "run_control"
                 and not _is_terminal(post)):
             post_combat = _is_combat(post)
-            post_inspector_state = {**post_game_state, **post,
+            post_inspector_state = {**({**post_game_state, **post} if post_combat
+                                       else ooc_inspector_state(post_game_state, post)),
                                     "_expected_boundary": "combat" if post_combat else "ooc"}
             if post_combat and _list(post_game_state.get("monsters")):
                 post_inspector_state["monsters"] = post_game_state["monsters"]
