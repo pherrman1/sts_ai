@@ -22806,6 +22806,34 @@ draw) is not this path and stays open.
 Seeds: none new (live seeds 111200476 and 111200481 as reported; unit test seed 111200071 from this thread's block).
 **Knowledge impact:** `operations/environment-variables.md`.
 
+## §623 — Exact expectimax vs native Silver on A20 first fights: Silver is near-optimal (2026-10-21)
+
+**Question:** does native Silver, at the configs we run, play the early A20 combats suboptimally compared with an exact
+solve of the same objective?
+**Setup:** `exact_combat_solver` (new, research tooling, built only with `-DSTS_EXACT_CHANCE`). It does exact
+expectimax over Silver's information-set root state. Draws, monster rolls and other RNG calls are enumerated exactly
+with their probabilities. Silver's `scoreEndState` is the objective, with the energy-waste term dropped, and the turn
+cap is 8. Each fight is solved once at its first searched root; every searched decision of every config is then scored.
+End-of-turn dominance pruning and Star1 alpha pruning are exact only where the value is monotone (`monotone()`, turn
+cap ≤ 8). Against the unpruned solve they give max |ΔQ| 5e-7 on Cultist and 6e-14 on Two Louse. The fights are the A20
+Ironclad first Act-1 encounter, starter deck, no Neow bonus, seeds 111147000-111147009. The configs are: prod
+(learned stop, g7f_E root+tree prior), live (flat 10k, no prior; the advisor's search emulated in the sim), flat 2.5k
+and flat 10k with the prior.
+**Result:** Silver won all 10 fights in every config, and the optimum's win probability was never higher. Agreement
+with the optimal action over 90 decisions: prod 98.9%, flat-prior 10k 98.9%, live 97.8%, flat-prior 2.5k 97.8%. Regret
+per fight is 0.23 / 0.23 / 0.33 / 0.33 Silver points, and HP lost per fight is 0.28 / 0.28 / 0.38 / 0.38. Two
+decisions were wrong; every other decision lost less than 0.01:
+- Jaw Worm 111147001, game turn 2, 1 energy: all configs played Strike (Q* 116.68) over Defend (118.98). That is about
+  2.8 HP, with visits 1.6-2.2:1 for Strike at every budget.
+- Cultist 111147000, game turn 3: live and 2.5k only, Strike over Defend, 1 HP.
+Small Slimes 111147005 and 008 exceeded 80M states from turn 1 and were solved from turn 2 (3 turn-1 roots each
+unscored).
+**Interpretation:** these first fights show no systematic suboptimal play at any budget. The one repeatable mistake is
+budget-independent, which points to a leaf or rollout bias. The sample is small, and later fights are out of reach of
+full enumeration.
+[Result](evidence/exact_combat_baseline_20261021/RESULT.md), rows `evidence/exact_combat_baseline_20261021/rows.jsonl`.
+Raw: `/mnt/project-files/exact-combat-baseline/`. Seeds 111147000-111147009 used.
+**Knowledge impact:** none yet. The Jaw Worm bias is a follow-up for the leaf-evaluation investigation.
 ## §615 — AZ gen 1b value head as the rollout3 end value: NOT_SHOWN on 512 paired A20 seeds, +3.1 pp Heart kills [−1.0, +7.2] at 1.07× wall (2026-10-21)
 
 Authorization: Philipp 2026-10-21 06:49Z ("Just update to main, then go 32 workers"), learned OOC stop off (05:22Z),
