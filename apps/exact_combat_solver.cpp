@@ -3345,8 +3345,9 @@ int main(int argc, char **argv) {
         // blend:L = L * V* + (1 - L) * playout. A suffix @S adds a fixed N(0, S^2) error per valued
         // state (ExactSolver::noiseAt). Leaves the model cannot value keep their playout (counted).
         // head:NAME = the --leaf-heads value head NAME instead of the playout; hblend:NAME:L = L * head
-        // + (1 - L) * playout.
-        struct LeafModeSpec { std::string tag, mode, head; double noise = 0, blend = 0.5; };
+        // + (1 - L) * playout. A suffix /P on either takes P points off the head's value for every turn the
+        // leaf lies beyond the root (so a head cannot prefer stalling over winning now).
+        struct LeafModeSpec { std::string tag, mode, head; double noise = 0, blend = 0.5, turnPenalty = 0; };
         std::vector<LeafModeSpec> leafModes;
         // --leaf-heads NAME=PATH,...: value heads on the trunk of --leaf-trunk (default g7f_E);
         // --leaf-head-dump PATH writes the first 300 head-valued leaves (state block, trunk, value).
@@ -3419,6 +3420,10 @@ int main(int argc, char **argv) {
                         m.noise = std::stod(m.mode.substr(at + 1));
                         m.mode.resize(at);
                     }
+                    if (const auto slash = m.mode.find('/'); slash != std::string::npos) {
+                        m.turnPenalty = std::stod(m.mode.substr(slash + 1));
+                        m.mode.resize(slash);
+                    }
                     if (m.mode.rfind("blend:", 0) == 0) { m.blend = std::stod(m.mode.substr(6)); m.mode = "blend"; }
                     else if (m.mode.rfind("head:", 0) == 0) { m.head = m.mode.substr(5); m.mode = "head"; }
                     else if (m.mode.rfind("hblend:", 0) == 0) {
@@ -3430,8 +3435,11 @@ int main(int argc, char **argv) {
                     }
                     if (m.mode != "none" && m.mode != "exact" && m.mode != "turn" && m.mode != "turnstart" && m.mode != "blend"
                             && m.mode != "head" && m.mode != "hblend")
-                        throw std::invalid_argument("--leaf-oracles items are none|exact|turn|turnstart|blend:L|head:NAME|hblend:NAME:L, optionally @S");
+                        throw std::invalid_argument("--leaf-oracles items are none|exact|turn|turnstart|blend:L|head:NAME|hblend:NAME:L,"
+                                                    " optionally @S (/P on a head)");
                     if (!m.head.empty() && m.noise != 0) throw std::invalid_argument("--leaf-oracles: no @S on a head");
+                    if (m.head.empty() && m.turnPenalty != 0)
+                        throw std::invalid_argument("--leaf-oracles: /P only on head:NAME and hblend:NAME:L");
                     leafModes.push_back(m);
                 }
             }
@@ -3531,7 +3539,8 @@ int main(int argc, char **argv) {
                     if (!leaf || leaf->mode == "none" || inLeafPlayout) return false;   // the playout (also the blend's own)
                     if (!leaf->head.empty()) {
                         ++leafCalls;
-                        double v = headValue(state, leafHeads.at(leaf->head));
+                        double v = headValue(state, leafHeads.at(leaf->head))
+                            - leaf->turnPenalty * std::max(0, state.turn - searcher.rootSearchState().turn);
                         if (leafDump.is_open() && leafDumped < 300) {
                             json d = {{"head", leaf->head}, {"value", v}, {"turn", state.turn},
                                       {"curHp", state.player.curHp}, {"trunk", base}};
