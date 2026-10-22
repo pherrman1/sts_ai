@@ -22262,6 +22262,18 @@ Seeds: none new (live seeds 111200473 and 111200504).
 
 **Status:** Draft PR; the Debug smoke suite passes (live_silver_importer failed once under `-j4` and passed on rerun).
 
+## §TBD — Live problem 86: the OOC correlation trusted get_screen's stale gold (2026-10-22)
+
+**Question:** Why did seed 111200523 stop at the Transmogrifier with "inspector OOC gold does not match MCP state"?
+
+**Evidence:** Ceramic Fish gave +9 gold (229 -> 238). MCP get_screen stayed at 229 for the whole wait, while game_state, the inspector's `publicState` and its captured `mcpState` all said 238. The driver correlated the snapshot against `{**game_state, **screen}`, so the stale screen value won. The stop is deterministic and reproduces from saved-111200523-seg1/-seg2 on the PC.
+
+**Change:** `STS_LIVE_OOC_GAME_STATE_STATS` (default on, `=0` restores). The new `ooc_inspector_state` builds the OOC correlation state with `game_state`'s act/floor/HP/max HP/gold winning over get_screen's. It is used at the three OOC `read_for` call sites (the reward-reveal read, the decision read and the differential post read); combat keeps the old merge. Test: `test_ooc_correlation_prefers_game_state_run_stats` (driver suite OK).
+
+**Interpretation:** A driver-only fix. It removes a stop that cost seed 523. A genuinely stale inspector snapshot (wrong gold against game_state) still fails.
+
+**Status:** Draft PR.
+
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with

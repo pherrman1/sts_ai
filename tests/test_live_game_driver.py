@@ -741,6 +741,26 @@ class LiveGameDriverTest(unittest.TestCase):
                                        "monsters": [{"id": 7, "curHp": 20}],
                                        "screen_monsters": [{"name": "Cultist", "current_hp": 20}]})
 
+    def test_ooc_correlation_prefers_game_state_run_stats(self):
+        import os
+        from unittest import mock
+        from tools.live_game_driver import ooc_inspector_state, validate_ooc_current
+        # Seed 111200523 Transmogrifier: Ceramic Fish +9 gold, get_screen kept 229.
+        screen = {"screen_type": "EVENT", "gold": 229, "choice_list": ["pray", "leave"]}
+        game_state = {"screen_type": "EVENT", "gold": 238, "floor": 30, "choice_list": ["pray", "leave"]}
+        observation = {"boundary": "ooc", "ooc": {"schemaVersion": 1, "screen": "event",
+                       "publicState": {"gold": 238, "floor": 30}, "liveChoices": [], "mcpState": game_state}}
+        with mock.patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("STS_LIVE_OOC_GAME_STATE_STATS", None)
+            validate_ooc_current(observation, ooc_inspector_state(game_state, screen))
+            with self.assertRaisesRegex(DriverError, "inspector OOC gold does not match"):
+                validate_ooc_current({**observation, "ooc": {**observation["ooc"], "publicState": {"gold": 229, "floor": 30}}},
+                                     ooc_inspector_state(game_state, screen))
+        with mock.patch.dict(os.environ, {"STS_LIVE_OOC_GAME_STATE_STATS": "0"}):
+            self.assertEqual(ooc_inspector_state(game_state, screen)["gold"], 229)
+            with self.assertRaisesRegex(DriverError, "inspector OOC gold does not match"):
+                validate_ooc_current(observation, ooc_inspector_state(game_state, screen))
+
     def test_transient_ready_state_waits_for_advance(self):
         with tempfile.TemporaryDirectory() as directory:
             states = [
