@@ -1,0 +1,5 @@
+pairs 128 of 128 ; invalid A 0 B 0
+A HP lost 32.77 wins 117 potions left 0.45 turns 4.27 cpu/fight 8.0 s
+B HP lost 32.46 wins 119 potions left 0.45 turns 4.43 cpu/fight 51.5 s
+B - A HP lost: -0.30 (fight SE 1.76), per-state bootstrap 95% CI [-3.28, +2.77]
+CPU ratio B/A 6.41

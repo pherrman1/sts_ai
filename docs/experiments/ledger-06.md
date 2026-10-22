@@ -23264,3 +23264,30 @@ Authorization: Philipp 2026-10-22 10:45Z ("Go with 32 workers"). Plan and output
 - **Inference:** exploration costs ~5 pp Heart kills in the generating runs; the rows add ~16k full-budget policy targets
   off the greedy path. Value labels from these runs are pessimistic for early states.
 - **Knowledge impact:** `evaluation/current-research.md`.
+## §TBD — Shield and Spear: prior playouts in the elite room do not cut HP lost (−0.3 HP [−3.3, +2.8]) at 6.4x CPU (NOT_SHOWN, 2026-10-22)
+
+**Question:** since ADR-0056 (#775) elite rooms use greedy root-table playouts and only the Heart keeps prior
+playouts. Shield and Spear is the biggest HP sink before the Heart (about 32 HP per fight, §530). Would prior playouts
+there (`STS_SILVER_PRIOR_PLAYOUT_ELITE=1`, ADR-0050's rooms) save HP? Started in the exact-combat research thread after
+Philipp's 14:53Z question (prior rollouts everywhere vs leaf research); analysed in its own thread.
+**Setup** ([evidence](evidence/shield_spear_prior_playouts_20261022/README.md)): `one_combat act4replay` on the 32
+recorded A20 Shield and Spear entry states of the loss audit F1, 4 copies each, seeds 111149768–111149895 (both arms on
+the same battle and planner seeds, paired per state and copy). Flat 10k exact sims with the §528 env (learned stop
+off), g7f_E root prior weight 400, tree prior K = 8, g7f_E rollout root table. Binary from `f8831b48`
+(claude/project-thread-kgjoid, main `165b5060` merged in). Research run, no prereg; nothing changes play.
+**Result** (128 paired fights per arm, HP lost incl. full HP on death, per-state bootstrap 95% CI):
+
+| arm | HP lost | wins | turns | CPU/fight |
+|---|---|---|---|---|
+| greedy playouts (default) | 32.77 | 117 | 4.27 | 8.0 s |
+| prior playouts | 32.46 | 119 | 4.43 | 51.5 s |
+
+- Prior − greedy: **−0.30 HP [−3.28, +2.77]**, fight SE 1.76; CPU 6.41x.
+- In the 113 fights both arms win, HP lost is 26.73 vs 26.72. Wins differ in 10 pairs (greedy only 4, prior only 6).
+- Potions used are equal (0.73 vs 0.74). The fight noise is large: the SD over the 4 copies of one state is 18.7 HP.
+**Interpretation:** at this sample the effect is at most about 3 HP per fight either way, and the point estimate is
+zero, so the playout policy is not what makes Shield and Spear expensive. This fits §541 (prior playouts saved only
+about 0.4 HP in hallway fights) and §530 (the entry
+state, not search, explains about half the excess). At 6.4x CPU per fight even the upper end of the CI would be hard
+to pay for.
+**Decision:** no change; elite rooms keep greedy playouts (ADR-0056). Seeds 111149768–111149895 used.
