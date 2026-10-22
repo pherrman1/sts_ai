@@ -1,0 +1,10 @@
+name          ooc-sibling-crn
+code_commit   90eb9f07296db2dbf54ab0f55ef351b78bd56e3f
+binary_sha256 dda768712c3864c67f87e38cb9938cd086c41006b6c80232a2d8eb8b8017d742
+workers       32
+share         /mnt/project-files/ooc-sibling-crn
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 30
+input student_sel.bin /mnt/project-files/az-gen3-explore/student_sel.bin cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7

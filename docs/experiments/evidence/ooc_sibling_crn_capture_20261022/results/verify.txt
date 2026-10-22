@@ -1,0 +1,2 @@
+units OK 320 MISSING 0 BAD 0 of 320; duplicates 0; tars for unknown units 0; run ['9fad3f60ee3a']; worker DONE.json: 0/32
+extracted 320 units to <extract dir>
