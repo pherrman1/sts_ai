@@ -190,49 +190,95 @@ def main() -> int:
                             for a in arms}
     report["missing"] = {k: sum(p["missing"].get(k, 0) for p in per) for k in
                          sorted({k for p in per for k in p["missing"]})}
+    cpu_per_rollout = report["refereeCpuSeconds"] / report["rollouts"] if report["rollouts"] else None
+    report["refereeCpuPerRollout"] = cpu_per_rollout
+    n_ref = max((len(v) for g in games for r in g["rows"] for v in (r.get("referee") or {}).get("actions", {}).values()),
+                default=0)
+    report["refereeN"] = n_ref
+    report["armErrorRate"] = {a: report["missing"].get(a + ":error", 0) / roots for a in arms}
+    report["armFlagged"] = [a for a in arms if report["armErrorRate"][a] > 0.01]
+    G = len(games)
     for k in REFEREES:
+        name = "R_full" if k == "value" else "R_act"
         rk = {"predicted": {}, "level": {}}
+        D = {a: [p["D"][k][a] for p in per] for a in arms}
+        derived = {}
+        if all(a in arms for a in ("M0", "S", "MS")):
+            derived["M0main"] = [(D["M0"][i] + D["MS"][i] - D["S"][i]) / 2 for i in range(G)]
+            derived["blendMain"] = [(D["S"][i] + D["MS"][i] - D["M0"][i]) / 2 for i in range(G)]
+        series = {**D, **derived}
+        boots = {x: [] for x in series}
+        for _ in range(args.boot):
+            idx = [rng.randrange(G) for _ in range(G)]
+            for x, v in series.items():
+                boots[x].append(sum(v[i] for i in idx) / G)
+        ci = {}
+        for x, b in boots.items():
+            b.sort()
+            ci[x] = [b[int(0.025 * args.boot)], b[int(0.975 * args.boot) - 1]]
         for a in arms:
-            ds = [p["D"][k][a] for p in per]
+            ds = D[a]
             adv = [x for p in per for x in p["advantages"][k][a]]
             pv = [x for p in per for x in p["pairVar"][k][a]]
-            ci = boot_ci(ds, args.boot, rng)
+            se = (statistics.stdev(adv) / math.sqrt(len(adv))) if len(adv) > 1 else None
             rk["predicted"][a] = {
-                "deltaHeart": sum(ds) / len(ds), "ci95": ci,
+                "deltaHeart": sum(ds) / G, "ci95": ci[a],
                 "flipsUsed": len(adv), "meanAdvantage": (sum(adv) / len(adv)) if adv else None,
-                "seMeanAdvantage": (statistics.stdev(adv) / math.sqrt(len(adv))) if len(adv) > 1 else None,
+                "seMeanAdvantage": se,
+                "refereeCoreHours": (2 * n_ref * len(adv) * cpu_per_rollout / 3600) if cpu_per_rollout else None,
                 "meanPairVariance": (sum(pv) / len(pv)) if pv else None}
-            # split halves by seed parity
             for half in (0, 1):
                 hs = [p["D"][k][a] for p, g in zip(per, games) if g["seed"] % 2 == half]
                 rk["predicted"][a][f"half{half}"] = (sum(hs) / len(hs)) if hs else None
+        for x in derived:
+            rk["predicted"][x] = {"deltaHeart": sum(derived[x]) / G, "ci95": ci[x]}
         for act in (1, 2, 3, 4):
-            ref_vals, real_vals, per_game_diff = [], [], []
+            ref_vals, real_vals, per_game_sums = [], [], []
             for p, g in zip(per, games):
                 lv = p["level"][k].get(act, [])
                 ref_vals += lv
                 real_vals += [g["y"]] * len(lv)
                 if lv:
-                    per_game_diff.append((sum(lv), g["y"] * len(lv), len(lv)))
+                    per_game_sums.append((sum(lv), g["y"] * len(lv), len(lv)))
             if not ref_vals:
                 continue
             ref_mean, real_mean = sum(ref_vals) / len(ref_vals), sum(real_vals) / len(real_vals)
-            # bootstrap the ratio-of-sums difference over games
-            boots = []
-            n = len(per_game_diff)
+            diffs = []
+            n = len(per_game_sums)
             for _ in range(args.boot):
                 sr = sy = sn = 0.0
                 for _ in range(n):
-                    a_, b_, c_ = per_game_diff[rng.randrange(n)]
+                    a_, b_, c_ = per_game_sums[rng.randrange(n)]
                     sr += a_; sy += b_; sn += c_
-                boots.append((sr - sy) / sn)
-            boots.sort()
-            rk["level"][str(act)] = {"roots": len(ref_vals), "referee": ref_mean, "real": real_mean,
+                diffs.append((sr - sy) / sn)
+            diffs.sort()
+            rk["level"][str(act)] = {"roots": len(ref_vals), "games": n, "referee": ref_mean, "real": real_mean,
                                      "diff": ref_mean - real_mean,
-                                     "ci95": [boots[int(0.025 * args.boot)], boots[int(0.975 * args.boot) - 1]],
+                                     "ci95": [diffs[int(0.025 * args.boot)], diffs[int(0.975 * args.boot) - 1]],
                                      "pass": abs(ref_mean - real_mean) <= 0.05}
-        rk["levelPass"] = bool(rk["level"]) and all(v["pass"] for v in rk["level"].values()) and len(rk["level"]) == 4
-        report["referees"]["R_full" if k == "value" else "R_act"] = rk
+        level_pass = len(rk["level"]) == 4 and all(v["pass"] for v in rk["level"].values())
+        m0 = rk["predicted"].get("M0", {})
+        precision_pass = (m0.get("seMeanAdvantage") is not None and m0["seMeanAdvantage"] <= 0.002
+                          and m0.get("refereeCoreHours") is not None and m0["refereeCoreHours"] <= 10)
+        rk["levelPass"], rk["precisionPass"] = level_pass, precision_pass
+        rk["qualified"] = level_pass and precision_pass
+        checks = {}
+        if "STU" in rk["predicted"]:
+            checks["STU_upper_below_0"] = rk["predicted"]["STU"]["ci95"][1] < 0
+        if "TD2" in rk["predicted"]:
+            checks["TD2_in_-0.035_0.021"] = -0.035 <= rk["predicted"]["TD2"]["deltaHeart"] <= 0.021
+        if "G1B" in rk["predicted"]:
+            checks["G1B_in_-0.010_0.072"] = -0.010 <= rk["predicted"]["G1B"]["deltaHeart"] <= 0.072
+        if "NULL" in rk["predicted"]:
+            lo, hi = rk["predicted"]["NULL"]["ci95"]
+            checks["NULL_ci_contains_0"] = lo <= 0 <= hi
+        rk["qualificationChecks"] = checks
+        rk["metricQualified"] = rk["qualified"] and len(checks) == 4 and all(checks.values())
+        report["referees"][name] = rk
+    full, act_ = report["referees"]["R_full"], report["referees"]["R_act"]
+    report["usedReferee"] = "R_full" if full["qualified"] else "R_act" if act_["qualified"] else None
+    report["verdict"] = ("QUALIFIED" if report["usedReferee"] and report["referees"][report["usedReferee"]]["metricQualified"]
+                         else "NOT QUALIFIED")
     text = json.dumps(report, indent=1, sort_keys=True)
     if args.json:
         Path(args.json).write_text(text + "\n")

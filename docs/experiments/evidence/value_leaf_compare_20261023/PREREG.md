@@ -64,12 +64,14 @@ workers if you want to, just do it, i allow it." The coordinator launches the wo
   mean real outcome (1 = this game killed the Heart); bootstrap over games.
 
 ## Gates
-**Stage 1, referee level.** A referee qualifies when |level − real| ≤ 0.05 in each of acts 1–4 (point estimates).
-R_full is used if it qualifies, else R_act; if neither does, stage 2 has no qualified referee, its numbers are
-reported under both as exploratory, and the metric is **NOT QUALIFIED**.
+**Stage 1, referee.** A referee qualifies when both hold (the plan's stage-1 gate):
+1. Level: |level − real| ≤ 0.05 in each of acts 1–4 (point estimates).
+2. Precision: the SE of M0's mean advantage over its flips is ≤ 0.002, and the referee CPU attributable to M0 (2n
+   rollouts per M0 flip at the measured CPU per rollout) is ≤ 10 core-hours.
 
-**Stage 1, precision (reported).** SE of the mean advantage per arm ≤ 0.002, with the arm's referee CPU ≤ 10
-core-hours.
+R_full is used if it qualifies, else R_act; if neither does, stage 2 has no qualified referee, its numbers are
+reported under both as exploratory, and the metric is **NOT QUALIFIED**. The same SE and cost are reported for every
+arm. An arm whose search failed at more than 1% of its roots is flagged (a failed root counts as no flip).
 
 **Stage 2, qualification** under the qualified referee. **QUALIFIED** only if all hold:
 1. STU (§504: reached Act 4 −10.9 pp [−20.3, −1.6], Heart kills 12 vs 20 of 128): the upper 95% bound of STU's
