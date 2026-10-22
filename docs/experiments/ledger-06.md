@@ -22262,6 +22262,17 @@ Seeds: none new (live seeds 111200473 and 111200504).
 
 **Status:** Draft PR; the Debug smoke suite passes (live_silver_importer failed once under `-j4` and passed on rerun).
 
+## §626 — Live problem 85: the Awakened One rebirth window could not be correlated (2026-10-21)
+
+**Question:** Why did seed 111200512 (seg1 s831, act 3 floor 50) stop with "no fresh inspector response for current state: cannot correlate inspector observation with MCP-visible state" right after Uppercut+ killed Awakened One's first form?
+
+**Evidence:** The inspector's observation was valid: hand empty, AwakenedOne hp 0 and halfDead, both Cultists dead. MCP showed hand `[]` and monsters `[]`, since it lists no monsters during the rebirth. In `InspectorSnapshot.validate_current` both comparisons need non-empty lists on both sides, so `compared` stayed False. Without session/sequence keys in the MCP state, the driver refused. Awakened One stays halfDead until its own turn, so waiting would not end the window.
+
+**Change:** `STS_LIVE_REBIRTH_CORRELATION` (default on, `=0` restores). When both hands are empty, the MCP monster list is empty and every inspector monster is dead or halfDead, the snapshot counts as correlated. A stale snapshot that still shows a live monster keeps failing. Test: `test_inspector_correlates_the_awakened_one_rebirth_window` (96 driver tests OK).
+
+**Interpretation:** A driver-only fix. It removes a stop that could end a live run at the Act 3 boss. Engine play is unchanged.
+
+**Status:** Draft PR.
 ## §625 — Live problem 84: a pending GainEnergyAction was exported with amount 0 (2026-10-21)
 
 **Question:** Why did seed 111200510 at steps 749 and 922 show player energy game 3 vs native 2 (and 7 vs 6) after Headbutt's put-on-top choice?
