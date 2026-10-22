@@ -23183,7 +23183,7 @@ production Silver from 12k or 15k simulations over 10k here.
 [Result](evidence/silver_maxbackup_ab_20261022/RESULT.md). Seeds used 111149381–382 (smokes), 111149390–393 (CPU
 check), 111149400–463.
 
-## §TBD — Sibling capture with common random numbers: the variance of sibling differences drops to 0.36 pooled (one A20 seed) (2026-10-22)
+## §639 — Sibling capture with common random numbers: the variance of sibling differences drops to 0.36 pooled (one A20 seed) (2026-10-22)
 
 **Question:** the §577 sibling labels are noisy. In round 2 the median best-minus-second gap is 0.016, and the
 64-repeat target of one public state scatters by about 0.025. Does seeding repeat r of every leaf of a root
