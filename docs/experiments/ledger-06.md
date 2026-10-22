@@ -22341,6 +22341,17 @@ Seeds: none new (live seeds 111200473 and 111200504).
 **Interpretation:** Toolbox (and any other projected offer) with Cultist Mask no longer abandons the fight.
 
 **Status:** Draft PR; javap confirmation and PC `test.sh` requested from the canary.
+## §TBD — Live problem 92 follow-up: the retained confirm answer failed the driver's MCTS validator (2026-10-22)
+
+**Question:** Why was seed 111200553, the first live run on c4dcb43c (§632), abandoned at its first single-card selector confirm (an event transform of Defend)?
+
+**Evidence:** The advisor answered as §632 intended (`selector_preview_retained`), but its sole candidate carried `visits` 0 with `visitShare` 1.0. For `mcts_ctm` the driver's `ooc_evaluator` requires total visits > 0 unless the sole-legal-action no-search contract applies, so it stopped with "OOC MCTS root visits/shares do not form a complete root distribution". §632's protocol test checked the advisor answer but not the driver's validation of it.
+
+**Change:** The retained confirm reports one visit on its sole candidate, as retained compound targets already do. `test_selector_preview_confirms_the_retained_grid_pick` now also validates the advisor response with the driver's `InspectorSnapshot.ooc_evaluator`; it reproduced the live error before the fix and passes after it (64 protocol tests OK).
+
+**Interpretation:** No decision changes; the §632 retained confirm now reaches the game.
+
+**Status:** Draft PR.
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with

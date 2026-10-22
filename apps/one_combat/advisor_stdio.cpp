@@ -298,7 +298,10 @@ json oocResponse(const one_combat::advisor::Request &request,
                 const bool retained=g_selectorPreviewRetain && lastPick.active && lastPick.session==request.session
                     && request.sequence>lastPick.sequence && lastPick.deckIdx==state.selectorPreviewDeckIndex
                     && lastPick.selectScreenType==static_cast<int>(state.projected.info.selectScreenType);
-                double q=0.0;int visits=0;bool confirm=true;
+                // One visit on the sole candidate keeps the root distribution
+                // complete for the driver's MCTS validator, as retained
+                // compound targets do.
+                double q=0.0;int visits=1;bool confirm=true;
                 if(!retained) {
                     if(std::string(policy.name())=="mcts_ctm" && !state.mctsRoot.supported)
                         throw std::runtime_error(state.mctsRoot.reason);
