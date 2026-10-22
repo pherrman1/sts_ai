@@ -22857,3 +22857,34 @@ twice in play (§414, §560). So this does not show more Heart kills; a paired A
 2048, vs current) must decide. The flag stays default off.
 [Result](evidence/gumbel_root_sh_20261021/RESULT.md). Raw: `/mnt/project-files/az-speed-profile/gumbel-compare/`.
 Seeds 111145010–017 used (010 reused from the speed profile).
+
+## §621 — AZ gen 2 (prior fine-tuned on gen 0 + gen-1b A/B self-play) vs student_sel: NOT_SHOWN on 1,024 paired A20 seeds, +0.6 pp Heart kills [−2.2, +3.3] at 1.01× wall (2026-10-22)
+
+Authorization: Philipp 2026-10-21 19:08Z ("Kk. Then let's go on 32 workers"). Pre-registration and outputs:
+`docs/experiments/evidence/az_gen2_ab_20261021/` (`PREREG.md`, `run_unit.sh`, `analyze.py`, `RESULT.md`, `result.json`,
+`verify.txt`, `tars.sha256`, `smoke/SMOKE.md`). Training: `docs/experiments/evidence/az_gen2_prior_sweep_20261021/`.
+
+- **Candidate:** gen 2 = student_sel fine-tuned on all 2,688 runs of gen 0 and both gen-1b A/B arms (Gumbel π' targets +
+  Heart-kill z, d64/L2, lr 1e-4, anchor 0.3, value weight 0.3, 32 value rows/run/epoch), export `fc32d8f4…`. Offline
+  selection-fold policy KL 0.0554 vs gen 1b 0.0654 and student_sel 0.103.
+- **Freeze:** RUN_COMMIT `712d4def` (main `844bd923` plus the campaign dir); v3 binary `23a09099…`. Smoke 111149992–993
+  (all rc 0); 111149990–991 were pre-freeze smokes.
+- **Arms:** gen 0's search stack with the 2026-10-21 defaults (learned Silver stop in real combats, fast-root cap 1024,
+  boss-only prior playouts set explicitly, X2-B rollout3 end value since §615 was NOT_SHOWN). A uses student_sel as OOC
+  prior and rollout net, B gen 2; nothing else differs.
+- **Run:** seeds 111142888–111143911, 32 workers × 4 lanes, `schedule queue` (with #773). 1,024 of 1,024 units OK, no
+  duplicates; 1,024 of 1,024 seeds valid.
+- **Result:**
+
+  | arm | Heart kills | reached Act 4 | mean floor | wall s/run (mean, max) |
+  |---|---|---|---|---|
+  | A student_sel | 214 (20.9%) | 399 (39.0%) | 43.15 | 773, 2,554 |
+  | B gen 2 | 220 (21.5%) | 408 (39.8%) | 43.08 | 777, 2,739 |
+
+  Heart kills B − A +0.6 pp [−2.2, +3.3], discordant 107 / 101, exact McNemar p 0.73. Act 4 +0.9 pp [−2.1, +3.9],
+  p 0.61. Wall B/A 1.006. Search overrides of the prior's argmax 7.9% (B) vs 6.6% (A) of searched roots.
+- **Verdict: NOT_SHOWN** (pre-registered rule). Below the +1.0 pp trigger, so the pre-registered extension does not run.
+  student_sel stays the OOC prior.
+- **Inference:** a much better offline fit to the search's targets did not show up as Heart kills within ±2.8 pp. Mean
+  run wall 773-777 s vs ~1,480 s in §589, from the 2026-10-21 speed defaults.
+- **Knowledge impact:** `evaluation/current-research.md`.
