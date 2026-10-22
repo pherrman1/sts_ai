@@ -305,6 +305,11 @@ Red Skull's battle-start anonymous action (`relics.RedSkull$1`) is a no-op
 unless the player is bloodied and the relic inactive. The projection omits the
 no-op and otherwise sends Strength 3 as `BUFF_PLAYER` (problem 74). The blocker
 names anonymous classes by their full class name.
+`GAIN_ENERGY` reads its amount from `GainEnergyAction.energyGain`: the
+`GainEnergyAction(int)` constructor calls `setValues(p,p,0)`, so the inherited
+`amount` is always 0. A missing or out-of-range (0-99) gain refuses with check
+`gain_energy_amount` (problem 84, seed 111200510: Nunchaku's GainEnergyAction(1)
+behind Headbutt's put-on-top choice was exported as 0, so energy was 1 short).
 Pen Nib's pending power gain/removal and Orange Pellets' player debuff removal
 are qualified by their exact vanilla relic, action and recipient.
 Exact vanilla action classes,
@@ -1484,6 +1489,13 @@ first snapshotted with its in-use cost 0, playability and hand stats (all 36
 transient dumps of seeds 450-519). Upgrades, UUIDs, order, the hand
 and every other field stay strict. The match only discards the decision and
 re-reads, within the same three-refresh limit.
+Inspector correlation also accepts the Awakened One rebirth window
+(`STS_LIVE_REBIRTH_CORRELATION`, default on; `=0` restores the refusal;
+problem 85, seed 111200512). MCP lists no monsters while all of them are dead
+or halfDead, so neither the hand nor the monster comparison could run. When
+both hands are empty, the MCP monster list is empty and every inspector
+monster is dead or halfDead, the snapshot counts as correlated. A stale
+snapshot that still shows a live monster keeps failing.
 MCP also reports exhaust-pile cards with stale displayed values (overnight
 2026-10-19: `damage` 10 vs 4 with `base_damage` 4), so the exhaust pile is treated like draw
 and discard: a positive explicit base replaces a different displayed stat in

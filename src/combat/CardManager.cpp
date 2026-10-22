@@ -435,6 +435,12 @@ void CardManager::draw(BattleContext &bc, int amount) {
     int evolve = bc.player.getStatus<PS::EVOLVE>();
     int fireBreathing = bc.player.getStatus<PS::FIRE_BREATHING>();
 
+#ifdef STS_EXACT_CHANCE
+    // Research tooling: tell the exact-chance draw hook how many draws this call makes.
+    exact::g_drawBatchRemaining = amount;
+    exact::g_drawBatchFresh = true;
+    struct BatchEnd { ~BatchEnd() { exact::g_drawBatchRemaining = 0; exact::g_drawBatchFresh = false; } } batchEnd;
+#endif
     for (int i = 0; i < amount; i++) {
         auto c = popFromDrawPile(bc.shuffleRng);
 
