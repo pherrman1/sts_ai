@@ -19,5 +19,5 @@ Started in the exact-combat research thread on 2026-10-22 and handed over to its
   (B − A: HP lost incl. full HP on death, wins, potions left, turns, CPU per fight; per-state bootstrap CI).
 - Not done: any analysis (the new thread owns it), learned-stop budgets, whole-run effect.
 
-Analysis: ledger §TBD (`paired.txt` is the output of `python3 ss_paired.py ss_greedy.csv ss_prior.csv`). The input
+Analysis: ledger §642 (`paired.txt` is the output of `python3 ss_paired.py ss_greedy.csv ss_prior.csv`). The input
 states `ss32.jsonl` stay on the share (sha256 85f8bf35..., also at the audit path above); they are not copied here.

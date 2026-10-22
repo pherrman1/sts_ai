@@ -23264,7 +23264,7 @@ Authorization: Philipp 2026-10-22 10:45Z ("Go with 32 workers"). Plan and output
 - **Inference:** exploration costs ~5 pp Heart kills in the generating runs; the rows add ~16k full-budget policy targets
   off the greedy path. Value labels from these runs are pessimistic for early states.
 - **Knowledge impact:** `evaluation/current-research.md`.
-## §TBD — Shield and Spear: prior playouts in the elite room do not cut HP lost (−0.3 HP [−3.3, +2.8]) at 6.4x CPU (NOT_SHOWN, 2026-10-22)
+## §642 — Shield and Spear: prior playouts in the elite room do not cut HP lost (−0.3 HP [−3.3, +2.8]) at 6.4x CPU (NOT_SHOWN, 2026-10-22)
 
 **Question:** since ADR-0056 (#775) elite rooms use greedy root-table playouts and only the Heart keeps prior
 playouts. Shield and Spear is the biggest HP sink before the Heart (about 32 HP per fight, §530). Would prior playouts
