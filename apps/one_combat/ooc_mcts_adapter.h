@@ -140,6 +140,9 @@ struct OocAdapterOptions {
     // Rollouts, their policy and the tree prior are unchanged.
     std::shared_ptr<const heart1::Net> heart1ValueNet;
     std::string heart1ValuePath, heart1ValueSha256;
+    // STS_OOC_MCTS_LEAF_HEART1_VALUE_WEIGHT=w in (0, 1) (default 1 = the head alone): the anchor becomes
+    // sigmoid((1 - w) logit(X2-B) + w logit(head)) where heart1 encodes the state.
+    double heart1ValueWeight = 1;
     // Optional per-decision thread CPU allowance; checked between simulations.
     // Zero preserves the simulation-bounded search. Never includes real combat.
     double cpuBudgetSeconds = 0;

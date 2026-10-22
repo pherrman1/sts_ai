@@ -23070,6 +23070,33 @@ was trained on mean-backup trees. The pre-registered A20 A/B
 111149400–463) needs Philipp's go. Flags stay default off.
 Report: `/mnt/project-files/silver-rollout-bias/REPORT.md`. Seeds used 111149100–147, 111149150–389, replays of
 111147001 and 111149600–699.
+## §TBD — OOC value head: the §622 hinge holds over three seeds, and a 15 % logit blend with X2-B ranks leaf siblings better than X2-B alone (offline, exploratory) (2026-10-22)
+
+**Question:** (1) is §622's hinge result (M0.3: best selection BCE, monotone prices) more than one seed? (2) the head
+alone ranks rollout siblings worse than X2-B (0.55 vs 0.633, §577 and §622); does a mix of the two rank them better?
+Authorization for the GPU runs: Philipp 2026-10-22 06:48Z ("Merge 799 and go for gpu").
+**Setup:** M0.3 (`--mono-weight 0.3`) seeds 1 and 2 and a control seed 1 on the §622 recipe, GPU on Philipp's PC;
+`prices.py` (2,916 round-2 REWARDS states) and the §577 sibling/outcome tool. Blend v = sigmoid((1 − w) logit(X2-B) +
+w logit(head)) on the §577 data with the tool's aggregation (w = 0 reproduces X2-B), w picked on round-2 TRAIN per head,
+reported on round-2 VALIDATION and §494 with a 2,000-sample source bootstrap.
+**Result:** M0.3 vs control (seed means): sel BCE 0.539 vs 0.542, val BCE 0.510 vs 0.513; HP monotone 89 % on every
+seed vs 52-55 %, max HP +5 priced > 0 51-67 % vs 18-19 %, −3 HP sign right 89-90 % vs 81-82 %; round-2 sibling
+concordance 0.551-0.554 vs 0.549, outcome AUC 0.758-0.764 vs 0.758-0.761. Blend, w 0.15 picked for all three heads:
+round-2 VALIDATION concordance − X2-B +0.011 [+0.001, +0.021] (M0.3 s0), +0.012 [+0.002, +0.021] (s1), +0.010
+[−0.000, +0.020] (control); §494 +0.011 to +0.015, regret −0.0005 to −0.0006 (CIs include 0); Heart-kill AUC on
+VALIDATION 0.698-0.699 vs 0.683, on all round-2 sources 0.715-0.716 vs 0.694 (CIs exclude 0); mean leaf 0.73 vs 0.79.
+Act-1 sibling concordance 0.669 vs X2-B 0.663 (head alone 0.537).
+**Interpretation:** the hinge's monotonicity gain holds on 3 / 3 seeds; its BCE gain is small. Inference: the head adds
+run-level information X2-B lacks, a small weight keeps X2-B's act-1 ranking, and the head's training barely matters
+for the blend (control ≈ M0.3). Exploratory: w was not pre-registered, the sibling target ends in X2-B, the online leaf
+is a rollout3 end state that these data do not score, and the learned OOC stop was trained on X2-B's scale.
+`STS_OOC_MCTS_LEAF_HEART1_VALUE_WEIGHT` (default off; [smoke](evidence/value_leaf_blend_20261022/SMOKE.md): unset
+reproduces main's decisions exactly) makes the blend testable in an A20 A/B, which needs a pre-registration and
+Philipp's go. [Offline report](evidence/value_leaf_blend_20261022/OFFLINE.md); weights on data
+branch `claude/az-gen2-data` `c3bd827a`, `gen2/value-cf/`.
+Seeds: none (offline scoring of stored states and training on stored rows).
+**Knowledge impact:** none yet (default-off option; no play change).
+
 ## §622 — OOC value head: counterfactual raw-heart1 delta distillation fixes the slopes but fails the BCE gate; the hinge on the T1 recipe is the best head so far (2026-10-22)
 
 **Question:** can the value head learn raw heart1's clean HP / max HP / gold slopes (handoff from the gen-2 thread:

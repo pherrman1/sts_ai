@@ -1,0 +1,257 @@
+{
+ "run": "M0.3_s1",
+ "selected_epoch": 8,
+ "epochs_run": 11,
+ "wall_sec": 1815.2081379890442,
+ "select": {
+  "kl": 0.056977765280069315,
+  "value": {
+   "act1": {
+    "n": 22556,
+    "bce": 0.5588,
+    "const_bce": 0.5866,
+    "auc": 0.6599386611167443,
+    "mean_p": 0.2202,
+    "mean_z": 0.2734
+   },
+   "act2": {
+    "n": 19057,
+    "bce": 0.5076,
+    "const_bce": 0.6253,
+    "auc": 0.7839948086522125,
+    "mean_p": 0.2966,
+    "mean_z": 0.318
+   },
+   "act3": {
+    "n": 14164,
+    "bce": 0.5504,
+    "const_bce": 0.6862,
+    "auc": 0.8149569795270076,
+    "mean_p": 0.3398,
+    "mean_z": 0.441
+   },
+   "act4": {
+    "n": 2096,
+    "bce": 0.549,
+    "const_bce": 0.6674,
+    "auc": 0.811693782475399,
+    "mean_p": 0.4979,
+    "mean_z": 0.6131
+   },
+   "all": {
+    "n": 57873,
+    "bce": 0.5395,
+    "const_bce": 0.642,
+    "auc": 0.76531495529686,
+    "mean_p": 0.2847,
+    "mean_z": 0.3414
+   },
+   "anchor_kl": 0.0144
+  },
+  "objective": 0.3310477652800693
+ },
+ "val_kl": 0.0535202564802278,
+ "val_value": {
+  "act1": {
+   "n": 22507,
+   "bce": 0.5412,
+   "const_bce": 0.5586,
+   "auc": 0.6226961416216924,
+   "mean_p": 0.2215,
+   "mean_z": 0.2466
+  },
+  "act2": {
+   "n": 18634,
+   "bce": 0.479,
+   "const_bce": 0.606,
+   "auc": 0.8051464759183589,
+   "mean_p": 0.3058,
+   "mean_z": 0.2944
+  },
+  "act3": {
+   "n": 13672,
+   "bce": 0.4994,
+   "const_bce": 0.6759,
+   "auc": 0.841731203748683,
+   "mean_p": 0.3363,
+   "mean_z": 0.4073
+  },
+  "act4": {
+   "n": 2069,
+   "bce": 0.5268,
+   "const_bce": 0.6789,
+   "auc": 0.8196303883663224,
+   "mean_p": 0.486,
+   "mean_z": 0.5843
+  },
+  "all": {
+   "n": 56882,
+   "bce": 0.5102,
+   "const_bce": 0.6216,
+   "auc": 0.7762468611726082,
+   "mean_p": 0.2863,
+   "mean_z": 0.3132
+  },
+  "anchor_kl": 0.014
+ },
+ "counterfactual": {
+  "rules": [
+   "hp",
+   "mhp",
+   "gold"
+  ],
+  "eval_deltas": {
+   "hp": -3,
+   "mhp": 5,
+   "gold": 50
+  },
+  "slope": 1.3586671352386475,
+  "select": {
+   "hp": {
+    "n": 57870,
+    "rel_sq_err": 8.9477,
+    "sign_agree": 0.7417,
+    "mean_ds": -0.03443,
+    "mean_dt": -0.00975,
+    "student_wrong": 0.1599,
+    "teacher_wrong": 0.1873
+   },
+   "mhp": {
+    "n": 57873,
+    "rel_sq_err": 4.7052,
+    "sign_agree": 0.6855,
+    "mean_ds": 0.02808,
+    "mean_dt": 0.01848,
+    "student_wrong": 0.2912,
+    "teacher_wrong": 0.1375
+   },
+   "gold": {
+    "n": 57873,
+    "rel_sq_err": 25.7073,
+    "sign_agree": 0.8162,
+    "mean_ds": 0.08965,
+    "mean_dt": 0.01495,
+    "student_wrong": 0.0739,
+    "teacher_wrong": 0.1378
+   }
+  },
+  "val": {
+   "hp": {
+    "n": 56882,
+    "rel_sq_err": 8.5038,
+    "sign_agree": 0.7336,
+    "mean_ds": -0.03264,
+    "mean_dt": -0.00951,
+    "student_wrong": 0.1661,
+    "teacher_wrong": 0.1938
+   },
+   "mhp": {
+    "n": 56882,
+    "rel_sq_err": 4.5584,
+    "sign_agree": 0.6814,
+    "mean_ds": 0.02981,
+    "mean_dt": 0.01973,
+    "student_wrong": 0.2898,
+    "teacher_wrong": 0.1151
+   },
+   "gold": {
+    "n": 56882,
+    "rel_sq_err": 24.9521,
+    "sign_agree": 0.825,
+    "mean_ds": 0.08995,
+    "mean_dt": 0.01548,
+    "student_wrong": 0.0747,
+    "teacher_wrong": 0.1247
+   }
+  }
+ },
+ "monotone": {
+  "rules": [
+   "hp",
+   "mhp",
+   "gold",
+   "potion",
+   "curse"
+  ],
+  "eval_deltas": {
+   "hp": -3,
+   "mhp": 5,
+   "gold": 50
+  },
+  "curses": [
+   "CLUMSY",
+   "DECAY",
+   "DOUBT",
+   "INJURY",
+   "NORMALITY",
+   "PAIN",
+   "REGRET",
+   "SHAME",
+   "WRITHE"
+  ],
+  "select": {
+   "hp": {
+    "n": 57870,
+    "viol": 0.1599,
+    "viol_p001": 0.1148,
+    "median_dp": 0.00409
+   },
+   "mhp": {
+    "n": 57873,
+    "viol": 0.2912,
+    "viol_p001": 0.2241,
+    "median_dp": 0.00319
+   },
+   "gold": {
+    "n": 57873,
+    "viol": 0.0739,
+    "viol_p001": 0.0545,
+    "median_dp": 0.01092
+   },
+   "potion": {
+    "n": 43721,
+    "viol": 0.0217,
+    "viol_p001": 0.0158,
+    "median_dp": 0.02444
+   },
+   "curse": {
+    "n": 57873,
+    "viol": 0.0,
+    "viol_p001": 0.0,
+    "median_dp": 0.02622
+   }
+  },
+  "val": {
+   "hp": {
+    "n": 56882,
+    "viol": 0.1661,
+    "viol_p001": 0.1172,
+    "median_dp": 0.00399
+   },
+   "mhp": {
+    "n": 56882,
+    "viol": 0.2898,
+    "viol_p001": 0.2218,
+    "median_dp": 0.00331
+   },
+   "gold": {
+    "n": 56882,
+    "viol": 0.0747,
+    "viol_p001": 0.0564,
+    "median_dp": 0.01115
+   },
+   "potion": {
+    "n": 43437,
+    "viol": 0.0186,
+    "viol_p001": 0.0147,
+    "median_dp": 0.02471
+   },
+   "curse": {
+    "n": 56882,
+    "viol": 0.0,
+    "viol_p001": 0.0,
+    "median_dp": 0.02596
+   }
+  }
+ }
+}
