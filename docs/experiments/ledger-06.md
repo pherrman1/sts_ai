@@ -22319,6 +22319,17 @@ Seeds: none new (live seeds 111200473 and 111200504).
 
 **Status:** Draft PR; PC `test.sh` requested from the canary.
 
+## §632 — Live problem 92: the shop-removal confirm screen re-searched and removed a different card (2026-10-22)
+
+**Question:** Why did the live AI choose "remove Strike" at shops but then remove a different card, usually a better one (Philipp's report; 88 of 95 overnight removals)?
+
+**Evidence:** The shop answer records a pending compound plan, and the grid click correctly picks the planned Strike. The single-card selector then shows its confirm screen. There `advisor_stdio.cpp` cleared the plan and ran a fresh 512-simulation search over the whole deck (about 28 near-tied cards), confirming only if its argmax was the previewed card; otherwise it cancelled and the next grid answer removed the fresh pick. Retained-target outcomes overnight: remove 106 cancel / 13 proceed, transform 12 / 1, upgrade 14 / 427.
+
+**Change:** `STS_LIVE_SELECTOR_PREVIEW_RETAIN` (default on, `=0` restores). The advisor remembers the deck card its previous OOC answer picked on a single-card selector grid (a retained plan or a selector search), bound to session, sequence and selector type. When the next answer is that selector's confirm screen for the same card, it confirms without searching (`mode` `selector_preview_retained`). Any other preview keeps the fresh search. Test: `test_selector_preview_confirms_the_retained_grid_pick` in `tests/live_ooc_protocol.py`.
+
+**Interpretation:** Live play-changing: shop/event removals, transforms and upgrades now carry out the card the source decision chose, as the simulator does (it has no confirm screen). It also saves one 512-simulation search per selector.
+
+**Status:** Draft PR.
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with
