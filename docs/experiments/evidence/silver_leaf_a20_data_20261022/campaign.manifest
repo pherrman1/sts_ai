@@ -1,0 +1,10 @@
+name          silver-leaf-a20
+code_commit   4b7ab9acb30ad3d4f9d1bcace73eb049c30b22bf
+binary_sha256 TBD
+configure_preset linux-gcc-release-x86-64-v3
+workers       8
+share         /mnt/project-files/silver-leaf-a20/campaign
+parallel      4
+schedule      queue
+lease_minutes 30
+input student_sel.bin /mnt/project-files/az-gen3-explore/student_sel.bin cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7
