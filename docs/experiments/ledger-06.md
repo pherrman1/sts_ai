@@ -23204,7 +23204,7 @@ seed, 256 simulations.
 **Decision:** the option stays default off. Proposed use is a new sibling capture for value-head ranking labels
 (needs seeds, workers and Philipp's go). Seed used: 111144997.
 
-## §TBD — AZ gen-3 exploration self-play block (root noise 0.25:0.3 + visit-sampled play on floors 0-6): 1,024 A20 runs, 15.7% Heart kills vs 20.9% greedy (descriptive, 2026-10-22)
+## §640 — AZ gen-3 exploration self-play block (root noise 0.25:0.3 + visit-sampled play on floors 0-6): 1,024 A20 runs, 15.7% Heart kills vs 20.9% greedy (descriptive, 2026-10-22)
 
 Authorization: Philipp 2026-10-22 10:45Z ("Go with 32 workers"). Plan and outputs:
 `docs/experiments/evidence/az_gen3_explore_20261022/` (`PLAN.md`, `PREREG.md`, `run_unit.sh`, `analyze.py`, `RESULT.md`,
