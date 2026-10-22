@@ -297,7 +297,16 @@ mechanism. What remains is the entry state (deck, lower max HP) from OOC play, w
 Shield and Spear excess and the max-HP deficit (A20 loss audit F1,
 `/mnt/project-files/audit-2026-10-17/a20-loss-analysis.md`).
 
-## AZ loop status — gen 1b as prior NOT_SHOWN (§589); student_sel stays the OOC prior
+## AZ loop status — gen 2 as prior NOT_SHOWN (§TBD, 2026-10-22); student_sel stays the OOC prior
+
+Gen 2 (student_sel fine-tuned on all 2,688 runs of gen 0 and both gen-1b A/B arms, offline selection KL 0.0554 vs
+student_sel 0.103) vs student_sel on 1,024 paired A20 seeds: Heart kills 21.5% vs 20.9% (+0.6 pp [−2.2, +3.3], p 0.73)
+at 1.01× wall, below the +1.0 pp extension trigger. Both arms' rows join the gen-3 window. Runs averaged ~775 s (half of
+gen 1b's) with the 2026-10-21 speed defaults. Offline value-head work (teacher distillation, search-value targets,
+monotonicity) moved to the "Value head research" thread; the gen-3 exploration block is drafted in
+`docs/experiments/evidence/az_gen3_explore_20261022/PLAN.md` (root noise + early-floor play sampling, #741 flags).
+
+### Earlier: gen 1b as prior NOT_SHOWN (§589)
 
 Gen 1b (student_sel fine-tuned on gen 0's Gumbel π' targets and Heart-kill value, §573) replaced student_sel as OOC
 prior and rollout net inside gen 0's search stack. On 512 paired A20 seeds it killed the Heart 22.3% vs 23.2%

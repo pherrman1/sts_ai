@@ -15,3 +15,9 @@ Code c420dc7a, which is this branch merged with main afce2f45. Binary `one_comba
   - 111149991: 622 / 623 s, both died in Act 2 (floor 33).
   - Gen 1b's A/B averaged ~1,480 s per run, but these two seeds are short runs, so this is no speed estimate.
 - The freeze rebuilds on the freeze commit and re-smokes on new seeds.
+
+## Frozen-binary smoke (2026-10-21, after the freeze)
+Code main `844bd923`, binary `23a09099…` (v3 preset), `run_unit.sh` as at RUN_COMMIT `712d4def`. Seeds 111149992–993.
+All 4 arm runs rc 0 with all banners (learned OOC stop, Act-4 CTM, `[heart1] loaded`, `fast_root_cap=1024`, learned
+Silver stop gbt-0cac7cc64364); `STS_SILVER_PRIOR_PLAYOUT_ELITE=0` in the env. Both arms killed the Heart on both seeds
+(floor 56). Wall A/B: 111149992 1,368 / 1,230 s; 111149993 1,101 / 1,071 s. `analyze.py` on them: 2 seeds, 2 valid.
