@@ -22363,7 +22363,7 @@ Seeds: none new (live seeds 111200473 and 111200504).
 **Interpretation:** Live play-changing: event removals behind a Continue page now remove the card the event decision chose.
 
 **Status:** Draft PR.
-## §TBD — Live problem 96: Necronomicon was imported as spent while ready (2026-10-23)
+## §646 — Live problem 96: Necronomicon was imported as spent while ready (2026-10-23)
 
 **Question:** Why did seed 111200565 (release c0ff2c3a) diverge at step 303 (Uppercut+ vs Mugger), followed by 124 more mismatches?
 
