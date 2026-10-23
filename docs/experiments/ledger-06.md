@@ -23600,5 +23600,12 @@ are valid.
 **Decision:** no default change; Philipp decides. Before M0 could become a default, PREREG requires the learned OOC
 stop to be checked on M0's Q scale and a confirmation on fresh seeds. The stage 1–2 replay (seeds
 111360000–111360255, running) is the first prospective test of the decision metric against M − A.
-- Seeds 111340000–111341023 used (smokes 111349990–111349993).
+- **Stop check (offline, done):** passes ([README](evidence/value_m0_stop_check_20261023/README.md)). 18 seeds per arm
+  (111370000–111370017, smokes 111370018–019) were played at a full 4096 simulations with the run profile on.
+  - At p ≥ 0.99 the stop's leader is the full search's choice at 99.76% [99.56, 99.94] of checkpoints under M0,
+    vs 99.62% [99.12, 99.94] under X2-B.
+  - As deployed at fast roots, none of its stops changed a pick (0 of 677 under M0, 0 of 685 under X2-B).
+  - It stops at 59% vs 54% of roots because M0's searches settle earlier.
+- The confirmation on fresh seeds remains (proposed: A vs M on 2,048 seeds, needs Philipp's go).
+- Seeds 111340000–111341023 used (smokes 111349990–111349993); stop check 111370000–111370019.
 - **Knowledge impact:** `evaluation/current-research.md`.

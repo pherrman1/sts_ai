@@ -398,10 +398,12 @@ in act 2 and 7.7× in act 3. Offline on §644's capture:
 - M0 also leans the search on the prior: fewer picks off the prior's argmax, and the learned OOC stop fires earlier.
   The A/B cannot separate that from the death price.
 - Wall: M 0.95×, MS 1.04× of A.
-- **Status:** X2-B stays the default leaf; Philipp decides. A default would first need the learned OOC stop checked
-  on M0's Q scale and a confirmation on fresh seeds
+- The learned OOC stop stays valid on M0's scale (offline check: at p ≥ 0.99, 99.8% same action as the full search
+  vs 99.6% under X2-B; no fast-root stop changed a pick). It fires more often because M0's searches settle earlier.
+- **Status:** X2-B stays the default leaf; Philipp decides. A default would first need a confirmation on fresh seeds
   ([stage 0](../../experiments/evidence/value_death_price_20261023/README.md),
-  [A/B result](../../experiments/evidence/value_level_ab_20261023/RESULT.md)).
+  [A/B result](../../experiments/evidence/value_level_ab_20261023/RESULT.md),
+  [stop check](../../experiments/evidence/value_m0_stop_check_20261023/README.md)).
 
 ## Heart leaf (opt-in) — §515 VALIDATION and CONFIRM gates FAIL
 

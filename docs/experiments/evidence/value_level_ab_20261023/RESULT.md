@@ -91,8 +91,11 @@ one run commit. Unit tar hashes: `tars.sha256`. Analysis: `analyze.py` on the `-
 ## Decision
 - No default change from this run alone; Philipp decides (PREREG).
 - Before M0 could become a default, PREREG requires two things:
-  - the learned OOC stop checked on the new Q scale, since it fires earlier under M0;
-  - a confirmation on fresh seeds.
+  - the learned OOC stop checked on the new Q scale, since it fires earlier under M0. **Done, passes**
+    ([`../value_m0_stop_check_20261023`](../value_m0_stop_check_20261023/README.md)): at p ≥ 0.99 its leader is the
+    full search's choice at 99.76% of checkpoints under M0 vs 99.62% under X2-B, and none of its fast-root stops
+    changed a pick. It fires more often because M0's searches settle earlier;
+  - a confirmation on fresh seeds (proposed: A vs M on 2,048 seeds; needs Philipp's go).
 - The stage 1–2 replay (`../value_leaf_compare_20261023`, seeds 111360000–111360255, running) adds the per-root view:
   which of M0's flips the referees score as gains. Its predicted Δ for M0 is the first prospective test of the
   decision metric against this A/B's M − A (+1.37 pp).
