@@ -2006,6 +2006,33 @@ int main(int argc, char **argv) {
                 auto invalid=obs;invalid["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"][0].erase("occupantGeneration");
                 if(one_combat::advisor::importSilverRoot(invalid).ok)throw std::runtime_error("missing occupant generation accepted");
             }
+            // Problem 112 (live seed 111200666): a burning elite's combat-start
+            // roll saw the max HP from before the Emerald Key buff (+round 25%).
+            for(const std::string id:{"SlaverBlue","Darkling"}) {
+                auto obs=boundDome(id);auto &c=obs["silverRoot"]["combat"];auto &row=c["runicDomeKnowledge"]["monsters"][0];
+                if(id=="SlaverBlue") {
+                    row["historySchemaVersion"]=1;
+                    for(const char *key:{"totalRolls","knownTransitions","knownNextMove","knownRollPredecessor"})row.erase(key);
+                }
+                const auto base=one_combat::advisor::importSilverRoot(obs);
+                if(!base.ok)throw std::runtime_error("burning elite Dome base "+id+": "+base.reason);
+                obs["silverRoot"]["burningElite"]=true;
+                c["monsters"][0]["maxHp"]=50;c["monsters"][0]["hp"]=38; // 40 + round(10.0)
+                const auto imported=one_combat::advisor::importSilverRoot(obs);
+                if(!imported.ok)throw std::runtime_error("burning elite Dome initial roll "+id+": "+imported.reason);
+                const auto &m=imported.wire.monsters[0];
+                if(m.maxHp!=50 || m.pendingRollInputs.maxHp!=40 || m.pendingRollInputs.curHp!=30)
+                    throw std::runtime_error("burning elite Dome roll inputs lost the pre-buff max HP "+id);
+                auto notBurning=obs;notBurning["silverRoot"]["burningElite"]=false;
+                if(one_combat::advisor::importSilverRoot(notBurning).ok)throw std::runtime_error("buffed max HP without a burning elite accepted");
+                auto wrongBuff=obs;wrongBuff["silverRoot"]["combat"]["monsters"][0]["maxHp"]=51;
+                if(one_combat::advisor::importSilverRoot(wrongBuff).ok)throw std::runtime_error("burning elite max HP off the 25% buff accepted");
+                setenv("STS_IMPORTER_RUNIC_DOME_BURNING_ELITE_HP","0",1);
+                const auto legacy=one_combat::advisor::importSilverRoot(obs);
+                unsetenv("STS_IMPORTER_RUNIC_DOME_BURNING_ELITE_HP");
+                if(legacy.ok || legacy.reason!="silver_runic_dome_history_gap")
+                    throw std::runtime_error("STS_IMPORTER_RUNIC_DOME_BURNING_ELITE_HP=0 did not restore the refusal: "+legacy.reason);
+            }
             for(int level:{0,9,19}) {
                 auto state=battleContextFromWire(one_combat::advisor::importSilverRoot(boundDome("TorchHead")).wire);
                 auto actual=state.monsterHpRng,expected=actual;
