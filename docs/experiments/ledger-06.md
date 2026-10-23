@@ -22443,7 +22443,7 @@ Seeds: none new (live seeds 111200473 and 111200504).
 
 **Status:** Draft PR.
 
-## §TBD — Live problem 103: Neow's two-card remove and transform grids were captured as unsupported selectors (2026-10-23)
+## §657 — Live problem 103: Neow's two-card remove and transform grids were captured as unsupported selectors (2026-10-23)
 
 **Question:** Why was seed 111200638 (release ab7f81ba) abandoned at Neow on floor 0?
 
