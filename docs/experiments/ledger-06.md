@@ -22363,7 +22363,7 @@ Seeds: none new (live seeds 111200473 and 111200504).
 **Interpretation:** Live play-changing: event removals behind a Continue page now remove the card the event decision chose.
 
 **Status:** Draft PR.
-## §TBD — Live problem 98: Impatience drew with Attacks in hand (2026-10-23)
+## §648 — Live problem 98: Impatience drew with Attacks in hand (2026-10-23)
 
 **Question:** Why did seed 111200587 (step 531, encounter 40) draw 2 natively after Impatience (hand 8) while the game drew nothing (hand 6)?
 
