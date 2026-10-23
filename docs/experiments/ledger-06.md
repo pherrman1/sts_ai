@@ -23838,3 +23838,57 @@ checks first: the learned OOC stop on M0's Q scale, and a confirmation on fresh 
 - Seeds 111340000–111341023 used (smokes 111349990–111349993); stop check 111370000–111370019.
 - **Knowledge impact:** `evaluation/current-research.md`, `architecture/out-of-combat.md`,
   `operations/environment-variables.md`, ADR-0057.
+
+## §TBD — Value-head plan, stages 1–2: no rollout referee matches real play at A20, so the leaf-compare decision metric is NOT QUALIFIED; as exploratory numbers it predicts M0's gain about right (256 games, 2026-10-23)
+
+**Question:** Is there a cheap judge of OOC decisions that never reads X2-B and whose level matches real outcomes in
+every act (stage 1)? If so, does a leaf-compare replay under it reproduce the past A20 leaf A/Bs and predict the
+stage-3 arms (stage 2)? Philipp: "keep going with the plan, you can use 32 workers" (2026-10-22 21:44Z).
+**Design:** pre-registered ([PREREG](evidence/value_leaf_compare_20261023/PREREG.md)), independent pre-launch review
+PASS.
+- Play is the stage-3 control arm A (§661). At every searched root, seven side searches (same config, seed and
+  budget) swap the leaf: M0, S, MS (the stage-3 arms), G1B (§615), STU (§504), TD2 (§522) and NULL (search seed
+  salted).
+- Where an arm's pick differs from the played one, 64 paired referee rollouts value both. R_full plays heart1 greedy
+  rollouts with CTM combats to the end of the game; R_act stops them at the act's end and takes M0's value there.
+- 256 seeds (111360000–111360255), one game each, 32 cloud workers × 4 lanes, RUN_COMMIT `799361fc`, binary
+  `41b26423…`.
+- Gates: a referee qualifies if its level is within 0.05 of real play in every act and M0's advantage SE is ≤ 0.002.
+  The metric qualifies only if, under a qualified referee, STU's predicted Δ is below 0, TD2's and G1B's lie in their
+  A/B intervals, and NULL's interval contains 0.
+**Result** ([RESULT](evidence/value_leaf_compare_20261023/RESULT.md)): 256 of 256 units verified, all games valid,
+Heart rate 22.3%. 16,237 searched roots, 1,201,344 referee rollouts, none errored.
+
+| act | real Heart rate | R_full | R_act |
+|---|---|---|---|
+| 1 | 0.231 | 0.081 | 0.177 |
+| 2 | 0.276 | 0.111 | 0.204 |
+| 3 | 0.407 | 0.176 | 0.191 |
+| 4 | 0.696 | 0.486 | 0.486 |
+
+- **Both referees fail the level gate**, so the metric is **NOT QUALIFIED**. Both pass the precision gate (SE 0.0014,
+  1.0 core-hour of referee CPU for M0's flips).
+- Exploratory predictions (pp, R_full / R_act):
+  - M0 +0.90 [+0.01, +1.81] / +1.42 [+0.39, +2.57], against the stage-3 A/B's M − A of +1.37 [−1.17, +4.00];
+  - M0 main effect +0.51 / +0.70, against an observed +2.15;
+  - STU −1.40 / −1.95; TD2 +1.48 / −1.35; G1B −0.11 / −3.99; NULL +0.49 / −0.07.
+- Under R_full all four retrospective checks pass; STU's only narrowly (upper bound −0.23 pp; +0.10 on the first 245
+  games). Under R_act, G1B falls outside §615's interval. R_act values the act's end with M0's function of X2-B, so it
+  is not X2-B-free.
+- Every A/B observation contains both referees' predictions. For S both predict a small gain where the A/B saw −1.37.
+- A leaf changes the played pick at 4.4–5.7% of searched roots (STU 6.6%), and re-seeding the search changes 4.7%.
+- At all 447 act-4 roots the five leaf arms ran identical searches and kept the played pick. No act-4 rollout reaches
+  a leaf, so act-4 OOC decisions depend only on the rollouts (CTM combats, rollout policy).
+- Wall 6.5 h (estimate 3 h): side searches 313 core-hours. Per-simulation speed differed up to 3× between containers.
+  The last unit (111360219, a Heart game on a slow container) took 4 h 10 min.
+**Interpretation:**
+- The rollouts die far more often than real play, most of all in act 3 (R_act's gap there is nearly R_full's). The
+  decision metric cannot gate stage-4 candidates until a referee's rollouts play closer to real play.
+- The first prospective point agrees with the A/B for M0, under a referee that did not qualify.
+- M0's higher act-4 conversion in the A/B (57.1% → 60.7% of arrivals) comes from the states the runs arrive in, since
+  no leaf changes an act-4 decision.
+**Decision:** none (PREREG). Stage-4 candidates are gated on the guardrails and paired A/Bs, not on this metric.
+Proposed next: an offline check of the CTM's act-4 predictions against the stage-3 A/B's outcomes, and for later
+campaigns, backup copies of stragglers on idle workers once the queue is empty.
+- Seeds 111360000–111360255 used; smokes 111369991–111369993 used (111369990–111369999 assigned).
+- **Knowledge impact:** `evaluation/current-research.md`.
