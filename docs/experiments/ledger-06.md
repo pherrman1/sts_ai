@@ -24041,7 +24041,6 @@ status updated. Eligible roots with authoritative public run-relic provenance
 are required before a natural-label pilot can continue. No producer/capture
 schema, model integration, scale-up or merge was performed.
 
-## §TBD Combat infinity phase 2 — realistic constructed recall (2026-10-23)
 ## §673 Combat infinity phase 2 — realistic constructed recall (2026-10-23)
 
 Baseline: merged #839 `45eb23a7ed88869f3ea54d22d70f37e3cf93b22e`, with both
