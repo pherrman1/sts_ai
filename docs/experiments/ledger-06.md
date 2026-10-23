@@ -23859,6 +23859,46 @@ Play-changing only where the advisor used to refuse.
 Seeds: none new (live seed 111200641 as reported; unit test seed 111200071 from this thread's block).
 **Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.
 
+## §664 — Silver leaf head, labels or data: a per-state label (Silver's searched value) orders exact leaves better and wins first fights without a playout, but no new net beats production in the 3-source smoke, and every head scores lower there in boss fights (offline, 2026-10-23)
+
+**Question:** Philipp, after §656 paused the line (2026-10-23 14:28Z): retrain the leaf head with cleaner labels, or
+does it need more data? Exploratory and offline: no new seeds, no workers, no code change.
+**Design:** [README](evidence/silver_leaf_label_data_20261023/README.md). Both silver-leaf-a20 packs rebuilt byte for
+byte (a20prod 47efc292…, a20 408a864c…), with the folds, optimizer and early stopping of `train_head_a20.py` (the
+a20prod recipe reproduces its report, 23.71). Variants: 25, 50 and 100% of the runs, a bigger head, the trunk trained
+end to end (started from g7f_E), both packs, and Silver's root value (`qchosen`) as the label instead of the fight's
+end score. The nets then went through the 69,734 exact search leaves of first fights 111149600–649, the exact
+first-fight test on the Part B fights 111333000–099 (§655) and the §656 harness's 3-source smoke (sources
+111339997–999, production at 10k only).
+**Result:**
+- Fit, fold-4 RMSE against the end score (noise bound 18.8): a20prod's frozen head 23.7, on half the runs 24.6; end
+  to end 20.0 (Act 3 26.7 → 20.4), on both packs 19.5; a bigger head on the frozen trunk 23.9.
+- Silver's root value lies 12.4 points below the end score on average: 20.0 at turn 0, 5.1 from turn 6 on, 18.1 in
+  boss fights, 23.6 in Act 4.
+- Exact leaves, pairs in order within one fight and turn: a20prod 0.774, end to end on the end score 0.771, end to
+  end on the searched value 0.808 (the capacity-test head `heads/ct.txt`, fitted to these exact values in sample:
+  0.876, `evidence/silver_leaf_label_data_20261023/results/exact_leaves_ct.txt`).
+- First fights, regret change per fight (mean / max backup): the searched-value net alone −0.27 / −0.28 (a20prod's
+  head alone −0.07 / +0.18, it stalls), at 50/50 −0.17 / −0.16; the 1-point turn penalty hurts it (−0.08 / 0.00).
+
+| 3-source smoke, head10000 − base10000 | score per fight [95% CI] | fights won | Act 1 | boss fights (10) |
+|---|---|---|---|---|
+| end to end on the end score, 50/50, 1 point per turn | −2.0 [−16.8, +1.3] (42 fights; a stall aborted one source) | −1 pp | −3.5 | −13.3 |
+| the same with the win-now cap | −8.6 [−18.5, +2.5] | −4 pp | −3.9 | −48.8 |
+| end to end on the searched value, 50/50 | −2.7 [−3.5, −2.1] | −1 pp | +2.1 | −28.5 |
+| the same net alone, no playout | −39.8 [−48.3, −33.9] | −11 pp | −9.4 | −136.3 |
+
+**Interpretation:** per-fight labels cannot rank two states of one fight; halving the runs costs about 1 point, and
+adding the other campaign's runs (twice the roots) gains 0.4. The per-state label ranks leaves better and needs no
+playout in first fights, but no net beats production in the smoke. Its intervals are a bootstrap over only 3 sources,
+so they are rough; among the new nets they exclude zero only for the searched-value net. Every head so far scores lower
+there in boss fights (§655, §656). The Act 1 gains of the first-fight tests do not carry over: in the smokes only the
+searched-value net at 50/50 gains in Act 1. All of these heads learned from states of playout-driven play; one
+explanation, not tested yet, is that a search that trusts the head steers into states its training never had. A next
+step would train on the states the head's own search reaches, labeled there by production's search (a generator
+change, seeds and workers; Philipp's call). The leaf head flags stay default off.
+Seeds: none new (replays of 111149600–649, 111333000–099 and 111339997–999).
+**Knowledge impact:** none (no code or default changed).
 ## §663 — Value-head plan, stages 1–2: no rollout referee matches real play at A20, so the leaf-compare decision metric is NOT QUALIFIED; as exploratory numbers it predicts M0's gain about right (256 games, 2026-10-23)
 
 **Question:** Is there a cheap judge of OOC decisions that never reads X2-B and whose level matches real outcomes in

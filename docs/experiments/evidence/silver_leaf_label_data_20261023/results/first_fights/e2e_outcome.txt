@@ -1,0 +1,34 @@
+prod
+  hblend:e2e:0.5     CULTIST     100 fights  score vs none   +0.09 ±0.07  end HP  62.9 (none  62.9)  turns   2.4 (none  2.4, max 3)  not won in both 0
+  hblend:e2e:0.5     JAW_WORM    100 fights  score vs none   +0.13 ±0.42  end HP  56.4 (none  55.9)  turns   3.4 (none  2.5, max 6)  not won in both 0
+  hblend:e2e:0.5     TWO_LOUSE   100 fights  score vs none   -0.07 ±0.07  end HP  63.0 (none  63.0)  turns   2.4 (none  2.4, max 4)  not won in both 0
+  hblend:e2e:0.5     all         300 fights  score vs none   +0.05 ±0.14  end HP  60.8 (none  60.6)  turns   2.8 (none  2.4, max 6)  not won in both 0
+  hblend:e2e:0.5/1   CULTIST     100 fights  score vs none   -0.05 ±0.09  end HP  62.8 (none  62.9)  turns   2.4 (none  2.4, max 3)  not won in both 0
+  hblend:e2e:0.5/1   JAW_WORM    100 fights  score vs none   -0.01 ±0.39  end HP  56.2 (none  55.9)  turns   3.2 (none  2.5, max 6)  not won in both 0
+  hblend:e2e:0.5/1   TWO_LOUSE   100 fights  score vs none   -0.11 ±0.06  end HP  62.9 (none  63.0)  turns   2.4 (none  2.4, max 4)  not won in both 0
+  hblend:e2e:0.5/1   all         300 fights  score vs none   -0.06 ±0.13  end HP  60.6 (none  60.6)  turns   2.7 (none  2.4, max 6)  not won in both 0
+  hblend:e2e:0.5/1+cap CULTIST     100 fights  score vs none   -0.01 ±0.07  end HP  62.8 (none  62.9)  turns   2.4 (none  2.4, max 4)  not won in both 0
+  hblend:e2e:0.5/1+cap JAW_WORM    100 fights  score vs none   +0.52 ±0.38  end HP  56.7 (none  55.9)  turns   3.2 (none  2.5, max 5)  not won in both 0
+  hblend:e2e:0.5/1+cap TWO_LOUSE   100 fights  score vs none   -0.11 ±0.07  end HP  62.9 (none  63.0)  turns   2.4 (none  2.4, max 4)  not won in both 0
+  hblend:e2e:0.5/1+cap all         300 fights  score vs none   +0.13 ±0.13  end HP  60.8 (none  60.6)  turns   2.7 (none  2.4, max 5)  not won in both 0
+  head:e2e           CULTIST     100 fights  score vs none   -0.11 ±0.29  end HP  62.8 (none  62.9)  turns   2.6 (none  2.4, max 5)  not won in both 0
+  head:e2e           JAW_WORM    100 fights  score vs none   -0.10 ±0.52  end HP  56.5 (none  55.9)  turns   4.3 (none  2.5, max 8)  not won in both 0
+  head:e2e           TWO_LOUSE   100 fights  score vs none   -0.34 ±0.14  end HP  62.8 (none  63.0)  turns   2.6 (none  2.4, max 4)  not won in both 0
+  head:e2e           all         300 fights  score vs none   -0.19 ±0.20  end HP  60.7 (none  60.6)  turns   3.2 (none  2.4, max 8)  not won in both 0
+prod@mb=4
+  hblend:e2e:0.5     CULTIST     100 fights  score vs none   +0.20 ±0.14  end HP  63.7 (none  63.5)  turns   2.6 (none  2.5, max 4)  not won in both 0
+  hblend:e2e:0.5     JAW_WORM    100 fights  score vs none   +0.46 ±0.32  end HP  57.0 (none  56.4)  turns   3.1 (none  2.7, max 6)  not won in both 0
+  hblend:e2e:0.5     TWO_LOUSE   100 fights  score vs none   -0.03 ±0.05  end HP  63.2 (none  63.2)  turns   2.5 (none  2.5, max 4)  not won in both 0
+  hblend:e2e:0.5     all         300 fights  score vs none   +0.21 ±0.12  end HP  61.3 (none  61.0)  turns   2.7 (none  2.6, max 6)  not won in both 0
+  hblend:e2e:0.5/1   CULTIST     100 fights  score vs none   +0.22 ±0.16  end HP  63.7 (none  63.5)  turns   2.5 (none  2.5, max 3)  not won in both 0
+  hblend:e2e:0.5/1   JAW_WORM    100 fights  score vs none   +0.14 ±0.32  end HP  56.7 (none  56.4)  turns   3.0 (none  2.7, max 7)  not won in both 0
+  hblend:e2e:0.5/1   TWO_LOUSE   100 fights  score vs none   -0.05 ±0.05  end HP  63.2 (none  63.2)  turns   2.4 (none  2.5, max 4)  not won in both 0
+  hblend:e2e:0.5/1   all         300 fights  score vs none   +0.10 ±0.12  end HP  61.2 (none  61.0)  turns   2.7 (none  2.6, max 7)  not won in both 0
+  hblend:e2e:0.5/1+cap CULTIST     100 fights  score vs none   +0.00 ±0.15  end HP  63.5 (none  63.5)  turns   2.6 (none  2.5, max 4)  not won in both 0
+  hblend:e2e:0.5/1+cap JAW_WORM    100 fights  score vs none   +0.24 ±0.38  end HP  56.7 (none  56.4)  turns   2.9 (none  2.7, max 5)  not won in both 0
+  hblend:e2e:0.5/1+cap TWO_LOUSE   100 fights  score vs none   -0.02 ±0.04  end HP  63.2 (none  63.2)  turns   2.4 (none  2.5, max 4)  not won in both 0
+  hblend:e2e:0.5/1+cap all         300 fights  score vs none   +0.07 ±0.14  end HP  61.1 (none  61.0)  turns   2.6 (none  2.6, max 5)  not won in both 0
+  head:e2e           CULTIST     100 fights  score vs none   -0.06 ±0.21  end HP  63.5 (none  63.5)  turns   2.7 (none  2.5, max 5)  not won in both 0
+  head:e2e           JAW_WORM    100 fights  score vs none   +0.21 ±0.51  end HP  57.2 (none  56.4)  turns   4.2 (none  2.7, max 8)  not won in both 0
+  head:e2e           TWO_LOUSE   100 fights  score vs none   -0.55 ±0.17  end HP  62.8 (none  63.2)  turns   2.8 (none  2.5, max 10)  not won in both 0
+  head:e2e           all         300 fights  score vs none   -0.13 ±0.19  end HP  61.2 (none  61.0)  turns   3.2 (none  2.6, max 10)  not won in both 0
