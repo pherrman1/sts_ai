@@ -24042,6 +24042,7 @@ are required before a natural-label pilot can continue. No producer/capture
 schema, model integration, scale-up or merge was performed.
 
 ## §TBD Combat infinity phase 2 — realistic constructed recall (2026-10-23)
+## §673 Combat infinity phase 2 — realistic constructed recall (2026-10-23)
 
 Baseline: merged #839 `45eb23a7ed88869f3ea54d22d70f37e3cf93b22e`, with both
 required review corrections. Concrete full-state/RNG deterministic fixture
@@ -24163,3 +24164,31 @@ Philipp's typed go and the worker count.
 - Seeds: the fit replays §661's and §663's rows (no new games). Smoke 111394990–111394999 used. A/B
   111392000–111394047 assigned, unused.
 - **Knowledge impact:** `evaluation/current-research.md`, `operations/environment-variables.md`.
+
+## §672 — A20 CTM fine-tune on today's real fights: a survival fine-tune does not beat the §670 calibration table; an HP-head fine-tune plus a refitted table lowers held-out won-fight HP error by 0.15 (research candidate, offline, 2026-10-23)
+
+**Question:** Philipp (2026-10-23 20:18Z), after §670: can a fine-tune of the deployed A20 CTM on today's real fights
+replace or improve the per-fight calibration? Yardstick (his, 20:32Z): prediction precision, not win rate.
+**Setup:** [packet](evidence/ctm_finetune_20261023/README.md). Warm start from the fast artifact `ae785ec2…`
+(`tools/ctm_finetune.py`, CPU). §670's rows, folds (source seed parity) and held-out set (LC, 6,022 fights of the stage
+1–2 games); train on one fold, test on the other; final model on all 97,561 A/B fights. 25% of each batch from 112,906
+§443 Stage-1 rows; epochs chosen on ~10% of the training fold's seeds. Fine-tuned: survival encoder + head (or head),
+and the HP head only (its encoder z also feeds maxHP, relic, gold and ritual heads). Scored by the C++ runtime
+through a research manifest; compared on the same rows with the CTM and with the CTM + §670 table fitted on the
+other fold.
+**Result:**
+- Survival: no variant beats the table out of sample. Best (encoder + head, lr 3e-4): death log loss 0.0714 / 0.0703
+  vs table 0.0685 / 0.0684 and CTM 0.0731 / 0.0717; FT − table +0.0026 [+0.0012, +0.0042] and +0.0017 [+0.0002,
+  +0.0032]. Higher learning rate or head-only is worse (head-only predicts the Heart at 0.11 vs 0.37 observed). Trained
+  on all A/B rows it ties the table on LC (0.0689 vs 0.0698, [−0.0038, +0.0019]).
+- HP head: alone it takes won-fight HP MAE from 8.46 / 8.48 / 8.23 (odd / even / LC) to 7.74 / 7.81 / 7.55. With a table
+  refitted on its scores, against the CTM + table: 7.66 → 7.56 (−0.10 [−0.13, −0.06]), 7.67 → 7.60 (−0.06 [−0.09,
+  −0.03]), held out 7.60 → 7.45 (−0.15 [−0.22, −0.08]); gains at bosses and Act-3 elites; deaths unchanged.
+**Candidate (research only):** `models/candidates/ctm_finetune_hp_pathb_a20_v1.native` (`bdbfafa6…`, five HP-head
+tensors changed, §470 shift kept so `p_death` is byte-identical to the deployed stack on all 103,583 fights), manifest
+`31bb21f7…`, table `ctm_calibration_pathb_a20_ft_hp_v1.json` (`8c226f23…`, C++ = tool on 30,072 fights). Nothing
+default; playing it needs a fast-artifact path switch the OOC stack does not have yet.
+**Interpretation:** at this data size a per-fight death shift beats re-learning survival; the HP head has room the
+per-group loss scale cannot reach. **Inference:** a clean retrain would need more current-play rows than one A/B.
+- No seeds run (rows of §661 and §663 replayed).
+- **Knowledge impact:** none beyond this entry (research candidate, no runtime or default change).

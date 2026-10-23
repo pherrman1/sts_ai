@@ -1,0 +1,14 @@
+{
+  "brew": 686,
+  "deaths": 5314,
+  "lizard": 2140,
+  "rows": 112906,
+  "sources": [
+    {
+      "rows": "/home/user/work/old/old.jsonl",
+      "rowsSha256": "466f9b93838937b124a427742808892d6146c3d8868784d961ad4a581a8b8666",
+      "scores": "/home/user/work/old/old.off.csv",
+      "scoresSha256": "697a283ea3d11bda5be275105dca17985fa1d7c28667a1f2a17ac98867cb3da6"
+    }
+  ]
+}

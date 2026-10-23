@@ -76,7 +76,7 @@ equality or the RNG card whitelist for it. The Dropkick construction isolates en
 [MATRIX.md](MATRIX.md) gives classifications and final metrics;
 [matrix.json](matrix.json) contains all 40 arm/fixture rows with explicit nulls,
 CPU time, reach/witness lengths, nodes, period deltas, replay result, repetitions,
-actions and rejection reasons. The raw `*-recall.jsonl` files retain every
+actions and rejection reasons, including player-HP deltas and maximum search depth. The raw `*-recall.jsonl` files retain every
 candidate/witness and diagnostic trace. A NONE classification has no discovered
 witness; a separately measured six-play trace is not reported as an oracle witness.
 
@@ -140,6 +140,7 @@ bash tools/seed_guard.sh build/linux-gcc-release-ccache/combat_infinity_oracle -
 bash tools/seed_guard.sh build/linux-gcc-release-ccache/combat_infinity_oracle --recall-fixtures
 ctest --test-dir build/linux-gcc-release-ccache -R '^combat_infinity_(oracle|recall)$' --output-on-failure
 python3 docs/experiments/evidence/combat_infinity_recall_20261023/analyze.py
+python3 docs/experiments/evidence/combat_infinity_recall_20261023/analyze.py --check
 git diff --check
 ```
 
@@ -160,6 +161,11 @@ regressing the minimal baseline. Neither output is counted as an experimental
 arm. The construction and implementation were corrected, A was rerun in
 isolation, then B was tested. See `development-*-result.txt`, raw probe output,
 and patches. No engine code or search limits changed to repair these problems.
+
+Reporting completion regenerates the full matrix solely from the retained raw
+JSONL. `--check` compares the generated JSON/Markdown bytes with the committed
+artifacts without rewriting them. No fixtures were rerun, CPU measurements
+replaced, oracle behavior changed, or scientific verdict revised.
 
 Knowledge impact: updated research status, the oracle's maintained normalization
 contract, and the chronological experiment ledger. Production executable source

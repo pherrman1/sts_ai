@@ -1,0 +1,25 @@
+run  selectedEpoch  innerSurvivalNll innerHpNll  (epoch-0 values in each fit.json)
+even-lr1e-4-l21-old0.25 {'hp': 12, 'survival': 11} 0.06006 2.96899 base 0.07728 3.00676
+even-lr1e-4-l21-old0 {'hp': 9, 'survival': 12} 0.05956 2.97238 base 0.07728 3.00676
+even-lr1e-4-l210-old0.25 {'hp': 12, 'survival': 11} 0.06021 2.96894 base 0.07728 3.00676
+even-lr1e-4-l210-old0 {'hp': 9, 'survival': 12} 0.0597 2.97232 base 0.07728 3.00676
+even-lr1e-4-l2100-old0.25 {'hp': 12, 'survival': 11} 0.06094 2.96907 base 0.07728 3.00676
+even-lr1e-4-l2100-old0 {'hp': 9, 'survival': 12} 0.06004 2.97215 base 0.07728 3.00676
+even-lr3e-4-l21-old0.25 {'hp': 12, 'survival': 4} 0.05797 2.96665 base 0.07728 3.00676
+even-lr3e-4-l21-old0 {'hp': 8, 'survival': 8} 0.06011 2.97029 base 0.07728 3.00676
+even-lr3e-4-l210-old0.25 {'hp': 12, 'survival': 4} 0.05822 2.96623 base 0.07728 3.00676
+even-lr3e-4-l210-old0 {'hp': 8, 'survival': 8} 0.06008 2.96962 base 0.07728 3.00676
+even-lr3e-4-l2100-old0.25 {'hp': 12, 'survival': 4} 0.05883 2.96648 base 0.07728 3.00676
+even-lr3e-4-l2100-old0 {'hp': 8, 'survival': 8} 0.0601 2.96845 base 0.07728 3.00676
+odd-lr1e-4-l21-old0.25 {'hp': 10, 'survival': 11} 0.08476 3.02003 base 0.09694 3.07087
+odd-lr1e-4-l21-old0 {'hp': 12, 'survival': 12} 0.08456 3.01944 base 0.09694 3.07087
+odd-lr1e-4-l210-old0.25 {'hp': 10, 'survival': 11} 0.08478 3.02006 base 0.09694 3.07087
+odd-lr1e-4-l210-old0 {'hp': 12, 'survival': 12} 0.08444 3.01956 base 0.09694 3.07087
+odd-lr1e-4-l2100-old0.25 {'hp': 10, 'survival': 7} 0.08473 3.02072 base 0.09694 3.07087
+odd-lr1e-4-l2100-old0 {'hp': 12, 'survival': 12} 0.08455 3.02028 base 0.09694 3.07087
+odd-lr3e-4-l21-old0.25 {'hp': 10, 'survival': 11} 0.08349 3.00994 base 0.09694 3.07087
+odd-lr3e-4-l21-old0 {'hp': 12, 'survival': 7} 0.08323 3.0098 base 0.09694 3.07087
+odd-lr3e-4-l210-old0.25 {'hp': 10, 'survival': 11} 0.08308 3.01012 base 0.09694 3.07087
+odd-lr3e-4-l210-old0 {'hp': 12, 'survival': 7} 0.08306 3.00998 base 0.09694 3.07087
+odd-lr3e-4-l2100-old0.25 {'hp': 10, 'survival': 11} 0.08356 3.01215 base 0.09694 3.07087
+odd-lr3e-4-l2100-old0 {'hp': 12, 'survival': 7} 0.08211 3.01095 base 0.09694 3.07087
