@@ -22520,6 +22520,8 @@ Seeds: none new (live seeds 111200473 and 111200504).
 
 **Decision (Philipp, 2026-10-23):** Known and not modelled. The extra draw count depends on the frame count and cannot be predicted natively. Native's draw from the imported counter is an equally valid random sample for planning, and the next live step re-imports the counter. The parity canary classifies cardRandomRng mismatches after a DiscoveryAction pick, and card sets that depend on them in the same decision chain, as background rows. No engine change.
 
+Seeds: none new (live canary seeds as cited).
+
 **Status:** Recorded.
 
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
