@@ -24012,7 +24012,7 @@ campaigns, backup copies of stragglers on idle workers once the queue is empty.
 - Seeds 111360000–111360255 used; smokes 111369991–111369993 used (111369990–111369999 assigned).
 - **Knowledge impact:** `evaluation/current-research.md`.
 
-## §TBD Combat infinity phase 2 — realistic constructed recall (2026-10-23)
+## §673 Combat infinity phase 2 — realistic constructed recall (2026-10-23)
 
 Baseline: merged #839 `45eb23a7ed88869f3ea54d22d70f37e3cf93b22e`, with both
 required review corrections. Concrete full-state/RNG deterministic fixture
