@@ -1959,7 +1959,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     .append(",\"usedUp\":").append(relic.usedUp);
             if ("Necronomicon".equals(relic.relicId)) {
                 Boolean activated = readBooleanField(relic, "activated");
-                if (activated != null) out.append(",\"usedThisTurn\":").append(activated);
+                // Vanilla's activated is true while this turn's copy is still available.
+                if (activated != null) out.append(",\"activated\":").append(activated);
             }
             out.append('}');
         }
@@ -4003,7 +4004,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     .append(",\"usedUp\":").append(relic.usedUp);
             if ("Necronomicon".equals(relic.relicId)) {
                 Boolean activated = readBooleanField(relic, "activated");
-                if (activated != null) out.append(",\"usedThisTurn\":").append(activated);
+                // Vanilla's activated is true while this turn's copy is still available.
+                if (activated != null) out.append(",\"activated\":").append(activated);
             }
             if ("Centennial Puzzle".equals(relic.relicId)) {
                 // Vanilla marks the once-per-combat draw in a private static

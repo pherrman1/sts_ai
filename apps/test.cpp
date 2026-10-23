@@ -2488,6 +2488,74 @@ int testIroncladCardJavaParity() {
         if (bc.monsters.arr[0].strength != strengthBefore - 3) return fail("Disarm+ did not remove 3 Strength");
     }
 
+    // Live problem 97 (seed 111200587, step 564): Dark Shackles left the
+    // monster at Strength -9 with Shackled 9 in the game, +9 and no Shackled
+    // natively. Java applies StrengthPower(-9), and GainStrengthPower(9) only
+    // when the target has no Artifact; Artifact blocks the Strength loss.
+    // STS_DARK_SHACKLES_FIX=0 restores the inverted legacy card.
+    for (const bool fix : {true, false}) {
+        for (const bool artifact : {false, true}) {
+            if (fix) unsetenv("STS_DARK_SHACKLES_FIX");
+            else setenv("STS_DARK_SHACKLES_FIX", "0", 1);
+            BattleContext bc = simulatorCorrectnessBattle({}, Card(CardId::DARK_SHACKLES), 10);
+            while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+                bc.executeActions();
+            }
+            Monster &worm = bc.monsters.arr[0];
+            if (artifact) worm.buff<MS::ARTIFACT>(1);
+            const int before = worm.getStatus<MS::STRENGTH>();
+            simulatorCorrectnessPlay(bc, 0, 0);
+            while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+                bc.executeActions();
+            }
+            const int strength = worm.getStatus<MS::STRENGTH>() - before;
+            const int shackled = worm.getStatus<MS::SHACKLED>();
+            const int artifactLeft = worm.getStatus<MS::ARTIFACT>();
+            worm.applyEndOfTurnTriggers(bc);
+            const int restored = worm.getStatus<MS::STRENGTH>() - before;
+            unsetenv("STS_DARK_SHACKLES_FIX");
+            const int wantStrength = artifact ? 0 : (fix ? -9 : 9);
+            const int wantShackled = fix ? (artifact ? 0 : 9) : (artifact ? 9 : 0);
+            const int wantRestored = wantStrength + wantShackled;
+            if (strength != wantStrength || shackled != wantShackled || artifactLeft != 0
+                    || restored != wantRestored) {
+                return fail(std::string(fix ? "Dark Shackles" : "STS_DARK_SHACKLES_FIX=0")
+                            + (artifact ? " with Artifact" : "") + ": Str " + std::to_string(strength)
+                            + ", Shackled " + std::to_string(shackled) + ", Artifact " + std::to_string(artifactLeft)
+                            + ", Str after end of turn " + std::to_string(restored));
+            }
+        }
+    }
+
+    // Live problem 98 (seed 111200587, step 531): Impatience drew 2 natively
+    // with Attacks in hand (game: no draw; hand 6 vs 8). Java draws only when
+    // no card in hand is an Attack. STS_IMPATIENCE_FIX=0 restores the
+    // legacy always-draw.
+    for (const bool fix : {true, false}) {
+        for (const bool attack : {true, false}) {
+            if (fix) unsetenv("STS_IMPATIENCE_FIX");
+            else setenv("STS_IMPATIENCE_FIX", "0", 1);
+            BattleContext bc = simulatorCorrectnessBattle({}, Card(CardId::IMPATIENCE), 10);
+            while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+                bc.executeActions();
+            }
+            if (attack) bc.cards.hand[1] = CardInstance(CardId::STRIKE_RED);
+            const int before = bc.cards.cardsInHand;
+            simulatorCorrectnessPlay(bc, 0, 0);
+            while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+                bc.executeActions();
+            }
+            const int drawn = bc.cards.cardsInHand - (before - 1);
+            unsetenv("STS_IMPATIENCE_FIX");
+            const int want = (attack && fix) ? 0 : 2;
+            if (drawn != want) {
+                return fail(std::string(fix ? "Impatience" : "STS_IMPATIENCE_FIX=0")
+                            + (attack ? " with an Attack in hand" : " without an Attack") + " drew "
+                            + std::to_string(drawn) + ", want " + std::to_string(want));
+            }
+        }
+    }
+
     // Brutality and Pain lose HP as self-damage, which triggers Rupture.
     for (const bool pain : {false, true}) {
         BattleContext bc = simulatorCorrectnessBattle({}, Card(CardId::DEFEND_RED), 10);
