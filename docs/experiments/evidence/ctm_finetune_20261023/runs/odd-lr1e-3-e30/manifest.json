@@ -1,0 +1,79 @@
+{
+  "activeLizard": {
+    "candidateId": "active-lizard-mechanical-q-learned-r-t2",
+    "candidateManifestSha256": "15da76f4ab3d8bdf74f04f17176fcdc4f6a1fe5ea792497a2e3cf12b29964617",
+    "frozenQrArtifactSha256": "3ca66c941904fa86ec9caec87210529a207eabaa39851f565c773605b8b9ca4c",
+    "rModel": {
+      "featureMean": [
+        0.7381432442056437
+      ],
+      "featureScale": [
+        0.25821602861152476
+      ],
+      "standardizedCoefficients": [
+        1.9390933205559342,
+        1.0438830448425434
+      ]
+    },
+    "rModelSha256": "fa8170f9b0c36be814f7ad1178a5f135664cef82c98e8715d35080eeb4292456"
+  },
+  "candidateId": "pathb-a20",
+  "capabilities": {
+    "fast": {
+      "escape": {
+        "checkpointSha256": "9db82c3180751e27198bb47c5fa31fa935baa41d4e7579b1151f34662aac8df0"
+      },
+      "lizardBrew": {
+        "rModel": {
+          "featureMean": [
+            0.7107754880552632
+          ],
+          "featureScale": [
+            0.26616081999875596
+          ],
+          "standardizedCoefficients": [
+            2.073495688086136,
+            0.9809218525066958
+          ]
+        }
+      },
+      "lizardFairy": {},
+      "writhingRitual": {}
+    },
+    "standard": {
+      "escape": {
+        "checkpointSha256": "fed45e004991422ea676fae3b8749586e8c7f56400eaa3901f652d23762c3b3b"
+      },
+      "writhingRitual": {}
+    }
+  },
+  "domainSha256": "011fd040cce01c69497af2a07c737f8f1a2e753680ab02a298939f8b90d7a4b7",
+  "fast": {
+    "artifactSha256": "e96351b5ba56404777038301fe00d40f5b1329ed76fbf44d0cd6509836dc49f9",
+    "downstreamCheckpointSha256": "43242a584e6c6aa1c3e50f215deec98933d5d383c94abe32eeb6b4a968cb3c40",
+    "maxHpHpCheckpointSha256": "eeedadeb38bd37c9e2739d6a274eaa9cdfdb555fefd585b6ac988d07a095f336",
+    "potionSpecialistCheckpointSha256": "3a41c06be0db9912089c1454b01790155ce0700d460eeb4c650899854e8151c8",
+    "survival": {
+      "checkpointSha256": "eeedadeb38bd37c9e2739d6a274eaa9cdfdb555fefd585b6ac988d07a095f336",
+      "preparedManifestSha256": "4ba23afdc466b2957806885ae5ad6cca934c3ef3d7508a2d7d8bef2224b2ac95",
+      "preparedSha256": "fe4254710f4eb21f204c3af461ada8e208dc009bc78c9c9a23be84802fa20581",
+      "scalarInvSha256": "6875d1f18ca03137eda8c5d67c0713418fadad426936f42333d9a5b357721ebc",
+      "scalarMeanSha256": "7547f89f25f170e97e4424ba41733931c8f1af3080eebb325c0824ee1052d8ba"
+    }
+  },
+  "schema": "ctm_research_candidate_v3",
+  "standard": {
+    "artifactSha256": "e338506ddf14177bec27cfe174670bd9dcac333c26b30416b9f0c76717392b0d",
+    "sources": {
+      "HP": "8f96a517b381d8bccce4ccceb758da07916e4a8110a58f65e1a2e0a57e9f184c",
+      "downstream": "9bbb1a5657aad4ff9b0dce0cf257037db204f8396dc32c9c97b65bc5b285f9ea",
+      "maxHP": "f2e6f6901b08e19c01eeff5054a0d7c36c8af67998f9b3a224bb24a111b8d539",
+      "potion": "d52457133790b9c0766d5e604dc92fbe6337f286e0e2e450690d175eb802e04d",
+      "survival": "125fd3d76359527e515f25c70994b2ac900f8f419c03c6dd53271a8f34b49e41"
+    }
+  },
+  "supportCensus": {
+    "allSupportedIndexSha256": "1069df0b968aab886c653292a5b8fd81e045f5d3ffd6d88dfd4c61dfc4b91bcf",
+    "testSupportedIndexSha256": "8c5cdbfa4d23b57d24bbfff5d66a17289539c1aeb656017bae94ce2abb41de8f"
+  }
+}

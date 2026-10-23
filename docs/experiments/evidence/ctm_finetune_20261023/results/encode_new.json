@@ -1,0 +1,32 @@
+{
+  "brew": 707,
+  "deaths": 3127,
+  "lizard": 3698,
+  "rows": 97561,
+  "sources": [
+    {
+      "rows": "/home/user/work/rows/A.jsonl",
+      "rowsSha256": "24e9d96d77cc3f7f560cef3970557636cf03814cd35158f0a165817cc5803234",
+      "scores": "/home/user/work/scores/ref/off/A.csv",
+      "scoresSha256": "95a9eaec35aa5a94c51ffe31434f4c210be70ad4da32473cb55b5575e6c923c9"
+    },
+    {
+      "rows": "/home/user/work/rows/M.jsonl",
+      "rowsSha256": "1c86625583fd4ffee641ca4d9e0c076f34320e5eee186e5628130c10eb64f3a7",
+      "scores": "/home/user/work/scores/ref/off/M.csv",
+      "scoresSha256": "9fbe223faf9ce8ec223c8344e94283aabc96c026ebc5a52aee12d160c9fd0c1c"
+    },
+    {
+      "rows": "/home/user/work/rows/S.jsonl",
+      "rowsSha256": "925bcfa3311b3fd12c55f5d9fa888cf33fd1cf8122ff725b9c3a2674bde493db",
+      "scores": "/home/user/work/scores/ref/off/S.csv",
+      "scoresSha256": "2a9d9ad6284a96e0d257e20b55bb9933d4a7c1e499073c56e108995fd424db24"
+    },
+    {
+      "rows": "/home/user/work/rows/MS.jsonl",
+      "rowsSha256": "cb32431522168aae05d21feac4c932cd8e943cc86f89dad00dc4c1b4696f6938",
+      "scores": "/home/user/work/scores/ref/off/MS.csv",
+      "scoresSha256": "b855f3f752237c6f2d2d41704d22eb8110d05574e7b1df25e6af85402a24cb2e"
+    }
+  ]
+}

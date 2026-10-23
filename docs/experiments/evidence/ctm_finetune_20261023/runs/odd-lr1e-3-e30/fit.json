@@ -1,0 +1,498 @@
+{
+  "baseArtifactSha256": "ae785ec2e28ceb3755fb63a71534f873ed61a069a6c2e107ef4131a788af7b6b",
+  "batch": 512,
+  "checkpointSha256": "eeedadeb38bd37c9e2739d6a274eaa9cdfdb555fefd585b6ac988d07a095f336",
+  "epochs": 30,
+  "history": [
+    {
+      "epoch": 0,
+      "new": {
+        "hpNll": 3.0708706378936768,
+        "hpRows": 4405,
+        "rows": 4573,
+        "survivalNll": 0.09693580865859985
+      },
+      "old": {
+        "hpNll": 2.9035637378692627,
+        "hpRows": 10422,
+        "rows": 10936,
+        "survivalNll": 0.08106699585914612
+      }
+    },
+    {
+      "epoch": 1,
+      "new": {
+        "hpNll": 3.0292811393737793,
+        "hpRows": 4405,
+        "rows": 4573,
+        "survivalNll": 0.0883401557803154
+      },
+      "old": {
+        "hpNll": 2.913057804107666,
+        "hpRows": 10422,
+        "rows": 10936,
+        "survivalNll": 0.08640389144420624
+      }
+    },
+    {
+      "epoch": 2,
+      "new": {
+        "hpNll": 3.019439935684204,
+        "hpRows": 4405,
+        "rows": 4573,
+        "survivalNll": 0.0858960822224617
+      },
+      "old": {
+        "hpNll": 2.9173154830932617,
+        "hpRows": 10422,
+        "rows": 10936,
+        "survivalNll": 0.08565322309732437
+      }
+    },
+    {
+      "epoch": 3,
+      "new": {
+        "hpNll": 3.025830030441284,
+        "hpRows": 4405,
+        "rows": 4573,
+        "survivalNll": 0.0898856371641159
+      },
+      "old": {
+        "hpNll": 2.9155492782592773,
+        "hpRows": 10422,
+        "rows": 10936,
+        "survivalNll": 0.08941362053155899
+      }
+    },
+    {
+      "epoch": 4,
+      "new": {
+        "hpNll": 3.016411304473877,
+        "hpRows": 4405,
+        "rows": 4573,
+        "survivalNll": 0.08594568818807602
+      },
+      "old": {
+        "hpNll": 2.9191722869873047,
+        "hpRows": 10422,
+        "rows": 10936,
+        "survivalNll": 0.089652881026268
+      }
+    },
+    {
+      "epoch": 5,
+      "new": {
+        "hpNll": 3.0111896991729736,
+        "hpRows": 4405,
+        "rows": 4573,
+        "survivalNll": 0.08594410866498947
+      },
+      "old": {
+        "hpNll": 2.9210362434387207,
+        "hpRows": 10422,
+        "rows": 10936,
+        "survivalNll": 0.08859582990407944
+      }
+    },
+    {
+      "epoch": 6,
+      "new": {
+        "hpNll": 3.008916139602661,
+        "hpRows": 4405,
+        "rows": 4573,
+        "survivalNll": 0.08588685840368271
+      },
+      "old": {
+        "hpNll": 2.922515630722046,
+        "hpRows": 10422,
+        "rows": 10936,
+        "survivalNll": 0.08773291110992432
+      }
+    },
+    {
+      "epoch": 7,
+      "new": {
+        "hpNll": 3.0125017166137695,
+        "hpRows": 4405,
+        "rows": 4573,
+        "survivalNll": 0.09110639989376068
+      },
+      "old": {
+        "hpNll": 2.9215259552001953,
+        "hpRows": 10422,
+        "rows": 10936,
+        "survivalNll": 0.09374780207872391
+      }
+    },
+    {
+      "epoch": 8,
+      "new": {
+        "hpNll": 3.0119569301605225,
+        "hpRows": 4405,
+        "rows": 4573,
+        "survivalNll": 0.085316002368927
+      },
+      "old": {
+        "hpNll": 2.9206178188323975,
+        "hpRows": 10422,
+        "rows": 10936,
+        "survivalNll": 0.09154989570379257
+      }
+    },
+    {
+      "epoch": 9,
+      "new": {
+        "hpNll": 3.010819435119629,
+        "hpRows": 4405,
+        "rows": 4573,
+        "survivalNll": 0.0862056240439415
+      },
+      "old": {
+        "hpNll": 2.9214179515838623,
+        "hpRows": 10422,
+        "rows": 10936,
+        "survivalNll": 0.0918995812535286
+      }
+    },
+    {
+      "epoch": 10,
+      "new": {
+        "hpNll": 3.008054733276367,
+        "hpRows": 4405,
+        "rows": 4573,
+        "survivalNll": 0.08685293048620224
+      },
+      "old": {
+        "hpNll": 2.9270718097686768,
+        "hpRows": 10422,
+        "rows": 10936,
+        "survivalNll": 0.08996208012104034
+      }
+    },
+    {
+      "epoch": 11,
+      "new": {
+        "hpNll": 3.007556676864624,
+        "hpRows": 4405,
+        "rows": 4573,
+        "survivalNll": 0.0853300616145134
+      },
+      "old": {
+        "hpNll": 2.9243311882019043,
+        "hpRows": 10422,
+        "rows": 10936,
+        "survivalNll": 0.0900205746293068
+      }
+    },
+    {
+      "epoch": 12,
+      "new": {
+        "hpNll": 3.007469654083252,
+        "hpRows": 4405,
+        "rows": 4573,
+        "survivalNll": 0.08621061593294144
+      },
+      "old": {
+        "hpNll": 2.9238510131835938,
+        "hpRows": 10422,
+        "rows": 10936,
+        "survivalNll": 0.0922747328877449
+      }
+    },
+    {
+      "epoch": 13,
+      "new": {
+        "hpNll": 3.0064847469329834,
+        "hpRows": 4405,
+        "rows": 4573,
+        "survivalNll": 0.08768163621425629
+      },
+      "old": {
+        "hpNll": 2.92598032951355,
+        "hpRows": 10422,
+        "rows": 10936,
+        "survivalNll": 0.09147385507822037
+      }
+    },
+    {
+      "epoch": 14,
+      "new": {
+        "hpNll": 3.003826379776001,
+        "hpRows": 4405,
+        "rows": 4573,
+        "survivalNll": 0.08847317099571228
+      },
+      "old": {
+        "hpNll": 2.92866849899292,
+        "hpRows": 10422,
+        "rows": 10936,
+        "survivalNll": 0.09111004322767258
+      }
+    },
+    {
+      "epoch": 15,
+      "new": {
+        "hpNll": 3.0085017681121826,
+        "hpRows": 4405,
+        "rows": 4573,
+        "survivalNll": 0.0862836018204689
+      },
+      "old": {
+        "hpNll": 2.929044246673584,
+        "hpRows": 10422,
+        "rows": 10936,
+        "survivalNll": 0.08944521099328995
+      }
+    },
+    {
+      "epoch": 16,
+      "new": {
+        "hpNll": 3.012150526046753,
+        "hpRows": 4405,
+        "rows": 4573,
+        "survivalNll": 0.09061295539140701
+      },
+      "old": {
+        "hpNll": 2.9272608757019043,
+        "hpRows": 10422,
+        "rows": 10936,
+        "survivalNll": 0.09256283938884735
+      }
+    },
+    {
+      "epoch": 17,
+      "new": {
+        "hpNll": 3.009702444076538,
+        "hpRows": 4405,
+        "rows": 4573,
+        "survivalNll": 0.09221912175416946
+      },
+      "old": {
+        "hpNll": 2.926513910293579,
+        "hpRows": 10422,
+        "rows": 10936,
+        "survivalNll": 0.09935066848993301
+      }
+    },
+    {
+      "epoch": 18,
+      "new": {
+        "hpNll": 3.0099267959594727,
+        "hpRows": 4405,
+        "rows": 4573,
+        "survivalNll": 0.09415802359580994
+      },
+      "old": {
+        "hpNll": 2.9295597076416016,
+        "hpRows": 10422,
+        "rows": 10936,
+        "survivalNll": 0.09664484858512878
+      }
+    },
+    {
+      "epoch": 19,
+      "new": {
+        "hpNll": 3.0063669681549072,
+        "hpRows": 4405,
+        "rows": 4573,
+        "survivalNll": 0.08615567535161972
+      },
+      "old": {
+        "hpNll": 2.928398609161377,
+        "hpRows": 10422,
+        "rows": 10936,
+        "survivalNll": 0.09250135719776154
+      }
+    },
+    {
+      "epoch": 20,
+      "new": {
+        "hpNll": 3.010974168777466,
+        "hpRows": 4405,
+        "rows": 4573,
+        "survivalNll": 0.09035278111696243
+      },
+      "old": {
+        "hpNll": 2.9317963123321533,
+        "hpRows": 10422,
+        "rows": 10936,
+        "survivalNll": 0.09436971694231033
+      }
+    },
+    {
+      "epoch": 21,
+      "new": {
+        "hpNll": 3.00382137298584,
+        "hpRows": 4405,
+        "rows": 4573,
+        "survivalNll": 0.08602914959192276
+      },
+      "old": {
+        "hpNll": 2.9261345863342285,
+        "hpRows": 10422,
+        "rows": 10936,
+        "survivalNll": 0.09241239726543427
+      }
+    },
+    {
+      "epoch": 22,
+      "new": {
+        "hpNll": 3.0028421878814697,
+        "hpRows": 4405,
+        "rows": 4573,
+        "survivalNll": 0.09259247034788132
+      },
+      "old": {
+        "hpNll": 2.929715871810913,
+        "hpRows": 10422,
+        "rows": 10936,
+        "survivalNll": 0.09634293615818024
+      }
+    },
+    {
+      "epoch": 23,
+      "new": {
+        "hpNll": 3.005469560623169,
+        "hpRows": 4405,
+        "rows": 4573,
+        "survivalNll": 0.092693030834198
+      },
+      "old": {
+        "hpNll": 2.9281065464019775,
+        "hpRows": 10422,
+        "rows": 10936,
+        "survivalNll": 0.10279756784439087
+      }
+    },
+    {
+      "epoch": 24,
+      "new": {
+        "hpNll": 3.0065112113952637,
+        "hpRows": 4405,
+        "rows": 4573,
+        "survivalNll": 0.09116141498088837
+      },
+      "old": {
+        "hpNll": 2.926957607269287,
+        "hpRows": 10422,
+        "rows": 10936,
+        "survivalNll": 0.0944191962480545
+      }
+    },
+    {
+      "epoch": 25,
+      "new": {
+        "hpNll": 3.0073373317718506,
+        "hpRows": 4405,
+        "rows": 4573,
+        "survivalNll": 0.08349728584289551
+      },
+      "old": {
+        "hpNll": 2.928145170211792,
+        "hpRows": 10422,
+        "rows": 10936,
+        "survivalNll": 0.09352140128612518
+      }
+    },
+    {
+      "epoch": 26,
+      "new": {
+        "hpNll": 3.0051441192626953,
+        "hpRows": 4405,
+        "rows": 4573,
+        "survivalNll": 0.09009376913309097
+      },
+      "old": {
+        "hpNll": 2.9292867183685303,
+        "hpRows": 10422,
+        "rows": 10936,
+        "survivalNll": 0.09438605606555939
+      }
+    },
+    {
+      "epoch": 27,
+      "new": {
+        "hpNll": 3.011056423187256,
+        "hpRows": 4405,
+        "rows": 4573,
+        "survivalNll": 0.08838290721178055
+      },
+      "old": {
+        "hpNll": 2.92748761177063,
+        "hpRows": 10422,
+        "rows": 10936,
+        "survivalNll": 0.09537556022405624
+      }
+    },
+    {
+      "epoch": 28,
+      "new": {
+        "hpNll": 3.0036137104034424,
+        "hpRows": 4405,
+        "rows": 4573,
+        "survivalNll": 0.08974889665842056
+      },
+      "old": {
+        "hpNll": 2.931661367416382,
+        "hpRows": 10422,
+        "rows": 10936,
+        "survivalNll": 0.09488385170698166
+      }
+    },
+    {
+      "epoch": 29,
+      "new": {
+        "hpNll": 3.0031516551971436,
+        "hpRows": 4405,
+        "rows": 4573,
+        "survivalNll": 0.08983680605888367
+      },
+      "old": {
+        "hpNll": 2.926886796951294,
+        "hpRows": 10422,
+        "rows": 10936,
+        "survivalNll": 0.0938057079911232
+      }
+    },
+    {
+      "epoch": 30,
+      "new": {
+        "hpNll": 3.001339912414551,
+        "hpRows": 4405,
+        "rows": 4573,
+        "survivalNll": 0.08587130159139633
+      },
+      "old": {
+        "hpNll": 2.9332027435302734,
+        "hpRows": 10422,
+        "rows": 10936,
+        "survivalNll": 0.09253516793251038
+      }
+    }
+  ],
+  "l2sp": 10.0,
+  "l2spHp": 10.0,
+  "lr": 0.001,
+  "newData": {
+    "innerValidationRows": 4573,
+    "path": "/home/user/work/new.npz",
+    "seeds": "odd",
+    "sha256": "10273f57874ac811a1e9c32ebc07ca344cdbac968176a0ea4e1a89e017183d78",
+    "trainRows": 42030
+  },
+  "numpy": "2.5.3",
+  "oldData": {
+    "path": "/home/user/work/old.npz",
+    "sha256": "e6e33eae9db40e2c9e04a4d028cd26a45efce78eb8c3ab5cd0803c4bfd03de6b",
+    "share": 0.25,
+    "trainRows": 99155
+  },
+  "schema": "ctm_finetune_v1",
+  "seed": 20261023,
+  "selectedEpoch": {
+    "hp": 30,
+    "survival": 25
+  },
+  "threads": 2,
+  "torch": "2.14.1+cu130"
+}

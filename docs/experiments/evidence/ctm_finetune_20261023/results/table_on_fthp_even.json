@@ -1,0 +1,230 @@
+{
+ "schema": "ctm_calibration_v1",
+ "candidateId": "pathb-a20",
+ "groups": {
+  "1:BOSS": {
+   "deathLogitShift": -0.660644,
+   "hpLossScale": 0.987354,
+   "rows": 1967,
+   "deaths": 150
+  },
+  "1:ELITE": {
+   "deathLogitShift": -0.585465,
+   "hpLossScale": 1.05325,
+   "rows": 5034,
+   "deaths": 53
+  },
+  "1:NORMAL": {
+   "deathLogitShift": 0.193659,
+   "hpLossScale": 1.122769,
+   "rows": 12294,
+   "deaths": 23
+  },
+  "1:OTHER": {
+   "deathLogitShift": -0.165383,
+   "hpLossScale": 1.260102,
+   "rows": 247,
+   "deaths": 5
+  },
+  "2:BOSS": {
+   "deathLogitShift": -0.273879,
+   "hpLossScale": 1.007532,
+   "rows": 1576,
+   "deaths": 246
+  },
+  "2:ELITE": {
+   "deathLogitShift": 0.080019,
+   "hpLossScale": 1.040884,
+   "rows": 3627,
+   "deaths": 141
+  },
+  "2:NORMAL": {
+   "deathLogitShift": -0.140656,
+   "hpLossScale": 1.051394,
+   "rows": 9107,
+   "deaths": 88
+  },
+  "2:OTHER": {
+   "deathLogitShift": 0.129261,
+   "hpLossScale": 1.218784,
+   "rows": 434,
+   "deaths": 12
+  },
+  "3:BOSS": {
+   "deathLogitShift": -0.656595,
+   "hpLossScale": 0.761177,
+   "rows": 2190,
+   "deaths": 299
+  },
+  "3:ELITE": {
+   "deathLogitShift": -0.331861,
+   "hpLossScale": 0.796955,
+   "rows": 3085,
+   "deaths": 120
+  },
+  "3:NORMAL": {
+   "deathLogitShift": -0.25208,
+   "hpLossScale": 0.834673,
+   "rows": 6951,
+   "deaths": 45
+  },
+  "3:OTHER": {
+   "deathLogitShift": 0.04567,
+   "hpLossScale": 1.084915,
+   "rows": 697,
+   "deaths": 6
+  },
+  "4:BOSS": {
+   "deathLogitShift": -0.660919,
+   "hpLossScale": 1.491918,
+   "rows": 818,
+   "deaths": 333
+  },
+  "4:ELITE": {
+   "deathLogitShift": -0.524428,
+   "hpLossScale": 1.241394,
+   "rows": 860,
+   "deaths": 42
+  },
+  "1:GREMLIN_NOB": {
+   "deathLogitShift": -0.768113,
+   "hpLossScale": 1.119848,
+   "rows": 1698,
+   "deaths": 19
+  },
+  "1:HEXAGHOST": {
+   "deathLogitShift": -0.666781,
+   "hpLossScale": 1.004795,
+   "rows": 690,
+   "deaths": 83
+  },
+  "1:LAGAVULIN": {
+   "deathLogitShift": -0.663183,
+   "hpLossScale": 1.0386,
+   "rows": 1686,
+   "deaths": 17
+  },
+  "1:SLIME_BOSS": {
+   "deathLogitShift": -0.409021,
+   "hpLossScale": 1.107952,
+   "rows": 637,
+   "deaths": 39
+  },
+  "1:THE_GUARDIAN": {
+   "deathLogitShift": -0.993318,
+   "hpLossScale": 0.90484,
+   "rows": 640,
+   "deaths": 28
+  },
+  "1:THREE_SENTRIES": {
+   "deathLogitShift": -0.38033,
+   "hpLossScale": 1.011959,
+   "rows": 1650,
+   "deaths": 17
+  },
+  "2:AUTOMATON": {
+   "deathLogitShift": -0.163618,
+   "hpLossScale": 1.021385,
+   "rows": 496,
+   "deaths": 79
+  },
+  "2:BOOK_OF_STABBING": {
+   "deathLogitShift": -0.255171,
+   "hpLossScale": 0.905565,
+   "rows": 1169,
+   "deaths": 46
+  },
+  "2:CHAMP": {
+   "deathLogitShift": -0.455692,
+   "hpLossScale": 0.877601,
+   "rows": 543,
+   "deaths": 62
+  },
+  "2:COLLECTOR": {
+   "deathLogitShift": -0.230386,
+   "hpLossScale": 1.129778,
+   "rows": 537,
+   "deaths": 105
+  },
+  "2:GREMLIN_LEADER": {
+   "deathLogitShift": 0.332974,
+   "hpLossScale": 1.117712,
+   "rows": 1266,
+   "deaths": 42
+  },
+  "2:SLAVERS": {
+   "deathLogitShift": 0.222445,
+   "hpLossScale": 1.141024,
+   "rows": 1192,
+   "deaths": 53
+  },
+  "3:AWAKENED_ONE": {
+   "deathLogitShift": 0.485365,
+   "hpLossScale": 1.388217,
+   "rows": 732,
+   "deaths": 158
+  },
+  "3:DONU_AND_DECA": {
+   "deathLogitShift": -1.31735,
+   "hpLossScale": 0.576457,
+   "rows": 714,
+   "deaths": 56
+  },
+  "3:GIANT_HEAD": {
+   "deathLogitShift": -1.214869,
+   "hpLossScale": 0.507337,
+   "rows": 999,
+   "deaths": 33
+  },
+  "3:NEMESIS": {
+   "deathLogitShift": -0.698056,
+   "hpLossScale": 0.794772,
+   "rows": 1000,
+   "deaths": 18
+  },
+  "3:REPTOMANCER": {
+   "deathLogitShift": 0.76977,
+   "hpLossScale": 1.315644,
+   "rows": 1086,
+   "deaths": 69
+  },
+  "3:TIME_EATER": {
+   "deathLogitShift": -1.491608,
+   "hpLossScale": 0.632857,
+   "rows": 744,
+   "deaths": 85
+  },
+  "4:SHIELD_AND_SPEAR": {
+   "deathLogitShift": -0.55248,
+   "hpLossScale": 1.241394,
+   "rows": 860,
+   "deaths": 42
+  },
+  "4:THE_HEART": {
+   "deathLogitShift": -0.672227,
+   "hpLossScale": 1.491918,
+   "rows": 818,
+   "deaths": 333
+  }
+ },
+ "provenance": {
+  "tool": "tools/ctm_calibration.py",
+  "note": null,
+  "seeds": "even",
+  "rows": 48887,
+  "inputs": {
+   "b838-even-hp-off/A.csv": "67b88021e92961c8b473d3ecd122249ca1b76eab67252f8798bb2a985e186017",
+   "b838-even-hp-zero/A.csv": "efb458d8f7ad244df9d5b512e3794990fb1ca7645c10619065eeeb982959d068",
+   "b838-even-hp-off/M.csv": "12256eabf260b1442337e4abaef6f04a57dbd794f04366d623dda682c49bb4b5",
+   "b838-even-hp-zero/M.csv": "e2579f5aeb02f7b53ce784cc90e60d8dbcf523ef78e139d03ee727437cd07095",
+   "b838-even-hp-off/S.csv": "f58433ce482d8f92194f64f138b548a4ed6cca1540b1d9ed3c58e4eae57d1c4f",
+   "b838-even-hp-zero/S.csv": "54e761dd43d8b698415c29ad5cd4f7a8fe21bcc8977899a0f74542e1f5bf4ccf",
+   "b838-even-hp-off/MS.csv": "e43607538e69770aa68f1c4b6d56056411f1deff1d8db39904989d19844cebc8",
+   "b838-even-hp-zero/MS.csv": "cbd4a395de4b67a606b0dafacd6ba8a1ced8864931b7633dd660f70d33528737"
+  },
+  "lambda": 2.0,
+  "lambdaFine": 2.0,
+  "minFineRows": 400,
+  "minCoarseRows": 100
+ }
+}
