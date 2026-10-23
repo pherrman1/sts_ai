@@ -12,6 +12,8 @@
 // one sampled outcome of that action.
 // Each action row's meta carries "tgt", the targeted monster slot
 // (combatActionTargetSlot, -1 when none), for the MLP prior's target gather.
+// Each root's state row carries "winNow", SilverSearcher::winNowValue of the
+// root (Silver's victory score if the fight ended there, referenced to it).
 // Rows are sparse: OUT.nnz (uint32 per row), OUT.idx (uint16 per value),
 // OUT.val (float32 per value) and one OUT.meta.jsonl line per row.
 //
@@ -127,10 +129,11 @@ void featurizeRoot(const nlohmann::json &row, SparseRows &out, std::map<std::str
     const bool hasSecond = row.contains("second");
     const bool hasCont = row.contains("continuations");
     auto m = id;
+    BattleContext winNowState = state.bc;
     m.update({{"k", "state"}, {"act", row.at("act")}, {"floor", row.at("floor")}, {"room", row.at("room")},
               {"encounter", row.at("encounter")}, {"turn", row.at("turn")}, {"hp", row.at("hp")},
               {"inheritedVisits", row.at("inheritedVisits")}, {"edges", bits.size()},
-              {"second", hasSecond}, {"cont", hasCont}});
+              {"second", hasSecond}, {"cont", hasCont}, {"winNow", scorer.winNowValue(winNowState)}});
     out.writeState(state.bc, m);
     const auto &edges = scorer.rootNode().edges;
     for (std::size_t e = 0; e < edges.size(); ++e) {

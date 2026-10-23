@@ -8,7 +8,8 @@ end evaluation, referenced to the fight's first searched root). Per root it also
 fight, act, floor, room, encounter, turn, the turn-start flag (the first root of its turn in its fight), decision
 index, edge count, the most visited edge's Q, the visit-weighted mean Q, HP, variant and seed (fold = seed % 5), and
 refchg: the root's gold or max HP differs from the fight's first searched root (Looter/Mugger steal, Feed), where
-the label's gold and max-HP terms no longer match the tree's own reference at that root.
+the label's gold and max-HP terms no longer match the tree's own reference at that root; and winnow, the root's
+win-now value (SilverSearcher::winNowValue, extractors from 2026-10-23 on; NaN from older ones).
 Roots whose fight has no fight row or a null score are dropped and counted. Extractor files are deleted per unit.
 
 usage: pack_a20.py ONE_COMBAT REPO DEST OUT.npz [WORK_DIR] [JOBS]
@@ -115,7 +116,8 @@ def one(gz):
                      ("turn", m["turn"]), ("tstart", int(start)), ("decision", m["decision"]),
                      ("nedge", len(v)), ("qchosen", q[best]),
                      ("qmean", sum(a * b for a, b in zip(q, v)) / vs if vs else np.nan),
-                     ("hp", m["hp"]), ("refchg", refchg), ("enc", m["encounter"])):
+                     ("hp", m["hp"]), ("refchg", refchg), ("enc", m["encounter"]),
+                     ("winnow", m.get("winNow", float("nan")))):
             cols[k].append(x)
     nn = np.array([len(a) for a in st_idx], np.int64)
     return (tag, summary, dropped, np.concatenate(st_idx) if st_idx else np.zeros(0, np.uint16),
@@ -123,7 +125,7 @@ def one(gz):
 
 
 COLS = ["seed", "fight", "var", "z", "won", "endhp", "fturns", "act", "floor", "room", "turn", "tstart", "decision",
-        "nedge", "qchosen", "qmean", "hp", "refchg", "enc"]
+        "nedge", "qchosen", "qmean", "hp", "refchg", "enc", "winnow"]
 ROOT_KEYS = {k: re.compile(rb'"%s":"?(\w+)' % k.encode()) for k in ("variant", "seed", "fight", "decision", "maxHp", "gold")}
 
 if __name__ == "__main__":
@@ -150,7 +152,7 @@ if __name__ == "__main__":
     for k in COLS:
         if k == "enc":
             out["r_enc"] = np.array([encs.index(e) for e in all_cols[k]], np.int16)
-        elif k in ("z", "qchosen", "qmean"):
+        elif k in ("z", "qchosen", "qmean", "winnow"):
             out["r_" + k] = np.array(all_cols[k], np.float32)
         else:
             out["r_" + k] = np.array(all_cols[k], np.int64)

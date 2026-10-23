@@ -3503,8 +3503,10 @@ int main(int argc, char **argv) {
                     if (!leaf || leaf->mode == "none" || inLeafPlayout) return false;   // the playout (also the blend's own)
                     if (!leaf->head.empty()) {
                         ++leafCalls;
-                        double v = headValue(state, leafHeads.at(leaf->head));
-                        if (leaf->winCap) v = std::min(v, searcher.winNowValue(state));
+                        const LeafHead &h = leafHeads.at(leaf->head);
+                        double v = headValue(state, h);
+                        if (h.shortfall) v = searcher.winNowValue(state) - std::max(0.0, v);
+                        else if (leaf->winCap) v = std::min(v, searcher.winNowValue(state));
                         v -= leaf->turnPenalty * std::max(0, state.turn - searcher.rootSearchState().turn);
                         if (leafDump.is_open() && leafDumped < 300) {
                             json d = {{"head", leaf->head}, {"value", v}, {"turn", state.turn},

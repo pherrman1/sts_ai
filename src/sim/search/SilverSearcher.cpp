@@ -780,7 +780,8 @@ double search::SilverSearcher::rolloutToEnd(BattleContext &bc, int treeDepth) {
         double headValue = 0;
         if (head) {
             headValue = leafHead.head->value(bc, *leafHead.trunk, leafHeadFeat, leafHeadBase);
-            if (leafHead.winCap) headValue = std::min(headValue, winNowValue(bc));
+            if (leafHead.head->shortfall) headValue = winNowValue(bc) - std::max(0.0, headValue);
+            else if (leafHead.winCap) headValue = std::min(headValue, winNowValue(bc));
             headValue -= leafHead.turnPenalty * std::max(0, bc.turn - rootSearchState().turn);
         }
         if (head && leafHead.blend >= 1) {

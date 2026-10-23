@@ -36,6 +36,12 @@ search::SilverValueHead search::SilverValueHead::load(const std::string &path) {
     h.b2 = one[0];
     f >> tok >> h.scale >> tok >> h.offset;
     if (!f) throw std::runtime_error(path + ": truncated");
+    if (f >> tok) {
+        std::string target;
+        if (tok != "target" || !(f >> target) || target != "shortfall" || (f >> tok))
+            throw std::runtime_error(path + ": unexpected data after the offset");
+        h.shortfall = true;
+    }
     return h;
 }
 

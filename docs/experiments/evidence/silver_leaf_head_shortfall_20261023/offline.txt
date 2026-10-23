@@ -1,0 +1,26 @@
+left out: refchg 30426, no win-now 0
+  epoch 0 stop-fold shortfall RMSE 20.410 points (24s)
+  epoch 1 stop-fold shortfall RMSE 20.337 points (24s)
+  epoch 2 stop-fold shortfall RMSE 20.415 points (25s)
+  epoch 3 stop-fold shortfall RMSE 20.368 points (25s)
+  epoch 4 stop-fold shortfall RMSE 20.384 points (26s)
+  epoch 5 stop-fold shortfall RMSE 20.610 points (26s)
+  epoch 6 stop-fold shortfall RMSE 20.421 points (27s)
+fold 4 (test), Silver points; bias = prediction - actual; shortfall value = winnow - 100 max(0, d)
+group          roots  actual   >win  sfRMSE  sfBias  plRMSE  plBias capRMSE capBias pl>win
+all           142746   120.1  0.122   19.15   -0.69   25.00   -0.76   23.19   -4.79  0.342
+act 1          43091   111.8  0.033   14.14   -0.79   16.97    0.01   16.33   -1.47  0.260
+act 2          41979   116.0  0.115   17.73   -1.33   22.41   -0.63   20.77   -4.06  0.325
+act 3          49729   130.7  0.206   19.38    0.20   28.26   -0.18   25.45   -6.67  0.437
+act 4           7947   120.0  0.119   38.59   -2.39   44.83   -9.31   43.41  -14.88  0.281
+MONSTER        59060   125.5  0.150   10.31   -1.31   17.37    0.97   14.80   -3.64  0.445
+ELITE          42488   114.9  0.110   17.17    0.47   22.36    1.07   20.52   -2.52  0.291
+BOSS           37576   117.2  0.086   29.56   -0.97   35.92   -5.72   34.50   -9.16  0.230
+EVENT           3622   121.5  0.190   13.88   -1.35   21.39    0.84   18.46   -4.85  0.410
+turn 0         34554   120.0  0.094   20.43    1.13   24.11   -0.21   23.02   -2.25  0.227
+turn 1         29111   121.7  0.118   18.11    0.05   23.46   -0.76   22.06   -3.70  0.309
+turn 2         24933   120.7  0.147   17.83   -1.30   23.68   -1.00   22.09   -5.04  0.371
+turn 3         18344   120.2  0.160   17.94   -1.65   24.12   -1.02   22.23   -5.98  0.413
+turn 4         13092   119.8  0.141   18.47   -2.72   25.64   -1.69   23.57   -7.29  0.414
+turn 5          8678   118.2  0.108   21.75   -1.33   27.97   -0.31   24.98   -6.71  0.435
+turn 6+        14034   117.3  0.100   20.60   -2.09   30.50   -0.79   27.19   -7.74  0.425

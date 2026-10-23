@@ -1,7 +1,9 @@
 //
 // A value head on the frozen trunk of a combat_policy_mlp prior (silver_value_head_v1 text format, written by the
 // leaf-value research tools): Silver points = scale * (w2 . relu(W1 ((relu(trunk base) - mu) * invSd) + b1) + b2)
-// + offset. Silver's STS_SILVER_LEAF_HEAD and exact_combat_solver --leaf-heads read it.
+// + offset. Silver's STS_SILVER_LEAF_HEAD and exact_combat_solver --leaf-heads read it. A file that ends in
+// "target shortfall" holds a shortfall head: it predicts how far below the state's win-now value
+// (SilverSearcher::winNowValue) the fight ends, and the state is worth win-now - max(0, prediction).
 //
 #ifndef STS_LIGHTSPEED_SILVERVALUEHEAD_H
 #define STS_LIGHTSPEED_SILVERVALUEHEAD_H
@@ -25,6 +27,7 @@ namespace sts::search {
         std::vector<float> mu, invSd, w1t, b1, w2;
         float b2 = 0;
         double scale = 1, offset = 0;
+        bool shortfall = false;   // value() is the shortfall below win-now, not the state's value
 
         static SilverValueHead load(const std::string &path);
         // The head on a trunk embedding (relu(trunk base), `in` values).

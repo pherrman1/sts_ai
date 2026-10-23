@@ -5681,8 +5681,8 @@ void ctmSilverWriteSample(std::ostream &out, const std::string &stateId, const s
 }
 
 // leafhead armset diagnostics (STS_CTMSILVER_LEAFHEAD_TRACE): one replayed root as a JSON line, with the root's
-// edges (visits, Q) and the armset head's value (uncapped) and the win-now value of the root and of every decision
-// child, whichever arm searched.
+// edges (visits, Q) and the armset head's value (uncapped; a shortfall head's as win-now - max(0, shortfall)) and
+// the win-now value of the root and of every decision child, whichever arm searched.
 void ctmLeafHeadTraceRow(std::ostream &out, const std::string &stateId, const std::string &arm, int k,
                          const search::NativeSilverRootView &view, const search::SilverValueHead &head,
                          const search::CombatValueNet &trunk) {
@@ -5705,11 +5705,15 @@ void ctmLeafHeadTraceRow(std::ostream &out, const std::string &stateId, const st
         BattleContext copy = state;
         return view.searcher.winNowValue(copy);
     };
+    const auto headOf = [&](const BattleContext &state) {
+        const double v = head.value(state, trunk, feat, base);
+        return head.shortfall ? winNow(state) - std::max(0.0, v) : v;
+    };
     for (const auto &e : view.searcher.rootNode().edges) {
         nlohmann::json row = {{"action", semantic(root, e.action)}, {"visits", e.visitCount}};
         if (e.node && e.node->simulationCount > 0) row["q"] = e.node->evaluationSum / e.node->simulationCount;
         if (e.node && !e.node->isRandomNode && e.node->state) {
-            row["head"] = head.value(*e.node->state, trunk, feat, base);
+            row["head"] = headOf(*e.node->state);
             if (e.node->state->outcome == Outcome::UNDECIDED) row["winNow"] = winNow(*e.node->state);
         }
         edges.push_back(std::move(row));
@@ -5719,7 +5723,7 @@ void ctmLeafHeadTraceRow(std::ostream &out, const std::string &stateId, const st
                           {"block", root.player.block}, {"energy", root.player.energy},
                           {"potions", root.potionCount}, {"monsters", monsters}, {"simulations", view.simulations},
                           {"skipped", view.skipped}, {"chosen", semantic(view.live, view.chosen)},
-                          {"headRoot", head.value(root, trunk, feat, base)}, {"winNowRoot", winNow(root)},
+                          {"headRoot", headOf(root)}, {"winNowRoot", winNow(root)},
                           {"edges", edges}}.dump() << '\n';
 }
 } // namespace

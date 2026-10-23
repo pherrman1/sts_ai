@@ -269,7 +269,8 @@ namespace sts::search {
         // blend * (head - turnPenalty * turns beyond the root) + (1 - blend) * its playout. The turn
         // penalty keeps a head that runs high on unfinished fights from preferring a stall to a win.
         // winCap first lowers the head to the leaf's winNowValue: off the states it was trained on a
-        // head can value a fight above any ending it has left (and search then avoids ending it).
+        // head can value a fight above any ending it has left (and search then avoids ending it). A
+        // shortfall head (SilverValueHead::shortfall) is worth winNowValue - max(0, head) instead.
         struct LeafHead {
             const SilverValueHead *head = nullptr;
             const CombatValueNet *trunk = nullptr;
