@@ -24145,3 +24145,25 @@ The importer test gains the burning-elite combat-start row for an ordinary and a
 Play-changing only where the advisor used to refuse.
 Seeds: none new (live seed 111200666 as reported).
 **Knowledge impact:** `operations/environment-variables.md`.
+
+## §TBD — Map-mirror audit: student_sel is not invariant under a horizontal map reflection (17% of map decisions flip, 37% at act start; teacher agreement 91.8% -> 80.8%); value head nearly invariant (offline, 2026-10-23)
+
+**Question:** Philipp (2026-10-23 23:20Z): is the A20 OOC prior invariant under x -> 6 - x, an exact game symmetry?
+**Setup:** [packet](evidence/map_mirror_20261023/README.md). Source audit of the engine (x is read only for edge
+membership, node identity and the visible burning elite; floor-14 boss move is action idx 0; next maps come from the
+seed), vanilla Java not re-read (JAR only on the PC). Exact mirror of student_sel's held-out rows (seed % 8 == 7, 16
+files, 267,871 rows, 36,013 map rows with >= 2 paths): xs, burning elite, current node, offered paths and the
+[left, straight, right] edge triples mirrored, tokens re-sorted; involution and self-symmetric rows checked. Native
+`heart1score` (binary `b855ee27`) on original and mirror with student_sel `cf6bf7fb` and gen 2 `fc32d8f4`.
+**Result:** student_sel map rows: top-1 flip 16.9% (act 1/2/3 11.1/17.3/24.8%, act start 36.8%, mid act 12.4%), mean
+KL 0.21, mean JS 0.040 (p99 0.46); agreement with heart1's choice 91.8% -> 80.8% (act start 91.1% -> 61.5%).
+Non-map screens 0.25% flips. gen 2 the same (16.1%, 90.7% -> 80.7%). gen 2 value: mean |dP(win)| 0.008 (p99 0.040)
+vs between-state sd 0.158; student_sel's value head is untrained. At act start the student picks partly by column
+(left-leaning, like the teacher: col 0 chosen 26% of offers, col 6 6%). Generated maps are themselves asymmetric
+(edge slots L/S/R 113,722 / 187,277 / 120,361).
+**Interpretation:** a material violation of an exact symmetry in the path policy; the value head is close to
+invariant. Whether the teacher's left preference is real map structure or a heart1 bias is open. Effect on play not
+measured. Candidate next step (not started): retrain student_sel's recipe with 50% random mirroring and compare on the
+unchanged validation set.
+Seeds: none (offline).
+**Knowledge impact:** none (diagnostic; no default changed).
