@@ -24100,7 +24100,7 @@ Philipp's typed go and the worker count.
   111392000–111394047 assigned, unused.
 - **Knowledge impact:** `evaluation/current-research.md`, `operations/environment-variables.md`.
 
-## §TBD — Live advisor: a burning elite under Runic Dome was refused at turn 1 (2026-10-23)
+## §673 — Live advisor: a burning elite under Runic Dome was refused at turn 1 (2026-10-23)
 
 **Question:** why did canary seed 111200666 (A2 floor 24, the burning Slavers elite, Runic Dome; problem 112) give up
 with `silver_runic_dome_history_gap` at turn 1, although `runicDomeKnowledge.complete` was true?
