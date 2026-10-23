@@ -22455,7 +22455,7 @@ Seeds: none new (live seeds 111200473 and 111200504).
 
 **Status:** Draft PR.
 
-## §TBD — Live problem 105: Champion Belt's queued Weak behind Gambling Chip's choice abandoned the run (2026-10-23)
+## §659 — Live problem 105: Champion Belt's queued Weak behind Gambling Chip's choice abandoned the run (2026-10-23)
 
 **Question:** Why was seed 111200643 (main 133d246a) abandoned in act 3, floor 40 (burning elite Giant Head, turn 1)?
 
