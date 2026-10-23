@@ -22512,6 +22512,16 @@ Seeds: none new (live seeds 111200473 and 111200504).
 
 **Status:** Draft PR.
 
+## §TBD — Live problem 111: Discovery advances cardRandomRng every frame (known, not modelled) (2026-10-23)
+
+**Question:** Why does the game's `cardRandomRng` counter jump after every in-combat Discovery pick (seed 111200663 F6: Duplication Potion + Discovery, second choice set Corruption/Shockwave/Feel No Pain vs native Body Slam/Iron Wave/Cleave; counter 3 -> 93 in the game, 3 -> 6 natively)?
+
+**Evidence (canary, javap; PC `issue111/j111b.txt` sha256 88adef5e…, `j111b_timing.txt`):** `DiscoveryAction.update` calls `generateColorlessCardChoices()` / `generateCardChoices(cardType)` at offsets 0-23 on EVERY `update()`, before the `duration == ACTION_DUR_FAST` first-frame check; only the first-frame list goes to `customCombatOpen`. Each later frame the action is updated draws and discards a fresh set (at least 3 draws plus duplicate-ID rerolls). Deltas seen: about 90 early in a run down to about 12 late (seeds 646, 656, 657, 663). They correlate negatively with wall-clock time per pick (-0.59 open-to-pick over 57 picks), so they are frame-count driven. `ChooseOneColorless` (Toolbox) generates only in the first-frame branch, so its delta is 0. Discovery and the Colorless, Attack, Skill and Power Potions all use `DiscoveryAction` and are affected. A full scan of all 2306 classes found no other per-frame `cardRandomRng` consumer; the mods only read it (`DebugRngCapture`).
+
+**Decision (Philipp, 2026-10-23):** Known and not modelled. The extra draw count depends on the frame count and cannot be predicted natively. Native's draw from the imported counter is an equally valid random sample for planning, and the next live step re-imports the counter. The parity canary classifies cardRandomRng mismatches after a DiscoveryAction pick, and card sets that depend on them in the same decision chain, as background rows. No engine change.
+
+**Status:** Recorded.
+
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with
