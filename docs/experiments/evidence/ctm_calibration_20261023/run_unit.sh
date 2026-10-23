@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# usage: run_unit.sh REPO RUN UNIT_OUT SEED -- one seed of the CTM-calibration A/B, both arms in sequence (order rotated
-# by seed % 2); always exits 0 (per-arm rc in the .done lines). PREREG.md has the full config and provenance.
-#   A   today's A20 search stack (the stage-3 A/B's config with the M0 leaf, now the default).
-#   C   A plus the per-fight CTM calibration: STS_CTM_CALIBRATION=models/candidates/ctm_calibration_pathb_a20_v1.json.
-#       Nothing else differs. 7 h timeout per arm (rc 124).
+# usage: run_unit.sh REPO RUN UNIT_OUT SEED -- one seed of the CTM-calibration guard, both arms in sequence (order
+# rotated by seed % 2); always exits 0 (per-arm rc in the .done lines). PREREG.md has the full config and provenance.
+#   A   today's A20 search stack (the stage-3 A/B's config with the M0 leaf, the default) with the raw CTM:
+#       STS_CTM_CALIBRATION=0.
+#   C   the same with STS_CTM_CALIBRATION unset: the default per-fight CTM calibration (ADR-TBD), the bundled table
+#       models/candidates/ctm_calibration_pathb_a20_v1.json. Nothing else differs. 7 h timeout per arm (rc 124).
 # Both arms: OOC MCTS 4096 sims, learned OOC stop 0.99, 25% full-budget roots with fast roots capped at 1024 sims,
 # real-combat CTM rows; real combats with the learned Silver stop (STS_SILVER_LEARNED_STOP=1 +
 # STS_SILVER_EXACT_ROOT_BUDGETS=1), g7f_E rollout root table + root/tree prior, boss-only prior playouts, flexible
@@ -43,7 +44,7 @@ cd "$REPO" || exit 2
 for i in 0 1; do
   arm=${ARMS[$(( (i + SEED) % 2 ))]}
   E=("${COMMON[@]}")
-  [ "$arm" = C ] && E+=("STS_CTM_CALIBRATION=$TABLE")
+  [ "$arm" = A ] && E+=("STS_CTM_CALIBRATION=0")
   b=$OUT/$arm-$SEED; printf '%s\n' "${E[@]}" | grep '^STS_' > "$b.env"
   start=$(date -u +%FT%TZ); t0=$(date +%s)
   env -i "${E[@]}" timeout 7h bash tools/seed_guard.sh "$RUN/one_combat" heartoutcomegen 1 "$SEED" "$b.jsonl" policy > "$b.log" 2> "$b.err"
@@ -55,9 +56,10 @@ for i in 0 1; do
     grep -q "fast_root_cap=1024" "$b.log" "$b.err" || rc=94
     # M0 is the default leaf in both arms (ADR-0057).
     grep -q "leaf_calibration=-2.5384.*leaf_calibration_min_ascension=20" "$b.log" "$b.err" || rc=93
-    # The banner must show exactly this arm's CTM: rc 92 for the calibration table.
+    # The banner must show exactly this arm's CTM: rc 92 for the calibration table (found next to the executable or
+    # under the working directory).
     case $arm in
-      C) grep -qF "[ctm-calibration] table=$TABLE sha256=$TABLE_SHA " "$b.log" "$b.err" || rc=92;;
+      C) grep -qE "\[ctm-calibration\] table=(.*/)?$TABLE sha256=$TABLE_SHA " "$b.log" "$b.err" || rc=92;;
       *) ! grep -q "ctm-calibration\]" "$b.log" "$b.err" || rc=92;;
     esac
   fi

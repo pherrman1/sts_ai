@@ -1,4 +1,4 @@
-# CTM-calibration A/B: cloud worker brief
+# CTM-calibration guard: cloud worker brief
 
 YOUR WORKER NUMBER: W=<n>   (pass it unpadded; never 03)
 RUN_COMMIT=__RUN_COMMIT__  CAMPAIGN=docs/experiments/evidence/ctm_calibration_20261023
@@ -21,5 +21,5 @@ If any step is refused or prints STOP, reply with the exact output and stop. Do 
 Never kill a unit or one_combat process. A unit that times out ends with rc=124, and the run continues.
 If the container restarts, run steps 1-3 again (finished units are skipped).
 Keep the session alive until you are told the tar is verified.
-Expect about 26 min per unit (two 4096-sim search runs, about 13 min each), 4 units at a time: about 2 h wall per
-worker for stage 1 (512 seeds on 32 workers), plus a straggler tail.
+Expect about 26 min per unit (two 4096-sim search runs, about 13 min each), 4 units at a time: about 7 h wall per
+worker (512 seeds on 8 workers), plus a straggler tail. Re-arm the wait task as often as it takes.
