@@ -8,6 +8,7 @@
 #include <stdexcept>
 #include <nlohmann/json.hpp>
 #include "combat/BattleContextBinary.h"
+#include "game/RelicContainer.h"
 #include "sim/search/CombatKnowledge.h"
 #include "sim/search/SearchStateHash.h"
 #include "sim/search/SilverWireJson.h"
@@ -30,8 +31,31 @@ struct ObserverScope {
     ~ObserverScope() { g_combatKnowledgeObserver = observer; g_debug_bc = debug; }
 };
 
-bool quiet(const BattleContext &b) {
-    return b.outcome == Outcome::UNDECIDED && b.inputState == InputState::PLAYER_NORMAL
+template<class F> void eachCard(const BattleContext &b, F f) {
+    for (int i=0; i<b.cards.cardsInHand; ++i) f(b.cards.hand[i]);
+    for (const auto &c:b.cards.drawPile) f(c);
+    for (const auto &c:b.cards.discardPile) f(c);
+    for (const auto &c:b.cards.exhaustPile) f(c);
+    for (const auto &c:b.cards.stasisCards) f(c);
+}
+
+// Counter normalization is qualified only for the Ironclad card domain.
+// Also reject foreign colored cards imported without their acquisition relic.
+bool auditedDomain(const BattleContext &b) {
+    if (b.player.cc != CharacterClass::IRONCLAD) return false;
+    bool supported=true;
+    eachCard(b,[&](const CardInstance &c) {
+        if (c.id==CardId::INVALID) return;
+        const auto color=getCardColor(c.id);
+        supported &= color==CardColor::RED || color==CardColor::COLORLESS || color==CardColor::CURSE;
+    });
+    return supported;
+}
+
+// BattleContext omits RelicContainer's third bitset, including Prismatic
+// Shard. Its absence must be proven by the caller, never guessed from Player.
+bool quiet(const BattleContext &b, bool noPrismaticShard) {
+    return noPrismaticShard && auditedDomain(b) && b.outcome == Outcome::UNDECIDED && b.inputState == InputState::PLAYER_NORMAL
         && !b.endTurnQueued && !b.turnHasEnded && !b.skipMonsterTurn
         && !b.actionQueue.size && !b.cardQueue.size && !b.intentsHidden
         && b.cards.drawPile.isConcrete() && !b.undefinedBehaviorEvoked
@@ -39,14 +63,6 @@ bool quiet(const BattleContext &b) {
         && b.player.cardsPlayedThisTurn >= 0 && b.player.cardsPlayedThisTurn < 20000
         && b.player.attacksPlayedThisTurn >= 0 && b.player.attacksPlayedThisTurn < 20000
         && b.player.skillsPlayedThisTurn >= 0 && b.player.skillsPlayedThisTurn < 20000;
-}
-
-template<class F> void eachCard(const BattleContext &b, F f) {
-    for (int i=0; i<b.cards.cardsInHand; ++i) f(b.cards.hand[i]);
-    for (const auto &c:b.cards.drawPile) f(c);
-    for (const auto &c:b.cards.discardPile) f(c);
-    for (const auto &c:b.cards.exhaustPile) f(c);
-    for (const auto &c:b.cards.stasisCards) f(c);
 }
 
 // The only RNG quotient in v0: two physical Dropkick/Flash of Steel cards,
@@ -97,9 +113,9 @@ BattleContext controlState(BattleContext b) {
 // No Silver policy/prior/model initialization or pruning: enumerate legal
 // physical card plays directly, through the existing Action legality API.
 // Selections and potions are outside this first quiet-boundary oracle.
-std::vector<SAction> actions(const BattleContext &b) {
+std::vector<SAction> actions(const BattleContext &b, bool noPrismaticShard) {
     std::vector<SAction> out;
-    if (!quiet(b)) return out;
+    if (!quiet(b,noPrismaticShard)) return out;
     for (int i=0;i<b.cards.cardsInHand;++i) {
         const int targets=b.cards.hand[i].requiresTarget()?b.monsters.monsterCount:1;
         for(int t=0;t<targets;++t) {
@@ -118,7 +134,7 @@ json describe(const BattleContext &b,const SAction &a) {
 
 struct Oracle {
     int nodes=0,maxDepth=0,repeats=0,replayActions=0,rejections=0;
-    bool stopped=false;
+    bool stopped=false, noPrismaticShard=false;
     json candidates=json::array(), best={{"classification","NONE"}};
     std::vector<std::unique_ptr<BattleContext>> path, controls;
     std::vector<std::size_t> hashes;
@@ -132,7 +148,7 @@ struct Oracle {
             for(const auto &step:w) {
                 if(used>=replayCap || replayActions>=totalReplayCap)
                     return {{"reason","action_cap"},{"repetitions",rep-1},{"actions",used}};
-                if(!quiet(*run) || run->turn!=start.turn)
+                if(!quiet(*run,noPrismaticShard) || run->turn!=start.turn)
                     return {{"reason","control_boundary_changed"},{"repetitions",rep-1},{"actions",used}};
                 const SAction a(step.at("bits").get<std::uint32_t>());
                 if(!a.isValidAction(*run) || describe(*run,a).at("semantic")!=step.at("semantic"))
@@ -143,7 +159,7 @@ struct Oracle {
                 if(run->outcome==Outcome::PLAYER_VICTORY && !run->smokeBombUsed && run->turn==start.turn)
                     return {{"reason","VICTORY"},{"repetitions",rep},{"actions",used}};
             }
-            if(!quiet(*run) || run->turn!=start.turn || !(controlState(*run)==*expected))
+            if(!quiet(*run,noPrismaticShard) || run->turn!=start.turn || !(controlState(*run)==*expected))
                 return {{"reason","control_state_changed"},{"repetitions",rep},{"actions",used}};
         }
         return {{"reason","repetition_cap"},{"repetitions",repetitionCap},{"actions",used}};
@@ -161,7 +177,7 @@ struct Oracle {
             total+=d; deltas.push_back(d);
         }
         json reach=json::array(); for(int i=0;i<at;++i) reach.push_back(steps[i]);
-        json row={{"classification",damage?"PRODUCTIVE_LOOP":"STALL_LOOP"},
+        json row={{"classification",damage?"PRODUCTIVE_CYCLE_CANDIDATE":"STALL_LOOP"},
             {"reach_depth",at},{"cycle_length",witness.size()}, {"reach_actions",reach},
             {"cycle_actions",witness},{"enemy_hp_deltas",deltas},{"enemy_hp_delta_per_cycle",total},
             {"player_hp_delta_per_cycle",end.player.curHp-start.player.curHp},
@@ -179,7 +195,7 @@ struct Oracle {
         }
         auto rank=[](const json &r) {
             auto c=r.at("classification").get<std::string>();
-            return c=="CERTIFIED_KILL"?3:c=="PRODUCTIVE_LOOP"?2:c=="STALL_LOOP"?1:0;
+            return c=="CERTIFIED_KILL"?3:c=="PRODUCTIVE_CYCLE_CANDIDATE"?2:c=="STALL_LOOP"?1:0;
         };
         if(rank(row)>rank(best)) best=row;
         candidates.push_back(row);
@@ -190,7 +206,7 @@ struct Oracle {
         if(stopped || nodes>=nodeCap) return;
         ++nodes;
         const int depth=steps.size(); maxDepth=std::max(maxDepth,depth);
-        if(!quiet(*b) || (!path.empty() && b->turn!=path.front()->turn)) return;
+        if(!quiet(*b,noPrismaticShard) || (!path.empty() && b->turn!=path.front()->turn)) return;
         auto control=std::make_unique<BattleContext>(controlState(*b));
         auto hash=hashBattleState(*control);
         for(int i=static_cast<int>(controls.size())-1;i>=0;--i)
@@ -198,7 +214,7 @@ struct Oracle {
                 candidate(i,*b); return; // never expand a repeated state
             }
         if(depth>=depthCap) return;
-        auto legal=actions(*b);
+        auto legal=actions(*b,noPrismaticShard);
         path.push_back(std::move(b)); controls.push_back(std::move(control)); hashes.push_back(hash);
         for(const auto &a:legal) {
             if(stopped || nodes>=nodeCap) break;
@@ -211,12 +227,14 @@ struct Oracle {
         hashes.pop_back(); controls.pop_back(); path.pop_back();
     }
 
-    json run(const BattleContext &root) {
+    json run(const BattleContext &root, bool shardAbsenceProven) {
+        noPrismaticShard=shardAbsenceProven;
         ObserverScope scope;
         const auto begin=std::clock();
-        if(quiet(root)) visit(std::make_unique<BattleContext>(root));
-        best["supported"]=quiet(root);
-        best["reason"]=quiet(root)?"bounded_search":"requires_concrete_quiet_player_root";
+        if(quiet(root,noPrismaticShard)) visit(std::make_unique<BattleContext>(root));
+        best["supported"]=quiet(root,noPrismaticShard);
+        best["prismatic_shard_absence_proven"]=noPrismaticShard;
+        best["reason"]=quiet(root,noPrismaticShard)?"bounded_search":"requires_audited_ironclad_concrete_quiet_player_root";
         best["nodes"]=nodes; best["max_depth"]=maxDepth;
         best["node_cap_hit"]=nodes>=nodeCap; best["depth_cap_hit"]=maxDepth>=depthCap; best["repeated_control_states"]=repeats;
         best["replay_actions"]=replayActions; best["replay_rejections"]=rejections;
@@ -250,7 +268,7 @@ BattleContext fixture(CardId card=CardId::DROPKICK) {
 void require(bool ok,const std::string &why) { if(!ok) throw std::runtime_error(why); }
 
 json summary(const std::vector<json> &rows) {
-    json r={{"states",rows.size()},{"supported_states",0},{"NONE",0},{"repeated_states",0},{"STALL_LOOP",0},{"PRODUCTIVE_LOOP",0},
+    json r={{"states",rows.size()},{"supported_states",0},{"NONE",0},{"repeated_states",0},{"STALL_LOOP",0},{"PRODUCTIVE_CYCLE_CANDIDATE",0},
         {"CERTIFIED_KILL",0},{"productive_candidates",0},{"replay_rejections",0},
         {"max_nodes",0},{"max_cpu_ms",0.0},{"max_depth",0}};
     double nodes=0,cpu=0;
@@ -274,9 +292,9 @@ json summary(const std::vector<json> &rows) {
 
 void fixtures() {
     std::vector<json> rows;
-    auto check=[&](const std::string &name,const BattleContext &b,const std::string &expected) {
+    auto check=[&](const std::string &name,const BattleContext &b,const std::string &expected, bool noShard=true) {
         const BattleContext before=b;
-        auto row=Oracle{}.run(b); row["fixture"]=name;
+        auto row=Oracle{}.run(b,noShard); row["fixture"]=name;
         std::cout<<row.dump()<<'\n'; rows.push_back(row);
         require(row.at("classification")==expected,name+": unexpected classification");
         require(b==before,name+": root mutated");
@@ -292,13 +310,13 @@ void fixtures() {
     stall.monsters.arr[0].setStatus<MS::INVINCIBLE>(0);
     check("flash_invincible_stall_544_class",stall,"STALL_LOOP");
     auto phase=positive; phase.monsters.arr[0].id=MonsterId::AWAKENED_ONE;
-    auto rejected=check("awakened_one_phase1",phase,"PRODUCTIVE_LOOP");
+    auto rejected=check("awakened_one_phase1",phase,"PRODUCTIVE_CYCLE_CANDIDATE");
     require(rejected.at("replay").at("reason")=="witness_illegal_or_identity_changed","phase must interrupt replay");
     auto time=positive; time.monsters.arr[0].buff<MS::TIME_WARP>(1);
     check("time_warp",time,"NONE");
     // A valid candidate whose lethal replay is beyond the conservative cap.
     auto capped=positive; capped.monsters.arr[0].curHp=100000; capped.monsters.arr[0].maxHp=100000;
-    auto cap=check("repetition_cap",capped,"PRODUCTIVE_LOOP");
+    auto cap=check("repetition_cap",capped,"PRODUCTIVE_CYCLE_CANDIDATE");
     require(cap.at("replay").at("reason")=="repetition_cap","cap cannot certify");
     // Exercise both hard search bounds without a seed cohort. A third card
     // disables the audited singleton-shuffle quotient; RNG stays exact.
@@ -316,6 +334,21 @@ void fixtures() {
     auto info=positive; info.cards.drawPile.assignInformationState({},
         {CardInstance(CardId::STRIKE_RED),CardInstance(CardId::DEFEND_RED)},{});
     check("unsupported_information_set",info,"NONE");
+    // Fail closed before any search outside the audited counter domain.
+    for (const auto cc:{CharacterClass::SILENT,CharacterClass::DEFECT,CharacterClass::WATCHER}) {
+        auto foreign=positive; foreign.player.cc=cc;
+        auto row=check(std::string("unsupported_")+characterClassEnumNames[static_cast<int>(cc)],foreign,"NONE");
+        require(!row.at("supported").get<bool>() && row.at("nodes")==0,"foreign character entered search");
+    }
+    RelicContainer shardRelics;
+    shardRelics.add({RelicId::PRISMATIC_SHARD,0});
+    require(shardRelics.has(RelicId::PRISMATIC_SHARD),"Shard fixture provenance");
+    auto unsupported=check("unsupported_prismatic_shard",positive,"NONE",
+        !shardRelics.has(RelicId::PRISMATIC_SHARD));
+    require(!unsupported.at("supported").get<bool>() && unsupported.at("nodes")==0,"Shard entered search");
+    auto finisher=positive; finisher.cards.hand[0]=CardInstance(CardId::FINISHER);
+    unsupported=check("unsupported_foreign_finisher",finisher,"NONE");
+    require(!unsupported.at("supported").get<bool>() && unsupported.at("nodes")==0,"foreign counter consumer entered search");
     // Key sensitivity: resources, dynamic cards, counters and enemy mechanics.
     auto key=controlState(positive);
     for(int field=0;field<8;++field) {
@@ -354,7 +387,9 @@ void roots(const char *file) {
         auto wire=source.contains("wire")?source.at("wire").get<silver_bridge::BattleStateWire>()
             :silver_bridge::battleStateWireFromEnvelope(source.at("state"));
         auto b=battleContextFromWire(wire);
-        auto row=Oracle{}.run(b);
+        // This explicit caller assertion must come from retained run relic
+        // provenance. Legacy combat-only wires do not prove Shard absence.
+        auto row=Oracle{}.run(b,source.value("oracle_no_prismatic_shard",false));
         row["root_index"]=rows.size(); row["wire_reconstructed"]=true;
         rows.push_back(row); std::cout<<row.dump()<<'\n';
     }

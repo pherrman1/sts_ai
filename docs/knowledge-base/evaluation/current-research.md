@@ -50,8 +50,12 @@ wire roots reconstruct, but the eight sampled information-set roots are outside
 v0's concrete-state support. This establishes synthetic correctness, not natural
 frequency or broad recall. [Design, limits and raw evidence](../../experiments/evidence/combat_infinity_oracle_20261023/REPORT.md).
 
-Any follow-up is data collection and encoder-signal analysis first; no infinity
-reward, model head, AZ generation annotation or OOC integration is authorized by
+Independent review's two corrections are applied: damaging recurrences are
+PRODUCTIVE_CYCLE_CANDIDATE (not known infinites), and the oracle fails closed
+outside Ironclad/red-color-domain roots with proven no-Shard provenance.
+Qualify realistic recall and public-state handling before any natural-root
+annotation; the current shuffle quotient also excludes exhausted-down decks.
+No infinity reward, model head, AZ annotation or OOC integration follows from
 this result.
 
 ## AlphaZero-style OOC loop: open requirements

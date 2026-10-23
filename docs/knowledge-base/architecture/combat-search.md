@@ -780,10 +780,16 @@ terminal reachability alone establishes no search-quality or budget claim.
 bounded card-action DFS. It is not linked into gameplay. It reuses the native
 state hash plus exact comparison of normalized copies, existing semantic action
 fingerprints, and real simulator replay. A repeated control state can be
-STALL_LOOP or PRODUCTIVE_LOOP; only actual same-turn victory during legal
+STALL_LOOP or PRODUCTIVE_CYCLE_CANDIDATE; only actual same-turn victory during legal
 witness replay is CERTIFIED_KILL. It never scores, prunes or annotates AZ rows.
 
-The v0 support boundary is concrete, quiet PLAYER_NORMAL roots; it excludes
+The v0 support boundary is concrete, quiet PLAYER_NORMAL Ironclad roots with
+red/colorless/curse cards and explicit no-Prismatic-Shard provenance. Shard is
+not represented by the combat Player's two relic bitsets, so the standalone
+root input must carry `oracle_no_prismatic_shard: true` from retained run relic
+provenance; missing/false is unsupported. The domain is checked at every action.
+PRODUCTIVE_CYCLE_CANDIDATE asserts a damaging recurrence, not an indefinite
+loop; a rejected/capped replay retains the candidate label. The oracle excludes
 potions, card-selection continuations, hidden intents and cross-turn cycles.
 All gameplay state remains exact except enemy HP as progress and the audited
 bookkeeping/conditional counter and singleton-shuffle normalizations documented
@@ -797,3 +803,5 @@ across candidates. Existing wire roots can be imported without new capture
 infrastructure, but information-set piles are rejected. `NONE` means no witness
 within the support/budget, not proof that a combat lacks an infinite. See the
 same evidence for raw fixtures, timing and the archived-root support check.
+Realistic recall/public-state handling must be qualified before natural-root
+annotation; this v0 cannot yet supply that evidence.
