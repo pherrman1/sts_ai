@@ -4861,6 +4861,58 @@ int main(int argc, char **argv) {
                 unsetenv("STS_SILVER_HALF_DEAD_SET_MOVE_QUEUE");
                 if(legacy.ok || legacy.reason!="silver_selection_pending_actions")
                     throw std::runtime_error("STS_SILVER_HALF_DEAD_SET_MOVE_QUEUE=0 did not restore the refusal");
+                // Problem 104 (live seed 111200641): the same grid under Runic
+                // Dome. The tracker's row from before the duplicate setter has
+                // Regrow known and one known transition; the history import
+                // derives Regrow after the pending loop.
+                auto dome=observation;auto &dc=dome["silverRoot"]["combat"];
+                dc["runicDome"]=true;dc["relics"].push_back({{"id","Runic Dome"},{"counter",0},{"usedUp",false}});
+                json rows=json::array();
+                for(int i=0;i<3;++i) {
+                    auto &m=dc["monsters"][i];
+                    for(const char *hidden:{"nextMove","moveHistory","previousMove","intent","intentDamage","uniquePower0","uniquePower1"})m.erase(hidden);
+                    m["miscInfo"]=0; // Java hides Nip damage under the Dome.
+                    const int maxHp=m["maxHp"].get<int>();
+                    rows.push_back({{"schemaVersion",4},{"historySchemaVersion",3},{"epoch",1},{"generation",1},{"complete",true},
+                        {"monsterId","Darkling"},{"slot",i},{"completedTurns",0},{"executedMoves",json::array()},
+                        {"pendingMoveRolls",1},{"totalRolls",1},{"knownTransitions",0},{"rollHp",maxHp},{"rollMaxHp",maxHp},
+                        {"publicMisc",0},{"firstHp",dc["monsters"][0]["maxHp"]},{"firstMaxHp",dc["monsters"][0]["maxHp"]},
+                        {"firstAlive",true},{"aliveCount",3},{"pendingAttackPredicates",json::array()},
+                        {"knownNextMove",nullptr},{"knownRollPredecessor",nullptr},
+                        {"latentDamageMask",Monster::latentDamagePrior(MonsterId::DARKLING,0)},
+                        {"latentDamageExecutions",0},{"latentDamageObservations",json::array()},
+                        {"occupantGeneration",1},{"birthGlobalTurn",0},{"birthKind","initial"},{"birthParentSlot",-1},
+                        {"birthParentGeneration",0},{"lastExecutionGlobalTurn",-1},{"rollGlobalTurn",0}});
+                }
+                rows[0].update({{"generation",2},{"knownTransitions",1},{"pendingMoveRolls",0},
+                    {"knownNextMove",{{"kind","darkling_public_regrow"},{"move",4}}}});
+                dc["runicDomeKnowledge"]={{"schemaVersion",3},{"epoch",1},{"complete",true},{"monsters",rows}};
+                const auto domeImported=one_combat::advisor::importSilverRoot(dome);
+                if(!domeImported.ok) throw std::runtime_error("Runic Dome Darkling Headbutt import: "+domeImported.reason);
+                auto domeRoot=battleContextFromWire(domeImported.wire);
+                if(json(domeImported.wire.pendingActionQueue)!=json(nativeQueue) || !domeRoot.intentsHidden
+                        || !domeRoot.monsters.arr[0].isHalfDead()
+                        || domeRoot.monsters.arr[0].moveHistory[0]!=MonsterMoveId::DARKLING_REGROW)
+                    throw std::runtime_error("Runic Dome Darkling Headbutt lost the pending Regrow");
+                pick.execute(domeRoot);
+                if(domeRoot.inputState!=InputState::PLAYER_NORMAL
+                        || domeRoot.monsters.arr[0].moveHistory[0]!=MonsterMoveId::DARKLING_REGROW
+                        || domeRoot.monsters.arr[0].moveHistory[1]!=MonsterMoveId::DARKLING_REGROW)
+                    throw std::runtime_error("Runic Dome Darkling Headbutt continuation lost Regrow");
+                // Fail closed: a window row without the queued setter, a queued
+                // setter with an even (completed) count, and the flag at 0.
+                auto unqueued=dome;unqueued["silverRoot"]["combat"]["pendingActionQueue"].erase(2);
+                if(one_combat::advisor::importSilverRoot(unqueued).ok)
+                    throw std::runtime_error("Runic Dome Regrow window without the queued setter was accepted");
+                auto claimed=dome;auto &claimedRow=claimed["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"][0];
+                claimedRow["knownTransitions"]=2;claimedRow["generation"]=3;
+                if(one_combat::advisor::importSilverRoot(claimed).ok)
+                    throw std::runtime_error("Runic Dome Regrow window with a claimed duplicate was accepted");
+                setenv("STS_SILVER_DARKLING_DOME_REGROW_QUEUE","0",1);
+                const auto domeLegacy=one_combat::advisor::importSilverRoot(dome);
+                unsetenv("STS_SILVER_DARKLING_DOME_REGROW_QUEUE");
+                if(domeLegacy.ok || domeLegacy.reason!="silver_selection_pending_actions")
+                    throw std::runtime_error("STS_SILVER_DARKLING_DOME_REGROW_QUEUE=0 did not restore the refusal: "+domeLegacy.reason);
             }
         }
         {

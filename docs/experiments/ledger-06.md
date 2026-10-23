@@ -23707,3 +23707,23 @@ ignores the damage still to come; not tested.
 `/mnt/project-files/silver-leaf-head-ab/campaign/units/` (`tars.sha256`). Seeds used 111350000–255 (smokes
 111339997–999, counted in §655).
 **Knowledge impact:** `research/combat-search/leaf-evaluation.md`, `operations/environment-variables.md`.
+
+## §TBD — Live advisor: Headbutt killing a Darkling under Runic Dome was refused (2026-10-23)
+
+**Question:** why did canary seed 111200641 (act 3 floor 44, three Darklings, Runic Dome; problem 104) stop with
+`silver_selection_pending_actions` after Headbutt left a Darkling half-dead, although the producer reported no
+`pendingActionsBlocker`?
+**Setup:** the canary's report (Dome `nextMove` null for every Darkling, `runicDomeKnowledge.complete` false);
+`RunicDomeTracker` and `live_silver_importer_test` (Ironclad seed 111200071, THREE_DARKLINGS; no gameplay runs).
+**Result:** the producer emitted `MONSTER_SET_MOVE {move:4, slot}` for the queued duplicate `SetMoveAction(4)`, as in
+problem 89 (§630). The importer only accepted it when the imported history already showed Regrow, but under Runic Dome
+that history is derived after the pending loop, so the item was refused. The Dome tracker also reported the Darkling as
+incomplete while the duplicate setter was queued (`publicDuplicatePending`), the same window as Awakened One in §631.
+**Interpretation:** the tracker now reports that window as complete with Regrow known. Each half-death adds two known
+transitions (the setter and its duplicate), so an odd count marks the window. Under
+`STS_SILVER_DARKLING_DOME_REGROW_QUEUE` (default on, `=0` restores the refusal) the importer accepts the queued item
+under Runic Dome, and the Darkling row only with odd count and queued item together. The importer test gains the Dome
+form of the §630 Darkling Headbutt, with fail-closed cases; the tracker test checks the window and the completed row.
+Play-changing only where the advisor used to refuse.
+Seeds: none new (live seed 111200641 as reported; unit test seed 111200071 from this thread's block).
+**Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.
