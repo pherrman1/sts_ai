@@ -23570,7 +23570,7 @@ advance? Philipp typed "merge 816 and go seeds" (2026-10-22 20:52Z).
 - No game seeds were used.
 - **Knowledge impact:** `evaluation/current-research.md`.
 
-## §TBD-turndom — Turn-level dominance opportunity in Silver's real decisions: 0.65% of choices, DROP (2026-10-23)
+## §658 — Turn-level dominance opportunity in Silver's real decisions: 0.65% of choices, DROP (2026-10-23)
 
 **Question:** would a combat search over whole turns (every deterministic line to the next chance node, pruned by
 end-of-turn dominance as in `exact_combat_solver` §623) have a target in production Silver play?
