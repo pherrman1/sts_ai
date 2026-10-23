@@ -97,6 +97,17 @@ passed 1,000 decisions and the engine's stall guard ended the run) and ends the 
 production. Production labels shrink the overvaluation off the training states; they do not remove it, so the
 penalty (or the cap) stays.
 
+The stall's trace (`STS_CTMSILVER_LEAFHEAD_TRACE`, the second Darklings redraw without the penalty) shows two
+things. First, time is free for the head: over the first 60 turns its value at the turn start stays at 115-125 while
+winning there falls from 129 to about 91 points (a potion used, and Silver's score loses 0.4 points per turn). No
+training root lies past turn 44 (99.9% before turn 19), so the head has never seen what a long fight costs.
+Continuing never looks worse than finishing, and the search does not commit to killing the three Darklings in one
+turn. Second, the deck keeps its block between turns, and once the block passes about 150 the head's value climbs
+with it, about 0.9 points per turn, to 267 at turn 168 (block 361, win-now 48). Block that high does occur in the
+training data (0.3% of the roots have 150 or more, presumably decks that win comfortably), but never this late in a
+fight. The turn penalty answers the first (each turn of delay costs 1 point inside the search), the cap both. In the
+Collector fight without the penalty the head instead stayed at 140-170 while the player fell from 77 to 21 HP.
+
 ## Smoke of the uncapped production head (descriptive)
 
 `a20prod` uncapped with the turn penalty (blend 0.5, 1 point per turn) in the A/B's harness on its smoke sources
