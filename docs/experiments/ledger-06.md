@@ -23839,7 +23839,7 @@ checks first: the learned OOC stop on M0's Q scale, and a confirmation on fresh 
 - **Knowledge impact:** `evaluation/current-research.md`, `architecture/out-of-combat.md`,
   `operations/environment-variables.md`, ADR-0057.
 
-## §TBD — Live advisor: Headbutt killing a Darkling under Runic Dome was refused (2026-10-23)
+## §662 — Live advisor: Headbutt killing a Darkling under Runic Dome was refused (2026-10-23)
 
 **Question:** why did canary seed 111200641 (act 3 floor 44, three Darklings, Runic Dome; problem 104) stop with
 `silver_selection_pending_actions` after Headbutt left a Darkling half-dead, although the producer reported no
