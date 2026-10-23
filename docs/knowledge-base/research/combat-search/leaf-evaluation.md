@@ -76,7 +76,7 @@ simulations end (§142).
   elites, bosses and Acts 3–4 decide. A leaf candidate needs a long-fight check (elites, bosses, Acts 3–4) before a
   fight-level A/B.
 - **Endgame (§TBD-endgame):** in the last two turns of A20 elite and boss fights Silver is near-optimal wherever exact
-  solves finish (certified loss 0.02–0.04 points per fight); lost fights are already lost when the last turn starts.
+  solves finish (certified loss 0.02–0.04 points per fight); a lost fight is usually lost before its last turn starts.
 - **Budget:** production Silver gains nothing measurable from 12k or 15k simulations over 10k at fight level (§638,
   §TBD-leafab).
 
