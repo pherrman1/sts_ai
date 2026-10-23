@@ -149,11 +149,13 @@ struct OocAdapterOptions {
     // STS_OOC_MCTS_LEAF_HEART1_VALUE_WEIGHT=w in (0, 1) (default 1 = the head alone): the anchor becomes
     // sigmoid((1 - w) logit(X2-B) + w logit(head)) where heart1 encodes the state.
     double heart1ValueWeight = 1;
-    // Research option (default unset, STS_OOC_MCTS_LEAF_CALIBRATION=a1,a2,a3,a4:b, value-head plan M0): the native
-    // leaf anchor x (X2-B or its heart1 blend) at a tree leaf or rollout end in act k becomes
-    // sigmoid(a_k + b logit x), so it speaks calibrated Heart probability like a death (0) and a Heart kill (1).
-    // Holds a1..a4, b; empty is off.
+    // Value-head plan M0 (STS_OOC_MCTS_LEAF_CALIBRATION=a1,a2,a3,a4:b): the native leaf anchor x (X2-B or its
+    // heart1 blend) at a tree leaf or rollout end in act k becomes sigmoid(a_k + b logit x), so it speaks
+    // calibrated Heart probability like a death (0) and a Heart kill (1). Holds a1..a4, b; empty is off.
+    // ADR-0057: a20LeafCalibration() is the default for the plain rollout3 X2-B leaf, applied only to states at
+    // leafCalibrationMinAscension (20) or above; an explicit value applies at every ascension (min 0).
     std::vector<double> leafCalibration;
+    int leafCalibrationMinAscension = 0;
     // Optional per-decision thread CPU allowance; checked between simulations.
     // Zero preserves the simulation-bounded search. Never includes real combat.
     double cpuBudgetSeconds = 0;
@@ -389,6 +391,11 @@ bool liveOocMctsEnabled();
 // (exact root budgets kept) instead of flat exact 10k. Unset: on at ascension 20
 // (ADR-0054), off below; 0 restores flat exact 10k, 1 forces it on.
 bool liveOocMctsRealLearnedStop(int ascension);
+// ADR-0057: the per-act calibration of the X2-B leaf (M0, fit in docs/experiments/evidence/value_death_price_20261023,
+// IMPROVED in the value-level A/B), a1..a4 and b. The A20 default for the rollout3 X2-B leaf offline and in the live
+// advisor, when the win model is the pinned public X2-B it was fit on (kHeartLeafAnchorSha256);
+// STS_OOC_MCTS_LEAF_CALIBRATION=0 restores the raw anchor.
+const std::vector<double> &a20LeafCalibration();
 // True when live OOC MCTS runs with STS_OOC_MCTS_TREE_RULES=1.
 bool liveOocMctsTreeRules();
 // Root choice key of the search: with tree rules, copies of one card are one

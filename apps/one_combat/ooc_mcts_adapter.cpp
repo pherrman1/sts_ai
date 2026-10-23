@@ -1782,7 +1782,7 @@ std::optional<double> OocGameContextModel::screenLeafValue(const GameContext &gc
 }
 double OocGameContextModel::leafAnchorValue(const GameContext &gc, const PathHistory &path) const {
     const double x = anchorValue(gc, path);
-    if (options.leafCalibration.empty()) return x;
+    if (options.leafCalibration.empty() || gc.ascension < options.leafCalibrationMinAscension) return x;
     const auto &c = options.leafCalibration;
     const double z = std::clamp(x, 1e-7, 1 - 1e-7);
     return 1.0 / (1.0 + std::exp(-(c[std::clamp(gc.act, 1, 4) - 1] + c[4] * std::log(z / (1 - z)))));
@@ -2406,6 +2406,11 @@ sts::search::OocMctsResult searchWithSoleRootShortcut(sts::search::OocGenerative
         return result;
     }
     return sts::search::OocMctsPlanner(config).search(model, 0, simulations);
+}
+// The value-level A/B's arm M (stage-0 fit, rounded to four decimals): ADR-0057.
+const std::vector<double> &a20LeafCalibration() {
+    static const std::vector<double> values{-2.5384, -2.9227, -3.6523, -3.6334, 1.0535};
+    return values;
 }
 }
 
@@ -3515,7 +3520,9 @@ void configureLiveOocMcts() {
             throw std::runtime_error("STS_OOC_MCTS_LEAF_HEART1_VALUE_WEIGHT requires STS_OOC_MCTS_LEAF_HEART1_VALUE");
         liveOptions.heart1ValueWeight = w;
     }
-    if (const char *raw = std::getenv("STS_OOC_MCTS_LEAF_CALIBRATION"); raw && *raw) {
+    // "0" keeps the raw anchor; unset selects the ADR-0057 default below.
+    const char *leafCalibrationEnv = std::getenv("STS_OOC_MCTS_LEAF_CALIBRATION");
+    if (const char *raw = leafCalibrationEnv; raw && *raw && std::string(raw) != "0") {
 #ifdef STS_LIVE_ADVISOR
         throw std::runtime_error("STS_OOC_MCTS_LEAF_CALIBRATION is unavailable in the live advisor");
 #else
@@ -3584,6 +3591,23 @@ void configureLiveOocMcts() {
         if (!numbers) throw std::runtime_error("STS_OOC_REFEREE_ACT_END must be a1,a2,a3,a4:b with b > 0");
         liveOptions.refereeActEndCalibration = *numbers;
 #endif
+    }
+    // ADR-0057 (Philipp 2026-10-23, value-level A/B M0 +2.15 pp): unset, the plain rollout3 X2-B leaf is calibrated
+    // with M0 on states at ascension 20, when the process win model is the pinned public X2-B M0 was fit on. Other
+    // win models, leaves and leaf counts, captures and the leaf compare keep the raw anchor, as does
+    // STS_OOC_MCTS_LEAF_CALIBRATION=0.
+    if (!leafCalibrationEnv || !*leafCalibrationEnv) {
+        const char *leafMode = std::getenv("STS_OOC_MCTS_LEAF_VALUE");
+        if (liveEnabled && leafMode && std::string(leafMode) == "native" && liveOptions.leafCombats == 3
+                && liveOptions.checkpointLeaves && !liveOptions.stopAtMapCheckpoint && !liveOptions.directLeaf
+                && !liveOptions.screenLeaf && !liveOptions.bossLeaf && !liveOptions.bossRollout && !liveOptions.constantLeaf
+                && !liveOptions.leafWinNet && !liveOptions.heartLeaf && !liveOptions.rolloutStudent
+                && !liveOptions.heart1ValueNet && !liveLeafCompare && !liveSibling
+                && !std::getenv("STS_OOC_MCTS_LEAF_CAPTURE")
+                && fileSha256Hex(g_winNet.path) == kHeartLeafAnchorSha256) {
+            liveOptions.leafCalibration = a20LeafCalibration();
+            liveOptions.leafCalibrationMinAscension = 20;
+        }
     }
     if (liveConfig.stopAt512VisitGap20
         && (liveSimulations != 2048 || liveConfig.selectByMeanQ))
@@ -3816,6 +3840,8 @@ void configureLiveOocMcts() {
         << (liveOptions.heart1ValueNet ? " leaf_heart1_value=" + liveOptions.heart1ValuePath : std::string{})
         << (liveOptions.heart1ValueWeight < 1 ? " leaf_heart1_value_weight=" + std::to_string(liveOptions.heart1ValueWeight) : std::string{})
         << (!liveOptions.leafCalibration.empty() ? " leaf_calibration=" + leafCalibrationText(liveOptions.leafCalibration, ":") : std::string{})
+        << (liveOptions.leafCalibrationMinAscension > 0
+            ? " leaf_calibration_min_ascension=" + std::to_string(liveOptions.leafCalibrationMinAscension) : std::string{})
         << (liveFullBudgetFraction > 0 ? " full_budget_fraction=" + std::to_string(liveFullBudgetFraction) : std::string{})
         << (liveFastRootCap > 0 ? " fast_root_cap=" + std::to_string(liveFastRootCap) : std::string{})
         << (liveFullRootSims > 0 ? " full_root_sims=" + std::to_string(liveFullRootSims) : std::string{})
@@ -3864,6 +3890,8 @@ void configureLiveOocMcts() {
             + liveOptions.heart1ValueSha256 + "\"" : std::string{})
         << (liveOptions.heart1ValueWeight < 1 ? ",\"leafHeart1ValueWeight\":" + std::to_string(liveOptions.heart1ValueWeight) : std::string{})
         << (!liveOptions.leafCalibration.empty() ? ",\"leafCalibration\":[" + leafCalibrationText(liveOptions.leafCalibration, ",") + "]" : std::string{})
+        << (liveOptions.leafCalibrationMinAscension > 0
+            ? ",\"leafCalibrationMinAscension\":" + std::to_string(liveOptions.leafCalibrationMinAscension) : std::string{})
         << (liveLeafCompare ? ",\"leafCompare\":" + [] {
                 nlohmann::json arms = nlohmann::json::array();
                 for (const auto &arm : liveLeafCompare->arms) {
@@ -7048,6 +7076,15 @@ void oocMctsAdapterSelfTest() {
             const double x=raw.leafValue(0);
             const double expected=1/(1+std::exp(-(opts.leafCalibration[act-1]+1.05*std::log(x/(1-x)))));
             require(x>0 && x<1 && std::abs(calibrated.leafValue(0)-expected)<1e-12,"leaf calibration by act");
+            // ADR-0057's default applies from ascension 20 only.
+            auto a20=opts; a20.leafCalibrationMinAscension=20;
+            for (int ascension : {19,20}) {
+                auto scoped=detachedCopy(probe); scoped.ascension=ascension;
+                OocGameContextModel rawScoped(scoped,path), m0(scoped,path,{},a20);
+                const double y=rawScoped.leafValue(0);
+                const double want=ascension<20 ? y : 1/(1+std::exp(-(opts.leafCalibration[act-1]+1.05*std::log(y/(1-y)))));
+                require(y>0 && y<1 && std::abs(m0.leafValue(0)-want)<1e-12,"leaf calibration minimum ascension");
+            }
             t_curPath=savedPath;
         }
         for(auto outcome : {GameOutcome::PLAYER_LOSS,GameOutcome::PLAYER_VICTORY}) {

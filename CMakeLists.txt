@@ -539,6 +539,7 @@ target_sources(one_combat_advisor PRIVATE
     apps/one_combat/differential_state.cpp
     apps/one_combat/live_ooc_policy.cpp
     apps/one_combat/heart1_policy.cpp
+    apps/one_combat/heart_leaf.cpp
     apps/one_combat/ooc_v4_encoding.cpp
     apps/one_combat/run_features.cpp
     apps/one_combat/live_ooc_importer.cpp
@@ -581,7 +582,7 @@ if(STS_NODE_EXECUTABLE)
 endif()
 
 add_executable(test_live_ooc_policy apps/test_live_ooc_policy.cpp
-    apps/one_combat/heart1_policy.cpp
+    apps/one_combat/heart1_policy.cpp apps/one_combat/heart_leaf.cpp
     apps/one_combat/live_ooc_policy.cpp apps/one_combat/ooc_v4_encoding.cpp
     apps/one_combat/ooc_checkpoint_policy.cpp
     apps/one_combat/run_features.cpp apps/one_combat/ooc_mcts_adapter.cpp apps/one_combat/ooc_tree_rules.cpp
@@ -598,7 +599,7 @@ add_test(NAME live_ooc_policy COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.
 set_tests_properties(live_ooc_policy PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
 add_executable(live_ooc_parity_test apps/live_ooc_parity_test.cpp
-    apps/one_combat/heart1_policy.cpp
+    apps/one_combat/heart1_policy.cpp apps/one_combat/heart_leaf.cpp
     apps/one_combat/live_ooc_state.cpp apps/one_combat/live_ooc_policy.cpp
     apps/one_combat/ooc_checkpoint_policy.cpp
     apps/one_combat/ooc_v4_encoding.cpp apps/one_combat/run_features.cpp
@@ -1315,6 +1316,10 @@ set_tests_properties(ooc_leaf_capture_startup PROPERTIES WORKING_DIRECTORY ${CMA
 add_test(NAME ooc_real_learned_stop_guard COMMAND python3
     ${CMAKE_SOURCE_DIR}/tests/test_ooc_real_learned_stop_guard.py $<TARGET_FILE:one_combat>)
 set_tests_properties(ooc_real_learned_stop_guard PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    LABELS "integration")
+add_test(NAME ooc_leaf_calibration_default COMMAND python3
+    ${CMAKE_SOURCE_DIR}/tests/test_ooc_leaf_calibration_default.py $<TARGET_FILE:one_combat>)
+set_tests_properties(ooc_leaf_calibration_default PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     LABELS "integration")
 add_test(NAME ooc_leaf_replay COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
     $<TARGET_FILE:one_combat> oocleafreplayselftest)

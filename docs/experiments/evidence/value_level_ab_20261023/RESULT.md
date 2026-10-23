@@ -89,13 +89,16 @@ one run commit. Unit tar hashes: `tars.sha256`. Analysis: `analyze.py` on the `-
   SR_crn_r2_s2_ep20 has not been played.
 
 ## Decision
-- No default change from this run alone; Philipp decides (PREREG).
-- Before M0 could become a default, PREREG requires two things:
+- **M0 is the A20 default** for the rollout3 X2-B leaf, offline and in the live advisor (Philipp, 2026-10-23 14:11Z,
+  [ADR-0057](../../../../decisions/0057-ooc-leaf-calibration-a20-default.md); `STS_OOC_MCTS_LEAF_CALIBRATION=0`
+  restores raw X2-B). He chose it without the confirmation below.
+- Before M0 could become a default, PREREG required two things:
   - the learned OOC stop checked on the new Q scale, since it fires earlier under M0. **Done, passes**
     ([`../value_m0_stop_check_20261023`](../value_m0_stop_check_20261023/README.md)): at p ≥ 0.99 its leader is the
     full search's choice at 99.76% of checkpoints under M0 vs 99.62% under X2-B, and none of its fast-root stops
     changed a pick. It fires more often because M0's searches settle earlier;
-  - a confirmation on fresh seeds (proposed: A vs M on 2,048 seeds; needs Philipp's go).
+  - a confirmation on fresh seeds. **Skipped:** a 2,048-seed A vs M A/B would come out IMPROVED only about one time
+    in three at a true gain of 1.4 pp (its SE would be about 0.94 pp).
 - The stage 1–2 replay (`../value_leaf_compare_20261023`, seeds 111360000–111360255, running) adds the per-root view:
   which of M0's flips the referees score as gains. Its predicted Δ for M0 is the first prospective test of the
   decision metric against this A/B's M − A (+1.37 pp).
