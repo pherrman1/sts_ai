@@ -1,6 +1,6 @@
 name          value-leaf-compare
 code_commit   3147901228c3e489665d2350c636c7f68fd749bd
-binary_sha256 unset
+binary_sha256 41b264235978c474d4934d99646bed2d445d99ec6decdaf0a1f8ab2fa00447ca
 workers       32
 share         /mnt/project-files/value-leaf-compare
 configure_preset linux-gcc-release-x86-64-v3

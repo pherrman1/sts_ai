@@ -109,9 +109,26 @@ referees; R_full against R_act predictions side by side.
 - Seeds 111360000–111360255 (256 games, assigned by the coordinator 2026-10-22 23:14Z; unused in the repo).
   Smokes 111369990–111369999. The pilot used 111349994–111349995 (from the stage-3 smoke range).
 - 32 workers × 4 lanes, `schedule queue`, 8 h timeout per unit (rc 124).
-- Cost (pilot and smoke): the seven side searches take about 40 s of CPU per searched root (110–250 s at a
-  full-budget root), a referee rollout about 37 ms (2.4 s per action at n = 64). With 50–90 searched roots per game
-  that is about 1 core-hour per game, about 260 core-hours in all, about 3 h of wall on 32 workers.
+- Cost (pilot and smoke): the seven side searches take about 40 s of CPU per searched root (about 150 s at a
+  full-budget root, 17 s at a fast one), a referee rollout 22–40 ms (1.4–2.6 s per action at n = 64). With 25–80
+  compare rows per game that is about 1 core-hour per game, about 260 core-hours in all, about 3 h of wall on 32
+  workers.
+
+## Pilot and smoke
+- **Pilot** (seed 111349994, n = 16, an earlier build of this code without the act-end value and the policy-state
+  hand-back): with the compare on, every record after the header and every CTM row equal the same build's game
+  without it (110 decisions, 54 compare rows). Side searches 37 s of CPU per root on average; referee about 40 ms
+  per rollout on a loaded machine; mean paired variance of R_full at the first six flipped actions about 0.18.
+- **Smoke** (seed 111369991, campaign binary `41b26423…`, the committed `run_unit.sh`):
+  - Without the compare, the game (192 decisions, 108 searched, Act 4, no Heart kill) is byte-identical to the frozen
+    stage-3 binary's arm-A game (`56b29bf8`): every record after the header, the CTM rows and the log.
+  - With the compare: rc 0 with every banner check, and every record after the header and every CTM row equal the
+    game without it. 79 compare rows (26/26/17/10 in acts 1–4), 6,016 referee rollouts, none errored or
+    non-terminal, no arm error; 68 min of wall. `analyze_compare.py` runs on it.
+  - Flips in this one game: M0 7, MS 7, STU 8, TD2 6, NULL 5, G1B 3, S 2. Mean paired variance at the flips: R_act
+    0.003–0.016, R_full 0.02–0.09.
+  - A first smoke on the binary before the hand-back (`1abc300e`, code `c9b40943`) gave the same byte-identity
+    without the compare; a container restart cut its compare game.
 
 ## Before launch
 1. Freeze: RUN_COMMIT, code commit, binary sha256 in `campaign.manifest` and the brief.
