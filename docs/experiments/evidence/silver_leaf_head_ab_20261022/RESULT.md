@@ -61,9 +61,9 @@ against 72/49.
 The exact first-fight benchmark does not predict long fights; a further leaf candidate needs a long-fight check
 (elites, bosses, Acts 3-4) before any fight-level A/B.
 
-Run: RUN_COMMIT 420026c2, code 75afdee0, binary 83de6c12 (v3), 8 workers, queue schedule, wall 05:39-12:08Z. Worker
-8 hit the session limit at launch and joined at 07:34Z. The manifest said `workers 32`, so three quarters of the
-units waited the 15-minute claim settle before running. `verify_campaign.py`: units OK 256, MISSING 0, BAD 0,
-duplicates 0, one run commit. Tars: `/mnt/project-files/silver-leaf-head-ab/campaign/units/` (sha256 in
-`tars.sha256`). Analysis: `python3 analyze.py result.json <extracted>`; descriptive extras
+Run: pre-launch review PASS (03:04Z). RUN_COMMIT 420026c2, code 75afdee0, binary 83de6c12 (v3), 8 workers, queue
+schedule, wall 05:39-12:08Z. Worker 8 hit the session limit at launch and joined at 07:34Z. The manifest said
+`workers 32`, so three quarters of the units waited the 15-minute claim settle before running. `verify_campaign.py`:
+units OK 256, MISSING 0, BAD 0, duplicates 0, one run commit. Tars: `/mnt/project-files/silver-leaf-head-ab/campaign/units/`
+(sha256 in `tars.sha256`). Analysis: `python3 analyze.py result.json <extracted>`; descriptive extras
 `python3 describe.py <extracted>` (`describe.txt`).

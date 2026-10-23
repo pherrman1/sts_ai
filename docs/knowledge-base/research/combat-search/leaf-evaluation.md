@@ -1,6 +1,6 @@
 # Leaf evaluation in combat search
 
-Last verified: 2026-10-18 for the native Silver prior-playout headroom pilot (§540); 2026-10-17 for the native Silver blended-leaf gate (§525); 2026-08-11 otherwise.
+Last verified: 2026-10-23 for the native Silver learned leaf head (§TBD-leaf, §TBD-leafab) and the exact endgame study (§TBD-endgame); 2026-10-18 for the native Silver prior-playout headroom pilot (§540); 2026-10-17 for the native Silver blended-leaf gate (§525); 2026-08-11 otherwise.
 
 ## Purpose / research question
 
@@ -57,6 +57,7 @@ simulations end (§142).
 - **Native Silver tree reuse off** — −2.6 HP lost [−5.4, −0.1] pooled on the same fights but did not replicate on the second seed block (+0.5), Heart 0 pp; not adopted (§528, same entry)
 - **Native Silver rollout attack targeting under Surrounded** — keep the faced monster +2.8 HP lost [+0.3, +5.6], face the bigger intent +0.7 [−2.5, +3.8] on 192 paired A20 Shield-and-Spear fights (§530, Shield and Spear search gap)
 - **Native Silver: OOC-label difference leaf** — gen 1b's value head prices end-state differences no better than the formula (per-type potion r = 0.02 vs §510, max HP negative), and CRN paired continuations to the act end are too noisy (HP slope CI includes 0, ~14,600 core-h projected for usable prices) (§607, CRN act-end pilot)
+- **Native Silver: learned leaf head fit to Silver's own end scores** (`STS_SILVER_LEAF_HEAD`, 128-64-1 on the frozen g7f_E trunk, half head and half playout) — on exact A20 first fights it stalls alone, and with a 1-point-per-turn penalty it matches a perfect leaf (§TBD-leaf). In long fights it values a running fight above any ending, so the fight-level candidate was capped at the win-now value; against CPU-matched production it is NOT_SHOWN, score −1.31 [−2.78, +0.14] per fight, better in normal fights, worse in elites and Acts 3–4; step-3 gate FAIL, line paused (§TBD-leafab). A shortfall head and a net-free win-now blend did not replace it (§TBD-leaf)
 
 ## Native Silver leaf headroom
 
@@ -69,6 +70,15 @@ simulations end (§142).
   at 7.3x. Bosses carry most of the point estimate (+9.8 / +12.5). At most a small gain. Philipp made prior playouts the
   default for real boss and elite fights (ADR-0050; `STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE=0` restores greedy);
   since ADR-0056 only boss fights, for CPU (`STS_SILVER_PRIOR_PLAYOUT_ELITE=1` restores elites).
+- **Exact first fights do not predict long fights (§638, §TBD-leaf, §TBD-leafab):** exact expectimax on the A20
+  first fights (§623) prices every leaf change cheaply, but three changes that cut first-fight regret (max backup with
+  block-first playouts, the win-now blend, the capped learned head) lost or did not win at A20 fight level, where
+  elites, bosses and Acts 3–4 decide. A leaf candidate needs a long-fight check (elites, bosses, Acts 3–4) before a
+  fight-level A/B.
+- **Endgame (§TBD-endgame):** in the last two turns of A20 elite and boss fights Silver is near-optimal wherever exact
+  solves finish (certified loss 0.02–0.04 points per fight); lost fights are already lost when the last turn starts.
+- **Budget:** production Silver gains nothing measurable from 12k or 15k simulations over 10k at fight level (§638,
+  §TBD-leafab).
 
 ## Relationships
 

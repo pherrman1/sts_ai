@@ -19,6 +19,8 @@ evaluation for Silver" (https://claude.ai/artifact/P8536tUChd5XLo1gV6kfbu).
   leaves and gives -0.246 on the tuning fights, against -0.253 uncapped and -0.075 capped at win-now. With max backup
   it gives -0.183, no better than the plain cap (-0.177; uncapped -0.253). 150 fights, SE about 0.06. Whether +10
   still stops the stalls is untested at fight level.
+- Update, after the A/B: it failed its gate (head − CPU-matched production, score −1.31 [−2.78, +0.14] per fight),
+  better in normal fights and worse in elites and Acts 3-4 (`../silver_leaf_head_ab_20261022/RESULT.md`).
 
 ## Question
 
