@@ -1240,6 +1240,8 @@ class LiveOocProtocol(unittest.TestCase):
         qualified["ooc"]["publicState"].update(questionHistoryComplete=True, questionOutcomes=[])
         x2b = Path("models/candidates/v_win_x2b_public_trees.txt").resolve()
         b0 = Path("models/v_win_trees.txt").resolve()
+        sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+        from tools.live_game_driver import InspectorSnapshot
         for observation, win, extra, expected in (
                 (qualified, x2b, None, [-2.5384, -2.9227, -3.6523, -3.6334, 1.0535]),
                 (qualified, x2b, {"STS_OOC_MCTS_LEAF_CALIBRATION": "0"}, None),
@@ -1250,6 +1252,10 @@ class LiveOocProtocol(unittest.TestCase):
             evaluator, = response["evaluators"]
             self.assertEqual(evaluator["status"], "OK", response)
             self.assertEqual(evaluator["model"].get("leafCalibration"), expected)
+            # The live driver must accept the answer it executes.
+            snapshot = InspectorSnapshot({}, "ooc-protocol", 1, "fixture-0", {}, response)
+            self.assertEqual(snapshot.ooc_evaluator(evaluator["policy"])["selectedLiveAction"],
+                             evaluator["selectedLiveAction"])
 
     @unittest.skipUnless(os.environ.get("STS_TEST_LIVE_ARM_C"), "set STS_TEST_LIVE_ARM_C to the frozen student C")
     def test_research_stack_uses_student_prior_and_leaf_policy(self):
