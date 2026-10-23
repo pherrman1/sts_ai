@@ -24146,7 +24146,7 @@ Play-changing only where the advisor used to refuse.
 Seeds: none new (live seed 111200666 as reported).
 **Knowledge impact:** `operations/environment-variables.md`.
 
-## §TBD — Map-mirror audit: student_sel is not invariant under a horizontal map reflection (17% of map decisions flip, 37% at act start; teacher agreement 91.8% -> 80.8%); value head nearly invariant (offline, 2026-10-23)
+## §674 — Map-mirror audit: student_sel is not invariant under a horizontal map reflection (17% of map decisions flip, 37% at act start; teacher agreement 91.8% -> 80.8%); value head nearly invariant (offline, 2026-10-23)
 
 **Question:** Philipp (2026-10-23 23:20Z): is the A20 OOC prior invariant under x -> 6 - x, an exact game symmetry?
 **Setup:** [packet](evidence/map_mirror_20261023/README.md). Source audit of the engine (x is read only for edge
