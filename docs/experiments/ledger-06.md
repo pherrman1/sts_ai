@@ -22479,6 +22479,27 @@ Seeds: none new (live seeds 111200473 and 111200504).
 
 **Status:** Draft PR.
 
+## §666 — Live problem 108: Angry gained Strength on a fully blocked hit (2026-10-23)
+
+**Question:** Why did seed 111200647 (step 461, floor 30, Gremlin Gang) diverge after Reaper hit a Gremlin Warrior (Angry 2, Strength 5, block 10)?
+
+**Evidence:** The hit was fully blocked (block 10 -> 6, HP unchanged). Game: Strength stayed 5; native: 7. `Monster::attacked` applied Angry's Strength before the block subtraction, unconditionally. Java (javap, canary): `AbstractMonster.damage` calls `decrementBlock` first and passes the remaining `damageAmount` to each power's `onAttacked`; `AngryPower.onAttacked` fires only when `info.owner != null && damageAmount > 0` and the type is not HP_LOSS (THORNS damage also triggers it).
+
+**Change:** `STS_ANGRY_UNBLOCKED_FIX` (default on, `=0` restores): Angry's Strength is applied after the block subtraction and only when damage remains. Test in `simulator_correctness_pr9_19`: Angry 2 with 10 block gains no Strength from a 4- or 10-damage attack and +2 from a 15-damage attack (legacy: +2 for all). Not changed here (pre-existing gap, candidate for a later PR): THORNS damage (Bronze Scales, Flame Barrier) goes through `Monster::damage`, which never triggers Angry.
+
+**Interpretation:** Play-changing against Gremlin Warriors with block (Gremlin Gang, Gremlin Leader), in simulation and live: blocked hits no longer make the Warrior stronger.
+## §665 — Live problem 106: Hand of Greed skipped the target's onAttacked reactions (2026-10-23)
+
+**Question:** Why did seed 111200646 (step 750, floor 48, Writhing Mass) diverge after Hand of Greed and its Necronomicon copy (two hits of 23)?
+
+**Evidence:** Game: Writhing Mass HP 172 -> 140, block 11 -> 4, Malleable 3 -> 5, aiRng advanced twice (two Reactive rerolls). Native: HP 137, block 0, Malleable 3, aiRng unchanged. `ActData_HandOfGreedAction` called `Monster::damage` (the non-attack path: block, Intangible, Invincible, Lagavulin wake, Shifting only), while Java `GreedAction` calls `target.damage(new DamageInfo(player, damage, NORMAL))`, which runs onAttacked; `ActData_FeedAction` already used `Monster::attacked`. Hand of Greed rows on Awakened One and Spire Shield matched because neither has an onAttacked reaction.
+
+**Change:** `STS_HAND_OF_GREED_ATTACK_FIX` (default on, `=0` restores): Hand of Greed hits through `Monster::attacked`, as Feed does. Test in `simulator_correctness_pr9_19`: a 23-damage Hand of Greed into Malleable 3 leaves Malleable 4 and 3 block (legacy: Malleable 3, no block), with the same HP loss.
+
+**Interpretation:** Play-changing whenever Hand of Greed hits a monster with an on-hit reaction (Malleable, Reactive, Curl Up, Angry, Plated Armor, Flight, Thorns) or with The Boot / Envenom, in simulation and live. Other `Monster::damage` callers (`DamageEnemy`, `DamageAllEnemy`, `DamageRandomEnemy`) are not changed here; each needs its own Java check, since most Java onAttacked reactions (e.g. Malleable, Curl Up) require a NORMAL `DamageInfo` and those callers model THORNS or HP_LOSS damage.
+
+**Status:** Draft PR.
+
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with
@@ -23870,3 +23891,99 @@ form of the §630 Darkling Headbutt, with fail-closed cases; the tracker test ch
 Play-changing only where the advisor used to refuse.
 Seeds: none new (live seed 111200641 as reported; unit test seed 111200071 from this thread's block).
 **Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.
+
+## §664 — Silver leaf head, labels or data: a per-state label (Silver's searched value) orders exact leaves better and wins first fights without a playout, but no new net beats production in the 3-source smoke, and every head scores lower there in boss fights (offline, 2026-10-23)
+
+**Question:** Philipp, after §656 paused the line (2026-10-23 14:28Z): retrain the leaf head with cleaner labels, or
+does it need more data? Exploratory and offline: no new seeds, no workers, no code change.
+**Design:** [README](evidence/silver_leaf_label_data_20261023/README.md). Both silver-leaf-a20 packs rebuilt byte for
+byte (a20prod 47efc292…, a20 408a864c…), with the folds, optimizer and early stopping of `train_head_a20.py` (the
+a20prod recipe reproduces its report, 23.71). Variants: 25, 50 and 100% of the runs, a bigger head, the trunk trained
+end to end (started from g7f_E), both packs, and Silver's root value (`qchosen`) as the label instead of the fight's
+end score. The nets then went through the 69,734 exact search leaves of first fights 111149600–649, the exact
+first-fight test on the Part B fights 111333000–099 (§655) and the §656 harness's 3-source smoke (sources
+111339997–999, production at 10k only).
+**Result:**
+- Fit, fold-4 RMSE against the end score (noise bound 18.8): a20prod's frozen head 23.7, on half the runs 24.6; end
+  to end 20.0 (Act 3 26.7 → 20.4), on both packs 19.5; a bigger head on the frozen trunk 23.9.
+- Silver's root value lies 12.4 points below the end score on average: 20.0 at turn 0, 5.1 from turn 6 on, 18.1 in
+  boss fights, 23.6 in Act 4.
+- Exact leaves, pairs in order within one fight and turn: a20prod 0.774, end to end on the end score 0.771, end to
+  end on the searched value 0.808 (the capacity-test head `heads/ct.txt`, fitted to these exact values in sample:
+  0.876, `evidence/silver_leaf_label_data_20261023/results/exact_leaves_ct.txt`).
+- First fights, regret change per fight (mean / max backup): the searched-value net alone −0.27 / −0.28 (a20prod's
+  head alone −0.07 / +0.18, it stalls), at 50/50 −0.17 / −0.16; the 1-point turn penalty hurts it (−0.08 / 0.00).
+
+| 3-source smoke, head10000 − base10000 | score per fight [95% CI] | fights won | Act 1 | boss fights (10) |
+|---|---|---|---|---|
+| end to end on the end score, 50/50, 1 point per turn | −2.0 [−16.8, +1.3] (42 fights; a stall aborted one source) | −1 pp | −3.5 | −13.3 |
+| the same with the win-now cap | −8.6 [−18.5, +2.5] | −4 pp | −3.9 | −48.8 |
+| end to end on the searched value, 50/50 | −2.7 [−3.5, −2.1] | −1 pp | +2.1 | −28.5 |
+| the same net alone, no playout | −39.8 [−48.3, −33.9] | −11 pp | −9.4 | −136.3 |
+
+**Interpretation:** per-fight labels cannot rank two states of one fight; halving the runs costs about 1 point, and
+adding the other campaign's runs (twice the roots) gains 0.4. The per-state label ranks leaves better and needs no
+playout in first fights, but no net beats production in the smoke. Its intervals are a bootstrap over only 3 sources,
+so they are rough; among the new nets they exclude zero only for the searched-value net. Every head so far scores lower
+there in boss fights (§655, §656). The Act 1 gains of the first-fight tests do not carry over: in the smokes only the
+searched-value net at 50/50 gains in Act 1. All of these heads learned from states of playout-driven play; one
+explanation, not tested yet, is that a search that trusts the head steers into states its training never had. A next
+step would train on the states the head's own search reaches, labeled there by production's search (a generator
+change, seeds and workers; Philipp's call). The leaf head flags stay default off.
+Seeds: none new (replays of 111149600–649, 111333000–099 and 111339997–999).
+**Knowledge impact:** none (no code or default changed).
+## §663 — Value-head plan, stages 1–2: no rollout referee matches real play at A20, so the leaf-compare decision metric is NOT QUALIFIED; as exploratory numbers it predicts M0's gain about right (256 games, 2026-10-23)
+
+**Question:** Is there a cheap judge of OOC decisions that never reads X2-B and whose level matches real outcomes in
+every act (stage 1)? If so, does a leaf-compare replay under it reproduce the past A20 leaf A/Bs and predict the
+stage-3 arms (stage 2)? Philipp: "keep going with the plan, you can use 32 workers" (2026-10-22 21:44Z).
+**Design:** pre-registered ([PREREG](evidence/value_leaf_compare_20261023/PREREG.md)), independent pre-launch review
+PASS.
+- Play is the stage-3 control arm A (§661). At every searched root, seven side searches (same config, seed and
+  budget) swap the leaf: M0, S, MS (the stage-3 arms), G1B (§615), STU (§504), TD2 (§522) and NULL (search seed
+  salted).
+- Where an arm's pick differs from the played one, 64 paired referee rollouts value both. R_full plays heart1 greedy
+  rollouts with CTM combats to the end of the game; R_act stops them at the act's end and takes M0's value there.
+- 256 seeds (111360000–111360255), one game each, 32 cloud workers × 4 lanes, RUN_COMMIT `799361fc`, binary
+  `41b26423…`.
+- Gates: a referee qualifies if its level is within 0.05 of real play in every act and M0's advantage SE is ≤ 0.002
+  at ≤ 10 core-hours of referee CPU.
+  The metric qualifies only if, under a qualified referee, STU's predicted Δ is below 0, TD2's and G1B's lie in their
+  A/B intervals, and NULL's interval contains 0.
+**Result** ([RESULT](evidence/value_leaf_compare_20261023/RESULT.md)): 256 of 256 units verified, all games valid,
+Heart rate 22.3%. 16,237 searched roots, 1,201,344 referee rollouts, none errored.
+
+| act | real Heart rate | R_full | R_act |
+|---|---|---|---|
+| 1 | 0.231 | 0.081 | 0.177 |
+| 2 | 0.276 | 0.111 | 0.204 |
+| 3 | 0.407 | 0.176 | 0.191 |
+| 4 | 0.696 | 0.486 | 0.486 |
+
+- **Both referees fail the level gate**, so the metric is **NOT QUALIFIED**. Both pass the precision gate (SE 0.0014,
+  1.0 core-hour of referee CPU for M0's flips).
+- Exploratory predictions (pp, R_full / R_act):
+  - M0 +0.90 [+0.01, +1.81] / +1.42 [+0.39, +2.57], against the stage-3 A/B's M − A of +1.37 [−1.17, +4.00];
+  - M0 main effect +0.51 / +0.70, against an observed +2.15;
+  - STU −1.40 / −1.95; TD2 +1.48 / −1.35; G1B −0.11 / −3.99; NULL +0.49 / −0.07.
+- Under R_full all four retrospective checks pass; STU's only narrowly (upper bound −0.23 pp). Under R_act, G1B falls
+  outside §615's interval. R_act values the act's end with M0's function of X2-B, so it
+  is not X2-B-free.
+- Every A/B observation contains both referees' predictions. For S both predict a small gain where the A/B saw −1.37.
+- A leaf changes the played pick at 4.4–5.7% of searched roots (STU 6.6%), and re-seeding the search changes 4.7%.
+- At all 447 act-4 roots the five leaf arms ran identical searches and kept the played pick. No act-4 rollout reaches
+  a leaf, so act-4 OOC decisions depend only on the rollouts (CTM combats, rollout policy).
+- Wall 6.5 h (estimate 3 h): side searches 313 core-hours. Per-simulation speed differed up to 3× between containers.
+  The last unit to land (111360219, a Heart game on a slow container, started 11:25Z) took 4 h 10 min; the longest
+  (111360072) took 5 h 22 min.
+**Interpretation:**
+- The rollouts die far more often than real play, most of all in act 3 (R_act's gap there is nearly R_full's). The
+  decision metric cannot gate stage-4 candidates until a referee's rollouts play closer to real play.
+- The first prospective point agrees with the A/B for M0, under a referee that did not qualify.
+- M0's higher act-4 conversion in the A/B (57.1% → 60.7% of arrivals) comes from the states the runs arrive in, since
+  no leaf changes an act-4 decision.
+**Decision:** none (PREREG). Stage-4 candidates are gated on the guardrails and paired A/Bs, not on this metric.
+Proposed next: an offline check of the CTM's act-4 predictions against the stage-3 A/B's outcomes, and for later
+campaigns, backup copies of stragglers on idle workers once the queue is empty.
+- Seeds 111360000–111360255 used; smokes 111369991–111369993 used (111369990–111369999 assigned).
+- **Knowledge impact:** `evaluation/current-research.md`.

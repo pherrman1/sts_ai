@@ -1,0 +1,62 @@
+loaded 777993 roots, 1536 runs (4s)
+trunk done (16s)
+fit 454345 (both packs 454345), stop 150982, test 141754
+  frozen epoch 0 stop-fold RMSE 24.368 (30s)
+  frozen epoch 1 stop-fold RMSE 23.359 (57s)
+  frozen epoch 2 stop-fold RMSE 23.006 (92s)
+  frozen epoch 3 stop-fold RMSE 22.878 (121s)
+  frozen epoch 4 stop-fold RMSE 22.715 (163s)
+  frozen epoch 5 stop-fold RMSE 22.539 (207s)
+  frozen epoch 6 stop-fold RMSE 22.486 (248s)
+  frozen epoch 7 stop-fold RMSE 22.530 (259s)
+  frozen epoch 8 stop-fold RMSE 22.443 (271s)
+  frozen epoch 9 stop-fold RMSE 22.526 (283s)
+  frozen epoch 10 stop-fold RMSE 22.478 (293s)
+  frozen epoch 11 stop-fold RMSE 22.480 (304s)
+  frozen epoch 12 stop-fold RMSE 22.424 (335s)
+  frozen epoch 13 stop-fold RMSE 22.459 (345s)
+  frozen epoch 14 stop-fold RMSE 22.494 (363s)
+  frozen epoch 15 stop-fold RMSE 22.487 (373s)
+  frozen epoch 16 stop-fold RMSE 22.501 (382s)
+  frozen epoch 17 stop-fold RMSE 22.580 (391s)
+frozen: {'fit': 454345, 'fitRuns': 923, 'epochs': 18, 'stopRmse': 22.424} all {'roots': 141754, 'rmse': 21.84, 'bias': 0.61, 'rootDebiasedRmse': 0.0}
+  e2e epoch 0 stop-fold RMSE 18.472 (515s)
+  e2e epoch 1 stop-fold RMSE 17.664 (655s)
+  e2e epoch 2 stop-fold RMSE 17.462 (759s)
+  e2e epoch 3 stop-fold RMSE 17.395 (961s)
+  e2e epoch 4 stop-fold RMSE 17.518 (1091s)
+  e2e epoch 5 stop-fold RMSE 17.374 (1252s)
+  e2e epoch 6 stop-fold RMSE 17.472 (1381s)
+  e2e epoch 7 stop-fold RMSE 17.509 (1535s)
+  e2e epoch 8 stop-fold RMSE 17.449 (1736s)
+  e2e epoch 9 stop-fold RMSE 17.607 (1988s)
+  e2e epoch 10 stop-fold RMSE 17.684 (2284s)
+e2e: {'fit': 454345, 'fitRuns': 923, 'epochs': 11, 'stopRmse': 17.374} all {'roots': 141754, 'rmse': 16.91, 'bias': 0.45, 'rootDebiasedRmse': 0.0}
+
+fold 4 (test) RMSE, Silver points; rootDeb = Silver's root value with its group bias removed (bounds label noise)
+group                roots rootDeb    frozen       e2e
+all                 141754     0.0     21.84     16.91
+act 1                43325     0.0     15.17     11.61
+act 2                40853     0.0     20.29     15.32
+act 3                47556     0.0     25.45     18.47
+act 4                10020     0.0     31.63     29.77
+MONSTER              58050     0.0     15.78      9.87
+ELITE                42759     0.0     21.30     16.33
+BOSS                 37458     0.0     29.32     24.65
+EVENT                 3487     0.0     21.13     14.26
+turn 0               34871     0.0     22.27     17.81
+turn 1               29604     0.0     21.26     16.46
+turn 2               24971     0.0     20.71     15.27
+turn 3               18207     0.0     20.63     15.41
+turn 4               12769     0.0     22.07     17.06
+turn 5                8162     0.0     22.68     17.64
+turn 6+              13170     0.0     24.75     19.59
+act 1 ELITE          14519     0.0     13.62      9.88
+act 1 BOSS            9981     0.0     23.52     19.56
+act 2 ELITE          10651     0.0     20.45     15.44
+act 2 BOSS            8988     0.0     28.06     23.25
+act 3 ELITE          13648     0.0     25.74     19.09
+act 3 BOSS           12410     0.0     32.09     24.86
+act 4 ELITE           3941     0.0     28.51     25.05
+act 4 BOSS            6079     0.0     33.50     32.47
+done (2285s)
