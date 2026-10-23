@@ -23557,7 +23557,7 @@ followed to the end of the turn and grouped by the solver's end-of-turn projecti
 all its end states are dominated, and "material" when the dominator has more HP, more needed block, or less monster
 HP / more debuffs. Pre-registered: material share below 1% = DROP.
 **Result:** 267,389 classified roots (985 capped). Material 0.65% [0.59, 0.73] (raw 1.37%); in the monotone gate 2 of
-2,484. 88% of flags are End Turn with unspent energy; Silver's own Q prefers the flagged edge at 99.4% of them (median
+2,484. 88% of flags are End Turn (82% with energy left); Silver's own Q prefers the flagged edge at 99.4% of them (median
 +0.55); dominated edges get 2.2% of root visits. Enumeration costs 1.5% of run time.
 **Interpretation:** DROP. No search-structure target; the residual is a leaf/score preference for ending the turn.
 Evidence: [turn_dominance_20261023](evidence/turn_dominance_20261023/RESULT.md). Seeds used as above.

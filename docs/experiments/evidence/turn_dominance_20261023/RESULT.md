@@ -20,7 +20,7 @@ seed-clustered 95% interval [0.59%, 0.73%]). That is below 1%: **DROP**.
 
 ## Descriptive
 
-- Where it happens: 88% of the material flags (1,539 of 1,751) are Silver choosing End Turn with energy left while a
+- Where it happens: 88% of the material flags (1,539 of 1,751) are Silver choosing End Turn (82% with energy left) while a
   line that deals damage, applies a debuff or adds needed block exists; the rest are card-order or target choices.
   Most frequent: Nemesis 142, Champ 123, Three Sentries 80, Awakened One 78, Three Darklings 73. Per turn, 1,734 of
   58,099 turns (3.0%) contain one material flag, about 3.4 per run.
