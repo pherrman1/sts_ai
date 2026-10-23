@@ -22443,6 +22443,18 @@ Seeds: none new (live seeds 111200473 and 111200504).
 
 **Status:** Draft PR.
 
+## §657 — Live problem 103: Neow's two-card remove and transform grids were captured as unsupported selectors (2026-10-23)
+
+**Question:** Why was seed 111200638 (release ab7f81ba) abandoned at Neow on floor 0?
+
+**Evidence:** OOC chose Neow option 2, "Lose all Gold, Remove 2 Cards" (240 visits, q 0.730). The next state was a GRID with `num_cards` 2 and `for_purge` false over the starter deck; the inspector captured `details.type: "other"` (`requiredPicks` 2), and the advisor refused it (`ooc_v4 explicitly unsupported: selector_type:other`) twice, so the run was abandoned. First time this path was taken since block 5. javap j103 (canary): `NeowReward.activate` opens `REMOVE_TWO` as `open(purgeable, 2, ..., forUpgrade F, forTransform F, canCancel F, forPurge F)` and `TRANSFORM_TWO_CARDS` the same way (only the tip differs), while `REMOVE_CARD`/`TRANSFORM_CARD`/`UPGRADE_CARD` set their flag; `update` applies the selection while the private `activated` is true and clears it afterwards. `LiveOocCapture.selectorType` classifies unowned grids only by their flags. The engine already models both bonuses as `openCardSelectScreen(REMOVE, 2)` and `openCardSelectScreen(TRANSFORM, 2)`.
+
+**Change:** `STS_NEOW_TWO_CARD_SELECTOR_FIX` (inspector mod, default on, `=0` restores): the single activated `REMOVE_TWO` or `TRANSFORM_TWO_CARDS` reward of the current `NeowEvent` owns the grid, captured as a `remove` or `transform` selector (contradictory flags or two activated rewards still give `other`). Test in `LiveOocCaptureTest`: both owners map to their selector, only an activated two-card reward qualifies (not an inactive one or `REMOVE_CARD`), two activated rewards are refused, and the flag off restores the unowned grid.
+
+**Interpretation:** Live-only, play-changing whenever either Neow two-card bonus is chosen: the run continues and the advisor picks both cards instead of abandoning. Known approximation (not changed here): the importer samples a live transform selector with the card RNG, while native Neow transforms use the Neow RNG; the outcome is hidden either way.
+
+**Status:** Draft PR.
+
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with
