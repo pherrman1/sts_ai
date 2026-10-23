@@ -218,9 +218,15 @@ LiveOocMctsPolicy::LiveOocMctsPolicy(const OocStrategicTokNet &model,
                                      std::shared_ptr<const CombatTransitionSampler> samplerA20)
     : model_(model), sampler_(std::move(sampler)), samplerA20_(std::move(samplerA20)),
       winModel_(oocWinModel), floorModel_(oocFloorModel), armC_(std::move(armC)) {
-    // ADR-0057: M0 was fit on the pinned public X2-B; B0 or another win model keeps the raw anchor.
-    a20LeafCalibration_ = a20LeafCalibration_ && winModel_ && winModel_->ok
-        && fileSha256Hex(winModel_->path) == kHeartLeafAnchorSha256;
+    // ADR-0057: M0 was fit on the pinned public X2-B. B0, another win model, or one without a readable file keeps the
+    // raw anchor.
+    if (a20LeafCalibration_) {
+        try {
+            a20LeafCalibration_ = winModel_ && winModel_->ok && fileSha256Hex(winModel_->path) == kHeartLeafAnchorSha256;
+        } catch (const std::runtime_error &) {
+            a20LeafCalibration_ = false;
+        }
+    }
 }
 
 void LiveOocMctsPolicy::setRootPrimitiveBits(const std::vector<std::uint32_t> &bits) {

@@ -46,4 +46,5 @@ before M0 could become a default. Does the stop still pick what a longer search 
 - Same-action proxy only, not a win rate. The A/B already measured M0 with this stop on.
 
 **Decision.** PREREG's stop check for an M0 default passes. The other condition, a confirmation A/B on fresh seeds,
-needs Philipp's go.
+needs Philipp's go. (2026-10-23 14:11Z: Philipp made M0 the A20 default without it,
+[ADR-0057](../../../../decisions/0057-ooc-leaf-calibration-a20-default.md).)
