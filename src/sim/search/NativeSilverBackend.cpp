@@ -519,7 +519,113 @@ namespace sts::search {
                 ? static_cast<std::int64_t>(agent.bossSimulationMultiplier * agent.simulationCountBase)
                 : agent.simulationCountBase;
 
+            if (g_nativeSilverLabelSearch && (adaptive || learnedStop || lockOnly || stopTrace))
+                fail(gc, bc, "the label search requires a flat budget");
+
             std::unique_ptr<SilverSearcher> searcher;
+            // g_nativeSilverLabelSearch: searches each root again as `searcher` does, without the leaf head.
+            std::unique_ptr<SilverSearcher> labelSearcher;
+            // Reroots `s` at `root` when its retained graph has the root, else starts it fresh there;
+            // returns the simulations the root inherits. `count` updates the reroot counters.
+            const auto prepareSearcher = [&](std::unique_ptr<SilverSearcher> &s, const BattleContext &root,
+                                             bool count) {
+                std::int64_t inheritedVisits = 0;
+                SilverSearcher::Node *node = s ? s->findNode(root) : nullptr;
+                if (s && (node == nullptr || node->isRandomNode)) {
+                    // A different physical copy of an equivalent card was played.
+                    node = s->findNodeUpToEquivalentCopy(root);
+                    if (node != nullptr && count) ++g_equivalentCopyReroots;
+                }
+                if (node != nullptr && !node->isRandomNode) {
+                    inheritedVisits = node->simulationCount;
+                    const bool overCap = s->nodeCount() >= kReuseCap;
+                    s->rerootAt(node, overCap);
+                    if (s->nodeCount() >= kReuseCap) {
+                        s->setRoot(root);   // compaction could not get below the cap
+                        inheritedVisits = 0;
+                    }
+                } else if (s) {
+                    s->setRoot(root);
+                } else {
+                    s = std::make_unique<SilverSearcher>(root, context);
+                    s->evalWeights.escapePenalty = g_options.escapePenalty;
+                    s->evalWeights.eliteEscapePenalty = g_options.eliteEscapePenalty;
+                    s->evalWeights.potionTypeWeightsOn = g_options.potionTypeWeightsOn;
+                    s->evalWeights.potionTypeWeights = g_options.potionTypeWeights;
+                    s->evalWeights.concaveHpK = g_nativeSilverConcaveHpLeafOverride.value_or(g_options.concaveHpK);
+                    s->evalWeights.goldWeight = g_options.goldWeight;
+                    s->evalWeights.maxHpWeight = g_options.maxHpWeight;
+                    if (const auto &params = g_nativeSilverSearchParamOverride) {
+                        s->explorationParameter = params->exploration;
+                        s->explorationParameterChance = params->explorationChance;
+                        s->chanceWideningC = params->chanceWideningC;
+                        s->chanceWideningAlpha = params->chanceWideningAlpha;
+                        s->endTurnWideningC = params->endTurnWideningC;
+                        s->endTurnWideningAlpha = params->endTurnWideningAlpha;
+                    }
+                }
+                if (count) {
+                    if (inheritedVisits > 0) ++g_reroots; else ++g_freshRoots;
+                }
+                return inheritedVisits;
+            };
+            // The settings of this fight's searches at the current root. The label searcher gets no
+            // leaf head, leaf sampler or outcome capture.
+            const auto configureSearcher = [&](SilverSearcher &s, bool label) {
+                s.leafSamples = label ? nullptr : g_nativeSilverLeafSamples;
+                s.outcomes = label ? nullptr : g_nativeSilverOutcomeCapture;
+                s.rootPrior = nativeSilverRootPrior(s);
+                s.rootPriorWeight = s.rootPrior.empty() ? 0 : g_options.rootPriorWeight;
+                s.rootPriorBonus = !g_nativeSilverRootPriorBonusOff;
+                s.nodePrior = nullptr;
+                if (!s.rootPrior.empty() && g_nativeSilverTreePriorOverride) {
+                    s.nodePrior = nativeSilverPolicyPrior;
+                    s.treePriorMinVisits = *g_nativeSilverTreePriorOverride;
+                } else if (!s.rootPrior.empty() && g_options.treePriorMinVisits > 0
+                        && !g_nativeSilverRootPriorOverride) {
+                    // Whole-run §452 tree prior; research thread overrides keep their own setting.
+                    s.nodePrior = nativeSilverPolicyPrior;
+                    s.treePriorMinVisits = g_options.treePriorMinVisits;
+                }
+                s.rolloutConfig = g_nativeSilverRolloutOverride
+                    ? *g_nativeSilverRolloutOverride : SilverSearcher::envRolloutConfig();
+                s.maxBackupMinVisits = g_nativeSilverMaxBackupOverride.value_or(
+                    SilverSearcher::envMaxBackupMinVisits());
+                // ADR-0050: boss rooms (and elite rooms with STS_SILVER_PRIOR_PLAYOUT_ELITE=1, ADR-0056)
+                // of whole-run fights play prior playouts. A rollout, root-prior or prior-net override
+                // (research arms, source runs, imagined OOC fights) keeps its own setting, as the
+                // whole-run tree prior above does.
+                if (!g_nativeSilverRolloutOverride && !g_nativeSilverRootPriorOverride
+                        && !g_nativeSilverPriorNetOverride && g_options.priorPlayoutBossElite
+                        && !g_options.rootPriorPath.empty() && !g_options.rootPriorOverrideOnly
+                        && (gc.curRoom == Room::BOSS || (gc.curRoom == Room::ELITE && g_options.priorPlayoutElite)))
+                    s.rolloutConfig.prior = true;
+                // STS_SILVER_LEAF_HEAD: whole-run fights, as the prior playouts above; a research
+                // override (leafhead armset) sets its own.
+                s.leafHead = {};
+                if (label) {
+                    // The label search plays the playout leaf alone.
+                } else if (g_nativeSilverLeafHeadOverride) {
+                    s.leafHead = *g_nativeSilverLeafHeadOverride;
+                } else if (!g_options.leafHeadPath.empty() && !g_nativeSilverRolloutOverride
+                        && !g_nativeSilverRootPriorOverride && !g_nativeSilverPriorNetOverride) {
+                    s.leafHead = {&g_leafHead, &g_leafHeadTrunk, g_options.leafHeadBlend,
+                                  g_options.leafHeadTurnPenalty, g_options.leafHeadWinCap};
+                }
+                s.rolloutPrior = nullptr;
+                if (s.rolloutConfig.prior) {
+                    // Research: prior playouts score with the root-prior model (or the arm's override).
+                    if (g_options.rootPriorPath.empty() && !g_nativeSilverPriorNetOverride)
+                        throw std::runtime_error("STS_SILVER_ROLLOUT_PRIOR requires STS_SILVER_ROOT_PRIOR");
+                    s.rolloutPrior = nativeSilverPolicyPrior;
+                }
+                if (const CombatValueNet *tableNet = g_nativeSilverRolloutRootTableOverride
+                        ? g_nativeSilverRolloutRootTableOverride
+                        : g_options.rolloutRootTablePath.empty() ? nullptr : &rolloutRootTableNet()) {
+                    nativeSilverRolloutRootTable(s.rootSearchState(), *tableNet, s.rootCardTable);
+                    s.rolloutConfig.cardTable = s.rootCardTable.data();
+                }
+            };
             int decision = 0;
             NoProgressFingerprint previous;
             int noProgressRun = 0;
@@ -552,93 +658,8 @@ namespace sts::search {
                 if (const auto error = nativeSilverSearchRoot(bc, knowledge, root); !error.empty()) {
                     fail(gc, bc, "conversion: " + error);
                 }
-                std::int64_t inheritedVisits = 0;
-                SilverSearcher::Node *node = searcher ? searcher->findNode(root) : nullptr;
-                if (searcher && (node == nullptr || node->isRandomNode)) {
-                    // A different physical copy of an equivalent card was played.
-                    node = searcher->findNodeUpToEquivalentCopy(root);
-                    if (node != nullptr) ++g_equivalentCopyReroots;
-                }
-                if (node != nullptr && !node->isRandomNode) {
-                    inheritedVisits = node->simulationCount;
-                    const bool overCap = searcher->nodeCount() >= kReuseCap;
-                    searcher->rerootAt(node, overCap);
-                    if (searcher->nodeCount() >= kReuseCap) {
-                        searcher->setRoot(root);   // compaction could not get below the cap
-                        inheritedVisits = 0;
-                    }
-                } else if (searcher) {
-                    searcher->setRoot(root);
-                } else {
-                    searcher = std::make_unique<SilverSearcher>(root, context);
-                    searcher->evalWeights.escapePenalty = g_options.escapePenalty;
-                    searcher->evalWeights.eliteEscapePenalty = g_options.eliteEscapePenalty;
-                    searcher->evalWeights.potionTypeWeightsOn = g_options.potionTypeWeightsOn;
-                    searcher->evalWeights.potionTypeWeights = g_options.potionTypeWeights;
-                    searcher->evalWeights.concaveHpK = g_nativeSilverConcaveHpLeafOverride.value_or(g_options.concaveHpK);
-                    searcher->evalWeights.goldWeight = g_options.goldWeight;
-                    searcher->evalWeights.maxHpWeight = g_options.maxHpWeight;
-                    if (const auto &params = g_nativeSilverSearchParamOverride) {
-                        searcher->explorationParameter = params->exploration;
-                        searcher->explorationParameterChance = params->explorationChance;
-                        searcher->chanceWideningC = params->chanceWideningC;
-                        searcher->chanceWideningAlpha = params->chanceWideningAlpha;
-                        searcher->endTurnWideningC = params->endTurnWideningC;
-                        searcher->endTurnWideningAlpha = params->endTurnWideningAlpha;
-                    }
-                }
-                if (inheritedVisits > 0) ++g_reroots; else ++g_freshRoots;
-
-                searcher->leafSamples = g_nativeSilverLeafSamples;
-                searcher->outcomes = g_nativeSilverOutcomeCapture;
-                searcher->rootPrior = nativeSilverRootPrior(*searcher);
-                searcher->rootPriorWeight = searcher->rootPrior.empty() ? 0 : g_options.rootPriorWeight;
-                searcher->rootPriorBonus = !g_nativeSilverRootPriorBonusOff;
-                searcher->nodePrior = nullptr;
-                if (!searcher->rootPrior.empty() && g_nativeSilverTreePriorOverride) {
-                    searcher->nodePrior = nativeSilverPolicyPrior;
-                    searcher->treePriorMinVisits = *g_nativeSilverTreePriorOverride;
-                } else if (!searcher->rootPrior.empty() && g_options.treePriorMinVisits > 0
-                        && !g_nativeSilverRootPriorOverride) {
-                    // Whole-run §452 tree prior; research thread overrides keep their own setting.
-                    searcher->nodePrior = nativeSilverPolicyPrior;
-                    searcher->treePriorMinVisits = g_options.treePriorMinVisits;
-                }
-                searcher->rolloutConfig = g_nativeSilverRolloutOverride
-                    ? *g_nativeSilverRolloutOverride : SilverSearcher::envRolloutConfig();
-                searcher->maxBackupMinVisits = g_nativeSilverMaxBackupOverride.value_or(
-                    SilverSearcher::envMaxBackupMinVisits());
-                // ADR-0050: boss rooms (and elite rooms with STS_SILVER_PRIOR_PLAYOUT_ELITE=1, ADR-0056)
-                // of whole-run fights play prior playouts. A rollout, root-prior or prior-net override
-                // (research arms, source runs, imagined OOC fights) keeps its own setting, as the
-                // whole-run tree prior above does.
-                if (!g_nativeSilverRolloutOverride && !g_nativeSilverRootPriorOverride
-                        && !g_nativeSilverPriorNetOverride && g_options.priorPlayoutBossElite
-                        && !g_options.rootPriorPath.empty() && !g_options.rootPriorOverrideOnly
-                        && (gc.curRoom == Room::BOSS || (gc.curRoom == Room::ELITE && g_options.priorPlayoutElite)))
-                    searcher->rolloutConfig.prior = true;
-                // STS_SILVER_LEAF_HEAD: whole-run fights, as the prior playouts above; a research
-                // override (leafhead armset) sets its own.
-                searcher->leafHead = {};
-                if (g_nativeSilverLeafHeadOverride)
-                    searcher->leafHead = *g_nativeSilverLeafHeadOverride;
-                else if (!g_options.leafHeadPath.empty() && !g_nativeSilverRolloutOverride
-                        && !g_nativeSilverRootPriorOverride && !g_nativeSilverPriorNetOverride)
-                    searcher->leafHead = {&g_leafHead, &g_leafHeadTrunk, g_options.leafHeadBlend,
-                                          g_options.leafHeadTurnPenalty, g_options.leafHeadWinCap};
-                searcher->rolloutPrior = nullptr;
-                if (searcher->rolloutConfig.prior) {
-                    // Research: prior playouts score with the root-prior model (or the arm's override).
-                    if (g_options.rootPriorPath.empty() && !g_nativeSilverPriorNetOverride)
-                        throw std::runtime_error("STS_SILVER_ROLLOUT_PRIOR requires STS_SILVER_ROOT_PRIOR");
-                    searcher->rolloutPrior = nativeSilverPolicyPrior;
-                }
-                if (const CombatValueNet *tableNet = g_nativeSilverRolloutRootTableOverride
-                        ? g_nativeSilverRolloutRootTableOverride
-                        : g_options.rolloutRootTablePath.empty() ? nullptr : &rolloutRootTableNet()) {
-                    nativeSilverRolloutRootTable(searcher->rootSearchState(), *tableNet, searcher->rootCardTable);
-                    searcher->rolloutConfig.cardTable = searcher->rootCardTable.data();
-                }
+                std::int64_t inheritedVisits = prepareSearcher(searcher, root, true);
+                configureSearcher(*searcher, false);
                 ProfileScope profiling(*searcher);
                 const auto configured = learnedStop || lockOnly || stopTrace
                     ? kNativeSilverStopCheckpoints.back() : adaptive ? kAdaptiveTotal : flatBudget;
@@ -737,6 +758,15 @@ namespace sts::search {
                     stats.rolloutActions += searcher->stats.rolloutActions - rolloutActionsBefore;
                 }
                 agent.simulationCountTotal += simulations;
+                // g_nativeSilverLabelSearch: the root again, without the leaf head; it labels the root and
+                // never chooses the action.
+                const bool labelSearch = g_nativeSilverLabelSearch && !skipSearch && searcher->leafHead.head;
+                std::int64_t labelInheritedVisits = 0;
+                if (labelSearch) {
+                    labelInheritedVisits = prepareSearcher(labelSearcher, root, false);
+                    configureSearcher(*labelSearcher, true);
+                    labelSearcher->search(flatBudget);
+                }
                 searching.resume();
 
                 const auto action = SilverSearcher::translateAction(
@@ -750,7 +780,8 @@ namespace sts::search {
                 if (g_nativeSilverRootObserver) {
                     KnowledgeObserverSuspension observing;
                     g_nativeSilverRootObserver({gc, bc, *searcher, decision, inheritedVisits, simulations,
-                                                skipSearch, action});
+                                                skipSearch, action, labelSearch ? labelSearcher.get() : nullptr,
+                                                labelInheritedVisits});
                 }
                 if (searcher->profile) writeTreeProfile(gc, bc, decision, combatId, *searcher, profiling.data,
                     inheritedVisits, configured, skipSearch, action.bits);
@@ -1329,6 +1360,7 @@ namespace sts::search {
     thread_local std::optional<std::uint64_t> g_nativeSilverPlannerSeedOverride;
     thread_local std::function<void(const NativeSilverRootView &)> g_nativeSilverRootObserver;
     thread_local SilverLeafSamples *g_nativeSilverLeafSamples = nullptr;
+    thread_local bool g_nativeSilverLabelSearch = false;
     thread_local SilverOutcomeCapture *g_nativeSilverOutcomeCapture = nullptr;
 
     NativeSilverTotals nativeSilverTotals() {
