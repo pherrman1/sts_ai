@@ -1,0 +1,27 @@
+111394991 old A complete=True
+111394991 old C complete=True
+111394991 new A complete=True
+111394991 new C complete=True
+111394991 exp complete=True
+111394991 new A vs old A jsonl: 397 vs 397 lines, identical=True
+111394991 new A vs old A ctm.jsonl: 33 vs 33 lines, identical=True
+111394991 new C vs old C jsonl: 191 vs 191 lines, identical=True
+111394991 new C vs old C ctm.jsonl: 17 vs 17 lines, identical=True
+111394991 exp vs new C jsonl: 191 vs 191 lines, identical=True
+111394991 exp vs new C ctm.jsonl: 17 vs 17 lines, identical=True
+111394991 new C vs new A jsonl: 191 vs 397 lines, identical=False (first difference at record 1)
+111394991 new C vs new A ctm.jsonl: 17 vs 33 lines, identical=False (first difference at record 0)
+111394992 old A complete=True
+111394992 old C complete=True
+111394992 new A complete=True
+111394992 new C complete=True
+111394992 exp complete=True
+111394992 new A vs old A jsonl: 217 vs 217 lines, identical=True
+111394992 new A vs old A ctm.jsonl: 19 vs 19 lines, identical=True
+111394992 new C vs old C jsonl: 217 vs 217 lines, identical=True
+111394992 new C vs old C ctm.jsonl: 19 vs 19 lines, identical=True
+111394992 exp vs new C jsonl: 217 vs 217 lines, identical=True
+111394992 exp vs new C ctm.jsonl: 19 vs 19 lines, identical=True
+111394992 new C vs new A jsonl: 217 vs 217 lines, identical=False (first difference at record 1)
+111394992 new C vs new A ctm.jsonl: 19 vs 19 lines, identical=False (first difference at record 9)
+PASS
