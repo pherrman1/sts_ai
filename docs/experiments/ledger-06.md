@@ -24011,7 +24011,7 @@ Proposed next: an offline check of the CTM's act-4 predictions against the stage
 campaigns, backup copies of stragglers on idle workers once the queue is empty.
 - Seeds 111360000–111360255 used; smokes 111369991–111369993 used (111369990–111369999 assigned).
 - **Knowledge impact:** `evaluation/current-research.md`.
-## §TBD — Value-head plan, stage 4 check: the A20 CTM over-predicts deaths at most bosses (the Heart 0.49 vs 0.37 observed) and HP loss in Acts 2–4 for today's Silver; a per-fight calibration predicts held-out fights better (research flag, default off; A/B proposed) (offline, 2026-10-23)
+## §670 — Value-head plan, stage 4 check: the A20 CTM over-predicts deaths at most bosses (the Heart 0.49 vs 0.37 observed) and HP loss in Acts 2–4 for today's Silver; a per-fight calibration predicts held-out fights better (research flag, default off; A/B proposed) (offline, 2026-10-23)
 
 **Question:** Do the A20 CTM's predictions match today's real fights, by act and fight? §663 found the rollouts far
 more pessimistic than real play. Philipp chose "Check the CTM first" (card, 2026-10-23 17:50Z): compare the CTM's
