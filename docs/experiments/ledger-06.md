@@ -22512,7 +22512,7 @@ Seeds: none new (live seeds 111200473 and 111200504).
 
 **Status:** Draft PR.
 
-## §TBD — Live problem 111: Discovery advances cardRandomRng every frame (known, not modelled) (2026-10-23)
+## §669 — Live problem 111: Discovery advances cardRandomRng every frame (known, not modelled) (2026-10-23)
 
 **Question:** Why does the game's `cardRandomRng` counter jump after every in-combat Discovery pick (seed 111200663 F6: Duplication Potion + Discovery, second choice set Corruption/Shockwave/Feel No Pain vs native Body Slam/Iron Wave/Cleave; counter 3 -> 93 in the game, 3 -> 6 natively)?
 
