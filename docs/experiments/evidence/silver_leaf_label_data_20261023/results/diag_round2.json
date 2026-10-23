@@ -1,0 +1,772 @@
+{
+ "frozen_both": {
+  "meta": {
+   "fit": 874069,
+   "fitRuns": 1846,
+   "epochs": 13,
+   "stopRmse": 22.949
+  },
+  "groups": {
+   "all": {
+    "roots": 141754,
+    "rmse": 23.29,
+    "bias": 0.26,
+    "rootDebiasedRmse": 18.77
+   },
+   "act 1": {
+    "roots": 43325,
+    "rmse": 16.28,
+    "bias": 0.42,
+    "rootDebiasedRmse": 12.49
+   },
+   "act 2": {
+    "roots": 40853,
+    "rmse": 21.33,
+    "bias": 0.67,
+    "rootDebiasedRmse": 16.76
+   },
+   "act 3": {
+    "roots": 47556,
+    "rmse": 26.18,
+    "bias": 0.86,
+    "rootDebiasedRmse": 18.59
+   },
+   "act 4": {
+    "roots": 10020,
+    "rmse": 37.71,
+    "bias": -4.89,
+    "rootDebiasedRmse": 35.54
+   },
+   "MONSTER": {
+    "roots": 58050,
+    "rmse": 15.44,
+    "bias": 1.3,
+    "rootDebiasedRmse": 9.85
+   },
+   "ELITE": {
+    "roots": 42759,
+    "rmse": 21.6,
+    "bias": 1.4,
+    "rootDebiasedRmse": 17.73
+   },
+   "BOSS": {
+    "roots": 37458,
+    "rmse": 33.3,
+    "bias": -2.55,
+    "rootDebiasedRmse": 27.4
+   },
+   "EVENT": {
+    "roots": 3487,
+    "rmse": 21.4,
+    "bias": -0.69,
+    "rootDebiasedRmse": 11.96
+   },
+   "turn 0": {
+    "roots": 34871,
+    "rmse": 23.39,
+    "bias": -0.64,
+    "rootDebiasedRmse": 22.11
+   },
+   "turn 1": {
+    "roots": 29604,
+    "rmse": 22.16,
+    "bias": 0.41,
+    "rootDebiasedRmse": 18.49
+   },
+   "turn 2": {
+    "roots": 24971,
+    "rmse": 21.96,
+    "bias": 0.26,
+    "rootDebiasedRmse": 17.19
+   },
+   "turn 3": {
+    "roots": 18207,
+    "rmse": 22.91,
+    "bias": 0.91,
+    "rootDebiasedRmse": 16.23
+   },
+   "turn 4": {
+    "roots": 12769,
+    "rmse": 23.68,
+    "bias": 0.92,
+    "rootDebiasedRmse": 15.16
+   },
+   "turn 5": {
+    "roots": 8162,
+    "rmse": 24.33,
+    "bias": 0.21,
+    "rootDebiasedRmse": 14.13
+   },
+   "turn 6+": {
+    "roots": 13170,
+    "rmse": 27.16,
+    "bias": 0.85,
+    "rootDebiasedRmse": 13.39
+   },
+   "act 1 ELITE": {
+    "roots": 14519,
+    "rmse": 13.48,
+    "bias": 0.81,
+    "rootDebiasedRmse": 8.87
+   },
+   "act 1 BOSS": {
+    "roots": 9981,
+    "rmse": 26.98,
+    "bias": 0.14,
+    "rootDebiasedRmse": 21.64
+   },
+   "act 2 ELITE": {
+    "roots": 10651,
+    "rmse": 20.43,
+    "bias": 1.08,
+    "rootDebiasedRmse": 16.67
+   },
+   "act 2 BOSS": {
+    "roots": 8988,
+    "rmse": 31.82,
+    "bias": -1.31,
+    "rootDebiasedRmse": 25.75
+   },
+   "act 3 ELITE": {
+    "roots": 13648,
+    "rmse": 26.18,
+    "bias": 3.17,
+    "rootDebiasedRmse": 20.53
+   },
+   "act 3 BOSS": {
+    "roots": 12410,
+    "rmse": 34.11,
+    "bias": -3.45,
+    "rootDebiasedRmse": 23.45
+   },
+   "act 4 ELITE": {
+    "roots": 3941,
+    "rmse": 29.81,
+    "bias": -1.72,
+    "rootDebiasedRmse": 25.97
+   },
+   "act 4 BOSS": {
+    "roots": 6079,
+    "rmse": 42.04,
+    "bias": -6.94,
+    "rootDebiasedRmse": 40.47
+   }
+  }
+ },
+ "e2e_both": {
+  "meta": {
+   "fit": 874069,
+   "fitRuns": 1846,
+   "epochs": 6,
+   "stopRmse": 19.517
+  },
+  "groups": {
+   "all": {
+    "roots": 141754,
+    "rmse": 19.54,
+    "bias": -1.79,
+    "rootDebiasedRmse": 18.77
+   },
+   "act 1": {
+    "roots": 43325,
+    "rmse": 14.58,
+    "bias": -0.1,
+    "rootDebiasedRmse": 12.49
+   },
+   "act 2": {
+    "roots": 40853,
+    "rmse": 17.9,
+    "bias": -2.09,
+    "rootDebiasedRmse": 16.76
+   },
+   "act 3": {
+    "roots": 47556,
+    "rmse": 20.11,
+    "bias": -2.22,
+    "rootDebiasedRmse": 18.59
+   },
+   "act 4": {
+    "roots": 10020,
+    "rmse": 35.49,
+    "bias": -5.85,
+    "rootDebiasedRmse": 35.54
+   },
+   "MONSTER": {
+    "roots": 58050,
+    "rmse": 10.52,
+    "bias": -1.62,
+    "rootDebiasedRmse": 9.85
+   },
+   "ELITE": {
+    "roots": 42759,
+    "rmse": 17.33,
+    "bias": -1.36,
+    "rootDebiasedRmse": 17.73
+   },
+   "BOSS": {
+    "roots": 37458,
+    "rmse": 30.2,
+    "bias": -2.75,
+    "rootDebiasedRmse": 27.4
+   },
+   "EVENT": {
+    "roots": 3487,
+    "rmse": 14.44,
+    "bias": 0.31,
+    "rootDebiasedRmse": 11.96
+   },
+   "turn 0": {
+    "roots": 34871,
+    "rmse": 20.04,
+    "bias": -1.64,
+    "rootDebiasedRmse": 22.11
+   },
+   "turn 1": {
+    "roots": 29604,
+    "rmse": 18.25,
+    "bias": -1.56,
+    "rootDebiasedRmse": 18.49
+   },
+   "turn 2": {
+    "roots": 24971,
+    "rmse": 17.85,
+    "bias": -2.24,
+    "rootDebiasedRmse": 17.19
+   },
+   "turn 3": {
+    "roots": 18207,
+    "rmse": 18.44,
+    "bias": -1.78,
+    "rootDebiasedRmse": 16.23
+   },
+   "turn 4": {
+    "roots": 12769,
+    "rmse": 19.53,
+    "bias": -1.61,
+    "rootDebiasedRmse": 15.16
+   },
+   "turn 5": {
+    "roots": 8162,
+    "rmse": 19.95,
+    "bias": -1.68,
+    "rootDebiasedRmse": 14.13
+   },
+   "turn 6+": {
+    "roots": 13170,
+    "rmse": 24.68,
+    "bias": -2.13,
+    "rootDebiasedRmse": 13.39
+   },
+   "act 1 ELITE": {
+    "roots": 14519,
+    "rmse": 11.23,
+    "bias": -0.09,
+    "rootDebiasedRmse": 8.87
+   },
+   "act 1 BOSS": {
+    "roots": 9981,
+    "rmse": 25.8,
+    "bias": 0.75,
+    "rootDebiasedRmse": 21.64
+   },
+   "act 2 ELITE": {
+    "roots": 10651,
+    "rmse": 16.97,
+    "bias": -1.0,
+    "rootDebiasedRmse": 16.67
+   },
+   "act 2 BOSS": {
+    "roots": 8988,
+    "rmse": 28.92,
+    "bias": -3.94,
+    "rootDebiasedRmse": 25.75
+   },
+   "act 3 ELITE": {
+    "roots": 13648,
+    "rmse": 20.23,
+    "bias": -2.23,
+    "rootDebiasedRmse": 20.53
+   },
+   "act 3 BOSS": {
+    "roots": 12410,
+    "rmse": 28.01,
+    "bias": -2.6,
+    "rootDebiasedRmse": 23.45
+   },
+   "act 4 ELITE": {
+    "roots": 3941,
+    "rmse": 24.43,
+    "bias": -4.01,
+    "rootDebiasedRmse": 25.97
+   },
+   "act 4 BOSS": {
+    "roots": 6079,
+    "rmse": 41.1,
+    "bias": -7.04,
+    "rootDebiasedRmse": 40.47
+   }
+  }
+ },
+ "e2e_reg": {
+  "meta": {
+   "fit": 454345,
+   "fitRuns": 923,
+   "epochs": 11,
+   "stopRmse": 20.332
+  },
+  "groups": {
+   "all": {
+    "roots": 141754,
+    "rmse": 20.23,
+    "bias": -1.59,
+    "rootDebiasedRmse": 18.77
+   },
+   "act 1": {
+    "roots": 43325,
+    "rmse": 14.73,
+    "bias": -0.43,
+    "rootDebiasedRmse": 12.49
+   },
+   "act 2": {
+    "roots": 40853,
+    "rmse": 18.62,
+    "bias": -1.95,
+    "rootDebiasedRmse": 16.76
+   },
+   "act 3": {
+    "roots": 47556,
+    "rmse": 21.0,
+    "bias": -1.04,
+    "rootDebiasedRmse": 18.59
+   },
+   "act 4": {
+    "roots": 10020,
+    "rmse": 36.67,
+    "bias": -7.73,
+    "rootDebiasedRmse": 35.54
+   },
+   "MONSTER": {
+    "roots": 58050,
+    "rmse": 11.06,
+    "bias": -0.82,
+    "rootDebiasedRmse": 9.85
+   },
+   "ELITE": {
+    "roots": 42759,
+    "rmse": 18.05,
+    "bias": -1.41,
+    "rootDebiasedRmse": 17.73
+   },
+   "BOSS": {
+    "roots": 37458,
+    "rmse": 31.09,
+    "bias": -3.18,
+    "rootDebiasedRmse": 27.4
+   },
+   "EVENT": {
+    "roots": 3487,
+    "rmse": 14.86,
+    "bias": 0.47,
+    "rootDebiasedRmse": 11.96
+   },
+   "turn 0": {
+    "roots": 34871,
+    "rmse": 20.58,
+    "bias": -2.03,
+    "rootDebiasedRmse": 22.11
+   },
+   "turn 1": {
+    "roots": 29604,
+    "rmse": 18.94,
+    "bias": -1.47,
+    "rootDebiasedRmse": 18.49
+   },
+   "turn 2": {
+    "roots": 24971,
+    "rmse": 18.54,
+    "bias": -1.75,
+    "rootDebiasedRmse": 17.19
+   },
+   "turn 3": {
+    "roots": 18207,
+    "rmse": 19.11,
+    "bias": -0.96,
+    "rootDebiasedRmse": 16.23
+   },
+   "turn 4": {
+    "roots": 12769,
+    "rmse": 20.33,
+    "bias": -0.96,
+    "rootDebiasedRmse": 15.16
+   },
+   "turn 5": {
+    "roots": 8162,
+    "rmse": 21.1,
+    "bias": -1.51,
+    "rootDebiasedRmse": 14.13
+   },
+   "turn 6+": {
+    "roots": 13170,
+    "rmse": 25.39,
+    "bias": -1.93,
+    "rootDebiasedRmse": 13.39
+   },
+   "act 1 ELITE": {
+    "roots": 14519,
+    "rmse": 11.22,
+    "bias": -0.6,
+    "rootDebiasedRmse": 8.87
+   },
+   "act 1 BOSS": {
+    "roots": 9981,
+    "rmse": 26.1,
+    "bias": 0.74,
+    "rootDebiasedRmse": 21.64
+   },
+   "act 2 ELITE": {
+    "roots": 10651,
+    "rmse": 17.33,
+    "bias": -0.97,
+    "rootDebiasedRmse": 16.67
+   },
+   "act 2 BOSS": {
+    "roots": 8988,
+    "rmse": 30.38,
+    "bias": -4.66,
+    "rootDebiasedRmse": 25.75
+   },
+   "act 3 ELITE": {
+    "roots": 13648,
+    "rmse": 21.5,
+    "bias": -1.23,
+    "rootDebiasedRmse": 20.53
+   },
+   "act 3 BOSS": {
+    "roots": 12410,
+    "rmse": 28.73,
+    "bias": -2.53,
+    "rootDebiasedRmse": 23.45
+   },
+   "act 4 ELITE": {
+    "roots": 3941,
+    "rmse": 25.67,
+    "bias": -6.17,
+    "rootDebiasedRmse": 25.97
+   },
+   "act 4 BOSS": {
+    "roots": 6079,
+    "rmse": 42.3,
+    "bias": -8.74,
+    "rootDebiasedRmse": 40.47
+   }
+  }
+ },
+ "e2e_reg_both": {
+  "meta": {
+   "fit": 874069,
+   "fitRuns": 1846,
+   "epochs": 11,
+   "stopRmse": 19.596
+  },
+  "groups": {
+   "all": {
+    "roots": 141754,
+    "rmse": 19.29,
+    "bias": -1.03,
+    "rootDebiasedRmse": 18.77
+   },
+   "act 1": {
+    "roots": 43325,
+    "rmse": 14.39,
+    "bias": 0.62,
+    "rootDebiasedRmse": 12.49
+   },
+   "act 2": {
+    "roots": 40853,
+    "rmse": 17.49,
+    "bias": -1.23,
+    "rootDebiasedRmse": 16.76
+   },
+   "act 3": {
+    "roots": 47556,
+    "rmse": 19.96,
+    "bias": -1.31,
+    "rootDebiasedRmse": 18.59
+   },
+   "act 4": {
+    "roots": 10020,
+    "rmse": 35.1,
+    "bias": -6.08,
+    "rootDebiasedRmse": 35.54
+   },
+   "MONSTER": {
+    "roots": 58050,
+    "rmse": 10.31,
+    "bias": -1.09,
+    "rootDebiasedRmse": 9.85
+   },
+   "ELITE": {
+    "roots": 42759,
+    "rmse": 17.19,
+    "bias": -0.98,
+    "rootDebiasedRmse": 17.73
+   },
+   "BOSS": {
+    "roots": 37458,
+    "rmse": 29.82,
+    "bias": -1.06,
+    "rootDebiasedRmse": 27.4
+   },
+   "EVENT": {
+    "roots": 3487,
+    "rmse": 13.61,
+    "bias": -0.45,
+    "rootDebiasedRmse": 11.96
+   },
+   "turn 0": {
+    "roots": 34871,
+    "rmse": 19.77,
+    "bias": -1.13,
+    "rootDebiasedRmse": 22.11
+   },
+   "turn 1": {
+    "roots": 29604,
+    "rmse": 18.19,
+    "bias": -1.1,
+    "rootDebiasedRmse": 18.49
+   },
+   "turn 2": {
+    "roots": 24971,
+    "rmse": 17.69,
+    "bias": -1.4,
+    "rootDebiasedRmse": 17.19
+   },
+   "turn 3": {
+    "roots": 18207,
+    "rmse": 18.17,
+    "bias": -0.8,
+    "rootDebiasedRmse": 16.23
+   },
+   "turn 4": {
+    "roots": 12769,
+    "rmse": 19.6,
+    "bias": -0.63,
+    "rootDebiasedRmse": 15.16
+   },
+   "turn 5": {
+    "roots": 8162,
+    "rmse": 20.68,
+    "bias": -0.74,
+    "rootDebiasedRmse": 14.13
+   },
+   "turn 6+": {
+    "roots": 13170,
+    "rmse": 23.25,
+    "bias": -0.86,
+    "rootDebiasedRmse": 13.39
+   },
+   "act 1 ELITE": {
+    "roots": 14519,
+    "rmse": 10.69,
+    "bias": 0.43,
+    "rootDebiasedRmse": 8.87
+   },
+   "act 1 BOSS": {
+    "roots": 9981,
+    "rmse": 25.89,
+    "bias": 3.41,
+    "rootDebiasedRmse": 21.64
+   },
+   "act 2 ELITE": {
+    "roots": 10651,
+    "rmse": 16.6,
+    "bias": -0.85,
+    "rootDebiasedRmse": 16.67
+   },
+   "act 2 BOSS": {
+    "roots": 8988,
+    "rmse": 28.37,
+    "bias": -1.69,
+    "rootDebiasedRmse": 25.75
+   },
+   "act 3 ELITE": {
+    "roots": 13648,
+    "rmse": 20.17,
+    "bias": -1.26,
+    "rootDebiasedRmse": 20.53
+   },
+   "act 3 BOSS": {
+    "roots": 12410,
+    "rmse": 27.71,
+    "bias": -1.59,
+    "rootDebiasedRmse": 23.45
+   },
+   "act 4 ELITE": {
+    "roots": 3941,
+    "rmse": 25.13,
+    "bias": -5.59,
+    "rootDebiasedRmse": 25.97
+   },
+   "act 4 BOSS": {
+    "roots": 6079,
+    "rmse": 40.26,
+    "bias": -6.4,
+    "rootDebiasedRmse": 40.47
+   }
+  }
+ },
+ "e2e_reg50": {
+  "meta": {
+   "fit": 225052,
+   "fitRuns": 462,
+   "epochs": 20,
+   "stopRmse": 21.418
+  },
+  "groups": {
+   "all": {
+    "roots": 141754,
+    "rmse": 21.34,
+    "bias": -1.57,
+    "rootDebiasedRmse": 18.77
+   },
+   "act 1": {
+    "roots": 43325,
+    "rmse": 15.17,
+    "bias": 0.08,
+    "rootDebiasedRmse": 12.49
+   },
+   "act 2": {
+    "roots": 40853,
+    "rmse": 19.18,
+    "bias": -1.3,
+    "rootDebiasedRmse": 16.76
+   },
+   "act 3": {
+    "roots": 47556,
+    "rmse": 22.72,
+    "bias": -1.67,
+    "rootDebiasedRmse": 18.59
+   },
+   "act 4": {
+    "roots": 10020,
+    "rmse": 38.68,
+    "bias": -9.33,
+    "rootDebiasedRmse": 35.54
+   },
+   "MONSTER": {
+    "roots": 58050,
+    "rmse": 11.83,
+    "bias": -0.58,
+    "rootDebiasedRmse": 9.85
+   },
+   "ELITE": {
+    "roots": 42759,
+    "rmse": 19.14,
+    "bias": -1.76,
+    "rootDebiasedRmse": 17.73
+   },
+   "BOSS": {
+    "roots": 37458,
+    "rmse": 32.61,
+    "bias": -3.0,
+    "rootDebiasedRmse": 27.4
+   },
+   "EVENT": {
+    "roots": 3487,
+    "rmse": 16.44,
+    "bias": -0.29,
+    "rootDebiasedRmse": 11.96
+   },
+   "turn 0": {
+    "roots": 34871,
+    "rmse": 21.56,
+    "bias": -1.53,
+    "rootDebiasedRmse": 22.11
+   },
+   "turn 1": {
+    "roots": 29604,
+    "rmse": 20.08,
+    "bias": -1.52,
+    "rootDebiasedRmse": 18.49
+   },
+   "turn 2": {
+    "roots": 24971,
+    "rmse": 19.71,
+    "bias": -1.93,
+    "rootDebiasedRmse": 17.19
+   },
+   "turn 3": {
+    "roots": 18207,
+    "rmse": 20.04,
+    "bias": -1.26,
+    "rootDebiasedRmse": 16.23
+   },
+   "turn 4": {
+    "roots": 12769,
+    "rmse": 21.76,
+    "bias": -1.21,
+    "rootDebiasedRmse": 15.16
+   },
+   "turn 5": {
+    "roots": 8162,
+    "rmse": 22.36,
+    "bias": -1.61,
+    "rootDebiasedRmse": 14.13
+   },
+   "turn 6+": {
+    "roots": 13170,
+    "rmse": 26.52,
+    "bias": -1.84,
+    "rootDebiasedRmse": 13.39
+   },
+   "act 1 ELITE": {
+    "roots": 14519,
+    "rmse": 11.66,
+    "bias": 0.1,
+    "rootDebiasedRmse": 8.87
+   },
+   "act 1 BOSS": {
+    "roots": 9981,
+    "rmse": 26.91,
+    "bias": 0.83,
+    "rootDebiasedRmse": 21.64
+   },
+   "act 2 ELITE": {
+    "roots": 10651,
+    "rmse": 18.02,
+    "bias": -0.74,
+    "rootDebiasedRmse": 16.67
+   },
+   "act 2 BOSS": {
+    "roots": 8988,
+    "rmse": 31.07,
+    "bias": -4.18,
+    "rootDebiasedRmse": 25.75
+   },
+   "act 3 ELITE": {
+    "roots": 13648,
+    "rmse": 22.78,
+    "bias": -2.31,
+    "rootDebiasedRmse": 20.53
+   },
+   "act 3 BOSS": {
+    "roots": 12410,
+    "rmse": 31.19,
+    "bias": -2.14,
+    "rootDebiasedRmse": 23.45
+   },
+   "act 4 ELITE": {
+    "roots": 3941,
+    "rmse": 28.24,
+    "bias": -9.41,
+    "rootDebiasedRmse": 25.97
+   },
+   "act 4 BOSS": {
+    "roots": 6079,
+    "rmse": 44.15,
+    "bias": -9.28,
+    "rootDebiasedRmse": 40.47
+   }
+  }
+ }
+}
