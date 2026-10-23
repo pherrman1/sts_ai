@@ -3770,7 +3770,7 @@ int testSimulatorCorrectnessPr9To19() {
     // a fully blocked hit gives no Strength. STS_ANGRY_UNBLOCKED_FIX=0 restores
     // the legacy buff on every attack.
     for (const bool fix : {true, false}) {
-        for (const int hit : {4, 15}) {
+        for (const int hit : {4, 10, 15}) {
             if (fix) unsetenv("STS_ANGRY_UNBLOCKED_FIX");
             else setenv("STS_ANGRY_UNBLOCKED_FIX", "0", 1);
             auto bc = simulatorCorrectnessBattle({}, Card(CardId::FLEX), 10);
