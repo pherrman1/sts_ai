@@ -22467,6 +22467,18 @@ Seeds: none new (live seeds 111200473 and 111200504).
 
 **Status:** Draft PR.
 
+## §TBD — Live problem 109: Time Eater marks usedHaste when it rolls Haste (2026-10-23)
+
+**Question:** Why did seed 111200653 (step 875, floor 51, Time Eater) show `monsters[0].miscInfo` 1 in the game vs 0 natively after End Turn?
+
+**Evidence:** HP went 232 -> 229, below max/2, so Time Eater rolled HASTE (post moveHistory [4,5]). Java (javap, canary): `TimeEater.getMove` writes `usedHaste = true` before `setMove(5, BUFF)`, i.e. at roll time. The engine set `miscInfo` only in the HASTE move action; its roll only read it.
+
+**Change:** `STS_TIME_EATER_HASTE_ROLL_FIX` (default on, `=0` restores): the Time Eater roll writes `monsterData = 1` when it chooses Haste, the same pattern Bronze Orb already uses for Stasis. Test in `simulator_correctness_pr9_19`: Time Eater below half HP rolls Haste with `miscInfo` 1 (legacy 0). smoke|core 138/138.
+
+**Interpretation:** Play is unchanged unless Time Eater re-rolls between choosing Haste and executing it. The fix makes the state between roll and Haste match the game (Silver node identity, live tree reuse on exact state match).
+
+**Status:** Draft PR.
+
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with

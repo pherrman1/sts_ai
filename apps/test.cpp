@@ -3765,6 +3765,28 @@ int testSimulatorCorrectnessPr9To19() {
         }
     }
 
+    // Live problem 109 (seed 111200653): Java TimeEater.getMove sets usedHaste
+    // when it rolls Haste, not when Haste executes. STS_TIME_EATER_HASTE_ROLL_FIX=0
+    // restores the legacy engine, which marked it only on execution.
+    for (const bool fix : {true, false}) {
+        if (fix) unsetenv("STS_TIME_EATER_HASTE_ROLL_FIX");
+        else setenv("STS_TIME_EATER_HASTE_ROLL_FIX", "0", 1);
+        GameContext gc(CharacterClass::IRONCLAD, 91, 20);
+        BattleContext bc; bc.init(gc, MonsterEncounter::TIME_EATER);
+        auto &m = bc.monsters.arr[0];
+        m.curHp = m.maxHp / 2 - 1;
+        m.miscInfo = 0;
+        m.rollMove(bc);
+        unsetenv("STS_TIME_EATER_HASTE_ROLL_FIX");
+        if (m.moveHistory[0] != MonsterMoveId::TIME_EATER_HASTE) {
+            return fail("Time Eater under half HP did not roll Haste");
+        }
+        if (m.miscInfo != (fix ? 1 : 0)) {
+            return fail(fix ? "Time Eater did not mark usedHaste when rolling Haste"
+                            : "STS_TIME_EATER_HASTE_ROLL_FIX=0 marked usedHaste at roll time");
+        }
+    }
+
     // #13: Unceasing Top resolves the shuffle/draw work before returning control.
     {
         auto bc = simulatorCorrectnessBattle({RelicId::UNCEASING_TOP}, Card(CardId::FLEX), 5);
