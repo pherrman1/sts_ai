@@ -1,0 +1,115 @@
+loaded 777993 roots, 1536 runs (4s)
+trunk done (14s)
+  frozen epoch 0 stop-fold RMSE 25.534 (31s)
+  frozen epoch 1 stop-fold RMSE 24.493 (32s)
+  frozen epoch 2 stop-fold RMSE 24.234 (32s)
+  frozen epoch 3 stop-fold RMSE 23.827 (33s)
+  frozen epoch 4 stop-fold RMSE 23.750 (34s)
+  frozen epoch 5 stop-fold RMSE 23.575 (35s)
+  frozen epoch 6 stop-fold RMSE 23.587 (36s)
+  frozen epoch 7 stop-fold RMSE 23.640 (36s)
+  frozen epoch 8 stop-fold RMSE 23.542 (37s)
+  frozen epoch 9 stop-fold RMSE 23.542 (38s)
+  frozen epoch 10 stop-fold RMSE 23.566 (39s)
+  frozen epoch 11 stop-fold RMSE 23.463 (39s)
+  frozen epoch 12 stop-fold RMSE 23.542 (40s)
+  frozen epoch 13 stop-fold RMSE 23.461 (41s)
+  frozen epoch 14 stop-fold RMSE 23.581 (42s)
+  frozen epoch 15 stop-fold RMSE 23.483 (42s)
+  frozen epoch 16 stop-fold RMSE 23.645 (43s)
+  frozen epoch 17 stop-fold RMSE 23.704 (44s)
+  frozen epoch 18 stop-fold RMSE 23.577 (45s)
+frozen: {'fit': 454345, 'fitRuns': 923, 'epochs': 19, 'stopRmse': 23.461} all {'roots': 141754, 'rmse': 23.71, 'bias': -0.08, 'rootDebiasedRmse': 18.77}
+  frozen50 epoch 0 stop-fold RMSE 27.018 (47s)
+  frozen50 epoch 1 stop-fold RMSE 25.739 (47s)
+  frozen50 epoch 2 stop-fold RMSE 25.217 (47s)
+  frozen50 epoch 3 stop-fold RMSE 24.983 (48s)
+  frozen50 epoch 4 stop-fold RMSE 24.667 (48s)
+  frozen50 epoch 5 stop-fold RMSE 24.711 (49s)
+  frozen50 epoch 6 stop-fold RMSE 24.662 (49s)
+  frozen50 epoch 7 stop-fold RMSE 24.455 (49s)
+  frozen50 epoch 8 stop-fold RMSE 24.500 (50s)
+  frozen50 epoch 9 stop-fold RMSE 24.470 (50s)
+  frozen50 epoch 10 stop-fold RMSE 24.431 (50s)
+  frozen50 epoch 11 stop-fold RMSE 24.486 (51s)
+  frozen50 epoch 12 stop-fold RMSE 24.500 (51s)
+  frozen50 epoch 13 stop-fold RMSE 24.591 (52s)
+  frozen50 epoch 14 stop-fold RMSE 24.511 (52s)
+  frozen50 epoch 15 stop-fold RMSE 24.532 (52s)
+frozen50: {'fit': 225052, 'fitRuns': 462, 'epochs': 16, 'stopRmse': 24.431} all {'roots': 141754, 'rmse': 24.62, 'bias': -0.39, 'rootDebiasedRmse': 18.77}
+  frozen25 epoch 0 stop-fold RMSE 29.440 (53s)
+  frozen25 epoch 1 stop-fold RMSE 27.395 (53s)
+  frozen25 epoch 2 stop-fold RMSE 26.613 (53s)
+  frozen25 epoch 3 stop-fold RMSE 26.198 (54s)
+  frozen25 epoch 4 stop-fold RMSE 25.922 (54s)
+  frozen25 epoch 5 stop-fold RMSE 25.760 (54s)
+  frozen25 epoch 6 stop-fold RMSE 25.706 (54s)
+  frozen25 epoch 7 stop-fold RMSE 25.611 (54s)
+  frozen25 epoch 8 stop-fold RMSE 25.568 (55s)
+  frozen25 epoch 9 stop-fold RMSE 25.715 (55s)
+  frozen25 epoch 10 stop-fold RMSE 25.466 (55s)
+  frozen25 epoch 11 stop-fold RMSE 25.525 (55s)
+  frozen25 epoch 12 stop-fold RMSE 25.451 (55s)
+  frozen25 epoch 13 stop-fold RMSE 25.433 (56s)
+  frozen25 epoch 14 stop-fold RMSE 25.672 (56s)
+  frozen25 epoch 15 stop-fold RMSE 25.384 (56s)
+  frozen25 epoch 16 stop-fold RMSE 25.564 (56s)
+  frozen25 epoch 17 stop-fold RMSE 25.560 (56s)
+  frozen25 epoch 18 stop-fold RMSE 25.775 (56s)
+  frozen25 epoch 19 stop-fold RMSE 25.769 (57s)
+  frozen25 epoch 20 stop-fold RMSE 25.589 (57s)
+frozen25: {'fit': 114360, 'fitRuns': 231, 'epochs': 21, 'stopRmse': 25.384} all {'roots': 141754, 'rmse': 25.84, 'bias': -0.15, 'rootDebiasedRmse': 18.77}
+  frozenbig epoch 0 stop-fold RMSE 24.048 (61s)
+  frozenbig epoch 1 stop-fold RMSE 23.751 (63s)
+  frozenbig epoch 2 stop-fold RMSE 23.661 (66s)
+  frozenbig epoch 3 stop-fold RMSE 23.810 (67s)
+  frozenbig epoch 4 stop-fold RMSE 24.124 (70s)
+  frozenbig epoch 5 stop-fold RMSE 24.081 (72s)
+  frozenbig epoch 6 stop-fold RMSE 24.445 (74s)
+  frozenbig epoch 7 stop-fold RMSE 24.556 (76s)
+frozenbig: {'fit': 454345, 'fitRuns': 923, 'epochs': 8, 'stopRmse': 23.661} all {'roots': 141754, 'rmse': 23.91, 'bias': -0.99, 'rootDebiasedRmse': 18.77}
+  e2e epoch 0 stop-fold RMSE 20.498 (89s)
+  e2e epoch 1 stop-fold RMSE 20.311 (100s)
+  e2e epoch 2 stop-fold RMSE 20.644 (111s)
+  e2e epoch 3 stop-fold RMSE 20.597 (122s)
+  e2e epoch 4 stop-fold RMSE 21.020 (133s)
+  e2e epoch 5 stop-fold RMSE 20.993 (144s)
+  e2e epoch 6 stop-fold RMSE 21.346 (155s)
+e2e: {'fit': 454345, 'fitRuns': 923, 'epochs': 7, 'stopRmse': 20.311} all {'roots': 141754, 'rmse': 19.98, 'bias': 0.08, 'rootDebiasedRmse': 18.77}
+  e2e50 epoch 0 stop-fold RMSE 22.868 (162s)
+  e2e50 epoch 1 stop-fold RMSE 21.402 (168s)
+  e2e50 epoch 2 stop-fold RMSE 21.131 (173s)
+  e2e50 epoch 3 stop-fold RMSE 21.250 (178s)
+  e2e50 epoch 4 stop-fold RMSE 21.178 (184s)
+  e2e50 epoch 5 stop-fold RMSE 21.286 (189s)
+  e2e50 epoch 6 stop-fold RMSE 21.371 (195s)
+  e2e50 epoch 7 stop-fold RMSE 21.356 (201s)
+e2e50: {'fit': 225052, 'fitRuns': 462, 'epochs': 8, 'stopRmse': 21.131} all {'roots': 141754, 'rmse': 21.06, 'bias': -1.01, 'rootDebiasedRmse': 18.77}
+
+fold 4 (test) RMSE, Silver points; rootDeb = Silver's root value with its group bias removed (bounds label noise)
+group                roots rootDeb    frozen  frozen50  frozen25 frozenbig       e2e     e2e50
+all                 141754    18.8     23.71     24.62     25.84     23.91     19.98     21.06
+act 1                43325    12.5     16.73     17.24     17.88     16.75     14.86     15.51
+act 2                40853    16.8     21.86     22.52     23.54     21.76     18.46     19.08
+act 3                47556    18.6     26.69     27.98     29.42     26.90     20.40     22.06
+act 4                10020    35.5     37.62     38.82     41.14     38.88     36.42     37.99
+MONSTER              58050     9.8     15.94     16.74     17.93     15.77     10.91     12.18
+ELITE                42759    17.7     22.14     23.25     24.54     22.10     17.76     19.08
+BOSS                 37458    27.4     33.62     34.55     35.85     34.31     30.70     31.74
+EVENT                 3487    12.0     21.89     22.78     24.30     21.70     15.69     16.70
+turn 0               34871    22.1     23.77     24.56     25.53     24.05     20.63     21.64
+turn 1               29604    18.5     22.69     23.48     24.54     22.82     18.72     19.93
+turn 2               24971    17.2     22.33     23.28     24.42     22.36     18.22     19.52
+turn 3               18207    16.2     23.18     24.36     25.61     23.42     19.21     19.79
+turn 4               12769    15.2     23.88     24.84     26.08     24.14     20.39     21.23
+turn 5                8162    14.1     24.94     25.67     26.99     25.01     20.73     21.82
+turn 6+              13170    13.4     27.79     28.88     30.93     28.20     23.91     25.43
+act 1 ELITE          14519     8.9     13.94     14.72     15.53     13.93     11.48     12.62
+act 1 BOSS            9981    21.6     27.60     28.13     28.64     27.70     26.22     26.68
+act 2 ELITE          10651    16.7     20.77     21.62     22.99     20.48     17.40     18.14
+act 2 BOSS            8988    25.8     32.62     33.45     34.35     32.90     30.04     30.24
+act 3 ELITE          13648    20.5     26.84     28.11     29.53     26.81     20.48     22.45
+act 3 BOSS           12410    23.4     34.40     35.77     37.13     35.17     27.92     29.54
+act 4 ELITE           3941    26.0     30.70     32.65     34.57     31.03     25.84     26.98
+act 4 BOSS            6079    40.5     41.49     42.34     44.89     43.21     41.87     43.66
+done (201s)

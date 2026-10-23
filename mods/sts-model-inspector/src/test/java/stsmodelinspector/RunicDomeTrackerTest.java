@@ -599,9 +599,13 @@ public final class RunicDomeTrackerTest {
         Object darkIdentity=new Object();RunicDomeTracker darkTracker=new RunicDomeTracker(darkIdentity,"Darkling",17,3,3,0);
         darkTracker.bind(1,0,"initial",-1,0);darkTracker.globalTurn(0);darkTracker.beginRoll(darkIdentity,50,50);darkTracker.setMove(darkIdentity);darkTracker.endRoll(darkIdentity);
         darkTracker.publicOverride(darkIdentity,4,true);darkTracker.setMove(darkIdentity);darkTracker.endKnownTurn(darkIdentity);
-        if(Boolean.TRUE.equals(darkTracker.snapshot(darkIdentity,1,0,false).get("complete")))throw new AssertionError("missing duplicate Regrow accepted");
+        // The window before the queued duplicate (a source card's grid,
+        // problem 104): Regrow known, one known transition.
+        Map<String,Object> regrowWindow=darkTracker.snapshot(darkIdentity,1,0,false);
+        if(!Boolean.TRUE.equals(regrowWindow.get("complete")) || !regrowWindow.get("knownTransitions").equals(1))throw new AssertionError("Regrow window "+regrowWindow);
         darkTracker.knownOverride(darkIdentity,4);darkTracker.setMove(darkIdentity);darkTracker.endKnownTurn(darkIdentity);
-        if(!Boolean.TRUE.equals(darkTracker.snapshot(darkIdentity,1,0,false).get("complete")))throw new AssertionError("public Regrow rejected");
+        Map<String,Object> regrowDone=darkTracker.snapshot(darkIdentity,1,0,false);
+        if(!Boolean.TRUE.equals(regrowDone.get("complete")) || !regrowDone.get("knownTransitions").equals(2))throw new AssertionError("public Regrow rejected "+regrowDone);
         darkTracker.globalTurn(1);darkTracker.execute(darkIdentity,4);darkTracker.beginRoll(darkIdentity,0,50);darkTracker.setMove(darkIdentity);darkTracker.endRoll(darkIdentity);
         Map<String,Object> darkRow=darkTracker.snapshot(darkIdentity,2,0,false);
         if(!Boolean.TRUE.equals(darkRow.get("complete")) || !Integer.valueOf(0).equals(darkRow.get("rollHp")))throw new AssertionError("half-dead roll rejected "+darkRow);

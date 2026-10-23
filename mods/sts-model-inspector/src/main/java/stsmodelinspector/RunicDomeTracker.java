@@ -392,7 +392,10 @@ final class RunicDomeTracker {
         // move; the row reports one known transition and the producer emits the
         // duplicate as a pending MONSTER_SET_MOVE.
         boolean rebirthWindow=rebirthDuplicatePending && knownNextMove==3 && !inRoll && !knownTurn;
-        boolean complete=failure==null && !inRoll && !knownTurn && !hiddenSetterScope && (!rebirthDuplicatePending || rebirthWindow) && !publicDuplicatePending && pendingThefts==0 && (pending || (pendingDirect && hiddenSetterSeen) || knownNextMove!=0 || dead);
+        // Darkling.damage at a half-death likewise: Regrow is known, and its
+        // queued duplicate SetMoveAction(4) is still pending (problem 104).
+        boolean regrowWindow=publicDuplicatePending && "Darkling".equals(id) && knownNextMove==4 && !inRoll && !knownTurn;
+        boolean complete=failure==null && !inRoll && !knownTurn && !hiddenSetterScope && (!rebirthDuplicatePending || rebirthWindow) && (!publicDuplicatePending || regrowWindow) && pendingThefts==0 && (pending || (pendingDirect && hiddenSetterSeen) || knownNextMove!=0 || dead);
         out.put("complete",complete);
         if(!complete) { out.put("reason",failure==null?"roll_unsettled":failure); return out; }
         if(occupantGeneration>0) {

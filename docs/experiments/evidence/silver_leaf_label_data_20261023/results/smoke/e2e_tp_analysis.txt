@@ -1,0 +1,35 @@
+{"validFights": 42, "sourceSeeds": 3, "excluded": {"incomplete_shard_abort": 1}, "truncatedRows": {}, "shards": [{"prefix": "S-111339997", "manifest": true, "requestedSeeds": 1, "finishedSeeds": 1, "states": 23, "controlReplayMismatches": 0, "invalidArmRows": 0, "hallwaySkipped": 9}, {"prefix": "S-111339998", "manifest": true, "requestedSeeds": 1, "finishedSeeds": 1, "states": 7, "controlReplayMismatches": 0, "invalidArmRows": 0, "hallwaySkipped": 5}, {"prefix": "S-111339999", "manifest": false}], "roomClasses": {"ELITE": 17, "NORMAL": 14, "BOSS": 8, "OTHER": 3}, "act4Fights": 2, "labels": {"head10000-base10000/score": "NOT_SHOWN", "head10000-base10000/hpLoss": "WORSE", "head10000-matched/score": "NOT_MATCHED", "head10000-matched/hpLoss": "NOT_MATCHED"}, "gate": {"pass": false, "reason": "NOT_MATCHED"}, "stallFights": {}, "cpuMatchedArm": null, "cpuRatios": {"head10000/base10000/perSimulation": {"ratio": 1.0439854181260162, "ci95": [1.0105619882249046, 1.1873992554042812]}, "head10000/base10000/perFight": {"ratio": 1.1721244466115122, "ci95": [1.1269930592463857, 1.3762500316117212]}}, "escapes": {"base10000": 0, "head10000": 0}, "excludedFightsByRootReason": {}, "invalidArmRowsByReason": {}, "escapeReplicatesAllFights": {"base10000": 0, "head10000": 0}}
+base10000 {'score': 341.595, 'win': 1.0, 'hpLoss': 8.143, 'decisions': 25.024, 'cpuSecondsPerFight': 26.602, 'cpuMicrosecondsPerSimulation': 53.152, 'meanRolloutLength': 16.066, 'playoutsPerSimulation': 0.866, 'decisionsPerFight': 50.048}
+head10000 {'score': 339.577, 'win': 0.988, 'hpLoss': 9.655, 'decisions': 28.095, 'cpuSecondsPerFight': 31.18, 'cpuMicrosecondsPerSimulation': 55.49, 'meanRolloutLength': 15.143, 'playoutsPerSimulation': 0.876, 'decisionsPerFight': 56.19}
+head10000-base10000/all/score: -2.018 [-16.821, +1.292] n=42
+head10000-base10000/all/win: -0.012 [-0.071, +0.000] n=42
+head10000-base10000/all/hpLoss: +1.512 [+0.542, +1.913] n=42
+head10000-base10000/all/decisions: +3.071 [+1.571, +3.391] n=42
+head10000-base10000/boss/score: -13.344 [-114.250, +6.750] n=8
+head10000-base10000/boss/win: -0.062 [-0.500, +0.000] n=8
+head10000-base10000/boss/hpLoss: +6.438 [-1.250, +9.500] n=8
+head10000-base10000/boss/decisions: +6.438 [+3.500, +12.000] n=8
+head10000-base10000/elite/score: +0.029 [-1.750, +0.700] n=17
+head10000-base10000/elite/win: +0.000 [+0.000, +0.000] n=17
+head10000-base10000/elite/hpLoss: +1.118 [+0.800, +1.750] n=17
+head10000-base10000/elite/decisions: +2.029 [-0.200, +3.200] n=17
+head10000-base10000/normal/score: +1.265 [-0.300, +2.875] n=17
+head10000-base10000/normal/win: +0.000 [+0.000, +0.000] n=17
+head10000-base10000/normal/hpLoss: -0.412 [-1.062, +0.300] n=17
+head10000-base10000/normal/decisions: +2.529 [+1.000, +3.400] n=17
+head10000-base10000/act4/score: -25.250 [-25.250, -25.250] n=2
+head10000-base10000/act4/win: +0.000 [+0.000, +0.000] n=2
+head10000-base10000/act4/hpLoss: +26.750 [+26.750, +26.750] n=2
+head10000-base10000/act4/decisions: +4.750 [+4.750, +4.750] n=2
+head10000-base10000/act1/score: -3.487 [-19.625, +4.571] n=19
+head10000-base10000/act1/win: -0.026 [-0.083, +0.000] n=19
+head10000-base10000/act1/hpLoss: -0.289 [-1.429, +2.167] n=19
+head10000-base10000/act1/decisions: +1.974 [+1.583, +2.583] n=19
+head10000-base10000/act2/score: +0.385 [-3.300, +3.071] n=13
+head10000-base10000/act2/win: +0.000 [+0.000, +0.000] n=13
+head10000-base10000/act2/hpLoss: +0.462 [-1.500, +3.300] n=13
+head10000-base10000/act2/decisions: +2.115 [-0.214, +5.500] n=13
+head10000-base10000/act3/score: +3.375 [+3.375, +3.375] n=8
+head10000-base10000/act3/win: +0.000 [+0.000, +0.000] n=8
+head10000-base10000/act3/hpLoss: +1.188 [+1.188, +1.188] n=8
+head10000-base10000/act3/decisions: +6.812 [+6.812, +6.812] n=8

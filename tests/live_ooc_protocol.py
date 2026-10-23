@@ -30,7 +30,7 @@ class LiveOocProtocol(unittest.TestCase):
 
     def run_rows(self, observations, model=True, policy=None, floor_model=True,
                  timeout=120, label="advisor request", debug_tree=False, tree_cap=None, differential=False,
-                 research_stack=False, extra_env=None):
+                 research_stack=False, extra_env=None, win=None):
         env = os.environ.copy()
         # Most cases pin the bare search they were written for; the research
         # stack (the advisor default) runs rollout3 and has its own cases.
@@ -59,8 +59,8 @@ class LiveOocProtocol(unittest.TestCase):
             env["STS_LIVE_OOC_MODEL"] = str(self.model)
         if self.ctm:
             env["STS_CTM_MODEL"] = str(self.ctm)
-        if self.win:
-            env["STS_LIVE_OOC_WIN_MODEL"] = str(self.win)
+        if win or self.win:
+            env["STS_LIVE_OOC_WIN_MODEL"] = str(win or self.win)
         env.pop("STS_LIVE_OOC_FLOOR_MODEL", None)
         if floor_model:
             env["STS_LIVE_OOC_FLOOR_MODEL"] = "models/v_rich_trees.txt"
@@ -1224,9 +1224,38 @@ class LiveOocProtocol(unittest.TestCase):
         self.assertEqual((model["searchStack"], model["collectKeys"], model["leafCombats"], model["treeRules"]),
                          ("a20_research", True, 3, True))
         self.assertEqual((model["wideningK"], model["wideningAlpha"], model["maxDepth"]), (4, 0.75, 32))
+        # ADR-0057: the leaf calibration (M0) applies from ascension 20; this fixture is A0.
+        self.assertNotIn("leafCalibration", model)
         bare, = self.run_rows([self.fixtures["card_reward_duplicate_take_skip"]], policy="mcts")
         self.assertEqual((bare["evaluators"][0]["model"]["searchStack"],
                           bare["evaluators"][0]["model"]["leafCombats"]), ("legacy", 0))
+
+    def test_research_stack_calibrates_the_a20_leaf(self):
+        # ADR-0057: at ascension 20 the rollout3 leaf on the pinned public X2-B speaks calibrated Heart probability
+        # (M0). STS_OOC_MCTS_LEAF_CALIBRATION=0, another win model (B0) and leaves that stop at the map checkpoint
+        # (unqualified history) keep the raw anchor.
+        unqualified = copy.deepcopy(self.fixtures["card_reward_duplicate_take_skip"])
+        unqualified["ooc"]["publicState"]["ascension"] = 20
+        qualified = copy.deepcopy(unqualified)
+        qualified["ooc"]["publicState"].update(questionHistoryComplete=True, questionOutcomes=[])
+        x2b = Path("models/candidates/v_win_x2b_public_trees.txt").resolve()
+        b0 = Path("models/v_win_trees.txt").resolve()
+        sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+        from tools.live_game_driver import InspectorSnapshot
+        for observation, win, extra, expected in (
+                (qualified, x2b, None, [-2.5384, -2.9227, -3.6523, -3.6334, 1.0535]),
+                (qualified, x2b, {"STS_OOC_MCTS_LEAF_CALIBRATION": "0"}, None),
+                (qualified, b0, None, None),
+                (unqualified, x2b, None, None)):
+            response, = self.run_rows([observation], policy="mcts", research_stack=True, extra_env=extra, win=win,
+                                      timeout=DEEP_SEARCH_TIMEOUT, label=f"A20 research stack {win.name} {extra}")
+            evaluator, = response["evaluators"]
+            self.assertEqual(evaluator["status"], "OK", response)
+            self.assertEqual(evaluator["model"].get("leafCalibration"), expected)
+            # The live driver must accept the answer it executes.
+            snapshot = InspectorSnapshot({}, "ooc-protocol", 1, "fixture-0", {}, response)
+            self.assertEqual(snapshot.ooc_evaluator(evaluator["policy"])["selectedLiveAction"],
+                             evaluator["selectedLiveAction"])
 
     @unittest.skipUnless(os.environ.get("STS_TEST_LIVE_ARM_C"), "set STS_TEST_LIVE_ARM_C to the frozen student C")
     def test_research_stack_uses_student_prior_and_leaf_policy(self):

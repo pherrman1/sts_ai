@@ -514,6 +514,18 @@ bool awakenedRebirthQueue() {
     throw std::runtime_error("STS_SILVER_AWAKENED_REBIRTH_QUEUE must be 0 or 1");
 }
 
+// STS_SILVER_DARKLING_DOME_REGROW_QUEUE: unset/1 (default) = under Runic
+// Dome, a source-card selection whose pending tail holds a half-dead
+// Darkling's duplicate SetMoveAction(4) (Headbutt killing it, problem 104)
+// imports the row from before that duplicate setter; 0 = legacy refusal as
+// silver_selection_pending_actions / silver_runic_dome_incomplete_history.
+bool darklingDomeRegrowQueue() {
+    const char *value = std::getenv("STS_SILVER_DARKLING_DOME_REGROW_QUEUE");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_SILVER_DARKLING_DOME_REGROW_QUEUE must be 0 or 1");
+}
+
 // STS_SILVER_LAGAVULIN_OPEN_QUEUE: unset/1 (default) = a source-card
 // selection whose pending tail holds the ChangeStateAction("OPEN") of a
 // Lagavulin woken by the hit folds its Metallicize reduction into the
@@ -1214,6 +1226,19 @@ std::string importBoundedRunicDome(const json &combat, silver_bridge::BattleStat
             if((asleep && (k.at("publicSleepTurns")>=3 || wire.encounter==static_cast<int>(sts::MonsterEncounter::LAGAVULIN_EVENT)))
                     || k.at("publicSleepTurns").get<int>()<std::count(moves.begin(),moves.end(),json(5))) return "silver_runic_dome_history_gap";
             if(asleep) m.statusBits|=1ULL<<static_cast<int>(sts::MonsterStatus::ASLEEP);
+        }
+        if(darkling) {
+            // Each half-death adds two known transitions: Darkling.damage's
+            // setMove(4) and its queued duplicate. An odd count is the window
+            // under a source card's grid, with that duplicate still pending.
+            const auto queue=combat.find("pendingActionQueue");
+            const bool regrowQueued=queue!=combat.end() && queue->is_array()
+                && std::any_of(queue->begin(),queue->end(),[&](const json &item) {
+                    return item.is_object() && item.value("kind","")=="MONSTER_SET_MOVE"
+                        && item.value("move",-1)==4 && item.value("slot",-1)==slot;});
+            const bool window=k.at("knownTransitions").get<int>()%2==1;
+            if(window && (!darklingDomeRegrowQueue() || !regrowQueued || !knownNext))return "silver_runic_dome_history_gap";
+            if(regrowQueued && !window)return "silver_runic_dome_history_gap";
         }
         if(darkling && ((knownNext && (!m.halfDead || m.curHp!=0))
                 || (!knownNext && m.halfDead && (moves.empty() || moves.back()!=4 || k.at("rollHp")!=0))))return "silver_runic_dome_history_gap";
@@ -2472,8 +2497,11 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                 }
                 if(!halfDeadSetMoveQueue() || move!=4)
                     return unsupported("silver_selection_pending_actions");
+                // Under Runic Dome the history import below derives Regrow
+                // and requires this item for its row (problem 104).
                 if(monster.idx!=slot || monster.id!=static_cast<std::int16_t>(sts::MonsterId::DARKLING) || !monster.halfDead
-                        || monster.moveHistory[0]!=static_cast<std::int16_t>(sts::MonsterMoveId::DARKLING_REGROW))
+                        || (!(runicDome && darklingDomeRegrowQueue())
+                            && monster.moveHistory[0]!=static_cast<std::int16_t>(sts::MonsterMoveId::DARKLING_REGROW)))
                     return unsupported("silver_selection_pending_actions");
                 silver_bridge::PendingActionWire action;action.kind=K::MONSTER_SET_MOVE;
                 action.amount=static_cast<int>(sts::MonsterMoveId::DARKLING_REGROW);action.monster=slot;

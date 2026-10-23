@@ -28,6 +28,9 @@ the replacement.
 
 ## Current architecture ADRs
 
+- [ADR-0057](0057-ooc-leaf-calibration-a20-default.md) makes the A20 rollout3 X2-B leaf speak calibrated Heart
+  probability (M0) offline and in the live advisor (`STS_OOC_MCTS_LEAF_CALIBRATION=0` restores the raw anchor;
+  value-level A/B IMPROVED, confirmation skipped by Philipp's call).
 - [ADR-0056](0056-silver-prior-playout-boss-only.md) limits ADR-0050's prior playouts to real boss fights
   (`STS_SILVER_PRIOR_PLAYOUT_ELITE=1` restores elite rooms; not gated).
 - [ADR-0055](0055-ooc-fast-root-cap.md) caps the fast (non-full-budget) roots of playout-cap-randomized OOC MCTS at
