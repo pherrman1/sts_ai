@@ -211,9 +211,17 @@ namespace sts::search {
         std::int64_t simulations;
         bool skipped;
         const Action &chosen;   // expressed against `live`
+        // The label search of this root (g_nativeSilverLabelSearch), or nullptr.
+        const SilverSearcher *label = nullptr;
+        std::int64_t labelInheritedVisits = 0;
     };
     extern thread_local std::function<void(const NativeSilverRootView &)> g_nativeSilverRootObserver;
     extern thread_local SilverLeafSamples *g_nativeSilverLeafSamples;
+    // Research-only (silverazgen STS_AZGEN_LABEL_SEARCH): when set, every root whose search uses a leaf
+    // head is searched again by a label searcher configured as that search without the head (its own
+    // retained graph, rerooted along the played path, the same flat budget); the root view carries it.
+    // The played action still comes from the head's search. Requires a flat budget. Default off.
+    extern thread_local bool g_nativeSilverLabelSearch;
     // Research-only (ctmsilvergen rootdist): when set, every search records its
     // simulation endpoints here (SilverSearcher::outcomes). Default off.
     extern thread_local SilverOutcomeCapture *g_nativeSilverOutcomeCapture;

@@ -10,6 +10,9 @@ using namespace sts;
 
 CardInstance::CardInstance(CardId id, bool upgraded) : id(id), upgraded(upgraded) {
     cost = getEnergyCost(id, upgraded);
+    if (id == CardId::TRIP && !tripCostFix()) {
+        cost = 1;  // legacy engine data; Java Trip costs 0
+    }
     costForTurn = cost;
 }
 

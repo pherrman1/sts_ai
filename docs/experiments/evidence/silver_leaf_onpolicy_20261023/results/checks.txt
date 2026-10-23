@@ -1,0 +1,89 @@
+# check_label.sh BASE NEW OUT 1000 (2026-10-23 18:34-18:41 UTC, cloud container, 4 cores; seeds 111399990-991)
+# BASE one_combat of main 09146204, sha256 c2e7fcf465fe9c1fbfaba974f043e25f3701ef01dc1c901511c4a162f5708d2f
+# NEW  one_combat of this change,  sha256 c18a9a73ce00fd78a9bc80adf441e4fe256fd9210b99fd7909ded2c810e72f49
+A: rows byte-identical (24bdfe28ed66, 951 rows); manifests identical apart from the binary sha and the rows path
+B: rows byte-identical (c4ae080da6a5, 1612 rows); manifests identical apart from the binary sha and the rows path
+C vs B: 1612 rows, 1555 roots; play identical apart from edges/inheritedVisits/teacherId: yes; C manifest labelSearch {'budget': 1000, 'edgeFallbacks': 1, 'labelRoots': 1555, 'play': 'leaf_head', 'rows': 'edges = production Silver without the leaf head; playEdges = played'}; teacher silver-az-1000-k8-rb1-prod-headplay-c45dcc0a
+C label vs A at shared states: 30 equal, 0 different
+C: 1555 roots; head's most visited edge = label's in 1025 (65.9%); played Q - label Q: mean +3.68, median +0.03
+ALL OK
+extractor A_new: "counts":{"roots":914}
+extractor B_new: "counts":{"roots":1555}
+extractor C_new: "counts":{"rootEdgeMismatch":1,"roots":1554}
+A_base rc=0 wall=56s
+A_new rc=0 wall=58s
+B_base rc=0 wall=135s
+B_new rc=0 wall=137s
+C_new rc=0 wall=233s
+
+# 10,000 simulations, the same seeds, A_new / B_new / C_new at once (2026-10-23 18:13-18:39 UTC; the check above
+# overlapped the last 5 minutes of C_new). NEW here is an earlier build of this change (sha256
+# 7a1bdb2111fe261b24d6da73d218d3a94034607d34977d134f55be601b393f8e) that wrote the label edges in the label root's
+# order; the searches are the same.
+silverazgen variant=natural teacher=silver-az-10000-k8-rb1-prod-c45dcc0a completed=2/2 fights=56 roots=1484 -> A_new.jsonl
+A_new rc=0 wall=1025.8
+silverazgen variant=natural teacher=silver-az-10000-k8-rb1-prod-c45dcc0a completed=2/2 fights=32 roots=922 -> B_new.jsonl
+B_new rc=0 wall=804.7
+silverazgen variant=natural teacher=silver-az-10000-k8-rb1-prod-headplay-c45dcc0a completed=2/2 fights=32 roots=922 labelRoots=922 -> C_new.jsonl
+C_new rc=0 wall=1567.4
+# mean inherited visits per root (all; act 1-4): A_new production along its own path, B_new the played head search,
+# C_new the label search (inheritedVisits) and the played search (playInheritedVisits)
+A_new inherited all:6390 1:8444 2:8090 3:4677 4:5553 
+B_new inherited all:6018 1:9275 2:5953 3:3839 4:5767 
+C_new inherited all:4593 1:8495 2:4618 3:2741 4:2259 play all:6018 1:9275 2:5953 3:3839 4:5767
+
+# peak memory (VmHWM, kB) at 10,000 simulations, NEW, one run each (seed 111399990) for 8 minutes, sampled every 30 s
+18:51:14 prodHWM_kB=457140 labelHWM_kB=828572
+
+# shift.py on C_new of the 1,000-simulation check (test seeds, 2 runs; not campaign data)
+1 files
+group         roots  unal  agree  regret  share     gap  gapRMS  inhLabel  inhPlay
+all            1555     1  0.660    2.00  0.478    3.67   13.47       435      479
+act 1           273     0  0.839    0.43  0.621   -0.81    3.61       682      709
+act 2           356     0  0.733    2.22  0.516   -0.99    4.43       484      538
+act 3           678     0  0.577    1.85  0.402    2.10    6.86       300      340
+act 4           248     1  0.583    3.82  0.476   19.65   31.14       460      518
+turn 0          265     1  0.682    2.44  0.546    1.49    9.40       486      555
+turn 1          237     0  0.709    2.94  0.503    0.93    7.90       428      476
+turn 2          261     0  0.636    3.36  0.453    3.69   11.92       377      451
+turn 3          179     0  0.698    1.52  0.505    5.36   15.12       561      617
+turn 4          194     0  0.613    1.35  0.439    3.96   13.53       398      420
+turn 5          119     0  0.655    0.91  0.444    5.84   17.27       371      433
+turn 6+         300     0  0.630    0.83  0.445    5.67   17.78       420      412
+BOSS            538     1  0.605    3.42  0.465    9.81   21.59       421      468
+ELITE           547     0  0.667    1.73  0.485    0.19    6.27       460      521
+MONSTER         470     0  0.713    0.69  0.486    0.70    4.62       423      443
+
+# ctest -R "silver|one_combat" -j 3 (build linux-gcc-release-x86-64-v3 of this change; test binaries built where the
+# build finished in 40 minutes)
+29/29 Test  #64: live_silver_importer  ***Failed
+26/29 Test  #68: one_combat_tree_parity  ***Not Run
+11/29 Test  #71: silver_useless_analysis     Passed
+13/29 Test  #74: silver_tree_profile_analysis     Passed
+15/29 Test  #78: py_compile_silver_az_mlp     Passed
+27/29 Test  #82: one_combat_feature_regression  ***Not Run
+14/29 Test  #94: silver_escape_penalty     Passed
+16/29 Test  #95: silver_rollout_zero_cost_loop     Passed
+23/29 Test  #96: silver_potion_weights     Passed
+28/29 Test  #97: silver_concave_hp_leaf     Passed
+ 7/29 Test #124: silver_param_screen_400_analysis_selftest     Passed
+20/29 Test #132: silver_learned_stop_selftest     Passed
+ 5/29 Test #133: silver_stop_replay_analysis_selftest     Passed
+21/29 Test #134: silver_param_screen_400_seed_guard_rejects_zero     Passed
+19/29 Test #135: silver_param_screen_400_rejects_non_exact_budget     Passed
+22/29 Test #136: silver_stop_replay_seed_guard_rejects_zero     Passed
+17/29 Test #137: silver_stop_replay_rejects_non_exact_budget     Passed
+ 8/29 Test #138: silver_learned_stop_rejects_small_boss_max     Passed
+18/29 Test #139: silver_learned_stop_rejects_unknown_model     Passed
+12/29 Test #140: silver_learned_stop_no_default_below_a20     Passed
+ 6/29 Test #141: silver_learned_stop_a20_zero_keeps_flat     Passed
+10/29 Test #142: silver_learned_stop_rejects_boss_fallback_without_learned_stop     Passed
+ 9/29 Test #143: silver_gold_weight_rejects_negative     Passed
+ 2/29 Test #180: silver_searcher     Passed
+24/29 Test #181: silver_rollout_limit     Passed
+ 1/29 Test #182: silver_wire_state     Passed
+25/29 Test #183: silver_semantic_action     Passed
+ 3/29 Test #276: ooc_selective_silver_sampler     Passed
+ 4/29 Test #277: ooc_selective_silver_analysis     Passed
+90% tests passed, 3 tests failed out of 29
+# not run: live_silver_importer_test, one_combat_tree_test and one_combat_feature_test were not built (link timeout)

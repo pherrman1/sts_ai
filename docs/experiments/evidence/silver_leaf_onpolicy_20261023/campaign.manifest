@@ -1,0 +1,14 @@
+# Set at the freeze, after Philipp's typed go: code_commit (main with this change merged), binary_sha256 (one build
+# of it) and workers (the count he authorizes). Until then worker.sh refuses this campaign.
+name          silver-leaf-onpolicy
+code_commit   FREEZE
+binary_sha256 FREEZE
+configure_preset linux-gcc-release-x86-64-v3
+workers       FREEZE
+share         /mnt/project-files/silver-leaf-onpolicy/campaign
+parallel      4
+schedule      queue
+lease_minutes 30
+input student_sel.bin /mnt/project-files/az-gen3-explore/student_sel.bin cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7
+input q_e2e_head.txt /mnt/project-files/exact-combat-research/leaf-value/label-data-20261023/nets/q_e2e_head.txt c2c7418ea30a01253dea86fbdb2f91d8d73d5c6cf8d9dc736575c20a68a37f3b
+input q_e2e_trunk.txt /mnt/project-files/exact-combat-research/leaf-value/label-data-20261023/nets/q_e2e_trunk.txt 4efed23e86207a2e6c82fd45809c8c62e06cc8a57fdec635aa302649bcf1efda
