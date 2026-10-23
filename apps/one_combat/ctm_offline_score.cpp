@@ -324,11 +324,12 @@ int ctmLizardFeatures(const std::string &inPath, const std::string &fastModel,
 
 // §527: native parity of the Act-4 survival model (STS_CTM_ACT4_SURVIVAL_MODEL, default on for pathb-a20) with the
 // Python fit. Each fixture line holds an Act-4 predictorInput and the Python death probability
-// (tools/ctm_act4_survival.py).
+// (tools/ctm_act4_survival.py). The model is checked alone, so the CTM calibration must be off.
 int ctmAct4SurvivalSelfTest(const std::string &fixturePath) {
     const one_combat::EntropicBrewFallbackCombatTransitionSampler sampler(
         "selfplay/models/combat_transition_deepsets_pathb_a20_lizard.native",
         "selfplay/models/combat_transition_near_full_escape_pathb_a20.native", false);
+    need(sampler.fastRuntime().calibrationPath().empty(), "ctmact4survivaltest needs STS_CTM_CALIBRATION=0");
     std::ifstream in(fixturePath);
     need(bool(in), "cannot open " + fixturePath);
     std::string line;
@@ -354,8 +355,8 @@ int ctmAct4SurvivalSelfTest(const std::string &fixturePath) {
 
 // STS_CTM_CALIBRATION parity with tools/ctm_calibration.py. Each fixture line holds a pathb-a20 predictorInput and
 // pre-combat state (no active Lizard Tail) with the Python death probability and mean winning HP, without the
-// calibration ("base") and under the committed table ("calibrated"). MODE on requires the calibration and checks
-// "calibrated"; off requires it off and checks "base".
+// calibration ("base") and under the committed table ("calibrated"). MODE on requires the calibration (the ADR-0058
+// default or an explicit table) and checks "calibrated"; off requires it off and checks "base".
 int ctmCalibrationSelfTest(const std::string &fixturePath, const std::string &mode) {
     need(mode == "on" || mode == "off", "ctmcalibrationtest MODE must be on or off");
     const one_combat::EntropicBrewFallbackCombatTransitionSampler sampler(

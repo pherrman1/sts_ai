@@ -47,7 +47,8 @@ class CombatTransitionRuntime {
     // Act-4 survival model for SHIELD_AND_SPEAR and THE_HEART (§527; STS_CTM_ACT4_SURVIVAL_MODEL), or null.
     const CompactTreeNet *act4Survival_ = nullptr;
     std::string act4SurvivalPath_;
-    // Per-fight death-logit shifts and HP-loss scales (STS_CTM_CALIBRATION, research, default off), or null.
+    // Per-fight death-logit shifts and HP-loss scales (STS_CTM_CALIBRATION; ADR-0058 default for the built-in A20
+    // stack), or null.
     const CtmCalibration *calibration_ = nullptr;
     // Every max_hp.encoder.* tensor equals its hp.encoder.* twin byte for byte, so
     // encode("max_hp",p) and encode("hp",p) are the same computation.

@@ -1,12 +1,12 @@
-"""CTM-calibration A/B analysis: python3 -I analyze.py DIR [OUT.json]
-DIR is the --extract dir of `verify_campaign.py` (queue schedule) or holds wWW.tar files. For both stages, pass a
-directory that holds the two stages' extract dirs.
-Arms: A (today's A20 stack), C (A + STS_CTM_CALIBRATION). PREREG.md fixes the endpoints:
-  primary    Heart kills C - A per seed, mean and 95% seed-bootstrap CI (exact McNemar alongside)
+"""CTM-calibration guard analysis: python3 -I analyze.py DIR [OUT.json]
+DIR is the --extract dir of `verify_campaign.py` (queue schedule) or holds wWW.tar files.
+Arms: A (today's A20 stack with the raw CTM, STS_CTM_CALIBRATION=0), C (the calibration, the default). PREREG.md
+fixes the endpoints:
+  primary    Heart kills C - A per seed, mean and 95% seed-bootstrap CI (exact McNemar alongside); WORSE turns the
+             default off
   secondary  reached Act 4; deaths by act; mean floor; real elite fights per run by act, fights entered below 20 HP
              per run by act and their death rate, mean HP entering a fight by act (all from the CTM rows)
-  guard      mean wall C / A (<= 1.10)
-  stage 1    C - A over seeds <= 111392511; below -1 pp the campaign stops
+  wall       mean wall C / A, reported (flagged above 1.10)
   descriptive  searched / full-budget / aborted roots, picks off the prior's argmax, completed simulations,
              learned-stop and root-lock shares at fast roots, by act."""
 import glob
@@ -24,7 +24,6 @@ import numpy as np
 
 ARMS = ('A', 'C')
 BOOT = 10000
-STAGE1_LAST = 111392511  # last seed of stage 1 (units.txt)
 
 
 def mcnemar_p(b, c):
@@ -153,10 +152,6 @@ def main():
             c.update({f'{x}_only': xo, f'{y}_only': yo, 'mcnemar_p': mcnemar_p(xo, yo)})
             res[f'{x}-{y}'] = c
         out[name] = res
-    s1 = [s for s in seeds if int(s) <= STAGE1_LAST]
-    if s1:  # PREREG stop rule: stage 1 stops the campaign when C - A over its seeds is below -1 pp
-        d1 = 100 * sum(heart[s]['C'] - heart[s]['A'] for s in s1) / len(s1)
-        out['stage1'] = {'seeds': len(s1), 'diff_pp': d1, 'stop': d1 < -1}
     deaths = {a: defaultdict(int) for a in ARMS}
     for s in seeds:
         for a in ARMS:
@@ -200,7 +195,8 @@ def main():
     out['search'] = search
     p = out['heart']['C-A']
     out['verdict'] = ('IMPROVED' if p['ci95_pp'][0] > 0 else 'WORSE' if p['ci95_pp'][1] < 0 else 'NOT_SHOWN')
-    out['guardPass'] = out['wall_s']['C']['overA'] <= 1.10
+    out['decision'] = 'turn the default off' if out['verdict'] == 'WORSE' else 'keep the default'
+    out['wallAbove110'] = out['wall_s']['C']['overA'] > 1.10
     text = json.dumps(out, indent=1)
     if out_path:
         with open(out_path, 'w') as fh:
