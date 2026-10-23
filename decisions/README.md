@@ -28,6 +28,9 @@ the replacement.
 
 ## Current architecture ADRs
 
+- [ADR-TBD](TBD-ctm-calibration-default.md) makes the A20 CTM stack apply the §670 per-fight calibration to today's
+  Silver by default (`STS_CTM_CALIBRATION=0` restores the raw CTM; adopted on prediction precision by Philipp's call,
+  with a 512-seed guard).
 - [ADR-0057](0057-ooc-leaf-calibration-a20-default.md) makes the A20 rollout3 X2-B leaf speak calibrated Heart
   probability (M0) offline and in the live advisor (`STS_OOC_MCTS_LEAF_CALIBRATION=0` restores the raw anchor;
   value-level A/B IMPROVED, confirmation skipped by Philipp's call).

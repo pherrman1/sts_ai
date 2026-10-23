@@ -26,8 +26,8 @@
 #include <unordered_map>
 
 namespace one_combat {
-// STS_CTM_CALIBRATION (research, default off): per-fight corrections of the CTM fitted to real combats
-// (tools/ctm_calibration.py, docs/experiments/evidence/ctm_calibration_20261023). See loadCtmCalibration.
+// STS_CTM_CALIBRATION (ADR-0058 default for the built-in A20 stack): per-fight corrections of the CTM fitted to real
+// combats (tools/ctm_calibration.py, docs/experiments/evidence/ctm_calibration_20261023). See ctmCalibration.
 struct CtmCalibration {
     struct Entry { float deathLogitShift=0,hpLossScale=1; };
     std::string path,candidateId;
@@ -125,6 +125,12 @@ Act4SurvivalModel loadAct4SurvivalModel(const std::string &path) {
               << " scope=SHIELD_AND_SPEAR,THE_HEART\n";
     return {std::move(net),path};
 }
+// A bundled model file: next to this executable (an installed release's models/), else under the working directory.
+std::string bundledPath(const char *relative) {
+    std::error_code error;
+    const auto beside=std::filesystem::read_symlink("/proc/self/exe",error).parent_path()/relative;
+    return !error && std::filesystem::is_regular_file(beside,error) ? beside.string() : std::string(relative);
+}
 const Act4SurvivalModel *act4SurvivalModel(bool a20Stack) {
     const char *raw=std::getenv("STS_CTM_ACT4_SURVIVAL_MODEL");
     if(raw) {
@@ -134,13 +140,7 @@ const Act4SurvivalModel *act4SurvivalModel(bool a20Stack) {
         return &model;
     }
     if(!a20Stack) return nullptr;
-    // The bundled model next to this executable (an installed release's models/), else under the working directory.
-    static const auto model=[] {
-        std::error_code error;
-        const auto beside=std::filesystem::read_symlink("/proc/self/exe",error).parent_path()/kDefaultAct4SurvivalModel;
-        return loadAct4SurvivalModel(!error && std::filesystem::is_regular_file(beside,error)
-            ? beside.string() : std::string(kDefaultAct4SurvivalModel));
-    }();
+    static const auto model=loadAct4SurvivalModel(bundledPath(kDefaultAct4SurvivalModel));
     return &model;
 }
 constexpr int kCalibrationEncounters=int(sizeof(sts::monsterEncounterEnumNames)/sizeof(sts::monsterEncounterEnumNames[0]));
@@ -154,10 +154,12 @@ int calibrationRoom(int roomClass) {
     default: return 3;
     }
 }
-// STS_CTM_CALIBRATION=PATH: a ctm_calibration_v1 JSON table, loaded once per process; unset or 0 is off. It applies to
-// the runtimes of the stack it names (candidateId) only. A fight's group is "<act>:<ENCOUNTER>" in an elite or boss
-// room when the table has it, else "<act>:<ROOM>" (the predictor room class: MONSTER is NORMAL, then ELITE, BOSS, and
-// OTHER for every other room); a fight in neither keeps the CTM's prediction.
+// ADR-0058: the table the built-in A20 stack applies when STS_CTM_CALIBRATION is unset, pinned by its bytes.
+constexpr char kDefaultCtmCalibration[]="models/candidates/ctm_calibration_pathb_a20_v1.json";
+constexpr char kDefaultCtmCalibrationSha256[]="359619f713677de60b86144e275ad37874718951c6964b63811f55c77181cb42";
+// A ctm_calibration_v1 JSON table applies to the runtimes of the stack it names (candidateId) only. A fight's group is
+// "<act>:<ENCOUNTER>" in an elite or boss room when the table has it, else "<act>:<ROOM>" (the predictor room class:
+// MONSTER is NORMAL, then ELITE, BOSS, and OTHER for every other room); a fight in neither keeps the CTM's prediction.
 std::unique_ptr<CtmCalibration> loadCtmCalibration(const std::string &path) {
     std::ifstream file(path);
     if(!file) throw std::runtime_error("STS_CTM_CALIBRATION: cannot open "+path);
@@ -197,11 +199,24 @@ std::unique_ptr<CtmCalibration> loadCtmCalibration(const std::string &path) {
               << " scope=" << calibration->candidateId << "\n";
     return calibration;
 }
-const CtmCalibration *ctmCalibration() {
+// STS_CTM_CALIBRATION, loaded once per process: a path is a research table; unset applies kDefaultCtmCalibration to
+// the built-in A20 stack only (ADR-0058); 0 turns the calibration off.
+const CtmCalibration *ctmCalibration(bool builtInA20Stack) {
     const char *raw=std::getenv("STS_CTM_CALIBRATION");
-    if(!raw || std::string(raw)=="0") return nullptr;
-    require(*raw!=0,"STS_CTM_CALIBRATION is empty");
-    static const auto calibration=loadCtmCalibration(raw);
+    if(raw) {
+        require(*raw!=0,"STS_CTM_CALIBRATION is empty");
+        if(std::string(raw)=="0") return nullptr;
+        static const auto calibration=loadCtmCalibration(raw);
+        return calibration.get();
+    }
+    if(!builtInA20Stack) return nullptr;
+    static const auto calibration=[] {
+        const auto path=bundledPath(kDefaultCtmCalibration);
+        if(!std::ifstream(path) || sha256File(path)!=kDefaultCtmCalibrationSha256)
+            throw std::runtime_error("STS_CTM_CALIBRATION unset needs the bundled table "+path+" with sha256 "+
+                kDefaultCtmCalibrationSha256+" (ADR-0058; =0 turns the calibration off)");
+        return loadCtmCalibration(path);
+    }();
     return calibration.get();
 }
 bool hasEntropicBrew(const CombatPredictorInputV1 &input) {
@@ -916,7 +931,11 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
         act4Survival_=act4->net.get();
         act4SurvivalPath_=act4->path;
     }
-    if(const auto *calibration=ctmCalibration(); calibration && identity_.at("candidateId")==calibration->candidateId) {
+    // The bundled table corrects this exact stack: the built-in calibrated manifest (also when a research manifest has
+    // the same content) with the ADR-0048 Act-4 model, whose predictions it was fitted on.
+    const bool builtInA20Stack=identity_==a20CandidateIdentity() && !std::getenv("STS_CTM_ACT4_SURVIVAL_MODEL");
+    if(const auto *calibration=ctmCalibration(builtInA20Stack);
+       calibration && identity_.at("candidateId")==calibration->candidateId) {
         require(nearFull(),"STS_CTM_CALIBRATION applies to near-full artifacts only");
         calibration_=calibration;
     }
