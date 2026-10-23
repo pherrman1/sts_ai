@@ -27,6 +27,10 @@ stack, so training runs on 4 CPUs in minutes; no GPU was used.
 - **Survival:** the survival encoder (its own weights) and its 1×64 head, or the head alone.
 - **HP:** only the HP head (max-HP-delta embedding and the 73 → 64 → 451 MLP). The HP encoder z stays frozen, because the
   maxHP head (a weight twin of it), the relic, gold and ritual heads read the same z.
+- Provenance labels: the runtime requires `experimentalSurvival.checkpointSha256` and the manifest's
+  `fast.survival.checkpointSha256` to agree, and `sources.HP` to equal `sources.maxHP`, so `export` writes the
+  fine-tune checkpoint's sha into the survival, HP and maxHP fields even when only the HP head changed. The
+  unchanged tensors are byte-identical to the base (`ctmFinetune.tensors` in the metadata lists the changed ones).
 - Everything else is copied byte for byte. Loss: BCE on survival, NLL of the HP class; L2 pull to the base weights
   (L2-SP); the survival and HP parts keep separate best epochs (disjoint parameters, independent losses).
 - `export` writes a research candidate under id `pathb-a20` and a `ctm_research_candidate_v3` manifest (the built-in
@@ -60,7 +64,9 @@ on the other fold (for LC: the shipped `ctm_calibration_pathb_a20_v1.json`); **F
   not enough to replace the table.
 - Sweep (12 configurations per fold, chosen on inner validation only): [`results/sweep_inner_validation.txt`](results/sweep_inner_validation.txt).
 
-**2. The HP head fine-tune improves HP on top of the table.** Candidate: HP head only (lr 1e-3, up to 30 epochs, L2-SP
+**2. The HP head fine-tune improves HP on top of the table.** (The HP-only configuration was chosen after the fold
+results of part 1 were seen, so the fold rows below are not strictly untouched; the held-out LC row is the clean
+figure.) Candidate: HP head only (lr 1e-3, up to 30 epochs, L2-SP
 10, 25% old rows), survival untouched; a calibration table refitted on its scores
 ([`tools/ctm_calibration.py`](../../../../tools/ctm_calibration.py) `fit`, same folds). Against the shipped arrangement
 (old net + table), on the same rows:
