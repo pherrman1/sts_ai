@@ -66,6 +66,37 @@ public final class QuestionRoomHistoryTest {
                 "missing original path cannot qualify resolved history");
         require(!QuestionRoomHistory.capture(path,null,1,5,"EVENT").complete,
                 "missing resolved path cannot qualify question history");
+        // A20 Act 3 double boss (floors 50 and 51): the VictoryRoom null is
+        // floor 52, then Act 4 rest, shop and Shield & Spear.
+        QuestionRoomHistory.victoryRoomFix = true;
+        List<String> a20Path = new ArrayList<>(), a20Resolved = new ArrayList<>();
+        for (int act=1; act<=3; ++act) {
+            for (int i=0; i<15; ++i) { a20Path.add(i == 3 ? "?" : "M"); a20Resolved.add(i == 3 ? "$" : "M"); }
+            a20Path.add("BOSS"); a20Resolved.add("B");
+            if (act < 3) a20Resolved.add(null);
+        }
+        a20Path.add("BOSS"); a20Resolved.add("B"); a20Resolved.add(null);
+        require(a20Resolved.size() == 52 && a20Path.size() == 49, "A20 path fixture shape");
+        require(QuestionRoomHistory.capture(a20Path,a20Resolved,4,52,QuestionRoomHistory.roomOutcome("VictoryRoom")).complete,
+                "A20 Act 4 entry map (VictoryRoom) has complete history");
+        a20Path.add("R"); a20Resolved.add("R");
+        a20Path.add("$"); a20Resolved.add("$");
+        a20Path.add("E"); a20Resolved.add("E");
+        history = QuestionRoomHistory.capture(a20Path,a20Resolved,4,55,"ELITE");
+        require(history.complete && history.outcomes.isEmpty() && history.allOutcomes.size() == 3,
+                "A20 Act 4 history after the double boss is complete");
+        List<String> singleBoss = new ArrayList<>(a20Resolved);
+        singleBoss.set(50,"M");
+        List<String> singlePath = new ArrayList<>(a20Path);
+        singlePath.set(48,"M");
+        require(!QuestionRoomHistory.capture(singlePath,singleBoss,4,55,"ELITE").complete,
+                "a floor-52 null without the double boss is not a VictoryRoom");
+        QuestionRoomHistory.victoryRoomFix = false;
+        require(!QuestionRoomHistory.capture(a20Path,a20Resolved,4,55,"ELITE").complete,
+                "STS_A20_VICTORY_ROOM_HISTORY_FIX=0 restores the old incomplete history");
+        require("INVALID".equals(QuestionRoomHistory.roomOutcome("VictoryRoom")),
+                "legacy VictoryRoom outcome");
+        QuestionRoomHistory.victoryRoomFix = true;
         System.out.println("QuestionRoomHistoryTest passed");
     }
 }
