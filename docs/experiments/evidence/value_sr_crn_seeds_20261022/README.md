@@ -86,6 +86,8 @@ first two rows are §645's):
 - **Outcome AUC on round-2 VALIDATION:** 0.679 and 0.677, against 0.672 for SR_w1 and 0.683 for X2-B.
 - **§494's siblings:** the blends score 0.652 (seed 1) and 0.642 (seed 2), against 0.631 for SR_w1's blend and 0.601
   for X2-B.
+- The "gate" labels in the `crn_eval_seed*.txt` files (PASS, IMPROVED, FAIL) are `crn_eval.py`'s head-alone gate from
+  §645, not this plan's gate.
 
 ## Interpretation
 - **The ranking-selected recipe replicates.**
@@ -99,8 +101,13 @@ first two rows are §645's):
 - **The cost is small.** Selection-fold BCE is 0.562–0.565 against SR_w1's 0.547. Monotonicity is better than
   SR_w1's for gold and max HP, and slightly better for HP.
 - **Caveats:**
-  - All of this is offline. The labels end in X2-B (rollout3 means), and the blend weight and the epoch are both
-    chosen on the same TRAIN holdout.
+  - All of this is offline, and the labels end in X2-B (rollout3 means).
+  - The epoch, the blend weight and the candidate are all chosen on the holdout sources (seed % 8 == 6), never on
+    VALIDATION.
+    - The epoch uses the in-training holdout: 3,806 groups from 176 sources, the common-seed holdout plus round 2's.
+    - w and the candidate use the common-seed TRAIN holdout alone: 2,802 groups from the same 40 common-seed sources.
+    - So the holdout numbers, such as the candidate's 0.706, are biased upward by these choices. The gate reads
+      VALIDATION only.
   - In both past A20 leaf A/Bs with offline numbers, offline concordance and online play disagreed in direction:
     - §504: the rollout student, distilled from rollout3 means, was WORSE online;
     - §615: the gen 1b head ranked siblings below X2-B but leaned +3.1 pp online.
