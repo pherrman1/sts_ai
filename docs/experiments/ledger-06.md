@@ -22363,6 +22363,17 @@ Seeds: none new (live seeds 111200473 and 111200504).
 **Interpretation:** Live play-changing: event removals behind a Continue page now remove the card the event decision chose.
 
 **Status:** Draft PR.
+## §648 — Live problem 98: Impatience drew with Attacks in hand (2026-10-23)
+
+**Question:** Why did seed 111200587 (step 531, encounter 40) draw 2 natively after Impatience (hand 8) while the game drew nothing (hand 6)?
+
+**Evidence:** The hand scan in `BattleContext::useSkillCard` assigned `hasAttack = false` on finding an Attack, so the draw always happened. Java's `Impatience.use` draws only when no card in hand is an Attack.
+
+**Change:** `STS_IMPATIENCE_FIX` (default on, `=0` restores the always-draw). Test in `ironclad_card_java_parity`: with a Strike in hand Impatience draws 0 (legacy 2); without an Attack it draws 2 under both flag values.
+
+**Interpretation:** Play-changing whenever Impatience is played with an Attack in hand, in simulated play and the live advisor: the engine overvalued it as an unconditional draw 2.
+
+**Status:** Draft PR.
 ## §647 — Live problem 97: Dark Shackles gave the monster +9 Strength and inverted its Artifact check (2026-10-23)
 
 **Question:** Why did seed 111200587 (step 564, encounter 45) show the monster at Strength -9 with Shackled 9 in the game, but Strength +9 and no Shackled natively?

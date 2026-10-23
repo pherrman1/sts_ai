@@ -338,6 +338,13 @@ namespace sts {
     // are fatal. Read only when Dark Shackles is used.
     bool darkShacklesFix();
 
+    // STS_IMPATIENCE_FIX: unset/1 (default) = Impatience draws only when the
+    // hand holds no Attack, as in the game (live problem 98, seed 111200587:
+    // the engine always drew because the Attack check never set its flag).
+    // 0 = the legacy engine. Other values are fatal. Read only when Impatience
+    // is used with an Attack in hand.
+    bool impatienceFix();
+
     struct BattleContext {
 
         // begin for debugging purposes

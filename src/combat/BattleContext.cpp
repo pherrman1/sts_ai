@@ -232,6 +232,11 @@ namespace sts {
         thread_local CachedFixFlag cache;
         return cachedFixFlag(cache, "STS_DARK_SHACKLES_FIX");
     }
+
+    bool impatienceFix() {
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_IMPATIENCE_FIX");
+    }
 }
 
 
@@ -1708,7 +1713,7 @@ void BattleContext::useSkillCard() {
             bool hasAttack = false;
             for (int i = 0; i < cards.cardsInHand; ++i) {
                 if (cards.hand[i].getType() == CardType::ATTACK) {
-                    hasAttack = false;
+                    hasAttack = impatienceFix();
                     break;
                 }
             }
