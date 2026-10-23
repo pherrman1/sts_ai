@@ -2999,6 +2999,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 if(!(value instanceof AbstractPower)) return refusePending(actionIndex,"power_value");
                 AbstractPower applied=(AbstractPower)value;
                 if(readObjectField(action,"target") instanceof AbstractMonster) {
+                    String belt=championBeltWeakJson(action,applied);
+                    if(belt!=null) {if(out.length()>1)out.append(',');out.append(belt);continue;}
                     int next=allEnemyPowerBatch(manager.actions,actionIndex,applied.ID,applied.amount);
                     if(next<0)return null; // allEnemyPowerBatch recorded the refusal
                     String item=publicPendingActionJson("DEBUFF_ALL_ENEMY",applied.amount,applied.ID);
@@ -3125,6 +3127,34 @@ public final class STSModelInspector implements PostInitializeSubscriber,
 
     private static boolean isActionClass(String name,String simpleName) {
         return name.startsWith("com.megacrit.cardcrawl.actions.") && name.endsWith("."+simpleName);
+    }
+
+    // ChampionsBelt.onTrigger, when a player Vulnerable lands on a monster:
+    // addToBot(RelicAboveCreatureAction) then addToBot(ApplyPowerAction(target,
+    // player, new WeakPower(target, 1, false), 1)) (problem 105: Bag of Marbles'
+    // Vulnerable left it queued behind Gambling Chip's choice). Native queues
+    // DebuffEnemy<WEAK>(idx, 1, false). Without Red Mask, whose all-enemy Weak
+    // batch has the same shape. STS_SILVER_CHAMPION_BELT_WEAK_QUEUE=0 restores
+    // the refusal.
+    static boolean championBeltWeakQueue=!"0".equals(System.getenv("STS_SILVER_CHAMPION_BELT_WEAK_QUEUE"));
+
+    private static String championBeltWeakJson(Object action,AbstractPower applied) {
+        Object target=readObjectField(action,"target");
+        if(!championBeltWeakQueue || !hasRelic("Champion Belt") || hasRelic("Red Mask") || !(target instanceof AbstractMonster)
+                || readObjectField(action,"source")!=AbstractDungeon.player
+                || !"com.megacrit.cardcrawl.powers.WeakPower".equals(applied.getClass().getName())
+                || applied.owner!=target || applied.amount!=1 || !Integer.valueOf(1).equals(readIntField(action,"amount"))
+                || !Boolean.FALSE.equals(readBooleanField(applied,"justApplied")))return null;
+        AbstractMonster monster=(AbstractMonster)target;
+        Integer slot=emittedMonsterSlots(liveEncounter).get(monster);
+        if(slot==null || monster.halfDead || monster.isDying || monster.isEscaping || monster.escaped
+                || monster.currentHealth<=0)return null;
+        return championBeltWeakItemJson(slot);
+    }
+
+    static String championBeltWeakItemJson(int slot) {
+        return slot>=0 && slot<=4
+                ? "{\"kind\":\"DEBUFF_ENEMY\",\"power\":\"Weakened\",\"amount\":1,\"slot\":"+slot+",\"sourceMonster\":false}" : null;
     }
 
     private static String halfDeadSetMoveJson(Object action) {
