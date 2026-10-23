@@ -22431,6 +22431,18 @@ Seeds: none new (live seeds 111200473 and 111200504).
 **Interpretation:** Play-changing only for Acid and Spike Slime (L) pushed to half HP by thorns-type damage during their own turn; they now split on schedule. Natively the split was lost only when nothing hit the slime again before its next turn (a later hit re-armed it). The Slime Boss never queues a roll, so its guard is play-neutral. The dead-monster and Byrd families are representation-only and left unchanged; the parity comparison could classify them as background.
 
 **Status:** Draft PR.
+## §653 — Live act 4: the inspector reported A20 Act 4 question history as incomplete, so OOC search never looked ahead (2026-10-23)
+
+**Question:** Why did live OOC search look ahead 0 floors in all 141 Act 4 decisions of seeds 525-622 (acts 1-3: 96-100% of simulations look ahead)?
+
+**Evidence:** The decision-review thread traced it to `stopAtMapCheckpoint = !mapHistoryComplete` (`live_ooc_policy.cpp:258`); `mapHistoryComplete` requires `questionHistoryComplete` (`live_ooc_state.cpp:719`), which the inspector reported false on every Act 4 state (seed 586: true on floor 49, false from floor 52; fixture `tests/fixtures/live_act4_entry.json`: floor 52, A20, `pathHistory` ends `BOSS, BOSS`). `QuestionRoomHistory.capture` accepted the null `path_per_floor` placeholder only on floors that are multiples of 17 (boss chests 17 and 34, non-A20 VictoryRoom 51). At A20 the second Act 3 boss is floor 51, so the VictoryRoom null is floor 52 (the importer already uses 52 as the Act 4 entry floor, `live_ooc_state.cpp:945`). Confirmed by the canary on two real A20 `.run` files (seed 111200630, Heart death; seed 111200613, victory): `path_per_floor` [49..55] = `"B","B",null,"R","$","E","B"` and `path_taken` ends `BOSS, BOSS, R, $, E, BOSS` with no entry for the VictoryRoom; the live export at the first Act 4 MAP (floor 52) had 49 `pathHistory` entries and `questionHistoryComplete: false`. `roomOutcome` also mapped the current `VictoryRoom` to `INVALID`, so the Act 4 entry map itself failed at any ascension.
+
+**Change:** `STS_A20_VICTORY_ROOM_HISTORY_FIX` (inspector mod, default on, `=0` restores): the null on floor 52 counts as the VictoryRoom placeholder when floors 50 and 51 were both bosses, and the current `VictoryRoom` maps to `NONE`. Test: `QuestionRoomHistoryTest` builds an A20 path with the double boss and checks the Act 4 entry map (floor 52) and floor 55 (Shield & Spear) are complete, that a floor-52 null without the double boss stays incomplete, and that the flag off restores the old result.
+
+**Interpretation:** Play-changing for every live A20 run reaching Act 4: OOC search now simulates the Act 4 rest/shop/elite/Heart path (the ADR-0048 act-4 CTM model was never used live before), instead of valuing the first map checkpoint with the bare win model (about 0.95 at the Act 4 campfire vs 10/21 wins). Simulator-only play is unaffected.
+
+**Status:** Draft PR.
+
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with
