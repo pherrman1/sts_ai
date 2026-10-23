@@ -22467,7 +22467,7 @@ Seeds: none new (live seeds 111200473 and 111200504).
 
 **Status:** Draft PR.
 
-## §TBD — Live problem 109: Time Eater marks usedHaste when it rolls Haste (2026-10-23)
+## §667 — Live problem 109: Time Eater marks usedHaste when it rolls Haste (2026-10-23)
 
 **Question:** Why did seed 111200653 (step 875, floor 51, Time Eater) show `monsters[0].miscInfo` 1 in the game vs 0 natively after End Turn?
 
