@@ -23470,7 +23470,7 @@ recipe do better when it learns from the recapture's cleaner labels? Philipp typ
 - No game seeds were used.
 - **Knowledge impact:** `evaluation/current-research.md`.
 
-## §TBD — Ranking-selected SR head, seeds 1–2: REPLICATED offline (blend +0.013 and +0.014 over SR_w1's blend; head alone level with X2-B); new online candidate SR_crn_r2_s2_ep20 (offline, 2026-10-23)
+## §649 — Ranking-selected SR head, seeds 1–2: REPLICATED offline (blend +0.013 and +0.014 over SR_w1's blend; head alone level with X2-B); new online candidate SR_crn_r2_s2_ep20 (offline, 2026-10-23)
 
 **Question:** §645's exploratory epoch (SR_crn_r2 seed 0, epoch 11) chose its epoch by the holdout ranking after the
 run. Does "SR_crn_r2's training, epoch chosen by the holdout ranking" replicate on fresh seeds with the rule fixed in
