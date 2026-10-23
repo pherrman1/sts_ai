@@ -1,0 +1,6 @@
+[100%] Built target sts_core_objects
+[100%] Building CXX object CMakeFiles/combat-infinity-oracle.dir/apps/combat_infinity_oracle.cpp.o
+[100%] Linking CXX executable combat_infinity_oracle
+[100%] Built target combat-infinity-oracle
+[ 84%] Built target sts_core_objects
+[100%] Built target unit-test
