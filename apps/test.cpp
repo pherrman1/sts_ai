@@ -2488,6 +2488,35 @@ int testIroncladCardJavaParity() {
         if (bc.monsters.arr[0].strength != strengthBefore - 3) return fail("Disarm+ did not remove 3 Strength");
     }
 
+    // Live problem 98 (seed 111200587, step 531): Impatience drew 2 natively
+    // with Attacks in hand (game: no draw; hand 6 vs 8). Java draws only when
+    // no card in hand is an Attack. STS_IMPATIENCE_FIX=0 restores the
+    // legacy always-draw.
+    for (const bool fix : {true, false}) {
+        for (const bool attack : {true, false}) {
+            if (fix) unsetenv("STS_IMPATIENCE_FIX");
+            else setenv("STS_IMPATIENCE_FIX", "0", 1);
+            BattleContext bc = simulatorCorrectnessBattle({}, Card(CardId::IMPATIENCE), 10);
+            while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+                bc.executeActions();
+            }
+            if (attack) bc.cards.hand[1] = CardInstance(CardId::STRIKE_RED);
+            const int before = bc.cards.cardsInHand;
+            simulatorCorrectnessPlay(bc, 0, 0);
+            while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+                bc.executeActions();
+            }
+            const int drawn = bc.cards.cardsInHand - (before - 1);
+            unsetenv("STS_IMPATIENCE_FIX");
+            const int want = (attack && fix) ? 0 : 2;
+            if (drawn != want) {
+                return fail(std::string(fix ? "Impatience" : "STS_IMPATIENCE_FIX=0")
+                            + (attack ? " with an Attack in hand" : " without an Attack") + " drew "
+                            + std::to_string(drawn) + ", want " + std::to_string(want));
+            }
+        }
+    }
+
     // Brutality and Pain lose HP as self-damage, which triggers Rupture.
     for (const bool pain : {false, true}) {
         BattleContext bc = simulatorCorrectnessBattle({}, Card(CardId::DEFEND_RED), 10);
