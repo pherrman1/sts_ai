@@ -3237,6 +3237,28 @@ int main(int argc, char **argv) {
         }
         unsetenv("STS_IMPORTER_CENTENNIAL_USED_FIX");
 
+        // Necronomicon (problem 96): vanilla's private activated is true while
+        // the turn's copy is still available, i.e. not yet used this turn.
+        const auto necronomiconObservation = [&](const char *field, bool activated) {
+            auto obs = genericObservation(fixtures[0], "necronomicon-ready");
+            obs["silverRoot"]["combat"]["relics"].push_back(
+                json{{"id", "Necronomicon"}, {"counter", -1}, {"usedUp", false}, {field, activated}});
+            return obs;
+        };
+        for (const char *flag : {"1", "0"}) {
+            setenv("STS_IMPORTER_NECRONOMICON_READY_FIX", flag, 1);
+            const bool fix = std::string(flag) == "1";
+            for (const char *field : {"activated", "usedThisTurn"})
+                for (const bool activated : {false, true}) {
+                    auto imported = one_combat::advisor::importSilverRoot(necronomiconObservation(field, activated));
+                    if (!imported.ok) throw std::runtime_error("Necronomicon import failed: " + imported.reason);
+                    if (imported.wire.player.haveUsedNecronomiconThisTurn != (fix ? !activated : activated))
+                        throw std::runtime_error(std::string("Necronomicon used flag wrong, flag=") + flag
+                            + " field=" + field + " activated=" + (activated ? "1" : "0"));
+                }
+        }
+        unsetenv("STS_IMPORTER_NECRONOMICON_READY_FIX");
+
         // A recounted strikeCount skips exhausted Strikes (Java
         // PerfectedStrike.countCards reads hand, draw and discard only); the
         // legacy recount included them, so Perfected Strike hit 2 harder.

@@ -932,6 +932,17 @@ bool domeAct4Fix() {
 // changeState queues the heal behind takeTurn's RollMoveAction, and phase two's
 // first move (Dark Echo) does not depend on HP (live problem 91, seed 111200541).
 // =0 restores the refusal (silver_runic_dome_history_gap).
+// STS_IMPORTER_NECRONOMICON_READY_FIX: unset/1 (default) = vanilla's private
+// Necronomicon.activated is true while the copy is still available this turn,
+// so it imports as !haveUsedNecronomiconThisTurn (problem 96); 0 restores the
+// legacy reading, which imported the ready relic as spent.
+bool necronomiconReadyFix() {
+    const char *value = std::getenv("STS_IMPORTER_NECRONOMICON_READY_FIX");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_IMPORTER_NECRONOMICON_READY_FIX must be 0 or 1");
+}
+
 bool domeRebirthRollFix() {
     const char *value = std::getenv("STS_IMPORTER_RUNIC_DOME_REBIRTH_ROLL");
     if (!value || !*value || std::string(value) == "1") return true;
@@ -1873,8 +1884,11 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         if (!relic.contains("usedUp") || !relic.at("usedUp").is_boolean()
             || !relic.contains("counter") || !relic.at("counter").is_number_integer())
             return unsupported("silver_unmapped_relic_state");
+        // The producer exports the raw vanilla field as "activated"; older
+        // producers sent the same value under "usedThisTurn".
+        const char *necronomiconField = relic.contains("activated") ? "activated" : "usedThisTurn";
         if (id == sts::RelicId::NECRONOMICON
-            && (!relic.contains("usedThisTurn") || !relic.at("usedThisTurn").is_boolean()))
+            && (!relic.contains(necronomiconField) || !relic.at(necronomiconField).is_boolean()))
             return unsupported("silver_unmapped_relic_state");
         if (id == sts::RelicId::CENTENNIAL_PUZZLE && centennialUsedFix()) {
             if (!relic.contains("usedThisCombat") || !relic.at("usedThisCombat").is_boolean())
@@ -1901,7 +1915,10 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                 p.relicCounters[i] = counter;
             }
         }
-        if (id == sts::RelicId::NECRONOMICON) p.haveUsedNecronomiconThisTurn = relic.at("usedThisTurn").get<bool>();
+        if (id == sts::RelicId::NECRONOMICON) {
+            const bool activated = relic.at(necronomiconField).get<bool>();
+            p.haveUsedNecronomiconThisTurn = necronomiconReadyFix() ? !activated : activated;
+        }
     }
 
     wire.potions.fill(static_cast<std::int16_t>(sts::Potion::EMPTY_POTION_SLOT));
