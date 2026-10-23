@@ -3239,6 +3239,7 @@ MMID Monster::getMoveForRoll(BattleContext &bc, const MonsterRollInputs &in, int
             const bool usedHaste = miscInfo;
             const bool underHalfHp = in.curHp < in.maxHp/2;
             if (!usedHaste && underHalfHp) {
+                if (timeEaterHasteRollFix()) monsterData = 1; // vanilla marks usedHaste when choosing it
                 return MonsterMoveId::TIME_EATER_HASTE;
             }
 

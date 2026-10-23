@@ -91,6 +91,12 @@ namespace sts {
     // block. Other values are fatal. Read only when an Angry monster is attacked.
     bool angryUnblockedFix();
 
+    // STS_TIME_EATER_HASTE_ROLL_FIX: unset/1 (default) = Time Eater marks
+    // usedHaste (miscInfo) when it rolls Haste, as Java TimeEater.getMove does
+    // (live parity problem 109). 0 = the legacy engine marks it only when
+    // Haste executes. Other values are fatal.
+    bool timeEaterHasteRollFix();
+
     // STS_ANGER_COPY_COST_FIX: unset/1 (default) = Anger's discard copy keeps
     // the played card's cost and costForTurn, as Java makeStatEquivalentCopy
     // does (live parity problem 43, seed 111200436: under Confusion the game's
