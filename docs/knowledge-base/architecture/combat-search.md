@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-10-18 for the A20 learned-stop default and stop model (ADR-0051); 2026-10-18 for the learned-stopping A20 result with the gen-7f table (§538); 2026-10-18 for §523 random playouts per leaf; 2026-10-17 for the live advisor rollout root table (ADR-0046); 2026-10-17 for the per-playout action cap (#544) and its `STS_SILVER_ROLLOUT_ACTION_CAP` switch; 2026-10-17 for the zero-cost rollout cap and depth-backstop rollout (#544); 2026-10-17 for the root-prior override used by the OOC Silver fallback and the burning-elite escape rule; 2026-10-15 for the default rollout card table (ADR-0040) and the §479 rollout research options; 2026-10-14 for default canonical multi-select masks (ADR-0034) and the §473 escape-penalty gate and defaults (ADR-0036, ADR-0037); 2026-10-08 for targeted public capture and the bounded public pair probe;
+Last verified: 2026-10-23 for the standalone same-turn infinity oracle; 2026-10-18 for the A20 learned-stop default and stop model (ADR-0051); 2026-10-18 for the learned-stopping A20 result with the gen-7f table (§538); 2026-10-18 for §523 random playouts per leaf; 2026-10-17 for the live advisor rollout root table (ADR-0046); 2026-10-17 for the per-playout action cap (#544) and its `STS_SILVER_ROLLOUT_ACTION_CAP` switch; 2026-10-17 for the zero-cost rollout cap and depth-backstop rollout (#544); 2026-10-17 for the root-prior override used by the OOC Silver fallback and the burning-elite escape rule; 2026-10-15 for the default rollout card table (ADR-0040) and the §479 rollout research options; 2026-10-14 for default canonical multi-select masks (ADR-0034) and the §473 escape-penalty gate and defaults (ADR-0036, ADR-0037); 2026-10-08 for targeted public capture and the bounded public pair probe;
 2026-09-25 for native-only Silver (ADR-0022), the native default
 (ADR-0021) and Silver-only dispatch (ADR-0020).
 
@@ -773,3 +773,27 @@ complete fight's evolution per encounter. It uses simulation-weighted shares,
 not averages of per-decision percentages. Zero-sample shares are null. Reused
 visits and correlated search samples are not independent gameplay outcomes;
 terminal reachability alone establishes no search-quality or budget claim.
+
+## Same-turn infinity oracle (research only)
+
+`combat_infinity_oracle --fixtures` or `--roots ROOTS.jsonl` runs a standalone
+bounded card-action DFS. It is not linked into gameplay. It reuses the native
+state hash plus exact comparison of normalized copies, existing semantic action
+fingerprints, and real simulator replay. A repeated control state can be
+STALL_LOOP or PRODUCTIVE_LOOP; only actual same-turn victory during legal
+witness replay is CERTIFIED_KILL. It never scores, prunes or annotates AZ rows.
+
+The v0 support boundary is concrete, quiet PLAYER_NORMAL roots; it excludes
+potions, card-selection continuations, hidden intents and cross-turn cycles.
+All gameplay state remains exact except enemy HP as progress and the audited
+bookkeeping/conditional counter and singleton-shuffle normalizations documented
+in the [design and fixture evidence](../../experiments/evidence/combat_infinity_oracle_20261023/REPORT.md).
+Hash hits must pass full equality. Future engine counter consumers require a
+new normalization audit; broadening the RNG quotient requires mechanical proof.
+
+Search is capped at depth/witness 24 and 2,000 nodes, with at most 16 candidates;
+certification is capped at 128 periods / 1,024 actions each and 4,096 actions
+across candidates. Existing wire roots can be imported without new capture
+infrastructure, but information-set piles are rejected. `NONE` means no witness
+within the support/budget, not proof that a combat lacks an infinite. See the
+same evidence for raw fixtures, timing and the archived-root support check.

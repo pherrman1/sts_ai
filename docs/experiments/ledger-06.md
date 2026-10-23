@@ -23999,3 +23999,27 @@ Proposed next: an offline check of the CTM's act-4 predictions against the stage
 campaigns, backup copies of stragglers on idle workers once the queue is empty.
 - Seeds 111360000–111360255 used; smokes 111369991–111369993 used (111369990–111369999 assigned).
 - **Knowledge impact:** `evaluation/current-research.md`.
+
+## §TBD Same-turn infinity oracle — bounded synthetic feasibility (2026-10-23)
+
+Hypothesis: exact recurring combat control state plus simulator witness replay
+can distinguish useful same-turn card cycles from stalls. Baseline
+`a8b801390a2e730c30312522b71a056c3eaca7c7`; standalone Debug utility, no models,
+no Silver/AZ/OOC integration, no new game-seed cohort. Concrete full-state/RNG
+regime, eight deterministic synthetic states and first eight preserved wire roots.
+Search bounds: depth/period 24, 2,000 nodes, 16 candidates; replay bounds: 128
+periods / 1,024 actions per candidate, 4,096 actions total.
+
+Synthetic decision rule PASS pending independent review: 1 certified Dropkick
+kill, 2 productive candidates rejected (phase transition, repetition cap), 1
+stall, 4 NONE (one unsupported). Four states repeat a control fingerprint;
+mean/max nodes 255.25/2,000, mean/max Debug process CPU 5.065/34.802 ms,
+maximum depth 24. No false certified positives in the fixture suite. All three
+focused CTests pass. Archived wires reconstruct 8/8, but all retain information-set
+draw piles and are unsupported for concrete cycle search. No natural prevalence
+or gameplay-quality claim. The historical #544 artifact has stacks, not its
+combat state; a synthetic fixture covers that failure class.
+
+[Design, command outcomes, witnesses, source/binary hashes and limitations](evidence/combat_infinity_oracle_20261023/REPORT.md).
+No default or training change. Next proposed step is label collection only,
+not implemented.
