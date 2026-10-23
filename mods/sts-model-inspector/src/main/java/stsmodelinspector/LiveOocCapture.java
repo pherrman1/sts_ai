@@ -1070,6 +1070,8 @@ final class LiveOocCapture {
                 && Boolean.FALSE.equals(field(event,"cardsSelected"))) owners.add("DrugDealer");
         if ("Designer".equals(eventClass) && "DONE".equals(LiveEventCapture.phase(event))
                 && "TRANSFORM".equals(String.valueOf(field(event,"option")))) owners.add("DesignerTransform");
+        String neowOwner = "NeowEvent".equals(eventClass) ? neowTwoCardOwner(optionalField(event, "rewards")) : null;
+        if (neowOwner != null) owners.add(neowOwner);
         boolean bonfire = "Bonfire".equals(eventClass)
                 && "CHOOSE".equals(String.valueOf(field(event, "screen")))
                 && Boolean.TRUE.equals(field(event, "cardSelect"));
@@ -1078,6 +1080,26 @@ final class LiveOocCapture {
         return selectorType(AbstractDungeon.gridSelectScreen.forUpgrade,
                 AbstractDungeon.gridSelectScreen.forPurge, AbstractDungeon.gridSelectScreen.forTransform,
                 owners, bonfire, duplicator);
+    }
+
+    // Live problem 103 (seed 111200638): Neow's "Remove 2 Cards" and "Transform
+    // 2 Cards" open their grids with no flag (javap j103), so they were captured
+    // as "other". The activated reward owns its grid; activated stays true until
+    // update applies the selection. STS_NEOW_TWO_CARD_SELECTOR_FIX=0 restores
+    // the old capture.
+    static boolean neowTwoCardFix = !"0".equals(System.getenv("STS_NEOW_TWO_CARD_SELECTOR_FIX"));
+    static String neowTwoCardOwner(Object rewards) throws ReflectiveOperationException {
+        if (!neowTwoCardFix || !(rewards instanceof List)) return null;
+        String owner = null;
+        for (Object reward : list(rewards)) {
+            if (!Boolean.TRUE.equals(field(reward, "activated"))) continue;
+            String type = String.valueOf(field(reward, "type"));
+            String candidate = "REMOVE_TWO".equals(type) ? "NeowRemoveTwo"
+                    : "TRANSFORM_TWO_CARDS".equals(type) ? "NeowTransformTwo" : null;
+            if (candidate == null || owner != null) return null;
+            owner = candidate;
+        }
+        return owner;
     }
 
     // Identify the owning vanilla continuation, never localized prompt text.
@@ -1093,8 +1115,9 @@ final class LiveOocCapture {
                 case "DollysMirror": return object("type", "duplicate");
                 case "BackToBasics": return object("type", "remove");
                 case "TheLibrary": return object("type", "obtain");
-                case "NoteForYourself": return object("type", "remove");
-                case "DrugDealer": case "DesignerTransform": return object("type", "transform");
+                case "NoteForYourself": case "NeowRemoveTwo": return object("type", "remove");
+                case "DrugDealer": case "DesignerTransform": case "NeowTransformTwo":
+                    return object("type", "transform");
                 case "Bottled Flame": return object("type", "bottle", "bottleType", "attack");
                 case "Bottled Lightning": return object("type", "bottle", "bottleType", "skill");
                 case "Bottled Tornado": return object("type", "bottle", "bottleType", "power");
