@@ -1,0 +1,377 @@
+{
+  "states": 50,
+  "validFights": 50,
+  "excluded": {},
+  "truncatedRows": {},
+  "shards": [
+    {
+      "prefix": "S-111339997",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 23,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 9
+    },
+    {
+      "prefix": "S-111339998",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 7,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 5
+    },
+    {
+      "prefix": "S-111339999",
+      "manifest": true,
+      "requestedSeeds": 1,
+      "finishedSeeds": 1,
+      "states": 20,
+      "controlReplayMismatches": 0,
+      "invalidArmRows": 0,
+      "hallwaySkipped": 8
+    }
+  ],
+  "seedsWithStates": 3,
+  "roomClasses": {
+    "ELITE": 19,
+    "NORMAL": 18,
+    "BOSS": 10,
+    "OTHER": 3
+  },
+  "sourceSeeds": 3,
+  "meanCpuSecondsPerFight": {
+    "control": 3.9794178747,
+    "base10000": 12.035742215339999,
+    "head10000": 13.18964205408
+  },
+  "cpuMsPerDecision": {
+    "control": 148.37501397091722,
+    "base10000": 477.2300640499603,
+    "head10000": 505.54396527711765
+  },
+  "escapes": {
+    "base10000": 0,
+    "head10000": 0
+  },
+  "excludedFightsByRootReason": {},
+  "invalidArmRowsByReason": {},
+  "escapeReplicatesAllFights": {
+    "base10000": 0,
+    "head10000": 0
+  },
+  "arms": {
+    "base10000": {
+      "score": 318.73,
+      "win": 0.94,
+      "hpLoss": 9.31,
+      "decisions": 25.22,
+      "cpuSecondsPerFight": 24.071484430679998,
+      "cpuMicrosecondsPerSimulation": 47.723006404996035,
+      "meanRolloutLength": 16.12833349604103,
+      "playoutsPerSimulation": 0.8582129659000793,
+      "decisionsPerFight": 50.44
+    },
+    "head10000": {
+      "score": 316.02,
+      "win": 0.93,
+      "hpLoss": 11.44,
+      "decisions": 26.09,
+      "cpuSecondsPerFight": 26.37928410816,
+      "cpuMicrosecondsPerSimulation": 50.554396527711766,
+      "meanRolloutLength": 15.660923787344538,
+      "playoutsPerSimulation": 0.8643986201609812,
+      "decisionsPerFight": 52.18
+    }
+  },
+  "contrasts": {
+    "head10000-base10000/all/score": {
+      "mean": -2.71,
+      "ci95": [
+        -3.5,
+        -2.142857142857143
+      ],
+      "fights": 50
+    },
+    "head10000-base10000/all/win": {
+      "mean": -0.01,
+      "ci95": [
+        -0.025,
+        0.0
+      ],
+      "fights": 50
+    },
+    "head10000-base10000/all/hpLoss": {
+      "mean": 2.13,
+      "ci95": [
+        -0.45,
+        4.130434782608695
+      ],
+      "fights": 50
+    },
+    "head10000-base10000/all/decisions": {
+      "mean": 0.87,
+      "ci95": [
+        0.1,
+        1.4130434782608696
+      ],
+      "fights": 50
+    },
+    "head10000-base10000/boss/score": {
+      "mean": -28.5,
+      "ci95": [
+        -60.5,
+        3.5
+      ],
+      "fights": 10
+    },
+    "head10000-base10000/boss/win": {
+      "mean": -0.1,
+      "ci95": [
+        -0.25,
+        0.0
+      ],
+      "fights": 10
+    },
+    "head10000-base10000/boss/hpLoss": {
+      "mean": 8.45,
+      "ci95": [
+        1.375,
+        15.4
+      ],
+      "fights": 10
+    },
+    "head10000-base10000/boss/decisions": {
+      "mean": 1.75,
+      "ci95": [
+        -1.5,
+        4.4
+      ],
+      "fights": 10
+    },
+    "head10000-base10000/elite/score": {
+      "mean": 0.13815789473684212,
+      "ci95": [
+        -1.45,
+        2.4464285714285716
+      ],
+      "fights": 19
+    },
+    "head10000-base10000/elite/win": {
+      "mean": 0.0,
+      "ci95": [
+        0.0,
+        0.0
+      ],
+      "fights": 19
+    },
+    "head10000-base10000/elite/hpLoss": {
+      "mean": 1.4210526315789473,
+      "ci95": [
+        0.0,
+        2.0
+      ],
+      "fights": 19
+    },
+    "head10000-base10000/elite/decisions": {
+      "mean": 0.5,
+      "ci95": [
+        -0.5,
+        1.25
+      ],
+      "fights": 19
+    },
+    "head10000-base10000/normal/score": {
+      "mean": 6.994047619047619,
+      "ci95": [
+        -4.625,
+        17.208333333333332
+      ],
+      "fights": 21
+    },
+    "head10000-base10000/normal/win": {
+      "mean": 0.023809523809523808,
+      "ci95": [
+        0.0,
+        0.05555555555555555
+      ],
+      "fights": 21
+    },
+    "head10000-base10000/normal/hpLoss": {
+      "mean": -0.23809523809523808,
+      "ci95": [
+        -2.388888888888889,
+        4.625
+      ],
+      "fights": 21
+    },
+    "head10000-base10000/normal/decisions": {
+      "mean": 0.7857142857142857,
+      "ci95": [
+        -0.25,
+        1.75
+      ],
+      "fights": 21
+    },
+    "head10000-base10000/act4/score": {
+      "mean": -19.75,
+      "ci95": [
+        -19.75,
+        -19.75
+      ],
+      "fights": 2
+    },
+    "head10000-base10000/act4/win": {
+      "mean": 0.0,
+      "ci95": [
+        0.0,
+        0.0
+      ],
+      "fights": 2
+    },
+    "head10000-base10000/act4/hpLoss": {
+      "mean": 22.5,
+      "ci95": [
+        22.5,
+        22.5
+      ],
+      "fights": 2
+    },
+    "head10000-base10000/act4/decisions": {
+      "mean": 2.0,
+      "ci95": [
+        2.0,
+        2.0
+      ],
+      "fights": 2
+    },
+    "head10000-base10000/act1/score": {
+      "mean": 2.1315789473684212,
+      "ci95": [
+        0.4166666666666667,
+        3.5714285714285716
+      ],
+      "fights": 19
+    },
+    "head10000-base10000/act1/win": {
+      "mean": 0.0,
+      "ci95": [
+        0.0,
+        0.0
+      ],
+      "fights": 19
+    },
+    "head10000-base10000/act1/hpLoss": {
+      "mean": -0.10526315789473684,
+      "ci95": [
+        -0.42857142857142855,
+        0.5
+      ],
+      "fights": 19
+    },
+    "head10000-base10000/act1/decisions": {
+      "mean": 0.07894736842105263,
+      "ci95": [
+        -0.75,
+        0.5
+      ],
+      "fights": 19
+    },
+    "head10000-base10000/act2/score": {
+      "mean": -1.8076923076923077,
+      "ci95": [
+        -17.5,
+        0.35714285714285715
+      ],
+      "fights": 13
+    },
+    "head10000-base10000/act2/win": {
+      "mean": 0.0,
+      "ci95": [
+        0.0,
+        0.0
+      ],
+      "fights": 13
+    },
+    "head10000-base10000/act2/hpLoss": {
+      "mean": 1.8076923076923077,
+      "ci95": [
+        -0.35714285714285715,
+        17.5
+      ],
+      "fights": 13
+    },
+    "head10000-base10000/act2/decisions": {
+      "mean": 1.3846153846153846,
+      "ci95": [
+        0.9285714285714286,
+        6.5
+      ],
+      "fights": 13
+    },
+    "head10000-base10000/act3/score": {
+      "mean": -7.0625,
+      "ci95": [
+        -10.8125,
+        -3.3125
+      ],
+      "fights": 16
+    },
+    "head10000-base10000/act3/win": {
+      "mean": -0.03125,
+      "ci95": [
+        -0.0625,
+        0.0
+      ],
+      "fights": 16
+    },
+    "head10000-base10000/act3/hpLoss": {
+      "mean": 2.5,
+      "ci95": [
+        -1.8125,
+        6.8125
+      ],
+      "fights": 16
+    },
+    "head10000-base10000/act3/decisions": {
+      "mean": 1.25,
+      "ci95": [
+        -0.8125,
+        3.3125
+      ],
+      "fights": 16
+    }
+  },
+  "cpuRatios": {
+    "head10000/base10000/perSimulation": {
+      "ratio": 1.0593296679318032,
+      "ci95": [
+        1.0433536932227931,
+        1.084939441716405
+      ]
+    },
+    "head10000/base10000/perFight": {
+      "ratio": 1.0958727611554617,
+      "ci95": [
+        1.0896412377801816,
+        1.1373479919119045
+      ]
+    }
+  },
+  "labels": {
+    "head10000-base10000/score": "WORSE",
+    "head10000-base10000/hpLoss": "NOT_SHOWN",
+    "head10000-matched/score": "NOT_MATCHED",
+    "head10000-matched/hpLoss": "NOT_MATCHED"
+  },
+  "cpuMatchedArm": null,
+  "gate": {
+    "pass": false,
+    "reason": "NOT_MATCHED"
+  },
+  "stallFights": {},
+  "act4Fights": 2
+}

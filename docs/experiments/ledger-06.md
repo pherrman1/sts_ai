@@ -22476,6 +22476,15 @@ Seeds: none new (live seeds 111200473 and 111200504).
 **Change:** `STS_ANGRY_UNBLOCKED_FIX` (default on, `=0` restores): Angry's Strength is applied after the block subtraction and only when damage remains. Test in `simulator_correctness_pr9_19`: Angry 2 with 10 block gains no Strength from a 4- or 10-damage attack and +2 from a 15-damage attack (legacy: +2 for all). Not changed here (pre-existing gap, candidate for a later PR): THORNS damage (Bronze Scales, Flame Barrier) goes through `Monster::damage`, which never triggers Angry.
 
 **Interpretation:** Play-changing against Gremlin Warriors with block (Gremlin Gang, Gremlin Leader), in simulation and live: blocked hits no longer make the Warrior stronger.
+## §665 — Live problem 106: Hand of Greed skipped the target's onAttacked reactions (2026-10-23)
+
+**Question:** Why did seed 111200646 (step 750, floor 48, Writhing Mass) diverge after Hand of Greed and its Necronomicon copy (two hits of 23)?
+
+**Evidence:** Game: Writhing Mass HP 172 -> 140, block 11 -> 4, Malleable 3 -> 5, aiRng advanced twice (two Reactive rerolls). Native: HP 137, block 0, Malleable 3, aiRng unchanged. `ActData_HandOfGreedAction` called `Monster::damage` (the non-attack path: block, Intangible, Invincible, Lagavulin wake, Shifting only), while Java `GreedAction` calls `target.damage(new DamageInfo(player, damage, NORMAL))`, which runs onAttacked; `ActData_FeedAction` already used `Monster::attacked`. Hand of Greed rows on Awakened One and Spire Shield matched because neither has an onAttacked reaction.
+
+**Change:** `STS_HAND_OF_GREED_ATTACK_FIX` (default on, `=0` restores): Hand of Greed hits through `Monster::attacked`, as Feed does. Test in `simulator_correctness_pr9_19`: a 23-damage Hand of Greed into Malleable 3 leaves Malleable 4 and 3 block (legacy: Malleable 3, no block), with the same HP loss.
+
+**Interpretation:** Play-changing whenever Hand of Greed hits a monster with an on-hit reaction (Malleable, Reactive, Curl Up, Angry, Plated Armor, Flight, Thorns) or with The Boot / Envenom, in simulation and live. Other `Monster::damage` callers (`DamageEnemy`, `DamageAllEnemy`, `DamageRandomEnemy`) are not changed here; each needs its own Java check, since most Java onAttacked reactions (e.g. Malleable, Curl Up) require a NORMAL `DamageInfo` and those callers model THORNS or HP_LOSS damage.
 
 **Status:** Draft PR.
 
@@ -23747,3 +23756,222 @@ ignores the damage still to come; not tested.
 `/mnt/project-files/silver-leaf-head-ab/campaign/units/` (`tars.sha256`). Seeds used 111350000–255 (smokes
 111339997–999, counted in §655).
 **Knowledge impact:** `research/combat-search/leaf-evaluation.md`, `operations/environment-variables.md`.
+
+## §660 — Value-head plan, stage 0: relative to its calibrated Heart value, the X2-B leaf over-prices a death 3.3× (act 1) to 7.7× (act 3); a per-act calibrated leaf (M0) would change 7.0% of root picks, three quarters toward the riskier sibling (offline, 2026-10-22)
+
+**Question:** A rollout3 leaf scores a death 0, a Heart kill 1 and a surviving end X2-B, whose level is far above the
+Heart rate. How much does that over-price a death, and would a calibrated leaf change the search's picks? Stage 0 of
+the [value-head research plan](https://claude.ai/artifact/MoLmbWb4QXdLTEsDVYgt4a); Philipp: "lets go with the plan"
+(2026-10-22 21:44Z).
+**Design:** offline on §644's common-seed capture (320 A20 sources of gen-2 A/B arm A play, 70 Heart kills, 20,679
+searched roots, 32 repeats per sibling). Tools [`stage0.py`](evidence/value_death_price_20261023/tools/stage0.py)
+and [`calib_check.py`](evidence/value_death_price_20261023/tools/calib_check.py).
+- Calibration: per searched root, X2-B of the executed action's child against the run's Heart kill;
+  logit p = a_act + b · logit x.
+- Death price in X2-B units at the surviving rollout ends: x̄(1 − x̄) / (b(1 − p̄)).
+- Flips: a PUCT proxy with fixed Q from the 32 repeats per child, the root's priors and its completed simulations.
+  It reproduces the played action at 91% of roots and ignores the deeper tree and the stop.
+**Result** ([README](evidence/value_death_price_20261023/README.md)):
+- Calibration: a = (−2.538, −2.923, −3.652, −3.633), b = 1.054 [0.81, 1.29]; separate slopes per act 0.90 / 0.97 /
+  1.22 / 1.10. Fit on 240 TRAIN sources, predicted − observed on the 80 VALIDATION sources is −0.002, +0.051, +0.070,
+  +0.081 in acts 1–4 (every CI includes 0).
+- Level at decision roots: X2-B 0.75 / 0.80 / 0.91 / 0.96 against Heart rates 0.22 / 0.27 / 0.38 / 0.58.
+- Death over-pricing: 3.3× [2.5, 4.1], 4.0× [3.0, 5.0] and 7.7× [5.5, 9.8] in acts 1–3 (the 10-17 audit had 2.6×,
+  3.1×, 5.8×). Rollouts also die more often than the real runs over the same horizon (real / rollout 0.59, 0.85,
+  0.62, 0.80 in acts 1–4).
+- The prior's top action is below 0.95 at 36% of searched roots; the search overrode the prior at 6.9%.
+
+| leaf change | best-by-mean flips | PUCT flips | to the riskier sibling | mean Δ rollout death share |
+|---|---|---|---|---|
+| M0′, death worth 0.52 / 0.58 / 0.77 (k = 1) | 13.0% | 5.1% | 97% | +0.10 |
+| M0′, death worth 0.30 / 0.39 / 0.66 (k = 2) | 7.1% | 3.6% | 96% | +0.09 |
+| M0, calibrated leaf | 17.4% | 7.0% (full-budget roots 13.5%) | 74% | +0.075 |
+
+- Predicted Heart kills per run from M0's PUCT flips: +1.8 pp if its calibration holds between siblings (act 1 −0.9,
+  act 2 +1.6, act 3 +1.0); −6.1 pp if today's implied death price were right.
+- M0′ (the plan doc's shortcut: survivors keep X2-B, a death is worth a per-act constant) breaks at act borders. A
+  rollout that dies at the act-3 boss would score 0.77, above the ≈ 0.54 average of rollouts that reach act 4
+  (deaths there stay 0, kills 1).
+**Interpretation:**
+- Flips are frequent, so the plan's early exit (flips rare → the level is not the lever) does not apply.
+- The two predictions have opposite signs. Which death price is right can only be settled in play.
+- M0′ is unusable as written. M0 puts every leaf in one unit, Heart probability.
+**Decision:** no default change. `STS_OOC_MCTS_LEAF_CALIBRATION` is a new research option (default unset). The 2×2 A/B
+of M0 × the SR_w1 blend is pre-registered in [value_level_ab_20261023](evidence/value_level_ab_20261023/PREREG.md).
+- No game seeds were used.
+- **Knowledge impact:** `evaluation/current-research.md`, `operations/environment-variables.md`.
+
+## §661 — Value-level 2×2 A/B at A20: the calibrated leaf (M0) kills the Heart more often (+2.15 pp [+0.10, +4.25], IMPROVED); the SR_w1 blend does not (−0.6 pp, NOT_SHOWN) (1,024 seeds, 2026-10-23)
+
+**Question:** Does ending every rollout3 leaf in calibrated Heart-kill probability (M0, fit in stage 0 above) instead
+of raw X2-B kill the Heart more often at A20? Secondary: does the SR_w1 value-head blend at w 0.1, and do the two add
+up? Stage 3 of the value-head research plan; Philipp: "keep going with the plan, you can use 32 workers" (2026-10-22
+21:44Z).
+**Design:** pre-registered ([PREREG](evidence/value_level_ab_20261023/PREREG.md)), independent pre-launch review PASS.
+- Every arm is the gen-2 A/B arm A config (§621) with the learned OOC stop 0.99:
+  - A: X2-B leaf;
+  - M: A + `STS_OOC_MCTS_LEAF_CALIBRATION`;
+  - S: A + the SR_w1 blend at w 0.1;
+  - MS: both.
+- 1,024 seeds (111340000–111341023), each played by all four arms on one lane. 32 cloud workers × 4 lanes,
+  RUN_COMMIT `2b1b269d`, binary `56b29bf8…`.
+- Primary: the M0 main effect ((M + MS) − (A + S)) / 2 on Heart kills, 95% seed bootstrap; IMPROVED if the CI is
+  above 0.
+**Result** ([RESULT](evidence/value_level_ab_20261023/RESULT.md)): 1,024 of 1,024 units verified, and all 4,096 games
+are valid.
+
+| arm | Heart kills | reached Act 4 | kills per Act-4 arrival | deaths in act 1 / 2 / 3 / 4 | wall vs A |
+|---|---|---|---|---|---|
+| A | 23.2% | 40.7% | 57.1% | 88 / 235 / 284 / 179 | 1.00 |
+| M | 24.6% | 40.5% | 60.7% | 120 / 263 / 226 / 163 | 0.95 |
+| S | 21.9% | 40.1% | 54.5% | 82 / 254 / 277 / 187 | 1.08 |
+| MS | 24.8% | 41.5% | 59.8% | 128 / 255 / 216 / 171 | 1.04 |
+
+- **M0 main effect +2.15 pp [+0.10, +4.25]: IMPROVED.** Stage 0 had predicted +1.8 pp if the calibration holds, or
+  −6.1 pp if X2-B's death price were right.
+- Blend main effect −0.59 pp [−2.25, +1.07]: NOT_SHOWN. Interaction +1.56 pp [−1.56, +4.79].
+- Simple effects: M − A +1.37 pp (102 / 88 discordant, p 0.35); MS − S +2.93 pp (107 / 77, p 0.03).
+- Under M0 the pick leaves the prior's argmax less often (5.1% vs 6.5% of searched roots). The learned OOC stop fires
+  earlier in every act (act 1: 345 vs 369 fast-root simulations).
+- The CI clears 0 by two grid steps. With 1,023 seeds in, a last seed with a negative M0 effect would have made it
+  NOT_SHOWN; that seed was a kill in all four arms.
+**Interpretation:**
+- X2-B's implied death price makes the search too cautious in acts 1–2. M0 takes more early risk (more act-1 and
+  act-2 deaths, fewer act-3 deaths) and wins Act 4 more often.
+- The size is uncertain, about 0 to 4 pp. M0 also shrinks Q gaps, so PUCT leans more on the prior; the A/B measures
+  both together.
+- The SR_w1 blend at w 0.1 does not help, with or without M0.
+- Two PREREG statements were wrong (reviewer notes): 3 of the stop's 14 features are Q gaps, not "Q differences only";
+  and the stop fired earlier in all four acts, not later in acts 1–2.
+**Decision:** M0 becomes the A20 default for the rollout3 X2-B leaf, offline and in the live advisor (Philipp,
+2026-10-23 14:11Z; ADR-0057; `STS_OOC_MCTS_LEAF_CALIBRATION=0` restores raw X2-B). The PREREG had asked for two
+checks first: the learned OOC stop on M0's Q scale, and a confirmation on fresh seeds. The stage 1–2 replay (seeds
+111360000–111360255) is the first prospective test of the decision metric against M − A.
+- **Stop check (offline, done):** passes ([README](evidence/value_m0_stop_check_20261023/README.md)). 18 seeds per arm
+  (111370000–111370017, smokes 111370018–019) were played at a full 4096 simulations with the run profile on.
+  - At p ≥ 0.99 the stop's leader is the full search's choice at 99.76% [99.56, 99.94] of checkpoints under M0,
+    vs 99.62% [99.12, 99.94] under X2-B.
+  - As deployed at fast roots, none of its stops changed a pick (0 of 677 under M0, 0 of 685 under X2-B).
+  - It stops at 59% vs 54% of roots because M0's searches settle earlier.
+- **Confirmation: skipped** (Philipp's choice). A 2,048-seed A vs M A/B would come out IMPROVED only about one time in
+  three at a true gain of 1.4 pp. The seeds reserved for it (111372000–111374047, smokes 111379990–111379997) are not
+  used.
+- Seeds 111340000–111341023 used (smokes 111349990–111349993); stop check 111370000–111370019.
+- **Knowledge impact:** `evaluation/current-research.md`, `architecture/out-of-combat.md`,
+  `operations/environment-variables.md`, ADR-0057.
+
+## §662 — Live advisor: Headbutt killing a Darkling under Runic Dome was refused (2026-10-23)
+
+**Question:** why did canary seed 111200641 (act 3 floor 44, three Darklings, Runic Dome; problem 104) stop with
+`silver_selection_pending_actions` after Headbutt left a Darkling half-dead, although the producer reported no
+`pendingActionsBlocker`?
+**Setup:** the canary's report (Dome `nextMove` null for every Darkling, `runicDomeKnowledge.complete` false);
+`RunicDomeTracker` and `live_silver_importer_test` (Ironclad seed 111200071, THREE_DARKLINGS; no gameplay runs).
+**Result:** the producer emitted `MONSTER_SET_MOVE {move:4, slot}` for the queued duplicate `SetMoveAction(4)`, as in
+problem 89 (§630). The importer only accepted it when the imported history already showed Regrow, but under Runic Dome
+that history is derived after the pending loop, so the item was refused. The Dome tracker also reported the Darkling as
+incomplete while the duplicate setter was queued (`publicDuplicatePending`), the same window as Awakened One in §631.
+**Interpretation:** the tracker now reports that window as complete with Regrow known. Each half-death adds two known
+transitions (the setter and its duplicate), so an odd count marks the window. Under
+`STS_SILVER_DARKLING_DOME_REGROW_QUEUE` (default on, `=0` restores the refusal) the importer accepts the queued item
+under Runic Dome, and the Darkling row only with odd count and queued item together. The importer test gains the Dome
+form of the §630 Darkling Headbutt, with fail-closed cases; the tracker test checks the window and the completed row.
+Play-changing only where the advisor used to refuse.
+Seeds: none new (live seed 111200641 as reported; unit test seed 111200071 from this thread's block).
+**Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.
+
+## §664 — Silver leaf head, labels or data: a per-state label (Silver's searched value) orders exact leaves better and wins first fights without a playout, but no new net beats production in the 3-source smoke, and every head scores lower there in boss fights (offline, 2026-10-23)
+
+**Question:** Philipp, after §656 paused the line (2026-10-23 14:28Z): retrain the leaf head with cleaner labels, or
+does it need more data? Exploratory and offline: no new seeds, no workers, no code change.
+**Design:** [README](evidence/silver_leaf_label_data_20261023/README.md). Both silver-leaf-a20 packs rebuilt byte for
+byte (a20prod 47efc292…, a20 408a864c…), with the folds, optimizer and early stopping of `train_head_a20.py` (the
+a20prod recipe reproduces its report, 23.71). Variants: 25, 50 and 100% of the runs, a bigger head, the trunk trained
+end to end (started from g7f_E), both packs, and Silver's root value (`qchosen`) as the label instead of the fight's
+end score. The nets then went through the 69,734 exact search leaves of first fights 111149600–649, the exact
+first-fight test on the Part B fights 111333000–099 (§655) and the §656 harness's 3-source smoke (sources
+111339997–999, production at 10k only).
+**Result:**
+- Fit, fold-4 RMSE against the end score (noise bound 18.8): a20prod's frozen head 23.7, on half the runs 24.6; end
+  to end 20.0 (Act 3 26.7 → 20.4), on both packs 19.5; a bigger head on the frozen trunk 23.9.
+- Silver's root value lies 12.4 points below the end score on average: 20.0 at turn 0, 5.1 from turn 6 on, 18.1 in
+  boss fights, 23.6 in Act 4.
+- Exact leaves, pairs in order within one fight and turn: a20prod 0.774, end to end on the end score 0.771, end to
+  end on the searched value 0.808 (the capacity-test head `heads/ct.txt`, fitted to these exact values in sample:
+  0.876, `evidence/silver_leaf_label_data_20261023/results/exact_leaves_ct.txt`).
+- First fights, regret change per fight (mean / max backup): the searched-value net alone −0.27 / −0.28 (a20prod's
+  head alone −0.07 / +0.18, it stalls), at 50/50 −0.17 / −0.16; the 1-point turn penalty hurts it (−0.08 / 0.00).
+
+| 3-source smoke, head10000 − base10000 | score per fight [95% CI] | fights won | Act 1 | boss fights (10) |
+|---|---|---|---|---|
+| end to end on the end score, 50/50, 1 point per turn | −2.0 [−16.8, +1.3] (42 fights; a stall aborted one source) | −1 pp | −3.5 | −13.3 |
+| the same with the win-now cap | −8.6 [−18.5, +2.5] | −4 pp | −3.9 | −48.8 |
+| end to end on the searched value, 50/50 | −2.7 [−3.5, −2.1] | −1 pp | +2.1 | −28.5 |
+| the same net alone, no playout | −39.8 [−48.3, −33.9] | −11 pp | −9.4 | −136.3 |
+
+**Interpretation:** per-fight labels cannot rank two states of one fight; halving the runs costs about 1 point, and
+adding the other campaign's runs (twice the roots) gains 0.4. The per-state label ranks leaves better and needs no
+playout in first fights, but no net beats production in the smoke. Its intervals are a bootstrap over only 3 sources,
+so they are rough; among the new nets they exclude zero only for the searched-value net. Every head so far scores lower
+there in boss fights (§655, §656). The Act 1 gains of the first-fight tests do not carry over: in the smokes only the
+searched-value net at 50/50 gains in Act 1. All of these heads learned from states of playout-driven play; one
+explanation, not tested yet, is that a search that trusts the head steers into states its training never had. A next
+step would train on the states the head's own search reaches, labeled there by production's search (a generator
+change, seeds and workers; Philipp's call). The leaf head flags stay default off.
+Seeds: none new (replays of 111149600–649, 111333000–099 and 111339997–999).
+**Knowledge impact:** none (no code or default changed).
+## §663 — Value-head plan, stages 1–2: no rollout referee matches real play at A20, so the leaf-compare decision metric is NOT QUALIFIED; as exploratory numbers it predicts M0's gain about right (256 games, 2026-10-23)
+
+**Question:** Is there a cheap judge of OOC decisions that never reads X2-B and whose level matches real outcomes in
+every act (stage 1)? If so, does a leaf-compare replay under it reproduce the past A20 leaf A/Bs and predict the
+stage-3 arms (stage 2)? Philipp: "keep going with the plan, you can use 32 workers" (2026-10-22 21:44Z).
+**Design:** pre-registered ([PREREG](evidence/value_leaf_compare_20261023/PREREG.md)), independent pre-launch review
+PASS.
+- Play is the stage-3 control arm A (§661). At every searched root, seven side searches (same config, seed and
+  budget) swap the leaf: M0, S, MS (the stage-3 arms), G1B (§615), STU (§504), TD2 (§522) and NULL (search seed
+  salted).
+- Where an arm's pick differs from the played one, 64 paired referee rollouts value both. R_full plays heart1 greedy
+  rollouts with CTM combats to the end of the game; R_act stops them at the act's end and takes M0's value there.
+- 256 seeds (111360000–111360255), one game each, 32 cloud workers × 4 lanes, RUN_COMMIT `799361fc`, binary
+  `41b26423…`.
+- Gates: a referee qualifies if its level is within 0.05 of real play in every act and M0's advantage SE is ≤ 0.002
+  at ≤ 10 core-hours of referee CPU.
+  The metric qualifies only if, under a qualified referee, STU's predicted Δ is below 0, TD2's and G1B's lie in their
+  A/B intervals, and NULL's interval contains 0.
+**Result** ([RESULT](evidence/value_leaf_compare_20261023/RESULT.md)): 256 of 256 units verified, all games valid,
+Heart rate 22.3%. 16,237 searched roots, 1,201,344 referee rollouts, none errored.
+
+| act | real Heart rate | R_full | R_act |
+|---|---|---|---|
+| 1 | 0.231 | 0.081 | 0.177 |
+| 2 | 0.276 | 0.111 | 0.204 |
+| 3 | 0.407 | 0.176 | 0.191 |
+| 4 | 0.696 | 0.486 | 0.486 |
+
+- **Both referees fail the level gate**, so the metric is **NOT QUALIFIED**. Both pass the precision gate (SE 0.0014,
+  1.0 core-hour of referee CPU for M0's flips).
+- Exploratory predictions (pp, R_full / R_act):
+  - M0 +0.90 [+0.01, +1.81] / +1.42 [+0.39, +2.57], against the stage-3 A/B's M − A of +1.37 [−1.17, +4.00];
+  - M0 main effect +0.51 / +0.70, against an observed +2.15;
+  - STU −1.40 / −1.95; TD2 +1.48 / −1.35; G1B −0.11 / −3.99; NULL +0.49 / −0.07.
+- Under R_full all four retrospective checks pass; STU's only narrowly (upper bound −0.23 pp). Under R_act, G1B falls
+  outside §615's interval. R_act values the act's end with M0's function of X2-B, so it
+  is not X2-B-free.
+- Every A/B observation contains both referees' predictions. For S both predict a small gain where the A/B saw −1.37.
+- A leaf changes the played pick at 4.4–5.7% of searched roots (STU 6.6%), and re-seeding the search changes 4.7%.
+- At all 447 act-4 roots the five leaf arms ran identical searches and kept the played pick. No act-4 rollout reaches
+  a leaf, so act-4 OOC decisions depend only on the rollouts (CTM combats, rollout policy).
+- Wall 6.5 h (estimate 3 h): side searches 313 core-hours. Per-simulation speed differed up to 3× between containers.
+  The last unit to land (111360219, a Heart game on a slow container, started 11:25Z) took 4 h 10 min; the longest
+  (111360072) took 5 h 22 min.
+**Interpretation:**
+- The rollouts die far more often than real play, most of all in act 3 (R_act's gap there is nearly R_full's). The
+  decision metric cannot gate stage-4 candidates until a referee's rollouts play closer to real play.
+- The first prospective point agrees with the A/B for M0, under a referee that did not qualify.
+- M0's higher act-4 conversion in the A/B (57.1% → 60.7% of arrivals) comes from the states the runs arrive in, since
+  no leaf changes an act-4 decision.
+**Decision:** none (PREREG). Stage-4 candidates are gated on the guardrails and paired A/Bs, not on this metric.
+Proposed next: an offline check of the CTM's act-4 predictions against the stage-3 A/B's outcomes, and for later
+campaigns, backup copies of stragglers on idle workers once the queue is empty.
+- Seeds 111360000–111360255 used; smokes 111369991–111369993 used (111369990–111369999 assigned).
+- **Knowledge impact:** `evaluation/current-research.md`.

@@ -1,0 +1,949 @@
+{
+ "units": 320,
+ "sources": 320,
+ "heartKills": 70,
+ "calibration": {
+  "intercepts": {
+   "1": -2.538414108110933,
+   "2": -2.922737309879601,
+   "3": -3.652252703569466,
+   "4": -3.6333917425902307
+  },
+  "slope": 1.0535003031941639,
+  "points": 20679
+ },
+ "observedByAct": {
+  "1": {
+   "roots": 8406,
+   "heartRate": 0.2222222222222222,
+   "meanX2bTaken": 0.7516707322282868
+  },
+  "2": {
+   "roots": 7092,
+   "heartRate": 0.26903553299492383,
+   "meanX2bTaken": 0.8028604696789736
+  },
+  "3": {
+   "roots": 4620,
+   "heartRate": 0.38376623376623376,
+   "meanX2bTaken": 0.9106976648449121
+  },
+  "4": {
+   "roots": 561,
+   "heartRate": 0.5793226381461676,
+   "meanX2bTaken": 0.959148139421898
+  }
+ },
+ "levels": {
+  "1": {
+   "xbar": 0.74612826241344,
+   "survivors": 3724989,
+   "deathShare": 0.08568023750293012,
+   "repeats": 4074055
+  },
+  "2": {
+   "xbar": 0.7801215209121454,
+   "survivors": 6342641,
+   "deathShare": 0.10708316140578941,
+   "repeats": 7103283
+  },
+  "3": {
+   "xbar": 0.8892330378941895,
+   "survivors": 5275400,
+   "deathShare": 0.11689439577641361,
+   "repeats": 5973691
+  },
+  "4": {
+   "xbar": 0.941244639791677,
+   "survivors": 578400,
+   "deathShare": 0.4301380521845158,
+   "repeats": 1341739
+  }
+ },
+ "prices": {
+  "1": {
+   "xbar": 0.74612826241344,
+   "pbar": 0.19739295867178178,
+   "price": 0.22402176566918636,
+   "overpricing": 3.3306061140293393,
+   "c1": 0.5221064967442537,
+   "c2": 0.2980847310750673
+  },
+  "2": {
+   "xbar": 0.7801215209121454,
+   "pbar": 0.16957938066110706,
+   "price": 0.196070471832889,
+   "overpricing": 3.978781269915255,
+   "c1": 0.5840510490792563,
+   "c2": 0.38798057724636736
+  },
+  "3": {
+   "xbar": 0.8892330378941895,
+   "pbar": 0.188791099744351,
+   "price": 0.115254651757685,
+   "overpricing": 7.715376553856941,
+   "c1": 0.7739783861365045,
+   "c2": 0.6587237343788195
+  }
+ },
+ "deathRates": {
+  "1": {
+   "roots": 8406,
+   "rolloutDeath": 0.049844456805243666,
+   "realDeath": 0.02938377349512253,
+   "ratio": 0.5895093532653634
+  },
+  "2": {
+   "roots": 7092,
+   "rolloutDeath": 0.11380858959097885,
+   "realDeath": 0.09644670050761421,
+   "ratio": 0.8474465842537702
+  },
+  "3": {
+   "roots": 4620,
+   "rolloutDeath": 0.22714372797132132,
+   "realDeath": 0.14177489177489178,
+   "ratio": 0.6241637972622865
+  },
+  "4": {
+   "roots": 561,
+   "rolloutDeath": 0.5228458833695274,
+   "realDeath": 0.4206773618538324,
+   "ratio": 0.8045915158454328
+  }
+ },
+ "bootstrap95": {
+  "b": [
+   0.8052203734124169,
+   1.2863983377800987
+  ],
+  "overpricing1": [
+   2.5032147335175314,
+   4.125517983353208
+  ],
+  "c1_1": [
+   0.448060133212049,
+   0.5652712666282499
+  ],
+  "overpricing2": [
+   2.9862564405487046,
+   4.963505812622424
+  ],
+  "c1_2": [
+   0.5188800340855283,
+   0.6229499071944105
+  ],
+  "overpricing3": [
+   5.544799297501338,
+   9.750918090086678
+  ],
+  "c1_3": [
+   0.7288590113417028,
+   0.7980381105566667
+  ],
+  "deathRatio1": [
+   0.39567625983132354,
+   0.7608824257982297
+  ],
+  "deathRatio2": [
+   0.688138765936393,
+   1.0429227415349798
+  ],
+  "deathRatio3": [
+   0.5261626262716865,
+   0.726929288398154
+  ],
+  "deathRatio4": [
+   0.6752020377060196,
+   0.9424718408180115
+  ]
+ },
+ "relevance": {
+  "searched": 20679,
+  "priorTop<0.95": 0.36283185840707965,
+  "priorTop<0.99": 0.4932056675854732,
+  "override": 0.06905556361526186,
+  "full": 0.24000193432951303
+ },
+ "flips_k1": {
+  "deathValues": {
+   "1": 0.5221064967442537,
+   "2": 0.5840510490792563,
+   "3": 0.7739783861365045
+  },
+  "byTag": {
+   "all": {
+    "roots": 20608,
+    "bestByMeanFlipShare": 0.13038625776397517,
+    "puctFlipShare": 0.05148486024844721,
+    "proxyMatchesPlayed": 0.9115392080745341,
+    "puctFlipsToRiskier": 0.9660697455230914,
+    "puctFlipMeanDeathDelta": 0.10134165395531337
+   },
+   "act1": {
+    "roots": 8393,
+    "bestByMeanFlipShare": 0.0997259621112832,
+    "puctFlipShare": 0.033837721911116406,
+    "proxyMatchesPlayed": 0.9436435124508519,
+    "puctFlipsToRiskier": 1.0,
+    "puctFlipMeanDeathDelta": 0.09938934641735155
+   },
+   "fast": {
+    "roots": 15663,
+    "bestByMeanFlipShare": 0.1294771116644321,
+    "puctFlipShare": 0.03671071953010279,
+    "proxyMatchesPlayed": 0.9328353444423163,
+    "puctFlipsToRiskier": 0.9669565217391304,
+    "puctFlipMeanDeathDelta": 0.11832455945568068
+   },
+   "priorTop>=0.95": {
+    "roots": 13105,
+    "bestByMeanFlipShare": 0.12216711178939337,
+    "puctFlipShare": 0.02861503243037009,
+    "proxyMatchesPlayed": 0.9642121327737505,
+    "puctFlipsToRiskier": 0.9466666666666667,
+    "puctFlipMeanDeathDelta": 0.12579232645513613
+   },
+   "priorTop<0.95": {
+    "roots": 7503,
+    "bestByMeanFlipShare": 0.1447421031587365,
+    "puctFlipShare": 0.09143009462881514,
+    "proxyMatchesPlayed": 0.8195388511262162,
+    "puctFlipsToRiskier": 0.9766763848396501,
+    "puctFlipMeanDeathDelta": 0.08797576155380675
+   },
+   "full": {
+    "roots": 4945,
+    "bestByMeanFlipShare": 0.1332659251769464,
+    "puctFlipShare": 0.09828109201213346,
+    "proxyMatchesPlayed": 0.8440849342770476,
+    "puctFlipsToRiskier": 0.9650205761316872,
+    "puctFlipMeanDeathDelta": 0.08124871020487882
+   },
+   "act2": {
+    "roots": 7055,
+    "bestByMeanFlipShare": 0.13054571226080794,
+    "puctFlipShare": 0.05527994330262225,
+    "proxyMatchesPlayed": 0.91268603827073,
+    "puctFlipsToRiskier": 1.0,
+    "puctFlipMeanDeathDelta": 0.11049211877247753
+   },
+   "act3": {
+    "roots": 4599,
+    "bestByMeanFlipShare": 0.2020004348771472,
+    "puctFlipShare": 0.08414872798434442,
+    "proxyMatchesPlayed": 0.8693194172646227,
+    "puctFlipsToRiskier": 0.9069767441860465,
+    "puctFlipMeanDeathDelta": 0.09355295644132672
+   },
+   "act4": {
+    "roots": 561,
+    "bestByMeanFlipShare": 0.0,
+    "puctFlipShare": 0.0,
+    "proxyMatchesPlayed": 0.7629233511586453,
+    "puctFlipsToRiskier": null,
+    "puctFlipMeanDeathDelta": null
+   }
+  },
+  "examples": [
+   {
+    "seed": 111144513,
+    "decision": 16,
+    "act": 1,
+    "floor": 5,
+    "screen": 8,
+    "from": "ooc:v1:effect=24:source=3:shop=potion,37:price=111:occurrence=0",
+    "to": "ooc:v1:effect=22:source=3:shop=card,301,0,0:price=56:occurrence=0",
+    "deathFrom": 0.125,
+    "deathTo": 0.40625,
+    "qFrom": 0.6455248892307281,
+    "qTo": 0.4375674221664667,
+    "played": "ooc:v1:effect=24:source=3:shop=potion,37:price=111:occurrence=0"
+   },
+   {
+    "seed": 111144513,
+    "decision": 72,
+    "act": 2,
+    "floor": 22,
+    "screen": 5,
+    "from": "map:3",
+    "to": "map:4",
+    "deathFrom": 0.0,
+    "deathTo": 0.0248015873015873,
+    "qFrom": 0.9055111967027187,
+    "qTo": 0.8942448879695601,
+    "played": "map:4"
+   },
+   {
+    "seed": 111144513,
+    "decision": 102,
+    "act": 2,
+    "floor": 30,
+    "screen": 2,
+    "from": "ooc:v1:effect=5:source=7:reward=card,179,0,0:group=[157,0,0;179,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "to": "ooc:v1:effect=12:source=7:reward=none:group=[157,0,0;179,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "deathFrom": 0.09375,
+    "deathTo": 0.15625,
+    "qFrom": 0.8437834363430738,
+    "qTo": 0.7834653817117214,
+    "played": "ooc:v1:effect=12:source=7:reward=none:group=[157,0,0;179,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   },
+   {
+    "seed": 111144514,
+    "decision": 15,
+    "act": 1,
+    "floor": 5,
+    "screen": 8,
+    "from": "ooc:v1:effect=22:source=3:shop=card,197,0,0:price=88:occurrence=0",
+    "to": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=104:misc=0:upgraded=0:bottle=-1:occurrence=0",
+    "deathFrom": 0.0,
+    "deathTo": 0.03125,
+    "qFrom": 0.7697129305452108,
+    "qTo": 0.7620058674365282,
+    "played": "ooc:v1:effect=22:source=3:shop=card,242,0,0:price=103:occurrence=0"
+   },
+   {
+    "seed": 111144514,
+    "decision": 19,
+    "act": 1,
+    "floor": 5,
+    "screen": 5,
+    "from": "map:1",
+    "to": "map:0",
+    "deathFrom": 0.0,
+    "deathTo": 0.0992063492063492,
+    "qFrom": 0.7651155069470406,
+    "qTo": 0.7090536031931166,
+    "played": "map:1"
+   },
+   {
+    "seed": 111144514,
+    "decision": 41,
+    "act": 1,
+    "floor": 11,
+    "screen": 5,
+    "from": "map:4",
+    "to": "map:3",
+    "deathFrom": 0.046875,
+    "deathTo": 0.30327868852459017,
+    "qFrom": 0.6958650439046323,
+    "qTo": 0.5083475777360259,
+    "played": "map:3"
+   },
+   {
+    "seed": 111144515,
+    "decision": 47,
+    "act": 1,
+    "floor": 14,
+    "screen": 1,
+    "from": "ooc:v1:effect=26:source=5:event=33:option=1",
+    "to": "ooc:v1:effect=26:source=5:event=33:option=0",
+    "deathFrom": 0.0,
+    "deathTo": 0.06696428571428571,
+    "qFrom": 0.7663091383874416,
+    "qTo": 0.6848032496544341,
+    "played": "ooc:v1:effect=26:source=5:event=33:option=0"
+   },
+   {
+    "seed": 111144515,
+    "decision": 68,
+    "act": 2,
+    "floor": 21,
+    "screen": 2,
+    "from": "ooc:v1:effect=5:source=7:reward=card,347,0,0:group=[119,0,0;181,0,0;345,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "to": "ooc:v1:effect=5:source=7:reward=card,311,0,0:group=[184,0,0;191,0,0;311,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "deathFrom": 0.125,
+    "deathTo": 0.1875,
+    "qFrom": 0.4098506774753332,
+    "qTo": 0.3629467277787626,
+    "played": "ooc:v1:effect=5:source=7:reward=card,311,0,0:group=[184,0,0;191,0,0;311,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   },
+   {
+    "seed": 111144515,
+    "decision": 141,
+    "act": 3,
+    "floor": 42,
+    "screen": 7,
+    "from": "ooc:v1:effect=0:source=0:card=27:misc=0:upgraded=0:bottle=-1:occurrence=0",
+    "to": "ooc:v1:effect=0:source=0:card=355:misc=0:upgraded=0:bottle=-1:occurrence=0",
+    "deathFrom": 0.09375,
+    "deathTo": 0.16015625,
+    "qFrom": 0.8434565253555775,
+    "qTo": 0.7981264100720485,
+    "played": "ooc:v1:effect=0:source=0:card=355:misc=0:upgraded=0:bottle=-1:occurrence=0"
+   },
+   {
+    "seed": 111144515,
+    "decision": 153,
+    "act": 3,
+    "floor": 45,
+    "screen": 2,
+    "from": "ooc:v1:effect=5:source=7:reward=card,300,0,0:group=[107,0,0;119,0,0;181,0,1;300,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "to": "ooc:v1:effect=5:source=7:reward=card,107,0,0:group=[107,0,0;119,0,0;181,0,1;300,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "deathFrom": 0.75,
+    "deathTo": 0.75,
+    "qFrom": 0.2444536555558443,
+    "qTo": 0.2433024886995554,
+    "played": "ooc:v1:effect=5:source=7:reward=card,300,0,0:group=[107,0,0;119,0,0;181,0,1;300,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   },
+   {
+    "seed": 111144515,
+    "decision": 160,
+    "act": 3,
+    "floor": 48,
+    "screen": 8,
+    "from": "ooc:v1:effect=25:source=3:none",
+    "to": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=339:misc=0:upgraded=0:bottle=-1:occurrence=0",
+    "deathFrom": 0.6875,
+    "deathTo": 0.71875,
+    "qFrom": 0.2974398694932461,
+    "qTo": 0.2683090679347515,
+    "played": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=244:misc=0:upgraded=0:bottle=-1:occurrence=0"
+   },
+   {
+    "seed": 111144515,
+    "decision": 161,
+    "act": 3,
+    "floor": 48,
+    "screen": 8,
+    "from": "ooc:v1:effect=24:source=3:shop=potion,41:price=53:occurrence=0",
+    "to": "ooc:v1:effect=22:source=3:shop=card,345,0,0:price=57:occurrence=0",
+    "deathFrom": 0.75,
+    "deathTo": 0.8125,
+    "qFrom": 0.23198306560516357,
+    "qTo": 0.17865457572042942,
+    "played": "ooc:v1:effect=25:source=3:none"
+   }
+  ]
+ },
+ "flips_k2": {
+  "deathValues": {
+   "1": 0.2980847310750673,
+   "2": 0.38798057724636736,
+   "3": 0.6587237343788195
+  },
+  "byTag": {
+   "all": {
+    "roots": 20608,
+    "bestByMeanFlipShare": 0.07089479813664597,
+    "puctFlipShare": 0.036345108695652176,
+    "proxyMatchesPlayed": 0.9115392080745341,
+    "puctFlipsToRiskier": 0.9612817089452603,
+    "puctFlipMeanDeathDelta": 0.09346060976605605
+   },
+   "act1": {
+    "roots": 8393,
+    "bestByMeanFlipShare": 0.04360776837841058,
+    "puctFlipShare": 0.018944358393899678,
+    "proxyMatchesPlayed": 0.9436435124508519,
+    "puctFlipsToRiskier": 1.0,
+    "puctFlipMeanDeathDelta": 0.08627129889202495
+   },
+   "fast": {
+    "roots": 15663,
+    "bestByMeanFlipShare": 0.07067611568665007,
+    "puctFlipShare": 0.026878631168997,
+    "proxyMatchesPlayed": 0.9328353444423163,
+    "puctFlipsToRiskier": 0.9596199524940617,
+    "puctFlipMeanDeathDelta": 0.11208012289189036
+   },
+   "priorTop>=0.95": {
+    "roots": 13105,
+    "bestByMeanFlipShare": 0.06547119420068676,
+    "puctFlipShare": 0.02090805036245708,
+    "proxyMatchesPlayed": 0.9642121327737505,
+    "puctFlipsToRiskier": 0.948905109489051,
+    "puctFlipMeanDeathDelta": 0.11751420114420323
+   },
+   "priorTop<0.95": {
+    "roots": 7503,
+    "bestByMeanFlipShare": 0.08036785285885646,
+    "puctFlipShare": 0.06330801012928162,
+    "proxyMatchesPlayed": 0.8195388511262162,
+    "puctFlipsToRiskier": 0.968421052631579,
+    "puctFlipMeanDeathDelta": 0.07958548547634584
+   },
+   "full": {
+    "roots": 4945,
+    "bestByMeanFlipShare": 0.07158746208291203,
+    "puctFlipShare": 0.06632962588473205,
+    "proxyMatchesPlayed": 0.8440849342770476,
+    "puctFlipsToRiskier": 0.9634146341463414,
+    "puctFlipMeanDeathDelta": 0.06956178346734805
+   },
+   "act2": {
+    "roots": 7055,
+    "bestByMeanFlipShare": 0.062083628632175765,
+    "puctFlipShare": 0.03784549964564139,
+    "proxyMatchesPlayed": 0.91268603827073,
+    "puctFlipsToRiskier": 1.0,
+    "puctFlipMeanDeathDelta": 0.10437379386764727
+   },
+   "act3": {
+    "roots": 4599,
+    "bestByMeanFlipShare": 0.14285714285714285,
+    "puctFlipShare": 0.07023265927375516,
+    "proxyMatchesPlayed": 0.8693194172646227,
+    "puctFlipsToRiskier": 0.9102167182662538,
+    "puctFlipMeanDeathDelta": 0.08797850535071881
+   },
+   "act4": {
+    "roots": 561,
+    "bestByMeanFlipShare": 0.0,
+    "puctFlipShare": 0.0,
+    "proxyMatchesPlayed": 0.7629233511586453,
+    "puctFlipsToRiskier": null,
+    "puctFlipMeanDeathDelta": null
+   }
+  },
+  "examples": [
+   {
+    "seed": 111144513,
+    "decision": 72,
+    "act": 2,
+    "floor": 22,
+    "screen": 5,
+    "from": "map:3",
+    "to": "map:4",
+    "deathFrom": 0.0,
+    "deathTo": 0.0248015873015873,
+    "qFrom": 0.9055111967027187,
+    "qTo": 0.8942448879695601,
+    "played": "map:4"
+   },
+   {
+    "seed": 111144513,
+    "decision": 102,
+    "act": 2,
+    "floor": 30,
+    "screen": 2,
+    "from": "ooc:v1:effect=5:source=7:reward=card,179,0,0:group=[157,0,0;179,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "to": "ooc:v1:effect=12:source=7:reward=none:group=[157,0,0;179,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "deathFrom": 0.09375,
+    "deathTo": 0.15625,
+    "qFrom": 0.8437834363430738,
+    "qTo": 0.7834653817117214,
+    "played": "ooc:v1:effect=12:source=7:reward=none:group=[157,0,0;179,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   },
+   {
+    "seed": 111144514,
+    "decision": 15,
+    "act": 1,
+    "floor": 5,
+    "screen": 8,
+    "from": "ooc:v1:effect=22:source=3:shop=card,197,0,0:price=88:occurrence=0",
+    "to": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=104:misc=0:upgraded=0:bottle=-1:occurrence=0",
+    "deathFrom": 0.0,
+    "deathTo": 0.03125,
+    "qFrom": 0.7697129305452108,
+    "qTo": 0.7620058674365282,
+    "played": "ooc:v1:effect=22:source=3:shop=card,242,0,0:price=103:occurrence=0"
+   },
+   {
+    "seed": 111144514,
+    "decision": 19,
+    "act": 1,
+    "floor": 5,
+    "screen": 5,
+    "from": "map:1",
+    "to": "map:0",
+    "deathFrom": 0.0,
+    "deathTo": 0.0992063492063492,
+    "qFrom": 0.7651155069470406,
+    "qTo": 0.7090536031931166,
+    "played": "map:1"
+   },
+   {
+    "seed": 111144514,
+    "decision": 41,
+    "act": 1,
+    "floor": 11,
+    "screen": 5,
+    "from": "map:4",
+    "to": "map:3",
+    "deathFrom": 0.046875,
+    "deathTo": 0.30327868852459017,
+    "qFrom": 0.6958650439046323,
+    "qTo": 0.5083475777360259,
+    "played": "map:3"
+   },
+   {
+    "seed": 111144515,
+    "decision": 68,
+    "act": 2,
+    "floor": 21,
+    "screen": 2,
+    "from": "ooc:v1:effect=5:source=7:reward=card,347,0,0:group=[119,0,0;181,0,0;345,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "to": "ooc:v1:effect=5:source=7:reward=card,311,0,0:group=[184,0,0;191,0,0;311,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "deathFrom": 0.125,
+    "deathTo": 0.1875,
+    "qFrom": 0.4098506774753332,
+    "qTo": 0.3629467277787626,
+    "played": "ooc:v1:effect=5:source=7:reward=card,311,0,0:group=[184,0,0;191,0,0;311,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   },
+   {
+    "seed": 111144515,
+    "decision": 141,
+    "act": 3,
+    "floor": 42,
+    "screen": 7,
+    "from": "ooc:v1:effect=0:source=0:card=27:misc=0:upgraded=0:bottle=-1:occurrence=0",
+    "to": "ooc:v1:effect=0:source=0:card=355:misc=0:upgraded=0:bottle=-1:occurrence=0",
+    "deathFrom": 0.09375,
+    "deathTo": 0.16015625,
+    "qFrom": 0.8434565253555775,
+    "qTo": 0.7981264100720485,
+    "played": "ooc:v1:effect=0:source=0:card=355:misc=0:upgraded=0:bottle=-1:occurrence=0"
+   },
+   {
+    "seed": 111144515,
+    "decision": 153,
+    "act": 3,
+    "floor": 45,
+    "screen": 2,
+    "from": "ooc:v1:effect=5:source=7:reward=card,300,0,0:group=[107,0,0;119,0,0;181,0,1;300,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "to": "ooc:v1:effect=5:source=7:reward=card,107,0,0:group=[107,0,0;119,0,0;181,0,1;300,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "deathFrom": 0.75,
+    "deathTo": 0.75,
+    "qFrom": 0.2444536555558443,
+    "qTo": 0.2433024886995554,
+    "played": "ooc:v1:effect=5:source=7:reward=card,300,0,0:group=[107,0,0;119,0,0;181,0,1;300,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   },
+   {
+    "seed": 111144515,
+    "decision": 160,
+    "act": 3,
+    "floor": 48,
+    "screen": 8,
+    "from": "ooc:v1:effect=25:source=3:none",
+    "to": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=339:misc=0:upgraded=0:bottle=-1:occurrence=0",
+    "deathFrom": 0.6875,
+    "deathTo": 0.71875,
+    "qFrom": 0.2974398694932461,
+    "qTo": 0.2683090679347515,
+    "played": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=244:misc=0:upgraded=0:bottle=-1:occurrence=0"
+   },
+   {
+    "seed": 111144515,
+    "decision": 161,
+    "act": 3,
+    "floor": 48,
+    "screen": 8,
+    "from": "ooc:v1:effect=24:source=3:shop=potion,41:price=53:occurrence=0",
+    "to": "ooc:v1:effect=22:source=3:shop=card,345,0,0:price=57:occurrence=0",
+    "deathFrom": 0.75,
+    "deathTo": 0.8125,
+    "qFrom": 0.23198306560516357,
+    "qTo": 0.17865457572042942,
+    "played": "ooc:v1:effect=25:source=3:none"
+   },
+   {
+    "seed": 111144516,
+    "decision": 31,
+    "act": 1,
+    "floor": 10,
+    "screen": 5,
+    "from": "map:0",
+    "to": "map:2",
+    "deathFrom": 0.0,
+    "deathTo": 0.05952380952380952,
+    "qFrom": 0.9081795755773783,
+    "qTo": 0.8476353068909948,
+    "played": "map:2"
+   },
+   {
+    "seed": 111144516,
+    "decision": 67,
+    "act": 2,
+    "floor": 20,
+    "screen": 8,
+    "from": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=107:misc=0:upgraded=1:bottle=-1:occurrence=0",
+    "to": "ooc:v1:effect=22:source=3:shop=card,222,0,0:price=39:occurrence=0",
+    "deathFrom": 0.03125,
+    "deathTo": 0.1875,
+    "qFrom": 0.8918276112526655,
+    "qTo": 0.7572096511721611,
+    "played": "ooc:v1:effect=22:source=3:shop=card,222,0,0:price=39:occurrence=0"
+   }
+  ]
+ },
+ "flips_m0": {
+  "calibration": {
+   "intercepts": {
+    "1": -2.538414108110933,
+    "2": -2.922737309879601,
+    "3": -3.652252703569466,
+    "4": -3.6333917425902307
+   },
+   "slope": 1.0535003031941639
+  },
+  "nullSlope": {
+   "1": 0.2645563351712358,
+   "2": 0.21737559612870175,
+   "3": 0.21230778850888285,
+   "4": 1.0
+  },
+  "byTag": {
+   "all": {
+    "roots": 20608,
+    "bestByMeanFlipShare": 0.17439829192546583,
+    "puctFlipShare": 0.06992430124223603,
+    "proxyMatchesPlayed": 0.9115392080745341,
+    "puctFlipsToRiskier": 0.7404580152671756,
+    "puctFlipMeanDeathDelta": 0.07500412329910097,
+    "predictedHeartPerRunOwn": 0.01778501121744674,
+    "predictedHeartPerRunNull": -0.061027237158899884
+   },
+   "act1": {
+    "roots": 8393,
+    "bestByMeanFlipShare": 0.15667818420111998,
+    "puctFlipShare": 0.04682473489812939,
+    "proxyMatchesPlayed": 0.9436435124508519,
+    "puctFlipsToRiskier": 0.7837150127226463,
+    "puctFlipMeanDeathDelta": 0.07420909190387935,
+    "predictedHeartPerRunOwn": -0.008536570637824106,
+    "predictedHeartPerRunNull": -0.019169032625431175
+   },
+   "fast": {
+    "roots": 15663,
+    "bestByMeanFlipShare": 0.17314690672285002,
+    "puctFlipShare": 0.04928813126476409,
+    "proxyMatchesPlayed": 0.9328353444423163,
+    "puctFlipsToRiskier": 0.75,
+    "puctFlipMeanDeathDelta": 0.09196317360355044,
+    "predictedHeartPerRunOwn": 0.0034467458094012498,
+    "predictedHeartPerRunNull": -0.040174186245902826
+   },
+   "priorTop>=0.95": {
+    "roots": 13105,
+    "bestByMeanFlipShare": 0.16329645173597862,
+    "puctFlipShare": 0.03723769553605494,
+    "proxyMatchesPlayed": 0.9642121327737505,
+    "puctFlipsToRiskier": 0.7909836065573771,
+    "puctFlipMeanDeathDelta": 0.10095699040817639,
+    "predictedHeartPerRunOwn": -0.00212990769264629,
+    "predictedHeartPerRunNull": -0.028649903624026352
+   },
+   "priorTop<0.95": {
+    "roots": 7503,
+    "bestByMeanFlipShare": 0.19378915100626415,
+    "puctFlipShare": 0.12701586032253764,
+    "proxyMatchesPlayed": 0.8195388511262162,
+    "puctFlipsToRiskier": 0.7145855194123819,
+    "puctFlipMeanDeathDelta": 0.06171451243946953,
+    "predictedHeartPerRunOwn": 0.01991491891009304,
+    "predictedHeartPerRunNull": -0.03237733353487368
+   },
+   "full": {
+    "roots": 4945,
+    "bestByMeanFlipShare": 0.1783619817997978,
+    "puctFlipShare": 0.1352881698685541,
+    "proxyMatchesPlayed": 0.8440849342770476,
+    "puctFlipsToRiskier": 0.7294469357249627,
+    "puctFlipMeanDeathDelta": 0.05543403834389174,
+    "predictedHeartPerRunOwn": 0.014338265408045512,
+    "predictedHeartPerRunNull": -0.020853050912997183
+   },
+   "act2": {
+    "roots": 7055,
+    "bestByMeanFlipShare": 0.19603118355776045,
+    "puctFlipShare": 0.07980155917788802,
+    "proxyMatchesPlayed": 0.91268603827073,
+    "puctFlipsToRiskier": 0.7211367673179396,
+    "puctFlipMeanDeathDelta": 0.07427737731240652,
+    "predictedHeartPerRunOwn": 0.01621568654470417,
+    "predictedHeartPerRunNull": -0.02201578564883125
+   },
+   "act3": {
+    "roots": 4599,
+    "bestByMeanFlipShare": 0.1948249619482496,
+    "puctFlipShare": 0.10545770819743422,
+    "proxyMatchesPlayed": 0.8693194172646227,
+    "puctFlipsToRiskier": 0.7278350515463917,
+    "puctFlipMeanDeathDelta": 0.07649196933792805,
+    "predictedHeartPerRunOwn": 0.0101058953105667,
+    "predictedHeartPerRunNull": -0.019842418884637537
+   },
+   "act4": {
+    "roots": 561,
+    "bestByMeanFlipShare": 0.0,
+    "puctFlipShare": 0.0,
+    "proxyMatchesPlayed": 0.7629233511586453,
+    "puctFlipsToRiskier": null,
+    "puctFlipMeanDeathDelta": null,
+    "predictedHeartPerRunOwn": 0.0,
+    "predictedHeartPerRunNull": 0.0
+   }
+  },
+  "examples": [
+   {
+    "seed": 111144512,
+    "decision": 31,
+    "act": 1,
+    "floor": 8,
+    "screen": 5,
+    "from": "map:2",
+    "to": "map:1",
+    "deathFrom": 0.03125,
+    "deathTo": 0.005482456140350877,
+    "qFrom": 0.8178979177027941,
+    "qTo": 0.761433462432602,
+    "played": "map:1"
+   },
+   {
+    "seed": 111144513,
+    "decision": 16,
+    "act": 1,
+    "floor": 5,
+    "screen": 8,
+    "from": "ooc:v1:effect=24:source=3:shop=potion,37:price=111:occurrence=0",
+    "to": "ooc:v1:effect=22:source=3:shop=card,301,0,0:price=56:occurrence=0",
+    "deathFrom": 0.125,
+    "deathTo": 0.40625,
+    "qFrom": 0.6455248892307281,
+    "qTo": 0.4375674221664667,
+    "played": "ooc:v1:effect=24:source=3:shop=potion,37:price=111:occurrence=0"
+   },
+   {
+    "seed": 111144513,
+    "decision": 72,
+    "act": 2,
+    "floor": 22,
+    "screen": 5,
+    "from": "map:3",
+    "to": "map:4",
+    "deathFrom": 0.0,
+    "deathTo": 0.0248015873015873,
+    "qFrom": 0.9055111967027187,
+    "qTo": 0.8942448879695601,
+    "played": "map:4"
+   },
+   {
+    "seed": 111144513,
+    "decision": 77,
+    "act": 2,
+    "floor": 24,
+    "screen": 8,
+    "from": "ooc:v1:effect=24:source=3:shop=potion,7:price=55:occurrence=0",
+    "to": "ooc:v1:effect=22:source=3:shop=card,179,0,0:price=30:occurrence=0",
+    "deathFrom": 0.0,
+    "deathTo": 0.0,
+    "qFrom": 0.9173655714839697,
+    "qTo": 0.9450976401567459,
+    "played": "ooc:v1:effect=24:source=3:shop=potion,7:price=55:occurrence=0"
+   },
+   {
+    "seed": 111144513,
+    "decision": 102,
+    "act": 2,
+    "floor": 30,
+    "screen": 2,
+    "from": "ooc:v1:effect=5:source=7:reward=card,179,0,0:group=[157,0,0;179,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "to": "ooc:v1:effect=12:source=7:reward=none:group=[157,0,0;179,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "deathFrom": 0.09375,
+    "deathTo": 0.15625,
+    "qFrom": 0.8437834363430738,
+    "qTo": 0.7834653817117214,
+    "played": "ooc:v1:effect=12:source=7:reward=none:group=[157,0,0;179,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   },
+   {
+    "seed": 111144514,
+    "decision": 15,
+    "act": 1,
+    "floor": 5,
+    "screen": 8,
+    "from": "ooc:v1:effect=22:source=3:shop=card,197,0,0:price=88:occurrence=0",
+    "to": "ooc:v1:effect=1:source=4:transaction:event=0:option=-1:cost=75:card=104:misc=0:upgraded=0:bottle=-1:occurrence=0",
+    "deathFrom": 0.0,
+    "deathTo": 0.03125,
+    "qFrom": 0.7697129305452108,
+    "qTo": 0.7620058674365282,
+    "played": "ooc:v1:effect=22:source=3:shop=card,242,0,0:price=103:occurrence=0"
+   },
+   {
+    "seed": 111144514,
+    "decision": 19,
+    "act": 1,
+    "floor": 5,
+    "screen": 5,
+    "from": "map:1",
+    "to": "map:0",
+    "deathFrom": 0.0,
+    "deathTo": 0.0992063492063492,
+    "qFrom": 0.7651155069470406,
+    "qTo": 0.7090536031931166,
+    "played": "map:1"
+   },
+   {
+    "seed": 111144514,
+    "decision": 41,
+    "act": 1,
+    "floor": 11,
+    "screen": 5,
+    "from": "map:4",
+    "to": "map:3",
+    "deathFrom": 0.046875,
+    "deathTo": 0.30327868852459017,
+    "qFrom": 0.6958650439046323,
+    "qTo": 0.5083475777360259,
+    "played": "map:3"
+   },
+   {
+    "seed": 111144514,
+    "decision": 57,
+    "act": 1,
+    "floor": 16,
+    "screen": 2,
+    "from": "ooc:v1:effect=5:source=7:reward=card,147,0,0:group=[83,0,0;119,0,0;147,0,0;149,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "to": "ooc:v1:effect=5:source=7:reward=card,83,0,0:group=[83,0,0;119,0,0;147,0,0;149,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "deathFrom": 0.0,
+    "deathTo": 0.001875,
+    "qFrom": 0.7943458680740811,
+    "qTo": 0.7032528936676681,
+    "played": "ooc:v1:effect=5:source=7:reward=card,147,0,0:group=[83,0,0;119,0,0;147,0,0;149,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   },
+   {
+    "seed": 111144515,
+    "decision": 68,
+    "act": 2,
+    "floor": 21,
+    "screen": 2,
+    "from": "ooc:v1:effect=5:source=7:reward=card,347,0,0:group=[119,0,0;181,0,0;345,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "to": "ooc:v1:effect=5:source=7:reward=card,311,0,0:group=[184,0,0;191,0,0;311,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "deathFrom": 0.125,
+    "deathTo": 0.1875,
+    "qFrom": 0.4098506774753332,
+    "qTo": 0.3629467277787626,
+    "played": "ooc:v1:effect=5:source=7:reward=card,311,0,0:group=[184,0,0;191,0,0;311,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   },
+   {
+    "seed": 111144515,
+    "decision": 121,
+    "act": 3,
+    "floor": 37,
+    "screen": 1,
+    "from": "ooc:v1:effect=4:source=5:transaction:event=17:option=0:cost=0:card=148:misc=0:upgraded=0:bottle=-1:occurrence=0",
+    "to": "ooc:v1:effect=4:source=5:transaction:event=17:option=0:cost=0:card=300:misc=0:upgraded=0:bottle=-1:occurrence=0",
+    "deathFrom": 0.029513888888888888,
+    "deathTo": 0.03125,
+    "qFrom": 0.849539102262093,
+    "qTo": 0.8804687596857548,
+    "played": "ooc:v1:effect=4:source=5:transaction:event=17:option=0:cost=0:card=148:misc=0:upgraded=0:bottle=-1:occurrence=0"
+   },
+   {
+    "seed": 111144515,
+    "decision": 141,
+    "act": 3,
+    "floor": 42,
+    "screen": 7,
+    "from": "ooc:v1:effect=0:source=0:card=27:misc=0:upgraded=0:bottle=-1:occurrence=0",
+    "to": "ooc:v1:effect=0:source=0:card=193:misc=0:upgraded=0:bottle=-1:occurrence=0",
+    "deathFrom": 0.09375,
+    "deathTo": 0.125,
+    "qFrom": 0.8434565253555775,
+    "qTo": 0.8380443137139082,
+    "played": "ooc:v1:effect=0:source=0:card=355:misc=0:upgraded=0:bottle=-1:occurrence=0"
+   }
+  ]
+ }
+}

@@ -1,0 +1,8 @@
+20a815235849a10c8316eefd6d01f46062fa970cca47a574b4f3bd5eb73638a2  /home/user/sts_ai/build/linux-gcc-release-x86-64-v3/exact_combat_solver
+ref wall=180s summaries=1800 failures=0
+e2e wall=315s summaries=3000 failures=0
+e2eb wall=325s summaries=3000 failures=0
+all done 15:26:28Z
+20a815235849a10c8316eefd6d01f46062fa970cca47a574b4f3bd5eb73638a2  /home/user/sts_ai/build/linux-gcc-release-x86-64-v3/exact_combat_solver
+qe2e wall=517s summaries=3000 failures=0
+all done 16:19:18Z

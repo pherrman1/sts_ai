@@ -118,6 +118,12 @@ struct OocAdapterOptions {
     std::shared_ptr<const HeartLeafModel> heartLeaf;
     std::string heartLeafPath;
     unsigned leafCombats = 0;
+    // Referee rollouts (STS_OOC_SIBLING_REFEREE, STS_OOC_MCTS_LEAF_COMPARE_REFEREE; set only in a forked child): rollouts
+    // ignore leafCombats and play on to the end of the game, so they score only deaths (0) and Heart kills (1).
+    bool refereeRollout = false;
+    // STS_OOC_REFEREE_ACT_END=a1,a2,a3,a4:b (research): a referee rollout also notes its act-end value, the calibrated
+    // X2-B sigma(a_act + b * logit X2-B) at the first map state past the root's act; the rollout plays on.
+    std::vector<double> refereeActEndCalibration;
     bool uniformLeafPolicy = false;
     // Research option (default off, STS_OOC_MCTS_LEAF_POLICY=prior, §487): rollouts apply the tree's fixed rule
     // steps, then take the V4 policy-head argmax on every screen V4 encodes; the chain decides everything else.
@@ -143,6 +149,13 @@ struct OocAdapterOptions {
     // STS_OOC_MCTS_LEAF_HEART1_VALUE_WEIGHT=w in (0, 1) (default 1 = the head alone): the anchor becomes
     // sigmoid((1 - w) logit(X2-B) + w logit(head)) where heart1 encodes the state.
     double heart1ValueWeight = 1;
+    // Value-head plan M0 (STS_OOC_MCTS_LEAF_CALIBRATION=a1,a2,a3,a4:b): the native leaf anchor x (X2-B or its
+    // heart1 blend) at a tree leaf or rollout end in act k becomes sigmoid(a_k + b logit x), so it speaks
+    // calibrated Heart probability like a death (0) and a Heart kill (1). Holds a1..a4, b; empty is off.
+    // ADR-0057: a20LeafCalibration() is the default for the plain rollout3 X2-B leaf, applied only to states at
+    // leafCalibrationMinAscension (20) or above; an explicit value applies at every ascension (min 0).
+    std::vector<double> leafCalibration;
+    int leafCalibrationMinAscension = 0;
     // Optional per-decision thread CPU allowance; checked between simulations.
     // Zero preserves the simulation-bounded search. Never includes real combat.
     double cpuBudgetSeconds = 0;
@@ -188,6 +201,9 @@ struct OocSiblingLeafCapture {
     std::function<nlohmann::json(const GameContext &)> annotate;
     std::uint64_t runSeed = 0, decisionIndex = 0, searchSeed = 0;
     unsigned repeats = 1, longRepeats = 0, maxDepth = 2;
+    // Research option (default 0, STS_OOC_SIBLING_REFEREE=n): n referee rollouts per leaf, played to the end of the
+    // game (no X2-B at the end), seeded like the repeats (common across a root's leaves with commonSeeds).
+    unsigned refereeRepeats = 0;
     std::uint64_t maxLeaves = 256, captured = 0;
     // Research option (default off, STS_OOC_SIBLING_COMMON_SEEDS=1): repeat r of every leaf of
     // the root uses the same stream (common random numbers), so sibling differences lose most of
@@ -270,6 +286,8 @@ private:
     std::uint64_t combatSamples_ = 0;
     std::uint64_t leafCalls_ = 0, leafObservationCount_ = 0;
     std::string observationError_;
+    // The act-end value the current referee rollout noted (refereeActEndCalibration), if it got that far.
+    std::optional<double> refereeActEnd_;
     OocAdapterOptions options;
     OocMctsDependencies dependencies;
     mutable OocContinuationMetrics continuation_;
@@ -281,6 +299,8 @@ private:
     std::optional<double> screenLeafValue(const GameContext &, const PathHistory &);
     // v_win anchor: the screen GBM's pinned X2-B when present, else the global v_win.
     double anchorValue(const GameContext &, const PathHistory &) const;
+    // anchorValue under STS_OOC_MCTS_LEAF_CALIBRATION; the native leaf and rollout ends use it.
+    double leafAnchorValue(const GameContext &, const PathHistory &) const;
     double evaluateLeafImpl(sts::search::OocStateId, std::mt19937_64 &, bool &terminal,
                             sts::search::OocEndpoint &endpoint);
     double evaluateLeafObserved(sts::search::OocStateId, std::mt19937_64 &, bool &terminal,
@@ -332,6 +352,10 @@ public:
     bool isDeterministicTransition(sts::search::OocStateId, sts::search::OocActionId) const override;
     std::optional<std::uint64_t> outcomeEquivalenceKey(sts::search::OocStateId) const override;
     std::optional<sts::search::OocEndpoint> endpoint(sts::search::OocStateId) const override;
+    // Value-head plan stage 2 (STS_OOC_MCTS_LEAF_COMPARE): n referee rollouts (to the end of the game, no X2-B) from
+    // each root action, with stream r shared by the actions (common random numbers). Runs in a forked child, so the
+    // model is unchanged.
+    nlohmann::json refereeRootActions(const std::vector<sts::search::OocActionId> &, unsigned n, std::uint64_t seed);
 };
 // Adds game meanings and CTM provenance to a captured generic search tree.
 void annotateOocTree(const OocGameContextModel &, sts::search::OocTreeSnapshot &);
@@ -367,6 +391,11 @@ bool liveOocMctsEnabled();
 // (exact root budgets kept) instead of flat exact 10k. Unset: on at ascension 20
 // (ADR-0054), off below; 0 restores flat exact 10k, 1 forces it on.
 bool liveOocMctsRealLearnedStop(int ascension);
+// ADR-0057: the per-act calibration of the X2-B leaf (M0, fit in docs/experiments/evidence/value_death_price_20261023,
+// IMPROVED in the value-level A/B), a1..a4 and b. The A20 default for the rollout3 X2-B leaf offline and in the live
+// advisor, when the win model is the pinned public X2-B it was fit on (kHeartLeafAnchorSha256);
+// STS_OOC_MCTS_LEAF_CALIBRATION=0 restores the raw anchor.
+const std::vector<double> &a20LeafCalibration();
 // True when live OOC MCTS runs with STS_OOC_MCTS_TREE_RULES=1.
 bool liveOocMctsTreeRules();
 // Root choice key of the search: with tree rules, copies of one card are one

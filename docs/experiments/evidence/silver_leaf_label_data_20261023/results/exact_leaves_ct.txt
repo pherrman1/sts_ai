@@ -1,0 +1,5 @@
+# python3 docs/experiments/evidence/silver_leaf_label_data_20261023/leaf_exact.py /mnt/project-files/exact-combat-research/leaf-value/ct/labels_all.jsonl.gz ct=models/combat_policy_mlp_g7f_E.txt:/mnt/project-files/exact-combat-research/leaf-value/heads/ct.txt
+# heads/ct.txt sha256 5a4a22092076b95e5e041f1829813dbdea19358a8b0b7a2a37e4b2af8da9f10f (capacity-test head, trained on the exact values of these leaves: in sample)
+69734 leaves
+ct         RMSE   3.01  bias   +0.14  within-group RMSE   2.86  pair order agreement 0.876 (2816746 pairs)  cross-turn 0.889 (5796217 pairs)
+           bias by leaf turn: 1: -0.11 (n=2962)  2: +0.02 (n=32813)  3: +0.18 (n=18382)  4: +0.40 (n=11892)  5: +0.39 (n=2561)  6: +0.47 (n=946)

@@ -3791,6 +3791,35 @@ int testSimulatorCorrectnessPr9To19() {
         }
     }
 
+    // Live problem 106 (seed 111200646): Hand of Greed into Writhing Mass. Java
+    // GreedAction hits with a NORMAL DamageInfo, so Malleable grows and queues
+    // its block. STS_HAND_OF_GREED_ATTACK_FIX=0 restores the non-attack path.
+    for (const bool fix : {true, false}) {
+        if (fix) unsetenv("STS_HAND_OF_GREED_ATTACK_FIX");
+        else setenv("STS_HAND_OF_GREED_ATTACK_FIX", "0", 1);
+        auto bc = simulatorCorrectnessBattle({}, Card(CardId::FLEX), 10);
+        while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+            bc.executeActions();
+        }
+        auto &m = bc.monsters.arr[0];
+        m.curHp = m.maxHp = 200;
+        m.block = 0;
+        m.buff<MonsterStatus::MALLEABLE>(3);
+        bc.inputState = InputState::EXECUTING_ACTIONS;
+        bc.addToBot(Actions::HandOfGreedAction(0, 23, false));
+        bc.executeActions();
+        unsetenv("STS_HAND_OF_GREED_ATTACK_FIX");
+        const auto &hit = bc.monsters.arr[0];
+        const int wantMalleable = fix ? 4 : 3, wantBlock = fix ? 3 : 0;
+        if (hit.curHp != 177 || hit.getStatus<MonsterStatus::MALLEABLE>() != wantMalleable || hit.block != wantBlock) {
+            const std::string msg = std::string(fix ? "Hand of Greed" : "STS_HAND_OF_GREED_ATTACK_FIX=0")
+                + " into Malleable: hp " + std::to_string(hit.curHp) + " malleable "
+                + std::to_string(hit.getStatus<MonsterStatus::MALLEABLE>()) + " block " + std::to_string(hit.block)
+                + ", want hp 177 malleable " + std::to_string(wantMalleable) + " block " + std::to_string(wantBlock);
+            return fail(msg.c_str());
+        }
+    }
+
     // #13: Unceasing Top resolves the shuffle/draw work before returning control.
     {
         auto bc = simulatorCorrectnessBattle({RelicId::UNCEASING_TOP}, Card(CardId::FLEX), 5);

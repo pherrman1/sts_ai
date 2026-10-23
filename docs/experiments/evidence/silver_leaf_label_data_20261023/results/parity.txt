@@ -1,0 +1,1 @@
+300 leaves: max |trunk diff| 9.01e-07, max |value diff| 1.16e-05 Silver points, mean |value diff| 3.71e-06
