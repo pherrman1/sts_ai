@@ -22455,6 +22455,18 @@ Seeds: none new (live seeds 111200473 and 111200504).
 
 **Status:** Draft PR.
 
+## §TBD — Live problem 105: Champion Belt's queued Weak behind Gambling Chip's choice abandoned the run (2026-10-23)
+
+**Question:** Why was seed 111200643 (main 133d246a) abandoned in act 3, floor 40 (burning elite Giant Head, turn 1)?
+
+**Evidence:** Gambling Chip's HAND_SELECT was open while `actions=[RelicAboveCreatureAction, ApplyPowerAction(Weakened 1, target GiantHead, source player), WaitAction]` was still queued: Bag of Marbles' Vulnerable had landed on Giant Head and Champion Belt's `onTrigger` queued its Weak. The producer reads a monster-targeted `ApplyPowerAction` only as an all-enemy relic batch (Red Mask for Weak), so it refused (`refusal=1:batch_relic_or_monsters`) and the importer reported `silver_selection_pending_actions` twice; deterministic from saved-111200643. Native `BattleContext::debuffEnemy` queues `DebuffEnemy<WEAK>(idx, 1, false)` for Champion Belt, but the Silver wire had no single-enemy debuff item.
+
+**Change:** `STS_SILVER_CHAMPION_BELT_WEAK_QUEUE` (default on, `=0` restores the refusal and the unobserved native tail): the producer emits `DEBUFF_ENEMY {power: Weakened, amount: 1, slot, sourceMonster: false}` for that action (Champion Belt owned, no Red Mask, live emitted target); the wire gains pending kind `DEBUFF_ENEMY = 21` (monster index, Weak 1, player source only); the importer imports it with Champion Belt present and a live monster in that slot; native conversions capture a queued `DebuffEnemy<WEAK>(idx, 1, false)` as the same item. Tests: `live_silver_importer` imports the tail behind a Gambling Chip selection, recaptures it from the native state, applies Weak after the Gamble, refuses six defects (amount, slot, power, monster source, no Champion Belt, flag off) and checks the flag-off native tail stays unobserved; `CombatBoundaryTest` checks the item JSON. `ctest -L "smoke|core"` 138/138.
+
+**Interpretation:** Live-only, play-changing for runs with Champion Belt whose Weak is queued behind a choice (Gambling Chip at turn 1 with Bag of Marbles; also any other player-Vulnerable trigger that leaves the Weak behind an open selection): the run continues and Silver plans with the Weak already queued.
+
+**Status:** Draft PR.
+
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with
