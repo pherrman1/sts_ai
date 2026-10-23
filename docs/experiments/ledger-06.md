@@ -24012,6 +24012,35 @@ campaigns, backup copies of stragglers on idle workers once the queue is empty.
 - Seeds 111360000–111360255 used; smokes 111369991–111369993 used (111369990–111369999 assigned).
 - **Knowledge impact:** `evaluation/current-research.md`.
 
+## §TBD-public Infinity public-root annotation pilot — K=4 contract and coverage (2026-10-23)
+
+Baseline reviewed phase-2 `59d7c463f733c9fb23ccef194d9d3d5c1dd9a3ff` (dependent
+PR #843). Separate app-managed worktree. Research-only adapter; Silver's existing
+information-set `CardPile::drawTop` materializes public-conditioned worlds with
+SHA256-derived isolated seeds, never the original draw order or RNG. No new
+whole-combat/run seed cohort, models, training, AZ, Silver or OOC/default change.
+K=4, first four preserved roots fixed before labels; every original oracle cap
+retained per world (depth24/nodes2000/candidates16/periods128/actions1024/total4096).
+
+Adapter contract PASS across four public constructed controls / 16 worlds:
+exhaust Dropkick and energy-positive Sundial certify 4/4; broken Dropkick 0/4;
+phase guard 0/4 certified but 4/4 damaging candidates. Candidate fraction includes
+certifications; minimum damaging reach 4, or null without a candidate. Known
+boundaries/physical multiset, lazy-kernel sequence/RNG parity for four seeds,
+source RNG/unknown-order/private-side-channel invariance, unchanged input,
+provenance truth table and domain rejection all pass. Three focused CTests pass.
+
+Natural annotation BLOCKED: the first four hash-bound `native8-first-captures`
+public roots (`2026100100/0`..`2026100103/0`) have no full run-relic provenance
+proving no Prismatic Shard. All four sidecars report UNSUPPORTED with null
+fractions; zero natural-world oracle searches. Do not count them as negatives,
+claim natural recall, recollect a cohort or enlarge K to mask the provenance gap.
+[Preregistration, inventory/hashes, raw sidecars, sampler contract, result and limits](evidence/combat_infinity_public_20261023/REPORT.md).
+Knowledge impact: maintained oracle research interface and current research
+status updated. Eligible roots with authoritative public run-relic provenance
+are required before a natural-label pilot can continue. No producer/capture
+schema, model integration, scale-up or merge was performed.
+
 ## §TBD Combat infinity phase 2 — realistic constructed recall (2026-10-23)
 
 Baseline: merged #839 `45eb23a7ed88869f3ea54d22d70f37e3cf93b22e`, with both

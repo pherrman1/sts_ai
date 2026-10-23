@@ -1,0 +1,20 @@
+{
+  "baseline_sha": "59d7c463f733c9fb23ccef194d9d3d5c1dd9a3ff",
+  "dependency_pr": 843,
+  "branch": "research/infinity-public-root-pilot",
+  "system": "Linux-7.1.5-76070105-generic-x86_64-with-glibc2.39",
+  "compiler": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+  "K": 4,
+  "root_cap": 4,
+  "source_input": "root-inventory.json",
+  "model_loading": false,
+  "new_game_seed_cohort": false,
+  "caps_per_world": {
+    "depth": 24,
+    "nodes": 2000,
+    "candidates": 16,
+    "periods": 128,
+    "actions_per_candidate": 1024,
+    "total_replay_actions": 4096
+  }
+}

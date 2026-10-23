@@ -1,0 +1,20 @@
+{
+  "selection": "first four lines, fixed before labels; no outcome-dependent sampling",
+  "source_path": "docs/experiments/evidence/silver_quiescent_queue_item_20260922/native8-first-captures.jsonl.gz",
+  "source_gzip_sha256": "c5fc6f84e93d9917de7efb1807b39b773fc0a17eabefdc7f16740d5dd23c1abe",
+  "raw_selected_lines_sha256": "11d3136d0d6452574a0561b521f3380d29ca6d9ab56dc897a4dcd34f73b29a55",
+  "public_input_sha256": "70e3b92910a76efd721f7214b4d8b01366fa87cd7f38891c913743882f3b0e77",
+  "root_ids": [
+    "2026100100/0",
+    "2026100101/0",
+    "2026100102/0",
+    "2026100103/0"
+  ],
+  "no_shard_provenance": "absent in these public search captures; never assert from two combat relic bitsets",
+  "other_sources_inspected": [
+    "silver_forced_action_target_2026-09-19/roots.jsonl: no full run relic provenance",
+    "silver_prior_root_replay_20260923/prepared/roots.jsonl: hidden intents unsupported and no relic provenance",
+    "ironclad_a0_overnight_20261008/audit/champ_d13_public_root.json: no full run relic provenance"
+  ],
+  "new_collection": false
+}

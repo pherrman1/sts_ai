@@ -1,0 +1,15 @@
+Test project /home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/build/linux-gcc-release-ccache
+    Start 1: combat_infinity_oracle
+1/3 Test #1: combat_infinity_oracle ...........   Passed    0.01 sec
+    Start 2: combat_infinity_recall
+2/3 Test #2: combat_infinity_recall ...........   Passed    0.01 sec
+    Start 3: combat_infinity_public
+3/3 Test #3: combat_infinity_public ...........   Passed    0.01 sec
+
+100% tests passed out of 3
+
+Label Time Summary:
+core              =   0.03 sec*proc (3 tests)
+research-repro    =   0.03 sec*proc (3 tests)
+
+Total Test time (real) =   0.03 sec
