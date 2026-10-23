@@ -24011,6 +24011,34 @@ Proposed next: an offline check of the CTM's act-4 predictions against the stage
 campaigns, backup copies of stragglers on idle workers once the queue is empty.
 - Seeds 111360000–111360255 used; smokes 111369991–111369993 used (111369990–111369999 assigned).
 - **Knowledge impact:** `evaluation/current-research.md`.
+
+## §671 Same-turn infinity oracle — bounded synthetic feasibility (2026-10-23)
+
+Hypothesis: exact recurring combat control state plus simulator witness replay
+can distinguish useful same-turn card cycles from stalls. Baseline
+`a8b801390a2e730c30312522b71a056c3eaca7c7`; standalone Debug utility, no models,
+no Silver/AZ/OOC integration, no new game-seed cohort. Concrete full-state/RNG
+regime, thirteen deterministic synthetic states and first eight preserved wire roots.
+Search bounds: depth/period 24, 2,000 nodes, 16 candidates; replay bounds: 128
+periods / 1,024 actions per candidate, 4,096 actions total.
+
+Synthetic decision rule PASS after the two requested independent-review corrections: 1 certified Dropkick
+kill, 2 productive candidates rejected (phase transition, repetition cap), 1
+stall, 9 NONE (six unsupported). Four states repeat a control fingerprint;
+mean/max nodes 157.077/2,000, mean/max Debug process CPU 3.130/34.656 ms,
+maximum depth 24. No false certified positives in the fixture suite. All three
+focused CTests pass. Archived wires reconstruct 8/8, but all retain information-set
+draw piles and are unsupported for concrete cycle search. No natural prevalence
+or gameplay-quality claim. The historical #544 artifact has stacks, not its
+combat state; a synthetic fixture covers that failure class.
+
+[Design, command outcomes, witnesses, source/binary hashes and limitations](evidence/combat_infinity_oracle_20261023/REPORT.md).
+Independent review of `b0acc5c` required the PRODUCTIVE_CYCLE_CANDIDATE rename
+and an explicit audited-domain gate. The corrected utility requires Ironclad,
+red/colorless/curse cards and proven no-Shard provenance; all five new domain
+regressions reject before search. Main synchronized to `a103a9b78`. Realistic
+recall/public-state handling must be qualified before natural-root annotation.
+No default, training, capture or follow-up qualification change is implemented.
 ## §670 — Value-head plan, stage 4 check: the A20 CTM over-predicts deaths at most bosses (the Heart 0.49 vs 0.37 observed) and HP loss in Acts 2–4 for today's Silver; a per-fight calibration predicts held-out fights better (research flag, default off; A/B proposed) (offline, 2026-10-23)
 
 **Question:** Do the A20 CTM's predictions match today's real fights, by act and fight? §663 found the rollouts far
@@ -24071,3 +24099,49 @@ Philipp's typed go and the worker count.
 - Seeds: the fit replays §661's and §663's rows (no new games). Smoke 111394990–111394999 used. A/B
   111392000–111394047 assigned, unused.
 - **Knowledge impact:** `evaluation/current-research.md`, `operations/environment-variables.md`.
+
+## §672 — A20 CTM fine-tune on today's real fights: a survival fine-tune does not beat the §670 calibration table; an HP-head fine-tune plus a refitted table lowers held-out won-fight HP error by 0.15 (research candidate, offline, 2026-10-23)
+
+**Question:** Philipp (2026-10-23 20:18Z), after §670: can a fine-tune of the deployed A20 CTM on today's real fights
+replace or improve the per-fight calibration? Yardstick (his, 20:32Z): prediction precision, not win rate.
+**Setup:** [packet](evidence/ctm_finetune_20261023/README.md). Warm start from the fast artifact `ae785ec2…`
+(`tools/ctm_finetune.py`, CPU). §670's rows, folds (source seed parity) and held-out set (LC, 6,022 fights of the stage
+1–2 games); train on one fold, test on the other; final model on all 97,561 A/B fights. 25% of each batch from 112,906
+§443 Stage-1 rows; epochs chosen on ~10% of the training fold's seeds. Fine-tuned: survival encoder + head (or head),
+and the HP head only (its encoder z also feeds maxHP, relic, gold and ritual heads). Scored by the C++ runtime
+through a research manifest; compared on the same rows with the CTM and with the CTM + §670 table fitted on the
+other fold.
+**Result:**
+- Survival: no variant beats the table out of sample. Best (encoder + head, lr 3e-4): death log loss 0.0714 / 0.0703
+  vs table 0.0685 / 0.0684 and CTM 0.0731 / 0.0717; FT − table +0.0026 [+0.0012, +0.0042] and +0.0017 [+0.0002,
+  +0.0032]. Higher learning rate or head-only is worse (head-only predicts the Heart at 0.11 vs 0.37 observed). Trained
+  on all A/B rows it ties the table on LC (0.0689 vs 0.0698, [−0.0038, +0.0019]).
+- HP head: alone it takes won-fight HP MAE from 8.46 / 8.48 / 8.23 (odd / even / LC) to 7.74 / 7.81 / 7.55. With a table
+  refitted on its scores, against the CTM + table: 7.66 → 7.56 (−0.10 [−0.13, −0.06]), 7.67 → 7.60 (−0.06 [−0.09,
+  −0.03]), held out 7.60 → 7.45 (−0.15 [−0.22, −0.08]); gains at bosses and Act-3 elites; deaths unchanged.
+**Candidate (research only):** `models/candidates/ctm_finetune_hp_pathb_a20_v1.native` (`bdbfafa6…`, five HP-head
+tensors changed, §470 shift kept so `p_death` is byte-identical to the deployed stack on all 103,583 fights), manifest
+`31bb21f7…`, table `ctm_calibration_pathb_a20_ft_hp_v1.json` (`8c226f23…`, C++ = tool on 30,072 fights). Nothing
+default; playing it needs a fast-artifact path switch the OOC stack does not have yet.
+**Interpretation:** at this data size a per-fight death shift beats re-learning survival; the HP head has room the
+per-group loss scale cannot reach. **Inference:** a clean retrain would need more current-play rows than one A/B.
+- No seeds run (rows of §661 and §663 replayed).
+- **Knowledge impact:** none beyond this entry (research candidate, no runtime or default change).
+
+## §673 — Live advisor: a burning elite under Runic Dome was refused at turn 1 (2026-10-23)
+
+**Question:** why did canary seed 111200666 (A2 floor 24, the burning Slavers elite, Runic Dome; problem 112) give up
+with `silver_runic_dome_history_gap` at turn 1, although `runicDomeKnowledge.complete` was true?
+**Setup:** the canary's report: the rows' `rollMaxHp` were 48/58/51 against live max HP 60/73/64. Native
+`BattleContext::init` and `MonsterGroup::applyEmeraldEliteBuff`; `live_silver_importer_test` (no gameplay runs).
+**Result:** a burning elite rolls its first move before `applyEmeraldEliteBuff` raises its max HP by round(25%)
+(48+12, 58+15, 51+13), and native does the same: `monsters.init` rolls, then the buff. The tracker's combat-start roll
+inputs were therefore right, but the importer required `rollMaxHp` to equal the live max HP.
+**Interpretation:** under `STS_IMPORTER_RUNIC_DOME_BURNING_ELITE_HP` (default on, `=0` restores the refusal) the
+importer accepts the combat-start roll (initial occupant, not executed, one roll) when the silverRoot says
+`burningElite` and the live max HP is the recorded one plus round(25%); the pending roll keeps the recorded pre-buff
+inputs. Later rolls still need the live max HP. The other three buffs (Strength, Metallicize, Regenerate) leave HP alone.
+The importer test gains the burning-elite combat-start row for an ordinary and a dynamic monster, with fail-closed cases.
+Play-changing only where the advisor used to refuse.
+Seeds: none new (live seed 111200666 as reported).
+**Knowledge impact:** `operations/environment-variables.md`.

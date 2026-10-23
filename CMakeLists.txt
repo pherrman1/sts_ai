@@ -54,6 +54,14 @@ set_target_properties(silver-public-pair-probe PROPERTIES OUTPUT_NAME silver_pub
 target_include_directories(silver-public-pair-probe PRIVATE include json/include)
 link_ctm_crypto(silver-public-pair-probe)
 
+# Same-turn infinity oracle: research executable, no production linkage.
+add_executable(combat-infinity-oracle apps/combat_infinity_oracle.cpp $<TARGET_OBJECTS:sts_core_objects>)
+set_target_properties(combat-infinity-oracle PROPERTIES OUTPUT_NAME combat_infinity_oracle)
+target_include_directories(combat-infinity-oracle PRIVATE include json/include)
+add_test(NAME combat_infinity_oracle COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:combat-infinity-oracle> --fixtures)
+set_tests_properties(combat_infinity_oracle PROPERTIES LABELS "core;research-repro")
+
 # Default-off observer neutrality: live combat core only.
 add_executable(combat-knowledge-neutrality-test apps/combat_knowledge_neutrality_test.cpp $<TARGET_OBJECTS:sts_core_objects>)
 set_target_properties(combat-knowledge-neutrality-test PROPERTIES OUTPUT_NAME combat_knowledge_neutrality_test)
