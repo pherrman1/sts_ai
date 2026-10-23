@@ -1564,7 +1564,13 @@ void ActData_HandOfGreedAction::operator()(BattleContext &bc) const {
         if (m.isDeadOrEscaped()) {
             return;
         }
-        bc.monsters.arr[idx].damage(bc, damage);
+        // Java GreedAction hits with a NORMAL DamageInfo, so the target's
+        // onAttacked reactions run (live problem 106).
+        if (handOfGreedAttackFix()) {
+            m.attacked(bc, damage);
+        } else {
+            m.damage(bc, damage);
+        }
 
         const bool effectTriggered = !m.hasStatus<MS::MINION>()
                 && !m.isAlive()

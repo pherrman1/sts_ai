@@ -22467,6 +22467,51 @@ Seeds: none new (live seeds 111200473 and 111200504).
 
 **Status:** Draft PR.
 
+## §668 — Live problem 110: Trip costs 0 (2026-10-23)
+
+**Question:** Why did seed 111200656 (step 593) show a Toolbox-discovered Trip at cost 0 in the game but 1 natively?
+
+**Evidence:** `include/constants/Cards.h` `getEnergyCost` listed `CardId::TRIP` in the cost-1 group. Java `cards.colorless.Trip` passes cost `iconst_0` to its constructor (javap, canary), and its upgrade only changes the target and Vulnerable amount.
+
+**Change:** `STS_TRIP_COST_FIX` (default on, `=0` restores): Trip is in the cost-0 group; with `=0` the `CardInstance` constructor restores cost 1. Test in `simulator_correctness_pr9_19`: base, upgraded and upgraded-in-combat Trip cost 0 (legacy 1). smoke|core 138/138.
+
+**Interpretation:** Play-changing whenever Trip is offered or held: it was undervalued by 1 energy in simulation.
+
+**Status:** Draft PR.
+
+## §667 — Live problem 109: Time Eater marks usedHaste when it rolls Haste (2026-10-23)
+
+**Question:** Why did seed 111200653 (step 875, floor 51, Time Eater) show `monsters[0].miscInfo` 1 in the game vs 0 natively after End Turn?
+
+**Evidence:** HP went 232 -> 229, below max/2, so Time Eater rolled HASTE (post moveHistory [4,5]). Java (javap, canary): `TimeEater.getMove` writes `usedHaste = true` before `setMove(5, BUFF)`, i.e. at roll time. The engine set `miscInfo` only in the HASTE move action; its roll only read it.
+
+**Change:** `STS_TIME_EATER_HASTE_ROLL_FIX` (default on, `=0` restores): the Time Eater roll writes `monsterData = 1` when it chooses Haste, the same pattern Bronze Orb already uses for Stasis. Test in `simulator_correctness_pr9_19`: Time Eater below half HP rolls Haste with `miscInfo` 1 (legacy 0). smoke|core 138/138.
+
+**Interpretation:** Play is unchanged unless Time Eater re-rolls between choosing Haste and executing it. The fix makes the state between roll and Haste match the game (Silver node identity, live tree reuse on exact state match).
+
+**Status:** Draft PR.
+
+## §666 — Live problem 108: Angry gained Strength on a fully blocked hit (2026-10-23)
+
+**Question:** Why did seed 111200647 (step 461, floor 30, Gremlin Gang) diverge after Reaper hit a Gremlin Warrior (Angry 2, Strength 5, block 10)?
+
+**Evidence:** The hit was fully blocked (block 10 -> 6, HP unchanged). Game: Strength stayed 5; native: 7. `Monster::attacked` applied Angry's Strength before the block subtraction, unconditionally. Java (javap, canary): `AbstractMonster.damage` calls `decrementBlock` first and passes the remaining `damageAmount` to each power's `onAttacked`; `AngryPower.onAttacked` fires only when `info.owner != null && damageAmount > 0` and the type is not HP_LOSS (THORNS damage also triggers it).
+
+**Change:** `STS_ANGRY_UNBLOCKED_FIX` (default on, `=0` restores): Angry's Strength is applied after the block subtraction and only when damage remains. Test in `simulator_correctness_pr9_19`: Angry 2 with 10 block gains no Strength from a 4- or 10-damage attack and +2 from a 15-damage attack (legacy: +2 for all). Not changed here (pre-existing gap, candidate for a later PR): THORNS damage (Bronze Scales, Flame Barrier) goes through `Monster::damage`, which never triggers Angry.
+
+**Interpretation:** Play-changing against Gremlin Warriors with block (Gremlin Gang, Gremlin Leader), in simulation and live: blocked hits no longer make the Warrior stronger.
+## §665 — Live problem 106: Hand of Greed skipped the target's onAttacked reactions (2026-10-23)
+
+**Question:** Why did seed 111200646 (step 750, floor 48, Writhing Mass) diverge after Hand of Greed and its Necronomicon copy (two hits of 23)?
+
+**Evidence:** Game: Writhing Mass HP 172 -> 140, block 11 -> 4, Malleable 3 -> 5, aiRng advanced twice (two Reactive rerolls). Native: HP 137, block 0, Malleable 3, aiRng unchanged. `ActData_HandOfGreedAction` called `Monster::damage` (the non-attack path: block, Intangible, Invincible, Lagavulin wake, Shifting only), while Java `GreedAction` calls `target.damage(new DamageInfo(player, damage, NORMAL))`, which runs onAttacked; `ActData_FeedAction` already used `Monster::attacked`. Hand of Greed rows on Awakened One and Spire Shield matched because neither has an onAttacked reaction.
+
+**Change:** `STS_HAND_OF_GREED_ATTACK_FIX` (default on, `=0` restores): Hand of Greed hits through `Monster::attacked`, as Feed does. Test in `simulator_correctness_pr9_19`: a 23-damage Hand of Greed into Malleable 3 leaves Malleable 4 and 3 block (legacy: Malleable 3, no block), with the same HP loss.
+
+**Interpretation:** Play-changing whenever Hand of Greed hits a monster with an on-hit reaction (Malleable, Reactive, Curl Up, Angry, Plated Armor, Flight, Thorns) or with The Boot / Envenom, in simulation and live. Other `Monster::damage` callers (`DamageEnemy`, `DamageAllEnemy`, `DamageRandomEnemy`) are not changed here; each needs its own Java check, since most Java onAttacked reactions (e.g. Malleable, Curl Up) require a NORMAL `DamageInfo` and those callers model THORNS or HP_LOSS damage.
+
+**Status:** Draft PR.
+
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with

@@ -3765,6 +3765,103 @@ int testSimulatorCorrectnessPr9To19() {
         }
     }
 
+    // Live problem 108 (seed 111200647): Reaper fully blocked by a Gremlin
+    // Warrior. Java AngryPower.onAttacked sees the damage left after block, so
+    // a fully blocked hit gives no Strength. STS_ANGRY_UNBLOCKED_FIX=0 restores
+    // the legacy buff on every attack.
+    for (const bool fix : {true, false}) {
+        for (const int hit : {4, 10, 15}) {
+            if (fix) unsetenv("STS_ANGRY_UNBLOCKED_FIX");
+            else setenv("STS_ANGRY_UNBLOCKED_FIX", "0", 1);
+            auto bc = simulatorCorrectnessBattle({}, Card(CardId::FLEX), 10);
+            auto &m = bc.monsters.arr[0];
+            m.curHp = m.maxHp = 100;
+            m.block = 10;
+            m.buff<MonsterStatus::ANGRY>(2);
+            const int before = m.strength;
+            m.attacked(bc, hit);
+            unsetenv("STS_ANGRY_UNBLOCKED_FIX");
+            const int want = before + ((fix && hit <= 10) ? 0 : 2);
+            if (m.strength != want) {
+                const std::string msg = std::string(fix ? "Angry" : "STS_ANGRY_UNBLOCKED_FIX=0") + " on a "
+                    + std::to_string(hit) + "-damage hit into 10 block: strength " + std::to_string(m.strength)
+                    + ", want " + std::to_string(want);
+                return fail(msg.c_str());
+            }
+        }
+    }
+
+    // Live problem 106 (seed 111200646): Hand of Greed into Writhing Mass. Java
+    // GreedAction hits with a NORMAL DamageInfo, so Malleable grows and queues
+    // its block. STS_HAND_OF_GREED_ATTACK_FIX=0 restores the non-attack path.
+    for (const bool fix : {true, false}) {
+        if (fix) unsetenv("STS_HAND_OF_GREED_ATTACK_FIX");
+        else setenv("STS_HAND_OF_GREED_ATTACK_FIX", "0", 1);
+        auto bc = simulatorCorrectnessBattle({}, Card(CardId::FLEX), 10);
+        while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+            bc.executeActions();
+        }
+        auto &m = bc.monsters.arr[0];
+        m.curHp = m.maxHp = 200;
+        m.block = 0;
+        m.buff<MonsterStatus::MALLEABLE>(3);
+        bc.inputState = InputState::EXECUTING_ACTIONS;
+        bc.addToBot(Actions::HandOfGreedAction(0, 23, false));
+        bc.executeActions();
+        unsetenv("STS_HAND_OF_GREED_ATTACK_FIX");
+        const auto &hit = bc.monsters.arr[0];
+        const int wantMalleable = fix ? 4 : 3, wantBlock = fix ? 3 : 0;
+        if (hit.curHp != 177 || hit.getStatus<MonsterStatus::MALLEABLE>() != wantMalleable || hit.block != wantBlock) {
+            const std::string msg = std::string(fix ? "Hand of Greed" : "STS_HAND_OF_GREED_ATTACK_FIX=0")
+                + " into Malleable: hp " + std::to_string(hit.curHp) + " malleable "
+                + std::to_string(hit.getStatus<MonsterStatus::MALLEABLE>()) + " block " + std::to_string(hit.block)
+                + ", want hp 177 malleable " + std::to_string(wantMalleable) + " block " + std::to_string(wantBlock);
+            return fail(msg.c_str());
+        }
+    }
+
+    // Live problem 109 (seed 111200653): Java TimeEater.getMove sets usedHaste
+    // when it rolls Haste, not when Haste executes. STS_TIME_EATER_HASTE_ROLL_FIX=0
+    // restores the legacy engine, which marked it only on execution.
+    for (const bool fix : {true, false}) {
+        if (fix) unsetenv("STS_TIME_EATER_HASTE_ROLL_FIX");
+        else setenv("STS_TIME_EATER_HASTE_ROLL_FIX", "0", 1);
+        GameContext gc(CharacterClass::IRONCLAD, 91, 20);
+        BattleContext bc; bc.init(gc, MonsterEncounter::TIME_EATER);
+        auto &m = bc.monsters.arr[0];
+        m.curHp = m.maxHp / 2 - 1;
+        m.miscInfo = 0;
+        m.rollMove(bc);
+        unsetenv("STS_TIME_EATER_HASTE_ROLL_FIX");
+        if (m.moveHistory[0] != MonsterMoveId::TIME_EATER_HASTE) {
+            return fail("Time Eater under half HP did not roll Haste");
+        }
+        if (m.miscInfo != (fix ? 1 : 0)) {
+            return fail(fix ? "Time Eater did not mark usedHaste when rolling Haste"
+                            : "STS_TIME_EATER_HASTE_ROLL_FIX=0 marked usedHaste at roll time");
+        }
+    }
+
+    // Live problem 110 (seed 111200656): Java Trip costs 0 (upgraded too).
+    // STS_TRIP_COST_FIX=0 restores the legacy engine cost of 1.
+    for (const bool fix : {true, false}) {
+        if (fix) unsetenv("STS_TRIP_COST_FIX");
+        else setenv("STS_TRIP_COST_FIX", "0", 1);
+        refreshEngineFlags();
+        CardInstance trip(CardId::TRIP, false);
+        CardInstance tripPlus(CardId::TRIP, true);
+        CardInstance upgraded(CardId::TRIP, false);
+        upgraded.upgrade();
+        unsetenv("STS_TRIP_COST_FIX");
+        refreshEngineFlags();
+        const int want = fix ? 0 : 1;
+        for (const auto *c : {&trip, &tripPlus, &upgraded}) {
+            if (c->cost != want || c->costForTurn != want) {
+                return fail(fix ? "Trip does not cost 0" : "STS_TRIP_COST_FIX=0 did not restore Trip cost 1");
+            }
+        }
+    }
+
     // #13: Unceasing Top resolves the shuffle/draw work before returning control.
     {
         auto bc = simulatorCorrectnessBattle({RelicId::UNCEASING_TOP}, Card(CardId::FLEX), 5);
