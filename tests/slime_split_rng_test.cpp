@@ -3,6 +3,12 @@
 // more for its own queued RollMoveAction, and the split trigger records the
 // split move twice in the move history, as in the game. =0 restores the
 // legacy engine (two extra rolls for either slime, previous move kept).
+//
+// STS_SLIME_SPLIT_ROLL_ORDER_FIX (default on, live problem 99): a split
+// triggered while the slime's own RollMoveAction is queued (thorns or Flame
+// Barrier during its turn) stays the next move, history [SPLIT, rolled], and
+// later hits leave a pending split alone. =0 restores the legacy engine,
+// where the roll replaced the split and every hit rewrote moveHistory[1].
 #include "combat/BattleContext.h"
 #include "game/GameContext.h"
 
@@ -44,8 +50,49 @@ static void check(bool fixed, MonsterId large, MonsterId medium, MMID split, int
     require(bc.monsterTurnIdx == 2, name + ": the new slimes must not act this turn");
 }
 
+static void checkRollOrder(bool fixed, MonsterId large, MMID split) {
+    const std::string name = std::string(monsterIdStrings[static_cast<int>(large)]) + " roll order";
+    GameContext gc(CharacterClass::IRONCLAD, SEED, 0);
+    BattleContext bc;
+    bc.init(gc, MonsterEncounter::LARGE_SLIME);
+    while (bc.actionQueue.size > 0) bc.actionQueue.popFront()(bc);
+    Monster &slime = bc.monsters.arr[0];
+    if (slime.id != large) slime.construct(bc, large, 0);
+
+    // The slime's attack queued its RollMoveAction; the reflected damage then
+    // takes it to half HP before the roll runs.
+    bc.addToBot(Actions::RollMove(0));
+    const int before = bc.aiRng.counter;
+    slime.attacked(bc, slime.curHp - slime.maxHp / 2);
+    while (bc.actionQueue.size > 0) bc.actionQueue.popFront()(bc);
+    require(bc.aiRng.counter - before == 1, name + ": the queued roll must still draw aiRng");
+    const auto rolled = slime.moveHistory[fixed ? 1 : 0];
+    require(rolled != split, name + ": the roll must not produce the split");
+    if (fixed) {
+        require(slime.moveHistory[0] == split, name + ": the split must stay the next move");
+    } else {
+        require(slime.moveHistory[0] != split && slime.moveHistory[1] == split,
+                name + ": =0 must restore the roll replacing the split");
+        return;
+    }
+
+    // A later hit leaves the pending split and its history alone.
+    slime.attacked(bc, 1);
+    while (bc.actionQueue.size > 0) bc.actionQueue.popFront()(bc);
+    require(slime.moveHistory[0] == split && slime.moveHistory[1] == rolled,
+            name + ": a hit on a pending split must not rewrite moveHistory[1]");
+}
+
 int main() {
     try {
+        for (const char *value : {"", "1", "0"}) {
+            if (*value) setenv("STS_SLIME_SPLIT_ROLL_ORDER_FIX", value, 1);
+            else unsetenv("STS_SLIME_SPLIT_ROLL_ORDER_FIX");
+            const bool fixed = std::string(value) != "0";
+            checkRollOrder(fixed, MonsterId::ACID_SLIME_L, MMID::ACID_SLIME_L_SPLIT);
+            checkRollOrder(fixed, MonsterId::SPIKE_SLIME_L, MMID::SPIKE_SLIME_L_SPLIT);
+        }
+        unsetenv("STS_SLIME_SPLIT_ROLL_ORDER_FIX");
         for (const char *value : {"", "1", "0"}) {
             if (*value) setenv("STS_SLIME_SPLIT_RNG_FIX", value, 1);
             else unsetenv("STS_SLIME_SPLIT_RNG_FIX");

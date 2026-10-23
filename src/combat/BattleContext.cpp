@@ -146,6 +146,11 @@ namespace sts {
         return cachedFixFlag(cache, "STS_SLIME_SPLIT_RNG_FIX");
     }
 
+    bool slimeSplitRollOrderFix() {
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_SLIME_SPLIT_ROLL_ORDER_FIX");
+    }
+
     bool dyingAttackerFix() {
         thread_local CachedFixFlag cache;
         return cachedFixFlag(cache, "STS_DYING_ATTACKER_FIX");
