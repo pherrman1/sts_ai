@@ -198,7 +198,7 @@ Final build exit 0; all three focused CTests pass (raw `build.log`, `ctest.log`)
 The oracle test carries the `core` label so the existing Linux GCC CI selection
 includes it. Worktree dependency check, staged diff whitespace check, and
 `python3 tools/repo_health.py --baseline a103a9b78aa42999fac8c97454d90ccdd0ed5811 --json`
-pass (repository health reports no warnings).
+pass (repository health reports the advisory `active Markdown growth`, with no hard-gate failure).
 `provenance.json` binds source/binary and source-root hashes to this evidence.
 No large cohorts, full-run quality experiment, Release timing campaign, model
 training, AZ annotations, OOC integration or production binary comparison was
