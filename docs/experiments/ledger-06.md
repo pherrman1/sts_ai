@@ -22396,7 +22396,7 @@ Seeds: none new (live seeds 111200473 and 111200504).
 **Interpretation:** Live play-changing for every run with Necronomicon: Silver now plans the free attack copy when it is available.
 
 **Status:** Draft PR; javap confirmation and PC `test.sh` requested from the canary.
-## §TBD — Live problem 101: Necronomicon did not replay a Havoc-autoplayed Attack (2026-10-23)
+## §652 — Live problem 101: Necronomicon did not replay a Havoc-autoplayed Attack (2026-10-23)
 
 **Question:** Why did seed 111200627 (step 374, Collector + 2 Torch Heads) replay Havoc's Immolate in the game but not natively?
 
