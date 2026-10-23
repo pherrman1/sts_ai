@@ -11,8 +11,11 @@
 #include "screen_leaf_s0.h"
 #include "one_combat/ooc_native_fallback.h"
 #include "run_driver.h"
+#include "combat/BattleContextBinary.h"
 #include "sim/search/SilverRolloutAgent.h"
 #include "sim/search/SilverRolloutCardTable.h"
+#include "sim/search/SilverValueHead.h"
+#include "sim/search/SilverWireState.h"
 #include "sim/search/RunGoal.h"
 #include "one_combat/heart1_policy.h"
 #include "one_combat/silver_synth_keys.h"
@@ -76,6 +79,13 @@ nlohmann::json effectiveSilverLeafSpecification() {
         spec["rollout_root_table"] = {{"path", leaf.rolloutRootTable}, {"sha256", fileSha256(leaf.rolloutRootTable)}};
     // Recorded only when on (ADR-0050 default with a root prior), so earlier specifications match.
     if (leaf.priorPlayoutBossElite) spec["prior_playout_rooms"] = leaf.priorPlayoutElite ? "boss,elite" : "boss";
+    // Recorded only when on (STS_SILVER_LEAF_HEAD, default off).
+    if (!leaf.leafHead.empty())
+        spec["leaf_head"] = {{"path", leaf.leafHead}, {"sha256", fileSha256(leaf.leafHead)},
+                             {"trunk", {{"path", leaf.leafHeadTrunk}, {"sha256", fileSha256(leaf.leafHeadTrunk)}}},
+                             {"blend", leaf.leafHeadBlend}, {"turn_penalty", leaf.leafHeadTurnPenalty}};
+    // Recorded only when on, so earlier leaf head specifications match.
+    if (!leaf.leafHead.empty() && leaf.leafHeadWinCap) spec["leaf_head"]["win_cap"] = true;
     return spec;
 }
 
@@ -5307,7 +5317,8 @@ struct CtmSilverArm { std::string name; int budget; bool prior; bool redraw; int
                       search::SilverSearcher::RolloutConfig rollout = {}; std::string cardTable;
                       std::string rootTableModel;
                       std::optional<search::NativeSilverSearchParams> params;
-                      int maxBackup = 0; };   // maxbackup armset: SilverSearcher::maxBackupMinVisits
+                      int maxBackup = 0;      // maxbackup armset: SilverSearcher::maxBackupMinVisits
+                      bool leafHead = false; };  // leafhead armset: this arm's leaves use the armset's head
 struct RolloutScope {
     explicit RolloutScope(const search::SilverSearcher::RolloutConfig &config) {
         search::g_nativeSilverRolloutOverride = config;
@@ -5318,6 +5329,11 @@ struct RolloutScope {
 struct MaxBackupScope {
     explicit MaxBackupScope(int m) { search::g_nativeSilverMaxBackupOverride = m; }
     ~MaxBackupScope() { search::g_nativeSilverMaxBackupOverride.reset(); }
+};
+// leafhead armset: this arm's leaf head.
+struct LeafHeadScope {
+    explicit LeafHeadScope(const search::SilverSearcher::LeafHead &h) { search::g_nativeSilverLeafHeadOverride = h; }
+    ~LeafHeadScope() { search::g_nativeSilverLeafHeadOverride.reset(); }
 };
 // widen518: this arm's Silver search constants (chance widening per category).
 struct SearchParamsScope {
@@ -5663,6 +5679,53 @@ void ctmSilverWriteSample(std::ostream &out, const std::string &stateId, const s
         << s.gold << ',' << s.potionCount << ',' << potions.str() << ',' << relics.str() << ','
         << std::hex << h << std::dec << ',' << (s.smokeBombUsed ? 1 : 0) << ',' << s.stolenGold << '\n';
 }
+
+// leafhead armset diagnostics (STS_CTMSILVER_LEAFHEAD_TRACE): one replayed root as a JSON line, with the root's
+// edges (visits, Q) and the armset head's value (uncapped; a shortfall head's as win-now - max(0, shortfall)) and
+// the win-now value of the root and of every decision child, whichever arm searched.
+void ctmLeafHeadTraceRow(std::ostream &out, const std::string &stateId, const std::string &arm, int k,
+                         const search::NativeSilverRootView &view, const search::SilverValueHead &head,
+                         const search::CombatValueNet &trunk) {
+    const auto semantic = [](const BattleContext &state, const search::Action &action) {
+        try {
+            return search::semanticFingerprint(search::semanticFromSearchAction(state, action));
+        } catch (const std::exception &) {
+            return std::string("?");
+        }
+    };
+    const auto &root = view.searcher.rootSearchState();
+    std::vector<float> feat, base;
+    nlohmann::json monsters = nlohmann::json::array(), edges = nlohmann::json::array();
+    for (int i = 0; i < root.monsters.monsterCount; ++i) {
+        const auto &m = root.monsters.arr[i];
+        monsters.push_back({{"id", static_cast<int>(m.id)}, {"hp", m.curHp}, {"block", m.block},
+                            {"strength", m.strength}});
+    }
+    const auto winNow = [&](const BattleContext &state) {
+        BattleContext copy = state;
+        return view.searcher.winNowValue(copy);
+    };
+    const auto headOf = [&](const BattleContext &state) {
+        const double v = head.value(state, trunk, feat, base);
+        return head.shortfall ? winNow(state) - std::max(0.0, v) : v;
+    };
+    for (const auto &e : view.searcher.rootNode().edges) {
+        nlohmann::json row = {{"action", semantic(root, e.action)}, {"visits", e.visitCount}};
+        if (e.node && e.node->simulationCount > 0) row["q"] = e.node->evaluationSum / e.node->simulationCount;
+        if (e.node && !e.node->isRandomNode && e.node->state) {
+            row["head"] = headOf(*e.node->state);
+            if (e.node->state->outcome == Outcome::UNDECIDED) row["winNow"] = winNow(*e.node->state);
+        }
+        edges.push_back(std::move(row));
+    }
+    out << nlohmann::json{{"stateId", stateId}, {"arm", arm}, {"k", k}, {"decision", view.decision},
+                          {"turn", root.turn}, {"hp", root.player.curHp}, {"maxHp", root.player.maxHp},
+                          {"block", root.player.block}, {"energy", root.player.energy},
+                          {"potions", root.potionCount}, {"monsters", monsters}, {"simulations", view.simulations},
+                          {"skipped", view.skipped}, {"chosen", semantic(view.live, view.chosen)},
+                          {"headRoot", headOf(root)}, {"winNowRoot", winNow(root)},
+                          {"edges", edges}}.dump() << '\n';
+}
 } // namespace
 
 void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long long seedOffset,
@@ -5675,15 +5738,15 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
     if (teacherA20) ctmTeacherA20ValidateBounds(nSeeds, asc, seedOffset, teacherLarge ? 4 : replicates);
     if (teacherLarge && replicates != 16)
         throw std::runtime_error("ctm vs silver: teacher_a20_large requires REPLICATES=16");
-    // Ascension 20 is allowed only for the mlpsweep, rollout479, roottable, widen518, rootregret, uniformpl and
-    // priorpl armsets (§476/§479/§519/§518/§523) and teacher_a20; every other armset is A0.
+    // Ascension 20 is allowed only for the mlpsweep, rollout479, roottable, widen518, rootregret, uniformpl,
+    // priorpl, maxbackup and leafhead armsets (§476/§479/§519/§518/§523) and teacher_a20; every other armset is A0.
     const bool sweepArmSet = armSet == "mlpsweep" || armSet == "rollout479" || armSet == "roottable"
             || armSet == "widen518" || armSet == "rootregret"
-            || armSet == "uniformpl" || armSet == "priorpl" || armSet == "maxbackup";
+            || armSet == "uniformpl" || armSet == "priorpl" || armSet == "maxbackup" || armSet == "leafhead";
     if (!teacherA20 && (nSeeds < 1 || !(asc == 0 || (asc == 20 && sweepArmSet)) || seedOffset < 0 || replicates < 0))
         throw std::runtime_error("ctm vs silver: requires a positive seed count, replicates >= 0, Ascension 0 "
-                                 "(or 20 with STS_CTMSILVER_ARMSET=mlpsweep, rollout479, roottable, widen518, rootregret, uniformpl, priorpl "
-                                 "or maxbackup)");
+                                 "(or 20 with STS_CTMSILVER_ARMSET=mlpsweep, rollout479, roottable, widen518, rootregret, uniformpl, priorpl, "
+                                 "maxbackup or leafhead)");
     // REPLICATES = 0 is CTM-only mode: no Silver arms; the production CTM and a
     // research candidate stack (STS_CTMSILVER_CANDIDATE_FAST/_STANDARD plus the
     // STS_CTM_RESEARCH_CANDIDATE_MANIFEST pair, active Lizard on) are scored on the
@@ -5747,13 +5810,22 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
     if (!armSet.empty() && armSet != "treeprior452" && armSet != "treeprior452k8" && armSet != "cpumatch453"
             && armSet != "mlpprior" && armSet != "finalleaf" && armSet != "mlpsweep" && armSet != "rollout479"
             && armSet != "roottable" && armSet != "widen518" && armSet != "rootregret"
-            && armSet != "uniformpl" && armSet != "priorpl" && armSet != "maxbackup" && !teacherA20)
+            && armSet != "uniformpl" && armSet != "priorpl" && armSet != "maxbackup" && armSet != "leafhead"
+            && !teacherA20)
         throw std::runtime_error("ctm vs silver: STS_CTMSILVER_ARMSET must be treeprior452, treeprior452k8, "
                                  "cpumatch453, mlpprior, finalleaf, mlpsweep, rollout479, roottable, widen518, rootregret, "
-                                 "uniformpl, priorpl, maxbackup or teacher_a20");
+                                 "uniformpl, priorpl, maxbackup, leafhead or teacher_a20");
     if (!armSet.empty() && ctmOnly)
         throw std::runtime_error("ctm vs silver: STS_CTMSILVER_ARMSET needs REPLICATES > 0");
     std::map<std::string, std::unique_ptr<search::CombatValueNet>> priorNets;
+    // leafhead armset: the head arms' value head, its trunk and their settings.
+    search::SilverValueHead leafHead;
+    search::CombatValueNet leafHeadTrunk;
+    search::NativeSilverLeafHeadEnv leafHeadEnv;
+    // leafhead diagnostics (default off): STS_CTMSILVER_FIGHTS replays only these fight indices;
+    // STS_CTMSILVER_LEAFHEAD_TRACE writes every replayed root (ctmLeafHeadTraceRow).
+    std::set<int> onlyFights;
+    std::ofstream leafTrace;
     int hallwayEvery = 1;
     std::vector<int> sweepSims;
     if (sweepArmSet) {
@@ -6055,6 +6127,72 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
             arms.back().rollout.blockRule = {3, true, 4};
             arms.back().maxBackup = 4;
         }
+    } else if (armSet == "leafhead") {
+        // Leaf-value research (../leaf_head_turn_penalty_20261022): base<b> (production search) for every budget in
+        // STS_CTMSILVER_SWEEP_SIMS vs head<b>, whose undecided leaves blend the value head STS_CTMSILVER_LEAF_HEAD
+        // (with _TRUNK, _BLEND and _TURN_PENALTY, read as STS_SILVER_LEAF_HEAD's) with the playout, for every budget
+        // in STS_CTMSILVER_HEAD_SIMS (default: the sweep budgets). Both arms use the root prior, the tree prior
+        // (K = 8) and the ADR-0046 root table under a rollout override that plays production's prior playouts in
+        // boss rooms (ADR-0050/0056), so the source run must play them too. Imagined-fight Silver fallbacks and
+        // STS_SILVER_LEAF_HEAD must be off.
+        const auto env = [](const char *name) { const char *v = std::getenv(name); return std::string(v ? v : ""); };
+        const auto &envRollout = search::SilverSearcher::envRolloutConfig();
+        if (envRollout.uniform != 0 || envRollout.perLeaf != 1 || envRollout.cardTable != search::kSilverRolloutCardTableG6
+                || envRollout.prior || !(envRollout.blockRule == search::SilverRolloutAgent::BlockRule{})
+                || search::SilverSearcher::envMaxBackupMinVisits() != 0 || env("STS_SILVER_ROLLOUT_ROOT_TABLE") == "0"
+                || !search::nativeSilverLeafSettings().leafHead.empty()
+                || !search::nativeSilverLeafSettings().priorPlayoutBossElite
+                || search::nativeSilverLeafSettings().priorPlayoutElite)
+            throw std::runtime_error("ctm vs silver: leafhead requires the production search (STS_SILVER_ROLLOUT_*, "
+                                     "STS_SILVER_MAX_BACKUP and STS_SILVER_LEAF_HEAD unset, root table on, boss-only "
+                                     "prior playouts)");
+        for (const char *name : {"STS_OOC_MCTS_ACT4_SILVER_SIMS", "STS_OOC_MCTS_UNSUPPORTED_SILVER_SIMS",
+                                 "STS_OOC_MCTS_COMBAT_RESOLVER"})
+            if (const std::string v = env(name); !v.empty() && v != "0")
+                throw std::runtime_error(std::string("ctm vs silver: leafhead requires ") + name + " unset or 0");
+        const auto loaded = search::nativeSilverLeafHeadFromEnv("STS_CTMSILVER_LEAF_HEAD", leafHead, leafHeadTrunk);
+        if (!loaded) throw std::runtime_error("ctm vs silver: leafhead requires STS_CTMSILVER_LEAF_HEAD");
+        leafHeadEnv = *loaded;
+        std::stringstream fights(env("STS_CTMSILVER_FIGHTS"));
+        for (std::string item; std::getline(fights, item, ',');) {
+            char *end = nullptr;
+            const long f = std::strtol(item.c_str(), &end, 10);
+            if (item.empty() || *end != '\0' || f < 0 || f > 1000)
+                throw std::runtime_error("ctm vs silver: STS_CTMSILVER_FIGHTS must list fight indices 0..1000");
+            onlyFights.insert(static_cast<int>(f));
+        }
+        if (const std::string path = env("STS_CTMSILVER_LEAFHEAD_TRACE"); !path.empty()) {
+            leafTrace.open(path);
+            if (!leafTrace) throw std::runtime_error("ctm vs silver: cannot open " + path);
+        }
+        const auto budgets = [&](const char *name) {
+            std::vector<int> out;
+            std::stringstream list(env(name));
+            for (std::string item; std::getline(list, item, ',');) {
+                char *end = nullptr;
+                const long b = std::strtol(item.c_str(), &end, 10);
+                if (item.empty() || *end != '\0' || b < 1 || b > 100000
+                        || std::find(out.begin(), out.end(), static_cast<int>(b)) != out.end())
+                    throw std::runtime_error(std::string("ctm vs silver: ") + name
+                                             + " must list distinct budgets 1..100000");
+                out.push_back(static_cast<int>(b));
+            }
+            return out;
+        };
+        sweepSims = budgets("STS_CTMSILVER_SWEEP_SIMS");
+        if (sweepSims.empty()) throw std::runtime_error("ctm vs silver: leafhead requires STS_CTMSILVER_SWEEP_SIMS");
+        std::vector<int> headSims = budgets("STS_CTMSILVER_HEAD_SIMS");
+        if (headSims.empty()) headSims = sweepSims;
+        arms = {{"control", sims, false, false, 1}};
+        for (const int b : sweepSims) {
+            arms.push_back({"base" + std::to_string(b), b, true, true, replicates, 8});
+            arms.back().rollout = envRollout;
+        }
+        for (const int b : headSims) {
+            arms.push_back({"head" + std::to_string(b), b, true, true, replicates, 8});
+            arms.back().rollout = envRollout;
+            arms.back().leafHead = true;
+        }
     } else if (teacherA20) {
         const std::string mlp = env("STS_CTMSILVER_MLP_PRIOR");
         if (mlp.empty() || search::nativeSilverRootPriorWeight() != 400.0)
@@ -6206,6 +6344,13 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
             armSpec[i]["blockRule"] = {{"blockFirstMargin", r.blockFirstMargin},
                                        {"blockLethalCheck", r.blockLethalCheck}, {"blockOffset", r.blockOffset}};
         }
+    if (armSet == "leafhead")
+        for (std::size_t i = 0; i < arms.size(); ++i)
+            armSpec[i]["leafHead"] = !arms[i].leafHead ? nlohmann::json(nullptr) : nlohmann::json{
+                {"path", leafHeadEnv.path}, {"sha256", fileSha256(leafHeadEnv.path)},
+                {"trunk", leafHeadEnv.trunkPath}, {"trunkSha256", fileSha256(leafHeadEnv.trunkPath)},
+                {"blend", leafHeadEnv.blend}, {"turnPenalty", leafHeadEnv.turnPenalty},
+                {"winCap", leafHeadEnv.winCap}};
     for (std::size_t i = 0; i < arms.size(); ++i)
         if (const auto &p = arms[i].params)
             armSpec[i]["searchParams"] = {{"exploration", p->exploration}, {"explorationChance", p->explorationChance},
@@ -6280,6 +6425,7 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                 ++hallwaySkipped;
                 continue;
             }
+            if (!onlyFights.empty() && !onlyFights.count(entry.fightIdx)) continue;
             const auto stateId = "s" + std::to_string(entry.pre->seed) + "-f" + std::to_string(entry.fightIdx);
             if (teacherA20 && !selectedIds.count(stateId)) continue;
             const auto stateCpuStart = vwinThreadCpuNanos();
@@ -6423,9 +6569,18 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                         if (arm.name != "control") leafScope.emplace(arm.finalFightLeaf);
                         std::optional<RolloutScope> rolloutScope;
                         if ((armSet == "rollout479" || armSet == "uniformpl" || armSet == "priorpl"
-                                    || armSet == "maxbackup") && arm.name != "control")
-                            rolloutScope.emplace(arm.rollout);
+                                    || armSet == "maxbackup" || armSet == "leafhead") && arm.name != "control") {
+                            auto rollout = arm.rollout;
+                            // leafhead: production's boss prior playouts (ADR-0050, boss rooms only by ADR-0056).
+                            if (armSet == "leafhead" && entry.roomClass == "BOSS") rollout.prior = true;
+                            rolloutScope.emplace(rollout);
+                        }
                         MaxBackupScope maxBackupScope(arm.maxBackup);
+                        std::optional<LeafHeadScope> leafHeadScope;
+                        if (arm.leafHead)
+                            leafHeadScope.emplace(search::SilverSearcher::LeafHead{
+                                &leafHead, &leafHeadTrunk, leafHeadEnv.blend, leafHeadEnv.turnPenalty,
+                                leafHeadEnv.winCap});
                         RolloutRootTableScope rootTableScope(arm.rootTableModel.empty() ? nullptr
                                                              : priorNets.at(arm.rootTableModel).get());
                         std::optional<SearchParamsScope> paramsScope;
@@ -6433,6 +6588,10 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                         struct ObserverScope {
                             ~ObserverScope() { search::g_nativeSilverRootObserver = nullptr; }
                         } observerScope;
+                        if (leafTrace.is_open())
+                            search::g_nativeSilverRootObserver = [&](const search::NativeSilverRootView &view) {
+                                ctmLeafHeadTraceRow(leafTrace, stateId, arm.name, k, view, leafHead, leafHeadTrunk);
+                            };
                         if (probe.out && arm.name == "base2500") {
                             probe.stateId = stateId; probe.sourceSeed = entry.pre->seed;
                             probe.fightIdx = entry.fightIdx; probe.act = entry.act; probe.floor = entry.floor;
@@ -8275,4 +8434,179 @@ void counterfactualSurrogateAuditGen(int nSeeds,int sims,int asc,const std::stri
     trainingCampaignStart();search::g_richCombatFeatures=true;const auto teacher=loadWholeCombatTeacher(teacherPath,sims);std::ofstream f(outfile);if(!f)throw std::runtime_error("counterfactual surrogate audit: cannot open output");f<<"sourceSeed,decisionIdx,actionIdx,actionBits,action,chosen,screen,decisionAct,decisionFloor,battleAct,battleFloor,battleEncounter,roomClass,teacherId,valid,quarantineReason,"<<combatHeaderStr()<<",won,endHp,startHp,startMaxHp,endMaxHp,endHpFrac\n";long long rows=0;int completed=0;
     for(int s=0;s<nSeeds;++s){const auto r=runCounterfactualSurrogateAuditSeed(seedOffset+s,sims,asc,teacher);rows+=std::count(r.begin(),r.end(),'\n');if(!r.empty())++completed;f<<r;f.flush();}
     std::cout<<"ooccfaudit teacher="<<teacher.id<<" completed="<<completed<<'/'<<nSeeds<<" quarantined="<<nSeeds-completed<<" rows="<<rows<<" -> "<<outfile<<'\n';writeTrainingProvenance(outfile,"ooccfaudit",nSeeds,completed,nSeeds-completed,g_trainingHealthFailures.load(),rows,seedOffset,sims,asc);
+}
+
+// ---- endgamerootgen (research: the exact endgame study, exact_combat_solver --roots) ----
+// Plays whole runs as bestbench does (runFullRunOOC with the process's OOC and
+// Silver settings) and writes, for every elite and boss fight, each Silver root
+// of the fight's last KEEP + 1 turns as one JSON line: the search root as a
+// binary snapshot (the draw pile flattened in its information-set order,
+// drawKnownBottom/drawKnownTop give the known regions back), the fields the
+// snapshot leaves out, Silver's search context and evaluation weights, its root
+// edges and its choice. Observation only: the runs are unchanged.
+namespace {
+
+    std::string endgameHex(const std::vector<std::uint8_t> &bytes) {
+        static const char *digits = "0123456789abcdef";
+        std::string s;
+        s.reserve(bytes.size() * 2);
+        for (auto b : bytes) { s += digits[b >> 4]; s += digits[b & 15]; }
+        return s;
+    }
+
+    nlohmann::json endgameRootState(const BattleContext &root) {
+        BattleContext flat = root;
+        const auto &pile = root.cards.drawPile;
+        if (!pile.isConcrete()) flat.cards.drawPile.assignConcrete(std::vector<CardInstance>(pile.begin(), pile.end()));
+        return {{"state", endgameHex(serializeBattleContext(flat))}, {"drawConcrete", pile.isConcrete()},
+                {"drawKnownBottom", pile.knownBottom()}, {"drawKnownTop", pile.knownTop()},
+                {"extras", {{"energyWasted", root.energyWasted}, {"cardsDrawn", root.cardsDrawn},
+                            {"miscBits", root.miscBits.to_ulong()}, {"smokeBombUsed", root.smokeBombUsed},
+                            {"monsterTurnIdx", root.monsterTurnIdx}, {"endTurnQueued", root.endTurnQueued},
+                            {"turnHasEnded", root.turnHasEnded}, {"skipMonsterTurn", root.skipMonsterTurn},
+                            {"intentsHidden", root.intentsHidden},
+                            {"haveUsedDiscoveryAction", root.haveUsedDiscoveryAction}}}};
+    }
+
+    // Inverse of endgameRootState (exact_combat_solver.cpp has the same decoder).
+    BattleContext endgameRootRestore(const nlohmann::json &j) {
+        const std::string hex = j.at("state");
+        std::vector<std::uint8_t> bytes(hex.size() / 2);
+        for (std::size_t i = 0; i < bytes.size(); ++i) bytes[i] = static_cast<std::uint8_t>(std::stoi(hex.substr(2 * i, 2), nullptr, 16));
+        BattleContext bc = deserializeBattleContext(bytes.data(), bytes.size());
+        const auto &x = j.at("extras");
+        bc.energyWasted = x.at("energyWasted"); bc.cardsDrawn = x.at("cardsDrawn");
+        bc.miscBits = std::bitset<32>(x.at("miscBits").get<unsigned long>());
+        bc.smokeBombUsed = x.at("smokeBombUsed"); bc.monsterTurnIdx = x.at("monsterTurnIdx");
+        bc.endTurnQueued = x.at("endTurnQueued"); bc.turnHasEnded = x.at("turnHasEnded");
+        bc.skipMonsterTurn = x.at("skipMonsterTurn"); bc.intentsHidden = x.at("intentsHidden");
+        bc.haveUsedDiscoveryAction = x.at("haveUsedDiscoveryAction");
+        if (!j.at("drawConcrete").get<bool>()) {
+            const std::vector<CardInstance> all(bc.cards.drawPile.begin(), bc.cards.drawPile.end());
+            const int bottom = j.at("drawKnownBottom"), top = j.at("drawKnownTop");
+            bc.cards.drawPile.assignInformationState(
+                std::vector<CardInstance>(all.begin(), all.begin() + bottom),
+                std::vector<CardInstance>(all.begin() + bottom, all.end() - top),
+                std::vector<CardInstance>(all.end() - top, all.end()));
+        }
+        return bc;
+    }
+
+    std::string endgameActionLabel(const search::Action &a, const BattleContext &bc) {
+        std::ostringstream os;
+        a.printDesc(os, bc);
+        return os.str();
+    }
+
+    nlohmann::json endgameRootRow(const search::NativeSilverRootView &view) {
+        const auto &s = view.searcher;
+        const BattleContext &root = s.rootSearchState();
+        nlohmann::json edges = nlohmann::json::array();
+        for (const auto &e : s.rootNode().edges) {
+            const bool hasQ = e.node && e.node->simulationCount > 0;
+            edges.push_back({e.action.bits, e.visitCount,
+                             hasQ ? nlohmann::json(e.node->evaluationSum / e.node->simulationCount) : nlohmann::json(nullptr),
+                             endgameActionLabel(e.action, root)});
+        }
+        const auto best = s.bestAction();
+        const auto &c = s.searchContext();
+        const auto &w = s.evalWeights;
+        nlohmann::json row = {
+            {"decision", view.decision}, {"turn", root.turn}, {"hp", root.player.curHp}, {"maxHp", root.player.maxHp},
+            {"block", root.player.block}, {"energy", root.player.energy}, {"handSize", root.cards.cardsInHand},
+            {"monstersAlive", root.monsters.monstersAlive}, {"inputState", static_cast<int>(root.inputState)},
+            {"skipped", view.skipped}, {"simulations", view.simulations}, {"inheritedVisits", view.inheritedVisits},
+            {"chosen", best.bits}, {"chosenLabel", endgameActionLabel(best, root)}, {"edges", edges},
+            {"context", {{"act", c.act}, {"actBossRoom", c.actBossRoom}, {"omamoriCharged", c.omamoriCharged},
+                         {"eliteRewards", c.eliteRewards}, {"finalBossBinary", c.finalBossBinary},
+                         {"finalFightLeaf", c.finalFightLeaf}, {"actHealFollows", c.actHealFollows},
+                         {"noLossPotionCredit", c.noLossPotionCredit}, {"relicHealLeaf", c.relicHealLeaf},
+                         {"escapeForfeitsRun", c.escapeForfeitsRun}}},
+            {"weights", {{"winBonus", w.winBonus}, {"potionWeight", w.potionWeight},
+                         {"victoryTurnPenalty", w.victoryTurnPenalty}, {"monsterDamageWeight", w.monsterDamageWeight},
+                         {"aliveWeight", w.aliveWeight}, {"energyWasteWeight", w.energyWasteWeight},
+                         {"drawWeight", w.drawWeight}, {"turnSurvivalWeight", w.turnSurvivalWeight},
+                         {"goldWeight", w.goldWeight}, {"maxHpWeight", w.maxHpWeight},
+                         {"parasitePenalty", w.parasitePenalty}, {"escapePenalty", w.escapePenalty},
+                         {"eliteEscapePenalty", w.eliteEscapePenalty}, {"potionTypeWeightsOn", w.potionTypeWeightsOn},
+                         {"potionTypeWeights", std::vector<double>(w.potionTypeWeights.begin(), w.potionTypeWeights.end())},
+                         {"concaveHpK", w.concaveHpK}}},
+            {"rollout", {{"cardTable", s.rolloutConfig.cardTable
+                              ? nlohmann::json(std::vector<int>(s.rolloutConfig.cardTable, s.rolloutConfig.cardTable + 372 * 2))
+                              : nlohmann::json(nullptr)},
+                         {"zeroCostCap", s.rolloutConfig.zeroCostCap}, {"actionCap", s.rolloutConfig.actionCap},
+                         {"uniform", s.rolloutConfig.uniform}, {"perLeaf", s.rolloutConfig.perLeaf},
+                         {"prior", s.rolloutConfig.prior},
+                         {"blockFirstMargin", s.rolloutConfig.blockRule.blockFirstMargin},
+                         {"blockLethalCheck", s.rolloutConfig.blockRule.blockLethalCheck},
+                         {"blockOffset", s.rolloutConfig.blockRule.blockOffset}}}};
+        try {
+            row.update(endgameRootState(root));
+            const BattleContext back = endgameRootRestore(row);
+            row["roundTrip"] = back.equalForSearch(root) && back.energyWasted == root.energyWasted
+                && back.cardsDrawn == root.cardsDrawn;
+        } catch (const std::exception &e) {
+            row["stateError"] = e.what();
+        }
+        return row;
+    }
+
+}
+
+void endgameRootGen(int nSeeds, int sims, int asc, long long seedOffset, const std::string &outPath, int keepTurns) {
+    std::ofstream out(outPath, std::ios::app);
+    if (!out) throw std::runtime_error("endgamerootgen: cannot open " + outPath);
+    long long written = 0;
+    #pragma omp parallel for schedule(dynamic) reduction(+:written)
+    for (int i = 0; i < nSeeds; ++i) {
+        const std::uint64_t seed = static_cast<std::uint64_t>(seedOffset) + static_cast<std::uint64_t>(i);
+        struct Pending { int floor; MonsterEncounter encounter; int turn; nlohmann::json row; };
+        std::vector<Pending> pending;
+        int fight = 0;
+        long long seedRows = 0;
+        search::g_nativeSilverRootObserver = [&](const search::NativeSilverRootView &view) {
+            if (view.gc.curRoom != Room::ELITE && view.gc.curRoom != Room::BOSS) return;
+            pending.push_back({view.live.floorNum, view.live.encounter, view.live.turn, endgameRootRow(view)});
+        };
+        t_realCombatObserver = [&](const GameContext &pre, const BattleContext &ended, int,
+                                   const std::optional<one_combat::CombatTransitionRecord> &) {
+            ++fight;
+            std::string lines;
+            if (pre.curRoom == Room::ELITE || pre.curRoom == Room::BOSS) {
+                for (auto &p : pending) {
+                    const int toEnd = ended.turn - p.turn;
+                    if (p.floor != pre.floorNum || p.encounter != ended.encounter || toEnd < 0 || toEnd > keepTurns) continue;
+                    p.row["seed"] = seed; p.row["fight"] = fight; p.row["floor"] = pre.floorNum; p.row["act"] = pre.act;
+                    p.row["room"] = pre.curRoom == Room::BOSS ? "BOSS" : "ELITE";
+                    p.row["encounter"] = monsterEncounterEnumNames[static_cast<int>(ended.encounter)];
+                    p.row["endTurn"] = ended.turn; p.row["turnsToEnd"] = toEnd;
+                    p.row["won"] = ended.outcome == Outcome::PLAYER_VICTORY; p.row["endHp"] = ended.player.curHp;
+                    lines += p.row.dump() + '\n';
+                    ++seedRows;
+                }
+            }
+            pending.clear();
+            if (!lines.empty()) {
+                #pragma omp critical(endgame_root_out)
+                { out << lines; out.flush(); }
+            }
+        };
+        const auto t0 = std::chrono::steady_clock::now();
+        nlohmann::json summary = {{"summary", true}, {"seed", seed}};
+        try {
+            const RunResult r = runFullRunOOC(seed, sims, asc, deployedRestV(), true);
+            summary.update({{"won", r.won}, {"floor", r.floor}, {"act", r.act}, {"hpEnd", r.hpEnd},
+                            {"fightsLost", r.fightsLost}});
+        } catch (const std::exception &e) {
+            summary["error"] = e.what();
+        }
+        search::g_nativeSilverRootObserver = nullptr;
+        t_realCombatObserver = nullptr;
+        summary["rows"] = seedRows;
+        summary["sec"] = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+        written += seedRows;
+        #pragma omp critical(endgame_root_out)
+        { out << summary.dump() << '\n'; out.flush(); }
+    }
+    std::cout << "endgamerootgen: " << written << " roots -> " << outPath << '\n';
 }

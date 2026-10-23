@@ -1,0 +1,73 @@
+exact regret per fight (mean ± SE over fights); paired change vs the same config's playout run
+
+== CULTIST
+  prod
+    none            100 fights  regret  0.792 ±0.155   vs none +0.000 ±0.000   optimal 0.969   sims/root   2334.4   fallback None
+    exact           100 fights  regret  0.833 ±0.159   vs none +0.040 ±0.059   optimal 0.967   sims/root   3093.1   fallback 0.0
+    hblend:a20:0.5  100 fights  regret  0.730 ±0.153   vs none -0.063 ±0.041   optimal 0.972   sims/root   3063.6   fallback 0.0
+    hblend:a20:0.5/1  100 fights  regret  0.805 ±0.159   vs none +0.012 ±0.054   optimal 0.970   sims/root   2983.2   fallback 0.0
+    hblend:ct:0.5   100 fights  regret  0.829 ±0.160   vs none +0.037 ±0.048   optimal 0.969   sims/root   2470.1   fallback 0.0
+    head:a20        100 fights  regret  1.021 ±0.230   vs none +0.229 ±0.282   optimal 0.930   sims/root   4082.4   fallback 0.0
+    head:ct         100 fights  regret  0.839 ±0.160   vs none +0.047 ±0.049   optimal 0.967   sims/root   2756.7   fallback 0.0
+  prod@mb=4
+    none            100 fights  regret  0.201 ±0.079   vs none +0.000 ±0.000   optimal 0.990   sims/root   3026.9   fallback None
+    exact           100 fights  regret  0.087 ±0.042   vs none -0.114 ±0.078   optimal 0.991   sims/root   3847.2   fallback 0.0
+    hblend:a20:0.5  100 fights  regret  0.110 ±0.039   vs none -0.091 ±0.077   optimal 0.987   sims/root   3782.3   fallback 0.0
+    hblend:a20:0.5/1  100 fights  regret  0.093 ±0.038   vs none -0.108 ±0.076   optimal 0.991   sims/root   3745.6   fallback 0.0
+    hblend:ct:0.5   100 fights  regret  0.194 ±0.072   vs none -0.007 ±0.064   optimal 0.987   sims/root   3326.4   fallback 0.0
+    head:a20        100 fights  regret  0.738 ±0.168   vs none +0.537 ±0.191   optimal 0.950   sims/root   4958.4   fallback 0.0
+    head:ct         100 fights  regret  0.207 ±0.068   vs none +0.006 ±0.102   optimal 0.985   sims/root   3605.8   fallback 0.0
+
+== JAW_WORM
+  prod
+    none            100 fights  regret  1.298 ±0.119   vs none +0.000 ±0.000   optimal 0.881   sims/root   2809.9   fallback None
+    exact           100 fights  regret  0.535 ±0.108   vs none -0.763 ±0.147   optimal 0.959   sims/root   3480.9   fallback 0.0
+    hblend:a20:0.5  100 fights  regret  0.465 ±0.083   vs none -0.833 ±0.133   optimal 0.951   sims/root   3317.5   fallback 0.0
+    hblend:a20:0.5/1  100 fights  regret  0.608 ±0.090   vs none -0.690 ±0.137   optimal 0.942   sims/root   3368.8   fallback 0.0
+    hblend:ct:0.5   100 fights  regret  1.073 ±0.127   vs none -0.225 ±0.115   optimal 0.910   sims/root   3138.7   fallback 0.0
+    head:a20        100 fights  regret  1.249 ±0.187   vs none -0.049 ±0.227   optimal 0.915   sims/root   3572.8   fallback 0.0
+    head:ct         100 fights  regret  0.413 ±0.087   vs none -0.885 ±0.118   optimal 0.963   sims/root   3587.8   fallback 0.0
+  prod@mb=4
+    none            100 fights  regret  1.058 ±0.099   vs none +0.000 ±0.000   optimal 0.898   sims/root   3727.2   fallback None
+    exact           100 fights  regret  0.189 ±0.043   vs none -0.868 ±0.104   optimal 0.971   sims/root   4680.0   fallback 0.0
+    hblend:a20:0.5  100 fights  regret  0.171 ±0.038   vs none -0.887 ±0.104   optimal 0.970   sims/root   4679.8   fallback 0.0
+    hblend:a20:0.5/1  100 fights  regret  0.353 ±0.062   vs none -0.705 ±0.105   optimal 0.966   sims/root   4519.8   fallback 0.0
+    hblend:ct:0.5   100 fights  regret  0.821 ±0.091   vs none -0.237 ±0.077   optimal 0.919   sims/root   4292.7   fallback 0.0
+    head:a20        100 fights  regret  2.814 ±1.444   vs none +1.756 ±1.443   optimal 0.905   sims/root   4892.7   fallback 0.0
+    head:ct         100 fights  regret  0.181 ±0.046   vs none -0.876 ±0.102   optimal 0.975   sims/root   4438.8   fallback 0.0
+
+== TWO_LOUSE
+  prod
+    none            100 fights  regret  0.279 ±0.053   vs none +0.000 ±0.000   optimal 0.945   sims/root   4155.2   fallback None
+    exact           100 fights  regret  0.198 ±0.040   vs none -0.081 ±0.049   optimal 0.951   sims/root   4613.4   fallback 0.0
+    hblend:a20:0.5  100 fights  regret  0.204 ±0.041   vs none -0.075 ±0.049   optimal 0.947   sims/root   4588.7   fallback 0.0
+    hblend:a20:0.5/1  100 fights  regret  0.202 ±0.041   vs none -0.076 ±0.048   optimal 0.949   sims/root   4626.2   fallback 0.0
+    hblend:ct:0.5   100 fights  regret  0.258 ±0.045   vs none -0.021 ±0.046   optimal 0.939   sims/root   4295.7   fallback 0.0
+    head:a20        100 fights  regret 14.952 ±3.787   vs none +14.674 ±3.794   optimal 0.807   sims/root   4728.2   fallback 0.0
+    head:ct         100 fights  regret  0.210 ±0.040   vs none -0.069 ±0.053   optimal 0.950   sims/root   4580.5   fallback 0.0
+  prod@mb=4
+    none            100 fights  regret  0.108 ±0.031   vs none +0.000 ±0.000   optimal 0.966   sims/root   6078.3   fallback None
+    exact           100 fights  regret  0.025 ±0.011   vs none -0.083 ±0.030   optimal 0.984   sims/root   6285.0   fallback 0.0
+    hblend:a20:0.5  100 fights  regret  1.438 ±1.082   vs none +1.330 ±1.083   optimal 0.888   sims/root   6451.1   fallback 0.0
+    hblend:a20:0.5/1  100 fights  regret  0.070 ±0.017   vs none -0.038 ±0.029   optimal 0.971   sims/root   6296.8   fallback 0.0
+    hblend:ct:0.5   100 fights  regret  0.140 ±0.040   vs none +0.032 ±0.028   optimal 0.961   sims/root   6155.5   fallback 0.0
+    head:a20        100 fights  regret 58.115 ±15.166   vs none +58.007 ±15.167   optimal 0.583   sims/root   5331.8   fallback 0.0
+    head:ct         100 fights  regret  0.226 ±0.040   vs none +0.118 ±0.049   optimal 0.933   sims/root   6309.9   fallback 0.0
+
+== all
+  prod
+    none            300 fights  regret  0.790 ±0.071   vs none +0.000 ±0.000   optimal 0.931   sims/root   3078.4   fallback None
+    exact           300 fights  regret  0.522 ±0.067   vs none -0.268 ±0.059   optimal 0.959   sims/root   3694.2   fallback 0.0
+    hblend:a20:0.5  300 fights  regret  0.466 ±0.061   vs none -0.324 ±0.053   optimal 0.956   sims/root   3612.6   fallback 0.0
+    hblend:a20:0.5/1  300 fights  regret  0.538 ±0.064   vs none -0.251 ±0.054   optimal 0.952   sims/root   3623.3   fallback 0.0
+    hblend:ct:0.5   300 fights  regret  0.720 ±0.072   vs none -0.070 ±0.045   optimal 0.938   sims/root   3281.0   fallback 0.0
+    head:a20        300 fights  regret  5.741 ±1.317   vs none +4.951 ±1.327   optimal 0.883   sims/root   4086.2   fallback 0.0
+    head:ct         300 fights  regret  0.487 ±0.064   vs none -0.302 ±0.052   optimal 0.960   sims/root   3634.4   fallback 0.0
+  prod@mb=4
+    none            300 fights  regret  0.456 ±0.050   vs none +0.000 ±0.000   optimal 0.951   sims/root   4247.5   fallback None
+    exact           300 fights  regret  0.100 ±0.021   vs none -0.355 ±0.049   optimal 0.981   sims/root   4905.0   fallback 0.0
+    hblend:a20:0.5  300 fights  regret  0.573 ±0.361   vs none +0.118 ±0.366   optimal 0.947   sims/root   5033.2   fallback 0.0
+    hblend:a20:0.5/1  300 fights  regret  0.172 ±0.026   vs none -0.283 ±0.048   optimal 0.975   sims/root   4813.2   fallback 0.0
+    hblend:ct:0.5   300 fights  regret  0.385 ±0.044   vs none -0.071 ±0.035   optimal 0.955   sims/root   4571.0   fallback 0.0
+    head:a20        300 fights  regret 20.556 ±5.290   vs none +20.100 ±5.294   optimal 0.762   sims/root   5113.5   fallback 0.0
+    head:ct         300 fights  regret  0.205 ±0.030   vs none -0.251 ±0.057   optimal 0.965   sims/root   4784.6   fallback 0.0

@@ -1,0 +1,2242 @@
+{
+ "CULTIST|flatprior:2500|none": {
+  "fights": 50,
+  "regretPerFight": 0.6963,
+  "se": 0.1887,
+  "pairedVsNone": 0.0,
+  "pairedSe": 0.0,
+  "optimalRootShare": 0.9653,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": null
+ },
+ "CULTIST|flatprior:2500|exact": {
+  "fights": 50,
+  "regretPerFight": 0.269,
+  "se": 0.0964,
+  "pairedVsNone": -0.4273,
+  "pairedSe": 0.1761,
+  "optimalRootShare": 0.9795,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|flatprior:2500|exact@1": {
+  "fights": 50,
+  "regretPerFight": 0.2711,
+  "se": 0.0841,
+  "pairedVsNone": -0.4252,
+  "pairedSe": 0.182,
+  "optimalRootShare": 0.9751,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|flatprior:2500|exact@2": {
+  "fights": 50,
+  "regretPerFight": 0.3795,
+  "se": 0.1288,
+  "pairedVsNone": -0.3169,
+  "pairedSe": 0.1573,
+  "optimalRootShare": 0.9751,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|flatprior:2500|exact@4": {
+  "fights": 50,
+  "regretPerFight": 0.4996,
+  "se": 0.144,
+  "pairedVsNone": -0.1967,
+  "pairedSe": 0.137,
+  "optimalRootShare": 0.9681,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|flatprior:2500|turn": {
+  "fights": 50,
+  "regretPerFight": 0.6963,
+  "se": 0.1887,
+  "pairedVsNone": 0.0,
+  "pairedSe": 0.0286,
+  "optimalRootShare": 0.9651,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|flatprior:2500|turnstart": {
+  "fights": 50,
+  "regretPerFight": 0.7162,
+  "se": 0.1835,
+  "pairedVsNone": 0.0199,
+  "pairedSe": 0.0654,
+  "optimalRootShare": 0.9607,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|flatprior:2500|turnstart@1": {
+  "fights": 50,
+  "regretPerFight": 0.5626,
+  "se": 0.1645,
+  "pairedVsNone": -0.1337,
+  "pairedSe": 0.1033,
+  "optimalRootShare": 0.9677,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|flatprior:2500|turnstart@2": {
+  "fights": 50,
+  "regretPerFight": 0.6127,
+  "se": 0.1825,
+  "pairedVsNone": -0.0836,
+  "pairedSe": 0.0663,
+  "optimalRootShare": 0.9701,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|flatprior:2500|turnstart@4": {
+  "fights": 50,
+  "regretPerFight": 0.5371,
+  "se": 0.1572,
+  "pairedVsNone": -0.1592,
+  "pairedSe": 0.1208,
+  "optimalRootShare": 0.9658,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|flatprior:2500|blend:0.5": {
+  "fights": 50,
+  "regretPerFight": 0.6527,
+  "se": 0.1819,
+  "pairedVsNone": -0.0436,
+  "pairedSe": 0.0521,
+  "optimalRootShare": 0.9655,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|flatprior:2500|hblend:ct:0.5": {
+  "fights": 50,
+  "regretPerFight": 0.7163,
+  "se": 0.1883,
+  "pairedVsNone": 0.02,
+  "pairedSe": 0.02,
+  "optimalRootShare": 0.963,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|flatprior:2500|head:ct": {
+  "fights": 50,
+  "regretPerFight": 0.6727,
+  "se": 0.1816,
+  "pairedVsNone": -0.0236,
+  "pairedSe": 0.0484,
+  "optimalRootShare": 0.9631,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|prod|none": {
+  "fights": 50,
+  "regretPerFight": 0.6394,
+  "se": 0.1899,
+  "pairedVsNone": 0.0,
+  "pairedSe": 0.0,
+  "optimalRootShare": 0.9719,
+  "meanSimsPerRoot": 2183.3,
+  "fallbackShare": null
+ },
+ "CULTIST|prod|exact": {
+  "fights": 50,
+  "regretPerFight": 0.5623,
+  "se": 0.1771,
+  "pairedVsNone": -0.0771,
+  "pairedSe": 0.0975,
+  "optimalRootShare": 0.9725,
+  "meanSimsPerRoot": 2894.7,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|prod|exact@1": {
+  "fights": 50,
+  "regretPerFight": 0.5423,
+  "se": 0.1772,
+  "pairedVsNone": -0.0971,
+  "pairedSe": 0.095,
+  "optimalRootShare": 0.9748,
+  "meanSimsPerRoot": 2837.2,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|prod|exact@2": {
+  "fights": 50,
+  "regretPerFight": 0.6638,
+  "se": 0.1896,
+  "pairedVsNone": 0.0244,
+  "pairedSe": 0.0408,
+  "optimalRootShare": 0.97,
+  "meanSimsPerRoot": 2876.2,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|prod|exact@4": {
+  "fights": 50,
+  "regretPerFight": 0.6402,
+  "se": 0.1824,
+  "pairedVsNone": 0.0008,
+  "pairedSe": 0.0635,
+  "optimalRootShare": 0.968,
+  "meanSimsPerRoot": 2823.8,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|prod|turn": {
+  "fights": 50,
+  "regretPerFight": 0.6763,
+  "se": 0.1891,
+  "pairedVsNone": 0.037,
+  "pairedSe": 0.0386,
+  "optimalRootShare": 0.9674,
+  "meanSimsPerRoot": 2307.0,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|prod|turnstart": {
+  "fights": 50,
+  "regretPerFight": 0.6127,
+  "se": 0.1825,
+  "pairedVsNone": -0.0267,
+  "pairedSe": 0.0751,
+  "optimalRootShare": 0.97,
+  "meanSimsPerRoot": 2736.1,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|prod|turnstart@1": {
+  "fights": 50,
+  "regretPerFight": 0.6838,
+  "se": 0.1892,
+  "pairedVsNone": 0.0444,
+  "pairedSe": 0.0452,
+  "optimalRootShare": 0.9674,
+  "meanSimsPerRoot": 2655.2,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|prod|turnstart@2": {
+  "fights": 50,
+  "regretPerFight": 0.6838,
+  "se": 0.1892,
+  "pairedVsNone": 0.0444,
+  "pairedSe": 0.0452,
+  "optimalRootShare": 0.9674,
+  "meanSimsPerRoot": 2711.6,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|prod|turnstart@4": {
+  "fights": 50,
+  "regretPerFight": 0.5423,
+  "se": 0.1772,
+  "pairedVsNone": -0.0971,
+  "pairedSe": 0.095,
+  "optimalRootShare": 0.9749,
+  "meanSimsPerRoot": 2717.5,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|prod|blend:0.5": {
+  "fights": 50,
+  "regretPerFight": 0.6763,
+  "se": 0.1891,
+  "pairedVsNone": 0.037,
+  "pairedSe": 0.0386,
+  "optimalRootShare": 0.9675,
+  "meanSimsPerRoot": 2500.6,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|prod|hblend:a20:0.5": {
+  "fights": 50,
+  "regretPerFight": 0.5748,
+  "se": 0.1767,
+  "pairedVsNone": -0.0645,
+  "pairedSe": 0.0824,
+  "optimalRootShare": 0.9703,
+  "meanSimsPerRoot": 2897.6,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|prod|hblend:ct:0.5": {
+  "fights": 50,
+  "regretPerFight": 0.6327,
+  "se": 0.1823,
+  "pairedVsNone": -0.0067,
+  "pairedSe": 0.0724,
+  "optimalRootShare": 0.9679,
+  "meanSimsPerRoot": 2455.3,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|prod|head:a20": {
+  "fights": 50,
+  "regretPerFight": 0.7598,
+  "se": 0.1508,
+  "pairedVsNone": 0.1205,
+  "pairedSe": 0.2217,
+  "optimalRootShare": 0.9481,
+  "meanSimsPerRoot": 3941.0,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|prod|head:ct": {
+  "fights": 50,
+  "regretPerFight": 0.6385,
+  "se": 0.1838,
+  "pairedVsNone": -0.0009,
+  "pairedSe": 0.0731,
+  "optimalRootShare": 0.9678,
+  "meanSimsPerRoot": 2573.6,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|flatprior:2500@mb=4|none": {
+  "fights": 50,
+  "regretPerFight": 0.1711,
+  "se": 0.077,
+  "pairedVsNone": 0.0,
+  "pairedSe": 0.0,
+  "optimalRootShare": 0.9867,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": null
+ },
+ "CULTIST|flatprior:2500@mb=4|exact": {
+  "fights": 50,
+  "regretPerFight": 0.1248,
+  "se": 0.0554,
+  "pairedVsNone": -0.0463,
+  "pairedSe": 0.0708,
+  "optimalRootShare": 0.9891,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|flatprior:2500@mb=4|exact@1": {
+  "fights": 50,
+  "regretPerFight": 0.1019,
+  "se": 0.0461,
+  "pairedVsNone": -0.0693,
+  "pairedSe": 0.0757,
+  "optimalRootShare": 0.9889,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|flatprior:2500@mb=4|exact@2": {
+  "fights": 50,
+  "regretPerFight": 0.1048,
+  "se": 0.0525,
+  "pairedVsNone": -0.0663,
+  "pairedSe": 0.0675,
+  "optimalRootShare": 0.9911,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|flatprior:2500@mb=4|exact@4": {
+  "fights": 50,
+  "regretPerFight": 0.1303,
+  "se": 0.0718,
+  "pairedVsNone": -0.0408,
+  "pairedSe": 0.0437,
+  "optimalRootShare": 0.989,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|flatprior:2500@mb=4|turn": {
+  "fights": 50,
+  "regretPerFight": 0.2838,
+  "se": 0.117,
+  "pairedVsNone": 0.1127,
+  "pairedSe": 0.0924,
+  "optimalRootShare": 0.9819,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|flatprior:2500@mb=4|turnstart": {
+  "fights": 50,
+  "regretPerFight": 0.1882,
+  "se": 0.0759,
+  "pairedVsNone": 0.0171,
+  "pairedSe": 0.0717,
+  "optimalRootShare": 0.9846,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|flatprior:2500@mb=4|turnstart@1": {
+  "fights": 50,
+  "regretPerFight": 0.2006,
+  "se": 0.0795,
+  "pairedVsNone": 0.0295,
+  "pairedSe": 0.0605,
+  "optimalRootShare": 0.9843,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|flatprior:2500@mb=4|turnstart@2": {
+  "fights": 50,
+  "regretPerFight": 0.1409,
+  "se": 0.0557,
+  "pairedVsNone": -0.0302,
+  "pairedSe": 0.0854,
+  "optimalRootShare": 0.987,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|flatprior:2500@mb=4|turnstart@4": {
+  "fights": 50,
+  "regretPerFight": 0.2258,
+  "se": 0.0671,
+  "pairedVsNone": 0.0547,
+  "pairedSe": 0.0827,
+  "optimalRootShare": 0.9779,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|flatprior:2500@mb=4|blend:0.5": {
+  "fights": 50,
+  "regretPerFight": 0.0942,
+  "se": 0.0491,
+  "pairedVsNone": -0.0769,
+  "pairedSe": 0.0618,
+  "optimalRootShare": 0.9911,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|flatprior:2500@mb=4|hblend:ct:0.5": {
+  "fights": 50,
+  "regretPerFight": 0.1739,
+  "se": 0.0776,
+  "pairedVsNone": 0.0028,
+  "pairedSe": 0.0266,
+  "optimalRootShare": 0.9865,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|flatprior:2500@mb=4|head:ct": {
+  "fights": 50,
+  "regretPerFight": 0.217,
+  "se": 0.0813,
+  "pairedVsNone": 0.0458,
+  "pairedSe": 0.0386,
+  "optimalRootShare": 0.9801,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|prod@mb=4|none": {
+  "fights": 50,
+  "regretPerFight": 0.1542,
+  "se": 0.0758,
+  "pairedVsNone": 0.0,
+  "pairedSe": 0.0,
+  "optimalRootShare": 0.9886,
+  "meanSimsPerRoot": 2815.5,
+  "fallbackShare": null
+ },
+ "CULTIST|prod@mb=4|exact": {
+  "fights": 50,
+  "regretPerFight": 0.0989,
+  "se": 0.0504,
+  "pairedVsNone": -0.0553,
+  "pairedSe": 0.0634,
+  "optimalRootShare": 0.991,
+  "meanSimsPerRoot": 3664.6,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|prod@mb=4|exact@1": {
+  "fights": 50,
+  "regretPerFight": 0.1017,
+  "se": 0.0513,
+  "pairedVsNone": -0.0525,
+  "pairedSe": 0.0689,
+  "optimalRootShare": 0.9912,
+  "meanSimsPerRoot": 3699.9,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|prod@mb=4|exact@2": {
+  "fights": 50,
+  "regretPerFight": 0.1069,
+  "se": 0.0534,
+  "pairedVsNone": -0.0473,
+  "pairedSe": 0.0641,
+  "optimalRootShare": 0.9911,
+  "meanSimsPerRoot": 3744.4,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|prod@mb=4|exact@4": {
+  "fights": 50,
+  "regretPerFight": 0.0988,
+  "se": 0.0505,
+  "pairedVsNone": -0.0553,
+  "pairedSe": 0.0682,
+  "optimalRootShare": 0.9912,
+  "meanSimsPerRoot": 3722.6,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|prod@mb=4|turn": {
+  "fights": 50,
+  "regretPerFight": 0.1711,
+  "se": 0.077,
+  "pairedVsNone": 0.017,
+  "pairedSe": 0.017,
+  "optimalRootShare": 0.9864,
+  "meanSimsPerRoot": 3188.6,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|prod@mb=4|turnstart": {
+  "fights": 50,
+  "regretPerFight": 0.0648,
+  "se": 0.0453,
+  "pairedVsNone": -0.0894,
+  "pairedSe": 0.0627,
+  "optimalRootShare": 0.9956,
+  "meanSimsPerRoot": 3434.3,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|prod@mb=4|turnstart@1": {
+  "fights": 50,
+  "regretPerFight": 0.0989,
+  "se": 0.0504,
+  "pairedVsNone": -0.0553,
+  "pairedSe": 0.0634,
+  "optimalRootShare": 0.9911,
+  "meanSimsPerRoot": 3365.5,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|prod@mb=4|turnstart@2": {
+  "fights": 50,
+  "regretPerFight": 0.1142,
+  "se": 0.0523,
+  "pairedVsNone": -0.0399,
+  "pairedSe": 0.0679,
+  "optimalRootShare": 0.9888,
+  "meanSimsPerRoot": 3524.0,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|prod@mb=4|turnstart@4": {
+  "fights": 50,
+  "regretPerFight": 0.1904,
+  "se": 0.0713,
+  "pairedVsNone": 0.0362,
+  "pairedSe": 0.0829,
+  "optimalRootShare": 0.9845,
+  "meanSimsPerRoot": 3571.9,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|prod@mb=4|blend:0.5": {
+  "fights": 50,
+  "regretPerFight": 0.1145,
+  "se": 0.0524,
+  "pairedVsNone": -0.0397,
+  "pairedSe": 0.0633,
+  "optimalRootShare": 0.9889,
+  "meanSimsPerRoot": 3198.6,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|prod@mb=4|hblend:a20:0.5": {
+  "fights": 50,
+  "regretPerFight": 0.171,
+  "se": 0.0771,
+  "pairedVsNone": 0.0169,
+  "pairedSe": 0.0301,
+  "optimalRootShare": 0.9866,
+  "meanSimsPerRoot": 3866.1,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|prod@mb=4|hblend:ct:0.5": {
+  "fights": 50,
+  "regretPerFight": 0.1939,
+  "se": 0.0792,
+  "pairedVsNone": 0.0398,
+  "pairedSe": 0.0371,
+  "optimalRootShare": 0.9845,
+  "meanSimsPerRoot": 3216.7,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|prod@mb=4|head:a20": {
+  "fights": 50,
+  "regretPerFight": 0.4832,
+  "se": 0.1059,
+  "pairedVsNone": 0.329,
+  "pairedSe": 0.1371,
+  "optimalRootShare": 0.9603,
+  "meanSimsPerRoot": 4796.0,
+  "fallbackShare": 0.0
+ },
+ "CULTIST|prod@mb=4|head:ct": {
+  "fights": 50,
+  "regretPerFight": 0.137,
+  "se": 0.0745,
+  "pairedVsNone": -0.0172,
+  "pairedSe": 0.0172,
+  "optimalRootShare": 0.991,
+  "meanSimsPerRoot": 3336.1,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|flatprior:2500|none": {
+  "fights": 50,
+  "regretPerFight": 1.5004,
+  "se": 0.1563,
+  "pairedVsNone": 0.0,
+  "pairedSe": 0.0,
+  "optimalRootShare": 0.8668,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": null
+ },
+ "JAW_WORM|flatprior:2500|exact": {
+  "fights": 50,
+  "regretPerFight": 0.7372,
+  "se": 0.1441,
+  "pairedVsNone": -0.7632,
+  "pairedSe": 0.2036,
+  "optimalRootShare": 0.9481,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|flatprior:2500|exact@1": {
+  "fights": 50,
+  "regretPerFight": 0.6537,
+  "se": 0.1408,
+  "pairedVsNone": -0.8467,
+  "pairedSe": 0.2028,
+  "optimalRootShare": 0.9472,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|flatprior:2500|exact@2": {
+  "fights": 50,
+  "regretPerFight": 0.6898,
+  "se": 0.1378,
+  "pairedVsNone": -0.8106,
+  "pairedSe": 0.2003,
+  "optimalRootShare": 0.9448,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|flatprior:2500|exact@4": {
+  "fights": 50,
+  "regretPerFight": 0.7219,
+  "se": 0.1497,
+  "pairedVsNone": -0.7785,
+  "pairedSe": 0.1915,
+  "optimalRootShare": 0.9462,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|flatprior:2500|turn": {
+  "fights": 50,
+  "regretPerFight": 0.996,
+  "se": 0.1687,
+  "pairedVsNone": -0.5044,
+  "pairedSe": 0.1888,
+  "optimalRootShare": 0.9341,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|flatprior:2500|turnstart": {
+  "fights": 50,
+  "regretPerFight": 0.9796,
+  "se": 0.1632,
+  "pairedVsNone": -0.5208,
+  "pairedSe": 0.208,
+  "optimalRootShare": 0.9343,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|flatprior:2500|turnstart@1": {
+  "fights": 50,
+  "regretPerFight": 0.9516,
+  "se": 0.1789,
+  "pairedVsNone": -0.5488,
+  "pairedSe": 0.2022,
+  "optimalRootShare": 0.9369,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|flatprior:2500|turnstart@2": {
+  "fights": 50,
+  "regretPerFight": 0.8436,
+  "se": 0.1676,
+  "pairedVsNone": -0.6568,
+  "pairedSe": 0.2045,
+  "optimalRootShare": 0.9454,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|flatprior:2500|turnstart@4": {
+  "fights": 50,
+  "regretPerFight": 0.804,
+  "se": 0.1633,
+  "pairedVsNone": -0.6963,
+  "pairedSe": 0.1918,
+  "optimalRootShare": 0.9483,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|flatprior:2500|blend:0.5": {
+  "fights": 50,
+  "regretPerFight": 1.4059,
+  "se": 0.1799,
+  "pairedVsNone": -0.0945,
+  "pairedSe": 0.1569,
+  "optimalRootShare": 0.8922,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|flatprior:2500|hblend:ct:0.5": {
+  "fights": 50,
+  "regretPerFight": 1.3393,
+  "se": 0.1803,
+  "pairedVsNone": -0.1611,
+  "pairedSe": 0.1622,
+  "optimalRootShare": 0.9,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|flatprior:2500|head:ct": {
+  "fights": 50,
+  "regretPerFight": 0.7795,
+  "se": 0.1767,
+  "pairedVsNone": -0.7209,
+  "pairedSe": 0.2354,
+  "optimalRootShare": 0.9475,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|prod|none": {
+  "fights": 50,
+  "regretPerFight": 1.4966,
+  "se": 0.1746,
+  "pairedVsNone": 0.0,
+  "pairedSe": 0.0,
+  "optimalRootShare": 0.8691,
+  "meanSimsPerRoot": 3009.6,
+  "fallbackShare": null
+ },
+ "JAW_WORM|prod|exact": {
+  "fights": 50,
+  "regretPerFight": 0.8605,
+  "se": 0.1749,
+  "pairedVsNone": -0.6361,
+  "pairedSe": 0.2086,
+  "optimalRootShare": 0.9489,
+  "meanSimsPerRoot": 3602.6,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|prod|exact@1": {
+  "fights": 50,
+  "regretPerFight": 0.8005,
+  "se": 0.1587,
+  "pairedVsNone": -0.6961,
+  "pairedSe": 0.1996,
+  "optimalRootShare": 0.9442,
+  "meanSimsPerRoot": 3598.1,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|prod|exact@2": {
+  "fights": 50,
+  "regretPerFight": 0.6884,
+  "se": 0.142,
+  "pairedVsNone": -0.8082,
+  "pairedSe": 0.209,
+  "optimalRootShare": 0.9497,
+  "meanSimsPerRoot": 3495.0,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|prod|exact@4": {
+  "fights": 50,
+  "regretPerFight": 0.9313,
+  "se": 0.163,
+  "pairedVsNone": -0.5653,
+  "pairedSe": 0.2183,
+  "optimalRootShare": 0.9392,
+  "meanSimsPerRoot": 3700.6,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|prod|turn": {
+  "fights": 50,
+  "regretPerFight": 1.1154,
+  "se": 0.185,
+  "pairedVsNone": -0.3813,
+  "pairedSe": 0.2007,
+  "optimalRootShare": 0.9322,
+  "meanSimsPerRoot": 3418.5,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|prod|turnstart": {
+  "fights": 50,
+  "regretPerFight": 1.0444,
+  "se": 0.1717,
+  "pairedVsNone": -0.4522,
+  "pairedSe": 0.2225,
+  "optimalRootShare": 0.9229,
+  "meanSimsPerRoot": 3688.7,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|prod|turnstart@1": {
+  "fights": 50,
+  "regretPerFight": 0.9584,
+  "se": 0.1616,
+  "pairedVsNone": -0.5382,
+  "pairedSe": 0.2137,
+  "optimalRootShare": 0.9337,
+  "meanSimsPerRoot": 3833.8,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|prod|turnstart@2": {
+  "fights": 50,
+  "regretPerFight": 1.0552,
+  "se": 0.169,
+  "pairedVsNone": -0.4414,
+  "pairedSe": 0.1937,
+  "optimalRootShare": 0.9284,
+  "meanSimsPerRoot": 3611.3,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|prod|turnstart@4": {
+  "fights": 50,
+  "regretPerFight": 0.8886,
+  "se": 0.1616,
+  "pairedVsNone": -0.608,
+  "pairedSe": 0.2083,
+  "optimalRootShare": 0.9341,
+  "meanSimsPerRoot": 3399.9,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|prod|blend:0.5": {
+  "fights": 50,
+  "regretPerFight": 1.3109,
+  "se": 0.1684,
+  "pairedVsNone": -0.1857,
+  "pairedSe": 0.1789,
+  "optimalRootShare": 0.8987,
+  "meanSimsPerRoot": 3456.9,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|prod|hblend:a20:0.5": {
+  "fights": 50,
+  "regretPerFight": 0.4779,
+  "se": 0.1036,
+  "pairedVsNone": -1.0187,
+  "pairedSe": 0.1973,
+  "optimalRootShare": 0.9531,
+  "meanSimsPerRoot": 3426.7,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|prod|hblend:ct:0.5": {
+  "fights": 50,
+  "regretPerFight": 1.3378,
+  "se": 0.1852,
+  "pairedVsNone": -0.1588,
+  "pairedSe": 0.1449,
+  "optimalRootShare": 0.9004,
+  "meanSimsPerRoot": 3321.5,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|prod|head:a20": {
+  "fights": 50,
+  "regretPerFight": 1.1227,
+  "se": 0.2536,
+  "pairedVsNone": -0.3739,
+  "pairedSe": 0.2891,
+  "optimalRootShare": 0.9249,
+  "meanSimsPerRoot": 3658.0,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|prod|head:ct": {
+  "fights": 50,
+  "regretPerFight": 1.0091,
+  "se": 0.1929,
+  "pairedVsNone": -0.4876,
+  "pairedSe": 0.2474,
+  "optimalRootShare": 0.938,
+  "meanSimsPerRoot": 3683.0,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|flatprior:2500@mb=4|none": {
+  "fights": 50,
+  "regretPerFight": 1.2206,
+  "se": 0.1566,
+  "pairedVsNone": 0.0,
+  "pairedSe": 0.0,
+  "optimalRootShare": 0.8847,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": null
+ },
+ "JAW_WORM|flatprior:2500@mb=4|exact": {
+  "fights": 50,
+  "regretPerFight": 0.379,
+  "se": 0.0857,
+  "pairedVsNone": -0.8416,
+  "pairedSe": 0.1505,
+  "optimalRootShare": 0.9528,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|flatprior:2500@mb=4|exact@1": {
+  "fights": 50,
+  "regretPerFight": 0.3492,
+  "se": 0.0897,
+  "pairedVsNone": -0.8714,
+  "pairedSe": 0.1554,
+  "optimalRootShare": 0.9523,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|flatprior:2500@mb=4|exact@2": {
+  "fights": 50,
+  "regretPerFight": 0.2828,
+  "se": 0.0734,
+  "pairedVsNone": -0.9378,
+  "pairedSe": 0.1543,
+  "optimalRootShare": 0.9592,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|flatprior:2500@mb=4|exact@4": {
+  "fights": 50,
+  "regretPerFight": 0.2897,
+  "se": 0.0809,
+  "pairedVsNone": -0.9309,
+  "pairedSe": 0.1528,
+  "optimalRootShare": 0.9628,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|flatprior:2500@mb=4|turn": {
+  "fights": 50,
+  "regretPerFight": 0.5967,
+  "se": 0.109,
+  "pairedVsNone": -0.6239,
+  "pairedSe": 0.1683,
+  "optimalRootShare": 0.9413,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|flatprior:2500@mb=4|turnstart": {
+  "fights": 50,
+  "regretPerFight": 0.6392,
+  "se": 0.1159,
+  "pairedVsNone": -0.5814,
+  "pairedSe": 0.1428,
+  "optimalRootShare": 0.9423,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|flatprior:2500@mb=4|turnstart@1": {
+  "fights": 50,
+  "regretPerFight": 0.6644,
+  "se": 0.1121,
+  "pairedVsNone": -0.5562,
+  "pairedSe": 0.1617,
+  "optimalRootShare": 0.9376,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|flatprior:2500@mb=4|turnstart@2": {
+  "fights": 50,
+  "regretPerFight": 0.5597,
+  "se": 0.1055,
+  "pairedVsNone": -0.6609,
+  "pairedSe": 0.1602,
+  "optimalRootShare": 0.9484,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|flatprior:2500@mb=4|turnstart@4": {
+  "fights": 50,
+  "regretPerFight": 0.5147,
+  "se": 0.1098,
+  "pairedVsNone": -0.7059,
+  "pairedSe": 0.1641,
+  "optimalRootShare": 0.9488,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|flatprior:2500@mb=4|blend:0.5": {
+  "fights": 50,
+  "regretPerFight": 0.8669,
+  "se": 0.1403,
+  "pairedVsNone": -0.3537,
+  "pairedSe": 0.1314,
+  "optimalRootShare": 0.9225,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|flatprior:2500@mb=4|hblend:ct:0.5": {
+  "fights": 50,
+  "regretPerFight": 0.9712,
+  "se": 0.142,
+  "pairedVsNone": -0.2494,
+  "pairedSe": 0.1062,
+  "optimalRootShare": 0.905,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|flatprior:2500@mb=4|head:ct": {
+  "fights": 50,
+  "regretPerFight": 0.4199,
+  "se": 0.1029,
+  "pairedVsNone": -0.8007,
+  "pairedSe": 0.1609,
+  "optimalRootShare": 0.9616,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|prod@mb=4|none": {
+  "fights": 50,
+  "regretPerFight": 1.1597,
+  "se": 0.1419,
+  "pairedVsNone": 0.0,
+  "pairedSe": 0.0,
+  "optimalRootShare": 0.8874,
+  "meanSimsPerRoot": 3792.7,
+  "fallbackShare": null
+ },
+ "JAW_WORM|prod@mb=4|exact": {
+  "fights": 50,
+  "regretPerFight": 0.2736,
+  "se": 0.0786,
+  "pairedVsNone": -0.886,
+  "pairedSe": 0.1426,
+  "optimalRootShare": 0.963,
+  "meanSimsPerRoot": 4752.9,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|prod@mb=4|exact@1": {
+  "fights": 50,
+  "regretPerFight": 0.3508,
+  "se": 0.0843,
+  "pairedVsNone": -0.8088,
+  "pairedSe": 0.1584,
+  "optimalRootShare": 0.9696,
+  "meanSimsPerRoot": 4963.7,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|prod@mb=4|exact@2": {
+  "fights": 50,
+  "regretPerFight": 0.3799,
+  "se": 0.0885,
+  "pairedVsNone": -0.7798,
+  "pairedSe": 0.1478,
+  "optimalRootShare": 0.9552,
+  "meanSimsPerRoot": 4824.6,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|prod@mb=4|exact@4": {
+  "fights": 50,
+  "regretPerFight": 0.2147,
+  "se": 0.066,
+  "pairedVsNone": -0.9449,
+  "pairedSe": 0.1442,
+  "optimalRootShare": 0.9643,
+  "meanSimsPerRoot": 4929.8,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|prod@mb=4|turn": {
+  "fights": 50,
+  "regretPerFight": 0.4691,
+  "se": 0.0972,
+  "pairedVsNone": -0.6905,
+  "pairedSe": 0.1398,
+  "optimalRootShare": 0.9558,
+  "meanSimsPerRoot": 4349.8,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|prod@mb=4|turnstart": {
+  "fights": 50,
+  "regretPerFight": 0.4791,
+  "se": 0.1018,
+  "pairedVsNone": -0.6806,
+  "pairedSe": 0.1461,
+  "optimalRootShare": 0.9511,
+  "meanSimsPerRoot": 4575.9,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|prod@mb=4|turnstart@1": {
+  "fights": 50,
+  "regretPerFight": 0.3812,
+  "se": 0.0914,
+  "pairedVsNone": -0.7785,
+  "pairedSe": 0.1466,
+  "optimalRootShare": 0.9578,
+  "meanSimsPerRoot": 4533.0,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|prod@mb=4|turnstart@2": {
+  "fights": 50,
+  "regretPerFight": 0.6261,
+  "se": 0.1156,
+  "pairedVsNone": -0.5336,
+  "pairedSe": 0.1552,
+  "optimalRootShare": 0.9427,
+  "meanSimsPerRoot": 4576.8,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|prod@mb=4|turnstart@4": {
+  "fights": 50,
+  "regretPerFight": 0.4734,
+  "se": 0.105,
+  "pairedVsNone": -0.6862,
+  "pairedSe": 0.1694,
+  "optimalRootShare": 0.9547,
+  "meanSimsPerRoot": 4601.5,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|prod@mb=4|blend:0.5": {
+  "fights": 50,
+  "regretPerFight": 0.8241,
+  "se": 0.1304,
+  "pairedVsNone": -0.3355,
+  "pairedSe": 0.1276,
+  "optimalRootShare": 0.9155,
+  "meanSimsPerRoot": 4273.7,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|prod@mb=4|hblend:a20:0.5": {
+  "fights": 50,
+  "regretPerFight": 0.2653,
+  "se": 0.08,
+  "pairedVsNone": -0.8943,
+  "pairedSe": 0.1493,
+  "optimalRootShare": 0.9725,
+  "meanSimsPerRoot": 4782.4,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|prod@mb=4|hblend:ct:0.5": {
+  "fights": 50,
+  "regretPerFight": 0.946,
+  "se": 0.1315,
+  "pairedVsNone": -0.2136,
+  "pairedSe": 0.1179,
+  "optimalRootShare": 0.9049,
+  "meanSimsPerRoot": 4593.6,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|prod@mb=4|head:a20": {
+  "fights": 50,
+  "regretPerFight": 2.2777,
+  "se": 1.0543,
+  "pairedVsNone": 1.1181,
+  "pairedSe": 1.0613,
+  "optimalRootShare": 0.8921,
+  "meanSimsPerRoot": 5022.9,
+  "fallbackShare": 0.0
+ },
+ "JAW_WORM|prod@mb=4|head:ct": {
+  "fights": 50,
+  "regretPerFight": 0.4171,
+  "se": 0.099,
+  "pairedVsNone": -0.7426,
+  "pairedSe": 0.1524,
+  "optimalRootShare": 0.9579,
+  "meanSimsPerRoot": 4872.4,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|flatprior:2500|none": {
+  "fights": 50,
+  "regretPerFight": 0.3436,
+  "se": 0.0869,
+  "pairedVsNone": 0.0,
+  "pairedSe": 0.0,
+  "optimalRootShare": 0.9454,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": null
+ },
+ "TWO_LOUSE|flatprior:2500|exact": {
+  "fights": 50,
+  "regretPerFight": 0.3064,
+  "se": 0.0806,
+  "pairedVsNone": -0.0372,
+  "pairedSe": 0.0766,
+  "optimalRootShare": 0.945,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|flatprior:2500|exact@1": {
+  "fights": 50,
+  "regretPerFight": 0.3259,
+  "se": 0.0848,
+  "pairedVsNone": -0.0177,
+  "pairedSe": 0.0804,
+  "optimalRootShare": 0.9474,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|flatprior:2500|exact@2": {
+  "fights": 50,
+  "regretPerFight": 0.2989,
+  "se": 0.0843,
+  "pairedVsNone": -0.0447,
+  "pairedSe": 0.0775,
+  "optimalRootShare": 0.9546,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|flatprior:2500|exact@4": {
+  "fights": 50,
+  "regretPerFight": 0.3178,
+  "se": 0.0851,
+  "pairedVsNone": -0.0258,
+  "pairedSe": 0.08,
+  "optimalRootShare": 0.9497,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|flatprior:2500|turn": {
+  "fights": 50,
+  "regretPerFight": 0.3227,
+  "se": 0.0772,
+  "pairedVsNone": -0.0209,
+  "pairedSe": 0.0697,
+  "optimalRootShare": 0.9459,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|flatprior:2500|turnstart": {
+  "fights": 50,
+  "regretPerFight": 0.2898,
+  "se": 0.0764,
+  "pairedVsNone": -0.0538,
+  "pairedSe": 0.0705,
+  "optimalRootShare": 0.9485,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|flatprior:2500|turnstart@1": {
+  "fights": 50,
+  "regretPerFight": 0.309,
+  "se": 0.0787,
+  "pairedVsNone": -0.0346,
+  "pairedSe": 0.0732,
+  "optimalRootShare": 0.9442,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|flatprior:2500|turnstart@2": {
+  "fights": 50,
+  "regretPerFight": 0.3489,
+  "se": 0.0853,
+  "pairedVsNone": 0.0053,
+  "pairedSe": 0.0808,
+  "optimalRootShare": 0.9327,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|flatprior:2500|turnstart@4": {
+  "fights": 50,
+  "regretPerFight": 0.2922,
+  "se": 0.0754,
+  "pairedVsNone": -0.0514,
+  "pairedSe": 0.0631,
+  "optimalRootShare": 0.9444,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|flatprior:2500|blend:0.5": {
+  "fights": 50,
+  "regretPerFight": 0.2472,
+  "se": 0.0719,
+  "pairedVsNone": -0.0964,
+  "pairedSe": 0.0576,
+  "optimalRootShare": 0.9557,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|flatprior:2500|hblend:ct:0.5": {
+  "fights": 50,
+  "regretPerFight": 0.2783,
+  "se": 0.0741,
+  "pairedVsNone": -0.0653,
+  "pairedSe": 0.0636,
+  "optimalRootShare": 0.9421,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|flatprior:2500|head:ct": {
+  "fights": 50,
+  "regretPerFight": 0.4787,
+  "se": 0.0889,
+  "pairedVsNone": 0.1351,
+  "pairedSe": 0.0916,
+  "optimalRootShare": 0.9054,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|prod|none": {
+  "fights": 50,
+  "regretPerFight": 0.4812,
+  "se": 0.103,
+  "pairedVsNone": 0.0,
+  "pairedSe": 0.0,
+  "optimalRootShare": 0.9289,
+  "meanSimsPerRoot": 4258.6,
+  "fallbackShare": null
+ },
+ "TWO_LOUSE|prod|exact": {
+  "fights": 50,
+  "regretPerFight": 0.3207,
+  "se": 0.0793,
+  "pairedVsNone": -0.1605,
+  "pairedSe": 0.0883,
+  "optimalRootShare": 0.9463,
+  "meanSimsPerRoot": 4656.0,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|prod|exact@1": {
+  "fights": 50,
+  "regretPerFight": 0.321,
+  "se": 0.0793,
+  "pairedVsNone": -0.1602,
+  "pairedSe": 0.0883,
+  "optimalRootShare": 0.9439,
+  "meanSimsPerRoot": 4829.4,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|prod|exact@2": {
+  "fights": 50,
+  "regretPerFight": 0.3055,
+  "se": 0.0776,
+  "pairedVsNone": -0.1758,
+  "pairedSe": 0.082,
+  "optimalRootShare": 0.9454,
+  "meanSimsPerRoot": 4662.7,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|prod|exact@4": {
+  "fights": 50,
+  "regretPerFight": 0.3551,
+  "se": 0.0818,
+  "pairedVsNone": -0.1261,
+  "pairedSe": 0.0789,
+  "optimalRootShare": 0.9413,
+  "meanSimsPerRoot": 4689.6,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|prod|turn": {
+  "fights": 50,
+  "regretPerFight": 0.4656,
+  "se": 0.1087,
+  "pairedVsNone": -0.0156,
+  "pairedSe": 0.0421,
+  "optimalRootShare": 0.934,
+  "meanSimsPerRoot": 4435.2,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|prod|turnstart": {
+  "fights": 50,
+  "regretPerFight": 0.3466,
+  "se": 0.0863,
+  "pairedVsNone": -0.1346,
+  "pairedSe": 0.0729,
+  "optimalRootShare": 0.9433,
+  "meanSimsPerRoot": 4570.9,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|prod|turnstart@1": {
+  "fights": 50,
+  "regretPerFight": 0.3584,
+  "se": 0.0933,
+  "pairedVsNone": -0.1228,
+  "pairedSe": 0.0508,
+  "optimalRootShare": 0.9455,
+  "meanSimsPerRoot": 4614.3,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|prod|turnstart@2": {
+  "fights": 50,
+  "regretPerFight": 0.3606,
+  "se": 0.0914,
+  "pairedVsNone": -0.1206,
+  "pairedSe": 0.0693,
+  "optimalRootShare": 0.9413,
+  "meanSimsPerRoot": 4528.8,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|prod|turnstart@4": {
+  "fights": 50,
+  "regretPerFight": 0.4393,
+  "se": 0.1005,
+  "pairedVsNone": -0.0419,
+  "pairedSe": 0.0695,
+  "optimalRootShare": 0.9243,
+  "meanSimsPerRoot": 4397.8,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|prod|blend:0.5": {
+  "fights": 50,
+  "regretPerFight": 0.3597,
+  "se": 0.0867,
+  "pairedVsNone": -0.1215,
+  "pairedSe": 0.057,
+  "optimalRootShare": 0.94,
+  "meanSimsPerRoot": 4485.6,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|prod|hblend:a20:0.5": {
+  "fights": 50,
+  "regretPerFight": 0.2509,
+  "se": 0.0707,
+  "pairedVsNone": -0.2304,
+  "pairedSe": 0.0717,
+  "optimalRootShare": 0.9516,
+  "meanSimsPerRoot": 4725.8,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|prod|hblend:ct:0.5": {
+  "fights": 50,
+  "regretPerFight": 0.365,
+  "se": 0.0872,
+  "pairedVsNone": -0.1163,
+  "pairedSe": 0.062,
+  "optimalRootShare": 0.9403,
+  "meanSimsPerRoot": 4404.5,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|prod|head:a20": {
+  "fights": 50,
+  "regretPerFight": 19.7463,
+  "se": 6.5008,
+  "pairedVsNone": 19.265,
+  "pairedSe": 6.5119,
+  "optimalRootShare": 0.7492,
+  "meanSimsPerRoot": 4764.7,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|prod|head:ct": {
+  "fights": 50,
+  "regretPerFight": 0.3841,
+  "se": 0.0803,
+  "pairedVsNone": -0.0971,
+  "pairedSe": 0.0879,
+  "optimalRootShare": 0.9371,
+  "meanSimsPerRoot": 4765.2,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|flatprior:2500@mb=4|none": {
+  "fights": 50,
+  "regretPerFight": 0.2046,
+  "se": 0.0486,
+  "pairedVsNone": 0.0,
+  "pairedSe": 0.0,
+  "optimalRootShare": 0.954,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": null
+ },
+ "TWO_LOUSE|flatprior:2500@mb=4|exact": {
+  "fights": 50,
+  "regretPerFight": 0.127,
+  "se": 0.0331,
+  "pairedVsNone": -0.0776,
+  "pairedSe": 0.0485,
+  "optimalRootShare": 0.9578,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|flatprior:2500@mb=4|exact@1": {
+  "fights": 50,
+  "regretPerFight": 0.1105,
+  "se": 0.0323,
+  "pairedVsNone": -0.094,
+  "pairedSe": 0.041,
+  "optimalRootShare": 0.96,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|flatprior:2500@mb=4|exact@2": {
+  "fights": 50,
+  "regretPerFight": 0.1096,
+  "se": 0.0318,
+  "pairedVsNone": -0.095,
+  "pairedSe": 0.0414,
+  "optimalRootShare": 0.9586,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|flatprior:2500@mb=4|exact@4": {
+  "fights": 50,
+  "regretPerFight": 0.1643,
+  "se": 0.0436,
+  "pairedVsNone": -0.0403,
+  "pairedSe": 0.0434,
+  "optimalRootShare": 0.9457,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|flatprior:2500@mb=4|turn": {
+  "fights": 50,
+  "regretPerFight": 0.2106,
+  "se": 0.0502,
+  "pairedVsNone": 0.0061,
+  "pairedSe": 0.0227,
+  "optimalRootShare": 0.9474,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|flatprior:2500@mb=4|turnstart": {
+  "fights": 50,
+  "regretPerFight": 0.1672,
+  "se": 0.0443,
+  "pairedVsNone": -0.0373,
+  "pairedSe": 0.0279,
+  "optimalRootShare": 0.9563,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|flatprior:2500@mb=4|turnstart@1": {
+  "fights": 50,
+  "regretPerFight": 0.2243,
+  "se": 0.052,
+  "pairedVsNone": 0.0198,
+  "pairedSe": 0.0212,
+  "optimalRootShare": 0.9485,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|flatprior:2500@mb=4|turnstart@2": {
+  "fights": 50,
+  "regretPerFight": 0.204,
+  "se": 0.0494,
+  "pairedVsNone": -0.0006,
+  "pairedSe": 0.0195,
+  "optimalRootShare": 0.9478,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|flatprior:2500@mb=4|turnstart@4": {
+  "fights": 50,
+  "regretPerFight": 0.1897,
+  "se": 0.0465,
+  "pairedVsNone": -0.0149,
+  "pairedSe": 0.0453,
+  "optimalRootShare": 0.943,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|flatprior:2500@mb=4|blend:0.5": {
+  "fights": 50,
+  "regretPerFight": 0.1859,
+  "se": 0.0469,
+  "pairedVsNone": -0.0187,
+  "pairedSe": 0.0209,
+  "optimalRootShare": 0.9562,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|flatprior:2500@mb=4|hblend:ct:0.5": {
+  "fights": 50,
+  "regretPerFight": 0.2606,
+  "se": 0.0703,
+  "pairedVsNone": 0.0561,
+  "pairedSe": 0.0585,
+  "optimalRootShare": 0.9494,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|flatprior:2500@mb=4|head:ct": {
+  "fights": 50,
+  "regretPerFight": 0.3096,
+  "se": 0.0726,
+  "pairedVsNone": 0.105,
+  "pairedSe": 0.0787,
+  "optimalRootShare": 0.9272,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|prod@mb=4|none": {
+  "fights": 50,
+  "regretPerFight": 0.1787,
+  "se": 0.0434,
+  "pairedVsNone": 0.0,
+  "pairedSe": 0.0,
+  "optimalRootShare": 0.9519,
+  "meanSimsPerRoot": 6215.1,
+  "fallbackShare": null
+ },
+ "TWO_LOUSE|prod@mb=4|exact": {
+  "fights": 50,
+  "regretPerFight": 0.0239,
+  "se": 0.0164,
+  "pairedVsNone": -0.1547,
+  "pairedSe": 0.0419,
+  "optimalRootShare": 0.9912,
+  "meanSimsPerRoot": 6327.8,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|prod@mb=4|exact@1": {
+  "fights": 50,
+  "regretPerFight": 0.001,
+  "se": 0.0006,
+  "pairedVsNone": -0.1777,
+  "pairedSe": 0.0433,
+  "optimalRootShare": 0.9913,
+  "meanSimsPerRoot": 6388.0,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|prod@mb=4|exact@2": {
+  "fights": 50,
+  "regretPerFight": 0.0592,
+  "se": 0.0263,
+  "pairedVsNone": -0.1195,
+  "pairedSe": 0.0386,
+  "optimalRootShare": 0.9781,
+  "meanSimsPerRoot": 6225.9,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|prod@mb=4|exact@4": {
+  "fights": 50,
+  "regretPerFight": 0.0475,
+  "se": 0.0205,
+  "pairedVsNone": -0.1312,
+  "pairedSe": 0.0405,
+  "optimalRootShare": 0.9761,
+  "meanSimsPerRoot": 6356.5,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|prod@mb=4|turn": {
+  "fights": 50,
+  "regretPerFight": 0.1666,
+  "se": 0.0425,
+  "pairedVsNone": -0.0121,
+  "pairedSe": 0.0268,
+  "optimalRootShare": 0.9611,
+  "meanSimsPerRoot": 6200.8,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|prod@mb=4|turnstart": {
+  "fights": 50,
+  "regretPerFight": 0.0873,
+  "se": 0.0362,
+  "pairedVsNone": -0.0914,
+  "pairedSe": 0.03,
+  "optimalRootShare": 0.9799,
+  "meanSimsPerRoot": 6161.1,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|prod@mb=4|turnstart@1": {
+  "fights": 50,
+  "regretPerFight": 0.051,
+  "se": 0.0228,
+  "pairedVsNone": -0.1277,
+  "pairedSe": 0.0424,
+  "optimalRootShare": 0.9803,
+  "meanSimsPerRoot": 6315.5,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|prod@mb=4|turnstart@2": {
+  "fights": 50,
+  "regretPerFight": 0.0812,
+  "se": 0.0286,
+  "pairedVsNone": -0.0975,
+  "pairedSe": 0.044,
+  "optimalRootShare": 0.9737,
+  "meanSimsPerRoot": 5923.8,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|prod@mb=4|turnstart@4": {
+  "fights": 50,
+  "regretPerFight": 0.1247,
+  "se": 0.049,
+  "pairedVsNone": -0.054,
+  "pairedSe": 0.0591,
+  "optimalRootShare": 0.967,
+  "meanSimsPerRoot": 6400.0,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|prod@mb=4|blend:0.5": {
+  "fights": 50,
+  "regretPerFight": 0.1624,
+  "se": 0.0426,
+  "pairedVsNone": -0.0163,
+  "pairedSe": 0.0174,
+  "optimalRootShare": 0.9612,
+  "meanSimsPerRoot": 6245.4,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|prod@mb=4|hblend:a20:0.5": {
+  "fights": 50,
+  "regretPerFight": 0.2928,
+  "se": 0.0636,
+  "pairedVsNone": 0.1142,
+  "pairedSe": 0.0601,
+  "optimalRootShare": 0.9024,
+  "meanSimsPerRoot": 6682.3,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|prod@mb=4|hblend:ct:0.5": {
+  "fights": 50,
+  "regretPerFight": 0.2255,
+  "se": 0.0734,
+  "pairedVsNone": 0.0468,
+  "pairedSe": 0.0689,
+  "optimalRootShare": 0.955,
+  "meanSimsPerRoot": 6124.4,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|prod@mb=4|head:a20": {
+  "fights": 50,
+  "regretPerFight": 71.8338,
+  "se": 22.2831,
+  "pairedVsNone": 71.6551,
+  "pairedSe": 22.2858,
+  "optimalRootShare": 0.5703,
+  "meanSimsPerRoot": 5582.0,
+  "fallbackShare": 0.0
+ },
+ "TWO_LOUSE|prod@mb=4|head:ct": {
+  "fights": 50,
+  "regretPerFight": 3.2187,
+  "se": 3.0293,
+  "pairedVsNone": 3.04,
+  "pairedSe": 3.033,
+  "optimalRootShare": 0.8956,
+  "meanSimsPerRoot": 6297.2,
+  "fallbackShare": 0.0
+ },
+ "all|flatprior:2500|none": {
+  "fights": 150,
+  "regretPerFight": 0.8468,
+  "se": 0.0948,
+  "pairedVsNone": 0.0,
+  "pairedSe": 0.0,
+  "optimalRootShare": 0.9252,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": null
+ },
+ "all|flatprior:2500|exact": {
+  "fights": 150,
+  "regretPerFight": 0.4375,
+  "se": 0.0656,
+  "pairedVsNone": -0.4092,
+  "pairedSe": 0.0958,
+  "optimalRootShare": 0.9566,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "all|flatprior:2500|exact@1": {
+  "fights": 150,
+  "regretPerFight": 0.4169,
+  "se": 0.0627,
+  "pairedVsNone": -0.4299,
+  "pairedSe": 0.098,
+  "optimalRootShare": 0.9556,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "all|flatprior:2500|exact@2": {
+  "fights": 150,
+  "regretPerFight": 0.456,
+  "se": 0.0698,
+  "pairedVsNone": -0.3907,
+  "pairedSe": 0.0919,
+  "optimalRootShare": 0.9568,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "all|flatprior:2500|exact@4": {
+  "fights": 150,
+  "regretPerFight": 0.5131,
+  "se": 0.0755,
+  "pairedVsNone": -0.3337,
+  "pairedSe": 0.0864,
+  "optimalRootShare": 0.9538,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "all|flatprior:2500|turn": {
+  "fights": 150,
+  "regretPerFight": 0.6717,
+  "se": 0.0905,
+  "pairedVsNone": -0.1751,
+  "pairedSe": 0.0699,
+  "optimalRootShare": 0.9472,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "all|flatprior:2500|turnstart": {
+  "fights": 150,
+  "regretPerFight": 0.6619,
+  "se": 0.0883,
+  "pairedVsNone": -0.1849,
+  "pairedSe": 0.0783,
+  "optimalRootShare": 0.9465,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "all|flatprior:2500|turnstart@1": {
+  "fights": 150,
+  "regretPerFight": 0.6077,
+  "se": 0.0873,
+  "pairedVsNone": -0.239,
+  "pairedSe": 0.0811,
+  "optimalRootShare": 0.9483,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "all|flatprior:2500|turnstart@2": {
+  "fights": 150,
+  "regretPerFight": 0.6018,
+  "se": 0.0883,
+  "pairedVsNone": -0.245,
+  "pairedSe": 0.0798,
+  "optimalRootShare": 0.949,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "all|flatprior:2500|turnstart@4": {
+  "fights": 150,
+  "regretPerFight": 0.5444,
+  "se": 0.0809,
+  "pairedVsNone": -0.3023,
+  "pairedSe": 0.0812,
+  "optimalRootShare": 0.9524,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "all|flatprior:2500|blend:0.5": {
+  "fights": 150,
+  "regretPerFight": 0.7686,
+  "se": 0.0964,
+  "pairedVsNone": -0.0782,
+  "pairedSe": 0.058,
+  "optimalRootShare": 0.9367,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "all|flatprior:2500|hblend:ct:0.5": {
+  "fights": 150,
+  "regretPerFight": 0.778,
+  "se": 0.0966,
+  "pairedVsNone": -0.0688,
+  "pairedSe": 0.0584,
+  "optimalRootShare": 0.9341,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "all|flatprior:2500|head:ct": {
+  "fights": 150,
+  "regretPerFight": 0.6436,
+  "se": 0.0895,
+  "pairedVsNone": -0.2031,
+  "pairedSe": 0.0904,
+  "optimalRootShare": 0.9395,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "all|prod|none": {
+  "fights": 150,
+  "regretPerFight": 0.8724,
+  "se": 0.099,
+  "pairedVsNone": 0.0,
+  "pairedSe": 0.0,
+  "optimalRootShare": 0.9225,
+  "meanSimsPerRoot": 3132.2,
+  "fallbackShare": null
+ },
+ "all|prod|exact": {
+  "fights": 150,
+  "regretPerFight": 0.5812,
+  "se": 0.0884,
+  "pairedVsNone": -0.2912,
+  "pairedSe": 0.0841,
+  "optimalRootShare": 0.9552,
+  "meanSimsPerRoot": 3700.1,
+  "fallbackShare": 0.0
+ },
+ "all|prod|exact@1": {
+  "fights": 150,
+  "regretPerFight": 0.5546,
+  "se": 0.0846,
+  "pairedVsNone": -0.3178,
+  "pairedSe": 0.0818,
+  "optimalRootShare": 0.9533,
+  "meanSimsPerRoot": 3732.3,
+  "fallbackShare": 0.0
+ },
+ "all|prod|exact@2": {
+  "fights": 150,
+  "regretPerFight": 0.5526,
+  "se": 0.0838,
+  "pairedVsNone": -0.3198,
+  "pairedSe": 0.0809,
+  "optimalRootShare": 0.9545,
+  "meanSimsPerRoot": 3648.7,
+  "fallbackShare": 0.0
+ },
+ "all|prod|exact@4": {
+  "fights": 150,
+  "regretPerFight": 0.6422,
+  "se": 0.0876,
+  "pairedVsNone": -0.2302,
+  "pairedSe": 0.0821,
+  "optimalRootShare": 0.9485,
+  "meanSimsPerRoot": 3726.8,
+  "fallbackShare": 0.0
+ },
+ "all|prod|turn": {
+  "fights": 150,
+  "regretPerFight": 0.7524,
+  "se": 0.0973,
+  "pairedVsNone": -0.12,
+  "pairedSe": 0.0707,
+  "optimalRootShare": 0.9437,
+  "meanSimsPerRoot": 3373.6,
+  "fallbackShare": 0.0
+ },
+ "all|prod|turnstart": {
+  "fights": 150,
+  "regretPerFight": 0.6679,
+  "se": 0.0908,
+  "pairedVsNone": -0.2045,
+  "pairedSe": 0.0827,
+  "optimalRootShare": 0.9432,
+  "meanSimsPerRoot": 3661.2,
+  "fallbackShare": 0.0
+ },
+ "all|prod|turnstart@1": {
+  "fights": 150,
+  "regretPerFight": 0.6669,
+  "se": 0.0903,
+  "pairedVsNone": -0.2055,
+  "pairedSe": 0.0769,
+  "optimalRootShare": 0.9474,
+  "meanSimsPerRoot": 3709.3,
+  "fallbackShare": 0.0
+ },
+ "all|prod|turnstart@2": {
+  "fights": 150,
+  "regretPerFight": 0.6999,
+  "se": 0.0923,
+  "pairedVsNone": -0.1725,
+  "pairedSe": 0.0717,
+  "optimalRootShare": 0.944,
+  "meanSimsPerRoot": 3614.1,
+  "fallbackShare": 0.0
+ },
+ "all|prod|turnstart@4": {
+  "fights": 150,
+  "regretPerFight": 0.6234,
+  "se": 0.0875,
+  "pairedVsNone": -0.249,
+  "pairedSe": 0.0819,
+  "optimalRootShare": 0.9437,
+  "meanSimsPerRoot": 3485.6,
+  "fallbackShare": 0.0
+ },
+ "all|prod|blend:0.5": {
+  "fights": 150,
+  "regretPerFight": 0.7823,
+  "se": 0.0944,
+  "pairedVsNone": -0.0901,
+  "pairedSe": 0.0639,
+  "optimalRootShare": 0.9345,
+  "meanSimsPerRoot": 3469.7,
+  "fallbackShare": 0.0
+ },
+ "all|prod|hblend:a20:0.5": {
+  "fights": 150,
+  "regretPerFight": 0.4345,
+  "se": 0.0726,
+  "pairedVsNone": -0.4379,
+  "pairedSe": 0.0821,
+  "optimalRootShare": 0.9578,
+  "meanSimsPerRoot": 3653.3,
+  "fallbackShare": 0.0
+ },
+ "all|prod|hblend:ct:0.5": {
+  "fights": 150,
+  "regretPerFight": 0.7785,
+  "se": 0.0968,
+  "pairedVsNone": -0.0939,
+  "pairedSe": 0.0576,
+  "optimalRootShare": 0.9352,
+  "meanSimsPerRoot": 3378.9,
+  "fallbackShare": 0.0
+ },
+ "all|prod|head:a20": {
+  "fights": 150,
+  "regretPerFight": 7.2096,
+  "se": 2.2737,
+  "pairedVsNone": 6.3372,
+  "pairedSe": 2.2856,
+  "optimalRootShare": 0.8692,
+  "meanSimsPerRoot": 4113.4,
+  "fallbackShare": 0.0
+ },
+ "all|prod|head:ct": {
+  "fights": 150,
+  "regretPerFight": 0.6772,
+  "se": 0.0945,
+  "pairedVsNone": -0.1952,
+  "pairedSe": 0.0919,
+  "optimalRootShare": 0.9466,
+  "meanSimsPerRoot": 3670.4,
+  "fallbackShare": 0.0
+ },
+ "all|flatprior:2500@mb=4|none": {
+  "fights": 150,
+  "regretPerFight": 0.5321,
+  "se": 0.072,
+  "pairedVsNone": 0.0,
+  "pairedSe": 0.0,
+  "optimalRootShare": 0.9417,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": null
+ },
+ "all|flatprior:2500@mb=4|exact": {
+  "fights": 150,
+  "regretPerFight": 0.2103,
+  "se": 0.0368,
+  "pairedVsNone": -0.3218,
+  "pairedSe": 0.0648,
+  "optimalRootShare": 0.9654,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "all|flatprior:2500@mb=4|exact@1": {
+  "fights": 150,
+  "regretPerFight": 0.1872,
+  "se": 0.0363,
+  "pairedVsNone": -0.3449,
+  "pairedSe": 0.0663,
+  "optimalRootShare": 0.9657,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "all|flatprior:2500@mb=4|exact@2": {
+  "fights": 150,
+  "regretPerFight": 0.1657,
+  "se": 0.0324,
+  "pairedVsNone": -0.3663,
+  "pairedSe": 0.0663,
+  "optimalRootShare": 0.9684,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "all|flatprior:2500@mb=4|exact@4": {
+  "fights": 150,
+  "regretPerFight": 0.1948,
+  "se": 0.039,
+  "pairedVsNone": -0.3373,
+  "pairedSe": 0.0645,
+  "optimalRootShare": 0.9655,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "all|flatprior:2500@mb=4|turn": {
+  "fights": 150,
+  "regretPerFight": 0.3637,
+  "se": 0.0572,
+  "pairedVsNone": -0.1684,
+  "pairedSe": 0.0693,
+  "optimalRootShare": 0.9556,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "all|flatprior:2500@mb=4|turnstart": {
+  "fights": 150,
+  "regretPerFight": 0.3315,
+  "se": 0.0513,
+  "pairedVsNone": -0.2005,
+  "pairedSe": 0.0581,
+  "optimalRootShare": 0.9596,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "all|flatprior:2500@mb=4|turnstart@1": {
+  "fights": 150,
+  "regretPerFight": 0.3631,
+  "se": 0.0517,
+  "pairedVsNone": -0.169,
+  "pairedSe": 0.0618,
+  "optimalRootShare": 0.9553,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "all|flatprior:2500@mb=4|turnstart@2": {
+  "fights": 150,
+  "regretPerFight": 0.3015,
+  "se": 0.0453,
+  "pairedVsNone": -0.2306,
+  "pairedSe": 0.0654,
+  "optimalRootShare": 0.9604,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "all|flatprior:2500@mb=4|turnstart@4": {
+  "fights": 150,
+  "regretPerFight": 0.3101,
+  "se": 0.0469,
+  "pairedVsNone": -0.222,
+  "pairedSe": 0.0687,
+  "optimalRootShare": 0.9559,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "all|flatprior:2500@mb=4|blend:0.5": {
+  "fights": 150,
+  "regretPerFight": 0.3823,
+  "se": 0.0588,
+  "pairedVsNone": -0.1498,
+  "pairedSe": 0.05,
+  "optimalRootShare": 0.9553,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "all|flatprior:2500@mb=4|hblend:ct:0.5": {
+  "fights": 150,
+  "regretPerFight": 0.4686,
+  "se": 0.0653,
+  "pairedVsNone": -0.0635,
+  "pairedSe": 0.0425,
+  "optimalRootShare": 0.9458,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "all|flatprior:2500@mb=4|head:ct": {
+  "fights": 150,
+  "regretPerFight": 0.3155,
+  "se": 0.0501,
+  "pairedVsNone": -0.2166,
+  "pairedSe": 0.0695,
+  "optimalRootShare": 0.9563,
+  "meanSimsPerRoot": 2500.0,
+  "fallbackShare": 0.0
+ },
+ "all|prod@mb=4|none": {
+  "fights": 150,
+  "regretPerFight": 0.4975,
+  "se": 0.0672,
+  "pairedVsNone": 0.0,
+  "pairedSe": 0.0,
+  "optimalRootShare": 0.9417,
+  "meanSimsPerRoot": 4263.3,
+  "fallbackShare": null
+ },
+ "all|prod@mb=4|exact": {
+  "fights": 150,
+  "regretPerFight": 0.1322,
+  "se": 0.0325,
+  "pairedVsNone": -0.3653,
+  "pairedSe": 0.0615,
+  "optimalRootShare": 0.9799,
+  "meanSimsPerRoot": 4906.5,
+  "fallbackShare": 0.0
+ },
+ "all|prod@mb=4|exact@1": {
+  "fights": 150,
+  "regretPerFight": 0.1512,
+  "se": 0.0348,
+  "pairedVsNone": -0.3463,
+  "pairedSe": 0.0649,
+  "optimalRootShare": 0.9827,
+  "meanSimsPerRoot": 5017.8,
+  "fallbackShare": 0.0
+ },
+ "all|prod@mb=4|exact@2": {
+  "fights": 150,
+  "regretPerFight": 0.182,
+  "se": 0.0371,
+  "pairedVsNone": -0.3155,
+  "pairedSe": 0.0611,
+  "optimalRootShare": 0.9731,
+  "meanSimsPerRoot": 4929.2,
+  "fallbackShare": 0.0
+ },
+ "all|prod@mb=4|exact@4": {
+  "fights": 150,
+  "regretPerFight": 0.1204,
+  "se": 0.0289,
+  "pairedVsNone": -0.3771,
+  "pairedSe": 0.0637,
+  "optimalRootShare": 0.9759,
+  "meanSimsPerRoot": 4998.0,
+  "fallbackShare": 0.0
+ },
+ "all|prod@mb=4|turn": {
+  "fights": 150,
+  "regretPerFight": 0.2689,
+  "se": 0.0449,
+  "pairedVsNone": -0.2286,
+  "pairedSe": 0.0545,
+  "optimalRootShare": 0.9667,
+  "meanSimsPerRoot": 4556.3,
+  "fallbackShare": 0.0
+ },
+ "all|prod@mb=4|turnstart": {
+  "fights": 150,
+  "regretPerFight": 0.2104,
+  "se": 0.0418,
+  "pairedVsNone": -0.2871,
+  "pairedSe": 0.0582,
+  "optimalRootShare": 0.9735,
+  "meanSimsPerRoot": 4705.9,
+  "fallbackShare": 0.0
+ },
+ "all|prod@mb=4|turnstart@1": {
+  "fights": 150,
+  "regretPerFight": 0.177,
+  "se": 0.0373,
+  "pairedVsNone": -0.3205,
+  "pairedSe": 0.0609,
+  "optimalRootShare": 0.9749,
+  "meanSimsPerRoot": 4731.9,
+  "fallbackShare": 0.0
+ },
+ "all|prod@mb=4|turnstart@2": {
+  "fights": 150,
+  "regretPerFight": 0.2738,
+  "se": 0.0477,
+  "pairedVsNone": -0.2237,
+  "pairedSe": 0.0607,
+  "optimalRootShare": 0.9662,
+  "meanSimsPerRoot": 4673.9,
+  "fallbackShare": 0.0
+ },
+ "all|prod@mb=4|turnstart@4": {
+  "fights": 150,
+  "regretPerFight": 0.2628,
+  "se": 0.0467,
+  "pairedVsNone": -0.2347,
+  "pairedSe": 0.0705,
+  "optimalRootShare": 0.9676,
+  "meanSimsPerRoot": 4839.8,
+  "fallbackShare": 0.0
+ },
+ "all|prod@mb=4|blend:0.5": {
+  "fights": 150,
+  "regretPerFight": 0.367,
+  "se": 0.0554,
+  "pairedVsNone": -0.1305,
+  "pairedSe": 0.049,
+  "optimalRootShare": 0.9542,
+  "meanSimsPerRoot": 4548.4,
+  "fallbackShare": 0.0
+ },
+ "all|prod@mb=4|hblend:a20:0.5": {
+  "fights": 150,
+  "regretPerFight": 0.2431,
+  "se": 0.0426,
+  "pairedVsNone": -0.2544,
+  "pairedSe": 0.0658,
+  "optimalRootShare": 0.9528,
+  "meanSimsPerRoot": 5168.4,
+  "fallbackShare": 0.0
+ },
+ "all|prod@mb=4|hblend:ct:0.5": {
+  "fights": 150,
+  "regretPerFight": 0.4552,
+  "se": 0.0631,
+  "pairedVsNone": -0.0423,
+  "pairedSe": 0.0479,
+  "optimalRootShare": 0.9474,
+  "meanSimsPerRoot": 4636.5,
+  "fallbackShare": 0.0
+ },
+ "all|prod@mb=4|head:a20": {
+  "fights": 150,
+  "regretPerFight": 24.8649,
+  "se": 7.8715,
+  "pairedVsNone": 24.3674,
+  "pairedSe": 7.8787,
+  "optimalRootShare": 0.7523,
+  "meanSimsPerRoot": 5244.6,
+  "fallbackShare": 0.0
+ },
+ "all|prod@mb=4|head:ct": {
+  "fights": 150,
+  "regretPerFight": 1.2576,
+  "se": 1.0103,
+  "pairedVsNone": 0.7601,
+  "pairedSe": 1.0144,
+  "optimalRootShare": 0.9471,
+  "meanSimsPerRoot": 4890.5,
+  "fallbackShare": 0.0
+ }
+}
