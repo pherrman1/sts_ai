@@ -39,7 +39,8 @@ Status: accepted
   process, when the first such runtime is built, and logs `[ctm-calibration] table=… sha256=… groups=34
   scope=pathb-a20`.
 - Other runtimes are unchanged: the A0 stacks, research candidates under another identity, and every runtime when
-  `STS_CTM_ACT4_SURVIVAL_MODEL` is set.
+  `STS_CTM_ACT4_SURVIVAL_MODEL` is set. A research manifest that keeps the candidate id `pathb-a20` with other
+  artifacts, such as the fine-tuned `ctm_finetune_hp_pathb_a20_v1`, is another identity; its own table is set by path.
 - `STS_CTM_CALIBRATION=0` restores the uncalibrated CTM.
 - A path stays the research option (§670): that table applies to every runtime of the stack it names.
 - **Live advisor.** Its A20 stack applies the bundled table under the same rule and reports it as

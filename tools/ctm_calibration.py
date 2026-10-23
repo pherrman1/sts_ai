@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Per-fight calibration of the A20 CTM against real combats (STS_CTM_CALIBRATION, research, default off).
+"""Per-fight calibration of the A20 CTM against real combats (STS_CTM_CALIBRATION; the built-in A20 stack applies
+models/candidates/ctm_calibration_pathb_a20_v1.json by default since ADR-0058, =0 turns it off).
 
   zero    OUT.json                                  every act:ROOM group at hpLossScale 0 (all HP losses removed)
   fit     OUT.json SPEC [SPEC ...] [--seeds S] [--note TEXT]   fit the table from scored real combats
@@ -9,13 +10,14 @@
   parity  TABLE.json SPEC CALIBRATED.csv [ROWS.jsonl]   the C++ calibrated scores against this tool's prediction
                                                     (ROWS: leave out rows with an active Lizard Tail)
 
-SPEC is BASE.csv,ZERO.csv: `one_combat ctmscorerows` of the same combat_transition_row_v2 rows with the calibration off
-(BASE) and with the `zero` table (ZERO). For a won fight in a group with loss scale s, calibrateHpLoss in
-apps/one_combat/combat_transition_runtime.cpp makes the mean HP ZERO - s * (ZERO - BASE); that is exact apart from
-the clamp at 1 HP when s > 1, which can only raise it, by at most (s - 1) * (pre HP - 1). The group's death shift
-moves logit(p_death) of BASE; under an active Lizard Tail the runtime shifts the composition's two survival terms
-instead, so those rows differ. Groups mirror CtmCalibration there: "<act>:<ENCOUNTER>" for elite and boss rooms when
-the table has it, else "<act>:<ROOM>". --seeds even|odd|all picks rows by source seed parity (default all).
+SPEC is BASE.csv,ZERO.csv: `one_combat ctmscorerows` of the same combat_transition_row_v2 rows with the calibration
+off (BASE; STS_CTM_CALIBRATION=0) and with the `zero` table (ZERO). For a won fight in a group with loss scale s,
+calibrateHpLoss in apps/one_combat/combat_transition_runtime.cpp makes the mean HP ZERO - s * (ZERO - BASE); that is
+exact apart from the clamp at 1 HP when s > 1, which can only raise it, by at most (s - 1) * (pre HP - 1). The group's
+death shift moves logit(p_death) of BASE; under an active Lizard Tail the runtime shifts the composition's two
+survival terms instead, so those rows differ. Groups mirror CtmCalibration there: "<act>:<ENCOUNTER>" for elite and
+boss rooms when the table has it, else "<act>:<ROOM>". --seeds even|odd|all picks rows by source seed parity (default
+all).
 """
 import csv
 import hashlib
