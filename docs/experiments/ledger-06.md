@@ -23853,7 +23853,8 @@ PASS.
   rollouts with CTM combats to the end of the game; R_act stops them at the act's end and takes M0's value there.
 - 256 seeds (111360000–111360255), one game each, 32 cloud workers × 4 lanes, RUN_COMMIT `799361fc`, binary
   `41b26423…`.
-- Gates: a referee qualifies if its level is within 0.05 of real play in every act and M0's advantage SE is ≤ 0.002.
+- Gates: a referee qualifies if its level is within 0.05 of real play in every act and M0's advantage SE is ≤ 0.002
+  at ≤ 10 core-hours of referee CPU.
   The metric qualifies only if, under a qualified referee, STU's predicted Δ is below 0, TD2's and G1B's lie in their
   A/B intervals, and NULL's interval contains 0.
 **Result** ([RESULT](evidence/value_leaf_compare_20261023/RESULT.md)): 256 of 256 units verified, all games valid,
@@ -23872,15 +23873,16 @@ Heart rate 22.3%. 16,237 searched roots, 1,201,344 referee rollouts, none errore
   - M0 +0.90 [+0.01, +1.81] / +1.42 [+0.39, +2.57], against the stage-3 A/B's M − A of +1.37 [−1.17, +4.00];
   - M0 main effect +0.51 / +0.70, against an observed +2.15;
   - STU −1.40 / −1.95; TD2 +1.48 / −1.35; G1B −0.11 / −3.99; NULL +0.49 / −0.07.
-- Under R_full all four retrospective checks pass; STU's only narrowly (upper bound −0.23 pp; +0.10 on the first 245
-  games). Under R_act, G1B falls outside §615's interval. R_act values the act's end with M0's function of X2-B, so it
+- Under R_full all four retrospective checks pass; STU's only narrowly (upper bound −0.23 pp). Under R_act, G1B falls
+  outside §615's interval. R_act values the act's end with M0's function of X2-B, so it
   is not X2-B-free.
 - Every A/B observation contains both referees' predictions. For S both predict a small gain where the A/B saw −1.37.
 - A leaf changes the played pick at 4.4–5.7% of searched roots (STU 6.6%), and re-seeding the search changes 4.7%.
 - At all 447 act-4 roots the five leaf arms ran identical searches and kept the played pick. No act-4 rollout reaches
   a leaf, so act-4 OOC decisions depend only on the rollouts (CTM combats, rollout policy).
 - Wall 6.5 h (estimate 3 h): side searches 313 core-hours. Per-simulation speed differed up to 3× between containers.
-  The last unit (111360219, a Heart game on a slow container) took 4 h 10 min.
+  The last unit to land (111360219, a Heart game on a slow container, started 11:25Z) took 4 h 10 min; the longest
+  (111360072) took 5 h 22 min.
 **Interpretation:**
 - The rollouts die far more often than real play, most of all in act 3 (R_act's gap there is nearly R_full's). The
   decision metric cannot gate stage-4 candidates until a referee's rollouts play closer to real play.

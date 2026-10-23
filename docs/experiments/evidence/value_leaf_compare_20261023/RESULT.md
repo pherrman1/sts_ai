@@ -66,8 +66,8 @@ Retrospective checks (PREREG stage 2):
 | NULL: interval contains 0 | pass | pass |
 
 - With the level gate set aside, R_full passes all four checks and R_act fails G1B. That is weak support for R_full.
-  The three past A/Bs ran on older stacks, so the checks test direction and size only. STU's check is marginal: on
-  the first 245 games, R_full's upper bound was +0.10 pp, which fails.
+  The three past A/Bs ran on older stacks, so the checks test direction and size only. STU's check passes narrowly:
+  R_full's upper bound is −0.23 pp.
 - **R_act is not X2-B-free.** Its act-end value is M0's own function of X2-B. So it scores M0's flips with M0's
   value, and it scores the flips of a head that disagrees with X2-B (G1B) with X2-B. That fits G1B's large negative
   prediction under R_act and its near-zero one under R_full.
@@ -104,12 +104,14 @@ Retrospective checks (PREREG stage 2):
 - CPU: the seven side searches took 313 core-hours (69.5 s per searched root; the pilot measured about 40 s), and the
   referee took 11.0 core-hours (1,201,344 rollouts, 32.8 ms each). The played games come on top.
 - There were no rollout errors, no non-terminal R_full rollouts, no arm errors and no excluded games.
-- **Speed varies by container.** Per simulation, the median act-1 side search ranged from 3.8 to 12.1 ms between
-  workers on the same binary.
+- **Speed varies by container.** On the same binary, the act-1 side-search CPU per simulation ranged from 3.8 to
+  12.1 ms between workers. Per unit, that is all seven arms' `cpuSeconds` over their `simulations` in the act-1
+  compare rows; per worker (named in each unit's `.err`), the median over its units.
   - Unit 111360180 ran twice, on W21 (5,733 s) and W24 (3,476 s), with identical records apart from `cpuSeconds`. The
     verifier used W21's tar (the first in name order); `tars.sha256` lists both.
-  - The last unit, 111360219, took 4 h 10 min (median 1 h 25 min). It reached the Heart with 83 searched roots
-    (median 71), ran on a slow container and started at 11:25Z.
+  - The last unit to land, 111360219, took 4 h 10 min (median 1 h 25 min). It reached the Heart with 83 searched
+    roots (median 71), ran on a slow container and started at 11:25Z. The longest unit, 111360072, took 5 h 22 min
+    but started at 09:43Z.
   - Next time, once the queue is empty, a second copy of each straggler could run on an idle worker. Results are
     deterministic, so the first copy to finish is enough.
 
