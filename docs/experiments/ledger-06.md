@@ -22431,7 +22431,7 @@ Seeds: none new (live seeds 111200473 and 111200504).
 **Interpretation:** Play-changing only for Acid and Spike Slime (L) pushed to half HP by thorns-type damage during their own turn; they now split on schedule. Natively the split was lost only when nothing hit the slime again before its next turn (a later hit re-armed it). The Slime Boss never queues a roll, so its guard is play-neutral. The dead-monster and Byrd families are representation-only and left unchanged; the parity comparison could classify them as background.
 
 **Status:** Draft PR.
-## §TBD — Live act 4: the inspector reported A20 Act 4 question history as incomplete, so OOC search never looked ahead (2026-10-23)
+## §653 — Live act 4: the inspector reported A20 Act 4 question history as incomplete, so OOC search never looked ahead (2026-10-23)
 
 **Question:** Why did live OOC search look ahead 0 floors in all 141 Act 4 decisions of seeds 525-622 (acts 1-3: 96-100% of simulations look ahead)?
 
