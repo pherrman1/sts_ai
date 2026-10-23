@@ -4162,6 +4162,10 @@ int main(int argc, char **argv) {
         silverFocusEvalGen(std::stoi(argv[2]), std::stoi(argv[3]), argv[4], std::stoll(argv[5]), argv[6],
                            std::stoi(argv[7]), std::stoi(argv[8]), std::stoi(argv[9]), std::stoi(argv[10]),
                            argv[11], argv[12]);
+    } else if (mode == "turndomgen") {
+        if (argc < 7) { std::cerr << "usage: one_combat turndomgen N_SEEDS SIMS ASC SEED_OFFSET OUT.jsonl [MAX_EXECS=200000] [MAX_SNAPSHOTS=40]\n"; return 2; }
+        turnDominanceGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]), std::stoll(argv[5]), argv[6],
+                         argc > 7 ? std::stoll(argv[7]) : 200000, argc > 8 ? std::stoi(argv[8]) : 40);
     } else if (mode == "act4replay") {
         if (argc < 8) { std::cerr << "usage: one_combat act4replay N_STATES STATES.jsonl OUT_PREFIX SEED_OFFSET SIMS[,SIMS..] REPLICATES\n"; return 2; }
         act4Replay(std::stoi(argv[2]), argv[3], argv[4], std::stoll(argv[5]), argv[6], std::stoi(argv[7]));

@@ -317,6 +317,11 @@ const std::vector<std::pair<std::string, search::NativeSilverSearchParams>> &sil
 // replayed under flat 10k (control), #199 adaptive, and learned stopping.
 void silverStopReplayGen(int nSeeds, int sims, int asc, const std::string &outPrefix,
                          long long seedOffset, const std::string &teacherPath);
+// Research-only (turndomgen, apps/one_combat/turn_dominance.cpp): plays whole
+// runs as bestbench does and writes, for every searched Silver root, which root
+// edges reach only dominated end-of-turn states through deterministic lines.
+void turnDominanceGen(int nSeeds, int sims, int asc, long long seedOffset, const std::string &outPath,
+                      long long maxExecs, int maxSnapshots);
 // CTM vs low-sim Silver forecasts on the same fight entries (ctmsilvergen).
 void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long long seedOffset,
                          const std::string &teacherPath, int replicates);
