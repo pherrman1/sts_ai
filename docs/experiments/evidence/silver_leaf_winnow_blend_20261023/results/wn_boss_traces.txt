@@ -1,0 +1,13 @@
+Source 111339997, boss fights f19/f28/f29/f31 rerun with STS_CTMSILVER_FIGHTS and STS_CTMSILVER_LEAFHEAD_TRACE (same HP as the smoke). Turns: decision turns per redraw (k0/k1). 'after N turns' = at the first decision of 0-based turn N.
+fight | arm | turns (k0/k1) | player HP after 2-4 turns (mean) | enemy HP after 4 turns | after 6 | end HP
+Collector | production | 8/9 | 68 | 280 | 212 | 75/50
+Collector | win-now | 9/9 | 71 | 278 | 210 | 39/46
+Awakened One | production | 8/8 | 78 | 214 | 302 | 103/70
+Awakened One | win-now | 11/10 | 90 | 236 | 134 | 29/19
+Time Eater | production | 9/9 | 61 | 399 | 284 | 82/43
+Time Eater | win-now | 8/10 | 59 | 404 | 347 | 53/50
+The Heart | production | 8/8 | 86 | 474 | 211 | 99/64
+The Heart | win-now | 8/9 | 86 | 552 | 342 | 69/44
+
+Awakened One: production ended the first phase in 0-based turn 5 of both redraws, win-now in turn 6, so "after 6" is
+production's second-phase HP (302) against win-now's first-phase HP (134).

@@ -124,19 +124,28 @@ Boss fights, HP after the two redraws (X = died):
 
 Summed boss HP: production 758, capped a20 703, win-now 558.
 
-A guess at the mechanism, not tested: win-now values a leaf as if the fight ended there, so it counts the HP the
-player has now and ignores the enemies' HP and the damage still to come. In a first fight of 2-3 turns little damage
-lies ahead and the blend helps; in a long boss fight that scales (Awakened One, Time Eater, the Heart) half of the leaf
-ignores most of the fight's damage, which favors keeping HP now over killing faster. The first fights point the same
-way: the win-now blend took more turns for a little more HP.
+The likely mechanism: win-now values a leaf as if the fight ended there, so it counts the HP the player has now and
+ignores the enemies' HP and the damage still to come. In a first fight of 2-3 turns little damage lies ahead and the
+blend helps; in a long boss fight that scales (Awakened One, Time Eater, the Heart) half of the leaf ignores most of
+the fight's damage, which favors keeping HP now over killing faster. The first fights point the same way: the win-now
+blend took more turns for a little more HP.
+
+Traces of the four boss fights of source 111339997 that win-now lost (`STS_CTMSILVER_FIGHTS` and
+`STS_CTMSILVER_LEAFHEAD_TRACE`; the reruns end with the smoke's HP; `results/wn_boss_traces.txt`) fit this. In three of
+them the win-now blend dealt its damage later: after six turns the Heart had 342 HP left against production's 211
+(after four, 552 against 474) and Time Eater 347 against 284; the Awakened One's first phase fell a turn later and the
+fight took 10-11 turns against 8, while win-now held more HP early (90 against 78 after 2-4 turns) and lost it later.
+The Collector fight went at production's pace but one turn longer in one redraw, and its HP went in the last turns.
+Raw traces: `/mnt/project-files/silver-leaf-head-ab/smoke/wn_boss_traces_raw.tgz` (sha256 `90fb1f790905e497...`).
 
 ## Files
 
 - `make_wn.py` (the constant head), `compare_modes.py` (paired differences across two solver runs).
 - `results/`: `tune_analysis.txt`, `tune.json` (first tuning run), `tune2_analysis.txt`, `tune2.json` (win-now
   weights), `fresh_analysis.txt`, `fresh.json`, `fresh_outcome.txt`, `tune_outcome.txt`, `fresh_compare.txt`,
-  `cap_binding.txt`, `smoke_wn_analysis.txt`, `smoke_wn.json`, `smoke_wn_fights.txt` (per fight), and the capped a20
-  smoke cut to the same two arms (`smoke_capped_a20_analysis.txt`, `smoke_capped_a20.json`).
+  `cap_binding.txt`, `smoke_wn_analysis.txt`, `smoke_wn.json`, `smoke_wn_fights.txt` (per fight), the capped a20
+  smoke cut to the same two arms (`smoke_capped_a20_analysis.txt`, `smoke_capped_a20.json`), and
+  `wn_boss_traces.txt` (the four traced boss fights).
 - Raw smoke rows: `/mnt/project-files/silver-leaf-head-ab/smoke/smoke_wn_raw.tgz` (sha256 `aa6a8566e40b8b1b...`).
 
 ## Commands
@@ -157,4 +166,6 @@ SEEDS=111333000:111333099 python3 compare_modes.py hblend:wn:0.5+cap hblend:a20:
 ```
 
 The smoke: the A/B's `run_unit.sh` environment with `a20.txt` replaced by `wn.txt`,
-`STS_CTMSILVER_LEAF_HEAD_TURN_PENALTY=0` and `STS_CTMSILVER_SWEEP_SIMS=10000`, one source per process.
+`STS_CTMSILVER_LEAF_HEAD_TURN_PENALTY=0` and `STS_CTMSILVER_SWEEP_SIMS=10000`, one source per process. The traces:
+the same environment plus `STS_CTMSILVER_FIGHTS=<fight index>` and `STS_CTMSILVER_LEAFHEAD_TRACE=<file>`, source
+111339997, one process per fight (19, 28, 29, 31).
