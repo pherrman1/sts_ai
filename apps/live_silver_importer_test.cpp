@@ -2032,6 +2032,26 @@ int main(int argc, char **argv) {
                 unsetenv("STS_IMPORTER_RUNIC_DOME_BURNING_ELITE_HP");
                 if(legacy.ok || legacy.reason!="silver_runic_dome_history_gap")
                     throw std::runtime_error("STS_IMPORTER_RUNIC_DOME_BURNING_ELITE_HP=0 did not restore the refusal: "+legacy.reason);
+                // Java MathUtils.round and native std::round agree at .5: 58 -> 58+15.
+                auto half=obs;half["silverRoot"]["combat"]["runicDomeKnowledge"]["monsters"][0]["rollMaxHp"]=58;
+                half["silverRoot"]["combat"]["monsters"][0]["maxHp"]=73;
+                const auto halfImported=one_combat::advisor::importSilverRoot(half);
+                if(!halfImported.ok || halfImported.wire.monsters[0].pendingRollInputs.maxHp!=58)
+                    throw std::runtime_error("burning elite Dome .5 rounding "+id+": "+halfImported.reason);
+            }
+            {
+                // Only the combat-start roll predates the buff: a roll after the
+                // first turn with the pre-buff max HP stays a history gap.
+                auto later=groupDome({"SlaverBlue"},{{1}});auto &c=later["silverRoot"]["combat"];auto &row=c["runicDomeKnowledge"]["monsters"][0];
+                c["runicDomeKnowledge"]["schemaVersion"]=3;
+                row.update({{"schemaVersion",4},{"historySchemaVersion",1},{"occupantGeneration",1},{"birthGlobalTurn",0},
+                    {"birthKind","initial"},{"birthParentSlot",-1},{"birthParentGeneration",0},
+                    {"lastExecutionGlobalTurn",1},{"rollGlobalTurn",1}});
+                const auto base=one_combat::advisor::importSilverRoot(later);
+                if(!base.ok)throw std::runtime_error("burning elite Dome later-roll base: "+base.reason);
+                later["silverRoot"]["burningElite"]=true;c["monsters"][0]["maxHp"]=50;
+                if(one_combat::advisor::importSilverRoot(later).ok)
+                    throw std::runtime_error("burning elite pre-buff max HP accepted for a roll after the first turn");
             }
             for(int level:{0,9,19}) {
                 auto state=battleContextFromWire(one_combat::advisor::importSilverRoot(boundDome("TorchHead")).wire);
