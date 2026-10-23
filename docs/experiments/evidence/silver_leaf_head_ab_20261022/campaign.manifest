@@ -1,0 +1,11 @@
+name          silver-leaf-head-ab
+code_commit   75afdee0f00d752e16b801d29a7229a2ae6d2ab9
+binary_sha256 83de6c12eb1130bbcdc503117fc9d96991ec3c1d256197445637e9f2c89a773f
+configure_preset linux-gcc-release-x86-64-v3
+workers       32
+share         /mnt/project-files/silver-leaf-head-ab/campaign
+parallel      4
+schedule      queue
+lease_minutes 30
+input studentc.bin /mnt/project-files/rollout-student-494/studentc.bin eff2f74f57dc2f566bbd44be30988592503cc8db51e51ff1e70cd2dec4636509
+input a20.txt /mnt/project-files/exact-combat-research/leaf-value/heads/a20.txt 049d08a2232a396e19cad0a9c2b69eadcd9eb2ee5e4cf80e597a34b952d12e61

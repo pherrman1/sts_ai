@@ -19,6 +19,7 @@ declare -A ONE_COMBAT_SEED_INDEX=(
   ["silverparams400gen"]=2
   ["silverstopreplaygen"]=2
   ["ctmsilvergen"]=2
+  ["endgamerootgen"]=2
   ["silversynthgen"]=2
   ["silverazgen"]=2
   ["silverazfocusgen"]=2

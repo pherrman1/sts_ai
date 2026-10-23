@@ -2445,6 +2445,61 @@ int testIroncladCardJavaParity() {
         }
     }
 
+    // Live problem 100 (seed 111200621): playing Corruption, Mummified Hand never
+    // picked a Skill in the game. Java's ApplyPowerAction constructor sets every
+    // Skill to cost 0 before the UseCardAction constructor runs the relic, so
+    // only Attacks/Powers are candidates, and with none left it does not roll
+    // (step 835: cardRandomRng 30 -> 30). STS_CORRUPTION_IMMEDIATE_COST_FIX=0
+    // restores the legacy pool, which still held the Skills.
+    for (const bool fix : {true, false}) {
+        if (fix) unsetenv("STS_CORRUPTION_IMMEDIATE_COST_FIX");
+        else setenv("STS_CORRUPTION_IMMEDIATE_COST_FIX", "0", 1);
+        auto playCorruption = [](std::initializer_list<CardInstance> hand, int rngCounter, int &rolls) {
+            BattleContext bc = simulatorCorrectnessBattle({RelicId::MUMMIFIED_HAND}, Card(CardId::DEFEND_RED), 10);
+            while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+                bc.executeActions();
+            }
+            while (bc.cards.cardsInHand > 0) bc.cards.removeFromHandAtIdx(bc.cards.cardsInHand - 1);
+            for (const auto &c : hand) bc.cards.createTempCardInHand(c);
+            bc.player.energy = 10;
+            bc.cardRandomRng = Random(111200621ULL, rngCounter);
+            int corruptionIdx = -1;
+            for (int i = 0; i < bc.cards.cardsInHand; ++i) {
+                if (bc.cards.hand[i].getId() == CardId::CORRUPTION) corruptionIdx = i;
+            }
+            simulatorCorrectnessPlay(bc, corruptionIdx, 0);
+            while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+                bc.executeActions();
+            }
+            rolls = bc.cardRandomRng.counter - rngCounter;
+            for (int i = 0; i < bc.cards.cardsInHand; ++i) {
+                if (bc.cards.hand[i].getId() == CardId::STRIKE_RED) return static_cast<int>(bc.cards.hand[i].costForTurn);
+            }
+            return -1;
+        };
+        int strikeKept = 0;
+        for (int counter = 0; counter < 10; ++counter) {
+            int rolls = 0;
+            const int strikeCost = playCorruption({CardInstance(CardId::DEFEND_RED), CardInstance(CardId::SHRUG_IT_OFF),
+                                                   CardInstance(CardId::CORRUPTION), CardInstance(CardId::DISARM),
+                                                   CardInstance(CardId::STRIKE_RED)}, counter, rolls);
+            if (strikeCost != 0) ++strikeKept;
+            if (rolls != 1) {
+                unsetenv("STS_CORRUPTION_IMMEDIATE_COST_FIX");
+                return fail("Mummified Hand on Corruption did not roll exactly once");
+            }
+        }
+        int skillOnlyRolls = 0;
+        playCorruption({CardInstance(CardId::DEFEND_RED), CardInstance(CardId::CORRUPTION)}, 0, skillOnlyRolls);
+        unsetenv("STS_CORRUPTION_IMMEDIATE_COST_FIX");
+        if (fix ? (strikeKept != 0 || skillOnlyRolls != 0) : (strikeKept == 0 || skillOnlyRolls != 1)) {
+            return fail(std::string(fix ? "Mummified Hand on Corruption picked a Skill"
+                                        : "STS_CORRUPTION_IMMEDIATE_COST_FIX=0 did not restore the Skill pool")
+                        + " (Strike kept in " + std::to_string(strikeKept) + "/10, skill-only rolls "
+                        + std::to_string(skillOnlyRolls) + ")");
+        }
+    }
+
     // Live parity problem 64b (seed 111200459, Colosseum Nobs): Gremlin Nob
     // with Anger 3 sits in slot 1 behind the Taskmaster; a played Skill gave
     // it Strength 3 in the game, 0 natively. STS_ENRAGE_ALL_MONSTERS_FIX=0
@@ -3674,6 +3729,39 @@ int testSimulatorCorrectnessPr9To19() {
         const bool purgeLegacy = purgeFlag && std::string(purgeFlag) == "0";
         if (replay.player.cardsPlayedThisTurn != (purgeLegacy ? 7 : 6)) {
             return fail("#12 Choker purge-on-use replay count");
+        }
+    }
+
+    // Live problem 101 (seed 111200627): Havoc autoplayed Immolate (cost 2) and
+    // Necronomicon replayed it in the game. Java checks only the card
+    // (costForTurn >= 2 && !freeToPlayOnce); a Forethought-free card still does
+    // not trigger. STS_NECRONOMICON_AUTOPLAY_FIX=0 restores the legacy skip of
+    // every free-to-play queue item.
+    for (const bool fix : {true, false}) {
+        for (const bool freeCard : {false, true}) {
+            if (fix) unsetenv("STS_NECRONOMICON_AUTOPLAY_FIX");
+            else setenv("STS_NECRONOMICON_AUTOPLAY_FIX", "0", 1);
+            auto bc = simulatorCorrectnessBattle({RelicId::NECRONOMICON}, Card(CardId::FLEX), 10);
+            while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+                bc.executeActions();
+            }
+            CardInstance blade(CardId::HEAVY_BLADE);
+            if (freeCard) blade.freeToPlayOnce = true;
+            CardQueueItem item(blade, 0, bc.player.energy);
+            item.autoplay = true;
+            item.freeToPlay = true; // as playTopCardInDrawPile (Havoc) queues it
+            bc.inputState = InputState::EXECUTING_ACTIONS;
+            bc.playCardQueueItem(item);
+            bc.executeActions();
+            unsetenv("STS_NECRONOMICON_AUTOPLAY_FIX");
+            const int want = (fix && !freeCard) ? 2 : 1;
+            if (bc.player.attacksPlayedThisTurn != want) {
+                const std::string msg = std::string(fix ? "Necronomicon" : "STS_NECRONOMICON_AUTOPLAY_FIX=0")
+                    + (freeCard ? " on a freeToPlayOnce autoplay" : " on a Havoc autoplay") + ": "
+                    + std::to_string(bc.player.attacksPlayedThisTurn) + " attacks played, want "
+                    + std::to_string(want);
+                return fail(msg.c_str());
+            }
         }
     }
 

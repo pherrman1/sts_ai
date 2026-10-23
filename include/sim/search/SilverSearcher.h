@@ -16,6 +16,9 @@
 
 namespace sts::search {
 
+    struct CombatValueNet;
+    struct SilverValueHead;
+
     // Run context the evaluation needs but a BattleContext does not carry.
     struct SilverSearchContext {
         int act = 1;
@@ -262,6 +265,19 @@ namespace sts::search {
         static int envMaxBackupMinVisits();
         // Research-only playout policy for RolloutConfig::prior (same signature as nodePrior).
         std::function<std::vector<double>(const BattleContext &, const std::vector<Edge> &)> rolloutPrior;
+        // STS_SILVER_LEAF_HEAD (set by NativeSilverBackend; default off): an undecided leaf is worth
+        // blend * (head - turnPenalty * turns beyond the root) + (1 - blend) * its playout. The turn
+        // penalty keeps a head that runs high on unfinished fights from preferring a stall to a win.
+        // winCap first lowers the head to the leaf's winNowValue: off the states it was trained on a
+        // head can value a fight above any ending it has left (and search then avoids ending it). A
+        // shortfall head (SilverValueHead::shortfall) is worth winNowValue - max(0, head) instead.
+        struct LeafHead {
+            const SilverValueHead *head = nullptr;
+            const CombatValueNet *trunk = nullptr;
+            double blend = 0.5, turnPenalty = 1;
+            bool winCap = false;
+        };
+        LeafHead leafHead;
 
         SilverSearcher(const BattleContext &root, const SilverSearchContext &context);
         ~SilverSearcher();
@@ -304,6 +320,10 @@ namespace sts::search {
         // Silver's terminal evaluation of `end`, relative to this searcher's
         // root (gold and max HP deltas) and run context.
         [[nodiscard]] double scoreEndState(const BattleContext &end) const { return evaluateEndState(end); }
+        // Silver's score for winning the fight at `bc` right now, with its HP, potions and turn: an upper
+        // bound on how the fight can still end, short of healing or gold and max HP gained in it.
+        // `bc` is left as it was.
+        [[nodiscard]] double winNowValue(BattleContext &bc) const;
         [[nodiscard]] const SilverSearchContext &searchContext() const { return context; }
         // One SilverRolloutAgent playout of `state` to combat end, scored like a
         // search leaf (research diagnostics; the graph is untouched).
@@ -333,6 +353,7 @@ namespace sts::search {
 
         std::default_random_engine randGen;
         SilverRolloutAgent rolloutAgent;
+        std::vector<float> leafHeadFeat, leafHeadBase;   // LeafHead scratch
 
         struct WideningSchedule {
             double c = 0;
@@ -375,6 +396,10 @@ namespace sts::search {
 
         [[nodiscard]] double evaluateEndState(const BattleContext &bc) const;
     };
+
+    // Research hook (exact_combat_solver --leaf-oracle; empty = production): when set and it
+    // returns true for an undecided leaf, the value it writes replaces the leaf's playout.
+    extern thread_local std::function<bool(SilverSearcher &, BattleContext &, double &)> g_silverLeafOverride;
 
 }
 

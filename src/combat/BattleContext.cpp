@@ -146,6 +146,11 @@ namespace sts {
         return cachedFixFlag(cache, "STS_SLIME_SPLIT_RNG_FIX");
     }
 
+    bool slimeSplitRollOrderFix() {
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_SLIME_SPLIT_ROLL_ORDER_FIX");
+    }
+
     bool dyingAttackerFix() {
         thread_local CachedFixFlag cache;
         return cachedFixFlag(cache, "STS_DYING_ATTACKER_FIX");
@@ -236,6 +241,16 @@ namespace sts {
     bool impatienceFix() {
         thread_local CachedFixFlag cache;
         return cachedFixFlag(cache, "STS_IMPATIENCE_FIX");
+    }
+
+    bool corruptionImmediateCostFix() {
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_CORRUPTION_IMMEDIATE_COST_FIX");
+    }
+
+    bool necronomiconAutoplayFix() {
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_NECRONOMICON_AUTOPLAY_FIX");
     }
 }
 
@@ -1900,6 +1915,11 @@ void BattleContext::usePowerCard() {
             break;
 
         case CardId::CORRUPTION:
+            // Java's ApplyPowerAction constructor already sets every Skill to
+            // cost 0 (modifyCostForCombat(-9)), before UseCardAction's relic
+            // hooks (Mummified Hand) run. Corruption.use builds no action when
+            // the power is already held.
+            if (!player.hasStatus<PS::CORRUPTION>() && corruptionImmediateCostFix()) cards.onBuffCorruption();
             addToBot( Actions::BuffPlayer<PS::CORRUPTION>() );
             break;
 
@@ -2060,8 +2080,13 @@ void BattleContext::onUseAttackCard() {
         addToBot( Actions::BuffPlayer<PS::STRENGTH>(1) );
     }
 
-    if (p.hasRelic<R::NECRONOMICON>() && !p.haveUsedNecronomiconThisTurn && !item.freeToPlay && !item.purgeOnUse &&
-        (c.costForTurn >= 2 || c.isXCost() && item.energyOnUse >= 2)) {
+    // Java Necronomicon.onUseCard: ((costForTurn >= 2 && !freeToPlayOnce) ||
+    // (X-cost && energyOnUse >= 2)) && activated. Havoc/Mayhem/Distilled Chaos
+    // autoplays and purge copies are not excluded.
+    const bool necronomiconCost = necronomiconAutoplayFix()
+        ? (c.costForTurn >= 2 && !c.freeToPlayOnce) || (c.isXCost() && item.energyOnUse >= 2)
+        : !item.freeToPlay && !item.purgeOnUse && (c.costForTurn >= 2 || c.isXCost() && item.energyOnUse >= 2);
+    if (p.hasRelic<R::NECRONOMICON>() && !p.haveUsedNecronomiconThisTurn && necronomiconCost) {
         queuePurgeCard(c, item.target);
         p.haveUsedNecronomiconThisTurn = true;
     }

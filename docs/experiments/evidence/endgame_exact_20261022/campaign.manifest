@@ -1,0 +1,14 @@
+name          endgame-exact
+code_commit   c449ca96dd5339d4cad1d96de8fd2b0fc8417eda
+binary_sha256 e16d59d140039c058a5fea26d7a5042df4ca46d0458bb9764d3b56282ab2c5c7
+build_target  exact_combat_solver
+configure_preset linux-gcc-release-x86-64-v3
+workers       8
+share         /mnt/project-files/exact-combat-research/endgame/campaign
+parallel      4
+schedule      queue
+lease_minutes 30
+input S0.jsonl /mnt/project-files/exact-combat-research/endgame/inputs/S0.jsonl 70837bf3edb45b696b5b7281c17533c8fee8ae1ff89349c82ea84c6f7d87e87f
+input C0.jsonl /mnt/project-files/exact-combat-research/endgame/inputs/C0.jsonl c13bc760586392260746b4c8bb51c24529fb52b2864d80e2449075ab52c5029a
+input S1.jsonl /mnt/project-files/exact-combat-research/endgame/inputs/S1.jsonl 3a20de9031e58dee29e1e9e0b2824b2979afeba23fc8676c8c834bf2aee0c54d
+input W1.jsonl /mnt/project-files/exact-combat-research/endgame/inputs/W1.jsonl 003a34e13465ae631391602ee5205eb2c199fc2b625883137cc760ce7863119d

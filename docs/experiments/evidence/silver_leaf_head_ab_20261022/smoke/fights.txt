@@ -1,0 +1,63 @@
+# Capped smoke (sources 111339997-999), HP after the two redraws per arm (X = death), CPU seconds and decisions per fight; per-source CPU totals, ratios to base10000, us per simulation, decisions.
+s111339997-f3 1 ELITE Lagavulin 62 control:46:3s:37d base10000:47/50:6s:57d base12000:33/50:8s:61d base15000:46/36:11s:67d head10000:52/35:9s:68d
+s111339997-f4 1 ELITE Gremlin Nob 74 control:55:1s:15d base10000:55/55:2s:30d base12000:55/55:3s:30d base15000:55/55:4s:30d head10000:55/55:3s:30d
+s111339997-f6 1 ELITE Three Sentries 65 control:49:4s:33d base10000:31/50:7s:55d base12000:31/50:9s:55d base15000:41/50:11s:53d head10000:51/51:8s:60d
+s111339997-f7 1 NORMAL Gremlin Gang 55 control:52:1s:13d base10000:51/52:2s:29d base12000:51/52:3s:27d base15000:53/52:3s:24d head10000:53/51:3s:24d
+s111339997-f8 1 ELITE Gremlin Nob 58 control:58:1s:10d base10000:57/72:1s:21d base12000:57/58:2s:20d base15000:57/72:2s:21d head10000:58/72:2s:23d
+s111339997-f9 1 BOSS The Guardian 64 control:55:5s:42d base10000:43/39:54s:78d base12000:46/42:64s:75d base15000:53/39:82s:75d head10000:56/55:58s:79d
+s111339997-f11 2 NORMAL Three Byrds 69 control:60:2s:19d base10000:60/66:4s:37d base12000:60/66:4s:36d base15000:60/60:5s:38d head10000:66/66:6s:46d
+s111339997-f14 2 NORMAL Centurion And He 75 control:67:3s:23d base10000:67/67:6s:49d base12000:68/68:7s:48d base15000:68/68:8s:47d head10000:68/67:6s:50d
+s111339997-f15 2 OTHER COLOSSEUM_EVENT_ 73 control:66:1s:17d base10000:66/66:4s:39d base12000:66/66:5s:38d base15000:66/66:6s:36d head10000:66/66:5s:38d
+s111339997-f16 2 OTHER COLOSSEUM_EVENT_ 72 control:71:2s:20d base10000:72/62:5s:54d base12000:70/69:6s:47d base15000:72/69:8s:51d head10000:71/69:7s:51d
+s111339997-f17 2 ELITE Book Of Stabbing 77 control:74:2s:24d base10000:76/76:5s:46d base12000:74/76:6s:45d base15000:76/76:7s:45d head10000:76/76:7s:47d
+s111339997-f18 2 NORMAL Snake Plant 77 control:76:2s:20d base10000:76/76:3s:39d base12000:76/76:4s:37d base15000:76/76:6s:40d head10000:76/76:4s:38d
+s111339997-f19 2 BOSS Collector 77 control:51:9s:49d base10000:75/50:105s:91d base12000:75/75:125s:88d base15000:76/75:184s:96d head10000:75/59:105s:86d
+s111339997-f21 3 NORMAL Orb Walker 74 control:72:2s:15d base10000:72/72:3s:29d base12000:72/72:3s:28d base15000:72/72:4s:29d head10000:73/73:4s:32d
+s111339997-f22 3 ELITE Giant Head 73 control:71:4s:28d base10000:71/70:7s:54d base12000:71/72:9s:55d base15000:70/72:12s:55d head10000:68/70:10s:55d
+s111339997-f24 3 ELITE Nemesis 89 control:58:5s:29d base10000:57/57:11s:60d base12000:57/57:12s:57d base15000:57/57:15s:61d head10000:60/57:14s:65d
+s111339997-f25 3 ELITE Giant Head 99 control:86:4s:30d base10000:73/71:9s:57d base12000:86/71:11s:60d base15000:73/84:16s:68d head10000:86/86:12s:63d
+s111339997-f26 3 NORMAL Jaw Worm Horde 92 control:78:3s:24d base10000:68/77:5s:37d base12000:68/77:6s:37d base15000:70/77:7s:35d head10000:77/77:8s:41d
+s111339997-f27 3 ELITE Nemesis 84 control:82:6s:30d base10000:75/82:16s:81d base12000:61/81:18s:78d base15000:68/82:26s:90d head10000:80/83:20s:80d
+s111339997-f28 3 BOSS Awakened One 88 control:82:11s:63d base10000:103/70:206s:132d base12000:84/97:233s:128d base15000:101/102:279s:127d head10000:61/70:159s:112d
+s111339997-f29 3 BOSS Time Eater 88 control:39:11s:40d base10000:82/43:139s:92d base12000:53/62:201s:108d base15000:59/54:202s:88d head10000:60/32:151s:99d
+s111339997-f30 4 ELITE Shield And Spear 90 control:109:6s:38d base10000:109/107:12s:70d base12000:104/107:14s:68d base15000:109/109:18s:68d head10000:109/109:14s:71d
+s111339997-f31 4 BOSS The Heart 111 control:18:13s:59d base10000:99/64:172s:117d base12000:105/62:200s:111d base15000:110/22:266s:122d head10000:80/74:186s:124d
+cpu {'control': 100.1, 'base10000': 784.8, 'base12000': 953.7, 'base15000': 1179.3, 'head10000': 801.1}
+cpu ratio vs base10000: {'control': 0.128, 'base10000': 1.0, 'base12000': 1.215, 'base15000': 1.503, 'head10000': 1.021}
+us/sim: {'control': 14.77, 'base10000': 57.96, 'base12000': 59.44, 'base15000': 57.56, 'head10000': 57.97}
+decisions: {'control': 678, 'base10000': 1354, 'base12000': 1337, 'base15000': 1366, 'head10000': 1382}
+s111339998-f0 1 NORMAL Two Louse 68 control:64:1s:8d base10000:64/64:1s:16d base12000:64/64:1s:16d base15000:64/64:1s:16d head10000:62/64:1s:17d
+s111339998-f4 1 NORMAL Blue Slaver 68 control:62:2s:18d base10000:62/62:3s:36d base12000:62/62:4s:36d base15000:62/62:5s:36d head10000:62/62:4s:36d
+s111339998-f5 1 ELITE Lagavulin 68 control:54:2s:18d base10000:54/49:3s:37d base12000:54/54:3s:37d base15000:49/54:4s:36d head10000:49/49:4s:38d
+s111339998-f7 1 NORMAL Looter 64 control:63:0s:6d base10000:63/63:0s:12d base12000:63/63:0s:12d base15000:63/63:1s:12d head10000:63/63:1s:14d
+s111339998-f8 1 ELITE Gremlin Nob 75 control:47:1s:15d base10000:47/47:2s:30d base12000:47/47:2s:30d base15000:47/47:3s:30d head10000:47/47:3s:30d
+s111339998-f9 1 BOSS Hexaghost 53 control:10:4s:38d base10000:8/10:44s:74d base12000:X/X:52s:67d base15000:X/7:63s:66d head10000:X/7:55s:72d
+s111339998-f10 2 NORMAL Three Byrds 60 control:2:3s:29d base10000:42/42:6s:40d base12000:42/42:7s:40d base15000:42/42:8s:40d head10000:42/47:7s:43d
+cpu {'control': 12.1, 'base10000': 59.2, 'base12000': 70.2, 'base15000': 85.0, 'head10000': 75.8}
+cpu ratio vs base10000: {'control': 0.205, 'base10000': 1.0, 'base12000': 1.186, 'base15000': 1.436, 'head10000': 1.281}
+us/sim: {'control': 9.18, 'base10000': 24.15, 'base12000': 24.57, 'base15000': 24.0, 'head10000': 30.3}
+decisions: {'control': 132, 'base10000': 245, 'base12000': 238, 'base15000': 236, 'head10000': 250}
+s111339999-f0 1 NORMAL Small Slimes 68 control:53:1s:12d base10000:58/66:2s:30d base12000:58/67:2s:27d base15000:53/67:3s:26d head10000:58/67:2s:27d
+s111339999-f1 1 NORMAL Two Louse 36 control:36:0s:7d base10000:36/36:1s:14d base12000:36/36:1s:14d base15000:36/36:1s:14d head10000:36/36:1s:14d
+s111339999-f3 1 ELITE Lagavulin 69 control:58:2s:24d base10000:44/53:3s:44d base12000:53/39:4s:43d base15000:44/53:5s:44d head10000:58/39:5s:40d
+s111339999-f4 1 ELITE Three Sentries 64 control:37:3s:28d base10000:42/42:5s:53d base12000:37/37:7s:51d base15000:42/37:9s:53d head10000:42/42:8s:52d
+s111339999-f5 1 OTHER MUSHROOMS_EVENT 43 control:33:1s:13d base10000:33/33:2s:24d base12000:33/33:2s:24d base15000:33/33:2s:24d head10000:33/33:2s:26d
+s111339999-f6 1 ELITE Gremlin Nob 39 control:31:1s:10d base10000:31/31:1s:20d base12000:31/31:2s:20d base15000:31/31:2s:20d head10000:31/31:2s:20d
+s111339999-f8 1 BOSS The Guardian 40 control:27:6s:47d base10000:27/23:72s:84d base12000:27/27:99s:93d base15000:27/27:132s:98d head10000:26/26:85s:103d
+s111339999-f9 2 NORMAL Shell Parasite 65 control:50:1s:11d base10000:50/50:2s:22d base12000:50/50:2s:22d base15000:50/50:2s:22d head10000:50/50:2s:22d
+s111339999-f12 2 ELITE Slavers 64 control:55:2s:18d base10000:55/55:4s:36d base12000:55/55:5s:36d base15000:55/55:7s:36d head10000:55/55:9s:55d
+s111339999-f13 2 ELITE Book Of Stabbing 75 control:32:3s:30d base10000:48/42:6s:57d base12000:49/44:7s:45d base15000:48/48:9s:50d head10000:42/42:8s:58d
+s111339999-f15 2 NORMAL Cultist And Chos 40 control:40:3s:26d base10000:31/40:8s:62d base12000:31/40:10s:66d base15000:40/40:12s:60d head10000:37/37:10s:66d
+s111339999-f17 2 BOSS Collector 73 control:4:9s:60d base10000:7/12:47s:57d base12000:12/12:52s:49d base15000:12/14:67s:49d head10000:7/12:85s:82d
+s111339999-f18 3 NORMAL Three Darklings 59 control:45:20s:61d base10000:46/35:8s:40d base12000:46/35:10s:41d base15000:48/43:16s:44d head10000:40/52:19s:76d
+s111339999-f19 3 NORMAL Three Shapes 51 control:44:1s:14d base10000:49/40:2s:27d base12000:49/40:3s:27d base15000:49/40:4s:27d head10000:49/43:4s:31d
+s111339999-f22 3 ELITE Reptomancer 29 control:1:2s:22d base10000:X/1:5s:43d base12000:X/1:5s:42d base15000:X/X:4s:32d head10000:X/X:5s:39d
+s111339999-f23 3 NORMAL Three Darklings 29 control:22:6s:36d base10000:26/24:11s:61d base12000:26/22:7s:39d base15000:26/22:16s:61d head10000:29/26:15s:66d
+s111339999-f24 3 ELITE Giant Head 28 control:12:4s:34d base10000:X/X:10s:80d base12000:X/26:13s:80d base15000:X/26:16s:82d head10000:X/X:11s:79d
+s111339999-f25 3 NORMAL Spire Growth 18 control:9:1s:16d base10000:X/9:3s:34d base12000:X/9:3s:34d base15000:9/9:4s:30d head10000:9/9:3s:30d
+s111339999-f26 3 BOSS Donu And Deca 37 control:13:6s:44d base10000:2/1:74s:99d base12000:2/2:84s:97d base15000:4/2:108s:100d head10000:1/2:81s:100d
+s111339999-f27 3 BOSS Awakened One 19 control:X:1s:18d base10000:X/X:10s:36d base12000:X/X:12s:36d base15000:X/X:15s:36d head10000:X/X:10s:30d
+cpu {'control': 72.8, 'base10000': 277.8, 'base12000': 328.2, 'base15000': 433.0, 'head10000': 366.3}
+cpu ratio vs base10000: {'control': 0.262, 'base10000': 1.0, 'base12000': 1.182, 'base15000': 1.559, 'head10000': 1.319}
+us/sim: {'control': 13.7, 'base10000': 30.1, 'base12000': 30.87, 'base15000': 31.79, 'head10000': 36.05}
+decisions: {'control': 531, 'base10000': 923, 'base12000': 886, 'base15000': 908, 'head10000': 1016}

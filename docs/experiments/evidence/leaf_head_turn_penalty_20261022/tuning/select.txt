@@ -1,0 +1,11 @@
+head:a20               prod +2.598  prod@mb=4 +17.834  mean +10.216  worst encounter +50.037
+head:a20/1             prod +0.006  prod@mb=4 +0.184  mean +0.095  worst encounter +0.366
+head:a20/2             prod +0.177  prod@mb=4 +0.025  mean +0.101  worst encounter +0.620
+head:a20/4             prod +0.464  prod@mb=4 +0.512  mean +0.488  worst encounter +0.584
+head:a20/8             prod +1.140  prod@mb=4 +1.148  mean +1.144  worst encounter +1.594
+hblend:a20:0.5         prod -0.344  prod@mb=4 -0.194  mean -0.269  worst encounter +0.147
+hblend:a20:0.5/1       prod -0.253  prod@mb=4 -0.253  mean -0.253  worst encounter -0.086
+hblend:a20:0.5/2       prod -0.137  prod@mb=4 -0.154  mean -0.145  worst encounter -0.034
+hblend:a20:0.5/4       prod +0.018  prod@mb=4 -0.034  mean -0.008  worst encounter +0.169
+hblend:a20:0.5/8       prod +0.443  prod@mb=4 +0.530  mean +0.487  worst encounter +0.620
+SELECTED hblend:a20:0.5/1 (mean -0.253, worst encounter -0.086)

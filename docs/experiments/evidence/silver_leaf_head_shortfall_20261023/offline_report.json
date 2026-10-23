@@ -1,0 +1,212 @@
+{
+ "pack": "a20_pack_wn.npz",
+ "head": "a20_head.txt",
+ "roots": 736347,
+ "fit": 419724,
+ "stop": 143451,
+ "test": 142746,
+ "stopShortfallRmse": 20.337,
+ "epochs": 7,
+ "groups": {
+  "all": {
+   "all": {
+    "roots": 142746,
+    "actual": 120.07,
+    "aboveWinNow": 0.1224,
+    "shortfallRmse": 19.15,
+    "shortfallBias": -0.69,
+    "plainRmse": 25.0,
+    "plainBias": -0.76,
+    "plainCappedRmse": 23.19,
+    "plainCappedBias": -4.79,
+    "plainAboveWinNow": 0.342
+   }
+  },
+  "act": {
+   "act 1": {
+    "roots": 43091,
+    "actual": 111.85,
+    "aboveWinNow": 0.0334,
+    "shortfallRmse": 14.14,
+    "shortfallBias": -0.79,
+    "plainRmse": 16.97,
+    "plainBias": 0.01,
+    "plainCappedRmse": 16.33,
+    "plainCappedBias": -1.47,
+    "plainAboveWinNow": 0.2604
+   },
+   "act 2": {
+    "roots": 41979,
+    "actual": 115.99,
+    "aboveWinNow": 0.1149,
+    "shortfallRmse": 17.73,
+    "shortfallBias": -1.33,
+    "plainRmse": 22.41,
+    "plainBias": -0.63,
+    "plainCappedRmse": 20.77,
+    "plainCappedBias": -4.06,
+    "plainAboveWinNow": 0.3251
+   },
+   "act 3": {
+    "roots": 49729,
+    "actual": 130.65,
+    "aboveWinNow": 0.2063,
+    "shortfallRmse": 19.38,
+    "shortfallBias": 0.2,
+    "plainRmse": 28.26,
+    "plainBias": -0.18,
+    "plainCappedRmse": 25.45,
+    "plainCappedBias": -6.67,
+    "plainAboveWinNow": 0.4366
+   },
+   "act 4": {
+    "roots": 7947,
+    "actual": 120.03,
+    "aboveWinNow": 0.119,
+    "shortfallRmse": 38.59,
+    "shortfallBias": -2.39,
+    "plainRmse": 44.83,
+    "plainBias": -9.31,
+    "plainCappedRmse": 43.41,
+    "plainCappedBias": -14.88,
+    "plainAboveWinNow": 0.2814
+   }
+  },
+  "room": {
+   "MONSTER": {
+    "roots": 59060,
+    "actual": 125.5,
+    "aboveWinNow": 0.1505,
+    "shortfallRmse": 10.31,
+    "shortfallBias": -1.31,
+    "plainRmse": 17.37,
+    "plainBias": 0.97,
+    "plainCappedRmse": 14.8,
+    "plainCappedBias": -3.64,
+    "plainAboveWinNow": 0.4454
+   },
+   "ELITE": {
+    "roots": 42488,
+    "actual": 114.92,
+    "aboveWinNow": 0.1096,
+    "shortfallRmse": 17.17,
+    "shortfallBias": 0.47,
+    "plainRmse": 22.36,
+    "plainBias": 1.07,
+    "plainCappedRmse": 20.52,
+    "plainCappedBias": -2.52,
+    "plainAboveWinNow": 0.2914
+   },
+   "BOSS": {
+    "roots": 37576,
+    "actual": 117.24,
+    "aboveWinNow": 0.0861,
+    "shortfallRmse": 29.56,
+    "shortfallBias": -0.97,
+    "plainRmse": 35.92,
+    "plainBias": -5.72,
+    "plainCappedRmse": 34.5,
+    "plainCappedBias": -9.16,
+    "plainAboveWinNow": 0.23
+   },
+   "EVENT": {
+    "roots": 3622,
+    "actual": 121.45,
+    "aboveWinNow": 0.19,
+    "shortfallRmse": 13.88,
+    "shortfallBias": -1.35,
+    "plainRmse": 21.39,
+    "plainBias": 0.84,
+    "plainCappedRmse": 18.46,
+    "plainCappedBias": -4.85,
+    "plainAboveWinNow": 0.4103
+   }
+  },
+  "turn": {
+   "turn 0": {
+    "roots": 34554,
+    "actual": 119.95,
+    "aboveWinNow": 0.094,
+    "shortfallRmse": 20.43,
+    "shortfallBias": 1.13,
+    "plainRmse": 24.11,
+    "plainBias": -0.21,
+    "plainCappedRmse": 23.02,
+    "plainCappedBias": -2.25,
+    "plainAboveWinNow": 0.2267
+   },
+   "turn 1": {
+    "roots": 29111,
+    "actual": 121.66,
+    "aboveWinNow": 0.1176,
+    "shortfallRmse": 18.11,
+    "shortfallBias": 0.05,
+    "plainRmse": 23.46,
+    "plainBias": -0.76,
+    "plainCappedRmse": 22.06,
+    "plainCappedBias": -3.7,
+    "plainAboveWinNow": 0.3094
+   },
+   "turn 2": {
+    "roots": 24933,
+    "actual": 120.67,
+    "aboveWinNow": 0.1474,
+    "shortfallRmse": 17.83,
+    "shortfallBias": -1.3,
+    "plainRmse": 23.68,
+    "plainBias": -1.0,
+    "plainCappedRmse": 22.09,
+    "plainCappedBias": -5.04,
+    "plainAboveWinNow": 0.371
+   },
+   "turn 3": {
+    "roots": 18344,
+    "actual": 120.18,
+    "aboveWinNow": 0.1601,
+    "shortfallRmse": 17.94,
+    "shortfallBias": -1.65,
+    "plainRmse": 24.12,
+    "plainBias": -1.02,
+    "plainCappedRmse": 22.23,
+    "plainCappedBias": -5.98,
+    "plainAboveWinNow": 0.4131
+   },
+   "turn 4": {
+    "roots": 13092,
+    "actual": 119.8,
+    "aboveWinNow": 0.1412,
+    "shortfallRmse": 18.47,
+    "shortfallBias": -2.72,
+    "plainRmse": 25.64,
+    "plainBias": -1.69,
+    "plainCappedRmse": 23.57,
+    "plainCappedBias": -7.29,
+    "plainAboveWinNow": 0.4138
+   },
+   "turn 5": {
+    "roots": 8678,
+    "actual": 118.23,
+    "aboveWinNow": 0.1079,
+    "shortfallRmse": 21.75,
+    "shortfallBias": -1.33,
+    "plainRmse": 27.97,
+    "plainBias": -0.31,
+    "plainCappedRmse": 24.98,
+    "plainCappedBias": -6.71,
+    "plainAboveWinNow": 0.4348
+   },
+   "turn 6+": {
+    "roots": 14034,
+    "actual": 117.26,
+    "aboveWinNow": 0.0998,
+    "shortfallRmse": 20.6,
+    "shortfallBias": -2.09,
+    "plainRmse": 30.5,
+    "plainBias": -0.79,
+    "plainCappedRmse": 27.19,
+    "plainCappedBias": -7.74,
+    "plainAboveWinNow": 0.4246
+   }
+  }
+ }
+}

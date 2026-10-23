@@ -115,8 +115,24 @@ namespace sts::search {
         bool priorPlayoutBossElite;
         // Elite rooms are included (STS_SILVER_PRIOR_PLAYOUT_ELITE=1; ADR-0056 makes boss rooms only the default).
         bool priorPlayoutElite;
+        // STS_SILVER_LEAF_HEAD: head and trunk paths (empty when off), blend weight, turn penalty, win cap.
+        std::string leafHead, leafHeadTrunk;
+        double leafHeadBlend, leafHeadTurnPenalty;
+        bool leafHeadWinCap;
     };
     NativeSilverLeafSettings nativeSilverLeafSettings();
+    // A leaf head from the environment: <prefix>=<silver_value_head_v1 file> (unset or 0 = none) on the trunk of
+    // <prefix>_TRUNK (default the g7f_E prior), blend weight <prefix>_BLEND (default 0.5; 1 = no playout) and
+    // <prefix>_TURN_PENALTY points per turn beyond the root (default 1), and with <prefix>_WIN_CAP=1 the head
+    // capped at the leaf's win-now value first (SilverSearcher::LeafHead::winCap; default 0). Loads head and
+    // trunk; nullopt when <prefix> is unset or 0, whose sub-options must then be unset.
+    struct NativeSilverLeafHeadEnv {
+        std::string path, trunkPath;
+        double blend = 0.5, turnPenalty = 1;
+        bool winCap = false;
+    };
+    std::optional<NativeSilverLeafHeadEnv> nativeSilverLeafHeadFromEnv(const std::string &prefix, SilverValueHead &head,
+                                                                      CombatValueNet &trunk);
     bool nativeSilverLearnedStopEnabled();
     bool nativeSilverLearnedStopBossFallback();
     std::int64_t nativeSilverLearnedStopBossMax();
@@ -160,6 +176,9 @@ namespace sts::search {
     // Research-only (maxbackup armset): when set, replaces STS_SILVER_MAX_BACKUP
     // (SilverSearcher::maxBackupMinVisits; 0 = off) for the current thread's searches. Unset elsewhere.
     extern thread_local std::optional<int> g_nativeSilverMaxBackupOverride;
+    // Research-only (leafhead armset): when set, this leaf head (an empty one: none) replaces the whole-run
+    // STS_SILVER_LEAF_HEAD setting (SilverSearcher::leafHead) for the current thread's searches. Unset elsewhere.
+    extern thread_local std::optional<SilverSearcher::LeafHead> g_nativeSilverLeafHeadOverride;
     // Bundled default model of the rollout root table (ADR-0046; gen-7f E since ADR-TBD), relative to the repository root.
     inline constexpr const char *kDefaultRolloutRootTableModel = "models/combat_policy_mlp_g7f_E.txt";
     // Rollout root table (STS_SILVER_ROLLOUT_ROOT_TABLE: unset = kDefaultRolloutRootTableModel,

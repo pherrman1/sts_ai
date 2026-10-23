@@ -229,6 +229,29 @@ std::array<CardId, 3> sts::generateDiscoveryCards(Random &cardRandomRng, Charact
     int cardCount = 0;
     std::array<CardId, 3> cards;
 
+#ifdef STS_EXACT_CHANCE
+    // Exact chance enumeration (research tooling) answers every new draw with its first value, so the duplicate
+    // rejection below would draw the same card forever. Draw each card from the pool cards not drawn yet instead,
+    // which is the distribution the rejection loop produces.
+    if (::sts::exact::g_chanceScript) {
+        const int poolSize = type == CardType::INVALID ? CombatCardPool::getPoolSize(cc)
+                : type == CardType::STATUS ? CombatColorlessCardPool::getPoolSize()
+                : CombatTypeCardPool::getPoolSize(cc, type);
+        int taken[3];  // pool indices drawn so far, ascending
+        for (; cardCount < 3; ++cardCount) {
+            int idx = cardRandomRng.random(poolSize - 1 - cardCount);
+            int at = 0;
+            while (at < cardCount && taken[at] <= idx) { ++idx; ++at; }
+            for (int i = cardCount; i > at; --i) taken[i] = taken[i - 1];
+            taken[at] = idx;
+            cards[cardCount] = type == CardType::INVALID ? CombatCardPool::getCardAt(cc, idx)
+                    : type == CardType::STATUS ? CombatColorlessCardPool::getCardAt(idx)
+                    : CombatTypeCardPool::getCardAt(cc, type, idx);
+        }
+        return cards;
+    }
+#endif
+
     while (cardCount < 3) {
         CardId id;
         if (type == CardType::INVALID) {
@@ -307,6 +330,19 @@ Potion sts::returnRandomPotion(Random &potionRng, CharacterClass cc, bool limite
 }
 
 Potion sts::returnRandomPotionOfRarity(Random &potionRng, PotionRarity rarity, CharacterClass cc, bool limited) {
+#ifdef STS_EXACT_CHANCE
+    // Exact chance enumeration (research tooling): the rejection loop below would redraw the same potion forever;
+    // draw from the pool entries the loop accepts instead (its distribution).
+    if (::sts::exact::g_chanceScript) {
+        Potion accepted[PotionPool::poolSize];
+        int n = 0;
+        for (int i = 0; i < PotionPool::poolSize; ++i) {
+            const Potion p = PotionPool::getPotionForClass(cc, i);
+            if (potionRarities[static_cast<int>(p)] == rarity && !(limited && p == Potion::FRUIT_JUICE)) accepted[n++] = p;
+        }
+        return accepted[potionRng.random(n - 1)];
+    }
+#endif
     // this is dumb.
     Potion temp = getRandomPotion(potionRng, cc);
     bool spamCheck = limited;

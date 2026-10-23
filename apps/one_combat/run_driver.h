@@ -99,6 +99,18 @@ bool matchAndKeepPolicyStep(sts::GameContext &, sts::search::ScumSearchAgent2 &,
 // True while the policy chain runs on a hypothetical Match and Keep offer.
 extern thread_local bool t_oocHypotheticalStep;
 
+// The per-run out-of-combat policy state runFullRunOOC sets before its first step (shop value, path policy
+// state, the strategic TOK check, the act-fight probe index, the strategic trace). t_curPath stays the caller's.
+void beginRealOocChainRun(bool shopV);
+// One real out-of-combat step exactly as runFullRunOOC plays it: the heart-key rule, heart1 (STS_OOC_HEART1
+// loaded, live OOC MCTS off), the chest and reward-relic rules, the OOC MCTS tree rules, Match and Keep, then
+// live OOC MCTS or runFullRunOocPolicyStep. Returns the handler that acted (the decision trace's "by").
+// Generators that play their own run loop with the production out-of-combat policy call it for every
+// non-BATTLE screen, after beginRealOocChainRun.
+const char *realOocChainStep(sts::GameContext &, sts::search::ScumSearchAgent2 &, bool restV, bool shopV,
+                             const one_combat::PathHistory &, std::uint64_t runSeed, std::uint64_t decisionIndex,
+                             one_combat::LiveOocMctsMetrics &);
+
 // Concrete seams shared with retained one_combat.cpp drivers.  These keep
 // environment parsing, model loading, and the counterfactual evaluators in
 // the integration translation unit while giving the run loop its lifecycle

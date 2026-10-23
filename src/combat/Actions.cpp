@@ -668,7 +668,15 @@ void ActData_SetMonsterMove::operator()(BattleContext &bc) const {
 }
 void ActData_RollMove::operator()(BattleContext &bc) const {
         Monster &m = bc.monsters.arr[monsterIdx];
+        // A split triggered after this roll was queued: Java's SetMoveAction
+        // (SPLIT) runs after the roll, so the split stays the next move.
+        const auto split = m.id == MonsterId::ACID_SLIME_L ? MMID::ACID_SLIME_L_SPLIT
+            : m.id == MonsterId::SPIKE_SLIME_L ? MMID::SPIKE_SLIME_L_SPLIT
+            : m.id == MonsterId::SLIME_BOSS ? MMID::SLIME_BOSS_SPLIT : MMID::INVALID;
+        const bool splitPending = split != MMID::INVALID && m.moveHistory[0] == split && !bc.intentsHidden
+            && m.isAlive() && slimeSplitRollOrderFix();
         m.rollMove(bc);
+        if (splitPending) m.setMove(split);
     }
 
 void ActData_ReactiveRollMove::operator()(BattleContext &bc) const {
@@ -861,6 +869,23 @@ void ActData_MadnessAction::operator()(BattleContext &bc) const {
         if (!haveValidCard) {
             return;
         }
+
+#ifdef STS_EXACT_CHANCE
+        // Exact chance enumeration (research tooling) answers every new draw with its first value, so the redraw
+        // loop below would never end on a free card; draw among the cards the loop accepts (its distribution).
+        if (::sts::exact::g_chanceScript) {
+            int accepted[CardManager::MAX_HAND_SIZE];
+            int n = 0;
+            for (int i = 0; i < bc.cards.cardsInHand; ++i) {
+                const auto &c = bc.cards.hand[i];
+                if (haveNonZeroTurnCost ? c.costForTurn > 0 : c.cost > 0) accepted[n++] = i;
+            }
+            auto &c = bc.cards.hand[accepted[bc.cardRandomRng.random(n - 1)]];
+            c.cost = 0;
+            c.costForTurn = 0;
+            return;
+        }
+#endif
 
         // always have 1 or more cards in hand here
 //#pragma clang diagnostic push
