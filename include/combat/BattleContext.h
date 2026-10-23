@@ -345,6 +345,14 @@ namespace sts {
     // is used with an Attack in hand.
     bool impatienceFix();
 
+    // STS_CORRUPTION_IMMEDIATE_COST_FIX: unset/1 (default) = playing Corruption
+    // sets every Skill's cost to 0 at once, as Java's ApplyPowerAction
+    // constructor does, so Mummified Hand (rolled in the UseCardAction
+    // constructor) never picks a Skill (live problem 100, seed 111200621).
+    // 0 = the legacy engine, which changed the costs when the queued power
+    // resolved. Other values are fatal. Read only when Corruption is played.
+    bool corruptionImmediateCostFix();
+
     struct BattleContext {
 
         // begin for debugging purposes
