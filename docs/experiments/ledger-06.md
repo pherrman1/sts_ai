@@ -23480,3 +23480,51 @@ and [`calib_check.py`](evidence/value_death_price_20261023/tools/calib_check.py)
 of M0 × the SR_w1 blend is pre-registered in [value_level_ab_20261023](evidence/value_level_ab_20261023/PREREG.md).
 - No game seeds were used.
 - **Knowledge impact:** `evaluation/current-research.md`, `operations/environment-variables.md`.
+
+## §TBD — Value-level 2×2 A/B at A20: the calibrated leaf (M0) kills the Heart more often (+2.15 pp [+0.10, +4.25], IMPROVED); the SR_w1 blend does not (−0.6 pp, NOT_SHOWN) (1,024 seeds, 2026-10-23)
+
+**Question:** Does ending every rollout3 leaf in calibrated Heart-kill probability (M0, fit in stage 0 above) instead
+of raw X2-B kill the Heart more often at A20? Secondary: does the SR_w1 value-head blend at w 0.1, and do the two add
+up? Stage 3 of the value-head research plan; Philipp: "keep going with the plan, you can use 32 workers" (2026-10-22
+21:44Z).
+**Design:** pre-registered ([PREREG](evidence/value_level_ab_20261023/PREREG.md)), independent pre-launch review PASS.
+- Every arm is the gen-2 A/B arm A config (§621) with the learned OOC stop 0.99:
+  - A: X2-B leaf;
+  - M: A + `STS_OOC_MCTS_LEAF_CALIBRATION`;
+  - S: A + the SR_w1 blend at w 0.1;
+  - MS: both.
+- 1,024 seeds (111340000–111341023), each played by all four arms on one lane. 32 cloud workers × 4 lanes,
+  RUN_COMMIT `2b1b269d`, binary `56b29bf8…`.
+- Primary: the M0 main effect ((M + MS) − (A + S)) / 2 on Heart kills, 95% seed bootstrap; IMPROVED if the CI is
+  above 0.
+**Result** ([RESULT](evidence/value_level_ab_20261023/RESULT.md)): 1,024 of 1,024 units verified, and all 4,096 games
+are valid.
+
+| arm | Heart kills | reached Act 4 | kills per Act-4 arrival | deaths in act 1 / 2 / 3 / 4 | wall vs A |
+|---|---|---|---|---|---|
+| A | 23.2% | 40.7% | 57.1% | 88 / 235 / 284 / 179 | 1.00 |
+| M | 24.6% | 40.5% | 60.7% | 120 / 263 / 226 / 163 | 0.95 |
+| S | 21.9% | 40.1% | 54.5% | 82 / 254 / 277 / 187 | 1.08 |
+| MS | 24.8% | 41.5% | 59.8% | 128 / 255 / 216 / 171 | 1.04 |
+
+- **M0 main effect +2.15 pp [+0.10, +4.25]: IMPROVED.** Stage 0 had predicted +1.8 pp if the calibration holds, or
+  −6.1 pp if X2-B's death price were right.
+- Blend main effect −0.59 pp [−2.25, +1.07]: NOT_SHOWN. Interaction +1.56 pp [−1.56, +4.79].
+- Simple effects: M − A +1.37 pp (102 / 88 discordant, p 0.35); MS − S +2.93 pp (107 / 77, p 0.03).
+- Under M0 the pick leaves the prior's argmax less often (5.1% vs 6.5% of searched roots). The learned OOC stop fires
+  earlier in every act (act 1: 345 vs 369 fast-root simulations).
+- The CI clears 0 by two grid steps. With 1,023 seeds in, a last seed with a negative M0 effect would have made it
+  NOT_SHOWN; that seed was a kill in all four arms.
+**Interpretation:**
+- X2-B's implied death price makes the search too cautious in acts 1–2. M0 takes more early risk (more act-1 and
+  act-2 deaths, fewer act-3 deaths) and wins Act 4 more often.
+- The size is uncertain, about 0 to 4 pp. M0 also shrinks Q gaps, so PUCT leans more on the prior; the A/B measures
+  both together.
+- The SR_w1 blend at w 0.1 does not help, with or without M0.
+- Two PREREG statements were wrong (reviewer notes): 3 of the stop's 14 features are Q gaps, not "Q differences only";
+  and the stop fired earlier in all four acts, not later in acts 1–2.
+**Decision:** no default change; Philipp decides. Before M0 could become a default, PREREG requires the learned OOC
+stop to be checked on M0's Q scale and a confirmation on fresh seeds. The stage 1–2 replay (seeds
+111360000–111360255, running) is the first prospective test of the decision metric against M − A.
+- Seeds 111340000–111341023 used (smokes 111349990–111349993).
+- **Knowledge impact:** `evaluation/current-research.md`.

@@ -109,7 +109,7 @@ def load_unit(unit):
 
 
 def load(extract, jobs):
-    units = sorted(Path(extract, 'out', 'units').iterdir())
+    units = sorted(p for p in Path(extract, 'out', 'units').iterdir() if p.is_dir())  # skip <seed>.done / .log
     with Pool(jobs) as pool:
         loaded = pool.map(load_unit, units, chunksize=4)
     return [s for s in loaded if s is not None], len(units)
