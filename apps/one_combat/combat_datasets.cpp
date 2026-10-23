@@ -15,6 +15,7 @@
 #include "sim/search/SilverRolloutAgent.h"
 #include "sim/search/SilverRolloutCardTable.h"
 #include "sim/search/SilverValueHead.h"
+#include "sim/search/SilverWireState.h"
 #include "sim/search/RunGoal.h"
 #include "one_combat/heart1_policy.h"
 #include "one_combat/silver_synth_keys.h"
@@ -83,6 +84,8 @@ nlohmann::json effectiveSilverLeafSpecification() {
         spec["leaf_head"] = {{"path", leaf.leafHead}, {"sha256", fileSha256(leaf.leafHead)},
                              {"trunk", {{"path", leaf.leafHeadTrunk}, {"sha256", fileSha256(leaf.leafHeadTrunk)}}},
                              {"blend", leaf.leafHeadBlend}, {"turn_penalty", leaf.leafHeadTurnPenalty}};
+    // Recorded only when on, so earlier leaf head specifications match.
+    if (!leaf.leafHead.empty() && leaf.leafHeadWinCap) spec["leaf_head"]["win_cap"] = true;
     return spec;
 }
 
@@ -5676,6 +5679,49 @@ void ctmSilverWriteSample(std::ostream &out, const std::string &stateId, const s
         << s.gold << ',' << s.potionCount << ',' << potions.str() << ',' << relics.str() << ','
         << std::hex << h << std::dec << ',' << (s.smokeBombUsed ? 1 : 0) << ',' << s.stolenGold << '\n';
 }
+
+// leafhead armset diagnostics (STS_CTMSILVER_LEAFHEAD_TRACE): one replayed root as a JSON line, with the root's
+// edges (visits, Q) and the armset head's value (uncapped) and the win-now value of the root and of every decision
+// child, whichever arm searched.
+void ctmLeafHeadTraceRow(std::ostream &out, const std::string &stateId, const std::string &arm, int k,
+                         const search::NativeSilverRootView &view, const search::SilverValueHead &head,
+                         const search::CombatValueNet &trunk) {
+    const auto semantic = [](const BattleContext &state, const search::Action &action) {
+        try {
+            return search::semanticFingerprint(search::semanticFromSearchAction(state, action));
+        } catch (const std::exception &) {
+            return std::string("?");
+        }
+    };
+    const auto &root = view.searcher.rootSearchState();
+    std::vector<float> feat, base;
+    nlohmann::json monsters = nlohmann::json::array(), edges = nlohmann::json::array();
+    for (int i = 0; i < root.monsters.monsterCount; ++i) {
+        const auto &m = root.monsters.arr[i];
+        monsters.push_back({{"id", static_cast<int>(m.id)}, {"hp", m.curHp}, {"block", m.block},
+                            {"strength", m.strength}});
+    }
+    const auto winNow = [&](const BattleContext &state) {
+        BattleContext copy = state;
+        return view.searcher.winNowValue(copy);
+    };
+    for (const auto &e : view.searcher.rootNode().edges) {
+        nlohmann::json row = {{"action", semantic(root, e.action)}, {"visits", e.visitCount}};
+        if (e.node && e.node->simulationCount > 0) row["q"] = e.node->evaluationSum / e.node->simulationCount;
+        if (e.node && !e.node->isRandomNode && e.node->state) {
+            row["head"] = head.value(*e.node->state, trunk, feat, base);
+            if (e.node->state->outcome == Outcome::UNDECIDED) row["winNow"] = winNow(*e.node->state);
+        }
+        edges.push_back(std::move(row));
+    }
+    out << nlohmann::json{{"stateId", stateId}, {"arm", arm}, {"k", k}, {"decision", view.decision},
+                          {"turn", root.turn}, {"hp", root.player.curHp}, {"maxHp", root.player.maxHp},
+                          {"block", root.player.block}, {"energy", root.player.energy},
+                          {"potions", root.potionCount}, {"monsters", monsters}, {"simulations", view.simulations},
+                          {"skipped", view.skipped}, {"chosen", semantic(view.live, view.chosen)},
+                          {"headRoot", head.value(root, trunk, feat, base)}, {"winNowRoot", winNow(root)},
+                          {"edges", edges}}.dump() << '\n';
+}
 } // namespace
 
 void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long long seedOffset,
@@ -5772,6 +5818,10 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
     search::SilverValueHead leafHead;
     search::CombatValueNet leafHeadTrunk;
     search::NativeSilverLeafHeadEnv leafHeadEnv;
+    // leafhead diagnostics (default off): STS_CTMSILVER_FIGHTS replays only these fight indices;
+    // STS_CTMSILVER_LEAFHEAD_TRACE writes every replayed root (ctmLeafHeadTraceRow).
+    std::set<int> onlyFights;
+    std::ofstream leafTrace;
     int hallwayEvery = 1;
     std::vector<int> sweepSims;
     if (sweepArmSet) {
@@ -6099,6 +6149,18 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
         const auto loaded = search::nativeSilverLeafHeadFromEnv("STS_CTMSILVER_LEAF_HEAD", leafHead, leafHeadTrunk);
         if (!loaded) throw std::runtime_error("ctm vs silver: leafhead requires STS_CTMSILVER_LEAF_HEAD");
         leafHeadEnv = *loaded;
+        std::stringstream fights(env("STS_CTMSILVER_FIGHTS"));
+        for (std::string item; std::getline(fights, item, ',');) {
+            char *end = nullptr;
+            const long f = std::strtol(item.c_str(), &end, 10);
+            if (item.empty() || *end != '\0' || f < 0 || f > 1000)
+                throw std::runtime_error("ctm vs silver: STS_CTMSILVER_FIGHTS must list fight indices 0..1000");
+            onlyFights.insert(static_cast<int>(f));
+        }
+        if (const std::string path = env("STS_CTMSILVER_LEAFHEAD_TRACE"); !path.empty()) {
+            leafTrace.open(path);
+            if (!leafTrace) throw std::runtime_error("ctm vs silver: cannot open " + path);
+        }
         const auto budgets = [&](const char *name) {
             std::vector<int> out;
             std::stringstream list(env(name));
@@ -6283,7 +6345,8 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
             armSpec[i]["leafHead"] = !arms[i].leafHead ? nlohmann::json(nullptr) : nlohmann::json{
                 {"path", leafHeadEnv.path}, {"sha256", fileSha256(leafHeadEnv.path)},
                 {"trunk", leafHeadEnv.trunkPath}, {"trunkSha256", fileSha256(leafHeadEnv.trunkPath)},
-                {"blend", leafHeadEnv.blend}, {"turnPenalty", leafHeadEnv.turnPenalty}};
+                {"blend", leafHeadEnv.blend}, {"turnPenalty", leafHeadEnv.turnPenalty},
+                {"winCap", leafHeadEnv.winCap}};
     for (std::size_t i = 0; i < arms.size(); ++i)
         if (const auto &p = arms[i].params)
             armSpec[i]["searchParams"] = {{"exploration", p->exploration}, {"explorationChance", p->explorationChance},
@@ -6358,6 +6421,7 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                 ++hallwaySkipped;
                 continue;
             }
+            if (!onlyFights.empty() && !onlyFights.count(entry.fightIdx)) continue;
             const auto stateId = "s" + std::to_string(entry.pre->seed) + "-f" + std::to_string(entry.fightIdx);
             if (teacherA20 && !selectedIds.count(stateId)) continue;
             const auto stateCpuStart = vwinThreadCpuNanos();
@@ -6511,7 +6575,8 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                         std::optional<LeafHeadScope> leafHeadScope;
                         if (arm.leafHead)
                             leafHeadScope.emplace(search::SilverSearcher::LeafHead{
-                                &leafHead, &leafHeadTrunk, leafHeadEnv.blend, leafHeadEnv.turnPenalty});
+                                &leafHead, &leafHeadTrunk, leafHeadEnv.blend, leafHeadEnv.turnPenalty,
+                                leafHeadEnv.winCap});
                         RolloutRootTableScope rootTableScope(arm.rootTableModel.empty() ? nullptr
                                                              : priorNets.at(arm.rootTableModel).get());
                         std::optional<SearchParamsScope> paramsScope;
@@ -6519,6 +6584,10 @@ void ctmSilverCompareGen(int nSeeds, int asc, const std::string &outPrefix, long
                         struct ObserverScope {
                             ~ObserverScope() { search::g_nativeSilverRootObserver = nullptr; }
                         } observerScope;
+                        if (leafTrace.is_open())
+                            search::g_nativeSilverRootObserver = [&](const search::NativeSilverRootView &view) {
+                                ctmLeafHeadTraceRow(leafTrace, stateId, arm.name, k, view, leafHead, leafHeadTrunk);
+                            };
                         if (probe.out && arm.name == "base2500") {
                             probe.stateId = stateId; probe.sourceSeed = entry.pre->seed;
                             probe.fightIdx = entry.fightIdx; probe.act = entry.act; probe.floor = entry.floor;

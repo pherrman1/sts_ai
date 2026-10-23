@@ -779,8 +779,9 @@ double search::SilverSearcher::rolloutToEnd(BattleContext &bc, int treeDepth) {
         const bool head = leafHead.head && bc.outcome == Outcome::UNDECIDED;
         double headValue = 0;
         if (head) {
-            headValue = leafHead.head->value(bc, *leafHead.trunk, leafHeadFeat, leafHeadBase)
-                - leafHead.turnPenalty * std::max(0, bc.turn - rootSearchState().turn);
+            headValue = leafHead.head->value(bc, *leafHead.trunk, leafHeadFeat, leafHeadBase);
+            if (leafHead.winCap) headValue = std::min(headValue, winNowValue(bc));
+            headValue -= leafHead.turnPenalty * std::max(0, bc.turn - rootSearchState().turn);
         }
         if (head && leafHead.blend >= 1) {
             // the head alone
@@ -1017,6 +1018,14 @@ std::array<double, search::kSilverPotionTypeCount> search::parseSilverPotionWeig
         if (!set[i]) weights[i] = defaultWeight;
     }
     return weights;
+}
+
+double search::SilverSearcher::winNowValue(BattleContext &bc) const {
+    const Outcome outcome = bc.outcome;
+    bc.outcome = Outcome::PLAYER_VICTORY;
+    const double value = evaluateEndState(bc);
+    bc.outcome = outcome;
+    return value;
 }
 
 double search::SilverSearcher::evaluateEndState(const BattleContext &bc) const {

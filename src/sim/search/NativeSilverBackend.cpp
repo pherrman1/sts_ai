@@ -89,6 +89,7 @@ namespace sts::search {
             // on the trunk of STS_SILVER_LEAF_HEAD_TRUNK, blended with the playout (SilverSearcher::LeafHead).
             std::string leafHeadPath, leafHeadTrunkPath;
             double leafHeadBlend = 0.5, leafHeadTurnPenalty = 1;
+            bool leafHeadWinCap = false;
             // No-progress loop guard: after this many consecutive free player
             // decisions in one turn that change nothing tracked by
             // NoProgressFingerprint, End Turn is forced (0 = off).
@@ -624,7 +625,7 @@ namespace sts::search {
                 else if (!g_options.leafHeadPath.empty() && !g_nativeSilverRolloutOverride
                         && !g_nativeSilverRootPriorOverride && !g_nativeSilverPriorNetOverride)
                     searcher->leafHead = {&g_leafHead, &g_leafHeadTrunk, g_options.leafHeadBlend,
-                                          g_options.leafHeadTurnPenalty};
+                                          g_options.leafHeadTurnPenalty, g_options.leafHeadWinCap};
                 searcher->rolloutPrior = nullptr;
                 if (searcher->rolloutConfig.prior) {
                     // Research: prior playouts score with the root-prior model (or the arm's override).
@@ -1000,8 +1001,9 @@ namespace sts::search {
             g_options.leafHeadTrunkPath = leaf->trunkPath;
             g_options.leafHeadBlend = leaf->blend;
             g_options.leafHeadTurnPenalty = leaf->turnPenalty;
+            g_options.leafHeadWinCap = leaf->winCap;
             std::cerr << "[silver] leaf head: " << leaf->path << " on " << leaf->trunkPath << " blend " << leaf->blend
-                      << " turn penalty " << leaf->turnPenalty << "\n";
+                      << " turn penalty " << leaf->turnPenalty << " win cap " << (leaf->winCap ? 1 : 0) << "\n";
         }
         if (const char *raw = std::getenv("STS_SILVER_TREE_PRIOR_MIN_VISITS"); raw && *raw) {
             char *end = nullptr;
@@ -1249,7 +1251,7 @@ namespace sts::search {
         };
         const std::string path = get("");
         if (path.empty() || path == "0") {
-            for (const char *suffix : {"_TRUNK", "_BLEND", "_TURN_PENALTY"})
+            for (const char *suffix : {"_TRUNK", "_BLEND", "_TURN_PENALTY", "_WIN_CAP"})
                 if (!get(suffix).empty()) throw std::runtime_error(prefix + suffix + " requires " + prefix);
             return std::nullopt;
         }
@@ -1271,6 +1273,10 @@ namespace sts::search {
                 throw std::runtime_error(prefix + suffix + " must be a number in "
                                          + (target == &out.blend ? "(0, 1]" : "[0, 100]"));
         }
+        if (const std::string raw = get("_WIN_CAP"); !raw.empty()) {
+            if (raw != "0" && raw != "1") throw std::runtime_error(prefix + "_WIN_CAP must be 0 or 1");
+            out.winCap = raw == "1";
+        }
         return out;
     }
 
@@ -1284,7 +1290,7 @@ namespace sts::search {
                 g_options.rolloutRootTablePath,
                 g_options.priorPlayoutBossElite && !g_options.rootPriorPath.empty() && !g_options.rootPriorOverrideOnly,
                 g_options.priorPlayoutElite, g_options.leafHeadPath, g_options.leafHeadTrunkPath,
-                g_options.leafHeadBlend, g_options.leafHeadTurnPenalty};
+                g_options.leafHeadBlend, g_options.leafHeadTurnPenalty, g_options.leafHeadWinCap};
     }
 
     bool nativeSilverLearnedStopEnabled() {

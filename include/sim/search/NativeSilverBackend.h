@@ -115,16 +115,22 @@ namespace sts::search {
         bool priorPlayoutBossElite;
         // Elite rooms are included (STS_SILVER_PRIOR_PLAYOUT_ELITE=1; ADR-0056 makes boss rooms only the default).
         bool priorPlayoutElite;
-        // STS_SILVER_LEAF_HEAD: head and trunk paths (empty when off), blend weight and turn penalty.
+        // STS_SILVER_LEAF_HEAD: head and trunk paths (empty when off), blend weight, turn penalty, win cap.
         std::string leafHead, leafHeadTrunk;
         double leafHeadBlend, leafHeadTurnPenalty;
+        bool leafHeadWinCap;
     };
     NativeSilverLeafSettings nativeSilverLeafSettings();
     // A leaf head from the environment: <prefix>=<silver_value_head_v1 file> (unset or 0 = none) on the trunk of
     // <prefix>_TRUNK (default the g7f_E prior), blend weight <prefix>_BLEND (default 0.5; 1 = no playout) and
-    // <prefix>_TURN_PENALTY points per turn beyond the root (default 1). Loads head and trunk; nullopt when
-    // <prefix> is unset or 0, whose sub-options must then be unset.
-    struct NativeSilverLeafHeadEnv { std::string path, trunkPath; double blend = 0.5, turnPenalty = 1; };
+    // <prefix>_TURN_PENALTY points per turn beyond the root (default 1), and with <prefix>_WIN_CAP=1 the head
+    // capped at the leaf's win-now value first (SilverSearcher::LeafHead::winCap; default 0). Loads head and
+    // trunk; nullopt when <prefix> is unset or 0, whose sub-options must then be unset.
+    struct NativeSilverLeafHeadEnv {
+        std::string path, trunkPath;
+        double blend = 0.5, turnPenalty = 1;
+        bool winCap = false;
+    };
     std::optional<NativeSilverLeafHeadEnv> nativeSilverLeafHeadFromEnv(const std::string &prefix, SilverValueHead &head,
                                                                       CombatValueNet &trunk);
     bool nativeSilverLearnedStopEnabled();

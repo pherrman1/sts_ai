@@ -268,10 +268,13 @@ namespace sts::search {
         // STS_SILVER_LEAF_HEAD (set by NativeSilverBackend; default off): an undecided leaf is worth
         // blend * (head - turnPenalty * turns beyond the root) + (1 - blend) * its playout. The turn
         // penalty keeps a head that runs high on unfinished fights from preferring a stall to a win.
+        // winCap first lowers the head to the leaf's winNowValue: off the states it was trained on a
+        // head can value a fight above any ending it has left (and search then avoids ending it).
         struct LeafHead {
             const SilverValueHead *head = nullptr;
             const CombatValueNet *trunk = nullptr;
             double blend = 0.5, turnPenalty = 1;
+            bool winCap = false;
         };
         LeafHead leafHead;
 
@@ -316,6 +319,10 @@ namespace sts::search {
         // Silver's terminal evaluation of `end`, relative to this searcher's
         // root (gold and max HP deltas) and run context.
         [[nodiscard]] double scoreEndState(const BattleContext &end) const { return evaluateEndState(end); }
+        // Silver's score for winning the fight at `bc` right now, with its HP, potions and turn: an upper
+        // bound on how the fight can still end, short of healing or gold and max HP gained in it.
+        // `bc` is left as it was.
+        [[nodiscard]] double winNowValue(BattleContext &bc) const;
         [[nodiscard]] const SilverSearchContext &searchContext() const { return context; }
         // One SilverRolloutAgent playout of `state` to combat end, scored like a
         // search leaf (research diagnostics; the graph is untouched).
