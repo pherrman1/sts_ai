@@ -66,7 +66,8 @@ bool quiet(const BattleContext &b, bool noPrismaticShard) {
 }
 
 // The only RNG quotient in v0: two physical Dropkick/Flash of Steel cards,
-// with no player powers or card hooks except Burning Blood/Sundial. At draw
+// with no player powers or card hooks except Burning Blood/Sundial. Static
+// exhaust stays exact in equality but cannot participate in this engine. At draw
 // time the played card is out of the piles, so a shuffle has <=1 card. Its
 // RNG advances but cannot affect the order. All other RNG streams stay exact.
 bool singletonShuffles(const BattleContext &b) {
@@ -76,13 +77,17 @@ bool singletonShuffles(const BattleContext &b) {
     if (b.player.statusBits0 || b.player.statusBits1 || !b.player.statusMap.empty()
         || (b.player.relicBits0 & ~allowed.relicBits0)
         || (b.player.relicBits1 & ~allowed.relicBits1)
-        || !b.cards.exhaustPile.empty()) return false;
+        || std::any_of(b.cards.stasisCards.begin(),b.cards.stasisCards.end(),
+            [](const CardInstance &c) { return c.id!=CardId::INVALID; })) return false;
     int count=0; bool simple=true;
-    eachCard(b,[&](const CardInstance &c) {
+    auto active=[&](const CardInstance &c) {
         if(c.id==CardId::INVALID) return;
         ++count;
         simple &= c.id==CardId::DROPKICK || c.id==CardId::FLASH_OF_STEEL;
-    });
+    };
+    for(int i=0;i<b.cards.cardsInHand;++i) active(b.cards.hand[i]);
+    for(const auto &c:b.cards.drawPile) active(c);
+    for(const auto &c:b.cards.discardPile) active(c);
     return simple && count==2 && b.cards.cardsInHand>0;
 }
 
@@ -104,7 +109,9 @@ BattleContext controlState(BattleContext b) {
         && !b.player.hasRelic<RelicId::ORNAMENTAL_FAN>())
         b.player.attacksPlayedThisTurn=std::min<int>(1,b.player.attacksPlayedThisTurn);
     if (!b.player.hasRelic<RelicId::LETTER_OPENER>()) b.player.skillsPlayedThisTurn=0;
-    // HP is the sole progress dimension. Preserve liveness and phase state.
+    // Enemy HP and nondecreasing energy are progress coordinates. Preserve
+    // player HP/block/powers, counters, liveness and phase state exactly.
+    b.player.energy=0;
     for (auto &m:b.monsters.arr) if (!m.isDeadOrEscaped() && !m.halfDead) m.curHp=1;
     if (singletonShuffles(b)) b.shuffleRng=Random(0);
     return b;
@@ -143,7 +150,7 @@ struct Oracle {
     json certify(const BattleContext &start,const std::vector<json> &w) {
         auto run=std::make_unique<BattleContext>(start);
         const auto expected=std::make_unique<BattleContext>(controlState(start));
-        int used=0;
+        int used=0, previousEnergy=start.player.energy;
         for(int rep=1;rep<=repetitionCap;++rep) {
             for(const auto &step:w) {
                 if(used>=replayCap || replayActions>=totalReplayCap)
@@ -159,8 +166,11 @@ struct Oracle {
                 if(run->outcome==Outcome::PLAYER_VICTORY && !run->smokeBombUsed && run->turn==start.turn)
                     return {{"reason","VICTORY"},{"repetitions",rep},{"actions",used}};
             }
+            if(run->player.energy<previousEnergy)
+                return {{"reason","energy_decreased"},{"repetitions",rep},{"actions",used}};
             if(!quiet(*run,noPrismaticShard) || run->turn!=start.turn || !(controlState(*run)==*expected))
                 return {{"reason","control_state_changed"},{"repetitions",rep},{"actions",used}};
+            previousEnergy=run->player.energy;
         }
         return {{"reason","repetition_cap"},{"repetitions",repetitionCap},{"actions",used}};
     }
@@ -210,7 +220,8 @@ struct Oracle {
         auto control=std::make_unique<BattleContext>(controlState(*b));
         auto hash=hashBattleState(*control);
         for(int i=static_cast<int>(controls.size())-1;i>=0;--i)
-            if(hash==hashes[i] && *control==*controls[i]) {
+            if(hash==hashes[i] && *control==*controls[i]
+                && b->player.energy>=path[i]->player.energy) {
                 candidate(i,*b); return; // never expand a repeated state
             }
         if(depth>=depthCap) return;
@@ -351,10 +362,9 @@ void fixtures() {
     require(!unsupported.at("supported").get<bool>() && unsupported.at("nodes")==0,"foreign counter consumer entered search");
     // Key sensitivity: resources, dynamic cards, counters and enemy mechanics.
     auto key=controlState(positive);
-    for(int field=0;field<8;++field) {
+    for(int field=1;field<8;++field) {
         auto changed=positive;
         switch(field) {
-            case 0: ++changed.player.energy; break;
             case 1: ++changed.cards.hand[0].costForTurn; break;
             case 2: ++changed.player.sundialCounter; break;
             case 3: ++changed.monsters.arr[0].block; break;
@@ -365,6 +375,8 @@ void fixtures() {
         }
         require(!(controlState(changed)==key),"control field omitted");
     }
+    auto higherEnergy=positive; ++higherEnergy.player.energy;
+    require(controlState(higherEnergy)==key,"energy must be a progress coordinate");
     auto counted=positive;
     counted.player.setHasRelic<RelicId::VELVET_CHOKER>(true);
     auto countedMore=counted; ++countedMore.player.cardsPlayedThisTurn;
@@ -376,6 +388,197 @@ void fixtures() {
     countedMore=counted; ++countedMore.player.skillsPlayedThisTurn;
     require(!(controlState(counted)==controlState(countedMore)),"Letter Opener count collapsed");
     std::cout<<json({{"summary",summary(rows)},{"fixture_assertions","PASS"}}).dump()<<'\n';
+}
+
+// Phase-2 fixtures use the same detector; --recall-probe records the ablation
+// before interventions, while --recall-fixtures also checks final verdicts.
+void staticExhaust(BattleContext &b) {
+    for (auto id:{CardId::STRIKE_RED,CardId::STRIKE_RED,CardId::DEFEND_RED,
+                 CardId::DEFEND_RED,CardId::BASH,CardId::ANGER,CardId::TRUE_GRIT}) {
+        CardInstance c(id); c.uniqueId=b.cards.nextUniqueCardId++;
+        b.cards.moveToExhaustPile(c);
+    }
+}
+
+json scriptedTrace(BattleContext b, int cap) {
+    const auto initial=std::make_unique<BattleContext>(b);
+    json rows=json::array();
+    for(int i=0;i<cap;++i) {
+        auto legal=actions(b,true);
+        if(legal.empty()) break;
+        require(legal.size()==1,"script requires a single legal physical play");
+        auto step=describe(b,legal[0]); legal[0].execute(b);
+        step["action"]=i+1; step["energy"]=b.player.energy;
+        step["player_hp"]=b.player.curHp; step["enemy_hp"]=b.monsters.arr[0].curHp;
+        step["sundial_counter"]=b.player.sundialCounter;
+        step["invincible"]=b.monsters.arr[0].getStatus<MS::INVINCIBLE>();
+        rows.push_back(step);
+        if(b.outcome!=Outcome::UNDECIDED || b.turn!=initial->turn) break;
+    }
+    return {{"trace",rows},{"actions",rows.size()},{"terminal_outcome",static_cast<int>(b.outcome)},
+        {"turn_changed",b.turn!=initial->turn},{"energy_end",b.player.energy},
+        {"player_hp_end",b.player.curHp},{"enemy_hp_end",b.monsters.arr[0].curHp},
+        {"invincible_end",b.monsters.arr[0].getStatus<MS::INVINCIBLE>()},
+        {"no_legal_card",actions(b,true).empty()}};
+}
+
+json periodEvidence(BattleContext b) {
+    // Four plays saturate the existing bookkeeping normalization. Six further
+    // plays restore both physical card positions and Sundial's modulo-3 count.
+    for(int i=0;i<4;++i) {
+        auto legal=actions(b,true); require(legal.size()==1,"period prefix"); legal[0].execute(b);
+    }
+    const auto start=std::make_unique<BattleContext>(b);
+    for(int i=0;i<6;++i) {
+        auto legal=actions(b,true); require(legal.size()==1,"full six-action period"); legal[0].execute(b);
+    }
+    auto a=std::make_unique<BattleContext>(controlState(*start));
+    auto z=std::make_unique<BattleContext>(controlState(b));
+    a->player.energy=z->player.energy=0;
+    // Diagnostic only: the two active Dropkicks prove singleton shuffles;
+    // static exhaust must remain exact even in this isolated comparison.
+    a->shuffleRng=z->shuffleRng=Random(0);
+    require(*a==*z,"period differs beyond energy and singleton shuffle RNG");
+    require(start->player.sundialCounter==b.player.sundialCounter,"Sundial period");
+    return {{"prefix_actions",4},{"period_actions",6},{"energy_start",start->player.energy},
+        {"energy_end",b.player.energy},{"energy_delta",b.player.energy-start->player.energy},
+        {"enemy_hp_delta",b.monsters.arr[0].curHp-start->monsters.arr[0].curHp},
+        {"sundial_start",start->player.sundialCounter},{"sundial_end",b.player.sundialCounter},
+        {"same_except_energy_and_singleton_rng",true}};
+}
+
+// Deliberately exercise the replay guard even when discovery correctly refuses
+// a decreasing-energy or changing-HP/counter state as a cycle candidate.
+json replayProbe(BattleContext b,int prefix,int period) {
+    for(int i=0;i<prefix;++i) {
+        auto legal=actions(b,true); require(legal.size()==1,"replay probe prefix"); legal[0].execute(b);
+    }
+    const auto start=std::make_unique<BattleContext>(b);
+    std::vector<json> witness;
+    for(int i=0;i<period;++i) {
+        auto legal=actions(b,true); require(legal.size()==1,"replay probe period");
+        witness.push_back(describe(b,legal[0])); legal[0].execute(b);
+    }
+    Oracle oracle; oracle.noPrismaticShard=true;
+    return oracle.certify(*start,witness);
+}
+
+void recallFixtures(bool verify) {
+    ObserverScope scope;
+    std::vector<json> rows;
+    auto check=[&](const std::string &name,const BattleContext &b,const std::string &expected,
+                   const json &diagnostics=json::object()) {
+        const auto before=std::make_unique<BattleContext>(b);
+        auto row=Oracle{}.run(b,true); row["fixture"]=name; row["mechanics"]=diagnostics;
+        std::cout<<row.dump()<<'\n'; rows.push_back(row);
+        if(verify) require(row.at("classification")==expected,name+": recall classification");
+        require(b==*before,name+": root mutated");
+        return row;
+    };
+    auto base=std::make_unique<BattleContext>(fixture());
+    check("minimal_dropkick",*base,"CERTIFIED_KILL");
+    auto exhausted=std::make_unique<BattleContext>(*base); staticExhaust(*exhausted);
+    check("static_exhaust_dropkick",*exhausted,"CERTIFIED_KILL");
+    auto broken=std::make_unique<BattleContext>(*exhausted);
+    broken->monsters.arr[0].removeStatus<MS::VULNERABLE>();
+    check("broken_dropkick",*broken,"NONE",scriptedTrace(*broken,64));
+
+    auto energy=std::make_unique<BattleContext>(*base);
+    energy->player.energy=7; energy->player.setHasRelic<RelicId::SUNDIAL>(true);
+    energy->cards.hand[0].cost=0; energy->cards.hand[0].setCostForTurn(0);
+    auto measured=periodEvidence(*energy);
+    require(measured.at("energy_delta").get<int>()>0,"positive energy economics");
+    check("energy_positive_no_exhaust",*energy,"CERTIFIED_KILL",measured);
+    staticExhaust(*energy);
+    check("energy_positive_exhaust",*energy,"CERTIFIED_KILL",periodEvidence(*energy));
+    auto negative=std::make_unique<BattleContext>(*energy);
+    negative->cards.hand[0].cost=3; negative->cards.hand[0].setCostForTurn(3); // sole cost variable
+    measured=periodEvidence(*negative);
+    require(measured.at("energy_delta").get<int>()<0,"negative energy economics");
+    measured["run_to_break"]=scriptedTrace(*negative,64);
+    measured["forced_replay"]=replayProbe(*negative,4,6);
+    require(measured["forced_replay"]["reason"]=="energy_decreased","decreasing replay must reject");
+    require(measured["run_to_break"]["no_legal_card"].get<bool>() &&
+        measured["run_to_break"]["enemy_hp_end"].get<int>()>0,"negative must run out before lethal");
+    check("energy_negative_exhaust",*negative,"NONE",measured);
+
+    auto time=std::make_unique<BattleContext>(*base);
+    time->monsters.arr[0]=Monster{}; auto &tm=time->monsters.arr[0];
+    tm.id=MonsterId::TIME_EATER; tm.idx=0; tm.initHp(time->monsterHpRng,0);
+    tm.preBattleAction(*time); tm.setMove(MMID::TIME_EATER_HEAD_SLAM);
+    tm.addDebuff<MS::VULNERABLE>(2,false); tm.setStatus<MS::TIME_WARP>(1);
+    check("time_eater",*time,"NONE",scriptedTrace(*time,64));
+    auto phase=std::make_unique<BattleContext>(*base);
+    phase->monsters.arr[0].id=MonsterId::AWAKENED_ONE;
+    check("awakened_one_phase1",*phase,"PRODUCTIVE_CYCLE_CANDIDATE");
+
+    auto heart=std::make_unique<BattleContext>(*exhausted); heart->ascension=20;
+    heart->monsters.arr[0]=Monster{}; auto &hm=heart->monsters.arr[0];
+    hm.id=MonsterId::CORRUPT_HEART; hm.idx=0; hm.initHp(heart->monsterHpRng,20);
+    hm.preBattleAction(*heart); hm.setMove(MMID::CORRUPT_HEART_DEBILITATE);
+    hm.addDebuff<MS::VULNERABLE>(2,false);
+    require(hm.curHp==800 && hm.getStatus<MS::BEAT_OF_DEATH>()==2 &&
+        hm.getStatus<MS::INVINCIBLE>()==200,"real A20 Heart mechanics");
+    auto trace=scriptedTrace(*heart,64);
+    trace["forced_replay"]=replayProbe(*heart,4,2);
+    require(trace["forced_replay"]["reason"]=="control_state_changed","Heart replay must reject");
+    require(trace.at("enemy_hp_end")==600 && trace.at("player_hp_end")==0 &&
+        trace.at("invincible_end")==0,"Heart cap and Beat of Death must prevent lethal");
+    check("heart_invincible_and_beat",*heart,"NONE",trace);
+    heart->player.curHp=12;
+    check("heart_low_hp",*heart,"NONE",scriptedTrace(*heart,64));
+
+    // Test the suggested alternative through actual simulator plays. Shrug's
+    // accumulating block introduces a second progress dimension, so do not
+    // extend the RNG quotient or block equality to accommodate this engine.
+    auto suggested=std::make_unique<BattleContext>(fixture(CardId::POMMEL_STRIKE));
+    suggested->cards.hand[0].upgrade(); suggested->cards.hand[0].cost=0;
+    suggested->cards.hand[0].setCostForTurn(0);
+    suggested->cards.drawPile.clear();
+    CardInstance shrug(CardId::SHRUG_IT_OFF); shrug.uniqueId=1;
+    suggested->cards.moveToDrawPileTop(shrug); suggested->player.energy=7;
+    suggested->player.setHasRelic<RelicId::SUNDIAL>(true);
+    for(int i=0;i<4;++i) {
+        auto legal=actions(*suggested,true); require(legal.size()==1,"suggested prefix"); legal[0].execute(*suggested);
+    }
+    int initialBlock=suggested->player.block;
+    auto suggestedTrace=scriptedTrace(*suggested,6);
+    // Copy-play the same six actions to measure the extra state change.
+    for(int i=0;i<6;++i) {
+        auto legal=actions(*suggested,true); require(legal.size()==1,"suggested period"); legal[0].execute(*suggested);
+    }
+    int blockDelta=suggested->player.block-initialBlock;
+    require(blockDelta==24,"Shrug must accumulate actual block");
+    std::cout<<json({{"diagnostic","pommel_plus_shrug"},{"block_delta_per_six_plays",blockDelta},
+        {"trace",suggestedTrace},{"reason","block_also_increases_outside_energy_only_scope"}}).dump()<<'\n';
+
+    // A purported period with the same active cards but a changed exhaust
+    // payload must fail full equality, including same-count mutations.
+    auto periodStart=std::make_unique<BattleContext>(*exhausted);
+    for(int i=0;i<4;++i) { auto legal=actions(*periodStart,true); legal[0].execute(*periodStart); }
+    auto periodEnd=std::make_unique<BattleContext>(*periodStart);
+    for(int i=0;i<2;++i) { auto legal=actions(*periodEnd,true); legal[0].execute(*periodEnd); }
+    require(controlState(*periodStart)==controlState(*periodEnd),"static exhaust real period must match");
+    auto changed=std::make_unique<BattleContext>(*periodEnd);
+    changed->cards.exhaustPile[0].id=CardId::DEFEND_RED;
+    require(!(controlState(*changed)==controlState(*periodStart)),"period exhaust mutation collapsed");
+    require(!(controlState(*changed)==controlState(*exhausted)),"exhaust mutation collapsed");
+    changed=std::make_unique<BattleContext>(*exhausted);
+    ++changed->cards.exhaustPile[0].uniqueId;
+    require(!(controlState(*changed)==controlState(*exhausted)),"exhaust physical ID collapsed");
+    changed=std::make_unique<BattleContext>(*exhausted);
+    changed->cards.exhaustPile.pop_back();
+    require(!(controlState(*changed)==controlState(*exhausted)),"exhaust removal collapsed");
+    auto stasis=std::make_unique<BattleContext>(*base);
+    stasis->cards.stasisCards[0]=CardInstance(CardId::STRIKE_RED);
+    require(!singletonShuffles(*stasis),"occupied stasis cannot qualify singleton shuffles");
+    auto rngChanged=std::make_unique<BattleContext>(*exhausted);
+    rngChanged->shuffleRng=Random(99);
+    require(controlState(*rngChanged)==controlState(*exhausted),"qualified singleton shuffle RNG");
+    rngChanged->cardRandomRng=Random(99);
+    require(!(controlState(*rngChanged)==controlState(*exhausted)),"other RNG streams stay exact");
+    std::cout<<json({{"summary",summary(rows)},{"exhaust_mutation_regressions","PASS"},
+        {"recall_assertions",verify?"PASS":"PROBE"}}).dump()<<'\n';
 }
 
 void roots(const char *file) {
@@ -400,8 +603,10 @@ void roots(const char *file) {
 int main(int argc,char **argv) {
     try {
         if(argc==2 && std::string(argv[1])=="--fixtures") fixtures();
+        else if(argc==2 && std::string(argv[1])=="--recall-probe") recallFixtures(false);
+        else if(argc==2 && std::string(argv[1])=="--recall-fixtures") recallFixtures(true);
         else if(argc==3 && std::string(argv[1])=="--roots") roots(argv[2]);
-        else { std::cerr<<"usage: combat_infinity_oracle --fixtures | --roots ROOTS.jsonl\n"; return 2; }
+        else { std::cerr<<"usage: combat_infinity_oracle --fixtures | --recall-fixtures | --recall-probe | --roots ROOTS.jsonl\n"; return 2; }
         return 0;
     } catch(const std::exception &e) { std::cerr<<"combat_infinity_oracle FAIL: "<<e.what()<<'\n'; return 1; }
 }

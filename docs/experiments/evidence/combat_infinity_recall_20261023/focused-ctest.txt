@@ -1,0 +1,13 @@
+Test project /home/philippherrmann/.codex/worktrees/infinity-realistic-recall/sts_lightspeed/build/linux-gcc-release-ccache
+    Start 1: combat_infinity_oracle
+1/2 Test #1: combat_infinity_oracle ...........   Passed    0.01 sec
+    Start 2: combat_infinity_recall
+2/2 Test #2: combat_infinity_recall ...........   Passed    0.01 sec
+
+100% tests passed out of 2
+
+Label Time Summary:
+core              =   0.02 sec*proc (2 tests)
+research-repro    =   0.02 sec*proc (2 tests)
+
+Total Test time (real) =   0.02 sec
