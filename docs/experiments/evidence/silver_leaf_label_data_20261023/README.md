@@ -3,10 +3,12 @@
 Question (Philipp, 2026-10-23 14:28Z, after §656 paused the leaf line): "Should we just retrain with cleaner ooc
 labels? Or do we need more data for leaf model?"
 
-**Answer: neither fixes what failed.** More runs of the same label buy about 1 RMSE point per doubling. A per-state
-label (Silver's own searched value at each root) orders exact leaf values better than any earlier head and wins first
-fights even without a playout, but every new net still loses the 3-source smoke, almost all of it in boss fights.
-All heads so far learned from states that playout-driven Silver reached; a search that trusts the head goes elsewhere.
+**Answer: neither fixes what failed.** Halving the runs of the same label costs about 1 RMSE point, and adding the
+other campaign's runs (about twice the roots) gains 0.4. A per-state label (Silver's own searched value at each root)
+orders exact leaf values better than any earlier head and wins first fights even without a playout, but in the
+3-source smoke every new net still scores below production, mostly in boss fights; the intervals exclude zero only for
+the searched-value net. All heads so far learned from states that playout-driven Silver reached; one explanation, not
+tested yet, is that a search that trusts the head goes elsewhere.
 The doc "Leaf evaluation for Silver" (https://claude.ai/artifact/P8536tUChd5XLo1gV6kfbu) has the same results in its
 sections "Measured since: what limits the head" and "Measured since: a label per state instead of per fight".
 
@@ -63,8 +65,11 @@ counts when its exact values differ by at least 1 point; same turn = one fight a
 | end to end | end score | 4.72 | +2.26 | 0.771 | 0.813 |
 | frozen trunk | searched value | 5.34 | +2.85 | 0.764 | 0.788 |
 | end to end | searched value | 3.70 | -0.22 | 0.808 | 0.820 |
+| capacity test (frozen trunk) | these exact values, in sample | 3.01 | +0.14 | 0.876 | 0.889 |
 
-A head fitted to these exact values in sample reaches 0.876. The end-to-end searched-value head's bias by leaf turn
+The capacity-test head (`/mnt/project-files/exact-combat-research/leaf-value/heads/ct.txt`, sha256 5a4a2209..., as in
+`../leaf_head_turn_penalty_20261022/PREREG.md`) was trained on the exact values of these same fights' leaves, so its
+row is an in-sample ceiling (`results/exact_leaves_ct.txt`). The end-to-end searched-value head's bias by leaf turn
 runs from -1.6 (turn 2) to +3.2 (turn 6), so its label was not shifted by turn: offsets of 20 points at turn 0 down to
 5 at turn 6 would act like a large turn penalty.
 
@@ -90,29 +95,39 @@ The end-to-end net on both packs (`e2eb`) behaves like `e2e` (`results/first_fig
 The fight-level A/B harness of §656 (`ctmsilvergen` armset leafhead, sources 111339997-999, R = 2, every 3rd hallway
 fight plus elites and bosses), production control at 10,000 simulations only, one_combat 83de6c12... (the A/B's
 binary). `smoke/analyze2.py` is the A/B's `analyze.py` with two arms; on the archived a20prod smoke it reproduces
--4.285 (`results/smoke/prev_reproduction.json`). Score per fight, head10000 - base10000 (`results/smoke/`):
+-4.285 (`results/smoke/prev_reproduction.json`). Score per fight, head10000 - base10000 (`results/smoke/`; the
+first row is main's `../silver_leaf_head_ab_20261022/smoke/analysis.json`):
 
-| leaf | score per fight | fights won | boss fights (10), score each |
-|---|---|---|---|
-| a20, 50/50, 1 point per turn, win-now cap (§656's candidate; its PREREG) | -0.8 | -1 pp | -11.7 |
-| a20prod, 50/50, 1 point per turn (§655) | -4.3 | -2 pp | -22.0 |
-| end to end on the end score, 50/50, 1 point per turn | -2.0 on 42 fights; a stall aborted source 111339999 | -1 pp | -13.3 (8 fights) |
-| the same with the win-now cap | -8.6 | -4 pp | -48.8 |
-| end to end on the searched value, 50/50, no penalty | -2.7 [-3.5, -2.1] | -1 pp | -28.5 |
-| the same head alone, no playout, no penalty | -39.8 [-48.3, -33.9] | -11 pp | -136.3 |
+| leaf | score per fight [95% CI] | fights won | hallway fights | Act 1 | boss fights (10), score each |
+|---|---|---|---|---|---|
+| a20, 50/50, 1 point per turn, win-now cap (§656's candidate; its PREREG) | -0.8 [-16.3, +2.6] | -1 pp | +8.3 | -3.8 | -11.7 |
+| a20prod, 50/50, 1 point per turn (§655) | -4.3 [-16.1, -0.6] | -2 pp | +6.6 | -4.6 | -22.0 |
+| end to end on the end score, 50/50, 1 point per turn | -2.0 [-16.8, +1.3] on 42 fights; a stall aborted source 111339999 | -1 pp | +1.3 (17 fights) | -3.5 | -13.3 (8 fights) |
+| the same with the win-now cap | -8.6 [-18.5, +2.5] | -4 pp | +8.3 | -3.9 | -48.8 |
+| end to end on the searched value, 50/50, no penalty | -2.7 [-3.5, -2.1] | -1 pp | +7.0 | +2.1 | -28.5 |
+| the same head alone, no playout, no penalty | -39.8 [-48.3, -33.9] | -11 pp | -13.4 | -9.4 | -136.3 |
 
-The stall: `native Silver backend: stall: exceeded 1000 decisions seed=111339999 floor=35 encounter=40`. The
-searched-value head at 50/50 gains in Act 1 (+2.1 [+0.4, +3.6]) and loses in Act 3 (-7.1) and bosses; alone it lost
-both Heart replays and ended both Collector replays at 12 HP where production ended at 75 and 50. Alone, its
-simulations cost 0.24 of production's.
+The intervals are §656's bootstrap over the 3 source seeds, which allows only 10 distinct resamples, so they are
+rough. They exclude zero for a20prod and both searched-value rows; the analysis labels those WORSE and the other three
+NOT_SHOWN. The stall: `native Silver backend: stall: exceeded 1000 decisions seed=111339999 floor=35 encounter=40`.
+
+Every head scores lower in boss fights. All but the head alone gain in hallway fights (+1.3 to +8.3 per fight; two
+of those five intervals exclude zero). The Act 1 gains of the first-fight tests (Act 1 hallway fights) do not carry
+over: here only the searched-value head at 50/50 gains in Act 1 (+2.1 [+0.4, +3.6]), and it loses in Act 3 (-7.1)
+and bosses. Alone, the searched-value head lost both replays of the Heart fight, ended both replays of one Collector
+fight at 12 HP where production ended at 75 and 50, and lost one replay of the other Collector fight (production 7
+and 12 HP); its simulations cost 0.24 of production's.
 
 ## 6. Reading
 
 - Per-fight labels cannot rank two states of one fight; fitting them better (end to end) lowers the error but does
-  not order leaves better, and more runs of them buy about 1 point per doubling.
-- Silver's searched value ranks states better and makes the head usable without a playout in first fights, yet it
-  fails the long fights like every head before: all of them help in Act 1 and hallway fights and lose in bosses.
-- What the heads share are their training states (Silver's roots under playout search). A next step would train on
+  not order leaves better. Halving the runs costs about 1 point; adding the other campaign's runs (about twice the
+  roots, a different campaign) gains only 0.4.
+- Silver's searched value ranks states better and makes the head usable without a playout in first fights, yet no
+  net beats production in the smoke. What every head shares there is the loss in boss fights; the Act 1 gains show
+  only in the first-fight tests.
+- What the heads also share are their training states (Silver's roots under playout search). One explanation, not
+  tested yet: a search that trusts the head steers into states its training never had. A next step would train on
   the states the head's own search reaches, labeled there by production's playout search, and repeat; that needs a
   generator change, a seed block and workers.
 
@@ -138,6 +153,8 @@ From the repo root, with `W` a work directory holding the packs and `g7f_E/model
     python3 $E/parity.py g7f_E/model.pt saved/e2e.pt dump.jsonl     # dump: exact_combat_solver ... --leaf-head-dump
     python3 $E/label_check.py a20prod_pack.npz saved savedq
     python3 $E/leaf_exact.py LABELS.jsonl.gz a20prod=TRUNK:HEAD e2e=TRUNK:HEAD qe2e=TRUNK:HEAD
+    python3 $E/leaf_exact.py LABELS.jsonl.gz \
+      ct=REPO/models/combat_policy_mlp_g7f_E.txt:/mnt/project-files/exact-combat-research/leaf-value/heads/ct.txt
 
 (`E` = this directory, `REPO` = the repo root.) First fights, from the repo root (`ref`, `e2e`, `e2eb` and `qe2e` the
 same way, modes as in `results/first_fights/*_analysis.txt`):
@@ -149,8 +166,10 @@ Smokes, from the repo root: `W=$W [BLEND=1] TP=0 $E/smoke/run_smoke.sh TAG HEAD 
 TP 1, WINCAP 0; e2e_tp_cap: WINCAP 1; qe2e_b05: blend 0.5, TP 0, WINCAP 0; qe2e_head: blend 1, TP 0, WINCAP 0).
 
 The scripts ran from a scratch directory with fixed paths; the committed copies take the paths as arguments or `W`,
-otherwise unchanged. Parity: on 300 dumped first-fight leaves the solver's trunk and value match the PyTorch net
-within 1.2e-5 points (`results/parity.txt`).
+otherwise unchanged. Besides those, `build_pack.sh` and `smoke/run_smoke.sh` copy fixed, content-addressed share
+inputs: `/mnt/project-files/bin-cache/one_combat-<sha256>` and `/mnt/project-files/rollout-student-494/studentc.bin`.
+Parity: on 300 dumped first-fight leaves the solver's trunk and value match the PyTorch net within 1.2e-5 points
+(`results/parity.txt`).
 
 Provenance: exact_combat_solver sha256 20a81523... built from 6a8de838 (#826's head; its solver code is main's),
 one_combat 83de6c12... (the §656 A/B binary, code 75afdee0), pack binaries f4cc0752... (code 28e281f1) and
