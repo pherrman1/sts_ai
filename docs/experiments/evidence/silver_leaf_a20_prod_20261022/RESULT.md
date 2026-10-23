@@ -97,6 +97,24 @@ passed 1,000 decisions and the engine's stall guard ended the run) and ends the 
 production. Production labels shrink the overvaluation off the training states; they do not remove it, so the
 penalty (or the cap) stays.
 
+## Smoke of the uncapped production head (descriptive)
+
+`a20prod` uncapped with the turn penalty (blend 0.5, 1 point per turn) in the A/B's harness on its smoke sources
+111339997-999: `../silver_leaf_head_ab_20261022/run_unit.sh`'s environment with `STS_CTMSILVER_LEAF_HEAD_WIN_CAP=0` and
+`STS_CTMSILVER_SWEEP_SIMS=10000` (production control at 10k only), binary `83de6c12...`. 50 valid fights, the same as
+in the capped smoke, with identical base10000 rows. The A/B's `analyze.py` with only these two arms
+(`results/smoke_prod_tp.json`):
+
+| head10000 − base10000, 50 fights | score per fight | HP lost per fight | CPU per fight | stalls |
+|---|---|---|---|---|
+| `a20prod` uncapped, 1 point per turn | −4.3 | +0.19 | 1.11 | 1 |
+| `a20` capped (the A/B's candidate, its smoke) | −0.8 | −0.39 | 1.11 | 0 |
+
+Two boss redraws died that production survived at 10 and 1 HP (Hexaghost, Donu and Deca); the one stall by the
+decision count is the Darklings fight above, which it ended with more HP than production. Three sources cannot rank
+the two heads, and nothing here argues for swapping the A/B's candidate. Raw rows:
+`/mnt/project-files/silver-leaf-head-ab/smoke/smoke_prod_tp_raw.tgz` (sha256 d7ff4342...).
+
 ## Provenance and commands
 
 - Solver: `exact_combat_solver` built from 75afdee0's code (sha256 a214254f...). Head `a20` (049d08a2...) from the
