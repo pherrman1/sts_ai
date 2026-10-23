@@ -183,6 +183,11 @@ namespace sts::search {
         // blocks, `targetSlots[i]` combatActionTargetSlot of edge i (or -1).
         void predictPolicyMlp(const float *stateFeatures, const float *actionBlocks,
                               const int *targetSlots, int n, double *out) const;
+        // The node's base (pmH1 values, before any edge's terms and the relu):
+        // b1, the v2 embedding rows and the state layer. predictPolicyMlp builds
+        // its edges on it; relu(base) is the state embedding a value head on
+        // the frozen trunk reads (research, exact_combat_solver --leaf-heads).
+        void policyMlpBase(const float *stateFeatures, std::vector<float> &base) const;
 
         // Compact copy of `trees` for predictPolicyActions, built by load for
         // policy tree ensembles whose children follow their parents (empty

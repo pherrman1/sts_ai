@@ -1,0 +1,2 @@
+natural: runs 1024, fights 23040, Heart killed 261 (25.5%, 95% CI 22.9-28.2), Heart fights 383 (won 68.1%), act 2 reached 84.7%, act 3 59.6%, act 4 39.6%; runs with an invalid fight 0
+perturbed: runs 512, fights 11275, Heart killed 109 (21.3%, 95% CI 18.0-25.0), Heart fights 173 (won 63.0%), act 2 reached 82.6%, act 3 56.4%, act 4 36.1%; runs with an invalid fight 0

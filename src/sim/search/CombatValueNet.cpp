@@ -1390,11 +1390,8 @@ void policyMlpEdges(const CombatValueNet &net, const float *__restrict base, con
 
 }
 
-void CombatValueNet::predictPolicyMlp(const float *stateFeatures, const float *actionBlocks,
-                                      const int *targetSlots, int n, double *out) const {
-    if (n <= 0) return;
-    const int H1 = pmH1, H2 = pmH2;
-    thread_local std::vector<float> base, h, z;
+void CombatValueNet::policyMlpBase(const float *stateFeatures, std::vector<float> &base) const {
+    const int H1 = pmH1;
     base.assign(pmB1.begin(), pmB1.end());
     // v2 embedding tables (raw ids otherwise enter the state layer as plain
     // numbers). Row = rounded value clipped to the table. A monster slot counts
@@ -1423,8 +1420,6 @@ void CombatValueNet::predictPolicyMlp(const float *stateFeatures, const float *a
             }
         }
     }
-    h.resize(H1);
-    z.resize(H2);
     // Sparse state layer, once per node (about 60 nonzeros of 1,766), in
     // ascending feature order.
     {
@@ -1438,6 +1433,16 @@ void CombatValueNet::predictPolicyMlp(const float *stateFeatures, const float *a
             for (int j = 0; j < H1; ++j) acc[j] += v * w[j];
         }
     }
+}
+
+void CombatValueNet::predictPolicyMlp(const float *stateFeatures, const float *actionBlocks,
+                                      const int *targetSlots, int n, double *out) const {
+    if (n <= 0) return;
+    const int H1 = pmH1, H2 = pmH2;
+    thread_local std::vector<float> base, h, z;
+    policyMlpBase(stateFeatures, base);
+    h.resize(H1);
+    z.resize(H2);
     if (H2 == 64 && H1 <= kPolicyMlpMaxH1) {
         policyMlpEdges<64>(*this, base.data(), stateFeatures, actionBlocks, targetSlots, n, out);
         return;

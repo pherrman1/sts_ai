@@ -1,0 +1,30 @@
+win rate per arm (replicates)
+  all     base10000  93.1%  base12000  93.2%  base15000  93.2%  head10000  92.7%  (n=2895 fights)
+  normal  base10000  98.2%  base12000  98.4%  base15000  98.3%  head10000  98.4%  (n=1133 fights)
+  elite   base10000  94.8%  base12000  94.8%  base15000  95.1%  head10000  94.0%  (n=1209 fights)
+  boss    base10000  78.8%  base12000  78.9%  base15000  78.8%  head10000  78.0%  (n=553 fights)
+  act1    base10000  96.3%  base12000  96.3%  base15000  96.6%  head10000  96.5%  (n=1352 fights)
+  act2    base10000  91.0%  base12000  91.2%  base15000  90.8%  head10000  90.4%  (n=893 fights)
+  act3    base10000  91.2%  base12000  91.5%  base15000  91.6%  head10000  90.5%  (n=576 fights)
+  act4    base10000  73.0%  base12000  73.6%  base15000  73.6%  head10000  67.6%  (n=74 fights)
+  heart   base10000  45.7%  base12000  47.1%  base15000  48.6%  head10000  40.0%  (n=35 fights)
+decisions per fight (both redraws)
+  all     base10000   50.8  base12000   50.9  base15000   50.8  head10000   52.4
+  normal  base10000   33.3  base12000   33.3  base15000   33.4  head10000   34.5
+  elite   base10000   50.1  base12000   50.0  base15000   49.9  head10000   51.6
+  boss    base10000   88.3  base12000   88.7  base15000   88.5  head10000   90.9
+  act3    base10000   67.8  base12000   67.9  base15000   67.9  head10000   70.3
+  act4    base10000   90.6  base12000   90.8  base15000   88.9  head10000   91.9
+stall-flagged fights (head10000 > 2x base10000 decisions): state act room encounter dec_base dec_head hp_base hp_head
+   s111350000-f1 1 NORMAL Jaw Worm 17 35 61/61 64/64
+   s111350069-f15 2 NORMAL Shelled Parasite And Fungi 18 38 45/45 45/32
+   s111350074-f3 1 NORMAL Large Slime 17 35 60/67 65/66
+   s111350078-f13 2 NORMAL Snake Plant 10 41 84/84 73/78
+   s111350086-f0 1 NORMAL Jaw Worm 18 39 54/54 59/57
+   s111350090-f28 4 ELITE Shield And Spear 28 76 X/X 21/33
+   s111350114-f24 3 BOSS Donu And Deca 45 97 X/X X/X
+   s111350117-f26 3 ELITE Reptomancer 30 90 X/X X/28
+   s111350173-f28 3 BOSS Awakened One 78 164 X/X 22/2
+   s111350178-f7 1 BOSS Slime Boss 41 83 26/26 28/34
+   s111350200-f2 1 NORMAL Jaw Worm 10 26 61/61 64/64
+   s111350219-f18 2 BOSS Collector 56 119 72/49 51/37

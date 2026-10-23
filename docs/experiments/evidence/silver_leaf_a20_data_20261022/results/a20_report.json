@@ -1,0 +1,435 @@
+{
+ "pack": "/tmp/claude-0/-home-user-sts-ai/cbf6dcc2-01d6-5260-ac1b-f327e87f9ba1/scratchpad/a20/a20_pack.npz",
+ "roots": 736347,
+ "refchgLeftOut": 30426,
+ "fit": 419724,
+ "stop": 143451,
+ "test": 142746,
+ "stopRmse": 24.084,
+ "epochs": 17,
+ "fitMean": 119.5,
+ "groups": {
+  "all": {
+   "all": {
+    "roots": 142746,
+    "fights": 6673,
+    "actual": 120.07,
+    "head": 119.31,
+    "rootQ": 106.54,
+    "headRmse": 25.0,
+    "headBias": -0.76,
+    "rootRmse": 24.62,
+    "rootBias": -13.54,
+    "constRmse": 36.43
+   }
+  },
+  "act": {
+   "act 1": {
+    "roots": 43091,
+    "fights": 2829,
+    "actual": 111.85,
+    "head": 111.86,
+    "rootQ": 103.51,
+    "headRmse": 16.97,
+    "headBias": 0.01,
+    "rootRmse": 16.1,
+    "rootBias": -8.33,
+    "constRmse": 25.84
+   },
+   "act 2": {
+    "roots": 41979,
+    "fights": 1998,
+    "actual": 115.99,
+    "head": 115.36,
+    "rootQ": 102.34,
+    "headRmse": 22.41,
+    "headBias": -0.63,
+    "rootRmse": 23.28,
+    "rootBias": -13.64,
+    "constRmse": 33.7
+   },
+   "act 3": {
+    "roots": 49729,
+    "fights": 1667,
+    "actual": 130.65,
+    "head": 130.47,
+    "rootQ": 115.14,
+    "headRmse": 28.26,
+    "headBias": -0.18,
+    "rootRmse": 25.94,
+    "rootBias": -15.52,
+    "constRmse": 42.56
+   },
+   "act 4": {
+    "roots": 7947,
+    "fights": 179,
+    "actual": 120.03,
+    "head": 110.72,
+    "rootQ": 91.26,
+    "headRmse": 44.83,
+    "headBias": -9.31,
+    "rootRmse": 49.13,
+    "rootBias": -28.77,
+    "constRmse": 53.72
+   }
+  },
+  "room": {
+   "MONSTER": {
+    "roots": 59060,
+    "fights": 3890,
+    "actual": 125.5,
+    "head": 126.47,
+    "rootQ": 117.59,
+    "headRmse": 17.37,
+    "headBias": 0.97,
+    "rootRmse": 12.82,
+    "rootBias": -7.92,
+    "constRmse": 30.31
+   },
+   "ELITE": {
+    "roots": 42488,
+    "fights": 1735,
+    "actual": 114.92,
+    "head": 115.99,
+    "rootQ": 101.42,
+    "headRmse": 22.36,
+    "headBias": 1.07,
+    "rootRmse": 22.47,
+    "rootBias": -13.49,
+    "constRmse": 36.06
+   },
+   "BOSS": {
+    "roots": 37576,
+    "fights": 864,
+    "actual": 117.24,
+    "head": 111.52,
+    "rootQ": 94.43,
+    "headRmse": 35.92,
+    "headBias": -5.72,
+    "rootRmse": 38.08,
+    "rootBias": -22.81,
+    "constRmse": 45.12
+   },
+   "EVENT": {
+    "roots": 3622,
+    "fights": 184,
+    "actual": 121.45,
+    "head": 122.29,
+    "rootQ": 111.99,
+    "headRmse": 21.39,
+    "headBias": 0.84,
+    "rootRmse": 15.79,
+    "rootBias": -9.46,
+    "constRmse": 31.0
+   }
+  },
+  "turn": {
+   "turn 0": {
+    "roots": 34554,
+    "fights": 6673,
+    "actual": 119.95,
+    "head": 119.74,
+    "rootQ": 98.72,
+    "headRmse": 24.11,
+    "headBias": -0.21,
+    "rootRmse": 31.59,
+    "rootBias": -21.24,
+    "constRmse": 35.13
+   },
+   "turn 1": {
+    "roots": 29111,
+    "fights": 6220,
+    "actual": 121.66,
+    "head": 120.9,
+    "rootQ": 106.9,
+    "headRmse": 23.46,
+    "headBias": -0.76,
+    "rootRmse": 25.15,
+    "rootBias": -14.77,
+    "constRmse": 35.88
+   },
+   "turn 2": {
+    "roots": 24933,
+    "fights": 5645,
+    "actual": 120.67,
+    "head": 119.68,
+    "rootQ": 108.74,
+    "headRmse": 23.68,
+    "headBias": -1.0,
+    "rootRmse": 22.67,
+    "rootBias": -11.93,
+    "constRmse": 35.76
+   },
+   "turn 3": {
+    "roots": 18344,
+    "fights": 4274,
+    "actual": 120.18,
+    "head": 119.16,
+    "rootQ": 110.22,
+    "headRmse": 24.12,
+    "headBias": -1.02,
+    "rootRmse": 20.13,
+    "rootBias": -9.95,
+    "constRmse": 36.56
+   },
+   "turn 4": {
+    "roots": 13092,
+    "fights": 2955,
+    "actual": 119.8,
+    "head": 118.11,
+    "rootQ": 110.5,
+    "headRmse": 25.64,
+    "headBias": -1.69,
+    "rootRmse": 20.57,
+    "rootBias": -9.3,
+    "constRmse": 37.68
+   },
+   "turn 5": {
+    "roots": 8678,
+    "fights": 2065,
+    "actual": 118.23,
+    "head": 117.92,
+    "rootQ": 110.58,
+    "headRmse": 27.97,
+    "headBias": -0.31,
+    "rootRmse": 19.39,
+    "rootBias": -7.65,
+    "constRmse": 40.02
+   },
+   "turn 6+": {
+    "roots": 14034,
+    "fights": 1308,
+    "actual": 117.26,
+    "head": 116.47,
+    "rootQ": 110.11,
+    "headRmse": 30.5,
+    "headBias": -0.79,
+    "rootRmse": 18.11,
+    "rootBias": -7.15,
+    "constRmse": 38.19
+   }
+  },
+  "turnStart": {
+   "turn start": {
+    "roots": 31379,
+    "fights": 6673,
+    "actual": 118.75,
+    "head": 118.42,
+    "rootQ": 106.17,
+    "headRmse": 23.49,
+    "headBias": -0.33,
+    "rootRmse": 23.28,
+    "rootBias": -12.58,
+    "constRmse": 33.97
+   },
+   "mid-turn": {
+    "roots": 111367,
+    "fights": 6620,
+    "actual": 120.45,
+    "head": 119.56,
+    "rootQ": 106.64,
+    "headRmse": 25.41,
+    "headBias": -0.88,
+    "rootRmse": 24.99,
+    "rootBias": -13.81,
+    "constRmse": 37.1
+   }
+  },
+  "variant": {
+   "natural": {
+    "roots": 98234,
+    "fights": 4488,
+    "actual": 120.92,
+    "head": 120.98,
+    "rootQ": 107.35,
+    "headRmse": 25.27,
+    "headBias": 0.06,
+    "rootRmse": 24.94,
+    "rootBias": -13.56,
+    "constRmse": 36.47
+   },
+   "perturbed": {
+    "roots": 44512,
+    "fights": 2185,
+    "actual": 118.21,
+    "head": 115.63,
+    "rootQ": 104.73,
+    "headRmse": 24.38,
+    "headBias": -2.58,
+    "rootRmse": 23.91,
+    "rootBias": -13.47,
+    "constRmse": 36.34
+   }
+  },
+  "actRoom": {
+   "act 1 MONSTER": {
+    "roots": 18493,
+    "fights": 1761,
+    "actual": 116.91,
+    "head": 118.48,
+    "rootQ": 112.26,
+    "headRmse": 9.22,
+    "headBias": 1.57,
+    "rootRmse": 6.88,
+    "rootBias": -4.65,
+    "constRmse": 18.86
+   },
+   "act 1 ELITE": {
+    "roots": 14154,
+    "fights": 745,
+    "actual": 103.7,
+    "head": 104.16,
+    "rootQ": 96.27,
+    "headRmse": 13.88,
+    "headBias": 0.45,
+    "rootRmse": 11.25,
+    "rootBias": -7.43,
+    "constRmse": 27.85
+   },
+   "act 1 BOSS": {
+    "roots": 9899,
+    "fights": 287,
+    "actual": 114.1,
+    "head": 110.86,
+    "rootQ": 97.5,
+    "headRmse": 28.45,
+    "headBias": -3.25,
+    "rootRmse": 29.22,
+    "rootBias": -16.61,
+    "constRmse": 33.34
+   },
+   "act 1 EVENT": {
+    "roots": 545,
+    "fights": 36,
+    "actual": 110.59,
+    "head": 105.71,
+    "rootQ": 103.86,
+    "headRmse": 13.51,
+    "headBias": -4.88,
+    "rootRmse": 9.41,
+    "rootBias": -6.73,
+    "constRmse": 20.17
+   },
+   "act 2 MONSTER": {
+    "roots": 20097,
+    "fights": 1245,
+    "actual": 119.77,
+    "head": 120.76,
+    "rootQ": 111.2,
+    "headRmse": 16.9,
+    "headBias": 0.99,
+    "rootRmse": 13.05,
+    "rootBias": -8.57,
+    "constRmse": 28.91
+   },
+   "act 2 ELITE": {
+    "roots": 11287,
+    "fights": 485,
+    "actual": 108.1,
+    "head": 109.43,
+    "rootQ": 93.67,
+    "headRmse": 21.66,
+    "headBias": 1.33,
+    "rootRmse": 23.61,
+    "rootBias": -14.43,
+    "constRmse": 35.35
+   },
+   "act 2 BOSS": {
+    "roots": 9677,
+    "fights": 209,
+    "actual": 117.49,
+    "head": 111.4,
+    "rootQ": 94.05,
+    "headRmse": 31.74,
+    "headBias": -6.1,
+    "rootRmse": 36.29,
+    "rootBias": -23.44,
+    "constRmse": 40.53
+   },
+   "act 2 EVENT": {
+    "roots": 918,
+    "fights": 59,
+    "actual": 114.38,
+    "head": 111.8,
+    "rootQ": 102.48,
+    "headRmse": 18.2,
+    "headBias": -2.58,
+    "rootRmse": 18.15,
+    "rootBias": -11.9,
+    "constRmse": 30.7
+   },
+   "act 3 MONSTER": {
+    "roots": 20470,
+    "fights": 884,
+    "actual": 138.89,
+    "head": 139.31,
+    "rootQ": 128.66,
+    "headRmse": 22.65,
+    "headBias": 0.42,
+    "rootRmse": 16.26,
+    "rootBias": -10.23,
+    "constRmse": 38.85
+   },
+   "act 3 ELITE": {
+    "roots": 13669,
+    "fights": 413,
+    "actual": 129.34,
+    "head": 131.61,
+    "rootQ": 113.03,
+    "headRmse": 26.65,
+    "headBias": 2.27,
+    "rootRmse": 25.77,
+    "rootBias": -16.31,
+    "constRmse": 40.78
+   },
+   "act 3 BOSS": {
+    "roots": 13431,
+    "fights": 281,
+    "actual": 119.99,
+    "head": 115.77,
+    "rootQ": 96.2,
+    "headRmse": 36.88,
+    "headBias": -4.22,
+    "rootRmse": 37.03,
+    "rootBias": -23.79,
+    "constRmse": 50.38
+   },
+   "act 3 EVENT": {
+    "roots": 2159,
+    "fights": 89,
+    "actual": 127.2,
+    "head": 130.94,
+    "rootQ": 118.08,
+    "headRmse": 24.09,
+    "headBias": 3.74,
+    "rootRmse": 15.99,
+    "rootBias": -9.12,
+    "constRmse": 33.3
+   },
+   "act 4 ELITE": {
+    "roots": 3378,
+    "fights": 92,
+    "actual": 126.32,
+    "head": 124.24,
+    "rootQ": 101.93,
+    "headRmse": 32.23,
+    "headBias": -2.08,
+    "rootRmse": 35.7,
+    "rootBias": -24.39,
+    "constRmse": 46.9
+   },
+   "act 4 BOSS": {
+    "roots": 4569,
+    "fights": 87,
+    "actual": 115.38,
+    "head": 100.72,
+    "rootQ": 83.38,
+    "headRmse": 52.22,
+    "headBias": -14.66,
+    "rootRmse": 57.06,
+    "rootBias": -32.01,
+    "constRmse": 58.24
+   }
+  }
+ }
+}

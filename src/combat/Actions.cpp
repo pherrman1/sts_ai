@@ -870,6 +870,23 @@ void ActData_MadnessAction::operator()(BattleContext &bc) const {
             return;
         }
 
+#ifdef STS_EXACT_CHANCE
+        // Exact chance enumeration (research tooling) answers every new draw with its first value, so the redraw
+        // loop below would never end on a free card; draw among the cards the loop accepts (its distribution).
+        if (::sts::exact::g_chanceScript) {
+            int accepted[CardManager::MAX_HAND_SIZE];
+            int n = 0;
+            for (int i = 0; i < bc.cards.cardsInHand; ++i) {
+                const auto &c = bc.cards.hand[i];
+                if (haveNonZeroTurnCost ? c.costForTurn > 0 : c.cost > 0) accepted[n++] = i;
+            }
+            auto &c = bc.cards.hand[accepted[bc.cardRandomRng.random(n - 1)]];
+            c.cost = 0;
+            c.costForTurn = 0;
+            return;
+        }
+#endif
+
         // always have 1 or more cards in hand here
 //#pragma clang diagnostic push
 //#pragma ide diagnostic ignored "EndlessLoop"

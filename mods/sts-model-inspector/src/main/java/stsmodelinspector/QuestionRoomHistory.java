@@ -14,6 +14,12 @@ final class QuestionRoomHistory {
     // after complete validates both persisted paths against the current room.
     final List<String> rooms = new ArrayList<>();
     boolean complete;
+    // Live problem (act-4 lookahead): A20's second Act 3 boss is floor 51, so the
+    // VictoryRoom (null in path_per_floor, absent from path_taken) is floor 52,
+    // not a multiple of 17. The VictoryRoom is also the current room on the Act 4
+    // entry map. STS_A20_VICTORY_ROOM_HISTORY_FIX=0 restores the old rule, which
+    // reported every A20 Act 4 history as incomplete.
+    static boolean victoryRoomFix = !"0".equals(System.getenv("STS_A20_VICTORY_ROOM_HISTORY_FIX"));
 
     static QuestionRoomHistory capture(List<String> original, List<String> resolved,
             int act, int floor, String currentOutcome) {
@@ -30,7 +36,9 @@ final class QuestionRoomHistory {
             if (visitedFloor == floor && !outcome.equals(currentOutcome)) return result;
             // Vanilla records the boss chest as null in path_per_floor and
             // omits it from path_taken. Never drop arbitrary missing entries.
-            if ("NONE".equals(outcome) && visitedFloor % 17 == 0) {
+            boolean victoryRoom = victoryRoomFix && visitedFloor == 52
+                    && "BOSS".equals(result.rooms.get(i-1)) && "BOSS".equals(result.rooms.get(i-2));
+            if ("NONE".equals(outcome) && (visitedFloor % 17 == 0 || victoryRoom)) {
                 if (reloadedBossMarker(original, source)) ++source;
                 continue;
             }
@@ -67,6 +75,7 @@ final class QuestionRoomHistory {
             case "ShopRoom": return "SHOP";
             case "TreasureRoom": return "TREASURE";
             case "TreasureRoomBoss": return "NONE";
+            case "VictoryRoom": return victoryRoomFix ? "NONE" : "INVALID";
             case "MonsterRoomBoss": return "BOSS";
             case "MonsterRoomElite": return "ELITE";
             case "RestRoom": return "REST";

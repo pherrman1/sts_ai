@@ -22431,6 +22431,30 @@ Seeds: none new (live seeds 111200473 and 111200504).
 **Interpretation:** Play-changing only for Acid and Spike Slime (L) pushed to half HP by thorns-type damage during their own turn; they now split on schedule. Natively the split was lost only when nothing hit the slime again before its next turn (a later hit re-armed it). The Slime Boss never queues a roll, so its guard is play-neutral. The dead-monster and Byrd families are representation-only and left unchanged; the parity comparison could classify them as background.
 
 **Status:** Draft PR.
+## §653 — Live act 4: the inspector reported A20 Act 4 question history as incomplete, so OOC search never looked ahead (2026-10-23)
+
+**Question:** Why did live OOC search look ahead 0 floors in all 141 Act 4 decisions of seeds 525-622 (acts 1-3: 96-100% of simulations look ahead)?
+
+**Evidence:** The decision-review thread traced it to `stopAtMapCheckpoint = !mapHistoryComplete` (`live_ooc_policy.cpp:258`); `mapHistoryComplete` requires `questionHistoryComplete` (`live_ooc_state.cpp:719`), which the inspector reported false on every Act 4 state (seed 586: true on floor 49, false from floor 52; fixture `tests/fixtures/live_act4_entry.json`: floor 52, A20, `pathHistory` ends `BOSS, BOSS`). `QuestionRoomHistory.capture` accepted the null `path_per_floor` placeholder only on floors that are multiples of 17 (boss chests 17 and 34, non-A20 VictoryRoom 51). At A20 the second Act 3 boss is floor 51, so the VictoryRoom null is floor 52 (the importer already uses 52 as the Act 4 entry floor, `live_ooc_state.cpp:945`). Confirmed by the canary on two real A20 `.run` files (seed 111200630, Heart death; seed 111200613, victory): `path_per_floor` [49..55] = `"B","B",null,"R","$","E","B"` and `path_taken` ends `BOSS, BOSS, R, $, E, BOSS` with no entry for the VictoryRoom; the live export at the first Act 4 MAP (floor 52) had 49 `pathHistory` entries and `questionHistoryComplete: false`. `roomOutcome` also mapped the current `VictoryRoom` to `INVALID`, so the Act 4 entry map itself failed at any ascension.
+
+**Change:** `STS_A20_VICTORY_ROOM_HISTORY_FIX` (inspector mod, default on, `=0` restores): the null on floor 52 counts as the VictoryRoom placeholder when floors 50 and 51 were both bosses, and the current `VictoryRoom` maps to `NONE`. Test: `QuestionRoomHistoryTest` builds an A20 path with the double boss and checks the Act 4 entry map (floor 52) and floor 55 (Shield & Spear) are complete, that a floor-52 null without the double boss stays incomplete, and that the flag off restores the old result.
+
+**Interpretation:** Play-changing for every live A20 run reaching Act 4: OOC search now simulates the Act 4 rest/shop/elite/Heart path (the ADR-0048 act-4 CTM model was never used live before), instead of valuing the first map checkpoint with the bare win model (about 0.95 at the Act 4 campfire vs 10/21 wins). Simulator-only play is unaffected.
+
+**Status:** Draft PR.
+
+## §657 — Live problem 103: Neow's two-card remove and transform grids were captured as unsupported selectors (2026-10-23)
+
+**Question:** Why was seed 111200638 (release ab7f81ba) abandoned at Neow on floor 0?
+
+**Evidence:** OOC chose Neow option 2, "Lose all Gold, Remove 2 Cards" (240 visits, q 0.730). The next state was a GRID with `num_cards` 2 and `for_purge` false over the starter deck; the inspector captured `details.type: "other"` (`requiredPicks` 2), and the advisor refused it (`ooc_v4 explicitly unsupported: selector_type:other`) twice, so the run was abandoned. First time this path was taken since block 5. javap j103 (canary): `NeowReward.activate` opens `REMOVE_TWO` as `open(purgeable, 2, ..., forUpgrade F, forTransform F, canCancel F, forPurge F)` and `TRANSFORM_TWO_CARDS` the same way (only the tip differs), while `REMOVE_CARD`/`TRANSFORM_CARD`/`UPGRADE_CARD` set their flag; `update` applies the selection while the private `activated` is true and clears it afterwards. `LiveOocCapture.selectorType` classifies unowned grids only by their flags. The engine already models both bonuses as `openCardSelectScreen(REMOVE, 2)` and `openCardSelectScreen(TRANSFORM, 2)`.
+
+**Change:** `STS_NEOW_TWO_CARD_SELECTOR_FIX` (inspector mod, default on, `=0` restores): the single activated `REMOVE_TWO` or `TRANSFORM_TWO_CARDS` reward of the current `NeowEvent` owns the grid, captured as a `remove` or `transform` selector (contradictory flags or two activated rewards still give `other`). Test in `LiveOocCaptureTest`: both owners map to their selector, only an activated two-card reward qualifies (not an inactive one or `REMOVE_CARD`), two activated rewards are refused, and the flag off restores the unowned grid.
+
+**Interpretation:** Live-only, play-changing whenever either Neow two-card bonus is chosen: the run continues and the advisor picks both cards instead of abandoning. Known approximation (not changed here): the importer samples a live transform selector with the card RNG, while native Neow transforms use the Neow RNG; the outcome is hidden either way.
+
+**Status:** Draft PR.
+
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with
@@ -23562,3 +23586,140 @@ HP / more debuffs. Pre-registered: material share below 1% = DROP.
 **Interpretation:** DROP. No search-structure target; the residual is a leaf/score preference for ending the turn.
 Evidence: [turn_dominance_20261023](evidence/turn_dominance_20261023/RESULT.md). Seeds used as above.
 **Knowledge impact:** none beyond this entry (research-only mode, no default changed).
+## §654 — Exact solves of the last turns of A20 elite and boss fights: Silver is near-optimal where they finish, and lost fights are decided before the last turn (descriptive, 2026-10-22)
+
+**Question (Philipp, 2026-10-22 11:08Z):** are exact solves of the last one or two turns of A20 elite and boss
+fights feasible, and what do they show about Silver racing instead of blocking? Research only: no gate, no play
+change.
+**Design:**
+- Positions: 68 A20 runs, seeds 111149700–767 (student_sel plays the map without OOC MCTS, production Silver every
+  real combat; 12 runs won). The new research mode `one_combat endgamerootgen` records every Silver decision of the
+  last three turns of every elite and boss fight: 549 fights, 7,648 decisions with Silver's root edges (visits, Q).
+- Solver: the new `exact_combat_solver roots` proves a lower and an upper bound for every root action within a
+  horizon. C0: last turn, win score. C1 and C2: second-to-last turn of won fights (C2 stops at this turn's end and
+  plays one more turn of Silver's playout policy for the lower bound). S0 and S1: lost fights, exact P(survive the
+  next one or two enemy turns). 30 s and 3 GB per bound pass, one core.
+- 133 units on 8 cloud workers × 4 lanes (run commit f8831b48, solver c449ca96), 13:37–14:36Z;
+  `verify_campaign.py`: 133 of 133 OK.
+**Result:**
+- Feasibility: the last turn solves at 56% of 1,664 positions (median 0.05 s), the second-to-last at 26% (C1) to 34%
+  (C2) of 2,498. Memory per chance outcome limits it, not time: 120 s instead of 30 s solved 11 of 32 C1 positions
+  instead of 10.
+- Won fights: Silver's choice is proven optimal at 54% of 796 solved last-turn positions and at 20% of 854
+  second-to-last ones. Its certified mistakes cost 0.022 and 0.042 points per fight (first fights: 0.74 per fight).
+  The rest are undetermined (bound gap median 31–36 points).
+- In the same position Silver's Q gap between an attack and a block exceeds the exact gap by +0.44 ± 0.09 points on
+  the last turn (133 fights) and by +0.71 ± 0.43 on the second-to-last (33 fights). That is a small racing bias that
+  seldom flips a decision this late; the certified mistakes go both ways (second-to-last turn: 4 attacks where a
+  block is best, 4 blocks where an attack is best).
+- Lost fights: at the start of the last turn, 26 of 33 solved positions have no surviving play. One and two turns
+  before the death every solved turn start survives the coming enemy turn. Silver's choice lowers P(survive) at 3 of
+  420 solved S0 positions (mean drop 0.08).
+- Solver fix (exact builds only, c449ca96): Discovery-style choices, Madness and Entropic Brew redraw until a value
+  is acceptable, and exact enumeration answers every new draw with its first value, so those loops never ended
+  (about 12% of the positions). They now draw among the acceptable values, the loop's distribution.
+**Interpretation:** where the last turns can be checked, Silver plays them almost optimally. If racing loses fights,
+it does so three or more turns before the death, beyond exact reach. The solved positions are the easier ones, and
+there are 68 runs.
+[Result](evidence/endgame_exact_20261022/RESULT.md); write-up `/mnt/project-files/exact-combat-research/REPORT.md`
+section 9, data `/mnt/project-files/exact-combat-research/endgame/`. Seeds used 111149700–767.
+**Knowledge impact:** none; descriptive, no option or default.
+
+## §655 — Learned leaf heads for native Silver on exact A20 first fights: a head fit to Silver's own end scores stalls alone, PASSES with a 1-point turn penalty (also on production-combat labels) and needs a win-now cap in long fights (2026-10-22/23)
+
+**Question (Philipp, 2026-10-22 15:25Z):** what should Silver's leaf evaluation be; can a learned value of the
+fight's end score replace half of the greedy playout's value?
+**Reference:** exact expectimax on the A20 first fights (Cultist, Two Louse, Jaw Worm) with `exact_combat_solver`
+(§623) and this branch's abstract exact models. Every Silver decision is scored by its exact regret; a leaf mode
+changes the value of undecided leaves inside Silver's search. On 300 fresh fights (111333000–099) Silver's regret is
+0.790 per fight (prod) and 0.456 with max backup (m = 4, §624); a perfect leaf, the exact value, lowers it by
+0.268 ± 0.059 and 0.355 ± 0.049.
+**Data and heads:**
+- Two A20 self-play campaigns of `silverazgen`, with Silver's own end score on every fight row (1,024 natural and 512
+  perturbed runs each, 192 units on 8 workers each, all verified; Philipp 17:08Z: up to 8 workers). The first
+  (RUN_COMMIT 2f910dba, natural 111310000–311023, perturbed 111320000–320511) plays out of combat through the
+  production chain (`STS_AZGEN_PRODUCTION_OOC=1`), but its combat runs under the generator's self-play overrides:
+  Heart 18.4% [16.1, 20.8]. The rerun (f92343af, `STS_AZGEN_PRODUCTION_COMBAT=1`, natural 111330000–331023, perturbed
+  111332000–332511) plays production Silver: Heart 25.5% [22.9, 28.2], Act 4 reached 39.6%.
+- Heads `a20` and `a20prod`: 128 → 64 → 1 on the frozen g7f_E trunk, fit to the end score of 736k and 778k searched
+  roots; fold-4 RMSE 25.0 and 23.7 points, close to unbiased outside Act 4. Silver's own root Q runs 8–32 points
+  below the end score.
+**First-fight tests** (paired change in regret per fight against the playout, ± SE; prod / max backup):
+- `a20` alone stalls: +6.34 / +24.37 on the held-out fights 111149650–699 (with one louse left it blocks and ends
+  turns). The 50/50 head-playout blend passes both pooled bars (−0.438 / −0.254) but misses the encounter cap (Two
+  Louse +0.114 with max backup): FAIL.
+- Turn penalty (Philipp, 21:58Z): 1 point off the head per turn the leaf lies beyond the root, chosen on the tuning
+  fights 111149600–649. `hblend:a20:0.5/1` gives −0.251 ± 0.054 / −0.283 ± 0.048 on the fresh fights with every
+  encounter within +0.10: **PASS** (pre-registered), about a perfect leaf's gain. Part B, `a20prod` under the same
+  rule: −0.264 / −0.214, **PASS**.
+- Long fights break the head. In a three-source fight-level smoke (111339997–999) the penalized `a20` stalled
+  (Darklings: 495 decisions against production's 40) or lost HP it did not have to (Collector: 24 and 1 HP left
+  against 75 and 50). Off its training states it can value a running fight above any ending (in the rerun's data no
+  root lies past turn 44, and very high block raises its value). A cap at the win-now value
+  (`SilverSearcher::winNowValue`, the score if the fight ended at the leaf) ends the stalls and keeps about 60% of
+  the first-fight gain (−0.149 / −0.174); it binds at 58–61% of the leaf evaluations. This capped `a20` became the
+  fight-level candidate (§656).
+- A shortfall head (`a20sf`, how far below win-now the fight ends) fits better offline (RMSE 19.2 against 25.0) but
+  gains less than the capped head (+0.081 ± 0.048 / +0.079 ± 0.032 against it): NEGATIVE by its pre-registered rule.
+- Exploratory, no net: 0.5 × win-now + 0.5 × playout beats the capped head on the fresh fights (−0.084 ± 0.058 /
+  −0.076 ± 0.037) and ties the uncapped one, but in the fight-level smoke it lost 2.7 points per fight against
+  production and 19 per boss fight; traces of four lost boss fights show it deals the damage later. A looser cap,
+  win-now + 10, binds at 1–2% of the leaves and keeps the uncapped gain in prod but not with max backup (tuning
+  fights; untested at fight level).
+**Code, all default off:** `STS_SILVER_LEAF_HEAD` with `_TRUNK`, `_BLEND`, `_TURN_PENALTY` and `_WIN_CAP` (whole-run
+fights, the same values as the solver's modes), the `ctmsilvergen` armset `leafhead` with its diagnostics,
+`exact_combat_solver --leaf-oracles` (`head`, `hblend`, `/P`, `+cap`, `+capM`), `STS_AZGEN_PRODUCTION_OOC` and
+`STS_AZGEN_PRODUCTION_COMBAT`.
+**Interpretation:** on starter-deck first fights a learned leaf with a turn penalty is as good as a perfect leaf.
+Whether that carries to long fights is the question §656 tests.
+Evidence: [A20 data](evidence/silver_leaf_a20_data_20261022/RESULT.md),
+[turn penalty](evidence/leaf_head_turn_penalty_20261022/RESULT.md),
+[production-combat rerun and Part B](evidence/silver_leaf_a20_prod_20261022/RESULT.md),
+[shortfall head](evidence/silver_leaf_head_shortfall_20261023/RESULT.md),
+[win-now blend](evidence/silver_leaf_winnow_blend_20261023/README.md). Heads and raw rows:
+`/mnt/project-files/exact-combat-research/leaf-value/`. Seeds used: the campaigns' above, smokes 111329990–997 and
+111339990–999; exact replays of 111149600–699 and 111333000–099.
+**Knowledge impact:** `operations/environment-variables.md`, `research/combat-search/leaf-evaluation.md`.
+
+## §656 — Capped leaf head vs production Silver at A20 fight level: NOT_SHOWN, step-3 gate FAIL (score −1.31 [−2.78, +0.14] per fight against CPU-matched production; better in normal fights, worse in elites and Acts 3–4) (2026-10-23)
+
+**Question:** does the capped head of §655 (`hblend:a20:0.5/1+cap`) improve real A20 fights? Step 3 of the leaf
+plan; its gate decides only whether a whole-run A/B is proposed.
+**Design:** [PREREG](evidence/silver_leaf_head_ab_20261022/PREREG.md), pre-launch review PASS (2026-10-23 03:04Z).
+`ctmsilvergen` armset `leafhead`, the §638 harness: 256 student C sources 111350000–255, every 3rd hallway fight
+plus elites and bosses, R = 2, all arms with the root and tree priors, boss prior playouts, flat budgets and no
+learned stop. Arms base10000, base12000, base15000 (production) and head10000 (`STS_SILVER_LEAF_HEAD` = `a20`, blend
+0.5, turn penalty 1, win cap on). Primary label head10000 − base10000; secondary head10000 − matched, chosen by CPU
+alone (head/base per fight ≤ 1.10): base12000 (0.938). Gate: the matched score contrast's CI lower bound above −1,
+and on bosses neither score nor HP lost WORSE. Authorized by Philipp 2026-10-22 17:08Z (up to 32 workers for steps
+2–4), 8 workers, 05:39–12:08Z. RUN_COMMIT 420026c2, code 75afdee0, binary 83de6c12; `verify_campaign.py`: 256 of 256
+OK.
+**Result:** 2,895 fights (1,021 normal, 1,209 elite, 553 boss, 112 other; 74 in Act 4); 17 excluded for escapes as
+pre-registered.
+
+| contrast (all fights) | score | win | HP lost |
+|---|---|---|---|
+| head10000 − base10000 | −0.90 [−2.31, +0.52] | −0.004 [−0.009, +0.001] | −0.16 [−0.48, +0.17] |
+| head10000 − base12000 (matched) | −1.31 [−2.78, +0.14] | −0.005 [−0.010, −0.001] | −0.07 [−0.37, +0.25] |
+| base12000 − base10000 | +0.41 [−0.51, +1.34] | +0.001 [−0.002, +0.005] | −0.09 [−0.30, +0.11] |
+| base15000 − base10000 | +0.49 [−0.61, +1.60] | +0.002 [−0.002, +0.006] | +0.01 [−0.20, +0.22] |
+
+- Labels: primary score **NOT_SHOWN**, HP lost **NOT_SHOWN**; secondary the same. **Step-3 gate: FAIL** (CI lower
+  bound −2.78; bosses not WORSE: score −2.28 [−8.20, +3.91], HP lost +0.53 [−0.67, +1.71]).
+- Descriptive, head10000 − base12000: normal and other fights HP lost −0.38 [−0.63, −0.11]; elites score −2.43
+  [−4.87, −0.04], 94.0% won against 94.8%; Act 3 score −4.30 [−8.46, −0.44]; Act 4 won 67.6% against 73.6% (74
+  fights), the Heart 40.0% against 47.1% (35 fights).
+- CPU head10000/base10000 is 1.127 per fight and 1.092 per simulation. In 12 fights the head took more than twice
+  production's decisions; none is a stall like the uncapped head's.
+**Interpretation:** the head helps where the first-fight test measured it (normal fights) and loses in the long
+fights that decide runs (elites, Acts 3–4). This is §638's pattern again, and the win-now blend's smoke
+(§655) showed it too: three changes that cut exact first-fight regret did not carry to long fights.
+**Inference:** the cap binds at about 60% of first-fight leaves, so much of the head's value is win-now, which
+ignores the damage still to come; not tested.
+**Decision:** no whole-run A/B. Philipp chose to record the line and pause it (2026-10-23 12:20Z);
+`STS_SILVER_LEAF_HEAD` stays default off. A further leaf candidate needs a long-fight check (elites, bosses, Acts
+3–4) before a fight-level A/B. Production gains nothing measurable from 12k or 15k simulations over 10k here.
+[Result](evidence/silver_leaf_head_ab_20261022/RESULT.md); unit tars
+`/mnt/project-files/silver-leaf-head-ab/campaign/units/` (`tars.sha256`). Seeds used 111350000–255 (smokes
+111339997–999, counted in §655).
+**Knowledge impact:** `research/combat-search/leaf-evaluation.md`, `operations/environment-variables.md`.

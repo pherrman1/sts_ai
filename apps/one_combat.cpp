@@ -3090,6 +3090,8 @@ static std::string unsupportedSilverOption() {
         {"STS_SILVER_ROOT_PRIOR", ""}, {"STS_SILVER_ROOT_PRIOR_WEIGHT", ""}, {"STS_SILVER_ROOT_PRIOR_SCOPE", ""}, {"STS_SILVER_TREE_PRIOR_MIN_VISITS", ""},
         {"STS_SILVER_ROLLOUT_UNIFORM", ""}, {"STS_SILVER_ROLLOUTS_PER_LEAF", ""}, {"STS_SILVER_ROLLOUT_CARD_TABLE", ""}, {"STS_SILVER_ROLLOUT_ZERO_COST_CAP", ""}, {"STS_SILVER_ROLLOUT_ACTION_CAP", ""},
         {"STS_SILVER_ROLLOUT_ROOT_TABLE", ""}, {"STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE", ""}, {"STS_SILVER_PRIOR_PLAYOUT_ELITE", ""},
+        {"STS_SILVER_LEAF_HEAD", ""}, {"STS_SILVER_LEAF_HEAD_TRUNK", ""}, {"STS_SILVER_LEAF_HEAD_BLEND", ""},
+        {"STS_SILVER_LEAF_HEAD_TURN_PENALTY", ""}, {"STS_SILVER_LEAF_HEAD_WIN_CAP", ""},
     };
     // Vendored-only diagnostics without the STS_SILVER_ prefix.
     static const char *const kRemoved[] = {
@@ -4350,6 +4352,18 @@ int main(int argc, char **argv) {
         try {
             silverStopReplayGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]), argv[5],
                                 std::stoll(argv[6]), argv[7]);
+        } catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 2;
+        }
+    } else if (mode == "endgamerootgen") {
+        if (argc != 7 && argc != 8) {
+            std::cerr << "usage: one_combat endgamerootgen N_SEEDS SIMS ASC SEED_OFFSET OUT.jsonl [KEEP=2]\n";
+            return 2;
+        }
+        try {
+            endgameRootGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]), std::stoll(argv[5]), argv[6],
+                           argc == 8 ? std::stoi(argv[7]) : 2);
         } catch (const std::exception &error) {
             std::cerr << error.what() << '\n';
             return 2;
