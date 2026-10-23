@@ -93,10 +93,31 @@ By group, odd seeds, fit on even seeds ([`offline/eval_fit_even_on_odd.json`](of
 
 - The gains are at the bosses, Act-3 elites and Act 4. Low-death groups (Act-1 hallways and elites, events) stay
   about where they were.
+- Per fight type and per elite and boss, over both halves: [`offline/errors_by_fight.md`](offline/errors_by_fight.md)
+  (death-rate and HP-loss errors, predicted − real; [`offline/group_errors.py`](offline/group_errors.py)). Out of
+  sample, every act × room group is within about ±2 pp and ±2 HP. Single encounters are within their noise; the
+  largest is Hexaghost at ±4.6 pp, whose real death rate differs by 5 pp between the two halves.
 - Held out ([`offline/compare_heldout_stage12_cpp.json`](offline/compare_heldout_stage12_cpp.json), scored by the C++
   runtime with the table): Act-3 bosses 0.3305 → 0.2639 log loss and 23.1 → 15.4 HP error; the Heart 0.458 → 0.358
   predicted deaths against 0.337 observed. One group got worse: Act-1 bosses, 0.2016 → 0.2107 log loss, where the
   held-out games died more often (21 of 249, 0.084) than the A/B (0.063).
+- **By pre-fight HP** ([`offline/hp_bands_fit_even_on_odd.txt`](offline/hp_bands_fit_even_on_odd.txt),
+  [`offline/hp_bands_fit_odd_on_even.txt`](offline/hp_bands_fit_odd_on_even.txt)), the CTM's pessimism sits at higher
+  HP. Below 20 HP its death rate is about right in Acts 2–3 and too low in Act 1. The calibration lowers it further in
+  Acts 1 and 3, most in Act 3, so Act-3 fights at low HP look safer than they are:
+
+  | Act 3, below 20 HP | fights | observed | CTM | calibrated |
+  |---|---|---|---|---|
+  | odd seeds | 179 | 0.475 | 0.488 | 0.431 |
+  | even seeds | 143 | 0.434 | 0.429 | 0.382 |
+
+  - It also flattens the death gap between low and high HP. At Act-3 bosses, 20–39 HP against 60+ HP, the gap is
+    0.43 observed, 0.46 for the CTM and 0.38 calibrated (odd seeds).
+  - An HP-fraction term in the shift improved the overall out-of-sample log loss by at most 0.0002 in either fold, and a
+    slope on the logit (Platt) made it worse ([`offline/death_variants.txt`](offline/death_variants.txt)). The table
+    keeps the plain shift.
+  - The search might use this optimism, for example by entering Act-3 fights at low HP more readily. The A/B's
+    descriptive endpoints count fights entered below 20 HP.
 
 ## Implementation checks
 - **Off is unchanged.** Unset and `=0`, `ctmscorerows` of all five row sets is byte-identical to the scores before the
@@ -115,12 +136,17 @@ By group, odd seeds, fit on even seeds ([`offline/eval_fit_even_on_odd.json`](of
 python3 -I tools/ctm_calibration.py zero zero.json
 bash offline/score.sh BIN ROWS off  off            # and: off0 ; table zero.json -> zero ; table TABLE -> cal
 python3 -I tools/ctm_calibration.py fit TABLE --note "…" off/A.csv,zero/A.csv off/M.csv,zero/M.csv off/S.csv,zero/S.csv off/MS.csv,zero/MS.csv
-python3 -I tools/ctm_calibration.py fit even.json --seeds even SPECS ; eval even.json --seeds odd SPECS --json …
+python3 -I tools/ctm_calibration.py fit offline/table_fit_even.json --seeds even SPECS   # and --seeds odd: table_fit_odd.json
+python3 -I tools/ctm_calibration.py eval offline/table_fit_even.json --seeds odd SPECS --json offline/eval_fit_even_on_odd.json
 python3 -I tools/ctm_calibration.py eval TABLE off/LC.csv,zero/LC.csv --json offline/eval_heldout_stage12.json
 python3 -I tools/ctm_calibration.py compare off/LC.csv cal/LC.csv --json offline/compare_heldout_stage12_cpp.json
 python3 -I tools/ctm_calibration.py parity TABLE off/X.csv,zero/X.csv cal/X.csv ROWS/X.jsonl
 python3 -I tools/ctm_calibration.py fixture TABLE ROWS/A.jsonl off/A.csv,zero/A.csv tests/fixtures/ctm_calibration_parity.jsonl
 python3 -I offline/cv_lambda.py tools SPECS
+bash offline/extract.sh OUT                         # rebuilds the five row sets of offline/rows.txt from the tars
+python3 -I offline/hp_bands.py tools/ctm_calibration.py offline/table_fit_even.json odd SPECS > offline/hp_bands_fit_even_on_odd.txt
+python3 -I offline/death_variants.py tools/ctm_calibration.py even odd 0.5 SPECS   # and odd even: death_variants.txt
+python3 -I offline/group_errors.py tools/ctm_calibration.py offline/table_fit_even.json offline/table_fit_odd.json SPECS > offline/errors_by_fight.md
 ```
 
 ## What this does not show

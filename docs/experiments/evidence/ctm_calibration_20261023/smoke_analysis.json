@@ -1,0 +1,197 @@
+{
+ "seeds": 10,
+ "valid": 10,
+ "invalid": [],
+ "heart": {
+  "rate_pct": {
+   "A": 30.0,
+   "C": 20.0
+  },
+  "C-A": {
+   "diff_pp": -10.0,
+   "ci95_pp": [
+    -30.0,
+    0.0
+   ],
+   "C_only": 0,
+   "A_only": 1,
+   "mcnemar_p": 1.0
+  }
+ },
+ "act4": {
+  "rate_pct": {
+   "A": 60.0,
+   "C": 30.0
+  },
+  "C-A": {
+   "diff_pp": -30.0,
+   "ci95_pp": [
+    -60.0,
+    0.0
+   ],
+   "C_only": 0,
+   "A_only": 3,
+   "mcnemar_p": 0.25
+  }
+ },
+ "deathsByAct": {
+  "A": {
+   "1": 1,
+   "2": 2,
+   "3": 1,
+   "4": 3
+  },
+  "C": {
+   "1": 1,
+   "2": 5,
+   "3": 1,
+   "4": 1
+  }
+ },
+ "meanFloor": {
+  "A": 45.1,
+  "C": 37.3
+ },
+ "elitesPerRunByAct": {
+  "A": {
+   "1": 2.7,
+   "2": 1.8,
+   "3": 1.8
+  },
+  "C": {
+   "1": 2.7,
+   "2": 1.4,
+   "3": 1.1
+  }
+ },
+ "fightsByAct": {
+  "A": {
+   "1": {
+    "meanPreFightHp": 61.88659793814433,
+    "below20PerRun": 0.1,
+    "below20DeathRate": 0.0
+   },
+   "2": {
+    "meanPreFightHp": 67.90243902439025,
+    "below20PerRun": 0.3,
+    "below20DeathRate": 0.3333333333333333
+   },
+   "3": {
+    "meanPreFightHp": 76.3076923076923,
+    "below20PerRun": 0.2,
+    "below20DeathRate": 0.0
+   },
+   "4": {
+    "meanPreFightHp": 67.63636363636364,
+    "below20PerRun": 0.1,
+    "below20DeathRate": 0.0
+   }
+  },
+  "C": {
+   "1": {
+    "meanPreFightHp": 61.34020618556701,
+    "below20PerRun": 0.1,
+    "below20DeathRate": 0.0
+   },
+   "2": {
+    "meanPreFightHp": 64.61111111111111,
+    "below20PerRun": 0.2,
+    "below20DeathRate": 0.5
+   },
+   "3": {
+    "meanPreFightHp": 77.38461538461539,
+    "below20PerRun": 0.0,
+    "below20DeathRate": null
+   },
+   "4": {
+    "meanPreFightHp": 81.5,
+    "below20PerRun": 0.0,
+    "below20DeathRate": null
+   }
+  }
+ },
+ "wall_s": {
+  "A": {
+   "mean": 813.7,
+   "max": 1264,
+   "overA": 1.0
+  },
+  "C": {
+   "mean": 624.1,
+   "max": 1149,
+   "overA": 0.7669902912621359
+  }
+ },
+ "search": {
+  "A": {
+   "decisions": 1494,
+   "searched": 637,
+   "fullBudget": 169,
+   "aborted": 0,
+   "changed": 37,
+   "changedShare": 0.058084772370486655,
+   "fastByAct": {
+    "1": {
+     "roots": 188,
+     "meanSims": 328.218085106383,
+     "learnedStopShare": 0.6861702127659575,
+     "lockStopShare": 0.31382978723404253
+    },
+    "2": {
+     "roots": 153,
+     "meanSims": 337.4052287581699,
+     "learnedStopShare": 0.6601307189542484,
+     "lockStopShare": 0.33986928104575165
+    },
+    "3": {
+     "roots": 107,
+     "meanSims": 457.9252336448598,
+     "learnedStopShare": 0.4672897196261682,
+     "lockStopShare": 0.5327102803738317
+    },
+    "4": {
+     "roots": 20,
+     "meanSims": 511.0,
+     "learnedStopShare": 0.3,
+     "lockStopShare": 0.7
+    }
+   }
+  },
+  "C": {
+   "decisions": 1258,
+   "searched": 545,
+   "fullBudget": 142,
+   "aborted": 0,
+   "changed": 23,
+   "changedShare": 0.04220183486238532,
+   "fastByAct": {
+    "1": {
+     "roots": 188,
+     "meanSims": 336.25,
+     "learnedStopShare": 0.6808510638297872,
+     "lockStopShare": 0.3191489361702128
+    },
+    "2": {
+     "roots": 131,
+     "meanSims": 334.29007633587787,
+     "learnedStopShare": 0.6564885496183206,
+     "lockStopShare": 0.3435114503816794
+    },
+    "3": {
+     "roots": 74,
+     "meanSims": 404.77027027027026,
+     "learnedStopShare": 0.5675675675675675,
+     "lockStopShare": 0.43243243243243246
+    },
+    "4": {
+     "roots": 10,
+     "meanSims": 483.2,
+     "learnedStopShare": 0.5,
+     "lockStopShare": 0.5
+    }
+   }
+  }
+ },
+ "verdict": "NOT_SHOWN",
+ "guardPass": true
+}

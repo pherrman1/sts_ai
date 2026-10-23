@@ -21,4 +21,5 @@ If any step is refused or prints STOP, reply with the exact output and stop. Do 
 Never kill a unit or one_combat process. A unit that times out ends with rc=124, and the run continues.
 If the container restarts, run steps 1-3 again (finished units are skipped).
 Keep the session alive until you are told the tar is verified.
-Expect about 7 h wall per worker with 2,048 seeds on 32 workers (two 4096-sim search runs per unit, about 13 min each).
+Expect about 26 min per unit (two 4096-sim search runs, about 13 min each), 4 units at a time: about 2 h wall per
+worker for stage 1 (512 seeds on 32 workers), plus a straggler tail.

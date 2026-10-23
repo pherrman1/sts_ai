@@ -459,11 +459,15 @@ Act-4 model) predicts too many deaths at most bosses and too much HP loss in Act
 `STS_CTM_CALIBRATION=models/candidates/ctm_calibration_pathb_a20_v1.json` (research, default off; the live advisor
 refuses it) adds a per-fight death-logit shift and HP-loss scale (34 groups: the encounter for elites and bosses, else
 act and room). Out of sample it predicts better in both seed folds (odd seeds: death log loss 0.0731 → 0.0685,
-won-fight HP error 8.5 → 7.7; even seeds 0.0717 → 0.0684, 8.5 → 7.7). On the 256 held-out stage 1–2 games it goes 0.0733 → 0.0698 and 8.2 → 7.6; the Heart 0.458 → 0.358
-against 0.337 observed. Whether the search plays better with it is untested. A paired A20 A/B (2,048 seeds) is
-pre-registered and needs Philipp's go
+won-fight HP error 8.5 → 7.7; even seeds 0.0717 → 0.0684, 8.5 → 7.7). On the 256 held-out stage 1–2 games it goes
+0.0733 → 0.0698 and 8.2 → 7.6; the Heart 0.458 → 0.358 against 0.337 observed. Below 20 HP it makes Act-3 fights look
+safer than they are (0.43 predicted against 0.47 observed; the CTM 0.49), and an HP term in the shift did not help.
+Whether the search plays better with it is untested. A 10-seed smoke leaned against it (the control got further on
+all four seeds whose games ended differently), which is no evidence at that size. A paired A20 A/B is pre-registered
+(512 seeds first, stopping if the calibrated arm trails by more than 1 pp, then 1,536 more) and needs Philipp's go
 ([evidence](../../experiments/evidence/ctm_calibration_20261023/README.md),
-[PREREG](../../experiments/evidence/ctm_calibration_20261023/PREREG.md)).
+[PREREG](../../experiments/evidence/ctm_calibration_20261023/PREREG.md),
+[smoke](../../experiments/evidence/ctm_calibration_20261023/SMOKE.md)).
 
 ## §494 student as a native OOC MCTS leaf (opt-in) — loses to rollout3 at A20 (§504)
 

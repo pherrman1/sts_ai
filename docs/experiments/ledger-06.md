@@ -23988,19 +23988,29 @@ M0 and propose an A/B.
 - Held-out stage 1–2 games, scored by the C++ runtime with the table fitted on all A/B rows: log loss 0.0733 → 0.0698
   [−0.0059, −0.0009], HP error 8.23 → 7.60 [−0.78, −0.47]. The Heart goes 0.458 → 0.358 predicted deaths against 0.337
   observed. Act-1 bosses got worse (0.2016 → 0.2107; 21 deaths of 249 there against the A/B's 0.063).
+- Per fight type and per elite and boss
+  ([errors_by_fight](evidence/ctm_calibration_20261023/offline/errors_by_fight.md)), out of sample every act × room
+  group is within about ±2 pp and ±2 HP.
+- By pre-fight HP the CTM's pessimism sits at higher HP. Below 20 HP the calibration makes Act-3 fights look safer
+  than they are (odd seeds: 0.43 predicted against 0.47 observed; the CTM 0.49). An HP term in the shift did not
+  help, so the table keeps the plain shift.
 - Flag `STS_CTM_CALIBRATION` (research, default off) with the table
   `models/candidates/ctm_calibration_pathb_a20_v1.json` (`359619f7…`, 34 groups). Unset or `0` is byte-identical on
   all five row sets. With the table the runtime matches the fit on all 99,764 fights without an active Lizard Tail
   (death within 1.2e-7, mean won-fight HP within 2e-6). The live advisor refuses the flag. ctests
   `ctm_calibration_parity`, `ctm_calibration_unset` and `ctm_calibration_off`.
-- Smoke of the A/B's run script: see [SMOKE](evidence/ctm_calibration_20261023/SMOKE.md).
+- Smoke of the A/B's run script on 10 spare seeds ([SMOKE](evidence/ctm_calibration_20261023/SMOKE.md)): all 20
+  games rc 0, banners right. Heart kills A 3, C 2; reached Act 4 A 6, C 3. On all four seeds whose games ended
+  differently A got further; the games part at near-ties of the root values. No evidence at this size, but it
+  lowered the point guess from +1 pp to 0.
 **Interpretation:** the CTM is most pessimistic where the search needs it most: the bosses of Acts 1 and 3, and the
 Heart, which every Act-4 rollout plays (§663). One explanation, not tested: it learned from older, weaker combat play
 (the Act-4 model from student C play, where the Heart was won 32% of the time; here 63%). Better predictions of real
 fights need not make the search play better. The last CTM calibration A/B (Act-4 survival model, §534) was NOT_SHOWN.
 **Decision:** the flag stays off. A paired A20 A/B is pre-registered
-([PREREG](evidence/ctm_calibration_20261023/PREREG.md); 2,048 seeds recommended, about 7 h on 32 workers). It needs
+([PREREG](evidence/ctm_calibration_20261023/PREREG.md)). Recommended in two stages: 512 seeds (about 2 h on 32
+workers), stopping if C − A is below −1 pp, then the other 1,536 (about 5 h), with the primary on all 2,048. It needs
 Philipp's typed go and the worker count.
-- Seeds: the fit replays §661's and §663's rows (no new games). Smoke 111394990–111394993 used (111394990–111394999
-  assigned). A/B 111392000–111394047 assigned, unused.
+- Seeds: the fit replays §661's and §663's rows (no new games). Smoke 111394990–111394999 used. A/B
+  111392000–111394047 assigned, unused.
 - **Knowledge impact:** `evaluation/current-research.md`, `operations/environment-variables.md`.

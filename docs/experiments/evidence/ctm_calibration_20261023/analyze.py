@@ -1,9 +1,12 @@
 """CTM-calibration A/B analysis: python3 -I analyze.py DIR [OUT.json]
-DIR is the --extract dir of `verify_campaign.py` (queue schedule) or holds wWW.tar files.
+DIR is the --extract dir of `verify_campaign.py` (queue schedule) or holds wWW.tar files. For both stages, pass a
+directory that holds the two stages' extract dirs.
 Arms: A (today's A20 stack), C (A + STS_CTM_CALIBRATION). PREREG.md fixes the endpoints:
   primary    Heart kills C - A per seed, mean and 95% seed-bootstrap CI (exact McNemar alongside)
-  secondary  reached Act 4; deaths by act; mean floor; real elite fights per run by act (from the CTM rows)
+  secondary  reached Act 4; deaths by act; mean floor; real elite fights per run by act, fights entered below 20 HP
+             per run by act and their death rate, mean HP entering a fight by act (all from the CTM rows)
   guard      mean wall C / A (<= 1.10)
+  stage 1    C - A over seeds <= 111392511; below -1 pp the campaign stops
   descriptive  searched / full-budget / aborted roots, picks off the prior's argmax, completed simulations,
              learned-stop and root-lock shares at fast roots, by act."""
 import glob
@@ -21,6 +24,7 @@ import numpy as np
 
 ARMS = ('A', 'C')
 BOOT = 10000
+STAGE1_LAST = 111392511  # last seed of stage 1 (units.txt)
 
 
 def mcnemar_p(b, c):
@@ -42,12 +46,20 @@ def arm_record(read, a, s):
     if foot.get('type') != 'outcome' or not foot.get('complete') or not foot.get('integrityPassed'):
         return None, rc
     elites = defaultdict(int)  # act -> real elite fights (combat_transition_row_v2 rows of this run)
+    fights = defaultdict(lambda: [0, 0, 0, 0])  # act -> [fights, pre-fight HP sum, fights below 20 HP, their deaths]
     for x in gzip.decompress(read(f'/{a}-{s}.ctm.jsonl.gz') or gzip.compress(b'')).splitlines():
         row = json.loads(x)
         if row.get('roomClass') == 'ELITE':
             elites[row.get('act')] += 1
+        hp = row['predictorInput']['globals']['curHp']
+        f = fights[row.get('act')]
+        f[0] += 1
+        f[1] += hp
+        if hp < 20:
+            f[2] += 1
+            f[3] += row['transition'].get('combatOutcome') == 2
     d = {'foot': foot, 'wall': int(re.search(r'wall=(\d+)', done).group(1)), 'decisions': 0, 'searched': 0,
-         'elitesByAct': dict(elites),
+         'elitesByAct': dict(elites), 'fightsByAct': {act: list(f) for act, f in fights.items()},
          'fullBudget': 0, 'aborted': 0, 'changed': 0,
          'fastByAct': defaultdict(lambda: [0, 0, 0, 0])}  # act -> [fast roots, completed sims, learned, lock stops]
     act_of = {}  # state index -> act (decision records carry only stateIndex)
@@ -141,6 +153,10 @@ def main():
             c.update({f'{x}_only': xo, f'{y}_only': yo, 'mcnemar_p': mcnemar_p(xo, yo)})
             res[f'{x}-{y}'] = c
         out[name] = res
+    s1 = [s for s in seeds if int(s) <= STAGE1_LAST]
+    if s1:  # PREREG stop rule: stage 1 stops the campaign when C - A over its seeds is below -1 pp
+        d1 = 100 * sum(heart[s]['C'] - heart[s]['A'] for s in s1) / len(s1)
+        out['stage1'] = {'seeds': len(s1), 'diff_pp': d1, 'stop': d1 < -1}
     deaths = {a: defaultdict(int) for a in ARMS}
     for s in seeds:
         for a in ARMS:
@@ -151,6 +167,17 @@ def main():
     out['meanFloor'] = {a: statistics.mean(valid[s][a]['foot']['finalFloor'] for s in seeds) for a in ARMS}
     out['elitesPerRunByAct'] = {a: {act: sum(valid[s][a]['elitesByAct'].get(act, 0) for s in seeds) / len(seeds)
                                     for act in (1, 2, 3)} for a in ARMS}
+    low = {}
+    for a in ARMS:
+        tot = defaultdict(lambda: [0, 0, 0, 0])
+        for s in seeds:
+            for act, f in valid[s][a]['fightsByAct'].items():
+                for i in range(4):
+                    tot[act][i] += f[i]
+        low[a] = {act: {'meanPreFightHp': f[1] / max(f[0], 1), 'below20PerRun': f[2] / len(seeds),
+                        'below20DeathRate': f[3] / f[2] if f[2] else None}
+                  for act, f in sorted(tot.items(), key=lambda kv: str(kv[0]))}
+    out['fightsByAct'] = low
     walls = {a: [valid[s][a]['wall'] for s in seeds] for a in ARMS}
     out['wall_s'] = {a: {'mean': statistics.mean(walls[a]), 'max': max(walls[a]),
                          'overA': statistics.mean(walls[a]) / statistics.mean(walls['A'])} for a in ARMS}
