@@ -3308,10 +3308,11 @@ int main(int argc, char **argv) {
         // head:NAME = the --leaf-heads value head NAME instead of the playout; hblend:NAME:L = L * head
         // + (1 - L) * playout. A suffix /P on either takes P points off the head's value for every turn the
         // leaf lies beyond the root (so a head cannot prefer stalling over winning now); a final +cap first
-        // caps the head at the leaf's win-now value (SilverSearcher::LeafHead::winCap).
+        // caps the head at the leaf's win-now value (SilverSearcher::LeafHead::winCap), +capM at win-now + M
+        // points (research: how much of the cap's cost is its tightness).
         struct LeafModeSpec {
             std::string tag, mode, head;
-            double noise = 0, blend = 0.5, turnPenalty = 0;
+            double noise = 0, blend = 0.5, turnPenalty = 0, winCapMargin = 0;
             bool winCap = false;
         };
         std::vector<LeafModeSpec> leafModes;
@@ -3382,9 +3383,15 @@ int main(int argc, char **argv) {
                 std::stringstream list(value());
                 for (std::string item; std::getline(list, item, ',');) {
                     LeafModeSpec m{item, item};
-                    if (m.mode.size() > 4 && m.mode.compare(m.mode.size() - 4, 4, "+cap") == 0) {
+                    if (const auto cap = m.mode.rfind("+cap"); cap != std::string::npos && cap > 0) {
                         m.winCap = true;
-                        m.mode.resize(m.mode.size() - 4);
+                        if (const auto margin = m.mode.substr(cap + 4); !margin.empty()) {
+                            std::size_t used = 0;
+                            m.winCapMargin = std::stod(margin, &used);
+                            if (used != margin.size() || m.winCapMargin < 0)
+                                throw std::invalid_argument("--leaf-oracles: +capM needs a margin M >= 0");
+                        }
+                        m.mode.resize(cap);
                     }
                     if (const auto at = m.mode.find('@'); at != std::string::npos) {
                         m.noise = std::stod(m.mode.substr(at + 1));
@@ -3406,7 +3413,7 @@ int main(int argc, char **argv) {
                     if (m.mode != "none" && m.mode != "exact" && m.mode != "turn" && m.mode != "turnstart" && m.mode != "blend"
                             && m.mode != "head" && m.mode != "hblend")
                         throw std::invalid_argument("--leaf-oracles items are none|exact|turn|turnstart|blend:L|head:NAME|hblend:NAME:L,"
-                                                    " optionally @S (/P and +cap on a head)");
+                                                    " optionally @S (/P and +cap or +capM on a head)");
                     if (!m.head.empty() && m.noise != 0) throw std::invalid_argument("--leaf-oracles: no @S on a head");
                     if (m.head.empty() && (m.turnPenalty != 0 || m.winCap))
                         throw std::invalid_argument("--leaf-oracles: /P and +cap only on head:NAME and hblend:NAME:L");
@@ -3495,7 +3502,8 @@ int main(int argc, char **argv) {
             // this fight, built from the fight's first searched root and shared by every mode.
             std::unique_ptr<ExactSolver> leafOracle;
             bool leafOracleReady = false, inLeafPlayout = false;
-            std::int64_t leafCalls = 0, leafFallbacks = 0;
+            std::int64_t leafCalls = 0, leafFallbacks = 0, leafCapBinds = 0;
+            double leafCapCut = 0;   // summed head value the cap removed
             const LeafModeSpec *leaf = nullptr;   // the mode of the fight being played
             const Config *leafConfig = nullptr;   // and its config (--leaf-label-dump rows)
             if (!leafModes.empty()) {
@@ -3506,7 +3514,10 @@ int main(int argc, char **argv) {
                         const LeafHead &h = leafHeads.at(leaf->head);
                         double v = headValue(state, h);
                         if (h.shortfall) v = searcher.winNowValue(state) - std::max(0.0, v);
-                        else if (leaf->winCap) v = std::min(v, searcher.winNowValue(state));
+                        else if (leaf->winCap) {
+                            const double cap = searcher.winNowValue(state) + leaf->winCapMargin;
+                            if (v > cap) { ++leafCapBinds; leafCapCut += v - cap; v = cap; }
+                        }
                         v -= leaf->turnPenalty * std::max(0, state.turn - searcher.rootSearchState().turn);
                         if (leafDump.is_open() && leafDumped < 300) {
                             json d = {{"head", leaf->head}, {"value", v}, {"turn", state.turn},
@@ -3876,7 +3887,9 @@ int main(int argc, char **argv) {
                     summary["leafOracle"] = mode.tag;
                     summary["leafOracleCalls"] = leafCalls;
                     summary["leafOracleFallbacks"] = leafFallbacks;
-                    leafCalls = leafFallbacks = 0;
+                    if (mode.winCap) { summary["leafCapBinds"] = leafCapBinds; summary["leafCapCut"] = leafCapCut; }
+                    leafCalls = leafFallbacks = leafCapBinds = 0;
+                    leafCapCut = 0;
                 }
                 out << summary.dump() << '\n';
                 out.flush();
