@@ -58,6 +58,16 @@ namespace sts {
         return cachedFixFlag(cache, "STS_CURL_UP_LETHAL_FIX");
     }
 
+    bool angryUnblockedFix() {
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_ANGRY_UNBLOCKED_FIX");
+    }
+
+    bool timeEaterHasteRollFix() {
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_TIME_EATER_HASTE_ROLL_FIX");
+    }
+
     bool angerCopyCostFix() {
         thread_local CachedFixFlag cache;
         return cachedFixFlag(cache, "STS_ANGER_COPY_COST_FIX");
@@ -256,6 +266,11 @@ namespace sts {
     bool necronomiconAutoplayFix() {
         thread_local CachedFixFlag cache;
         return cachedFixFlag(cache, "STS_NECRONOMICON_AUTOPLAY_FIX");
+    }
+
+    bool handOfGreedAttackFix() {
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_HAND_OF_GREED_ATTACK_FIX");
     }
 }
 

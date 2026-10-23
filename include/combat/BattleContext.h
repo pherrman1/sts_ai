@@ -83,6 +83,20 @@ namespace sts {
     // fatal. Read only on a lethal hit.
     bool curlUpLethalFix();
 
+    // STS_ANGRY_UNBLOCKED_FIX: unset/1 (default) = Angry (Gremlin Warrior)
+    // gains Strength only when an attack's damage after block is > 0, as
+    // AngryPower.onAttacked does on the post-decrementBlock damageAmount
+    // (live problem 108, seed 111200647: a fully blocked Reaper hit gave
+    // Strength natively). 0 = the legacy engine buffs on every attack, before
+    // block. Other values are fatal. Read only when an Angry monster is attacked.
+    bool angryUnblockedFix();
+
+    // STS_TIME_EATER_HASTE_ROLL_FIX: unset/1 (default) = Time Eater marks
+    // usedHaste (miscInfo) when it rolls Haste, as Java TimeEater.getMove does
+    // (live parity problem 109). 0 = the legacy engine marks it only when
+    // Haste executes. Other values are fatal.
+    bool timeEaterHasteRollFix();
+
     // STS_ANGER_COPY_COST_FIX: unset/1 (default) = Anger's discard copy keeps
     // the played card's cost and costForTurn, as Java makeStatEquivalentCopy
     // does (live parity problem 43, seed 111200436: under Confusion the game's
@@ -377,6 +391,14 @@ namespace sts {
     // game, not natively). 0 = the legacy engine, which skipped every
     // free-to-play queue item and purge copy. Other values are fatal.
     bool necronomiconAutoplayFix();
+
+    // STS_HAND_OF_GREED_ATTACK_FIX: unset/1 (default) = Hand of Greed hits its
+    // target through Monster::attacked, as Java GreedAction's NORMAL DamageInfo
+    // does, so onAttacked reactions run (Malleable, Reactive, Curl Up, Angry,
+    // Plated Armor, Flight, The Boot, Envenom; live problem 106, seed 111200646:
+    // Writhing Mass). 0 = the legacy engine, which used the non-attack
+    // Monster::damage path. Other values are fatal.
+    bool handOfGreedAttackFix();
 
     struct BattleContext {
 
