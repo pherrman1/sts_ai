@@ -24012,7 +24012,7 @@ campaigns, backup copies of stragglers on idle workers once the queue is empty.
 - Seeds 111360000–111360255 used; smokes 111369991–111369993 used (111369990–111369999 assigned).
 - **Knowledge impact:** `evaluation/current-research.md`.
 
-## §TBD Same-turn infinity oracle — bounded synthetic feasibility (2026-10-23)
+## §671 Same-turn infinity oracle — bounded synthetic feasibility (2026-10-23)
 
 Hypothesis: exact recurring combat control state plus simulator witness replay
 can distinguish useful same-turn card cycles from stalls. Baseline

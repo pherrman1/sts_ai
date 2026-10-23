@@ -216,7 +216,7 @@ cycles and card-selection continuations is unmeasured or unsupported.
 
 Knowledge impact: research capability, its conservative equivalence contract,
 fixture evidence and limitations are recorded in the combat-search KB, current
-research page and §TBD ledger entry. No default changed.
+research page and §671 ledger entry. No default changed.
 
 Before any natural-root annotation, qualify realistic recall and public-state
 handling: existing public roots are information sets, and the two-card shuffle
