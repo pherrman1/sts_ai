@@ -8,7 +8,7 @@ the V4 prior ("v4", "src_bits"); newer rows carry "kind" (node/select) and the s
 
 usage: distill.py SILVERBOT_REPO OUTDIR --data a.capture.jsonl.gz ... [--dim 64 --layers 2 --mult 2 --heads 4]
   [--trim-map] [--epochs 8] [--device cuda] [--workers 6] [--amp] [--init student.pt] [--select-repeat 1]
-  [--extra-inputs] [--compact] [--value-weight 1 --anchor-weight 1 --select last]
+  [--extra-inputs] [--compact] [--value-weight 1 --anchor-weight 1 --select last] [--mirror 0.5]
 AZ-loop rows (az_targets.py convert) may carry null entries in "logits" (tokens without a search target: masked
 out of the policy loss) and a value target "z" (1 = the run killed the Heart); rows may carry only "z".
 --value-weight W adds W * BCE(value head logit, z); --anchor-weight A adds A * KL(--init student || student) over
@@ -19,12 +19,14 @@ by --mono-weight) scores the chosen epoch's violation rates per rule on the sele
 --select last keeps the last epoch instead of the best validation epoch (keeps the validation split clean for a gate);
 --select fold holds out the files with seed % --val-mod == --select-mod (default --val-mod - 2) from training and keeps
 the epoch with the lowest training objective (policy KL + weighted value BCE + weighted anchor KL) on them.
+--mirror P replaces each training row (each epoch, independently) with its horizontal map mirror (map_mirror.py) with
+probability P; validation and selection rows are never mirrored.
 Validation = held-out seeds: files whose seed (from "-<seed>.capture" in the name) has seed % --val-mod ==
 --val-mod - 1. Loss: KL(teacher softmax || student softmax) over the row's choice tokens (temperature 1).
 Reports val KL and top-1 agreement with the teacher per screen and card-select type, and the agreement of
 V4 / the serving net where rows carry them. SILVERBOT_REPO is daniel-ziegler/sts_lightspeed built at 84ab3ea
 (silverbot.network imports its compiled module). The student exports with export_heart1_weights.py."""
-import argparse, collections, gzip, json, math, os, random, re, sys, time, zlib
+import argparse, collections, functools, gzip, json, math, os, random, re, sys, time, zlib
 ap = argparse.ArgumentParser()
 ap.add_argument("repo"); ap.add_argument("out"); ap.add_argument("--data", nargs="+", required=True)
 ap.add_argument("--dim", type=int, default=128); ap.add_argument("--layers", type=int, default=2)
@@ -48,11 +50,13 @@ ap.add_argument("--extra-inputs", action="store_true",
 ap.add_argument("--mono-weight", type=float, default=0.0, help="weight of the value monotonicity hinge (monotone.py)")
 ap.add_argument("--mono-rules", default=",".join(("hp", "mhp", "gold", "potion", "curse")))
 ap.add_argument("--mono-report", action="store_true", help="report monotonicity violations of the chosen epoch")
+ap.add_argument("--mirror", type=float, default=0.0, help="probability of mirroring the map of a training row")
 a = ap.parse_args()
 if a.anchor_weight and not a.init: sys.exit("--anchor-weight needs --init")
 sys.path.insert(0, a.repo); sys.path.insert(0, os.path.join(a.repo, "build"))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from capture_provenance import row_wing_boots_counter, single_wing_boots_counter
+import map_mirror
 import torch, torch.nn.functional as F
 from silverbot import network
 torch.set_num_threads(a.threads); torch.manual_seed(a.seed); random.seed(a.seed)
@@ -132,8 +136,9 @@ def positions(rec):
         pos += list(range(off, off + len(rec[key]))); off += width
     return pos
 
-def collate(rows):
+def collate(rows, mirror_p=0.0):
     rows = [unpack(r) for r in rows]
+    if mirror_p: rows = [{**r, "record": map_mirror.mirror(r["record"])} if random.random() < mirror_p else r for r in rows]
     b = network.collate_fn([{**r["record"], "chosen_idx": 0, "outcome": 0.0} for r in rows])
     if a.extra_inputs: b["extra"] = student_inputs.extra_batch(rows)
     mask = torch.zeros(len(rows), WIDTH, dtype=torch.bool); tgt = torch.full((len(rows), WIDTH), -1e9)
@@ -150,8 +155,8 @@ def to_dev(x):
     if isinstance(x, (list, tuple)): return type(x)(to_dev(v) for v in x)
     return x.to(a.device, non_blocking=True) if hasattr(x, "to") else x
 
-def loader(rows, shuffle):
-    return torch.utils.data.DataLoader(rows, batch_size=a.bs, shuffle=shuffle, collate_fn=collate,
+def loader(rows, shuffle, mirror_p=0.0):
+    return torch.utils.data.DataLoader(rows, batch_size=a.bs, shuffle=shuffle, collate_fn=functools.partial(collate, mirror_p=mirror_p),
                                        num_workers=a.workers, persistent_workers=a.workers > 0, pin_memory=a.device != "cpu")
 
 H = network.ModelHP(dim=a.dim, n_layers=a.layers, mlp_dim_mult=a.mult, n_heads=a.heads, use_value_head=True)
@@ -193,7 +198,7 @@ def mono_report(dl):
                 "median_dp": round(sorted(pg[r])[len(pg[r]) // 2], 5) if pg[r] else None} for r in mono_rules}
 
 opt = torch.optim.AdamW(net.parameters(), lr=a.lr, weight_decay=a.wd)
-train_dl, val_dl = loader(train, True), loader(val, False)
+train_dl, val_dl = loader(train, True, a.mirror), loader(val, False)
 sel_dl = loader(sel, False) if sel else None
 sched = torch.optim.lr_scheduler.OneCycleLR(opt, a.lr, total_steps=a.epochs * len(train_dl), pct_start=0.05)
 
