@@ -3,7 +3,7 @@
 # rotated by seed % 2); always exits 0 (per-arm rc in the .done lines). PREREG.md has the full config and provenance.
 #   A   today's A20 search stack (the stage-3 A/B's config with the M0 leaf, the default) with the raw CTM:
 #       STS_CTM_CALIBRATION=0.
-#   C   the same with STS_CTM_CALIBRATION unset: the default per-fight CTM calibration (ADR-TBD), the bundled table
+#   C   the same with STS_CTM_CALIBRATION unset: the default per-fight CTM calibration (ADR-0058), the bundled table
 #       models/candidates/ctm_calibration_pathb_a20_v1.json. Nothing else differs. 7 h timeout per arm (rc 124).
 # Both arms: OOC MCTS 4096 sims, learned OOC stop 0.99, 25% full-budget roots with fast roots capped at 1024 sims,
 # real-combat CTM rows; real combats with the learned Silver stop (STS_SILVER_LEARNED_STOP=1 +
