@@ -3765,6 +3765,32 @@ int testSimulatorCorrectnessPr9To19() {
         }
     }
 
+    // Live problem 108 (seed 111200647): Reaper fully blocked by a Gremlin
+    // Warrior. Java AngryPower.onAttacked sees the damage left after block, so
+    // a fully blocked hit gives no Strength. STS_ANGRY_UNBLOCKED_FIX=0 restores
+    // the legacy buff on every attack.
+    for (const bool fix : {true, false}) {
+        for (const int hit : {4, 15}) {
+            if (fix) unsetenv("STS_ANGRY_UNBLOCKED_FIX");
+            else setenv("STS_ANGRY_UNBLOCKED_FIX", "0", 1);
+            auto bc = simulatorCorrectnessBattle({}, Card(CardId::FLEX), 10);
+            auto &m = bc.monsters.arr[0];
+            m.curHp = m.maxHp = 100;
+            m.block = 10;
+            m.buff<MonsterStatus::ANGRY>(2);
+            const int before = m.strength;
+            m.attacked(bc, hit);
+            unsetenv("STS_ANGRY_UNBLOCKED_FIX");
+            const int want = before + ((fix && hit <= 10) ? 0 : 2);
+            if (m.strength != want) {
+                const std::string msg = std::string(fix ? "Angry" : "STS_ANGRY_UNBLOCKED_FIX=0") + " on a "
+                    + std::to_string(hit) + "-damage hit into 10 block: strength " + std::to_string(m.strength)
+                    + ", want " + std::to_string(want);
+                return fail(msg.c_str());
+            }
+        }
+    }
+
     // #13: Unceasing Top resolves the shuffle/draw work before returning control.
     {
         auto bc = simulatorCorrectnessBattle({RelicId::UNCEASING_TOP}, Card(CardId::FLEX), 5);

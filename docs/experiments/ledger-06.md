@@ -22467,6 +22467,18 @@ Seeds: none new (live seeds 111200473 and 111200504).
 
 **Status:** Draft PR.
 
+## §TBD — Live problem 108: Angry gained Strength on a fully blocked hit (2026-10-23)
+
+**Question:** Why did seed 111200647 (step 461, floor 30, Gremlin Gang) diverge after Reaper hit a Gremlin Warrior (Angry 2, Strength 5, block 10)?
+
+**Evidence:** The hit was fully blocked (block 10 -> 6, HP unchanged). Game: Strength stayed 5; native: 7. `Monster::attacked` applied Angry's Strength before the block subtraction, unconditionally. Java (javap, canary): `AbstractMonster.damage` calls `decrementBlock` first and passes the remaining `damageAmount` to each power's `onAttacked`; `AngryPower.onAttacked` fires only when `info.owner != null && damageAmount > 0` and the type is not HP_LOSS or THORNS.
+
+**Change:** `STS_ANGRY_UNBLOCKED_FIX` (default on, `=0` restores): Angry's Strength is applied after the block subtraction and only when damage remains. Test in `simulator_correctness_pr9_19`: Angry 2 with 10 block gains no Strength from a 4-damage attack and +2 from a 15-damage attack (legacy: +2 for both). The THORNS/HP_LOSS exclusion is not changed here: `Monster::attacked` callers model NORMAL attacks.
+
+**Interpretation:** Play-changing against Gremlin Warriors with block (Gremlin Gang, Gremlin Leader), in simulation and live: blocked hits no longer make the Warrior stronger.
+
+**Status:** Draft PR.
+
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with

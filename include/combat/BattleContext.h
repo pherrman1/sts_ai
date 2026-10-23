@@ -83,6 +83,14 @@ namespace sts {
     // fatal. Read only on a lethal hit.
     bool curlUpLethalFix();
 
+    // STS_ANGRY_UNBLOCKED_FIX: unset/1 (default) = Angry (Gremlin Warrior)
+    // gains Strength only when an attack's damage after block is > 0, as
+    // AngryPower.onAttacked does on the post-decrementBlock damageAmount
+    // (live problem 108, seed 111200647: a fully blocked Reaper hit gave
+    // Strength natively). 0 = the legacy engine buffs on every attack, before
+    // block. Other values are fatal. Read only when an Angry monster is attacked.
+    bool angryUnblockedFix();
+
     // STS_ANGER_COPY_COST_FIX: unset/1 (default) = Anger's discard copy keeps
     // the played card's cost and costForTurn, as Java makeStatEquivalentCopy
     // does (live parity problem 43, seed 111200436: under Confusion the game's

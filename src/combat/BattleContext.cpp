@@ -58,6 +58,11 @@ namespace sts {
         return cachedFixFlag(cache, "STS_CURL_UP_LETHAL_FIX");
     }
 
+    bool angryUnblockedFix() {
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_ANGRY_UNBLOCKED_FIX");
+    }
+
     bool angerCopyCostFix() {
         thread_local CachedFixFlag cache;
         return cachedFixFlag(cache, "STS_ANGER_COPY_COST_FIX");
