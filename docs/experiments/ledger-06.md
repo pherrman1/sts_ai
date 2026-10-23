@@ -22467,7 +22467,7 @@ Seeds: none new (live seeds 111200473 and 111200504).
 
 **Status:** Draft PR.
 
-## §TBD — Live problem 110: Trip costs 0 (2026-10-23)
+## §668 — Live problem 110: Trip costs 0 (2026-10-23)
 
 **Question:** Why did seed 111200656 (step 593) show a Toolbox-discovered Trip at cost 0 in the game but 1 natively?
 
