@@ -1,0 +1,6 @@
+A: parity rows=24171 activeLizardLeftOut=847 maxAbsPDeath=9.84e-08 maxWinHpMiss=1.64e-06 rowsOverTolerance=0
+M: parity rows=22917 activeLizardLeftOut=986 maxAbsPDeath=1.16e-07 maxWinHpMiss=1.8e-06 rowsOverTolerance=0
+S: parity rows=23905 activeLizardLeftOut=877 maxAbsPDeath=1.1e-07 maxWinHpMiss=1.98e-06 rowsOverTolerance=0
+MS: parity rows=22870 activeLizardLeftOut=988 maxAbsPDeath=1.02e-07 maxWinHpMiss=1.55e-06 rowsOverTolerance=0
+LC: parity rows=5901 activeLizardLeftOut=121 maxAbsPDeath=1e-07 maxWinHpMiss=1.55e-06 rowsOverTolerance=0
+off (unset) and =0 scores vs the earlier scores of the same rows (cmp): identical for A M S MS LC

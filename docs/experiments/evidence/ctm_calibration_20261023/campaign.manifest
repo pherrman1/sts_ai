@@ -1,0 +1,10 @@
+name          ctm-calibration-ab
+code_commit   __FREEZE__
+binary_sha256 __FREEZE__
+workers       __PHILIPP__
+share         /mnt/project-files/ctm-calibration-ab
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 30
+input student_sel.bin /mnt/project-files/az-gen3-explore/student_sel.bin cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7

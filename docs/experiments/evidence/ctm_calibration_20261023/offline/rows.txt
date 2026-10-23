@@ -1,0 +1,8 @@
+# set rows sha256 of the concatenated combat_transition_row_v2 jsonl (extract.sh rebuilds them).
+# A M S MS: <arm>-<seed>.ctm.jsonl.gz of the 1,024 stage-3 A/B tars (/mnt/project-files/value-level-ab/units/).
+# LC: LC-<seed>.ctm.jsonl.gz of the 256 stage 1-2 tars (/mnt/project-files/value-leaf-compare/units/), held out.
+A 25018 24e9d96d77cc3f7f560cef3970557636cf03814cd35158f0a165817cc5803234
+M 23903 1c86625583fd4ffee641ca4d9e0c076f34320e5eee186e5628130c10eb64f3a7
+S 24782 925bcfa3311b3fd12c55f5d9fa888cf33fd1cf8122ff725b9c3a2674bde493db
+MS 23858 cb32431522168aae05d21feac4c932cd8e943cc86f89dad00dc4c1b4696f6938
+LC 6022 4993471cb7a9220bab13b3daea13f91066648acac808252e21f8a550c9c31014
