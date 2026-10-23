@@ -330,6 +330,14 @@ namespace sts {
     // Other values are fatal. Read only when a Power card is used.
     bool curiosityFix();
 
+    // STS_DARK_SHACKLES_FIX: unset/1 (default) = Dark Shackles applies
+    // Strength -9 (-15) and, when the target had no Artifact, Shackled 9 (15)
+    // that restores it at the monster's end of turn, as in the game (live
+    // problem 97, seed 111200587: the engine gave the monster +9 Strength and
+    // Shackled only when it had Artifact). 0 = the legacy engine. Other values
+    // are fatal. Read only when Dark Shackles is used.
+    bool darkShacklesFix();
+
     struct BattleContext {
 
         // begin for debugging purposes

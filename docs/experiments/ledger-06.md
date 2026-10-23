@@ -22363,6 +22363,17 @@ Seeds: none new (live seeds 111200473 and 111200504).
 **Interpretation:** Live play-changing: event removals behind a Continue page now remove the card the event decision chose.
 
 **Status:** Draft PR.
+## §TBD — Live problem 97: Dark Shackles gave the monster +9 Strength and inverted its Artifact check (2026-10-23)
+
+**Question:** Why did seed 111200587 (step 564, encounter 45) show the monster at Strength -9 with Shackled 9 in the game, but Strength +9 and no Shackled natively?
+
+**Evidence:** `BattleContext::useSkillCard` queued `DebuffEnemy<STRENGTH>(t, 9)`, which adds +9 (Disarm passes -2/-3), and queued Shackled only when the target *had* Artifact. Java's `DarkShackles.use` applies `StrengthPower(-magic)` and then `GainStrengthPower(magic)` only when the target has no Artifact; Artifact blocks the Strength loss.
+
+**Change:** `STS_DARK_SHACKLES_FIX` (default on, `=0` restores the legacy card): Strength -9 (-15) and, without Artifact at use time, Shackled 9 (15). Test in `ironclad_card_java_parity` (Jaw Worm, with and without Artifact, both flag values): without Artifact Str -9 / Shackled 9 and Str back to its old value after the monster's end of turn; with Artifact, Artifact consumed, Str unchanged, no Shackled.
+
+**Interpretation:** Play-changing for every combat with Dark Shackles, in simulated play and the live advisor: the engine had valued it as a +9 Strength gift for the monster, so search likely avoided it. Not handled (unchanged): Sadistic Nature triggers on GainStrengthPower in Java (a DEBUFF power) but not natively.
+
+**Status:** Draft PR.
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with
