@@ -22,7 +22,7 @@ Status: accepted
   winrate: winrate follows from good labels, which need a precise CTM. At 20:44Z he chose "Default on + 512-seed
   guard" on the card "Adopt the CTM calibration on precision, and with what play check?": the default now, a 512-seed
   A20 guard against the old CTM, and only a clear loss sends it back to off. At 20:45Z he authorized the 512 seeds on
-  8 workers.
+  8 workers, and at 22:11Z on 16.
 - **Play so far.** A 10-seed smoke of the A/B script leaned against the calibration (Heart kills 3 without, 2 with;
   `SMOKE.md`). Ten seeds are no evidence.
 

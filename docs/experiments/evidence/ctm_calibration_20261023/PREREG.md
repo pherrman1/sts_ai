@@ -5,8 +5,9 @@ This file first pre-registered an A/B that asked whether the calibration kills t
 then 1,536 seeds; §670 and PR #838 hold that version). On 2026-10-23 at 20:32Z Philipp argued that the CTM should be
 judged by its precision, not by winrate. At 20:44Z he chose "Default on + 512-seed guard" on the card "Adopt the CTM
 calibration on precision, and with what play check?": the calibration became the A20 default (ADR-TBD), and 512 seeds
-check that it does not clearly lose. At 20:45Z he authorized the run: "The 512 seeds can use 8 workers later". The
-campaign is frozen as usual (`campaign.manifest`, brief, run commit) after the default's PR is reviewed and merged.
+check that it does not clearly lose. At 20:45Z he authorized the run ("The 512 seeds can use 8 workers later") and at
+22:11Z raised it to 16 workers ("U can also use 16 workers"). The campaign is frozen as usual (`campaign.manifest`,
+brief, run commit) after the default's PR is reviewed and merged.
 
 ## Question
 In today's A20 search stack, does the CTM calibration, now the default, kill the Heart clearly less often than the raw
@@ -76,10 +77,10 @@ would need a gain of about +3.7 pp to be called half the time.
 - Either way the result goes to the ledger.
 
 ## Cost and run plan
-- 512 seeds × 2 arms = 1,024 games: about 7 h on 8 workers (4 lanes each, queue schedule, lease 30 min), plus a
+- 512 seeds × 2 arms = 1,024 games: about 3.5 h on 16 workers (4 lanes each, queue schedule, lease 30 min), plus a
   straggler tail (container speeds vary about 3×, §663).
 - Share `/mnt/project-files/ctm-calibration-ab`. [`BRIEF-worker.md`](BRIEF-worker.md) and
-  [`campaign.manifest`](campaign.manifest) are templates until the freeze (code commit, binary sha256, 8 workers,
+  [`campaign.manifest`](campaign.manifest) are templates until the freeze (code commit, binary sha256, 16 workers,
   authorization).
 - The freeze builds the binary from the merged default and reruns one equivalence-check seed on it; its records must
   match the check's.
