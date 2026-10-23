@@ -9,5 +9,7 @@
   "unsupported_natural_roots": 4,
   "max_nodes_per_control_world": 11,
   "max_cpu_ms_per_control_world": 0.262,
-  "total_control_cpu_ms": 1.492
+  "total_control_cpu_ms": 1.492,
+  "eligible_natural_roots": 0,
+  "annotated_natural_worlds": 0
 }
