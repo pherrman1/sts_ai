@@ -345,6 +345,15 @@ namespace sts {
     // is used with an Attack in hand.
     bool impatienceFix();
 
+    // STS_NECRONOMICON_AUTOPLAY_FIX: unset/1 (default) = Necronomicon replays
+    // an Attack with costForTurn >= 2 unless the card is freeToPlayOnce (or an
+    // X-cost Attack with energyOnUse >= 2), as Java Necronomicon.onUseCard
+    // does, including Havoc/Mayhem/Distilled Chaos autoplays and purge copies
+    // (live problem 101, seed 111200627: Havoc's Immolate was replayed in the
+    // game, not natively). 0 = the legacy engine, which skipped every
+    // free-to-play queue item and purge copy. Other values are fatal.
+    bool necronomiconAutoplayFix();
+
     struct BattleContext {
 
         // begin for debugging purposes

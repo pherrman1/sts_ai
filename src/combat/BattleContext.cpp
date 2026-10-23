@@ -237,6 +237,11 @@ namespace sts {
         thread_local CachedFixFlag cache;
         return cachedFixFlag(cache, "STS_IMPATIENCE_FIX");
     }
+
+    bool necronomiconAutoplayFix() {
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_NECRONOMICON_AUTOPLAY_FIX");
+    }
 }
 
 
@@ -2060,8 +2065,13 @@ void BattleContext::onUseAttackCard() {
         addToBot( Actions::BuffPlayer<PS::STRENGTH>(1) );
     }
 
-    if (p.hasRelic<R::NECRONOMICON>() && !p.haveUsedNecronomiconThisTurn && !item.freeToPlay && !item.purgeOnUse &&
-        (c.costForTurn >= 2 || c.isXCost() && item.energyOnUse >= 2)) {
+    // Java Necronomicon.onUseCard: ((costForTurn >= 2 && !freeToPlayOnce) ||
+    // (X-cost && energyOnUse >= 2)) && activated. Havoc/Mayhem/Distilled Chaos
+    // autoplays and purge copies are not excluded.
+    const bool necronomiconCost = necronomiconAutoplayFix()
+        ? (c.costForTurn >= 2 && !c.freeToPlayOnce) || (c.isXCost() && item.energyOnUse >= 2)
+        : !item.freeToPlay && !item.purgeOnUse && (c.costForTurn >= 2 || c.isXCost() && item.energyOnUse >= 2);
+    if (p.hasRelic<R::NECRONOMICON>() && !p.haveUsedNecronomiconThisTurn && necronomiconCost) {
         queuePurgeCard(c, item.target);
         p.haveUsedNecronomiconThisTurn = true;
     }

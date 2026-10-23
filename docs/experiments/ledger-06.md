@@ -22396,6 +22396,17 @@ Seeds: none new (live seeds 111200473 and 111200504).
 **Interpretation:** Live play-changing for every run with Necronomicon: Silver now plans the free attack copy when it is available.
 
 **Status:** Draft PR; javap confirmation and PC `test.sh` requested from the canary.
+## §TBD — Live problem 101: Necronomicon did not replay a Havoc-autoplayed Attack (2026-10-23)
+
+**Question:** Why did seed 111200627 (step 374, Collector + 2 Torch Heads) replay Havoc's Immolate in the game but not natively?
+
+**Evidence:** In the game Necronomicon triggered (activated true -> false), Immolate played twice and both Torch Heads died; natively it played once (Torch Heads 21/6, Collector 183 vs 147). Java `Necronomicon.onUseCard` (javap j96) checks only the card: Attack, `(costForTurn >= 2 && !freeToPlayOnce) || (cost == -1 && energyOnUse >= 2)`, and `activated`. `PlayTopCardAction` (Havoc, Mayhem, Distilled Chaos) leaves the card's `freeToPlayOnce` false. The engine required `!item.freeToPlay && !item.purgeOnUse` on the queue item, and `playTopCardInDrawPile` marks its item free.
+
+**Change:** `STS_NECRONOMICON_AUTOPLAY_FIX` (default on, `=0` restores): the trigger uses Java's card condition. A Necronomicon copy cannot retrigger because the relic is spent this turn. Test in `simulator_correctness_pr9_19`: a Havoc-style autoplay of Heavy Blade is replayed (2 attacks; legacy 1); a `freeToPlayOnce` Heavy Blade is not (1 under both).
+
+**Interpretation:** Play-changing with Necronomicon and Havoc/Mayhem/Distilled Chaos (and purge copies such as Double Tap or Duplication when the original did not trigger it).
+
+**Status:** Draft PR.
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with
