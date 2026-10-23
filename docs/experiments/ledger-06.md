@@ -22467,6 +22467,18 @@ Seeds: none new (live seeds 111200473 and 111200504).
 
 **Status:** Draft PR.
 
+## §TBD — Live problem 106: Hand of Greed skipped the target's onAttacked reactions (2026-10-23)
+
+**Question:** Why did seed 111200646 (step 750, floor 48, Writhing Mass) diverge after Hand of Greed and its Necronomicon copy (two hits of 23)?
+
+**Evidence:** Game: Writhing Mass HP 172 -> 140, block 11 -> 4, Malleable 3 -> 5, aiRng advanced twice (two Reactive rerolls). Native: HP 137, block 0, Malleable 3, aiRng unchanged. `ActData_HandOfGreedAction` called `Monster::damage` (the non-attack path: block, Intangible, Invincible, Lagavulin wake, Shifting only), while Java `GreedAction` calls `target.damage(new DamageInfo(player, damage, NORMAL))`, which runs onAttacked; `ActData_FeedAction` already used `Monster::attacked`. Hand of Greed rows on Awakened One and Spire Shield matched because neither has an onAttacked reaction.
+
+**Change:** `STS_HAND_OF_GREED_ATTACK_FIX` (default on, `=0` restores): Hand of Greed hits through `Monster::attacked`, as Feed does. Test in `simulator_correctness_pr9_19`: a 23-damage Hand of Greed into Malleable 3 leaves Malleable 4 and 3 block (legacy: Malleable 3, no block), with the same HP loss.
+
+**Interpretation:** Play-changing whenever Hand of Greed hits a monster with an on-hit reaction (Malleable, Reactive, Curl Up, Angry, Plated Armor, Flight, Thorns) or with The Boot / Envenom, in simulation and live. Other `Monster::damage` callers (`DamageEnemy`, `DamageAllEnemy`, `DamageRandomEnemy`) are not changed here; each needs its own Java check, since most Java onAttacked reactions (e.g. Malleable, Curl Up) require a NORMAL `DamageInfo` and those callers model THORNS or HP_LOSS damage.
+
+**Status:** Draft PR.
+
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with

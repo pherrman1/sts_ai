@@ -252,6 +252,11 @@ namespace sts {
         thread_local CachedFixFlag cache;
         return cachedFixFlag(cache, "STS_NECRONOMICON_AUTOPLAY_FIX");
     }
+
+    bool handOfGreedAttackFix() {
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_HAND_OF_GREED_ATTACK_FIX");
+    }
 }
 
 
