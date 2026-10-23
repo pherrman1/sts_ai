@@ -187,6 +187,17 @@ namespace sts {
     // keeps the previous move in moveHistory[1]. Other values are fatal.
     bool slimeSplitRngFix();
 
+    // STS_SLIME_SPLIT_ROLL_ORDER_FIX: unset/1 (default) = a large slime or the
+    // Slime Boss whose split is already pending ignores further hits (Java
+    // damage() checks nextMove != SPLIT), and a RollMoveAction queued before the
+    // split trigger (thorns or Flame Barrier during the slime's own turn) still
+    // draws aiRng but leaves the split as the next move, because Java's
+    // SetMoveAction(SPLIT) runs after it (history [SPLIT, rolled]). Live
+    // problem 99 (seeds 111200568 and 111200594): native rolled over the split.
+    // 0 = the legacy engine. Other values are fatal. Read only at a split
+    // trigger or a queued roll of a split-pending slime.
+    bool slimeSplitRollOrderFix();
+
     // STS_DYING_ATTACKER_FIX: unset/1 (default) = a queued monster attack
     // hit does nothing once its attacker is dead or half-dead, as in the game
     // (DamageAction.update cancels a non-THORNS hit when its owner isDying or
