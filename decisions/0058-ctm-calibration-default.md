@@ -1,4 +1,4 @@
-# ADR-TBD: The A20 CTM stack applies the per-fight calibration to today's Silver by default
+# ADR-0058: The A20 CTM stack applies the per-fight calibration to today's Silver by default
 
 Date: 2026-10-23
 Status: accepted

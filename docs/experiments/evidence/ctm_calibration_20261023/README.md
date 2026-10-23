@@ -6,7 +6,7 @@ the rollouts too pessimistic, and their Act-4 decomposition traced most of the H
 Philipp chose "Check the CTM first". The option said: compare the CTM's predictions with the real outcomes of the
 stage-3 A/B's 4,096 games, by act and fight; if it over-predicts deaths, fit a per-act fix like M0 and propose an A/B.
 This directory holds that check, the fix and its play check. The fix was first a research flag (§670). Philipp then
-judged the CTM by its precision and made the fix the A20 default (ADR-TBD, 2026-10-23); a 512-seed guard against the
+judged the CTM by its precision and made the fix the A20 default (ADR-0058, 2026-10-23); a 512-seed guard against the
 raw CTM ([`PREREG.md`](PREREG.md)) turns it off only if it comes out WORSE.
 
 ## The check
@@ -39,7 +39,7 @@ raw CTM ([`PREREG.md`](PREREG.md)) turns it off only if it comes out WORSE.
   (g7f_E prior, learned stop, boss-only prior playouts) loses much less HP late in the run. The Act-4 model was
   trained on student C play (10-17, Heart won 32% of the time); here the Heart is won 63% of the time.
 
-## The calibration (`STS_CTM_CALIBRATION`; the A20 default since ADR-TBD, `=0` restores the raw CTM)
+## The calibration (`STS_CTM_CALIBRATION`; the A20 default since ADR-0058, `=0` restores the raw CTM)
 - **Groups.** A fight's group is `<act>:<ENCOUNTER>` in an elite or boss room, else `<act>:<ROOM>` with ROOM one of
   NORMAL (hallway), ELITE, BOSS and OTHER (event fights and the rest), from the predictor input's room class. An
   encounter group needs 400 rows, a room group 100; a fight without either keeps the CTM's prediction.

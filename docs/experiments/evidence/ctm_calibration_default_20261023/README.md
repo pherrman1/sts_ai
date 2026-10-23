@@ -1,6 +1,6 @@
 # The CTM-calibration default plays the reviewed flag; `=0` plays main (2026-10-23)
 
-**Question.** [ADR-TBD](../../../../decisions/TBD-ctm-calibration-default.md) makes the §670 per-fight CTM
+**Question.** [ADR-0058](../../../../decisions/0058-ctm-calibration-default.md) makes the §670 per-fight CTM
 calibration the default of the built-in A20 stack. The guard
 ([`../ctm_calibration_20261023/PREREG.md`](../ctm_calibration_20261023/PREREG.md)) compares `STS_CTM_CALIBRATION=0`
 (arm A) with the default (arm C). Does arm C play exactly what the reviewed flag `STS_CTM_CALIBRATION=<table>` played

@@ -4,7 +4,7 @@
 This file first pre-registered an A/B that asked whether the calibration kills the Heart more often (two stages, 512
 then 1,536 seeds; §670 and PR #838 hold that version). On 2026-10-23 at 20:32Z Philipp argued that the CTM should be
 judged by its precision, not by winrate. At 20:44Z he chose "Default on + 512-seed guard" on the card "Adopt the CTM
-calibration on precision, and with what play check?": the calibration became the A20 default (ADR-TBD), and 512 seeds
+calibration on precision, and with what play check?": the calibration became the A20 default (ADR-0058), and 512 seeds
 check that it does not clearly lose. At 20:45Z he authorized the run ("The 512 seeds can use 8 workers later") and at
 22:11Z raised it to 16 workers ("U can also use 16 workers"). The campaign is frozen as usual (`campaign.manifest`,
 brief, run commit) after the default's PR is reviewed and merged.
