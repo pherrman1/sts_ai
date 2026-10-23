@@ -23570,6 +23570,22 @@ advance? Philipp typed "merge 816 and go seeds" (2026-10-22 20:52Z).
 - No game seeds were used.
 - **Knowledge impact:** `evaluation/current-research.md`.
 
+## §658 — Turn-level dominance opportunity in Silver's real decisions: 0.65% of choices, DROP (2026-10-23)
+
+**Question:** would a combat search over whole turns (every deterministic line to the next chance node, pruned by
+end-of-turn dominance as in `exact_combat_solver` §623) have a target in production Silver play?
+**Setup:** `one_combat turndomgen` (research, observation only; bestbench gives the identical run on the smoke seed):
+512 A20 runs with production Silver (learned stop, g7f_E prior, boss prior playouts), student_sel argmax out of combat,
+seeds 111380000-111380511 (smokes 111389990-111389994). At each searched root every root edge's deterministic lines are
+followed to the end of the turn and grouped by the solver's end-of-turn projection; a chosen edge is flagged when
+all its end states are dominated, and "material" when the dominator has more HP, more needed block, or less monster
+HP / more debuffs. Pre-registered: material share below 1% = DROP.
+**Result:** 267,389 classified roots (985 capped). Material 0.65% [0.59, 0.73] (raw 1.37%); in the monotone gate 2 of
+2,484. 88% of flags are End Turn (82% with energy left); Silver's own Q prefers the flagged edge at 99.4% of them (median
++0.55); dominated edges get 2.2% of root visits. Enumeration costs 1.5% of run time.
+**Interpretation:** DROP. No search-structure target; the residual is a leaf/score preference for ending the turn.
+Evidence: [turn_dominance_20261023](evidence/turn_dominance_20261023/RESULT.md). Seeds used as above.
+**Knowledge impact:** none beyond this entry (research-only mode, no default changed).
 ## §654 — Exact solves of the last turns of A20 elite and boss fights: Silver is near-optimal where they finish, and lost fights are decided before the last turn (descriptive, 2026-10-22)
 
 **Question (Philipp, 2026-10-22 11:08Z):** are exact solves of the last one or two turns of A20 elite and boss
