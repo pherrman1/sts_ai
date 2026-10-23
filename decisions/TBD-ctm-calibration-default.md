@@ -63,6 +63,9 @@ Status: accepted
 - **Coupling.** The table was fitted on the predictions of these exact artifacts with the §470 shift and the ADR-0048
   Act-4 model, on fights before the 2026-10-23 engine fixes (#831, #833, #835, #836). A retrained CTM or Act-4 model
   needs a refit; the bundled table does not follow it.
+- **Next candidate.** §672's HP-head fine-tune with its refitted table predicts won-fight HP a little better than this
+  table (held out 7.60 → 7.45) with the same deaths. It is a research candidate that the OOC stack cannot load yet;
+  adopting it is a separate decision.
 
 ## Evidence
 
