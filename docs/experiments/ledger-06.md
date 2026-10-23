@@ -22405,6 +22405,8 @@ Seeds: none new (live seeds 111200473 and 111200504).
 **Change:** `STS_NECRONOMICON_AUTOPLAY_FIX` (default on, `=0` restores): the trigger uses Java's card condition. A Necronomicon copy cannot retrigger because the relic is spent this turn. Test in `simulator_correctness_pr9_19`: a Havoc-style autoplay of Heavy Blade is replayed (2 attacks; legacy 1); a `freeToPlayOnce` Heavy Blade is not (1 under both).
 
 **Interpretation:** Play-changing with Necronomicon and Havoc/Mayhem/Distilled Chaos (and purge copies such as Double Tap or Duplication when the original did not trigger it).
+
+**Status:** Draft PR.
 ## §651 — Live problem 100: Mummified Hand picked Skills when Corruption was played (2026-10-23)
 
 **Question:** Why did seed 111200621 (Mummified Hand, Snecko Eye) zero a different card than the game on 14 Corruption plays, and once draw cardRandomRng where the game did not?
