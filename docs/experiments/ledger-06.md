@@ -22467,6 +22467,18 @@ Seeds: none new (live seeds 111200473 and 111200504).
 
 **Status:** Draft PR.
 
+## §668 — Live problem 110: Trip costs 0 (2026-10-23)
+
+**Question:** Why did seed 111200656 (step 593) show a Toolbox-discovered Trip at cost 0 in the game but 1 natively?
+
+**Evidence:** `include/constants/Cards.h` `getEnergyCost` listed `CardId::TRIP` in the cost-1 group. Java `cards.colorless.Trip` passes cost `iconst_0` to its constructor (javap, canary), and its upgrade only changes the target and Vulnerable amount.
+
+**Change:** `STS_TRIP_COST_FIX` (default on, `=0` restores): Trip is in the cost-0 group; with `=0` the `CardInstance` constructor restores cost 1. Test in `simulator_correctness_pr9_19`: base, upgraded and upgraded-in-combat Trip cost 0 (legacy 1). smoke|core 138/138.
+
+**Interpretation:** Play-changing whenever Trip is offered or held: it was undervalued by 1 energy in simulation.
+
+**Status:** Draft PR.
+
 ## §667 — Live problem 109: Time Eater marks usedHaste when it rolls Haste (2026-10-23)
 
 **Question:** Why did seed 111200653 (step 875, floor 51, Time Eater) show `monsters[0].miscInfo` 1 in the game vs 0 natively after End Turn?

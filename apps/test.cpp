@@ -3842,6 +3842,26 @@ int testSimulatorCorrectnessPr9To19() {
         }
     }
 
+    // Live problem 110 (seed 111200656): Java Trip costs 0 (upgraded too).
+    // STS_TRIP_COST_FIX=0 restores the legacy engine cost of 1.
+    for (const bool fix : {true, false}) {
+        if (fix) unsetenv("STS_TRIP_COST_FIX");
+        else setenv("STS_TRIP_COST_FIX", "0", 1);
+        refreshEngineFlags();
+        CardInstance trip(CardId::TRIP, false);
+        CardInstance tripPlus(CardId::TRIP, true);
+        CardInstance upgraded(CardId::TRIP, false);
+        upgraded.upgrade();
+        unsetenv("STS_TRIP_COST_FIX");
+        refreshEngineFlags();
+        const int want = fix ? 0 : 1;
+        for (const auto *c : {&trip, &tripPlus, &upgraded}) {
+            if (c->cost != want || c->costForTurn != want) {
+                return fail(fix ? "Trip does not cost 0" : "STS_TRIP_COST_FIX=0 did not restore Trip cost 1");
+            }
+        }
+    }
+
     // #13: Unceasing Top resolves the shuffle/draw work before returning control.
     {
         auto bc = simulatorCorrectnessBattle({RelicId::UNCEASING_TOP}, Card(CardId::FLEX), 5);

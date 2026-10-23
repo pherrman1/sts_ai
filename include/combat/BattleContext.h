@@ -113,6 +113,11 @@ namespace sts {
     // Other values are fatal. Read on every CardInstance::upgrade.
     bool upgradeCostDeltaFix();
 
+    // STS_TRIP_COST_FIX: unset/1 (default) = Trip costs 0, as Java
+    // cards.colorless.Trip does (live parity problem 110). 0 = the legacy engine
+    // cost 1. Other values are fatal. Read when a Trip CardInstance is built.
+    bool tripCostFix();
+
     // STS_BYRD_GROUNDED_FLIGHT_FIX: unset/1 (default) = the hit that takes a
     // Byrd's Flight from 1 to 0 removes the power, as Java ReducePowerAction
     // does (live parity problem 42, seed 111200436). The grounded Byrd takes

@@ -78,6 +78,11 @@ namespace sts {
         return cachedFixFlag(cache, "STS_UPGRADE_COST_DELTA_FIX");
     }
 
+    bool tripCostFix() {
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_TRIP_COST_FIX");
+    }
+
     bool byrdGroundedFlightFix() {
         thread_local CachedFixFlag cache;
         return cachedFixFlag(cache, "STS_BYRD_GROUNDED_FLIGHT_FIX");
