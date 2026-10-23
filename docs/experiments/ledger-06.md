@@ -22363,6 +22363,39 @@ Seeds: none new (live seeds 111200473 and 111200504).
 **Interpretation:** Live play-changing: event removals behind a Continue page now remove the card the event decision chose.
 
 **Status:** Draft PR.
+## §648 — Live problem 98: Impatience drew with Attacks in hand (2026-10-23)
+
+**Question:** Why did seed 111200587 (step 531, encounter 40) draw 2 natively after Impatience (hand 8) while the game drew nothing (hand 6)?
+
+**Evidence:** The hand scan in `BattleContext::useSkillCard` assigned `hasAttack = false` on finding an Attack, so the draw always happened. Java's `Impatience.use` draws only when no card in hand is an Attack.
+
+**Change:** `STS_IMPATIENCE_FIX` (default on, `=0` restores the always-draw). Test in `ironclad_card_java_parity`: with a Strike in hand Impatience draws 0 (legacy 2); without an Attack it draws 2 under both flag values.
+
+**Interpretation:** Play-changing whenever Impatience is played with an Attack in hand, in simulated play and the live advisor: the engine overvalued it as an unconditional draw 2.
+
+**Status:** Draft PR.
+## §647 — Live problem 97: Dark Shackles gave the monster +9 Strength and inverted its Artifact check (2026-10-23)
+
+**Question:** Why did seed 111200587 (step 564, encounter 45) show the monster at Strength -9 with Shackled 9 in the game, but Strength +9 and no Shackled natively?
+
+**Evidence:** `BattleContext::useSkillCard` queued `DebuffEnemy<STRENGTH>(t, 9)`, which adds +9 (Disarm passes -2/-3), and queued Shackled only when the target *had* Artifact. Java's `DarkShackles.use` applies `StrengthPower(-magic)` and then `GainStrengthPower(magic)` only when the target has no Artifact; Artifact blocks the Strength loss.
+
+**Change:** `STS_DARK_SHACKLES_FIX` (default on, `=0` restores the legacy card): Strength -9 (-15) and, without Artifact at use time, Shackled 9 (15). Test in `ironclad_card_java_parity` (Jaw Worm, with and without Artifact, both flag values): without Artifact Str -9 / Shackled 9 and Str back to its old value after the monster's end of turn; with Artifact, Artifact consumed, Str unchanged, no Shackled.
+
+**Interpretation:** Play-changing for every combat with Dark Shackles, in simulated play and the live advisor: the engine had valued it as a +9 Strength gift for the monster, so search likely avoided it. Sadistic Nature still triggers once (on the Strength loss), as in Java, whose `SadisticPower.onApplyPower` skips Shackled.
+
+**Status:** Draft PR.
+## §646 — Live problem 96: Necronomicon was imported as spent while ready (2026-10-23)
+
+**Question:** Why did seed 111200565 (release c0ff2c3a) diverge at step 303 (Uppercut+ vs Mugger), followed by 124 more mismatches?
+
+**Evidence:** Vanilla `Necronomicon` keeps a private `activated` flag: true at turn start, set false when the copy of a 2+-cost attack fires. The producer exported it as `"usedThisTurn"` (`STSModelInspector`, two relic writers) and `live_silver_importer.cpp` copied it into native's `haveUsedNecronomiconThisTurn`. So live Silver planned every turn with Necronomicon spent while it was ready, and as ready after it had fired; the game then copied Uppercut+ that the engine did not.
+
+**Change:** The producer now names the field `activated` (same value). `STS_IMPORTER_NECRONOMICON_READY_FIX` (default on, `=0` restores) imports `haveUsedNecronomiconThisTurn = !activated`, reading `activated` or, from older producers, `usedThisTurn`. Test: the importer test covers both field names, both values and both flag settings (`live_silver_importer` ctest passes).
+
+**Interpretation:** Live play-changing for every run with Necronomicon: Silver now plans the free attack copy when it is available.
+
+**Status:** Draft PR; javap confirmation and PC `test.sh` requested from the canary.
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with
@@ -23434,6 +23467,47 @@ recipe do better when it learns from the recapture's cleaner labels? Philipp typ
 **Decision:** no default change. The leaf stays X2-B, and SR_w1's blend stays the online candidate.
 - Next, if Philipp agrees: confirm the ranking-selected recipe with seeds 1–2 under a new plan (about 2 h GPU). If it
   replicates, epoch 11's blend replaces SR_w1's as the online candidate.
+- No game seeds were used.
+- **Knowledge impact:** `evaluation/current-research.md`.
+
+## §649 — Ranking-selected SR head, seeds 1–2: REPLICATED offline (blend +0.013 and +0.014 over SR_w1's blend; head alone level with X2-B); new online candidate SR_crn_r2_s2_ep20 (offline, 2026-10-23)
+
+**Question:** §645's exploratory epoch (SR_crn_r2 seed 0, epoch 11) chose its epoch by the holdout ranking after the
+run. Does "SR_crn_r2's training, epoch chosen by the holdout ranking" replicate on fresh seeds with the rule fixed in
+advance? Philipp typed "merge 816 and go seeds" (2026-10-22 20:52Z).
+**Design:** pre-registered ([PLAN.md](evidence/value_sr_crn_seeds_20261022/PLAN.md), data branch `0341698`).
+- SR_crn_r2's command with seeds 1 and 2, all 20 epochs (`--patience 0`).
+- Epoch: the best in-training holdout ranking among epochs with selection-fold BCE ≤ 0.570 (`pick_epoch.py`; it
+  picks epoch 11 on seed 0). Secondary: the same choice within the epochs a value-objective stop would have run.
+- Gate per seed: blend minus SR_w1 seed 0's blend on the common-seed VALIDATION (w chosen on the TRAIN holdout),
+  paired CI above 0, and "−3 HP sign" ≥ 85 %. REPLICATED if both seeds pass.
+- Trained on Philipp's GPU (20:59–23:50Z, one seed after the other), evaluated in the cloud with §645's tools.
+**Result** ([README](evidence/value_sr_crn_seeds_20261022/README.md)):
+
+| head | epoch | selection-fold BCE | VALIDATION | − SR_w1 [95 % CI] | blend (w) | blend − SR_w1's blend | round 2 | −3 HP sign |
+|---|---|---|---|---|---|---|---|---|
+| SR_w1 (control) | 7 | 0.547 | 0.645 | – | 0.689 (0.10) | – | 0.644 | 88.1 % |
+| seed 0 (§645, exploratory) | 11 | 0.557 | 0.660 | +0.015 [+0.009, +0.022] | 0.703 (0.10) | +0.014 [+0.009, +0.019] | 0.648 | 88.2 % |
+| seed 1 | 13 | 0.565 | 0.663 | +0.018 [+0.011, +0.025] | 0.702 (0.10) | **+0.013 [+0.008, +0.019]** | 0.653 | 90.9 % |
+| seed 2 | 20 | 0.562 | 0.667 | +0.022 [+0.015, +0.030] | 0.703 (0.10) | **+0.014 [+0.009, +0.020]** | 0.655 | 89.4 % |
+| seed 1, value stop | 7 | 0.550 | 0.644 | −0.001 [−0.007, +0.005] | 0.690 (0.15) | +0.001 [−0.004, +0.006] | 0.633 | 88.0 % |
+| seed 2, value stop | 9 | 0.566 | 0.654 | +0.009 [+0.003, +0.016] | 0.692 (0.20) | +0.003 [−0.003, +0.010] | 0.644 | 87.8 % |
+
+- X2-B scores 0.664 on the common-seed VALIDATION and 0.633 on round 2.
+- **Gate: REPLICATED** (both seeds pass).
+- Candidate by TRAIN-holdout blend: seed 2's epoch 20 (0.706, against 0.704 and 0.700).
+- On round 2 both heads beat SR_w1 alone (+0.010 [+0.001, +0.019], +0.011 [+0.002, +0.021]).
+- Gold +50 is valued higher in 77–84 % of cases (SR_w1 65 %).
+**Interpretation:**
+- The ranking-selected recipe replicates. Alone it is now level with X2-B (0.663, 0.667 vs 0.664), and its blend
+  beats SR_w1's by +0.013 to +0.014 on every seed.
+- The gain needs the longer training. The value-stop epochs (7, 9) do not beat SR_w1's blend; the ranking plateaus
+  from about epoch 12.
+- Offline only, on labels that end in X2-B. In §504 and §615, offline concordance and online play disagreed in
+  direction, so this does not predict a Heart-kill gain by itself.
+**Decision:** no default change; X2-B stays the leaf.
+- Seed 2's epoch 20 blend (w 0.10; data branch `gen2/value-sr-crn/weights/SR_crn_r2_s2_ep20/student.bin`, sha256
+  `28523fb5…`) replaces SR_w1's as the online candidate. Any online test needs Philipp's go.
 - No game seeds were used.
 - **Knowledge impact:** `evaluation/current-research.md`.
 
