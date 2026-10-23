@@ -498,7 +498,10 @@ void Monster::attacked(BattleContext &bc, int damage) {
         }
     }
 
-    if (hasStatus<MS::ANGRY>()) { // onAttacked
+    // Java AngryPower.onAttacked sees the damage left after decrementBlock.
+    const bool angry = hasStatus<MS::ANGRY>();
+    const bool angryAfterBlock = angry && angryUnblockedFix();
+    if (angry && !angryAfterBlock) { // onAttacked
         buff<MS::STRENGTH>(getStatus<MS::ANGRY>());
     }
 
@@ -506,6 +509,10 @@ void Monster::attacked(BattleContext &bc, int damage) {
     const int tempDamage = damage;
     damage -= block;
     block = std::max(0, block - tempDamage);
+
+    if (angryAfterBlock && damage > 0) {
+        buff<MS::STRENGTH>(getStatus<MS::ANGRY>());
+    }
 
     if (hadBlock && block == 0 && bc.player.hasRelic<RelicId::HAND_DRILL>()) {
         bc.addToBot(Actions::DebuffEnemy<MS::VULNERABLE>(idx, 2, false) );
