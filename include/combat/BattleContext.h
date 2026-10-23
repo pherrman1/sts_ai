@@ -187,6 +187,17 @@ namespace sts {
     // keeps the previous move in moveHistory[1]. Other values are fatal.
     bool slimeSplitRngFix();
 
+    // STS_SLIME_SPLIT_ROLL_ORDER_FIX: unset/1 (default) = a large slime or the
+    // Slime Boss whose split is already pending ignores further hits (Java
+    // damage() checks nextMove != SPLIT), and a RollMoveAction queued before the
+    // split trigger (thorns or Flame Barrier during the slime's own turn) still
+    // draws aiRng but leaves the split as the next move, because Java's
+    // SetMoveAction(SPLIT) runs after it (history [SPLIT, rolled]). Live
+    // problem 99 (seeds 111200568 and 111200594): native rolled over the split.
+    // 0 = the legacy engine. Other values are fatal. Read only at a split
+    // trigger or a queued roll of a split-pending slime.
+    bool slimeSplitRollOrderFix();
+
     // STS_DYING_ATTACKER_FIX: unset/1 (default) = a queued monster attack
     // hit does nothing once its attacker is dead or half-dead, as in the game
     // (DamageAction.update cancels a non-THORNS hit when its owner isDying or
@@ -329,6 +340,38 @@ namespace sts {
     // per Power natively). 0 = the legacy engine, where Curiosity did nothing.
     // Other values are fatal. Read only when a Power card is used.
     bool curiosityFix();
+
+    // STS_DARK_SHACKLES_FIX: unset/1 (default) = Dark Shackles applies
+    // Strength -9 (-15) and, when the target had no Artifact, Shackled 9 (15)
+    // that restores it at the monster's end of turn, as in the game (live
+    // problem 97, seed 111200587: the engine gave the monster +9 Strength and
+    // Shackled only when it had Artifact). 0 = the legacy engine. Other values
+    // are fatal. Read only when Dark Shackles is used.
+    bool darkShacklesFix();
+
+    // STS_IMPATIENCE_FIX: unset/1 (default) = Impatience draws only when the
+    // hand holds no Attack, as in the game (live problem 98, seed 111200587:
+    // the engine always drew because the Attack check never set its flag).
+    // 0 = the legacy engine. Other values are fatal. Read only when Impatience
+    // is used with an Attack in hand.
+    bool impatienceFix();
+
+    // STS_CORRUPTION_IMMEDIATE_COST_FIX: unset/1 (default) = playing Corruption
+    // sets every Skill's cost to 0 at once, as Java's ApplyPowerAction
+    // constructor does, so Mummified Hand (rolled in the UseCardAction
+    // constructor) never picks a Skill (live problem 100, seed 111200621).
+    // 0 = the legacy engine, which changed the costs when the queued power
+    // resolved. Other values are fatal. Read only when Corruption is played.
+    bool corruptionImmediateCostFix();
+
+    // STS_NECRONOMICON_AUTOPLAY_FIX: unset/1 (default) = Necronomicon replays
+    // an Attack with costForTurn >= 2 unless the card is freeToPlayOnce (or an
+    // X-cost Attack with energyOnUse >= 2), as Java Necronomicon.onUseCard
+    // does, including Havoc/Mayhem/Distilled Chaos autoplays and purge copies
+    // (live problem 101, seed 111200627: Havoc's Immolate was replayed in the
+    // game, not natively). 0 = the legacy engine, which skipped every
+    // free-to-play queue item and purge copy. Other values are fatal.
+    bool necronomiconAutoplayFix();
 
     struct BattleContext {
 

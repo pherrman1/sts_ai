@@ -146,6 +146,11 @@ namespace sts {
         return cachedFixFlag(cache, "STS_SLIME_SPLIT_RNG_FIX");
     }
 
+    bool slimeSplitRollOrderFix() {
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_SLIME_SPLIT_ROLL_ORDER_FIX");
+    }
+
     bool dyingAttackerFix() {
         thread_local CachedFixFlag cache;
         return cachedFixFlag(cache, "STS_DYING_ATTACKER_FIX");
@@ -226,6 +231,26 @@ namespace sts {
     bool curiosityFix() {
         thread_local CachedFixFlag cache;
         return cachedFixFlag(cache, "STS_CURIOSITY_FIX");
+    }
+
+    bool darkShacklesFix() {
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_DARK_SHACKLES_FIX");
+    }
+
+    bool impatienceFix() {
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_IMPATIENCE_FIX");
+    }
+
+    bool corruptionImmediateCostFix() {
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_CORRUPTION_IMMEDIATE_COST_FIX");
+    }
+
+    bool necronomiconAutoplayFix() {
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_NECRONOMICON_AUTOPLAY_FIX");
     }
 }
 
@@ -1614,6 +1639,16 @@ void BattleContext::useSkillCard() {
             break;
 
         case CardId::DARK_SHACKLES:
+            // Java: StrengthPower(-magic), then GainStrengthPower(magic) only
+            // when the target has no Artifact at use time.
+            if (darkShacklesFix()) {
+                const bool hadArtifact = monsters.arr[t].hasStatus<MS::ARTIFACT>();
+                addToBot( Actions::DebuffEnemy<MS::STRENGTH>(t, up ? -15 : -9) );
+                if (!hadArtifact) {
+                    addToBot( Actions::BuffEnemy<MS::SHACKLED>(t, up ? 15 : 9) );
+                }
+                break;
+            }
             addToBot( Actions::DebuffEnemy<MS::STRENGTH>(t, up ? 15 : 9) );
             if (monsters.arr[t].hasStatus<MS::ARTIFACT>()) {
                 addToBot( Actions::BuffEnemy<MS::SHACKLED>(t, up ? 15 : 9) );
@@ -1693,7 +1728,7 @@ void BattleContext::useSkillCard() {
             bool hasAttack = false;
             for (int i = 0; i < cards.cardsInHand; ++i) {
                 if (cards.hand[i].getType() == CardType::ATTACK) {
-                    hasAttack = false;
+                    hasAttack = impatienceFix();
                     break;
                 }
             }
@@ -1880,6 +1915,11 @@ void BattleContext::usePowerCard() {
             break;
 
         case CardId::CORRUPTION:
+            // Java's ApplyPowerAction constructor already sets every Skill to
+            // cost 0 (modifyCostForCombat(-9)), before UseCardAction's relic
+            // hooks (Mummified Hand) run. Corruption.use builds no action when
+            // the power is already held.
+            if (!player.hasStatus<PS::CORRUPTION>() && corruptionImmediateCostFix()) cards.onBuffCorruption();
             addToBot( Actions::BuffPlayer<PS::CORRUPTION>() );
             break;
 
@@ -2040,8 +2080,13 @@ void BattleContext::onUseAttackCard() {
         addToBot( Actions::BuffPlayer<PS::STRENGTH>(1) );
     }
 
-    if (p.hasRelic<R::NECRONOMICON>() && !p.haveUsedNecronomiconThisTurn && !item.freeToPlay && !item.purgeOnUse &&
-        (c.costForTurn >= 2 || c.isXCost() && item.energyOnUse >= 2)) {
+    // Java Necronomicon.onUseCard: ((costForTurn >= 2 && !freeToPlayOnce) ||
+    // (X-cost && energyOnUse >= 2)) && activated. Havoc/Mayhem/Distilled Chaos
+    // autoplays and purge copies are not excluded.
+    const bool necronomiconCost = necronomiconAutoplayFix()
+        ? (c.costForTurn >= 2 && !c.freeToPlayOnce) || (c.isXCost() && item.energyOnUse >= 2)
+        : !item.freeToPlay && !item.purgeOnUse && (c.costForTurn >= 2 || c.isXCost() && item.energyOnUse >= 2);
+    if (p.hasRelic<R::NECRONOMICON>() && !p.haveUsedNecronomiconThisTurn && necronomiconCost) {
         queuePurgeCard(c, item.target);
         p.haveUsedNecronomiconThisTurn = true;
     }

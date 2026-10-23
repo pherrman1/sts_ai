@@ -22363,6 +22363,74 @@ Seeds: none new (live seeds 111200473 and 111200504).
 **Interpretation:** Live play-changing: event removals behind a Continue page now remove the card the event decision chose.
 
 **Status:** Draft PR.
+## §648 — Live problem 98: Impatience drew with Attacks in hand (2026-10-23)
+
+**Question:** Why did seed 111200587 (step 531, encounter 40) draw 2 natively after Impatience (hand 8) while the game drew nothing (hand 6)?
+
+**Evidence:** The hand scan in `BattleContext::useSkillCard` assigned `hasAttack = false` on finding an Attack, so the draw always happened. Java's `Impatience.use` draws only when no card in hand is an Attack.
+
+**Change:** `STS_IMPATIENCE_FIX` (default on, `=0` restores the always-draw). Test in `ironclad_card_java_parity`: with a Strike in hand Impatience draws 0 (legacy 2); without an Attack it draws 2 under both flag values.
+
+**Interpretation:** Play-changing whenever Impatience is played with an Attack in hand, in simulated play and the live advisor: the engine overvalued it as an unconditional draw 2.
+
+**Status:** Draft PR.
+## §647 — Live problem 97: Dark Shackles gave the monster +9 Strength and inverted its Artifact check (2026-10-23)
+
+**Question:** Why did seed 111200587 (step 564, encounter 45) show the monster at Strength -9 with Shackled 9 in the game, but Strength +9 and no Shackled natively?
+
+**Evidence:** `BattleContext::useSkillCard` queued `DebuffEnemy<STRENGTH>(t, 9)`, which adds +9 (Disarm passes -2/-3), and queued Shackled only when the target *had* Artifact. Java's `DarkShackles.use` applies `StrengthPower(-magic)` and then `GainStrengthPower(magic)` only when the target has no Artifact; Artifact blocks the Strength loss.
+
+**Change:** `STS_DARK_SHACKLES_FIX` (default on, `=0` restores the legacy card): Strength -9 (-15) and, without Artifact at use time, Shackled 9 (15). Test in `ironclad_card_java_parity` (Jaw Worm, with and without Artifact, both flag values): without Artifact Str -9 / Shackled 9 and Str back to its old value after the monster's end of turn; with Artifact, Artifact consumed, Str unchanged, no Shackled.
+
+**Interpretation:** Play-changing for every combat with Dark Shackles, in simulated play and the live advisor: the engine had valued it as a +9 Strength gift for the monster, so search likely avoided it. Sadistic Nature still triggers once (on the Strength loss), as in Java, whose `SadisticPower.onApplyPower` skips Shackled.
+
+**Status:** Draft PR.
+## §646 — Live problem 96: Necronomicon was imported as spent while ready (2026-10-23)
+
+**Question:** Why did seed 111200565 (release c0ff2c3a) diverge at step 303 (Uppercut+ vs Mugger), followed by 124 more mismatches?
+
+**Evidence:** Vanilla `Necronomicon` keeps a private `activated` flag: true at turn start, set false when the copy of a 2+-cost attack fires. The producer exported it as `"usedThisTurn"` (`STSModelInspector`, two relic writers) and `live_silver_importer.cpp` copied it into native's `haveUsedNecronomiconThisTurn`. So live Silver planned every turn with Necronomicon spent while it was ready, and as ready after it had fired; the game then copied Uppercut+ that the engine did not.
+
+**Change:** The producer now names the field `activated` (same value). `STS_IMPORTER_NECRONOMICON_READY_FIX` (default on, `=0` restores) imports `haveUsedNecronomiconThisTurn = !activated`, reading `activated` or, from older producers, `usedThisTurn`. Test: the importer test covers both field names, both values and both flag settings (`live_silver_importer` ctest passes).
+
+**Interpretation:** Live play-changing for every run with Necronomicon: Silver now plans the free attack copy when it is available.
+
+**Status:** Draft PR; javap confirmation and PC `test.sh` requested from the canary.
+## §652 — Live problem 101: Necronomicon did not replay a Havoc-autoplayed Attack (2026-10-23)
+
+**Question:** Why did seed 111200627 (step 374, Collector + 2 Torch Heads) replay Havoc's Immolate in the game but not natively?
+
+**Evidence:** In the game Necronomicon triggered (activated true -> false), Immolate played twice and both Torch Heads died; natively it played once (Torch Heads 21/6, Collector 183 vs 147). Java `Necronomicon.onUseCard` (javap j96) checks only the card: Attack, `(costForTurn >= 2 && !freeToPlayOnce) || (cost == -1 && energyOnUse >= 2)`, and `activated`. `PlayTopCardAction` (Havoc, Mayhem, Distilled Chaos) leaves the card's `freeToPlayOnce` false. The engine required `!item.freeToPlay && !item.purgeOnUse` on the queue item, and `playTopCardInDrawPile` marks its item free.
+
+**Change:** `STS_NECRONOMICON_AUTOPLAY_FIX` (default on, `=0` restores): the trigger uses Java's card condition. A Necronomicon copy cannot retrigger because the relic is spent this turn. Test in `simulator_correctness_pr9_19`: a Havoc-style autoplay of Heavy Blade is replayed (2 attacks; legacy 1); a `freeToPlayOnce` Heavy Blade is not (1 under both).
+
+**Interpretation:** Play-changing with Necronomicon and Havoc/Mayhem/Distilled Chaos (and purge copies such as Double Tap or Duplication when the original did not trigger it).
+
+**Status:** Draft PR.
+## §651 — Live problem 100: Mummified Hand picked Skills when Corruption was played (2026-10-23)
+
+**Question:** Why did seed 111200621 (Mummified Hand, Snecko Eye) zero a different card than the game on 14 Corruption plays, and once draw cardRandomRng where the game did not?
+
+**Evidence:** Canary extract `engine-parity/overnight-20261019/issue100/` (rows, javap, game log). In all 13 rows with a pick the game zeroed an Attack or Power; at step 835 the only candidate was a Skill (Second Wind) and the game did not roll (cardRandomRng 30 -> 30; log "NO VALID CARDS"). The bytecode explains it: `Corruption.use` builds `ApplyPowerAction`, whose constructor calls `modifyCostForCombat(-9)` on every Skill in hand, draw, discard and exhaust pile when the power is Corruption; `AbstractPlayer.useCard` then constructs `UseCardAction`, whose relic hooks run Mummified Hand's roll over cards with cost > 0 and costForTurn > 0. The engine changed the Skill costs only when the queued `BuffPlayer<CORRUPTION>` resolved, so its pool still held the Skills.
+
+**Change:** `STS_CORRUPTION_IMMEDIATE_COST_FIX` (default on, `=0` restores): Corruption's use applies the Skill cost change at once (`CardManager::onBuffCorruption`), before the relic hooks. Test in `ironclad_card_java_parity`: with Mummified Hand, Corruption among three Skills and a Strike always zeroes the Strike over 10 RNG states (legacy: sometimes a Skill), each with one roll; with only a Skill left there is no roll (legacy: one).
+
+**Interpretation:** Play-changing and cardRandomRng-changing for runs with Mummified Hand and Corruption: the free card now always lands on an Attack or Power.
+## §650 — Live problem 99: monster moveHistory mismatches; a slime split triggered during its own turn was rolled over (2026-10-23)
+
+**Question:** What are the 20 background moveHistory mismatch rows in canary seeds 111200535-618, and do any of them change play?
+
+**Evidence:** Canary extract `engine-parity/overnight-20261019/issue99/summary.md`. Families:
+- 12 rows: a monster that dies on its own turn (Dagger explode 9 rows covering 11 Daggers, Exploder 2) or Awakened One stage 1 going half-dead at End Turn (1). Java's queued `RollMoveAction` still rolls for the dead or half-dead monster, so live moveHistory[1] is the rolled move. The engine already draws the same aiRng roll (`noOpRollMove`; Awakened One rolls Rebirth natively vs Dark Echo in Java), so only the dead or reviving monster's history differs. No play effect.
+- 2 rows (seeds 572 and 618): a Byrd killed by the hit that broke its Flight. Natively it is set Stunned; in Java the dead Byrd keeps its moves. No play effect.
+- 5 rows (seed 568 Acid Slime L; seed 594 split Acid Slime L after the Slime Boss split): live `[SPLIT, rolled]`, native `[rolled, SPLIT]`. The slime crossed half HP from reflected damage during its own attack. In Java, `damage()` calls `setMove(SPLIT)` and queues `SetMoveAction(SPLIT)` *behind* the attack's already-queued `RollMoveAction`, so the split stays the next move. Natively, `onHpLost` wrote the split and the queued roll then overwrote it, so the slime would attack again instead of splitting. Later hits also rewrote moveHistory[1] natively, while Java skips a pending split (`nextMove != SPLIT`).
+- 1 row (seed 565 Time Eater) is drift from live problem 96 (§646).
+
+**Change:** `STS_SLIME_SPLIT_ROLL_ORDER_FIX` (default on, `=0` restores). A queued roll of a split-pending large slime or Slime Boss still draws aiRng and then restores the split (`[SPLIT, rolled]`), and a hit on a pending split changes nothing. Under Runic Dome search (`intentsHidden`) the legacy order is kept. Test: `slime_split_rng` gains roll-order checks for both large slimes (queued roll before the trigger: one aiRng draw, split kept, a later hit leaves the history alone; `=0` reproduces the legacy overwrite). The smoke and core ctest labels pass (138/138); `runic_dome_lifecycle` fails identically with and without the flag (known stale test).
+
+**Interpretation:** Play-changing only for Acid and Spike Slime (L) pushed to half HP by thorns-type damage during their own turn; they now split on schedule. Natively the split was lost only when nothing hit the slime again before its next turn (a later hit re-armed it). The Slime Boss never queues a roll, so its guard is play-neutral. The dead-monster and Byrd families are representation-only and left unchanged; the parity comparison could classify them as background.
+
+**Status:** Draft PR.
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with
@@ -23392,4 +23460,88 @@ values matter for online play). Plan and outputs: `docs/experiments/evidence/az_
 - **Recommendation (Philipp decides):** no gen-3 A/B; student_sel stays the prior; prior-only AZ generations wait until
   the evaluation (leaf values) changes. Future prior candidates report their departures from the current prior, the
   overlap with earlier candidates, and the search's verdict at those roots, not KL alone. No game seeds were used.
+- **Knowledge impact:** `evaluation/current-research.md`.
+
+## §645 — Sibling-ranking loss on the common-seed labels: both arms FAIL (head alone 0.640 and 0.649, SR_w1 0.645, X2-B 0.664); the ranking-selected epoch of SR_crn_r2 reaches X2-B's level (0.660) and its blend beats SR_w1's by +0.014 (offline, exploratory, 2026-10-22)
+
+**Question:** SR_w1 (§641) ranks the common-seed VALIDATION siblings below X2-B (0.645 vs 0.664, §644). Does the same
+recipe do better when it learns from the recapture's cleaner labels? Philipp typed "go gpu" (2026-10-22 17:50Z).
+**Design:** pre-registered ([PLAN.md](evidence/value_sr_crn_20261022/PLAN.md), data branch `a8ab7da`).
+- Arms on SR_w1's recipe (seed 0). Only the ranking data change:
+  - SR_crn: the recapture's TRAIN groups (15,129);
+  - SR_crn_r2: those plus round-2 TRAIN (23,587).
+- Groups with source seed % 8 == 6 are held out. Selection is unchanged (fold objective, patience 3). The epoch with
+  the best holdout ranking is exported too, as exploratory.
+- Gate: the head alone on the common-seed VALIDATION, with the bars met (selection-fold BCE ≤ 0.552, −3 HP sign
+  ≥ 85 %). PASS at ≥ X2-B; IMPROVED above SR_w1 with the paired CI above 0; FAIL otherwise.
+- Trained on Philipp's GPU (18:03–19:31Z), evaluated in the cloud.
+**Result** ([README](evidence/value_sr_crn_20261022/README.md)):
+
+| head | selection-fold BCE | VALIDATION | − SR_w1 [95 % CI] | blend | blend − SR_w1's blend | round 2 |
+|---|---|---|---|---|---|---|
+| SR_w1 (control) | 0.547 | 0.645 | – | 0.689 | – | 0.644 |
+| SR_crn | 0.556 (bar missed) | 0.640 | −0.005 [−0.012, +0.002] | 0.688 | −0.001 | 0.610 |
+| SR_crn_r2 | 0.543 | 0.649 | +0.004 [−0.002, +0.010] | 0.690 | +0.001 | 0.639 |
+| SR_crn epoch 8 (exploratory) | 0.587 | 0.650 | +0.005 [−0.001, +0.013] | 0.692 | +0.003 | 0.624 |
+| SR_crn_r2 epoch 11 (exploratory) | 0.557 | 0.660 | +0.015 [+0.009, +0.022] | 0.703 | +0.014 [+0.009, +0.019] | 0.648 |
+
+- X2-B scores 0.664 on the common-seed VALIDATION and 0.633 on round 2. Blend weights were chosen on the TRAIN holdout.
+- Gate: SR_crn FAIL (level with SR_w1; BCE bar missed). SR_crn_r2 FAIL (the CI includes 0).
+- The value objective stopped both runs while the holdout ranking still rose. It was 0.644 at SR_crn's selected
+  epoch 5 and 0.657 at epoch 8; 0.646 at SR_crn_r2's selected epoch 8 and 0.656 at epoch 11.
+- Monotonicity is better than SR_w1's (gold +50 valued higher in 83–87 % of cases, against 65 %). −3 HP sign is
+  86–90 %. Outcome AUC on round 2 is 0.671–0.675 for every head.
+**Interpretation:**
+- Cleaner and more labels did not lift the selected heads. They are level with SR_w1, so label noise was not what
+  held the head back.
+- Selection on value stops training while ranking still improves. The ranking-selected epochs gain +0.010 and +0.011
+  on VALIDATION, which no choice read. This sharpens §641's lesson (select on value and ranking).
+- SR_crn_r2's epoch 11 is the best evaluator so far: alone at X2-B's level, and its blend is 0.703 (+0.039 over X2-B).
+  It is one seed, its epoch was chosen after the run, and its BCE is just over the bar.
+- Training only on common-seed labels loses on round 2 (0.610). Mixing in round 2's labels removes that loss.
+**Decision:** no default change. The leaf stays X2-B, and SR_w1's blend stays the online candidate.
+- Next, if Philipp agrees: confirm the ranking-selected recipe with seeds 1–2 under a new plan (about 2 h GPU). If it
+  replicates, epoch 11's blend replaces SR_w1's as the online candidate.
+- No game seeds were used.
+- **Knowledge impact:** `evaluation/current-research.md`.
+
+## §649 — Ranking-selected SR head, seeds 1–2: REPLICATED offline (blend +0.013 and +0.014 over SR_w1's blend; head alone level with X2-B); new online candidate SR_crn_r2_s2_ep20 (offline, 2026-10-23)
+
+**Question:** §645's exploratory epoch (SR_crn_r2 seed 0, epoch 11) chose its epoch by the holdout ranking after the
+run. Does "SR_crn_r2's training, epoch chosen by the holdout ranking" replicate on fresh seeds with the rule fixed in
+advance? Philipp typed "merge 816 and go seeds" (2026-10-22 20:52Z).
+**Design:** pre-registered ([PLAN.md](evidence/value_sr_crn_seeds_20261022/PLAN.md), data branch `0341698`).
+- SR_crn_r2's command with seeds 1 and 2, all 20 epochs (`--patience 0`).
+- Epoch: the best in-training holdout ranking among epochs with selection-fold BCE ≤ 0.570 (`pick_epoch.py`; it
+  picks epoch 11 on seed 0). Secondary: the same choice within the epochs a value-objective stop would have run.
+- Gate per seed: blend minus SR_w1 seed 0's blend on the common-seed VALIDATION (w chosen on the TRAIN holdout),
+  paired CI above 0, and "−3 HP sign" ≥ 85 %. REPLICATED if both seeds pass.
+- Trained on Philipp's GPU (20:59–23:50Z, one seed after the other), evaluated in the cloud with §645's tools.
+**Result** ([README](evidence/value_sr_crn_seeds_20261022/README.md)):
+
+| head | epoch | selection-fold BCE | VALIDATION | − SR_w1 [95 % CI] | blend (w) | blend − SR_w1's blend | round 2 | −3 HP sign |
+|---|---|---|---|---|---|---|---|---|
+| SR_w1 (control) | 7 | 0.547 | 0.645 | – | 0.689 (0.10) | – | 0.644 | 88.1 % |
+| seed 0 (§645, exploratory) | 11 | 0.557 | 0.660 | +0.015 [+0.009, +0.022] | 0.703 (0.10) | +0.014 [+0.009, +0.019] | 0.648 | 88.2 % |
+| seed 1 | 13 | 0.565 | 0.663 | +0.018 [+0.011, +0.025] | 0.702 (0.10) | **+0.013 [+0.008, +0.019]** | 0.653 | 90.9 % |
+| seed 2 | 20 | 0.562 | 0.667 | +0.022 [+0.015, +0.030] | 0.703 (0.10) | **+0.014 [+0.009, +0.020]** | 0.655 | 89.4 % |
+| seed 1, value stop | 7 | 0.550 | 0.644 | −0.001 [−0.007, +0.005] | 0.690 (0.15) | +0.001 [−0.004, +0.006] | 0.633 | 88.0 % |
+| seed 2, value stop | 9 | 0.566 | 0.654 | +0.009 [+0.003, +0.016] | 0.692 (0.20) | +0.003 [−0.003, +0.010] | 0.644 | 87.8 % |
+
+- X2-B scores 0.664 on the common-seed VALIDATION and 0.633 on round 2.
+- **Gate: REPLICATED** (both seeds pass).
+- Candidate by TRAIN-holdout blend: seed 2's epoch 20 (0.706, against 0.704 and 0.700).
+- On round 2 both heads beat SR_w1 alone (+0.010 [+0.001, +0.019], +0.011 [+0.002, +0.021]).
+- Gold +50 is valued higher in 77–84 % of cases (SR_w1 65 %).
+**Interpretation:**
+- The ranking-selected recipe replicates. Alone it is now level with X2-B (0.663, 0.667 vs 0.664), and its blend
+  beats SR_w1's by +0.013 to +0.014 on every seed.
+- The gain needs the longer training. The value-stop epochs (7, 9) do not beat SR_w1's blend; the ranking plateaus
+  from about epoch 12.
+- Offline only, on labels that end in X2-B. In §504 and §615, offline concordance and online play disagreed in
+  direction, so this does not predict a Heart-kill gain by itself.
+**Decision:** no default change; X2-B stays the leaf.
+- Seed 2's epoch 20 blend (w 0.10; data branch `gen2/value-sr-crn/weights/SR_crn_r2_s2_ep20/student.bin`, sha256
+  `28523fb5…`) replaces SR_w1's as the online candidate. Any online test needs Philipp's go.
+- No game seeds were used.
 - **Knowledge impact:** `evaluation/current-research.md`.
