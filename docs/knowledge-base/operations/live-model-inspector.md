@@ -1,6 +1,6 @@
 # Live model inspector
 
-Last verified: 2026-10-23 for the half-dead Darkling Regrow window under Runic Dome (`STS_SILVER_DARKLING_DOME_REGROW_QUEUE`); 2026-10-22 for the Awakened One Rebirth pending item (`STS_SILVER_AWAKENED_REBIRTH_QUEUE`); 2026-10-22 for the `STS_SILVER_STASIS_RETURN_QUEUE` pending item and the half-dead Darkling `SetMoveAction` producer fix; 2026-10-20 for the Act 4 map import; 2026-10-19 for the Lagavulin sleep import, the driver's Smoke Bomb escape wait, in-combat potion discards and exhaust-pile display resets in the driver state identity; 2026-10-18 for unadvertised out-of-combat potion discards, the reloaded boss marker in `?`-room history and the ADR-0047 card-select student in the advisor; 2026-10-17 for the live-bridge audit fixes (keys, research search stack, X2-B leaf, 10k Silver, strict driver, Silver session retention); 2026-10-17 for explicit Arm C tree-prior loading, qualified A0/A20 CTM packaging and ascension dispatch; 2026-10-01 for the issue #368 power-ID, selector, history, chest, combat-offer and forced-transition projections; 2026-09-27 for the combat final-HP panel and OOC endpoint HP; 2026-09-26 for two-offer Neow capture/import; 2026-09-25 for the native Silver evaluator; 2026-09-23 otherwise. This page describes the private integration
+Last verified: 2026-10-23 for the half-dead Darkling Regrow window under Runic Dome (`STS_SILVER_DARKLING_DOME_REGROW_QUEUE`); 2026-10-23 for the A20 leaf calibration (M0, ADR-0057) in the research stack; 2026-10-22 for the Awakened One Rebirth pending item (`STS_SILVER_AWAKENED_REBIRTH_QUEUE`); 2026-10-22 for the `STS_SILVER_STASIS_RETURN_QUEUE` pending item and the half-dead Darkling `SetMoveAction` producer fix; 2026-10-20 for the Act 4 map import; 2026-10-19 for the Lagavulin sleep import, the driver's Smoke Bomb escape wait, in-combat potion discards and exhaust-pile display resets in the driver state identity; 2026-10-18 for unadvertised out-of-combat potion discards, the reloaded boss marker in `?`-room history and the ADR-0047 card-select student in the advisor; 2026-10-17 for the live-bridge audit fixes (keys, research search stack, X2-B leaf, 10k Silver, strict driver, Silver session retention); 2026-10-17 for explicit Arm C tree-prior loading, qualified A0/A20 CTM packaging and ascension dispatch; 2026-10-01 for the issue #368 power-ID, selector, history, chest, combat-offer and forced-transition projections; 2026-09-27 for the combat final-HP panel and OOC endpoint HP; 2026-09-26 for two-offer Neow capture/import; 2026-09-25 for the native Silver evaluator; 2026-09-23 otherwise. This page describes the private integration
 boundary currently present in the repository; it is not a claim that every
 game boundary has a qualified live evaluator.
 
@@ -93,6 +93,8 @@ search uses the A20 research configuration of §504/§522: three leaf combats
 (rollout3), PUCT 1.5, widening K 4 and α 0.75, depth 32, early stop, outcome
 merging and tree rules (ADR-0031), greedy rollout shops (ADR-0032), and with
 Arm C loaded the heart1full prior (ADR-0042) and the student as leaf policy.
+At ascension 20, rollout3 leaves on the X2-B tree end in calibrated Heart probability (M0, ADR-0057; responses
+report `leafCalibration`). `STS_OOC_MCTS_LEAF_CALIBRATION=0` restores raw X2-B, which B0 and checkpoint leaves keep.
 `STS_LIVE_OOC_RESEARCH_STACK=0` restores the bare planner defaults (widening 2
 and 0.5, no leaf combats, no tree rules). Responses report `searchStack`,
 `collectKeys`, `leafCombats`, `treeRules` and the widening and depth settings.
@@ -296,7 +298,9 @@ block order and lethal damage.
 Qualified source-card selectors, standalone selectors and Toolbox capture an
 ordered typed action tail: opening draws, block/energy, literal or random enemy damage,
 Gambling Chip, Warped Tongs, bounded player powers, public all-enemy debuff
-batches, Mark of Pain's two shuffled Wounds, Hex's shuffled Dazed for a played
+batches, Champion Belt's Weak 1 on the monster a player Vulnerable hit
+(`DEBUFF_ENEMY` with `slot`, `STS_SILVER_CHAMPION_BELT_WEAK_QUEUE`; only
+without Red Mask; e.g. Bag of Marbles before Gambling Chip), Mark of Pain's two shuffled Wounds, Hex's shuffled Dazed for a played
 non-Attack (`SHUFFLE_DAZED`, amount 1, `STS_SILVER_HEX_DAZED_QUEUE`; e.g. a
 Discovery choice under Hex), Void's energy loss (`LOSE_ENERGY`, amount 1, from
 `actions.unique.LoseEnergyAction.energyLoss`; e.g. Warcry drawing Void under

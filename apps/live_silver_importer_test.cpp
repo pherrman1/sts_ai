@@ -3946,6 +3946,61 @@ int main(int argc, char **argv) {
             auto invalid=offer;invalid["silverRoot"]["combat"]["pendingActionQueue"][0]["amount"]=3;
             if(one_combat::advisor::importSilverRoot(invalid).ok)throw std::runtime_error("unqualified Wound count accepted");
         }
+        {
+            // Live problem 105 (seed 111200643): Champion Belt's Weak, from Bag
+            // of Marbles' Vulnerable, queued behind Gambling Chip's choice.
+            auto observation=genericObservation(fixtures[0],"champion-belt-weak-tail");
+            auto &combat=observation["silverRoot"]["combat"];
+            combat["relics"].push_back(json{{"id","Champion Belt"},{"counter",-1},{"usedUp",false}});
+            const auto prototype=combat["hand"][0];
+            combat["hand"]=json::array();
+            json choices=json::array();
+            for (int i=0;i<3;++i) {
+                auto card=prototype;card["id"]="Strike_R";card["uuid"]="belt-"+std::to_string(i);
+                combat["hand"].push_back(card);
+                choices.push_back(json{{"uuid",card["uuid"]},{"choiceIndex",i+1}});
+            }
+            combat["cardSelect"]=json{{"task","GAMBLE"},{"origin","HAND_SELECT"},{"pickCount",99},
+                {"canPickZero",true},{"canPickAnyNumber",true},{"selectedBits",0},{"selectedCount",0},
+                {"liveChoices",choices},{"continuation","public_actions"},{"cards",json::array()},
+                {"actionClass","com.megacrit.cardcrawl.actions.unique.GamblingChipAction"}};
+            combat["pendingActionQueue"]=json::array({json{{"kind","DEBUFF_ENEMY"},{"power","Weakened"},{"amount",1},
+                {"slot",0},{"sourceMonster",false}}});
+            const auto imported=one_combat::advisor::importSilverRoot(observation);
+            if(!imported.ok)throw std::runtime_error("Champion Belt Weak tail import: "+imported.reason);
+            if(!imported.wire.pendingActionQueueObserved || imported.wire.pendingActionQueue.size()!=1
+                    || imported.wire.pendingActionQueue[0].kind!=silver_bridge::PendingActionKind::DEBUFF_ENEMY
+                    || imported.wire.pendingActionQueue[0].monster!=0)
+                throw std::runtime_error("Champion Belt Weak tail is not [DEBUFF_ENEMY monster 0]");
+            auto native=battleContextFromWire(json(imported.wire).get<silver_bridge::BattleStateWire>());
+            const auto recaptured=wireFromSearchState(native,searchContextFromWire(imported.wire));
+            if(!recaptured.pendingActionQueueObserved || recaptured.pendingActionQueue.size()!=1
+                    || recaptured.pendingActionQueue[0].kind!=silver_bridge::PendingActionKind::DEBUFF_ENEMY)
+                throw std::runtime_error("native Champion Belt Weak tail not recaptured");
+            setenv("STS_SILVER_CHAMPION_BELT_WEAK_QUEUE","0",1);
+            const auto legacy=wireFromSearchState(native,searchContextFromWire(imported.wire));
+            unsetenv("STS_SILVER_CHAMPION_BELT_WEAK_QUEUE");
+            if(legacy.pendingActionQueueObserved)
+                throw std::runtime_error("STS_SILVER_CHAMPION_BELT_WEAK_QUEUE=0 did not restore the unobserved native tail");
+            const int weakBefore=native.monsters.arr[0].getStatus<MonsterStatus::WEAK>();
+            sts::search::Action(sts::search::ActionType::MULTI_CARD_SELECT,1).execute(native);
+            if(native.inputState!=InputState::PLAYER_NORMAL
+                    || native.monsters.arr[0].getStatus<MonsterStatus::WEAK>()!=weakBefore+1)
+                throw std::runtime_error("Champion Belt Weak tail not applied after the Gamble");
+            for(int defect=0;defect<6;++defect) {
+                auto bad=observation;auto &c=bad["silverRoot"]["combat"];auto &item=c["pendingActionQueue"][0];
+                if(defect==0)item["amount"]=2;
+                if(defect==1)item["slot"]=4;
+                if(defect==2)item["power"]="Vulnerable";
+                if(defect==3)item["sourceMonster"]=true;
+                if(defect==4)c["relics"].erase(c["relics"].size()-1);
+                if(defect==5)setenv("STS_SILVER_CHAMPION_BELT_WEAK_QUEUE","0",1);
+                const auto rejected=one_combat::advisor::importSilverRoot(bad);
+                unsetenv("STS_SILVER_CHAMPION_BELT_WEAK_QUEUE");
+                if(rejected.ok || rejected.reason!="silver_selection_pending_actions")
+                    throw std::runtime_error("unqualified Champion Belt Weak tail accepted (defect "+std::to_string(defect)+")");
+            }
+        }
         for(int subset:{0,1}) {
             auto offer=genericObservation(fixtures[0],"toolbox-typed-relic-tail");auto &combat=offer["silverRoot"]["combat"];
             const auto prototype=combat["hand"][0];combat["hand"]=json::array();json draw=json::array();

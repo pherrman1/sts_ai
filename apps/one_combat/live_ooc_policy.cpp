@@ -15,6 +15,7 @@
 #include "ooc_checkpoint_policy.h"
 #include "ooc_native_fallback.h"
 #include "heart1_policy.h"
+#include "heart_leaf.h"
 #include "run_driver.h"
 #include "sim/search/RunGoal.h"
 
@@ -202,6 +203,13 @@ bool liveOocResearchStack() {
     throw std::invalid_argument("STS_LIVE_OOC_RESEARCH_STACK must be 0 or 1");
 }
 
+bool liveOocA20LeafCalibration() {
+    const char *raw = std::getenv("STS_OOC_MCTS_LEAF_CALIBRATION");
+    if (!raw || !*raw) return true;
+    if (std::string(raw) == "0") return false;
+    throw std::invalid_argument("STS_OOC_MCTS_LEAF_CALIBRATION must be unset or 0 in the live advisor");
+}
+
 LiveOocMctsPolicy::LiveOocMctsPolicy(const OocStrategicTokNet &model,
                                      std::shared_ptr<const CombatTransitionSampler> sampler,
                                      const CompactTreeNet *oocWinModel,
@@ -209,7 +217,17 @@ LiveOocMctsPolicy::LiveOocMctsPolicy(const OocStrategicTokNet &model,
                                      std::shared_ptr<const heart1::Net> armC,
                                      std::shared_ptr<const CombatTransitionSampler> samplerA20)
     : model_(model), sampler_(std::move(sampler)), samplerA20_(std::move(samplerA20)),
-      winModel_(oocWinModel), floorModel_(oocFloorModel), armC_(std::move(armC)) {}
+      winModel_(oocWinModel), floorModel_(oocFloorModel), armC_(std::move(armC)) {
+    // ADR-0057: M0 was fit on the pinned public X2-B. B0, another win model, or one without a readable file keeps the
+    // raw anchor.
+    if (a20LeafCalibration_) {
+        try {
+            a20LeafCalibration_ = winModel_ && winModel_->ok && fileSha256Hex(winModel_->path) == kHeartLeafAnchorSha256;
+        } catch (const std::runtime_error &) {
+            a20LeafCalibration_ = false;
+        }
+    }
+}
 
 void LiveOocMctsPolicy::setRootPrimitiveBits(const std::vector<std::uint32_t> &bits) {
     rootPrimitiveBits_ = std::set<std::uint32_t>(bits.begin(), bits.end());
@@ -256,6 +274,12 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
     // Qualified public question-room history reconstructs the native chance
     // counters; successors update those counters through normal transitions.
     options.stopAtMapCheckpoint = !mapHistoryComplete_;
+    // ADR-0057: at ascension 20 the X2-B anchor at rollout3 ends becomes calibrated Heart probability (M0), as
+    // offline. Leaves that stop at the map checkpoint keep the raw anchor.
+    if (researchStack_ && a20LeafCalibration_ && !options.stopAtMapCheckpoint) {
+        options.leafCalibration = a20LeafCalibration();
+        options.leafCalibrationMinAscension = 20;
+    }
     if (hasRootPrimitiveBits_) options.rootPrimitiveBits = rootPrimitiveBits_;
     OocMctsDependencies dependencies;
     if (armC_) {
@@ -446,6 +470,8 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
             {"leafCombats", options.leafCombats}, {"treeRules", options.treeRules},
             {"wideningK", config.wideningK}, {"wideningAlpha", config.wideningAlpha}, {"maxDepth", config.maxDepth},
             {"pruneUnsupported", config.pruneUnsupported}, {"prunedActions", search.metrics.prunedActions}};
+        if (!options.leafCalibration.empty() && projected.ascension >= options.leafCalibrationMinAscension)
+            result.searchModel["leafCalibration"] = options.leafCalibration;
         if (armC_) {
             const auto &metrics = provider.continuationMetrics();
             result.searchModel.update({{"prior", options.heart1Coverage ? "arm_c_full" : "arm_c"},

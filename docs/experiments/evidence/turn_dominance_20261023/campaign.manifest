@@ -1,0 +1,11 @@
+name          turn-dominance
+code_commit   687e6dcf4f5d189d6dedc9ad106253efa7e13b3e
+binary_sha256 b62e6190b0aecad79a8d04a9992eb4fa80f962fb1d3141864d72f9e96833c009
+configure_preset linux-gcc-release-x86-64-v3
+workers       8
+share         /mnt/project-files/turn-dominance/campaign
+parallel      4
+schedule      queue
+lease_minutes 30
+claim_settle_seconds 300
+input student_sel.bin /mnt/project-files/az-gen3-explore/student_sel.bin cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7
