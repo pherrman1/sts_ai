@@ -1284,6 +1284,8 @@ int main() {
                 if (identity.value("candidateId", std::string()) != "pathb-a20"
                         || !identity.contains("bossSurvivalLogitShift"))
                     throw std::invalid_argument("live A20 CTM requires the qualified calibrated pathb-a20 stack");
+                if (!a20->fastRuntime().calibrationPath().empty())
+                    throw std::invalid_argument("live A20 CTM refuses the research STS_CTM_CALIBRATION table");
                 const std::string act4Survival = a20->fastRuntime().act4SurvivalModelPath().empty()
                     ? std::string("off") : modelIdentity(a20->fastRuntime().act4SurvivalModelPath());
                 ctmA20 = std::move(a20);
