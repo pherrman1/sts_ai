@@ -1,0 +1,2 @@
+315992240246aedeb037d3849430ee28a5ae8d4cec5903b40e708ca86c998628  apps/combat_infinity_oracle.cpp
+bad4d94b5a366f7f821dd0dac58f1f40f15d5d1b4dbdcab3e195f3900b334b6e  build/linux-gcc-release-ccache/combat_infinity_oracle

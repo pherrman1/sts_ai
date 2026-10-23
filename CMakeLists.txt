@@ -61,6 +61,9 @@ target_include_directories(combat-infinity-oracle PRIVATE include json/include)
 add_test(NAME combat_infinity_oracle COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
     $<TARGET_FILE:combat-infinity-oracle> --fixtures)
 set_tests_properties(combat_infinity_oracle PROPERTIES LABELS "core;research-repro")
+add_test(NAME combat_infinity_recall COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:combat-infinity-oracle> --recall-fixtures)
+set_tests_properties(combat_infinity_recall PROPERTIES LABELS "core;research-repro")
 
 # Default-off observer neutrality: live combat core only.
 add_executable(combat-knowledge-neutrality-test apps/combat_knowledge_neutrality_test.cpp $<TARGET_OBJECTS:sts_core_objects>)

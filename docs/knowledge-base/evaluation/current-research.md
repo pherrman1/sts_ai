@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-10-23 for synthetic infinity-oracle feasibility (§671); 2026-10-23 for the A20 CTM against real fights and its research calibration flag (§670), the stage 1–2 leaf-compare replay (§663) and the M0 leaf calibration as the A20 default (ADR-0057) and the calibrated-leaf (M0) × SR_w1 blend A/B (§661) and the OOC value head's ranking-selected recipe on two more seeds (§649); 2026-10-22 for the OOC leaf's death price (§660); 2026-10-22 for the OOC value head as a leaf ranker (§641), its common-seed recapture (§644) and the retrain on those labels (§645); 2026-10-18 for the Act-4 CTM survival model A/B (§534) and A20 default (ADR-0048); 2026-10-17 for per-category chance widening (§518); 2026-10-17 for the AlphaZero-loop open requirements (potion discard output); 2026-10-17 for A0 Ritual artifact custody, corrected producer growth, coverage pilots and the Ritual refit (§511, §512, §505–§508); 2026-10-17 for the Arm C value fine-tune (§509); 2026-10-17 for the §494 student leaf A20 A/B (§504); 2026-10-17 for the outcome head as a sibling-leaf ranker (§502); 2026-10-17 for the development value-head comparison (§501); 2026-10-17 for development weighting ablation (§500); 2026-10-17 for one-shot observed-outcome holdout and early calibration (§499); 2026-10-17 for observed Heart-outcome value-head fitting (§498); 2026-10-16 for recovered Heart-outcome corpus import and class coverage (§497); 2026-10-16 for the NOT_SHOWN Arm C rollout-policy Heart pilot (§493) and software-fault recovery of the A20 Heart rollout-distillation pilot (§§491–492); 2026-10-14 for conditional leaf target stability (§471, #507); 2026-10-13 for bounded observational leaf capture (#507); 2026-10-13 for OOC MCTS `combo` at A20 (§457) and with the Lizard-capable A20 CTM (§458); 2026-10-12 for the A20 V4 at A0 and V4 margin sweep (§448), the public X2-B as rollout3 win model (§449), deep OOC MCTS with uniform prior and leaf policy (§441), the A20 short-branch label corpus (§445), the rollout3 fresh-seed confirmation (§433) and the CTM cost in rollout3 (§439); 2026-10-11 for Lizard Tail support in the default OOC MCTS CTM (§435), the #401 tree-input audit (§438) and the rollout3 CPU profile (§436) and exact native fallback batching (§437); 2026-10-11 for the rollout3 one-setting variants (§427–§430), independent branch futures and short-branch labels at A20 (§432), OOC MCTS on the A20 gold decisions (§425), rollout3 at 512 simulations (§424) and the Lizard-capable CTM inside rollout3 (§423); 2026-10-10 for the rollout3 OOC MCTS replication (§422); 2026-10-09 for the OOC MCTS root-selection × cpuct screen (§414) and the #418 retrained CTM live A/B (§412); 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for fair native OOC decision quality (§395) and the blocked boss-relic selection-precision attempt (§398); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
+Last verified: 2026-10-23 for constructed infinity-oracle recall (§TBD; feasibility §671); 2026-10-23 for the A20 CTM against real fights and its research calibration flag (§670), the stage 1–2 leaf-compare replay (§663) and the M0 leaf calibration as the A20 default (ADR-0057) and the calibrated-leaf (M0) × SR_w1 blend A/B (§661) and the OOC value head's ranking-selected recipe on two more seeds (§649); 2026-10-22 for the OOC leaf's death price (§660); 2026-10-22 for the OOC value head as a leaf ranker (§641), its common-seed recapture (§644) and the retrain on those labels (§645); 2026-10-18 for the Act-4 CTM survival model A/B (§534) and A20 default (ADR-0048); 2026-10-17 for per-category chance widening (§518); 2026-10-17 for the AlphaZero-loop open requirements (potion discard output); 2026-10-17 for A0 Ritual artifact custody, corrected producer growth, coverage pilots and the Ritual refit (§511, §512, §505–§508); 2026-10-17 for the Arm C value fine-tune (§509); 2026-10-17 for the §494 student leaf A20 A/B (§504); 2026-10-17 for the outcome head as a sibling-leaf ranker (§502); 2026-10-17 for the development value-head comparison (§501); 2026-10-17 for development weighting ablation (§500); 2026-10-17 for one-shot observed-outcome holdout and early calibration (§499); 2026-10-17 for observed Heart-outcome value-head fitting (§498); 2026-10-16 for recovered Heart-outcome corpus import and class coverage (§497); 2026-10-16 for the NOT_SHOWN Arm C rollout-policy Heart pilot (§493) and software-fault recovery of the A20 Heart rollout-distillation pilot (§§491–492); 2026-10-14 for conditional leaf target stability (§471, #507); 2026-10-13 for bounded observational leaf capture (#507); 2026-10-13 for OOC MCTS `combo` at A20 (§457) and with the Lizard-capable A20 CTM (§458); 2026-10-12 for the A20 V4 at A0 and V4 margin sweep (§448), the public X2-B as rollout3 win model (§449), deep OOC MCTS with uniform prior and leaf policy (§441), the A20 short-branch label corpus (§445), the rollout3 fresh-seed confirmation (§433) and the CTM cost in rollout3 (§439); 2026-10-11 for Lizard Tail support in the default OOC MCTS CTM (§435), the #401 tree-input audit (§438) and the rollout3 CPU profile (§436) and exact native fallback batching (§437); 2026-10-11 for the rollout3 one-setting variants (§427–§430), independent branch futures and short-branch labels at A20 (§432), OOC MCTS on the A20 gold decisions (§425), rollout3 at 512 simulations (§424) and the Lizard-capable CTM inside rollout3 (§423); 2026-10-10 for the rollout3 OOC MCTS replication (§422); 2026-10-09 for the OOC MCTS root-selection × cpuct screen (§414) and the #418 retrained CTM live A/B (§412); 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for fair native OOC decision quality (§395) and the blocked boss-relic selection-precision attempt (§398); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
 2026-09-27 for the active-Lizard fresh native Stage-C
 qualification, valid DeepSets/Brew integration canary, Gate 2 provenance-bound
 promotion, and default-stack plumbing; 2026-09-26 for the current-main
@@ -41,22 +41,28 @@ stopping, root mechanism, internal-node FPU, the learned root prior, and the
 are history. Reopening one means porting it to native Silver first. OOC research
 contracts now bind native Silver teachers.
 
-## Same-turn infinity oracle — synthetic feasibility (§671)
+## Same-turn infinity oracle — constructed recall qualified (§671, §TBD)
 
-A standalone research utility detects bounded same-turn card cycles and certifies
-only real simulator victories. The Dropkick, near miss, stall, phase-break and
-budget fixtures pass; no production/default/model path changed. Existing archived
-wire roots reconstruct, but the eight sampled information-set roots are outside
-v0's concrete-state support. This establishes synthetic correctness, not natural
-frequency or broad recall. [Design, limits and raw evidence](../../experiments/evidence/combat_infinity_oracle_20261023/REPORT.md).
+The research-only same-turn oracle now passes the small realistic constructed
+recall gate. The merged #839 detector missed both static-exhaust Dropkick and
+an energy-positive Sundial engine. An active-zone singleton-shuffle check
+repairs the first; nondecreasing energy with real simulator replay repairs the
+second. Positives use 7–11 nodes, reach depth 4 and 2–6-action witnesses under
+the original depth-24/2,000-node bounds. Matched near misses and Time Eater,
+Awakened One and actual A20 Heart mechanics produce no false certifications.
+[Full ablation, constructions, raw evidence and limits](../../experiments/evidence/combat_infinity_recall_20261023/REPORT.md).
 
-Independent review's two corrections are applied: damaging recurrences are
-PRODUCTIVE_CYCLE_CANDIDATE (not known infinites), and the oracle fails closed
-outside Ironclad/red-color-domain roots with proven no-Shard provenance.
-Qualify realistic recall and public-state handling before any natural-root
-annotation; the current shuffle quotient also excludes exhausted-down decks.
-No infinity reward, model head, AZ annotation or OOC integration follows from
-this result.
+This is constructed near-infinity qualification, not natural prevalence,
+population recall or public-root annotation quality. Exact exhaust mutations,
+player HP/block/powers and encounter counters remain protected. The domain
+still requires audited Ironclad/card roots with proven no-Shard provenance;
+PRODUCTIVE_CYCLE_CANDIDATE remains a damaging recurrence pending certification.
+
+The next eligible research step is a separately requested small public-root
+pilot using the existing fair public-conditioned determinization (small K),
+never the real run's hidden draw order. It is not implemented here. Concrete
+piles remain mandatory. No production caller, infinity reward, model head,
+AZ annotation/training or OOC/default change follows from this result.
 
 ## AlphaZero-style OOC loop: open requirements
 

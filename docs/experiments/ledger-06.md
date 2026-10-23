@@ -24012,6 +24012,41 @@ campaigns, backup copies of stragglers on idle workers once the queue is empty.
 - Seeds 111360000–111360255 used; smokes 111369991–111369993 used (111369990–111369999 assigned).
 - **Knowledge impact:** `evaluation/current-research.md`.
 
+## §TBD Combat infinity phase 2 — realistic constructed recall (2026-10-23)
+
+Baseline: merged #839 `45eb23a7ed88869f3ea54d22d70f37e3cf93b22e`, with both
+required review corrections. Concrete full-state/RNG deterministic fixture
+regime, inherited RNG initializers 1..6, no new run-seed cohort, models, Silver,
+AZ or OOC use. Release GCC 13.3.0, ccache preset, one process-CPU observation per
+fixture/arm. Fresh app-managed worktree, focused research executable only.
+
+Fixed budgets: depth 24, nodes 2,000, candidates 16, replay periods 128,
+actions per candidate 1,024, total replay actions 4,096. Sequential ablation:
+merged detector + new harness → active-zone singleton-shuffle check with exact
+exhaust → nondecreasing energy and unchanged simulator replay. Exhaust-only
+repairs realistic Dropkick (NONE → CERTIFIED_KILL, 7 nodes) while energy positives
+still miss. Energy intervention repairs the zero-cost Dropkick/Sundial engine
+(NONE → CERTIFIED_KILL, 11 nodes, six-play period HP −42 / energy +7).
+
+Constructed-fixture decision rule PASS: final ten roots yield four certified
+kills, one phase-rejected candidate, five NONE. Seven-card static exhaust is
+exact; payload/ID/size mutation checks pass. Cost-negative matched engine loses
+2 energy per six-play period and runs out after 12 plays with 116 enemy HP;
+forced replay rejects energy_decreased. Time Eater forces the turn, Awakened One
+rejects targeting, and actual A20 Heart Invincible/Beat of Death prevents lethal
+(40-play trace: player death, enemy HP 600). Positives use reach 4, witnesses 2–6,
+7–11 nodes, 25 replay actions and <0.25 ms in this Release sample; ten-fixture max
+0.623 ms. Both focused CTests pass, and thirteen legacy verdicts are preserved.
+
+Two development repairs (pile-reset fixture cost, fixed-array stasis check) are
+retained in raw evidence and excluded from the three experimental arms.
+[Preregistration, exact constructions, full before/after matrix, raw outputs,
+source/binary hashes and limitations](evidence/combat_infinity_recall_20261023/REPORT.md).
+Knowledge impact: maintained oracle contract and research status updated.
+This supports only a separately requested public-root pilot; natural recall,
+information-set sampling/annotation, whole-combat discovery, model integration
+and gameplay/default promotion remain unimplemented and unqualified.
+
 ## §671 Same-turn infinity oracle — bounded synthetic feasibility (2026-10-23)
 
 Hypothesis: exact recurring combat control state plus simulator witness replay

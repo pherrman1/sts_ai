@@ -1,0 +1,32 @@
+[
+  {
+    "patch": "baseline-harness.patch.gz",
+    "uncompressed_patch_sha256": "adb0962efc242db6c77375418b22e75d8d45ab740d60aebaab87874f32c76960",
+    "reconstructed_source_sha256": "b90a35b46f7830f384b8c2f89129d1a267bc5a911be1916391b573b2deba4ebd",
+    "verification": "PASS"
+  },
+  {
+    "patch": "development-stasis-treatment.patch.gz",
+    "uncompressed_patch_sha256": "db135f33f4c916c0f0c9612cd9cb8019dbd4a4481b75e75e880bea7cf4ca8d66",
+    "reconstructed_source_sha256": "310a6fac4a03618481413430525d2b4a90742e6bb7d9c1c55041e5b579db88c0",
+    "verification": "PASS"
+  },
+  {
+    "patch": "development-turn-cost-harness.patch.gz",
+    "uncompressed_patch_sha256": "bc94c8b80f33d22736e6e37c3a71a2904ef20378bef47f117b7f42dc1e5640f4",
+    "reconstructed_source_sha256": "a24a9ffbdfe75e86dfd1e2515996873a483c03113f30ca0a5982366c8d8f9da2",
+    "verification": "PASS"
+  },
+  {
+    "patch": "energy-treatment.patch.gz",
+    "uncompressed_patch_sha256": "2a2fa465c0bd685224364ea30be134fa0ccd7640c4d7c7ba76567b8563eebb58",
+    "reconstructed_source_sha256": "315992240246aedeb037d3849430ee28a5ae8d4cec5903b40e708ca86c998628",
+    "verification": "PASS"
+  },
+  {
+    "patch": "exhaust-treatment.patch.gz",
+    "uncompressed_patch_sha256": "fabc09b3b84f61aecca1bf1398638fb1221acd71a01c0065ab39a8f246b3cfe9",
+    "reconstructed_source_sha256": "1b5ca3d405297bc600aa7bddd45a58e45a19bfc9ff55f3dd739b7924a05ae98c",
+    "verification": "PASS"
+  }
+]

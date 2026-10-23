@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-10-23 for the standalone same-turn infinity oracle; 2026-10-18 for the A20 learned-stop default and stop model (ADR-0051); 2026-10-18 for the learned-stopping A20 result with the gen-7f table (§538); 2026-10-18 for §523 random playouts per leaf; 2026-10-17 for the live advisor rollout root table (ADR-0046); 2026-10-17 for the per-playout action cap (#544) and its `STS_SILVER_ROLLOUT_ACTION_CAP` switch; 2026-10-17 for the zero-cost rollout cap and depth-backstop rollout (#544); 2026-10-17 for the root-prior override used by the OOC Silver fallback and the burning-elite escape rule; 2026-10-15 for the default rollout card table (ADR-0040) and the §479 rollout research options; 2026-10-14 for default canonical multi-select masks (ADR-0034) and the §473 escape-penalty gate and defaults (ADR-0036, ADR-0037); 2026-10-08 for targeted public capture and the bounded public pair probe;
+Last verified: 2026-10-23 for realistic infinity-oracle recall qualification; 2026-10-23 for the standalone same-turn infinity oracle; 2026-10-18 for the A20 learned-stop default and stop model (ADR-0051); 2026-10-18 for the learned-stopping A20 result with the gen-7f table (§538); 2026-10-18 for §523 random playouts per leaf; 2026-10-17 for the live advisor rollout root table (ADR-0046); 2026-10-17 for the per-playout action cap (#544) and its `STS_SILVER_ROLLOUT_ACTION_CAP` switch; 2026-10-17 for the zero-cost rollout cap and depth-backstop rollout (#544); 2026-10-17 for the root-prior override used by the OOC Silver fallback and the burning-elite escape rule; 2026-10-15 for the default rollout card table (ADR-0040) and the §479 rollout research options; 2026-10-14 for default canonical multi-select masks (ADR-0034) and the §473 escape-penalty gate and defaults (ADR-0036, ADR-0037); 2026-10-08 for targeted public capture and the bounded public pair probe;
 2026-09-25 for native-only Silver (ADR-0022), the native default
 (ADR-0021) and Silver-only dispatch (ADR-0020).
 
@@ -776,14 +776,14 @@ terminal reachability alone establishes no search-quality or budget claim.
 
 ## Same-turn infinity oracle (research only)
 
-`combat_infinity_oracle --fixtures` or `--roots ROOTS.jsonl` runs a standalone
+`combat_infinity_oracle --fixtures`, `--recall-fixtures` or `--roots ROOTS.jsonl` runs a standalone
 bounded card-action DFS. It is not linked into gameplay. It reuses the native
 state hash plus exact comparison of normalized copies, existing semantic action
 fingerprints, and real simulator replay. A repeated control state can be
 STALL_LOOP or PRODUCTIVE_CYCLE_CANDIDATE; only actual same-turn victory during legal
 witness replay is CERTIFIED_KILL. It never scores, prunes or annotates AZ rows.
 
-The v0 support boundary is concrete, quiet PLAYER_NORMAL Ironclad roots with
+The support boundary is concrete, quiet PLAYER_NORMAL Ironclad roots with
 red/colorless/curse cards and explicit no-Prismatic-Shard provenance. Shard is
 not represented by the combat Player's two relic bitsets, so the standalone
 root input must carry `oracle_no_prismatic_shard: true` from retained run relic
@@ -803,5 +803,20 @@ across candidates. Existing wire roots can be imported without new capture
 infrastructure, but information-set piles are rejected. `NONE` means no witness
 within the support/budget, not proof that a combat lacks an infinite. See the
 same evidence for raw fixtures, timing and the archived-root support check.
-Realistic recall/public-state handling must be qualified before natural-root
-annotation; this v0 cannot yet supply that evidence.
+The [phase-2 constructed recall qualification](../../experiments/evidence/combat_infinity_recall_20261023/REPORT.md)
+adds two narrow changes: the singleton-shuffle quotient counts the two audited
+Dropkick/Flash of Steel cards in hand/draw/discard, permitting exact static
+exhaust while rejecting occupied stasis; energy is omitted only from comparison
+copies, with nondecreasing actual energy required at discovery and each complete
+replay period. Exhaust payload/identity/size, player HP/block/powers and all other
+control coordinates retain exact equality. Actual energy is untouched during
+simulator replay. No card/relic/power whitelist was broadened.
+
+Exhausted-down Dropkick and a zero-cost Dropkick/Sundial engine certify in 7–11
+nodes; matched negatives and Time Eater/Awakened One/Heart guards do not falsely
+certify. The Heart changes exact HP/Invincible fields and has no discovered
+candidate; a forced-witness replay also rejects. These are constructed roots,
+not natural or public-root recall evidence. Information-set piles remain
+unsupported, and a public-conditioned determinization/annotation pilot requires
+a separate experiment. Accumulating-block engines remain outside this
+energy-only qualification.
