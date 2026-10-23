@@ -159,14 +159,16 @@ enum class PendingActionKind : std::uint8_t {
     // A half-dead Darkling's queued SetMoveAction (amount = native move id).
     MONSTER_SET_MOVE = 19,
     // Hex's Dazed for a played non-Attack: MakeTempCardInDrawPile(Dazed, amount, random spot).
-    SHUFFLE_DAZED = 20
+    SHUFFLE_DAZED = 20,
+    // Champion Belt's Weak 1 on one monster: DebuffEnemy<WEAK>(monster, 1, player source).
+    DEBUFF_ENEMY = 21
 };
 struct PendingActionWire {
     PendingActionKind kind = PendingActionKind::INVALID;
     int amount = 0;
     int status = 0;
     bool sourceMonster = false;
-    // Native monster index; nonzero only for MONSTER_GAIN_BLOCK and MONSTER_SET_MOVE.
+    // Native monster index; nonzero only for MONSTER_GAIN_BLOCK, MONSTER_SET_MOVE and DEBUFF_ENEMY.
     int monster = 0;
 };
 

@@ -245,6 +245,9 @@ public final class CombatBoundaryTest {
                 || STSModelInspector.publicPendingActionJson("SHUFFLE_WOUNDS",3,null)!=null
                 || STSModelInspector.publicPendingActionJson("SHUFFLE_DAZED",1,null)==null
                 || STSModelInspector.publicPendingActionJson("SHUFFLE_DAZED",2,null)!=null
+                || !"{\"kind\":\"DEBUFF_ENEMY\",\"power\":\"Weakened\",\"amount\":1,\"slot\":2,\"sourceMonster\":false}"
+                        .equals(STSModelInspector.championBeltWeakItemJson(2))
+                || STSModelInspector.championBeltWeakItemJson(5)!=null
                 || STSModelInspector.publicPendingActionJson("LOSE_ENERGY",1,null)==null
                 || STSModelInspector.publicPendingActionJson("LOSE_ENERGY",2,null)!=null
                 || STSModelInspector.publicPendingActionJson("DRAW",11,null)!=null

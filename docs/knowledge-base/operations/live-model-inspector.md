@@ -298,7 +298,9 @@ block order and lethal damage.
 Qualified source-card selectors, standalone selectors and Toolbox capture an
 ordered typed action tail: opening draws, block/energy, literal or random enemy damage,
 Gambling Chip, Warped Tongs, bounded player powers, public all-enemy debuff
-batches, Mark of Pain's two shuffled Wounds, Hex's shuffled Dazed for a played
+batches, Champion Belt's Weak 1 on the monster a player Vulnerable hit
+(`DEBUFF_ENEMY` with `slot`, `STS_SILVER_CHAMPION_BELT_WEAK_QUEUE`; only
+without Red Mask; e.g. Bag of Marbles before Gambling Chip), Mark of Pain's two shuffled Wounds, Hex's shuffled Dazed for a played
 non-Attack (`SHUFFLE_DAZED`, amount 1, `STS_SILVER_HEX_DAZED_QUEUE`; e.g. a
 Discovery choice under Hex), Void's energy loss (`LOSE_ENERGY`, amount 1, from
 `actions.unique.LoseEnergyAction.energyLoss`; e.g. Warcry drawing Void under

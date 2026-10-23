@@ -538,6 +538,17 @@ bool slimeSplitQueue() {
     throw std::runtime_error("STS_SILVER_SLIME_SPLIT_QUEUE must be 0 or 1");
 }
 
+// STS_SILVER_CHAMPION_BELT_WEAK_QUEUE: unset/1 (default) = a pending tail
+// holding Champion Belt's queued Weak 1 on one monster (a player Vulnerable
+// landed, e.g. Bag of Marbles before Gambling Chip's choice) imports it as a
+// native DebuffEnemy<WEAK>; 0 = legacy refusal (silver_selection_pending_actions).
+bool championBeltWeakQueue() {
+    const char *value = std::getenv("STS_SILVER_CHAMPION_BELT_WEAK_QUEUE");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_SILVER_CHAMPION_BELT_WEAK_QUEUE must be 0 or 1");
+}
+
 // STS_SILVER_HEX_DAZED_QUEUE: unset/1 (default) = a pending tail holding
 // Hex's queued Dazed (HexPower.onUseCard for a non-Attack, e.g. Discovery's
 // choice under Hex) imports it as a native MakeTempCardInDrawPile(Dazed);
@@ -2577,6 +2588,25 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                 if(amount<0 || amount>999) return unsupported("silver_selection_pending_actions");
                 silver_bridge::PendingActionWire action;action.kind=K::MONSTER_GAIN_BLOCK;
                 action.amount=amount;action.monster=slot;
+                wire.pendingActionQueue.push_back(action);
+                continue;
+            }
+            if(kindName=="DEBUFF_ENEMY") {
+                // ChampionsBelt.onTrigger: Weak 1 on the monster a player
+                // Vulnerable hit (problem 105); native queues the same debuff.
+                int slot=-1,amount=0;bool sourceMonster=true;
+                constexpr int belt=static_cast<int>(sts::RelicId::CHAMPION_BELT);
+                static_assert(belt<64);
+                if(!championBeltWeakQueue() || !((wire.player.relicBits0>>belt)&1ULL)
+                        || !requiredInt(entry,"slot",slot) || !requiredInt(entry,"amount",amount)
+                        || !requiredBool(entry,"sourceMonster",sourceMonster) || sourceMonster || amount!=1
+                        || entry.value("power",std::string())!="Weakened" || slot<0 || slot>=wire.monsterCount)
+                    return unsupported("silver_selection_pending_actions");
+                const auto &monster=wire.monsters[slot];
+                if(monster.idx!=slot || monster.curHp<=0 || monster.halfDead || monster.isEscapingB)
+                    return unsupported("silver_selection_pending_actions");
+                silver_bridge::PendingActionWire action;action.kind=K::DEBUFF_ENEMY;action.amount=1;
+                action.status=static_cast<int>(sts::MonsterStatus::WEAK);action.monster=slot;
                 wire.pendingActionQueue.push_back(action);
                 continue;
             }

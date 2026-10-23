@@ -24,13 +24,14 @@ namespace sts::search {
         sts::Action pendingActionFromWire(const silver_bridge::PendingActionWire &in) {
             using K = silver_bridge::PendingActionKind;
             if (in.amount < 0 || in.amount > 999
-                    || ((in.kind != K::BUFF_PLAYER && in.kind != K::DEBUFF_PLAYER && in.kind != K::DEBUFF_ALL_ENEMY)
+                    || ((in.kind != K::BUFF_PLAYER && in.kind != K::DEBUFF_PLAYER && in.kind != K::DEBUFF_ALL_ENEMY
+                            && in.kind != K::DEBUFF_ENEMY)
                         && (in.status != 0 || in.sourceMonster))
                     || (in.kind == K::BUFF_PLAYER && in.sourceMonster)
                     || ((in.kind == K::GAMBLE || in.kind == K::UPGRADE_RANDOM || in.kind == K::USE_CARD
                         || in.kind == K::REMOVE_PEN_NIB || in.kind == K::REMOVE_PLAYER_DEBUFFS
                         || in.kind == K::REACTIVE_ROLL_MOVE) && in.amount != 0)
-                    || (in.kind == K::MONSTER_GAIN_BLOCK || in.kind == K::MONSTER_SET_MOVE
+                    || (in.kind == K::MONSTER_GAIN_BLOCK || in.kind == K::MONSTER_SET_MOVE || in.kind == K::DEBUFF_ENEMY
                         ? in.monster < 0 || in.monster > 4 : in.monster != 0))
                 throw std::invalid_argument("invalid Silver pending action fields");
             switch (in.kind) {
@@ -92,6 +93,11 @@ namespace sts::search {
                 case K::SHUFFLE_DAZED:
                     if (in.amount != 1) throw std::invalid_argument("unsupported Silver pending Dazed generation");
                     return Actions::MakeTempCardInDrawPile(CardInstance(CardId::DAZED),1,true);
+                // Champion Belt's queued Weak on the monster a player Vulnerable hit.
+                case K::DEBUFF_ENEMY:
+                    if (in.status != static_cast<int>(MonsterStatus::WEAK) || in.amount != 1 || in.sourceMonster)
+                        throw std::invalid_argument("unsupported Silver pending single-enemy debuff");
+                    return Actions::DebuffEnemy<MonsterStatus::WEAK>(in.monster, 1, false);
                 default: throw std::invalid_argument("unsupported Silver pending action kind");
             }
         }
@@ -379,6 +385,18 @@ namespace sts::search {
         throw std::runtime_error("STS_SILVER_HEX_DAZED_QUEUE must be 0 or 1");
     }
 
+    // STS_SILVER_CHAMPION_BELT_WEAK_QUEUE: unset/1 (default) = a selection's
+    // queued player Weak 1 on one monster (Champion Belt, e.g. behind Gambling
+    // Chip's choice) is captured as an exact pending tail item. 0 = legacy: such
+    // a tail stays unobserved and conversion falls back to card replay. Other
+    // values are fatal.
+    static bool silverChampionBeltWeakQueue() {
+        const char *value = std::getenv("STS_SILVER_CHAMPION_BELT_WEAK_QUEUE");
+        if (!value || !*value || std::string(value) == "1") return true;
+        if (std::string(value) == "0") return false;
+        throw std::runtime_error("STS_SILVER_CHAMPION_BELT_WEAK_QUEUE must be 0 or 1");
+    }
+
     void capturePendingActionQueue(const BattleContext &state, BattleStateWire &wire) {
         using K = silver_bridge::PendingActionKind;
         wire.pendingActionQueueObserved = false;
@@ -423,6 +441,11 @@ namespace sts::search {
                 case CombatActionType::DebuffAllEnemy:
                     item.kind=K::DEBUFF_ALL_ENEMY; item.status=static_cast<int>(action.v_DebuffAllEnemy.s);
                     item.amount=action.v_DebuffAllEnemy.amount; item.sourceMonster=action.v_DebuffAllEnemy.isSourceMonster; break;
+                case CombatActionType::DebuffEnemy:
+                    if(!silverChampionBeltWeakQueue())return;
+                    item.kind=K::DEBUFF_ENEMY; item.status=static_cast<int>(action.v_DebuffEnemy.s);
+                    item.monster=action.v_DebuffEnemy.idx; item.amount=action.v_DebuffEnemy.amount;
+                    item.sourceMonster=action.v_DebuffEnemy.isSourceMonster; break;
                 case CombatActionType::MakeTempCardInDrawPile:
                     if(action.v_MakeTempCardInDrawPile.c.id==CardId::DAZED) {
                         if(!silverHexDazedQueue())return;
