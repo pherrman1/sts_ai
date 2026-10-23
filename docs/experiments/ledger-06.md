@@ -23558,7 +23558,7 @@ advance? Philipp typed "merge 816 and go seeds" (2026-10-22 20:52Z).
 - No game seeds were used.
 - **Knowledge impact:** `evaluation/current-research.md`.
 
-## §TBD-endgame — Exact solves of the last turns of A20 elite and boss fights: Silver is near-optimal where they finish, and lost fights are decided before the last turn (descriptive, 2026-10-22)
+## §654 — Exact solves of the last turns of A20 elite and boss fights: Silver is near-optimal where they finish, and lost fights are decided before the last turn (descriptive, 2026-10-22)
 
 **Question (Philipp, 2026-10-22 11:08Z):** are exact solves of the last one or two turns of A20 elite and boss
 fights feasible, and what do they show about Silver racing instead of blocking? Research only: no gate, no play
@@ -23597,7 +23597,7 @@ there are 68 runs.
 section 9, data `/mnt/project-files/exact-combat-research/endgame/`. Seeds used 111149700–767.
 **Knowledge impact:** none; descriptive, no option or default.
 
-## §TBD-leaf — Learned leaf heads for native Silver on exact A20 first fights: a head fit to Silver's own end scores stalls alone, PASSES with a 1-point turn penalty (also on production-combat labels) and needs a win-now cap in long fights (2026-10-22/23)
+## §655 — Learned leaf heads for native Silver on exact A20 first fights: a head fit to Silver's own end scores stalls alone, PASSES with a 1-point turn penalty (also on production-combat labels) and needs a win-now cap in long fights (2026-10-22/23)
 
 **Question (Philipp, 2026-10-22 15:25Z):** what should Silver's leaf evaluation be; can a learned value of the
 fight's end score replace half of the greedy playout's value?
@@ -23630,7 +23630,7 @@ changes the value of undecided leaves inside Silver's search. On 300 fresh fight
   root lies past turn 44, and very high block raises its value). A cap at the win-now value
   (`SilverSearcher::winNowValue`, the score if the fight ended at the leaf) ends the stalls and keeps about 60% of
   the first-fight gain (−0.149 / −0.174); it binds at 58–61% of the leaf evaluations. This capped `a20` became the
-  fight-level candidate (§TBD-leafab).
+  fight-level candidate (§656).
 - A shortfall head (`a20sf`, how far below win-now the fight ends) fits better offline (RMSE 19.2 against 25.0) but
   gains less than the capped head (+0.081 ± 0.048 / +0.079 ± 0.032 against it): NEGATIVE by its pre-registered rule.
 - Exploratory, no net: 0.5 × win-now + 0.5 × playout beats the capped head on the fresh fights (−0.084 ± 0.058 /
@@ -23643,7 +23643,7 @@ fights, the same values as the solver's modes), the `ctmsilvergen` armset `leafh
 `exact_combat_solver --leaf-oracles` (`head`, `hblend`, `/P`, `+cap`, `+capM`), `STS_AZGEN_PRODUCTION_OOC` and
 `STS_AZGEN_PRODUCTION_COMBAT`.
 **Interpretation:** on starter-deck first fights a learned leaf with a turn penalty is as good as a perfect leaf.
-Whether that carries to long fights is the question §TBD-leafab tests.
+Whether that carries to long fights is the question §656 tests.
 Evidence: [A20 data](evidence/silver_leaf_a20_data_20261022/RESULT.md),
 [turn penalty](evidence/leaf_head_turn_penalty_20261022/RESULT.md),
 [production-combat rerun and Part B](evidence/silver_leaf_a20_prod_20261022/RESULT.md),
@@ -23653,9 +23653,9 @@ Evidence: [A20 data](evidence/silver_leaf_a20_data_20261022/RESULT.md),
 111339990–999; exact replays of 111149600–699 and 111333000–099.
 **Knowledge impact:** `operations/environment-variables.md`, `research/combat-search/leaf-evaluation.md`.
 
-## §TBD-leafab — Capped leaf head vs production Silver at A20 fight level: NOT_SHOWN, step-3 gate FAIL (score −1.31 [−2.78, +0.14] per fight against CPU-matched production; better in normal fights, worse in elites and Acts 3–4) (2026-10-23)
+## §656 — Capped leaf head vs production Silver at A20 fight level: NOT_SHOWN, step-3 gate FAIL (score −1.31 [−2.78, +0.14] per fight against CPU-matched production; better in normal fights, worse in elites and Acts 3–4) (2026-10-23)
 
-**Question:** does the capped head of §TBD-leaf (`hblend:a20:0.5/1+cap`) improve real A20 fights? Step 3 of the leaf
+**Question:** does the capped head of §655 (`hblend:a20:0.5/1+cap`) improve real A20 fights? Step 3 of the leaf
 plan; its gate decides only whether a whole-run A/B is proposed.
 **Design:** [PREREG](evidence/silver_leaf_head_ab_20261022/PREREG.md), pre-launch review PASS (2026-10-23 03:04Z).
 `ctmsilvergen` armset `leafhead`, the §638 harness: 256 student C sources 111350000–255, every 3rd hallway fight
@@ -23685,7 +23685,7 @@ pre-registered.
   production's decisions; none is a stall like the uncapped head's.
 **Interpretation:** the head helps where the first-fight test measured it (normal fights) and loses in the long
 fights that decide runs (elites, Acts 3–4). This is §638's pattern again, and the win-now blend's smoke
-(§TBD-leaf) showed it too: three changes that cut exact first-fight regret did not carry to long fights.
+(§655) showed it too: three changes that cut exact first-fight regret did not carry to long fights.
 **Inference:** the cap binds at about 60% of first-fight leaves, so much of the head's value is win-now, which
 ignores the damage still to come; not tested.
 **Decision:** no whole-run A/B. Philipp chose to record the line and pause it (2026-10-23 12:20Z);
@@ -23693,5 +23693,5 @@ ignores the damage still to come; not tested.
 3–4) before a fight-level A/B. Production gains nothing measurable from 12k or 15k simulations over 10k here.
 [Result](evidence/silver_leaf_head_ab_20261022/RESULT.md); unit tars
 `/mnt/project-files/silver-leaf-head-ab/campaign/units/` (`tars.sha256`). Seeds used 111350000–255 (smokes
-111339997–999, counted in §TBD-leaf).
+111339997–999, counted in §655).
 **Knowledge impact:** `research/combat-search/leaf-evaluation.md`, `operations/environment-variables.md`.
