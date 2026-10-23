@@ -22396,6 +22396,15 @@ Seeds: none new (live seeds 111200473 and 111200504).
 **Interpretation:** Live play-changing for every run with Necronomicon: Silver now plans the free attack copy when it is available.
 
 **Status:** Draft PR; javap confirmation and PC `test.sh` requested from the canary.
+## §651 — Live problem 100: Mummified Hand picked Skills when Corruption was played (2026-10-23)
+
+**Question:** Why did seed 111200621 (Mummified Hand, Snecko Eye) zero a different card than the game on 14 Corruption plays, and once draw cardRandomRng where the game did not?
+
+**Evidence:** Canary extract `engine-parity/overnight-20261019/issue100/` (rows, javap, game log). In all 13 rows with a pick the game zeroed an Attack or Power; at step 835 the only candidate was a Skill (Second Wind) and the game did not roll (cardRandomRng 30 -> 30; log "NO VALID CARDS"). The bytecode explains it: `Corruption.use` builds `ApplyPowerAction`, whose constructor calls `modifyCostForCombat(-9)` on every Skill in hand, draw, discard and exhaust pile when the power is Corruption; `AbstractPlayer.useCard` then constructs `UseCardAction`, whose relic hooks run Mummified Hand's roll over cards with cost > 0 and costForTurn > 0. The engine changed the Skill costs only when the queued `BuffPlayer<CORRUPTION>` resolved, so its pool still held the Skills.
+
+**Change:** `STS_CORRUPTION_IMMEDIATE_COST_FIX` (default on, `=0` restores): Corruption's use applies the Skill cost change at once (`CardManager::onBuffCorruption`), before the relic hooks. Test in `ironclad_card_java_parity`: with Mummified Hand, Corruption among three Skills and a Strike always zeroes the Strike over 10 RNG states (legacy: sometimes a Skill), each with one roll; with only a Skill left there is no roll (legacy: one).
+
+**Interpretation:** Play-changing and cardRandomRng-changing for runs with Mummified Hand and Corruption: the free card now always lands on an Attack or Power.
 ## §650 — Live problem 99: monster moveHistory mismatches; a slime split triggered during its own turn was rolled over (2026-10-23)
 
 **Question:** What are the 20 background moveHistory mismatch rows in canary seeds 111200535-618, and do any of them change play?

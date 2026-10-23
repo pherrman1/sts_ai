@@ -242,6 +242,11 @@ namespace sts {
         thread_local CachedFixFlag cache;
         return cachedFixFlag(cache, "STS_IMPATIENCE_FIX");
     }
+
+    bool corruptionImmediateCostFix() {
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_CORRUPTION_IMMEDIATE_COST_FIX");
+    }
 }
 
 
@@ -1905,6 +1910,11 @@ void BattleContext::usePowerCard() {
             break;
 
         case CardId::CORRUPTION:
+            // Java's ApplyPowerAction constructor already sets every Skill to
+            // cost 0 (modifyCostForCombat(-9)), before UseCardAction's relic
+            // hooks (Mummified Hand) run. Corruption.use builds no action when
+            // the power is already held.
+            if (!player.hasStatus<PS::CORRUPTION>() && corruptionImmediateCostFix()) cards.onBuffCorruption();
             addToBot( Actions::BuffPlayer<PS::CORRUPTION>() );
             break;
 
