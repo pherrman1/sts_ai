@@ -22,7 +22,7 @@ workers if you want to, just do it, i allow it." The coordinator launches the wo
    A/Bs (§504, §522, §615), and what does it predict for the stage-3 arms?
 
 ## Background
-- **Stage 0** (§TBD-a in PR #817): X2-B over-prices a death 3.3× (act 1) to 7.7× (act 3) relative to the calibrated
+- **Stage 0** (§660 in PR #817): X2-B over-prices a death 3.3× (act 1) to 7.7× (act 3) relative to the calibrated
   Heart value; rollouts die more often than the real runs over the same horizon (real / rollout 0.59–0.85).
 - **Pilot** (seed 111349994, 7 arms, n 16; see "Pilot and smoke" below): about 40 ms of CPU per full-game referee
   rollout; R_full looked far below real play (one Heart kill in the first 32 rollouts from floor 0). That is why

@@ -23736,7 +23736,7 @@ ignores the damage still to come; not tested.
 111339997–999, counted in §655).
 **Knowledge impact:** `research/combat-search/leaf-evaluation.md`, `operations/environment-variables.md`.
 
-## §TBD-a — Value-head plan, stage 0: relative to its calibrated Heart value, the X2-B leaf over-prices a death 3.3× (act 1) to 7.7× (act 3); a per-act calibrated leaf (M0) would change 7.0% of root picks, three quarters toward the riskier sibling (offline, 2026-10-22)
+## §660 — Value-head plan, stage 0: relative to its calibrated Heart value, the X2-B leaf over-prices a death 3.3× (act 1) to 7.7× (act 3); a per-act calibrated leaf (M0) would change 7.0% of root picks, three quarters toward the riskier sibling (offline, 2026-10-22)
 
 **Question:** A rollout3 leaf scores a death 0, a Heart kill 1 and a surviving end X2-B, whose level is far above the
 Heart rate. How much does that over-price a death, and would a calibrated leaf change the search's picks? Stage 0 of
@@ -23780,7 +23780,7 @@ of M0 × the SR_w1 blend is pre-registered in [value_level_ab_20261023](evidence
 - No game seeds were used.
 - **Knowledge impact:** `evaluation/current-research.md`, `operations/environment-variables.md`.
 
-## §TBD-b — Value-level 2×2 A/B at A20: the calibrated leaf (M0) kills the Heart more often (+2.15 pp [+0.10, +4.25], IMPROVED); the SR_w1 blend does not (−0.6 pp, NOT_SHOWN) (1,024 seeds, 2026-10-23)
+## §661 — Value-level 2×2 A/B at A20: the calibrated leaf (M0) kills the Heart more often (+2.15 pp [+0.10, +4.25], IMPROVED); the SR_w1 blend does not (−0.6 pp, NOT_SHOWN) (1,024 seeds, 2026-10-23)
 
 **Question:** Does ending every rollout3 leaf in calibrated Heart-kill probability (M0, fit in stage 0 above) instead
 of raw X2-B kill the Heart more often at A20? Secondary: does the SR_w1 value-head blend at w 0.1, and do the two add
