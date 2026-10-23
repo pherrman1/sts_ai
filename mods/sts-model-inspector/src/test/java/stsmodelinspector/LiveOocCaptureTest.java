@@ -5,6 +5,11 @@ import java.util.Map;
 
 /** Pure projection tests: no game, rendering context, RNG, or save is initialized. */
 public final class LiveOocCaptureTest {
+    private static final class FakeNeowReward {
+        private final Object type;
+        private final boolean activated;
+        FakeNeowReward(Object type, boolean activated) { this.type = type; this.activated = activated; }
+    }
     private static Map<String,Object> obj(Object... values) {
         Map<String,Object> out = new HashMap<>();
         for (int i = 0; i < values.length; i += 2) out.put((String)values[i], values[i + 1]);
@@ -315,7 +320,8 @@ public final class LiveOocCaptureTest {
         }
         String[][] ownerSelectors = {{"BackToBasics", "remove", ""}, {"Astrolabe", "transform_upgrade", ""},
                 {"DollysMirror", "duplicate", ""}, {"Bottled Flame", "bottle", "attack"},
-                {"Bottled Lightning", "bottle", "skill"}, {"Bottled Tornado", "bottle", "power"}};
+                {"Bottled Lightning", "bottle", "skill"}, {"Bottled Tornado", "bottle", "power"},
+                {"NeowRemoveTwo", "remove", ""}};
         for (String[] row : ownerSelectors) {
             Map<String,Object> type = LiveOocCapture.selectorType(false, false, false,
                     java.util.Arrays.asList(row[0]), false, false);
@@ -325,6 +331,19 @@ public final class LiveOocCaptureTest {
                     java.util.Arrays.asList(row[0]), false, false).get("type")))
                 throw new AssertionError("contradictory owned selector accepted");
         }
+        // Live problem 103: only the activated REMOVE_TWO Neow reward owns the
+        // unflagged two-card grid.
+        LiveOocCapture.neowRemoveTwoFix = true;
+        if (!LiveOocCapture.neowRemoveTwoActive(java.util.Arrays.asList(
+                    new FakeNeowReward("THREE_CARDS", false), new FakeNeowReward("REMOVE_TWO", true)))
+                || LiveOocCapture.neowRemoveTwoActive(java.util.Arrays.asList(new FakeNeowReward("REMOVE_TWO", false)))
+                || LiveOocCapture.neowRemoveTwoActive(java.util.Arrays.asList(new FakeNeowReward("TRANSFORM_TWO_CARDS", true)))
+                || LiveOocCapture.neowRemoveTwoActive(null))
+            throw new AssertionError("Neow REMOVE_TWO selector owner");
+        LiveOocCapture.neowRemoveTwoFix = false;
+        if (LiveOocCapture.neowRemoveTwoActive(java.util.Arrays.asList(new FakeNeowReward("REMOVE_TWO", true))))
+            throw new AssertionError("STS_NEOW_REMOVE_TWO_SELECTOR_FIX=0 restores the unowned grid");
+        LiveOocCapture.neowRemoveTwoFix = true;
         java.util.List<String> noOwners = java.util.Collections.emptyList();
         if (!"bonfire".equals(LiveOocCapture.selectorType(false,true,false,noOwners,true,false).get("type"))
                 || !"duplicate".equals(LiveOocCapture.selectorType(false,false,false,noOwners,false,true).get("type"))

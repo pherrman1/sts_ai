@@ -22443,6 +22443,18 @@ Seeds: none new (live seeds 111200473 and 111200504).
 
 **Status:** Draft PR.
 
+## §TBD — Live problem 103: Neow's two-card removal grid was captured as an unsupported selector (2026-10-23)
+
+**Question:** Why was seed 111200638 (release ab7f81ba) abandoned at Neow on floor 0?
+
+**Evidence:** OOC chose Neow option 2, "Lose all Gold, Remove 2 Cards" (240 visits, q 0.730). The next state was a GRID with `num_cards` 2 and `for_purge` false over the starter deck; the inspector captured `details.type: "other"` (`requiredPicks` 2), and the advisor refused it (`ooc_v4 explicitly unsupported: selector_type:other`) twice, so the run was abandoned. Vanilla `NeowReward.activate` opens `REMOVE_TWO` with `forPurge` false (single `REMOVE_CARD` sets it), and `LiveOocCapture.selectorType` classifies unowned grids only by their flags. First time this path was taken since block 5. The engine already models the bonus as `openCardSelectScreen(REMOVE, 2)`.
+
+**Change:** `STS_NEOW_REMOVE_TWO_SELECTOR_FIX` (inspector mod, default on, `=0` restores): an activated `REMOVE_TWO` reward of the current `NeowEvent` owns the grid, which is then captured as a `remove` selector (contradictory flags still give `other`). Test in `LiveOocCaptureTest`: the owner maps to `remove`, only an activated `REMOVE_TWO` reward qualifies (not an inactive one or `TRANSFORM_TWO_CARDS`), and the flag off restores the unowned grid.
+
+**Interpretation:** Live-only, play-changing whenever Neow's two-card removal is chosen: the run continues and the advisor picks both removals instead of abandoning.
+
+**Status:** Draft PR.
+
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with

@@ -1070,6 +1070,8 @@ final class LiveOocCapture {
                 && Boolean.FALSE.equals(field(event,"cardsSelected"))) owners.add("DrugDealer");
         if ("Designer".equals(eventClass) && "DONE".equals(LiveEventCapture.phase(event))
                 && "TRANSFORM".equals(String.valueOf(field(event,"option")))) owners.add("DesignerTransform");
+        if ("NeowEvent".equals(eventClass) && neowRemoveTwoActive(optionalField(event, "rewards")))
+            owners.add("NeowRemoveTwo");
         boolean bonfire = "Bonfire".equals(eventClass)
                 && "CHOOSE".equals(String.valueOf(field(event, "screen")))
                 && Boolean.TRUE.equals(field(event, "cardSelect"));
@@ -1078,6 +1080,19 @@ final class LiveOocCapture {
         return selectorType(AbstractDungeon.gridSelectScreen.forUpgrade,
                 AbstractDungeon.gridSelectScreen.forPurge, AbstractDungeon.gridSelectScreen.forTransform,
                 owners, bonfire, duplicator);
+    }
+
+    // Live problem 103 (seed 111200638): Neow's "Lose all Gold, Remove 2 Cards"
+    // opens its two-card grid with forPurge false, so it was captured as
+    // "other". The activated REMOVE_TWO reward owns that grid.
+    // STS_NEOW_REMOVE_TWO_SELECTOR_FIX=0 restores the old capture.
+    static boolean neowRemoveTwoFix = !"0".equals(System.getenv("STS_NEOW_REMOVE_TWO_SELECTOR_FIX"));
+    static boolean neowRemoveTwoActive(Object rewards) throws ReflectiveOperationException {
+        if (!neowRemoveTwoFix || !(rewards instanceof List)) return false;
+        for (Object reward : list(rewards))
+            if ("REMOVE_TWO".equals(String.valueOf(field(reward, "type")))
+                    && Boolean.TRUE.equals(field(reward, "activated"))) return true;
+        return false;
     }
 
     // Identify the owning vanilla continuation, never localized prompt text.
@@ -1093,7 +1108,7 @@ final class LiveOocCapture {
                 case "DollysMirror": return object("type", "duplicate");
                 case "BackToBasics": return object("type", "remove");
                 case "TheLibrary": return object("type", "obtain");
-                case "NoteForYourself": return object("type", "remove");
+                case "NoteForYourself": case "NeowRemoveTwo": return object("type", "remove");
                 case "DrugDealer": case "DesignerTransform": return object("type", "transform");
                 case "Bottled Flame": return object("type", "bottle", "bottleType", "attack");
                 case "Bottled Lightning": return object("type", "bottle", "bottleType", "skill");
