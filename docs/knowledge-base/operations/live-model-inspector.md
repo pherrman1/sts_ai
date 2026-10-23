@@ -321,6 +321,11 @@ player's `TalkAction`) is cosmetic and omitted as a pair; any other pending
 `amount` is always 0. A missing or out-of-range (0-99) gain refuses with check
 `gain_energy_amount` (problem 84, seed 111200510: Nunchaku's GainEnergyAction(1)
 behind Headbutt's put-on-top choice was exported as 0, so energy was 1 short).
+Necronomicon carries vanilla's private `activated` (true while this turn's copy
+is still available); the importer turns it into native's
+`haveUsedNecronomiconThisTurn = !activated` (`STS_IMPORTER_NECRONOMICON_READY_FIX`,
+default on; problem 96). Producers before this fix sent the same value as
+`usedThisTurn`, which the importer still accepts.
 Pen Nib's pending power gain/removal and Orange Pellets' player debuff removal
 are qualified by their exact vanilla relic, action and recipient.
 Exact vanilla action classes,

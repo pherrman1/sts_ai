@@ -22363,6 +22363,17 @@ Seeds: none new (live seeds 111200473 and 111200504).
 **Interpretation:** Live play-changing: event removals behind a Continue page now remove the card the event decision chose.
 
 **Status:** Draft PR.
+## §646 — Live problem 96: Necronomicon was imported as spent while ready (2026-10-23)
+
+**Question:** Why did seed 111200565 (release c0ff2c3a) diverge at step 303 (Uppercut+ vs Mugger), followed by 124 more mismatches?
+
+**Evidence:** Vanilla `Necronomicon` keeps a private `activated` flag: true at turn start, set false when the copy of a 2+-cost attack fires. The producer exported it as `"usedThisTurn"` (`STSModelInspector`, two relic writers) and `live_silver_importer.cpp` copied it into native's `haveUsedNecronomiconThisTurn`. So live Silver planned every turn with Necronomicon spent while it was ready, and as ready after it had fired; the game then copied Uppercut+ that the engine did not.
+
+**Change:** The producer now names the field `activated` (same value). `STS_IMPORTER_NECRONOMICON_READY_FIX` (default on, `=0` restores) imports `haveUsedNecronomiconThisTurn = !activated`, reading `activated` or, from older producers, `usedThisTurn`. Test: the importer test covers both field names, both values and both flag settings (`live_silver_importer` ctest passes).
+
+**Interpretation:** Live play-changing for every run with Necronomicon: Silver now plans the free attack copy when it is available.
+
+**Status:** Draft PR; javap confirmation and PC `test.sh` requested from the canary.
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with
