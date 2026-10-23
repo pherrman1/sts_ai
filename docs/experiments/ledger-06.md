@@ -23859,7 +23859,7 @@ Play-changing only where the advisor used to refuse.
 Seeds: none new (live seed 111200641 as reported; unit test seed 111200071 from this thread's block).
 **Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.
 
-## §TBD — Value-head plan, stages 1–2: no rollout referee matches real play at A20, so the leaf-compare decision metric is NOT QUALIFIED; as exploratory numbers it predicts M0's gain about right (256 games, 2026-10-23)
+## §663 — Value-head plan, stages 1–2: no rollout referee matches real play at A20, so the leaf-compare decision metric is NOT QUALIFIED; as exploratory numbers it predicts M0's gain about right (256 games, 2026-10-23)
 
 **Question:** Is there a cheap judge of OOC decisions that never reads X2-B and whose level matches real outcomes in
 every act (stage 1)? If so, does a leaf-compare replay under it reproduce the past A20 leaf A/Bs and predict the
