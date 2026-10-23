@@ -22405,6 +22405,28 @@ Seeds: none new (live seeds 111200473 and 111200504).
 **Change:** `STS_NECRONOMICON_AUTOPLAY_FIX` (default on, `=0` restores): the trigger uses Java's card condition. A Necronomicon copy cannot retrigger because the relic is spent this turn. Test in `simulator_correctness_pr9_19`: a Havoc-style autoplay of Heavy Blade is replayed (2 attacks; legacy 1); a `freeToPlayOnce` Heavy Blade is not (1 under both).
 
 **Interpretation:** Play-changing with Necronomicon and Havoc/Mayhem/Distilled Chaos (and purge copies such as Double Tap or Duplication when the original did not trigger it).
+## §651 — Live problem 100: Mummified Hand picked Skills when Corruption was played (2026-10-23)
+
+**Question:** Why did seed 111200621 (Mummified Hand, Snecko Eye) zero a different card than the game on 14 Corruption plays, and once draw cardRandomRng where the game did not?
+
+**Evidence:** Canary extract `engine-parity/overnight-20261019/issue100/` (rows, javap, game log). In all 13 rows with a pick the game zeroed an Attack or Power; at step 835 the only candidate was a Skill (Second Wind) and the game did not roll (cardRandomRng 30 -> 30; log "NO VALID CARDS"). The bytecode explains it: `Corruption.use` builds `ApplyPowerAction`, whose constructor calls `modifyCostForCombat(-9)` on every Skill in hand, draw, discard and exhaust pile when the power is Corruption; `AbstractPlayer.useCard` then constructs `UseCardAction`, whose relic hooks run Mummified Hand's roll over cards with cost > 0 and costForTurn > 0. The engine changed the Skill costs only when the queued `BuffPlayer<CORRUPTION>` resolved, so its pool still held the Skills.
+
+**Change:** `STS_CORRUPTION_IMMEDIATE_COST_FIX` (default on, `=0` restores): Corruption's use applies the Skill cost change at once (`CardManager::onBuffCorruption`), before the relic hooks. Test in `ironclad_card_java_parity`: with Mummified Hand, Corruption among three Skills and a Strike always zeroes the Strike over 10 RNG states (legacy: sometimes a Skill), each with one roll; with only a Skill left there is no roll (legacy: one).
+
+**Interpretation:** Play-changing and cardRandomRng-changing for runs with Mummified Hand and Corruption: the free card now always lands on an Attack or Power.
+## §650 — Live problem 99: monster moveHistory mismatches; a slime split triggered during its own turn was rolled over (2026-10-23)
+
+**Question:** What are the 20 background moveHistory mismatch rows in canary seeds 111200535-618, and do any of them change play?
+
+**Evidence:** Canary extract `engine-parity/overnight-20261019/issue99/summary.md`. Families:
+- 12 rows: a monster that dies on its own turn (Dagger explode 9 rows covering 11 Daggers, Exploder 2) or Awakened One stage 1 going half-dead at End Turn (1). Java's queued `RollMoveAction` still rolls for the dead or half-dead monster, so live moveHistory[1] is the rolled move. The engine already draws the same aiRng roll (`noOpRollMove`; Awakened One rolls Rebirth natively vs Dark Echo in Java), so only the dead or reviving monster's history differs. No play effect.
+- 2 rows (seeds 572 and 618): a Byrd killed by the hit that broke its Flight. Natively it is set Stunned; in Java the dead Byrd keeps its moves. No play effect.
+- 5 rows (seed 568 Acid Slime L; seed 594 split Acid Slime L after the Slime Boss split): live `[SPLIT, rolled]`, native `[rolled, SPLIT]`. The slime crossed half HP from reflected damage during its own attack. In Java, `damage()` calls `setMove(SPLIT)` and queues `SetMoveAction(SPLIT)` *behind* the attack's already-queued `RollMoveAction`, so the split stays the next move. Natively, `onHpLost` wrote the split and the queued roll then overwrote it, so the slime would attack again instead of splitting. Later hits also rewrote moveHistory[1] natively, while Java skips a pending split (`nextMove != SPLIT`).
+- 1 row (seed 565 Time Eater) is drift from live problem 96 (§646).
+
+**Change:** `STS_SLIME_SPLIT_ROLL_ORDER_FIX` (default on, `=0` restores). A queued roll of a split-pending large slime or Slime Boss still draws aiRng and then restores the split (`[SPLIT, rolled]`), and a hit on a pending split changes nothing. Under Runic Dome search (`intentsHidden`) the legacy order is kept. Test: `slime_split_rng` gains roll-order checks for both large slimes (queued roll before the trigger: one aiRng draw, split kept, a later hit leaves the history alone; `=0` reproduces the legacy overwrite). The smoke and core ctest labels pass (138/138); `runic_dome_lifecycle` fails identically with and without the flag (known stale test).
+
+**Interpretation:** Play-changing only for Acid and Spike Slime (L) pushed to half HP by thorns-type damage during their own turn; they now split on schedule. Natively the split was lost only when nothing hit the slime again before its next turn (a later hit re-armed it). The Slime Boss never queues a roll, so its guard is play-neutral. The dead-monster and Byrd families are representation-only and left unchanged; the parity comparison could classify them as background.
 
 **Status:** Draft PR.
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)

@@ -581,7 +581,7 @@ void Monster::onHpLost(BattleContext &bc, int amount) {
     const bool atOrBelowHalf = curHp <= maxHp/2;
     switch (id) {
         case MonsterId::ACID_SLIME_L:
-            if (atOrBelowHalf) {
+            if (atOrBelowHalf && !(moveHistory[0] == MMID::ACID_SLIME_L_SPLIT && slimeSplitRollOrderFix())) {
                 cancelPendingMove();
                 moveHistory[0] = MMID::ACID_SLIME_L_SPLIT;
                 if (slimeSplitRngFix()) moveHistory[1] = MMID::ACID_SLIME_L_SPLIT; // setMove, then the queued SetMoveAction
@@ -591,7 +591,7 @@ void Monster::onHpLost(BattleContext &bc, int amount) {
             break;
 
         case MonsterId::SLIME_BOSS:
-            if (atOrBelowHalf) {
+            if (atOrBelowHalf && !(moveHistory[0] == MMID::SLIME_BOSS_SPLIT && slimeSplitRollOrderFix())) {
                 cancelPendingMove();
                 moveHistory[0] = MMID::SLIME_BOSS_SPLIT;
                 if (slimeSplitRngFix()) moveHistory[1] = MMID::SLIME_BOSS_SPLIT; // setMove, then the queued SetMoveAction
@@ -601,7 +601,7 @@ void Monster::onHpLost(BattleContext &bc, int amount) {
             break;
 
         case MonsterId::SPIKE_SLIME_L:
-            if (atOrBelowHalf) {
+            if (atOrBelowHalf && !(moveHistory[0] == MMID::SPIKE_SLIME_L_SPLIT && slimeSplitRollOrderFix())) {
                 cancelPendingMove();
                 moveHistory[0] = MMID::SPIKE_SLIME_L_SPLIT;
                 if (slimeSplitRngFix()) moveHistory[1] = MMID::SPIKE_SLIME_L_SPLIT; // setMove, then the queued SetMoveAction

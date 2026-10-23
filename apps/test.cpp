@@ -2445,6 +2445,61 @@ int testIroncladCardJavaParity() {
         }
     }
 
+    // Live problem 100 (seed 111200621): playing Corruption, Mummified Hand never
+    // picked a Skill in the game. Java's ApplyPowerAction constructor sets every
+    // Skill to cost 0 before the UseCardAction constructor runs the relic, so
+    // only Attacks/Powers are candidates, and with none left it does not roll
+    // (step 835: cardRandomRng 30 -> 30). STS_CORRUPTION_IMMEDIATE_COST_FIX=0
+    // restores the legacy pool, which still held the Skills.
+    for (const bool fix : {true, false}) {
+        if (fix) unsetenv("STS_CORRUPTION_IMMEDIATE_COST_FIX");
+        else setenv("STS_CORRUPTION_IMMEDIATE_COST_FIX", "0", 1);
+        auto playCorruption = [](std::initializer_list<CardInstance> hand, int rngCounter, int &rolls) {
+            BattleContext bc = simulatorCorrectnessBattle({RelicId::MUMMIFIED_HAND}, Card(CardId::DEFEND_RED), 10);
+            while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+                bc.executeActions();
+            }
+            while (bc.cards.cardsInHand > 0) bc.cards.removeFromHandAtIdx(bc.cards.cardsInHand - 1);
+            for (const auto &c : hand) bc.cards.createTempCardInHand(c);
+            bc.player.energy = 10;
+            bc.cardRandomRng = Random(111200621ULL, rngCounter);
+            int corruptionIdx = -1;
+            for (int i = 0; i < bc.cards.cardsInHand; ++i) {
+                if (bc.cards.hand[i].getId() == CardId::CORRUPTION) corruptionIdx = i;
+            }
+            simulatorCorrectnessPlay(bc, corruptionIdx, 0);
+            while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+                bc.executeActions();
+            }
+            rolls = bc.cardRandomRng.counter - rngCounter;
+            for (int i = 0; i < bc.cards.cardsInHand; ++i) {
+                if (bc.cards.hand[i].getId() == CardId::STRIKE_RED) return static_cast<int>(bc.cards.hand[i].costForTurn);
+            }
+            return -1;
+        };
+        int strikeKept = 0;
+        for (int counter = 0; counter < 10; ++counter) {
+            int rolls = 0;
+            const int strikeCost = playCorruption({CardInstance(CardId::DEFEND_RED), CardInstance(CardId::SHRUG_IT_OFF),
+                                                   CardInstance(CardId::CORRUPTION), CardInstance(CardId::DISARM),
+                                                   CardInstance(CardId::STRIKE_RED)}, counter, rolls);
+            if (strikeCost != 0) ++strikeKept;
+            if (rolls != 1) {
+                unsetenv("STS_CORRUPTION_IMMEDIATE_COST_FIX");
+                return fail("Mummified Hand on Corruption did not roll exactly once");
+            }
+        }
+        int skillOnlyRolls = 0;
+        playCorruption({CardInstance(CardId::DEFEND_RED), CardInstance(CardId::CORRUPTION)}, 0, skillOnlyRolls);
+        unsetenv("STS_CORRUPTION_IMMEDIATE_COST_FIX");
+        if (fix ? (strikeKept != 0 || skillOnlyRolls != 0) : (strikeKept == 0 || skillOnlyRolls != 1)) {
+            return fail(std::string(fix ? "Mummified Hand on Corruption picked a Skill"
+                                        : "STS_CORRUPTION_IMMEDIATE_COST_FIX=0 did not restore the Skill pool")
+                        + " (Strike kept in " + std::to_string(strikeKept) + "/10, skill-only rolls "
+                        + std::to_string(skillOnlyRolls) + ")");
+        }
+    }
+
     // Live parity problem 64b (seed 111200459, Colosseum Nobs): Gremlin Nob
     // with Anger 3 sits in slot 1 behind the Taskmaster; a played Skill gave
     // it Strength 3 in the game, 0 natively. STS_ENRAGE_ALL_MONSTERS_FIX=0
