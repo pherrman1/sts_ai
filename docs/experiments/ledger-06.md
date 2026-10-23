@@ -22396,7 +22396,7 @@ Seeds: none new (live seeds 111200473 and 111200504).
 **Interpretation:** Live play-changing for every run with Necronomicon: Silver now plans the free attack copy when it is available.
 
 **Status:** Draft PR; javap confirmation and PC `test.sh` requested from the canary.
-## §TBD — Live problem 100: Mummified Hand picked Skills when Corruption was played (2026-10-23)
+## §651 — Live problem 100: Mummified Hand picked Skills when Corruption was played (2026-10-23)
 
 **Question:** Why did seed 111200621 (Mummified Hand, Snecko Eye) zero a different card than the game on 14 Corruption plays, and once draw cardRandomRng where the game did not?
 
