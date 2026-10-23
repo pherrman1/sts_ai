@@ -668,7 +668,15 @@ void ActData_SetMonsterMove::operator()(BattleContext &bc) const {
 }
 void ActData_RollMove::operator()(BattleContext &bc) const {
         Monster &m = bc.monsters.arr[monsterIdx];
+        // A split triggered after this roll was queued: Java's SetMoveAction
+        // (SPLIT) runs after the roll, so the split stays the next move.
+        const auto split = m.id == MonsterId::ACID_SLIME_L ? MMID::ACID_SLIME_L_SPLIT
+            : m.id == MonsterId::SPIKE_SLIME_L ? MMID::SPIKE_SLIME_L_SPLIT
+            : m.id == MonsterId::SLIME_BOSS ? MMID::SLIME_BOSS_SPLIT : MMID::INVALID;
+        const bool splitPending = split != MMID::INVALID && m.moveHistory[0] == split && !bc.intentsHidden
+            && m.isAlive() && slimeSplitRollOrderFix();
         m.rollMove(bc);
+        if (splitPending) m.setMove(split);
     }
 
 void ActData_ReactiveRollMove::operator()(BattleContext &bc) const {
