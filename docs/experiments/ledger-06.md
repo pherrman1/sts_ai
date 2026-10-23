@@ -24011,3 +24011,63 @@ Proposed next: an offline check of the CTM's act-4 predictions against the stage
 campaigns, backup copies of stragglers on idle workers once the queue is empty.
 - Seeds 111360000–111360255 used; smokes 111369991–111369993 used (111369990–111369999 assigned).
 - **Knowledge impact:** `evaluation/current-research.md`.
+## §670 — Value-head plan, stage 4 check: the A20 CTM over-predicts deaths at most bosses (the Heart 0.49 vs 0.37 observed) and HP loss in Acts 2–4 for today's Silver; a per-fight calibration predicts held-out fights better (research flag, default off; A/B proposed) (offline, 2026-10-23)
+
+**Question:** Do the A20 CTM's predictions match today's real fights, by act and fight? §663 found the rollouts far
+more pessimistic than real play. Philipp chose "Check the CTM first" (card, 2026-10-23 17:50Z): compare the CTM's
+predictions with the real outcomes of the stage-3 A/B's games, and if it over-predicts deaths, fit a per-act fix like
+M0 and propose an A/B.
+**Design** ([README](evidence/ctm_calibration_20261023/README.md)):
+- Rows: the 97,561 real fights that the stage-3 A/B (§661, arms A, M, S and MS, 1,024 seeds) recorded as CTM rows.
+  Held out: the 6,022 fights of the 256 stage 1–2 games (§663).
+- Scores: `one_combat ctmscorerows` with the deployed A20 stack (`pathb_a20_lizard` `ae785ec2…`, Brew fallback
+  `e338506d…`, Lizard correction, §470 boss shift, Act-4 survival model `05279b3c…`).
+- Calibration: one group per fight, `<act>:<ENCOUNTER>` for elites and bosses with at least 400 rows, else
+  `<act>:<ROOM>` with at least 100. Each group gets a shift on the death logit (L2-penalized logistic fit, λ = 2,
+  encounter groups shrunk towards their room group; λ by two-fold seed CV) and a scale on a won fight's HP loss
+  (least squares).
+**Result:**
+
+| fights (odd seeds) | rows | deaths: observed | CTM | calibrated (fit on even seeds) | won fights: CTM's HP after − real |
+|---|---|---|---|---|---|
+| all | 48,674 | 0.032 | 0.038 | 0.032 | −1.9 |
+| Act-1 boss | 1,959 | 0.050 | 0.093 | 0.068 | −3.9 |
+| Act-2 boss | 1,578 | 0.150 | 0.166 | 0.158 | −8.6 |
+| Act-3 elite | 3,034 | 0.044 | 0.050 | 0.040 | −8.1 |
+| Act-3 boss | 2,131 | 0.148 | 0.189 | 0.148 | −19.0 |
+| Shield and Spear | 808 | 0.051 | 0.080 | 0.052 | −3.1 |
+| the Heart | 767 | 0.370 | 0.486 | 0.391 | (the run ends) |
+
+- The CTM under-predicts deaths at the Awakened One, Reptomancer, Gremlin Leader, Slavers and Act-2/3 event fights.
+- Out of sample the calibration predicts better in both folds. On odd seeds the death log loss goes 0.0731 → 0.0685
+  (Δ −0.0045 [−0.0055, −0.0035]) and the won-fight HP error 8.46 → 7.66 (−0.80 [−0.89, −0.71]); on even seeds the Δs
+  are [−0.0044, −0.0019] and [−0.89, −0.72].
+- Held-out stage 1–2 games, scored by the C++ runtime with the table fitted on all A/B rows: log loss 0.0733 → 0.0698
+  [−0.0059, −0.0009], HP error 8.23 → 7.60 [−0.78, −0.47]. The Heart goes 0.458 → 0.358 predicted deaths against 0.337
+  observed. Act-1 bosses got worse (0.2016 → 0.2107; 21 deaths of 249 there against the A/B's 0.063).
+- Per fight type and per elite and boss
+  ([errors_by_fight](evidence/ctm_calibration_20261023/offline/errors_by_fight.md)), out of sample every act × room
+  group is within about ±2 pp and ±2 HP.
+- By pre-fight HP the CTM's pessimism sits at higher HP. Below 20 HP the calibration makes Act-3 fights look safer
+  than they are (odd seeds: 0.43 predicted against 0.47 observed; the CTM 0.49). An HP term in the shift did not
+  help, so the table keeps the plain shift.
+- Flag `STS_CTM_CALIBRATION` (research, default off) with the table
+  `models/candidates/ctm_calibration_pathb_a20_v1.json` (`359619f7…`, 34 groups). Unset or `0` is byte-identical on
+  all five row sets. With the table the runtime matches the fit on all 99,764 fights without an active Lizard Tail
+  (death within 1.2e-7, mean won-fight HP within 2e-6). The live advisor refuses the flag. ctests
+  `ctm_calibration_parity`, `ctm_calibration_unset` and `ctm_calibration_off`.
+- Smoke of the A/B's run script on 10 spare seeds ([SMOKE](evidence/ctm_calibration_20261023/SMOKE.md)): all 20
+  games rc 0, banners right. Heart kills A 3, C 2; reached Act 4 A 6, C 3. On all four seeds whose games ended
+  differently A got further; the games part at near-ties of the root values. No evidence at this size, but it
+  lowered the point guess from +1 pp to 0.
+**Interpretation:** the CTM is most pessimistic where the search needs it most: the bosses of Acts 1 and 3, and the
+Heart, which every Act-4 rollout plays (§663). One explanation, not tested: it learned from older, weaker combat play
+(the Act-4 model from student C play, where the Heart was won 32% of the time; here 63%). Better predictions of real
+fights need not make the search play better. The last CTM calibration A/B (Act-4 survival model, §534) was NOT_SHOWN.
+**Decision:** the flag stays off. A paired A20 A/B is pre-registered
+([PREREG](evidence/ctm_calibration_20261023/PREREG.md)). Recommended in two stages: 512 seeds (about 2 h on 32
+workers), stopping if C − A is below −1 pp, then the other 1,536 (about 5 h), with the primary on all 2,048. It needs
+Philipp's typed go and the worker count.
+- Seeds: the fit replays §661's and §663's rows (no new games). Smoke 111394990–111394999 used. A/B
+  111392000–111394047 assigned, unused.
+- **Knowledge impact:** `evaluation/current-research.md`, `operations/environment-variables.md`.

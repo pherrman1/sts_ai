@@ -4541,6 +4541,9 @@ int main(int argc, char **argv) {
     } else if (mode == "ctmact4survivaltest") {
         if (argc != 3) { std::cerr << "usage: one_combat ctmact4survivaltest FIXTURE.jsonl\n"; return 2; }
         return ctmAct4SurvivalSelfTest(argv[2]);
+    } else if (mode == "ctmcalibrationtest") {
+        if (argc != 4) { std::cerr << "usage: one_combat ctmcalibrationtest FIXTURE.jsonl on|off\n"; return 2; }
+        return ctmCalibrationSelfTest(argv[2], argv[3]);
     } else if (mode == "ooccfaudit") {
         if (argc < 8) { std::cerr << "usage: one_combat ooccfaudit N_SEEDS SIMS ASC OUT.csv SEED_OFFSET TEACHER.json\n"; return 2; }
         counterfactualSurrogateAuditGen(std::stoi(argv[2]),std::stoi(argv[3]),std::stoi(argv[4]),argv[5],std::stoull(argv[6]),argv[7]);

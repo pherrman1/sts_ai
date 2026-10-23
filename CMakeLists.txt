@@ -1074,6 +1074,28 @@ set_tests_properties(ctm_act4_survival_off PROPERTIES
     ENVIRONMENT "STS_CTM_ACT4_SURVIVAL_MODEL=0"
     WILL_FAIL TRUE
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+# STS_CTM_CALIBRATION (research, default off): parity with tools/ctm_calibration.py; unset and =0 keep the CTM's scores.
+add_test(NAME ctm_calibration_parity COMMAND $<TARGET_FILE:one_combat> ctmcalibrationtest
+    tests/fixtures/ctm_calibration_parity.jsonl on)
+set_tests_properties(ctm_calibration_parity PROPERTIES
+    LABELS "core;research-repro"
+    ENVIRONMENT "STS_CTM_CALIBRATION=models/candidates/ctm_calibration_pathb_a20_v1.json"
+    PASS_REGULAR_EXPRESSION "ctmcalibrationtest PASS mode=on "
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME ctm_calibration_unset COMMAND $<TARGET_FILE:one_combat> ctmcalibrationtest
+    tests/fixtures/ctm_calibration_parity.jsonl off)
+set_tests_properties(ctm_calibration_unset PROPERTIES
+    LABELS "core;research-repro"
+    ENVIRONMENT_MODIFICATION "STS_CTM_CALIBRATION=unset:"
+    PASS_REGULAR_EXPRESSION "ctmcalibrationtest PASS mode=off "
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME ctm_calibration_off COMMAND $<TARGET_FILE:one_combat> ctmcalibrationtest
+    tests/fixtures/ctm_calibration_parity.jsonl off)
+set_tests_properties(ctm_calibration_off PROPERTIES
+    LABELS "core;research-repro"
+    ENVIRONMENT "STS_CTM_CALIBRATION=0"
+    PASS_REGULAR_EXPRESSION "ctmcalibrationtest PASS mode=off "
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 set_tests_properties(ooc_semantic_producer PROPERTIES WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
 add_test(NAME ooc_semantic_smith COMMAND $<TARGET_FILE:unit-test> ooc_semantic_smith)
 set_tests_properties(ooc_semantic ooc_semantic_pipeline ooc_semantic_producer ooc_semantic_smith ooc_reward_continuation
