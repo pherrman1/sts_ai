@@ -85,6 +85,10 @@ LiveOocDecision scoreLiveOocV4(const sts::GameContext &, const PathHistory &,
 // shops, widening 4/0.75, depth 32, early stop). 0 restores the bare pre-fix
 // search. Any other value is fatal.
 bool liveOocResearchStack();
+// STS_OOC_MCTS_LEAF_CALIBRATION (ADR-0057): unset, the research stack's rollout3 X2-B leaf speaks calibrated Heart
+// probability (M0, a20LeafCalibration()) at ascension 20 when the win model is the pinned public X2-B; 0 keeps the
+// raw anchor. Any other value is fatal here.
+bool liveOocA20LeafCalibration();
 // Env override `key` (`off` or `on`, anything else throws); unset returns `fallback`.
 bool liveOocEnvChoice(const char *key, const char *off, const char *on, bool fallback);
 
@@ -114,6 +118,7 @@ private:
     const CompactTreeNet *floorModel_;
     std::shared_ptr<const heart1::Net> armC_;
     bool researchStack_ = liveOocResearchStack();
+    bool a20LeafCalibration_ = liveOocA20LeafCalibration();
     mutable std::uint64_t searchSeed_ = 0;
     mutable std::set<std::uint32_t> rootPrimitiveBits_;
     mutable bool hasRootPrimitiveBits_ = false;

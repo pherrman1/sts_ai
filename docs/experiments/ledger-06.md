@@ -23735,3 +23735,106 @@ ignores the damage still to come; not tested.
 `/mnt/project-files/silver-leaf-head-ab/campaign/units/` (`tars.sha256`). Seeds used 111350000–255 (smokes
 111339997–999, counted in §655).
 **Knowledge impact:** `research/combat-search/leaf-evaluation.md`, `operations/environment-variables.md`.
+
+## §660 — Value-head plan, stage 0: relative to its calibrated Heart value, the X2-B leaf over-prices a death 3.3× (act 1) to 7.7× (act 3); a per-act calibrated leaf (M0) would change 7.0% of root picks, three quarters toward the riskier sibling (offline, 2026-10-22)
+
+**Question:** A rollout3 leaf scores a death 0, a Heart kill 1 and a surviving end X2-B, whose level is far above the
+Heart rate. How much does that over-price a death, and would a calibrated leaf change the search's picks? Stage 0 of
+the [value-head research plan](https://claude.ai/artifact/MoLmbWb4QXdLTEsDVYgt4a); Philipp: "lets go with the plan"
+(2026-10-22 21:44Z).
+**Design:** offline on §644's common-seed capture (320 A20 sources of gen-2 A/B arm A play, 70 Heart kills, 20,679
+searched roots, 32 repeats per sibling). Tools [`stage0.py`](evidence/value_death_price_20261023/tools/stage0.py)
+and [`calib_check.py`](evidence/value_death_price_20261023/tools/calib_check.py).
+- Calibration: per searched root, X2-B of the executed action's child against the run's Heart kill;
+  logit p = a_act + b · logit x.
+- Death price in X2-B units at the surviving rollout ends: x̄(1 − x̄) / (b(1 − p̄)).
+- Flips: a PUCT proxy with fixed Q from the 32 repeats per child, the root's priors and its completed simulations.
+  It reproduces the played action at 91% of roots and ignores the deeper tree and the stop.
+**Result** ([README](evidence/value_death_price_20261023/README.md)):
+- Calibration: a = (−2.538, −2.923, −3.652, −3.633), b = 1.054 [0.81, 1.29]; separate slopes per act 0.90 / 0.97 /
+  1.22 / 1.10. Fit on 240 TRAIN sources, predicted − observed on the 80 VALIDATION sources is −0.002, +0.051, +0.070,
+  +0.081 in acts 1–4 (every CI includes 0).
+- Level at decision roots: X2-B 0.75 / 0.80 / 0.91 / 0.96 against Heart rates 0.22 / 0.27 / 0.38 / 0.58.
+- Death over-pricing: 3.3× [2.5, 4.1], 4.0× [3.0, 5.0] and 7.7× [5.5, 9.8] in acts 1–3 (the 10-17 audit had 2.6×,
+  3.1×, 5.8×). Rollouts also die more often than the real runs over the same horizon (real / rollout 0.59, 0.85,
+  0.62, 0.80 in acts 1–4).
+- The prior's top action is below 0.95 at 36% of searched roots; the search overrode the prior at 6.9%.
+
+| leaf change | best-by-mean flips | PUCT flips | to the riskier sibling | mean Δ rollout death share |
+|---|---|---|---|---|
+| M0′, death worth 0.52 / 0.58 / 0.77 (k = 1) | 13.0% | 5.1% | 97% | +0.10 |
+| M0′, death worth 0.30 / 0.39 / 0.66 (k = 2) | 7.1% | 3.6% | 96% | +0.09 |
+| M0, calibrated leaf | 17.4% | 7.0% (full-budget roots 13.5%) | 74% | +0.075 |
+
+- Predicted Heart kills per run from M0's PUCT flips: +1.8 pp if its calibration holds between siblings (act 1 −0.9,
+  act 2 +1.6, act 3 +1.0); −6.1 pp if today's implied death price were right.
+- M0′ (the plan doc's shortcut: survivors keep X2-B, a death is worth a per-act constant) breaks at act borders. A
+  rollout that dies at the act-3 boss would score 0.77, above the ≈ 0.54 average of rollouts that reach act 4
+  (deaths there stay 0, kills 1).
+**Interpretation:**
+- Flips are frequent, so the plan's early exit (flips rare → the level is not the lever) does not apply.
+- The two predictions have opposite signs. Which death price is right can only be settled in play.
+- M0′ is unusable as written. M0 puts every leaf in one unit, Heart probability.
+**Decision:** no default change. `STS_OOC_MCTS_LEAF_CALIBRATION` is a new research option (default unset). The 2×2 A/B
+of M0 × the SR_w1 blend is pre-registered in [value_level_ab_20261023](evidence/value_level_ab_20261023/PREREG.md).
+- No game seeds were used.
+- **Knowledge impact:** `evaluation/current-research.md`, `operations/environment-variables.md`.
+
+## §661 — Value-level 2×2 A/B at A20: the calibrated leaf (M0) kills the Heart more often (+2.15 pp [+0.10, +4.25], IMPROVED); the SR_w1 blend does not (−0.6 pp, NOT_SHOWN) (1,024 seeds, 2026-10-23)
+
+**Question:** Does ending every rollout3 leaf in calibrated Heart-kill probability (M0, fit in stage 0 above) instead
+of raw X2-B kill the Heart more often at A20? Secondary: does the SR_w1 value-head blend at w 0.1, and do the two add
+up? Stage 3 of the value-head research plan; Philipp: "keep going with the plan, you can use 32 workers" (2026-10-22
+21:44Z).
+**Design:** pre-registered ([PREREG](evidence/value_level_ab_20261023/PREREG.md)), independent pre-launch review PASS.
+- Every arm is the gen-2 A/B arm A config (§621) with the learned OOC stop 0.99:
+  - A: X2-B leaf;
+  - M: A + `STS_OOC_MCTS_LEAF_CALIBRATION`;
+  - S: A + the SR_w1 blend at w 0.1;
+  - MS: both.
+- 1,024 seeds (111340000–111341023), each played by all four arms on one lane. 32 cloud workers × 4 lanes,
+  RUN_COMMIT `2b1b269d`, binary `56b29bf8…`.
+- Primary: the M0 main effect ((M + MS) − (A + S)) / 2 on Heart kills, 95% seed bootstrap; IMPROVED if the CI is
+  above 0.
+**Result** ([RESULT](evidence/value_level_ab_20261023/RESULT.md)): 1,024 of 1,024 units verified, and all 4,096 games
+are valid.
+
+| arm | Heart kills | reached Act 4 | kills per Act-4 arrival | deaths in act 1 / 2 / 3 / 4 | wall vs A |
+|---|---|---|---|---|---|
+| A | 23.2% | 40.7% | 57.1% | 88 / 235 / 284 / 179 | 1.00 |
+| M | 24.6% | 40.5% | 60.7% | 120 / 263 / 226 / 163 | 0.95 |
+| S | 21.9% | 40.1% | 54.5% | 82 / 254 / 277 / 187 | 1.08 |
+| MS | 24.8% | 41.5% | 59.8% | 128 / 255 / 216 / 171 | 1.04 |
+
+- **M0 main effect +2.15 pp [+0.10, +4.25]: IMPROVED.** Stage 0 had predicted +1.8 pp if the calibration holds, or
+  −6.1 pp if X2-B's death price were right.
+- Blend main effect −0.59 pp [−2.25, +1.07]: NOT_SHOWN. Interaction +1.56 pp [−1.56, +4.79].
+- Simple effects: M − A +1.37 pp (102 / 88 discordant, p 0.35); MS − S +2.93 pp (107 / 77, p 0.03).
+- Under M0 the pick leaves the prior's argmax less often (5.1% vs 6.5% of searched roots). The learned OOC stop fires
+  earlier in every act (act 1: 345 vs 369 fast-root simulations).
+- The CI clears 0 by two grid steps. With 1,023 seeds in, a last seed with a negative M0 effect would have made it
+  NOT_SHOWN; that seed was a kill in all four arms.
+**Interpretation:**
+- X2-B's implied death price makes the search too cautious in acts 1–2. M0 takes more early risk (more act-1 and
+  act-2 deaths, fewer act-3 deaths) and wins Act 4 more often.
+- The size is uncertain, about 0 to 4 pp. M0 also shrinks Q gaps, so PUCT leans more on the prior; the A/B measures
+  both together.
+- The SR_w1 blend at w 0.1 does not help, with or without M0.
+- Two PREREG statements were wrong (reviewer notes): 3 of the stop's 14 features are Q gaps, not "Q differences only";
+  and the stop fired earlier in all four acts, not later in acts 1–2.
+**Decision:** M0 becomes the A20 default for the rollout3 X2-B leaf, offline and in the live advisor (Philipp,
+2026-10-23 14:11Z; ADR-0057; `STS_OOC_MCTS_LEAF_CALIBRATION=0` restores raw X2-B). The PREREG had asked for two
+checks first: the learned OOC stop on M0's Q scale, and a confirmation on fresh seeds. The stage 1–2 replay (seeds
+111360000–111360255) is the first prospective test of the decision metric against M − A.
+- **Stop check (offline, done):** passes ([README](evidence/value_m0_stop_check_20261023/README.md)). 18 seeds per arm
+  (111370000–111370017, smokes 111370018–019) were played at a full 4096 simulations with the run profile on.
+  - At p ≥ 0.99 the stop's leader is the full search's choice at 99.76% [99.56, 99.94] of checkpoints under M0,
+    vs 99.62% [99.12, 99.94] under X2-B.
+  - As deployed at fast roots, none of its stops changed a pick (0 of 677 under M0, 0 of 685 under X2-B).
+  - It stops at 59% vs 54% of roots because M0's searches settle earlier.
+- **Confirmation: skipped** (Philipp's choice). A 2,048-seed A vs M A/B would come out IMPROVED only about one time in
+  three at a true gain of 1.4 pp. The seeds reserved for it (111372000–111374047, smokes 111379990–111379997) are not
+  used.
+- Seeds 111340000–111341023 used (smokes 111349990–111349993); stop check 111370000–111370019.
+- **Knowledge impact:** `evaluation/current-research.md`, `architecture/out-of-combat.md`,
+  `operations/environment-variables.md`, ADR-0057.
