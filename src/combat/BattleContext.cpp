@@ -228,6 +228,11 @@ namespace sts {
         return cachedFixFlag(cache, "STS_CURIOSITY_FIX");
     }
 
+    bool darkShacklesFix() {
+        thread_local CachedFixFlag cache;
+        return cachedFixFlag(cache, "STS_DARK_SHACKLES_FIX");
+    }
+
     bool impatienceFix() {
         thread_local CachedFixFlag cache;
         return cachedFixFlag(cache, "STS_IMPATIENCE_FIX");
@@ -1619,6 +1624,16 @@ void BattleContext::useSkillCard() {
             break;
 
         case CardId::DARK_SHACKLES:
+            // Java: StrengthPower(-magic), then GainStrengthPower(magic) only
+            // when the target has no Artifact at use time.
+            if (darkShacklesFix()) {
+                const bool hadArtifact = monsters.arr[t].hasStatus<MS::ARTIFACT>();
+                addToBot( Actions::DebuffEnemy<MS::STRENGTH>(t, up ? -15 : -9) );
+                if (!hadArtifact) {
+                    addToBot( Actions::BuffEnemy<MS::SHACKLED>(t, up ? 15 : 9) );
+                }
+                break;
+            }
             addToBot( Actions::DebuffEnemy<MS::STRENGTH>(t, up ? 15 : 9) );
             if (monsters.arr[t].hasStatus<MS::ARTIFACT>()) {
                 addToBot( Actions::BuffEnemy<MS::SHACKLED>(t, up ? 15 : 9) );
