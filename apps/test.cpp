@@ -3732,6 +3732,39 @@ int testSimulatorCorrectnessPr9To19() {
         }
     }
 
+    // Live problem 101 (seed 111200627): Havoc autoplayed Immolate (cost 2) and
+    // Necronomicon replayed it in the game. Java checks only the card
+    // (costForTurn >= 2 && !freeToPlayOnce); a Forethought-free card still does
+    // not trigger. STS_NECRONOMICON_AUTOPLAY_FIX=0 restores the legacy skip of
+    // every free-to-play queue item.
+    for (const bool fix : {true, false}) {
+        for (const bool freeCard : {false, true}) {
+            if (fix) unsetenv("STS_NECRONOMICON_AUTOPLAY_FIX");
+            else setenv("STS_NECRONOMICON_AUTOPLAY_FIX", "0", 1);
+            auto bc = simulatorCorrectnessBattle({RelicId::NECRONOMICON}, Card(CardId::FLEX), 10);
+            while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+                bc.executeActions();
+            }
+            CardInstance blade(CardId::HEAVY_BLADE);
+            if (freeCard) blade.freeToPlayOnce = true;
+            CardQueueItem item(blade, 0, bc.player.energy);
+            item.autoplay = true;
+            item.freeToPlay = true; // as playTopCardInDrawPile (Havoc) queues it
+            bc.inputState = InputState::EXECUTING_ACTIONS;
+            bc.playCardQueueItem(item);
+            bc.executeActions();
+            unsetenv("STS_NECRONOMICON_AUTOPLAY_FIX");
+            const int want = (fix && !freeCard) ? 2 : 1;
+            if (bc.player.attacksPlayedThisTurn != want) {
+                const std::string msg = std::string(fix ? "Necronomicon" : "STS_NECRONOMICON_AUTOPLAY_FIX=0")
+                    + (freeCard ? " on a freeToPlayOnce autoplay" : " on a Havoc autoplay") + ": "
+                    + std::to_string(bc.player.attacksPlayedThisTurn) + " attacks played, want "
+                    + std::to_string(want);
+                return fail(msg.c_str());
+            }
+        }
+    }
+
     // #13: Unceasing Top resolves the shuffle/draw work before returning control.
     {
         auto bc = simulatorCorrectnessBattle({RelicId::UNCEASING_TOP}, Card(CardId::FLEX), 5);
