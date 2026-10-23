@@ -22467,7 +22467,7 @@ Seeds: none new (live seeds 111200473 and 111200504).
 
 **Status:** Draft PR.
 
-## §TBD — Live problem 106: Hand of Greed skipped the target's onAttacked reactions (2026-10-23)
+## §665 — Live problem 106: Hand of Greed skipped the target's onAttacked reactions (2026-10-23)
 
 **Question:** Why did seed 111200646 (step 750, floor 48, Writhing Mass) diverge after Hand of Greed and its Necronomicon copy (two hits of 23)?
 
