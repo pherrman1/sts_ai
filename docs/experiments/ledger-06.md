@@ -24100,7 +24100,7 @@ Philipp's typed go and the worker count.
   111392000–111394047 assigned, unused.
 - **Knowledge impact:** `evaluation/current-research.md`, `operations/environment-variables.md`.
 
-## §TBD — A20 CTM fine-tune on today's real fights: a survival fine-tune does not beat the §670 calibration table; an HP-head fine-tune plus a refitted table lowers held-out won-fight HP error by 0.15 (research candidate, offline, 2026-10-23)
+## §672 — A20 CTM fine-tune on today's real fights: a survival fine-tune does not beat the §670 calibration table; an HP-head fine-tune plus a refitted table lowers held-out won-fight HP error by 0.15 (research candidate, offline, 2026-10-23)
 
 **Question:** Philipp (2026-10-23 20:18Z), after §670: can a fine-tune of the deployed A20 CTM on today's real fights
 replace or improve the per-fight calibration? Yardstick (his, 20:32Z): prediction precision, not win rate.
