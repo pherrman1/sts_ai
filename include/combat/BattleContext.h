@@ -373,6 +373,14 @@ namespace sts {
     // free-to-play queue item and purge copy. Other values are fatal.
     bool necronomiconAutoplayFix();
 
+    // STS_HAND_OF_GREED_ATTACK_FIX: unset/1 (default) = Hand of Greed hits its
+    // target through Monster::attacked, as Java GreedAction's NORMAL DamageInfo
+    // does, so onAttacked reactions run (Malleable, Reactive, Curl Up, Angry,
+    // Plated Armor, Flight, The Boot, Envenom; live problem 106, seed 111200646:
+    // Writhing Mass). 0 = the legacy engine, which used the non-attack
+    // Monster::damage path. Other values are fatal.
+    bool handOfGreedAttackFix();
+
     struct BattleContext {
 
         // begin for debugging purposes
