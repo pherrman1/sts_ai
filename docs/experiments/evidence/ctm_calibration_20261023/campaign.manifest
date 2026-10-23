@@ -1,6 +1,6 @@
 name          ctm-calibration-ab
 code_commit   c38fa53d32ecb8257ffe9c809dfa00a55682a86e
-binary_sha256 __FREEZE__
+binary_sha256 b855ee276e3b4af42d4eca390cd4e6af05669fffb262bc5859ba559f88af72a5
 workers       16
 share         /mnt/project-files/ctm-calibration-ab
 configure_preset linux-gcc-release-x86-64-v3
