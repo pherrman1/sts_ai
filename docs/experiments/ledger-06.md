@@ -23436,3 +23436,44 @@ recipe do better when it learns from the recapture's cleaner labels? Philipp typ
   replicates, epoch 11's blend replaces SR_w1's as the online candidate.
 - No game seeds were used.
 - **Knowledge impact:** `evaluation/current-research.md`.
+
+## §TBD — Ranking-selected SR head, seeds 1–2: REPLICATED offline (blend +0.013 and +0.014 over SR_w1's blend; head alone level with X2-B); new online candidate SR_crn_r2_s2_ep20 (offline, 2026-10-23)
+
+**Question:** §645's exploratory epoch (SR_crn_r2 seed 0, epoch 11) chose its epoch by the holdout ranking after the
+run. Does "SR_crn_r2's training, epoch chosen by the holdout ranking" replicate on fresh seeds with the rule fixed in
+advance? Philipp typed "merge 816 and go seeds" (2026-10-22 20:52Z).
+**Design:** pre-registered ([PLAN.md](evidence/value_sr_crn_seeds_20261022/PLAN.md), data branch `0341698`).
+- SR_crn_r2's command with seeds 1 and 2, all 20 epochs (`--patience 0`).
+- Epoch: the best in-training holdout ranking among epochs with selection-fold BCE ≤ 0.570 (`pick_epoch.py`; it
+  picks epoch 11 on seed 0). Secondary: the same choice within the epochs a value-objective stop would have run.
+- Gate per seed: blend minus SR_w1 seed 0's blend on the common-seed VALIDATION (w chosen on the TRAIN holdout),
+  paired CI above 0, and "−3 HP sign" ≥ 85 %. REPLICATED if both seeds pass.
+- Trained on Philipp's GPU (20:59–23:50Z, one seed after the other), evaluated in the cloud with §645's tools.
+**Result** ([README](evidence/value_sr_crn_seeds_20261022/README.md)):
+
+| head | epoch | selection-fold BCE | VALIDATION | − SR_w1 [95 % CI] | blend (w) | blend − SR_w1's blend | round 2 | −3 HP sign |
+|---|---|---|---|---|---|---|---|---|
+| SR_w1 (control) | 7 | 0.547 | 0.645 | – | 0.689 (0.10) | – | 0.644 | 88.1 % |
+| seed 0 (§645, exploratory) | 11 | 0.557 | 0.660 | +0.015 [+0.009, +0.022] | 0.703 (0.10) | +0.014 [+0.009, +0.019] | 0.648 | 88.2 % |
+| seed 1 | 13 | 0.565 | 0.663 | +0.018 [+0.011, +0.025] | 0.702 (0.10) | **+0.013 [+0.008, +0.019]** | 0.653 | 90.9 % |
+| seed 2 | 20 | 0.562 | 0.667 | +0.022 [+0.015, +0.030] | 0.703 (0.10) | **+0.014 [+0.009, +0.020]** | 0.655 | 89.4 % |
+| seed 1, value stop | 7 | 0.550 | 0.644 | −0.001 [−0.007, +0.005] | 0.690 (0.15) | +0.001 [−0.004, +0.006] | 0.633 | 88.0 % |
+| seed 2, value stop | 9 | 0.566 | 0.654 | +0.009 [+0.003, +0.016] | 0.692 (0.20) | +0.003 [−0.003, +0.010] | 0.644 | 87.8 % |
+
+- X2-B scores 0.664 on the common-seed VALIDATION and 0.633 on round 2.
+- **Gate: REPLICATED** (both seeds pass).
+- Candidate by TRAIN-holdout blend: seed 2's epoch 20 (0.706, against 0.704 and 0.700).
+- On round 2 both heads beat SR_w1 alone (+0.010 [+0.001, +0.019], +0.011 [+0.002, +0.021]).
+- Gold +50 is valued higher in 77–84 % of cases (SR_w1 65 %).
+**Interpretation:**
+- The ranking-selected recipe replicates. Alone it is now level with X2-B (0.663, 0.667 vs 0.664), and its blend
+  beats SR_w1's by +0.013 to +0.014 on every seed.
+- The gain needs the longer training. The value-stop epochs (7, 9) do not beat SR_w1's blend; the ranking plateaus
+  from about epoch 12.
+- Offline only, on labels that end in X2-B. In §504 and §615, offline concordance and online play disagreed in
+  direction, so this does not predict a Heart-kill gain by itself.
+**Decision:** no default change; X2-B stays the leaf.
+- Seed 2's epoch 20 blend (w 0.10; data branch `gen2/value-sr-crn/weights/SR_crn_r2_s2_ep20/student.bin`, sha256
+  `28523fb5…`) replaces SR_w1's as the online candidate. Any online test needs Philipp's go.
+- No game seeds were used.
+- **Knowledge impact:** `evaluation/current-research.md`.
