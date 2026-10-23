@@ -24100,23 +24100,6 @@ Philipp's typed go and the worker count.
   111392000–111394047 assigned, unused.
 - **Knowledge impact:** `evaluation/current-research.md`, `operations/environment-variables.md`.
 
-## §673 — Live advisor: a burning elite under Runic Dome was refused at turn 1 (2026-10-23)
-
-**Question:** why did canary seed 111200666 (A2 floor 24, the burning Slavers elite, Runic Dome; problem 112) give up
-with `silver_runic_dome_history_gap` at turn 1, although `runicDomeKnowledge.complete` was true?
-**Setup:** the canary's report: the rows' `rollMaxHp` were 48/58/51 against live max HP 60/73/64. Native
-`BattleContext::init` and `MonsterGroup::applyEmeraldEliteBuff`; `live_silver_importer_test` (no gameplay runs).
-**Result:** a burning elite rolls its first move before `applyEmeraldEliteBuff` raises its max HP by round(25%)
-(48+12, 58+15, 51+13), and native does the same: `monsters.init` rolls, then the buff. The tracker's combat-start roll
-inputs were therefore right, but the importer required `rollMaxHp` to equal the live max HP.
-**Interpretation:** under `STS_IMPORTER_RUNIC_DOME_BURNING_ELITE_HP` (default on, `=0` restores the refusal) the
-importer accepts the combat-start roll (initial occupant, not executed, one roll) when the silverRoot says
-`burningElite` and the live max HP is the recorded one plus round(25%); the pending roll keeps the recorded pre-buff
-inputs. Later rolls still need the live max HP. The other three buffs (Strength, Metallicize, Regenerate) leave HP alone.
-The importer test gains the burning-elite combat-start row for an ordinary and a dynamic monster, with fail-closed cases.
-Play-changing only where the advisor used to refuse.
-Seeds: none new (live seed 111200666 as reported).
-**Knowledge impact:** `operations/environment-variables.md`.
 ## §672 — A20 CTM fine-tune on today's real fights: a survival fine-tune does not beat the §670 calibration table; an HP-head fine-tune plus a refitted table lowers held-out won-fight HP error by 0.15 (research candidate, offline, 2026-10-23)
 
 **Question:** Philipp (2026-10-23 20:18Z), after §670: can a fine-tune of the deployed A20 CTM on today's real fights
@@ -24144,3 +24127,21 @@ default; playing it needs a fast-artifact path switch the OOC stack does not hav
 per-group loss scale cannot reach. **Inference:** a clean retrain would need more current-play rows than one A/B.
 - No seeds run (rows of §661 and §663 replayed).
 - **Knowledge impact:** none beyond this entry (research candidate, no runtime or default change).
+
+## §673 — Live advisor: a burning elite under Runic Dome was refused at turn 1 (2026-10-23)
+
+**Question:** why did canary seed 111200666 (A2 floor 24, the burning Slavers elite, Runic Dome; problem 112) give up
+with `silver_runic_dome_history_gap` at turn 1, although `runicDomeKnowledge.complete` was true?
+**Setup:** the canary's report: the rows' `rollMaxHp` were 48/58/51 against live max HP 60/73/64. Native
+`BattleContext::init` and `MonsterGroup::applyEmeraldEliteBuff`; `live_silver_importer_test` (no gameplay runs).
+**Result:** a burning elite rolls its first move before `applyEmeraldEliteBuff` raises its max HP by round(25%)
+(48+12, 58+15, 51+13), and native does the same: `monsters.init` rolls, then the buff. The tracker's combat-start roll
+inputs were therefore right, but the importer required `rollMaxHp` to equal the live max HP.
+**Interpretation:** under `STS_IMPORTER_RUNIC_DOME_BURNING_ELITE_HP` (default on, `=0` restores the refusal) the
+importer accepts the combat-start roll (initial occupant, not executed, one roll) when the silverRoot says
+`burningElite` and the live max HP is the recorded one plus round(25%); the pending roll keeps the recorded pre-buff
+inputs. Later rolls still need the live max HP. The other three buffs (Strength, Metallicize, Regenerate) leave HP alone.
+The importer test gains the burning-elite combat-start row for an ordinary and a dynamic monster, with fail-closed cases.
+Play-changing only where the advisor used to refuse.
+Seeds: none new (live seed 111200666 as reported).
+**Knowledge impact:** `operations/environment-variables.md`.
