@@ -22,6 +22,7 @@ class AdvisorProtocolTest(unittest.TestCase):
         env.pop("STS_DIFFERENTIAL_TRACE", None)
         env.pop("STS_CTM_BREW_FALLBACK_MODEL", None)
         env.pop("STS_CTM_ACTIVE_LIZARD", None)
+        env.pop("STS_CTM_CALIBRATION", None)
         for key in ("STS_LIVE_OOC_ARM_C", "STS_LIVE_CTM_A20_MODEL", "STS_LIVE_CTM_A20_FALLBACK_MODEL"):
             env.pop(key, None)
         env.update(ctm_env or {})
@@ -42,9 +43,10 @@ class AdvisorProtocolTest(unittest.TestCase):
         proc = subprocess.run(
             [executable or sys.argv[1]], input="\n".join(rows) + "\n", text=True,
             capture_output=True, check=True, env=env, cwd=cwd)
-        # The A20 stack's default Act-4 survival model (ADR-TBD) logs its load line; nothing else may.
+        # The A20 stack's default Act-4 survival model (ADR-0048) and CTM calibration (ADR-0058) log their load
+        # lines; nothing else may.
         self.assertEqual([line for line in proc.stderr.splitlines()
-                          if not line.startswith("[ctm-act4-survival")], [])
+                          if not line.startswith(("[ctm-act4-survival", "[ctm-calibration"))], [])
         return [json.loads(line) for line in proc.stdout.splitlines()]
 
     def test_invalid_live_switches_fail_startup(self):
@@ -79,6 +81,15 @@ class AdvisorProtocolTest(unittest.TestCase):
         self.assertIn("bossSurvivalLogitShift", response["ctmStack"]["ascension20"])
         # ADR-TBD: the A20 stack loads the bundled Act-4 survival model by default.
         self.assertRegex(response["ctmStack"]["ascension20"]["act4Survival"], r"^fnv1a64:[0-9a-f]{16}$")
+        # ADR-0058: it applies the bundled CTM calibration by default; =0 turns it off and a research table fails.
+        self.assertRegex(response["ctmStack"]["ascension20"]["calibration"], r"^fnv1a64:[0-9a-f]{16}$")
+        off, = self.run_advisor([hello], base, ctm_env=dict(env, STS_CTM_CALIBRATION="0"))
+        self.assertEqual(off["ctmStatus"], "OK", off)
+        self.assertEqual(off["ctmStack"]["ascension20"]["calibration"], "off")
+        table = Path(__file__).resolve().parents[1] / "models/candidates/ctm_calibration_pathb_a20_v1.json"
+        research, = self.run_advisor([hello], base, ctm_env=dict(env, STS_CTM_CALIBRATION=str(table)))
+        self.assertEqual(research["ctmStatus"], "SCHEMA_MISMATCH", research)
+        self.assertIn("refuses a research STS_CTM_CALIBRATION table", research["ctmReason"])
         entry = {"boundary": "combat", "character": "IRONCLAD", "ascension": 0,
                  "act": 1, "floor": 7, "hp": 70, "maxHp": 80, "gold": 99,
                  "roomClass": "MONSTER", "previousRoomClass": "SHOP", "encounter": "CULTIST",

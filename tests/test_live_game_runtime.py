@@ -11,7 +11,7 @@ from unittest import mock
 from tools.live_game_runtime import (CTM_NAME, CTM_FAST_NAME, CTM_STACK_KEYS,
     CTM_CURRENT_NAME, CTM_CURRENT_FAST_NAME, CTM_A20_NAME, CTM_A20_FAST_NAME,
     CTM_QUALIFIED_KEYS, OOC_NAME, OOC_WIN_NAME, OOC_WIN_SOURCE, LEGACY_OOC_WIN_NAME,
-    OOC_FLOOR_NAME, ARM_C_NAME, ACT4_SURVIVAL_NAME,
+    OOC_FLOOR_NAME, ARM_C_NAME, ACT4_SURVIVAL_NAME, CTM_CALIBRATION_NAME,
     ROLLOUT_ROOT_TABLE_NAME, LEGACY_ROLLOUT_ROOT_TABLE_NAME, RuntimeFailure, RuntimeManager, sha256)
 
 
@@ -122,6 +122,7 @@ class LiveGameRuntimeTest(unittest.TestCase):
         for name in (CTM_CURRENT_NAME, CTM_CURRENT_FAST_NAME, CTM_A20_NAME, CTM_A20_FAST_NAME):
             (self.repo / "selfplay/models" / name).write_bytes(name.encode())
         (self.repo / "models" / ACT4_SURVIVAL_NAME).write_bytes(b"act4-survival")
+        (self.repo / "models" / CTM_CALIBRATION_NAME).write_bytes(b"ctm-calibration")
 
     def test_qualified_ctm_pins_both_ascensions_and_survives_refresh(self):
         self.qualified_sources()
@@ -133,6 +134,8 @@ class LiveGameRuntimeTest(unittest.TestCase):
         self.assertEqual(manifest["ctmA20Fallback"], CTM_A20_NAME)
         self.assertEqual((self.manager.current / "models" / ACT4_SURVIVAL_NAME).read_bytes(), b"act4-survival")
         self.assertEqual(manifest["ctmAct4SurvivalSha256"], sha256(self.manager.current / "models" / ACT4_SURVIVAL_NAME))
+        self.assertEqual((self.manager.current / "models" / CTM_CALIBRATION_NAME).read_bytes(), b"ctm-calibration")
+        self.assertEqual(manifest["ctmCalibrationSha256"], sha256(self.manager.current / "models" / CTM_CALIBRATION_NAME))
         self.assertEqual(self.manager.install(self.advisor), manifest)
         env = {"STS_LIVE_CTM_A20_MODEL": str(self.manager.current / "models" / CTM_A20_FAST_NAME),
                "STS_LIVE_CTM_A20_FALLBACK_MODEL": str(self.manager.current / "models" / CTM_A20_NAME)}

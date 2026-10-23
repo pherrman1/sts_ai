@@ -54,6 +54,14 @@ set_target_properties(silver-public-pair-probe PROPERTIES OUTPUT_NAME silver_pub
 target_include_directories(silver-public-pair-probe PRIVATE include json/include)
 link_ctm_crypto(silver-public-pair-probe)
 
+# Same-turn infinity oracle: research executable, no production linkage.
+add_executable(combat-infinity-oracle apps/combat_infinity_oracle.cpp $<TARGET_OBJECTS:sts_core_objects>)
+set_target_properties(combat-infinity-oracle PROPERTIES OUTPUT_NAME combat_infinity_oracle)
+target_include_directories(combat-infinity-oracle PRIVATE include json/include)
+add_test(NAME combat_infinity_oracle COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:combat-infinity-oracle> --fixtures)
+set_tests_properties(combat_infinity_oracle PROPERTIES LABELS "core;research-repro")
+
 # Default-off observer neutrality: live combat core only.
 add_executable(combat-knowledge-neutrality-test apps/combat_knowledge_neutrality_test.cpp $<TARGET_OBJECTS:sts_core_objects>)
 set_target_properties(combat-knowledge-neutrality-test PROPERTIES OUTPUT_NAME combat_knowledge_neutrality_test)
@@ -1060,12 +1068,13 @@ set_tests_properties(ctm_act4_survival_parity PROPERTIES
     LABELS "core;research-repro"
     ENVIRONMENT "STS_CTM_ACT4_SURVIVAL_MODEL=models/candidates/ctm_act4_survival_trees.txt"
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-# ADR-TBD: unset, the pathb-a20 stack uses the bundled model; =0 restores the CTM head, so parity must fail.
+# ADR-0048: unset, the pathb-a20 stack uses the bundled model; =0 restores the CTM head, so parity must fail. The
+# ADR-0058 calibration is off here: the test checks the Act-4 model alone.
 add_test(NAME ctm_act4_survival_default COMMAND $<TARGET_FILE:one_combat> ctmact4survivaltest
     tests/fixtures/ctm_act4_survival_parity.jsonl)
 set_tests_properties(ctm_act4_survival_default PROPERTIES
     LABELS "core;research-repro"
-    ENVIRONMENT_MODIFICATION "STS_CTM_ACT4_SURVIVAL_MODEL=unset:"
+    ENVIRONMENT_MODIFICATION "STS_CTM_ACT4_SURVIVAL_MODEL=unset:;STS_CTM_CALIBRATION=set:0"
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME ctm_act4_survival_off COMMAND $<TARGET_FILE:one_combat> ctmact4survivaltest
     tests/fixtures/ctm_act4_survival_parity.jsonl)
@@ -1073,6 +1082,46 @@ set_tests_properties(ctm_act4_survival_off PROPERTIES
     LABELS "core;research-repro"
     ENVIRONMENT "STS_CTM_ACT4_SURVIVAL_MODEL=0"
     WILL_FAIL TRUE
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+# STS_CTM_CALIBRATION: parity with tools/ctm_calibration.py. ADR-0058: unset applies the bundled table to the built-in
+# A20 stack (also under a research manifest with the same content), but not with STS_CTM_ACT4_SURVIVAL_MODEL set; =0
+# keeps the CTM's scores.
+add_test(NAME ctm_calibration_parity COMMAND $<TARGET_FILE:one_combat> ctmcalibrationtest
+    tests/fixtures/ctm_calibration_parity.jsonl on)
+set_tests_properties(ctm_calibration_parity PROPERTIES
+    LABELS "core;research-repro"
+    ENVIRONMENT "STS_CTM_CALIBRATION=models/candidates/ctm_calibration_pathb_a20_v1.json"
+    PASS_REGULAR_EXPRESSION "ctmcalibrationtest PASS mode=on "
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME ctm_calibration_default COMMAND $<TARGET_FILE:one_combat> ctmcalibrationtest
+    tests/fixtures/ctm_calibration_parity.jsonl on)
+set_tests_properties(ctm_calibration_default PROPERTIES
+    LABELS "core;research-repro"
+    ENVIRONMENT_MODIFICATION "STS_CTM_CALIBRATION=unset:;STS_CTM_ACT4_SURVIVAL_MODEL=unset:"
+    PASS_REGULAR_EXPRESSION "ctmcalibrationtest PASS mode=on "
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME ctm_calibration_default_research_manifest COMMAND $<TARGET_FILE:one_combat> ctmcalibrationtest
+    tests/fixtures/ctm_calibration_parity.jsonl on)
+set_tests_properties(ctm_calibration_default_research_manifest PROPERTIES
+    LABELS "core;research-repro"
+    ENVIRONMENT "STS_CTM_RESEARCH_CANDIDATE_MANIFEST=docs/experiments/evidence/ctm_a20_boss_calib_470_20261014/candidate-pathb-a20-lizard-boss470.json;STS_CTM_RESEARCH_CANDIDATE_MANIFEST_SHA256=00bb4da6eb9b3117feb0579356436a96f7315ea28a8f3d1f29fd10b827c254ea"
+    ENVIRONMENT_MODIFICATION "STS_CTM_CALIBRATION=unset:;STS_CTM_ACT4_SURVIVAL_MODEL=unset:"
+    PASS_REGULAR_EXPRESSION "ctmcalibrationtest PASS mode=on "
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME ctm_calibration_default_act4_set COMMAND $<TARGET_FILE:one_combat> ctmcalibrationtest
+    tests/fixtures/ctm_calibration_parity.jsonl off)
+set_tests_properties(ctm_calibration_default_act4_set PROPERTIES
+    LABELS "core;research-repro"
+    ENVIRONMENT "STS_CTM_ACT4_SURVIVAL_MODEL=models/candidates/ctm_act4_survival_trees.txt"
+    ENVIRONMENT_MODIFICATION "STS_CTM_CALIBRATION=unset:"
+    PASS_REGULAR_EXPRESSION "ctmcalibrationtest PASS mode=off "
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME ctm_calibration_off COMMAND $<TARGET_FILE:one_combat> ctmcalibrationtest
+    tests/fixtures/ctm_calibration_parity.jsonl off)
+set_tests_properties(ctm_calibration_off PROPERTIES
+    LABELS "core;research-repro"
+    ENVIRONMENT "STS_CTM_CALIBRATION=0"
+    PASS_REGULAR_EXPRESSION "ctmcalibrationtest PASS mode=off "
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 set_tests_properties(ooc_semantic_producer PROPERTIES WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
 add_test(NAME ooc_semantic_smith COMMAND $<TARGET_FILE:unit-test> ooc_semantic_smith)

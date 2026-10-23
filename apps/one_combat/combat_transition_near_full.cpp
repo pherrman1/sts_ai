@@ -140,7 +140,8 @@ CombatRuntimeSample sampleNearFull(const CombatTransitionRuntime &net,const Nati
         if(!survivalAlreadyWon && CombatTransitionRuntime::escapeEligible(pre.potions,pre.potionCapacity,bossFight))
             e=uniform()<net.escapeProbability(z)?1:0;
     }
-    int h=category(net.signedHp(z,d,pre.curHp,post.maxHp,e));
+    auto hpProb=net.signedHp(z,d,pre.curHp,post.maxHp,e);net.calibrateHpLoss(pi,hpProb,pre.curHp,post.maxHp);
+    int h=category(hpProb);
     post.curHp+=domain.hpClasses.at(h);
     float fraction=float(post.curHp)/post.maxHp;int initialMask=0,originalBits=0;for(int slot=0;slot<5;++slot)if(pre.potions[slot]>1)originalBits|=1<<slot;
     std::vector<int> consumed;bool escaped=false,origin=false;sts::Random potionRng;bool sozu=has(pre,R::SOZU);

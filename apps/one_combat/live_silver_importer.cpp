@@ -1,6 +1,7 @@
 #include "live_silver_importer.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <stdexcept>
@@ -966,6 +967,18 @@ bool necronomiconReadyFix() {
     throw std::runtime_error("STS_IMPORTER_NECRONOMICON_READY_FIX must be 0 or 1");
 }
 
+// STS_IMPORTER_RUNIC_DOME_BURNING_ELITE_HP: unset/1 (default) accepts a
+// burning (Emerald Key) elite's combat-start roll made at the pre-buff max HP:
+// applyEmeraldEliteBuff raises max HP by round(25%) after the monsters rolled
+// their first moves, as native BattleContext::init does (live problem 112,
+// seed 111200666). =0 restores the refusal (silver_runic_dome_history_gap).
+bool domeBurningEliteHpFix() {
+    const char *value = std::getenv("STS_IMPORTER_RUNIC_DOME_BURNING_ELITE_HP");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_IMPORTER_RUNIC_DOME_BURNING_ELITE_HP must be 0 or 1");
+}
+
 bool domeRebirthRollFix() {
     const char *value = std::getenv("STS_IMPORTER_RUNIC_DOME_REBIRTH_ROLL");
     if (!value || !*value || std::string(value) == "1") return true;
@@ -1001,7 +1014,7 @@ bool domeNewbornAliveFix() {
 // Audited stable-slot monsters whose next roll depends on public executed history.
 // Spot Weakness carries only its public attack predicate for the pending roll.
 // Generators and unaudited monster lifecycles remain outside this domain.
-std::string importBoundedRunicDome(const json &combat, silver_bridge::BattleStateWire &wire) {
+std::string importBoundedRunicDome(const json &combat, silver_bridge::BattleStateWire &wire, bool burningElite) {
     const auto found=combat.find("runicDomeKnowledge");
     if(found==combat.end() || !found->is_object()) return "silver_runic_dome_missing_history";
     const auto validInteger=[](const json &obj,const char *name,std::int64_t lo,std::int64_t hi) {
@@ -1134,6 +1147,12 @@ std::string importBoundedRunicDome(const json &combat, silver_bridge::BattleStat
             } else if(!proof.is_null()) return "silver_runic_dome_known_next_schema";
         } else if(k.contains("knownNextMove")) return "silver_runic_dome_known_next_schema";
         const auto generation=k.at("generation").get<int>();
+        // A burning elite's combat-start roll saw the max HP from before the
+        // Emerald Key buff (problem 112); later rolls see the buffed one.
+        const int preBuffMaxHp=k.at("rollMaxHp").get<int>();
+        const bool buffedInitialRoll=burningElite && domeBurningEliteHpFix() && unexecutedInitial && completed==0
+            && (k.contains("totalRolls")?k.at("totalRolls")==1:generation==1)
+            && m.maxHp==preBuffMaxHp+static_cast<int>(std::round(static_cast<float>(preBuffMaxHp)*0.25f));
         const bool generationValid=dynamic
             ? integer("totalRolls",1,1000000) && integer("knownTransitions",0,1000000)
                 && generation==completed+k.at("totalRolls").get<int>()+k.at("knownTransitions").get<int>()+(thief?k.at("directChoices").get<int>():0)
@@ -1143,7 +1162,7 @@ std::string importBoundedRunicDome(const json &combat, silver_bridge::BattleStat
             : generation>=2*completed && generation<=2*completed+1 && (dead || generation==2*completed+1);
         if((bound?(completed>wire.turn-birthTurn || (completed==0?lastExecution!=-1:lastExecution<birthTurn)
                 || (!dead && !(lastExecution==wire.turn || (completed==0 && birthTurn==wire.turn)))):(dead?completed>wire.turn:completed!=wire.turn)) || !generationValid || moves.size()!=static_cast<std::size_t>(std::min(completed,2))
-                || k.at("rollHp")>k.at("rollMaxHp") || k.at("rollMaxHp")!=m.maxHp)
+                || k.at("rollHp")>k.at("rollMaxHp") || (k.at("rollMaxHp")!=m.maxHp && !buffedInitialRoll))
             return "silver_runic_dome_history_gap";
         int misc=0;
         if(multi) {
@@ -2820,7 +2839,7 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
     wire.version = silver_bridge::BattleStateWire::kVersion; wire.valid = true;
     wire.fullDrawOrderObserved = frozenEye; wire.intentsHidden = false;
     if(runicDome) {
-        if(const auto reason=importBoundedRunicDome(combat,wire); !reason.empty()) return unsupported(reason);
+        if(const auto reason=importBoundedRunicDome(combat,wire,root.value("burningElite",false)); !reason.empty()) return unsupported(reason);
         // Native Monster::damage cancels the deferred roll before the stun.
         for(const int slot:groundedByrds) {
             auto &m=wire.monsters[slot];

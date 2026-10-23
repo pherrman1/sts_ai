@@ -1284,13 +1284,19 @@ int main() {
                 if (identity.value("candidateId", std::string()) != "pathb-a20"
                         || !identity.contains("bossSurvivalLogitShift"))
                     throw std::invalid_argument("live A20 CTM requires the qualified calibrated pathb-a20 stack");
+                // ADR-0058: the A20 stack applies the bundled CTM calibration unless =0; a research table is refused.
+                if (const char *table = std::getenv("STS_CTM_CALIBRATION"); table && std::string(table) != "0")
+                    throw std::invalid_argument("live A20 CTM refuses a research STS_CTM_CALIBRATION table "
+                                                "(unset applies the bundled table, 0 turns it off)");
                 const std::string act4Survival = a20->fastRuntime().act4SurvivalModelPath().empty()
                     ? std::string("off") : modelIdentity(a20->fastRuntime().act4SurvivalModelPath());
+                const std::string calibration = a20->fastRuntime().calibrationPath().empty()
+                    ? std::string("off") : modelIdentity(a20->fastRuntime().calibrationPath());
                 ctmA20 = std::move(a20);
                 ctmStack["ascension20"] = {{"primary", modelIdentity(a20Path)},
                     {"brewFallback", modelIdentity(a20Fallback)}, {"activeLizard", activeLizard},
                     {"bossSurvivalLogitShift", identity.at("bossSurvivalLogitShift")},
-                    {"act4Survival", act4Survival}};
+                    {"act4Survival", act4Survival}, {"calibration", calibration}};
             }
             ctmIdentity = ctmStack.dump();
             ctmStatus = "OK";

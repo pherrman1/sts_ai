@@ -12,6 +12,7 @@
 
 namespace one_combat {
 struct CompactTreeNet;
+struct CtmCalibration;
 struct ActiveLizardPrediction {
     bool supported = false;
     std::string reason = "disabled";
@@ -46,6 +47,9 @@ class CombatTransitionRuntime {
     // Act-4 survival model for SHIELD_AND_SPEAR and THE_HEART (§527; STS_CTM_ACT4_SURVIVAL_MODEL), or null.
     const CompactTreeNet *act4Survival_ = nullptr;
     std::string act4SurvivalPath_;
+    // Per-fight death-logit shifts and HP-loss scales (STS_CTM_CALIBRATION; ADR-0058 default for the built-in A20
+    // stack), or null.
+    const CtmCalibration *calibration_ = nullptr;
     // Every max_hp.encoder.* tensor equals its hp.encoder.* twin byte for byte, so
     // encode("max_hp",p) and encode("hp",p) are the same computation.
     bool sharedHpEncoder_ = false;
@@ -58,6 +62,7 @@ class CombatTransitionRuntime {
     std::vector<float> linear(const std::string &, const std::vector<float> &) const;
     std::vector<float> embedding(const std::string &, int) const;
     std::vector<float> encode(const std::string &, const CombatPredictorInputV1 &) const;
+    float uncalibratedSurvival(const CombatPredictorInputV1 &) const;
 public:
     static constexpr float probabilityTolerance = 1e-4f;
     // ctm_input_v2: act is a category (act-1, acts 1..4) instead of a scalar, floor stays raw,
@@ -79,6 +84,8 @@ public:
     const nlohmann::json &identity() const { return identity_; }
     // Path of the Act-4 survival model this runtime uses ("" when off).
     const std::string &act4SurvivalModelPath() const { return act4SurvivalPath_; }
+    // Path of the STS_CTM_CALIBRATION table this runtime applies ("" when off).
+    const std::string &calibrationPath() const;
     bool researchCandidate() const { return !identity_.at("candidateId").is_null() && !productionCandidate_; }
     // The artifact is the built-in production candidate, pinned without a research manifest.
     bool productionCandidate() const { return productionCandidate_; }
@@ -111,6 +118,10 @@ public:
     std::vector<float> hpEncoding(const CombatPredictorInputV1 &) const;
     // escaped is -1 for an artifact without the escape capability, else 0 or 1.
     std::vector<float> signedHp(const std::vector<float> &z, int delta, int preHp, int maximum, int escaped=-1) const;
+    // STS_CTM_CALIBRATION: multiplies the HP losses of a signedHp() distribution by the fight's scale, splitting each
+    // class's mass between the two nearest classes so the mean loss scales exactly; gains are kept and the result
+    // stays in [1, maximum]. No change when the calibration is off.
+    void calibrateHpLoss(const CombatPredictorInputV1 &, std::vector<float> &hp, int preHp, int maximum) const;
     std::vector<float> potionEncoding(const CombatPredictorInputV1 &) const;
     std::vector<float> potion(const CombatPredictorInputV1 &, int delta, float fraction) const;
     std::vector<float> potion(const std::vector<float> &encoding,

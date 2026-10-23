@@ -22512,6 +22512,18 @@ Seeds: none new (live seeds 111200473 and 111200504).
 
 **Status:** Draft PR.
 
+## §669 — Live problem 111: Discovery advances cardRandomRng every frame (known, not modelled) (2026-10-23)
+
+**Question:** Why does the game's `cardRandomRng` counter jump after every in-combat Discovery pick (seed 111200663 F6: Duplication Potion + Discovery, second choice set Corruption/Shockwave/Feel No Pain vs native Body Slam/Iron Wave/Cleave; counter 3 -> 93 in the game, 3 -> 6 natively)?
+
+**Evidence (canary, javap; PC `issue111/j111b.txt` sha256 88adef5e…, `j111b_timing.txt`):** `DiscoveryAction.update` calls `generateColorlessCardChoices()` / `generateCardChoices(cardType)` at offsets 0-23 on EVERY `update()`, before the `duration == ACTION_DUR_FAST` first-frame check; only the first-frame list goes to `customCombatOpen`. Each later frame the action is updated draws and discards a fresh set (at least 3 draws plus duplicate-ID rerolls). Deltas seen: about 90 early in a run down to about 12 late (seeds 646, 656, 657, 663). They correlate negatively with wall-clock time per pick (-0.59 open-to-pick over 57 picks), so they are frame-count driven. `ChooseOneColorless` (Toolbox) generates only in the first-frame branch, so its delta is 0. Discovery and the Colorless, Attack, Skill and Power Potions all use `DiscoveryAction` and are affected. A full scan of all 2306 classes found no other per-frame `cardRandomRng` consumer; the mods only read it (`DebugRngCapture`). The same per-frame regeneration was first seen in §554 (Discovery parity, 2026-10-19), where the probe already treated cardRandomRng on DISCOVERY picks as unobservable. This entry adds the method-level javap, the timing correlation and the list of affected potions.
+
+**Decision (Philipp, 2026-10-23):** Known and not modelled. The extra draw count depends on the frame count and cannot be predicted natively. Native's draw from the imported counter is an equally valid random sample for planning, and the next live step re-imports the counter. The parity canary classifies cardRandomRng mismatches after a DiscoveryAction pick, and card sets that depend on them in the same decision chain, as background rows. No engine change.
+
+Seeds: none new (live canary seeds as cited).
+
+**Status:** Recorded.
+
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
 
 **Question:** why did live seed 111200440 (floor 55, after winning Shield and Spear) fail twice on the Act 4 map with
@@ -23999,3 +24011,159 @@ Proposed next: an offline check of the CTM's act-4 predictions against the stage
 campaigns, backup copies of stragglers on idle workers once the queue is empty.
 - Seeds 111360000–111360255 used; smokes 111369991–111369993 used (111369990–111369999 assigned).
 - **Knowledge impact:** `evaluation/current-research.md`.
+
+## §671 Same-turn infinity oracle — bounded synthetic feasibility (2026-10-23)
+
+Hypothesis: exact recurring combat control state plus simulator witness replay
+can distinguish useful same-turn card cycles from stalls. Baseline
+`a8b801390a2e730c30312522b71a056c3eaca7c7`; standalone Debug utility, no models,
+no Silver/AZ/OOC integration, no new game-seed cohort. Concrete full-state/RNG
+regime, thirteen deterministic synthetic states and first eight preserved wire roots.
+Search bounds: depth/period 24, 2,000 nodes, 16 candidates; replay bounds: 128
+periods / 1,024 actions per candidate, 4,096 actions total.
+
+Synthetic decision rule PASS after the two requested independent-review corrections: 1 certified Dropkick
+kill, 2 productive candidates rejected (phase transition, repetition cap), 1
+stall, 9 NONE (six unsupported). Four states repeat a control fingerprint;
+mean/max nodes 157.077/2,000, mean/max Debug process CPU 3.130/34.656 ms,
+maximum depth 24. No false certified positives in the fixture suite. All three
+focused CTests pass. Archived wires reconstruct 8/8, but all retain information-set
+draw piles and are unsupported for concrete cycle search. No natural prevalence
+or gameplay-quality claim. The historical #544 artifact has stacks, not its
+combat state; a synthetic fixture covers that failure class.
+
+[Design, command outcomes, witnesses, source/binary hashes and limitations](evidence/combat_infinity_oracle_20261023/REPORT.md).
+Independent review of `b0acc5c` required the PRODUCTIVE_CYCLE_CANDIDATE rename
+and an explicit audited-domain gate. The corrected utility requires Ironclad,
+red/colorless/curse cards and proven no-Shard provenance; all five new domain
+regressions reject before search. Main synchronized to `a103a9b78`. Realistic
+recall/public-state handling must be qualified before natural-root annotation.
+No default, training, capture or follow-up qualification change is implemented.
+## §670 — Value-head plan, stage 4 check: the A20 CTM over-predicts deaths at most bosses (the Heart 0.49 vs 0.37 observed) and HP loss in Acts 2–4 for today's Silver; a per-fight calibration predicts held-out fights better (research flag, default off; A/B proposed) (offline, 2026-10-23)
+
+**Question:** Do the A20 CTM's predictions match today's real fights, by act and fight? §663 found the rollouts far
+more pessimistic than real play. Philipp chose "Check the CTM first" (card, 2026-10-23 17:50Z): compare the CTM's
+predictions with the real outcomes of the stage-3 A/B's games, and if it over-predicts deaths, fit a per-act fix like
+M0 and propose an A/B.
+**Design** ([README](evidence/ctm_calibration_20261023/README.md)):
+- Rows: the 97,561 real fights that the stage-3 A/B (§661, arms A, M, S and MS, 1,024 seeds) recorded as CTM rows.
+  Held out: the 6,022 fights of the 256 stage 1–2 games (§663).
+- Scores: `one_combat ctmscorerows` with the deployed A20 stack (`pathb_a20_lizard` `ae785ec2…`, Brew fallback
+  `e338506d…`, Lizard correction, §470 boss shift, Act-4 survival model `05279b3c…`).
+- Calibration: one group per fight, `<act>:<ENCOUNTER>` for elites and bosses with at least 400 rows, else
+  `<act>:<ROOM>` with at least 100. Each group gets a shift on the death logit (L2-penalized logistic fit, λ = 2,
+  encounter groups shrunk towards their room group; λ by two-fold seed CV) and a scale on a won fight's HP loss
+  (least squares).
+**Result:**
+
+| fights (odd seeds) | rows | deaths: observed | CTM | calibrated (fit on even seeds) | won fights: CTM's HP after − real |
+|---|---|---|---|---|---|
+| all | 48,674 | 0.032 | 0.038 | 0.032 | −1.9 |
+| Act-1 boss | 1,959 | 0.050 | 0.093 | 0.068 | −3.9 |
+| Act-2 boss | 1,578 | 0.150 | 0.166 | 0.158 | −8.6 |
+| Act-3 elite | 3,034 | 0.044 | 0.050 | 0.040 | −8.1 |
+| Act-3 boss | 2,131 | 0.148 | 0.189 | 0.148 | −19.0 |
+| Shield and Spear | 808 | 0.051 | 0.080 | 0.052 | −3.1 |
+| the Heart | 767 | 0.370 | 0.486 | 0.391 | (the run ends) |
+
+- The CTM under-predicts deaths at the Awakened One, Reptomancer, Gremlin Leader, Slavers and Act-2/3 event fights.
+- Out of sample the calibration predicts better in both folds. On odd seeds the death log loss goes 0.0731 → 0.0685
+  (Δ −0.0045 [−0.0055, −0.0035]) and the won-fight HP error 8.46 → 7.66 (−0.80 [−0.89, −0.71]); on even seeds the Δs
+  are [−0.0044, −0.0019] and [−0.89, −0.72].
+- Held-out stage 1–2 games, scored by the C++ runtime with the table fitted on all A/B rows: log loss 0.0733 → 0.0698
+  [−0.0059, −0.0009], HP error 8.23 → 7.60 [−0.78, −0.47]. The Heart goes 0.458 → 0.358 predicted deaths against 0.337
+  observed. Act-1 bosses got worse (0.2016 → 0.2107; 21 deaths of 249 there against the A/B's 0.063).
+- Per fight type and per elite and boss
+  ([errors_by_fight](evidence/ctm_calibration_20261023/offline/errors_by_fight.md)), out of sample every act × room
+  group is within about ±2 pp and ±2 HP.
+- By pre-fight HP the CTM's pessimism sits at higher HP. Below 20 HP the calibration makes Act-3 fights look safer
+  than they are (odd seeds: 0.43 predicted against 0.47 observed; the CTM 0.49). An HP term in the shift did not
+  help, so the table keeps the plain shift.
+- Flag `STS_CTM_CALIBRATION` (research, default off) with the table
+  `models/candidates/ctm_calibration_pathb_a20_v1.json` (`359619f7…`, 34 groups). Unset or `0` is byte-identical on
+  all five row sets. With the table the runtime matches the fit on all 99,764 fights without an active Lizard Tail
+  (death within 1.2e-7, mean won-fight HP within 2e-6). The live advisor refuses the flag. ctests
+  `ctm_calibration_parity`, `ctm_calibration_unset` and `ctm_calibration_off`.
+- Smoke of the A/B's run script on 10 spare seeds ([SMOKE](evidence/ctm_calibration_20261023/SMOKE.md)): all 20
+  games rc 0, banners right. Heart kills A 3, C 2; reached Act 4 A 6, C 3. On all four seeds whose games ended
+  differently A got further; the games part at near-ties of the root values. No evidence at this size, but it
+  lowered the point guess from +1 pp to 0.
+**Interpretation:** the CTM is most pessimistic where the search needs it most: the bosses of Acts 1 and 3, and the
+Heart, which every Act-4 rollout plays (§663). One explanation, not tested: it learned from older, weaker combat play
+(the Act-4 model from student C play, where the Heart was won 32% of the time; here 63%). Better predictions of real
+fights need not make the search play better. The last CTM calibration A/B (Act-4 survival model, §534) was NOT_SHOWN.
+**Decision:** the flag stays off. A paired A20 A/B is pre-registered
+([PREREG](evidence/ctm_calibration_20261023/PREREG.md)). Recommended in two stages: 512 seeds (about 2 h on 32
+workers), stopping if C − A is below −1 pp, then the other 1,536 (about 5 h), with the primary on all 2,048. It needs
+Philipp's typed go and the worker count.
+- Seeds: the fit replays §661's and §663's rows (no new games). Smoke 111394990–111394999 used. A/B
+  111392000–111394047 assigned, unused.
+- **Knowledge impact:** `evaluation/current-research.md`, `operations/environment-variables.md`.
+
+## §672 — A20 CTM fine-tune on today's real fights: a survival fine-tune does not beat the §670 calibration table; an HP-head fine-tune plus a refitted table lowers held-out won-fight HP error by 0.15 (research candidate, offline, 2026-10-23)
+
+**Question:** Philipp (2026-10-23 20:18Z), after §670: can a fine-tune of the deployed A20 CTM on today's real fights
+replace or improve the per-fight calibration? Yardstick (his, 20:32Z): prediction precision, not win rate.
+**Setup:** [packet](evidence/ctm_finetune_20261023/README.md). Warm start from the fast artifact `ae785ec2…`
+(`tools/ctm_finetune.py`, CPU). §670's rows, folds (source seed parity) and held-out set (LC, 6,022 fights of the stage
+1–2 games); train on one fold, test on the other; final model on all 97,561 A/B fights. 25% of each batch from 112,906
+§443 Stage-1 rows; epochs chosen on ~10% of the training fold's seeds. Fine-tuned: survival encoder + head (or head),
+and the HP head only (its encoder z also feeds maxHP, relic, gold and ritual heads). Scored by the C++ runtime
+through a research manifest; compared on the same rows with the CTM and with the CTM + §670 table fitted on the
+other fold.
+**Result:**
+- Survival: no variant beats the table out of sample. Best (encoder + head, lr 3e-4): death log loss 0.0714 / 0.0703
+  vs table 0.0685 / 0.0684 and CTM 0.0731 / 0.0717; FT − table +0.0026 [+0.0012, +0.0042] and +0.0017 [+0.0002,
+  +0.0032]. Higher learning rate or head-only is worse (head-only predicts the Heart at 0.11 vs 0.37 observed). Trained
+  on all A/B rows it ties the table on LC (0.0689 vs 0.0698, [−0.0038, +0.0019]).
+- HP head: alone it takes won-fight HP MAE from 8.46 / 8.48 / 8.23 (odd / even / LC) to 7.74 / 7.81 / 7.55. With a table
+  refitted on its scores, against the CTM + table: 7.66 → 7.56 (−0.10 [−0.13, −0.06]), 7.67 → 7.60 (−0.06 [−0.09,
+  −0.03]), held out 7.60 → 7.45 (−0.15 [−0.22, −0.08]); gains at bosses and Act-3 elites; deaths unchanged.
+**Candidate (research only):** `models/candidates/ctm_finetune_hp_pathb_a20_v1.native` (`bdbfafa6…`, five HP-head
+tensors changed, §470 shift kept so `p_death` is byte-identical to the deployed stack on all 103,583 fights), manifest
+`31bb21f7…`, table `ctm_calibration_pathb_a20_ft_hp_v1.json` (`8c226f23…`, C++ = tool on 30,072 fights). Nothing
+default; playing it needs a fast-artifact path switch the OOC stack does not have yet.
+**Interpretation:** at this data size a per-fight death shift beats re-learning survival; the HP head has room the
+per-group loss scale cannot reach. **Inference:** a clean retrain would need more current-play rows than one A/B.
+- No seeds run (rows of §661 and §663 replayed).
+- **Knowledge impact:** none beyond this entry (research candidate, no runtime or default change).
+
+## §673 — Live advisor: a burning elite under Runic Dome was refused at turn 1 (2026-10-23)
+
+**Question:** why did canary seed 111200666 (A2 floor 24, the burning Slavers elite, Runic Dome; problem 112) give up
+with `silver_runic_dome_history_gap` at turn 1, although `runicDomeKnowledge.complete` was true?
+**Setup:** the canary's report: the rows' `rollMaxHp` were 48/58/51 against live max HP 60/73/64. Native
+`BattleContext::init` and `MonsterGroup::applyEmeraldEliteBuff`; `live_silver_importer_test` (no gameplay runs).
+**Result:** a burning elite rolls its first move before `applyEmeraldEliteBuff` raises its max HP by round(25%)
+(48+12, 58+15, 51+13), and native does the same: `monsters.init` rolls, then the buff. The tracker's combat-start roll
+inputs were therefore right, but the importer required `rollMaxHp` to equal the live max HP.
+**Interpretation:** under `STS_IMPORTER_RUNIC_DOME_BURNING_ELITE_HP` (default on, `=0` restores the refusal) the
+importer accepts the combat-start roll (initial occupant, not executed, one roll) when the silverRoot says
+`burningElite` and the live max HP is the recorded one plus round(25%); the pending roll keeps the recorded pre-buff
+inputs. Later rolls still need the live max HP. The other three buffs (Strength, Metallicize, Regenerate) leave HP alone.
+The importer test gains the burning-elite combat-start row for an ordinary and a dynamic monster, with fail-closed cases.
+Play-changing only where the advisor used to refuse.
+Seeds: none new (live seed 111200666 as reported).
+**Knowledge impact:** `operations/environment-variables.md`.
+
+## §674 — Map-mirror audit: student_sel is not invariant under a horizontal map reflection (17% of map decisions flip, 37% at act start; teacher agreement 91.8% -> 80.8%); value head nearly invariant (offline, 2026-10-23)
+
+**Question:** Philipp (2026-10-23 23:20Z): is the A20 OOC prior invariant under x -> 6 - x, an exact game symmetry?
+**Setup:** [packet](evidence/map_mirror_20261023/README.md). Source audit of the engine (x is read only for edge
+membership, node identity and the visible burning elite; floor-14 boss move is action idx 0; next maps come from the
+seed), vanilla Java not re-read (JAR only on the PC). Exact mirror of student_sel's held-out rows (seed % 8 == 7, 16
+files, 267,871 rows, 36,013 map rows with >= 2 paths): xs, burning elite, current node, offered paths and the
+[left, straight, right] edge triples mirrored, tokens re-sorted; involution and self-symmetric rows checked. Native
+`heart1score` (binary `b855ee27`) on original and mirror with student_sel `cf6bf7fb` and gen 2 `fc32d8f4`.
+**Result:** student_sel map rows: top-1 flip 16.9% (act 1/2/3 11.1/17.3/24.8%, act start 36.8%, mid act 12.4%), mean
+KL 0.21, mean JS 0.040 (p99 0.46); agreement with heart1's choice 91.8% -> 80.8% (act start 91.1% -> 61.5%).
+Non-map screens 0.25% flips. gen 2 the same (16.1%, 90.7% -> 80.7%). gen 2 value: mean |dP(win)| 0.008 (p99 0.040)
+vs between-state sd 0.158; student_sel's value head is untrained. At act start the student picks partly by column
+(left-leaning, like the teacher: col 0 chosen 26% of offers, col 6 6%). Generated maps are themselves asymmetric
+(edge slots L/S/R 113,722 / 187,277 / 120,361).
+**Interpretation:** a material violation of an exact symmetry in the path policy; the value head is close to
+invariant. Whether the teacher's left preference is real map structure or a heart1 bias is open. Effect on play not
+measured. Candidate next step (not started): retrain student_sel's recipe with 50% random mirroring and compare on the
+unchanged validation set.
+Seeds: none (offline).
+**Knowledge impact:** none (diagnostic; no default changed).

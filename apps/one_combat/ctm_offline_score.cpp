@@ -147,6 +147,8 @@ int ctmScoreRows(const std::string &inPath, const std::string &outPath,
     if (sampler.fastRuntime().researchCandidate())
         std::cerr << "ctmscorerows research candidate "
                   << sampler.fastRuntime().identity().at("candidateId").get<std::string>() << '\n';
+    if (!sampler.fastRuntime().calibrationPath().empty())
+        std::cerr << "ctmscorerows calibration " << sampler.fastRuntime().calibrationPath() << '\n';
     std::ifstream in(inPath);
     need(bool(in), "cannot open " + inPath);
     std::ofstream out(outPath);
@@ -322,11 +324,12 @@ int ctmLizardFeatures(const std::string &inPath, const std::string &fastModel,
 
 // §527: native parity of the Act-4 survival model (STS_CTM_ACT4_SURVIVAL_MODEL, default on for pathb-a20) with the
 // Python fit. Each fixture line holds an Act-4 predictorInput and the Python death probability
-// (tools/ctm_act4_survival.py).
+// (tools/ctm_act4_survival.py). The model is checked alone, so the CTM calibration must be off.
 int ctmAct4SurvivalSelfTest(const std::string &fixturePath) {
     const one_combat::EntropicBrewFallbackCombatTransitionSampler sampler(
         "selfplay/models/combat_transition_deepsets_pathb_a20_lizard.native",
         "selfplay/models/combat_transition_near_full_escape_pathb_a20.native", false);
+    need(sampler.fastRuntime().calibrationPath().empty(), "ctmact4survivaltest needs STS_CTM_CALIBRATION=0");
     std::ifstream in(fixturePath);
     need(bool(in), "cannot open " + fixturePath);
     std::string line;
@@ -347,6 +350,57 @@ int ctmAct4SurvivalSelfTest(const std::string &fixturePath) {
         return 1;
     }
     std::cout << "ctmact4survivaltest PASS rows=" << n << " max_abs_diff=" << worst << '\n';
+    return 0;
+}
+
+// STS_CTM_CALIBRATION parity with tools/ctm_calibration.py. Each fixture line holds a pathb-a20 predictorInput and
+// pre-combat state (no active Lizard Tail) with the Python death probability and mean winning HP, without the
+// calibration ("base") and under the committed table ("calibrated"). MODE on requires the calibration (the ADR-0058
+// default or an explicit table) and checks "calibrated"; off requires it off and checks "base".
+int ctmCalibrationSelfTest(const std::string &fixturePath, const std::string &mode) {
+    need(mode == "on" || mode == "off", "ctmcalibrationtest MODE must be on or off");
+    const one_combat::EntropicBrewFallbackCombatTransitionSampler sampler(
+        "selfplay/models/combat_transition_deepsets_pathb_a20_lizard.native",
+        "selfplay/models/combat_transition_near_full_escape_pathb_a20.native", true);
+    const bool on = !sampler.fastRuntime().calibrationPath().empty();
+    if (on != (mode == "on")) {
+        std::cerr << "ctmcalibrationtest FAIL the calibration is " << (on ? "on" : "off") << '\n';
+        return 1;
+    }
+    std::ifstream in(fixturePath);
+    need(bool(in), "cannot open " + fixturePath);
+    std::string line;
+    int n = 0;
+    double worstDeath = 0, worstHp = 0;
+    while (std::getline(in, line)) {
+        if (line.empty()) continue;
+        const J row = J::parse(line);
+        const auto input = predictorInputFromJson(row.at("predictorInput"));
+        const auto pre = one_combat::combatTransitionStateFromJson(row.at("pre"));
+        const auto e = sampler.expectationState(pre, input);
+        need(e.supported, "fixture row is not supported");
+        double mass = 0, meanHp = 0;
+        for (std::size_t i = 0; i < e.winningHpHistogram.size(); ++i) {
+            mass += e.winningHpHistogram[i];
+            meanHp += double(e.winningHpMin + int(i)) * e.winningHpHistogram[i];
+        }
+        const auto &expected = row.at(mode == "on" ? "calibrated" : "base");
+        worstDeath = std::max(worstDeath, std::abs(e.death - expected.at("pDeath").get<double>()));
+        // The tool's mean ignores the clamp at 1 HP that a loss scale above 1 can hit: the clamp only raises the
+        // mean, by at most (scale - 1) * (pre HP - 1).
+        const double hp = meanHp / mass, expectedHp = expected.at("expectedWinHp").get<double>();
+        const double scale = mode == "on" ? row.at("hpLossScale").get<double>() : 1.0;
+        const double slack = scale > 1 ? (scale - 1) * (pre.curHp - 1) : 0.0;
+        worstHp = std::max(worstHp, hp < expectedHp ? expectedHp - hp : std::max(0.0, hp - expectedHp - slack));
+        ++n;
+    }
+    if (n == 0 || !(worstDeath < 1e-5) || !(worstHp < 1e-3)) {
+        std::cerr << "ctmcalibrationtest FAIL rows=" << n << " max_abs_death=" << worstDeath
+                  << " max_abs_win_hp=" << worstHp << '\n';
+        return 1;
+    }
+    std::cout << "ctmcalibrationtest PASS mode=" << mode << " rows=" << n << " max_abs_death=" << worstDeath
+              << " max_abs_win_hp=" << worstHp << '\n';
     return 0;
 }
 

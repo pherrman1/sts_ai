@@ -6,6 +6,7 @@
 #include "constants/MonsterEncounters.h"
 #include "constants/Potions.h"
 #include "constants/Relics.h"
+#include "constants/Rooms.h"
 #include <algorithm>
 #include <array>
 #include <atomic>
@@ -25,6 +26,15 @@
 #include <unordered_map>
 
 namespace one_combat {
+// STS_CTM_CALIBRATION (ADR-0058 default for the built-in A20 stack): per-fight corrections of the CTM fitted to real
+// combats (tools/ctm_calibration.py, docs/experiments/evidence/ctm_calibration_20261023). See ctmCalibration.
+struct CtmCalibration {
+    struct Entry { float deathLogitShift=0,hpLossScale=1; };
+    std::string path,candidateId;
+    // Indexed [act][encounter][room]: each fight's group resolved at load.
+    std::vector<Entry> entries;
+    const Entry &at(const CombatPredictorInputV1 &) const;
+};
 namespace {
 using Vec=std::vector<float>;
 void require(bool value,const char *why) { if(!value) throw std::runtime_error(why); }
@@ -115,6 +125,12 @@ Act4SurvivalModel loadAct4SurvivalModel(const std::string &path) {
               << " scope=SHIELD_AND_SPEAR,THE_HEART\n";
     return {std::move(net),path};
 }
+// A bundled model file: next to this executable (an installed release's models/), else under the working directory.
+std::string bundledPath(const char *relative) {
+    std::error_code error;
+    const auto beside=std::filesystem::read_symlink("/proc/self/exe",error).parent_path()/relative;
+    return !error && std::filesystem::is_regular_file(beside,error) ? beside.string() : std::string(relative);
+}
 const Act4SurvivalModel *act4SurvivalModel(bool a20Stack) {
     const char *raw=std::getenv("STS_CTM_ACT4_SURVIVAL_MODEL");
     if(raw) {
@@ -124,14 +140,84 @@ const Act4SurvivalModel *act4SurvivalModel(bool a20Stack) {
         return &model;
     }
     if(!a20Stack) return nullptr;
-    // The bundled model next to this executable (an installed release's models/), else under the working directory.
-    static const auto model=[] {
-        std::error_code error;
-        const auto beside=std::filesystem::read_symlink("/proc/self/exe",error).parent_path()/kDefaultAct4SurvivalModel;
-        return loadAct4SurvivalModel(!error && std::filesystem::is_regular_file(beside,error)
-            ? beside.string() : std::string(kDefaultAct4SurvivalModel));
-    }();
+    static const auto model=loadAct4SurvivalModel(bundledPath(kDefaultAct4SurvivalModel));
     return &model;
+}
+constexpr int kCalibrationEncounters=int(sizeof(sts::monsterEncounterEnumNames)/sizeof(sts::monsterEncounterEnumNames[0]));
+constexpr const char *kCalibrationRooms[]={"NORMAL","ELITE","BOSS","OTHER"};
+constexpr int kCalibrationRoomCount=int(sizeof(kCalibrationRooms)/sizeof(kCalibrationRooms[0]));
+int calibrationRoom(int roomClass) {
+    switch(static_cast<sts::Room>(roomClass)) {
+    case sts::Room::MONSTER: return 0;
+    case sts::Room::ELITE: return 1;
+    case sts::Room::BOSS: return 2;
+    default: return 3;
+    }
+}
+// ADR-0058: the table the built-in A20 stack applies when STS_CTM_CALIBRATION is unset, pinned by its bytes.
+constexpr char kDefaultCtmCalibration[]="models/candidates/ctm_calibration_pathb_a20_v1.json";
+constexpr char kDefaultCtmCalibrationSha256[]="359619f713677de60b86144e275ad37874718951c6964b63811f55c77181cb42";
+// A ctm_calibration_v1 JSON table applies to the runtimes of the stack it names (candidateId) only. A fight's group is
+// "<act>:<ENCOUNTER>" in an elite or boss room when the table has it, else "<act>:<ROOM>" (the predictor room class:
+// MONSTER is NORMAL, then ELITE, BOSS, and OTHER for every other room); a fight in neither keeps the CTM's prediction.
+std::unique_ptr<CtmCalibration> loadCtmCalibration(const std::string &path) {
+    std::ifstream file(path);
+    if(!file) throw std::runtime_error("STS_CTM_CALIBRATION: cannot open "+path);
+    const auto table=nlohmann::json::parse(file);
+    if(!table.is_object() || table.value("schema",std::string{})!="ctm_calibration_v1" ||
+       !table.contains("candidateId") || !table.at("candidateId").is_string() ||
+       !table.contains("groups") || !table.at("groups").is_object())
+        throw std::runtime_error("STS_CTM_CALIBRATION: "+path+" is not a ctm_calibration_v1 table");
+    std::set<std::string> known;
+    for(int act=1;act<=4;++act) {
+        for(const char *room:kCalibrationRooms) known.insert(std::to_string(act)+":"+room);
+        for(int encounter=1;encounter<kCalibrationEncounters;++encounter)
+            known.insert(std::to_string(act)+":"+sts::monsterEncounterEnumNames[encounter]);
+    }
+    std::map<std::string,CtmCalibration::Entry> groups;
+    for(const auto &[key,value]:table.at("groups").items()) {
+        const CtmCalibration::Entry entry{value.at("deathLogitShift").get<float>(),value.at("hpLossScale").get<float>()};
+        if(!known.count(key) || !std::isfinite(entry.deathLogitShift) || std::abs(entry.deathLogitShift)>5 ||
+           !std::isfinite(entry.hpLossScale) || entry.hpLossScale<0 || entry.hpLossScale>4)
+            throw std::runtime_error("STS_CTM_CALIBRATION: "+path+" group "+key+
+                " needs a known name, |deathLogitShift| <= 5 and hpLossScale in [0, 4]");
+        groups.emplace(key,entry);
+    }
+    auto calibration=std::make_unique<CtmCalibration>();
+    calibration->path=path;
+    calibration->candidateId=table.at("candidateId").get<std::string>();
+    calibration->entries.assign(std::size_t(5*kCalibrationEncounters*kCalibrationRoomCount),{});
+    for(int act=1;act<=4;++act) for(int encounter=0;encounter<kCalibrationEncounters;++encounter)
+        for(int room=0;room<kCalibrationRoomCount;++room) {
+            auto found=groups.end();
+            if(room==1 || room==2) found=groups.find(std::to_string(act)+":"+sts::monsterEncounterEnumNames[encounter]);
+            if(found==groups.end()) found=groups.find(std::to_string(act)+":"+kCalibrationRooms[room]);
+            if(found!=groups.end())
+                calibration->entries[std::size_t((act*kCalibrationEncounters+encounter)*kCalibrationRoomCount+room)]=found->second;
+        }
+    std::cerr << "[ctm-calibration] table=" << path << " sha256=" << sha256File(path) << " groups=" << groups.size()
+              << " scope=" << calibration->candidateId << "\n";
+    return calibration;
+}
+// STS_CTM_CALIBRATION, loaded once per process: a path is a research table; unset applies kDefaultCtmCalibration to
+// the built-in A20 stack only (ADR-0058); 0 turns the calibration off.
+const CtmCalibration *ctmCalibration(bool builtInA20Stack) {
+    const char *raw=std::getenv("STS_CTM_CALIBRATION");
+    if(raw) {
+        require(*raw!=0,"STS_CTM_CALIBRATION is empty");
+        if(std::string(raw)=="0") return nullptr;
+        static const auto calibration=loadCtmCalibration(raw);
+        return calibration.get();
+    }
+    if(!builtInA20Stack) return nullptr;
+    static const auto calibration=[] {
+        const auto path=bundledPath(kDefaultCtmCalibration);
+        if(!std::ifstream(path) || sha256File(path)!=kDefaultCtmCalibrationSha256)
+            throw std::runtime_error("STS_CTM_CALIBRATION unset needs the bundled table "+path+" with sha256 "+
+                kDefaultCtmCalibrationSha256+" (ADR-0058; =0 turns the calibration off)");
+        return loadCtmCalibration(path);
+    }();
+    return calibration.get();
 }
 bool hasEntropicBrew(const CombatPredictorInputV1 &input) {
     return std::any_of(input.potions.begin(),input.potions.end(),[](const auto &p) {
@@ -771,6 +857,17 @@ const nlohmann::json *researchCandidateIdentity() {
     return identity.get();
 }
 }
+const CtmCalibration::Entry &CtmCalibration::at(const CombatPredictorInputV1 &p) const {
+    static const Entry none;
+    const int act=p.globals.act,encounter=p.globals.encounter;
+    if(act<1 || act>4 || encounter<0 || encounter>=kCalibrationEncounters) return none;
+    return entries[std::size_t((act*kCalibrationEncounters+encounter)*kCalibrationRoomCount+
+        calibrationRoom(p.globals.roomClass))];
+}
+const std::string &CombatTransitionRuntime::calibrationPath() const {
+    static const std::string none;
+    return calibration_?calibration_->path:none;
+}
 void CombatTransitionRuntime::requireCurrentStandardFallbackArtifact(const std::string &path) {
     static const std::string expected=productionIdentity().at("standard").at("artifactSha256");
     require(sha256File(path)==expected,
@@ -833,6 +930,14 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
     if(const auto *act4=act4SurvivalModel(identity_.at("candidateId")=="pathb-a20")) {
         act4Survival_=act4->net.get();
         act4SurvivalPath_=act4->path;
+    }
+    // The bundled table corrects this exact stack: the built-in calibrated manifest (also when a research manifest has
+    // the same content) with the ADR-0048 Act-4 model, whose predictions it was fitted on.
+    const bool builtInA20Stack=identity_==a20CandidateIdentity() && !std::getenv("STS_CTM_ACT4_SURVIVAL_MODEL");
+    if(const auto *calibration=ctmCalibration(builtInA20Stack);
+       calibration && identity_.at("candidateId")==calibration->candidateId) {
+        require(nearFull(),"STS_CTM_CALIBRATION applies to near-full artifacts only");
+        calibration_=calibration;
     }
     const auto &capabilities=identity_.at("capabilities").at(deepsetStack?"fast":"standard");
     require(metadata_.value("capabilities",nlohmann::json::object())==capabilities,
@@ -1230,6 +1335,15 @@ double CombatTransitionRuntime::lizardBrewReserveProbability(double pReserveWin)
     return reserveProbability(lizardBrewRModel_,pReserveWin);
 }
 float CombatTransitionRuntime::survival(const CombatPredictorInputV1 &p) const {
+    const float base=uncalibratedSurvival(p);
+    if(!calibration_) return base;
+    const float shift=calibration_->at(p).deathLogitShift;
+    if(shift==0 || !(base>0 && base<1)) return base;
+    // STS_CTM_CALIBRATION: the shift moves the logit of the death probability, after §470 and the Act-4 model.
+    const double death=1-double(base);
+    return float(1/(1+std::exp(std::log(death/(1-death))+shift)));
+}
+float CombatTransitionRuntime::uncalibratedSurvival(const CombatPredictorInputV1 &p) const {
     // §527: the Act-4 model replaces the survival of the two Act-4 fights (the CTM never trained on Act 4); other
     // heads are unchanged. Default on for the pathb-a20 stack (ADR-0048).
     if(act4Survival_ && (p.globals.encounter==int(sts::MonsterEncounter::THE_HEART) ||
@@ -1267,6 +1381,24 @@ Vec CombatTransitionRuntime::signedHp(const Vec &z,int delta,int preHp,int maxim
     if(escape_){require(escaped==0 || escaped==1,"escape-capable HP head needs the escape bit");x.push_back(float(escaped));}
     else require(escaped==-1,"escape bit on an artifact without the escape capability");
     auto logits=linear("hp.hp.2",relu(linear("hp.hp.0",x)));for(int i=0;i<int(logits.size());++i)if(preHp+i+hpMin_<1 || preHp+i+hpMin_>maximum)logits[i]=-std::numeric_limits<float>::infinity();return softmax(logits);}
+void CombatTransitionRuntime::calibrateHpLoss(const CombatPredictorInputV1 &p,Vec &hp,int preHp,int maximum) const {
+    if(!calibration_) return;
+    const double scale=calibration_->at(p).hpLossScale;
+    if(scale==1) return;
+    const int classes=int(hp.size()),low=std::max(hpMin_,1-preHp),high=std::min(hpMin_+classes-1,maximum-preHp);
+    require(low<=high,"calibrated HP classes are empty");
+    std::vector<double> out(hp.size(),0.0);
+    auto add=[&](int delta,double mass) { out[std::size_t(std::clamp(delta,low,high)-hpMin_)]+=mass; };
+    for(int cls=0;cls<classes;++cls) {
+        const double mass=hp[std::size_t(cls)],delta=cls+hpMin_;
+        if(mass<=0) continue;
+        if(delta>=0) { out[std::size_t(cls)]+=mass; continue; }
+        const double target=scale*delta,lower=std::floor(target),up=target-lower;
+        add(int(lower),mass*(1-up));
+        if(up>0) add(int(lower)+1,mass*up);
+    }
+    for(int cls=0;cls<classes;++cls) hp[std::size_t(cls)]=float(out[std::size_t(cls)]);
+}
 Vec CombatTransitionRuntime::potion(const CombatPredictorInputV1 &p,int delta,float fraction) const {
     return potion(potionEncoding(p),p,delta,fraction);
 }
@@ -1352,6 +1484,7 @@ CombatTransitionExpectation calculateForecastExpectation(
             for (size_t cls = 0; cls < hp.size(); ++cls)
                 hp[cls] = float((1 - escape) * hp[cls] + escape * escaped[cls]);
         }
+        runtime.calibrateHpLoss(p, hp, p.globals.curHp, maximum);
         double conditional = 0;
         for (size_t cls = 0; cls < hp.size(); ++cls) {
             const int finalHp = p.globals.curHp + domain.hpClasses.at(cls);

@@ -468,6 +468,7 @@ int ctmScoreRowsSelfTest();
 nlohmann::json ctmOpeningHandJson(const GameContext &gc);
 int ctmOpeningHands(const std::string &inPath, const std::string &outPath, int resamples);
 int ctmAct4SurvivalSelfTest(const std::string &fixturePath);
+int ctmCalibrationSelfTest(const std::string &fixturePath, const std::string &mode);
 int ctmEscapeFeatures(const std::string &inPath, const std::string &model, const std::string &outPrefix);
 int ctmLizardFeatures(const std::string &inPath, const std::string &fastModel,
                       const std::string &standardModel, const std::string &outPath);

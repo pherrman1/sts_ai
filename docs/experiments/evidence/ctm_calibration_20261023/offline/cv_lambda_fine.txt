@@ -1,0 +1,8 @@
+lam_fine      0.5 cv logloss 0.06849  elite 0.08796 boss 0.25863
+lam_fine        2 cv logloss 0.06848  elite 0.08795 boss 0.25858
+lam_fine        5 cv logloss 0.06848  elite 0.08796 boss 0.25855
+lam_fine       10 cv logloss 0.06851  elite 0.08805 boss 0.25864
+lam_fine       20 cv logloss 0.06864  elite 0.08833 boss 0.25905
+lam_fine       50 cv logloss 0.06905  elite 0.08913 boss 0.26060
+lam_fine 1000000000.0 cv logloss 0.07085  elite 0.09168 boss 0.26921
+uncalibrated logloss 0.07239
