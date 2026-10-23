@@ -22396,7 +22396,7 @@ Seeds: none new (live seeds 111200473 and 111200504).
 **Interpretation:** Live play-changing for every run with Necronomicon: Silver now plans the free attack copy when it is available.
 
 **Status:** Draft PR; javap confirmation and PC `test.sh` requested from the canary.
-## §TBD — Live problem 99: monster moveHistory mismatches; a slime split triggered during its own turn was rolled over (2026-10-23)
+## §650 — Live problem 99: monster moveHistory mismatches; a slime split triggered during its own turn was rolled over (2026-10-23)
 
 **Question:** What are the 20 background moveHistory mismatch rows in canary seeds 111200535-618, and do any of them change play?
 
