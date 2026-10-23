@@ -23859,7 +23859,7 @@ Play-changing only where the advisor used to refuse.
 Seeds: none new (live seed 111200641 as reported; unit test seed 111200071 from this thread's block).
 **Knowledge impact:** `operations/environment-variables.md`, `operations/live-model-inspector.md`.
 
-## §TBD-leaflabel — Silver leaf head, labels or data: a per-state label (Silver's searched value) orders exact leaves better and wins first fights without a playout, but no new net beats production in the 3-source smoke, and every head scores lower there in boss fights (offline, 2026-10-23)
+## §664 — Silver leaf head, labels or data: a per-state label (Silver's searched value) orders exact leaves better and wins first fights without a playout, but no new net beats production in the 3-source smoke, and every head scores lower there in boss fights (offline, 2026-10-23)
 
 **Question:** Philipp, after §656 paused the line (2026-10-23 14:28Z): retrain the leaf head with cleaner labels, or
 does it need more data? Exploratory and offline: no new seeds, no workers, no code change.
