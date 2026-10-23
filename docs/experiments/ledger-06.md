@@ -22371,7 +22371,7 @@ Seeds: none new (live seeds 111200473 and 111200504).
 
 **Change:** `STS_DARK_SHACKLES_FIX` (default on, `=0` restores the legacy card): Strength -9 (-15) and, without Artifact at use time, Shackled 9 (15). Test in `ironclad_card_java_parity` (Jaw Worm, with and without Artifact, both flag values): without Artifact Str -9 / Shackled 9 and Str back to its old value after the monster's end of turn; with Artifact, Artifact consumed, Str unchanged, no Shackled.
 
-**Interpretation:** Play-changing for every combat with Dark Shackles, in simulated play and the live advisor: the engine had valued it as a +9 Strength gift for the monster, so search likely avoided it. Not handled (unchanged): Sadistic Nature triggers on GainStrengthPower in Java (a DEBUFF power) but not natively.
+**Interpretation:** Play-changing for every combat with Dark Shackles, in simulated play and the live advisor: the engine had valued it as a +9 Strength gift for the monster, so search likely avoided it. Sadistic Nature still triggers once (on the Strength loss), as in Java, whose `SadisticPower.onApplyPower` skips Shackled.
 
 **Status:** Draft PR.
 ## §576 — Live Act 4: the Heart's "Boss!" map choice had no native action; its completed room stalled (2026-10-20)
