@@ -22467,7 +22467,7 @@ Seeds: none new (live seeds 111200473 and 111200504).
 
 **Status:** Draft PR.
 
-## §TBD — Live problem 108: Angry gained Strength on a fully blocked hit (2026-10-23)
+## §666 — Live problem 108: Angry gained Strength on a fully blocked hit (2026-10-23)
 
 **Question:** Why did seed 111200647 (step 461, floor 30, Gremlin Gang) diverge after Reaper hit a Gremlin Warrior (Angry 2, Strength 5, block 10)?
 
