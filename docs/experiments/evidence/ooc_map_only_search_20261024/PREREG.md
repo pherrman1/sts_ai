@@ -5,7 +5,7 @@ Written 2026-10-24 before any campaign game ran. Origin: the OOC direction revie
 and open for 2 and 3 and issue each in github". Issue #854.
 
 **Authorization:** Philipp, 2026-10-24 18:56Z: "lets go, 32 workers." 1,024 paired A20 seeds × 3 arms on 32 cloud
-workers. The independent pre-launch review (reviewer J) runs in parallel; a blocking finding stops the campaign.
+workers, launched by the coordinator after the independent pre-launch review (reviewer J) passes this RUN_COMMIT.
 
 ## Question
 The review found that gen-0's whole search gain (§569, +40 kills on 1,664 pairs) sits in pairs whose first divergence
