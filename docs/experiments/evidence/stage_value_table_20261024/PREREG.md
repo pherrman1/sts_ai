@@ -2,8 +2,8 @@
 
 Issue [#855](https://github.com/pherrman1/sts_ai/issues/855), experiment 2 of the post-#853 OOC direction review
 (`/mnt/project-files/ooc-direction-review/REPORT.html`). Philipp, 2026-10-24 22:40Z: "starte [...] einen anderen
-thread der idee 2 von dem og research plan macht". **Status: DRAFT. No gameplay seed has been used. Nothing runs
-before Philipp's typed go, a seed block from the coordinator and a pre-launch review.**
+thread der idee 2 von dem og research plan macht". **Status: Stage A authorized (Philipp 2026-10-24 23:00Z "go stufe A", 8 workers). Runs after the pre-launch review.
+Stage B needs its own go.**
 
 ## Question
 
@@ -76,7 +76,8 @@ the same run fall into the same half.
 - 4 `rm:X` (X may carry `+`): X uniform over distinct removable card names in the deck; one copy is removed.
   Not removable: Ascender's Bane, Necronomicurse, Curse of the Bell, and bottled cards. Removing Parasite costs 3 max
   HP. Bottle indices are remapped after the removal.
-- 2 `hp:-10` (cur HP − 10, at least 1); two copies give the HP exchange rate at this stage.
+- 2 HP losses, `hp:-8` and `hp:-16` (cur HP lowered, at least 1); they give the HP exchange rate at this stage.
+  (Two identical variants would replay identical fights, since base and variants share all seeds.)
 - If a deck has fewer up or rm candidates, the missing slots are filled with further `add` keys.
 
 **Fights.** `one_combat act4replay` on one line at a time (base or one variant), `SIMS 10000`, `REPLICATES 4`,
@@ -106,9 +107,9 @@ projected r is below 0.35. Otherwise ask Philipp for Stage B.
 
 **Heart-stage gates (after Stage B, all 392 decks):**
 - **(a) Reproducibility:** over keys with at least 20 deck observations **in each half** (interpretation of #855's
-  "≥ 20 observations"), the Pearson correlation of key means between the two halves is ≥ 0.6. `hp:-10` is excluded.
+  "≥ 20 observations"), the Pearson correlation of key means between the two halves is ≥ 0.6. `hp:` keys are excluded.
 - **(b) Prediction:** table fitted on one half, evaluated on the other (both directions). For each held-out deck,
-  Spearman correlation between the table value of its variants and their observed per-deck δ (`hp:-10` excluded;
+  Spearman correlation between the table value of its variants and their observed per-deck δ (`hp:` keys excluded;
   keys absent from the training half predicted 0). Mean over held-out decks; 95% bootstrap CI over source seeds
   must exclude 0 from below (lower bound > 0).
 - **(c) Disagreement (descriptive, not a FAIL criterion):** at the card-reward roots of the #854 arm-D traces
@@ -119,7 +120,7 @@ projected r is below 0.35. Otherwise ask Philipp for Stage B.
   gates; a Stage A projection between 0.35 and 0.6 is reported as such.
 
 **Reported, no rule:** base replay win rate vs observed entry outcome (fidelity, as in #852); CRN correlation of
-base and variant outcomes; HP exchange rate (`hp:-10`); the top and bottom 15 keys with CIs; add vs up vs rm
+base and variant outcomes; HP exchange rate (`hp:-8`, `hp:-16`); the top and bottom 15 keys with CIs; add vs up vs rm
 spread; CPU per fight.
 
 ## After the result
@@ -137,13 +138,16 @@ spread; CPU per fight.
 - Heart first, act-3 boss only after a Heart PASS.
 - 392 decks x 4 seeds instead of 96-128 decks x 4-8 seeds: more decks reduce the deck x key heterogeneity part of
   the error, which more seeds cannot.
-- `hp:-10` added as a key.
+- `hp:-8` and `hp:-16` added as keys.
 
 ## Provenance (to be frozen before launch)
 
-- RUN_COMMIT, code SHA, binary sha256: TBD (frozen at launch).
-- Seeds: battle seeds `BASE .. BASE + 1,567` (392 decks x 4) and a smoke range, **requested from the coordinator**
-  (proposed: 111303000-111304567, smokes 111308990-999; checked against `tools/seed_guard.sh` and the ledger before
-  freezing).
-- States file and variant file: sha256 TBD (built by `make_variants.py` from the guard rows).
-- Compute: Stage A about 24 core-h; Stage B about 74 core-h. Worker count from Philipp.
+- RUN_COMMIT: the commit that carries this file's final campaign files (stated in the launch message).
+  `campaign.manifest` names the code commit and the binary sha256 (v3 preset).
+- Seeds (coordinator, 2026-10-24 22:51Z): battle seeds 111303000-111304567 (392 decks x 4; Stage A uses
+  111303000-111303383); smokes 111308990-111308999 (111308990-993 used by the deck-0 smoke, 3 variants, rc 0, and a
+  determinism rerun of the base line: identical rows).
+- Variant file `variants.jsonl.gz` sha256 `ee000b604029724a067ff3b36fd48b75133f4d13e47ab92c8d46e585416322b6`
+  (rebuilt byte-identically by `make_variants.py` from the guard rows; 400 distinct Heart decks, the first 392 used).
+- Smoke CPU: 3.0-7.4 s per Heart fight at P10 (deck 0).
+- Compute: Stage A about 15-24 core-h on 8 workers x 4 lanes; Stage B about 50-74 core-h. Worker count from Philipp.
