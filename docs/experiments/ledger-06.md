@@ -24167,3 +24167,23 @@ measured. Candidate next step (not started): retrain student_sel's recipe with 5
 unchanged validation set.
 Seeds: none (offline).
 **Knowledge impact:** none (diagnostic; no default changed).
+
+## §TBD — student_sel retrained with 50% map mirroring: nearly mirror-equivariant (map flips 16.9% -> 2.5%) but 0.73 pp lower heart1 top-1 on original validation rows; pre-registered gate FAIL (offline, 2026-10-24)
+
+**Question:** follow-up to §674 (Philipp chose the retrain 2026-10-23 23:55Z): does 50% mirroring remove the asymmetry
+without losing teacher agreement? Gate (card, before training): original-validation top-1 at most 0.5 pp below
+student_sel and map flip rate under 5%.
+**Setup:** [packet](evidence/map_mirror_retrain_20261024/README.md). New `distill.py --mirror P` (default 0) with
+`tools/heart1/map_mirror.py`; E_d64_sel_xin's recipe and 128 files unchanged plus `--mirror 0.5` (commit `4acd3425`,
+Philipp's GPU, 91 min); output data branch `9601d463` `results/F_d64_sel_xin_mirror50/`, export `acc9051e…`. §674's
+mirror audit on the same 267,871 held-out rows.
+**Result:** validation top-1 93.38% vs 94.11% (KL 0.0590 vs 0.0522); all of it on map rows (91.9% -> 87.0%, act 3
+86.8% -> 77.6%), other screens within ±0.01. Map flips 16.9% -> 2.5% (act start 36.8% -> 8.8%), mean JS 0.040 ->
+0.0001; agreement with heart1 original/mirrored 86.9%/86.8% (E 91.8%/80.8%, mean 86.3%). Gate: flips PASS, top-1
+FAIL -> **FAIL**.
+**Interpretation:** augmentation yields near-equivariance at no cost on non-map screens; the loss is agreement with
+heart1's labels on original maps, which an equivariant net cannot match where heart1 is asymmetric, so the gate cannot
+tell "less biased" from "worse". Not a candidate as gated; heart1's own asymmetry is the open question. No default
+changed (`--mirror` default 0).
+Seeds: none (offline).
+**Knowledge impact:** `tools/heart1/distill.py` docstring (new option).
