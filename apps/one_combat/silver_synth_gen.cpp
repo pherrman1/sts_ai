@@ -982,7 +982,9 @@ void silverFocusEvalGen(int nSeeds, int asc, const std::string &outPrefix, long 
 // (Shield + Spear, the Heart) under several flat exact Silver budgets. Each JSONL line gives the
 // encounter, HP, max HP, deck (trace names, "+" = upgraded once), relics, potions and potion
 // capacity of one recorded fight start. The state is rebuilt on a fresh A20 GameContext moved to
-// Act 4 (relic counters and card misc reset: an approximation shared by all arms). Copy r of every
+// Act 4 (card misc reset; relic counters reset unless the line gives "relicData", one value per relic,
+// e.g. an unused Lizard Tail; "bottleIdxs" [attack, skill, power] deck indices bottle those cards; an
+// approximation shared by all arms). "Strike"/"Defend" are Ironclad's (STRIKE_RED/DEFEND_RED). Copy r of every
 // arm shares the battle seed (SEED_OFFSET + state * REPLICATES + r) and the planner seed, so arms
 // differ only in the budget. One CSV row per (state, replicate, arm).
 namespace {
@@ -990,7 +992,8 @@ namespace {
 GameContext act4ReplayContext(const nlohmann::json &s, std::uint64_t seed, MonsterEncounter enc) {
     static const auto cardIds = [] {
         std::map<std::string, CardId> m;
-        for (int i = 1; i < static_cast<int>(std::size(cardNames)); ++i) m.emplace(cardNames[i], static_cast<CardId>(i));
+        // Later ids win: the duplicated starter names resolve to Ironclad's *_RED variants, the last of each group.
+        for (int i = 1; i < static_cast<int>(std::size(cardNames)); ++i) m[cardNames[i]] = static_cast<CardId>(i);
         return m;
     }();
     GameContext gc(CharacterClass::IRONCLAD, seed, 20);
@@ -1007,13 +1010,27 @@ GameContext act4ReplayContext(const nlohmann::json &s, std::uint64_t seed, Monst
         gc.deck.obtainRaw(c);
     }
     gc.relics.relics.clear();
+    const auto relicData = s.value("relicData", std::vector<int>{});
+    if (!relicData.empty() && relicData.size() != s.at("relics").size())
+        throw std::runtime_error("act4replay: relicData must give one value per relic");
+    std::size_t relicIndex = 0;
     for (const auto &entry : s.at("relics")) {
         const auto name = entry.get<std::string>();
         int id = -1;
         for (int i = 0; i < static_cast<int>(std::size(relicEnumNames)) - 1; ++i)
             if (name == relicEnumNames[i]) id = i;
         if (id < 0) throw std::runtime_error("act4replay: unknown relic " + name);
-        gc.relics.add({static_cast<RelicId>(id), 0});
+        gc.relics.add({static_cast<RelicId>(id), relicData.empty() ? 0 : relicData[relicIndex]});
+        ++relicIndex;
+    }
+    if (s.contains("bottleIdxs")) {
+        const auto bottles = s.at("bottleIdxs").get<std::vector<int>>();
+        if (bottles.size() != 3) throw std::runtime_error("act4replay: bottleIdxs must have 3 entries");
+        for (int type = 0; type < 3; ++type) {
+            if (bottles[type] < 0) continue;
+            if (bottles[type] >= gc.deck.size()) throw std::runtime_error("act4replay: bottle index out of range");
+            gc.deck.bottleCard(bottles[type], static_cast<CardType>(type));
+        }
     }
     gc.potionCapacity = s.at("potionCapacity").get<int>();
     for (int i = 0; i < static_cast<int>(gc.potions.size()); ++i) gc.potions[i] = Potion::EMPTY_POTION_SLOT;

@@ -24347,3 +24347,47 @@ are too weak to overrule student_sel, as with earlier Q-based root selection. A 
 untested (new hypothesis). The option stays research-only.
 Seeds: 111302000–111302063 (campaign), 111309990, 111309991, 111309995 (smokes, root replay).
 **Knowledge impact:** environment-variables.md and CODE_MAP.md list the research option; no default change.
+
+## §681 — Act-4 combat strength from the guard's decks: prior playouts save Shield and Spear 4.4 HP (COMBAT_HEADROOM), more Silver budget does not win the Heart at the 32k node cap (+0.9 pp [−1.1, +3.0]) (128 + 128 states × 8 copies × 6 cells, 2026-10-24)
+
+**Question:** Philipp (2026-10-24 09:00Z): only Shield and Spear (S&S) matters for HP (the Act-3 boss heals 80%);
+first test whether Act-4 combat could be better or the decks are the limit. 128 S&S and 128 Heart fights, 10k and
+40k simulations, with the root prior, with prior playouts, and without a prior.
+**Setup:** [PREREG](evidence/act4_combat_strength_20261024/PREREG.md). Entry states from the §676 guard (arm C,
+1,024 seeds, ascension 20), 128 per fight; `act4replay` (fixed this PR: Strike/Defend ids, relic data, bottled
+cards). Cells P (g7f_E root/tree prior, greedy playouts), PP (P + prior playouts) and N (no prior), each at flat 10k
+and 40k, 8 copies per state with common seeds. Run commit `60b39fa6`, 32 cloud workers, 768 units verified;
+pre-launch review PASS. Deviation: `analyze.py` was changed after the freeze to drop a fight that threw (one 40k fight
+hit the 1,000-decision stall guard) with its (state, copy) from every cell.
+**Result:** [RESULT.md](evidence/act4_combat_strength_20261024/RESULT.md). Heart wins P 57.5/58.7%, PP 60.9/61.9%,
+N 57.4/56.1% (10k/40k); S&S HP lost P 29.9/28.7, PP 25.4/25.5, N 30.6/31.3. Primary: Heart `PP@40k − PP@10k`
++0.9 pp [−1.1, +3.0]; S&S `P@10k − PP@40k` +4.4 HP [+3.1, +5.7] → COMBAT_HEADROOM (S&S only). Secondary: the S&S
+gain is the prior playouts (`P@10k − PP@10k` +4.5 [+3.1, +5.9]); 15 Heart decks lose all 48 fights, 20 win all;
+under production 67 of 128 are mixed. Replay fidelity: Heart 60.9% vs 58.6% in the real games; S&S replays miss
+Burning Blood's +6 heal.
+**Interpretation:** in S&S prior playouts are worth about 4.5 HP before the Heart (§642's null on 32 states had the
+act4replay errors fixed here). The Heart did not gain from 40k, but Silver dropped its reused tree at ~30% of 40k
+reroots (32,768-node cap), so 40k was not a 4× search; §682 repeats it with the cap raised.
+Seeds: 111395000–111396023 (S&S), 111398100–111399123 (Heart), 111396990–111396995 (smokes).
+**Knowledge impact:** `evaluation/current-research.md`.
+
+## §682 — Act-4 combat strength at a raised Silver node cap (262,144): 40k with prior playouts wins the Heart +2.4 pp [+0.6, +4.2] over production 10k, Shield and Spear unchanged (INCONCLUSIVE); Act 4 strong becomes the A20 default by Philipp's call (ADR-0060) (128 + 128 states × 8 copies × 3 cells, 2026-10-24)
+
+**Question:** Philipp (2026-10-24 11:06Z): "Do we use stopping here? Should we maybe try without and increase the
+search space node limit?" §681's 40k cells lost the reused tree at ~30% of reroots (32,768-node cap). Does 40k
+help once the tree is kept?
+**Setup:** [PREREG](evidence/act4_combat_reusecap_20261024/PREREG.md). §681's 40k cells (P, PP, N) rerun with
+the research option `STS_SILVER_NODE_REUSE_CAP=262144` (cells Pc, PPc, Nc), same states, copies and seeds, paired
+with §681's cells. Run commit `c19e1213`, 32 cloud workers; 764 units verified, the last 4 Heart PP units rerun in
+this thread's container from the same commit and binary (all rc 0).
+**Result:** [RESULT.md](evidence/act4_combat_reusecap_20261024/RESULT.md). Heart wins Pc 60.6%, PPc 63.2%, Nc 57.6%;
+S&S HP lost 28.8 / 25.4 / 30.7. Primary: Heart `PPc@40k − PP@10k` +2.4 pp [+0.6, +4.2]; S&S `P@10k − Pc@40k`
++1.1 HP [+0.1, +2.0] → INCONCLUSIVE. Raised vs default cap at 40k: Heart +1.4 / +2.0 / +1.5 pp (PP / P / N), none
+excluding 0; S&S ±0.1 HP. CPU +5-14% per 40k fight; a PPc Heart fight costs about 4 min, PP 10k about 1 min.
+**Interpretation:** the Heart gains a little from a 40k search that keeps its tree; S&S gains only from prior
+playouts (§681). Fight-level evidence on 128 guard decks per fight; no run-level A/B.
+**Decision:** Philipp (17:00Z): "Die extra Kosten sind es mir für beide Combats wert" → ADR-0060: whole-run Act 4
+under the learned stop plays S&S at flat 10k with prior playouts and the Heart at flat 40k with a 262,144-node cap;
+`STS_SILVER_ACT4_STRONG=0` restores the learned stop (older A20 comparisons need it).
+Seeds: none new (§681's seeds replayed).
+**Knowledge impact:** `operations/environment-variables.md`, `evaluation/current-research.md`.

@@ -1,0 +1,9 @@
+name          act4-combat-reusecap
+code_commit   269cf66d774e1dcd5319dddb2ac7460f05073635
+binary_sha256 415cb1523172e075bc4ece50260bfa332ef7f219837bc529053c8c7340682587
+workers       32
+share         /mnt/project-files/act4-combat-reusecap
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 30
