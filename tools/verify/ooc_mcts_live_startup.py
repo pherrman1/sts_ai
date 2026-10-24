@@ -66,6 +66,13 @@ def main():
             'active_lizard_correction=1'),
         ('A20 stack on by default', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_SIMS': '128'}, True,
             '[ctm-a20-stack] candidate_id=pathb-a20 scope=ascension20'),
+        # ADR-0059: its fast artifact is the HP-head fine-tune; =0 restores the §470 artifact.
+        ('A20 HP-head fine-tune on by default', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_SIMS': '128'}, True,
+            'active_lizard_correction=1 hp_finetune=1'),
+        ('A20 HP-head fine-tune opt-out', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_SIMS': '128',
+            'STS_CTM_A20_HP_FINETUNE': '0'}, True, 'active_lizard_correction=1 hp_finetune=0'),
+        ('malformed A20 HP-head fine-tune flag', {'STS_OOC_MCTS': '1', 'STS_CTM_A20_HP_FINETUNE': 'yes'}, False,
+            'STS_CTM_A20_HP_FINETUNE must be 0 or 1 when set'),
         ('explicit A20 stack refuses overrides', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_A20_CTM': '1',
             'STS_OOC_MCTS_ACTIVE_LIZARD': '0'}, False, 'STS_OOC_MCTS_A20_CTM=1 requires the default CTM stack'),
         ('malformed A20 stack flag', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_A20_CTM': 'yes'}, False,

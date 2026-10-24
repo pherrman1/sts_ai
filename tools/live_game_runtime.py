@@ -27,7 +27,11 @@ CTM_CURRENT_NAME = "combat_transition_near_full_escape_pathb_r2_ritual_refit.nat
 CTM_QUALIFIED_PAIRS = ((CTM_CURRENT_FAST_NAME, CTM_CURRENT_NAME),
                        ("combat_transition_deepsets_pathb_r2_lizard.native",
                         "combat_transition_near_full_escape_pathb_r2.native"))
-CTM_A20_FAST_NAME = "combat_transition_deepsets_pathb_a20_lizard.native"
+# ADR-0059: the A20 stack's fast artifact is the §672 HP-head fine-tune, tracked in models/candidates/. Releases
+# installed before it carry the §470 fast artifact (from selfplay/models/) under its own name.
+CTM_A20_FAST_NAME = "ctm_finetune_hp_pathb_a20_v1.native"
+CTM_A20_FAST_SOURCE = "models/candidates/ctm_finetune_hp_pathb_a20_v1.native"
+LEGACY_CTM_A20_FAST_NAME = "combat_transition_deepsets_pathb_a20_lizard.native"
 CTM_A20_NAME = "combat_transition_near_full_escape_pathb_a20.native"
 CTM_QUALIFIED_KEYS = ("ctmFallback", "ctmA20Primary", "ctmA20Fallback", "ctmA20FastSha256", "ctmA20Sha256")
 OOC_NAME = "ooc_strategic_tok_final.native"
@@ -51,8 +55,14 @@ def rollout_root_table_name(manifest: dict[str, Any]) -> str:
     return manifest.get("rolloutRootTableName", LEGACY_ROLLOUT_ROOT_TABLE_NAME)
 # ADR-0048 Act-4 survival model of the A20 CTM stack; the advisor loads it from models/candidates/ beside itself.
 ACT4_SURVIVAL_NAME = "candidates/ctm_act4_survival_trees.txt"
-# ADR-0058 calibration table of the A20 CTM stack; the advisor loads it from models/candidates/ beside itself.
-CTM_CALIBRATION_NAME = "candidates/ctm_calibration_pathb_a20_v1.json"
+# The A20 CTM stack's calibration table, refitted for the fine-tune (ADR-0059); the advisor loads it from
+# models/candidates/ beside itself. Releases from before ADR-0059 carry the ADR-0058 table and no ctmCalibrationName.
+CTM_CALIBRATION_NAME = "candidates/ctm_calibration_pathb_a20_ft_hp_v1.json"
+LEGACY_CTM_CALIBRATION_NAME = "candidates/ctm_calibration_pathb_a20_v1.json"
+
+
+def ctm_calibration_name(manifest: dict[str, Any]) -> str:
+    return manifest.get("ctmCalibrationName", LEGACY_CTM_CALIBRATION_NAME)
 ARM_C_NAME = "arm_c_student.bin"
 # ADR-0047: the card-select student student_sel.bin is the standard; student C stays accepted so
 # existing installs keep working until they are reinstalled with --arm-c-source student_sel.bin.
@@ -183,14 +193,19 @@ class RuntimeManager:
                 raise RuntimeFailure("incomplete or unsupported CTM stack manifest")
             checks += ((f"models/{primary_name}", "ctmFastSha256", False),)
         if qualified:
+            # The fine-tune ships with its own table only (ADR-0059); the §470 artifact with the ADR-0058 one or none.
+            fine_tune = manifest.get("ctmA20Primary") == CTM_A20_FAST_NAME
             if (manifest.get("ctmFallback") != fallback_name
-                    or manifest.get("ctmA20Primary") != CTM_A20_FAST_NAME
+                    or manifest.get("ctmA20Primary") not in (CTM_A20_FAST_NAME, LEGACY_CTM_A20_FAST_NAME)
                     or manifest.get("ctmA20Fallback") != CTM_A20_NAME
                     or any(not isinstance(manifest.get(key), str)
                         or not re.fullmatch(r"[0-9a-f]{64}", manifest[key])
-                        for key in ("ctmA20FastSha256", "ctmA20Sha256"))):
+                        for key in ("ctmA20FastSha256", "ctmA20Sha256"))
+                    or (fine_tune and (ctm_calibration_name(manifest) != CTM_CALIBRATION_NAME
+                                       or not manifest.get("ctmCalibrationSha256")))
+                    or (not fine_tune and "ctmCalibrationName" in manifest)):
                 raise RuntimeFailure("incomplete or unsupported qualified CTM stack manifest")
-            checks += ((f"models/{CTM_A20_FAST_NAME}", "ctmA20FastSha256", False),
+            checks += ((f"models/{manifest['ctmA20Primary']}", "ctmA20FastSha256", False),
                        (f"models/{CTM_A20_NAME}", "ctmA20Sha256", False))
         elif any(key in manifest for key in CTM_QUALIFIED_KEYS):
             raise RuntimeFailure("partial qualified CTM stack manifest")
@@ -205,7 +220,7 @@ class RuntimeManager:
         if manifest.get("ctmAct4SurvivalSha256"):
             checks += ((f"models/{ACT4_SURVIVAL_NAME}", "ctmAct4SurvivalSha256", False),)
         if manifest.get("ctmCalibrationSha256"):
-            checks += ((f"models/{CTM_CALIBRATION_NAME}", "ctmCalibrationSha256", False),)
+            checks += ((f"models/{ctm_calibration_name(manifest)}", "ctmCalibrationSha256", False),)
         if "armCModelSha256" in manifest:
             if not arm_c_frozen(manifest["armCModelSha256"]):
                 raise RuntimeFailure("runtime Arm C SHA-256 is not the frozen student")
@@ -401,8 +416,8 @@ class RuntimeManager:
         hashes = {"advisor": sha256(advisor_source), "ctm": sha256(ctm), "ctmFast": sha256(ctm_fast)}
         hashes["ctmStackVersion"] = 2 if qualified_ctm else 1
         if qualified_ctm:
-            for key, name in (("ctmA20", CTM_A20_NAME), ("ctmA20Fast", CTM_A20_FAST_NAME)):
-                source = self.repo / "selfplay/models" / name
+            for key, source in (("ctmA20", self.repo / "selfplay/models" / CTM_A20_NAME),
+                                ("ctmA20Fast", self.repo / CTM_A20_FAST_SOURCE)):
                 if not source.is_file():
                     raise RuntimeFailure(f"tracked A20 CTM model missing: {source}")
                 hashes[key] = sha256(source)
@@ -440,8 +455,8 @@ class RuntimeManager:
             shutil.copy2(ctm, staging / "models" / ctm_name)
             shutil.copy2(ctm_fast, staging / "models" / ctm_fast_name)
             if qualified_ctm:
-                for name in (CTM_A20_NAME, CTM_A20_FAST_NAME):
-                    shutil.copy2(self.repo / "selfplay/models" / name, staging / "models" / name)
+                shutil.copy2(self.repo / "selfplay/models" / CTM_A20_NAME, staging / "models" / CTM_A20_NAME)
+                shutil.copy2(self.repo / CTM_A20_FAST_SOURCE, staging / "models" / CTM_A20_FAST_NAME)
                 (staging / "models" / ACT4_SURVIVAL_NAME).parent.mkdir()
                 shutil.copy2(self.repo / "models" / ACT4_SURVIVAL_NAME, staging / "models" / ACT4_SURVIVAL_NAME)
                 shutil.copy2(self.repo / "models" / CTM_CALIBRATION_NAME, staging / "models" / CTM_CALIBRATION_NAME)
@@ -477,7 +492,7 @@ class RuntimeManager:
                 manifest.update(ctmFallback=ctm_name, ctmA20Primary=CTM_A20_FAST_NAME,
                     ctmA20Fallback=CTM_A20_NAME, ctmA20Sha256=hashes["ctmA20"],
                     ctmA20FastSha256=hashes["ctmA20Fast"], ctmAct4SurvivalSha256=hashes["ctmAct4Survival"],
-                    ctmCalibrationSha256=hashes["ctmCalibration"])
+                    ctmCalibrationSha256=hashes["ctmCalibration"], ctmCalibrationName=CTM_CALIBRATION_NAME)
             atomic_json(staging / "manifest.json", manifest)
             self.validate_release(staging)
             os.replace(staging, final)

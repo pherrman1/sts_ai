@@ -23,6 +23,7 @@ class AdvisorProtocolTest(unittest.TestCase):
         env.pop("STS_CTM_BREW_FALLBACK_MODEL", None)
         env.pop("STS_CTM_ACTIVE_LIZARD", None)
         env.pop("STS_CTM_CALIBRATION", None)
+        env.pop("STS_CTM_A20_HP_FINETUNE", None)
         for key in ("STS_LIVE_OOC_ARM_C", "STS_LIVE_CTM_A20_MODEL", "STS_LIVE_CTM_A20_FALLBACK_MODEL"):
             env.pop(key, None)
         env.update(ctm_env or {})
@@ -70,26 +71,40 @@ class AdvisorProtocolTest(unittest.TestCase):
 
     def test_qualified_ascension_stacks_load_and_partial_a20_config_fails_closed(self):
         models = self.model.parent
+        candidates = Path(__file__).resolve().parents[1] / "models/candidates"
         base = models / "combat_transition_deepsets_pathb_r2_lizard.native"
+        # ADR-0059: the A20 stack's fast artifact is the HP-head fine-tune.
         env = {"STS_CTM_BREW_FALLBACK_MODEL": str(models / "combat_transition_near_full_escape_pathb_r2.native"),
-               "STS_LIVE_CTM_A20_MODEL": str(models / "combat_transition_deepsets_pathb_a20_lizard.native"),
+               "STS_LIVE_CTM_A20_MODEL": str(candidates / "ctm_finetune_hp_pathb_a20_v1.native"),
                "STS_LIVE_CTM_A20_FALLBACK_MODEL": str(models / "combat_transition_near_full_escape_pathb_a20.native")}
         hello = json.dumps({"kind": "hello", "protocol": "sts_model_inspector_v1"})
         response, = self.run_advisor([hello], base, ctm_env=env)
         self.assertEqual(response["ctmStatus"], "OK", response)
         self.assertTrue(response["ctmStack"]["activeLizard"])
         self.assertIn("bossSurvivalLogitShift", response["ctmStack"]["ascension20"])
-        # ADR-TBD: the A20 stack loads the bundled Act-4 survival model by default.
+        # ADR-0048: the A20 stack loads the bundled Act-4 survival model by default.
         self.assertRegex(response["ctmStack"]["ascension20"]["act4Survival"], r"^fnv1a64:[0-9a-f]{16}$")
         # ADR-0058: it applies the bundled CTM calibration by default; =0 turns it off and a research table fails.
         self.assertRegex(response["ctmStack"]["ascension20"]["calibration"], r"^fnv1a64:[0-9a-f]{16}$")
         off, = self.run_advisor([hello], base, ctm_env=dict(env, STS_CTM_CALIBRATION="0"))
         self.assertEqual(off["ctmStatus"], "OK", off)
         self.assertEqual(off["ctmStack"]["ascension20"]["calibration"], "off")
-        table = Path(__file__).resolve().parents[1] / "models/candidates/ctm_calibration_pathb_a20_v1.json"
+        table = candidates / "ctm_calibration_pathb_a20_ft_hp_v1.json"
         research, = self.run_advisor([hello], base, ctm_env=dict(env, STS_CTM_CALIBRATION=str(table)))
         self.assertEqual(research["ctmStatus"], "SCHEMA_MISMATCH", research)
         self.assertIn("refuses a research STS_CTM_CALIBRATION table", research["ctmReason"])
+        # STS_CTM_A20_HP_FINETUNE=0 restores the §470 artifact with the ADR-0058 table, and refuses the fine-tune.
+        legacy_env = dict(env, STS_CTM_A20_HP_FINETUNE="0",
+                          STS_LIVE_CTM_A20_MODEL=str(models / "combat_transition_deepsets_pathb_a20_lizard.native"))
+        legacy, = self.run_advisor([hello], base, ctm_env=legacy_env)
+        self.assertEqual(legacy["ctmStatus"], "OK", legacy)
+        self.assertRegex(legacy["ctmStack"]["ascension20"]["calibration"], r"^fnv1a64:[0-9a-f]{16}$")
+        self.assertNotEqual(legacy["ctmStack"]["ascension20"]["primary"], response["ctmStack"]["ascension20"]["primary"])
+        self.assertNotEqual(legacy["ctmStack"]["ascension20"]["calibration"],
+                            response["ctmStack"]["ascension20"]["calibration"])
+        mixed, = self.run_advisor([hello], base, ctm_env=dict(env, STS_CTM_A20_HP_FINETUNE="0"))
+        self.assertEqual(mixed["ctmStatus"], "SCHEMA_MISMATCH", mixed)
+        self.assertIn("is not an artifact of the built-in A20 CTM stack", mixed["ctmReason"])
         entry = {"boundary": "combat", "character": "IRONCLAD", "ascension": 0,
                  "act": 1, "floor": 7, "hp": 70, "maxHp": 80, "gold": 99,
                  "roomClass": "MONSTER", "previousRoomClass": "SHOP", "encounter": "CULTIST",

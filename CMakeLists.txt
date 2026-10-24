@@ -1083,20 +1083,22 @@ set_tests_properties(ctm_act4_survival_off PROPERTIES
     ENVIRONMENT "STS_CTM_ACT4_SURVIVAL_MODEL=0"
     WILL_FAIL TRUE
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-# STS_CTM_CALIBRATION: parity with tools/ctm_calibration.py. ADR-0058: unset applies the bundled table to the built-in
-# A20 stack (also under a research manifest with the same content), but not with STS_CTM_ACT4_SURVIVAL_MODEL set; =0
-# keeps the CTM's scores.
+# STS_CTM_CALIBRATION: parity with tools/ctm_calibration.py. Unset applies the built-in A20 stack's own table (also
+# under a research manifest with the same content), but not with STS_CTM_ACT4_SURVIVAL_MODEL set; =0 keeps the CTM's
+# scores. Each stack has its own fixture. These five check the §470 stack with the ADR-0058 table
+# (STS_CTM_A20_HP_FINETUNE=0); the ctm_calibration_ft_hp_* ones below check the ADR-0059 default.
 add_test(NAME ctm_calibration_parity COMMAND $<TARGET_FILE:one_combat> ctmcalibrationtest
     tests/fixtures/ctm_calibration_parity.jsonl on)
 set_tests_properties(ctm_calibration_parity PROPERTIES
     LABELS "core;research-repro"
-    ENVIRONMENT "STS_CTM_CALIBRATION=models/candidates/ctm_calibration_pathb_a20_v1.json"
+    ENVIRONMENT "STS_CTM_CALIBRATION=models/candidates/ctm_calibration_pathb_a20_v1.json;STS_CTM_A20_HP_FINETUNE=0"
     PASS_REGULAR_EXPRESSION "ctmcalibrationtest PASS mode=on "
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME ctm_calibration_default COMMAND $<TARGET_FILE:one_combat> ctmcalibrationtest
     tests/fixtures/ctm_calibration_parity.jsonl on)
 set_tests_properties(ctm_calibration_default PROPERTIES
     LABELS "core;research-repro"
+    ENVIRONMENT "STS_CTM_A20_HP_FINETUNE=0"
     ENVIRONMENT_MODIFICATION "STS_CTM_CALIBRATION=unset:;STS_CTM_ACT4_SURVIVAL_MODEL=unset:"
     PASS_REGULAR_EXPRESSION "ctmcalibrationtest PASS mode=on "
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
@@ -1104,7 +1106,7 @@ add_test(NAME ctm_calibration_default_research_manifest COMMAND $<TARGET_FILE:on
     tests/fixtures/ctm_calibration_parity.jsonl on)
 set_tests_properties(ctm_calibration_default_research_manifest PROPERTIES
     LABELS "core;research-repro"
-    ENVIRONMENT "STS_CTM_RESEARCH_CANDIDATE_MANIFEST=docs/experiments/evidence/ctm_a20_boss_calib_470_20261014/candidate-pathb-a20-lizard-boss470.json;STS_CTM_RESEARCH_CANDIDATE_MANIFEST_SHA256=00bb4da6eb9b3117feb0579356436a96f7315ea28a8f3d1f29fd10b827c254ea"
+    ENVIRONMENT "STS_CTM_A20_HP_FINETUNE=0;STS_CTM_RESEARCH_CANDIDATE_MANIFEST=docs/experiments/evidence/ctm_a20_boss_calib_470_20261014/candidate-pathb-a20-lizard-boss470.json;STS_CTM_RESEARCH_CANDIDATE_MANIFEST_SHA256=00bb4da6eb9b3117feb0579356436a96f7315ea28a8f3d1f29fd10b827c254ea"
     ENVIRONMENT_MODIFICATION "STS_CTM_CALIBRATION=unset:;STS_CTM_ACT4_SURVIVAL_MODEL=unset:"
     PASS_REGULAR_EXPRESSION "ctmcalibrationtest PASS mode=on "
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
@@ -1112,7 +1114,7 @@ add_test(NAME ctm_calibration_default_act4_set COMMAND $<TARGET_FILE:one_combat>
     tests/fixtures/ctm_calibration_parity.jsonl off)
 set_tests_properties(ctm_calibration_default_act4_set PROPERTIES
     LABELS "core;research-repro"
-    ENVIRONMENT "STS_CTM_ACT4_SURVIVAL_MODEL=models/candidates/ctm_act4_survival_trees.txt"
+    ENVIRONMENT "STS_CTM_A20_HP_FINETUNE=0;STS_CTM_ACT4_SURVIVAL_MODEL=models/candidates/ctm_act4_survival_trees.txt"
     ENVIRONMENT_MODIFICATION "STS_CTM_CALIBRATION=unset:"
     PASS_REGULAR_EXPRESSION "ctmcalibrationtest PASS mode=off "
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
@@ -1120,7 +1122,46 @@ add_test(NAME ctm_calibration_off COMMAND $<TARGET_FILE:one_combat> ctmcalibrati
     tests/fixtures/ctm_calibration_parity.jsonl off)
 set_tests_properties(ctm_calibration_off PROPERTIES
     LABELS "core;research-repro"
+    ENVIRONMENT "STS_CTM_CALIBRATION=0;STS_CTM_A20_HP_FINETUNE=0"
+    PASS_REGULAR_EXPRESSION "ctmcalibrationtest PASS mode=off "
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+# ADR-0059: unset (or 1), the built-in A20 stack is the §672 HP-head fine-tune with its own table.
+add_test(NAME ctm_calibration_ft_hp_parity COMMAND $<TARGET_FILE:one_combat> ctmcalibrationtest
+    tests/fixtures/ctm_calibration_ft_hp_parity.jsonl on)
+set_tests_properties(ctm_calibration_ft_hp_parity PROPERTIES
+    LABELS "core;research-repro"
+    ENVIRONMENT "STS_CTM_CALIBRATION=models/candidates/ctm_calibration_pathb_a20_ft_hp_v1.json;STS_CTM_A20_HP_FINETUNE=1"
+    PASS_REGULAR_EXPRESSION "ctmcalibrationtest PASS mode=on "
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME ctm_calibration_ft_hp_default COMMAND $<TARGET_FILE:one_combat> ctmcalibrationtest
+    tests/fixtures/ctm_calibration_ft_hp_parity.jsonl on)
+set_tests_properties(ctm_calibration_ft_hp_default PROPERTIES
+    LABELS "core;research-repro"
+    ENVIRONMENT_MODIFICATION "STS_CTM_CALIBRATION=unset:;STS_CTM_ACT4_SURVIVAL_MODEL=unset:;STS_CTM_A20_HP_FINETUNE=unset:"
+    PASS_REGULAR_EXPRESSION "ctmcalibrationtest PASS mode=on "
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME ctm_calibration_ft_hp_default_research_manifest COMMAND $<TARGET_FILE:one_combat> ctmcalibrationtest
+    tests/fixtures/ctm_calibration_ft_hp_parity.jsonl on)
+set_tests_properties(ctm_calibration_ft_hp_default_research_manifest PROPERTIES
+    LABELS "core;research-repro"
+    ENVIRONMENT "STS_CTM_RESEARCH_CANDIDATE_MANIFEST=models/candidates/ctm_finetune_hp_pathb_a20_v1.manifest.json;STS_CTM_RESEARCH_CANDIDATE_MANIFEST_SHA256=31bb21f7ace7e3cd440136cf0799dbae1e0fbc2964d00bfa7bac8e21124e0a5c"
+    ENVIRONMENT_MODIFICATION "STS_CTM_CALIBRATION=unset:;STS_CTM_ACT4_SURVIVAL_MODEL=unset:;STS_CTM_A20_HP_FINETUNE=unset:"
+    PASS_REGULAR_EXPRESSION "ctmcalibrationtest PASS mode=on "
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME ctm_calibration_ft_hp_default_act4_set COMMAND $<TARGET_FILE:one_combat> ctmcalibrationtest
+    tests/fixtures/ctm_calibration_ft_hp_parity.jsonl off)
+set_tests_properties(ctm_calibration_ft_hp_default_act4_set PROPERTIES
+    LABELS "core;research-repro"
+    ENVIRONMENT "STS_CTM_ACT4_SURVIVAL_MODEL=models/candidates/ctm_act4_survival_trees.txt"
+    ENVIRONMENT_MODIFICATION "STS_CTM_CALIBRATION=unset:;STS_CTM_A20_HP_FINETUNE=unset:"
+    PASS_REGULAR_EXPRESSION "ctmcalibrationtest PASS mode=off "
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME ctm_calibration_ft_hp_off COMMAND $<TARGET_FILE:one_combat> ctmcalibrationtest
+    tests/fixtures/ctm_calibration_ft_hp_parity.jsonl off)
+set_tests_properties(ctm_calibration_ft_hp_off PROPERTIES
+    LABELS "core;research-repro"
     ENVIRONMENT "STS_CTM_CALIBRATION=0"
+    ENVIRONMENT_MODIFICATION "STS_CTM_A20_HP_FINETUNE=unset:"
     PASS_REGULAR_EXPRESSION "ctmcalibrationtest PASS mode=off "
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 set_tests_properties(ooc_semantic_producer PROPERTIES WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")

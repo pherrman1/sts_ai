@@ -327,8 +327,7 @@ int ctmLizardFeatures(const std::string &inPath, const std::string &fastModel,
 // (tools/ctm_act4_survival.py). The model is checked alone, so the CTM calibration must be off.
 int ctmAct4SurvivalSelfTest(const std::string &fixturePath) {
     const one_combat::EntropicBrewFallbackCombatTransitionSampler sampler(
-        "selfplay/models/combat_transition_deepsets_pathb_a20_lizard.native",
-        "selfplay/models/combat_transition_near_full_escape_pathb_a20.native", false);
+        one_combat::a20FastCtmArtifact(), one_combat::kA20StandardCtmArtifact, false);
     need(sampler.fastRuntime().calibrationPath().empty(), "ctmact4survivaltest needs STS_CTM_CALIBRATION=0");
     std::ifstream in(fixturePath);
     need(bool(in), "cannot open " + fixturePath);
@@ -355,13 +354,13 @@ int ctmAct4SurvivalSelfTest(const std::string &fixturePath) {
 
 // STS_CTM_CALIBRATION parity with tools/ctm_calibration.py. Each fixture line holds a pathb-a20 predictorInput and
 // pre-combat state (no active Lizard Tail) with the Python death probability and mean winning HP, without the
-// calibration ("base") and under the committed table ("calibrated"). MODE on requires the calibration (the ADR-0058
-// default or an explicit table) and checks "calibrated"; off requires it off and checks "base".
+// calibration ("base") and under the committed table ("calibrated"), for the A20 stack STS_CTM_A20_HP_FINETUNE selects
+// (each stack has its own fixture). MODE on requires the calibration (the stack's default table or an explicit one)
+// and checks "calibrated"; off requires it off and checks "base".
 int ctmCalibrationSelfTest(const std::string &fixturePath, const std::string &mode) {
     need(mode == "on" || mode == "off", "ctmcalibrationtest MODE must be on or off");
     const one_combat::EntropicBrewFallbackCombatTransitionSampler sampler(
-        "selfplay/models/combat_transition_deepsets_pathb_a20_lizard.native",
-        "selfplay/models/combat_transition_near_full_escape_pathb_a20.native", true);
+        one_combat::a20FastCtmArtifact(), one_combat::kA20StandardCtmArtifact, true);
     const bool on = !sampler.fastRuntime().calibrationPath().empty();
     if (on != (mode == "on")) {
         std::cerr << "ctmcalibrationtest FAIL the calibration is " << (on ? "on" : "off") << '\n';
