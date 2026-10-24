@@ -24168,7 +24168,7 @@ unchanged validation set.
 Seeds: none (offline).
 **Knowledge impact:** none (diagnostic; no default changed).
 
-## §TBD — CTM-calibration guard at A20: the default per-fight calibration does not lose (+2.15 pp [−1.17, +5.66] Heart kills, NOT_SHOWN) and predicts the guard's 24,186 fights better; the default stays (512 seeds, 2026-10-24)
+## §676 — CTM-calibration guard at A20: the default per-fight calibration does not lose (+2.15 pp [−1.17, +5.66] Heart kills, NOT_SHOWN) and predicts the guard's 24,186 fights better; the default stays (512 seeds, 2026-10-24)
 
 **Question:** With the §670 per-fight calibration made the A20 CTM default on prediction precision (ADR-0058,
 Philipp's choice "Default on + 512-seed guard", 2026-10-23 20:44Z), does the OOC search kill the Heart clearly less
