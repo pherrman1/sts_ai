@@ -36,5 +36,29 @@
   "median_abs_dq": 0.011944276728978187,
   "median_visits_f": 1334.5,
   "median_visits_sel": 2659.0
+ },
+ "f_visits_0_100": {
+  "n": 77,
+  "mean_dp_f_minus_sel": -0.03643342646445022,
+  "f_q_higher": 0.24675324675324675,
+  "played_f": 0
+ },
+ "f_visits_100_500": {
+  "n": 130,
+  "mean_dp_f_minus_sel": -0.019602503296994304,
+  "f_q_higher": 0.2,
+  "played_f": 0
+ },
+ "f_visits_500_1000": {
+  "n": 150,
+  "mean_dp_f_minus_sel": -0.010692400012615825,
+  "f_q_higher": 0.22666666666666666,
+  "played_f": 0
+ },
+ "f_visits_1000_up": {
+  "n": 435,
+  "mean_dp_f_minus_sel": 0.01035211865598463,
+  "f_q_higher": 0.6482758620689655,
+  "played_f": 137
  }
 }

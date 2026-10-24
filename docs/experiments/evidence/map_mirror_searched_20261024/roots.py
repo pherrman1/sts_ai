@@ -112,6 +112,12 @@ def margins(out, tars):
                      "mean_dq_f_minus_sel": st.mean(y["dq"] for y in ys), "f_q_higher": sum(y["dq"] > 0 for y in ys) / len(ys),
                      "mean_dp_f_minus_sel": st.mean(y["dp"] for y in ys), "median_abs_dq": st.median(abs(y["dq"]) for y in ys),
                      "median_visits_f": st.median(y["n_f"] for y in ys), "median_visits_sel": st.median(y["n_sel"] for y in ys)}
+    # the less F's move was explored, the noisier (and more pessimistic) its q: stratify by its visits
+    for lo, hi in ((0, 100), (100, 500), (500, 1000), (1000, 10**9)):
+        ys = [y for y in rows if lo <= y["n_f"] < hi]
+        if ys: res[f"f_visits_{lo}_{hi if hi < 10**9 else 'up'}"] = {
+            "n": len(ys), "mean_dp_f_minus_sel": st.mean(y["dp"] for y in ys), "f_q_higher": sum(y["dq"] > 0 for y in ys) / len(ys),
+            "played_f": sum(y["played"] == "f" for y in ys)}
     json.dump({"summary": res, "rows": rows}, open(os.path.join(out, "margins.json"), "w"), indent=1)
     print(json.dumps(res, indent=1))
 

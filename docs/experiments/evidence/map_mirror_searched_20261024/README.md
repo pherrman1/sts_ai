@@ -1,4 +1,4 @@
-# Mirror-trained prior F at real searched map roots (offline, 2026-10-24)
+# Mirror-trained prior F at real searched map roots: near-ties, sign of the q gap not identified (offline, 2026-10-24)
 
 Follow-up to §677. Philipp (2026-10-24 07:56Z): run the offline check before any A/B. Question: in real A20 play,
 how often would F (`student_mirror50.bin` `acc9051e…`) pick a different map move than student_sel (`cf6bf7fb…`), and
@@ -22,16 +22,28 @@ what did the production search find at those roots?
 | act start | 1,323 | 362 (27.4%) | 285 / 53 / 24 | 48.9% | −0.0058 | −0.0033 | 0.012 |
 | mid act | 7,422 | 430 (5.8%) | 343 / 84 / 3 | 42.8% | −0.0060 | −0.0030 | 0.012 |
 
+By the visits F's move got (the search was guided by student_sel, so F's move is often barely explored):
+
+| visits of F's move | n | mean dP(kill) F − sel | F's move higher q | search played F |
+|---|---|---|---|---|
+| < 100 | 77 | −3.6 pp | 24.7% | 0 |
+| 100–499 | 130 | −2.0 pp | 20.0% | 0 |
+| 500–999 | 150 | −1.1 pp | 22.7% | 0 |
+| >= 1,000 | 435 | +1.0 pp | 64.8% | 137 |
+
 Agreement with pi' (all map roots): student_sel 87.2%, F 83.9%. Median visits at departures: student_sel's move
 2,631, F's 1,115. dP uses the gen-3 root_v calibration (as `az_gen3_train_20261022/flip/margins.py`).
 
 ## Interpretation
 
-F would change about one map decision in eleven (one in four at act start). At those roots the two moves are
-near-ties: median |dq| 0.012, about the typical gap between the two best visited candidates (0.011, §643), and F's move
-has the higher root q almost half the time (49% at act start). On average F's move is slightly worse (−0.3 pp
-P(Heart kill) per departure). The search played student_sel's move 79% of the time, but that verdict is biased
-toward the guiding prior: it got 2.4x the visits. With ~0.36 departures per run at about −0.3 pp each, the expected
-effect of swapping the prior is about −0.1 pp Heart kills per run, an order of magnitude below what a 1,024-pair A/B
-resolves (±2.7 pp, §621). So the column bias costs nothing measurable in play, and F is no better at real roots.
-Caveat: root q comes from searches guided by student_sel (prior and rollouts), so F's moves are less explored.
+F would change the prior's top map move at about one root in eleven (one in four at act start). At those roots the two
+moves are near-ties: median |dq| 0.012, about the typical gap between the two best visited candidates (0.011, §643).
+The sign of the gap is not identified: pooled, F's move is −0.3 pp P(Heart kill), but that pooled figure is driven by
+moves the student_sel-guided search barely explored (−3.6 to −1.1 pp below 1,000 visits); where F's move got at least
+1,000 visits (435 roots) it is +1.0 pp and has the higher q 65% of the time. That is search-selection bias in both
+directions, so this data cannot say whether F's moves are better or worse. The search played student_sel's move 79%
+of the time, a verdict biased toward the guiding prior (2.4x the visits).
+
+A departure is a change of the prior's argmax, not of the played move: the search would still pick among the same
+candidates. A rough heuristic for the play effect: ~0.36 departures per run times |dP| of about 1 pp is at most
+~0.4 pp Heart kills per run in either direction, below what a 1,024-pair A/B resolves (±2.7 pp, §621). Hence no A/B.
