@@ -24326,7 +24326,7 @@ Seeds: none new (guard seeds 111392255 and 111392359 replayed for the game check
 **Knowledge impact:** `architecture/out-of-combat.md`, `operations/environment-variables.md`,
 `evaluation/current-research.md`.
 
-## §TBD — OOC search architecture A/B/C pilot at A20: a common-random-number particle root search (P 64) and a particle beam (8:2:3) both lose clearly to OOC MCTS (Heart kills 2 and 3 vs 13 of 64, Act 4 8 and 9 vs 27); STOP, keep MCTS (64 paired seeds, 2026-10-24)
+## §680 — OOC search architecture A/B/C pilot at A20: a common-random-number particle root search (P 64) and a particle beam (8:2:3) both lose clearly to OOC MCTS (Heart kills 2 and 3 vs 13 of 64, Act 4 8 and 9 vs 27); STOP, keep MCTS (64 paired seeds, 2026-10-24)
 
 **Question:** Philipp (2026-10-24, a ChatGPT design he adopted): does OOC planning gain from replacing PUCT tree visits
 with explicit stochastic future sampling (B − A), and do several contingent plans gain further (C − B)?
