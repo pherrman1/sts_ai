@@ -1,0 +1,1159 @@
+{
+  "seed_for_join_only": 111101326,
+  "fight": {
+    "act": 3,
+    "floor": 37,
+    "fight": 19,
+    "encounter": "THREE_DARKLINGS",
+    "pre_deck": [
+      "Ascender's Bane",
+      "Strike",
+      "Strike",
+      "Strike",
+      "Strike",
+      "Strike+",
+      "Defend+",
+      "Defend",
+      "Defend",
+      "Defend",
+      "Bash",
+      "Headbutt",
+      "Headbutt",
+      "Dramatic Entrance",
+      "Anger+",
+      "Shockwave+",
+      "Corruption+",
+      "Anger",
+      "Reaper",
+      "Impervious",
+      "Anger",
+      "Havoc",
+      "Blood for Blood",
+      "Feel No Pain+",
+      "Limit Break",
+      "Dark Embrace",
+      "Battle Trance",
+      "Impervious",
+      "Panic Button",
+      "Flash of Steel",
+      "Flash of Steel"
+    ],
+    "pre_relics": [
+      "BURNING_BLOOD",
+      "DU_VU_DOLL",
+      "MARK_OF_PAIN",
+      "VAJRA",
+      "SLING_OF_COURAGE",
+      "CHARONS_ASHES",
+      "CENTENNIAL_PUZZLE",
+      "ECTOPLASM"
+    ],
+    "source_pre_sha256": "f67f8363b2cd869f28b4a75d7f709c6a2abb0e2d41f8ba71b016fb29a68eb0f7",
+    "future_public_target_if_restored": "111101326:37"
+  },
+  "receipt_sha256": "d6e97e9116d613bfbe973ecaebce43694fc1e2f962c3caf8d48fb90fdfaaebd3",
+  "capture_sha256": "e7790960052e67dfb815ea73219564193d169e989f65846db98b69d59f9d975e",
+  "trace_sha256": "6bc18ef5ee3c8710277899c84b08d251c2c36ffc094bf87dc076ff5bde5c3cde",
+  "full_run_relics": [
+    "BURNING_BLOOD",
+    "DU_VU_DOLL",
+    "MARK_OF_PAIN",
+    "VAJRA",
+    "SLING_OF_COURAGE",
+    "CHARONS_ASHES",
+    "CENTENNIAL_PUZZLE",
+    "ECTOPLASM"
+  ],
+  "no_prismatic_shard_proven": true,
+  "run_deck_before_fight": [
+    "Ascender's Bane",
+    "Strike",
+    "Strike",
+    "Strike",
+    "Strike",
+    "Strike+",
+    "Defend+",
+    "Defend",
+    "Defend",
+    "Defend",
+    "Bash",
+    "Headbutt",
+    "Headbutt",
+    "Dramatic Entrance",
+    "Anger+",
+    "Shockwave+",
+    "Corruption+",
+    "Anger",
+    "Reaper",
+    "Impervious",
+    "Anger",
+    "Havoc",
+    "Blood for Blood",
+    "Feel No Pain+",
+    "Limit Break",
+    "Dark Embrace",
+    "Battle Trance",
+    "Impervious",
+    "Panic Button",
+    "Flash of Steel",
+    "Flash of Steel"
+  ],
+  "public_roots_captured": 18,
+  "valid_roots": 18,
+  "ordinary_public_roots": 17,
+  "tier1_roots": 0,
+  "tier2_roots": 17,
+  "selected": [
+    {
+      "line_1based": 8,
+      "decision": 8,
+      "turn": 0,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support",
+          "K4_headbutt_draw"
+        ],
+        "active_card_count": 30,
+        "relevant_cards": {
+          "BASH": 1,
+          "BATTLE_TRANCE": 1,
+          "CORRUPTION": 1,
+          "DARK_EMBRACE": 1,
+          "FLASH_OF_STEEL": 2,
+          "HEADBUTT": 2
+        },
+        "relevant_relics": []
+      },
+      "tier": 2,
+      "ingredient_priority": 1,
+      "active_cards": {
+        "ANGER": 3,
+        "ASCENDERS_BANE": 1,
+        "BASH": 1,
+        "BATTLE_TRANCE": 1,
+        "BLOOD_FOR_BLOOD": 1,
+        "CORRUPTION": 1,
+        "DARK_EMBRACE": 1,
+        "DEFEND_RED": 4,
+        "FEEL_NO_PAIN": 1,
+        "FLASH_OF_STEEL": 2,
+        "HAVOC": 1,
+        "HEADBUTT": 2,
+        "IMPERVIOUS": 1,
+        "LIMIT_BREAK": 1,
+        "PANIC_BUTTON": 1,
+        "REAPER": 1,
+        "STRIKE_RED": 5,
+        "WOUND": 2
+      },
+      "input_sha256": "91949bc0a231a0d61617ec7dac9b78f7cf6b97b6cdcb1188d3ec136f34ba4ef7",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 11,
+      "decision": 11,
+      "turn": 1,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support",
+          "K4_headbutt_draw"
+        ],
+        "active_card_count": 30,
+        "relevant_cards": {
+          "BASH": 1,
+          "BATTLE_TRANCE": 1,
+          "CORRUPTION": 1,
+          "DARK_EMBRACE": 1,
+          "FLASH_OF_STEEL": 2,
+          "HEADBUTT": 2
+        },
+        "relevant_relics": []
+      },
+      "tier": 2,
+      "ingredient_priority": 1,
+      "active_cards": {
+        "ANGER": 4,
+        "ASCENDERS_BANE": 1,
+        "BASH": 1,
+        "BATTLE_TRANCE": 1,
+        "BLOOD_FOR_BLOOD": 1,
+        "CORRUPTION": 1,
+        "DARK_EMBRACE": 1,
+        "DEFEND_RED": 4,
+        "FEEL_NO_PAIN": 1,
+        "FLASH_OF_STEEL": 2,
+        "HAVOC": 1,
+        "HEADBUTT": 2,
+        "IMPERVIOUS": 1,
+        "PANIC_BUTTON": 1,
+        "REAPER": 1,
+        "STRIKE_RED": 5,
+        "WOUND": 2
+      },
+      "input_sha256": "d176d4c53cb05622976a4ae51ec42db4de79f65ee536582aec0b3ef81e106a6f",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 12,
+      "decision": 12,
+      "turn": 1,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support",
+          "K4_headbutt_draw"
+        ],
+        "active_card_count": 30,
+        "relevant_cards": {
+          "BASH": 1,
+          "BATTLE_TRANCE": 1,
+          "CORRUPTION": 1,
+          "DARK_EMBRACE": 1,
+          "FLASH_OF_STEEL": 2,
+          "HEADBUTT": 2
+        },
+        "relevant_relics": []
+      },
+      "tier": 2,
+      "ingredient_priority": 1,
+      "active_cards": {
+        "ANGER": 4,
+        "ASCENDERS_BANE": 1,
+        "BASH": 1,
+        "BATTLE_TRANCE": 1,
+        "BLOOD_FOR_BLOOD": 1,
+        "CORRUPTION": 1,
+        "DARK_EMBRACE": 1,
+        "DEFEND_RED": 4,
+        "FEEL_NO_PAIN": 1,
+        "FLASH_OF_STEEL": 2,
+        "HAVOC": 1,
+        "HEADBUTT": 2,
+        "IMPERVIOUS": 1,
+        "PANIC_BUTTON": 1,
+        "REAPER": 1,
+        "STRIKE_RED": 5,
+        "WOUND": 2
+      },
+      "input_sha256": "7b2ac8bcbabe89dbbd02021f3261883dc43eb1eb687034d2da25622bed6912fa",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 18,
+      "decision": 18,
+      "turn": 2,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support",
+          "K4_headbutt_draw"
+        ],
+        "active_card_count": 30,
+        "relevant_cards": {
+          "BASH": 1,
+          "BATTLE_TRANCE": 1,
+          "CORRUPTION": 1,
+          "DARK_EMBRACE": 1,
+          "FLASH_OF_STEEL": 2,
+          "HEADBUTT": 2
+        },
+        "relevant_relics": []
+      },
+      "tier": 2,
+      "ingredient_priority": 1,
+      "active_cards": {
+        "ANGER": 5,
+        "ASCENDERS_BANE": 1,
+        "BASH": 1,
+        "BATTLE_TRANCE": 1,
+        "BLOOD_FOR_BLOOD": 1,
+        "CORRUPTION": 1,
+        "DARK_EMBRACE": 1,
+        "DEFEND_RED": 4,
+        "FEEL_NO_PAIN": 1,
+        "FLASH_OF_STEEL": 2,
+        "HAVOC": 1,
+        "HEADBUTT": 2,
+        "IMPERVIOUS": 1,
+        "PANIC_BUTTON": 1,
+        "STRIKE_RED": 5,
+        "WOUND": 2
+      },
+      "input_sha256": "0dfb3ee338e4bb2c4abe21fe81762f4b86cda5640642fcf82c8a09d0fdada862",
+      "duplicate_public_root": false
+    }
+  ],
+  "all_roots": [
+    {
+      "line_1based": 1,
+      "decision": 1,
+      "turn": 0,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support",
+          "K4_headbutt_draw"
+        ],
+        "active_card_count": 33,
+        "relevant_cards": {
+          "BASH": 1,
+          "BATTLE_TRANCE": 1,
+          "CORRUPTION": 1,
+          "DARK_EMBRACE": 1,
+          "FLASH_OF_STEEL": 2,
+          "HEADBUTT": 2,
+          "SHOCKWAVE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier": 2,
+      "ingredient_priority": 1,
+      "active_cards": {
+        "ANGER": 3,
+        "ASCENDERS_BANE": 1,
+        "BASH": 1,
+        "BATTLE_TRANCE": 1,
+        "BLOOD_FOR_BLOOD": 1,
+        "CORRUPTION": 1,
+        "DARK_EMBRACE": 1,
+        "DEFEND_RED": 4,
+        "DRAMATIC_ENTRANCE": 1,
+        "FEEL_NO_PAIN": 1,
+        "FLASH_OF_STEEL": 2,
+        "HAVOC": 1,
+        "HEADBUTT": 2,
+        "IMPERVIOUS": 2,
+        "LIMIT_BREAK": 1,
+        "PANIC_BUTTON": 1,
+        "REAPER": 1,
+        "SHOCKWAVE": 1,
+        "STRIKE_RED": 5,
+        "WOUND": 2
+      },
+      "input_sha256": "411eb39c46cdbd06aadbdcade949fc4e41dcec63ad704f05beff19918cf22927",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 2,
+      "decision": 2,
+      "turn": 0,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support",
+          "K4_headbutt_draw"
+        ],
+        "active_card_count": 33,
+        "relevant_cards": {
+          "BASH": 1,
+          "BATTLE_TRANCE": 1,
+          "CORRUPTION": 1,
+          "DARK_EMBRACE": 1,
+          "FLASH_OF_STEEL": 2,
+          "HEADBUTT": 2,
+          "SHOCKWAVE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier": 2,
+      "ingredient_priority": 1,
+      "active_cards": {
+        "ANGER": 3,
+        "ASCENDERS_BANE": 1,
+        "BASH": 1,
+        "BATTLE_TRANCE": 1,
+        "BLOOD_FOR_BLOOD": 1,
+        "CORRUPTION": 1,
+        "DARK_EMBRACE": 1,
+        "DEFEND_RED": 4,
+        "DRAMATIC_ENTRANCE": 1,
+        "FEEL_NO_PAIN": 1,
+        "FLASH_OF_STEEL": 2,
+        "HAVOC": 1,
+        "HEADBUTT": 2,
+        "IMPERVIOUS": 2,
+        "LIMIT_BREAK": 1,
+        "PANIC_BUTTON": 1,
+        "REAPER": 1,
+        "SHOCKWAVE": 1,
+        "STRIKE_RED": 5,
+        "WOUND": 2
+      },
+      "input_sha256": "0a0e3fd37c937685b20e5f78afe07a1e6f2841cb5819ca398c3947d8b99e35e0",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 3,
+      "decision": 3,
+      "turn": 0,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support",
+          "K4_headbutt_draw"
+        ],
+        "active_card_count": 33,
+        "relevant_cards": {
+          "BASH": 1,
+          "BATTLE_TRANCE": 1,
+          "CORRUPTION": 1,
+          "DARK_EMBRACE": 1,
+          "FLASH_OF_STEEL": 2,
+          "HEADBUTT": 2,
+          "SHOCKWAVE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier": 2,
+      "ingredient_priority": 1,
+      "active_cards": {
+        "ANGER": 3,
+        "ASCENDERS_BANE": 1,
+        "BASH": 1,
+        "BATTLE_TRANCE": 1,
+        "BLOOD_FOR_BLOOD": 1,
+        "CORRUPTION": 1,
+        "DARK_EMBRACE": 1,
+        "DEFEND_RED": 4,
+        "DRAMATIC_ENTRANCE": 1,
+        "FEEL_NO_PAIN": 1,
+        "FLASH_OF_STEEL": 2,
+        "HAVOC": 1,
+        "HEADBUTT": 2,
+        "IMPERVIOUS": 2,
+        "LIMIT_BREAK": 1,
+        "PANIC_BUTTON": 1,
+        "REAPER": 1,
+        "SHOCKWAVE": 1,
+        "STRIKE_RED": 5,
+        "WOUND": 2
+      },
+      "input_sha256": "6acd779a051e5122efd6ccb36495331a4f74365afdf2fd63a44635054c1df3b9",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 4,
+      "decision": 4,
+      "turn": 0,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support",
+          "K4_headbutt_draw"
+        ],
+        "active_card_count": 32,
+        "relevant_cards": {
+          "BASH": 1,
+          "BATTLE_TRANCE": 1,
+          "CORRUPTION": 1,
+          "DARK_EMBRACE": 1,
+          "FLASH_OF_STEEL": 2,
+          "HEADBUTT": 2,
+          "SHOCKWAVE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier": 2,
+      "ingredient_priority": 1,
+      "active_cards": {
+        "ANGER": 3,
+        "ASCENDERS_BANE": 1,
+        "BASH": 1,
+        "BATTLE_TRANCE": 1,
+        "BLOOD_FOR_BLOOD": 1,
+        "CORRUPTION": 1,
+        "DARK_EMBRACE": 1,
+        "DEFEND_RED": 4,
+        "DRAMATIC_ENTRANCE": 1,
+        "FEEL_NO_PAIN": 1,
+        "FLASH_OF_STEEL": 2,
+        "HAVOC": 1,
+        "HEADBUTT": 2,
+        "IMPERVIOUS": 1,
+        "LIMIT_BREAK": 1,
+        "PANIC_BUTTON": 1,
+        "REAPER": 1,
+        "SHOCKWAVE": 1,
+        "STRIKE_RED": 5,
+        "WOUND": 2
+      },
+      "input_sha256": "253fcde9e97787ae28c793dea63dd104ba309235b1c41c3508fe498da2851327",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 5,
+      "decision": 5,
+      "turn": 0,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support",
+          "K4_headbutt_draw"
+        ],
+        "active_card_count": 31,
+        "relevant_cards": {
+          "BASH": 1,
+          "BATTLE_TRANCE": 1,
+          "CORRUPTION": 1,
+          "DARK_EMBRACE": 1,
+          "FLASH_OF_STEEL": 2,
+          "HEADBUTT": 2
+        },
+        "relevant_relics": []
+      },
+      "tier": 2,
+      "ingredient_priority": 1,
+      "active_cards": {
+        "ANGER": 3,
+        "ASCENDERS_BANE": 1,
+        "BASH": 1,
+        "BATTLE_TRANCE": 1,
+        "BLOOD_FOR_BLOOD": 1,
+        "CORRUPTION": 1,
+        "DARK_EMBRACE": 1,
+        "DEFEND_RED": 4,
+        "DRAMATIC_ENTRANCE": 1,
+        "FEEL_NO_PAIN": 1,
+        "FLASH_OF_STEEL": 2,
+        "HAVOC": 1,
+        "HEADBUTT": 2,
+        "IMPERVIOUS": 1,
+        "LIMIT_BREAK": 1,
+        "PANIC_BUTTON": 1,
+        "REAPER": 1,
+        "STRIKE_RED": 5,
+        "WOUND": 2
+      },
+      "input_sha256": "46c67f86bb6d96fe9fcc1101abe6019a1f03db7e3d4827bf0289a751b9d848cd",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 6,
+      "decision": 6,
+      "turn": 0,
+      "capture_valid": true,
+      "ordinary_player_decision": false,
+      "selection_exclusion": "not PLAYER_NORMAL; unchanged adapter domain"
+    },
+    {
+      "line_1based": 7,
+      "decision": 7,
+      "turn": 0,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support",
+          "K4_headbutt_draw"
+        ],
+        "active_card_count": 31,
+        "relevant_cards": {
+          "BASH": 1,
+          "BATTLE_TRANCE": 1,
+          "CORRUPTION": 1,
+          "DARK_EMBRACE": 1,
+          "FLASH_OF_STEEL": 2,
+          "HEADBUTT": 2
+        },
+        "relevant_relics": []
+      },
+      "tier": 2,
+      "ingredient_priority": 1,
+      "active_cards": {
+        "ANGER": 3,
+        "ASCENDERS_BANE": 1,
+        "BASH": 1,
+        "BATTLE_TRANCE": 1,
+        "BLOOD_FOR_BLOOD": 1,
+        "CORRUPTION": 1,
+        "DARK_EMBRACE": 1,
+        "DEFEND_RED": 4,
+        "DRAMATIC_ENTRANCE": 1,
+        "FEEL_NO_PAIN": 1,
+        "FLASH_OF_STEEL": 2,
+        "HAVOC": 1,
+        "HEADBUTT": 2,
+        "IMPERVIOUS": 1,
+        "LIMIT_BREAK": 1,
+        "PANIC_BUTTON": 1,
+        "REAPER": 1,
+        "STRIKE_RED": 5,
+        "WOUND": 2
+      },
+      "input_sha256": "805537c4a8769f61cc028014d2aa350c1fcd19de7a7ea917b4bf9dfb7db4f71b",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 8,
+      "decision": 8,
+      "turn": 0,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support",
+          "K4_headbutt_draw"
+        ],
+        "active_card_count": 30,
+        "relevant_cards": {
+          "BASH": 1,
+          "BATTLE_TRANCE": 1,
+          "CORRUPTION": 1,
+          "DARK_EMBRACE": 1,
+          "FLASH_OF_STEEL": 2,
+          "HEADBUTT": 2
+        },
+        "relevant_relics": []
+      },
+      "tier": 2,
+      "ingredient_priority": 1,
+      "active_cards": {
+        "ANGER": 3,
+        "ASCENDERS_BANE": 1,
+        "BASH": 1,
+        "BATTLE_TRANCE": 1,
+        "BLOOD_FOR_BLOOD": 1,
+        "CORRUPTION": 1,
+        "DARK_EMBRACE": 1,
+        "DEFEND_RED": 4,
+        "FEEL_NO_PAIN": 1,
+        "FLASH_OF_STEEL": 2,
+        "HAVOC": 1,
+        "HEADBUTT": 2,
+        "IMPERVIOUS": 1,
+        "LIMIT_BREAK": 1,
+        "PANIC_BUTTON": 1,
+        "REAPER": 1,
+        "STRIKE_RED": 5,
+        "WOUND": 2
+      },
+      "input_sha256": "91949bc0a231a0d61617ec7dac9b78f7cf6b97b6cdcb1188d3ec136f34ba4ef7",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 9,
+      "decision": 9,
+      "turn": 0,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support",
+          "K4_headbutt_draw"
+        ],
+        "active_card_count": 31,
+        "relevant_cards": {
+          "BASH": 1,
+          "BATTLE_TRANCE": 1,
+          "CORRUPTION": 1,
+          "DARK_EMBRACE": 1,
+          "FLASH_OF_STEEL": 2,
+          "HEADBUTT": 2
+        },
+        "relevant_relics": []
+      },
+      "tier": 2,
+      "ingredient_priority": 1,
+      "active_cards": {
+        "ANGER": 4,
+        "ASCENDERS_BANE": 1,
+        "BASH": 1,
+        "BATTLE_TRANCE": 1,
+        "BLOOD_FOR_BLOOD": 1,
+        "CORRUPTION": 1,
+        "DARK_EMBRACE": 1,
+        "DEFEND_RED": 4,
+        "FEEL_NO_PAIN": 1,
+        "FLASH_OF_STEEL": 2,
+        "HAVOC": 1,
+        "HEADBUTT": 2,
+        "IMPERVIOUS": 1,
+        "LIMIT_BREAK": 1,
+        "PANIC_BUTTON": 1,
+        "REAPER": 1,
+        "STRIKE_RED": 5,
+        "WOUND": 2
+      },
+      "input_sha256": "1d3a7d2698cdeebe128dd90f732526e92d4e65126aac2f61da2a2edd6d0ffbc7",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 10,
+      "decision": 10,
+      "turn": 1,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support",
+          "K4_headbutt_draw"
+        ],
+        "active_card_count": 31,
+        "relevant_cards": {
+          "BASH": 1,
+          "BATTLE_TRANCE": 1,
+          "CORRUPTION": 1,
+          "DARK_EMBRACE": 1,
+          "FLASH_OF_STEEL": 2,
+          "HEADBUTT": 2
+        },
+        "relevant_relics": []
+      },
+      "tier": 2,
+      "ingredient_priority": 1,
+      "active_cards": {
+        "ANGER": 4,
+        "ASCENDERS_BANE": 1,
+        "BASH": 1,
+        "BATTLE_TRANCE": 1,
+        "BLOOD_FOR_BLOOD": 1,
+        "CORRUPTION": 1,
+        "DARK_EMBRACE": 1,
+        "DEFEND_RED": 4,
+        "FEEL_NO_PAIN": 1,
+        "FLASH_OF_STEEL": 2,
+        "HAVOC": 1,
+        "HEADBUTT": 2,
+        "IMPERVIOUS": 1,
+        "LIMIT_BREAK": 1,
+        "PANIC_BUTTON": 1,
+        "REAPER": 1,
+        "STRIKE_RED": 5,
+        "WOUND": 2
+      },
+      "input_sha256": "32df2c16a45d202fa5729fc6c20d85bbd86c8ed3c1a1ceb1fad9dacc4c81e3be",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 11,
+      "decision": 11,
+      "turn": 1,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support",
+          "K4_headbutt_draw"
+        ],
+        "active_card_count": 30,
+        "relevant_cards": {
+          "BASH": 1,
+          "BATTLE_TRANCE": 1,
+          "CORRUPTION": 1,
+          "DARK_EMBRACE": 1,
+          "FLASH_OF_STEEL": 2,
+          "HEADBUTT": 2
+        },
+        "relevant_relics": []
+      },
+      "tier": 2,
+      "ingredient_priority": 1,
+      "active_cards": {
+        "ANGER": 4,
+        "ASCENDERS_BANE": 1,
+        "BASH": 1,
+        "BATTLE_TRANCE": 1,
+        "BLOOD_FOR_BLOOD": 1,
+        "CORRUPTION": 1,
+        "DARK_EMBRACE": 1,
+        "DEFEND_RED": 4,
+        "FEEL_NO_PAIN": 1,
+        "FLASH_OF_STEEL": 2,
+        "HAVOC": 1,
+        "HEADBUTT": 2,
+        "IMPERVIOUS": 1,
+        "PANIC_BUTTON": 1,
+        "REAPER": 1,
+        "STRIKE_RED": 5,
+        "WOUND": 2
+      },
+      "input_sha256": "d176d4c53cb05622976a4ae51ec42db4de79f65ee536582aec0b3ef81e106a6f",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 12,
+      "decision": 12,
+      "turn": 1,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support",
+          "K4_headbutt_draw"
+        ],
+        "active_card_count": 30,
+        "relevant_cards": {
+          "BASH": 1,
+          "BATTLE_TRANCE": 1,
+          "CORRUPTION": 1,
+          "DARK_EMBRACE": 1,
+          "FLASH_OF_STEEL": 2,
+          "HEADBUTT": 2
+        },
+        "relevant_relics": []
+      },
+      "tier": 2,
+      "ingredient_priority": 1,
+      "active_cards": {
+        "ANGER": 4,
+        "ASCENDERS_BANE": 1,
+        "BASH": 1,
+        "BATTLE_TRANCE": 1,
+        "BLOOD_FOR_BLOOD": 1,
+        "CORRUPTION": 1,
+        "DARK_EMBRACE": 1,
+        "DEFEND_RED": 4,
+        "FEEL_NO_PAIN": 1,
+        "FLASH_OF_STEEL": 2,
+        "HAVOC": 1,
+        "HEADBUTT": 2,
+        "IMPERVIOUS": 1,
+        "PANIC_BUTTON": 1,
+        "REAPER": 1,
+        "STRIKE_RED": 5,
+        "WOUND": 2
+      },
+      "input_sha256": "7b2ac8bcbabe89dbbd02021f3261883dc43eb1eb687034d2da25622bed6912fa",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 13,
+      "decision": 13,
+      "turn": 1,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support",
+          "K4_headbutt_draw"
+        ],
+        "active_card_count": 31,
+        "relevant_cards": {
+          "BASH": 1,
+          "BATTLE_TRANCE": 1,
+          "CORRUPTION": 1,
+          "DARK_EMBRACE": 1,
+          "FLASH_OF_STEEL": 2,
+          "HEADBUTT": 2
+        },
+        "relevant_relics": []
+      },
+      "tier": 2,
+      "ingredient_priority": 1,
+      "active_cards": {
+        "ANGER": 5,
+        "ASCENDERS_BANE": 1,
+        "BASH": 1,
+        "BATTLE_TRANCE": 1,
+        "BLOOD_FOR_BLOOD": 1,
+        "CORRUPTION": 1,
+        "DARK_EMBRACE": 1,
+        "DEFEND_RED": 4,
+        "FEEL_NO_PAIN": 1,
+        "FLASH_OF_STEEL": 2,
+        "HAVOC": 1,
+        "HEADBUTT": 2,
+        "IMPERVIOUS": 1,
+        "PANIC_BUTTON": 1,
+        "REAPER": 1,
+        "STRIKE_RED": 5,
+        "WOUND": 2
+      },
+      "input_sha256": "7442fa87056a87d4df4b0b8e0efd4a32a86ad75ae95be15992d818c6df044c77",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 14,
+      "decision": 14,
+      "turn": 1,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support",
+          "K4_headbutt_draw"
+        ],
+        "active_card_count": 31,
+        "relevant_cards": {
+          "BASH": 1,
+          "BATTLE_TRANCE": 1,
+          "CORRUPTION": 1,
+          "DARK_EMBRACE": 1,
+          "FLASH_OF_STEEL": 2,
+          "HEADBUTT": 2
+        },
+        "relevant_relics": []
+      },
+      "tier": 2,
+      "ingredient_priority": 1,
+      "active_cards": {
+        "ANGER": 5,
+        "ASCENDERS_BANE": 1,
+        "BASH": 1,
+        "BATTLE_TRANCE": 1,
+        "BLOOD_FOR_BLOOD": 1,
+        "CORRUPTION": 1,
+        "DARK_EMBRACE": 1,
+        "DEFEND_RED": 4,
+        "FEEL_NO_PAIN": 1,
+        "FLASH_OF_STEEL": 2,
+        "HAVOC": 1,
+        "HEADBUTT": 2,
+        "IMPERVIOUS": 1,
+        "PANIC_BUTTON": 1,
+        "REAPER": 1,
+        "STRIKE_RED": 5,
+        "WOUND": 2
+      },
+      "input_sha256": "55a5f15c507e14e3a9b55c2d25d532a7ba74d4e4af660d91531f2bb522d384a4",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 15,
+      "decision": 15,
+      "turn": 1,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support",
+          "K4_headbutt_draw"
+        ],
+        "active_card_count": 31,
+        "relevant_cards": {
+          "BASH": 1,
+          "BATTLE_TRANCE": 1,
+          "CORRUPTION": 1,
+          "DARK_EMBRACE": 1,
+          "FLASH_OF_STEEL": 2,
+          "HEADBUTT": 2
+        },
+        "relevant_relics": []
+      },
+      "tier": 2,
+      "ingredient_priority": 1,
+      "active_cards": {
+        "ANGER": 5,
+        "ASCENDERS_BANE": 1,
+        "BASH": 1,
+        "BATTLE_TRANCE": 1,
+        "BLOOD_FOR_BLOOD": 1,
+        "CORRUPTION": 1,
+        "DARK_EMBRACE": 1,
+        "DEFEND_RED": 4,
+        "FEEL_NO_PAIN": 1,
+        "FLASH_OF_STEEL": 2,
+        "HAVOC": 1,
+        "HEADBUTT": 2,
+        "IMPERVIOUS": 1,
+        "PANIC_BUTTON": 1,
+        "REAPER": 1,
+        "STRIKE_RED": 5,
+        "WOUND": 2
+      },
+      "input_sha256": "99af406fcea522a76b0f655133ecf443ee69f0b2ab42ac45aa835317f842610a",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 16,
+      "decision": 16,
+      "turn": 1,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support",
+          "K4_headbutt_draw"
+        ],
+        "active_card_count": 31,
+        "relevant_cards": {
+          "BASH": 1,
+          "BATTLE_TRANCE": 1,
+          "CORRUPTION": 1,
+          "DARK_EMBRACE": 1,
+          "FLASH_OF_STEEL": 2,
+          "HEADBUTT": 2
+        },
+        "relevant_relics": []
+      },
+      "tier": 2,
+      "ingredient_priority": 1,
+      "active_cards": {
+        "ANGER": 5,
+        "ASCENDERS_BANE": 1,
+        "BASH": 1,
+        "BATTLE_TRANCE": 1,
+        "BLOOD_FOR_BLOOD": 1,
+        "CORRUPTION": 1,
+        "DARK_EMBRACE": 1,
+        "DEFEND_RED": 4,
+        "FEEL_NO_PAIN": 1,
+        "FLASH_OF_STEEL": 2,
+        "HAVOC": 1,
+        "HEADBUTT": 2,
+        "IMPERVIOUS": 1,
+        "PANIC_BUTTON": 1,
+        "REAPER": 1,
+        "STRIKE_RED": 5,
+        "WOUND": 2
+      },
+      "input_sha256": "b4608c83bc2364fe2a4429c5743e934ba4887f272c639de013a16e955500de16",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 17,
+      "decision": 17,
+      "turn": 2,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support",
+          "K4_headbutt_draw"
+        ],
+        "active_card_count": 31,
+        "relevant_cards": {
+          "BASH": 1,
+          "BATTLE_TRANCE": 1,
+          "CORRUPTION": 1,
+          "DARK_EMBRACE": 1,
+          "FLASH_OF_STEEL": 2,
+          "HEADBUTT": 2
+        },
+        "relevant_relics": []
+      },
+      "tier": 2,
+      "ingredient_priority": 1,
+      "active_cards": {
+        "ANGER": 5,
+        "ASCENDERS_BANE": 1,
+        "BASH": 1,
+        "BATTLE_TRANCE": 1,
+        "BLOOD_FOR_BLOOD": 1,
+        "CORRUPTION": 1,
+        "DARK_EMBRACE": 1,
+        "DEFEND_RED": 4,
+        "FEEL_NO_PAIN": 1,
+        "FLASH_OF_STEEL": 2,
+        "HAVOC": 1,
+        "HEADBUTT": 2,
+        "IMPERVIOUS": 1,
+        "PANIC_BUTTON": 1,
+        "REAPER": 1,
+        "STRIKE_RED": 5,
+        "WOUND": 2
+      },
+      "input_sha256": "5d857faac07ddc431872bf90ca1ad216561a19ddd1b665b33788c32a88f4eda7",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 18,
+      "decision": 18,
+      "turn": 2,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support",
+          "K4_headbutt_draw"
+        ],
+        "active_card_count": 30,
+        "relevant_cards": {
+          "BASH": 1,
+          "BATTLE_TRANCE": 1,
+          "CORRUPTION": 1,
+          "DARK_EMBRACE": 1,
+          "FLASH_OF_STEEL": 2,
+          "HEADBUTT": 2
+        },
+        "relevant_relics": []
+      },
+      "tier": 2,
+      "ingredient_priority": 1,
+      "active_cards": {
+        "ANGER": 5,
+        "ASCENDERS_BANE": 1,
+        "BASH": 1,
+        "BATTLE_TRANCE": 1,
+        "BLOOD_FOR_BLOOD": 1,
+        "CORRUPTION": 1,
+        "DARK_EMBRACE": 1,
+        "DEFEND_RED": 4,
+        "FEEL_NO_PAIN": 1,
+        "FLASH_OF_STEEL": 2,
+        "HAVOC": 1,
+        "HEADBUTT": 2,
+        "IMPERVIOUS": 1,
+        "PANIC_BUTTON": 1,
+        "STRIKE_RED": 5,
+        "WOUND": 2
+      },
+      "input_sha256": "0dfb3ee338e4bb2c4abe21fe81762f4b86cda5640642fcf82c8a09d0fdada862",
+      "duplicate_public_root": false
+    }
+  ],
+  "inputs_sha256": "09865631df386e17a7e14516191337d099e704383e6f32ff1eb38ee170ca4c91",
+  "oracle_binary_sha256": "28e942c218cbaeef29f3a58a3301873d2fca012f6205379445e4e23ffef0ebe9",
+  "oracle_K": 4,
+  "oracle_caps": {
+    "depth": 24,
+    "nodes": 2000,
+    "candidates": 16,
+    "periods": 128,
+    "actions_per_candidate": 1024,
+    "total_replay_actions": 4096
+  }
+}

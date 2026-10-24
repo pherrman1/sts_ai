@@ -1,0 +1,593 @@
+{
+  "seed_for_join_only": 111101512,
+  "fight": {
+    "act": 1,
+    "floor": 14,
+    "fight": 8,
+    "encounter": "TWO_FUNGI_BEASTS",
+    "pre_deck": [
+      "Ascender's Bane",
+      "Strike",
+      "Strike",
+      "Strike",
+      "Strike",
+      "Strike",
+      "Defend",
+      "Defend",
+      "Defend",
+      "Defend",
+      "Bash",
+      "Clothesline+",
+      "Iron Wave",
+      "Twin Strike+",
+      "Anger",
+      "Uppercut",
+      "Pommel Strike",
+      "Shrug It Off",
+      "Havoc"
+    ],
+    "pre_relics": [
+      "BURNING_BLOOD",
+      "ORICHALCUM",
+      "REGAL_PILLOW",
+      "SUNDIAL"
+    ],
+    "source_pre_sha256": "2e19a835c7025923abcfe0e646b8837e9211ccefcc053961a6b8d16914436bc1",
+    "future_public_target_if_restored": "111101512:14"
+  },
+  "receipt_sha256": "362df161e73ac6aaf40188bb688735bc76b811b2133cb96bb46b71defd7aa90d",
+  "capture_sha256": "c5765eaa17fdd5e7dcb52d6c98f95e84ba1fbdf9750c4e3aad36ce1aef6ecb5d",
+  "trace_sha256": "1ae21870e5d5a8815c16ace3c8582a00963907fb7ebc3be36679b19f75f428fc",
+  "full_run_relics": [
+    "BURNING_BLOOD",
+    "ORICHALCUM",
+    "REGAL_PILLOW",
+    "SUNDIAL"
+  ],
+  "no_prismatic_shard_proven": true,
+  "run_deck_before_fight": [
+    "Ascender's Bane",
+    "Strike",
+    "Strike",
+    "Strike",
+    "Strike",
+    "Strike",
+    "Defend",
+    "Defend",
+    "Defend",
+    "Defend",
+    "Bash",
+    "Clothesline+",
+    "Iron Wave",
+    "Twin Strike+",
+    "Anger",
+    "Uppercut",
+    "Pommel Strike",
+    "Shrug It Off",
+    "Havoc"
+  ],
+  "public_roots_captured": 8,
+  "valid_roots": 8,
+  "ordinary_public_roots": 8,
+  "tier1_roots": 0,
+  "tier2_roots": 8,
+  "selected": [
+    {
+      "line_1based": 1,
+      "decision": 1,
+      "turn": 0,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K2_sundial_draw"
+        ],
+        "active_card_count": 19,
+        "relevant_cards": {
+          "BASH": 1,
+          "POMMEL_STRIKE": 1,
+          "SHRUG_IT_OFF": 1,
+          "UPPERCUT": 1
+        },
+        "relevant_relics": [
+          "SUNDIAL"
+        ]
+      },
+      "tier": 2,
+      "ingredient_priority": 2,
+      "active_cards": {
+        "ANGER": 1,
+        "ASCENDERS_BANE": 1,
+        "BASH": 1,
+        "CLOTHESLINE": 1,
+        "DEFEND_RED": 4,
+        "HAVOC": 1,
+        "IRON_WAVE": 1,
+        "POMMEL_STRIKE": 1,
+        "SHRUG_IT_OFF": 1,
+        "STRIKE_RED": 5,
+        "TWIN_STRIKE": 1,
+        "UPPERCUT": 1
+      },
+      "input_sha256": "bea33cde8fc33e23dfea270feb5159fa3ad7dac730924aa139469d476afbc224",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 2,
+      "decision": 2,
+      "turn": 0,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K2_sundial_draw"
+        ],
+        "active_card_count": 19,
+        "relevant_cards": {
+          "BASH": 1,
+          "POMMEL_STRIKE": 1,
+          "SHRUG_IT_OFF": 1,
+          "UPPERCUT": 1
+        },
+        "relevant_relics": [
+          "SUNDIAL"
+        ]
+      },
+      "tier": 2,
+      "ingredient_priority": 2,
+      "active_cards": {
+        "ANGER": 1,
+        "ASCENDERS_BANE": 1,
+        "BASH": 1,
+        "CLOTHESLINE": 1,
+        "DEFEND_RED": 4,
+        "HAVOC": 1,
+        "IRON_WAVE": 1,
+        "POMMEL_STRIKE": 1,
+        "SHRUG_IT_OFF": 1,
+        "STRIKE_RED": 5,
+        "TWIN_STRIKE": 1,
+        "UPPERCUT": 1
+      },
+      "input_sha256": "3aaaed4a3e25bb59b0a76a222e1e33c2c778421b0d0f443acb9ad9e4c123c6bf",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 3,
+      "decision": 3,
+      "turn": 0,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K2_sundial_draw"
+        ],
+        "active_card_count": 19,
+        "relevant_cards": {
+          "BASH": 1,
+          "POMMEL_STRIKE": 1,
+          "SHRUG_IT_OFF": 1,
+          "UPPERCUT": 1
+        },
+        "relevant_relics": [
+          "SUNDIAL"
+        ]
+      },
+      "tier": 2,
+      "ingredient_priority": 2,
+      "active_cards": {
+        "ANGER": 1,
+        "ASCENDERS_BANE": 1,
+        "BASH": 1,
+        "CLOTHESLINE": 1,
+        "DEFEND_RED": 4,
+        "HAVOC": 1,
+        "IRON_WAVE": 1,
+        "POMMEL_STRIKE": 1,
+        "SHRUG_IT_OFF": 1,
+        "STRIKE_RED": 5,
+        "TWIN_STRIKE": 1,
+        "UPPERCUT": 1
+      },
+      "input_sha256": "8937f7269437f3ab6fe602e300d404cdc93403ca12b163998808805956eb43fc",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 4,
+      "decision": 4,
+      "turn": 1,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K2_sundial_draw"
+        ],
+        "active_card_count": 19,
+        "relevant_cards": {
+          "BASH": 1,
+          "POMMEL_STRIKE": 1,
+          "SHRUG_IT_OFF": 1,
+          "UPPERCUT": 1
+        },
+        "relevant_relics": [
+          "SUNDIAL"
+        ]
+      },
+      "tier": 2,
+      "ingredient_priority": 2,
+      "active_cards": {
+        "ANGER": 1,
+        "ASCENDERS_BANE": 1,
+        "BASH": 1,
+        "CLOTHESLINE": 1,
+        "DEFEND_RED": 4,
+        "HAVOC": 1,
+        "IRON_WAVE": 1,
+        "POMMEL_STRIKE": 1,
+        "SHRUG_IT_OFF": 1,
+        "STRIKE_RED": 5,
+        "TWIN_STRIKE": 1,
+        "UPPERCUT": 1
+      },
+      "input_sha256": "870bbc5cfc968f6ad180db7ca1e60b571b4360212e5ee08fc5e2eaf01f076ee5",
+      "duplicate_public_root": false
+    }
+  ],
+  "all_roots": [
+    {
+      "line_1based": 1,
+      "decision": 1,
+      "turn": 0,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K2_sundial_draw"
+        ],
+        "active_card_count": 19,
+        "relevant_cards": {
+          "BASH": 1,
+          "POMMEL_STRIKE": 1,
+          "SHRUG_IT_OFF": 1,
+          "UPPERCUT": 1
+        },
+        "relevant_relics": [
+          "SUNDIAL"
+        ]
+      },
+      "tier": 2,
+      "ingredient_priority": 2,
+      "active_cards": {
+        "ANGER": 1,
+        "ASCENDERS_BANE": 1,
+        "BASH": 1,
+        "CLOTHESLINE": 1,
+        "DEFEND_RED": 4,
+        "HAVOC": 1,
+        "IRON_WAVE": 1,
+        "POMMEL_STRIKE": 1,
+        "SHRUG_IT_OFF": 1,
+        "STRIKE_RED": 5,
+        "TWIN_STRIKE": 1,
+        "UPPERCUT": 1
+      },
+      "input_sha256": "bea33cde8fc33e23dfea270feb5159fa3ad7dac730924aa139469d476afbc224",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 2,
+      "decision": 2,
+      "turn": 0,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K2_sundial_draw"
+        ],
+        "active_card_count": 19,
+        "relevant_cards": {
+          "BASH": 1,
+          "POMMEL_STRIKE": 1,
+          "SHRUG_IT_OFF": 1,
+          "UPPERCUT": 1
+        },
+        "relevant_relics": [
+          "SUNDIAL"
+        ]
+      },
+      "tier": 2,
+      "ingredient_priority": 2,
+      "active_cards": {
+        "ANGER": 1,
+        "ASCENDERS_BANE": 1,
+        "BASH": 1,
+        "CLOTHESLINE": 1,
+        "DEFEND_RED": 4,
+        "HAVOC": 1,
+        "IRON_WAVE": 1,
+        "POMMEL_STRIKE": 1,
+        "SHRUG_IT_OFF": 1,
+        "STRIKE_RED": 5,
+        "TWIN_STRIKE": 1,
+        "UPPERCUT": 1
+      },
+      "input_sha256": "3aaaed4a3e25bb59b0a76a222e1e33c2c778421b0d0f443acb9ad9e4c123c6bf",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 3,
+      "decision": 3,
+      "turn": 0,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K2_sundial_draw"
+        ],
+        "active_card_count": 19,
+        "relevant_cards": {
+          "BASH": 1,
+          "POMMEL_STRIKE": 1,
+          "SHRUG_IT_OFF": 1,
+          "UPPERCUT": 1
+        },
+        "relevant_relics": [
+          "SUNDIAL"
+        ]
+      },
+      "tier": 2,
+      "ingredient_priority": 2,
+      "active_cards": {
+        "ANGER": 1,
+        "ASCENDERS_BANE": 1,
+        "BASH": 1,
+        "CLOTHESLINE": 1,
+        "DEFEND_RED": 4,
+        "HAVOC": 1,
+        "IRON_WAVE": 1,
+        "POMMEL_STRIKE": 1,
+        "SHRUG_IT_OFF": 1,
+        "STRIKE_RED": 5,
+        "TWIN_STRIKE": 1,
+        "UPPERCUT": 1
+      },
+      "input_sha256": "8937f7269437f3ab6fe602e300d404cdc93403ca12b163998808805956eb43fc",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 4,
+      "decision": 4,
+      "turn": 1,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K2_sundial_draw"
+        ],
+        "active_card_count": 19,
+        "relevant_cards": {
+          "BASH": 1,
+          "POMMEL_STRIKE": 1,
+          "SHRUG_IT_OFF": 1,
+          "UPPERCUT": 1
+        },
+        "relevant_relics": [
+          "SUNDIAL"
+        ]
+      },
+      "tier": 2,
+      "ingredient_priority": 2,
+      "active_cards": {
+        "ANGER": 1,
+        "ASCENDERS_BANE": 1,
+        "BASH": 1,
+        "CLOTHESLINE": 1,
+        "DEFEND_RED": 4,
+        "HAVOC": 1,
+        "IRON_WAVE": 1,
+        "POMMEL_STRIKE": 1,
+        "SHRUG_IT_OFF": 1,
+        "STRIKE_RED": 5,
+        "TWIN_STRIKE": 1,
+        "UPPERCUT": 1
+      },
+      "input_sha256": "870bbc5cfc968f6ad180db7ca1e60b571b4360212e5ee08fc5e2eaf01f076ee5",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 5,
+      "decision": 5,
+      "turn": 1,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K2_sundial_draw"
+        ],
+        "active_card_count": 19,
+        "relevant_cards": {
+          "BASH": 1,
+          "POMMEL_STRIKE": 1,
+          "SHRUG_IT_OFF": 1,
+          "UPPERCUT": 1
+        },
+        "relevant_relics": [
+          "SUNDIAL"
+        ]
+      },
+      "tier": 2,
+      "ingredient_priority": 2,
+      "active_cards": {
+        "ANGER": 1,
+        "ASCENDERS_BANE": 1,
+        "BASH": 1,
+        "CLOTHESLINE": 1,
+        "DEFEND_RED": 4,
+        "HAVOC": 1,
+        "IRON_WAVE": 1,
+        "POMMEL_STRIKE": 1,
+        "SHRUG_IT_OFF": 1,
+        "STRIKE_RED": 5,
+        "TWIN_STRIKE": 1,
+        "UPPERCUT": 1
+      },
+      "input_sha256": "1c016ae960dd65dc0ed1f1560f0e16dc714e1fbc62159e73eae0a8bc2e29933a",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 6,
+      "decision": 6,
+      "turn": 1,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K2_sundial_draw"
+        ],
+        "active_card_count": 19,
+        "relevant_cards": {
+          "BASH": 1,
+          "POMMEL_STRIKE": 1,
+          "SHRUG_IT_OFF": 1,
+          "UPPERCUT": 1
+        },
+        "relevant_relics": [
+          "SUNDIAL"
+        ]
+      },
+      "tier": 2,
+      "ingredient_priority": 2,
+      "active_cards": {
+        "ANGER": 1,
+        "ASCENDERS_BANE": 1,
+        "BASH": 1,
+        "CLOTHESLINE": 1,
+        "DEFEND_RED": 4,
+        "HAVOC": 1,
+        "IRON_WAVE": 1,
+        "POMMEL_STRIKE": 1,
+        "SHRUG_IT_OFF": 1,
+        "STRIKE_RED": 5,
+        "TWIN_STRIKE": 1,
+        "UPPERCUT": 1
+      },
+      "input_sha256": "5a85a4e33f580ba520349741e1624a50e52fa040d7591dd27bd1f5e81d083bea",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 7,
+      "decision": 7,
+      "turn": 1,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K2_sundial_draw"
+        ],
+        "active_card_count": 20,
+        "relevant_cards": {
+          "BASH": 1,
+          "POMMEL_STRIKE": 1,
+          "SHRUG_IT_OFF": 1,
+          "UPPERCUT": 1
+        },
+        "relevant_relics": [
+          "SUNDIAL"
+        ]
+      },
+      "tier": 2,
+      "ingredient_priority": 2,
+      "active_cards": {
+        "ANGER": 2,
+        "ASCENDERS_BANE": 1,
+        "BASH": 1,
+        "CLOTHESLINE": 1,
+        "DEFEND_RED": 4,
+        "HAVOC": 1,
+        "IRON_WAVE": 1,
+        "POMMEL_STRIKE": 1,
+        "SHRUG_IT_OFF": 1,
+        "STRIKE_RED": 5,
+        "TWIN_STRIKE": 1,
+        "UPPERCUT": 1
+      },
+      "input_sha256": "bded4b6cba873fe061b704f2fe63500daea2e7c3021ae3c067f9ca641b10e9f2",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 8,
+      "decision": 8,
+      "turn": 2,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K2_sundial_draw"
+        ],
+        "active_card_count": 20,
+        "relevant_cards": {
+          "BASH": 1,
+          "POMMEL_STRIKE": 1,
+          "SHRUG_IT_OFF": 1,
+          "UPPERCUT": 1
+        },
+        "relevant_relics": [
+          "SUNDIAL"
+        ]
+      },
+      "tier": 2,
+      "ingredient_priority": 2,
+      "active_cards": {
+        "ANGER": 2,
+        "ASCENDERS_BANE": 1,
+        "BASH": 1,
+        "CLOTHESLINE": 1,
+        "DEFEND_RED": 4,
+        "HAVOC": 1,
+        "IRON_WAVE": 1,
+        "POMMEL_STRIKE": 1,
+        "SHRUG_IT_OFF": 1,
+        "STRIKE_RED": 5,
+        "TWIN_STRIKE": 1,
+        "UPPERCUT": 1
+      },
+      "input_sha256": "3bcbf3583b91d367efce112abcae0c2817d3754f09c031fab45e0dc78987fc71",
+      "duplicate_public_root": false
+    }
+  ],
+  "inputs_sha256": "d3bf6e9d566ccece51494a9e9f4dea2bf13060681d4626a93394fd7accb1e43b",
+  "oracle_binary_sha256": "28e942c218cbaeef29f3a58a3301873d2fca012f6205379445e4e23ffef0ebe9",
+  "oracle_K": 4,
+  "oracle_caps": {
+    "depth": 24,
+    "nodes": 2000,
+    "candidates": 16,
+    "periods": 128,
+    "actions_per_candidate": 1024,
+    "total_replay_actions": 4096
+  }
+}

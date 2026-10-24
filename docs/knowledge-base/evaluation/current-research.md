@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-10-24 for paired-capture replayability (§TBD-capture) and targeted retained-data hunt (§TBD-hunt) and provenance-backed historical annotation (§TBD-natural) and retained provenance-route inspection; 2026-10-23 for K=4 public-root infinity adapter coverage (§TBD-public) and constructed recall (§673; feasibility §671); 2026-10-23 for the A20 CTM against real fights and its research calibration flag (§670), the stage 1–2 leaf-compare replay (§663) and the M0 leaf calibration as the A20 default (ADR-0057) and the calibrated-leaf (M0) × SR_w1 blend A/B (§661) and the OOC value head's ranking-selected recipe on two more seeds (§649); 2026-10-22 for the OOC leaf's death price (§660); 2026-10-22 for the OOC value head as a leaf ranker (§641), its common-seed recapture (§644) and the retrain on those labels (§645); 2026-10-18 for the Act-4 CTM survival model A/B (§534) and A20 default (ADR-0048); 2026-10-17 for per-category chance widening (§518); 2026-10-17 for the AlphaZero-loop open requirements (potion discard output); 2026-10-17 for A0 Ritual artifact custody, corrected producer growth, coverage pilots and the Ritual refit (§511, §512, §505–§508); 2026-10-17 for the Arm C value fine-tune (§509); 2026-10-17 for the §494 student leaf A20 A/B (§504); 2026-10-17 for the outcome head as a sibling-leaf ranker (§502); 2026-10-17 for the development value-head comparison (§501); 2026-10-17 for development weighting ablation (§500); 2026-10-17 for one-shot observed-outcome holdout and early calibration (§499); 2026-10-17 for observed Heart-outcome value-head fitting (§498); 2026-10-16 for recovered Heart-outcome corpus import and class coverage (§497); 2026-10-16 for the NOT_SHOWN Arm C rollout-policy Heart pilot (§493) and software-fault recovery of the A20 Heart rollout-distillation pilot (§§491–492); 2026-10-14 for conditional leaf target stability (§471, #507); 2026-10-13 for bounded observational leaf capture (#507); 2026-10-13 for OOC MCTS `combo` at A20 (§457) and with the Lizard-capable A20 CTM (§458); 2026-10-12 for the A20 V4 at A0 and V4 margin sweep (§448), the public X2-B as rollout3 win model (§449), deep OOC MCTS with uniform prior and leaf policy (§441), the A20 short-branch label corpus (§445), the rollout3 fresh-seed confirmation (§433) and the CTM cost in rollout3 (§439); 2026-10-11 for Lizard Tail support in the default OOC MCTS CTM (§435), the #401 tree-input audit (§438) and the rollout3 CPU profile (§436) and exact native fallback batching (§437); 2026-10-11 for the rollout3 one-setting variants (§427–§430), independent branch futures and short-branch labels at A20 (§432), OOC MCTS on the A20 gold decisions (§425), rollout3 at 512 simulations (§424) and the Lizard-capable CTM inside rollout3 (§423); 2026-10-10 for the rollout3 OOC MCTS replication (§422); 2026-10-09 for the OOC MCTS root-selection × cpuct screen (§414) and the #418 retrained CTM live A/B (§412); 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for fair native OOC decision quality (§395) and the blocked boss-relic selection-precision attempt (§398); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
+Last verified: 2026-10-24 for exact Heart runtime reconstruction and paired ingredient-fight capture (§TBD-reconstruction), paired-capture replayability (§TBD-capture) and targeted retained-data hunt (§TBD-hunt) and provenance-backed historical annotation (§TBD-natural) and retained provenance-route inspection; 2026-10-23 for K=4 public-root infinity adapter coverage (§TBD-public) and constructed recall (§673; feasibility §671); 2026-10-23 for the A20 CTM against real fights and its research calibration flag (§670), the stage 1–2 leaf-compare replay (§663) and the M0 leaf calibration as the A20 default (ADR-0057) and the calibrated-leaf (M0) × SR_w1 blend A/B (§661) and the OOC value head's ranking-selected recipe on two more seeds (§649); 2026-10-22 for the OOC leaf's death price (§660); 2026-10-22 for the OOC value head as a leaf ranker (§641), its common-seed recapture (§644) and the retrain on those labels (§645); 2026-10-18 for the Act-4 CTM survival model A/B (§534) and A20 default (ADR-0048); 2026-10-17 for per-category chance widening (§518); 2026-10-17 for the AlphaZero-loop open requirements (potion discard output); 2026-10-17 for A0 Ritual artifact custody, corrected producer growth, coverage pilots and the Ritual refit (§511, §512, §505–§508); 2026-10-17 for the Arm C value fine-tune (§509); 2026-10-17 for the §494 student leaf A20 A/B (§504); 2026-10-17 for the outcome head as a sibling-leaf ranker (§502); 2026-10-17 for the development value-head comparison (§501); 2026-10-17 for development weighting ablation (§500); 2026-10-17 for one-shot observed-outcome holdout and early calibration (§499); 2026-10-17 for observed Heart-outcome value-head fitting (§498); 2026-10-16 for recovered Heart-outcome corpus import and class coverage (§497); 2026-10-16 for the NOT_SHOWN Arm C rollout-policy Heart pilot (§493) and software-fault recovery of the A20 Heart rollout-distillation pilot (§§491–492); 2026-10-14 for conditional leaf target stability (§471, #507); 2026-10-13 for bounded observational leaf capture (#507); 2026-10-13 for OOC MCTS `combo` at A20 (§457) and with the Lizard-capable A20 CTM (§458); 2026-10-12 for the A20 V4 at A0 and V4 margin sweep (§448), the public X2-B as rollout3 win model (§449), deep OOC MCTS with uniform prior and leaf policy (§441), the A20 short-branch label corpus (§445), the rollout3 fresh-seed confirmation (§433) and the CTM cost in rollout3 (§439); 2026-10-11 for Lizard Tail support in the default OOC MCTS CTM (§435), the #401 tree-input audit (§438) and the rollout3 CPU profile (§436) and exact native fallback batching (§437); 2026-10-11 for the rollout3 one-setting variants (§427–§430), independent branch futures and short-branch labels at A20 (§432), OOC MCTS on the A20 gold decisions (§425), rollout3 at 512 simulations (§424) and the Lizard-capable CTM inside rollout3 (§423); 2026-10-10 for the rollout3 OOC MCTS replication (§422); 2026-10-09 for the OOC MCTS root-selection × cpuct screen (§414) and the #418 retrained CTM live A/B (§412); 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for fair native OOC decision quality (§395) and the blocked boss-relic selection-precision attempt (§398); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
 2026-09-27 for the active-Lizard fresh native Stage-C
 qualification, valid DeepSets/Brew integration canary, Gate 2 provenance-bound
 promotion, and default-stack plumbing; 2026-09-26 for the current-main
@@ -90,30 +90,43 @@ roots remain unsupported/null. No current-policy prevalence, recall, negative
 training-label qualification, model probing or collection extension follows.
 
 The [targeted retained-data hunt](../../experiments/evidence/combat_infinity_hunt_20261024/REPORT.md)
-(§TBD-hunt) is **BLOCKED_BY_DATA for current-policy positives**. Frozen public-only
-screening covers4,968 OOC run IDs/820,868 records and343 older combat-root
+(§TBD-hunt) was **BLOCKED_BY_DATA for current-policy positives** before the
+paired capture below. Frozen public-only screening covers4,968 OOC run IDs/820,868 records and343 older combat-root
 observations. Cycle-pair and Sundial/draw ingredients occur in70 and440 OOC run
 IDs, but OOC records cannot establish combat compression. Recent combat wires
 lack complete run-relic provenance; the current remote raw share was unavailable
-and is not counted as scanned. The only eligible selected roots are four weak
-Headbutt/draw Champ roots already labeled; their16 worlds are reused, with no
-new annotation. Do not infer rarity or a recall bottleneck from this data gap.
-Next obtain a small provenance-complete targeted public sample using existing
-paired opt-in traces; no capture patch, collection, model probing or bound change
-was implemented. Exact missing fields and a minimal optional metadata proposal
-are recorded in the report.
+and was not counted as scanned. At that stage the only eligible selected roots
+were four weak Headbutt/draw Champ roots already labeled; their16 worlds were
+reused without new annotation. Do not infer rarity or a recall bottleneck from this data gap.
+That motivated the small provenance-complete paired capture below. The hunt
+itself implemented no capture patch, collection, model probing or bound change.
+Exact missing fields and a minimal optional metadata proposal are in the report.
 
-The [tiny paired-capture replayability gate](../../experiments/evidence/combat_infinity_capture_20261024/REPORT.md)
-(§TBD-capture) stops at **BLOCKED_BY_REPLAY_ARTIFACTS**. Six strong frozen leads
-require Heart round2 binary0e17e0f2 or gen2 armA binary23a09099; neither appears
-in the declared retained build/bundle inventory. Exact Student/dependency model
-bytes are available, but no runtime/fidelity is established. The AZ `gen3` folder
-leads actually came from gen2 A/B armA/student_sel; original game seeds are
-unchanged, and their raw unit headers/env remain unavailable. Zero seed runs,
-combats reproduced, public roots captured or oracle worlds; tier/cap measurements
-are unassessed. Restore the receipt-bound Heart binary first, then perform the
-existing paired public/OOC trace fidelity gate. No current-policy substitution,
-rebuild, new capture schema, collection or model work was launched.
+The [original paired-capture preflight](../../experiments/evidence/combat_infinity_capture_20261024/REPORT.md)
+(§TBD-capture) stopped before execution because no retained executable matched
+Heart round2 or AZ armA custody. The Heart blocker is now resolved by the
+[exact-runtime reconstruction and paired capture](../../experiments/evidence/combat_infinity_reconstruction_20261024/REPORT.md)
+(§TBD-reconstruction): unpatched source d8fd2a105a8d with the original presets
+rebuilds **byte-identical executable0e17e0f2…c2d52**. Exact Student C and all seven
+model dependencies were retained. No replacement worktree or policy was used.
+
+**EXACT_RUNTIME_RECOVERED + NO_NEAR_INFINITY_STATE_OBSERVED.** Original seeds
+111101032/326/512 match all frozen public checkpoints through Shell Parasite,
+Three Darklings and Two Fungi Beasts (68/137/57 state objects and67/136/56 trace
+objects; full headers also exact). Same-run paired traces bind full no-Shard
+relic provenance to45 captured records/43 ordinary roots. None meets Tier1;
+all43 are ingredient-only Tier2, with minimum active pools16/30/19. Frozen
+four per fight yield12 eligible roots/48 supported K4 worlds, all NONE, no
+candidate/kill/witness. One node-cap world is inconclusive; no bounded NONE is a
+negative training label. Oracle CPU31.710ms,10,846 nodes, maximum depth5.
+
+This resolves the data path for those historical fights, not useful positive
+signal, current-policy prevalence or an oracle recall limitation. Deck
+ingredients did not turn into compressed combat engines in the three declared
+fights. Stop after this pilot; the next useful experiment would target
+OOC/counterfactual construction toward actual compression. No automatic capture
+extension, AZ replay, bound change, model probing/training or gameplay change.
+AZ raw headers/env/runtime custody remains outside this Heart-only continuation.
 
 ## AlphaZero-style OOC loop: open requirements
 

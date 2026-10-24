@@ -1,0 +1,1026 @@
+{
+  "seed_for_join_only": 111101032,
+  "fight": {
+    "act": 2,
+    "floor": 18,
+    "fight": 11,
+    "encounter": "SHELL_PARASITE",
+    "pre_deck": [
+      "Ascender's Bane",
+      "Bash",
+      "Fire Breathing",
+      "Clothesline",
+      "Armaments",
+      "Pommel Strike+",
+      "Twin Strike",
+      "Immolate",
+      "Reaper",
+      "Berserk",
+      "Inflame",
+      "Dropkick",
+      "Barricade",
+      "Entrench",
+      "Dropkick",
+      "Fire Breathing",
+      "Wild Strike",
+      "Rage"
+    ],
+    "pre_relics": [
+      "BURNING_BLOOD",
+      "MEAL_TICKET",
+      "STRIKE_DUMMY",
+      "KUNAI",
+      "PANDORAS_BOX"
+    ],
+    "source_pre_sha256": "b1b84f674b77eacebc132f36bf374b25f82b311cb43338d082d6a577c3657bfb",
+    "future_public_target_if_restored": "111101032:18"
+  },
+  "receipt_sha256": "519119d6364bcfbc858a49007740045803436ee3cfeda20c58668de397b73a4d",
+  "capture_sha256": "cdbc1d20c703b5b4347510b5c6cce5b213a50ff7659954d2b06c4e57950ad945",
+  "trace_sha256": "6843953f33d921d3a2bf571641d5a0705f15dc2549db970c3622acb716b0627f",
+  "full_run_relics": [
+    "BURNING_BLOOD",
+    "MEAL_TICKET",
+    "STRIKE_DUMMY",
+    "KUNAI",
+    "PANDORAS_BOX"
+  ],
+  "no_prismatic_shard_proven": true,
+  "run_deck_before_fight": [
+    "Ascender's Bane",
+    "Bash",
+    "Fire Breathing",
+    "Clothesline",
+    "Armaments",
+    "Pommel Strike+",
+    "Twin Strike",
+    "Immolate",
+    "Reaper",
+    "Berserk",
+    "Inflame",
+    "Dropkick",
+    "Barricade",
+    "Entrench",
+    "Dropkick",
+    "Fire Breathing",
+    "Wild Strike",
+    "Rage"
+  ],
+  "public_roots_captured": 19,
+  "valid_roots": 19,
+  "ordinary_public_roots": 18,
+  "tier1_roots": 0,
+  "tier2_roots": 18,
+  "selected": [
+    {
+      "line_1based": 9,
+      "decision": 9,
+      "turn": 1,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 16,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier": 2,
+      "ingredient_priority": 1,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "ASCENDERS_BANE": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "CLOTHESLINE": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "FIRE_BREATHING": 2,
+        "IMMOLATE": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "REAPER": 1,
+        "TWIN_STRIKE": 1,
+        "WILD_STRIKE": 1
+      },
+      "input_sha256": "e85880fbc5a525106ddfbaf36c9cb7bbafc7108c57a71cc6ae5ac5ea7afca69c",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 16,
+      "decision": 16,
+      "turn": 3,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 16,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier": 2,
+      "ingredient_priority": 1,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "BURN": 1,
+        "CLOTHESLINE": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "FIRE_BREATHING": 1,
+        "IMMOLATE": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "REAPER": 1,
+        "TWIN_STRIKE": 1,
+        "WILD_STRIKE": 1,
+        "WOUND": 1
+      },
+      "input_sha256": "4b1e1b90f604f38cb293f4e2af73c6aa3d7e7fb87f1f020971be79d9ff6b114f",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 17,
+      "decision": 17,
+      "turn": 3,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 16,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier": 2,
+      "ingredient_priority": 1,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "BURN": 1,
+        "CLOTHESLINE": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "FIRE_BREATHING": 1,
+        "IMMOLATE": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "REAPER": 1,
+        "TWIN_STRIKE": 1,
+        "WILD_STRIKE": 1,
+        "WOUND": 1
+      },
+      "input_sha256": "b8c247272aece5b1538842959c6d34fd6aa9ac99a4fad6a8eba92fb5efe913f5",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 18,
+      "decision": 18,
+      "turn": 3,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 16,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier": 2,
+      "ingredient_priority": 1,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "BURN": 1,
+        "CLOTHESLINE": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "FIRE_BREATHING": 1,
+        "IMMOLATE": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "REAPER": 1,
+        "TWIN_STRIKE": 1,
+        "WILD_STRIKE": 1,
+        "WOUND": 1
+      },
+      "input_sha256": "b97f28ba4c02a7d5019691f93e636656e1fc4441ad6f5a9a885fbb5f5e0135d5",
+      "duplicate_public_root": false
+    }
+  ],
+  "all_roots": [
+    {
+      "line_1based": 1,
+      "decision": 1,
+      "turn": 0,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 18,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier": 2,
+      "ingredient_priority": 1,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "ASCENDERS_BANE": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "BERSERK": 1,
+        "CLOTHESLINE": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "FIRE_BREATHING": 2,
+        "IMMOLATE": 1,
+        "INFLAME": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "REAPER": 1,
+        "TWIN_STRIKE": 1,
+        "WILD_STRIKE": 1
+      },
+      "input_sha256": "af688f847986309e71913b479a17a7df1796b65fb83504e88bd4dbdbd195a59b",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 2,
+      "decision": 2,
+      "turn": 0,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 18,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier": 2,
+      "ingredient_priority": 1,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "ASCENDERS_BANE": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "BERSERK": 1,
+        "CLOTHESLINE": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "FIRE_BREATHING": 2,
+        "IMMOLATE": 1,
+        "INFLAME": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "REAPER": 1,
+        "TWIN_STRIKE": 1,
+        "WILD_STRIKE": 1
+      },
+      "input_sha256": "188a89127151e54b7621b6f933a3c1b7291328fb23a5693ef693a451643be9f8",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 3,
+      "decision": 3,
+      "turn": 0,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 18,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier": 2,
+      "ingredient_priority": 1,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "ASCENDERS_BANE": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "BERSERK": 1,
+        "CLOTHESLINE": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "FIRE_BREATHING": 2,
+        "IMMOLATE": 1,
+        "INFLAME": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "REAPER": 1,
+        "TWIN_STRIKE": 1,
+        "WILD_STRIKE": 1
+      },
+      "input_sha256": "a44155b580de9d4415213ec932f9331c9051efeb87cbaf0cb6181c82039624e7",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 4,
+      "decision": 4,
+      "turn": 0,
+      "capture_valid": true,
+      "ordinary_player_decision": false,
+      "selection_exclusion": "not PLAYER_NORMAL; unchanged adapter domain"
+    },
+    {
+      "line_1based": 5,
+      "decision": 5,
+      "turn": 0,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 18,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier": 2,
+      "ingredient_priority": 1,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "ASCENDERS_BANE": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "BERSERK": 1,
+        "CLOTHESLINE": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "FIRE_BREATHING": 2,
+        "IMMOLATE": 1,
+        "INFLAME": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "REAPER": 1,
+        "TWIN_STRIKE": 1,
+        "WILD_STRIKE": 1
+      },
+      "input_sha256": "7b4b6a9d1a2def13ef0419b1d1268fd1d8bbda7e5e8bad898b2e8b2e4130dfbe",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 6,
+      "decision": 6,
+      "turn": 0,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 17,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier": 2,
+      "ingredient_priority": 1,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "ASCENDERS_BANE": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "CLOTHESLINE": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "FIRE_BREATHING": 2,
+        "IMMOLATE": 1,
+        "INFLAME": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "REAPER": 1,
+        "TWIN_STRIKE": 1,
+        "WILD_STRIKE": 1
+      },
+      "input_sha256": "d13f36b5fe97a2400d3ba486958f522a9e43cac649e3d56f2da2bef10a51be55",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 7,
+      "decision": 7,
+      "turn": 1,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 17,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier": 2,
+      "ingredient_priority": 1,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "ASCENDERS_BANE": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "CLOTHESLINE": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "FIRE_BREATHING": 2,
+        "IMMOLATE": 1,
+        "INFLAME": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "REAPER": 1,
+        "TWIN_STRIKE": 1,
+        "WILD_STRIKE": 1
+      },
+      "input_sha256": "4653248074a77b4336869bd03950952c2d9d8e9dfd83ee17676c202c0ba775ff",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 8,
+      "decision": 8,
+      "turn": 1,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 17,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier": 2,
+      "ingredient_priority": 1,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "ASCENDERS_BANE": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "CLOTHESLINE": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "FIRE_BREATHING": 2,
+        "IMMOLATE": 1,
+        "INFLAME": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "REAPER": 1,
+        "TWIN_STRIKE": 1,
+        "WILD_STRIKE": 1
+      },
+      "input_sha256": "b916691e37a78d6241013d11064af254a6702900461627e5ee18e4e8156078a5",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 9,
+      "decision": 9,
+      "turn": 1,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 16,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier": 2,
+      "ingredient_priority": 1,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "ASCENDERS_BANE": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "CLOTHESLINE": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "FIRE_BREATHING": 2,
+        "IMMOLATE": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "REAPER": 1,
+        "TWIN_STRIKE": 1,
+        "WILD_STRIKE": 1
+      },
+      "input_sha256": "e85880fbc5a525106ddfbaf36c9cb7bbafc7108c57a71cc6ae5ac5ea7afca69c",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 10,
+      "decision": 10,
+      "turn": 1,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 17,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier": 2,
+      "ingredient_priority": 1,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "ASCENDERS_BANE": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "CLOTHESLINE": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "FIRE_BREATHING": 2,
+        "IMMOLATE": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "REAPER": 1,
+        "TWIN_STRIKE": 1,
+        "WILD_STRIKE": 1,
+        "WOUND": 1
+      },
+      "input_sha256": "26ba8e6f8ed9c47a73ea05b3ac435efc8337dc4a26d388766e1439d795b0f917",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 11,
+      "decision": 11,
+      "turn": 1,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 17,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier": 2,
+      "ingredient_priority": 1,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "ASCENDERS_BANE": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "CLOTHESLINE": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "FIRE_BREATHING": 2,
+        "IMMOLATE": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "REAPER": 1,
+        "TWIN_STRIKE": 1,
+        "WILD_STRIKE": 1,
+        "WOUND": 1
+      },
+      "input_sha256": "56ede0fbf267677d6b6b695e6c43f235b84fdc6121602eb8089bebb5e3067992",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 12,
+      "decision": 12,
+      "turn": 2,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 17,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier": 2,
+      "ingredient_priority": 1,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "ASCENDERS_BANE": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "CLOTHESLINE": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "FIRE_BREATHING": 2,
+        "IMMOLATE": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "REAPER": 1,
+        "TWIN_STRIKE": 1,
+        "WILD_STRIKE": 1,
+        "WOUND": 1
+      },
+      "input_sha256": "8bc3d34cb938c76a845c28852b6efdc8ef419a62d19c44ba8b229aabf9ff9940",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 13,
+      "decision": 13,
+      "turn": 2,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 18,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier": 2,
+      "ingredient_priority": 1,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "ASCENDERS_BANE": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "BURN": 1,
+        "CLOTHESLINE": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "FIRE_BREATHING": 2,
+        "IMMOLATE": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "REAPER": 1,
+        "TWIN_STRIKE": 1,
+        "WILD_STRIKE": 1,
+        "WOUND": 1
+      },
+      "input_sha256": "bbacae7cac2df80ad72a89e7970b9ca018db4f9b685eeb75b931ac95931d4740",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 14,
+      "decision": 14,
+      "turn": 2,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 18,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier": 2,
+      "ingredient_priority": 1,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "ASCENDERS_BANE": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "BURN": 1,
+        "CLOTHESLINE": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "FIRE_BREATHING": 2,
+        "IMMOLATE": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "REAPER": 1,
+        "TWIN_STRIKE": 1,
+        "WILD_STRIKE": 1,
+        "WOUND": 1
+      },
+      "input_sha256": "434bb995536c96d9a2e2c9c2107826935a540414776ca3b0fbed2db60f40a89a",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 15,
+      "decision": 15,
+      "turn": 2,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 17,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier": 2,
+      "ingredient_priority": 1,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "ASCENDERS_BANE": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "BURN": 1,
+        "CLOTHESLINE": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "FIRE_BREATHING": 1,
+        "IMMOLATE": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "REAPER": 1,
+        "TWIN_STRIKE": 1,
+        "WILD_STRIKE": 1,
+        "WOUND": 1
+      },
+      "input_sha256": "e4b322625193345f94c1cc73861bd4ded9810da04c0b2dc50eb0e2dec956eb13",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 16,
+      "decision": 16,
+      "turn": 3,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 16,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier": 2,
+      "ingredient_priority": 1,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "BURN": 1,
+        "CLOTHESLINE": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "FIRE_BREATHING": 1,
+        "IMMOLATE": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "REAPER": 1,
+        "TWIN_STRIKE": 1,
+        "WILD_STRIKE": 1,
+        "WOUND": 1
+      },
+      "input_sha256": "4b1e1b90f604f38cb293f4e2af73c6aa3d7e7fb87f1f020971be79d9ff6b114f",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 17,
+      "decision": 17,
+      "turn": 3,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 16,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier": 2,
+      "ingredient_priority": 1,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "BURN": 1,
+        "CLOTHESLINE": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "FIRE_BREATHING": 1,
+        "IMMOLATE": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "REAPER": 1,
+        "TWIN_STRIKE": 1,
+        "WILD_STRIKE": 1,
+        "WOUND": 1
+      },
+      "input_sha256": "b8c247272aece5b1538842959c6d34fd6aa9ac99a4fad6a8eba92fb5efe913f5",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 18,
+      "decision": 18,
+      "turn": 3,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 16,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier": 2,
+      "ingredient_priority": 1,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "BURN": 1,
+        "CLOTHESLINE": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "FIRE_BREATHING": 1,
+        "IMMOLATE": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "REAPER": 1,
+        "TWIN_STRIKE": 1,
+        "WILD_STRIKE": 1,
+        "WOUND": 1
+      },
+      "input_sha256": "b97f28ba4c02a7d5019691f93e636656e1fc4441ad6f5a9a885fbb5f5e0135d5",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 19,
+      "decision": 19,
+      "turn": 3,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 16,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier": 2,
+      "ingredient_priority": 1,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "BURN": 1,
+        "CLOTHESLINE": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "FIRE_BREATHING": 1,
+        "IMMOLATE": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "REAPER": 1,
+        "TWIN_STRIKE": 1,
+        "WILD_STRIKE": 1,
+        "WOUND": 1
+      },
+      "input_sha256": "e435713326139ff7806bdf411a64ce793748de57879d0a10e20dff428c51fd26",
+      "duplicate_public_root": false
+    }
+  ],
+  "inputs_sha256": "6a87f6b931cb69c195ad0bce97299fd733f38c8da6dfbc3a343d2a9e4a1fbf91",
+  "oracle_binary_sha256": "28e942c218cbaeef29f3a58a3301873d2fca012f6205379445e4e23ffef0ebe9",
+  "oracle_K": 4,
+  "oracle_caps": {
+    "depth": 24,
+    "nodes": 2000,
+    "candidates": 16,
+    "periods": 128,
+    "actions_per_candidate": 1024,
+    "total_replay_actions": 4096
+  }
+}

@@ -24012,6 +24012,43 @@ campaigns, backup copies of stragglers on idle workers once the queue is empty.
 - Seeds 111360000–111360255 used; smokes 111369991–111369993 used (111369990–111369999 assigned).
 - **Knowledge impact:** `evaluation/current-research.md`.
 
+## §TBD-reconstruction Heart runtime reconstructed exactly; three paired ingredient fights never compress (2026-10-24)
+
+Existing #844 line, baseline `0772ffe7ca8c63bd941036fa3c8cbecf040c934a`.
+Heart-only continuation of §TBD-capture: bounded retained artifact/archive lookup
+and exact-source rebuild, no new worktree or AZ leads. Source d8fd2a105a8d,
+historical linux-gcc-release/build presets, GCC13.3.0, CMake4.4.2, no source
+patch/shim. The rebuilt executable SHA256 is exactly the required
+`0e17e0f22259afe21f35ba89a0413f2af7663cfae1312311f1ea8c71b00c2d52`.
+Student Ceff2f74f5 and all seven dependency artifacts match frozen custody.
+**EXACT_RUNTIME_RECOVERED**, not merely a behaviorally qualified different binary.
+
+Three original receipt-configured seed-guarded prefixes reproduce every frozen
+public state/OOC trace through the target fight and its following state:
+111101032 Shell Parasite68/67 objects,111101326 Three Darklings137/136,
+111101512 Two Fungi Beasts57/56. Headers/policy/model identity also exact;
+no divergence or retry. Prefix wall times125.564/385.254/65.458s. Paired public
+capture was quarantined until qualification, with the full same-run relic
+inventory proving no Shard. Existing capture paths only; no schema change.
+
+45 public records,43 ordinary player roots (two card-selection roots explicitly
+outside domain). Tier1=0; strong ingredient Tier2=43. Smallest active pools
+16/30/19, so ingredient presence does not establish a near-infinite state.
+Frozen deterministic four/fight gives12 eligible roots/48 K4 worlds. Existing
+adapter/bounds unchanged: all48 NONE, no candidate/kill/witness or replay;
+one node-cap world (2.083%) is inconclusive. Total10,846 nodes, depth<=5,
+oracle CPU31.710ms. Other bounded NONE results are not proven absences or
+qualified negative labels.
+
+**NO_NEAR_INFINITY_STATE_OBSERVED (Case D), limited to the three declared fights.**
+No evidence here for an oracle recall/budget change or model work. Stop;
+propose targeted OOC/counterfactual generation toward actual compression as a
+separate next experiment, not an automatic collection. No current-policy
+prevalence claim. Older unsupported roots retain null fractions.
+[Protocol, exact identities, full checkpoint/capture/annotation evidence and matrix](evidence/combat_infinity_reconstruction_20261024/REPORT.md).
+Knowledge impact: maintained research status and this experiment; no default,
+production code, model, reward, oracle or gameplay change.
+
 ## §TBD-capture Tiny paired infinity capture — historical runtime gate blocked (2026-10-24)
 
 Existing #844 line, baseline `fa8e9278fd7b7c6913b69ca53bede1485fa62fed`.

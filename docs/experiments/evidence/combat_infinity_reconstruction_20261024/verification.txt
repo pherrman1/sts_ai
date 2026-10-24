@@ -1,0 +1,30 @@
+$ python3 docs/experiments/evidence/combat_infinity_reconstruction_20261024/analyze.py --check
+PASS exact runtime, full frozen-prefix fidelity, same-run no-Shard custody, public sampling, K=4 bounds and regenerated matrix; no seed/world execution
+exit=0
+
+$ python3 docs/experiments/evidence/combat_infinity_reconstruction_20261024/freeze_roots.py 111101032 --check
+PASS qualified custody, frozen public-only selection, unchanged adapter identity; no oracle execution
+exit=0
+
+$ python3 docs/experiments/evidence/combat_infinity_reconstruction_20261024/freeze_roots.py 111101326 --check
+PASS qualified custody, frozen public-only selection, unchanged adapter identity; no oracle execution
+exit=0
+
+$ python3 docs/experiments/evidence/combat_infinity_reconstruction_20261024/freeze_roots.py 111101512 --check
+PASS qualified custody, frozen public-only selection, unchanged adapter identity; no oracle execution
+exit=0
+
+$ python3 tools/agent/worktree.py check .
+worktree_submodules_ok json=2222d386c905 pybind11=63d627c5747b
+exit=0
+
+Build configure/build exit=0; raw configure.log.gz/build.log retained. Three gameplay prefix receipts and three oracle receipts retain exact commands, outcomes, hashes, CPU and timing. No fixture/gameplay rerun for verification.
+PASS 772 historical source files and eight model artifacts unchanged after all three replays.
+No production/oracle/CMake/model paths modified in this task; only the new reconstruction evidence directory, ledger and maintained current-research status.
+Raw configure log contains a CMake-emitted trailing space; preserved byte-exact in configure.log.gz so Git whitespace validation does not alter raw evidence.
+PASS preserved configure-log byte hash and unchanged original4 unsupported roots /0 annotated worlds.
+$ python3 docs/experiments/evidence/combat_infinity_reconstruction_20261024/analyze.py --check
+PASS exact runtime, full frozen-prefix fidelity, same-run no-Shard custody, public sampling, K=4 bounds and regenerated matrix; no seed/world execution
+exit=0
+$ git diff --cached --check
+exit=0
