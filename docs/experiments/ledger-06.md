@@ -24325,3 +24325,25 @@ games, with no cost in deaths. Playing strength is not measured; by Philipp's cr
 Seeds: none new (guard seeds 111392255 and 111392359 replayed for the game check).
 **Knowledge impact:** `architecture/out-of-combat.md`, `operations/environment-variables.md`,
 `evaluation/current-research.md`.
+
+## §TBD — OOC search architecture A/B/C pilot at A20: a common-random-number particle root search (P 64) and a particle beam (8:2:3) both lose clearly to OOC MCTS (Heart kills 2 and 3 vs 13 of 64, Act 4 8 and 9 vs 27); STOP, keep MCTS (64 paired seeds, 2026-10-24)
+
+**Question:** Philipp (2026-10-24, a ChatGPT design he adopted): does OOC planning gain from replacing PUCT tree visits
+with explicit stochastic future sampling (B − A), and do several contingent plans gain further (C − B)?
+**Setup:** [packet](evidence/ooc_search_arch_20261024/PREREG.md). New research option `STS_OOC_MCTS_SEARCH_MODE`
+(`OocParticlePlanner`, default `mcts` byte-identical to main). A = today's A20 OOC MCTS (4096 sims, learned stop,
+25% full roots). B = every legal root action on the same 64 particles (CRN), rollout3 leaf, highest mean. C = B's root
+stage then a beam (width 8) over contingent plans of policy ranks 1–2 at 3 later decisions, leaves at B's horizon.
+All arms share the leaf (SR_crn_r2_s2_ep20 blend w 0.1 with explicit M0), prior, CTM and real-combat stack. Seeds
+111302000–111302063, 8 workers; pre-launch review PASS; smokes and a 53-root replay with fairness checks in
+[SMOKE.md](evidence/ooc_search_arch_20261024/SMOKE.md).
+**Result:** [RESULT.md](evidence/ooc_search_arch_20261024/RESULT.md). Heart kills A 13, B 2, C 3 of 64: B − A
+−17.2 pp [−28.1, −7.8] (discordant 1/12, p 0.003), C − A −15.6 pp [−26.6, −4.7] (2/12, p 0.013), C − B +1.6 pp
+(2/1). Act 4 27 / 8 / 9; mean floor 43.9 / 37.3 / 38.0; B and C die more in acts 2–3. Off-prior picks 4.2% (A) vs
+43.8% (B) and 44.1% (C). Planning CPU per game 482 / 89 / 554 s.
+**Interpretation:** under the frozen rule both new arms are disastrous: STOP; keep MCTS. **Inference:** MCTS at these
+settings is a prior-anchored search; the rollout3 leaf's root gaps (median 0.008, about one particle standard error)
+are too weak to overrule student_sel, as with earlier Q-based root selection. A prior-anchored particle search is
+untested (new hypothesis). The option stays research-only.
+Seeds: 111302000–111302063 (campaign), 111309990, 111309991, 111309995 (smokes, root replay).
+**Knowledge impact:** environment-variables.md and CODE_MAP.md list the research option; no default change.
