@@ -1,0 +1,198 @@
+{
+ "seeds": 512,
+ "valid": 512,
+ "invalid": [],
+ "heart": {
+  "rate_pct": {
+   "A": 24.0234375,
+   "C": 26.171875
+  },
+  "C-A": {
+   "diff_pp": 2.1484375,
+   "ci95_pp": [
+    -1.171875,
+    5.6640625
+   ],
+   "C_only": 45,
+   "A_only": 34,
+   "mcnemar_p": 0.26042552589724327
+  }
+ },
+ "act4": {
+  "rate_pct": {
+   "A": 40.625,
+   "C": 44.3359375
+  },
+  "C-A": {
+   "diff_pp": 3.7109375,
+   "ci95_pp": [
+    0.1953125,
+    7.2265625
+   ],
+   "C_only": 52,
+   "A_only": 33,
+   "mcnemar_p": 0.05025089533529144
+  }
+ },
+ "deathsByAct": {
+  "A": {
+   "1": 68,
+   "2": 117,
+   "3": 119,
+   "4": 85
+  },
+  "C": {
+   "1": 60,
+   "2": 110,
+   "3": 115,
+   "4": 93
+  }
+ },
+ "meanFloor": {
+  "A": 42.044921875,
+  "C": 43.142578125
+ },
+ "elitesPerRunByAct": {
+  "A": {
+   "1": 2.462890625,
+   "2": 1.7109375,
+   "3": 1.509765625
+  },
+  "C": {
+   "1": 2.47265625,
+   "2": 1.7265625,
+   "3": 1.64453125
+  }
+ },
+ "fightsByAct": {
+  "A": {
+   "1": {
+    "meanPreFightHp": 60.29100310237849,
+    "below20PerRun": 0.07421875,
+    "below20DeathRate": 0.15789473684210525
+   },
+   "2": {
+    "meanPreFightHp": 63.65824206683516,
+    "below20PerRun": 0.126953125,
+    "below20DeathRate": 0.3384615384615385
+   },
+   "3": {
+    "meanPreFightHp": 77.31492063492064,
+    "below20PerRun": 0.076171875,
+    "below20DeathRate": 0.358974358974359
+   },
+   "4": {
+    "meanPreFightHp": 85.60396039603961,
+    "below20PerRun": 0.015625,
+    "below20DeathRate": 0.75
+   }
+  },
+  "C": {
+   "1": {
+    "meanPreFightHp": 60.3799379524302,
+    "below20PerRun": 0.076171875,
+    "below20DeathRate": 0.10256410256410256
+   },
+   "2": {
+    "meanPreFightHp": 63.777899945024735,
+    "below20PerRun": 0.125,
+    "below20DeathRate": 0.328125
+   },
+   "3": {
+    "meanPreFightHp": 77.09430551370895,
+    "below20PerRun": 0.087890625,
+    "below20DeathRate": 0.4
+   },
+   "4": {
+    "meanPreFightHp": 85.85585585585585,
+    "below20PerRun": 0.0078125,
+    "below20DeathRate": 1.0
+   }
+  }
+ },
+ "wall_s": {
+  "A": {
+   "mean": 508.400390625,
+   "max": 1386,
+   "overA": 1.0
+  },
+  "C": {
+   "mean": 534.779296875,
+   "max": 1448,
+   "overA": 1.051886085723835
+  }
+ },
+ "search": {
+  "A": {
+   "decisions": 71702,
+   "searched": 32489,
+   "fullBudget": 8162,
+   "aborted": 0,
+   "changed": 1604,
+   "changedShare": 0.04937055618824833,
+   "fastByAct": {
+    "1": {
+     "roots": 10048,
+     "meanSims": 347.9458598726115,
+     "learnedStopShare": 0.654359076433121,
+     "lockStopShare": 0.3440485668789809
+    },
+    "2": {
+     "roots": 8069,
+     "meanSims": 390.08154666005703,
+     "learnedStopShare": 0.5802453835667369,
+     "lockStopShare": 0.41863923658445906
+    },
+    "3": {
+     "roots": 5466,
+     "meanSims": 443.286864251738,
+     "learnedStopShare": 0.4996341017197219,
+     "lockStopShare": 0.49798755945847056
+    },
+    "4": {
+     "roots": 744,
+     "meanSims": 555.0900537634409,
+     "learnedStopShare": 0.3387096774193548,
+     "lockStopShare": 0.657258064516129
+    }
+   }
+  },
+  "C": {
+   "decisions": 73690,
+   "searched": 33404,
+   "fullBudget": 8331,
+   "aborted": 0,
+   "changed": 1611,
+   "changedShare": 0.048227757154831755,
+   "fastByAct": {
+    "1": {
+     "roots": 10094,
+     "meanSims": 345.45631067961165,
+     "learnedStopShare": 0.6576183871606895,
+     "lockStopShare": 0.3410937190410145
+    },
+    "2": {
+     "roots": 8358,
+     "meanSims": 390.8512802105767,
+     "learnedStopShare": 0.5831538645608997,
+     "lockStopShare": 0.4154103852596315
+    },
+    "3": {
+     "roots": 5823,
+     "meanSims": 433.62768332474667,
+     "learnedStopShare": 0.5138244890949683,
+     "lockStopShare": 0.4849733814185128
+    },
+    "4": {
+     "roots": 798,
+     "meanSims": 577.9197994987469,
+     "learnedStopShare": 0.3182957393483709,
+     "lockStopShare": 0.6741854636591479
+    }
+   }
+  }
+ },
+ "verdict": "NOT_SHOWN",
+ "decision": "keep the default",
+ "wallAbove110": false
+}

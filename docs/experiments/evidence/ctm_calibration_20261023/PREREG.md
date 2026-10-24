@@ -1,13 +1,14 @@
 # CTM-calibration guard at A20 (pre-registration)
 
-**Status: authorized, to be frozen after the default's review.** Revised on 2026-10-23 before any game of the guard ran.
+**Status: frozen, authorized (16 workers).** Revised on 2026-10-23 before any game of the guard ran.
 This file first pre-registered an A/B that asked whether the calibration kills the Heart more often (two stages, 512
 then 1,536 seeds; §670 and PR #838 hold that version). On 2026-10-23 at 20:32Z Philipp argued that the CTM should be
 judged by its precision, not by winrate. At 20:44Z he chose "Default on + 512-seed guard" on the card "Adopt the CTM
 calibration on precision, and with what play check?": the calibration became the A20 default (ADR-0058), and 512 seeds
 check that it does not clearly lose. At 20:45Z he authorized the run ("The 512 seeds can use 8 workers later") and at
-22:11Z raised it to 16 workers ("U can also use 16 workers"). The campaign is frozen as usual (`campaign.manifest`,
-brief, run commit) after the default's PR is reviewed and merged.
+22:11Z raised it to 16 workers ("U can also use 16 workers"). The default merged as #845 (`c38fa53d`, review PASS
+by reviewer J), and the campaign was frozen on it: `campaign.manifest` names code commit `c38fa53d` and binary
+`b855ee27…` (the equivalence check's `new` binary), 16 workers.
 
 ## Question
 In today's A20 search stack, does the CTM calibration, now the default, kill the Heart clearly less often than the raw
@@ -80,10 +81,15 @@ would need a gain of about +3.7 pp to be called half the time.
 - 512 seeds × 2 arms = 1,024 games: about 3.5 h on 16 workers (4 lanes each, queue schedule, lease 30 min), plus a
   straggler tail (container speeds vary about 3×, §663).
 - Share `/mnt/project-files/ctm-calibration-ab`. [`BRIEF-worker.md`](BRIEF-worker.md) and
-  [`campaign.manifest`](campaign.manifest) are templates until the freeze (code commit, binary sha256, 16 workers,
-  authorization).
-- The freeze builds the binary from the merged default and reruns one equivalence-check seed on it; its records must
-  match the check's.
+  [`campaign.manifest`](campaign.manifest) are frozen: code commit `c38fa53d`, binary `b855ee27…` (in the share's
+  binary cache), 16 workers, the authorization quoted.
+- The freeze built the binary from the merged default and reran one equivalence-check seed on it (below).
 
 ## Smoke (this container, before the default)
 See [`SMOKE.md`](SMOKE.md): the first plan's 10-seed smoke, with the calibration as a flag on the pre-merge binary.
+
+## Freeze smoke (2026-10-23, 23:14–23:22Z)
+`run_unit.sh` as frozen, on the frozen binary from the share's cache (`b855ee27…`) and the manifest's
+`student_sel.bin`, seed 111394992 (already used by the smoke and the equivalence check): both arms rc 0 with
+complete, integrity-passed footers; the calibration banner in C only. Every record after the header and every CTM
+row equals the equivalence check's `new` games of that seed (A 217 records and 19 CTM rows, C 217 and 19).

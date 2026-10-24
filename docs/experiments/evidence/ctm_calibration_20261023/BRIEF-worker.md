@@ -3,7 +3,8 @@
 YOUR WORKER NUMBER: W=<n>   (pass it unpadded; never 03)
 RUN_COMMIT=__RUN_COMMIT__  CAMPAIGN=docs/experiments/evidence/ctm_calibration_20261023
 
-Philipp authorized this run (__AUTHORIZATION__).
+Philipp authorized this run (2026-10-23 20:45Z, "Merge 838. The 512 seeds can use 8 workers later"; 22:11Z,
+"U can also use 16 workers").
 - Do not change seeds, scripts, environments, binary, weights or timeouts.
 - Work in /home/user/sts_ai. Run nothing from /mnt/project-files (noexec).
 - The worker script uploads only to /mnt/project-files/ctm-calibration-ab (units/, claims/, wWW.DONE.json). Write nothing
