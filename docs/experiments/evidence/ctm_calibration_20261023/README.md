@@ -7,7 +7,8 @@ Philipp chose "Check the CTM first". The option said: compare the CTM's predicti
 stage-3 A/B's 4,096 games, by act and fight; if it over-predicts deaths, fit a per-act fix like M0 and propose an A/B.
 This directory holds that check, the fix and its play check. The fix was first a research flag (§670). Philipp then
 judged the CTM by its precision and made the fix the A20 default (ADR-0058, 2026-10-23); a 512-seed guard against the
-raw CTM ([`PREREG.md`](PREREG.md)) turns it off only if it comes out WORSE.
+raw CTM ([`PREREG.md`](PREREG.md)) turns it off only if it comes out WORSE. It did not: +2.15 pp [−1.17, +5.66] Heart
+kills, NOT_SHOWN, and the default stays ([`RESULT.md`](RESULT.md), 2026-10-24).
 
 ## The check
 - **Rows.** The A/B recorded every real combat as a `combat_transition_row_v2` row (`STS_HEART_OUTCOME_CTM_ROWS=1`):
@@ -154,4 +155,5 @@ python3 -I offline/group_errors.py tools/ctm_calibration.py offline/table_fit_ev
 Better predictions of real fights do not by themselves make the search play better: the A/B's 4,096 games were
 played with the uncalibrated CTM, and the search's rollouts reach states the real runs do not. The last CTM
 calibration A/B (Act-4 survival model, §534) was NOT_SHOWN, 75 vs 82 Heart kills of 512. Whether this one helps is
-not tested: the guard ([`PREREG.md`](PREREG.md)) only checks that it does not clearly lose.
+not shown: the guard ([`PREREG.md`](PREREG.md)) only checks that it does not clearly lose, and it came out NOT_SHOWN
+with the point estimate in its favour ([`RESULT.md`](RESULT.md)).
