@@ -1,0 +1,352 @@
+[
+  {
+    "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/linux-gcc-release/one_combat",
+    "bytes": 4504184,
+    "sha256": "d3ffe4f4225286597ce1f2a13f956658c038cbcb28d79d25e6f6dcf77f680146"
+  },
+  {
+    "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/ooc-mcts-fresh64-10000/one_combat",
+    "bytes": 4284352,
+    "sha256": "810281cbf8531dc18aa95cd7c3ce839ad7b337722d7b316bfd189023f3485639"
+  },
+  {
+    "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/linux-gcc-release-ccache/one_combat",
+    "bytes": 3810032,
+    "sha256": "c97ab0467c8f8ba961efc1ea4bc1fa559462d3799c915afa7f6b9fb30e65c4c5"
+  },
+  {
+    "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/ooc-mcts-expanded-support/one_combat",
+    "bytes": 4284352,
+    "sha256": "810281cbf8531dc18aa95cd7c3ce839ad7b337722d7b316bfd189023f3485639"
+  },
+  {
+    "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/linux-gcc-debug-ccache/one_combat",
+    "bytes": 61554896,
+    "sha256": "bbe0493ed945a702e98e012c628a2c37416351cf6f973671f1844167c131cb35"
+  },
+  {
+    "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-rollout-distill-20261016-v1-invalid/run/one_combat",
+    "bytes": 7919576,
+    "sha256": "a30bb099358773850e98a4d91ce088bc6c0b9661649c8ca65d97664e1cdef01b"
+  },
+  {
+    "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/arm-c-rollout-heart-20261016-v2/run/one_combat",
+    "bytes": 7949592,
+    "sha256": "d13014727ca0e4385f449a6e7c4c9ee9de2b5652a5d680aa48c512c5bd079283"
+  },
+  {
+    "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/ooc-mcts-parameter-search/one_combat",
+    "bytes": 4309960,
+    "sha256": "61b648eea86e8fe853fd73d93eb787ddde432f48832643600baae59d3d1133a4"
+  },
+  {
+    "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-rollout-distill-20261016-v2/run/one_combat",
+    "bytes": 7932816,
+    "sha256": "f81e84a19df37b687dd53f4daf967952a58fb618c82b0d2801f8fe2744660de4"
+  },
+  {
+    "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/ooc-mcts-gate/baseline/one_combat",
+    "bytes": 4119896,
+    "sha256": "b881245f61b46e858d57cc9cfc15d749038a76040d10313cc7ea2beb52006138"
+  },
+  {
+    "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/arm-c-rollout-heart-20261016/run/one_combat",
+    "bytes": 7949592,
+    "sha256": "d13014727ca0e4385f449a6e7c4c9ee9de2b5652a5d680aa48c512c5bd079283"
+  },
+  {
+    "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-collection-20261016-v1/bundle/one_combat",
+    "bytes": 7976448,
+    "sha256": "178e7076934097987e473ab04c2dc80eec5368f9dcb12b274a631bad62f43e4e"
+  },
+  {
+    "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/arm-c-cloud-package-20261016/rootfs/run/one_combat",
+    "bytes": 7949592,
+    "sha256": "86a7569fe56cfdd2f635018147f005b16870598c53c7c164a5d1edd994ecbacf"
+  },
+  {
+    "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/ooc-mcts-corrected/baseline/one_combat",
+    "bytes": 4232024,
+    "sha256": "97e275b9b0c191ae9a7daf5a07ea3187a38f85350ce43eb92b9d9dabf44d218b"
+  },
+  {
+    "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/arm-c-rollout-distill-20261016-v1/run/one_combat",
+    "bytes": 7949592,
+    "sha256": "86a7569fe56cfdd2f635018147f005b16870598c53c7c164a5d1edd994ecbacf"
+  },
+  {
+    "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-rollout-distill-20261016-recovery-01/run/one_combat",
+    "bytes": 7932816,
+    "sha256": "f81e84a19df37b687dd53f4daf967952a58fb618c82b0d2801f8fe2744660de4"
+  },
+  {
+    "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/linux-gcc-debug/one_combat",
+    "bytes": 65389520,
+    "sha256": "8c6a392ad315597bec839ef3947527bcb0a02e64d90b2e8276eabbf37a6c1b4f"
+  },
+  {
+    "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-rollout-distill-20261016-v3-armc/run/one_combat",
+    "bytes": 7932816,
+    "sha256": "f81e84a19df37b687dd53f4daf967952a58fb618c82b0d2801f8fe2744660de4"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/vwin334-continuation-fix/sts_lightspeed/build/linux-gcc-release-ccache/one_combat",
+    "bytes": 4560264,
+    "sha256": "c8df43c850a09ca1e418f4e7e20ab5d5311cb1827242581b64fb00473a17eb59"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/1790401020-2399291/sts_lightspeed/build/linux-gcc-release-ccache/one_combat",
+    "bytes": 3593240,
+    "sha256": "a24a2a359a18ca015f4abdef9a09de455d844d6a679876153b0c3d145a1b93c2"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/1790401020-2399291/sts_lightspeed/build/linux-gcc-debug-ccache/one_combat",
+    "bytes": 57016280,
+    "sha256": "50fcd43185c413fff5d018a6229b4255cc6df060d12e7621ea0f52c3af9a8255"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/1790401020-2399291/sts_lightspeed/build/baselines/b23aad9d8885/one_combat",
+    "bytes": 56876920,
+    "sha256": "7de9d5d020b441f5665ae2be241a62e66dc7192d47e1959e40f94d79a1c879f3"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/linux-gcc-release/one_combat",
+    "bytes": 6313392,
+    "sha256": "85552690f7455c40e70d08a812dd631254313a287a511b939a06afed8587e907"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/binaries/cardrank-5add2413/one_combat",
+    "bytes": 6313392,
+    "sha256": "85552690f7455c40e70d08a812dd631254313a287a511b939a06afed8587e907"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/binaries/reviewed-736d1ff7/one_combat",
+    "bytes": 6225568,
+    "sha256": "3f69f5fd251ac699580bca8eb8da707282c77bc5263732f10e83f8e2670aba2d"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/binaries/baseline-a4b3df35/one_combat",
+    "bytes": 6210848,
+    "sha256": "edd992223bb30e619101bd986a885218d62294018d9c1ab56129451ff37094f0"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/binaries/targeted-631f7f92/one_combat",
+    "bytes": 6271632,
+    "sha256": "0d78692026608575721d1e47bc78f4c1eed150d41c7a4b6edd5387c2e007ca48"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/binaries/fullhp-b229f3ff/one_combat",
+    "bytes": 6295192,
+    "sha256": "a8516aaae94c3ed91d5671ba5477c704ff1a42e53ce83061e1dddb846081d23a"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/binaries/removal-d35b42b1/one_combat",
+    "bytes": 6295368,
+    "sha256": "1dcc79169e60cc58865218cd66644dd2db61a9e9ceaafdf39c1b8a7b6600a8f5"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/binaries/corrected-3ed91ab3/one_combat",
+    "bytes": 6290832,
+    "sha256": "27a78efd3f5da731897d36dd9b50a622d2ace4f54dae69dfc157bf6712b027c7"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/linux-gcc-debug/one_combat",
+    "bytes": 88535144,
+    "sha256": "5c6cb7396bb70514f09765a9213a7e13f0cd0dfc983d907aa045b94cbdea6650"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/2e2c/sts_lightspeed/build/linux-gcc-debug/one_combat",
+    "bytes": 70840264,
+    "sha256": "8c2684a8d37c02bf723a40252ef96ddeecad2ab70a4d8efc86ff4fd472a71304"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/07ec/sts_lightspeed/build/linux-gcc-release-ccache/one_combat",
+    "bytes": 5000192,
+    "sha256": "3c5172f63bca5e1af38705bbb131f3c97ecd0d6013dc76e40327770ce6ec80d6"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/07ec/sts_lightspeed/build/linux-gcc-debug-ccache/one_combat",
+    "bytes": 70923656,
+    "sha256": "4c3b5535b3de0cde29b9d2282849b4d05c3364ff58a9e7efdf2673095f170524"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/07ec/sts_lightspeed/build/linux-gcc-debug/one_combat",
+    "bytes": 71758840,
+    "sha256": "61b481ed69d661930340be32fe8d54cd57291ced95445228f763b5e12927338c"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/vwin334-match-keep-fix/sts_lightspeed/build/freeze-1e93bd66/one_combat",
+    "bytes": 4579168,
+    "sha256": "0d612ab70123bb862bfc479f89913baa184fec62f78caade96ed18fa8ff6a7e7"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/vwin334-match-keep-fix/sts_lightspeed/build/linux-gcc-release-ccache/one_combat",
+    "bytes": 4579168,
+    "sha256": "0d612ab70123bb862bfc479f89913baa184fec62f78caade96ed18fa8ff6a7e7"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/c13f/sts_lightspeed/build/recovery-06657471/one_combat",
+    "bytes": 4588584,
+    "sha256": "8175c9dc91aa5029e47b3e74f511128b3af575382ae52bf1f7fea811d464b1f6"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/a2ce/sts_lightspeed/build/linux-gcc-release/one_combat",
+    "bytes": 4133240,
+    "sha256": "6be3e793089c7ac6ec39ab1ee6bcc5f45259c4088e327be949865cf7143616b7"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/a2ce/sts_lightspeed/build/baselines/31571bbd406f/one_combat",
+    "bytes": 3853312,
+    "sha256": "72f488f9161cf9b5cf6af2cdc646846d63d9923290d9c42747367f2ca48a9748"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/aa30/sts_lightspeed/build/linux-gcc-debug-ccache/one_combat",
+    "bytes": 111812912,
+    "sha256": "93d43268ec37b6d6bc33fadf0cff98aadb26f9e1151fbb6f24ccceadeff82f24"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/build/linux-gcc-release-ccache/one_combat",
+    "bytes": 7662120,
+    "sha256": "94a5ee0bff5148ea43b5d74bde47e2ba1c68010e35341863be56e8b6d98b1090"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/build/linux-gcc-debug-ccache/one_combat",
+    "bytes": 101029984,
+    "sha256": "25a8ea0e464d2311b5d3729a6cab1a7dc8fc05a8c1a75cd9cc7d78fe8e197aaf"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/build/issue507-stability/one_combat",
+    "bytes": 7216568,
+    "sha256": "36127ba9cc7ff3ab12369437d1926f5317c6d591bad5e11f46e96772585fdc82"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/build/issue507-replay/one_combat",
+    "bytes": 7096864,
+    "sha256": "abd6f14d42668cc67ebda3604687300feaef36e234fb38812db96f6bf8ef1bed"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/build/ooc-selective-silver-audit/run-1/one_combat",
+    "bytes": 7630024,
+    "sha256": "b3e89dca6bc15fbec3a9faa156366a58122800d47b42e8e71392fcb8df6c7bd5"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/build/ooc-selective-silver-audit/run-2/one_combat",
+    "bytes": 7630240,
+    "sha256": "ca14a43ce7f9f86ba39e7647304f4ada14c8539d71e61e5cc5ca63fc60c91e1e"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/build/issue507-pilot/run/one_combat",
+    "bytes": 7007808,
+    "sha256": "b4586cfc0e26dcae96d3fe14f0c80beccd297cde87bd986fd69954cf126995e1"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/build/a20-teacher-comparison/gen6E-large-1/one_combat",
+    "bytes": 7428128,
+    "sha256": "f3f98d84ef57faba177ebcb3842ece31b65c9524cb168fb3f516b2641e8afa5f"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/build/a20-teacher-comparison/gen6E-run-1/one_combat",
+    "bytes": 7402816,
+    "sha256": "f065c3be3f6d9e73cebf03beb117e27ef8afb76d5590b244d0e1589d577be4c7"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/d8c5/sts_lightspeed/build/a20-teacher-comparison/gen6E-run-2/one_combat",
+    "bytes": 7428168,
+    "sha256": "c6c8b7f146cdb932daa641b00bfee28c74fce4496389ad339feabf7e809b2944"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/vwin334-memory-diagnostic/sts_lightspeed/build/vwin-memory-asan/one_combat",
+    "bytes": 62260376,
+    "sha256": "11fed1e437351b26e75366c521ce2a7234b598292e8137be94d19e4ba88a7fab"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/a49e/sts_lightspeed/build/linux-gcc-release-ccache/one_combat",
+    "bytes": 7949592,
+    "sha256": "86a7569fe56cfdd2f635018147f005b16870598c53c7c164a5d1edd994ecbacf"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/a49e/sts_lightspeed/build/linux-gcc-debug-ccache/one_combat",
+    "bytes": 108344648,
+    "sha256": "cf26cbd94a6ca4fdd7181786ccf5ff00df2d8c852daacf4d9403dc79efde4720"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/a49e/sts_lightspeed/build/heart-rollout-distill-20261016/run/one_combat",
+    "bytes": 7919576,
+    "sha256": "a30bb099358773850e98a4d91ce088bc6c0b9661649c8ca65d97664e1cdef01b"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/6de5/sts_lightspeed/build/linux-gcc-release/one_combat",
+    "bytes": 3937232,
+    "sha256": "b6856ee898cd619961353aa9595c1b220e32d24867e684682f6b92f0075e7159"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed/build/linux-gcc-debug-ccache/one_combat",
+    "bytes": 92645448,
+    "sha256": "d938ced4d97862640b77120091b7f4df707b3f800c6afe0f0c8eff7006db06ef"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/ironclad-research-handoff-20261008/sts_lightspeed/build/linux-gcc-debug/one_combat",
+    "bytes": 92594056,
+    "sha256": "070f2bea32e7f3983601c07fb4adf1b50f00a6b9e86b439a6d35aed3ad0f8a74"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/linux-gcc-release/one_combat",
+    "bytes": 5866880,
+    "sha256": "fcaeec61840b88d8f0449c118a553291a8ae0339f4616509d1fd6f1a6bec51ab"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/leaf-screengbm-32-20261006/one_combat",
+    "bytes": 5870432,
+    "sha256": "10350a54f7ff2f36315e6aecce90bc1a2bc3ae5833952e4d8befbdba114a68b1"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/leaf-screen-3arm-512-20261006/one_combat",
+    "bytes": 5836392,
+    "sha256": "c69ad6206732785095482d32c02fea4672077ddb62423b3361bb0f3c1a36007a"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/issue379-replay/frozen2/build/one_combat",
+    "bytes": 4659032,
+    "sha256": "35c4fef3443bc0c01bb12589c652daa53e724f586c5e739258d56dc09e7052e6"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/issue379-replay/frozen4/build/one_combat",
+    "bytes": 4685224,
+    "sha256": "d210132164ce8baa5d1454cd5c5d7154e78e46e8b3c67a9409cf89996784890e"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/issue379-replay/frozen3/build/one_combat",
+    "bytes": 4668560,
+    "sha256": "0fb7e152713997631e1879adfee9056d86edc9cc5f0e31111ba2034b5037e5a6"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/issue379-replay/frozen5/build/one_combat",
+    "bytes": 4702864,
+    "sha256": "8947bc9755af9f02374590bc6d2393d668685e54204a8b8885da625f4a6f6e7e"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/282b/sts_lightspeed/build/issue379-replay/frozen1/build/one_combat",
+    "bytes": 4659032,
+    "sha256": "d99f1a31471d80659752714e9cc847ded34115984d71a4a5322bf8a2b4110e80"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/1ee9/sts_lightspeed/build/linux-gcc-release/one_combat",
+    "bytes": 5325104,
+    "sha256": "a2da467582425ec1ca017b10c341fd56a7da18fa07b84ea890cd5ba1164be834"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/a0-ritual-gap/sts_lightspeed/build/linux-gcc-release-ccache/one_combat",
+    "bytes": 8222800,
+    "sha256": "500e763076bfe9d88a94199e9aef134b9bb7593a5ae80be1e1382cbb7eb293ad"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/a0-ritual-gap/sts_lightspeed/build/linux-gcc-debug-ccache/one_combat",
+    "bytes": 113106488,
+    "sha256": "21effc5dd5d1e15936a051f408007357d5eca2821fdd14010de43af3b3703469"
+  },
+  {
+    "path": "/home/philippherrmann/.codex/worktrees/a0-ritual-gap/sts_lightspeed/build/ritual-ab-run-607d683b/one_combat",
+    "bytes": 8110136,
+    "sha256": "d02d4a1da1081b1dd3190f1eddacb7cc1f6b350fa02cd39ca3e93662b423da0b"
+  }
+]

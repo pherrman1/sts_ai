@@ -24012,6 +24012,33 @@ campaigns, backup copies of stragglers on idle workers once the queue is empty.
 - Seeds 111360000–111360255 used; smokes 111369991–111369993 used (111369990–111369999 assigned).
 - **Knowledge impact:** `evaluation/current-research.md`.
 
+## §TBD-capture Tiny paired infinity capture — historical runtime gate blocked (2026-10-24)
+
+Existing #844 line, baseline `fa8e9278fd7b7c6913b69ca53bede1485fa62fed`.
+No further census: preflight only six frozen strong leads,111101032/111143169/
+111143224/111101326/111142899/111101512. Three Heart round2 sources have actual
+receipt-bound producer d8fd2a10/binary0e17e0f2 and exact local Student Ceff2f74f5
+plus policy/CTM models. The three `gen3/rows_new` leads are actually converted
+gen2 A/B armA/student_sel trajectories (code844bd923, intended binary23a09099,
+modelcf6bf7fb); seed numbers unchanged. Raw AZ headers/env cannot be confirmed
+without three hash-bound unit tars, absent locally.
+
+**BLOCKED_BY_REPLAY_ARTIFACTS (CaseE).** Neither required frozen executable is
+among70 retained named executables/61 hashes in declared build/bundle locations.
+Both Student models and checked dependency bytes are present; file presence is
+not runtime use or replay fidelity. No substitute current policy, different
+binary rebuild, new collection, capture/schema change, oracle/model/default
+change or seed run. Existing historical/current paired trace parsers verified.
+
+Runs attempted0, combats reproduced0, public roots0, selected roots/worlds0;
+fidelity/Tier1/Tier2/cap rate not assessed, not negative findings. The first
+Heart ingredient battles/checkpoint hashes are retained for restoration. Restore
+one exact Heart round2 binary first to unlock cycle-pair and Sundial leads;
+AZ additionally needs original raw unit custody. Existing K4/bounds and source
+public-only Tier1/Tier2 selection remain unchanged and unexecuted.
+[Per-lead identities, artifact checks, source checkpoints, unexecuted protocol and recovery](evidence/combat_infinity_capture_20261024/REPORT.md).
+Knowledge impact: maintained replay prerequisite and AZ source-lineage clarification.
+
 ## §TBD-hunt Targeted natural infinity inventory — current-policy data gap (2026-10-24)
 
 Existing #844 branch; baseline `7249709a16a19b8cc6d265a5b42c8d93e5a24872`.

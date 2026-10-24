@@ -1,0 +1,1632 @@
+{
+  "schema": "infinity_paired_capture_preflight_v1",
+  "starting_sha": "fa8e9278fd7b7c6913b69ca53bede1485fa62fed",
+  "conclusion": "BLOCKED_BY_REPLAY_ARTIFACTS",
+  "leads": [
+    {
+      "source_seed": 111101032,
+      "ingredient_class": "cycle_pair",
+      "family": "HEART",
+      "binary_sha256": "0e17e0f22259afe21f35ba89a0413f2af7663cfae1312311f1ea8c71b00c2d52",
+      "producer_sha": "d8fd2a105a8d2a481b7639e26c683f75e382e3d4",
+      "binary_available_in_declared_inventory": false,
+      "locally_runnable_exact_source": false,
+      "run_launched": false,
+      "fidelity": "NOT_TESTED_MISSING_ARTIFACTS",
+      "binary_identity_basis": "actual retained source receipt",
+      "source_archive": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-round2-data-a8f6542e/heart-outcome-round2/deliveries/w00/train.tar.gz",
+      "source_archive_sha256": "f697c9f413795331fb382b1ef90b48a82f11d820ee6dee49b170309c438c2c11",
+      "receipt_sha256": "ac5668745f54193f98886edd1b9c064f817d2e76fe9b29b6e94c2febeabd2577",
+      "retained_states_sha256": "abb1aaaca49d4c27f6e2bc6295bdd8b5f0b8c692a1b45682e5d8e318e09b6ea7",
+      "retained_trace_sha256": "8099830d2980363f1cbacfab2bd908a90757f2590eb568f54b98d38917fde05e",
+      "original_command": [
+        "bash",
+        "/root/heart2-w00/campaign/bundle/seed_guard.sh",
+        "/root/heart2-w00/campaign/bundle/one_combat",
+        "heartoutcomegen",
+        "1",
+        "111101032",
+        "/root/heart2-w00/out/train/seed-111101032.states.jsonl",
+        "on"
+      ],
+      "original_environment": {
+        "HOME": "/root",
+        "OMP_DYNAMIC": "FALSE",
+        "OMP_NUM_THREADS": "1",
+        "PATH": "/nix/var/nix/profiles/default/bin:/root/.local/bin:/root/.cargo/bin:/usr/local/go/bin:/opt/node22/bin:/opt/maven/bin:/opt/gradle/bin:/opt/rbenv/bin:/root/.bun/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "STS_COLLECT_KEYS": "1",
+        "STS_EXECUTABLE_GIT_SHA": "d8fd2a105a8d2a481b7639e26c683f75e382e3d4",
+        "STS_FAIR": "1",
+        "STS_OOC_DECISION_TRACE": "/root/heart2-w00/out/train/seed-111101032.trace.jsonl",
+        "STS_OOC_HEART1": "studentc.bin",
+        "STS_OOC_MCTS": "1",
+        "STS_OOC_MCTS_CPUCT": "1.5",
+        "STS_OOC_MCTS_EARLY_STOP": "1",
+        "STS_OOC_MCTS_LEAF_COMBATS": "3",
+        "STS_OOC_MCTS_LEAF_POLICY": "heart1",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_PRIOR": "heart1",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_ROOT_TRACE": "/root/heart2-w00/out/train/seed-111101032.roots.jsonl",
+        "STS_OOC_MCTS_SIMS": "512",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_TRACE": "/root/heart2-w00/out/train/seed-111101032.mcts.csv",
+        "STS_OOC_MCTS_TREE_RULES": "1",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.75",
+        "STS_OOC_MCTS_WIDEN_K": "4",
+        "STS_OOC_PUBLIC_FUTURES": "8",
+        "STS_OOC_SIBLING_CAPTURE": "/root/heart2-w00/out/train/seed-111101032.sib.jsonl",
+        "STS_OOC_SIBLING_EVERY": "8",
+        "STS_OOC_SIBLING_LONG": "0",
+        "STS_OOC_SIBLING_MAX_DEPTH": "1",
+        "STS_OOC_SIBLING_MAX_LEAVES": "64",
+        "STS_OOC_SIBLING_REPEATS": "64",
+        "STS_OOC_STRATEGIC_BOSS_RELIC": "1",
+        "STS_OOC_STRATEGIC_EVENT": "1",
+        "STS_OOC_STRATEGIC_MARGIN": "1.0",
+        "STS_OOC_STRATEGIC_REST": "1",
+        "STS_OOC_STRATEGIC_SHOP": "1",
+        "STS_OOC_STRATEGIC_TOK_NN": "selfplay/models/ooc_strategic_tok_final.native",
+        "STS_OOC_STRATEGIC_TREASURE": "1",
+        "STS_REST_WIN": "0",
+        "STS_SILVER_ADAPTIVE": "0",
+        "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+        "STS_SILVER_LEARNED_STOP": "0",
+        "STS_SILVER_REUSE_CAP_MODE": "allocated",
+        "STS_SILVER_SEARCH": "1",
+        "STS_SILVER_VNET_LEAF_DIRECT": "0",
+        "STS_STOP_AFTER_ACT": "0"
+      },
+      "policy": {
+        "flags": {
+          "act_fight_probe_all_ooc": false,
+          "act_fight_probe_draft": false,
+          "act_fight_probe_encounter_nn": false,
+          "act_fight_probe_gate_regret": false,
+          "act_fight_probe_predict": false,
+          "boss_draft": false,
+          "boss_relic_v": false,
+          "boss_v": false,
+          "card_action": false,
+          "card_nn": false,
+          "card_win": false,
+          "collect_keys": true,
+          "event_v": 0,
+          "native_ooc_shop_deck_size_fix": true,
+          "neow_v": false,
+          "ooc_action_nn": false,
+          "ooc_heart1": true,
+          "ooc_map_route": false,
+          "ooc_shop_beam": false,
+          "ooc_strategic_boss_relic": true,
+          "ooc_strategic_card": true,
+          "ooc_strategic_event": true,
+          "ooc_strategic_map": false,
+          "ooc_strategic_q": true,
+          "ooc_strategic_rest": true,
+          "ooc_strategic_score_policy": false,
+          "ooc_strategic_shop": true,
+          "ooc_strategic_tok": true,
+          "ooc_strategic_treasure": true,
+          "path_v": 0,
+          "potion_reward_swap": true,
+          "remove_low_obtain_weight": true,
+          "rest_win": false,
+          "shop_win": false,
+          "skip_optional_recall": true
+        },
+        "model_artifacts": [
+          {
+            "path": "models/v_rich_trees.txt",
+            "role": "floor",
+            "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+          },
+          {
+            "path": "models/candidates/v_win_x2b_public_trees.txt",
+            "role": "win",
+            "sha256": "e2d3aa65291df2914119f5d8129fb3aa6b7339ba6fa72eeaf9e86b9402beca90"
+          },
+          {
+            "path": "selfplay/models/ooc_strategic_tok_final.native",
+            "role": "ooc_strategic_tok",
+            "sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c"
+          },
+          {
+            "path": "studentc.bin",
+            "role": "ooc_heart1",
+            "sha256": "eff2f74f57dc2f566bbd44be30988592503cc8db51e51ff1e70cd2dec4636509"
+          }
+        ],
+        "native_ooc": true,
+        "ooc_mcts": {
+          "artifact_sha256": {},
+          "environment": {
+            "STS_OOC_MCTS": "1",
+            "STS_OOC_MCTS_CPUCT": "1.5",
+            "STS_OOC_MCTS_EARLY_STOP": "1",
+            "STS_OOC_MCTS_LEAF_COMBATS": "3",
+            "STS_OOC_MCTS_LEAF_POLICY": "heart1",
+            "STS_OOC_MCTS_LEAF_VALUE": "native",
+            "STS_OOC_MCTS_MAX_DEPTH": "32",
+            "STS_OOC_MCTS_PRIOR": "heart1",
+            "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+            "STS_OOC_MCTS_SIMS": "512",
+            "STS_OOC_MCTS_TEMPERATURE": "1",
+            "STS_OOC_MCTS_TREE_RULES": "1",
+            "STS_OOC_MCTS_WIDEN_ALPHA": "0.75",
+            "STS_OOC_MCTS_WIDEN_K": "4"
+          },
+          "leaf_value": "native",
+          "simulations": 512
+        },
+        "parameters": {
+          "act_fight_probe_checkpoint_sims": [],
+          "act_fight_probe_floor_decay": 0.985,
+          "act_fight_probe_futures": 4,
+          "act_fight_probe_margin": 0.0,
+          "act_fight_probe_max_checkpoints": -1,
+          "act_fight_probe_predict_win_threshold": 0.5,
+          "act_fight_probe_sims": 100,
+          "act_fight_probe_term_win": 0.0,
+          "boss_draft_fights": 4,
+          "boss_draft_futures": 2,
+          "boss_draft_rows": 3,
+          "boss_draft_sims": 150,
+          "boss_v_weight": 0.5,
+          "card_nn_skip": 0.0,
+          "card_nn_weight": 1.0,
+          "card_skip_threshold": -0.5,
+          "card_win_skip": 0.0,
+          "map_route_horizon": 3,
+          "native_ooc_public_futures": 8,
+          "shop_beam_budget": 4096,
+          "shop_beam_depth": 0,
+          "shop_beam_width": 32,
+          "stop_after_act": 0,
+          "strategic_gate": "margin",
+          "strategic_gate_eps": 0.03,
+          "strategic_margin": 1.0,
+          "strategic_margin_boss_relic": -1.0,
+          "strategic_margin_card": -1.0,
+          "strategic_margin_event": -1.0,
+          "strategic_margin_map": -1.0,
+          "strategic_margin_rest": -1.0,
+          "strategic_margin_shop": -1.0,
+          "strategic_margin_treasure": -1.0
+        },
+        "policy_chain": "runFullRunOOC",
+        "restV": false,
+        "schema_version": "runFullRunOOC_policy_v1",
+        "shopV": true
+      },
+      "checkpoints": [
+        {
+          "index": 0,
+          "act": 1,
+          "floor": 0,
+          "screen": 1,
+          "public_observation_sha256": "4943fccfcdd3a71acbb810f69974a3a10250a7efaee6319272c4fd2a0d72122e",
+          "deck_ids": [
+            15,
+            321,
+            321,
+            321,
+            321,
+            321,
+            104,
+            104,
+            104,
+            104,
+            25
+          ],
+          "deck_upgrades": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "relic_ids": [
+            86
+          ],
+          "relic_counters": [
+            0
+          ]
+        },
+        {
+          "index": 65,
+          "act": 2,
+          "floor": 17,
+          "screen": 5,
+          "public_observation_sha256": "7b3da8d1661f756cf2ba931d3b5fb5baebf7fbd898e4969d12e17d9b159f37dd",
+          "deck_ids": [
+            15,
+            25,
+            152,
+            69,
+            14,
+            249,
+            347,
+            187,
+            266,
+            30,
+            193,
+            122,
+            24,
+            132,
+            122,
+            152,
+            362,
+            261
+          ],
+          "deck_upgrades": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "relic_ids": [
+            86,
+            149,
+            67,
+            33,
+            156
+          ],
+          "relic_counters": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "first_ingredient_bearing_battle": {
+        "act": 2,
+        "floor": 18,
+        "fight": 11,
+        "encounter": "SHELL_PARASITE",
+        "pre_deck": [
+          "Ascender's Bane",
+          "Bash",
+          "Fire Breathing",
+          "Clothesline",
+          "Armaments",
+          "Pommel Strike+",
+          "Twin Strike",
+          "Immolate",
+          "Reaper",
+          "Berserk",
+          "Inflame",
+          "Dropkick",
+          "Barricade",
+          "Entrench",
+          "Dropkick",
+          "Fire Breathing",
+          "Wild Strike",
+          "Rage"
+        ],
+        "pre_relics": [
+          "BURNING_BLOOD",
+          "MEAL_TICKET",
+          "STRIKE_DUMMY",
+          "KUNAI",
+          "PANDORAS_BOX"
+        ],
+        "source_pre_sha256": "b1b84f674b77eacebc132f36bf374b25f82b311cb43338d082d6a577c3657bfb",
+        "future_public_target_if_restored": "111101032:18"
+      },
+      "models": [
+        {
+          "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-collection-20261016-v1/bundle/studentc.bin",
+          "expected_sha256": "eff2f74f57dc2f566bbd44be30988592503cc8db51e51ff1e70cd2dec4636509",
+          "actual_sha256": "eff2f74f57dc2f566bbd44be30988592503cc8db51e51ff1e70cd2dec4636509",
+          "present_and_matches": true
+        },
+        {
+          "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-collection-20261016-v1/bundle/models/v_rich_trees.txt",
+          "expected_sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3",
+          "actual_sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3",
+          "present_and_matches": true
+        },
+        {
+          "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-collection-20261016-v1/bundle/models/candidates/v_win_x2b_public_trees.txt",
+          "expected_sha256": "e2d3aa65291df2914119f5d8129fb3aa6b7339ba6fa72eeaf9e86b9402beca90",
+          "actual_sha256": "e2d3aa65291df2914119f5d8129fb3aa6b7339ba6fa72eeaf9e86b9402beca90",
+          "present_and_matches": true
+        },
+        {
+          "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-collection-20261016-v1/bundle/selfplay/models/ooc_strategic_tok_final.native",
+          "expected_sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+          "actual_sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+          "present_and_matches": true
+        },
+        {
+          "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-collection-20261016-v1/bundle/selfplay/models/combat_transition_deepsets_pathb_r2_lizard.native",
+          "expected_sha256": "c6d56bbc959f4d5de8fe1dd57f58a922112cd8323bcbac9711e0aecda93f5a3c",
+          "actual_sha256": "c6d56bbc959f4d5de8fe1dd57f58a922112cd8323bcbac9711e0aecda93f5a3c",
+          "present_and_matches": true
+        },
+        {
+          "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-collection-20261016-v1/bundle/selfplay/models/combat_transition_near_full_escape_pathb_r2.native",
+          "expected_sha256": "b9188de03ed6cc0611094c108f607a8770a5d5c5f367c157851bc6af91f8d9cf",
+          "actual_sha256": "b9188de03ed6cc0611094c108f607a8770a5d5c5f367c157851bc6af91f8d9cf",
+          "present_and_matches": true
+        },
+        {
+          "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-collection-20261016-v1/bundle/selfplay/models/combat_transition_deepsets_pathb_a20_lizard.native",
+          "expected_sha256": "ae785ec2e28ceb3755fb63a71534f873ed61a069a6c2e107ef4131a788af7b6b",
+          "actual_sha256": "ae785ec2e28ceb3755fb63a71534f873ed61a069a6c2e107ef4131a788af7b6b",
+          "present_and_matches": true
+        },
+        {
+          "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-collection-20261016-v1/bundle/selfplay/models/combat_transition_near_full_escape_pathb_a20.native",
+          "expected_sha256": "e338506ddf14177bec27cfe174670bd9dcac333c26b30416b9f0c76717392b0d",
+          "actual_sha256": "e338506ddf14177bec27cfe174670bd9dcac333c26b30416b9f0c76717392b0d",
+          "present_and_matches": true
+        }
+      ],
+      "seed_semantics": "original unsigned game seed; no namespace conversion",
+      "missing_artifacts": [
+        "frozen Heart executable 0e17e0f22259afe21f35ba89a0413f2af7663cfae1312311f1ea8c71b00c2d52"
+      ]
+    },
+    {
+      "source_seed": 111143169,
+      "ingredient_class": "cycle_pair",
+      "family": "AZ",
+      "binary_sha256": "23a09099a161fbc7a4b944924536064f6c9f84e28f2731e13c8751bf611a269c",
+      "producer_sha": "844bd9239c6621968f5095c6f84aba6de27bbf2f",
+      "binary_available_in_declared_inventory": false,
+      "locally_runnable_exact_source": false,
+      "run_launched": false,
+      "fidelity": "NOT_TESTED_MISSING_ARTIFACTS",
+      "binary_identity_basis": "campaign freeze only; raw header/environment unavailable",
+      "run_commit": "712d4def04a62f0ae3e769a3548a46bfa19d5ca0",
+      "converted_data_commit": "43ad57f0e34e5bc34b7cb21c9fa8f8d5bb3039c1",
+      "converted_path": "gen3/rows_new/az-111143169.capture.jsonl.gz",
+      "converted_sha256": "350e10bfc731c8d834dabea3781907e0a7e35e7ee65a0928a1f19bece2a125cf",
+      "converted_public_checkpoint": {
+        "row": 8,
+        "public_observation_sha256": "49a0426486a63b204a1a77dca6e85e46943af45b629b280b51368da829a97bde",
+        "deck_ids": [
+          15,
+          321,
+          321,
+          321,
+          321,
+          321,
+          104,
+          104,
+          104,
+          104,
+          25,
+          11,
+          249,
+          249,
+          83,
+          122,
+          191,
+          244,
+          222,
+          189,
+          288,
+          12,
+          148,
+          122,
+          39
+        ],
+        "relic_ids": [
+          86,
+          154,
+          107,
+          159,
+          151,
+          102
+        ]
+      },
+      "raw_archive": "/mnt/project-files/az-gen2-ab/units/111143169.w26.tar",
+      "raw_archive_expected_sha256": "d8a2cc051d916f6c8ed034d896c0bf14d13a8663db9e4a56430070bc53a12b8f",
+      "raw_header_available": false,
+      "raw_archive_checksum_source": "docs/experiments/evidence/az_gen2_ab_20261021/tars.sha256",
+      "expected_run_script_sha256": "e503fd622b78a3b673087eb2f538b03fe699122779a7419d2acea0fb8ae96aea",
+      "student_model": {
+        "path": "/home/philippherrmann/h1distill/E_sel/E_d64_sel_xin/student_sel.bin",
+        "expected_sha256": "cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7",
+        "actual_sha256": "cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7",
+        "present_and_matches": true
+      },
+      "expected_tracked_models": [
+        {
+          "path": "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/models/combat_policy_mlp_g7f_E.txt",
+          "expected_sha256": "c45dcc0ac4ee1739e6c533046c591be75965dec643146e32f8d2fc77814e0934",
+          "actual_sha256": "c45dcc0ac4ee1739e6c533046c591be75965dec643146e32f8d2fc77814e0934",
+          "present_and_matches": true
+        },
+        {
+          "path": "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/models/candidates/ooc_learned_stop_trees.txt",
+          "expected_sha256": "aa928b83b7b1b5bf95a93c4058d5316fed2ae876625bbe9c21a50f8e429e272c",
+          "actual_sha256": "aa928b83b7b1b5bf95a93c4058d5316fed2ae876625bbe9c21a50f8e429e272c",
+          "present_and_matches": true
+        },
+        {
+          "path": "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/selfplay/models/ooc_strategic_tok_final.native",
+          "expected_sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+          "actual_sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+          "present_and_matches": true
+        },
+        {
+          "path": "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/selfplay/models/combat_transition_deepsets_pathb_r2_lizard.native",
+          "expected_sha256": "c6d56bbc959f4d5de8fe1dd57f58a922112cd8323bcbac9711e0aecda93f5a3c",
+          "actual_sha256": "c6d56bbc959f4d5de8fe1dd57f58a922112cd8323bcbac9711e0aecda93f5a3c",
+          "present_and_matches": true
+        },
+        {
+          "path": "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/selfplay/models/combat_transition_near_full_escape_pathb_r2.native",
+          "expected_sha256": "b9188de03ed6cc0611094c108f607a8770a5d5c5f367c157851bc6af91f8d9cf",
+          "actual_sha256": "b9188de03ed6cc0611094c108f607a8770a5d5c5f367c157851bc6af91f8d9cf",
+          "present_and_matches": true
+        },
+        {
+          "path": "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/selfplay/models/combat_transition_deepsets_pathb_a20_lizard.native",
+          "expected_sha256": "ae785ec2e28ceb3755fb63a71534f873ed61a069a6c2e107ef4131a788af7b6b",
+          "actual_sha256": "ae785ec2e28ceb3755fb63a71534f873ed61a069a6c2e107ef4131a788af7b6b",
+          "present_and_matches": true
+        },
+        {
+          "path": "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/selfplay/models/combat_transition_near_full_escape_pathb_a20.native",
+          "expected_sha256": "e338506ddf14177bec27cfe174670bd9dcac333c26b30416b9f0c76717392b0d",
+          "actual_sha256": "e338506ddf14177bec27cfe174670bd9dcac333c26b30416b9f0c76717392b0d",
+          "present_and_matches": true
+        },
+        {
+          "path": "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/models/candidates/ctm_act4_survival_trees.txt",
+          "expected_sha256": "05279b3c54651afac2ccd60ccb7a71babbab073e5bb8536c9f9bd1b5d9950d5e",
+          "actual_sha256": "05279b3c54651afac2ccd60ccb7a71babbab073e5bb8536c9f9bd1b5d9950d5e",
+          "present_and_matches": true
+        }
+      ],
+      "policy_arm": "gen2 A/B arm A; student_sel",
+      "seed_semantics": "original game seed unchanged; A maps to az-SEED; B/E use different prefixes",
+      "missing_artifacts": [
+        "frozen AZ executable 23a09099a161fbc7a4b944924536064f6c9f84e28f2731e13c8751bf611a269c",
+        "hash-bound raw unit /mnt/project-files/az-gen2-ab/units/111143169.w26.tar"
+      ]
+    },
+    {
+      "source_seed": 111143224,
+      "ingredient_class": "cycle_pair",
+      "family": "AZ",
+      "binary_sha256": "23a09099a161fbc7a4b944924536064f6c9f84e28f2731e13c8751bf611a269c",
+      "producer_sha": "844bd9239c6621968f5095c6f84aba6de27bbf2f",
+      "binary_available_in_declared_inventory": false,
+      "locally_runnable_exact_source": false,
+      "run_launched": false,
+      "fidelity": "NOT_TESTED_MISSING_ARTIFACTS",
+      "binary_identity_basis": "campaign freeze only; raw header/environment unavailable",
+      "run_commit": "712d4def04a62f0ae3e769a3548a46bfa19d5ca0",
+      "converted_data_commit": "43ad57f0e34e5bc34b7cb21c9fa8f8d5bb3039c1",
+      "converted_path": "gen3/rows_new/az-111143224.capture.jsonl.gz",
+      "converted_sha256": "bf54a3842378243a93a7b09283a584d46b656d273e6f8cb41b5cce4d42b7d51a",
+      "converted_public_checkpoint": {
+        "row": 12,
+        "public_observation_sha256": "c0af591a409845ad3b0fb6feac416e294e7e968b2098695319877e23822a0c0f",
+        "deck_ids": [
+          15,
+          321,
+          321,
+          321,
+          321,
+          104,
+          104,
+          104,
+          104,
+          25,
+          177,
+          249,
+          178,
+          170,
+          27,
+          122,
+          249,
+          347,
+          191,
+          292,
+          141,
+          154,
+          179,
+          266,
+          197,
+          122,
+          191,
+          149
+        ],
+        "relic_ids": [
+          86,
+          177,
+          78,
+          119,
+          61,
+          53,
+          92,
+          115,
+          169,
+          52,
+          132
+        ]
+      },
+      "raw_archive": "/mnt/project-files/az-gen2-ab/units/111143224.w17.tar",
+      "raw_archive_expected_sha256": "4e8845b7a8df0584ebbbbc4d97e981e16920b00580d594e9a40cd7ecc24954f5",
+      "raw_header_available": false,
+      "raw_archive_checksum_source": "docs/experiments/evidence/az_gen2_ab_20261021/tars.sha256",
+      "expected_run_script_sha256": "e503fd622b78a3b673087eb2f538b03fe699122779a7419d2acea0fb8ae96aea",
+      "student_model": {
+        "path": "/home/philippherrmann/h1distill/E_sel/E_d64_sel_xin/student_sel.bin",
+        "expected_sha256": "cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7",
+        "actual_sha256": "cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7",
+        "present_and_matches": true
+      },
+      "expected_tracked_models": [
+        {
+          "path": "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/models/combat_policy_mlp_g7f_E.txt",
+          "expected_sha256": "c45dcc0ac4ee1739e6c533046c591be75965dec643146e32f8d2fc77814e0934",
+          "actual_sha256": "c45dcc0ac4ee1739e6c533046c591be75965dec643146e32f8d2fc77814e0934",
+          "present_and_matches": true
+        },
+        {
+          "path": "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/models/candidates/ooc_learned_stop_trees.txt",
+          "expected_sha256": "aa928b83b7b1b5bf95a93c4058d5316fed2ae876625bbe9c21a50f8e429e272c",
+          "actual_sha256": "aa928b83b7b1b5bf95a93c4058d5316fed2ae876625bbe9c21a50f8e429e272c",
+          "present_and_matches": true
+        },
+        {
+          "path": "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/selfplay/models/ooc_strategic_tok_final.native",
+          "expected_sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+          "actual_sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+          "present_and_matches": true
+        },
+        {
+          "path": "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/selfplay/models/combat_transition_deepsets_pathb_r2_lizard.native",
+          "expected_sha256": "c6d56bbc959f4d5de8fe1dd57f58a922112cd8323bcbac9711e0aecda93f5a3c",
+          "actual_sha256": "c6d56bbc959f4d5de8fe1dd57f58a922112cd8323bcbac9711e0aecda93f5a3c",
+          "present_and_matches": true
+        },
+        {
+          "path": "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/selfplay/models/combat_transition_near_full_escape_pathb_r2.native",
+          "expected_sha256": "b9188de03ed6cc0611094c108f607a8770a5d5c5f367c157851bc6af91f8d9cf",
+          "actual_sha256": "b9188de03ed6cc0611094c108f607a8770a5d5c5f367c157851bc6af91f8d9cf",
+          "present_and_matches": true
+        },
+        {
+          "path": "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/selfplay/models/combat_transition_deepsets_pathb_a20_lizard.native",
+          "expected_sha256": "ae785ec2e28ceb3755fb63a71534f873ed61a069a6c2e107ef4131a788af7b6b",
+          "actual_sha256": "ae785ec2e28ceb3755fb63a71534f873ed61a069a6c2e107ef4131a788af7b6b",
+          "present_and_matches": true
+        },
+        {
+          "path": "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/selfplay/models/combat_transition_near_full_escape_pathb_a20.native",
+          "expected_sha256": "e338506ddf14177bec27cfe174670bd9dcac333c26b30416b9f0c76717392b0d",
+          "actual_sha256": "e338506ddf14177bec27cfe174670bd9dcac333c26b30416b9f0c76717392b0d",
+          "present_and_matches": true
+        },
+        {
+          "path": "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/models/candidates/ctm_act4_survival_trees.txt",
+          "expected_sha256": "05279b3c54651afac2ccd60ccb7a71babbab073e5bb8536c9f9bd1b5d9950d5e",
+          "actual_sha256": "05279b3c54651afac2ccd60ccb7a71babbab073e5bb8536c9f9bd1b5d9950d5e",
+          "present_and_matches": true
+        }
+      ],
+      "policy_arm": "gen2 A/B arm A; student_sel",
+      "seed_semantics": "original game seed unchanged; A maps to az-SEED; B/E use different prefixes",
+      "missing_artifacts": [
+        "frozen AZ executable 23a09099a161fbc7a4b944924536064f6c9f84e28f2731e13c8751bf611a269c",
+        "hash-bound raw unit /mnt/project-files/az-gen2-ab/units/111143224.w17.tar"
+      ]
+    },
+    {
+      "source_seed": 111101326,
+      "ingredient_class": "cycle_pair",
+      "family": "HEART",
+      "binary_sha256": "0e17e0f22259afe21f35ba89a0413f2af7663cfae1312311f1ea8c71b00c2d52",
+      "producer_sha": "d8fd2a105a8d2a481b7639e26c683f75e382e3d4",
+      "binary_available_in_declared_inventory": false,
+      "locally_runnable_exact_source": false,
+      "run_launched": false,
+      "fidelity": "NOT_TESTED_MISSING_ARTIFACTS",
+      "binary_identity_basis": "actual retained source receipt",
+      "source_archive": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-round2-data-a8f6542e/heart-outcome-round2/deliveries/w06/train.tar.gz",
+      "source_archive_sha256": "182da1f55b3732fbda436dac48820a012071a70c6d7920c4cae2d03487b112ff",
+      "receipt_sha256": "95c67a427fdb784be7cae8f8ea24ebd6f8a5e3b14c8b7638f48839be6781e0a7",
+      "retained_states_sha256": "988aebcc4c59c575eef9032e691b319f7b7176bb49a26c31fca675c9bd3badc6",
+      "retained_trace_sha256": "a94f962f41275c35f3c0654f0b0ec0395dcc81bc5f88c5b8fe87962a547d0605",
+      "original_command": [
+        "bash",
+        "/root/heart2-w06/campaign/bundle/seed_guard.sh",
+        "/root/heart2-w06/campaign/bundle/one_combat",
+        "heartoutcomegen",
+        "1",
+        "111101326",
+        "/root/heart2-w06/out/train/seed-111101326.states.jsonl",
+        "on"
+      ],
+      "original_environment": {
+        "HOME": "/root",
+        "OMP_DYNAMIC": "FALSE",
+        "OMP_NUM_THREADS": "1",
+        "PATH": "/nix/var/nix/profiles/default/bin:/root/.local/bin:/root/.cargo/bin:/usr/local/go/bin:/opt/node22/bin:/opt/maven/bin:/opt/gradle/bin:/opt/rbenv/bin:/root/.bun/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "STS_COLLECT_KEYS": "1",
+        "STS_EXECUTABLE_GIT_SHA": "d8fd2a105a8d2a481b7639e26c683f75e382e3d4",
+        "STS_FAIR": "1",
+        "STS_OOC_DECISION_TRACE": "/root/heart2-w06/out/train/seed-111101326.trace.jsonl",
+        "STS_OOC_HEART1": "studentc.bin",
+        "STS_OOC_MCTS": "1",
+        "STS_OOC_MCTS_CPUCT": "1.5",
+        "STS_OOC_MCTS_EARLY_STOP": "1",
+        "STS_OOC_MCTS_LEAF_COMBATS": "3",
+        "STS_OOC_MCTS_LEAF_POLICY": "heart1",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_PRIOR": "heart1",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_ROOT_TRACE": "/root/heart2-w06/out/train/seed-111101326.roots.jsonl",
+        "STS_OOC_MCTS_SIMS": "512",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_TRACE": "/root/heart2-w06/out/train/seed-111101326.mcts.csv",
+        "STS_OOC_MCTS_TREE_RULES": "1",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.75",
+        "STS_OOC_MCTS_WIDEN_K": "4",
+        "STS_OOC_PUBLIC_FUTURES": "8",
+        "STS_OOC_SIBLING_CAPTURE": "/root/heart2-w06/out/train/seed-111101326.sib.jsonl",
+        "STS_OOC_SIBLING_EVERY": "8",
+        "STS_OOC_SIBLING_LONG": "0",
+        "STS_OOC_SIBLING_MAX_DEPTH": "1",
+        "STS_OOC_SIBLING_MAX_LEAVES": "64",
+        "STS_OOC_SIBLING_REPEATS": "64",
+        "STS_OOC_STRATEGIC_BOSS_RELIC": "1",
+        "STS_OOC_STRATEGIC_EVENT": "1",
+        "STS_OOC_STRATEGIC_MARGIN": "1.0",
+        "STS_OOC_STRATEGIC_REST": "1",
+        "STS_OOC_STRATEGIC_SHOP": "1",
+        "STS_OOC_STRATEGIC_TOK_NN": "selfplay/models/ooc_strategic_tok_final.native",
+        "STS_OOC_STRATEGIC_TREASURE": "1",
+        "STS_REST_WIN": "0",
+        "STS_SILVER_ADAPTIVE": "0",
+        "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+        "STS_SILVER_LEARNED_STOP": "0",
+        "STS_SILVER_REUSE_CAP_MODE": "allocated",
+        "STS_SILVER_SEARCH": "1",
+        "STS_SILVER_VNET_LEAF_DIRECT": "0",
+        "STS_STOP_AFTER_ACT": "0"
+      },
+      "policy": {
+        "flags": {
+          "act_fight_probe_all_ooc": false,
+          "act_fight_probe_draft": false,
+          "act_fight_probe_encounter_nn": false,
+          "act_fight_probe_gate_regret": false,
+          "act_fight_probe_predict": false,
+          "boss_draft": false,
+          "boss_relic_v": false,
+          "boss_v": false,
+          "card_action": false,
+          "card_nn": false,
+          "card_win": false,
+          "collect_keys": true,
+          "event_v": 0,
+          "native_ooc_shop_deck_size_fix": true,
+          "neow_v": false,
+          "ooc_action_nn": false,
+          "ooc_heart1": true,
+          "ooc_map_route": false,
+          "ooc_shop_beam": false,
+          "ooc_strategic_boss_relic": true,
+          "ooc_strategic_card": true,
+          "ooc_strategic_event": true,
+          "ooc_strategic_map": false,
+          "ooc_strategic_q": true,
+          "ooc_strategic_rest": true,
+          "ooc_strategic_score_policy": false,
+          "ooc_strategic_shop": true,
+          "ooc_strategic_tok": true,
+          "ooc_strategic_treasure": true,
+          "path_v": 0,
+          "potion_reward_swap": true,
+          "remove_low_obtain_weight": true,
+          "rest_win": false,
+          "shop_win": false,
+          "skip_optional_recall": true
+        },
+        "model_artifacts": [
+          {
+            "path": "models/v_rich_trees.txt",
+            "role": "floor",
+            "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+          },
+          {
+            "path": "models/candidates/v_win_x2b_public_trees.txt",
+            "role": "win",
+            "sha256": "e2d3aa65291df2914119f5d8129fb3aa6b7339ba6fa72eeaf9e86b9402beca90"
+          },
+          {
+            "path": "selfplay/models/ooc_strategic_tok_final.native",
+            "role": "ooc_strategic_tok",
+            "sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c"
+          },
+          {
+            "path": "studentc.bin",
+            "role": "ooc_heart1",
+            "sha256": "eff2f74f57dc2f566bbd44be30988592503cc8db51e51ff1e70cd2dec4636509"
+          }
+        ],
+        "native_ooc": true,
+        "ooc_mcts": {
+          "artifact_sha256": {},
+          "environment": {
+            "STS_OOC_MCTS": "1",
+            "STS_OOC_MCTS_CPUCT": "1.5",
+            "STS_OOC_MCTS_EARLY_STOP": "1",
+            "STS_OOC_MCTS_LEAF_COMBATS": "3",
+            "STS_OOC_MCTS_LEAF_POLICY": "heart1",
+            "STS_OOC_MCTS_LEAF_VALUE": "native",
+            "STS_OOC_MCTS_MAX_DEPTH": "32",
+            "STS_OOC_MCTS_PRIOR": "heart1",
+            "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+            "STS_OOC_MCTS_SIMS": "512",
+            "STS_OOC_MCTS_TEMPERATURE": "1",
+            "STS_OOC_MCTS_TREE_RULES": "1",
+            "STS_OOC_MCTS_WIDEN_ALPHA": "0.75",
+            "STS_OOC_MCTS_WIDEN_K": "4"
+          },
+          "leaf_value": "native",
+          "simulations": 512
+        },
+        "parameters": {
+          "act_fight_probe_checkpoint_sims": [],
+          "act_fight_probe_floor_decay": 0.985,
+          "act_fight_probe_futures": 4,
+          "act_fight_probe_margin": 0.0,
+          "act_fight_probe_max_checkpoints": -1,
+          "act_fight_probe_predict_win_threshold": 0.5,
+          "act_fight_probe_sims": 100,
+          "act_fight_probe_term_win": 0.0,
+          "boss_draft_fights": 4,
+          "boss_draft_futures": 2,
+          "boss_draft_rows": 3,
+          "boss_draft_sims": 150,
+          "boss_v_weight": 0.5,
+          "card_nn_skip": 0.0,
+          "card_nn_weight": 1.0,
+          "card_skip_threshold": -0.5,
+          "card_win_skip": 0.0,
+          "map_route_horizon": 3,
+          "native_ooc_public_futures": 8,
+          "shop_beam_budget": 4096,
+          "shop_beam_depth": 0,
+          "shop_beam_width": 32,
+          "stop_after_act": 0,
+          "strategic_gate": "margin",
+          "strategic_gate_eps": 0.03,
+          "strategic_margin": 1.0,
+          "strategic_margin_boss_relic": -1.0,
+          "strategic_margin_card": -1.0,
+          "strategic_margin_event": -1.0,
+          "strategic_margin_map": -1.0,
+          "strategic_margin_rest": -1.0,
+          "strategic_margin_shop": -1.0,
+          "strategic_margin_treasure": -1.0
+        },
+        "policy_chain": "runFullRunOOC",
+        "restV": false,
+        "schema_version": "runFullRunOOC_policy_v1",
+        "shopV": true
+      },
+      "checkpoints": [
+        {
+          "index": 0,
+          "act": 1,
+          "floor": 0,
+          "screen": 1,
+          "public_observation_sha256": "3321ab1c628002479e936537419c37380a3f2b0525b99e8246b96e99bba2cc7b",
+          "deck_ids": [
+            15,
+            321,
+            321,
+            321,
+            321,
+            321,
+            104,
+            104,
+            104,
+            104,
+            25
+          ],
+          "deck_upgrades": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "relic_ids": [
+            86
+          ],
+          "relic_counters": [
+            0
+          ]
+        },
+        {
+          "index": 134,
+          "act": 3,
+          "floor": 36,
+          "screen": 5,
+          "public_observation_sha256": "c41c06ce1bc9efaa3a84794c53006543ec6d950f3e37a70f6e65a1b0edf97926",
+          "deck_ids": [
+            15,
+            321,
+            321,
+            321,
+            321,
+            321,
+            104,
+            104,
+            104,
+            104,
+            25,
+            179,
+            179,
+            121,
+            11,
+            300,
+            83,
+            11,
+            266,
+            189,
+            11,
+            178,
+            39,
+            148,
+            208,
+            93,
+            27,
+            189,
+            242,
+            155,
+            155
+          ],
+          "deck_upgrades": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "relic_ids": [
+            86,
+            105,
+            114,
+            132,
+            128,
+            11,
+            8,
+            17
+          ],
+          "relic_counters": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "first_ingredient_bearing_battle": {
+        "act": 3,
+        "floor": 37,
+        "fight": 19,
+        "encounter": "THREE_DARKLINGS",
+        "pre_deck": [
+          "Ascender's Bane",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Strike+",
+          "Defend+",
+          "Defend",
+          "Defend",
+          "Defend",
+          "Bash",
+          "Headbutt",
+          "Headbutt",
+          "Dramatic Entrance",
+          "Anger+",
+          "Shockwave+",
+          "Corruption+",
+          "Anger",
+          "Reaper",
+          "Impervious",
+          "Anger",
+          "Havoc",
+          "Blood for Blood",
+          "Feel No Pain+",
+          "Limit Break",
+          "Dark Embrace",
+          "Battle Trance",
+          "Impervious",
+          "Panic Button",
+          "Flash of Steel",
+          "Flash of Steel"
+        ],
+        "pre_relics": [
+          "BURNING_BLOOD",
+          "DU_VU_DOLL",
+          "MARK_OF_PAIN",
+          "VAJRA",
+          "SLING_OF_COURAGE",
+          "CHARONS_ASHES",
+          "CENTENNIAL_PUZZLE",
+          "ECTOPLASM"
+        ],
+        "source_pre_sha256": "f67f8363b2cd869f28b4a75d7f709c6a2abb0e2d41f8ba71b016fb29a68eb0f7",
+        "future_public_target_if_restored": "111101326:37"
+      },
+      "models": [
+        {
+          "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-collection-20261016-v1/bundle/studentc.bin",
+          "expected_sha256": "eff2f74f57dc2f566bbd44be30988592503cc8db51e51ff1e70cd2dec4636509",
+          "actual_sha256": "eff2f74f57dc2f566bbd44be30988592503cc8db51e51ff1e70cd2dec4636509",
+          "present_and_matches": true
+        },
+        {
+          "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-collection-20261016-v1/bundle/models/v_rich_trees.txt",
+          "expected_sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3",
+          "actual_sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3",
+          "present_and_matches": true
+        },
+        {
+          "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-collection-20261016-v1/bundle/models/candidates/v_win_x2b_public_trees.txt",
+          "expected_sha256": "e2d3aa65291df2914119f5d8129fb3aa6b7339ba6fa72eeaf9e86b9402beca90",
+          "actual_sha256": "e2d3aa65291df2914119f5d8129fb3aa6b7339ba6fa72eeaf9e86b9402beca90",
+          "present_and_matches": true
+        },
+        {
+          "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-collection-20261016-v1/bundle/selfplay/models/ooc_strategic_tok_final.native",
+          "expected_sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+          "actual_sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+          "present_and_matches": true
+        },
+        {
+          "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-collection-20261016-v1/bundle/selfplay/models/combat_transition_deepsets_pathb_r2_lizard.native",
+          "expected_sha256": "c6d56bbc959f4d5de8fe1dd57f58a922112cd8323bcbac9711e0aecda93f5a3c",
+          "actual_sha256": "c6d56bbc959f4d5de8fe1dd57f58a922112cd8323bcbac9711e0aecda93f5a3c",
+          "present_and_matches": true
+        },
+        {
+          "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-collection-20261016-v1/bundle/selfplay/models/combat_transition_near_full_escape_pathb_r2.native",
+          "expected_sha256": "b9188de03ed6cc0611094c108f607a8770a5d5c5f367c157851bc6af91f8d9cf",
+          "actual_sha256": "b9188de03ed6cc0611094c108f607a8770a5d5c5f367c157851bc6af91f8d9cf",
+          "present_and_matches": true
+        },
+        {
+          "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-collection-20261016-v1/bundle/selfplay/models/combat_transition_deepsets_pathb_a20_lizard.native",
+          "expected_sha256": "ae785ec2e28ceb3755fb63a71534f873ed61a069a6c2e107ef4131a788af7b6b",
+          "actual_sha256": "ae785ec2e28ceb3755fb63a71534f873ed61a069a6c2e107ef4131a788af7b6b",
+          "present_and_matches": true
+        },
+        {
+          "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-collection-20261016-v1/bundle/selfplay/models/combat_transition_near_full_escape_pathb_a20.native",
+          "expected_sha256": "e338506ddf14177bec27cfe174670bd9dcac333c26b30416b9f0c76717392b0d",
+          "actual_sha256": "e338506ddf14177bec27cfe174670bd9dcac333c26b30416b9f0c76717392b0d",
+          "present_and_matches": true
+        }
+      ],
+      "seed_semantics": "original unsigned game seed; no namespace conversion",
+      "missing_artifacts": [
+        "frozen Heart executable 0e17e0f22259afe21f35ba89a0413f2af7663cfae1312311f1ea8c71b00c2d52"
+      ]
+    },
+    {
+      "source_seed": 111142899,
+      "ingredient_class": "sundial_draw",
+      "family": "AZ",
+      "binary_sha256": "23a09099a161fbc7a4b944924536064f6c9f84e28f2731e13c8751bf611a269c",
+      "producer_sha": "844bd9239c6621968f5095c6f84aba6de27bbf2f",
+      "binary_available_in_declared_inventory": false,
+      "locally_runnable_exact_source": false,
+      "run_launched": false,
+      "fidelity": "NOT_TESTED_MISSING_ARTIFACTS",
+      "binary_identity_basis": "campaign freeze only; raw header/environment unavailable",
+      "run_commit": "712d4def04a62f0ae3e769a3548a46bfa19d5ca0",
+      "converted_data_commit": "43ad57f0e34e5bc34b7cb21c9fa8f8d5bb3039c1",
+      "converted_path": "gen3/rows_new/az-111142899.capture.jsonl.gz",
+      "converted_sha256": "781c0ab76fb2fcf90b3f00dfa36b0f00ed00ad9751aaa02565a736ec3f2458e3",
+      "converted_public_checkpoint": {
+        "row": 5,
+        "public_observation_sha256": "c54f33dc8c9087fb7139629d16aeaaae037b652689e09068a2f0bfa418a908c0",
+        "deck_ids": [
+          15,
+          321,
+          321,
+          321,
+          321,
+          321,
+          104,
+          104,
+          104,
+          104,
+          25,
+          242,
+          14,
+          11,
+          301,
+          69,
+          222,
+          355,
+          69,
+          345,
+          39,
+          301
+        ],
+        "relic_ids": [
+          86,
+          173,
+          166,
+          68
+        ]
+      },
+      "raw_archive": "/mnt/project-files/az-gen2-ab/units/111142899.w12.tar",
+      "raw_archive_expected_sha256": "9ff0840dbb8516869b9810b9a5c7992a4c80ad455ac4efb2307483020bc590bb",
+      "raw_header_available": false,
+      "raw_archive_checksum_source": "docs/experiments/evidence/az_gen2_ab_20261021/tars.sha256",
+      "expected_run_script_sha256": "e503fd622b78a3b673087eb2f538b03fe699122779a7419d2acea0fb8ae96aea",
+      "student_model": {
+        "path": "/home/philippherrmann/h1distill/E_sel/E_d64_sel_xin/student_sel.bin",
+        "expected_sha256": "cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7",
+        "actual_sha256": "cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7",
+        "present_and_matches": true
+      },
+      "expected_tracked_models": [
+        {
+          "path": "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/models/combat_policy_mlp_g7f_E.txt",
+          "expected_sha256": "c45dcc0ac4ee1739e6c533046c591be75965dec643146e32f8d2fc77814e0934",
+          "actual_sha256": "c45dcc0ac4ee1739e6c533046c591be75965dec643146e32f8d2fc77814e0934",
+          "present_and_matches": true
+        },
+        {
+          "path": "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/models/candidates/ooc_learned_stop_trees.txt",
+          "expected_sha256": "aa928b83b7b1b5bf95a93c4058d5316fed2ae876625bbe9c21a50f8e429e272c",
+          "actual_sha256": "aa928b83b7b1b5bf95a93c4058d5316fed2ae876625bbe9c21a50f8e429e272c",
+          "present_and_matches": true
+        },
+        {
+          "path": "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/selfplay/models/ooc_strategic_tok_final.native",
+          "expected_sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+          "actual_sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+          "present_and_matches": true
+        },
+        {
+          "path": "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/selfplay/models/combat_transition_deepsets_pathb_r2_lizard.native",
+          "expected_sha256": "c6d56bbc959f4d5de8fe1dd57f58a922112cd8323bcbac9711e0aecda93f5a3c",
+          "actual_sha256": "c6d56bbc959f4d5de8fe1dd57f58a922112cd8323bcbac9711e0aecda93f5a3c",
+          "present_and_matches": true
+        },
+        {
+          "path": "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/selfplay/models/combat_transition_near_full_escape_pathb_r2.native",
+          "expected_sha256": "b9188de03ed6cc0611094c108f607a8770a5d5c5f367c157851bc6af91f8d9cf",
+          "actual_sha256": "b9188de03ed6cc0611094c108f607a8770a5d5c5f367c157851bc6af91f8d9cf",
+          "present_and_matches": true
+        },
+        {
+          "path": "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/selfplay/models/combat_transition_deepsets_pathb_a20_lizard.native",
+          "expected_sha256": "ae785ec2e28ceb3755fb63a71534f873ed61a069a6c2e107ef4131a788af7b6b",
+          "actual_sha256": "ae785ec2e28ceb3755fb63a71534f873ed61a069a6c2e107ef4131a788af7b6b",
+          "present_and_matches": true
+        },
+        {
+          "path": "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/selfplay/models/combat_transition_near_full_escape_pathb_a20.native",
+          "expected_sha256": "e338506ddf14177bec27cfe174670bd9dcac333c26b30416b9f0c76717392b0d",
+          "actual_sha256": "e338506ddf14177bec27cfe174670bd9dcac333c26b30416b9f0c76717392b0d",
+          "present_and_matches": true
+        },
+        {
+          "path": "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/models/candidates/ctm_act4_survival_trees.txt",
+          "expected_sha256": "05279b3c54651afac2ccd60ccb7a71babbab073e5bb8536c9f9bd1b5d9950d5e",
+          "actual_sha256": "05279b3c54651afac2ccd60ccb7a71babbab073e5bb8536c9f9bd1b5d9950d5e",
+          "present_and_matches": true
+        }
+      ],
+      "policy_arm": "gen2 A/B arm A; student_sel",
+      "seed_semantics": "original game seed unchanged; A maps to az-SEED; B/E use different prefixes",
+      "missing_artifacts": [
+        "frozen AZ executable 23a09099a161fbc7a4b944924536064f6c9f84e28f2731e13c8751bf611a269c",
+        "hash-bound raw unit /mnt/project-files/az-gen2-ab/units/111142899.w12.tar"
+      ]
+    },
+    {
+      "source_seed": 111101512,
+      "ingredient_class": "sundial_draw",
+      "family": "HEART",
+      "binary_sha256": "0e17e0f22259afe21f35ba89a0413f2af7663cfae1312311f1ea8c71b00c2d52",
+      "producer_sha": "d8fd2a105a8d2a481b7639e26c683f75e382e3d4",
+      "binary_available_in_declared_inventory": false,
+      "locally_runnable_exact_source": false,
+      "run_launched": false,
+      "fidelity": "NOT_TESTED_MISSING_ARTIFACTS",
+      "binary_identity_basis": "actual retained source receipt",
+      "source_archive": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-round2-data-a8f6542e/heart-outcome-round2/deliveries/w00/train.tar.gz",
+      "source_archive_sha256": "f697c9f413795331fb382b1ef90b48a82f11d820ee6dee49b170309c438c2c11",
+      "receipt_sha256": "c08a2cada2fc9b1202796988461331d3e327251a22d94121bd8ddb73170a0784",
+      "retained_states_sha256": "f2cf8ef342e529362beebcb067d27a966feba3511c116c423e95c2d497359560",
+      "retained_trace_sha256": "68b55fbecbc19c2f91d191acf3163407440f6ffbb86bea8760e657b27a6fafad",
+      "original_command": [
+        "bash",
+        "/root/heart2-w00/campaign/bundle/seed_guard.sh",
+        "/root/heart2-w00/campaign/bundle/one_combat",
+        "heartoutcomegen",
+        "1",
+        "111101512",
+        "/root/heart2-w00/out/train/seed-111101512.states.jsonl",
+        "on"
+      ],
+      "original_environment": {
+        "HOME": "/root",
+        "OMP_DYNAMIC": "FALSE",
+        "OMP_NUM_THREADS": "1",
+        "PATH": "/nix/var/nix/profiles/default/bin:/root/.local/bin:/root/.cargo/bin:/usr/local/go/bin:/opt/node22/bin:/opt/maven/bin:/opt/gradle/bin:/opt/rbenv/bin:/root/.bun/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "STS_COLLECT_KEYS": "1",
+        "STS_EXECUTABLE_GIT_SHA": "d8fd2a105a8d2a481b7639e26c683f75e382e3d4",
+        "STS_FAIR": "1",
+        "STS_OOC_DECISION_TRACE": "/root/heart2-w00/out/train/seed-111101512.trace.jsonl",
+        "STS_OOC_HEART1": "studentc.bin",
+        "STS_OOC_MCTS": "1",
+        "STS_OOC_MCTS_CPUCT": "1.5",
+        "STS_OOC_MCTS_EARLY_STOP": "1",
+        "STS_OOC_MCTS_LEAF_COMBATS": "3",
+        "STS_OOC_MCTS_LEAF_POLICY": "heart1",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_PRIOR": "heart1",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_ROOT_TRACE": "/root/heart2-w00/out/train/seed-111101512.roots.jsonl",
+        "STS_OOC_MCTS_SIMS": "512",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_TRACE": "/root/heart2-w00/out/train/seed-111101512.mcts.csv",
+        "STS_OOC_MCTS_TREE_RULES": "1",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.75",
+        "STS_OOC_MCTS_WIDEN_K": "4",
+        "STS_OOC_PUBLIC_FUTURES": "8",
+        "STS_OOC_SIBLING_CAPTURE": "/root/heart2-w00/out/train/seed-111101512.sib.jsonl",
+        "STS_OOC_SIBLING_EVERY": "8",
+        "STS_OOC_SIBLING_LONG": "0",
+        "STS_OOC_SIBLING_MAX_DEPTH": "1",
+        "STS_OOC_SIBLING_MAX_LEAVES": "64",
+        "STS_OOC_SIBLING_REPEATS": "64",
+        "STS_OOC_STRATEGIC_BOSS_RELIC": "1",
+        "STS_OOC_STRATEGIC_EVENT": "1",
+        "STS_OOC_STRATEGIC_MARGIN": "1.0",
+        "STS_OOC_STRATEGIC_REST": "1",
+        "STS_OOC_STRATEGIC_SHOP": "1",
+        "STS_OOC_STRATEGIC_TOK_NN": "selfplay/models/ooc_strategic_tok_final.native",
+        "STS_OOC_STRATEGIC_TREASURE": "1",
+        "STS_REST_WIN": "0",
+        "STS_SILVER_ADAPTIVE": "0",
+        "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+        "STS_SILVER_LEARNED_STOP": "0",
+        "STS_SILVER_REUSE_CAP_MODE": "allocated",
+        "STS_SILVER_SEARCH": "1",
+        "STS_SILVER_VNET_LEAF_DIRECT": "0",
+        "STS_STOP_AFTER_ACT": "0"
+      },
+      "policy": {
+        "flags": {
+          "act_fight_probe_all_ooc": false,
+          "act_fight_probe_draft": false,
+          "act_fight_probe_encounter_nn": false,
+          "act_fight_probe_gate_regret": false,
+          "act_fight_probe_predict": false,
+          "boss_draft": false,
+          "boss_relic_v": false,
+          "boss_v": false,
+          "card_action": false,
+          "card_nn": false,
+          "card_win": false,
+          "collect_keys": true,
+          "event_v": 0,
+          "native_ooc_shop_deck_size_fix": true,
+          "neow_v": false,
+          "ooc_action_nn": false,
+          "ooc_heart1": true,
+          "ooc_map_route": false,
+          "ooc_shop_beam": false,
+          "ooc_strategic_boss_relic": true,
+          "ooc_strategic_card": true,
+          "ooc_strategic_event": true,
+          "ooc_strategic_map": false,
+          "ooc_strategic_q": true,
+          "ooc_strategic_rest": true,
+          "ooc_strategic_score_policy": false,
+          "ooc_strategic_shop": true,
+          "ooc_strategic_tok": true,
+          "ooc_strategic_treasure": true,
+          "path_v": 0,
+          "potion_reward_swap": true,
+          "remove_low_obtain_weight": true,
+          "rest_win": false,
+          "shop_win": false,
+          "skip_optional_recall": true
+        },
+        "model_artifacts": [
+          {
+            "path": "models/v_rich_trees.txt",
+            "role": "floor",
+            "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+          },
+          {
+            "path": "models/candidates/v_win_x2b_public_trees.txt",
+            "role": "win",
+            "sha256": "e2d3aa65291df2914119f5d8129fb3aa6b7339ba6fa72eeaf9e86b9402beca90"
+          },
+          {
+            "path": "selfplay/models/ooc_strategic_tok_final.native",
+            "role": "ooc_strategic_tok",
+            "sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c"
+          },
+          {
+            "path": "studentc.bin",
+            "role": "ooc_heart1",
+            "sha256": "eff2f74f57dc2f566bbd44be30988592503cc8db51e51ff1e70cd2dec4636509"
+          }
+        ],
+        "native_ooc": true,
+        "ooc_mcts": {
+          "artifact_sha256": {},
+          "environment": {
+            "STS_OOC_MCTS": "1",
+            "STS_OOC_MCTS_CPUCT": "1.5",
+            "STS_OOC_MCTS_EARLY_STOP": "1",
+            "STS_OOC_MCTS_LEAF_COMBATS": "3",
+            "STS_OOC_MCTS_LEAF_POLICY": "heart1",
+            "STS_OOC_MCTS_LEAF_VALUE": "native",
+            "STS_OOC_MCTS_MAX_DEPTH": "32",
+            "STS_OOC_MCTS_PRIOR": "heart1",
+            "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+            "STS_OOC_MCTS_SIMS": "512",
+            "STS_OOC_MCTS_TEMPERATURE": "1",
+            "STS_OOC_MCTS_TREE_RULES": "1",
+            "STS_OOC_MCTS_WIDEN_ALPHA": "0.75",
+            "STS_OOC_MCTS_WIDEN_K": "4"
+          },
+          "leaf_value": "native",
+          "simulations": 512
+        },
+        "parameters": {
+          "act_fight_probe_checkpoint_sims": [],
+          "act_fight_probe_floor_decay": 0.985,
+          "act_fight_probe_futures": 4,
+          "act_fight_probe_margin": 0.0,
+          "act_fight_probe_max_checkpoints": -1,
+          "act_fight_probe_predict_win_threshold": 0.5,
+          "act_fight_probe_sims": 100,
+          "act_fight_probe_term_win": 0.0,
+          "boss_draft_fights": 4,
+          "boss_draft_futures": 2,
+          "boss_draft_rows": 3,
+          "boss_draft_sims": 150,
+          "boss_v_weight": 0.5,
+          "card_nn_skip": 0.0,
+          "card_nn_weight": 1.0,
+          "card_skip_threshold": -0.5,
+          "card_win_skip": 0.0,
+          "map_route_horizon": 3,
+          "native_ooc_public_futures": 8,
+          "shop_beam_budget": 4096,
+          "shop_beam_depth": 0,
+          "shop_beam_width": 32,
+          "stop_after_act": 0,
+          "strategic_gate": "margin",
+          "strategic_gate_eps": 0.03,
+          "strategic_margin": 1.0,
+          "strategic_margin_boss_relic": -1.0,
+          "strategic_margin_card": -1.0,
+          "strategic_margin_event": -1.0,
+          "strategic_margin_map": -1.0,
+          "strategic_margin_rest": -1.0,
+          "strategic_margin_shop": -1.0,
+          "strategic_margin_treasure": -1.0
+        },
+        "policy_chain": "runFullRunOOC",
+        "restV": false,
+        "schema_version": "runFullRunOOC_policy_v1",
+        "shopV": true
+      },
+      "checkpoints": [
+        {
+          "index": 0,
+          "act": 1,
+          "floor": 0,
+          "screen": 1,
+          "public_observation_sha256": "d3bd51d2f37e4acc2509c346d118d92c6b0660b2971659f023a67510530a0a63",
+          "deck_ids": [
+            15,
+            321,
+            321,
+            321,
+            321,
+            321,
+            104,
+            104,
+            104,
+            104,
+            25
+          ],
+          "deck_upgrades": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "relic_ids": [
+            86
+          ],
+          "relic_counters": [
+            0
+          ]
+        },
+        {
+          "index": 52,
+          "act": 1,
+          "floor": 13,
+          "screen": 2,
+          "public_observation_sha256": "7706a46433521578b48e455104db207e5a742d6c5399103c7ebbb67378e4d805",
+          "deck_ids": [
+            15,
+            321,
+            321,
+            321,
+            321,
+            321,
+            104,
+            104,
+            104,
+            104,
+            25,
+            69,
+            198,
+            347,
+            11,
+            349,
+            249,
+            301
+          ],
+          "deck_upgrades": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0
+          ],
+          "relic_ids": [
+            86,
+            48,
+            163,
+            68
+          ],
+          "relic_counters": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "first_ingredient_bearing_battle": {
+        "act": 1,
+        "floor": 14,
+        "fight": 8,
+        "encounter": "TWO_FUNGI_BEASTS",
+        "pre_deck": [
+          "Ascender's Bane",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Defend",
+          "Defend",
+          "Defend",
+          "Defend",
+          "Bash",
+          "Clothesline+",
+          "Iron Wave",
+          "Twin Strike+",
+          "Anger",
+          "Uppercut",
+          "Pommel Strike",
+          "Shrug It Off",
+          "Havoc"
+        ],
+        "pre_relics": [
+          "BURNING_BLOOD",
+          "ORICHALCUM",
+          "REGAL_PILLOW",
+          "SUNDIAL"
+        ],
+        "source_pre_sha256": "2e19a835c7025923abcfe0e646b8837e9211ccefcc053961a6b8d16914436bc1",
+        "future_public_target_if_restored": "111101512:14"
+      },
+      "models": [
+        {
+          "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-collection-20261016-v1/bundle/studentc.bin",
+          "expected_sha256": "eff2f74f57dc2f566bbd44be30988592503cc8db51e51ff1e70cd2dec4636509",
+          "actual_sha256": "eff2f74f57dc2f566bbd44be30988592503cc8db51e51ff1e70cd2dec4636509",
+          "present_and_matches": true
+        },
+        {
+          "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-collection-20261016-v1/bundle/models/v_rich_trees.txt",
+          "expected_sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3",
+          "actual_sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3",
+          "present_and_matches": true
+        },
+        {
+          "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-collection-20261016-v1/bundle/models/candidates/v_win_x2b_public_trees.txt",
+          "expected_sha256": "e2d3aa65291df2914119f5d8129fb3aa6b7339ba6fa72eeaf9e86b9402beca90",
+          "actual_sha256": "e2d3aa65291df2914119f5d8129fb3aa6b7339ba6fa72eeaf9e86b9402beca90",
+          "present_and_matches": true
+        },
+        {
+          "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-collection-20261016-v1/bundle/selfplay/models/ooc_strategic_tok_final.native",
+          "expected_sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+          "actual_sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+          "present_and_matches": true
+        },
+        {
+          "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-collection-20261016-v1/bundle/selfplay/models/combat_transition_deepsets_pathb_r2_lizard.native",
+          "expected_sha256": "c6d56bbc959f4d5de8fe1dd57f58a922112cd8323bcbac9711e0aecda93f5a3c",
+          "actual_sha256": "c6d56bbc959f4d5de8fe1dd57f58a922112cd8323bcbac9711e0aecda93f5a3c",
+          "present_and_matches": true
+        },
+        {
+          "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-collection-20261016-v1/bundle/selfplay/models/combat_transition_near_full_escape_pathb_r2.native",
+          "expected_sha256": "b9188de03ed6cc0611094c108f607a8770a5d5c5f367c157851bc6af91f8d9cf",
+          "actual_sha256": "b9188de03ed6cc0611094c108f607a8770a5d5c5f367c157851bc6af91f8d9cf",
+          "present_and_matches": true
+        },
+        {
+          "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-collection-20261016-v1/bundle/selfplay/models/combat_transition_deepsets_pathb_a20_lizard.native",
+          "expected_sha256": "ae785ec2e28ceb3755fb63a71534f873ed61a069a6c2e107ef4131a788af7b6b",
+          "actual_sha256": "ae785ec2e28ceb3755fb63a71534f873ed61a069a6c2e107ef4131a788af7b6b",
+          "present_and_matches": true
+        },
+        {
+          "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-collection-20261016-v1/bundle/selfplay/models/combat_transition_near_full_escape_pathb_a20.native",
+          "expected_sha256": "e338506ddf14177bec27cfe174670bd9dcac333c26b30416b9f0c76717392b0d",
+          "actual_sha256": "e338506ddf14177bec27cfe174670bd9dcac333c26b30416b9f0c76717392b0d",
+          "present_and_matches": true
+        }
+      ],
+      "seed_semantics": "original unsigned game seed; no namespace conversion",
+      "missing_artifacts": [
+        "frozen Heart executable 0e17e0f22259afe21f35ba89a0413f2af7663cfae1312311f1ea8c71b00c2d52"
+      ]
+    }
+  ],
+  "routes": [
+    {
+      "producer_sha": "d8fd2a105a8d2a481b7639e26c683f75e382e3d4",
+      "files_sha256": {
+        "apps/one_combat.cpp": "1ff0dfa9034a9a94aad34b13a369d1b3ae1982e1214229645e60f7ef08b8126f",
+        "apps/one_combat/run_driver.cpp": "36b593d26e5698bf1d370f9e98efd498ee4c08878cb8fb882c6e291a2038d011",
+        "src/sim/search/NativeSilverBackend.cpp": "73802b88bfe2d5ff3cd90672fdb178e0a20aec1af92d9a7c50754e9329a329d9"
+      },
+      "paired_trace_parse_sites_verified": true
+    },
+    {
+      "producer_sha": "844bd9239c6621968f5095c6f84aba6de27bbf2f",
+      "files_sha256": {
+        "apps/one_combat.cpp": "40cc93f3117984647d2c57773960352bd879d632bf32fe6842c0bb27620801e6",
+        "apps/one_combat/run_driver.cpp": "dda74eaecaf29f2ff0f25d93a70d27218049282eabe67bfdd5b2bdc0255afdc3",
+        "src/sim/search/NativeSilverBackend.cpp": "fca0f37139918c494031cd20cc4d9b6237e12caaf1ad00eb3d3d84aab432f176"
+      },
+      "paired_trace_parse_sites_verified": true
+    },
+    {
+      "producer_sha": "fa8e9278fd7b7c6913b69ca53bede1485fa62fed",
+      "files_sha256": {
+        "apps/one_combat.cpp": "de2a5cf80a09a4135ac87d70dfe4589f101219c187b509222676708b9121ec16",
+        "apps/one_combat/run_driver.cpp": "a851658be94d20c7fb63edc2e9a9fa17126c11b7364052b0c4b457ba1e43ec1f",
+        "src/sim/search/NativeSilverBackend.cpp": "0733a565c43d5236e67a350f6c6e275feafc44f8e6102229fbd6deb32a8db66b"
+      },
+      "paired_trace_parse_sites_verified": true
+    }
+  ],
+  "executables_checked": 70,
+  "unique_executable_hashes": 61,
+  "runs_attempted": 0,
+  "ingredient_bearing_combats_reproduced": 0,
+  "public_roots_captured": 0,
+  "tier1_roots": null,
+  "tier2_roots": null,
+  "selected_roots": 0,
+  "annotated_worlds": 0,
+  "witnesses": [],
+  "node_cap_rate": null,
+  "fidelity_gate_passed": false,
+  "new_schema_or_runtime_code": false,
+  "scope_note": "Declared retained primary/app-worktree build/bundle paths only; not a global or cloud disk inventory"
+}
