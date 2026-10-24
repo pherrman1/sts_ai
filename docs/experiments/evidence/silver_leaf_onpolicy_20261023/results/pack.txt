@@ -1,0 +1,3 @@
+# pack_a20.py <campaign one_combat 0feb879d> REPO UNITS onpol_pack.npz WORK 4 -> sha256 bab1e106e6ed8b64db00f91b4b96d90cd2d70741923964ca27f001e152bce6f1
+256 units with rc=0, 0 without: []
+{"units": 256, "unitsNotRc0": 0, "roots": 281924, "droppedNoScore": 2000, "extractorCounts": {"roots": 283924, "rootEdgeMismatch": 11}, "nnzMean": 66.39681971027653, "seconds": 105}

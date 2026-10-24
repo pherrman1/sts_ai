@@ -1,16 +1,16 @@
-# Worker brief: silver-leaf-onpolicy (N workers, set at the freeze)
+# Worker brief: silver-leaf-onpolicy (32 workers)
 
 ```
-YOUR WORKER NUMBER: W=<n>   (1..N; pass it unpadded, never 03)
-RUN_COMMIT=<sha>  CAMPAIGN=docs/experiments/evidence/silver_leaf_onpolicy_20261023
-Philipp authorized this run (<date and his words, filled in at the freeze>).
+YOUR WORKER NUMBER: W=<n>   (1..32; pass it unpadded, never 03)
+RUN_COMMIT=<sha from the launch message>  CAMPAIGN=docs/experiments/evidence/silver_leaf_onpolicy_20261023
+Philipp authorized this run (2026-10-23 19:35Z: "let's do 512 runs on 32 workers").
 - Do not change seeds, scripts, environments, binary, weights or timeouts.
 - Work in /home/user/sts_ai. Run nothing from /mnt/project-files (noexec).
 - The worker script uploads the finished units to /mnt/project-files/silver-leaf-onpolicy/campaign. Write nothing
   else to the share.
 
 1. In the FOREGROUND (never as a background task; timeout 10 min):
-     cd /home/user/sts_ai && git fetch origin claude/project-thread-kgjoid && git checkout --detach $RUN_COMMIT
+     cd /home/user/sts_ai && git fetch origin claude/project-thread-kgjoid main && git checkout --detach $RUN_COMMIT
      git rev-parse HEAD     -> must print exactly $RUN_COMMIT
      git status --short     -> must print nothing for tracked files
    If the fetch fails or hangs, retry it in the foreground up to 4 times (wait 2 s, 4 s, 8 s, 16 s).
