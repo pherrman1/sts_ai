@@ -24274,3 +24274,36 @@ the fixed engine.
 **Decision:** the default stays (ADR-0058, the PREREG rule).
 - Seeds 111392000–111392511 used; the dropped stage 2 (111392512–111394047) stays reserved and unused.
 - **Knowledge impact:** `evaluation/current-research.md`.
+
+## §TBD — The §672 HP-head fine-tune with its own table becomes the A20 CTM default on precision: on the guard's 24,186 fresh fights won-fight HP error 7.75 → 7.59 (−0.16 [−0.20, −0.12]) with the same deaths (ADR-TBD, offline, 2026-10-24)
+
+**Question:** Philipp (2026-10-24 07:52Z): "Don't qualify ctm by winrate but by precision, so the new one goes in as
+default." Is §672's candidate (HP-head fine-tune + its refitted table) more precise than the ADR-0058 default (old net
++ §670 table) on fights neither has seen, and does the switch change nothing else?
+**Setup:** [packet](evidence/ctm_finetune_default_20261024/README.md). Fresh rows: the 24,186 real fights of the §676
+guard's 1,024 games, played after both candidates were frozen. Held out: §670's 6,022 stage 1–2 fights. Scored with
+this change's binary, default against `STS_CTM_A20_HP_FINETUNE=0`; 95% bootstrap over source seeds.
+**Result:**
+
+| fights | n | death log loss | won-fight HP MAE (old default → new) | change [95% CI] |
+|---|---|---|---|---|
+| fresh (guard) | 24,186 | 0.0660 both | 7.75 → 7.59 | −0.16 [−0.20, −0.12] |
+| held out (LC) | 6,022 | 0.0698 both | 7.60 → 7.45 | −0.16 [−0.23, −0.09] |
+
+- Deaths are identical fight for fight (the fine-tune keeps the old `p_death`, and both tables shift deaths alike).
+- Fresh fights by group: Act-3 bosses 16.50 → 15.40 (Awakened One 19.19 → 17.24), Act-2 bosses 17.07 → 16.57,
+  Shield and Spear 18.21 → 17.29, Act-3 elites 11.46 → 11.16; hallway fights lower by 0.03–0.15. Worse: the Heart
+  18.45 → 18.58 (no use: a won Heart ends the run), two small groups by < 0.05.
+- Equivalence, byte for byte on four row sets (A, LC, both guard arms): the default = main with the §672 research flags
+  (manifest `31bb21f7…` + table `8c226f23…`); `=0` = main's default and, with `STS_CTM_CALIBRATION=0`, main's raw CTM.
+  Wrong pairings (the §470 artifact under the default, the fine-tune under `=0`) and bad values fail loudly.
+- Games: on two guard seeds (111392255, 111392359) `=0` replays the guard's arm C exactly (every record and CTM row);
+  the default runs with its own banner, table and header artifact, and first plays a different move at decision 86
+  of 172 on one seed (the same moves throughout on the other).
+**Interpretation:** the fine-tune's precision gain on HP holds on fresh fights at the same size as on the held-out
+games, with no cost in deaths. Playing strength is not measured; by Philipp's criterion none is needed.
+**Decision:** A20 default (ADR-TBD); `STS_CTM_A20_HP_FINETUNE=0` restores the §470 artifact with the ADR-0058 table
+(older A20 comparisons need it).
+Seeds: none new (guard seeds 111392255 and 111392359 replayed for the game check).
+**Knowledge impact:** `architecture/out-of-combat.md`, `operations/environment-variables.md`,
+`evaluation/current-research.md`.

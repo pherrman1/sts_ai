@@ -1,0 +1,21 @@
+111392255 guard: 372 records, 26 CTM rows, died (act 3, floor 46)
+111392255 zero: 372 records, 26 CTM rows, died (act 3, floor 46)
+111392255 ft: 372 records, 26 CTM rows, died (act 3, floor 46)
+111392255 zero: banner "active_lizard_correction=1 hp_finetune=0" and its table True; header CTM artifacts as expected True
+111392255 ft: banner "active_lizard_correction=1 hp_finetune=1" and its table True; header CTM artifacts as expected True
+111392255 zero vs guard records: identical=True
+111392255 zero vs guard CTM rows: identical=True
+111392255 ft vs zero records: identical=False (first difference at line 2)
+111392255 ft vs zero CTM rows: identical=False (first difference at line 13)
+111392255 ft vs zero moves: 172 vs 172 decisions, first different move at decision 86
+111392359 guard: 165 records, 13 CTM rows, died (act 2, floor 24)
+111392359 zero: 165 records, 13 CTM rows, died (act 2, floor 24)
+111392359 ft: 165 records, 13 CTM rows, died (act 2, floor 24)
+111392359 zero: banner "active_lizard_correction=1 hp_finetune=0" and its table True; header CTM artifacts as expected True
+111392359 ft: banner "active_lizard_correction=1 hp_finetune=1" and its table True; header CTM artifacts as expected True
+111392359 zero vs guard records: identical=True
+111392359 zero vs guard CTM rows: identical=True
+111392359 ft vs zero records: identical=False (first difference at line 2)
+111392359 ft vs zero CTM rows: identical=True
+111392359 ft vs zero moves: 75 vs 75 decisions, the same move at every decision
+PASS
