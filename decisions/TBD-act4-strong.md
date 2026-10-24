@@ -32,8 +32,12 @@ Philipp decided on 2026-10-24 (17:00Z): "Die extra Kosten sind es mir für beide
 
 ## Consequences
 
-- CPU. In the replays a production S&S fight took about 6 s and a Heart fight about 58 s (single thread); the new
-  settings take about 36 s and 4 min. A20 runs that reach Act 4 cost correspondingly more.
+- CPU. In the replays (flat budgets, single thread) an S&S fight at 10k with greedy playouts took about 6 s and a
+  Heart fight at 10k with prior playouts about 58 s; the new settings take about 36 s and 4 min. Against the learned
+  stop the simulation count grows more: in the review's game (seed 111392123) S&S went from 110k to 310k simulations
+  and the Heart from 234k to 1.96M, about 15× and 8× the CPU.
+- Memory. One 40k Heart search at the 262,144-node cap holds about 2.2-2.3 GB RSS; several concurrent Heart fights
+  can exhaust a 15 GB container (the review saw two processes killed, rc 137). Size parallel lanes accordingly.
 - Every A20 comparison with older runs that reach Act 4 needs `STS_SILVER_ACT4_STRONG=0` (comparability flag).
   Teacher and specification JSONs written before this ADR lack `act4_strong` and are refused by the `silver_leaf`
   equality check unless matched with `=0`.
