@@ -1,10 +1,10 @@
-# Set at the freeze, after Philipp's typed go: code_commit (main with this change merged), binary_sha256 (one build
-# of it) and workers (the count he authorizes). Until then worker.sh refuses this campaign.
+# Frozen 2026-10-23 after Philipp's typed go (19:35Z: "let's do 512 runs on 32 workers"): code_commit = main
+# a8b80139 (#837 merged, after the engine fixes #831/#833/#835/#836), binary_sha256 = its v3 build.
 name          silver-leaf-onpolicy
-code_commit   FREEZE
-binary_sha256 FREEZE
+code_commit   a8b801390a2e730c30312522b71a056c3eaca7c7
+binary_sha256 0feb879d7e0b54beeb8edbb83e4f02aba860464983b812931b673d1d60ebad68
 configure_preset linux-gcc-release-x86-64-v3
-workers       FREEZE
+workers       32
 share         /mnt/project-files/silver-leaf-onpolicy/campaign
 parallel      4
 schedule      queue

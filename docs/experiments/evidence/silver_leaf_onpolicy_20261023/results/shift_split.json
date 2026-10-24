@@ -1,0 +1,345 @@
+{
+ "files": 256,
+ "groups": {
+  "short": {
+   "roots": 265341,
+   "unaligned": 11,
+   "agree": 0.6666,
+   "labelRegret": 1.635,
+   "valueGap": 3.858,
+   "valueGapRms": 60.038,
+   "labelInherited": 4628.9,
+   "playInherited": 6247.9
+  },
+  "short MONSTER": {
+   "roots": 111279,
+   "unaligned": 1,
+   "agree": 0.7254,
+   "labelRegret": 0.698,
+   "valueGap": 1.494,
+   "valueGapRms": 4.655,
+   "labelInherited": 5143.2,
+   "playInherited": 6255.8
+  },
+  "short turn 0": {
+   "roots": 55457,
+   "unaligned": 0,
+   "agree": 0.6725,
+   "labelRegret": 2.556,
+   "valueGap": 2.536,
+   "valueGapRms": 8.556,
+   "labelInherited": 4707.7,
+   "playInherited": 6582.0
+  },
+  "short turn 1": {
+   "roots": 52334,
+   "unaligned": 2,
+   "agree": 0.7078,
+   "labelRegret": 1.751,
+   "valueGap": 2.627,
+   "valueGapRms": 8.351,
+   "labelInherited": 5087.4,
+   "playInherited": 6672.0
+  },
+  "short turn 2": {
+   "roots": 46140,
+   "unaligned": 3,
+   "agree": 0.7037,
+   "labelRegret": 1.355,
+   "valueGap": 2.527,
+   "valueGapRms": 7.985,
+   "labelInherited": 5136.7,
+   "playInherited": 6558.2
+  },
+  "short ELITE": {
+   "roots": 77396,
+   "unaligned": 3,
+   "agree": 0.6748,
+   "labelRegret": 1.805,
+   "valueGap": 2.864,
+   "valueGapRms": 7.933,
+   "labelInherited": 4783.6,
+   "playInherited": 6528.8
+  },
+  "short turn 3": {
+   "roots": 34245,
+   "unaligned": 3,
+   "agree": 0.6763,
+   "labelRegret": 1.348,
+   "valueGap": 2.773,
+   "valueGapRms": 8.509,
+   "labelInherited": 4692.6,
+   "playInherited": 6068.0
+  },
+  "short turn 4": {
+   "roots": 24333,
+   "unaligned": 3,
+   "agree": 0.6524,
+   "labelRegret": 1.242,
+   "valueGap": 3.275,
+   "valueGapRms": 9.174,
+   "labelInherited": 4066.0,
+   "playInherited": 5478.1
+  },
+  "short turn 5": {
+   "roots": 16355,
+   "unaligned": 0,
+   "agree": 0.6389,
+   "labelRegret": 1.307,
+   "valueGap": 3.569,
+   "valueGapRms": 10.297,
+   "labelInherited": 4297.2,
+   "playInherited": 5790.7
+  },
+  "short turn 6+": {
+   "roots": 36477,
+   "unaligned": 0,
+   "agree": 0.5644,
+   "labelRegret": 1.104,
+   "valueGap": 10.855,
+   "valueGapRms": 160.485,
+   "labelInherited": 3673.6,
+   "playInherited": 5626.4
+  },
+  "short BOSS": {
+   "roots": 69070,
+   "unaligned": 7,
+   "agree": 0.5648,
+   "labelRegret": 3.009,
+   "valueGap": 8.914,
+   "valueGapRms": 117.21,
+   "labelInherited": 3656.7,
+   "playInherited": 5949.4
+  },
+  "short EVENT": {
+   "roots": 7596,
+   "unaligned": 0,
+   "agree": 0.6477,
+   "labelRegret": 1.143,
+   "valueGap": 2.65,
+   "valueGapRms": 6.386,
+   "labelInherited": 4359.2,
+   "playInherited": 5986.0
+  },
+  "long": {
+   "roots": 16594,
+   "unaligned": 0,
+   "agree": 0.1309,
+   "labelRegret": 1.557,
+   "valueGap": 86.732,
+   "valueGapRms": 121.163,
+   "labelInherited": 923.9,
+   "playInherited": 3052.4
+  },
+  "long MONSTER": {
+   "roots": 12436,
+   "unaligned": 0,
+   "agree": 0.1041,
+   "labelRegret": 1.255,
+   "valueGap": 91.699,
+   "valueGapRms": 123.016,
+   "labelInherited": 762.3,
+   "playInherited": 2642.7
+  },
+  "long turn 0": {
+   "roots": 268,
+   "unaligned": 0,
+   "agree": 0.653,
+   "labelRegret": 2.814,
+   "valueGap": 0.874,
+   "valueGapRms": 12.43,
+   "labelInherited": 4191.6,
+   "playInherited": 5694.3
+  },
+  "long turn 1": {
+   "roots": 261,
+   "unaligned": 0,
+   "agree": 0.5556,
+   "labelRegret": 1.619,
+   "valueGap": 3.33,
+   "valueGapRms": 9.681,
+   "labelInherited": 3582.8,
+   "playInherited": 4830.8
+  },
+  "long turn 2": {
+   "roots": 206,
+   "unaligned": 0,
+   "agree": 0.6165,
+   "labelRegret": 1.48,
+   "valueGap": 2.834,
+   "valueGapRms": 8.689,
+   "labelInherited": 4106.0,
+   "playInherited": 5106.5
+  },
+  "long turn 3": {
+   "roots": 175,
+   "unaligned": 0,
+   "agree": 0.52,
+   "labelRegret": 0.934,
+   "valueGap": 3.443,
+   "valueGapRms": 9.185,
+   "labelInherited": 2497.0,
+   "playInherited": 3628.7
+  },
+  "long turn 4": {
+   "roots": 161,
+   "unaligned": 0,
+   "agree": 0.4658,
+   "labelRegret": 0.649,
+   "valueGap": 2.022,
+   "valueGapRms": 8.298,
+   "labelInherited": 2176.6,
+   "playInherited": 3130.3
+  },
+  "long turn 5": {
+   "roots": 147,
+   "unaligned": 0,
+   "agree": 0.5034,
+   "labelRegret": 0.425,
+   "valueGap": 2.695,
+   "valueGapRms": 6.98,
+   "labelInherited": 2182.7,
+   "playInherited": 3471.5
+  },
+  "long turn 6+": {
+   "roots": 15376,
+   "unaligned": 0,
+   "agree": 0.0966,
+   "labelRegret": 1.562,
+   "valueGap": 93.407,
+   "valueGapRms": 125.841,
+   "labelInherited": 736.1,
+   "playInherited": 2937.3
+  },
+  "cut": {
+   "roots": 2000,
+   "unaligned": 0,
+   "agree": 0.249,
+   "labelRegret": 25.098,
+   "valueGap": 58.055,
+   "valueGapRms": 85.536,
+   "labelInherited": 4064.5,
+   "playInherited": 26438.4
+  },
+  "cut ELITE": {
+   "roots": 1000,
+   "unaligned": 0,
+   "agree": 0.151,
+   "labelRegret": 39.104,
+   "valueGap": 12.362,
+   "valueGapRms": 25.27,
+   "labelInherited": 2172.1,
+   "playInherited": 45408.0
+  },
+  "cut turn 0": {
+   "roots": 10,
+   "unaligned": 0,
+   "agree": 0.6,
+   "labelRegret": 1.799,
+   "valueGap": 3.111,
+   "valueGapRms": 4.586,
+   "labelInherited": 3816.6,
+   "playInherited": 6082.7
+  },
+  "cut turn 1": {
+   "roots": 10,
+   "unaligned": 0,
+   "agree": 0.7,
+   "labelRegret": 5.476,
+   "valueGap": 5.668,
+   "valueGapRms": 6.128,
+   "labelInherited": 8683.6,
+   "playInherited": 8306.7
+  },
+  "cut turn 2": {
+   "roots": 12,
+   "unaligned": 0,
+   "agree": 0.5,
+   "labelRegret": 0.546,
+   "valueGap": 4.211,
+   "valueGapRms": 4.453,
+   "labelInherited": 2585.2,
+   "playInherited": 3914.2
+  },
+  "cut turn 3": {
+   "roots": 7,
+   "unaligned": 0,
+   "agree": 0.5714,
+   "labelRegret": 0.856,
+   "valueGap": 5.674,
+   "valueGapRms": 6.625,
+   "labelInherited": 4403.1,
+   "playInherited": 5551.6
+  },
+  "cut turn 4": {
+   "roots": 10,
+   "unaligned": 0,
+   "agree": 0.6,
+   "labelRegret": 0.581,
+   "valueGap": 3.949,
+   "valueGapRms": 4.624,
+   "labelInherited": 3700.4,
+   "playInherited": 6811.0
+  },
+  "cut turn 5": {
+   "roots": 8,
+   "unaligned": 0,
+   "agree": 0.25,
+   "labelRegret": 0.929,
+   "valueGap": 2.553,
+   "valueGapRms": 2.798,
+   "labelInherited": 1733.6,
+   "playInherited": 4726.8
+  },
+  "cut turn 6+": {
+   "roots": 1943,
+   "unaligned": 0,
+   "agree": 0.2403,
+   "labelRegret": 25.784,
+   "valueGap": 59.636,
+   "valueGapRms": 86.777,
+   "labelInherited": 4061.4,
+   "playInherited": 27041.3
+  },
+  "long ELITE": {
+   "roots": 1776,
+   "unaligned": 0,
+   "agree": 0.1976,
+   "labelRegret": 1.167,
+   "valueGap": 49.114,
+   "valueGapRms": 72.859,
+   "labelInherited": 1201.4,
+   "playInherited": 3721.0
+  },
+  "long BOSS": {
+   "roots": 2188,
+   "unaligned": 0,
+   "agree": 0.2258,
+   "labelRegret": 3.484,
+   "valueGap": 90.968,
+   "valueGapRms": 143.06,
+   "labelInherited": 1672.1,
+   "playInherited": 5009.2
+  },
+  "cut MONSTER": {
+   "roots": 1000,
+   "unaligned": 0,
+   "agree": 0.347,
+   "labelRegret": 11.092,
+   "valueGap": 103.748,
+   "valueGapRms": 118.297,
+   "labelInherited": 5956.9,
+   "playInherited": 7468.9
+  },
+  "long EVENT": {
+   "roots": 194,
+   "unaligned": 0,
+   "agree": 0.1701,
+   "labelRegret": 2.745,
+   "valueGap": 64.984,
+   "valueGapRms": 78.937,
+   "labelInherited": 302.3,
+   "playInherited": 1124.3
+  }
+ }
+}

@@ -1,0 +1,79 @@
+loaded 1059917 roots, 2048 runs (6s)
+fit 454345 / both 620106, stop 150982 / both 203853, test prod 141754, test on-policy 53353
+trunk done (29s)
+qe2e: {'checkpoint': '/mnt/project-files/exact-combat-research/leaf-value/label-data-20261023/checkpoints/q_e2e.pt'} prod {'roots': 141754, 'rmse': 16.91, 'bias': 0.45} on-policy {'roots': 53353, 'rmse': 98.44, 'bias': 26.01}
+  ref epoch 0 stop-fold RMSE 18.471 (202s)
+  ref epoch 1 stop-fold RMSE 17.658 (308s)
+  ref epoch 2 stop-fold RMSE 17.469 (395s)
+  ref epoch 3 stop-fold RMSE 17.369 (503s)
+  ref epoch 4 stop-fold RMSE 17.516 (627s)
+  ref epoch 5 stop-fold RMSE 17.390 (737s)
+  ref epoch 6 stop-fold RMSE 17.472 (840s)
+  ref epoch 7 stop-fold RMSE 17.567 (1001s)
+  ref epoch 8 stop-fold RMSE 17.397 (1104s)
+ref: {'fit': 454345, 'fitRuns': 923, 'epochs': 9, 'stopRoots': 150982, 'stopRmse': 17.369} prod {'roots': 141754, 'rmse': 16.87, 'bias': -0.3} on-policy {'roots': 53353, 'rmse': 105.68, 'bias': 26.25}
+  onpolicy epoch 0 stop-fold RMSE 36.209 (1227s)
+  onpolicy epoch 1 stop-fold RMSE 37.014 (1351s)
+  onpolicy epoch 2 stop-fold RMSE 18.275 (1492s)
+  onpolicy epoch 3 stop-fold RMSE 18.033 (1690s)
+  onpolicy epoch 4 stop-fold RMSE 18.154 (1859s)
+  onpolicy epoch 5 stop-fold RMSE 18.611 (2021s)
+  onpolicy epoch 6 stop-fold RMSE 19.321 (2159s)
+  onpolicy epoch 7 stop-fold RMSE 28.452 (2345s)
+  onpolicy epoch 8 stop-fold RMSE 24.535 (2804s)
+onpolicy: {'fit': 620106, 'fitRuns': 1231, 'epochs': 9, 'stopRoots': 203853, 'stopRmse': 18.033} prod {'roots': 141754, 'rmse': 17.14, 'bias': -0.92} on-policy {'roots': 53353, 'rmse': 21.92, 'bias': 0.59}
+
+fold 4 of the prod pack, RMSE against the production label, Silver points
+group                roots      qe2e       ref  onpolicy
+all                 141754     16.91     16.87     17.14
+act 1                43325     11.61     11.92     11.62
+act 2                40853     15.32     15.46     15.75
+act 3                47556     18.47     18.35     18.75
+act 4                10020     29.77     28.96     29.86
+MONSTER              58050      9.87      9.91     10.07
+ELITE                42759     16.33     16.46     16.29
+BOSS                 37458     24.65     24.43     25.13
+EVENT                 3487     14.26     14.09     14.60
+turn 0               34871     17.81     17.71     17.35
+turn 1               29604     16.46     16.46     16.60
+turn 2               24971     15.27     15.51     15.90
+turn 3               18207     15.41     15.45     15.55
+turn 4               12769     17.06     16.76     17.19
+turn 5                8162     17.64     17.42     18.17
+turn 6+              13170     19.59     19.42     20.99
+act 1 ELITE          14519      9.88     10.18      9.92
+act 1 BOSS            9981     19.56     20.05     19.49
+act 2 ELITE          10651     15.44     15.70     15.54
+act 2 BOSS            8988     23.25     23.39     24.31
+act 3 ELITE          13648     19.09     19.20     18.92
+act 3 BOSS           12410     24.86     24.51     25.52
+act 4 ELITE           3941     25.05     24.83     25.00
+act 4 BOSS            6079     32.47     31.34     32.62
+
+fold 4 of the onpolicy pack, RMSE against the production label, Silver points
+group                roots      qe2e       ref  onpolicy
+all                  53353     98.44    105.68     21.92
+act 1                17652    164.58    178.85     19.05
+act 2                14833     19.54     20.07     17.79
+act 3                17447     39.43     33.57     24.38
+act 4                 3421     42.04     40.53     34.86
+MONSTER              23254    145.95    157.35     20.44
+ELITE                15166     21.21     21.01     16.80
+BOSS                 13448     32.60     31.08     28.89
+EVENT                 1485     18.40     18.21     16.48
+turn 0               10597     20.06     19.57     18.55
+turn 1                9738     19.89     19.29     18.01
+turn 2                8650     20.08     19.30     18.19
+turn 3                6371     21.91     21.04     19.00
+turn 4                4683     24.13     22.93     21.27
+turn 5                3147     24.43     23.43     21.41
+turn 6+              10167    221.25    238.43     31.52
+act 1 ELITE           5066     10.84     11.20     10.74
+act 1 BOSS            3359     21.46     21.67     19.30
+act 2 ELITE           3750     17.85     17.70     17.14
+act 2 BOSS            3523     29.45     29.32     26.57
+act 3 ELITE           4766     26.67     25.50     19.04
+act 3 BOSS            4729     33.44     31.02     29.79
+act 4 ELITE           1584     32.20     33.59     23.37
+act 4 BOSS            1837     48.96     45.68     42.33
+done (2806s)

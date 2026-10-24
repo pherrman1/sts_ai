@@ -1,0 +1,59 @@
+on-policy pack: 281924 roots, 11133 fights; production pack: 777993 roots, longest fight 44 turns
+fights with >=  20 turns:  113 (1.02%), won 98, roots 23294 (8.26% of roots)
+fights with >=  40 turns:   46 (0.41%), won 34, roots 16594 (5.89% of roots)
+fights with >= 100 turns:   24 (0.22%), won 18, roots 12796 (4.54% of roots)
+fights with >= 499 turns:   12 (0.11%), won 8, roots 7826 (2.78% of roots)
+long fights by encounter: THREE_SHAPES (act 3 MONSTER) 7, THREE_SENTRIES (act 1 ELITE) 5, LOTS_OF_SLIMES (act 1 MONSTER) 4, FOUR_SHAPES (act 3 MONSTER) 4, AWAKENED_ONE (act 3 BOSS) 3, CENTURION_AND_HEALER (act 2 MONSTER) 2, THREE_DARKLINGS (act 3 MONSTER) 2, DONU_AND_DECA (act 3 BOSS) 2, SMALL_SLIMES (act 1 MONSTER) 2, TWO_LOUSE (act 1 MONSTER) 2, THREE_LOUSE (act 1 MONSTER) 2, GREMLIN_GANG (act 1 MONSTER) 1, SENTRY_AND_SPHERE (act 2 MONSTER) 1, SLIME_BOSS (act 1 BOSS) 1, BLUE_SLAVER (act 1 MONSTER) 1, SPHERE_AND_TWO_SHAPES (act 3 MONSTER) 1, LARGE_SLIME (act 1 MONSTER) 1, NEMESIS (act 3 ELITE) 1, REPTOMANCER (act 3 ELITE) 1, JAW_WORM_HORDE (act 3 MONSTER) 1, SLIME_BOSS (act 3 EVENT) 1, TIME_EATER (act 3 BOSS) 1
+long fights: won 34 (HP lost 33.6 on average, 12 ended at 1 HP), died 8, lost alive at the turn limit 4
+long fights, HP at the first root -> end HP: 48->0 lost, 46->31, 80->53, 64->1, 28->1, 73->0 lost, 54->2, 35->0 lost, 31->1, 40->41, 48->1, 36->7, 71->71, 71->15, 75->30, 72->7, 69->41, 39->1, 82->82 lost, 75->1, 18->2, 60->4, 11->1, 31->4, 87->0 lost, 33->14, 38->46 lost, 37->0 lost, 57->57, 69->0 lost, 66->1, 75->29 lost, 93->96 lost, 57->26, 83->0 lost, 42->41, 67->1, 47->1, 59->11, 54->32, 57->6, 50->8, 28->1, 74->74, 23->1, 73->0 lost
+
+qe2e: fold 4 of the on-policy pack, RMSE (bias) against the label, Silver points
+  all                     53353    98.44 ( +26.01)
+  fights < 40 turns       49963    22.35 (  +6.88)
+  fights >= 40 turns       3390   380.96 (+307.91)
+    short MONSTER         19864    12.98 (  +3.83)
+    short ELITE           15166    21.21 (  +6.45)
+    short BOSS            13448    32.60 ( +11.89)
+    short EVENT            1485    18.40 (  +6.66)
+    short turn 6+          6937    28.72 ( +12.37)
+  long fights by turn: prediction / label
+    turns   0- 39   450 roots    126.8 /   111.5
+    turns  40- 99   403 roots    149.3 /    86.7
+    turns 100-199   686 roots    241.3 /    50.9
+    turns 200-299   629 roots    329.3 /     1.9
+    turns 300-399   653 roots    441.9 /   -42.5
+    turns 400-501   569 roots    552.4 /   -78.2
+
+ref: fold 4 of the on-policy pack, RMSE (bias) against the label, Silver points
+  all                     53353   105.68 ( +26.25)
+  fights < 40 turns       49963    21.83 (  +5.66)
+  fights >= 40 turns       3390   410.80 (+329.62)
+    short MONSTER         19864    13.52 (  +3.14)
+    short ELITE           15166    21.01 (  +5.24)
+    short BOSS            13448    31.08 (  +9.87)
+    short EVENT            1485    18.21 (  +5.61)
+    short turn 6+          6937    29.18 ( +11.32)
+  long fights by turn: prediction / label
+    turns   0- 39   450 roots    124.3 /   111.5
+    turns  40- 99   403 roots    162.2 /    86.7
+    turns 100-199   686 roots    256.2 /    50.9
+    turns 200-299   629 roots    352.1 /     1.9
+    turns 300-399   653 roots    469.0 /   -42.5
+    turns 400-501   569 roots    600.3 /   -78.2
+
+onpolicy: fold 4 of the on-policy pack, RMSE (bias) against the label, Silver points
+  all                     53353    21.92 (  +0.59)
+  fights < 40 turns       49963    19.16 (  +2.21)
+  fights >= 40 turns       3390    46.34 ( -23.32)
+    short MONSTER         19864    11.08 (  +1.35)
+    short ELITE           15166    16.80 (  +1.38)
+    short BOSS            13448    28.89 (  +4.26)
+    short EVENT            1485    16.48 (  +3.64)
+    short turn 6+          6937    20.19 (  +2.81)
+  long fights by turn: prediction / label
+    turns   0- 39   450 roots    110.5 /   111.5
+    turns  40- 99   403 roots     71.6 /    86.7
+    turns 100-199   686 roots     42.1 /    50.9
+    turns 200-299   629 roots    -32.0 /     1.9
+    turns 300-399   653 roots    -77.2 /   -42.5
+    turns 400-501   569 roots   -117.7 /   -78.2
