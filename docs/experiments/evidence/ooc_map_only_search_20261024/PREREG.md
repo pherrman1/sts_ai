@@ -82,3 +82,9 @@ Pre-launch checks (results in `SMOKE.md`):
 - MAP keeps D's search budget per map root at 4096 with the learned stop; the stop was trained on all screens.
 - The gen-0 attribution is observational (first-divergence classes are not randomized); this screen is the
   randomized test of it.
+
+## Addendum (2026-10-24, pre-launch review; doc only, RUN_COMMIT unchanged)
+Act-4 comparability: the base `61a536fe` plays real Act-4 combats (Spear and Shield, Heart) like every other real
+combat, with the learned Silver stop (`STS_SILVER_LEARNED_STOP=1`, model `gbt-0cac7cc64364`) and exact root budgets.
+The Act-4 strong search of #852 (`STS_SILVER_ACT4_STRONG`) is not on this base, so its CPU and memory profile does not
+apply. All three arms share this Act-4 play; the screen changes only OOC decisions.
