@@ -24392,7 +24392,7 @@ under the learned stop plays S&S at flat 10k with prior playouts and the Heart a
 Seeds: none new (§681's seeds replayed).
 **Knowledge impact:** `operations/environment-variables.md`, `evaluation/current-research.md`.
 
-## §TBD — Map-only OOC search screen at A20: OOC MCTS only at map roots (full budget) reaches Act 4 +4.8 pp [+2.3, +7.3] more often than no search, and today's all-screen search adds nothing over it (Heart D − MAP −1.4 pp [−4.0, +1.4]); PASS (1,024 paired seeds × 3 arms, 2026-10-24)
+## §683 — Map-only OOC search screen at A20: OOC MCTS only at map roots (full budget) reaches Act 4 +4.8 pp [+2.3, +7.3] more often than no search, and today's all-screen search adds nothing over it (Heart D − MAP −1.4 pp [−4.0, +1.4]); PASS (1,024 paired seeds × 3 arms, 2026-10-24)
 
 **Question:** the OOC direction review (2026-10-24) found gen-0's search gain (§569) in pairs whose first divergence
 was a map override. Does map search alone beat no OOC search (MAP − OFF), and does today's default gain anything from
