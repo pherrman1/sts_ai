@@ -1,0 +1,9 @@
+name          act4-combat-strength
+code_commit   888bda4013f8414d0ce34a5860f51332891eda7d
+binary_sha256 00d3f309d16df0de31da64242b6a62c2c7a84830953d418c6ac316cfd1d79f4b
+workers       32
+share         /mnt/project-files/act4-combat-strength
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 30

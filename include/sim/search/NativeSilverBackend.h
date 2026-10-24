@@ -53,6 +53,10 @@ namespace sts::search {
     bool nativeSilverSearchesSingletonRoots();
     // Node count at which the retained graph is compacted on reroot.
     std::int64_t nativeSilverReuseCap();
+    // ADR-0060 (STS_SILVER_ACT4_STRONG, default on): whole-run Act-4 fights under the learned stop play Shield
+    // and Spear at flat 10k with prior playouts and the Heart at flat 40k with a 262,144-node reuse cap. True when
+    // the option is on and the process options let it apply (learned stop, root prior on for every fight).
+    bool nativeSilverAct4Strong();
 
     // Decisions and simulations of the current thread's latest combat.
     struct NativeSilverCombatStats {
@@ -119,6 +123,8 @@ namespace sts::search {
         std::string leafHead, leafHeadTrunk;
         double leafHeadBlend, leafHeadTurnPenalty;
         bool leafHeadWinCap;
+        // ADR-0060 Act-4 fights (nativeSilverAct4Strong()).
+        bool act4Strong;
     };
     NativeSilverLeafSettings nativeSilverLeafSettings();
     // A leaf head from the environment: <prefix>=<silver_value_head_v1 file> (unset or 0 = none) on the trunk of

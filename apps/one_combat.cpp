@@ -3081,7 +3081,7 @@ static std::string unsupportedSilverOption() {
         {"STS_SILVER_SEARCH", ""}, {"STS_SILVER_ADAPTIVE", ""},
         {"STS_SILVER_ADAPTIVE_TOP_GAP", ""}, {"STS_SILVER_ADAPTIVE_RETAINED_ONLY", "1"},
         {"STS_SILVER_EXACT_ROOT_BUDGETS", ""}, {"STS_SILVER_SEARCH_SINGLETON_ROOTS", ""},
-        {"STS_SILVER_REUSE_CAP_MODE", "allocated"},
+        {"STS_SILVER_REUSE_CAP_MODE", "allocated"}, {"STS_SILVER_NODE_REUSE_CAP", ""}, {"STS_SILVER_ACT4_STRONG", ""},
         {"STS_SILVER_VNET_LEAF_DIRECT", "0"}, {"STS_SILVER_TELEMETRY", "0"},
         {"STS_SILVER_USELESS_TRACE", ""}, {"STS_SILVER_PUBLIC_TRACE", ""}, {"STS_SILVER_PUBLIC_TARGET", ""}, {"STS_SILVER_TREE_PROFILE", ""}, {"STS_SILVER_DEBUG_TREE", ""}, {"STS_SILVER_DEBUG_TREE_NODE_CAP", ""},
         {"STS_SILVER_LEARNED_STOP", ""}, {"STS_SILVER_LEARNED_STOP_THRESHOLD", ""},
@@ -3685,6 +3685,7 @@ int main(int argc, char **argv) {
                       ? std::string(" ") + search::nativeSilverStopModelId() : std::string{})
               << (search::nativeSilverExactRootBudgets() ? "; exact root budgets" : "")
               << (search::nativeSilverSearchesSingletonRoots() ? "" : "; one-action roots unsearched")
+              << (search::nativeSilverAct4Strong() ? "; Act 4 strong (S&S 10k prior playouts, Heart 40k)" : "")
               << "]\n";
     if (const char *d = std::getenv("STS_FORCE_RELIC"); d && *d) { // force a relic at run start (paired A/B)
         const std::string name(d);
