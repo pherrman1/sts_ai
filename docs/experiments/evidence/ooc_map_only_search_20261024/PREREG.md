@@ -49,8 +49,9 @@ Pre-launch checks (results in `SMOKE.md`):
   guard clean). One unit = one seed with D, MAP, OFF in sequence (order rotated by seed % 3) on one lane.
 - Extension (only if the rule says EXTEND): **111375124–111376147** (another 1,024, same block).
 - Smokes: 111375990–111375999.
-- Cost estimate: D ~10–12 min, MAP ~5–7 min, OFF ~3–4 min per game (Silver combats dominate) -> ~20 min per unit,
-  ~340 core-hours for 1,024 units; on 32 workers × 4 lanes ~2.7 h wall plus a straggler tail.
+- Cost (smoke seed 111375990, 4 lanes busy): D 689 s, MAP 647 s, OFF 216 s -> ~26 min per unit, ~450 core-hours for
+  1,024 units; on 32 workers × 4 lanes ~3.5 h wall plus a straggler tail. MAP costs about as much as D because every
+  map root runs the full budget.
 
 ## Endpoints
 - **Primary:** Act-4 arrival, MAP − OFF, paired: exact discordance counts (exact McNemar p) and a 95% seed-bootstrap
@@ -75,8 +76,8 @@ Pre-launch checks (results in `SMOKE.md`):
   no default change from this screen.
 
 ## Known limitations
-- Equal CPU is not required here; MAP is much cheaper than D (few map roots, each at full budget), so a tie D ≈ MAP
-  is already an efficiency win. The wall ratios are reported.
+- Equal CPU is not required here and MAP is about as expensive as D (smoke: 0.94x wall), so this screen says where
+  the gain sits, not that MAP saves CPU; a MAP default would need its own matched-CPU A/B. The wall ratios are reported.
 - 1,024 seeds resolve about ±2.5 pp on Act-4 arrival (paired); this is a screen, not a qualification.
 - MAP keeps D's search budget per map root at 4096 with the learned stop; the stop was trained on all screens.
 - The gen-0 attribution is observational (first-divergence classes are not randomized); this screen is the

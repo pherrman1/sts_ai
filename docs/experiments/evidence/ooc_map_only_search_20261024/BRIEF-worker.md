@@ -22,4 +22,4 @@ If any step is refused or prints STOP, reply with the exact output and stop. Do 
 Never kill a unit or one_combat process. A unit that times out ends with rc=124, and the run continues.
 If the container restarts, run steps 1-3 again at once (finished units are skipped).
 Keep the session alive until you are told the tar is verified.
-Expect about __UNIT_MIN__ min per unit (three games: D, MAP, OFF), 4 units at a time.
+Expect about 26 min per unit (three games: D, MAP, OFF), 4 units at a time.

@@ -46,17 +46,20 @@ def arm_record(read, a, s):
     if foot.get('type') != 'outcome' or not foot.get('complete') or not foot.get('integrityPassed'):
         return None, rc
     states = [r for r in rows if r.get('type') == 'state']
-    decisions = [r for r in rows if r.get('type') == 'decision' and r.get('executed')]
+    # Non-MCTS decision rows carry no 'executed' field; MCTS rows with executed=false (root boundary) were not played.
+    decisions = [r for r in rows if r.get('type') == 'decision' and r.get('executed', True)]
+    screen_of = {r['index']: r.get('screen') for r in states}
     d = {'foot': foot, 'wall': int(re.search(r'wall=(\d+)', done).group(1)),
          'states': [json.dumps(r.get('record'), sort_keys=True) for r in states],
+         'stateMeta': [(r.get('act'), r.get('floor'), r.get('screen')) for r in states],
          'byState': {r['stateIndex']: r for r in decisions},
-         'by': Counter((r['by'], SCREEN.get(r.get('screen'), str(r.get('screen')))) for r in decisions),
+         'by': Counter((r['by'], SCREEN.get(screen_of.get(r.get('stateIndex')), '?')) for r in decisions),
          'roots': Counter(), 'offPrior': Counter()}
     for r in decisions:
         root = r.get('root')
         if r['by'] != 'mcts' or not root or not root.get('candidates'):
             continue
-        sc = SCREEN.get(r.get('screen'), str(r.get('screen')))
+        sc = SCREEN.get(screen_of.get(r.get('stateIndex')), '?')
         d['roots'][sc] += 1
         best = max(root['candidates'], key=lambda c: c.get('prior', 0))
         d['offPrior'][sc] += best.get('key') != r.get('selectedKey')
@@ -68,10 +71,11 @@ def first_divergence(x, y):
     i = next((k for k in range(n) if x['states'][k] != y['states'][k]), None)
     if i is None:
         return None
+    if i == 0:
+        return {'state': 0, 'act': None, 'floor': None, 'screen': 'start', 'by': 'none/none'}
     dx, dy = x['byState'].get(i - 1), y['byState'].get(i - 1)
-    ref = dx or dy or {}
-    return {'state': i, 'act': ref.get('act'), 'floor': ref.get('floor'),
-            'screen': SCREEN.get(ref.get('screen'), str(ref.get('screen'))),
+    act, floor, screen = x['stateMeta'][i - 1]
+    return {'state': i, 'act': act, 'floor': floor, 'screen': SCREEN.get(screen, str(screen)),
             'by': f"{(dx or {}).get('by')}/{(dy or {}).get('by')}"}
 
 
