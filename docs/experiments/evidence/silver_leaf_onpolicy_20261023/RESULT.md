@@ -181,6 +181,7 @@ For any later decision:
 - `RESULT.md` (this file); `stalls.py` and `shift_split.py` (descriptive, written after the pre-registered steps).
 - `results/`: verify.txt, outcomes.txt, pack.txt, shift.txt/.json, shift_split*.txt/.json, stalls.txt, train.txt,
   fits.json, parity.txt, exact_leaves.txt; smoke_{qe2e,onp1,onp1p}_analysis.txt, .json and _inputs.txt (onp1p = the
-  exploratory 255-unit fit); pair.txt/.json (onp1 against qe2e) and pair_onp1p.txt/.json (exploratory).
+  exploratory 255-unit fit); pair.txt/.json (onp1 against qe2e) and pair_onp1p.txt/.json (exploratory);
+  train_255.txt (the exploratory fits on 255 units).
 - Nets and checkpoints (not in git): `/mnt/project-files/silver-leaf-onpolicy/nets/` (onp1 trunk and head, the
   onpolicy and ref checkpoints; the exploratory fit in `onp1_255/`; `SHA256SUMS` in each).
