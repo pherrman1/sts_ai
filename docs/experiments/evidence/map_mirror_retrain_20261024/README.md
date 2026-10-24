@@ -37,6 +37,7 @@ Passing makes F an offline candidate only; an A20 A/B needs Philipp's separate a
 | map mean JS (p99) | 0.040 (0.465) | 0.0001 (0.0018) |
 | map agreement with heart1, original / mirrored | 91.8% / 80.8% (mean 86.3%) | 86.9% / 86.8% (mean 86.9%) |
 | map agreement act 1 / 2 / 3 (original) | 94.7 / 92.2 / 86.8% | 93.0 / 87.2 / 77.6% |
+| map agreement act start (original), the largest drop | 91.1% | 79.4% |
 | non-map flips | 0.25% | 0.10% |
 
 Start column chosen at act start (`startcols.m50.json`): F original 822 / 487 / 1887 / 1259 / 1701 / 389 / 221,
