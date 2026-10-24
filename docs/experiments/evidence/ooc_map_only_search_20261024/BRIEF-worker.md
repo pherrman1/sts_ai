@@ -3,7 +3,7 @@
 YOUR WORKER NUMBER: W=<n>   (pass it unpadded; never 03)
 RUN_COMMIT=__RUN_COMMIT__  CAMPAIGN=docs/experiments/evidence/ooc_map_only_search_20261024
 
-Philipp authorized this run (__AUTHORIZATION__).
+Philipp authorized this run (2026-10-24 18:56Z, "lets go, 32 workers.").
 - Do not change seeds, scripts, environments, binary, weights or timeouts.
 - Work in /home/user/sts_ai. Run nothing from /mnt/project-files (noexec).
 - The worker script uploads only to /mnt/project-files/ooc-map-only-search (units/, claims/, wWW.DONE.json). Write

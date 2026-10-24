@@ -4,8 +4,8 @@ Written 2026-10-24 before any campaign game ran. Origin: the OOC direction revie
 (`/mnt/project-files/ooc-direction-review/REPORT.html`), experiment 1; Philipp, 2026-10-24 18:28Z: "lets start with 1
 and open for 2 and 3 and issue each in github". Issue #854.
 
-**Authorization:** NOT YET. This file freezes the design; the campaign starts only after Philipp's typed go and his
-worker count. Smokes use the smoke block below only.
+**Authorization:** Philipp, 2026-10-24 18:56Z: "lets go, 32 workers." 1,024 paired A20 seeds × 3 arms on 32 cloud
+workers. The independent pre-launch review (reviewer J) runs in parallel; a blocking finding stops the campaign.
 
 ## Question
 The review found that gen-0's whole search gain (§569, +40 kills on 1,664 pairs) sits in pairs whose first divergence

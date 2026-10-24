@@ -1,7 +1,7 @@
 name          ooc-map-only-search
-code_commit   __RUN_COMMIT__
-binary_sha256 __BINARY_SHA256__
-workers       __WORKERS__
+code_commit   a29681868a5fca41b1b283ed9ff97f22eaa0f78e
+binary_sha256 6c7747a9639a19cdd8a93db6d4964b07afcab83e27d1da82d0d70ce9d9a483d4
+workers       32
 share         /mnt/project-files/ooc-map-only-search
 configure_preset linux-gcc-release-x86-64-v3
 parallel      4
