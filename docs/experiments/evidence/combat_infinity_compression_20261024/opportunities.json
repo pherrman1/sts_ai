@@ -16,7 +16,7 @@
       "adds": [],
       "removes": [],
       "engine_threat": false,
-      "label": "random common relic (Neow drawback enum1)",
+      "label": "random common relic (drawback: none)",
       "deck_effect": "reward/selector or coupled random relic outcome; not an observed independent card deletion"
     },
     "gold": 99,
@@ -45,8 +45,8 @@
         "adds": [],
         "removes": [],
         "engine_threat": false,
-        "label": "remove one (Neow drawback enum1)",
-        "deck_effect": "reward/selector or coupled random relic outcome; not an observed independent card deletion",
+        "label": "remove one (drawback: none)",
+        "deck_effect": "remove one legal selected card, -1 permanent; if starter selected before Pandora the future batch changes",
         "engine_note": "changes pre-Pandora starter count if a starter is selected; coupled, not independently counted"
       },
       {
@@ -57,7 +57,7 @@
         "adds": [],
         "removes": [],
         "engine_threat": false,
-        "label": "random common relic (Neow drawback enum1)",
+        "label": "random common relic (drawback: none)",
         "deck_effect": "reward/selector or coupled random relic outcome; not an observed independent card deletion"
       },
       {
@@ -65,11 +65,14 @@
         "effect": 26,
         "gold_cost": 0,
         "same_map_path_structurally": true,
-        "adds": [],
+        "adds": [
+          "one unobserved random curse"
+        ],
         "removes": [],
         "engine_threat": false,
-        "label": "250 gold (Neow drawback enum4)",
-        "deck_effect": "reward/selector or coupled random relic outcome; not an observed independent card deletion"
+        "label": "250 gold (drawback: one random curse)",
+        "deck_effect": "reward/selector or coupled random relic outcome; not an observed independent card deletion; curse drawback adds one permanent card",
+        "gold_gain": 250
       },
       {
         "key": "ooc:v1:effect=26:source=5:event=5:option=3",
@@ -79,7 +82,7 @@
         "adds": [],
         "removes": [],
         "engine_threat": false,
-        "label": "boss relic swap (Neow drawback enum6)",
+        "label": "boss relic swap (drawback: lose starter relic)",
         "deck_effect": "reward/selector or coupled random relic outcome; not an observed independent card deletion"
       }
     ],
@@ -1577,8 +1580,8 @@
       "adds": [],
       "removes": [],
       "engine_threat": false,
-      "label": "choose three cards (Neow drawback enum1)",
-      "deck_effect": "reward/selector or coupled random relic outcome; not an observed independent card deletion"
+      "label": "choose three cards (drawback: none)",
+      "deck_effect": "one optional card-reward group; pick adds one card, SKIP adds none"
     },
     "gold": 99,
     "deck_before": [
@@ -1606,8 +1609,8 @@
         "adds": [],
         "removes": [],
         "engine_threat": false,
-        "label": "choose three cards (Neow drawback enum1)",
-        "deck_effect": "reward/selector or coupled random relic outcome; not an observed independent card deletion"
+        "label": "choose three cards (drawback: none)",
+        "deck_effect": "one optional card-reward group; pick adds one card, SKIP adds none"
       },
       {
         "key": "ooc:v1:effect=26:source=5:event=5:option=1",
@@ -1617,7 +1620,7 @@
         "adds": [],
         "removes": [],
         "engine_threat": false,
-        "label": "three potions (Neow drawback enum1)",
+        "label": "three potions (drawback: none)",
         "deck_effect": "reward/selector or coupled random relic outcome; not an observed independent card deletion"
       },
       {
@@ -1628,7 +1631,7 @@
         "adds": [],
         "removes": [],
         "engine_threat": false,
-        "label": "rare relic (Neow drawback enum5)",
+        "label": "rare relic (drawback: HP becomes floor(HP/10)*7)",
         "deck_effect": "reward/selector or coupled random relic outcome; not an observed independent card deletion"
       },
       {
@@ -1639,7 +1642,7 @@
         "adds": [],
         "removes": [],
         "engine_threat": false,
-        "label": "boss relic swap (Neow drawback enum6)",
+        "label": "boss relic swap (drawback: lose starter relic)",
         "deck_effect": "reward/selector or coupled random relic outcome; not an observed independent card deletion"
       }
     ],
@@ -7671,8 +7674,9 @@
       "adds": [],
       "removes": [],
       "engine_threat": false,
-      "label": "100 gold (Neow drawback enum1)",
-      "deck_effect": "reward/selector or coupled random relic outcome; not an observed independent card deletion"
+      "label": "100 gold (drawback: none)",
+      "deck_effect": "reward/selector or coupled random relic outcome; not an observed independent card deletion",
+      "gold_gain": 100
     },
     "gold": 99,
     "deck_before": [
@@ -7700,8 +7704,8 @@
         "adds": [],
         "removes": [],
         "engine_threat": false,
-        "label": "choose three cards (Neow drawback enum1)",
-        "deck_effect": "reward/selector or coupled random relic outcome; not an observed independent card deletion"
+        "label": "choose three cards (drawback: none)",
+        "deck_effect": "one optional card-reward group; pick adds one card, SKIP adds none"
       },
       {
         "key": "ooc:v1:effect=26:source=5:event=5:option=1",
@@ -7711,8 +7715,9 @@
         "adds": [],
         "removes": [],
         "engine_threat": false,
-        "label": "100 gold (Neow drawback enum1)",
-        "deck_effect": "reward/selector or coupled random relic outcome; not an observed independent card deletion"
+        "label": "100 gold (drawback: none)",
+        "deck_effect": "reward/selector or coupled random relic outcome; not an observed independent card deletion",
+        "gold_gain": 100
       },
       {
         "key": "ooc:v1:effect=26:source=5:event=5:option=2",
@@ -7722,8 +7727,8 @@
         "adds": [],
         "removes": [],
         "engine_threat": false,
-        "label": "rare colorless reward (Neow drawback enum2)",
-        "deck_effect": "reward/selector or coupled random relic outcome; not an observed independent card deletion"
+        "label": "rare colorless reward (drawback: 10% max HP loss)",
+        "deck_effect": "one optional card-reward group; pick adds one card, SKIP adds none"
       },
       {
         "key": "ooc:v1:effect=26:source=5:event=5:option=3",
@@ -7733,7 +7738,7 @@
         "adds": [],
         "removes": [],
         "engine_threat": false,
-        "label": "boss relic swap (Neow drawback enum6)",
+        "label": "boss relic swap (drawback: lose starter relic)",
         "deck_effect": "reward/selector or coupled random relic outcome; not an observed independent card deletion"
       }
     ],

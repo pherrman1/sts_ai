@@ -88,7 +88,11 @@ def generate():
     if sib['effect']==26:
      option=int(re.search(r':option=(\d+)',sib['key'])[1]);event=r['pre']['event']
      if event=='NEOW':
-      n=root['neow_offers'][option];sib['label']=bonuses[n['r']]+f" (Neow drawback enum{n['d']})";sib['deck_effect']='reward/selector or coupled random relic outcome; not an observed independent card deletion'
+      n=root['neow_offers'][option];drawbacks=['invalid','none','10% max HP loss','lose all gold','one random curse','HP becomes floor(HP/10)*7','lose starter relic'];sib['label']=bonuses[n['r']]+' (drawback: '+drawbacks[n['d']]+')';sib['deck_effect']='reward/selector or coupled random relic outcome; not an observed independent card deletion'
+      if n['r']==2:sib['deck_effect']='remove one legal selected card, -1 permanent; if starter selected before Pandora the future batch changes'
+      if n['r'] in [0,11]:sib['deck_effect']='one optional card-reward group; pick adds one card, SKIP adds none'
+      if n['r'] in [10,15]:sib['gold_gain']=100 if n['r']==10 else 250
+      if n['d']==4:sib['adds']=['one unobserved random curse'];sib['deck_effect']+='; curse drawback adds one permanent card'
      elif event=='The Cleric':sib['label']={0:'heal35g (excludes removal)',2:'leave'}[option];sib['gold_cost']=35 if option==0 else 0;sib['deck_effect']='no permanent deck change'
      elif event=='Sensory Stone':sib['label']=f'{option+1} colorless reward group(s), {5*option} HP';sib['deck_effect']='0 immediate cards; each group subsequently permits pick or SKIP; earlier group generation prefix unchanged'
      elif event=='Shining Light':sib['label']='upgrade two random cards, HP cost' if option==0 else 'leave';sib['deck_effect']='upgrades only, permanent cardinality unchanged'

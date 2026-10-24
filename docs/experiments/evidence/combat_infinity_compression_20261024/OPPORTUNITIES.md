@@ -4,7 +4,7 @@ All siblings in opportunities.json are receipt-bound legal semantic keys, withou
 
 | Run | Trace / decision / floor | Screen / event | Historical action | SKIP? | Gold | Legal siblings / composition effect |
 |---|---|---|---|---|---:|---|
-| 111101032 | 0 / 0 / 0 | EVENT NEOW | random common relic (Neow drawback enum1) | no | 99 | remove one (Neow drawback enum1); random common relic (Neow drawback enum1); 250 gold (Neow drawback enum4); boss relic swap (Neow drawback enum6) |
+| 111101032 | 0 / 0 / 0 | EVENT NEOW | random common relic (drawback: none) | no | 99 | remove one (drawback: none); random common relic (drawback: none); 250 gold (drawback: one random curse); boss relic swap (drawback: lose starter relic) |
 | 111101032 | 4 / 3 / 1 | REWARDS  | pick FLAME_BARRIER | yes | 119 | SKIP this card-reward group; pick FLAME_BARRIER; pick INFERNAL_BLADE; pick CLEAVE |
 | 111101032 | 6 / 5 / 2 | EVENT Transmorgrifier | transform FLAME_BARRIER | no | 119 | leave; transform DEFEND_RED; transform FLAME_BARRIER; transform BASH; transform STRIKE_RED |
 | 111101032 | 11 / 9 / 3 | REWARDS  | SKIP this card-reward group | yes | 137 | SKIP this card-reward group; pick SWORD_BOOMERANG; pick BODY_SLAM; pick COMBUST |
@@ -18,7 +18,7 @@ All siblings in opportunities.json are receipt-bound legal semantic keys, withou
 | 111101032 | 55 / 46 / 14 | REWARDS  | SKIP this card-reward group | yes | 229 | SKIP this card-reward group; pick SWORD_BOOMERANG; pick TRUE_GRIT; pick WILD_STRIKE |
 | 111101032 | 63 / 53 / 16 | REWARDS  | pick REAPER | yes | 302 | SKIP this card-reward group; pick DEMON_FORM; pick REAPER; pick CORRUPTION |
 | 111101032 | 64 / 54 / 17 | BOSS_RELIC  | take boss relic PANDORAS_BOX | yes | 302 | take boss relic ASTROLABE; take boss relic PANDORAS_BOX; take boss relic RUNIC_DOME; SKIP boss relic |
-| 111101326 | 0 / 0 / 0 | EVENT NEOW | choose three cards (Neow drawback enum1) | no | 99 | choose three cards (Neow drawback enum1); three potions (Neow drawback enum1); rare relic (Neow drawback enum5); boss relic swap (Neow drawback enum6) |
+| 111101326 | 0 / 0 / 0 | EVENT NEOW | choose three cards (drawback: none) | no | 99 | choose three cards (drawback: none); three potions (drawback: none); rare relic (drawback: HP becomes floor(HP/10)*7); boss relic swap (drawback: lose starter relic) |
 | 111101326 | 1 / 1 / 0 | REWARDS  | pick HEADBUTT | yes | 99 | SKIP this card-reward group; pick DROPKICK; pick HEADBUTT; pick DARK_EMBRACE |
 | 111101326 | 5 / 4 / 1 | REWARDS  | pick HEADBUTT | yes | 110 | SKIP this card-reward group; pick ARMAMENTS; pick FLEX; pick HEADBUTT |
 | 111101326 | 7 / 6 / 2 | SHOP  | buy DRAMATIC_ENTRANCE | no | 110 | remove DEFEND_RED (75g); remove HEADBUTT (75g); remove BASH (75g); remove STRIKE_RED (75g); buy ANGER (38g); buy DRAMATIC_ENTRANCE (72g); buy ARMAMENTS (19g); buy RECKLESS_CHARGE (60g); buy RUPTURE (59g); buy SHRUG_IT_OFF (37g); buy potion (no permanent card change) (40g); buy potion (no permanent card change) (42g); buy potion (no permanent card change) (41g); leave shop |
@@ -57,7 +57,7 @@ All siblings in opportunities.json are receipt-bound legal semantic keys, withou
 | 111101326 | 131 / 113 / 36 | REWARDS  | pick PANIC_BUTTON | yes | 93 | SKIP this card-reward group; SKIP this card-reward group; SKIP this card-reward group; semantic effect 14; pick ENLIGHTENMENT; pick FLASH_OF_STEEL; pick FLASH_OF_STEEL; pick FORETHOUGHT; pick JACK_OF_ALL_TRADES; pick PANACEA; pick PANIC_BUTTON; pick SADISTIC_NATURE; pick SECRET_WEAPON |
 | 111101326 | 132 / 114 / 36 | REWARDS  | pick FLASH_OF_STEEL | yes | 93 | SKIP this card-reward group; SKIP this card-reward group; semantic effect 14; pick FLASH_OF_STEEL; pick FLASH_OF_STEEL; pick FORETHOUGHT; pick JACK_OF_ALL_TRADES; pick SADISTIC_NATURE; pick SECRET_WEAPON |
 | 111101326 | 133 / 115 / 36 | REWARDS  | pick FLASH_OF_STEEL | yes | 93 | SKIP this card-reward group; pick FLASH_OF_STEEL; pick SADISTIC_NATURE; pick SECRET_WEAPON |
-| 111101512 | 0 / 0 / 0 | EVENT NEOW | 100 gold (Neow drawback enum1) | no | 99 | choose three cards (Neow drawback enum1); 100 gold (Neow drawback enum1); rare colorless reward (Neow drawback enum2); boss relic swap (Neow drawback enum6) |
+| 111101512 | 0 / 0 / 0 | EVENT NEOW | 100 gold (drawback: none) | no | 99 | choose three cards (drawback: none); 100 gold (drawback: none); rare colorless reward (drawback: 10% max HP loss); boss relic swap (drawback: lose starter relic) |
 | 111101512 | 4 / 3 / 1 | REWARDS  | pick CLOTHESLINE | yes | 219 | SKIP this card-reward group; pick FLEX; pick SWORD_BOOMERANG; pick CLOTHESLINE |
 | 111101512 | 8 / 6 / 2 | REWARDS  | pick IRON_WAVE | yes | 231 | SKIP this card-reward group; pick IRON_WAVE; pick SWORD_BOOMERANG; pick WARCRY |
 | 111101512 | 12 / 9 / 3 | REWARDS  | pick TWIN_STRIKE | yes | 247 | SKIP this card-reward group; pick SWORD_BOOMERANG; pick TWIN_STRIKE; pick WARCRY |
