@@ -24012,6 +24012,29 @@ campaigns, backup copies of stragglers on idle workers once the queue is empty.
 - Seeds 111360000–111360255 used; smokes 111369991–111369993 used (111369990–111369999 assigned).
 - **Knowledge impact:** `evaluation/current-research.md`.
 
+## §TBD-natural Infinity public-root annotation — provenance-backed historical sample (2026-10-24)
+
+Existing #844 branch, baseline `e41dcef5b734b5187d9552c1e41b9f8b6b5ef1cd`;
+preregistered inputs frozen at `28c28eecd` before execution. Fixed first16 public
+normal decisions from the retained A0 Champ capture, K=4, existing caps unchanged.
+Same-receipt public/OOC/full-relic inventory join proves no Shard. No hidden draw
+order/run RNG as teacher, new gameplay, capture patch, model or production change.
+
+Annotation feasibility PASS: 16 eligible roots/64 supported worlds, 0 unsupported.
+All64 NONE, no damaging candidate/certified kill; useful natural signal remains
+NOT ESTABLISHED. Twelve worlds at three roots hit node2000 and are inconclusive;
+no depth/candidate cap hits. Other bounded NONE observations are not unrestricted
+absence proofs or qualified negative training labels. Zero replay actions.
+Different draw orders at all16 roots and search diagnostics at six, but no label
+disagreement. Oracle CPU103.835ms total, median0.1605ms/max6.190ms per world;
+four-command wall137.640ms, 39,664nodes, maximum depth8. Single-pass timings only.
+
+[Protocol, custody, raw sidecars/receipts, matrix, manual examples and limitations](evidence/combat_infinity_natural_20261024/REPORT.md).
+One historical A0 encounter/older policy with correlated roots, not current-policy
+coverage/prevalence/recall/calibration. The earlier four native8 roots retain
+BLOCKED/null labels. Stop after the tiny pilot; no model probing or scale-up.
+Knowledge impact: maintained research status updated for this separate sample.
+
 ## §TBD-public Infinity public-root annotation pilot — K=4 contract and coverage (2026-10-23)
 
 Baseline reviewed phase-2 `59d7c463f733c9fb23ccef194d9d3d5c1dd9a3ff` (dependent
