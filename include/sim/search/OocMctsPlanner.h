@@ -59,6 +59,14 @@ public:
     // one chance node with equal keys must have the same future distribution
     // (the provider re-samples everything the key omits). Empty never merges.
     virtual std::optional<std::uint64_t> outcomeEquivalenceKey(OocStateId) const { return std::nullopt; }
+    // Particle planners (OocParticlePlanner): combats a sampled successor
+    // resolved on the edge into it, and a leaf evaluation whose combat horizon
+    // is shortened by `spentCombats` the planner already played. The defaults
+    // count none and keep the ordinary leaf.
+    virtual unsigned edgeCombats(OocStateId) const { return 0; }
+    virtual OocLeafEvaluation evaluateLeafAfterCombats(OocStateId state, std::mt19937_64 &rng, unsigned) {
+        return evaluateLeafWithOutcome(state, rng);
+    }
 };
 struct OocRootActionStats {
     OocActionId id;
