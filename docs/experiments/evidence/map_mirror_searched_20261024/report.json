@@ -1,0 +1,74 @@
+{
+ "all": {
+  "n": 8745,
+  "sel_agrees_pi": 0.8715837621497999,
+  "f_agrees_pi": 0.8388793596340766,
+  "departures": 792,
+  "departure_rate": 0.09056603773584905,
+  "at_departures_pi_picks_sel": 0.6654040404040404,
+  "at_departures_pi_picks_f": 0.3042929292929293,
+  "at_departures_pi_picks_other": 0.030303030303030304,
+  "mean_sel_prob_of_f_move": 0.2790393095752076,
+  "mean_f_prob_of_sel_move": 0.3238845735660984
+ },
+ "act1": {
+  "n": 3528,
+  "sel_agrees_pi": 0.8653628117913832,
+  "f_agrees_pi": 0.8214285714285714,
+  "departures": 354,
+  "departure_rate": 0.10034013605442177,
+  "at_departures_pi_picks_sel": 0.6977401129943502,
+  "at_departures_pi_picks_f": 0.2598870056497175,
+  "at_departures_pi_picks_other": 0.0423728813559322,
+  "mean_sel_prob_of_f_move": 0.27205890057211396,
+  "mean_f_prob_of_sel_move": 0.31353248117979127
+ },
+ "start-of-act": {
+  "n": 1323,
+  "sel_agrees_pi": 0.8223733938019653,
+  "f_agrees_pi": 0.6772486772486772,
+  "departures": 362,
+  "departure_rate": 0.273620559334845,
+  "at_departures_pi_picks_sel": 0.7403314917127072,
+  "at_departures_pi_picks_f": 0.20994475138121546,
+  "at_departures_pi_picks_other": 0.049723756906077346,
+  "mean_sel_prob_of_f_move": 0.2260447282992057,
+  "mean_f_prob_of_sel_move": 0.30252388112070866
+ },
+ "act2": {
+  "n": 3239,
+  "sel_agrees_pi": 0.8863846866316765,
+  "f_agrees_pi": 0.853349799320778,
+  "departures": 290,
+  "departure_rate": 0.08953380673047237,
+  "at_departures_pi_picks_sel": 0.6724137931034483,
+  "at_departures_pi_picks_f": 0.30344827586206896,
+  "at_departures_pi_picks_other": 0.02413793103448276,
+  "mean_sel_prob_of_f_move": 0.2692725069094935,
+  "mean_f_prob_of_sel_move": 0.32583863477065744
+ },
+ "mid-act": {
+  "n": 7422,
+  "sel_agrees_pi": 0.8803556992724333,
+  "f_agrees_pi": 0.8676906494206413,
+  "departures": 430,
+  "departure_rate": 0.057935866343303694,
+  "at_departures_pi_picks_sel": 0.6023255813953489,
+  "at_departures_pi_picks_f": 0.38372093023255816,
+  "at_departures_pi_picks_other": 0.013953488372093023,
+  "mean_sel_prob_of_f_move": 0.3236533524168645,
+  "mean_f_prob_of_sel_move": 0.3418672960433803
+ },
+ "act3": {
+  "n": 1978,
+  "sel_agrees_pi": 0.8584428715874621,
+  "f_agrees_pi": 0.846309403437816,
+  "departures": 148,
+  "departure_rate": 0.07482305358948432,
+  "at_departures_pi_picks_sel": 0.5743243243243243,
+  "at_departures_pi_picks_f": 0.41216216216216217,
+  "at_departures_pi_picks_other": 0.013513513513513514,
+  "mean_sel_prob_of_f_move": 0.3148733471438021,
+  "mean_f_prob_of_sel_move": 0.3448167556973882
+ }
+}

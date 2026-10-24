@@ -24307,3 +24307,20 @@ games, with no cost in deaths. Playing strength is not measured; by Philipp's cr
 Seeds: none new (guard seeds 111392255 and 111392359 replayed for the game check).
 **Knowledge impact:** `architecture/out-of-combat.md`, `operations/environment-variables.md`,
 `evaluation/current-research.md`.
+## §678 — Mirror-trained prior F at real searched map roots: it changes 9.1% of map decisions (27% at act start), all near-ties whose q gap has no identified sign (pooled −0.3 pp P(kill), +1.0 pp where F's move got >= 1,000 visits); no A/B proposed (offline, 2026-10-24)
+
+**Question:** Philipp (2026-10-24 07:56Z), after §677: before an A/B, check offline what F would change in real play.
+**Setup:** [packet](evidence/map_mirror_searched_20261024/README.md). 8,745 searched map roots (>= 2 paths) of 2,176
+A20 runs searched with student_sel (AZ gen 0 + gen-1b arm A policy rows); student_sel and F scored natively; at each
+departure both moves' root q, visits and the played move from the raw captures (792 of 792 matched).
+**Result:** F ≠ student_sel at 9.1% of map roots (act start 27.4%, mid act 5.8%). At departures the search played
+student_sel's move 628 times, F's 137, other 27; median |dq| 0.012; pooled mean dP(kill) F − sel −0.31 pp, F's move
+higher q at 45.6%. By F's move's visits: < 100 −3.6 pp (n 77), 100–499 −2.0 (130), 500–999 −1.1 (150), >= 1,000
++1.0 pp (435, F higher at 64.8%). pi' agreement 87.2% vs 83.9%.
+**Interpretation:** the asymmetry of §674 sits on near-tie map choices. The sign of the gap is not identified
+(search-selection bias: q of barely explored moves is pessimistic), so the data cannot rank F against student_sel.
+A departure changes the prior's argmax, not the played move; ~0.36 departures per run at |dP| ~1 pp bounds the play
+effect at roughly ±0.4 pp per run (heuristic), below a 1,024-pair A/B's resolution, so no A/B is proposed. Mirror
+augmentation stays available (`--mirror`, default 0) for future priors.
+Seeds: none (offline).
+**Knowledge impact:** none.
