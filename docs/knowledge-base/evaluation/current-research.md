@@ -140,14 +140,24 @@ reward skips alone pass the screen; the two Flashes are Sensory Stone products,
 Corruption/Dark Embrace ordinary rewards. Mark of Pain adds two temporary
 Wounds, not permanent deck size.512's Sundial and two draw picks are separate.
 
-The [authorized one-treatment follow-up](../../experiments/evidence/combat_infinity_counterfactual_20261024/PROTOCOL.md)
-(§TBD-counterfactual) now tests a research-only patch to the exact historical
-source, leaving current production C++ and the original hash-identical runtime
-untouched. It must first pass exact flag-off137-state/136-trace parity. Only then
-may seed326 execute the unchanged13-group manifest once; engine acquisitions and
-all downstream decisions stay natural. Build/seed-free hook checks are complete;
-parity/treatment are not yet executed. There is no empirical compression/survival
-result yet. No beam, policy/model work, other lead or search-bound escalation.
+The [single frozen reward-skip counterfactual](../../experiments/evidence/combat_infinity_counterfactual_20261024/REPORT.md)
+(§TBD-counterfactual) resolves the compatible-runtime boundary with a research-only
+patch to historical d8fd2a10, leaving current production C++ and the original
+hash-identical runtime intact. The independently reviewed patched executable
+passed exact flag-off137-state/136-trace/full-header parity. One seed326 treatment
+then executed6 of13 frozen groups; seven never recurred. The first map node changed
+x5->x1, Dark Embrace was acquired at floor29, but Corruption/both Flashes were not
+offered or acquired. It died to Automaton on act2/floor33, before the historical
+engine-complete floor37. **COMPRESSION_SURVIVAL_TRADEOFF**, limited to this one
+intervention/seed; no general causal claim about individual skips or win rate.
+
+The engine never completed, so no capture replay, selected combat root or sampled
+world/oracle execution followed. Final23 permanent cards cannot be compared with
+the historical31 as an engine-preserving reduction; no counterfactual target active
+pool exists. The31->18 accounting projection was not realized. Engine-preserving
+actual compression and natural positive signal remain unestablished. This result
+does not justify a beam, alternate arm, oracle change or model work. Stop after
+this bounded experiment; prior unsupported/null roots and earlier results stand.
 
 ## AlphaZero-style OOC loop: open requirements
 

@@ -24012,27 +24012,35 @@ campaigns, backup copies of stragglers on idle workers once the queue is empty.
 - Seeds 111360000–111360255 used; smokes 111369991–111369993 used (111369990–111369999 assigned).
 - **Knowledge impact:** `evaluation/current-research.md`.
 
-## §TBD-counterfactual Frozen13 reward-skip intervention — historical research patch qualification (2026-10-24)
+## §TBD-counterfactual Frozen13 reward-skip counterfactual — engine lost; earlier death (2026-10-24)
 
-Accepted user charter starts from reviewed #844 head5adfd78b. One seed111101326,
-exact historical source d8fd2a10 plus a research-only semantic skip manifest hook;
-current production C++ and original hash-identical runtime untouched. The13
-previously frozen reward groups remain unchanged; natural downstream policy,
-engine acquisitions, map and survival are not repaired. Eight exact historical
-models, original Heart Student-C/MCTS controller and simulation settings retained.
+**COMPRESSION_SURVIVAL_TRADEOFF.** Starting #844 reviewed5adfd78b; frozen
+independently reviewed patch/protocol06119a587. Historical source d8fd2a10,
+research-patched executable2e6fe2ee357a85748d17ac33ee981da9b4efb013555f43d238da69f92e146d50,
+same exact eight models/controller/settings, unchanged13-entry manifest. Current
+production C++, original hash-identical runtime, oracle/K/bounds/defaults untouched.
 
-Preregistered order: independent implementation/design review; commit/freeze;
-one flag-off exact137-state/136-trace prefix qualification, then only on PASS one
-full treatment. One identical capture-only replay is authorized if needed to
-collect the first naturally engine-complete combat. Per-run wall1800seconds/OMP1;
-no alternative skip sets or seeds. Freeze<=4 roots by active count/decision before
-unchanged K4 oracle. Production/default/model/reward/oracle changes: none.
+One flag-off qualification matched full header+137 states+136 traces exactly,
+no exclusions/differences/retries (400.039s wall/391.814s CPU). Only then one
+seed111101326 treatment:6 MATCHED_EXECUTED,7 NOT_SEEN,0 failures/duplicates;
+375.570s wall/364.788s CPU. Simulator integrity PASS;131 public OOC states supported.
+Skips fired at act1/f0,f1 and act2/f20,f22,f24,f27. First post-skip map node changed
+x5->x1. Dark Embrace acquired naturally f29/d104; Corruption/Flash offers and
+acquisitions absent. Death to Automaton act2/f33/fight16,23 permanent cards,
+69->0HP, before historical engine-bearing floor37. Engine never completed.
 
-Status: build and focused seed-free contract checks complete; gameplay/parity and
-treatment not yet executed. Knowledge impact: experimental status and resulting
-current-research boundary; no policy promotion.
+No capture replay, selected public combat roots, sampled worlds or oracle runs.
+Engine-complete deck/active pool and oracle fractions/node-cap rate are unavailable,
+not negatives.23 versus historical31 at a different floor is not an engine-preserving
+compression estimate;31->18 projection was not realized. This single skip set does
+not establish a general survival effect, actual engine-preserving compression,
+or justify a beam. Stop; no automatic next arm/lead/model work or merge.
 
-[Patch, frozen protocol, build identity and focused checks](evidence/combat_infinity_counterfactual_20261024/PROTOCOL.md).
+Knowledge impact: bounded empirical result updates current-research status.
+Offline shop-offer parsing fix regenerated reports from unchanged raw bytes; no
+run/executable/manifest change or rerun. Prior unsupported roots remain null.
+
+[Protocol, patch/build custody, exact parity, full treatment/trigger/measurement evidence and limits](evidence/combat_infinity_counterfactual_20261024/REPORT.md).
 
 ## §TBD-compression Offline OOC compression headroom exists; prescribed replay has no compatible exact-binary intervention path (2026-10-24)
 
