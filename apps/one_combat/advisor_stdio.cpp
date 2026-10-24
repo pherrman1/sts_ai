@@ -1284,7 +1284,8 @@ int main() {
                 if (identity.value("candidateId", std::string()) != "pathb-a20"
                         || !identity.contains("bossSurvivalLogitShift"))
                     throw std::invalid_argument("live A20 CTM requires the qualified calibrated pathb-a20 stack");
-                // ADR-0058: the A20 stack applies the bundled CTM calibration unless =0; a research table is refused.
+                // ADR-0058/0059: the A20 stack applies its own bundled CTM calibration unless =0 (the release ships the
+                // stack's artifact and table: the ADR-0059 HP-head fine-tune); a research table is refused.
                 if (const char *table = std::getenv("STS_CTM_CALIBRATION"); table && std::string(table) != "0")
                     throw std::invalid_argument("live A20 CTM refuses a research STS_CTM_CALIBRATION table "
                                                 "(unset applies the bundled table, 0 turns it off)");

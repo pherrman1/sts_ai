@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Per-fight calibration of the A20 CTM against real combats (STS_CTM_CALIBRATION; the built-in A20 stack applies
-models/candidates/ctm_calibration_pathb_a20_v1.json by default since ADR-0058, =0 turns it off).
+"""Per-fight calibration of the A20 CTM against real combats (STS_CTM_CALIBRATION; the built-in A20 stack applies its
+own table by default, =0 turns it off: models/candidates/ctm_calibration_pathb_a20_ft_hp_v1.json for the ADR-0059
+HP-head fine-tune, ctm_calibration_pathb_a20_v1.json for the §470 stack under STS_CTM_A20_HP_FINETUNE=0, ADR-0058).
 
   zero    OUT.json                                  every act:ROOM group at hpLossScale 0 (all HP losses removed)
   fit     OUT.json SPEC [SPEC ...] [--seeds S] [--note TEXT]   fit the table from scored real combats
