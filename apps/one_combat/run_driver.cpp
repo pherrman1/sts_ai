@@ -450,6 +450,8 @@ const char *realOocChainStep(GameContext &gc, search::ScumSearchAgent2 &agent, b
     if (matchAndKeepPolicyStep(gc, agent, restV, shopV, path, seed, index,
                                one_combat::liveOocMctsEnabled() ? &mctsMetrics : nullptr))
         return "match_and_keep";
+    // STS_OOC_MCTS_SCREENS (research, #854): after the same rule chain, student_sel decides unsearched screens.
+    if (one_combat::liveOocMctsScreenExcluded(gc) && one_combat::heart1::policyStep(gc)) return "heart1_screen";
     if (t_realOocDecisionObserver) one_combat::armOocPolicyTarget();
     if (one_combat::oocMctsPolicyStep(gc, path, seed, index, mctsMetrics)) return "mcts";
     if (one_combat::liveOocMctsHeart1Fallback(gc) && one_combat::heart1::policyStep(gc)) return "heart1_fallback";
