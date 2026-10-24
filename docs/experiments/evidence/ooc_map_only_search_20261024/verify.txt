@@ -1,0 +1,2 @@
+units OK 1024 MISSING 0 BAD 0 of 1024; duplicates 0; tars for unknown units 0; run ['772df240dd49']; worker DONE.json: 32/32
+extracted 1024 units to /tmp/claude-0/-home-user-sts-ai/1f92af47-3350-54c1-9a01-50a6a653ef87/scratchpad/final
