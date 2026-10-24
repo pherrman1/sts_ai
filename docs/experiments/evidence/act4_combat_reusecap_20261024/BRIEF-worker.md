@@ -3,7 +3,7 @@
 YOUR WORKER NUMBER: W=<n>   (pass it unpadded; never 03)
 RUN_COMMIT=<frozen sha, given in the header>  CAMPAIGN=docs/experiments/evidence/act4_combat_reusecap_20261024
 
-Philipp authorized this run (<time and words of his go>).
+Philipp authorized this run (2026-10-24 11:29Z, "Jo go", on the proposal "Ist das ein Go für 32 Worker?").
 - Do not change seeds, scripts, environments, binary or timeouts.
 - Work in /home/user/sts_ai. Run nothing from /mnt/project-files (noexec).
 - The worker script uploads only to /mnt/project-files/act4-combat-reusecap (units/, claims/, wWW.DONE.json). Write
