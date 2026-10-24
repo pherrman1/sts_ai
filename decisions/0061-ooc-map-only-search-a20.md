@@ -1,4 +1,4 @@
-# ADR-TBD: At A20, real OOC MCTS searches only map screens, each at the full budget
+# ADR-0061: At A20, real OOC MCTS searches only map screens, each at the full budget
 
 Date: 2026-10-24
 Status: accepted
