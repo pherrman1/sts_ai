@@ -28,3 +28,19 @@ PASS exact runtime, full frozen-prefix fidelity, same-run no-Shard custody, publ
 exit=0
 $ git diff --cached --check
 exit=0
+
+Post-commit checks at evidence commit87e65d3aad9b4cad5d4bf9ff0a4bc3b7a87d20a9:
+$ python3 tools/ledger_assign.py assign --dry-run --base 5c30b0d28f20e2323dc530c077c5e5e17b4b7b73 --skip 517
+§TBD-reconstruction -> §674
+§TBD-capture -> §675
+§TBD-hunt -> §676
+§TBD-natural -> §677
+§TBD-public -> §678
+exit=0 (dry run only; no numbers assigned)
+
+$ python3 tools/repo_health.py --baseline 0772ffe7ca8c63bd941036fa3c8cbecf040c934a --json
+Raw output: repo-health.json
+status=pass; hard_failures={}; current_broken=[]; warning=active Markdown growth
+exit=0
+$ git diff --check 0772ffe7ca8c63bd941036fa3c8cbecf040c934a HEAD
+exit=0; clean committed tree before recording these post-commit checks.
