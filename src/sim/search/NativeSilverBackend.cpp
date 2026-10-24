@@ -40,6 +40,10 @@ namespace sts::search {
     namespace {
 
         constexpr std::size_t kReuseCap = 32 * 1024;   // Silver's production node cap
+        // ADR-0060 Act-4 fights (STS_SILVER_ACT4_STRONG): flat budgets and the Heart's tree-reuse cap.
+        constexpr std::int64_t kAct4EliteBudget = 10000;
+        constexpr std::int64_t kAct4HeartBudget = 40000;
+        constexpr std::size_t kAct4HeartReuseCap = 256 * 1024;
         constexpr std::int64_t kAdaptiveInitial = 500;
         constexpr std::int64_t kAdaptiveTotal = 10000;
         constexpr double kDefaultTopGap = 0.2932885906040268;
@@ -88,6 +92,10 @@ namespace sts::search {
             // STS_SILVER_NODE_REUSE_CAP (research, default kReuseCap): node count above which a reroot compacts or
             // drops the reused tree. Production and data-generator modes refuse any other value.
             std::size_t reuseCap = kReuseCap;
+            // ADR-0060: Act-4 fights of whole runs under the learned stop search harder (STS_SILVER_ACT4_STRONG;
+            // unset = on, =0 restores the learned stop there): Shield and Spear at flat 10k with prior playouts,
+            // the Heart at flat 40k with tree reuse up to kAct4HeartReuseCap nodes.
+            bool act4Strong = true;
             // STS_SILVER_LEAF_HEAD (default off): whole-run fights value undecided leaves with this value head
             // on the trunk of STS_SILVER_LEAF_HEAD_TRUNK, blended with the playout (SilverSearcher::LeafHead).
             std::string leafHeadPath, leafHeadTrunkPath;
@@ -505,22 +513,34 @@ namespace sts::search {
             using BudgetPolicy = NativeSilverBudgetOverride::Policy;
             if (context.finalBossBinary && budgetOverride && budgetOverride->policy != BudgetPolicy::Flat)
                 fail(gc, bc, "binary final-boss objective requires a flat budget override");
+            // ADR-0060: Act 4's elite (Shield and Spear) and boss (the Heart) in a whole run under the learned
+            // stop, with the root prior on for every fight, replace the stop with a flat budget. Research arms,
+            // source runs and imagined OOC fights (any override) and the stop trace keep their own settings.
+            const bool act4Strong = g_options.act4Strong && g_options.learnedStop && !budgetOverride
+                && g_options.stopTrace.empty() && !g_nativeSilverRolloutOverride && !g_nativeSilverRootPriorOverride
+                && !g_nativeSilverPriorNetOverride && !g_options.rootPriorPath.empty()
+                && !g_options.rootPriorOverrideOnly && gc.act == 4
+                && (gc.curRoom == Room::ELITE || gc.curRoom == Room::BOSS);
+            const bool act4Heart = act4Strong && gc.curRoom == Room::BOSS;
             // Learned stopping with the boss fallback runs boss rooms under #199.
-            const bool bossFallback = !budgetOverride && g_options.learnedStop
+            const bool bossFallback = !budgetOverride && g_options.learnedStop && !act4Strong
                 && g_options.learnedStopBossFallback && gc.curRoom == Room::BOSS;
             const bool adaptive = budgetOverride ? budgetOverride->policy == BudgetPolicy::Adaptive
-                                                 : g_options.adaptive || bossFallback;
+                                                 : (g_options.adaptive && !act4Strong) || bossFallback;
             const bool learnedStop = budgetOverride ? budgetOverride->policy == BudgetPolicy::LearnedStop
-                                                    : g_options.learnedStop && !bossFallback;
+                                                    : g_options.learnedStop && !bossFallback && !act4Strong;
             const bool lockOnly = budgetOverride && budgetOverride->policy == BudgetPolicy::LockOnly;
             const bool stopTrace = !budgetOverride && !g_options.stopTrace.empty();
             const bool skipSingletons = budgetOverride ? budgetOverride->skipSingletonRoots
                 : !g_options.exactRootBudgets && !g_options.searchSingletonRoots;
             if (learnedStop && !nativeSilverStopModelTrained())
                 fail(gc, bc, "learned stopping requires a trained stop model");
-            const std::int64_t flatBudget = isBossEncounter(bc.encounter) && !g_options.exactRootBudgets
+            const std::int64_t flatBudget = act4Strong ? (act4Heart ? kAct4HeartBudget : kAct4EliteBudget)
+                : isBossEncounter(bc.encounter) && !g_options.exactRootBudgets
                 ? static_cast<std::int64_t>(agent.bossSimulationMultiplier * agent.simulationCountBase)
                 : agent.simulationCountBase;
+            const std::size_t reuseCap = act4Heart ? std::max(g_options.reuseCap, kAct4HeartReuseCap)
+                                                   : g_options.reuseCap;
 
             if (g_nativeSilverLabelSearch && (adaptive || learnedStop || lockOnly || stopTrace))
                 fail(gc, bc, "the label search requires a flat budget");
@@ -541,9 +561,9 @@ namespace sts::search {
                 }
                 if (node != nullptr && !node->isRandomNode) {
                     inheritedVisits = node->simulationCount;
-                    const bool overCap = s->nodeCount() >= g_options.reuseCap;
+                    const bool overCap = s->nodeCount() >= reuseCap;
                     s->rerootAt(node, overCap);
-                    if (s->nodeCount() >= g_options.reuseCap) {
+                    if (s->nodeCount() >= reuseCap) {
                         s->setRoot(root);   // compaction could not get below the cap
                         inheritedVisits = 0;
                     }
@@ -602,6 +622,10 @@ namespace sts::search {
                         && !g_nativeSilverPriorNetOverride && g_options.priorPlayoutBossElite
                         && !g_options.rootPriorPath.empty() && !g_options.rootPriorOverrideOnly
                         && (gc.curRoom == Room::BOSS || (gc.curRoom == Room::ELITE && g_options.priorPlayoutElite)))
+                    s.rolloutConfig.prior = true;
+                // ADR-0060: Act 4's elite (Shield and Spear) plays prior playouts too, unless
+                // STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE=0 turns them off everywhere.
+                if (act4Strong && gc.curRoom == Room::ELITE && g_options.priorPlayoutBossElite)
                     s.rolloutConfig.prior = true;
                 // STS_SILVER_LEAF_HEAD: whole-run fights, as the prior playouts above; a research
                 // override (leafhead armset) sets its own.
@@ -1023,6 +1047,11 @@ namespace sts::search {
                 throw std::runtime_error("STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE must be 0 or 1");
             g_options.priorPlayoutBossElite = value == "1";
         }
+        if (const char *raw = std::getenv("STS_SILVER_ACT4_STRONG"); raw && *raw) {
+            const std::string value = raw;
+            if (value != "0" && value != "1") throw std::runtime_error("STS_SILVER_ACT4_STRONG must be 0 or 1");
+            g_options.act4Strong = value == "1";
+        }
         if (const char *raw = std::getenv("STS_SILVER_NODE_REUSE_CAP"); raw && *raw) {
             char *end = nullptr;
             const long long value = std::strtoll(raw, &end, 10);
@@ -1278,6 +1307,11 @@ namespace sts::search {
         return static_cast<std::int64_t>(g_options.reuseCap);
     }
 
+    bool nativeSilverAct4Strong() {
+        return g_options.act4Strong && g_options.learnedStop && g_options.stopTrace.empty()
+            && !g_options.rootPriorPath.empty() && !g_options.rootPriorOverrideOnly;
+    }
+
     const char *const kNativeSilverStopFeatureNames[kStopFeatureCount] = {
         "checkpoint", "inherited_visits", "fresh_root", "legal_actions", "top_share",
         "second_share", "gap_share", "entropy", "q_gap", "q_gap_valid", "root_visits",
@@ -1332,7 +1366,8 @@ namespace sts::search {
                 g_options.rolloutRootTablePath,
                 g_options.priorPlayoutBossElite && !g_options.rootPriorPath.empty() && !g_options.rootPriorOverrideOnly,
                 g_options.priorPlayoutElite, g_options.leafHeadPath, g_options.leafHeadTrunkPath,
-                g_options.leafHeadBlend, g_options.leafHeadTurnPenalty, g_options.leafHeadWinCap};
+                g_options.leafHeadBlend, g_options.leafHeadTurnPenalty, g_options.leafHeadWinCap,
+                nativeSilverAct4Strong()};
     }
 
     bool nativeSilverLearnedStopEnabled() {
