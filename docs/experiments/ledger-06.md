@@ -24275,7 +24275,7 @@ the fixed engine.
 - Seeds 111392000–111392511 used; the dropped stage 2 (111392512–111394047) stays reserved and unused.
 - **Knowledge impact:** `evaluation/current-research.md`.
 
-## §TBD — Mirror-trained prior F at real searched map roots: it changes 9.1% of map decisions (27% at act start), all near-ties whose q gap has no identified sign (pooled −0.3 pp P(kill), +1.0 pp where F's move got >= 1,000 visits); no A/B proposed (offline, 2026-10-24)
+## §678 — Mirror-trained prior F at real searched map roots: it changes 9.1% of map decisions (27% at act start), all near-ties whose q gap has no identified sign (pooled −0.3 pp P(kill), +1.0 pp where F's move got >= 1,000 visits); no A/B proposed (offline, 2026-10-24)
 
 **Question:** Philipp (2026-10-24 07:56Z), after §677: before an A/B, check offline what F would change in real play.
 **Setup:** [packet](evidence/map_mirror_searched_20261024/README.md). 8,745 searched map roots (>= 2 paths) of 2,176
