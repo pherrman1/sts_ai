@@ -1,0 +1,11 @@
+name          ooc-search-arch
+code_commit   febd481450e439b76e73d2535f231d401f7e4b7d
+binary_sha256 PENDING
+workers       8
+share         /mnt/project-files/ooc-search-arch
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 30
+input student_sel.bin /mnt/project-files/az-gen3-explore/student_sel.bin cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7
+input sr_crn_r2_s2_ep20.bin /mnt/project-files/ooc-search-arch/sr_crn_r2_s2_ep20.bin 28523fb5b63c1977b6f63d3c832f592db4f901b92d2f06aa2783401840006dbb
