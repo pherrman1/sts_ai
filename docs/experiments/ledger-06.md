@@ -24391,3 +24391,25 @@ under the learned stop plays S&S at flat 10k with prior playouts and the Heart a
 `STS_SILVER_ACT4_STRONG=0` restores the learned stop (older A20 comparisons need it).
 Seeds: none new (§681's seeds replayed).
 **Knowledge impact:** `operations/environment-variables.md`, `evaluation/current-research.md`.
+
+## §683 — Map-only OOC search screen at A20: OOC MCTS only at map roots (full budget) reaches Act 4 +4.8 pp [+2.3, +7.3] more often than no search, and today's all-screen search adds nothing over it (Heart D − MAP −1.4 pp [−4.0, +1.4]); PASS (1,024 paired seeds × 3 arms, 2026-10-24)
+
+**Question:** the OOC direction review (2026-10-24) found gen-0's search gain (§569) in pairs whose first divergence
+was a map override. Does map search alone beat no OOC search (MAP − OFF), and does today's default gain anything from
+searching the other screens (D − MAP)? Issue #854; Philipp "lets start with 1", go 18:56Z with 32 workers.
+**Setup:** [PREREG](evidence/ooc_map_only_search_20261024/PREREG.md). New research option `STS_OOC_MCTS_SCREENS`
+(unset = byte-identical to main; excluded screens: same rule chain, then student_sel). D = today's A20 OOC default;
+MAP = MCTS only at map roots, all at 4096 sims; OFF = student_sel behind the rule chain. Base `61a536fe` (Act 4 with
+the learned stop, before §682's Act 4 strong). Run commit `772df240`, 32 cloud workers, 1,024/1,024 units verified, no
+dropped or timed-out game; pre-launch review PASS.
+**Result:** [RESULT.md](evidence/ooc_map_only_search_20261024/RESULT.md). Act 4 D 41.8 / MAP 43.1 / OFF 38.3%; Heart
+23.3 / 24.7 / 23.3%. Primary MAP − OFF Act 4 +4.79 pp [+2.34, +7.32] (discordant 109/60, p 2e−4); guard D − MAP Heart
+−1.37 pp [−4.00, +1.37]; D − OFF Act 4 +3.5 pp [+0.7, +6.4] but Heart 0.0 (96/96). MAP − OFF Heart +1.4 pp
+[−1.1, +3.8]. First divergence MAP − OFF: act-1 maps +29 arrivals, act-2 +16, act-3 +4. D − MAP: act-1 rest sites
+(425 seeds) −13 arrivals, −15 kills. Wall per game D 527 s, MAP 435 s, OFF 87 s.
+**Interpretation:** PASS under the frozen rule: route search is the useful part of OOC search, and the non-map search
+of today's default adds nothing measurable. **Inference:** the extra arrivals convert weakly into kills (kills per
+arrival 0.57 vs 0.61; OFF dies more in act 2, MAP more in Act 4), consistent with a survival-scoring leaf. Follow-up
+(Philipp's call): a matched-CPU paired A20 A/B of MAP as candidate default on current main.
+Seeds: 111374100–111375123 (campaign), 111375990–111375991 (smokes).
+**Knowledge impact:** environment-variables.md and CODE_MAP.md list the research option; no default change.

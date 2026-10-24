@@ -1,6 +1,8 @@
 #include "sim/search/RunGoal.h"
 #include "sim/search/OocParticlePlanner.h"
 #include <ctime>
+#include <map>
+#include <sstream>
 #include "run_profile.h"
 #include "ooc_mcts_adapter.h"
 #ifndef STS_LIVE_ADVISOR
@@ -2532,6 +2534,11 @@ std::string liveRootComparePath;
 // STS_OOC_MCTS_BEAM=WIDTH:K:DEPTH (default 8:2:3) configure OocParticlePlanner. STS_OOC_MCTS_SEARCH_TRACE=PATH appends
 // one JSONL row per searched root; STS_OOC_MCTS_SEARCH_COMPARE=1 also runs the other two planners on fresh models
 // there (rows only; the played action and the run are unchanged).
+// Map-only search screen (#854, research, default all): STS_OOC_MCTS_SCREENS=all|none|LIST, LIST a comma list of
+// map,event,rewards,boss_relic,card_select,treasure,rest,shop. Real roots on an unlisted screen skip the search after
+// the rule chain and student_sel decides them (liveOocMctsScreenExcluded); imagined decisions are unchanged.
+std::uint32_t liveSearchScreens = ~0u;
+bool liveSearchScreensSet = false;
 enum class LiveSearchMode { Mcts, Particle, ParticleBeam };
 LiveSearchMode liveSearchMode = LiveSearchMode::Mcts;
 sts::search::OocParticleConfig liveParticleConfig;
@@ -3161,6 +3168,9 @@ bool liveOocMctsRealLearnedStop(int ascension) {
     return liveEnabled && liveRealLearnedStop.value_or(ascension >= 20);
 }
 bool liveOocMctsTreeRules() { return liveEnabled && liveOptions.treeRules; }
+bool liveOocMctsScreenExcluded(const GameContext &gc) {
+    return liveEnabled && liveSearchScreensSet && !(liveSearchScreens & (1u << int(gc.screenState)));
+}
 bool liveOocMctsHeart1Fallback(const GameContext &gc) {
     return liveEnabled && liveOptions.heart1Coverage && heart1FullScreen(gc);
 }
@@ -3618,6 +3628,32 @@ void configureLiveOocMcts() {
 #endif
     }
     liveSearchMode = LiveSearchMode::Mcts; liveParticleConfig = {}; liveSearchTracePath.clear(); liveSearchCompare = false;
+    liveSearchScreens = ~0u; liveSearchScreensSet = false;
+    if (const char *raw = std::getenv("STS_OOC_MCTS_SCREENS"); raw && *raw && std::string(raw) != "all") {
+        static const std::map<std::string, sts::ScreenState> names = {
+            {"map", sts::ScreenState::MAP_SCREEN}, {"event", sts::ScreenState::EVENT_SCREEN},
+            {"rewards", sts::ScreenState::REWARDS}, {"boss_relic", sts::ScreenState::BOSS_RELIC_REWARDS},
+            {"card_select", sts::ScreenState::CARD_SELECT}, {"treasure", sts::ScreenState::TREASURE_ROOM},
+            {"rest", sts::ScreenState::REST_ROOM}, {"shop", sts::ScreenState::SHOP_ROOM}};
+        liveSearchScreens = 0; liveSearchScreensSet = true;
+        const std::string value(raw);
+        if (value != "none") {
+            std::stringstream list(value);
+            for (std::string name; std::getline(list, name, ',');) {
+                const auto it = names.find(name);
+                if (it == names.end())
+                    throw std::runtime_error("STS_OOC_MCTS_SCREENS must be all, none or a comma list of map, event, "
+                        "rewards, boss_relic, card_select, treasure, rest, shop");
+                liveSearchScreens |= 1u << int(it->second);
+            }
+        }
+#ifdef STS_LIVE_ADVISOR
+        throw std::runtime_error("STS_OOC_MCTS_SCREENS is unavailable in the live advisor");
+#endif
+        if (!liveEnabled || !liveOptions.heart1Prior)
+            throw std::runtime_error("STS_OOC_MCTS_SCREENS needs STS_OOC_MCTS=1 with a heart1 prior (student_sel "
+                "decides the unlisted screens)");
+    }
     if (const char *mode = std::getenv("STS_OOC_MCTS_SEARCH_MODE"); mode && *mode) {
         const std::string value(mode);
         if (value == "particle") liveSearchMode = LiveSearchMode::Particle;
@@ -3940,6 +3976,7 @@ void configureLiveOocMcts() {
                 : std::string{})
             + " horizon_combats=" + std::to_string(liveParticleConfig.horizonCombats) : std::string{})
         << (liveSearchCompare ? " search_compare=1" : "")
+        << (liveSearchScreensSet ? " screens=" + std::string(std::getenv("STS_OOC_MCTS_SCREENS")) : std::string{})
         << "]\n";
     std::cout << "[ooc-mcts-config] {\"noncombatOutcomes\":\""
         << (liveOptions.sampleNoncombat ? "sampled" : "exact")
