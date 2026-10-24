@@ -82,6 +82,11 @@ change (c18a9a73...); output in `results/checks.txt`.
 - Freeze, after the go: merge this PR; set `code_commit` (main), `binary_sha256` and `workers` (his count) in
   `campaign.manifest`; publish the binary; fill in `BRIEF-worker.md`; independent pre-launch review (clean build
   against `binary_sha256`). The coordinator starts the workers.
+- Frozen 2026-10-23 after Philipp's typed go (19:35Z: "let's do 512 runs on 32 workers"): `code_commit` a8b80139, main
+  with this PR (#837) and four engine parity fixes merged just before it (#831 Hand of Greed, #833 Angry, #835 Time
+  Eater, #836 Trip; §665-668), `binary_sha256` 0feb879d..., 32 workers. Known deviation: the a20prod campaign ran
+  without those four fixes, so the two packs come from slightly different engines in the few states they touch. The
+  smoke runs both nets on its own fixed binary, so its contrasts stay paired.
 
 ## Expected cost
 
@@ -133,9 +138,12 @@ smoke about 1.5 h. The qe2e smoke can run while the campaign runs.
   run early: stalls are counted and reported); `edgeFallbacks` at most 1% of the roots. Otherwise stop and report.
 - **G2, shift (descriptive; the prediction).** If the explanation holds, qe2e's fold-4 error against the label is
   larger on the on-policy pack than on the production pack, most in boss fights, and biased upward there (the head
-  overvalues the states its search steers into).
+  overvalues the states its search steers into). Read it next to the inherited-visit gap from `shift.py`: the label
+  search inherits fewer visits along the head's path (checks: 4,593 against production's 6,390 per root; act 4:
+  2,259 against 5,553), so its labels are noisier there even without a shift (pre-launch review note).
 - **G3, fit** (decides whether onp1 gets a smoke). onp1's fold-4 RMSE on the on-policy pack at least 0.5 points
-  below ref's, and on the production pack at most 0.3 points above ref's.
+  below ref's, and on the production pack at most 0.3 points above ref's. The on-policy half is close to automatic
+  for a net fitted on that pack; the production half and G4 carry the decision.
 - **G4, screen** (decides whether a fight-level A/B is proposed). In the 16-source smoke, onp1 − qe2e has a positive
   mean score per fight over all fights and over boss fights, and onp1 − production over all fights is not WORSE
   (the bootstrap interval's upper bound is at least 0).

@@ -1,0 +1,2 @@
+# python3 tools/cloud/verify_campaign.py docs/experiments/evidence/silver_leaf_onpolicy_20261023 (2026-10-23T23:16:02Z)
+units OK 256 MISSING 0 BAD 0 of 256; duplicates 0; tars for unknown units 0; run ['db49b3515293']; worker DONE.json: 1/32

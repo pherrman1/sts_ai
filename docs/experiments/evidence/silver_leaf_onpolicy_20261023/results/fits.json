@@ -1,0 +1,763 @@
+{
+ "qe2e": {
+  "meta": {
+   "checkpoint": "/mnt/project-files/exact-combat-research/leaf-value/label-data-20261023/checkpoints/q_e2e.pt"
+  },
+  "test": {
+   "prod": {
+    "all": {
+     "roots": 141754,
+     "rmse": 16.91,
+     "bias": 0.45
+    },
+    "act 1": {
+     "roots": 43325,
+     "rmse": 11.61,
+     "bias": 0.27
+    },
+    "act 2": {
+     "roots": 40853,
+     "rmse": 15.32,
+     "bias": -0.03
+    },
+    "act 3": {
+     "roots": 47556,
+     "rmse": 18.47,
+     "bias": 1.16
+    },
+    "act 4": {
+     "roots": 10020,
+     "rmse": 29.77,
+     "bias": -0.19
+    },
+    "MONSTER": {
+     "roots": 58050,
+     "rmse": 9.87,
+     "bias": 0.8
+    },
+    "ELITE": {
+     "roots": 42759,
+     "rmse": 16.33,
+     "bias": 0.6
+    },
+    "BOSS": {
+     "roots": 37458,
+     "rmse": 24.65,
+     "bias": -0.47
+    },
+    "EVENT": {
+     "roots": 3487,
+     "rmse": 14.26,
+     "bias": 2.69
+    },
+    "turn 0": {
+     "roots": 34871,
+     "rmse": 17.81,
+     "bias": 0.06
+    },
+    "turn 1": {
+     "roots": 29604,
+     "rmse": 16.46,
+     "bias": 0.2
+    },
+    "turn 2": {
+     "roots": 24971,
+     "rmse": 15.27,
+     "bias": 0.19
+    },
+    "turn 3": {
+     "roots": 18207,
+     "rmse": 15.41,
+     "bias": 0.87
+    },
+    "turn 4": {
+     "roots": 12769,
+     "rmse": 17.06,
+     "bias": 1.12
+    },
+    "turn 5": {
+     "roots": 8162,
+     "rmse": 17.64,
+     "bias": 0.76
+    },
+    "turn 6+": {
+     "roots": 13170,
+     "rmse": 19.59,
+     "bias": 1.1
+    },
+    "act 1 ELITE": {
+     "roots": 14519,
+     "rmse": 9.88,
+     "bias": -0.02
+    },
+    "act 1 BOSS": {
+     "roots": 9981,
+     "rmse": 19.56,
+     "bias": 1.16
+    },
+    "act 2 ELITE": {
+     "roots": 10651,
+     "rmse": 15.44,
+     "bias": 0.65
+    },
+    "act 2 BOSS": {
+     "roots": 8988,
+     "rmse": 23.25,
+     "bias": -2.34
+    },
+    "act 3 ELITE": {
+     "roots": 13648,
+     "rmse": 19.09,
+     "bias": 1.82
+    },
+    "act 3 BOSS": {
+     "roots": 12410,
+     "rmse": 24.86,
+     "bias": -0.99
+    },
+    "act 4 ELITE": {
+     "roots": 3941,
+     "rmse": 25.05,
+     "bias": -1.5
+    },
+    "act 4 BOSS": {
+     "roots": 6079,
+     "rmse": 32.47,
+     "bias": 0.65
+    }
+   },
+   "onpolicy": {
+    "all": {
+     "roots": 53353,
+     "rmse": 98.44,
+     "bias": 26.01
+    },
+    "act 1": {
+     "roots": 17652,
+     "rmse": 164.58,
+     "bias": 57.85
+    },
+    "act 2": {
+     "roots": 14833,
+     "rmse": 19.54,
+     "bias": 5.79
+    },
+    "act 3": {
+     "roots": 17447,
+     "rmse": 39.43,
+     "bias": 12.04
+    },
+    "act 4": {
+     "roots": 3421,
+     "rmse": 42.04,
+     "bias": 20.59
+    },
+    "MONSTER": {
+     "roots": 23254,
+     "rmse": 145.95,
+     "bias": 48.16
+    },
+    "ELITE": {
+     "roots": 15166,
+     "rmse": 21.21,
+     "bias": 6.45
+    },
+    "BOSS": {
+     "roots": 13448,
+     "rmse": 32.6,
+     "bias": 11.89
+    },
+    "EVENT": {
+     "roots": 1485,
+     "rmse": 18.4,
+     "bias": 6.66
+    },
+    "turn 0": {
+     "roots": 10597,
+     "rmse": 20.06,
+     "bias": 3.75
+    },
+    "turn 1": {
+     "roots": 9738,
+     "rmse": 19.89,
+     "bias": 4.92
+    },
+    "turn 2": {
+     "roots": 8650,
+     "rmse": 20.08,
+     "bias": 5.85
+    },
+    "turn 3": {
+     "roots": 6371,
+     "rmse": 21.91,
+     "bias": 7.53
+    },
+    "turn 4": {
+     "roots": 4683,
+     "rmse": 24.13,
+     "bias": 9.28
+    },
+    "turn 5": {
+     "roots": 3147,
+     "rmse": 24.43,
+     "bias": 9.3
+    },
+    "turn 6+": {
+     "roots": 10167,
+     "rmse": 221.25,
+     "bias": 110.99
+    },
+    "act 1 ELITE": {
+     "roots": 5066,
+     "rmse": 10.84,
+     "bias": 1.96
+    },
+    "act 1 BOSS": {
+     "roots": 3359,
+     "rmse": 21.46,
+     "bias": 3.73
+    },
+    "act 2 ELITE": {
+     "roots": 3750,
+     "rmse": 17.85,
+     "bias": 3.98
+    },
+    "act 2 BOSS": {
+     "roots": 3523,
+     "rmse": 29.45,
+     "bias": 11.88
+    },
+    "act 3 ELITE": {
+     "roots": 4766,
+     "rmse": 26.67,
+     "bias": 10.0
+    },
+    "act 3 BOSS": {
+     "roots": 4729,
+     "rmse": 33.44,
+     "bias": 12.75
+    },
+    "act 4 ELITE": {
+     "roots": 1584,
+     "rmse": 32.2,
+     "bias": 15.93
+    },
+    "act 4 BOSS": {
+     "roots": 1837,
+     "rmse": 48.96,
+     "bias": 24.6
+    }
+   }
+  }
+ },
+ "ref": {
+  "meta": {
+   "fit": 454345,
+   "fitRuns": 923,
+   "epochs": 9,
+   "stopRoots": 150982,
+   "stopRmse": 17.369
+  },
+  "test": {
+   "prod": {
+    "all": {
+     "roots": 141754,
+     "rmse": 16.87,
+     "bias": -0.3
+    },
+    "act 1": {
+     "roots": 43325,
+     "rmse": 11.92,
+     "bias": 0.78
+    },
+    "act 2": {
+     "roots": 40853,
+     "rmse": 15.46,
+     "bias": -1.02
+    },
+    "act 3": {
+     "roots": 47556,
+     "rmse": 18.35,
+     "bias": -0.33
+    },
+    "act 4": {
+     "roots": 10020,
+     "rmse": 28.96,
+     "bias": -1.82
+    },
+    "MONSTER": {
+     "roots": 58050,
+     "rmse": 9.91,
+     "bias": 0.18
+    },
+    "ELITE": {
+     "roots": 42759,
+     "rmse": 16.46,
+     "bias": -0.08
+    },
+    "BOSS": {
+     "roots": 37458,
+     "rmse": 24.43,
+     "bias": -1.49
+    },
+    "EVENT": {
+     "roots": 3487,
+     "rmse": 14.09,
+     "bias": 2.08
+    },
+    "turn 0": {
+     "roots": 34871,
+     "rmse": 17.71,
+     "bias": -0.42
+    },
+    "turn 1": {
+     "roots": 29604,
+     "rmse": 16.46,
+     "bias": -0.48
+    },
+    "turn 2": {
+     "roots": 24971,
+     "rmse": 15.51,
+     "bias": -0.57
+    },
+    "turn 3": {
+     "roots": 18207,
+     "rmse": 15.45,
+     "bias": -0.0
+    },
+    "turn 4": {
+     "roots": 12769,
+     "rmse": 16.76,
+     "bias": 0.18
+    },
+    "turn 5": {
+     "roots": 8162,
+     "rmse": 17.42,
+     "bias": -0.13
+    },
+    "turn 6+": {
+     "roots": 13170,
+     "rmse": 19.42,
+     "bias": 0.0
+    },
+    "act 1 ELITE": {
+     "roots": 14519,
+     "rmse": 10.18,
+     "bias": 0.72
+    },
+    "act 1 BOSS": {
+     "roots": 9981,
+     "rmse": 20.05,
+     "bias": 1.62
+    },
+    "act 2 ELITE": {
+     "roots": 10651,
+     "rmse": 15.7,
+     "bias": -0.41
+    },
+    "act 2 BOSS": {
+     "roots": 8988,
+     "rmse": 23.39,
+     "bias": -3.4
+    },
+    "act 3 ELITE": {
+     "roots": 13648,
+     "rmse": 19.2,
+     "bias": -0.02
+    },
+    "act 3 BOSS": {
+     "roots": 12410,
+     "rmse": 24.51,
+     "bias": -2.63
+    },
+    "act 4 ELITE": {
+     "roots": 3941,
+     "rmse": 24.83,
+     "bias": -2.39
+    },
+    "act 4 BOSS": {
+     "roots": 6079,
+     "rmse": 31.34,
+     "bias": -1.45
+    }
+   },
+   "onpolicy": {
+    "all": {
+     "roots": 53353,
+     "rmse": 105.68,
+     "bias": 26.25
+    },
+    "act 1": {
+     "roots": 17652,
+     "rmse": 178.85,
+     "bias": 62.99
+    },
+    "act 2": {
+     "roots": 14833,
+     "rmse": 20.07,
+     "bias": 4.76
+    },
+    "act 3": {
+     "roots": 17447,
+     "rmse": 33.57,
+     "bias": 8.81
+    },
+    "act 4": {
+     "roots": 3421,
+     "rmse": 40.53,
+     "bias": 18.71
+    },
+    "MONSTER": {
+     "roots": 23254,
+     "rmse": 157.35,
+     "bias": 50.74
+    },
+    "ELITE": {
+     "roots": 15166,
+     "rmse": 21.01,
+     "bias": 5.24
+    },
+    "BOSS": {
+     "roots": 13448,
+     "rmse": 31.08,
+     "bias": 9.87
+    },
+    "EVENT": {
+     "roots": 1485,
+     "rmse": 18.21,
+     "bias": 5.61
+    },
+    "turn 0": {
+     "roots": 10597,
+     "rmse": 19.57,
+     "bias": 2.97
+    },
+    "turn 1": {
+     "roots": 9738,
+     "rmse": 19.29,
+     "bias": 3.76
+    },
+    "turn 2": {
+     "roots": 8650,
+     "rmse": 19.3,
+     "bias": 4.39
+    },
+    "turn 3": {
+     "roots": 6371,
+     "rmse": 21.04,
+     "bias": 6.13
+    },
+    "turn 4": {
+     "roots": 4683,
+     "rmse": 22.93,
+     "bias": 7.79
+    },
+    "turn 5": {
+     "roots": 3147,
+     "rmse": 23.43,
+     "bias": 7.5
+    },
+    "turn 6+": {
+     "roots": 10167,
+     "rmse": 238.43,
+     "bias": 117.54
+    },
+    "act 1 ELITE": {
+     "roots": 5066,
+     "rmse": 11.2,
+     "bias": 2.5
+    },
+    "act 1 BOSS": {
+     "roots": 3359,
+     "rmse": 21.67,
+     "bias": 3.86
+    },
+    "act 2 ELITE": {
+     "roots": 3750,
+     "rmse": 17.7,
+     "bias": 2.53
+    },
+    "act 2 BOSS": {
+     "roots": 3523,
+     "rmse": 29.32,
+     "bias": 10.76
+    },
+    "act 3 ELITE": {
+     "roots": 4766,
+     "rmse": 25.5,
+     "bias": 7.14
+    },
+    "act 3 BOSS": {
+     "roots": 4729,
+     "rmse": 31.02,
+     "bias": 8.7
+    },
+    "act 4 ELITE": {
+     "roots": 1584,
+     "rmse": 33.59,
+     "bias": 14.7
+    },
+    "act 4 BOSS": {
+     "roots": 1837,
+     "rmse": 45.68,
+     "bias": 22.16
+    }
+   }
+  }
+ },
+ "onpolicy": {
+  "meta": {
+   "fit": 620106,
+   "fitRuns": 1231,
+   "epochs": 9,
+   "stopRoots": 203853,
+   "stopRmse": 18.033
+  },
+  "test": {
+   "prod": {
+    "all": {
+     "roots": 141754,
+     "rmse": 17.14,
+     "bias": -0.92
+    },
+    "act 1": {
+     "roots": 43325,
+     "rmse": 11.62,
+     "bias": 0.33
+    },
+    "act 2": {
+     "roots": 40853,
+     "rmse": 15.75,
+     "bias": -1.25
+    },
+    "act 3": {
+     "roots": 47556,
+     "rmse": 18.75,
+     "bias": -0.96
+    },
+    "act 4": {
+     "roots": 10020,
+     "rmse": 29.86,
+     "bias": -4.81
+    },
+    "MONSTER": {
+     "roots": 58050,
+     "rmse": 10.07,
+     "bias": 0.09
+    },
+    "ELITE": {
+     "roots": 42759,
+     "rmse": 16.29,
+     "bias": -0.82
+    },
+    "BOSS": {
+     "roots": 37458,
+     "rmse": 25.13,
+     "bias": -2.85
+    },
+    "EVENT": {
+     "roots": 3487,
+     "rmse": 14.6,
+     "bias": 1.74
+    },
+    "turn 0": {
+     "roots": 34871,
+     "rmse": 17.35,
+     "bias": -0.42
+    },
+    "turn 1": {
+     "roots": 29604,
+     "rmse": 16.6,
+     "bias": -0.54
+    },
+    "turn 2": {
+     "roots": 24971,
+     "rmse": 15.9,
+     "bias": -1.27
+    },
+    "turn 3": {
+     "roots": 18207,
+     "rmse": 15.55,
+     "bias": -0.94
+    },
+    "turn 4": {
+     "roots": 12769,
+     "rmse": 17.19,
+     "bias": -0.96
+    },
+    "turn 5": {
+     "roots": 8162,
+     "rmse": 18.17,
+     "bias": -1.39
+    },
+    "turn 6+": {
+     "roots": 13170,
+     "rmse": 20.99,
+     "bias": -2.13
+    },
+    "act 1 ELITE": {
+     "roots": 14519,
+     "rmse": 9.92,
+     "bias": -0.38
+    },
+    "act 1 BOSS": {
+     "roots": 9981,
+     "rmse": 19.49,
+     "bias": 0.68
+    },
+    "act 2 ELITE": {
+     "roots": 10651,
+     "rmse": 15.54,
+     "bias": -0.62
+    },
+    "act 2 BOSS": {
+     "roots": 8988,
+     "rmse": 24.31,
+     "bias": -4.12
+    },
+    "act 3 ELITE": {
+     "roots": 13648,
+     "rmse": 18.92,
+     "bias": -0.76
+    },
+    "act 3 BOSS": {
+     "roots": 12410,
+     "rmse": 25.52,
+     "bias": -3.31
+    },
+    "act 4 ELITE": {
+     "roots": 3941,
+     "rmse": 25.0,
+     "bias": -3.22
+    },
+    "act 4 BOSS": {
+     "roots": 6079,
+     "rmse": 32.62,
+     "bias": -5.83
+    }
+   },
+   "onpolicy": {
+    "all": {
+     "roots": 53353,
+     "rmse": 21.92,
+     "bias": 0.59
+    },
+    "act 1": {
+     "roots": 17652,
+     "rmse": 19.05,
+     "bias": -4.35
+    },
+    "act 2": {
+     "roots": 14833,
+     "rmse": 17.79,
+     "bias": 2.09
+    },
+    "act 3": {
+     "roots": 17447,
+     "rmse": 24.38,
+     "bias": 2.53
+    },
+    "act 4": {
+     "roots": 3421,
+     "rmse": 34.86,
+     "bias": 9.64
+    },
+    "MONSTER": {
+     "roots": 23254,
+     "rmse": 20.44,
+     "bias": -2.24
+    },
+    "ELITE": {
+     "roots": 15166,
+     "rmse": 16.8,
+     "bias": 1.38
+    },
+    "BOSS": {
+     "roots": 13448,
+     "rmse": 28.89,
+     "bias": 4.26
+    },
+    "EVENT": {
+     "roots": 1485,
+     "rmse": 16.48,
+     "bias": 3.64
+    },
+    "turn 0": {
+     "roots": 10597,
+     "rmse": 18.55,
+     "bias": 2.07
+    },
+    "turn 1": {
+     "roots": 9738,
+     "rmse": 18.01,
+     "bias": 1.74
+    },
+    "turn 2": {
+     "roots": 8650,
+     "rmse": 18.19,
+     "bias": 1.42
+    },
+    "turn 3": {
+     "roots": 6371,
+     "rmse": 19.0,
+     "bias": 2.44
+    },
+    "turn 4": {
+     "roots": 4683,
+     "rmse": 21.27,
+     "bias": 3.16
+    },
+    "turn 5": {
+     "roots": 3147,
+     "rmse": 21.41,
+     "bias": 3.2
+    },
+    "turn 6+": {
+     "roots": 10167,
+     "rmse": 31.52,
+     "bias": -5.91
+    },
+    "act 1 ELITE": {
+     "roots": 5066,
+     "rmse": 10.74,
+     "bias": 0.89
+    },
+    "act 1 BOSS": {
+     "roots": 3359,
+     "rmse": 19.3,
+     "bias": 1.82
+    },
+    "act 2 ELITE": {
+     "roots": 3750,
+     "rmse": 17.14,
+     "bias": 0.51
+    },
+    "act 2 BOSS": {
+     "roots": 3523,
+     "rmse": 26.57,
+     "bias": 5.34
+    },
+    "act 3 ELITE": {
+     "roots": 4766,
+     "rmse": 19.04,
+     "bias": 1.01
+    },
+    "act 3 BOSS": {
+     "roots": 4729,
+     "rmse": 29.79,
+     "bias": 1.92
+    },
+    "act 4 ELITE": {
+     "roots": 1584,
+     "rmse": 23.37,
+     "bias": 6.12
+    },
+    "act 4 BOSS": {
+     "roots": 1837,
+     "rmse": 42.33,
+     "bias": 12.68
+    }
+   }
+  }
+ }
+}

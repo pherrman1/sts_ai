@@ -1,0 +1,2 @@
+# outcomes.py on the 256 unit tars
+natural: runs 512, fights 11133, Heart killed 88 (17.2%, 95% CI 14.2-20.7), Heart fights 158 (won 55.7%), act 2 reached 85.0%, act 3 57.0%, act 4 33.2%; runs with an invalid fight 0

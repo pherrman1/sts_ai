@@ -1,0 +1,2 @@
+# exact_combat_solver (20a81523...) 1 111333000 --encounter JAW_WORM --abstract-only --configs prod --leaf-oracles none,head:onp1 --leaf-head-dump; parity.py with the onpolicy checkpoint
+300 leaves: max |trunk diff| 1e-06, max |value diff| 1.05e-05 Silver points, mean |value diff| 3.73e-06
