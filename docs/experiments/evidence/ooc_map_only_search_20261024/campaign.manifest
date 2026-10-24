@@ -1,0 +1,10 @@
+name          ooc-map-only-search
+code_commit   a29681868a5fca41b1b283ed9ff97f22eaa0f78e
+binary_sha256 6c7747a9639a19cdd8a93db6d4964b07afcab83e27d1da82d0d70ce9d9a483d4
+workers       32
+share         /mnt/project-files/ooc-map-only-search
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 45
+input student_sel.bin /mnt/project-files/az-gen3-explore/student_sel.bin cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7
