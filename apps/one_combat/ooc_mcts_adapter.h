@@ -352,6 +352,11 @@ public:
     bool isDeterministicTransition(sts::search::OocStateId, sts::search::OocActionId) const override;
     std::optional<std::uint64_t> outcomeEquivalenceKey(sts::search::OocStateId) const override;
     std::optional<sts::search::OocEndpoint> endpoint(sts::search::OocStateId) const override;
+    // Particle planners: 1 when the edge into this state resolved a combat with the combat model.
+    unsigned edgeCombats(sts::search::OocStateId) const override;
+    // The leaf with `spentCombats` subtracted from the rollout's combats (no-op without a combat horizon).
+    sts::search::OocLeafEvaluation evaluateLeafAfterCombats(sts::search::OocStateId, std::mt19937_64 &,
+                                                           unsigned spentCombats) override;
     // Value-head plan stage 2 (STS_OOC_MCTS_LEAF_COMPARE): n referee rollouts (to the end of the game, no X2-B) from
     // each root action, with stream r shared by the actions (common random numbers). Runs in a forked child, so the
     // model is unchanged.
