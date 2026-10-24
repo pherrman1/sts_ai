@@ -94,8 +94,13 @@ comes from the worker checkout, so the raw header must also resolve run-commit
 versus compiled-code identity. No actual AZ runtime load/fidelity is claimed.
 
 Converted row hashes match the pinned delivery checksum list. Student, g7f_E,
-OOC stop, V4, R2/A20 CTM and Act4 survival model bytes are locally available and
-match the intended source's tracked artifacts. The missing raw units are:
+OOC stop, V4, Ritual-refit R2/A20 CTM and Act4 survival model bytes are locally available and
+match the intended source's tracked artifacts. The base R2 dependencies differ
+from Heart round2: AZ uses `combat_transition_deepsets_pathb_r2_lizard_ritual_refit.native`
+and `combat_transition_near_full_escape_pathb_r2_ritual_refit.native`; Heart uses
+the earlier non-Ritual R2 pair. Independent review corrected this dependency
+metadata before final handoff; no model file or blocking conclusion changed.
+The missing raw units are:
 
 | Unit under `/mnt/project-files/az-gen2-ab/units/` | Expected SHA256 |
 |---|---|

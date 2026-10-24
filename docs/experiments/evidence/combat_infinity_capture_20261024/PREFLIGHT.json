@@ -477,15 +477,15 @@
           "present_and_matches": true
         },
         {
-          "path": "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/selfplay/models/combat_transition_deepsets_pathb_r2_lizard.native",
-          "expected_sha256": "c6d56bbc959f4d5de8fe1dd57f58a922112cd8323bcbac9711e0aecda93f5a3c",
-          "actual_sha256": "c6d56bbc959f4d5de8fe1dd57f58a922112cd8323bcbac9711e0aecda93f5a3c",
+          "path": "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/selfplay/models/combat_transition_deepsets_pathb_r2_lizard_ritual_refit.native",
+          "expected_sha256": "3bbff6b6a413a24dde5c760212828decb8578ff38d5456c0f414d9cbd048bdec",
+          "actual_sha256": "3bbff6b6a413a24dde5c760212828decb8578ff38d5456c0f414d9cbd048bdec",
           "present_and_matches": true
         },
         {
-          "path": "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/selfplay/models/combat_transition_near_full_escape_pathb_r2.native",
-          "expected_sha256": "b9188de03ed6cc0611094c108f607a8770a5d5c5f367c157851bc6af91f8d9cf",
-          "actual_sha256": "b9188de03ed6cc0611094c108f607a8770a5d5c5f367c157851bc6af91f8d9cf",
+          "path": "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/selfplay/models/combat_transition_near_full_escape_pathb_r2_ritual_refit.native",
+          "expected_sha256": "2f0f5d974c6bf178c238dbeb6ae5e6e632c08cff10aee699da296f5d7a9f9b0e",
+          "actual_sha256": "2f0f5d974c6bf178c238dbeb6ae5e6e632c08cff10aee699da296f5d7a9f9b0e",
           "present_and_matches": true
         },
         {
@@ -607,15 +607,15 @@
           "present_and_matches": true
         },
         {
-          "path": "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/selfplay/models/combat_transition_deepsets_pathb_r2_lizard.native",
-          "expected_sha256": "c6d56bbc959f4d5de8fe1dd57f58a922112cd8323bcbac9711e0aecda93f5a3c",
-          "actual_sha256": "c6d56bbc959f4d5de8fe1dd57f58a922112cd8323bcbac9711e0aecda93f5a3c",
+          "path": "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/selfplay/models/combat_transition_deepsets_pathb_r2_lizard_ritual_refit.native",
+          "expected_sha256": "3bbff6b6a413a24dde5c760212828decb8578ff38d5456c0f414d9cbd048bdec",
+          "actual_sha256": "3bbff6b6a413a24dde5c760212828decb8578ff38d5456c0f414d9cbd048bdec",
           "present_and_matches": true
         },
         {
-          "path": "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/selfplay/models/combat_transition_near_full_escape_pathb_r2.native",
-          "expected_sha256": "b9188de03ed6cc0611094c108f607a8770a5d5c5f367c157851bc6af91f8d9cf",
-          "actual_sha256": "b9188de03ed6cc0611094c108f607a8770a5d5c5f367c157851bc6af91f8d9cf",
+          "path": "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/selfplay/models/combat_transition_near_full_escape_pathb_r2_ritual_refit.native",
+          "expected_sha256": "2f0f5d974c6bf178c238dbeb6ae5e6e632c08cff10aee699da296f5d7a9f9b0e",
+          "actual_sha256": "2f0f5d974c6bf178c238dbeb6ae5e6e632c08cff10aee699da296f5d7a9f9b0e",
           "present_and_matches": true
         },
         {
@@ -1161,15 +1161,15 @@
           "present_and_matches": true
         },
         {
-          "path": "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/selfplay/models/combat_transition_deepsets_pathb_r2_lizard.native",
-          "expected_sha256": "c6d56bbc959f4d5de8fe1dd57f58a922112cd8323bcbac9711e0aecda93f5a3c",
-          "actual_sha256": "c6d56bbc959f4d5de8fe1dd57f58a922112cd8323bcbac9711e0aecda93f5a3c",
+          "path": "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/selfplay/models/combat_transition_deepsets_pathb_r2_lizard_ritual_refit.native",
+          "expected_sha256": "3bbff6b6a413a24dde5c760212828decb8578ff38d5456c0f414d9cbd048bdec",
+          "actual_sha256": "3bbff6b6a413a24dde5c760212828decb8578ff38d5456c0f414d9cbd048bdec",
           "present_and_matches": true
         },
         {
-          "path": "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/selfplay/models/combat_transition_near_full_escape_pathb_r2.native",
-          "expected_sha256": "b9188de03ed6cc0611094c108f607a8770a5d5c5f367c157851bc6af91f8d9cf",
-          "actual_sha256": "b9188de03ed6cc0611094c108f607a8770a5d5c5f367c157851bc6af91f8d9cf",
+          "path": "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/selfplay/models/combat_transition_near_full_escape_pathb_r2_ritual_refit.native",
+          "expected_sha256": "2f0f5d974c6bf178c238dbeb6ae5e6e632c08cff10aee699da296f5d7a9f9b0e",
+          "actual_sha256": "2f0f5d974c6bf178c238dbeb6ae5e6e632c08cff10aee699da296f5d7a9f9b0e",
           "present_and_matches": true
         },
         {

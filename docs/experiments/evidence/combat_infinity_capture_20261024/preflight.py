@@ -116,8 +116,8 @@ def main():
    tracked_models=[]
    for name in ('models/combat_policy_mlp_g7f_E.txt','models/candidates/ooc_learned_stop_trees.txt',
                 'selfplay/models/ooc_strategic_tok_final.native',
-                'selfplay/models/combat_transition_deepsets_pathb_r2_lizard.native',
-                'selfplay/models/combat_transition_near_full_escape_pathb_r2.native',
+                'selfplay/models/combat_transition_deepsets_pathb_r2_lizard_ritual_refit.native',
+                'selfplay/models/combat_transition_near_full_escape_pathb_r2_ritual_refit.native',
                 'selfplay/models/combat_transition_deepsets_pathb_a20_lizard.native',
                 'selfplay/models/combat_transition_near_full_escape_pathb_a20.native',
                 'models/candidates/ctm_act4_survival_trees.txt'):
