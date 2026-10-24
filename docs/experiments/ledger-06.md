@@ -24168,7 +24168,7 @@ unchanged validation set.
 Seeds: none (offline).
 **Knowledge impact:** none (diagnostic; no default changed).
 
-## §TBD — student_sel retrained with 50% map mirroring: nearly mirror-equivariant (map flips 16.9% -> 2.5%) but 0.73 pp lower heart1 top-1 on original validation rows; pre-registered gate FAIL (offline, 2026-10-24)
+## §677 — student_sel retrained with 50% map mirroring: nearly mirror-equivariant (map flips 16.9% -> 2.5%) but 0.73 pp lower heart1 top-1 on original validation rows; pre-registered gate FAIL (offline, 2026-10-24)
 
 **Question:** follow-up to §674 (Philipp chose the retrain 2026-10-23 23:55Z): does 50% mirroring remove the asymmetry
 without losing teacher agreement? Gate (card, before training): original-validation top-1 at most 0.5 pp below
