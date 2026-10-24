@@ -85,6 +85,9 @@ namespace sts::search {
             bool priorPlayoutBossElite = true;
             // ADR-0056: elite rooms are left out unless STS_SILVER_PRIOR_PLAYOUT_ELITE=1 (ADR-0050's rooms).
             bool priorPlayoutElite = false;
+            // STS_SILVER_NODE_REUSE_CAP (research, default kReuseCap): node count above which a reroot compacts or
+            // drops the reused tree. Production and data-generator modes refuse any other value.
+            std::size_t reuseCap = kReuseCap;
             // STS_SILVER_LEAF_HEAD (default off): whole-run fights value undecided leaves with this value head
             // on the trunk of STS_SILVER_LEAF_HEAD_TRUNK, blended with the playout (SilverSearcher::LeafHead).
             std::string leafHeadPath, leafHeadTrunkPath;
@@ -538,9 +541,9 @@ namespace sts::search {
                 }
                 if (node != nullptr && !node->isRandomNode) {
                     inheritedVisits = node->simulationCount;
-                    const bool overCap = s->nodeCount() >= kReuseCap;
+                    const bool overCap = s->nodeCount() >= g_options.reuseCap;
                     s->rerootAt(node, overCap);
-                    if (s->nodeCount() >= kReuseCap) {
+                    if (s->nodeCount() >= g_options.reuseCap) {
                         s->setRoot(root);   // compaction could not get below the cap
                         inheritedVisits = 0;
                     }
@@ -1020,6 +1023,14 @@ namespace sts::search {
                 throw std::runtime_error("STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE must be 0 or 1");
             g_options.priorPlayoutBossElite = value == "1";
         }
+        if (const char *raw = std::getenv("STS_SILVER_NODE_REUSE_CAP"); raw && *raw) {
+            char *end = nullptr;
+            const long long value = std::strtoll(raw, &end, 10);
+            if (!std::isdigit(static_cast<unsigned char>(raw[0])) || *end != '\0' || value < 1024 || value > (1LL << 24))
+                throw std::runtime_error("STS_SILVER_NODE_REUSE_CAP must be an integer in [1024, 16777216]");
+            g_options.reuseCap = static_cast<std::size_t>(value);
+            std::cerr << "[silver] research node reuse cap " << g_options.reuseCap << "\n";
+        }
         if (const char *raw = std::getenv("STS_SILVER_PRIOR_PLAYOUT_ELITE"); raw && *raw) {
             const std::string value = raw;
             if (value != "0" && value != "1")
@@ -1264,7 +1275,7 @@ namespace sts::search {
     }
 
     std::int64_t nativeSilverReuseCap() {
-        return static_cast<std::int64_t>(kReuseCap);
+        return static_cast<std::int64_t>(g_options.reuseCap);
     }
 
     const char *const kNativeSilverStopFeatureNames[kStopFeatureCount] = {

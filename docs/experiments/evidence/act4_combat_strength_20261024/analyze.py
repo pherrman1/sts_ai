@@ -13,6 +13,8 @@ STATES = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'states')
 
 
 def load(units_dir):
+    """Rows by cell. A fight that threw (e.g. Silver's 1,000-decision stall guard) is an ERROR row without a budget;
+    its (encounter, state, copy) is dropped from every cell so that the cells stay paired, and counted in ERRORS."""
     cells = defaultdict(list)  # (enc, state, arm, sims) -> rows
     for path in glob.glob(os.path.join(units_dir, '**', '*.csv'), recursive=True):
         base = os.path.basename(path)[:-4]
@@ -24,13 +26,23 @@ def load(units_dir):
             continue
         with open(path) as f:
             for r in csv.DictReader(f):
+                if r['encounter'] == 'ERROR':
+                    ERRORS.append({'enc': enc, 'state': int(state), 'arm': arm, 'copy': int(r['replicate']),
+                                   'what': r['cpuSeconds'].split('#', 1)[-1].strip()})
+                    continue
                 pre = int(r['preHp'])
                 won = int(r['won'])
                 cells[(enc, int(state), arm, int(r['sims']))].append({
                     'valid': int(r['valid']), 'won': won, 'hpLost': pre - (int(r['curHp']) if won else 0),
                     'postHp': int(r['curHp']) if won else 0, 'cpu': float(r['cpuSeconds']), 'preHp': pre,
-                    'potionsUsed': int(r['prePotions']) - int(r['potionCount'])})
-    return cells
+                    'potionsUsed': int(r['prePotions']) - int(r['potionCount']), 'copy': int(r['replicate'])})
+    bad = {(e['enc'], e['state'], e['copy']) for e in ERRORS}
+    for k in cells:
+        cells[k] = [r for r in cells[k] if (k[0], k[1], r['copy']) not in bad]
+    return {k: v for k, v in cells.items() if v}
+
+
+ERRORS = []
 
 
 def per_state(cells, enc, arm, sims, key):
@@ -60,7 +72,7 @@ def contrast(cells, enc, a, b, key):
 
 def main():
     cells = load(sys.argv[1])
-    res = {'cells': {}, 'contrasts': {}, 'descriptive': {}}
+    res = {'cells': {}, 'contrasts': {}, 'descriptive': {}, 'errors': ERRORS}
     for (enc, s, arm, sims), rows in cells.items():
         c = res['cells'].setdefault(f'{enc} {arm}@{sims}', {'fights': 0, 'invalid': 0, 'won': 0, 'hpLost': 0,
                                                             'cpu': 0.0, 'states': set()})
