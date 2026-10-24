@@ -24167,3 +24167,38 @@ measured. Candidate next step (not started): retrain student_sel's recipe with 5
 unchanged validation set.
 Seeds: none (offline).
 **Knowledge impact:** none (diagnostic; no default changed).
+
+## §TBD — CTM-calibration guard at A20: the default per-fight calibration does not lose (+2.15 pp [−1.17, +5.66] Heart kills, NOT_SHOWN) and predicts the guard's 24,186 fights better; the default stays (512 seeds, 2026-10-24)
+
+**Question:** With the §670 per-fight calibration made the A20 CTM default on prediction precision (ADR-0058,
+Philipp's choice "Default on + 512-seed guard", 2026-10-23 20:44Z), does the OOC search kill the Heart clearly less
+often than with the raw CTM? Only WORSE turns the default off.
+**Design:** pre-registered ([PREREG](evidence/ctm_calibration_20261023/PREREG.md)), reviewed with #845 (PASS).
+- A: today's A20 stack (the stage-3 A/B's config, §661, with the M0 leaf) with `STS_CTM_CALIBRATION=0`; C: the same
+  with the default. Real combats are the same Silver; only the search's imagined fights change.
+- 512 seeds (111392000–111392511), both arms per seed on one lane. 16 cloud workers × 4 lanes, queue schedule,
+  RUN_COMMIT `4056cef9` (code `c38fa53d`), binary `b855ee27…`. Authorized 2026-10-23 20:45Z (8 workers) and 22:11Z
+  (16 workers).
+- Primary: Heart kills C − A, 95% seed bootstrap; WORSE if the upper bound is below 0.
+**Result** ([RESULT](evidence/ctm_calibration_20261023/RESULT.md)): 512 of 512 units verified, all 1,024 games valid.
+
+| arm | Heart kills | reached Act 4 | kills per Act-4 arrival | deaths in act 1 / 2 / 3 / 4 | wall vs A |
+|---|---|---|---|---|---|
+| A (raw CTM) | 24.0% | 40.6% | 59.1% | 68 / 117 / 119 / 85 | 1.00 |
+| C (the default) | 26.2% | 44.3% | 59.0% | 60 / 110 / 115 / 93 | 1.05 |
+
+- **C − A +2.15 pp [−1.17, +5.66]: NOT_SHOWN** (45 vs 34 discordant seeds, McNemar p 0.26). Predicted: 0 pp.
+- Reached Act 4 +3.71 pp [+0.20, +7.23] (secondary, descriptive); kills per arrival are unchanged.
+- C fights more Act-3 elites (1.64 vs 1.51 per run) and enters fights with the same HP (within 0.3 HP in every act).
+  Search statistics are about the same (picks off the prior's argmax 4.8% vs 4.9% of searched roots).
+- The CTM's precision on the guard's own 24,186 real fights (new seeds, today's engine fixes; descriptive): death log
+  loss 0.0711 → 0.0660 ([−0.0064, −0.0038]), won-fight HP MAE 8.65 → 7.75 ([−0.99, −0.79]); the Heart predicted
+  0.512 → 0.403 against 0.378 observed; Act-3 bosses' HP bias −20.5 → −1.4. Act-1 bosses improved here (log loss
+  0.2008 → 0.1910); Act-2 elites, Slime Boss, Gremlin Nob and Slavers got slightly worse.
+**Interpretation:** at 512 seeds the guard can only catch a large loss, and it found none; the point estimate leans
+towards the calibration. The extra kills come from reaching Act 4 more often, consistent with a search that fears
+Act-3 fights less (more Act-3 elites, fewer Act-1–3 deaths). The precision gain of §670 holds on fresh fights under
+the fixed engine.
+**Decision:** the default stays (ADR-0058, the PREREG rule).
+- Seeds 111392000–111392511 used; the dropped stage 2 (111392512–111394047) stays reserved and unused.
+- **Knowledge impact:** `evaluation/current-research.md`.

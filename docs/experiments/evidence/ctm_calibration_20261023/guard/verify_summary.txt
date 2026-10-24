@@ -1,0 +1,4 @@
+$ python3 -I tools/cloud/verify_campaign.py docs/experiments/evidence/ctm_calibration_20261023   # exit 0, 2026-10-24
+units OK 512 MISSING 0 BAD 0 of 512; duplicates 0; tars for unknown units 0; run ['4056cef99f9a']; worker DONE.json: 16/16
+$ ... --extract X   # same summary, then:
+extracted 512 units to X
