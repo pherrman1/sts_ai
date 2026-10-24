@@ -47,7 +47,7 @@ Pre-launch checks (results in `SMOKE.md`):
 ## Seeds and scale
 - Campaign: **111374100–111375123** (1,024 seeds, in the free block 111370020–111379989 of the seed ledger; repo seed
   guard clean). One unit = one seed with D, MAP, OFF in sequence (order rotated by seed % 3) on one lane.
-- Extension (only if the rule says EXTEND): **111375124–111376147** (another 1,024, same block).
+- Extension (only if the rule says EXTEND): **111376000–111377023** (another 1,024, same block).
 - Smokes: 111375990–111375999.
 - Cost (smoke seed 111375990, 4 lanes busy): D 689 s, MAP 647 s, OFF 216 s -> ~26 min per unit, ~450 core-hours for
   1,024 units; on 32 workers × 4 lanes ~3.5 h wall plus a straggler tail. MAP costs about as much as D because every
