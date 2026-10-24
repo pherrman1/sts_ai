@@ -1,0 +1,4723 @@
+{
+ "counts": {
+  "roots": 53,
+  "sameCandidates": 53,
+  "hiddenWorldsDiffer": 53,
+  "hiddenInvariantPrior": 53,
+  "p1Exact": 53,
+  "beam11KeepsB": 53,
+  "rootStageReplays": 53,
+  "checkErrors": 0,
+  "B!=A": 21,
+  "C!=A": 22,
+  "C!=B": 17,
+  "A!=prior": 0,
+  "B!=prior": 21,
+  "C!=prior": 22
+ },
+ "shares": {
+  "sameCandidates": 1.0,
+  "hiddenWorldsDiffer": 1.0,
+  "hiddenInvariantPrior": 1.0,
+  "p1Exact": 1.0,
+  "beam11KeepsB": 1.0,
+  "rootStageReplays": 1.0,
+  "checkErrors": 0.0,
+  "B!=A": 0.39622641509433965,
+  "C!=A": 0.41509433962264153,
+  "C!=B": 0.32075471698113206,
+  "A!=prior": 0.0,
+  "B!=prior": 0.39622641509433965,
+  "C!=prior": 0.41509433962264153
+ },
+ "byScreen": {
+  "BOSS_RELIC": {
+   "B!=A": 0,
+   "C!=A": 0,
+   "C!=B": 0,
+   "A!=prior": 0,
+   "B!=prior": 0,
+   "C!=prior": 0,
+   "roots": 1
+  },
+  "CARD_SELECT": {
+   "B!=A": 0,
+   "C!=A": 0,
+   "C!=B": 0,
+   "A!=prior": 0,
+   "B!=prior": 0,
+   "C!=prior": 0,
+   "roots": 1
+  },
+  "EVENT": {
+   "B!=A": 1,
+   "C!=A": 1,
+   "C!=B": 0,
+   "A!=prior": 0,
+   "B!=prior": 1,
+   "C!=prior": 1,
+   "roots": 5
+  },
+  "MAP": {
+   "B!=A": 4,
+   "C!=A": 3,
+   "C!=B": 5,
+   "A!=prior": 0,
+   "B!=prior": 4,
+   "C!=prior": 3,
+   "roots": 12
+  },
+  "REST": {
+   "B!=A": 4,
+   "C!=A": 5,
+   "C!=B": 2,
+   "A!=prior": 0,
+   "B!=prior": 4,
+   "C!=prior": 5,
+   "roots": 6
+  },
+  "REWARDS": {
+   "B!=A": 9,
+   "C!=A": 9,
+   "C!=B": 7,
+   "A!=prior": 0,
+   "B!=prior": 9,
+   "C!=prior": 9,
+   "roots": 24
+  },
+  "SHOP": {
+   "B!=A": 3,
+   "C!=A": 4,
+   "C!=B": 3,
+   "A!=prior": 0,
+   "B!=prior": 3,
+   "C!=prior": 4,
+   "roots": 4
+  }
+ },
+ "cpuPerRoot_s": {
+  "mcts": 8.025053579849056,
+  "particle": 1.838355249754714,
+  "particle_beam": 10.127416245301879
+ },
+ "examples": [
+  {
+   "seed": 111309995,
+   "decision": 0,
+   "act": 1,
+   "floor": 0,
+   "screen": "EVENT",
+   "hp": "68/75",
+   "A": "Choose event option: 0",
+   "B": "Choose event option: 1",
+   "C": "Choose event option: 1",
+   "cBeam": [
+    {
+     "ranks": [
+      1,
+      2,
+      1
+     ],
+     "root": 1,
+     "score": 0.1784302086424192
+    },
+    {
+     "ranks": [
+      1,
+      2,
+      2
+     ],
+     "root": 1,
+     "score": 0.16906188441236783
+    },
+    {
+     "ranks": [
+      2,
+      2,
+      1
+     ],
+     "root": 1,
+     "score": 0.16533878350228287
+    }
+   ],
+   "actions": [
+    {
+     "label": "Choose event option: 0",
+     "prior": 1.0,
+     "A_visits_q": [
+      125,
+      0.14769194988451656
+     ],
+     "B_mean_se": [
+      0.15276843612595314,
+      0.007187598580453335
+     ],
+     "C_final": 0.16234744138605467
+    },
+    {
+     "label": "Choose event option: 1",
+     "prior": 0.009,
+     "A_visits_q": [
+      1,
+      0.1271698010588149
+     ],
+     "B_mean_se": [
+      0.16718323494733103,
+      0.01001323158399676
+     ],
+     "C_final": 0.1784302086424192
+    },
+    {
+     "label": "Choose event option: 2",
+     "prior": 0.003,
+     "A_visits_q": [
+      1,
+      0.10704130106810453
+     ],
+     "B_mean_se": [
+      0.14756774277522042,
+      0.005957031964106134
+     ],
+     "C_final": 0.14756774277522042
+    },
+    {
+     "label": "Choose event option: 3",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.1767582026243499
+     ],
+     "B_mean_se": [
+      0.12629146151089624,
+      0.0074679525070313274
+     ],
+     "C_final": 0.12629146151089624
+    }
+   ]
+  },
+  {
+   "seed": 111309995,
+   "decision": 2,
+   "act": 1,
+   "floor": 0,
+   "screen": "MAP",
+   "hp": "68/75",
+   "A": "Travel to Monster room at (0,0)",
+   "B": "Travel to Monster room at (6,0)",
+   "C": "Travel to Monster room at (0,0)",
+   "cBeam": [
+    {
+     "ranks": [
+      1,
+      1,
+      1
+     ],
+     "root": 0,
+     "score": 0.16717513427278216
+    },
+    {
+     "ranks": [
+      1,
+      1,
+      2
+     ],
+     "root": 3,
+     "score": 0.16535889368281573
+    },
+    {
+     "ranks": [
+      1,
+      2,
+      2
+     ],
+     "root": 3,
+     "score": 0.16142437256407108
+    }
+   ],
+   "actions": [
+    {
+     "label": "Travel to Monster room at (0,0)",
+     "prior": 1.0,
+     "A_visits_q": [
+      512,
+      0.16493938957652962
+     ],
+     "B_mean_se": [
+      0.15932457069057065,
+      0.007634127184814624
+     ],
+     "C_final": 0.16717513427278216
+    },
+    {
+     "label": "Travel to Monster room at (3,0)",
+     "prior": 0.564,
+     "A_visits_q": [
+      257,
+      0.1582524089952522
+     ],
+     "B_mean_se": [
+      0.14819170460691408,
+      0.004396837402292045
+     ],
+     "C_final": 0.16535889368281573
+    },
+    {
+     "label": "Travel to Monster room at (6,0)",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.1557322464006587
+     ],
+     "B_mean_se": [
+      0.16458074427938021,
+      0.011193359742467223
+     ],
+     "C_final": 0.14688476123404673
+    }
+   ]
+  },
+  {
+   "seed": 111309995,
+   "decision": 18,
+   "act": 1,
+   "floor": 6,
+   "screen": "REST",
+   "hp": "75/75",
+   "A": "Upgrade card: Perfected Strike",
+   "B": "Upgrade card: Battle Trance",
+   "C": "Upgrade card: Battle Trance",
+   "cBeam": [
+    {
+     "ranks": [
+      1,
+      1,
+      1
+     ],
+     "root": 4,
+     "score": 0.15182905699902607
+    },
+    {
+     "ranks": [
+      1,
+      1,
+      2
+     ],
+     "root": 4,
+     "score": 0.14385247888596256
+    },
+    {
+     "ranks": [
+      1,
+      2,
+      1
+     ],
+     "root": 2,
+     "score": 0.1387477492685987
+    }
+   ],
+   "actions": [
+    {
+     "label": "Upgrade card: Defend",
+     "prior": 0.0,
+     "A_visits_q": [
+      2,
+      0.13121494585902876
+     ],
+     "B_mean_se": [
+      0.1223469491213064,
+      0.008599454394652813
+     ],
+     "C_final": 0.1223469491213064
+    },
+    {
+     "label": "Upgrade card: Infernal Blade",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.11638050673869663
+     ],
+     "B_mean_se": [
+      0.13472163769055462,
+      0.007943947707332671
+     ],
+     "C_final": 0.13098875406721616
+    },
+    {
+     "label": "Upgrade card: Perfected Strike",
+     "prior": 1.0,
+     "A_visits_q": [
+      4079,
+      0.12443184814193647
+     ],
+     "B_mean_se": [
+      0.13531984966513366,
+      0.008925784220644002
+     ],
+     "C_final": 0.1387477492685987
+    },
+    {
+     "label": "Upgrade card: Bash",
+     "prior": 0.0,
+     "A_visits_q": [
+      4,
+      0.12728778386357265
+     ],
+     "B_mean_se": [
+      0.13369337285819044,
+      0.008737619482953124
+     ],
+     "C_final": 0.13174493060385895
+    },
+    {
+     "label": "Upgrade card: Battle Trance",
+     "prior": 0.0,
+     "A_visits_q": [
+      4,
+      0.14156036697605784
+     ],
+     "B_mean_se": [
+      0.13927312992642968,
+      0.009042252453901172
+     ],
+     "C_final": 0.15182905699902607
+    },
+    {
+     "label": "Upgrade card: Strike",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.12176523088255649
+     ],
+     "B_mean_se": [
+      0.13126933470453292,
+      0.009145181749830214
+     ],
+     "C_final": 0.13126933470453292
+    },
+    {
+     "label": "Upgrade card: Thunderclap",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.12537415354538836
+     ],
+     "B_mean_se": [
+      0.1287939692293647,
+      0.007822176845506009
+     ],
+     "C_final": 0.1287939692293647
+    },
+    {
+     "label": "Rest",
+     "prior": 0.0,
+     "A_visits_q": [
+      3,
+      0.13909973814743684
+     ],
+     "B_mean_se": [
+      0.12357524117350385,
+      0.008263119490433415
+     ],
+     "C_final": 0.12357524117350385
+    },
+    {
+     "label": "Take Ruby Key",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.08640283500135545
+     ],
+     "B_mean_se": [
+      0.11045402550684764,
+      0.0075143219974837866
+     ],
+     "C_final": 0.11045402550684764
+    }
+   ]
+  },
+  {
+   "seed": 111309995,
+   "decision": 22,
+   "act": 1,
+   "floor": 7,
+   "screen": "MAP",
+   "hp": "75/75",
+   "A": "Travel to Rest room at (4,7)",
+   "B": "Travel to Event room at (3,7)",
+   "C": "Travel to Event room at (3,7)",
+   "cBeam": [
+    {
+     "ranks": [
+      1,
+      2,
+      1
+     ],
+     "root": 3,
+     "score": 0.12904915967078734
+    },
+    {
+     "ranks": [
+      2,
+      1,
+      1
+     ],
+     "root": 4,
+     "score": 0.1270941123223241
+    },
+    {
+     "ranks": [
+      2,
+      2,
+      1
+     ],
+     "root": 4,
+     "score": 0.1270941123223241
+    }
+   ],
+   "actions": [
+    {
+     "label": "Travel to Event room at (3,7)",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.0
+     ],
+     "B_mean_se": [
+      0.12920827975920446,
+      0.0075020287991042055
+     ],
+     "C_final": 0.12904915967078734
+    },
+    {
+     "label": "Travel to Rest room at (4,7)",
+     "prior": 1.0,
+     "A_visits_q": [
+      127,
+      0.12441313846462165
+     ],
+     "B_mean_se": [
+      0.12233608496661005,
+      0.0071921583093828454
+     ],
+     "C_final": 0.1270941123223241
+    }
+   ]
+  },
+  {
+   "seed": 111309995,
+   "decision": 23,
+   "act": 1,
+   "floor": 8,
+   "screen": "REST",
+   "hp": "75/75",
+   "A": "Upgrade card: Thunderclap",
+   "B": "Upgrade card: Infernal Blade",
+   "C": "Upgrade card: Battle Trance",
+   "cBeam": [
+    {
+     "ranks": [
+      1,
+      1,
+      1
+     ],
+     "root": 3,
+     "score": 0.11813791957031233
+    },
+    {
+     "ranks": [
+      2,
+      1,
+      1
+     ],
+     "root": 3,
+     "score": 0.11813791957031233
+    },
+    {
+     "ranks": [
+      1,
+      1,
+      1
+     ],
+     "root": 1,
+     "score": 0.11788659894275372
+    }
+   ],
+   "actions": [
+    {
+     "label": "Upgrade card: Defend",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.10407006814365749
+     ],
+     "B_mean_se": [
+      0.10720770701233769,
+      0.010020081902197421
+     ],
+     "C_final": 0.10720770701233769
+    },
+    {
+     "label": "Upgrade card: Infernal Blade",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.0941104676412753
+     ],
+     "B_mean_se": [
+      0.12532474218098896,
+      0.010341585192802817
+     ],
+     "C_final": 0.11788659894275372
+    },
+    {
+     "label": "Upgrade card: Bash",
+     "prior": 0.03,
+     "A_visits_q": [
+      3,
+      0.13740987198116017
+     ],
+     "B_mean_se": [
+      0.12113394966289256,
+      0.01027127265286242
+     ],
+     "C_final": 0.11449563211964535
+    },
+    {
+     "label": "Upgrade card: Battle Trance",
+     "prior": 0.001,
+     "A_visits_q": [
+      1,
+      0.023435470122073015
+     ],
+     "B_mean_se": [
+      0.12339331525609012,
+      0.010682239501042074
+     ],
+     "C_final": 0.11813791957031233
+    },
+    {
+     "label": "Upgrade card: Strike",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.06386299961637613
+     ],
+     "B_mean_se": [
+      0.11411268297398192,
+      0.01048709547407577
+     ],
+     "C_final": 0.11411268297398192
+    },
+    {
+     "label": "Upgrade card: Thunderclap",
+     "prior": 0.969,
+     "A_visits_q": [
+      119,
+      0.12989957108418465
+     ],
+     "B_mean_se": [
+      0.11563346649950314,
+      0.010266740195688549
+     ],
+     "C_final": 0.11131436345092814
+    },
+    {
+     "label": "Rest",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.06146618166693271
+     ],
+     "B_mean_se": [
+      0.11073911341463791,
+      0.010421655206622202
+     ],
+     "C_final": 0.11073911341463791
+    },
+    {
+     "label": "Take Ruby Key",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.050424968949717645
+     ],
+     "B_mean_se": [
+      0.093091770583694,
+      0.009016447589462075
+     ],
+     "C_final": 0.093091770583694
+    }
+   ]
+  },
+  {
+   "seed": 111309995,
+   "decision": 35,
+   "act": 1,
+   "floor": 11,
+   "screen": "REWARDS",
+   "hp": "61/75",
+   "A": "Take card: Pommel Strike",
+   "B": "Take card: Pommel Strike",
+   "C": "Take card: Bludgeon",
+   "cBeam": [
+    {
+     "ranks": [
+      2,
+      1,
+      1
+     ],
+     "root": 2,
+     "score": 0.16927140797905998
+    },
+    {
+     "ranks": [
+      2,
+      1,
+      1
+     ],
+     "root": 1,
+     "score": 0.16403196917723126
+    },
+    {
+     "ranks": [
+      2,
+      2,
+      1
+     ],
+     "root": 2,
+     "score": 0.16074301805602983
+    }
+   ],
+   "actions": [
+    {
+     "label": "Skip card reward",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.14209081332295126
+     ],
+     "B_mean_se": [
+      0.1287531333092106,
+      0.00702045106923556
+     ],
+     "C_final": 0.1287531333092106
+    },
+    {
+     "label": "Take card: Pommel Strike",
+     "prior": 1.0,
+     "A_visits_q": [
+      125,
+      0.12109157229926291
+     ],
+     "B_mean_se": [
+      0.15895687079163623,
+      0.007903472989618252
+     ],
+     "C_final": 0.16403196917723126
+    },
+    {
+     "label": "Take card: Bludgeon",
+     "prior": 0.006,
+     "A_visits_q": [
+      1,
+      0.0
+     ],
+     "B_mean_se": [
+      0.1308007635106995,
+      0.006823966934059828
+     ],
+     "C_final": 0.16927140797905998
+    },
+    {
+     "label": "Take card: Clash",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.07968341843441604
+     ],
+     "B_mean_se": [
+      0.1308925110271946,
+      0.0073319087403332425
+     ],
+     "C_final": 0.15748254236928522
+    }
+   ]
+  },
+  {
+   "seed": 111309995,
+   "decision": 46,
+   "act": 1,
+   "floor": 14,
+   "screen": "REWARDS",
+   "hp": "49/75",
+   "A": "Take card: Uppercut",
+   "B": "Take card: Flame Barrier",
+   "C": "Take card: Flame Barrier",
+   "cBeam": [
+    {
+     "ranks": [
+      1
+     ],
+     "root": 2,
+     "score": 0.1473667899625656
+    },
+    {
+     "ranks": [
+      2
+     ],
+     "root": 3,
+     "score": 0.14243067530672496
+    },
+    {
+     "ranks": [
+      1
+     ],
+     "root": 0,
+     "score": 0.13717910844969536
+    }
+   ],
+   "actions": [
+    {
+     "label": "Skip card reward",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.10500510311797154
+     ],
+     "B_mean_se": [
+      0.13482525537163928,
+      0.010298349413761598
+     ],
+     "C_final": 0.13717910844969536
+    },
+    {
+     "label": "Take card: Armaments",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.1422611786940833
+     ],
+     "B_mean_se": [
+      0.1040155379485429,
+      0.007539628679990544
+     ],
+     "C_final": 0.13457179221993384
+    },
+    {
+     "label": "Take card: Flame Barrier",
+     "prior": 0.202,
+     "A_visits_q": [
+      115,
+      0.1338736927108068
+     ],
+     "B_mean_se": [
+      0.1399756038111483,
+      0.01001567265718682
+     ],
+     "C_final": 0.1473667899625656
+    },
+    {
+     "label": "Take card: Uppercut",
+     "prior": 1.0,
+     "A_visits_q": [
+      512,
+      0.128904367423486
+     ],
+     "B_mean_se": [
+      0.1305864831885616,
+      0.010193547600141357
+     ],
+     "C_final": 0.14243067530672496
+    }
+   ]
+  },
+  {
+   "seed": 111309995,
+   "decision": 48,
+   "act": 1,
+   "floor": 15,
+   "screen": "REST",
+   "hp": "49/75",
+   "A": "Upgrade card: Uppercut",
+   "B": "Upgrade card: Inflame",
+   "C": "Upgrade card: Inflame",
+   "cBeam": [
+    {
+     "ranks": [],
+     "root": 2,
+     "score": 0.1320567116311083
+    },
+    {
+     "ranks": [],
+     "root": 7,
+     "score": 0.11680825046406895
+    },
+    {
+     "ranks": [],
+     "root": 6,
+     "score": 0.11325638884037144
+    }
+   ],
+   "actions": [
+    {
+     "label": "Upgrade card: Defend",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.05346259007356304
+     ],
+     "B_mean_se": [
+      0.1018866009763987,
+      0.005682754965930927
+     ],
+     "C_final": 0.1018866009763987
+    },
+    {
+     "label": "Upgrade card: Headbutt",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.07920887548310997
+     ],
+     "B_mean_se": [
+      0.10323664748532276,
+      0.00586629706553445
+     ],
+     "C_final": 0.10323664748532276
+    },
+    {
+     "label": "Upgrade card: Inflame",
+     "prior": 0.043,
+     "A_visits_q": [
+      4,
+      0.10013443139239597
+     ],
+     "B_mean_se": [
+      0.1320567116311083,
+      0.007146166242256443
+     ],
+     "C_final": 0.1320567116311083
+    },
+    {
+     "label": "Upgrade card: Bash",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.11326220560489918
+     ],
+     "B_mean_se": [
+      0.10297257923521534,
+      0.005809577626199671
+     ],
+     "C_final": 0.10297257923521534
+    },
+    {
+     "label": "Upgrade card: Battle Trance",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.05694028822970487
+     ],
+     "B_mean_se": [
+      0.10462755521175905,
+      0.005761823153560895
+     ],
+     "C_final": 0.10462755521175905
+    },
+    {
+     "label": "Upgrade card: Strike",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.1274648255426226
+     ],
+     "B_mean_se": [
+      0.10338265349271737,
+      0.0058235777720148625
+     ],
+     "C_final": 0.10338265349271737
+    },
+    {
+     "label": "Upgrade card: Uppercut",
+     "prior": 0.957,
+     "A_visits_q": [
+      116,
+      0.12110032906120169
+     ],
+     "B_mean_se": [
+      0.11325638884037144,
+      0.005979741815192515
+     ],
+     "C_final": 0.11325638884037144
+    },
+    {
+     "label": "Rest",
+     "prior": 0.003,
+     "A_visits_q": [
+      2,
+      0.2018748923769673
+     ],
+     "B_mean_se": [
+      0.11680825046406895,
+      0.005883968833162457
+     ],
+     "C_final": 0.11680825046406895
+    },
+    {
+     "label": "Take Ruby Key",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.09954085891567156
+     ],
+     "B_mean_se": [
+      0.08109937344395211,
+      0.005177341659409688
+     ],
+     "C_final": 0.08109937344395211
+    }
+   ]
+  },
+  {
+   "seed": 111309995,
+   "decision": 53,
+   "act": 2,
+   "floor": 17,
+   "screen": "MAP",
+   "hp": "63/75",
+   "A": "Travel to Monster room at (0,0)",
+   "B": "Travel to Monster room at (0,0)",
+   "C": "Travel to Monster room at (5,0)",
+   "cBeam": [
+    {
+     "ranks": [
+      1,
+      2,
+      1
+     ],
+     "root": 5,
+     "score": 0.18779112473369985
+    },
+    {
+     "ranks": [
+      1,
+      1,
+      1
+     ],
+     "root": 0,
+     "score": 0.18218692151704471
+    },
+    {
+     "ranks": [
+      2,
+      2,
+      1
+     ],
+     "root": 5,
+     "score": 0.17719124009503182
+    }
+   ],
+   "actions": [
+    {
+     "label": "Travel to Monster room at (0,0)",
+     "prior": 1.0,
+     "A_visits_q": [
+      3515,
+      0.18450862222168576
+     ],
+     "B_mean_se": [
+      0.1929466834995679,
+      0.013178064721527468
+     ],
+     "C_final": 0.18218692151704471
+    },
+    {
+     "label": "Travel to Monster room at (5,0)",
+     "prior": 0.319,
+     "A_visits_q": [
+      581,
+      0.1650460786760644
+     ],
+     "B_mean_se": [
+      0.1553901958950235,
+      0.010663582449147791
+     ],
+     "C_final": 0.18779112473369985
+    }
+   ]
+  },
+  {
+   "seed": 111309995,
+   "decision": 56,
+   "act": 2,
+   "floor": 18,
+   "screen": "REWARDS",
+   "hp": "69/75",
+   "A": "Skip card reward",
+   "B": "Take card: Thunderclap",
+   "C": "Skip card reward",
+   "cBeam": [
+    {
+     "ranks": [
+      1,
+      1,
+      1
+     ],
+     "root": 0,
+     "score": 0.20082331592112485
+    },
+    {
+     "ranks": [
+      1,
+      1,
+      1
+     ],
+     "root": 1,
+     "score": 0.20074618875554423
+    },
+    {
+     "ranks": [
+      2,
+      1,
+      1
+     ],
+     "root": 1,
+     "score": 0.19310666713893038
+    }
+   ],
+   "actions": [
+    {
+     "label": "Skip card reward",
+     "prior": 1.0,
+     "A_visits_q": [
+      125,
+      0.21055644334454932
+     ],
+     "B_mean_se": [
+      0.20567539383134428,
+      0.014185790972094312
+     ],
+     "C_final": 0.20082331592112485
+    },
+    {
+     "label": "Take card: Thunderclap",
+     "prior": 0.014,
+     "A_visits_q": [
+      1,
+      0.10752288930546942
+     ],
+     "B_mean_se": [
+      0.20677861302073178,
+      0.014274957047453449
+     ],
+     "C_final": 0.20074618875554423
+    },
+    {
+     "label": "Take card: Wild Strike",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.12414854499858126
+     ],
+     "B_mean_se": [
+      0.16657031421282023,
+      0.012989839387404598
+     ],
+     "C_final": 0.16657031421282023
+    },
+    {
+     "label": "Take card: Bloodletting",
+     "prior": 0.013,
+     "A_visits_q": [
+      1,
+      0.16748350222752686
+     ],
+     "B_mean_se": [
+      0.19708529619318985,
+      0.014157325655809004
+     ],
+     "C_final": 0.18942500694817407
+    }
+   ]
+  },
+  {
+   "seed": 111309995,
+   "decision": 59,
+   "act": 2,
+   "floor": 19,
+   "screen": "REWARDS",
+   "hp": "75/75",
+   "A": "Take card: Clothesline",
+   "B": "Skip card reward",
+   "C": "Take card: Clothesline",
+   "cBeam": [
+    {
+     "ranks": [
+      1,
+      1,
+      1
+     ],
+     "root": 3,
+     "score": 0.1961537901509995
+    },
+    {
+     "ranks": [
+      1,
+      2,
+      1
+     ],
+     "root": 3,
+     "score": 0.1890855080354616
+    },
+    {
+     "ranks": [
+      1,
+      1,
+      1
+     ],
+     "root": 0,
+     "score": 0.18563363030165467
+    }
+   ],
+   "actions": [
+    {
+     "label": "Skip card reward",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.2731466528504191
+     ],
+     "B_mean_se": [
+      0.18913197432166703,
+      0.014508684482999967
+     ],
+     "C_final": 0.18563363030165467
+    },
+    {
+     "label": "Take card: Dual Wield",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.027676125413910242
+     ],
+     "B_mean_se": [
+      0.16627338898030106,
+      0.01305905277088933
+     ],
+     "C_final": 0.17135830566743224
+    },
+    {
+     "label": "Take card: True Grit",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.0725933305997578
+     ],
+     "B_mean_se": [
+      0.1774668533902225,
+      0.013589597886045815
+     ],
+     "C_final": 0.18195053151976373
+    },
+    {
+     "label": "Take card: Clothesline",
+     "prior": 1.0,
+     "A_visits_q": [
+      125,
+      0.19058739965262186
+     ],
+     "B_mean_se": [
+      0.18845236453717754,
+      0.014850160138471164
+     ],
+     "C_final": 0.1961537901509995
+    }
+   ]
+  },
+  {
+   "seed": 111309995,
+   "decision": 66,
+   "act": 2,
+   "floor": 21,
+   "screen": "REWARDS",
+   "hp": "57/81",
+   "A": "Take card: Power Through",
+   "B": "Take card: Shrug It Off",
+   "C": "Take card: Shrug It Off",
+   "cBeam": [
+    {
+     "ranks": [
+      1,
+      1,
+      1
+     ],
+     "root": 2,
+     "score": 0.22107920838267026
+    },
+    {
+     "ranks": [
+      1,
+      1,
+      1
+     ],
+     "root": 1,
+     "score": 0.2205278074295562
+    },
+    {
+     "ranks": [
+      1,
+      2,
+      1
+     ],
+     "root": 2,
+     "score": 0.2156067819080865
+    }
+   ],
+   "actions": [
+    {
+     "label": "Skip card reward",
+     "prior": 0.004,
+     "A_visits_q": [
+      1,
+      0.282785736613436
+     ],
+     "B_mean_se": [
+      0.18357710530253468,
+      0.013217419976653585
+     ],
+     "C_final": 0.20959201066918343
+    },
+    {
+     "label": "Take card: Power Through",
+     "prior": 1.0,
+     "A_visits_q": [
+      119,
+      0.21631558851498686
+     ],
+     "B_mean_se": [
+      0.18998044690603663,
+      0.013152789174499926
+     ],
+     "C_final": 0.2205278074295562
+    },
+    {
+     "label": "Take card: Shrug It Off",
+     "prior": 0.083,
+     "A_visits_q": [
+      7,
+      0.1758870975911486
+     ],
+     "B_mean_se": [
+      0.19098546778107894,
+      0.013207645345090552
+     ],
+     "C_final": 0.22107920838267026
+    },
+    {
+     "label": "Take card: True Grit",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.16446739372372016
+     ],
+     "B_mean_se": [
+      0.17144809121800839,
+      0.01290633336119599
+     ],
+     "C_final": 0.17144809121800839
+    }
+   ]
+  },
+  {
+   "seed": 111309995,
+   "decision": 70,
+   "act": 2,
+   "floor": 23,
+   "screen": "REST",
+   "hp": "57/81",
+   "A": "Rest",
+   "B": "Rest",
+   "C": "Upgrade card: Inflame",
+   "cBeam": [
+    {
+     "ranks": [
+      1,
+      1,
+      1
+     ],
+     "root": 3,
+     "score": 0.19958638408923213
+    },
+    {
+     "ranks": [
+      1,
+      1,
+      1
+     ],
+     "root": 8,
+     "score": 0.1979814688983172
+    },
+    {
+     "ranks": [
+      1,
+      1,
+      1
+     ],
+     "root": 1,
+     "score": 0.1977862477085414
+    }
+   ],
+   "actions": [
+    {
+     "label": "Upgrade card: Defend",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.05417657531646392
+     ],
+     "B_mean_se": [
+      0.18360571444699758,
+      0.016611798367597946
+     ],
+     "C_final": 0.18360571444699758
+    },
+    {
+     "label": "Upgrade card: Feed",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.23507657550746291
+     ],
+     "B_mean_se": [
+      0.21532044261339242,
+      0.01898400393031248
+     ],
+     "C_final": 0.1977862477085414
+    },
+    {
+     "label": "Upgrade card: Headbutt",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.0
+     ],
+     "B_mean_se": [
+      0.1811374882324572,
+      0.016676814259212497
+     ],
+     "C_final": 0.1811374882324572
+    },
+    {
+     "label": "Upgrade card: Inflame",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.22692057214605527
+     ],
+     "B_mean_se": [
+      0.218096736483232,
+      0.017859657447624536
+     ],
+     "C_final": 0.19958638408923213
+    },
+    {
+     "label": "Upgrade card: Power Through",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.15954581326379766
+     ],
+     "B_mean_se": [
+      0.1845530928216592,
+      0.016667823286831106
+     ],
+     "C_final": 0.1845530928216592
+    },
+    {
+     "label": "Upgrade card: Bash",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.1750327069675678
+     ],
+     "B_mean_se": [
+      0.17727205672316645,
+      0.016162857875820665
+     ],
+     "C_final": 0.17727205672316645
+    },
+    {
+     "label": "Upgrade card: Battle Trance",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.09421136418606345
+     ],
+     "B_mean_se": [
+      0.18594364090160287,
+      0.016643113695486853
+     ],
+     "C_final": 0.18594364090160287
+    },
+    {
+     "label": "Upgrade card: Strike",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.1709112503434153
+     ],
+     "B_mean_se": [
+      0.18534623237937492,
+      0.016699715371429773
+     ],
+     "C_final": 0.18534623237937492
+    },
+    {
+     "label": "Rest",
+     "prior": 1.0,
+     "A_visits_q": [
+      119,
+      0.18155732920368858
+     ],
+     "B_mean_se": [
+      0.22537758274507516,
+      0.01693377320973114
+     ],
+     "C_final": 0.1979814688983172
+    },
+    {
+     "label": "Take Ruby Key",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.13123205068498142
+     ],
+     "B_mean_se": [
+      0.15690554336671275,
+      0.015890397157306203
+     ],
+     "C_final": 0.15690554336671275
+    }
+   ]
+  },
+  {
+   "seed": 111309995,
+   "decision": 76,
+   "act": 2,
+   "floor": 25,
+   "screen": "MAP",
+   "hp": "68/81",
+   "A": "Travel to Treasure room at (1,8)",
+   "B": "Travel to Treasure room at (2,8)",
+   "C": "Travel to Treasure room at (1,8)",
+   "cBeam": [
+    {
+     "ranks": [
+      1,
+      2,
+      2
+     ],
+     "root": 1,
+     "score": 0.20854774882193702
+    },
+    {
+     "ranks": [
+      1,
+      1,
+      1
+     ],
+     "root": 2,
+     "score": 0.20178163043047245
+    },
+    {
+     "ranks": [
+      1,
+      2,
+      1
+     ],
+     "root": 2,
+     "score": 0.1980481327281338
+    }
+   ],
+   "actions": [
+    {
+     "label": "Travel to Treasure room at (1,8)",
+     "prior": 1.0,
+     "A_visits_q": [
+      513,
+      0.1667217634573669
+     ],
+     "B_mean_se": [
+      0.1764482215542203,
+      0.018191860803625594
+     ],
+     "C_final": 0.20854774882193702
+    },
+    {
+     "label": "Travel to Treasure room at (2,8)",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.2291042945826464
+     ],
+     "B_mean_se": [
+      0.19998526369133357,
+      0.013937116391774248
+     ],
+     "C_final": 0.20178163043047245
+    }
+   ]
+  },
+  {
+   "seed": 111309995,
+   "decision": 81,
+   "act": 2,
+   "floor": 26,
+   "screen": "MAP",
+   "hp": "68/81",
+   "A": "Travel to Elite room at (1,9)",
+   "B": "Travel to Elite room at (1,9)",
+   "C": "Travel to Rest room at (2,9)",
+   "cBeam": [
+    {
+     "ranks": [
+      2,
+      1,
+      1
+     ],
+     "root": 2,
+     "score": 0.22155212960060622
+    },
+    {
+     "ranks": [
+      2,
+      1,
+      2
+     ],
+     "root": 2,
+     "score": 0.22023021799560744
+    },
+    {
+     "ranks": [
+      1,
+      1,
+      1
+     ],
+     "root": 1,
+     "score": 0.2132225444908369
+    }
+   ],
+   "actions": [
+    {
+     "label": "Travel to Elite room at (1,9)",
+     "prior": 1.0,
+     "A_visits_q": [
+      513,
+      0.19987152657909443
+     ],
+     "B_mean_se": [
+      0.22304217946090407,
+      0.019355032498758033
+     ],
+     "C_final": 0.2132225444908369
+    },
+    {
+     "label": "Travel to Rest room at (2,9)",
+     "prior": 0.141,
+     "A_visits_q": [
+      60,
+      0.18703020127982187
+     ],
+     "B_mean_se": [
+      0.21648748450766145,
+      0.018741466236371785
+     ],
+     "C_final": 0.22155212960060622
+    }
+   ]
+  },
+  {
+   "seed": 111309995,
+   "decision": 90,
+   "act": 2,
+   "floor": 29,
+   "screen": "SHOP",
+   "hp": "59/81",
+   "A": "Buy relic: Orrery",
+   "B": "Buy card: Metallicize",
+   "C": "Buy card: Metallicize",
+   "cBeam": [
+    {
+     "ranks": [
+      2,
+      2,
+      2
+     ],
+     "root": 21,
+     "score": 0.17079950256639712
+    },
+    {
+     "ranks": [
+      2,
+      1,
+      1
+     ],
+     "root": 21,
+     "score": 0.1701554327746656
+    },
+    {
+     "ranks": [
+      1,
+      1,
+      2
+     ],
+     "root": 28,
+     "score": 0.16657163178916512
+    }
+   ],
+   "actions": [
+    {
+     "label": "Remove card: Defend",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.11933602309537356
+     ],
+     "B_mean_se": [
+      0.13668807575128272,
+      0.009534407920500504
+     ],
+     "C_final": 0.13668807575128272
+    },
+    {
+     "label": "Remove card: Defend",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.10199150527888506
+     ],
+     "B_mean_se": [
+      0.13651971134700946,
+      0.009557042618371132
+     ],
+     "C_final": 0.13651971134700946
+    },
+    {
+     "label": "Remove card: Feed",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.0968363220462049
+     ],
+     "B_mean_se": [
+      0.11281222394571755,
+      0.00846075781235192
+     ],
+     "C_final": 0.11281222394571755
+    },
+    {
+     "label": "Remove card: Flame Barrier",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.08648740280017943
+     ],
+     "B_mean_se": [
+      0.1279764567699956,
+      0.009131023050710799
+     ],
+     "C_final": 0.1279764567699956
+    },
+    {
+     "label": "Remove card: Headbutt",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.09117118940436275
+     ],
+     "B_mean_se": [
+      0.13160777272280744,
+      0.009025931748720186
+     ],
+     "C_final": 0.13160777272280744
+    },
+    {
+     "label": "Remove card: Infernal Blade",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.14117610114001555
+     ],
+     "B_mean_se": [
+      0.13284653171795646,
+      0.00933520620878392
+     ],
+     "C_final": 0.13284653171795646
+    },
+    {
+     "label": "Remove card: Inflame",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.11421333602348807
+     ],
+     "B_mean_se": [
+      0.12385665664560154,
+      0.008967380919501559
+     ],
+     "C_final": 0.12385665664560154
+    },
+    {
+     "label": "Remove card: Limit Break",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.08687912767117208
+     ],
+     "B_mean_se": [
+      0.12242408670066679,
+      0.00861063717562019
+     ],
+     "C_final": 0.12242408670066679
+    },
+    {
+     "label": "Remove card: Perfected Strike",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.1596167100518961
+     ],
+     "B_mean_se": [
+      0.12386826978838221,
+      0.008767870580275219
+     ],
+     "C_final": 0.12386826978838221
+    },
+    {
+     "label": "Remove card: Pommel Strike",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.22820001482140143
+     ],
+     "B_mean_se": [
+      0.10920209944940898,
+      0.008440705289530722
+     ],
+     "C_final": 0.10920209944940898
+    },
+    {
+     "label": "Remove card: Power Through",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.20113679007863577
+     ],
+     "B_mean_se": [
+      0.1311719573057299,
+      0.009119541835141833
+     ],
+     "C_final": 0.1311719573057299
+    },
+    {
+     "label": "Remove card: Power Through",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.15258398687819016
+     ],
+     "B_mean_se": [
+      0.13073971056444933,
+      0.008790331330731737
+     ],
+     "C_final": 0.13073971056444933
+    },
+    {
+     "label": "Remove card: Bash",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.09144460512635284
+     ],
+     "B_mean_se": [
+      0.12609788247354026,
+      0.008741331847467297
+     ],
+     "C_final": 0.12609788247354026
+    },
+    {
+     "label": "Remove card: Battle Trance",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.09673547572945966
+     ],
+     "B_mean_se": [
+      0.12428884104201025,
+      0.009112143553141676
+     ],
+     "C_final": 0.12428884104201025
+    },
+    {
+     "label": "Remove card: Spot Weakness",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.12516001871475918
+     ],
+     "B_mean_se": [
+      0.12498344420169549,
+      0.008820919784382085
+     ],
+     "C_final": 0.12498344420169549
+    },
+    {
+     "label": "Remove card: Strike",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.13775701744272087
+     ],
+     "B_mean_se": [
+      0.13569859607783682,
+      0.009432224429130005
+     ],
+     "C_final": 0.13569859607783682
+    },
+    {
+     "label": "Remove card: Thunderclap",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.11092320917218655
+     ],
+     "B_mean_se": [
+      0.13077540300719565,
+      0.009121043381803667
+     ],
+     "C_final": 0.13077540300719565
+    },
+    {
+     "label": "Remove card: Uppercut",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.06732217441326911
+     ],
+     "B_mean_se": [
+      0.11448991222189248,
+      0.008983227579688679
+     ],
+     "C_final": 0.11448991222189248
+    },
+    {
+     "label": "Remove card: Clothesline",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.13683742537607463
+     ],
+     "B_mean_se": [
+      0.12865576414861535,
+      0.00912205183408575
+     ],
+     "C_final": 0.12865576414861535
+    },
+    {
+     "label": "Buy card: Headbutt",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.11548170576555727
+     ],
+     "B_mean_se": [
+      0.14499504118068382,
+      0.008916600154185847
+     ],
+     "C_final": 0.14499504118068382
+    },
+    {
+     "label": "Buy card: Infernal Blade",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.08970866043847912
+     ],
+     "B_mean_se": [
+      0.1426985391976847,
+      0.008601618741832004
+     ],
+     "C_final": 0.1426985391976847
+    },
+    {
+     "label": "Buy card: Metallicize",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.15976478500969865
+     ],
+     "B_mean_se": [
+      0.18413142052420464,
+      0.01070495814198072
+     ],
+     "C_final": 0.17079950256639712
+    },
+    {
+     "label": "Buy card: Secret Technique",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.12138037933129431
+     ],
+     "B_mean_se": [
+      0.11159332684481245,
+      0.008186003032351421
+     ],
+     "C_final": 0.11159332684481245
+    },
+    {
+     "label": "Buy card: Spot Weakness",
+     "prior": 0.006,
+     "A_visits_q": [
+      1,
+      0.112116390423716
+     ],
+     "B_mean_se": [
+      0.14001438943372807,
+      0.007071096617331201
+     ],
+     "C_final": 0.14001438943372807
+    },
+    {
+     "label": "Buy card: Thunderclap",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.15004453125419007
+     ],
+     "B_mean_se": [
+      0.14958420683996146,
+      0.008973916750441669
+     ],
+     "C_final": 0.14958420683996146
+    },
+    {
+     "label": "Buy card: Trip",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.2549163596685444
+     ],
+     "B_mean_se": [
+      0.13917270019140784,
+      0.008358868052867188
+     ],
+     "C_final": 0.13917270019140784
+    },
+    {
+     "label": "Buy relic: Orrery",
+     "prior": 1.0,
+     "A_visits_q": [
+      96,
+      0.14707956338932215
+     ],
+     "B_mean_se": [
+      0.1452541970026091,
+      0.008397730983775324
+     ],
+     "C_final": 0.1452541970026091
+    },
+    {
+     "label": "Buy relic: Tiny Chest",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.04799760689340658
+     ],
+     "B_mean_se": [
+      0.12741795650703436,
+      0.008567389919860655
+     ],
+     "C_final": 0.12741795650703436
+    },
+    {
+     "label": "Buy relic: Ice Cream",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.1407688316026057
+     ],
+     "B_mean_se": [
+      0.14842829166001947,
+      0.009105489920470326
+     ],
+     "C_final": 0.16657163178916512
+    },
+    {
+     "label": "Buy potion: Explosive Potion",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.1661420212994979
+     ],
+     "B_mean_se": [
+      0.15877936471214726,
+      0.010184431871014109
+     ],
+     "C_final": 0.15877936471214726
+    },
+    {
+     "label": "Buy potion: Ancient Potion",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.20965107256836646
+     ],
+     "B_mean_se": [
+      0.16403586173630524,
+      0.01017993293425737
+     ],
+     "C_final": 0.16403586173630524
+    },
+    {
+     "label": "Buy potion: Blessing Of The Forge",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.15402891514169656
+     ],
+     "B_mean_se": [
+      0.1539372467916946,
+      0.009823141789271551
+     ],
+     "C_final": 0.1539372467916946
+    },
+    {
+     "label": "Leave shop",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.0
+     ],
+     "B_mean_se": [
+      0.12880624081330733,
+      0.0067729450280192395
+     ],
+     "C_final": 0.12880624081330733
+    }
+   ]
+  },
+  {
+   "seed": 111309995,
+   "decision": 91,
+   "act": 2,
+   "floor": 29,
+   "screen": "REWARDS",
+   "hp": "59/81",
+   "A": "Take card: Flame Barrier",
+   "B": "Leave rewards",
+   "C": "Skip card reward",
+   "cBeam": [
+    {
+     "ranks": [
+      2,
+      1,
+      1
+     ],
+     "root": 4,
+     "score": 0.1322127845482229
+    },
+    {
+     "ranks": [
+      2,
+      1,
+      2
+     ],
+     "root": 4,
+     "score": 0.1322127843352635
+    },
+    {
+     "ranks": [
+      2,
+      1,
+      1
+     ],
+     "root": 3,
+     "score": 0.1320360055792912
+    }
+   ],
+   "actions": [
+    {
+     "label": "Skip card reward",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.10150243451353634
+     ],
+     "B_mean_se": [
+      0.12927253128988264,
+      0.009413783214042798
+     ],
+     "C_final": 0.12971568610158413
+    },
+    {
+     "label": "Skip card reward",
+     "prior": 0.0,
+     "A_visits_q": [
+      2,
+      0.12948165622900826
+     ],
+     "B_mean_se": [
+      0.1286924621714834,
+      0.009014808562144802
+     ],
+     "C_final": 0.1286924621714834
+    },
+    {
+     "label": "Skip card reward",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.12041563507722017
+     ],
+     "B_mean_se": [
+      0.12195784957938478,
+      0.00932327563403433
+     ],
+     "C_final": 0.12195784957938478
+    },
+    {
+     "label": "Skip card reward",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.144544285979481
+     ],
+     "B_mean_se": [
+      0.1303914506698879,
+      0.009342038792190865
+     ],
+     "C_final": 0.1320360055792912
+    },
+    {
+     "label": "Skip card reward",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.09712803717009592
+     ],
+     "B_mean_se": [
+      0.12619810102093848,
+      0.009480792425053708
+     ],
+     "C_final": 0.1322127845482229
+    },
+    {
+     "label": "Leave rewards",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.12547473598606354
+     ],
+     "B_mean_se": [
+      0.13338948534623185,
+      0.011142079530630048
+     ],
+     "C_final": 0.13338948534623185
+    },
+    {
+     "label": "Take card: Flame Barrier",
+     "prior": 1.0,
+     "A_visits_q": [
+      4019,
+      0.12290203072052774
+     ],
+     "B_mean_se": [
+      0.12540501889807898,
+      0.00930169440834828
+     ],
+     "C_final": 0.12540501889807898
+    },
+    {
+     "label": "Take card: Ghostly Armor",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.0681015670834424
+     ],
+     "B_mean_se": [
+      0.1254050194740657,
+      0.009301694392915241
+     ],
+     "C_final": 0.1254050194740657
+    },
+    {
+     "label": "Take card: Havoc",
+     "prior": 0.0,
+     "A_visits_q": [
+      13,
+      0.14533040059422453
+     ],
+     "B_mean_se": [
+      0.12618523372054966,
+      0.008910597309038601
+     ],
+     "C_final": 0.12618523372054966
+    },
+    {
+     "label": "Take card: Havoc",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.14366146010019865
+     ],
+     "B_mean_se": [
+      0.12258774607808116,
+      0.009418327774972484
+     ],
+     "C_final": 0.12258774607808116
+    },
+    {
+     "label": "Take card: Infernal Blade",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.13277916744560267
+     ],
+     "B_mean_se": [
+      0.127629131762346,
+      0.009060647669523867
+     ],
+     "C_final": 0.127629131762346
+    },
+    {
+     "label": "Take card: Pommel Strike",
+     "prior": 0.004,
+     "A_visits_q": [
+      31,
+      0.13359498127955516
+     ],
+     "B_mean_se": [
+      0.13181692886196184,
+      0.009237024793107004
+     ],
+     "C_final": 0.13181692886196184
+    },
+    {
+     "label": "Take card: Pommel Strike",
+     "prior": 0.004,
+     "A_visits_q": [
+      15,
+      0.11942099658493549
+     ],
+     "B_mean_se": [
+      0.1254050189956581,
+      0.009301694451123305
+     ],
+     "C_final": 0.1254050189956581
+    },
+    {
+     "label": "Take card: Reckless Charge",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.11188838811981913
+     ],
+     "B_mean_se": [
+      0.1174613144663906,
+      0.009186293892961639
+     ],
+     "C_final": 0.1174613144663906
+    },
+    {
+     "label": "Take card: Reckless Charge",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.1464740489558382
+     ],
+     "B_mean_se": [
+      0.11586764202720655,
+      0.009051800838979747
+     ],
+     "C_final": 0.11586764202720655
+    },
+    {
+     "label": "Take card: Searing Blow",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.10719544451589054
+     ],
+     "B_mean_se": [
+      0.11636647541860286,
+      0.009133192703114964
+     ],
+     "C_final": 0.11636647541860286
+    },
+    {
+     "label": "Take card: Seeing Red",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.10633216619798477
+     ],
+     "B_mean_se": [
+      0.1254050189989512,
+      0.009301694379150025
+     ],
+     "C_final": 0.1254050189989512
+    },
+    {
+     "label": "Take card: Bludgeon",
+     "prior": 0.001,
+     "A_visits_q": [
+      1,
+      0.06836723752800265
+     ],
+     "B_mean_se": [
+      0.11834230368266807,
+      0.009193317632755752
+     ],
+     "C_final": 0.11834230368266807
+    },
+    {
+     "label": "Take card: Clash",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.12155969567515698
+     ],
+     "B_mean_se": [
+      0.12597449207991626,
+      0.009633201417683986
+     ],
+     "C_final": 0.12597449207991626
+    },
+    {
+     "label": "Take card: Cleave",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.1115517970587418
+     ],
+     "B_mean_se": [
+      0.1129082576071486,
+      0.009248398634215584
+     ],
+     "C_final": 0.1129082576071486
+    },
+    {
+     "label": "Take card: Clothesline",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.06582753073550777
+     ],
+     "B_mean_se": [
+      0.1254050186014384,
+      0.00930169443496282
+     ],
+     "C_final": 0.1254050186014384
+    }
+   ]
+  },
+  {
+   "seed": 111309995,
+   "decision": 92,
+   "act": 2,
+   "floor": 29,
+   "screen": "REWARDS",
+   "hp": "59/81",
+   "A": "Take card: Pommel Strike",
+   "B": "Leave rewards",
+   "C": "Skip card reward",
+   "cBeam": [
+    {
+     "ranks": [
+      1,
+      1,
+      2
+     ],
+     "root": 2,
+     "score": 0.13678959769156626
+    },
+    {
+     "ranks": [
+      1,
+      2,
+      1
+     ],
+     "root": 2,
+     "score": 0.13518337124644883
+    },
+    {
+     "ranks": [
+      1,
+      1,
+      1
+     ],
+     "root": 2,
+     "score": 0.1351833709525314
+    }
+   ],
+   "actions": [
+    {
+     "label": "Skip card reward",
+     "prior": 0.002,
+     "A_visits_q": [
+      1,
+      0.1317478925407186
+     ],
+     "B_mean_se": [
+      0.12277593217996229,
+      0.006759734639292402
+     ],
+     "C_final": 0.12277593217996229
+    },
+    {
+     "label": "Skip card reward",
+     "prior": 0.002,
+     "A_visits_q": [
+      1,
+      0.10725292824298796
+     ],
+     "B_mean_se": [
+      0.12028153511963063,
+      0.0066285727425848566
+     ],
+     "C_final": 0.12028153511963063
+    },
+    {
+     "label": "Skip card reward",
+     "prior": 0.002,
+     "A_visits_q": [
+      4,
+      0.16006207816426676
+     ],
+     "B_mean_se": [
+      0.1244405667186553,
+      0.0067738556999223905
+     ],
+     "C_final": 0.13678959769156626
+    },
+    {
+     "label": "Skip card reward",
+     "prior": 0.002,
+     "A_visits_q": [
+      1,
+      0.12506959567357834
+     ],
+     "B_mean_se": [
+      0.1231855966691338,
+      0.0067998302013064175
+     ],
+     "C_final": 0.1231855966691338
+    },
+    {
+     "label": "Leave rewards",
+     "prior": 0.002,
+     "A_visits_q": [
+      1,
+      0.09926821480002794
+     ],
+     "B_mean_se": [
+      0.12751172872381009,
+      0.00543016271695249
+     ],
+     "C_final": 0.12751172872381009
+    },
+    {
+     "label": "Take card: Ghostly Armor",
+     "prior": 0.022,
+     "A_visits_q": [
+      12,
+      0.13303072048328624
+     ],
+     "B_mean_se": [
+      0.12249381146172092,
+      0.006777994062393561
+     ],
+     "C_final": 0.12249381146172092
+    },
+    {
+     "label": "Take card: Havoc",
+     "prior": 0.001,
+     "A_visits_q": [
+      1,
+      0.09415810624844163
+     ],
+     "B_mean_se": [
+      0.12123779574673105,
+      0.00679280611324421
+     ],
+     "C_final": 0.12123779574673105
+    },
+    {
+     "label": "Take card: Havoc",
+     "prior": 0.001,
+     "A_visits_q": [
+      1,
+      0.09504282176818883
+     ],
+     "B_mean_se": [
+      0.12061591727132798,
+      0.006790071362449065
+     ],
+     "C_final": 0.12061591727132798
+    },
+    {
+     "label": "Take card: Infernal Blade",
+     "prior": 0.033,
+     "A_visits_q": [
+      10,
+      0.09821556825742248
+     ],
+     "B_mean_se": [
+      0.12069552789955282,
+      0.006731068636643215
+     ],
+     "C_final": 0.12069552789955282
+    },
+    {
+     "label": "Take card: Pommel Strike",
+     "prior": 1.0,
+     "A_visits_q": [
+      435,
+      0.12092848201445339
+     ],
+     "B_mean_se": [
+      0.12249381105412054,
+      0.0067779939515157225
+     ],
+     "C_final": 0.12249381105412054
+    },
+    {
+     "label": "Take card: Reckless Charge",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.13721783736169832
+     ],
+     "B_mean_se": [
+      0.1127117955245438,
+      0.006849911523542284
+     ],
+     "C_final": 0.1127117955245438
+    },
+    {
+     "label": "Take card: Searing Blow",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.07808681895785749
+     ],
+     "B_mean_se": [
+      0.112250661679604,
+      0.006415530639768936
+     ],
+     "C_final": 0.112250661679604
+    },
+    {
+     "label": "Take card: Seeing Red",
+     "prior": 0.267,
+     "A_visits_q": [
+      116,
+      0.12124223166234481
+     ],
+     "B_mean_se": [
+      0.12249381216908749,
+      0.006777994034189266
+     ],
+     "C_final": 0.13382694319798236
+    },
+    {
+     "label": "Take card: Bludgeon",
+     "prior": 0.229,
+     "A_visits_q": [
+      89,
+      0.11451244653231066
+     ],
+     "B_mean_se": [
+      0.1146088734903883,
+      0.00681577593152363
+     ],
+     "C_final": 0.1146088734903883
+    },
+    {
+     "label": "Take card: Clash",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.17072109205623148
+     ],
+     "B_mean_se": [
+      0.12268435556826468,
+      0.0067049566451778736
+     ],
+     "C_final": 0.12268435556826468
+    },
+    {
+     "label": "Take card: Cleave",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.04591654983736063
+     ],
+     "B_mean_se": [
+      0.11199252441286461,
+      0.006456020778698412
+     ],
+     "C_final": 0.11199252441286461
+    },
+    {
+     "label": "Take card: Clothesline",
+     "prior": 0.065,
+     "A_visits_q": [
+      30,
+      0.12449864506634174
+     ],
+     "B_mean_se": [
+      0.12249381168570897,
+      0.0067779940187534336
+     ],
+     "C_final": 0.13348238786568645
+    }
+   ]
+  },
+  {
+   "seed": 111309995,
+   "decision": 93,
+   "act": 2,
+   "floor": 29,
+   "screen": "REWARDS",
+   "hp": "59/81",
+   "A": "Take card: Seeing Red",
+   "B": "Leave rewards",
+   "C": "Skip card reward",
+   "cBeam": [
+    {
+     "ranks": [
+      1,
+      2,
+      2
+     ],
+     "root": 1,
+     "score": 0.13298023557048191
+    },
+    {
+     "ranks": [
+      2,
+      1,
+      2
+     ],
+     "root": 1,
+     "score": 0.13278707831208633
+    },
+    {
+     "ranks": [
+      2,
+      2,
+      2
+     ],
+     "root": 4,
+     "score": 0.13278707786636415
+    }
+   ],
+   "actions": [
+    {
+     "label": "Skip card reward",
+     "prior": 0.01,
+     "A_visits_q": [
+      9,
+      0.07832382487442158
+     ],
+     "B_mean_se": [
+      0.12518878046070903,
+      0.010287044670820084
+     ],
+     "C_final": 0.12950838801854758
+    },
+    {
+     "label": "Skip card reward",
+     "prior": 0.01,
+     "A_visits_q": [
+      17,
+      0.10796205470857745
+     ],
+     "B_mean_se": [
+      0.12823994912035058,
+      0.010672293732695971
+     ],
+     "C_final": 0.13298023557048191
+    },
+    {
+     "label": "Skip card reward",
+     "prior": 0.01,
+     "A_visits_q": [
+      33,
+      0.1304380590820579
+     ],
+     "B_mean_se": [
+      0.12468276194363656,
+      0.010409794896799536
+     ],
+     "C_final": 0.12468276194363656
+    },
+    {
+     "label": "Leave rewards",
+     "prior": 0.01,
+     "A_visits_q": [
+      43,
+      0.1351324859441353
+     ],
+     "B_mean_se": [
+      0.13046131277990805,
+      0.008157375929998519
+     ],
+     "C_final": 0.13046131277990805
+    },
+    {
+     "label": "Take card: Ghostly Armor",
+     "prior": 0.11,
+     "A_visits_q": [
+      251,
+      0.1219283413957142
+     ],
+     "B_mean_se": [
+      0.12495571633520867,
+      0.01033274679625344
+     ],
+     "C_final": 0.13278707786636415
+    },
+    {
+     "label": "Take card: Havoc",
+     "prior": 0.002,
+     "A_visits_q": [
+      9,
+      0.1348989480218656
+     ],
+     "B_mean_se": [
+      0.12276616820286754,
+      0.01019651856514079
+     ],
+     "C_final": 0.12276616820286754
+    },
+    {
+     "label": "Take card: Havoc",
+     "prior": 0.002,
+     "A_visits_q": [
+      1,
+      0.0866829294941522
+     ],
+     "B_mean_se": [
+      0.12390029694278354,
+      0.010381987170669564
+     ],
+     "C_final": 0.12390029694278354
+    },
+    {
+     "label": "Take card: Infernal Blade",
+     "prior": 0.128,
+     "A_visits_q": [
+      307,
+      0.12325478919305487
+     ],
+     "B_mean_se": [
+      0.12336529376172904,
+      0.010135592862954308
+     ],
+     "C_final": 0.12336529376172904
+    },
+    {
+     "label": "Take card: Reckless Charge",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.09264567262609444
+     ],
+     "B_mean_se": [
+      0.11455456722087129,
+      0.01000239950236976
+     ],
+     "C_final": 0.11455456722087129
+    },
+    {
+     "label": "Take card: Seeing Red",
+     "prior": 1.0,
+     "A_visits_q": [
+      2920,
+      0.1280112711146433
+     ],
+     "B_mean_se": [
+      0.12495571640572486,
+      0.010332746772200665
+     ],
+     "C_final": 0.12495571640572486
+    },
+    {
+     "label": "Take card: Clash",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.0875962039958812
+     ],
+     "B_mean_se": [
+      0.12482012340071752,
+      0.010533245853740882
+     ],
+     "C_final": 0.12482012340071752
+    },
+    {
+     "label": "Take card: Cleave",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.07191916584978576
+     ],
+     "B_mean_se": [
+      0.11527100080328599,
+      0.01001270532987079
+     ],
+     "C_final": 0.11527100080328599
+    },
+    {
+     "label": "Take card: Clothesline",
+     "prior": 0.212,
+     "A_visits_q": [
+      503,
+      0.1230071532188974
+     ],
+     "B_mean_se": [
+      0.12495571676327841,
+      0.010332746825502784
+     ],
+     "C_final": 0.12495571676327841
+    }
+   ]
+  },
+  {
+   "seed": 111309995,
+   "decision": 94,
+   "act": 2,
+   "floor": 29,
+   "screen": "REWARDS",
+   "hp": "59/81",
+   "A": "Take card: Ghostly Armor",
+   "B": "Take card: Ghostly Armor",
+   "C": "Skip card reward",
+   "cBeam": [
+    {
+     "ranks": [
+      2,
+      1,
+      2
+     ],
+     "root": 0,
+     "score": 0.12340722706407593
+    },
+    {
+     "ranks": [
+      2,
+      1,
+      2
+     ],
+     "root": 8,
+     "score": 0.12323888068486084
+    },
+    {
+     "ranks": [
+      1,
+      1,
+      2
+     ],
+     "root": 6,
+     "score": 0.12323888026196897
+    }
+   ],
+   "actions": [
+    {
+     "label": "Skip card reward",
+     "prior": 0.071,
+     "A_visits_q": [
+      25,
+      0.12165414187142361
+     ],
+     "B_mean_se": [
+      0.14283868501583452,
+      0.009089510299198985
+     ],
+     "C_final": 0.12340722706407593
+    },
+    {
+     "label": "Skip card reward",
+     "prior": 0.071,
+     "A_visits_q": [
+      25,
+      0.12261849237863125
+     ],
+     "B_mean_se": [
+      0.13923391259691018,
+      0.008828076825415953
+     ],
+     "C_final": 0.13923391259691018
+    },
+    {
+     "label": "Leave rewards",
+     "prior": 0.071,
+     "A_visits_q": [
+      31,
+      0.12962338091113454
+     ],
+     "B_mean_se": [
+      0.13206307181240023,
+      0.009254098404527587
+     ],
+     "C_final": 0.13206307181240023
+    },
+    {
+     "label": "Take card: Ghostly Armor",
+     "prior": 1.0,
+     "A_visits_q": [
+      388,
+      0.12672623162837315
+     ],
+     "B_mean_se": [
+      0.14441536637360158,
+      0.008835342941860256
+     ],
+     "C_final": 0.12219385407515602
+    },
+    {
+     "label": "Take card: Havoc",
+     "prior": 0.022,
+     "A_visits_q": [
+      8,
+      0.11975002845069564
+     ],
+     "B_mean_se": [
+      0.14039882582254692,
+      0.009081888624823273
+     ],
+     "C_final": 0.14039882582254692
+    },
+    {
+     "label": "Take card: Havoc",
+     "prior": 0.022,
+     "A_visits_q": [
+      8,
+      0.12808162548723437
+     ],
+     "B_mean_se": [
+      0.13971057936225426,
+      0.008558495443296583
+     ],
+     "C_final": 0.13971057936225426
+    },
+    {
+     "label": "Take card: Infernal Blade",
+     "prior": 0.45,
+     "A_visits_q": [
+      151,
+      0.1198508265694387
+     ],
+     "B_mean_se": [
+      0.1410302998903702,
+      0.009041028142971775
+     ],
+     "C_final": 0.12323888026196897
+    },
+    {
+     "label": "Take card: Reckless Charge",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.13649234491747572
+     ],
+     "B_mean_se": [
+      0.12737813005683343,
+      0.00879336712778717
+     ],
+     "C_final": 0.12737813005683343
+    },
+    {
+     "label": "Take card: Clothesline",
+     "prior": 0.926,
+     "A_visits_q": [
+      335,
+      0.12356333773243053
+     ],
+     "B_mean_se": [
+      0.14441536601961596,
+      0.008835342829535431
+     ],
+     "C_final": 0.12323888068486084
+    }
+   ]
+  },
+  {
+   "seed": 111309995,
+   "decision": 95,
+   "act": 2,
+   "floor": 29,
+   "screen": "REWARDS",
+   "hp": "59/81",
+   "A": "Take card: Clothesline",
+   "B": "Skip card reward",
+   "C": "Skip card reward",
+   "cBeam": [
+    {
+     "ranks": [
+      1,
+      1,
+      2
+     ],
+     "root": 0,
+     "score": 0.13577770765208652
+    },
+    {
+     "ranks": [
+      2,
+      1,
+      2
+     ],
+     "root": 0,
+     "score": 0.13577770765208652
+    },
+    {
+     "ranks": [
+      1,
+      1,
+      2
+     ],
+     "root": 3,
+     "score": 0.13517904555014706
+    }
+   ],
+   "actions": [
+    {
+     "label": "Skip card reward",
+     "prior": 0.087,
+     "A_visits_q": [
+      20,
+      0.13075022123197028
+     ],
+     "B_mean_se": [
+      0.13038649237562092,
+      0.009624143619539484
+     ],
+     "C_final": 0.13577770765208652
+    },
+    {
+     "label": "Take card: Havoc",
+     "prior": 0.031,
+     "A_visits_q": [
+      9,
+      0.14564921617388124
+     ],
+     "B_mean_se": [
+      0.12683954850049048,
+      0.009541929421377354
+     ],
+     "C_final": 0.13363511964784233
+    },
+    {
+     "label": "Take card: Reckless Charge",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.10725878722442217
+     ],
+     "B_mean_se": [
+      0.12141409612891518,
+      0.009263898685204915
+     ],
+     "C_final": 0.12757090264837664
+    },
+    {
+     "label": "Take card: Clothesline",
+     "prior": 1.0,
+     "A_visits_q": [
+      226,
+      0.12817803901050526
+     ],
+     "B_mean_se": [
+      0.12944662549147593,
+      0.009625533737227198
+     ],
+     "C_final": 0.13517904555014706
+    }
+   ]
+  },
+  {
+   "seed": 111309995,
+   "decision": 96,
+   "act": 2,
+   "floor": 29,
+   "screen": "SHOP",
+   "hp": "59/81",
+   "A": "Buy card: Spot Weakness",
+   "B": "Buy card: Spot Weakness",
+   "C": "Buy card: Metallicize",
+   "cBeam": [
+    {
+     "ranks": [
+      2,
+      2,
+      2
+     ],
+     "root": 25,
+     "score": 0.17444896430291218
+    },
+    {
+     "ranks": [
+      2,
+      2,
+      1
+     ],
+     "root": 25,
+     "score": 0.1634399475649826
+    },
+    {
+     "ranks": [
+      1,
+      1,
+      2
+     ],
+     "root": 25,
+     "score": 0.15294699105644916
+    }
+   ],
+   "actions": [
+    {
+     "label": "Remove card: Defend",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.12041477580622724
+     ],
+     "B_mean_se": [
+      0.11531116231275895,
+      0.00812266649232018
+     ],
+     "C_final": 0.11531116231275895
+    },
+    {
+     "label": "Remove card: Defend",
+     "prior": 0.0,
+     "A_visits_q": [
+      2,
+      0.11943578623260562
+     ],
+     "B_mean_se": [
+      0.11779951630885364,
+      0.007967335481817833
+     ],
+     "C_final": 0.1457599333294062
+    },
+    {
+     "label": "Remove card: Feed",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.07482982844350401
+     ],
+     "B_mean_se": [
+      0.09150432262188722,
+      0.006566206963888776
+     ],
+     "C_final": 0.09150432262188722
+    },
+    {
+     "label": "Remove card: Flame Barrier",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.12620659714740495
+     ],
+     "B_mean_se": [
+      0.11321639294563937,
+      0.007358762042283143
+     ],
+     "C_final": 0.11321639294563937
+    },
+    {
+     "label": "Remove card: Ghostly Armor",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.12767739758373386
+     ],
+     "B_mean_se": [
+      0.11236481528207695,
+      0.007424801282597131
+     ],
+     "C_final": 0.11236481528207695
+    },
+    {
+     "label": "Remove card: Headbutt",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.11377386226510237
+     ],
+     "B_mean_se": [
+      0.10857734161559929,
+      0.007790001188541208
+     ],
+     "C_final": 0.10857734161559929
+    },
+    {
+     "label": "Remove card: Infernal Blade",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.15157270666037845
+     ],
+     "B_mean_se": [
+      0.11162440675311501,
+      0.007688047599822662
+     ],
+     "C_final": 0.11162440675311501
+    },
+    {
+     "label": "Remove card: Inflame",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.14480017530670977
+     ],
+     "B_mean_se": [
+      0.0938579719253478,
+      0.0073697702929190045
+     ],
+     "C_final": 0.0938579719253478
+    },
+    {
+     "label": "Remove card: Limit Break",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.0
+     ],
+     "B_mean_se": [
+      0.0996086427065944,
+      0.007966193662379304
+     ],
+     "C_final": 0.0996086427065944
+    },
+    {
+     "label": "Remove card: Perfected Strike",
+     "prior": 0.0,
+     "A_visits_q": [
+      2,
+      0.13152983720595912
+     ],
+     "B_mean_se": [
+      0.10234963053291961,
+      0.007820758796605392
+     ],
+     "C_final": 0.10234963053291961
+    },
+    {
+     "label": "Remove card: Pommel Strike",
+     "prior": 0.0,
+     "A_visits_q": [
+      10,
+      0.14886629457450318
+     ],
+     "B_mean_se": [
+      0.10853071111110385,
+      0.007453221260535345
+     ],
+     "C_final": 0.10853071111110385
+    },
+    {
+     "label": "Remove card: Pommel Strike",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.07107803271368159
+     ],
+     "B_mean_se": [
+      0.09428186119948119,
+      0.007066377126228312
+     ],
+     "C_final": 0.09428186119948119
+    },
+    {
+     "label": "Remove card: Power Through",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.13527322065267547
+     ],
+     "B_mean_se": [
+      0.1134595286929485,
+      0.007426268870693372
+     ],
+     "C_final": 0.1134595286929485
+    },
+    {
+     "label": "Remove card: Power Through",
+     "prior": 0.0,
+     "A_visits_q": [
+      2,
+      0.08496958406864928
+     ],
+     "B_mean_se": [
+      0.1129431349379161,
+      0.007932623118815244
+     ],
+     "C_final": 0.1129431349379161
+    },
+    {
+     "label": "Remove card: Bash",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.08180534998203026
+     ],
+     "B_mean_se": [
+      0.10760827338901113,
+      0.007427472519988784
+     ],
+     "C_final": 0.10760827338901113
+    },
+    {
+     "label": "Remove card: Battle Trance",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.08610020677434742
+     ],
+     "B_mean_se": [
+      0.10291430548402698,
+      0.007408806540630044
+     ],
+     "C_final": 0.10291430548402698
+    },
+    {
+     "label": "Remove card: Seeing Red",
+     "prior": 0.0,
+     "A_visits_q": [
+      3,
+      0.11953229739176241
+     ],
+     "B_mean_se": [
+      0.1132020008900694,
+      0.007762029248673247
+     ],
+     "C_final": 0.1132020008900694
+    },
+    {
+     "label": "Remove card: Spot Weakness",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.07689001203107802
+     ],
+     "B_mean_se": [
+      0.10637685521270421,
+      0.007882671111077105
+     ],
+     "C_final": 0.10637685521270421
+    },
+    {
+     "label": "Remove card: Strike",
+     "prior": 0.098,
+     "A_visits_q": [
+      340,
+      0.1356521555930887
+     ],
+     "B_mean_se": [
+      0.11786484862726733,
+      0.007911081097137188
+     ],
+     "C_final": 0.11786484862726733
+    },
+    {
+     "label": "Remove card: Thunderclap",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.12774479998159918
+     ],
+     "B_mean_se": [
+      0.11240089107834982,
+      0.00771208676878605
+     ],
+     "C_final": 0.11240089107834982
+    },
+    {
+     "label": "Remove card: Uppercut",
+     "prior": 0.0,
+     "A_visits_q": [
+      2,
+      0.12876033152298677
+     ],
+     "B_mean_se": [
+      0.09516126347336863,
+      0.007864646599410588
+     ],
+     "C_final": 0.09516126347336863
+    },
+    {
+     "label": "Remove card: Clothesline",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.15858467770156673
+     ],
+     "B_mean_se": [
+      0.10900897078936257,
+      0.007699119836097218
+     ],
+     "C_final": 0.10900897078936257
+    },
+    {
+     "label": "Remove card: Clothesline",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.11146812720393393
+     ],
+     "B_mean_se": [
+      0.10825501777180915,
+      0.00781521756267341
+     ],
+     "C_final": 0.10825501777180915
+    },
+    {
+     "label": "Buy card: Headbutt",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.05193792860864338
+     ],
+     "B_mean_se": [
+      0.10568051558326191,
+      0.005855592639762612
+     ],
+     "C_final": 0.10568051558326191
+    },
+    {
+     "label": "Buy card: Infernal Blade",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.08218687702078141
+     ],
+     "B_mean_se": [
+      0.10315446517416978,
+      0.006245494123898631
+     ],
+     "C_final": 0.10315446517416978
+    },
+    {
+     "label": "Buy card: Metallicize",
+     "prior": 0.006,
+     "A_visits_q": [
+      46,
+      0.14924022952370858
+     ],
+     "B_mean_se": [
+      0.1308376790143927,
+      0.006617619222580405
+     ],
+     "C_final": 0.17444896430291218
+    },
+    {
+     "label": "Buy card: Secret Technique",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.11938863036673555
+     ],
+     "B_mean_se": [
+      0.08110770772586869,
+      0.005900528469783241
+     ],
+     "C_final": 0.08110770772586869
+    },
+    {
+     "label": "Buy card: Spot Weakness",
+     "prior": 1.0,
+     "A_visits_q": [
+      3602,
+      0.1368281721675757
+     ],
+     "B_mean_se": [
+      0.13362507523101463,
+      0.00850638506919254
+     ],
+     "C_final": 0.13362507523101463
+    },
+    {
+     "label": "Buy card: Thunderclap",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.08620547485064552
+     ],
+     "B_mean_se": [
+      0.11908538430938427,
+      0.007380846208444202
+     ],
+     "C_final": 0.11908538430938427
+    },
+    {
+     "label": "Buy card: Trip",
+     "prior": 0.0,
+     "A_visits_q": [
+      2,
+      0.10833174038994214
+     ],
+     "B_mean_se": [
+      0.09598014397905855,
+      0.005436676357199685
+     ],
+     "C_final": 0.09598014397905855
+    },
+    {
+     "label": "Buy relic: Tiny Chest",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.11651199717224807
+     ],
+     "B_mean_se": [
+      0.09154619505968158,
+      0.004553304575314844
+     ],
+     "C_final": 0.09154619505968158
+    },
+    {
+     "label": "Buy potion: Explosive Potion",
+     "prior": 0.001,
+     "A_visits_q": [
+      2,
+      0.07933740108424871
+     ],
+     "B_mean_se": [
+      0.11791193673537002,
+      0.006319642768287321
+     ],
+     "C_final": 0.11791193673537002
+    },
+    {
+     "label": "Buy potion: Ancient Potion",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.05840360021241649
+     ],
+     "B_mean_se": [
+      0.11779519535386605,
+      0.006180214322486707
+     ],
+     "C_final": 0.1457471033728726
+    },
+    {
+     "label": "Buy potion: Blessing Of The Forge",
+     "prior": 0.04,
+     "A_visits_q": [
+      60,
+      0.10413438571231028
+     ],
+     "B_mean_se": [
+      0.1118873564468367,
+      0.006020425512925436
+     ],
+     "C_final": 0.1118873564468367
+    },
+    {
+     "label": "Leave shop",
+     "prior": 0.001,
+     "A_visits_q": [
+      1,
+      0.1007611200645427
+     ],
+     "B_mean_se": [
+      0.12433014781313065,
+      0.006646095420277398
+     ],
+     "C_final": 0.12433014781313065
+    }
+   ]
+  },
+  {
+   "seed": 111309995,
+   "decision": 97,
+   "act": 2,
+   "floor": 29,
+   "screen": "SHOP",
+   "hp": "59/81",
+   "A": "Remove card: Strike",
+   "B": "Buy card: Metallicize",
+   "C": "Buy potion: Ancient Potion",
+   "cBeam": [
+    {
+     "ranks": [
+      2,
+      2,
+      2
+     ],
+     "root": 31,
+     "score": 0.1630285443842057
+    },
+    {
+     "ranks": [
+      2,
+      1,
+      2
+     ],
+     "root": 31,
+     "score": 0.14159728098691482
+    },
+    {
+     "ranks": [
+      2,
+      2,
+      1
+     ],
+     "root": 25,
+     "score": 0.14078674752693454
+    }
+   ],
+   "actions": [
+    {
+     "label": "Remove card: Defend",
+     "prior": 0.0,
+     "A_visits_q": [
+      3,
+      0.16413436813479307
+     ],
+     "B_mean_se": [
+      0.12033908755956528,
+      0.006463921336005558
+     ],
+     "C_final": 0.12033908755956528
+    },
+    {
+     "label": "Remove card: Defend",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.08779663691413887
+     ],
+     "B_mean_se": [
+      0.12463662373662217,
+      0.006019532890564565
+     ],
+     "C_final": 0.12463662373662217
+    },
+    {
+     "label": "Remove card: Feed",
+     "prior": 0.0,
+     "A_visits_q": [
+      3,
+      0.18058992844511365
+     ],
+     "B_mean_se": [
+      0.09669995827078628,
+      0.004859272157958816
+     ],
+     "C_final": 0.09669995827078628
+    },
+    {
+     "label": "Remove card: Flame Barrier",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.11452254181161282
+     ],
+     "B_mean_se": [
+      0.1216254315128697,
+      0.005841432498940371
+     ],
+     "C_final": 0.1216254315128697
+    },
+    {
+     "label": "Remove card: Ghostly Armor",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.16525974173353106
+     ],
+     "B_mean_se": [
+      0.11933041767129711,
+      0.005791877188886891
+     ],
+     "C_final": 0.11933041767129711
+    },
+    {
+     "label": "Remove card: Headbutt",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.0
+     ],
+     "B_mean_se": [
+      0.11819434051267934,
+      0.006355988495014605
+     ],
+     "C_final": 0.11819434051267934
+    },
+    {
+     "label": "Remove card: Infernal Blade",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.11580068315693147
+     ],
+     "B_mean_se": [
+      0.12178456059924075,
+      0.0057619427591529115
+     ],
+     "C_final": 0.1354210688545201
+    },
+    {
+     "label": "Remove card: Inflame",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.1168988428601839
+     ],
+     "B_mean_se": [
+      0.10470812866611127,
+      0.0056547720409152735
+     ],
+     "C_final": 0.10470812866611127
+    },
+    {
+     "label": "Remove card: Limit Break",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.08250636168440578
+     ],
+     "B_mean_se": [
+      0.11282982085909297,
+      0.006160685218304555
+     ],
+     "C_final": 0.11282982085909297
+    },
+    {
+     "label": "Remove card: Perfected Strike",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.16013835785613753
+     ],
+     "B_mean_se": [
+      0.11204024388758548,
+      0.005389898974779229
+     ],
+     "C_final": 0.11204024388758548
+    },
+    {
+     "label": "Remove card: Pommel Strike",
+     "prior": 0.0,
+     "A_visits_q": [
+      2,
+      0.12208420958277898
+     ],
+     "B_mean_se": [
+      0.11466976253267189,
+      0.005865224739436383
+     ],
+     "C_final": 0.11466976253267189
+    },
+    {
+     "label": "Remove card: Pommel Strike",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.16847509822098927
+     ],
+     "B_mean_se": [
+      0.10577986185354743,
+      0.005423220362934181
+     ],
+     "C_final": 0.10577986185354743
+    },
+    {
+     "label": "Remove card: Power Through",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.0
+     ],
+     "B_mean_se": [
+      0.1183827436767001,
+      0.005791659435957028
+     ],
+     "C_final": 0.1183827436767001
+    },
+    {
+     "label": "Remove card: Power Through",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.07755916519797394
+     ],
+     "B_mean_se": [
+      0.12033925316869164,
+      0.005882088358020605
+     ],
+     "C_final": 0.12033925316869164
+    },
+    {
+     "label": "Remove card: Bash",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.15079890952104258
+     ],
+     "B_mean_se": [
+      0.1161076140258948,
+      0.00628098391154701
+     ],
+     "C_final": 0.1161076140258948
+    },
+    {
+     "label": "Remove card: Battle Trance",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.11811325283598288
+     ],
+     "B_mean_se": [
+      0.10967221922539945,
+      0.005862887578020418
+     ],
+     "C_final": 0.10967221922539945
+    },
+    {
+     "label": "Remove card: Seeing Red",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.08267714723766686
+     ],
+     "B_mean_se": [
+      0.11846242262650956,
+      0.006305818638644656
+     ],
+     "C_final": 0.11846242262650956
+    },
+    {
+     "label": "Remove card: Spot Weakness",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.0
+     ],
+     "B_mean_se": [
+      0.11408294230919444,
+      0.006534424869684245
+     ],
+     "C_final": 0.11408294230919444
+    },
+    {
+     "label": "Remove card: Strike",
+     "prior": 1.0,
+     "A_visits_q": [
+      483,
+      0.13223578158198324
+     ],
+     "B_mean_se": [
+      0.12352358097753531,
+      0.006317106830674807
+     ],
+     "C_final": 0.12352358097753531
+    },
+    {
+     "label": "Remove card: Thunderclap",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.0781382244682402
+     ],
+     "B_mean_se": [
+      0.12166963257856228,
+      0.005851960936959906
+     ],
+     "C_final": 0.13982238059597368
+    },
+    {
+     "label": "Remove card: Uppercut",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.12570324087003304
+     ],
+     "B_mean_se": [
+      0.10632881368025834,
+      0.005663311126899691
+     ],
+     "C_final": 0.10632881368025834
+    },
+    {
+     "label": "Remove card: Clothesline",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.11829803975620716
+     ],
+     "B_mean_se": [
+      0.12153239279806027,
+      0.006334753004385206
+     ],
+     "C_final": 0.12153239279806027
+    },
+    {
+     "label": "Remove card: Clothesline",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.08361169672056769
+     ],
+     "B_mean_se": [
+      0.11585620312911656,
+      0.005840717127416138
+     ],
+     "C_final": 0.11585620312911656
+    },
+    {
+     "label": "Buy card: Headbutt",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.09333697527149087
+     ],
+     "B_mean_se": [
+      0.11559292780250856,
+      0.008742910515192248
+     ],
+     "C_final": 0.11559292780250856
+    },
+    {
+     "label": "Buy card: Infernal Blade",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.18964333379920698
+     ],
+     "B_mean_se": [
+      0.11367123950719422,
+      0.008717825524974267
+     ],
+     "C_final": 0.11367123950719422
+    },
+    {
+     "label": "Buy card: Metallicize",
+     "prior": 0.039,
+     "A_visits_q": [
+      18,
+      0.1316580048683826
+     ],
+     "B_mean_se": [
+      0.14628469746022227,
+      0.01036557180821318
+     ],
+     "C_final": 0.14078674752693454
+    },
+    {
+     "label": "Buy card: Secret Technique",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.05626997682232836
+     ],
+     "B_mean_se": [
+      0.08663161006338001,
+      0.004677711787997233
+     ],
+     "C_final": 0.08663161006338001
+    },
+    {
+     "label": "Buy card: Thunderclap",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.10593292568900728
+     ],
+     "B_mean_se": [
+      0.13014472652845976,
+      0.008831315792320313
+     ],
+     "C_final": 0.13014472652845976
+    },
+    {
+     "label": "Buy card: Trip",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.12056344167236756
+     ],
+     "B_mean_se": [
+      0.10998947615305033,
+      0.008375132981311111
+     ],
+     "C_final": 0.10998947615305033
+    },
+    {
+     "label": "Buy relic: Tiny Chest",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.07324593447826423
+     ],
+     "B_mean_se": [
+      0.10438768409451822,
+      0.007551708918532357
+     ],
+     "C_final": 0.10438768409451822
+    },
+    {
+     "label": "Buy potion: Explosive Potion",
+     "prior": 0.003,
+     "A_visits_q": [
+      1,
+      0.05217987929652146
+     ],
+     "B_mean_se": [
+      0.11974051790627951,
+      0.009525140563676485
+     ],
+     "C_final": 0.11974051790627951
+    },
+    {
+     "label": "Buy potion: Ancient Potion",
+     "prior": 0.003,
+     "A_visits_q": [
+      1,
+      0.0
+     ],
+     "B_mean_se": [
+      0.12468958954582193,
+      0.009518350785859013
+     ],
+     "C_final": 0.1630285443842057
+    },
+    {
+     "label": "Buy potion: Blessing Of The Forge",
+     "prior": 0.18,
+     "A_visits_q": [
+      80,
+      0.1273332062361713
+     ],
+     "B_mean_se": [
+      0.12047632367938144,
+      0.0091488446780319
+     ],
+     "C_final": 0.12047632367938144
+    },
+    {
+     "label": "Leave shop",
+     "prior": 0.015,
+     "A_visits_q": [
+      7,
+      0.13121469162933141
+     ],
+     "B_mean_se": [
+      0.11298693123528065,
+      0.008209882208208416
+     ],
+     "C_final": 0.11298693123528065
+    }
+   ]
+  },
+  {
+   "seed": 111309995,
+   "decision": 98,
+   "act": 2,
+   "floor": 29,
+   "screen": "SHOP",
+   "hp": "59/81",
+   "A": "Leave shop",
+   "B": "Buy card: Metallicize",
+   "C": "Buy potion: Explosive Potion",
+   "cBeam": [
+    {
+     "ranks": [
+      2,
+      1,
+      2
+     ],
+     "root": 6,
+     "score": 0.15907653206347488
+    },
+    {
+     "ranks": [
+      2,
+      2,
+      2
+     ],
+     "root": 6,
+     "score": 0.15245533880390713
+    },
+    {
+     "ranks": [
+      2,
+      1,
+      2
+     ],
+     "root": 8,
+     "score": 0.15103328971097887
+    }
+   ],
+   "actions": [
+    {
+     "label": "Buy card: Headbutt",
+     "prior": 0.002,
+     "A_visits_q": [
+      1,
+      0.06947463643884896
+     ],
+     "B_mean_se": [
+      0.1090539638430254,
+      0.0070916896250726785
+     ],
+     "C_final": 0.1090539638430254
+    },
+    {
+     "label": "Buy card: Infernal Blade",
+     "prior": 0.001,
+     "A_visits_q": [
+      1,
+      0.11820455754616367
+     ],
+     "B_mean_se": [
+      0.10743991597055619,
+      0.007121809236004101
+     ],
+     "C_final": 0.10743991597055619
+    },
+    {
+     "label": "Buy card: Metallicize",
+     "prior": 0.121,
+     "A_visits_q": [
+      66,
+      0.140952334149964
+     ],
+     "B_mean_se": [
+      0.1368635962079642,
+      0.008317562293428823
+     ],
+     "C_final": 0.15103328971097887
+    },
+    {
+     "label": "Buy card: Thunderclap",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.11474338583603023
+     ],
+     "B_mean_se": [
+      0.12047622871464483,
+      0.007345139502765662
+     ],
+     "C_final": 0.12047622871464483
+    },
+    {
+     "label": "Buy card: Trip",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.14749282639068823
+     ],
+     "B_mean_se": [
+      0.10237802277618453,
+      0.006800404892593535
+     ],
+     "C_final": 0.10237802277618453
+    },
+    {
+     "label": "Buy relic: Tiny Chest",
+     "prior": 0.009,
+     "A_visits_q": [
+      3,
+      0.11768603134513222
+     ],
+     "B_mean_se": [
+      0.09457285012444808,
+      0.006018762223146775
+     ],
+     "C_final": 0.09457285012444808
+    },
+    {
+     "label": "Buy potion: Explosive Potion",
+     "prior": 0.002,
+     "A_visits_q": [
+      9,
+      0.17903981366006502
+     ],
+     "B_mean_se": [
+      0.13475572309326506,
+      0.009055948194324545
+     ],
+     "C_final": 0.15907653206347488
+    },
+    {
+     "label": "Buy potion: Ancient Potion",
+     "prior": 0.01,
+     "A_visits_q": [
+      5,
+      0.13578161682059106
+     ],
+     "B_mean_se": [
+      0.12781149538354358,
+      0.009328791548986146
+     ],
+     "C_final": 0.12781149538354358
+    },
+    {
+     "label": "Buy potion: Blessing Of The Forge",
+     "prior": 0.359,
+     "A_visits_q": [
+      141,
+      0.12224620670684984
+     ],
+     "B_mean_se": [
+      0.12663193680166784,
+      0.008606906268614106
+     ],
+     "C_final": 0.15103328971097887
+    },
+    {
+     "label": "Leave shop",
+     "prior": 1.0,
+     "A_visits_q": [
+      469,
+      0.13344910170931626
+     ],
+     "B_mean_se": [
+      0.12867287718336415,
+      0.010727614633250341
+     ],
+     "C_final": 0.12867287718336415
+    }
+   ]
+  },
+  {
+   "seed": 111309995,
+   "decision": 99,
+   "act": 2,
+   "floor": 29,
+   "screen": "MAP",
+   "hp": "59/81",
+   "A": "Travel to Elite room at (1,12)",
+   "B": "Travel to Event room at (0,12)",
+   "C": "Travel to Elite room at (1,12)",
+   "cBeam": [
+    {
+     "ranks": [
+      1,
+      1
+     ],
+     "root": 1,
+     "score": 0.14520616906088973
+    },
+    {
+     "ranks": [
+      1,
+      2
+     ],
+     "root": 1,
+     "score": 0.13937694731469927
+    },
+    {
+     "ranks": [
+      2,
+      1
+     ],
+     "root": 1,
+     "score": 0.1388984523053172
+    }
+   ],
+   "actions": [
+    {
+     "label": "Travel to Event room at (0,12)",
+     "prior": 0.002,
+     "A_visits_q": [
+      1,
+      0.0937665999806956
+     ],
+     "B_mean_se": [
+      0.14638366909353354,
+      0.015251474909209018
+     ],
+     "C_final": 0.13487735644868656
+    },
+    {
+     "label": "Travel to Elite room at (1,12)",
+     "prior": 1.0,
+     "A_visits_q": [
+      127,
+      0.12483658243262907
+     ],
+     "B_mean_se": [
+      0.14023685235550998,
+      0.01348586149291527
+     ],
+     "C_final": 0.14520616906088973
+    }
+   ]
+  },
+  {
+   "seed": 111309995,
+   "decision": 102,
+   "act": 2,
+   "floor": 31,
+   "screen": "REWARDS",
+   "hp": "70/84",
+   "A": "Take card: Sever Soul",
+   "B": "Skip card reward",
+   "C": "Skip card reward",
+   "cBeam": [
+    {
+     "ranks": [
+      1
+     ],
+     "root": 0,
+     "score": 0.160637486265223
+    },
+    {
+     "ranks": [
+      1
+     ],
+     "root": 3,
+     "score": 0.15299081376252902
+    },
+    {
+     "ranks": [
+      1
+     ],
+     "root": 2,
+     "score": 0.15174823194361695
+    }
+   ],
+   "actions": [
+    {
+     "label": "Skip card reward",
+     "prior": 0.589,
+     "A_visits_q": [
+      244,
+      0.12938642967212768
+     ],
+     "B_mean_se": [
+      0.1593633270392004,
+      0.012126962736075626
+     ],
+     "C_final": 0.160637486265223
+    },
+    {
+     "label": "Take card: Anger",
+     "prior": 0.005,
+     "A_visits_q": [
+      1,
+      0.12528554268207154
+     ],
+     "B_mean_se": [
+      0.1456681291382246,
+      0.011323438932740204
+     ],
+     "C_final": 0.14580131177813654
+    },
+    {
+     "label": "Take card: Searing Blow",
+     "prior": 0.001,
+     "A_visits_q": [
+      1,
+      0.15235811376839067
+     ],
+     "B_mean_se": [
+      0.1491316986923693,
+      0.011836610803240426
+     ],
+     "C_final": 0.15174823194361695
+    },
+    {
+     "label": "Take card: Sever Soul",
+     "prior": 1.0,
+     "A_visits_q": [
+      512,
+      0.14151507094556337
+     ],
+     "B_mean_se": [
+      0.1484904456667277,
+      0.01238674569756993
+     ],
+     "C_final": 0.15299081376252902
+    }
+   ]
+  },
+  {
+   "seed": 111309995,
+   "decision": 104,
+   "act": 2,
+   "floor": 32,
+   "screen": "REST",
+   "hp": "70/84",
+   "A": "Upgrade card: Inflame",
+   "B": "Upgrade card: Spot Weakness",
+   "C": "Upgrade card: Spot Weakness",
+   "cBeam": [
+    {
+     "ranks": [],
+     "root": 13,
+     "score": 0.1778398305273907
+    },
+    {
+     "ranks": [],
+     "root": 5,
+     "score": 0.1747729570410909
+    },
+    {
+     "ranks": [],
+     "root": 3,
+     "score": 0.1715966228387512
+    }
+   ],
+   "actions": [
+    {
+     "label": "Upgrade card: Defend",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.046602249276541954
+     ],
+     "B_mean_se": [
+      0.1441761801248641,
+      0.013886731320079898
+     ],
+     "C_final": 0.1441761801248641
+    },
+    {
+     "label": "Upgrade card: Feed",
+     "prior": 0.006,
+     "A_visits_q": [
+      2,
+      0.09856760978136282
+     ],
+     "B_mean_se": [
+      0.15951069989371014,
+      0.015023597649782491
+     ],
+     "C_final": 0.15951069989371014
+    },
+    {
+     "label": "Upgrade card: Flame Barrier",
+     "prior": 0.001,
+     "A_visits_q": [
+      1,
+      0.07781521773494902
+     ],
+     "B_mean_se": [
+      0.14626331558310263,
+      0.013926078973909907
+     ],
+     "C_final": 0.14626331558310263
+    },
+    {
+     "label": "Upgrade card: Ghostly Armor",
+     "prior": 0.0,
+     "A_visits_q": [
+      3,
+      0.17678466923954841
+     ],
+     "B_mean_se": [
+      0.1715966228387512,
+      0.014446384984976465
+     ],
+     "C_final": 0.1715966228387512
+    },
+    {
+     "label": "Upgrade card: Headbutt",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.0
+     ],
+     "B_mean_se": [
+      0.14518853315066624,
+      0.013968995133412336
+     ],
+     "C_final": 0.14518853315066624
+    },
+    {
+     "label": "Upgrade card: Inflame",
+     "prior": 0.61,
+     "A_visits_q": [
+      400,
+      0.14005556078145756
+     ],
+     "B_mean_se": [
+      0.1747729570410909,
+      0.014482035730695356
+     ],
+     "C_final": 0.1747729570410909
+    },
+    {
+     "label": "Upgrade card: Limit Break",
+     "prior": 0.0,
+     "A_visits_q": [
+      5,
+      0.17411409216517043
+     ],
+     "B_mean_se": [
+      0.14490909711403652,
+      0.013713369014956199
+     ],
+     "C_final": 0.14490909711403652
+    },
+    {
+     "label": "Upgrade card: Pommel Strike",
+     "prior": 0.378,
+     "A_visits_q": [
+      203,
+      0.12953226967209508
+     ],
+     "B_mean_se": [
+      0.1483326036861758,
+      0.013856690775636877
+     ],
+     "C_final": 0.1483326036861758
+    },
+    {
+     "label": "Upgrade card: Power Through",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.10945609746674138
+     ],
+     "B_mean_se": [
+      0.1474532582756779,
+      0.013764226910027665
+     ],
+     "C_final": 0.1474532582756779
+    },
+    {
+     "label": "Upgrade card: Bash",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.07595736251412111
+     ],
+     "B_mean_se": [
+      0.1431901475319163,
+      0.013605481120595148
+     ],
+     "C_final": 0.1431901475319163
+    },
+    {
+     "label": "Upgrade card: Battle Trance",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.1196588428611107
+     ],
+     "B_mean_se": [
+      0.14706521817905524,
+      0.013934661197683114
+     ],
+     "C_final": 0.14706521817905524
+    },
+    {
+     "label": "Upgrade card: Seeing Red",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.09485627102167443
+     ],
+     "B_mean_se": [
+      0.14400896489385798,
+      0.01373385508909667
+     ],
+     "C_final": 0.14400896489385798
+    },
+    {
+     "label": "Upgrade card: Sever Soul",
+     "prior": 0.001,
+     "A_visits_q": [
+      2,
+      0.13889333598792758
+     ],
+     "B_mean_se": [
+      0.14005303265548957,
+      0.014014789808863571
+     ],
+     "C_final": 0.14005303265548957
+    },
+    {
+     "label": "Upgrade card: Spot Weakness",
+     "prior": 0.004,
+     "A_visits_q": [
+      1,
+      0.042460876926385144
+     ],
+     "B_mean_se": [
+      0.1778398305273907,
+      0.014775237504127646
+     ],
+     "C_final": 0.1778398305273907
+    },
+    {
+     "label": "Upgrade card: Strike",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.09411094525713057
+     ],
+     "B_mean_se": [
+      0.14506110691999277,
+      0.014259310441018929
+     ],
+     "C_final": 0.14506110691999277
+    },
+    {
+     "label": "Upgrade card: Clothesline",
+     "prior": 0.0,
+     "A_visits_q": [
+      1,
+      0.05155624883188558
+     ],
+     "B_mean_se": [
+      0.14601965256908353,
+      0.013989445471475098
+     ],
+     "C_final": 0.14601965256908353
+    },
+    {
+     "label": "Rest",
+     "prior": 0.41,
+     "A_visits_q": [
+      207,
+      0.1258574065095791
+     ],
+     "B_mean_se": [
+      0.14847039384074145,
+      0.013996670652942782
+     ],
+     "C_final": 0.14847039384074145
+    },
+    {
+     "label": "Take Ruby Key",
+     "prior": 0.002,
+     "A_visits_q": [
+      1,
+      0.08482015617307594
+     ],
+     "B_mean_se": [
+      0.12380532017293418,
+      0.012755085416411061
+     ],
+     "C_final": 0.12380532017293418
+    }
+   ]
+  }
+ ]
+}

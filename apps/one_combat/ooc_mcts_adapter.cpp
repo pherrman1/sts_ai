@@ -1,4 +1,5 @@
 #include "sim/search/RunGoal.h"
+#include "sim/search/OocParticlePlanner.h"
 #include <ctime>
 #include "run_profile.h"
 #include "ooc_mcts_adapter.h"
@@ -1743,6 +1744,17 @@ sts::search::OocLeafEvaluation OocGameContextModel::evaluateLeafWithOutcome(
     const double value = evaluateLeafImpl(id, rng, terminal, endpoint);
     return {value, terminal, endpoint};
 }
+unsigned OocGameContextModel::edgeCombats(sts::search::OocStateId id) const {
+    return states.at(id).combatPrediction.used ? 1 : 0;
+}
+sts::search::OocLeafEvaluation OocGameContextModel::evaluateLeafAfterCombats(sts::search::OocStateId id,
+        std::mt19937_64 &rng, unsigned spentCombats) {
+    if (!options.leafCombats || options.refereeRollout || !spentCombats) return evaluateLeafWithOutcome(id, rng);
+    const unsigned saved = options.leafCombats;
+    struct Restore { unsigned &field; unsigned value; ~Restore() { field = value; } } restore{options.leafCombats, saved};
+    options.leafCombats = saved - std::min(saved, spentCombats);
+    return evaluateLeafWithOutcome(id, rng);
+}
 std::optional<double> OocGameContextModel::screenLeafValue(const GameContext &gc, const PathHistory &path) {
 #ifdef STS_LIVE_ADVISOR
     (void)gc; (void)path; throw std::runtime_error("screen leaf is unavailable in the live advisor");
@@ -2515,6 +2527,19 @@ double liveGumbelRootScale = 1;
 // 512/1024/2048 on the same model with their own seeds, and append one JSONL row per root. The played
 // action and the run are unchanged.
 std::string liveRootComparePath;
+// Search-architecture pilot (research, default mcts): STS_OOC_MCTS_SEARCH_MODE=mcts|particle|particle_beam picks the
+// planner of every searched (non-singleton) root; STS_OOC_MCTS_PARTICLES=P (default 64) and
+// STS_OOC_MCTS_BEAM=WIDTH:K:DEPTH (default 8:2:3) configure OocParticlePlanner. STS_OOC_MCTS_SEARCH_TRACE=PATH appends
+// one JSONL row per searched root; STS_OOC_MCTS_SEARCH_COMPARE=1 also runs the other two planners on fresh models
+// there (rows only; the played action and the run are unchanged).
+enum class LiveSearchMode { Mcts, Particle, ParticleBeam };
+LiveSearchMode liveSearchMode = LiveSearchMode::Mcts;
+sts::search::OocParticleConfig liveParticleConfig;
+std::string liveSearchTracePath;
+bool liveSearchCompare = false;
+const char *searchModeName(LiveSearchMode mode) {
+    return mode == LiveSearchMode::Particle ? "particle" : mode == LiveSearchMode::ParticleBeam ? "particle_beam" : "mcts";
+}
 // STS_OOC_MCTS_LEAF_COMPARE=PATH (research, value-head plan stage 2): at every searched root, after the real search,
 // the same search (seed, budget, stops) runs once per STS_OOC_MCTS_LEAF_COMPARE_ARMS leaf on a fresh model, then
 // STS_OOC_MCTS_LEAF_COMPARE_REFEREE referee rollouts run from the played action and from every arm's differing pick.
@@ -3592,6 +3617,55 @@ void configureLiveOocMcts() {
         liveOptions.refereeActEndCalibration = *numbers;
 #endif
     }
+    liveSearchMode = LiveSearchMode::Mcts; liveParticleConfig = {}; liveSearchTracePath.clear(); liveSearchCompare = false;
+    if (const char *mode = std::getenv("STS_OOC_MCTS_SEARCH_MODE"); mode && *mode) {
+        const std::string value(mode);
+        if (value == "particle") liveSearchMode = LiveSearchMode::Particle;
+        else if (value == "particle_beam") liveSearchMode = LiveSearchMode::ParticleBeam;
+        else if (value != "mcts") throw std::runtime_error("STS_OOC_MCTS_SEARCH_MODE must be mcts, particle or particle_beam");
+    }
+    if (const char *raw = std::getenv("STS_OOC_MCTS_PARTICLES"); raw && *raw) {
+        const std::string value(raw);
+        if (value.size() > 5 || value.find_first_not_of("0123456789") != std::string::npos
+                || std::stoul(value) == 0 || std::stoul(value) > 4096)
+            throw std::runtime_error("STS_OOC_MCTS_PARTICLES must be 1..4096");
+        liveParticleConfig.particles = std::uint32_t(std::stoul(value));
+    }
+    liveParticleConfig.beamWidth = 8; liveParticleConfig.branchK = 2; liveParticleConfig.depth = 3;
+    if (const char *raw = std::getenv("STS_OOC_MCTS_BEAM"); raw && *raw) {
+        unsigned w = 0, k = 0, d = 0;
+        char tail = 0;
+        if (std::sscanf(raw, "%u:%u:%u%c", &w, &k, &d, &tail) != 3 || w < 1 || w > 256 || k < 1 || k > 16 || d > 16)
+            throw std::runtime_error("STS_OOC_MCTS_BEAM must be WIDTH:K:DEPTH with WIDTH 1..256, K 1..16, DEPTH 0..16");
+        liveParticleConfig.beamWidth = w; liveParticleConfig.branchK = k; liveParticleConfig.depth = d;
+    }
+    if (const char *trace = std::getenv("STS_OOC_MCTS_SEARCH_TRACE"); trace && *trace) {
+        liveSearchTracePath = trace;
+        if (!std::ofstream(liveSearchTracePath, std::ios::app))
+            throw std::runtime_error("STS_OOC_MCTS_SEARCH_TRACE cannot open output");
+    }
+    if (const char *compare = std::getenv("STS_OOC_MCTS_SEARCH_COMPARE"); compare && *compare) {
+        const std::string value(compare);
+        if (value != "0" && value != "1") throw std::runtime_error("STS_OOC_MCTS_SEARCH_COMPARE must be 0 or 1");
+        liveSearchCompare = value == "1";
+        if (liveSearchCompare && liveSearchTracePath.empty())
+            throw std::runtime_error("STS_OOC_MCTS_SEARCH_COMPARE requires STS_OOC_MCTS_SEARCH_TRACE");
+    }
+    if (liveSearchMode != LiveSearchMode::Mcts || liveSearchCompare) {
+#ifdef STS_LIVE_ADVISOR
+        throw std::runtime_error("STS_OOC_MCTS_SEARCH_MODE and _SEARCH_COMPARE are unavailable in the live advisor");
+#endif
+        // The particle planners replace the whole root search: options that read or reshape a PUCT tree, or that
+        // observe its leaves, have no meaning there and fail closed.
+        if (!liveEnabled || !liveOptions.checkpointLeaves || liveOptions.cpuBudgetSeconds > 0 || liveLeafCompare
+                || liveSibling || std::getenv("STS_OOC_MCTS_LEAF_CAPTURE") || !liveRootComparePath.empty()
+                || liveGumbelRootActions || liveRootNoiseFraction > 0 || livePlaySampleFloor >= 0)
+            throw std::runtime_error("STS_OOC_MCTS_SEARCH_MODE/_SEARCH_COMPARE need STS_OOC_MCTS=1 with checkpoint "
+                "leaves and exclude the CPU budget, leaf/sibling capture, leaf and root compares, Gumbel roots, root "
+                "noise and play sampling");
+        // The beam's horizon is the rollout's: combats after the root edge count against the leaf's combats.
+        liveParticleConfig.horizonCombats = liveOptions.leafCombats;
+    }
     // ADR-0057 (Philipp 2026-10-23, value-level A/B M0 +2.15 pp): unset, the plain rollout3 X2-B leaf is calibrated
     // with M0 on states at ascension 20, when the process win model is the pinned public X2-B M0 was fit on. Other
     // win models, leaves and leaf counts, captures and the leaf compare keep the raw anchor, as does
@@ -3859,6 +3933,13 @@ void configureLiveOocMcts() {
             + leafCalibrationText(liveOptions.refereeActEndCalibration, ":") : std::string{})
         << (livePlaySampleFloor >= 0 ? " play_sample=" + std::to_string(livePlaySampleFloor) + ":"
             + std::to_string(livePlaySampleTemperature) : std::string{})
+        << (liveSearchMode != LiveSearchMode::Mcts ? std::string(" search_mode=") + searchModeName(liveSearchMode)
+            + " particles=" + std::to_string(liveParticleConfig.particles)
+            + (liveSearchMode == LiveSearchMode::ParticleBeam ? " beam=" + std::to_string(liveParticleConfig.beamWidth)
+                + ":" + std::to_string(liveParticleConfig.branchK) + ":" + std::to_string(liveParticleConfig.depth)
+                : std::string{})
+            + " horizon_combats=" + std::to_string(liveParticleConfig.horizonCombats) : std::string{})
+        << (liveSearchCompare ? " search_compare=1" : "")
         << "]\n";
     std::cout << "[ooc-mcts-config] {\"noncombatOutcomes\":\""
         << (liveOptions.sampleNoncombat ? "sampled" : "exact")
@@ -4428,6 +4509,73 @@ nlohmann::json takeOocPolicyTarget() {
     t_policyTargetArmed = false;
     return std::exchange(t_policyTargetRow, nullptr);
 }
+namespace {
+sts::search::OocParticleResult runLiveParticlePlanner(OocGameContextModel &model, std::uint64_t seed, LiveSearchMode mode) {
+    auto config = liveParticleConfig;
+    config.seed = seed;
+    if (mode == LiveSearchMode::Particle) config.depth = 0;
+    return sts::search::OocParticlePlanner(config).search(model, 0);
+}
+// The particle result in the PUCT result's shape: visits are the particles each root action was evaluated on, q its
+// selection score (particle mean, or the best final-beam plan with that root action).
+sts::search::OocMctsResult particleAsMctsResult(const sts::search::OocParticleResult &r) {
+    sts::search::OocMctsResult out;
+    out.selectedAction = r.selectedAction;
+    out.aborted = r.aborted;
+    out.abortReason = r.abortReason;
+    for (const auto &a : r.actions)
+        out.rootActions.push_back({a.id, a.prior, a.rootParticles, a.finalScore, a.pruned});
+    out.metrics.transitionSamples = r.transitions;
+    out.metrics.leafEvaluations = r.evaluations;
+    out.metrics.simulations = r.evaluations + r.terminalParticles;
+    out.metrics.simulationAttempts = out.metrics.simulations;
+    return out;
+}
+// Chosen minus best other action by the planner's own selection score; null with fewer than two scored actions.
+nlohmann::json selectionMargin(const std::vector<std::pair<sts::search::OocActionId, double>> &scores,
+                               std::optional<sts::search::OocActionId> selected) {
+    if (!selected || scores.size() < 2) return nullptr;
+    std::optional<double> chosen, runnerUp;
+    for (const auto &[id, score] : scores) {
+        if (id == *selected) chosen = score;
+        else if (!runnerUp || score > *runnerUp) runnerUp = score;
+    }
+    return chosen && runnerUp ? nlohmann::json(*chosen - *runnerUp) : nlohmann::json(nullptr);
+}
+nlohmann::json mctsSummary(const sts::search::OocMctsResult &r, double cpuSeconds) {
+    nlohmann::json actions = nlohmann::json::array();
+    std::vector<std::pair<sts::search::OocActionId, double>> q, visits;
+    for (const auto &a : r.rootActions) {
+        actions.push_back({{"id", a.id}, {"visits", a.visits}, {"q", a.q}, {"pruned", a.pruned}});
+        if (!a.pruned && a.visits) q.emplace_back(a.id, a.q);
+        if (!a.pruned) visits.emplace_back(a.id, double(a.visits) / double(std::max<std::uint64_t>(1, r.metrics.simulations)));
+    }
+    return {{"selected", r.selectedAction ? nlohmann::json(*r.selectedAction) : nlohmann::json(nullptr)},
+        {"aborted", r.aborted}, {"abortReason", r.abortReason}, {"simulations", r.metrics.simulations},
+        {"transitions", r.metrics.transitionSamples}, {"evaluations", r.metrics.leafEvaluations},
+        {"cpuSeconds", cpuSeconds}, {"qMargin", selectionMargin(q, r.selectedAction)},
+        {"visitShareMargin", selectionMargin(visits, r.selectedAction)}, {"actions", actions}};
+}
+nlohmann::json particleSummary(const sts::search::OocParticleResult &r, double cpuSeconds) {
+    nlohmann::json actions = nlohmann::json::array(), beam = nlohmann::json::array();
+    std::vector<std::pair<sts::search::OocActionId, double>> rootScores, finalScores;
+    for (const auto &a : r.actions) {
+        actions.push_back({{"id", a.id}, {"mean", a.rootMean}, {"stdErr", a.rootStdErr}, {"particles", a.rootParticles},
+            {"final", a.finalScore}, {"inFinalBeam", a.inFinalBeam}, {"evaluations", a.evaluations},
+            {"values", a.particleValues},
+            {"pruned", a.pruned}, {"pruneReason", a.pruneReason}});
+        if (!a.pruned) { rootScores.emplace_back(a.id, a.rootMean); finalScores.emplace_back(a.id, a.finalScore); }
+    }
+    for (const auto &p : r.finalBeam) beam.push_back({{"root", p.root}, {"ranks", p.ranks}, {"score", p.score}});
+    return {{"selected", r.selectedAction ? nlohmann::json(*r.selectedAction) : nlohmann::json(nullptr)},
+        {"rootStage", r.rootStageAction ? nlohmann::json(*r.rootStageAction) : nlohmann::json(nullptr)},
+        {"aborted", r.aborted}, {"abortReason", r.abortReason}, {"transitions", r.transitions},
+        {"evaluations", r.evaluations}, {"terminalParticles", r.terminalParticles},
+        {"branchedPlans", r.branchedPlans}, {"droppedPlans", r.droppedPlans}, {"levels", r.levelsExpanded},
+        {"cpuSeconds", cpuSeconds}, {"rootMargin", selectionMargin(rootScores, r.rootStageAction)},
+        {"finalMargin", selectionMargin(finalScores, r.selectedAction)}, {"actions", actions}, {"finalBeam", beam}};
+}
+}
 sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const PathHistory &path,
     std::uint64_t seed, std::uint64_t index, std::uint64_t simulations,
     std::shared_ptr<const CombatTransitionSampler> sampler, std::uint64_t &samples,
@@ -4502,7 +4650,8 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
         options.priorTraceDecisionIndex = index;
         options.priorTraceSearchSeed = config.seed;
     }
-    const auto compareSampler = liveLeafCompare ? sampler : std::shared_ptr<const CombatTransitionSampler>{};
+    const auto compareSampler = liveLeafCompare || liveSearchCompare ? sampler : std::shared_ptr<const CombatTransitionSampler>{};
+    const auto searchCompareOptions = liveSearchCompare ? std::optional(options) : std::nullopt;
     OocGameContextModel model(gc, path, std::move(sampler), std::move(options));
     samples = 0;
     if (selected) selected->reset();
@@ -4584,10 +4733,120 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
     // The leaf compare's side searches start from the thread's OOC policy state as the real search found it.
     const auto policyBeforeSearch = liveLeafCompare ? std::optional(captureOocPolicyThreadState()) : std::nullopt;
 #endif
+#ifndef STS_LIVE_ADVISOR
+    const auto policyBeforePlanner = liveSearchCompare ? std::optional(captureOocPolicyThreadState()) : std::nullopt;
+#endif
+    const double plannerCpuStart = threadCpuSeconds();
+    std::optional<sts::search::OocParticleResult> particleResult;
     auto result = [&] {
         DecisionLogScope logScope(decisionLog ? &*decisionLog : nullptr);
+        if (liveSearchMode != LiveSearchMode::Mcts && !sole) {
+            particleResult = runLiveParticlePlanner(model, config.seed, liveSearchMode);
+            return particleAsMctsResult(*particleResult);
+        }
         return searchWithSoleRootShortcut(model, config, sole, simulations);
     }();
+    const double plannerCpu = threadCpuSeconds() - plannerCpuStart;
+    if (!liveSearchTracePath.empty() && !sole) {
+        // Research rows only: the compare's planners run on fresh models from the thread's pre-search policy state,
+        // and the real run continues from the state the real planner left.
+        nlohmann::json candidates = nlohmann::json::array();
+        std::optional<sts::search::OocActionId> priorArgmax;
+        double bestPrior = -1;
+        for (const auto &a : model.legalActions(0)) {
+            candidates.push_back({{"id", a.id}, {"key", model.candidate(0, a.id).key},
+                {"label", candidateLabel(gc, model.candidate(0, a.id))}, {"prior", a.prior}});
+            if (a.prior > bestPrior) { bestPrior = a.prior; priorArgmax = a.id; }
+        }
+        nlohmann::json row = {{"schema", "ooc-search-trace-v1"}, {"seed", seed}, {"decisionIndex", index},
+            {"act", gc.act}, {"floor", gc.floorNum}, {"screen", int(gc.screenState)}, {"hp", gc.curHp},
+            {"maxHp", gc.maxHp}, {"gold", gc.gold}, {"searchSeed", config.seed}, {"mode", searchModeName(liveSearchMode)},
+            {"candidates", candidates}, {"priorArgmax", priorArgmax ? nlohmann::json(*priorArgmax) : nlohmann::json(nullptr)},
+            {"fullBudget", fullBudget}, {"budget", simulations}};
+        row["planners"][searchModeName(liveSearchMode)] = particleResult
+            ? particleSummary(*particleResult, plannerCpu) : mctsSummary(result, plannerCpu);
+#ifndef STS_LIVE_ADVISOR
+        if (liveSearchCompare && !result.aborted) {
+            const auto policyAfterPlanner = captureOocPolicyThreadState();
+            for (const auto mode : {LiveSearchMode::Mcts, LiveSearchMode::Particle, LiveSearchMode::ParticleBeam}) {
+                if (mode == liveSearchMode) continue;
+                restoreOocPolicyThreadState(*policyBeforePlanner);
+                const double t0 = threadCpuSeconds();
+                try {
+                    OocGameContextModel other(gc, path, compareSampler, *searchCompareOptions);
+                    if (mode == LiveSearchMode::Mcts)
+                        row["planners"][searchModeName(mode)] = mctsSummary(
+                            searchWithSoleRootShortcut(other, config, sole, simulations), threadCpuSeconds() - t0);
+                    else {
+                        const auto r = runLiveParticlePlanner(other, config.seed, mode);
+                        row["planners"][searchModeName(mode)] = particleSummary(r, threadCpuSeconds() - t0);
+                    }
+                } catch (const std::exception &e) {
+                    row["planners"][searchModeName(mode)] = {{"error", e.what()}, {"cpuSeconds", threadCpuSeconds() - t0}};
+                }
+            }
+            // Fairness checks at this real root, each on fresh models from the pre-search policy state.
+            nlohmann::json &checks = row["checks"];
+            const auto fresh = [&](const GameContext &root) {
+                restoreOocPolicyThreadState(*policyBeforePlanner);
+                return std::make_unique<OocGameContextModel>(root, path, compareSampler, *searchCompareOptions);
+            };
+            try {
+                // Hidden information: two hidden worlds of this public root expose the same candidates and prior,
+                // so every planner's decision here (and the beam's rank choices) is the same in both.
+                auto worldA = detachedCopy(gc), worldB = detachedCopy(gc);
+                std::mt19937_64 ra(splitMix64(config.seed ^ 0x4849444431ULL)), rb(splitMix64(config.seed ^ 0x4849444432ULL));
+                sampleNoncombatFuture(worldA, ra);
+                sampleNoncombatFuture(worldB, rb);
+                checks["hiddenWorldsDiffer"] = sts::test::oocStateFingerprint(worldA) != sts::test::oocStateFingerprint(worldB);
+                const auto ma = fresh(worldA);
+                const auto la = ma->legalActions(0);
+                const auto mb = fresh(worldB);
+                const auto lb = mb->legalActions(0);
+                bool same = la.size() == lb.size();
+                for (std::size_t i = 0; same && i < la.size(); ++i)
+                    same = la[i].id == lb[i].id && la[i].prior == lb[i].prior
+                        && ma->candidate(0, la[i].id).key == mb->candidate(0, lb[i].id).key;
+                checks["hiddenInvariantPrior"] = same;
+            } catch (const std::exception &e) { checks["hiddenError"] = e.what(); }
+            try {
+                // P = 1 is the single continuation of particle 0's streams.
+                auto one = liveParticleConfig;
+                one.seed = config.seed; one.depth = 0; one.particles = 1;
+                const auto m1 = fresh(gc);
+                const auto r1 = sts::search::OocParticlePlanner(one).search(*m1, 0);
+                const auto m2 = fresh(gc);
+                auto ids = m2->legalActions(0);
+                std::sort(ids.begin(), ids.end(), [](const auto &x, const auto &y) { return x.id < y.id; });
+                double worst = 0;
+                for (std::size_t i = 0; i < ids.size(); ++i) {
+                    if (r1.actions.at(i).pruned) continue;
+                    auto t = sts::search::OocParticlePlanner::transitionStream(config.seed, 0);
+                    const auto next = m2->sampleSuccessor(0, ids[i].id, t);
+                    auto leaf = sts::search::OocParticlePlanner::leafStream(config.seed, 0);
+                    const auto terminal = m2->terminalValue(next);
+                    const double v = terminal ? *terminal : m2->evaluateLeafAfterCombats(next, leaf, 0).value;
+                    worst = std::max(worst, std::abs(v - r1.actions[i].rootMean));
+                }
+                checks["p1MaxAbsDiff"] = worst;
+            } catch (const std::exception &e) { checks["p1Error"] = e.what(); }
+            try {
+                // beam(1, 1) keeps the particle search's choice.
+                auto narrow = liveParticleConfig;
+                narrow.seed = config.seed; narrow.beamWidth = 1; narrow.branchK = 1;
+                const auto m = fresh(gc);
+                const auto r = sts::search::OocParticlePlanner(narrow).search(*m, 0);
+                checks["beam11Selected"] = r.selectedAction ? nlohmann::json(*r.selectedAction) : nlohmann::json(nullptr);
+                checks["beam11Levels"] = r.levelsExpanded;
+            } catch (const std::exception &e) { checks["beam11Error"] = e.what(); }
+            restoreOocPolicyThreadState(policyAfterPlanner);
+        }
+#endif
+        std::lock_guard<std::mutex> lock(liveTraceMutex);
+        std::ofstream out(liveSearchTracePath, std::ios::app);
+        if (!out || !(out << row.dump() << '\n'))
+            throw std::runtime_error("STS_OOC_MCTS_SEARCH_TRACE write failed");
+    }
     if (rootCompare && !result.aborted && !result.rootActions.empty()) {
         // Research only: extra searches on the same model after the real one, with their own seeds.
         const auto stats = [](const sts::search::OocMctsResult &r) {

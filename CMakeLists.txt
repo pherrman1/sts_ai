@@ -756,6 +756,10 @@ add_executable(ooc-mcts-test apps/ooc_mcts_test.cpp src/sim/search/OocMctsPlanne
 target_include_directories(ooc-mcts-test PRIVATE include)
 add_test(NAME ooc_mcts COMMAND $<TARGET_FILE:ooc-mcts-test>)
 set_tests_properties(ooc_mcts PROPERTIES LABELS "core")
+add_executable(ooc-particle-planner-test tests/ooc_particle_planner_test.cpp src/sim/search/OocParticlePlanner.cpp)
+target_include_directories(ooc-particle-planner-test PRIVATE include)
+add_test(NAME ooc_particle_planner COMMAND $<TARGET_FILE:ooc-particle-planner-test>)
+set_tests_properties(ooc_particle_planner PROPERTIES LABELS "core")
 
 # CTest entries below cover checks that do not depend on apps/test.cpp
 # subcommands (apps/test.cpp is a manual command dispatcher; its subcommands
