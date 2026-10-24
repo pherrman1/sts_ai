@@ -13,6 +13,13 @@
 namespace one_combat {
 struct CompactTreeNet;
 struct CtmCalibration;
+// STS_CTM_A20_HP_FINETUNE (ADR-0059): unset or 1, the built-in A20 CTM stack is the §470 stack with the §672 HP-head
+// fine-tune of its fast artifact and that stack's own calibration table; 0 restores the §470 stack (fast ae785ec2, the
+// ADR-0058 table). Any other value is fatal.
+bool a20HpFinetune();
+// The A20 stack's fast artifact under STS_CTM_A20_HP_FINETUNE, and its Brew fallback (the same in both).
+const std::string &a20FastCtmArtifact();
+constexpr const char *kA20StandardCtmArtifact = "selfplay/models/combat_transition_near_full_escape_pathb_a20.native";
 struct ActiveLizardPrediction {
     bool supported = false;
     std::string reason = "disabled";
@@ -47,8 +54,8 @@ class CombatTransitionRuntime {
     // Act-4 survival model for SHIELD_AND_SPEAR and THE_HEART (§527; STS_CTM_ACT4_SURVIVAL_MODEL), or null.
     const CompactTreeNet *act4Survival_ = nullptr;
     std::string act4SurvivalPath_;
-    // Per-fight death-logit shifts and HP-loss scales (STS_CTM_CALIBRATION; ADR-0058 default for the built-in A20
-    // stack), or null.
+    // Per-fight death-logit shifts and HP-loss scales (STS_CTM_CALIBRATION; the built-in A20 stack's own table by
+    // default, ADR-0058 and ADR-0059), or null.
     const CtmCalibration *calibration_ = nullptr;
     // Every max_hp.encoder.* tensor equals its hp.encoder.* twin byte for byte, so
     // encode("max_hp",p) and encode("hp",p) are the same computation.

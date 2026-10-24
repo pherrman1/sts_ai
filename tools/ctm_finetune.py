@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Warm-start fine-tune of the A20 fast CTM (pathb-a20 DeepSets) on recorded real combats (research).
 
-The deployed fast artifact (combat_transition_deepsets_pathb_a20_lizard.native) was trained on combats of the
-2026-10-12 Stage-1 teacher (§443). Today's Silver loses less HP late in the run (ctm_calibration_20261023). This
+The §470 fast artifact (combat_transition_deepsets_pathb_a20_lizard.native; the A20 default until ADR-0059 made its
+§672 HP-head fine-tune from this tool the default) was trained on combats of the 2026-10-12 Stage-1 teacher (§443). Today's Silver loses less HP late in the run (ctm_calibration_20261023). This
 tool continues training two parts of that artifact on combat_transition_row_v2 rows of current play:
 
 * survival: the survival encoder (its own DeepSets weights) and its 1x64 head, all weights;

@@ -9,9 +9,9 @@ from pathlib import Path
 from unittest import mock
 
 from tools.live_game_runtime import (CTM_NAME, CTM_FAST_NAME, CTM_STACK_KEYS,
-    CTM_CURRENT_NAME, CTM_CURRENT_FAST_NAME, CTM_A20_NAME, CTM_A20_FAST_NAME,
-    CTM_QUALIFIED_KEYS, OOC_NAME, OOC_WIN_NAME, OOC_WIN_SOURCE, LEGACY_OOC_WIN_NAME,
-    OOC_FLOOR_NAME, ARM_C_NAME, ACT4_SURVIVAL_NAME, CTM_CALIBRATION_NAME,
+    CTM_CURRENT_NAME, CTM_CURRENT_FAST_NAME, CTM_A20_NAME, CTM_A20_FAST_NAME, CTM_A20_FAST_SOURCE,
+    LEGACY_CTM_A20_FAST_NAME, CTM_QUALIFIED_KEYS, OOC_NAME, OOC_WIN_NAME, OOC_WIN_SOURCE, LEGACY_OOC_WIN_NAME,
+    OOC_FLOOR_NAME, ARM_C_NAME, ACT4_SURVIVAL_NAME, CTM_CALIBRATION_NAME, LEGACY_CTM_CALIBRATION_NAME,
     ROLLOUT_ROOT_TABLE_NAME, LEGACY_ROLLOUT_ROOT_TABLE_NAME, RuntimeFailure, RuntimeManager, sha256)
 
 
@@ -119,8 +119,9 @@ class LiveGameRuntimeTest(unittest.TestCase):
                     self.assertIs(active["armCMatchesInstalled"], expected)
 
     def qualified_sources(self):
-        for name in (CTM_CURRENT_NAME, CTM_CURRENT_FAST_NAME, CTM_A20_NAME, CTM_A20_FAST_NAME):
+        for name in (CTM_CURRENT_NAME, CTM_CURRENT_FAST_NAME, CTM_A20_NAME):
             (self.repo / "selfplay/models" / name).write_bytes(name.encode())
+        (self.repo / CTM_A20_FAST_SOURCE).write_bytes(CTM_A20_FAST_NAME.encode())
         (self.repo / "models" / ACT4_SURVIVAL_NAME).write_bytes(b"act4-survival")
         (self.repo / "models" / CTM_CALIBRATION_NAME).write_bytes(b"ctm-calibration")
 
@@ -136,6 +137,9 @@ class LiveGameRuntimeTest(unittest.TestCase):
         self.assertEqual(manifest["ctmAct4SurvivalSha256"], sha256(self.manager.current / "models" / ACT4_SURVIVAL_NAME))
         self.assertEqual((self.manager.current / "models" / CTM_CALIBRATION_NAME).read_bytes(), b"ctm-calibration")
         self.assertEqual(manifest["ctmCalibrationSha256"], sha256(self.manager.current / "models" / CTM_CALIBRATION_NAME))
+        # ADR-0059: the fine-tuned fast artifact ships with its own table.
+        self.assertEqual((self.manager.current / "models" / CTM_A20_FAST_NAME).read_bytes(), CTM_A20_FAST_NAME.encode())
+        self.assertEqual(manifest["ctmCalibrationName"], CTM_CALIBRATION_NAME)
         self.assertEqual(self.manager.install(self.advisor), manifest)
         env = {"STS_LIVE_CTM_A20_MODEL": str(self.manager.current / "models" / CTM_A20_FAST_NAME),
                "STS_LIVE_CTM_A20_FALLBACK_MODEL": str(self.manager.current / "models" / CTM_A20_NAME)}
@@ -164,6 +168,26 @@ class LiveGameRuntimeTest(unittest.TestCase):
                 with self.assertRaisesRegex(RuntimeFailure, "hash mismatch"):
                     self.manager.validate_release()
                 artifact.write_bytes(old)
+
+    def test_pre_finetune_qualified_release_stays_valid_and_tables_stay_paired(self):
+        self.qualified_sources()
+        manifest = self.manager.install(self.advisor, qualified_ctm=True)
+        release = self.manager.current.resolve()
+        receipt = release / "manifest.json"
+        # A release installed before ADR-0059: the §470 fast artifact with the ADR-0058 table, no table name.
+        (release / f"models/{CTM_A20_FAST_NAME}").rename(release / f"models/{LEGACY_CTM_A20_FAST_NAME}")
+        (release / f"models/{CTM_CALIBRATION_NAME}").rename(release / f"models/{LEGACY_CTM_CALIBRATION_NAME}")
+        legacy = {k: v for k, v in manifest.items() if k != "ctmCalibrationName"}
+        legacy["ctmA20Primary"] = LEGACY_CTM_A20_FAST_NAME
+        receipt.write_text(json.dumps(legacy))
+        self.assertEqual(self.manager.validate_release(), legacy)
+        # The fine-tune never pairs with the ADR-0058 table, nor the §470 artifact with a named one.
+        for broken in (dict(legacy, ctmA20Primary=CTM_A20_FAST_NAME),
+                       dict(legacy, ctmCalibrationName=LEGACY_CTM_CALIBRATION_NAME)):
+            with self.subTest(broken=broken["ctmA20Primary"]):
+                receipt.write_text(json.dumps(broken))
+                with self.assertRaisesRegex(RuntimeFailure, "incomplete or unsupported qualified CTM stack manifest"):
+                    self.manager.validate_release()
 
     def test_missing_a20_source_preserves_previous_release(self):
         before = self.install()

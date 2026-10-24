@@ -26,8 +26,8 @@
 #include <unordered_map>
 
 namespace one_combat {
-// STS_CTM_CALIBRATION (ADR-0058 default for the built-in A20 stack): per-fight corrections of the CTM fitted to real
-// combats (tools/ctm_calibration.py, docs/experiments/evidence/ctm_calibration_20261023). See ctmCalibration.
+// STS_CTM_CALIBRATION (default for the built-in A20 stack: ADR-0058, ADR-0059): per-fight corrections of the CTM fitted
+// to real combats (tools/ctm_calibration.py, docs/experiments/evidence/ctm_calibration_20261023). See ctmCalibration.
 struct CtmCalibration {
     struct Entry { float deathLogitShift=0,hpLossScale=1; };
     std::string path,candidateId;
@@ -35,6 +35,20 @@ struct CtmCalibration {
     std::vector<Entry> entries;
     const Entry &at(const CombatPredictorInputV1 &) const;
 };
+bool a20HpFinetune() {
+    static const bool on=[] {
+        const char *raw=std::getenv("STS_CTM_A20_HP_FINETUNE");
+        if(!raw || std::string(raw)=="1") return true;
+        if(std::string(raw)=="0") return false;
+        throw std::runtime_error("STS_CTM_A20_HP_FINETUNE must be 0 or 1 when set");
+    }();
+    return on;
+}
+const std::string &a20FastCtmArtifact() {
+    static const std::string path=a20HpFinetune()?"models/candidates/ctm_finetune_hp_pathb_a20_v1.native":
+        "selfplay/models/combat_transition_deepsets_pathb_a20_lizard.native";
+    return path;
+}
 namespace {
 using Vec=std::vector<float>;
 void require(bool value,const char *why) { if(!value) throw std::runtime_error(why); }
@@ -154,9 +168,12 @@ int calibrationRoom(int roomClass) {
     default: return 3;
     }
 }
-// ADR-0058: the table the built-in A20 stack applies when STS_CTM_CALIBRATION is unset, pinned by its bytes.
+// The tables the built-in A20 stacks apply when STS_CTM_CALIBRATION is unset, pinned by their bytes: ADR-0058's for
+// the §470 stack, and ADR-0059's, refitted on the HP-head fine-tune's predictions, for that stack.
 constexpr char kDefaultCtmCalibration[]="models/candidates/ctm_calibration_pathb_a20_v1.json";
 constexpr char kDefaultCtmCalibrationSha256[]="359619f713677de60b86144e275ad37874718951c6964b63811f55c77181cb42";
+constexpr char kHpFinetuneCtmCalibration[]="models/candidates/ctm_calibration_pathb_a20_ft_hp_v1.json";
+constexpr char kHpFinetuneCtmCalibrationSha256[]="8c226f23d80ff1cd2d9d1f87a14af3b5098a710ef88c6428f3fe0e70b3283653";
 // A ctm_calibration_v1 JSON table applies to the runtimes of the stack it names (candidateId) only. A fight's group is
 // "<act>:<ENCOUNTER>" in an elite or boss room when the table has it, else "<act>:<ROOM>" (the predictor room class:
 // MONSTER is NORMAL, then ELITE, BOSS, and OTHER for every other room); a fight in neither keeps the CTM's prediction.
@@ -199,9 +216,17 @@ std::unique_ptr<CtmCalibration> loadCtmCalibration(const std::string &path) {
               << " scope=" << calibration->candidateId << "\n";
     return calibration;
 }
-// STS_CTM_CALIBRATION, loaded once per process: a path is a research table; unset applies kDefaultCtmCalibration to
-// the built-in A20 stack only (ADR-0058); 0 turns the calibration off.
-const CtmCalibration *ctmCalibration(bool builtInA20Stack) {
+enum class BuiltInA20Stack { None, Boss470, HpFinetune };
+std::unique_ptr<CtmCalibration> loadBundledCtmCalibration(const char *relative,const char *expected,const char *adr) {
+    const auto path=bundledPath(relative);
+    if(!std::ifstream(path) || sha256File(path)!=expected)
+        throw std::runtime_error("STS_CTM_CALIBRATION unset needs the bundled table "+path+" with sha256 "+expected+
+            " ("+adr+"; =0 turns the calibration off)");
+    return loadCtmCalibration(path);
+}
+// STS_CTM_CALIBRATION, loaded once per process: a path is a research table; unset applies the built-in A20 stack's
+// own table to that stack only (ADR-0058, ADR-0059); 0 turns the calibration off.
+const CtmCalibration *ctmCalibration(BuiltInA20Stack stack) {
     const char *raw=std::getenv("STS_CTM_CALIBRATION");
     if(raw) {
         require(*raw!=0,"STS_CTM_CALIBRATION is empty");
@@ -209,15 +234,17 @@ const CtmCalibration *ctmCalibration(bool builtInA20Stack) {
         static const auto calibration=loadCtmCalibration(raw);
         return calibration.get();
     }
-    if(!builtInA20Stack) return nullptr;
-    static const auto calibration=[] {
-        const auto path=bundledPath(kDefaultCtmCalibration);
-        if(!std::ifstream(path) || sha256File(path)!=kDefaultCtmCalibrationSha256)
-            throw std::runtime_error("STS_CTM_CALIBRATION unset needs the bundled table "+path+" with sha256 "+
-                kDefaultCtmCalibrationSha256+" (ADR-0058; =0 turns the calibration off)");
-        return loadCtmCalibration(path);
-    }();
-    return calibration.get();
+    if(stack==BuiltInA20Stack::Boss470) {
+        static const auto calibration=loadBundledCtmCalibration(kDefaultCtmCalibration,kDefaultCtmCalibrationSha256,
+            "ADR-0058");
+        return calibration.get();
+    }
+    if(stack==BuiltInA20Stack::HpFinetune) {
+        static const auto calibration=loadBundledCtmCalibration(kHpFinetuneCtmCalibration,
+            kHpFinetuneCtmCalibrationSha256,"ADR-0059");
+        return calibration.get();
+    }
+    return nullptr;
 }
 bool hasEntropicBrew(const CombatPredictorInputV1 &input) {
     return std::any_of(input.potions.begin(),input.potions.end(),[](const auto &p) {
@@ -763,8 +790,8 @@ std::vector<int> declaredHpClasses(const nlohmann::json &domain,const nlohmann::
     return classes;
 }
 // The bundled A20 stack (§470): the §443 Stage 4 Lizard candidate pathb-a20 (fast ae785ec2, standard e338506d,
-// manifest 704f2a58) plus the boss calibration fit on Stage 1 VALIDATION rows. Loaded by STS_OOC_MCTS_A20_CTM=1 at
-// ascension 20, or by any artifact declaring pathb-a20 when no research manifest names that candidate.
+// manifest 704f2a58) plus the boss calibration fit on Stage 1 VALIDATION rows. Built in under
+// STS_CTM_A20_HP_FINETUNE=0; by default its HP-head fine-tune below (ADR-0059). tools/ctm_finetune.py reads this one.
 constexpr char kA20CandidateManifest[]=R"json({
   "activeLizard": {
     "candidateId": "active-lizard-mechanical-q-learned-r-t2",
@@ -847,10 +874,105 @@ constexpr char kA20CandidateManifest[]=R"json({
 }
 )json";
 constexpr char kA20CandidateManifestSha256[]="00bb4da6eb9b3117feb0579356436a96f7315ea28a8f3d1f29fd10b827c254ea";
-const nlohmann::json &a20CandidateIdentity() {
+// ADR-0059: the same stack with the §672 HP-head fine-tune of its fast artifact (bdbfafa6: only the five HP-head
+// tensors differ from ae785ec2, so it predicts the same deaths). These are the exact bytes of its research-candidate
+// manifest, models/candidates/ctm_finetune_hp_pathb_a20_v1.manifest.json.
+constexpr char kA20HpFinetuneManifest[]=R"json({
+  "activeLizard": {
+    "candidateId": "active-lizard-mechanical-q-learned-r-t2",
+    "candidateManifestSha256": "15da76f4ab3d8bdf74f04f17176fcdc4f6a1fe5ea792497a2e3cf12b29964617",
+    "frozenQrArtifactSha256": "3ca66c941904fa86ec9caec87210529a207eabaa39851f565c773605b8b9ca4c",
+    "rModel": {
+      "featureMean": [
+        0.7381432442056437
+      ],
+      "featureScale": [
+        0.25821602861152476
+      ],
+      "standardizedCoefficients": [
+        1.9390933205559342,
+        1.0438830448425434
+      ]
+    },
+    "rModelSha256": "fa8170f9b0c36be814f7ad1178a5f135664cef82c98e8715d35080eeb4292456"
+  },
+  "bossSurvivalLogitShift": -0.18325317250506112,
+  "candidateId": "pathb-a20",
+  "capabilities": {
+    "fast": {
+      "escape": {
+        "checkpointSha256": "9db82c3180751e27198bb47c5fa31fa935baa41d4e7579b1151f34662aac8df0"
+      },
+      "lizardBrew": {
+        "rModel": {
+          "featureMean": [
+            0.7107754880552632
+          ],
+          "featureScale": [
+            0.26616081999875596
+          ],
+          "standardizedCoefficients": [
+            2.073495688086136,
+            0.9809218525066958
+          ]
+        }
+      },
+      "lizardFairy": {},
+      "writhingRitual": {}
+    },
+    "standard": {
+      "escape": {
+        "checkpointSha256": "fed45e004991422ea676fae3b8749586e8c7f56400eaa3901f652d23762c3b3b"
+      },
+      "writhingRitual": {}
+    }
+  },
+  "domainSha256": "011fd040cce01c69497af2a07c737f8f1a2e753680ab02a298939f8b90d7a4b7",
+  "fast": {
+    "artifactSha256": "bdbfafa6823adc52ff240dae5cbd2ba224aca145f2182bedf79fe0dc8cf6571b",
+    "downstreamCheckpointSha256": "43242a584e6c6aa1c3e50f215deec98933d5d383c94abe32eeb6b4a968cb3c40",
+    "maxHpHpCheckpointSha256": "7e068cd3b0958ae48dfb7eb7e8c9ac3aaf8fb3407033ecd1535106d50aacc3a7",
+    "potionSpecialistCheckpointSha256": "3a41c06be0db9912089c1454b01790155ce0700d460eeb4c650899854e8151c8",
+    "survival": {
+      "checkpointSha256": "7e068cd3b0958ae48dfb7eb7e8c9ac3aaf8fb3407033ecd1535106d50aacc3a7",
+      "preparedManifestSha256": "4ba23afdc466b2957806885ae5ad6cca934c3ef3d7508a2d7d8bef2224b2ac95",
+      "preparedSha256": "fe4254710f4eb21f204c3af461ada8e208dc009bc78c9c9a23be84802fa20581",
+      "scalarInvSha256": "6875d1f18ca03137eda8c5d67c0713418fadad426936f42333d9a5b357721ebc",
+      "scalarMeanSha256": "7547f89f25f170e97e4424ba41733931c8f1af3080eebb325c0824ee1052d8ba"
+    }
+  },
+  "schema": "ctm_research_candidate_v3",
+  "standard": {
+    "artifactSha256": "e338506ddf14177bec27cfe174670bd9dcac333c26b30416b9f0c76717392b0d",
+    "sources": {
+      "HP": "8f96a517b381d8bccce4ccceb758da07916e4a8110a58f65e1a2e0a57e9f184c",
+      "downstream": "9bbb1a5657aad4ff9b0dce0cf257037db204f8396dc32c9c97b65bc5b285f9ea",
+      "maxHP": "f2e6f6901b08e19c01eeff5054a0d7c36c8af67998f9b3a224bb24a111b8d539",
+      "potion": "d52457133790b9c0766d5e604dc92fbe6337f286e0e2e450690d175eb802e04d",
+      "survival": "125fd3d76359527e515f25c70994b2ac900f8f419c03c6dd53271a8f34b49e41"
+    }
+  },
+  "supportCensus": {
+    "allSupportedIndexSha256": "1069df0b968aab886c653292a5b8fd81e045f5d3ffd6d88dfd4c61dfc4b91bcf",
+    "testSupportedIndexSha256": "8c5cdbfa4d23b57d24bbfff5d66a17289539c1aeb656017bae94ce2abb41de8f"
+  }
+}
+)json";
+constexpr char kA20HpFinetuneManifestSha256[]="31bb21f7ace7e3cd440136cf0799dbae1e0fbc2964d00bfa7bac8e21124e0a5c";
+const nlohmann::json &a20Boss470Identity() {
     static const std::unique_ptr<const nlohmann::json> identity=
         parseEmbeddedManifest(kA20CandidateManifest,kA20CandidateManifestSha256);
     return *identity;
+}
+const nlohmann::json &a20HpFinetuneIdentity() {
+    static const std::unique_ptr<const nlohmann::json> identity=
+        parseEmbeddedManifest(kA20HpFinetuneManifest,kA20HpFinetuneManifestSha256);
+    return *identity;
+}
+// The built-in A20 stack (STS_CTM_A20_HP_FINETUNE): an artifact declaring pathb-a20 loads under it when no research
+// manifest names that candidate, and it must be one of that stack's artifacts.
+const nlohmann::json &a20CandidateIdentity() {
+    return a20HpFinetune()?a20HpFinetuneIdentity():a20Boss470Identity();
 }
 const nlohmann::json *researchCandidateIdentity() {
     static const std::unique_ptr<const nlohmann::json> identity=loadResearchCandidateIdentity();
@@ -910,7 +1032,15 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
             if(production) {
                 candidateIdentity=production;
                 productionCandidate_=true;
-            } else if(declares(a20CandidateIdentity())) candidateIdentity=&a20CandidateIdentity();
+            } else if(declares(a20CandidateIdentity())) {
+                candidateIdentity=&a20CandidateIdentity();
+                const auto &role=candidateIdentity->at(deepsetStack?"fast":"standard");
+                if(!role.is_null() && role.at("artifactSha256")!=bytes)
+                    throw std::runtime_error("combat runtime: "+path+" (sha256 "+bytes+") is not an artifact of the "
+                        "built-in A20 CTM stack: "+(a20HpFinetune()?"the ADR-0059 HP-head fine-tune, fast artifact "+
+                        a20FastCtmArtifact()+" (STS_CTM_A20_HP_FINETUNE=0 restores the §470 stack)":
+                        "the §470 stack under STS_CTM_A20_HP_FINETUNE=0, fast artifact "+a20FastCtmArtifact()));
+            }
         }
         require(candidateIdentity!=nullptr,
             "combat runtime research candidate requires STS_CTM_RESEARCH_CANDIDATE_MANIFEST");
@@ -931,9 +1061,11 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
         act4Survival_=act4->net.get();
         act4SurvivalPath_=act4->path;
     }
-    // The bundled table corrects this exact stack: the built-in calibrated manifest (also when a research manifest has
-    // the same content) with the ADR-0048 Act-4 model, whose predictions it was fitted on.
-    const bool builtInA20Stack=identity_==a20CandidateIdentity() && !std::getenv("STS_CTM_ACT4_SURVIVAL_MODEL");
+    // A bundled table corrects exactly the stack it was fitted on, with the ADR-0048 Act-4 model: either built-in A20
+    // manifest, also when a research manifest has the same content.
+    const auto builtInA20Stack=std::getenv("STS_CTM_ACT4_SURVIVAL_MODEL")?BuiltInA20Stack::None:
+        identity_==a20HpFinetuneIdentity()?BuiltInA20Stack::HpFinetune:
+        identity_==a20Boss470Identity()?BuiltInA20Stack::Boss470:BuiltInA20Stack::None;
     if(const auto *calibration=ctmCalibration(builtInA20Stack);
        calibration && identity_.at("candidateId")==calibration->candidateId) {
         require(nearFull(),"STS_CTM_CALIBRATION applies to near-full artifacts only");

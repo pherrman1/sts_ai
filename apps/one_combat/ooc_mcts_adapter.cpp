@@ -3743,16 +3743,16 @@ void configureLiveOocMcts() {
             throw std::runtime_error("STS_OOC_MCTS_A20_CTM=1 requires the default CTM stack: no STS_OOC_MCTS_COMBAT_MODEL, "
                 "STS_OOC_MCTS_BREW_FALLBACK_MODEL, STS_OOC_MCTS_ACTIVE_LIZARD=0, STS_OOC_MCTS_COMBAT_RESOLVER, "
                 "STS_CTM_RESEARCH_CANDIDATE_MANIFEST or STS_OOC_MCTS_LEAF_CAPTURE");
+        // ADR-0059: the fast artifact is the HP-head fine-tune unless STS_CTM_A20_HP_FINETUNE=0.
         auto a20 = std::make_shared<EntropicBrewFallbackCombatTransitionSampler>(
-            "selfplay/models/combat_transition_deepsets_pathb_a20_lizard.native",
-            "selfplay/models/combat_transition_near_full_escape_pathb_a20.native", true);
+            a20FastCtmArtifact(), kA20StandardCtmArtifact, true);
         const auto &identity = a20->fastRuntime().identity();
         if (identity.at("candidateId") != "pathb-a20" || !identity.contains("bossSurvivalLogitShift"))
             throw std::runtime_error("STS_OOC_MCTS_A20_CTM=1 did not load the calibrated pathb-a20 stack");
         liveSamplerA20 = a20;
         std::cout << std::setprecision(17) << "[ctm-a20-stack] candidate_id=pathb-a20 scope=ascension20"
             << " boss_survival_logit_shift=" << identity.at("bossSurvivalLogitShift").get<double>()
-            << " active_lizard_correction=1\n" << std::setprecision(6);
+            << " active_lizard_correction=1 hp_finetune=" << int(a20HpFinetune()) << "\n" << std::setprecision(6);
     }
     const auto addCtmArtifact = [](const char *role, const std::string &path) {
         liveCtmArtifacts.push_back({{"role", role}, {"path", path}, {"sha256", fileSha256(path)}});
@@ -3762,8 +3762,8 @@ void configureLiveOocMcts() {
         if (!brewFallbackArtifact.empty()) addCtmArtifact("ctm_brew_fallback", brewFallbackArtifact);
     }
     if (liveSamplerA20) {
-        addCtmArtifact("ctm_a20", "selfplay/models/combat_transition_deepsets_pathb_a20_lizard.native");
-        addCtmArtifact("ctm_a20_brew_fallback", "selfplay/models/combat_transition_near_full_escape_pathb_a20.native");
+        addCtmArtifact("ctm_a20", a20FastCtmArtifact());
+        addCtmArtifact("ctm_a20_brew_fallback", kA20StandardCtmArtifact);
     }
     const auto silverSims = [&](const char *raw, const char *name) {
         const std::string value = raw;
