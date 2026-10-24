@@ -1,6 +1,6 @@
 name          stage-value-heart-a
-code_commit   cfd19cd9cba408b3287db7455cf95dbc87145811
-binary_sha256 5b2f3ec30a229ad93d22ab42507f65cd216d93392c3b5744b1d28ad43c216097
+code_commit   cca702c1b0c47d46a257782b1a93bae12e857303
+binary_sha256 eb4f7c73485a4f417e2f3f84205cb6f14fbedaf734f3448b8618dc36d52eb7ec
 configure_preset linux-gcc-release-x86-64-v3
 workers       8
 share         /mnt/project-files/stage-value-table/stage-a
