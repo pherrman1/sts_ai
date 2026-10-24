@@ -182,3 +182,14 @@ input is public root data accompanied by complete run-relic provenance (or an
 existing retained authoritative record proving the assertion). No capture
 schema, new producer run, model integration, automatic scale-up or merge was
 performed to compensate.
+
+## Subsequent provenance-route inspection (no new pilot)
+
+The [read-only source/artifact audit](PROVENANCE_OPTIONS.md) found a companion
+full-run trace for a different retained historical Champ capture, with matching
+receipt/file/manifest/binary hashes. It offers a first-16 development proposal
+without a producer change; oracle eligibility and annotation remain unexecuted.
+The earlier inventory statement concerns individual root records. The later
+paired-file join does not supply provenance to the four frozen native8 roots.
+Their null fractions and this report's BLOCKED natural-annotation verdict remain
+unchanged. No world sampling or experiment was rerun.
