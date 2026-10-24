@@ -22,5 +22,5 @@ If any step is refused or prints STOP, reply with the exact output and stop. Do 
 Never kill a unit or one_combat process. A unit that times out ends with rc=124, and the run continues.
 If the container restarts, run steps 1-3 again at once (finished units are skipped).
 Keep the session alive until you are told the tar is verified.
-Expect about __UNIT_MIN__ min per unit (three games: A ~__A_MIN__ min, B ~__B_MIN__ min, C ~__C_MIN__ min), 4 units at a
-time: about __WORKER_H__ h wall per worker (64 seeds on 8 workers), plus a straggler tail.
+Expect about 26 min per unit (three games: A ~13 min, B ~2.5 min, C ~11 min), 4 units at a
+time: about 1 to 1.5 h wall per worker (64 seeds on 8 workers), plus a straggler tail.

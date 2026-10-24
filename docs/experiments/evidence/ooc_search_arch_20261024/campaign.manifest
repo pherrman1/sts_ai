@@ -1,6 +1,6 @@
 name          ooc-search-arch
 code_commit   febd481450e439b76e73d2535f231d401f7e4b7d
-binary_sha256 PENDING
+binary_sha256 c31fe2b001d474a95ccadb23376531fa6966d956f6282c43c9badca3426de5e1
 workers       8
 share         /mnt/project-files/ooc-search-arch
 configure_preset linux-gcc-release-x86-64-v3
