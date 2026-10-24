@@ -1,0 +1,27 @@
+{
+  "starting_sha": "b94a96da22a5eae3f2c7c74ee81bccfa23b9139a",
+  "sources": [
+    {
+      "seed": 111101032,
+      "raw_roots_sha256": "594313f0b24935f726149a9b2840abf3105eb9e26d7d93b1a7f0af6421d10ba4",
+      "executed_receipt_sha256": "519119d6364bcfbc858a49007740045803436ee3cfeda20c58668de397b73a4d",
+      "legal_extract_sha256": "54cedaba1fc8c2d53c78fea2a4668a367d691a5c5f02b17176f3c26b42c57024"
+    },
+    {
+      "seed": 111101326,
+      "raw_roots_sha256": "b959b6f02d57e42f17c549d96d2b2c4a30527cbbbb8040e42d8e1e91d4e9931c",
+      "executed_receipt_sha256": "d6e97e9116d613bfbe973ecaebce43694fc1e2f962c3caf8d48fb90fdfaaebd3",
+      "legal_extract_sha256": "a9a0d857e9fb8843e88582c252189611447c9be26f161a27631da3d9f5eb173d"
+    },
+    {
+      "seed": 111101512,
+      "raw_roots_sha256": "d55517ef876659d7e0da11098895da12f82b0cafa5216c10807ff5b9f3f602b7",
+      "executed_receipt_sha256": "362df161e73ac6aaf40188bb688735bc76b811b2133cb96bb46b71defd7aa90d",
+      "legal_extract_sha256": "783fb8db1ca1c210240906c10bf53f408c8513cf0bf3a5311fd4bc695af00199"
+    }
+  ],
+  "analysis_only": true,
+  "new_gameplay_runs": 0,
+  "new_oracle_worlds": 0,
+  "selection_uses_outcome_or_oracle": false
+}

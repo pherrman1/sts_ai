@@ -24012,6 +24012,40 @@ campaigns, backup copies of stragglers on idle workers once the queue is empty.
 - Seeds 111360000–111360255 used; smokes 111369991–111369993 used (111369990–111369999 assigned).
 - **Knowledge impact:** `evaluation/current-research.md`.
 
+## §TBD-compression Offline OOC compression headroom exists; prescribed replay has no compatible exact-binary intervention path (2026-10-24)
+
+Existing #844 baseline b94a96da22a5eae3f2c7c74ee81bccfa23b9139a, reconstruction
+independent-review PASS supplied by user. No new runs or oracle worlds.
+Complete68-card target provenance plus authenticated legal siblings for the
+three frozen prefixes.032 pair is one Pandora batch with7 clutter; Pommel is
+reward/upgrade, Bash a starter.326 Corruption/DE are rewards, both Flashes from
+Sensory Stone.512 Sundial/draw picks are independent combat rewards
+(Pommel ordinary, Shrug/Sundial elite). Mark of Pain
+adds2 temporary Wounds, not permanent cards; Anger copies are combat-only.
+
+Clean independent REWARD_SKIP_BOUND sizes032/326/512:13/18/14 versus18/31/19
+historical permanent cards.032's Flame Barrier reward is a transform input;
+naively pruning its descendant gives12 but changes the historical transaction,
+so that dependent alternative is separately qualified. Paid, resource-feasible
+SKIP_REMOVE_BOUND plans yield12/12/11, explicitly funding Cleric/shop removals,
+75/100/125 shop escalation and displaced purchases. We Meet Again's offered
+Headbutt already disappears under reward skips; no double deletion. Hypothetical
+permanent sizes are not predicted combat active pools or survival results.
+
+**Headroom gate PASS**, strongest clean one-variable intervention326's13 reward
+skips (31 ->18), frozen public group keys before any replay. **Not**
+OOC_COMPRESSION_HEADROOM_LOW. Exact historical heartoutcomegen has no supported
+multi-step skip input. STRATEGIC_MCTS_FORCE uses a different unforced controller;
+leaf probes require4096/V4 and exclude the historical Heart settings. No silent
+substitution, injection, production patch or control rerun. Minimal proposed
+research-only semantic skip callback would change executable identity and need
+an explicit parity contract; not implemented. Actual compression/survival and
+all empirical replay decision labels remain unmeasured. Stop at this execution
+boundary; no beam or model work.
+[Complete per-card provenance, opportunities, A/B decks/cash plans, C coupling and replay design](evidence/combat_infinity_compression_20261024/REPORT.md).
+Knowledge impact: maintained structural headroom and exact execution boundary;
+no production/default/model/reward/oracle/capture change.
+
 ## §TBD-reconstruction Heart runtime reconstructed exactly; three paired ingredient fights never compress (2026-10-24)
 
 Existing #844 line, baseline `0772ffe7ca8c63bd941036fa3c8cbecf040c934a`.

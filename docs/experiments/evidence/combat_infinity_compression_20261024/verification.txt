@@ -1,0 +1,13 @@
+$ python3 docs/experiments/evidence/combat_infinity_compression_20261024/verify.py
+PASS full prefix card lineage, legal siblings, nested independent-skip/resource-removal bounds; no simulator or oracle execution
+PASS 111101032: provenance18; independent reward skips5; A13; B12; final accounted cash delta-40; gateA=False gateB=True
+PASS 111101326: provenance31; independent reward skips13; A18; B12; final accounted cash delta-13; gateA=True gateB=True
+PASS 111101512: provenance19; independent reward skips5; A14; B11; final accounted cash delta-10; gateA=False gateB=True
+PASS frozen13 exact public SKIP keys; protected four engine acquisition groups; transform/Pandora dependency retained
+PASS Mark of Pain2 temporary Wounds; Anger3->5 combat copies; permanent31 is separately audited
+PASS exact historical source/executable/eight model identities unchanged; zero new game/world execution
+exit=0
+
+$ git diff --cached --check
+exit=0
+PASS scoped evidence/documentation paths only; no new seed or oracle commands.
