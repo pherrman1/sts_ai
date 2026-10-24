@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Build only a plain archived historical snapshot, never current production C++."""
+import argparse
 import gzip
 import hashlib
 import json
@@ -49,6 +50,16 @@ def main():
         assert all((verify/p).read_bytes()==(SOURCE/p).read_bytes() for p in allowed)
     for model in json.loads((HERE.parent / 'combat_infinity_compression_20261024/INTERVENTIONS.json').read_text())['models']:
         assert sha(Path(model['path'])) == model['expected_sha256']
+    parser=argparse.ArgumentParser()
+    parser.add_argument('--check',action='store_true')
+    args=parser.parse_args()
+    if args.check:
+        record=json.loads((HERE/'build-result.json').read_text())
+        assert sha(patch)==record['patch_sha256']
+        assert sha(Path(record['binary_path']))==record['binary_sha256']
+        assert all(sha(SOURCE/p)==h for p,h in record['patched_file_hashes'].items())
+        print('PASS base source, fresh patch application, patched file hashes, models and executable custody; no rebuild')
+        return
     commands = [['cmake','--preset','linux-gcc-release'],['cmake','--build','--preset','linux-gcc-build','--target','one_combat','--parallel','4']]
     start = time.monotonic()
     for command, name in zip(commands, ['configure.log', 'build.log']):
