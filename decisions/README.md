@@ -28,7 +28,7 @@ the replacement.
 
 ## Current architecture ADRs
 
-- [ADR-TBD](TBD-ctm-a20-hp-finetune-default.md) makes §672's HP-head fine-tune, with its own refitted calibration
+- [ADR-0059](0059-ctm-a20-hp-finetune-default.md) makes §672's HP-head fine-tune, with its own refitted calibration
   table, the A20 CTM stack's default (`STS_CTM_A20_HP_FINETUNE=0` restores the §470 artifact with ADR-0058's table;
   adopted on prediction precision by Philipp's call, no winrate guard).
 - [ADR-0058](0058-ctm-calibration-default.md) makes the A20 CTM stack apply the §670 per-fight calibration to today's

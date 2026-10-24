@@ -1,4 +1,4 @@
-# ADR-TBD: The A20 CTM stack uses the HP-head fine-tune with its own calibration table by default
+# ADR-0059: The A20 CTM stack uses the HP-head fine-tune with its own calibration table by default
 
 Date: 2026-10-24
 Status: accepted

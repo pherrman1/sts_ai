@@ -24293,7 +24293,7 @@ augmentation stays available (`--mirror`, default 0) for future priors.
 Seeds: none (offline).
 **Knowledge impact:** none.
 
-## §TBD — The §672 HP-head fine-tune with its own table becomes the A20 CTM default on precision: on the guard's 24,186 fresh fights won-fight HP error 7.75 → 7.59 (−0.16 [−0.20, −0.12]) with the same deaths (ADR-TBD, offline, 2026-10-24)
+## §679 — The §672 HP-head fine-tune with its own table becomes the A20 CTM default on precision: on the guard's 24,186 fresh fights won-fight HP error 7.75 → 7.59 (−0.16 [−0.20, −0.12]) with the same deaths (ADR-0059, offline, 2026-10-24)
 
 **Question:** Philipp (2026-10-24 07:52Z): "Don't qualify ctm by winrate but by precision, so the new one goes in as
 default." Is §672's candidate (HP-head fine-tune + its refitted table) more precise than the ADR-0058 default (old net
@@ -24320,7 +24320,7 @@ this change's binary, default against `STS_CTM_A20_HP_FINETUNE=0`; 95% bootstrap
   of 172 on one seed (the same moves throughout on the other).
 **Interpretation:** the fine-tune's precision gain on HP holds on fresh fights at the same size as on the held-out
 games, with no cost in deaths. Playing strength is not measured; by Philipp's criterion none is needed.
-**Decision:** A20 default (ADR-TBD); `STS_CTM_A20_HP_FINETUNE=0` restores the §470 artifact with the ADR-0058 table
+**Decision:** A20 default (ADR-0059); `STS_CTM_A20_HP_FINETUNE=0` restores the §470 artifact with the ADR-0058 table
 (older A20 comparisons need it).
 Seeds: none new (guard seeds 111392255 and 111392359 replayed for the game check).
 **Knowledge impact:** `architecture/out-of-combat.md`, `operations/environment-variables.md`,

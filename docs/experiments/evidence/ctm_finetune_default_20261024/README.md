@@ -1,7 +1,7 @@
 # The HP-head fine-tune becomes the A20 CTM default: closer HP on fresh fights, the same deaths (2026-10-24)
 
 **Question.** Philipp, 2026-10-24 07:52Z: "Don't qualify ctm by winrate but by precision, so the new one goes in as
-default." [ADR-TBD](../../../../decisions/TBD-ctm-a20-hp-finetune-default.md) makes §672's HP-head fine-tune
+default." [ADR-0059](../../../../decisions/0059-ctm-a20-hp-finetune-default.md) makes §672's HP-head fine-tune
 ([`../ctm_finetune_20261023/`](../ctm_finetune_20261023/README.md)) with its own refitted table the built-in A20 CTM
 stack. `STS_CTM_A20_HP_FINETUNE=0` restores the §470 stack with the ADR-0058 table. Two questions:
 1. Is the new default more precise than the old one (old net + ADR-0058 table) on fights neither has seen?
