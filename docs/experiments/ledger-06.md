@@ -24012,6 +24012,28 @@ campaigns, backup copies of stragglers on idle workers once the queue is empty.
 - Seeds 111360000–111360255 used; smokes 111369991–111369993 used (111369990–111369999 assigned).
 - **Knowledge impact:** `evaluation/current-research.md`.
 
+## §TBD-counterfactual Frozen13 reward-skip intervention — historical research patch qualification (2026-10-24)
+
+Accepted user charter starts from reviewed #844 head5adfd78b. One seed111101326,
+exact historical source d8fd2a10 plus a research-only semantic skip manifest hook;
+current production C++ and original hash-identical runtime untouched. The13
+previously frozen reward groups remain unchanged; natural downstream policy,
+engine acquisitions, map and survival are not repaired. Eight exact historical
+models, original Heart Student-C/MCTS controller and simulation settings retained.
+
+Preregistered order: independent implementation/design review; commit/freeze;
+one flag-off exact137-state/136-trace prefix qualification, then only on PASS one
+full treatment. One identical capture-only replay is authorized if needed to
+collect the first naturally engine-complete combat. Per-run wall1800seconds/OMP1;
+no alternative skip sets or seeds. Freeze<=4 roots by active count/decision before
+unchanged K4 oracle. Production/default/model/reward/oracle changes: none.
+
+Status: build and focused seed-free contract checks complete; gameplay/parity and
+treatment not yet executed. Knowledge impact: experimental status and resulting
+current-research boundary; no policy promotion.
+
+[Patch, frozen protocol, build identity and focused checks](evidence/combat_infinity_counterfactual_20261024/PROTOCOL.md).
+
 ## §TBD-compression Offline OOC compression headroom exists; prescribed replay has no compatible exact-binary intervention path (2026-10-24)
 
 Existing #844 baseline b94a96da22a5eae3f2c7c74ee81bccfa23b9139a, reconstruction

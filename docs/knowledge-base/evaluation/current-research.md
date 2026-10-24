@@ -140,15 +140,14 @@ reward skips alone pass the screen; the two Flashes are Sensory Stone products,
 Corruption/Dark Embrace ordinary rewards. Mark of Pain adds two temporary
 Wounds, not permanent deck size.512's Sundial and two draw picks are separate.
 
-**Replay remains unexecuted at a compatible-runtime boundary.** The frozen
-13-group skip manifest for326 cannot be installed in the exact historical
-Heart/Student-C/MCTS executable through a supported path. Existing forced-action
-strategicgen2 bypasses that controller; leaf probes require a different teacher.
-A proposed research-only skip callback would produce a new binary hash and
-need an identity/parity contract decision; it is not implemented. Zero new
-runs/worlds, no measured active-pool or survival change, and none of the empirical
-replay-outcome labels is established. Do not call the headroom low, substitute
-the policy, build a beam, or start model work to bypass this boundary.
+The [authorized one-treatment follow-up](../../experiments/evidence/combat_infinity_counterfactual_20261024/PROTOCOL.md)
+(§TBD-counterfactual) now tests a research-only patch to the exact historical
+source, leaving current production C++ and the original hash-identical runtime
+untouched. It must first pass exact flag-off137-state/136-trace parity. Only then
+may seed326 execute the unchanged13-group manifest once; engine acquisitions and
+all downstream decisions stay natural. Build/seed-free hook checks are complete;
+parity/treatment are not yet executed. There is no empirical compression/survival
+result yet. No beam, policy/model work, other lead or search-bound escalation.
 
 ## AlphaZero-style OOC loop: open requirements
 
