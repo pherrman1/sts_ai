@@ -2534,11 +2534,17 @@ std::string liveRootComparePath;
 // STS_OOC_MCTS_BEAM=WIDTH:K:DEPTH (default 8:2:3) configure OocParticlePlanner. STS_OOC_MCTS_SEARCH_TRACE=PATH appends
 // one JSONL row per searched root; STS_OOC_MCTS_SEARCH_COMPARE=1 also runs the other two planners on fresh models
 // there (rows only; the played action and the run are unchanged).
-// Map-only search screen (#854, research, default all): STS_OOC_MCTS_SCREENS=all|none|LIST, LIST a comma list of
+// Map-only search screen (#854): STS_OOC_MCTS_SCREENS=all|none|LIST, LIST a comma list of
 // map,event,rewards,boss_relic,card_select,treasure,rest,shop. Real roots on an unlisted screen skip the search after
 // the rule chain and student_sel decides them (liveOocMctsScreenExcluded); imagined decisions are unchanged.
+// ADR-TBD (§683): unset, with the heart1 prior and outside the live advisor, real roots at ascension 20 search only
+// map screens, each at the full budget (liveSearchScreensA20Default); STS_OOC_MCTS_SCREENS=all restores every screen.
 std::uint32_t liveSearchScreens = ~0u;
 bool liveSearchScreensSet = false;
+bool liveSearchScreensA20Default = false;
+bool liveMapOnlyA20(const GameContext &gc) {
+    return liveEnabled && liveSearchScreensA20Default && gc.ascension >= 20;
+}
 enum class LiveSearchMode { Mcts, Particle, ParticleBeam };
 LiveSearchMode liveSearchMode = LiveSearchMode::Mcts;
 sts::search::OocParticleConfig liveParticleConfig;
@@ -3169,6 +3175,7 @@ bool liveOocMctsRealLearnedStop(int ascension) {
 }
 bool liveOocMctsTreeRules() { return liveEnabled && liveOptions.treeRules; }
 bool liveOocMctsScreenExcluded(const GameContext &gc) {
+    if (liveMapOnlyA20(gc)) return gc.screenState != sts::ScreenState::MAP_SCREEN;
     return liveEnabled && liveSearchScreensSet && !(liveSearchScreens & (1u << int(gc.screenState)));
 }
 bool liveOocMctsHeart1Fallback(const GameContext &gc) {
@@ -3628,8 +3635,12 @@ void configureLiveOocMcts() {
 #endif
     }
     liveSearchMode = LiveSearchMode::Mcts; liveParticleConfig = {}; liveSearchTracePath.clear(); liveSearchCompare = false;
-    liveSearchScreens = ~0u; liveSearchScreensSet = false;
-    if (const char *raw = std::getenv("STS_OOC_MCTS_SCREENS"); raw && *raw && std::string(raw) != "all") {
+    liveSearchScreens = ~0u; liveSearchScreensSet = false; liveSearchScreensA20Default = false;
+    const char *screensEnv = std::getenv("STS_OOC_MCTS_SCREENS");
+#ifndef STS_LIVE_ADVISOR
+    liveSearchScreensA20Default = (!screensEnv || !*screensEnv) && liveEnabled && liveOptions.heart1Prior;
+#endif
+    if (const char *raw = screensEnv; raw && *raw && std::string(raw) != "all") {
         static const std::map<std::string, sts::ScreenState> names = {
             {"map", sts::ScreenState::MAP_SCREEN}, {"event", sts::ScreenState::EVENT_SCREEN},
             {"rewards", sts::ScreenState::REWARDS}, {"boss_relic", sts::ScreenState::BOSS_RELIC_REWARDS},
@@ -3977,6 +3988,7 @@ void configureLiveOocMcts() {
             + " horizon_combats=" + std::to_string(liveParticleConfig.horizonCombats) : std::string{})
         << (liveSearchCompare ? " search_compare=1" : "")
         << (liveSearchScreensSet ? " screens=" + std::string(std::getenv("STS_OOC_MCTS_SCREENS")) : std::string{})
+        << (liveSearchScreensA20Default ? " screens_a20_default=map_full_budget" : std::string{})
         << "]\n";
     std::cout << "[ooc-mcts-config] {\"noncombatOutcomes\":\""
         << (liveOptions.sampleNoncombat ? "sampled" : "exact")
@@ -4010,6 +4022,7 @@ void configureLiveOocMcts() {
         << (!liveOptions.leafCalibration.empty() ? ",\"leafCalibration\":[" + leafCalibrationText(liveOptions.leafCalibration, ",") + "]" : std::string{})
         << (liveOptions.leafCalibrationMinAscension > 0
             ? ",\"leafCalibrationMinAscension\":" + std::to_string(liveOptions.leafCalibrationMinAscension) : std::string{})
+        << (liveSearchScreensA20Default ? ",\"searchScreensA20Default\":\"map_full_budget\"" : std::string{})
         << (liveLeafCompare ? ",\"leafCompare\":" + [] {
                 nlohmann::json arms = nlohmann::json::array();
                 for (const auto &arm : liveLeafCompare->arms) {
@@ -5393,7 +5406,8 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
         try {
             return selectOocMctsAction(gc, path, seed, index, liveSimulations, liveSamplerFor(gc),
                 samples, &continuation, &selected, rootRow.is_null() ? nullptr : &rootActions,
-                liveFullBudgetFraction > 0 && oocMctsFullBudgetRoot(seed, index, liveFullBudgetFraction), true);
+                liveFullBudgetFraction > 0
+                    && (liveMapOnlyA20(gc) || oocMctsFullBudgetRoot(seed, index, liveFullBudgetFraction)), true);
         } catch (const std::exception &error) {
             if (leafStabilityMode) failStability(error.what());
             if (leafReplayMode) throw LeafReplayComplete{replayReport("INVALID", error.what())};

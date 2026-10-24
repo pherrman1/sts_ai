@@ -28,6 +28,9 @@ the replacement.
 
 ## Current architecture ADRs
 
+- [ADR-TBD](TBD-ooc-map-only-search-a20.md) makes A20 real OOC MCTS search only map screens, each at the full
+  budget; student_sel decides the other screens after the rule chain (`STS_OOC_MCTS_SCREENS=all` restores every
+  screen; adopted on §683 by Philipp's call, no A/B with Act 4 strong; live advisor unchanged).
 - [ADR-0060](0060-act4-strong.md) makes whole-run Act-4 fights under the learned stop search harder: Shield and
   Spear at flat 10k with prior playouts, the Heart at flat 40k with a 262,144-node reuse cap (`STS_SILVER_ACT4_STRONG=0`
   restores the learned stop; adopted on §681/§682 fight-level evidence by Philipp's call, no run-level A/B).

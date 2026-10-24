@@ -403,7 +403,8 @@ bool liveOocMctsRealLearnedStop(int ascension);
 const std::vector<double> &a20LeafCalibration();
 // True when live OOC MCTS runs with STS_OOC_MCTS_TREE_RULES=1.
 bool liveOocMctsTreeRules();
-// STS_OOC_MCTS_SCREENS (research, #854): this real root's screen is not searched; student_sel decides it.
+// STS_OOC_MCTS_SCREENS (#854; ADR-TBD map-only A20 default): this real root's screen is not searched; student_sel
+// decides it.
 bool liveOocMctsScreenExcluded(const GameContext &gc);
 // Root choice key of the search: with tree rules, copies of one card are one
 // choice for bottle, duplicate and bonfire selectors.
