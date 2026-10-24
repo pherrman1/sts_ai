@@ -4,7 +4,7 @@
   "starting_sha": "5adfd78bfb32580ac49eca4a4c8f52498be08653",
   "binary_path": "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/build/infinity-heart-counterfactual-20261024/source/build/linux-gcc-release/one_combat",
   "binary_sha256": "2e6fe2ee357a85748d17ac33ee981da9b4efb013555f43d238da69f92e146d50",
-  "patch_sha256": "a8f668328adb041471406d52559585fc9bc5e325142fcfbb722c30d8e278f39c",
+  "patch_sha256": "1b47c17ab7b3626389f8160e8ae1cf5388ab66a06d4d85b2cca5736f42f305de",
   "archive_sha256": "4ece46d16984ac3a40c042c25a051c752c7d0be768c8c4238b65580d569d4b37",
   "manifest_sha256": "c98f1671a12ac41f7bee827f8f7428d4aedf628b10f2cedd9c14ec58f982754e",
   "commands": [

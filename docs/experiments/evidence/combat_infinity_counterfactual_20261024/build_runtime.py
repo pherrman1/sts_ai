@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Build only a plain archived historical snapshot, never current production C++."""
+import gzip
 import hashlib
 import json
 from pathlib import Path
@@ -53,6 +54,8 @@ def main():
     for command, name in zip(commands, ['configure.log', 'build.log']):
         with (HERE / name).open('w') as out:
             subprocess.run(command, cwd=SOURCE, stdout=out, stderr=subprocess.STDOUT, check=True)
+    (HERE/'configure.log.gz').write_bytes(gzip.compress((HERE/'configure.log').read_bytes(),mtime=0))
+    (HERE/'configure.log').unlink()
     binary = SOURCE / 'build/linux-gcc-release/one_combat'
     record = {'status':'BUILT_RESEARCH_PATCHED_RUNTIME_NOT_HISTORICAL_EXECUTABLE','historical_source_sha':plan['source_sha'], 'starting_sha':'5adfd78bfb32580ac49eca4a4c8f52498be08653', 'binary_path':str(binary), 'binary_sha256':sha(binary), 'patch_sha256':sha(patch), 'archive_sha256':sha(archive), 'manifest_sha256':sha(HERE.parent / 'combat_infinity_compression_20261024/INTERVENTIONS.json'), 'commands':commands, 'compiler':subprocess.check_output(['g++','--version'],text=True), 'cmake':subprocess.check_output(['cmake','--version'],text=True), 'changed_historical_paths':sorted(allowed), 'patched_file_hashes':{p:sha(SOURCE/p) for p in allowed}, 'wall_seconds':time.monotonic()-start, 'worktree_created':False,'production_source_modified':False, 'submodules':{name:{'path':str((SOURCE/name).resolve()),'sha':subprocess.check_output(['git','-C',str((SOURCE/name).resolve()),'rev-parse','HEAD'],text=True).strip()} for name in ['json','pybind11']}}
     write(HERE/'build-result.json',record)
