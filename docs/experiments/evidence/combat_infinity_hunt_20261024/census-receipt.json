@@ -1,0 +1,10 @@
+{
+  "command": [
+    "python3",
+    "docs/experiments/evidence/combat_infinity_hunt_20261024/census.py"
+  ],
+  "returncode": 0,
+  "wall_seconds": 28.724724509986117,
+  "child_cpu_seconds": 28.741508999999997,
+  "scope": "read-only TRAIN/public census; no simulator or oracle"
+}

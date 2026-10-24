@@ -1,0 +1,13 @@
+HEART_ROUND2_TRAIN TRAIN archives scanned 8
+HEART_ROUND2_TRAIN TRAIN archives scanned 16
+HEART_ROUND2_TRAIN TRAIN archives scanned 24
+HEART_ROUND2_TRAIN TRAIN archives scanned 32
+AZ TRAIN files scanned 1000
+AZ TRAIN files scanned 2000
+HEART_ROUND1_TRAIN TRAIN archives scanned 8
+HEART_ROUND1_TRAIN TRAIN archives scanned 16
+HEART_ROUND1_TRAIN TRAIN archives scanned 24
+HEART_ROUND1_TRAIN TRAIN archives scanned 32
+HEART_ROUND1_TRAIN TRAIN archives scanned 40
+HEART_ROUND1_TRAIN TRAIN archives scanned 48
+CENSUS COMPLETE {"public_roots_screened": 343, "provenance_complete_public_roots": 72, "enriched_public_roots": 116} selected 4
