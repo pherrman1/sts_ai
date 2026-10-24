@@ -38,5 +38,5 @@ production's 10k; the gain is real at 95% but
 below the pre-registered +3 pp line. More budget does not help S&S; prior playouts do.
 
 **Decision (Philipp, 2026-10-24 17:00Z):** "Die extra Kosten sind es mir für beide Combats wert": whole-run Act 4
-defaults to S&S at flat 10k with prior playouts and the Heart at flat 40k with the cap raised (ADR-TBD,
+defaults to S&S at flat 10k with prior playouts and the Heart at flat 40k with the cap raised (ADR-0060,
 `STS_SILVER_ACT4_STRONG=0` restores the learned stop).

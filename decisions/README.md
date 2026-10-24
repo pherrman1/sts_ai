@@ -28,9 +28,9 @@ the replacement.
 
 ## Current architecture ADRs
 
-- [ADR-TBD](TBD-act4-strong.md) makes whole-run Act-4 fights under the learned stop search harder: Shield and
+- [ADR-0060](0060-act4-strong.md) makes whole-run Act-4 fights under the learned stop search harder: Shield and
   Spear at flat 10k with prior playouts, the Heart at flat 40k with a 262,144-node reuse cap (`STS_SILVER_ACT4_STRONG=0`
-  restores the learned stop; adopted on §TBD-a/§TBD-b fight-level evidence by Philipp's call, no run-level A/B).
+  restores the learned stop; adopted on §681/§682 fight-level evidence by Philipp's call, no run-level A/B).
 - [ADR-0059](0059-ctm-a20-hp-finetune-default.md) makes §672's HP-head fine-tune, with its own refitted calibration
   table, the A20 CTM stack's default (`STS_CTM_A20_HP_FINETUNE=0` restores the §470 artifact with ADR-0058's table;
   adopted on prediction precision by Philipp's call, no winrate guard).

@@ -1,4 +1,4 @@
-# ADR-TBD: Stronger Silver search in Act 4 (Shield and Spear 10k with prior playouts, the Heart 40k)
+# ADR-0060: Stronger Silver search in Act 4 (Shield and Spear 10k with prior playouts, the Heart 40k)
 
 Date: 2026-10-24
 Status: accepted
@@ -9,11 +9,11 @@ Changes Act 4 of [ADR-0051](0051-a20-learned-stop-default.md) (learned stop) and
 ## Context
 
 After the Act-3 boss the run heals 80% of missing HP, so of Act 4's two fights Shield and Spear (S&S) sets the HP
-the Heart starts with. §TBD-a replayed 128 S&S and 128 Heart entry states from the 1,024-seed guard (8 copies each)
+the Heart starts with. §681 replayed 128 S&S and 128 Heart entry states from the 1,024-seed guard (8 copies each)
 under six Silver configurations. S&S with prior playouts at 10k simulations loses 4.5 HP less than production
 (greedy playouts under the learned stop: [+3.1, +5.9]); more budget without prior playouts saves 1.1 HP. The
 Heart did not gain from 40k (+0.9 pp [−1.1, +3.0]), but Silver dropped its reused tree at ~30% of 40k reroots
-(node cap 32,768). §TBD-b repeated the 40k cells with the cap at 262,144: the Heart then wins +2.4 pp [+0.6, +4.2]
+(node cap 32,768). §682 repeated the 40k cells with the cap at 262,144: the Heart then wins +2.4 pp [+0.6, +4.2]
 more than production's 10k, with prior playouts.
 
 Philipp decided on 2026-10-24 (17:00Z): "Die extra Kosten sind es mir für beide Combats wert."
