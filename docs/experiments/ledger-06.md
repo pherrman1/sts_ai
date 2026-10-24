@@ -24274,3 +24274,19 @@ the fixed engine.
 **Decision:** the default stays (ADR-0058, the PREREG rule).
 - Seeds 111392000–111392511 used; the dropped stage 2 (111392512–111394047) stays reserved and unused.
 - **Knowledge impact:** `evaluation/current-research.md`.
+
+## §TBD — Mirror-trained prior F at real searched map roots: it changes 9.1% of map decisions (27% at act start), all near-ties, slightly worse on root q (−0.3 pp P(kill) per change); no A/B proposed (offline, 2026-10-24)
+
+**Question:** Philipp (2026-10-24 07:56Z), after §677: before an A/B, check offline what F would change in real play.
+**Setup:** [packet](evidence/map_mirror_searched_20261024/README.md). 8,745 searched map roots (>= 2 paths) of 2,176
+A20 runs searched with student_sel (AZ gen 0 + gen-1b arm A policy rows); student_sel and F scored natively; at each
+departure both moves' root q, visits and the played move from the raw captures (792 of 792 matched).
+**Result:** F ≠ student_sel at 9.1% of map roots (act start 27.4%, mid act 5.8%). At departures the search played
+student_sel's move 628 times, F's 137, other 27; F's move had the higher root q at 45.6% (act start 48.9%), mean dq
+−0.0059, mean dP(kill) −0.0031, median |dq| 0.012; visits 2,631 vs 1,115 (prior-guided). pi' agreement 87.2% vs 83.9%.
+**Interpretation:** the asymmetry of §674 sits on near-tie map choices; removing it does not find better moves (if
+anything slightly worse). Expected effect ~−0.1 pp Heart kills per run, far below a 1,024-pair A/B's resolution, so no
+A/B is proposed. Caveat: q comes from student_sel-guided searches. Mirror augmentation stays available (`--mirror`,
+default 0) for future priors.
+Seeds: none (offline).
+**Knowledge impact:** none.

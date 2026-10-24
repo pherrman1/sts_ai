@@ -1,0 +1,40 @@
+{
+ "departures_matched": 792,
+ "unmatched": 0,
+ "all": {
+  "n": 792,
+  "played_f": 137,
+  "played_sel": 628,
+  "played_other": 27,
+  "mean_dq_f_minus_sel": -0.005899500466944505,
+  "f_q_higher": 0.45580808080808083,
+  "mean_dp_f_minus_sel": -0.0030989743092310422,
+  "median_abs_dq": 0.01203986267389362,
+  "median_visits_f": 1115.0,
+  "median_visits_sel": 2630.5
+ },
+ "start-of-act": {
+  "n": 362,
+  "played_f": 53,
+  "played_sel": 285,
+  "played_other": 24,
+  "mean_dq_f_minus_sel": -0.005753794380985281,
+  "f_q_higher": 0.4889502762430939,
+  "mean_dp_f_minus_sel": -0.003254530212780408,
+  "median_abs_dq": 0.012418292487369531,
+  "median_visits_f": 826.5,
+  "median_visits_sel": 2598.0
+ },
+ "mid-act": {
+  "n": 430,
+  "played_f": 84,
+  "played_sel": 343,
+  "played_other": 3,
+  "mean_dq_f_minus_sel": -0.00602216466024041,
+  "f_q_higher": 0.42790697674418604,
+  "mean_dp_f_minus_sel": -0.0029680179439173903,
+  "median_abs_dq": 0.011944276728978187,
+  "median_visits_f": 1334.5,
+  "median_visits_sel": 2659.0
+ }
+}
