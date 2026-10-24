@@ -34,7 +34,7 @@ fights from the decks we actually reach.
   - Each arm at flat **10,000 and 40,000** simulations. Production plays the learned Silver stop, which averages
     below 10,000 (§516), so 10k is at least production strength.
 - **Copies and seeds.** 8 copies per state; copy r of state k uses battle seed 111395000 + 8k + r (Shield and Spear,
-  111395000-111396023) or 111397000 + 8k + r (Heart, 111397000-111398023), and the same planner seed, in every arm
+  111395000-111396023) or 111398100 + 8k + r (Heart, 111398100-111399123; 111397000-111397203 went to the node-cap check), and the same planner seed, in every arm
   and budget: all six cells are paired per (state, copy). Smokes used 111396990-111396995. 128 x 8 x 6 = 6,144
   fights per encounter.
 - **Campaign.** 768 units (encounter x state x arm), each runs both budgets x 8 copies single-threaded. 32 cloud

@@ -6,12 +6,12 @@
 #   P   g7f_E root/tree prior (weight 400, tree prior K 8), greedy root-table playouts (production in elite rooms).
 #   PP  P + prior playouts in every room (production in boss rooms, ADR-0050; STS_SILVER_PRIOR_PLAYOUT_ELITE=1 here).
 #   N   no root/tree prior; greedy root-table playouts.
-# Battle seed of copy r: 111395000 + STATE*8 + r (Shield and Spear), 111397000 + STATE*8 + r (the Heart).
+# Battle seed of copy r: 111395000 + STATE*8 + r (Shield and Spear), 111398100 + STATE*8 + r (the Heart).
 set -uo pipefail
 REPO=$1 RUN=$2 OUT=$3 ENC=$4 STATE=$5 ARM=$6
 case $ENC in
   ss) FILE=states/shield_and_spear_128.jsonl BASE=111395000;;
-  heart) FILE=states/the_heart_128.jsonl BASE=111397000;;
+  heart) FILE=states/the_heart_128.jsonl BASE=111398100;;
   *) echo "bad encounter $ENC" >&2; exit 2;;
 esac
 [[ $STATE =~ ^[0-9]+$ ]] && [ "$STATE" -lt 128 ] || { echo "bad state $STATE" >&2; exit 2; }
