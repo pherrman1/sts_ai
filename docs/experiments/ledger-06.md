@@ -24168,7 +24168,7 @@ unchanged validation set.
 Seeds: none (offline).
 **Knowledge impact:** none (diagnostic; no default changed).
 
-## §TBD — Leaf head, on-policy round 1: the searched-value head draws fights out (its value grows about 1 point per turn beyond its training data); the net retrained on its own states fits them (fold-4 RMSE 21.9 against 105.7) but fails the 16-source screen against qe2e (−0.86 per fight) (512 runs, 2026-10-23/24)
+## §675 — Leaf head, on-policy round 1: the searched-value head draws fights out (its value grows about 1 point per turn beyond its training data); the net retrained on its own states fits them (fold-4 RMSE 21.9 against 105.7) but fails the 16-source screen against qe2e (−0.86 per fight) (512 runs, 2026-10-23/24)
 
 **Question:** Philipp chose "Plan the on-policy round" after §664 (decision card, 2026-10-23 17:49Z): does the leaf
 head lose because a search that trusts it steers into states its training never had? Label the states the head's own
