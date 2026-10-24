@@ -1,0 +1,5 @@
+69734 leaves
+qe2e       RMSE   3.70  bias   -0.22  within-group RMSE   3.16  pair order agreement 0.808 (2816746 pairs)  cross-turn 0.820 (5796217 pairs)
+           bias by leaf turn: 1: -1.32 (n=2962)  2: -1.63 (n=32813)  3: +0.85 (n=18382)  4: +1.43 (n=11892)  5: +2.22 (n=2561)  6: +3.15 (n=946)
+onp1       RMSE   3.53  bias   +0.71  within-group RMSE   3.14  pair order agreement 0.812 (2816746 pairs)  cross-turn 0.839 (5796217 pairs)
+           bias by leaf turn: 1: -0.04 (n=2962)  2: +0.27 (n=32813)  3: +1.06 (n=18382)  4: +1.24 (n=11892)  5: +1.79 (n=2561)  6: +1.44 (n=946)

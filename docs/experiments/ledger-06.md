@@ -24167,3 +24167,45 @@ measured. Candidate next step (not started): retrain student_sel's recipe with 5
 unchanged validation set.
 Seeds: none (offline).
 **Knowledge impact:** none (diagnostic; no default changed).
+## §TBD — Leaf head, on-policy round 1: the searched-value head draws fights out (its value grows about 1 point per turn beyond its training data); the net retrained on its own states fits them (fold-4 RMSE 21.9 against 105.7) but fails the 16-source screen against qe2e (−0.86 per fight) (512 runs, 2026-10-23/24)
+
+**Question:** Philipp chose "Plan the on-policy round" after §664 (decision card, 2026-10-23 17:49Z): does the leaf
+head lose because a search that trusts it steers into states its training never had? Label the states the head's own
+search reaches with production's search there (DAgger), retrain on both packs, and screen again.
+**Design:** [README](evidence/silver_leaf_onpolicy_20261023/README.md) (pre-registered; #837 added
+`STS_AZGEN_LABEL_SEARCH`, default off) and [RESULT](evidence/silver_leaf_onpolicy_20261023/RESULT.md). Typed go
+2026-10-23 19:35Z ("let's do 512 runs on 32 workers"). 512 A20 runs, seeds 111390000–511, student_sel through the
+production chain out of combat; in combat qe2e at 50/50 (no turn penalty, no win-now cap) chose every action and
+production Silver searched every root again for the label. RUN_COMMIT db49b351, one_combat 0feb879d…, 32 workers,
+52.8 lane-hours. Then qe2e, the recipe refit on the production pack (`ref`) and the fit on both packs (`onp1`) on
+fold 4 of each pack, the 69,734 exact leaves, and the 16-source smoke (sources 111339997–999 and 111391000–012).
+**Result:**
+- G1 PASS: 256 of 256 units, 510 of 512 runs complete (2 stopped at 1,000 decisions in one fight), 283,935 roots
+  labelled, 13 edge fallbacks.
+- G2 (descriptive): qe2e's fold-4 RMSE against the label is 98.4 (bias +26.0) on the on-policy pack against 16.9
+  (+0.5) on the production pack; in fights under 40 turns 22.4 (+6.9), in their boss fights 32.6 (+11.9).
+- Not pre-registered: qe2e's value grows about 1 point per turn beyond its training data (the production pack's
+  longest fight has 44 turns), while production's label falls 0.4 points per turn (Silver's victory turn penalty).
+  46 of 11,133 fights lasted 40 turns or more, 12 reached the 500-turn limit; when won they cost 33.6 HP on average
+  (12 ended at 1 HP). The head-played runs killed the Heart in 17.2% [14.2, 20.7] against 25.5% for production in
+  the a20prod campaign (unpaired, other seeds). onp1's value falls with the turn as the label does.
+- G3 PASS at the margin: onp1 21.9 on the on-policy pack against ref's 105.7; 17.14 on the production pack against
+  16.87 (limit +0.3; the same fit on 255 of the 256 units gave +0.35). Exact leaves: onp1 RMSE 3.53, same-turn pairs
+  in order 0.812 (qe2e 3.70, 0.808).
+- G4 FAIL (onp1 − qe2e must be positive over all fights and over boss fights):
+
+| 16-source smoke, score per fight [95% CI over sources] | all fights (209) | boss fights (40) |
+|---|---|---|
+| qe2e − production | +2.38 [−0.82, +6.91] | −4.36 |
+| onp1 − production | +1.52 [−2.06, +5.92] | −2.31 |
+| onp1 − qe2e | −0.86 [−3.43, +1.04] | +2.06 |
+| exploratory: the 255-unit fit − qe2e | +2.85 [−0.48, +6.07] | +4.42 |
+
+**Interpretation:** the shift DAgger targets is real, and the on-policy labels teach the net what its own play leads
+to: it now values long fights lower, as production does. The 16-source screen cannot separate it from qe2e: two fits
+that differ by 0.5% of the data differ by 3.7 points per fight there. The clearest damage is rare: fights the head
+draws out, which a smoke of 209 fights samples about once, while the run-level gap is large. As pre-registered, the
+round is a negative result and nothing more is proposed on this line unless Philipp asks; no default changes.
+Seeds: 111390000–111390511 (campaign), 111391000–111391012 (smoke sources; 111339997–999 reused),
+111399990–111399991 (generator checks in #837).
+**Knowledge impact:** none (no default changed; `STS_AZGEN_LABEL_SEARCH` was documented with #837).

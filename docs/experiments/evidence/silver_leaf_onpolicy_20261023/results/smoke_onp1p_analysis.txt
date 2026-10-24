@@ -1,0 +1,35 @@
+{"validFights": 209, "sourceSeeds": 16, "excluded": {}, "truncatedRows": {}, "shards": [{"prefix": "S-111339997", "manifest": true, "requestedSeeds": 1, "finishedSeeds": 1, "states": 23, "controlReplayMismatches": 0, "invalidArmRows": 0, "hallwaySkipped": 9}, {"prefix": "S-111339998", "manifest": true, "requestedSeeds": 1, "finishedSeeds": 1, "states": 7, "controlReplayMismatches": 0, "invalidArmRows": 0, "hallwaySkipped": 5}, {"prefix": "S-111339999", "manifest": true, "requestedSeeds": 1, "finishedSeeds": 1, "states": 20, "controlReplayMismatches": 0, "invalidArmRows": 0, "hallwaySkipped": 8}, {"prefix": "S-111391000", "manifest": true, "requestedSeeds": 1, "finishedSeeds": 1, "states": 20, "controlReplayMismatches": 0, "invalidArmRows": 0, "hallwaySkipped": 7}, {"prefix": "S-111391001", "manifest": true, "requestedSeeds": 1, "finishedSeeds": 1, "states": 6, "controlReplayMismatches": 0, "invalidArmRows": 0, "hallwaySkipped": 7}, {"prefix": "S-111391002", "manifest": true, "requestedSeeds": 1, "finishedSeeds": 1, "states": 8, "controlReplayMismatches": 0, "invalidArmRows": 0, "hallwaySkipped": 2}, {"prefix": "S-111391003", "manifest": true, "requestedSeeds": 1, "finishedSeeds": 1, "states": 11, "controlReplayMismatches": 0, "invalidArmRows": 0, "hallwaySkipped": 8}, {"prefix": "S-111391004", "manifest": true, "requestedSeeds": 1, "finishedSeeds": 1, "states": 22, "controlReplayMismatches": 0, "invalidArmRows": 0, "hallwaySkipped": 9}, {"prefix": "S-111391005", "manifest": true, "requestedSeeds": 1, "finishedSeeds": 1, "states": 9, "controlReplayMismatches": 0, "invalidArmRows": 0, "hallwaySkipped": 4}, {"prefix": "S-111391006", "manifest": true, "requestedSeeds": 1, "finishedSeeds": 1, "states": 13, "controlReplayMismatches": 0, "invalidArmRows": 0, "hallwaySkipped": 11}, {"prefix": "S-111391007", "manifest": true, "requestedSeeds": 1, "finishedSeeds": 1, "states": 6, "controlReplayMismatches": 0, "invalidArmRows": 0, "hallwaySkipped": 11}, {"prefix": "S-111391008", "manifest": true, "requestedSeeds": 1, "finishedSeeds": 1, "states": 20, "controlReplayMismatches": 0, "invalidArmRows": 0, "hallwaySkipped": 14}, {"prefix": "S-111391009", "manifest": true, "requestedSeeds": 1, "finishedSeeds": 1, "states": 3, "controlReplayMismatches": 0, "invalidArmRows": 0, "hallwaySkipped": 3}, {"prefix": "S-111391010", "manifest": true, "requestedSeeds": 1, "finishedSeeds": 1, "states": 19, "controlReplayMismatches": 0, "invalidArmRows": 0, "hallwaySkipped": 13}, {"prefix": "S-111391011", "manifest": true, "requestedSeeds": 1, "finishedSeeds": 1, "states": 7, "controlReplayMismatches": 0, "invalidArmRows": 0, "hallwaySkipped": 3}, {"prefix": "S-111391012", "manifest": true, "requestedSeeds": 1, "finishedSeeds": 1, "states": 15, "controlReplayMismatches": 0, "invalidArmRows": 0, "hallwaySkipped": 12}], "roomClasses": {"ELITE": 90, "NORMAL": 68, "BOSS": 40, "OTHER": 11}, "act4Fights": 8, "labels": {"head10000-base10000/score": "BETTER", "head10000-base10000/hpLoss": "NOT_SHOWN", "head10000-matched/score": "NOT_MATCHED", "head10000-matched/hpLoss": "NOT_MATCHED"}, "gate": {"pass": false, "reason": "NOT_MATCHED"}, "stallFights": {"all": 1, "NORMAL": 1}, "cpuMatchedArm": null, "cpuRatios": {"head10000/base10000/perSimulation": {"ratio": 1.0621553920541662, "ci95": [1.030119957219601, 1.0918687889793302]}, "head10000/base10000/perFight": {"ratio": 1.0882618089150078, "ci95": [1.0476564198847302, 1.1241418077516043]}}, "escapes": {"base10000": 0, "head10000": 0}, "excludedFightsByRootReason": {}, "invalidArmRowsByReason": {}, "escapeReplicatesAllFights": {"base10000": 0, "head10000": 0}}
+base10000 {'score': 309.209, 'win': 0.933, 'hpLoss': 11.402, 'decisions': 25.696, 'cpuSecondsPerFight': 21.188, 'cpuMicrosecondsPerSimulation': 41.228, 'meanRolloutLength': 15.298, 'playoutsPerSimulation': 0.856, 'decisionsPerFight': 51.392}
+head10000 {'score': 314.431, 'win': 0.95, 'hpLoss': 11.297, 'decisions': 26.328, 'cpuSecondsPerFight': 23.058, 'cpuMicrosecondsPerSimulation': 43.791, 'meanRolloutLength': 15.097, 'playoutsPerSimulation': 0.858, 'decisionsPerFight': 52.656}
+head10000-base10000/all/score: +5.222 [+1.453, +9.628] n=209
+head10000-base10000/all/win: +0.017 [+0.003, +0.034] n=209
+head10000-base10000/all/hpLoss: -0.105 [-0.937, +0.700] n=209
+head10000-base10000/all/decisions: +0.632 [+0.139, +1.138] n=209
+head10000-base10000/boss/score: +0.056 [-14.141, +20.250] n=40
+head10000-base10000/boss/win: +0.000 [-0.056, +0.076] n=40
+head10000-base10000/boss/hpLoss: +1.100 [-1.892, +4.200] n=40
+head10000-base10000/boss/decisions: -0.300 [-2.671, +1.725] n=40
+head10000-base10000/elite/score: +10.321 [+3.609, +18.971] n=90
+head10000-base10000/elite/win: +0.033 [+0.010, +0.065] n=90
+head10000-base10000/elite/hpLoss: -0.806 [-2.517, +0.655] n=90
+head10000-base10000/elite/decisions: +0.161 [-0.593, +0.755] n=90
+head10000-base10000/normal/score: +2.030 [-0.764, +6.008] n=79
+head10000-base10000/normal/win: +0.006 [+0.000, +0.019] n=79
+head10000-base10000/normal/hpLoss: +0.082 [-1.197, +1.500] n=79
+head10000-base10000/normal/decisions: +1.639 [+0.669, +2.839] n=79
+head10000-base10000/act4/score: +3.125 [-5.562, +13.062] n=8
+head10000-base10000/act4/win: +0.000 [+0.000, +0.000] n=8
+head10000-base10000/act4/hpLoss: -2.250 [-11.000, +6.125] n=8
+head10000-base10000/act4/decisions: -2.000 [-5.250, +1.625] n=8
+head10000-base10000/act1/score: +1.549 [-3.742, +8.268] n=91
+head10000-base10000/act1/win: +0.005 [-0.016, +0.032] n=91
+head10000-base10000/act1/hpLoss: +1.258 [+0.451, +2.136] n=91
+head10000-base10000/act1/decisions: +0.835 [-0.024, +1.763] n=91
+head10000-base10000/act2/score: +5.768 [+0.298, +11.546] n=57
+head10000-base10000/act2/win: +0.018 [+0.000, +0.038] n=57
+head10000-base10000/act2/hpLoss: -1.711 [-3.867, +0.014] n=57
+head10000-base10000/act2/decisions: +0.360 [-0.840, +1.466] n=57
+head10000-base10000/act3/score: +11.259 [+1.310, +28.309] n=53
+head10000-base10000/act3/win: +0.038 [+0.000, +0.100] n=53
+head10000-base10000/act3/hpLoss: -0.396 [-2.656, +1.533] n=53
+head10000-base10000/act3/decisions: +0.972 [-0.123, +1.976] n=53

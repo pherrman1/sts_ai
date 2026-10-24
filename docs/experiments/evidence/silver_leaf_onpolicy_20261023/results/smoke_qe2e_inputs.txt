@@ -1,0 +1,5 @@
+83de6c12eb1130bbcdc503117fc9d96991ec3c1d256197445637e9f2c89a773f  smoke16/run_qe2e/one_combat
+eff2f74f57dc2f566bbd44be30988592503cc8db51e51ff1e70cd2dec4636509  smoke16/run_qe2e/studentc.bin
+c2c7418ea30a01253dea86fbdb2f91d8d73d5c6cf8d9dc736575c20a68a37f3b  smoke16/run_qe2e/a20.txt
+4efed23e86207a2e6c82fd45809c8c62e06cc8a57fdec635aa302649bcf1efda  /mnt/project-files/exact-combat-research/leaf-value/label-data-20261023/nets/q_e2e_trunk.txt
+qe2e wall=3340s
