@@ -24167,6 +24167,7 @@ measured. Candidate next step (not started): retrain student_sel's recipe with 5
 unchanged validation set.
 Seeds: none (offline).
 **Knowledge impact:** none (diagnostic; no default changed).
+
 ## §TBD — Leaf head, on-policy round 1: the searched-value head draws fights out (its value grows about 1 point per turn beyond its training data); the net retrained on its own states fits them (fold-4 RMSE 21.9 against 105.7) but fails the 16-source screen against qe2e (−0.86 per fight) (512 runs, 2026-10-23/24)
 
 **Question:** Philipp chose "Plan the on-policy round" after §664 (decision card, 2026-10-23 17:49Z): does the leaf
@@ -24182,13 +24183,23 @@ fold 4 of each pack, the 69,734 exact leaves, and the 16-source smoke (sources 1
 **Result:**
 - G1 PASS: 256 of 256 units, 510 of 512 runs complete (2 stopped at 1,000 decisions in one fight), 283,935 roots
   labelled, 13 edge fallbacks.
-- G2 (descriptive): qe2e's fold-4 RMSE against the label is 98.4 (bias +26.0) on the on-policy pack against 16.9
-  (+0.5) on the production pack; in fights under 40 turns 22.4 (+6.9), in their boss fights 32.6 (+11.9).
+- G2 (descriptive) holds in part: qe2e's fold-4 RMSE against the label is 98.4 (bias +26.0) on the on-policy pack
+  against 16.9 (+0.5) on the production pack, larger and biased upward as predicted, but on the whole pack it is
+  largest in hallway fights (145.95) and turns 6+ (221.25), not in boss fights (32.60, bias +11.89) as predicted; boss
+  fights lead only among fights under 40 turns (RMSE 22.4, bias +6.9, over all of them), a split made after seeing
+  the data.
 - Not pre-registered: qe2e's value grows about 1 point per turn beyond its training data (the production pack's
   longest fight has 44 turns), while production's label falls 0.4 points per turn (Silver's victory turn penalty).
-  46 of 11,133 fights lasted 40 turns or more, 12 reached the 500-turn limit; when won they cost 33.6 HP on average
-  (12 ended at 1 HP). The head-played runs killed the Heart in 17.2% [14.2, 20.7] against 25.5% for production in
-  the a20prod campaign (unpaired, other seeds). onp1's value falls with the turn as the label does.
+  46 of 11,133 fights lasted 40 turns or more; 12 of them lasted to turn 499 or later (8 won in the last two turns
+  before the 500-turn limit, 4 hit it and were lost alive), and the 34 won long fights cost 33.6 HP on average (12
+  ended at 1 HP). The head-played runs killed the Heart in 17.2% [14.2, 20.7] against 25.5% for production in the
+  a20prod campaign (unpaired: other seeds, and before the four engine fixes). onp1's value falls with the turn as the
+  label does.
+- Known issue (the generators' fight rows; this round's label is `qchosen` and is unaffected): the 4 fights lost at
+  the turn limit have `valid` true and `score` 105-171, above all 8 wins at turn 499-500 (−76 to −140), because
+  Silver's terminal score keeps an uncapped draw bonus for a loss (0.03 per card drawn) and has no energy-waste term
+  in Three and Four Shapes fights (all 4 are such fights). A net trained on the fight rows' `score` from such runs
+  would learn that stalling to the limit pays: drop fights over 500 turns or have the generator mark them invalid.
 - G3 PASS at the margin: onp1 21.9 on the on-policy pack against ref's 105.7; 17.14 on the production pack against
   16.87 (limit +0.3; the same fit on 255 of the 256 units gave +0.35). Exact leaves: onp1 RMSE 3.53, same-turn pairs
   in order 0.812 (qe2e 3.70, 0.808).

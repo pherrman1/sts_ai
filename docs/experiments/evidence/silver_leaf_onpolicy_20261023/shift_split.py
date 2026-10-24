@@ -3,7 +3,7 @@
 statistics (agree, label regret, value gap, inherited visits; same definitions) split by the fight's length:
 `short` (fight row `turns` < 40), `long` (>= 40) and `cut` (no fight row: the run stopped in that fight at 1,000
 decisions), each also by room and turn (6+ pooled). EXCLUDE=SEED:FIGHT[,SEED:FIGHT...] puts those fights in a
-class `excluded` instead (RESULT.md: the Collector fight whose played values ran away to 4,262 points).
+class `excluded` instead (RESULT.md: the Collector fight whose played values ran away to 4,294 points).
 
 usage: [EXCLUDE=...] shift_split.py OUT.json DIR   (every *.jsonl.gz below DIR)
 """
