@@ -1,0 +1,138 @@
+[
+  {
+    "source": "A0_CHAMP_PAIRED",
+    "run": "610081002",
+    "fight": 13,
+    "decision": 1,
+    "public_sha256": "341a8ad2b695269ee22d3260a23bd862a2b0d52d3cdbac6c09c0180fc6638c5d",
+    "known_engine": true,
+    "generic_near_cycle": false,
+    "reasons": [
+      "K4_headbutt_draw"
+    ],
+    "active_card_count": 25,
+    "relevant_cards": {
+      "BASH": 1,
+      "HEADBUTT": 2,
+      "SHOCKWAVE": 1,
+      "SHRUG_IT_OFF": 3,
+      "UPPERCUT": 1
+    },
+    "relevant_relics": [],
+    "supported_worlds": 4,
+    "evidence_status": "REUSED_PRIOR_OUTPUT_NOT_A_NEW_EXPERIMENT",
+    "certified_fraction": 0.0,
+    "candidate_fraction": 0.0,
+    "minimum_reach_depth": null,
+    "node_cap_worlds": 4,
+    "depth_cap_worlds": 0,
+    "candidate_cap_worlds": 0,
+    "nodes": 8000,
+    "max_depth": 8,
+    "prior_oracle_cpu_ms": 21.452,
+    "representative_witness": null,
+    "interpretation": "INCONCLUSIVE_NODE_CAP"
+  },
+  {
+    "source": "A0_CHAMP_PAIRED",
+    "run": "610081002",
+    "fight": 13,
+    "decision": 2,
+    "public_sha256": "df57286b1c049e706b313e762c1028fd28a9c0571065caee6ed402531ae69a40",
+    "known_engine": true,
+    "generic_near_cycle": false,
+    "reasons": [
+      "K4_headbutt_draw"
+    ],
+    "active_card_count": 25,
+    "relevant_cards": {
+      "BASH": 1,
+      "HEADBUTT": 2,
+      "SHOCKWAVE": 1,
+      "SHRUG_IT_OFF": 3,
+      "UPPERCUT": 1
+    },
+    "relevant_relics": [],
+    "supported_worlds": 4,
+    "evidence_status": "REUSED_PRIOR_OUTPUT_NOT_A_NEW_EXPERIMENT",
+    "certified_fraction": 0.0,
+    "candidate_fraction": 0.0,
+    "minimum_reach_depth": null,
+    "node_cap_worlds": 4,
+    "depth_cap_worlds": 0,
+    "candidate_cap_worlds": 0,
+    "nodes": 8000,
+    "max_depth": 7,
+    "prior_oracle_cpu_ms": 19.483,
+    "representative_witness": null,
+    "interpretation": "INCONCLUSIVE_NODE_CAP"
+  },
+  {
+    "source": "A0_CHAMP_PAIRED",
+    "run": "610081002",
+    "fight": 13,
+    "decision": 3,
+    "public_sha256": "e9093f8f31380feb5ceaf13641dc3b3d21c9d21ca6d48b35f7e76a4c1b88a0fe",
+    "known_engine": true,
+    "generic_near_cycle": false,
+    "reasons": [
+      "K4_headbutt_draw"
+    ],
+    "active_card_count": 25,
+    "relevant_cards": {
+      "BASH": 1,
+      "HEADBUTT": 2,
+      "SHOCKWAVE": 1,
+      "SHRUG_IT_OFF": 3,
+      "UPPERCUT": 1
+    },
+    "relevant_relics": [],
+    "supported_worlds": 4,
+    "evidence_status": "REUSED_PRIOR_OUTPUT_NOT_A_NEW_EXPERIMENT",
+    "certified_fraction": 0.0,
+    "candidate_fraction": 0.0,
+    "minimum_reach_depth": null,
+    "node_cap_worlds": 0,
+    "depth_cap_worlds": 0,
+    "candidate_cap_worlds": 0,
+    "nodes": 6368,
+    "max_depth": 6,
+    "prior_oracle_cpu_ms": 15.442,
+    "representative_witness": null,
+    "interpretation": "NO_CANDIDATE_IN_BOUNDED_SUPPORTED_SEARCH"
+  },
+  {
+    "source": "A0_CHAMP_PAIRED",
+    "run": "610081002",
+    "fight": 13,
+    "decision": 5,
+    "public_sha256": "0acf6f347d6fc86cdcfacf67602c4cb07640a06f8cfcecd7e11a5401b9abe175",
+    "known_engine": true,
+    "generic_near_cycle": false,
+    "reasons": [
+      "K4_headbutt_draw"
+    ],
+    "active_card_count": 26,
+    "relevant_cards": {
+      "BASH": 1,
+      "HEADBUTT": 2,
+      "SHOCKWAVE": 2,
+      "SHRUG_IT_OFF": 3,
+      "UPPERCUT": 1
+    },
+    "relevant_relics": [],
+    "supported_worlds": 4,
+    "evidence_status": "REUSED_PRIOR_OUTPUT_NOT_A_NEW_EXPERIMENT",
+    "certified_fraction": 0.0,
+    "candidate_fraction": 0.0,
+    "minimum_reach_depth": null,
+    "node_cap_worlds": 4,
+    "depth_cap_worlds": 0,
+    "candidate_cap_worlds": 0,
+    "nodes": 8000,
+    "max_depth": 7,
+    "prior_oracle_cpu_ms": 21.377,
+    "representative_witness": null,
+    "interpretation": "INCONCLUSIVE_NODE_CAP"
+  }
+]

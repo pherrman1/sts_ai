@@ -24012,6 +24012,37 @@ campaigns, backup copies of stragglers on idle workers once the queue is empty.
 - Seeds 111360000–111360255 used; smokes 111369991–111369993 used (111369990–111369999 assigned).
 - **Knowledge impact:** `evaluation/current-research.md`.
 
+## §TBD-hunt Targeted natural infinity inventory — current-policy data gap (2026-10-24)
+
+Existing #844 branch; baseline `7249709a16a19b8cc6d265a5b42c8d93e5a24872`.
+Read-only current main `413e85d69634b51419f3306e286f385f68c3a32c`; no merge.
+Public-only ingredient/compression screen frozen `bef9bbc1e` before census;
+selected root hashes frozen `1c9d14ffb` before reuse analysis. No oracle changes.
+
+Screened4,968 declared OOC run IDs/820,868 records from Heart TRAIN and pinned
+AZ gen2/gen3 TRAIN, plus343 older public-root observations/89 declared seed IDs.
+Overlapping OOC flags:70 cycle-pair runs,440 Sundial+draw,98 Corruption/Dark
+Embrace/Dead Branch,2,581 weak Headbutt/draw; any K2,842. OOC compression and
+Top cheapness unassessable, not zero prevalence. Public G0, K116; only72 paired
+Champ roots have full no-Shard provenance. Neither ingredient rarity near an
+actual infinite nor oracle recall is established from these disconnected formats.
+
+Current-policy natural positive signal **BLOCKED_BY_DATA**: recent OOC records
+lack combat wires; newer combat-root producer lacks complete relic inventory/
+receipt-bound no-Shard proof. Remote A20 combat raw share unavailable here;
+metadata/producer inspected, its roots not counted as scanned. No safe join
+across independent policies/trajectories. No sealed TEST/confirm opened.
+
+Selectormax4/combat yields only old Champ1,2,3,5, weak K4/active25–26, identical
+prior-pilot inputs. Reuse16 existing world records:0 certified/candidates,
+12/16 node-capped (inconclusive), prior CPU77.754ms. No novel/current selected
+root, new oracle world, capture/collection, model probing or budget change.
+Read-only census pass28.725s wall; current-policy cap rate null/not run.
+[Sources, frozen rules/census/selection, reused matrix, missing field and smallest unimplemented capture proposal](evidence/combat_infinity_hunt_20261024/REPORT.md).
+Knowledge impact: maintained data prerequisite/research status updated. Next
+step is provenance-complete targeted public capture via existing paired opt-in
+traces; optional single-row full-relic metadata proposal only, not implemented.
+
 ## §TBD-natural Infinity public-root annotation — provenance-backed historical sample (2026-10-24)
 
 Existing #844 branch, baseline `e41dcef5b734b5187d9552c1e41b9f8b6b5ef1cd`;
