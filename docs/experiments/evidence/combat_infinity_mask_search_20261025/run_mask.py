@@ -26,12 +26,15 @@ def main():
     assert parity['binary_sha256']==build['binary_sha256']==sha(Path(build['binary_path']))
     assert all(sha(Path(m['path']))==m['expected_sha256'] for m in parity['models'])
     label=('capture-' if args.capture else 'mask-')+bits;run=RUNTIME/label;run.mkdir() # no retries/overwrites
-    target=None;search_result=None
+    target=None;search_result=None;search_public_prefix=None
     if args.capture:
         selection=json.loads((HERE/'SELECTED_MASK.json').read_text());assert selection['gate_pass'] and selection['best_mask']==bits
         search_result=json.loads((HERE/'results'/f'{bits}.json').read_text())
         assert selection['best_result_sha256']==sha(HERE/'results'/f'{bits}.json')
         target=search_result['measurement']['target']
+        selected_states=[json.loads(line) for line in gzip.decompress((HERE/'runs'/f'{bits}.states.jsonl.gz').read_bytes()).splitlines()]
+        search_public_prefix=[r for r in selected_states if r.get('type')=='header' or (r.get('type')=='state' and r['index']<=target['boundary_index'])]
+        assert [r['index'] for r in search_public_prefix if r.get('type')=='state']==list(range(target['boundary_index']+1))
     bundle=Path('/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-collection-20261016-v1/bundle')
     for name in ['models','selfplay','studentc.bin']:(run/name).symlink_to(bundle/name,target_is_directory=name!='studentc.bin')
     env={k:v for k,v in os.environ.items() if not k.startswith(('STS_','OMP_'))};env.update(parity['environment'])
@@ -63,6 +66,10 @@ def main():
                         measurement=assess(args.mask,manifest,trace,endpoint)
                         first_difference=difference(search_result['measurement'],measurement,'/capture_entry_measurement')
                         if first_difference:status='CAPTURE_ENTRY_DIVERGED';break
+                        captured_states=complete_rows(run/'states.jsonl')
+                        capture_public_prefix=[r for r in captured_states if r.get('type')=='header' or (r.get('type')=='state' and r['index']<=target['boundary_index'])]
+                        first_difference=difference(search_public_prefix,capture_public_prefix,'/capture_public_state_prefix')
+                        if first_difference:status='CAPTURE_PUBLIC_PREFIX_DIVERGED';break
                         for row in normal:
                             if row['kind']=='battle' and row['fight']==target['fight'] and row['pre']['act']==target['act'] and row['pre']['floor']==target['floor']:
                                 capture_battle=row;break
