@@ -2,8 +2,9 @@
 
 Issue [#856](https://github.com/pherrman1/sts_ai/issues/856), experiment 3 of the post-#853 OOC direction review
 (`/mnt/project-files/ooc-direction-review/REPORT.html`, section 4). Philipp, 2026-10-25 09:09Z: "kannst du ein thread
-mit idee 3 öffnen, nachdem idee 2 auch gefailed ist?" **Status: draft, not authorized. No seed has been played. Smoke,
-Stage A and Stage B each need Philipp's typed go and worker count.**
+mit idee 3 öffnen, nachdem idee 2 auch gefailed ist?" Size: Philipp chose "Gleich groß planen (1.024)" (decision card,
+2026-10-25 09:48Z). **Status: Stage A authorized with 32 workers (Philipp 2026-10-25 09:49Z, "ill alow 32 workers");
+it runs after the smoke and the pre-launch review. Stage B needs its own go.**
 
 ## Question
 
@@ -53,7 +54,7 @@ pick better than the production pick (student_sel's argmax, `by=heart1_screen` s
 - **Table:** root fixed-effects OLS `y_rj = a_r + u_key + e` with `u_SKIP = 0`, keys = relic names pooled over acts
   (per-act tables reported only). SEs by bootstrap over source seeds.
 - **Spread:** method of moments over keys with ≥ 8 appearances, `τ̂² = Var(û) − mean(SE²)`. Projected split-half r of
-  the full design: `τ̂² / (τ̂² + mean SE² × n_A / 256)`.
+  the full design: `τ̂² / (τ̂² + mean SE² × n_A / 512)` (halves of 1,024 sources).
 - **Override (full design only):** 2-fold cross-fit by `seed % 2`. Training fold: table, empirical-Bayes shrinkage
   toward 0 with the fold's τ̂². Held-out roots: take the shrunk-best option when it beats the production pick's shrunk
   value by more than 0.03, else the production pick. Gain per source = Σ over its roots of
@@ -62,10 +63,11 @@ pick better than the production pick (student_sel's argmax, `by=heart1_screen` s
 ## Stages and decision rules
 
 - **Smoke (2 seeds):** S + all forks; fork checks pass; S replayed twice is identical; CPU per game measured.
-- **Stage A (futility):** first 128 sources. **STOP** if the projected split-half r on Heart kills is < 0.35.
+- **Stage A (futility):** first 256 sources (111378000–111378255). **STOP** if the projected split-half r of the full
+  1,024-source design on Heart kills is < 0.35.
   Otherwise ask Philipp for Stage B. Reported: τ̂, CRN correlation of options within a root, production pick minus
   the mean of the alternatives, skip outcomes, Act-4 numbers.
-- **Stage B:** sources 129–512. **PASS:** cross-fitted Heart-kill gain per source, 95% bootstrap CI (10,000 resamples
+- **Stage B:** sources 257–1,024 (111378256–111379023); Stage A data are part of the final analysis. **PASS:** cross-fitted Heart-kill gain per source, 95% bootstrap CI (10,000 resamples
   over sources, RNG 20261025) with lower bound > 0. **FAIL:** point estimate ≤ 0. Otherwise INCONCLUSIVE.
   Act-4 gain reported, not a gate.
 
@@ -75,27 +77,30 @@ Assumptions: 23 boss relics (22 observed), Heart rate 0.25, within-root option c
 0.88 / 0.66, production pick = argmax of the true effect plus noise of the same size (a decent prior). τ below is the
 SD of relic effects on the uncorrelated part; the effective spread is about 0.6 τ.
 
-| τ (effective) | P(STOP) at Stage A 128 | P(STOP) at 256 | P(PASS) at 512 | P(PASS) at 1,024 |
-|---|---|---|---|---|
-| 0 | 0.93 | 0.93 | 0.00 | 0.00 |
-| 0.05 (3 pp) | 0.80 | 1.00 | 0.00 | 0.00 |
-| 0.08 (5 pp) | 0.62 | 0.53 | 0.00 | 0.00 |
-| 0.12 (7 pp) | 0.30 | 0.17 | 0.05 | 0.25 |
+| τ (effective) | P(STOP) at Stage A = 256 (projected to 1,024) | P(PASS) at 512 | P(PASS) at 1,024 |
+|---|---|---|---|
+| 0 | 0.77 | 0.00 | 0.00 |
+| 0.05 (3 pp) | 0.87 | 0.00 | 0.00 |
+| 0.08 (5 pp) | 0.27 | 0.00 | 0.00 |
+| 0.12 (7 pp) | 0.03 | 0.05 | 0.25 |
+
+(30 simulated Stage A runs per row, 20 / 12 full runs; Monte-Carlo error about ±0.1.)
 
 **Reading:** with a decent production pick, the override gain is small (+0.7 pp per source at 512, +1.7 pp at 1,024
-even at a 7 pp spread) against a per-source SE of about 1.3–1.9 pp. #856's 256 sources cannot pass; 512 passes only
-if relic effects are large *and* student_sel picks badly. Stage A mostly measures whether the spread is large.
+even at a 7 pp spread) against a per-source SE of about 1.3–1.9 pp. #856's 256 sources cannot pass; even 1,024 pass only
+if relic effects are large *and* student_sel picks badly. Stage A mostly measures whether the spread is large; it lets
+large spreads through (STOP 0.03 at 7 pp) and stops most small ones.
 
 ## Cost (estimate; the smoke measures it)
 
 About 600 s per game (MAP 435 s in §683 plus Act 4 strong), 5.6 games per source → about 0.9 core-h per source:
-Stage A ≈ 120 core-h (≈ 1 h on 32 workers × 4 lanes, ≈ 4 h on 8), full 512 ≈ 480 core-h. Memory: one Heart
-search ≈ 2.3 GB, 4 lanes fit a 15 GB container.
+Stage A ≈ 230 core-h (≈ 2 h on 32 workers × 4 lanes; one unit ≈ 1 h on one lane), full 1,024 ≈ 920 core-h (≈ 7-8 h on
+32 workers). Memory: one Heart search ≈ 2.3 GB, 4 lanes fit a 15 GB container.
 
 ## Seeds (assigned by the coordinator 2026-10-25 09:40Z; repo seed guard checked before freezing)
 
-Sources 111378000–111378511 (Stage A 111378000–111378127), smokes 111378990–111378999, inside the free block
-111370020–111379989. Forks replay the source seeds (no new seeds).
+Sources 111378000–111379023 (Stage A 111378000–111378255), smokes 111379980–111379989 (coordinator, 2026-10-25
+09:49Z), inside the free block 111370020–111379989. Forks replay the source seeds (no new seeds).
 
 ## Provenance (frozen before launch)
 

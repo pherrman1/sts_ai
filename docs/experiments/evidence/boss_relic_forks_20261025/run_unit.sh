@@ -5,6 +5,7 @@
 # to that root, the option forced, then played to the end. Always exits 0 (per-game rc in the .done lines).
 # PREREG.md has the full config and provenance. Every game writes the OOC decision trace (STS_OOC_DECISION_TRACE),
 # from which forks.py reads the roots and checks that each fork equals S before its root. 7 h timeout per game.
+# SOURCE_ONLY=1 (smokes only) plays S and no forks.
 set -uo pipefail
 REPO=$1 RUN=$2 OUT=$3 SEED=$4
 [ -s "$RUN/student_sel.bin" ] || { echo "missing $RUN/student_sel.bin" >&2; exit 2; }
@@ -65,7 +66,8 @@ play() {
   echo "tag=$tag rc=$rc force=${force:-none} start=$start wall=$(( $(date +%s)-t0 ))" > "$b.done"
 }
 play "S-$SEED"
-if grep -q ' rc=0 ' "$OUT/S-$SEED.done"; then
+# SOURCE_ONLY (smokes only): the source game alone, for a rerun-determinism check.
+if [ -z "${SOURCE_ONLY:-}" ] && grep -q ' rc=0 ' "$OUT/S-$SEED.done"; then
   # One line "ACT:CHOICE" per untaken option at each act-1/act-2 boss-relic root of S.
   for f in $(python3 -I "$REPO/docs/experiments/evidence/boss_relic_forks_20261025/forks.py" plan "$OUT/S-$SEED.trace.jsonl"); do
     play "F${f/:/_}-$SEED" "$f"

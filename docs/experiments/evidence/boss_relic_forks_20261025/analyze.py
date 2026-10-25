@@ -12,8 +12,8 @@ sys.path.insert(0, HERE)
 import forks  # noqa: E402
 
 SKIP = 'SKIP'
-N_FULL = 512        # sources in the full design (Stage A + Stage B)
-N_STAGE_A = 128
+N_FULL = 1024       # sources in the full design (Stage A + Stage B)
+N_STAGE_A = 256
 MIN_OBS = 8         # Stage A: keys with at least this many appearances enter the spread estimate
 STOP_R = 0.35       # Stage A: STOP when the projected split-half r of the full design is below this
 MARGIN = 0.03       # override margin on the shrunk table (P300's relicu margin)
