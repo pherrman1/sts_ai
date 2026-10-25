@@ -1,0 +1,96 @@
+[
+  {
+    "status": "fulfilled",
+    "value": {
+      "name": "hook",
+      "args": [
+        "python3",
+        "docs/experiments/evidence/combat_infinity_mask_search_20261025/check_hook.py"
+      ],
+      "chunk_id": "fa0a3a",
+      "wall_time_seconds": 2.205307708,
+      "exit_code": 0,
+      "original_token_count": 170,
+      "output": "PASS disabled: zero semantic enumeration/execution\nPASS wrong seed rejected; irrelevant screen/floor do not enumerate; absent groups stay NOT_SEEN\nPASS all 5 exact semantic keys; at-most-once accounting; decision indices unused\nPASS unsupported/incomplete/ambiguous/wrong-type/failed execution abort and mark MATCH_FAILED_FATAL\nPASS disabled entry never enumerates/matches/executes and reports DISABLED_BY_DESIGN\nPASS 4 unchanged enabled targets fire once; matched+unseen+disabled=5\nPASS omitted/true preserve all5 targets; nonboolean enabled fails closed\nPASS complete32-mask enablement/at-most-once/accounting contract\n9 focused contract groups passed (stub; no gameplay run)\n"
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "name": "accounting",
+      "args": [
+        "python3",
+        "docs/experiments/evidence/combat_infinity_mask_search_20261025/check_accounting.py"
+      ],
+      "chunk_id": "98539a",
+      "wall_time_seconds": 0.000008946,
+      "exit_code": 0,
+      "original_token_count": 45,
+      "output": "PASS retained18-card/two-Dropkick/Pandora control; no future-outcome ranking; target/horizon/death stops; frozen lexicographic tie-break; all32 masks. No seeds/worlds executed.\n"
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "name": "custody",
+      "args": [
+        "python3",
+        "docs/experiments/evidence/combat_infinity_mask_search_20261025/build_runtime.py",
+        "--check"
+      ],
+      "chunk_id": "0814e0",
+      "wall_time_seconds": 0.038350444,
+      "exit_code": 0,
+      "original_token_count": 52,
+      "output": "patching file apps/one_combat/infinity_frozen_skips.h\npatching file apps/one_combat/run_driver.cpp\nPASS base source, fresh patch application, patched file hashes, models and executable custody; no rebuild\n"
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "name": "roots",
+      "args": [
+        "python3",
+        "docs/experiments/evidence/combat_infinity_mask_search_20261025/freeze_roots.py",
+        "--check"
+      ],
+      "chunk_id": "b3784e",
+      "wall_time_seconds": 0.000012373,
+      "exit_code": 0,
+      "original_token_count": 33,
+      "output": "PASS selected fight identity, receipt-bound no-Shard, public-only root selection and unchanged adapter custody; no oracle execution\n"
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "name": "report",
+      "args": [
+        "python3",
+        "docs/experiments/evidence/combat_infinity_mask_search_20261025/report.py",
+        "--check"
+      ],
+      "chunk_id": "9cb78c",
+      "wall_time_seconds": 0.000010249,
+      "exit_code": 0,
+      "original_token_count": 38,
+      "output": "PASS exact capture public-state/trace prefixes, archive/receipt custody,4 roots16 worlds/caps/fractions, report regeneration; no simulator execution\n"
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "name": "whitespace",
+      "args": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "chunk_id": "c1885c",
+      "wall_time_seconds": 0.00001095,
+      "exit_code": 0,
+      "original_token_count": 0,
+      "output": ""
+    }
+  }
+]

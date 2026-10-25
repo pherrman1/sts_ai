@@ -1,0 +1,21 @@
+{
+  "seed": 111101032,
+  "command": [
+    "timeout",
+    "30s",
+    "bash",
+    "tools/seed_guard.sh",
+    "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/build/linux-gcc-release-ccache/combat_infinity_oracle",
+    "--public-roots",
+    "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/docs/experiments/evidence/combat_infinity_mask_search_20261025/inputs.jsonl"
+  ],
+  "returncode": 0,
+  "selection_sha256": "d8d1a61db987ca0698554dfe741635d160e1de24cf7d759b9e026757ed5f5c9a",
+  "inputs_sha256": "697b1bbe4868759ab824dd95a1054a6421a81081612dc54b89a574dda8aaa51b",
+  "output_sha256": "6aba9cb7df4e7888517e169f2c86dd081c2b96a777b9d6ea6ab2b14576651c55",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "adapter_binary_sha256": "28e942c218cbaeef29f3a58a3301873d2fca012f6205379445e4e23ffef0ebe9",
+  "wall_seconds": 0.01034236280247569,
+  "child_user_seconds": 0.004046000000000001,
+  "child_system_seconds": 0.004232999999999999
+}

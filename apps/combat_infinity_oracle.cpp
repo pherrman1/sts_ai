@@ -2,6 +2,8 @@
 #include <algorithm>
 #include <ctime>
 #include <fstream>
+#include <iomanip>
+#include <openssl/evp.h>
 #include <iostream>
 #include <memory>
 #include <sstream>
@@ -10,6 +12,7 @@
 #include "combat/BattleContextBinary.h"
 #include "game/RelicContainer.h"
 #include "sim/search/CombatKnowledge.h"
+#include "sim/search/SearchRng.h"
 #include "sim/search/SearchStateHash.h"
 #include "sim/search/SilverWireJson.h"
 #include "sim/search/SilverWireState.h"
@@ -581,6 +584,210 @@ void recallFixtures(bool verify) {
         {"recall_assertions",verify?"PASS":"PROBE"}}).dump()<<'\n';
 }
 
+// Research-only public-root adapter. Silver itself samples CardPile's unknown
+// region lazily. Eagerly drawing a COPY with that same operation gives a
+// public-conditioned concrete order; the root and its public facts stay intact.
+constexpr int publicWorlds=4, publicRootCap=4;
+
+std::string publicSha(const std::string &text) {
+    unsigned char digest[EVP_MAX_MD_SIZE]{}; unsigned int length=0;
+    if(EVP_Digest(text.data(),text.size(),digest,&length,EVP_sha256(),nullptr)!=1 || length!=32)
+        throw std::runtime_error("public-root SHA256 failure");
+    std::ostringstream out; out<<std::hex<<std::setfill('0');
+    for(unsigned int i=0;i<length;++i) out<<std::setw(2)<<unsigned(digest[i]);
+    return out.str();
+}
+
+struct PublicRoot {
+    BattleContext state;
+    std::string hash;
+};
+
+PublicRoot publicRoot(const json &row) {
+    const auto &envelope=row.contains("public_wire")?row.at("public_wire"):row.at("state");
+    auto wire=silver_bridge::battleStateWireFromEnvelope(envelope);
+    require(wire.valid && wire.drawPile.valid,"invalid public root");
+    require(!wire.fullDrawOrderObserved && !wire.drawPile.fullOrderObserved,
+        "pilot requires information-set draw; never import private concrete order");
+    require(!wire.intentsHidden,"hidden-intent roots outside pilot scope");
+    // Ignore a source-provided RNG identity even when a historical wire has it.
+    wire.isolatedSearchSeed=0;
+    auto b=battleContextFromWire(wire);
+    auto canonical=wireFromSearchState(b,searchContextFromWire(wire));
+    canonical.isolatedSearchSeed=0; canonical.observedGeneration=0;
+    return {std::move(b),publicSha(silver_bridge::battleStateWireEnvelope(canonical).dump())};
+}
+
+BattleContext publicWorld(const PublicRoot &root,int k) {
+    require(k>=0 && k<publicWorlds,"world index outside frozen K=4");
+    auto b=root.state;
+    const auto digest=publicSha("combat-infinity-public-world-v1:"+root.hash+":"+std::to_string(k));
+    const auto seed=std::stoull(digest.substr(0,16),nullptr,16);
+    b.seed=seed; seedSearchRng(b,seed);
+    auto pile=b.cards.drawPile;
+    require(!pile.isConcrete(),"public sampling requires an information set");
+    std::vector<CardInstance> drawn;
+    while(!pile.empty()) drawn.push_back(pile.drawTop(b.shuffleRng));
+    std::reverse(drawn.begin(),drawn.end()); // concrete representation is bottom-first
+    b.cards.drawPile.assignConcrete(std::move(drawn));
+    return b;
+}
+
+json annotatePublic(const json &source) {
+    ObserverScope scope;
+    auto root=std::make_unique<PublicRoot>(publicRoot(source));
+    const auto before=std::make_unique<BattleContext>(root->state);
+    const bool noShard=source.value("oracle_no_prismatic_shard",false);
+    json result={{"schema","combat_infinity_public_sidecar_v1"},{"public_root_sha256",root->hash},
+        {"K",publicWorlds},{"sampling","Silver_CardPile_drawTop_public_conditioned_v1"},
+        {"candidate_fraction_definition","worlds_with_damaging_candidate_including_certified"},
+        {"supported_worlds",0},{"certified_fraction",nullptr},{"candidate_fraction",nullptr},
+        {"minimum_reach_depth",nullptr},{"worlds",json::array()}};
+    if(!noShard) {
+        result["status"]="UNSUPPORTED"; result["reason"]="missing_proven_no_prismatic_shard";
+        return result;
+    }
+    int certified=0,candidates=0,minReach=depthCap+1;
+    for(int k=0;k<publicWorlds;++k) {
+        auto world=std::make_unique<BattleContext>(publicWorld(*root,k));
+        auto verdict=Oracle{}.run(*world,true);
+        json order=json::array();
+        for(const auto &c:world->cards.drawPile)
+            order.push_back({{"id",static_cast<int>(c.id)},{"physical_id",c.uniqueId}});
+        result["worlds"].push_back({{"k",k},{"sample_seed",std::to_string(world->seed)},
+            {"sampled_draw_bottom_first",order},{"oracle",verdict}});
+        if(!verdict.at("supported").get<bool>()) continue;
+        result["supported_worlds"]=result["supported_worlds"].get<int>()+1;
+        certified+=verdict.at("classification")=="CERTIFIED_KILL";
+        bool productive=false;
+        for(const auto &c:verdict.at("candidates")) if(c.at("classification")!="STALL_LOOP") {
+            productive=true; minReach=std::min(minReach,c.at("reach_depth").get<int>());
+        }
+        candidates+=productive;
+    }
+    require(root->state==*before,"public annotation mutated input root");
+    if(result.at("supported_worlds")!=publicWorlds) {
+        result["status"]="UNSUPPORTED"; result["reason"]="oracle_domain_or_quiet_boundary";
+        return result; // missing worlds are never silently counted as negatives
+    }
+    result["status"]="ANNOTATED"; result["reason"]="bounded_K4_public_conditioned_worlds";
+    result["certified_fraction"]=double(certified)/publicWorlds;
+    result["candidate_fraction"]=double(candidates)/publicWorlds;
+    if(minReach<=depthCap) result["minimum_reach_depth"]=minReach;
+    return result;
+}
+
+json publicFixtureRow(BattleContext b) {
+    // Explicit synthetic public knowledge: forget all draw order, retain the
+    // multiset. No original concrete ordering is exported to the adapter.
+    std::vector<CardInstance> unknown(b.cards.drawPile.begin(),b.cards.drawPile.end());
+    b.cards.drawPile.assignInformationState({},unknown,{});
+    auto wire=wireFromSearchState(b,SilverSearchContext{});
+    wire.isolatedSearchSeed=0;
+    return {{"public_wire",silver_bridge::battleStateWireEnvelope(wire)},
+        {"oracle_no_prismatic_shard",true}};
+}
+
+void publicFixtures() {
+    ObserverScope scope;
+    std::vector<json> rows;
+    auto check=[&](const std::string &name,const BattleContext &b,double expected) {
+        auto input=publicFixtureRow(b); auto result=annotatePublic(input);
+        require(result.at("status")=="ANNOTATED" && result.at("certified_fraction")==expected,
+            name+": public fixture classification");
+        result["fixture"]=name; rows.push_back(result); std::cout<<result.dump()<<'\n';
+        return input;
+    };
+    auto positive=std::make_unique<BattleContext>(fixture()); staticExhaust(*positive);
+    auto input=check("public_static_exhaust_dropkick",*positive,1.0);
+    auto energy=std::make_unique<BattleContext>(*positive);
+    energy->player.energy=7; energy->player.setHasRelic<RelicId::SUNDIAL>(true);
+    energy->cards.hand[0].cost=0; energy->cards.hand[0].setCostForTurn(0);
+    check("public_energy_positive",*energy,1.0);
+    auto broken=std::make_unique<BattleContext>(*positive);
+    broken->monsters.arr[0].removeStatus<MS::VULNERABLE>();
+    check("public_broken_dropkick",*broken,0.0);
+    auto phase=std::make_unique<BattleContext>(*positive); phase->monsters.arr[0].id=MonsterId::AWAKENED_ONE;
+    check("public_phase_guard",*phase,0.0);
+    require(rows[3].at("candidate_fraction")==1.0,"candidate fraction must include rejected damaging recurrences");
+    require(rows[0].at("candidate_fraction")==1.0 && rows[0].at("minimum_reach_depth")==4,
+        "positive public aggregate fields");
+    require(rows[2].at("candidate_fraction")==0.0 && rows[2].at("minimum_reach_depth").is_null(),
+        "no-candidate depth must be null");
+    auto missing=input; missing.erase("oracle_no_prismatic_shard");
+    auto unsupported=annotatePublic(missing);
+    require(unsupported.at("status")=="UNSUPPORTED" && unsupported.at("certified_fraction").is_null()
+        && unsupported.at("candidate_fraction").is_null() && unsupported.at("worlds").empty(),
+        "missing provenance cannot produce negative labels");
+    auto explicitFalse=input; explicitFalse["oracle_no_prismatic_shard"]=false;
+    require(annotatePublic(explicitFalse).at("certified_fraction").is_null(),"false provenance cannot label");
+
+    // Nontrivial information set: fixed top/bottom and three distinct unknowns.
+    // Check exact draw-sequence parity with the existing lazy kernel for each
+    // of the four frozen world seeds, with no card effects or game rollout.
+    auto kernel=std::make_unique<BattleContext>(fixture());
+    CardInstance bottom(CardId::STRIKE_RED),a(CardId::ANGER),c(CardId::DEFEND_RED),d(CardId::BASH),top(CardId::DROPKICK);
+    bottom.uniqueId=5; a.uniqueId=2; c.uniqueId=3; d.uniqueId=4; top.uniqueId=1;
+    kernel->cards.drawPile.assignInformationState({bottom},{a,c,d},{top});
+    kernel->cards.nextUniqueCardId=6;
+    auto wire=wireFromSearchState(*kernel,SilverSearchContext{});
+    auto kernelInput=json{{"public_wire",silver_bridge::battleStateWireEnvelope(wire)}};
+    auto root=std::make_unique<PublicRoot>(publicRoot(kernelInput));
+    auto reversed=wire; std::reverse(reversed.drawPile.unknown.begin(),reversed.drawPile.unknown.end());
+    reversed.isolatedSearchSeed=987654321;
+    auto variant=std::make_unique<PublicRoot>(publicRoot({{"public_wire",silver_bridge::battleStateWireEnvelope(reversed)},
+        {"private_draw_order","poisoned side channel must never be read"}}));
+    require(root->hash==variant->hash,"source RNG/unknown order changed canonical public identity");
+    json samples=json::array();
+    for(int k=0;k<publicWorlds;++k) {
+        auto world=std::make_unique<BattleContext>(publicWorld(*root,k));
+        auto other=std::make_unique<BattleContext>(publicWorld(*variant,k));
+        require(*world==*other,"unobserved source identity influenced sampled world");
+        auto lazy=std::make_unique<BattleContext>(root->state); seedSearchRng(*lazy,world->seed);
+        auto concrete=world->cards.drawPile;
+        while(!concrete.empty()) require(concrete.drawTop(world->shuffleRng)==lazy->cards.drawPile.drawTop(lazy->shuffleRng),
+            "materialized sequence differs from Silver lazy draw kernel");
+        // Concrete draws consume no randomness; reset them before comparing
+        // the sampler's post-materialization stream with the full lazy drain.
+        auto fresh=std::make_unique<BattleContext>(publicWorld(*root,k));
+        require(fresh->shuffleRng==lazy->shuffleRng,"sampler RNG continuation differs from lazy drain");
+        require(fresh->cards.drawPile[0]==bottom && fresh->cards.drawPile[fresh->cards.drawPile.size()-1]==top,"known order facts changed");
+        json ids=json::array(); for(const auto &card:fresh->cards.drawPile) ids.push_back(card.uniqueId);
+        samples.push_back({{"k",k},{"draw_bottom_first",ids},{"seed",std::to_string(fresh->seed)}});
+    }
+    bool rejected=false;
+    auto concreteWire=wire; concreteWire.fullDrawOrderObserved=true;
+    try { (void)publicRoot({{"public_wire",silver_bridge::battleStateWireEnvelope(concreteWire)}}); }
+    catch(const std::exception &) { rejected=true; }
+    require(rejected,"private concrete order input must reject");
+    auto hiddenWire=wire; hiddenWire.intentsHidden=true; rejected=false;
+    try { (void)publicRoot({{"public_wire",silver_bridge::battleStateWireEnvelope(hiddenWire)}}); }
+    catch(const std::exception &) { rejected=true; }
+    require(rejected,"hidden intents outside pilot must reject");
+    auto malformed=input; malformed["oracle_no_prismatic_shard"]="true"; rejected=false;
+    try { (void)annotatePublic(malformed); } catch(const std::exception &) { rejected=true; }
+    require(rejected,"nonboolean provenance must reject");
+    auto foreign=std::make_unique<BattleContext>(*positive); foreign->player.cc=CharacterClass::SILENT;
+    auto foreignResult=annotatePublic(publicFixtureRow(*foreign));
+    require(foreignResult.at("status")=="UNSUPPORTED" && foreignResult.at("supported_worlds")==0
+        && foreignResult.at("certified_fraction").is_null(),"unsupported worlds cannot become negatives");
+    std::cout<<json({{"public_contract_assertions","PASS"},{"K",publicWorlds},{"control_roots",rows.size()},
+        {"known_boundary_samples",samples},{"missing_provenance",unsupported}}).dump()<<'\n';
+}
+
+void publicRoots(const char *file) {
+    std::ifstream in(file); require(bool(in),"cannot open public roots");
+    std::string line; int count=0,supported=0;
+    while(count<publicRootCap && std::getline(in,line)) {
+        auto result=annotatePublic(json::parse(line)); result["root_index"]=count++;
+        supported+=result.at("status")=="ANNOTATED";
+        std::cout<<result.dump()<<'\n';
+    }
+    std::cout<<json({{"schema","combat_infinity_public_pilot_summary_v1"},{"roots",count},
+        {"annotated_roots",supported},{"unsupported_roots",count-supported},{"K",publicWorlds},
+        {"root_cap",publicRootCap}}).dump()<<'\n';
+}
+
 void roots(const char *file) {
     std::ifstream in(file); if(!in) throw std::runtime_error("cannot open roots");
     std::vector<json> rows; std::string line;
@@ -605,8 +812,10 @@ int main(int argc,char **argv) {
         if(argc==2 && std::string(argv[1])=="--fixtures") fixtures();
         else if(argc==2 && std::string(argv[1])=="--recall-probe") recallFixtures(false);
         else if(argc==2 && std::string(argv[1])=="--recall-fixtures") recallFixtures(true);
+        else if(argc==2 && std::string(argv[1])=="--public-fixtures") publicFixtures();
+        else if(argc==3 && std::string(argv[1])=="--public-roots") publicRoots(argv[2]);
         else if(argc==3 && std::string(argv[1])=="--roots") roots(argv[2]);
-        else { std::cerr<<"usage: combat_infinity_oracle --fixtures | --recall-fixtures | --recall-probe | --roots ROOTS.jsonl\n"; return 2; }
+        else { std::cerr<<"usage: combat_infinity_oracle --fixtures | --recall-fixtures | --recall-probe | --public-fixtures | --public-roots ROOTS.jsonl | --roots ROOTS.jsonl\n"; return 2; }
         return 0;
     } catch(const std::exception &e) { std::cerr<<"combat_infinity_oracle FAIL: "<<e.what()<<'\n'; return 1; }
 }

@@ -1,0 +1,204 @@
+{
+  "decision": "OOC_COMPRESSION_LEVER_ESTABLISHED",
+  "scope": "one historical seed, frozen five-skip space; existence only, not policy quality or prevalence",
+  "starting_sha": "13bed5e0060788f58a0138e563877f1e9c312696",
+  "runtime_reviewed_sha": "8c8cc1582a7ba6e6f661bbbdbd5783560caf4def",
+  "research_binary_sha256": "2b317b0533d0c834da268ddff03d087b271b9a950b26dde303437df7cc10cba9",
+  "parity": "header+68 states+67 traces EXACT",
+  "search_trajectories": 32,
+  "new_treatments": 31,
+  "single_capture_replay": 1,
+  "technical_failures": 0,
+  "engine_complete": 32,
+  "alive_target": 32,
+  "best_mask": "11111",
+  "gate_pass": true,
+  "unique_feasible_mask": true,
+  "matched_skips": 5,
+  "not_seen": 0,
+  "historical_permanent": 18,
+  "selected_permanent": 14,
+  "historical_minimum_active": 16,
+  "selected_minimum_active": 9,
+  "tier1_roots": 0,
+  "public_records": 22,
+  "ordinary_public_roots": 21,
+  "selected_roots": 4,
+  "annotated_worlds": 16,
+  "supported_worlds": 16,
+  "candidate_worlds": 0,
+  "certified_worlds": 0,
+  "node_cap_worlds": 0,
+  "depth_cap_worlds": 0,
+  "node_cap_rate": 0.0,
+  "search_child_cpu_seconds": 4687.833208,
+  "capture_child_cpu_seconds": 78.710423,
+  "oracle_child_cpu_seconds": 0.008279,
+  "oracle_cpu_ms": 0.874,
+  "oracle_total_nodes": 324,
+  "oracle_results": [
+    {
+      "decision": 10,
+      "active": 9,
+      "input_sha256": "e0581b87342c0187fc7427066813c629bdc9ed636762fc00bf2fd1a0997b83c5",
+      "public_root_sha256": "29b94abf7d4c83266578a16e7d97924a2b643439a53ad708cab923e1fbd1bde9",
+      "supported_worlds": 4,
+      "classifications": {
+        "NONE": 4
+      },
+      "candidate_fraction": 0.0,
+      "certified_fraction": 0.0,
+      "minimum_reach_depth": null,
+      "nodes_per_world": [
+        54,
+        54,
+        54,
+        54
+      ],
+      "depth_per_world": [
+        4,
+        4,
+        4,
+        4
+      ],
+      "node_cap_worlds": 0,
+      "depth_cap_worlds": 0,
+      "oracle_cpu_ms": 0.601,
+      "representative_witness": null
+    },
+    {
+      "decision": 12,
+      "active": 9,
+      "input_sha256": "39a262297bd609cdb98436a54802112fe3e20d74668d706c0403c71e1ee13704",
+      "public_root_sha256": "7a3732c7c8cb6d758d52a71c9e27d4737fb96499a03b8130b8056b90afbeaaf0",
+      "supported_worlds": 4,
+      "classifications": {
+        "NONE": 4
+      },
+      "candidate_fraction": 0.0,
+      "certified_fraction": 0.0,
+      "minimum_reach_depth": null,
+      "nodes_per_world": [
+        19,
+        19,
+        19,
+        19
+      ],
+      "depth_per_world": [
+        3,
+        3,
+        3,
+        3
+      ],
+      "node_cap_worlds": 0,
+      "depth_cap_worlds": 0,
+      "oracle_cpu_ms": 0.189,
+      "representative_witness": null
+    },
+    {
+      "decision": 13,
+      "active": 9,
+      "input_sha256": "86e2969c73411d69e035af955016b558531d9e5f3539fcb004c9ad197c138d01",
+      "public_root_sha256": "3bd6a6a593c0d24ae07d5bbafc1540bbf94b5956663326be7bb4d3cb73aa7398",
+      "supported_worlds": 4,
+      "classifications": {
+        "NONE": 4
+      },
+      "candidate_fraction": 0.0,
+      "certified_fraction": 0.0,
+      "minimum_reach_depth": null,
+      "nodes_per_world": [
+        6,
+        6,
+        6,
+        6
+      ],
+      "depth_per_world": [
+        2,
+        2,
+        2,
+        2
+      ],
+      "node_cap_worlds": 0,
+      "depth_cap_worlds": 0,
+      "oracle_cpu_ms": 0.063,
+      "representative_witness": null
+    },
+    {
+      "decision": 14,
+      "active": 9,
+      "input_sha256": "a9dc3f3e1ce59b925ff386c391166371e1b6b0f6f86c5435b9fea1c6f381813a",
+      "public_root_sha256": "8efd50ceceed0cbcd51d33d992026b4707c2a1e3a5b3a26ab18894526116552e",
+      "supported_worlds": 4,
+      "classifications": {
+        "NONE": 4
+      },
+      "candidate_fraction": 0.0,
+      "certified_fraction": 0.0,
+      "minimum_reach_depth": null,
+      "nodes_per_world": [
+        2,
+        2,
+        2,
+        2
+      ],
+      "depth_per_world": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "node_cap_worlds": 0,
+      "depth_cap_worlds": 0,
+      "oracle_cpu_ms": 0.021,
+      "representative_witness": null
+    }
+  ],
+  "engine_at_entry": {
+    "act": 2,
+    "deck": [
+      "Ascender's Bane",
+      "Bash",
+      "Fire Breathing",
+      "Pommel Strike",
+      "Armaments",
+      "Berserk",
+      "Inflame",
+      "Dropkick",
+      "Barricade",
+      "Entrench",
+      "Dropkick",
+      "Fire Breathing",
+      "Wild Strike",
+      "Rage"
+    ],
+    "event": "",
+    "floor": 18,
+    "gold": 302,
+    "hp": 64,
+    "maxHp": 75,
+    "potionCapacity": 2,
+    "potions": [
+      "BLOCK_POTION"
+    ],
+    "relics": [
+      "BURNING_BLOOD",
+      "MEAL_TICKET",
+      "STRIKE_DUMMY",
+      "KUNAI",
+      "PANDORAS_BOX"
+    ],
+    "room": "MONSTER",
+    "screen": "BATTLE",
+    "x": 0,
+    "y": 0
+  },
+  "target_combat_exit_hp": 36,
+  "natural_near_infinity_established": false,
+  "certified_positive_established": false,
+  "current_policy_prevalence_measured": false,
+  "qualification_not_original_binary": true,
+  "unobserved_full_run_outcomes": null,
+  "witnesses": [],
+  "all_capture_public_state_and_trace_prefixes_exact": true
+}

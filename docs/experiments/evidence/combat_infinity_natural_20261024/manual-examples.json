@@ -1,0 +1,113 @@
+[
+  {
+    "source_decision": 1,
+    "turn": 0,
+    "energy": 5,
+    "player_hp": 69,
+    "enemy_hp": 420,
+    "hand": [
+      "FIRE_BREATHING",
+      "SHRUG_IT_OFF+",
+      "REAPER+",
+      "DEFEND_RED",
+      "INFERNAL_BLADE",
+      "CLASH",
+      "STRIKE_RED",
+      "STRIKE_RED"
+    ],
+    "cards_by_public_zone": {
+      "FIRE_BREATHING": 1,
+      "SHRUG_IT_OFF+": 1,
+      "REAPER+": 1,
+      "DEFEND_RED": 4,
+      "INFERNAL_BLADE": 1,
+      "CLASH": 1,
+      "STRIKE_RED": 4,
+      "ANGER": 1,
+      "BASH": 1,
+      "BLOOD_FOR_BLOOD+": 1,
+      "FLAME_BARRIER+": 1,
+      "HEADBUTT+": 1,
+      "HEADBUTT": 1,
+      "PERFECTED_STRIKE+": 1,
+      "SHOCKWAVE+": 1,
+      "SHRUG_IT_OFF": 2,
+      "TRANSMUTATION": 1,
+      "UPPERCUT+": 1
+    },
+    "note": "public hand/draw/discard/exhaust inventory; not hidden order or oracle replay"
+  },
+  {
+    "source_decision": 11,
+    "turn": 1,
+    "energy": 4,
+    "player_hp": 75,
+    "enemy_hp": 395,
+    "hand": [
+      "SHRUG_IT_OFF",
+      "STRIKE_RED",
+      "SHOCKWAVE+",
+      "SHRUG_IT_OFF",
+      "BASH"
+    ],
+    "cards_by_public_zone": {
+      "SHRUG_IT_OFF": 2,
+      "STRIKE_RED": 4,
+      "SHOCKWAVE+": 1,
+      "BASH": 1,
+      "ANGER": 1,
+      "BLOOD_FOR_BLOOD+": 1,
+      "DEFEND_RED": 4,
+      "FLAME_BARRIER+": 1,
+      "HEADBUTT+": 1,
+      "HEADBUTT": 1,
+      "PERFECTED_STRIKE+": 1,
+      "TRANSMUTATION": 1,
+      "UPPERCUT+": 1,
+      "CLASH": 1,
+      "FIRE_BREATHING": 1,
+      "SEARING_BLOW": 1,
+      "SHRUG_IT_OFF+": 1,
+      "WILD_STRIKE": 1,
+      "INFERNAL_BLADE": 1,
+      "REAPER+": 1,
+      "SHOCKWAVE": 1
+    },
+    "note": "public hand/draw/discard/exhaust inventory; not hidden order or oracle replay"
+  },
+  {
+    "source_decision": 20,
+    "turn": 2,
+    "energy": 0,
+    "player_hp": 69,
+    "enemy_hp": 342,
+    "hand": [
+      "PERFECTED_STRIKE+",
+      "FLAME_BARRIER+"
+    ],
+    "cards_by_public_zone": {
+      "PERFECTED_STRIKE+": 1,
+      "FLAME_BARRIER+": 1,
+      "SHRUG_IT_OFF+": 1,
+      "ANGER": 1,
+      "BLOOD_FOR_BLOOD+": 1,
+      "DEFEND_RED": 4,
+      "HEADBUTT+": 1,
+      "STRIKE_RED": 4,
+      "BASH": 1,
+      "CLASH": 1,
+      "FIRE_BREATHING": 1,
+      "HEADBUTT": 1,
+      "SEARING_BLOW": 1,
+      "SHOCKWAVE+": 1,
+      "SHRUG_IT_OFF": 2,
+      "TRANSMUTATION": 1,
+      "UPPERCUT+": 1,
+      "WILD_STRIKE": 1,
+      "INFERNAL_BLADE": 1,
+      "REAPER+": 1,
+      "SHOCKWAVE": 1
+    },
+    "note": "public hand/draw/discard/exhaust inventory; not hidden order or oracle replay"
+  }
+]

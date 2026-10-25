@@ -1,0 +1,18 @@
+{
+  "command": [
+    "timeout",
+    "30s",
+    "bash",
+    "tools/seed_guard.sh",
+    "build/linux-gcc-release-ccache/combat_infinity_oracle",
+    "--public-roots",
+    "docs/experiments/evidence/combat_infinity_natural_20261024/inputs-1.jsonl"
+  ],
+  "returncode": 0,
+  "wall_seconds": 0.029320265166461468,
+  "child_user_seconds": 0.027252,
+  "child_system_seconds": 0.001965999999999999,
+  "output_sha256": "d8b864f5ecc40a3f2c16438f5a43fe43ce5ffc4d646782385e7d53aeaa8cdec7",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "frozen_protocol_sha": "28c28eecdd6eb28ea5227f994885d7650bec5777"
+}

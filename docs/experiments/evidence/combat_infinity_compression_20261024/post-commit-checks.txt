@@ -1,0 +1,14 @@
+Evidence head cb5ffbe57
+$ python3 tools/ledger_assign.py assign --dry-run --base 5c30b0d28f20e2323dc530c077c5e5e17b4b7b73 --skip 517
+§TBD-compression -> §674
+§TBD-reconstruction -> §675
+§TBD-capture -> §676
+§TBD-hunt -> §677
+§TBD-natural -> §678
+§TBD-public -> §679
+exit=0; dry run only
+
+$ python3 tools/repo_health.py --baseline b94a96da22a5eae3f2c7c74ee81bccfa23b9139a --json
+Raw output: repo-health.json
+status=pass; hard_failures={}; warning=active Markdown growth
+exit=0

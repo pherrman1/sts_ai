@@ -1,0 +1,28 @@
+{
+  "outcome": "PASS",
+  "blocking_findings": [],
+  "reviewed_sha": "e37fac336fbaf0227c088afaddc2cd2a5808a9fb",
+  "baseline_sha": "dbd2a1f7b44f1467ab45ae1346f0bc02c3125788",
+  "reviewer": "independent /root/infinity_review",
+  "checks": [
+    "check_hook.py:8 focused seed-free contract groups PASS",
+    "build_runtime.py --check:fresh patch/source/models/executable custody PASS",
+    "fullbaseline git diff --check PASS"
+  ],
+  "scope": "sole manifestaddition enabled:false to firstidentity; disabled no enumeration/matching/execution; old default/true semantics; complete flag-off parity comparator; live pre-enabled trace/map5,0 guard; run latches/conditional capture; no production/model/oracle changes",
+  "no_seed_or_world_executed_during_review": true,
+  "files_sha256": {
+    "historical-intervention.patch": "763c005e85f63e46de666546181950f11420be92f49df046d8278fd2f7dd1479",
+    "r1-enabled-entry.patch": "fdfad711801f761226a0b95c3465213b1089796d38b0992b9f29e04895d44f2f",
+    "R1_INTERVENTIONS.json": "e169bb62143b5034d8182f81851aeee6f1492da5a1b0c7ece23ff73d686ce5cd",
+    "build_runtime.py": "1c6aecb0f40c1762c178a87854b133a8b0a57973b438da366369d9151720fa3f",
+    "check_hook.py": "a3a6a5e494f52cb1751834f165306d7b32c054c3847e8f8dc6e6b94371151072",
+    "qualify.py": "f073f43330252636242c553bde02c9c21957cf430c88503d28e60305554bfc77",
+    "treatment.py": "db5b1b0d0229c5d6f2fc9c946aae5c4154f69c5e8eca72e6baec4cc7ff470638",
+    "measure.py": "8ff94a99ccfc18a82775209033e6ea14c3f0d2d5fff494d5569253e24bd93ebb",
+    "freeze_roots.py": "d7525f2bbefa8792caca0cc9817d61492b78f8bbb57496c3eb4336b85701b305",
+    "annotate.py": "bf583851379d228e5e186cdb26149b5f0cfeaf937922b421d96c17be967eace1",
+    "PROTOCOL.md": "1497b9d811f9228baba9528424d7a7fe32718f4f5522a27f29d93ce505a34d28",
+    "FREEZE.json": "dd8cca208b055629333aea6034de4aac04ca15ce8043e42a20e8af9dd7973d16"
+  }
+}

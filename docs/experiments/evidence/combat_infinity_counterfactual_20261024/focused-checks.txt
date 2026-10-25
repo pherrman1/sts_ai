@@ -1,0 +1,5 @@
+PASS disabled: zero semantic enumeration/execution
+PASS wrong seed rejected; irrelevant screen/floor do not enumerate; absent groups stay NOT_SEEN
+PASS all 13 exact semantic keys; at-most-once accounting; decision indices unused
+PASS unsupported/incomplete/ambiguous/wrong-type/failed execution abort and mark MATCH_FAILED_FATAL
+5 focused contract groups passed (stub; no gameplay run)

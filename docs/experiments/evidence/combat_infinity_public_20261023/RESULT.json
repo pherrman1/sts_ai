@@ -1,0 +1,15 @@
+{
+  "adapter_contract": "PASS",
+  "natural_annotation": "BLOCKED_MISSING_NO_SHARD_PROVENANCE",
+  "K": 4,
+  "control_roots": 4,
+  "control_worlds": 16,
+  "natural_roots": 4,
+  "annotated_natural_roots": 0,
+  "unsupported_natural_roots": 4,
+  "max_nodes_per_control_world": 11,
+  "max_cpu_ms_per_control_world": 0.262,
+  "total_control_cpu_ms": 1.492,
+  "eligible_natural_roots": 0,
+  "annotated_natural_worlds": 0
+}

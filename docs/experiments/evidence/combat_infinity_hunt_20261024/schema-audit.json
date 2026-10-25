@@ -1,0 +1,67 @@
+{
+  "main_readonly_sha": "413e85d69634b51419f3306e286f385f68c3a32c",
+  "files": [
+    {
+      "path": "apps/one_combat/heart1_policy.cpp",
+      "sha256": "1018a108083c04167e99fb796e51a2bada9b7eebd10122316a7ee14115e61590",
+      "main_equals_research_branch": true
+    },
+    {
+      "path": "apps/one_combat/heart_outcome_capture.cpp",
+      "sha256": "3570734c3c07b6974bfae7e748c5bdb9a674c91921dc9108426c4c82835d237b",
+      "main_equals_research_branch": true
+    },
+    {
+      "path": "apps/one_combat/run_driver.cpp",
+      "sha256": "a851658be94d20c7fb63edc2e9a9fa17126c11b7364052b0c4b457ba1e43ec1f",
+      "main_equals_research_branch": true
+    },
+    {
+      "path": "src/sim/search/NativeSilverBackend.cpp",
+      "sha256": "0733a565c43d5236e67a350f6c6e275feafc44f8e6102229fbd6deb32a8db66b",
+      "main_equals_research_branch": true
+    },
+    {
+      "path": "apps/one_combat/silver_synth_gen.cpp",
+      "sha256": "df90e0044dde5a659756c47740f806943a827d76180e6c9e453f5c6a6d54d259",
+      "main_equals_research_branch": true
+    },
+    {
+      "path": "src/sim/search/SilverConversion.cpp",
+      "sha256": "30b7f0d57d01955a84e02dcab57540761850ac0d76ba98907ea95da4cbdc9106",
+      "main_equals_research_branch": true
+    },
+    {
+      "path": "tools/heart1/az_targets.py",
+      "sha256": "6036d5d38feaccdeb36300c98840aa41035c60516f5e688fc490ca9b8f5281c6",
+      "main_equals_research_branch": true
+    }
+  ],
+  "recent_A20_combat_campaign_metadata": [
+    {
+      "path": "docs/experiments/evidence/silver_leaf_onpolicy_20261023/campaign.manifest",
+      "sha256": "0c93dc2275d7329d06e4bfa479ac492aaf81c836b97eb628b0599a6afbc92488"
+    },
+    {
+      "path": "docs/experiments/evidence/silver_leaf_onpolicy_20261023/run_unit.sh",
+      "sha256": "8fdfc9a4e91305877d7f3e84951071dab4940838006fe425d25998b771757f66"
+    },
+    {
+      "path": "docs/experiments/evidence/silver_leaf_onpolicy_20261023/BRIEF-worker.md",
+      "sha256": "127d51e2d1155576a8300dd9fda27890d70228783a0c43e47da943f8b5dbc459"
+    }
+  ],
+  "producer_code": "a8b801390a2e730c30312522b71a056c3eaca7c7",
+  "run_commit": "db49b3515293711d90356221b63af1617abfe64e",
+  "binary_sha256": "0feb879d7e0b54beeb8edbb83e4f02aba860464983b812931b673d1d60ebad68",
+  "share": "/mnt/project-files/silver-leaf-onpolicy/campaign",
+  "share_available_locally": false,
+  "cloud_cli_active_account": false,
+  "raw_current_campaign_roots_opened": 0,
+  "schema_findings": {
+    "Heart_AZ_OOC": "complete owned relic IDs; no public in-combat wire",
+    "silverazgen_FightRecorder_observe": "public wire; no complete owned relic inventory",
+    "NativeSilverBackend_tracePublicAction": "public wire; no complete owned relic inventory; paired OOC trace can supply it"
+  },
+  "new_capture_or_code": false
+}

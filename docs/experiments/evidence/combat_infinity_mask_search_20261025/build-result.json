@@ -1,0 +1,50 @@
+{
+  "status": "BUILT_RESEARCH_PATCHED_RUNTIME_NOT_HISTORICAL_EXECUTABLE",
+  "historical_source_sha": "d8fd2a105a8d2a481b7639e26c683f75e382e3d4",
+  "starting_sha": "13bed5e0060788f58a0138e563877f1e9c312696",
+  "binary_path": "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/build/infinity-heart-mask-search-20261025/source/build/linux-gcc-release/one_combat",
+  "binary_sha256": "2b317b0533d0c834da268ddff03d087b271b9a950b26dde303437df7cc10cba9",
+  "patch_sha256": "d6c23ef873b027236617999f738f241f2304c948c393191c9aaedb88abc3bcc5",
+  "archive_sha256": "4ece46d16984ac3a40c042c25a051c752c7d0be768c8c4238b65580d569d4b37",
+  "manifest_sha256": "8bfa73180282a47fbfd38327a2d5e5c199d63473a1ecf8bed82a3960db006f78",
+  "commands": [
+    [
+      "cmake",
+      "--preset",
+      "linux-gcc-release"
+    ],
+    [
+      "cmake",
+      "--build",
+      "--preset",
+      "linux-gcc-build",
+      "--target",
+      "one_combat",
+      "--parallel",
+      "4"
+    ]
+  ],
+  "compiler": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0\nCopyright (C) 2023 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n",
+  "cmake": "cmake version 4.4.2\n\nCMake suite maintained and supported by Kitware (kitware.com/cmake).\n",
+  "changed_historical_paths": [
+    "apps/one_combat/infinity_frozen_skips.h",
+    "apps/one_combat/run_driver.cpp"
+  ],
+  "patched_file_hashes": {
+    "apps/one_combat/infinity_frozen_skips.h": "b633eb0f053004cb084fb86f7b8118b72d92aaa65abcb68be8f5c48bfe15b602",
+    "apps/one_combat/run_driver.cpp": "0aba83b2d382d6d37197c2121860473d65552c87fb24a447617eafb1f2690e34"
+  },
+  "wall_seconds": 84.26662072306499,
+  "worktree_created": false,
+  "production_source_modified": false,
+  "submodules": {
+    "json": {
+      "path": "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/json",
+      "sha": "2222d386c905e6a6ebf73c61571a8a2cf196e843"
+    },
+    "pybind11": {
+      "path": "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/pybind11",
+      "sha": "63d627c5747befad7720a43ebbe5614fd5d83247"
+    }
+  }
+}

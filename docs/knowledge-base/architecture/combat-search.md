@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-10-23 for realistic infinity-oracle recall qualification; 2026-10-23 for the standalone same-turn infinity oracle; 2026-10-18 for the A20 learned-stop default and stop model (ADR-0051); 2026-10-18 for the learned-stopping A20 result with the gen-7f table (§538); 2026-10-18 for §523 random playouts per leaf; 2026-10-17 for the live advisor rollout root table (ADR-0046); 2026-10-17 for the per-playout action cap (#544) and its `STS_SILVER_ROLLOUT_ACTION_CAP` switch; 2026-10-17 for the zero-cost rollout cap and depth-backstop rollout (#544); 2026-10-17 for the root-prior override used by the OOC Silver fallback and the burning-elite escape rule; 2026-10-15 for the default rollout card table (ADR-0040) and the §479 rollout research options; 2026-10-14 for default canonical multi-select masks (ADR-0034) and the §473 escape-penalty gate and defaults (ADR-0036, ADR-0037); 2026-10-08 for targeted public capture and the bounded public pair probe;
+Last verified: 2026-10-23 for the K=4 public-root infinity adapter; 2026-10-23 for realistic infinity-oracle recall qualification; 2026-10-23 for the standalone same-turn infinity oracle; 2026-10-18 for the A20 learned-stop default and stop model (ADR-0051); 2026-10-18 for the learned-stopping A20 result with the gen-7f table (§538); 2026-10-18 for §523 random playouts per leaf; 2026-10-17 for the live advisor rollout root table (ADR-0046); 2026-10-17 for the per-playout action cap (#544) and its `STS_SILVER_ROLLOUT_ACTION_CAP` switch; 2026-10-17 for the zero-cost rollout cap and depth-backstop rollout (#544); 2026-10-17 for the root-prior override used by the OOC Silver fallback and the burning-elite escape rule; 2026-10-15 for the default rollout card table (ADR-0040) and the §479 rollout research options; 2026-10-14 for default canonical multi-select masks (ADR-0034) and the §473 escape-penalty gate and defaults (ADR-0036, ADR-0037); 2026-10-08 for targeted public capture and the bounded public pair probe;
 2026-09-25 for native-only Silver (ADR-0022), the native default
 (ADR-0021) and Silver-only dispatch (ADR-0020).
 
@@ -816,7 +816,21 @@ Exhausted-down Dropkick and a zero-cost Dropkick/Sundial engine certify in 7–1
 nodes; matched negatives and Time Eater/Awakened One/Heart guards do not falsely
 certify. The Heart changes exact HP/Invincible fields and has no discovered
 candidate; a forced-witness replay also rejects. These are constructed roots,
-not natural or public-root recall evidence. Information-set piles remain
-unsupported, and a public-conditioned determinization/annotation pilot requires
-a separate experiment. Accumulating-block engines remain outside this
-energy-only qualification.
+not natural or public-root recall evidence. The underlying concrete oracle
+continues to reject information-set piles directly; the separate research
+adapter below supplies sampled concrete worlds. Accumulating-block engines
+remain outside this energy-only qualification.
+
+The research-only `--public-roots ROOTS.jsonl` adapter annotates at most four
+public roots with K=4 sampled concrete worlds. It reuses `CardPile::drawTop` on
+copied information sets, preserving known boundaries; source RNG identity and
+private order are excluded. `--public-fixtures` checks sampler invariance and
+sidecar aggregation. The standalone target uses OpenSSL Crypto for SHA256.
+`certified_fraction` counts certified worlds; `candidate_fraction` includes all
+worlds with damaging candidates (certified or rejected); minimum reach is null
+without a damaging candidate. All K worlds must be supported, otherwise fractions
+are null. Missing/false no-Shard provenance never becomes a negative label.
+[The bounded pilot](../../experiments/evidence/combat_infinity_public_20261023/REPORT.md)
+passes control contracts, but all four archived natural roots lack no-Shard
+provenance and remain unsupported. Natural annotation quality is still
+unqualified; the adapter has no production caller.

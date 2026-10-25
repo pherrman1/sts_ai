@@ -1,0 +1,15 @@
+--- a/apps/one_combat/infinity_frozen_skips.h
++++ b/apps/one_combat/infinity_frozen_skips.h
+@@ -44,0 +45 @@
++            if (!j.value("enabled", true)) e.status = "DISABLED_BY_DESIGN";
+@@ -84 +85 @@
+-        int matched = 0, unseen = 0, failed = 0;
++        int matched = 0, unseen = 0, failed = 0, disabled = 0;
+@@ -92,0 +94 @@
++            disabled += e.status == "DISABLED_BY_DESIGN";
+@@ -94 +96 @@
+-        if (normalEnd && (entries_.size() != 13 || matched + unseen != 13 || failed != 0))
++        if (normalEnd && (entries_.size() != 13 || matched + unseen + disabled != 13 || failed != 0))
+@@ -98 +100 @@
+-                {"matched", matched}, {"not_seen", unseen}, {"failed", failed}, {"entries", rows}};
++                {"matched", matched}, {"not_seen", unseen}, {"disabled_by_design", disabled}, {"failed", failed}, {"entries", rows}};

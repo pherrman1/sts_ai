@@ -1,0 +1,90 @@
+{
+  "bounded_roots": [
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-value-20261017-v2",
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-value-20261017-v1-verification",
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-weighting-20261017-v1",
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-distill-models",
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-rollout-distill-20261016-v1-invalid",
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/arm-c-rollout-heart-20261016-v2",
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-weighting-20261017-v1-verification",
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-dev-compare-20261017-v1",
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-import-20261016-v1",
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-round2-data-a8f6542e",
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-rollout-distill-20261016-v2",
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/arm-c-rollout-heart-20261016",
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-collection-20261016-v1",
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-rollout-distill-20261016-recovery-01",
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-value-20261017-v1",
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-value-20261017-v2-verification",
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-main-merge-20261017",
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-holdout-20261017-v1-verification",
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-rollout-distill-20261016-v3-armc",
+    "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-holdout-20261017-v1"
+  ],
+  "prior_inventory": "../combat_infinity_capture_20261024/executable-inventory.json",
+  "results": [
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-rollout-distill-20261016-v1-invalid/run/one_combat",
+      "size": 7919576,
+      "sha256": "a30bb099358773850e98a4d91ce088bc6c0b9661649c8ca65d97664e1cdef01b"
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/arm-c-rollout-heart-20261016-v2/run/one_combat",
+      "size": 7949592,
+      "sha256": "d13014727ca0e4385f449a6e7c4c9ee9de2b5652a5d680aa48c512c5bd079283"
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-import-20261016-v1/transport.tar",
+      "size": 36843520,
+      "relevant_members": []
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-rollout-distill-20261016-v2/run/one_combat",
+      "size": 7932816,
+      "sha256": "f81e84a19df37b687dd53f4daf967952a58fb618c82b0d2801f8fe2744660de4"
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/arm-c-rollout-heart-20261016/run/one_combat",
+      "size": 7949592,
+      "sha256": "d13014727ca0e4385f449a6e7c4c9ee9de2b5652a5d680aa48c512c5bd079283"
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-collection-20261016-v1/bundle/one_combat",
+      "size": 7976448,
+      "sha256": "178e7076934097987e473ab04c2dc80eec5368f9dcb12b274a631bad62f43e4e"
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-rollout-distill-20261016-recovery-01/run/one_combat",
+      "size": 7932816,
+      "sha256": "f81e84a19df37b687dd53f4daf967952a58fb618c82b0d2801f8fe2744660de4"
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-rollout-distill-20261016-v3-armc/run/one_combat",
+      "size": 7932816,
+      "sha256": "f81e84a19df37b687dd53f4daf967952a58fb618c82b0d2801f8fe2744660de4"
+    },
+    {
+      "path": "/home/philippherrmann/Downloads/cloud-1-return.tar.gz",
+      "size": 20694536,
+      "relevant_members": []
+    },
+    {
+      "path": "/home/philippherrmann/Downloads/cloud-2-return.tar.gz",
+      "size": 20509313,
+      "relevant_members": []
+    },
+    {
+      "path": "/home/philippherrmann/Downloads/cloud-3-return.tar.gz",
+      "size": 20514568,
+      "relevant_members": []
+    }
+  ],
+  "exact_found": false,
+  "ci_runs": 0,
+  "not_searched": [
+    "sealed confirm/TEST/validation archive payloads",
+    "unrelated filesystem trees",
+    "ccache object files (no linked executable custody)",
+    "inaccessible /root cloud worker paths; /mnt/project-files absent"
+  ]
+}

@@ -24012,6 +24012,283 @@ campaigns, backup copies of stragglers on idle workers once the queue is empty.
 - Seeds 111360000–111360255 used; smokes 111369991–111369993 used (111369990–111369999 assigned).
 - **Knowledge impact:** `evaluation/current-research.md`.
 
+## §TBD-mask Five-skip search establishes compression on032 (2026-10-25)
+
+**OOC_COMPRESSION_LEVER_ESTABLISHED**, scoped to one historical seed/frozen subset
+space, not policy quality or prevalence. Starting reviewed13bed5e00; independent
+prelaunch PASS/frozen8c8cc1582. Research-patched historical d8fd binary
+2b317b0533d0c834da268ddff03d087b271b9a950b26dde303437df7cc10cba9 matched the
+complete historical header/68 states/67 OOC traces with manifest unset. This served
+mask00000; canary00001 then30 masks completed on4OMP1 workers,900s/run, no retries.
+Five exact public reward groups: f4Clothesline, f5Armaments, f10TwinStrike,
+f12Immolate, f16Reaper. Flame Barrier/Cleric/Pandora interventions excluded.
+
+All32 valid masks acquired the actual engine and reached their first post-engine
+combat alive. Frozen lexicographic ranking uniquely selected11111: all5 matched,
+0 unseen,14 permanent cards/64HP at act2/f18/fight11 Shell Parasite; all others>=15.
+Natural policy added an Armaments at f13; do not substitute the offline13-card bound.
+Search child CPU4687.833208s. No oracle or later outcome entered search ranking.
+
+One selected capture matched trace/boundary plus full public header/states0..70
+exactly, passed native health and survived target with36HP. Captured22 public
+records/21 ordinary roots; permanent18→14, observed minimum active16→9,0 Tier1.
+Frozen decisions10/12/13/14 all active9; unchangedK4 adapter annotated16 supported
+public-conditioned worlds: allNONE,0 candidates/certified/replay/caps,324 nodes,
+maxdepths4/3/2/1,0.874ms summed oracleCPU. No enemy Vulnerable; Bash/Pommel undrawn,
+explaining small immediate action trees without establishing general absence.
+
+Independent evidence review PASS; no current-policy prevalence/near-infinity/kill
+claim. Production/default/oracle/models/rewards unchanged. Knowledge impact:
+experiment evidence and maintained current-research status. Stop; no more static
+subsets/removals/512/beam/model work in this task.
+
+[Full result](evidence/combat_infinity_mask_search_20261025/RESULT.md),
+[all32 matrix](evidence/combat_infinity_mask_search_20261025/MATRIX.md),
+[oracle matrix](evidence/combat_infinity_mask_search_20261025/ORACLE_MATRIX.md).
+
+## §TBD-r1 R1 restores first map, but engine preservation still fails (2026-10-25)
+
+**COMPRESSION_PATH_FRAGILITY_CONFIRMED.** Starting reviewed #844 dbd2a1f7b;
+independent prelaunch PASS/frozen e37fac336. One research-header extension supports
+enabled:false/DISABLED_BY_DESIGN. Sole manifest delta disables floor0; all13
+identities and other12 entries unchanged. Historical d8fd2a10/controller/models/
+settings; new patched binary cb46712feaccfc4ae874b37ba1437261e4b64bfcf62ea92682b0204438505509.
+Production C++, original runtimes, prior13-arm evidence, oracle/K/bounds/defaults untouched.
+
+One manifest-unset full-header/137-state/136-trace parity PASS, no exclusions or
+retries:394.772s wall/386.264s CPU. Then one R1 treatment,273.869s wall/264.616s CPU,
+integrity PASS,118 supported public OOC states. First3 trace objects identical to
+historical: ordinary policy takes floor0 Headbutt, map(5,0) rather than13-arm(1,0).
+Exactly13=7 matched+5 unseen+1 disabled; zero failures/duplicates. Enabled skips
+fired at act1/f1,f3,f10,f12,f16 and act2/f22,f24; no substitutions.
+
+First later map-node difference at act2/f18: R1(3,0), control(0,0). Corruption
+naturally taken f7/d24 (15cards/64HP/44g), then ordinary MCTS gives it for Vajra at
+WeMeetAgain f20/d65 (18->17cards/41HP/200g). Dark Embrace only offered at f0 where
+policy takes Headbutt, never acquired/later offered; no Flash offers/acquisitions.
+Death to Automaton act2/f33/fight15,18 permanent cards,60->0HP. Engine never completes.
+
+Completion/target deck and active minimum unavailable, not an18-vs31 engine-preserving
+reduction. No capture replay/roots/worlds/oracle; fractions/reach/cap rate null.
+The floor0 skip caused the immediate bifurcation but is not a sufficient explanation
+of package failure. This one rescue does not isolate any later skip or prove all
+compression incompatible. Stop hand-tuning this seed; no next subset, other lead,
+beam/model/default/oracle work or merge. Knowledge impact: final experimental and
+current-research boundary; previous package conclusion unchanged.
+
+[Exact patch/manifest, full raw qualification/treatment, all13 statuses, engine history and limits](evidence/combat_infinity_r1_20261025/REPORT.md).
+
+## §TBD-counterfactual Frozen13 reward-skip counterfactual — engine lost; earlier death (2026-10-24)
+
+**COMPRESSION_SURVIVAL_TRADEOFF.** Starting #844 reviewed5adfd78b; frozen
+independently reviewed patch/protocol06119a587. Historical source d8fd2a10,
+research-patched executable2e6fe2ee357a85748d17ac33ee981da9b4efb013555f43d238da69f92e146d50,
+same exact eight models/controller/settings, unchanged13-entry manifest. Current
+production C++, original hash-identical runtime, oracle/K/bounds/defaults untouched.
+
+One flag-off qualification matched full header+137 states+136 traces exactly,
+no exclusions/differences/retries (400.039s wall/391.814s CPU). Only then one
+seed111101326 treatment:6 MATCHED_EXECUTED,7 NOT_SEEN,0 failures/duplicates;
+375.570s wall/364.788s CPU. Simulator integrity PASS;131 public OOC states supported.
+Skips fired at act1/f0,f1 and act2/f20,f22,f24,f27. First post-skip map node changed
+x5->x1. Dark Embrace acquired naturally f29/d104; Corruption/Flash offers and
+acquisitions absent. Death to Automaton act2/f33/fight16,23 permanent cards,
+69->0HP, before historical engine-bearing floor37. Engine never completed.
+
+No capture replay, selected public combat roots, sampled worlds or oracle runs.
+Engine-complete deck/active pool and oracle fractions/node-cap rate are unavailable,
+not negatives.23 versus historical31 at a different floor is not an engine-preserving
+compression estimate;31->18 projection was not realized. This single skip set does
+not establish a general survival effect, actual engine-preserving compression,
+or justify a beam. Stop; no automatic next arm/lead/model work or merge.
+
+Knowledge impact: bounded empirical result updates current-research status.
+Offline shop-offer parsing fix regenerated reports from unchanged raw bytes; no
+run/executable/manifest change or rerun. Prior unsupported roots remain null.
+
+[Protocol, patch/build custody, exact parity, full treatment/trigger/measurement evidence and limits](evidence/combat_infinity_counterfactual_20261024/REPORT.md).
+
+## §TBD-compression Offline OOC compression headroom exists; prescribed replay has no compatible exact-binary intervention path (2026-10-24)
+
+Existing #844 baseline b94a96da22a5eae3f2c7c74ee81bccfa23b9139a, reconstruction
+independent-review PASS supplied by user. No new runs or oracle worlds.
+Complete68-card target provenance plus authenticated legal siblings for the
+three frozen prefixes.032 pair is one Pandora batch with7 clutter; Pommel is
+reward/upgrade, Bash a starter.326 Corruption/DE are rewards, both Flashes from
+Sensory Stone.512 Sundial/draw picks are independent combat rewards
+(Pommel ordinary, Shrug/Sundial elite). Mark of Pain
+adds2 temporary Wounds, not permanent cards; Anger copies are combat-only.
+
+Clean independent REWARD_SKIP_BOUND sizes032/326/512:13/18/14 versus18/31/19
+historical permanent cards.032's Flame Barrier reward is a transform input;
+naively pruning its descendant gives12 but changes the historical transaction,
+so that dependent alternative is separately qualified. Paid, resource-feasible
+SKIP_REMOVE_BOUND plans yield12/12/11, explicitly funding Cleric/shop removals,
+75/100/125 shop escalation and displaced purchases. We Meet Again's offered
+Headbutt already disappears under reward skips; no double deletion. Hypothetical
+permanent sizes are not predicted combat active pools or survival results.
+
+**Headroom gate PASS**, strongest clean one-variable intervention326's13 reward
+skips (31 ->18), frozen public group keys before any replay. **Not**
+OOC_COMPRESSION_HEADROOM_LOW. Exact historical heartoutcomegen has no supported
+multi-step skip input. STRATEGIC_MCTS_FORCE uses a different unforced controller;
+leaf probes require4096/V4 and exclude the historical Heart settings. No silent
+substitution, injection, production patch or control rerun. Minimal proposed
+research-only semantic skip callback would change executable identity and need
+an explicit parity contract; not implemented. Actual compression/survival and
+all empirical replay decision labels remain unmeasured. Stop at this execution
+boundary; no beam or model work.
+[Complete per-card provenance, opportunities, A/B decks/cash plans, C coupling and replay design](evidence/combat_infinity_compression_20261024/REPORT.md).
+Knowledge impact: maintained structural headroom and exact execution boundary;
+no production/default/model/reward/oracle/capture change.
+
+## §TBD-reconstruction Heart runtime reconstructed exactly; three paired ingredient fights never compress (2026-10-24)
+
+Existing #844 line, baseline `0772ffe7ca8c63bd941036fa3c8cbecf040c934a`.
+Heart-only continuation of §TBD-capture: bounded retained artifact/archive lookup
+and exact-source rebuild, no new worktree or AZ leads. Source d8fd2a105a8d,
+historical linux-gcc-release/build presets, GCC13.3.0, CMake4.4.2, no source
+patch/shim. The rebuilt executable SHA256 is exactly the required
+`0e17e0f22259afe21f35ba89a0413f2af7663cfae1312311f1ea8c71b00c2d52`.
+Student Ceff2f74f5 and all seven dependency artifacts match frozen custody.
+**EXACT_RUNTIME_RECOVERED**, not merely a behaviorally qualified different binary.
+
+Three original receipt-configured seed-guarded prefixes reproduce every frozen
+public state/OOC trace through the target fight and its following state:
+111101032 Shell Parasite68/67 objects,111101326 Three Darklings137/136,
+111101512 Two Fungi Beasts57/56. Headers/policy/model identity also exact;
+no divergence or retry. Prefix wall times125.564/385.254/65.458s. Paired public
+capture was quarantined until qualification, with the full same-run relic
+inventory proving no Shard. Existing capture paths only; no schema change.
+
+45 public records,43 ordinary player roots (two card-selection roots explicitly
+outside domain). Tier1=0; strong ingredient Tier2=43. Smallest active pools
+16/30/19, so ingredient presence does not establish a near-infinite state.
+Frozen deterministic four/fight gives12 eligible roots/48 K4 worlds. Existing
+adapter/bounds unchanged: all48 NONE, no candidate/kill/witness or replay;
+one node-cap world (2.083%) is inconclusive. Total10,846 nodes, depth<=5,
+oracle CPU31.710ms. Other bounded NONE results are not proven absences or
+qualified negative labels.
+
+**NO_NEAR_INFINITY_STATE_OBSERVED (Case D), limited to the three declared fights.**
+No evidence here for an oracle recall/budget change or model work. Stop;
+propose targeted OOC/counterfactual generation toward actual compression as a
+separate next experiment, not an automatic collection. No current-policy
+prevalence claim. Older unsupported roots retain null fractions.
+[Protocol, exact identities, full checkpoint/capture/annotation evidence and matrix](evidence/combat_infinity_reconstruction_20261024/REPORT.md).
+Knowledge impact: maintained research status and this experiment; no default,
+production code, model, reward, oracle or gameplay change.
+
+## §TBD-capture Tiny paired infinity capture — historical runtime gate blocked (2026-10-24)
+
+Existing #844 line, baseline `fa8e9278fd7b7c6913b69ca53bede1485fa62fed`.
+No further census: preflight only six frozen strong leads,111101032/111143169/
+111143224/111101326/111142899/111101512. Three Heart round2 sources have actual
+receipt-bound producer d8fd2a10/binary0e17e0f2 and exact local Student Ceff2f74f5
+plus policy/CTM models. The three `gen3/rows_new` leads are actually converted
+gen2 A/B armA/student_sel trajectories (code844bd923, intended binary23a09099,
+modelcf6bf7fb); seed numbers unchanged. Raw AZ headers/env cannot be confirmed
+without three hash-bound unit tars, absent locally.
+
+**BLOCKED_BY_REPLAY_ARTIFACTS (CaseE).** Neither required frozen executable is
+among70 retained named executables/61 hashes in declared build/bundle locations.
+Both Student models and checked dependency bytes are present; file presence is
+not runtime use or replay fidelity. No substitute current policy, different
+binary rebuild, new collection, capture/schema change, oracle/model/default
+change or seed run. Existing historical/current paired trace parsers verified.
+
+Runs attempted0, combats reproduced0, public roots0, selected roots/worlds0;
+fidelity/Tier1/Tier2/cap rate not assessed, not negative findings. The first
+Heart ingredient battles/checkpoint hashes are retained for restoration. Restore
+one exact Heart round2 binary first to unlock cycle-pair and Sundial leads;
+AZ additionally needs original raw unit custody. Existing K4/bounds and source
+public-only Tier1/Tier2 selection remain unchanged and unexecuted.
+[Per-lead identities, artifact checks, source checkpoints, unexecuted protocol and recovery](evidence/combat_infinity_capture_20261024/REPORT.md).
+Knowledge impact: maintained replay prerequisite and AZ source-lineage clarification.
+
+## §TBD-hunt Targeted natural infinity inventory — current-policy data gap (2026-10-24)
+
+Existing #844 branch; baseline `7249709a16a19b8cc6d265a5b42c8d93e5a24872`.
+Read-only current main `413e85d69634b51419f3306e286f385f68c3a32c`; no merge.
+Public-only ingredient/compression screen frozen `bef9bbc1e` before census;
+selected root hashes frozen `1c9d14ffb` before reuse analysis. No oracle changes.
+
+Screened4,968 declared OOC run IDs/820,868 records from Heart TRAIN and pinned
+AZ gen2/gen3 TRAIN, plus343 older public-root observations/89 declared seed IDs.
+Overlapping OOC flags:70 cycle-pair runs,440 Sundial+draw,98 Corruption/Dark
+Embrace/Dead Branch,2,581 weak Headbutt/draw; any K2,842. OOC compression and
+Top cheapness unassessable, not zero prevalence. Public G0, K116; only72 paired
+Champ roots have full no-Shard provenance. Neither ingredient rarity near an
+actual infinite nor oracle recall is established from these disconnected formats.
+
+Current-policy natural positive signal **BLOCKED_BY_DATA**: recent OOC records
+lack combat wires; newer combat-root producer lacks complete relic inventory/
+receipt-bound no-Shard proof. Remote A20 combat raw share unavailable here;
+metadata/producer inspected, its roots not counted as scanned. No safe join
+across independent policies/trajectories. No sealed TEST/confirm opened.
+
+Selectormax4/combat yields only old Champ1,2,3,5, weak K4/active25–26, identical
+prior-pilot inputs. Reuse16 existing world records:0 certified/candidates,
+12/16 node-capped (inconclusive), prior CPU77.754ms. No novel/current selected
+root, new oracle world, capture/collection, model probing or budget change.
+Read-only census pass28.725s wall; current-policy cap rate null/not run.
+[Sources, frozen rules/census/selection, reused matrix, missing field and smallest unimplemented capture proposal](evidence/combat_infinity_hunt_20261024/REPORT.md).
+Knowledge impact: maintained data prerequisite/research status updated. Next
+step is provenance-complete targeted public capture via existing paired opt-in
+traces; optional single-row full-relic metadata proposal only, not implemented.
+
+## §TBD-natural Infinity public-root annotation — provenance-backed historical sample (2026-10-24)
+
+Existing #844 branch, baseline `e41dcef5b734b5187d9552c1e41b9f8b6b5ef1cd`;
+preregistered inputs frozen at `28c28eecd` before execution. Fixed first16 public
+normal decisions from the retained A0 Champ capture, K=4, existing caps unchanged.
+Same-receipt public/OOC/full-relic inventory join proves no Shard. No hidden draw
+order/run RNG as teacher, new gameplay, capture patch, model or production change.
+
+Annotation feasibility PASS: 16 eligible roots/64 supported worlds, 0 unsupported.
+All64 NONE, no damaging candidate/certified kill; useful natural signal remains
+NOT ESTABLISHED. Twelve worlds at three roots hit node2000 and are inconclusive;
+no depth/candidate cap hits. Other bounded NONE observations are not unrestricted
+absence proofs or qualified negative training labels. Zero replay actions.
+Different draw orders at all16 roots and search diagnostics at six, but no label
+disagreement. Oracle CPU103.835ms total, median0.1605ms/max6.190ms per world;
+four-command wall137.640ms, 39,664nodes, maximum depth8. Single-pass timings only.
+
+[Protocol, custody, raw sidecars/receipts, matrix, manual examples and limitations](evidence/combat_infinity_natural_20261024/REPORT.md).
+One historical A0 encounter/older policy with correlated roots, not current-policy
+coverage/prevalence/recall/calibration. The earlier four native8 roots retain
+BLOCKED/null labels. Stop after the tiny pilot; no model probing or scale-up.
+Knowledge impact: maintained research status updated for this separate sample.
+
+## §TBD-public Infinity public-root annotation pilot — K=4 contract and coverage (2026-10-23)
+
+Baseline reviewed phase-2 `59d7c463f733c9fb23ccef194d9d3d5c1dd9a3ff` (dependent
+PR #843). Separate app-managed worktree. Research-only adapter; Silver's existing
+information-set `CardPile::drawTop` materializes public-conditioned worlds with
+SHA256-derived isolated seeds, never the original draw order or RNG. No new
+whole-combat/run seed cohort, models, training, AZ, Silver or OOC/default change.
+K=4, first four preserved roots fixed before labels; every original oracle cap
+retained per world (depth24/nodes2000/candidates16/periods128/actions1024/total4096).
+
+Adapter contract PASS across four public constructed controls / 16 worlds:
+exhaust Dropkick and energy-positive Sundial certify 4/4; broken Dropkick 0/4;
+phase guard 0/4 certified but 4/4 damaging candidates. Candidate fraction includes
+certifications; minimum damaging reach 4, or null without a candidate. Known
+boundaries/physical multiset, lazy-kernel sequence/RNG parity for four seeds,
+source RNG/unknown-order/private-side-channel invariance, unchanged input,
+provenance truth table and domain rejection all pass. Three focused CTests pass.
+
+Natural annotation BLOCKED: the first four hash-bound `native8-first-captures`
+public roots (`2026100100/0`..`2026100103/0`) have no full run-relic provenance
+proving no Prismatic Shard. All four sidecars report UNSUPPORTED with null
+fractions; zero natural-world oracle searches. Do not count them as negatives,
+claim natural recall, recollect a cohort or enlarge K to mask the provenance gap.
+[Preregistration, inventory/hashes, raw sidecars, sampler contract, result and limits](evidence/combat_infinity_public_20261023/REPORT.md).
+Knowledge impact: maintained oracle research interface and current research
+status updated. Eligible roots with authoritative public run-relic provenance
+are required before a natural-label pilot can continue. No producer/capture
+schema, model integration, scale-up or merge was performed.
+
 ## §673 Combat infinity phase 2 — realistic constructed recall (2026-10-23)
 
 Baseline: merged #839 `45eb23a7ed88869f3ea54d22d70f37e3cf93b22e`, with both

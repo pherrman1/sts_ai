@@ -1,0 +1,2352 @@
+[
+  {
+    "seed": 111101032,
+    "permanent_deck_size": 18,
+    "historical_min_active": 16,
+    "target_cards": [
+      {
+        "token": "start-1",
+        "card": "Ascender's Bane",
+        "source": "starting ascension curse",
+        "trace": null,
+        "decision": null,
+        "floor": 0,
+        "history": [],
+        "parent_origins": [],
+        "target_slot": 1,
+        "engine": false
+      },
+      {
+        "token": "start-11",
+        "card": "Bash",
+        "source": "starting deck",
+        "trace": null,
+        "decision": null,
+        "floor": 0,
+        "history": [],
+        "parent_origins": [],
+        "target_slot": 2,
+        "engine": true
+      },
+      {
+        "token": "acq-2",
+        "card": "Fire Breathing",
+        "source": "event transform",
+        "trace": 6,
+        "decision": 5,
+        "floor": 2,
+        "history": [],
+        "parents": [
+          "acq-1"
+        ],
+        "parent_origins": [
+          {
+            "token": "acq-1",
+            "card": "Flame Barrier",
+            "source": "ordinary card reward",
+            "trace": 4,
+            "decision": 3,
+            "floor": 1,
+            "history": [],
+            "parents": []
+          }
+        ],
+        "target_slot": 3,
+        "engine": false
+      },
+      {
+        "token": "acq-3",
+        "card": "Clothesline",
+        "source": "ordinary card reward",
+        "trace": 16,
+        "decision": 13,
+        "floor": 4,
+        "history": [],
+        "parents": [],
+        "parent_origins": [],
+        "target_slot": 4,
+        "engine": false
+      },
+      {
+        "token": "acq-4",
+        "card": "Armaments",
+        "source": "ordinary card reward",
+        "trace": 20,
+        "decision": 16,
+        "floor": 5,
+        "history": [],
+        "parents": [],
+        "parent_origins": [],
+        "target_slot": 5,
+        "engine": false
+      },
+      {
+        "token": "acq-5",
+        "card": "Pommel Strike+",
+        "source": "ordinary card reward",
+        "trace": 27,
+        "decision": 22,
+        "floor": 7,
+        "history": [
+          {
+            "trace": 40,
+            "decision": 34,
+            "floor": 11,
+            "from": "Pommel Strike",
+            "to": "Pommel Strike+"
+          }
+        ],
+        "parents": [],
+        "parent_origins": [],
+        "target_slot": 6,
+        "engine": true
+      },
+      {
+        "token": "acq-6",
+        "card": "Twin Strike",
+        "source": "ordinary card reward",
+        "trace": 38,
+        "decision": 32,
+        "floor": 10,
+        "history": [],
+        "parents": [],
+        "parent_origins": [],
+        "target_slot": 7,
+        "engine": false
+      },
+      {
+        "token": "acq-7",
+        "card": "Immolate",
+        "source": "ordinary card reward",
+        "trace": 45,
+        "decision": 38,
+        "floor": 12,
+        "history": [],
+        "parents": [],
+        "parent_origins": [],
+        "target_slot": 8,
+        "engine": false
+      },
+      {
+        "token": "acq-8",
+        "card": "Reaper",
+        "source": "ordinary card reward",
+        "trace": 63,
+        "decision": 53,
+        "floor": 16,
+        "history": [],
+        "parents": [],
+        "parent_origins": [],
+        "target_slot": 9,
+        "engine": false
+      },
+      {
+        "token": "acq-9",
+        "card": "Berserk",
+        "source": "Pandora batch (9 starters ->9 products)",
+        "trace": 64,
+        "decision": 54,
+        "floor": 17,
+        "history": [],
+        "parents": [
+          "start-2",
+          "start-3",
+          "start-4",
+          "start-5",
+          "start-6",
+          "start-7",
+          "start-8",
+          "start-9",
+          "start-10"
+        ],
+        "parent_origins": [],
+        "target_slot": 10,
+        "engine": false
+      },
+      {
+        "token": "acq-10",
+        "card": "Inflame",
+        "source": "Pandora batch (9 starters ->9 products)",
+        "trace": 64,
+        "decision": 54,
+        "floor": 17,
+        "history": [],
+        "parents": [
+          "start-2",
+          "start-3",
+          "start-4",
+          "start-5",
+          "start-6",
+          "start-7",
+          "start-8",
+          "start-9",
+          "start-10"
+        ],
+        "parent_origins": [],
+        "target_slot": 11,
+        "engine": false
+      },
+      {
+        "token": "acq-11",
+        "card": "Dropkick",
+        "source": "Pandora batch (9 starters ->9 products)",
+        "trace": 64,
+        "decision": 54,
+        "floor": 17,
+        "history": [],
+        "parents": [
+          "start-2",
+          "start-3",
+          "start-4",
+          "start-5",
+          "start-6",
+          "start-7",
+          "start-8",
+          "start-9",
+          "start-10"
+        ],
+        "parent_origins": [],
+        "target_slot": 12,
+        "engine": true
+      },
+      {
+        "token": "acq-12",
+        "card": "Barricade",
+        "source": "Pandora batch (9 starters ->9 products)",
+        "trace": 64,
+        "decision": 54,
+        "floor": 17,
+        "history": [],
+        "parents": [
+          "start-2",
+          "start-3",
+          "start-4",
+          "start-5",
+          "start-6",
+          "start-7",
+          "start-8",
+          "start-9",
+          "start-10"
+        ],
+        "parent_origins": [],
+        "target_slot": 13,
+        "engine": false
+      },
+      {
+        "token": "acq-13",
+        "card": "Entrench",
+        "source": "Pandora batch (9 starters ->9 products)",
+        "trace": 64,
+        "decision": 54,
+        "floor": 17,
+        "history": [],
+        "parents": [
+          "start-2",
+          "start-3",
+          "start-4",
+          "start-5",
+          "start-6",
+          "start-7",
+          "start-8",
+          "start-9",
+          "start-10"
+        ],
+        "parent_origins": [],
+        "target_slot": 14,
+        "engine": false
+      },
+      {
+        "token": "acq-14",
+        "card": "Dropkick",
+        "source": "Pandora batch (9 starters ->9 products)",
+        "trace": 64,
+        "decision": 54,
+        "floor": 17,
+        "history": [],
+        "parents": [
+          "start-2",
+          "start-3",
+          "start-4",
+          "start-5",
+          "start-6",
+          "start-7",
+          "start-8",
+          "start-9",
+          "start-10"
+        ],
+        "parent_origins": [],
+        "target_slot": 15,
+        "engine": true
+      },
+      {
+        "token": "acq-15",
+        "card": "Fire Breathing",
+        "source": "Pandora batch (9 starters ->9 products)",
+        "trace": 64,
+        "decision": 54,
+        "floor": 17,
+        "history": [],
+        "parents": [
+          "start-2",
+          "start-3",
+          "start-4",
+          "start-5",
+          "start-6",
+          "start-7",
+          "start-8",
+          "start-9",
+          "start-10"
+        ],
+        "parent_origins": [],
+        "target_slot": 16,
+        "engine": false
+      },
+      {
+        "token": "acq-16",
+        "card": "Wild Strike",
+        "source": "Pandora batch (9 starters ->9 products)",
+        "trace": 64,
+        "decision": 54,
+        "floor": 17,
+        "history": [],
+        "parents": [
+          "start-2",
+          "start-3",
+          "start-4",
+          "start-5",
+          "start-6",
+          "start-7",
+          "start-8",
+          "start-9",
+          "start-10"
+        ],
+        "parent_origins": [],
+        "target_slot": 17,
+        "engine": false
+      },
+      {
+        "token": "acq-17",
+        "card": "Rage",
+        "source": "Pandora batch (9 starters ->9 products)",
+        "trace": 64,
+        "decision": 54,
+        "floor": 17,
+        "history": [],
+        "parents": [
+          "start-2",
+          "start-3",
+          "start-4",
+          "start-5",
+          "start-6",
+          "start-7",
+          "start-8",
+          "start-9",
+          "start-10"
+        ],
+        "parent_origins": [],
+        "target_slot": 18,
+        "engine": false
+      }
+    ],
+    "relic_acquisitions": [
+      {
+        "relic": "MEAL_TICKET",
+        "trace": 0,
+        "decision": 0,
+        "floor": 0,
+        "screen": "EVENT",
+        "event": "NEOW"
+      },
+      {
+        "relic": "STRIKE_DUMMY",
+        "trace": 36,
+        "decision": 30,
+        "floor": 10,
+        "screen": "REWARDS",
+        "event": ""
+      },
+      {
+        "relic": "KUNAI",
+        "trace": 43,
+        "decision": 36,
+        "floor": 12,
+        "screen": "REWARDS",
+        "event": ""
+      },
+      {
+        "relic": "PANDORAS_BOX",
+        "trace": 64,
+        "decision": 54,
+        "floor": 17,
+        "screen": "BOSS_RELIC",
+        "event": ""
+      }
+    ],
+    "all_acquisitions": [
+      {
+        "token": "acq-1",
+        "card": "Flame Barrier",
+        "source": "ordinary card reward",
+        "trace": 4,
+        "decision": 3,
+        "floor": 1,
+        "history": [],
+        "parents": []
+      },
+      {
+        "token": "acq-2",
+        "card": "Fire Breathing",
+        "source": "event transform",
+        "trace": 6,
+        "decision": 5,
+        "floor": 2,
+        "history": [],
+        "parents": [
+          "acq-1"
+        ]
+      },
+      {
+        "token": "acq-3",
+        "card": "Clothesline",
+        "source": "ordinary card reward",
+        "trace": 16,
+        "decision": 13,
+        "floor": 4,
+        "history": [],
+        "parents": []
+      },
+      {
+        "token": "acq-4",
+        "card": "Armaments",
+        "source": "ordinary card reward",
+        "trace": 20,
+        "decision": 16,
+        "floor": 5,
+        "history": [],
+        "parents": []
+      },
+      {
+        "token": "acq-5",
+        "card": "Pommel Strike",
+        "source": "ordinary card reward",
+        "trace": 27,
+        "decision": 22,
+        "floor": 7,
+        "history": [],
+        "parents": []
+      },
+      {
+        "token": "acq-6",
+        "card": "Twin Strike",
+        "source": "ordinary card reward",
+        "trace": 38,
+        "decision": 32,
+        "floor": 10,
+        "history": [],
+        "parents": []
+      },
+      {
+        "token": "acq-7",
+        "card": "Immolate",
+        "source": "ordinary card reward",
+        "trace": 45,
+        "decision": 38,
+        "floor": 12,
+        "history": [],
+        "parents": []
+      },
+      {
+        "token": "acq-8",
+        "card": "Reaper",
+        "source": "ordinary card reward",
+        "trace": 63,
+        "decision": 53,
+        "floor": 16,
+        "history": [],
+        "parents": []
+      },
+      {
+        "token": "acq-9",
+        "card": "Berserk",
+        "source": "Pandora batch (9 starters ->9 products)",
+        "trace": 64,
+        "decision": 54,
+        "floor": 17,
+        "history": [],
+        "parents": [
+          "start-2",
+          "start-3",
+          "start-4",
+          "start-5",
+          "start-6",
+          "start-7",
+          "start-8",
+          "start-9",
+          "start-10"
+        ]
+      },
+      {
+        "token": "acq-10",
+        "card": "Inflame",
+        "source": "Pandora batch (9 starters ->9 products)",
+        "trace": 64,
+        "decision": 54,
+        "floor": 17,
+        "history": [],
+        "parents": [
+          "start-2",
+          "start-3",
+          "start-4",
+          "start-5",
+          "start-6",
+          "start-7",
+          "start-8",
+          "start-9",
+          "start-10"
+        ]
+      },
+      {
+        "token": "acq-11",
+        "card": "Dropkick",
+        "source": "Pandora batch (9 starters ->9 products)",
+        "trace": 64,
+        "decision": 54,
+        "floor": 17,
+        "history": [],
+        "parents": [
+          "start-2",
+          "start-3",
+          "start-4",
+          "start-5",
+          "start-6",
+          "start-7",
+          "start-8",
+          "start-9",
+          "start-10"
+        ]
+      },
+      {
+        "token": "acq-12",
+        "card": "Barricade",
+        "source": "Pandora batch (9 starters ->9 products)",
+        "trace": 64,
+        "decision": 54,
+        "floor": 17,
+        "history": [],
+        "parents": [
+          "start-2",
+          "start-3",
+          "start-4",
+          "start-5",
+          "start-6",
+          "start-7",
+          "start-8",
+          "start-9",
+          "start-10"
+        ]
+      },
+      {
+        "token": "acq-13",
+        "card": "Entrench",
+        "source": "Pandora batch (9 starters ->9 products)",
+        "trace": 64,
+        "decision": 54,
+        "floor": 17,
+        "history": [],
+        "parents": [
+          "start-2",
+          "start-3",
+          "start-4",
+          "start-5",
+          "start-6",
+          "start-7",
+          "start-8",
+          "start-9",
+          "start-10"
+        ]
+      },
+      {
+        "token": "acq-14",
+        "card": "Dropkick",
+        "source": "Pandora batch (9 starters ->9 products)",
+        "trace": 64,
+        "decision": 54,
+        "floor": 17,
+        "history": [],
+        "parents": [
+          "start-2",
+          "start-3",
+          "start-4",
+          "start-5",
+          "start-6",
+          "start-7",
+          "start-8",
+          "start-9",
+          "start-10"
+        ]
+      },
+      {
+        "token": "acq-15",
+        "card": "Fire Breathing",
+        "source": "Pandora batch (9 starters ->9 products)",
+        "trace": 64,
+        "decision": 54,
+        "floor": 17,
+        "history": [],
+        "parents": [
+          "start-2",
+          "start-3",
+          "start-4",
+          "start-5",
+          "start-6",
+          "start-7",
+          "start-8",
+          "start-9",
+          "start-10"
+        ]
+      },
+      {
+        "token": "acq-16",
+        "card": "Wild Strike",
+        "source": "Pandora batch (9 starters ->9 products)",
+        "trace": 64,
+        "decision": 54,
+        "floor": 17,
+        "history": [],
+        "parents": [
+          "start-2",
+          "start-3",
+          "start-4",
+          "start-5",
+          "start-6",
+          "start-7",
+          "start-8",
+          "start-9",
+          "start-10"
+        ]
+      },
+      {
+        "token": "acq-17",
+        "card": "Rage",
+        "source": "Pandora batch (9 starters ->9 products)",
+        "trace": 64,
+        "decision": 54,
+        "floor": 17,
+        "history": [],
+        "parents": [
+          "start-2",
+          "start-3",
+          "start-4",
+          "start-5",
+          "start-6",
+          "start-7",
+          "start-8",
+          "start-9",
+          "start-10"
+        ]
+      }
+    ],
+    "engine_core": [
+      "Bash",
+      "Dropkick",
+      "Pommel Strike"
+    ],
+    "engine_relics": [],
+    "reward_skip_bound": {
+      "deck_size": 13,
+      "deck": [
+        "Ascender's Bane",
+        "Bash",
+        "Fire Breathing",
+        "Pommel Strike+",
+        "Berserk",
+        "Inflame",
+        "Dropkick",
+        "Barricade",
+        "Entrench",
+        "Dropkick",
+        "Fire Breathing",
+        "Wild Strike",
+        "Rage"
+      ],
+      "skips": [
+        {
+          "token": "acq-3",
+          "card": "Clothesline",
+          "source": "ordinary card reward",
+          "trace": 16,
+          "decision": 13,
+          "floor": 4,
+          "history": [],
+          "parents": [],
+          "parent_origins": [],
+          "target_slot": 4,
+          "engine": false
+        },
+        {
+          "token": "acq-4",
+          "card": "Armaments",
+          "source": "ordinary card reward",
+          "trace": 20,
+          "decision": 16,
+          "floor": 5,
+          "history": [],
+          "parents": [],
+          "parent_origins": [],
+          "target_slot": 5,
+          "engine": false
+        },
+        {
+          "token": "acq-6",
+          "card": "Twin Strike",
+          "source": "ordinary card reward",
+          "trace": 38,
+          "decision": 32,
+          "floor": 10,
+          "history": [],
+          "parents": [],
+          "parent_origins": [],
+          "target_slot": 7,
+          "engine": false
+        },
+        {
+          "token": "acq-7",
+          "card": "Immolate",
+          "source": "ordinary card reward",
+          "trace": 45,
+          "decision": 38,
+          "floor": 12,
+          "history": [],
+          "parents": [],
+          "parent_origins": [],
+          "target_slot": 8,
+          "engine": false
+        },
+        {
+          "token": "acq-8",
+          "card": "Reaper",
+          "source": "ordinary card reward",
+          "trace": 63,
+          "decision": 53,
+          "floor": 16,
+          "history": [],
+          "parents": [],
+          "parent_origins": [],
+          "target_slot": 9,
+          "engine": false
+        }
+      ],
+      "dependent_acquisition_not_independently_deleted": [
+        {
+          "token": "acq-1",
+          "card": "Flame Barrier",
+          "source": "ordinary card reward",
+          "trace": 4,
+          "decision": 3,
+          "floor": 1,
+          "history": [],
+          "parents": []
+        }
+      ],
+      "scope": "clean independent skips; Flame Barrier transform dependency separately disclosed"
+    },
+    "skip_remove_bound": {
+      "deck_size": 12,
+      "deck": [
+        "Ascender's Bane",
+        "Bash",
+        "Pommel Strike+",
+        "Berserk",
+        "Inflame",
+        "Dropkick",
+        "Barricade",
+        "Entrench",
+        "Dropkick",
+        "Fire Breathing",
+        "Wild Strike",
+        "Rage"
+      ],
+      "removed": [
+        {
+          "card": "Fire Breathing",
+          "token": "acq-2",
+          "reason": "Cleric f8,75g instead of35g heal; preserve nine Pandora inputs"
+        }
+      ],
+      "forgone_shop_cards": [],
+      "resource_plan": [
+        {
+          "floor": 8,
+          "historical_entry_gold": 177,
+          "available_gold": 177,
+          "cost": 75,
+          "replaces": "35g heal",
+          "removed": "Fire Breathing",
+          "balance_after": 102,
+          "gold_delta_after": -40
+        }
+      ],
+      "scope": "optimistic fixed-route accounting; explicitly replaces purchases to fund removals; not replayed"
+    },
+    "gate_A": false,
+    "gate_B": true
+  },
+  {
+    "seed": 111101326,
+    "permanent_deck_size": 31,
+    "historical_min_active": 30,
+    "target_cards": [
+      {
+        "token": "start-1",
+        "card": "Ascender's Bane",
+        "source": "starting ascension curse",
+        "trace": null,
+        "decision": null,
+        "floor": 0,
+        "history": [],
+        "parent_origins": [],
+        "target_slot": 1,
+        "engine": false
+      },
+      {
+        "token": "start-2",
+        "card": "Strike",
+        "source": "starting deck",
+        "trace": null,
+        "decision": null,
+        "floor": 0,
+        "history": [],
+        "parent_origins": [],
+        "target_slot": 2,
+        "engine": false
+      },
+      {
+        "token": "start-3",
+        "card": "Strike",
+        "source": "starting deck",
+        "trace": null,
+        "decision": null,
+        "floor": 0,
+        "history": [],
+        "parent_origins": [],
+        "target_slot": 3,
+        "engine": false
+      },
+      {
+        "token": "start-4",
+        "card": "Strike",
+        "source": "starting deck",
+        "trace": null,
+        "decision": null,
+        "floor": 0,
+        "history": [],
+        "parent_origins": [],
+        "target_slot": 4,
+        "engine": false
+      },
+      {
+        "token": "start-5",
+        "card": "Strike",
+        "source": "starting deck",
+        "trace": null,
+        "decision": null,
+        "floor": 0,
+        "history": [],
+        "parent_origins": [],
+        "target_slot": 5,
+        "engine": false
+      },
+      {
+        "token": "start-6",
+        "card": "Strike+",
+        "source": "starting deck",
+        "trace": null,
+        "decision": null,
+        "floor": 0,
+        "history": [
+          {
+            "trace": 15,
+            "decision": 13,
+            "floor": 4,
+            "from": "Strike",
+            "to": "Strike+"
+          }
+        ],
+        "parent_origins": [],
+        "target_slot": 6,
+        "engine": false
+      },
+      {
+        "token": "start-7",
+        "card": "Defend+",
+        "source": "starting deck",
+        "trace": null,
+        "decision": null,
+        "floor": 0,
+        "history": [
+          {
+            "trace": 15,
+            "decision": 13,
+            "floor": 4,
+            "from": "Defend",
+            "to": "Defend+"
+          }
+        ],
+        "parent_origins": [],
+        "target_slot": 7,
+        "engine": false
+      },
+      {
+        "token": "start-8",
+        "card": "Defend",
+        "source": "starting deck",
+        "trace": null,
+        "decision": null,
+        "floor": 0,
+        "history": [],
+        "parent_origins": [],
+        "target_slot": 8,
+        "engine": false
+      },
+      {
+        "token": "start-9",
+        "card": "Defend",
+        "source": "starting deck",
+        "trace": null,
+        "decision": null,
+        "floor": 0,
+        "history": [],
+        "parent_origins": [],
+        "target_slot": 9,
+        "engine": false
+      },
+      {
+        "token": "start-10",
+        "card": "Defend",
+        "source": "starting deck",
+        "trace": null,
+        "decision": null,
+        "floor": 0,
+        "history": [],
+        "parent_origins": [],
+        "target_slot": 10,
+        "engine": false
+      },
+      {
+        "token": "start-11",
+        "card": "Bash",
+        "source": "starting deck",
+        "trace": null,
+        "decision": null,
+        "floor": 0,
+        "history": [],
+        "parent_origins": [],
+        "target_slot": 11,
+        "engine": false
+      },
+      {
+        "token": "acq-1",
+        "card": "Headbutt",
+        "source": "Neow card reward",
+        "trace": 1,
+        "decision": 1,
+        "floor": 0,
+        "history": [],
+        "parents": [],
+        "parent_origins": [],
+        "target_slot": 12,
+        "engine": false
+      },
+      {
+        "token": "acq-2",
+        "card": "Headbutt",
+        "source": "ordinary card reward",
+        "trace": 5,
+        "decision": 4,
+        "floor": 1,
+        "history": [],
+        "parents": [],
+        "parent_origins": [],
+        "target_slot": 13,
+        "engine": false
+      },
+      {
+        "token": "acq-3",
+        "card": "Dramatic Entrance",
+        "source": "shop purchase",
+        "trace": 7,
+        "decision": 6,
+        "floor": 2,
+        "history": [],
+        "parents": [],
+        "parent_origins": [],
+        "target_slot": 14,
+        "engine": false
+      },
+      {
+        "token": "acq-4",
+        "card": "Anger+",
+        "source": "shop purchase",
+        "trace": 8,
+        "decision": 7,
+        "floor": 2,
+        "history": [
+          {
+            "trace": 53,
+            "decision": 46,
+            "floor": 15,
+            "from": "Anger",
+            "to": "Anger+"
+          }
+        ],
+        "parents": [],
+        "parent_origins": [],
+        "target_slot": 15,
+        "engine": false
+      },
+      {
+        "token": "acq-5",
+        "card": "Shockwave+",
+        "source": "ordinary card reward",
+        "trace": 13,
+        "decision": 11,
+        "floor": 3,
+        "history": [
+          {
+            "trace": 28,
+            "decision": 24,
+            "floor": 8,
+            "from": "Shockwave",
+            "to": "Shockwave+"
+          }
+        ],
+        "parents": [],
+        "parent_origins": [],
+        "target_slot": 16,
+        "engine": false
+      },
+      {
+        "token": "acq-6",
+        "card": "Corruption+",
+        "source": "ordinary card reward",
+        "trace": 26,
+        "decision": 22,
+        "floor": 7,
+        "history": [
+          {
+            "trace": 49,
+            "decision": 42,
+            "floor": 13,
+            "from": "Corruption",
+            "to": "Corruption+"
+          }
+        ],
+        "parents": [],
+        "parent_origins": [],
+        "target_slot": 17,
+        "engine": true
+      },
+      {
+        "token": "acq-7",
+        "card": "Anger",
+        "source": "ordinary card reward",
+        "trace": 37,
+        "decision": 32,
+        "floor": 10,
+        "history": [],
+        "parents": [],
+        "parent_origins": [],
+        "target_slot": 18,
+        "engine": false
+      },
+      {
+        "token": "acq-8",
+        "card": "Reaper",
+        "source": "ordinary card reward",
+        "trace": 47,
+        "decision": 40,
+        "floor": 12,
+        "history": [],
+        "parents": [],
+        "parent_origins": [],
+        "target_slot": 19,
+        "engine": false
+      },
+      {
+        "token": "acq-9",
+        "card": "Impervious",
+        "source": "ordinary card reward",
+        "trace": 58,
+        "decision": 50,
+        "floor": 16,
+        "history": [],
+        "parents": [],
+        "parent_origins": [],
+        "target_slot": 20,
+        "engine": false
+      },
+      {
+        "token": "acq-10",
+        "card": "Anger",
+        "source": "ordinary card reward",
+        "trace": 70,
+        "decision": 60,
+        "floor": 20,
+        "history": [],
+        "parents": [],
+        "parent_origins": [],
+        "target_slot": 21,
+        "engine": false
+      },
+      {
+        "token": "acq-11",
+        "card": "Havoc",
+        "source": "ordinary card reward",
+        "trace": 80,
+        "decision": 68,
+        "floor": 22,
+        "history": [],
+        "parents": [],
+        "parent_origins": [],
+        "target_slot": 22,
+        "engine": false
+      },
+      {
+        "token": "acq-12",
+        "card": "Blood for Blood",
+        "source": "ordinary card reward",
+        "trace": 86,
+        "decision": 73,
+        "floor": 24,
+        "history": [],
+        "parents": [],
+        "parent_origins": [],
+        "target_slot": 23,
+        "engine": false
+      },
+      {
+        "token": "acq-13",
+        "card": "Feel No Pain+",
+        "source": "shop purchase",
+        "trace": 88,
+        "decision": 75,
+        "floor": 25,
+        "history": [
+          {
+            "trace": 117,
+            "decision": 101,
+            "floor": 32,
+            "from": "Feel No Pain",
+            "to": "Feel No Pain+"
+          }
+        ],
+        "parents": [],
+        "parent_origins": [],
+        "target_slot": 24,
+        "engine": false
+      },
+      {
+        "token": "acq-14",
+        "card": "Limit Break",
+        "source": "ordinary card reward",
+        "trace": 101,
+        "decision": 87,
+        "floor": 27,
+        "history": [],
+        "parents": [],
+        "parent_origins": [],
+        "target_slot": 25,
+        "engine": false
+      },
+      {
+        "token": "acq-15",
+        "card": "Dark Embrace",
+        "source": "ordinary card reward",
+        "trace": 105,
+        "decision": 90,
+        "floor": 28,
+        "history": [],
+        "parents": [],
+        "parent_origins": [],
+        "target_slot": 26,
+        "engine": true
+      },
+      {
+        "token": "acq-16",
+        "card": "Battle Trance",
+        "source": "ordinary card reward",
+        "trace": 109,
+        "decision": 93,
+        "floor": 29,
+        "history": [],
+        "parents": [],
+        "parent_origins": [],
+        "target_slot": 27,
+        "engine": false
+      },
+      {
+        "token": "acq-17",
+        "card": "Impervious",
+        "source": "ordinary card reward",
+        "trace": 122,
+        "decision": 105,
+        "floor": 33,
+        "history": [],
+        "parents": [],
+        "parent_origins": [],
+        "target_slot": 28,
+        "engine": false
+      },
+      {
+        "token": "acq-18",
+        "card": "Panic Button",
+        "source": "Sensory Stone card reward",
+        "trace": 131,
+        "decision": 113,
+        "floor": 36,
+        "history": [],
+        "parents": [],
+        "parent_origins": [],
+        "target_slot": 29,
+        "engine": false
+      },
+      {
+        "token": "acq-19",
+        "card": "Flash of Steel",
+        "source": "Sensory Stone card reward",
+        "trace": 132,
+        "decision": 114,
+        "floor": 36,
+        "history": [],
+        "parents": [],
+        "parent_origins": [],
+        "target_slot": 30,
+        "engine": true
+      },
+      {
+        "token": "acq-20",
+        "card": "Flash of Steel",
+        "source": "Sensory Stone card reward",
+        "trace": 133,
+        "decision": 115,
+        "floor": 36,
+        "history": [],
+        "parents": [],
+        "parent_origins": [],
+        "target_slot": 31,
+        "engine": true
+      }
+    ],
+    "relic_acquisitions": [
+      {
+        "relic": "DU_VU_DOLL",
+        "trace": 44,
+        "decision": 37,
+        "floor": 12,
+        "screen": "REWARDS",
+        "event": ""
+      },
+      {
+        "relic": "MARK_OF_PAIN",
+        "trace": 59,
+        "decision": 51,
+        "floor": 17,
+        "screen": "BOSS_RELIC",
+        "event": ""
+      },
+      {
+        "relic": "VAJRA",
+        "trace": 65,
+        "decision": 56,
+        "floor": 19,
+        "screen": "EVENT",
+        "event": "WeMeetAgain"
+      },
+      {
+        "relic": "SLING_OF_COURAGE",
+        "trace": 90,
+        "decision": 77,
+        "floor": 25,
+        "screen": "SHOP",
+        "event": ""
+      },
+      {
+        "relic": "CHARONS_ASHES",
+        "trace": 94,
+        "decision": 81,
+        "floor": 26,
+        "screen": "REWARDS",
+        "event": ""
+      },
+      {
+        "relic": "CENTENNIAL_PUZZLE",
+        "trace": 99,
+        "decision": 85,
+        "floor": 27,
+        "screen": "REWARDS",
+        "event": ""
+      },
+      {
+        "relic": "ECTOPLASM",
+        "trace": 123,
+        "decision": 106,
+        "floor": 34,
+        "screen": "BOSS_RELIC",
+        "event": ""
+      }
+    ],
+    "all_acquisitions": [
+      {
+        "token": "acq-1",
+        "card": "Headbutt",
+        "source": "Neow card reward",
+        "trace": 1,
+        "decision": 1,
+        "floor": 0,
+        "history": [],
+        "parents": []
+      },
+      {
+        "token": "acq-2",
+        "card": "Headbutt",
+        "source": "ordinary card reward",
+        "trace": 5,
+        "decision": 4,
+        "floor": 1,
+        "history": [],
+        "parents": []
+      },
+      {
+        "token": "acq-3",
+        "card": "Dramatic Entrance",
+        "source": "shop purchase",
+        "trace": 7,
+        "decision": 6,
+        "floor": 2,
+        "history": [],
+        "parents": []
+      },
+      {
+        "token": "acq-4",
+        "card": "Anger",
+        "source": "shop purchase",
+        "trace": 8,
+        "decision": 7,
+        "floor": 2,
+        "history": [],
+        "parents": []
+      },
+      {
+        "token": "acq-5",
+        "card": "Shockwave",
+        "source": "ordinary card reward",
+        "trace": 13,
+        "decision": 11,
+        "floor": 3,
+        "history": [],
+        "parents": []
+      },
+      {
+        "token": "acq-6",
+        "card": "Corruption",
+        "source": "ordinary card reward",
+        "trace": 26,
+        "decision": 22,
+        "floor": 7,
+        "history": [],
+        "parents": []
+      },
+      {
+        "token": "acq-7",
+        "card": "Anger",
+        "source": "ordinary card reward",
+        "trace": 37,
+        "decision": 32,
+        "floor": 10,
+        "history": [],
+        "parents": []
+      },
+      {
+        "token": "acq-8",
+        "card": "Reaper",
+        "source": "ordinary card reward",
+        "trace": 47,
+        "decision": 40,
+        "floor": 12,
+        "history": [],
+        "parents": []
+      },
+      {
+        "token": "acq-9",
+        "card": "Impervious",
+        "source": "ordinary card reward",
+        "trace": 58,
+        "decision": 50,
+        "floor": 16,
+        "history": [],
+        "parents": []
+      },
+      {
+        "token": "acq-10",
+        "card": "Anger",
+        "source": "ordinary card reward",
+        "trace": 70,
+        "decision": 60,
+        "floor": 20,
+        "history": [],
+        "parents": []
+      },
+      {
+        "token": "acq-11",
+        "card": "Havoc",
+        "source": "ordinary card reward",
+        "trace": 80,
+        "decision": 68,
+        "floor": 22,
+        "history": [],
+        "parents": []
+      },
+      {
+        "token": "acq-12",
+        "card": "Blood for Blood",
+        "source": "ordinary card reward",
+        "trace": 86,
+        "decision": 73,
+        "floor": 24,
+        "history": [],
+        "parents": []
+      },
+      {
+        "token": "acq-13",
+        "card": "Feel No Pain",
+        "source": "shop purchase",
+        "trace": 88,
+        "decision": 75,
+        "floor": 25,
+        "history": [],
+        "parents": []
+      },
+      {
+        "token": "acq-14",
+        "card": "Limit Break",
+        "source": "ordinary card reward",
+        "trace": 101,
+        "decision": 87,
+        "floor": 27,
+        "history": [],
+        "parents": []
+      },
+      {
+        "token": "acq-15",
+        "card": "Dark Embrace",
+        "source": "ordinary card reward",
+        "trace": 105,
+        "decision": 90,
+        "floor": 28,
+        "history": [],
+        "parents": []
+      },
+      {
+        "token": "acq-16",
+        "card": "Battle Trance",
+        "source": "ordinary card reward",
+        "trace": 109,
+        "decision": 93,
+        "floor": 29,
+        "history": [],
+        "parents": []
+      },
+      {
+        "token": "acq-17",
+        "card": "Impervious",
+        "source": "ordinary card reward",
+        "trace": 122,
+        "decision": 105,
+        "floor": 33,
+        "history": [],
+        "parents": []
+      },
+      {
+        "token": "acq-18",
+        "card": "Panic Button",
+        "source": "Sensory Stone card reward",
+        "trace": 131,
+        "decision": 113,
+        "floor": 36,
+        "history": [],
+        "parents": []
+      },
+      {
+        "token": "acq-19",
+        "card": "Flash of Steel",
+        "source": "Sensory Stone card reward",
+        "trace": 132,
+        "decision": 114,
+        "floor": 36,
+        "history": [],
+        "parents": []
+      },
+      {
+        "token": "acq-20",
+        "card": "Flash of Steel",
+        "source": "Sensory Stone card reward",
+        "trace": 133,
+        "decision": 115,
+        "floor": 36,
+        "history": [],
+        "parents": []
+      }
+    ],
+    "engine_core": [
+      "Corruption",
+      "Dark Embrace",
+      "Flash of Steel"
+    ],
+    "engine_relics": [],
+    "reward_skip_bound": {
+      "deck_size": 18,
+      "deck": [
+        "Ascender's Bane",
+        "Strike",
+        "Strike",
+        "Strike",
+        "Strike",
+        "Strike+",
+        "Defend+",
+        "Defend",
+        "Defend",
+        "Defend",
+        "Bash",
+        "Dramatic Entrance",
+        "Anger+",
+        "Corruption+",
+        "Feel No Pain+",
+        "Dark Embrace",
+        "Flash of Steel",
+        "Flash of Steel"
+      ],
+      "skips": [
+        {
+          "token": "acq-1",
+          "card": "Headbutt",
+          "source": "Neow card reward",
+          "trace": 1,
+          "decision": 1,
+          "floor": 0,
+          "history": [],
+          "parents": [],
+          "parent_origins": [],
+          "target_slot": 12,
+          "engine": false
+        },
+        {
+          "token": "acq-2",
+          "card": "Headbutt",
+          "source": "ordinary card reward",
+          "trace": 5,
+          "decision": 4,
+          "floor": 1,
+          "history": [],
+          "parents": [],
+          "parent_origins": [],
+          "target_slot": 13,
+          "engine": false
+        },
+        {
+          "token": "acq-5",
+          "card": "Shockwave+",
+          "source": "ordinary card reward",
+          "trace": 13,
+          "decision": 11,
+          "floor": 3,
+          "history": [
+            {
+              "trace": 28,
+              "decision": 24,
+              "floor": 8,
+              "from": "Shockwave",
+              "to": "Shockwave+"
+            }
+          ],
+          "parents": [],
+          "parent_origins": [],
+          "target_slot": 16,
+          "engine": false
+        },
+        {
+          "token": "acq-7",
+          "card": "Anger",
+          "source": "ordinary card reward",
+          "trace": 37,
+          "decision": 32,
+          "floor": 10,
+          "history": [],
+          "parents": [],
+          "parent_origins": [],
+          "target_slot": 18,
+          "engine": false
+        },
+        {
+          "token": "acq-8",
+          "card": "Reaper",
+          "source": "ordinary card reward",
+          "trace": 47,
+          "decision": 40,
+          "floor": 12,
+          "history": [],
+          "parents": [],
+          "parent_origins": [],
+          "target_slot": 19,
+          "engine": false
+        },
+        {
+          "token": "acq-9",
+          "card": "Impervious",
+          "source": "ordinary card reward",
+          "trace": 58,
+          "decision": 50,
+          "floor": 16,
+          "history": [],
+          "parents": [],
+          "parent_origins": [],
+          "target_slot": 20,
+          "engine": false
+        },
+        {
+          "token": "acq-10",
+          "card": "Anger",
+          "source": "ordinary card reward",
+          "trace": 70,
+          "decision": 60,
+          "floor": 20,
+          "history": [],
+          "parents": [],
+          "parent_origins": [],
+          "target_slot": 21,
+          "engine": false
+        },
+        {
+          "token": "acq-11",
+          "card": "Havoc",
+          "source": "ordinary card reward",
+          "trace": 80,
+          "decision": 68,
+          "floor": 22,
+          "history": [],
+          "parents": [],
+          "parent_origins": [],
+          "target_slot": 22,
+          "engine": false
+        },
+        {
+          "token": "acq-12",
+          "card": "Blood for Blood",
+          "source": "ordinary card reward",
+          "trace": 86,
+          "decision": 73,
+          "floor": 24,
+          "history": [],
+          "parents": [],
+          "parent_origins": [],
+          "target_slot": 23,
+          "engine": false
+        },
+        {
+          "token": "acq-14",
+          "card": "Limit Break",
+          "source": "ordinary card reward",
+          "trace": 101,
+          "decision": 87,
+          "floor": 27,
+          "history": [],
+          "parents": [],
+          "parent_origins": [],
+          "target_slot": 25,
+          "engine": false
+        },
+        {
+          "token": "acq-16",
+          "card": "Battle Trance",
+          "source": "ordinary card reward",
+          "trace": 109,
+          "decision": 93,
+          "floor": 29,
+          "history": [],
+          "parents": [],
+          "parent_origins": [],
+          "target_slot": 27,
+          "engine": false
+        },
+        {
+          "token": "acq-17",
+          "card": "Impervious",
+          "source": "ordinary card reward",
+          "trace": 122,
+          "decision": 105,
+          "floor": 33,
+          "history": [],
+          "parents": [],
+          "parent_origins": [],
+          "target_slot": 28,
+          "engine": false
+        },
+        {
+          "token": "acq-18",
+          "card": "Panic Button",
+          "source": "Sensory Stone card reward",
+          "trace": 131,
+          "decision": 113,
+          "floor": 36,
+          "history": [],
+          "parents": [],
+          "parent_origins": [],
+          "target_slot": 29,
+          "engine": false
+        }
+      ],
+      "dependent_acquisition_not_independently_deleted": [],
+      "scope": "clean independent skips; Flame Barrier transform dependency separately disclosed"
+    },
+    "skip_remove_bound": {
+      "deck_size": 12,
+      "deck": [
+        "Ascender's Bane",
+        "Strike",
+        "Strike+",
+        "Defend+",
+        "Defend",
+        "Defend",
+        "Defend",
+        "Bash",
+        "Corruption+",
+        "Dark Embrace",
+        "Flash of Steel",
+        "Flash of Steel"
+      ],
+      "removed": [
+        {
+          "card": "Strike",
+          "token": "start-2",
+          "reason": "shop f2; escalating removal cost"
+        },
+        {
+          "card": "Strike",
+          "token": "start-3",
+          "reason": "shop f25; escalating removal cost"
+        },
+        {
+          "card": "Strike",
+          "token": "start-4",
+          "reason": "shop f31; escalating removal cost"
+        }
+      ],
+      "forgone_shop_cards": [
+        {
+          "card": "Dramatic Entrance",
+          "token": "acq-3",
+          "reason": "shop removal funding displaces this non-engine card purchase; see running cash plan"
+        },
+        {
+          "card": "Anger+",
+          "token": "acq-4",
+          "reason": "shop removal funding displaces this non-engine card purchase; see running cash plan"
+        },
+        {
+          "card": "Feel No Pain+",
+          "token": "acq-13",
+          "reason": "shop removal funding displaces this non-engine card purchase; see running cash plan"
+        }
+      ],
+      "resource_plan": [
+        {
+          "floor": 2,
+          "historical_entry_gold": 110,
+          "available_gold": 110,
+          "cost": 75,
+          "forgone": [
+            "Dramatic Entrance72g",
+            "Anger38g"
+          ],
+          "other_spend": 0,
+          "balance_after": 35,
+          "gold_delta_after": 35
+        },
+        {
+          "floor": 25,
+          "historical_entry_gold": 251,
+          "available_gold": 286,
+          "cost": 100,
+          "forgone": [
+            "Feel No Pain56g",
+            "Power Potion38g"
+          ],
+          "other_spend": 118,
+          "retained": [
+            "Sling of Courage118g"
+          ],
+          "balance_after": 68,
+          "gold_delta_after": 29
+        },
+        {
+          "floor": 31,
+          "historical_entry_gold": 99,
+          "available_gold": 128,
+          "cost": 125,
+          "forgone": [
+            "Blessing of the Forge42g",
+            "Colorless Potion41g"
+          ],
+          "other_spend": 0,
+          "balance_after": 3,
+          "gold_delta_after": -13
+        }
+      ],
+      "scope": "optimistic fixed-route accounting; explicitly replaces purchases to fund removals; not replayed"
+    },
+    "gate_A": true,
+    "gate_B": true
+  },
+  {
+    "seed": 111101512,
+    "permanent_deck_size": 19,
+    "historical_min_active": 19,
+    "target_cards": [
+      {
+        "token": "start-1",
+        "card": "Ascender's Bane",
+        "source": "starting ascension curse",
+        "trace": null,
+        "decision": null,
+        "floor": 0,
+        "history": [],
+        "parent_origins": [],
+        "target_slot": 1,
+        "engine": false
+      },
+      {
+        "token": "start-2",
+        "card": "Strike",
+        "source": "starting deck",
+        "trace": null,
+        "decision": null,
+        "floor": 0,
+        "history": [],
+        "parent_origins": [],
+        "target_slot": 2,
+        "engine": false
+      },
+      {
+        "token": "start-3",
+        "card": "Strike",
+        "source": "starting deck",
+        "trace": null,
+        "decision": null,
+        "floor": 0,
+        "history": [],
+        "parent_origins": [],
+        "target_slot": 3,
+        "engine": false
+      },
+      {
+        "token": "start-4",
+        "card": "Strike",
+        "source": "starting deck",
+        "trace": null,
+        "decision": null,
+        "floor": 0,
+        "history": [],
+        "parent_origins": [],
+        "target_slot": 4,
+        "engine": false
+      },
+      {
+        "token": "start-5",
+        "card": "Strike",
+        "source": "starting deck",
+        "trace": null,
+        "decision": null,
+        "floor": 0,
+        "history": [],
+        "parent_origins": [],
+        "target_slot": 5,
+        "engine": false
+      },
+      {
+        "token": "start-6",
+        "card": "Strike",
+        "source": "starting deck",
+        "trace": null,
+        "decision": null,
+        "floor": 0,
+        "history": [],
+        "parent_origins": [],
+        "target_slot": 6,
+        "engine": false
+      },
+      {
+        "token": "start-7",
+        "card": "Defend",
+        "source": "starting deck",
+        "trace": null,
+        "decision": null,
+        "floor": 0,
+        "history": [],
+        "parent_origins": [],
+        "target_slot": 7,
+        "engine": false
+      },
+      {
+        "token": "start-8",
+        "card": "Defend",
+        "source": "starting deck",
+        "trace": null,
+        "decision": null,
+        "floor": 0,
+        "history": [],
+        "parent_origins": [],
+        "target_slot": 8,
+        "engine": false
+      },
+      {
+        "token": "start-9",
+        "card": "Defend",
+        "source": "starting deck",
+        "trace": null,
+        "decision": null,
+        "floor": 0,
+        "history": [],
+        "parent_origins": [],
+        "target_slot": 9,
+        "engine": false
+      },
+      {
+        "token": "start-10",
+        "card": "Defend",
+        "source": "starting deck",
+        "trace": null,
+        "decision": null,
+        "floor": 0,
+        "history": [],
+        "parent_origins": [],
+        "target_slot": 10,
+        "engine": false
+      },
+      {
+        "token": "start-11",
+        "card": "Bash",
+        "source": "starting deck",
+        "trace": null,
+        "decision": null,
+        "floor": 0,
+        "history": [],
+        "parent_origins": [],
+        "target_slot": 11,
+        "engine": false
+      },
+      {
+        "token": "acq-1",
+        "card": "Clothesline+",
+        "source": "ordinary card reward",
+        "trace": 4,
+        "decision": 3,
+        "floor": 1,
+        "history": [
+          {
+            "trace": 21,
+            "decision": 17,
+            "floor": 6,
+            "from": "Clothesline",
+            "to": "Clothesline+"
+          }
+        ],
+        "parents": [],
+        "parent_origins": [],
+        "target_slot": 12,
+        "engine": false
+      },
+      {
+        "token": "acq-2",
+        "card": "Iron Wave",
+        "source": "ordinary card reward",
+        "trace": 8,
+        "decision": 6,
+        "floor": 2,
+        "history": [],
+        "parents": [],
+        "parent_origins": [],
+        "target_slot": 13,
+        "engine": false
+      },
+      {
+        "token": "acq-3",
+        "card": "Twin Strike+",
+        "source": "ordinary card reward",
+        "trace": 12,
+        "decision": 9,
+        "floor": 3,
+        "history": [
+          {
+            "trace": 28,
+            "decision": 24,
+            "floor": 8,
+            "from": "Twin Strike",
+            "to": "Twin Strike+"
+          }
+        ],
+        "parents": [],
+        "parent_origins": [],
+        "target_slot": 14,
+        "engine": false
+      },
+      {
+        "token": "acq-4",
+        "card": "Anger",
+        "source": "ordinary card reward",
+        "trace": 19,
+        "decision": 15,
+        "floor": 5,
+        "history": [],
+        "parents": [],
+        "parent_origins": [],
+        "target_slot": 15,
+        "engine": false
+      },
+      {
+        "token": "acq-5",
+        "card": "Uppercut",
+        "source": "shop purchase",
+        "trace": 24,
+        "decision": 20,
+        "floor": 7,
+        "history": [],
+        "parents": [],
+        "parent_origins": [],
+        "target_slot": 16,
+        "engine": false
+      },
+      {
+        "token": "acq-6",
+        "card": "Pommel Strike",
+        "source": "ordinary card reward",
+        "trace": 40,
+        "decision": 35,
+        "floor": 10,
+        "history": [],
+        "parents": [],
+        "parent_origins": [],
+        "target_slot": 17,
+        "engine": true
+      },
+      {
+        "token": "acq-7",
+        "card": "Shrug It Off",
+        "source": "ordinary card reward",
+        "trace": 46,
+        "decision": 40,
+        "floor": 11,
+        "history": [],
+        "parents": [],
+        "parent_origins": [],
+        "target_slot": 18,
+        "engine": true
+      },
+      {
+        "token": "acq-8",
+        "card": "Havoc",
+        "source": "ordinary card reward",
+        "trace": 53,
+        "decision": 46,
+        "floor": 13,
+        "history": [],
+        "parents": [],
+        "parent_origins": [],
+        "target_slot": 19,
+        "engine": false
+      }
+    ],
+    "relic_acquisitions": [
+      {
+        "relic": "ORICHALCUM",
+        "trace": 23,
+        "decision": 19,
+        "floor": 7,
+        "screen": "SHOP",
+        "event": ""
+      },
+      {
+        "relic": "REGAL_PILLOW",
+        "trace": 43,
+        "decision": 37,
+        "floor": 11,
+        "screen": "REWARDS",
+        "event": ""
+      },
+      {
+        "relic": "SUNDIAL",
+        "trace": 51,
+        "decision": 44,
+        "floor": 13,
+        "screen": "REWARDS",
+        "event": ""
+      }
+    ],
+    "all_acquisitions": [
+      {
+        "token": "acq-1",
+        "card": "Clothesline",
+        "source": "ordinary card reward",
+        "trace": 4,
+        "decision": 3,
+        "floor": 1,
+        "history": [],
+        "parents": []
+      },
+      {
+        "token": "acq-2",
+        "card": "Iron Wave",
+        "source": "ordinary card reward",
+        "trace": 8,
+        "decision": 6,
+        "floor": 2,
+        "history": [],
+        "parents": []
+      },
+      {
+        "token": "acq-3",
+        "card": "Twin Strike",
+        "source": "ordinary card reward",
+        "trace": 12,
+        "decision": 9,
+        "floor": 3,
+        "history": [],
+        "parents": []
+      },
+      {
+        "token": "acq-4",
+        "card": "Anger",
+        "source": "ordinary card reward",
+        "trace": 19,
+        "decision": 15,
+        "floor": 5,
+        "history": [],
+        "parents": []
+      },
+      {
+        "token": "acq-5",
+        "card": "Uppercut",
+        "source": "shop purchase",
+        "trace": 24,
+        "decision": 20,
+        "floor": 7,
+        "history": [],
+        "parents": []
+      },
+      {
+        "token": "acq-6",
+        "card": "Pommel Strike",
+        "source": "ordinary card reward",
+        "trace": 40,
+        "decision": 35,
+        "floor": 10,
+        "history": [],
+        "parents": []
+      },
+      {
+        "token": "acq-7",
+        "card": "Shrug It Off",
+        "source": "ordinary card reward",
+        "trace": 46,
+        "decision": 40,
+        "floor": 11,
+        "history": [],
+        "parents": []
+      },
+      {
+        "token": "acq-8",
+        "card": "Havoc",
+        "source": "ordinary card reward",
+        "trace": 53,
+        "decision": 46,
+        "floor": 13,
+        "history": [],
+        "parents": []
+      }
+    ],
+    "engine_core": [
+      "Pommel Strike",
+      "Shrug It Off"
+    ],
+    "engine_relics": [
+      "SUNDIAL"
+    ],
+    "reward_skip_bound": {
+      "deck_size": 14,
+      "deck": [
+        "Ascender's Bane",
+        "Strike",
+        "Strike",
+        "Strike",
+        "Strike",
+        "Strike",
+        "Defend",
+        "Defend",
+        "Defend",
+        "Defend",
+        "Bash",
+        "Uppercut",
+        "Pommel Strike",
+        "Shrug It Off"
+      ],
+      "skips": [
+        {
+          "token": "acq-1",
+          "card": "Clothesline+",
+          "source": "ordinary card reward",
+          "trace": 4,
+          "decision": 3,
+          "floor": 1,
+          "history": [
+            {
+              "trace": 21,
+              "decision": 17,
+              "floor": 6,
+              "from": "Clothesline",
+              "to": "Clothesline+"
+            }
+          ],
+          "parents": [],
+          "parent_origins": [],
+          "target_slot": 12,
+          "engine": false
+        },
+        {
+          "token": "acq-2",
+          "card": "Iron Wave",
+          "source": "ordinary card reward",
+          "trace": 8,
+          "decision": 6,
+          "floor": 2,
+          "history": [],
+          "parents": [],
+          "parent_origins": [],
+          "target_slot": 13,
+          "engine": false
+        },
+        {
+          "token": "acq-3",
+          "card": "Twin Strike+",
+          "source": "ordinary card reward",
+          "trace": 12,
+          "decision": 9,
+          "floor": 3,
+          "history": [
+            {
+              "trace": 28,
+              "decision": 24,
+              "floor": 8,
+              "from": "Twin Strike",
+              "to": "Twin Strike+"
+            }
+          ],
+          "parents": [],
+          "parent_origins": [],
+          "target_slot": 14,
+          "engine": false
+        },
+        {
+          "token": "acq-4",
+          "card": "Anger",
+          "source": "ordinary card reward",
+          "trace": 19,
+          "decision": 15,
+          "floor": 5,
+          "history": [],
+          "parents": [],
+          "parent_origins": [],
+          "target_slot": 15,
+          "engine": false
+        },
+        {
+          "token": "acq-8",
+          "card": "Havoc",
+          "source": "ordinary card reward",
+          "trace": 53,
+          "decision": 46,
+          "floor": 13,
+          "history": [],
+          "parents": [],
+          "parent_origins": [],
+          "target_slot": 19,
+          "engine": false
+        }
+      ],
+      "dependent_acquisition_not_independently_deleted": [],
+      "scope": "clean independent skips; Flame Barrier transform dependency separately disclosed"
+    },
+    "skip_remove_bound": {
+      "deck_size": 11,
+      "deck": [
+        "Ascender's Bane",
+        "Strike",
+        "Strike",
+        "Strike",
+        "Defend",
+        "Defend",
+        "Defend",
+        "Defend",
+        "Bash",
+        "Pommel Strike",
+        "Shrug It Off"
+      ],
+      "removed": [
+        {
+          "card": "Strike",
+          "token": "start-2",
+          "reason": "Cleric f4,75g instead of35g heal"
+        },
+        {
+          "card": "Strike",
+          "token": "start-3",
+          "reason": "shop f7,75g; event removal does not increment shopRemoveCount"
+        }
+      ],
+      "forgone_shop_cards": [
+        {
+          "card": "Uppercut",
+          "token": "acq-5",
+          "reason": "f7 removal funding displaces Uppercut64g and potion41g, preserving Orichalcum117g"
+        }
+      ],
+      "resource_plan": [
+        {
+          "floor": 4,
+          "historical_entry_gold": 247,
+          "available_gold": 247,
+          "cost": 75,
+          "replaces": "35g heal",
+          "balance_after": 172,
+          "gold_delta_after": -40
+        },
+        {
+          "floor": 7,
+          "historical_entry_gold": 232,
+          "available_gold": 192,
+          "cost": 75,
+          "forgone": [
+            "Uppercut64g",
+            "Colorless Potion41g"
+          ],
+          "other_spend": 117,
+          "retained": [
+            "Orichalcum117g"
+          ],
+          "balance_after": 0,
+          "gold_delta_after": -10
+        }
+      ],
+      "scope": "optimistic fixed-route accounting; explicitly replaces purchases to fund removals; not replayed"
+    },
+    "gate_A": false,
+    "gate_B": true
+  }
+]

@@ -1,0 +1,58 @@
+Focused evidence checks only; no game seeds, gameplay fixtures, oracle worlds or CI dispatch.
+
+$ python3 docs/experiments/evidence/combat_infinity_counterfactual_20261024/measure.py --check
+{
+  "actual_skips": 6,
+  "not_seen": 7,
+  "highest_floor": 33,
+  "outcomes": [
+    {
+      "complete": true,
+      "finalAct": 2,
+      "finalFloor": 33,
+      "finalHp": 0,
+      "heartKilled": false,
+      "integrityPassed": true,
+      "label": 0,
+      "states": 131,
+      "supportedStates": 131,
+      "type": "outcome",
+      "unsupported": {}
+    }
+  ],
+  "maximum_owned_engine": {
+    "Corruption": 0,
+    "Dark Embrace": 1,
+    "Flash of Steel": 0
+  },
+  "engine_completion": null,
+  "first_subsequent_combat": null
+}
+EXIT 0
+
+$ python3 docs/experiments/evidence/combat_infinity_counterfactual_20261024/analyze.py --check
+PASS raw custody, complete exact flag-off prefix, frozen13 statuses/accounting, actual measurements and conditional oracle tables; no seed/world execution
+EXIT 0
+
+$ python3 docs/experiments/evidence/combat_infinity_counterfactual_20261024/build_runtime.py --check
+patching file apps/one_combat/infinity_frozen_skips.h
+patching file apps/one_combat/run_driver.cpp
+PASS base source, fresh patch application, patched file hashes, models and executable custody; no rebuild
+EXIT 0
+
+$ python3 docs/experiments/evidence/combat_infinity_reconstruction_20261024/analyze.py --check
+PASS exact runtime, full frozen-prefix fidelity, same-run no-Shard custody, public sampling, K=4 bounds and regenerated matrix; no seed/world execution
+EXIT 0
+
+$ python3 docs/experiments/evidence/combat_infinity_compression_20261024/verify.py
+PASS full prefix card lineage, legal siblings, nested independent-skip/resource-removal bounds; no simulator or oracle execution
+PASS 111101032: provenance18; independent reward skips5; A13; B12; final accounted cash delta-40; gateA=False gateB=True
+PASS 111101326: provenance31; independent reward skips13; A18; B12; final accounted cash delta-13; gateA=True gateB=True
+PASS 111101512: provenance19; independent reward skips5; A14; B11; final accounted cash delta-10; gateA=False gateB=True
+PASS frozen13 exact public SKIP keys; protected four engine acquisition groups; transform/Pandora dependency retained
+PASS Mark of Pain2 temporary Wounds; Anger3->5 combat copies; permanent31 is separately audited
+PASS exact historical source/executable/eight model identities unchanged; zero new game/world execution
+EXIT 0
+
+$ git diff 5adfd78bfb32580ac49eca4a4c8f52498be08653 --check
+EXIT 0

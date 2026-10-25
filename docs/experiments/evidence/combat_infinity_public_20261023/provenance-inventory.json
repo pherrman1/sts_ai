@@ -1,0 +1,69 @@
+{
+  "schema": "infinity_provenance_inventory_v1",
+  "audit": "PASS",
+  "receipt_sha256": "bd1b1d03bf538de6c9d8b195da25bec69fd58292ee1f46b3c2397230b4ad2837",
+  "source_sha": "3ed91ab3491a4cdc1a7de687b2ad87dcc7774fc0",
+  "binary_sha256": "27a78efd3f5da731897d36dd9b50a622d2ace4f54dae69dfc157bf6712b027c7",
+  "manifest_sha256": "41e163b3b26602e51fc597032a6c7617a40810c4b311baac71945253387cdb7d",
+  "checked_artifacts": {
+    "public": {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/corrected_canary/Capture_0.public.jsonl",
+      "sha256": "0a679ddf01a75eae8186a7c68eda9d6b808decb42c6c2c0457b4c2fc980a4f83",
+      "bytes": 1007770
+    },
+    "trace": {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/corrected_canary/Capture_0.trace.jsonl",
+      "sha256": "05051dc60cc9bd5a44f8c84d498fe0ad5ae0845222deecf30775a7982d986aba",
+      "bytes": 128920
+    },
+    "meta": {
+      "path": "/home/philippherrmann/.codex/worktrees/ironclad-overnight-20261008/sts_lightspeed/build/overnight_20261008/corrected_canary/Capture_0.csv.meta.json",
+      "sha256": "3acbcd7d01ac0c16e6e0e690bb78c9c22d79670a5b8adb2d8c1fe77d21890962",
+      "bytes": 1487
+    }
+  },
+  "seed": 610081002,
+  "ascension": 0,
+  "act": 2,
+  "floor": 33,
+  "encounter": "CHAMP",
+  "trace_line_1based": 123,
+  "fight": 13,
+  "full_run_relics": [
+    "BURNING_BLOOD",
+    "BAG_OF_PREPARATION",
+    "MAW_BANK",
+    "LANTERN",
+    "GINGER",
+    "SELF_FORMING_CLAY",
+    "ECTOPLASM",
+    "ENCHIRIDION",
+    "GIRYA",
+    "NLOTHS_GIFT"
+  ],
+  "no_shard_provenance": "same_receipt_full_inventory_pre_and_post",
+  "public_rows": 72,
+  "basic_public_normal_candidates": 65,
+  "proposed_first16_decisions": [
+    1,
+    2,
+    3,
+    5,
+    6,
+    7,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    18,
+    20
+  ],
+  "oracle_eligibility_not_yet_executed": true,
+  "worlds_annotated_by_this_audit": 0,
+  "original_pilot_eligible_roots": 0,
+  "original_pilot_annotated_worlds": 0
+}

@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-10-23 for constructed infinity-oracle recall (§673; feasibility §671); 2026-10-23 for the A20 CTM against real fights and its research calibration flag (§670), the stage 1–2 leaf-compare replay (§663) and the M0 leaf calibration as the A20 default (ADR-0057) and the calibrated-leaf (M0) × SR_w1 blend A/B (§661) and the OOC value head's ranking-selected recipe on two more seeds (§649); 2026-10-22 for the OOC leaf's death price (§660); 2026-10-22 for the OOC value head as a leaf ranker (§641), its common-seed recapture (§644) and the retrain on those labels (§645); 2026-10-18 for the Act-4 CTM survival model A/B (§534) and A20 default (ADR-0048); 2026-10-17 for per-category chance widening (§518); 2026-10-17 for the AlphaZero-loop open requirements (potion discard output); 2026-10-17 for A0 Ritual artifact custody, corrected producer growth, coverage pilots and the Ritual refit (§511, §512, §505–§508); 2026-10-17 for the Arm C value fine-tune (§509); 2026-10-17 for the §494 student leaf A20 A/B (§504); 2026-10-17 for the outcome head as a sibling-leaf ranker (§502); 2026-10-17 for the development value-head comparison (§501); 2026-10-17 for development weighting ablation (§500); 2026-10-17 for one-shot observed-outcome holdout and early calibration (§499); 2026-10-17 for observed Heart-outcome value-head fitting (§498); 2026-10-16 for recovered Heart-outcome corpus import and class coverage (§497); 2026-10-16 for the NOT_SHOWN Arm C rollout-policy Heart pilot (§493) and software-fault recovery of the A20 Heart rollout-distillation pilot (§§491–492); 2026-10-14 for conditional leaf target stability (§471, #507); 2026-10-13 for bounded observational leaf capture (#507); 2026-10-13 for OOC MCTS `combo` at A20 (§457) and with the Lizard-capable A20 CTM (§458); 2026-10-12 for the A20 V4 at A0 and V4 margin sweep (§448), the public X2-B as rollout3 win model (§449), deep OOC MCTS with uniform prior and leaf policy (§441), the A20 short-branch label corpus (§445), the rollout3 fresh-seed confirmation (§433) and the CTM cost in rollout3 (§439); 2026-10-11 for Lizard Tail support in the default OOC MCTS CTM (§435), the #401 tree-input audit (§438) and the rollout3 CPU profile (§436) and exact native fallback batching (§437); 2026-10-11 for the rollout3 one-setting variants (§427–§430), independent branch futures and short-branch labels at A20 (§432), OOC MCTS on the A20 gold decisions (§425), rollout3 at 512 simulations (§424) and the Lizard-capable CTM inside rollout3 (§423); 2026-10-10 for the rollout3 OOC MCTS replication (§422); 2026-10-09 for the OOC MCTS root-selection × cpuct screen (§414) and the #418 retrained CTM live A/B (§412); 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for fair native OOC decision quality (§395) and the blocked boss-relic selection-precision attempt (§398); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
+Last verified: 2026-10-24 for offline OOC compression headroom (§TBD-compression) and exact Heart runtime reconstruction and paired ingredient-fight capture (§TBD-reconstruction), paired-capture replayability (§TBD-capture) and targeted retained-data hunt (§TBD-hunt) and provenance-backed historical annotation (§TBD-natural) and retained provenance-route inspection; 2026-10-23 for K=4 public-root infinity adapter coverage (§TBD-public) and constructed recall (§673; feasibility §671); 2026-10-23 for the A20 CTM against real fights and its research calibration flag (§670), the stage 1–2 leaf-compare replay (§663) and the M0 leaf calibration as the A20 default (ADR-0057) and the calibrated-leaf (M0) × SR_w1 blend A/B (§661) and the OOC value head's ranking-selected recipe on two more seeds (§649); 2026-10-22 for the OOC leaf's death price (§660); 2026-10-22 for the OOC value head as a leaf ranker (§641), its common-seed recapture (§644) and the retrain on those labels (§645); 2026-10-18 for the Act-4 CTM survival model A/B (§534) and A20 default (ADR-0048); 2026-10-17 for per-category chance widening (§518); 2026-10-17 for the AlphaZero-loop open requirements (potion discard output); 2026-10-17 for A0 Ritual artifact custody, corrected producer growth, coverage pilots and the Ritual refit (§511, §512, §505–§508); 2026-10-17 for the Arm C value fine-tune (§509); 2026-10-17 for the §494 student leaf A20 A/B (§504); 2026-10-17 for the outcome head as a sibling-leaf ranker (§502); 2026-10-17 for the development value-head comparison (§501); 2026-10-17 for development weighting ablation (§500); 2026-10-17 for one-shot observed-outcome holdout and early calibration (§499); 2026-10-17 for observed Heart-outcome value-head fitting (§498); 2026-10-16 for recovered Heart-outcome corpus import and class coverage (§497); 2026-10-16 for the NOT_SHOWN Arm C rollout-policy Heart pilot (§493) and software-fault recovery of the A20 Heart rollout-distillation pilot (§§491–492); 2026-10-14 for conditional leaf target stability (§471, #507); 2026-10-13 for bounded observational leaf capture (#507); 2026-10-13 for OOC MCTS `combo` at A20 (§457) and with the Lizard-capable A20 CTM (§458); 2026-10-12 for the A20 V4 at A0 and V4 margin sweep (§448), the public X2-B as rollout3 win model (§449), deep OOC MCTS with uniform prior and leaf policy (§441), the A20 short-branch label corpus (§445), the rollout3 fresh-seed confirmation (§433) and the CTM cost in rollout3 (§439); 2026-10-11 for Lizard Tail support in the default OOC MCTS CTM (§435), the #401 tree-input audit (§438) and the rollout3 CPU profile (§436) and exact native fallback batching (§437); 2026-10-11 for the rollout3 one-setting variants (§427–§430), independent branch futures and short-branch labels at A20 (§432), OOC MCTS on the A20 gold decisions (§425), rollout3 at 512 simulations (§424) and the Lizard-capable CTM inside rollout3 (§423); 2026-10-10 for the rollout3 OOC MCTS replication (§422); 2026-10-09 for the OOC MCTS root-selection × cpuct screen (§414) and the #418 retrained CTM live A/B (§412); 2026-10-08 for default ascending fallback REMOVE ordering; 2026-10-08 for fair native OOC decision quality (§395) and the blocked boss-relic selection-precision attempt (§398); 2026-10-03 for the #397 v_win information-boundary audit, card domain, history families and derived probabilities and the MLP follow-up (§§371, 373–376, 378); 2026-10-03 for learned Silver stopping (§370, v2 §372, v3 live §377); 2026-10-02 for the #400 Silver search-parameter screen (§369); 2026-10-01 for A3 offline v_win model tooling; 2026-09-28 for OOC MCTS equivalent-outcome merging (§367);
 2026-09-27 for the active-Lizard fresh native Stage-C
 qualification, valid DeepSets/Brew integration canary, Gate 2 provenance-bound
 promotion, and default-stack plumbing; 2026-09-26 for the current-main
@@ -58,11 +58,147 @@ player HP/block/powers and encounter counters remain protected. The domain
 still requires audited Ironclad/card roots with proven no-Shard provenance;
 PRODUCTIVE_CYCLE_CANDIDATE remains a damaging recurrence pending certification.
 
-The next eligible research step is a separately requested small public-root
-pilot using the existing fair public-conditioned determinization (small K),
-never the real run's hidden draw order. It is not implemented here. Concrete
-piles remain mandatory. No production caller, infinity reward, model head,
-AZ annotation/training or OOC/default change follows from this result.
+The [K=4 public-root adapter pilot](../../experiments/evidence/combat_infinity_public_20261023/REPORT.md)
+now passes its sampling/sidecar control contract: it reuses Silver's public
+information-set draw kernel and excludes source private order/RNG. Four
+constructed controls produce expected certified/candidate fractions across 16
+worlds. However, all four preselected preserved public roots lack full run-relic
+provenance needed to prove no Prismatic Shard. They are UNSUPPORTED with null
+fractions, not negative labels; those four roots remain ineligible because of this
+metadata gap. Do not increase K/sample size or train from the nulls to compensate.
+The next prerequisite is authoritative public run-relic provenance attached to
+eligible roots. No new collection, capture-schema change, model/AZ/training,
+OOC/default change or production caller was implemented.
+
+A [read-only provenance audit](../../experiments/evidence/combat_infinity_public_20261023/PROVENANCE_OPTIONS.md)
+found a different retained historical A0 Champ capture whose receipt binds public
+roots to a full pre/post run-relic trace proving no Shard. It supplies 65 basic
+public/normal candidates; the fixed first16 were subsequently annotated in the
+pilot below. Existing paired opt-in trace paths suffice, so no capture
+patch is needed for this development sample. This does not repair the original
+four null roots or establish current-policy coverage. Current OOC AZ records
+retain full relic IDs but do not themselves carry in-combat public wires.
+
+The [provenance-backed historical pilot](../../experiments/evidence/combat_infinity_natural_20261024/REPORT.md)
+(§TBD-natural) now annotates all16 fixed A0 Champ roots /64 K=4 worlds using that
+existing join. All64 are supported but NONE, with no damaging candidate or kill;
+12 worlds at three roots hit node2000 and are inconclusive. Different draw
+orders at all16 roots cause no label disagreement. Oracle CPU totals103.835ms
+(max6.190ms/world); this is a tiny one-pass observation. Data-path feasibility
+passes, useful natural signal remains unestablished. The earlier four native8
+roots remain unsupported/null. No current-policy prevalence, recall, negative
+training-label qualification, model probing or collection extension follows.
+
+The [targeted retained-data hunt](../../experiments/evidence/combat_infinity_hunt_20261024/REPORT.md)
+(§TBD-hunt) was **BLOCKED_BY_DATA for current-policy positives** before the
+paired capture below. Frozen public-only screening covers4,968 OOC run IDs/820,868 records and343 older combat-root
+observations. Cycle-pair and Sundial/draw ingredients occur in70 and440 OOC run
+IDs, but OOC records cannot establish combat compression. Recent combat wires
+lack complete run-relic provenance; the current remote raw share was unavailable
+and was not counted as scanned. At that stage the only eligible selected roots
+were four weak Headbutt/draw Champ roots already labeled; their16 worlds were
+reused without new annotation. Do not infer rarity or a recall bottleneck from this data gap.
+That motivated the small provenance-complete paired capture below. The hunt
+itself implemented no capture patch, collection, model probing or bound change.
+Exact missing fields and a minimal optional metadata proposal are in the report.
+
+The [original paired-capture preflight](../../experiments/evidence/combat_infinity_capture_20261024/REPORT.md)
+(§TBD-capture) stopped before execution because no retained executable matched
+Heart round2 or AZ armA custody. The Heart blocker is now resolved by the
+[exact-runtime reconstruction and paired capture](../../experiments/evidence/combat_infinity_reconstruction_20261024/REPORT.md)
+(§TBD-reconstruction): unpatched source d8fd2a105a8d with the original presets
+rebuilds **byte-identical executable0e17e0f2…c2d52**. Exact Student C and all seven
+model dependencies were retained. No replacement worktree or policy was used.
+
+**EXACT_RUNTIME_RECOVERED + NO_NEAR_INFINITY_STATE_OBSERVED.** Original seeds
+111101032/326/512 match all frozen public checkpoints through Shell Parasite,
+Three Darklings and Two Fungi Beasts (68/137/57 state objects and67/136/56 trace
+objects; full headers also exact). Same-run paired traces bind full no-Shard
+relic provenance to45 captured records/43 ordinary roots. None meets Tier1;
+all43 are ingredient-only Tier2, with minimum active pools16/30/19. Frozen
+four per fight yield12 eligible roots/48 supported K4 worlds, all NONE, no
+candidate/kill/witness. One node-cap world is inconclusive; no bounded NONE is a
+negative training label. Oracle CPU31.710ms,10,846 nodes, maximum depth5.
+
+This resolves the data path for those historical fights, not useful positive
+signal, current-policy prevalence or an oracle recall limitation. Deck
+ingredients did not turn into compressed combat engines in the three declared
+fights. Stop after this pilot; the next useful experiment would target
+OOC/counterfactual construction toward actual compression. No automatic capture
+extension, AZ replay, bound change, model probing/training or gameplay change.
+AZ raw headers/env/runtime custody remains outside this Heart-only continuation.
+
+The [offline OOC compression audit](../../experiments/evidence/combat_infinity_compression_20261024/REPORT.md)
+(§TBD-compression; reviewed reconstruction baseline b94a96da) finds **meaningful
+structural headroom**, not OOC_COMPRESSION_HEADROOM_LOW. Complete68-card target
+provenance and receipt-bound legal siblings give independent-reward-skip sizes
+13/18/14 and optimistic funded-removal sizes12/12/11 for032/326/512.032's
+sixth reward is the input of a historical transform; its clean13-card projection
+protects that dependency rather than deleting a transform product for free.
+Both Dropkicks and seven clutter cards are one Pandora batch.326's13 clean
+reward skips alone pass the screen; the two Flashes are Sensory Stone products,
+Corruption/Dark Embrace ordinary rewards. Mark of Pain adds two temporary
+Wounds, not permanent deck size.512's Sundial and two draw picks are separate.
+
+The [single frozen reward-skip counterfactual](../../experiments/evidence/combat_infinity_counterfactual_20261024/REPORT.md)
+(§TBD-counterfactual) resolves the compatible-runtime boundary with a research-only
+patch to historical d8fd2a10, leaving current production C++ and the original
+hash-identical runtime intact. The independently reviewed patched executable
+passed exact flag-off137-state/136-trace/full-header parity. One seed326 treatment
+then executed6 of13 frozen groups; seven never recurred. The first map node changed
+x5->x1, Dark Embrace was acquired at floor29, but Corruption/both Flashes were not
+offered or acquired. It died to Automaton on act2/floor33, before the historical
+engine-complete floor37. **COMPRESSION_SURVIVAL_TRADEOFF**, limited to this one
+intervention/seed; no general causal claim about individual skips or win rate.
+
+The engine never completed, so no capture replay, selected combat root or sampled
+world/oracle execution followed. Final23 permanent cards cannot be compared with
+the historical31 as an engine-preserving reduction; no counterfactual target active
+pool exists. The31->18 accounting projection was not realized. Engine-preserving
+actual compression and natural positive signal were not established by that326
+treatment. This result
+does not justify a beam, alternate arm, oracle change or model work. Stop after
+this bounded experiment; prior unsupported/null roots and earlier results stand.
+
+
+The [single R1 rescue ablation](../../experiments/evidence/combat_infinity_r1_20261025/REPORT.md)
+(§TBD-r1; starting reviewed dbd2a1f7b, frozen e37fac336) disables only the floor0 skip,
+keeping the other12 identities unchanged. The new historical research binary passed
+full flag-off137-state/136-trace/header parity. R1 exactly reproduced the first3
+historical traces and map(5,0), implicating the floor0 skip in the earlier immediate
+bifurcation. Seven later skips fired. Its first later map-node difference was act2/f18,
+(3,0) rather than control(0,0). Corruption was acquired f7, but ordinary MCTS exchanged
+it for Vajra at WeMeetAgain f20; Dark Embrace and both Flashes were never owned.
+It died to Automaton f33. **COMPRESSION_PATH_FRAGILITY_CONFIRMED**, limited to this
+seed/remaining package, not a claim that every compression policy fails.
+
+The engine never completed: no target active-pool measurement, capture replay,
+selected root, sampled world or oracle result. Final18 permanent cards do not prove
+engine-preserving compression versus historical31. The immediate route cause was
+isolated, but restoring it was insufficient to preserve the whole engine trajectory.
+Stop manual subset chasing on this seed: no next restoration/leave-one-out, other
+lead, beam implementation or model work. Production/default/oracle behavior and
+previous evidence remain unchanged; no #844 merge.
+
+
+The [exhaustive five-skip search on032](../../experiments/evidence/combat_infinity_mask_search_20261025/RESULT.md)
+(§TBD-mask) establishes **OOC_COMPRESSION_LEVER_ESTABLISHED** for this one
+historical seed/subset space. All32 masks were valid and reached the actual
+Bash/Pommel/two-Dropkick engine's first combat alive. The unique gate-passing best,
+11111, executed all5 skips and reached14 permanent cards/64HP. Its one exact-prefix
+capture measured minimum active9 versus historical16 (permanent18→14), survived
+Shell Parasite at36HP, and supplied21 ordinary public roots, none active<=8.
+Natural downstream policy acquired another Armaments; the offline13-card bound
+was not the observed result. No policy/prevalence inference from32 correlated masks.
+
+Four frozen smallest-active roots, unchangedK4:16 supported worlds allNONE, no
+candidate/certified witness or cap hit; only2–54 nodes/world. Enemy Vulnerable was0
+and Bash/Pommel remained undrawn, limiting same-turn options. This establishes a
+compression lever, not natural near-infinity signal or an absence proof. Runtime
+manifest-unset qualification matched historical header/68states/67traces exactly;
+independent implementation and evidence reviews passed. The authorized search and
+single capture/annotation are complete. Current production/default/oracle/models
+remain unchanged; no further326 subset, removal,512 run, beam or model work follows.
 
 ## AlphaZero-style OOC loop: open requirements
 

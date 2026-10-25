@@ -1,0 +1,132 @@
+--- /dev/null
++++ b/apps/one_combat/infinity_frozen_skips.h
+@@ -0,0 +1,103 @@
++// Research patch for the frozen 111101032 experiment; never a production hook.
++#pragma once
++#include "sim/search/OocSemanticAction.h"
++#include <nlohmann/json.hpp>
++#include <cstdlib>
++#include <fstream>
++#include <set>
++#include <stdexcept>
++
++namespace one_combat {
++class InfinityFrozenSkips {
++    struct Entry {
++        int act, floor;
++        std::string key;
++        nlohmann::json audit;
++        std::string status = "NOT_SEEN";
++        std::string error;
++    };
++    bool enabled_ = false;
++    std::vector<Entry> entries_;
++    [[noreturn]] void fail(Entry &entry, const std::string &error) {
++        entry.status = "MATCH_FAILED_FATAL";
++        entry.error = error;
++        throw std::runtime_error("infinity frozen skip: " + error);
++    }
++public:
++    explicit InfinityFrozenSkips(std::uint64_t seed) {
++        const char *path = std::getenv("STS_INFINITY_SKIP_MANIFEST");
++        if (!path || !*path) return;
++        enabled_ = true;
++        std::ifstream input(path);
++        if (!input) throw std::runtime_error("cannot open frozen infinity manifest");
++        nlohmann::json manifest;
++        input >> manifest;
++        if (seed != 111101032 || manifest.at("preferred_test_seed").get<std::uint64_t>() != seed
++                || manifest.at("interventions").size() != 5)
++            throw std::runtime_error("wrong frozen infinity seed/count");
++        std::set<std::tuple<int,int,std::string>> unique;
++        for (const auto &j : manifest.at("interventions")) {
++            Entry e{j.at("act").get<int>(), j.at("floor").get<int>(),
++                    j.at("forced_skip_key").get<std::string>(), j};
++            if (e.key.rfind("ooc:v1:effect=12:source=7:reward=none:group=", 0) != 0
++                    || !unique.emplace(e.act, e.floor, e.key).second)
++                throw std::runtime_error("invalid/duplicate frozen infinity target");
++            if (!j.value("enabled", true)) e.status = "DISABLED_BY_DESIGN";
++            entries_.push_back(std::move(e));
++        }
++    }
++    bool enabled() const { return enabled_; }
++    bool tryApply(sts::GameContext &gc) {
++        // Disabled path performs no enumeration, allocation, RNG call or mutation.
++        if (!enabled_) return false;
++        if (gc.seed != 111101032) throw std::runtime_error("infinity run seed changed");
++        // Only a REWARDS screen can expose these frozen SKIP_CARD_REWARD keys.
++        // MAP/CARD_SELECT/etc. at the same floor are not relevant targets.
++        if (gc.screenState != sts::ScreenState::REWARDS) return false;
++        bool relevant = false;
++        for (const auto &e : entries_)
++            relevant |= e.status == "NOT_SEEN" && e.act == gc.act && e.floor == gc.floorNum;
++        if (!relevant) return false;
++        const auto candidates = sts::search::enumerateOocSemanticActions(gc);
++        for (auto &e : entries_) {
++            if (e.status != "NOT_SEEN" || e.act != gc.act || e.floor != gc.floorNum) continue;
++            if (!candidates.supported || !candidates.complete)
++                fail(e, "incomplete/unsupported semantic enumeration: " + candidates.error);
++            const sts::search::OocSemanticAction *match = nullptr;
++            for (const auto &a : candidates.actions) {
++                if (sts::search::canonicalOocSemanticActionKey(a) != e.key) continue;
++                if (match) fail(e, "ambiguous exact semantic match");
++                match = &a;
++            }
++            if (!match) continue; // Natural divergence: never substitute another skip.
++            if (match->effect != sts::search::OocSemanticEffect::SKIP_CARD_REWARD
++                    || match->source != sts::search::OocSemanticSource::REWARDS)
++                fail(e, "exact semantic key has wrong typed effect/source");
++            const auto result = sts::search::executeOocSemanticAction(gc, *match);
++            if (!result.ok) fail(e, "semantic execution failed: " + result.error);
++            e.status = "MATCHED_EXECUTED";
++            return true;
++        }
++        return false;
++    }
++    nlohmann::json summary(bool normalEnd) const {
++        nlohmann::json rows = nlohmann::json::array();
++        int matched = 0, unseen = 0, failed = 0, disabled = 0;
++        for (const auto &e : entries_) {
++            auto row = e.audit;
++            row["status"] = e.status;
++            if (!e.error.empty()) row["error"] = e.error;
++            rows.push_back(row);
++            matched += e.status == "MATCHED_EXECUTED";
++            unseen += e.status == "NOT_SEEN";
++            failed += e.status == "MATCH_FAILED_FATAL";
++            disabled += e.status == "DISABLED_BY_DESIGN";
++        }
++        if (normalEnd && (entries_.size() != 5 || matched + unseen + disabled != 5 || failed != 0))
++            throw std::runtime_error("infinity intervention accounting failed");
++        return {{"kind", "infinity_skip_summary"}, {"seed", 111101032},
++                {"normal_end", normalEnd}, {"manifest_entries", entries_.size()},
++                {"matched", matched}, {"not_seen", unseen}, {"disabled_by_design", disabled}, {"failed", failed}, {"entries", rows}};
++    }
++};
++} // namespace one_combat
+--- a/apps/one_combat/run_driver.cpp
++++ b/apps/one_combat/run_driver.cpp
+@@ -2,0 +3 @@
++#include "infinity_frozen_skips.h"
+@@ -425,0 +427 @@
++    one_combat::InfinityFrozenSkips infinitySkips(seed);
+@@ -469,0 +472,10 @@
++        // Research-only read-only checkpoint for bounded five-mask search.
++        // Manifest unset: no extra trace/state serialization or behavior.
++        if (infinitySkips.enabled())
++            oocTraceEmit({{"kind", "infinity_mask_boundary"}, {"seed", seed},
++                {"index", oocDecisionIndex + fightsTotal}, {"fight", fightsTotal + 1},
++                {"encounter", gc.screenState == ScreenState::BATTLE
++                    ? monsterEncounterEnumNames[static_cast<int>(gc.info.encounter)] : ""},
++                {"pre", oocTraceState(gc)}, {"integrity_so_far", trainingRunValid(true)},
++                {"interventions", infinitySkips.summary(false)}});
++
+@@ -527 +539,3 @@
+-            if (const auto key = search::heartKeyAction(gc, g_collectKeys)) {
++            if (infinitySkips.tryApply(gc)) {
++                traceBy = "infinity_skip";
++            } else if (const auto key = search::heartKeyAction(gc, g_collectKeys)) {
+@@ -550,0 +565 @@
++        if (infinitySkips.enabled()) oocTraceEmit(infinitySkips.summary(false));
+@@ -553,0 +569 @@
++    if (infinitySkips.enabled()) oocTraceEmit(infinitySkips.summary(true));

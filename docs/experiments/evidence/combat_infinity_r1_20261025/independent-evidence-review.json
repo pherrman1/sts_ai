@@ -1,0 +1,31 @@
+{
+  "outcome": "PASS",
+  "blocking_findings": [],
+  "reviewer": "independent /root/infinity_review",
+  "reviewed_evidence_sha": "04b059927d67afbbc5718a8d6d2dd7ef0957f7d1",
+  "frozen_runtime_sha": "e37fac336fbaf0227c088afaddc2cd2a5808a9fb",
+  "additional_reviewed_check_artifacts": [
+    "post-commit-checks.txt",
+    "repo-health.json"
+  ],
+  "checks": [
+    "measure.py --check PASS",
+    "analyze.py --check PASS",
+    "eight decompressed raw archive custody hashes PASS",
+    "full137states/136traces/header parity",
+    "first3R1traces identical/map5,0",
+    "7executed+5unseen+1disabled, no failures/duplicates",
+    "118supportedpublicstates,Corruptionacquiredf7/d24 andexchangedVajraf20/d65,deathAutomatonf33/fight15",
+    "ledgerdryrun/repohealth/whitespacePASS; Markdowngrowthwarningonly"
+  ],
+  "scientific_interpretation": "COMPRESSION_PATH_FRAGILITY_CONFIRMED for thisseed/remainingpackage only; no individual later-skip/generalcompression/winrate claims; no enginecomplete target/capture/oracle; null unavailable quantities; stopsubsetchasing",
+  "no_seed_or_world_execution_during_review": true,
+  "files_sha256": {
+    "REPORT.md": "c047526e3cb2273c2f326ddfb443852c676049cdd51105a8b89a929635d4f67b",
+    "RESULT.json": "282115fd2266faf0afc740384f829841c3d2aa3b68bb6181e0313947b9fe6d30",
+    "TRIGGERS.md": "66ae12ec7614c4be1d0cc377562fd838b7929c2e6fd5dccb13076415010aeaa5",
+    "MATRIX.md": "1a780232729f06a6a0df242c78ea78315d2700576273a2fb83b3233fcac94f30",
+    "analyze.py": "36a47c4ee687d5669335402e5ad414461e6d18df916f0e52b504715217c341ff",
+    "measure.py": "8ff94a99ccfc18a82775209033e6ea14c3f0d2d5fff494d5569253e24bd93ebb"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "outcome": "PASS",
+  "reviewed_sha": "06119a587009844c427339a1e5c93c60ca3998c8",
+  "baseline_sha": "5adfd78bfb32580ac49eca4a4c8f52498be08653",
+  "reviewer": "independent /root/infinity_review",
+  "blocking_findings": [],
+  "checks": [
+    "check_hook.py: 5 seed-free contract groups PASS",
+    "build_runtime.py --check: source/fresh patch/models/binary custody PASS",
+    "diff whitespace PASS"
+  ],
+  "review_scope": "historical patch, disabled neutrality, semantic matching/fail closed, full parity comparator, single-attempt latches, treatment gates and first-engine-complete target rule; no seeds run by reviewer",
+  "files_sha256": {
+    "historical-intervention.patch": "1b47c17ab7b3626389f8160e8ae1cf5388ab66a06d4d85b2cca5736f42f305de",
+    "build_runtime.py": "392c4e2801cd743505018e98481c55a5aad69a2ffe5413308a84d3d6d71715ef",
+    "check_hook.py": "95afc3bc335ee18b213a5975b12361e354bc2398ff15fa444f52e99afa1235a1",
+    "qualify.py": "053c7fc65953906f8a2924cd9b51a69978dfbcc855d51382012959ad14906fe8",
+    "treatment.py": "ad0c0a6b3e78a087b4d3dbc0f372d7a2f54c275c528b2c428912148cfc254ba8",
+    "measure.py": "02414f747b7ba4824fefdcda8bb3734dca5cdc6a8ede801093d1ebe3c93e2206",
+    "PROTOCOL.md": "c99044ff4a18f29bdbd485e9d985b75594b1928f2b0bb8c7cafb69b6a1879c43"
+  },
+  "downstream_delta_review": {
+    "outcome": "PASS",
+    "blocking_findings": [],
+    "scope": "static conditional root selection and unchanged adapter invocation; no execution",
+    "files_sha256": {
+      "freeze_roots.py": "d7525f2bbefa8792caca0cc9817d61492b78f8bbb57496c3eb4336b85701b305",
+      "annotate.py": "bf583851379d228e5e186cdb26149b5f0cfeaf937922b421d96c17be967eace1"
+    }
+  }
+}

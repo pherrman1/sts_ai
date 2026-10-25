@@ -58,12 +58,16 @@ link_ctm_crypto(silver-public-pair-probe)
 add_executable(combat-infinity-oracle apps/combat_infinity_oracle.cpp $<TARGET_OBJECTS:sts_core_objects>)
 set_target_properties(combat-infinity-oracle PROPERTIES OUTPUT_NAME combat_infinity_oracle)
 target_include_directories(combat-infinity-oracle PRIVATE include json/include)
+link_ctm_crypto(combat-infinity-oracle)
 add_test(NAME combat_infinity_oracle COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
     $<TARGET_FILE:combat-infinity-oracle> --fixtures)
 set_tests_properties(combat_infinity_oracle PROPERTIES LABELS "core;research-repro")
 add_test(NAME combat_infinity_recall COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
     $<TARGET_FILE:combat-infinity-oracle> --recall-fixtures)
 set_tests_properties(combat_infinity_recall PROPERTIES LABELS "core;research-repro")
+add_test(NAME combat_infinity_public COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:combat-infinity-oracle> --public-fixtures)
+set_tests_properties(combat_infinity_public PROPERTIES LABELS "core;research-repro")
 
 # Default-off observer neutrality: live combat core only.
 add_executable(combat-knowledge-neutrality-test apps/combat_knowledge_neutrality_test.cpp $<TARGET_OBJECTS:sts_core_objects>)

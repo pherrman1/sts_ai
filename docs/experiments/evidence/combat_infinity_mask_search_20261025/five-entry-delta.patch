@@ -1,0 +1,32 @@
+--- a/apps/one_combat/infinity_frozen_skips.h
++++ b/apps/one_combat/infinity_frozen_skips.h
+@@ -1 +1 @@
+-// Research patch for the frozen 111101326 experiment; never a production hook.
++// Research patch for the frozen 111101032 experiment; never a production hook.
+@@ -35,2 +35,2 @@
+-        if (seed != 111101326 || manifest.at("preferred_test_seed").get<std::uint64_t>() != seed
+-                || manifest.at("interventions").size() != 13)
++        if (seed != 111101032 || manifest.at("preferred_test_seed").get<std::uint64_t>() != seed
++                || manifest.at("interventions").size() != 5)
+@@ -53 +53 @@
+-        if (gc.seed != 111101326) throw std::runtime_error("infinity run seed changed");
++        if (gc.seed != 111101032) throw std::runtime_error("infinity run seed changed");
+@@ -96 +96 @@
+-        if (normalEnd && (entries_.size() != 13 || matched + unseen + disabled != 13 || failed != 0))
++        if (normalEnd && (entries_.size() != 5 || matched + unseen + disabled != 5 || failed != 0))
+@@ -98 +98 @@
+-        return {{"kind", "infinity_skip_summary"}, {"seed", 111101326},
++        return {{"kind", "infinity_skip_summary"}, {"seed", 111101032},
+--- a/apps/one_combat/run_driver.cpp
++++ b/apps/one_combat/run_driver.cpp
+@@ -471,0 +472,10 @@
++        // Research-only read-only checkpoint for bounded five-mask search.
++        // Manifest unset: no extra trace/state serialization or behavior.
++        if (infinitySkips.enabled())
++            oocTraceEmit({{"kind", "infinity_mask_boundary"}, {"seed", seed},
++                {"index", oocDecisionIndex + fightsTotal}, {"fight", fightsTotal + 1},
++                {"encounter", gc.screenState == ScreenState::BATTLE
++                    ? monsterEncounterEnumNames[static_cast<int>(gc.info.encounter)] : ""},
++                {"pre", oocTraceState(gc)}, {"integrity_so_far", trainingRunValid(true)},
++                {"interventions", infinitySkips.summary(false)}});
++

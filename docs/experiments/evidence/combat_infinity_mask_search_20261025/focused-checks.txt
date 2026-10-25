@@ -1,0 +1,9 @@
+PASS disabled: zero semantic enumeration/execution
+PASS wrong seed rejected; irrelevant screen/floor do not enumerate; absent groups stay NOT_SEEN
+PASS all 5 exact semantic keys; at-most-once accounting; decision indices unused
+PASS unsupported/incomplete/ambiguous/wrong-type/failed execution abort and mark MATCH_FAILED_FATAL
+PASS disabled entry never enumerates/matches/executes and reports DISABLED_BY_DESIGN
+PASS 4 unchanged enabled targets fire once; matched+unseen+disabled=5
+PASS omitted/true preserve all5 targets; nonboolean enabled fails closed
+PASS complete32-mask enablement/at-most-once/accounting contract
+9 focused contract groups passed (stub; no gameplay run)

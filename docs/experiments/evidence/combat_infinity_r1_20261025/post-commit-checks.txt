@@ -1,0 +1,176 @@
+Checked head 04b059927d67afbbc5718a8d6d2dd7ef0957f7d1
+
+$ python3 tools/ledger_assign.py assign --dry-run --base 5c30b0d28f20e2323dc530c077c5e5e17b4b7b73 --skip 517
+§TBD-r1 -> §674
+§TBD-counterfactual -> §675
+§TBD-compression -> §676
+§TBD-reconstruction -> §677
+§TBD-capture -> §678
+§TBD-hunt -> §679
+§TBD-natural -> §680
+§TBD-public -> §681
+EXIT 0
+
+$ python3 tools/repo_health.py --baseline dbd2a1f7b44f1467ab45ae1346f0bc02c3125788 --json
+{
+  "added_tracked_paths": [
+    "docs/experiments/evidence/combat_infinity_r1_20261025/FREEZE.json",
+    "docs/experiments/evidence/combat_infinity_r1_20261025/MATRIX.md",
+    "docs/experiments/evidence/combat_infinity_r1_20261025/PROTOCOL.md",
+    "docs/experiments/evidence/combat_infinity_r1_20261025/R1_INTERVENTIONS.json",
+    "docs/experiments/evidence/combat_infinity_r1_20261025/REPORT.md",
+    "docs/experiments/evidence/combat_infinity_r1_20261025/RESULT.json",
+    "docs/experiments/evidence/combat_infinity_r1_20261025/TRIGGERS.md",
+    "docs/experiments/evidence/combat_infinity_r1_20261025/analyze.py",
+    "docs/experiments/evidence/combat_infinity_r1_20261025/annotate.py",
+    "docs/experiments/evidence/combat_infinity_r1_20261025/build-details.json",
+    "docs/experiments/evidence/combat_infinity_r1_20261025/build-result.json",
+    "docs/experiments/evidence/combat_infinity_r1_20261025/build.log",
+    "docs/experiments/evidence/combat_infinity_r1_20261025/build_runtime.py",
+    "docs/experiments/evidence/combat_infinity_r1_20261025/check_hook.py",
+    "docs/experiments/evidence/combat_infinity_r1_20261025/configure.log.gz",
+    "docs/experiments/evidence/combat_infinity_r1_20261025/focused-checks.txt",
+    "docs/experiments/evidence/combat_infinity_r1_20261025/freeze_roots.py",
+    "docs/experiments/evidence/combat_infinity_r1_20261025/historical-intervention.patch",
+    "docs/experiments/evidence/combat_infinity_r1_20261025/independent-review.json",
+    "docs/experiments/evidence/combat_infinity_r1_20261025/measure.py",
+    "docs/experiments/evidence/combat_infinity_r1_20261025/measurements.json",
+    "docs/experiments/evidence/combat_infinity_r1_20261025/parity.json",
+    "docs/experiments/evidence/combat_infinity_r1_20261025/parity.states.jsonl.gz",
+    "docs/experiments/evidence/combat_infinity_r1_20261025/parity.stderr.log.gz",
+    "docs/experiments/evidence/combat_infinity_r1_20261025/parity.stdout.log.gz",
+    "docs/experiments/evidence/combat_infinity_r1_20261025/parity.trace.jsonl.gz",
+    "docs/experiments/evidence/combat_infinity_r1_20261025/preservation-check.json",
+    "docs/experiments/evidence/combat_infinity_r1_20261025/qualify.py",
+    "docs/experiments/evidence/combat_infinity_r1_20261025/r1-enabled-entry.patch",
+    "docs/experiments/evidence/combat_infinity_r1_20261025/treatment.json",
+    "docs/experiments/evidence/combat_infinity_r1_20261025/treatment.py",
+    "docs/experiments/evidence/combat_infinity_r1_20261025/treatment.states.jsonl.gz",
+    "docs/experiments/evidence/combat_infinity_r1_20261025/treatment.stderr.log.gz",
+    "docs/experiments/evidence/combat_infinity_r1_20261025/treatment.stdout.log.gz",
+    "docs/experiments/evidence/combat_infinity_r1_20261025/treatment.trace.jsonl.gz",
+    "docs/experiments/evidence/combat_infinity_r1_20261025/verification.txt"
+  ],
+  "baseline": "dbd2a1f7b44f1467ab45ae1346f0bc02c3125788",
+  "baseline_metrics": {
+    "active_markdown": {
+      "bytes": 8247402,
+      "files": 1026
+    },
+    "one_combat_cpp": {
+      "bytes": 253127
+    },
+    "root_scripts": [
+      "analyze_card_cf_reliability.py",
+      "eval_ensemble.py",
+      "export_combat_model.py",
+      "export_ooc_checkpoint.py",
+      "export_strategic.py",
+      "export_strategic_tok.py",
+      "export_win_model.py",
+      "paired_analysis.py",
+      "parity_test.py",
+      "strategic_gate_contract.py",
+      "strategic_metrics.py",
+      "strategic_split.py",
+      "strategic_tok_contract.py",
+      "strategic_tok_net.py",
+      "strategic_tok_state_cache.py",
+      "train_boss_survival.py",
+      "train_card_cf.py",
+      "train_combat_cpsi.py",
+      "train_combat_deepsets.py",
+      "train_combat_dist.py",
+      "train_combat_pvnet.py",
+      "train_combat_transition_entry.py",
+      "train_deckset.py",
+      "train_meta_entity.py",
+      "train_ooc_checkpoint.py",
+      "train_ooc_encounter.py",
+      "train_ooc_next_action.py",
+      "train_path_cf.py",
+      "train_rest_cf.py",
+      "train_strategic.py",
+      "train_strategic_ppo.py",
+      "train_strategic_qiso.py",
+      "train_strategic_tok.py",
+      "train_value.py",
+      "train_value_combat.py",
+      "train_value_deckaware.py",
+      "train_value_rich.py",
+      "train_value_xgb.py",
+      "train_winrate.py",
+      "v_server.py"
+    ],
+    "tracked_bytes": 957190151,
+    "tracked_files": 10160
+  },
+  "current": {
+    "head": "04b059927d67afbbc5718a8d6d2dd7ef0957f7d1",
+    "metrics": {
+      "active_markdown": {
+        "bytes": 8269452,
+        "files": 1030
+      },
+      "one_combat_cpp": {
+        "bytes": 253127
+      },
+      "root_scripts": [
+        "analyze_card_cf_reliability.py",
+        "eval_ensemble.py",
+        "export_combat_model.py",
+        "export_ooc_checkpoint.py",
+        "export_strategic.py",
+        "export_strategic_tok.py",
+        "export_win_model.py",
+        "paired_analysis.py",
+        "parity_test.py",
+        "strategic_gate_contract.py",
+        "strategic_metrics.py",
+        "strategic_split.py",
+        "strategic_tok_contract.py",
+        "strategic_tok_net.py",
+        "strategic_tok_state_cache.py",
+        "train_boss_survival.py",
+        "train_card_cf.py",
+        "train_combat_cpsi.py",
+        "train_combat_deepsets.py",
+        "train_combat_dist.py",
+        "train_combat_pvnet.py",
+        "train_combat_transition_entry.py",
+        "train_deckset.py",
+        "train_meta_entity.py",
+        "train_ooc_checkpoint.py",
+        "train_ooc_encounter.py",
+        "train_ooc_next_action.py",
+        "train_path_cf.py",
+        "train_rest_cf.py",
+        "train_strategic.py",
+        "train_strategic_ppo.py",
+        "train_strategic_qiso.py",
+        "train_strategic_tok.py",
+        "train_value.py",
+        "train_value_combat.py",
+        "train_value_deckaware.py",
+        "train_value_rich.py",
+        "train_value_xgb.py",
+        "train_winrate.py",
+        "v_server.py"
+      ],
+      "tracked_bytes": 957408122,
+      "tracked_files": 10196
+    }
+  },
+  "documentation": {
+    "current_broken": []
+  },
+  "hard_failures": {},
+  "status": "pass",
+  "warnings": [
+    "active Markdown growth"
+  ]
+}
+EXIT 0
+
+$ git diff dbd2a1f7b44f1467ab45ae1346f0bc02c3125788 --check
+EXIT 0

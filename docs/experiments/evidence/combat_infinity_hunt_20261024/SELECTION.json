@@ -1,0 +1,137 @@
+{
+  "schema": "infinity_hunt_selection_v1",
+  "screen_freeze_sha": "bef9bbc1e5311ead48f8e7ded3b3db8c31ac3c3d",
+  "census_sha256": "282b1413cd549488f41850c4f67b4fcae7c032ded8b447855384e20e445bd87a",
+  "selected_input_sha256": "580bb38b20d7fa1dd3fcdb4f7a0748075dea3080626f30bc88431eb87a921ce9",
+  "selection_rule": "frozen public-only screen and ordering; max4/combat max32 total",
+  "roots": [
+    {
+      "source": "A0_CHAMP_PAIRED",
+      "run": "610081002",
+      "identity": {
+        "line": 1,
+        "decision": 1,
+        "act": 2,
+        "floor": 33,
+        "fight": 13
+      },
+      "no_shard_proven": true,
+      "eligible_public_input": true,
+      "enrichment": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K4_headbutt_draw"
+        ],
+        "active_card_count": 25,
+        "relevant_cards": {
+          "BASH": 1,
+          "HEADBUTT": 2,
+          "SHOCKWAVE": 1,
+          "SHRUG_IT_OFF": 3,
+          "UPPERCUT": 1
+        },
+        "relevant_relics": []
+      },
+      "public_sha256": "341a8ad2b695269ee22d3260a23bd862a2b0d52d3cdbac6c09c0180fc6638c5d"
+    },
+    {
+      "source": "A0_CHAMP_PAIRED",
+      "run": "610081002",
+      "identity": {
+        "line": 2,
+        "decision": 2,
+        "act": 2,
+        "floor": 33,
+        "fight": 13
+      },
+      "no_shard_proven": true,
+      "eligible_public_input": true,
+      "enrichment": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K4_headbutt_draw"
+        ],
+        "active_card_count": 25,
+        "relevant_cards": {
+          "BASH": 1,
+          "HEADBUTT": 2,
+          "SHOCKWAVE": 1,
+          "SHRUG_IT_OFF": 3,
+          "UPPERCUT": 1
+        },
+        "relevant_relics": []
+      },
+      "public_sha256": "df57286b1c049e706b313e762c1028fd28a9c0571065caee6ed402531ae69a40"
+    },
+    {
+      "source": "A0_CHAMP_PAIRED",
+      "run": "610081002",
+      "identity": {
+        "line": 3,
+        "decision": 3,
+        "act": 2,
+        "floor": 33,
+        "fight": 13
+      },
+      "no_shard_proven": true,
+      "eligible_public_input": true,
+      "enrichment": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K4_headbutt_draw"
+        ],
+        "active_card_count": 25,
+        "relevant_cards": {
+          "BASH": 1,
+          "HEADBUTT": 2,
+          "SHOCKWAVE": 1,
+          "SHRUG_IT_OFF": 3,
+          "UPPERCUT": 1
+        },
+        "relevant_relics": []
+      },
+      "public_sha256": "e9093f8f31380feb5ceaf13641dc3b3d21c9d21ca6d48b35f7e76a4c1b88a0fe"
+    },
+    {
+      "source": "A0_CHAMP_PAIRED",
+      "run": "610081002",
+      "identity": {
+        "line": 5,
+        "decision": 5,
+        "act": 2,
+        "floor": 33,
+        "fight": 13
+      },
+      "no_shard_proven": true,
+      "eligible_public_input": true,
+      "enrichment": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K4_headbutt_draw"
+        ],
+        "active_card_count": 26,
+        "relevant_cards": {
+          "BASH": 1,
+          "HEADBUTT": 2,
+          "SHOCKWAVE": 2,
+          "SHRUG_IT_OFF": 3,
+          "UPPERCUT": 1
+        },
+        "relevant_relics": []
+      },
+      "public_sha256": "0acf6f347d6fc86cdcfacf67602c4cb07640a06f8cfcecd7e11a5401b9abe175"
+    }
+  ],
+  "novel_selected_roots": 0,
+  "current_A20_selected_roots": 0,
+  "execution_decision": "REUSE_IDENTICAL_PRIOR_INPUT_OUTPUT; current-policy hunt BLOCKED_BY_DATA",
+  "prior_input": "../combat_infinity_natural_20261024/inputs-0.jsonl",
+  "prior_output": "../combat_infinity_natural_20261024/output-0.jsonl",
+  "prior_output_sha256": "4836ea4e5db5bed6399de54c2ffe45e1cbbcb38490f90e5f59d37194eb19306f",
+  "prior_result_sha": "7249709a16a19b8cc6d265a5b42c8d93e5a24872",
+  "reason": "Only the weak K4 Headbutt/draw class has eligible public roots; four selected roots are byte-identical to prior pilot batch0. No new independent evidence from replaying them; no current/recent eligible enriched combat root was found."
+}
