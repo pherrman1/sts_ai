@@ -24424,10 +24424,10 @@ A+C, 400 distinct, first 392 in a fixed order). Each deck: base + 24 variants (1
 6 up, 4 rm, `hp:-8`, `hp:-16`), 4 copies each. Base and variants share battle and planner seeds. `act4replay` arm P
 (flat 10k, g7f_E root prior): on #852's Heart decks this ranks decks like production 40k (disattenuated r ≈ 1.0) at
 1/27 of the CPU. Stage A = first 96 decks, with a pre-registered futility rule. Run commit `0de9a35c`, 8 cloud
-workers, 96/96 units verified. Two fights were dropped (deterministic Silver stall on one deck); pre-launch review PASS.
+workers, 96/96 units verified. Two fights were dropped by the frozen analysis (deterministic Silver stall on one deck); pre-launch review PASS.
 Philipp's go: 2026-10-24 23:00Z.
 **Result:** [RESULT.md](evidence/stage_value_table_20261024/RESULT.md). 9,598 fights. CRN correlation of base and
-variant 0.68; base win 54.7% vs observed 61.5%. DerSimonian-Laird spread of true key effects over 111 keys: τ = 0.0.
+variant 0.68; base win 54.7% vs observed 61.5%. Spread of true key effects over 111 keys: τ = 0.0 (DerSimonian-Laird; plain method of moments also 0).
 Per-deck difference SD 0.207. Projected split-half r of the full design 0.00 < 0.35 → **STOP**. Held-out Spearman
 0.023 [−0.024, +0.073]. HP is measurable: `hp:-16` −4.7 pp (SE 1.9), about −0.3 pp per entry HP.
 **Interpretation:** FAIL by the futility rule (inference): single deck changes at the Heart are below what about

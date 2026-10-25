@@ -8,7 +8,7 @@
 (`/mnt/project-files/reviews/pr859-prelaunch-review.md`). `tools/cloud/verify_campaign.py`: 96 of 96 units OK,
 0 missing, 0 bad, one run commit. Every `deck-*.done` reads rc=0 except deck 95 (rc=91). There, two fights
 (`up:Havoc` copy 1, `rm:Pain` copy 2, deck C-111392119) hit the deterministic Silver stall ("exceeded 1000
-decisions"); the same state stalled once in #852 (Heart state 15). Those two fights are dropped, as pre-registered.
+decisions"); the same state stalled once in #852 (Heart state 15). Those two fights are dropped by the frozen analysis (the PREREG does not define error handling).
 Seeds used: 111303000-111303383 (Stage A) and smokes 111308990-997. Results: [`analysis-stage-a.json`](analysis-stage-a.json).
 
 **Data.** 96 decks, 9,598 valid fights, 8.4 CPU s per fight on average.
@@ -17,7 +17,8 @@ Seeds used: 111303000-111303383 (Stage A) and smokes 111308990-997. Results: [`a
 - CRN works. Base and variant outcomes on the same copy correlate 0.68.
 
 **Primary (Stage A futility rule): STOP.**
-- DerSimonian-Laird spread of true key effects over the 111 add/up/rm keys with at least 8 decks: **τ = 0.0**.
+- DerSimonian-Laird spread of true key effects over the 111 add/up/rm keys with at least 8 decks: **τ = 0.0**. The
+  PREREG's plain method of moments gives σ̂² = −0.0006, also clamped to 0 (delta review).
 - Per-deck SD of a variant-minus-base difference: 0.207.
 - Projected split-half r for the full 392-deck design: **0.00**, below the 0.35 line.
 - Stage B and the act-3 stage do not run.
@@ -25,7 +26,7 @@ Seeds used: 111303000-111303383 (Stage A) and smokes 111308990-997. Results: [`a
 **Secondary.**
 - Gate (b) on Stage A decks (descriptive at this size): mean held-out Spearman 0.023, 95% CI [−0.024, +0.073], over 72
   decks. 24 decks gave no Spearman (constant predictions or observations).
-- Raw SD of key means: add 4.0 pp, upgrade 2.2 pp, remove 0.0 pp (keys with ≥ 20 decks). The noise SE alone at 20
+- Raw SD of key means: add 4.0 pp, upgrade 2.2 pp (keys with ≥ 20 decks; no remove key reached 20 decks). The noise SE alone at 20
   decks is about 4.6 pp. The extremes are consistent with noise: `add:Sword Boomerang` +9.3 pp, `add:Hemokinesis` and
   `add:Seeing Red` −7.5 pp, each over 20-27 decks.
 - **HP is measurable:** `hp:-8` −2.1 pp (SE 1.7) and `hp:-16` −4.7 pp (SE 1.9) Heart win. That is about −0.3 pp per
