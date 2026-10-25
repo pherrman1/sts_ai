@@ -1,0 +1,304 @@
+{
+  "status": "VALID",
+  "receipt_sha256": "e46e3c57734a59e308b8fc90f5335dc782d2bbaf265e6f940262faadca1cf618",
+  "measurement": {
+    "mask": "01100",
+    "numeric_mask": 12,
+    "enabled_skip_count": 2,
+    "matched": 2,
+    "not_seen": 0,
+    "disabled": 3,
+    "statuses": [
+      {
+        "act": 1,
+        "bit": 0,
+        "enabled": false,
+        "floor": 4,
+        "forced_skip_key": "ooc:v1:effect=12:source=7:reward=none:group=[65,0,0;69,0,0;197,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+        "historical_card": "Clothesline",
+        "historical_take_key": "ooc:v1:effect=5:source=7:reward=card,69,0,0:group=[65,0,0;69,0,0;197,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+        "original_ooc_decision": 13,
+        "original_trace_index": 16,
+        "public_reward_group": "[65,0,0;69,0,0;197,0,0;]",
+        "status": "DISABLED_BY_DESIGN"
+      },
+      {
+        "act": 1,
+        "bit": 1,
+        "enabled": false,
+        "floor": 5,
+        "forced_skip_key": "ooc:v1:effect=12:source=7:reward=none:group=[14,0,0;184,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+        "historical_card": "Armaments",
+        "historical_take_key": "ooc:v1:effect=5:source=7:reward=card,14,0,0:group=[14,0,0;184,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+        "original_ooc_decision": 16,
+        "original_trace_index": 20,
+        "public_reward_group": "[14,0,0;184,0,0;329,0,0;]",
+        "status": "DISABLED_BY_DESIGN"
+      },
+      {
+        "act": 1,
+        "bit": 2,
+        "enabled": true,
+        "floor": 10,
+        "forced_skip_key": "ooc:v1:effect=12:source=7:reward=none:group=[191,0,0;197,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+        "historical_card": "Twin Strike",
+        "historical_take_key": "ooc:v1:effect=5:source=7:reward=card,347,0,0:group=[191,0,0;197,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+        "original_ooc_decision": 32,
+        "original_trace_index": 38,
+        "public_reward_group": "[191,0,0;197,0,0;347,0,0;]",
+        "status": "MATCHED_EXECUTED"
+      },
+      {
+        "act": 1,
+        "bit": 3,
+        "enabled": true,
+        "floor": 12,
+        "forced_skip_key": "ooc:v1:effect=12:source=7:reward=none:group=[73,0,0;152,0,0;187,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+        "historical_card": "Immolate",
+        "historical_take_key": "ooc:v1:effect=5:source=7:reward=card,187,0,0:group=[73,0,0;152,0,0;187,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+        "original_ooc_decision": 38,
+        "original_trace_index": 45,
+        "public_reward_group": "[73,0,0;152,0,0;187,0,0;]",
+        "status": "MATCHED_EXECUTED"
+      },
+      {
+        "act": 1,
+        "bit": 4,
+        "enabled": false,
+        "floor": 16,
+        "forced_skip_key": "ooc:v1:effect=12:source=7:reward=none:group=[83,0,0;107,0,0;266,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+        "historical_card": "Reaper",
+        "historical_take_key": "ooc:v1:effect=5:source=7:reward=card,266,0,0:group=[83,0,0;107,0,0;266,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+        "original_ooc_decision": 53,
+        "original_trace_index": 63,
+        "public_reward_group": "[83,0,0;107,0,0;266,0,0;]",
+        "status": "DISABLED_BY_DESIGN"
+      }
+    ],
+    "stop": "TARGET_REACHED",
+    "highest_floor": 18,
+    "alive": true,
+    "pandora_offered": true,
+    "pandora_offer_rows": [
+      131
+    ],
+    "pandora_obtained": true,
+    "pandora_selected_naturally": true,
+    "pandora_choice": {
+      "row": 131,
+      "decision": 55,
+      "act": 1,
+      "floor": 17,
+      "by": "mcts",
+      "added": {
+        "Berserk": 1,
+        "Inflame": 1,
+        "Dropkick": 2,
+        "Barricade": 1,
+        "Entrench": 1,
+        "Fire Breathing": 1,
+        "Wild Strike": 1,
+        "Rage": 1
+      },
+      "removed": {
+        "Strike": 5,
+        "Defend": 4
+      },
+      "dropkicks_produced": 2,
+      "pre": {
+        "act": 1,
+        "deck": [
+          "Ascender's Bane",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Defend",
+          "Defend",
+          "Defend",
+          "Defend",
+          "Bash",
+          "Fire Breathing+",
+          "Clothesline",
+          "Armaments",
+          "Pommel Strike",
+          "Armaments",
+          "Reaper"
+        ],
+        "event": "",
+        "floor": 17,
+        "gold": 302,
+        "hp": 14,
+        "maxHp": 75,
+        "potionCapacity": 2,
+        "potions": [
+          "BLOCK_POTION"
+        ],
+        "relics": [
+          "BURNING_BLOOD",
+          "MEAL_TICKET",
+          "STRIKE_DUMMY",
+          "KUNAI"
+        ],
+        "room": "BOSS_TREASURE",
+        "screen": "BOSS_RELIC",
+        "x": 0,
+        "y": 15
+      },
+      "post": {
+        "act": 2,
+        "deck": [
+          "Ascender's Bane",
+          "Bash",
+          "Fire Breathing+",
+          "Clothesline",
+          "Armaments",
+          "Pommel Strike",
+          "Armaments",
+          "Reaper",
+          "Berserk",
+          "Inflame",
+          "Dropkick",
+          "Barricade",
+          "Entrench",
+          "Dropkick",
+          "Fire Breathing",
+          "Wild Strike",
+          "Rage"
+        ],
+        "event": "",
+        "floor": 17,
+        "gold": 302,
+        "hp": 60,
+        "maxHp": 75,
+        "potionCapacity": 2,
+        "potions": [
+          "BLOCK_POTION"
+        ],
+        "relics": [
+          "BURNING_BLOOD",
+          "MEAL_TICKET",
+          "STRIKE_DUMMY",
+          "KUNAI",
+          "PANDORAS_BOX"
+        ],
+        "room": "BOSS_TREASURE",
+        "screen": "MAP",
+        "x": -1,
+        "y": -1
+      }
+    },
+    "dropkicks": 2,
+    "bash_present": true,
+    "pommel_present": true,
+    "engine_complete": true,
+    "engine_intact_at_target": true,
+    "engine_completion": {
+      "row": 131,
+      "state": {
+        "act": 2,
+        "deck": [
+          "Ascender's Bane",
+          "Bash",
+          "Fire Breathing+",
+          "Clothesline",
+          "Armaments",
+          "Pommel Strike",
+          "Armaments",
+          "Reaper",
+          "Berserk",
+          "Inflame",
+          "Dropkick",
+          "Barricade",
+          "Entrench",
+          "Dropkick",
+          "Fire Breathing",
+          "Wild Strike",
+          "Rage"
+        ],
+        "event": "",
+        "floor": 17,
+        "gold": 302,
+        "hp": 60,
+        "maxHp": 75,
+        "potionCapacity": 2,
+        "potions": [
+          "BLOCK_POTION"
+        ],
+        "relics": [
+          "BURNING_BLOOD",
+          "MEAL_TICKET",
+          "STRIKE_DUMMY",
+          "KUNAI",
+          "PANDORAS_BOX"
+        ],
+        "room": "BOSS_TREASURE",
+        "screen": "MAP",
+        "x": -1,
+        "y": -1
+      },
+      "source": "post",
+      "decision": 55
+    },
+    "permanent_deck_at_engine_completion": 17,
+    "target_alive": true,
+    "target": {
+      "seed": 111101032,
+      "act": 2,
+      "floor": 18,
+      "fight": 11,
+      "encounter": "SHELL_PARASITE",
+      "state": {
+        "act": 2,
+        "deck": [
+          "Ascender's Bane",
+          "Bash",
+          "Fire Breathing+",
+          "Clothesline",
+          "Armaments",
+          "Pommel Strike",
+          "Armaments",
+          "Reaper",
+          "Berserk",
+          "Inflame",
+          "Dropkick",
+          "Barricade",
+          "Entrench",
+          "Dropkick",
+          "Fire Breathing",
+          "Wild Strike",
+          "Rage"
+        ],
+        "event": "",
+        "floor": 18,
+        "gold": 302,
+        "hp": 60,
+        "maxHp": 75,
+        "potionCapacity": 2,
+        "potions": [
+          "BLOCK_POTION"
+        ],
+        "relics": [
+          "BURNING_BLOOD",
+          "MEAL_TICKET",
+          "STRIKE_DUMMY",
+          "KUNAI",
+          "PANDORAS_BOX"
+        ],
+        "room": "MONSTER",
+        "screen": "BATTLE",
+        "x": 0,
+        "y": 0
+      },
+      "pre_sha256": "545b5d547a51fe36d297f0e35ff6d299d9b15e4136c14c63a13c654cce7505d2",
+      "boundary_index": 67
+    },
+    "target_deck_size": 17,
+    "target_hp": 60,
+    "current_deck_size": 17,
+    "endpoint_row": 134,
+    "prefix_sha256": "43bc74c25b1e930fa0217bb842665845d8f20eabcaaf388bdfc5c00576a42984",
+    "oracle_executed": false
+  }
+}

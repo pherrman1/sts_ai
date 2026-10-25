@@ -64,7 +64,7 @@ information-set draw kernel and excludes source private order/RNG. Four
 constructed controls produce expected certified/candidate fractions across 16
 worlds. However, all four preselected preserved public roots lack full run-relic
 provenance needed to prove no Prismatic Shard. They are UNSUPPORTED with null
-fractions, not negative labels; natural-root annotation remains blocked by this
+fractions, not negative labels; those four roots remain ineligible because of this
 metadata gap. Do not increase K/sample size or train from the nulls to compensate.
 The next prerequisite is authoritative public run-relic provenance attached to
 eligible roots. No new collection, capture-schema change, model/AZ/training,
@@ -73,8 +73,8 @@ OOC/default change or production caller was implemented.
 A [read-only provenance audit](../../experiments/evidence/combat_infinity_public_20261023/PROVENANCE_OPTIONS.md)
 found a different retained historical A0 Champ capture whose receipt binds public
 roots to a full pre/post run-relic trace proving no Shard. It supplies 65 basic
-public/normal candidates, with a fixed first-16 proposal; oracle eligibility and
-annotation have not run. Existing paired opt-in trace paths suffice, so no capture
+public/normal candidates; the fixed first16 were subsequently annotated in the
+pilot below. Existing paired opt-in trace paths suffice, so no capture
 patch is needed for this development sample. This does not repair the original
 four null roots or establish current-policy coverage. Current OOC AZ records
 retain full relic IDs but do not themselves carry in-combat public wires.
@@ -155,7 +155,8 @@ The engine never completed, so no capture replay, selected combat root or sample
 world/oracle execution followed. Final23 permanent cards cannot be compared with
 the historical31 as an engine-preserving reduction; no counterfactual target active
 pool exists. The31->18 accounting projection was not realized. Engine-preserving
-actual compression and natural positive signal remain unestablished. This result
+actual compression and natural positive signal were not established by that326
+treatment. This result
 does not justify a beam, alternate arm, oracle change or model work. Stop after
 this bounded experiment; prior unsupported/null roots and earlier results stand.
 
@@ -180,16 +181,24 @@ lead, beam implementation or model work. Production/default/oracle behavior and
 previous evidence remain unchanged; no #844 merge.
 
 
-The [authorized exhaustive five-skip search on032](../../experiments/evidence/combat_infinity_mask_search_20261025/PROTOCOL.md)
-(§TBD-mask-search; starting reviewed13bed5e00) now tests all32 subsets of the five
-clean optional rewards, preserving the earlier Flame Barrier transform dependency
-and coupled Pandora outcome. This is existence/search on one historical seed, not
-32 independent policy samples. The new research binary must first reproduce the
-68-state/67-trace historical prefix. Qualification serves mask0; then31 frozen
-variants, no oracle during search, four single-thread workers after canary validation.
-The only follow-up is the single ranked best's capture if intact engine/alive entry/
-permanent<=14. No runs yet, no claim of actual compression or positive signal.
-No further326 subset, removals,512 continuation, beam implementation or models.
+The [exhaustive five-skip search on032](../../experiments/evidence/combat_infinity_mask_search_20261025/RESULT.md)
+(§TBD-mask-search) establishes **OOC_COMPRESSION_LEVER_ESTABLISHED** for this one
+historical seed/subset space. All32 masks were valid and reached the actual
+Bash/Pommel/two-Dropkick engine's first combat alive. The unique gate-passing best,
+11111, executed all5 skips and reached14 permanent cards/64HP. Its one exact-prefix
+capture measured minimum active9 versus historical16 (permanent18→14), survived
+Shell Parasite at36HP, and supplied21 ordinary public roots, none active<=8.
+Natural downstream policy acquired another Armaments; the offline13-card bound
+was not the observed result. No policy/prevalence inference from32 correlated masks.
+
+Four frozen smallest-active roots, unchangedK4:16 supported worlds allNONE, no
+candidate/certified witness or cap hit; only2–54 nodes/world. Enemy Vulnerable was0
+and Bash/Pommel remained undrawn, limiting same-turn options. This establishes a
+compression lever, not natural near-infinity signal or an absence proof. Runtime
+manifest-unset qualification matched historical header/68states/67traces exactly;
+independent implementation and evidence reviews passed. The authorized search and
+single capture/annotation are complete. Current production/default/oracle/models
+remain unchanged; no further326 subset, removal,512 run, beam or model work follows.
 
 ## AlphaZero-style OOC loop: open requirements
 

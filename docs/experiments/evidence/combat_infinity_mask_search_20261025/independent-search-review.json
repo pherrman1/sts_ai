@@ -1,0 +1,19 @@
+{
+  "reviewer": "/root/infinity_review",
+  "runtime_reviewed_sha": "8c8cc1582a7ba6e6f661bbbdbd5783560caf4def",
+  "verdict": "PASS",
+  "checks": [
+    "all32 in-memory raw measurement regeneration",
+    "treatment/parity archive hashes",
+    "68 states67 traces/header parity",
+    "canary before-first-skip equality",
+    "manifests/models/custody",
+    "healthy first endpoints and clipping",
+    "unique11111 ranking and gate",
+    "4687.833208s CPU",
+    "public-only root-freeze helper and unchanged annotation helper"
+  ],
+  "root_helper_sha256": "4b20685f7a55ae6c1bf2e12e568c8fef98431a844672732bb5d2ae9ddd1e9ae1",
+  "capture_oracle_results_pending": true,
+  "seed_or_world_reruns": 0
+}

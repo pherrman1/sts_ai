@@ -1,0 +1,58 @@
+[
+  {
+    "phase": "qualification",
+    "native_session": 3485984,
+    "sample_utc": "2026-10-25T09:42:46Z",
+    "ps_columns": [
+      "pid",
+      "nlwp",
+      "rss_kib",
+      "pcpu"
+    ],
+    "sample": "3485984    1 46852  4.3\n3486040    1 39956  100\n"
+  },
+  {
+    "phase": "mask00001_canary",
+    "native_session": 3486319,
+    "sample_utc": "2026-10-25T09:45:01Z",
+    "ps_columns": [
+      "pid",
+      "nlwp",
+      "rss_kib",
+      "pcpu"
+    ],
+    "sample": "3486319    1 46940  4.3\n3486379    1 40336  103\n"
+  },
+  {
+    "phase": "four_worker_batch",
+    "sample_utc": "2026-10-25T09:47:13Z",
+    "ps_columns": [
+      "pid",
+      "nlwp",
+      "rss_kib",
+      "pcpu"
+    ],
+    "samples": [
+      {
+        "mask": "00010",
+        "native_session": 3486661,
+        "sample": "3486661    1 47048  3.6\n3486825    1 41004  101\n"
+      },
+      {
+        "mask": "00011",
+        "native_session": 3486664,
+        "sample": "3486664    1 47016  3.8\n3486826    1 40920  100\n"
+      },
+      {
+        "mask": "00100",
+        "native_session": 3486663,
+        "sample": "3486663    1 46916  3.8\n3486836    1 40156  125\n"
+      },
+      {
+        "mask": "00101",
+        "native_session": 3486662,
+        "sample": "3486662    1 46920  4.0\n3486827    1 40840  105\n"
+      }
+    ]
+  }
+]

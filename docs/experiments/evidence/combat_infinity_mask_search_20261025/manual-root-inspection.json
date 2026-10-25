@@ -1,0 +1,209 @@
+[
+  {
+    "decision": 10,
+    "turn": 2,
+    "player": {
+      "curHp": 44,
+      "energy": 4,
+      "energyPerTurn": 4,
+      "maxHp": 75
+    },
+    "monsters": [
+      [
+        69,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ]
+    ],
+    "zones": {
+      "hand": [
+        "ARMAMENTS",
+        "RAGE",
+        "DROPKICK",
+        "BARRICADE",
+        "DROPKICK"
+      ],
+      "drawPile": [
+        "BASH",
+        "ENTRENCH",
+        "POMMEL_STRIKE",
+        "WILD_STRIKE"
+      ],
+      "discardPile": [],
+      "exhaustPile": [
+        "ASCENDERS_BANE"
+      ]
+    }
+  },
+  {
+    "decision": 12,
+    "turn": 2,
+    "player": {
+      "curHp": 44,
+      "energy": 3,
+      "energyPerTurn": 4,
+      "maxHp": 75
+    },
+    "monsters": [
+      [
+        69,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ]
+    ],
+    "zones": {
+      "hand": [
+        "DROPKICK",
+        "BARRICADE",
+        "DROPKICK",
+        "RAGE"
+      ],
+      "drawPile": [
+        "BASH",
+        "ENTRENCH",
+        "POMMEL_STRIKE",
+        "WILD_STRIKE"
+      ],
+      "discardPile": [
+        "ARMAMENTS"
+      ],
+      "exhaustPile": [
+        "ASCENDERS_BANE"
+      ]
+    }
+  },
+  {
+    "decision": 13,
+    "turn": 2,
+    "player": {
+      "curHp": 44,
+      "energy": 3,
+      "energyPerTurn": 4,
+      "maxHp": 75
+    },
+    "monsters": [
+      [
+        69,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ]
+    ],
+    "zones": {
+      "hand": [
+        "DROPKICK",
+        "BARRICADE",
+        "DROPKICK"
+      ],
+      "drawPile": [
+        "BASH",
+        "ENTRENCH",
+        "POMMEL_STRIKE",
+        "WILD_STRIKE"
+      ],
+      "discardPile": [
+        "ARMAMENTS",
+        "RAGE"
+      ],
+      "exhaustPile": [
+        "ASCENDERS_BANE"
+      ]
+    }
+  },
+  {
+    "decision": 14,
+    "turn": 2,
+    "player": {
+      "curHp": 44,
+      "energy": 2,
+      "energyPerTurn": 4,
+      "maxHp": 75
+    },
+    "monsters": [
+      [
+        69,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ]
+    ],
+    "zones": {
+      "hand": [
+        "BARRICADE",
+        "DROPKICK"
+      ],
+      "drawPile": [
+        "BASH",
+        "ENTRENCH",
+        "POMMEL_STRIKE",
+        "WILD_STRIKE"
+      ],
+      "discardPile": [
+        "ARMAMENTS",
+        "DROPKICK",
+        "RAGE"
+      ],
+      "exhaustPile": [
+        "ASCENDERS_BANE"
+      ]
+    }
+  }
+]

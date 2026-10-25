@@ -1,0 +1,990 @@
+{
+  "rule": "smallest active pool then earliest decision; no Tier gate",
+  "mask": "11111",
+  "target": {
+    "seed": 111101032,
+    "act": 2,
+    "floor": 18,
+    "fight": 11,
+    "encounter": "SHELL_PARASITE",
+    "state": {
+      "act": 2,
+      "deck": [
+        "Ascender's Bane",
+        "Bash",
+        "Fire Breathing",
+        "Pommel Strike",
+        "Armaments",
+        "Berserk",
+        "Inflame",
+        "Dropkick",
+        "Barricade",
+        "Entrench",
+        "Dropkick",
+        "Fire Breathing",
+        "Wild Strike",
+        "Rage"
+      ],
+      "event": "",
+      "floor": 18,
+      "gold": 302,
+      "hp": 64,
+      "maxHp": 75,
+      "potionCapacity": 2,
+      "potions": [
+        "BLOCK_POTION"
+      ],
+      "relics": [
+        "BURNING_BLOOD",
+        "MEAL_TICKET",
+        "STRIKE_DUMMY",
+        "KUNAI",
+        "PANDORAS_BOX"
+      ],
+      "room": "MONSTER",
+      "screen": "BATTLE",
+      "x": 0,
+      "y": 0
+    },
+    "pre_sha256": "636ca4fa12cfa70f9424e6a93ab743f2839bb735c4820ebe6c7db6c1d6e346a2",
+    "boundary_index": 70
+  },
+  "selected_mask_sha256": "4a15edc55723f3c9a994eeb8bed2934ee0c7e96ba4d1b688d0d70ab9601dfe17",
+  "capture_receipt_sha256": "90423486d08e241cd7f2b471edeef6f6bd774d69562c43ca79de4539f340fcd1",
+  "capture_sha256": "5728283e755b872eec5b801759dee309e22c13a786a6e2c951b0f6481e1af4cf",
+  "trace_sha256": "6f0ee0c1389f42c0ade34d6fc701c286b7b72da298060b4573b5952f6e3eed47",
+  "full_run_relics": [
+    "BURNING_BLOOD",
+    "MEAL_TICKET",
+    "STRIKE_DUMMY",
+    "KUNAI",
+    "PANDORAS_BOX"
+  ],
+  "no_prismatic_shard_proven": true,
+  "run_deck_before_fight": [
+    "Ascender's Bane",
+    "Bash",
+    "Fire Breathing",
+    "Pommel Strike",
+    "Armaments",
+    "Berserk",
+    "Inflame",
+    "Dropkick",
+    "Barricade",
+    "Entrench",
+    "Dropkick",
+    "Fire Breathing",
+    "Wild Strike",
+    "Rage"
+  ],
+  "public_roots_captured": 22,
+  "ordinary_public_roots": 21,
+  "tier1_roots": 0,
+  "minimum_active": 9,
+  "maximum_active": 14,
+  "active_at_most8_roots": 0,
+  "historical_minimum_active": 16,
+  "selected": [
+    {
+      "line_1based": 10,
+      "decision": 10,
+      "turn": 2,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 9,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier1": false,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "WILD_STRIKE": 1
+      },
+      "input_sha256": "e0581b87342c0187fc7427066813c629bdc9ed636762fc00bf2fd1a0997b83c5",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 12,
+      "decision": 12,
+      "turn": 2,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 9,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier1": false,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "WILD_STRIKE": 1
+      },
+      "input_sha256": "39a262297bd609cdb98436a54802112fe3e20d74668d706c0403c71e1ee13704",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 13,
+      "decision": 13,
+      "turn": 2,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 9,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier1": false,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "WILD_STRIKE": 1
+      },
+      "input_sha256": "86e2969c73411d69e035af955016b558531d9e5f3539fcb004c9ad197c138d01",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 14,
+      "decision": 14,
+      "turn": 2,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 9,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier1": false,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "WILD_STRIKE": 1
+      },
+      "input_sha256": "a9dc3f3e1ce59b925ff386c391166371e1b6b0f6f86c5435b9fea1c6f381813a",
+      "duplicate_public_root": false
+    }
+  ],
+  "all_roots": [
+    {
+      "line_1based": 1,
+      "decision": 1,
+      "turn": 0,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 14,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier1": false,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "ASCENDERS_BANE": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "BERSERK": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "FIRE_BREATHING": 2,
+        "INFLAME": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "WILD_STRIKE": 1
+      },
+      "input_sha256": "9fb1f24c090d56a2cea742c1fec2f2dc026c2ec176dcda3c219c0708b93b7f96",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 2,
+      "decision": 2,
+      "turn": 0,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 14,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier1": false,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "ASCENDERS_BANE": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "BERSERK": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "FIRE_BREATHING": 2,
+        "INFLAME": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "WILD_STRIKE": 1
+      },
+      "input_sha256": "ac39418d2faf2c64c5a9f47d0a42c41b9c0f9b8e8b4723df3437e231594bed30",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 3,
+      "decision": 3,
+      "turn": 0,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 13,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier1": false,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "ASCENDERS_BANE": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "BERSERK": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "FIRE_BREATHING": 1,
+        "INFLAME": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "WILD_STRIKE": 1
+      },
+      "input_sha256": "d14b3fc56f5e479507ccc484d6475bfe704b4acb42b900bc761e59e21755d11f",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 4,
+      "decision": 4,
+      "turn": 0,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 13,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier1": false,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "ASCENDERS_BANE": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "BERSERK": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "FIRE_BREATHING": 1,
+        "INFLAME": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "WILD_STRIKE": 1
+      },
+      "input_sha256": "66ebd9b8cb46bc49c512f42ac8934dfc5e2eef041580b5b650e761823070bc99",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 5,
+      "decision": 5,
+      "turn": 1,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 13,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier1": false,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "ASCENDERS_BANE": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "BERSERK": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "FIRE_BREATHING": 1,
+        "INFLAME": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "WILD_STRIKE": 1
+      },
+      "input_sha256": "c5b1f8cfd86d4b2873905cc960415b40e3546c6edd11e005c7f6a95f1bc747c3",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 6,
+      "decision": 6,
+      "turn": 1,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 12,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier1": false,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "ASCENDERS_BANE": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "BERSERK": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "FIRE_BREATHING": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "WILD_STRIKE": 1
+      },
+      "input_sha256": "fc8c4affb43000939c3740190f5c41435296112f0832eef76c776f24e42f6792",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 7,
+      "decision": 7,
+      "turn": 1,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 12,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier1": false,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "ASCENDERS_BANE": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "BERSERK": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "FIRE_BREATHING": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "WILD_STRIKE": 1
+      },
+      "input_sha256": "dab3b805d39514263782a1a1b00a5382bcce7b9bde17e2d819cfa0bb6ece3b5f",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 8,
+      "decision": 8,
+      "turn": 1,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 11,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier1": false,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "ASCENDERS_BANE": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "BERSERK": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "WILD_STRIKE": 1
+      },
+      "input_sha256": "b6818cec63058de640536a80514fde1d4cdae9ed1fae0d8f08902894bb0db21c",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 9,
+      "decision": 9,
+      "turn": 1,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 10,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier1": false,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "ASCENDERS_BANE": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "WILD_STRIKE": 1
+      },
+      "input_sha256": "634a4cbb25a5eb8f50bfdeebbf07a5436436cb78dd1747d29ab94960707d1de0",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 10,
+      "decision": 10,
+      "turn": 2,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 9,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier1": false,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "WILD_STRIKE": 1
+      },
+      "input_sha256": "e0581b87342c0187fc7427066813c629bdc9ed636762fc00bf2fd1a0997b83c5",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 11,
+      "decision": 11,
+      "turn": 2,
+      "capture_valid": true,
+      "ordinary_player_decision": false
+    },
+    {
+      "line_1based": 12,
+      "decision": 12,
+      "turn": 2,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 9,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier1": false,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "WILD_STRIKE": 1
+      },
+      "input_sha256": "39a262297bd609cdb98436a54802112fe3e20d74668d706c0403c71e1ee13704",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 13,
+      "decision": 13,
+      "turn": 2,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 9,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier1": false,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "WILD_STRIKE": 1
+      },
+      "input_sha256": "86e2969c73411d69e035af955016b558531d9e5f3539fcb004c9ad197c138d01",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 14,
+      "decision": 14,
+      "turn": 2,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 9,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier1": false,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "WILD_STRIKE": 1
+      },
+      "input_sha256": "a9dc3f3e1ce59b925ff386c391166371e1b6b0f6f86c5435b9fea1c6f381813a",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 15,
+      "decision": 15,
+      "turn": 2,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 9,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier1": false,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "WILD_STRIKE": 1
+      },
+      "input_sha256": "bd4532142c4cf13cd00d2ce4b7aeb52e5d3f7b450edb506e84f2351c7abe8aa5",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 16,
+      "decision": 16,
+      "turn": 3,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 9,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier1": false,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "WILD_STRIKE": 1
+      },
+      "input_sha256": "9588c363ed596d49cdfa87e83ed844fe1414d57515e4ca1c6358b8b9dcf242d5",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 17,
+      "decision": 17,
+      "turn": 3,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 9,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier1": false,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "WILD_STRIKE": 1
+      },
+      "input_sha256": "1e69d7bbef1943025df62fa635fda316d8e66ce1e47e77b9de5c2a19fff43744",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 18,
+      "decision": 18,
+      "turn": 3,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 9,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier1": false,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "WILD_STRIKE": 1
+      },
+      "input_sha256": "d9ec30b0b3adeb3c70b5df251e9c31667df2ce7e523e1276b47f352c3ab1fa76",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 19,
+      "decision": 19,
+      "turn": 3,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 9,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier1": false,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "WILD_STRIKE": 1
+      },
+      "input_sha256": "6a53467c900b2145a0ff7b9e96c2c1a847aa6a42f18aaf0a22258b713b08c8de",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 20,
+      "decision": 20,
+      "turn": 3,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 9,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier1": false,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "WILD_STRIKE": 1
+      },
+      "input_sha256": "86f22540623e880a65bdffdc59732e5744c4b81797474bb6b39dc47327e9f6c1",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 21,
+      "decision": 21,
+      "turn": 3,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 10,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier1": false,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "WILD_STRIKE": 1,
+        "WOUND": 1
+      },
+      "input_sha256": "62c27021e89ab66a8fa81fdb22303c026d46aad1b55dc201dcd8958458c90581",
+      "duplicate_public_root": false
+    },
+    {
+      "line_1based": 22,
+      "decision": 22,
+      "turn": 4,
+      "capture_valid": true,
+      "ordinary_player_decision": true,
+      "screen": {
+        "known_engine": true,
+        "generic_near_cycle": false,
+        "reasons": [
+          "K1_cycle_pair_with_required_vulnerable_support"
+        ],
+        "active_card_count": 10,
+        "relevant_cards": {
+          "BASH": 1,
+          "DROPKICK": 2,
+          "POMMEL_STRIKE": 1
+        },
+        "relevant_relics": []
+      },
+      "tier1": false,
+      "active_cards": {
+        "ARMAMENTS": 1,
+        "BARRICADE": 1,
+        "BASH": 1,
+        "DROPKICK": 2,
+        "ENTRENCH": 1,
+        "POMMEL_STRIKE": 1,
+        "RAGE": 1,
+        "WILD_STRIKE": 1,
+        "WOUND": 1
+      },
+      "input_sha256": "1f73c258be92ecdfaacd923f9454afcf3a6f2e1d69ec41ecfa0c64a2765e8b77",
+      "duplicate_public_root": false
+    }
+  ],
+  "inputs_sha256": "697b1bbe4868759ab824dd95a1054a6421a81081612dc54b89a574dda8aaa51b",
+  "oracle_binary_sha256": "28e942c218cbaeef29f3a58a3301873d2fca012f6205379445e4e23ffef0ebe9",
+  "oracle_K": 4,
+  "oracle_caps": {
+    "depth": 24,
+    "nodes": 2000,
+    "candidates": 16,
+    "periods": 128,
+    "actions_per_candidate": 1024,
+    "total_replay_actions": 4096
+  }
+}

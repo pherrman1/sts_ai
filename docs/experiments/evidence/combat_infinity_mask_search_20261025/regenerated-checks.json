@@ -1,0 +1,10 @@
+{
+  "all_32_measurements_match_raw": true,
+  "all_32_receipts_and_manifests_verified": true,
+  "raw_archive_hashes_match_receipts": true,
+  "parity_header_states68_traces67_exact": true,
+  "prefix_health_valid": true,
+  "production_oracle_execution_during_search": false,
+  "selected_mask_sha256": "4a15edc55723f3c9a994eeb8bed2934ee0c7e96ba4d1b688d0d70ab9601dfe17",
+  "matrix_sha256": "af16c939a53d9aa4c9d9e8386935b2b0c9f6d7569919f1923d9a72e48a7cb530"
+}

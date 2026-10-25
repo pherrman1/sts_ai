@@ -24012,29 +24012,39 @@ campaigns, backup copies of stragglers on idle workers once the queue is empty.
 - Seeds 111360000–111360255 used; smokes 111369991–111369993 used (111369990–111369999 assigned).
 - **Knowledge impact:** `evaluation/current-research.md`.
 
-## §TBD-mask-search Exhaustive five clean reward-skip subsets on032 — preregistration (2026-10-25)
+## §TBD-mask-search Five-skip search establishes compression on032 (2026-10-25)
 
-Accepted user charter starts at reviewed13bed5e00. One existence/search experiment,
-32 correlated masks of seed111101032, not win-rate/prevalence. Five public canonical
-reward groups frozen from retained legal/provenance records:f4Clothesline,f5Armaments,
-f10TwinStrike,f12Immolate,f16Reaper. Flame Barrier/Cleric/Pandora interventions excluded.
-Same historicald8fd source/compiler/controller/models, production/default/oracle untouched.
+**OOC_COMPRESSION_LEVER_ESTABLISHED**, scoped to one historical seed/frozen subset
+space, not policy quality or prevalence. Starting reviewed13bed5e00; independent
+prelaunch PASS/frozen8c8cc1582. Research-patched historical d8fd binary
+2b317b0533d0c834da268ddff03d087b271b9a950b26dde303437df7cc10cba9 matched the
+complete historical header/68 states/67 OOC traces with manifest unset. This served
+mask00000; canary00001 then30 masks completed on4OMP1 workers,900s/run, no retries.
+Five exact public reward groups: f4Clothesline, f5Armaments, f10TwinStrike,
+f12Immolate, f16Reaper. Flame Barrier/Cleric/Pandora interventions excluded.
 
-Independent review/frozen commit before one manifest-unset68-state/67-trace/header
-qualification; successful qualification reusesmask00000. Then one mask00001 canary,
-remaining30 masks in numeric schedule with4OMP1workers,900s wall/run. No retries or
-outcome-adaptive masks. Stop at death, first actual post-engine combat entry, or
-floor19 boundary without earlier engine. Read-only research checkpoints retain
-status/health/entry identity; never score logged outcomes beyond frozen entry.
+All32 valid masks acquired the actual engine and reached their first post-engine
+combat alive. Frozen lexicographic ranking uniquely selected11111: all5 matched,
+0 unseen,14 permanent cards/64HP at act2/f18/fight11 Shell Parasite; all others>=15.
+Natural policy added an Armaments at f13; do not substitute the offline13-card bound.
+Search child CPU4687.833208s. No oracle or later outcome entered search ranking.
 
-Frozen lexicographic ranking:enginecomplete,aliveentry,smallerpermanentdeck,higherHP,
-fewer enabled skips,numericmask. Only single ranked best with intact engine/alive
-entry/deck<=14 can receive one capture-only replay/unchangedK4 annotation. Otherwise
-STATIC_SKIP_SEARCH_NO_ENGINE_PRESERVING_COMPRESSION; stop static chasing, no beam.
-Technical/incomplete masks are not negative feasibility results. No seed yet run.
-Knowledge impact: experiment evidence and current-research stopping point.
+One selected capture matched trace/boundary plus full public header/states0..70
+exactly, passed native health and survived target with36HP. Captured22 public
+records/21 ordinary roots; permanent18→14, observed minimum active16→9,0 Tier1.
+Frozen decisions10/12/13/14 all active9; unchangedK4 adapter annotated16 supported
+public-conditioned worlds: allNONE,0 candidates/certified/replay/caps,324 nodes,
+maxdepths4/3/2/1,0.874ms summed oracleCPU. No enemy Vulnerable; Bash/Pommel undrawn,
+explaining small immediate action trees without establishing general absence.
 
-[Five exact identities, all32 manifests, resource/stop/ranking/gate protocol](evidence/combat_infinity_mask_search_20261025/PROTOCOL.md).
+Independent evidence review PASS; no current-policy prevalence/near-infinity/kill
+claim. Production/default/oracle/models/rewards unchanged. Knowledge impact:
+experiment evidence and maintained current-research status. Stop; no more static
+subsets/removals/512/beam/model work in this task.
+
+[Full result](evidence/combat_infinity_mask_search_20261025/RESULT.md),
+[all32 matrix](evidence/combat_infinity_mask_search_20261025/MATRIX.md),
+[oracle matrix](evidence/combat_infinity_mask_search_20261025/ORACLE_MATRIX.md).
 
 ## §TBD-r1 R1 restores first map, but engine preservation still fails (2026-10-25)
 
