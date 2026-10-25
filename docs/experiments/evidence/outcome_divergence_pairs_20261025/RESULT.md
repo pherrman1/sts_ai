@@ -39,6 +39,12 @@ search −1.2 pp [−10.2, +7.7] and +0.6 pp [−7.4, +8.6].
   does not use. The frozen head is blind to routes by construction.
 - On the 943 non-tied pairs A_h is −2.7 pp [−6.4, +0.9]; accuracy on non-tied discordant pairs 0.43 [0.34, 0.52].
 - (`headAccuracyDiscordantHeart` in test.json counts ties as wrong; read explore.json's non-tied accuracy instead.)
+- Found in review (reviewer J, [pr861-review.md](/mnt/project-files/reviews/pr861-review.md)): 170 pairs (2.0%)
+  diverge earlier than the public record shows. 164 are bottle choices (the record has no field for the bottled
+  card) and 6 buy the same potion from a different shop slot, so their state k−1 is not one root. Dropping them
+  changes nothing: A_h −1.23 pp [−2.86, +0.37] on TEST (28 pairs removed), rho 0.488.
+- The log-loss "constant" in fit.json is the overall TRAIN mean, not a per-act mean, so it flatters the later acts
+  (most of all act 4). The comparison is descriptive only.
 
 ## Interpretation
 - One real outcome per state, on 4,096 training games, teaches the level (log loss well below the constant in every
