@@ -1,0 +1,25 @@
+{
+ "xgboost": "3.0.2",
+ "bestIteration": 238,
+ "headSha256": "fa852066428e888b27721806c12a85523358c73f01728bb8d555d05e940be93e",
+ "trainRows": 679381,
+ "valRows": 339366,
+ "trainGames": 4096,
+ "valGames": 2048,
+ "valLogLossAct1": {
+  "head": 0.40327817231120716,
+  "constant": 0.4376194537305661
+ },
+ "valLogLossAct2": {
+  "head": 0.4881960989568699,
+  "constant": 0.5487323761904034
+ },
+ "valLogLossAct3": {
+  "head": 0.5475423698290498,
+  "constant": 0.7141217082929211
+ },
+ "valLogLossAct4": {
+  "head": 0.610959149094151,
+  "constant": 0.944329018564592
+ }
+}

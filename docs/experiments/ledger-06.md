@@ -24435,3 +24435,29 @@ Per-deck difference SD 0.207. Projected split-half r of the full design 0.00 < 0
 is #856 (whole-game forks at boss relics); Philipp decides.
 Seeds: 111303000–111303383 (Stage A), 111308990–111308997 (smokes and review smoke); 111303384–111304567 unused.
 **Knowledge impact:** none beyond this entry; no code or default change.
+
+## §685 — Outcome-label value head on first-divergence pairs of three paired A20 A/Bs: NO_SIGNAL (A_h −1.2 pp [−2.8, +0.4]); sibling outcomes correlate at rho 0.49, so a full-rollout sibling referee costs about a paired A/B; full-rollout label line STOP (offline, 8,192 games, 2026-10-25)
+
+**Question (Philipp, 2026-10-25 09:31Z):** would a full rollout to the Heart at each OOC MCTS decision give clean
+value-head labels? Plan doc https://claude.ai/artifact/LuB6LLggR5TF4em1fKzBYG; Philipp chose "Stufe 0 starten"
+09:49Z. One full rollout per state is one Bernoulli, the label every recorded game already carries; §515/§522 had
+already shown that a better outcome log loss does not predict play, and X2-B cannot be scored on stored records, so
+Stufe 0 was rebuilt as an offline, X2-B-free sibling test.
+**Design:** [PREREG](evidence/outcome_divergence_pairs_20261025/PREREG.md). Paired arms of §683 (D/MAP/OFF), §661
+(A/M/S/MS) and §676 (A/C) are identical until their first differing state; the two children there are whole-game
+common-seed pairs. Head G: XGBoost on public-record features, trained on real outcomes of TRAIN games (seed % 4 in
+{0,1}), early stop on VALIDATION (== 2), frozen (`fa852066…`) before TEST (== 3) was read. Primary A_h = mean
+(y_a − y_b)·sign(G_a − G_b) over TEST pairs, CI by seed bootstrap; SIGNAL if the lower bound > 0.
+**Result:** [RESULT](evidence/outcome_divergence_pairs_20261025/RESULT.md). 8,192 games valid, 8,510 pairs.
+rho (Heart kill) 0.488 [0.455, 0.520]; act 1 0.44, acts 2–3 0.57. VALIDATION log loss below the constant in every
+act. **A_h −1.16 pp [−2.80, +0.40] → NO_SIGNAL**; Act-4 arrival −0.05 pp. Exploratory: 56% of TEST pairs tie,
+mostly map roots, because the features do not see which rooms the child can reach; non-tied A_h −2.7 pp
+[−6.4, +0.9].
+**Interpretation:** outcome labels teach the level, not the choice between children (as §502/§509, with 4× §498's
+games); label quantity is not the bottleneck. With rho 0.49 a full-rollout referee needs ≈ 1,940/R continuations
+per child for SE 1 pp over R flip roots (≈ 430 core-h production policy, ≈ 210 student_sel) against ≈ 310 core-h
+for a paired 1,024-seed A/B, which is the same referee with one continuation per flip root. By the pre-registered
+rule the full-rollout label line stops. Inference: a route-aware head is the next offline candidate; this TEST is
+consumed.
+Seeds: none (existing games only).
+**Knowledge impact:** none beyond this entry; no code or default change.

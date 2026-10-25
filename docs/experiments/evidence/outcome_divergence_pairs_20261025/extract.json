@@ -1,0 +1,12 @@
+{
+ "tars": 2560,
+ "duplicateSeeds": 0,
+ "invalidArmGames": 0,
+ "games": 8192,
+ "identicalPairs": 1218,
+ "pairs": 8510,
+ "ooc-map-only-searchSeeds": 1024,
+ "value-level-abSeeds": 1024,
+ "ctm-calibration-abSeeds": 512,
+ "rows": 1018747
+}
