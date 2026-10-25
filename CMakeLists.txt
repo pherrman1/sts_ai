@@ -422,6 +422,7 @@ set_tests_properties(ooc_public_futures PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
 add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
+    apps/one_combat/compression_audit.cpp
     apps/one_combat/ooc_leaf_capture.cpp
     apps/one_combat/ooc_leaf_capture_sink.cpp
     apps/one_combat/screen_leaf_snapshot.cpp
