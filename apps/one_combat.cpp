@@ -8,6 +8,7 @@
 
 #include "one_combat/driver_shared.h"
 #include "one_combat/heart1_policy.h"
+#include "one_combat/compression_audit.h"
 #include "one_combat/rollout_student.h"
 #include "one_combat/heart_outcome_capture.h"
 #include "one_combat/heart_leaf_tail.h"
@@ -4017,6 +4018,9 @@ int main(int argc, char **argv) {
         return one_combat::oocLearnedStopTestCommand(argc, argv);
     } else if (mode == "heart1logitscheck") {
         return one_combat::heart1::logitsCheckCommand(argc, argv);
+    } else if (mode == "ooccompressionaudit") {
+        if (argc != 4 && !(argc == 5 && std::string(argv[4]) == "--values")) return 2;
+        return one_combat::compressionAuditCommand(argv[2], argv[3], argc == 5);
     } else if (mode == "heart1score") {   // heart1 parity: native logits for silverbot records
         return one_combat::heart1::scoreCommand(argc, argv);
     } else if (mode == "heart1replay") {  // heart1 parity: replay one seed's OOC action bits

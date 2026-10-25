@@ -4626,6 +4626,52 @@ nlohmann::json particleSummary(const sts::search::OocParticleResult &r, double c
         {"finalMargin", selectionMargin(finalScores, r.selectedAction)}, {"actions", actions}, {"finalBeam", beam}};
 }
 }
+// Offline audit seam: uses the configured deployed prior and particle/CRN evaluator.
+nlohmann::json compressionAuditRoot(const GameContext &gc, bool evaluate) {
+    if(!liveEnabled || !liveOptions.heart1Prior || !liveOptions.heart1Coverage
+            || !liveOptions.checkpointLeaves || liveOptions.leafCombats!=3
+            || liveOptions.heart1ValueNet || liveOptions.constantLeaf || liveOptions.screenLeaf
+            || liveOptions.bossLeaf || liveOptions.directLeaf || liveOptions.stopAtMapCheckpoint
+            || liveOptions.leafCalibration!=a20LeafCalibration())
+        throw std::runtime_error("compression audit requires deployed heart1full rollout3 native/M0 stack");
+    ImaginedScope scope;
+    auto options=liveOptions;
+    OocGameContextModel model(gc,PathHistory{},liveSamplerFor(gc),options);
+    const auto legal=model.legalActions(0);
+    const auto &metrics=model.continuationMetrics();
+    if(metrics.heart1PriorNodes!=1 || metrics.heart1PriorFallbacks!=0)
+        throw std::runtime_error("compression audit prior coverage/fallback mismatch");
+    double priorTotal=0;
+    for(const auto &action:legal) priorTotal+=action.prior;
+    if(!(priorTotal>0)) throw std::runtime_error("compression audit empty prior mass");
+    nlohmann::json actions=nlohmann::json::array();
+    for(const auto &a:legal) {
+        const auto &c=model.candidate(0,a.id);
+        if(!c.semantic) throw std::runtime_error("audit expected semantic reward action");
+        const auto &sem=*c.semantic;
+        nlohmann::json row={{"id",a.id},{"prior",a.prior/priorTotal},{"raw_prior_weight",a.prior},{"key",c.key},
+            {"effect",int(sem.effect)},{"bits",c.primitive.bits},{"card",0},{"upgraded",false},{"relic",180}};
+        if(const auto *reward=std::get_if<sts::search::OocRewardTarget>(&sem.target)) {
+            if(const auto *card=std::get_if<Card>(&reward->entity)) {
+                row["card"]=int(card->id);row["upgraded"]=card->upgraded;
+            }
+            if(const auto *relic=std::get_if<RelicId>(&reward->entity)) row["relic"]=int(*relic);
+        }
+        actions.push_back(std::move(row));
+    }
+    nlohmann::json result={{"actions",actions},{"particles",nullptr},
+        {"heart1_prior_nodes",metrics.heart1PriorNodes},{"heart1_prior_fallbacks",metrics.heart1PriorFallbacks},
+        {"specification",liveOocMctsSpecification()},{"ctm_artifacts",liveOocMctsCtmArtifacts()}};
+    if(evaluate) {
+        auto config=liveParticleConfig;config.particles=64;config.depth=0;
+        config.seed=oocMctsSearchSeed(gc.seed,1);
+        const auto start=threadCpuSeconds();
+        const auto scored=sts::search::OocParticlePlanner(config).search(model,0);
+        result["particles"]=particleSummary(scored,threadCpuSeconds()-start);
+        result["search_seed"]=config.seed;
+    }
+    return result;
+}
 sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const PathHistory &path,
     std::uint64_t seed, std::uint64_t index, std::uint64_t simulations,
     std::shared_ptr<const CombatTransitionSampler> sampler, std::uint64_t &samples,

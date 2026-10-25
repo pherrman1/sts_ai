@@ -1,0 +1,22 @@
+[collect keys ON]
+[ooc-strat-tok-net] loaded selfplay/models/ooc_strategic_tok_final.native
+[OOC one-ply strategic TOK net ON: card rewards gated at margin 1]
+[OOC one-ply: campfire Q gate ON (rest options + upgrade targets)]
+[OOC one-ply: event Q gate ON (incl. Neow)]
+[OOC one-ply: shop Q gate ON]
+[OOC one-ply: treasure Q gate ON]
+[OOC one-ply: boss relic Q gate ON]
+[CompactTreeNet: 1006 trees, 428 feats from models/candidates/v_win_x2b_public_trees.txt]
+[CompactTreeNet: 1256 trees, 448 feats from models/v_rich_trees.txt]
+[native OOC floor/win GBMs ON; no v_server required]
+[OOC MCTS default win model: models/candidates/v_win_x2b_public_trees.txt]
+[native OOC optional Ruby Recall excluded when keys off and another action is legal]
+[native OOC fallback REMOVE ranks low acquisition weight first; Bonfire unchanged]
+[native OOC public encounter mixture: 8 futures]
+[native OOC shop deck-size correction ON]
+[ctm-a20-stack] candidate_id=pathb-a20 scope=ascension20 boss_survival_logit_shift=-0.18325317250506112 active_lizard_correction=1 hp_finetune=1
+[ooc-mcts-silver-fallback] unsupported_silver_sims=500 act4_silver_sims=0 root_prior=off redraw=seed_and_six_combat_streams
+[live OOC MCTS ON sims=512 combat_model=selfplay/models/combat_transition_deepsets_pathb_r2_lizard_ritual_refit.native brew_fallback_model=selfplay/models/combat_transition_near_full_escape_pathb_r2_ritual_refit.native dispatch=precombat_entropic_brew active_lizard_correction=1 prior=heart1full cpu_seconds=0 temperature=1 cpuct=1.5 widen_k=2 widen_alpha=0.5 max_depth=512 root_selection=visits early_stop=1 gap_stop_20=0 merge_outcomes=1 prune_unsupported=1 leaf_value=native leaf_combats=3 leaf_policy=heart1 rollout_shop=greedy target_prior=1 leaf_selects=heart1 leaf_calibration=-2.5384000000000002,-2.9226999999999999,-3.6522999999999999,-3.6334:1.0535000000000001 leaf_calibration_min_ascension=20 screens_a20_default=map_full_budget]
+[ooc-mcts-config] {"noncombatOutcomes":"sampled","prior":"heart1full","cpuSeconds":0,"temperature":1,"cPuct":1.5,"wideningK":2,"wideningAlpha":0.5,"maxDepth":512,"rootSelection":"visits","earlyStop":true,"gapStop20":false,"mergeOutcomes":true,"pruneUnsupported":true,"leafValue":"native","leafWinModel":null,"leafCombats":3,"leafPolicy":"heart1","simulations":512,"combatModel":"selfplay/models/combat_transition_deepsets_pathb_r2_lizard_ritual_refit.native","brewFallbackModel":"selfplay/models/combat_transition_near_full_escape_pathb_r2_ritual_refit.native","dispatchRule":"precombat_entropic_brew_to_standard","activeLizardCorrection":true,"priorTrace":"","leafCalibration":[-2.5384000000000002,-2.9226999999999999,-3.6522999999999999,-3.6334,1.0535000000000001],"leafCalibrationMinAscension":20,"searchScreensA20Default":"map_full_budget"}
+[Native Silver combat backend: Silver search on the main engine; flat budget; one-action roots unsearched]
+[ctm-a20] ascension-20 decisions use pathb-a20

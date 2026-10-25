@@ -600,6 +600,26 @@ projection; these timings are a microbenchmark, not gameplay qualification.
 Use `tools/seed_guard.sh` for this executable self-test as for the registered
 adapter CTest. No profile environment variable affects live search configuration.
 
+### Offline historical compression audit
+
+`one_combat ooccompressionaudit INPUT OUTPUT [--values]` is a research-only
+reward-screen audit, separate from gameplay. The input envelope retains the
+#844 public record and trace; the tool restores public act and zero misc only
+for decks without misc-bearing cards, reconstructs reward candidates and
+requires complete native public-record equality. It reports normalized
+semantic prior probabilities (raw model weights separately), action identity,
+and permanent-deck/cycle-burden before and after each candidate.
+
+The current deployed `heart1full` prior and rollout3 native/M0 configuration
+must be loaded; prior fallback is rejected. Without `--values` it performs no
+leaf evaluations. With it, only a matching initial Neow reward may run the
+existing 64-particle CRN root evaluator. Later historical public projections
+lack exact snapshots and are never used for transitions or values. Invoke
+through `tools/seed_guard.sh`; the experiment's explicit-environment launcher,
+input custody and fixed gates are in
+[`prior_anchor_compression_20261025`](../../experiments/evidence/prior_anchor_compression_20261025/PREREG.md).
+This audit does not change root routing, search defaults or gameplay.
+
 ## Important data flow
 
 1. Configure loads root `json/` and `pybind11/` through `add_subdirectory`.

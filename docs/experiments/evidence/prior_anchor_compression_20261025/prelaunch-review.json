@@ -1,0 +1,16 @@
+{
+  "reviewer": "independent native subagent audit_review",
+  "status": "PASS",
+  "source_sha": "fb03ef6649bb9010cd66e1577cf744bd2e32fd1a",
+  "findings_repaired": [
+    "normalize raw prior weights to probabilities",
+    "conditional pre-outcome scientific language",
+    "fail closed on prior fallback and nondeployed leaf stack"
+  ],
+  "conditions_satisfied": [
+    "18/18 full restored public-record parity",
+    "explicit environment",
+    "model and binary hashes frozen before 64-particle evaluation"
+  ],
+  "reviewer_seed_commands_run": false
+}

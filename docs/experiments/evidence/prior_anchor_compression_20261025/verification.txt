@@ -1,0 +1,1 @@
+PASS: 6 historical hashes, frozen binary/models/source receipt, exact native-input preservation, 18 public-record parity rows, 72 semantic actions, CRN pairing, deterministic analyzer, stop rule

@@ -1,0 +1,15 @@
+{
+  "reviewer": "independent native subagent audit_review",
+  "status": "PASS",
+  "native_source_sha": "fb03ef6649bb9010cd66e1577cf744bd2e32fd1a",
+  "checks": [
+    "verify.py exit 0",
+    "git diff --check clean",
+    "independent particle means/marginal SE/paired SE recomputation",
+    "exact 18-row consumed-input preservation",
+    "one derived expected-key repair only, justified by native id,misc,upgraded serialization",
+    "C++ unchanged from freeze",
+    "P4/P2/V5 failure and positive-value null wording sound"
+  ],
+  "actionable_findings": []
+}

@@ -1,0 +1,40 @@
+{
+  "historical_sha": "1322e0d97721d9ffe9e2e41dbc69d8a5acc07a01",
+  "sources": [
+    {
+      "case": "032/11111",
+      "path": "docs/experiments/evidence/combat_infinity_mask_search_20261025/runs/11111.states.jsonl.gz",
+      "sha256": "149b8a7f235a9e13ceda29233fe0a2ee04c0f5e2ebfb8cb368fe24433ae63122"
+    },
+    {
+      "case": "032/11111",
+      "path": "docs/experiments/evidence/combat_infinity_mask_search_20261025/runs/11111.trace.jsonl.gz",
+      "sha256": "5cb5406f3d1e526ce58c0c0fa07cb601b6f26950e67fa30cd85501847c924538"
+    },
+    {
+      "case": "326/13-skip",
+      "path": "docs/experiments/evidence/combat_infinity_counterfactual_20261024/treatment.states.jsonl.gz",
+      "sha256": "8a1bfa231a9c9f9a340d58502d4c37c1fe04a0548bb0ac51cf5ff1b5749bb02f"
+    },
+    {
+      "case": "326/13-skip",
+      "path": "docs/experiments/evidence/combat_infinity_counterfactual_20261024/treatment.trace.jsonl.gz",
+      "sha256": "2b6ccf312f2cf73429066ec37717c76c3919ec8114f6197499889f29c012e597"
+    },
+    {
+      "case": "326/R1",
+      "path": "docs/experiments/evidence/combat_infinity_r1_20261025/treatment.states.jsonl.gz",
+      "sha256": "1376ea546db2a1ed3a35ccf94fb047ecd5e15d767bf241e41f0e9b9c2cc2f8e2"
+    },
+    {
+      "case": "326/R1",
+      "path": "docs/experiments/evidence/combat_infinity_r1_20261025/treatment.trace.jsonl.gz",
+      "sha256": "8ee5542b52cb2223eb6ab49a6bf86506e528b1aa830b601eb8b181885304a01d"
+    }
+  ],
+  "counts": {
+    "032/11111": 5,
+    "326/13-skip": 6,
+    "326/R1": 7
+  }
+}

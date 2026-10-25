@@ -1,0 +1,14 @@
+{
+  "reason": "Expected semantic card key serialized upgrade and misc in reversed positions. Corrected derived identity assertion only; all record/trace/native inputs identical. No evaluator rerun.",
+  "evaluated_input_copy": "inputs-evaluated.jsonl",
+  "freeze_input_sha256": "be41d85f4213864b2231db5ec528c33138235d4182a81e42b2925c3c3bc34bc7",
+  "corrected_inputs_sha256": "a4ca6bcd742193c0e92f0460bc86e71d93ad2450f0f79191d2bd1104d1380bf6",
+  "changes": [
+    {
+      "case": "326/13-skip",
+      "decision": 93,
+      "old": "ooc:v1:effect=12:source=7:reward=none:group=[208,0,0;339,0,0;360,1,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "new": "ooc:v1:effect=12:source=7:reward=none:group=[208,0,0;339,0,0;360,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+    }
+  ]
+}
