@@ -53,8 +53,9 @@ From the #852 Heart replays (128 guard arm-C Heart entry decks x 8 copies, same 
   about 200.
 
 Available stage-entry decks (guard §676, `/mnt/project-files/ctm-calibration-ab/units`, rows `*.ctm.jsonl.gz`,
-`captureStatus = exactly_one`, `runValid`): Heart 217 (arm C) + 196 (arm A) = 413, of which 21 arm-A decks are
-identical to the arm-C deck of the same seed and are dropped (392 distinct); act-3 boss fights 583 (C) + 539 (A).
+`captureStatus = exactly_one`, `runValid`): Heart 217 (arm C) + 196 (arm A) = 413, of which 13 arm-A entries are
+identical (full entry state) to the arm-C entry of the same seed and are dropped (400 distinct; the first 392 of the
+fixed order are used, see Provenance; correction from the pre-launch review, 2026-10-24); act-3 boss fights 583 (C) + 539 (A).
 
 ## Design
 
