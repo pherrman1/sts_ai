@@ -34,15 +34,16 @@ So the literal futility rule does not fire: readiness separates Act-4 converters
 
 ## 3. Same seed, two arms: the decision's own deck change does not predict who kills
 Paired arms are identical until their first different choice. Concordance = share of kill-discordant pairs in which
-the killing arm has the larger value (0.5 = no signal; ties count ½; CI by pair bootstrap):
+the killing arm has the larger value (0.5 = no signal; ties count ½; 95% CI by seed bootstrap, since one §683 seed
+carries up to three dependent pairs):
 
 | where the two decks are compared | kill-discordant pairs | readiness `rF` | HP |
 |---|---|---|---|
-| first fight after the split | 625 | **0.497 [0.464, 0.532]** | 0.502 |
-|  — split in act 1 / 2 / 3 (deck changed) | 155 / 176 / 55 | 0.471 / 0.494 / 0.545 | 0.506 / 0.537 / 0.491 |
+| first fight after the split | 625 | **0.497 [0.457, 0.536]** | 0.502 |
+|  — split in act 1 / 2 / 3 (deck changed) | 155 / 176 / 55 | 0.471 [0.38, 0.57] / 0.494 [0.40, 0.58] / 0.545 [0.40, 0.69] | 0.506 / 0.537 / 0.491 |
 |  — three fights later, split in act 1 / 2 / 3 | 294 / 236 / 74 | 0.556 / 0.517 / 0.574 | – |
-| act-3 entry (both reached it) | 498 | 0.598 [0.561, 0.636] | 0.591 |
-| Act-4 entry (both reached it) | 289 | 0.678 [0.625, 0.732] | 0.514 |
+| act-3 entry (both reached it) | 498 | 0.598 [0.551, 0.644] | 0.591 |
+| Act-4 entry (both reached it) | 289 | 0.678 [0.615, 0.743] | 0.514 |
 
 At the point where a search decision changes the deck, the readiness difference between the two children says
 nothing about which one later kills the Heart; it becomes predictive only once the two runs have drifted far apart
@@ -55,9 +56,12 @@ both far below shared arrivals (0.68). **Inference:** MAP's lower kills per arri
 effect (search rescues weaker runs to Act 4), not search building worse Heart decks.
 
 ## Verdict
-**STOP for a readiness leaf blend** (exploratory, stated rule plus the paired check). Readiness is a strong
+**STOP for a readiness leaf blend, as a judgement for Philipp's OK, not a rule outcome:** the rule stated before
+the analysis passed (section 2); the STOP rests on the paired check added afterwards. Readiness is a strong
 *descriptor* of a run's Heart chances, but the deck differences that one OOC decision creates in acts 1–2, where the
-search gain sits (§683), do not predict the kill (concordance 0.47–0.49). A blended leaf would mostly add noise there.
+search gain sits (§683), do not predict the kill (concordance 0.47–0.49). Power: at rho ≈ 0.49 a useful term would show only a small
+concordance above 0.5; the upper bound 0.536 rules out a strong signal, not a small one, so "a blended leaf would
+mostly add noise there" is inference.
 Possible narrow follow-ups (Philipp's call, none started): act-3-only readiness term (55 pairs, needs fresh paired
 data), or using readiness as a Heart-strength feature in a future value head rather than as a leaf term.
 Seeds: none (existing games only). Knowledge impact: none beyond this entry; no code or default change.

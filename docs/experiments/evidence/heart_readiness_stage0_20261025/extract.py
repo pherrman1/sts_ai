@@ -1,6 +1,8 @@
 """Heart-readiness Stage 0 extraction (2026-10-25): every CTM fight row of a game rescored as a Heart fight with the
 Act-4 survival model (rA = actual HP, rF = HP set to max HP). Usage: extract.py 683|676 LO HI OUT.pkl; the §683 units
-were read from a local --extract copy, the §676 units from /mnt/project-files/ctm-calibration-ab/units."""
+were read from a local --extract copy (the same units are in the share tars /mnt/project-files/ooc-map-only-search,
+see tars.sha256 of ooc_map_only_search_20261024; point the 683 root at an extract of them), the §676 units from
+/mnt/project-files/ctm-calibration-ab/units."""
 import gzip, json, os, re, sys, tarfile, pickle
 sys.path.insert(0, '/home/user/sts_ai/tools')
 import numpy as np

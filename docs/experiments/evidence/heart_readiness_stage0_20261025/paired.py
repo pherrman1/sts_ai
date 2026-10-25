@@ -9,6 +9,17 @@ rng = np.random.default_rng(2)
 PAIRS = [('683', 'MAP', 'OFF'), ('683', 'D', 'MAP'), ('683', 'D', 'OFF'), ('676', 'C', 'A')]
 sig = lambda f: (f['enc'], f['floor'], f['curHp'], f['maxHp'], f['deck'], f['upg'], f['gold'], round(f['rF'], 9))
 
+def seed_ci(R, key, n=2000):  # bootstrap over seeds (one seed can carry up to three dependent §683 pairs)
+    by = {}
+    for r in R:
+        if r['dk'] != 0: by.setdefault(r['seed'], []).append(r)
+    us = sorted(by); bs = []
+    for _ in range(n):
+        j = [r for u in rng.choice(us, len(us)) for r in by[u]]
+        bs.append(conc([r[key] for r in j], [r['dk'] for r in j])[0])
+    return np.percentile(bs, 2.5), np.percentile(bs, 97.5)
+
+
 def conc(d, k):  # share of discordant-kill pairs where the killer has the larger value; ties = 1/2
     d, k = np.asarray(d), np.asarray(k)
     m = k != 0
@@ -30,7 +41,7 @@ for mode in ('first_diff_fight', 'act3_entry', 'act4_entry'):
                 act = 3 if mode == 'act3_entry' else 4
                 a = next((f for f in gx['fights'] if f['act'] == act), None); b = next((f for f in gy['fights'] if f['act'] == act), None)
                 if not a or not b: continue
-            rec.append(dict(pair=f'{x}-{y}', dk=gx['kill'] - gy['kill'], dr=lg(a['rF']) - lg(b['rF']), dra=lg(a['rA']) - lg(b['rA']),
+            rec.append(dict(seed=src + s, pair=f'{x}-{y}', dk=gx['kill'] - gy['kill'], dr=lg(a['rF']) - lg(b['rF']), dra=lg(a['rA']) - lg(b['rA']),
                             dhp=a['curHp'] - b['curHp'], dmax=a['maxHp'] - b['maxHp'], ddeck=a['deck'] - b['deck'], act=a['act'],
                             same_floor=a['floor'] == b['floor']))
     print(f'== {mode}: pairs {len(rec)}')
@@ -39,11 +50,8 @@ for mode in ('first_diff_fight', 'act3_entry', 'act4_entry'):
         out = []
         for key in ('dr', 'dra', 'dhp', 'dmax', 'ddeck'):
             c, n, t = conc([r[key] for r in R], dk)
-            bs = []
-            idx = np.array([i for i, r in enumerate(R) if r['dk'] != 0])
-            for _ in range(2000):
-                j = rng.choice(idx, len(idx)); bs.append(conc([R[i][key] for i in j], [R[i]['dk'] for i in j])[0])
-            out.append(f'{key} {c:.3f} [{np.percentile(bs,2.5):.3f},{np.percentile(bs,97.5):.3f}] ties {t}')
+            lo, hi = seed_ci(R, key)
+            out.append(f'{key} {c:.3f} [{lo:.3f},{hi:.3f}] ties {t}')
         print(f'  {sub}: discordant-kill pairs {n}; ' + ' | '.join(out))
     # residual: within same-HP-direction strata, does dr add? logistic on discordant pairs: P(x killer) ~ dr + dhp + dmax (no intercept)
     R = [r for r in rec if r['dk'] != 0]
@@ -74,11 +82,12 @@ for src, x, y in PAIRS:
         a, b = fx[i], fy[i]
         # also the fight 3 fights later (if both have it)
         later = (fx[i + 3], fy[i + 3]) if i + 3 < min(len(fx), len(fy)) else None
-        rec.append(dict(dk=gx['kill'] - gy['kill'], dr=lg(a['rF']) - lg(b['rF']), dhp=a['curHp'] - b['curHp'], act=a['act'],
+        rec.append(dict(seed=src + s, dk=gx['kill'] - gy['kill'], dr=lg(a['rF']) - lg(b['rF']), dhp=a['curHp'] - b['curHp'], act=a['act'],
                         dr3=(lg(later[0]['rF']) - lg(later[1]['rF'])) if later else None))
 for act in (1, 2, 3):
     R = [r for r in rec if r['act'] == act and abs(r['dr']) > 0.05]
     c = conc([r['dr'] for r in R], [r['dk'] for r in R]); h = conc([r['dhp'] for r in R], [r['dk'] for r in R])
     R3 = [r for r in rec if r['act'] == act and r['dr3'] is not None]
     c3 = conc([r['dr3'] for r in R3], [r['dk'] for r in R3])
-    print(f'  act {act}: n {len(R)} conc dr {c[0]:.3f} (disc {c[1]}), dhp {h[0]:.3f}; 3 fights later conc dr {c3[0]:.3f} (disc {c3[1]})')
+    lo, hi = seed_ci(R, 'dr')
+    print(f'  act {act}: n {len(R)} conc dr {c[0]:.3f} [{lo:.3f},{hi:.3f}] (disc {c[1]}), dhp {h[0]:.3f}; 3 fights later conc dr {c3[0]:.3f} (disc {c3[1]})')
