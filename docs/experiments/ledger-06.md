@@ -24414,7 +24414,7 @@ arrival 0.57 vs 0.61; OFF dies more in act 2, MAP more in Act 4), consistent wit
 Seeds: 111374100–111375123 (campaign), 111375990–111375991 (smokes).
 **Knowledge impact:** environment-variables.md and CODE_MAP.md list the research option; no default change.
 
-## §TBD — Causal stage-value table for deck changes, Heart stage: one card change moves Heart survival less than CRN fights can resolve; Stage A futility STOP (96 decks × 25 versions × 4 copies, 2026-10-25)
+## §684 — Causal stage-value table for deck changes, Heart stage: one card change moves Heart survival less than CRN fights can resolve; Stage A futility STOP (96 decks × 25 versions × 4 copies, 2026-10-25)
 
 **Question:** issue #855 (experiment 2 of the post-#853 OOC direction review). With common random numbers, do real
 Heart entry decks with one change (add, upgrade or remove a card; lose HP) give a reproducible global table of
