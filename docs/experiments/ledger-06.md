@@ -24413,3 +24413,25 @@ arrival 0.57 vs 0.61; OFF dies more in act 2, MAP more in Act 4), consistent wit
 (Philipp's call): a matched-CPU paired A20 A/B of MAP as candidate default on current main.
 Seeds: 111374100–111375123 (campaign), 111375990–111375991 (smokes).
 **Knowledge impact:** environment-variables.md and CODE_MAP.md list the research option; no default change.
+
+## §684 — Causal stage-value table for deck changes, Heart stage: one card change moves Heart survival less than CRN fights can resolve; Stage A futility STOP (96 decks × 25 versions × 4 copies, 2026-10-25)
+
+**Question:** issue #855 (experiment 2 of the post-#853 OOC direction review). With common random numbers, do real
+Heart entry decks with one change (add, upgrade or remove a card; lose HP) give a reproducible global table of
+effects on Heart survival (P300-style stage values)?
+**Setup:** [PREREG](evidence/stage_value_table_20261024/PREREG.md). Real Heart entry decks from the §676 guard (arms
+A+C, 400 distinct, first 392 in a fixed order). Each deck: base + 24 variants (12 add from the 72 red reward cards,
+6 up, 4 rm, `hp:-8`, `hp:-16`), 4 copies each. Base and variants share battle and planner seeds. `act4replay` arm P
+(flat 10k, g7f_E root prior): on #852's Heart decks this ranks decks like production 40k (disattenuated r ≈ 1.0) at
+1/27 of the CPU. Stage A = first 96 decks, with a pre-registered futility rule. Run commit `0de9a35c`, 8 cloud
+workers, 96/96 units verified. Two fights were dropped by the frozen analysis (deterministic Silver stall on one deck); pre-launch review PASS.
+Philipp's go: 2026-10-24 23:00Z.
+**Result:** [RESULT.md](evidence/stage_value_table_20261024/RESULT.md). 9,598 fights. CRN correlation of base and
+variant 0.68; base win 54.7% vs observed 61.5%. Spread of true key effects over 111 keys: τ = 0.0 (DerSimonian-Laird; plain method of moments also 0).
+Per-deck difference SD 0.207. Projected split-half r of the full design 0.00 < 0.35 → **STOP**. Held-out Spearman
+0.023 [−0.024, +0.073]. HP is measurable: `hp:-16` −4.7 pp (SE 1.9), about −0.3 pp per entry HP.
+**Interpretation:** FAIL by the futility rule (inference): single deck changes at the Heart are below what about
+100 CRN fights per deck can resolve, in line with §396. Stage B and the act-3 stage were not run. The next candidate
+is #856 (whole-game forks at boss relics); Philipp decides.
+Seeds: 111303000–111303383 (Stage A), 111308990–111308997 (smokes and review smoke); 111303384–111304567 unused.
+**Knowledge impact:** none beyond this entry; no code or default change.
