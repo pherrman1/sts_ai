@@ -1,0 +1,23 @@
+{
+  "experiment": "R1 rescue arm, one treatment only",
+  "starting_sha": "dbd2a1f7b44f1467ab45ae1346f0bc02c3125788",
+  "prior_manifest_sha256": "c98f1671a12ac41f7bee827f8f7428d4aedf628b10f2cedd9c14ec58f982754e",
+  "r1_manifest_sha256": "e169bb62143b5034d8182f81851aeee6f1492da5a1b0c7ece23ff73d686ce5cd",
+  "only_manifest_change": "interventions[0].enabled=false; all13 original identities preserved; other12 unchanged/default-enabled",
+  "seed": 111101326,
+  "first_map_predictions": {
+    "historical": [
+      5,
+      0
+    ],
+    "thirteen_skip": [
+      1,
+      0
+    ],
+    "R1_expected_before_any_enabled_intervention": [
+      5,
+      0
+    ]
+  },
+  "charter_sha256": "a17582ff90763ae337cc5d7f75b9234a3d9dfefa95fd613acd43917959775fd9"
+}

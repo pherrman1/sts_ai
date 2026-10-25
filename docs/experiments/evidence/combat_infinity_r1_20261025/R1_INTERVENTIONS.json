@@ -1,0 +1,232 @@
+{
+  "status": "FROZEN_NOT_EXECUTED_MISSING_SUPPORTED_INTERVENTION_PATH",
+  "baseline_sha": "b94a96da22a5eae3f2c7c74ee81bccfa23b9139a",
+  "preferred_test_seed": 111101326,
+  "selection_reason": "only unambiguously qualifying independent-reward-skip bound:31->18,13 removals;032 has transform/Pandora dependency and only five clean skips",
+  "conceptual_intervention": "skip the13 predeclared non-engine historical reward groups",
+  "interventions": [
+    {
+      "floor": 0,
+      "original_ooc_decision": 1,
+      "original_trace_index": 1,
+      "historical_acquisition": "Headbutt",
+      "target_card": "Headbutt",
+      "historical_take_key": "ooc:v1:effect=5:source=7:reward=card,179,0,0:group=[93,0,0;122,0,0;179,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "forced_skip_key": "ooc:v1:effect=12:source=7:reward=none:group=[93,0,0;122,0,0;179,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "public_reward_group": "[93,0,0;122,0,0;179,0,0;]",
+      "act": 1,
+      "enabled": false
+    },
+    {
+      "floor": 1,
+      "original_ooc_decision": 4,
+      "original_trace_index": 5,
+      "historical_acquisition": "Headbutt",
+      "target_card": "Headbutt",
+      "historical_take_key": "ooc:v1:effect=5:source=7:reward=card,179,0,0:group=[14,0,0;157,0,0;179,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "forced_skip_key": "ooc:v1:effect=12:source=7:reward=none:group=[14,0,0;157,0,0;179,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "public_reward_group": "[14,0,0;157,0,0;179,0,0;]",
+      "act": 1
+    },
+    {
+      "floor": 3,
+      "original_ooc_decision": 11,
+      "original_trace_index": 13,
+      "historical_acquisition": "Shockwave",
+      "target_card": "Shockwave+",
+      "historical_take_key": "ooc:v1:effect=5:source=7:reward=card,300,0,0:group=[67,0,0;157,0,0;300,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "forced_skip_key": "ooc:v1:effect=12:source=7:reward=none:group=[67,0,0;157,0,0;300,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "public_reward_group": "[67,0,0;157,0,0;300,0,0;]",
+      "act": 1
+    },
+    {
+      "floor": 10,
+      "original_ooc_decision": 32,
+      "original_trace_index": 37,
+      "historical_acquisition": "Anger",
+      "target_card": "Anger",
+      "historical_take_key": "ooc:v1:effect=5:source=7:reward=card,11,0,0:group=[11,0,0;179,0,0;181,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "forced_skip_key": "ooc:v1:effect=12:source=7:reward=none:group=[11,0,0;179,0,0;181,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "public_reward_group": "[11,0,0;179,0,0;181,0,0;]",
+      "act": 1
+    },
+    {
+      "floor": 12,
+      "original_ooc_decision": 40,
+      "original_trace_index": 47,
+      "historical_acquisition": "Reaper",
+      "target_card": "Reaper",
+      "historical_take_key": "ooc:v1:effect=5:source=7:reward=card,266,0,0:group=[249,0,0;258,0,0;266,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "forced_skip_key": "ooc:v1:effect=12:source=7:reward=none:group=[249,0,0;258,0,0;266,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "public_reward_group": "[249,0,0;258,0,0;266,0,0;]",
+      "act": 1
+    },
+    {
+      "floor": 16,
+      "original_ooc_decision": 50,
+      "original_trace_index": 58,
+      "historical_acquisition": "Impervious",
+      "target_card": "Impervious",
+      "historical_take_key": "ooc:v1:effect=5:source=7:reward=card,189,0,0:group=[30,0,0;187,0,0;189,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "forced_skip_key": "ooc:v1:effect=12:source=7:reward=none:group=[30,0,0;187,0,0;189,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "public_reward_group": "[30,0,0;187,0,0;189,0,0;]",
+      "act": 1
+    },
+    {
+      "floor": 20,
+      "original_ooc_decision": 60,
+      "original_trace_index": 70,
+      "historical_acquisition": "Anger",
+      "target_card": "Anger",
+      "historical_take_key": "ooc:v1:effect=5:source=7:reward=card,11,0,0:group=[11,0,0;67,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "forced_skip_key": "ooc:v1:effect=12:source=7:reward=none:group=[11,0,0;67,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "public_reward_group": "[11,0,0;67,0,0;362,0,0;]",
+      "act": 2
+    },
+    {
+      "floor": 22,
+      "original_ooc_decision": 68,
+      "original_trace_index": 80,
+      "historical_acquisition": "Havoc",
+      "target_card": "Havoc",
+      "historical_take_key": "ooc:v1:effect=5:source=7:reward=card,178,0,0:group=[178,0,0;181,0,0;191,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "forced_skip_key": "ooc:v1:effect=12:source=7:reward=none:group=[178,0,0;181,0,0;191,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "public_reward_group": "[178,0,0;181,0,0;191,0,0;]",
+      "act": 2
+    },
+    {
+      "floor": 24,
+      "original_ooc_decision": 73,
+      "original_trace_index": 86,
+      "historical_acquisition": "Blood for Blood",
+      "target_card": "Blood for Blood",
+      "historical_take_key": "ooc:v1:effect=5:source=7:reward=card,39,0,0:group=[39,0,0;157,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "forced_skip_key": "ooc:v1:effect=12:source=7:reward=none:group=[39,0,0;157,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "public_reward_group": "[39,0,0;157,0,0;345,0,0;]",
+      "act": 2
+    },
+    {
+      "floor": 27,
+      "original_ooc_decision": 87,
+      "original_trace_index": 101,
+      "historical_acquisition": "Limit Break",
+      "target_card": "Limit Break",
+      "historical_take_key": "ooc:v1:effect=5:source=7:reward=card,208,0,0:group=[208,0,0;339,0,0;360,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "forced_skip_key": "ooc:v1:effect=12:source=7:reward=none:group=[208,0,0;339,0,0;360,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "public_reward_group": "[208,0,0;339,0,0;360,0,1;]",
+      "act": 2
+    },
+    {
+      "floor": 29,
+      "original_ooc_decision": 93,
+      "original_trace_index": 109,
+      "historical_acquisition": "Battle Trance",
+      "target_card": "Battle Trance",
+      "historical_take_key": "ooc:v1:effect=5:source=7:reward=card,27,0,0:group=[27,0,0;42,0,0;52,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "forced_skip_key": "ooc:v1:effect=12:source=7:reward=none:group=[27,0,0;42,0,0;52,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "public_reward_group": "[27,0,0;42,0,0;52,0,0;]",
+      "act": 2
+    },
+    {
+      "floor": 33,
+      "original_ooc_decision": 105,
+      "original_trace_index": 122,
+      "historical_acquisition": "Impervious",
+      "target_card": "Impervious",
+      "historical_take_key": "ooc:v1:effect=5:source=7:reward=card,189,0,0:group=[30,0,0;187,0,0;189,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "forced_skip_key": "ooc:v1:effect=12:source=7:reward=none:group=[30,0,0;187,0,0;189,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "public_reward_group": "[30,0,0;187,0,0;189,0,0;]",
+      "act": 2
+    },
+    {
+      "floor": 36,
+      "original_ooc_decision": 113,
+      "original_trace_index": 131,
+      "historical_acquisition": "Panic Button",
+      "target_card": "Panic Button",
+      "historical_take_key": "ooc:v1:effect=5:source=7:reward=card,242,0,0:group=[131,0,0;240,0,0;242,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "forced_skip_key": "ooc:v1:effect=12:source=7:reward=none:group=[131,0,0;240,0,0;242,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "public_reward_group": "[131,0,0;240,0,0;242,0,0;]",
+      "act": 3
+    }
+  ],
+  "protected_engine_acquisitions": [
+    {
+      "floor": 7,
+      "decision": 22,
+      "card": "Corruption (later upgraded)"
+    },
+    {
+      "floor": 28,
+      "decision": 90,
+      "card": "Dark Embrace"
+    },
+    {
+      "floor": 36,
+      "decision": 114,
+      "card": "Flash of Steel"
+    },
+    {
+      "floor": 36,
+      "decision": 115,
+      "card": "Flash of Steel"
+    }
+  ],
+  "matching_rule": "seed+act/floor+exact public reward-group semantic identity; original decision indices are audit metadata, not sole matching keys; never add triggers after execution",
+  "divergence_rule": "no policy/path/deck repair; missing groups remain unmatched; natural policy may lose engine or die",
+  "new_runs": 0,
+  "new_worlds": 0,
+  "historical_source_sha": "d8fd2a105a8d2a481b7639e26c683f75e382e3d4",
+  "historical_binary_sha256": "0e17e0f22259afe21f35ba89a0413f2af7663cfae1312311f1ea8c71b00c2d52",
+  "models": [
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-collection-20261016-v1/bundle/studentc.bin",
+      "expected_sha256": "eff2f74f57dc2f566bbd44be30988592503cc8db51e51ff1e70cd2dec4636509",
+      "actual_sha256": "eff2f74f57dc2f566bbd44be30988592503cc8db51e51ff1e70cd2dec4636509",
+      "present_and_matches": true
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-collection-20261016-v1/bundle/models/v_rich_trees.txt",
+      "expected_sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3",
+      "actual_sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3",
+      "present_and_matches": true
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-collection-20261016-v1/bundle/models/candidates/v_win_x2b_public_trees.txt",
+      "expected_sha256": "e2d3aa65291df2914119f5d8129fb3aa6b7339ba6fa72eeaf9e86b9402beca90",
+      "actual_sha256": "e2d3aa65291df2914119f5d8129fb3aa6b7339ba6fa72eeaf9e86b9402beca90",
+      "present_and_matches": true
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-collection-20261016-v1/bundle/selfplay/models/ooc_strategic_tok_final.native",
+      "expected_sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+      "actual_sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+      "present_and_matches": true
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-collection-20261016-v1/bundle/selfplay/models/combat_transition_deepsets_pathb_r2_lizard.native",
+      "expected_sha256": "c6d56bbc959f4d5de8fe1dd57f58a922112cd8323bcbac9711e0aecda93f5a3c",
+      "actual_sha256": "c6d56bbc959f4d5de8fe1dd57f58a922112cd8323bcbac9711e0aecda93f5a3c",
+      "present_and_matches": true
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-collection-20261016-v1/bundle/selfplay/models/combat_transition_near_full_escape_pathb_r2.native",
+      "expected_sha256": "b9188de03ed6cc0611094c108f607a8770a5d5c5f367c157851bc6af91f8d9cf",
+      "actual_sha256": "b9188de03ed6cc0611094c108f607a8770a5d5c5f367c157851bc6af91f8d9cf",
+      "present_and_matches": true
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-collection-20261016-v1/bundle/selfplay/models/combat_transition_deepsets_pathb_a20_lizard.native",
+      "expected_sha256": "ae785ec2e28ceb3755fb63a71534f873ed61a069a6c2e107ef4131a788af7b6b",
+      "actual_sha256": "ae785ec2e28ceb3755fb63a71534f873ed61a069a6c2e107ef4131a788af7b6b",
+      "present_and_matches": true
+    },
+    {
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-collection-20261016-v1/bundle/selfplay/models/combat_transition_near_full_escape_pathb_a20.native",
+      "expected_sha256": "e338506ddf14177bec27cfe174670bd9dcac333c26b30416b9f0c76717392b0d",
+      "actual_sha256": "e338506ddf14177bec27cfe174670bd9dcac333c26b30416b9f0c76717392b0d",
+      "present_and_matches": true
+    }
+  ],
+  "control_receipt_sha256": "d6e97e9116d613bfbe973ecaebce43694fc1e2f962c3caf8d48fb90fdfaaebd3"
+}

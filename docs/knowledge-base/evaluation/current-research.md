@@ -159,6 +159,19 @@ actual compression and natural positive signal remain unestablished. This result
 does not justify a beam, alternate arm, oracle change or model work. Stop after
 this bounded experiment; prior unsupported/null roots and earlier results stand.
 
+
+The [authorized R1 rescue ablation](../../experiments/evidence/combat_infinity_r1_20261025/PROTOCOL.md)
+(§TBD-r1; starting reviewed dbd2a1f7b) now isolates the specific floor0 causal clue:
+disable only that skip, leaving the other12 frozen identities intact. A narrow
+research-header extension supports enabled:false/DISABLED_BY_DESIGN; current
+production source remains untouched. Before its one treatment, the new binary must
+pass the same exact flag-off prefix qualification. R1 must reproduce first map(5,0)
+before any enabled skip, otherwise stop for execution-identity investigation. No R1
+seed has executed yet. If engine failure/early death persists, stop hand-tuning this
+seed with COMPRESSION_PATH_FRAGILITY_CONFIRMED; if naturally complete, measure the
+first subsequent combat under the unchanged public/oracle protocol. No beam or
+model implementation, extra subset or other lead is authorized.
+
 ## AlphaZero-style OOC loop: open requirements
 
 Recorded 2026-10-17 at Philipp's request ("write down that this is something we'll need to fix in
