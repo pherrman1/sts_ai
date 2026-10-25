@@ -92,7 +92,7 @@ About 600 s per game (MAP 435 s in §683 plus Act 4 strong), 5.6 games per sourc
 Stage A ≈ 120 core-h (≈ 1 h on 32 workers × 4 lanes, ≈ 4 h on 8), full 512 ≈ 480 core-h. Memory: one Heart
 search ≈ 2.3 GB, 4 lanes fit a 15 GB container.
 
-## Seeds (proposed, to be confirmed by the coordinator and the repo seed guard)
+## Seeds (assigned by the coordinator 2026-10-25 09:40Z; repo seed guard checked before freezing)
 
 Sources 111378000–111378511 (Stage A 111378000–111378127), smokes 111378990–111378999, inside the free block
 111370020–111379989. Forks replay the source seeds (no new seeds).
