@@ -24012,6 +24012,30 @@ campaigns, backup copies of stragglers on idle workers once the queue is empty.
 - Seeds 111360000–111360255 used; smokes 111369991–111369993 used (111369990–111369999 assigned).
 - **Knowledge impact:** `evaluation/current-research.md`.
 
+## §TBD-mask-search Exhaustive five clean reward-skip subsets on032 — preregistration (2026-10-25)
+
+Accepted user charter starts at reviewed13bed5e00. One existence/search experiment,
+32 correlated masks of seed111101032, not win-rate/prevalence. Five public canonical
+reward groups frozen from retained legal/provenance records:f4Clothesline,f5Armaments,
+f10TwinStrike,f12Immolate,f16Reaper. Flame Barrier/Cleric/Pandora interventions excluded.
+Same historicald8fd source/compiler/controller/models, production/default/oracle untouched.
+
+Independent review/frozen commit before one manifest-unset68-state/67-trace/header
+qualification; successful qualification reusesmask00000. Then one mask00001 canary,
+remaining30 masks in numeric schedule with4OMP1workers,900s wall/run. No retries or
+outcome-adaptive masks. Stop at death, first actual post-engine combat entry, or
+floor19 boundary without earlier engine. Read-only research checkpoints retain
+status/health/entry identity; never score logged outcomes beyond frozen entry.
+
+Frozen lexicographic ranking:enginecomplete,aliveentry,smallerpermanentdeck,higherHP,
+fewer enabled skips,numericmask. Only single ranked best with intact engine/alive
+entry/deck<=14 can receive one capture-only replay/unchangedK4 annotation. Otherwise
+STATIC_SKIP_SEARCH_NO_ENGINE_PRESERVING_COMPRESSION; stop static chasing, no beam.
+Technical/incomplete masks are not negative feasibility results. No seed yet run.
+Knowledge impact: experiment evidence and current-research stopping point.
+
+[Five exact identities, all32 manifests, resource/stop/ranking/gate protocol](evidence/combat_infinity_mask_search_20261025/PROTOCOL.md).
+
 ## §TBD-r1 R1 restores first map, but engine preservation still fails (2026-10-25)
 
 **COMPRESSION_PATH_FRAGILITY_CONFIRMED.** Starting reviewed #844 dbd2a1f7b;

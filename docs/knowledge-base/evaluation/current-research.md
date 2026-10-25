@@ -179,6 +179,18 @@ Stop manual subset chasing on this seed: no next restoration/leave-one-out, othe
 lead, beam implementation or model work. Production/default/oracle behavior and
 previous evidence remain unchanged; no #844 merge.
 
+
+The [authorized exhaustive five-skip search on032](../../experiments/evidence/combat_infinity_mask_search_20261025/PROTOCOL.md)
+(§TBD-mask-search; starting reviewed13bed5e00) now tests all32 subsets of the five
+clean optional rewards, preserving the earlier Flame Barrier transform dependency
+and coupled Pandora outcome. This is existence/search on one historical seed, not
+32 independent policy samples. The new research binary must first reproduce the
+68-state/67-trace historical prefix. Qualification serves mask0; then31 frozen
+variants, no oracle during search, four single-thread workers after canary validation.
+The only follow-up is the single ranked best's capture if intact engine/alive entry/
+permanent<=14. No runs yet, no claim of actual compression or positive signal.
+No further326 subset, removals,512 continuation, beam implementation or models.
+
 ## AlphaZero-style OOC loop: open requirements
 
 Recorded 2026-10-17 at Philipp's request ("write down that this is something we'll need to fix in

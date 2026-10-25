@@ -1,0 +1,6 @@
+[ 54%] Built target sts_core_objects
+[ 58%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/run_driver.cpp.o
+[ 58%] Linking CXX executable one_combat
+lto-wrapper: warning: using serial compilation of 110 LTRANS jobs
+lto-wrapper: note: see the ‘-flto’ option documentation for more information
+[100%] Built target one_combat
