@@ -1,0 +1,78 @@
+Focused offline checks only; no seed, gameplay, world sampling or CI dispatch.
+
+$ python3 /home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/docs/experiments/evidence/combat_infinity_r1_20261025/measure.py --check
+{
+  "actual_skips": 7,
+  "not_seen": 5,
+  "highest_floor": 33,
+  "outcomes": [
+    {
+      "complete": true,
+      "finalAct": 2,
+      "finalFloor": 33,
+      "finalHp": 0,
+      "heartKilled": false,
+      "integrityPassed": true,
+      "label": 0,
+      "states": 118,
+      "supportedStates": 118,
+      "type": "outcome",
+      "unsupported": {}
+    }
+  ],
+  "maximum_owned_engine": {
+    "Corruption": 1,
+    "Dark Embrace": 0,
+    "Flash of Steel": 0
+  },
+  "engine_completion": null,
+  "first_subsequent_combat": null
+}
+EXIT 0
+
+$ python3 /home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/docs/experiments/evidence/combat_infinity_r1_20261025/analyze.py --check
+PASS raw custody, complete exact flag-off prefix, frozen13 statuses/accounting, actual measurements and conditional oracle tables; no seed/world execution
+EXIT 0
+
+$ python3 /home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/docs/experiments/evidence/combat_infinity_r1_20261025/build_runtime.py --check
+patching file apps/one_combat/infinity_frozen_skips.h
+patching file apps/one_combat/run_driver.cpp
+PASS base source, fresh patch application, patched file hashes, models and executable custody; no rebuild
+EXIT 0
+
+$ python3 docs/experiments/evidence/combat_infinity_counterfactual_20261024/measure.py --check
+{
+  "actual_skips": 6,
+  "not_seen": 7,
+  "highest_floor": 33,
+  "outcomes": [
+    {
+      "complete": true,
+      "finalAct": 2,
+      "finalFloor": 33,
+      "finalHp": 0,
+      "heartKilled": false,
+      "integrityPassed": true,
+      "label": 0,
+      "states": 131,
+      "supportedStates": 131,
+      "type": "outcome",
+      "unsupported": {}
+    }
+  ],
+  "maximum_owned_engine": {
+    "Corruption": 0,
+    "Dark Embrace": 1,
+    "Flash of Steel": 0
+  },
+  "engine_completion": null,
+  "first_subsequent_combat": null
+}
+EXIT 0
+
+$ python3 docs/experiments/evidence/combat_infinity_counterfactual_20261024/analyze.py --check
+PASS raw custody, complete exact flag-off prefix, frozen13 statuses/accounting, actual measurements and conditional oracle tables; no seed/world execution
+EXIT 0
+
+$ git diff dbd2a1f7b44f1467ab45ae1346f0bc02c3125788 --check
+EXIT 0

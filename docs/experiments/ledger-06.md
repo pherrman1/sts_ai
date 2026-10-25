@@ -24012,29 +24012,37 @@ campaigns, backup copies of stragglers on idle workers once the queue is empty.
 - Seeds 111360000–111360255 used; smokes 111369991–111369993 used (111369990–111369999 assigned).
 - **Knowledge impact:** `evaluation/current-research.md`.
 
-## §TBD-r1 One rescue ablation: restore floor0 Headbutt, freeze the remaining12 skips (2026-10-25)
+## §TBD-r1 R1 restores first map, but engine preservation still fails (2026-10-25)
 
-Accepted user charter starts from independently reviewed #844 dbd2a1f7b.
-One new R1 treatment for seed111101326, historical source/controller/models/settings.
-Only intervention change: first frozen manifest entry enabled:false; all13 identities
-preserved, remaining12 unchanged. Research-only header extension records
-DISABLED_BY_DESIGN and matched+not_seen+disabled=13. Production/default/oracle changes:none.
+**COMPRESSION_PATH_FRAGILITY_CONFIRMED.** Starting reviewed #844 dbd2a1f7b;
+independent prelaunch PASS/frozen e37fac336. One research-header extension supports
+enabled:false/DISABLED_BY_DESIGN. Sole manifest delta disables floor0; all13
+identities and other12 entries unchanged. Historical d8fd2a10/controller/models/
+settings; new patched binary cb46712feaccfc4ae874b37ba1437261e4b64bfcf62ea92682b0204438505509.
+Production C++, original runtimes, prior13-arm evidence, oracle/K/bounds/defaults untouched.
 
-Preregistered sequence: independent implementation/design review and commit freeze;
-one manifest-unset full-header/137-state/136-trace parity, then only on PASS one R1
-full run. Before interpreting gameplay, require exact pre-enabled trace through
-first map(5,0), versus prior13-skip(1,0); abort on unexpected identity divergence.
-Record all triggers, natural engine offers/ownership and later divergence. Per-run
-OMP1/wall1800s, original10k Silver/512 OOC sims. If engine completes, first subsequent
-combat only; conditional identical capture replay and <=4 public roots/unchangedK4.
+One manifest-unset full-header/137-state/136-trace parity PASS, no exclusions or
+retries:394.772s wall/386.264s CPU. Then one R1 treatment,273.869s wall/264.616s CPU,
+integrity PASS,118 supported public OOC states. First3 trace objects identical to
+historical: ordinary policy takes floor0 Headbutt, map(5,0) rather than13-arm(1,0).
+Exactly13=7 matched+5 unseen+1 disabled; zero failures/duplicates. Enabled skips
+fired at act1/f1,f3,f10,f12,f16 and act2/f22,f24; no substitutions.
 
-Build and8 focused seed-free contract groups PASS; zero seed executions at preregistration. Engine failure
-or early death => COMPRESSION_PATH_FRAGILITY_CONFIRMED and stop this seed; no next
-subset/lead/beam/model work. Actual engine-preserving active compression is required
-for a compression lever claim. Knowledge impact: experimental status and final
-current-research boundary, no default promotion. Prior package result unchanged.
+First later map-node difference at act2/f18: R1(3,0), control(0,0). Corruption
+naturally taken f7/d24 (15cards/64HP/44g), then ordinary MCTS gives it for Vajra at
+WeMeetAgain f20/d65 (18->17cards/41HP/200g). Dark Embrace only offered at f0 where
+policy takes Headbutt, never acquired/later offered; no Flash offers/acquisitions.
+Death to Automaton act2/f33/fight15,18 permanent cards,60->0HP. Engine never completes.
 
-[Frozen contrast, patch, execution/capture bounds and stopping rules](evidence/combat_infinity_r1_20261025/PROTOCOL.md).
+Completion/target deck and active minimum unavailable, not an18-vs31 engine-preserving
+reduction. No capture replay/roots/worlds/oracle; fractions/reach/cap rate null.
+The floor0 skip caused the immediate bifurcation but is not a sufficient explanation
+of package failure. This one rescue does not isolate any later skip or prove all
+compression incompatible. Stop hand-tuning this seed; no next subset, other lead,
+beam/model/default/oracle work or merge. Knowledge impact: final experimental and
+current-research boundary; previous package conclusion unchanged.
+
+[Exact patch/manifest, full raw qualification/treatment, all13 statuses, engine history and limits](evidence/combat_infinity_r1_20261025/REPORT.md).
 
 ## §TBD-counterfactual Frozen13 reward-skip counterfactual — engine lost; earlier death (2026-10-24)
 

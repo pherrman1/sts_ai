@@ -160,17 +160,24 @@ does not justify a beam, alternate arm, oracle change or model work. Stop after
 this bounded experiment; prior unsupported/null roots and earlier results stand.
 
 
-The [authorized R1 rescue ablation](../../experiments/evidence/combat_infinity_r1_20261025/PROTOCOL.md)
-(§TBD-r1; starting reviewed dbd2a1f7b) now isolates the specific floor0 causal clue:
-disable only that skip, leaving the other12 frozen identities intact. A narrow
-research-header extension supports enabled:false/DISABLED_BY_DESIGN; current
-production source remains untouched. Before its one treatment, the new binary must
-pass the same exact flag-off prefix qualification. R1 must reproduce first map(5,0)
-before any enabled skip, otherwise stop for execution-identity investigation. No R1
-seed has executed yet. If engine failure/early death persists, stop hand-tuning this
-seed with COMPRESSION_PATH_FRAGILITY_CONFIRMED; if naturally complete, measure the
-first subsequent combat under the unchanged public/oracle protocol. No beam or
-model implementation, extra subset or other lead is authorized.
+The [single R1 rescue ablation](../../experiments/evidence/combat_infinity_r1_20261025/REPORT.md)
+(§TBD-r1; starting reviewed dbd2a1f7b, frozen e37fac336) disables only the floor0 skip,
+keeping the other12 identities unchanged. The new historical research binary passed
+full flag-off137-state/136-trace/header parity. R1 exactly reproduced the first3
+historical traces and map(5,0), implicating the floor0 skip in the earlier immediate
+bifurcation. Seven later skips fired. Its first later map-node difference was act2/f18,
+(3,0) rather than control(0,0). Corruption was acquired f7, but ordinary MCTS exchanged
+it for Vajra at WeMeetAgain f20; Dark Embrace and both Flashes were never owned.
+It died to Automaton f33. **COMPRESSION_PATH_FRAGILITY_CONFIRMED**, limited to this
+seed/remaining package, not a claim that every compression policy fails.
+
+The engine never completed: no target active-pool measurement, capture replay,
+selected root, sampled world or oracle result. Final18 permanent cards do not prove
+engine-preserving compression versus historical31. The immediate route cause was
+isolated, but restoring it was insufficient to preserve the whole engine trajectory.
+Stop manual subset chasing on this seed: no next restoration/leave-one-out, other
+lead, beam implementation or model work. Production/default/oracle behavior and
+previous evidence remain unchanged; no #844 merge.
 
 ## AlphaZero-style OOC loop: open requirements
 

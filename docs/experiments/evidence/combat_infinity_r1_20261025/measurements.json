@@ -1,0 +1,1353 @@
+{
+  "seed": 111101326,
+  "treatment_receipt_sha256": "818d401889cb348a19cb36c3adae8f10702c6d2476a5d1cae9b09ea98c5f9d9c",
+  "frozen_triggers": [
+    {
+      "act": 1,
+      "enabled": false,
+      "floor": 0,
+      "forced_skip_key": "ooc:v1:effect=12:source=7:reward=none:group=[93,0,0;122,0,0;179,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "historical_acquisition": "Headbutt",
+      "historical_take_key": "ooc:v1:effect=5:source=7:reward=card,179,0,0:group=[93,0,0;122,0,0;179,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "original_ooc_decision": 1,
+      "original_trace_index": 1,
+      "public_reward_group": "[93,0,0;122,0,0;179,0,0;]",
+      "status": "DISABLED_BY_DESIGN",
+      "target_card": "Headbutt"
+    },
+    {
+      "act": 1,
+      "floor": 1,
+      "forced_skip_key": "ooc:v1:effect=12:source=7:reward=none:group=[14,0,0;157,0,0;179,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "historical_acquisition": "Headbutt",
+      "historical_take_key": "ooc:v1:effect=5:source=7:reward=card,179,0,0:group=[14,0,0;157,0,0;179,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "original_ooc_decision": 4,
+      "original_trace_index": 5,
+      "public_reward_group": "[14,0,0;157,0,0;179,0,0;]",
+      "status": "MATCHED_EXECUTED",
+      "target_card": "Headbutt"
+    },
+    {
+      "act": 1,
+      "floor": 3,
+      "forced_skip_key": "ooc:v1:effect=12:source=7:reward=none:group=[67,0,0;157,0,0;300,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "historical_acquisition": "Shockwave",
+      "historical_take_key": "ooc:v1:effect=5:source=7:reward=card,300,0,0:group=[67,0,0;157,0,0;300,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "original_ooc_decision": 11,
+      "original_trace_index": 13,
+      "public_reward_group": "[67,0,0;157,0,0;300,0,0;]",
+      "status": "MATCHED_EXECUTED",
+      "target_card": "Shockwave+"
+    },
+    {
+      "act": 1,
+      "floor": 10,
+      "forced_skip_key": "ooc:v1:effect=12:source=7:reward=none:group=[11,0,0;179,0,0;181,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "historical_acquisition": "Anger",
+      "historical_take_key": "ooc:v1:effect=5:source=7:reward=card,11,0,0:group=[11,0,0;179,0,0;181,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "original_ooc_decision": 32,
+      "original_trace_index": 37,
+      "public_reward_group": "[11,0,0;179,0,0;181,0,0;]",
+      "status": "MATCHED_EXECUTED",
+      "target_card": "Anger"
+    },
+    {
+      "act": 1,
+      "floor": 12,
+      "forced_skip_key": "ooc:v1:effect=12:source=7:reward=none:group=[249,0,0;258,0,0;266,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "historical_acquisition": "Reaper",
+      "historical_take_key": "ooc:v1:effect=5:source=7:reward=card,266,0,0:group=[249,0,0;258,0,0;266,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "original_ooc_decision": 40,
+      "original_trace_index": 47,
+      "public_reward_group": "[249,0,0;258,0,0;266,0,0;]",
+      "status": "MATCHED_EXECUTED",
+      "target_card": "Reaper"
+    },
+    {
+      "act": 1,
+      "floor": 16,
+      "forced_skip_key": "ooc:v1:effect=12:source=7:reward=none:group=[30,0,0;187,0,0;189,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "historical_acquisition": "Impervious",
+      "historical_take_key": "ooc:v1:effect=5:source=7:reward=card,189,0,0:group=[30,0,0;187,0,0;189,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "original_ooc_decision": 50,
+      "original_trace_index": 58,
+      "public_reward_group": "[30,0,0;187,0,0;189,0,0;]",
+      "status": "MATCHED_EXECUTED",
+      "target_card": "Impervious"
+    },
+    {
+      "act": 2,
+      "floor": 20,
+      "forced_skip_key": "ooc:v1:effect=12:source=7:reward=none:group=[11,0,0;67,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "historical_acquisition": "Anger",
+      "historical_take_key": "ooc:v1:effect=5:source=7:reward=card,11,0,0:group=[11,0,0;67,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "original_ooc_decision": 60,
+      "original_trace_index": 70,
+      "public_reward_group": "[11,0,0;67,0,0;362,0,0;]",
+      "status": "NOT_SEEN",
+      "target_card": "Anger"
+    },
+    {
+      "act": 2,
+      "floor": 22,
+      "forced_skip_key": "ooc:v1:effect=12:source=7:reward=none:group=[178,0,0;181,0,0;191,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "historical_acquisition": "Havoc",
+      "historical_take_key": "ooc:v1:effect=5:source=7:reward=card,178,0,0:group=[178,0,0;181,0,0;191,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "original_ooc_decision": 68,
+      "original_trace_index": 80,
+      "public_reward_group": "[178,0,0;181,0,0;191,0,0;]",
+      "status": "MATCHED_EXECUTED",
+      "target_card": "Havoc"
+    },
+    {
+      "act": 2,
+      "floor": 24,
+      "forced_skip_key": "ooc:v1:effect=12:source=7:reward=none:group=[39,0,0;157,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "historical_acquisition": "Blood for Blood",
+      "historical_take_key": "ooc:v1:effect=5:source=7:reward=card,39,0,0:group=[39,0,0;157,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "original_ooc_decision": 73,
+      "original_trace_index": 86,
+      "public_reward_group": "[39,0,0;157,0,0;345,0,0;]",
+      "status": "MATCHED_EXECUTED",
+      "target_card": "Blood for Blood"
+    },
+    {
+      "act": 2,
+      "floor": 27,
+      "forced_skip_key": "ooc:v1:effect=12:source=7:reward=none:group=[208,0,0;339,0,0;360,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "historical_acquisition": "Limit Break",
+      "historical_take_key": "ooc:v1:effect=5:source=7:reward=card,208,0,0:group=[208,0,0;339,0,0;360,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "original_ooc_decision": 87,
+      "original_trace_index": 101,
+      "public_reward_group": "[208,0,0;339,0,0;360,0,1;]",
+      "status": "NOT_SEEN",
+      "target_card": "Limit Break"
+    },
+    {
+      "act": 2,
+      "floor": 29,
+      "forced_skip_key": "ooc:v1:effect=12:source=7:reward=none:group=[27,0,0;42,0,0;52,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "historical_acquisition": "Battle Trance",
+      "historical_take_key": "ooc:v1:effect=5:source=7:reward=card,27,0,0:group=[27,0,0;42,0,0;52,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "original_ooc_decision": 93,
+      "original_trace_index": 109,
+      "public_reward_group": "[27,0,0;42,0,0;52,0,0;]",
+      "status": "NOT_SEEN",
+      "target_card": "Battle Trance"
+    },
+    {
+      "act": 2,
+      "floor": 33,
+      "forced_skip_key": "ooc:v1:effect=12:source=7:reward=none:group=[30,0,0;187,0,0;189,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "historical_acquisition": "Impervious",
+      "historical_take_key": "ooc:v1:effect=5:source=7:reward=card,189,0,0:group=[30,0,0;187,0,0;189,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "original_ooc_decision": 105,
+      "original_trace_index": 122,
+      "public_reward_group": "[30,0,0;187,0,0;189,0,0;]",
+      "status": "NOT_SEEN",
+      "target_card": "Impervious"
+    },
+    {
+      "act": 3,
+      "floor": 36,
+      "forced_skip_key": "ooc:v1:effect=12:source=7:reward=none:group=[131,0,0;240,0,0;242,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "historical_acquisition": "Panic Button",
+      "historical_take_key": "ooc:v1:effect=5:source=7:reward=card,242,0,0:group=[131,0,0;240,0,0;242,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+      "original_ooc_decision": 113,
+      "original_trace_index": 131,
+      "public_reward_group": "[131,0,0;240,0,0;242,0,0;]",
+      "status": "NOT_SEEN",
+      "target_card": "Panic Button"
+    }
+  ],
+  "actual_skips": 7,
+  "not_seen": 5,
+  "disabled_by_design": 1,
+  "post_skip_measurements": [
+    {
+      "trace_index": 4,
+      "decision": 3,
+      "act": 1,
+      "floor": 1,
+      "pre_deck_size": 12,
+      "post_deck_size": 12,
+      "hp": 60,
+      "gold": 99,
+      "engine": {
+        "Corruption": 0,
+        "Dark Embrace": 0,
+        "Flash of Steel": 0
+      },
+      "pre_sha256": "b418ef45e6da743f1531918c6b9176dcc30c4e9e658ef209ead8600bb110885f",
+      "offer": {
+        "cards": [
+          [
+            "Headbutt",
+            "Armaments",
+            "Flex"
+          ]
+        ],
+        "gold": [
+          11
+        ],
+        "potions": [],
+        "relics": []
+      }
+    },
+    {
+      "trace_index": 13,
+      "decision": 11,
+      "act": 1,
+      "floor": 3,
+      "pre_deck_size": 14,
+      "post_deck_size": 14,
+      "hp": 66,
+      "gold": 0,
+      "engine": {
+        "Corruption": 0,
+        "Dark Embrace": 0,
+        "Flash of Steel": 0
+      },
+      "pre_sha256": "866d12ef939353a611c06ecaa10383f0cae54daab683474f3794c692249bf11c",
+      "offer": {
+        "cards": [
+          [
+            "Shockwave",
+            "Flex",
+            "Cleave"
+          ]
+        ],
+        "gold": [
+          14
+        ],
+        "potions": [],
+        "relics": []
+      }
+    },
+    {
+      "trace_index": 37,
+      "decision": 32,
+      "act": 1,
+      "floor": 10,
+      "pre_deck_size": 15,
+      "post_deck_size": 15,
+      "hp": 67,
+      "gold": 4,
+      "engine": {
+        "Corruption": 1,
+        "Dark Embrace": 0,
+        "Flash of Steel": 0
+      },
+      "pre_sha256": "0dce637fdfb7e8bff8de6b8182d3d0434818aea20750444566cc4bc0e8aece2b",
+      "offer": {
+        "cards": [
+          [
+            "Heavy Blade",
+            "Anger",
+            "Headbutt"
+          ]
+        ],
+        "gold": [
+          16,
+          40
+        ],
+        "potions": [],
+        "relics": []
+      }
+    },
+    {
+      "trace_index": 47,
+      "decision": 40,
+      "act": 1,
+      "floor": 12,
+      "pre_deck_size": 16,
+      "post_deck_size": 16,
+      "hp": 31,
+      "gold": 71,
+      "engine": {
+        "Corruption": 1,
+        "Dark Embrace": 0,
+        "Flash of Steel": 0
+      },
+      "pre_sha256": "5364858fda9090a370319d2df0ea6451b4b693b457ea9bf969836f74fa63f3d7",
+      "offer": {
+        "cards": [
+          [
+            "Pummel",
+            "Pommel Strike",
+            "Reaper"
+          ]
+        ],
+        "gold": [
+          30
+        ],
+        "potions": [
+          "POWER_POTION"
+        ],
+        "relics": [
+          "DU_VU_DOLL"
+        ]
+      }
+    },
+    {
+      "trace_index": 60,
+      "decision": 52,
+      "act": 1,
+      "floor": 16,
+      "pre_deck_size": 16,
+      "post_deck_size": 16,
+      "hp": 46,
+      "gold": 101,
+      "engine": {
+        "Corruption": 1,
+        "Dark Embrace": 0,
+        "Flash of Steel": 0
+      },
+      "pre_sha256": "eaa507a2d950c500150a290af9a4ce89c20cb2e10f0a815a674fac59e1c9fe85",
+      "offer": {
+        "cards": [
+          [
+            "Berserk",
+            "Immolate",
+            "Impervious"
+          ]
+        ],
+        "gold": [
+          71
+        ],
+        "potions": [
+          "SKILL_POTION"
+        ],
+        "relics": []
+      }
+    },
+    {
+      "trace_index": 83,
+      "decision": 71,
+      "act": 2,
+      "floor": 22,
+      "pre_deck_size": 17,
+      "post_deck_size": 17,
+      "hp": 17,
+      "gold": 215,
+      "engine": {
+        "Corruption": 0,
+        "Dark Embrace": 0,
+        "Flash of Steel": 0
+      },
+      "pre_sha256": "524ee828fb4ec3f2c1b74c62038d42b219b985cc48c94237154458dd1bc7fb82",
+      "offer": {
+        "cards": [
+          [
+            "Heavy Blade",
+            "Havoc",
+            "Infernal Blade"
+          ]
+        ],
+        "gold": [
+          16
+        ],
+        "potions": [
+          "DUPLICATION_POTION"
+        ],
+        "relics": []
+      }
+    },
+    {
+      "trace_index": 91,
+      "decision": 78,
+      "act": 2,
+      "floor": 24,
+      "pre_deck_size": 17,
+      "post_deck_size": 17,
+      "hp": 22,
+      "gold": 231,
+      "engine": {
+        "Corruption": 0,
+        "Dark Embrace": 0,
+        "Flash of Steel": 0
+      },
+      "pre_sha256": "31dd8c40b53f39c18629e154a5e9fb43010e0aac2c6aad17bc9bccb46594faee",
+      "offer": {
+        "cards": [
+          [
+            "True Grit",
+            "Blood for Blood",
+            "Flex"
+          ]
+        ],
+        "gold": [
+          20
+        ],
+        "potions": [],
+        "relics": []
+      }
+    }
+  ],
+  "highest_floor": 33,
+  "outcomes": [
+    {
+      "complete": true,
+      "finalAct": 2,
+      "finalFloor": 33,
+      "finalHp": 0,
+      "heartKilled": false,
+      "integrityPassed": true,
+      "label": 0,
+      "states": 118,
+      "supportedStates": 118,
+      "type": "outcome",
+      "unsupported": {}
+    }
+  ],
+  "final_public_state": {
+    "act": 2,
+    "deck": [
+      "Ascender's Bane",
+      "Strike",
+      "Strike",
+      "Strike",
+      "Strike",
+      "Strike",
+      "Defend+",
+      "Defend+",
+      "Defend+",
+      "Defend",
+      "Bash",
+      "Headbutt",
+      "Dramatic Entrance",
+      "Anger",
+      "Perfected Strike+",
+      "Perfected Strike+",
+      "Anger",
+      "Reaper"
+    ],
+    "event": "",
+    "floor": 33,
+    "gold": 281,
+    "hp": 0,
+    "maxHp": 80,
+    "potionCapacity": 2,
+    "potions": [],
+    "relics": [
+      "BURNING_BLOOD",
+      "DU_VU_DOLL",
+      "MARK_OF_PAIN",
+      "VAJRA",
+      "CHARONS_ASHES",
+      "MUTAGENIC_STRENGTH",
+      "CENTENNIAL_PUZZLE"
+    ],
+    "room": "BOSS",
+    "screen": "BATTLE",
+    "x": 0,
+    "y": 15
+  },
+  "maximum_owned_engine": {
+    "Corruption": 1,
+    "Dark Embrace": 0,
+    "Flash of Steel": 0
+  },
+  "engine_completion": null,
+  "first_subsequent_combat": null,
+  "engine_acquisitions": [
+    {
+      "trace_index": 28,
+      "decision": 24,
+      "act": 1,
+      "floor": 7,
+      "by": "mcts",
+      "card": "Corruption",
+      "before": 0,
+      "after": 1,
+      "permanent_deck_size": 15,
+      "hp": 64,
+      "gold": 44,
+      "pre": {
+        "act": 1,
+        "deck": [
+          "Ascender's Bane",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Defend",
+          "Defend+",
+          "Defend+",
+          "Defend",
+          "Bash",
+          "Headbutt",
+          "Dramatic Entrance",
+          "Anger"
+        ],
+        "event": "",
+        "floor": 7,
+        "gold": 44,
+        "hp": 64,
+        "maxHp": 75,
+        "potionCapacity": 2,
+        "potions": [
+          "SPEED_POTION"
+        ],
+        "relics": [
+          "BURNING_BLOOD"
+        ],
+        "room": "MONSTER",
+        "screen": "REWARDS",
+        "x": 6,
+        "y": 6
+      },
+      "offer": {
+        "cards": [
+          [
+            "Corruption",
+            "Anger",
+            "Clash"
+          ]
+        ],
+        "gold": [],
+        "potions": [],
+        "relics": []
+      },
+      "post": {
+        "act": 1,
+        "deck": [
+          "Ascender's Bane",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Defend",
+          "Defend+",
+          "Defend+",
+          "Defend",
+          "Bash",
+          "Headbutt",
+          "Dramatic Entrance",
+          "Anger",
+          "Corruption"
+        ],
+        "event": "",
+        "floor": 7,
+        "gold": 44,
+        "hp": 64,
+        "maxHp": 75,
+        "potionCapacity": 2,
+        "potions": [
+          "SPEED_POTION"
+        ],
+        "relics": [
+          "BURNING_BLOOD"
+        ],
+        "room": "MONSTER",
+        "screen": "MAP",
+        "x": 6,
+        "y": 6
+      }
+    },
+    {
+      "trace_index": 75,
+      "decision": 65,
+      "act": 2,
+      "floor": 20,
+      "by": "mcts",
+      "card": "Corruption",
+      "before": 1,
+      "after": 0,
+      "permanent_deck_size": 17,
+      "hp": 41,
+      "gold": 200,
+      "pre": {
+        "act": 2,
+        "deck": [
+          "Ascender's Bane",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Defend+",
+          "Defend+",
+          "Defend+",
+          "Defend",
+          "Bash",
+          "Headbutt",
+          "Dramatic Entrance",
+          "Anger",
+          "Corruption",
+          "Perfected Strike+",
+          "Perfected Strike",
+          "Anger"
+        ],
+        "event": "WeMeetAgain",
+        "floor": 20,
+        "gold": 200,
+        "hp": 41,
+        "maxHp": 75,
+        "potionCapacity": 2,
+        "potions": [],
+        "relics": [
+          "BURNING_BLOOD",
+          "DU_VU_DOLL",
+          "MARK_OF_PAIN"
+        ],
+        "room": "EVENT",
+        "screen": "EVENT",
+        "x": 3,
+        "y": 2
+      },
+      "offer": {},
+      "post": {
+        "act": 2,
+        "deck": [
+          "Ascender's Bane",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Defend+",
+          "Defend+",
+          "Defend+",
+          "Defend",
+          "Bash",
+          "Headbutt",
+          "Dramatic Entrance",
+          "Anger",
+          "Perfected Strike+",
+          "Perfected Strike",
+          "Anger"
+        ],
+        "event": "",
+        "floor": 20,
+        "gold": 200,
+        "hp": 41,
+        "maxHp": 75,
+        "potionCapacity": 2,
+        "potions": [],
+        "relics": [
+          "BURNING_BLOOD",
+          "DU_VU_DOLL",
+          "MARK_OF_PAIN",
+          "VAJRA"
+        ],
+        "room": "EVENT",
+        "screen": "MAP",
+        "x": 3,
+        "y": 2
+      }
+    }
+  ],
+  "engine_offers": [
+    {
+      "trace_index": 1,
+      "decision": 1,
+      "by": "mcts",
+      "permanent_deck_size": 11,
+      "hp": 68,
+      "gold": 99,
+      "ownership_before": {
+        "Corruption": 0,
+        "Dark Embrace": 0,
+        "Flash of Steel": 0
+      },
+      "ownership_after": {
+        "Corruption": 0,
+        "Dark Embrace": 0,
+        "Flash of Steel": 0
+      },
+      "pre": {
+        "act": 1,
+        "deck": [
+          "Ascender's Bane",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Defend",
+          "Defend",
+          "Defend",
+          "Defend",
+          "Bash"
+        ],
+        "event": "",
+        "floor": 0,
+        "gold": 99,
+        "hp": 68,
+        "maxHp": 75,
+        "potionCapacity": 2,
+        "potions": [],
+        "relics": [
+          "BURNING_BLOOD"
+        ],
+        "room": "INVALID",
+        "screen": "REWARDS",
+        "x": -1,
+        "y": -1
+      },
+      "offer": {
+        "cards": [
+          [
+            "Headbutt",
+            "Dropkick",
+            "Dark Embrace"
+          ]
+        ],
+        "gold": [],
+        "potions": [],
+        "relics": []
+      },
+      "post": {
+        "act": 1,
+        "deck": [
+          "Ascender's Bane",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Defend",
+          "Defend",
+          "Defend",
+          "Defend",
+          "Bash",
+          "Headbutt"
+        ],
+        "event": "",
+        "floor": 0,
+        "gold": 99,
+        "hp": 68,
+        "maxHp": 75,
+        "potionCapacity": 2,
+        "potions": [],
+        "relics": [
+          "BURNING_BLOOD"
+        ],
+        "room": "INVALID",
+        "screen": "MAP",
+        "x": -1,
+        "y": -1
+      }
+    },
+    {
+      "trace_index": 27,
+      "decision": 23,
+      "by": "tree_rule",
+      "permanent_deck_size": 14,
+      "hp": 64,
+      "gold": 27,
+      "ownership_before": {
+        "Corruption": 0,
+        "Dark Embrace": 0,
+        "Flash of Steel": 0
+      },
+      "ownership_after": {
+        "Corruption": 0,
+        "Dark Embrace": 0,
+        "Flash of Steel": 0
+      },
+      "pre": {
+        "act": 1,
+        "deck": [
+          "Ascender's Bane",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Defend",
+          "Defend+",
+          "Defend+",
+          "Defend",
+          "Bash",
+          "Headbutt",
+          "Dramatic Entrance",
+          "Anger"
+        ],
+        "event": "",
+        "floor": 7,
+        "gold": 27,
+        "hp": 64,
+        "maxHp": 75,
+        "potionCapacity": 2,
+        "potions": [
+          "SPEED_POTION"
+        ],
+        "relics": [
+          "BURNING_BLOOD"
+        ],
+        "room": "MONSTER",
+        "screen": "REWARDS",
+        "x": 6,
+        "y": 6
+      },
+      "offer": {
+        "cards": [
+          [
+            "Corruption",
+            "Anger",
+            "Clash"
+          ]
+        ],
+        "gold": [
+          17
+        ],
+        "potions": [],
+        "relics": []
+      },
+      "post": {
+        "act": 1,
+        "deck": [
+          "Ascender's Bane",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Defend",
+          "Defend+",
+          "Defend+",
+          "Defend",
+          "Bash",
+          "Headbutt",
+          "Dramatic Entrance",
+          "Anger"
+        ],
+        "event": "",
+        "floor": 7,
+        "gold": 44,
+        "hp": 64,
+        "maxHp": 75,
+        "potionCapacity": 2,
+        "potions": [
+          "SPEED_POTION"
+        ],
+        "relics": [
+          "BURNING_BLOOD"
+        ],
+        "room": "MONSTER",
+        "screen": "REWARDS",
+        "x": 6,
+        "y": 6
+      }
+    },
+    {
+      "trace_index": 28,
+      "decision": 24,
+      "by": "mcts",
+      "permanent_deck_size": 14,
+      "hp": 64,
+      "gold": 44,
+      "ownership_before": {
+        "Corruption": 0,
+        "Dark Embrace": 0,
+        "Flash of Steel": 0
+      },
+      "ownership_after": {
+        "Corruption": 1,
+        "Dark Embrace": 0,
+        "Flash of Steel": 0
+      },
+      "pre": {
+        "act": 1,
+        "deck": [
+          "Ascender's Bane",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Defend",
+          "Defend+",
+          "Defend+",
+          "Defend",
+          "Bash",
+          "Headbutt",
+          "Dramatic Entrance",
+          "Anger"
+        ],
+        "event": "",
+        "floor": 7,
+        "gold": 44,
+        "hp": 64,
+        "maxHp": 75,
+        "potionCapacity": 2,
+        "potions": [
+          "SPEED_POTION"
+        ],
+        "relics": [
+          "BURNING_BLOOD"
+        ],
+        "room": "MONSTER",
+        "screen": "REWARDS",
+        "x": 6,
+        "y": 6
+      },
+      "offer": {
+        "cards": [
+          [
+            "Corruption",
+            "Anger",
+            "Clash"
+          ]
+        ],
+        "gold": [],
+        "potions": [],
+        "relics": []
+      },
+      "post": {
+        "act": 1,
+        "deck": [
+          "Ascender's Bane",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Strike",
+          "Defend",
+          "Defend+",
+          "Defend+",
+          "Defend",
+          "Bash",
+          "Headbutt",
+          "Dramatic Entrance",
+          "Anger",
+          "Corruption"
+        ],
+        "event": "",
+        "floor": 7,
+        "gold": 44,
+        "hp": 64,
+        "maxHp": 75,
+        "potionCapacity": 2,
+        "potions": [
+          "SPEED_POTION"
+        ],
+        "relics": [
+          "BURNING_BLOOD"
+        ],
+        "room": "MONSTER",
+        "screen": "MAP",
+        "x": 6,
+        "y": 6
+      }
+    }
+  ],
+  "historical_control": {
+    "permanent_deck": 31,
+    "minimum_active_pool": 30,
+    "act": 3,
+    "floor": 37,
+    "fight": 19,
+    "encounter": "THREE_DARKLINGS"
+  },
+  "oracle_executed": false,
+  "prior_thirteen_skip_first_map": [
+    1,
+    0
+  ],
+  "engine_public_offer_occurrences": {
+    "Corruption": [
+      {
+        "state_index": 27,
+        "act": 1,
+        "floor": 7,
+        "screen": 2
+      },
+      {
+        "state_index": 28,
+        "act": 1,
+        "floor": 7,
+        "screen": 2
+      }
+    ],
+    "Dark Embrace": [
+      {
+        "state_index": 1,
+        "act": 1,
+        "floor": 0,
+        "screen": 2
+      }
+    ],
+    "Flash of Steel": []
+  },
+  "not_seen_diagnostics": [
+    {
+      "act": 2,
+      "floor": 20,
+      "historical_decision_audit": 60,
+      "historical_card": "Anger",
+      "observed_screens": [
+        "EVENT",
+        "MAP"
+      ],
+      "observed_reward_groups": [],
+      "reason": "exact frozen reward group never appeared"
+    },
+    {
+      "act": 2,
+      "floor": 27,
+      "historical_decision_audit": 87,
+      "historical_card": "Limit Break",
+      "observed_screens": [
+        "MAP",
+        "REST"
+      ],
+      "observed_reward_groups": [],
+      "reason": "exact frozen reward group never appeared"
+    },
+    {
+      "act": 2,
+      "floor": 29,
+      "historical_decision_audit": 93,
+      "historical_card": "Battle Trance",
+      "observed_screens": [
+        "BATTLE",
+        "MAP",
+        "REWARDS"
+      ],
+      "observed_reward_groups": [
+        [
+          [
+            "Reaper",
+            "Pommel Strike",
+            "Uppercut"
+          ]
+        ],
+        [
+          [
+            "Reaper",
+            "Pommel Strike",
+            "Uppercut"
+          ]
+        ],
+        [
+          [
+            "Reaper",
+            "Pommel Strike",
+            "Uppercut"
+          ]
+        ],
+        [
+          [
+            "Reaper",
+            "Pommel Strike",
+            "Uppercut"
+          ]
+        ]
+      ],
+      "reason": "exact frozen reward group never appeared"
+    },
+    {
+      "act": 2,
+      "floor": 33,
+      "historical_decision_audit": 105,
+      "historical_card": "Impervious",
+      "observed_screens": [
+        "BATTLE"
+      ],
+      "observed_reward_groups": [],
+      "reason": "exact frozen reward group never appeared"
+    },
+    {
+      "act": 3,
+      "floor": 36,
+      "historical_decision_audit": 113,
+      "historical_card": "Panic Button",
+      "observed_screens": [],
+      "observed_reward_groups": [],
+      "reason": "floor not reached"
+    }
+  ],
+  "first_map_choice": {
+    "historical_decision": 2,
+    "treatment_decision": 2,
+    "historical_post": {
+      "act": 1,
+      "floor": 1,
+      "x": 5,
+      "y": 0,
+      "room": "MONSTER"
+    },
+    "treatment_post": {
+      "act": 1,
+      "floor": 1,
+      "x": 5,
+      "y": 0,
+      "room": "MONSTER"
+    }
+  },
+  "last_battle": {
+    "encounter": "AUTOMATON",
+    "fight": 15,
+    "kind": "battle",
+    "post": {
+      "act": 2,
+      "deck": [
+        "Ascender's Bane",
+        "Strike",
+        "Strike",
+        "Strike",
+        "Strike",
+        "Strike",
+        "Defend+",
+        "Defend+",
+        "Defend+",
+        "Defend",
+        "Bash",
+        "Headbutt",
+        "Dramatic Entrance",
+        "Anger",
+        "Perfected Strike+",
+        "Perfected Strike+",
+        "Anger",
+        "Reaper"
+      ],
+      "event": "",
+      "floor": 33,
+      "gold": 281,
+      "hp": 0,
+      "maxHp": 80,
+      "potionCapacity": 2,
+      "potions": [],
+      "relics": [
+        "BURNING_BLOOD",
+        "DU_VU_DOLL",
+        "MARK_OF_PAIN",
+        "VAJRA",
+        "CHARONS_ASHES",
+        "MUTAGENIC_STRENGTH",
+        "CENTENNIAL_PUZZLE"
+      ],
+      "room": "BOSS",
+      "screen": "BATTLE",
+      "x": 0,
+      "y": 15
+    },
+    "pre": {
+      "act": 2,
+      "deck": [
+        "Ascender's Bane",
+        "Strike",
+        "Strike",
+        "Strike",
+        "Strike",
+        "Strike",
+        "Defend+",
+        "Defend+",
+        "Defend+",
+        "Defend",
+        "Bash",
+        "Headbutt",
+        "Dramatic Entrance",
+        "Anger",
+        "Perfected Strike+",
+        "Perfected Strike+",
+        "Anger",
+        "Reaper"
+      ],
+      "event": "",
+      "floor": 33,
+      "gold": 281,
+      "hp": 60,
+      "maxHp": 80,
+      "potionCapacity": 2,
+      "potions": [
+        "POWER_POTION"
+      ],
+      "relics": [
+        "BURNING_BLOOD",
+        "DU_VU_DOLL",
+        "MARK_OF_PAIN",
+        "VAJRA",
+        "CHARONS_ASHES",
+        "MUTAGENIC_STRENGTH",
+        "CENTENNIAL_PUZZLE"
+      ],
+      "room": "BOSS",
+      "screen": "BATTLE",
+      "x": 0,
+      "y": 15
+    },
+    "seed": 111101326,
+    "won": false
+  },
+  "first_enabled_skip": {
+    "trace_index": 4,
+    "decision": 3,
+    "act": 1,
+    "floor": 1,
+    "pre": {
+      "act": 1,
+      "deck": [
+        "Ascender's Bane",
+        "Strike",
+        "Strike",
+        "Strike",
+        "Strike",
+        "Strike",
+        "Defend",
+        "Defend",
+        "Defend",
+        "Defend",
+        "Bash",
+        "Headbutt"
+      ],
+      "event": "",
+      "floor": 1,
+      "gold": 99,
+      "hp": 60,
+      "maxHp": 75,
+      "potionCapacity": 2,
+      "potions": [],
+      "relics": [
+        "BURNING_BLOOD"
+      ],
+      "room": "MONSTER",
+      "screen": "REWARDS",
+      "x": 5,
+      "y": 0
+    },
+    "offer": {
+      "cards": [
+        [
+          "Headbutt",
+          "Armaments",
+          "Flex"
+        ]
+      ],
+      "gold": [
+        11
+      ],
+      "potions": [],
+      "relics": []
+    },
+    "post": {
+      "act": 1,
+      "deck": [
+        "Ascender's Bane",
+        "Strike",
+        "Strike",
+        "Strike",
+        "Strike",
+        "Strike",
+        "Defend",
+        "Defend",
+        "Defend",
+        "Defend",
+        "Bash",
+        "Headbutt"
+      ],
+      "event": "",
+      "floor": 1,
+      "gold": 99,
+      "hp": 60,
+      "maxHp": 75,
+      "potionCapacity": 2,
+      "potions": [],
+      "relics": [
+        "BURNING_BLOOD"
+      ],
+      "room": "MONSTER",
+      "screen": "REWARDS",
+      "x": 5,
+      "y": 0
+    }
+  },
+  "first_later_route_difference": {
+    "trace_index": 65,
+    "decision": 57,
+    "act": 2,
+    "floor": 18,
+    "historical_decision": 52,
+    "historical_node": [
+      0,
+      0
+    ],
+    "R1_node": [
+      3,
+      0
+    ],
+    "pre": {
+      "act": 2,
+      "deck": [
+        "Ascender's Bane",
+        "Strike",
+        "Strike",
+        "Strike",
+        "Strike",
+        "Strike",
+        "Defend+",
+        "Defend+",
+        "Defend+",
+        "Defend",
+        "Bash",
+        "Headbutt",
+        "Dramatic Entrance",
+        "Anger",
+        "Corruption",
+        "Perfected Strike+"
+      ],
+      "event": "",
+      "floor": 17,
+      "gold": 172,
+      "hp": 68,
+      "maxHp": 75,
+      "potionCapacity": 2,
+      "potions": [
+        "SKILL_POTION"
+      ],
+      "relics": [
+        "BURNING_BLOOD",
+        "DU_VU_DOLL",
+        "MARK_OF_PAIN"
+      ],
+      "room": "BOSS_TREASURE",
+      "screen": "MAP",
+      "x": -1,
+      "y": -1
+    },
+    "post": {
+      "act": 2,
+      "deck": [
+        "Ascender's Bane",
+        "Strike",
+        "Strike",
+        "Strike",
+        "Strike",
+        "Strike",
+        "Defend+",
+        "Defend+",
+        "Defend+",
+        "Defend",
+        "Bash",
+        "Headbutt",
+        "Dramatic Entrance",
+        "Anger",
+        "Corruption",
+        "Perfected Strike+"
+      ],
+      "event": "",
+      "floor": 18,
+      "gold": 172,
+      "hp": 68,
+      "maxHp": 75,
+      "potionCapacity": 2,
+      "potions": [
+        "SKILL_POTION"
+      ],
+      "relics": [
+        "BURNING_BLOOD",
+        "DU_VU_DOLL",
+        "MARK_OF_PAIN"
+      ],
+      "room": "MONSTER",
+      "screen": "BATTLE",
+      "x": 3,
+      "y": 0
+    }
+  }
+}

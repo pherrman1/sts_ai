@@ -1,0 +1,10 @@
+{
+  "original_source_files_unchanged": 772,
+  "prior_research_source_and_binary_unchanged": true,
+  "original_runtime_sha256": "0e17e0f22259afe21f35ba89a0413f2af7663cfae1312311f1ea8c71b00c2d52",
+  "prior_research_runtime_sha256": "2e6fe2ee357a85748d17ac33ee981da9b4efb013555f43d238da69f92e146d50",
+  "models_unchanged": 8,
+  "production_changes": [],
+  "prior_evidence_changes": [],
+  "oracle_binary_sha256": "28e942c218cbaeef29f3a58a3301873d2fca012f6205379445e4e23ffef0ebe9"
+}
