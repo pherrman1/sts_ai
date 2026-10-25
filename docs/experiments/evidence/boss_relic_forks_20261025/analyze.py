@@ -152,6 +152,8 @@ def spread(roots, endpoint, rng, boot, n_sources):
 
 def shrunk(u, n, tau2, noise_var):
     """Empirical-Bayes shrinkage toward 0 (= skip); noise variance per appearance from the training fold."""
+    if tau2 <= 0:
+        return {k: 0.0 for k in u}  # no spread: every key shrinks to skip, so the override never fires
     return {k: (v if k == SKIP else v * tau2 / (tau2 + noise_var / max(1, n.get(k, 0)))) for k, v in u.items()}
 
 
