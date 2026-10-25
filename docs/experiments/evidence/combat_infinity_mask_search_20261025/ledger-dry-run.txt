@@ -1,0 +1,9 @@
+§TBD-mask -> §674
+§TBD-r1 -> §675
+§TBD-counterfactual -> §676
+§TBD-compression -> §677
+§TBD-reconstruction -> §678
+§TBD-capture -> §679
+§TBD-hunt -> §680
+§TBD-natural -> §681
+§TBD-public -> §682

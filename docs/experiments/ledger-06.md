@@ -24012,7 +24012,7 @@ campaigns, backup copies of stragglers on idle workers once the queue is empty.
 - Seeds 111360000–111360255 used; smokes 111369991–111369993 used (111369990–111369999 assigned).
 - **Knowledge impact:** `evaluation/current-research.md`.
 
-## §TBD-mask-search Five-skip search establishes compression on032 (2026-10-25)
+## §TBD-mask Five-skip search establishes compression on032 (2026-10-25)
 
 **OOC_COMPRESSION_LEVER_ESTABLISHED**, scoped to one historical seed/frozen subset
 space, not policy quality or prevalence. Starting reviewed13bed5e00; independent

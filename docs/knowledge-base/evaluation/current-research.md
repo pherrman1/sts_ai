@@ -182,7 +182,7 @@ previous evidence remain unchanged; no #844 merge.
 
 
 The [exhaustive five-skip search on032](../../experiments/evidence/combat_infinity_mask_search_20261025/RESULT.md)
-(§TBD-mask-search) establishes **OOC_COMPRESSION_LEVER_ESTABLISHED** for this one
+(§TBD-mask) establishes **OOC_COMPRESSION_LEVER_ESTABLISHED** for this one
 historical seed/subset space. All32 masks were valid and reached the actual
 Bash/Pommel/two-Dropkick engine's first combat alive. The unique gate-passing best,
 11111, executed all5 skips and reached14 permanent cards/64HP. Its one exact-prefix
