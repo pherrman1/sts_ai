@@ -104,4 +104,10 @@ Sources 111378000–111379023 (Stage A 111378000–111378255), smokes 111379980�
 
 ## Provenance (frozen before launch)
 
-RUN_COMMIT, code commit and binary sha256 (v3 preset) in `campaign.manifest`; student_sel.bin `cf6bf7fb…`.
+- Code commit `eb94f4e3bffec44f9f5a8d950973e4ff62feffa7`; binary (v3 preset) sha256
+  `e57de3841aa8cab9ae240531352d16e11d84ad2fcece2082ac4b2e7798acda0d`, rebuilt from that commit by
+  `worker.sh publish-binary` with the same hash and cached.
+- student_sel.bin `cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7`.
+- RUN_COMMIT: the commit carrying this file's final campaign files (stated in the launch message).
+- Smoke: [SMOKE.md](SMOKE.md); raw units in `/mnt/project-files/boss-relic-forks/smoke/smoke-units.tar`.
+- Share: `/mnt/project-files/boss-relic-forks/stage-a`.
