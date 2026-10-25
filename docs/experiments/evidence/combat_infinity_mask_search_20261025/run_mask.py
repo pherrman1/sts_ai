@@ -46,6 +46,7 @@ def main():
         process=subprocess.Popen(command,cwd=run,env=env,stdout=out,stderr=err,start_new_session=True);record['pid']=process.pid;write(run/'started.json',record)
         try:
             while True:
+                if time.monotonic()-start>900:status='WALL_LIMIT';break
                 trace=complete_rows(run/'trace.jsonl');endpoint=locate_stop(trace)
                 prefix=trace[:endpoint['row']+1] if endpoint else trace
                 boundaries=[r for r in prefix if r.get('kind')=='infinity_mask_boundary']
@@ -56,7 +57,7 @@ def main():
                     n=forced if forced is not None else min(len(normal),len(expected['trace']))
                     first_difference=difference(expected['trace'][:n],normal[:n],'/canary_before_first_enabled_skip')
                     if first_difference:status='CANARY_PRE_INTERVENTION_DIVERGED';break
-                    canary_checked=forced is not None
+                    canary_checked=forced is not None or endpoint is not None
                 if args.capture:
                     if endpoint and endpoint['kind']=='TARGET_REACHED':
                         measurement=assess(args.mask,manifest,trace,endpoint)
@@ -83,7 +84,6 @@ def main():
                         status='VALID' if process.returncode==0 else 'PROCESS_FAILED';break
                     status='VALID';break
                 if process.poll() is not None:status='PROCESS_ENDED_BEFORE_STOP';break
-                if time.monotonic()-start>900:status='WALL_LIMIT';break
                 write(run/'progress.json',{'mask':bits,'wall_seconds':time.monotonic()-start,'boundary_count':len(boundaries),'floor':boundaries[-1]['pre']['floor'] if boundaries else None,'pid':process.pid})
                 time.sleep(0.1)
         finally:
