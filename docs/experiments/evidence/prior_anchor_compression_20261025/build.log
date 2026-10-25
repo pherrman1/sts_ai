@@ -1,0 +1,6 @@
+[ 52%] Built target sts_core_objects
+[ 52%] Building CXX object CMakeFiles/one_combat.dir/apps/one_combat/compression_audit.cpp.o
+[ 52%] Linking CXX executable one_combat
+lto-wrapper: warning: using serial compilation of 127 LTRANS jobs
+lto-wrapper: note: see the ‘-flto’ option documentation for more information
+[100%] Built target one_combat

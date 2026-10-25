@@ -1,0 +1,70 @@
+{
+  "baseline_sha": "8cce22b4d5d54733330e323b3065ca687fbcbfc5",
+  "reviewed_source_sha": "fb03ef6649bb9010cd66e1577cf744bd2e32fd1a",
+  "binary": "/home/philippherrmann/.codex/worktrees/a439/sts_lightspeed/build/linux-gcc-release-ccache/one_combat",
+  "binary_sha256": "ec6ceb73d475c70430c3c5ce3ea13257e7f631d6739b05ae0c614a6ce6589945",
+  "models": [
+    {
+      "path": "selfplay/models/combat_transition_deepsets_pathb_r2_lizard_ritual_refit.native",
+      "role": "ctm",
+      "sha256": "3bbff6b6a413a24dde5c760212828decb8578ff38d5456c0f414d9cbd048bdec"
+    },
+    {
+      "path": "selfplay/models/combat_transition_near_full_escape_pathb_r2_ritual_refit.native",
+      "role": "ctm_brew_fallback",
+      "sha256": "2f0f5d974c6bf178c238dbeb6ae5e6e632c08cff10aee699da296f5d7a9f9b0e"
+    },
+    {
+      "path": "models/candidates/ctm_finetune_hp_pathb_a20_v1.native",
+      "role": "ctm_a20",
+      "sha256": "bdbfafa6823adc52ff240dae5cbd2ba224aca145f2182bedf79fe0dc8cf6571b"
+    },
+    {
+      "path": "selfplay/models/combat_transition_near_full_escape_pathb_a20.native",
+      "role": "ctm_a20_brew_fallback",
+      "sha256": "e338506ddf14177bec27cfe174670bd9dcac333c26b30416b9f0c76717392b0d"
+    },
+    {
+      "role": "prior",
+      "path": "/home/philippherrmann/.local/share/sts-ai/live-runtime/releases/5c30b0d28f20-0703f89883e6/models/arm_c_student.bin",
+      "sha256": "cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7"
+    },
+    {
+      "role": "leaf_win",
+      "path": "/home/philippherrmann/.codex/worktrees/a439/sts_lightspeed/models/candidates/v_win_x2b_public_trees.txt",
+      "sha256": "e2d3aa65291df2914119f5d8129fb3aa6b7339ba6fa72eeaf9e86b9402beca90"
+    },
+    {
+      "role": "floor",
+      "path": "/home/philippherrmann/.codex/worktrees/a439/sts_lightspeed/models/v_rich_trees.txt",
+      "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+    },
+    {
+      "role": "v4",
+      "path": "/home/philippherrmann/.codex/worktrees/a439/sts_lightspeed/selfplay/models/ooc_strategic_tok_final.native",
+      "sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c"
+    },
+    {
+      "role": "ctm_calibration",
+      "path": "/home/philippherrmann/.codex/worktrees/a439/sts_lightspeed/models/candidates/ctm_calibration_pathb_a20_ft_hp_v1.json",
+      "sha256": "8c226f23d80ff1cd2d9d1f87a14af3b5098a710ef88c6428f3fe0e70b3283653"
+    },
+    {
+      "role": "act4_survival",
+      "path": "/home/philippherrmann/.codex/worktrees/a439/sts_lightspeed/models/candidates/ctm_act4_survival_trees.txt",
+      "sha256": "05279b3c54651afac2ccd60ccb7a71babbab073e5bb8536c9f9bd1b5d9950d5e"
+    }
+  ],
+  "inputs_sha256": "be41d85f4213864b2231db5ec528c33138235d4182a81e42b2925c3c3bc34bc7",
+  "prereg_sha256": "d54b6a22c64a72cb71633e4eb50eadcaa9aa1875be7b77e7654f3dfb841e5bdb",
+  "budget": {
+    "particles": 64,
+    "depth": 0,
+    "source_seed": 111101326,
+    "source_decision": 1,
+    "OMP_NUM_THREADS": 1,
+    "timeout_seconds": 1200
+  },
+  "review": "independent audit_review: PASS after normalized weights/coverage guards; full 18-row parity preview PASS",
+  "stage_b_authorized": false
+}

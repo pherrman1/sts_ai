@@ -1,0 +1,42 @@
+{
+  "command": [
+    "bash",
+    "tools/seed_guard.sh",
+    "/home/philippherrmann/.codex/worktrees/a439/sts_lightspeed/build/linux-gcc-release-ccache/one_combat",
+    "ooccompressionaudit",
+    "/home/philippherrmann/.codex/worktrees/a439/sts_lightspeed/docs/experiments/evidence/prior_anchor_compression_20261025/inputs.jsonl",
+    "/home/philippherrmann/.codex/worktrees/a439/sts_lightspeed/docs/experiments/evidence/prior_anchor_compression_20261025/raw.jsonl",
+    "--values"
+  ],
+  "env": {
+    "HOME": "/home/philippherrmann",
+    "PATH": "/home/philippherrmann/google-cloud-sdk/bin:/home/philippherrmann/.local/bin:/home/philippherrmann/.local/bin:/usr/games:/home/philippherrmann/.codex/tmp/arg0/codex-arg0lFMwTE:/home/philippherrmann/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/override:/home/philippherrmann/google-cloud-sdk/bin:/home/philippherrmann/.local/bin:/home/philippherrmann/.local/bin:/home/philippherrmann/.nvm/versions/node/v24.19.0/bin:/home/philippherrmann/google-cloud-sdk/bin:/home/philippherrmann/.local/bin:/usr/games:/home/philippherrmann/google-cloud-sdk/bin:/home/philippherrmann/.local/bin:/home/philippherrmann/.local/bin:/usr/games:/home/philippherrmann/google-cloud-sdk/bin:/home/philippherrmann/.local/bin:/home/philippherrmann/.local/bin:/usr/games:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/philippherrmann/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback:/usr/lib/chatgpt/resources",
+    "OMP_NUM_THREADS": "1",
+    "OMP_DYNAMIC": "FALSE",
+    "STS_FAIR": "1",
+    "STS_COLLECT_KEYS": "1",
+    "STS_OOC_MCTS": "1",
+    "STS_OOC_MCTS_PRIOR": "heart1full",
+    "STS_OOC_MCTS_LEAF_POLICY": "heart1",
+    "STS_OOC_MCTS_LEAF_VALUE": "native",
+    "STS_OOC_MCTS_LEAF_COMBATS": "3",
+    "STS_OOC_MCTS_TARGET_PRIOR": "1",
+    "STS_OOC_MCTS_TREE_RULES": "1",
+    "STS_OOC_MCTS_UNSUPPORTED_SILVER_SIMS": "500",
+    "STS_OOC_HEART1": "/home/philippherrmann/.local/share/sts-ai/live-runtime/releases/5c30b0d28f20-0703f89883e6/models/arm_c_student.bin",
+    "STS_OOC_HEART1_WING_BOOTS_COUNTER": "1",
+    "STS_OOC_STRATEGIC_TOK_NN": "selfplay/models/ooc_strategic_tok_final.native",
+    "STS_OOC_STRATEGIC_REST": "1",
+    "STS_OOC_STRATEGIC_EVENT": "1",
+    "STS_OOC_STRATEGIC_SHOP": "1",
+    "STS_OOC_STRATEGIC_TREASURE": "1",
+    "STS_OOC_STRATEGIC_BOSS_RELIC": "1",
+    "STS_OOC_STRATEGIC_MARGIN": "1.0",
+    "STS_EXECUTABLE_GIT_SHA": "fb03ef6649bb9010cd66e1577cf744bd2e32fd1a"
+  },
+  "binary_sha256": "ec6ceb73d475c70430c3c5ce3ea13257e7f631d6739b05ae0c614a6ce6589945",
+  "prior_sha256": "cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7",
+  "source_sha": "fb03ef6649bb9010cd66e1577cf744bd2e32fd1a",
+  "values": true,
+  "timeout_seconds": 1200
+}

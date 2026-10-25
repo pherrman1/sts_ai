@@ -24461,3 +24461,38 @@ rule the full-rollout label line stops. Inference: a route-aware head is the nex
 consumed.
 Seeds: none (existing games only).
 **Knowledge impact:** none beyond this entry; no code or default change.
+
+## §TBD — Prior-anchored compression Stage A: P4/P2/V5 do not separate the five successful #844 skips from 326's destructive floor-0 skip; STOP (2026-10-25)
+
+**Question:** Can the current deployed policy/value constrain the proven historical
+compression lever before any new beam variant is implemented? Accepted user
+handoff fixes P4 (prior rank <=4), P2 (log-prior gap <=2), V5 (CRN gap <=
+max(0.05,2 combined SE)); a passing gate must admit all five 032/11111 skips and
+reject 326/13-skip's floor-0 skip. Stage B is conditional on that result.
+**Setup:** [PREREG](evidence/prior_anchor_compression_20261025/PREREG.md), current-main
+baseline `8cce22b4`, reviewed audit source `fb03ef664`, exact source/model/binary/input
+identities in [FREEZE](evidence/prior_anchor_compression_20261025/FREEZE.json).
+#844 head `1322e0d97` read-only: 18 executed skip states (5 positive, 6 thirteen-skip,
+7 R1); full restored native public-record parity and current student_sel priors,
+no fallback. Current deployed rollout3/CTM/public X2-B+M0, no experimental SR head.
+Later public records lack exact transition snapshots; only the initial Neow root
+is qualified for values. Existing OocParticlePlanner CRN root stage, 64 particles
+per action, one local lane, OMP=1, ascension 20, project-fair hypothetical futures.
+**Result:** [report and 18-row table](evidence/prior_anchor_compression_20261025/RESULT.md).
+P4 admits all five positives AND the bad skip (rank 2); P2 rejects every audited
+skip, including all five positives; V5 admits the bad skip (0.150276±0.009062 vs
+best 0.155509±0.009313; gap 0.005233, paired SE 0.001903, tolerance 0.05).
+Its positive-state values remain null; the known-negative admission alone fails
+V5. **PRIOR_ANCHOR_NOT_SEPARABLE**. No gate selected, beam variant, challenge games,
+model training or new gameplay campaign. Cycle burden excludes Powers, played-card
+exhaust and guaranteed one-pass unplayables, adds Mark of Pain Wounds: target
+14-card deck burden 8, versus observed minimum 9. 72 semantic actions scored for
+prior, 256 CRN leaf evaluations/root transitions, 1.1601 thread CPU s (1.4162 wall s).
+**Interpretation:** these three fixed safety rules do not provide the required
+safe region. This is a bounded separation failure, not a universal impossibility
+of compression or a gameplay win-rate result. Later 326 skips are not individual
+negative labels. Stage B stops at its authorization gate.
+Seeds: no whole games; initial native Neow reconstruction for historical
+111101326, public prior-only records also from 111101032. #844 never modified.
+**Knowledge impact:** `evaluation/current-research.md`; offline diagnostic routing
+in CODE_MAP and build-and-debugging. No production default change.

@@ -17,7 +17,7 @@ for case,(prefix,seed) in cases.items():
   record=s['record'].copy();assert 'obs.act' not in record;record['obs.act']=s['act']
   # All retained decks are free of misc-bearing cards. Fail rather than impute trained inputs.
   record['obs.deck.misc']=[0]*len(record['obs.deck.cards'])
-  row={'case':case,'seed':seed,'decision':r['idx'],'state_index':s['index'],'act':s['act'],'floor':s['floor'],'record':record,'trace':r,'historical_record':s['record'],'expected_skip_key':'ooc:v1:effect=12:source=7:reward=none:group=['+''.join(f'{c},{u},0;' for c,u in sorted(zip(record['cards_offered.cards'],record['cards_offered.upgrades'])))+']:groupOccurrence=0:occurrence=0:sapphirePaired=0'};inputs.append(row)
+  row={'case':case,'seed':seed,'decision':r['idx'],'state_index':s['index'],'act':s['act'],'floor':s['floor'],'record':record,'trace':r,'historical_record':s['record'],'expected_skip_key':'ooc:v1:effect=12:source=7:reward=none:group=['+''.join(f'{c},0,{u};' for c,u in sorted(zip(record['cards_offered.cards'],record['cards_offered.upgrades'])))+']:groupOccurrence=0:occurrence=0:sapphirePaired=0'};inputs.append(row)
 (out/'inputs.jsonl').write_text(''.join(json.dumps(r)+'\n' for r in inputs))
 (out/'sources.json').write_text(json.dumps({'historical_sha':sha,'sources':sources,'counts':{c:sum(r['case']==c for r in inputs) for c in cases}},indent=2)+'\n')
 print('rows',len(inputs),json.loads((out/'sources.json').read_text())['counts'])

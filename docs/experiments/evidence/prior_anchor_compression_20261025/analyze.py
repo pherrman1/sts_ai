@@ -51,7 +51,7 @@ def analyze(path):
 
 def report(result):
     lines=['# Fixed Stage A separability audit','',f"Decision: **{result['decision']}**. Selected gate: {result['selected_gate']}.",'',
-      'Skip probabilities/ranks use the existing planner semantic action set, including other rewards and mapped gold/discard actions. Log gaps use unnormalized weights, which give the same log probability gaps. Ties use deterministic action ID.','',
+      'Skip probabilities/ranks use the existing planner semantic action set after its ordinary forced-gold and tree-rule reward collection. Each audited root then has three card takes and one skip. Log gaps use unnormalized weights, which give the same log probability gaps. Ties use deterministic action ID.','',
       '| Case | decision / state index | floor | deck | burden | skip p | rank | log gap | value mean ± SE | gap | paired SE | P4 | P2 | V5 |',
       '|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|:---:|:---:|:---:|']
     def num(v):return 'null' if v is None else f'{v:.6g}'

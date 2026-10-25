@@ -1,0 +1,59 @@
+{
+  "source_sha": "1322e0d97721d9ffe9e2e41dbc69d8a5acc07a01",
+  "source_path": "docs/experiments/evidence/combat_infinity_mask_search_20261025/results/11111.json",
+  "source_sha256": "4225ecd024ac88bfeee1d94d4c621aebb60848a14367063000ebe08bbc26185f",
+  "target": {
+    "act": 2,
+    "deck": [
+      "Ascender's Bane",
+      "Bash",
+      "Fire Breathing",
+      "Pommel Strike",
+      "Armaments",
+      "Berserk",
+      "Inflame",
+      "Dropkick",
+      "Barricade",
+      "Entrench",
+      "Dropkick",
+      "Fire Breathing",
+      "Wild Strike",
+      "Rage"
+    ],
+    "event": "",
+    "floor": 18,
+    "gold": 302,
+    "hp": 64,
+    "maxHp": 75,
+    "potionCapacity": 2,
+    "potions": [
+      "BLOCK_POTION"
+    ],
+    "relics": [
+      "BURNING_BLOOD",
+      "MEAL_TICKET",
+      "STRIKE_DUMMY",
+      "KUNAI",
+      "PANDORAS_BOX"
+    ],
+    "room": "MONSTER",
+    "screen": "BATTLE",
+    "x": 0,
+    "y": 0
+  },
+  "permanent_deck_size": 14,
+  "excluded": [
+    "Ascender's Bane",
+    "Fire Breathing",
+    "Berserk",
+    "Inflame",
+    "Barricade",
+    "Fire Breathing"
+  ],
+  "mark_of_pain_wounds": 0,
+  "cycle_burden": 8,
+  "observed_combat_minimum": 9,
+  "distance_raw": 5,
+  "distance_cycle_burden": 1,
+  "card_generated_future_inserts": "not modeled"
+}

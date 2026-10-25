@@ -1,0 +1,3 @@
+[heart1] loaded /home/philippherrmann/.local/share/sts-ai/live-runtime/releases/5c30b0d28f20-0703f89883e6/models/arm_c_student.bin (dim 64, heads 4, hidden 256, layers 2, trim_map 1)
+[ctm-act4-survival] model=models/candidates/ctm_act4_survival_trees.txt sha256=05279b3c54651afac2ccd60ccb7a71babbab073e5bb8536c9f9bd1b5d9950d5e scope=SHIELD_AND_SPEAR,THE_HEART
+[ctm-calibration] table=models/candidates/ctm_calibration_pathb_a20_ft_hp_v1.json sha256=8c226f23d80ff1cd2d9d1f87a14af3b5098a710ef88c6428f3fe0e70b3283653 groups=34 scope=pathb-a20
