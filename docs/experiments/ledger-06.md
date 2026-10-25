@@ -24436,7 +24436,7 @@ is #856 (whole-game forks at boss relics); Philipp decides.
 Seeds: 111303000–111303383 (Stage A), 111308990–111308997 (smokes and review smoke); 111303384–111304567 unused.
 **Knowledge impact:** none beyond this entry; no code or default change.
 
-## §TBD — Outcome-label value head on first-divergence pairs of three paired A20 A/Bs: NO_SIGNAL (A_h −1.2 pp [−2.8, +0.4]); sibling outcomes correlate at rho 0.49, so a full-rollout sibling referee costs about a paired A/B; full-rollout label line STOP (offline, 8,192 games, 2026-10-25)
+## §685 — Outcome-label value head on first-divergence pairs of three paired A20 A/Bs: NO_SIGNAL (A_h −1.2 pp [−2.8, +0.4]); sibling outcomes correlate at rho 0.49, so a full-rollout sibling referee costs about a paired A/B; full-rollout label line STOP (offline, 8,192 games, 2026-10-25)
 
 **Question (Philipp, 2026-10-25 09:31Z):** would a full rollout to the Heart at each OOC MCTS decision give clean
 value-head labels? Plan doc https://claude.ai/artifact/LuB6LLggR5TF4em1fKzBYG; Philipp chose "Stufe 0 starten"
