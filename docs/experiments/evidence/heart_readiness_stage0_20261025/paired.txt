@@ -1,0 +1,28 @@
+== first_diff_fight: pairs 2716
+  all: discordant-kill pairs 625; dr 0.497 [0.464,0.532] ties 151 | dra 0.474 [0.437,0.509] ties 85 | dhp 0.502 [0.481,0.524] ties 425 | dmax 0.504 [0.493,0.514] ties 576 | ddeck 0.481 [0.459,0.502] ties 429
+  same_floor: discordant-kill pairs 388; dr 0.513 [0.469,0.558] ties 82 | dra 0.490 [0.441,0.539] ties 30 | dhp 0.509 [0.482,0.537] ties 269 | dmax 0.515 [0.504,0.528] ties 364 | ddeck 0.488 [0.464,0.515] ties 289
+  std coefs dhp,dmax,ddeck,dr: [ 0.014  0.218 -0.164  0.083] CI lo [-0.146  0.051 -0.343 -0.084] hi [0.17  0.499 0.025 0.257]
+  MAP-OFF: n 628 mean dr +0.077 mean dhp +0.47 conc dr (np.float64(0.503125), 160)
+  D-MAP: n 862 mean dr +0.019 mean dhp +1.72 conc dr (np.float64(0.4742268041237113), 194)
+  D-OFF: n 855 mean dr +0.044 mean dhp +1.24 conc dr (np.float64(0.4973958333333333), 192)
+  C-A: n 371 mean dr +0.018 mean dhp -0.53 conc dr (np.float64(0.5379746835443038), 79)
+== act3_entry: pairs 2006
+  all: discordant-kill pairs 498; dr 0.598 [0.561,0.636] ties 92 | dra 0.583 [0.542,0.622] ties 79 | dhp 0.591 [0.553,0.629] ties 109 | dmax 0.546 [0.517,0.573] ties 294 | ddeck 0.511 [0.479,0.546] ties 197
+  same_floor: discordant-kill pairs 498; dr 0.598 [0.561,0.636] ties 92 | dra 0.583 [0.546,0.623] ties 79 | dhp 0.591 [0.553,0.629] ties 109 | dmax 0.546 [0.518,0.574] ties 294 | ddeck 0.511 [0.476,0.547] ties 197
+  std coefs dhp,dmax,ddeck,dr: [ 0.5   -0.077  0.061  0.577] CI lo [ 0.118 -0.418 -0.124  0.374] hi [0.874 0.332 0.319 0.822]
+  MAP-OFF: n 563 mean dr +0.049 mean dhp +0.56 conc dr (np.float64(0.58), 125)
+  D-MAP: n 576 mean dr -0.031 mean dhp +0.97 conc dr (np.float64(0.6396103896103896), 154)
+  D-OFF: n 559 mean dr +0.015 mean dhp +1.35 conc dr (np.float64(0.5822368421052632), 152)
+  C-A: n 308 mean dr +0.022 mean dhp +0.35 conc dr (np.float64(0.5746268656716418), 67)
+== act4_entry: pairs 1123
+  all: discordant-kill pairs 289; dr 0.678 [0.625,0.732] ties 6 | dra 0.683 [0.630,0.735] ties 5 | dhp 0.514 [0.467,0.562] ties 81 | dmax 0.519 [0.471,0.567] ties 92 | ddeck 0.593 [0.543,0.645] ties 49
+  same_floor: discordant-kill pairs 289; dr 0.678 [0.625,0.728] ties 6 | dra 0.683 [0.630,0.737] ties 5 | dhp 0.514 [0.464,0.566] ties 81 | dmax 0.519 [0.474,0.567] ties 92 | ddeck 0.593 [0.543,0.644] ties 49
+  std coefs dhp,dmax,ddeck,dr: [-0.65   0.564  0.267  1.161] CI lo [-1.765 -0.447 -0.007  0.821] hi [0.434 1.587 0.601 1.568]
+  MAP-OFF: n 332 mean dr -0.023 mean dhp -1.14 conc dr (np.float64(0.72), 75)
+  D-MAP: n 321 mean dr +0.091 mean dhp +1.19 conc dr (np.float64(0.5988372093023255), 86)
+  D-OFF: n 295 mean dr +0.069 mean dhp -0.13 conc dr (np.float64(0.7235294117647059), 85)
+  C-A: n 175 mean dr +0.094 mean dhp +0.07 conc dr (np.float64(0.6744186046511628), 43)
+== first_diff_fight by act, deck-changed only (|dr|>0.05)
+  act 1: n 678 conc dr 0.471 (disc 155), dhp 0.506; 3 fights later conc dr 0.556 (disc 294)
+  act 2: n 659 conc dr 0.494 (disc 176), dhp 0.537; 3 fights later conc dr 0.517 (disc 236)
+  act 3: n 174 conc dr 0.545 (disc 55), dhp 0.491; 3 fights later conc dr 0.574 (disc 74)

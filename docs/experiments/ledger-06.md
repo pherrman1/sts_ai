@@ -24461,3 +24461,23 @@ rule the full-rollout label line stops. Inference: a route-aware head is the nex
 consumed.
 Seeds: none (existing games only).
 **Knowledge impact:** none beyond this entry; no code or default change.
+
+## §TBD — Heart readiness (Act-4 CTM survival model applied to the current deck) as an OOC preference: predicts the Heart kill across games well beyond HP (+0.08 to +0.23 AUC), but the deck change of a single act-1/2 decision does not predict which paired arm kills (concordance 0.497 [0.464, 0.532]); leaf-blend STOP (offline, 4,096 games, 2026-10-25)
+
+**Question (Philipp, 2026-10-25 10:37Z):** "prefer decks that kill the heart and not just survive the next fight"
+(after §683: MAP + 4.8 pp Act 4 but + 1.4 pp kills). Every real fight row of §683 (3 × 1,024) and §676 (2 × 512) was
+rescored as a Heart fight with the deployed §527 Act-4 survival model, at actual HP and at max HP (`rF`).
+**Design and result:** [RESULT](evidence/heart_readiness_stage0_20261025/RESULT.md). Exploratory, futility rule
+stated in the thread before analysis. Across games (CV, seed bootstrap) `rF` adds ΔAUC +0.111 [+0.082, +0.143] at
+act-2 entry, +0.077 at act-3 entry and +0.234 at Act-4 entry over HP, and predicts conversion given Act 4 (+0.11 from
+act-2 entry), so the stated rule did not fire. The paired check (same seed, the arms' first differing choice) does:
+at the first fight after the split the killing arm has the higher readiness in 0.497 [0.464, 0.532] of 625
+kill-discordant pairs (act 1 0.471, act 2 0.494, act 3 0.545 on 55), HP 0.502; only at act-3 entry (0.598) and Act-4
+entry (0.678) do the decks predict the kill. MAP's Act-4 decks are not weaker than OFF's (Δlogit −0.02
+[−0.12, +0.07]); MAP-only and OFF-only arrivals have equal readiness, far below shared arrivals.
+**Interpretation:** readiness describes a run's Heart chances but cannot rank the children of one act-1/2 decision,
+where the search gain sits; §683's lower kills per arrival is a selection effect (rescued weak runs), not weaker
+decks. The leaf-blend line stops. Inference: an act-3-only term or readiness as a value-head feature are the only
+open variants, neither started.
+Seeds: none (existing games only).
+**Knowledge impact:** none beyond this entry; no code or default change.
