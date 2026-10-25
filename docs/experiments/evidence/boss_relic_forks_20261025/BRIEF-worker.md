@@ -22,4 +22,4 @@ If any step is refused or prints STOP, reply with the exact output and stop. Do 
 Never kill a unit or one_combat process. A game that times out ends with rc=124, and the run continues.
 If the container restarts, run steps 1-3 again at once (finished units are skipped).
 Keep the session alive until you are told the tar is verified.
-Expect 15-90 min per unit (one source game plus up to 6 forks), 4 units at a time.
+Expect 15 min to about 2.5 h per unit (one source game plus up to 6 forks), 4 units at a time; Stage A about 3 h.

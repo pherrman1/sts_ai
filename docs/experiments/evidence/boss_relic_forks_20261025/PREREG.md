@@ -54,11 +54,12 @@ pick better than the production pick (student_sel's argmax, `by=heart1_screen` s
 - **Table:** root fixed-effects OLS `y_rj = a_r + u_key + e` with `u_SKIP = 0`, keys = relic names pooled over acts
   (per-act tables reported only). SEs by bootstrap over source seeds.
 - **Spread:** method of moments over keys with ≥ 8 appearances, `τ̂² = Var(û) − mean(SE²)`. Projected split-half r of
-  the full design: `τ̂² / (τ̂² + mean SE² × n_A / 512)` (halves of 1,024 sources).
+  the full design: `τ̂² / (τ̂² + mean SE² × n_A / 512)` (halves of 1,024 sources), with n_A = valid Stage A sources, rooted or not
+  (pre-launch review fix).
 - **Override (full design only):** 2-fold cross-fit by `seed % 2`. Training fold: table, empirical-Bayes shrinkage
   toward 0 with the fold's τ̂². Held-out roots: take the shrunk-best option when it beats the production pick's shrunk
   value by more than 0.03, else the production pick. Gain per source = Σ over its roots of
-  `y(rule pick) − y(production pick)`, read directly off the forks (no new A/B needed for this gate).
+  `y(rule pick) − y(production pick)` (0 for a valid source without a root), read directly off the forks (no new A/B needed for this gate).
 
 ## Stages and decision rules
 
@@ -93,9 +94,9 @@ large spreads through (STOP 0.03 at 7 pp) and stops most small ones.
 
 ## Cost (estimate; the smoke measures it)
 
-About 600 s per game (MAP 435 s in §683 plus Act 4 strong), 5.6 games per source → about 0.9 core-h per source:
-Stage A ≈ 230 core-h (≈ 2 h on 32 workers × 4 lanes; one unit ≈ 1 h on one lane), full 1,024 ≈ 920 core-h (≈ 7-8 h on
-32 workers). Memory: one Heart search ≈ 2.3 GB, 4 lanes fit a 15 GB container.
+Pre-launch review measurement: about 890 s per game with 4 lanes busy, about 1.4 core-h per source (the first estimate
+was 0.9): Stage A ≈ 360 core-h (≈ 3 h on 32 workers × 4 lanes; a unit with both roots 1.5-2.2 h), full 1,024 ≈
+1,400 core-h (≈ 11 h on 32 workers). Memory: one Heart search ≈ 2.3 GB, 4 lanes fit a 15 GB container.
 
 ## Seeds (assigned by the coordinator 2026-10-25 09:40Z; repo seed guard checked before freezing)
 

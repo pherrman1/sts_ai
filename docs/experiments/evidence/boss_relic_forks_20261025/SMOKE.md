@@ -16,4 +16,4 @@ Binary `e57de384…` (v3 preset, code `eb94f4e`), this container, three lanes at
 - `analyze.py --stage A` reads the smoke units (2 roots, 8 games, no problems).
 - Wall 135–400 s per game; both sources died in act 2, so neither an act-2 root nor Act 4 was exercised (the act-2
   path is the same code with ACT=2; Act-4 CPU is unmeasured here, the cost estimate stays an estimate).
-- Seeds used: 111379980, 111379981 (111379982–989 free for the review).
+- Seeds used: 111379980, 111379981; the pre-launch review used 111379982–984 (985–989 free).

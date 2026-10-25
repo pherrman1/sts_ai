@@ -73,13 +73,14 @@ def game(files, tag, seed):
 
 def load(root):
     """Roots: one dict per act-1/2 boss-relic root of a valid source, with every option's outcome."""
-    roots, problems, walls = [], collections.Counter(), []
+    roots, problems, walls, valid = [], collections.Counter(), [], set()
     for seed, files in sorted(unit_files(root).items()):
         src = game(files, 'S', seed)
         if src is None:
             problems['source_failed'] += 1
             continue
         walls.append(src['wall'])
+        valid.add(seed)
         for r in forks.roots(src['trace']):
             options = list(r['offered']) + [SKIP]
             out = {r['taken']: src}
@@ -97,7 +98,7 @@ def load(root):
             roots.append({'seed': seed, 'act': r['act'], 'keys': options, 'prior': r['taken'], 'by': r['by'],
                           'y': {e: [out[c][e] for c in range(len(options))] for e in ENDPOINTS},
                           'heartHp': [out[c]['heartHp'] for c in range(len(options))]})
-    return roots, problems, walls
+    return roots, problems, walls, valid
 
 
 # ---------------------------------------------------------------- table
@@ -214,10 +215,12 @@ def main():
     a = ap.parse_args()
     if a.selftest:
         return selftest()
-    roots, problems, walls = load(a.units)
+    roots, problems, walls, valid = load(a.units)
+    n_sources = len(valid)
     rng = np.random.default_rng(20261025)
-    n_sources = len({r['seed'] for r in roots})
-    res = {'stage': a.stage, 'problems': dict(problems), 'sourcesWithRoots': n_sources,
+    # The projection scales by valid sources, rooted or not (a source without a root is part of the design too).
+    res = {'stage': a.stage, 'problems': dict(problems), 'validSources': n_sources,
+           'sourcesWithRoots': len({r['seed'] for r in roots}),
            'coreHours': sum(walls) / 3600, 'gamesValid': len(walls), 'describe': describe(roots)}
     for e in ENDPOINTS:
         res[f'spread_{e}'] = spread(roots, e, rng, min(a.boot, 2000), n_sources)[0]
@@ -231,8 +234,8 @@ def main():
             for f in (0, 1):
                 per_root.update(override_gain(folds[1 - f], folds[f], e, rng, min(a.boot, 2000)))
             per_source = collections.defaultdict(lambda: [0.0, 0.0])
-            for x in roots:
-                per_source[x['seed']]  # sources with roots count with gain 0 where nothing fires
+            for seed in valid:
+                per_source[seed]  # every valid source counts, with gain 0 where nothing fires or it has no root
             for (seed, _), (_, gh, g4) in per_root.items():
                 per_source[seed][0] += gh; per_source[seed][1] += g4
             fired = sum(p != x['prior'] for x in roots for (s, act), (p, *_) in per_root.items()
