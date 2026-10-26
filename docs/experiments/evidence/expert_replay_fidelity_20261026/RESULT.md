@@ -47,8 +47,9 @@ match), and one run had no fights to test.
 
 ## Stage 2: decision replay (348 vanilla runs)
 
-Numbers below include a local, uncommitted engine patch (see Calling Bell
-below): `createCardReward(Room::EVENT)` in the `CALLING_BELL` acquisition case.
+Numbers below are with `STS_CALLING_BELL_CARD_RNG_FIX` on (the default since
+this change; see Calling Bell below). With it at `0`, card offers match
+7,098 / 7,643 (92.9%) and 251 runs are fully exact.
 
 | check | match |
 |---|---|
@@ -75,13 +76,15 @@ reached it:
 
 ### Known divergence sources
 
-- **Calling Bell at Neow:** without the patch, 251 runs are exact and card offers
-  diverge from floor 1 after a Neow Calling Bell. With an extra discarded
-  card-reward roll at acquisition the first acts match (7 more runs exact). This
-  is consistent with Java's `CombatRewardScreen.setupItemReward` creating a card
-  `RewardItem` when the relic opens the reward screen, as the engine already
-  models for Neow's potions. **Open question:** whether the boss-chest Calling
-  Bell does the same; not verified against the game code.
+- **Calling Bell (fixed, `STS_CALLING_BELL_CARD_RNG_FIX`):** without the fix,
+  card offers diverge from floor 1 after a Neow Calling Bell (3 runs: 7 of 26
+  offers match; with it 20 of 26, two runs fully exact) and after an act-2
+  boss-chest Calling Bell (5 runs become fully exact). No run gets worse. An
+  act-1 boss-chest Bell is masked by the act-start `cardRng` counter reset.
+  This is consistent with the game opening the combat reward screen (which
+  rolls a card `RewardItem`) before clearing it for the relics, as the engine
+  already models for Neow's potions. **Open question:** not verified against
+  the game's bytecode.
 - **Prismatic Shard:** the engine disables it (`disablePrismaticShard`); 21 runs
   diverge after buying it.
 - **Mini Neow blessing:** 19 runs started after a short previous run and got
@@ -105,4 +108,4 @@ plus Silver-combat experiment is feasible on these 348 seeds with a fallback
 to the bot policy at the first divergence, an illegal logged action, or the
 expert's death floor.
 
-Knowledge impact: this evidence note only; no default or engine change.
+Knowledge impact: this evidence note; `STS_CALLING_BELL_CARD_RNG_FIX` (default on) documented in `docs/knowledge-base/operations/environment-variables.md`.

@@ -4224,6 +4224,29 @@ int testIssueFixes() {
             }
         }
     }
+    // Acquiring Calling Bell rolls and discards one card reward (cardRng)
+    // before its three relics; STS_CALLING_BELL_CARD_RNG_FIX=0 skips it.
+    {
+        auto takeBell = [](bool fix) {
+            if (fix) unsetenv("STS_CALLING_BELL_CARD_RNG_FIX");
+            else setenv("STS_CALLING_BELL_CARD_RNG_FIX", "0", 1);
+            GameContext gc(CharacterClass::IRONCLAD, 641641641u, 20);
+            gc.obtainRelic(RelicId::CALLING_BELL);
+            unsetenv("STS_CALLING_BELL_CARD_RNG_FIX");
+            return gc;
+        };
+        const GameContext legacy = takeBell(false);
+        const GameContext fixed = takeBell(true);
+        const auto &lr = legacy.info.rewardsContainer;
+        const auto &fr = fixed.info.rewardsContainer;
+        bool sameRelics = lr.relicCount == 3 && fr.relicCount == 3;
+        for (int i = 0; sameRelics && i < 3; ++i) sameRelics = lr.relics[i] == fr.relics[i];
+        if (fixed.cardRng.counter <= legacy.cardRng.counter || !sameRelics
+                || fixed.relicRng.counter != legacy.relicRng.counter
+                || fr.cardRewardCount != 0 || fixed.screenState != ScreenState::REWARDS) {
+            return fail("Calling Bell did not roll exactly one discarded card reward before its relics");
+        }
+    }
     // Colosseum's fight continuations bypass afterBattle(): a slaver escape
     // must still clear smokeBombUsed and reopen the event, and a Nob escape
     // must forfeit the Victory rewards and return to the map.
