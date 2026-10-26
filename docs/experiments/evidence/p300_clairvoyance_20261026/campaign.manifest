@@ -1,0 +1,9 @@
+name          p300-clairvoyance-2x2
+code_commit   4e3783bf19bf1b18c65dc0b9012a4b15c8b562e6
+binary_sha256 TBD
+configure_preset linux-gcc-release-x86-64-v3
+workers       2
+share         /mnt/project-files/p300-clairvoyance/run-2x2
+parallel      4
+schedule      queue
+lease_minutes 30
