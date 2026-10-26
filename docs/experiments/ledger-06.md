@@ -24462,7 +24462,7 @@ consumed.
 Seeds: none (existing games only).
 **Knowledge impact:** none beyond this entry; no code or default change.
 
-## §TBD — Elite routes at map roots (experiment 4 of the 2026-10-26 research report): no elite deficit; the bot already takes elite-heavier children 82–88% at HP ≥ 60%, and same-seed first-divergence pairs show +1.6 pp kills [−1.2, +4.4] for the elite-heavier child; HP-gated elite tilt STOP before any run (offline, 8,192 games, 2026-10-26)
+## §686 — Elite routes at map roots (experiment 4 of the 2026-10-26 research report): no elite deficit; the bot already takes elite-heavier children 82–88% at HP ≥ 60%, and same-seed first-divergence pairs show +1.6 pp kills [−1.2, +4.4] for the elite-heavier child; HP-gated elite tilt STOP before any run (offline, 8,192 games, 2026-10-26)
 
 **Question:** the deep-research report (Philipp, 2026-10-26) proposed an HP-gated tilt toward elite routes at map
 roots, conditional on the expert audit (#865) finding an elite deficit. Do existing games show a deficit, and is the
