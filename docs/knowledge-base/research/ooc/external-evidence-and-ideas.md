@@ -1,7 +1,7 @@
 # External evidence and candidate ideas for the A20 OOC plateau
 
 Last verified: 2026-10-26 (web research with 3-vote adversarial claim verification, plus read-only checks of this
-repository at `8cce22b`).
+repository at `8cce22b`; follow-up status checked against main at `db216ff`).
 
 ## Purpose / research question
 
@@ -24,6 +24,26 @@ Evidence status labels:
   whose errors look systematic rather than random.
 - No verified evidence says larger or equivariant networks, graph map encoders, Stochastic MuZero or distributional
   value heads would lift this bot. New information sources and structural fixes rank higher.
+
+## Follow-up status (2026-10-26)
+
+Each candidate below got its own thread on 2026-10-26. Status on main at `db216ff`:
+
+| # | Idea | Status |
+| --- | --- | --- |
+| 1 | Key rules A/B | Design done (seeds 111382000-111383023 assigned); paired A/B being frozen |
+| 2 | Expert audit | Done, §688: elite dose matches experts; the bot rests 3× as often, skips 2.4× less and loses 1.4-3× more HP per elite/boss fight; deviations come from the prior |
+| 3 | Expert replay | Fidelity probe in draft PR #868 (348 vanilla expert runs usable); Calling Bell engine fix and replay mode in progress |
+| 4 | Elite dose at map roots | STOP, §686: no elite deficit; declined elites worth ≤ ~1-2 pp per flipped root |
+| 5 | Boss-relic forks | #856 Stage A running (draft PR #860) |
+| 6 | AIVAT | Offline estimate: unbiased fight re-simulation gives ~2× effective seeds; the CTM-only baseline is biased (up to 3 pp). Replay mode being built |
+| 7 | Expert-decision ranker | Expert-anchored student_sel fine-tune in training; A/B not started |
+| 8 | HP into the Heart | Done, §687: the policy rests when it can; forced pre-boss Ruby costs ≤ 0.65 pp; no run |
+| 9 | Bounded Q tilt | Draft PR #869 (default-off Gumbel Q cap); offline root replays running |
+| 10 | P300 cross-check | Draft PR #870 (known-RNG `act4replay` arm); calibration running |
+
+The audit (§688) refutes the "fewer elites" reading under [Where the gap is](#where-the-gap-is) and corrects two
+expert-profile numbers below.
 
 ## Benchmark position
 
@@ -61,21 +81,23 @@ Expert: Baalorlord's 676 Ironclad runs (77 / 81 / 46 / 47 deaths, 425 kills; Ver
 - Expert losses: 52% on boss floors (the Heart is the single most frequent killer, 39 of 251), 31% to elites
   (Slavers 17, 3 Sentries 13, Gremlin Nob 9, Shield and Spear 8) (Verified).
 - **Inference:** the bot survives Act 1 at expert level and then falls apart, worst in Act 3. That fits a run that
-  under-invests early (fewer elites, weaker deck) as well as the rigid key rules below. Neither is measured yet.
+  under-invests early (fewer elites, weaker deck) as well as the rigid key rules below. §688 and §686 later found no
+  elite deficit; the key rules are being tested (idea 1).
 
 ## Expert-play reference profile
 
 For audits and rule priors. Baalorlord's 100 most recent Ironclad runs (Apr 2025 to Mar 2026, 65 wins) unless noted.
 
-- Elites (Verified): winning runs fight a median of 8 elites in Acts 1-3 (IQR 7-9). Act 1 median 3, never fewer
-  than 2; Act 2 mean 2.4; Act 3 mean 2.5.
+- Elites (Verified): winning runs fight a median of 8 elites in Acts 1-3 (IQR 7-9). Act 1 median 3 (§688: 9
+  winners fought only one); Act 2 mean 2.4; Act 3 mean 2.5.
 - Telemetry routes (Verified, associations only; the logs do not record which elites the map offered): within a
   play session (8,745 sessions) each Act-1 elite multiplies the odds of clearing Act 2 by 1.38 (1.34-1.43) and each
   Act-1 rest by 0.85 (0.81-0.89); within the four expert streamers 1.68 and 0.64. Act-2 clear rate is 21/25/32/40/50%
   for 0 to 4+ Act-1 elites. A route profile explains only 17-19% of the streamers' advantage. The "winners take more
   path risk" result (arXiv 2504.03918) is plausibly a survivorship artifact: Act 1, the only act every run enters,
   shows no difference.
-- Campfires (Extracted): 67.7% smith, 17.9% rest, 9.9% Ruby, 4.5% other. Streamers rest at 9% of Act-1 campfires
+- Campfires (Extracted): 67.7% smith, 17.9% rest, 9.9% Ruby, 4.5% other. §688 recomputed 72% smith / 13% rest over
+  all 676 runs (acts 1-3). Streamers rest at 9% of Act-1 campfires
   (population 23%) and never at ≥ 70% HP.
 - Cards and deck (Extracted): 27.8% of card rewards skipped; final deck median 34 (IQR 30-36) after a median of 4
   removals. Removals go to Strikes (median 0 of 5 left); Defends are kept (median 4 of 4).
