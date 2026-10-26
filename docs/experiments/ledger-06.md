@@ -24549,7 +24549,7 @@ a value-based rest-vs-upgrade decision is being scoped in its own thread (2026-1
 Seeds: none (existing games only).
 **Knowledge impact:** none beyond this entry; no code or default change.
 
-## §TBD — Boss-relic forks with real combats, Stage A: relic choice moves Heart kills a lot (τ ≈ 11 pp, reproducible; futility CONTINUE), but student_sel already picks the table's best relic at 74% of roots and a context-free table override loses (Heart −2.7 pp [−6.6, +1.2], Act 4 −5.5 pp [−9.4, −2.0] per source, descriptive); STOP before Stage B by Philipp's call (256 sources, 1,429 games, 2026-10-26)
+## §690 — Boss-relic forks with real combats, Stage A: relic choice moves Heart kills a lot (τ ≈ 11 pp, reproducible; futility CONTINUE), but student_sel already picks the table's best relic at 74% of roots and a context-free table override loses (Heart −2.7 pp [−6.6, +1.2], Act 4 −5.5 pp [−9.4, −2.0] per source, descriptive); STOP before Stage B by Philipp's call (256 sources, 1,429 games, 2026-10-26)
 
 **Question:** issue #856 (experiment 3 of the post-#853 OOC direction review). At act-1/act-2 boss-relic roots of real
 A20 default games, if every option (three relics, skip) is played to the end with the production stack and the same run
