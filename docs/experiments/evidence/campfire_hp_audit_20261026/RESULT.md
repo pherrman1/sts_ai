@@ -8,7 +8,7 @@ and §676 (512 seeds × A/C, share `ctm-calibration-ab/units`), 4,096 complete g
 `STS_KEY_RUBY=policy` (Ruby is forced only at the act-3 pre-boss campfire, map row 14 = floor 49).
 `extract.py <unit root> <out.pkl>` reads the decision and CTM rows; `analyze.py m683.pkl g676.pkl`
 writes `analyze.json`. Choice = MCTS selected effect where recorded, else inferred from the next
-non-campfire state (agreement 100% on smith/rest/recall where both exist).
+non-campfire state (they agree on 13,796 of 14,205 smith/rest/recall rows; the 409 others are rests at full HP, which leave no trace).
 
 ## Findings (all five arms; MAP alone agrees)
 
