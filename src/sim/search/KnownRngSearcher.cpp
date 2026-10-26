@@ -221,6 +221,9 @@ void search::KnownRngSearcher::enumerateActionsForNode(Node &node, const BattleC
         if (potion == Potion::EMPTY_POTION_SLOT) continue;
         if (potionDiscardEnablesEntropicBrew(bc, p)) node.edges.push_back({Action(ActionType::POTION, p, -1)});
         if (potion == Potion::FAIRY_POTION) continue;
+        // Same rule as Action::isValidAction: with an empty hand GAMBLE would open a
+        // card select with no legal action.
+        if (potion == Potion::GAMBLERS_BREW && bc.cards.cardsInHand == 0) continue;
         if (potion == Potion::SMOKE_BOMB) {
             if (!bc.smokeBombEscapeBlocked()) node.edges.push_back({Action(ActionType::POTION, p)});
             continue;

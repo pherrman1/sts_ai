@@ -63,3 +63,8 @@ act4replay arm?").
   `[known-rng] plan mismatch` otherwise; the Stage 0 smokes had none.
 - **Smoke strength** (8 fights per cell, Heart decks 0–3 of §684 Stage A): 7/8 wins at full HP and 4/8 at natural
   HP. P300 reports 68% at full HP on its own decks.
+- **Calibration** (2026-10-26, Philipp's go; §684 Stage A decks 0–95, base, full HP, 4 copies, seeds
+  111304600–983): 329/384 wins, 85.7% (deck-clustered SE 2.9 pp), 3.3 CPU s per fight. The arm is not weaker
+  than P300's search, which won 68% on its own decks.
+- Gambler's Brew is not enumerated with an empty hand, the same rule as `Action::isValidAction`. The calibration
+  found this on 2 decks; their 8 fights won 8/8 before and after the fix.
