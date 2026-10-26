@@ -21,23 +21,37 @@ act4replay arm?").
 ## Decision
 
 - Add `search::KnownRngSearcher` and `search::playoutBattleKnownRng`
-  (`include/sim/search/KnownRngSearcher.h`, `src/sim/search/KnownRngSearcher.cpp`). They restore only the non-fair
-  path of `BattleScumSearcher2` as of `e45820fd^`:
-  - plain UCB with random rollouts to the end of the battle. The rollouts use P300's accepted sampler: while a card is
-    playable END_TURN is kept one draw in ten, and half of the card draws pick among the best expert play ordering.
-    With plain uniform rollouts the search never found a Heart kill in the Stage 0 smokes;
-  - the original `evaluateEndState`, with potion keep value 4;
-  - one persistent tree per battle, re-rooted after every action;
-  - up to 15 actions of the best line found when it survives, otherwise up to 5 most-visited actions;
-  - the 1,000-decision stall guard.
-
-  Fair determinization, PUCT/VNet priors, the transposition table, convergence stops and every other Searcher2
-  option stay deleted.
+  (`include/sim/search/KnownRngSearcher.h`, `src/sim/search/KnownRngSearcher.cpp`). They implement P300's
+  stage-value combat search. That search is gamerpuppy's `BattleScumSearcher2` / `ScumSearchAgent2` non-fair path
+  with P300's `sim_patch` search chain applied in order, at destire-mio/sts-ironclad-agent `f8486daf`:
+  - **`search_rollout`:**
+    - the best value starts at `lowest()`;
+    - unvisited edges are searched first;
+    - quality is `(value − min) / range`, and 0 while every return is equal;
+    - exploration divides by the visit count;
+    - rollouts keep END_TURN only one draw in ten while a card is playable.
+  - **`search_order`:** half of the rollout card draws pick uniformly among the cards with the best expert play
+    ordering.
+  - **`search_bounded_loss`:** nodes back up the best sampled return (max backup), and a loss's draw + turn bonus is
+    capped at 20.
+  - **`search_replanning_limit`:** at most 256 searches per battle. After that, the arm plays out the cached winning
+    plan or the latest search's best terminal line.
+  - **Agent loop:**
+    - a fresh searcher per decision with SIMS simulations, ×3 at the Heart (Boss multiplier 3);
+    - up to 15 actions of the best winning line found so far, otherwise up to 5 actions down the most-visited path;
+    - the searcher RNG is seeded with `seed + floorNum` (act4replay sets the run seed to the battle seed);
+    - the original `evaluateEndState`, with potion value 4.
+  - **Turn 500:** rollouts end there, and a battle that reaches turn 500 is left undecided (an invalid row). This is
+    later P300 behavior; it never binds at the Heart.
+  - **Version caveat:** P300's D4 Heart table has no run manifest pinning its engine, and D4 postdates all four
+    patches. P300's later combat4r engine adds performance work and flag-gated changes (75% expert order, focus
+    targets, thief value), which are not used here.
+  - **What stays deleted:** fair determinization, PUCT/VNet priors, the transposition table and every other removed
+    Searcher2 option.
+  - **Enumeration:** actions, card selects and potions come from this engine. Card-select edges keep real draw-pile
+    indices, which is exact under known RNG.
 - Only `act4replay` can select it, with `STS_ACT4REPLAY_COMBAT=known`. Unset or `fair` keeps native Silver, and any
-  other value is fatal.
-  - The `act4replay` CSV gains a last column, `regime` (`fair` or `known_rng`).
-  - The known arm uses SIMS × 3 per decision at the Heart (Boss multiplier 3, P300's setting).
-  - Its planner RNG is seeded from the same per-copy key as Silver's planner seed.
+  other value is fatal. The `act4replay` CSV gains a last column, `regime` (`fair` or `known_rng`).
 - `run`, `bestbench`, generators, the OOC planner and the live advisor cannot reach it.
 
 ## Consequences
@@ -47,5 +61,5 @@ act4replay arm?").
   copies (seeds 111305990–997) gave identical fair rows on main and on this change.
 - A completed winning plan must end exactly as simulated, because the search ran on the real RNG. The arm prints
   `[known-rng] plan mismatch` otherwise; the Stage 0 smokes had none.
-- The searcher reuses the current engine's action enumeration, card-select enumeration and potion rules, so engine
-  fixes since `e45820fd` apply to it.
+- **Smoke strength** (8 fights per cell, Heart decks 0–3 of §684 Stage A): 7/8 wins at full HP and 4/8 at natural
+  HP. P300 reports 68% at full HP on its own decks.

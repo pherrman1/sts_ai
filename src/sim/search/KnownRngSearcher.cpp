@@ -1,6 +1,8 @@
 // Research-only known-RNG combat search; see include/sim/search/KnownRngSearcher.h.
-// Search logic follows the non-fair path of BattleScumSearcher2 at e45820fd^
-// (uniform UCB, uniform random rollouts, no transposition table, no priors).
+// Follows gamerpuppy's BattleScumSearcher2 / ScumSearchAgent2 non-fair path with
+// P300's sim_patch search chain applied in order: search_rollout, search_order,
+// search_bounded_loss, search_replanning_limit (destire-mio/sts-ironclad-agent
+// f8486daf). Card, potion and card-select enumeration come from this engine.
 
 #include "sim/search/KnownRngSearcher.h"
 #include "sim/search/ExpertKnowledge.h"
@@ -13,8 +15,9 @@ using namespace sts;
 
 namespace {
 
-constexpr double kPotionKeepValue = 4.0;  // BattleScumSearcher2's default g_potionKeepValue
-constexpr int kMaxBattleDecisions = 1000;
+constexpr double kPotionKeepValue = 4.0;  // gamerpuppy evaluateEndState: potionCount * 4
+constexpr int kMaxSearchRounds = 256;     // search_replanning_limit.patch
+constexpr int kTurnLimit = 500;           // ScumSearchAgent2 battle guard; also ends stalemated rollouts
 constexpr int kStepsWithSolution = 15;
 constexpr int kStepsNoSolution = 5;
 
@@ -38,40 +41,24 @@ double nonMinionMonsterCurHpRatio(const BattleContext &bc) {
     return (cur == 0 || max == 0) ? 0 : static_cast<double>(cur) / max;
 }
 
-}  // namespace
-
-search::KnownRngSearcher::KnownRngSearcher(const BattleContext &bc, std::uint64_t plannerSeed)
-    : rootState(new BattleContext(bc)), randGen(static_cast<std::default_random_engine::result_type>(plannerSeed)) {}
-
-void search::KnownRngSearcher::search(std::int64_t simulations) {
-    if (rootState->outcome != Outcome::UNDECIDED) {
-        outcomePlayerHp = rootState->player.curHp;
-        bestActionSequence.clear();
-        if (root.simulationCount < 1) {
-            root.evaluationSum = evaluateEndState(*rootState);
-            root.simulationCount = 1;
-        }
-        return;
-    }
-    for (std::int64_t i = 0; i < simulations; ++i) step();
+bool isTerminal(const BattleContext &bc) {
+    return bc.outcome != Outcome::UNDECIDED || bc.turn >= kTurnLimit;
 }
 
-void search::KnownRngSearcher::advanceRoot(const Action &action, const BattleContext &newRootState) {
-    bool reused = false;
-    for (auto &edge : root.edges) {
-        if (edge.action == action) {
-            Node child = std::move(edge.node);
-            root = std::move(child);
-            reused = true;
-            break;
-        }
+}  // namespace
+
+// gamerpuppy seeds the searcher with bc.seed + floorNum; act4replay sets the run seed to the battle seed.
+search::KnownRngSearcher::KnownRngSearcher(const BattleContext &bc)
+    : rootState(new BattleContext(bc)), randGen(bc.seed + bc.floorNum) {}
+
+void search::KnownRngSearcher::search(std::int64_t simulations) {
+    if (isTerminal(*rootState)) {
+        outcomePlayerHp = rootState->player.curHp;
+        bestActionSequence.clear();
+        root.evaluationSum = evaluateEndState(*rootState);
+        root.simulationCount = 1;
     }
-    if (!reused) root = Node{};
-    rootState = std::make_unique<const BattleContext>(newRootState);
-    bestActionSequence.clear();
-    bestActionValue = std::numeric_limits<double>::min();
-    minActionValue = std::numeric_limits<double>::max();
-    outcomePlayerHp = 0;
+    for (std::int64_t i = 0; i < simulations; ++i) step();
 }
 
 void search::KnownRngSearcher::step() {
@@ -82,7 +69,7 @@ void search::KnownRngSearcher::step() {
 
     while (true) {
         auto &curNode = *searchStack.back();
-        if (curState.outcome != Outcome::UNDECIDED) {
+        if (isTerminal(curState)) {
             updateFromPlayout(curState);
             return;
         }
@@ -108,6 +95,7 @@ void search::KnownRngSearcher::step() {
     }
 }
 
+// search_bounded_loss.patch: nodes keep the best sampled return (max backup), not the mean.
 void search::KnownRngSearcher::updateFromPlayout(const BattleContext &endState) {
     const double evaluation = evaluateEndState(endState);
     if (evaluation > bestActionValue) {
@@ -117,23 +105,31 @@ void search::KnownRngSearcher::updateFromPlayout(const BattleContext &endState) 
     }
     if (evaluation < minActionValue) minActionValue = evaluation;
     for (auto it = searchStack.rbegin(); it != searchStack.rend(); ++it) {
-        ++(*it)->simulationCount;
-        (*it)->evaluationSum += evaluation;
+        auto &node = **it;
+        node.evaluationSum = node.simulationCount == 0 ? evaluation : std::max(node.evaluationSum, evaluation);
+        ++node.simulationCount;
     }
 }
 
+// search_rollout.patch + search_bounded_loss.patch: unvisited edges first; quality is the edge's best return
+// normalized to [min, best] (0 while every return is equal); exploration divides by the visit count.
 int search::KnownRngSearcher::selectBestEdgeToSearch(const Node &cur) const {
     const int n = static_cast<int>(cur.edges.size());
     if (n == 1) return 0;
     const double logParent = std::log(static_cast<double>(cur.simulationCount + 1));
-    const bool exploit = !bestActionSequence.empty();
     const double evalRange = bestActionValue - minActionValue;
+    const bool normalize = std::isfinite(evalRange) && evalRange > 0.0;
     int bestEdge = 0;
     double bestEdgeValue = 0.0;
     for (int i = 0; i < n; ++i) {
-        const auto &edge = cur.edges[i];
-        const double quality = exploit ? (edge.node.evaluationSum / (edge.node.simulationCount + 1)) / evalRange : 0.0;
-        const double value = quality + explorationParameter * std::sqrt(logParent / (edge.node.simulationCount + 1));
+        const auto &node = cur.edges[i].node;
+        double value;
+        if (node.simulationCount == 0) {
+            value = std::numeric_limits<double>::infinity();
+        } else {
+            const double quality = normalize ? (node.evaluationSum - minActionValue) / evalRange : 0.0;
+            value = quality + explorationParameter * std::sqrt(logParent / node.simulationCount);
+        }
         if (i == 0 || value > bestEdgeValue) {
             bestEdge = i;
             bestEdgeValue = value;
@@ -142,13 +138,13 @@ int search::KnownRngSearcher::selectBestEdgeToSearch(const Node &cur) const {
     return bestEdge;
 }
 
-// P300's accepted rollout sampler (its E22/E23, Sep 2026): uniform over legal actions, but while a card is playable
-// END_TURN is kept only one draw in ten; when a CARD is drawn, half the time it is replaced by a uniform pick among the
-// legal card actions with the best expert play ordering. Tree expansion keeps every legal action.
+// search_rollout.patch + search_order.patch: uniform over legal actions, but while a card is playable END_TURN is
+// kept only one draw in ten; when a CARD is drawn, half the time it is replaced by a uniform pick among the legal
+// card actions with the best expert play ordering. Tree expansion keeps every legal action.
 void search::KnownRngSearcher::playoutRandom(BattleContext &state) {
     Node tempNode;
     std::vector<int> preferred;
-    while (state.outcome == Outcome::UNDECIDED) {
+    while (!isTerminal(state)) {
         enumerateActionsForNode(tempNode, state);
         if (tempNode.edges.empty()) break;
         const int n = static_cast<int>(tempNode.edges.size());
@@ -184,6 +180,8 @@ void search::KnownRngSearcher::playoutRandom(BattleContext &state) {
     }
 }
 
+// Card-select edges store real draw-pile indices: under known RNG a tree path fixes the pile order exactly, so the
+// fair path's SelectedCardKey remapping is not needed.
 void search::KnownRngSearcher::enumerateActionsForNode(Node &node, const BattleContext &bc) {
     if (bc.inputState == InputState::CARD_SELECT) {
         for (const auto &a : Action::enumerateCardSelectActions(bc)) node.edges.push_back({a});
@@ -238,6 +236,7 @@ void search::KnownRngSearcher::enumerateActionsForNode(Node &node, const BattleC
     node.edges.push_back({Action(ActionType::END_TURN)});
 }
 
+// gamerpuppy's score; search_bounded_loss.patch caps the loss's draw + turn bonus at 20.
 double search::KnownRngSearcher::evaluateEndState(const BattleContext &bc) {
     const double potionScore = bc.potionCount * kPotionKeepValue;
     if (bc.outcome == Outcome::PLAYER_VICTORY) {
@@ -247,39 +246,45 @@ double search::KnownRngSearcher::evaluateEndState(const BattleContext &bc) {
     const double energyPenalty = bc.energyWasted * -0.2 * (couldHaveSpikers ? 0 : 1);
     const double drawBonus = bc.cardsDrawn * 0.03;
     const double aliveScore = bc.monsters.monstersAlive * -1;
-    return (1 - nonMinionMonsterCurHpRatio(bc)) * 10 + aliveScore + energyPenalty + drawBonus + potionScore / 2
-        + (bc.turn * .2);
+    return (1 - nonMinionMonsterCurHpRatio(bc)) * 10 + aliveScore + energyPenalty
+        + std::min(20.0, drawBonus + bc.turn * .2) + potionScore / 2;
 }
 
-int search::playoutBattleKnownRng(BattleContext &bc, int simsBase, double bossMultiplier, std::uint64_t plannerSeed) {
+// ScumSearchAgent2::playoutBattle with search_replanning_limit.patch: a fresh searcher per decision.
+int search::playoutBattleKnownRng(BattleContext &bc, int simsBase, double bossMultiplier) {
     std::vector<Action> bestActions;
     int bestOutcomePlayerHp = -1;
-    KnownRngSearcher searcher(bc, plannerSeed);
-    int decisions = 0;
+    int rounds = 0;
     const std::int64_t sims = isBossEncounter(bc.encounter)
         ? static_cast<std::int64_t>(bossMultiplier * simsBase) : simsBase;
 
     while (bc.outcome == Outcome::UNDECIDED) {
-        if (++decisions > kMaxBattleDecisions) {
-            std::cerr << "[battle-stall] known-RNG search exceeded " << kMaxBattleDecisions
-                      << " decisions; treating battle as LOSS\n";
-            bc.outcome = Outcome::PLAYER_LOSS;
-            break;
+        if (bc.turn >= kTurnLimit) {
+            std::cerr << "[known-rng] battle undecided at the " << kTurnLimit << "-turn limit\n";
+            break;  // left undecided: the row is invalid
         }
+        KnownRngSearcher searcher(bc);
         searcher.search(sims);
         if (searcher.outcomePlayerHp > bestOutcomePlayerHp) {
             bestActions = std::vector(searcher.bestActionSequence.rbegin(), searcher.bestActionSequence.rend());
             bestOutcomePlayerHp = searcher.outcomePlayerHp;
         }
-        bool committed = false;
+        if (++rounds >= kMaxSearchRounds) {
+            // Play out the cached winning plan, or this search's best terminal line from the current state.
+            auto actions = bestOutcomePlayerHp > 0 ? bestActions
+                : std::vector(searcher.bestActionSequence.rbegin(), searcher.bestActionSequence.rend());
+            while (!actions.empty() && bc.outcome == Outcome::UNDECIDED) {
+                actions.back().execute(bc);
+                actions.pop_back();
+            }
+            if (bc.outcome == Outcome::UNDECIDED)
+                std::cerr << "[known-rng] replanning limit: terminal plan did not finish the battle\n";
+            break;
+        }
         if (bestOutcomePlayerHp > 0) {
-            for (int i = 0; i < kStepsWithSolution && !bestActions.empty(); ++i) {
-                const auto a = bestActions.back();
+            for (int i = 0; i < kStepsWithSolution && !bestActions.empty() && bc.outcome == Outcome::UNDECIDED; ++i) {
+                bestActions.back().execute(bc);
                 bestActions.pop_back();
-                a.execute(bc);
-                searcher.advanceRoot(a, bc);
-                committed = true;
-                if (bc.outcome != Outcome::UNDECIDED) break;
             }
             // The search ran on the real RNG, so a completed winning line must end exactly as simulated.
             if (bc.outcome != Outcome::UNDECIDED && bestActions.empty()
@@ -287,22 +292,21 @@ int search::playoutBattleKnownRng(BattleContext &bc, int simsBase, double bossMu
                 std::cerr << "[known-rng] plan mismatch: promised hp " << bestOutcomePlayerHp << ", got outcome "
                           << static_cast<int>(bc.outcome) << " hp " << bc.player.curHp << '\n';
         } else {
+            const KnownRngSearcher::Node *node = &searcher.root;
             for (int i = 0; i < kStepsNoSolution && bc.outcome == Outcome::UNDECIDED; ++i) {
+                const KnownRngSearcher::Edge *maxEdge = nullptr;
                 std::int64_t maxSims = -1;
-                Action maxAction;
-                for (const auto &edge : searcher.root.edges) {
+                for (const auto &edge : node->edges) {
                     if (edge.node.simulationCount > maxSims) {
                         maxSims = edge.node.simulationCount;
-                        maxAction = edge.action;
+                        maxEdge = &edge;
                     }
                 }
-                if (maxSims < 0) break;
-                maxAction.execute(bc);
-                searcher.advanceRoot(maxAction, bc);
-                committed = true;
+                if (!maxEdge) break;
+                maxEdge->action.execute(bc);
+                node = &maxEdge->node;
             }
         }
-        if (!committed && bc.outcome == Outcome::UNDECIDED) break;  // no progress: leave undecided (invalid row)
     }
-    return decisions;
+    return rounds;
 }

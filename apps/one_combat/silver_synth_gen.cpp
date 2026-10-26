@@ -1079,7 +1079,7 @@ void act4Replay(int nStates, const std::string &statesPath, const std::string &o
     if (!search::nativeSilverBackendInstalled() || !search::nativeSilverExactRootBudgets()
             || search::nativeSilverAdaptiveEnabled() || search::nativeSilverLearnedStopEnabled())
         throw std::runtime_error("act4replay: requires flat exact-budget native Silver");
-    // STS_ACT4REPLAY_COMBAT=known: research-only known-RNG combat (KnownRngSearcher, P300's regime). Its rows are a
+    // STS_ACT4REPLAY_COMBAT=known: research-only known-RNG combat (KnownRngSearcher, P300's stage-value search). Its rows are a
     // separate series (ADR-0002) and carry regime=known_rng; unset or "fair" keeps native Silver.
     const char *combatEnv = std::getenv("STS_ACT4REPLAY_COMBAT");
     const std::string combat = combatEnv ? combatEnv : "fair";
@@ -1125,8 +1125,7 @@ void act4Replay(int nStates, const std::string &statesPath, const std::string &o
                 const auto t0 = threadCpuNanos();
                 if (knownRng) {
                     bc.init(copy);
-                    search::playoutBattleKnownRng(bc, budget, agent.bossSimulationMultiplier,
-                                                  key(battleSeed, si, 0xA47, r));
+                    search::playoutBattleKnownRng(bc, budget, agent.bossSimulationMultiplier);
                 } else {
                     agent.playoutBattle(copy, bc);
                 }
