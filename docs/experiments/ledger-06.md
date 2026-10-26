@@ -24462,7 +24462,7 @@ consumed.
 Seeds: none (existing games only).
 **Knowledge impact:** none beyond this entry; no code or default change.
 
-## §TBD — Bot runs vs expert play (Baalorlord, 676 A20 Ironclad runs): elite dose matches; the bot rests 3× as often at campfires, skips card rewards 2.4× less (+6 cards) and loses 1.4–3× more HP per elite/boss fight; offline, no seeds (2026-10-26)
+## §688 — Bot runs vs expert play (Baalorlord, 676 A20 Ironclad runs): elite dose matches; the bot rests 3× as often at campfires, skips card rewards 2.4× less (+6 cards) and loses 1.4–3× more HP per elite/boss fight; offline, no seeds (2026-10-26)
 
 **Question:** experiment 2 of the 2026-10-26 deep-research report: in game terms, where does the A20 bot's play
 deviate from an expert's? Thread "Audit bot runs against expert play" (Philipp asked for one thread per experiment).
