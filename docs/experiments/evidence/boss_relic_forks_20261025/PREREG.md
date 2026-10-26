@@ -4,7 +4,7 @@ Issue [#856](https://github.com/pherrman1/sts_ai/issues/856), experiment 3 of th
 (`/mnt/project-files/ooc-direction-review/REPORT.html`, section 4). Philipp, 2026-10-25 09:09Z: "kannst du ein thread
 mit idee 3 öffnen, nachdem idee 2 auch gefailed ist?" Size: Philipp chose "Gleich groß planen (1.024)" (decision card,
 2026-10-25 09:48Z). **Status: Stage A authorized with 32 workers (Philipp 2026-10-25 09:49Z, "ill alow 32 workers");
-it runs after the smoke and the pre-launch review. Stage B needs its own go.**
+it ran 2026-10-25/26 ([RESULT-stage-a.md](RESULT-stage-a.md)). Stage B not run: Philipp stopped after Stage A (2026-10-26 23:34Z).**
 
 ## Question
 
