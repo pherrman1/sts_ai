@@ -1,6 +1,6 @@
 name          expert-replay-ab
 code_commit   e65f229387630bba820d5eb56834140d5b6225db
-binary_sha256 pending
+binary_sha256 f91ba554129ffe312f0a4b9a14ca60fa04891e7fda063816014e0522af5bef45
 workers       16
 share         /mnt/project-files/expert-replay-ab
 configure_preset linux-gcc-release-x86-64-v3
