@@ -60,7 +60,11 @@ Combat search is Silver only (ADR-0020). Silver converts the visible state into
 its private representation and owns its chance randomness from a stable
 per-battle seed (see [combat-search.md](../architecture/combat-search.md)); it
 never reads the live battle's hidden RNG streams. Searcher2 (partial
-determinization) and Searcher3 (particles) were removed.
+determinization) and Searcher3 (particles) were removed. The one exception is the
+research-only `act4replay` arm `STS_ACT4REPLAY_COMBAT=known` (ADR-0062):
+`KnownRngSearcher` searches copies of the real battle, RNG streams included, so
+it sees the true draw order and rolls. Its rows carry `regime=known_rng` and are
+a separate series.
 
 Under Runic Dome, Spot Weakness reveals only an attack/nonattack predicate.
 The actual simulator observation consumes no additional RNG. Fair search
