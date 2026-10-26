@@ -24461,7 +24461,7 @@ rule the full-rollout label line stops. Inference: a route-aware head is the nex
 consumed.
 Seeds: none (existing games only).
 **Knowledge impact:** none beyond this entry; no code or default change.
-## §TBD — Gumbel root Q cap (Muesli-style, `STS_OOC_MCTS_GUMBEL_QCAP`): keeps strong priors on real roots, behaves like PUCT on the leaf-Q reference; offline root replay, no play claim (4 games, 48 full roots, 2026-10-26)
+## §689 — Gumbel root Q cap (Muesli-style, `STS_OOC_MCTS_GUMBEL_QCAP`): keeps strong priors on real roots, behaves like PUCT on the leaf-Q reference; offline root replay, no play claim (4 games, 48 full roots, 2026-10-26)
 
 **Question (deep-research report, 2026-10-26, point 3 and experiment 9):** was §635 a test of argmax of noisy Q?
 `gumbelSigma` scores (50 + max N) · 1.0 · min-max-normalised Q (mctx's default scale is 0.1); with two survivors
