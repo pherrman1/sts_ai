@@ -24476,10 +24476,10 @@ act 1 0.87 / 0.82 / 0.73 / 0.55, act 2 0.84 / 0.70 / 0.50 / 0.26; at HP ≥ 40% 
 (the prior's choice); below 40% they spread more (act 3, 20–39%: 0.38 / 0.28 / 0.46). Seed-fixed maps: each extra reachable Act-1 elite gives +0.51 elites fought and +3.8 pp kills [+1.4, +6.2]
 pooled (§683 alone +7.1, §661 +2.8, §676 −0.8; Act-1 clear −0.9 pp). First-divergence pairs at map roots whose
 children differ in elite potential (1,038): elite-heavier minus other kill +1.6 pp [−1.2, +4.4], Act 4 +1.9 pp
-[−1.4, +5.2]; act 1 HP ≥ 60% (594) +1.3 pp [−2.2, +5.1].
+[−1.3, +5.0]; act 1 HP ≥ 60% (594) +1.3 pp [−2.2, +4.9].
 **Interpretation:** no elite deficit, and the elites the bot declines are worth at most ~1–2 pp per flipped root; a
 tilt flipping ~0.4 roots per game per act is far below a 1,024-seed paired A/B's MDE (~3.5 pp). Experiment 4 stops.
 Inference: Act-1 elite opportunity matters, but the prior already uses it. Weak, post-hoc lead only: act-2 mid-HP
-declines (Act 4 +9.1 pp [+2.5, +16.2] in 241 pairs). Divergence pairs are not randomized.
+declines (Act 4 +9.1 pp [+2.1, +16.2] in 241 pairs). Divergence pairs are not randomized.
 Seeds: none (existing games only).
 **Knowledge impact:** none beyond this entry; no code or default change.

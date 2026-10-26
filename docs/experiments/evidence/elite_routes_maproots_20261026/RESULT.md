@@ -50,9 +50,9 @@ something; §683 alone overstated it (it was the first campaign looked at).
 ## 4. Paired test of the bot's own declines: first-divergence pairs
 Same-seed arm pairs whose first differing state is a map root with children of different elite potential
 (1,038 pairs; elite-heavier side minus other):
-- Heart kill +1.6 pp [-1.2, +4.4]; Act 4 +1.9 pp [-1.4, +5.2].
-- Act 1 (727): kill +1.2 [-2.1, +4.7]. Act 1 at HP >= 60% (594): +1.3 [-2.2, +5.1].
-- Act 2 (241): kill +3.3 [-2.9, +9.5], Act 4 +9.1 [+2.5, +16.2] (small n, one of many cuts).
+- Heart kill +1.6 pp [-1.2, +4.4]; Act 4 +1.9 pp [-1.3, +5.0].
+- Act 1 (727): kill +1.2 [-2.1, +4.7]. Act 1 at HP >= 60% (594): +1.3 [-2.2, +4.9].
+- Act 2 (241): kill +3.3 [-2.9, +9.1], Act 4 +9.1 [+2.1, +16.2] (small n, one of many cuts).
 - HP < 40% (51): kill -5.9 [-17.6, +5.9].
 
 Reading: at the roots where the bot's own variants disagree, taking the elite-heavier child is not measurably better
