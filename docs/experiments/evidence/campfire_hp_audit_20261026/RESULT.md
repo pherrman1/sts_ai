@@ -22,7 +22,7 @@ non-campfire state (they agree on 13,796 of 14,205 smith/rest/recall rows; the 4
    reach it, mostly at ≥ 80% HP (no cost). Below 60% HP without Dripper: 164 runs (4.0% of all runs),
    act-3 boss death 72%, Heart kill 12.8%; runs that rested there at the same HP band: death 50%, kill
    24.2% (n 62, already holding Ruby; observational).
-4. **Implied cost (observational logistic on boss-1 entry HP, upper-bound style).** A rest (+27 HP)
+4. **Implied cost (observational logistic on boss-1 entry HP, upper-bound style).** A rest (+int(0.3·maxHp), capped at max; 27 HP on average)
    instead of the forced Recall for those 164 runs: −1.2 pp act-3 boss deaths and **+0.65 pp Heart kills
    over all runs**. Only 82 of them (2.0% of runs) passed an earlier act-3 campfire at ≥ 60% HP, where
    Recalling would have freed the pre-boss rest: **≤ +0.32 pp**, before charging the action lost at that
@@ -34,7 +34,7 @@ non-campfire state (they agree on 13,796 of 14,205 smith/rest/recall rows; the 4
 Smallest intervention: the existing `STS_KEY_RUBY=hp` (Recall at the first act-3 campfire with HP ≥
 `STS_KEY_RUBY_MIN_HP`, default 0.6), no code. It changes play in about a third of runs (341 of 1,024
 MAP seeds pass such a campfire without Ruby), but the expected gain is at most about +0.3 pp, while a
-paired A/B on the 341 diverging §683 seeds (MAP arm as control) has an MDE of roughly 2 pp. No affordable
+paired A/B on the 341 diverging §683 seeds (MAP arm as control) has an MDE of roughly 2 pp in all-runs units (about 9 pp among the 341 diverging seeds). No affordable
 whole-run test can show it. Recommendation: no run; record as an audit. If wanted, the cheap causal check
 is a pre-boss fork (rest vs Recall) on the 82 states replaying both act-3 bosses, which needs act-3
 support in `act4replay` (currently S&S/Heart only).

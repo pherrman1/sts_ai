@@ -1,6 +1,6 @@
 import gzip, json, glob, os, sys, pickle, re
 from concurrent.futures import ProcessPoolExecutor
-EFF = {0:'smith',17:'rest',18:'recall',19:'lift',20:'dig',21:'leave'}
+EFF = {0:'smith',1:'toke',17:'rest',18:'recall',19:'lift',20:'dig',21:'leave'}  # 1 = Peace Pipe remove
 def fo(r): return r['record']['obs.fixed_observation']
 def ups(r): return sum(r['record']['obs.deck.upgrades'])
 def one(path):

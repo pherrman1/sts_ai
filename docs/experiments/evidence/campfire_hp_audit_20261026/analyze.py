@@ -76,5 +76,26 @@ for grp, arms in (('MAP', ('MAP',)), ('all5', ('MAP', 'D', 'A', 'C', 'OFF'))):
         fa = [f for f in g['fights'] if f['act'] == 4]
         if len(fa) >= 2: hm.append(fa[1]['maxhp'] - fa[1]['hp'])
     o['act4_campfire'] = dict(sorted(a4.items())); o['heart_entry_missing_hp_mean'] = round(float(np.mean(hm)), 1)
+    sns = [fa[0]['hp'] - fa[0]['post'] for g in (R[k] for k in R if k[1] in arms)
+           for fa in [[f for f in g['fights'] if f['act'] == 4]] if len(fa) >= 2 and fa[0]['out'] == 1]
+    o['sns_hp_lost_when_won_mean'] = round(float(np.mean(sns)), 1)
+    agree = collections.Counter()
+    for k in R:
+        if k[1] not in arms: continue
+        for x in R[k]['fires']:
+            if x['eff'] in ('smith', 'rest', 'recall'): agree[x['eff'] == x['inferred']] += 1
+    o['recorded_vs_inferred_agree'] = f"{agree[True]}/{agree[True] + agree[False]}"
+    # seeds where STS_KEY_RUBY=hp would change play: the first act-3 campfire without Ruby before row 14
+    # has HP >= 60% and the run did not Recall there
+    if arms == ('MAP',):
+        dv = collections.Counter()
+        for k in R:
+            if k[1] != 'MAP': continue
+            for x in R[k]['fires']:
+                if x['act'] != 3 or x['ruby']: continue
+                if x['floor'] < 49 and x['hp'] / x['maxhp'] >= .6: dv['diverge' if ch(x) != 'recall' else 'same_recall'] += 1; break
+                if x['floor'] == 49: dv['reach_preboss_no_hi'] += 1; break
+            else: dv['no_act3_fire_without_ruby'] += 1
+        o['ruby_hp_rule_divergence'] = dict(dv)
     out[grp] = o
 print(json.dumps(out, indent=1))
