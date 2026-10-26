@@ -96,6 +96,14 @@ else()
 endif()
 
 
+add_executable(expert-seed-probe apps/expert_seed_probe.cpp $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(expert-seed-probe PUBLIC include)
+target_include_directories(expert-seed-probe PUBLIC json/include)
+
+add_executable(expert-replay-probe apps/expert_replay_probe.cpp $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(expert-replay-probe PUBLIC include)
+target_include_directories(expert-replay-probe PUBLIC json/include)
+
 add_executable(main apps/main.cpp $<TARGET_OBJECTS:sts_core_objects>)
 target_link_directories(main PRIVATE json::nlohmann_json)
 target_include_directories(main PUBLIC include)
