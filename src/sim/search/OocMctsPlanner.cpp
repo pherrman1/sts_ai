@@ -31,6 +31,7 @@ struct ChanceNode {
     std::vector<std::pair<std::uint64_t, DecisionNode *>> outcomeKeys;
     bool pruned = false;
     double searchPrior = 0;   // PUCT prior: action.prior, or its root-noised mix
+    double totalSquare = 0;   // sum of squared simulation values, for the Q standard error
     double q() const { return visits ? totalValue / visits : 0; }
 };
 struct DecisionNode {
@@ -62,6 +63,7 @@ struct Search {
     std::uint32_t gumbelPhases = 0, gumbelPhasesLeft = 0;
     // sigma(Q) on the root Q min-max normalised over the visited live actions, as mctx does.
     double gumbelSigma(const DecisionNode &node, const ChanceNode &action) const {
+        if (config.gumbelQCap > 0) return gumbelCappedSigma(node, action);
         std::uint64_t most = 0;
         double lo = std::numeric_limits<double>::infinity(), hi = -lo;
         for (const auto &a : node.actions) {
@@ -70,6 +72,20 @@ struct Search {
         }
         const double q = action.visits && hi > lo ? (action.q() - lo) / (hi - lo) : 0;
         return (config.gumbelCVisit + double(most)) * config.gumbelCScale * q;
+    }
+    // Muesli-style: the advantage over the root's visit-weighted mean Q in standard errors,
+    // clipped to +-gumbelQCap. Fewer than two visits carry no error estimate and score 0.
+    double gumbelCappedSigma(const DecisionNode &node, const ChanceNode &action) const {
+        if (action.visits < 2) return 0;
+        double total = 0;
+        std::uint64_t visits = 0;
+        for (const auto &a : node.actions)
+            if (a.visits && !a.pruned) { total += a.totalValue; visits += a.visits; }
+        const double n = double(action.visits), advantage = action.q() - total / double(visits);
+        const double variance = std::max(0.0, (action.totalSquare - n * action.q() * action.q()) / (n - 1));
+        const double se = std::sqrt(variance / n);
+        const double z = se > 0 ? advantage / se : advantage > 0 ? config.gumbelQCap : advantage < 0 ? -config.gumbelQCap : 0;
+        return std::clamp(z, -config.gumbelQCap, config.gumbelQCap);
     }
     double gumbelScore(const DecisionNode &node, const ChanceNode &action) const {
         return gumbelLogit.at(&action) + gumbelSigma(node, action);
@@ -276,6 +292,7 @@ struct Search {
             throw;  // every action is pruned: the parent prunes its edge to this node
         } catch (const DiscardedSimulation &) { --chance.visits; throw; }
         chance.totalValue += value;
+        chance.totalSquare += value * value;
         if (root && config.captureValueDistribution) {
             actionValues[chance.action.id].record(value, terminalKind);
             actionHp[chance.action.id].record(endpoint, terminalKind);
@@ -328,7 +345,8 @@ OocMctsPlanner::OocMctsPlanner(OocMctsConfig config) : config(config) {
     if (!std::isfinite(config.cPuct) || config.cPuct < 0
         || !std::isfinite(config.wideningK) || config.wideningK <= 0
         || !std::isfinite(config.wideningAlpha) || config.wideningAlpha <= 0
-        || config.wideningAlpha >= 1)
+        || config.wideningAlpha >= 1
+        || !std::isfinite(config.gumbelQCap) || config.gumbelQCap < 0)
         throw std::invalid_argument("OOC MCTS invalid PUCT/PW configuration");
     if ((!config.rootCheckpointSimulations.empty() && !config.rootCheckpointSimulations.front())
         || !std::is_sorted(config.rootCheckpointSimulations.begin(),
