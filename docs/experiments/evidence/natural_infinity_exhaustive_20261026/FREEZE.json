@@ -1,0 +1,2795 @@
+{
+  "K": 4,
+  "baseline_sha": "8cce22b4d5d54733330e323b3065ca687fbcbfc5",
+  "caps": {
+    "actions_per_replay": 1024,
+    "candidates": 16,
+    "cycle_length": 24,
+    "depth": 24,
+    "nodes": 2000,
+    "repetitions": 128,
+    "total_replay_actions": 4096
+  },
+  "capture_receipt_sha256": "90423486d08e241cd7f2b471edeef6f6bd774d69562c43ca79de4539f340fcd1",
+  "combat_entry": {
+    "act": 2,
+    "deck": [
+      "Ascender's Bane",
+      "Bash",
+      "Fire Breathing",
+      "Pommel Strike",
+      "Armaments",
+      "Berserk",
+      "Inflame",
+      "Dropkick",
+      "Barricade",
+      "Entrench",
+      "Dropkick",
+      "Fire Breathing",
+      "Wild Strike",
+      "Rage"
+    ],
+    "event": "",
+    "floor": 18,
+    "gold": 302,
+    "hp": 64,
+    "maxHp": 75,
+    "potionCapacity": 2,
+    "potions": [
+      "BLOCK_POTION"
+    ],
+    "relics": [
+      "BURNING_BLOOD",
+      "MEAL_TICKET",
+      "STRIKE_DUMMY",
+      "KUNAI",
+      "PANDORAS_BOX"
+    ],
+    "room": "MONSTER",
+    "screen": "BATTLE",
+    "x": 0,
+    "y": 0
+  },
+  "combat_exit": {
+    "act": 2,
+    "deck": [
+      "Ascender's Bane",
+      "Bash",
+      "Fire Breathing",
+      "Pommel Strike",
+      "Armaments",
+      "Berserk",
+      "Inflame",
+      "Dropkick",
+      "Barricade",
+      "Entrench",
+      "Dropkick",
+      "Fire Breathing",
+      "Wild Strike",
+      "Rage"
+    ],
+    "event": "",
+    "floor": 18,
+    "gold": 302,
+    "hp": 36,
+    "maxHp": 75,
+    "potionCapacity": 2,
+    "potions": [],
+    "relics": [
+      "BURNING_BLOOD",
+      "MEAL_TICKET",
+      "STRIKE_DUMMY",
+      "KUNAI",
+      "PANDORAS_BOX"
+    ],
+    "room": "MONSTER",
+    "screen": "REWARDS",
+    "x": 0,
+    "y": 0
+  },
+  "cycle_burden": 8,
+  "cycle_burden_definition_source": "PR863 6e479697b7af2874e89bb850737b31656cbed8a9 apps/one_combat/compression_audit.cpp::burden",
+  "cycle_burden_excluded": [
+    "Ascender's Bane",
+    "Fire Breathing x2",
+    "Berserk",
+    "Inflame",
+    "Barricade"
+  ],
+  "excluded_nonordinary": [
+    {
+      "decision": 11,
+      "inputState": 2,
+      "line": 11
+    }
+  ],
+  "inputs_sha256": "94704da20964bd6898aac2ee5043c90643ee39eeaa86f4ad4e48db2712be55ec",
+  "oracle_binary": "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/build/linux-gcc-release-ccache/combat_infinity_oracle",
+  "oracle_binary_sha256": "28e942c218cbaeef29f3a58a3301873d2fca012f6205379445e4e23ffef0ebe9",
+  "oracle_source_sha256": "f10c7dc5f4d7f4d53ae6129c291ff915db5fa338a94184522b43a1514d27b700",
+  "permanent_deck_size": 14,
+  "pinned_source": "1322e0d97721d9ffe9e2e41dbc69d8a5acc07a01",
+  "roots": [
+    {
+      "active_pool": 14,
+      "decision": 1,
+      "enemy_hp": [
+        75
+      ],
+      "enemy_vulnerable": [
+        0
+      ],
+      "ingredient_locations": {
+        "BASH": {
+          "discardPile": [],
+          "drawPile": [],
+          "exhaustPile": [],
+          "hand": [
+            {
+              "name": "BASH",
+              "physical_id": 1,
+              "upgraded": false
+            }
+          ],
+          "limbo": []
+        },
+        "DROPKICK": {
+          "discardPile": [],
+          "drawPile": [
+            {
+              "name": "DROPKICK",
+              "physical_id": 10,
+              "upgraded": false
+            }
+          ],
+          "exhaustPile": [],
+          "hand": [
+            {
+              "name": "DROPKICK",
+              "physical_id": 7,
+              "upgraded": false
+            }
+          ],
+          "limbo": []
+        },
+        "POMMEL_STRIKE": {
+          "discardPile": [],
+          "drawPile": [
+            {
+              "name": "POMMEL_STRIKE",
+              "physical_id": 3,
+              "upgraded": false
+            }
+          ],
+          "exhaustPile": [],
+          "hand": [],
+          "limbo": []
+        }
+      },
+      "input_sha256": "a3dd68b8b831687aedf80440b956befbec3ee3e3723d7fb440325a0bf939b524",
+      "line_1based": 1,
+      "player_hp": 64,
+      "turn": 0,
+      "zones": {
+        "discardPile": [],
+        "drawPile": [
+          {
+            "name": "ARMAMENTS",
+            "physical_id": 4,
+            "upgraded": false
+          },
+          {
+            "name": "ASCENDERS_BANE",
+            "physical_id": 0,
+            "upgraded": false
+          },
+          {
+            "name": "BERSERK",
+            "physical_id": 5,
+            "upgraded": false
+          },
+          {
+            "name": "DROPKICK",
+            "physical_id": 10,
+            "upgraded": false
+          },
+          {
+            "name": "FIRE_BREATHING",
+            "physical_id": 2,
+            "upgraded": false
+          },
+          {
+            "name": "INFLAME",
+            "physical_id": 6,
+            "upgraded": false
+          },
+          {
+            "name": "POMMEL_STRIKE",
+            "physical_id": 3,
+            "upgraded": false
+          },
+          {
+            "name": "RAGE",
+            "physical_id": 13,
+            "upgraded": false
+          },
+          {
+            "name": "WILD_STRIKE",
+            "physical_id": 12,
+            "upgraded": false
+          }
+        ],
+        "exhaustPile": [],
+        "hand": [
+          {
+            "name": "ENTRENCH",
+            "physical_id": 9,
+            "upgraded": false
+          },
+          {
+            "name": "BARRICADE",
+            "physical_id": 8,
+            "upgraded": false
+          },
+          {
+            "name": "FIRE_BREATHING",
+            "physical_id": 11,
+            "upgraded": false
+          },
+          {
+            "name": "BASH",
+            "physical_id": 1,
+            "upgraded": false
+          },
+          {
+            "name": "DROPKICK",
+            "physical_id": 7,
+            "upgraded": false
+          }
+        ],
+        "limbo": []
+      }
+    },
+    {
+      "active_pool": 14,
+      "decision": 2,
+      "enemy_hp": [
+        75
+      ],
+      "enemy_vulnerable": [
+        0
+      ],
+      "ingredient_locations": {
+        "BASH": {
+          "discardPile": [],
+          "drawPile": [],
+          "exhaustPile": [],
+          "hand": [
+            {
+              "name": "BASH",
+              "physical_id": 1,
+              "upgraded": false
+            }
+          ],
+          "limbo": []
+        },
+        "DROPKICK": {
+          "discardPile": [],
+          "drawPile": [
+            {
+              "name": "DROPKICK",
+              "physical_id": 10,
+              "upgraded": false
+            }
+          ],
+          "exhaustPile": [],
+          "hand": [
+            {
+              "name": "DROPKICK",
+              "physical_id": 7,
+              "upgraded": false
+            }
+          ],
+          "limbo": []
+        },
+        "POMMEL_STRIKE": {
+          "discardPile": [],
+          "drawPile": [
+            {
+              "name": "POMMEL_STRIKE",
+              "physical_id": 3,
+              "upgraded": false
+            }
+          ],
+          "exhaustPile": [],
+          "hand": [],
+          "limbo": []
+        }
+      },
+      "input_sha256": "9a7c43e34ddcaf080be44ccbcde0ab8da0686f2fb827ec9599b5a934979349c5",
+      "line_1based": 2,
+      "player_hp": 64,
+      "turn": 0,
+      "zones": {
+        "discardPile": [],
+        "drawPile": [
+          {
+            "name": "ARMAMENTS",
+            "physical_id": 4,
+            "upgraded": false
+          },
+          {
+            "name": "ASCENDERS_BANE",
+            "physical_id": 0,
+            "upgraded": false
+          },
+          {
+            "name": "BERSERK",
+            "physical_id": 5,
+            "upgraded": false
+          },
+          {
+            "name": "DROPKICK",
+            "physical_id": 10,
+            "upgraded": false
+          },
+          {
+            "name": "FIRE_BREATHING",
+            "physical_id": 2,
+            "upgraded": false
+          },
+          {
+            "name": "INFLAME",
+            "physical_id": 6,
+            "upgraded": false
+          },
+          {
+            "name": "POMMEL_STRIKE",
+            "physical_id": 3,
+            "upgraded": false
+          },
+          {
+            "name": "RAGE",
+            "physical_id": 13,
+            "upgraded": false
+          },
+          {
+            "name": "WILD_STRIKE",
+            "physical_id": 12,
+            "upgraded": false
+          }
+        ],
+        "exhaustPile": [],
+        "hand": [
+          {
+            "name": "ENTRENCH",
+            "physical_id": 9,
+            "upgraded": false
+          },
+          {
+            "name": "BARRICADE",
+            "physical_id": 8,
+            "upgraded": false
+          },
+          {
+            "name": "FIRE_BREATHING",
+            "physical_id": 11,
+            "upgraded": false
+          },
+          {
+            "name": "BASH",
+            "physical_id": 1,
+            "upgraded": false
+          },
+          {
+            "name": "DROPKICK",
+            "physical_id": 7,
+            "upgraded": false
+          }
+        ],
+        "limbo": []
+      }
+    },
+    {
+      "active_pool": 13,
+      "decision": 3,
+      "enemy_hp": [
+        75
+      ],
+      "enemy_vulnerable": [
+        0
+      ],
+      "ingredient_locations": {
+        "BASH": {
+          "discardPile": [],
+          "drawPile": [],
+          "exhaustPile": [],
+          "hand": [
+            {
+              "name": "BASH",
+              "physical_id": 1,
+              "upgraded": false
+            }
+          ],
+          "limbo": []
+        },
+        "DROPKICK": {
+          "discardPile": [],
+          "drawPile": [
+            {
+              "name": "DROPKICK",
+              "physical_id": 10,
+              "upgraded": false
+            }
+          ],
+          "exhaustPile": [],
+          "hand": [
+            {
+              "name": "DROPKICK",
+              "physical_id": 7,
+              "upgraded": false
+            }
+          ],
+          "limbo": []
+        },
+        "POMMEL_STRIKE": {
+          "discardPile": [],
+          "drawPile": [
+            {
+              "name": "POMMEL_STRIKE",
+              "physical_id": 3,
+              "upgraded": false
+            }
+          ],
+          "exhaustPile": [],
+          "hand": [],
+          "limbo": []
+        }
+      },
+      "input_sha256": "8a1e35d43b24659d1ea95f7887fca63c29208817c71e252e3b07b820300b634c",
+      "line_1based": 3,
+      "player_hp": 64,
+      "turn": 0,
+      "zones": {
+        "discardPile": [],
+        "drawPile": [
+          {
+            "name": "ARMAMENTS",
+            "physical_id": 4,
+            "upgraded": false
+          },
+          {
+            "name": "ASCENDERS_BANE",
+            "physical_id": 0,
+            "upgraded": false
+          },
+          {
+            "name": "BERSERK",
+            "physical_id": 5,
+            "upgraded": false
+          },
+          {
+            "name": "DROPKICK",
+            "physical_id": 10,
+            "upgraded": false
+          },
+          {
+            "name": "FIRE_BREATHING",
+            "physical_id": 2,
+            "upgraded": false
+          },
+          {
+            "name": "INFLAME",
+            "physical_id": 6,
+            "upgraded": false
+          },
+          {
+            "name": "POMMEL_STRIKE",
+            "physical_id": 3,
+            "upgraded": false
+          },
+          {
+            "name": "RAGE",
+            "physical_id": 13,
+            "upgraded": false
+          },
+          {
+            "name": "WILD_STRIKE",
+            "physical_id": 12,
+            "upgraded": false
+          }
+        ],
+        "exhaustPile": [],
+        "hand": [
+          {
+            "name": "ENTRENCH",
+            "physical_id": 9,
+            "upgraded": false
+          },
+          {
+            "name": "BARRICADE",
+            "physical_id": 8,
+            "upgraded": false
+          },
+          {
+            "name": "BASH",
+            "physical_id": 1,
+            "upgraded": false
+          },
+          {
+            "name": "DROPKICK",
+            "physical_id": 7,
+            "upgraded": false
+          }
+        ],
+        "limbo": []
+      }
+    },
+    {
+      "active_pool": 13,
+      "decision": 4,
+      "enemy_hp": [
+        75
+      ],
+      "enemy_vulnerable": [
+        0
+      ],
+      "ingredient_locations": {
+        "BASH": {
+          "discardPile": [],
+          "drawPile": [],
+          "exhaustPile": [],
+          "hand": [
+            {
+              "name": "BASH",
+              "physical_id": 1,
+              "upgraded": false
+            }
+          ],
+          "limbo": []
+        },
+        "DROPKICK": {
+          "discardPile": [],
+          "drawPile": [
+            {
+              "name": "DROPKICK",
+              "physical_id": 10,
+              "upgraded": false
+            }
+          ],
+          "exhaustPile": [],
+          "hand": [
+            {
+              "name": "DROPKICK",
+              "physical_id": 7,
+              "upgraded": false
+            }
+          ],
+          "limbo": []
+        },
+        "POMMEL_STRIKE": {
+          "discardPile": [],
+          "drawPile": [
+            {
+              "name": "POMMEL_STRIKE",
+              "physical_id": 3,
+              "upgraded": false
+            }
+          ],
+          "exhaustPile": [],
+          "hand": [],
+          "limbo": []
+        }
+      },
+      "input_sha256": "77637a76b3d4d950fff928b65eac064c1e4d052715e43e942ccc9b50438b7c3b",
+      "line_1based": 4,
+      "player_hp": 64,
+      "turn": 0,
+      "zones": {
+        "discardPile": [
+          {
+            "name": "ENTRENCH",
+            "physical_id": 9,
+            "upgraded": false
+          }
+        ],
+        "drawPile": [
+          {
+            "name": "ARMAMENTS",
+            "physical_id": 4,
+            "upgraded": false
+          },
+          {
+            "name": "ASCENDERS_BANE",
+            "physical_id": 0,
+            "upgraded": false
+          },
+          {
+            "name": "BERSERK",
+            "physical_id": 5,
+            "upgraded": false
+          },
+          {
+            "name": "DROPKICK",
+            "physical_id": 10,
+            "upgraded": false
+          },
+          {
+            "name": "FIRE_BREATHING",
+            "physical_id": 2,
+            "upgraded": false
+          },
+          {
+            "name": "INFLAME",
+            "physical_id": 6,
+            "upgraded": false
+          },
+          {
+            "name": "POMMEL_STRIKE",
+            "physical_id": 3,
+            "upgraded": false
+          },
+          {
+            "name": "RAGE",
+            "physical_id": 13,
+            "upgraded": false
+          },
+          {
+            "name": "WILD_STRIKE",
+            "physical_id": 12,
+            "upgraded": false
+          }
+        ],
+        "exhaustPile": [],
+        "hand": [
+          {
+            "name": "BARRICADE",
+            "physical_id": 8,
+            "upgraded": false
+          },
+          {
+            "name": "BASH",
+            "physical_id": 1,
+            "upgraded": false
+          },
+          {
+            "name": "DROPKICK",
+            "physical_id": 7,
+            "upgraded": false
+          }
+        ],
+        "limbo": []
+      }
+    },
+    {
+      "active_pool": 13,
+      "decision": 5,
+      "enemy_hp": [
+        75
+      ],
+      "enemy_vulnerable": [
+        0
+      ],
+      "ingredient_locations": {
+        "BASH": {
+          "discardPile": [
+            {
+              "name": "BASH",
+              "physical_id": 1,
+              "upgraded": false
+            }
+          ],
+          "drawPile": [],
+          "exhaustPile": [],
+          "hand": [],
+          "limbo": []
+        },
+        "DROPKICK": {
+          "discardPile": [
+            {
+              "name": "DROPKICK",
+              "physical_id": 7,
+              "upgraded": false
+            }
+          ],
+          "drawPile": [
+            {
+              "name": "DROPKICK",
+              "physical_id": 10,
+              "upgraded": false
+            }
+          ],
+          "exhaustPile": [],
+          "hand": [],
+          "limbo": []
+        },
+        "POMMEL_STRIKE": {
+          "discardPile": [],
+          "drawPile": [],
+          "exhaustPile": [],
+          "hand": [
+            {
+              "name": "POMMEL_STRIKE",
+              "physical_id": 3,
+              "upgraded": false
+            }
+          ],
+          "limbo": []
+        }
+      },
+      "input_sha256": "b5740a92b5d025e82e4f064b7e21ceae899503e236b60951d3542e455fe1cb78",
+      "line_1based": 5,
+      "player_hp": 64,
+      "turn": 1,
+      "zones": {
+        "discardPile": [
+          {
+            "name": "BARRICADE",
+            "physical_id": 8,
+            "upgraded": false
+          },
+          {
+            "name": "BASH",
+            "physical_id": 1,
+            "upgraded": false
+          },
+          {
+            "name": "DROPKICK",
+            "physical_id": 7,
+            "upgraded": false
+          },
+          {
+            "name": "ENTRENCH",
+            "physical_id": 9,
+            "upgraded": false
+          }
+        ],
+        "drawPile": [
+          {
+            "name": "ARMAMENTS",
+            "physical_id": 4,
+            "upgraded": false
+          },
+          {
+            "name": "DROPKICK",
+            "physical_id": 10,
+            "upgraded": false
+          },
+          {
+            "name": "FIRE_BREATHING",
+            "physical_id": 2,
+            "upgraded": false
+          },
+          {
+            "name": "RAGE",
+            "physical_id": 13,
+            "upgraded": false
+          }
+        ],
+        "exhaustPile": [],
+        "hand": [
+          {
+            "name": "WILD_STRIKE",
+            "physical_id": 12,
+            "upgraded": false
+          },
+          {
+            "name": "ASCENDERS_BANE",
+            "physical_id": 0,
+            "upgraded": false
+          },
+          {
+            "name": "INFLAME",
+            "physical_id": 6,
+            "upgraded": false
+          },
+          {
+            "name": "POMMEL_STRIKE",
+            "physical_id": 3,
+            "upgraded": false
+          },
+          {
+            "name": "BERSERK",
+            "physical_id": 5,
+            "upgraded": false
+          }
+        ],
+        "limbo": []
+      }
+    },
+    {
+      "active_pool": 12,
+      "decision": 6,
+      "enemy_hp": [
+        75
+      ],
+      "enemy_vulnerable": [
+        0
+      ],
+      "ingredient_locations": {
+        "BASH": {
+          "discardPile": [
+            {
+              "name": "BASH",
+              "physical_id": 1,
+              "upgraded": false
+            }
+          ],
+          "drawPile": [],
+          "exhaustPile": [],
+          "hand": [],
+          "limbo": []
+        },
+        "DROPKICK": {
+          "discardPile": [
+            {
+              "name": "DROPKICK",
+              "physical_id": 7,
+              "upgraded": false
+            }
+          ],
+          "drawPile": [
+            {
+              "name": "DROPKICK",
+              "physical_id": 10,
+              "upgraded": false
+            }
+          ],
+          "exhaustPile": [],
+          "hand": [],
+          "limbo": []
+        },
+        "POMMEL_STRIKE": {
+          "discardPile": [],
+          "drawPile": [],
+          "exhaustPile": [],
+          "hand": [
+            {
+              "name": "POMMEL_STRIKE",
+              "physical_id": 3,
+              "upgraded": false
+            }
+          ],
+          "limbo": []
+        }
+      },
+      "input_sha256": "2f75169e8187dfd65cd8cdbf4595ad77b4791824b3c357d04754d1c56a5d87f0",
+      "line_1based": 6,
+      "player_hp": 64,
+      "turn": 1,
+      "zones": {
+        "discardPile": [
+          {
+            "name": "BARRICADE",
+            "physical_id": 8,
+            "upgraded": false
+          },
+          {
+            "name": "BASH",
+            "physical_id": 1,
+            "upgraded": false
+          },
+          {
+            "name": "DROPKICK",
+            "physical_id": 7,
+            "upgraded": false
+          },
+          {
+            "name": "ENTRENCH",
+            "physical_id": 9,
+            "upgraded": false
+          }
+        ],
+        "drawPile": [
+          {
+            "name": "ARMAMENTS",
+            "physical_id": 4,
+            "upgraded": false
+          },
+          {
+            "name": "DROPKICK",
+            "physical_id": 10,
+            "upgraded": false
+          },
+          {
+            "name": "FIRE_BREATHING",
+            "physical_id": 2,
+            "upgraded": false
+          },
+          {
+            "name": "RAGE",
+            "physical_id": 13,
+            "upgraded": false
+          }
+        ],
+        "exhaustPile": [],
+        "hand": [
+          {
+            "name": "WILD_STRIKE",
+            "physical_id": 12,
+            "upgraded": false
+          },
+          {
+            "name": "ASCENDERS_BANE",
+            "physical_id": 0,
+            "upgraded": false
+          },
+          {
+            "name": "POMMEL_STRIKE",
+            "physical_id": 3,
+            "upgraded": false
+          },
+          {
+            "name": "BERSERK",
+            "physical_id": 5,
+            "upgraded": false
+          }
+        ],
+        "limbo": []
+      }
+    },
+    {
+      "active_pool": 12,
+      "decision": 7,
+      "enemy_hp": [
+        69
+      ],
+      "enemy_vulnerable": [
+        0
+      ],
+      "ingredient_locations": {
+        "BASH": {
+          "discardPile": [
+            {
+              "name": "BASH",
+              "physical_id": 1,
+              "upgraded": false
+            }
+          ],
+          "drawPile": [],
+          "exhaustPile": [],
+          "hand": [],
+          "limbo": []
+        },
+        "DROPKICK": {
+          "discardPile": [
+            {
+              "name": "DROPKICK",
+              "physical_id": 7,
+              "upgraded": false
+            }
+          ],
+          "drawPile": [
+            {
+              "name": "DROPKICK",
+              "physical_id": 10,
+              "upgraded": false
+            }
+          ],
+          "exhaustPile": [],
+          "hand": [],
+          "limbo": []
+        },
+        "POMMEL_STRIKE": {
+          "discardPile": [
+            {
+              "name": "POMMEL_STRIKE",
+              "physical_id": 3,
+              "upgraded": false
+            }
+          ],
+          "drawPile": [],
+          "exhaustPile": [],
+          "hand": [],
+          "limbo": []
+        }
+      },
+      "input_sha256": "38924e8066c7e812e3a8cbbe9c5f1bbcffc4ecc84da30db85a7b3a52226625c9",
+      "line_1based": 7,
+      "player_hp": 64,
+      "turn": 1,
+      "zones": {
+        "discardPile": [
+          {
+            "name": "BARRICADE",
+            "physical_id": 8,
+            "upgraded": false
+          },
+          {
+            "name": "BASH",
+            "physical_id": 1,
+            "upgraded": false
+          },
+          {
+            "name": "DROPKICK",
+            "physical_id": 7,
+            "upgraded": false
+          },
+          {
+            "name": "ENTRENCH",
+            "physical_id": 9,
+            "upgraded": false
+          },
+          {
+            "name": "POMMEL_STRIKE",
+            "physical_id": 3,
+            "upgraded": false
+          }
+        ],
+        "drawPile": [
+          {
+            "name": "ARMAMENTS",
+            "physical_id": 4,
+            "upgraded": false
+          },
+          {
+            "name": "DROPKICK",
+            "physical_id": 10,
+            "upgraded": false
+          },
+          {
+            "name": "RAGE",
+            "physical_id": 13,
+            "upgraded": false
+          }
+        ],
+        "exhaustPile": [],
+        "hand": [
+          {
+            "name": "WILD_STRIKE",
+            "physical_id": 12,
+            "upgraded": false
+          },
+          {
+            "name": "ASCENDERS_BANE",
+            "physical_id": 0,
+            "upgraded": false
+          },
+          {
+            "name": "BERSERK",
+            "physical_id": 5,
+            "upgraded": false
+          },
+          {
+            "name": "FIRE_BREATHING",
+            "physical_id": 2,
+            "upgraded": false
+          }
+        ],
+        "limbo": []
+      }
+    },
+    {
+      "active_pool": 11,
+      "decision": 8,
+      "enemy_hp": [
+        69
+      ],
+      "enemy_vulnerable": [
+        0
+      ],
+      "ingredient_locations": {
+        "BASH": {
+          "discardPile": [
+            {
+              "name": "BASH",
+              "physical_id": 1,
+              "upgraded": false
+            }
+          ],
+          "drawPile": [],
+          "exhaustPile": [],
+          "hand": [],
+          "limbo": []
+        },
+        "DROPKICK": {
+          "discardPile": [
+            {
+              "name": "DROPKICK",
+              "physical_id": 7,
+              "upgraded": false
+            }
+          ],
+          "drawPile": [
+            {
+              "name": "DROPKICK",
+              "physical_id": 10,
+              "upgraded": false
+            }
+          ],
+          "exhaustPile": [],
+          "hand": [],
+          "limbo": []
+        },
+        "POMMEL_STRIKE": {
+          "discardPile": [
+            {
+              "name": "POMMEL_STRIKE",
+              "physical_id": 3,
+              "upgraded": false
+            }
+          ],
+          "drawPile": [],
+          "exhaustPile": [],
+          "hand": [],
+          "limbo": []
+        }
+      },
+      "input_sha256": "c6cba032050336cce784dd41f108cfd825fbfc0b60d9be2f6aa3bffb612b2a6c",
+      "line_1based": 8,
+      "player_hp": 64,
+      "turn": 1,
+      "zones": {
+        "discardPile": [
+          {
+            "name": "BARRICADE",
+            "physical_id": 8,
+            "upgraded": false
+          },
+          {
+            "name": "BASH",
+            "physical_id": 1,
+            "upgraded": false
+          },
+          {
+            "name": "DROPKICK",
+            "physical_id": 7,
+            "upgraded": false
+          },
+          {
+            "name": "ENTRENCH",
+            "physical_id": 9,
+            "upgraded": false
+          },
+          {
+            "name": "POMMEL_STRIKE",
+            "physical_id": 3,
+            "upgraded": false
+          }
+        ],
+        "drawPile": [
+          {
+            "name": "ARMAMENTS",
+            "physical_id": 4,
+            "upgraded": false
+          },
+          {
+            "name": "DROPKICK",
+            "physical_id": 10,
+            "upgraded": false
+          },
+          {
+            "name": "RAGE",
+            "physical_id": 13,
+            "upgraded": false
+          }
+        ],
+        "exhaustPile": [],
+        "hand": [
+          {
+            "name": "WILD_STRIKE",
+            "physical_id": 12,
+            "upgraded": false
+          },
+          {
+            "name": "ASCENDERS_BANE",
+            "physical_id": 0,
+            "upgraded": false
+          },
+          {
+            "name": "BERSERK",
+            "physical_id": 5,
+            "upgraded": false
+          }
+        ],
+        "limbo": []
+      }
+    },
+    {
+      "active_pool": 10,
+      "decision": 9,
+      "enemy_hp": [
+        69
+      ],
+      "enemy_vulnerable": [
+        0
+      ],
+      "ingredient_locations": {
+        "BASH": {
+          "discardPile": [
+            {
+              "name": "BASH",
+              "physical_id": 1,
+              "upgraded": false
+            }
+          ],
+          "drawPile": [],
+          "exhaustPile": [],
+          "hand": [],
+          "limbo": []
+        },
+        "DROPKICK": {
+          "discardPile": [
+            {
+              "name": "DROPKICK",
+              "physical_id": 7,
+              "upgraded": false
+            }
+          ],
+          "drawPile": [
+            {
+              "name": "DROPKICK",
+              "physical_id": 10,
+              "upgraded": false
+            }
+          ],
+          "exhaustPile": [],
+          "hand": [],
+          "limbo": []
+        },
+        "POMMEL_STRIKE": {
+          "discardPile": [
+            {
+              "name": "POMMEL_STRIKE",
+              "physical_id": 3,
+              "upgraded": false
+            }
+          ],
+          "drawPile": [],
+          "exhaustPile": [],
+          "hand": [],
+          "limbo": []
+        }
+      },
+      "input_sha256": "a06771b11ca972d6e87e125f7a4d4b3969951d6ea16db8dec019f480deab63dd",
+      "line_1based": 9,
+      "player_hp": 64,
+      "turn": 1,
+      "zones": {
+        "discardPile": [
+          {
+            "name": "BARRICADE",
+            "physical_id": 8,
+            "upgraded": false
+          },
+          {
+            "name": "BASH",
+            "physical_id": 1,
+            "upgraded": false
+          },
+          {
+            "name": "DROPKICK",
+            "physical_id": 7,
+            "upgraded": false
+          },
+          {
+            "name": "ENTRENCH",
+            "physical_id": 9,
+            "upgraded": false
+          },
+          {
+            "name": "POMMEL_STRIKE",
+            "physical_id": 3,
+            "upgraded": false
+          }
+        ],
+        "drawPile": [
+          {
+            "name": "ARMAMENTS",
+            "physical_id": 4,
+            "upgraded": false
+          },
+          {
+            "name": "DROPKICK",
+            "physical_id": 10,
+            "upgraded": false
+          },
+          {
+            "name": "RAGE",
+            "physical_id": 13,
+            "upgraded": false
+          }
+        ],
+        "exhaustPile": [],
+        "hand": [
+          {
+            "name": "WILD_STRIKE",
+            "physical_id": 12,
+            "upgraded": false
+          },
+          {
+            "name": "ASCENDERS_BANE",
+            "physical_id": 0,
+            "upgraded": false
+          }
+        ],
+        "limbo": []
+      }
+    },
+    {
+      "active_pool": 9,
+      "decision": 10,
+      "enemy_hp": [
+        69
+      ],
+      "enemy_vulnerable": [
+        0
+      ],
+      "ingredient_locations": {
+        "BASH": {
+          "discardPile": [],
+          "drawPile": [
+            {
+              "name": "BASH",
+              "physical_id": 1,
+              "upgraded": false
+            }
+          ],
+          "exhaustPile": [],
+          "hand": [],
+          "limbo": []
+        },
+        "DROPKICK": {
+          "discardPile": [],
+          "drawPile": [],
+          "exhaustPile": [],
+          "hand": [
+            {
+              "name": "DROPKICK",
+              "physical_id": 10,
+              "upgraded": false
+            },
+            {
+              "name": "DROPKICK",
+              "physical_id": 7,
+              "upgraded": false
+            }
+          ],
+          "limbo": []
+        },
+        "POMMEL_STRIKE": {
+          "discardPile": [],
+          "drawPile": [
+            {
+              "name": "POMMEL_STRIKE",
+              "physical_id": 3,
+              "upgraded": false
+            }
+          ],
+          "exhaustPile": [],
+          "hand": [],
+          "limbo": []
+        }
+      },
+      "input_sha256": "706b6b50a1934415ee014c6dd6f6e9e06b08ab0a480bd76d6bfec0aae1600da0",
+      "line_1based": 10,
+      "player_hp": 44,
+      "turn": 2,
+      "zones": {
+        "discardPile": [],
+        "drawPile": [
+          {
+            "name": "BASH",
+            "physical_id": 1,
+            "upgraded": false
+          },
+          {
+            "name": "ENTRENCH",
+            "physical_id": 9,
+            "upgraded": false
+          },
+          {
+            "name": "POMMEL_STRIKE",
+            "physical_id": 3,
+            "upgraded": false
+          },
+          {
+            "name": "WILD_STRIKE",
+            "physical_id": 12,
+            "upgraded": false
+          }
+        ],
+        "exhaustPile": [
+          {
+            "name": "ASCENDERS_BANE",
+            "physical_id": 0,
+            "upgraded": false
+          }
+        ],
+        "hand": [
+          {
+            "name": "ARMAMENTS",
+            "physical_id": 4,
+            "upgraded": false
+          },
+          {
+            "name": "RAGE",
+            "physical_id": 13,
+            "upgraded": false
+          },
+          {
+            "name": "DROPKICK",
+            "physical_id": 10,
+            "upgraded": false
+          },
+          {
+            "name": "BARRICADE",
+            "physical_id": 8,
+            "upgraded": false
+          },
+          {
+            "name": "DROPKICK",
+            "physical_id": 7,
+            "upgraded": false
+          }
+        ],
+        "limbo": []
+      }
+    },
+    {
+      "active_pool": 9,
+      "decision": 12,
+      "enemy_hp": [
+        69
+      ],
+      "enemy_vulnerable": [
+        0
+      ],
+      "ingredient_locations": {
+        "BASH": {
+          "discardPile": [],
+          "drawPile": [
+            {
+              "name": "BASH",
+              "physical_id": 1,
+              "upgraded": false
+            }
+          ],
+          "exhaustPile": [],
+          "hand": [],
+          "limbo": []
+        },
+        "DROPKICK": {
+          "discardPile": [],
+          "drawPile": [],
+          "exhaustPile": [],
+          "hand": [
+            {
+              "name": "DROPKICK",
+              "physical_id": 10,
+              "upgraded": false
+            },
+            {
+              "name": "DROPKICK",
+              "physical_id": 7,
+              "upgraded": false
+            }
+          ],
+          "limbo": []
+        },
+        "POMMEL_STRIKE": {
+          "discardPile": [],
+          "drawPile": [
+            {
+              "name": "POMMEL_STRIKE",
+              "physical_id": 3,
+              "upgraded": false
+            }
+          ],
+          "exhaustPile": [],
+          "hand": [],
+          "limbo": []
+        }
+      },
+      "input_sha256": "fc636bf13ae67493e593197db77776b3f11d8a0f596617574e1d4eeef21c05d7",
+      "line_1based": 12,
+      "player_hp": 44,
+      "turn": 2,
+      "zones": {
+        "discardPile": [
+          {
+            "name": "ARMAMENTS",
+            "physical_id": 4,
+            "upgraded": false
+          }
+        ],
+        "drawPile": [
+          {
+            "name": "BASH",
+            "physical_id": 1,
+            "upgraded": false
+          },
+          {
+            "name": "ENTRENCH",
+            "physical_id": 9,
+            "upgraded": false
+          },
+          {
+            "name": "POMMEL_STRIKE",
+            "physical_id": 3,
+            "upgraded": false
+          },
+          {
+            "name": "WILD_STRIKE",
+            "physical_id": 12,
+            "upgraded": false
+          }
+        ],
+        "exhaustPile": [
+          {
+            "name": "ASCENDERS_BANE",
+            "physical_id": 0,
+            "upgraded": false
+          }
+        ],
+        "hand": [
+          {
+            "name": "DROPKICK",
+            "physical_id": 10,
+            "upgraded": false
+          },
+          {
+            "name": "BARRICADE",
+            "physical_id": 8,
+            "upgraded": false
+          },
+          {
+            "name": "DROPKICK",
+            "physical_id": 7,
+            "upgraded": false
+          },
+          {
+            "name": "RAGE",
+            "physical_id": 13,
+            "upgraded": true
+          }
+        ],
+        "limbo": []
+      }
+    },
+    {
+      "active_pool": 9,
+      "decision": 13,
+      "enemy_hp": [
+        69
+      ],
+      "enemy_vulnerable": [
+        0
+      ],
+      "ingredient_locations": {
+        "BASH": {
+          "discardPile": [],
+          "drawPile": [
+            {
+              "name": "BASH",
+              "physical_id": 1,
+              "upgraded": false
+            }
+          ],
+          "exhaustPile": [],
+          "hand": [],
+          "limbo": []
+        },
+        "DROPKICK": {
+          "discardPile": [],
+          "drawPile": [],
+          "exhaustPile": [],
+          "hand": [
+            {
+              "name": "DROPKICK",
+              "physical_id": 10,
+              "upgraded": false
+            },
+            {
+              "name": "DROPKICK",
+              "physical_id": 7,
+              "upgraded": false
+            }
+          ],
+          "limbo": []
+        },
+        "POMMEL_STRIKE": {
+          "discardPile": [],
+          "drawPile": [
+            {
+              "name": "POMMEL_STRIKE",
+              "physical_id": 3,
+              "upgraded": false
+            }
+          ],
+          "exhaustPile": [],
+          "hand": [],
+          "limbo": []
+        }
+      },
+      "input_sha256": "fc1a5512cb0bd30d7e3751d490ab5c2adf13b3a0f8a953f58a8b40d563029ccd",
+      "line_1based": 13,
+      "player_hp": 44,
+      "turn": 2,
+      "zones": {
+        "discardPile": [
+          {
+            "name": "ARMAMENTS",
+            "physical_id": 4,
+            "upgraded": false
+          },
+          {
+            "name": "RAGE",
+            "physical_id": 13,
+            "upgraded": true
+          }
+        ],
+        "drawPile": [
+          {
+            "name": "BASH",
+            "physical_id": 1,
+            "upgraded": false
+          },
+          {
+            "name": "ENTRENCH",
+            "physical_id": 9,
+            "upgraded": false
+          },
+          {
+            "name": "POMMEL_STRIKE",
+            "physical_id": 3,
+            "upgraded": false
+          },
+          {
+            "name": "WILD_STRIKE",
+            "physical_id": 12,
+            "upgraded": false
+          }
+        ],
+        "exhaustPile": [
+          {
+            "name": "ASCENDERS_BANE",
+            "physical_id": 0,
+            "upgraded": false
+          }
+        ],
+        "hand": [
+          {
+            "name": "DROPKICK",
+            "physical_id": 10,
+            "upgraded": false
+          },
+          {
+            "name": "BARRICADE",
+            "physical_id": 8,
+            "upgraded": false
+          },
+          {
+            "name": "DROPKICK",
+            "physical_id": 7,
+            "upgraded": false
+          }
+        ],
+        "limbo": []
+      }
+    },
+    {
+      "active_pool": 9,
+      "decision": 14,
+      "enemy_hp": [
+        69
+      ],
+      "enemy_vulnerable": [
+        0
+      ],
+      "ingredient_locations": {
+        "BASH": {
+          "discardPile": [],
+          "drawPile": [
+            {
+              "name": "BASH",
+              "physical_id": 1,
+              "upgraded": false
+            }
+          ],
+          "exhaustPile": [],
+          "hand": [],
+          "limbo": []
+        },
+        "DROPKICK": {
+          "discardPile": [
+            {
+              "name": "DROPKICK",
+              "physical_id": 10,
+              "upgraded": false
+            }
+          ],
+          "drawPile": [],
+          "exhaustPile": [],
+          "hand": [
+            {
+              "name": "DROPKICK",
+              "physical_id": 7,
+              "upgraded": false
+            }
+          ],
+          "limbo": []
+        },
+        "POMMEL_STRIKE": {
+          "discardPile": [],
+          "drawPile": [
+            {
+              "name": "POMMEL_STRIKE",
+              "physical_id": 3,
+              "upgraded": false
+            }
+          ],
+          "exhaustPile": [],
+          "hand": [],
+          "limbo": []
+        }
+      },
+      "input_sha256": "9c6972c1132726363f97870df346afb4fe3da5015d4d88c4dbbe19c2bfe0f67b",
+      "line_1based": 14,
+      "player_hp": 44,
+      "turn": 2,
+      "zones": {
+        "discardPile": [
+          {
+            "name": "ARMAMENTS",
+            "physical_id": 4,
+            "upgraded": false
+          },
+          {
+            "name": "DROPKICK",
+            "physical_id": 10,
+            "upgraded": false
+          },
+          {
+            "name": "RAGE",
+            "physical_id": 13,
+            "upgraded": true
+          }
+        ],
+        "drawPile": [
+          {
+            "name": "BASH",
+            "physical_id": 1,
+            "upgraded": false
+          },
+          {
+            "name": "ENTRENCH",
+            "physical_id": 9,
+            "upgraded": false
+          },
+          {
+            "name": "POMMEL_STRIKE",
+            "physical_id": 3,
+            "upgraded": false
+          },
+          {
+            "name": "WILD_STRIKE",
+            "physical_id": 12,
+            "upgraded": false
+          }
+        ],
+        "exhaustPile": [
+          {
+            "name": "ASCENDERS_BANE",
+            "physical_id": 0,
+            "upgraded": false
+          }
+        ],
+        "hand": [
+          {
+            "name": "BARRICADE",
+            "physical_id": 8,
+            "upgraded": false
+          },
+          {
+            "name": "DROPKICK",
+            "physical_id": 7,
+            "upgraded": false
+          }
+        ],
+        "limbo": []
+      }
+    },
+    {
+      "active_pool": 9,
+      "decision": 15,
+      "enemy_hp": [
+        68
+      ],
+      "enemy_vulnerable": [
+        0
+      ],
+      "ingredient_locations": {
+        "BASH": {
+          "discardPile": [],
+          "drawPile": [
+            {
+              "name": "BASH",
+              "physical_id": 1,
+              "upgraded": false
+            }
+          ],
+          "exhaustPile": [],
+          "hand": [],
+          "limbo": []
+        },
+        "DROPKICK": {
+          "discardPile": [
+            {
+              "name": "DROPKICK",
+              "physical_id": 7,
+              "upgraded": false
+            },
+            {
+              "name": "DROPKICK",
+              "physical_id": 10,
+              "upgraded": false
+            }
+          ],
+          "drawPile": [],
+          "exhaustPile": [],
+          "hand": [],
+          "limbo": []
+        },
+        "POMMEL_STRIKE": {
+          "discardPile": [],
+          "drawPile": [
+            {
+              "name": "POMMEL_STRIKE",
+              "physical_id": 3,
+              "upgraded": false
+            }
+          ],
+          "exhaustPile": [],
+          "hand": [],
+          "limbo": []
+        }
+      },
+      "input_sha256": "2efa65a38cf133e5727848bb7be41756dfa00e568265505c3e5fee4a56630ed9",
+      "line_1based": 15,
+      "player_hp": 44,
+      "turn": 2,
+      "zones": {
+        "discardPile": [
+          {
+            "name": "ARMAMENTS",
+            "physical_id": 4,
+            "upgraded": false
+          },
+          {
+            "name": "DROPKICK",
+            "physical_id": 7,
+            "upgraded": false
+          },
+          {
+            "name": "DROPKICK",
+            "physical_id": 10,
+            "upgraded": false
+          },
+          {
+            "name": "RAGE",
+            "physical_id": 13,
+            "upgraded": true
+          }
+        ],
+        "drawPile": [
+          {
+            "name": "BASH",
+            "physical_id": 1,
+            "upgraded": false
+          },
+          {
+            "name": "ENTRENCH",
+            "physical_id": 9,
+            "upgraded": false
+          },
+          {
+            "name": "POMMEL_STRIKE",
+            "physical_id": 3,
+            "upgraded": false
+          },
+          {
+            "name": "WILD_STRIKE",
+            "physical_id": 12,
+            "upgraded": false
+          }
+        ],
+        "exhaustPile": [
+          {
+            "name": "ASCENDERS_BANE",
+            "physical_id": 0,
+            "upgraded": false
+          }
+        ],
+        "hand": [
+          {
+            "name": "BARRICADE",
+            "physical_id": 8,
+            "upgraded": false
+          }
+        ],
+        "limbo": []
+      }
+    },
+    {
+      "active_pool": 9,
+      "decision": 16,
+      "enemy_hp": [
+        68
+      ],
+      "enemy_vulnerable": [
+        0
+      ],
+      "ingredient_locations": {
+        "BASH": {
+          "discardPile": [],
+          "drawPile": [],
+          "exhaustPile": [],
+          "hand": [
+            {
+              "name": "BASH",
+              "physical_id": 1,
+              "upgraded": false
+            }
+          ],
+          "limbo": []
+        },
+        "DROPKICK": {
+          "discardPile": [],
+          "drawPile": [
+            {
+              "name": "DROPKICK",
+              "physical_id": 7,
+              "upgraded": false
+            }
+          ],
+          "exhaustPile": [],
+          "hand": [
+            {
+              "name": "DROPKICK",
+              "physical_id": 10,
+              "upgraded": false
+            }
+          ],
+          "limbo": []
+        },
+        "POMMEL_STRIKE": {
+          "discardPile": [],
+          "drawPile": [],
+          "exhaustPile": [],
+          "hand": [
+            {
+              "name": "POMMEL_STRIKE",
+              "physical_id": 3,
+              "upgraded": false
+            }
+          ],
+          "limbo": []
+        }
+      },
+      "input_sha256": "c5bebe579dcd4cfc80de3845e1e4b602606dfaaacf39feb5e40051d5519489a6",
+      "line_1based": 16,
+      "player_hp": 37,
+      "turn": 3,
+      "zones": {
+        "discardPile": [],
+        "drawPile": [
+          {
+            "name": "ARMAMENTS",
+            "physical_id": 4,
+            "upgraded": false
+          },
+          {
+            "name": "BARRICADE",
+            "physical_id": 8,
+            "upgraded": false
+          },
+          {
+            "name": "DROPKICK",
+            "physical_id": 7,
+            "upgraded": false
+          },
+          {
+            "name": "RAGE",
+            "physical_id": 13,
+            "upgraded": true
+          }
+        ],
+        "exhaustPile": [
+          {
+            "name": "ASCENDERS_BANE",
+            "physical_id": 0,
+            "upgraded": false
+          }
+        ],
+        "hand": [
+          {
+            "name": "ENTRENCH",
+            "physical_id": 9,
+            "upgraded": false
+          },
+          {
+            "name": "WILD_STRIKE",
+            "physical_id": 12,
+            "upgraded": false
+          },
+          {
+            "name": "BASH",
+            "physical_id": 1,
+            "upgraded": false
+          },
+          {
+            "name": "POMMEL_STRIKE",
+            "physical_id": 3,
+            "upgraded": false
+          },
+          {
+            "name": "DROPKICK",
+            "physical_id": 10,
+            "upgraded": false
+          }
+        ],
+        "limbo": []
+      }
+    },
+    {
+      "active_pool": 9,
+      "decision": 17,
+      "enemy_hp": [
+        68
+      ],
+      "enemy_vulnerable": [
+        2
+      ],
+      "ingredient_locations": {
+        "BASH": {
+          "discardPile": [
+            {
+              "name": "BASH",
+              "physical_id": 1,
+              "upgraded": false
+            }
+          ],
+          "drawPile": [],
+          "exhaustPile": [],
+          "hand": [],
+          "limbo": []
+        },
+        "DROPKICK": {
+          "discardPile": [],
+          "drawPile": [
+            {
+              "name": "DROPKICK",
+              "physical_id": 7,
+              "upgraded": false
+            }
+          ],
+          "exhaustPile": [],
+          "hand": [
+            {
+              "name": "DROPKICK",
+              "physical_id": 10,
+              "upgraded": false
+            }
+          ],
+          "limbo": []
+        },
+        "POMMEL_STRIKE": {
+          "discardPile": [],
+          "drawPile": [],
+          "exhaustPile": [],
+          "hand": [
+            {
+              "name": "POMMEL_STRIKE",
+              "physical_id": 3,
+              "upgraded": false
+            }
+          ],
+          "limbo": []
+        }
+      },
+      "input_sha256": "808c998ec066c7803f77143b60da0fafa9da83ea19b34af3e11be5da3c1b5341",
+      "line_1based": 17,
+      "player_hp": 37,
+      "turn": 3,
+      "zones": {
+        "discardPile": [
+          {
+            "name": "BASH",
+            "physical_id": 1,
+            "upgraded": false
+          }
+        ],
+        "drawPile": [
+          {
+            "name": "ARMAMENTS",
+            "physical_id": 4,
+            "upgraded": false
+          },
+          {
+            "name": "BARRICADE",
+            "physical_id": 8,
+            "upgraded": false
+          },
+          {
+            "name": "DROPKICK",
+            "physical_id": 7,
+            "upgraded": false
+          },
+          {
+            "name": "RAGE",
+            "physical_id": 13,
+            "upgraded": true
+          }
+        ],
+        "exhaustPile": [
+          {
+            "name": "ASCENDERS_BANE",
+            "physical_id": 0,
+            "upgraded": false
+          }
+        ],
+        "hand": [
+          {
+            "name": "ENTRENCH",
+            "physical_id": 9,
+            "upgraded": false
+          },
+          {
+            "name": "WILD_STRIKE",
+            "physical_id": 12,
+            "upgraded": false
+          },
+          {
+            "name": "POMMEL_STRIKE",
+            "physical_id": 3,
+            "upgraded": false
+          },
+          {
+            "name": "DROPKICK",
+            "physical_id": 10,
+            "upgraded": false
+          }
+        ],
+        "limbo": []
+      }
+    },
+    {
+      "active_pool": 9,
+      "decision": 18,
+      "enemy_hp": [
+        49
+      ],
+      "enemy_vulnerable": [
+        2
+      ],
+      "ingredient_locations": {
+        "BASH": {
+          "discardPile": [
+            {
+              "name": "BASH",
+              "physical_id": 1,
+              "upgraded": false
+            }
+          ],
+          "drawPile": [],
+          "exhaustPile": [],
+          "hand": [],
+          "limbo": []
+        },
+        "DROPKICK": {
+          "discardPile": [],
+          "drawPile": [
+            {
+              "name": "DROPKICK",
+              "physical_id": 7,
+              "upgraded": false
+            }
+          ],
+          "exhaustPile": [],
+          "hand": [
+            {
+              "name": "DROPKICK",
+              "physical_id": 10,
+              "upgraded": false
+            }
+          ],
+          "limbo": []
+        },
+        "POMMEL_STRIKE": {
+          "discardPile": [
+            {
+              "name": "POMMEL_STRIKE",
+              "physical_id": 3,
+              "upgraded": false
+            }
+          ],
+          "drawPile": [],
+          "exhaustPile": [],
+          "hand": [],
+          "limbo": []
+        }
+      },
+      "input_sha256": "78ed7adc2e44e83518e83996aadf13dd2eed0d378380595307c106ffce2c4f3f",
+      "line_1based": 18,
+      "player_hp": 37,
+      "turn": 3,
+      "zones": {
+        "discardPile": [
+          {
+            "name": "BASH",
+            "physical_id": 1,
+            "upgraded": false
+          },
+          {
+            "name": "POMMEL_STRIKE",
+            "physical_id": 3,
+            "upgraded": false
+          }
+        ],
+        "drawPile": [
+          {
+            "name": "ARMAMENTS",
+            "physical_id": 4,
+            "upgraded": false
+          },
+          {
+            "name": "DROPKICK",
+            "physical_id": 7,
+            "upgraded": false
+          },
+          {
+            "name": "RAGE",
+            "physical_id": 13,
+            "upgraded": true
+          }
+        ],
+        "exhaustPile": [
+          {
+            "name": "ASCENDERS_BANE",
+            "physical_id": 0,
+            "upgraded": false
+          }
+        ],
+        "hand": [
+          {
+            "name": "ENTRENCH",
+            "physical_id": 9,
+            "upgraded": false
+          },
+          {
+            "name": "WILD_STRIKE",
+            "physical_id": 12,
+            "upgraded": false
+          },
+          {
+            "name": "DROPKICK",
+            "physical_id": 10,
+            "upgraded": false
+          },
+          {
+            "name": "BARRICADE",
+            "physical_id": 8,
+            "upgraded": false
+          }
+        ],
+        "limbo": []
+      }
+    },
+    {
+      "active_pool": 9,
+      "decision": 19,
+      "enemy_hp": [
+        39
+      ],
+      "enemy_vulnerable": [
+        2
+      ],
+      "ingredient_locations": {
+        "BASH": {
+          "discardPile": [
+            {
+              "name": "BASH",
+              "physical_id": 1,
+              "upgraded": false
+            }
+          ],
+          "drawPile": [],
+          "exhaustPile": [],
+          "hand": [],
+          "limbo": []
+        },
+        "DROPKICK": {
+          "discardPile": [
+            {
+              "name": "DROPKICK",
+              "physical_id": 10,
+              "upgraded": false
+            }
+          ],
+          "drawPile": [
+            {
+              "name": "DROPKICK",
+              "physical_id": 7,
+              "upgraded": false
+            }
+          ],
+          "exhaustPile": [],
+          "hand": [],
+          "limbo": []
+        },
+        "POMMEL_STRIKE": {
+          "discardPile": [
+            {
+              "name": "POMMEL_STRIKE",
+              "physical_id": 3,
+              "upgraded": false
+            }
+          ],
+          "drawPile": [],
+          "exhaustPile": [],
+          "hand": [],
+          "limbo": []
+        }
+      },
+      "input_sha256": "f8dcbf45d15662eeb11b3c7e3d4653591776dfb6703be0c8b207ea81983ef546",
+      "line_1based": 19,
+      "player_hp": 37,
+      "turn": 3,
+      "zones": {
+        "discardPile": [
+          {
+            "name": "BASH",
+            "physical_id": 1,
+            "upgraded": false
+          },
+          {
+            "name": "DROPKICK",
+            "physical_id": 10,
+            "upgraded": false
+          },
+          {
+            "name": "POMMEL_STRIKE",
+            "physical_id": 3,
+            "upgraded": false
+          }
+        ],
+        "drawPile": [
+          {
+            "name": "ARMAMENTS",
+            "physical_id": 4,
+            "upgraded": false
+          },
+          {
+            "name": "DROPKICK",
+            "physical_id": 7,
+            "upgraded": false
+          }
+        ],
+        "exhaustPile": [
+          {
+            "name": "ASCENDERS_BANE",
+            "physical_id": 0,
+            "upgraded": false
+          }
+        ],
+        "hand": [
+          {
+            "name": "ENTRENCH",
+            "physical_id": 9,
+            "upgraded": false
+          },
+          {
+            "name": "WILD_STRIKE",
+            "physical_id": 12,
+            "upgraded": false
+          },
+          {
+            "name": "BARRICADE",
+            "physical_id": 8,
+            "upgraded": false
+          },
+          {
+            "name": "RAGE",
+            "physical_id": 13,
+            "upgraded": true
+          }
+        ],
+        "limbo": []
+      }
+    },
+    {
+      "active_pool": 9,
+      "decision": 20,
+      "enemy_hp": [
+        39
+      ],
+      "enemy_vulnerable": [
+        2
+      ],
+      "ingredient_locations": {
+        "BASH": {
+          "discardPile": [
+            {
+              "name": "BASH",
+              "physical_id": 1,
+              "upgraded": false
+            }
+          ],
+          "drawPile": [],
+          "exhaustPile": [],
+          "hand": [],
+          "limbo": []
+        },
+        "DROPKICK": {
+          "discardPile": [
+            {
+              "name": "DROPKICK",
+              "physical_id": 10,
+              "upgraded": false
+            }
+          ],
+          "drawPile": [
+            {
+              "name": "DROPKICK",
+              "physical_id": 7,
+              "upgraded": false
+            }
+          ],
+          "exhaustPile": [],
+          "hand": [],
+          "limbo": []
+        },
+        "POMMEL_STRIKE": {
+          "discardPile": [
+            {
+              "name": "POMMEL_STRIKE",
+              "physical_id": 3,
+              "upgraded": false
+            }
+          ],
+          "drawPile": [],
+          "exhaustPile": [],
+          "hand": [],
+          "limbo": []
+        }
+      },
+      "input_sha256": "80774a4519d2d8013a336ee9156a3f53f9b46b10a2caae2d331bd8c667630a54",
+      "line_1based": 20,
+      "player_hp": 37,
+      "turn": 3,
+      "zones": {
+        "discardPile": [
+          {
+            "name": "BASH",
+            "physical_id": 1,
+            "upgraded": false
+          },
+          {
+            "name": "DROPKICK",
+            "physical_id": 10,
+            "upgraded": false
+          },
+          {
+            "name": "POMMEL_STRIKE",
+            "physical_id": 3,
+            "upgraded": false
+          },
+          {
+            "name": "RAGE",
+            "physical_id": 13,
+            "upgraded": true
+          }
+        ],
+        "drawPile": [
+          {
+            "name": "ARMAMENTS",
+            "physical_id": 4,
+            "upgraded": false
+          },
+          {
+            "name": "DROPKICK",
+            "physical_id": 7,
+            "upgraded": false
+          }
+        ],
+        "exhaustPile": [
+          {
+            "name": "ASCENDERS_BANE",
+            "physical_id": 0,
+            "upgraded": false
+          }
+        ],
+        "hand": [
+          {
+            "name": "ENTRENCH",
+            "physical_id": 9,
+            "upgraded": false
+          },
+          {
+            "name": "WILD_STRIKE",
+            "physical_id": 12,
+            "upgraded": false
+          },
+          {
+            "name": "BARRICADE",
+            "physical_id": 8,
+            "upgraded": false
+          }
+        ],
+        "limbo": []
+      }
+    },
+    {
+      "active_pool": 10,
+      "decision": 21,
+      "enemy_hp": [
+        14
+      ],
+      "enemy_vulnerable": [
+        2
+      ],
+      "ingredient_locations": {
+        "BASH": {
+          "discardPile": [
+            {
+              "name": "BASH",
+              "physical_id": 1,
+              "upgraded": false
+            }
+          ],
+          "drawPile": [],
+          "exhaustPile": [],
+          "hand": [],
+          "limbo": []
+        },
+        "DROPKICK": {
+          "discardPile": [
+            {
+              "name": "DROPKICK",
+              "physical_id": 10,
+              "upgraded": false
+            }
+          ],
+          "drawPile": [
+            {
+              "name": "DROPKICK",
+              "physical_id": 7,
+              "upgraded": false
+            }
+          ],
+          "exhaustPile": [],
+          "hand": [],
+          "limbo": []
+        },
+        "POMMEL_STRIKE": {
+          "discardPile": [
+            {
+              "name": "POMMEL_STRIKE",
+              "physical_id": 3,
+              "upgraded": false
+            }
+          ],
+          "drawPile": [],
+          "exhaustPile": [],
+          "hand": [],
+          "limbo": []
+        }
+      },
+      "input_sha256": "777f8fd82b49a4a4a94627a00f9254ab963ddb20d5b22cb38e226b44579e8046",
+      "line_1based": 21,
+      "player_hp": 37,
+      "turn": 3,
+      "zones": {
+        "discardPile": [
+          {
+            "name": "BASH",
+            "physical_id": 1,
+            "upgraded": false
+          },
+          {
+            "name": "DROPKICK",
+            "physical_id": 10,
+            "upgraded": false
+          },
+          {
+            "name": "POMMEL_STRIKE",
+            "physical_id": 3,
+            "upgraded": false
+          },
+          {
+            "name": "RAGE",
+            "physical_id": 13,
+            "upgraded": true
+          },
+          {
+            "name": "WILD_STRIKE",
+            "physical_id": 12,
+            "upgraded": false
+          }
+        ],
+        "drawPile": [
+          {
+            "name": "ARMAMENTS",
+            "physical_id": 4,
+            "upgraded": false
+          },
+          {
+            "name": "DROPKICK",
+            "physical_id": 7,
+            "upgraded": false
+          },
+          {
+            "name": "WOUND",
+            "physical_id": 14,
+            "upgraded": false
+          }
+        ],
+        "exhaustPile": [
+          {
+            "name": "ASCENDERS_BANE",
+            "physical_id": 0,
+            "upgraded": false
+          }
+        ],
+        "hand": [
+          {
+            "name": "ENTRENCH",
+            "physical_id": 9,
+            "upgraded": false
+          },
+          {
+            "name": "BARRICADE",
+            "physical_id": 8,
+            "upgraded": false
+          }
+        ],
+        "limbo": []
+      }
+    },
+    {
+      "active_pool": 10,
+      "decision": 22,
+      "enemy_hp": [
+        18
+      ],
+      "enemy_vulnerable": [
+        1
+      ],
+      "ingredient_locations": {
+        "BASH": {
+          "discardPile": [],
+          "drawPile": [],
+          "exhaustPile": [],
+          "hand": [
+            {
+              "name": "BASH",
+              "physical_id": 1,
+              "upgraded": false
+            }
+          ],
+          "limbo": []
+        },
+        "DROPKICK": {
+          "discardPile": [],
+          "drawPile": [
+            {
+              "name": "DROPKICK",
+              "physical_id": 10,
+              "upgraded": false
+            }
+          ],
+          "exhaustPile": [],
+          "hand": [
+            {
+              "name": "DROPKICK",
+              "physical_id": 7,
+              "upgraded": false
+            }
+          ],
+          "limbo": []
+        },
+        "POMMEL_STRIKE": {
+          "discardPile": [],
+          "drawPile": [],
+          "exhaustPile": [],
+          "hand": [
+            {
+              "name": "POMMEL_STRIKE",
+              "physical_id": 3,
+              "upgraded": false
+            }
+          ],
+          "limbo": []
+        }
+      },
+      "input_sha256": "6086e3d6a6f96268219583c61ddb8e670cd6b5dc1f17ee51d8b9c978faa2b6f1",
+      "line_1based": 22,
+      "player_hp": 30,
+      "turn": 4,
+      "zones": {
+        "discardPile": [],
+        "drawPile": [
+          {
+            "name": "BARRICADE",
+            "physical_id": 8,
+            "upgraded": false
+          },
+          {
+            "name": "DROPKICK",
+            "physical_id": 10,
+            "upgraded": false
+          },
+          {
+            "name": "ENTRENCH",
+            "physical_id": 9,
+            "upgraded": false
+          },
+          {
+            "name": "RAGE",
+            "physical_id": 13,
+            "upgraded": true
+          },
+          {
+            "name": "WILD_STRIKE",
+            "physical_id": 12,
+            "upgraded": false
+          }
+        ],
+        "exhaustPile": [
+          {
+            "name": "ASCENDERS_BANE",
+            "physical_id": 0,
+            "upgraded": false
+          }
+        ],
+        "hand": [
+          {
+            "name": "DROPKICK",
+            "physical_id": 7,
+            "upgraded": false
+          },
+          {
+            "name": "WOUND",
+            "physical_id": 14,
+            "upgraded": false
+          },
+          {
+            "name": "ARMAMENTS",
+            "physical_id": 4,
+            "upgraded": false
+          },
+          {
+            "name": "POMMEL_STRIKE",
+            "physical_id": 3,
+            "upgraded": false
+          },
+          {
+            "name": "BASH",
+            "physical_id": 1,
+            "upgraded": false
+          }
+        ],
+        "limbo": []
+      }
+    }
+  ],
+  "rule": "all ordinary roots, capture order; no selection or deduplication",
+  "source_artifacts": {
+    "public.jsonl": {
+      "compressed_sha256": "240e83ceb23b48cdc83360c8bec1135910fa900d71366356765dac506018a8d4",
+      "decompressed_sha256": "5728283e755b872eec5b801759dee309e22c13a786a6e2c951b0f6481e1af4cf",
+      "path": "docs/experiments/evidence/combat_infinity_mask_search_20261025/capture/11111.public.jsonl.gz"
+    },
+    "states.jsonl": {
+      "compressed_sha256": "9996e32cfc4698f091759d953a3c890daadf17316413148cc8fafb049bfdb469",
+      "decompressed_sha256": "4bc3909f82fa84c73adbc3e21c904badc5b5f2c836c01c0245753468dc67130f",
+      "path": "docs/experiments/evidence/combat_infinity_mask_search_20261025/capture/11111.states.jsonl.gz"
+    },
+    "trace.jsonl": {
+      "compressed_sha256": "b97cf46e2ed4421658052e324dc9ce3d9a98a7abb7cfdbd362a24f4e9af73344",
+      "decompressed_sha256": "6f0ee0c1389f42c0ade34d6fc701c286b7b72da298060b4573b5952f6e3eed47",
+      "path": "docs/experiments/evidence/combat_infinity_mask_search_20261025/capture/11111.trace.jsonl.gz"
+    }
+  }
+}

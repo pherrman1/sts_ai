@@ -24461,3 +24461,66 @@ rule the full-rollout label line stops. Inference: a route-aware head is the nex
 consumed.
 Seeds: none (existing games only).
 **Knowledge impact:** none beyond this entry; no code or default change.
+
+## §TBD Exhaustive compressed-trajectory infinity annotation — TARGET_COMBAT_INCONCLUSIVE (2026-10-26)
+
+**Question:** Does historical seed111101032/mask11111 naturally reach a damaging
+cycle or certified kill in its first three post-engine combats? Accepted bounded
+handoff; new app-managed worktree on verified main
+`8cce22b4d5d54733330e323b3065ca687fbcbfc5`. #844 read-only at
+`1322e0d97721d9ffe9e2e41dbc69d8a5acc07a01`; #863 unchanged.
+
+**Protocol/provenance:** [PREREG](evidence/natural_infinity_exhaustive_20261026/PREREG.md),
+[complete result and artifact hashes](evidence/natural_infinity_exhaustive_20261026/REPORT.md).
+Stage A reuses the pinned compressed public/state/trace archives and freezes all
+21 ordinary roots without card/active/Vulnerable/prior-result selection. Same
+public K4 adapter binary `28e942c218cbaeef29f3a58a3301873d2fca012f6205379445e4e23ffef0ebe9`;
+depth24/nodes2000/candidates16/periods128/actions1024/total4096 unchanged. Every
+native invocation uses the seed guard. Only after clean Stage A NONE, Stage B
+uses the byte-identical #844 research-patched historical d8fd runtime
+`2b317b0533d0c834da268ddff03d087b271b9a950b26dde303437df7cc10cba9`,
+same five earlier skips, same Student-C/MCTS and eight model hashes, fair/public
+information. One local lane, 900s per replay, no retries/adaptive bounds. Because
+capture targets one floor, one bounded discovery and two targeted replays bind
+complete deterministic prefixes; these are not independent trajectories. No
+production runtime/source rebuild, controller/model/default change or extra
+intervention. Current changes are evidence/reporting only.
+
+| Combat | Floor | Permanent / cycle burden / min active | Roots / worlds | Vulnerable / Dropkick / Bash / Pommel hand roots | Candidate / certified | Cap / unsupported worlds |
+|---|---:|---|---|---|---|---|
+| Shell Parasite |18|14 / 8 / 9|21 / 84|6 / 12 / 6 / 5|0 / 0|0 / 0|
+| Chosen |22|21 / 12 / 19|18 / 72|7 / 7 / 1 / 5|0 / 0|0 / 0|
+| Slavers |24|22 / 13 / 22|27 / 108|11 / 5 / 1 / 7|0 / 0|4 / 0|
+
+**Result:** 66 roots, 264 supported public-conditioned worlds, 21,782 node visits,
+maximum depth6; no damaging candidate, certified kill, recurrence witness or
+independent victory replay to perform. Stage A is
+TARGET_COMBAT_EXHAUSTED_NO_SIGNAL; Chosen is clean NONE. Slavers decision11
+(turn2, player30HP, surviving enemies41/60HP with Vulnerable1/0, active26) hits
+nodes2000 in all four worlds, depths5/6/5/6. It has two Pommels and Shrug in hand,
+one Dropkick in draw and the other in discard, Bash in discard and seven Wounds
+in discard. This material ambiguity blocks a clean absence label. Final stop:
+**TARGET_COMBAT_INCONCLUSIVE**, not COMPRESSION_WITHOUT_INFINITY_SIGNAL. No bounds
+increase, model, beam or additional combat follows. No capped/unsupported row or
+NONE observation becomes a training negative.
+
+**Natural changes:** Before Chosen, add Spot Weakness×2, Feel No Pain+, Infernal
+Blade, Clothesline+, Panic Button, Shrug It Off, Orrery and Oddly Smooth Stone.
+Before Slavers, add Pommel Strike and upgrade Berserk. No permanent card/relic
+loss; both Dropkicks/Bash/original Pommel preserved. Entry/exit HP64→36,66→72,
+72→17. Compression was not preserved unchanged by subsequent choices; this does
+not isolate a compression-only causal effect. Full-run outcomes/current-policy
+prevalence unobserved. Native replay child CPU900.157895s total across three
+passes. Polling stopped after Slavers; two trailing floor24 reward-screen actions
+were retained, no fourth combat entered/completed or studied.
+
+**Verification:** offline exhaustive freeze/matrix/study regeneration, exact raw
+archive/receipt hashes, source/binary/eight-model custody, full replay prefixes,
+complete ordinary-root coverage, five-intervention accounting and fixed-horizon
+checks PASS ([raw audit](evidence/natural_infinity_exhaustive_20261026/verification.json)).
+No gameplay/oracle reruns for verification. Python syntax and seed-free burden
+helper checks supplement the evidence audit; full production build/CTest was not
+needed for this evidence-only change. Independent review remains the draft-PR
+handoff; authoritative GitHub Linux GCC is separate from these local checks.
+**Knowledge impact:** ledger plus maintained current-research status; no default
+or model promotion. No edits to historical #844/#863 or other source seeds.

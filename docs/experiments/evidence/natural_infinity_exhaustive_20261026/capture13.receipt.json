@@ -1,0 +1,296 @@
+{
+  "binary_sha256": "2b317b0533d0c834da268ddff03d087b271b9a950b26dde303437df7cc10cba9",
+  "build_record_sha256": "2e65be0aa4f397654d181519a86a831a11abfd4de75f2888d1c6294665baa71d",
+  "child_system_seconds": 6.002072999999999,
+  "child_user_seconds": 304.51025899999996,
+  "command": [
+    "bash",
+    "/home/philippherrmann/.codex/worktrees/8500/sts_lightspeed/tools/seed_guard.sh",
+    "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/build/infinity-heart-mask-search-20261025/source/build/linux-gcc-release/one_combat",
+    "heartoutcomegen",
+    "1",
+    "111101032",
+    "/home/philippherrmann/.codex/worktrees/8500/sts_lightspeed/build/natural-infinity-20261026/capture13/states.jsonl",
+    "on"
+  ],
+  "cwd": "/home/philippherrmann/.codex/worktrees/8500/sts_lightspeed/build/natural-infinity-20261026/capture13",
+  "entry": null,
+  "environment": {
+    "OMP_DYNAMIC": "FALSE",
+    "OMP_NUM_THREADS": "1",
+    "STS_COLLECT_KEYS": "1",
+    "STS_EXECUTABLE_GIT_SHA": "d8fd2a105a8d2a481b7639e26c683f75e382e3d4",
+    "STS_FAIR": "1",
+    "STS_INFINITY_SKIP_MANIFEST": "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/docs/experiments/evidence/combat_infinity_mask_search_20261025/manifests/11111.json",
+    "STS_OOC_DECISION_TRACE": "/home/philippherrmann/.codex/worktrees/8500/sts_lightspeed/build/natural-infinity-20261026/capture13/trace.jsonl",
+    "STS_OOC_HEART1": "studentc.bin",
+    "STS_OOC_MCTS": "1",
+    "STS_OOC_MCTS_CPUCT": "1.5",
+    "STS_OOC_MCTS_EARLY_STOP": "1",
+    "STS_OOC_MCTS_LEAF_COMBATS": "3",
+    "STS_OOC_MCTS_LEAF_POLICY": "heart1",
+    "STS_OOC_MCTS_LEAF_VALUE": "native",
+    "STS_OOC_MCTS_MAX_DEPTH": "32",
+    "STS_OOC_MCTS_PRIOR": "heart1",
+    "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+    "STS_OOC_MCTS_ROOT_TRACE": "/home/philippherrmann/.codex/worktrees/8500/sts_lightspeed/build/natural-infinity-20261026/capture13/roots.jsonl",
+    "STS_OOC_MCTS_SIMS": "512",
+    "STS_OOC_MCTS_TEMPERATURE": "1",
+    "STS_OOC_MCTS_TRACE": "/home/philippherrmann/.codex/worktrees/8500/sts_lightspeed/build/natural-infinity-20261026/capture13/mcts.csv",
+    "STS_OOC_MCTS_TREE_RULES": "1",
+    "STS_OOC_MCTS_WIDEN_ALPHA": "0.75",
+    "STS_OOC_MCTS_WIDEN_K": "4",
+    "STS_OOC_PUBLIC_FUTURES": "8",
+    "STS_OOC_SIBLING_CAPTURE": "/home/philippherrmann/.codex/worktrees/8500/sts_lightspeed/build/natural-infinity-20261026/capture13/sib.jsonl",
+    "STS_OOC_SIBLING_EVERY": "8",
+    "STS_OOC_SIBLING_LONG": "0",
+    "STS_OOC_SIBLING_MAX_DEPTH": "1",
+    "STS_OOC_SIBLING_MAX_LEAVES": "64",
+    "STS_OOC_SIBLING_REPEATS": "64",
+    "STS_OOC_STRATEGIC_BOSS_RELIC": "1",
+    "STS_OOC_STRATEGIC_EVENT": "1",
+    "STS_OOC_STRATEGIC_MARGIN": "1.0",
+    "STS_OOC_STRATEGIC_REST": "1",
+    "STS_OOC_STRATEGIC_SHOP": "1",
+    "STS_OOC_STRATEGIC_TOK_NN": "selfplay/models/ooc_strategic_tok_final.native",
+    "STS_OOC_STRATEGIC_TREASURE": "1",
+    "STS_REST_WIN": "0",
+    "STS_SILVER_ADAPTIVE": "0",
+    "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+    "STS_SILVER_LEARNED_STOP": "0",
+    "STS_SILVER_PUBLIC_TARGET": "111101032:24",
+    "STS_SILVER_PUBLIC_TRACE": "/home/philippherrmann/.codex/worktrees/8500/sts_lightspeed/build/natural-infinity-20261026/capture13/public.jsonl",
+    "STS_SILVER_REUSE_CAP_MODE": "allocated",
+    "STS_SILVER_SEARCH": "1",
+    "STS_SILVER_VNET_LEAF_DIRECT": "0",
+    "STS_STOP_AFTER_ACT": "0"
+  },
+  "files": {
+    "public.jsonl": {
+      "compressed_sha256": "75c25daf9d1d92ff9c658525859d7908d2f9821d18c7698606167f8738e9d296",
+      "sha256": "2d5af2687130774ba6a913867e8b2a21f425ea0df8fb98a25ad43eb8068997c7"
+    },
+    "states.jsonl": {
+      "compressed_sha256": "0bb5eb136affd1518245812e1d60a3f29254ba939d49cc6f572b076c5544da16",
+      "sha256": "364d98c9f67c50eefd957672daf12ce56726b5cdddaa4fe5c24eeda108773729"
+    },
+    "stderr.log": {
+      "compressed_sha256": "06e8b1acc00650c27330b0f2c86c8a5d656ba91fd188045e9199c7afb8002186",
+      "sha256": "4577562d58ffdc1cbec4e0212da72c386f894915e0f457a2f91f10a0e18b00fc"
+    },
+    "stdout.log": {
+      "compressed_sha256": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "trace.jsonl": {
+      "compressed_sha256": "7422fc2178d00afee309abbfb17598e1ff6500cd17bec67dea851a53343e4efa",
+      "sha256": "a83e88b731daa6d743e61996579cac99e0b19d047c4a205827748b93e9e33de2"
+    }
+  },
+  "historical_source_sha": "d8fd2a105a8d2a481b7639e26c683f75e382e3d4",
+  "latest_boundary": {
+    "encounter": "",
+    "fight": 14,
+    "index": 99,
+    "integrity_so_far": true,
+    "interventions": {
+      "disabled_by_design": 0,
+      "entries": [
+        {
+          "act": 1,
+          "bit": 0,
+          "enabled": true,
+          "floor": 4,
+          "forced_skip_key": "ooc:v1:effect=12:source=7:reward=none:group=[65,0,0;69,0,0;197,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+          "historical_card": "Clothesline",
+          "historical_take_key": "ooc:v1:effect=5:source=7:reward=card,69,0,0:group=[65,0,0;69,0,0;197,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+          "original_ooc_decision": 13,
+          "original_trace_index": 16,
+          "public_reward_group": "[65,0,0;69,0,0;197,0,0;]",
+          "status": "MATCHED_EXECUTED"
+        },
+        {
+          "act": 1,
+          "bit": 1,
+          "enabled": true,
+          "floor": 5,
+          "forced_skip_key": "ooc:v1:effect=12:source=7:reward=none:group=[14,0,0;184,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+          "historical_card": "Armaments",
+          "historical_take_key": "ooc:v1:effect=5:source=7:reward=card,14,0,0:group=[14,0,0;184,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+          "original_ooc_decision": 16,
+          "original_trace_index": 20,
+          "public_reward_group": "[14,0,0;184,0,0;329,0,0;]",
+          "status": "MATCHED_EXECUTED"
+        },
+        {
+          "act": 1,
+          "bit": 2,
+          "enabled": true,
+          "floor": 10,
+          "forced_skip_key": "ooc:v1:effect=12:source=7:reward=none:group=[191,0,0;197,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+          "historical_card": "Twin Strike",
+          "historical_take_key": "ooc:v1:effect=5:source=7:reward=card,347,0,0:group=[191,0,0;197,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+          "original_ooc_decision": 32,
+          "original_trace_index": 38,
+          "public_reward_group": "[191,0,0;197,0,0;347,0,0;]",
+          "status": "MATCHED_EXECUTED"
+        },
+        {
+          "act": 1,
+          "bit": 3,
+          "enabled": true,
+          "floor": 12,
+          "forced_skip_key": "ooc:v1:effect=12:source=7:reward=none:group=[73,0,0;152,0,0;187,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+          "historical_card": "Immolate",
+          "historical_take_key": "ooc:v1:effect=5:source=7:reward=card,187,0,0:group=[73,0,0;152,0,0;187,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+          "original_ooc_decision": 38,
+          "original_trace_index": 45,
+          "public_reward_group": "[73,0,0;152,0,0;187,0,0;]",
+          "status": "MATCHED_EXECUTED"
+        },
+        {
+          "act": 1,
+          "bit": 4,
+          "enabled": true,
+          "floor": 16,
+          "forced_skip_key": "ooc:v1:effect=12:source=7:reward=none:group=[83,0,0;107,0,0;266,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+          "historical_card": "Reaper",
+          "historical_take_key": "ooc:v1:effect=5:source=7:reward=card,266,0,0:group=[83,0,0;107,0,0;266,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+          "original_ooc_decision": 53,
+          "original_trace_index": 63,
+          "public_reward_group": "[83,0,0;107,0,0;266,0,0;]",
+          "status": "MATCHED_EXECUTED"
+        }
+      ],
+      "failed": 0,
+      "kind": "infinity_skip_summary",
+      "manifest_entries": 5,
+      "matched": 5,
+      "normal_end": false,
+      "not_seen": 0,
+      "seed": 111101032
+    },
+    "kind": "infinity_mask_boundary",
+    "pre": {
+      "act": 2,
+      "deck": [
+        "Ascender's Bane",
+        "Bash",
+        "Fire Breathing",
+        "Pommel Strike",
+        "Armaments",
+        "Berserk+",
+        "Inflame",
+        "Dropkick",
+        "Barricade",
+        "Entrench",
+        "Dropkick",
+        "Fire Breathing",
+        "Wild Strike",
+        "Rage",
+        "Spot Weakness",
+        "Feel No Pain+",
+        "Infernal Blade",
+        "Spot Weakness",
+        "Clothesline+",
+        "Panic Button",
+        "Shrug It Off",
+        "Pommel Strike"
+      ],
+      "event": "",
+      "floor": 24,
+      "gold": 53,
+      "hp": 17,
+      "maxHp": 75,
+      "potionCapacity": 2,
+      "potions": [],
+      "relics": [
+        "BURNING_BLOOD",
+        "MEAL_TICKET",
+        "STRIKE_DUMMY",
+        "KUNAI",
+        "PANDORAS_BOX",
+        "ORRERY",
+        "ODDLY_SMOOTH_STONE",
+        "DREAM_CATCHER"
+      ],
+      "room": "ELITE",
+      "screen": "REWARDS",
+      "x": 1,
+      "y": 6
+    },
+    "seed": 111101032
+  },
+  "manifest_sha256": "7f7e3967566e6a39756db2ec1131d7a91bf35f39861a04720cdc58187a7eb58d",
+  "models": [
+    {
+      "actual_sha256": "eff2f74f57dc2f566bbd44be30988592503cc8db51e51ff1e70cd2dec4636509",
+      "expected_sha256": "eff2f74f57dc2f566bbd44be30988592503cc8db51e51ff1e70cd2dec4636509",
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-collection-20261016-v1/bundle/studentc.bin",
+      "present_and_matches": true
+    },
+    {
+      "actual_sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3",
+      "expected_sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3",
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-collection-20261016-v1/bundle/models/v_rich_trees.txt",
+      "present_and_matches": true
+    },
+    {
+      "actual_sha256": "e2d3aa65291df2914119f5d8129fb3aa6b7339ba6fa72eeaf9e86b9402beca90",
+      "expected_sha256": "e2d3aa65291df2914119f5d8129fb3aa6b7339ba6fa72eeaf9e86b9402beca90",
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-collection-20261016-v1/bundle/models/candidates/v_win_x2b_public_trees.txt",
+      "present_and_matches": true
+    },
+    {
+      "actual_sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+      "expected_sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-collection-20261016-v1/bundle/selfplay/models/ooc_strategic_tok_final.native",
+      "present_and_matches": true
+    },
+    {
+      "actual_sha256": "c6d56bbc959f4d5de8fe1dd57f58a922112cd8323bcbac9711e0aecda93f5a3c",
+      "expected_sha256": "c6d56bbc959f4d5de8fe1dd57f58a922112cd8323bcbac9711e0aecda93f5a3c",
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-collection-20261016-v1/bundle/selfplay/models/combat_transition_deepsets_pathb_r2_lizard.native",
+      "present_and_matches": true
+    },
+    {
+      "actual_sha256": "b9188de03ed6cc0611094c108f607a8770a5d5c5f367c157851bc6af91f8d9cf",
+      "expected_sha256": "b9188de03ed6cc0611094c108f607a8770a5d5c5f367c157851bc6af91f8d9cf",
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-collection-20261016-v1/bundle/selfplay/models/combat_transition_near_full_escape_pathb_r2.native",
+      "present_and_matches": true
+    },
+    {
+      "actual_sha256": "ae785ec2e28ceb3755fb63a71534f873ed61a069a6c2e107ef4131a788af7b6b",
+      "expected_sha256": "ae785ec2e28ceb3755fb63a71534f873ed61a069a6c2e107ef4131a788af7b6b",
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-collection-20261016-v1/bundle/selfplay/models/combat_transition_deepsets_pathb_a20_lizard.native",
+      "present_and_matches": true
+    },
+    {
+      "actual_sha256": "e338506ddf14177bec27cfe174670bd9dcac333c26b30416b9f0c76717392b0d",
+      "expected_sha256": "e338506ddf14177bec27cfe174670bd9dcac333c26b30416b9f0c76717392b0d",
+      "path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/heart-outcome-collection-20261016-v1/bundle/selfplay/models/combat_transition_near_full_escape_pathb_a20.native",
+      "present_and_matches": true
+    }
+  ],
+  "no_retries": true,
+  "one_local_lane": true,
+  "patched_file_hashes": {
+    "apps/one_combat/infinity_frozen_skips.h": "b633eb0f053004cb084fb86f7b8118b72d92aaa65abcb68be8f5c48bfe15b602",
+    "apps/one_combat/run_driver.cpp": "0aba83b2d382d6d37197c2121860473d65552c87fb24a447617eafb1f2690e34"
+  },
+  "phase": "capture13",
+  "prefix_checked": true,
+  "raw_folder": "/home/philippherrmann/.codex/worktrees/8500/sts_lightspeed/build/natural-infinity-20261026/capture13",
+  "returncode": -15,
+  "source_checked_files": 772,
+  "source_plan_sha256": "556ada173e7252493bc8c3e2947aef1297d0d430eb80e58aefeb05bbedd67b80",
+  "stage_a_result_sha256": "ac3cf08e49caa419b6b5d73346895ac3ad1d98d0ad91f3587da086bb835fa8df",
+  "started_utc": "2026-10-26T11:38:19Z",
+  "status": "THREE_COMBAT_HORIZON",
+  "stop_at_entry": false,
+  "target_fight": 13,
+  "target_floor": 24,
+  "wall_limit_seconds": 900,
+  "wall_seconds": 315.12417373800054,
+  "wrapper_sha256": "a3e7a1e3bacc0beee43e9fdc3cee29de4794cfadbd9fdfb7d395e6436404e487"
+}

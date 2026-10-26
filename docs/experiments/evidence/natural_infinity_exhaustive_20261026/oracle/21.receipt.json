@@ -1,0 +1,20 @@
+{
+  "binary_sha256": "28e942c218cbaeef29f3a58a3301873d2fca012f6205379445e4e23ffef0ebe9",
+  "child_system_seconds": 0.004063999999999998,
+  "child_user_seconds": 0.002693000000000001,
+  "command": [
+    "timeout",
+    "30s",
+    "bash",
+    "tools/seed_guard.sh",
+    "/home/philippherrmann/.codex/worktrees/infinity-public-root-pilot/sts_lightspeed/build/linux-gcc-release-ccache/combat_infinity_oracle",
+    "--public-roots",
+    "/home/philippherrmann/.codex/worktrees/8500/sts_lightspeed/docs/experiments/evidence/natural_infinity_exhaustive_20261026/oracle/21.input.jsonl"
+  ],
+  "freeze_sha256": "ca399bbf45a99ab82bf565a873d0c3716c7d734473c10ed240f113ddc419fc12",
+  "input_sha256": "777f8fd82b49a4a4a94627a00f9254ab963ddb20d5b22cb38e226b44579e8046",
+  "output_sha256": "ce02bbdc253554f8ca904d00f076068ad0bbf0a681d1c6da423180136fe7e3f6",
+  "returncode": 0,
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "wall_seconds": 0.007768562001729151
+}

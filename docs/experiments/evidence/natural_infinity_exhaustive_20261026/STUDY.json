@@ -1,0 +1,368 @@
+{
+  "ambiguities": [
+    {
+      "active_pool": 26,
+      "cap_worlds": 4,
+      "decision": 11,
+      "enemy_hp": [
+        41,
+        60
+      ],
+      "enemy_vulnerable": [
+        1,
+        0
+      ],
+      "fight": 13,
+      "hand": [
+        {
+          "name": "BARRICADE",
+          "physical_id": 8,
+          "upgraded": false
+        },
+        {
+          "name": "POMMEL_STRIKE",
+          "physical_id": 21,
+          "upgraded": false
+        },
+        {
+          "name": "FIRE_BREATHING",
+          "physical_id": 2,
+          "upgraded": false
+        },
+        {
+          "name": "POMMEL_STRIKE",
+          "physical_id": 3,
+          "upgraded": false
+        },
+        {
+          "name": "SHRUG_IT_OFF",
+          "physical_id": 20,
+          "upgraded": false
+        }
+      ],
+      "ingredient_locations": {
+        "BASH": {
+          "discardPile": [
+            {
+              "name": "BASH",
+              "physical_id": 1,
+              "upgraded": false
+            }
+          ],
+          "drawPile": [],
+          "exhaustPile": [],
+          "hand": [],
+          "limbo": []
+        },
+        "DROPKICK": {
+          "discardPile": [
+            {
+              "name": "DROPKICK",
+              "physical_id": 7,
+              "upgraded": false
+            }
+          ],
+          "drawPile": [
+            {
+              "name": "DROPKICK",
+              "physical_id": 10,
+              "upgraded": false
+            }
+          ],
+          "exhaustPile": [],
+          "hand": [],
+          "limbo": []
+        },
+        "POMMEL_STRIKE": {
+          "discardPile": [],
+          "drawPile": [],
+          "exhaustPile": [],
+          "hand": [
+            {
+              "name": "POMMEL_STRIKE",
+              "physical_id": 21,
+              "upgraded": false
+            },
+            {
+              "name": "POMMEL_STRIKE",
+              "physical_id": 3,
+              "upgraded": false
+            }
+          ],
+          "limbo": []
+        }
+      },
+      "max_depth": [
+        5,
+        6,
+        5,
+        6
+      ],
+      "nodes": [
+        2000,
+        2000,
+        2000,
+        2000
+      ],
+      "turn": 2,
+      "unsupported_worlds": 0
+    }
+  ],
+  "baseline_sha": "8cce22b4d5d54733330e323b3065ca687fbcbfc5",
+  "combats": [
+    {
+      "act": 2,
+      "counts": {
+        "annotated_roots": 21,
+        "bash_in_hand_roots": 6,
+        "candidate_roots": 0,
+        "candidate_worlds": 0,
+        "cap_roots": 0,
+        "cap_worlds": 0,
+        "certified_roots": 0,
+        "certified_worlds": 0,
+        "dropkick_in_hand_roots": 12,
+        "maximum_depth": 6,
+        "minimum_active_pool": 9,
+        "ordinary_roots": 21,
+        "pommel_strike_in_hand_roots": 5,
+        "supported_worlds": 84,
+        "total_nodes": 1954,
+        "unsupported_roots": 0,
+        "unsupported_worlds": 0,
+        "vulnerable_roots": 6
+      },
+      "cycle_burden": 8,
+      "deck": [
+        "Ascender's Bane",
+        "Bash",
+        "Fire Breathing",
+        "Pommel Strike",
+        "Armaments",
+        "Berserk",
+        "Inflame",
+        "Dropkick",
+        "Barricade",
+        "Entrench",
+        "Dropkick",
+        "Fire Breathing",
+        "Wild Strike",
+        "Rage"
+      ],
+      "encounter": "SHELL_PARASITE",
+      "entry_hp": 64,
+      "exit_hp": 36,
+      "fight": 11,
+      "floor": 18,
+      "label": "TARGET_COMBAT_EXHAUSTED_NO_SIGNAL",
+      "permanent_deck_size": 14,
+      "relics": [
+        "BURNING_BLOOD",
+        "MEAL_TICKET",
+        "STRIKE_DUMMY",
+        "KUNAI",
+        "PANDORAS_BOX"
+      ],
+      "result_sha256": "ac3cf08e49caa419b6b5d73346895ac3ad1d98d0ad91f3587da086bb835fa8df"
+    },
+    {
+      "act": 2,
+      "counts": {
+        "annotated_roots": 18,
+        "bash_in_hand_roots": 1,
+        "candidate_roots": 0,
+        "candidate_worlds": 0,
+        "cap_roots": 0,
+        "cap_worlds": 0,
+        "certified_roots": 0,
+        "certified_worlds": 0,
+        "dropkick_in_hand_roots": 7,
+        "maximum_depth": 6,
+        "minimum_active_pool": 19,
+        "ordinary_roots": 18,
+        "pommel_strike_in_hand_roots": 5,
+        "supported_worlds": 72,
+        "total_nodes": 5491,
+        "unsupported_roots": 0,
+        "unsupported_worlds": 0,
+        "vulnerable_roots": 7
+      },
+      "cycle_burden": 12,
+      "deck": [
+        "Ascender's Bane",
+        "Bash",
+        "Fire Breathing",
+        "Pommel Strike",
+        "Armaments",
+        "Berserk",
+        "Inflame",
+        "Dropkick",
+        "Barricade",
+        "Entrench",
+        "Dropkick",
+        "Fire Breathing",
+        "Wild Strike",
+        "Rage",
+        "Spot Weakness",
+        "Feel No Pain+",
+        "Infernal Blade",
+        "Spot Weakness",
+        "Clothesline+",
+        "Panic Button",
+        "Shrug It Off"
+      ],
+      "encounter": "CHOSEN",
+      "entry_hp": 66,
+      "exit_hp": 72,
+      "fight": 12,
+      "floor": 22,
+      "label": "TARGET_COMBAT_EXHAUSTED_NO_SIGNAL",
+      "permanent_deck_size": 21,
+      "relics": [
+        "BURNING_BLOOD",
+        "MEAL_TICKET",
+        "STRIKE_DUMMY",
+        "KUNAI",
+        "PANDORAS_BOX",
+        "ORRERY",
+        "ODDLY_SMOOTH_STONE"
+      ],
+      "result_sha256": "b2db7dbf0456f29b1a05c1241ebbc60bc0a42cdc2812ed65bfdb66c70a93c0d7"
+    },
+    {
+      "act": 2,
+      "counts": {
+        "annotated_roots": 27,
+        "bash_in_hand_roots": 1,
+        "candidate_roots": 0,
+        "candidate_worlds": 0,
+        "cap_roots": 1,
+        "cap_worlds": 4,
+        "certified_roots": 0,
+        "certified_worlds": 0,
+        "dropkick_in_hand_roots": 5,
+        "maximum_depth": 6,
+        "minimum_active_pool": 22,
+        "ordinary_roots": 27,
+        "pommel_strike_in_hand_roots": 7,
+        "supported_worlds": 108,
+        "total_nodes": 14337,
+        "unsupported_roots": 0,
+        "unsupported_worlds": 0,
+        "vulnerable_roots": 11
+      },
+      "cycle_burden": 13,
+      "deck": [
+        "Ascender's Bane",
+        "Bash",
+        "Fire Breathing",
+        "Pommel Strike",
+        "Armaments",
+        "Berserk+",
+        "Inflame",
+        "Dropkick",
+        "Barricade",
+        "Entrench",
+        "Dropkick",
+        "Fire Breathing",
+        "Wild Strike",
+        "Rage",
+        "Spot Weakness",
+        "Feel No Pain+",
+        "Infernal Blade",
+        "Spot Weakness",
+        "Clothesline+",
+        "Panic Button",
+        "Shrug It Off",
+        "Pommel Strike"
+      ],
+      "encounter": "SLAVERS",
+      "entry_hp": 72,
+      "exit_hp": 17,
+      "fight": 13,
+      "floor": 24,
+      "label": "TARGET_COMBAT_INCONCLUSIVE",
+      "permanent_deck_size": 22,
+      "relics": [
+        "BURNING_BLOOD",
+        "MEAL_TICKET",
+        "STRIKE_DUMMY",
+        "KUNAI",
+        "PANDORAS_BOX",
+        "ORRERY",
+        "ODDLY_SMOOTH_STONE"
+      ],
+      "result_sha256": "85b03c4bd0bce46fe02a93f4862919967a0557182667531e89a4de8ec4927fff"
+    }
+  ],
+  "current_policy_prevalence": null,
+  "full_run_outcomes": null,
+  "inventory_changes": [
+    {
+      "added_cards": {
+        "Clothesline+": 1,
+        "Feel No Pain+": 1,
+        "Infernal Blade": 1,
+        "Panic Button": 1,
+        "Shrug It Off": 1,
+        "Spot Weakness": 2
+      },
+      "added_relics": [
+        "ODDLY_SMOOTH_STONE",
+        "ORRERY"
+      ],
+      "from_fight": 11,
+      "removed_cards": {},
+      "removed_relics": [],
+      "to_fight": 12,
+      "upgrades": []
+    },
+    {
+      "added_cards": {
+        "Pommel Strike": 1
+      },
+      "added_relics": [],
+      "from_fight": 12,
+      "removed_cards": {},
+      "removed_relics": [],
+      "to_fight": 13,
+      "upgrades": [
+        {
+          "after": "Berserk+",
+          "before": "Berserk",
+          "count": 1
+        }
+      ]
+    }
+  ],
+  "knowledge_impact": "experiment ledger and maintained current-research status; no production/default change",
+  "oracle_binary_sha256": "28e942c218cbaeef29f3a58a3301873d2fca012f6205379445e4e23ffef0ebe9",
+  "pinned_844_sha": "1322e0d97721d9ffe9e2e41dbc69d8a5acc07a01",
+  "source_artifacts": {
+    "public.jsonl": {
+      "compressed_sha256": "240e83ceb23b48cdc83360c8bec1135910fa900d71366356765dac506018a8d4",
+      "decompressed_sha256": "5728283e755b872eec5b801759dee309e22c13a786a6e2c951b0f6481e1af4cf",
+      "path": "docs/experiments/evidence/combat_infinity_mask_search_20261025/capture/11111.public.jsonl.gz"
+    },
+    "states.jsonl": {
+      "compressed_sha256": "9996e32cfc4698f091759d953a3c890daadf17316413148cc8fafb049bfdb469",
+      "decompressed_sha256": "4bc3909f82fa84c73adbc3e21c904badc5b5f2c836c01c0245753468dc67130f",
+      "path": "docs/experiments/evidence/combat_infinity_mask_search_20261025/capture/11111.states.jsonl.gz"
+    },
+    "trace.jsonl": {
+      "compressed_sha256": "b97cf46e2ed4421658052e324dc9ce3d9a98a7abb7cfdbd362a24f4e9af73344",
+      "decompressed_sha256": "6f0ee0c1389f42c0ade34d6fc701c286b7b72da298060b4573b5952f6e3eed47",
+      "path": "docs/experiments/evidence/combat_infinity_mask_search_20261025/capture/11111.trace.jsonl.gz"
+    }
+  },
+  "stop_monitor_tail": {
+    "additional_completed_combats": 0,
+    "ordinary_ooc_actions": 2,
+    "records": 5
+  },
+  "stopping_label": "TARGET_COMBAT_INCONCLUSIVE",
+  "total_node_visits": 21782,
+  "total_ordinary_roots": 66,
+  "total_supported_worlds": 264,
+  "training_negatives_created": false
+}
