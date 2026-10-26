@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# usage: run_unit.sh REPO RUN UNIT_OUT RUN_JSON -- one expert seed of the expert-replay ablation, both arms in sequence
+# usage: run_unit.sh REPO RUN UNIT_OUT RUN_ID -- one expert seed (RUN_ID.json in $RUN/expert_runs.tar) of the expert-replay ablation, both arms in sequence
 # (order rotated by the run id); always exits 0 (per-arm rc in the .done lines). The arms differ only in
 # STS_EXPERT_REPLAY_TYPES:
 #   X  all: the expert's logged out-of-combat decisions (path, rewards, campfires, shops, boss relics, events/Neow) are
@@ -11,11 +11,12 @@
 # explicit (STS_CALLING_BELL_CARD_RNG_FIX left at its default, on). 7 h timeout per arm (rc 124). ARMS_OVERRIDE
 # (smokes only) runs a subset.
 set -uo pipefail
-REPO=$1 RUN=$2 OUT=$3 RUN_JSON=$4
+REPO=$1 RUN=$2 OUT=$3 ID=$4
 [ -s "$RUN/student_sel.bin" ] || { echo "missing $RUN/student_sel.bin" >&2; exit 2; }
-[ -s "$RUN_JSON" ] || { echo "missing $RUN_JSON" >&2; exit 2; }
-ID=$(basename "$RUN_JSON" .json)
+[[ "$ID" =~ ^[0-9]+$ ]] || { echo "bad run id $ID" >&2; exit 2; }
 mkdir -p "$OUT"
+tar -xf "$RUN/expert_runs.tar" -C "$OUT" "./$ID.json" || { echo "run $ID not in expert_runs.tar" >&2; exit 2; }
+RUN_JSON=$OUT/$ID.json
 COMMON=("PATH=/usr/local/bin:/usr/bin:/bin" "HOME=$HOME" "STS_EXECUTABLE_GIT_SHA=$(git -C "$REPO" rev-parse HEAD)"
   OMP_NUM_THREADS=1 OMP_DYNAMIC=FALSE
   STS_COLLECT_KEYS=1 STS_FAIR=1 STS_STOP_AFTER_ACT=0 STS_REST_WIN=0

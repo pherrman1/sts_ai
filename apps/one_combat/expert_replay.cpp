@@ -185,15 +185,16 @@ private:
         if (!on("event")) return bot("event");
         const auto bonus = run.value("neow_bonus", std::string());
         const auto cost = run.value("neow_cost", std::string());
-        if (bonus == "THREE_ENEMY_KILL" || bonus == "TEN_PERCENT_HP_BONUS")
-            return stop(gc, "Neow mini blessing (not modeled)");
         int pick = -1;
         for (int i = 0; i < 4; ++i) {
             const auto &o = gc.info.neowRewards[i];
             // The log records a boss swap's cost as NONE.
             if (jname(o.r) == bonus && (o.r == Neow::Bonus::BOSS_RELIC || jname(o.d) == cost)) pick = i;
         }
-        if (pick < 0) return stop(gc, "Neow option not offered");
+        if (pick < 0)
+            // The two-option blessing after a short previous run is not modeled.
+            return stop(gc, bonus == "THREE_ENEMY_KILL" || bonus == "TEN_PERCENT_HP_BONUS"
+                                ? "Neow mini blessing (not modeled)" : "Neow option not offered");
         if (run.contains("neow_bonus_log") && run["neow_bonus_log"].is_object()) {
             const auto &l = run["neow_bonus_log"];
             for (const auto &[k, kind] : {std::pair<const char *, const char *>{"cardsRemoved", "remove"},

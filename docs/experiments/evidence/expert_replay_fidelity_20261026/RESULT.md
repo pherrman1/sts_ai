@@ -112,7 +112,7 @@ illegal or unaffordable action, log ends, Winged Boots path, Neow mini blessing,
 run and the production chain plays on. Unlogged picks (Bottled cards, Astrolabe, Match and Keep, old Neow
 sub-choices) go to the production chain without stopping. `STS_EXPERT_REPLAY_TYPES` selects the decision types
 (`all`, `none`, or a list of `path,reward,campfire,shop,bossrelic,event`); `none` is the bot alone on the same seed.
-`run_unit.sh` runs both arms per seed with today's A20 default stack. Smoke: [SMOKE.md](SMOKE.md).
+[`run_unit.sh`](../expert_replay_ab_20261027/run_unit.sh) runs both arms per seed with today's A20 default stack. Smoke: [SMOKE.md](SMOKE.md).
 
 ## Interpretation
 

@@ -1,6 +1,6 @@
 # Expert-replay smoke (2026-10-26)
 
-`run_unit.sh` on 4 expert seeds, both arms, 4 lanes on one 4-CPU cloud container, binary `b8b5268`, student_sel
+`run_unit.sh` (its smoke version took the run file path; the campaign version, now in `../expert_replay_ab_20261027/`, takes the run id) on 4 expert seeds, both arms, 4 lanes on one 4-CPU cloud container, binary `b8b5268`, student_sel
 `cf6bf7fb…`. All 8 games exited 0 and passed the banner checks (OOC learned stop, Act-4 CTM, heart1 loaded,
 `screens_a20_default=map_full_budget`, M0 leaf calibration, no value-head leaf). Seeds chosen to cover a fully
 reproduced won run, an old log without Neow sub-choices, and two expert deaths. A smoke, not a result: 4 seeds say
