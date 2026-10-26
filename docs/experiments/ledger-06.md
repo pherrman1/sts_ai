@@ -24548,3 +24548,31 @@ those cards; the audit shows deviations, not that they are mistakes. Follow-up: 
 a value-based rest-vs-upgrade decision is being scoped in its own thread (2026-10-26).
 Seeds: none (existing games only).
 **Knowledge impact:** none beyond this entry; no code or default change.
+
+## §690 — Boss-relic forks with real combats, Stage A: relic choice moves Heart kills a lot (τ ≈ 11 pp, reproducible; futility CONTINUE), but student_sel already picks the table's best relic at 74% of roots and a context-free table override loses (Heart −2.7 pp [−6.6, +1.2], Act 4 −5.5 pp [−9.4, −2.0] per source, descriptive); STOP before Stage B by Philipp's call (256 sources, 1,429 games, 2026-10-26)
+
+**Question:** issue #856 (experiment 3 of the post-#853 OOC direction review). At act-1/act-2 boss-relic roots of real
+A20 default games, if every option (three relics, skip) is played to the end with the production stack and the same run
+seed, does a per-relic table fitted on these forks pick better than student_sel's production pick?
+**Setup:** [PREREG](evidence/boss_relic_forks_20261025/PREREG.md). New research option `STS_OOC_FORCE_BOSS_RELIC=ACT:CHOICE`
+(default off): a fork replays the source seed with today's A20 stack (map-only OOC search ADR-0061, Act 4 strong
+ADR-0060) up to the root, takes the forced option, and plays on; `forks.py check` requires the fork's OOC decision trace to
+equal the source's row for row before the root. Plan sized by Philipp to 1,024 sources with a futility stop after 256
+(decision card 2026-10-25 09:48Z); Stage A go with 32 workers 09:49Z. Smoke PASS (rerun byte-identical); pre-launch and
+delta review PASS. Run commit `9ec4944c`, code `eb94f4e`, binary `e57de384…`; 32 cloud workers, interrupted at 217/256 by
+a usage limit (2026-10-25 14:42Z) and resumed 2026-10-26.
+**Result:** [RESULT-stage-a.md](evidence/boss_relic_forks_20261025/RESULT-stage-a.md). 256/256 units verified, 1,429
+games all rc 0, every fork valid; 391 roots (225 act 1, 166 act 2); 219.7 core-h. Heart kill at the roots: production
+pick 38.9%, untaken options 19.4%, skip 12.8% (Act 4 57.3 / 36.0 / 27.6%). Option CRN correlation 0.36. Relic spread
+τ̂ = 0.106 (Heart), 0.112 (Act 4); projected split-half r of the 1,024 design 0.885 → **futility CONTINUE**. Top relics
+against skip: Snecko Eye +45 pp, Pandora's Box +42, Coffee Dripper +30; bottom Black Blood +2, Velvet Choker +2,
+Ectoplasm +4 (SE ≈ 5-6). Descriptive, not the gate: the Stage B cross-fitted override computed on Stage A fires at 21% of
+roots and loses (Heart −2.7 pp [−6.6, +1.2], Act 4 −5.5 pp [−9.4, −2.0] per source); the production pick is the table's
+best option at 289/391 roots.
+**Interpretation:** boss relics matter far more than single cards (§684, τ = 0), and same-seed real-combat forks measure
+them reproducibly. **Inference:** student_sel's boss-relic choice is close to the best a context-free table can do, and
+where it departs from the table it is usually right (context: deck, HP). The per-relic table is not a teacher here.
+**Decision:** Philipp (2026-10-26 23:34Z, decision card): stop before Stage B; boss relics stay with student_sel. The
+forks remain as an unbiased referee set (unit tars on `/mnt/project-files/boss-relic-forks/stage-a`).
+Seeds: 111378000–111378255 used, smokes 111379980–111379984 used; 111378256–111379023 and 111379985–111379989 unused.
+**Knowledge impact:** `operations/environment-variables.md` (research option `STS_OOC_FORCE_BOSS_RELIC`).

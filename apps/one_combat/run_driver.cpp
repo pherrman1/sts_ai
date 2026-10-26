@@ -429,9 +429,48 @@ void beginRealOocChainRun(bool shopV) {
     t_tokCheckPending = g_oocStrategicTokCheck;
 }
 
+std::optional<ForcedBossRelic> parseForcedBossRelic(const char *value) {
+    if (!value || !*value) return std::nullopt;
+    const std::string text(value);
+    if (text.size() != 3 || (text[0] != '1' && text[0] != '2') || text[1] != ':' || text[2] < '0' || text[2] > '3')
+        throw std::runtime_error("STS_OOC_FORCE_BOSS_RELIC must be ACT:CHOICE with ACT 1 or 2 and CHOICE 0-3 (3 = skip)");
+    return ForcedBossRelic{text[0] - '0', text[2] - '0'};
+}
+
+namespace {
+const std::optional<ForcedBossRelic> &forcedBossRelic() {
+    static const auto forced = parseForcedBossRelic(std::getenv("STS_OOC_FORCE_BOSS_RELIC"));
+    return forced;
+}
+thread_local bool t_forcedBossRelicTaken = false;
+}
+
+int forcedBossRelicSelfTest() {
+    const auto check = [](bool ok, const char *what) {
+        if (!ok) throw std::runtime_error(std::string("forced boss relic selftest: ") + what);
+    };
+    check(!parseForcedBossRelic(nullptr) && !parseForcedBossRelic(""), "unset must be off");
+    const auto skip = parseForcedBossRelic("2:3");
+    check(skip && skip->act == 2 && skip->choice == 3, "2:3 parse");
+    for (const char *bad : {"3:0", "0:1", "1:4", "1-2", "1:", "1:01", "a:1"}) {
+        bool refused = false;
+        try { parseForcedBossRelic(bad); } catch (const std::runtime_error &) { refused = true; }
+        check(refused, bad);
+    }
+    std::cout << "forced boss relic selftest passed\n";
+    return 0;
+}
+
 const char *realOocChainStep(GameContext &gc, search::ScumSearchAgent2 &agent, bool restV, bool shopV,
                              const one_combat::PathHistory &path, std::uint64_t seed, std::uint64_t index,
                              one_combat::LiveOocMctsMetrics &mctsMetrics) {
+    if (const auto &forced = forcedBossRelic(); forced && gc.screenState == ScreenState::BOSS_RELIC_REWARDS
+            && gc.act == forced->act) {
+        if (t_forcedBossRelicTaken) throw std::runtime_error("STS_OOC_FORCE_BOSS_RELIC: second boss-relic root in the act");
+        t_forcedBossRelicTaken = true;
+        search::GameAction(forced->choice).execute(gc);
+        return "forced_boss_relic";
+    }
     if (const auto key = search::heartKeyAction(gc, g_collectKeys)) {
         key->execute(gc);
         return "heart_key";
@@ -492,6 +531,7 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
                                      " or STS_OOC_SIBLING_CAPTURE");
     }
     vDisconnect();
+    t_forcedBossRelicTaken = false;
     GameContext gc(CharacterClass::IRONCLAD, seed, asc);
     search::ScumSearchAgent2 agent;
     agent.simulationCountBase = sims;
@@ -616,6 +656,9 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
         floorProfile.finish(mctsMetrics, "abort", e.what());
         throw;
     }
+    // A fork whose replay never reached its boss-relic root is not a fork of the source game.
+    if (forcedBossRelic() && !t_forcedBossRelicTaken)
+        throw std::runtime_error("STS_OOC_FORCE_BOSS_RELIC: the run ended before the act's boss-relic root");
     floorProfile.finish(mctsMetrics, clearedStopActBoss ? "stop_act_victory"
         : gc.outcome == GameOutcome::PLAYER_VICTORY ? "victory"
         : gc.outcome == GameOutcome::PLAYER_LOSS ? "death" : "stopped");
