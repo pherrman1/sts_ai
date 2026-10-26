@@ -1,0 +1,74 @@
+{
+ "1-BOSS": {
+  "bot_n": 887,
+  "bot_mean": 19.3,
+  "exp_n": 601,
+  "exp_mean": 11.3
+ },
+ "1-ELITE": {
+  "bot_n": 2462,
+  "bot_mean": 13.0,
+  "exp_n": 1692,
+  "exp_mean": 9.3
+ },
+ "1-NORMAL": {
+  "bot_n": 6069,
+  "bot_mean": 0.2,
+  "exp_n": 3086,
+  "exp_mean": 0.6
+ },
+ "1-OTHER": {
+  "bot_n": 116,
+  "bot_mean": 9.4,
+  "exp_n": 0,
+  "exp_mean": null
+ },
+ "2-BOSS": {
+  "bot_n": 661,
+  "bot_mean": 23.6,
+  "exp_n": 518,
+  "exp_mean": 11.2
+ },
+ "2-ELITE": {
+  "bot_n": 1706,
+  "bot_mean": 10.1,
+  "exp_n": 1341,
+  "exp_mean": 5.3
+ },
+ "2-NORMAL": {
+  "bot_n": 4356,
+  "bot_mean": 2.6,
+  "exp_n": 2962,
+  "exp_mean": 1.7
+ },
+ "2-OTHER": {
+  "bot_n": 185,
+  "bot_mean": 6.9,
+  "exp_n": 0,
+  "exp_mean": null
+ },
+ "3-BOSS": {
+  "bot_n": 958,
+  "bot_mean": 13.0,
+  "exp_n": 959,
+  "exp_mean": 9.0
+ },
+ "3-ELITE": {
+  "bot_n": 1543,
+  "bot_mean": 6.1,
+  "exp_n": 1348,
+  "exp_mean": 1.9
+ },
+ "3-NORMAL": {
+  "bot_n": 3265,
+  "bot_mean": 0.1,
+  "exp_n": 2638,
+  "exp_mean": -0.9
+ },
+ "3-OTHER": {
+  "bot_n": 361,
+  "bot_mean": 3.3,
+  "exp_n": 0,
+  "exp_mean": null
+ }
+}
