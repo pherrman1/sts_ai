@@ -164,7 +164,7 @@ Each idea needs its own pre-registration, the seed-run guard and explicit author
    expert gap into OOC choices vs combat and ranks decision types by leverage. First measure how often the
    simulator reproduces the logged offers. Unverified: the exact `.run` fields and replay fidelity. Maps can be
    regenerated from seeds (arXiv 2504.03918 did it with sts_map_oracle).
-4. **Elite dose at map roots, only if audit 2 shows a deficit.** Run an exploratory slope of the Heart-kill
+4. **Elite dose at map roots, only if audit 2 shows a deficit.** *Stopped: no deficit (§686, §688).* Run an exploratory slope of the Heart-kill
    difference on the elite-count difference over §685's first-divergence pairs (its TEST split is consumed, so this
    is exploratory only). Then pre-register a paired A/B of an HP-gated tilt toward elite-reaching children at map
    roots, the only screens where search pays (§683). Falsified if the bot already matches the expert dose or the
@@ -267,8 +267,8 @@ SpireBench and the LLM results date from Sept-Oct 2026 and may change.
 
 ## Open questions
 
-- Does the bot take fewer elites than experts, and does more elite exposure cause better Act 2-4 outcomes for a
-  Silver-strength fighter?
+- ~~Does the bot take fewer elites than experts?~~ Answered: no (§686, §688). Whether more elite exposure causes
+  better Act 2-4 outcomes for a Silver-strength fighter stays open.
 - How much of the 17.6% → ~24% jump do the key rules explain?
 - Can expert `.run` files be replayed faithfully enough to split the expert gap into OOC and combat parts?
 - How much variance would AIVAT-style chance corrections remove from a paired A20 A/B?
