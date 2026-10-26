@@ -59,6 +59,7 @@ Key facts:
 ## Relationships
 
 - [encounter-marginalization.md](encounter-marginalization.md) — M0/M1 are alternative strategic label sources
+- [external-evidence-and-ideas.md](external-evidence-and-ideas.md) — external benchmarks, expert play and ranked candidates for the A20 plateau
 - [leaf-evaluation.md](../combat-search/leaf-evaluation.md) — combat VNet interacts with gate decisions
 - [searcher3.md](../combat-search/searcher3.md) — gate stack tested under both S2 and S3
 
