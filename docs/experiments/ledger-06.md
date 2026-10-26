@@ -24462,31 +24462,6 @@ consumed.
 Seeds: none (existing games only).
 **Knowledge impact:** none beyond this entry; no code or default change.
 
-## §688 — Bot runs vs expert play (Baalorlord, 676 A20 Ironclad runs): elite dose matches; the bot rests 3× as often at campfires, skips card rewards 2.4× less (+6 cards) and loses 1.4–3× more HP per elite/boss fight; offline, no seeds (2026-10-26)
-
-**Question:** experiment 2 of the 2026-10-26 deep-research report: in game terms, where does the A20 bot's play
-deviate from an expert's? Thread "Audit bot runs against expert play" (Philipp asked for one thread per experiment).
-**Data:** [RESULT](evidence/expert_play_audit_20261026/RESULT.md). Bot: §683's 1,024 seeds × MAP/D/OFF (run commit
-`772df240`; MAP = today's map-only default, pre-§682 Act 4). Expert: all 676 Ironclad A20 runs of Baalorlord's
-profile 0, raw `.run` files from baalorlord.tv (ids and hashes committed, raw files not).
-**Result:** Heart 24.7% vs 62.9%; deaths per act reached 13/26/33/43% vs 11/14/9/10%. Elites per cleared act
-2.50/2.20/2.66 vs 2.58/2.42/2.68, winners median 8 vs 8 (acts 1-3). Campfires (acts 1-3) smith/rest 46/40% vs
-72/13%; rest share at 40-60% HP 75% vs 13%, at 60-80% 42% vs 5%, while the bot arrives healthier (median 0.72 vs
-0.68 of max). Card reward skip 12% vs 30% (acts 1/2/3 6/15/17% vs 15/34/41%); winners' final deck 40 vs 34 cards.
-Removals per winning run 2.5 vs 2.6, mostly Strikes in both. Sapphire key taken in act 3 by 37% of bot winners vs
-66%. Net HP per won elite fight 13.0/10.1/6.1 vs 9.3/5.3/1.9, per boss 19.3/23.6/13.0 vs 11.3/11.2/9.0. Bot card
-picks most above the expert: Metallicize, Havoc, Reaper, Clothesline; most below: Whirlwind (1.6 vs 34%), Rage,
-Double Tap, Entrench, Bloodletting, Burning Pact, True Grit. MAP, D and OFF agree within ~1 pp on every row.
-Report checks: 63% kills, median 8 elites, skip ~28-30%, ~34 cards, Strikes out / Defends kept reproduced; "smith
-68% / rest 18%" not reproduced (72/13); "never fewer than 2 Act-1 elites" not reproduced (9 winners fought one).
-**Interpretation:** the elite-deficit premise of the report's experiment 4 is refuted for this stack. The visible
-OOC deviations (rest over smith, few skips, card preferences) are identical with and without search, so they come
-from the student_sel/heart1 prior. **Inference:** part of the extra resting pays for the extra HP the bot loses in
-elite and boss fights (confounded by deck strength), and some card preferences may reflect how our combat plays
-those cards; the audit shows deviations, not that they are mistakes. Candidate follow-ups (Philipp decides): a
-paired rule ablation "smith instead of rest at ≥ 40% HP" and a card-skip threshold, each as one A/B.
-Seeds: none (existing games only).
-**Knowledge impact:** none beyond this entry; no code or default change.
 ## §686 — Elite routes at map roots (experiment 4 of the 2026-10-26 research report): no elite deficit; the bot already takes elite-heavier children 82–88% at HP ≥ 60%, and same-seed first-divergence pairs show +1.6 pp kills [−1.2, +4.4] for the elite-heavier child; HP-gated elite tilt STOP before any run (offline, 8,192 games, 2026-10-26)
 
 **Question:** the deep-research report (Philipp, 2026-10-26) proposed an HP-gated tilt toward elite routes at map
@@ -24528,3 +24503,29 @@ run, no default change. Inference: the observational slope is confounded by deck
 likely smaller.
 Seeds: none (existing games only).
 **Knowledge impact:** none beyond this entry.
+
+## §688 — Bot runs vs expert play (Baalorlord, 676 A20 Ironclad runs): elite dose matches; the bot rests 3× as often at campfires, skips card rewards 2.4× less (+6 cards) and loses 1.4–3× more HP per elite/boss fight; offline, no seeds (2026-10-26)
+
+**Question:** experiment 2 of the 2026-10-26 deep-research report: in game terms, where does the A20 bot's play
+deviate from an expert's? Thread "Audit bot runs against expert play" (Philipp asked for one thread per experiment).
+**Data:** [RESULT](evidence/expert_play_audit_20261026/RESULT.md). Bot: §683's 1,024 seeds × MAP/D/OFF (run commit
+`772df240`; MAP = today's map-only default, pre-§682 Act 4). Expert: all 676 Ironclad A20 runs of Baalorlord's
+profile 0, raw `.run` files from baalorlord.tv (ids and hashes committed, raw files not).
+**Result:** Heart 24.7% vs 62.9%; deaths per act reached 13/26/33/43% vs 11/14/9/10%. Elites per cleared act
+2.50/2.20/2.66 vs 2.58/2.42/2.68, winners median 8 vs 8 (acts 1-3). Campfires (acts 1-3) smith/rest 46/40% vs
+72/13%; rest share at 40-60% HP 75% vs 13%, at 60-80% 42% vs 5%, while the bot arrives healthier (median 0.72 vs
+0.68 of max). Card reward skip 12% vs 30% (acts 1/2/3 6/15/17% vs 15/34/41%); winners' final deck 40 vs 34 cards.
+Removals per winning run 2.5 vs 2.6, mostly Strikes in both. Sapphire key taken in act 3 by 37% of bot winners vs
+66%. Net HP per won elite fight 13.0/10.1/6.1 vs 9.3/5.3/1.9, per boss 19.3/23.6/13.0 vs 11.3/11.2/9.0. Bot card
+picks most above the expert: Metallicize, Havoc, Reaper, Clothesline; most below: Whirlwind (1.6 vs 34%), Rage,
+Double Tap, Entrench, Bloodletting, Burning Pact, True Grit. MAP, D and OFF agree within ~1 pp on every row.
+Report checks: 63% kills, median 8 elites, skip ~28-30%, ~34 cards, Strikes out / Defends kept reproduced; "smith
+68% / rest 18%" not reproduced (72/13); "never fewer than 2 Act-1 elites" not reproduced (9 winners fought one).
+**Interpretation:** the elite-deficit premise of the report's experiment 4 is refuted for this stack. The visible
+OOC deviations (rest over smith, few skips, card preferences) are identical with and without search, so they come
+from the student_sel/heart1 prior. **Inference:** part of the extra resting pays for the extra HP the bot loses in
+elite and boss fights (confounded by deck strength), and some card preferences may reflect how our combat plays
+those cards; the audit shows deviations, not that they are mistakes. Follow-up: Philipp wants no fixed campfire rule;
+a value-based rest-vs-upgrade decision is being scoped in its own thread (2026-10-26).
+Seeds: none (existing games only).
+**Knowledge impact:** none beyond this entry; no code or default change.
