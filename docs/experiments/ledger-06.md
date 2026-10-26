@@ -24529,3 +24529,24 @@ those cards; the audit shows deviations, not that they are mistakes. Follow-up: 
 a value-based rest-vs-upgrade decision is being scoped in its own thread (2026-10-26).
 Seeds: none (existing games only).
 **Knowledge impact:** none beyond this entry; no code or default change.
+
+## §TBD — Fight-luck control variates for paired A/Bs: a CTM-only baseline is biased (shifts up to 3.2 pp); fresh fight replays are unbiased and project 0.71x paired SD (~2x seeds) at m = 4; new `one_combat fightreplay` reproduces 415/415 recorded fights; offline, no seeds (2026-10-26)
+
+**Question:** experiment 6 of the 2026-10-26 deep-research report (thread "Shrink A/B variance with AIVAT"): how much
+paired-A/B variance can AIVAT-style corrections at fights remove, and what keeps them unbiased?
+**Data:** [RESULT](evidence/aivat_fight_replay_20261026/RESULT.md). The unit tars of §676 (512 × 2), §661 (1,024 × 4)
+and §683 (1,024 × 3), six paired comparisons; V = P(Heart kill | post-fight state) GBM cross-fitted by campaign.
+**Result:** raw paired SD 0.39-0.44 (unpaired ~0.60). With the default A20 CTM as the expected-outcome baseline, all
+fights corrected: SD 0.62x [0.56, 0.66], but the point estimates move -2.0 to +3.2 pp and two shifts exclude 0
+(§661 S-A -1.37 -> +1.39; §683 D-OFF 0.00 -> +3.18 [+1.43, +4.95]): biased. Unbiased version (m fresh replays per
+fight, beta optimal), projected from the CTM's conditional variance: all fights 0.85/0.78/0.71/0.66x at m = 1/2/4/8,
+bosses + Act 4 0.73x and the Heart alone 0.80x at m = 4. Fight HP/death luck is ~60-65% of the paired variance.
+New `one_combat fightreplay` (replicate 0 = identity gate) + `tools/fight_replay_rows.py` + `tools/aivat_estimate.py`:
+415 of 415 recorded §676 fights (18 runs) reproduced exactly on main with the campaign's env
+(`STS_SILVER_ACT4_STRONG=0`); real combat costs ~86 CPU-s per run under that config, ~70% in bosses.
+**Interpretation:** a model-only luck baseline can manufacture a significant result and must not be a primary
+metric; fight replays buy about 2x effective seeds (1,024-seed detectable effect ~3.6 -> ~2.6 pp), not enough
+alone for 1 pp. Next: post-hoc replay of the §676 guard (m = 4, all fights) to measure the projected 0.71x, which
+needs Philipp's authorization and worker count.
+Seeds: none (existing games only; replays draw battle seeds from a SEED_BASE hash, not from the 111 blocks).
+**Knowledge impact:** new research-only mode and tools; no default or play change.
