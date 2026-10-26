@@ -24487,3 +24487,44 @@ those cards; the audit shows deviations, not that they are mistakes. Candidate f
 paired rule ablation "smith instead of rest at ≥ 40% HP" and a card-skip threshold, each as one A/B.
 Seeds: none (existing games only).
 **Knowledge impact:** none beyond this entry; no code or default change.
+## §686 — Elite routes at map roots (experiment 4 of the 2026-10-26 research report): no elite deficit; the bot already takes elite-heavier children 82–88% at HP ≥ 60%, and same-seed first-divergence pairs show +1.6 pp kills [−1.2, +4.4] for the elite-heavier child; HP-gated elite tilt STOP before any run (offline, 8,192 games, 2026-10-26)
+
+**Question:** the deep-research report (Philipp, 2026-10-26) proposed an HP-gated tilt toward elite routes at map
+roots, conditional on the expert audit (#865) finding an elite deficit. Do existing games show a deficit, and is the
+marginal declined elite worth enough to test?
+**Setup:** existing records only: §683 (1,024 seeds × D/MAP/OFF), §661 (1,024 × A/M/S/MS), §676 (512 × A/C).
+Map graphs from state records; a child's elite potential = max elites on any path to the act's last row. Scripts in
+[evidence](evidence/elite_routes_maproots_20261026/RESULT.md).
+**Result:** elites fought per cleared act (§683) 2.50 / 2.22 / 2.70; Heart killers (1,956 games, three
+campaigns) 2.63 / 2.40 / 2.74, median 8 over acts 1–3 (Baalorlord winners 8). Take rate of the elite-heavier child at map roots, HP 80–99 / 60–79 / 40–59 / 20–39%:
+act 1 0.87 / 0.82 / 0.73 / 0.55, act 2 0.84 / 0.70 / 0.50 / 0.26; at HP ≥ 40% MAP, D and OFF agree within ~0.05
+(the prior's choice); below 40% they spread more (act 3, 20–39%: 0.38 / 0.28 / 0.46). Seed-fixed maps: each extra reachable Act-1 elite gives +0.51 elites fought and +3.8 pp kills [+1.4, +6.2]
+pooled (§683 alone +7.1, §661 +2.8, §676 −0.8; Act-1 clear −0.9 pp). First-divergence pairs at map roots whose
+children differ in elite potential (1,038): elite-heavier minus other kill +1.6 pp [−1.2, +4.4], Act 4 +1.9 pp
+[−1.3, +5.0]; act 1 HP ≥ 60% (594) +1.3 pp [−2.2, +4.9].
+**Interpretation:** no elite deficit, and the elites the bot declines are worth at most ~1–2 pp per flipped root; a
+tilt flipping ~0.4 roots per game per act is far below a 1,024-seed paired A/B's MDE (~3.5 pp). Experiment 4 stops.
+Inference: Act-1 elite opportunity matters, but the prior already uses it. Weak, post-hoc lead only: act-2 mid-HP
+declines (Act 4 +9.1 pp [+2.1, +16.2] in 241 pairs). Divergence pairs are not randomized.
+Seeds: none (existing games only).
+**Knowledge impact:** none beyond this entry; no code or default change.
+
+## §687 — Campfire choices vs HP before the act-3 bosses and the Heart: the policy rests when it can; the forced pre-boss Ruby Recall at < 60% HP costs at most ≈ 0.65 pp Heart kills, ≤ 0.32 pp recoverable by an earlier Recall; no run (offline, 4,096 games, 2026-10-26)
+
+**Question (deep-research experiment 8, Philipp 2026-10-26):** does the bot smith or Recall at low HP before the
+act-3 bosses or the Heart, and what does the Ruby rule's campfire cost?
+**Design:** [RESULT](evidence/campfire_hp_audit_20261026/RESULT.md). Every campfire of §683 (D/MAP/OFF) and §676
+(A/C), all under `STS_KEY_RUBY=policy`; choice from the MCTS record or the next state; outcome from the CTM rows.
+**Result:** without Coffee Dripper and with HP < 60% in acts 2–3 the policy rests 3,641 of 3,669 times; low-HP smiths are
+Coffee Dripper runs (444 vs 5). Act-4 campfire smiths with ≥ 10 HP missing in 3.8% of arrivals; the Heart is
+entered 21.6 HP below max ≈ the S&S damage. The forced Ruby takes the pre-boss campfire in 60% of the runs that
+reach it; below 60% HP (no Dripper) in 4.0% of runs, act-3 boss death 72% vs 50% for runs that rested there.
+Observational logistic on boss-1 entry HP: a rest instead of that Recall would be +0.65 pp Heart kills over all
+runs; only half of those runs passed an earlier act-3 campfire at ≥ 60% HP, so `STS_KEY_RUBY=hp` can recover at
+most ≈ +0.32 pp before the cost of the earlier campfire action.
+**Interpretation:** campfires do not explain low Heart entry HP (S&S does); the only campfire lever is Ruby
+timing, and its ceiling is below what a paired A/B can resolve (MDE ≈ 2 pp on the 341 diverging MAP seeds). No
+run, no default change. Inference: the observational slope is confounded by deck strength, so the true value is
+likely smaller.
+Seeds: none (existing games only).
+**Knowledge impact:** none beyond this entry.
