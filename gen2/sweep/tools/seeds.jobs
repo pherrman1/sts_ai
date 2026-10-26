@@ -1,2 +1,0 @@
-S_d64L2_lr1e-4_a0.3_v0.3_s1 --dim 64 --layers 2 --mult 4 --heads 4 --lr 1e-4 --anchor-weight 0.3 --value-weight 0.3 --seed 1 --init /home/philippherrmann/h1distill/E_sel/E_d64_sel_xin/student.pt
-S_d64L2_lr1e-4_a0.3_v0.3_s2 --dim 64 --layers 2 --mult 4 --heads 4 --lr 1e-4 --anchor-weight 0.3 --value-weight 0.3 --seed 2 --init /home/philippherrmann/h1distill/E_sel/E_d64_sel_xin/student.pt

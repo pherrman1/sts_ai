@@ -1,6 +1,0 @@
-curHP +5                   n= 2440  mean dP(win) +0.72pp  median +0.55pp  wrong-sign 23.4%  worst -5.31pp
-curHP -5                   n= 3000  mean dP(win) -0.87pp  median -0.69pp  wrong-sign 20.5%  worst +6.65pp
-maxHP +5 (and curHP +5)    n= 3000  mean dP(win) -0.50pp  median -0.71pp  wrong-sign 65.7%  worst -10.15pp
-maxHP +5 only              n= 3000  mean dP(win) -1.35pp  median -1.46pp  wrong-sign 80.2%  worst -8.89pp
-gold +50                   n= 3000  mean dP(win) +1.27pp  median +0.73pp  wrong-sign 26.3%  worst -9.59pp
-gold -50                   n= 2946  mean dP(win) -0.97pp  median -0.50pp  wrong-sign 29.8%  worst +10.98pp
