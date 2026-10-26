@@ -18,7 +18,7 @@ applied before continuation or future-state scoring.
 **Known-RNG** — The historical Searcher2 non-fair regime, where search started
 from the concrete battle RNG. It no longer exists in the executable
 (ADR-0020), except as the research-only `act4replay` arm
-`STS_ACT4REPLAY_COMBAT=known` (ADR-0062). Historical non-fair Searcher3 results sampled particles and must
+`STS_ACT4REPLAY_COMBAT=known` (ADR-TBD). Historical non-fair Searcher3 results sampled particles and must
 not be labelled known-RNG without qualification.
 
 **Native OOC** — In-process out-of-combat inference, contrasted with inference

@@ -61,7 +61,7 @@ its private representation and owns its chance randomness from a stable
 per-battle seed (see [combat-search.md](../architecture/combat-search.md)); it
 never reads the live battle's hidden RNG streams. Searcher2 (partial
 determinization) and Searcher3 (particles) were removed. The one exception is the
-research-only `act4replay` arm `STS_ACT4REPLAY_COMBAT=known` (ADR-0062):
+research-only `act4replay` arm `STS_ACT4REPLAY_COMBAT=known` (ADR-TBD):
 `KnownRngSearcher` searches copies of the real battle, RNG streams included, so
 it sees the true draw order and rolls. Its rows carry `regime=known_rng` and are
 a separate series.

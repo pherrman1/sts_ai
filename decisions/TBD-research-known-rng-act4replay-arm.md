@@ -1,4 +1,4 @@
-# ADR-0062: A research-only known-RNG combat arm in `act4replay`
+# ADR-TBD: A research-only known-RNG combat arm in `act4replay`
 
 Date: 2026-10-26
 Status: accepted

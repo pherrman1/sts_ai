@@ -988,7 +988,7 @@ void silverFocusEvalGen(int nSeeds, int asc, const std::string &outPrefix, long 
 // approximation shared by all arms). "Strike"/"Defend" are Ironclad's (STRIKE_RED/DEFEND_RED). Copy r of every
 // arm shares the battle seed (SEED_OFFSET + state * REPLICATES + r) and the planner seed, so arms
 // differ only in the budget. One CSV row per (state, replicate, arm). STS_ACT4REPLAY_COMBAT=known swaps Silver for the
-// research-only known-RNG searcher (ADR-0062); the last column records the regime.
+// research-only known-RNG searcher (ADR-TBD); the last column records the regime.
 namespace {
 
 GameContext act4ReplayContext(const nlohmann::json &s, std::uint64_t seed, MonsterEncounter enc) {

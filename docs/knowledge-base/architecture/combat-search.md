@@ -72,7 +72,7 @@ policy-prior/V_combat/PVNet leaf loading, and the `combatgen`, `fightgen`,
 modes (ADR-0020). The non-fair search path survives only as the research-only
 `KnownRngSearcher` (`src/sim/search/KnownRngSearcher.cpp`), selected by
 `act4replay` with `STS_ACT4REPLAY_COMBAT=known` to measure P300-style
-known-RNG stage values (ADR-0062); no play path can reach it.
+known-RNG stage values (ADR-TBD); no play path can reach it.
 
 The vendored Silver model (`third_party/silver_lightspeed`, its bridge and
 `SilverLiveBackend`) was removed with every research tool that needed it
