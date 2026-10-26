@@ -24470,10 +24470,10 @@ marginal declined elite worth enough to test?
 **Setup:** existing records only: §683 (1,024 seeds × D/MAP/OFF), §661 (1,024 × A/M/S/MS), §676 (512 × A/C).
 Map graphs from state records; a child's elite potential = max elites on any path to the act's last row. Scripts in
 [evidence](evidence/elite_routes_maproots_20261026/RESULT.md).
-**Result:** elites fought per cleared act (§683) 2.50 / 2.22 / 2.70; Heart killers median 8 over acts 1–3
-(Baalorlord winners 8). Take rate of the elite-heavier child at map roots, HP 80–99 / 60–79 / 40–59 / 20–39%:
-act 1 0.87 / 0.82 / 0.73 / 0.55, act 2 0.84 / 0.70 / 0.50 / 0.26; MAP, D and OFF agree within ~0.05 (the prior's
-choice). Seed-fixed maps: each extra reachable Act-1 elite gives +0.51 elites fought and +3.8 pp kills [+1.4, +6.2]
+**Result:** elites fought per cleared act (§683) 2.50 / 2.22 / 2.70; Heart killers (1,956 games, three
+campaigns) 2.63 / 2.40 / 2.74, median 8 over acts 1–3 (Baalorlord winners 8). Take rate of the elite-heavier child at map roots, HP 80–99 / 60–79 / 40–59 / 20–39%:
+act 1 0.87 / 0.82 / 0.73 / 0.55, act 2 0.84 / 0.70 / 0.50 / 0.26; at HP ≥ 40% MAP, D and OFF agree within ~0.05
+(the prior's choice); below 40% they spread more (act 3, 20–39%: 0.38 / 0.28 / 0.46). Seed-fixed maps: each extra reachable Act-1 elite gives +0.51 elites fought and +3.8 pp kills [+1.4, +6.2]
 pooled (§683 alone +7.1, §661 +2.8, §676 −0.8; Act-1 clear −0.9 pp). First-divergence pairs at map roots whose
 children differ in elite potential (1,038): elite-heavier minus other kill +1.6 pp [−1.2, +4.4], Act 4 +1.9 pp
 [−1.4, +5.2]; act 1 HP ≥ 60% (594) +1.3 pp [−2.2, +5.1].

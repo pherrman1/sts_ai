@@ -13,8 +13,9 @@ first-divergence pairs). Run with `python3 -I`; `ELITE_DIR` holds the extracted 
 
 ## 1. Elite dose: no deficit
 - Elites fought per act among games that clear the act (§683, all arms): 2.50 / 2.22 / 2.70; median 3 / 2 / 3.
-- Heart killers (n = 731 over the three campaigns): 2.69 / 2.45 / 2.80, median 8 over acts 1-3; Act-4 arrivals
-  median 8 (mean 7.7). Baalorlord's winning runs: median 8, 3 in Act 1. Only 4.9% of bot winners fought <= 1 Act-1 elite.
+- Heart killers pooled over the three campaigns (n = 1,956 games): 2.63 / 2.40 / 2.74, median 8 over acts 1-3
+  (§683 alone, n = 731: 2.69 / 2.45 / 2.80); §683 Act-4 arrivals
+  median 8 (mean 7.7). Baalorlord's winning runs: median 8, 3 in Act 1. Only 5.0% of bot winners (pooled) fought <= 1 Act-1 elite.
 
 ## 2. The bot already takes elite-heavy routes when healthy
 Map roots where one child has more elite potential than another (§683): share that takes the elite-heavier child.
@@ -26,8 +27,10 @@ Map roots where one child has more elite potential than another (§683): share t
 | 40-59% | 0.73 | 0.50 | 0.60 |
 | 20-39% | 0.55 | 0.26 | 0.38 |
 
-MAP, D and OFF (student_sel alone) agree within ~0.05: the choice is the prior's (take rate ~ prior mass of the
-elite child), and search Q leans the same way (Q gap positive above 60% HP, negative below). An HP-gated tilt
+At HP >= 40%, MAP, D and OFF (student_sel alone) agree within ~0.05: the choice is the prior's (take rate ~ prior
+mass of the elite child). Below 40% the arms spread more (act 3, 20-39% HP: MAP 0.38 / D 0.28 / OFF 0.46; small n).
+Search Q leans the same way: the Q gap of the elite-heavier child is positive from 40-59% HP in acts 1 and 3 and
+from 60% in act 2, negative below. An HP-gated tilt
 would flip only ~0.4 declined roots per game per act at HP >= 60%.
 
 ## 3. Natural experiment: maps with more reachable Act-1 elites (seed-determined, exogenous to play)

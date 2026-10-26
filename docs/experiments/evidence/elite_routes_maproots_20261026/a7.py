@@ -44,7 +44,7 @@ if __name__=='__main__':
     root=os.path.join(os.environ.get('ELITE_DIR', '.'), f'u{ds}/out/units')
     dirs=[os.path.join(root,s) for s in sorted(os.listdir(root)) if s.isdigit()]
     with Pool(4) as p:
-      for o in p.imap_unordered(unit,dirs,chunksize=8):
+      for o in p.imap(unit,dirs,chunksize=8):
         for x in o: x['ds']=ds; res.append(x)
   pickle.dump(res,open(os.path.join(os.environ.get('ELITE_DIR', '.'), 'divpairs.pkl'),'wb'))
   print(len(res))
