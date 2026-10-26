@@ -83,6 +83,21 @@ def spearman(x, y):
     den = math.sqrt(sum((a - mx) ** 2 for a in rx) * sum((b - my) ** 2 for b in ry))
     return num / den if den else float('nan')
 
+def spearman_ci(both, kind, reps=2000):
+    """Percentile bootstrap over source seeds (sites of one game move together)."""
+    import random
+    if len(both) < 3: return None
+    rng = random.Random(20261026)
+    seeds = sorted({s['seed'] for s in both})
+    by = {k: [s for s in both if s['seed'] == k] for k in seeds}
+    vals = []
+    for _ in range(reps):
+        sample = [s for k in (rng.choice(seeds) for _ in seeds) for s in by[k]]
+        r = spearman([s[kind + 'Diff'] for s in sample], [s['hp'] / s['maxHp'] for s in sample])
+        if r == r: vals.append(r)
+    vals.sort()
+    return [round(vals[int(.025 * len(vals))], 3), round(vals[int(.975 * len(vals)) - 1], 3)] if vals else None
+
 def main(out, dirs):
     sites, errors = [], 0
     for d in dirs:
@@ -115,6 +130,7 @@ def main(out, dirs):
             'meanAbsDiff': round(mean(abs(s[kind + 'Diff']) for s in both), 4) if both else None,
             'medianSe': round(sorted(s[kind + 'Se'] for s in both)[len(both) // 2], 4) if both else None,
             'b_spearmanDiffVsHpFrac': round(spearman([s[kind + 'Diff'] for s in both], hpf), 3) if len(both) > 2 else None,
+            'b_spearmanCi95': spearman_ci(both, kind),
             'c_disagree': round(sum(s[kind + 'Best'] != s['played'] for s in dis) / len(dis), 3) if dis else None,
             'byHpBand': bands}
     json.dump({'report': report, 'sites': sites}, open(out, 'w'), indent=1)
