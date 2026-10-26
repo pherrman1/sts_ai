@@ -42,6 +42,11 @@ extern thread_local std::function<void(const sts::GameContext &, const one_comba
 // "chain", "heart_key", ...). While set, the driver arms
 // one_combat::armOocPolicyTarget before the OOC MCTS step.
 extern thread_local std::function<void(std::uint64_t, const char *)> t_realOocDecisionObserver;
+// Research-only (expertreplay): when set, runFullRunOOC offers each real
+// out-of-combat step to it first. It either acts on gc and returns the handler
+// name for the decision trace, or returns nullptr without touching gc and the
+// production chain acts. Unset everywhere else.
+extern thread_local std::function<const char *(sts::GameContext &)> t_oocDecisionOverride;
 // Default-off research observation of each real combat: called after exitBattle
 // with the context copied just before Silver initialized the battle, the ended
 // battle, the number of RAW persistent-exit callbacks and the first one's record

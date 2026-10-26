@@ -19,7 +19,7 @@
 
 #include "nlohmann/json.hpp"
 
-#include "constants/SaveFileMappings.h"
+#include "expert_run_log.h"
 #include "game/Game.h"
 #include "game/GameContext.h"
 #include "game/Map.h"
@@ -33,21 +33,9 @@ using RAT = search::GameAction::RewardsActionType;
 
 namespace {
 
-template <typename E> std::string jname(E e) {
-    json j = e;
-    return j.is_string() ? j.get<std::string>() : std::string("?");
-}
-
-std::string cardName(const Card &c) {
-    std::string s = jname(c.getId());
-    if (c.getUpgraded() > 0) s += "+" + std::to_string(c.getUpgraded());
-    return s;
-}
-
-std::string baseName(const std::string &s) {
-    auto p = s.find('+');
-    return p == std::string::npos ? s : s.substr(0, p);
-}
+using expert::baseName;
+using expert::cardName;
+using expert::jname;
 
 struct Tally {
     int match = 0, mismatch = 0, firstMismatchFloor = -1;
@@ -64,43 +52,21 @@ struct Tally {
     }
 };
 
-struct Replayer {
-    json run;
+struct Replayer : expert::RunLog {
     GameContext gc;
     std::map<std::string, Tally> t;
     json notes = json::array();
     int firstGuessFloor = -1;     // first floor where a decision could not be replayed exactly
     int lastFloor = 0;
 
-    // per-floor log indices
-    std::map<int, std::vector<json>> cardChoices, relicsObtained, potionsObtained, events, campfire;
-    std::map<int, std::vector<std::string>> purchases, purges;
-    std::vector<json> bossRelics;
-    std::map<int, json> shopContents;
-    int greenKeyFloor = -1, blueKeyFloor = -1;
     std::vector<int> pathX[3];
     std::vector<std::string> pendingSelect;   // card names to pick on the next select screens
     std::vector<int> pendingEventIdx;
     int bossRelicIdx = 0;
     int unloggedOffers = 0;
 
-    Replayer(const json &r, std::uint64_t seed) : run(r), gc(CharacterClass::IRONCLAD, seed, 20) {
+    Replayer(const json &r, std::uint64_t seed) : RunLog(r), gc(CharacterClass::IRONCLAD, seed, 20) {
         gc.skipBattles = true;
-        for (const auto &c : run["card_choices"]) cardChoices[c["floor"].get<int>()].push_back(c);
-        for (const auto &c : run["relics_obtained"]) relicsObtained[c["floor"].get<int>()].push_back(c);
-        for (const auto &c : run.value("potions_obtained", json::array())) potionsObtained[c["floor"].get<int>()].push_back(c);
-        for (const auto &c : run["event_choices"]) events[c["floor"].get<int>()].push_back(c);
-        for (const auto &c : run["campfire_choices"]) campfire[c["floor"].get<int>()].push_back(c);
-        const auto &ip = run["items_purchased"]; const auto &ipf = run["item_purchase_floors"];
-        for (size_t i = 0; i < ip.size() && i < ipf.size(); ++i) purchases[ipf[i].get<int>()].push_back(ip[i]);
-        const auto &pu = run.value("items_purged", json::array()); const auto &puf = run.value("items_purged_floors", json::array());
-        for (size_t i = 0; i < pu.size() && i < puf.size(); ++i) purges[puf[i].get<int>()].push_back(pu[i]);
-        for (const auto &b : run["boss_relics"]) bossRelics.push_back(b);
-        for (const auto &s : run.value("shop_contents", json::array())) shopContents[s["floor"].get<int>()] = s;
-        if (run.contains("green_key_taken_log") && run["green_key_taken_log"].is_number())
-            greenKeyFloor = run["green_key_taken_log"].get<int>();
-        if (run.contains("blue_key_relic_skipped_log") && run["blue_key_relic_skipped_log"].is_object())
-            blueKeyFloor = run["blue_key_relic_skipped_log"]["floor"].get<int>();
     }
 
     void guess(const std::string &what) {
@@ -121,43 +87,7 @@ struct Replayer {
         if (g >= 0) gc.gold = g;
     }
 
-    // map symbols for one act from path_taken
-    bool computePath(int act, const Map &m) {
-        const auto &pt = run["path_taken"];
-        std::vector<char> syms;
-        for (int i = 16 * act; i < 16 * act + 15 && i < (int)pt.size(); ++i) {
-            if (!pt[i].is_string()) break;
-            auto s = pt[i].get<std::string>();
-            if (s == "BOSS") break;
-            syms.push_back(s[0]);
-        }
-        pathX[act].clear();
-        if (syms.empty()) return true;
-        // DP backwards for feasibility
-        int n = syms.size();
-        std::vector<std::array<int, 7>> nxt(n);
-        std::vector<std::array<bool, 7>> ok(n);
-        for (int y = n - 1; y >= 0; --y)
-            for (int x = 0; x < 7; ++x) {
-                const auto &node = m.getNode(x, y);
-                ok[y][x] = false; nxt[y][x] = -1;
-                if (node.room == Room::NONE || node.getRoomSymbol() != syms[y]) continue;
-                if (y == n - 1) { ok[y][x] = true; continue; }
-                for (int i = 0; i < node.edgeCount; ++i)
-                    if (ok[y + 1][node.edges[i]]) { ok[y][x] = true; nxt[y][x] = node.edges[i]; break; }
-            }
-        int x = -1;
-        for (int i = 0; i < 7; ++i) if (ok[0][i] && m.getNode(i, 0).edgeCount > 0) { x = i; break; }
-        if (x < 0) return false;
-        for (int y = 0; y < n; ++y) { pathX[act].push_back(x); x = nxt[y][x]; }
-        return true;
-    }
-
-    std::string logRoomAt(int floor) {
-        const auto &p = run["path_per_floor"];
-        if (floor >= 1 && floor - 1 < (int)p.size() && p[floor - 1].is_string()) return p[floor - 1].get<std::string>();
-        return "";
-    }
+    bool computePath(int act, const Map &m) { return actPath(act, m, pathX[act]); }
 
     static std::string roomLetter(Room r) {
         switch (r) {
@@ -191,14 +121,13 @@ struct Replayer {
         prepareFloor(floor);
         gc.transitionToMapNode(x);
         // compare room outcome for '?' nodes
-        const auto logged = logRoomAt(floor);
+        const auto logged = roomAt(floor);
         if (gc.curMapNodeY < 15 && gc.map->getNode(x, gc.curMapNodeY).room == Room::EVENT) {
             const auto eng = roomLetter(gc.curRoom);
             t["questionRoomOutcome"].add(eng == logged, floor, {{"floor", floor}, {"log", logged}, {"eng", eng}});
             if (gc.curRoom == Room::EVENT) {
                 auto ev = events.count(floor) ? events[floor][0]["event_name"].get<std::string>() : std::string("<none>");
-                auto engEv = jname(gc.curEvent);
-                if (engEv == "Match and Keep") engEv = "Match and Keep!";
+                auto engEv = expert::logEventName(gc.curEvent);
                 t["eventName"].add(ev == engEv, floor, {{"floor", floor}, {"log", ev}, {"eng", engEv}});
                 planEvent(floor, ev == engEv);
             }
@@ -216,96 +145,15 @@ struct Replayer {
     void planEvent(int floor, bool nameOk) {
         if (!nameOk || !events.count(floor)) { guess("event mismatch, leaving"); return; }
         const auto &e = events[floor][0];
-        const auto name = e["event_name"].get<std::string>();
-        const auto ch = e["player_choice"].get<std::string>();
-        for (const char *k : {"cards_removed", "cards_upgraded", "cards_transformed"})
-            if (e.contains(k)) for (auto &c : e[k]) pendingSelect.push_back(c);
-        if (name == "Duplicator" && e.contains("cards_obtained")) for (auto &c : e["cards_obtained"]) pendingSelect.push_back(c);
-        std::vector<int> &q = pendingEventIdx;
-        static const std::map<std::string, std::map<std::string, std::vector<int>>> table = {
-            {"Accursed Blacksmith", {{"Forge", {0}}, {"Rummage", {1}}, {"Ignored", {2}}}},
-            {"Addict", {{"Obtained Relic", {0}}, {"Stole Relic", {1}}, {"Ignored", {2}}}},
-            {"Back to Basics", {{"Elegance", {0}}, {"Simplicity", {1}}}},
-            {"Beggar", {{"Gave Gold", {0}}, {"Ignored", {1}}}},
-            {"Big Fish", {{"Banana", {0}}, {"Donut", {1}}, {"Box", {2}}}},
-            {"Colosseum", {{"Fight", {0, 0}}, {"Fought Nobs", {0, 1}}}},
-            {"Cursed Tome", {{"Obtained Book", {0, 2, 3, 4, 5}}, {"Ignored", {1}}, {"Stopped", {0, 2, 3, 4, 6}}}},
-            {"Designer", {{"Upgrade", {0}}, {"Upgraded Two", {1}}, {"Single Remove", {2}}, {"Transformed Cards", {3}},
-                          {"Upgrade and Remove", {4}}, {"Ignored", {5}}}},
-            {"Drug Dealer", {{"Obtain J.A.X.", {0}}, {"Became Test Subject", {1}}, {"Inject Mutagens", {2}}}},
-            {"Duplicator", {{"Copied", {0}}, {"Ignored", {1}}}},
-            {"FaceTrader", {{"Touch", {0}}, {"Trade", {1}}, {"Leave", {2}}}},
-            {"Falling", {{"Removed Skill", {0}}, {"Removed Power", {1}}, {"Removed Attack", {2}}}},
-            {"Forgotten Altar", {{"Gave Idol", {0}}, {"Shed Blood", {1}}, {"Smashed Altar", {2}}}},
-            {"Fountain of Cleansing", {{"Removed Curses", {0}}, {"Ignored", {1}}}},
-            {"Ghosts", {{"Became a Ghost", {0}}, {"Ignored", {1}}}},
-            {"Golden Idol", {{"Take Wound", {0, 2}}, {"Take Damage", {0, 3}}, {"Lose Max HP", {0, 4}}, {"Ignored", {1}}}},
-            {"Golden Shrine", {{"Pray", {0}}, {"Desecrate", {1}}, {"Ignored", {2}}}},
-            {"Golden Wing", {{"Card Removal", {0}}, {"Gained Gold", {1}}, {"Ignored", {2}}}},
-            {"Liars Game", {{"AGREE", {0}}, {"Ignored", {1}}, {"DISAGREE", {1}}}},
-            {"Living Wall", {{"Forget", {0}}, {"Change", {1}}, {"Grow", {2}}}},
-            {"Masked Bandits", {{"Paid Fearfully", {0}}, {"Fought Bandits", {1}}}},
-            {"MindBloom", {{"Fight", {0}}, {"Upgrade", {1}}, {"Gold", {2}}, {"Heal", {3}}}},
-            {"Mushrooms", {{"Fought Mushrooms", {0}}, {"Healed and dodged fight", {1}}}},
-            {"Mysterious Sphere", {{"Fight", {0}}, {"Ignored", {1}}}},
-            {"N'loth", {{"Ignored", {2}}}},
-            {"Nest", {{"Stole From Cult", {0}}, {"Joined the Cult", {1}}}},
-            {"Purifier", {{"Purged", {0}}, {"Ignored", {1}}}},
-            {"SecretPortal", {{"Took Portal", {0}}, {"Ignored", {1}}}},
-            {"SensoryStone", {{"Memory 1", {0}}, {"Memory 2", {1}}, {"Memory 3", {2}}}},
-            {"Shining Light", {{"Entered Light", {0}}, {"Ignored", {1}}}},
-            {"The Cleric", {{"Healed", {0}}, {"Card Removal", {1}}, {"Leave", {2}}}},
-            {"The Joust", {{"Bet on Murderer", {0}}, {"Bet on Owner", {1}}}},
-            {"The Library", {{"Read", {0}}, {"Heal", {1}}}},
-            {"The Mausoleum", {{"Opened", {0}}, {"Ignored", {1}}}},
-            {"The Moai Head", {{"Heal", {0}}, {"Gave Idol", {1}}, {"Ignored", {2}}}},
-            {"The Woman in Blue", {{"Bought 1 Potion", {0}}, {"Bought 2 Potions", {1}}, {"Bought 3 Potions", {2}},
-                                   {"Bought 0 Potions", {3}}}},
-            {"Tomb of Lord Red Mask", {{"Wore Mask", {0}}, {"Paid", {1}}, {"Ignored", {2}}}},
-            {"Transmorgrifier", {{"Transformed", {0}}, {"Ignored", {1}}}},
-            {"Upgrade Shrine", {{"Upgraded", {0}}, {"Ignored", {1}}}},
-            {"Vampires", {{"Became a vampire (Vial)", {0}}, {"Became a vampire", {1}}, {"Ignored", {2}}}},
-            {"WeMeetAgain", {{"Gave Potion", {0}}, {"Paid Gold", {1}}, {"Gave Card", {2}}, {"Ignored", {3}}}},
-            {"Wheel of Change", {{"Gold", {0}}, {"Relic", {0}}, {"Card Removal", {0}}, {"Cursed", {0}}, {"Full Heal", {0}}, {"Damaged", {0}}}},
-            {"Winding Halls", {{"Embrace Madness", {0}}, {"Writhe", {1}}, {"Max HP", {2}}}},
-            {"World of Goop", {{"Gather Gold", {0}}, {"Left Gold", {1}}}},
-        };
-        if (name == "Dead Adventurer") {
-            int k = 0;
-            auto p = ch.find('\'');
-            if (p != std::string::npos) k = std::stoi(ch.substr(p + 1));
-            for (int i = 0; i < k; ++i) q.push_back(0);
-            q.push_back(1);
-            return;
+        std::vector<expert::SelectPick> picks;
+        const auto why = expert::planEvent(e, gc, pendingEventIdx, picks);
+        for (const auto &p : picks) pendingSelect.push_back(p.card);
+        if (why.rfind("N'loth", 0) == 0) {
+            pendingEventIdx = {0};
+            t["eventOffer"].add(false, floor, {{"floor", floor}, {"event", "N'loth"}, {"why", why}});
+        } else if (!why.empty()) {
+            guess(why);
         }
-        if (name == "Scrap Ooze") {
-            if (ch == "Success") { for (int i = 0; i < 40; ++i) q.push_back(0); return; }
-            int dmg = e.value("damage_taken", 0), k = 0, s = 0;
-            while (s < dmg) { s += 5 + k; ++k; }
-            for (int i = 0; i < k; ++i) q.push_back(0);
-            q.push_back(1);
-            return;
-        }
-        if (name == "Knowing Skull") {
-            std::istringstream ss(ch); std::string tok;
-            while (ss >> tok) q.push_back(tok == "GOLD" ? 0 : tok == "CARD" ? 1 : 2);
-            q.push_back(3);
-            return;
-        }
-        if (name == "N'loth" && ch == "Traded Relic") {
-            std::string lost = e.contains("relics_lost") && !e["relics_lost"].empty() ? e["relics_lost"][0].get<std::string>() : "";
-            int i0 = gc.info.relicIdx0, i1 = gc.info.relicIdx1;
-            if (i0 >= 0 && jname(gc.relics.relics[i0].id) == lost) q.push_back(0);
-            else if (i1 >= 0 && jname(gc.relics.relics[i1].id) == lost) q.push_back(1);
-            else { q.push_back(0); t["eventOffer"].add(false, floor, {{"floor", floor}, {"event", name}, {"lost", lost}}); }
-            return;
-        }
-        if (name == "Match and Keep!" || name == "Lab" || name == "Bonfire Elementals") return;  // handled generically
-        auto it = table.find(name);
-        if (it == table.end()) { guess("unmapped event " + name); return; }
-        auto jt = it->second.find(ch);
-        if (jt == it->second.end()) { guess("unmapped choice " + name + "/" + ch); return; }
-        q = jt->second;
     }
 
     void doEvent() {

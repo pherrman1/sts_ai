@@ -48,15 +48,16 @@ match), and one run had no fights to test.
 ## Stage 2: decision replay (348 vanilla runs)
 
 Numbers below are with `STS_CALLING_BELL_CARD_RNG_FIX` on (the default since
-this change; see Calling Bell below). With it at `0`, card offers match
-7,098 / 7,643 (92.9%) and 251 runs are fully exact.
+this change; see Calling Bell below) and with the log's `SensoryStone` spelling mapped (first version of
+this note: event names 96.3%, card offers 7,132 / 7,643). With the fix at `0`, card offers matched
+7,098 / 7,643 (92.9%) and 251 runs were fully exact.
 
 | check | match |
 |---|---|
-| card reward offers (base names) | 7,132 / 7,643 (93.3%) |
-| upgrade flags within matched offers | 7,065 / 7,132 (99.1%) |
-| `?` room outcomes | 2,486 / 2,488 (99.9%) |
-| event names | 1,717 / 1,783 (96.3%, includes spelling-only misses such as SensoryStone) |
+| card reward offers (base names) | 7,138 / 7,645 (93.4%) |
+| upgrade flags within matched offers | 7,071 / 7,138 (99.1%) |
+| `?` room outcomes | 2,487 / 2,489 (99.9%) |
+| event names | 1,772 / 1,784 (99.3%) |
 | reward / chest relics (floors with a logged relic) | 3,004 / 3,249 (92.5%) |
 | boss relic offers | 486 / 541 (89.8%) |
 | potion drop floors | 3,413 / 3,607 (94.6%) |

@@ -455,6 +455,7 @@ add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/run_driver.cpp
     apps/one_combat/ooc_tree_rules.cpp
     apps/one_combat/heart_outcome_capture.cpp
+    apps/one_combat/expert_replay.cpp
     apps/one_combat/heart1_policy.cpp
     apps/one_combat/heart1_record_invariance.cpp
     apps/one_combat/rollout_student.cpp

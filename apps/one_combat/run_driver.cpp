@@ -210,6 +210,7 @@ thread_local bool t_oocHypotheticalStep = false;
 thread_local BossEntryHook *t_bossEntryHook = nullptr;
 thread_local std::function<void(const sts::GameContext &, const one_combat::PathHistory &)> t_realRunContextObserver;
 thread_local std::function<void(std::uint64_t, const char *)> t_realOocDecisionObserver;
+thread_local std::function<const char *(sts::GameContext &)> t_oocDecisionOverride;
 thread_local std::function<void(const sts::GameContext &, const sts::BattleContext &,
     int, const std::optional<one_combat::CombatTransitionRecord> &)> t_realCombatObserver;
 
@@ -599,7 +600,9 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
                 if (!masked) keyMaskAllowedX.clear();
             }
             const int keyMaskFloor = gc.floorNum;
-            traceBy = realOocChainStep(gc, agent, restV, shopV, path, seed, index, mctsMetrics);
+            const char *overrideBy = t_oocDecisionOverride ? t_oocDecisionOverride(gc) : nullptr;
+            traceBy = overrideBy ? overrideBy
+                                 : realOocChainStep(gc, agent, restV, shopV, path, seed, index, mctsMetrics);
             if (!keyMaskAllowedX.empty() && gc.floorNum != keyMaskFloor
                     && std::find(keyMaskAllowedX.begin(), keyMaskAllowedX.end(), gc.curMapNodeX) == keyMaskAllowedX.end())
                 std::fprintf(stderr, "heart_key_mask_violation seed=%llu floor=%d by=%s handler=%s x=%d\n",
