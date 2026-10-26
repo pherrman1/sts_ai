@@ -1,0 +1,10 @@
+name          aivat-replay-676
+code_commit   4da941d4e2f2b4797b4bc360ee9bdc14a3c81239
+binary_sha256 TBD
+workers       4
+share         /mnt/project-files/aivat-replay-676
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 30
+input student_sel.bin /mnt/project-files/az-gen3-explore/student_sel.bin cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7
