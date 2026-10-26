@@ -1,0 +1,242 @@
+{
+ "MAP": {
+  "runs": 1024,
+  "reach_preboss": 582,
+  "forced_share": 0.615,
+  "forced<60%": {
+   "n": 37,
+   "pct_runs": 3.61,
+   "act3_boss_death": 0.622,
+   "kill": 0.216,
+   "dDeath_pp_all_runs": -1.03,
+   "dKill_pp_all_runs": 0.58,
+   "earlier_hi_choice": {
+    "other": 5,
+    "None": 19,
+    "smith": 6,
+    "rest": 7
+   }
+  },
+  "forced<60%+hi_earlier": {
+   "n": 18,
+   "pct_runs": 1.76,
+   "act3_boss_death": 0.722,
+   "kill": 0.222,
+   "dDeath_pp_all_runs": -0.49,
+   "dKill_pp_all_runs": 0.26,
+   "earlier_hi_choice": {
+    "other": 5,
+    "smith": 6,
+    "rest": 7
+   }
+  },
+  "forced<70%": {
+   "n": 65,
+   "pct_runs": 6.35,
+   "act3_boss_death": 0.585,
+   "kill": 0.277,
+   "dDeath_pp_all_runs": -1.64,
+   "dKill_pp_all_runs": 1.05,
+   "earlier_hi_choice": {
+    "other": 10,
+    "None": 26,
+    "smith": 16,
+    "rest": 13
+   }
+  },
+  "forced<70%+hi_earlier": {
+   "n": 39,
+   "pct_runs": 3.81,
+   "act3_boss_death": 0.615,
+   "kill": 0.308,
+   "dDeath_pp_all_runs": -0.94,
+   "dKill_pp_all_runs": 0.6,
+   "earlier_hi_choice": {
+    "other": 10,
+    "smith": 16,
+    "rest": 13
+   }
+  },
+  "observed 0-0.6 recall": {
+   "n": 37,
+   "boss1_entry": 42.5,
+   "act3_boss_death": 0.622,
+   "kill": 0.216
+  },
+  "observed 0-0.6 rest": {
+   "n": 13,
+   "boss1_entry": 59.1,
+   "act3_boss_death": 0.385,
+   "kill": 0.462
+  },
+  "observed 0.6-0.8 recall": {
+   "n": 49,
+   "boss1_entry": 61.7,
+   "act3_boss_death": 0.49,
+   "kill": 0.327
+  },
+  "observed 0.6-0.8 rest": {
+   "n": 24,
+   "boss1_entry": 84.6,
+   "act3_boss_death": 0.25,
+   "kill": 0.208
+  },
+  "policy_choices_below_60pct": {
+   "act2 other dripper": 15,
+   "act2 other no_dripper": 1,
+   "act2 rest no_dripper": 700,
+   "act2 smith dripper": 79,
+   "act3 other dripper": 21,
+   "act3 other no_dripper": 2,
+   "act3 recall dripper": 8,
+   "act3 recall no_dripper": 6,
+   "act3 rest no_dripper": 185,
+   "act3 smith dripper": 24
+  },
+  "act4_campfire": {
+   "other missing<10": 147,
+   "other missing>=10": 9,
+   "rest missing<10": 109,
+   "rest missing>=10": 125,
+   "smith missing<10": 37,
+   "smith missing>=10": 14
+  },
+  "heart_entry_missing_hp_mean": 21.7
+ },
+ "all5": {
+  "runs": 4096,
+  "reach_preboss": 2304,
+  "forced_share": 0.602,
+  "forced<60%": {
+   "n": 164,
+   "pct_runs": 4.0,
+   "act3_boss_death": 0.72,
+   "kill": 0.128,
+   "dDeath_pp_all_runs": -1.22,
+   "dKill_pp_all_runs": 0.65,
+   "earlier_hi_choice": {
+    "None": 82,
+    "other": 8,
+    "rest": 38,
+    "smith": 32,
+    "dig": 1,
+    "lift": 1,
+    "1": 2
+   }
+  },
+  "forced<60%+hi_earlier": {
+   "n": 82,
+   "pct_runs": 2.0,
+   "act3_boss_death": 0.744,
+   "kill": 0.159,
+   "dDeath_pp_all_runs": -0.6,
+   "dKill_pp_all_runs": 0.32,
+   "earlier_hi_choice": {
+    "other": 8,
+    "rest": 38,
+    "smith": 32,
+    "dig": 1,
+    "lift": 1,
+    "1": 2
+   }
+  },
+  "forced<70%": {
+   "n": 258,
+   "pct_runs": 6.3,
+   "act3_boss_death": 0.643,
+   "kill": 0.209,
+   "dDeath_pp_all_runs": -1.83,
+   "dKill_pp_all_runs": 1.16,
+   "earlier_hi_choice": {
+    "None": 119,
+    "other": 16,
+    "rest": 56,
+    "smith": 58,
+    "dig": 5,
+    "1": 3,
+    "lift": 1
+   }
+  },
+  "forced<70%+hi_earlier": {
+   "n": 139,
+   "pct_runs": 3.39,
+   "act3_boss_death": 0.647,
+   "kill": 0.245,
+   "dDeath_pp_all_runs": -0.97,
+   "dKill_pp_all_runs": 0.62,
+   "earlier_hi_choice": {
+    "other": 16,
+    "rest": 56,
+    "smith": 58,
+    "dig": 5,
+    "1": 3,
+    "lift": 1
+   }
+  },
+  "observed 0-0.6 recall": {
+   "n": 164,
+   "boss1_entry": 38.7,
+   "act3_boss_death": 0.72,
+   "kill": 0.128
+  },
+  "observed 0-0.6 rest": {
+   "n": 62,
+   "boss1_entry": 62.6,
+   "act3_boss_death": 0.5,
+   "kill": 0.242
+  },
+  "observed 0.6-0.8 recall": {
+   "n": 193,
+   "boss1_entry": 64.4,
+   "act3_boss_death": 0.456,
+   "kill": 0.316
+  },
+  "observed 0.6-0.8 rest": {
+   "n": 86,
+   "boss1_entry": 87.9,
+   "act3_boss_death": 0.291,
+   "kill": 0.221
+  },
+  "policy_choices_below_60pct": {
+   "act2 1 dripper": 6,
+   "act2 dig dripper": 13,
+   "act2 lift dripper": 15,
+   "act2 other dripper": 23,
+   "act2 other no_dripper": 2,
+   "act2 recall dripper": 1,
+   "act2 rest no_dripper": 2870,
+   "act2 smith dripper": 338,
+   "act2 smith no_dripper": 4,
+   "act3 1 dripper": 2,
+   "act3 dig dripper": 9,
+   "act3 dig no_dripper": 1,
+   "act3 leave dripper": 18,
+   "act3 lift dripper": 7,
+   "act3 lift no_dripper": 1,
+   "act3 other dripper": 32,
+   "act3 other no_dripper": 3,
+   "act3 recall dripper": 49,
+   "act3 recall no_dripper": 16,
+   "act3 rest no_dripper": 771,
+   "act3 smith dripper": 106,
+   "act3 smith no_dripper": 1
+  },
+  "act4_campfire": {
+   "1 missing<10": 13,
+   "1 missing>=10": 4,
+   "dig missing<10": 26,
+   "dig missing>=10": 4,
+   "leave missing<10": 14,
+   "leave missing>=10": 6,
+   "lift missing<10": 24,
+   "lift missing>=10": 9,
+   "other missing<10": 264,
+   "other missing>=10": 16,
+   "rest missing<10": 648,
+   "rest missing>=10": 454,
+   "smith missing<10": 150,
+   "smith missing>=10": 64
+  },
+  "heart_entry_missing_hp_mean": 21.6
+ }
+}

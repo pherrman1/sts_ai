@@ -24461,3 +24461,23 @@ rule the full-rollout label line stops. Inference: a route-aware head is the nex
 consumed.
 Seeds: none (existing games only).
 **Knowledge impact:** none beyond this entry; no code or default change.
+
+## §TBD — Campfire choices vs HP before the act-3 bosses and the Heart: the policy rests when it can; the forced pre-boss Ruby Recall at < 60% HP costs at most ≈ 0.65 pp Heart kills, ≤ 0.32 pp recoverable by an earlier Recall; no run (offline, 4,096 games, 2026-10-26)
+
+**Question (deep-research experiment 8, Philipp 2026-10-26):** does the bot smith or Recall at low HP before the
+act-3 bosses or the Heart, and what does the Ruby rule's campfire cost?
+**Design:** [RESULT](evidence/campfire_hp_audit_20261026/RESULT.md). Every campfire of §683 (D/MAP/OFF) and §676
+(A/C), all under `STS_KEY_RUBY=policy`; choice from the MCTS record or the next state; outcome from the CTM rows.
+**Result:** without Coffee Dripper and with HP < 60% in acts 2–3 the policy rests 3,641 of 3,669 times; low-HP smiths are
+Coffee Dripper runs (444 vs 5). Act-4 campfire smiths with ≥ 10 HP missing in 3.8% of arrivals; the Heart is
+entered 21.6 HP below max ≈ the S&S damage. The forced Ruby takes the pre-boss campfire in 60% of the runs that
+reach it; below 60% HP (no Dripper) in 4.0% of runs, act-3 boss death 72% vs 50% for runs that rested there.
+Observational logistic on boss-1 entry HP: a rest instead of that Recall would be +0.65 pp Heart kills over all
+runs; only half of those runs passed an earlier act-3 campfire at ≥ 60% HP, so `STS_KEY_RUBY=hp` can recover at
+most ≈ +0.32 pp before the cost of the earlier campfire action.
+**Interpretation:** campfires do not explain low Heart entry HP (S&S does); the only campfire lever is Ruby
+timing, and its ceiling is below what a paired A/B can resolve (MDE ≈ 2 pp on the 341 diverging MAP seeds). No
+run, no default change. Inference: the observational slope is confounded by deck strength, so the true value is
+likely smaller.
+Seeds: none (existing games only).
+**Knowledge impact:** none beyond this entry.
