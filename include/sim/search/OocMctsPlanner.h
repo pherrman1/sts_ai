@@ -137,6 +137,11 @@ struct OocMctsConfig {
     double gumbelCVisit = 50.0;
     double gumbelCScale = 1.0;
     std::uint64_t gumbelSeed = 0;
+    // Opt-in Muesli-style cap (STS_OOC_MCTS_GUMBEL_QCAP; Hessel et al. 2021): when > 0, the
+    // sigma(Q) term above becomes clip((Q - V) / SE, -cap, cap), where V is the visit-weighted
+    // mean Q of the visited live root actions and SE the action's standard error of the mean.
+    // Q then moves an action's score by at most `cap` logits from g + log prior. 0 is off.
+    double gumbelQCap = 0;
     // Research reference (STS_OOC_MCTS_ROOT_COMPARE): with a Gumbel root, never halve; the
     // simulations are split evenly over the sampled actions (scale 0 and M >= legal = all of them).
     bool gumbelUniform = false;
