@@ -24461,6 +24461,25 @@ rule the full-rollout label line stops. Inference: a route-aware head is the nex
 consumed.
 Seeds: none (existing games only).
 **Knowledge impact:** none beyond this entry; no code or default change.
+## §689 — Gumbel root Q cap (Muesli-style, `STS_OOC_MCTS_GUMBEL_QCAP`): keeps strong priors on real roots, behaves like PUCT on the leaf-Q reference; offline root replay, no play claim (4 games, 48 full roots, 2026-10-26)
+
+**Question (deep-research report, 2026-10-26, point 3 and experiment 9):** was §635 a test of argmax of noisy Q?
+`gumbelSigma` scores (50 + max N) · 1.0 · min-max-normalised Q (mctx's default scale is 0.1); with two survivors
+min-max maps any gap to {0, 1}, i.e. 50 + N logits against ≈ 4.6 for a 0.99 prior. Verified in the code; the §635
+PREREG had named it as the main risk.
+**Change (#869, default off, byte-identical when off):** `STS_OOC_MCTS_GUMBEL_QCAP=c` replaces the term by
+clip((Q − V)/SE, −c, c), V the visit-weighted root Q, SE the action's standard error, so Q moves an action at most
+c logits from g + log prior. ROOT_COMPARE gains a capped `16@2048cap` row on the uncapped row's seed.
+**Replay:** §635 arm-A config on current main defaults + `STS_OOC_MCTS_SCREENS=all`, ROOT_COMPARE with c = 1, play
+unchanged. Seeds 111305000–003 (1 Heart kill), 48 full roots. vs the 8192-sim uniform reference (same leaf):
+uncapped SH leaves the prior argmax on 66.7% of roots (agree 0.708, regret 4.03e-3), capped 10.4% (0.417, 12.29e-3),
+PUCT 4096 2.1% (0.438, 11.85e-3). Capped − PUCT regret +0.44e-3 [−1.14, +2.08]. At top prior ≥ 0.9 (29 roots):
+uncapped overrules 20, capped 0, PUCT 0. Capped CPU 22 s/root, about half of PUCT 4096.
+**Interpretation:** the mechanism holds on real roots and the cap removes it. Agreement with the leaf-Q reference
+is not a play gate (§619 → §635), so this shows only that capped SH@2048 ≈ PUCT@4096 at half the full-root CPU.
+Guessed play effect (no evidence) 0 to +1 pp; a paired A/B needs Philipp's go. c = 1 untuned; small sample.
+[Result](evidence/gumbel_qcap_20261026/RESULT.md). Seeds 111305000–003 used.
+**Knowledge impact:** `operations/environment-variables.md` (`STS_OOC_MCTS_GUMBEL_QCAP`).
 
 ## §686 — Elite routes at map roots (experiment 4 of the 2026-10-26 research report): no elite deficit; the bot already takes elite-heavier children 82–88% at HP ≥ 60%, and same-seed first-divergence pairs show +1.6 pp kills [−1.2, +4.4] for the elite-heavier child; HP-gated elite tilt STOP before any run (offline, 8,192 games, 2026-10-26)
 
