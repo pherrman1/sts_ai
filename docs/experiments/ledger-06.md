@@ -24462,7 +24462,7 @@ consumed.
 Seeds: none (existing games only).
 **Knowledge impact:** none beyond this entry; no code or default change.
 
-## §TBD — Campfire choices vs HP before the act-3 bosses and the Heart: the policy rests when it can; the forced pre-boss Ruby Recall at < 60% HP costs at most ≈ 0.65 pp Heart kills, ≤ 0.32 pp recoverable by an earlier Recall; no run (offline, 4,096 games, 2026-10-26)
+## §687 — Campfire choices vs HP before the act-3 bosses and the Heart: the policy rests when it can; the forced pre-boss Ruby Recall at < 60% HP costs at most ≈ 0.65 pp Heart kills, ≤ 0.32 pp recoverable by an earlier Recall; no run (offline, 4,096 games, 2026-10-26)
 
 **Question (deep-research experiment 8, Philipp 2026-10-26):** does the bot smith or Recall at low HP before the
 act-3 bosses or the Heart, and what does the Ruby rule's campfire cost?
