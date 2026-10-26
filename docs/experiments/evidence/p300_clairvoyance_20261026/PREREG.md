@@ -44,7 +44,8 @@ Barricade at +10 to +14 pp, measured with a known-RNG search at full HP. Our fai
 
 | Rule | Condition | Reading |
 |---|---|---|
-| R1 | D(Kfull) < 3 | P300's effect does not reproduce on our engine and decks (factor S or D). Stop; ledger as a non-replication. |
+| R1 | D(Kfull) < 3 and D(Knat) < 3 | P300's effect does not reproduce on our engine and decks (factor S or D). Stop; ledger as a non-replication. |
+| R1c | D(Kfull) < 3 and D(Knat) >= 3 | The known-RNG effect exists but the ~86% Kfull base compresses it: read C from the natural-HP cells (D(Knat) - D(Fnat)), not as a non-replication. |
 | R2 | D(Kfull) >= 5 and D(Fnat) <= 2 and C >= 4 | Clairvoyance inflates the power/defence card values: P300's Heart table does not transfer to fair play. |
 | R3 | H >= 4 and abs(C) < 2 | Entry HP drives it: the values are HP-conditional; a fixed-key table at natural HP stays near 0. |
 | R4 | D(Fnat) >= 4 | Stage A was underpowered by its random key sampling: a fixed-key fair table is worth building. |
@@ -53,7 +54,7 @@ Any combination that matches none of these is reported as numbers only, without 
 
 **Known caveat, stated before the data:** the K-full base calibration won 85.7% (P300: 68% on its decks; our decks
 reach the Heart with more max HP, relics and potions). A base near 86% compresses the room for card gains in
-`Kfull`, which biases D(Kfull) toward 0, i.e. toward R1. `Knat` is the less compressed known-RNG cell; the per-cell
+`Kfull`, which biases D(Kfull) toward 0. R1 therefore also needs D(Knat) < 3 (pre-launch review suggestion). `Knat` is the less compressed known-RNG cell; the per-cell
 base win is reported next to every D.
 
 ## Validity checks

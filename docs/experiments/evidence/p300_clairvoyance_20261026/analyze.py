@@ -80,8 +80,10 @@ for k in point:
 pp = lambda k: 100 * point[k]
 D = {c: pp(f'{c}.D') for c in CELLS}
 readings = []
-if D['Kfull'] < 3:
-    readings.append('R1 non-replication: D(Kfull) < 3 pp')
+if D['Kfull'] < 3 and D['Knat'] < 3:
+    readings.append('R1 non-replication: D(Kfull) < 3 pp and D(Knat) < 3 pp')
+if D['Kfull'] < 3 and D['Knat'] >= 3:
+    readings.append('R1c ceiling-compressed: D(Kfull) < 3 pp but D(Knat) >= 3 pp; read C from the natural-HP cells')
 if D['Kfull'] >= 5 and D['Fnat'] <= 2 and pp('C_main') >= 4:
     readings.append('R2 clairvoyance inflates the top cards')
 if pp('H_main') >= 4 and abs(pp('C_main')) < 2:
