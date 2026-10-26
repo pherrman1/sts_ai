@@ -101,6 +101,19 @@ reached it:
   attributed; candidates are relic pool eligibility rules (for example Black
   Blood without Burning Blood) and earlier relic RNG consumers.
 
+## Replay mode (Silver combat)
+
+`one_combat expertreplay 1 RUN.json OUT.json` (`apps/one_combat/expert_replay.cpp`) plays one A20 full run on the
+expert's seed through the production driver `runFullRunOOC` and first offers each real out-of-combat step to a
+replayer of the log. The replayer plays the logged path, card/potion/relic/key rewards and chests, campfires, shop
+purchases and removals, boss relics, events and Neow while the engine's offer equals the log and the logged action
+is legal, with no HP or gold syncing. At the first decision that is not (offer differs, room or event differs,
+illegal or unaffordable action, log ends, Winged Boots path, Neow mini blessing, Act 4) it stops for the rest of the
+run and the production chain plays on. Unlogged picks (Bottled cards, Astrolabe, Match and Keep, old Neow
+sub-choices) go to the production chain without stopping. `STS_EXPERT_REPLAY_TYPES` selects the decision types
+(`all`, `none`, or a list of `path,reward,campfire,shop,bossrelic,event`); `none` is the bot alone on the same seed.
+`run_unit.sh` runs both arms per seed with today's A20 default stack. Smoke: [SMOKE.md](SMOKE.md).
+
 ## Interpretation
 
 Vanilla expert seeds replay well: the engine reproduces the offered choices
@@ -109,4 +122,4 @@ plus Silver-combat experiment is feasible on these 348 seeds with a fallback
 to the bot policy at the first divergence, an illegal logged action, or the
 expert's death floor.
 
-Knowledge impact: this evidence note; `STS_CALLING_BELL_CARD_RNG_FIX` (default on) documented in `docs/knowledge-base/operations/environment-variables.md`.
+Knowledge impact: this evidence note and its smoke; `STS_EXPERT_REPLAY_TYPES` and `STS_CALLING_BELL_CARD_RNG_FIX` (default on) documented in `docs/knowledge-base/operations/environment-variables.md`.
