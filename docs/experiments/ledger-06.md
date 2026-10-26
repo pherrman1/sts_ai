@@ -24435,3 +24435,116 @@ Per-deck difference SD 0.207. Projected split-half r of the full design 0.00 < 0
 is #856 (whole-game forks at boss relics); Philipp decides.
 Seeds: 111303000–111303383 (Stage A), 111308990–111308997 (smokes and review smoke); 111303384–111304567 unused.
 **Knowledge impact:** none beyond this entry; no code or default change.
+
+## §685 — Outcome-label value head on first-divergence pairs of three paired A20 A/Bs: NO_SIGNAL (A_h −1.2 pp [−2.8, +0.4]); sibling outcomes correlate at rho 0.49, so a full-rollout sibling referee costs about a paired A/B; full-rollout label line STOP (offline, 8,192 games, 2026-10-25)
+
+**Question (Philipp, 2026-10-25 09:31Z):** would a full rollout to the Heart at each OOC MCTS decision give clean
+value-head labels? Plan doc https://claude.ai/artifact/LuB6LLggR5TF4em1fKzBYG; Philipp chose "Stufe 0 starten"
+09:49Z. One full rollout per state is one Bernoulli, the label every recorded game already carries; §515/§522 had
+already shown that a better outcome log loss does not predict play, and X2-B cannot be scored on stored records, so
+Stufe 0 was rebuilt as an offline, X2-B-free sibling test.
+**Design:** [PREREG](evidence/outcome_divergence_pairs_20261025/PREREG.md). Paired arms of §683 (D/MAP/OFF), §661
+(A/M/S/MS) and §676 (A/C) are identical until their first differing state; the two children there are whole-game
+common-seed pairs. Head G: XGBoost on public-record features, trained on real outcomes of TRAIN games (seed % 4 in
+{0,1}), early stop on VALIDATION (== 2), frozen (`fa852066…`) before TEST (== 3) was read. Primary A_h = mean
+(y_a − y_b)·sign(G_a − G_b) over TEST pairs, CI by seed bootstrap; SIGNAL if the lower bound > 0.
+**Result:** [RESULT](evidence/outcome_divergence_pairs_20261025/RESULT.md). 8,192 games valid, 8,510 pairs.
+rho (Heart kill) 0.488 [0.455, 0.520]; act 1 0.44, acts 2–3 0.57. VALIDATION log loss below the constant in every
+act. **A_h −1.16 pp [−2.80, +0.40] → NO_SIGNAL**; Act-4 arrival −0.05 pp. Exploratory: 56% of TEST pairs tie,
+mostly map roots, because the features do not see which rooms the child can reach; non-tied A_h −2.7 pp
+[−6.4, +0.9].
+**Interpretation:** outcome labels teach the level, not the choice between children (as §502/§509, with 4× §498's
+games); label quantity is not the bottleneck. With rho 0.49 a full-rollout referee needs ≈ 1,940/R continuations
+per child for SE 1 pp over R flip roots (≈ 430 core-h production policy, ≈ 210 student_sel) against ≈ 310 core-h
+for a paired 1,024-seed A/B, which is the same referee with one continuation per flip root. By the pre-registered
+rule the full-rollout label line stops. Inference: a route-aware head is the next offline candidate; this TEST is
+consumed.
+Seeds: none (existing games only).
+**Knowledge impact:** none beyond this entry; no code or default change.
+## §689 — Gumbel root Q cap (Muesli-style, `STS_OOC_MCTS_GUMBEL_QCAP`): keeps strong priors on real roots, behaves like PUCT on the leaf-Q reference; offline root replay, no play claim (4 games, 48 full roots, 2026-10-26)
+
+**Question (deep-research report, 2026-10-26, point 3 and experiment 9):** was §635 a test of argmax of noisy Q?
+`gumbelSigma` scores (50 + max N) · 1.0 · min-max-normalised Q (mctx's default scale is 0.1); with two survivors
+min-max maps any gap to {0, 1}, i.e. 50 + N logits against ≈ 4.6 for a 0.99 prior. Verified in the code; the §635
+PREREG had named it as the main risk.
+**Change (#869, default off, byte-identical when off):** `STS_OOC_MCTS_GUMBEL_QCAP=c` replaces the term by
+clip((Q − V)/SE, −c, c), V the visit-weighted root Q, SE the action's standard error, so Q moves an action at most
+c logits from g + log prior. ROOT_COMPARE gains a capped `16@2048cap` row on the uncapped row's seed.
+**Replay:** §635 arm-A config on current main defaults + `STS_OOC_MCTS_SCREENS=all`, ROOT_COMPARE with c = 1, play
+unchanged. Seeds 111305000–003 (1 Heart kill), 48 full roots. vs the 8192-sim uniform reference (same leaf):
+uncapped SH leaves the prior argmax on 66.7% of roots (agree 0.708, regret 4.03e-3), capped 10.4% (0.417, 12.29e-3),
+PUCT 4096 2.1% (0.438, 11.85e-3). Capped − PUCT regret +0.44e-3 [−1.14, +2.08]. At top prior ≥ 0.9 (29 roots):
+uncapped overrules 20, capped 0, PUCT 0. Capped CPU 22 s/root, about half of PUCT 4096.
+**Interpretation:** the mechanism holds on real roots and the cap removes it. Agreement with the leaf-Q reference
+is not a play gate (§619 → §635), so this shows only that capped SH@2048 ≈ PUCT@4096 at half the full-root CPU.
+Guessed play effect (no evidence) 0 to +1 pp; a paired A/B needs Philipp's go. c = 1 untuned; small sample.
+[Result](evidence/gumbel_qcap_20261026/RESULT.md). Seeds 111305000–003 used.
+**Knowledge impact:** `operations/environment-variables.md` (`STS_OOC_MCTS_GUMBEL_QCAP`).
+
+## §686 — Elite routes at map roots (experiment 4 of the 2026-10-26 research report): no elite deficit; the bot already takes elite-heavier children 82–88% at HP ≥ 60%, and same-seed first-divergence pairs show +1.6 pp kills [−1.2, +4.4] for the elite-heavier child; HP-gated elite tilt STOP before any run (offline, 8,192 games, 2026-10-26)
+
+**Question:** the deep-research report (Philipp, 2026-10-26) proposed an HP-gated tilt toward elite routes at map
+roots, conditional on the expert audit (#865) finding an elite deficit. Do existing games show a deficit, and is the
+marginal declined elite worth enough to test?
+**Setup:** existing records only: §683 (1,024 seeds × D/MAP/OFF), §661 (1,024 × A/M/S/MS), §676 (512 × A/C).
+Map graphs from state records; a child's elite potential = max elites on any path to the act's last row. Scripts in
+[evidence](evidence/elite_routes_maproots_20261026/RESULT.md).
+**Result:** elites fought per cleared act (§683) 2.50 / 2.22 / 2.70; Heart killers (1,956 games, three
+campaigns) 2.63 / 2.40 / 2.74, median 8 over acts 1–3 (Baalorlord winners 8). Take rate of the elite-heavier child at map roots, HP 80–99 / 60–79 / 40–59 / 20–39%:
+act 1 0.87 / 0.82 / 0.73 / 0.55, act 2 0.84 / 0.70 / 0.50 / 0.26; at HP ≥ 40% MAP, D and OFF agree within ~0.05
+(the prior's choice); below 40% they spread more (act 3, 20–39%: 0.38 / 0.28 / 0.46). Seed-fixed maps: each extra reachable Act-1 elite gives +0.51 elites fought and +3.8 pp kills [+1.4, +6.2]
+pooled (§683 alone +7.1, §661 +2.8, §676 −0.8; Act-1 clear −0.9 pp). First-divergence pairs at map roots whose
+children differ in elite potential (1,038): elite-heavier minus other kill +1.6 pp [−1.2, +4.4], Act 4 +1.9 pp
+[−1.3, +5.0]; act 1 HP ≥ 60% (594) +1.3 pp [−2.2, +4.9].
+**Interpretation:** no elite deficit, and the elites the bot declines are worth at most ~1–2 pp per flipped root; a
+tilt flipping ~0.4 roots per game per act is far below a 1,024-seed paired A/B's MDE (~3.5 pp). Experiment 4 stops.
+Inference: Act-1 elite opportunity matters, but the prior already uses it. Weak, post-hoc lead only: act-2 mid-HP
+declines (Act 4 +9.1 pp [+2.1, +16.2] in 241 pairs). Divergence pairs are not randomized.
+Seeds: none (existing games only).
+**Knowledge impact:** none beyond this entry; no code or default change.
+
+## §687 — Campfire choices vs HP before the act-3 bosses and the Heart: the policy rests when it can; the forced pre-boss Ruby Recall at < 60% HP costs at most ≈ 0.65 pp Heart kills, ≤ 0.32 pp recoverable by an earlier Recall; no run (offline, 4,096 games, 2026-10-26)
+
+**Question (deep-research experiment 8, Philipp 2026-10-26):** does the bot smith or Recall at low HP before the
+act-3 bosses or the Heart, and what does the Ruby rule's campfire cost?
+**Design:** [RESULT](evidence/campfire_hp_audit_20261026/RESULT.md). Every campfire of §683 (D/MAP/OFF) and §676
+(A/C), all under `STS_KEY_RUBY=policy`; choice from the MCTS record or the next state; outcome from the CTM rows.
+**Result:** without Coffee Dripper and with HP < 60% in acts 2–3 the policy rests 3,641 of 3,669 times; low-HP smiths are
+Coffee Dripper runs (444 vs 5). Act-4 campfire smiths with ≥ 10 HP missing in 3.8% of arrivals; the Heart is
+entered 21.6 HP below max ≈ the S&S damage. The forced Ruby takes the pre-boss campfire in 60% of the runs that
+reach it; below 60% HP (no Dripper) in 4.0% of runs, act-3 boss death 72% vs 50% for runs that rested there.
+Observational logistic on boss-1 entry HP: a rest instead of that Recall would be +0.65 pp Heart kills over all
+runs; only half of those runs passed an earlier act-3 campfire at ≥ 60% HP, so `STS_KEY_RUBY=hp` can recover at
+most ≈ +0.32 pp before the cost of the earlier campfire action.
+**Interpretation:** campfires do not explain low Heart entry HP (S&S does); the only campfire lever is Ruby
+timing, and its ceiling is below what a paired A/B can resolve (MDE ≈ 2 pp on the 341 diverging MAP seeds). No
+run, no default change. Inference: the observational slope is confounded by deck strength, so the true value is
+likely smaller.
+Seeds: none (existing games only).
+**Knowledge impact:** none beyond this entry.
+
+## §688 — Bot runs vs expert play (Baalorlord, 676 A20 Ironclad runs): elite dose matches; the bot rests 3× as often at campfires, skips card rewards 2.4× less (+6 cards) and loses 1.4–3× more HP per elite/boss fight; offline, no seeds (2026-10-26)
+
+**Question:** experiment 2 of the 2026-10-26 deep-research report: in game terms, where does the A20 bot's play
+deviate from an expert's? Thread "Audit bot runs against expert play" (Philipp asked for one thread per experiment).
+**Data:** [RESULT](evidence/expert_play_audit_20261026/RESULT.md). Bot: §683's 1,024 seeds × MAP/D/OFF (run commit
+`772df240`; MAP = today's map-only default, pre-§682 Act 4). Expert: all 676 Ironclad A20 runs of Baalorlord's
+profile 0, raw `.run` files from baalorlord.tv (ids and hashes committed, raw files not).
+**Result:** Heart 24.7% vs 62.9%; deaths per act reached 13/26/33/43% vs 11/14/9/10%. Elites per cleared act
+2.50/2.20/2.66 vs 2.58/2.42/2.68, winners median 8 vs 8 (acts 1-3). Campfires (acts 1-3) smith/rest 46/40% vs
+72/13%; rest share at 40-60% HP 75% vs 13%, at 60-80% 42% vs 5%, while the bot arrives healthier (median 0.72 vs
+0.68 of max). Card reward skip 12% vs 30% (acts 1/2/3 6/15/17% vs 15/34/41%); winners' final deck 40 vs 34 cards.
+Removals per winning run 2.5 vs 2.6, mostly Strikes in both. Sapphire key taken in act 3 by 37% of bot winners vs
+66%. Net HP per won elite fight 13.0/10.1/6.1 vs 9.3/5.3/1.9, per boss 19.3/23.6/13.0 vs 11.3/11.2/9.0. Bot card
+picks most above the expert: Metallicize, Havoc, Reaper, Clothesline; most below: Whirlwind (1.6 vs 34%), Rage,
+Double Tap, Entrench, Bloodletting, Burning Pact, True Grit. MAP, D and OFF agree within ~1 pp on every row.
+Report checks: 63% kills, median 8 elites, skip ~28-30%, ~34 cards, Strikes out / Defends kept reproduced; "smith
+68% / rest 18%" not reproduced (72/13); "never fewer than 2 Act-1 elites" not reproduced (9 winners fought one).
+**Interpretation:** the elite-deficit premise of the report's experiment 4 is refuted for this stack. The visible
+OOC deviations (rest over smith, few skips, card preferences) are identical with and without search, so they come
+from the student_sel/heart1 prior. **Inference:** part of the extra resting pays for the extra HP the bot loses in
+elite and boss fights (confounded by deck strength), and some card preferences may reflect how our combat plays
+those cards; the audit shows deviations, not that they are mistakes. Follow-up: Philipp wants no fixed campfire rule;
+a value-based rest-vs-upgrade decision is being scoped in its own thread (2026-10-26).
+Seeds: none (existing games only).
+**Knowledge impact:** none beyond this entry; no code or default change.

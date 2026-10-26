@@ -1,0 +1,634 @@
+[
+ {
+  "card": "METALLICIZE",
+  "bot_offered": 661,
+  "bot_rate": 73.4,
+  "exp_offered": 432,
+  "exp_rate": 16.2,
+  "diff": 57.2
+ },
+ {
+  "card": "REAPER",
+  "bot_offered": 509,
+  "bot_rate": 98.4,
+  "exp_offered": 337,
+  "exp_rate": 52.5,
+  "diff": 45.9
+ },
+ {
+  "card": "HAVOC",
+  "bot_offered": 1917,
+  "bot_rate": 50.1,
+  "exp_offered": 1322,
+  "exp_rate": 5.8,
+  "diff": 44.3
+ },
+ {
+  "card": "SPOT_WEAKNESS",
+  "bot_offered": 679,
+  "bot_rate": 74.5,
+  "exp_offered": 474,
+  "exp_rate": 43.7,
+  "diff": 30.8
+ },
+ {
+  "card": "CORRUPTION",
+  "bot_offered": 502,
+  "bot_rate": 91.0,
+  "exp_offered": 361,
+  "exp_rate": 60.4,
+  "diff": 30.6
+ },
+ {
+  "card": "INFLAME",
+  "bot_offered": 726,
+  "bot_rate": 70.4,
+  "exp_offered": 474,
+  "exp_rate": 39.9,
+  "diff": 30.5
+ },
+ {
+  "card": "GHOSTLY_ARMOR",
+  "bot_offered": 706,
+  "bot_rate": 47.2,
+  "exp_offered": 432,
+  "exp_rate": 19.4,
+  "diff": 27.8
+ },
+ {
+  "card": "POMMEL_STRIKE",
+  "bot_offered": 1936,
+  "bot_rate": 63.3,
+  "exp_offered": 1304,
+  "exp_rate": 37.3,
+  "diff": 26.0
+ },
+ {
+  "card": "INTIMIDATE",
+  "bot_offered": 721,
+  "bot_rate": 41.9,
+  "exp_offered": 492,
+  "exp_rate": 16.7,
+  "diff": 25.2
+ },
+ {
+  "card": "BLOOD_FOR_BLOOD",
+  "bot_offered": 690,
+  "bot_rate": 38.8,
+  "exp_offered": 506,
+  "exp_rate": 14.6,
+  "diff": 24.2
+ },
+ {
+  "card": "UPPERCUT",
+  "bot_offered": 664,
+  "bot_rate": 59.5,
+  "exp_offered": 453,
+  "exp_rate": 35.3,
+  "diff": 24.2
+ },
+ {
+  "card": "SHOCKWAVE",
+  "bot_offered": 714,
+  "bot_rate": 89.8,
+  "exp_offered": 454,
+  "exp_rate": 65.9,
+  "diff": 23.9
+ },
+ {
+  "card": "CLOTHESLINE",
+  "bot_offered": 1994,
+  "bot_rate": 29.4,
+  "exp_offered": 1316,
+  "exp_rate": 6.7,
+  "diff": 22.7
+ },
+ {
+  "card": "ANGER",
+  "bot_offered": 1955,
+  "bot_rate": 39.9,
+  "exp_offered": 1286,
+  "exp_rate": 17.7,
+  "diff": 22.2
+ },
+ {
+  "card": "BARRICADE",
+  "bot_offered": 502,
+  "bot_rate": 62.4,
+  "exp_offered": 336,
+  "exp_rate": 40.5,
+  "diff": 21.9
+ },
+ {
+  "card": "FEED",
+  "bot_offered": 525,
+  "bot_rate": 70.7,
+  "exp_offered": 349,
+  "exp_rate": 49.0,
+  "diff": 21.7
+ },
+ {
+  "card": "BATTLE_TRANCE",
+  "bot_offered": 655,
+  "bot_rate": 68.7,
+  "exp_offered": 474,
+  "exp_rate": 50.8,
+  "diff": 17.9
+ },
+ {
+  "card": "CARNAGE",
+  "bot_offered": 706,
+  "bot_rate": 37.1,
+  "exp_offered": 506,
+  "exp_rate": 19.6,
+  "diff": 17.5
+ },
+ {
+  "card": "IMPERVIOUS",
+  "bot_offered": 505,
+  "bot_rate": 73.5,
+  "exp_offered": 322,
+  "exp_rate": 58.1,
+  "diff": 15.4
+ },
+ {
+  "card": "DEMON_FORM",
+  "bot_offered": 461,
+  "bot_rate": 44.0,
+  "exp_offered": 351,
+  "exp_rate": 30.5,
+  "diff": 13.5
+ },
+ {
+  "card": "PERFECTED_STRIKE",
+  "bot_offered": 1969,
+  "bot_rate": 21.6,
+  "exp_offered": 1369,
+  "exp_rate": 8.2,
+  "diff": 13.4
+ },
+ {
+  "card": "SHRUG_IT_OFF",
+  "bot_offered": 1884,
+  "bot_rate": 68.3,
+  "exp_offered": 1320,
+  "exp_rate": 55.2,
+  "diff": 13.1
+ },
+ {
+  "card": "IRON_WAVE",
+  "bot_offered": 1904,
+  "bot_rate": 18.8,
+  "exp_offered": 1385,
+  "exp_rate": 6.9,
+  "diff": 11.9
+ },
+ {
+  "card": "INFERNAL_BLADE",
+  "bot_offered": 706,
+  "bot_rate": 25.5,
+  "exp_offered": 545,
+  "exp_rate": 14.5,
+  "diff": 11.0
+ },
+ {
+  "card": "FLAME_BARRIER",
+  "bot_offered": 660,
+  "bot_rate": 64.5,
+  "exp_offered": 465,
+  "exp_rate": 54.2,
+  "diff": 10.3
+ },
+ {
+  "card": "SECOND_WIND",
+  "bot_offered": 682,
+  "bot_rate": 59.1,
+  "exp_offered": 508,
+  "exp_rate": 50.0,
+  "diff": 9.1
+ },
+ {
+  "card": "FEEL_NO_PAIN",
+  "bot_offered": 651,
+  "bot_rate": 84.8,
+  "exp_offered": 508,
+  "exp_rate": 76.0,
+  "diff": 8.8
+ },
+ {
+  "card": "TWIN_STRIKE",
+  "bot_offered": 1975,
+  "bot_rate": 21.1,
+  "exp_offered": 1279,
+  "exp_rate": 12.7,
+  "diff": 8.4
+ },
+ {
+  "card": "SEEING_RED",
+  "bot_offered": 708,
+  "bot_rate": 29.4,
+  "exp_offered": 485,
+  "exp_rate": 21.4,
+  "diff": 8.0
+ },
+ {
+  "card": "HEADBUTT",
+  "bot_offered": 1875,
+  "bot_rate": 35.8,
+  "exp_offered": 1247,
+  "exp_rate": 28.1,
+  "diff": 7.7
+ },
+ {
+  "card": "JACK_OF_ALL_TRADES",
+  "bot_offered": 113,
+  "bot_rate": 22.1,
+  "exp_offered": 41,
+  "exp_rate": 14.6,
+  "diff": 7.5
+ },
+ {
+  "card": "CLASH",
+  "bot_offered": 1966,
+  "bot_rate": 7.9,
+  "exp_offered": 1361,
+  "exp_rate": 1.3,
+  "diff": 6.6
+ },
+ {
+  "card": "DISARM",
+  "bot_offered": 713,
+  "bot_rate": 76.7,
+  "exp_offered": 463,
+  "exp_rate": 71.3,
+  "diff": 5.4
+ },
+ {
+  "card": "THUNDERCLAP",
+  "bot_offered": 1935,
+  "bot_rate": 11.2,
+  "exp_offered": 1332,
+  "exp_rate": 7.1,
+  "diff": 4.1
+ },
+ {
+  "card": "POWER_THROUGH",
+  "bot_offered": 645,
+  "bot_rate": 44.7,
+  "exp_offered": 458,
+  "exp_rate": 41.0,
+  "diff": 3.7
+ },
+ {
+  "card": "DARK_EMBRACE",
+  "bot_offered": 659,
+  "bot_rate": 68.6,
+  "exp_offered": 501,
+  "exp_rate": 66.3,
+  "diff": 2.3
+ },
+ {
+  "card": "PUMMEL",
+  "bot_offered": 687,
+  "bot_rate": 29.0,
+  "exp_offered": 505,
+  "exp_rate": 28.3,
+  "diff": 0.7
+ },
+ {
+  "card": "DROPKICK",
+  "bot_offered": 715,
+  "bot_rate": 10.3,
+  "exp_offered": 488,
+  "exp_rate": 9.8,
+  "diff": 0.5
+ },
+ {
+  "card": "JUGGERNAUT",
+  "bot_offered": 470,
+  "bot_rate": 21.7,
+  "exp_offered": 331,
+  "exp_rate": 22.4,
+  "diff": -0.7
+ },
+ {
+  "card": "EXHUME",
+  "bot_offered": 531,
+  "bot_rate": 39.9,
+  "exp_offered": 333,
+  "exp_rate": 41.1,
+  "diff": -1.2
+ },
+ {
+  "card": "WILD_STRIKE",
+  "bot_offered": 1833,
+  "bot_rate": 0.0,
+  "exp_offered": 1324,
+  "exp_rate": 1.4,
+  "diff": -1.4
+ },
+ {
+  "card": "BLUDGEON",
+  "bot_offered": 482,
+  "bot_rate": 12.2,
+  "exp_offered": 383,
+  "exp_rate": 13.6,
+  "diff": -1.4
+ },
+ {
+  "card": "SEVER_SOUL",
+  "bot_offered": 702,
+  "bot_rate": 5.7,
+  "exp_offered": 477,
+  "exp_rate": 7.8,
+  "diff": -2.1
+ },
+ {
+  "card": "BODY_SLAM",
+  "bot_offered": 1997,
+  "bot_rate": 8.7,
+  "exp_offered": 1367,
+  "exp_rate": 11.1,
+  "diff": -2.4
+ },
+ {
+  "card": "WARCRY",
+  "bot_offered": 1991,
+  "bot_rate": 10.4,
+  "exp_offered": 1397,
+  "exp_rate": 13.2,
+  "diff": -2.8
+ },
+ {
+  "card": "SWORD_BOOMERANG",
+  "bot_offered": 2032,
+  "bot_rate": 3.0,
+  "exp_offered": 1346,
+  "exp_rate": 6.9,
+  "diff": -3.9
+ },
+ {
+  "card": "RAMPAGE",
+  "bot_offered": 704,
+  "bot_rate": 0.0,
+  "exp_offered": 469,
+  "exp_rate": 4.3,
+  "diff": -4.3
+ },
+ {
+  "card": "FIEND_FIRE",
+  "bot_offered": 490,
+  "bot_rate": 50.0,
+  "exp_offered": 330,
+  "exp_rate": 54.8,
+  "diff": -4.8
+ },
+ {
+  "card": "EVOLVE",
+  "bot_offered": 732,
+  "bot_rate": 16.5,
+  "exp_offered": 469,
+  "exp_rate": 21.7,
+  "diff": -5.2
+ },
+ {
+  "card": "SEARING_BLOW",
+  "bot_offered": 683,
+  "bot_rate": 0.1,
+  "exp_offered": 501,
+  "exp_rate": 5.4,
+  "diff": -5.3
+ },
+ {
+  "card": "CLEAVE",
+  "bot_offered": 1992,
+  "bot_rate": 5.5,
+  "exp_offered": 1271,
+  "exp_rate": 11.0,
+  "diff": -5.5
+ },
+ {
+  "card": "FIRE_BREATHING",
+  "bot_offered": 726,
+  "bot_rate": 0.1,
+  "exp_offered": 454,
+  "exp_rate": 5.7,
+  "diff": -5.6
+ },
+ {
+  "card": "RUPTURE",
+  "bot_offered": 678,
+  "bot_rate": 0.0,
+  "exp_offered": 486,
+  "exp_rate": 6.0,
+  "diff": -6.0
+ },
+ {
+  "card": "GOOD_INSTINCTS",
+  "bot_offered": 145,
+  "bot_rate": 6.9,
+  "exp_offered": 46,
+  "exp_rate": 13.0,
+  "diff": -6.1
+ },
+ {
+  "card": "IMPATIENCE",
+  "bot_offered": 149,
+  "bot_rate": 0.7,
+  "exp_offered": 43,
+  "exp_rate": 7.0,
+  "diff": -6.3
+ },
+ {
+  "card": "RECKLESS_CHARGE",
+  "bot_offered": 732,
+  "bot_rate": 9.8,
+  "exp_offered": 488,
+  "exp_rate": 16.4,
+  "diff": -6.6
+ },
+ {
+  "card": "FLEX",
+  "bot_offered": 1884,
+  "bot_rate": 3.2,
+  "exp_offered": 1337,
+  "exp_rate": 9.9,
+  "diff": -6.7
+ },
+ {
+  "card": "BERSERK",
+  "bot_offered": 472,
+  "bot_rate": 0.8,
+  "exp_offered": 373,
+  "exp_rate": 7.8,
+  "diff": -7.0
+ },
+ {
+  "card": "ARMAMENTS",
+  "bot_offered": 1974,
+  "bot_rate": 13.6,
+  "exp_offered": 1293,
+  "exp_rate": 21.2,
+  "diff": -7.6
+ },
+ {
+  "card": "HEMOKINESIS",
+  "bot_offered": 667,
+  "bot_rate": 2.4,
+  "exp_offered": 477,
+  "exp_rate": 10.3,
+  "diff": -7.9
+ },
+ {
+  "card": "PANACEA",
+  "bot_offered": 117,
+  "bot_rate": 20.5,
+  "exp_offered": 45,
+  "exp_rate": 28.9,
+  "diff": -8.4
+ },
+ {
+  "card": "COMBUST",
+  "bot_offered": 677,
+  "bot_rate": 0.7,
+  "exp_offered": 456,
+  "exp_rate": 10.3,
+  "diff": -9.6
+ },
+ {
+  "card": "BRUTALITY",
+  "bot_offered": 469,
+  "bot_rate": 13.4,
+  "exp_offered": 347,
+  "exp_rate": 23.3,
+  "diff": -9.9
+ },
+ {
+  "card": "HEAVY_BLADE",
+  "bot_offered": 1970,
+  "bot_rate": 2.5,
+  "exp_offered": 1325,
+  "exp_rate": 13.1,
+  "diff": -10.6
+ },
+ {
+  "card": "LIMIT_BREAK",
+  "bot_offered": 493,
+  "bot_rate": 22.1,
+  "exp_offered": 344,
+  "exp_rate": 32.8,
+  "diff": -10.7
+ },
+ {
+  "card": "OFFERING",
+  "bot_offered": 464,
+  "bot_rate": 64.7,
+  "exp_offered": 340,
+  "exp_rate": 76.5,
+  "diff": -11.8
+ },
+ {
+  "card": "DUAL_WIELD",
+  "bot_offered": 666,
+  "bot_rate": 4.5,
+  "exp_offered": 508,
+  "exp_rate": 16.5,
+  "diff": -12.0
+ },
+ {
+  "card": "IMMOLATE",
+  "bot_offered": 483,
+  "bot_rate": 23.0,
+  "exp_offered": 349,
+  "exp_rate": 35.8,
+  "diff": -12.8
+ },
+ {
+  "card": "RAGE",
+  "bot_offered": 773,
+  "bot_rate": 0.1,
+  "exp_offered": 500,
+  "exp_rate": 16.2,
+  "diff": -16.1
+ },
+ {
+  "card": "DOUBLE_TAP",
+  "bot_offered": 544,
+  "bot_rate": 2.0,
+  "exp_offered": 327,
+  "exp_rate": 18.3,
+  "diff": -16.3
+ },
+ {
+  "card": "SENTINEL",
+  "bot_offered": 696,
+  "bot_rate": 13.6,
+  "exp_offered": 503,
+  "exp_rate": 30.4,
+  "diff": -16.8
+ },
+ {
+  "card": "ENTRENCH",
+  "bot_offered": 647,
+  "bot_rate": 2.6,
+  "exp_offered": 490,
+  "exp_rate": 23.1,
+  "diff": -20.5
+ },
+ {
+  "card": "BLIND",
+  "bot_offered": 130,
+  "bot_rate": 9.2,
+  "exp_offered": 49,
+  "exp_rate": 30.6,
+  "diff": -21.4
+ },
+ {
+  "card": "TRUE_GRIT",
+  "bot_offered": 1942,
+  "bot_rate": 11.6,
+  "exp_offered": 1343,
+  "exp_rate": 34.7,
+  "diff": -23.1
+ },
+ {
+  "card": "DEEP_BREATH",
+  "bot_offered": 140,
+  "bot_rate": 0.7,
+  "exp_offered": 42,
+  "exp_rate": 23.8,
+  "diff": -23.1
+ },
+ {
+  "card": "DARK_SHACKLES",
+  "bot_offered": 126,
+  "bot_rate": 47.6,
+  "exp_offered": 48,
+  "exp_rate": 70.8,
+  "diff": -23.2
+ },
+ {
+  "card": "BLOODLETTING",
+  "bot_offered": 673,
+  "bot_rate": 8.9,
+  "exp_offered": 509,
+  "exp_rate": 36.5,
+  "diff": -27.6
+ },
+ {
+  "card": "BURNING_PACT",
+  "bot_offered": 725,
+  "bot_rate": 31.2,
+  "exp_offered": 473,
+  "exp_rate": 59.0,
+  "diff": -27.8
+ },
+ {
+  "card": "WHIRLWIND",
+  "bot_offered": 697,
+  "bot_rate": 1.6,
+  "exp_offered": 464,
+  "exp_rate": 33.8,
+  "diff": -32.2
+ }
+]
