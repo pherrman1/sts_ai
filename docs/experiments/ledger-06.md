@@ -24477,7 +24477,7 @@ PUCT 4096 2.1% (0.438, 11.85e-3). Capped − PUCT regret +0.44e-3 [−1.14, +2.0
 uncapped overrules 20, capped 0, PUCT 0. Capped CPU 22 s/root, about half of PUCT 4096.
 **Interpretation:** the mechanism holds on real roots and the cap removes it. Agreement with the leaf-Q reference
 is not a play gate (§619 → §635), so this shows only that capped SH@2048 ≈ PUCT@4096 at half the full-root CPU.
-Expected play effect 0 to +1 pp; a paired A/B needs Philipp's go. c = 1 untuned; small sample.
+Guessed play effect (no evidence) 0 to +1 pp; a paired A/B needs Philipp's go. c = 1 untuned; small sample.
 [Result](evidence/gumbel_qcap_20261026/RESULT.md). Seeds 111305000–003 used.
 **Knowledge impact:** `operations/environment-variables.md` (`STS_OOC_MCTS_GUMBEL_QCAP`).
 

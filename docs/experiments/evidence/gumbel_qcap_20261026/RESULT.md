@@ -30,7 +30,7 @@ thirds of full roots (in play §635 saw 17.3% of all searched roots), and the ca
 priors ≥ 0.9. Capped Gumbel at 2048 behaves like PUCT at 4096 on the leaf-Q reference, at about half the full-root
 CPU. The reference shares the leaf (rollout3 + X2-B), so the uncapped root's lower regret is agreement with the
 leaf that lost in play (§635), not evidence of strength; the capped root's equality with PUCT is not evidence of a
-gain either. Expected play effect 0 to +1 pp. Only a paired play A/B can decide, and that needs Philipp's go.
+gain either. Guessed play effect (no evidence) 0 to +1 pp. Only a paired play A/B can decide, and that needs Philipp's go.
 Small sample (4 games, 48 roots); c = 1 not tuned.
 
 Raw: `cmp.jsonl.gz` (rows, sha256 per seed in `cmp.sha256`); full run outputs
