@@ -1,0 +1,72 @@
+sha eb52ab45e0456c7643bb2e05436af998d3bb3b7d distill.py sha256 b15843bbb8a8154e86a1bc05a9eb4b801c5aac7032bd595e28c649bd9327110a monotone.py sha256 09efffaf3a789f09126c24db162f9efb1729e74a1da0e8581c530250f0ac72bc
+args --mono-weight 3
+cache /home/philippherrmann/h1distill/gen2/cache/eb5e79069123c0c1
+train 350256 rows / 2016 files, val 56882 rows / 336 files, wing_boots_counter 1, select 57873 rows / 336 files
+/home/philippherrmann/Documents/sts/value-mono/tools/heart1/distill.py:313: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  missing, unexpected = net.load_state_dict(torch.load(a.init, map_location=a.device), strict=False)
+student params 280844
+   mono penalty 0.00032
+ep 1 train loss 0.2820 val KL None top1 None value null 31s
+   select fold objective 0.2645 KL 0.07152653789751275 value {"n": 57873, "bce": 0.6367, "const_bce": 0.642, "auc": 0.5882818679523903, "mean_p": 0.3773, "mean_z": 0.3414}
+   mono penalty 0.00057
+ep 2 train loss 0.2318 val KL None top1 None value null 66s
+   select fold objective 0.2520 KL 0.0586627405291014 value {"n": 57873, "bce": 0.6346, "const_bce": 0.642, "auc": 0.6061806688792742, "mean_p": 0.2801, "mean_z": 0.3414}
+   mono penalty 0.00057
+ep 3 train loss 0.2188 val KL None top1 None value null 101s
+   select fold objective 0.2479 KL 0.05548115559480722 value {"n": 57873, "bce": 0.6317, "const_bce": 0.642, "auc": 0.6209189276460098, "mean_p": 0.2747, "mean_z": 0.3414}
+   mono penalty 0.00057
+ep 4 train loss 0.2129 val KL None top1 None value null 137s
+   select fold objective 0.2456 KL 0.054667598129251316 value {"n": 57873, "bce": 0.6265, "const_bce": 0.642, "auc": 0.6334455769235003, "mean_p": 0.2768, "mean_z": 0.3414}
+   mono penalty 0.00058
+ep 5 train loss 0.2094 val KL None top1 None value null 172s
+   select fold objective 0.2432 KL 0.053471799502880196 value {"n": 57873, "bce": 0.6216, "const_bce": 0.642, "auc": 0.6425312172565174, "mean_p": 0.278, "mean_z": 0.3414}
+   mono penalty 0.00057
+ep 6 train loss 0.2062 val KL None top1 None value null 208s
+   select fold objective 0.2426 KL 0.054446894068695545 value {"n": 57873, "bce": 0.6168, "const_bce": 0.642, "auc": 0.6487983993127577, "mean_p": 0.2791, "mean_z": 0.3414}
+   mono penalty 0.00058
+ep 7 train loss 0.2029 val KL None top1 None value null 243s
+   select fold objective 0.2405 KL 0.053353889316826116 value {"n": 57873, "bce": 0.6131, "const_bce": 0.642, "auc": 0.65624402440551, "mean_p": 0.2761, "mean_z": 0.3414}
+   mono penalty 0.00057
+ep 8 train loss 0.2006 val KL None top1 None value null 278s
+   select fold objective 0.2397 KL 0.05293947520655557 value {"n": 57873, "bce": 0.6113, "const_bce": 0.642, "auc": 0.6652900920169482, "mean_p": 0.267, "mean_z": 0.3414}
+   mono penalty 0.00056
+ep 9 train loss 0.1983 val KL None top1 None value null 314s
+   select fold objective 0.2388 KL 0.05381066144976651 value {"n": 57873, "bce": 0.6049, "const_bce": 0.642, "auc": 0.6713115512673372, "mean_p": 0.2734, "mean_z": 0.3414}
+   mono penalty 0.00060
+ep 10 train loss 0.1967 val KL None top1 None value null 349s
+   select fold objective 0.2382 KL 0.05455619951486511 value {"n": 57873, "bce": 0.6009, "const_bce": 0.642, "auc": 0.6771957442165766, "mean_p": 0.2751, "mean_z": 0.3414}
+   mono penalty 0.00057
+ep 11 train loss 0.1945 val KL None top1 None value null 384s
+   select fold objective 0.2367 KL 0.05410350333570432 value {"n": 57873, "bce": 0.5972, "const_bce": 0.642, "auc": 0.6855034589641938, "mean_p": 0.2731, "mean_z": 0.3414}
+   mono penalty 0.00060
+ep 12 train loss 0.1928 val KL None top1 None value null 418s
+   select fold objective 0.2352 KL 0.05443611803218405 value {"n": 57873, "bce": 0.5915, "const_bce": 0.642, "auc": 0.6895657431720597, "mean_p": 0.2814, "mean_z": 0.3414}
+   mono penalty 0.00059
+ep 13 train loss 0.1912 val KL None top1 None value null 453s
+   select fold objective 0.2352 KL 0.05408113866940022 value {"n": 57873, "bce": 0.5922, "const_bce": 0.642, "auc": 0.6962658529534976, "mean_p": 0.2692, "mean_z": 0.3414}
+   mono penalty 0.00061
+ep 14 train loss 0.1899 val KL None top1 None value null 488s
+   select fold objective 0.2345 KL 0.05430357130386232 value {"n": 57873, "bce": 0.5889, "const_bce": 0.642, "auc": 0.7004847808440982, "mean_p": 0.2712, "mean_z": 0.3414}
+   mono penalty 0.00063
+ep 15 train loss 0.1889 val KL None top1 None value null 522s
+   select fold objective 0.2341 KL 0.05468855525486508 value {"n": 57873, "bce": 0.5867, "const_bce": 0.642, "auc": 0.7040615595976327, "mean_p": 0.2716, "mean_z": 0.3414}
+   mono penalty 0.00066
+ep 16 train loss 0.1878 val KL None top1 None value null 557s
+   select fold objective 0.2333 KL 0.05468784082993435 value {"n": 57873, "bce": 0.5839, "const_bce": 0.642, "auc": 0.7057232520635796, "mean_p": 0.2758, "mean_z": 0.3414}
+   mono penalty 0.00066
+ep 17 train loss 0.1872 val KL None top1 None value null 591s
+   select fold objective 0.2332 KL 0.05482539307743995 value {"n": 57873, "bce": 0.5829, "const_bce": 0.642, "auc": 0.7066694101823813, "mean_p": 0.2767, "mean_z": 0.3414}
+   mono penalty 0.00064
+ep 18 train loss 0.1863 val KL None top1 None value null 626s
+   select fold objective 0.2332 KL 0.05480798235934038 value {"n": 57873, "bce": 0.5831, "const_bce": 0.642, "auc": 0.7079673282607288, "mean_p": 0.2742, "mean_z": 0.3414}
+   mono penalty 0.00065
+ep 19 train loss 0.1861 val KL None top1 None value null 661s
+   select fold objective 0.2331 KL 0.05491229903338416 value {"n": 57873, "bce": 0.5824, "const_bce": 0.642, "auc": 0.7081639689145742, "mean_p": 0.2756, "mean_z": 0.3414}
+   mono penalty 0.00065
+ep 20 train loss 0.1859 val KL None top1 None value null 695s
+   select fold objective 0.2331 KL 0.0548965590537901 value {"n": 57873, "bce": 0.5824, "const_bce": 0.642, "auc": 0.7082300117528673, "mean_p": 0.2755, "mean_z": 0.3414}
+chosen epoch 20 val KL 0.053135303940749404 top1 0.9335180055401662 value {"n": 56882, "bce": 0.5502, "const_bce": 0.6216, "auc": 0.7197683551448423, "mean_p": 0.2771, "mean_z": 0.3132}
+best per group: {"boss_relic": {"n": 135, "kl": 0.0282, "top1": 0.9704, "v4_top1": null, "serve_top1": null}, "card_select:bonfire_spirits": {"n": 7, "kl": 0.1824, "top1": 0.1429, "v4_top1": null, "serve_top1": null}, "card_select:bottle": {"n": 17, "kl": 0.648, "top1": 0.1765, "v4_top1": null, "serve_top1": null}, "card_select:obtain": {"n": 6, "kl": 0.2424, "top1": 0.3333, "v4_top1": null, "serve_top1": null}, "card_select:transform": {"n": 4, "kl": 0.038, "top1": 0.5, "v4_top1": null, "serve_top1": null}, "card_select:transform_upgrade": {"n": 9, "kl": 0.2404, "top1": 0.0, "v4_top1": null, "serve_top1": null}, "card_select:upgrade": {"n": 5, "kl": 0.0015, "top1": 1.0, "v4_top1": null, "serve_top1": null}, "event": {"n": 471, "kl": 0.0387, "top1": 0.9766, "v4_top1": null, "serve_top1": null}, "map": {"n": 1302, "kl": 0.1304, "top1": 0.8602, "v4_top1": null, "serve_top1": null}, "rest": {"n": 534, "kl": 0.0155, "top1": 0.9738, "v4_top1": null, "serve_top1": null}, "rewards": {"n": 2275, "kl": 0.0231, "top1": 0.9666, "v4_top1": null, "serve_top1": null}, "shop": {"n": 641, "kl": 0.0295, "top1": 0.9407, "v4_top1": null, "serve_top1": null}, "treasure": {"n": 9, "kl": 0.0, "top1": 1.0, "v4_top1": null, "serve_top1": null}}
+monotonicity {"rules": ["hp", "mhp", "gold", "potion", "curse"], "eval_deltas": {"hp": -3, "mhp": 5, "gold": 50}, "curses": ["CLUMSY", "DECAY", "DOUBT", "INJURY", "NORMALITY", "PAIN", "REGRET", "SHAME", "WRITHE"], "select": {"hp": {"n": 57870, "viol": 0.1392, "viol_p001": 0.0537, "median_dp": 0.00132}, "mhp": {"n": 57873, "viol": 0.2771, "viol_p001": 0.0855, "median_dp": 0.00098}, "gold": {"n": 57873, "viol": 0.1321, "viol_p001": 0.0588, "median_dp": 0.00217}, "potion": {"n": 43721, "viol": 0.0, "viol_p001": 0.0, "median_dp": 0.02749}, "curse": {"n": 57873, "viol": 0.0, "viol_p001": 0.0, "median_dp": 0.01064}}, "val": {"hp": {"n": 56882, "viol": 0.1322, "viol_p001": 0.0467, "median_dp": 0.00134}, "mhp": {"n": 56882, "viol": 0.2771, "viol_p001": 0.0818, "median_dp": 0.00099}, "gold": {"n": 56882, "viol": 0.1269, "viol_p001": 0.0575, "median_dp": 0.00219}, "potion": {"n": 43437, "viol": 0.0, "viol_p001": 0.0, "median_dp": 0.02743}, "curse": {"n": 56882, "viol": 0.0, "viol_p001": 0.0, "median_dp": 0.01066}}}
+real 744.16 user 703.33 sys 46.02 maxrss_kb 4037640
+EXIT 0

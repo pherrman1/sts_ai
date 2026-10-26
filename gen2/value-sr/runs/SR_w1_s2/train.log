@@ -1,0 +1,51 @@
+distill.py sha256 1443c2050af432a9759ac7765b54af5540446a401eaf4961d4676b28eda0ed2d monotone.py 09efffaf3a789f09126c24db162f9efb1729e74a1da0e8581c530250f0ac72bc heart1 deaba59d0c1d13a64578bd770bbcdcee95b1b5ef85e9b732739c89291da237d9 groups b1933cc411b168e683ba11474f82528477fd4dde8aae07e3935924d126493567
+args --sr-weight 1 --seed 2
+train 350256 rows / 2016 files, val 56882 rows / 336 files, wing_boots_counter 1, select 57873 rows / 336 files
+/home/philippherrmann/h1distill/gen2/valuesr/tools/distill.py:355: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  missing, unexpected = net.load_state_dict(torch.load(a.init, map_location=a.device), strict=False)
+student params 280844
+sibling-rank groups train 7454 holdout 1004
+init sibling-rank holdout {"groups": 1004, "sources": 136, "concordance": 0.5133}
+   mono penalty 0.00093
+   sibling-rank loss 0.69100
+   sibling-rank holdout {"groups": 1004, "sources": 136, "concordance": 0.5221}
+ep 1 train loss 1.0846 val KL None top1 None value null 203s
+   select fold objective 0.3865 KL 0.06740343124486257 value {"n": 57873, "bce": 0.6324, "const_bce": 0.642, "auc": 0.6300926824158061, "mean_p": 0.2709, "mean_z": 0.3414}
+   mono penalty 0.00725
+   sibling-rank loss 0.66696
+   sibling-rank holdout {"groups": 1004, "sources": 136, "concordance": 0.5787}
+ep 2 train loss 1.0056 val KL None top1 None value null 412s
+   select fold objective 0.3551 KL 0.059084654304040814 value {"n": 57873, "bce": 0.5833, "const_bce": 0.642, "auc": 0.7151521806440537, "mean_p": 0.2826, "mean_z": 0.3414}
+   mono penalty 0.00891
+   sibling-rank loss 0.62142
+   sibling-rank holdout {"groups": 1004, "sources": 136, "concordance": 0.5922}
+ep 3 train loss 0.9419 val KL None top1 None value null 640s
+   select fold objective 0.3492 KL 0.06096774279705582 value {"n": 57873, "bce": 0.5668, "const_bce": 0.642, "auc": 0.7462253868513712, "mean_p": 0.2708, "mean_z": 0.3414}
+   mono penalty 0.00799
+   sibling-rank loss 0.59351
+   sibling-rank holdout {"groups": 1004, "sources": 136, "concordance": 0.6253}
+ep 4 train loss 0.9034 val KL None top1 None value null 844s
+   select fold objective 0.3372 KL 0.06038347222965055 value {"n": 57873, "bce": 0.5432, "const_bce": 0.642, "auc": 0.7615439957400514, "mean_p": 0.2981, "mean_z": 0.3414}
+   mono penalty 0.00823
+   sibling-rank loss 0.57036
+   sibling-rank holdout {"groups": 1004, "sources": 136, "concordance": 0.6374}
+ep 5 train loss 0.8759 val KL None top1 None value null 1050s
+   select fold objective 0.3409 KL 0.06028750284701575 value {"n": 57873, "bce": 0.5508, "const_bce": 0.642, "auc": 0.7642140131556341, "mean_p": 0.2801, "mean_z": 0.3414}
+   mono penalty 0.00820
+   sibling-rank loss 0.55632
+   sibling-rank holdout {"groups": 1004, "sources": 136, "concordance": 0.6414}
+ep 6 train loss 0.8584 val KL None top1 None value null 1258s
+   select fold objective 0.3411 KL 0.06098683604172096 value {"n": 57873, "bce": 0.5494, "const_bce": 0.642, "auc": 0.7648449100531638, "mean_p": 0.2816, "mean_z": 0.3414}
+   mono penalty 0.00844
+   sibling-rank loss 0.53098
+   sibling-rank holdout {"groups": 1004, "sources": 136, "concordance": 0.6446}
+ep 7 train loss 0.8313 val KL None top1 None value null 1466s
+   select fold objective 0.3481 KL 0.06103913852348996 value {"n": 57873, "bce": 0.5629, "const_bce": 0.642, "auc": 0.758067093558983, "mean_p": 0.2651, "mean_z": 0.3414}
+early stop: no better selection score for 3 epochs
+chosen epoch 4 val KL 0.058876946514402326 top1 0.9287165281625115 value {"n": 56882, "bce": 0.522, "const_bce": 0.6216, "auc": 0.7632377781102886, "mean_p": 0.2982, "mean_z": 0.3132}
+best per group: {"boss_relic": {"n": 135, "kl": 0.0377, "top1": 0.9407, "v4_top1": null, "serve_top1": null}, "card_select:bonfire_spirits": {"n": 7, "kl": 0.2146, "top1": 0.1429, "v4_top1": null, "serve_top1": null}, "card_select:bottle": {"n": 17, "kl": 0.7395, "top1": 0.2941, "v4_top1": null, "serve_top1": null}, "card_select:obtain": {"n": 6, "kl": 0.3687, "top1": 0.3333, "v4_top1": null, "serve_top1": null}, "card_select:transform": {"n": 4, "kl": 0.0251, "top1": 0.5, "v4_top1": null, "serve_top1": null}, "card_select:transform_upgrade": {"n": 9, "kl": 0.2721, "top1": 0.2222, "v4_top1": null, "serve_top1": null}, "card_select:upgrade": {"n": 5, "kl": 0.0043, "top1": 1.0, "v4_top1": null, "serve_top1": null}, "event": {"n": 471, "kl": 0.0382, "top1": 0.966, "v4_top1": null, "serve_top1": null}, "map": {"n": 1302, "kl": 0.1292, "top1": 0.8633, "v4_top1": null, "serve_top1": null}, "rest": {"n": 534, "kl": 0.0211, "top1": 0.9794, "v4_top1": null, "serve_top1": null}, "rewards": {"n": 2275, "kl": 0.03, "top1": 0.9618, "v4_top1": null, "serve_top1": null}, "shop": {"n": 641, "kl": 0.0454, "top1": 0.9142, "v4_top1": null, "serve_top1": null}, "treasure": {"n": 9, "kl": 0.0, "top1": 1.0, "v4_top1": null, "serve_top1": null}}
+counterfactual {"rules": ["hp", "mhp", "gold"], "eval_deltas": {"hp": -3, "mhp": 5, "gold": 50}, "slope": 1.3586671352386475, "select": {"hp": {"n": 57870, "rel_sq_err": 45.1403, "sign_agree": 0.7105, "mean_ds": -0.06701, "mean_dt": -0.00975, "student_wrong": 0.1974, "teacher_wrong": 0.1873}, "mhp": {"n": 57873, "rel_sq_err": 12.792, "sign_agree": 0.5272, "mean_ds": 0.00968, "mean_dt": 0.01848, "student_wrong": 0.4585, "teacher_wrong": 0.1375}, "gold": {"n": 57873, "rel_sq_err": 37.1081, "sign_agree": 0.7316, "mean_ds": 0.08238, "mean_dt": 0.01495, "student_wrong": 0.1915, "teacher_wrong": 0.1378}}, "val": {"hp": {"n": 56882, "rel_sq_err": 47.6319, "sign_agree": 0.7009, "mean_ds": -0.06763, "mean_dt": -0.00951, "student_wrong": 0.1972, "teacher_wrong": 0.1938}, "mhp": {"n": 56882, "rel_sq_err": 11.4334, "sign_agree": 0.5149, "mean_ds": 0.0115, "mean_dt": 0.01973, "student_wrong": 0.4636, "teacher_wrong": 0.1151}, "gold": {"n": 56882, "rel_sq_err": 37.7762, "sign_agree": 0.7386, "mean_ds": 0.08471, "mean_dt": 0.01548, "student_wrong": 0.1917, "teacher_wrong": 0.1247}}}
+monotonicity {"rules": ["hp", "mhp", "gold", "potion", "curse"], "eval_deltas": {"hp": -3, "mhp": 5, "gold": 50}, "curses": ["CLUMSY", "DECAY", "DOUBT", "INJURY", "NORMALITY", "PAIN", "REGRET", "SHAME", "WRITHE"], "select": {"hp": {"n": 57870, "viol": 0.1974, "viol_p001": 0.1656, "median_dp": 0.00731}, "mhp": {"n": 57873, "viol": 0.4585, "viol_p001": 0.4022, "median_dp": 0.00072}, "gold": {"n": 57873, "viol": 0.1915, "viol_p001": 0.1632, "median_dp": 0.01016}, "potion": {"n": 43721, "viol": 0.0362, "viol_p001": 0.032, "median_dp": 0.0384}, "curse": {"n": 57873, "viol": 0.0013, "viol_p001": 0.0009, "median_dp": 0.02162}}, "val": {"hp": {"n": 56882, "viol": 0.1972, "viol_p001": 0.1657, "median_dp": 0.00729}, "mhp": {"n": 56882, "viol": 0.4636, "viol_p001": 0.4058, "median_dp": 0.0006}, "gold": {"n": 56882, "viol": 0.1917, "viol_p001": 0.1634, "median_dp": 0.01034}, "potion": {"n": 43437, "viol": 0.028, "viol_p001": 0.0248, "median_dp": 0.03898}, "curse": {"n": 56882, "viol": 0.0009, "viol_p001": 0.0006, "median_dp": 0.02144}}}
+sibling-rank {"holdout": {"groups": 1004, "sources": 136, "concordance": 0.6253}, "train_first1000": {"groups": 1000, "sources": 127, "concordance": 0.6311}}
+real 2077.32 user 7123.80 sys 277.52 maxrss_kb 2054356
+EXIT 0

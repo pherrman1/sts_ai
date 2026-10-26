@@ -1,0 +1,7 @@
+VALIDATION {'groups': 5587, 'sources': 80}, holdout {'groups': 2802, 'sources': 40}; X2-B 0.6639 (holdout 0.6570)
+SR_w1        conc 0.6449 regret 0.0184 - X2-B -0.0190 [-0.0311, -0.0079]
+             holdout 0.6495; blend w 0.1 (holdout 0.6921) VALIDATION 0.6889 - X2-B +0.0250 [+0.0187, +0.0313]
+SR_crn_r2_s2_ep20 conc 0.6668 regret 0.0172 - X2-B +0.0029 [-0.0115, +0.0169] - SR_w1 +0.0219 [+0.0147, +0.0301] gate PASS
+             holdout 0.6688; blend w 0.1 (holdout 0.7055) VALIDATION 0.7031 - X2-B +0.0391 [+0.0312, +0.0472] - control blend +0.0142 [+0.0087, +0.0200]
+SR_crn_r2_s2_ep9 conc 0.6540 regret 0.0176 - X2-B -0.0100 [-0.0226, +0.0020] - SR_w1 +0.0091 [+0.0025, +0.0157] gate IMPROVED
+             holdout 0.6613; blend w 0.2 (holdout 0.6982) VALIDATION 0.6922 - X2-B +0.0283 [+0.0189, +0.0374] - control blend +0.0033 [-0.0034, +0.0101]

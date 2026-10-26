@@ -1,0 +1,6 @@
+export sha256 cd9a049a3b35da9327bbe42a509b6b8e61f4354d7b13a4845b88e04875eae5e7
+VD_T1_alpha1_v1 records 400 logits 1652 max|dlogit| 1.1e-05 max|dvalue| 1.43e-06 argmax mismatches 0
+export sha256 e4869d10c904271aaf54b2bb678adde3ba15985ca6a87510e649af490ade8eb0
+VDF_T1_alpha1_v1 records 400 logits 1652 max|dlogit| 1.57e-05 max|dvalue| 1.67e-06 argmax mismatches 0
+export sha256 5f14d3f64a4573ac8e61474a9dc10c59cc1ca288b04f767f52d89b2efdeb49e8
+VDF_T1_alpha1_v0.5 records 400 logits 1652 max|dlogit| 1.19e-05 max|dvalue| 2.15e-06 argmax mismatches 0
