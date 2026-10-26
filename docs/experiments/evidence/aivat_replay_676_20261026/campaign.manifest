@@ -1,6 +1,6 @@
 name          aivat-replay-676
 code_commit   4da941d4e2f2b4797b4bc360ee9bdc14a3c81239
-binary_sha256 TBD
+binary_sha256 aadd4ea8b74f4512d4dcc034dfbebebcbeeb628d0090c91c7a096d4ec7d60381
 workers       4
 share         /mnt/project-files/aivat-replay-676
 configure_preset linux-gcc-release-x86-64-v3
