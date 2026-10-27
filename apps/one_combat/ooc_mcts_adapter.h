@@ -368,7 +368,8 @@ public:
     // Campfire price (STS_OOC_CAMPFIRE_PRICE): for every legal root action, n rollouts of the search's own leaf and n
     // rollouts to the act's end valued by refereeActEndCalibration, stream r shared by the actions. Changes the
     // model's rollout state: call it in a forked child.
-    nlohmann::json priceRootActions(unsigned n, std::uint64_t seed);
+    // top > 0 prices only the top highest-prior legal actions (ties keep legal order).
+    nlohmann::json priceRootActions(unsigned n, std::uint64_t seed, unsigned top = 0);
 };
 // Adds game meanings and CTM provenance to a captured generic search tree.
 void annotateOocTree(const OocGameContextModel &, sts::search::OocTreeSnapshot &);
