@@ -53,6 +53,7 @@ for i in 0 1; do
   env -i "${E[@]}" timeout 7h bash tools/seed_guard.sh "$RUN/one_combat" heartoutcomegen 1 "$SEED" "$b.jsonl" off > "$b.log" 2> "$b.err"
   rc=$?
   if [ "$rc" = 0 ]; then
+    grep -q "ooc-learned-stop: .*ooc_learned_stop_trees.txt" "$b.log" "$b.err" || rc=97
     grep -q "ctm-act4-survival\] model=" "$b.log" "$b.err" || rc=96
     grep -qF "[heart1] loaded $RUN/student_sel.bin " "$b.log" "$b.err" || rc=95
     grep -q " screens=none" "$b.log" "$b.err" || rc=94

@@ -12,8 +12,9 @@ and does it make Silver play materially longer combats or stall?
 ## Where the term acts (preflight on main `ed2dcb2`)
 - Only the won branch of the ordinary leaf. The loss/unresolved branch (including `turnSurvivalWeight` 1.5 per turn,
   no credit past turn 100) is unchanged in both arms.
-- Not at the Heart: the final-fight leaf (`context.finalFightLeaf`, ADR-0035) scores every win the same, so the Heart
-  fight is identical in both arms by construction. Shield and Spear and every Act 1-3 fight use the ordinary leaf.
+- Not in the run's final fight: the final-fight leaf (`context.finalFightLeaf`, ADR-0035) scores every win the same.
+  That covers the Heart, and also the last Act-3 boss when Act 4 does not follow (keys missing), so those fights are
+  identical in both arms by construction. Shield and Spear and every other Act 1-3 fight use the ordinary leaf.
 - The live advisor (`native_silver_advisor.cpp`) builds its own searcher and ignores the flag; the exact solver
   keeps its own weights.
 - The learned Silver stop (`gbt-0cac7cc64364`) was trained on the 0.4 leaf. B shifts won-leaf values by at most
@@ -76,4 +77,5 @@ Evaluated in this order on the 32 seeds:
 - Runs diverge at the first combat whose play changes, so only that first combat per seed is cleanly paired; later
   combats are compared as distributions.
 - The learned stop was fit on the 0.4 leaf (see above); B tests the term under that stop, not a retuned one.
-- The Heart fight cannot differ (final-fight leaf); Act-4 differences come from Shield and Spear or earlier play.
+- The run's final fight cannot differ (final-fight leaf: the Heart, or the last Act-3 boss without keys); Act-4
+  differences come from Shield and Spear or earlier play.
