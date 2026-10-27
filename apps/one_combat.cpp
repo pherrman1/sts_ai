@@ -9,6 +9,7 @@
 #include "one_combat/driver_shared.h"
 #include "one_combat/heart1_policy.h"
 #include "one_combat/rollout_student.h"
+#include "one_combat/expert_replay.h"
 #include "one_combat/heart_outcome_capture.h"
 #include "one_combat/heart_leaf_tail.h"
 #include "one_combat/differential_replay_native.h"
@@ -3161,7 +3162,8 @@ int main(int argc, char **argv) {
         const bool wholeRunMode = mode == "run" || mode == "bestbench" || mode == "reprobench";
         // All three modes take the ascension as argv[4], default 20.
         const bool a20WholeRun = wholeRunMode && (argc > 4 ? std::atoi(argv[4]) : 20) == 20;
-        const bool wholeRunDefault = (wholeRunMode && argc <= 2) || a20WholeRun;
+        // expertreplay plays one A20 whole run per process (no sims argument).
+        const bool wholeRunDefault = (wholeRunMode && argc <= 2) || a20WholeRun || mode == "expertreplay";
         const bool adaptiveConfigured = std::getenv("STS_SILVER_ADAPTIVE")
             || std::getenv("STS_SILVER_ADAPTIVE_RETAINED_ONLY")
             || std::getenv("STS_SILVER_ADAPTIVE_TOP_GAP");
@@ -3810,10 +3812,16 @@ int main(int argc, char **argv) {
 
     } else if (mode == "heartoutcomeselftest") {
         return one_combat::heartOutcomeSelfTest();
+    } else if (mode == "forcebossrelicselftest") {
+        return forcedBossRelicSelfTest();
     } else if (mode == "heart1recordselftest") {
         one_combat::heart1::publicRecordInvarianceSelfTest();
         std::cout << "heart1 public record invariance selftest: ok\n";
         return 0;
+    } else if (mode == "expertreplay") {
+        if (argc != 5 || std::string(argv[2]) != "1")
+            throw std::runtime_error("usage: one_combat expertreplay 1 RUN.json OUT.json");
+        return one_combat::expertReplayGen(argv[3], argv[4]);
     } else if (mode == "heartoutcomegen") {
         const std::string capture = argc == 6 ? argv[5] : "";
         if (argc != 6 || std::string(argv[2]) != "1"

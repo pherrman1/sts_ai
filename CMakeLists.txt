@@ -96,6 +96,14 @@ else()
 endif()
 
 
+add_executable(expert-seed-probe apps/expert_seed_probe.cpp $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(expert-seed-probe PUBLIC include)
+target_include_directories(expert-seed-probe PUBLIC json/include)
+
+add_executable(expert-replay-probe apps/expert_replay_probe.cpp $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(expert-replay-probe PUBLIC include)
+target_include_directories(expert-replay-probe PUBLIC json/include)
+
 add_executable(main apps/main.cpp $<TARGET_OBJECTS:sts_core_objects>)
 target_link_directories(main PRIVATE json::nlohmann_json)
 target_include_directories(main PUBLIC include)
@@ -447,6 +455,7 @@ add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/run_driver.cpp
     apps/one_combat/ooc_tree_rules.cpp
     apps/one_combat/heart_outcome_capture.cpp
+    apps/one_combat/expert_replay.cpp
     apps/one_combat/heart1_policy.cpp
     apps/one_combat/heart1_record_invariance.cpp
     apps/one_combat/rollout_student.cpp
@@ -474,6 +483,7 @@ link_ctm_crypto(one_combat)
 target_link_options(one_combat PRIVATE -Wl,--gc-sections)
 
 add_test(NAME heart_outcome_capture COMMAND one_combat heartoutcomeselftest)
+add_test(NAME forced_boss_relic COMMAND one_combat forcebossrelicselftest)
 add_test(NAME heart1_public_record_invariance COMMAND one_combat heart1recordselftest)
 add_test(NAME heart_outcome_collection_python COMMAND python3 -m unittest discover
     -s ${CMAKE_CURRENT_SOURCE_DIR}/tests -p test_heart_outcome_collect.py)
