@@ -42,7 +42,7 @@ priors, visits, Q, selected key).
 - Campaign: **111387000-111387255** (256 seeds, free block 111381000-111389989 of the seed ledger; repo seed guard
   clean). One unit = one seed with A, B, C, D in sequence (order rotated by seed % 4) on one lane.
 - Smokes: 111387990-111387999 (111387990 used for the pre-launch smoke).
-- Cost: see SMOKE.md (per-arm wall on the smoke seed); estimate A, B ~550 s, C, D ~850 s per game -> ~200 core-hours.
+- Cost: see SMOKE.md (per-arm wall on the smoke seed); estimate A ~500 s, B ~800 s, C and D ~3,000 s per game -> ~520 core-hours, ~8 h on 16 workers.
 
 ## Endpoints
 - **Primary:** Heart kills, B - A, C - A, D - A, paired: exact discordance counts (exact McNemar p), 95% seed
