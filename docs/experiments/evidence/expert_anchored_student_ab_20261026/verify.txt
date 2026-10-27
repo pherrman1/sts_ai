@@ -1,0 +1,3 @@
+111384717 OK      111384717.w02.tar (+1 duplicate)
+units OK 1024 MISSING 0 BAD 0 of 1024; duplicates 1; tars for unknown units 0; run ['d9aa44fa36be']; worker DONE.json: 0/16
+extracted 1024 units to /tmp/claude-0/-home-user-sts-ai/18a8c00c-1b5d-5f33-a7ba-bdd32bbee7de/scratchpad/full
