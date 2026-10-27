@@ -2,6 +2,7 @@
 DIR is the --extract dir of `verify_campaign.py` (queue schedule), holds wWW.tar files, or holds the unit files.
 Arms: A (student_sel), B (expert-anchored candidate); nothing else differs. PREREG.md fixes:
   primary    Heart kills, B - A, paired: exact discordance counts (exact McNemar p), 95% seed-bootstrap CI
+  verdict    IMPROVED needs p < 0.05, CI > 0 and wall B/A <= 1.10 (else NOT_SHOWN with verdictNote)
   futility   (--futility, first 256 seeds only) Act-4 arrival B - A <= -3 pp -> STOP
   secondary  Act-4 arrival, kills per Act-4 arrival, mean final floor, deaths by act
   mechanism  first-divergence attribution: paired games are identical until the first different choice; each pair is
@@ -188,6 +189,9 @@ def main():
                      'wallMean_s': statistics.mean(walls), 'wallMax_s': max(walls)}
     out['search'] = search
     out['wallRatio'] = {f'{x}/{y}': search[x]['wallMean_s'] / max(search[y]['wallMean_s'], 1) for x, y in PAIRS}
+    if out['verdict'] == 'IMPROVED' and out['wallRatio']['B/A'] > 1.10:  # PREREG: IMPROVED needs B's mean wall <= 1.10x A's
+        out['verdict'] = 'NOT_SHOWN'
+        out['verdictNote'] = 'Heart kills improved, but wall B/A > 1.10'
     out['perSeed'] = {s: {a: [heart[s][a], act4[s][a], valid[s][a]['foot']['finalFloor']] for a in ARMS} for s in seeds}
     text = json.dumps(out, indent=1)
     if out_path:

@@ -17,4 +17,4 @@ expert.bin `14506144…`. Four lanes in parallel on one 4-CPU cloud container, t
 | wall | 111385990 (floor 13): A 75 s, B 81 s; 111385991 (A, floor 33): 342 s |
 
 Unit time for a game that reaches the Heart is longer (§683: 647 s for a full MAP game before Act-4 strong); expect
-20-35 min per unit (two games).
+20-50 min per unit (two games; reviewer: up to 40-50 min when both reach the Heart).
