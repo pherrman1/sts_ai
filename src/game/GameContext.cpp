@@ -1199,6 +1199,20 @@ static bool rewardlessCombatRngFix() {
     throw std::runtime_error("STS_REWARDLESS_COMBAT_RNG_FIX must be 0 or 1");
 }
 
+// STS_CALLING_BELL_CARD_RNG_FIX: unset or 1 = acquiring Calling Bell rolls
+// and discards one card reward (cardRng and the rarity factor), as the game's
+// CallingBell.update opens the reward screen (CombatRewardScreen.open rolls a
+// card RewardItem) before clearing it for the three relics. Inferred from 348
+// replayed expert runs (evidence expert_replay_fidelity_20261026), not from
+// bytecode. 0 = the legacy engine makes no card roll. Other values are fatal.
+// Read once per Calling Bell acquisition.
+static bool callingBellCardRngFix() {
+    const char *value = std::getenv("STS_CALLING_BELL_CARD_RNG_FIX");
+    if (!value || !*value || std::string(value) == "1") return true;
+    if (std::string(value) == "0") return false;
+    throw std::runtime_error("STS_CALLING_BELL_CARD_RNG_FIX must be 0 or 1");
+}
+
 void GameContext::rollEscapedCombatRewardRng() {
     // Java builds the rewards and only skips the reward screen, so the gold,
     // elite relic (popped from its pool) and potion rolls happen and the
@@ -1471,6 +1485,11 @@ bool GameContext::obtainRelic(RelicId r) {
 
         case RelicId::CALLING_BELL: {
             deck.obtain(*this, CardId::CURSE_OF_THE_BELL);
+            if (callingBellCardRngFix()) {
+                // CallingBell.update opens the combat reward screen before
+                // clearing it, which rolls a card reward that is never shown.
+                createCardReward(Room::EVENT);
+            }
             Rewards reward;
             reward.addRelic(returnRandomScreenlessRelic(RelicTier::COMMON));
             reward.addRelic(returnRandomScreenlessRelic(RelicTier::UNCOMMON));

@@ -35,9 +35,9 @@ std::optional<search::GameAction> rewardRelicRuleAction(const GameContext &gc) {
     using RT = search::GameAction::RewardsActionType;
     if (gc.screenState != ScreenState::REWARDS) return std::nullopt;
     const auto &r = gc.info.rewardsContainer;
-    // Under a non-default key flag that leaves Sapphire as a choice (STS_KEY_SAPPHIRE=policy),
+    // Under a key rule that leaves Sapphire as a choice (STS_KEY_SAPPHIRE=policy, the ADR-0063 default),
     // taking the paired relic would remove the key offer.
-    if (r.sapphireKey && !search::heartKeyRules().isDefault() && g_collectKeys && gc.keysEnabled
+    if (r.sapphireKey && !search::heartKeyRules().isAdr0041() && g_collectKeys && gc.keysEnabled
             && search::heartKeyActionAllowed(gc, g_collectKeys, search::GameAction(RT::KEY, 0)))
         return std::nullopt;
     for (int i = 0; i < r.relicCount; ++i) {

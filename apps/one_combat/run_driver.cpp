@@ -210,6 +210,7 @@ thread_local bool t_oocHypotheticalStep = false;
 thread_local BossEntryHook *t_bossEntryHook = nullptr;
 thread_local std::function<void(const sts::GameContext &, const one_combat::PathHistory &)> t_realRunContextObserver;
 thread_local std::function<void(std::uint64_t, const char *)> t_realOocDecisionObserver;
+thread_local std::function<const char *(sts::GameContext &)> t_oocDecisionOverride;
 thread_local std::function<void(const sts::GameContext &, const sts::BattleContext &,
     int, const std::optional<one_combat::CombatTransitionRecord> &)> t_realCombatObserver;
 
@@ -299,7 +300,7 @@ void runFullRunOocPolicyStep(GameContext &gc, search::ScumSearchAgent2 &agent,
     }
     // STS_KEY_EMERALD=mask: the map handlers below enumerate unmasked edges, so
     // the chain takes the first edge that still reaches the burning elite.
-    if (gc.screenState == ScreenState::MAP_SCREEN && !search::heartKeyRules().isDefault()) {
+    if (gc.screenState == ScreenState::MAP_SCREEN && !search::heartKeyRules().isAdr0041()) {
         std::optional<search::GameAction> allowed;
         bool masked = false;
         for (const auto a : search::GameAction::getAllActionsInState(gc)) {
@@ -464,6 +465,9 @@ int forcedBossRelicSelfTest() {
 const char *realOocChainStep(GameContext &gc, search::ScumSearchAgent2 &agent, bool restV, bool shopV,
                              const one_combat::PathHistory &path, std::uint64_t seed, std::uint64_t index,
                              one_combat::LiveOocMctsMetrics &mctsMetrics) {
+    // Research observer (STS_OOC_CAMPFIRE_PRICE, default off): prices every option of a rest site before anything
+    // decides it. Play is unchanged. A rule-forced Ruby site has no search candidates and records a price error.
+    one_combat::observeOocCampfirePrice(gc, path, seed, index);
     if (const auto &forced = forcedBossRelic(); forced && gc.screenState == ScreenState::BOSS_RELIC_REWARDS
             && gc.act == forced->act) {
         if (t_forcedBossRelicTaken) throw std::runtime_error("STS_OOC_FORCE_BOSS_RELIC: second boss-relic root in the act");
@@ -627,9 +631,9 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
                 traceOffer = oocTraceOffer(gc);
             }
             const char *traceBy = "chain";
-            // Opt-in key variants mask some actions; report a policy that ignored the mask.
+            // Non-ADR-0041 key variants mask some actions; report a policy that ignored the mask.
             std::vector<int> keyMaskAllowedX;
-            if (!search::heartKeyRules().isDefault() && gc.screenState == ScreenState::MAP_SCREEN) {
+            if (!search::heartKeyRules().isAdr0041() && gc.screenState == ScreenState::MAP_SCREEN) {
                 bool masked = false;
                 for (const auto a : search::GameAction::getAllActionsInState(gc)) {
                     if (!a.isValidAction(gc)) continue;
@@ -639,7 +643,9 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
                 if (!masked) keyMaskAllowedX.clear();
             }
             const int keyMaskFloor = gc.floorNum;
-            traceBy = realOocChainStep(gc, agent, restV, shopV, path, seed, index, mctsMetrics);
+            const char *overrideBy = t_oocDecisionOverride ? t_oocDecisionOverride(gc) : nullptr;
+            traceBy = overrideBy ? overrideBy
+                                 : realOocChainStep(gc, agent, restV, shopV, path, seed, index, mctsMetrics);
             if (!keyMaskAllowedX.empty() && gc.floorNum != keyMaskFloor
                     && std::find(keyMaskAllowedX.begin(), keyMaskAllowedX.end(), gc.curMapNodeX) == keyMaskAllowedX.end())
                 std::fprintf(stderr, "heart_key_mask_violation seed=%llu floor=%d by=%s handler=%s x=%d\n",
