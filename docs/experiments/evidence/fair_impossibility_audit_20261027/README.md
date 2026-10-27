@@ -59,12 +59,13 @@ Consequences:
   probability exp(−N²/2^(H+1))); Neow + boss adds about 11 bits. So at most a few hundred seeds typically share a
   floor-0 observation, and the first combat (monster HP rolls, opening hand order from `Random(seed + 1)`) adds far
   more than the missing bits. Two seeds sharing a history into a meaningful decision would be an astronomically rare
-  collision, giving a loss bound of order 2^-64: the issue's own warning against numerically useless bounds applies.
+  collision, so any loss bound from such a pair is negligible (not computed): the issue's own warning against
+  numerically useless bounds applies.
 - In this regime the only nontrivial question is whether **hindsight-unwinnable** seeds exist. That is a different
   problem (no information argument) and is the one the community has worked on: OohBleh with gamerpuppy (author of
   sts_lightspeed) and ForgottenArbiter proved seed `18ISL35FYK4` unwinnable for the **Silent at A18+** (forced
   floor-6 Lagavulin; a relaxation that ignores HP and gives the player full shuffle control still loses)
-  ([reddit, 2022-02-28](https://lr.eu.psf.lt/r/slaythespire/s/U6aYt5QCRy); earlier search
+  ([reddit, 2022-02-28](https://www.reddit.com/r/slaythespire/s/U6aYt5QCRy); earlier search
   [PC Gamer, 2020-07-21](https://www.pcgamer.com/uk/does-an-impossible-slay-the-spire-seed-exist-this-players-doing-the-maths/)).
   No Ironclad proof was found.
 
@@ -77,7 +78,8 @@ even needed. But every route to a whole-run statement must certify *eventual* lo
 - There is no forced common prefix beyond the Neow screen. Any earlier fair deviation (Neow choice, path, card picks)
   reaches states where the two worlds diverge observably, after which the policy plays each world separately. Ruling
   that out (the issue's "critical subtlety") requires proving loss over the remaining ~50 floors in at least one
-  world for every deviation: a full POMDP solve.
+  world for every deviation: at least a loss proof over all states reachable from some forced point,
+  short of but still requiring a sound bound on a full POMDP solve. Neither exists.
 - No sound whole-run loss bound exists in the repository. `exact_combat_solver` is exact for one combat and only
   under gates (starter deck, Act-1 weak monsters, turn cap ≤ 8; `apps/exact_combat_solver.cpp` header), and its
   `roots` mode certifies survival only over a 1–2 turn horizon (§623, §654,
@@ -92,11 +94,11 @@ even needed. But every route to a whole-run statement must certify *eventual* lo
 In the fresh-chance regime the exact solver already gives local (b)-type facts. The endgame study found, at the start
 of the last turn of lost A20 fights, 26 of 33 solved positions where no play survives the coming enemy turn, with the
 best play surviving with probability 0.076 on average (§654; REPORT §9.5). Those are "every fair policy can die here"
-statements but mostly not information conflicts: many are lost in every world.
+statements but not necessarily information conflicts (Unverified: some may be lost in every world).
 
 The quantity that isolates the information conflict at a root h is the value of perfect information
-VPI(h) = E_w[max_a P(survive | a, w)] − max_a E_w[P(survive | a, w)]: VPI(h) > 0 with E_w[max_a …] = 1 is exactly a
-local certificate that every world is survivable with hindsight but no fair action survives all of them. A sound
+VPI(h) = E_w[max_a P(survive | a, w)] − max_a E_w[P(survive | a, w)], where P(survive | a, w) is under the best
+continuation in world w. VPI(h) > 0 with E_w[max_a …] = 1 is a sufficient local certificate that every world is survivable with hindsight but no fair action survives all of them. A sound
 version needs only the existing solver run twice on recorded roots (determinized per root chance outcome, and fair),
 so no new seeds and no gameplay. It remains local: conditional on reaching h, for that combat's horizon, under the
 idealized chance model; it says nothing about whole-run win probability.
@@ -108,8 +110,8 @@ a certificate either.
 ## Reproduce
 
 ```
-g++ -std=c++20 -O2 -fopenmp -Iinclude -Iextern -c src/<each>.cpp   # all of src/*.cpp
-g++ -std=c++20 -O2 -fopenmp -Iinclude -Iextern census.cpp <objects> -o census -lcrypto
+find src -name '*.cpp' | xargs -P4 -I{} sh -c 'g++ -std=c++20 -O2 -fopenmp -Iinclude -Iextern -c {} -o obj/$(echo {} | tr / _).o'
+g++ -std=c++20 -O2 -fopenmp -Iinclude -Iextern census.cpp obj/*.o -o census -lcrypto   # -Iextern: nlohmann/json.hpp, no submodule needed
 census range 111000000 1000000 [0|1|2]     # 0 all, 1 map only, 2 Neow+boss control
 census random 20000000 887 [0|1|2]
 ```

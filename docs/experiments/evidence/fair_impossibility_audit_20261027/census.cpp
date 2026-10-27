@@ -74,9 +74,9 @@ int main(int argc, char **argv) {
         std::uint64_t seed = mode == "range" ? a + i : splitmix(salt);
         const std::string obs = observe(seed, mapOnly);
         const std::string d = digest(obs);
-        collidingPairs += static_cast<double>(classSize[d]++);
         auto [it, fresh] = seen.emplace(d, seed);
         if (!fresh && observe(it->second, mapOnly) != obs) { std::printf("digest-only clash %llu %llu\n", (unsigned long long)it->second, (unsigned long long)seed); continue; }
+        collidingPairs += static_cast<double>(classSize[d]++);
         if (!fresh) {
             ++collisions;
             if (collisions <= 20) std::printf("collision %llu %llu\n", (unsigned long long)it->second, (unsigned long long)seed);
