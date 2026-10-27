@@ -34,7 +34,7 @@ First 32 seeds alone: Heart 7 vs 10 (B-only 4 / A-only 1), floor +0.19 [−4.7, 
 | turn cap / undecided | 0 | 0 |
 | Smoke Bomb escapes | 4 | 4 |
 
-By act × room, B is longer in 9 of 10 act-1–4 NORMAL/ELITE/BOSS cells, by +0.05 to +0.79 turns; bosses carry most of
+By act × room, B is longer in 9 of 11 act-1–4 NORMAL/ELITE/BOSS cells (by +0.04 to +1.17 turns); bosses carry most of
 it (act 1 +0.79, act 2 +0.57, act 3 +0.63, act 4 +1.17).
 
 **Paired first divergence:** 63 of 64 seeds diverge, all first at a combat with the same pre-combat state (1 seed
