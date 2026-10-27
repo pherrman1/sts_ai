@@ -1,0 +1,10 @@
+name          key-rules-ab
+code_commit   db216ff062ca21d54834885634aef97f7a90c576
+binary_sha256 d74cfded889b944099454a3d2a0f8324d318cb81332b29c809acd3d26aa16899
+workers       16
+share         /mnt/project-files/key-rules-ab
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 45
+input student_sel.bin /mnt/project-files/az-gen3-explore/student_sel.bin cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7
