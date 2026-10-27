@@ -11,7 +11,8 @@ coefficient when V is the true value. V(post) is 0 after a death and the fight o
 post-fight states are scored by a frozen value model (`train`), which must not be fit on the evaluated campaign.
 
   train  OUT_PREFIX UNIT.tar ...               fit V = P(Heart kill | post-fight state) (xgboost) on other campaigns
-  estimate MODEL_PREFIX REPLAYS.jsonl UNITS.tar ... --pair B,A [--rooms BOSS,ELITE] [--act4]
+  estimate MODEL_PREFIX UNITS.tar ... --replays R.jsonl[.gz] [--replays ...] --pair B,A [--beta B]
+      seeds with a failed, invalid, non-identical or missing replay are excluded whole and listed
 """
 import argparse
 import gzip
@@ -109,16 +110,25 @@ def estimate(args):
     model, feat, sha = load_model(args.model)
     runs = runs_from_units(args.units)
     b, a = args.pair.split(',')
-    reps = {}
-    for line in open(args.replays):
-        r = json.loads(line)
-        if 'error' in r or not r.get('valid'):
-            raise SystemExit(f'invalid replay row: {line[:200]}')
-        if r['replicate'] == 0:
-            if not r.get('identity'):
-                raise SystemExit(f'identity replay mismatch: {line[:200]}')
-            continue
-        reps.setdefault((r['arm'], r['sourceSeed'], r['fightIdx']), []).append(r)
+    reps, bad = {}, {}
+    for path in args.replays:
+        for line in (gzip.open(path, 'rt') if path.endswith('.gz') else open(path)):
+            r = json.loads(line)
+            # A seed with any failed, invalid or non-identical replay is excluded whole (both arms).
+            if 'error' in r or not r.get('valid'):
+                bad.setdefault(r['sourceSeed'], 'invalid_or_error')
+                continue
+            if r['replicate'] == 0:
+                if not r.get('identity'):
+                    bad[r['sourceSeed']] = 'identity_mismatch'
+                continue
+            reps.setdefault((r['arm'], r['sourceSeed'], r['fightIdx']), []).append(r)
+    m = max(len(v) for v in reps.values())   # the campaign's replicate count; fewer = incomplete
+    # A seed must have m replays of every non-event fight of both arms; otherwise it is excluded too.
+    for (arm, seed), (y, fights) in runs.items():
+        if arm in (a, b) and seed not in bad and any(
+                f['roomClass'] != 'OTHER' and len(reps.get((arm, seed, f['fightIdx']), [])) != m for f in fights):
+            bad[seed] = 'incomplete_replays'
 
     # V of every actual and replayed post state; the model is called once on all live non-Heart states.
     pending, values = [], {}
@@ -140,11 +150,7 @@ def estimate(args):
         pr = model.predict_proba(np.array([x for _, x in pending]))[:, 1]
         for (key, _), p in zip(pending, pr):
             values[key] = float(p)
-    seeds = sorted({s for (arm, s) in runs if arm == b} & {s for (arm, s) in runs if arm == a})
-    ms = {len(v) for v in reps.values()}
-    if len(ms) != 1:
-        raise SystemExit(f'unequal replicate counts {sorted(ms)}')
-    m = ms.pop()
+    seeds = sorted(({s for (arm, s) in runs if arm == b} & {s for (arm, s) in runs if arm == a}) - set(bad))
     beta = args.beta if args.beta is not None else m / (m + 1)
 
     def per_run(arm, seed):
@@ -174,7 +180,10 @@ def estimate(args):
     res = {'pair': f'{b}-{a}', 'seeds': len(seeds), 'replicates': m, 'beta': beta, 'value_model_sha256': sha,
            'replayed_fights': len(reps),
            'raw': {'diff': float(D_raw.mean()), 'ci': ci(D_raw), 'sd': float(D_raw.std(ddof=1))},
-           'aivat': {'diff': float(D_cv.mean()), 'ci': ci(D_cv), 'sd': float(D_cv.std(ddof=1))}}
+           'aivat': {'diff': float(D_cv.mean()), 'ci': ci(D_cv), 'sd': float(D_cv.std(ddof=1))},
+           # corrected minus raw = -beta * (luck_B - luck_A); its CI is the bias check (expected 0)
+           'shift': {'diff': float((D_cv - D_raw).mean()), 'ci': ci(D_cv - D_raw)},
+           'excluded_seeds': {str(k): v for k, v in sorted(bad.items())}}
     res['sd_ratio'] = res['aivat']['sd'] / res['raw']['sd']
     res['effective_seed_multiplier'] = 1 / res['sd_ratio'] ** 2
     json.dump(res, sys.stdout, indent=1)
@@ -189,8 +198,8 @@ def main():
     t.add_argument('units', nargs='+')
     e = sub.add_parser('estimate')
     e.add_argument('model')
-    e.add_argument('replays')
     e.add_argument('units', nargs='+')
+    e.add_argument('--replays', action='append', required=True, help='fightreplay output (.jsonl or .jsonl.gz)')
     e.add_argument('--pair', required=True, help='B,A: report B minus A')
     e.add_argument('--beta', type=float, default=None)
     e.add_argument('--boot', type=int, default=4000)
