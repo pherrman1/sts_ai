@@ -28,6 +28,9 @@ the replacement.
 
 ## Current architecture ADRs
 
+- [ADR-0062](0062-research-known-rng-act4replay-arm.md) adds a research-only known-RNG combat arm to `act4replay`
+  (`STS_ACT4REPLAY_COMBAT=known`, P300's known-RNG Searcher2 search as `KnownRngSearcher`; rows carry
+  `regime=known_rng`). It partly reverses ADR-0020 for that mode only; no play path can reach it.
 - [ADR-0061](0061-ooc-map-only-search-a20.md) makes A20 real OOC MCTS search only map screens, each at the full
   budget; student_sel decides the other screens after the rule chain (`STS_OOC_MCTS_SCREENS=all` restores every
   screen; adopted on §683 by Philipp's call, no A/B with Act 4 strong; live advisor unchanged).

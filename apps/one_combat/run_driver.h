@@ -111,6 +111,14 @@ const char *realOocChainStep(sts::GameContext &, sts::search::ScumSearchAgent2 &
                              const one_combat::PathHistory &, std::uint64_t runSeed, std::uint64_t decisionIndex,
                              one_combat::LiveOocMctsMetrics &);
 
+// STS_OOC_FORCE_BOSS_RELIC=ACT:CHOICE (research, #856 boss-relic forks): at the real boss-relic root of act ACT (1 or
+// 2) realOocChainStep takes CHOICE (0-2 the offered relic in screen order, 3 skip) before any policy; every other
+// decision is the production chain's, so a game with the same seed equals the unforced game up to that root.
+// runFullRunOOC throws when the run ends without reaching the root. Unset: nothing changes.
+struct ForcedBossRelic { int act; int choice; };
+std::optional<ForcedBossRelic> parseForcedBossRelic(const char *value);
+int forcedBossRelicSelfTest();
+
 // Concrete seams shared with retained one_combat.cpp drivers.  These keep
 // environment parsing, model loading, and the counterfactual evaluators in
 // the integration translation unit while giving the run loop its lifecycle

@@ -2561,6 +2561,10 @@ double liveRootNoiseFraction = 0, liveRootNoiseAlpha = 0.3;
 // (OocMctsConfig::gumbelRootActions) instead of PUCT; fast roots stay PUCT.
 std::uint32_t liveGumbelRootActions = 0;
 double liveGumbelRootScale = 1;
+// STS_OOC_MCTS_GUMBEL_QCAP=CAP (opt-in, needs STS_OOC_MCTS_GUMBEL_ROOT): the Gumbel root's Q term is
+// the standard-error z-score clipped to +-CAP logits (OocMctsConfig::gumbelQCap) instead of mctx's
+// (50 + max N) * min-max-normalised Q, so Q cannot outvote a strong prior. Unset keeps the old term.
+double liveGumbelQCap = 0;
 // STS_OOC_MCTS_ROOT_COMPARE=PATH (research): at each full-budget root, after the real search, run an
 // 8192-simulation reference split evenly over every root action and Gumbel roots (M = 4 and 16) at
 // 512/1024/2048 on the same model with their own seeds, and append one JSONL row per root. The played
@@ -3411,7 +3415,7 @@ void configureLiveOocMcts() {
     }
     liveRootNoiseFraction = 0; liveRootNoiseAlpha = 0.3;
     livePlaySampleFloor = -1; livePlaySampleTemperature = 1;
-    liveGumbelRootActions = 0; liveGumbelRootScale = 1; liveRootComparePath.clear();
+    liveGumbelRootActions = 0; liveGumbelRootScale = 1; liveGumbelQCap = 0; liveRootComparePath.clear();
     liveCampfirePricePath.clear(); liveCampfirePriceN = 16;
     // "A[:B]" with A and B finite; returns false on malformed text.
     const auto parsePair = [](const std::string &text, double &a, double &b) {
@@ -3443,6 +3447,15 @@ void configureLiveOocMcts() {
             throw std::runtime_error("STS_OOC_MCTS_GUMBEL_ROOT requires STS_OOC_MCTS_FULL_BUDGET_FRACTION");
         liveGumbelRootActions = std::uint32_t(m);
     }
+    if (const char *cap = std::getenv("STS_OOC_MCTS_GUMBEL_QCAP"); cap && *cap) {
+#ifdef STS_LIVE_ADVISOR
+        throw std::runtime_error("STS_OOC_MCTS_GUMBEL_QCAP is unavailable in the live advisor");
+#endif
+        char *end = nullptr;
+        liveGumbelQCap = std::strtod(cap, &end);
+        if (end == cap || *end || !std::isfinite(liveGumbelQCap) || !(liveGumbelQCap > 0))
+            throw std::runtime_error("STS_OOC_MCTS_GUMBEL_QCAP must be a finite number > 0");
+    }
     if (const char *compare = std::getenv("STS_OOC_MCTS_ROOT_COMPARE"); compare && *compare) {
 #ifdef STS_LIVE_ADVISOR
         throw std::runtime_error("STS_OOC_MCTS_ROOT_COMPARE is unavailable in the live advisor");
@@ -3469,6 +3482,8 @@ void configureLiveOocMcts() {
         }
     } else if (std::getenv("STS_OOC_CAMPFIRE_PRICE_N"))
         throw std::runtime_error("STS_OOC_CAMPFIRE_PRICE_N requires STS_OOC_CAMPFIRE_PRICE");
+    if (liveGumbelQCap > 0 && !liveGumbelRootActions && liveRootComparePath.empty())
+        throw std::runtime_error("STS_OOC_MCTS_GUMBEL_QCAP requires STS_OOC_MCTS_GUMBEL_ROOT or STS_OOC_MCTS_ROOT_COMPARE");
     if (const char *sample = std::getenv("STS_OOC_MCTS_PLAY_SAMPLE")) {
 #ifdef STS_LIVE_ADVISOR
         throw std::runtime_error("STS_OOC_MCTS_PLAY_SAMPLE is unavailable in the live advisor");
@@ -4029,6 +4044,7 @@ void configureLiveOocMcts() {
             + std::to_string(liveRootNoiseAlpha) : std::string{})
         << (liveGumbelRootActions ? " gumbel_root=" + std::to_string(liveGumbelRootActions) + ":"
             + std::to_string(liveGumbelRootScale) : std::string{})
+        << (liveGumbelQCap > 0 ? " gumbel_qcap=" + std::to_string(liveGumbelQCap) : std::string{})
         << (!liveRootComparePath.empty() ? " root_compare=1" : "")
         << (liveLeafCompare ? " leaf_compare=" + liveLeafCompare->path + " leaf_compare_arms=" + [] {
                 std::string names;
@@ -4793,7 +4809,10 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
         c.gumbelSeed = splitMix64(c.seed ^ 0x47554d42454c5254ULL);   // "GUMBELRT"
         c.rootNoiseFraction = 0;
     };
-    if (explore && fullBudget && liveGumbelRootActions) gumbelConfig(config, liveGumbelRootActions, liveGumbelRootScale);
+    if (explore && fullBudget && liveGumbelRootActions) {
+        gumbelConfig(config, liveGumbelRootActions, liveGumbelRootScale);
+        config.gumbelQCap = liveGumbelQCap;
+    }
     const bool rootCompare = explore && fullBudget && !liveRootComparePath.empty();
     if (rootCompare && (capture || options.siblingCapture))
         throw std::runtime_error("STS_OOC_MCTS_ROOT_COMPARE cannot run with leaf or sibling capture");
@@ -4990,6 +5009,21 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
         for (const std::uint32_t m : {4u, 16u})
             for (const std::uint64_t sims : {512u, 1024u, 2048u})
                 gumbelRows[std::to_string(m) + "@" + std::to_string(sims)] = rerun(0x534830ULL + m * 7919 + sims, m, sims);
+        if (liveGumbelQCap > 0) {
+            // STS_OOC_MCTS_GUMBEL_QCAP: the capped M = 16 @ 2048 root on the uncapped row's seed, so the two
+            // differ only in the Q term.
+            const auto salt = 0x534830ULL + 16 * 7919 + 2048;
+            auto c = liveConfig;
+            c.allowUnqualifiedRootStop = false; c.stopAt512VisitGap20 = false; c.gapStopFraction = 0;
+            c.seed = splitMix64(config.seed ^ salt);
+            gumbelConfig(c, 16, liveGumbelRootScale > 0 ? liveGumbelRootScale : 1);
+            c.gumbelQCap = liveGumbelQCap;
+            const double t0 = threadCpuSeconds();
+            auto row = stats(sts::search::OocMctsPlanner(c).search(model, 0, 2048));
+            row["cpuSeconds"] = threadCpuSeconds() - t0;
+            row["qcap"] = liveGumbelQCap;
+            gumbelRows["16@2048cap"] = std::move(row);
+        }
         const nlohmann::json row = {{"schema", 1}, {"seed", seed}, {"decisionIndex", index}, {"act", gc.act},
             {"floor", gc.floorNum}, {"screen", int(gc.screenState)}, {"searchSeed", config.seed},
             {"candidates", candidates}, {"main", stats(result)}, {"mainGumbel", config.gumbelRootActions},
@@ -5234,6 +5268,7 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
         if (explore && liveRootNoiseFraction > 0 && !config.gumbelRootActions)
             (*policyRoot)["rootNoise"] = {liveRootNoiseFraction, liveRootNoiseAlpha};
         if (config.gumbelRootActions) (*policyRoot)["gumbelRoot"] = {config.gumbelRootActions, config.gumbelScale};
+        if (config.gumbelQCap > 0) (*policyRoot)["gumbelQCap"] = config.gumbelQCap;
         if (explore && livePlaySampleFloor >= 0) {
             (*policyRoot)["searchSelectedId"] = searchSelected ? json(*searchSelected) : json(nullptr);
             (*policyRoot)["playSampled"] = searchSelected != result.selectedAction;
