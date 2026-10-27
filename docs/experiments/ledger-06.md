@@ -24802,3 +24802,29 @@ recipe, not the volume; consistent with §645/§649.
 labels that do not end in X2-B or luck-corrected outcome labels (§697/§698), and a ranking-first selection.
 Seeds: none.
 **Knowledge impact:** none (no default or code change).
+
+## §701 — Combat HP-loss gap vs Baalorlord (issue #889): the bot loses more HP on every act-1-3 elite and boss encounter at matched entry HP and deck size, 2-3x with near-starter decks, while drinking more potions per fight; potion under-use refuted; offline, no seeds (2026-10-27)
+
+**Question:** why does the A20 bot lose more HP than Baalorlord in elite and boss fights (§688), and is potion
+management, deck/resources, encounter mix or combat play the explanation? Existing data only.
+**Data:** [RESULT](evidence/combat_hp_gap_20261027/RESULT.md). Bot: §683 MAP arm ctm rows (1,024 seeds, 24,017 fights,
+run commit `772df240`, pre-§682 Act 4). Expert: the 676 #865 `.run` files (hashes match), 17,356 fights. §694 X-arm
+games (`84d2f15d`) for deaths with the expert's exact deck.
+**Result:** net HP per won fight, bot vs expert, elites acts 1/2/3 13.0/10.1/6.1 vs 9.5/5.6/2.2, bosses 19.3/23.6/13.0
+vs 11.3/11.2/8.8 (all CIs exclude 0); hallways within ~1 HP. Death per fight act-2 boss 0.143 vs 0.055, act-3 boss
+0.128 vs 0.023, Heart 0.41 vs 0.08 (bot Act 4 is the pre-§682 learned-stop setup, not today's Act-4 strong default). The gap is on all 18 act-1-3 elite/boss encounters; the act-2 boss gap is neither
+one boss nor the mix (expert-mix reweighted 23.9) nor entry HP (bot enters healthier). It stays within entry-HP bins
+(85-100% HP: elites 11.7 vs 6.4, bosses 19.4 vs 10.7) and deck-size strata; act-1 elites with near-starter decks
+(floor ≤ 8, ≤ 13 cards, ≤ 1 upgrade): Nob 16.4 vs 5.7, Lagavulin 25.0 vs 11.1, Sentries 27.4 vs 11.5 (n 20-32 each,
+CIs exclude 0). Potions: expert uses are logged per floor in all runs (names in 538), inventory reconstructable in
+488; turn-level use is not logged. The bot drinks more per elite/boss fight (act-2 boss 0.89 vs 0.47, act-3 boss 0.59
+vs 0.12) and enters the Heart with 0.97 potions vs 2.19 (expert drinks 1.94 there). §694 X arm: 85 combat deaths on
+floors the expert survived with the same deck and encounter (acts 1/2/3 54/27/4; the expert entered at median 59% HP).
+**Interpretation:** ranked by evidence: (1) combat play, potions included, loses more HP on the same fights; (2) deck
+quality may add in acts 2-3 but does not explain the act-1 near-starter gap; (3) potion under-use refuted, potion
+allocation (spending before the Heart) a plausible Heart-only contributor; (4) mix and entry HP ruled out; engine
+fight fidelity not testable from these logs. **Inference:** a matched expert-entry replay (HP and potions synced at
+combat entry, Silver K = 4 per fight, ~1,600 acts-1-2 elite/boss entries on vanilla seeds) would size the combat gap
+on identical states; it needs per-fight output in `expertreplay` (missing today) and Philipp's go.
+Seeds: none (existing games only).
+**Knowledge impact:** this ledger entry and its evidence only; no code, model or default change.
