@@ -32,7 +32,7 @@ def pair_stats(a, b):
                 stoch=int(a.shape[0] > 1 or b.shape[0] > 1))
 
 pairs = []
-for seed, roots in data.items():
+for seed, roots in sorted(data.items()):  # sorted: the Monte Carlo reversal draws use one RNG
     for r in roots:
         acts = r['actions']
         for j in range(1, len(acts)):

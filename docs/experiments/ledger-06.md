@@ -24715,7 +24715,7 @@ per fight). Not tested: larger α, rest-site imitation, a separate ranker head.
 Seeds: 111384000–111385023 used, smokes 111385990–111385991 used; 111385992–111385999 unused.
 **Knowledge impact:** none (no default or code change).
 
-## §697 — OOC sibling-value noise and bias by root type (#881): a single leaf sample of a sibling difference has an SD of 15–26 pp, most leading-sibling gaps are below 2 pp, and the leaf's bias against a deeper act-end rollout is small (−0.3 pp pooled) except at events (−2.5 pp); mixed, mostly variance and tiny gaps (offline + 16 replays of used seeds, 2026-10-27)
+## §697 — OOC sibling-value noise and bias by root type (#881): a single leaf sample of a sibling difference has an SD of 14–26 pp, most leading-sibling gaps are below 2 pp, and the leaf's bias against a deeper act-end rollout is small (−0.3 pp pooled) except at events (−2.5 pp); mixed, mostly variance and tiny gaps (offline + 16 replays of used seeds, 2026-10-27)
 
 **Question:** issue #881. At an OOC root the search acts on D = Q̂(A) − Q̂(B). How noisy is D per leaf sample, how
 much do common random numbers (CRN) help, how large are the gaps, and is D biased against a deeper reference, by root
@@ -24726,7 +24726,7 @@ hoc (36,131 pairs); (2) new research options `STS_OOC_CAMPFIRE_PRICE_SCREENS` / 
 off/rest) price the top-3 prior actions at every real OOC root: 32 leaf and 32 act-end rollouts, CRN within each kind;
 16 replays of used §683 seeds (Philipp's go 2026-10-27 20:37Z), all 16 trace-identical to §683, 1,872 roots, 3,396
 pairs; (3) §695's rest sites (1,499 pairs). Reference = act-end rollout (same policy and CTM, longer horizon).
-**Result:** single-sample sibling-difference SD unpaired 15–26 pp at every type; CRN variance ratio 0.07–0.15 at card
+**Result:** single-sample sibling-difference SD unpaired 14–26 pp at every type; CRN variance ratio 0.07–0.15 at card
 rewards/selects, about 0.3 at rest sites, 0.82–0.85 at map roots (random successors). n for a 2 pp gap ≈ 180–650 leaf
 samples per action unpaired (map ≈ 270; card rewards 46 paired). Gaps (§644): 43 % of leading pairs below 1 pp, 63 %
 below 2 pp, 40 % resolved at 32 CRN repeats. Bias (deep-reference pairs): pooled −0.34 pp [−0.56, −0.13], card rewards

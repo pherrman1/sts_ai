@@ -64,7 +64,7 @@ Intervals resample seeds (roots of one game are correlated).
 
 (n columns from §644; [results/crn644_noise.txt](results/crn644_noise.txt), [results/cohort.txt](results/cohort.txt).)
 
-- One leaf sample of a sibling difference has an SD of 15–26 pp without CRN at every root type. The two data sets agree
+- One leaf sample of a sibling difference has an SD of 14–26 pp without CRN at every root type. The two data sets agree
   within about 2 pp except at the small types.
 - CRN cuts the variance to 0.07–0.15 at card rewards and card selects (deterministic children), to about 0.3 at rest
   sites, and hardly at all at map roots (0.82–0.85), where the successor (room, combat outcome) is itself random.
@@ -91,7 +91,7 @@ are resolved by a few dozen samples.
 The act-end rollout is deeper than the leaf only early in an act. Its median horizon is 6–13 floors against the leaf's
 4–5; but it ends at or before the leaf at 14–54 % of roots (by type) and at every boss-relic root (where it is M0 of X2-B at the
 next act's first map state, no rollout). The main rows therefore keep pairs whose reference ends ≥ 3 floors beyond
-the leaf ("deep"); all pairs are in [results/cohort.txt](results/cohort.txt).
+the leaf ("deep"); all pairs (including 11 act-4 roots) are in [results/cohort.txt](results/cohort.txt).
 
 | type (deep pairs) | pairs | median \|D\| leaf / ref | median SE leaf / ref | bias [95 % CI, seeds] | bias SD beyond noise | MAE / noise-only MAE | order disagrees: all / both resolved |
 |---|---|---|---|---|---|---|---|
@@ -123,11 +123,12 @@ the leaf ("deep"); all pairs are in [results/cohort.txt](results/cohort.txt).
   core roots) can be joined later on (seed, decisionIndex).
 
 ## Interpretation
-- **Variance-dominated, with mostly tiny gaps.** A single leaf sample has an SD of 15–26 pp (unpaired), while about
+- **Variance-dominated, with mostly tiny gaps.** A single leaf sample has an SD of 14–26 pp (unpaired), while about
   half the leading-sibling gaps are below 1–2 pp. Resolving a 2 pp gap at 95 % takes about 180–650 independent leaf
   samples per action; a 5 pp gap about 30–100.
 - **Map roots** (production search, 4,096 simulations at full budget over 2–4 actions): about 270 samples per action
-  resolve 2 pp and about 1,100 resolve 1 pp, so today's budget resolves gaps of roughly 1–2 pp at the top. Half of the
+  resolve 2 pp and about 1,100 resolve 1 pp, so today's budget resolves gaps of roughly 1–2 pp at the top at best (an upper bound: it assumes all 4,096 simulations
+  run, while the learned OOC stop often ends earlier, and that they split over the top two actions). Half of the
   map pairs have gaps below 2 pp. CRN would not help here (ratio 0.85) because the successor itself is random.
 - **Card rewards and card selects:** CRN would cut the samples needed 6–14× (paired n 46 vs 309 for 2 pp at card
   rewards). Bias against the deeper reference is −0.3 pp, inside the noise.
