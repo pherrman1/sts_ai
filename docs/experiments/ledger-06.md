@@ -24641,3 +24641,24 @@ Act-1 chest relic); flexible keys explain about 6 of the 8 pp between §566 and 
 Philipp's call.
 Seeds: 111382000–111383023 (campaign), 111383024–111383027 (smokes) used.
 **Knowledge impact:** none until a default change; `evaluation/current-baselines.md` unchanged.
+## §TBD — Expert decisions on expert seeds (experiment 3 of the 2026-10-26 research report): replaying Baalorlord's out-of-combat decisions does not raise the bot's A20 Heart rate, −2.1 pp [−7.9, +3.6]; NOT_SHOWN (329 paired seeds, 2026-10-27)
+
+**Question:** with combat held at today's A20 Silver, how much Heart win rate does the bot's out-of-combat play lose to
+an expert's? Philipp's go 2026-10-26 23:31Z ("Also 16 workers, but work with the coordinator when to actually run them").
+**Setup:** [PREREG](evidence/expert_replay_ab_20261027/PREREG.md), pre-launch review PASS (reviewer H). 329
+vanilla-RNG Baalorlord Ironclad A20 runs whose seeds the engine reproduces ([fidelity](evidence/expert_replay_fidelity_20261026/RESULT.md):
+card offers 93.4%, 258/348 runs exact through act 3; adds `STS_CALLING_BELL_CARD_RNG_FIX`, default on). Arm X:
+`one_combat expertreplay` replays the logged path, rewards, campfires, shops, boss relics, events and Neow while they
+stay exact, then today's A20 default plays on; arm B: the default alone. RUN_COMMIT `84d2f15d`, binary `f91ba554…`,
+16 cloud workers; 329/329 units verified, 658 games valid.
+**Result:** [RESULT.md](evidence/expert_replay_ab_20261027/RESULT.md). Heart kills X 20.1% / B 22.2%, X − B **−2.1 pp
+[−7.9, +3.6]** (discordant 45/52, exact McNemar p 0.54); Act 4 32.2 / 34.3%; mean floor 37.4 / 39.6. The expert won 199
+of the 329. In 116 seeds the bot died while still following the log (median floor 16; X 0 kills, B 27 on those
+seeds); 198 were handed to the bot at a non-replayable decision; 9 replayed into Act 4 (X 8 kills). Defect: on 6 seeds
+the log had no `green_key_taken_log`, so X took no Emerald key and ended after act 3; excluding them −1.5 pp.
+**Interpretation:** NOT_SHOWN. **Inference:** expert decisions presuppose expert combat; at Silver's strength his
+early lines cost runs as often as his later decisions win them, so imitating him is no free gain for the OOC policy.
+Per-type ablations were not run.
+Seeds: 329 external expert seeds (run ids in the campaign's `units.txt`); no 111xxxxxx seeds.
+**Knowledge impact:** `STS_CALLING_BELL_CARD_RNG_FIX` (default on) and `STS_EXPERT_REPLAY_TYPES` in
+`environment-variables.md`; no default change from the A/B.
