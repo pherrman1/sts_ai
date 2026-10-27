@@ -4180,6 +4180,9 @@ int main(int argc, char **argv) {
     } else if (mode == "act4replay") {
         if (argc < 8) { std::cerr << "usage: one_combat act4replay N_STATES STATES.jsonl OUT_PREFIX SEED_OFFSET SIMS[,SIMS..] REPLICATES\n"; return 2; }
         act4Replay(std::stoi(argv[2]), argv[3], argv[4], std::stoll(argv[5]), argv[6], std::stoi(argv[7]));
+    } else if (mode == "fightreplay") {
+        if (argc != 7) { std::cerr << "usage: one_combat fightreplay N_ROWS ROWS.jsonl OUT.jsonl SEED_BASE REPLICATES\n"; return 2; }
+        return fightReplay(std::stoi(argv[2]), argv[3], argv[4], std::stoull(argv[5]), std::stoi(argv[6]));
     } else if (mode == "silversynthfeatures") {
         if (argc < 3) { std::cerr << "usage: one_combat silversynthfeatures OUT_PREFIX < corpus.jsonl\n"; return 2; }
         silverSynthFeatures(argv[2]);
