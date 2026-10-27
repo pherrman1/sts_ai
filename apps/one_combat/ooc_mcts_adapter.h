@@ -124,6 +124,9 @@ struct OocAdapterOptions {
     // STS_OOC_REFEREE_ACT_END=a1,a2,a3,a4:b (research): a referee rollout also notes its act-end value, the calibrated
     // X2-B sigma(a_act + b * logit X2-B) at the first map state past the root's act; the rollout plays on.
     std::vector<double> refereeActEndCalibration;
+    // STS_OOC_CAMPFIRE_PRICE (research; set only in a forked child): a referee rollout ends at its act-end value
+    // instead of playing on to the end of the game.
+    bool refereeStopAtActEnd = false;
     bool uniformLeafPolicy = false;
     // Research option (default off, STS_OOC_MCTS_LEAF_POLICY=prior, §487): rollouts apply the tree's fixed rule
     // steps, then take the V4 policy-head argmax on every screen V4 encodes; the chain decides everything else.
@@ -288,6 +291,7 @@ private:
     std::string observationError_;
     // The act-end value the current referee rollout noted (refereeActEndCalibration), if it got that far.
     std::optional<double> refereeActEnd_;
+    std::optional<std::pair<int, int>> refereeActEndHp_;   // curHp, maxHp at that state
     OocAdapterOptions options;
     OocMctsDependencies dependencies;
     mutable OocContinuationMetrics continuation_;
@@ -361,6 +365,10 @@ public:
     // each root action, with stream r shared by the actions (common random numbers). Runs in a forked child, so the
     // model is unchanged.
     nlohmann::json refereeRootActions(const std::vector<sts::search::OocActionId> &, unsigned n, std::uint64_t seed);
+    // Campfire price (STS_OOC_CAMPFIRE_PRICE): for every legal root action, n rollouts of the search's own leaf and n
+    // rollouts to the act's end valued by refereeActEndCalibration, stream r shared by the actions. Changes the
+    // model's rollout state: call it in a forked child.
+    nlohmann::json priceRootActions(unsigned n, std::uint64_t seed);
 };
 // Adds game meanings and CTM provenance to a captured generic search tree.
 void annotateOocTree(const OocGameContextModel &, sts::search::OocTreeSnapshot &);
@@ -445,6 +453,10 @@ nlohmann::json scoreLiveOocMctsDecision(const GameContext &, const PathHistory &
 bool executeOocMctsRoot(GameContext &, const OocGameContextModel::Candidate &, std::string &error);
 bool oocMctsPolicyStep(GameContext &, const PathHistory &, std::uint64_t runSeed,
     std::uint64_t decisionIndex, LiveOocMctsMetrics &);
+// STS_OOC_CAMPFIRE_PRICE=PATH (research, default off): at each real rest site, before anything decides it, append one
+// JSONL row pricing every legal campfire action (priceRootActions in a forked child). The run is unchanged.
+void observeOocCampfirePrice(const GameContext &, const PathHistory &, std::uint64_t runSeed,
+    std::uint64_t decisionIndex);
 // Policy-target capture (heartoutcomegen policy). arm: the next
 // oocMctsPolicyStep records its root (heart1 record, candidate keys, heart1
 // tokens, prior/visits/Q, checkpoints, selection, flags) without changing the
