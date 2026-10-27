@@ -24548,3 +24548,20 @@ those cards; the audit shows deviations, not that they are mistakes. Follow-up: 
 a value-based rest-vs-upgrade decision is being scoped in its own thread (2026-10-26).
 Seeds: none (existing games only).
 **Knowledge impact:** none beyond this entry; no code or default change.
+## §TBD — Gumbel root with the Muesli-style Q cap at A20 map roots, paired A/B (512 seeds): NOT_SHOWN, Heart kills 25.2% vs 27.7%, reached Act 4 −4.7 pp (2026-10-27)
+
+**Question (Philipp, 2026-10-26 22:57Z "lets go with 16 workers after the boss relic thing is done"):** does §689's
+cap turn the Gumbel root into a play gain? [PREREG](evidence/gumbel_qcap_ab_20261026/PREREG.md), pre-launch review
+PASS (J). A = today's A20 default (map roots only, PUCT 4096). B = A + `STS_OOC_MCTS_GUMBEL_ROOT=16
+STS_OOC_MCTS_GUMBEL_QCAP=1 STS_OOC_MCTS_FULL_ROOT_SIMS=2048`. RUN_COMMIT `b49bbd33` (code `9a37d780`, v3 binary
+`7bb54d7e…`), 16 workers, seeds 111381000–511.
+**Result: NOT_SHOWN.** 512 valid pairs. Heart kills B 129 (25.2%) vs A 142 (27.7%), −2.5 pp [−6.7, +1.6], McNemar
+p = 0.27. Reached Act 4 −4.7 pp [−8.9, −0.5], p = 0.035. Wall 0.62×. Played ≠ prior argmax 12.9% vs 6.5% of
+searched (map) roots.
+**Interpretation:** the cap removes §635's collapse (−11.4 pp), so the uncapped σ term caused most of it. The
+remaining overrides still lean the wrong way (Act-4 reach), so the leaf does not beat student_sel at map roots
+even within ±1 logit. No default change; the flags stay research options. Separating Gumbel sampling noise from
+the Q term (scale 0) would be a new question.
+[Result](evidence/gumbel_qcap_ab_20261026/RESULT.md), [result.json](evidence/gumbel_qcap_ab_20261026/result.json).
+Raw: `/mnt/project-files/gumbel-qcap-ab/units/`. Seeds 111381000–511 and smokes 111383990–991 used.
+**Knowledge impact:** none beyond this entry.
