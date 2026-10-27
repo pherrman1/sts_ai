@@ -24550,3 +24550,21 @@ alone for 1 pp. Next: post-hoc replay of the §676 guard (m = 4, all fights) to 
 needs Philipp's authorization and worker count.
 Seeds: none (existing games only; replays draw battle seeds from a SEED_BASE hash, not from the 111 blocks).
 **Knowledge impact:** new research-only mode and tools; no default or play change.
+
+## §TBD — AIVAT fight-replay pilot on the §676 guard: valid (23,503/23,503 identity, no fight-class bias) but paired SD only 0.80x (projected 0.71x; pre-registered "weaker", no recommendation); the Heart gives almost all of it (2026-10-27)
+
+**Question:** does subtracting fight luck measured by fresh fight replays shrink a real A20 A/B's paired SD as the
+offline projection (previous entry) says? Authorized by Philipp 2026-10-26 23:13Z ("go on 4 workers").
+**Data:** [PREREG](evidence/aivat_replay_676_20261026/PREREG.md), [RESULT](evidence/aivat_replay_676_20261026/RESULT.md).
+The 512 §676 seeds x A, C post hoc: every non-event fight replayed (`one_combat fightreplay`, run commit `d147c389`),
+replicate 0 = identity, m = 4 fresh (CRN across arms), V `8efcc81f` (§661 + §683), beta 0.8; 173 CPU-h, 4 workers.
+**Result:** identity 23,503 of 23,503 exact, no seed excluded; fight-level bias CIs contain 0 in every class (act-1/2/3
+boss HP -0.53/+0.42/-0.61, Heart -0.40). C - A raw +2.15 pp [-1.17, +5.66] SD 0.393; corrected +3.39 [+0.64, +6.16]
+SD 0.316; shift +1.25 [-1.41, +3.90]. **SD ratio 0.804** (1.55x effective seeds). Post hoc: Heart only 0.817, bosses
++ Heart 0.844; in-sample best beta 0.64 -> 0.788.
+**Interpretation:** the method is unbiased in practice but the earlier fights add almost nothing beyond the Heart;
+the offline projection overrated how much a post-fight value model captures the kill. Pre-registered band
+0.80-0.90: report, no recommendation. The corrected CI excluding 0 is not a finding (the raw §676 verdict stands).
+Seeds: none (existing games; replay battle seeds from SEED_BASE 676000001).
+**Knowledge impact:** fight-replay correction is not worth its cost as a standard A/B metric; a Heart-only version
+(~1.5x seeds) remains an option only where Heart compute is cheap.
