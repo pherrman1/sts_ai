@@ -1,0 +1,9 @@
+split=TRAIN leaves=420939 mean death rate=0.1251 leaves with any death=0.616
+leaf var pooled=0.04938; death term q(1-q)m^2 share=0.879; one-event RB approx var ratio=0.084
+pairs=2807953 CRN ratio var(d)/(var_i+var_j) pooled=0.580
+mean frac repeats with discordant death=0.0995; pairs with any discordant death=0.617
+pooled share of sibling-diff SS from discordant-death repeats=0.867
+pooled var(d | both survive)/var(d) (proxy for death-free noise)=0.094
+  parentScreen=1: pairs=174751 CRN ratio=0.530 disc-death SS share=0.877
+  parentScreen=2: pairs=263909 CRN ratio=0.415 disc-death SS share=0.878
+
