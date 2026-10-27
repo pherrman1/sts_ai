@@ -24570,7 +24570,7 @@ needs Philipp's authorization and worker count.
 Seeds: none (existing games only; replays draw battle seeds from a SEED_BASE hash, not from the 111 blocks).
 **Knowledge impact:** new research-only mode and tools; no default or play change.
 
-## §TBD — AIVAT fight-replay pilot on the §676 guard: valid (23,503/23,503 identity, no fight-class bias) but paired SD only 0.80x (projected 0.71x; pre-registered "weaker", no recommendation); the Heart gives almost all of it (2026-10-27)
+## §TBD-b — AIVAT fight-replay pilot on the §676 guard: valid (23,503/23,503 identity, no fight-class bias) but paired SD only 0.80x (projected 0.71x; pre-registered "weaker", no recommendation); the Heart gives almost all of it (2026-10-27)
 
 **Question:** does subtracting fight luck measured by fresh fight replays shrink a real A20 A/B's paired SD as the
 offline projection (previous entry) says? Authorized by Philipp 2026-10-26 23:13Z ("go on 4 workers").
