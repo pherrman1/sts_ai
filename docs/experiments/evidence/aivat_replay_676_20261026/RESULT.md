@@ -46,6 +46,11 @@ Replays used 173 CPU-h (fresh replicates 139 CPU-h): bosses 117, Heart 24, elite
 correction would have cost ~19 CPU-h of fresh replays at this config for ratio 0.82; under today's Act-4 strong
 default the Heart search is ~8-15x more expensive, and m = 4 Heart replays cost 4x the A/B's own Heart fights.
 
+Against simply adding seeds (estimate, 2026-10-27): a §676 run took ~580 s wall per lane (mean of 120 runs in the
+source tars), so all-fight replays add ~+84% compute for 1.55x effective seeds, which is worse than running 55% more
+seeds. Heart-only would add ~+12% for ~1.5x at §676's config, but under Act-4 strong (~10x Heart cost, Heart reached
+in ~40% of runs) roughly +55%, about break-even. Not measured under Act-4 strong.
+
 ## Conclusion
 
 The fight-replay correction is valid (exact identity, no bias in any fight class) but buys ~1.5x effective seeds,
