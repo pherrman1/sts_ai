@@ -212,6 +212,11 @@ struct OocSiblingLeafCapture {
     // the root uses the same stream (common random numbers), so sibling differences lose most of
     // the rollout noise. Off: each leaf's repeats have their own streams (seeded with its ordinal).
     bool commonSeeds = false;
+    // Research option (default off, STS_OOC_SIBLING_MONO=1, issue #886): each captured leaf also scores paired
+    // variants that differ only in current HP or in one upgraded card (X2-B, the calibrated leaf anchor, heart1's
+    // value and monoRepeats rollouts on the same streams as the repeats), in the same forked child.
+    bool mono = false;
+    unsigned monoRepeats = 16;
 };
 
 // Host-provided model seams keep the scientific OOC MCTS substrate reusable
@@ -313,6 +318,7 @@ private:
     std::map<sts::search::OocStateId, std::pair<sts::search::OocStateId, sts::search::OocActionId>> parents_;
 #ifndef STS_LIVE_ADVISOR
     std::optional<nlohmann::json> siblingLeafExtras(sts::search::OocStateId);
+    nlohmann::json monoVariants(sts::search::OocStateId, const OocPolicyThreadState &);
 #endif
     double evaluateLeafUnobserved(sts::search::OocStateId, std::mt19937_64 &, bool &terminal,
                                  sts::search::OocEndpoint &endpoint);

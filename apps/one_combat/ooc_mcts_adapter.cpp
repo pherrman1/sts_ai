@@ -1891,9 +1891,12 @@ std::optional<nlohmann::json> OocGameContextModel::siblingLeafExtras(sts::search
         {"outcome", int(gc.outcome)}, {"boundary", isLeafBoundary(id)}};
     if (capture.commonSeeds) row["commonSeeds"] = true;
     const auto policyBefore = captureOocPolicyThreadState();
-    const unsigned seconds = 20 + 4 * (capture.repeats + 2 * capture.longRepeats) + 30 * capture.refereeRepeats;
+    const unsigned seconds = 20 + 4 * (capture.repeats + 2 * capture.longRepeats) + 30 * capture.refereeRepeats
+        + (capture.mono ? 30 + 2 * 40 * capture.monoRepeats : 0);
     try { row["extra"] = forkLeafReplay([&] {
         nlohmann::json out = nlohmann::json::object();
+        const auto leafCombatsBefore = options.leafCombats;
+        const bool refereeBefore = options.refereeRollout;
         const auto anchorStart = std::clock();
         try { out["x2b"] = anchorValue(gc, pathHistory(id)); }
         catch (const std::exception &e) { out["x2bError"] = e.what(); }
@@ -1951,10 +1954,103 @@ std::optional<nlohmann::json> OocGameContextModel::siblingLeafExtras(sts::search
             evaluations("referee", capture.refereeRepeats, 3);
             out["refereeCpuSeconds"] = double(std::clock() - refereeStart) / CLOCKS_PER_SEC;
         }
+        if (capture.mono && gc.outcome == sts::GameOutcome::UNDECIDED) {
+            // Child process only: the leaf's own snapshot is edited in place and restored after each variant.
+            options.leafCombats = leafCombatsBefore;
+            options.refereeRollout = refereeBefore;
+            out["mono"] = monoVariants(id, policyBefore);
+        }
         return out;
     }, int(seconds) * 1000, int(seconds), std::size_t(1) << 24); }
     catch (const std::exception &e) { row["extraError"] = e.what(); }
     return row;
+}
+// STS_OOC_SIBLING_MONO (issue #886), forked child only: paired variants of one leaf that differ only in current HP
+// (within 1..maxHp) or in one upgraded card (the first upgradable copy of each card id). Each variant is checked
+// against the leaf's rich features (only curHp or that card's u feature may change; Searing Blow may change none),
+// scored with X2-B, the calibrated leaf anchor, heart1's value and monoRepeats rollouts on the repeats' streams, and
+// restored exactly before the next one.
+nlohmann::json OocGameContextModel::monoVariants(sts::search::OocStateId id, const OocPolicyThreadState &policyBefore) {
+    const auto &capture = *options.siblingCapture;
+    auto &snap = states.at(id);
+    static const std::vector<std::string> names = [] {
+        std::vector<std::string> n(richIdxMap().size());
+        for (const auto &[name, index] : richIdxMap()) n.at(index) = name;
+        return n;
+    }();
+    const auto baseState = replayStateString(snap.gc);
+    const auto baseRich = richFeatureVec(snap.gc, snap.path);
+    // Candidate metadata is cached per state and may depend on HP: variants recompute it, the leaf gets its own back.
+    struct MetadataGuard {
+        std::optional<Metadata> &slot; std::optional<Metadata> saved;
+        ~MetadataGuard() { slot = std::move(saved); }
+    } metadataGuard{snap.metadata, std::move(snap.metadata)};
+    snap.metadata.reset();
+    nlohmann::json out = {{"repeats", capture.monoRepeats}, {"act", snap.gc.act},
+        {"boss", sts::monsterEncounterEnumNames[int(snap.gc.boss)]},
+        {"redSkull", snap.gc.hasRelic(sts::RelicId::RED_SKULL)},
+        {"meatOnTheBone", snap.gc.hasRelic(sts::RelicId::MEAT_ON_THE_BONE)},
+        {"variants", nlohmann::json::array()}};
+    const auto score = [&](nlohmann::json v) {
+        snap.metadata.reset();
+        const auto rich = richFeatureVec(snap.gc, snap.path);
+        auto &diff = v["featureDiff"] = nlohmann::json::array();
+        for (std::size_t i = 0; i < rich.size() && i < baseRich.size(); ++i)
+            if (rich[i] != baseRich[i]) diff.push_back({names.at(i), baseRich[i], rich[i]});
+        if (rich.size() != baseRich.size()) v["featureSizeError"] = true;
+        try { v["x2b"] = anchorValue(snap.gc, snap.path); v["leafAnchor"] = leafAnchorValue(snap.gc, snap.path); }
+        catch (const std::exception &e) { v["anchorError"] = e.what(); }
+        if (capture.annotate) {
+            try { v["heart1"] = capture.annotate(snap.gc).at("value"); }
+            catch (const std::exception &e) { v["heart1Error"] = e.what(); }
+        }
+        const auto start = std::clock();
+        auto &list = v["rollouts"] = nlohmann::json::array();
+        for (unsigned r = 0; r < capture.monoRepeats; ++r) {
+            restoreOocPolicyThreadState(policyBefore);
+            // The repeats' seeds (kind 1): rollout r of every variant pairs with repeat r of the leaf.
+            const std::uint64_t leafKey = capture.commonSeeds ? 0xFFFFFFFFull : capture.captured - 1;
+            std::seed_seq seq{capture.searchSeed, capture.decisionIndex, leafKey, std::uint64_t(1), std::uint64_t(r)};
+            std::mt19937_64 stream(seq);
+            bool ended = false;
+            sts::search::OocEndpoint end;
+            try {
+                const double value = evaluateLeafUnobserved(id, stream, ended, end);
+                list.push_back({{"value", value}, {"terminal", ended}, {"endFloor", end.floor}, {"endHp", end.hp}});
+            } catch (const std::exception &e) { list.push_back({{"error", e.what()}}); }
+        }
+        v["rolloutCpuSeconds"] = double(std::clock() - start) / CLOCKS_PER_SEC;
+        out["variants"].push_back(std::move(v));
+    };
+    const auto restored = [&] {
+        snap.metadata.reset();
+        if (replayStateString(snap.gc) == baseState) return true;
+        out["restoreError"] = true;
+        return false;
+    };
+    score({{"kind", "base"}});
+    if (!restored()) return out;
+    const int hp = snap.gc.curHp;
+    for (const int delta : {-24, -12, -6, -3, -1, 1, 3, 6, 12}) {
+        if (hp + delta < 1 || hp + delta > snap.gc.maxHp) continue;
+        snap.gc.curHp = hp + delta;
+        score({{"kind", "hp"}, {"delta", delta}});
+        snap.gc.curHp = hp;
+        if (!restored()) return out;
+    }
+    std::set<int> seen;
+    for (int i = 0; i < snap.gc.deck.size(); ++i) {
+        const auto card = snap.gc.deck.cards[i];
+        if (!card.canUpgrade() || !seen.insert(int(card.getId())).second) continue;
+        const auto deck = snap.gc.deck;
+        snap.gc.deck.upgrade(i);
+        score({{"kind", "upgrade"}, {"card", sts::cardEnumStrings[int(card.getId())]}, {"cardId", int(card.getId())},
+            {"deckIndex", i}, {"wasUpgraded", card.isUpgraded()}, {"bottled", snap.gc.deck.isCardBottled(i)},
+            {"cardType", int(card.getType())}});
+        snap.gc.deck = deck;
+        if (!restored()) return out;
+    }
+    return out;
 }
 nlohmann::json OocGameContextModel::refereeRootActions(const std::vector<sts::search::OocActionId> &actions,
         unsigned n, std::uint64_t seed) {
@@ -2650,6 +2746,8 @@ struct LiveSiblingCapture {
     std::uint64_t every = 4, maxLeaves = 256;
     unsigned repeats = 1, longRepeats = 0, refereeRepeats = 0, maxDepth = 2;
     bool commonSeeds = false;
+    bool mono = false;
+    unsigned monoRepeats = 16;
 };
 std::optional<LiveSiblingCapture> liveSibling;
 std::string pendingLeafCapturePath;
@@ -3328,6 +3426,8 @@ void configureLiveOocMcts() {
         sibling.maxDepth = unsigned(knob("STS_OOC_SIBLING_MAX_DEPTH", 2, 1, 64));
         sibling.maxLeaves = knob("STS_OOC_SIBLING_MAX_LEAVES", 256, 1, 100000);
         sibling.commonSeeds = knob("STS_OOC_SIBLING_COMMON_SEEDS", 0, 0, 1) == 1;
+        sibling.mono = knob("STS_OOC_SIBLING_MONO", 0, 0, 1) == 1;
+        sibling.monoRepeats = unsigned(knob("STS_OOC_SIBLING_MONO_REPEATS", 16, 0, 256));
         sibling.out = std::make_shared<std::ofstream>(path, std::ios::app);
         if (!*sibling.out) throw std::runtime_error("STS_OOC_SIBLING_CAPTURE cannot open output");
         // Load heart1 in the parent: forked children must not each reload it.
@@ -3790,14 +3890,15 @@ void configureLiveOocMcts() {
     // ADR-0057 (Philipp 2026-10-23, value-level A/B M0 +2.15 pp): unset, the plain rollout3 X2-B leaf is calibrated
     // with M0 on states at ascension 20, when the process win model is the pinned public X2-B M0 was fit on. Other
     // win models, leaves and leaf counts, captures and the leaf compare keep the raw anchor, as does
-    // STS_OOC_MCTS_LEAF_CALIBRATION=0.
+    // STS_OOC_MCTS_LEAF_CALIBRATION=0. The #886 mono capture keeps the default (its rows carry both values), so its
+    // games replay the uncaptured ones.
     if (!leafCalibrationEnv || !*leafCalibrationEnv) {
         const char *leafMode = std::getenv("STS_OOC_MCTS_LEAF_VALUE");
         if (liveEnabled && leafMode && std::string(leafMode) == "native" && liveOptions.leafCombats == 3
                 && liveOptions.checkpointLeaves && !liveOptions.stopAtMapCheckpoint && !liveOptions.directLeaf
                 && !liveOptions.screenLeaf && !liveOptions.bossLeaf && !liveOptions.bossRollout && !liveOptions.constantLeaf
                 && !liveOptions.leafWinNet && !liveOptions.heartLeaf && !liveOptions.rolloutStudent
-                && !liveOptions.heart1ValueNet && !liveLeafCompare && !liveSibling
+                && !liveOptions.heart1ValueNet && !liveLeafCompare && (!liveSibling || liveSibling->mono)
                 && !std::getenv("STS_OOC_MCTS_LEAF_CAPTURE")
                 && fileSha256Hex(g_winNet.path) == kHeartLeafAnchorSha256) {
             liveOptions.leafCalibration = a20LeafCalibration();
@@ -4768,6 +4869,7 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
         sibling->refereeRepeats = liveSibling->refereeRepeats;
         sibling->maxDepth = liveSibling->maxDepth; sibling->maxLeaves = liveSibling->maxLeaves;
         sibling->commonSeeds = liveSibling->commonSeeds;
+        sibling->mono = liveSibling->mono; sibling->monoRepeats = liveSibling->monoRepeats;
         options.siblingCapture = std::move(sibling);
     }
     if (!options.priorTracePath.empty()) {
