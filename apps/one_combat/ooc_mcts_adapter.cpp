@@ -2580,6 +2580,8 @@ std::string liveCtmAuditPath;
 unsigned liveCtmAuditN = 16;
 std::uint64_t liveCtmAuditEvery = 1, liveCtmAuditRoots = 0;
 std::size_t liveCtmAuditTop = 3;
+// (seed, decision index) of complete rows already in the output: a restarted replay skips them (resume).
+std::set<std::pair<std::uint64_t, std::uint64_t>> liveCtmAuditDone;
 int liveCtmAuditSilverSims = 10000;
 // Search-architecture pilot (research, default mcts): STS_OOC_MCTS_SEARCH_MODE=mcts|particle|particle_beam picks the
 // planner of every searched (non-singleton) root; STS_OOC_MCTS_PARTICLES=P (default 64) and
@@ -3623,6 +3625,15 @@ void configureLiveOocMcts() {
         throw std::runtime_error("STS_OOC_CTM_AUDIT is unavailable in the live advisor");
 #endif
         liveCtmAuditPath = audit;
+        liveCtmAuditDone.clear();
+        {
+            std::ifstream in(liveCtmAuditPath);
+            for (std::string line; std::getline(in, line);) {
+                const auto row = nlohmann::json::parse(line, nullptr, false);   // a cut last line is not complete
+                if (!row.is_discarded() && row.contains("audit"))
+                    liveCtmAuditDone.emplace(row.at("seed").get<std::uint64_t>(), row.at("decisionIndex").get<std::uint64_t>());
+            }
+        }
         if (!std::ofstream(liveCtmAuditPath, std::ios::app)) throw std::runtime_error("STS_OOC_CTM_AUDIT cannot open output");
         const auto count = [](const char *name, unsigned long long low, unsigned long long high, auto &target) {
             const char *raw = std::getenv(name);
@@ -5197,7 +5208,7 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
 #ifndef STS_LIVE_ADVISOR
     if (!liveCtmAuditPath.empty() && explore && !sole && !result.aborted
             && std::count_if(result.rootActions.begin(), result.rootActions.end(), [](const auto &a) { return !a.pruned; }) > 1
-            && liveCtmAuditRoots++ % liveCtmAuditEvery == 0) {
+            && liveCtmAuditRoots++ % liveCtmAuditEvery == 0 && !liveCtmAuditDone.count({seed, index})) {
         // Research only (#884): in a forked child, N rollouts of the search's own leaf from every root action, once
         // with the search's CTM stack resolving each imagined combat and once with production Silver; stream r is
         // shared by the actions and the arms (common random numbers up to each rollout's first combat). Every combat
