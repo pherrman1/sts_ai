@@ -24558,9 +24558,10 @@ STS_OOC_MCTS_GUMBEL_QCAP=1 STS_OOC_MCTS_FULL_ROOT_SIMS=2048`. RUN_COMMIT `b49bbd
 **Result: NOT_SHOWN.** 512 valid pairs. Heart kills B 129 (25.2%) vs A 142 (27.7%), −2.5 pp [−6.7, +1.6], McNemar
 p = 0.27. Reached Act 4 −4.7 pp [−8.9, −0.5], p = 0.035. Wall 0.62×. Played ≠ prior argmax 12.9% vs 6.5% of
 searched (map) roots.
-**Interpretation:** the cap removes §635's collapse (−11.4 pp), so the uncapped σ term caused most of it. The
-remaining overrides still lean the wrong way (Act-4 reach), so the leaf does not beat student_sel at map roots
-even within ±1 logit. No default change; the flags stay research options. Separating Gumbel sampling noise from
+**Interpretation:** Inference (cross-campaign): the cap removes §635's collapse (−11.4 pp), so the uncapped σ term
+caused most of it. Inference (rests on the p = 0.035 secondary): the remaining overrides still lean the wrong way
+(Act-4 reach), so the leaf does not beat student_sel at map roots even within ±1 logit. The 0.62× wall holds in
+matched subsets (both arms reach Act 4: 0.72×; neither: 0.53×). No default change; the flags stay research options. Separating Gumbel sampling noise from
 the Q term (scale 0) would be a new question.
 [Result](evidence/gumbel_qcap_ab_20261026/RESULT.md), [result.json](evidence/gumbel_qcap_ab_20261026/result.json).
 Raw: `/mnt/project-files/gumbel-qcap-ab/units/`. Seeds 111381000–511 and smokes 111383990–991 used.
