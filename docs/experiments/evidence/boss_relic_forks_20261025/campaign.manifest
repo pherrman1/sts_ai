@@ -1,0 +1,10 @@
+name          boss-relic-forks-a
+code_commit   eb94f4e3bffec44f9f5a8d950973e4ff62feffa7
+binary_sha256 e57de3841aa8cab9ae240531352d16e11d84ad2fcece2082ac4b2e7798acda0d
+configure_preset linux-gcc-release-x86-64-v3
+workers       32
+share         /mnt/project-files/boss-relic-forks/stage-a
+parallel      4
+schedule      queue
+lease_minutes 45
+input student_sel.bin /mnt/project-files/az-gen3-explore/student_sel.bin cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7
