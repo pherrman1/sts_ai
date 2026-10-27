@@ -111,7 +111,7 @@ survived** (`replay_deaths.json`): 3 in events, 85 in fights (acts 1/2/3 = 54/27
 Guardian 11, Hexaghost 10, Slime Boss 6, Nob 6, Slavers 5, other act-2 elites 8, hallways 14.
 
 The expert entered those 85 fights at a median 59% of max HP (20 of them below 40%) and lost a median 13 HP net
-(24 received), used a potion in 48 of them, and lost ≥ 50% of max HP in only 16. Representative cases:
+(24 received), used a potion in 48 of them, and received damage ≥ 50% of max HP (damage_taken, not net HP lost) in only 16. Representative cases:
 - act-1 Lagavulin, run 1665608474 floor 7: the expert entered at 28/75 HP, drank one potion and lost 3; run
   1632257093 floor 10: entered at 17/75, two potions, lost 7 net (15 received).
 - act-1 Guardian, run 1693933695 floor 16: the expert entered at 21/75, two potions, lost 8 net (29 received); the

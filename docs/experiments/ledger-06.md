@@ -24724,7 +24724,7 @@ run commit `772df240`, pre-§682 Act 4). Expert: the 676 #865 `.run` files (hash
 games (`84d2f15d`) for deaths with the expert's exact deck.
 **Result:** net HP per won fight, bot vs expert, elites acts 1/2/3 13.0/10.1/6.1 vs 9.5/5.6/2.2, bosses 19.3/23.6/13.0
 vs 11.3/11.2/8.8 (all CIs exclude 0); hallways within ~1 HP. Death per fight act-2 boss 0.143 vs 0.055, act-3 boss
-0.128 vs 0.023, Heart 0.41 vs 0.08. The gap is on all 18 act-1-3 elite/boss encounters; the act-2 boss gap is neither
+0.128 vs 0.023, Heart 0.41 vs 0.08 (bot Act 4 is the pre-§682 learned-stop setup, not today's Act-4 strong default). The gap is on all 18 act-1-3 elite/boss encounters; the act-2 boss gap is neither
 one boss nor the mix (expert-mix reweighted 23.9) nor entry HP (bot enters healthier). It stays within entry-HP bins
 (85-100% HP: elites 11.7 vs 6.4, bosses 19.4 vs 10.7) and deck-size strata; act-1 elites with near-starter decks
 (floor ≤ 8, ≤ 13 cards, ≤ 1 upgrade): Nob 16.4 vs 5.7, Lagavulin 25.0 vs 11.1, Sentries 27.4 vs 11.5 (n 20-32 each,
