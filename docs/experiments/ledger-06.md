@@ -24754,7 +24754,7 @@ per fight). Not tested: larger α, rest-site imitation, a separate ranker head.
 Seeds: 111384000–111385023 used, smokes 111385990–111385991 used; 111385992–111385999 unused.
 **Knowledge impact:** none (no default or code change).
 
-## §TBD — SR head data learning curve: halving the SR_crn_r2 training data costs nothing (50 % → 100 %: +0.003 [−0.003, +0.009], FLAT); a quarter of the game rows with all ranking groups ranks as well as everything, so more policy-only games would not lift this head (offline, NEGATIVE, 2026-10-27)
+## §699 — SR head data learning curve: halving the SR_crn_r2 training data costs nothing (50 % → 100 %: +0.003 [−0.003, +0.009], FLAT); a quarter of the game rows with all ranking groups ranks as well as everything, so more policy-only games would not lift this head (offline, NEGATIVE, 2026-10-27)
 
 **Question:** the best SR heads rank common-seed VALIDATION siblings at X2-B's level (SR_crn_r2 s1/s2 0.663/0.667,
 X2-B 0.664, §649). Is that limited by the amount of training data (estimate in the project: 100k–1M games for 1 pp)?
