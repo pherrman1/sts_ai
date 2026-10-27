@@ -31,6 +31,12 @@ C - A difference agrees with the raw +2.15 pp within noise (it is unbiased by co
 - 0.80 < ratio < 0.90 -> weaker than projected; report, no recommendation.
 - ratio >= 0.90 -> NOT_USEFUL; stop the line.
 - The raw-vs-corrected difference of the C - A estimate is reported with its own bootstrap CI as a bias check.
+- Fight-level bias check (added 2026-10-27 before any results, review H: in the smokes boss replays ended ~6 +- 2.4 HP
+  above the recorded fights): per room class (hallway, elite, each act's boss, the Heart), the mean of recorded minus
+  mean-replay end HP, death and V, with seed-clustered CIs (`fight_bias` in the estimate). A class whose CI excludes
+  0 is a validity failure: the corrected estimate is then not reported as unbiased, and the cause is found first.
+- Analysis fixes committed before results (pre-launch review I, `979f12a`): seeds with any failed, invalid,
+  non-identical or missing replay are excluded whole (both arms) and listed.
 
 **Cost.** ~86 CPU-s of combat per run under this config (identity check on 18 runs) x 5 plays x 1,024 runs ~= 120
 CPU-h: ~14 min per unit (one seed, both arms), 512 units on 4 workers x 4 lanes ~= 8 h wall plus stragglers.

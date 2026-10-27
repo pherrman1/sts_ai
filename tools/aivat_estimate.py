@@ -184,6 +184,36 @@ def estimate(args):
            # corrected minus raw = -beta * (luck_B - luck_A); its CI is the bias check (expected 0)
            'shift': {'diff': float((D_cv - D_raw).mean()), 'ci': ci(D_cv - D_raw)},
            'excluded_seeds': {str(k): v for k, v in sorted(bad.items())}}
+    # Fight-level bias check (review H): the recorded fight and its replays are draws from one distribution, so
+    # per room class the mean of (recorded - mean replay) end HP (0 after a death), death and V must be 0 within
+    # noise. Seed-clustered bootstrap over the included seeds, both arms.
+    classes = {}
+    for si, sd in enumerate(seeds):
+        for arm in (a, b):
+            for f in runs[(arm, sd)][1]:
+                k = (arm, sd, f['fightIdx'])
+                if k not in reps:
+                    continue
+                cls = 'HEART' if f['encounter'] == HEART else f'act{f["act"]}_{f["roomClass"]}' if f[
+                    'roomClass'] == 'BOSS' else f['roomClass']
+                t = f['transition']
+                hp = lambda o, post: post['curHp'] if o == 1 else 0
+                d = [hp(t['combatOutcome'], t['post']) - np.mean([hp(r['combatOutcome'], r['post']) for r in reps[k]]),
+                     float(t['combatOutcome'] != 1) - np.mean([float(r['combatOutcome'] != 1) for r in reps[k]]),
+                     values[(k, 'real')] - np.mean([values[(k, f'r{r["replicate"]}')] for r in reps[k]])]
+                classes.setdefault(cls, []).append((si, d))
+    fight_bias = {}
+    for cls, rows_ in sorted(classes.items()):
+        per_seed = np.zeros((len(seeds), 3)); cnt = np.zeros(len(seeds))
+        for si, d in rows_:
+            per_seed[si] += d; cnt[si] += 1
+        sums, ns = per_seed[idx].sum(1), cnt[idx].sum(1)[:, None]
+        boot = sums / np.maximum(ns, 1)
+        mean = per_seed.sum(0) / cnt.sum()
+        lo, hi = np.percentile(boot, 2.5, axis=0), np.percentile(boot, 97.5, axis=0)
+        fight_bias[cls] = {'fights': int(cnt.sum()), **{name: {'mean': float(mean[i]), 'ci': [float(lo[i]), float(hi[i])]}
+                           for i, name in enumerate(('hp', 'death', 'v'))}}
+    res['fight_bias'] = fight_bias
     res['sd_ratio'] = res['aivat']['sd'] / res['raw']['sd']
     res['effective_seed_multiplier'] = 1 / res['sd_ratio'] ** 2
     json.dump(res, sys.stdout, indent=1)
