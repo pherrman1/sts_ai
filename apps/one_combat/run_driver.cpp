@@ -300,7 +300,7 @@ void runFullRunOocPolicyStep(GameContext &gc, search::ScumSearchAgent2 &agent,
     }
     // STS_KEY_EMERALD=mask: the map handlers below enumerate unmasked edges, so
     // the chain takes the first edge that still reaches the burning elite.
-    if (gc.screenState == ScreenState::MAP_SCREEN && !search::heartKeyRules().isDefault()) {
+    if (gc.screenState == ScreenState::MAP_SCREEN && !search::heartKeyRules().isAdr0041()) {
         std::optional<search::GameAction> allowed;
         bool masked = false;
         for (const auto a : search::GameAction::getAllActionsInState(gc)) {
@@ -628,9 +628,9 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
                 traceOffer = oocTraceOffer(gc);
             }
             const char *traceBy = "chain";
-            // Opt-in key variants mask some actions; report a policy that ignored the mask.
+            // Non-ADR-0041 key variants mask some actions; report a policy that ignored the mask.
             std::vector<int> keyMaskAllowedX;
-            if (!search::heartKeyRules().isDefault() && gc.screenState == ScreenState::MAP_SCREEN) {
+            if (!search::heartKeyRules().isAdr0041() && gc.screenState == ScreenState::MAP_SCREEN) {
                 bool masked = false;
                 for (const auto a : search::GameAction::getAllActionsInState(gc)) {
                     if (!a.isValidAction(gc)) continue;
