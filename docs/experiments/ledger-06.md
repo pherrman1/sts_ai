@@ -24577,7 +24577,7 @@ forks remain as an unbiased referee set (unit tars on `/mnt/project-files/boss-r
 Seeds: 111378000–111378255 used, smokes 111379980–111379984 used; 111378256–111379023 and 111379985–111379989 unused.
 **Knowledge impact:** `operations/environment-variables.md` (research option `STS_OOC_FORCE_BOSS_RELIC`).
 
-## §TBD — Key rules at A20 (experiment 1 of the 2026-10-26 research report): flexible keys beat main's rigid ADR-0041 rules by +6.1 pp Heart kills [+3.4, +8.6] with student_sel alone; KEYS_EXPLAIN (1,024 paired seeds, 2026-10-27)
+## §691 — Key rules at A20 (experiment 1 of the 2026-10-26 research report): flexible keys beat main's rigid ADR-0041 rules by +6.1 pp Heart kills [+3.4, +8.6] with student_sel alone; KEYS_EXPLAIN (1,024 paired seeds, 2026-10-27)
 
 **Question:** §566 (rigid keys, 17.6%) and §569 (flexible keys, 25.8% search / 23.4% student_sel) differ in key rules,
 combat stack, fix flags and code. Main still defaults to the rigid rules (`RunGoal.cpp`); every campaign since §569
