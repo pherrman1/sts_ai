@@ -1,0 +1,11 @@
+name          expert-anchored-ab
+code_commit   f526cef9c08688be8a0af1438e5653e466fba72a
+binary_sha256 5d9ac01529b73fa9284d70f001d71695aee1c54e075e2163fb32b18c8ef4ff62
+workers       16
+share         /mnt/project-files/expert-anchored-ab
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 45
+input student_sel.bin /mnt/project-files/az-gen3-explore/student_sel.bin cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7
+input expert.bin /mnt/project-files/expert-anchored-ab/expert.bin 145061444b796ca81339fdb4a7a20dd582c0aba25e2fd3df0c684bac385cae73
