@@ -1,6 +1,6 @@
 # OOC rollout variance reduction
 
-Last verified: 2026-10-27 against `main` `ed2dcb2b` (issue #883, phases 1–2; offline decomposition §TBD).
+Last verified: 2026-10-27 against `main` `ed2dcb2b` (issue #883, phases 1–2; offline decomposition §699).
 
 ## Purpose / research question
 
@@ -13,7 +13,7 @@ teacher or CTM bias (#884).
 
 - **The CTM death draw dominates rollout3 noise.** In the §644 common-seed capture it carries 88% of leaf variance and
   87% of sibling-difference variance ([evidence](../../../experiments/evidence/ooc_variance_reduction_audit_20261027/README.md),
-  §TBD; pre-calibration CTM, so today's share is likely lower).
+  §699; pre-calibration CTM, so today's share is likely lower).
 - **Candidate 1, go for a small experiment: conditional Monte Carlo on survival** ("survival-weighted rollouts").
   The CTM's survival probability is known at every rollout combat, so the death draw can be integrated out exactly.
 - **Candidate 2, go for a small experiment: event-keyed streams.** Today's common seeds share one sequential stream,
