@@ -16,7 +16,7 @@ bootstrap 2,000, seed 20261026). All effects in pp; 95% CIs in brackets.
 | Kfull (known RNG, full HP, P300's regime) | 85.7% | **+2.7** [+1.2, +4.4] | +1.4 | −1.2 |
 
 Main effects on D: clairvoyance C = −2.2 [−4.4, 0.0]; full HP H = −1.1 [−2.2, +0.1]; C x H = −0.6 [−3.5, +2.1];
-D(Kfull) − D(Fnat) = −3.3 [−6.0, −0.6].
+D(Kfull) − D(Fnat) = −3.3 [−6.0, −0.6]; the R1c quantity D(Knat) − D(Fnat) = −1.9 [−4.6, +0.7] (same bootstrap).
 
 **Pre-registered readings that fire:** R1c (D(Kfull) < 3 but D(Knat) ≥ 3: the Kfull ceiling compresses the effect, not a
 non-replication) and **R4** (D(Fnat) ≥ 4: Stage A's random key sampling missed a real top-vs-bottom gap; a fixed-key
@@ -49,10 +49,12 @@ Single-key CIs are about ±4.5 pp (see `analysis.json`).
 
 - **P300's ordering is real in fair play.** In our engine, on our decks, with fair Silver at natural HP, P300's top 5
   beat its bottom 5 by 6 pp. Corruption and Feel No Pain lead; Whirlwind is last. §684's "Impervious 0.0 / top-5
-  pooled +0.3" came from about 20 random decks per key and a different base draw, not from a missing effect.
-- **Clairvoyance does not inflate these values; it shrinks them.** D falls from fair to known RNG at both HP levels
-  (C = −2.2). The steepest drop is the Kfull ceiling: at 86% base win, all adds move toward 0. Full HP alone changes D
-  little (H = −1.1).
+  pooled +0.3" came, by inference, from about 20 random decks per key and a different base draw, not from a missing
+  effect.
+- **Clairvoyance does not inflate these values.** D is lower under known RNG at both HP levels (point estimates;
+  C = −2.2 [−4.4, 0.0], natural-HP contrast −1.9 [−4.6, +0.7], both CIs include 0). The solid contrast is P300's regime
+  against fair natural HP, −3.3 [−6.0, −0.6]: at 86% base win, all adds move toward 0. Full HP alone changes D little
+  (H = −1.1).
 - **P300's magnitudes (+10 to +14 per top card) do not transfer as absolute numbers.** Their mean add +3.7 sits on a
   68% base in their regime; in ours the per-card effects depend on base win, and the ranking is what carries over.
 - **Inference:** a fixed-key fair Heart table (R4) would have usable signal for the strongest power/defence keys. Its

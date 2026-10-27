@@ -24577,7 +24577,7 @@ forks remain as an unbiased referee set (unit tars on `/mnt/project-files/boss-r
 Seeds: 111378000–111378255 used, smokes 111379980–111379984 used; 111378256–111379023 and 111379985–111379989 unused.
 **Knowledge impact:** `operations/environment-variables.md` (research option `STS_OOC_FORCE_BOSS_RELIC`).
 
-## §TBD — P300 clairvoyance 2x2 (Heart stage values, fair vs known-RNG combat x natural vs full HP): P300's top-5 cards beat its bottom-5 by D = +6.0 pp [+3.8, +8.3] under fair Silver at natural HP; known RNG shrinks D (clairvoyance −2.2 pp [−4.4, 0.0]), lowest in P300's own regime (+2.7 at an 86% base); readings R1c + R4 (96 decks x 12 fixed variants x 4 cells, 18,112 fights, 2026-10-27)
+## §TBD — P300 clairvoyance 2x2 (Heart stage values, fair vs known-RNG combat x natural vs full HP): P300's top-5 cards beat its bottom-5 by D = +6.0 pp [+3.8, +8.3] under fair Silver at natural HP; known RNG does not inflate D (natural-HP contrast −1.9 pp [−4.6, +0.7]), and D is lowest in P300's own regime (+2.7 at an 86% base; vs fair natural −3.3 [−6.0, −0.6]); readings R1c + R4 (96 decks x 12 fixed variants x 4 cells, 18,112 fights, 2026-10-27)
 
 **Question:** experiment 10 of the deep-research report. P300 (destire-mio/sts-ironclad-agent, D4) values Feel No Pain,
 Demon Form, Impervious, Corruption and Barricade at +10 to +14 pp at the Heart with a known-RNG search at full HP; §684
@@ -24594,10 +24594,11 @@ invalid, 34.8 core-h. D: Fnat +6.0 [+3.8, +8.3] (base 51.6%), Ffull +5.2 [+2.9, 
 (73.4%), Kfull +2.7 [+1.2, +4.4] (85.7%). Clairvoyance C = −2.2 [−4.4, 0.0], full HP H = −1.1 [−2.2, +0.1], C x H
 −0.6. Fair natural HP single adds: Corruption +10.9, Feel No Pain +8.1, Barricade +6.8, Impervious +4.9, Demon Form
 +4.7; Whirlwind −1.3 (each about ±4.5, plus a common base error of about 2.5 pp). Pre-registered readings: **R1c**
-(the Kfull ceiling compresses the effect; not a non-replication) and **R4** (D(Fnat) ≥ 4).
+(the Kfull ceiling compresses the effect; not a non-replication; its natural-HP clairvoyance contrast D(Knat) − D(Fnat) =
+−1.9 [−4.6, +0.7]) and **R4** (D(Fnat) ≥ 4). D(Kfull) − D(Fnat) = −3.3 [−6.0, −0.6].
 **Interpretation:** P300's ranking of these Heart cards holds in fair play on our engine and decks; clairvoyance does
-not create it, and makes it smaller. §684's "Impervious 0.0 / top-5 pooled +0.3" was noise from about 20 random decks
-per key. P300's absolute magnitudes do not transfer, because per-card effects depend on the base win. **Inference:** a
+not inflate it (point estimate lower, CI includes 0), and P300's own regime shows the smallest gap. **Inference:** §684's
+"Impervious 0.0 / top-5 pooled +0.3" was noise from about 20 random decks per key. P300's absolute magnitudes do not transfer, because per-card effects depend on the base win. **Inference:** a
 fixed-key fair Heart table would carry signal for the strongest power/defence keys; whether it improves on student_sel's
 card picks is a separate question and not decided here.
 Seeds: 111304600–111304983 used (calibration and every 2x2 cell); smokes 111305990–111305997 used.
