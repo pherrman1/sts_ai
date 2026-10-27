@@ -1,0 +1,12 @@
+VALIDATION {'groups': 5587, 'sources': 80}; X2-B 0.6639 (small gaps 0.6461)
+  LC25rows_s1      f 0.25  conc 0.6664 small 0.5948 blend(w 0.15) 0.7008
+  LC25groups_s1    f 0.26  conc 0.6492 small 0.5856 blend(w 0.1) 0.6896
+  SR_crn_r2_s1_ep13 f 1.0   conc 0.6628 small 0.5929 blend(w 0.1) 0.7020
+f 0.25  (1 heads) conc 0.6664 - X2-B +0.0025 [-0.0111, +0.0160] small 0.5948 blend 0.7008
+f 0.26  (1 heads) conc 0.6492 - X2-B -0.0148 [-0.0272, -0.0020] small 0.5856 blend 0.6896
+f 1.0   (1 heads) conc 0.6628 - X2-B -0.0011 [-0.0144, +0.0121] small 0.5929 blend 0.7020
+0.25->0.26: conc -0.0172 [-0.0251, -0.0092] small -0.0092 [-0.0178, -0.0005] blend -0.0112 [-0.0174, -0.0051]
+0.26->1.0: conc +0.0136 [+0.0067, +0.0205] small +0.0073 [-0.0006, +0.0155] blend +0.0125 [+0.0062, +0.0187]
+slope per doubling (all): +0.0023 [-0.0002, +0.0048]
+slope per doubling (small): +0.0013 [-0.0016, +0.0041]
+slope per doubling (blend): +0.0034 [+0.0013, +0.0054]

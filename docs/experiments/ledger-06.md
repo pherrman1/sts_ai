@@ -24775,3 +24775,30 @@ technique: [variance-reduction.md](../knowledge-base/research/ooc/variance-reduc
 event-keyed streams on ~64 frozen roots from replays of used seeds, ≈ 2 core-h.
 Seeds: none.
 **Knowledge impact:** new KB page research/ooc/variance-reduction.md.
+
+## §700 — SR head data learning curve: halving the SR_crn_r2 training data costs nothing (50 % → 100 %: +0.003 [−0.003, +0.009], FLAT); a quarter of the game rows with all ranking groups ranks as well as everything, so more policy-only games would not lift this head (offline, NEGATIVE, 2026-10-27)
+
+**Question:** the best SR heads rank common-seed VALIDATION siblings at X2-B's level (SR_crn_r2 s1/s2 0.663/0.667,
+X2-B 0.664, §649). Is that limited by the amount of training data (estimate in the project: 100k–1M games for 1 pp)?
+**Setup:** [README](evidence/value_sr_learning_curve_20261027/README.md), plan [PLAN.md](evidence/value_sr_learning_curve_20261027/PLAN.md)
+(frozen before the runs, data branch `claude/az-gen2-data` `gen2/value-sr-lc/`). SR_crn_r2_s1/s2's command on nested
+source subsets (sha256 hash rule) of its 2,016 training row files and 19,781 ranking groups: 25 % (463 files, 5,074
+groups) and 50 % (992, 10,457), torch seeds 1 and 2, optimizer steps matched to the 100 % runs (80/40/20 epochs);
+split runs at seed 1: 25 % rows with all groups, all rows with 25 % groups. Epoch by §649's `pick_epoch.py` (best
+in-training holdout ranking with selection BCE ≤ 0.570). Philipp's GPU 2026-10-27 12:08Z–~19:20Z (Philipp's OK
+2026-10-26 23:32Z, start time his); scoring in the cloud reproduces §649 exactly. Weights on the data branch (`5d7a2ec`,
+`0d84e2c`). STS_ACTIVE_POWER_FEATURES not read by the heart1 student (unset, logged).
+**Result:** head alone on VALIDATION, seed mean: 25 % 0.638, 50 % 0.662, 100 % 0.665. 25 → 50 %: +0.024
+[+0.018, +0.030]; **50 → 100 %: +0.003 [−0.003, +0.009] → FLAT** (pairs with label gap < 1.5 pp: −0.000
+[−0.007, +0.006]; blend +0.005 [−0.001, +0.009]). Split: 25 % rows + all groups 0.666, +0.004 [−0.002, +0.009] vs
+100 % s1; all rows + 25 % groups 0.649, −0.014 [−0.021, −0.007]. At 25 % the value BCE bar binds (6–8 of 80 epochs
+pass); the best unconstrained epochs reach holdout ranking 0.656–0.663, near 100 %.
+**Interpretation:** the head's ranking is not limited by game-outcome rows; they matter only through value-BCE
+overfitting, which cuts the epoch choice short. Ranking groups matter with diminishing returns (flat by ~10k groups).
+**Inference:** even the CI's upper end (+0.009 per doubling) needs ~10× today's data for +0.03 over X2-B; the point
+estimate needs ~500×. The plateau comes from the labels' kind (rollout3 means ending in X2-B), the features or the
+recipe, not the volume; consistent with §645/§649.
+**Decision:** no default change; no data generation for this head proposed. Next levers, if the value head is pursued:
+labels that do not end in X2-B or luck-corrected outcome labels (§697/§698), and a ranking-first selection.
+Seeds: none.
+**Knowledge impact:** none (no default or code change).
