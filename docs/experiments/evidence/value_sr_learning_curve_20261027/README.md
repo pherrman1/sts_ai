@@ -125,6 +125,8 @@ gen2/value-sr-lc/tools/drive_lc.sh        # smoke, main (PAR=2), split; exports 
 STS_REPO=$REPO python3 tools/lc_eval.py $ONE_COMBAT $CRN lc_main.json 0.25:LC25_s1=LC25_s1_ep17.bin \
   0.25:LC25_s2=LC25_s2_ep39.bin 0.5:LC50_s1=LC50_s1_ep27.bin 0.5:LC50_s2=LC50_s2_ep29.bin \
   1.0:SR_crn_r2_s1_ep13=SR_crn_r2_s1_ep13.bin 1.0:SR_crn_r2_s2_ep20=SR_crn_r2_s2_ep20.bin
+STS_REPO=$REPO python3 tools/lc_eval.py $ONE_COMBAT $CRN lc_split.json 0.25:LC25rows_s1=LC25rows_s1_ep49.bin \
+  0.26:LC25groups_s1=LC25groups_s1_ep12.bin 1.0:SR_crn_r2_s1_ep13=SR_crn_r2_s1_ep13.bin
 STS_REPO=$REPO python3 tools/lc_eval.py $ONE_COMBAT $CRN lc_split_rows.json 0.25:LC25rows_s1=LC25rows_s1_ep49.bin \
   1.0:SR_crn_r2_s1_ep13=SR_crn_r2_s1_ep13.bin
 ```
