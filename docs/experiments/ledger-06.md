@@ -24548,7 +24548,7 @@ those cards; the audit shows deviations, not that they are mistakes. Follow-up: 
 a value-based rest-vs-upgrade decision is being scoped in its own thread (2026-10-26).
 Seeds: none (existing games only).
 **Knowledge impact:** none beyond this entry; no code or default change.
-## §TBD — Gumbel root with the Muesli-style Q cap at A20 map roots, paired A/B (512 seeds): NOT_SHOWN, Heart kills 25.2% vs 27.7%, reached Act 4 −4.7 pp (2026-10-27)
+## §693 — Gumbel root with the Muesli-style Q cap at A20 map roots, paired A/B (512 seeds): NOT_SHOWN, Heart kills 25.2% vs 27.7%, reached Act 4 −4.7 pp (2026-10-27)
 
 **Question (Philipp, 2026-10-26 22:57Z "lets go with 16 workers after the boss relic thing is done"):** does §689's
 cap turn the Gumbel root into a play gain? [PREREG](evidence/gumbel_qcap_ab_20261026/PREREG.md), pre-launch review
