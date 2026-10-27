@@ -24754,6 +24754,27 @@ per fight). Not tested: larger α, rest-site imitation, a separate ranker head.
 Seeds: 111384000–111385023 used, smokes 111385990–111385991 used; 111385992–111385999 unused.
 **Knowledge impact:** none (no default or code change).
 
+## §702 — Fair-policy impossibility certificate, Stage 1 audit (issue #887): in the seed regime the floor-0 observation identifies the seed (1M repo-range and 20M random seeds, zero collisions), so no information-set certificate exists there and fair equals clairvoyant; in the fresh-chance regime a whole-run certificate needs a full-game loss proof; STOP after Stage 1 (no gameplay, 2026-10-27)
+
+**Question:** can two positive-probability worlds share an observable history at a decision with no common winning
+action, so that no fair policy wins the A20 Ironclad Heart with probability 1?
+**Setup:** [README](evidence/fair_impossibility_audit_20261027/README.md). Read-only audit of RNG, observability and
+exact-solver contracts at `ed2dcb2b`, plus a no-gameplay census of floor-0 observations (Neow options, act-1 boss,
+act-1 map with burning elite) per seed.
+**Result:** all 1,000,000 seeds 111,000,000–111,999,999 and all 20,000,000 random seeds have distinct floor-0
+observations (maps alone also distinct; control Neow + boss: 2,250 classes, Rényi-2 11.1 bits). Map collision entropy
+> ~46 bits at 95%. Seed-regime consequence (proved on that range): no two worlds share any history, and a lookup policy
+plays each seed's hindsight-optimal line, so the best fair win rate equals the hindsight-winnable fraction.
+Fresh-chance regime: no forced prefix beyond Neow and no sound whole-run loss bound in the repo (`exact_combat_solver`
+is exact only for gated single combats or 1–2 turn horizons, §623, §654). The only known unwinnable-seed proof is
+Silent A18+ (`18ISL35FYK4`, forced Lagavulin relaxation); none for Ironclad.
+**Interpretation:** a universal (c) certificate is impossible in the seed regime and infeasible in the fresh-chance
+regime with current tools; local (b) conflicts are computable as value of perfect information on recorded exact-solver
+roots, conditional on reaching the root.
+**Decision:** stop after Stage 1; Stage 2 pilot not run. Optional follow-up (Philipp's call): local VPI on the §654
+recorded roots, no new seeds.
+Seeds: none used (census evaluates map/Neow generation only; no game played).
+**Knowledge impact:** none (no code or default change).
 ## §699 — OOC rollout variance (issue #883, phases 1–2): the CTM death draw carries 87% of rollout3 sibling-difference variance in the §644 capture; common seeds couple map and boss-relic siblings least (CRN ratio ≈ 0.85); conditional Monte Carlo on survival and event-keyed streams proposed (offline, no seeds, 2026-10-27)
 
 **Question:** issue #883. Which unbiased, fair-RNG methods would buy the most precision per CPU-hour for OOC sibling
