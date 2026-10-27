@@ -24714,3 +24714,32 @@ per fight). Not tested: larger α, rest-site imitation, a separate ranker head.
 **Decision:** student_sel stays; no default change.
 Seeds: 111384000–111385023 used, smokes 111385990–111385991 used; 111385992–111385999 unused.
 **Knowledge impact:** none (no default or code change).
+
+## §697 — OOC sibling-value noise and bias by root type (#881): a single leaf sample of a sibling difference has an SD of 15–26 pp, most leading-sibling gaps are below 2 pp, and the leaf's bias against a deeper act-end rollout is small (−0.3 pp pooled) except at events (−2.5 pp); mixed, mostly variance and tiny gaps (offline + 16 replays of used seeds, 2026-10-27)
+
+**Question:** issue #881. At an OOC root the search acts on D = Q̂(A) − Q̂(B). How noisy is D per leaf sample, how
+much do common random numbers (CRN) help, how large are the gaps, and is D biased against a deeper reference, by root
+type? Variance (search allocation/stopping), bias (targets/data) or tiny gaps (ε-best-arm stopping)?
+**Setup:** [RESULT](evidence/ooc_sibling_noise_bias_20261027/RESULT.md). Active A20 leaf: rollout3 + M0-calibrated X2-B,
+map roots only (ADR-0061, ADR-0057). Data: (1) §644's common-seed capture re-read, top-3 prior actions, M0 applied post
+hoc (36,131 pairs); (2) new research options `STS_OOC_CAMPFIRE_PRICE_SCREENS` / `_TOP` (code `3bfca325`, default
+off/rest) price the top-3 prior actions at every real OOC root: 32 leaf and 32 act-end rollouts, CRN within each kind;
+16 replays of used §683 seeds (Philipp's go 2026-10-27 20:37Z), all 16 trace-identical to §683, 1,872 roots, 3,396
+pairs; (3) §695's rest sites (1,499 pairs). Reference = act-end rollout (same policy and CTM, longer horizon).
+**Result:** single-sample sibling-difference SD unpaired 15–26 pp at every type; CRN variance ratio 0.07–0.15 at card
+rewards/selects, about 0.3 at rest sites, 0.82–0.85 at map roots (random successors). n for a 2 pp gap ≈ 180–650 leaf
+samples per action unpaired (map ≈ 270; card rewards 46 paired). Gaps (§644): 43 % of leading pairs below 1 pp, 63 %
+below 2 pp, 40 % resolved at 32 CRN repeats. Bias (deep-reference pairs): pooled −0.34 pp [−0.56, −0.13], card rewards
+−0.26, map −0.20 [−0.93, +0.49] (reference SE 3.4 pp, little power), rest +0.51 [+0.16, +0.84] (§695), **events −2.50
+[−4.08, −1.06]**; where both estimators resolve a pair they agree on its order 95–100 %. Boss relics have no deeper
+reference in this harness (the act-end value is shallower).
+**Interpretation:** mixed, mostly variance and tiny gaps; the leaf's horizon bias is within noise except at events
+(and small at rest sites). Leaf and reference share policy and CTM, so bias against real play is not measured (§663).
+**Decision:** no default change. Suggested next: quantify the ε implied by the learned OOC stop at map roots (ε-best-arm
+view); paired sibling sampling only matters if non-map screens are searched again (#883); event roots are the only
+bias candidate for longer-horizon targets. Shared roots for #882/#884/#886: data branch `claude/sibling-noise-881-data`
+`f35262a`. SEL 25/50/100 % checkpoints verified on `claude/az-gen2-data` (`gen2/value-sr-lc/weights/`), evaluated by the
+learning-curve thread, not here.
+Seeds: none new; 111374100–111374115 (§683, used) replayed.
+**Knowledge impact:** `operations/environment-variables.md` (research options `STS_OOC_CAMPFIRE_PRICE_SCREENS`,
+`STS_OOC_CAMPFIRE_PRICE_TOP`).
