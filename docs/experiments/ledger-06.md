@@ -24576,3 +24576,24 @@ where it departs from the table it is usually right (context: deck, HP). The per
 forks remain as an unbiased referee set (unit tars on `/mnt/project-files/boss-relic-forks/stage-a`).
 Seeds: 111378000–111378255 used, smokes 111379980–111379984 used; 111378256–111379023 and 111379985–111379989 unused.
 **Knowledge impact:** `operations/environment-variables.md` (research option `STS_OOC_FORCE_BOSS_RELIC`).
+
+## §691 — Key rules at A20 (experiment 1 of the 2026-10-26 research report): flexible keys beat main's rigid ADR-0041 rules by +6.1 pp Heart kills [+3.4, +8.6] with student_sel alone; KEYS_EXPLAIN (1,024 paired seeds, 2026-10-27)
+
+**Question:** §566 (rigid keys, 17.6%) and §569 (flexible keys, 25.8% search / 23.4% student_sel) differ in key rules,
+combat stack, fix flags and code. Main still defaults to the rigid rules (`RunGoal.cpp`); every campaign since §569
+sets `STS_KEY_SAPPHIRE=policy STS_KEY_RUBY=policy STS_KEY_EMERALD=mask`; the key rules were never A/B tested. How much
+do they add on today's stack? Philipp's go 2026-10-26 22:16Z ("okay lets go on 16 workers").
+**Setup:** [PREREG](evidence/key_rules_ab_20261026/PREREG.md), pre-launch review PASS (reviewer G). Arms R (no
+`STS_KEY_*`) and F (the three flexible flags), otherwise the §683 OFF arm on main `db216ff0` (student_sel alone,
+`STS_OOC_MCTS_SCREENS=none`, learned Silver stop, Act 4 strong). RUN_COMMIT `89e6ba90`, binary `d74cfded…`, 16 cloud
+workers; 1,024/1,024 units verified, 2,048 games valid.
+**Result:** [RESULT.md](evidence/key_rules_ab_20261026/RESULT.md). Heart kills R 20.7% / F 26.8%, F − R **+6.05 pp
+[+3.42, +8.59]** (discordant 126/64, exact McNemar p 8e−6); Act 4 33.2 / 40.8%, +7.6 pp [+4.9, +10.4]; mean floor
++2.86. 901 of 1,024 pairs first diverge at the Act-1 Sapphire offer (+63 kills, +78 Act-4 arrivals); 26 at an Act-3
+campfire (−2 kills). F holds the Sapphire in Act 1 in 208 runs (R 1,000) and enters Act 2 with 6.32 vs 5.47 relics.
+**Interpretation:** KEYS_EXPLAIN under the frozen rule. **Inference:** the gain is the deferred Sapphire (keeping the
+Act-1 chest relic); flexible keys explain about 6 of the 8 pp between §566 and §569, the combat-side changes the rest
+(unpaired). No default changed; making flexible keys the A20 default and checking the live advisor's key flags are
+Philipp's call.
+Seeds: 111382000–111383023 (campaign), 111383024–111383027 (smokes) used.
+**Knowledge impact:** none until a default change; `evaluation/current-baselines.md` unchanged.
