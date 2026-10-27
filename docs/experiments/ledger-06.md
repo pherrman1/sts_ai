@@ -24641,7 +24641,7 @@ Act-1 chest relic); flexible keys explain about 6 of the 8 pp between §566 and 
 Philipp's call.
 Seeds: 111382000–111383023 (campaign), 111383024–111383027 (smokes) used.
 **Knowledge impact:** none until a default change; `evaluation/current-baselines.md` unchanged.
-## §TBD — Expert decisions on expert seeds (experiment 3 of the 2026-10-26 research report): replaying Baalorlord's out-of-combat decisions leaves the bot's A20 Heart rate unchanged, −2.1 pp [−7.9, +3.6], about 0 ± 6 pp after a key defect; NOT_SHOWN (329 paired seeds, 2026-10-27)
+## §694 — Expert decisions on expert seeds (experiment 3 of the 2026-10-26 research report): replaying Baalorlord's out-of-combat decisions leaves the bot's A20 Heart rate unchanged, −2.1 pp [−7.9, +3.6], about 0 ± 6 pp after a key defect; NOT_SHOWN (329 paired seeds, 2026-10-27)
 
 **Question:** with combat held at today's A20 Silver, how much Heart win rate does the bot's out-of-combat play lose to
 an expert's? Philipp's go 2026-10-26 23:31Z ("Also 16 workers, but work with the coordinator when to actually run them").
