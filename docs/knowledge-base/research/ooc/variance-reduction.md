@@ -17,8 +17,8 @@ teacher or CTM bias (#884).
 - **Candidate 1, go for a small experiment: conditional Monte Carlo on survival** ("survival-weighted rollouts").
   The CTM's survival probability is known at every rollout combat, so the death draw can be integrated out exactly.
 - **Candidate 2, go for a small experiment: event-keyed streams.** Today's common seeds share one sequential stream,
-  which desynchronises once siblings take different numbers of draws. Map and boss-relic siblings keep almost no
-  coupling (CRN ratio 0.86).
+  which desynchronises once siblings take different numbers of draws. Map and boss-relic siblings keep the least
+  coupling (CRN ratio 0.73–0.87 depending on weighting, against 0.30 at rest sites).
 - Latin-hypercube/antithetic draws, martingale control variates and adaptive allocation are sound but second-order
   until candidate 1 is measured. Multilevel Monte Carlo and general importance sampling are not recommended (below).
 - No default change follows from this page. Either candidate changes leaf values and therefore play; a play-changing
@@ -77,8 +77,8 @@ generators: Salmon et al. 2011).
   now. A key reused within a trajectory would correlate two events and must fail loudly.
 - **Expected gain:** siblings keep using the same uniforms for "the fight on floor f" even after their draw counts
   diverge, and the CTM's inverse-CDF HP draw then gives the monotone (comonotone) coupling that is variance-minimising
-  for monotone responses (Glasserman & Yao 1992). Largest where today's coupling is weakest: map (0.86), boss relic
-  (0.86), shop (0.58).
+  for monotone responses (Glasserman & Yao 1992). Largest where today's coupling is weakest: map and boss relic
+  (≈ 0.82–0.87 pooled over row pairs), shop (≈ 0.52).
 - **Cost:** a seeded `mt19937_64` per event; small. Draw order inside a combat is fixed, so the near-full CTM's
   variable potion loop needs its own subkey after the HP draw to keep relic draws aligned.
 - **Placeholder / deck-slot coupling** (issue #881's idea) matters only for real-combat forks, not for rollout3 (the

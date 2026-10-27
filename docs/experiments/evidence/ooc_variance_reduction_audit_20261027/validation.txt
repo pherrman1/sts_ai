@@ -1,14 +1,15 @@
 split=VALIDATION leaves=158048 mean death rate=0.1410 leaves with any death=0.644
-leaf var pooled=0.05409; death term q(1-q)m^2 share=0.887; one-event RB approx var ratio=0.074
-pairs=1078844 CRN ratio var(d)/(var_i+var_j) pooled=0.571
-mean frac repeats with discordant death=0.1107; pairs with any discordant death=0.631
+leaf var pooled=0.05409; death term q(1-q)m^2 share=0.887 (vs ddof=1 variance; vs population variance 0.916); one-event RB approx var ratio=0.074
+pairs with var(d)=0 (perfectly coupled, kept)=28607
+pairs=1107451 CRN ratio var(d)/(var_i+var_j) pooled=0.543
+mean frac repeats with discordant death=0.1079; pairs with any discordant death=0.615
 pooled share of sibling-diff SS from discordant-death repeats=0.874
 pooled var(d | both survive)/var(d) (proxy for death-free noise)=0.094
-  parentScreen=1: pairs=64094 CRN ratio=0.515 disc-death SS share=0.877
-  parentScreen=2: pairs=104077 CRN ratio=0.421 disc-death SS share=0.878
+  parentScreen=1: pairs=64109 CRN ratio=0.515 disc-death SS share=0.877
+  parentScreen=2: pairs=104888 CRN ratio=0.419 disc-death SS share=0.878
   parentScreen=3: pairs=40970 CRN ratio=0.864 disc-death SS share=0.752
-  parentScreen=4: pairs=19661 CRN ratio=0.147 disc-death SS share=0.744
-  parentScreen=5: pairs=390558 CRN ratio=0.859 disc-death SS share=0.850
+  parentScreen=4: pairs=19919 CRN ratio=0.135 disc-death SS share=0.744
+  parentScreen=5: pairs=399443 CRN ratio=0.824 disc-death SS share=0.850
   parentScreen=6: pairs=441 CRN ratio=0.739 disc-death SS share=0.940
-  parentScreen=7: pairs=226767 CRN ratio=0.311 disc-death SS share=0.868
-  parentScreen=8: pairs=232276 CRN ratio=0.576 disc-death SS share=0.923
+  parentScreen=7: pairs=230836 CRN ratio=0.299 disc-death SS share=0.868
+  parentScreen=8: pairs=246845 CRN ratio=0.525 disc-death SS share=0.923

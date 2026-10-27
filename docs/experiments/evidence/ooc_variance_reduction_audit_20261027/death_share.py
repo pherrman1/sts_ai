@@ -24,7 +24,8 @@ for f in sorted(glob.glob(f"{root}/out/units/*/S-*.sib.jsonl.gz")):
             m = sum(v) / n; vt = sum((x - m) ** 2 for x in v) / (n - 1)
             ms = sum(surv) / len(surv) if surv else 0
             vs = sum((x - ms) ** 2 for x in surv) / (len(surv) - 1) if len(surv) > 1 else 0
-            leaf_stats.append((q, ms, vs, vt, scr))
+            vp = vt * (n - 1) / n  # population variance, same scale as q(1-q)m^2
+            leaf_stats.append((q, ms, vs, vt, scr, vp))
         for i in range(len(leaves)):
             for j in range(i + 1, len(leaves)):
                 a, b = leaves[i], leaves[j]
@@ -33,18 +34,18 @@ for f in sorted(glob.glob(f"{root}/out/units/*/S-*.sib.jsonl.gz")):
                 n = len(d); md = sum(d) / n
                 ss = [(x - md) ** 2 for x in d]
                 vd = sum(ss) / (n - 1)
-                if vd == 0: continue
                 disc = [da != db for da, db in zip(a[3], b[3])]
                 both = [dd for dd, da, db in zip(d, a[3], b[3]) if not da and not db]
                 vb = (sum((x - sum(both) / len(both)) ** 2 for x in both) / (len(both) - 1)) if len(both) > 1 else float("nan")
                 ua = sum((x - sum(a[2]) / n) ** 2 for x in a[2]) / (n - 1); ub = sum((x - sum(b[2]) / n) ** 2 for x in b[2]) / (n - 1)
-                pairs.append((vd, vb, sum(disc) / n, sum(s for s, k in zip(ss, disc) if k) / sum(ss), ua + ub, a[1]))
+                pairs.append((vd, vb, sum(disc) / n, (sum(s for s, k in zip(ss, disc) if k) / sum(ss)) if vd > 0 else 0.0, ua + ub, a[1]))
 # leaf level
 tot = sum(l[3] for l in leaf_stats)
 death_term = sum(l[0] * (1 - l[0]) * l[1] ** 2 for l in leaf_stats)
 rb = sum((1 - l[0]) ** 2 * l[2] for l in leaf_stats)
 print(f"split={split} leaves={len(leaf_stats)} mean death rate={sum(l[0] for l in leaf_stats)/len(leaf_stats):.4f} leaves with any death={sum(l[0]>0 for l in leaf_stats)/len(leaf_stats):.3f}")
-print(f"leaf var pooled={tot/len(leaf_stats):.5f}; death term q(1-q)m^2 share={death_term/tot:.3f}; one-event RB approx var ratio={rb/tot:.3f}")
+print(f"leaf var pooled={tot/len(leaf_stats):.5f}; death term q(1-q)m^2 share={death_term/tot:.3f} (vs ddof=1 variance; vs population variance {death_term/sum(l[5] for l in leaf_stats):.3f}); one-event RB approx var ratio={rb/tot:.3f}")
+print(f"pairs with var(d)=0 (perfectly coupled, kept)={sum(p[0]==0 for p in pairs)}")
 # pair level
 P = len(pairs); svd = sum(p[0] for p in pairs); sind = sum(p[4] for p in pairs)
 print(f"pairs={P} CRN ratio var(d)/(var_i+var_j) pooled={svd/sind:.3f}")
