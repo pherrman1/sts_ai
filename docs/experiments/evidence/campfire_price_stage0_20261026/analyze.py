@@ -109,6 +109,8 @@ def main(out, dirs):
                 if 'price' not in row or row['act'] > 3: errors += 'priceError' in row; continue
                 s = site(row, pl.get(row['floor']))
                 if s: sites.append(s)
+    # priceErrors: the rule-forced Ruby Recall sites (decided by heart_key, STS_KEY_RUBY=policy): the search model has no
+    # candidates there by design, so they are not priced (out of scope, §687).
     report = {'sites': len(sites), 'priceErrors': errors}
     for kind in ('actEnd', 'leaf'):
         both = [s for s in sites if kind + 'Diff' in s]

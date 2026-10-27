@@ -5419,11 +5419,13 @@ void observeOocCampfirePrice(const GameContext &gc, const PathHistory &path, std
     const unsigned seconds = 120 + 40 * n;
     try {
         row["price"] = forkLeafReplay([&] {
-            ImaginedScope scope;
-            auto options = liveOptions;
-            if (options.refereeActEndCalibration.empty()) options.refereeActEndCalibration = a20LeafCalibration();
-            OocGameContextModel model(gc, path, liveSamplerFor(gc), std::move(options));
-            return model.priceRootActions(n, splitMix64(oocMctsSearchSeed(seed, index) ^ 0x43414d5046495245ULL));  // "CAMPFIRE"
+            try {
+                ImaginedScope scope;
+                auto options = liveOptions;
+                if (options.refereeActEndCalibration.empty()) options.refereeActEndCalibration = a20LeafCalibration();
+                OocGameContextModel model(gc, path, liveSamplerFor(gc), std::move(options));
+                return model.priceRootActions(n, splitMix64(oocMctsSearchSeed(seed, index) ^ 0x43414d5046495245ULL));  // "CAMPFIRE"
+            } catch (const std::exception &e) { return nlohmann::json{{"error", e.what()}}; }
         }, int(seconds) * 1000, int(seconds), std::size_t(1) << 24);
     } catch (const std::exception &e) { row["priceError"] = e.what(); }
     row["wallSeconds"] = std::chrono::duration<double>(std::chrono::steady_clock::now() - wallStart).count();
