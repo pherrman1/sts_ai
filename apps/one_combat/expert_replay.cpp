@@ -73,6 +73,10 @@ public:
     Replayer(const json &run, std::set<std::string> types)
         : RunLog(run), types_(std::move(types)), lastFloor_(run["floor_reached"].get<int>()) {
         if (types_.empty()) { stopped_ = true; stopFloor_ = 0; stopReason_ = "types none"; }
+        // Logs before Run History Plus 1.x lack the key fields; a run that reached Act 4 took both keys.
+        const bool reachedAct4 = lastFloor_ > 51;
+        emeraldUnlogged_ = reachedAct4 && !run.contains("green_key_taken_log");
+        sapphireUnlogged_ = reachedAct4 && !run.contains("blue_key_relic_skipped_log");
     }
 
     const char *step(GameContext &gc) {
@@ -102,6 +106,8 @@ public:
 private:
     std::set<std::string> types_;
     int lastFloor_;
+    // Take the key at its first offer (Emerald) or at the first chest with no logged relic (Sapphire).
+    bool emeraldUnlogged_ = false, sapphireUnlogged_ = false;
     bool stopped_ = false;
     int stopFloor_ = -1;
     std::string stopReason_;
@@ -242,11 +248,16 @@ private:
         auto &r = gc.info.rewardsContainer;
         const int f = gc.floorNum;
         while (r.goldRewardCount > 0) Action(RAT::GOLD, 0).execute(gc);
-        if (r.emeraldKey && greenKeyFloor == f) Action(RAT::KEY, 0).execute(gc);
-        if (r.sapphireKey && blueKeyFloor == f) {
+        if (r.emeraldKey && (greenKeyFloor == f || emeraldUnlogged_)) {
+            emeraldUnlogged_ = false;
+            Action(RAT::KEY, 0).execute(gc);
+        }
+        const bool unloggedSapphire = sapphireUnlogged_ && relicsObtained[f].empty();
+        if (r.sapphireKey && (blueKeyFloor == f || unloggedSapphire)) {
             // The key replaces the relic paired with it, the last one.
-            if (r.relicCount == 0 || jname(r.relics[r.relicCount - 1]) != blueKeyRelic)
+            if (!unloggedSapphire && (r.relicCount == 0 || jname(r.relics[r.relicCount - 1]) != blueKeyRelic))
                 return stop(gc, "sapphire key relic differs");
+            sapphireUnlogged_ = false;
             Action(RAT::KEY, 0).execute(gc);
             return done("reward");
         }
@@ -369,7 +380,7 @@ private:
     const char *doTreasure(GameContext &gc) {
         if (!on("reward")) return bot("reward");
         // A chest with no logged relic (and no sapphire key) was left closed.
-        const bool open = !relicsObtained[gc.floorNum].empty() || blueKeyFloor == gc.floorNum;
+        const bool open = !relicsObtained[gc.floorNum].empty() || blueKeyFloor == gc.floorNum || sapphireUnlogged_;
         Action(open ? 0 : 1).execute(gc);
         return done("reward");
     }

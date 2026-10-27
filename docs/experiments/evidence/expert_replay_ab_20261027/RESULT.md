@@ -15,43 +15,49 @@ RUN_COMMIT `84d2f15d`, binary `f91ba554…`, 16 cloud workers (started 05:56 CET
 | mean final floor | 37.4 | 39.6 | −2.2 |
 | mean wall per game | 493 s | 935 s | |
 
-The expert himself won 199 of these 329 runs (60.5%). On those 199 seeds X killed the Heart 53 times, B 49 times.
+The expert himself won 199 of these 329 runs (60.5%).
 
-**Reading:** replaying the expert's out-of-combat decisions, as far as they replay exactly, does not raise the bot's
-A20 Heart rate; the point estimate is slightly negative and the CI excludes gains above +3.6 pp.
+**Reading:** with the pre-registered intention-to-treat count, X and B are indistinguishable (CI −7.9 to +3.6 pp).
+A replay defect (below) biases X down on 17 seeds; corrected for it, the difference is about 0 ± 6 pp.
 
-## Replay defect found in the data (reported, not corrected)
+## Replay defect: missing Emerald key on 17 seeds (found in review; not re-run)
 
-On 6 seeds the X game ended after the Act-3 boss alive and without having lost a fight (floor 52, act 3): the replay
-never took the Emerald key, because those logs (older Run History Plus versions) have no `green_key_taken_log`, so the
-run had no Act 4. The expert won all 6. Excluding them: X 66/323 vs B 71/323, −1.5 pp. Even if X had killed the Heart
-on all 6, X would tie B (72 vs 73). The conclusion does not change.
+In 17 X games the run ended after the Act-3 boss, alive, with no Act 4 (floor 52, act 3); B has no such game. The
+expert won all 17. None of the 17 logs has `green_key_taken_log` (192 of the 329 logs lack it: Run History Plus
+versions before the field existed), and the replayer took the Emerald key only on the logged floor, so it never took
+it. In 6 of the 17 the run ended while still following the log; in 11 the bot had taken over later in act 3, after the
+key was already lost. (A first version of this note found only the 6.)
+
+- Excluding the 17 pairs: X 66/312 vs B 66/312, **0.0 pp [−6.1, +5.8]**.
+- Imputing X's own Heart rate given Act 4 (66/106) on the 17: X about +1.1 pp over B.
+
+`apps/one_combat/expert_replay.cpp` now takes the Emerald at its first offer, and the Sapphire at the first chest with
+no logged relic, when the log lacks the key field and the expert reached Act 4. This changes X games of up to 110
+seeds (logs without the fields whose expert reached Act 4); re-running them needs Philipp's go.
 
 ## Where the X games went (descriptive; conditioned on X's own trajectory, so not causal)
 
-| replay outcome | seeds | X Heart | B Heart | X / B mean floor |
-|---|---|---|---|---|
-| bot died while still following the log | 116 (expert won 57) | 0 | 27 | 20.8 / 38.0 |
-| handed to the bot at a non-replayable decision | 198 | 57 | 42 | 46.4 / 40.1 |
-| replayed through act 3 into Act 4 | 9 | 8 | 3 | 56.0 / 43.8 |
-| expert's log ended (expert died), bot continued | 6 | 1 | 1 | 34.2 / 45.7 |
+| replay outcome | seeds | expert won | X Heart | B Heart | X / B mean floor |
+|---|---|---|---|---|---|
+| bot died while still following the log | 110 | 51 | 0 | 25 | 19.1 / 37.9 |
+| handed to the bot at a non-replayable decision | 187 | 122 | 57 | 37 | 46.1 / 39.7 |
+| replayed through act 3 into Act 4 | 9 | 9 | 8 | 3 | 56.0 / 43.8 |
+| expert's log ended (expert died), bot continued | 6 | 0 | 1 | 1 | 34.2 / 45.7 |
+| no Emerald key, run ended after act 3 (defect) | 17 | 17 | 0 | 7 | 52.0 / 44.9 |
 
-Of the 116 in-log runs, half ended by floor 16 (median 16, lower quartile 14); the 6 no-Emerald seeds are among
-them, and 3 died outside combat (event damage). Hand-overs were at reward relics (54), shop shelves or
-purchases (48), card offers (35), boss relics (26), events (15) and others.
+Half of the 110 in-log deaths came by floor 16 (median 16, lower quartile 14); 3 died outside combat (event damage).
+Hand-overs were at reward relics, shop shelves or purchases, card offers, boss relics, events and others
+(`result.json`, `stopReasons`).
 
-These splits select on X's own fate (a seed lands in the first row because X died), so the large positive difference
-in the second row is not evidence that expert decisions help: the same selection removes X's losses from it.
+These splits select on X's own fate (a seed lands in the first row because X died), so the positive difference in the
+second row is not evidence that expert decisions help: the same selection removes X's losses from it.
 
 ## Interpretation
 
-- **Inference (mechanism not measured):** the expert's decisions assume the expert's combat. Played by Silver, his
-  early lines (likely elites and HP-costing choices at HP he could afford) end more bot runs in acts 1-2 than the bot's
-  own policy does; on balance this cancels whatever his later decisions are worth. This fits the expert-play audit (#865): the bot
-  rests far more than he does; the bot's caution is partly a correct response to its weaker combat.
-- **Inference:** "imitate the expert" is not a free win for the OOC policy at today's combat strength. Expert data
-  remains useful as a prior or for decision types that do not trade HP for value; per-type ablations
-  (`STS_EXPERT_REPLAY_TYPES`) could locate them but were not run.
-- No default changes.
+- NOT_SHOWN: replaying the expert's out-of-combat decisions, as far as they replay exactly, produces no measurable
+  change in the bot's A20 Heart rate (about 0 ± 6 pp after the key defect).
+- In 110 seeds the bot died while still following his log, most by floor 16, where B on the same seeds killed the
+  Heart 25 times. Why (his choices assuming his combat strength, or something else) was not measured.
+- Per-type ablations (`STS_EXPERT_REPLAY_TYPES`) were not run. No default changes.
 
 Seeds: 329 external expert seeds (Baalorlord run ids in `units.txt`); no 111xxxxxx seeds used.
