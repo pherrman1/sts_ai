@@ -24664,3 +24664,6 @@ run.
 Seeds: 329 external expert seeds (run ids in the campaign's `units.txt`); no 111xxxxxx seeds.
 **Knowledge impact:** `STS_CALLING_BELL_CARD_RNG_FIX` (default on) and `STS_EXPERT_REPLAY_TYPES` in
 `environment-variables.md`; no default change from the A/B.
+**Comparability:** `STS_CALLING_BELL_CARD_RNG_FIX` changes the card offers after every Calling Bell, so A20
+whole-run results before and after this merge are not comparable; freeze files for older comparisons must set
+`STS_CALLING_BELL_CARD_RNG_FIX=0`, or rerun both arms on one commit.
