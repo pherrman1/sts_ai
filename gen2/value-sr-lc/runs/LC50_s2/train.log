@@ -1,0 +1,215 @@
+distill.py sha256 40a9d5a33b9a9d6e5cc0c35010d764cc514551a3219da0bf2d048ea1f29df4b3 monotone.py 09efffaf3a789f09126c24db162f9efb1729e74a1da0e8581c530250f0ac72bc heart1 deaba59d0c1d13a64578bd770bbcdcee95b1b5ef85e9b732739c89291da237d9 groups 6dd13a64879a8f895a34b56ce96f82c0a8bc45c512e60ad84aaf7c02868e844f rows.txt d1e878bdf27ffd3ec5fae42d7bf9457e120da943f56c7d9b8fc0e0f9ecc1f839 STS_ACTIVE_POWER_FEATURES=unset
+args epochs 40 seed 2 
+train 172358 rows / 992 files, val 56882 rows / 336 files, wing_boots_counter 1, select 57873 rows / 336 files
+/home/philippherrmann/Documents/sts/az-gen2-data/gen2/value-sr-lc/tools/../../value-sr-crn/tools/distill.py:356: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  missing, unexpected = net.load_state_dict(torch.load(a.init, map_location=a.device), strict=False)
+student params 280844
+sibling-rank groups train 10457 holdout 3806
+init sibling-rank holdout {"groups": 3806, "sources": 176, "concordance": 0.5153}
+   mono penalty 0.00036
+   sibling-rank loss 0.69272
+   sibling-rank holdout {"groups": 3806, "sources": 176, "concordance": 0.5146}
+ep 1 train loss 1.1180 val KL None top1 None value null 202s
+   select fold objective 0.4071 KL 0.0832599161253011 value {"n": 57873, "bce": 0.6449, "const_bce": 0.642, "auc": 0.5870548553157323, "mean_p": 0.4061, "mean_z": 0.3414}
+   mono penalty 0.00174
+   sibling-rank loss 0.68953
+   sibling-rank holdout {"groups": 3806, "sources": 176, "concordance": 0.5303}
+ep 2 train loss 1.0535 val KL None top1 None value null 383s
+   select fold objective 0.3806 KL 0.06342242768628274 value {"n": 57873, "bce": 0.6275, "const_bce": 0.642, "auc": 0.6334380267424756, "mean_p": 0.2817, "mean_z": 0.3414}
+   mono penalty 0.00545
+   sibling-rank loss 0.67997
+   sibling-rank holdout {"groups": 3806, "sources": 176, "concordance": 0.556}
+ep 3 train loss 1.0189 val KL None top1 None value null 565s
+   select fold objective 0.3684 KL 0.06165084585918398 value {"n": 57873, "bce": 0.605, "const_bce": 0.642, "auc": 0.6859644017648855, "mean_p": 0.2754, "mean_z": 0.3414}
+   mono penalty 0.01066
+   sibling-rank loss 0.65076
+   sibling-rank holdout {"groups": 3806, "sources": 176, "concordance": 0.574}
+ep 4 train loss 0.9786 val KL None top1 None value null 745s
+   select fold objective 0.3573 KL 0.06175649873457372 value {"n": 57873, "bce": 0.5803, "const_bce": 0.642, "auc": 0.723936793028821, "mean_p": 0.2732, "mean_z": 0.3414}
+   mono penalty 0.01018
+   sibling-rank loss 0.61873
+   sibling-rank holdout {"groups": 3806, "sources": 176, "concordance": 0.5855}
+ep 5 train loss 0.9361 val KL None top1 None value null 925s
+   select fold objective 0.3452 KL 0.06255543408008156 value {"n": 57873, "bce": 0.5551, "const_bce": 0.642, "auc": 0.7431044519370202, "mean_p": 0.3217, "mean_z": 0.3414}
+   mono penalty 0.00941
+   sibling-rank loss 0.59403
+   sibling-rank holdout {"groups": 3806, "sources": 176, "concordance": 0.5986}
+ep 6 train loss 0.9038 val KL None top1 None value null 1103s
+   select fold objective 0.3524 KL 0.06432163815025908 value {"n": 57873, "bce": 0.5644, "const_bce": 0.642, "auc": 0.7482656420211452, "mean_p": 0.2821, "mean_z": 0.3414}
+   mono penalty 0.00882
+   sibling-rank loss 0.58059
+   sibling-rank holdout {"groups": 3806, "sources": 176, "concordance": 0.6045}
+ep 7 train loss 0.8854 val KL None top1 None value null 1280s
+   select fold objective 0.3482 KL 0.0641215278229278 value {"n": 57873, "bce": 0.5566, "const_bce": 0.642, "auc": 0.7514040036987336, "mean_p": 0.2997, "mean_z": 0.3414}
+   mono penalty 0.00854
+   sibling-rank loss 0.57105
+   sibling-rank holdout {"groups": 3806, "sources": 176, "concordance": 0.6085}
+ep 8 train loss 0.8719 val KL None top1 None value null 1455s
+   select fold objective 0.3456 KL 0.06456570365394221 value {"n": 57873, "bce": 0.551, "const_bce": 0.642, "auc": 0.7606358062945209, "mean_p": 0.3034, "mean_z": 0.3414}
+   mono penalty 0.00886
+   sibling-rank loss 0.55941
+   sibling-rank holdout {"groups": 3806, "sources": 176, "concordance": 0.6181}
+ep 9 train loss 0.8589 val KL None top1 None value null 1627s
+   select fold objective 0.3511 KL 0.06569863493236854 value {"n": 57873, "bce": 0.5588, "const_bce": 0.642, "auc": 0.7634229145890777, "mean_p": 0.2744, "mean_z": 0.3414}
+   mono penalty 0.00946
+   sibling-rank loss 0.54190
+   sibling-rank holdout {"groups": 3806, "sources": 176, "concordance": 0.6275}
+ep 10 train loss 0.8402 val KL None top1 None value null 1797s
+   select fold objective 0.3468 KL 0.06637685510790992 value {"n": 57873, "bce": 0.5487, "const_bce": 0.642, "auc": 0.7606349186237479, "mean_p": 0.3069, "mean_z": 0.3414}
+   mono penalty 0.00955
+   sibling-rank loss 0.52987
+   sibling-rank holdout {"groups": 3806, "sources": 176, "concordance": 0.6285}
+ep 11 train loss 0.8277 val KL None top1 None value null 1964s
+   select fold objective 0.3556 KL 0.06548232692034113 value {"n": 57873, "bce": 0.5677, "const_bce": 0.642, "auc": 0.7628137287775213, "mean_p": 0.2662, "mean_z": 0.3414}
+   mono penalty 0.00927
+   sibling-rank loss 0.52422
+   sibling-rank holdout {"groups": 3806, "sources": 176, "concordance": 0.6356}
+ep 12 train loss 0.8216 val KL None top1 None value null 2129s
+   select fold objective 0.3633 KL 0.06891907494040932 value {"n": 57873, "bce": 0.5755, "const_bce": 0.642, "auc": 0.7563566914042341, "mean_p": 0.2606, "mean_z": 0.3414}
+   mono penalty 0.00933
+   sibling-rank loss 0.51145
+   sibling-rank holdout {"groups": 3806, "sources": 176, "concordance": 0.6413}
+ep 13 train loss 0.8077 val KL None top1 None value null 2290s
+   select fold objective 0.3560 KL 0.06756664584040761 value {"n": 57873, "bce": 0.5641, "const_bce": 0.642, "auc": 0.7564687948614833, "mean_p": 0.2736, "mean_z": 0.3414}
+   mono penalty 0.00884
+   sibling-rank loss 0.51061
+   sibling-rank holdout {"groups": 3806, "sources": 176, "concordance": 0.6476}
+ep 14 train loss 0.8051 val KL None top1 None value null 2449s
+   select fold objective 0.3520 KL 0.06816580737875484 value {"n": 57873, "bce": 0.554, "const_bce": 0.642, "auc": 0.763575524249661, "mean_p": 0.2962, "mean_z": 0.3414}
+   mono penalty 0.00921
+   sibling-rank loss 0.50702
+   sibling-rank holdout {"groups": 3806, "sources": 176, "concordance": 0.6464}
+ep 15 train loss 0.8011 val KL None top1 None value null 2605s
+   select fold objective 0.3544 KL 0.07000230981127152 value {"n": 57873, "bce": 0.5557, "const_bce": 0.642, "auc": 0.7638227242937097, "mean_p": 0.2911, "mean_z": 0.3414}
+   mono penalty 0.00925
+   sibling-rank loss 0.49428
+   sibling-rank holdout {"groups": 3806, "sources": 176, "concordance": 0.6483}
+ep 16 train loss 0.7876 val KL None top1 None value null 2758s
+   select fold objective 0.3679 KL 0.06929876704934776 value {"n": 57873, "bce": 0.5837, "const_bce": 0.642, "auc": 0.7652723563947402, "mean_p": 0.255, "mean_z": 0.3414}
+   mono penalty 0.00913
+   sibling-rank loss 0.48686
+   sibling-rank holdout {"groups": 3806, "sources": 176, "concordance": 0.6503}
+ep 17 train loss 0.7794 val KL None top1 None value null 2908s
+   select fold objective 0.3619 KL 0.06898771521831677 value {"n": 57873, "bce": 0.5719, "const_bce": 0.642, "auc": 0.7602668592494854, "mean_p": 0.284, "mean_z": 0.3414}
+   mono penalty 0.00883
+   sibling-rank loss 0.48356
+   sibling-rank holdout {"groups": 3806, "sources": 176, "concordance": 0.6509}
+ep 18 train loss 0.7747 val KL None top1 None value null 3054s
+   select fold objective 0.3640 KL 0.07133548204925971 value {"n": 57873, "bce": 0.5713, "const_bce": 0.642, "auc": 0.7636280023897026, "mean_p": 0.2813, "mean_z": 0.3414}
+   mono penalty 0.00890
+   sibling-rank loss 0.47390
+   sibling-rank holdout {"groups": 3806, "sources": 176, "concordance": 0.6508}
+ep 19 train loss 0.7651 val KL None top1 None value null 3201s
+   select fold objective 0.3649 KL 0.07090350977262039 value {"n": 57873, "bce": 0.5744, "const_bce": 0.642, "auc": 0.7629999988872579, "mean_p": 0.2569, "mean_z": 0.3414}
+   mono penalty 0.00919
+   sibling-rank loss 0.46919
+   sibling-rank holdout {"groups": 3806, "sources": 176, "concordance": 0.6549}
+ep 20 train loss 0.7602 val KL None top1 None value null 3347s
+   select fold objective 0.3622 KL 0.07240230586788154 value {"n": 57873, "bce": 0.5655, "const_bce": 0.642, "auc": 0.7644977975845757, "mean_p": 0.2702, "mean_z": 0.3414}
+   mono penalty 0.00935
+   sibling-rank loss 0.46255
+   sibling-rank holdout {"groups": 3806, "sources": 176, "concordance": 0.6508}
+ep 21 train loss 0.7528 val KL None top1 None value null 3493s
+   select fold objective 0.3659 KL 0.0723744107778648 value {"n": 57873, "bce": 0.5729, "const_bce": 0.642, "auc": 0.7626800868553917, "mean_p": 0.2598, "mean_z": 0.3414}
+   mono penalty 0.00913
+   sibling-rank loss 0.45854
+   sibling-rank holdout {"groups": 3806, "sources": 176, "concordance": 0.6499}
+ep 22 train loss 0.7475 val KL None top1 None value null 3639s
+   select fold objective 0.3654 KL 0.07315564517468437 value {"n": 57873, "bce": 0.5701, "const_bce": 0.642, "auc": 0.7648849455320567, "mean_p": 0.2668, "mean_z": 0.3414}
+   mono penalty 0.00930
+   sibling-rank loss 0.46579
+   sibling-rank holdout {"groups": 3806, "sources": 176, "concordance": 0.6562}
+ep 23 train loss 0.7541 val KL None top1 None value null 3787s
+   select fold objective 0.3621 KL 0.07413308351915877 value {"n": 57873, "bce": 0.5615, "const_bce": 0.642, "auc": 0.766095157488902, "mean_p": 0.2756, "mean_z": 0.3414}
+   mono penalty 0.00932
+   sibling-rank loss 0.45613
+   sibling-rank holdout {"groups": 3806, "sources": 176, "concordance": 0.649}
+ep 24 train loss 0.7445 val KL None top1 None value null 3934s
+   select fold objective 0.3627 KL 0.07312720236801083 value {"n": 57873, "bce": 0.5647, "const_bce": 0.642, "auc": 0.7683245117625513, "mean_p": 0.2723, "mean_z": 0.3414}
+   mono penalty 0.00930
+   sibling-rank loss 0.45475
+   sibling-rank holdout {"groups": 3806, "sources": 176, "concordance": 0.6524}
+ep 25 train loss 0.7430 val KL None top1 None value null 4081s
+   select fold objective 0.3613 KL 0.07337284195350811 value {"n": 57873, "bce": 0.5613, "const_bce": 0.642, "auc": 0.7657651537623844, "mean_p": 0.2778, "mean_z": 0.3414}
+   mono penalty 0.00922
+   sibling-rank loss 0.44652
+   sibling-rank holdout {"groups": 3806, "sources": 176, "concordance": 0.6519}
+ep 26 train loss 0.7341 val KL None top1 None value null 4229s
+   select fold objective 0.3660 KL 0.07475620654556046 value {"n": 57873, "bce": 0.568, "const_bce": 0.642, "auc": 0.7617570632826509, "mean_p": 0.2716, "mean_z": 0.3414}
+   mono penalty 0.00951
+   sibling-rank loss 0.44864
+   sibling-rank holdout {"groups": 3806, "sources": 176, "concordance": 0.6578}
+ep 27 train loss 0.7358 val KL None top1 None value null 4378s
+   select fold objective 0.3670 KL 0.07416762561130684 value {"n": 57873, "bce": 0.5709, "const_bce": 0.642, "auc": 0.7647635610353647, "mean_p": 0.2671, "mean_z": 0.3414}
+   mono penalty 0.00939
+   sibling-rank loss 0.44554
+   sibling-rank holdout {"groups": 3806, "sources": 176, "concordance": 0.6555}
+ep 28 train loss 0.7321 val KL None top1 None value null 4525s
+   select fold objective 0.3708 KL 0.07544301096411844 value {"n": 57873, "bce": 0.5761, "const_bce": 0.642, "auc": 0.7657143168505782, "mean_p": 0.2622, "mean_z": 0.3414}
+   mono penalty 0.00955
+   sibling-rank loss 0.43994
+   sibling-rank holdout {"groups": 3806, "sources": 176, "concordance": 0.6584}
+ep 29 train loss 0.7263 val KL None top1 None value null 4674s
+   select fold objective 0.3663 KL 0.07495175990123033 value {"n": 57873, "bce": 0.568, "const_bce": 0.642, "auc": 0.7656766144121462, "mean_p": 0.2712, "mean_z": 0.3414}
+   mono penalty 0.00939
+   sibling-rank loss 0.43817
+   sibling-rank holdout {"groups": 3806, "sources": 176, "concordance": 0.6543}
+ep 30 train loss 0.7239 val KL None top1 None value null 4821s
+   select fold objective 0.3690 KL 0.07533875712244431 value {"n": 57873, "bce": 0.5725, "const_bce": 0.642, "auc": 0.761962504956516, "mean_p": 0.2718, "mean_z": 0.3414}
+   mono penalty 0.00928
+   sibling-rank loss 0.43855
+   sibling-rank holdout {"groups": 3806, "sources": 176, "concordance": 0.6554}
+ep 31 train loss 0.7247 val KL None top1 None value null 4968s
+   select fold objective 0.3695 KL 0.07525255082783301 value {"n": 57873, "bce": 0.5736, "const_bce": 0.642, "auc": 0.7639413674346638, "mean_p": 0.2634, "mean_z": 0.3414}
+   mono penalty 0.00939
+   sibling-rank loss 0.43769
+   sibling-rank holdout {"groups": 3806, "sources": 176, "concordance": 0.6562}
+ep 32 train loss 0.7227 val KL None top1 None value null 5116s
+   select fold objective 0.3684 KL 0.07539751007750593 value {"n": 57873, "bce": 0.5711, "const_bce": 0.642, "auc": 0.7625181098448192, "mean_p": 0.2703, "mean_z": 0.3414}
+   mono penalty 0.00938
+   sibling-rank loss 0.44114
+   sibling-rank holdout {"groups": 3806, "sources": 176, "concordance": 0.6567}
+ep 33 train loss 0.7257 val KL None top1 None value null 5264s
+   select fold objective 0.3669 KL 0.07583620395388109 value {"n": 57873, "bce": 0.5672, "const_bce": 0.642, "auc": 0.7631478959920099, "mean_p": 0.2753, "mean_z": 0.3414}
+   mono penalty 0.00959
+   sibling-rank loss 0.43883
+   sibling-rank holdout {"groups": 3806, "sources": 176, "concordance": 0.6564}
+ep 34 train loss 0.7239 val KL None top1 None value null 5411s
+   select fold objective 0.3710 KL 0.07598060652317282 value {"n": 57873, "bce": 0.575, "const_bce": 0.642, "auc": 0.7634195146174785, "mean_p": 0.267, "mean_z": 0.3414}
+   mono penalty 0.00937
+   sibling-rank loss 0.43832
+   sibling-rank holdout {"groups": 3806, "sources": 176, "concordance": 0.6576}
+ep 35 train loss 0.7233 val KL None top1 None value null 5559s
+   select fold objective 0.3672 KL 0.07570640169313823 value {"n": 57873, "bce": 0.5679, "const_bce": 0.642, "auc": 0.7636974465274496, "mean_p": 0.2739, "mean_z": 0.3414}
+   mono penalty 0.00931
+   sibling-rank loss 0.44586
+   sibling-rank holdout {"groups": 3806, "sources": 176, "concordance": 0.6568}
+ep 36 train loss 0.7302 val KL None top1 None value null 5708s
+   select fold objective 0.3696 KL 0.07595894673565264 value {"n": 57873, "bce": 0.5723, "const_bce": 0.642, "auc": 0.7638422238379143, "mean_p": 0.2666, "mean_z": 0.3414}
+   mono penalty 0.00937
+   sibling-rank loss 0.44048
+   sibling-rank holdout {"groups": 3806, "sources": 176, "concordance": 0.6581}
+ep 37 train loss 0.7250 val KL None top1 None value null 5855s
+   select fold objective 0.3678 KL 0.07582368918090635 value {"n": 57873, "bce": 0.569, "const_bce": 0.642, "auc": 0.7640472020905381, "mean_p": 0.2719, "mean_z": 0.3414}
+   mono penalty 0.00922
+   sibling-rank loss 0.43642
+   sibling-rank holdout {"groups": 3806, "sources": 176, "concordance": 0.6575}
+ep 38 train loss 0.7207 val KL None top1 None value null 6003s
+   select fold objective 0.3688 KL 0.07578550597648274 value {"n": 57873, "bce": 0.5711, "const_bce": 0.642, "auc": 0.763738449348389, "mean_p": 0.269, "mean_z": 0.3414}
+   mono penalty 0.00932
+   sibling-rank loss 0.44077
+   sibling-rank holdout {"groups": 3806, "sources": 176, "concordance": 0.6581}
+ep 39 train loss 0.7251 val KL None top1 None value null 6150s
+   select fold objective 0.3687 KL 0.07574877506747647 value {"n": 57873, "bce": 0.571, "const_bce": 0.642, "auc": 0.7639407201055661, "mean_p": 0.2687, "mean_z": 0.3414}
+   mono penalty 0.00938
+   sibling-rank loss 0.43442
+   sibling-rank holdout {"groups": 3806, "sources": 176, "concordance": 0.6564}
+ep 40 train loss 0.7189 val KL None top1 None value null 6298s
+   select fold objective 0.3688 KL 0.07578499593965943 value {"n": 57873, "bce": 0.5711, "const_bce": 0.642, "auc": 0.7639447322181173, "mean_p": 0.2687, "mean_z": 0.3414}
+chosen epoch 5 val KL 0.061575052023828056 top1 0.9259464450600184 value {"n": 56882, "bce": 0.5377, "const_bce": 0.6216, "auc": 0.7416681309805316, "mean_p": 0.3198, "mean_z": 0.3132}
+best per group: {"boss_relic": {"n": 135, "kl": 0.0335, "top1": 0.9704, "v4_top1": null, "serve_top1": null}, "card_select:bonfire_spirits": {"n": 7, "kl": 0.3312, "top1": 0.1429, "v4_top1": null, "serve_top1": null}, "card_select:bottle": {"n": 17, "kl": 0.9765, "top1": 0.2353, "v4_top1": null, "serve_top1": null}, "card_select:obtain": {"n": 6, "kl": 0.4858, "top1": 0.3333, "v4_top1": null, "serve_top1": null}, "card_select:transform": {"n": 4, "kl": 0.012, "top1": 0.5, "v4_top1": null, "serve_top1": null}, "card_select:transform_upgrade": {"n": 9, "kl": 0.3698, "top1": 0.1111, "v4_top1": null, "serve_top1": null}, "card_select:upgrade": {"n": 5, "kl": 0.0023, "top1": 1.0, "v4_top1": null, "serve_top1": null}, "event": {"n": 471, "kl": 0.0468, "top1": 0.9575, "v4_top1": null, "serve_top1": null}, "map": {"n": 1302, "kl": 0.1274, "top1": 0.8564, "v4_top1": null, "serve_top1": null}, "rest": {"n": 534, "kl": 0.0193, "top1": 0.9813, "v4_top1": null, "serve_top1": null}, "rewards": {"n": 2275, "kl": 0.0342, "top1": 0.9578, "v4_top1": null, "serve_top1": null}, "shop": {"n": 641, "kl": 0.043, "top1": 0.9204, "v4_top1": null, "serve_top1": null}, "treasure": {"n": 9, "kl": 0.0, "top1": 1.0, "v4_top1": null, "serve_top1": null}}
+counterfactual {"rules": ["hp", "mhp", "gold"], "eval_deltas": {"hp": -3, "mhp": 5, "gold": 50}, "slope": 1.3586671352386475, "select": {"hp": {"n": 57870, "rel_sq_err": 33.4349, "sign_agree": 0.7533, "mean_ds": -0.06721, "mean_dt": -0.00975, "student_wrong": 0.129, "teacher_wrong": 0.1873}, "mhp": {"n": 57873, "rel_sq_err": 10.3877, "sign_agree": 0.4408, "mean_ds": -0.01465, "mean_dt": 0.01848, "student_wrong": 0.5968, "teacher_wrong": 0.1375}, "gold": {"n": 57873, "rel_sq_err": 14.0062, "sign_agree": 0.6508, "mean_ds": 0.03268, "mean_dt": 0.01495, "student_wrong": 0.3079, "teacher_wrong": 0.1378}}, "val": {"hp": {"n": 56882, "rel_sq_err": 33.1671, "sign_agree": 0.7541, "mean_ds": -0.06719, "mean_dt": -0.00951, "student_wrong": 0.1204, "teacher_wrong": 0.1938}, "mhp": {"n": 56882, "rel_sq_err": 10.1629, "sign_agree": 0.4113, "mean_ds": -0.01751, "mean_dt": 0.01973, "student_wrong": 0.6172, "teacher_wrong": 0.1151}, "gold": {"n": 56882, "rel_sq_err": 14.0882, "sign_agree": 0.6559, "mean_ds": 0.03456, "mean_dt": 0.01548, "student_wrong": 0.3031, "teacher_wrong": 0.1247}}}
+monotonicity {"rules": ["hp", "mhp", "gold", "potion", "curse"], "eval_deltas": {"hp": -3, "mhp": 5, "gold": 50}, "curses": ["CLUMSY", "DECAY", "DOUBT", "INJURY", "NORMALITY", "PAIN", "REGRET", "SHAME", "WRITHE"], "select": {"hp": {"n": 57870, "viol": 0.129, "viol_p001": 0.1063, "median_dp": 0.0085}, "mhp": {"n": 57873, "viol": 0.5968, "viol_p001": 0.5386, "median_dp": -0.00177}, "gold": {"n": 57873, "viol": 0.3079, "viol_p001": 0.2635, "median_dp": 0.00447}, "potion": {"n": 43721, "viol": 0.0, "viol_p001": 0.0, "median_dp": 0.05315}, "curse": {"n": 57873, "viol": 0.0017, "viol_p001": 0.0008, "median_dp": 0.01547}}, "val": {"hp": {"n": 56882, "viol": 0.1204, "viol_p001": 0.0991, "median_dp": 0.00847}, "mhp": {"n": 56882, "viol": 0.6172, "viol_p001": 0.5615, "median_dp": -0.0022}, "gold": {"n": 56882, "viol": 0.3031, "viol_p001": 0.257, "median_dp": 0.00454}, "potion": {"n": 43437, "viol": 0.0, "viol_p001": 0.0, "median_dp": 0.05384}, "curse": {"n": 56882, "viol": 0.0011, "viol_p001": 0.0006, "median_dp": 0.01549}}}
+sibling-rank {"holdout": {"groups": 3806, "sources": 176, "concordance": 0.5855}, "train_first1000": {"groups": 1000, "sources": 18, "concordance": 0.6022}}
+real 7114.41 user 23816.26 sys 797.44 maxrss_kb 1955700
+EXIT 0
