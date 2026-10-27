@@ -87,5 +87,20 @@ for a, rows in bias.items():
     pm = mean(rm); pse = math.sqrt(var(rm) / len(rm)) if len(rm) > 1 else float("nan")
     report["bias"][a] = {"children": len(rows), "fracAbsZgt2": sum(abs(x) > 2 for x in z) / max(1, len(z)),
                          "pooledMeanDiff": pm, "pooledSE": pse}
+# Exploratory (added after the interim look, not pre-registered): sign split of the per-child z, and z against keyed
+# instead of base. A survival-weighted arm paired with base shares base's draws until the first death, so its
+# per-repeat difference is a small negative (W - 1) V almost everywhere plus rare large positive terms; with few
+# deaths in R repeats the t statistic is skewed, which the sign split shows.
+for a, rows in bias.items():
+    z = [m / se for _, m, se in rows if se > 0]
+    report["bias"][a]["zNegGt2"] = sum(x < -2 for x in z) / max(1, len(z))
+    report["bias"][a]["zPosGt2"] = sum(x > 2 for x in z) / max(1, len(z))
+alt = []
+for key, leaves in sorted(roots.items()):
+    for l in leaves:
+        k = l["extra"]["vr"]["keyed"]["values"]; x = l["extra"]["vr"]["sw"]["values"]
+        d = [p - q for p, q in zip(x, k)]
+        if var(d) > 0: alt.append(mean(d) / math.sqrt(var(d) / len(d)))
+report["exploratory_sw_vs_keyed_fracAbsZgt2"] = sum(abs(x) > 2 for x in alt) / max(1, len(alt))
 json.dump(report, open(sys.argv[1], "w"), indent=1)
 print(json.dumps(report, indent=1))
