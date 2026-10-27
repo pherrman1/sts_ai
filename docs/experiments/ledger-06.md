@@ -24548,3 +24548,96 @@ those cards; the audit shows deviations, not that they are mistakes. Follow-up: 
 a value-based rest-vs-upgrade decision is being scoped in its own thread (2026-10-26).
 Seeds: none (existing games only).
 **Knowledge impact:** none beyond this entry; no code or default change.
+## §693 — Gumbel root with the Muesli-style Q cap at A20 map roots, paired A/B (512 seeds): NOT_SHOWN, Heart kills 25.2% vs 27.7%, reached Act 4 −4.7 pp (2026-10-27)
+
+**Question (Philipp, 2026-10-26 22:57Z "lets go with 16 workers after the boss relic thing is done"):** does §689's
+cap turn the Gumbel root into a play gain? [PREREG](evidence/gumbel_qcap_ab_20261026/PREREG.md), pre-launch review
+PASS (J). A = today's A20 default (map roots only, PUCT 4096). B = A + `STS_OOC_MCTS_GUMBEL_ROOT=16
+STS_OOC_MCTS_GUMBEL_QCAP=1 STS_OOC_MCTS_FULL_ROOT_SIMS=2048`. RUN_COMMIT `b49bbd33` (code `9a37d780`, v3 binary
+`7bb54d7e…`), 16 workers, seeds 111381000–511.
+**Result: NOT_SHOWN.** 512 valid pairs. Heart kills B 129 (25.2%) vs A 142 (27.7%), −2.5 pp [−6.7, +1.6], McNemar
+p = 0.27. Reached Act 4 −4.7 pp [−8.9, −0.5], p = 0.035. Wall 0.62×. Played ≠ prior argmax 12.9% vs 6.5% of
+searched (map) roots.
+**Interpretation:** Inference (cross-campaign): the cap removes §635's collapse (−11.4 pp), so the uncapped σ term
+caused most of it. Inference (rests on the p = 0.035 secondary): the remaining overrides still lean the wrong way
+(Act-4 reach), so the leaf does not beat student_sel at map roots even within ±1 logit. The 0.62× wall holds in
+matched subsets (both arms reach Act 4: 0.72×; neither: 0.53×). No default change; the flags stay research options. Separating Gumbel sampling noise from
+the Q term (scale 0) would be a new question.
+[Result](evidence/gumbel_qcap_ab_20261026/RESULT.md), [result.json](evidence/gumbel_qcap_ab_20261026/result.json).
+Raw: `/mnt/project-files/gumbel-qcap-ab/units/`. Seeds 111381000–511 and smokes 111383990–991 used.
+**Knowledge impact:** none beyond this entry.
+
+## §690 — Boss-relic forks with real combats, Stage A: relic choice moves Heart kills a lot (τ ≈ 11 pp, reproducible; futility CONTINUE), but student_sel already picks the table's best relic at 74% of roots and a context-free table override loses (Heart −2.7 pp [−6.6, +1.2], Act 4 −5.5 pp [−9.4, −2.0] per source, descriptive); STOP before Stage B by Philipp's call (256 sources, 1,429 games, 2026-10-26)
+
+**Question:** issue #856 (experiment 3 of the post-#853 OOC direction review). At act-1/act-2 boss-relic roots of real
+A20 default games, if every option (three relics, skip) is played to the end with the production stack and the same run
+seed, does a per-relic table fitted on these forks pick better than student_sel's production pick?
+**Setup:** [PREREG](evidence/boss_relic_forks_20261025/PREREG.md). New research option `STS_OOC_FORCE_BOSS_RELIC=ACT:CHOICE`
+(default off): a fork replays the source seed with today's A20 stack (map-only OOC search ADR-0061, Act 4 strong
+ADR-0060) up to the root, takes the forced option, and plays on; `forks.py check` requires the fork's OOC decision trace to
+equal the source's row for row before the root. Plan sized by Philipp to 1,024 sources with a futility stop after 256
+(decision card 2026-10-25 09:48Z); Stage A go with 32 workers 09:49Z. Smoke PASS (rerun byte-identical); pre-launch and
+delta review PASS. Run commit `9ec4944c`, code `eb94f4e`, binary `e57de384…`; 32 cloud workers, interrupted at 217/256 by
+a usage limit (2026-10-25 14:42Z) and resumed 2026-10-26.
+**Result:** [RESULT-stage-a.md](evidence/boss_relic_forks_20261025/RESULT-stage-a.md). 256/256 units verified, 1,429
+games all rc 0, every fork valid; 391 roots (225 act 1, 166 act 2); 219.7 core-h. Heart kill at the roots: production
+pick 38.9%, untaken options 19.4%, skip 12.8% (Act 4 57.3 / 36.0 / 27.6%). Option CRN correlation 0.36. Relic spread
+τ̂ = 0.106 (Heart), 0.112 (Act 4); projected split-half r of the 1,024 design 0.885 → **futility CONTINUE**. Top relics
+against skip: Snecko Eye +45 pp, Pandora's Box +42, Coffee Dripper +30; bottom Black Blood +2, Velvet Choker +2,
+Ectoplasm +4 (SE ≈ 5-6). Descriptive, not the gate: the Stage B cross-fitted override computed on Stage A fires at 21% of
+roots and loses (Heart −2.7 pp [−6.6, +1.2], Act 4 −5.5 pp [−9.4, −2.0] per source); the production pick is the table's
+best option at 289/391 roots.
+**Interpretation:** boss relics matter far more than single cards (§684, τ = 0), and same-seed real-combat forks measure
+them reproducibly. **Inference:** student_sel's boss-relic choice is close to the best a context-free table can do, and
+where it departs from the table it is usually right (context: deck, HP). The per-relic table is not a teacher here.
+**Decision:** Philipp (2026-10-26 23:34Z, decision card): stop before Stage B; boss relics stay with student_sel. The
+forks remain as an unbiased referee set (unit tars on `/mnt/project-files/boss-relic-forks/stage-a`).
+Seeds: 111378000–111378255 used, smokes 111379980–111379984 used; 111378256–111379023 and 111379985–111379989 unused.
+**Knowledge impact:** `operations/environment-variables.md` (research option `STS_OOC_FORCE_BOSS_RELIC`).
+
+## §692 — P300 clairvoyance 2x2 (Heart stage values, fair vs known-RNG combat x natural vs full HP): P300's top-5 cards beat its bottom-5 by D = +6.0 pp [+3.8, +8.3] under fair Silver at natural HP; known RNG does not inflate D (natural-HP contrast −1.9 pp [−4.6, +0.7]), and D is lowest in P300's own regime (+2.7 at an 86% base; vs fair natural −3.3 [−6.0, −0.6]); readings R1c + R4 (96 decks x 12 fixed variants x 4 cells, 18,112 fights, 2026-10-27)
+
+**Question:** experiment 10 of the deep-research report. P300 (destire-mio/sts-ironclad-agent, D4) values Feel No Pain,
+Demon Form, Impervious, Corruption and Barricade at +10 to +14 pp at the Heart with a known-RNG search at full HP; §684
+measured these cards near 0 with fair Silver at natural HP. Is the gap clairvoyance, entry HP, or a non-replication?
+**Setup:** [PREREG](evidence/p300_clairvoyance_20261026/PREREG.md). New research arm `STS_ACT4REPLAY_COMBAT=known`
+(ADR-0062, #870): P300's known-RNG search (gamerpuppy Searcher2 + P300's sim_patch chain) at 8,000 x 3. Calibration
+(Philipp's go 2026-10-26): K-full base 85.7% (329/384) vs P300's 68% on its decks. 2x2: {fair Silver P10k (arm P of
+§684), known RNG} x {natural entry HP, full HP} on the §684 Stage A decks 0–95, 12 fixed variants (base, P300's top 5
+and bottom 5 adds, rm:Strike on 76 decks), 4 CRN copies shared by every variant and cell. Primary D = mean top-5 add
+effect minus mean bottom-5 add effect per cell; deck bootstrap. Philipp authorized the run with 2 workers (2026-10-26
+22:31Z); pre-launch review PASS. Run commit `cd34ba1f`, code `4e3783bf`, binary `2750c38d…`.
+**Result:** [RESULT.md](evidence/p300_clairvoyance_20261026/RESULT.md). 384/384 units verified, 18,112 fights, 0
+invalid, 34.8 core-h. D: Fnat +6.0 [+3.8, +8.3] (base 51.6%), Ffull +5.2 [+2.9, +7.6] (61.7%), Knat +4.1 [+2.3, +6.0]
+(73.4%), Kfull +2.7 [+1.2, +4.4] (85.7%). Clairvoyance C = −2.2 [−4.4, 0.0], full HP H = −1.1 [−2.2, +0.1], C x H
+−0.6. Fair natural HP single adds: Corruption +10.9, Feel No Pain +8.1, Barricade +6.8, Impervious +4.9, Demon Form
++4.7; Whirlwind −1.3 (each about ±4.5, plus a common base error of about 2.5 pp). Pre-registered readings: **R1c**
+(the Kfull ceiling compresses the effect; not a non-replication; its natural-HP clairvoyance contrast D(Knat) − D(Fnat) =
+−1.9 [−4.6, +0.7]) and **R4** (D(Fnat) ≥ 4). D(Kfull) − D(Fnat) = −3.3 [−6.0, −0.6].
+**Interpretation:** P300's ranking of these Heart cards holds in fair play on our engine and decks; clairvoyance does
+not inflate it (point estimate lower, CI includes 0), and P300's own regime shows the smallest gap. **Inference:** §684's
+"Impervious 0.0 / top-5 pooled +0.3" was noise from about 20 random decks per key. P300's absolute magnitudes do not transfer, because per-card effects depend on the base win. **Inference:** a
+fixed-key fair Heart table would carry signal for the strongest power/defence keys; whether it improves on student_sel's
+card picks is a separate question and not decided here.
+Seeds: 111304600–111304983 used (calibration and every 2x2 cell); smokes 111305990–111305997 used.
+**Knowledge impact:** ADR-0062 (research-only known-RNG arm); no default change.
+## §691 — Key rules at A20 (experiment 1 of the 2026-10-26 research report): flexible keys beat main's rigid ADR-0041 rules by +6.1 pp Heart kills [+3.4, +8.6] with student_sel alone; KEYS_EXPLAIN (1,024 paired seeds, 2026-10-27)
+
+**Question:** §566 (rigid keys, 17.6%) and §569 (flexible keys, 25.8% search / 23.4% student_sel) differ in key rules,
+combat stack, fix flags and code. Main still defaults to the rigid rules (`RunGoal.cpp`); every campaign since §569
+sets `STS_KEY_SAPPHIRE=policy STS_KEY_RUBY=policy STS_KEY_EMERALD=mask`; the key rules were never A/B tested. How much
+do they add on today's stack? Philipp's go 2026-10-26 22:16Z ("okay lets go on 16 workers").
+**Setup:** [PREREG](evidence/key_rules_ab_20261026/PREREG.md), pre-launch review PASS (reviewer G). Arms R (no
+`STS_KEY_*`) and F (the three flexible flags), otherwise the §683 OFF arm on main `db216ff0` (student_sel alone,
+`STS_OOC_MCTS_SCREENS=none`, learned Silver stop, Act 4 strong). RUN_COMMIT `89e6ba90`, binary `d74cfded…`, 16 cloud
+workers; 1,024/1,024 units verified, 2,048 games valid.
+**Result:** [RESULT.md](evidence/key_rules_ab_20261026/RESULT.md). Heart kills R 20.7% / F 26.8%, F − R **+6.05 pp
+[+3.42, +8.59]** (discordant 126/64, exact McNemar p 8e−6); Act 4 33.2 / 40.8%, +7.6 pp [+4.9, +10.4]; mean floor
++2.86. 901 of 1,024 pairs first diverge at the Act-1 Sapphire offer (+63 kills, +78 Act-4 arrivals); 26 at an Act-3
+campfire (−2 kills). F holds the Sapphire in Act 1 in 208 runs (R 1,000) and enters Act 2 with 6.32 vs 5.47 relics.
+**Interpretation:** KEYS_EXPLAIN under the frozen rule. **Inference:** the gain is the deferred Sapphire (keeping the
+Act-1 chest relic); flexible keys explain about 6 of the 8 pp between §566 and §569, the combat-side changes the rest
+(unpaired). No default changed; making flexible keys the A20 default and checking the live advisor's key flags are
+Philipp's call.
+Seeds: 111382000–111383023 (campaign), 111383024–111383027 (smokes) used.
+**Knowledge impact:** none until a default change; `evaluation/current-baselines.md` unchanged.

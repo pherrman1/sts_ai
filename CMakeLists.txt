@@ -482,6 +482,7 @@ link_ctm_crypto(one_combat)
 target_link_options(one_combat PRIVATE -Wl,--gc-sections)
 
 add_test(NAME heart_outcome_capture COMMAND one_combat heartoutcomeselftest)
+add_test(NAME forced_boss_relic COMMAND one_combat forcebossrelicselftest)
 add_test(NAME heart1_public_record_invariance COMMAND one_combat heart1recordselftest)
 add_test(NAME heart_outcome_collection_python COMMAND python3 -m unittest discover
     -s ${CMAKE_CURRENT_SOURCE_DIR}/tests -p test_heart_outcome_collect.py)
