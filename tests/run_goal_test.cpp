@@ -1,4 +1,5 @@
 #include "sim/search/RunGoal.h"
+#include <cstdlib>
 #include <iostream>
 #include <stdexcept>
 
@@ -7,6 +8,13 @@ using namespace sts::search;
 static void require(bool ok, const char *what) { if (!ok) throw std::runtime_error(what); }
 int main() {
     try {
+        // ADR-0063: with no STS_KEY_* set, Sapphire and Ruby follow the policy and Emerald masks the route.
+        if (!std::getenv("STS_KEY_SAPPHIRE") && !std::getenv("STS_KEY_RUBY") && !std::getenv("STS_KEY_EMERALD")) {
+            const auto &env = heartKeyRules();
+            require(env.sapphire == HeartKeyRules::Sapphire::POLICY && env.ruby == HeartKeyRules::Ruby::POLICY
+                && env.emerald == HeartKeyRules::Emerald::MASK && !env.isAdr0041(), "flexible keys by default");
+        }
+        heartKeyRules() = HeartKeyRules{};  // the ADR-0041 rules (STS_KEY_*=first) for the checks below
         GameContext gc{};
         gc.cc = CharacterClass::IRONCLAD; gc.keysEnabled = true;
         gc.act = 3; gc.outcome = GameOutcome::PLAYER_VICTORY;
@@ -63,9 +71,9 @@ int main() {
         gc.act = 2; right.edges[0] = 2;
         require(!heartKeyAction(gc, true), "early-act path choice preserved");
 
-        // Opt-in variants (STS_KEY_*); the defaults above are the ADR-0041 rules.
+        // Variants (STS_KEY_*); the checks above use the ADR-0041 rules.
         auto &rules = heartKeyRules();
-        require(rules.isDefault(), "ADR-0041 rules by default");
+        require(rules.isAdr0041(), "value-initialized rules are ADR-0041");
         gc.act = 3; gc.greenKey = false; right.edges[0] = 2; left.edges[0] = 2;
         require(heartKeyAction(gc, true)->getIdx1() == 0, "first reaching edge by default");
         rules.emerald = HeartKeyRules::Emerald::MASK;

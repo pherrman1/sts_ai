@@ -74,6 +74,8 @@ nlohmann::json runProvenance() {
 }
 }
 
+nlohmann::json heartOutcomeRunProvenance() { return runProvenance(); }
+
 int heartOutcomeGen(std::uint64_t seed, const std::string &output, bool capture, bool policyTargets) {
     if (!g_collectKeys || g_stopAfterAct != 0 || g_forceRelic != sts::RelicId::INVALID)
         throw std::runtime_error("heart outcomes require normal full-run Heart objective, keys on, no forced relic");

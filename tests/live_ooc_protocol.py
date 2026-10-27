@@ -1185,14 +1185,21 @@ class LiveOocProtocol(unittest.TestCase):
 
     def test_heart_key_rule_precedes_relic_gold_and_search(self):
         observation, kinds = self.keyed_rewards()
+        first = {"STS_KEY_SAPPHIRE": "first"}
         for stack in (False, True):
-            # No model is configured: the key click needs no search.
-            response, = self.run_rows([observation], model=False, policy="mcts", research_stack=stack)
+            # ADR-0041 (STS_KEY_SAPPHIRE=first): no model is configured, and the key click needs no search.
+            response, = self.run_rows([observation], model=False, policy="mcts", research_stack=stack,
+                                      extra_env=first)
             evaluator, = response["evaluators"]
             self.assertEqual(evaluator["status"], "OK", response)
             self.assertEqual(evaluator["mode"], "fixed_rule")
             self.assertTrue(evaluator["selectedSemanticKey"].startswith("ooc-live:v1:heart_key:"))
             self.assertEqual(evaluator["selectedLiveAction"], kinds["key"])
+            # ADR-0063 default: before Act 3 the Sapphire is the policy's choice, so no key rule fires.
+            response, = self.run_rows([observation], model=False, policy="mcts", research_stack=stack)
+            evaluator, = response["evaluators"]
+            self.assertEqual(evaluator["status"], "OK", response)
+            self.assertFalse(evaluator.get("selectedSemanticKey", "").startswith("ooc-live:v1:heart_key:"), response)
         # STS_COLLECT_KEYS=0 restores keys-off play: the bare stack takes the
         # gold first, the research stack's relic rule the relic.
         off = {"STS_COLLECT_KEYS": "0"}

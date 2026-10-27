@@ -1701,18 +1701,22 @@ Phase-5 architecture and recorded in `docs/knowledge-base/decisions/2026-08-02-s
    which now exposes `DISCARD_POTION` when a visible reward or affordable shop
    potion can refill a full belt (see the live inspector contract).
    `one_combat` enables `STS_COLLECT_KEYS` by default. `heartKeyAction` runs
-   before learned choices and reward relic rules: take offered keys before
-   their paired relic, take Ruby Recall at the first legal Act-3+ campfire,
-   and on Act 3 choose the first legal map edge still reaching the visible
-   burning elite while Emerald is missing. Earlier acts retain normal path
+   before learned choices and reward relic rules. Default (ADR-0063, §691):
+   Sapphire and Ruby are the policy's choice, with backstops (Sapphire at
+   the Act-3 treasure row, Recall at the pre-boss campfire); Emerald is
+   always taken when offered, and on Act 3 the route is masked to edges
+   still reaching the visible burning elite. Earlier acts retain normal path
    decisions. The helper also runs in the fallback chain and tree-rule
    projection. Explicit `STS_COLLECT_KEYS=0` restores keys-off behavior.
-   Opt-in variants, default off (`RunGoal.h` `HeartKeyRules`):
-   `STS_KEY_SAPPHIRE=act3` forbids the key before Act 3 and takes it at the
-   first Act-3 chest (every act has a treasure row); `=policy` lets the policy
-   choose, with the Act-3 treasure row as backstop. `STS_KEY_RUBY=hp` Recalls
-   at the first Act-3 campfire with HP at least `STS_KEY_RUBY_MIN_HP` (0.6),
-   else at the pre-boss row; `=policy` forces only the pre-boss row.
+   Variants (`RunGoal.h` `HeartKeyRules`): `=first` restores ADR-0041 for
+   that key (Sapphire before its paired relic at the first chest, Recall at
+   the first legal Act-3+ campfire, the first legal Act-3 edge still
+   reaching the burning elite). `STS_KEY_SAPPHIRE=act3` forbids the key
+   before Act 3 and takes it at the first Act-3 chest (every act has a
+   treasure row); `=policy` lets the policy choose, with the Act-3 treasure
+   row as backstop. `STS_KEY_RUBY=hp` Recalls at the first Act-3 campfire
+   with HP at least `STS_KEY_RUBY_MIN_HP` (0.6), else at the pre-boss row;
+   `=policy` forces only the pre-boss row.
    `STS_KEY_EMERALD=mask` turns the Act-3 route rule into a mask: candidate
    lists (`v4CandidateActions`, the MCTS semantic enumeration, heart1's
    choice) drop edges that no longer reach the burning elite, and the rule
