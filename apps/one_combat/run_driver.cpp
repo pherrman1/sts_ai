@@ -464,8 +464,8 @@ int forcedBossRelicSelfTest() {
 const char *realOocChainStep(GameContext &gc, search::ScumSearchAgent2 &agent, bool restV, bool shopV,
                              const one_combat::PathHistory &path, std::uint64_t seed, std::uint64_t index,
                              one_combat::LiveOocMctsMetrics &mctsMetrics) {
-    // Research observer (STS_OOC_CAMPFIRE_PRICE, default off): prices every option of a rest site before anything,
-    // the forced Ruby Recall included, decides it. Play is unchanged.
+    // Research observer (STS_OOC_CAMPFIRE_PRICE, default off): prices every option of a rest site before anything
+    // decides it. Play is unchanged. A rule-forced Ruby site has no search candidates and records a price error.
     one_combat::observeOocCampfirePrice(gc, path, seed, index);
     if (const auto &forced = forcedBossRelic(); forced && gc.screenState == ScreenState::BOSS_RELIC_REWARDS
             && gc.act == forced->act) {

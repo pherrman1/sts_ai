@@ -134,6 +134,9 @@ def main(out, dirs):
             'b_spearmanDiffVsHpFrac': round(spearman([s[kind + 'Diff'] for s in both], hpf), 3) if len(both) > 2 else None,
             'b_spearmanCi95': spearman_ci(both, kind),
             'c_disagree': round(sum(s[kind + 'Best'] != s['played'] for s in dis) / len(dis), 3) if dis else None,
+            # Rest/Smith swaps (played one, price prefers the other) whose difference clears 2 paired SE.
+            'c_swapsSeparable2se': (lambda w: [len(w), round(sum(abs(s[kind + 'Diff']) > 2 * s[kind + 'Se'] for s in w) / len(w), 3)]
+                if w else None)([s for s in both if {s['played'], s[kind + 'Best']} == {'rest', 'smith'}]),
             'byHpBand': bands}
     json.dump({'report': report, 'sites': sites}, open(out, 'w'), indent=1)
     print(json.dumps(report, indent=1))

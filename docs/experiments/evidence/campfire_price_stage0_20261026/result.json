@@ -12,6 +12,10 @@
    -0.372
   ],
   "c_disagree": 0.328,
+  "c_swapsSeparable2se": [
+   189,
+   0.122
+  ],
   "byHpBand": {
    "0.0-0.4": {
     "n": 105,
@@ -50,6 +54,10 @@
    -0.413
   ],
   "c_disagree": 0.303,
+  "c_swapsSeparable2se": [
+   174,
+   0.195
+  ],
   "byHpBand": {
    "0.0-0.4": {
     "n": 105,

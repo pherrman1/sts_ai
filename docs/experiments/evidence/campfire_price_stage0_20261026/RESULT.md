@@ -3,7 +3,7 @@
 **Verdict: STOP under the frozen rule.** Gate (a) fails. At N = 32 the price separates Rest from the best Smith
 by more than 2 paired SE at only 29% of rest sites (gate: 50%). Gates (b) and (c) pass. The price moves the right
 way with HP, and it would rest much less at 40–60% HP than student_sel does. But the sites where it disagrees with
-the played choice are mostly within noise: only 12.6% of them are separable.
+the played choice are mostly within noise: only 12.2% of them are separable.
 
 ## Run
 
@@ -17,8 +17,13 @@ the played choice are mostly within noise: only 12.6% of them are separable.
   change play.
 - Raw rows: share `campfire-price-stage0/replays-38bd5a71.tar.gz` (sha256 `5a3b685ce291c147…`) and
   `analyze.json` (per-site values).
+- Provenance note: `STS_EXECUTABLE_GIT_SHA` in the `.env` files is the checkout HEAD at launch (`ada3b5cd` for 17
+  seeds, `ba6a1f67` for 111). Every replay ran the frozen `38bd5a71` binary above, copied once into the run folder.
+- Replayed game traces: share `campfire-price-stage0/replay-games-38bd5a71.tar.gz`, for rerunning `trace_check.py`.
 - Not priced: 45 rule-forced Ruby Recall sites (floor 49, decided by `heart_key`). The search model has no
-  candidates there by design, and they are out of scope (§687).
+  candidates there: a diagnostic replay of 111374100 with the later error-reporting build (`ba6a1f67`) logged
+  "OOC MCTS actions requested at leaf" at floor 49. The run binary only logged exit status 125. These sites are out
+  of scope (§687).
 
 ## Gates (actEnd price, 732 rest sites in acts 1–3 with a legal Rest; 665 also offer Smith)
 
@@ -51,8 +56,8 @@ targets are Spot Weakness, Inflame, Pommel Strike, Shockwave and Ghostly Armor.
 
 - **Implementation success:** the price runs on real rest sites at about 1–2 s per site (N = 8 to 32) and leaves
   play unchanged.
-- **Scientific result:** FAIL on (a). Gate (c)'s 33% disagreement is mostly noise: among the 206 Rest/Smith
-  disagreements, only 12.6% clear 2 SE. A rest-site rule driven by this price at N = 32 would mostly follow sampling
+- **Scientific result:** FAIL on (a). Gate (c)'s 33% disagreement is mostly noise: among the 189 Rest/Smith
+  swaps, only 12.2% clear 2 SE (`c_swapsSeparable2se` in `result.json`). A rest-site rule driven by this price at N = 32 would mostly follow sampling
   noise.
 - **Inference (not tested):** the failure is precision, not direction. SE falls as 1/√N, and pricing costs seconds
   per site. Naively projected, N = 128 would clear 2 SE on about 57% of sites (an upper-bound style estimate) but

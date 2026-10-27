@@ -24654,7 +24654,7 @@ unchanged). Primary price: N rollouts per action to the first map state of the n
 `STS_SILVER_ACT4_STRONG=0`), code `38bd5a71`, N = 32; every replay reproduces its §683 trace.
 **Result:** [RESULT.md](evidence/campfire_price_stage0_20261026/RESULT.md). 732 rest sites (acts 1–3); 45 forced-Ruby
 sites are not priced. (a) separable at 2 SE 29.3% (gate ≥ 50%) **FAIL**; (b) Spearman with HP fraction −0.44
-[−0.50, −0.37] PASS; (c) disagreement 32.8% PASS, but only 12.6% of the Rest/Smith disagreements clear 2 SE. At
+[−0.50, −0.37] PASS; (c) disagreement 32.8% PASS, but only 12.2% of the 189 Rest/Smith swaps clear 2 SE. At
 40–60% HP: played rest 85%, price rest 56% (expert 13%, #865).
 **Interpretation:** STOP under the frozen rule. The direction is right, but at N = 32 the price is too noisy per
 site to drive or referee campfire choices. **Inference:** this is a precision limit, not a missing signal; a
