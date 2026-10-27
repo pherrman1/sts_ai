@@ -3,7 +3,7 @@
 **Authorization.** Philipp, 2026-10-26 23:13Z (00:13 CET), thread "Shrink A/B variance with AIVAT": "go on 4 workers".
 
 **Question.** Does subtracting fight luck measured by fresh fight replays shrink the paired per-seed SD of a real
-A20 A/B as projected offline (§TBD, [aivat_fight_replay_20261026](../aivat_fight_replay_20261026/RESULT.md))?
+A20 A/B as projected offline (§697, [aivat_fight_replay_20261026](../aivat_fight_replay_20261026/RESULT.md))?
 
 **Data.** The 512 §676 guard seeds (111392000-111392511), both arms (A raw CTM, C calibrated CTM), from their unit
 tars in `/mnt/project-files/ctm-calibration-ab/units/` (hashes in `source_tars.sha256`). No new gameplay seeds:
