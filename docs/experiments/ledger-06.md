@@ -24775,3 +24775,24 @@ roots, conditional on reaching the root.
 recorded roots, no new seeds.
 Seeds: none used (census evaluates map/Neow generation only; no game played).
 **Knowledge impact:** none (no code or default change).
+## §699 — OOC rollout variance (issue #883, phases 1–2): the CTM death draw carries 87% of rollout3 sibling-difference variance in the §644 capture; common seeds couple map and boss-relic siblings least (CRN ratio ≈ 0.85); conditional Monte Carlo on survival and event-keyed streams proposed (offline, no seeds, 2026-10-27)
+
+**Question:** issue #883. Which unbiased, fair-RNG methods would buy the most precision per CPU-hour for OOC sibling
+differences and rollout labels, given what `main` already implements?
+**Setup:** repository audit of the rollout, capture and fork paths on `main` `ed2dcb2b`, and an offline variance
+decomposition of the §644 common-seed capture (320 sources, 32 repeats per root child, pre-calibration CTM and raw
+X2-B leaf): [README](evidence/ooc_variance_reduction_audit_20261027/README.md), script `death_share.py`.
+**Result:** VALIDATION (TRAIN): rollout death rate 0.141 (0.125); the death indicator carries 0.887 (0.879) of leaf
+variance (0.916 against the population variance) and 0.874 (0.867) of sibling-difference variance; var(d | both survived) /
+var(d) 0.094 (0.094). CRN ratio pooled over row pairs 0.543 (0.555; §644's 0.36 uses per-root, per-source
+weighting); by screen, VALIDATION (TRAIN): rest 0.30 (0.30), rewards 0.42 (0.41), card select 0.14 (0.42, 62 VAL
+roots), shop 0.53 (0.52), map 0.82 (0.86), boss relic 0.86 (0.87).
+**Interpretation:** **Inference:** rollout3 noise is mostly the Bernoulli death draw, whose probability the CTM
+already knows; integrating it out (sequential importance weight Π s_k, exact, bounded) keeps the estimand. The weak
+map and boss-relic coupling fits a shared sequential stream that desynchronises once siblings take different numbers
+of draws. Today's calibrated CTM dies less, so the current share is likely lower. Literature review and go/no-go per
+technique: [variance-reduction.md](../knowledge-base/research/ooc/variance-reduction.md).
+**Decision:** no code or default change. Proposed phase 3 (needs Philipp's go): survival-weighted rollouts and
+event-keyed streams on ~64 frozen roots from replays of used seeds, ≈ 2 core-h.
+Seeds: none.
+**Knowledge impact:** new KB page research/ooc/variance-reduction.md.
