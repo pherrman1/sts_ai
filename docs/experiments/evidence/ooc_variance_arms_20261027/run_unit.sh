@@ -6,7 +6,7 @@ REPO=$1 RUN=$2 OUT=$3 SEED=$4 R=$5 ARMS=${6:-base,indep,sw,keyed,swkeyed}
 mkdir -p "$OUT"
 COMMON=("PATH=/usr/local/bin:/usr/bin:/bin" "HOME=$HOME" "STS_EXECUTABLE_GIT_SHA=$(git -C "$REPO" rev-parse HEAD)"
   OMP_NUM_THREADS=1 OMP_DYNAMIC=FALSE
-  STS_COLLECT_KEYS=1 STS_FAIR=1 STS_STOP_AFTER_ACT=${STOP_AFTER_ACT:-0} STS_REST_WIN=0
+  STS_COLLECT_KEYS=1 STS_FAIR=1 STS_STOP_AFTER_ACT=0 STS_REST_WIN=0
   STS_KEY_SAPPHIRE=policy STS_KEY_RUBY=policy STS_KEY_EMERALD=mask
   STS_ACTIVE_POWER_FEATURES=1 STS_REWARDLESS_COMBAT_RNG_FIX=1 STS_HAND_UPGRADE_ALL_FIX=1
   STS_SILVER_SEARCH=1 STS_SILVER_ADAPTIVE=0 STS_SILVER_EXACT_ROOT_BUDGETS=1 STS_SILVER_LEARNED_STOP=1
@@ -39,10 +39,10 @@ printf '%s\n' "${COMMON[@]}" | grep '^STS_' > "$b.env"
 t0=$(date +%s)
 env -i "${COMMON[@]}" timeout 10h bash tools/seed_guard.sh "$RUN/one_combat" heartoutcomegen 1 "$SEED" "$b.jsonl" policy > "$b.log" 2> "$b.err" &
 pid=$!
-# Card rewards and map roots of acts 1-3 only: stop the game at its first act-4 state.
+# Card rewards and map roots of acts 1-3 only: stop the game at its first act-4 state (smoke: STOP_ACT=2).
 stopped=0
 while kill -0 $pid 2>/dev/null; do
-  if grep -q '"act":4,' "$b.jsonl" 2>/dev/null; then pkill -P $pid; pkill -f "heartoutcomegen 1 $SEED " ; stopped=1; break; fi
+  if grep -q "\"act\":${STOP_ACT:-4}," "$b.jsonl" 2>/dev/null; then pkill -P $pid; pkill -f "heartoutcomegen 1 $SEED " ; stopped=1; break; fi
   sleep 5
 done
 wait $pid; rc=$?

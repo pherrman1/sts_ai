@@ -30,6 +30,7 @@ used seeds; the arms themselves run in forked children and do not change play (s
 captured (depth 1, at most 16 children); R = 128.
 
 ## Measures (analyze.py)
+- **Arm order** is shuffled per leaf (seeded), so warm caches do not favour one arm in the CPU comparison.
 - **Target:** var(mean over R of v_i − v_j) for every child pair of a root, pooled by root (sum over pairs). The
   ratio to base comes with a root-bootstrap 95% CI, by screen (rewards primary, map secondary).
 - **Work ratio:** variance ratio × CPU ratio (cpuSeconds per arm), i.e. variance at equal CPU.

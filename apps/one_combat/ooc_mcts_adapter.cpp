@@ -1971,7 +1971,13 @@ std::optional<nlohmann::json> OocGameContextModel::siblingLeafExtras(sts::search
         // Issue #883 variance arms, all paired by repeat index r (kind 4); indep alone uses per-leaf seeds.
         if (!capture.vrArms.empty()) {
             auto &vr = out["vr"] = nlohmann::json::object();
-            for (const auto &arm : capture.vrArms) {
+            // Shuffled arm order per leaf, so warm caches favour no arm on average in the CPU comparison.
+            auto order = capture.vrArms;
+            std::seed_seq orderSeq{capture.searchSeed, capture.decisionIndex, std::uint64_t(ordinal), std::uint64_t(5)};
+            std::mt19937_64 orderRng(orderSeq);
+            std::shuffle(order.begin(), order.end(), orderRng);
+            vr["order"] = order;
+            for (const auto &arm : order) {
                 options.survivalWeightedRollout = arm == "sw" || arm == "swkeyed";   // child process only
                 options.keyedRolloutStreams = arm == "keyed" || arm == "swkeyed";
                 const std::uint64_t leafKey = arm == "indep" ? ordinal : 0xFFFFFFFFull;
