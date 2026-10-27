@@ -24548,26 +24548,6 @@ those cards; the audit shows deviations, not that they are mistakes. Follow-up: 
 a value-based rest-vs-upgrade decision is being scoped in its own thread (2026-10-26).
 Seeds: none (existing games only).
 **Knowledge impact:** none beyond this entry; no code or default change.
-## §TBD — Dynamic campfire price, stage 0 at A20: a model-only price (rollout to the act's end × calibrated X2-B) moves with HP and disagrees with student_sel at 33% of rest sites, but separates Rest from the best Smith at only 29% of sites at N = 32; STOP (offline replays of 128 §683 seeds, 2026-10-27)
-
-**Question:** Philipp, 2026-10-26: campfire choices should be priced, not ruled. At the A20 default, student_sel
-decides rest sites from its logits (option, then upgrade target) with no price. Can a model-only price tell Rest,
-Recall and Smith → card k apart at real rest sites, move with HP, and disagree with the played choice often enough
-to justify campfire forks? Philipp's go for stage 0: 2026-10-26 22:24Z.
-**Setup:** [PLAN](evidence/campfire_price_stage0_20261026/PLAN.md), with gates frozen in `ada3b5cd` before results.
-Research observer `STS_OOC_CAMPFIRE_PRICE` (default off; prices every legal campfire action in a forked child; play
-unchanged). Primary price: N rollouts per action to the first map state of the next act, valued by the M0 calibration
-(ADR-0057), with streams shared by the actions. Replays of the first 128 §683 seeds (MAP arm configuration plus
-`STS_SILVER_ACT4_STRONG=0`), code `38bd5a71`, N = 32; every replay reproduces its §683 trace.
-**Result:** [RESULT.md](evidence/campfire_price_stage0_20261026/RESULT.md). 732 rest sites (acts 1–3); 45 forced-Ruby
-sites are not priced. (a) separable at 2 SE 29.3% (gate ≥ 50%) **FAIL**; (b) Spearman with HP fraction −0.44
-[−0.50, −0.37] PASS; (c) disagreement 32.8% PASS, but only 12.6% of the Rest/Smith disagreements clear 2 SE. At
-40–60% HP: played rest 85%, price rest 56% (expert 13%, #865).
-**Interpretation:** STOP under the frozen rule. The direction is right, but at N = 32 the price is too noisy per
-site to drive or referee campfire choices. **Inference:** this is a precision limit, not a missing signal; a
-higher-N or expectation-based price would be a new pre-registered stage (Philipp's call).
-Seeds: none new; 111374100–111374227 (§683, used) replayed.
-**Knowledge impact:** none (research observer only, default off).
 ## §693 — Gumbel root with the Muesli-style Q cap at A20 map roots, paired A/B (512 seeds): NOT_SHOWN, Heart kills 25.2% vs 27.7%, reached Act 4 −4.7 pp (2026-10-27)
 
 **Question (Philipp, 2026-10-26 22:57Z "lets go with 16 workers after the boss relic thing is done"):** does §689's
@@ -24661,3 +24641,23 @@ Act-1 chest relic); flexible keys explain about 6 of the 8 pp between §566 and 
 Philipp's call.
 Seeds: 111382000–111383023 (campaign), 111383024–111383027 (smokes) used.
 **Knowledge impact:** none until a default change; `evaluation/current-baselines.md` unchanged.
+## §TBD — Dynamic campfire price, stage 0 at A20: a model-only price (rollout to the act's end × calibrated X2-B) moves with HP and disagrees with student_sel at 33% of rest sites, but separates Rest from the best Smith at only 29% of sites at N = 32; STOP (offline replays of 128 §683 seeds, 2026-10-27)
+
+**Question:** Philipp, 2026-10-26: campfire choices should be priced, not ruled. At the A20 default, student_sel
+decides rest sites from its logits (option, then upgrade target) with no price. Can a model-only price tell Rest,
+Recall and Smith → card k apart at real rest sites, move with HP, and disagree with the played choice often enough
+to justify campfire forks? Philipp's go for stage 0: 2026-10-26 22:24Z.
+**Setup:** [PLAN](evidence/campfire_price_stage0_20261026/PLAN.md), with gates frozen in `ada3b5cd` before results.
+Research observer `STS_OOC_CAMPFIRE_PRICE` (default off; prices every legal campfire action in a forked child; play
+unchanged). Primary price: N rollouts per action to the first map state of the next act, valued by the M0 calibration
+(ADR-0057), with streams shared by the actions. Replays of the first 128 §683 seeds (MAP arm configuration plus
+`STS_SILVER_ACT4_STRONG=0`), code `38bd5a71`, N = 32; every replay reproduces its §683 trace.
+**Result:** [RESULT.md](evidence/campfire_price_stage0_20261026/RESULT.md). 732 rest sites (acts 1–3); 45 forced-Ruby
+sites are not priced. (a) separable at 2 SE 29.3% (gate ≥ 50%) **FAIL**; (b) Spearman with HP fraction −0.44
+[−0.50, −0.37] PASS; (c) disagreement 32.8% PASS, but only 12.6% of the Rest/Smith disagreements clear 2 SE. At
+40–60% HP: played rest 85%, price rest 56% (expert 13%, #865).
+**Interpretation:** STOP under the frozen rule. The direction is right, but at N = 32 the price is too noisy per
+site to drive or referee campfire choices. **Inference:** this is a precision limit, not a missing signal; a
+higher-N or expectation-based price would be a new pre-registered stage (Philipp's call).
+Seeds: none new; 111374100–111374227 (§683, used) replayed.
+**Knowledge impact:** none (research observer only, default off).
