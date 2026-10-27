@@ -78,8 +78,8 @@ even needed. But every route to a whole-run statement must certify *eventual* lo
 - There is no forced common prefix beyond the Neow screen. Any earlier fair deviation (Neow choice, path, card picks)
   reaches states where the two worlds diverge observably, after which the policy plays each world separately. Ruling
   that out (the issue's "critical subtlety") requires proving loss over the remaining ~50 floors in at least one
-  world for every deviation: at least a loss proof over all states reachable from some forced point,
-  short of but still requiring a sound bound on a full POMDP solve. Neither exists.
+  world for every deviation: a loss proof over all states reachable from some forced point
+  (at worst a full POMDP solve). No such proof or tool exists.
 - No sound whole-run loss bound exists in the repository. `exact_combat_solver` is exact for one combat and only
   under gates (starter deck, Act-1 weak monsters, turn cap ≤ 8; `apps/exact_combat_solver.cpp` header), and its
   `roots` mode certifies survival only over a 1–2 turn horizon (§623, §654,
