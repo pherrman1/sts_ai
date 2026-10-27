@@ -462,7 +462,7 @@ void observeOocCampfirePrice(const GameContext &, const PathHistory &, std::uint
 // (key, label, tree prior, public effect), which candidate the production decider (`productionStep`, the real chain
 // on a copy) matches, and three fresh searches on the live configuration: PUCT at the live budget with the real
 // search seed (as a full-budget root), PUCT at STS_OOC_ROOT_PROBE_DEEP (default 32768) on the same seed, and the
-// 8192-simulation uniform reference of STS_OOC_MCTS_ROOT_COMPARE. Each runs in a forked child; the run is unchanged.
+// 8192-simulation uniform reference of STS_OOC_MCTS_ROOT_COMPARE on its seed and on a second one. Each runs in a forked child; the run is unchanged.
 bool rootProbeIndex(std::uint64_t decisionIndex);
 void observeOocRootProbe(const GameContext &, const PathHistory &, std::uint64_t runSeed, std::uint64_t decisionIndex,
     const std::function<void(GameContext &)> &productionStep);

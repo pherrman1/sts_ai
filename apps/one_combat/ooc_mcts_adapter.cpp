@@ -5547,7 +5547,7 @@ void observeOocRootProbe(const GameContext &gc, const PathHistory &path, std::ui
         return options;
     };
     // Every search runs in its own forked child on a fresh model, so none of them can change the run.
-    const auto search = [&](std::uint64_t sims, bool uniform) -> nlohmann::json {
+    const auto search = [&](std::uint64_t sims, bool uniform, std::uint64_t salt = 0x5245464552454e43ULL) -> nlohmann::json {
         const unsigned seconds = unsigned(120 + sims / 8);
         try {
             return forkLeafReplay([&] {
@@ -5560,7 +5560,7 @@ void observeOocRootProbe(const GameContext &gc, const PathHistory &path, std::ui
                     c.seed = searchSeed;
                     if (uniform) {
                         // As STS_OOC_MCTS_ROOT_COMPARE's reference: simulations split evenly over every root action.
-                        c.seed = splitMix64(searchSeed ^ 0x5245464552454e43ULL);   // "REFERENC"
+                        c.seed = splitMix64(searchSeed ^ salt);   // default "REFERENC", as ROOT_COMPARE
                         c.gumbelRootActions = 64; c.gumbelScale = 0; c.gumbelUniform = true;
                         c.gumbelSeed = splitMix64(c.seed ^ 0x47554d42454c5254ULL);   // "GUMBELRT"
                         c.rootNoiseFraction = 0;
@@ -5602,7 +5602,7 @@ void observeOocRootProbe(const GameContext &gc, const PathHistory &path, std::ui
                 {
                     ImaginedScope scope;
                     OocGameContextModel model(gc, path, liveSamplerFor(gc), plainOptions());
-                    if (model.terminalValue(0) || model.isLeafBoundary(0)) return out;
+                    if (model.terminalValue(0) || model.isLeafBoundary(0)) return nlohmann::json{{"list", out}};
                     for (const auto &a : model.legalActions(0)) {
                         candidates.push_back(model.candidate(0, a.id));
                         out.push_back({{"id", a.id}, {"key", candidates.back().key},
@@ -5618,8 +5618,10 @@ void observeOocRootProbe(const GameContext &gc, const PathHistory &path, std::ui
                     } else out[i]["effectError"] = error;
                 }
             } catch (const std::exception &e) { return nlohmann::json{{"error", e.what()}}; }
-            return out;
+            return nlohmann::json{{"list", out}};
         }, 600000, 600, std::size_t(1) << 24);
+        if (row["candidates"].contains("error")) throw std::runtime_error(row["candidates"]["error"].get<std::string>());
+        row["candidates"] = nlohmann::json(row["candidates"]["list"]);
         row["production"] = forkLeafReplay([&] {
             nlohmann::json out = nlohmann::json::object();
             try {
@@ -5651,6 +5653,8 @@ void observeOocRootProbe(const GameContext &gc, const PathHistory &path, std::ui
     row["puct"] = search(liveSimulations, false);
     row["deep"] = search(liveRootProbeDeep, false);
     row["uniform"] = search(8192, true);
+    // A second reference on its own seed: the two give each sibling Q's run-to-run noise.
+    row["uniform2"] = search(8192, true, 0x5245464552454e44ULL);
     row["wallSeconds"] = std::chrono::duration<double>(std::chrono::steady_clock::now() - wallStart).count();
     std::lock_guard<std::mutex> lock(liveTraceMutex);
     std::ofstream out(liveRootProbePath, std::ios::app);
