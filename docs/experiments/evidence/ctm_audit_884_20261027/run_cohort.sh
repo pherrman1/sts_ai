@@ -4,5 +4,11 @@
 set -uo pipefail
 REPO=$1 RUN=$2 OUT=$3 LANES=${4:-4}
 mkdir -p "$OUT"
-seq 111374100 111374115 | xargs -P "$LANES" -I{} bash "$REPO/docs/experiments/evidence/ctm_audit_884_20261027/replay_unit.sh" \
+# Resumable: seeds with a .done file are skipped; an unfinished seed reruns from its start (replays are
+# deterministic), its partial files moved to OUTDIR/partial-<epoch>/.
+for s in $(seq 111374100 111374115); do
+  [ -f "$OUT/A-$s.done" ] && continue
+  if ls "$OUT"/A-$s.* >/dev/null 2>&1; then mkdir -p "$OUT/partial-$$"; mv "$OUT"/A-$s.* "$OUT/partial-$$/"; fi
+  echo $s
+done | xargs -P "$LANES" -I{} bash "$REPO/docs/experiments/evidence/ctm_audit_884_20261027/replay_unit.sh" \
   "$REPO" "$RUN" "$OUT" {} 16 2 10000
