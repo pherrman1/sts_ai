@@ -24754,7 +24754,7 @@ per fight). Not tested: larger α, rest-site imitation, a separate ranker head.
 Seeds: 111384000–111385023 used, smokes 111385990–111385991 used; 111385992–111385999 unused.
 **Knowledge impact:** none (no default or code change).
 
-## §699 — Combat HP-loss gap vs Baalorlord (issue #889): the bot loses more HP on every act-1-3 elite and boss encounter at matched entry HP and deck size, 2-3x with near-starter decks, while drinking more potions per fight; potion under-use refuted; offline, no seeds (2026-10-27)
+## §700 — Combat HP-loss gap vs Baalorlord (issue #889): the bot loses more HP on every act-1-3 elite and boss encounter at matched entry HP and deck size, 2-3x with near-starter decks, while drinking more potions per fight; potion under-use refuted; offline, no seeds (2026-10-27)
 
 **Question:** why does the A20 bot lose more HP than Baalorlord in elite and boss fights (§688), and is potion
 management, deck/resources, encounter mix or combat play the explanation? Existing data only.
