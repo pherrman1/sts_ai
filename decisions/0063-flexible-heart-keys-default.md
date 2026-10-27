@@ -39,4 +39,9 @@ Philipp chose on 2026-10-27 (decision card, 07:20Z): "Yes, separate PR".
 - Comparability: runs from before this ADR that left the flags unset are reproduced with
   `STS_KEY_SAPPHIRE=first STS_KEY_RUBY=first STS_KEY_EMERALD=first`; freeze files must record the flags.
 - The live advisor plays flexible keys after its next reinstall (which needs Philipp's typed OK).
+- Known gap (review of #878): the live advisor's OOC MCTS continuation (`live_ooc_policy.cpp` `continuationStep`)
+  sends map screens to `ScumSearchAgent2::stepOutOfCombatPolicy` without the Emerald mask, whereas the sim continuation
+  (`runFullRunOocPolicyStep`) masks first. Under ADR-0041 the forced edge covered both; under `mask` a live rollout can
+  leave the Act-3 burning-elite route (the backstop still forces the last reaching edge only in the masked paths).
+  Follow-up: apply the same mask in the live continuation before the next live reinstall.
 - With OOC MCTS on, the search chooses key timing too; that combination is untested beyond §569's descriptive run.
