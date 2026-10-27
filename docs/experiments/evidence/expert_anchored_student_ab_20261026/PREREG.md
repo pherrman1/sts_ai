@@ -2,7 +2,7 @@
 
 Written 2026-10-26 before any campaign game ran. Origin: experiment 7 of the 2026-10-26 deep-research report
 (contextual preference ranker on expert decisions), thread "Train a card ranker on expert picks". Offline analysis:
-`../expert_picks_20261026/RESULT.md`. `__CODE_COMMIT__` and `__BINARY_SHA256__` are filled at freeze.
+`../expert_picks_20261026/RESULT.md`. Code commit `f526cef9` (main), binary (`linux-gcc-release-x86-64-v3`) sha256 `5d9ac015…` (SMOKE.md).
 
 **Authorization:** Philipp, 2026-10-26 22:03Z: "lets go. how many workers would we need if we have around 16 hours?";
 22:56Z: "go on 16 workers after the boss relic workers are done". Worker count: 16. Launched by the coordinator after

@@ -1,6 +1,6 @@
 name          expert-anchored-ab
 code_commit   f526cef9c08688be8a0af1438e5653e466fba72a
-binary_sha256 __BINARY_SHA256__
+binary_sha256 5d9ac01529b73fa9284d70f001d71695aee1c54e075e2163fb32b18c8ef4ff62
 workers       16
 share         /mnt/project-files/expert-anchored-ab
 configure_preset linux-gcc-release-x86-64-v3

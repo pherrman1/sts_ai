@@ -23,4 +23,4 @@ Never kill a unit or one_combat process. A unit that times out ends with rc=124,
 If the container restarts, run steps 1-3 again at once (finished units are skipped). Remove a stale local lock only
 if ps shows no worker or _qlane process.
 Keep the session alive until you are told the tar is verified.
-Expect about __UNIT_MIN__ min per unit (two games: A and B), 4 units at a time.
+Expect about 20-35 min per unit (two games: A and B), 4 units at a time.
