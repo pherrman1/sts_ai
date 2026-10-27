@@ -24688,3 +24688,29 @@ site to drive or referee campfire choices. **Inference:** this is a precision li
 higher-N or expectation-based price would be a new pre-registered stage (Philipp's call).
 Seeds: none new; 111374100–111374227 (§683, used) replayed.
 **Knowledge impact:** none (research observer only, default off).
+
+## §696 — Expert-anchored student_sel at A20 (experiment 7 of the 2026-10-26 research report): fine-tuning student_sel toward Baalorlord's card rewards, smith targets, removals and boss relics leaves Heart kills unchanged, −0.7 pp [−3.4, +2.0]; NOT_SHOWN (1,024 paired seeds, 2026-10-27)
+
+**Question:** student_sel agrees with an A20 expert (Baalorlord, 808 Ironclad runs rebuilt as heart1 records) on 50% of
+card rewards, 27% of smith targets and 50% of boss relics, and a GBM predicts his picks 13-23 pp better. Does a
+student_sel fine-tuned toward his picks kill the Heart more often? §641-§649 trained on model labels; the new part is
+the label source.
+**Setup:** offline [RESULT](evidence/expert_picks_20261026/RESULT.md); A/B [PREREG](evidence/expert_anchored_student_ab_20261026/PREREG.md).
+Candidate: `distill.py --init` from student_sel's checkpoint, target log((1 − α) p + α e) on expert card rewards, smith
+targets, shop removals and boss relics, anchored on 62,576 gen-3 bot decisions with student_sel's own logits; rest sites
+not taught (Philipp's decision card 2026-10-26). α = 0.6 by the offline gates: held-out expert top-1 card reward
++8.0 pp, smith +12.5 pp; bot-state argmax changes ≤ 4.7% per screen, maps 1.2%; native parity 1.1e-5. Arms differ only
+in `STS_OOC_HEART1` (A student_sel `cf6bf7fb…`, B `14506144…`), today's A20 default otherwise. Philipp authorized the run
+with 16 workers (2026-10-26 22:56Z); pre-launch review and delta check PASS. Run commit `d9aa44fa`, code `f526cef9`,
+binary `5d9ac015…`.
+**Result:** [RESULT.md](evidence/expert_anchored_student_ab_20261026/RESULT.md). 1,024/1,024 units verified, 2,048 games
+rc 0, all seeds valid; ~543 core-h. Heart kills A 26.1%, B 25.4%, B − A −0.7 pp [−3.4, +2.0] (97 vs 104 discordant,
+p 0.67) → **NOT_SHOWN**. Act 4 42.2% vs 41.9% (−0.3 pp [−3.4, +2.8]); mean floor equal; wall ratio 1.003. Futility look at
+256 seeds CONTINUE (Act 4 +2.3 pp). 929 pairs diverge, mostly first at act-1 card rewards (263) and card selects (259);
+no divergence class carries a visible effect.
+**Interpretation:** expert agreement on these screens moved offline but not in play. **Inference:** at this size of
+change, matching an expert's individual picks is not what limits the A20 Heart rate (§688: the bot loses 1.4-3x more HP
+per fight). Not tested: larger α, rest-site imitation, a separate ranker head.
+**Decision:** student_sel stays; no default change.
+Seeds: 111384000–111385023 used, smokes 111385990–111385991 used; 111385992–111385999 unused.
+**Knowledge impact:** none (no default or code change).
