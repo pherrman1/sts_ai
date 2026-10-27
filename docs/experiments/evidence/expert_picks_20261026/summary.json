@@ -1,0 +1,2430 @@
+{
+ "by_type": {
+  "boss_relic": {
+   "n": 1203,
+   "runs": 647,
+   "top1_agree": 0.502,
+   "ci90": [
+    0.48,
+    0.523
+   ],
+   "p_expert": 0.498,
+   "nll": 4.7,
+   "random_top1": 0.25,
+   "student_conf": 0.939,
+   "confident_disagree": 0.386
+  },
+  "card_choice_other": {
+   "n": 1262,
+   "runs": 427,
+   "top1_agree": 0.506,
+   "ci90": [
+    0.481,
+    0.528
+   ],
+   "p_expert": 0.501,
+   "nll": 3.611,
+   "random_top1": 0.236,
+   "student_conf": 0.909,
+   "confident_disagree": 0.322
+  },
+  "card_reward_boss": {
+   "n": 1170,
+   "runs": 643,
+   "top1_agree": 0.504,
+   "ci90": [
+    0.482,
+    0.528
+   ],
+   "p_expert": 0.505,
+   "nll": 3.986,
+   "random_top1": 0.245,
+   "student_conf": 0.941,
+   "confident_disagree": 0.378
+  },
+  "card_reward_elite": {
+   "n": 5154,
+   "runs": 729,
+   "top1_agree": 0.511,
+   "ci90": [
+    0.5,
+    0.522
+   ],
+   "p_expert": 0.505,
+   "nll": 3.873,
+   "random_top1": 0.247,
+   "student_conf": 0.926,
+   "confident_disagree": 0.345
+  },
+  "card_reward_monster": {
+   "n": 10346,
+   "runs": 749,
+   "top1_agree": 0.501,
+   "ci90": [
+    0.493,
+    0.51
+   ],
+   "p_expert": 0.498,
+   "nll": 4.25,
+   "random_top1": 0.248,
+   "student_conf": 0.934,
+   "confident_disagree": 0.368
+  },
+  "map": {
+   "n": 10515,
+   "runs": 741,
+   "top1_agree": 0.712,
+   "ci90": [
+    0.705,
+    0.719
+   ],
+   "p_expert": 0.704,
+   "nll": 1.507,
+   "random_top1": 0.458,
+   "student_conf": 0.923,
+   "confident_disagree": 0.167
+  },
+  "rest": {
+   "n": 5344,
+   "runs": 733,
+   "top1_agree": 0.603,
+   "ci90": [
+    0.589,
+    0.617
+   ],
+   "p_expert": 0.6,
+   "nll": 2.574,
+   "random_top1": 0.363,
+   "student_conf": 0.949,
+   "confident_disagree": 0.313
+  },
+  "shop_remove": {
+   "n": 1347,
+   "runs": 599,
+   "top1_agree": 0.656,
+   "ci90": [
+    0.634,
+    0.679
+   ],
+   "p_expert": 0.652,
+   "nll": 3.298,
+   "random_top1": 0.076,
+   "student_conf": 0.946,
+   "confident_disagree": 0.234
+  },
+  "smith": {
+   "n": 3960,
+   "runs": 718,
+   "top1_agree": 0.272,
+   "ci90": [
+    0.259,
+    0.283
+   ],
+   "p_expert": 0.264,
+   "nll": 6.015,
+   "random_top1": 0.106,
+   "student_conf": 0.837,
+   "confident_disagree": 0.369
+  }
+ },
+ "by_type_all_runs": {
+  "boss_relic": {
+   "n": 1275,
+   "runs": 685,
+   "top1_agree": 0.505,
+   "ci90": [
+    0.48,
+    0.527
+   ],
+   "p_expert": 0.501,
+   "nll": 4.704,
+   "random_top1": 0.25,
+   "student_conf": 0.94,
+   "confident_disagree": 0.385
+  },
+  "card_choice_other": {
+   "n": 1333,
+   "runs": 452,
+   "top1_agree": 0.503,
+   "ci90": [
+    0.478,
+    0.526
+   ],
+   "p_expert": 0.498,
+   "nll": 3.655,
+   "random_top1": 0.236,
+   "student_conf": 0.909,
+   "confident_disagree": 0.324
+  },
+  "card_reward_boss": {
+   "n": 1238,
+   "runs": 681,
+   "top1_agree": 0.505,
+   "ci90": [
+    0.48,
+    0.528
+   ],
+   "p_expert": 0.504,
+   "nll": 4.015,
+   "random_top1": 0.245,
+   "student_conf": 0.941,
+   "confident_disagree": 0.379
+  },
+  "card_reward_elite": {
+   "n": 5448,
+   "runs": 767,
+   "top1_agree": 0.511,
+   "ci90": [
+    0.5,
+    0.523
+   ],
+   "p_expert": 0.505,
+   "nll": 3.887,
+   "random_top1": 0.247,
+   "student_conf": 0.925,
+   "confident_disagree": 0.345
+  },
+  "card_reward_monster": {
+   "n": 10920,
+   "runs": 787,
+   "top1_agree": 0.499,
+   "ci90": [
+    0.49,
+    0.508
+   ],
+   "p_expert": 0.496,
+   "nll": 4.271,
+   "random_top1": 0.247,
+   "student_conf": 0.935,
+   "confident_disagree": 0.37
+  },
+  "map": {
+   "n": 11041,
+   "runs": 774,
+   "top1_agree": 0.71,
+   "ci90": [
+    0.704,
+    0.718
+   ],
+   "p_expert": 0.703,
+   "nll": 1.509,
+   "random_top1": 0.458,
+   "student_conf": 0.922,
+   "confident_disagree": 0.168
+  },
+  "rest": {
+   "n": 5631,
+   "runs": 771,
+   "top1_agree": 0.602,
+   "ci90": [
+    0.589,
+    0.614
+   ],
+   "p_expert": 0.599,
+   "nll": 2.587,
+   "random_top1": 0.364,
+   "student_conf": 0.949,
+   "confident_disagree": 0.314
+  },
+  "shop_remove": {
+   "n": 1418,
+   "runs": 631,
+   "top1_agree": 0.644,
+   "ci90": [
+    0.622,
+    0.665
+   ],
+   "p_expert": 0.64,
+   "nll": 3.541,
+   "random_top1": 0.076,
+   "student_conf": 0.948,
+   "confident_disagree": 0.249
+  },
+  "smith": {
+   "n": 4159,
+   "runs": 755,
+   "top1_agree": 0.274,
+   "ci90": [
+    0.262,
+    0.287
+   ],
+   "p_expert": 0.266,
+   "nll": 5.998,
+   "random_top1": 0.106,
+   "student_conf": 0.837,
+   "confident_disagree": 0.369
+  }
+ },
+ "by_type_act": {
+  "boss_relic|act1": {
+   "n": 646,
+   "runs": 646,
+   "top1_agree": 0.522,
+   "ci90": [
+    0.488,
+    0.556
+   ],
+   "p_expert": 0.519,
+   "nll": 4.939,
+   "random_top1": 0.25,
+   "student_conf": 0.954,
+   "confident_disagree": 0.387
+  },
+  "boss_relic|act2": {
+   "n": 557,
+   "runs": 557,
+   "top1_agree": 0.479,
+   "ci90": [
+    0.447,
+    0.519
+   ],
+   "p_expert": 0.474,
+   "nll": 4.421,
+   "random_top1": 0.25,
+   "student_conf": 0.921,
+   "confident_disagree": 0.384
+  },
+  "card_choice_other|act1": {
+   "n": 143,
+   "runs": 85,
+   "top1_agree": 0.517,
+   "ci90": [
+    0.441,
+    0.592
+   ],
+   "p_expert": 0.509,
+   "nll": 4.198,
+   "random_top1": 0.249,
+   "student_conf": 0.939,
+   "confident_disagree": 0.357
+  },
+  "card_choice_other|act2": {
+   "n": 276,
+   "runs": 175,
+   "top1_agree": 0.475,
+   "ci90": [
+    0.422,
+    0.529
+   ],
+   "p_expert": 0.475,
+   "nll": 3.852,
+   "random_top1": 0.207,
+   "student_conf": 0.891,
+   "confident_disagree": 0.312
+  },
+  "card_choice_other|act3": {
+   "n": 728,
+   "runs": 294,
+   "top1_agree": 0.501,
+   "ci90": [
+    0.472,
+    0.534
+   ],
+   "p_expert": 0.496,
+   "nll": 3.588,
+   "random_top1": 0.246,
+   "student_conf": 0.911,
+   "confident_disagree": 0.332
+  },
+  "card_choice_other|act4": {
+   "n": 115,
+   "runs": 40,
+   "top1_agree": 0.591,
+   "ci90": [
+    0.506,
+    0.67
+   ],
+   "p_expert": 0.581,
+   "nll": 2.448,
+   "random_top1": 0.232,
+   "student_conf": 0.901,
+   "confident_disagree": 0.235
+  },
+  "card_reward_boss|act1": {
+   "n": 635,
+   "runs": 635,
+   "top1_agree": 0.498,
+   "ci90": [
+    0.466,
+    0.531
+   ],
+   "p_expert": 0.501,
+   "nll": 4.439,
+   "random_top1": 0.247,
+   "student_conf": 0.953,
+   "confident_disagree": 0.405
+  },
+  "card_reward_boss|act2": {
+   "n": 533,
+   "runs": 533,
+   "top1_agree": 0.514,
+   "ci90": [
+    0.484,
+    0.55
+   ],
+   "p_expert": 0.512,
+   "nll": 3.407,
+   "random_top1": 0.242,
+   "student_conf": 0.928,
+   "confident_disagree": 0.345
+  },
+  "card_reward_boss|act3": {
+   "n": 2,
+   "runs": 2,
+   "top1_agree": 0.0,
+   "ci90": [
+    0.0,
+    0.0
+   ],
+   "p_expert": 0.0,
+   "nll": 14.448,
+   "random_top1": 0.225,
+   "student_conf": 0.929,
+   "confident_disagree": 0.5
+  },
+  "card_reward_elite|act1": {
+   "n": 1822,
+   "runs": 726,
+   "top1_agree": 0.509,
+   "ci90": [
+    0.491,
+    0.531
+   ],
+   "p_expert": 0.508,
+   "nll": 4.659,
+   "random_top1": 0.249,
+   "student_conf": 0.943,
+   "confident_disagree": 0.37
+  },
+  "card_reward_elite|act2": {
+   "n": 1410,
+   "runs": 598,
+   "top1_agree": 0.525,
+   "ci90": [
+    0.5,
+    0.544
+   ],
+   "p_expert": 0.517,
+   "nll": 3.545,
+   "random_top1": 0.245,
+   "student_conf": 0.924,
+   "confident_disagree": 0.34
+  },
+  "card_reward_elite|act3": {
+   "n": 1430,
+   "runs": 543,
+   "top1_agree": 0.506,
+   "ci90": [
+    0.482,
+    0.528
+   ],
+   "p_expert": 0.5,
+   "nll": 3.441,
+   "random_top1": 0.248,
+   "student_conf": 0.913,
+   "confident_disagree": 0.323
+  },
+  "card_reward_elite|act4": {
+   "n": 492,
+   "runs": 490,
+   "top1_agree": 0.494,
+   "ci90": [
+    0.461,
+    0.53
+   ],
+   "p_expert": 0.481,
+   "nll": 3.158,
+   "random_top1": 0.243,
+   "student_conf": 0.903,
+   "confident_disagree": 0.329
+  },
+  "card_reward_monster|act1": {
+   "n": 4137,
+   "runs": 749,
+   "top1_agree": 0.516,
+   "ci90": [
+    0.504,
+    0.529
+   ],
+   "p_expert": 0.514,
+   "nll": 5.088,
+   "random_top1": 0.251,
+   "student_conf": 0.956,
+   "confident_disagree": 0.398
+  },
+  "card_reward_monster|act2": {
+   "n": 3274,
+   "runs": 644,
+   "top1_agree": 0.478,
+   "ci90": [
+    0.462,
+    0.491
+   ],
+   "p_expert": 0.476,
+   "nll": 3.959,
+   "random_top1": 0.246,
+   "student_conf": 0.924,
+   "confident_disagree": 0.366
+  },
+  "card_reward_monster|act3": {
+   "n": 2935,
+   "runs": 554,
+   "top1_agree": 0.506,
+   "ci90": [
+    0.491,
+    0.522
+   ],
+   "p_expert": 0.5,
+   "nll": 3.393,
+   "random_top1": 0.245,
+   "student_conf": 0.916,
+   "confident_disagree": 0.33
+  },
+  "map|act1": {
+   "n": 4622,
+   "runs": 736,
+   "top1_agree": 0.689,
+   "ci90": [
+    0.679,
+    0.7
+   ],
+   "p_expert": 0.679,
+   "nll": 1.575,
+   "random_top1": 0.443,
+   "student_conf": 0.906,
+   "confident_disagree": 0.161
+  },
+  "map|act2": {
+   "n": 3350,
+   "runs": 615,
+   "top1_agree": 0.703,
+   "ci90": [
+    0.689,
+    0.714
+   ],
+   "p_expert": 0.696,
+   "nll": 1.617,
+   "random_top1": 0.46,
+   "student_conf": 0.925,
+   "confident_disagree": 0.179
+  },
+  "map|act3": {
+   "n": 2543,
+   "runs": 523,
+   "top1_agree": 0.764,
+   "ci90": [
+    0.75,
+    0.781
+   ],
+   "p_expert": 0.759,
+   "nll": 1.238,
+   "random_top1": 0.483,
+   "student_conf": 0.949,
+   "confident_disagree": 0.159
+  },
+  "rest|act1": {
+   "n": 2089,
+   "runs": 733,
+   "top1_agree": 0.632,
+   "ci90": [
+    0.61,
+    0.652
+   ],
+   "p_expert": 0.629,
+   "nll": 2.676,
+   "random_top1": 0.333,
+   "student_conf": 0.961,
+   "confident_disagree": 0.308
+  },
+  "rest|act2": {
+   "n": 1745,
+   "runs": 611,
+   "top1_agree": 0.593,
+   "ci90": [
+    0.566,
+    0.616
+   ],
+   "p_expert": 0.589,
+   "nll": 2.938,
+   "random_top1": 0.354,
+   "student_conf": 0.957,
+   "confident_disagree": 0.342
+  },
+  "rest|act3": {
+   "n": 1157,
+   "runs": 519,
+   "top1_agree": 0.656,
+   "ci90": [
+    0.635,
+    0.679
+   ],
+   "p_expert": 0.645,
+   "nll": 1.724,
+   "random_top1": 0.401,
+   "student_conf": 0.923,
+   "confident_disagree": 0.223
+  },
+  "rest|act4": {
+   "n": 353,
+   "runs": 352,
+   "top1_agree": 0.303,
+   "ci90": [
+    0.267,
+    0.343
+   ],
+   "p_expert": 0.338,
+   "nll": 2.956,
+   "random_top1": 0.47,
+   "student_conf": 0.926,
+   "confident_disagree": 0.493
+  },
+  "shop_remove|act1": {
+   "n": 293,
+   "runs": 277,
+   "top1_agree": 0.365,
+   "ci90": [
+    0.32,
+    0.406
+   ],
+   "p_expert": 0.364,
+   "nll": 5.364,
+   "random_top1": 0.146,
+   "student_conf": 0.894,
+   "confident_disagree": 0.444
+  },
+  "shop_remove|act2": {
+   "n": 485,
+   "runs": 415,
+   "top1_agree": 0.767,
+   "ci90": [
+    0.735,
+    0.797
+   ],
+   "p_expert": 0.761,
+   "nll": 2.499,
+   "random_top1": 0.069,
+   "student_conf": 0.978,
+   "confident_disagree": 0.196
+  },
+  "shop_remove|act3": {
+   "n": 378,
+   "runs": 314,
+   "top1_agree": 0.706,
+   "ci90": [
+    0.66,
+    0.746
+   ],
+   "p_expert": 0.7,
+   "nll": 3.434,
+   "random_top1": 0.048,
+   "student_conf": 0.95,
+   "confident_disagree": 0.183
+  },
+  "shop_remove|act4": {
+   "n": 191,
+   "runs": 191,
+   "top1_agree": 0.717,
+   "ci90": [
+    0.66,
+    0.77
+   ],
+   "p_expert": 0.719,
+   "nll": 1.892,
+   "random_top1": 0.042,
+   "student_conf": 0.938,
+   "confident_disagree": 0.11
+  },
+  "smith|act1": {
+   "n": 1818,
+   "runs": 715,
+   "top1_agree": 0.377,
+   "ci90": [
+    0.357,
+    0.395
+   ],
+   "p_expert": 0.368,
+   "nll": 5.56,
+   "random_top1": 0.131,
+   "student_conf": 0.893,
+   "confident_disagree": 0.405
+  },
+  "smith|act2": {
+   "n": 1271,
+   "runs": 537,
+   "top1_agree": 0.201,
+   "ci90": [
+    0.183,
+    0.218
+   ],
+   "p_expert": 0.194,
+   "nll": 6.957,
+   "random_top1": 0.09,
+   "student_conf": 0.824,
+   "confident_disagree": 0.404
+  },
+  "smith|act3": {
+   "n": 570,
+   "runs": 350,
+   "top1_agree": 0.139,
+   "ci90": [
+    0.114,
+    0.162
+   ],
+   "p_expert": 0.134,
+   "nll": 5.973,
+   "random_top1": 0.075,
+   "student_conf": 0.744,
+   "confident_disagree": 0.239
+  },
+  "smith|act4": {
+   "n": 301,
+   "runs": 301,
+   "top1_agree": 0.186,
+   "ci90": [
+    0.153,
+    0.223
+   ],
+   "p_expert": 0.17,
+   "nll": 4.857,
+   "random_top1": 0.078,
+   "student_conf": 0.732,
+   "confident_disagree": 0.256
+  }
+ },
+ "by_type_victory": {
+  "boss_relic|win=True": {
+   "n": 907,
+   "runs": 454,
+   "top1_agree": 0.516,
+   "ci90": [
+    0.488,
+    0.545
+   ],
+   "p_expert": 0.511,
+   "nll": 4.443,
+   "random_top1": 0.25,
+   "student_conf": 0.936,
+   "confident_disagree": 0.372
+  },
+  "boss_relic|win=False": {
+   "n": 296,
+   "runs": 193,
+   "top1_agree": 0.459,
+   "ci90": [
+    0.408,
+    0.509
+   ],
+   "p_expert": 0.461,
+   "nll": 5.484,
+   "random_top1": 0.25,
+   "student_conf": 0.947,
+   "confident_disagree": 0.429
+  },
+  "card_choice_other|win=True": {
+   "n": 1052,
+   "runs": 335,
+   "top1_agree": 0.508,
+   "ci90": [
+    0.481,
+    0.538
+   ],
+   "p_expert": 0.5,
+   "nll": 3.655,
+   "random_top1": 0.236,
+   "student_conf": 0.908,
+   "confident_disagree": 0.323
+  },
+  "card_choice_other|win=False": {
+   "n": 210,
+   "runs": 92,
+   "top1_agree": 0.495,
+   "ci90": [
+    0.436,
+    0.555
+   ],
+   "p_expert": 0.501,
+   "nll": 3.389,
+   "random_top1": 0.236,
+   "student_conf": 0.913,
+   "confident_disagree": 0.314
+  },
+  "card_reward_boss|win=True": {
+   "n": 886,
+   "runs": 452,
+   "top1_agree": 0.521,
+   "ci90": [
+    0.495,
+    0.547
+   ],
+   "p_expert": 0.519,
+   "nll": 3.826,
+   "random_top1": 0.244,
+   "student_conf": 0.941,
+   "confident_disagree": 0.363
+  },
+  "card_reward_boss|win=False": {
+   "n": 284,
+   "runs": 191,
+   "top1_agree": 0.451,
+   "ci90": [
+    0.411,
+    0.497
+   ],
+   "p_expert": 0.461,
+   "nll": 4.484,
+   "random_top1": 0.249,
+   "student_conf": 0.943,
+   "confident_disagree": 0.423
+  },
+  "card_reward_elite|win=True": {
+   "n": 3973,
+   "runs": 454,
+   "top1_agree": 0.517,
+   "ci90": [
+    0.504,
+    0.531
+   ],
+   "p_expert": 0.511,
+   "nll": 3.665,
+   "random_top1": 0.246,
+   "student_conf": 0.922,
+   "confident_disagree": 0.332
+  },
+  "card_reward_elite|win=False": {
+   "n": 1181,
+   "runs": 275,
+   "top1_agree": 0.491,
+   "ci90": [
+    0.465,
+    0.516
+   ],
+   "p_expert": 0.486,
+   "nll": 4.575,
+   "random_top1": 0.252,
+   "student_conf": 0.937,
+   "confident_disagree": 0.389
+  },
+  "card_reward_monster|win=True": {
+   "n": 7466,
+   "runs": 454,
+   "top1_agree": 0.509,
+   "ci90": [
+    0.499,
+    0.518
+   ],
+   "p_expert": 0.505,
+   "nll": 4.02,
+   "random_top1": 0.246,
+   "student_conf": 0.932,
+   "confident_disagree": 0.356
+  },
+  "card_reward_monster|win=False": {
+   "n": 2880,
+   "runs": 295,
+   "top1_agree": 0.48,
+   "ci90": [
+    0.463,
+    0.497
+   ],
+   "p_expert": 0.479,
+   "nll": 4.847,
+   "random_top1": 0.251,
+   "student_conf": 0.942,
+   "confident_disagree": 0.4
+  },
+  "map|win=True": {
+   "n": 7490,
+   "runs": 449,
+   "top1_agree": 0.714,
+   "ci90": [
+    0.705,
+    0.721
+   ],
+   "p_expert": 0.706,
+   "nll": 1.468,
+   "random_top1": 0.459,
+   "student_conf": 0.922,
+   "confident_disagree": 0.164
+  },
+  "map|win=False": {
+   "n": 3025,
+   "runs": 292,
+   "top1_agree": 0.707,
+   "ci90": [
+    0.692,
+    0.721
+   ],
+   "p_expert": 0.7,
+   "nll": 1.602,
+   "random_top1": 0.457,
+   "student_conf": 0.924,
+   "confident_disagree": 0.173
+  },
+  "rest|win=True": {
+   "n": 3902,
+   "runs": 454,
+   "top1_agree": 0.604,
+   "ci90": [
+    0.588,
+    0.621
+   ],
+   "p_expert": 0.602,
+   "nll": 2.451,
+   "random_top1": 0.367,
+   "student_conf": 0.949,
+   "confident_disagree": 0.308
+  },
+  "rest|win=False": {
+   "n": 1442,
+   "runs": 279,
+   "top1_agree": 0.598,
+   "ci90": [
+    0.573,
+    0.625
+   ],
+   "p_expert": 0.594,
+   "nll": 2.906,
+   "random_top1": 0.353,
+   "student_conf": 0.951,
+   "confident_disagree": 0.326
+  },
+  "shop_remove|win=True": {
+   "n": 1046,
+   "runs": 425,
+   "top1_agree": 0.668,
+   "ci90": [
+    0.642,
+    0.693
+   ],
+   "p_expert": 0.664,
+   "nll": 3.259,
+   "random_top1": 0.072,
+   "student_conf": 0.947,
+   "confident_disagree": 0.219
+  },
+  "shop_remove|win=False": {
+   "n": 301,
+   "runs": 174,
+   "top1_agree": 0.611,
+   "ci90": [
+    0.562,
+    0.655
+   ],
+   "p_expert": 0.61,
+   "nll": 3.434,
+   "random_top1": 0.092,
+   "student_conf": 0.945,
+   "confident_disagree": 0.286
+  },
+  "smith|win=True": {
+   "n": 2911,
+   "runs": 451,
+   "top1_agree": 0.265,
+   "ci90": [
+    0.25,
+    0.279
+   ],
+   "p_expert": 0.256,
+   "nll": 6.015,
+   "random_top1": 0.102,
+   "student_conf": 0.83,
+   "confident_disagree": 0.356
+  },
+  "smith|win=False": {
+   "n": 1049,
+   "runs": 267,
+   "top1_agree": 0.291,
+   "ci90": [
+    0.266,
+    0.311
+   ],
+   "p_expert": 0.283,
+   "nll": 6.013,
+   "random_top1": 0.115,
+   "student_conf": 0.859,
+   "confident_disagree": 0.407
+  }
+ },
+ "card_reward_skip": {
+  "expert": 0.275,
+  "student_argmax": 0.122,
+  "by_act": {
+   "1": {
+    "expert": 0.129,
+    "student": 0.06
+   },
+   "2": {
+    "expert": 0.325,
+    "student": 0.137
+   },
+   "3": {
+    "expert": 0.42,
+    "student": 0.191
+   },
+   "4": {
+    "expert": 0.409,
+    "student": 0.185
+   }
+  }
+ },
+ "card_take_rates": [
+  {
+   "card": "Whirlwind",
+   "offered": 463,
+   "expert": 0.35,
+   "student": 0.022,
+   "diff": -0.328
+  },
+  {
+   "card": "Bloodletting",
+   "offered": 509,
+   "expert": 0.369,
+   "student": 0.063,
+   "diff": -0.306
+  },
+  {
+   "card": "Burning Pact",
+   "offered": 467,
+   "expert": 0.585,
+   "student": 0.343,
+   "diff": -0.242
+  },
+  {
+   "card": "True Grit",
+   "offered": 1310,
+   "expert": 0.367,
+   "student": 0.132,
+   "diff": -0.235
+  },
+  {
+   "card": "Entrench",
+   "offered": 478,
+   "expert": 0.236,
+   "student": 0.029,
+   "diff": -0.207
+  },
+  {
+   "card": "Sentinel",
+   "offered": 491,
+   "expert": 0.308,
+   "student": 0.104,
+   "diff": -0.204
+  },
+  {
+   "card": "Double Tap",
+   "offered": 348,
+   "expert": 0.195,
+   "student": 0.014,
+   "diff": -0.181
+  },
+  {
+   "card": "Rage",
+   "offered": 489,
+   "expert": 0.178,
+   "student": 0.0,
+   "diff": -0.178
+  },
+  {
+   "card": "Limit Break",
+   "offered": 364,
+   "expert": 0.343,
+   "student": 0.17,
+   "diff": -0.173
+  },
+  {
+   "card": "Dual Wield",
+   "offered": 490,
+   "expert": 0.182,
+   "student": 0.053,
+   "diff": -0.129
+  },
+  {
+   "card": "Evolve",
+   "offered": 463,
+   "expert": 0.231,
+   "student": 0.125,
+   "diff": -0.106
+  },
+  {
+   "card": "Heavy Blade",
+   "offered": 1279,
+   "expert": 0.137,
+   "student": 0.033,
+   "diff": -0.104
+  },
+  {
+   "card": "Combust",
+   "offered": 449,
+   "expert": 0.109,
+   "student": 0.009,
+   "diff": -0.1
+  },
+  {
+   "card": "Immolate",
+   "offered": 366,
+   "expert": 0.344,
+   "student": 0.246,
+   "diff": -0.098
+  },
+  {
+   "card": "Fiend Fire",
+   "offered": 350,
+   "expert": 0.531,
+   "student": 0.44,
+   "diff": -0.091
+  },
+  {
+   "card": "Brutality",
+   "offered": 344,
+   "expert": 0.23,
+   "student": 0.145,
+   "diff": -0.084
+  },
+  {
+   "card": "Cleave",
+   "offered": 1250,
+   "expert": 0.129,
+   "student": 0.049,
+   "diff": -0.08
+  },
+  {
+   "card": "Rupture",
+   "offered": 464,
+   "expert": 0.071,
+   "student": 0.0,
+   "diff": -0.071
+  },
+  {
+   "card": "Hemokinesis",
+   "offered": 474,
+   "expert": 0.108,
+   "student": 0.038,
+   "diff": -0.07
+  },
+  {
+   "card": "Flex",
+   "offered": 1299,
+   "expert": 0.117,
+   "student": 0.048,
+   "diff": -0.069
+  },
+  {
+   "card": "Fire Breathing",
+   "offered": 447,
+   "expert": 0.065,
+   "student": 0.0,
+   "diff": -0.065
+  },
+  {
+   "card": "Armaments",
+   "offered": 1281,
+   "expert": 0.21,
+   "student": 0.146,
+   "diff": -0.064
+  },
+  {
+   "card": "Offering",
+   "offered": 361,
+   "expert": 0.767,
+   "student": 0.709,
+   "diff": -0.058
+  },
+  {
+   "card": "Sword Boomerang",
+   "offered": 1336,
+   "expert": 0.08,
+   "student": 0.025,
+   "diff": -0.055
+  },
+  {
+   "card": "Rampage",
+   "offered": 446,
+   "expert": 0.047,
+   "student": 0.0,
+   "diff": -0.047
+  },
+  {
+   "card": "Sever Soul",
+   "offered": 447,
+   "expert": 0.085,
+   "student": 0.04,
+   "diff": -0.045
+  },
+  {
+   "card": "Berserk",
+   "offered": 393,
+   "expert": 0.081,
+   "student": 0.038,
+   "diff": -0.043
+  },
+  {
+   "card": "Warcry",
+   "offered": 1362,
+   "expert": 0.136,
+   "student": 0.094,
+   "diff": -0.042
+  },
+  {
+   "card": "Searing Blow",
+   "offered": 484,
+   "expert": 0.054,
+   "student": 0.014,
+   "diff": -0.039
+  },
+  {
+   "card": "Dropkick",
+   "offered": 473,
+   "expert": 0.112,
+   "student": 0.076,
+   "diff": -0.036
+  },
+  {
+   "card": "Dark Embrace",
+   "offered": 503,
+   "expert": 0.67,
+   "student": 0.634,
+   "diff": -0.036
+  },
+  {
+   "card": "Exhume",
+   "offered": 339,
+   "expert": 0.404,
+   "student": 0.375,
+   "diff": -0.029
+  },
+  {
+   "card": "Juggernaut",
+   "offered": 357,
+   "expert": 0.23,
+   "student": 0.202,
+   "diff": -0.028
+  },
+  {
+   "card": "Wild Strike",
+   "offered": 1274,
+   "expert": 0.02,
+   "student": 0.0,
+   "diff": -0.02
+  },
+  {
+   "card": "Body Slam",
+   "offered": 1311,
+   "expert": 0.116,
+   "student": 0.114,
+   "diff": -0.002
+  },
+  {
+   "card": "Pummel",
+   "offered": 499,
+   "expert": 0.295,
+   "student": 0.293,
+   "diff": -0.002
+  },
+  {
+   "card": "Power Through",
+   "offered": 478,
+   "expert": 0.418,
+   "student": 0.418,
+   "diff": 0.0
+  },
+  {
+   "card": "Reckless Charge",
+   "offered": 488,
+   "expert": 0.164,
+   "student": 0.168,
+   "diff": 0.004
+  },
+  {
+   "card": "Second Wind",
+   "offered": 523,
+   "expert": 0.488,
+   "student": 0.493,
+   "diff": 0.006
+  },
+  {
+   "card": "Thunderclap",
+   "offered": 1348,
+   "expert": 0.087,
+   "student": 0.095,
+   "diff": 0.008
+  },
+  {
+   "card": "Bludgeon",
+   "offered": 388,
+   "expert": 0.144,
+   "student": 0.168,
+   "diff": 0.023
+  },
+  {
+   "card": "Headbutt",
+   "offered": 1223,
+   "expert": 0.293,
+   "student": 0.32,
+   "diff": 0.027
+  },
+  {
+   "card": "Seeing Red",
+   "offered": 499,
+   "expert": 0.23,
+   "student": 0.275,
+   "diff": 0.044
+  },
+  {
+   "card": "Clash",
+   "offered": 1313,
+   "expert": 0.018,
+   "student": 0.083,
+   "diff": 0.065
+  },
+  {
+   "card": "Disarm",
+   "offered": 490,
+   "expert": 0.727,
+   "student": 0.808,
+   "diff": 0.082
+  },
+  {
+   "card": "Perfected Strike",
+   "offered": 1329,
+   "expert": 0.099,
+   "student": 0.19,
+   "diff": 0.091
+  },
+  {
+   "card": "Iron Wave",
+   "offered": 1319,
+   "expert": 0.072,
+   "student": 0.187,
+   "diff": 0.115
+  },
+  {
+   "card": "Twin Strike",
+   "offered": 1293,
+   "expert": 0.133,
+   "student": 0.258,
+   "diff": 0.125
+  },
+  {
+   "card": "Flame Barrier",
+   "offered": 478,
+   "expert": 0.575,
+   "student": 0.705,
+   "diff": 0.13
+  },
+  {
+   "card": "Impervious",
+   "offered": 338,
+   "expert": 0.565,
+   "student": 0.707,
+   "diff": 0.142
+  },
+  {
+   "card": "Feel No Pain",
+   "offered": 516,
+   "expert": 0.756,
+   "student": 0.899,
+   "diff": 0.143
+  },
+  {
+   "card": "Infernal Blade",
+   "offered": 531,
+   "expert": 0.156,
+   "student": 0.303,
+   "diff": 0.147
+  },
+  {
+   "card": "Barricade",
+   "offered": 350,
+   "expert": 0.4,
+   "student": 0.554,
+   "diff": 0.154
+  },
+  {
+   "card": "Carnage",
+   "offered": 509,
+   "expert": 0.202,
+   "student": 0.365,
+   "diff": 0.163
+  },
+  {
+   "card": "Battle Trance",
+   "offered": 475,
+   "expert": 0.535,
+   "student": 0.716,
+   "diff": 0.181
+  },
+  {
+   "card": "Shrug It Off",
+   "offered": 1329,
+   "expert": 0.549,
+   "student": 0.748,
+   "diff": 0.199
+  },
+  {
+   "card": "Demon Form",
+   "offered": 365,
+   "expert": 0.301,
+   "student": 0.504,
+   "diff": 0.203
+  },
+  {
+   "card": "Intimidate",
+   "offered": 471,
+   "expert": 0.202,
+   "student": 0.408,
+   "diff": 0.206
+  },
+  {
+   "card": "Spot Weakness",
+   "offered": 482,
+   "expert": 0.436,
+   "student": 0.662,
+   "diff": 0.226
+  },
+  {
+   "card": "Ghostly Armor",
+   "offered": 433,
+   "expert": 0.196,
+   "student": 0.425,
+   "diff": 0.229
+  },
+  {
+   "card": "Corruption",
+   "offered": 382,
+   "expert": 0.61,
+   "student": 0.846,
+   "diff": 0.236
+  },
+  {
+   "card": "Inflame",
+   "offered": 471,
+   "expert": 0.429,
+   "student": 0.669,
+   "diff": 0.24
+  },
+  {
+   "card": "Blood for Blood",
+   "offered": 504,
+   "expert": 0.157,
+   "student": 0.401,
+   "diff": 0.244
+  },
+  {
+   "card": "Shockwave",
+   "offered": 459,
+   "expert": 0.671,
+   "student": 0.952,
+   "diff": 0.281
+  },
+  {
+   "card": "Anger",
+   "offered": 1286,
+   "expert": 0.188,
+   "student": 0.479,
+   "diff": 0.291
+  },
+  {
+   "card": "Feed",
+   "offered": 363,
+   "expert": 0.471,
+   "student": 0.769,
+   "diff": 0.298
+  },
+  {
+   "card": "Uppercut",
+   "offered": 476,
+   "expert": 0.363,
+   "student": 0.666,
+   "diff": 0.303
+  },
+  {
+   "card": "Pommel Strike",
+   "offered": 1310,
+   "expert": 0.378,
+   "student": 0.692,
+   "diff": 0.314
+  },
+  {
+   "card": "Clothesline",
+   "offered": 1273,
+   "expert": 0.08,
+   "student": 0.419,
+   "diff": 0.339
+  },
+  {
+   "card": "Havoc",
+   "offered": 1305,
+   "expert": 0.064,
+   "student": 0.493,
+   "diff": 0.428
+  },
+  {
+   "card": "Reaper",
+   "offered": 347,
+   "expert": 0.519,
+   "student": 0.986,
+   "diff": 0.467
+  },
+  {
+   "card": "Metallicize",
+   "offered": 433,
+   "expert": 0.169,
+   "student": 0.737,
+   "diff": 0.568
+  }
+ ],
+ "card_disagree_pairs_expert_vs_student": [
+  [
+   "SKIP",
+   "Havoc",
+   288
+  ],
+  [
+   "SKIP",
+   "Clothesline",
+   236
+  ],
+  [
+   "SKIP",
+   "Anger",
+   206
+  ],
+  [
+   "SKIP",
+   "Pommel Strike",
+   203
+  ],
+  [
+   "SKIP",
+   "Twin Strike",
+   122
+  ],
+  [
+   "SKIP",
+   "Iron Wave",
+   106
+  ],
+  [
+   "SKIP",
+   "Metallicize",
+   103
+  ],
+  [
+   "True Grit",
+   "SKIP",
+   93
+  ],
+  [
+   "SKIP",
+   "Shrug It Off",
+   91
+  ],
+  [
+   "SKIP",
+   "Blood for Blood",
+   82
+  ],
+  [
+   "SKIP",
+   "Headbutt",
+   81
+  ],
+  [
+   "SKIP",
+   "Intimidate",
+   79
+  ],
+  [
+   "SKIP",
+   "Ghostly Armor",
+   68
+  ],
+  [
+   "SKIP",
+   "Inflame",
+   67
+  ],
+  [
+   "SKIP",
+   "Carnage",
+   67
+  ],
+  [
+   "SKIP",
+   "Body Slam",
+   66
+  ],
+  [
+   "SKIP",
+   "Spot Weakness",
+   66
+  ],
+  [
+   "SKIP",
+   "Uppercut",
+   59
+  ],
+  [
+   "SKIP",
+   "Seeing Red",
+   57
+  ],
+  [
+   "SKIP",
+   "Perfected Strike",
+   56
+  ],
+  [
+   "SKIP",
+   "Battle Trance",
+   56
+  ],
+  [
+   "SKIP",
+   "Thunderclap",
+   51
+  ],
+  [
+   "SKIP",
+   "Armaments",
+   45
+  ],
+  [
+   "SKIP",
+   "Flame Barrier",
+   45
+  ],
+  [
+   "SKIP",
+   "Infernal Blade",
+   45
+  ],
+  [
+   "SKIP",
+   "Pummel",
+   42
+  ],
+  [
+   "SKIP",
+   "Demon Form",
+   37
+  ],
+  [
+   "Heavy Blade",
+   "SKIP",
+   37
+  ],
+  [
+   "SKIP",
+   "Second Wind",
+   36
+  ],
+  [
+   "SKIP",
+   "Power Through",
+   32
+  ],
+  [
+   "SKIP",
+   "Clash",
+   32
+  ],
+  [
+   "SKIP",
+   "Reckless Charge",
+   32
+  ],
+  [
+   "Sentinel",
+   "SKIP",
+   30
+  ],
+  [
+   "Armaments",
+   "SKIP",
+   30
+  ],
+  [
+   "Whirlwind",
+   "SKIP",
+   29
+  ],
+  [
+   "SKIP",
+   "Corruption",
+   28
+  ],
+  [
+   "SKIP",
+   "Shockwave",
+   27
+  ],
+  [
+   "Evolve",
+   "SKIP",
+   27
+  ],
+  [
+   "Bloodletting",
+   "SKIP",
+   26
+  ],
+  [
+   "SKIP",
+   "Flex",
+   26
+  ]
+ ],
+ "rest_by_hp": {
+  "0-0.4": {
+   "n": 846,
+   "expert": {
+    "SMITH": 0.496,
+    "REST": 0.46,
+    "LIFT": 0.004,
+    "RECALL": 0.025,
+    "DIG": 0.007,
+    "PURGE": 0.008
+   },
+   "student": {
+    "REST": 0.939,
+    "SMITH": 0.054,
+    "RECALL": 0.005,
+    "PURGE": 0.002
+   }
+  },
+  "0.4-0.6": {
+   "n": 1170,
+   "expert": {
+    "SMITH": 0.794,
+    "PURGE": 0.012,
+    "RECALL": 0.045,
+    "LIFT": 0.018,
+    "REST": 0.129,
+    "DIG": 0.002
+   },
+   "student": {
+    "REST": 0.703,
+    "SMITH": 0.264,
+    "PURGE": 0.002,
+    "RECALL": 0.021,
+    "DIG": 0.005,
+    "LIFT": 0.005
+   }
+  },
+  "0.6-0.8": {
+   "n": 1260,
+   "expert": {
+    "SMITH": 0.813,
+    "RECALL": 0.083,
+    "LIFT": 0.021,
+    "REST": 0.048,
+    "PURGE": 0.021,
+    "DIG": 0.013
+   },
+   "student": {
+    "SMITH": 0.54,
+    "REST": 0.374,
+    "RECALL": 0.045,
+    "PURGE": 0.011,
+    "LIFT": 0.01,
+    "DIG": 0.02
+   }
+  },
+  "0.8-1.01": {
+   "n": 2068,
+   "expert": {
+    "PURGE": 0.028,
+    "RECALL": 0.176,
+    "SMITH": 0.706,
+    "REST": 0.039,
+    "DIG": 0.023,
+    "LIFT": 0.028
+   },
+   "student": {
+    "PURGE": 0.029,
+    "RECALL": 0.108,
+    "SMITH": 0.645,
+    "REST": 0.156,
+    "DIG": 0.036,
+    "LIFT": 0.026
+   }
+  }
+ },
+ "rest_confusion_expert_student": [
+  [
+   "SMITH",
+   "SMITH",
+   2154
+  ],
+  [
+   "SMITH",
+   "REST",
+   1579
+  ],
+  [
+   "REST",
+   "REST",
+   654
+  ],
+  [
+   "RECALL",
+   "RECALL",
+   271
+  ],
+  [
+   "RECALL",
+   "SMITH",
+   152
+  ],
+  [
+   "RECALL",
+   "REST",
+   92
+  ],
+  [
+   "DIG",
+   "DIG",
+   51
+  ],
+  [
+   "LIFT",
+   "LIFT",
+   46
+  ],
+  [
+   "PURGE",
+   "PURGE",
+   44
+  ],
+  [
+   "PURGE",
+   "REST",
+   34
+  ],
+  [
+   "LIFT",
+   "REST",
+   32
+  ],
+  [
+   "SMITH",
+   "DIG",
+   32
+  ],
+  [
+   "SMITH",
+   "RECALL",
+   32
+  ],
+  [
+   "SMITH",
+   "PURGE",
+   24
+  ],
+  [
+   "LIFT",
+   "SMITH",
+   24
+  ],
+  [
+   "PURGE",
+   "SMITH",
+   22
+  ],
+  [
+   "DIG",
+   "REST",
+   19
+  ],
+  [
+   "REST",
+   "SMITH",
+   17
+  ],
+  [
+   "SMITH",
+   "LIFT",
+   14
+  ],
+  [
+   "RECALL",
+   "DIG",
+   12
+  ],
+  [
+   "RECALL",
+   "PURGE",
+   8
+  ],
+  [
+   "RECALL",
+   "LIFT",
+   8
+  ],
+  [
+   "LIFT",
+   "DIG",
+   5
+  ],
+  [
+   "REST",
+   "RECALL",
+   4
+  ],
+  [
+   "PURGE",
+   "DIG",
+   4
+  ],
+  [
+   "REST",
+   "LIFT",
+   2
+  ],
+  [
+   "REST",
+   "DIG",
+   2
+  ],
+  [
+   "REST",
+   "PURGE",
+   2
+  ],
+  [
+   "DIG",
+   "LIFT",
+   1
+  ],
+  [
+   "PURGE",
+   "LIFT",
+   1
+  ],
+  [
+   "DIG",
+   "RECALL",
+   1
+  ],
+  [
+   "PURGE",
+   "RECALL",
+   1
+  ]
+ ],
+ "boss_relic_take": [
+  {
+   "relic": "Runic Pyramid",
+   "offered": 159,
+   "expert": 0.786,
+   "student": 0.113
+  },
+  {
+   "relic": "Empty Cage",
+   "offered": 163,
+   "expert": 0.331,
+   "student": 0.0
+  },
+  {
+   "relic": "Black Star",
+   "offered": 176,
+   "expert": 0.301,
+   "student": 0.062
+  },
+  {
+   "relic": "Astrolabe",
+   "offered": 164,
+   "expert": 0.378,
+   "student": 0.146
+  },
+  {
+   "relic": "Black Blood",
+   "offered": 127,
+   "expert": 0.126,
+   "student": 0.0
+  },
+  {
+   "relic": "Cursed Key",
+   "offered": 185,
+   "expert": 0.524,
+   "student": 0.411
+  },
+  {
+   "relic": "SacredBark",
+   "offered": 197,
+   "expert": 0.107,
+   "student": 0.0
+  },
+  {
+   "relic": "Velvet Choker",
+   "offered": 163,
+   "expert": 0.129,
+   "student": 0.031
+  },
+  {
+   "relic": "Busted Crown",
+   "offered": 149,
+   "expert": 0.121,
+   "student": 0.027
+  },
+  {
+   "relic": "Calling Bell",
+   "offered": 167,
+   "expert": 0.198,
+   "student": 0.126
+  },
+  {
+   "relic": "SlaversCollar",
+   "offered": 164,
+   "expert": 0.518,
+   "student": 0.47
+  },
+  {
+   "relic": "Tiny House",
+   "offered": 159,
+   "expert": 0.063,
+   "student": 0.019
+  },
+  {
+   "relic": "SKIP",
+   "offered": 1203,
+   "expert": 0.002,
+   "student": 0.0
+  },
+  {
+   "relic": "Runic Cube",
+   "offered": 175,
+   "expert": 0.24,
+   "student": 0.274
+  },
+  {
+   "relic": "Philosopher's Stone",
+   "offered": 169,
+   "expert": 0.349,
+   "student": 0.432
+  },
+  {
+   "relic": "Coffee Dripper",
+   "offered": 189,
+   "expert": 0.619,
+   "student": 0.735
+  },
+  {
+   "relic": "Sozu",
+   "offered": 151,
+   "expert": 0.172,
+   "student": 0.325
+  },
+  {
+   "relic": "Ectoplasm",
+   "offered": 94,
+   "expert": 0.128,
+   "student": 0.319
+  },
+  {
+   "relic": "Mark of Pain",
+   "offered": 185,
+   "expert": 0.216,
+   "student": 0.416
+  },
+  {
+   "relic": "Fusion Hammer",
+   "offered": 188,
+   "expert": 0.521,
+   "student": 0.771
+  },
+  {
+   "relic": "Runic Dome",
+   "offered": 156,
+   "expert": 0.333,
+   "student": 0.635
+  },
+  {
+   "relic": "Snecko Eye",
+   "offered": 155,
+   "expert": 0.529,
+   "student": 0.942
+  },
+  {
+   "relic": "Pandora's Box",
+   "offered": 173,
+   "expert": 0.451,
+   "student": 0.908
+  }
+ ],
+ "map_room_choice": {
+  "act1": {
+   "n": 4622,
+   "elite_offered": 1172,
+   "expert_elite": 836,
+   "student_elite": 810
+  },
+  "act2": {
+   "n": 3350,
+   "elite_offered": 930,
+   "expert_elite": 622,
+   "student_elite": 562
+  },
+  "act3": {
+   "n": 2543,
+   "elite_offered": 825,
+   "expert_elite": 669,
+   "student_elite": 676
+  }
+ },
+ "map_disagree_room_pairs_expert_vs_student": [
+  [
+   "M",
+   "M",
+   875
+  ],
+  [
+   "M",
+   "?",
+   575
+  ],
+  [
+   "?",
+   "M",
+   364
+  ],
+  [
+   "E",
+   "R",
+   143
+  ],
+  [
+   "R",
+   "E",
+   127
+  ],
+  [
+   "M",
+   "$",
+   106
+  ],
+  [
+   "T",
+   "T",
+   98
+  ],
+  [
+   "M",
+   "R",
+   97
+  ],
+  [
+   "E",
+   "M",
+   92
+  ],
+  [
+   "?",
+   "$",
+   92
+  ],
+  [
+   "E",
+   "?",
+   74
+  ],
+  [
+   "M",
+   "E",
+   71
+  ],
+  [
+   "$",
+   "M",
+   60
+  ],
+  [
+   "R",
+   "?",
+   52
+  ],
+  [
+   "?",
+   "R",
+   48
+  ],
+  [
+   "$",
+   "?",
+   39
+  ],
+  [
+   "?",
+   "E",
+   39
+  ],
+  [
+   "R",
+   "M",
+   26
+  ],
+  [
+   "E",
+   "$",
+   19
+  ],
+  [
+   "R",
+   "$",
+   16
+  ]
+ ],
+ "smith_targets": {
+  "expert": [
+   [
+    "True Grit",
+    229
+   ],
+   [
+    "Searing Blow",
+    224
+   ],
+   [
+    "Dark Embrace",
+    200
+   ],
+   [
+    "Armaments",
+    179
+   ],
+   [
+    "Feel No Pain",
+    162
+   ],
+   [
+    "Pommel Strike",
+    140
+   ],
+   [
+    "Inflame",
+    134
+   ],
+   [
+    "Corruption",
+    111
+   ],
+   [
+    "Uppercut",
+    105
+   ],
+   [
+    "Whirlwind",
+    103
+   ],
+   [
+    "Bash",
+    100
+   ],
+   [
+    "Disarm",
+    93
+   ],
+   [
+    "Flex",
+    92
+   ],
+   [
+    "Battle Trance",
+    90
+   ],
+   [
+    "Fiend Fire",
+    88
+   ]
+  ],
+  "student": [
+   [
+    "Pommel Strike",
+    633
+   ],
+   [
+    "Offering",
+    319
+   ],
+   [
+    "Armaments",
+    306
+   ],
+   [
+    "Inflame",
+    276
+   ],
+   [
+    "Uppercut",
+    258
+   ],
+   [
+    "Immolate",
+    136
+   ],
+   [
+    "Feel No Pain",
+    132
+   ],
+   [
+    "Demon Form",
+    129
+   ],
+   [
+    "Spot Weakness",
+    113
+   ],
+   [
+    "Shockwave",
+    111
+   ],
+   [
+    "Feed",
+    109
+   ],
+   [
+    "Flame Barrier",
+    106
+   ],
+   [
+    "Perfected Strike",
+    102
+   ],
+   [
+    "Twin Strike",
+    98
+   ],
+   [
+    "Bash",
+    96
+   ]
+  ]
+ },
+ "shop_remove_targets": {
+  "expert": [
+   [
+    "Strike_R",
+    936
+   ],
+   [
+    "Defend_R",
+    104
+   ],
+   [
+    "Bash",
+    59
+   ],
+   [
+    "Normality",
+    32
+   ],
+   [
+    "Doubt",
+    29
+   ],
+   [
+    "Regret",
+    25
+   ],
+   [
+    "Writhe",
+    21
+   ],
+   [
+    "Perfected Strike",
+    16
+   ],
+   [
+    "Anger",
+    16
+   ],
+   [
+    "Pain",
+    13
+   ],
+   [
+    "Decay",
+    10
+   ],
+   [
+    "Twin Strike",
+    9
+   ],
+   [
+    "Shame",
+    6
+   ],
+   [
+    "Hemokinesis",
+    6
+   ],
+   [
+    "Parasite",
+    6
+   ]
+  ],
+  "student": [
+   [
+    "Strike_R",
+    1005
+   ],
+   [
+    "Defend_R",
+    239
+   ],
+   [
+    "Immolate",
+    17
+   ],
+   [
+    "Heavy Blade",
+    14
+   ],
+   [
+    "Cleave",
+    13
+   ],
+   [
+    "Perfected Strike",
+    10
+   ],
+   [
+    "Combust",
+    9
+   ],
+   [
+    "Whirlwind",
+    8
+   ],
+   [
+    "Bash",
+    6
+   ],
+   [
+    "Entrench",
+    6
+   ],
+   [
+    "Berserk",
+    5
+   ],
+   [
+    "Hemokinesis",
+    3
+   ],
+   [
+    "Sword Boomerang",
+    2
+   ],
+   [
+    "Thunderclap",
+    2
+   ],
+   [
+    "Dual Wield",
+    2
+   ]
+  ]
+ }
+}
