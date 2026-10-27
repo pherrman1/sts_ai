@@ -24689,7 +24689,7 @@ higher-N or expectation-based price would be a new pre-registered stage (Philipp
 Seeds: none new; 111374100–111374227 (§683, used) replayed.
 **Knowledge impact:** none (research observer only, default off).
 
-## §TBD — Expert-anchored student_sel at A20 (experiment 7 of the 2026-10-26 research report): fine-tuning student_sel toward Baalorlord's card rewards, smith targets, removals and boss relics leaves Heart kills unchanged, −0.7 pp [−3.4, +2.0]; NOT_SHOWN (1,024 paired seeds, 2026-10-27)
+## §696 — Expert-anchored student_sel at A20 (experiment 7 of the 2026-10-26 research report): fine-tuning student_sel toward Baalorlord's card rewards, smith targets, removals and boss relics leaves Heart kills unchanged, −0.7 pp [−3.4, +2.0]; NOT_SHOWN (1,024 paired seeds, 2026-10-27)
 
 **Question:** student_sel agrees with an A20 expert (Baalorlord, 808 Ironclad runs rebuilt as heart1 records) on 50% of
 card rewards, 27% of smith targets and 50% of boss relics, and a GBM predicts his picks 13-23 pp better. Does a
