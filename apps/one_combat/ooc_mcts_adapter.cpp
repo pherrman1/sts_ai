@@ -2574,6 +2574,11 @@ std::string liveRootComparePath;
 // observeOocCampfirePrice.
 std::string liveCampfirePricePath;
 unsigned liveCampfirePriceN = 16;
+// STS_OOC_ROOT_PROBE=PATH, STS_OOC_ROOT_PROBE_INDICES=I,J,..., STS_OOC_ROOT_PROBE_DEEP=N (research, #882, default off):
+// see observeOocRootProbe.
+std::string liveRootProbePath;
+std::set<std::uint64_t> liveRootProbeIndices;
+std::uint64_t liveRootProbeDeep = 32768;
 // Search-architecture pilot (research, default mcts): STS_OOC_MCTS_SEARCH_MODE=mcts|particle|particle_beam picks the
 // planner of every searched (non-singleton) root; STS_OOC_MCTS_PARTICLES=P (default 64) and
 // STS_OOC_MCTS_BEAM=WIDTH:K:DEPTH (default 8:2:3) configure OocParticlePlanner. STS_OOC_MCTS_SEARCH_TRACE=PATH appends
@@ -3417,6 +3422,7 @@ void configureLiveOocMcts() {
     livePlaySampleFloor = -1; livePlaySampleTemperature = 1;
     liveGumbelRootActions = 0; liveGumbelRootScale = 1; liveGumbelQCap = 0; liveRootComparePath.clear();
     liveCampfirePricePath.clear(); liveCampfirePriceN = 16;
+    liveRootProbePath.clear(); liveRootProbeIndices.clear(); liveRootProbeDeep = 32768;
     // "A[:B]" with A and B finite; returns false on malformed text.
     const auto parsePair = [](const std::string &text, double &a, double &b) {
         const auto colon = text.find(':');
@@ -3482,6 +3488,35 @@ void configureLiveOocMcts() {
         }
     } else if (std::getenv("STS_OOC_CAMPFIRE_PRICE_N"))
         throw std::runtime_error("STS_OOC_CAMPFIRE_PRICE_N requires STS_OOC_CAMPFIRE_PRICE");
+    if (const char *probe = std::getenv("STS_OOC_ROOT_PROBE"); probe && *probe) {
+#ifdef STS_LIVE_ADVISOR
+        throw std::runtime_error("STS_OOC_ROOT_PROBE is unavailable in the live advisor");
+#endif
+        liveRootProbePath = probe;
+        if (!std::ofstream(liveRootProbePath, std::ios::app))
+            throw std::runtime_error("STS_OOC_ROOT_PROBE cannot open output");
+        const char *raw = std::getenv("STS_OOC_ROOT_PROBE_INDICES");
+        const std::string list = raw ? raw : "";
+        std::size_t at = 0;
+        while (at < list.size()) {
+            const auto comma = std::min(list.find(',', at), list.size());
+            const auto item = list.substr(at, comma - at);
+            if (item.empty() || item.size() > 6 || item.find_first_not_of("0123456789") != std::string::npos)
+                throw std::runtime_error("STS_OOC_ROOT_PROBE_INDICES must be a comma list of decision indices");
+            liveRootProbeIndices.insert(std::stoull(item));
+            at = comma + 1;
+        }
+        if (liveRootProbeIndices.empty())
+            throw std::runtime_error("STS_OOC_ROOT_PROBE requires STS_OOC_ROOT_PROBE_INDICES");
+        if (const char *deep = std::getenv("STS_OOC_ROOT_PROBE_DEEP")) {
+            const std::string value(deep);
+            if (value.empty() || value.size() > 7 || value.find_first_not_of("0123456789") != std::string::npos
+                    || std::stoull(value) < 1024 || std::stoull(value) > 262144)
+                throw std::runtime_error("STS_OOC_ROOT_PROBE_DEEP must be 1024..262144");
+            liveRootProbeDeep = std::stoull(value);
+        }
+    } else if (std::getenv("STS_OOC_ROOT_PROBE_INDICES") || std::getenv("STS_OOC_ROOT_PROBE_DEEP"))
+        throw std::runtime_error("STS_OOC_ROOT_PROBE_INDICES and _DEEP require STS_OOC_ROOT_PROBE");
     if (liveGumbelQCap > 0 && !liveGumbelRootActions && liveRootComparePath.empty())
         throw std::runtime_error("STS_OOC_MCTS_GUMBEL_QCAP requires STS_OOC_MCTS_GUMBEL_ROOT or STS_OOC_MCTS_ROOT_COMPARE");
     if (const char *sample = std::getenv("STS_OOC_MCTS_PLAY_SAMPLE")) {
@@ -5468,6 +5503,179 @@ void observeOocCampfirePrice(const GameContext &gc, const PathHistory &path, std
     std::ofstream out(liveCampfirePricePath, std::ios::app);
     if (!out || !(out << row.dump() << '\n')) throw std::runtime_error("STS_OOC_CAMPFIRE_PRICE write failed");
 #endif
+}
+bool rootProbeIndex(std::uint64_t index) {
+    return !liveRootProbePath.empty() && liveRootProbeIndices.count(index) > 0;
+}
+#ifndef STS_LIVE_ADVISOR
+namespace {
+// Public effect of a root step: what a candidate and the production decider can be matched on.
+std::string publicEffectFingerprint(const GameContext &g) {
+    std::ostringstream out;
+    out << int(g.screenState) << '|' << g.act << '|' << g.floorNum << '|' << g.curHp << '|' << g.maxHp << '|'
+        << g.gold << '|' << g.curMapNodeX << '|' << g.curMapNodeY << "|p";
+    for (const auto &p : g.potions) out << int(p) << ',';
+    out << "|r";
+    for (const auto &r : g.relics.relics) out << int(r.id) << ':' << r.data << ',';
+    out << "|d";
+    for (const auto &c : g.deck.cards) out << int(c.id) << ':' << int(c.upgraded) << ':' << c.misc << ',';
+    return out.str();
+}
+}
+#endif
+void observeOocRootProbe(const GameContext &gc, const PathHistory &path, std::uint64_t seed, std::uint64_t index,
+    const std::function<void(GameContext &)> &productionStep) {
+#ifdef STS_LIVE_ADVISOR
+    (void)gc; (void)path; (void)seed; (void)index; (void)productionStep;
+#else
+    if (!rootProbeIndex(index) || !liveEnabled || gc.outcome != sts::GameOutcome::UNDECIDED) return;
+    const auto searchSeed = oocMctsSearchSeed(seed, index);
+    nlohmann::json row = {{"schema", "ooc-root-probe-v1"}, {"seed", seed}, {"decisionIndex", index},
+        {"searchSeed", searchSeed}, {"ascension", gc.ascension}, {"act", gc.act}, {"floor", gc.floorNum},
+        {"screen", int(gc.screenState)}, {"selector", int(gc.info.selectScreenType)}, {"hp", gc.curHp},
+        {"maxHp", gc.maxHp}, {"gold", gc.gold}, {"deep", liveRootProbeDeep}};
+    try { row["snapshot"] = screen_leaf::snapshotJson(gc, path); }
+    catch (const std::exception &error) { row["snapshot"] = nullptr; row["snapshotError"] = error.what(); }
+    nlohmann::json record;
+    if (heart1::buildPublicLeafRecord(gc, record)) row["record"] = std::move(record);
+    const auto wallStart = std::chrono::steady_clock::now();
+    const auto plainOptions = [] {
+        auto options = liveOptions;
+        options.siblingCapture.reset();
+        options.leafObserver = {};
+        options.priorTracePath.clear();
+        return options;
+    };
+    // Every search runs in its own forked child on a fresh model, so none of them can change the run.
+    const auto search = [&](std::uint64_t sims, bool uniform) -> nlohmann::json {
+        const unsigned seconds = unsigned(120 + sims / 8);
+        try {
+            return forkLeafReplay([&] {
+                try {
+                    ImaginedScope scope;
+                    OocGameContextModel model(gc, path, liveSamplerFor(gc), plainOptions());
+                    if (model.terminalValue(0) || model.isLeafBoundary(0)) return nlohmann::json{{"error", "root_not_searchable"}};
+                    auto c = liveConfig;
+                    c.allowUnqualifiedRootStop = false; c.stopAt512VisitGap20 = false; c.gapStopFraction = 0;
+                    c.seed = searchSeed;
+                    if (uniform) {
+                        // As STS_OOC_MCTS_ROOT_COMPARE's reference: simulations split evenly over every root action.
+                        c.seed = splitMix64(searchSeed ^ 0x5245464552454e43ULL);   // "REFERENC"
+                        c.gumbelRootActions = 64; c.gumbelScale = 0; c.gumbelUniform = true;
+                        c.gumbelSeed = splitMix64(c.seed ^ 0x47554d42454c5254ULL);   // "GUMBELRT"
+                        c.rootNoiseFraction = 0;
+                    } else {
+                        // The production full-budget root (map roots at A20): same seed, noise and selection.
+                        if (liveRootNoiseFraction > 0) {
+                            c.rootNoiseFraction = liveRootNoiseFraction;
+                            c.rootNoiseAlpha = liveRootNoiseAlpha;
+                            c.rootNoiseSeed = splitMix64(c.seed ^ 0x524f4f544e4f4953ULL);   // "ROOTNOIS"
+                        }
+                        for (std::uint64_t cp = 128; cp < sims; cp *= 2) c.rootCheckpointSimulations.push_back(cp);
+                    }
+                    const double t0 = threadCpuSeconds();
+                    const auto r = sts::search::OocMctsPlanner(c).search(model, 0, sims);
+                    nlohmann::json actions = nlohmann::json::array();
+                    for (const auto &a : r.rootActions) actions.push_back({a.id, a.visits, a.q, a.pruned});
+                    nlohmann::json checkpoints = nlohmann::json::array();
+                    for (const auto &cp : r.rootCheckpoints) {
+                        nlohmann::json xs = nlohmann::json::array();
+                        for (const auto &a : cp.actions) xs.push_back({a.id, a.visits, a.q, a.pruned});
+                        checkpoints.push_back({{"simulations", cp.simulations}, {"actions", xs}});
+                    }
+                    return nlohmann::json{{"simulations", r.metrics.simulations}, {"aborted", r.aborted},
+                        {"abortReason", r.abortReason},
+                        {"selectedId", r.selectedAction ? nlohmann::json(*r.selectedAction) : nlohmann::json(nullptr)},
+                        {"actions", actions}, {"checkpoints", checkpoints}, {"maxDepth", r.metrics.maxDepthReached},
+                        {"cpuSeconds", threadCpuSeconds() - t0}};
+                } catch (const std::exception &e) { return nlohmann::json{{"error", e.what()}}; }
+            }, int(seconds) * 1000, int(seconds), std::size_t(1) << 24);
+        } catch (const std::exception &e) { return nlohmann::json{{"error", e.what()}}; }
+    };
+    try {
+        // Candidates and the public effect of each, then the production decider's effect (up to four chain steps,
+        // so a two-step smith matches its compound candidate).
+        row["candidates"] = forkLeafReplay([&] {
+            nlohmann::json out = nlohmann::json::array();
+            try {
+                std::vector<OocGameContextModel::Candidate> candidates;
+                {
+                    ImaginedScope scope;
+                    OocGameContextModel model(gc, path, liveSamplerFor(gc), plainOptions());
+                    if (model.terminalValue(0) || model.isLeafBoundary(0)) return out;
+                    for (const auto &a : model.legalActions(0)) {
+                        candidates.push_back(model.candidate(0, a.id));
+                        out.push_back({{"id", a.id}, {"key", candidates.back().key},
+                            {"label", candidateLabel(gc, candidates.back())}, {"prior", a.prior}});
+                    }
+                }
+                for (std::size_t i = 0; i < candidates.size(); ++i) {
+                    auto copy = detachedCopy(gc);
+                    std::string error;
+                    if (executeOocMctsRoot(copy, candidates[i], error)) {
+                        out[i]["effect"] = publicEffectFingerprint(copy);
+                        out[i]["exact"] = sts::test::oocStateFingerprint(copy);
+                    } else out[i]["effectError"] = error;
+                }
+            } catch (const std::exception &e) { return nlohmann::json{{"error", e.what()}}; }
+            return out;
+        }, 600000, 600, std::size_t(1) << 24);
+        row["production"] = forkLeafReplay([&] {
+            nlohmann::json out = nlohmann::json::object();
+            try {
+                std::set<std::string> effects, exacts;
+                for (const auto &c : row["candidates"]) {
+                    if (c.contains("effect")) effects.insert(c["effect"].get<std::string>());
+                    if (c.contains("exact")) exacts.insert(c["exact"].get<std::string>());
+                }
+                auto copy = detachedCopy(gc);
+                for (int step = 1; step <= 4; ++step) {
+                    productionStep(copy);
+                    const auto effect = publicEffectFingerprint(copy);
+                    out["steps"] = step;
+                    if (effects.count(effect)) {
+                        for (const auto &c : row["candidates"])
+                            if (c.value("effect", std::string()) == effect) out["keys"].push_back(c["key"]);
+                        out["exact"] = exacts.count(sts::test::oocStateFingerprint(copy)) > 0;
+                        break;
+                    }
+                    if (copy.outcome != sts::GameOutcome::UNDECIDED || copy.screenState == sts::ScreenState::BATTLE
+                            || copy.screenState == sts::ScreenState::MAP_SCREEN || copy.floorNum != gc.floorNum)
+                        break;
+                }
+                out["effect"] = publicEffectFingerprint(copy);
+            } catch (const std::exception &e) { out["error"] = e.what(); }
+            return out;
+        }, 900000, 900, std::size_t(1) << 24);
+    } catch (const std::exception &e) { row["candidateError"] = e.what(); }
+    row["puct"] = search(liveSimulations, false);
+    row["deep"] = search(liveRootProbeDeep, false);
+    row["uniform"] = search(8192, true);
+    row["wallSeconds"] = std::chrono::duration<double>(std::chrono::steady_clock::now() - wallStart).count();
+    std::lock_guard<std::mutex> lock(liveTraceMutex);
+    std::ofstream out(liveRootProbePath, std::ios::app);
+    if (!out || !(out << row.dump() << '\n')) throw std::runtime_error("STS_OOC_ROOT_PROBE write failed");
+#endif
+}
+bool executeOocRootKey(GameContext &gc, const PathHistory &path, const std::string &key, std::string &error) {
+    if (!liveEnabled) { error = "forced_key_requires_live_ooc_mcts"; return false; }
+    std::optional<OocGameContextModel::Candidate> found;
+    {
+        // Building the model scores priors; the thread's policy state must look as if it never happened.
+        const auto policy = captureOocPolicyThreadState();
+        ImaginedScope scope;
+        auto options = liveOptions;
+        options.siblingCapture.reset();
+        options.leafObserver = {};
+        options.priorTracePath.clear();
+        OocGameContextModel model(gc, path, liveSamplerFor(gc), std::move(options));
+        if (!model.terminalValue(0) && !model.isLeafBoundary(0))
+            for (const auto &a : model.legalActions(0))
+                if (model.candidate(0, a.id).key == key) { found = model.candidate(0, a.id); break; }
+        restoreOocPolicyThreadState(policy);
+    }
+    if (!found) { error = "forced_key_not_a_root_candidate"; return false; }
+    return executeOocMctsRoot(gc, *found, error);
 }
 bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t seed,
     std::uint64_t index, LiveOocMctsMetrics &metrics) {
