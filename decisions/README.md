@@ -28,6 +28,9 @@ the replacement.
 
 ## Current architecture ADRs
 
+- [ADR-0063](0063-flexible-heart-keys-default.md) makes flexible keys the default: Sapphire and Ruby follow the policy
+  (Act-3 treasure row and pre-boss campfire backstops), Emerald masks the Act-3 route (`STS_KEY_*=first` restores
+  ADR-0041's rules; adopted on §691, +6.05 pp Heart kills at A20).
 - [ADR-0062](0062-research-known-rng-act4replay-arm.md) adds a research-only known-RNG combat arm to `act4replay`
   (`STS_ACT4REPLAY_COMBAT=known`, P300's known-RNG Searcher2 search as `KnownRngSearcher`; rows carry
   `regime=known_rng`). It partly reverses ADR-0020 for that mode only; no play path can reach it.

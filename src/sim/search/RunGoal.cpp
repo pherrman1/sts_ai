@@ -9,7 +9,12 @@
 namespace sts::search {
 namespace {
 HeartKeyRules rulesFromEnv() {
+    // ADR-0063: unset keys follow the policy (Sapphire, Ruby) and mask the Act-3 route (Emerald); the three
+    // backstops stay. first restores the ADR-0041 rule for that key.
     HeartKeyRules rules;
+    rules.sapphire = HeartKeyRules::Sapphire::POLICY;
+    rules.ruby = HeartKeyRules::Ruby::POLICY;
+    rules.emerald = HeartKeyRules::Emerald::MASK;
     const auto value = [](const char *name) -> std::string {
         const char *v = std::getenv(name);
         return v ? v : "";
@@ -17,20 +22,19 @@ HeartKeyRules rulesFromEnv() {
     const auto bad = [](const char *name, const std::string &v) {
         throw std::runtime_error(std::string(name) + ": unsupported value '" + v + "'");
     };
-    if (const auto v = value("STS_KEY_SAPPHIRE"); v == "act3") rules.sapphire = HeartKeyRules::Sapphire::ACT3;
-    else if (v == "policy") rules.sapphire = HeartKeyRules::Sapphire::POLICY;
-    else if (!v.empty() && v != "first") bad("STS_KEY_SAPPHIRE", v);
-    if (const auto v = value("STS_KEY_RUBY"); v == "hp") rules.ruby = HeartKeyRules::Ruby::HP;
-    else if (v == "policy") rules.ruby = HeartKeyRules::Ruby::POLICY;
-    else if (!v.empty() && v != "first") bad("STS_KEY_RUBY", v);
+    if (const auto v = value("STS_KEY_SAPPHIRE"); v == "first") rules.sapphire = HeartKeyRules::Sapphire::FIRST;
+    else if (v == "act3") rules.sapphire = HeartKeyRules::Sapphire::ACT3;
+    else if (!v.empty() && v != "policy") bad("STS_KEY_SAPPHIRE", v);
+    if (const auto v = value("STS_KEY_RUBY"); v == "first") rules.ruby = HeartKeyRules::Ruby::FIRST;
+    else if (v == "hp") rules.ruby = HeartKeyRules::Ruby::HP;
+    else if (!v.empty() && v != "policy") bad("STS_KEY_RUBY", v);
     if (const auto v = value("STS_KEY_RUBY_MIN_HP"); !v.empty()) {
         char *end = nullptr;
         rules.rubyMinHp = std::strtod(v.c_str(), &end);
         if (end == v.c_str() || *end || !(rules.rubyMinHp >= 0 && rules.rubyMinHp <= 1)) bad("STS_KEY_RUBY_MIN_HP", v);
     }
-    if (const auto v = value("STS_KEY_EMERALD"); v == "mask") rules.emerald = HeartKeyRules::Emerald::MASK;
-    else if (v == "policy") rules.emerald = HeartKeyRules::Emerald::MASK;  // backstop kept
-    else if (!v.empty() && v != "first") bad("STS_KEY_EMERALD", v);
+    if (const auto v = value("STS_KEY_EMERALD"); v == "first") rules.emerald = HeartKeyRules::Emerald::FIRST;
+    else if (!v.empty() && v != "mask" && v != "policy") bad("STS_KEY_EMERALD", v);  // policy: alias of mask
     return rules;
 }
 
@@ -68,7 +72,7 @@ bool offersSapphireOnly(const GameContext &gc) {
 HeartKeyRules &heartKeyRules() {
     static HeartKeyRules rules = [] {
         const auto r = rulesFromEnv();
-        if (!r.isDefault())
+        if (!r.isAdr0041())
             std::fprintf(stderr, "heart_key_rules sapphire=%d ruby=%d ruby_min_hp=%.3f emerald=%d\n",
                          int(r.sapphire), int(r.ruby), r.rubyMinHp, int(r.emerald));
         return r;
@@ -133,7 +137,7 @@ bool heartRecallRequired(const GameContext &gc, bool collectKeys) {
 
 bool heartKeyActionAllowed(const GameContext &gc, bool collectKeys, const GameAction &action) {
     const auto &rules = heartKeyRules();
-    if (rules.isDefault() || !keysActive(gc, collectKeys)) return true;
+    if (rules.isAdr0041() || !keysActive(gc, collectKeys)) return true;
     if (rules.sapphire == HeartKeyRules::Sapphire::ACT3 && gc.act < 3 && offersSapphireOnly(gc))
         return action.getRewardsActionType() != GameAction::RewardsActionType::KEY;
     if (rules.emerald != HeartKeyRules::Emerald::MASK) return true;
