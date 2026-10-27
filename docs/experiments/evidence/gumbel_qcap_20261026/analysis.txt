@@ -1,0 +1,10 @@
+roots=48 runs=4
+method          !=prior agree ref regret*1e3
+prior             0.000     0.438      11.34
+puct4096          0.021     0.438      11.85
+sh16@2048         0.667     0.708       4.03
+sh16@2048cap      0.104     0.417      12.29
+regret sh16@2048cap - sh16@2048: +8.26e-3 [+4.45, +12.52]
+regret sh16@2048cap - puct4096: +0.44e-3 [-1.14, +2.08]
+regret sh16@2048 - puct4096: -7.82e-3 [-11.61, -4.28]
+roots with top prior >= .9: 29; left prior argmax: puct4096 0, sh16@2048 20, sh16@2048cap 0

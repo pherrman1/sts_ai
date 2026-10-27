@@ -861,6 +861,52 @@ void tests() {
         for (const auto &a : OocMctsPlanner(gumbel).search(u, 0, 64).rootActions)
             require(a.visits == 8, "uniform Gumbel reference splits the budget evenly");
     }
+    {
+        // Muesli-style Q cap. The uncapped mctx term turns any positive gap into (50 + max N) logits and
+        // overrules a .99 prior (4.6 logits); a cap of 1 bounds the Q shift to 1 logit each way.
+        const auto fixed = [] {
+            Toy t;
+            t.actions[0] = {{0, .99}, {1, .01}};
+            t.terminals = {{1, .50}, {2, .51}};
+            t.transition = [](auto, auto a, auto &) { return OocStateId(a + 1); };
+            return t;
+        };
+        // Coin flips: action 0 is worth .5, action 1 .5 + gap / 2.
+        const auto coins = [](double gap) {
+            Toy t;
+            t.actions[0] = {{0, .99}, {1, .01}};
+            t.transition = [](auto, auto a, auto &r) {
+                return OocStateId(10 * (a + 1) + std::uniform_int_distribution<int>(0, 1)(r));
+            };
+            t.terminals = {{10, 0}, {11, 1}, {20, gap}, {21, 1}};
+            return t;
+        };
+        OocMctsConfig gumbel;
+        gumbel.gumbelRootActions = 2;
+        gumbel.gumbelScale = 0;
+        auto a = fixed();
+        require(OocMctsPlanner(gumbel).search(a, 0, 256).selectedAction == OocActionId(1),
+            "uncapped Gumbel Q overrules a .99 prior on a .01 gap");
+        gumbel.gumbelQCap = 1;
+        auto b = fixed();
+        require(OocMctsPlanner(gumbel).search(b, 0, 256).selectedAction == OocActionId(0),
+            "capped Gumbel Q keeps a .99 prior on a .01 gap");
+        for (std::uint64_t seed = 0; seed < 8; ++seed) {
+            gumbel.seed = seed;
+            auto n = coins(.02);
+            require(OocMctsPlanner(gumbel).search(n, 0, 256).selectedAction == OocActionId(0),
+                "capped Gumbel Q keeps a .99 prior against coin-flip noise");
+        }
+        // A prior ratio inside exp(2 * cap) is still overruled by a gap many standard errors wide.
+        auto c = coins(.9);
+        c.actions[0] = {{0, .6}, {1, .4}};
+        require(OocMctsPlanner(gumbel).search(c, 0, 256).selectedAction == OocActionId(1),
+            "capped Gumbel Q overrules a weak prior on a clear gap");
+        gumbel.gumbelQCap = -1;
+        bool rejected = false;
+        try { OocMctsPlanner bad(gumbel); } catch (const std::invalid_argument &) { rejected = true; }
+        require(rejected, "negative Gumbel Q cap is rejected");
+    }
 }
 }
 int main() {
