@@ -9,7 +9,7 @@ cheapest experiment that separates the leading explanations.
 
 | layer | artifact | trained on | source |
 |---|---|---|---|
-| base net (fast `pathb-a20` DeepSets + Lizard composition) | `ae785ec2…` (§470 boss shift −0.183 in the manifest) | §443 Stage 1 corpus: 609,883 rows (TRAIN 486,628 / VAL 59,685 / TEST 63,570, source-seed hash split) from 31,995 seeds of `combattransitiongen 10000 20` with the **2026-10-12 deployed-V4 OOC policy** and that day's Silver; Stage 2 on Philipp's RTX 3060 Ti | §443, §470; data branch `claude/ctm-a20-data` |
+| base net (fast `pathb-a20` DeepSets + Lizard composition) | `ae785ec2…` (§470 boss shift −0.183 in the manifest) | §443 Stage 1 corpus: 609,883 rows (TRAIN 486,628 / VAL 59,685 / TEST 63,570, source-seed hash split) from 31,995 seeds of `combattransitiongen 10000 20` with the **2026-10-12 deployed-V4 OOC policy** and that day's Silver; Stage 2 on Philipp's RTX 3060 Ti | §443, §458 (Lizard step), §470; data branch `claude/ctm-a20-data` |
 | HP head fine-tune (A20 default, ADR-0059) | `ctm_finetune_hp_pathb_a20_v1.native` `bdbfafa6…`, manifest `31bb21f7…` | 97,561 real fights of the stage-3 A/B (§661, 1,024 seeds × 4 arms) + 25% of each batch from 112,906 Stage-1 rows; HP head only, CPU minutes (`tools/ctm_finetune.py`) | §672, §679 |
 | per-fight calibration (A20 default, ADR-0058/0059) | `ctm_calibration_pathb_a20_ft_hp_v1.json` `8c226f23…` (34 groups: death-logit shift + won-fight HP scale) | the same 97,561 fights | §670, §672 |
 | Act-4 survival model (A20 default, ADR-0048) | `models/candidates/ctm_act4_survival_trees.txt` | student-C era Act-4 fights | §527, §534 |
@@ -47,10 +47,11 @@ Silver flags (learned stop `gbt-0cac7cc64364`, exact root budgets, g7f_E root pr
 | Gumbel Q cap (§693) | `9a37d780` | yes | 512 | A 12,000 · B 11,785 | 23,785 |
 | expert-anchored student (§696) | `f526cef9` | yes | 1,025 | A 23,632 · B 23,780 | 47,412 |
 | card rule (#874, still running) | `4eb0b3c5` | yes | 230 so far | A 5,218 · B 5,084 · C 4,824 · D 5,262 | 20,388 so far |
-| expert replay (2026-10-27) | `e65f2293` | yes | 331 | **none: `expertreplay` does not write CTM rows** | 0 |
+| expert replay (2026-10-27) | `e65f2293` | yes | 331 tars (329 pre-registered seeds; the 2 extra tars not checked) | **none: `expertreplay` does not write CTM rows** | 0 |
 
-About **116k post-#852 rows** (137k with the card-rule rows so far) and **199k pre-#852 rows**: roughly 3.4× the
-data §672 fine-tuned on, all from today's or near-today's Silver. That is enough for a 4-point nested learning curve
+About **116k post-#852 rows** (137k with the card-rule rows so far) and **199k pre-#852 rows**, all from today's or
+near-today's Silver. The training pool defined in §4 (all of it minus the test sets, with Act-4 rows only after #852)
+is about 270–290k rows, roughly 3× the 97,561 fights §672 fine-tuned on. That is enough for a 4-point nested learning curve
 without one new game. The value-level count is §670's; the others were counted here.
 
 Act-4 combat changed with ADR-0060 (#852, Act 4 strong): campaigns whose code predates #852 have the older Heart and
@@ -93,8 +94,10 @@ points to them, and each needs Philipp's typed go, a frozen seed block and a wor
   deployed recipe; (b) **survival encoder + head** (lr 3e-4, ≤ 12 epochs) — the part that still carries old-policy
   survival. Each fit followed by a refit of the per-fight table on its own training rows
   (`tools/ctm_calibration.py fit`), as the deployed pipeline does. Architecture, features and encoding untouched.
-- **Training pool:** post-#852 campaigns except the test sets, plus the §661 stage-3 rows (pre-#852; non-Act-4 rows
-  only). Split by source seed (all arms of a seed together); nested fractions **12.5 / 25 / 50 / 100%** of the
+- **Training pool:** post-#852 campaigns (key rules, Q cap, expert-anchored) minus the T2 held-out seeds, plus the
+  pre-#852 campaigns (§661 value-level, §676 guard, §683 map-only) with their Act-4 rows dropped (older Act-4 combat
+  policy); the LC games (§663) stay an extra held-out set, as in §670/§672. Code SHA is a recorded covariate (engine
+  fixes landed between campaigns). Split by source seed (all arms of a seed together); nested fractions **12.5 / 25 / 50 / 100%** of the
   training seeds, each with 3 fit seeds (fraction × variant × fit seed = 24 fits). Epochs chosen on ~10% inner
   validation seeds only, as §672.
 - **Also scored at every fraction (capacity control):** the table alone on the raw §470 net (34 parameters; it should
@@ -107,7 +110,10 @@ points to them, and each needs Philipp's typed go, a frozen seed block and a wor
   ranking reversals vs the repeated-outcome reference). Scored by the C++ runtime (`one_combat ctmscorerows`)
   through research manifests, as §672. 95% source-seed bootstrap (2,000 reps), paired across fractions.
 - **Decision rule:**
-  - **Data scarcity supported** if 50% → 100% improves T1 death log loss or HP MAE with a paired CI excluding 0
+  - **Primary comparison, fixed before the run from #884's finding:** if #884's error is in deaths/wins, the
+    survival variant on death log loss; if it is in HP, the HP-head variant on won-fight HP MAE. The other variant
+    and metric are secondary (Holm-adjusted), so the 2×2 does not multiply the chances of a false positive.
+  - **Data scarcity supported** if 50% → 100% improves the primary metric on T1 with a paired CI excluding 0
     **and** #884's decision metric on T3 does not get worse. Then the cheap remedy is to keep pooling the CTM rows
     that every A/B already writes (~45k fights per 1,024-seed A/B) and refit periodically — not a dedicated
     collection campaign. Promotion would still need its own pre-registered precision gate (never NLL alone).
@@ -120,7 +126,7 @@ points to them, and each needs Philipp's typed go, a frozen seed block and a wor
 
 ## 5. Cost (estimate, CPU only)
 
-- Extract and encode ~330k rows from the unit tars into scratch (not onto the share: 50,000-file limit): ~1 h.
+- Extract and encode the ~300k pool and test rows from the unit tars into scratch (not onto the share: 50,000-file limit): ~1 h.
 - 24 fine-tunes at minutes each on 4 CPUs (§672: "4 CPUs in minutes" at 97k rows): ~2–3 h.
 - Export + `ctmscorerows` of each candidate on T1–T3 (~60k rows each): ~1 h.
 - Total about **5 h of one cloud container**, no GPU, no new gameplay seeds. A GPU retrain of the full Stage-2 chain
