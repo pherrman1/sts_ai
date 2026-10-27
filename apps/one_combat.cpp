@@ -3810,6 +3810,8 @@ int main(int argc, char **argv) {
 
     } else if (mode == "heartoutcomeselftest") {
         return one_combat::heartOutcomeSelfTest();
+    } else if (mode == "forcebossrelicselftest") {
+        return forcedBossRelicSelfTest();
     } else if (mode == "heart1recordselftest") {
         one_combat::heart1::publicRecordInvarianceSelfTest();
         std::cout << "heart1 public record invariance selftest: ok\n";
