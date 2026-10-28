@@ -24461,6 +24461,25 @@ rule the full-rollout label line stops. Inference: a route-aware head is the nex
 consumed.
 Seeds: none (existing games only).
 **Knowledge impact:** none beyond this entry; no code or default change.
+## §689 — Gumbel root Q cap (Muesli-style, `STS_OOC_MCTS_GUMBEL_QCAP`): keeps strong priors on real roots, behaves like PUCT on the leaf-Q reference; offline root replay, no play claim (4 games, 48 full roots, 2026-10-26)
+
+**Question (deep-research report, 2026-10-26, point 3 and experiment 9):** was §635 a test of argmax of noisy Q?
+`gumbelSigma` scores (50 + max N) · 1.0 · min-max-normalised Q (mctx's default scale is 0.1); with two survivors
+min-max maps any gap to {0, 1}, i.e. 50 + N logits against ≈ 4.6 for a 0.99 prior. Verified in the code; the §635
+PREREG had named it as the main risk.
+**Change (#869, default off, byte-identical when off):** `STS_OOC_MCTS_GUMBEL_QCAP=c` replaces the term by
+clip((Q − V)/SE, −c, c), V the visit-weighted root Q, SE the action's standard error, so Q moves an action at most
+c logits from g + log prior. ROOT_COMPARE gains a capped `16@2048cap` row on the uncapped row's seed.
+**Replay:** §635 arm-A config on current main defaults + `STS_OOC_MCTS_SCREENS=all`, ROOT_COMPARE with c = 1, play
+unchanged. Seeds 111305000–003 (1 Heart kill), 48 full roots. vs the 8192-sim uniform reference (same leaf):
+uncapped SH leaves the prior argmax on 66.7% of roots (agree 0.708, regret 4.03e-3), capped 10.4% (0.417, 12.29e-3),
+PUCT 4096 2.1% (0.438, 11.85e-3). Capped − PUCT regret +0.44e-3 [−1.14, +2.08]. At top prior ≥ 0.9 (29 roots):
+uncapped overrules 20, capped 0, PUCT 0. Capped CPU 22 s/root, about half of PUCT 4096.
+**Interpretation:** the mechanism holds on real roots and the cap removes it. Agreement with the leaf-Q reference
+is not a play gate (§619 → §635), so this shows only that capped SH@2048 ≈ PUCT@4096 at half the full-root CPU.
+Guessed play effect (no evidence) 0 to +1 pp; a paired A/B needs Philipp's go. c = 1 untuned; small sample.
+[Result](evidence/gumbel_qcap_20261026/RESULT.md). Seeds 111305000–003 used.
+**Knowledge impact:** `operations/environment-variables.md` (`STS_OOC_MCTS_GUMBEL_QCAP`).
 
 ## §686 — Elite routes at map roots (experiment 4 of the 2026-10-26 research report): no elite deficit; the bot already takes elite-heavier children 82–88% at HP ≥ 60%, and same-seed first-divergence pairs show +1.6 pp kills [−1.2, +4.4] for the elite-heavier child; HP-gated elite tilt STOP before any run (offline, 8,192 games, 2026-10-26)
 
@@ -24550,3 +24569,303 @@ the policy prior, and the search (about 1 floor of tree plus rollout3) does not 
 X2-B as a card evaluator (D−C), which matches its larger card spread in the single-seed diagnostics.
 **Inference:** card-reward improvement has to come through the prior (training targets) or through a value head
 that has been shown to rank post-pick states against outcomes, not through search over today's leaves.
+## §697 — Fight-luck control variates for paired A/Bs: a CTM-only baseline is biased (shifts up to 3.2 pp); fresh fight replays are unbiased and project 0.71x paired SD (~2x seeds) at m = 4; new `one_combat fightreplay` reproduces 415/415 recorded fights; offline, no seeds (2026-10-26)
+
+**Question:** experiment 6 of the 2026-10-26 deep-research report (thread "Shrink A/B variance with AIVAT"): how much
+paired-A/B variance can AIVAT-style corrections at fights remove, and what keeps them unbiased?
+**Data:** [RESULT](evidence/aivat_fight_replay_20261026/RESULT.md). The unit tars of §676 (512 × 2), §661 (1,024 × 4)
+and §683 (1,024 × 3), six paired comparisons; V = P(Heart kill | post-fight state) GBM cross-fitted by campaign.
+**Result:** raw paired SD 0.39-0.44 (unpaired ~0.60). With the default A20 CTM as the expected-outcome baseline, all
+fights corrected: SD 0.62x [0.56, 0.66], but the point estimates move -2.0 to +3.2 pp and two shifts exclude 0
+(§661 S-A -1.37 -> +1.39; §683 D-OFF 0.00 -> +3.18 [+1.43, +4.95]): biased. Unbiased version (m fresh replays per
+fight, beta optimal), projected from the CTM's conditional variance: all fights 0.85/0.78/0.71/0.66x at m = 1/2/4/8,
+bosses + Act 4 0.73x and the Heart alone 0.80x at m = 4. Fight HP/death luck is ~60-65% of the paired variance.
+New `one_combat fightreplay` (replicate 0 = identity gate) + `tools/fight_replay_rows.py` + `tools/aivat_estimate.py`:
+415 of 415 recorded §676 fights (18 runs) reproduced exactly on main with the campaign's env
+(`STS_SILVER_ACT4_STRONG=0`); real combat costs ~86 CPU-s per run under that config, ~70% in bosses.
+**Interpretation:** a model-only luck baseline can manufacture a significant result and must not be a primary
+metric; fight replays buy about 2x effective seeds (1,024-seed detectable effect ~3.6 -> ~2.6 pp), not enough
+alone for 1 pp. Next: post-hoc replay of the §676 guard (m = 4, all fights) to measure the projected 0.71x, which
+needs Philipp's authorization and worker count.
+Seeds: none (existing games only; replays draw battle seeds from a SEED_BASE hash, not from the 111 blocks).
+**Knowledge impact:** new research-only mode and tools; no default or play change.
+
+## §698 — AIVAT fight-replay pilot on the §676 guard: valid (23,503/23,503 identity, no fight-class bias) but paired SD only 0.80x (projected 0.71x; pre-registered "weaker", no recommendation); the Heart gives almost all of it (2026-10-27)
+
+**Question:** does subtracting fight luck measured by fresh fight replays shrink a real A20 A/B's paired SD as the
+offline projection (previous entry) says? Authorized by Philipp 2026-10-26 23:13Z ("go on 4 workers").
+**Data:** [PREREG](evidence/aivat_replay_676_20261026/PREREG.md), [RESULT](evidence/aivat_replay_676_20261026/RESULT.md).
+The 512 §676 seeds x A, C post hoc: every non-event fight replayed (`one_combat fightreplay`, run commit `d147c389`),
+replicate 0 = identity, m = 4 fresh (CRN across arms), V `8efcc81f` (§661 + §683), beta 0.8; 173 CPU-h, 4 workers.
+**Result:** identity 23,503 of 23,503 exact, no seed excluded; fight-level bias CIs contain 0 in every class (act-1/2/3
+boss HP -0.53/+0.42/-0.61, Heart -0.40). C - A raw +2.15 pp [-1.17, +5.66] SD 0.393; corrected +3.39 [+0.64, +6.16]
+SD 0.316; shift +1.25 [-1.41, +3.90]. **SD ratio 0.804** (1.55x effective seeds). Post hoc: Heart only 0.817, bosses
++ Heart 0.844; in-sample best beta 0.64 -> 0.788.
+**Interpretation:** the method is unbiased in practice but the earlier fights add almost nothing beyond the Heart;
+the offline projection overrated how much a post-fight value model captures the kill. Pre-registered band
+0.80-0.90: report, no recommendation. The corrected CI excluding 0 is not a finding (the raw §676 verdict stands).
+Seeds: none (existing games; replay battle seeds from SEED_BASE 676000001).
+**Knowledge impact:** fight-replay correction is not worth its cost as a standard A/B metric; a Heart-only version
+(~1.5x seeds) remains an option only where Heart compute is cheap.
+## §693 — Gumbel root with the Muesli-style Q cap at A20 map roots, paired A/B (512 seeds): NOT_SHOWN, Heart kills 25.2% vs 27.7%, reached Act 4 −4.7 pp (2026-10-27)
+
+**Question (Philipp, 2026-10-26 22:57Z "lets go with 16 workers after the boss relic thing is done"):** does §689's
+cap turn the Gumbel root into a play gain? [PREREG](evidence/gumbel_qcap_ab_20261026/PREREG.md), pre-launch review
+PASS (J). A = today's A20 default (map roots only, PUCT 4096). B = A + `STS_OOC_MCTS_GUMBEL_ROOT=16
+STS_OOC_MCTS_GUMBEL_QCAP=1 STS_OOC_MCTS_FULL_ROOT_SIMS=2048`. RUN_COMMIT `b49bbd33` (code `9a37d780`, v3 binary
+`7bb54d7e…`), 16 workers, seeds 111381000–511.
+**Result: NOT_SHOWN.** 512 valid pairs. Heart kills B 129 (25.2%) vs A 142 (27.7%), −2.5 pp [−6.7, +1.6], McNemar
+p = 0.27. Reached Act 4 −4.7 pp [−8.9, −0.5], p = 0.035. Wall 0.62×. Played ≠ prior argmax 12.9% vs 6.5% of
+searched (map) roots.
+**Interpretation:** Inference (cross-campaign): the cap removes §635's collapse (−11.4 pp), so the uncapped σ term
+caused most of it. Inference (rests on the p = 0.035 secondary): the remaining overrides still lean the wrong way
+(Act-4 reach), so the leaf does not beat student_sel at map roots even within ±1 logit. The 0.62× wall holds in
+matched subsets (both arms reach Act 4: 0.72×; neither: 0.53×). No default change; the flags stay research options. Separating Gumbel sampling noise from
+the Q term (scale 0) would be a new question.
+[Result](evidence/gumbel_qcap_ab_20261026/RESULT.md), [result.json](evidence/gumbel_qcap_ab_20261026/result.json).
+Raw: `/mnt/project-files/gumbel-qcap-ab/units/`. Seeds 111381000–511 and smokes 111383990–991 used.
+**Knowledge impact:** none beyond this entry.
+
+## §690 — Boss-relic forks with real combats, Stage A: relic choice moves Heart kills a lot (τ ≈ 11 pp, reproducible; futility CONTINUE), but student_sel already picks the table's best relic at 74% of roots and a context-free table override loses (Heart −2.7 pp [−6.6, +1.2], Act 4 −5.5 pp [−9.4, −2.0] per source, descriptive); STOP before Stage B by Philipp's call (256 sources, 1,429 games, 2026-10-26)
+
+**Question:** issue #856 (experiment 3 of the post-#853 OOC direction review). At act-1/act-2 boss-relic roots of real
+A20 default games, if every option (three relics, skip) is played to the end with the production stack and the same run
+seed, does a per-relic table fitted on these forks pick better than student_sel's production pick?
+**Setup:** [PREREG](evidence/boss_relic_forks_20261025/PREREG.md). New research option `STS_OOC_FORCE_BOSS_RELIC=ACT:CHOICE`
+(default off): a fork replays the source seed with today's A20 stack (map-only OOC search ADR-0061, Act 4 strong
+ADR-0060) up to the root, takes the forced option, and plays on; `forks.py check` requires the fork's OOC decision trace to
+equal the source's row for row before the root. Plan sized by Philipp to 1,024 sources with a futility stop after 256
+(decision card 2026-10-25 09:48Z); Stage A go with 32 workers 09:49Z. Smoke PASS (rerun byte-identical); pre-launch and
+delta review PASS. Run commit `9ec4944c`, code `eb94f4e`, binary `e57de384…`; 32 cloud workers, interrupted at 217/256 by
+a usage limit (2026-10-25 14:42Z) and resumed 2026-10-26.
+**Result:** [RESULT-stage-a.md](evidence/boss_relic_forks_20261025/RESULT-stage-a.md). 256/256 units verified, 1,429
+games all rc 0, every fork valid; 391 roots (225 act 1, 166 act 2); 219.7 core-h. Heart kill at the roots: production
+pick 38.9%, untaken options 19.4%, skip 12.8% (Act 4 57.3 / 36.0 / 27.6%). Option CRN correlation 0.36. Relic spread
+τ̂ = 0.106 (Heart), 0.112 (Act 4); projected split-half r of the 1,024 design 0.885 → **futility CONTINUE**. Top relics
+against skip: Snecko Eye +45 pp, Pandora's Box +42, Coffee Dripper +30; bottom Black Blood +2, Velvet Choker +2,
+Ectoplasm +4 (SE ≈ 5-6). Descriptive, not the gate: the Stage B cross-fitted override computed on Stage A fires at 21% of
+roots and loses (Heart −2.7 pp [−6.6, +1.2], Act 4 −5.5 pp [−9.4, −2.0] per source); the production pick is the table's
+best option at 289/391 roots.
+**Interpretation:** boss relics matter far more than single cards (§684, τ = 0), and same-seed real-combat forks measure
+them reproducibly. **Inference:** student_sel's boss-relic choice is close to the best a context-free table can do, and
+where it departs from the table it is usually right (context: deck, HP). The per-relic table is not a teacher here.
+**Decision:** Philipp (2026-10-26 23:34Z, decision card): stop before Stage B; boss relics stay with student_sel. The
+forks remain as an unbiased referee set (unit tars on `/mnt/project-files/boss-relic-forks/stage-a`).
+Seeds: 111378000–111378255 used, smokes 111379980–111379984 used; 111378256–111379023 and 111379985–111379989 unused.
+**Knowledge impact:** `operations/environment-variables.md` (research option `STS_OOC_FORCE_BOSS_RELIC`).
+
+## §692 — P300 clairvoyance 2x2 (Heart stage values, fair vs known-RNG combat x natural vs full HP): P300's top-5 cards beat its bottom-5 by D = +6.0 pp [+3.8, +8.3] under fair Silver at natural HP; known RNG does not inflate D (natural-HP contrast −1.9 pp [−4.6, +0.7]), and D is lowest in P300's own regime (+2.7 at an 86% base; vs fair natural −3.3 [−6.0, −0.6]); readings R1c + R4 (96 decks x 12 fixed variants x 4 cells, 18,112 fights, 2026-10-27)
+
+**Question:** experiment 10 of the deep-research report. P300 (destire-mio/sts-ironclad-agent, D4) values Feel No Pain,
+Demon Form, Impervious, Corruption and Barricade at +10 to +14 pp at the Heart with a known-RNG search at full HP; §684
+measured these cards near 0 with fair Silver at natural HP. Is the gap clairvoyance, entry HP, or a non-replication?
+**Setup:** [PREREG](evidence/p300_clairvoyance_20261026/PREREG.md). New research arm `STS_ACT4REPLAY_COMBAT=known`
+(ADR-0062, #870): P300's known-RNG search (gamerpuppy Searcher2 + P300's sim_patch chain) at 8,000 x 3. Calibration
+(Philipp's go 2026-10-26): K-full base 85.7% (329/384) vs P300's 68% on its decks. 2x2: {fair Silver P10k (arm P of
+§684), known RNG} x {natural entry HP, full HP} on the §684 Stage A decks 0–95, 12 fixed variants (base, P300's top 5
+and bottom 5 adds, rm:Strike on 76 decks), 4 CRN copies shared by every variant and cell. Primary D = mean top-5 add
+effect minus mean bottom-5 add effect per cell; deck bootstrap. Philipp authorized the run with 2 workers (2026-10-26
+22:31Z); pre-launch review PASS. Run commit `cd34ba1f`, code `4e3783bf`, binary `2750c38d…`.
+**Result:** [RESULT.md](evidence/p300_clairvoyance_20261026/RESULT.md). 384/384 units verified, 18,112 fights, 0
+invalid, 34.8 core-h. D: Fnat +6.0 [+3.8, +8.3] (base 51.6%), Ffull +5.2 [+2.9, +7.6] (61.7%), Knat +4.1 [+2.3, +6.0]
+(73.4%), Kfull +2.7 [+1.2, +4.4] (85.7%). Clairvoyance C = −2.2 [−4.4, 0.0], full HP H = −1.1 [−2.2, +0.1], C x H
+−0.6. Fair natural HP single adds: Corruption +10.9, Feel No Pain +8.1, Barricade +6.8, Impervious +4.9, Demon Form
++4.7; Whirlwind −1.3 (each about ±4.5, plus a common base error of about 2.5 pp). Pre-registered readings: **R1c**
+(the Kfull ceiling compresses the effect; not a non-replication; its natural-HP clairvoyance contrast D(Knat) − D(Fnat) =
+−1.9 [−4.6, +0.7]) and **R4** (D(Fnat) ≥ 4). D(Kfull) − D(Fnat) = −3.3 [−6.0, −0.6].
+**Interpretation:** P300's ranking of these Heart cards holds in fair play on our engine and decks; clairvoyance does
+not inflate it (point estimate lower, CI includes 0), and P300's own regime shows the smallest gap. **Inference:** §684's
+"Impervious 0.0 / top-5 pooled +0.3" was noise from about 20 random decks per key. P300's absolute magnitudes do not transfer, because per-card effects depend on the base win. **Inference:** a
+fixed-key fair Heart table would carry signal for the strongest power/defence keys; whether it improves on student_sel's
+card picks is a separate question and not decided here.
+Seeds: 111304600–111304983 used (calibration and every 2x2 cell); smokes 111305990–111305997 used.
+**Knowledge impact:** ADR-0062 (research-only known-RNG arm); no default change.
+## §691 — Key rules at A20 (experiment 1 of the 2026-10-26 research report): flexible keys beat main's rigid ADR-0041 rules by +6.1 pp Heart kills [+3.4, +8.6] with student_sel alone; KEYS_EXPLAIN (1,024 paired seeds, 2026-10-27)
+
+**Question:** §566 (rigid keys, 17.6%) and §569 (flexible keys, 25.8% search / 23.4% student_sel) differ in key rules,
+combat stack, fix flags and code. Main still defaults to the rigid rules (`RunGoal.cpp`); every campaign since §569
+sets `STS_KEY_SAPPHIRE=policy STS_KEY_RUBY=policy STS_KEY_EMERALD=mask`; the key rules were never A/B tested. How much
+do they add on today's stack? Philipp's go 2026-10-26 22:16Z ("okay lets go on 16 workers").
+**Setup:** [PREREG](evidence/key_rules_ab_20261026/PREREG.md), pre-launch review PASS (reviewer G). Arms R (no
+`STS_KEY_*`) and F (the three flexible flags), otherwise the §683 OFF arm on main `db216ff0` (student_sel alone,
+`STS_OOC_MCTS_SCREENS=none`, learned Silver stop, Act 4 strong). RUN_COMMIT `89e6ba90`, binary `d74cfded…`, 16 cloud
+workers; 1,024/1,024 units verified, 2,048 games valid.
+**Result:** [RESULT.md](evidence/key_rules_ab_20261026/RESULT.md). Heart kills R 20.7% / F 26.8%, F − R **+6.05 pp
+[+3.42, +8.59]** (discordant 126/64, exact McNemar p 8e−6); Act 4 33.2 / 40.8%, +7.6 pp [+4.9, +10.4]; mean floor
++2.86. 901 of 1,024 pairs first diverge at the Act-1 Sapphire offer (+63 kills, +78 Act-4 arrivals); 26 at an Act-3
+campfire (−2 kills). F holds the Sapphire in Act 1 in 208 runs (R 1,000) and enters Act 2 with 6.32 vs 5.47 relics.
+**Interpretation:** KEYS_EXPLAIN under the frozen rule. **Inference:** the gain is the deferred Sapphire (keeping the
+Act-1 chest relic); flexible keys explain about 6 of the 8 pp between §566 and §569, the combat-side changes the rest
+(unpaired). No default changed; making flexible keys the A20 default and checking the live advisor's key flags are
+Philipp's call.
+Seeds: 111382000–111383023 (campaign), 111383024–111383027 (smokes) used.
+**Knowledge impact:** none until a default change; `evaluation/current-baselines.md` unchanged.
+## §694 — Expert decisions on expert seeds (experiment 3 of the 2026-10-26 research report): replaying Baalorlord's out-of-combat decisions leaves the bot's A20 Heart rate unchanged, −2.1 pp [−7.9, +3.6], about 0 ± 6 pp after a key defect; NOT_SHOWN (329 paired seeds, 2026-10-27)
+
+**Question:** with combat held at today's A20 Silver, how much Heart win rate does the bot's out-of-combat play lose to
+an expert's? Philipp's go 2026-10-26 23:31Z ("Also 16 workers, but work with the coordinator when to actually run them").
+**Setup:** [PREREG](evidence/expert_replay_ab_20261027/PREREG.md), pre-launch review PASS (reviewer H). 329
+vanilla-RNG Baalorlord Ironclad A20 runs whose seeds the engine reproduces ([fidelity](evidence/expert_replay_fidelity_20261026/RESULT.md):
+card offers 93.4%, 258/348 runs exact through act 3; adds `STS_CALLING_BELL_CARD_RNG_FIX`, default on). Arm X:
+`one_combat expertreplay` replays the logged path, rewards, campfires, shops, boss relics, events and Neow while they
+stay exact, then today's A20 default plays on; arm B: the default alone. RUN_COMMIT `84d2f15d`, binary `f91ba554…`,
+16 cloud workers; 329/329 units verified, 658 games valid.
+**Result:** [RESULT.md](evidence/expert_replay_ab_20261027/RESULT.md). Heart kills X 20.1% / B 22.2%, X − B **−2.1 pp
+[−7.9, +3.6]** (discordant 45/52, exact McNemar p 0.54); Act 4 32.2 / 34.3%; mean floor 37.4 / 39.6. The expert won 199
+of the 329. Defect found in review: on 17 seeds (expert won all) the log has no `green_key_taken_log`, the replayer
+never took the Emerald and the run ended after act 3; excluding them 66/312 vs 66/312, 0.0 pp [−6.1, +5.8]; imputing
+X's Heart|Act-4 rate on them about +1.1 pp. In 110 seeds the bot died while still following the log (median floor 16;
+X 0 kills, B 25 on those seeds).
+**Interpretation:** NOT_SHOWN; the effect is indistinguishable from 0 (about ±6 pp). Why the bot dies early on his
+lines was not measured. The replayer now takes missing-field keys (Emerald at first offer, Sapphire at the first chest
+with no logged relic when the expert reached Act 4); the affected X games were not re-run. Per-type ablations were not
+run.
+Seeds: 329 external expert seeds (run ids in the campaign's `units.txt`); no 111xxxxxx seeds.
+**Knowledge impact:** `STS_CALLING_BELL_CARD_RNG_FIX` (default on) and `STS_EXPERT_REPLAY_TYPES` in
+`environment-variables.md`; no default change from the A/B.
+**Comparability:** `STS_CALLING_BELL_CARD_RNG_FIX` changes the card offers after every Calling Bell, so A20
+whole-run results before and after this merge are not comparable; freeze files for older comparisons must set
+`STS_CALLING_BELL_CARD_RNG_FIX=0`, or rerun both arms on one commit.
+
+## §695 — Dynamic campfire price, stage 0 at A20: a model-only price (rollout to the act's end × calibrated X2-B) moves with HP and disagrees with student_sel at 33% of rest sites, but separates Rest from the best Smith at only 29% of sites at N = 32; STOP (offline replays of 128 §683 seeds, 2026-10-27)
+
+**Question:** Philipp, 2026-10-26: campfire choices should be priced, not ruled. At the A20 default, student_sel
+decides rest sites from its logits (option, then upgrade target) with no price. Can a model-only price tell Rest,
+Recall and Smith → card k apart at real rest sites, move with HP, and disagree with the played choice often enough
+to justify campfire forks? Philipp's go for stage 0: 2026-10-26 22:24Z.
+**Setup:** [PLAN](evidence/campfire_price_stage0_20261026/PLAN.md), with gates frozen in `ada3b5cd` before results.
+Research observer `STS_OOC_CAMPFIRE_PRICE` (default off; prices every legal campfire action in a forked child; play
+unchanged). Primary price: N rollouts per action to the first map state of the next act, valued by the M0 calibration
+(ADR-0057), with streams shared by the actions. Replays of the first 128 §683 seeds (MAP arm configuration plus
+`STS_SILVER_ACT4_STRONG=0`), code `38bd5a71`, N = 32; every replay reproduces its §683 trace.
+**Result:** [RESULT.md](evidence/campfire_price_stage0_20261026/RESULT.md). 732 rest sites (acts 1–3); 45 forced-Ruby
+sites are not priced. (a) separable at 2 SE 29.3% (gate ≥ 50%) **FAIL**; (b) Spearman with HP fraction −0.44
+[−0.50, −0.37] PASS; (c) disagreement 32.8% PASS, but only 12.2% of the 189 Rest/Smith swaps clear 2 SE. At
+40–60% HP: played rest 85%, price rest 56% (expert 13%, #865).
+**Interpretation:** STOP under the frozen rule. The direction is right, but at N = 32 the price is too noisy per
+site to drive or referee campfire choices. **Inference:** this is a precision limit, not a missing signal; a
+higher-N or expectation-based price would be a new pre-registered stage (Philipp's call).
+Seeds: none new; 111374100–111374227 (§683, used) replayed.
+**Knowledge impact:** none (research observer only, default off).
+
+## §696 — Expert-anchored student_sel at A20 (experiment 7 of the 2026-10-26 research report): fine-tuning student_sel toward Baalorlord's card rewards, smith targets, removals and boss relics leaves Heart kills unchanged, −0.7 pp [−3.4, +2.0]; NOT_SHOWN (1,024 paired seeds, 2026-10-27)
+
+**Question:** student_sel agrees with an A20 expert (Baalorlord, 808 Ironclad runs rebuilt as heart1 records) on 50% of
+card rewards, 27% of smith targets and 50% of boss relics, and a GBM predicts his picks 13-23 pp better. Does a
+student_sel fine-tuned toward his picks kill the Heart more often? §641-§649 trained on model labels; the new part is
+the label source.
+**Setup:** offline [RESULT](evidence/expert_picks_20261026/RESULT.md); A/B [PREREG](evidence/expert_anchored_student_ab_20261026/PREREG.md).
+Candidate: `distill.py --init` from student_sel's checkpoint, target log((1 − α) p + α e) on expert card rewards, smith
+targets, shop removals and boss relics, anchored on 62,576 gen-3 bot decisions with student_sel's own logits; rest sites
+not taught (Philipp's decision card 2026-10-26). α = 0.6 by the offline gates: held-out expert top-1 card reward
++8.0 pp, smith +12.5 pp; bot-state argmax changes ≤ 4.7% per screen, maps 1.2%; native parity 1.1e-5. Arms differ only
+in `STS_OOC_HEART1` (A student_sel `cf6bf7fb…`, B `14506144…`), today's A20 default otherwise. Philipp authorized the run
+with 16 workers (2026-10-26 22:56Z); pre-launch review and delta check PASS. Run commit `d9aa44fa`, code `f526cef9`,
+binary `5d9ac015…`.
+**Result:** [RESULT.md](evidence/expert_anchored_student_ab_20261026/RESULT.md). 1,024/1,024 units verified, 2,048 games
+rc 0, all seeds valid; ~543 core-h. Heart kills A 26.1%, B 25.4%, B − A −0.7 pp [−3.4, +2.0] (97 vs 104 discordant,
+p 0.67) → **NOT_SHOWN**. Act 4 42.2% vs 41.9% (−0.3 pp [−3.4, +2.8]); mean floor equal; wall ratio 1.003. Futility look at
+256 seeds CONTINUE (Act 4 +2.3 pp). 929 pairs diverge, mostly first at act-1 card rewards (263) and card selects (259);
+no divergence class carries a visible effect.
+**Interpretation:** expert agreement on these screens moved offline but not in play. **Inference:** at this size of
+change, matching an expert's individual picks is not what limits the A20 Heart rate (§688: the bot loses 1.4-3x more HP
+per fight). Not tested: larger α, rest-site imitation, a separate ranker head.
+**Decision:** student_sel stays; no default change.
+Seeds: 111384000–111385023 used, smokes 111385990–111385991 used; 111385992–111385999 unused.
+**Knowledge impact:** none (no default or code change).
+
+## §702 — Fair-policy impossibility certificate, Stage 1 audit (issue #887): in the seed regime the floor-0 observation identifies the seed (1M repo-range and 20M random seeds, zero collisions), so no information-set certificate exists there and fair equals clairvoyant; in the fresh-chance regime a whole-run certificate needs a full-game loss proof; STOP after Stage 1 (no gameplay, 2026-10-27)
+
+**Question:** can two positive-probability worlds share an observable history at a decision with no common winning
+action, so that no fair policy wins the A20 Ironclad Heart with probability 1?
+**Setup:** [README](evidence/fair_impossibility_audit_20261027/README.md). Read-only audit of RNG, observability and
+exact-solver contracts at `ed2dcb2b`, plus a no-gameplay census of floor-0 observations (Neow options, act-1 boss,
+act-1 map with burning elite) per seed.
+**Result:** all 1,000,000 seeds 111,000,000–111,999,999 and all 20,000,000 random seeds have distinct floor-0
+observations (maps alone also distinct; control Neow + boss: 2,250 classes, Rényi-2 11.1 bits). Map collision entropy
+> ~46 bits at 95%. Seed-regime consequence (proved on that range): no two worlds share any history, and a lookup policy
+plays each seed's hindsight-optimal line, so the best fair win rate equals the hindsight-winnable fraction.
+Fresh-chance regime: no forced prefix beyond Neow and no sound whole-run loss bound in the repo (`exact_combat_solver`
+is exact only for gated single combats or 1–2 turn horizons, §623, §654). The only known unwinnable-seed proof is
+Silent A18+ (`18ISL35FYK4`, forced Lagavulin relaxation); none for Ironclad.
+**Interpretation:** a universal (c) certificate is impossible in the seed regime and infeasible in the fresh-chance
+regime with current tools; local (b) conflicts are computable as value of perfect information on recorded exact-solver
+roots, conditional on reaching the root.
+**Decision:** stop after Stage 1; Stage 2 pilot not run. Optional follow-up (Philipp's call): local VPI on the §654
+recorded roots, no new seeds.
+Seeds: none used (census evaluates map/Neow generation only; no game played).
+**Knowledge impact:** none (no code or default change).
+## §699 — OOC rollout variance (issue #883, phases 1–2): the CTM death draw carries 87% of rollout3 sibling-difference variance in the §644 capture; common seeds couple map and boss-relic siblings least (CRN ratio ≈ 0.85); conditional Monte Carlo on survival and event-keyed streams proposed (offline, no seeds, 2026-10-27)
+
+**Question:** issue #883. Which unbiased, fair-RNG methods would buy the most precision per CPU-hour for OOC sibling
+differences and rollout labels, given what `main` already implements?
+**Setup:** repository audit of the rollout, capture and fork paths on `main` `ed2dcb2b`, and an offline variance
+decomposition of the §644 common-seed capture (320 sources, 32 repeats per root child, pre-calibration CTM and raw
+X2-B leaf): [README](evidence/ooc_variance_reduction_audit_20261027/README.md), script `death_share.py`.
+**Result:** VALIDATION (TRAIN): rollout death rate 0.141 (0.125); the death indicator carries 0.887 (0.879) of leaf
+variance (0.916 against the population variance) and 0.874 (0.867) of sibling-difference variance; var(d | both survived) /
+var(d) 0.094 (0.094). CRN ratio pooled over row pairs 0.543 (0.555; §644's 0.36 uses per-root, per-source
+weighting); by screen, VALIDATION (TRAIN): rest 0.30 (0.30), rewards 0.42 (0.41), card select 0.14 (0.42, 62 VAL
+roots), shop 0.53 (0.52), map 0.82 (0.86), boss relic 0.86 (0.87).
+**Interpretation:** **Inference:** rollout3 noise is mostly the Bernoulli death draw, whose probability the CTM
+already knows; integrating it out (sequential importance weight Π s_k, exact, bounded) keeps the estimand. The weak
+map and boss-relic coupling fits a shared sequential stream that desynchronises once siblings take different numbers
+of draws. Today's calibrated CTM dies less, so the current share is likely lower. Literature review and go/no-go per
+technique: [variance-reduction.md](../knowledge-base/research/ooc/variance-reduction.md).
+**Decision:** no code or default change. Proposed phase 3 (needs Philipp's go): survival-weighted rollouts and
+event-keyed streams on ~64 frozen roots from replays of used seeds, ≈ 2 core-h.
+Seeds: none.
+**Knowledge impact:** new KB page research/ooc/variance-reduction.md.
+
+## §700 — SR head data learning curve: halving the SR_crn_r2 training data costs nothing (50 % → 100 %: +0.003 [−0.003, +0.009], FLAT); a quarter of the game rows with all ranking groups ranks as well as everything, so more policy-only games would not lift this head (offline, NEGATIVE, 2026-10-27)
+
+**Question:** the best SR heads rank common-seed VALIDATION siblings at X2-B's level (SR_crn_r2 s1/s2 0.663/0.667,
+X2-B 0.664, §649). Is that limited by the amount of training data (estimate in the project: 100k–1M games for 1 pp)?
+**Setup:** [README](evidence/value_sr_learning_curve_20261027/README.md), plan [PLAN.md](evidence/value_sr_learning_curve_20261027/PLAN.md)
+(frozen before the runs, data branch `claude/az-gen2-data` `gen2/value-sr-lc/`). SR_crn_r2_s1/s2's command on nested
+source subsets (sha256 hash rule) of its 2,016 training row files and 19,781 ranking groups: 25 % (463 files, 5,074
+groups) and 50 % (992, 10,457), torch seeds 1 and 2, optimizer steps matched to the 100 % runs (80/40/20 epochs);
+split runs at seed 1: 25 % rows with all groups, all rows with 25 % groups. Epoch by §649's `pick_epoch.py` (best
+in-training holdout ranking with selection BCE ≤ 0.570). Philipp's GPU 2026-10-27 12:08Z–~19:20Z (Philipp's OK
+2026-10-26 23:32Z, start time his); scoring in the cloud reproduces §649 exactly. Weights on the data branch (`5d7a2ec`,
+`0d84e2c`). STS_ACTIVE_POWER_FEATURES not read by the heart1 student (unset, logged).
+**Result:** head alone on VALIDATION, seed mean: 25 % 0.638, 50 % 0.662, 100 % 0.665. 25 → 50 %: +0.024
+[+0.018, +0.030]; **50 → 100 %: +0.003 [−0.003, +0.009] → FLAT** (pairs with label gap < 1.5 pp: −0.000
+[−0.007, +0.006]; blend +0.005 [−0.001, +0.009]). Split: 25 % rows + all groups 0.666, +0.004 [−0.002, +0.009] vs
+100 % s1; all rows + 25 % groups 0.649, −0.014 [−0.021, −0.007]. At 25 % the value BCE bar binds (6–8 of 80 epochs
+pass); the best unconstrained epochs reach holdout ranking 0.656–0.663, near 100 %.
+**Interpretation:** the head's ranking is not limited by game-outcome rows; they matter only through value-BCE
+overfitting, which cuts the epoch choice short. Ranking groups matter with diminishing returns (flat by ~10k groups).
+**Inference:** even the CI's upper end (+0.009 per doubling) needs ~10× today's data for +0.03 over X2-B; the point
+estimate needs ~500×. The plateau comes from the labels' kind (rollout3 means ending in X2-B), the features or the
+recipe, not the volume; consistent with §645/§649.
+**Decision:** no default change; no data generation for this head proposed. Next levers, if the value head is pursued:
+labels that do not end in X2-B or luck-corrected outcome labels (§697/§698), and a ranking-first selection.
+Seeds: none.
+**Knowledge impact:** none (no default or code change).
+
+## §701 — Combat HP-loss gap vs Baalorlord (issue #889): the bot loses more HP on every act-1-3 elite and boss encounter at matched entry HP and deck size, 2-3x with near-starter decks, while drinking more potions per fight; potion under-use refuted; offline, no seeds (2026-10-27)
+
+**Question:** why does the A20 bot lose more HP than Baalorlord in elite and boss fights (§688), and is potion
+management, deck/resources, encounter mix or combat play the explanation? Existing data only.
+**Data:** [RESULT](evidence/combat_hp_gap_20261027/RESULT.md). Bot: §683 MAP arm ctm rows (1,024 seeds, 24,017 fights,
+run commit `772df240`, pre-§682 Act 4). Expert: the 676 #865 `.run` files (hashes match), 17,356 fights. §694 X-arm
+games (`84d2f15d`) for deaths with the expert's exact deck.
+**Result:** net HP per won fight, bot vs expert, elites acts 1/2/3 13.0/10.1/6.1 vs 9.5/5.6/2.2, bosses 19.3/23.6/13.0
+vs 11.3/11.2/8.8 (all CIs exclude 0); hallways within ~1 HP. Death per fight act-2 boss 0.143 vs 0.055, act-3 boss
+0.128 vs 0.023, Heart 0.41 vs 0.08 (bot Act 4 is the pre-§682 learned-stop setup, not today's Act-4 strong default). The gap is on all 18 act-1-3 elite/boss encounters; the act-2 boss gap is neither
+one boss nor the mix (expert-mix reweighted 23.9) nor entry HP (bot enters healthier). It stays within entry-HP bins
+(85-100% HP: elites 11.7 vs 6.4, bosses 19.4 vs 10.7) and deck-size strata; act-1 elites with near-starter decks
+(floor ≤ 8, ≤ 13 cards, ≤ 1 upgrade): Nob 16.4 vs 5.7, Lagavulin 25.0 vs 11.1, Sentries 27.4 vs 11.5 (n 20-32 each,
+CIs exclude 0). Potions: expert uses are logged per floor in all runs (names in 538), inventory reconstructable in
+488; turn-level use is not logged. The bot drinks more per elite/boss fight (act-2 boss 0.89 vs 0.47, act-3 boss 0.59
+vs 0.12) and enters the Heart with 0.97 potions vs 2.19 (expert drinks 1.94 there). §694 X arm: 85 combat deaths on
+floors the expert survived with the same deck and encounter (acts 1/2/3 54/27/4; the expert entered at median 59% HP).
+**Interpretation:** ranked by evidence: (1) combat play, potions included, loses more HP on the same fights; (2) deck
+quality may add in acts 2-3 but does not explain the act-1 near-starter gap; (3) potion under-use refuted, potion
+allocation (spending before the Heart) a plausible Heart-only contributor; (4) mix and entry HP ruled out; engine
+fight fidelity not testable from these logs. **Inference:** a matched expert-entry replay (HP and potions synced at
+combat entry, Silver K = 4 per fight, ~1,600 acts-1-2 elite/boss entries on vanilla seeds) would size the combat gap
+on identical states; it needs per-fight output in `expertreplay` (missing today) and Philipp's go.
+Seeds: none (existing games only).
+**Knowledge impact:** this ledger entry and its evidence only; no code, model or default change.

@@ -343,6 +343,9 @@ void silverAzFocusGen(int nSeeds, int sims, int asc, const std::string &outPrefi
 // Paired online check of two MLP tree priors on one encounter (silverfocusevalgen, §469).
 void act4Replay(int nStates, const std::string &statesPath, const std::string &outPrefix, long long seedOffset,
                 const std::string &simsList, int replicates);
+// AIVAT replay baseline: recorded real fights re-played under the process's real-combat config (fight_replay.cpp).
+int fightReplay(int nRows, const std::string &rowsPath, const std::string &outPath, std::uint64_t seedBase,
+                int replicates);
 void silverFocusEvalGen(int nSeeds, int asc, const std::string &outPrefix, long long seedOffset,
                         const std::string &encounter, int replicates, int otherSims, int armSims, int treeMinVisits,
                         const std::string &priorA, const std::string &priorB);
