@@ -193,6 +193,51 @@ def main():
                     den += w[k]
         if den:
             out["coverage"][cfg] = {"q": num / den, "weight": den}
+    # Per-root table (Philipp 2026-10-28 22:14Z; noisy per root by design, SE per pair ~0.45/sqrt(4)) and the
+    # method-of-moments RMS of the relative bias B_ab = x - Delta_ref per (root, competitor) at N_max:
+    # E[(x - D)^2] = B^2 + Var(D | root) + Var(x), D = mean over salts of Z_i - Z_ref.
+    out["per_root"], out["rms_relative_bias"] = {}, {}
+    for cfg in cfgs:
+        terms, table = [], []
+        for k in complete:
+            gs = runs.get((k, cfg), [])
+            if len(gs) < 2:
+                continue
+            qs = [final_q(g) for g in gs]
+            r0 = ref_id[k]
+            mean_q = {c: statistics.mean(q[c] for q in qs if c in q) for c in qs[0]}
+            ref_q = {c: statistics.mean(z(k, s, c) for s in salts) for c in ids[k]}
+            best_ref = max(ref_q, key=ref_q.get)
+            chosen = [picks(g)[g["simulations"]] for g in gs]
+            for c in qs[0]:
+                if c == r0 or rep_key[(k, c)] == rep_key[(k, r0)]:
+                    continue
+                d = [z(k, s, c) - z(k, s, r0) for s in salts]
+                dx = [q[c] - q[r0] for q in qs if c in q and r0 in q]
+                x, dm = statistics.mean(dx), statistics.mean(d)
+                vd = statistics.variance(d) / len(d)
+                vx = statistics.variance(dx) / len(dx) if len(dx) > 1 else 0.0
+                terms.append(((x - dm) ** 2 - vd - vx, w[k], k))
+                table.append({"root": f"{k[0]}/{k[1]}", "competitor": ids[k][c], "delta_ref": dm,
+                              "delta_mcts": x, "B_ab": x - dm, "se_ref": math.sqrt(vd), "search_sd": math.sqrt(vx * len(dx))})
+            out["per_root"].setdefault(cfg, {})[f"{k[0]}/{k[1]}"] = {
+                "rows": [t for t in table if t["root"] == f"{k[0]}/{k[1]}"],
+                "mcts_best_eq_ref_best_insample": statistics.mean(float(rep_key[(k, c)] == rep_key[(k, best_ref)]) for c in chosen),
+                "regret_vs_insample_best": statistics.mean(ref_q[best_ref] - ref_q[c] for c in chosen),
+                "max_depth": statistics.mean(g["maxDepth"] for g in gs)}
+        if terms:
+            m2 = sum(t * wt for t, wt, _ in terms) / sum(wt for _, wt, _ in terms)
+            boot = []
+            for _ in range(2000):
+                byr = {}
+                for t in terms:
+                    byr.setdefault(t[2], []).append(t)
+                keys = list(byr)
+                smp = [t for _ in keys for t in byr[rng.choice(keys)]]   # root-clustered
+                boot.append(sum(t * wt for t, wt, _ in smp) / sum(wt for _, wt, _ in smp))
+            boot.sort()
+            out["rms_relative_bias"][cfg] = {"mean_square": m2, "rms": math.sqrt(max(0.0, m2)),
+                                             "mean_square_ci": [boot[50], boot[1949]], "pairs": len(terms)}
     json.dump(out, sys.stdout, indent=1)
 
 
