@@ -1,0 +1,21 @@
+runs 64 fights 131
+-- all: n=131 expert=6.77 prod=11.72 (death 0.069, pots 0.43, cpu 1.3s)
+   flat10000          loss  11.70  arm-prod -0.02 [-0.52,+0.48]  death 0.069 pots 0.43 cpu 3.1s
+   flat100000         loss  11.85  arm-prod +0.13 [-0.52,+0.79]  death 0.074 pots 0.44 cpu 33.4s
+   pp                 loss  11.00  arm-prod -0.72 [-1.53,+0.06]  death 0.071 pots 0.37 cpu 6.4s
+-- (2, 'E'): n=131 expert=6.77 prod=11.72 (death 0.069, pots 0.43, cpu 1.3s)
+   flat10000          loss  11.70  arm-prod -0.02 [-0.52,+0.48]  death 0.069 pots 0.43 cpu 3.1s
+   flat100000         loss  11.85  arm-prod +0.13 [-0.52,+0.79]  death 0.074 pots 0.44 cpu 33.4s
+   pp                 loss  11.00  arm-prod -0.72 [-1.53,+0.06]  death 0.071 pots 0.37 cpu 6.4s
+-- Book of Stabbing: n=46 expert=6.43 prod=11.79 (death 0.071, pots 0.34, cpu 1.1s)
+   flat10000          loss  11.48  arm-prod -0.30 [-1.32,+0.72]  death 0.076 pots 0.36 cpu 2.7s
+   flat100000         loss  11.61  arm-prod -0.17 [-1.21,+0.98]  death 0.082 pots 0.38 cpu 28.7s
+   pp                 loss  11.12  arm-prod -0.67 [-1.94,+0.59]  death 0.065 pots 0.34 cpu 5.1s
+-- Gremlin Leader: n=38 expert=3.58 prod=5.47 (death 0.039, pots 0.59, cpu 1.6s)
+   flat10000          loss   5.18  arm-prod -0.29 [-0.99,+0.37]  death 0.033 pots 0.55 cpu 3.9s
+   flat100000         loss   5.93  arm-prod +0.45 [-0.85,+1.91]  death 0.046 pots 0.52 cpu 41.1s
+   pp                 loss   3.37  arm-prod -2.11 [-3.47,-0.81]  death 0.039 pots 0.41 cpu 8.9s
+-- Slavers: n=47 expert=9.68 prod=16.69 (death 0.090, pots 0.40, cpu 1.2s)
+   flat10000          loss  17.18  arm-prod +0.48 [-0.34,+1.27]  death 0.090 pots 0.40 cpu 2.9s
+   flat100000         loss  16.86  arm-prod +0.17 [-0.80,+1.21]  death 0.090 pots 0.43 cpu 31.6s
+   pp                 loss  17.04  arm-prod +0.35 [-0.78,+1.45]  death 0.101 pots 0.37 cpu 5.6s

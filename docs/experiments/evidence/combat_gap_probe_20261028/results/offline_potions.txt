@@ -1,0 +1,58 @@
+== ('2', 'E')
+all                                      n= 1500 bl= 11.0 el=  5.2 d= +5.8 bu=0.41 eu=0.53 bdeath=0.055
+held0                                    n=  472 bl= 16.5 el=  6.9 d= +9.6 bu=0.00 eu=0.53 bdeath=0.121
+held>=1                                  n= 1028 bl=  8.5 el=  4.5 d= +4.0 bu=0.60 eu=0.53 bdeath=0.024
+held>=1 & bot used 0                     n=  505 bl=  6.7 el=  2.8 d= +3.9 bu=0.00 eu=0.36 bdeath=0.002
+held>=1 & bot used >=1                   n=  523 bl= 10.2 el=  6.1 d= +4.1 bu=1.18 eu=0.70 bdeath=0.046
+expert used0                             n=  808 bl=  7.7 el=  3.4 d= +4.2 bu=0.29 eu=0.00 bdeath=0.025
+expert used>=1                           n=  692 bl= 14.9 el=  7.3 d= +7.6 bu=0.55 eu=1.15 bdeath=0.090
+entry hp frac 0-0.5                      n=  176 bl=  9.5 el=  3.7 d= +5.8 bu=0.36 eu=0.64 bdeath=0.176
+entry hp frac 0.5-0.75                   n=  596 bl= 11.6 el=  4.6 d= +7.0 bu=0.53 eu=0.60 bdeath=0.064
+entry hp frac 0.75-1.01                  n=  728 bl= 10.9 el=  6.1 d= +4.8 bu=0.33 eu=0.45 bdeath=0.018
+== ('2', 'B')
+all                                      n=  512 bl= 18.7 el= 14.2 d= +4.5 bu=0.66 eu=0.44 bdeath=0.107
+held0                                    n=  164 bl= 24.2 el= 20.2 d= +3.9 bu=0.00 eu=0.49 bdeath=0.152
+held>=1                                  n=  348 bl= 16.1 el= 11.4 d= +4.7 bu=0.98 eu=0.41 bdeath=0.086
+held>=1 & bot used 0                     n=  103 bl=  5.9 el=  5.1 d= +0.8 bu=0.00 eu=0.26 bdeath=0.000
+held>=1 & bot used >=1                   n=  245 bl= 20.4 el= 14.0 d= +6.4 bu=1.39 eu=0.48 bdeath=0.122
+expert used0                             n=  320 bl= 16.6 el= 10.6 d= +5.9 bu=0.59 eu=0.00 bdeath=0.069
+expert used>=1                           n=  192 bl= 22.2 el= 20.2 d= +2.0 bu=0.79 eu=1.17 bdeath=0.172
+entry hp frac 0-0.5                      n=   56 bl= 15.8 el= 10.4 d= +5.4 bu=0.66 eu=0.57 bdeath=0.268
+entry hp frac 0.5-0.75                   n=  204 bl= 17.5 el= 13.9 d= +3.6 bu=0.63 eu=0.43 bdeath=0.078
+entry hp frac 0.75-1.01                  n=  252 bl= 20.3 el= 15.3 d= +5.0 bu=0.69 eu=0.41 bdeath=0.095
+== ('1', 'E')
+all                                      n= 2956 bl= 11.2 el=  9.7 d= +1.5 bu=0.62 eu=0.59 bdeath=0.031
+held0                                    n=  396 bl= 16.4 el= 10.8 d= +5.5 bu=0.00 eu=0.28 bdeath=0.073
+held>=1                                  n= 2560 bl= 10.4 el=  9.6 d= +0.9 bu=0.71 eu=0.63 bdeath=0.024
+held>=1 & bot used 0                     n=  988 bl= 10.9 el=  7.8 d= +3.1 bu=0.00 eu=0.39 bdeath=0.004
+held>=1 & bot used >=1                   n= 1572 bl= 10.2 el= 10.7 d= -0.5 bu=1.16 eu=0.78 bdeath=0.037
+expert used0                             n= 1384 bl=  9.6 el=  9.7 d= -0.2 bu=0.37 eu=0.00 bdeath=0.021
+expert used>=1                           n= 1572 bl= 12.7 el=  9.7 d= +3.0 bu=0.84 eu=1.10 bdeath=0.039
+entry hp frac 0-0.5                      n=  660 bl=  8.1 el=  5.4 d= +2.7 bu=0.64 eu=0.59 bdeath=0.100
+entry hp frac 0.5-0.75                   n= 1192 bl= 10.9 el=  9.3 d= +1.6 bu=0.53 eu=0.56 bdeath=0.017
+entry hp frac 0.75-1.01                  n= 1104 bl= 13.4 el= 12.7 d= +0.7 bu=0.70 eu=0.61 bdeath=0.005
+== ('1', 'B')
+all                                      n= 1000 bl= 14.6 el= 12.9 d= +1.7 bu=0.89 eu=0.47 bdeath=0.125
+held0                                    n=  192 bl= 18.3 el= 12.5 d= +5.8 bu=0.00 eu=0.29 bdeath=0.208
+held>=1                                  n=  808 bl= 13.7 el= 13.0 d= +0.7 bu=1.10 eu=0.51 bdeath=0.105
+held>=1 & bot used 0                     n=  165 bl=  9.4 el=  8.8 d= +0.5 bu=0.00 eu=0.12 bdeath=0.018
+held>=1 & bot used >=1                   n=  643 bl= 14.8 el= 14.0 d= +0.8 bu=1.39 eu=0.62 bdeath=0.128
+expert used0                             n=  612 bl= 12.4 el= 11.1 d= +1.4 bu=0.71 eu=0.00 bdeath=0.074
+expert used>=1                           n=  388 bl= 18.0 el= 15.8 d= +2.2 bu=1.18 eu=1.22 bdeath=0.206
+entry hp frac 0-0.5                      n=  456 bl= 11.9 el=  9.4 d= +2.5 bu=0.96 eu=0.61 bdeath=0.193
+entry hp frac 0.5-0.75                   n=  404 bl= 16.3 el= 15.7 d= +0.6 bu=0.82 eu=0.39 bdeath=0.087
+entry hp frac 0.75-1.01                  n=  140 bl= 18.5 el= 16.2 d= +2.3 bu=0.86 eu=0.26 bdeath=0.014
+== equal potion use (per copy) by encounter, acts1-2 E/B
+(1, 'B', 'Hexaghost')                    n=  191 bl= 15.2 el= 13.4 d= +1.7 bu=0.52 eu=0.52 bdeath=0.141
+(1, 'B', 'Slime Boss')                   n=  138 bl=  9.1 el=  9.2 d= -0.1 bu=0.31 eu=0.31 bdeath=0.145
+(1, 'B', 'The Guardian')                 n=  139 bl= 17.5 el= 14.8 d= +2.7 bu=0.50 eu=0.50 bdeath=0.137
+(1, 'E', '3 Sentries')                   n=  593 bl= 12.1 el= 10.8 d= +1.3 bu=0.48 eu=0.48 bdeath=0.030
+(1, 'E', 'Gremlin Nob')                  n=  568 bl=  9.0 el=  7.8 d= +1.1 bu=0.59 eu=0.59 bdeath=0.030
+(1, 'E', 'Lagavulin')                    n=  613 bl= 11.0 el= 10.3 d= +0.7 bu=0.47 eu=0.47 bdeath=0.015
+(2, 'B', 'Champ')                        n=   86 bl= 11.8 el= 10.1 d= +1.7 bu=0.21 eu=0.21 bdeath=0.000
+(2, 'B', 'Collector')                    n=  100 bl= 21.2 el= 24.0 d= -2.8 bu=0.41 eu=0.41 bdeath=0.110
+(2, 'E', 'Book of Stabbing')             n=  292 bl= 10.4 el=  6.2 d= +4.2 bu=0.27 eu=0.27 bdeath=0.024
+(2, 'E', 'Gremlin Leader')               n=  298 bl=  5.9 el=  0.8 d= +5.1 bu=0.26 eu=0.26 bdeath=0.030
+(2, 'E', 'Slavers')                      n=  245 bl= 10.9 el=  6.6 d= +4.3 bu=0.37 eu=0.37 bdeath=0.037
+ALL equal use                            n= 3311 bl= 11.1 el=  9.1 d= +2.0 bu=0.43 eu=0.43 bdeath=0.046
+ALL equal use, 0 potions both            n= 1978 bl= 10.2 el=  7.7 d= +2.6 bu=0.00 eu=0.00 bdeath=0.031
