@@ -96,3 +96,14 @@ differences to about 0.2 of today's common-seed estimator at equal CPU, without 
 - **Training:** two runs of about 85 min each on Philipp's GPU, one after the other (§649).
 - **Seeds:** none new; replays of 111144512–111144831.
 - **Data:** about 220 MB on the share. The claims directory is deleted after the campaign (share file limit).
+
+## Freeze (2026-10-28, after Philipp's "Go with 16 workers" at 15:20Z)
+- Pre-launch review PASS (reviewer J, `/mnt/project-files/reviews/pr903-prelaunch-review.md`); its fixes are in this plan.
+- **RUN_COMMIT:** the commit on `claude/project-thread-tt1jc5-run` that adds this directory to `d4a4ec3c`. The result
+  records its hash.
+- **code_commit** `d4a4ec3c` (= `90eb9f07` + [backport_90eb9f07.patch](backport_90eb9f07.patch)); binary sha256
+  `382997c2…` (`linux-gcc-release-x86-64-v3`, in the bin-cache).
+- **Campaign:** [campaign.manifest](campaign.manifest), with 16 workers, 4 lanes each, a queue schedule and a 7 h
+  timeout per source. [units.txt](units.txt) holds the 320 §644 seeds, ordered longest first by their §644 wall time.
+- **Share:** `/mnt/project-files/ooc-swkeyed-labels`. Its `claims/` directory is deleted after verification (the
+  share's file limit).
