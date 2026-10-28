@@ -1,5 +1,9 @@
 # CTM data scale and coverage (issue #885): inventory and plan (not run)
 
+**Gate closed (2026-10-28):** the #884 CTM audit (draft PR #901, pending review) found no decision-relevant CTM
+error at A20 map roots (cross-fitted regret +0.0010 [−0.0024, +0.0040], NOT_SHOWN). Under the gate below, #885 does
+not run; this plan is kept only as a record in case a later audit reverses that.
+
 Status: **plan only, gated on #884.** Nothing here has been run, no seeds are used, no model is trained. Written
 2026-10-27 from main `ed2dcb2` (#875 merged). Philipp's issue #885 asks: only if the CTM audit (#884) establishes a
 decision-relevant CTM error, test whether more or better-distributed training data can reduce it, choosing only the
