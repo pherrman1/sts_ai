@@ -56,7 +56,7 @@ distinguish (median leaf gap 0.022 next to a median per-root real-play SE of 0.0
 Largest gains for the alternative: 111374102/118 boss relic Busted Crown → Velvet Choker +12.5 pp (SE 20.2);
 111374115/175 rest Rest → Smith Metallicize +12.5 (SE 8.5); 111374112/79 card select Feel No Pain → Shrug It Off
 +12.5 (SE 8.5). Largest losses: 111374107/124 boss relic Slavers Collar → Velvet Choker −31.3 (SE 17.6);
-111374102/143 smith Perfected Strike → Shockwave −25.0 (SE 11.2); 111374100/73 duplicate Apotheosis → Impervious
+111374102/143 card select (rest-site upgrade) Perfected Strike → Shockwave −25.0 (SE 11.2); 111374100/73 duplicate Apotheosis → Impervious
 −12.5 (SE 12.5). Per-root rows with labels, base rates and SEs: [analysis.json](analysis.json).
 
 ## Not covered

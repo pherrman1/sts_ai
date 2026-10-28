@@ -25040,7 +25040,7 @@ Seeds: none new; 111384000–111384003 (§696, used) replayed.
 Seeds: none new; 111374100–111374227 (§683, used) replayed.
 **Knowledge impact:** none (research observer only, default off).
 
-## §TBD — OOC prior vs search (issue #882): at 26 A20 roots where PUCT 4096/32768 or the uniform leaf reference disagree with production, forcing the alternative to game end over 16 paired resampled futures gives Heart −1.9 pp [−7.9, +3.8]; where search departs +1.4 [−5.3, +8.7], where only the leaf disagrees −5.3 [−14.4, +2.9]; no type shows a search gain; diagnostic, no default change (16 replayed §683 seeds, no new seeds, 2026-10-28)
+## §710 — OOC prior vs search (issue #882): at 26 A20 roots where PUCT 4096/32768 or the uniform leaf reference disagree with production, forcing the alternative to game end over 16 paired resampled futures gives Heart −1.9 pp [−7.9, +3.8]; where search departs +1.4 [−5.3, +8.7], where only the leaf disagrees −5.3 [−14.4, +2.9]; no type shows a search gain; diagnostic, no default change (16 replayed §683 seeds, no new seeds, 2026-10-28)
 
 **Question (#882):** why does OOC MCTS rarely beat the student_sel prior, and would it help if it did?
 **Phase 0 (no seeds, §683 D arm, 1,024 games):** search leaves the prior argmax at 2–8% of roots per type (full 4096
