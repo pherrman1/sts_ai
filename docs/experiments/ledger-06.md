@@ -24884,7 +24884,7 @@ on identical states; it needs per-fight output in `expertreplay` (missing today)
 Seeds: none (existing games only).
 **Knowledge impact:** this ledger entry and its evidence only; no code, model or default change.
 
-## §TBD — OOC value counterfactual monotonicity (issue #886): the A20 leaf never prices lower HP higher (X2-B 0 of 25,315 HP pairs; rollout3 wrong-way beyond 2 SE 0.5 %, noise level), but X2-B prices some plain upgrades lower, card-specifically and across decks (Defend+ −0.61 pp, Bash+ −0.42 pp, Anger+ −0.71 pp, Dropkick+ −3.4 pp; 29.7 % of plain-upgrade pairs wrong-way); diagnostic, no gameplay change (8 replayed seeds, 2026-10-28)
+## §705 — OOC value counterfactual monotonicity (issue #886): the A20 leaf never prices lower HP higher (X2-B 0 of 25,315 HP pairs; rollout3 wrong-way beyond 2 SE 0.5 %, noise level), but X2-B prices some plain upgrades lower, card-specifically and across decks (Defend+ −0.61 pp, Bash+ −0.42 pp, Anger+ −0.71 pp, Dropkick+ −3.4 pp; 29.7 % of plain-upgrade pairs wrong-way); diagnostic, no gameplay change (8 replayed seeds, 2026-10-28)
 
 **Question:** does the active A20 OOC value (rollout3 leaf ending in M0-calibrated public X2-B; no learned head is
 read) violate same-state dominance in current HP or in one upgraded card?
