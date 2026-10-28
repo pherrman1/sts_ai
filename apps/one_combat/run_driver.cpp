@@ -213,6 +213,7 @@ thread_local BossEntryHook *t_bossEntryHook = nullptr;
 thread_local std::function<void(const sts::GameContext &, const one_combat::PathHistory &)> t_realRunContextObserver;
 thread_local std::function<void(std::uint64_t, const char *)> t_realOocDecisionObserver;
 thread_local std::function<const char *(sts::GameContext &)> t_oocDecisionOverride;
+thread_local std::function<bool(sts::GameContext &, sts::search::ScumSearchAgent2 &)> t_battleOverride;
 thread_local std::function<void(const sts::GameContext &, const sts::BattleContext &,
     int, const std::optional<one_combat::CombatTransitionRecord> &)> t_realCombatObserver;
 
@@ -646,6 +647,10 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
             agent.simulationCountBase = fightSims(gc, sims);            // difficulty-tiered budget
             if (one_combat::liveOocMctsEnabled() && agent.simulationCountBase != 10000)
                 throw std::runtime_error("live OOC MCTS real combat budget must remain 10000");
+            if (t_battleOverride && t_battleOverride(gc, agent)) {
+                ++fightsTotal;
+                continue;
+            }
             BossEntryHook *const bossHook = battleRoom == Room::BOSS ? t_bossEntryHook : nullptr;
             if (bossHook) bossHook->before(gc, agent, path);
             const bool traceOoc = std::getenv("STS_OOC_DECISION_TRACE") != nullptr;
