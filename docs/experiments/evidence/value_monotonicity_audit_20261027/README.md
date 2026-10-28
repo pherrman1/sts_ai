@@ -1,6 +1,6 @@
 # OOC value counterfactual monotonicity audit (issue #886, plan, 2026-10-27)
 
-Written before the audit run. Diagnostic only: no training, no gameplay change, no new seeds.
+Written before the audit run (result: [RESULT.md](RESULT.md)). Diagnostic only: no training, no gameplay change, no new seeds.
 
 ## Question
 
@@ -36,7 +36,7 @@ every variant uses repeat r's seed, common across the root's leaves). The base v
 leaf's own repeats exactly (determinism check). The mono capture keeps the A20 M0 default (the plain sibling capture
 turns it off), so the search, and the game, are those of the uncaptured run.
 
-## Data (no new seeds, pending Philipp's go)
+## Data (no new seeds; Philipp's go 2026-10-27 21:37 CET)
 
 §683 MAP seeds 111374100–111374107, replayed with the §695 replay configuration (`mono_unit.sh`; the same seeds
 #881 freezes its roots from), `STS_OOC_SIBLING_EVERY=1`, `MAX_DEPTH=1`, `MAX_LEAVES=24`, `REPEATS=16`,
