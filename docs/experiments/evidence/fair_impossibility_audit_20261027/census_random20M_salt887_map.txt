@@ -1,0 +1,1 @@
+mode=random mapOnly=1 seeds=20000000 distinct=20000000 collisions=0
