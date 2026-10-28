@@ -24549,7 +24549,7 @@ a value-based rest-vs-upgrade decision is being scoped in its own thread (2026-1
 Seeds: none (existing games only).
 **Knowledge impact:** none beyond this entry; no code or default change.
 
-## §TBD — Card-reward rule screen: student_sel's card picks beat a value-head argmax (−17.6 pp Heart kills), a uniform 8,192-sim Q search with the X2-B M0 leaf (−19.1 pp) and the same search with the SR leaf (−9.4 pp); all three STOP (256 paired seeds, A20, 2026-10-27)
+## §712 — Card-reward rule screen: student_sel's card picks beat a value-head argmax (−17.6 pp Heart kills), a uniform 8,192-sim Q search with the X2-B M0 leaf (−19.1 pp) and the same search with the SR leaf (−9.4 pp); all three STOP (256 paired seeds, A20, 2026-10-27)
 
 **Question:** Philipp, 2026-10-26: the OOC search never compares card options because student_sel puts ≥0.97 prior
 on one card. Do better card decisions come from a value head or from a uniform search? Thread "Measure OOC MCTS
