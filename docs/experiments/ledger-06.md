@@ -24912,7 +24912,7 @@ on identical states; it needs per-fight output in `expertreplay` (missing today)
 Seeds: none (existing games only).
 **Knowledge impact:** this ledger entry and its evidence only; no code, model or default change.
 
-## §TBD — CTM decision-impact audit (issue #884): at 144 A20 map roots the active CTM's picks lose nothing measurable when the same leaf rollouts play their combats with production Silver (cross-fitted regret +0.0010 [−0.0024, +0.0040]); fight forecasts are close (boss HP ~4 too optimistic, elite deaths ~1 pp too high); NOT_SHOWN, stop (16 replayed §683 seeds, no new seeds, 2026-10-28)
+## §709 — CTM decision-impact audit (issue #884): at 144 A20 map roots the active CTM's picks lose nothing measurable when the same leaf rollouts play their combats with production Silver (cross-fitted regret +0.0010 [−0.0024, +0.0040]); fight forecasts are close (boss HP ~4 too optimistic, elite deaths ~1 pp too high); NOT_SHOWN, stop (16 replayed §683 seeds, no new seeds, 2026-10-28)
 
 **Question (#884):** does the active CTM make errors that reverse OOC sibling-action rankings?
 **Preflight:** at A20 the default searches only map roots (ADR-0061), so the CTM shapes only map decisions (tree
