@@ -303,6 +303,14 @@ better: the measured weights (potion 5, max HP 1.1, gold 0.01) −1.63 floors an
 −5.9 pp wins, concave HP k = 2.7 −5.23 floors and −8.4 pp, k = 1.35 −2.10 floors
 (wins NOT_SHOWN), and the per-type combinations −6.32 and −2.41 floors; per-type
 potion weights alone −1.54 floors, NOT_SHOWN. The default weights stay.
+Research-only `STS_SILVER_VICTORY_TURN_PENALTY` (native Silver; unset = 0.4,
+issue #880) replaces the per-turn penalty a won leaf pays (`- turn * 0.4`); `0`
+makes equal-resource wins independent of combat length. The loss branch
+(including its `turnSurvivalWeight` credit) and the final-fight leaf are
+unchanged. Ledger-06 (#880, 64 paired A20 whole runs) was INCONCLUSIVE: `0`
+lengthens boss fights by ~0.7 turns (all combats 3.99 → 4.16) without stalling;
+Heart kills 17 → 19 and final floor −2.39 [−5.92, +1.06] are noise. The default
+stays 0.4.
 
 `STS_MULTISELECT_MODE=all|single|none` controls subsets. `all` is default and
 the complete validity contract; `single` keeps empty, singleton, and full
@@ -766,6 +774,38 @@ rollout before heuristic evaluation, so terminal **evaluated endpoints** do
 not imply terminal tree leaves. `nonterminal_rollout_starts` and `rollout_calls`
 make this distinction visible; cycle rollouts are counted separately. Exact
 histograms retain maxima and quantiles without dumping states or whole trees.
+
+Since #888 each searched row also carries a `search` block (schema 1 rows gain
+the field; older readers ignore it). Per new simulation: round depth of the
+tree leaf (`tree_rounds`), of the rollout (`rollout_rounds`) and in total
+(`total_rounds`), rollout actions, the stop reason (`new_leaf`: a node created
+by this simulation was rolled out; `unvisited_node`: a transposition into a
+node with no visits; `terminal_revisit`: an already visited terminal decision
+node, valued exactly by the terminal evaluation; `no_actions`, `cycle`,
+`depth_bound`) and the nodes it allocated (decision nodes from expanding an
+action edge, decision nodes from DPW widening of an existing chance node,
+chance nodes). A round is one `BattleContext::turn` step: the player turn and
+the enemy turn that follows. After the search, a read of the graph gives
+allocated nodes (`allocated_nodes`, the pool in use; the older `nodes` field is
+the pool's high-water mark and keeps stale nodes of an earlier root) and the
+nodes reachable from the root, the most-visited line (`pv`: action depth,
+round depth and edge visits per action edge; chance nodes follow their
+most-visited outcome), and every first End Turn reachable from the root
+without ending a turn (`first_end_turns`; other chance nodes, such as a draw
+inside the turn, are followed through all outcomes). For each: End Turn edge
+visits, chance-node visits, distinct outcome nodes (`equalForSearch`, which
+ignores the RNG streams), RNG draws, distinct public projections (outcome,
+turn, player HP/block/energy/strength/dexterity/status flags, each monster's
+HP/block/liveness/last two moves/strength/Vulnerable/Weak, hand multiset and
+pile sizes; unique ids, hidden intent damage and draw order left out), the
+DPW cap at the node's visits, largest-child visits, effective children
+(`(Σv)²/Σv²`) and whether it is on the most-visited line. Under the learned
+stop the same counts are read at each checkpoint (`checkpoints`). Rows also
+record thread CPU and wall seconds of the search. The graph read includes
+visits inherited through a reroot; per-simulation counters do not.
+`STS_SILVER_TREE_PROFILE_SCOPE=real` skips fights under a budget override
+(imagined OOC fights). `tools/analyze_silver_tree_shape.py` summarizes the
+block per encounter. Measurement: [§706](../../experiments/ledger-06.md).
 
 Run `python3 tools/analyze_silver_tree_profile.py PROFILE.jsonl --output
 SUMMARY.json` to validate all denominators and generate counts/shares and depth

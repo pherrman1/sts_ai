@@ -220,6 +220,11 @@ struct OocSiblingLeafCapture {
     // the root uses the same stream (common random numbers), so sibling differences lose most of
     // the rollout noise. Off: each leaf's repeats have their own streams (seeded with its ordinal).
     bool commonSeeds = false;
+    // Research option (default off, STS_OOC_SIBLING_MONO=1, issue #886): each captured leaf also scores paired
+    // variants that differ only in current HP or in one upgraded card (X2-B, the calibrated leaf anchor, heart1's
+    // value and monoRepeats rollouts on the same streams as the repeats), in the same forked child.
+    bool mono = false;
+    unsigned monoRepeats = 16;
     // Research option (default empty, STS_OOC_SIBLING_VR_ARMS=a,b,...; issue #883): each named arm adds
     // extra.vr.<arm> with `repeats` rollout values of the leaf. Arms: base (common seeds), indep (per-leaf seeds),
     // sw (survival-weighted), keyed (event-keyed streams), swkeyed (both); all but indep use common seeds.
@@ -328,6 +333,7 @@ private:
     std::map<sts::search::OocStateId, std::pair<sts::search::OocStateId, sts::search::OocActionId>> parents_;
 #ifndef STS_LIVE_ADVISOR
     std::optional<nlohmann::json> siblingLeafExtras(sts::search::OocStateId);
+    nlohmann::json monoVariants(sts::search::OocStateId, const OocPolicyThreadState &);
 #endif
     double evaluateLeafUnobserved(sts::search::OocStateId, std::mt19937_64 &, bool &terminal,
                                  sts::search::OocEndpoint &endpoint);
@@ -383,7 +389,8 @@ public:
     // Campfire price (STS_OOC_CAMPFIRE_PRICE): for every legal root action, n rollouts of the search's own leaf and n
     // rollouts to the act's end valued by refereeActEndCalibration, stream r shared by the actions. Changes the
     // model's rollout state: call it in a forked child.
-    nlohmann::json priceRootActions(unsigned n, std::uint64_t seed);
+    // top > 0 prices only the top highest-prior legal actions (ties keep legal order).
+    nlohmann::json priceRootActions(unsigned n, std::uint64_t seed, unsigned top = 0);
 };
 // Adds game meanings and CTM provenance to a captured generic search tree.
 void annotateOocTree(const OocGameContextModel &, sts::search::OocTreeSnapshot &);
