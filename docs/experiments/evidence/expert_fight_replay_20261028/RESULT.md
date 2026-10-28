@@ -31,8 +31,8 @@ fight 0.059 vs 0.031, +0.03 [+0.02, +0.04]. No fight was dropped.
 | act-3 boss* | 121 | 13.07 | 7.90 | +5.17 [+2.07, +8.29] | 0.33 / 0.06 | 0.070 / 0.008 |
 
 By encounter (elites/bosses, n ≥ 36): Slavers +7.0, Automaton +9.8, Awakened One +10.7, Book of Stabbing +4.8,
-Gremlin Leader +4.6, Champ +4.9, Nemesis +4.3, The Guardian +4.3 (CIs exclude 0); Lagavulin +1.3, Nob +1.2,
-Sentries +1.0, Hexaghost +1.1, Slime Boss −0.2, Collector −0.1 (near 0). Full table in `result.json`.
+Gremlin Leader +4.6, Champ +4.9, Nemesis +4.3, The Guardian +4.3, Lagavulin +1.3 [+0.1, +2.5] (CIs exclude 0);
+Nob +1.2, Sentries +1.0, Hexaghost +1.1, Slime Boss −0.2, Collector −0.1 (CIs include 0). Full table in `result.json`.
 
 **Against §701 (observational, won fights):** act-1 elites +3.5 → +1.2 matched; act-1 boss +8.0 → +1.7; act-2 elites
 +4.5 → +5.4; act-2 boss +12.4 → +4.5. In act 1 most of the observed gap goes away on the expert's own states (it
@@ -54,7 +54,8 @@ comes from upstream: deck, HP, path); act-2 elites keep their whole gap, act-2 b
 \* The final act-3 boss (floor 51 at A20): the engine's exit from that fight runs on into the Act-4 transition,
 which heals 75% of missing HP (`GameContext::transitionToAct`); the expert's floor-51 HP is before that heal. Before
 the correction Time Eater and Donu and Deca showed the bot *gaining* HP (−3.4 and −2.7 lost). `analyze.py` now
-inverts the heal for those bot exits (largest h with h + round(0.75·(max − h)) = exit). Acts 1-2 and the primary are
+inverts the heal for those bot exits (largest h with h + round(0.75·(max − h)) = exit). The inversion is not unique
+(rounding): taking the smallest such h gives act-3 bosses +6.4 instead of +5.2. Acts 1-2 and the primary are
 unaffected (identical before and after).
 
 ## Interpretation
