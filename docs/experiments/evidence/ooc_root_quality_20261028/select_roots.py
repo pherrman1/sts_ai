@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Phase-1 root list for the root-quality campaign (PREREG.md, frozen rule).
 
-Reads the arm-A records of the §712 card-rule campaign (unit tars) and picks, for the first 128 seeds of
+Reads the arm-A records of the §712 card-rule campaign (unit tars) and picks, for the first 144 seeds (128 + 16 spares) of
 111387000-111387255 whose game has a card-reward root, one root uniformly by splitmix64(seed ^ 0x524f4f5451).
 A card-reward root is a real decision by heart1_screen on a REWARDS state (screen 2) with offered cards at floor >= 1.
-Usage: python3 -I select_roots.py UNITS_DIR [LOCAL_DIR ...] > roots.tsv   (seed, decisionIndex, floor, act, nRoots)
+Usage: python3 -I select_roots.py UNITS_DIR [LOCAL_DIR ...] > roots.tsv   (seed, decisionIndex, floor, act, nRoots, cards)
+The cards column is the §712 root's offer; the analysis keeps a probed root only if main's state at that index is a
+card reward (main does not replay every §712 game bit-exactly), and uses the first 128 valid roots in seed order.
 """
 import gzip, io, json, sys, tarfile
 from pathlib import Path
@@ -39,14 +41,14 @@ def card_roots(rows):
             continue
         s = states.get(r["stateIndex"])
         if s and s["screen"] == 2 and s["floor"] >= 1 and s["record"].get("cards_offered.cards"):
-            out.append((r["decisionIndex"], s["floor"], s["act"]))
+            out.append((r["decisionIndex"], s["floor"], s["act"], s["record"]["cards_offered.cards"]))
     return out
 
 
 def main():
     dirs = sys.argv[1:]
     picked = 0
-    print("seed\tdecisionIndex\tfloor\tact\tnRoots")
+    print("seed\tdecisionIndex\tfloor\tact\tnRoots\tcards")
     for seed in range(111387000, 111387256):
         rows = arm_a_rows(dirs, seed)
         if rows is None:
@@ -54,12 +56,12 @@ def main():
         roots = card_roots(rows)
         if not roots:
             continue
-        idx, floor, act = roots[splitmix64(seed ^ 0x524F4F5451) % len(roots)]
-        print(f"{seed}\t{idx}\t{floor}\t{act}\t{len(roots)}")
+        idx, floor, act, cards = roots[splitmix64(seed ^ 0x524F4F5451) % len(roots)]
+        print(f"{seed}\t{idx}\t{floor}\t{act}\t{len(roots)}\t{','.join(map(str, cards))}")
         picked += 1
-        if picked == 128:
+        if picked == 144:
             break
-    if picked < 128:
+    if picked < 144:
         raise SystemExit(f"only {picked} seeds with card roots")
 
 

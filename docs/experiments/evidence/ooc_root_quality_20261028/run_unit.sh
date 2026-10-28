@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Root-quality campaign unit (PREREG.md). Environment = §712 arm A (card_rule_ab_20261026/run_unit.sh, verbatim).
-#   probe REPO RUN OUT SEED INDEX           phase 1: grid probe at one root, exits after the probe row
-#   fork  REPO RUN OUT SEED INDEX SALT KEY   phase 2: one forked game (KEY = root candidate key, or - = production)
+#   run_unit.sh REPO RUN OUT probe SEED INDEX           phase 1: grid probe at one root, exits after the probe row
+#   run_unit.sh REPO RUN OUT fork  SEED INDEX SALT KEY   phase 2: one forked game (KEY = root candidate key, - = production)
 # RUN holds one_combat, student_sel.bin (cf6bf7fb...) and sr_value.bin (28523fb5..., SR_crn_r2_s2_ep20).
 set -uo pipefail
-MODE=$1 REPO=$2 RUN=$3 OUT=$4 SEED=$5 INDEX=$6
+REPO=$1 RUN=$2 OUT=$3 MODE=$4 SEED=$5 INDEX=$6
 [ "$(sha256sum < "$RUN/student_sel.bin" | cut -c1-16)" = cf6bf7fb7c3147dc ] || { echo "bad $RUN/student_sel.bin" >&2; exit 2; }
 [ "$(sha256sum < "$RUN/sr_value.bin" | cut -c1-16)" = 28523fb5b63c1977 ] || { echo "bad $RUN/sr_value.bin" >&2; exit 2; }
 mkdir -p "$OUT"
