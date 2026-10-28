@@ -24754,6 +24754,27 @@ per fight). Not tested: larger α, rest-site imitation, a separate ranker head.
 Seeds: 111384000–111385023 used, smokes 111385990–111385991 used; 111385992–111385999 unused.
 **Knowledge impact:** none (no default or code change).
 
+## §702 — Fair-policy impossibility certificate, Stage 1 audit (issue #887): in the seed regime the floor-0 observation identifies the seed (1M repo-range and 20M random seeds, zero collisions), so no information-set certificate exists there and fair equals clairvoyant; in the fresh-chance regime a whole-run certificate needs a full-game loss proof; STOP after Stage 1 (no gameplay, 2026-10-27)
+
+**Question:** can two positive-probability worlds share an observable history at a decision with no common winning
+action, so that no fair policy wins the A20 Ironclad Heart with probability 1?
+**Setup:** [README](evidence/fair_impossibility_audit_20261027/README.md). Read-only audit of RNG, observability and
+exact-solver contracts at `ed2dcb2b`, plus a no-gameplay census of floor-0 observations (Neow options, act-1 boss,
+act-1 map with burning elite) per seed.
+**Result:** all 1,000,000 seeds 111,000,000–111,999,999 and all 20,000,000 random seeds have distinct floor-0
+observations (maps alone also distinct; control Neow + boss: 2,250 classes, Rényi-2 11.1 bits). Map collision entropy
+> ~46 bits at 95%. Seed-regime consequence (proved on that range): no two worlds share any history, and a lookup policy
+plays each seed's hindsight-optimal line, so the best fair win rate equals the hindsight-winnable fraction.
+Fresh-chance regime: no forced prefix beyond Neow and no sound whole-run loss bound in the repo (`exact_combat_solver`
+is exact only for gated single combats or 1–2 turn horizons, §623, §654). The only known unwinnable-seed proof is
+Silent A18+ (`18ISL35FYK4`, forced Lagavulin relaxation); none for Ironclad.
+**Interpretation:** a universal (c) certificate is impossible in the seed regime and infeasible in the fresh-chance
+regime with current tools; local (b) conflicts are computable as value of perfect information on recorded exact-solver
+roots, conditional on reaching the root.
+**Decision:** stop after Stage 1; Stage 2 pilot not run. Optional follow-up (Philipp's call): local VPI on the §654
+recorded roots, no new seeds.
+Seeds: none used (census evaluates map/Neow generation only; no game played).
+**Knowledge impact:** none (no code or default change).
 ## §699 — OOC rollout variance (issue #883, phases 1–2): the CTM death draw carries 87% of rollout3 sibling-difference variance in the §644 capture; common seeds couple map and boss-relic siblings least (CRN ratio ≈ 0.85); conditional Monte Carlo on survival and event-keyed streams proposed (offline, no seeds, 2026-10-27)
 
 **Question:** issue #883. Which unbiased, fair-RNG methods would buy the most precision per CPU-hour for OOC sibling
@@ -24810,3 +24831,55 @@ skewed-test artefact, since sw shares base's draws until a death. keyed alone is
 and an A20 A/B as the live leaf; each is Philipp's call.
 Seeds: none new; 111374100–111374107 (§683, used) replayed.
 **Knowledge impact:** KB research/ooc/variance-reduction.md updated.
+## §700 — SR head data learning curve: halving the SR_crn_r2 training data costs nothing (50 % → 100 %: +0.003 [−0.003, +0.009], FLAT); a quarter of the game rows with all ranking groups ranks as well as everything, so more policy-only games would not lift this head (offline, NEGATIVE, 2026-10-27)
+
+**Question:** the best SR heads rank common-seed VALIDATION siblings at X2-B's level (SR_crn_r2 s1/s2 0.663/0.667,
+X2-B 0.664, §649). Is that limited by the amount of training data (estimate in the project: 100k–1M games for 1 pp)?
+**Setup:** [README](evidence/value_sr_learning_curve_20261027/README.md), plan [PLAN.md](evidence/value_sr_learning_curve_20261027/PLAN.md)
+(frozen before the runs, data branch `claude/az-gen2-data` `gen2/value-sr-lc/`). SR_crn_r2_s1/s2's command on nested
+source subsets (sha256 hash rule) of its 2,016 training row files and 19,781 ranking groups: 25 % (463 files, 5,074
+groups) and 50 % (992, 10,457), torch seeds 1 and 2, optimizer steps matched to the 100 % runs (80/40/20 epochs);
+split runs at seed 1: 25 % rows with all groups, all rows with 25 % groups. Epoch by §649's `pick_epoch.py` (best
+in-training holdout ranking with selection BCE ≤ 0.570). Philipp's GPU 2026-10-27 12:08Z–~19:20Z (Philipp's OK
+2026-10-26 23:32Z, start time his); scoring in the cloud reproduces §649 exactly. Weights on the data branch (`5d7a2ec`,
+`0d84e2c`). STS_ACTIVE_POWER_FEATURES not read by the heart1 student (unset, logged).
+**Result:** head alone on VALIDATION, seed mean: 25 % 0.638, 50 % 0.662, 100 % 0.665. 25 → 50 %: +0.024
+[+0.018, +0.030]; **50 → 100 %: +0.003 [−0.003, +0.009] → FLAT** (pairs with label gap < 1.5 pp: −0.000
+[−0.007, +0.006]; blend +0.005 [−0.001, +0.009]). Split: 25 % rows + all groups 0.666, +0.004 [−0.002, +0.009] vs
+100 % s1; all rows + 25 % groups 0.649, −0.014 [−0.021, −0.007]. At 25 % the value BCE bar binds (6–8 of 80 epochs
+pass); the best unconstrained epochs reach holdout ranking 0.656–0.663, near 100 %.
+**Interpretation:** the head's ranking is not limited by game-outcome rows; they matter only through value-BCE
+overfitting, which cuts the epoch choice short. Ranking groups matter with diminishing returns (flat by ~10k groups).
+**Inference:** even the CI's upper end (+0.009 per doubling) needs ~10× today's data for +0.03 over X2-B; the point
+estimate needs ~500×. The plateau comes from the labels' kind (rollout3 means ending in X2-B), the features or the
+recipe, not the volume; consistent with §645/§649.
+**Decision:** no default change; no data generation for this head proposed. Next levers, if the value head is pursued:
+labels that do not end in X2-B or luck-corrected outcome labels (§697/§698), and a ranking-first selection.
+Seeds: none.
+**Knowledge impact:** none (no default or code change).
+
+## §701 — Combat HP-loss gap vs Baalorlord (issue #889): the bot loses more HP on every act-1-3 elite and boss encounter at matched entry HP and deck size, 2-3x with near-starter decks, while drinking more potions per fight; potion under-use refuted; offline, no seeds (2026-10-27)
+
+**Question:** why does the A20 bot lose more HP than Baalorlord in elite and boss fights (§688), and is potion
+management, deck/resources, encounter mix or combat play the explanation? Existing data only.
+**Data:** [RESULT](evidence/combat_hp_gap_20261027/RESULT.md). Bot: §683 MAP arm ctm rows (1,024 seeds, 24,017 fights,
+run commit `772df240`, pre-§682 Act 4). Expert: the 676 #865 `.run` files (hashes match), 17,356 fights. §694 X-arm
+games (`84d2f15d`) for deaths with the expert's exact deck.
+**Result:** net HP per won fight, bot vs expert, elites acts 1/2/3 13.0/10.1/6.1 vs 9.5/5.6/2.2, bosses 19.3/23.6/13.0
+vs 11.3/11.2/8.8 (all CIs exclude 0); hallways within ~1 HP. Death per fight act-2 boss 0.143 vs 0.055, act-3 boss
+0.128 vs 0.023, Heart 0.41 vs 0.08 (bot Act 4 is the pre-§682 learned-stop setup, not today's Act-4 strong default). The gap is on all 18 act-1-3 elite/boss encounters; the act-2 boss gap is neither
+one boss nor the mix (expert-mix reweighted 23.9) nor entry HP (bot enters healthier). It stays within entry-HP bins
+(85-100% HP: elites 11.7 vs 6.4, bosses 19.4 vs 10.7) and deck-size strata; act-1 elites with near-starter decks
+(floor ≤ 8, ≤ 13 cards, ≤ 1 upgrade): Nob 16.4 vs 5.7, Lagavulin 25.0 vs 11.1, Sentries 27.4 vs 11.5 (n 20-32 each,
+CIs exclude 0). Potions: expert uses are logged per floor in all runs (names in 538), inventory reconstructable in
+488; turn-level use is not logged. The bot drinks more per elite/boss fight (act-2 boss 0.89 vs 0.47, act-3 boss 0.59
+vs 0.12) and enters the Heart with 0.97 potions vs 2.19 (expert drinks 1.94 there). §694 X arm: 85 combat deaths on
+floors the expert survived with the same deck and encounter (acts 1/2/3 54/27/4; the expert entered at median 59% HP).
+**Interpretation:** ranked by evidence: (1) combat play, potions included, loses more HP on the same fights; (2) deck
+quality may add in acts 2-3 but does not explain the act-1 near-starter gap; (3) potion under-use refuted, potion
+allocation (spending before the Heart) a plausible Heart-only contributor; (4) mix and entry HP ruled out; engine
+fight fidelity not testable from these logs. **Inference:** a matched expert-entry replay (HP and potions synced at
+combat entry, Silver K = 4 per fight, ~1,600 acts-1-2 elite/boss entries on vanilla seeds) would size the combat gap
+on identical states; it needs per-fight output in `expertreplay` (missing today) and Philipp's go.
+Seeds: none (existing games only).
+**Knowledge impact:** this ledger entry and its evidence only; no code, model or default change.
