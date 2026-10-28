@@ -3514,6 +3514,37 @@ int testSilverConcaveHpLeaf() {
     return 0;
 }
 
+// #880: the per-turn victory penalty (STS_SILVER_VICTORY_TURN_PENALTY) moves only
+// won leaves; at 0 equal-resource wins score the same at any turn.
+int testSilverVictoryTurnPenalty() {
+    auto fail = [&](const std::string &msg) {
+        std::cout << "silver_victory_turn_penalty FAIL: " << msg << '\n';
+        return 1;
+    };
+    GameContext gc(CharacterClass::IRONCLAD, 424243, 0);
+    gc.curRoom = Room::MONSTER;
+    BattleContext bc;
+    bc.init(gc, MonsterEncounter::CULTIST);
+    search::SilverSearchContext context;
+    context.act = 1;
+    search::SilverSearcher searcher(silverSearchRoot(bc), context);
+    auto score = [&](Outcome outcome, int turn) {
+        BattleContext end = bc;
+        end.outcome = outcome;
+        end.turn = turn;
+        return searcher.scoreEndState(end);
+    };
+    if (searcher.evalWeights.victoryTurnPenalty != 0.4) return fail("default is not 0.4");
+    if (std::abs((score(Outcome::PLAYER_VICTORY, 3) - score(Outcome::PLAYER_VICTORY, 13)) - 4.0) > 1e-9)
+        return fail("default: 10 turns do not cost 4");
+    const double loss = score(Outcome::PLAYER_LOSS, 7);
+    searcher.evalWeights.victoryTurnPenalty = 0;
+    if (score(Outcome::PLAYER_VICTORY, 3) != score(Outcome::PLAYER_VICTORY, 13)) return fail("0: win depends on turn");
+    if (loss != score(Outcome::PLAYER_LOSS, 7)) return fail("loss branch changed");
+    std::cout << "silver_victory_turn_penalty PASS\n";
+    return 0;
+}
+
 // #544: a replayable zero-cost draw (two Finesse) must not trap Silver's
 // rollout policy in a loop that never attacks. Before the fix every playout
 // here ran ~142k actions to the engine's loop guard and scored that loss
@@ -6784,6 +6815,8 @@ int main(int argc, const char* argv[]) {
         return testSilverPotionWeights();
     } else if (command == "silver_concave_hp_leaf") {
         return testSilverConcaveHpLeaf();
+    } else if (command == "silver_victory_turn_penalty") {
+        return testSilverVictoryTurnPenalty();
     } else if (command == "silver_rollout_zero_cost_loop") {
         return testSilverRolloutZeroCostLoop();
     } else if (command == "match_and_keep") {

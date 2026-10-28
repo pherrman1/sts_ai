@@ -303,6 +303,14 @@ better: the measured weights (potion 5, max HP 1.1, gold 0.01) −1.63 floors an
 −5.9 pp wins, concave HP k = 2.7 −5.23 floors and −8.4 pp, k = 1.35 −2.10 floors
 (wins NOT_SHOWN), and the per-type combinations −6.32 and −2.41 floors; per-type
 potion weights alone −1.54 floors, NOT_SHOWN. The default weights stay.
+Research-only `STS_SILVER_VICTORY_TURN_PENALTY` (native Silver; unset = 0.4,
+issue #880) replaces the per-turn penalty a won leaf pays (`- turn * 0.4`); `0`
+makes equal-resource wins independent of combat length. The loss branch
+(including its `turnSurvivalWeight` credit) and the final-fight leaf are
+unchanged. Ledger-06 (#880, 64 paired A20 whole runs) was INCONCLUSIVE: `0`
+lengthens boss fights by ~0.7 turns (all combats 3.99 → 4.16) without stalling;
+Heart kills 17 → 19 and final floor −2.39 [−5.92, +1.06] are noise. The default
+stays 0.4.
 
 `STS_MULTISELECT_MODE=all|single|none` controls subsets. `all` is default and
 the complete validity contract; `single` keeps empty, singleton, and full

@@ -1646,7 +1646,33 @@ CombatRuntimeSample::Outcome OocGameContextModel::resolveCombat(Snapshot &child,
                         : CombatRuntimeSupport{false, "missing_sampler"};
     auto reason = support.reason;
     if (support.supported) {
-        const auto sampled = prepared ? prepared->sample(rng) : combatSampler->sample(child.gc, input, rng);
+        // Survival-weighted rollout (#883): weight by P(survive) and draw from the CTM conditioned on survival by
+        // rejection; the sampler's death probability is 1 - runtime survival, as its expectation reports.
+        std::optional<CombatTransitionExpectation> weighted;
+        // Act-4 fights may be routed to native Silver (STS_OOC_MCTS_ACT4_SILVER_SIMS), whose death rate the CTM
+        // expectation does not describe; they keep the sampled death, which is also unbiased.
+        const bool act4Fight = child.gc.info.encounter == sts::MonsterEncounter::SHIELD_AND_SPEAR
+            || child.gc.info.encounter == sts::MonsterEncounter::THE_HEART;
+        if (rolloutSurvivalWeight_ && !prepared && !act4Fight) {
+            auto expected = combatSampler->expectation(child.gc, input);
+            if (expected.supported && std::isfinite(expected.death) && expected.death >= 0 && expected.death <= 1)
+                weighted = std::move(expected);
+        }
+        if (weighted && weighted->death >= 1 - 1e-6) {
+            *rolloutSurvivalWeight_ = 0;
+            child.gc.outcome = sts::GameOutcome::PLAYER_LOSS;
+            return CombatRuntimeSample::Outcome::DEATH;
+        }
+        if (weighted) *rolloutSurvivalWeight_ *= 1.0 - double(weighted->death);
+        const auto draw = [&] {
+            if (!weighted) return prepared ? prepared->sample(rng) : combatSampler->sample(child.gc, input, rng);
+            for (int attempt = 0; attempt < 100000; ++attempt) {
+                auto sample = combatSampler->sample(child.gc, input, rng);
+                if (sample.outcome != CombatRuntimeSample::Outcome::DEATH) return sample;
+            }
+            throw sts::search::OocSearchUnsupported("survival_weight_rejection_limit");
+        };
+        const auto sampled = draw();
         if (sampled.outcome != CombatRuntimeSample::Outcome::UNSUPPORTED) {
             sampledOutcome = sampled.outcome;
             ++combatSamples_;
@@ -1892,7 +1918,8 @@ std::optional<nlohmann::json> OocGameContextModel::siblingLeafExtras(sts::search
     if (capture.commonSeeds) row["commonSeeds"] = true;
     const auto policyBefore = captureOocPolicyThreadState();
     const unsigned seconds = 20 + 4 * (capture.repeats + 2 * capture.longRepeats) + 30 * capture.refereeRepeats
-        + (capture.mono ? 30 + 2 * 40 * capture.monoRepeats : 0);
+        + (capture.mono ? 30 + 2 * 40 * capture.monoRepeats : 0)
+        + capture.vrRepeats * unsigned(capture.vrArms.size());
     try { row["extra"] = forkLeafReplay([&] {
         nlohmann::json out = nlohmann::json::object();
         const auto leafCombatsBefore = options.leafCombats;
@@ -1944,6 +1971,38 @@ std::optional<nlohmann::json> OocGameContextModel::siblingLeafExtras(sts::search
             options.uniformLeafPolicy ? "uniform" : options.priorLeafPolicy ? "prior" : "v4";
         out["heart1RolloutSteps"] = continuation_.heart1LeafSteps - heart1StepsBefore;
         out["heart1RolloutFallbacks"] = continuation_.heart1LeafFallbacks - heart1FallbacksBefore;
+        // Issue #883 variance arms, all paired by repeat index r (kind 4); indep alone uses per-leaf seeds.
+        if (!capture.vrArms.empty()) {
+            auto &vr = out["vr"] = nlohmann::json::object();
+            // Shuffled arm order per leaf, so warm caches favour no arm on average in the CPU comparison.
+            auto order = capture.vrArms;
+            std::seed_seq orderSeq{capture.searchSeed, capture.decisionIndex, std::uint64_t(ordinal), std::uint64_t(5)};
+            std::mt19937_64 orderRng(orderSeq);
+            std::shuffle(order.begin(), order.end(), orderRng);
+            vr["order"] = order;
+            for (const auto &arm : order) {
+                options.survivalWeightedRollout = arm == "sw" || arm == "swkeyed";   // child process only
+                options.keyedRolloutStreams = arm == "keyed" || arm == "swkeyed";
+                const std::uint64_t leafKey = arm == "indep" ? ordinal : 0xFFFFFFFFull;
+                auto &values = vr[arm]["values"] = nlohmann::json::array();
+                auto &deaths = vr[arm]["terminal"] = nlohmann::json::array();
+                const auto armStart = std::clock();
+                for (unsigned r = 0; r < capture.vrRepeats; ++r) {
+                    restoreOocPolicyThreadState(policyBefore);
+                    std::seed_seq seq{capture.searchSeed, capture.decisionIndex, leafKey, std::uint64_t(4), std::uint64_t(r)};
+                    std::mt19937_64 stream(seq);
+                    bool ended = false;
+                    sts::search::OocEndpoint end;
+                    refereeActEnd_.reset();
+                    try {
+                        values.push_back(evaluateLeafUnobserved(id, stream, ended, end));
+                        deaths.push_back(ended);
+                    } catch (const std::exception &e) { values.push_back(nullptr); deaths.push_back(e.what()); }
+                }
+                vr[arm]["cpuSeconds"] = double(std::clock() - armStart) / CLOCKS_PER_SEC;
+            }
+            options.survivalWeightedRollout = options.keyedRolloutStreams = false;
+        }
         if (capture.longRepeats) {
             options.leafCombats = 5;  // child process only
             evaluations("long5", capture.longRepeats, 2);
@@ -2365,10 +2424,32 @@ double OocGameContextModel::evaluateLeafUnobserved(sts::search::OocStateId id,
         const GameContext &gc; sts::search::OocEndpoint &out;
         ~EndpointOnExit() { out = endpointOf(gc); }
     } endpointOnExit{child.gc, endpoint};
+    // Event-keyed streams (#883 research): each rollout event takes a fresh stream keyed by its public position, so
+    // keys are unique within one trajectory and every event still gets independent uniforms.
+    std::mt19937_64 keyedStream;
+    std::map<std::array<int, 4>, int> keyedOccurrences;
+    const std::uint64_t keyedBase = options.keyedRolloutStreams ? rng() : 0;
+    const auto streamFor = [&](int kind) -> std::mt19937_64 & {
+        if (!options.keyedRolloutStreams) return rng;
+        const std::array<int, 4> key{child.gc.act, child.gc.floorNum, int(child.gc.screenState), kind};
+        const int occurrence = keyedOccurrences[key]++;
+        std::seed_seq seq{std::uint32_t(keyedBase), std::uint32_t(keyedBase >> 32), std::uint32_t(key[0]),
+            std::uint32_t(key[1]), std::uint32_t(key[2]), std::uint32_t(key[3]), std::uint32_t(occurrence)};
+        keyedStream.seed(seq);
+        return keyedStream;
+    };
+    // Survival-weighted rollouts (#883 research) scale the value by the product of CTM survival probabilities.
+    double survivalWeight = 1;
+    struct WeightScope {
+        double *&slot; double *saved;
+        ~WeightScope() { slot = saved; }
+    } weightScope{rolloutSurvivalWeight_, rolloutSurvivalWeight_};
+    rolloutSurvivalWeight_ = options.survivalWeightedRollout ? &survivalWeight : nullptr;
     if (options.sampleNoncombat) {
-        sampleNoncombatFuture(child.gc, rng);
+        auto &start = streamFor(1);
+        sampleNoncombatFuture(child.gc, start);
         if (id == 0 && dependencies.sampleHiddenCounters)
-            dependencies.sampleHiddenCounters(child.gc, rng);
+            dependencies.sampleHiddenCounters(child.gc, start);
     }
     if (!options.checkpointLeaves) {
         if (child.gc.outcome == sts::GameOutcome::PLAYER_LOSS) { terminal = true; return 0; }
@@ -2442,8 +2523,9 @@ double OocGameContextModel::evaluateLeafUnobserved(sts::search::OocStateId id,
         }
         return value;
     };
-    return boundedContinuation(maxSteps,loggedCheckpoint,[&] {
+    const double value = boundedContinuation(maxSteps,loggedCheckpoint,[&] {
         ++continuation_.projectionSteps;
+        auto &rng = streamFor(child.gc.screenState == sts::ScreenState::BATTLE ? 2 : 3);
         if (child.gc.screenState == sts::ScreenState::BATTLE) {
             try { resolveCombat(child,rng); }
             catch (const sts::search::OocSearchUnsupported &) {
@@ -2536,6 +2618,7 @@ double OocGameContextModel::evaluateLeafUnobserved(sts::search::OocStateId id,
             }
         }
     });
+    return survivalWeight * value;
 }
 
 }
@@ -2748,6 +2831,8 @@ struct LiveSiblingCapture {
     bool commonSeeds = false;
     bool mono = false;
     unsigned monoRepeats = 16;
+    std::vector<std::string> vrArms;
+    unsigned vrRepeats = 0;
 };
 std::optional<LiveSiblingCapture> liveSibling;
 std::string pendingLeafCapturePath;
@@ -3428,6 +3513,19 @@ void configureLiveOocMcts() {
         sibling.commonSeeds = knob("STS_OOC_SIBLING_COMMON_SEEDS", 0, 0, 1) == 1;
         sibling.mono = knob("STS_OOC_SIBLING_MONO", 0, 0, 1) == 1;
         sibling.monoRepeats = unsigned(knob("STS_OOC_SIBLING_MONO_REPEATS", 16, 0, 256));
+        if (const char *arms = std::getenv("STS_OOC_SIBLING_VR_ARMS"); arms && *arms) {
+            const std::string list(arms);
+            for (std::size_t pos = 0; pos <= list.size();) {
+                const auto comma = std::min(list.find(',', pos), list.size());
+                const std::string arm = list.substr(pos, comma - pos);
+                if (arm != "base" && arm != "indep" && arm != "sw" && arm != "keyed" && arm != "swkeyed")
+                    throw std::runtime_error("STS_OOC_SIBLING_VR_ARMS: unknown arm '" + arm + "'");
+                sibling.vrArms.push_back(arm);
+                pos = comma + 1;
+            }
+            sibling.vrRepeats = unsigned(knob("STS_OOC_SIBLING_VR_REPEATS", 32, 1, 1024));
+        } else if (std::getenv("STS_OOC_SIBLING_VR_REPEATS"))
+            throw std::runtime_error("STS_OOC_SIBLING_VR_REPEATS requires STS_OOC_SIBLING_VR_ARMS");
         sibling.out = std::make_shared<std::ofstream>(path, std::ios::app);
         if (!*sibling.out) throw std::runtime_error("STS_OOC_SIBLING_CAPTURE cannot open output");
         // Load heart1 in the parent: forked children must not each reload it.
@@ -4870,6 +4968,7 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
         sibling->maxDepth = liveSibling->maxDepth; sibling->maxLeaves = liveSibling->maxLeaves;
         sibling->commonSeeds = liveSibling->commonSeeds;
         sibling->mono = liveSibling->mono; sibling->monoRepeats = liveSibling->monoRepeats;
+        sibling->vrArms = liveSibling->vrArms; sibling->vrRepeats = liveSibling->vrRepeats;
         options.siblingCapture = std::move(sibling);
     }
     if (!options.priorTracePath.empty()) {

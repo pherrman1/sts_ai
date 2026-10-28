@@ -71,6 +71,8 @@ namespace sts::search {
             // Research-only victory-leaf resource weights (STS_SILVER_GOLD_WEIGHT, STS_SILVER_MAXHP_WEIGHT).
             double goldWeight = SilverEvalWeights{}.goldWeight;
             double maxHpWeight = SilverEvalWeights{}.maxHpWeight;
+            // Research-only per-turn victory penalty (STS_SILVER_VICTORY_TURN_PENALTY, #880).
+            double victoryTurnPenalty = SilverEvalWeights{}.victoryTurnPenalty;
             // Research-only learned stopping (NativeSilverStopModel.h).
             bool learnedStop = false;
             double learnedStopThreshold = 0;
@@ -578,6 +580,7 @@ namespace sts::search {
                     s->evalWeights.concaveHpK = g_nativeSilverConcaveHpLeafOverride.value_or(g_options.concaveHpK);
                     s->evalWeights.goldWeight = g_options.goldWeight;
                     s->evalWeights.maxHpWeight = g_options.maxHpWeight;
+                    s->evalWeights.victoryTurnPenalty = g_options.victoryTurnPenalty;
                     if (const auto &params = g_nativeSilverSearchParamOverride) {
                         s->explorationParameter = params->exploration;
                         s->explorationParameterChance = params->explorationChance;
@@ -975,7 +978,8 @@ namespace sts::search {
                 throw std::runtime_error("STS_SILVER_CONCAVE_HP_LEAF must be a number in [0, 20] (0 = off)");
         }
         for (const auto &[name, target] : {std::pair<const char *, double *>{"STS_SILVER_GOLD_WEIGHT", &g_options.goldWeight},
-                                            {"STS_SILVER_MAXHP_WEIGHT", &g_options.maxHpWeight}}) {
+                                            {"STS_SILVER_MAXHP_WEIGHT", &g_options.maxHpWeight},
+                                            {"STS_SILVER_VICTORY_TURN_PENALTY", &g_options.victoryTurnPenalty}}) {
             if (const char *raw = std::getenv(name); raw && *raw) {
                 char *end = nullptr;
                 *target = std::strtod(raw, &end);
@@ -984,8 +988,10 @@ namespace sts::search {
             }
         }
         if (g_options.goldWeight != SilverEvalWeights{}.goldWeight || g_options.maxHpWeight != SilverEvalWeights{}.maxHpWeight
+                || g_options.victoryTurnPenalty != SilverEvalWeights{}.victoryTurnPenalty
                 || g_options.concaveHpK != 0 || g_options.potionTypeWeightsOn)
             std::cerr << "[silver] research leaf: gold=" << g_options.goldWeight << " maxhp=" << g_options.maxHpWeight
+                      << " victoryTurnPenalty=" << g_options.victoryTurnPenalty
                       << " concave=" << g_options.concaveHpK << " potionWeights=" << (g_options.potionTypeWeightsOn ? "on" : "off")
                       << "\n";
         if (const char *raw = std::getenv("STS_SILVER_LEARNED_STOP")) {
