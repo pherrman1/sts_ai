@@ -139,6 +139,11 @@ $p_\theta$ = share of the R search seeds choosing a. All CIs: two-stage bootstra
   a_{\mathrm{ref}}]$ (observable), and a model-based empirical-Bayes estimate (normal hierarchical model on
   $\delta_i(s)$ with the measured salt variance; posterior $\Pr[\hat a \ne a^*]$). Only the first two are evidence.
 
+- **Per-root table and RMS relative bias** (Philipp 2026-10-28 22:14Z, added before any phase-2 data): per (root,
+  competitor) Δ_ref, Δ_MCTS, B_ab = Δ_MCTS − Δ_ref, its SE, search SD, rank agreement with the in-sample best, regret,
+  tree depth, labelled noisy per root (SE ≈ 0.22 per pair at M = 4). Pooled: method-of-moments mean square of B_ab
+  (E[(x − D)²] − Var D − Var x), root-clustered bootstrap; detects only RMS ≳ 10 pp at this size. Descriptive, no rule.
+
 ## Decision rules (diagnostic; no default, model or training change follows from this run)
 
 Per leaf L at h = 3 (primary) and for each h (secondary):
