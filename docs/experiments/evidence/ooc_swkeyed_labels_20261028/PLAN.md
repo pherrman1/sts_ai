@@ -107,3 +107,16 @@ differences to about 0.2 of today's common-seed estimator at equal CPU, without 
   timeout per source. [units.txt](units.txt) holds the 320 §644 seeds, ordered longest first by their §644 wall time.
 - **Share:** `/mnt/project-files/ooc-swkeyed-labels`. Its `claims/` directory is deleted after verification (the
   share's file limit).
+
+## Deviation (2026-10-28, after the capture)
+- **Bias rule triggered:** the row-level rule flagged the labels. 8.6 % of rows have |z| > 2 against the §644 labels
+  on the same row (limit 8 %). The pooled mean difference passes: −0.00018 ± 0.00028.
+- **Diagnosis** (60 sources, `results/`): each row's z conditions on that row's own §644 draws.
+  - Rows whose base repeats saw no death come out low (−0.0115).
+  - Rows with 3 or more base deaths come out high (+0.011).
+  - Overall these cancel. This is the selection artefact §703 saw for sw.
+- **Decision:** Philipp chose "Proceed to training" on 2026-10-28 at 19:04Z. The result reports the flag and this
+  deviation.
+- **Groups:** on the replay, `crn_groups.py` keeps all 15,129 TRAIN groups. They are identical to §644's apart from
+  `target`. No group was lost.
+- **Data branch:** `claude/az-gen2-data` `gen2/value-sr-swk/` (`975e4e5f`); the groups file's sha256 is `4541dc8a…`.
