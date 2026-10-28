@@ -1,4 +1,4 @@
-# Matched expert-entry fight replay: result (§TBD)
+# Matched expert-entry fight replay: result (§711)
 
 Campaign `expert-fight-replay`, frozen per `PREREG.md` and `campaign.manifest` (run commit `11b496b3`, code
 `748eb3eb`, binary `d7af0395…`), 4 cloud workers, 2026-10-28 16:15-17:55Z. `verify_campaign.py`: 329/329 units OK,

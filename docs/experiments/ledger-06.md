@@ -25065,7 +25065,7 @@ above 32768, other leaves.
 Seeds: none new; 111374100–111374115 (§683, used) replayed.
 **Knowledge impact:** none (research flags only, default off).
 
-## §TBD — Matched expert-entry fight replay (#902): on Baalorlord's own fight states Silver loses +2.6 HP per acts-1-2 elite/boss fight (INCONCLUSIVE at the +2 margin); small in act 1, +5.4 on act-2 elites
+## §711 — Matched expert-entry fight replay (#902): on Baalorlord's own fight states Silver loses +2.6 HP per acts-1-2 elite/boss fight (INCONCLUSIVE at the +2 margin); small in act 1, +5.4 on act-2 elites
 
 **Question:** §701 found the bot loses more HP than Baalorlord on every elite and boss, but could not hold deck and
 relics fixed. On his own combat-entry states (deck, relics, path, HP, max HP), does today's A20 Silver lose more HP?
