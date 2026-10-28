@@ -45,7 +45,12 @@ differences to about 0.2 of today's common-seed estimator at equal CPU, without 
 
 ## Arms
 - **Control:** SR_crn_r2_s1 and SR_crn_r2_s2 as trained in §649. Their weights are on the data branch, so they are
-  not retrained.
+  not retrained, provided the stack is unchanged:
+  - The treatment's `train.log` hash line must match §649's: `distill.py` `40a9d5a3`, `monotone.py` `09efffaf`,
+    heart1 `deaba59d`.
+  - torch and CUDA versions are recorded.
+  - If the PC's torch or CUDA stack differs from 10-23, control seed 1 is retrained on the new stack and compared
+    instead.
 - **Treatment:** SR_crn_r2_swk_s1 and SR_crn_r2_swk_s2.
 
 ## Evaluation (cloud; `crn_eval.py` as in §649)
@@ -59,13 +64,22 @@ differences to about 0.2 of today's common-seed estimator at equal CPU, without 
   - round-2 VALIDATION;
   - the prices check (−3 HP sign ≥ 85 %).
 - **Label checks (capture only, before any training):**
-  - The split-half agreement of sibling orders at 16 vs 16 repeats on VALIDATION (§644: 0.718).
+  - The split-half agreement of sibling orders at 16 vs 16 repeats on VALIDATION (§644: 0.718), overall and by
+    screen. §703 measured only map and rewards; shop, rest and event are about a third of the groups.
   - The bias of swkeyed against base on identical rows: §644's labels are the base arm, paired row by row. Reported
     are the root-clustered pooled mean difference and the fraction of rows with |z| > 2.
   - A bias flag (pooled mean outside ±2 SE, or more than 8 % of rows with |z| > 2) stops the round before training.
+  - Groups lost to a failed swkeyed repeat (an error repeat, e.g. `survival_weight_rejection_limit`) are dropped
+    from the treatment file by `crn_groups.py`'s rule. Their count is reported. If it exceeds 0.5 % of groups, the
+    control is not comparable, and the round stops before training.
 
 ## Gate (seed mean, primary)
-- **IMPROVED:** treatment − control has a paired CI above 0, with the bars met.
+- **IMPROVED:** all of:
+  - the paired source-bootstrap CI of the seed-mean difference is above 0;
+  - each seed's difference is positive (swk_s1 − s1 > 0 and swk_s2 − s2 > 0), because the source bootstrap leaves
+    out training-seed noise (§649's seed spread is about 0.007);
+  - the bars hold for each treatment seed at its picked epoch: −3 HP sign ≥ 85 % in the prices check, and
+    `pick_epoch.py`'s selection-fold BCE ≤ 0.570.
 - **NOT_SHOWN:** otherwise. This is a negative result for the ledger, and it closes "label noise" as a lever for this
   head.
 
