@@ -421,7 +421,7 @@ Offline only, on round-2 sibling groups (§503; targets are 64-rollout3 means, s
   [recapture](../../experiments/evidence/ooc_sibling_crn_capture_20261022/README.md),
   [retrain](../../experiments/evidence/value_sr_crn_20261022/README.md),
   [seeds](../../experiments/evidence/value_sr_crn_seeds_20261022/README.md)).
-- **Ranking vs value (§TBD, 2026-10-28):** search reads the leaf only at map roots (ADR-0061). It uses the leaf as
+- **Ranking vs value (§715, 2026-10-28):** search reads the leaf only at map roots (ADR-0061). It uses the leaf as
   the rollout3 endpoint value, averaged with 0/1 terminals and read by PUCT and the learned stop in probability units,
   so level and scale of differences matter. A sibling-ranking loss pins neither.
   - At map roots every SR head and blend is within about 0.01–0.02 of X2-B with M0, with no demonstrated gain (all CIs include 0). The blend

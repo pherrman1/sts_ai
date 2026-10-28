@@ -25172,7 +25172,7 @@ open variants, neither started.
 Seeds: none (existing games only).
 **Knowledge impact:** none beyond this entry; no code or default change.
 
-## §TBD — SR head, ranking vs value: search reads level and difference scale at map roots, not sibling order; at map roots no SR head or blend shows a gain over X2-B with M0 (within about 0.01–0.02, all CIs include 0), and the heads' sibling differences are 5.5–6× over-dispersed (about 3× more than X2-B with M0) (offline, no seeds, 2026-10-28)
+## §715 — SR head, ranking vs value: search reads level and difference scale at map roots, not sibling order; at map roots no SR head or blend shows a gain over X2-B with M0 (within about 0.01–0.02, all CIs include 0), and the heads' sibling differences are 5.5–6× over-dispersed (about 3× more than X2-B with M0) (offline, no seeds, 2026-10-28)
 
 **Question:** Philipp, 2026-10-28 21:19Z: for the SR head, is ranking or a better value loss more important? Should
 we optimise ranking directly?
