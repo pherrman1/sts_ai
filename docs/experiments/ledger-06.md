@@ -25064,3 +25064,28 @@ alternatives are not better in real play, so more search or more exploration tow
 above 32768, other leaves.
 Seeds: none new; 111374100–111374115 (§683, used) replayed.
 **Knowledge impact:** none (research flags only, default off).
+
+## §TBD — Matched expert-entry fight replay (#902): on Baalorlord's own fight states Silver loses +2.6 HP per acts-1-2 elite/boss fight (INCONCLUSIVE at the +2 margin); small in act 1, +5.4 on act-2 elites
+
+**Question:** §701 found the bot loses more HP than Baalorlord on every elite and boss, but could not hold deck and
+relics fixed. On his own combat-entry states (deck, relics, path, HP, max HP), does today's A20 Silver lose more HP?
+**Setup:** [PREREG](evidence/expert_fight_replay_20261028/PREREG.md) frozen before launch (reviewer K PASS; Philipp
+"Let's do 4 workers"). New research mode `one_combat expertfights` replays each of §694's 329 vanilla-RNG expert runs
+while exact, sets HP/max HP to the log at every fight, keeps the bot's own potions, and plays each fight with the
+logged encounter 4 times with the A20 default Silver (copy 0 on the game's battle seed). Run commit `11b496b3`, code
+`748eb3eb`, binary `d7af0395…`; 4 cloud workers; 329/329 units verified.
+**Result:** [RESULT](evidence/expert_fight_replay_20261028/RESULT.md). Primary, 1,492 acts-1-2 elite/boss fights in
+308 runs: bot 12.38 vs expert 9.75 HP lost, **+2.63 [+1.99, +3.29]** (copy 0: +2.39 [+1.64, +3.13]) →
+**INCONCLUSIVE** by the pre-registered rule (lower bound 0.01 under +2; CI excludes 0). Potions +0.08 [+0.04, +0.11]
+per fight (0.62 vs 0.54); death per fight 0.059 vs 0.031. By room: act-1 elites +1.2, act-1 boss +1.7, act-2 elites
+**+5.4 [+4.1, +6.8]** (Slavers +7.0, Book +4.8, Leader +4.6), act-2 boss +4.5, act-3 elites +3.5, act-3 bosses +5.2
+(Automaton +9.8, Awakened One +10.7); act-1 hallways +0.2. Post-hoc: the engine's final-act-3-boss exit includes the
+Act-4 transition heal; `analyze.py` inverts it for those descriptive rows (primary unchanged).
+**Interpretation:** compared with §701's observational gaps (act-1 elites +3.5, boss +8.0; act-2 elites +4.5, boss
++12.4), most of the act-1 gap disappears on matched states (upstream: deck, HP, path), while act-2 elites keep all of
+theirs and bosses part: from act 2 on, combat play itself costs HP and deaths. **Inference:** combat-strength work
+(search budget, priors, potion timing) should be judged on act-2 elites and act-2/3 bosses; act-1 gains are more
+likely upstream (deck building, pathing).
+Seeds: none new (external Baalorlord run seeds of §694).
+**Knowledge impact:** research mode `one_combat expertfights` and `STS_EXPERT_FIGHTS_REPLICATES`, `_MAX_ACT`,
+`_POTIONS` (environment-variables.md); no default or play change (the driver hook is unset in every other mode).

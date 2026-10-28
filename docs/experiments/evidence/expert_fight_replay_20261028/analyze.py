@@ -14,6 +14,16 @@ import glob, json, os, random, statistics as st, sys, collections
 FRUIT = {'Strawberry': 7, 'Pear': 10, 'Mango': 14}
 
 
+def before_act4_heal(exit_hp, max_hp):
+    # Post-hoc (RESULT.md): the engine's exit from the final act-3 boss (floor 51 at A20) runs on into the Act-4
+    # transition, which heals round(0.75 * missing HP) (GameContext::transitionToAct); the expert's floor-51 HP is
+    # before that heal. Return the largest HP h with h + round(0.75 * (max - h)) == exit.
+    for h in range(exit_hp, -1, -1):
+        if h + int((max_hp - h) * 0.75 + 0.5) == exit_hp:
+            return h
+    return exit_hp
+
+
 def load(d):
     out = []
     for p in sorted(glob.glob(os.path.join(d, '**', '*.fights.json'), recursive=True)):
@@ -43,7 +53,10 @@ def rows(runs, dropped):
             fruit = sum(FRUIT.get(n, 0) for n in e['relicsObtained'])
             e_exit = 0 if e['died'] else max(0, e['exitHp'] - fruit)
             e_loss = f['hp'] - e_exit
-            b_loss = [f['hp'] - (r['exitHp'] if r['won'] else 0) for r in reps]
+            final_boss = f['act'] == 3 and f['room'] == 'B' and f['floor'] == 51
+            b_exit = [(before_act4_heal(r['exitHp'], r['exitMaxHp']) if final_boss else r['exitHp']) if r['won'] else 0
+                      for r in reps]
+            b_loss = [f['hp'] - x for x in b_exit]
             R.append(dict(run=rid, floor=f['floor'], act=f['act'], room=f['room'], enc=f['encounter'],
                           hp=f['hp'], maxhp=f['maxHp'], held=len(f['potions']),
                           e_held=len(f['expertPotions']) if 'expertPotions' in f else None,
