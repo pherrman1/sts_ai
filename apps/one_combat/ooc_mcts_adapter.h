@@ -225,6 +225,10 @@ struct OocSiblingLeafCapture {
     // sw (survival-weighted), keyed (event-keyed streams), swkeyed (both); all but indep use common seeds.
     std::vector<std::string> vrArms;
     unsigned vrRepeats = 0;   // STS_OOC_SIBLING_VR_REPEATS, rollouts per arm
+    // Research option (default off, STS_OOC_SIBLING_ROLLOUT=swkeyed; needs commonSeeds): the `repeats` label rollouts
+    // are survival-weighted with event-keyed streams (§703: ~5x less sibling-difference variance per CPU, no bias).
+    // Rows carry rolloutEstimator "swkeyed"; long5, referee and vr arms are unchanged.
+    bool swkeyedRepeats = false;
 };
 
 // Host-provided model seams keep the scientific OOC MCTS substrate reusable
