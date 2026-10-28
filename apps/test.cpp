@@ -281,10 +281,26 @@ namespace {
             }
             search::SilverTreeProfile profile;
             searcher->profile = profileEnabled ? &profile : nullptr;
+            const auto allocatedBefore = static_cast<std::int64_t>(searcher->allocatedNodeCount());
             searcher->search(sims);
             searcher->profile = nullptr;
             if (profileEnabled && profile.completed != sims)
                 throw std::runtime_error("profile denominator includes inherited visits or misses simulations");
+            if (profileEnabled) {
+                // #888 shape counters: every simulation has one stop reason and one growth entry,
+                // growth adds up to the allocated nodes, and every endpoint has a round depth.
+                std::int64_t stops = 0, growthSims = 0, grown = 0, rounds = 0;
+                for (const auto n : profile.stops) stops += n;
+                for (const auto &[k, n] : profile.newNodesPerSimulation) { growthSims += n; grown += k * n; }
+                for (const auto &[k, n] : profile.treeRounds) rounds += n;
+                const auto snap = searcher->treeSnapshot();
+                if (stops != sims || growthSims != sims
+                        || grown != snap.allocatedNodes - allocatedBefore
+                        || grown != profile.expansionDecisionNodes + profile.wideningDecisionNodes + profile.chanceNodes
+                        || rounds != profile.completed || snap.reachableDecisionNodes < 1
+                        || snap.reachableDecisionNodes + snap.reachableChanceNodes > snap.allocatedNodes)
+                    throw std::runtime_error("tree shape counters do not add up");
+            }
             const auto action = search::SilverSearcher::translateAction(
                 searcher->bestAction(), searcher->rootSearchState(), bc);
             if (!action.isValidAction(bc)) {
@@ -831,6 +847,21 @@ int testSilverSearcher() {
         }
         check(chanceSearcher.stats.chanceOutcomesSampled > 0 && depthOne == 1,
               "chance outcome edge does not add another action to tree depth");
+        chanceSearcher.search(63);
+        {
+            // #888: the root's only action is End Turn, a chance node widened by DPW.
+            const auto snap = chanceSearcher.treeSnapshot();
+            const auto &t = snap.firstEndTurns;
+            const int cap = static_cast<int>(std::ceil(chanceSearcher.endTurnWideningC
+                * std::pow(static_cast<double>(t.empty() ? 0 : t[0].visits + 1), chanceSearcher.endTurnWideningAlpha)));
+            check(t.size() == 1 && t[0].stochastic && t[0].onPv && t[0].visits == 64 && t[0].edgeVisits == 64
+                  && t[0].draws >= t[0].children && t[0].children >= t[0].observable && t[0].observable >= 1
+                  && t[0].cap == cap && t[0].children <= cap && t[0].actionsFromRoot == 1
+                  && !snap.pv.empty() && snap.pv[0].endTurn && snap.pv[0].rounds == 1
+                  && chanceProfile.stops[Profile::NEW_LEAF] + chanceProfile.stops[Profile::UNVISITED_NODE]
+                      + chanceProfile.stops[Profile::TERMINAL_REVISIT] + chanceProfile.stops[Profile::CYCLE] > 0,
+                  "first End Turn chance coverage reads the root's widened outcomes");
+        }
         bc.inputState = InputState::CHOOSE_STANCE_ACTION;
         searcher.setRoot(silverSearchRoot(bc));
         profile = {};
@@ -3511,6 +3542,37 @@ int testSilverConcaveHpLeaf() {
     searcher.evalWeights.concaveHpK = 0;
     if (lossOn != searcher.scoreEndState(loss)) return fail("loss branch changed");
     std::cout << "silver_concave_hp_leaf PASS\n";
+    return 0;
+}
+
+// #880: the per-turn victory penalty (STS_SILVER_VICTORY_TURN_PENALTY) moves only
+// won leaves; at 0 equal-resource wins score the same at any turn.
+int testSilverVictoryTurnPenalty() {
+    auto fail = [&](const std::string &msg) {
+        std::cout << "silver_victory_turn_penalty FAIL: " << msg << '\n';
+        return 1;
+    };
+    GameContext gc(CharacterClass::IRONCLAD, 424243, 0);
+    gc.curRoom = Room::MONSTER;
+    BattleContext bc;
+    bc.init(gc, MonsterEncounter::CULTIST);
+    search::SilverSearchContext context;
+    context.act = 1;
+    search::SilverSearcher searcher(silverSearchRoot(bc), context);
+    auto score = [&](Outcome outcome, int turn) {
+        BattleContext end = bc;
+        end.outcome = outcome;
+        end.turn = turn;
+        return searcher.scoreEndState(end);
+    };
+    if (searcher.evalWeights.victoryTurnPenalty != 0.4) return fail("default is not 0.4");
+    if (std::abs((score(Outcome::PLAYER_VICTORY, 3) - score(Outcome::PLAYER_VICTORY, 13)) - 4.0) > 1e-9)
+        return fail("default: 10 turns do not cost 4");
+    const double loss = score(Outcome::PLAYER_LOSS, 7);
+    searcher.evalWeights.victoryTurnPenalty = 0;
+    if (score(Outcome::PLAYER_VICTORY, 3) != score(Outcome::PLAYER_VICTORY, 13)) return fail("0: win depends on turn");
+    if (loss != score(Outcome::PLAYER_LOSS, 7)) return fail("loss branch changed");
+    std::cout << "silver_victory_turn_penalty PASS\n";
     return 0;
 }
 
@@ -6784,6 +6846,8 @@ int main(int argc, const char* argv[]) {
         return testSilverPotionWeights();
     } else if (command == "silver_concave_hp_leaf") {
         return testSilverConcaveHpLeaf();
+    } else if (command == "silver_victory_turn_penalty") {
+        return testSilverVictoryTurnPenalty();
     } else if (command == "silver_rollout_zero_cost_loop") {
         return testSilverRolloutZeroCostLoop();
     } else if (command == "match_and_keep") {

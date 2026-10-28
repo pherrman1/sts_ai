@@ -1,0 +1,110 @@
+{
+ "nets": {
+  "LC25_s1": {
+   "hp": {
+    "n": 25315.0,
+    "right": 20434.0,
+    "wrong": 4881.0,
+    "wrong_mag_sum": 231.6261557675898
+   },
+   "maxAbsDeviationFromCapturedHeart1": 8.03467720746994,
+   "upgrade": {
+    "n": 37031.0,
+    "right": 26541.0,
+    "wrong": 10490.0,
+    "wrong_mag_sum": 845.806996576488
+   }
+  },
+  "LC25_s2": {
+   "hp": {
+    "n": 25315.0,
+    "right": 20394.0,
+    "wrong": 4921.0,
+    "wrong_mag_sum": 338.776225194335
+   },
+   "maxAbsDeviationFromCapturedHeart1": 13.865910947322845,
+   "upgrade": {
+    "n": 37031.0,
+    "right": 24032.0,
+    "wrong": 12999.0,
+    "wrong_mag_sum": 1474.532678000629
+   }
+  },
+  "LC50_s1": {
+   "hp": {
+    "n": 25315.0,
+    "right": 20965.0,
+    "wrong": 4350.0,
+    "wrong_mag_sum": 247.75447456538677
+   },
+   "maxAbsDeviationFromCapturedHeart1": 15.075492165982723,
+   "upgrade": {
+    "n": 37031.0,
+    "right": 25694.0,
+    "wrong": 11337.0,
+    "wrong_mag_sum": 1293.8131918981671
+   }
+  },
+  "LC50_s2": {
+   "hp": {
+    "n": 25315.0,
+    "right": 21444.0,
+    "wrong": 3871.0,
+    "wrong_mag_sum": 232.0691244006157
+   },
+   "maxAbsDeviationFromCapturedHeart1": 15.344691537320614,
+   "upgrade": {
+    "n": 37031.0,
+    "right": 25736.0,
+    "wrong": 11295.0,
+    "wrong_mag_sum": 1351.254244953394
+   }
+  },
+  "SR100_s1": {
+   "hp": {
+    "n": 25315.0,
+    "right": 20894.0,
+    "wrong": 4421.0,
+    "wrong_mag_sum": 204.852026976645
+   },
+   "maxAbsDeviationFromCapturedHeart1": 13.836895249783993,
+   "upgrade": {
+    "n": 37031.0,
+    "right": 26390.0,
+    "wrong": 10641.0,
+    "wrong_mag_sum": 1017.82732052356
+   }
+  },
+  "SR100_s2": {
+   "hp": {
+    "n": 25315.0,
+    "right": 20932.0,
+    "wrong": 4383.0,
+    "wrong_mag_sum": 195.41189772635698
+   },
+   "maxAbsDeviationFromCapturedHeart1": 15.155115649104118,
+   "upgrade": {
+    "n": 37031.0,
+    "right": 27062.0,
+    "wrong": 9969.0,
+    "wrong_mag_sum": 999.2186009138823
+   }
+  },
+  "sel": {
+   "hp": {
+    "n": 25315.0,
+    "right": 17811.0,
+    "wrong": 7504.0,
+    "wrong_mag_sum": 1.617051369510591
+   },
+   "maxAbsDeviationFromCapturedHeart1": 0.0,
+   "upgrade": {
+    "n": 37031.0,
+    "right": 4420.0,
+    "wrong": 32611.0,
+    "wrong_mag_sum": 17.458178729750216
+   }
+  }
+ },
+ "records": 65512
+}

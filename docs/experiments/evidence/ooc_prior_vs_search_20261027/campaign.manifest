@@ -1,0 +1,10 @@
+name          ooc-prior-vs-search-882
+code_commit   b225220d62965b8a6f58048b48f9ac46893f9cc3
+binary_sha256 4dfc84d9a0160b8f4ec58c6fe755e3b999c126f89f331d0e651318b766954f87
+configure_preset linux-gcc-release-x86-64-v3
+workers       16
+share         /mnt/project-files/ooc-prior-vs-search-882/forks
+parallel      4
+schedule      queue
+lease_minutes 45
+input student_sel.bin /mnt/project-files/az-gen3-explore/student_sel.bin cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7

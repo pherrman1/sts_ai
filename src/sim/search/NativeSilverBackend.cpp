@@ -14,6 +14,8 @@
 #include <mutex>
 #include <cmath>
 #include <cstring>
+#include <chrono>
+#include <ctime>
 #include <nlohmann/json.hpp>
 #include <stdexcept>
 #include <string>
@@ -71,6 +73,8 @@ namespace sts::search {
             // Research-only victory-leaf resource weights (STS_SILVER_GOLD_WEIGHT, STS_SILVER_MAXHP_WEIGHT).
             double goldWeight = SilverEvalWeights{}.goldWeight;
             double maxHpWeight = SilverEvalWeights{}.maxHpWeight;
+            // Research-only per-turn victory penalty (STS_SILVER_VICTORY_TURN_PENALTY, #880).
+            double victoryTurnPenalty = SilverEvalWeights{}.victoryTurnPenalty;
             // Research-only learned stopping (NativeSilverStopModel.h).
             bool learnedStop = false;
             double learnedStopThreshold = 0;
@@ -238,6 +242,7 @@ namespace sts::search {
         }
         std::ofstream g_treeProfile;
         std::mutex g_treeProfileMutex;
+        bool g_treeProfileRealOnly = false;   // STS_SILVER_TREE_PROFILE_SCOPE=real
 
         nlohmann::json histogram(const std::map<int, std::int64_t> &counts) {
             auto result = nlohmann::json::object();
@@ -245,10 +250,56 @@ namespace sts::search {
             return result;
         }
 
+        double threadCpuSeconds() {
+            timespec t {};
+            clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t);
+            return static_cast<double>(t.tv_sec) + 1e-9 * static_cast<double>(t.tv_nsec);
+        }
+
+        // Search-shape fields of a tree-profile row (#888): per-simulation
+        // horizons in rounds, node growth and stop reasons, and a read of the
+        // graph after the search.
+        nlohmann::json treeShape(const SilverSearcher &searcher, const SilverTreeProfile &profile) {
+            using nlohmann::json;
+            const auto snap = searcher.treeSnapshot();
+            json stops = json::object();
+            for (int i = 0; i < SilverTreeProfile::STOP_COUNT; ++i)
+                stops[SilverTreeProfile::stopNames[i]] = profile.stops[i];
+            json pv = json::array();
+            for (const auto &p : snap.pv) pv.push_back({p.actions, p.rounds, p.visits, p.endTurn});
+            json endTurns = json::array();
+            for (const auto &t : snap.firstEndTurns) {
+                endTurns.push_back({{"stochastic", t.stochastic}, {"edge_visits", t.edgeVisits},
+                    {"visits", t.visits}, {"children", t.children}, {"draws", t.draws},
+                    {"observable", t.observable}, {"terminal_children", t.terminalChildren}, {"cap", t.cap},
+                    {"max_child_visits", t.maxChildVisits}, {"effective_children", t.effectiveChildren},
+                    {"actions_from_root", t.actionsFromRoot}, {"on_pv", t.onPv}});
+            }
+            return {
+                {"tree_rounds", histogram(profile.treeRounds)}, {"rollout_rounds", histogram(profile.rolloutRounds)},
+                {"total_rounds", histogram(profile.totalRounds)},
+                {"rollout_actions", histogram(profile.rolloutActions)},
+                {"stops", stops}, {"new_nodes_per_simulation", histogram(profile.newNodesPerSimulation)},
+                {"expansion_decision_nodes", profile.expansionDecisionNodes},
+                {"widening_decision_nodes", profile.wideningDecisionNodes},
+                {"chance_nodes_created", profile.chanceNodes},
+                {"widening_draws", profile.wideningDraws},
+                {"widening_sibling_repeats", profile.wideningSiblingRepeats},
+                {"widening_transpositions", profile.wideningTranspositions},
+                {"allocated_nodes", snap.allocatedNodes}, {"allocated_chance_nodes", snap.allocatedChanceNodes},
+                {"reachable_decision_nodes", snap.reachableDecisionNodes},
+                {"reachable_chance_nodes", snap.reachableChanceNodes},
+                {"reachable_outcome_edges", snap.reachableOutcomeEdges},
+                {"reachable_action_edges", snap.reachableExpandedActionEdges},
+                {"root_visits", searcher.rootNode().simulationCount},
+                {"pv", pv}, {"first_end_turns", endTurns}};
+        }
+
         void writeTreeProfile(const GameContext &gc, const BattleContext &bc, int decision,
                               std::int64_t combatId, const SilverSearcher &searcher, const SilverTreeProfile &profile,
                               std::int64_t inherited, std::int64_t configured, bool skipped,
-                              const nlohmann::json &action, const std::string &error = {}) {
+                              const nlohmann::json &action, const std::string &error = {},
+                              const nlohmann::json &search = nullptr) {
             using nlohmann::json;
             json endpoints = json::object();
             for (int i = 0; i < SilverTreeProfile::COUNT; ++i) {
@@ -276,7 +327,7 @@ namespace sts::search {
                 {"rollout_calls", profile.rolloutCalls}, {"cycle_rollouts", profile.cycleRollouts},
                 {"nonterminal_rollout_starts", profile.nonterminalRolloutStarts},
                 {"descent_aborts", profile.descentAborts}, {"endpoints", endpoints},
-                {"action", action}, {"error", error}};
+                {"action", action}, {"error", error}, {"search", search}};
             std::lock_guard<std::mutex> lock(g_treeProfileMutex);
             g_treeProfile << row.dump() << '\n';
             g_treeProfile.flush();
@@ -286,8 +337,8 @@ namespace sts::search {
         struct ProfileScope {
             SilverSearcher &searcher;
             SilverTreeProfile data;
-            explicit ProfileScope(SilverSearcher &s) : searcher(s) {
-                if (g_treeProfile.is_open()) searcher.profile = &data;
+            ProfileScope(SilverSearcher &s, bool enabled) : searcher(s) {
+                if (enabled && g_treeProfile.is_open()) searcher.profile = &data;
             }
             ~ProfileScope() { searcher.profile = nullptr; }
         };
@@ -578,6 +629,7 @@ namespace sts::search {
                     s->evalWeights.concaveHpK = g_nativeSilverConcaveHpLeafOverride.value_or(g_options.concaveHpK);
                     s->evalWeights.goldWeight = g_options.goldWeight;
                     s->evalWeights.maxHpWeight = g_options.maxHpWeight;
+                    s->evalWeights.victoryTurnPenalty = g_options.victoryTurnPenalty;
                     if (const auto &params = g_nativeSilverSearchParamOverride) {
                         s->explorationParameter = params->exploration;
                         s->explorationParameterChance = params->explorationChance;
@@ -687,7 +739,9 @@ namespace sts::search {
                 }
                 std::int64_t inheritedVisits = prepareSearcher(searcher, root, true);
                 configureSearcher(*searcher, false);
-                ProfileScope profiling(*searcher);
+                // STS_SILVER_TREE_PROFILE_SCOPE=real leaves out fights under a budget override
+                // (imagined OOC fights, research arms).
+                ProfileScope profiling(*searcher, !(g_treeProfileRealOnly && budgetOverride));
                 const auto configured = learnedStop || lockOnly || stopTrace
                     ? kNativeSilverStopCheckpoints.back() : adaptive ? kAdaptiveTotal : flatBudget;
 
@@ -699,6 +753,20 @@ namespace sts::search {
                 // contracts search every root.
                 const bool skipSearch = skipSingletons && searcher->prepareRootActions() == 1;
                 const auto stepsBefore = searcher->stats.steps;
+                // Tree profile only (#888): cost, starting graph and checkpoint reads of this search.
+                const bool shape = searcher->profile != nullptr;
+                nlohmann::json shapeRow = nullptr;
+                double cpuBefore = 0;
+                std::chrono::steady_clock::time_point wallBefore;
+                nlohmann::json shapeCheckpoints = nlohmann::json::array();
+                if (shape) {
+                    shapeRow = {{"allocated_nodes_before", searcher->allocatedNodeCount()},
+                                {"root_visits_before", searcher->rootNode().simulationCount},
+                                {"room_code", stopRoomCode(gc.curRoom)}, {"act4_strong", act4Strong},
+                                {"learned_stop", learnedStop}, {"reuse_cap", reuseCap}};
+                    cpuBefore = threadCpuSeconds();
+                    wallBefore = std::chrono::steady_clock::now();
+                }
                 const auto playoutsBefore = searcher->stats.rolloutPlayouts;
                 const auto rolloutActionsBefore = searcher->stats.rolloutActions;
                 try {
@@ -718,6 +786,17 @@ namespace sts::search {
                         for (const auto checkpoint : kNativeSilverStopCheckpoints) {
                             searcher->search(checkpoint - simulations);
                             simulations = checkpoint;
+                            if (shape) {
+                                const auto snap = searcher->treeSnapshot();
+                                nlohmann::json pvEnd = nullptr;
+                                for (const auto &t : snap.firstEndTurns)
+                                    if (t.onPv) pvEnd = {t.visits, t.children, t.observable, t.draws};
+                                shapeCheckpoints.push_back({{"simulations", checkpoint},
+                                    {"allocated_nodes", snap.allocatedNodes},
+                                    {"reachable_nodes", snap.reachableDecisionNodes + snap.reachableChanceNodes},
+                                    {"first_end_turn_nodes", snap.firstEndTurns.size()},
+                                    {"pv_end_turn", pvEnd}});
+                            }
                             const auto x = stopFeatures(*searcher, inheritedVisits, checkpoint, budget,
                                 bc.turn, gc.act, room, track);
                             if (stopTrace) {
@@ -810,8 +889,16 @@ namespace sts::search {
                                                 skipSearch, action, labelSearch ? labelSearcher.get() : nullptr,
                                                 labelInheritedVisits});
                 }
-                if (searcher->profile) writeTreeProfile(gc, bc, decision, combatId, *searcher, profiling.data,
-                    inheritedVisits, configured, skipSearch, action.bits);
+                if (searcher->profile) {
+                    shapeRow["cpu_seconds"] = threadCpuSeconds() - cpuBefore;
+                    shapeRow["wall_seconds"] = std::chrono::duration<double>(
+                        std::chrono::steady_clock::now() - wallBefore).count();
+                    shapeRow["simulations"] = simulations;
+                    shapeRow["checkpoints"] = shapeCheckpoints;
+                    shapeRow.update(treeShape(*searcher, profiling.data));
+                    writeTreeProfile(gc, bc, decision, combatId, *searcher, profiling.data,
+                        inheritedVisits, configured, skipSearch, action.bits, {}, shapeRow);
+                }
                 agent.takeAction(bc, action);
             }
         }
@@ -932,6 +1019,13 @@ namespace sts::search {
             g_treeProfile.open(path, std::ios::app);
             if (!g_treeProfile) throw std::runtime_error("cannot open STS_SILVER_TREE_PROFILE");
         }
+        g_treeProfileRealOnly = false;
+        if (const char *raw = std::getenv("STS_SILVER_TREE_PROFILE_SCOPE"); raw && *raw) {
+            const std::string scope(raw);
+            if (scope != "all" && scope != "real")
+                throw std::runtime_error("STS_SILVER_TREE_PROFILE_SCOPE must be all or real");
+            g_treeProfileRealOnly = scope == "real";
+        }
         g_options = Options{};
         g_options.installed = true;
         if (const char *raw = std::getenv("STS_SILVER_LOOP_GUARD"); raw && *raw) {
@@ -975,7 +1069,8 @@ namespace sts::search {
                 throw std::runtime_error("STS_SILVER_CONCAVE_HP_LEAF must be a number in [0, 20] (0 = off)");
         }
         for (const auto &[name, target] : {std::pair<const char *, double *>{"STS_SILVER_GOLD_WEIGHT", &g_options.goldWeight},
-                                            {"STS_SILVER_MAXHP_WEIGHT", &g_options.maxHpWeight}}) {
+                                            {"STS_SILVER_MAXHP_WEIGHT", &g_options.maxHpWeight},
+                                            {"STS_SILVER_VICTORY_TURN_PENALTY", &g_options.victoryTurnPenalty}}) {
             if (const char *raw = std::getenv(name); raw && *raw) {
                 char *end = nullptr;
                 *target = std::strtod(raw, &end);
@@ -984,8 +1079,10 @@ namespace sts::search {
             }
         }
         if (g_options.goldWeight != SilverEvalWeights{}.goldWeight || g_options.maxHpWeight != SilverEvalWeights{}.maxHpWeight
+                || g_options.victoryTurnPenalty != SilverEvalWeights{}.victoryTurnPenalty
                 || g_options.concaveHpK != 0 || g_options.potionTypeWeightsOn)
             std::cerr << "[silver] research leaf: gold=" << g_options.goldWeight << " maxhp=" << g_options.maxHpWeight
+                      << " victoryTurnPenalty=" << g_options.victoryTurnPenalty
                       << " concave=" << g_options.concaveHpK << " potionWeights=" << (g_options.potionTypeWeightsOn ? "on" : "off")
                       << "\n";
         if (const char *raw = std::getenv("STS_SILVER_LEARNED_STOP")) {

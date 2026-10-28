@@ -484,6 +484,7 @@ target_link_options(one_combat PRIVATE -Wl,--gc-sections)
 
 add_test(NAME heart_outcome_capture COMMAND one_combat heartoutcomeselftest)
 add_test(NAME forced_boss_relic COMMAND one_combat forcebossrelicselftest)
+add_test(NAME forced_decision COMMAND one_combat forcedecisionselftest)
 add_test(NAME heart1_public_record_invariance COMMAND one_combat heart1recordselftest)
 add_test(NAME heart_outcome_collection_python COMMAND python3 -m unittest discover
     -s ${CMAKE_CURRENT_SOURCE_DIR}/tests -p test_heart_outcome_collect.py)
@@ -816,6 +817,8 @@ add_test(NAME silver_potion_weights COMMAND $<TARGET_FILE:unit-test> silver_poti
 set_tests_properties(silver_potion_weights PROPERTIES LABELS "core")
 add_test(NAME silver_concave_hp_leaf COMMAND $<TARGET_FILE:unit-test> silver_concave_hp_leaf)
 set_tests_properties(silver_concave_hp_leaf PROPERTIES LABELS "core")
+add_test(NAME silver_victory_turn_penalty COMMAND $<TARGET_FILE:unit-test> silver_victory_turn_penalty)
+set_tests_properties(silver_victory_turn_penalty PROPERTIES LABELS "core")
 set_tests_properties(silver_rollout_zero_cost_loop PROPERTIES LABELS "core")
 add_test(NAME ooc_reward_continuation COMMAND $<TARGET_FILE:unit-test> ooc_reward_continuation)
 add_test(NAME ooc_semantic COMMAND $<TARGET_FILE:unit-test> ooc_semantic)

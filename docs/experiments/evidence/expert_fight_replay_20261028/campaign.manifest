@@ -1,0 +1,11 @@
+name          expert-fight-replay
+code_commit   748eb3ebc399ca5b533924d70c2b510b9b7860a2
+binary_sha256 d7af03956506916d87136c38c46203ed16c882e584612a9a9bee10a4e1b005ca
+workers       4
+share         /mnt/project-files/expert-fight-replay
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 45
+input student_sel.bin /mnt/project-files/az-gen3-explore/student_sel.bin cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7
+input expert_runs.tar /mnt/project-files/expert-replay/expert_runs.tar 895eac8fa092d0fb0e56735841f8425f269cdfc3d9eacde84d4905a240fd0f24
