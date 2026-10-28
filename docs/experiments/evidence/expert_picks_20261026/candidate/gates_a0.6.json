@@ -1,0 +1,90 @@
+{
+ "expert_heldout": {
+  "boss_relic": {
+   "n": 148,
+   "student_sel": 0.466,
+   "candidate": 0.48,
+   "gain_pp": 1.4
+  },
+  "card_reward": {
+   "n": 2387,
+   "student_sel": 0.475,
+   "candidate": 0.555,
+   "gain_pp": 8.0
+  },
+  "shop_remove": {
+   "n": 194,
+   "student_sel": 0.665,
+   "candidate": 0.706,
+   "gain_pp": 4.1
+  },
+  "smith": {
+   "n": 519,
+   "student_sel": 0.293,
+   "candidate": 0.418,
+   "gain_pp": 12.5
+  }
+ },
+ "bot_drift": {
+  "boss_relic": {
+   "n": 1547,
+   "changed": 0.037
+  },
+  "card_select:1": {
+   "n": 106,
+   "changed": 0.0
+  },
+  "card_select:2": {
+   "n": 81,
+   "changed": 0.012
+  },
+  "card_select:3": {
+   "n": 61,
+   "changed": 0.0
+  },
+  "card_select:4": {
+   "n": 73,
+   "changed": 0.014
+  },
+  "card_select:5": {
+   "n": 2,
+   "changed": 0.0
+  },
+  "card_select:6": {
+   "n": 85,
+   "changed": 0.094
+  },
+  "card_select:7": {
+   "n": 199,
+   "changed": 0.07
+  },
+  "card_select:8": {
+   "n": 107,
+   "changed": 0.093
+  },
+  "event": {
+   "n": 6127,
+   "changed": 0.005
+  },
+  "map": {
+   "n": 15202,
+   "changed": 0.012
+  },
+  "rest": {
+   "n": 6215,
+   "changed": 0.007
+  },
+  "rewards": {
+   "n": 25922,
+   "changed": 0.031
+  },
+  "shop": {
+   "n": 6741,
+   "changed": 0.047
+  },
+  "treasure": {
+   "n": 108,
+   "changed": 0.0
+  }
+ }
+}
