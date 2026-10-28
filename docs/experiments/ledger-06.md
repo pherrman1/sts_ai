@@ -24754,30 +24754,6 @@ per fight). Not tested: larger α, rest-site imitation, a separate ranker head.
 Seeds: 111384000–111385023 used, smokes 111385990–111385991 used; 111385992–111385999 unused.
 **Knowledge impact:** none (no default or code change).
 
-## §TBD — Native Silver search shape by encounter (#888): the tree plans about one round (median 1, p90 1–3) at today's A20 budgets; bosses and Act-3 elites get 70–88% of their simulated actions from rollouts; widening-capped End Turns concentrate ~40 effective outcomes of ~240 (measurement, 2026-10-27)
-
-**Question:** how deep does today's A20 native Silver search look in the tree versus the rollouts, how many next-turn
-futures does it see at its first End Turn, how does the tree grow, and how large is it, per encounter? Historical
-notes (~33 actions, ~5.9 turns per rollout) were not current and mixed rollout length with tree depth.
-**Setup:** [README](evidence/silver_tree_shape_20261027/README.md). New opt-in diagnostics in `STS_SILVER_TREE_PROFILE`
-(per-simulation round depths, stop reasons, node growth; graph reads of size, most-visited line and first End Turn
-coverage; CPU time) and `STS_SILVER_TREE_PROFILE_SCOPE=real`; play unchanged (profile on/off byte-identical on seed
-111384001). Roots: all 1,939 real combat decisions (89 fights, 48 encounters, acts 1–4) of 4 replayed games, arm A of
-§696 (today's A20 default), seeds 111384000–003; the games end as recorded.
-**Result:** encounter-weighted medians: tree 4 actions / 1 round (p90 over encounters 5 / 1), rollout 1 round, total
-2 rounds; the most-visited line keeps ≥10% of root visits only inside the current turn. Shallow tree with long
-rollouts (total p90 ≥ 6 rounds, tree median 1): Time Eater, Champ, Nemesis, Donu and Deca, Guardian, Heart, Sentries,
-Collector, Giant Head, Hexaghost, Slime Boss. Heart decision 1 (40k sims): the PV reaches its End Turn with 1 visit
-among 3,861 first End Turn nodes. First End Turn on the PV: outcomes typ. 50–250; at the widening cap (667 nodes)
-91% of visits re-pick an old outcome and effective outcomes are 16.5% of distinct ones (~40/239); below the cap 85% of
-visits are fresh draws. Card-copy identity splits outcome nodes (public/outcome 0.3–0.4 in starter-deck fights).
-1.2 new nodes per simulation; zero-growth simulations are all terminal revisits (4–6% bosses, up to 41% short Act-1
-fights). Allocated nodes at end median 16k (Heart 176k), about half reachable from the root.
-**Interpretation:** measurement only. **Inference:** the main depth limit is long boss/elite fights, where planning
-beyond the enemy's next reply comes from playouts. Candidates for separate experiments: distribution-following chance
-re-picking, deeper boss search (value leaf / macro turns), cheaper terminal revisits.
-Seeds: none new; 111384000–111384003 (§696, used) replayed.
-**Knowledge impact:** combat-search.md (tree profile `search` block) and environment-variables.md updated.
 ## §702 — Fair-policy impossibility certificate, Stage 1 audit (issue #887): in the seed regime the floor-0 observation identifies the seed (1M repo-range and 20M random seeds, zero collisions), so no information-set certificate exists there and fair equals clairvoyant; in the fresh-chance regime a whole-run certificate needs a full-game loss proof; STOP after Stage 1 (no gameplay, 2026-10-27)
 
 **Question:** can two positive-probability worlds share an observable history at a decision with no common winning
@@ -24959,3 +24935,28 @@ training gate or upgrade-paired augmentation; a smith-target study for real choi
 Seeds: none new (8 used §683 seeds replayed).
 **Knowledge impact:** `environment-variables.md` (`STS_OOC_SIBLING_MONO`, and that it keeps the M0 default which the
 plain sibling capture turns off); this entry and its evidence.
+
+## §706 — Native Silver search shape by encounter (#888): the tree plans about one round (median 1, p90 1–3) at today's A20 budgets; bosses and Act-3 elites get 70–88% of their simulated actions from rollouts; widening-capped End Turns concentrate ~40 effective outcomes of ~240 (measurement, 2026-10-27)
+
+**Question:** how deep does today's A20 native Silver search look in the tree versus the rollouts, how many next-turn
+futures does it see at its first End Turn, how does the tree grow, and how large is it, per encounter? Historical
+notes (~33 actions, ~5.9 turns per rollout) were not current and mixed rollout length with tree depth.
+**Setup:** [README](evidence/silver_tree_shape_20261027/README.md). New opt-in diagnostics in `STS_SILVER_TREE_PROFILE`
+(per-simulation round depths, stop reasons, node growth; graph reads of size, most-visited line and first End Turn
+coverage; CPU time) and `STS_SILVER_TREE_PROFILE_SCOPE=real`; play unchanged (profile on/off byte-identical on seed
+111384001). Roots: all 1,939 real combat decisions (89 fights, 48 encounters, acts 1–4) of 4 replayed games, arm A of
+§696 (today's A20 default), seeds 111384000–003; the games end as recorded.
+**Result:** encounter-weighted medians: tree 4 actions / 1 round (p90 over encounters 5 / 1), rollout 1 round, total
+2 rounds; the most-visited line keeps ≥10% of root visits only inside the current turn. Shallow tree with long
+rollouts (total p90 ≥ 6 rounds, tree median 1): Time Eater, Champ, Nemesis, Donu and Deca, Guardian, Heart, Sentries,
+Collector, Giant Head, Hexaghost, Slime Boss. Heart decision 1 (40k sims): the PV reaches its End Turn with 1 visit
+among 3,861 first End Turn nodes. First End Turn on the PV: outcomes typ. 50–250; at the widening cap (667 nodes)
+91% of visits re-pick an old outcome and effective outcomes are 16.5% of distinct ones (~40/239); below the cap 85% of
+visits are fresh draws. Card-copy identity splits outcome nodes (public/outcome 0.3–0.4 in starter-deck fights).
+1.2 new nodes per simulation; zero-growth simulations are all terminal revisits (4–6% bosses, up to 41% short Act-1
+fights). Allocated nodes at end median 16k (Heart 176k), about half reachable from the root.
+**Interpretation:** measurement only. **Inference:** the main depth limit is long boss/elite fights, where planning
+beyond the enemy's next reply comes from playouts. Candidates for separate experiments: distribution-following chance
+re-picking, deeper boss search (value leaf / macro turns), cheaper terminal revisits.
+Seeds: none new; 111384000–111384003 (§696, used) replayed.
+**Knowledge impact:** combat-search.md (tree profile `search` block) and environment-variables.md updated.

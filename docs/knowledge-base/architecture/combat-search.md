@@ -805,7 +805,7 @@ record thread CPU and wall seconds of the search. The graph read includes
 visits inherited through a reroot; per-simulation counters do not.
 `STS_SILVER_TREE_PROFILE_SCOPE=real` skips fights under a budget override
 (imagined OOC fights). `tools/analyze_silver_tree_shape.py` summarizes the
-block per encounter. Measurement: [§TBD](../../experiments/ledger-06.md).
+block per encounter. Measurement: [§706](../../experiments/ledger-06.md).
 
 Run `python3 tools/analyze_silver_tree_profile.py PROFILE.jsonl --output
 SUMMARY.json` to validate all denominators and generate counts/shares and depth
