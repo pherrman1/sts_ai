@@ -24797,7 +24797,7 @@ event-keyed streams on ~64 frozen roots from replays of used seeds, ≈ 2 core-h
 Seeds: none.
 **Knowledge impact:** new KB page research/ooc/variance-reduction.md.
 
-## §TBD — OOC rollout variance arms (issue #883, phase 3): survival-weighted rollouts plus event-keyed streams leave 0.21× (card rewards) and 0.18× (map) of today's common-seed sibling-difference variance at equal CPU, mean unchanged; USEFUL, no default change (315 roots from 8 replayed used seeds, 2026-10-27/28)
+## §703 — OOC rollout variance arms (issue #883, phase 3): survival-weighted rollouts plus event-keyed streams leave 0.21× (card rewards) and 0.18× (map) of today's common-seed sibling-difference variance at equal CPU, mean unchanged; USEFUL, no default change (315 roots from 8 replayed used seeds, 2026-10-27/28)
 
 **Question:** do the two §699 candidates cut rollout3 sibling-difference variance per CPU without moving the
 estimand? Philipp's go, 2026-10-27 20:37Z (via the coordinator), without waiting for #881.

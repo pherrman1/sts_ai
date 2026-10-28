@@ -1,7 +1,7 @@
 # OOC rollout variance reduction
 
 Last verified: 2026-10-28 (issue #883: phases 1–2 against `main` `ed2dcb2b`, offline decomposition §699; phase 3 measured at
-`2ed59b94`, §TBD).
+`2ed59b94`, §703).
 
 ## Purpose / research question
 
@@ -22,7 +22,7 @@ teacher or CTM bias (#884).
   coupling (CRN ratio 0.73–0.87 depending on weighting, against 0.30 at rest sites).
 - Latin-hypercube/antithetic draws, martingale control variates and adaptive allocation are sound but second-order
   until candidate 1 is measured. Multilevel Monte Carlo and general importance sampling are not recommended (below).
-- **Phase 3 measured both (§TBD, [result](../../../experiments/evidence/ooc_variance_arms_20261027/RESULT.md)):** on 164 card-reward and
+- **Phase 3 measured both (§703, [result](../../../experiments/evidence/ooc_variance_arms_20261027/RESULT.md)):** on 164 card-reward and
   120 map roots, survival weighting plus keyed streams leave 0.21× (card rewards) and 0.18× (map) of today's
   sibling-difference variance at equal CPU, with no detectable shift in the mean. That is about 5× the effective
   repeats per CPU-hour. Keyed streams alone: 0.64×; survival weighting alone: 0.35×, but it fails the pre-registered
