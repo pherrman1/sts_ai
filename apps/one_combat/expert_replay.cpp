@@ -5,6 +5,8 @@
 #include "run_driver.h"
 
 #include <algorithm>
+#include <ctime>
+#include <random>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -96,11 +98,16 @@ public:
         }
     }
 
+    bool stopped() const { return stopped_; }
+    // expertfights: a shop whose shelves differ from the log only stops the
+    // replay when a logged purchase is not offered (the deck stays the expert's).
+    void allowShelfDifferences() { lenientShelves_ = true; }
+
     json summary() const {
         return {{"types", json(std::vector<std::string>(types_.begin(), types_.end()))},
                 {"stopFloor", stopFloor_}, {"stopReason", stopReason_}, {"replayed", replayed_},
                 {"botScreens", bot_}, {"unopenedCardRewards", unopenedCardRewards_},
-                {"potionsLeftBeltFull", potionsLeft_}};
+                {"potionsLeftBeltFull", potionsLeft_}, {"shelvesDiffered", shelvesDiffered_}};
     }
 
 private:
@@ -112,7 +119,8 @@ private:
     int stopFloor_ = -1;
     std::string stopReason_;
     std::map<std::string, int> replayed_, bot_;
-    int unopenedCardRewards_ = 0, potionsLeft_ = 0;
+    int unopenedCardRewards_ = 0, potionsLeft_ = 0, shelvesDiffered_ = 0;
+    bool lenientShelves_ = false;
     std::vector<int> pathX_[3];
     bool pathReady_[3] = {false, false, false};
     int preparedFloor_ = -1;
@@ -406,7 +414,10 @@ private:
         auto &s = gc.info.shop;
         if (!shopChecked_) {
             shopChecked_ = true;
-            if (shopContents.count(f) && !shopShelvesMatch(gc, shopContents[f])) return stop(gc, "shop shelves differ");
+            if (shopContents.count(f) && !shopShelvesMatch(gc, shopContents[f])) {
+                if (!lenientShelves_) return stop(gc, "shop shelves differ");
+                ++shelvesDiffered_;
+            }
         }
         while (!pendingPurchases_.empty()) {
             const auto item = pendingPurchases_.front();
@@ -457,6 +468,238 @@ private:
     }
 };
 
+// The expert's logged state around each fight: HP and max HP at the end of
+// every floor, the logged outcome of each fight floor, and the potions held
+// entering each floor. The inventory needs Run History Plus logs (potion names
+// per use and discard); it is rebuilt from potions obtained (rewards, events,
+// Neow, Alchemize, Entropic Brew, shop) minus uses and discards, and is known
+// only up to the first floor where a used or discarded potion was not held or
+// more than four are held.
+struct ExpertCombatLog {
+    std::vector<int> hp, maxHp;
+    std::map<int, json> fight;
+    std::map<int, int> uses;
+    std::map<int, std::vector<std::string>> useNames, potionsAt, relicsAt;
+    int potionsKnownThrough = -1;
+    std::string potionsUnknownWhy = "no Run History Plus potion logs";
+    int floorReached = 0;
+    bool victory = false;
+    std::string killedBy;
+
+    static bool isPotion(const std::string &name) {
+        const auto p = json(name).get<Potion>();
+        return p != Potion::INVALID && p != Potion::EMPTY_POTION_SLOT;
+    }
+
+    explicit ExpertCombatLog(const json &run) {
+        for (const auto &h : run["current_hp_per_floor"]) hp.push_back(h.get<int>());
+        for (const auto &h : run["max_hp_per_floor"]) maxHp.push_back(h.get<int>());
+        for (const auto &d : run["damage_taken"]) fight[d["floor"].get<int>()] = d;
+        for (const auto &u : run["potions_floor_usage"]) ++uses[u.get<int>()];
+        for (const auto &r : run["relics_obtained"]) relicsAt[r["floor"].get<int>()].push_back(r["key"].get<std::string>());
+        floorReached = run["floor_reached"].get<int>();
+        victory = run.value("victory", false);
+        if (run.contains("killed_by") && run["killed_by"].is_string()) killedBy = run["killed_by"].get<std::string>();
+        const auto used = run.value("potion_use_per_floor", json());
+        const auto discarded = run.value("potion_discard_per_floor", json());
+        if (!used.is_array() || !discarded.is_array()) return;
+        for (std::size_t i = 0; i < used.size(); ++i)
+            for (const auto &n : used[i]) useNames[(int)i + 1].push_back(n.get<std::string>());
+        std::map<int, std::vector<std::string>> gains;
+        for (const auto &o : run.value("potions_obtained", json::array()))
+            gains[o["floor"].get<int>()].push_back(o["key"].get<std::string>());
+        for (const char *k : {"potions_obtained_alchemize", "potions_obtained_entropic_brew"}) {
+            const auto per = run.value(k, json::array());
+            for (std::size_t i = 0; i < per.size(); ++i)
+                for (const auto &n : per[i]) gains[(int)i + 1].push_back(n.get<std::string>());
+        }
+        const auto &ip = run["items_purchased"];
+        const auto &ipf = run["item_purchase_floors"];
+        for (std::size_t i = 0; i < ip.size() && i < ipf.size(); ++i)
+            if (isPotion(ip[i].get<std::string>())) gains[ipf[i].get<int>()].push_back(ip[i].get<std::string>());
+        std::multiset<std::string> held(gains[0].begin(), gains[0].end());
+        potionsUnknownWhy.clear();
+        for (int f = 1; f <= (int)hp.size(); ++f) {
+            potionsAt[f] = std::vector<std::string>(held.begin(), held.end());
+            potionsKnownThrough = f;
+            for (const auto &n : gains[f]) held.insert(n);
+            auto take = [&](const std::string &n) {
+                const auto it = held.find(n);
+                if (it == held.end()) return false;
+                held.erase(it);
+                return true;
+            };
+            bool ok = true;
+            for (const auto &n : useNames[f]) ok = take(n) && ok;
+            if (f - 1 < (int)discarded.size())
+                for (const auto &n : discarded[f - 1]) ok = take(n.get<std::string>()) && ok;
+            if (!ok || held.size() > 4) {
+                potionsUnknownWhy = "inconsistent after floor " + std::to_string(f);
+                break;
+            }
+        }
+    }
+    bool potionsKnown(int f) const { return f <= potionsKnownThrough && potionsAt.count(f); }
+};
+
+std::vector<std::string> potionNames(const std::array<Potion, 5> &potions) {
+    std::vector<std::string> out;
+    for (auto p : potions)
+        if (p != Potion::EMPTY_POTION_SLOT && p != Potion::INVALID) out.push_back(jname(p));
+    std::sort(out.begin(), out.end());
+    return out;
+}
+
+std::vector<std::string> minus(const std::vector<std::string> &a, const std::vector<std::string> &b) {
+    std::multiset<std::string> rest(b.begin(), b.end());
+    std::vector<std::string> out;
+    for (const auto &x : a) {
+        const auto it = rest.find(x);
+        if (it == rest.end()) out.push_back(x);
+        else rest.erase(it);
+    }
+    return out;
+}
+
+std::uint64_t mix(std::uint64_t x) {
+    x += 0x9E3779B97F4A7C15ULL;
+    x = (x ^ (x >> 30)) * 0xBF58476D1CE4E5B9ULL;
+    x = (x ^ (x >> 27)) * 0x94D049BB133111EBULL;
+    return x ^ (x >> 31);
+}
+
+double threadCpuSeconds() {
+    timespec ts{};
+    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts);
+    return ts.tv_sec + ts.tv_nsec / 1e9;
+}
+
+// expertfights: at each fight inside the exact-replay prefix, set HP and max HP
+// to the expert's, and with expertPotions (STS_EXPERT_FIGHTS_POTIONS=expert)
+// also the potions where the log determines them. By default the bot keeps its
+// own potions: they follow its use in earlier fights and the expert's pickups,
+// so a potion it drinks is not refilled at the next fight. At fights with
+// the logged encounter (hallways included), play K detached copies with the production
+// Silver agent: copy 0 keeps the game's battle seed (the expert's deal), copies
+// 1..K-1 get a fresh battle seed and fresh persistent combat streams. The run
+// continues from copy 0 if it won, else from the first copy that won (seed
+// restored), else the driver plays the fight itself.
+class FightReplayer {
+public:
+    FightReplayer(const json &run, Replayer &replayer, int replicates, int maxAct, bool expertPotions)
+        : log_(run), replayer_(replayer), k_(replicates), maxAct_(maxAct), expertPotions_(expertPotions) {}
+
+    bool onBattle(GameContext &gc, search::ScumSearchAgent2 &agent) {
+        if (replayer_.stopped() || gc.act > maxAct_) return false;
+        const int f = gc.floorNum;
+        const std::string engineEnc = jname(gc.info.encounter);
+        const auto lf = log_.fight.find(f);
+        const std::string loggedEnc = lf == log_.fight.end() ? "" : lf->second["enemies"].get<std::string>();
+        json sync = {{"floor", f}, {"act", gc.act}, {"room", roomLetter(gc.curRoom)}, {"encounter", engineEnc},
+                     {"loggedEncounter", loggedEnc}, {"engineHp", gc.curHp}, {"engineMaxHp", gc.maxHp},
+                     {"enginePotions", potionNames(gc.potions)}};
+        bool hpSynced = false, potionsSynced = false;
+        if (f >= 2 && f - 2 < (int)log_.hp.size() && log_.hp[f - 2] > 0) {
+            gc.maxHp = log_.maxHp[f - 2];
+            gc.curHp = std::min(log_.hp[f - 2], gc.maxHp);
+            hpSynced = true;
+        }
+        const bool namesKnown = log_.potionsKnown(f)
+            && std::all_of(log_.potionsAt.at(f).begin(), log_.potionsAt.at(f).end(), ExpertCombatLog::isPotion);
+        if (log_.potionsKnown(f)) sync["expertPotions"] = log_.potionsAt.at(f);
+        if (expertPotions_ && namesKnown && (int)log_.potionsAt.at(f).size() <= gc.potionCapacity) {
+            const auto &names = log_.potionsAt.at(f);
+            gc.potions.fill(Potion::EMPTY_POTION_SLOT);
+            for (std::size_t i = 0; i < names.size(); ++i) gc.potions[i] = json(names[i]).get<Potion>();
+            gc.potionCount = (int)names.size();
+            potionsSynced = true;
+        }
+        sync["hpSynced"] = hpSynced;
+        sync["potionsSynced"] = potionsSynced;
+        sync["hp"] = gc.curHp;
+        sync["maxHp"] = gc.maxHp;
+        sync["potions"] = potionNames(gc.potions);
+        syncs_.push_back(sync);
+        if (!hpSynced || loggedEnc != engineEnc) return false;
+
+        json rec = sync;
+        rec.erase("enginePotions");
+        rec["potionsUnknownWhy"] = potionsSynced || !expertPotions_ ? "" : !log_.potionsKnown(f) ? log_.potionsUnknownWhy
+                                     : namesKnown ? "more than the engine's slots" : "unknown potion name";
+        int upgrades = 0;
+        for (const auto &c : gc.deck.cards) upgrades += c.getUpgraded() > 0;
+        rec["deck"] = gc.deck.size();
+        rec["upgrades"] = upgrades;
+        std::vector<std::string> relics;
+        for (const auto &r : gc.relics.relics) relics.push_back(jname(r.id));
+        rec["relics"] = relics;
+        const auto &lfight = lf->second;
+        rec["expert"] = {{"received", lfight["damage"]}, {"turns", lfight["turns"]},
+                         {"exitHp", f - 1 < (int)log_.hp.size() ? json(log_.hp[f - 1]) : json()},
+                         {"died", !log_.victory && f == log_.floorReached && log_.killedBy == loggedEnc},
+                         {"potionsUsed", log_.uses.count(f) ? log_.uses.at(f) : 0},
+                         {"potionNamesUsed", log_.useNames.count(f) ? json(log_.useNames.at(f)) : json()},
+                         {"relicsObtained", log_.relicsAt.count(f) ? json(log_.relicsAt.at(f)) : json::array()}};
+        const auto entryPotions = potionNames(gc.potions);
+        json reps = json::array();
+        std::optional<GameContext> next;
+        int continuedFrom = -1;
+        for (int r = 0; r < k_; ++r) {
+            GameContext copy = detachedCounterfactualCopy(gc);
+            if (r > 0) {
+                std::mt19937_64 rng(mix(gc.seed ^ mix(f * 1000003ULL + r)));
+                for (auto stream : {&copy.aiRng, &copy.cardRandomRng, &copy.miscRng, &copy.monsterHpRng,
+                                    &copy.potionRng, &copy.shuffleRng}) {
+                    const auto counter = stream->counter;
+                    *stream = sts::Random(rng());
+                    stream->counter = counter;
+                }
+                copy.seed = rng();
+            }
+            search::ScumSearchAgent2 a;
+            a.simulationCountBase = agent.simulationCountBase;
+            a.rng = std::default_random_engine(static_cast<unsigned>(mix(gc.seed + 7919ULL * f + r)));
+            BattleContext bc{};
+            const double t0 = threadCpuSeconds();
+            a.playoutBattle(copy, bc);
+            const double cpu = threadCpuSeconds() - t0;
+            const bool decided = bc.outcome != Outcome::UNDECIDED;
+            const bool won = bc.outcome == Outcome::PLAYER_VICTORY;
+            const bool valid = trainingRunValid(decided);
+            const auto exitPotions = potionNames(bc.potions);
+            if (won) bc.exitBattle(copy);
+            reps.push_back({{"r", r}, {"won", won}, {"valid", valid}, {"exitHp", won ? copy.curHp : 0},
+                            {"exitMaxHp", copy.maxHp}, {"turns", bc.turn}, {"cpu", cpu},
+                            {"potionsUsed", minus(entryPotions, exitPotions)},
+                            {"potionsGained", minus(exitPotions, entryPotions)}});
+            if (won && !next) {
+                copy.seed = gc.seed;
+                next = std::move(copy);
+                continuedFrom = r;
+            }
+        }
+        rec["replicates"] = reps;
+        rec["continuedFrom"] = continuedFrom;
+        fights_.push_back(rec);
+        if (!next) return false;
+        gc = std::move(*next);
+        return true;
+    }
+
+    json fights() const { return fights_; }
+    json syncs() const { return syncs_; }
+    json potionLog() const {
+        return {{"knownThroughFloor", log_.potionsKnownThrough}, {"unknownWhy", log_.potionsUnknownWhy}};
+    }
+
+private:
+    ExpertCombatLog log_;
+    Replayer &replayer_;
+    int k_, maxAct_;
+    bool expertPotions_;
+    json fights_ = json::array(), syncs_ = json::array();
+};
+
 }  // namespace
 
 int expertReplayGen(const std::string &runFile, const std::string &output) {
@@ -494,6 +737,65 @@ int expertReplayGen(const std::string &runFile, const std::string &output) {
     if (!f) throw std::runtime_error("write failed: " + output);
     std::cout << "[expertreplay] seed=" << seedPlayed << " heartKilled=" << result.won << " floor=" << result.floor
               << " stopFloor=" << out["replay"]["stopFloor"] << " stop=" << out["replay"]["stopReason"] << std::endl;
+    return 0;
+}
+
+int expertFightsGen(const std::string &runFile, const std::string &output) {
+    if (!g_collectKeys || g_stopAfterAct != 0 || g_forceRelic != sts::RelicId::INVALID)
+        throw std::runtime_error("expertfights requires the full-run Heart objective, keys on, no forced relic");
+    if (t_oocDecisionOverride || t_oocContinuation || t_oocHypotheticalStep || t_battleOverride)
+        throw std::runtime_error("expertfights requires an unowned real driver context");
+    if (std::filesystem::exists(output) && std::filesystem::file_size(output) > 0)
+        throw std::runtime_error("expertfights output " + output + " already exists");
+    auto envInt = [](const char *name, int def, int lo, int hi) {
+        const char *v = std::getenv(name);
+        const int x = v && *v ? std::atoi(v) : def;
+        if (x < lo || x > hi) throw std::runtime_error(std::string(name) + " out of range");
+        return x;
+    };
+    const int replicates = envInt("STS_EXPERT_FIGHTS_REPLICATES", 4, 1, 64);
+    const int maxAct = envInt("STS_EXPERT_FIGHTS_MAX_ACT", 3, 1, 3);
+    const char *pm = std::getenv("STS_EXPERT_FIGHTS_POTIONS");
+    const std::string potionMode = pm && *pm ? pm : "own";
+    if (potionMode != "own" && potionMode != "expert")
+        throw std::runtime_error("STS_EXPERT_FIGHTS_POTIONS must be own or expert");
+    std::ifstream in(runFile);
+    if (!in) throw std::runtime_error("cannot read " + runFile);
+    const json run = json::parse(in);
+    if (run.value("character_chosen", std::string()) != "IRONCLAD" || run.value("ascension_level", 0) != 20)
+        throw std::runtime_error("expertfights needs an Ironclad A20 run");
+    const auto seedPlayed = run["seed_played"].get<std::string>();
+    const auto seed = static_cast<std::uint64_t>(std::stoll(seedPlayed));
+    Replayer replayer(run, {kReplayTypes.begin(), kReplayTypes.end()});
+    replayer.allowShelfDifferences();
+    FightReplayer fights(run, replayer, replicates, maxAct, potionMode == "expert");
+    // The run ends at the first decision the log does not replay exactly: the
+    // measurement only covers the expert's own states.
+    t_oocDecisionOverride = [&](GameContext &gc) -> const char * {
+        const char *by = replayer.step(gc);
+        if (!replayer.stopped()) return by;
+        gc.outcome = GameOutcome::PLAYER_LOSS;
+        return "replay_stopped";
+    };
+    t_battleOverride = [&](GameContext &gc, search::ScumSearchAgent2 &agent) { return fights.onBattle(gc, agent); };
+    struct Reset { ~Reset() { t_oocDecisionOverride = nullptr; t_battleOverride = nullptr; } } reset;
+    trainingRunStart();
+    const auto result = runFullRunOOC(seed, 10000, 20, deployedRestV(), true);
+    if (!trainingRunValid(true)) throw std::runtime_error("expert fights run failed simulator integrity");
+    const json out = {{"schema", "expert-fights-v1"}, {"runFile", std::filesystem::path(runFile).filename().string()},
+        {"playId", run.value("play_id", std::string())}, {"seedPlayed", seedPlayed}, {"engineSeed", seed},
+        {"replicates", replicates}, {"maxAct", maxAct}, {"potionMode", potionMode}, {"endFloor", result.floor}, {"endAct", result.act},
+        {"diedInMainLine", result.deathCombat >= 0}, {"sec", result.sec},
+        {"expert", {{"victory", run.value("victory", false)}, {"floorReached", run["floor_reached"]}}},
+        {"replay", replayer.summary()}, {"potionLog", fights.potionLog()}, {"fights", fights.fights()},
+        {"syncs", fights.syncs()}, {"producerSha", trainingExecutableGitSha()},
+        {"policy", effectiveOocPolicySpecification()}, {"provenance", heartOutcomeRunProvenance()}};
+    std::ofstream f(output);
+    if (!f) throw std::runtime_error("cannot write " + output);
+    f << out.dump() << '\n';
+    if (!f) throw std::runtime_error("write failed: " + output);
+    std::cout << "[expertfights] seed=" << seedPlayed << " fights=" << out["fights"].size()
+              << " endFloor=" << result.floor << " stop=" << out["replay"]["stopReason"] << std::endl;
     return 0;
 }
 

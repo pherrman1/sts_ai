@@ -47,6 +47,12 @@ extern thread_local std::function<void(std::uint64_t, const char *)> t_realOocDe
 // name for the decision trace, or returns nullptr without touching gc and the
 // production chain acts. Unset everywhere else.
 extern thread_local std::function<const char *(sts::GameContext &)> t_oocDecisionOverride;
+// Research-only (expertfights): when set, runFullRunOOC offers each real battle
+// to it first, after the battle budget is set on the agent. It either plays
+// the battle itself, leaves gc after the battle (won, at the rewards screen) and
+// returns true, or returns false with gc ready for the driver's own battle
+// (it may adjust HP and potions first). Unset everywhere else.
+extern thread_local std::function<bool(sts::GameContext &, sts::search::ScumSearchAgent2 &)> t_battleOverride;
 // Default-off research observation of each real combat: called after exitBattle
 // with the context copied just before Silver initialized the battle, the ended
 // battle, the number of RAW persistent-exit callbacks and the first one's record

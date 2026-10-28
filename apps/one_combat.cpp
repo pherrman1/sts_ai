@@ -3163,7 +3163,8 @@ int main(int argc, char **argv) {
         // All three modes take the ascension as argv[4], default 20.
         const bool a20WholeRun = wholeRunMode && (argc > 4 ? std::atoi(argv[4]) : 20) == 20;
         // expertreplay plays one A20 whole run per process (no sims argument).
-        const bool wholeRunDefault = (wholeRunMode && argc <= 2) || a20WholeRun || mode == "expertreplay";
+        const bool wholeRunDefault = (wholeRunMode && argc <= 2) || a20WholeRun || mode == "expertreplay"
+            || mode == "expertfights";
         const bool adaptiveConfigured = std::getenv("STS_SILVER_ADAPTIVE")
             || std::getenv("STS_SILVER_ADAPTIVE_RETAINED_ONLY")
             || std::getenv("STS_SILVER_ADAPTIVE_TOP_GAP");
@@ -3822,6 +3823,10 @@ int main(int argc, char **argv) {
         if (argc != 5 || std::string(argv[2]) != "1")
             throw std::runtime_error("usage: one_combat expertreplay 1 RUN.json OUT.json");
         return one_combat::expertReplayGen(argv[3], argv[4]);
+    } else if (mode == "expertfights") {
+        if (argc != 5 || std::string(argv[2]) != "1")
+            throw std::runtime_error("usage: one_combat expertfights 1 RUN.json OUT.json");
+        return one_combat::expertFightsGen(argv[3], argv[4]);
     } else if (mode == "heartoutcomegen") {
         const std::string capture = argc == 6 ? argv[5] : "";
         if (argc != 6 || std::string(argv[2]) != "1"
