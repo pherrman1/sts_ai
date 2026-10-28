@@ -24884,6 +24884,28 @@ on identical states; it needs per-fight output in `expertreplay` (missing today)
 Seeds: none (existing games only).
 **Knowledge impact:** this ledger entry and its evidence only; no code, model or default change.
 
+## §704 — Silver victory turn penalty 0.4 vs 0 at A20 (issue #880): removing it lengthens boss fights by ~0.7 turns without stalling; outcomes INCONCLUSIVE at 64 paired whole runs (2026-10-27)
+
+**Question:** Silver's won leaf pays 0.4 HP-equivalents per combat turn (`SilverEvalWeights::victoryTurnPenalty`). Does a
+turn-neutral victory leaf (0) improve or preserve play, make combats longer, or stall?
+**Setup:** [PREREG](evidence/victory_turn_penalty_ab_20261027/PREREG.md). Research-only `STS_SILVER_VICTORY_TURN_PENALTY`
+(unset = 0.4; the final-fight leaf ignores it, so the Heart fight is identical); `STS_OOC_DECISION_TRACE` battle rows now
+carry `turns`. Arms differ only in that flag on the key-rules F stack (student_sel alone out of combat, learned Silver
+stop, Act 4 strong). 32 paired A20 seeds plus the pre-registered 32-seed extension, run commit `3febdd0`, code
+`67d2dc1`, on one 4-CPU cloud container (~11 core-h). Philipp's go 2026-10-27 20:37Z; prelaunch review PASS.
+**Result:** [RESULT.md](evidence/victory_turn_penalty_ab_20261027/RESULT.md). 128/128 games rc 0. Heart kills A 17 / B 19
+(7 vs 5 discordant, p 0.77); Act 4 29 / 26; final floor B − A −2.39 [−5.92, +1.06]. Turns per combat 3.99 → 4.16 (boss
+7.34 → 8.08, normal +0.12, elite +0.03); 0 turn caps, ≥ 30-turn combats 0 vs 1 (Champ, won). Paired first-divergent
+combats (63): turns +0.14 [−0.17, +0.43], HP +0.49 [−0.95, +1.84]. Context: Baalorlord's 676 A20 runs average 4.1 / 4.8 /
+7.9 player turns (normal / elite / boss) vs the bot's 3.9 / 5.5 / 8.3 (A).
+**Interpretation:** INCONCLUSIVE under the frozen rule (no STALL, WORSE, LONGER_ONLY or PROMISING) → stop at 64. The term
+mainly shortens boss fights; the bot is not implausibly fast vs the expert. **Inference:** the penalty is not a lever
+for A20 strength at this precision; revisit only for certified winning engines (#880).
+**Decision:** victoryTurnPenalty stays 0.4; the flag stays research-only, default off.
+Seeds: 111386000–111386063 used, smokes 111386990–111386991 used; 111386992–111386993 unused.
+**Knowledge impact:** [combat-search.md](../knowledge-base/architecture/combat-search.md) (flag and result),
+environment-variables.md, ooc-label-pipeline.md (trace fields).
+
 ## §705 — OOC value counterfactual monotonicity (issue #886): the A20 leaf never prices lower HP higher (X2-B 0 of 25,315 HP pairs; rollout3 wrong-way beyond 2 SE 0.5 %, noise level), but X2-B prices some plain upgrades lower, card-specifically and across decks (Defend+ −0.61 pp, Bash+ −0.42 pp, Anger+ −0.71 pp, Dropkick+ −3.4 pp; 29.7 % of plain-upgrade pairs wrong-way); diagnostic, no gameplay change (8 replayed seeds, 2026-10-28)
 
 **Question:** does the active A20 OOC value (rollout3 leaf ending in M0-calibrated public X2-B; no learned head is
@@ -24913,24 +24935,3 @@ training gate or upgrade-paired augmentation; a smith-target study for real choi
 Seeds: none new (8 used §683 seeds replayed).
 **Knowledge impact:** `environment-variables.md` (`STS_OOC_SIBLING_MONO`, and that it keeps the M0 default which the
 plain sibling capture turns off); this entry and its evidence.
-## §704 — Silver victory turn penalty 0.4 vs 0 at A20 (issue #880): removing it lengthens boss fights by ~0.7 turns without stalling; outcomes INCONCLUSIVE at 64 paired whole runs (2026-10-27)
-
-**Question:** Silver's won leaf pays 0.4 HP-equivalents per combat turn (`SilverEvalWeights::victoryTurnPenalty`). Does a
-turn-neutral victory leaf (0) improve or preserve play, make combats longer, or stall?
-**Setup:** [PREREG](evidence/victory_turn_penalty_ab_20261027/PREREG.md). Research-only `STS_SILVER_VICTORY_TURN_PENALTY`
-(unset = 0.4; the final-fight leaf ignores it, so the Heart fight is identical); `STS_OOC_DECISION_TRACE` battle rows now
-carry `turns`. Arms differ only in that flag on the key-rules F stack (student_sel alone out of combat, learned Silver
-stop, Act 4 strong). 32 paired A20 seeds plus the pre-registered 32-seed extension, run commit `3febdd0`, code
-`67d2dc1`, on one 4-CPU cloud container (~11 core-h). Philipp's go 2026-10-27 20:37Z; prelaunch review PASS.
-**Result:** [RESULT.md](evidence/victory_turn_penalty_ab_20261027/RESULT.md). 128/128 games rc 0. Heart kills A 17 / B 19
-(7 vs 5 discordant, p 0.77); Act 4 29 / 26; final floor B − A −2.39 [−5.92, +1.06]. Turns per combat 3.99 → 4.16 (boss
-7.34 → 8.08, normal +0.12, elite +0.03); 0 turn caps, ≥ 30-turn combats 0 vs 1 (Champ, won). Paired first-divergent
-combats (63): turns +0.14 [−0.17, +0.43], HP +0.49 [−0.95, +1.84]. Context: Baalorlord's 676 A20 runs average 4.1 / 4.8 /
-7.9 player turns (normal / elite / boss) vs the bot's 3.9 / 5.5 / 8.3 (A).
-**Interpretation:** INCONCLUSIVE under the frozen rule (no STALL, WORSE, LONGER_ONLY or PROMISING) → stop at 64. The term
-mainly shortens boss fights; the bot is not implausibly fast vs the expert. **Inference:** the penalty is not a lever
-for A20 strength at this precision; revisit only for certified winning engines (#880).
-**Decision:** victoryTurnPenalty stays 0.4; the flag stays research-only, default off.
-Seeds: 111386000–111386063 used, smokes 111386990–111386991 used; 111386992–111386993 unused.
-**Knowledge impact:** [combat-search.md](../knowledge-base/architecture/combat-search.md) (flag and result),
-environment-variables.md, ooc-label-pipeline.md (trace fields).
