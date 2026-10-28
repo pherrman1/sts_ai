@@ -469,6 +469,7 @@ add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/silver_synth_gen.cpp
     apps/one_combat/silver_synth_replay.cpp
     apps/one_combat/ctm_offline_score.cpp
+    apps/one_combat/fight_replay.cpp
     apps/one_combat/ooc_factor_eval.cpp
     apps/one_combat/potion_price_probe.cpp
     apps/one_combat/strategic_gen.cpp
@@ -815,6 +816,8 @@ add_test(NAME silver_potion_weights COMMAND $<TARGET_FILE:unit-test> silver_poti
 set_tests_properties(silver_potion_weights PROPERTIES LABELS "core")
 add_test(NAME silver_concave_hp_leaf COMMAND $<TARGET_FILE:unit-test> silver_concave_hp_leaf)
 set_tests_properties(silver_concave_hp_leaf PROPERTIES LABELS "core")
+add_test(NAME silver_victory_turn_penalty COMMAND $<TARGET_FILE:unit-test> silver_victory_turn_penalty)
+set_tests_properties(silver_victory_turn_penalty PROPERTIES LABELS "core")
 set_tests_properties(silver_rollout_zero_cost_loop PROPERTIES LABELS "core")
 add_test(NAME ooc_reward_continuation COMMAND $<TARGET_FILE:unit-test> ooc_reward_continuation)
 add_test(NAME ooc_semantic COMMAND $<TARGET_FILE:unit-test> ooc_semantic)
