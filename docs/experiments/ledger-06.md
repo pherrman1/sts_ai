@@ -24549,6 +24549,26 @@ a value-based rest-vs-upgrade decision is being scoped in its own thread (2026-1
 Seeds: none (existing games only).
 **Knowledge impact:** none beyond this entry; no code or default change.
 
+## §712 — Card-reward rule screen: student_sel's card picks beat a value-head argmax (−17.6 pp Heart kills), a uniform 8,192-sim Q search with the X2-B M0 leaf (−19.1 pp) and the same search with the SR leaf (−9.4 pp); all three STOP (256 paired seeds, A20, 2026-10-27)
+
+**Question:** Philipp, 2026-10-26: the OOC search never compares card options because student_sel puts ≥0.97 prior
+on one card. Do better card decisions come from a value head or from a uniform search? Thread "Measure OOC MCTS
+depth on card rewards"; screen of 4 arms A/B/C/D, pre-registered.
+**Data:** [PREREG](evidence/card_rule_ab_20261026/PREREG.md), [RESULT](evidence/card_rule_ab_20261026/RESULT.md);
+seeds 111387000-111387255 (smoke 111387990). Run commit `5e27e0ad`, research flag `STS_OOC_MCTS_CARD_RULE` (default
+off). A = today's A20 default; B = SR_crn_r2_s2_ep20 value-head argmax of the post-pick state; C = 8,192 sims split
+evenly over the root actions, rollout3 + X2-B M0 leaf, boss edge, best mean Q; D = C with the SR head as leaf anchor.
+Only real card-reward roots differ.
+**Result:** Heart kills A 28.1%, B 10.5%, C 9.0%, D 18.8%. Paired: B−A −17.6 pp [−23.4, −12.1] (8/53), C−A −19.1 pp
+[−25.0, −13.3] (8/57), D−A −9.4 pp [−15.6, −2.7] (23/47); D−B +8.2 pp, D−C +9.8 pp. Act-4 arrival 41/23/21/33%.
+Rules pick off the student_sel argmax on 38-49% of card roots and skip 16-23%. Extra deaths come mostly in acts
+2-3. Wall per game: C 2.6×, D 3.1× A. Two units were run locally after three dead-worker attempts each; the other
+254 were verified.
+**Interpretation:** STOP for B, C and D, no follow-up runs. Neither leaf in use today ranks card options better than
+the policy prior, and the search (about 1 floor of tree plus rollout3) does not make up for it. The SR leaf beats
+X2-B as a card evaluator (D−C), which matches its larger card spread in the single-seed diagnostics.
+**Inference:** card-reward improvement has to come through the prior (training targets) or through a value head
+that has been shown to rank post-pick states against outcomes, not through search over today's leaves.
 ## §697 — Fight-luck control variates for paired A/Bs: a CTM-only baseline is biased (shifts up to 3.2 pp); fresh fight replays are unbiased and project 0.71x paired SD (~2x seeds) at m = 4; new `one_combat fightreplay` reproduces 415/415 recorded fights; offline, no seeds (2026-10-26)
 
 **Question:** experiment 6 of the 2026-10-26 deep-research report (thread "Shrink A/B variance with AIVAT"): how much

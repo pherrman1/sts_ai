@@ -1034,6 +1034,13 @@ OocGameContextModel::Metadata &OocGameContextModel::mutableMetadata(sts::search:
                 value.candidates.push_back({action.bits, "map:" + std::to_string(action.bits), {}, action});
             }
             value.sourcePriorCovered = true;
+        } else if (options.bossEdge && gc.outcome == sts::GameOutcome::UNDECIDED
+                   && gc.screenState == sts::ScreenState::MAP_SCREEN && gc.map && gc.curMapNodeY == 14) {
+            for (auto action : GameAction::getAllActionsInState(gc))
+                if (action.isValidAction(gc))
+                    value.candidates.push_back({static_cast<sts::search::OocActionId>(value.candidates.size()),
+                        "map:" + std::to_string(action.bits), {}, action});
+            value.sourcePriorCovered = true;
         } else if (gc.outcome == sts::GameOutcome::UNDECIDED && gc.screenState != sts::ScreenState::BATTLE
                    && gc.screenState != sts::ScreenState::MAP_SCREEN) {
             const auto enumeration = sts::search::enumerateOocSemanticPrimitiveBindings(gc);
@@ -2788,6 +2795,20 @@ std::uint64_t liveRootProbeDeep = 32768;
 // ADR-TBD (§683): unset, with the heart1 prior and outside the live advisor, real roots at ascension 20 search only
 // map screens, each at the full budget (liveSearchScreensA20Default); STS_OOC_MCTS_SCREENS=all restores every screen.
 std::uint32_t liveSearchScreens = ~0u;
+// Card-reward rule (research, default unset): STS_OOC_MCTS_CARD_RULE=value|search decides every real root on a
+// card-reward screen after the rule chain. value: argmax over the root actions of the leaf anchor of each successor
+// state, no rollout (needs STS_OOC_MCTS_CARD_RULE_HEART1_VALUE). search: STS_OOC_MCTS_CARD_RULE_SIMS (default 8192)
+// simulations split evenly over every root action (uniform Gumbel root, no stops), the rest of the tree as the live
+// search, then the action with the best mean Q. STS_OOC_MCTS_CARD_RULE_HEART1_VALUE=<weights> replaces the leaf
+// anchor by that value head alone (no calibration) in these roots only; STS_OOC_MCTS_CARD_RULE_BOSS_EDGE=1 lets
+// these trees walk into the act boss (OocAdapterOptions::bossEdge). Other roots are unchanged.
+enum class LiveCardRule { Off, Value, Search };
+LiveCardRule liveCardRule = LiveCardRule::Off;
+std::shared_ptr<const one_combat::heart1::Net> liveCardRuleNet;
+std::string liveCardRulePath, liveCardRuleSha256;
+std::uint64_t liveCardRuleSims = 8192;
+bool liveCardRuleBossEdge = false;
+thread_local bool t_cardRuleRoot = false;
 bool liveSearchScreensSet = false;
 bool liveSearchScreensA20Default = false;
 bool liveMapOnlyA20(const GameContext &gc) {
@@ -3557,6 +3578,10 @@ bool liveOocMctsScreenExcluded(const GameContext &gc) {
     if (liveMapOnlyA20(gc)) return gc.screenState != sts::ScreenState::MAP_SCREEN;
     return liveEnabled && liveSearchScreensSet && !(liveSearchScreens & (1u << int(gc.screenState)));
 }
+bool liveOocCardRuleApplies(const GameContext &gc) {
+    return liveEnabled && liveCardRule != LiveCardRule::Off && gc.screenState == sts::ScreenState::REWARDS
+        && gc.info.rewardsContainer.cardRewardCount > 0;
+}
 bool liveOocMctsHeart1Fallback(const GameContext &gc) {
     return liveEnabled && liveOptions.heart1Coverage && heart1FullScreen(gc);
 }
@@ -4181,6 +4206,44 @@ void configureLiveOocMcts() {
             throw std::runtime_error("STS_OOC_MCTS_SCREENS needs STS_OOC_MCTS=1 with a heart1 prior (student_sel "
                 "decides the unlisted screens)");
     }
+    liveCardRule = LiveCardRule::Off; liveCardRuleNet.reset(); liveCardRulePath.clear(); liveCardRuleSha256.clear();
+    liveCardRuleSims = 8192; liveCardRuleBossEdge = false;
+    if (const char *rule = std::getenv("STS_OOC_MCTS_CARD_RULE"); rule && *rule) {
+#ifdef STS_LIVE_ADVISOR
+        throw std::runtime_error("STS_OOC_MCTS_CARD_RULE is unavailable in the live advisor");
+#else
+        const std::string value(rule);
+        if (value == "value") liveCardRule = LiveCardRule::Value;
+        else if (value == "search") liveCardRule = LiveCardRule::Search;
+        else throw std::runtime_error("STS_OOC_MCTS_CARD_RULE must be value or search");
+        if (!liveEnabled || !liveOptions.heart1Prior || liveSearchMode != LiveSearchMode::Mcts)
+            throw std::runtime_error("STS_OOC_MCTS_CARD_RULE needs STS_OOC_MCTS=1 with a heart1 prior and the mcts planner");
+        if (const char *weights = std::getenv("STS_OOC_MCTS_CARD_RULE_HEART1_VALUE"); weights && *weights) {
+            auto net = std::make_shared<one_combat::heart1::Net>();
+            std::string error;
+            if (!net->load(weights, &error)) throw std::runtime_error("STS_OOC_MCTS_CARD_RULE_HEART1_VALUE: " + error);
+            liveCardRuleNet = std::move(net);
+            liveCardRulePath = weights;
+            liveCardRuleSha256 = fileSha256Hex(weights);
+        } else if (liveCardRule == LiveCardRule::Value)
+            throw std::runtime_error("STS_OOC_MCTS_CARD_RULE=value requires STS_OOC_MCTS_CARD_RULE_HEART1_VALUE");
+        if (const char *raw = std::getenv("STS_OOC_MCTS_CARD_RULE_SIMS"); raw && *raw) {
+            const std::string sims(raw);
+            if (liveCardRule != LiveCardRule::Search || sims.size() > 7
+                    || sims.find_first_not_of("0123456789") != std::string::npos || std::stoull(sims) < 2)
+                throw std::runtime_error("STS_OOC_MCTS_CARD_RULE_SIMS must be 2..9999999 with STS_OOC_MCTS_CARD_RULE=search");
+            liveCardRuleSims = std::stoull(sims);
+        }
+        if (const char *raw = std::getenv("STS_OOC_MCTS_CARD_RULE_BOSS_EDGE"); raw && *raw) {
+            if (std::string(raw) != "1" || liveCardRule != LiveCardRule::Search)
+                throw std::runtime_error("STS_OOC_MCTS_CARD_RULE_BOSS_EDGE must be 1 with STS_OOC_MCTS_CARD_RULE=search");
+            liveCardRuleBossEdge = true;
+        }
+#endif
+    } else for (const char *key : {"STS_OOC_MCTS_CARD_RULE_HEART1_VALUE", "STS_OOC_MCTS_CARD_RULE_SIMS",
+                                   "STS_OOC_MCTS_CARD_RULE_BOSS_EDGE"})
+        if (const char *v = std::getenv(key); v && *v)
+            throw std::runtime_error(std::string(key) + " requires STS_OOC_MCTS_CARD_RULE");
     if (const char *mode = std::getenv("STS_OOC_MCTS_SEARCH_MODE"); mode && *mode) {
         const std::string value(mode);
         if (value == "particle") liveSearchMode = LiveSearchMode::Particle;
@@ -4506,6 +4569,10 @@ void configureLiveOocMcts() {
             + " horizon_combats=" + std::to_string(liveParticleConfig.horizonCombats) : std::string{})
         << (liveSearchCompare ? " search_compare=1" : "")
         << (liveSearchScreensSet ? " screens=" + std::string(std::getenv("STS_OOC_MCTS_SCREENS")) : std::string{})
+        << (liveCardRule == LiveCardRule::Off ? std::string{} : std::string(" card_rule=")
+            + (liveCardRule == LiveCardRule::Value ? "value" : "search:" + std::to_string(liveCardRuleSims))
+            + (liveCardRuleNet ? " card_rule_heart1_value=" + liveCardRulePath + " sha256=" + liveCardRuleSha256 : "")
+            + (liveCardRuleBossEdge ? " card_rule_boss_edge=1" : ""))
         << (liveSearchScreensA20Default ? " screens_a20_default=map_full_budget" : std::string{})
         << "]\n";
     std::cout << "[ooc-mcts-config] {\"noncombatOutcomes\":\""
@@ -5189,6 +5256,17 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
         config.rootNoiseSeed = splitMix64(config.seed ^ 0x524f4f544e4f4953ULL);   // "ROOTNOIS"
     }
     auto options = liveOptions;
+    const bool cardRule = t_cardRuleRoot;
+    if (cardRule) {
+        if (liveCardRuleNet) {
+            options.heart1ValueNet = liveCardRuleNet;
+            options.heart1ValuePath = liveCardRulePath;
+            options.heart1ValueSha256 = liveCardRuleSha256;
+            options.heart1ValueWeight = 1;
+            options.leafCalibration.clear();
+        }
+        options.bossEdge = liveCardRuleBossEdge;
+    }
     auto capture = liveLeafCapture ? liveLeafCapture->begin(seed, index, config.seed,
         simulations, options.leafCombats) : nullptr;
     if (capture) {
@@ -5313,6 +5391,31 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
     std::optional<sts::search::OocParticleResult> particleResult;
     auto result = [&] {
         DecisionLogScope logScope(decisionLog ? &*decisionLog : nullptr);
+        if (cardRule && !sole && liveCardRule == LiveCardRule::Value) {
+            sts::search::OocMctsResult r;
+            std::mt19937_64 rng(config.seed);
+            double best = 0;
+            for (const auto &a : model.legalActions(0)) {
+                const double v = model.leafAnchor(model.sampleSuccessor(0, a.id, rng));
+                r.rootActions.push_back({a.id, a.prior, 0, v, false});
+                if (!r.selectedAction || v > best) { best = v; r.selectedAction = a.id; }
+            }
+            return r;
+        }
+        if (cardRule && !sole) {
+            auto c = config;
+            c.allowUnqualifiedRootStop = false; c.stopAt512VisitGap20 = false; c.gapStopFraction = 0;
+            c.learnedStop = {}; c.learnedStopSimulations.clear();
+            gumbelConfig(c, 64, 0.0);
+            c.gumbelUniform = true;
+            auto r = searchWithSoleRootShortcut(model, c, sole, liveCardRuleSims);
+            // The evenly split root picks by mean Q (the Gumbel score would add log prior).
+            const sts::search::OocRootActionStats *best = nullptr;
+            for (const auto &a : r.rootActions)
+                if (!a.pruned && a.visits && (!best || a.q > best->q)) best = &a;
+            r.selectedAction = best ? std::optional(best->id) : std::nullopt;
+            return r;
+        }
         if (liveSearchMode != LiveSearchMode::Mcts && !sole) {
             particleResult = runLiveParticlePlanner(model, config.seed, liveSearchMode);
             return particleAsMctsResult(*particleResult);
@@ -5951,6 +6054,11 @@ bool oocHypotheticalCardTaken(const GameContext &gc, const PathHistory &path, co
     sts::search::g_disallowImaginedCombat = scope.disallowed;
     step(offer);
     return offer.deck.size() > before;
+}
+bool oocCardRulePolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t seed,
+    std::uint64_t index, LiveOocMctsMetrics &metrics) {
+    struct Scope { Scope() { t_cardRuleRoot = true; } ~Scope() { t_cardRuleRoot = false; } } scope;
+    return oocMctsPolicyStep(gc, path, seed, index, metrics);
 }
 void observeOocCampfirePrice(const GameContext &gc, const PathHistory &path, std::uint64_t seed, std::uint64_t index) {
 #ifdef STS_LIVE_ADVISOR

@@ -1,0 +1,11 @@
+name          card-rule-ab
+code_commit   4eb0b3c5a857ae1a56d0eb03cd2712f7cf9f4c4a
+binary_sha256 5ae5b71258e0650bdeb6da9732d99d6173086a42d1bfadbce2b76f50cb9968a0
+workers       16
+share         /mnt/project-files/card-rule-ab
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 30
+input student_sel.bin /mnt/project-files/card-rule-ab/student_sel.bin cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7
+input sr_value.bin /mnt/project-files/card-rule-ab/sr_value.bin 28523fb5b63c1977b6f63d3c832f592db4f901b92d2f06aa2783401840006dbb
