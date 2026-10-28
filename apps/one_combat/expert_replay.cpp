@@ -608,8 +608,18 @@ double threadCpuSeconds() {
 // restored), else the driver plays the fight itself.
 class FightReplayer {
 public:
-    FightReplayer(const json &run, Replayer &replayer, int replicates, int maxAct, bool expertPotions)
-        : log_(run), replayer_(replayer), k_(replicates), maxAct_(maxAct), expertPotions_(expertPotions) {}
+    // Research arm (STS_EXPERT_FIGHTS_ARMS, default none): a '+'-joined set of `pp` (prior playouts in elite
+    // rooms, as STS_SILVER_PRIOR_PLAYOUT_ELITE=1) and `flat<N>` (flat N simulations at every root, singletons
+    // searched, no learned stop).
+    struct Arm {
+        std::string name;
+        bool priorPlayoutElite = false;
+        std::int64_t flat = 0;
+    };
+    FightReplayer(const json &run, Replayer &replayer, int replicates, int maxAct, bool expertPotions,
+                  std::vector<Arm> arms = {}, std::set<std::string> armRooms = {}, int armK = 0)
+        : log_(run), replayer_(replayer), k_(replicates), maxAct_(maxAct), expertPotions_(expertPotions),
+          arms_(std::move(arms)), armRooms_(std::move(armRooms)), armK_(armK) {}
 
     bool onBattle(GameContext &gc, search::ScumSearchAgent2 &agent) {
         if (replayer_.stopped() || gc.act > maxAct_) return false;
@@ -666,10 +676,8 @@ public:
                          {"potionNamesUsed", log_.useNames.count(f) ? json(log_.useNames.at(f)) : json()},
                          {"relicsObtained", log_.relicsAt.count(f) ? json(log_.relicsAt.at(f)) : json::array()}};
         const auto entryPotions = potionNames(gc.potions);
-        json reps = json::array();
-        std::optional<GameContext> next;
-        int continuedFrom = -1;
-        for (int r = 0; r < k_; ++r) {
+        // Copy r from this state: production settings, or arm `arm` (index into arms_; research, see Arm).
+        auto playCopy = [&](int r, const Arm *arm, std::optional<GameContext> *winner) {
             GameContext copy = detachedCounterfactualCopy(gc);
             if (r > 0) {
                 std::mt19937_64 rng(mix(gc.seed ^ mix(f * 1000003ULL + r)));
@@ -682,8 +690,14 @@ public:
                 copy.seed = rng();
             }
             search::ScumSearchAgent2 a;
-            a.simulationCountBase = agent.simulationCountBase;
+            a.simulationCountBase = arm && arm->flat > 0 ? arm->flat : agent.simulationCountBase;
             a.rng = std::default_random_engine(static_cast<unsigned>(mix(gc.seed + 7919ULL * f + r)));
+            if (arm && arm->flat > 0)
+                search::g_nativeSilverBudgetOverride = search::NativeSilverBudgetOverride{
+                    search::NativeSilverBudgetOverride::Policy::Flat, false};
+            if (arm && arm->priorPlayoutElite) search::g_nativeSilverPriorPlayoutEliteOverride = true;
+            struct ArmReset { ~ArmReset() { search::g_nativeSilverBudgetOverride.reset();
+                                            search::g_nativeSilverPriorPlayoutEliteOverride.reset(); } } armReset;
             BattleContext bc{};
             const double t0 = threadCpuSeconds();
             a.playoutBattle(copy, bc);
@@ -693,15 +707,38 @@ public:
             const bool valid = trainingRunValid(decided);
             const auto exitPotions = potionNames(bc.potions);
             if (won) bc.exitBattle(copy);
-            reps.push_back({{"r", r}, {"won", won}, {"valid", valid}, {"exitHp", won ? copy.curHp : 0},
-                            {"exitMaxHp", copy.maxHp}, {"turns", bc.turn}, {"cpu", cpu},
-                            {"potionsUsed", minus(entryPotions, exitPotions)},
-                            {"potionsGained", minus(exitPotions, entryPotions)}});
-            if (won && !next) {
+            json rep = {{"r", r}, {"won", won}, {"valid", valid}, {"exitHp", won ? copy.curHp : 0},
+                        {"exitMaxHp", copy.maxHp}, {"turns", bc.turn}, {"cpu", cpu},
+                        {"potionsUsed", minus(entryPotions, exitPotions)},
+                        {"potionsGained", minus(exitPotions, entryPotions)}};
+            if (won && winner && !*winner) {
                 copy.seed = gc.seed;
-                next = std::move(copy);
-                continuedFrom = r;
+                *winner = std::move(copy);
             }
+            return rep;
+        };
+        json reps = json::array();
+        std::optional<GameContext> next;
+        int continuedFrom = -1;
+        // With research arms (STS_EXPERT_FIGHTS_ARMS) only fights in armRooms_ play copies 0..armK_-1 in full,
+        // production and each arm on the same copy seeds; any other copy is played only until the first win (the
+        // main line continues from the first winning copy either way, so it is the same as without arms).
+        const bool armFight = !arms_.empty() && armRooms_.count(std::to_string(gc.act) + roomLetter(gc.curRoom));
+        const int full = arms_.empty() ? k_ : armFight ? armK_ : 0;
+        for (int r = 0; r < k_; ++r) {
+            if (r >= full && next) break;
+            const bool hadWinner = next.has_value();
+            reps.push_back(playCopy(r, nullptr, &next));
+            if (!hadWinner && next) continuedFrom = r;
+        }
+        if (armFight) {
+            json armReps = json::object();
+            for (const auto &arm : arms_) {
+                json ar = json::array();
+                for (int r = 0; r < armK_; ++r) ar.push_back(playCopy(r, &arm, nullptr));
+                armReps[arm.name] = ar;
+            }
+            rec["arms"] = armReps;
         }
         rec["replicates"] = reps;
         rec["continuedFrom"] = continuedFrom;
@@ -722,6 +759,9 @@ private:
     Replayer &replayer_;
     int k_, maxAct_;
     bool expertPotions_;
+    std::vector<Arm> arms_;
+    std::set<std::string> armRooms_;
+    int armK_;
     json fights_ = json::array(), syncs_ = json::array();
 };
 
@@ -793,7 +833,41 @@ int expertFightsGen(const std::string &runFile, const std::string &output) {
     const auto seed = static_cast<std::uint64_t>(std::stoll(seedPlayed));
     Replayer replayer(run, {kReplayTypes.begin(), kReplayTypes.end()});
     replayer.allowShelfDifferences();
-    FightReplayer fights(run, replayer, replicates, maxAct, potionMode == "expert");
+    // Research (default off): STS_EXPERT_FIGHTS_ARMS=<arm>[,<arm>...] (FightReplayer::Arm) plays every fight whose
+    // act and room are in STS_EXPERT_FIGHTS_ARM_ROOMS (e.g. 2E,2B; required) STS_EXPERT_FIGHTS_ARM_REPLICATES
+    // (default K) times under production and each arm, on the same copy seeds.
+    std::vector<FightReplayer::Arm> arms;
+    std::set<std::string> armRooms;
+    auto split = [](const std::string &v, char sep) {
+        std::vector<std::string> out;
+        std::stringstream ss(v);
+        for (std::string t; std::getline(ss, t, sep);) out.push_back(t);
+        return out;
+    };
+    if (const char *v = std::getenv("STS_EXPERT_FIGHTS_ARMS"); v && *v) {
+        for (const auto &name : split(v, ',')) {
+            FightReplayer::Arm arm{name};
+            for (const auto &t : split(name, '+')) {
+                if (t == "pp") arm.priorPlayoutElite = true;
+                else if (t.size() > 4 && t.rfind("flat", 0) == 0
+                         && t.find_first_not_of("0123456789", 4) == std::string::npos) arm.flat = std::stoll(t.substr(4));
+                else throw std::runtime_error("STS_EXPERT_FIGHTS_ARMS: unknown arm part " + t);
+            }
+            if (arm.flat < 0 || arm.flat > 1000000) throw std::runtime_error("STS_EXPERT_FIGHTS_ARMS: flat out of range");
+            arms.push_back(arm);
+        }
+        const char *rooms = std::getenv("STS_EXPERT_FIGHTS_ARM_ROOMS");
+        if (!rooms || !*rooms) throw std::runtime_error("STS_EXPERT_FIGHTS_ARMS requires STS_EXPERT_FIGHTS_ARM_ROOMS");
+        for (const auto &t : split(rooms, ',')) {
+            if (t.size() != 2 || t[0] < '1' || t[0] > '3' || std::string("MEB?$T").find(t[1]) == std::string::npos)
+                throw std::runtime_error("STS_EXPERT_FIGHTS_ARM_ROOMS: bad entry " + t);
+            armRooms.insert(t);
+        }
+    } else if (const char *rooms = std::getenv("STS_EXPERT_FIGHTS_ARM_ROOMS"); rooms && *rooms) {
+        throw std::runtime_error("STS_EXPERT_FIGHTS_ARM_ROOMS requires STS_EXPERT_FIGHTS_ARMS");
+    }
+    const int armK = envInt("STS_EXPERT_FIGHTS_ARM_REPLICATES", replicates, 1, replicates);
+    FightReplayer fights(run, replayer, replicates, maxAct, potionMode == "expert", arms, armRooms, armK);
     // The run ends at the first decision the log does not replay exactly: the
     // measurement only covers the expert's own states.
     t_oocDecisionOverride = [&](GameContext &gc) -> const char * {
@@ -809,7 +883,9 @@ int expertFightsGen(const std::string &runFile, const std::string &output) {
     if (!trainingRunValid(true)) throw std::runtime_error("expert fights run failed simulator integrity");
     const json out = {{"schema", "expert-fights-v1"}, {"runFile", std::filesystem::path(runFile).filename().string()},
         {"playId", run.value("play_id", std::string())}, {"seedPlayed", seedPlayed}, {"engineSeed", seed},
-        {"replicates", replicates}, {"maxAct", maxAct}, {"potionMode", potionMode}, {"endFloor", result.floor}, {"endAct", result.act},
+        {"replicates", replicates}, {"maxAct", maxAct}, {"potionMode", potionMode},
+        {"arms", [&] { json a = json::array(); for (const auto &x : arms) a.push_back(x.name); return a; }()},
+        {"armRooms", armRooms}, {"armReplicates", armK}, {"endFloor", result.floor}, {"endAct", result.act},
         {"diedInMainLine", result.deathCombat >= 0}, {"sec", result.sec},
         {"expert", {{"victory", run.value("victory", false)}, {"floorReached", run["floor_reached"]}}},
         {"replay", replayer.summary()}, {"potionLog", fights.potionLog()}, {"fights", fights.fights()},

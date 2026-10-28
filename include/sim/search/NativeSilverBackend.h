@@ -150,6 +150,9 @@ namespace sts::search {
         bool skipSingletonRoots = false;
     };
     extern thread_local std::optional<NativeSilverBudgetOverride> g_nativeSilverBudgetOverride;
+    // Research-only (expertfights arms): when set, replaces STS_SILVER_PRIOR_PLAYOUT_ELITE for the current
+    // thread's elite rooms (ADR-0056 conditions otherwise unchanged). Unset elsewhere.
+    extern thread_local std::optional<bool> g_nativeSilverPriorPlayoutEliteOverride;
     // Research-only (CTM vs low-sim Silver comparison): when set, turns the
     // STS_SILVER_ROOT_PRIOR bonus off (false) or requires it on (true) for the
     // current thread's combats. Unset elsewhere; unset keeps the process option.
