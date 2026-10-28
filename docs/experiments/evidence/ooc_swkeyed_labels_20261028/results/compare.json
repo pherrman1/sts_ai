@@ -1,0 +1,15 @@
+{
+ "sources": 320,
+ "mismatch": [],
+ "missing": [],
+ "roots": 20787,
+ "rows": 578987,
+ "rowsWithoutLabel": 0,
+ "pooledMeanDiff": -0.00018336925191617278,
+ "pooledSe": 0.0002787018413487552,
+ "zRows": 578542,
+ "shareAbsZ2": 0.08638439387287353,
+ "shareZneg2": 0.06854472104013191,
+ "shareZpos2": 0.017839672832741616,
+ "biasFlag": true
+}

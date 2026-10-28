@@ -24932,6 +24932,46 @@ on identical states; it needs per-fight output in `expertreplay` (missing today)
 Seeds: none (existing games only).
 **Knowledge impact:** this ledger entry and its evidence only; no code, model or default change.
 
+## §714 — SR head on swkeyed sibling labels (issue #883 follow-up, PR #903): labels 0.16× as noisy (split-half 0.718 → 0.829), but retraining SR_crn_r2 on them is NOT_SHOWN (seed 1 +0.011 [+0.005, +0.016], seed 2 −0.001 [−0.005, +0.003], seed mean +0.005 [+0.001, +0.008]); label noise does not limit this head (320 replayed §644 sources, 2026-10-28)
+
+**Question:** §703's swkeyed estimator cuts the variance of rollout3 sibling differences about 5× per CPU. Retraining
+the SR head on the same groups, with only the label estimator changed: does it rank siblings better? Philipp chose
+"use it for labels first" (11:05Z) and "Go with 16 workers" (15:20Z).
+**Setup:** [PLAN](evidence/ooc_swkeyed_labels_20261028/PLAN.md) (pre-launch review PASS, then fixes; two
+deviations).
+- **Producer:**
+  - Main cannot replay §644 bit-exactly (unflagged engine fixes), so the capture uses a backport: `90eb9f07` plus
+    `STS_OOC_SIBLING_ROLLOUT=swkeyed` (code `d4a4ec3c`, RUN_COMMIT `27c85529`).
+  - It reproduces §644 exactly with the base estimator (SMOKE).
+  - Code on main: `STS_OOC_SIBLING_ROLLOUT=swkeyed` (research, default off, forked capture only).
+- **Training:** §649's SR_crn_r2 recipe, seeds 1 and 2, the same 15,129 CRN TRAIN groups with only `target` changed
+  (round-2 groups and game rows unchanged); epoch chosen by `pick_epoch.py`. Philipp's GPU; the §649 controls are
+  reused (same code and stack hashes).
+- **Gate:** head alone on the common-seed VALIDATION with §644's labels. The seed-mean paired CI must be above 0,
+  **and** each seed's difference must be positive.
+**Result** ([RESULT](evidence/ooc_swkeyed_labels_20261028/RESULT.md)):
+- **Capture:** 320/320 units, 155.8 core-h. Play and rows are exact against §644.
+- **Labels:**
+  - Split-half agreement 0.718 → 0.829; sibling-difference variance 0.16× (rewards 0.08×, map 0.31×).
+  - Pooled bias −0.0002 ± 0.0003. The row-level |z| > 2 share is 8.6 %, over the 8 % limit: a selection artefact by
+    the row's own base deaths. Philipp chose to proceed.
+- **Heads:** treatment picked epochs 18 and 11; controls 13 and 20.
+  - Head alone: control 0.6628 / 0.6668, treatment **0.6734 / 0.6661** (X2-B 0.6639).
+  - Differences: seed 1 +0.0106 [+0.0054, +0.0158], seed 2 −0.0007 [−0.0049, +0.0033], seed mean +0.0050
+    [+0.0014, +0.0084]. Blend seed mean +0.0012 [−0.0029, +0.0048].
+  - Scored on the swkeyed VALIDATION labels instead: seed mean +0.0055 [+0.0017, +0.0093], seed 2 again +0.0003.
+- **Bars:** the selection BCE holds. On the −3 HP proxy (the §649 prices data is lost, Deviation 2), the treatment is
+  1.2 pp and 1.9 pp below its controls (limit 2 pp).
+**Interpretation:**
+- NOT_SHOWN: one seed gains about one §649 seed spread, the other is level, and the epoch choice differs between
+  arms.
+- **Inference:** with §645 (cleaner CRN labels) and §700 (more data) this is the third flat lever. The head's ranking
+  is limited by the objective, recipe or features, not by label noise or volume.
+**Decision:** no default change. The swkeyed groups stay on the data branch (`gen2/value-sr-swk/`) for the
+ranking-vs-value-loss thread.
+Seeds: none new (111144512–111144831 replayed).
+**Knowledge impact:** `research/ooc/variance-reduction.md`.
+
 ## §709 — CTM decision-impact audit (issue #884): at 144 A20 map roots the active CTM's picks lose nothing measurable when the same leaf rollouts play their combats with production Silver (cross-fitted regret +0.0010 [−0.0024, +0.0040]); fight forecasts are close (boss HP ~4 too optimistic, elite deaths ~1 pp too high); NOT_SHOWN, stop (16 replayed §683 seeds, no new seeds, 2026-10-28)
 
 **Question (#884):** does the active CTM make errors that reverse OOC sibling-action rankings?
