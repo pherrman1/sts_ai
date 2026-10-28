@@ -19,7 +19,9 @@ differences to about 0.2 of today's common-seed estimator at equal CPU, without 
     Engine fixes since 2026-10-22 (live problems 99–101, the Corruption fixes) have no restore flag
     ([SMOKE.md](SMOKE.md)).
   - So the producer is the §644 code commit `90eb9f07`, plus only the swkeyed code, as a backport:
-    - commit `d4a4ec3c`, run branch `claude/project-thread-tt1jc5-run`;
+    - commit `d4a4ec3c` (tree `0c09868c`), which is `git am` of [backport_90eb9f07.patch](backport_90eb9f07.patch) on
+      `90eb9f07`;
+    - the run branch `claude/project-thread-tt1jc5-run` is pushed only after Philipp's go;
     - [run_unit.sh](run_unit.sh) is §644's, plus `STS_OOC_SIBLING_ROLLOUT=${EST:-swkeyed}`.
   - With `EST=base`, the backport replays the sources bit-exactly: policy rows, CTM rows, capture rows and all 32
     repeat values match the original capture.
