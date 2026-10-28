@@ -24754,7 +24754,7 @@ per fight). Not tested: larger α, rest-site imitation, a separate ranker head.
 Seeds: 111384000–111385023 used, smokes 111385990–111385991 used; 111385992–111385999 unused.
 **Knowledge impact:** none (no default or code change).
 
-## §697 — OOC sibling-value noise and bias by root type (#881): a single leaf sample of a sibling difference has an SD of 14–26 pp, most leading-sibling gaps are below 2 pp, and the leaf's bias against a deeper act-end rollout is small (−0.3 pp pooled) except at events (−2.5 pp); mixed, mostly variance and tiny gaps (offline + 16 replays of used seeds, 2026-10-27)
+## §707 — OOC sibling-value noise and bias by root type (#881): a single leaf sample of a sibling difference has an SD of 14–26 pp, most leading-sibling gaps are below 2 pp, and the leaf's bias against a deeper act-end rollout is small (−0.3 pp pooled) except at events (−2.5 pp); mixed, mostly variance and tiny gaps (offline + 16 replays of used seeds, 2026-10-27)
 
 **Question:** issue #881. At an OOC root the search acts on D = Q̂(A) − Q̂(B). How noisy is D per leaf sample, how
 much do common random numbers (CRN) help, how large are the gaps, and is D biased against a deeper reference, by root
