@@ -75,8 +75,13 @@ key). Check: the forced $a_{\mathrm{ref}}$ game equals the `-` game for the same
   PUCT root (live budget) on the same 4 seeds for reference.
 - Outputs per root: $\hat Q$ curves, $\sigma_{D,i}(N)$, $\sigma_a$, $\rho_{\mathrm{eff}}$, $P_{\mathrm{self}}(N)$,
   $\Pr[\hat a \ne a_{\mathrm{ref}}](N)$, $G_a$, tree depth.
-- Convergence check: if the R seeds at $N_{\max}$ disagree on the argmax at a root, $\bar a_\infty$ is "unresolved"
-  there; the share of unresolved roots is reported and those roots count as not converged for $P_{\mathrm{self}}$.
+- $P_{\mathrm{self}}$ is **cross-fitted**: checkpoints of one run are nested, so a seed's 8,192 pick is correlated with
+  its own 16,384 pick. $\bar a_\infty$ is the argmax of the mean $\hat Q$ of seeds {1, 2} at $N_{\max}$, and the
+  checkpoints of seeds {3, 4} are scored against it; then the roles swap, and the two halves are averaged. A root is
+  "unresolved" in a half when its two reference seeds have different argmaxes at $N_{\max}$. Unresolved roots stay in
+  the primary mean, which biases $P_{\mathrm{self}}$ upward (toward "variance-limited", the conservative direction
+  for the stop decision). $P_{\mathrm{self}}$ over resolved roots only and the share of unresolved roots are
+  reported next to it.
 - Cost: ≈ 105 core-s per 16,384-sim search averaged over h (60 s per 8,192 at h = 3, §712 SMOKE) × 8 × 4 ≈
   56 core-min per root → ≈ 120 core-h of searches for 128 roots, plus ≈ 30 core-h of replays to reach the roots and
   the production-PUCT reference searches: **≈ 150–160 core-h**. Answers σ, $P_{\mathrm{self}}$, the search side of q, and the seen gaps; not Δ or B.
@@ -112,11 +117,11 @@ $p_\theta$ = share of the R search seeds choosing a. All CIs: two-stage bootstra
 - Variance regret: $\bar{\mathcal A}(L,h,N_{\max}) - \bar{\mathcal A}(L,h,N)$.
 - Calibration per (L, h) at $N_{\max}$: weighted least squares of $Z(s,i,\omega) - Z(s,a_{\mathrm{ref}},\omega)$ on
   $x = \bar\mu_i - \bar\mu_{a_{\mathrm{ref}}}$ over all (root, i ≠ $a_{\mathrm{ref}}$, salt), root-clustered SE;
-  attenuation from search noise in x corrected with the measured $\sigma_D$ (reliability ratio). Projected SE(β) (≈ 400 effective root-clustered pairs, per-salt SD 0.45): ≈ 1.0
+  attenuation from search noise in x corrected with the measured $\sigma_D$ (reliability ratio, computed on the selected phase-2 roots). Projected SE(β) (≈ 400 effective root-clustered pairs, per-salt SD 0.45): ≈ 1.0
   for X2-B (seen spread ≈ 2 pp, so uninformative; reported only) and ≈ 0.3 for SR (spread ≈ 5–10 pp, before the
   spread-based root selection, which lowers it). Reported with
   Spearman ρ between x and the root's $\hat\delta_i$.
-- σ: per-root sample SD over R = 4 (χ² CI per root, ≈ ±40 %), pooled as mean variance; $P_{\mathrm{self}}$ plug-in.
+- σ: per-root sample SD over R = 4 (χ² CI per root, ≈ ±40 %), pooled as mean variance; $P_{\mathrm{self}}$ cross-fitted as above.
 - q(h): weighted mean of $G_i(T_i)$ over discordant (root, i, salt) triples; root bootstrap. Expected ≈ 250–400
   discordant triples.
 - P(wrong card | N, h): reported three ways, labelled: $P_{\mathrm{self}}$ (variance part, exact), $\Pr[\hat a \ne
