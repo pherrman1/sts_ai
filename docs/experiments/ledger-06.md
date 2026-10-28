@@ -24792,10 +24792,10 @@ off, forked capture child only; play identical with and without arms in the smok
 Roots: depth-1 children of every map and reward root, R = 128. Data: §683 seeds 111374100–107 replayed at today's
 A20 default plus `STS_OOC_MCTS_SCREENS=map,rewards`, stopped at Act 4. Run commit `2ed59b94`, binary `c8f8d0e9…`.
 Deviation: two container restarts cut games 105–107 at floors 26–31. Their reruns reproduce the first attempt's rows
-exactly, and their complete rows are used.
+exactly (244/173/163), and their complete rows are used.
 **Result:** [RESULT.md](evidence/ooc_variance_arms_20261027/RESULT.md). 315 roots (164 card rewards, 31 other rewards,
-120 map); base death rate 6.7% per rollout. Work ratio (variance × CPU, against base), card rewards / map:
-- swkeyed **0.209** [variance CI 0.110–0.221] / **0.179**;
+120 map); base death rate 6.7% per rollout. Work ratio (variance × CPU, against base), card rewards (subgroup labelled after the result) / map:
+- swkeyed: work **0.209** (variance 0.162 [0.110, 0.221]) / work **0.179**; pre-registered rewards group (195 roots) work 0.204;
 - sw 0.350 / 0.270;
 - keyed 0.638 / 0.607;
 - indep 5.02 / 1.49.

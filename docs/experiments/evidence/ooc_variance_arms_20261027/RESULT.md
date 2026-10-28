@@ -13,13 +13,13 @@ Pre-registration: [PREREG.md](PREREG.md). Smoke: [SMOKE.md](SMOKE.md). Analysis:
   - 101, 103 and 104 died (floors 42, 16, 38).
   Games 105–107 were cut off twice, at floors 26–31 (acts 2–3), and are used up to the last complete row.
   - The replays are deterministic: each rerun's capture rows match the first attempt's prefix exactly apart from CPU
-    fields (243/243, 172/172 and 162/162 rows).
+    fields (244/173/163 rows; the first count of 243/172/162 was off by one).
   - For each seed, the longer file is used.
 - Raw capture: `/mnt/project-files/ooc-variance-arms/` ([tars.sha256](tars.sha256); `final-capture.tgz` is the
   analysed set).
 
 ## Result
-2,649 capture rows, all arms valid. 315 roots: 120 map, 195 rewards, of which 164 are card rewards. R = 128 repeats
+2,649 capture rows, all arms valid. 315 roots: 120 map, 195 rewards (the pre-registered group), of which 164 are card rewards (a subgroup added to analyze.py after the result, post hoc). R = 128 repeats
 per child and arm. Base death rate per rollout: 6.7%. With survival weighting, 0.1% (Act-4 fights and fights without a
 CTM expectation only).
 
@@ -48,7 +48,7 @@ Bias check, each arm against base over 2,648 children:
 | swkeyed | +0.0003 (0.0009) | 4.5% | 3.5% / 0.9% |
 
 ## Decision (pre-registered rule, rewards roots)
-- **swkeyed: USEFUL.** Work ratio 0.20 (≤ 0.5), and no bias flag on either the pooled mean or the per-child z rule.
+- **swkeyed: USEFUL.** Work ratio 0.204 on the pre-registered rewards roots (≤ 0.5; card-reward subgroup 0.209, post hoc), and no bias flag on either the pooled mean or the per-child z rule.
 - **sw: INVALID by the letter of the rule:** 29.8% of children have |z| > 2, against a limit of 8%.
   - Exploratory, not pre-registered: the flags are one-sided (29.4% negative, 0.4% positive). The pooled mean
     difference is −0.0001 ± 0.0007.
