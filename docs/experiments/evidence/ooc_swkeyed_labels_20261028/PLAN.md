@@ -120,3 +120,15 @@ differences to about 0.2 of today's common-seed estimator at equal CPU, without 
 - **Groups:** on the replay, `crn_groups.py` keeps all 15,129 TRAIN groups. They are identical to §644's apart from
   `target`. No group was lost.
 - **Data branch:** `claude/az-gen2-data` `gen2/value-sr-swk/` (`975e4e5f`); the groups file's sha256 is `4541dc8a…`.
+
+## Deviation 2: the prices check (written before the treatment weights were scored, 2026-10-28 ~21:40Z)
+- §649's prices check data (#812's evaluation directory: perturbed records, `meta.json`, `prices.py`) no longer
+  exists: it is not on the share, on Philipp's PC or in git.
+- Replacement: [tools/swk_eval.py](tools/swk_eval.py) `--hp3 3000`.
+  - It takes the first row of 3,000 VALIDATION groups with curHp > 3, lowers `obs.fixed_observation[0]` (curHp) by
+    3, and reports the share of states whose value drops.
+  - Calibration on the controls: SR_crn_r2_s1_ep13 84.1 % and s2_ep20 83.7 %. §649's prices check gave them 90.9 %
+    and 89.4 %, so the proxy reads about 6 pp lower.
+- Bar (replaces "−3 HP sign ≥ 85 %"): each treatment seed's proxy is at most 2 pp below its control seed's proxy.
+- The scoring reproduces §649 exactly: SR_crn_r2_s1_ep13 0.6628, s2_ep20 0.6668, X2-B 0.6639 on the common-seed
+  VALIDATION.
