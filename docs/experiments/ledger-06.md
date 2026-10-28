@@ -25132,7 +25132,7 @@ open variants, neither started.
 Seeds: none (existing games only).
 **Knowledge impact:** none beyond this entry; no code or default change.
 
-## §TBD — SR head, ranking vs value: search reads level and difference scale at map roots, not sibling order; at map roots no SR head or blend beats X2-B with M0 (within about 0.01–0.02, CIs touching 0), and the heads' sibling differences are about 5× over-dispersed (offline, no seeds, 2026-10-28)
+## §TBD — SR head, ranking vs value: search reads level and difference scale at map roots, not sibling order; at map roots no SR head or blend shows a gain over X2-B with M0 (within about 0.01–0.02, all CIs include 0), and the heads' sibling differences are 5.5–6× over-dispersed (about 3× more than X2-B with M0) (offline, no seeds, 2026-10-28)
 
 **Question:** Philipp, 2026-10-28 21:19Z: for the SR head, is ranking or a better value loss more important? Should
 we optimise ranking directly?
@@ -25150,13 +25150,14 @@ re-applied to the recorded endpoints. Training curves from the runs' summaries. 
   - X2-B with M0 +0.011 [−0.000, +0.023] (M0 labels);
   - swk blends +0.011 to +0.023;
   - the SR_w1 blend that lost online (§661) +0.001.
-- Against X2-B with M0 at map roots: blends +0.008 to +0.013, heads alone +0.001 to +0.005. Non-map blends: +0.045
+- Against X2-B with M0 at map roots (M0 labels, paired bootstrap by the reviewer): blends +0.008 to +0.013, heads alone
+  −0.003 to +0.005, every CI including 0 (e.g. the s2_ep20 blend +0.008 [−0.013, +0.029]). Non-map blends: +0.045
   [+0.036, +0.055].
 - Level: the heads sit at the M0-label level (+0.01 to +0.04), the blend 0.50 above it.
 - Scale: head sibling differences have r ≈ 0.39 with the labels but an RMS 2.2–2.4× the labels' (slope 0.16–0.18;
   X2-B with M0 0.57). The ratio grows with training.
 - Training: from epoch 6 the selection-fold BCE correlates −0.64 to −0.97 with the mean prediction, while AUC stays
-  in 0.760–0.772.
+  in 0.760–0.772 (from epoch 6).
 **Interpretation:**
 - Do not train ranking-only. A pairwise loss leaves level and scale free, and both matter: M0's level change is the
   only leaf change that won online (§661), while the offline ranking gain of SR_w1's blend lost.

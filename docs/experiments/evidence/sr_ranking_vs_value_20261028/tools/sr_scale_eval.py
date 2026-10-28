@@ -14,7 +14,7 @@ VALIDATION (seed % 4 == 3), all screens and map roots alone:
   slope_between: the slope of group-mean target on group-mean prediction across roots, and
   level: mean prediction minus mean target. A head whose within-root differences are on the label's scale has
   slope_within near 1; ranking losses do not pin it.
-Paired source-bootstrap 95 % CIs (2,000 draws, fixed seed) for each head minus X2-B and minus the first head.
+Paired source-bootstrap 95 % CIs (2,000 draws, fixed seed) for each predictor minus raw X2-B (concordance).
 """
 import gzip
 import json

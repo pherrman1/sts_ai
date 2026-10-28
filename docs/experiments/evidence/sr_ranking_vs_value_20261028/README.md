@@ -48,7 +48,7 @@ Read from current `main` (`880cfd6c`):
 and the two #903 runs on `claude/az-gen2-data`):
 - From epoch 6 on, the selection-fold value BCE moves with the mean prediction: correlation −0.71, −0.97, −0.85
   (SR_crn_r2 s0/s1/s2) and −0.78, −0.64 (swk s1/s2).
-- The selection-fold AUC stays in 0.760–0.772 in every run.
+- From epoch 6 on, the selection-fold AUC stays in 0.760–0.772 in every run (about 0.63 at epoch 1).
 - The mean prediction (0.25–0.31) sits below the mean outcome (0.341) at every epoch.
 - So the BCE ≤ 0.570 bar in `pick_epoch.py` mostly filters epochs by level drift. Level drift is what a post-hoc
   calibration removes. It says little about whether the head still discriminates outcomes, which the flat AUC
@@ -94,9 +94,17 @@ Concordance; "− X2-B" uses raw X2-B as the control, with the 95 % CI in bracke
 | swk_s2_ep11 blend | 0.619 | +0.016 [−0.009, +0.039] | 0.615 | +0.023 [+0.001, +0.044] |
 | SR_w1 blend (lost online in §661) | 0.604 | +0.001 [−0.018, +0.019] | 0.594 | +0.003 [−0.016, +0.020] |
 
-- At map roots no head and no blend beats X2-B with M0 by more than about 0.01 in point estimate. Against M0 X2-B
-  the s2_ep20 blend is +0.008 and the best swk blend +0.013, without CIs.
-- The current candidate heads alone (s2_ep20, s1_ep13, both swk heads) are within +0.001 to +0.005 of it.
+- At map roots no head and no blend shows a gain over X2-B with M0: all CIs include 0. The table below is from
+  reviewer J's paired source bootstrap (2,000 draws) on M0 labels, with X2-B with M0 as the control
+  ([review](/mnt/project-files/reviews/pr907-review.md) on the project share; same tool and data).
+
+  | head | alone − X2-B with M0 | blend w 0.1 − X2-B with M0 |
+  |---|---|---|
+  | s2_ep20 | +0.002 [−0.034, +0.038] | +0.008 [−0.013, +0.029] |
+  | s1_ep13 | +0.001 [−0.032, +0.033] | +0.012 [−0.008, +0.030] |
+  | swk_s1_ep18 | +0.005 [−0.027, +0.037] | +0.010 [−0.015, +0.033] |
+  | swk_s2_ep11 | −0.002 [−0.039, +0.034] | +0.013 [−0.010, +0.034] |
+  | s0_ep8 | −0.003 [−0.036, +0.030] | +0.013 [−0.005, +0.029] |
 - The blend gains are three times larger off the map (non-map, raw labels: +0.045 [+0.036, +0.055] for s2_ep20),
   i.e. on roots production does not search.
 - The online-loser SR_w1 blend and today's candidate differ by about 0.01–0.015 at map roots. That is the whole
@@ -121,7 +129,8 @@ Concordance; "− X2-B" uses raw X2-B as the control, with the 95 % CI in bracke
 **Scale.**
 - The heads' sibling differences are 2.2–2.4 times as large as the label differences, with r ≈ 0.39. A calibrated
   predictor would have an RMS ratio near r and a slope near 1. Here the slope is 0.16–0.18: the head's differences
-  are about five times too large for what they predict.
+  are 5.5–6 times too large for what they predict. X2-B with M0 has a slope of 0.57 itself (1.75×), so relative
+  to the production leaf the heads are about 3× more over-dispersed.
 - The RankNet term rewards larger differences and nothing penalises them. Over epochs the ratio grows (s1: 1.77 at
   epoch 4, 2.11 at 13; swk 2.40).
 - With w 0.1 the blend is mostly a shrinkage of the head's differences, which is why such a small w is optimal.
@@ -139,10 +148,10 @@ learns that price.
 1. **Not ranking-only.** Search consumes averages of leaf values across different states, mixed with 0/1 terminals,
    read by PUCT and the stop in probability units.
    - A pairwise loss pins neither the level nor the scale of differences.
-   - Both demonstrably matter: the level is M0's +2.15 pp, and the scale is 5× over-dispersed today.
+   - Both demonstrably matter: the level is M0's +2.15 pp, and the scale is 5.5–6× over-dispersed today.
    - The one online test of a ranking gain (SR_w1 blend, §661) was negative.
 2. **The ranking gains are not where search acts.** At map roots every SR head and blend is within about 0.01–0.02
-   of X2-B with M0, with CIs touching 0. The offline progress is on card rewards, rest sites, shops and events,
+   of X2-B with M0, and no gain is demonstrated (all CIs include 0). The offline progress is on card rewards, rest sites, shops and events,
    which production does not search (ADR-0061).
 3. **The BCE cap is the wrong guard, but a value term is needed.** In-training BCE varies with level drift (AUC
    flat). The guard should be calibration-invariant (AUC, or BCE after a per-act refit of the M0 form). The level
@@ -180,7 +189,7 @@ In order of cost. None needs new engine code.
 - If Philipp wants to continue with the SR head, option 1 is cheap and settles the selection question.
 - Option 3 is the one training run that addresses the measured problem (scale and level, not ranking).
 - Otherwise park the SR head. Map-root decisions are where any leaf improvement has to show, and there X2-B with M0
-  is not beaten.
+  shows no demonstrated loss to any SR head or blend.
 
 ## Caveats
 
