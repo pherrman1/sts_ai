@@ -45,6 +45,7 @@ graph TD
     subgraph "Out of Combat"
         SP["strategic-policy.md<br/>Strategic policy"]
         EM["encounter-marginalization.md<br/>Encounter marginalization"]
+        EX["external-evidence-and-ideas.md<br/>External evidence"]
     end
 
     S3 --> BS
@@ -56,6 +57,7 @@ graph TD
     PP --> S3
     PP --> PV
     SP --> EM
+    SP --> EX
     VN --> LE
 ```
 
@@ -68,6 +70,8 @@ graph TD
 - [PVNet & alternatives](combat-models/pvnet-and-alternatives.md) — neural shared nets
 - [Strategic policy](ooc/strategic-policy.md) — OOC learned policy evolution
 - [Encounter marginalization](ooc/encounter-marginalization.md) — M0/M1 strategic labels
+- [External evidence and ideas](ooc/external-evidence-and-ideas.md) — benchmarks, expert play, literature, ranked OOC candidates
+- [Variance reduction](ooc/variance-reduction.md) — rollout noise sources, CRN coupling, unbiased estimators (#883)
 
 ## Evidence labels
 

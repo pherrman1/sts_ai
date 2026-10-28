@@ -58,6 +58,7 @@
 #include "constants/CardPools.h"
 #include "constants/Potions.h"
 #include "sim/search/CombatValueNet.h"
+#include "sim/search/KnownRngSearcher.h"
 #include "sim/search/NativeSilverBackend.h"
 #include "sim/search/SearchRng.h"
 #include "sim/search/SilverSearcher.h"
@@ -986,7 +987,8 @@ void silverFocusEvalGen(int nSeeds, int asc, const std::string &outPrefix, long 
 // e.g. an unused Lizard Tail; "bottleIdxs" [attack, skill, power] deck indices bottle those cards; an
 // approximation shared by all arms). "Strike"/"Defend" are Ironclad's (STRIKE_RED/DEFEND_RED). Copy r of every
 // arm shares the battle seed (SEED_OFFSET + state * REPLICATES + r) and the planner seed, so arms
-// differ only in the budget. One CSV row per (state, replicate, arm).
+// differ only in the budget. One CSV row per (state, replicate, arm). STS_ACT4REPLAY_COMBAT=known swaps Silver for the
+// research-only known-RNG searcher (ADR-TBD); the last column records the regime.
 namespace {
 
 GameContext act4ReplayContext(const nlohmann::json &s, std::uint64_t seed, MonsterEncounter enc) {
@@ -1077,6 +1079,14 @@ void act4Replay(int nStates, const std::string &statesPath, const std::string &o
     if (!search::nativeSilverBackendInstalled() || !search::nativeSilverExactRootBudgets()
             || search::nativeSilverAdaptiveEnabled() || search::nativeSilverLearnedStopEnabled())
         throw std::runtime_error("act4replay: requires flat exact-budget native Silver");
+    // STS_ACT4REPLAY_COMBAT=known: research-only known-RNG combat (KnownRngSearcher, P300's stage-value search). Its rows are a
+    // separate series (ADR-0002) and carry regime=known_rng; unset or "fair" keeps native Silver.
+    const char *combatEnv = std::getenv("STS_ACT4REPLAY_COMBAT");
+    const std::string combat = combatEnv ? combatEnv : "fair";
+    if (combat != "fair" && combat != "known")
+        throw std::runtime_error("act4replay: STS_ACT4REPLAY_COMBAT must be fair or known");
+    const bool knownRng = combat == "known";
+    const char *regime = knownRng ? "known_rng" : "fair";
     std::vector<nlohmann::json> states;
     {
         std::ifstream in(statesPath);
@@ -1088,7 +1098,7 @@ void act4Replay(int nStates, const std::string &statesPath, const std::string &o
     if (std::filesystem::exists(rowsPath)) throw std::runtime_error("act4replay: refusing to overwrite " + rowsPath);
     std::ofstream rows(rowsPath);
     rows << "state,id,encounter,replicate,sims,battleSeed,preHp,preMaxHp,prePotions,valid,won,curHp,potionCount,turns,"
-            "cpuSeconds\n";
+            "cpuSeconds,regime\n";
     const int jobs = nStates * replicates;
     #pragma omp parallel for schedule(dynamic)
     for (int j = 0; j < jobs; ++j) {
@@ -1113,7 +1123,12 @@ void act4Replay(int nStates, const std::string &statesPath, const std::string &o
                 BattleContext bc;
                 const int preHp = copy.curHp, preMaxHp = copy.maxHp, prePotions = copy.potionCount;
                 const auto t0 = threadCpuNanos();
-                agent.playoutBattle(copy, bc);
+                if (knownRng) {
+                    bc.init(copy);
+                    search::playoutBattleKnownRng(bc, budget, agent.bossSimulationMultiplier);
+                } else {
+                    agent.playoutBattle(copy, bc);
+                }
                 const double cpu = static_cast<double>(threadCpuNanos() - t0) / 1e9;
                 search::g_nativeSilverPlannerSeedOverride.reset();
                 const bool decided = bc.outcome != Outcome::UNDECIDED;
@@ -1122,11 +1137,11 @@ void act4Replay(int nStates, const std::string &statesPath, const std::string &o
                 out << si << ',' << s.value("id", std::string()) << ',' << encName << ',' << r << ',' << budget << ','
                     << battleSeed << ',' << preHp << ',' << preMaxHp << ',' << prePotions << ',' << (valid ? 1 : 0)
                     << ',' << (won ? 1 : 0) << ',' << (won ? bc.player.curHp : 0) << ',' << bc.potionCount << ','
-                    << bc.turn << ',' << std::setprecision(6) << cpu << '\n';
+                    << bc.turn << ',' << std::setprecision(6) << cpu << ',' << regime << '\n';
             }
         } catch (const std::exception &e) {
             search::g_nativeSilverPlannerSeedOverride.reset();
-            out << si << ',' << s.value("id", std::string()) << ",ERROR," << r << ",0,0,0,0,0,0,0,0,0,0,0 # " << e.what() << '\n';
+            out << si << ',' << s.value("id", std::string()) << ",ERROR," << r << ",0,0,0,0,0,0,0,0,0,0,0," << regime << " # " << e.what() << '\n';
         }
         #pragma omp critical(act4_replay_write)
         {

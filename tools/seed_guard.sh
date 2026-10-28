@@ -9,6 +9,8 @@ declare -A ONE_COMBAT_SEED_INDEX=(
   ["oocleafstabilityprobe"]=2
   ["oocselectivesilvergen"]=2
   ["heartoutcomegen"]=2
+  ["expertreplay"]=2
+  ["expertfights"]=2
   ["datagen3"]=2
   ["e2cgen"]=2
   ["wholecombatgen"]=2     ["combattransitiongen"]=2 ["combattransitionforcedgen"]=2 ["combattransitionlizardtargetcandidategen"]=2
@@ -25,6 +27,7 @@ declare -A ONE_COMBAT_SEED_INDEX=(
   ["silverazfocusgen"]=2
   ["silverfocusevalgen"]=2
   ["act4replay"]=2
+  ["fightreplay"]=2
   ["turndomgen"]=2
   ["vwinrefreshbranchselftest"]=2
   ["vwinrefreshfatalcountselftest"]=2
@@ -63,7 +66,7 @@ check_seed_counts() {
       fi
       if [ -n "$idx" ]; then
         local seeds="${argv[$((i + idx))]:-}"
-        if { [ "$mode" = "oocleafreplayprobe" ] || [ "$mode" = "oocleafstabilityprobe" ] || [ "$mode" = "oocselectivesilvergen" ] || [ "$mode" = "heartoutcomegen" ]; } && [ "$seeds" != 1 ]; then
+        if { [ "$mode" = "oocleafreplayprobe" ] || [ "$mode" = "oocleafstabilityprobe" ] || [ "$mode" = "oocselectivesilvergen" ] || [ "$mode" = "heartoutcomegen" ] || [ "$mode" = "expertreplay" ] || [ "$mode" = "expertfights" ]; } && [ "$seeds" != 1 ]; then
           echo "SEED_GUARD: $mode requires exactly one source seed" >&2
           exit 1
         fi

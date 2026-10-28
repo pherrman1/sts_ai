@@ -1,0 +1,1111 @@
+{
+ "seeds": 32,
+ "invalid": {},
+ "arms": {
+  "A": {
+   "heartKills": 7,
+   "act4": 12,
+   "meanFinalFloor": 40.062,
+   "lossesByFinalAct": {
+    "1": 6,
+    "3": 8,
+    "2": 6,
+    "4": 5
+   },
+   "meanWall": 259.8,
+   "combats": 711,
+   "combatsWon": 686,
+   "turns": {
+    "n": 711,
+    "mean": 4.059,
+    "median": 4.0,
+    "p90": 7.0,
+    "p95": 9.0,
+    "max": 20
+   },
+   "turnsWon": {
+    "n": 686,
+    "mean": 4.026,
+    "median": 3.0,
+    "p90": 7.0,
+    "p95": 9.0,
+    "max": 20
+   },
+   "turnsByRoom": {
+    "NORMAL": {
+     "n": 394,
+     "mean": 2.926,
+     "median": 3.0,
+     "p90": 5.0,
+     "p95": 6.0,
+     "max": 9
+    },
+    "ELITE": {
+     "n": 198,
+     "mean": 4.611,
+     "median": 4.0,
+     "p90": 8.0,
+     "p95": 9.0,
+     "max": 17
+    },
+    "BOSS": {
+     "n": 96,
+     "mean": 7.562,
+     "median": 7.0,
+     "p90": 11.0,
+     "p95": 11.25,
+     "max": 20
+    },
+    "OTHER": {
+     "n": 23,
+     "mean": 4.087,
+     "median": 4.0,
+     "p90": 6.800000000000001,
+     "p95": 9.699999999999996,
+     "max": 10
+    }
+   },
+   "playerTurnsByRoom": {
+    "NORMAL": {
+     "n": 394,
+     "mean": 3.926,
+     "median": 4.0,
+     "p90": 6.0,
+     "p95": 7.0,
+     "max": 10
+    },
+    "ELITE": {
+     "n": 198,
+     "mean": 5.611,
+     "median": 5.0,
+     "p90": 9.0,
+     "p95": 10.0,
+     "max": 18
+    },
+    "BOSS": {
+     "n": 96,
+     "mean": 8.562,
+     "median": 8.0,
+     "p90": 12.0,
+     "p95": 12.25,
+     "max": 21
+    }
+   },
+   "turnsByActRoom": {
+    "1-BOSS": {
+     "n": 28,
+     "mean": 7.286,
+     "median": 7.0,
+     "p90": 9.0,
+     "p95": 9.649999999999999,
+     "max": 16
+    },
+    "1-ELITE": {
+     "n": 83,
+     "mean": 5.084,
+     "median": 5.0,
+     "p90": 9.0,
+     "p95": 10.899999999999991,
+     "max": 17
+    },
+    "1-NORMAL": {
+     "n": 178,
+     "mean": 2.444,
+     "median": 2.0,
+     "p90": 4.0,
+     "p95": 4.0,
+     "max": 7
+    },
+    "1-OTHER": {
+     "n": 2,
+     "mean": 4.0,
+     "median": 4.0,
+     "p90": 4.0,
+     "p95": 4.0,
+     "max": 4
+    },
+    "2-BOSS": {
+     "n": 22,
+     "mean": 8.818,
+     "median": 8.0,
+     "p90": 11.0,
+     "p95": 16.699999999999996,
+     "max": 20
+    },
+    "2-ELITE": {
+     "n": 58,
+     "mean": 3.724,
+     "median": 3.5,
+     "p90": 6.0,
+     "p95": 7.0,
+     "max": 8
+    },
+    "2-NORMAL": {
+     "n": 118,
+     "mean": 3.229,
+     "median": 3.0,
+     "p90": 5.299999999999997,
+     "p95": 6.0,
+     "max": 7
+    },
+    "2-OTHER": {
+     "n": 5,
+     "mean": 1.8,
+     "median": 2.0,
+     "p90": 2.6,
+     "p95": 2.8,
+     "max": 3
+    },
+    "3-BOSS": {
+     "n": 34,
+     "mean": 7.529,
+     "median": 7.0,
+     "p90": 11.0,
+     "p95": 11.349999999999998,
+     "max": 13
+    },
+    "3-ELITE": {
+     "n": 45,
+     "mean": 4.8,
+     "median": 5.0,
+     "p90": 8.0,
+     "p95": 8.0,
+     "max": 11
+    },
+    "3-NORMAL": {
+     "n": 98,
+     "mean": 3.439,
+     "median": 4.0,
+     "p90": 5.0,
+     "p95": 6.0,
+     "max": 9
+    },
+    "3-OTHER": {
+     "n": 16,
+     "mean": 4.812,
+     "median": 4.0,
+     "p90": 8.5,
+     "p95": 10.0,
+     "max": 10
+    },
+    "4-BOSS": {
+     "n": 12,
+     "mean": 6.0,
+     "median": 7.0,
+     "p90": 7.0,
+     "p95": 7.449999999999999,
+     "max": 8
+    },
+    "4-ELITE": {
+     "n": 12,
+     "mean": 4.917,
+     "median": 5.0,
+     "p90": 6.0,
+     "p95": 6.449999999999999,
+     "max": 7
+    }
+   },
+   "turnsAtLeast30": 0,
+   "turnCapOrUndecided": 0,
+   "escapes": 3,
+   "longest": [
+    [
+     20,
+     111386021,
+     "CHAMP",
+     "BOSS",
+     1
+    ],
+    [
+     17,
+     111386017,
+     "THREE_SENTRIES",
+     "ELITE",
+     1
+    ],
+    [
+     17,
+     111386003,
+     "CHAMP",
+     "BOSS",
+     1
+    ],
+    [
+     16,
+     111386018,
+     "THREE_SENTRIES",
+     "ELITE",
+     1
+    ],
+    [
+     16,
+     111386013,
+     "THE_GUARDIAN",
+     "BOSS",
+     1
+    ],
+    [
+     14,
+     111386015,
+     "THREE_SENTRIES",
+     "ELITE",
+     1
+    ],
+    [
+     13,
+     111386019,
+     "TIME_EATER",
+     "BOSS",
+     1
+    ],
+    [
+     12,
+     111386019,
+     "DONU_AND_DECA",
+     "BOSS",
+     1
+    ],
+    [
+     11,
+     111386026,
+     "TIME_EATER",
+     "BOSS",
+     1
+    ],
+    [
+     11,
+     111386026,
+     "AWAKENED_ONE",
+     "BOSS",
+     2
+    ]
+   ]
+  },
+  "B": {
+   "heartKills": 10,
+   "act4": 13,
+   "meanFinalFloor": 40.25,
+   "lossesByFinalAct": {
+    "1": 7,
+    "3": 8,
+    "2": 4,
+    "4": 3
+   },
+   "meanWall": 332.9,
+   "combats": 708,
+   "combatsWon": 686,
+   "turns": {
+    "n": 708,
+    "mean": 4.151,
+    "median": 3.0,
+    "p90": 8.0,
+    "p95": 9.649999999999977,
+    "max": 33
+   },
+   "turnsWon": {
+    "n": 686,
+    "mean": 4.112,
+    "median": 3.0,
+    "p90": 7.5,
+    "p95": 9.75,
+    "max": 33
+   },
+   "turnsByRoom": {
+    "NORMAL": {
+     "n": 382,
+     "mean": 2.927,
+     "median": 3.0,
+     "p90": 5.0,
+     "p95": 5.949999999999989,
+     "max": 11
+    },
+    "ELITE": {
+     "n": 201,
+     "mean": 4.582,
+     "median": 4.0,
+     "p90": 7.0,
+     "p95": 9.0,
+     "max": 18
+    },
+    "BOSS": {
+     "n": 97,
+     "mean": 8.206,
+     "median": 7.0,
+     "p90": 11.0,
+     "p95": 13.199999999999989,
+     "max": 33
+    },
+    "OTHER": {
+     "n": 28,
+     "mean": 3.714,
+     "median": 3.0,
+     "p90": 5.300000000000001,
+     "p95": 7.299999999999997,
+     "max": 16
+    }
+   },
+   "playerTurnsByRoom": {
+    "NORMAL": {
+     "n": 382,
+     "mean": 3.927,
+     "median": 4.0,
+     "p90": 6.0,
+     "p95": 6.949999999999989,
+     "max": 12
+    },
+    "ELITE": {
+     "n": 201,
+     "mean": 5.582,
+     "median": 5.0,
+     "p90": 8.0,
+     "p95": 10.0,
+     "max": 19
+    },
+    "BOSS": {
+     "n": 97,
+     "mean": 9.206,
+     "median": 8.0,
+     "p90": 12.0,
+     "p95": 14.199999999999989,
+     "max": 34
+    }
+   },
+   "turnsByActRoom": {
+    "1-BOSS": {
+     "n": 28,
+     "mean": 7.929,
+     "median": 7.0,
+     "p90": 10.0,
+     "p95": 13.249999999999993,
+     "max": 17
+    },
+    "1-ELITE": {
+     "n": 83,
+     "mean": 5.108,
+     "median": 5.0,
+     "p90": 9.0,
+     "p95": 11.0,
+     "max": 18
+    },
+    "1-NORMAL": {
+     "n": 171,
+     "mean": 2.491,
+     "median": 2.0,
+     "p90": 4.0,
+     "p95": 4.0,
+     "max": 8
+    },
+    "1-OTHER": {
+     "n": 3,
+     "mean": 3.667,
+     "median": 4.0,
+     "p90": 4.0,
+     "p95": 4.0,
+     "max": 4
+    },
+    "2-BOSS": {
+     "n": 22,
+     "mean": 10.136,
+     "median": 8.5,
+     "p90": 10.900000000000002,
+     "p95": 27.149999999999988,
+     "max": 33
+    },
+    "2-ELITE": {
+     "n": 55,
+     "mean": 3.8,
+     "median": 3.0,
+     "p90": 6.0,
+     "p95": 7.0,
+     "max": 8
+    },
+    "2-NORMAL": {
+     "n": 114,
+     "mean": 3.272,
+     "median": 3.0,
+     "p90": 5.0,
+     "p95": 6.0,
+     "max": 7
+    },
+    "2-OTHER": {
+     "n": 9,
+     "mean": 1.667,
+     "median": 2.0,
+     "p90": 2.2,
+     "p95": 2.5999999999999996,
+     "max": 3
+    },
+    "3-BOSS": {
+     "n": 34,
+     "mean": 7.735,
+     "median": 7.0,
+     "p90": 12.0,
+     "p95": 12.349999999999998,
+     "max": 14
+    },
+    "3-ELITE": {
+     "n": 50,
+     "mean": 4.58,
+     "median": 4.0,
+     "p90": 6.0,
+     "p95": 7.549999999999997,
+     "max": 10
+    },
+    "3-NORMAL": {
+     "n": 97,
+     "mean": 3.289,
+     "median": 3.0,
+     "p90": 5.0,
+     "p95": 8.0,
+     "max": 11
+    },
+    "3-OTHER": {
+     "n": 16,
+     "mean": 4.875,
+     "median": 4.0,
+     "p90": 7.0,
+     "p95": 10.0,
+     "max": 16
+    },
+    "4-BOSS": {
+     "n": 13,
+     "mean": 6.769,
+     "median": 7.0,
+     "p90": 8.8,
+     "p95": 9.399999999999999,
+     "max": 10
+    },
+    "4-ELITE": {
+     "n": 13,
+     "mean": 4.538,
+     "median": 4.0,
+     "p90": 6.800000000000001,
+     "p95": 7.799999999999997,
+     "max": 9
+    }
+   },
+   "turnsAtLeast30": 1,
+   "turnCapOrUndecided": 0,
+   "escapes": 3,
+   "longest": [
+    [
+     33,
+     111386021,
+     "CHAMP",
+     "BOSS",
+     1
+    ],
+    [
+     28,
+     111386008,
+     "CHAMP",
+     "BOSS",
+     1
+    ],
+    [
+     18,
+     111386017,
+     "THREE_SENTRIES",
+     "ELITE",
+     1
+    ],
+    [
+     17,
+     111386020,
+     "SLIME_BOSS",
+     "BOSS",
+     1
+    ],
+    [
+     16,
+     111386021,
+     "SLIME_BOSS",
+     "OTHER",
+     1
+    ],
+    [
+     15,
+     111386013,
+     "THE_GUARDIAN",
+     "BOSS",
+     1
+    ],
+    [
+     14,
+     111386015,
+     "THREE_SENTRIES",
+     "ELITE",
+     1
+    ],
+    [
+     14,
+     111386001,
+     "TIME_EATER",
+     "BOSS",
+     1
+    ],
+    [
+     13,
+     111386018,
+     "THREE_SENTRIES",
+     "ELITE",
+     1
+    ],
+    [
+     13,
+     111386018,
+     "AWAKENED_ONE",
+     "BOSS",
+     1
+    ]
+   ]
+  }
+ },
+ "paired": {
+  "heartKills": {
+   "B_only": 4,
+   "A_only": 1,
+   "mcnemarP": 0.375,
+   "diffPerSeed": [
+    0.09375,
+    -0.03125,
+    0.21875
+   ]
+  },
+  "finalFloorBminusA": [
+   0.1875,
+   -4.6875,
+   5.125
+  ],
+  "act4BminusA": [
+   0.03125,
+   -0.125,
+   0.1875
+  ]
+ },
+ "firstDivergence": {
+  "kinds": {
+   "battle": 32
+  },
+  "pairedCombats": 32,
+  "turnsBminusA": [
+   0.125,
+   -0.3125,
+   0.53125
+  ],
+  "hpBminusA": [
+   0.6875,
+   -1.75,
+   2.90625
+  ],
+  "potionsBminusA": [
+   0.09375,
+   0.0,
+   0.1875
+  ],
+  "wonA": 31,
+  "wonB": 31,
+  "turnsLonger": 13,
+  "turnsShorter": 9,
+  "byRoom": {
+   "NORMAL": [
+    0.25,
+    -0.125,
+    0.625
+   ],
+   "ELITE": [
+    0.0,
+    -0.8571428571428571,
+    0.7857142857142857
+   ],
+   "BOSS": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "rows": [
+   {
+    "seed": 111386000,
+    "act": 1,
+    "floor": 4,
+    "room": "NORMAL",
+    "encounter": "CULTIST",
+    "turnsA": 2,
+    "turnsB": 3,
+    "outcomeA": 1,
+    "outcomeB": 1,
+    "hpA": 74,
+    "hpB": 75,
+    "potionsA": 1,
+    "potionsB": 1
+   },
+   {
+    "seed": 111386001,
+    "act": 1,
+    "floor": 7,
+    "room": "ELITE",
+    "encounter": "THREE_SENTRIES",
+    "turnsA": 5,
+    "turnsB": 6,
+    "outcomeA": 1,
+    "outcomeB": 1,
+    "hpA": 31,
+    "hpB": 41,
+    "potionsA": 1,
+    "potionsB": 1
+   },
+   {
+    "seed": 111386002,
+    "act": 1,
+    "floor": 4,
+    "room": "NORMAL",
+    "encounter": "TWO_LOUSE",
+    "turnsA": 3,
+    "turnsB": 2,
+    "outcomeA": 1,
+    "outcomeB": 1,
+    "hpA": 63,
+    "hpB": 63,
+    "potionsA": 1,
+    "potionsB": 1
+   },
+   {
+    "seed": 111386003,
+    "act": 1,
+    "floor": 7,
+    "room": "NORMAL",
+    "encounter": "SMALL_SLIMES",
+    "turnsA": 3,
+    "turnsB": 3,
+    "outcomeA": 1,
+    "outcomeB": 1,
+    "hpA": 30,
+    "hpB": 29,
+    "potionsA": 2,
+    "potionsB": 2
+   },
+   {
+    "seed": 111386004,
+    "act": 1,
+    "floor": 6,
+    "room": "ELITE",
+    "encounter": "THREE_SENTRIES",
+    "turnsA": 4,
+    "turnsB": 3,
+    "outcomeA": 1,
+    "outcomeB": 1,
+    "hpA": 59,
+    "hpB": 66,
+    "potionsA": 0,
+    "potionsB": 0
+   },
+   {
+    "seed": 111386005,
+    "act": 1,
+    "floor": 3,
+    "room": "NORMAL",
+    "encounter": "CULTIST",
+    "turnsA": 3,
+    "turnsB": 2,
+    "outcomeA": 1,
+    "outcomeB": 1,
+    "hpA": 70,
+    "hpB": 71,
+    "potionsA": 0,
+    "potionsB": 0
+   },
+   {
+    "seed": 111386006,
+    "act": 1,
+    "floor": 12,
+    "room": "ELITE",
+    "encounter": "THREE_SENTRIES",
+    "turnsA": 9,
+    "turnsB": 10,
+    "outcomeA": 1,
+    "outcomeB": 1,
+    "hpA": 49,
+    "hpB": 52,
+    "potionsA": 2,
+    "potionsB": 2
+   },
+   {
+    "seed": 111386007,
+    "act": 1,
+    "floor": 6,
+    "room": "ELITE",
+    "encounter": "LAGAVULIN",
+    "turnsA": 5,
+    "turnsB": 6,
+    "outcomeA": 1,
+    "outcomeB": 1,
+    "hpA": 46,
+    "hpB": 46,
+    "potionsA": 2,
+    "potionsB": 2
+   },
+   {
+    "seed": 111386008,
+    "act": 1,
+    "floor": 11,
+    "room": "ELITE",
+    "encounter": "THREE_SENTRIES",
+    "turnsA": 6,
+    "turnsB": 6,
+    "outcomeA": 1,
+    "outcomeB": 1,
+    "hpA": 45,
+    "hpB": 54,
+    "potionsA": 2,
+    "potionsB": 2
+   },
+   {
+    "seed": 111386009,
+    "act": 1,
+    "floor": 1,
+    "room": "NORMAL",
+    "encounter": "TWO_LOUSE",
+    "turnsA": 1,
+    "turnsB": 2,
+    "outcomeA": 1,
+    "outcomeB": 1,
+    "hpA": 71,
+    "hpB": 74,
+    "potionsA": 0,
+    "potionsB": 0
+   },
+   {
+    "seed": 111386010,
+    "act": 1,
+    "floor": 8,
+    "room": "ELITE",
+    "encounter": "LAGAVULIN",
+    "turnsA": 4,
+    "turnsB": 6,
+    "outcomeA": 1,
+    "outcomeB": 1,
+    "hpA": 54,
+    "hpB": 31,
+    "potionsA": 1,
+    "potionsB": 2
+   },
+   {
+    "seed": 111386011,
+    "act": 1,
+    "floor": 5,
+    "room": "NORMAL",
+    "encounter": "TWO_LOUSE",
+    "turnsA": 3,
+    "turnsB": 3,
+    "outcomeA": 1,
+    "outcomeB": 1,
+    "hpA": 41,
+    "hpB": 42,
+    "potionsA": 0,
+    "potionsB": 0
+   },
+   {
+    "seed": 111386012,
+    "act": 1,
+    "floor": 16,
+    "room": "BOSS",
+    "encounter": "HEXAGHOST",
+    "turnsA": 6,
+    "turnsB": 6,
+    "outcomeA": 1,
+    "outcomeB": 1,
+    "hpA": 36,
+    "hpB": 34,
+    "potionsA": 2,
+    "potionsB": 2
+   },
+   {
+    "seed": 111386013,
+    "act": 1,
+    "floor": 6,
+    "room": "ELITE",
+    "encounter": "THREE_SENTRIES",
+    "turnsA": 10,
+    "turnsB": 6,
+    "outcomeA": 1,
+    "outcomeB": 1,
+    "hpA": 43,
+    "hpB": 50,
+    "potionsA": 0,
+    "potionsB": 0
+   },
+   {
+    "seed": 111386014,
+    "act": 1,
+    "floor": 6,
+    "room": "ELITE",
+    "encounter": "THREE_SENTRIES",
+    "turnsA": 5,
+    "turnsB": 4,
+    "outcomeA": 2,
+    "outcomeB": 2,
+    "hpA": 0,
+    "hpB": 0,
+    "potionsA": 0,
+    "potionsB": 0
+   },
+   {
+    "seed": 111386015,
+    "act": 1,
+    "floor": 1,
+    "room": "NORMAL",
+    "encounter": "SMALL_SLIMES",
+    "turnsA": 2,
+    "turnsB": 3,
+    "outcomeA": 1,
+    "outcomeB": 1,
+    "hpA": 52,
+    "hpB": 49,
+    "potionsA": 0,
+    "potionsB": 0
+   },
+   {
+    "seed": 111386016,
+    "act": 1,
+    "floor": 2,
+    "room": "NORMAL",
+    "encounter": "SMALL_SLIMES",
+    "turnsA": 3,
+    "turnsB": 3,
+    "outcomeA": 1,
+    "outcomeB": 1,
+    "hpA": 79,
+    "hpB": 76,
+    "potionsA": 0,
+    "potionsB": 0
+   },
+   {
+    "seed": 111386017,
+    "act": 1,
+    "floor": 3,
+    "room": "NORMAL",
+    "encounter": "CULTIST",
+    "turnsA": 2,
+    "turnsB": 3,
+    "outcomeA": 1,
+    "outcomeB": 1,
+    "hpA": 71,
+    "hpB": 63,
+    "potionsA": 0,
+    "potionsB": 1
+   },
+   {
+    "seed": 111386018,
+    "act": 1,
+    "floor": 5,
+    "room": "NORMAL",
+    "encounter": "EXORDIUM_THUGS",
+    "turnsA": 3,
+    "turnsB": 4,
+    "outcomeA": 1,
+    "outcomeB": 1,
+    "hpA": 59,
+    "hpB": 69,
+    "potionsA": 2,
+    "potionsB": 2
+   },
+   {
+    "seed": 111386019,
+    "act": 1,
+    "floor": 2,
+    "room": "NORMAL",
+    "encounter": "TWO_LOUSE",
+    "turnsA": 2,
+    "turnsB": 3,
+    "outcomeA": 1,
+    "outcomeB": 1,
+    "hpA": 50,
+    "hpB": 55,
+    "potionsA": 1,
+    "potionsB": 1
+   },
+   {
+    "seed": 111386020,
+    "act": 1,
+    "floor": 1,
+    "room": "NORMAL",
+    "encounter": "JAW_WORM",
+    "turnsA": 5,
+    "turnsB": 4,
+    "outcomeA": 1,
+    "outcomeB": 1,
+    "hpA": 63,
+    "hpB": 60,
+    "potionsA": 0,
+    "potionsB": 0
+   },
+   {
+    "seed": 111386021,
+    "act": 1,
+    "floor": 3,
+    "room": "NORMAL",
+    "encounter": "SMALL_SLIMES",
+    "turnsA": 3,
+    "turnsB": 4,
+    "outcomeA": 1,
+    "outcomeB": 1,
+    "hpA": 71,
+    "hpB": 73,
+    "potionsA": 1,
+    "potionsB": 1
+   },
+   {
+    "seed": 111386022,
+    "act": 1,
+    "floor": 7,
+    "room": "ELITE",
+    "encounter": "LAGAVULIN",
+    "turnsA": 5,
+    "turnsB": 4,
+    "outcomeA": 1,
+    "outcomeB": 1,
+    "hpA": 28,
+    "hpB": 37,
+    "potionsA": 1,
+    "potionsB": 1
+   },
+   {
+    "seed": 111386023,
+    "act": 1,
+    "floor": 8,
+    "room": "ELITE",
+    "encounter": "THREE_SENTRIES",
+    "turnsA": 4,
+    "turnsB": 6,
+    "outcomeA": 1,
+    "outcomeB": 1,
+    "hpA": 51,
+    "hpB": 48,
+    "potionsA": 1,
+    "potionsB": 1
+   },
+   {
+    "seed": 111386024,
+    "act": 1,
+    "floor": 2,
+    "room": "NORMAL",
+    "encounter": "TWO_LOUSE",
+    "turnsA": 3,
+    "turnsB": 3,
+    "outcomeA": 1,
+    "outcomeB": 1,
+    "hpA": 65,
+    "hpB": 70,
+    "potionsA": 0,
+    "potionsB": 0
+   },
+   {
+    "seed": 111386025,
+    "act": 1,
+    "floor": 6,
+    "room": "ELITE",
+    "encounter": "LAGAVULIN",
+    "turnsA": 6,
+    "turnsB": 6,
+    "outcomeA": 1,
+    "outcomeB": 1,
+    "hpA": 25,
+    "hpB": 30,
+    "potionsA": 0,
+    "potionsB": 0
+   },
+   {
+    "seed": 111386026,
+    "act": 1,
+    "floor": 8,
+    "room": "ELITE",
+    "encounter": "THREE_SENTRIES",
+    "turnsA": 8,
+    "turnsB": 7,
+    "outcomeA": 1,
+    "outcomeB": 1,
+    "hpA": 60,
+    "hpB": 60,
+    "potionsA": 0,
+    "potionsB": 0
+   },
+   {
+    "seed": 111386027,
+    "act": 1,
+    "floor": 1,
+    "room": "NORMAL",
+    "encounter": "JAW_WORM",
+    "turnsA": 4,
+    "turnsB": 4,
+    "outcomeA": 1,
+    "outcomeB": 1,
+    "hpA": 68,
+    "hpB": 63,
+    "potionsA": 0,
+    "potionsB": 0
+   },
+   {
+    "seed": 111386028,
+    "act": 1,
+    "floor": 6,
+    "room": "ELITE",
+    "encounter": "THREE_SENTRIES",
+    "turnsA": 7,
+    "turnsB": 9,
+    "outcomeA": 1,
+    "outcomeB": 1,
+    "hpA": 80,
+    "hpB": 66,
+    "potionsA": 0,
+    "potionsB": 1
+   },
+   {
+    "seed": 111386029,
+    "act": 1,
+    "floor": 8,
+    "room": "ELITE",
+    "encounter": "LAGAVULIN",
+    "turnsA": 6,
+    "turnsB": 5,
+    "outcomeA": 1,
+    "outcomeB": 1,
+    "hpA": 27,
+    "hpB": 34,
+    "potionsA": 1,
+    "potionsB": 1
+   },
+   {
+    "seed": 111386030,
+    "act": 1,
+    "floor": 1,
+    "room": "NORMAL",
+    "encounter": "CULTIST",
+    "turnsA": 3,
+    "turnsB": 3,
+    "outcomeA": 1,
+    "outcomeB": 1,
+    "hpA": 73,
+    "hpB": 72,
+    "potionsA": 0,
+    "potionsB": 0
+   },
+   {
+    "seed": 111386031,
+    "act": 1,
+    "floor": 16,
+    "room": "BOSS",
+    "encounter": "SLIME_BOSS",
+    "turnsA": 6,
+    "turnsB": 6,
+    "outcomeA": 1,
+    "outcomeB": 1,
+    "hpA": 42,
+    "hpB": 45,
+    "potionsA": 2,
+    "potionsB": 2
+   }
+  ]
+ },
+ "validPairs": 32
+}

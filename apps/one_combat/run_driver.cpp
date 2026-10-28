@@ -7,6 +7,7 @@
 #include <functional>
 #include <map>
 #include <mutex>
+#include <random>
 #include <sstream>
 
 #include "combat/BattleContext.h"
@@ -25,6 +26,7 @@
 #include "ooc_profile.h"
 #include "run_profile.h"
 #include "run_features.h"
+#include "driver_shared.h"
 
 using namespace sts;
 
@@ -210,6 +212,8 @@ thread_local bool t_oocHypotheticalStep = false;
 thread_local BossEntryHook *t_bossEntryHook = nullptr;
 thread_local std::function<void(const sts::GameContext &, const one_combat::PathHistory &)> t_realRunContextObserver;
 thread_local std::function<void(std::uint64_t, const char *)> t_realOocDecisionObserver;
+thread_local std::function<const char *(sts::GameContext &)> t_oocDecisionOverride;
+thread_local std::function<bool(sts::GameContext &, sts::search::ScumSearchAgent2 &)> t_battleOverride;
 thread_local std::function<void(const sts::GameContext &, const sts::BattleContext &,
     int, const std::optional<one_combat::CombatTransitionRecord> &)> t_realCombatObserver;
 
@@ -299,7 +303,7 @@ void runFullRunOocPolicyStep(GameContext &gc, search::ScumSearchAgent2 &agent,
     }
     // STS_KEY_EMERALD=mask: the map handlers below enumerate unmasked edges, so
     // the chain takes the first edge that still reaches the burning elite.
-    if (gc.screenState == ScreenState::MAP_SCREEN && !search::heartKeyRules().isDefault()) {
+    if (gc.screenState == ScreenState::MAP_SCREEN && !search::heartKeyRules().isAdr0041()) {
         std::optional<search::GameAction> allowed;
         bool masked = false;
         for (const auto a : search::GameAction::getAllActionsInState(gc)) {
@@ -429,9 +433,52 @@ void beginRealOocChainRun(bool shopV) {
     t_tokCheckPending = g_oocStrategicTokCheck;
 }
 
-const char *realOocChainStep(GameContext &gc, search::ScumSearchAgent2 &agent, bool restV, bool shopV,
-                             const one_combat::PathHistory &path, std::uint64_t seed, std::uint64_t index,
-                             one_combat::LiveOocMctsMetrics &mctsMetrics) {
+std::optional<ForcedBossRelic> parseForcedBossRelic(const char *value) {
+    if (!value || !*value) return std::nullopt;
+    const std::string text(value);
+    if (text.size() != 3 || (text[0] != '1' && text[0] != '2') || text[1] != ':' || text[2] < '0' || text[2] > '3')
+        throw std::runtime_error("STS_OOC_FORCE_BOSS_RELIC must be ACT:CHOICE with ACT 1 or 2 and CHOICE 0-3 (3 = skip)");
+    return ForcedBossRelic{text[0] - '0', text[2] - '0'};
+}
+
+namespace {
+const std::optional<ForcedBossRelic> &forcedBossRelic() {
+    static const auto forced = parseForcedBossRelic(std::getenv("STS_OOC_FORCE_BOSS_RELIC"));
+    return forced;
+}
+thread_local bool t_forcedBossRelicTaken = false;
+}
+
+int forcedBossRelicSelfTest() {
+    const auto check = [](bool ok, const char *what) {
+        if (!ok) throw std::runtime_error(std::string("forced boss relic selftest: ") + what);
+    };
+    check(!parseForcedBossRelic(nullptr) && !parseForcedBossRelic(""), "unset must be off");
+    const auto skip = parseForcedBossRelic("2:3");
+    check(skip && skip->act == 2 && skip->choice == 3, "2:3 parse");
+    for (const char *bad : {"3:0", "0:1", "1:4", "1-2", "1:", "1:01", "a:1"}) {
+        bool refused = false;
+        try { parseForcedBossRelic(bad); } catch (const std::runtime_error &) { refused = true; }
+        check(refused, bad);
+    }
+    std::cout << "forced boss relic selftest passed\n";
+    return 0;
+}
+
+namespace {
+const char *realOocChainStepBody(GameContext &gc, search::ScumSearchAgent2 &agent, bool restV, bool shopV,
+                                 const one_combat::PathHistory &path, std::uint64_t seed, std::uint64_t index,
+                                 one_combat::LiveOocMctsMetrics &mctsMetrics) {
+    // Research observer (STS_OOC_CAMPFIRE_PRICE, default off): prices every option of a rest site before anything
+    // decides it. Play is unchanged. A rule-forced Ruby site has no search candidates and records a price error.
+    one_combat::observeOocCampfirePrice(gc, path, seed, index);
+    if (const auto &forced = forcedBossRelic(); forced && gc.screenState == ScreenState::BOSS_RELIC_REWARDS
+            && gc.act == forced->act) {
+        if (t_forcedBossRelicTaken) throw std::runtime_error("STS_OOC_FORCE_BOSS_RELIC: second boss-relic root in the act");
+        t_forcedBossRelicTaken = true;
+        search::GameAction(forced->choice).execute(gc);
+        return "forced_boss_relic";
+    }
     if (const auto key = search::heartKeyAction(gc, g_collectKeys)) {
         key->execute(gc);
         return "heart_key";
@@ -452,12 +499,93 @@ const char *realOocChainStep(GameContext &gc, search::ScumSearchAgent2 &agent, b
         return "match_and_keep";
     // STS_OOC_MCTS_SCREENS (#854; A20 default map only, ADR-TBD): after the same rule chain, student_sel decides
     // unsearched screens.
+    // STS_OOC_MCTS_CARD_RULE (research): the card rule decides card-reward screens instead.
+    if (one_combat::liveOocCardRuleApplies(gc)) {
+        if (t_realOocDecisionObserver) one_combat::armOocPolicyTarget();
+        if (one_combat::oocCardRulePolicyStep(gc, path, seed, index, mctsMetrics)) return "card_rule";
+    }
     if (one_combat::liveOocMctsScreenExcluded(gc) && one_combat::heart1::policyStep(gc)) return "heart1_screen";
     if (t_realOocDecisionObserver) one_combat::armOocPolicyTarget();
     if (one_combat::oocMctsPolicyStep(gc, path, seed, index, mctsMetrics)) return "mcts";
     if (one_combat::liveOocMctsHeart1Fallback(gc) && one_combat::heart1::policyStep(gc)) return "heart1_fallback";
     runFullRunOocPolicyStep(gc, agent, restV, shopV);
     return "chain";
+}
+thread_local bool t_rootProbeActive = false;
+}
+
+std::optional<ForcedDecision> parseForcedDecision(const char *value) {
+    if (!value || !*value) return std::nullopt;
+    const std::string text(value);
+    const auto a = text.find(':');
+    const auto b = a == std::string::npos ? std::string::npos : text.find(':', a + 1);
+    const auto digits = [](const std::string &t, std::size_t limit) {
+        return !t.empty() && t.size() <= limit && t.find_first_not_of("0123456789") == std::string::npos;
+    };
+    if (b == std::string::npos || !digits(text.substr(0, a), 6) || !digits(text.substr(a + 1, b - a - 1), 19)
+            || b + 1 >= text.size())
+        throw std::runtime_error("STS_OOC_FORCE_DECISION must be INDEX:SALT:KEY (KEY a root candidate key or - for the"
+                                 " production choice; SALT 0 keeps the game's own future)");
+    return ForcedDecision{std::stoull(text.substr(0, a)), std::stoull(text.substr(a + 1, b - a - 1)), text.substr(b + 1)};
+}
+
+namespace {
+const std::optional<ForcedDecision> &forcedDecision() {
+    static const auto forced = parseForcedDecision(std::getenv("STS_OOC_FORCE_DECISION"));
+    return forced;
+}
+thread_local bool t_forcedDecisionTaken = false;
+}
+
+int forcedDecisionSelfTest() {
+    const auto check = [](bool ok, const char *what) {
+        if (!ok) throw std::runtime_error(std::string("forced decision selftest: ") + what);
+    };
+    check(!parseForcedDecision(nullptr) && !parseForcedDecision(""), "unset must be off");
+    const auto keyed = parseForcedDecision("12:7:ooc:v1:effect=5:source=7");
+    check(keyed && keyed->index == 12 && keyed->salt == 7 && keyed->key == "ooc:v1:effect=5:source=7", "keyed parse");
+    const auto production = parseForcedDecision("0:0:-");
+    check(production && production->index == 0 && production->salt == 0 && production->key == "-", "production parse");
+    for (const char *bad : {"1", "1:2", "1:2:", "a:2:k", "1:b:k", ":2:k", "1::k"}) {
+        bool refused = false;
+        try { parseForcedDecision(bad); } catch (const std::runtime_error &) { refused = true; }
+        check(refused, bad);
+    }
+    std::cout << "forced decision selftest passed\n";
+    return 0;
+}
+
+const char *realOocChainStep(GameContext &gc, search::ScumSearchAgent2 &agent, bool restV, bool shopV,
+                             const one_combat::PathHistory &path, std::uint64_t seed, std::uint64_t index,
+                             one_combat::LiveOocMctsMetrics &mctsMetrics) {
+    // Research observer (STS_OOC_ROOT_PROBE, #882, default off): prior, searches and the production choice at the
+    // listed decision indices, all in forked children. Play is unchanged.
+    if (!t_rootProbeActive && one_combat::rootProbeIndex(index)) {
+        one_combat::observeOocRootProbe(gc, path, seed, index, [&](GameContext &copy) {
+            t_rootProbeActive = true;   // only ever inside the probe's forked child
+            realOocChainStepBody(copy, agent, restV, shopV, path, seed, index, mctsMetrics);
+        });
+    }
+    const auto &forced = forcedDecision();
+    if (!forced || t_rootProbeActive || index != forced->index)
+        return realOocChainStepBody(gc, agent, restV, shopV, path, seed, index, mctsMetrics);
+    // STS_OOC_FORCE_DECISION (research, #882 forks): this decision takes KEY (or the production choice for -), then
+    // a SALT above 0 redraws the hidden future as OOC MCTS does for its own continuations; forks of one root share it.
+    if (t_forcedDecisionTaken) throw std::runtime_error("STS_OOC_FORCE_DECISION: decision index reached twice");
+    t_forcedDecisionTaken = true;
+    const char *by = "forced_decision";
+    if (forced->key == "-") by = realOocChainStepBody(gc, agent, restV, shopV, path, seed, index, mctsMetrics);
+    else {
+        std::string error;
+        if (!one_combat::executeOocRootKey(gc, path, forced->key, error))
+            throw std::runtime_error("STS_OOC_FORCE_DECISION: " + error);
+    }
+    if (forced->salt) {
+        std::seed_seq seq{forced->salt, std::uint64_t(0x464f524b4544ULL)};   // "FORKED"
+        std::mt19937_64 rng(seq);
+        one_combat::resampleCounterfactualFuture(gc, rng);
+    }
+    return by;
 }
 
 // WHOLE RUN: ScumSearchAgent2 plays Neow -> Act 3 boss (battles via MCTS,
@@ -492,6 +620,8 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
                                      " or STS_OOC_SIBLING_CAPTURE");
     }
     vDisconnect();
+    t_forcedBossRelicTaken = false;
+    t_forcedDecisionTaken = false;
     GameContext gc(CharacterClass::IRONCLAD, seed, asc);
     search::ScumSearchAgent2 agent;
     agent.simulationCountBase = sims;
@@ -522,6 +652,10 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
             agent.simulationCountBase = fightSims(gc, sims);            // difficulty-tiered budget
             if (one_combat::liveOocMctsEnabled() && agent.simulationCountBase != 10000)
                 throw std::runtime_error("live OOC MCTS real combat budget must remain 10000");
+            if (t_battleOverride && t_battleOverride(gc, agent)) {
+                ++fightsTotal;
+                continue;
+            }
             BossEntryHook *const bossHook = battleRoom == Room::BOSS ? t_bossEntryHook : nullptr;
             if (bossHook) bossHook->before(gc, agent, path);
             const bool traceOoc = std::getenv("STS_OOC_DECISION_TRACE") != nullptr;
@@ -567,7 +701,11 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
             if (traceOoc)
                 oocTraceEmit({{"seed", seed}, {"kind", "battle"}, {"fight", fightsTotal},
                               {"encounter", monsterEncounterEnumNames[static_cast<int>(bc.encounter)]},
-                              {"won", bc.outcome == Outcome::PLAYER_VICTORY}, {"pre", tracePre},
+                              {"won", bc.outcome == Outcome::PLAYER_VICTORY},
+                              {"outcome", static_cast<int>(bc.outcome)}, {"turns", bc.turn},
+                              {"room", battleRoom == Room::MONSTER ? "NORMAL" : battleRoom == Room::ELITE ? "ELITE"
+                                          : battleRoom == Room::BOSS ? "BOSS" : "OTHER"},
+                              {"escaped", bc.smokeBombUsed}, {"pre", tracePre},
                               {"post", oocTraceState(gc)}});
             // A20 Act 3 has two bosses: winning the first one leads straight into
             // the second, so the Act-3 stop waits for that fight.
@@ -587,9 +725,9 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
                 traceOffer = oocTraceOffer(gc);
             }
             const char *traceBy = "chain";
-            // Opt-in key variants mask some actions; report a policy that ignored the mask.
+            // Non-ADR-0041 key variants mask some actions; report a policy that ignored the mask.
             std::vector<int> keyMaskAllowedX;
-            if (!search::heartKeyRules().isDefault() && gc.screenState == ScreenState::MAP_SCREEN) {
+            if (!search::heartKeyRules().isAdr0041() && gc.screenState == ScreenState::MAP_SCREEN) {
                 bool masked = false;
                 for (const auto a : search::GameAction::getAllActionsInState(gc)) {
                     if (!a.isValidAction(gc)) continue;
@@ -599,7 +737,9 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
                 if (!masked) keyMaskAllowedX.clear();
             }
             const int keyMaskFloor = gc.floorNum;
-            traceBy = realOocChainStep(gc, agent, restV, shopV, path, seed, index, mctsMetrics);
+            const char *overrideBy = t_oocDecisionOverride ? t_oocDecisionOverride(gc) : nullptr;
+            traceBy = overrideBy ? overrideBy
+                                 : realOocChainStep(gc, agent, restV, shopV, path, seed, index, mctsMetrics);
             if (!keyMaskAllowedX.empty() && gc.floorNum != keyMaskFloor
                     && std::find(keyMaskAllowedX.begin(), keyMaskAllowedX.end(), gc.curMapNodeX) == keyMaskAllowedX.end())
                 std::fprintf(stderr, "heart_key_mask_violation seed=%llu floor=%d by=%s handler=%s x=%d\n",
@@ -616,6 +756,11 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
         floorProfile.finish(mctsMetrics, "abort", e.what());
         throw;
     }
+    // A fork whose replay never reached its boss-relic root is not a fork of the source game.
+    if (forcedBossRelic() && !t_forcedBossRelicTaken)
+        throw std::runtime_error("STS_OOC_FORCE_BOSS_RELIC: the run ended before the act's boss-relic root");
+    if (forcedDecision() && !t_forcedDecisionTaken)
+        throw std::runtime_error("STS_OOC_FORCE_DECISION: the run ended before the forced decision index");
     floorProfile.finish(mctsMetrics, clearedStopActBoss ? "stop_act_victory"
         : gc.outcome == GameOutcome::PLAYER_VICTORY ? "victory"
         : gc.outcome == GameOutcome::PLAYER_LOSS ? "death" : "stopped");

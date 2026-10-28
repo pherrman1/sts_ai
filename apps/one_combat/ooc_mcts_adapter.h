@@ -124,6 +124,17 @@ struct OocAdapterOptions {
     // STS_OOC_REFEREE_ACT_END=a1,a2,a3,a4:b (research): a referee rollout also notes its act-end value, the calibrated
     // X2-B sigma(a_act + b * logit X2-B) at the first map state past the root's act; the rollout plays on.
     std::vector<double> refereeActEndCalibration;
+    // STS_OOC_CAMPFIRE_PRICE (research; set only in a forked child): a referee rollout ends at its act-end value
+    // instead of playing on to the end of the game.
+    bool refereeStopAtActEnd = false;
+    // Issue #883 rollout variance research (set only in a forked sibling-capture child, STS_OOC_SIBLING_VR_ARMS):
+    // survivalWeightedRollout integrates each CTM death draw out of a leaf rollout: the combat is resampled until it is
+    // not a death and the rollout value is multiplied by the product of the CTM survival probabilities (an exact,
+    // bounded likelihood ratio; same expectation). keyedRolloutStreams draws every rollout event (hidden-future
+    // resample, CTM combat) from its own stream keyed by (act, floor, kind, occurrence), so common-seed siblings stay
+    // aligned when their draw counts differ.
+    bool survivalWeightedRollout = false;
+    bool keyedRolloutStreams = false;
     bool uniformLeafPolicy = false;
     // Research option (default off, STS_OOC_MCTS_LEAF_POLICY=prior, §487): rollouts apply the tree's fixed rule
     // steps, then take the V4 policy-head argmax on every screen V4 encodes; the chain decides everything else.
@@ -170,6 +181,9 @@ struct OocAdapterOptions {
     // without Cursed Key, leave an empty reward screen), and bottle, duplicate
     // and bonfire selectors offer one choice per distinct card.
     bool treeRules = false;
+    // Card-rule research (STS_OOC_MCTS_CARD_RULE_BOSS_EDGE=1): the map step into the act boss is a sole-action tree
+    // edge (the boss fight is sampled like any other) instead of a leaf boundary.
+    bool bossEdge = false;
     // Live search samples unknown futures. False is retained for exact native replay fixtures.
     bool sampleNoncombat = false;
     // False (live runs with STS_COLLECT_KEYS off) drops TAKE_KEY and
@@ -209,6 +223,16 @@ struct OocSiblingLeafCapture {
     // the root uses the same stream (common random numbers), so sibling differences lose most of
     // the rollout noise. Off: each leaf's repeats have their own streams (seeded with its ordinal).
     bool commonSeeds = false;
+    // Research option (default off, STS_OOC_SIBLING_MONO=1, issue #886): each captured leaf also scores paired
+    // variants that differ only in current HP or in one upgraded card (X2-B, the calibrated leaf anchor, heart1's
+    // value and monoRepeats rollouts on the same streams as the repeats), in the same forked child.
+    bool mono = false;
+    unsigned monoRepeats = 16;
+    // Research option (default empty, STS_OOC_SIBLING_VR_ARMS=a,b,...; issue #883): each named arm adds
+    // extra.vr.<arm> with `repeats` rollout values of the leaf. Arms: base (common seeds), indep (per-leaf seeds),
+    // sw (survival-weighted), keyed (event-keyed streams), swkeyed (both); all but indep use common seeds.
+    std::vector<std::string> vrArms;
+    unsigned vrRepeats = 0;   // STS_OOC_SIBLING_VR_REPEATS, rollouts per arm
 };
 
 // Host-provided model seams keep the scientific OOC MCTS substrate reusable
@@ -288,6 +312,9 @@ private:
     std::string observationError_;
     // The act-end value the current referee rollout noted (refereeActEndCalibration), if it got that far.
     std::optional<double> refereeActEnd_;
+    // Product of CTM survival probabilities in the current survival-weighted rollout (null outside one).
+    double *rolloutSurvivalWeight_ = nullptr;
+    std::optional<std::pair<int, int>> refereeActEndHp_;   // curHp, maxHp at that state
     OocAdapterOptions options;
     OocMctsDependencies dependencies;
     mutable OocContinuationMetrics continuation_;
@@ -309,6 +336,7 @@ private:
     std::map<sts::search::OocStateId, std::pair<sts::search::OocStateId, sts::search::OocActionId>> parents_;
 #ifndef STS_LIVE_ADVISOR
     std::optional<nlohmann::json> siblingLeafExtras(sts::search::OocStateId);
+    nlohmann::json monoVariants(sts::search::OocStateId, const OocPolicyThreadState &);
 #endif
     double evaluateLeafUnobserved(sts::search::OocStateId, std::mt19937_64 &, bool &terminal,
                                  sts::search::OocEndpoint &endpoint);
@@ -354,6 +382,8 @@ public:
     std::optional<sts::search::OocEndpoint> endpoint(sts::search::OocStateId) const override;
     // Particle planners: 1 when the edge into this state resolved a combat with the combat model.
     unsigned edgeCombats(sts::search::OocStateId) const override;
+    // The leaf anchor (calibrated if configured) of a stored state, without a rollout.
+    double leafAnchor(sts::search::OocStateId id) const { return leafAnchorValue(state(id), pathHistory(id)); }
     // The leaf with `spentCombats` subtracted from the rollout's combats (no-op without a combat horizon).
     sts::search::OocLeafEvaluation evaluateLeafAfterCombats(sts::search::OocStateId, std::mt19937_64 &,
                                                            unsigned spentCombats) override;
@@ -361,6 +391,11 @@ public:
     // each root action, with stream r shared by the actions (common random numbers). Runs in a forked child, so the
     // model is unchanged.
     nlohmann::json refereeRootActions(const std::vector<sts::search::OocActionId> &, unsigned n, std::uint64_t seed);
+    // Campfire price (STS_OOC_CAMPFIRE_PRICE): for every legal root action, n rollouts of the search's own leaf and n
+    // rollouts to the act's end valued by refereeActEndCalibration, stream r shared by the actions. Changes the
+    // model's rollout state: call it in a forked child.
+    // top > 0 prices only the top highest-prior legal actions (ties keep legal order).
+    nlohmann::json priceRootActions(unsigned n, std::uint64_t seed, unsigned top = 0);
 };
 // Adds game meanings and CTM provenance to a captured generic search tree.
 void annotateOocTree(const OocGameContextModel &, sts::search::OocTreeSnapshot &);
@@ -406,6 +441,8 @@ bool liveOocMctsTreeRules();
 // STS_OOC_MCTS_SCREENS (#854; ADR-TBD map-only A20 default): this real root's screen is not searched; student_sel
 // decides it.
 bool liveOocMctsScreenExcluded(const GameContext &gc);
+// STS_OOC_MCTS_CARD_RULE (research, default unset): this real root is a card-reward screen that the card rule decides.
+bool liveOocCardRuleApplies(const GameContext &gc);
 // Root choice key of the search: with tree rules, copies of one card are one
 // choice for bottle, duplicate and bonfire selectors.
 std::string oocMctsChoiceKey(sts::search::OocSemanticAction action, const GameContext &gc, bool treeRules);
@@ -445,6 +482,25 @@ nlohmann::json scoreLiveOocMctsDecision(const GameContext &, const PathHistory &
 bool executeOocMctsRoot(GameContext &, const OocGameContextModel::Candidate &, std::string &error);
 bool oocMctsPolicyStep(GameContext &, const PathHistory &, std::uint64_t runSeed,
     std::uint64_t decisionIndex, LiveOocMctsMetrics &);
+// The card rule's decision at a card-reward root (liveOocCardRuleApplies): oocMctsPolicyStep with the rule's root.
+bool oocCardRulePolicyStep(GameContext &, const PathHistory &, std::uint64_t runSeed,
+    std::uint64_t decisionIndex, LiveOocMctsMetrics &);
+// STS_OOC_CAMPFIRE_PRICE=PATH (research, default off): at each real rest site, before anything decides it, append one
+// JSONL row pricing every legal campfire action (priceRootActions in a forked child). The run is unchanged.
+void observeOocCampfirePrice(const GameContext &, const PathHistory &, std::uint64_t runSeed,
+    std::uint64_t decisionIndex);
+// STS_OOC_ROOT_PROBE=PATH with STS_OOC_ROOT_PROBE_INDICES=I,J,... (research, #882, default off): at each listed real
+// decision index, before anything decides it, append one ooc-root-probe-v1 row: the search model's root candidates
+// (key, label, tree prior, public effect), which candidate the production decider (`productionStep`, the real chain
+// on a copy) matches, and three fresh searches on the live configuration: PUCT at the live budget with the real
+// search seed (as a full-budget root), PUCT at STS_OOC_ROOT_PROBE_DEEP (default 32768) on the same seed, and the
+// 8192-simulation uniform reference of STS_OOC_MCTS_ROOT_COMPARE on its seed and on a second one. Each runs in a forked child; the run is unchanged.
+bool rootProbeIndex(std::uint64_t decisionIndex);
+void observeOocRootProbe(const GameContext &, const PathHistory &, std::uint64_t runSeed, std::uint64_t decisionIndex,
+    const std::function<void(GameContext &)> &productionStep);
+// Executes the live search model's root candidate whose key is `key` (STS_OOC_FORCE_DECISION). False with `error`
+// when no root candidate has that key; the policy thread state is left as before.
+bool executeOocRootKey(GameContext &, const PathHistory &, const std::string &key, std::string &error);
 // Policy-target capture (heartoutcomegen policy). arm: the next
 // oocMctsPolicyStep records its root (heart1 record, candidate keys, heart1
 // tokens, prior/visits/Q, checkpoints, selection, flags) without changing the

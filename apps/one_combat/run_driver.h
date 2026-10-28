@@ -42,6 +42,17 @@ extern thread_local std::function<void(const sts::GameContext &, const one_comba
 // "chain", "heart_key", ...). While set, the driver arms
 // one_combat::armOocPolicyTarget before the OOC MCTS step.
 extern thread_local std::function<void(std::uint64_t, const char *)> t_realOocDecisionObserver;
+// Research-only (expertreplay): when set, runFullRunOOC offers each real
+// out-of-combat step to it first. It either acts on gc and returns the handler
+// name for the decision trace, or returns nullptr without touching gc and the
+// production chain acts. Unset everywhere else.
+extern thread_local std::function<const char *(sts::GameContext &)> t_oocDecisionOverride;
+// Research-only (expertfights): when set, runFullRunOOC offers each real battle
+// to it first, after the battle budget is set on the agent. It either plays
+// the battle itself, leaves gc after the battle (won, at the rewards screen) and
+// returns true, or returns false with gc ready for the driver's own battle
+// (it may adjust HP and potions first). Unset everywhere else.
+extern thread_local std::function<bool(sts::GameContext &, sts::search::ScumSearchAgent2 &)> t_battleOverride;
 // Default-off research observation of each real combat: called after exitBattle
 // with the context copied just before Silver initialized the battle, the ended
 // battle, the number of RAW persistent-exit callbacks and the first one's record
@@ -110,6 +121,23 @@ void beginRealOocChainRun(bool shopV);
 const char *realOocChainStep(sts::GameContext &, sts::search::ScumSearchAgent2 &, bool restV, bool shopV,
                              const one_combat::PathHistory &, std::uint64_t runSeed, std::uint64_t decisionIndex,
                              one_combat::LiveOocMctsMetrics &);
+
+// STS_OOC_FORCE_BOSS_RELIC=ACT:CHOICE (research, #856 boss-relic forks): at the real boss-relic root of act ACT (1 or
+// 2) realOocChainStep takes CHOICE (0-2 the offered relic in screen order, 3 skip) before any policy; every other
+// decision is the production chain's, so a game with the same seed equals the unforced game up to that root.
+// runFullRunOOC throws when the run ends without reaching the root. Unset: nothing changes.
+struct ForcedBossRelic { int act; int choice; };
+std::optional<ForcedBossRelic> parseForcedBossRelic(const char *value);
+int forcedBossRelicSelfTest();
+
+// STS_OOC_FORCE_DECISION=INDEX:SALT:KEY (research, #882 paired root forks): the real decision with this index takes
+// the live search model's root candidate KEY (- = whatever the production chain does), and a SALT above 0 then
+// redraws the hidden future (resampleCounterfactualFuture, seeded by SALT). Forks of one root with one SALT share
+// that future; different SALTs give independent continuations. Earlier decisions are the production chain's, so a
+// fork equals the unforced game up to INDEX. runFullRunOOC throws when the run ends before INDEX. Unset: nothing changes.
+struct ForcedDecision { std::uint64_t index; std::uint64_t salt; std::string key; };
+std::optional<ForcedDecision> parseForcedDecision(const char *value);
+int forcedDecisionSelfTest();
 
 // Concrete seams shared with retained one_combat.cpp drivers.  These keep
 // environment parsing, model loading, and the counterfactual evaluators in
