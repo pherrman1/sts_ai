@@ -25039,3 +25039,28 @@ Seeds: none new; 111384000–111384003 (§696, used) replayed.
   trace_check.txt); share `campfire-price-stage0/replays-n128-38bd5a71.tar.gz`.
 Seeds: none new; 111374100–111374227 (§683, used) replayed.
 **Knowledge impact:** none (research observer only, default off).
+
+## §TBD — OOC prior vs search (issue #882): at 26 A20 roots where PUCT 4096/32768 or the uniform leaf reference disagree with production, forcing the alternative to game end over 16 paired resampled futures gives Heart −1.9 pp [−7.9, +3.8]; where search departs +1.4 [−5.3, +8.7], where only the leaf disagrees −5.3 [−14.4, +2.9]; no type shows a search gain; diagnostic, no default change (16 replayed §683 seeds, no new seeds, 2026-10-28)
+
+**Question (#882):** why does OOC MCTS rarely beat the student_sel prior, and would it help if it did?
+**Phase 0 (no seeds, §683 D arm, 1,024 games):** search leaves the prior argmax at 2–8% of roots per type (full 4096
+roots 3.5–12%); median top prior 0.98–1.0; the argmax gets 75–92% of visits; games whose first difference D vs MAP
+follows a non-map override: Heart −0.3 pp [−4.3, +3.5] (631 seeds). §683's "act-1 rest −15 kills" class is mostly a
+representation artifact (compound smith vs two-step decision).
+**Probe (`STS_OOC_ROOT_PROBE`, default off, play-neutral forked children):** 64 core roots of #881's cohort (§683 MAP
+seeds 111374100–115 replayed, 8 per type): PUCT 4096 departs from production at 9/64, PUCT 32768 at 16/64; the
+uniform 8192 leaf reference (two seeds) prefers another action with z > 2 at 25/64 (median gap 0.023); 11 of 16 deep
+departures go to the leaf's best.
+**Forks (`STS_OOC_FORCE_DECISION=INDEX:SALT:KEY`, default off):** [PREREG](evidence/ooc_prior_vs_search_20261027/PREREG.md)
+frozen before launch (Philipp's go 11:04Z, pre-launch review PASS after dropping 2 unforceable treasure roots). Both
+arms replay to the root, redraw the hidden future with a shared salt, play to the end. 26 roots × 16 salts, 832 games,
+RUN_COMMIT `b93d4d3`, binary `4dfc84d9…`; verify 416/416 OK, 416 valid pairs.
+**Result** ([RESULT](evidence/ooc_prior_vs_search_20261027/RESULT.md)): Heart Δ (alternative − production) all
+−1.9 pp [−7.9, +3.8], search_departs +1.4 [−5.3, +8.7], leaf_only −5.3 [−14.4, +2.9]; per type all inconclusive
+(rest Act 4 +14.1 [+1.6, +28.1] is 1 of 18 secondary tests); leaf gap vs real Heart Δ r = −0.10.
+**Interpretation:** search beneficial and exploration constrained are both not shown; the leaf's preferred
+alternatives are not better in real play, so more search or more exploration toward them is not the lever.
+**Decision:** stop (#882 is diagnostic); no training, model or default change. Not covered: treasure, Act 4, budgets
+above 32768, other leaves.
+Seeds: none new; 111374100–111374115 (§683, used) replayed.
+**Knowledge impact:** none (research flags only, default off).
