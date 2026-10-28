@@ -24884,7 +24884,7 @@ on identical states; it needs per-fight output in `expertreplay` (missing today)
 Seeds: none (existing games only).
 **Knowledge impact:** this ledger entry and its evidence only; no code, model or default change.
 
-## §TBD — Silver victory turn penalty 0.4 vs 0 at A20 (issue #880): removing it lengthens boss fights by ~0.7 turns without stalling; outcomes INCONCLUSIVE at 64 paired whole runs (2026-10-27)
+## §704 — Silver victory turn penalty 0.4 vs 0 at A20 (issue #880): removing it lengthens boss fights by ~0.7 turns without stalling; outcomes INCONCLUSIVE at 64 paired whole runs (2026-10-27)
 
 **Question:** Silver's won leaf pays 0.4 HP-equivalents per combat turn (`SilverEvalWeights::victoryTurnPenalty`). Does a
 turn-neutral victory leaf (0) improve or preserve play, make combats longer, or stall?
