@@ -2143,11 +2143,16 @@ nlohmann::json OocGameContextModel::refereeRootActions(const std::vector<sts::se
     }, int(seconds) * 1000, int(seconds), std::size_t(1) << 24); }
     catch (const std::exception &e) { return nlohmann::json{{"error", e.what()}}; }
 }
-nlohmann::json OocGameContextModel::priceRootActions(unsigned n, std::uint64_t seed) {
+nlohmann::json OocGameContextModel::priceRootActions(unsigned n, std::uint64_t seed, unsigned top) {
     if (options.refereeActEndCalibration.empty()) throw std::runtime_error("campfire price requires an act-end calibration");
     const auto policyBefore = captureOocPolicyThreadState();
-    const auto actions = legalActions(0);
-    nlohmann::json out = {{"n", n}, {"actions", nlohmann::json::array()}};
+    auto actions = legalActions(0);
+    nlohmann::json out = {{"n", n}, {"legalActions", actions.size()}, {"actions", nlohmann::json::array()}};
+    if (top > 0 && actions.size() > top) {
+        std::stable_sort(actions.begin(), actions.end(), [](const auto &a, const auto &b) { return a.prior > b.prior; });
+        actions.resize(top);
+        out["top"] = top;
+    }
     const auto start = std::clock();
     for (const auto &action : actions) {
         const auto &c = candidate(0, action.id);
@@ -2753,6 +2758,11 @@ std::string liveRootComparePath;
 // observeOocCampfirePrice.
 std::string liveCampfirePricePath;
 unsigned liveCampfirePriceN = 16;
+// STS_OOC_CAMPFIRE_PRICE_SCREENS=all|LIST (research, default rest; LIST as STS_OOC_MCTS_SCREENS) and
+// STS_OOC_CAMPFIRE_PRICE_TOP=K (1..64, default all): the same price at other real OOC roots (sibling-value noise and
+// bias, #881), for the K highest-prior root actions only.
+std::uint32_t liveCampfirePriceScreens = 1u << int(sts::ScreenState::REST_ROOM);
+unsigned liveCampfirePriceTop = 0;
 // Search-architecture pilot (research, default mcts): STS_OOC_MCTS_SEARCH_MODE=mcts|particle|particle_beam picks the
 // planner of every searched (non-singleton) root; STS_OOC_MCTS_PARTICLES=P (default 64) and
 // STS_OOC_MCTS_BEAM=WIDTH:K:DEPTH (default 8:2:3) configure OocParticlePlanner. STS_OOC_MCTS_SEARCH_TRACE=PATH appends
@@ -3615,6 +3625,7 @@ void configureLiveOocMcts() {
     livePlaySampleFloor = -1; livePlaySampleTemperature = 1;
     liveGumbelRootActions = 0; liveGumbelRootScale = 1; liveGumbelQCap = 0; liveRootComparePath.clear();
     liveCampfirePricePath.clear(); liveCampfirePriceN = 16;
+    liveCampfirePriceScreens = 1u << int(sts::ScreenState::REST_ROOM); liveCampfirePriceTop = 0;
     // "A[:B]" with A and B finite; returns false on malformed text.
     const auto parsePair = [](const std::string &text, double &a, double &b) {
         const auto colon = text.find(':');
@@ -3678,8 +3689,37 @@ void configureLiveOocMcts() {
                 throw std::runtime_error("STS_OOC_CAMPFIRE_PRICE_N must be 1..256");
             liveCampfirePriceN = unsigned(std::stoul(value));
         }
-    } else if (std::getenv("STS_OOC_CAMPFIRE_PRICE_N"))
-        throw std::runtime_error("STS_OOC_CAMPFIRE_PRICE_N requires STS_OOC_CAMPFIRE_PRICE");
+        if (const char *raw = std::getenv("STS_OOC_CAMPFIRE_PRICE_SCREENS"); raw && std::string(raw) != "rest") {
+            static const std::map<std::string, sts::ScreenState> names = {
+                {"map", sts::ScreenState::MAP_SCREEN}, {"event", sts::ScreenState::EVENT_SCREEN},
+                {"rewards", sts::ScreenState::REWARDS}, {"boss_relic", sts::ScreenState::BOSS_RELIC_REWARDS},
+                {"card_select", sts::ScreenState::CARD_SELECT}, {"treasure", sts::ScreenState::TREASURE_ROOM},
+                {"rest", sts::ScreenState::REST_ROOM}, {"shop", sts::ScreenState::SHOP_ROOM}};
+            liveCampfirePriceScreens = 0;
+            std::stringstream list(raw);
+            for (std::string name; std::getline(list, name, ',');) {
+                if (std::string(raw) == "all") {
+                    for (const auto &entry : names) liveCampfirePriceScreens |= 1u << int(entry.second);
+                    break;
+                }
+                const auto it = names.find(name);
+                if (it == names.end())
+                    throw std::runtime_error("STS_OOC_CAMPFIRE_PRICE_SCREENS must be all or a comma list of map, event, "
+                        "rewards, boss_relic, card_select, treasure, rest, shop");
+                liveCampfirePriceScreens |= 1u << int(it->second);
+            }
+            if (!liveCampfirePriceScreens) throw std::runtime_error("STS_OOC_CAMPFIRE_PRICE_SCREENS is empty");
+        }
+        if (const char *raw = std::getenv("STS_OOC_CAMPFIRE_PRICE_TOP")) {
+            const std::string value(raw);
+            if (value.empty() || value.size() > 2 || value.find_first_not_of("0123456789") != std::string::npos
+                    || std::stoul(value) < 1 || std::stoul(value) > 64)
+                throw std::runtime_error("STS_OOC_CAMPFIRE_PRICE_TOP must be 1..64");
+            liveCampfirePriceTop = unsigned(std::stoul(value));
+        }
+    } else if (std::getenv("STS_OOC_CAMPFIRE_PRICE_N") || std::getenv("STS_OOC_CAMPFIRE_PRICE_SCREENS")
+               || std::getenv("STS_OOC_CAMPFIRE_PRICE_TOP"))
+        throw std::runtime_error("STS_OOC_CAMPFIRE_PRICE_N, _SCREENS and _TOP require STS_OOC_CAMPFIRE_PRICE");
     if (liveGumbelQCap > 0 && !liveGumbelRootActions && liveRootComparePath.empty())
         throw std::runtime_error("STS_OOC_MCTS_GUMBEL_QCAP requires STS_OOC_MCTS_GUMBEL_ROOT or STS_OOC_MCTS_ROOT_COMPARE");
     if (const char *sample = std::getenv("STS_OOC_MCTS_PLAY_SAMPLE")) {
@@ -5637,18 +5677,23 @@ void observeOocCampfirePrice(const GameContext &gc, const PathHistory &path, std
 #ifdef STS_LIVE_ADVISOR
     (void)gc; (void)path; (void)seed; (void)index;
 #else
-    if (liveCampfirePricePath.empty() || !liveEnabled || gc.screenState != sts::ScreenState::REST_ROOM
+    if (liveCampfirePricePath.empty() || !liveEnabled || !(liveCampfirePriceScreens & (1u << int(gc.screenState)))
             || gc.outcome != sts::GameOutcome::UNDECIDED)
         return;
-    // One row per rest site: the chain may pass the same rest room more than once.
-    static thread_local std::pair<std::uint64_t, int> last{0, -1};
-    if (last == std::pair{seed, gc.floorNum}) return;
-    last = {seed, gc.floorNum};
+    nlohmann::json record;
+    const bool hasRecord = heart1::buildPublicLeafRecord(gc, record);
+    // One row per rest site: the chain may pass the same rest room more than once. Other screens: one row per
+    // distinct public root (same floor, screen and record), else per decision.
+    static thread_local std::tuple<std::uint64_t, int, int, std::size_t> last{0, -1, -1, 0};
+    const bool rest = gc.screenState == sts::ScreenState::REST_ROOM;
+    const std::tuple<std::uint64_t, int, int, std::size_t> key{seed, gc.floorNum, int(gc.screenState),
+        rest ? 0 : hasRecord ? std::hash<std::string>{}(record.dump()) : std::size_t(index) + 1};
+    if (last == key) return;
+    last = key;
     nlohmann::json row = {{"schema", "campfire-price-v1"}, {"seed", seed}, {"decisionIndex", index},
         {"ascension", gc.ascension}, {"act", gc.act}, {"floor", gc.floorNum}, {"hp", gc.curHp}, {"maxHp", gc.maxHp},
-        {"gold", gc.gold}, {"n", liveCampfirePriceN}};
-    nlohmann::json record;
-    if (heart1::buildPublicLeafRecord(gc, record)) row["record"] = std::move(record);
+        {"gold", gc.gold}, {"n", liveCampfirePriceN}, {"screen", int(gc.screenState)}};
+    if (hasRecord) row["record"] = std::move(record);
     const unsigned n = liveCampfirePriceN;
     const auto wallStart = std::chrono::steady_clock::now();
     // Ten options of 2n rollouts each, a few seconds per act-end rollout at most.
@@ -5660,7 +5705,8 @@ void observeOocCampfirePrice(const GameContext &gc, const PathHistory &path, std
                 auto options = liveOptions;
                 if (options.refereeActEndCalibration.empty()) options.refereeActEndCalibration = a20LeafCalibration();
                 OocGameContextModel model(gc, path, liveSamplerFor(gc), std::move(options));
-                return model.priceRootActions(n, splitMix64(oocMctsSearchSeed(seed, index) ^ 0x43414d5046495245ULL));  // "CAMPFIRE"
+                return model.priceRootActions(n, splitMix64(oocMctsSearchSeed(seed, index) ^ 0x43414d5046495245ULL),  // "CAMPFIRE"
+                                              liveCampfirePriceTop);
             } catch (const std::exception &e) { return nlohmann::json{{"error", e.what()}}; }
         }, int(seconds) * 1000, int(seconds), std::size_t(1) << 24);
     } catch (const std::exception &e) { row["priceError"] = e.what(); }
@@ -8415,6 +8461,19 @@ void oocMctsAdapterSelfTest() {
         for (const auto &a : price(30, std::make_shared<DeathSampler>()).at("actions"))
             for (const auto &e : a.at("actEnd"))
                 require(e.at("value") == 0 && e.at("terminal") == true, "campfire price: a death before the act end is 0");
+        // STS_OOC_CAMPFIRE_PRICE_TOP: only the top-K prior actions are priced, with the same streams as a full price.
+        {
+            auto o = plain; o.refereeActEndCalibration = {30, 30, 30, 30, 1};
+            OocGameContextModel m(refereeRoot,path,std::make_shared<HorizonSampler>(),o);
+            const auto top = m.priceRootActions(2, 99, 1);
+            double best = -1;
+            for (const auto &a : rootActions) best = std::max(best, a.prior);
+            require(top.at("actions").size() == 1 && top.at("top") == 1 && top.at("legalActions") == rootActions.size()
+                && top.at("actions")[0].at("prior").get<double>() == best, "campfire price top-K keeps the highest prior");
+            for (const auto &a : priced.at("actions"))
+                if (a.at("id") == top.at("actions")[0].at("id"))
+                    require(a.at("leaf") == top.at("actions")[0].at("leaf"), "campfire price top-K keeps the streams");
+        }
     }
     {
         // Observe RNG after every transition/evaluation without changing the
