@@ -80,7 +80,7 @@ def main():
         root_state = s_dec[index]['stateIndex'] if index in s_dec and 'stateIndex' in s_dec[index] else None
         if root_state is None or states[:root_state + 1] != s_states[:root_state + 1]:
             invalid.append([tag, 'prefix_mismatch']); continue
-        if arm == 'A' and dec.get(index, {}).get('by') not in (None, 'forced_decision'):
+        if arm == 'A' and dec.get(index, {}).get('by') != 'forced_decision':
             invalid.append([tag, 'not_forced']); continue
         res[(seed, index)].setdefault(salt, {})[arm] = (int(bool(out.get('heartKilled'))), int(out.get('finalAct', 0) >= 4))
     rng = np.random.default_rng(RNG)

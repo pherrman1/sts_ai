@@ -20,9 +20,11 @@ prior outside map decisions? Diagnostic only; no default change follows from thi
 
 ## Question and arms
 
-At the 28 probed roots where PUCT 4096, PUCT 32768 or the leaf reference disagree with the production pick
-(`fork_roots.jsonl`; 5 shop, 4 card select, 4 boss relic, 4 rest, 3 rewards, 3 map, 3 event, 2 treasure; the card-select
-remove after shop root 111374105/38 is dropped as the same decision), is the alternative better in real play?
+At the 26 probed roots where PUCT 4096, PUCT 32768 or the leaf reference disagree with the production pick
+(`fork_roots.jsonl`; 5 shop, 4 card select, 4 boss relic, 4 rest, 3 rewards, 3 map, 3 event; the card-select
+remove after shop root 111374105/38 is dropped as the same decision; the 2 treasure roots 111374108/96 and 111374113/29 are dropped because
+no candidate can be forced there (`semantic_root_stale` in every probe candidate, reproduced by the pre-launch review)),
+is the alternative better in real play?
 
 - **B** (production): `STS_OOC_FORCE_DECISION=INDEX:SALT:-`; **A** (alternative): `INDEX:SALT:KEY`, KEY = the deep
   search's pick if it departs, else PUCT 4096's, else the leaf reference's best.
@@ -37,7 +39,7 @@ remove after shop root 111374105/38 is dropped as the same decision), is the alt
 - Primary: Heart kill. Secondary: Act 4 reached. Per root, d = mean over salts of y(A) − y(B).
 - Validity: rc 0, an outcome row, the game's states equal the §683 MAP game's states up to the root, A's root row
   `by=forced_decision`. Invalid games drop their pair; counts are reported.
-- Groups: all 28 roots; **search_departs** (PUCT 4096 or 32768 departs, 15 roots); **leaf_only** (only the leaf
+- Groups: all 26 roots; **search_departs** (PUCT 4096 or 32768 departs, 13 roots); **leaf_only** (only the leaf
   reference disagrees, 13 roots); each screen type. Effect = mean over roots,
   95% CI by a two-stage bootstrap (roots, then salts), 10,000 resamples, RNG 20261028.
 - Also reported: per-root effect with SE, base Heart rate per root, correlation of the leaf gap with the effect.
@@ -54,8 +56,8 @@ remove after shop root 111374105/38 is dropped as the same decision), is the alt
 
 ## Cost and provenance
 
-- 448 units × 2 games, about 12 core-min per game, about 180 core-h; 16 workers × 4 lanes, queue schedule.
+- 416 units × 2 games, about 12 core-min per game, about 170 core-h; 16 workers × 4 lanes, queue schedule.
 - Code `b225220d62965b8a6f58048b48f9ac46893f9cc3`, binary (v3 preset) sha256
   `4dfc84d9a0160b8f4ec58c6fe755e3b999c126f89f331d0e651318b766954f87`; student_sel `cf6bf7fb…`.
 - Seeds: replays of 111374100–111374115 (used by §683; no new seeds). Authorization: Philipp's typed go in the #882
-  thread (pending). RUN_COMMIT: the commit carrying this file's final campaign files.
+  thread ("Go 882 forks, 16 workers", 11:04Z 2026-10-28). RUN_COMMIT: the commit carrying this file's final campaign files.
