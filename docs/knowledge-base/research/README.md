@@ -71,6 +71,7 @@ graph TD
 - [Strategic policy](ooc/strategic-policy.md) — OOC learned policy evolution
 - [Encounter marginalization](ooc/encounter-marginalization.md) — M0/M1 strategic labels
 - [External evidence and ideas](ooc/external-evidence-and-ideas.md) — benchmarks, expert play, literature, ranked OOC candidates
+- [Variance reduction](ooc/variance-reduction.md) — rollout noise sources, CRN coupling, unbiased estimators (#883)
 
 ## Evidence labels
 

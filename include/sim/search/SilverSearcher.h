@@ -120,6 +120,57 @@ namespace sts::search {
         std::int64_t cycleRollouts = 0;
         std::int64_t descentAborts = 0;
         void record(const BattleContext &state, int treeDepth, int rolloutDepth);
+
+        // Horizon in combat rounds (BattleContext::turn, which counts completed
+        // player + enemy rounds) from the root: to the tree leaf, inside the
+        // rollout, and in total; plus rollout actions. One entry per endpoint.
+        std::map<int, std::int64_t> treeRounds, rolloutRounds, totalRounds, rolloutActions;
+        // Why each simulation's descent stopped (#888 measurement).
+        enum Stop { NEW_LEAF, UNVISITED_NODE, TERMINAL_REVISIT, NO_ACTIONS, CYCLE, DEPTH_BOUND, STOP_COUNT };
+        inline static constexpr const char *stopNames[STOP_COUNT] = {
+            "new_leaf", "unvisited_node", "terminal_revisit", "no_actions", "cycle", "depth_bound"
+        };
+        std::array<std::int64_t, STOP_COUNT> stops{};
+        // Nodes allocated per simulation (decision + chance), and their sources:
+        // decision nodes from expanding an action edge (including a new chance
+        // node's first outcome), decision nodes from widening an existing chance
+        // node, and chance nodes.
+        std::map<int, std::int64_t> newNodesPerSimulation;
+        std::int64_t expansionDecisionNodes = 0, wideningDecisionNodes = 0, chanceNodes = 0;
+        // Widening draws that reproduced an existing sibling or an existing node elsewhere.
+        std::int64_t wideningDraws = 0, wideningSiblingRepeats = 0, wideningTranspositions = 0;
+        int rootTurn = 0;   // set by SilverSearcher::search
+    };
+
+    // Observational shape of the current search graph (#888 measurement): node
+    // counts, the most-visited line, and the first End Turn transitions reachable
+    // from the root without ending a turn. Reads the graph only.
+    struct SilverTreeSnapshot {
+        std::int64_t allocatedNodes = 0, allocatedChanceNodes = 0;   // pool in use, live or stale
+        std::int64_t reachableDecisionNodes = 0, reachableChanceNodes = 0, reachableOutcomeEdges = 0;
+        std::int64_t reachableExpandedActionEdges = 0;
+        // Most-visited line from the root: one entry per action edge with that
+        // edge's visits, the action-depth and round depth reached; chance nodes
+        // follow their most-visited outcome.
+        struct PvStep { int actions = 0; int rounds = 0; std::int64_t visits = 0; bool endTurn = false; };
+        std::vector<PvStep> pv;
+        // A first End Turn reachable from the root through actions that do not end
+        // the turn (other chance nodes are followed through all their outcomes).
+        struct EndTurn {
+            bool stochastic = false;           // false: a deterministic End Turn edge
+            std::int64_t edgeVisits = 0;       // End Turn edge visits from its decision parent
+            std::int64_t visits = 0;           // chance node simulations
+            int children = 0;                  // distinct outcome nodes (equalForSearch, RNG excluded)
+            int draws = 0;                     // RNG outcome draws executed
+            int observable = 0;                // distinct public next-turn projections
+            int terminalChildren = 0;          // outcomes that end the combat
+            int cap = 0;                       // widening cap at `visits`
+            std::int64_t maxChildVisits = 0;
+            double effectiveChildren = 0;      // (sum v)^2 / sum v^2 over outcome edge visits
+            int actionsFromRoot = 0;           // action depth of the End Turn edge
+            bool onPv = false;
+        };
+        std::vector<EndTurn> firstEndTurns;
     };
 
     // Observational end-of-combat samples of newly executed simulations, at
@@ -298,6 +349,10 @@ namespace sts::search {
         void rerootAt(Node *node, bool compact);
 
         [[nodiscard]] std::size_t nodeCount() const { return allNodes.size(); }
+        // Nodes in use (nodeCount() also holds pooled nodes of an earlier root).
+        [[nodiscard]] std::size_t allocatedNodeCount() const { return poolUsed; }
+        // Diagnostic read of the current graph (#888); never changes the search.
+        [[nodiscard]] SilverTreeSnapshot treeSnapshot() const;
         [[nodiscard]] const Node &rootNode() const { return *root; }
 
         void search(std::int64_t simulations);
@@ -375,6 +430,9 @@ namespace sts::search {
         Node *getOrCreateNode(BattleContext &&state);
 
         void step();
+        SilverTreeProfile::Stop stepImpl();
+        std::int64_t wideningCreatedNodes = 0;   // profile only
+        int profileLeafTurn = 0;                 // profile only: turn of the current rollout start
         void updateFromPlayout(const std::vector<Node *> &stack, double evaluation);
         [[nodiscard]] double selectionValue(const Node &node) const;
         double evaluateEdge(const Node &parent, int edgeIdx, double logParentVisits) const;

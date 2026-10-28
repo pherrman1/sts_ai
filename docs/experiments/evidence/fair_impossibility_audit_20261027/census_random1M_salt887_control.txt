@@ -1,0 +1,2 @@
+mode=random mapOnly=2 seeds=1000000 distinct=2250 collisions=997750
+renyi2_bits=11.13 (colliding pairs 223178653 of 499999500000)

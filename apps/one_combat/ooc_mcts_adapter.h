@@ -127,6 +127,14 @@ struct OocAdapterOptions {
     // STS_OOC_CAMPFIRE_PRICE (research; set only in a forked child): a referee rollout ends at its act-end value
     // instead of playing on to the end of the game.
     bool refereeStopAtActEnd = false;
+    // Issue #883 rollout variance research (set only in a forked sibling-capture child, STS_OOC_SIBLING_VR_ARMS):
+    // survivalWeightedRollout integrates each CTM death draw out of a leaf rollout: the combat is resampled until it is
+    // not a death and the rollout value is multiplied by the product of the CTM survival probabilities (an exact,
+    // bounded likelihood ratio; same expectation). keyedRolloutStreams draws every rollout event (hidden-future
+    // resample, CTM combat) from its own stream keyed by (act, floor, kind, occurrence), so common-seed siblings stay
+    // aligned when their draw counts differ.
+    bool survivalWeightedRollout = false;
+    bool keyedRolloutStreams = false;
     bool uniformLeafPolicy = false;
     // Research option (default off, STS_OOC_MCTS_LEAF_POLICY=prior, §487): rollouts apply the tree's fixed rule
     // steps, then take the V4 policy-head argmax on every screen V4 encodes; the chain decides everything else.
@@ -212,6 +220,16 @@ struct OocSiblingLeafCapture {
     // the root uses the same stream (common random numbers), so sibling differences lose most of
     // the rollout noise. Off: each leaf's repeats have their own streams (seeded with its ordinal).
     bool commonSeeds = false;
+    // Research option (default off, STS_OOC_SIBLING_MONO=1, issue #886): each captured leaf also scores paired
+    // variants that differ only in current HP or in one upgraded card (X2-B, the calibrated leaf anchor, heart1's
+    // value and monoRepeats rollouts on the same streams as the repeats), in the same forked child.
+    bool mono = false;
+    unsigned monoRepeats = 16;
+    // Research option (default empty, STS_OOC_SIBLING_VR_ARMS=a,b,...; issue #883): each named arm adds
+    // extra.vr.<arm> with `repeats` rollout values of the leaf. Arms: base (common seeds), indep (per-leaf seeds),
+    // sw (survival-weighted), keyed (event-keyed streams), swkeyed (both); all but indep use common seeds.
+    std::vector<std::string> vrArms;
+    unsigned vrRepeats = 0;   // STS_OOC_SIBLING_VR_REPEATS, rollouts per arm
 };
 
 // Host-provided model seams keep the scientific OOC MCTS substrate reusable
@@ -291,6 +309,8 @@ private:
     std::string observationError_;
     // The act-end value the current referee rollout noted (refereeActEndCalibration), if it got that far.
     std::optional<double> refereeActEnd_;
+    // Product of CTM survival probabilities in the current survival-weighted rollout (null outside one).
+    double *rolloutSurvivalWeight_ = nullptr;
     std::optional<std::pair<int, int>> refereeActEndHp_;   // curHp, maxHp at that state
     OocAdapterOptions options;
     OocMctsDependencies dependencies;
@@ -313,6 +333,7 @@ private:
     std::map<sts::search::OocStateId, std::pair<sts::search::OocStateId, sts::search::OocActionId>> parents_;
 #ifndef STS_LIVE_ADVISOR
     std::optional<nlohmann::json> siblingLeafExtras(sts::search::OocStateId);
+    nlohmann::json monoVariants(sts::search::OocStateId, const OocPolicyThreadState &);
 #endif
     double evaluateLeafUnobserved(sts::search::OocStateId, std::mt19937_64 &, bool &terminal,
                                  sts::search::OocEndpoint &endpoint);

@@ -1,0 +1,1 @@
+mode=range mapOnly=1 seeds=1000000 distinct=1000000 collisions=0
