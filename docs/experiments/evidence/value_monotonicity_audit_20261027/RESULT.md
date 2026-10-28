@@ -85,7 +85,8 @@ Heads are deterministic, so these rates are model error, not sampling noise.
 - **Cause of the divergence:** `mono_unit.sh` copies the §695 env, which predates #868. It does not set
   `STS_CALLING_BELL_CARD_RNG_FIX=0`, and that fix has been on by default since §683. Uncaptured replays of 102/104/105
   with `=0` (otherwise the same env, stopped early) match §683 on their first 249 / 216 / 156 rows, past the
-  divergence rows 242 / 109 / 65 (`trace_check.py --prefix`).
+  divergence rows 242 / 109 / 65 (`trace_check.py --prefix`; replays stopped there,
+  `bell-fix0-102-104-105.tgz` on the share, sha256 in `results/raw.sha256`).
 
 ## Deviation from the plan
 
