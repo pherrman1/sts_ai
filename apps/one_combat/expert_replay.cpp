@@ -107,7 +107,23 @@ public:
         return {{"types", json(std::vector<std::string>(types_.begin(), types_.end()))},
                 {"stopFloor", stopFloor_}, {"stopReason", stopReason_}, {"replayed", replayed_},
                 {"botScreens", bot_}, {"unopenedCardRewards", unopenedCardRewards_},
-                {"potionsLeftBeltFull", potionsLeft_}, {"shelvesDiffered", shelvesDiffered_}};
+                {"potionsLeftBeltFull", potionsLeft_}, {"shelvesDiffered", shelvesDiffered_},
+                {"loggedPotionsNotOffered", loggedPotionsNotOffered()}};
+    }
+
+    // Logged potions of floors with a reward screen that were neither taken nor
+    // left for a full belt: the drop differed from the log (e.g. after the run
+    // continued on another copy's combat streams). Potions logged from an event
+    // on such a floor count here too.
+    int loggedPotionsNotOffered() const {
+        int n = 0;
+        for (int f : rewardFloors_) {
+            const auto it = potionsObtained.find(f);
+            const auto left = leftAt_.find(f);
+            if (it != potionsObtained.end())
+                n += std::max(0, (int)it->second.size() - (left == leftAt_.end() ? 0 : left->second));
+        }
+        return n;
     }
 
 private:
@@ -121,6 +137,8 @@ private:
     std::map<std::string, int> replayed_, bot_;
     int unopenedCardRewards_ = 0, potionsLeft_ = 0, shelvesDiffered_ = 0;
     bool lenientShelves_ = false;
+    std::set<int> rewardFloors_;
+    std::map<int, int> leftAt_;
     std::vector<int> pathX_[3];
     bool pathReady_[3] = {false, false, false};
     int preparedFloor_ = -1;
@@ -255,6 +273,7 @@ private:
         if (!on("reward")) return bot("reward");
         auto &r = gc.info.rewardsContainer;
         const int f = gc.floorNum;
+        rewardFloors_.insert(f);
         while (r.goldRewardCount > 0) Action(RAT::GOLD, 0).execute(gc);
         if (r.emeraldKey && (greenKeyFloor == f || emeraldUnlogged_)) {
             emeraldUnlogged_ = false;
@@ -288,7 +307,7 @@ private:
                 auto it = std::find_if(logged.begin(), logged.end(), [&](const json &l) { return l["key"] == name; });
                 if (it == logged.end()) continue;
                 const Action a(RAT::POTION, i);
-                if (!a.isValidAction(gc)) { ++potionsLeft_; continue; }
+                if (!a.isValidAction(gc)) { ++potionsLeft_; ++leftAt_[f]; continue; }
                 logged.erase(it);
                 a.execute(gc);
             }
@@ -478,7 +497,7 @@ private:
 struct ExpertCombatLog {
     std::vector<int> hp, maxHp;
     std::map<int, json> fight;
-    std::map<int, int> uses;
+    std::map<int, int> uses, fightsOnFloor;
     std::map<int, std::vector<std::string>> useNames, potionsAt, relicsAt;
     int potionsKnownThrough = -1;
     std::string potionsUnknownWhy = "no Run History Plus potion logs";
@@ -494,7 +513,10 @@ struct ExpertCombatLog {
     explicit ExpertCombatLog(const json &run) {
         for (const auto &h : run["current_hp_per_floor"]) hp.push_back(h.get<int>());
         for (const auto &h : run["max_hp_per_floor"]) maxHp.push_back(h.get<int>());
-        for (const auto &d : run["damage_taken"]) fight[d["floor"].get<int>()] = d;
+        for (const auto &d : run["damage_taken"]) {
+            fight[d["floor"].get<int>()] = d;
+            ++fightsOnFloor[d["floor"].get<int>()];
+        }
         for (const auto &u : run["potions_floor_usage"]) ++uses[u.get<int>()];
         for (const auto &r : run["relics_obtained"]) relicsAt[r["floor"].get<int>()].push_back(r["key"].get<std::string>());
         floorReached = run["floor_reached"].get<int>();
@@ -634,6 +656,9 @@ public:
         for (const auto &r : gc.relics.relics) relics.push_back(jname(r.id));
         rec["relics"] = relics;
         const auto &lfight = lf->second;
+        // Two logged fights on one floor (Colosseum): the log keeps the last one
+        // and the floor's exit HP covers both; analyze.py drops such fights.
+        rec["loggedFightsOnFloor"] = log_.fightsOnFloor.at(f);
         rec["expert"] = {{"received", lfight["damage"]}, {"turns", lfight["turns"]},
                          {"exitHp", f - 1 < (int)log_.hp.size() ? json(log_.hp[f - 1]) : json()},
                          {"died", !log_.victory && f == log_.floorReached && log_.killedBy == loggedEnc},

@@ -24,16 +24,21 @@ def load(d):
     return out
 
 
-def rows(runs):
+def rows(runs, dropped):
     R = []
     for x in runs:
         rid = x['runFile'][:-5]
         for f in x['fights']:
             reps = [r for r in f['replicates'] if r['valid']]
             if len(reps) != len(f['replicates']) or not reps:
+                dropped['invalid_copy'] += 1
                 continue
             e = f['expert']
             if e['exitHp'] is None:
+                dropped['no_logged_exit_hp'] += 1
+                continue
+            if f['loggedFightsOnFloor'] > 1:
+                dropped['two_fights_on_floor'] += 1
                 continue
             fruit = sum(FRUIT.get(n, 0) for n in e['relicsObtained'])
             e_exit = 0 if e['died'] else max(0, e['exitHp'] - fruit)
@@ -41,6 +46,8 @@ def rows(runs):
             b_loss = [f['hp'] - (r['exitHp'] if r['won'] else 0) for r in reps]
             R.append(dict(run=rid, floor=f['floor'], act=f['act'], room=f['room'], enc=f['encounter'],
                           hp=f['hp'], maxhp=f['maxHp'], held=len(f['potions']),
+                          e_held=len(f['expertPotions']) if 'expertPotions' in f else None,
+                          cont=f['continuedFrom'],
                           same_potions='expertPotions' in f and sorted(f['potions']) == sorted(f['expertPotions']),
                           e_loss=e_loss, e_died=e['died'], e_uses=e['potionsUsed'],
                           b_loss=st.mean(b_loss), b0_loss=b_loss[0], b_died=st.mean(not r['won'] for r in reps),
@@ -78,20 +85,37 @@ def cell(R):
                 bot_potions=round(st.mean(r['b_uses'] for r in R), 2), exp_potions=round(st.mean(r['e_uses'] for r in R), 2),
                 potion_diff_ci=boot(R, lambda r: r['b_uses'] - r['e_uses']),
                 bot_held=round(st.mean(r['held'] for r in R), 2),
+                exp_held=round(st.mean(h), 2) if (h := [r['e_held'] for r in R if r['e_held'] is not None]) else None,
+                exp_held_n=len(h),
                 bot_cpu_per_fight=round(st.mean(r['b_cpu'] for r in R), 1))
 
 
 def main():
     runs = load(sys.argv[1])
-    R = rows(runs)
+    dropped = collections.Counter()
+    R = rows(runs, dropped)
+    ends = sorted(x['endFloor'] for x in runs)
+    q = lambda p: ends[min(len(ends) - 1, int(p * len(ends)))] if ends else None
+    other = [x for x in runs if any(f['continuedFrom'] > 0 for f in x['fights'])]
+    prefix = dict(end_floor_mean=round(st.mean(ends), 1) if ends else None, end_floor_q25_50_75=[q(.25), q(.5), q(.75)],
+                  end_act=collections.Counter(x['endAct'] for x in runs).most_common(),
+                  main_line_deaths=sum(x['diedInMainLine'] for x in runs),
+                  fights_continued_from_other_copy=sum(f['continuedFrom'] > 0 for x in runs for f in x['fights']),
+                  fights_no_copy_won=sum(f['continuedFrom'] < 0 for x in runs for f in x['fights']),
+                  runs_with_other_copy=len(other),
+                  logged_potions_not_offered=dict(
+                      runs_with_other_copy=sum(x['replay']['loggedPotionsNotOffered'] for x in other),
+                      runs_copy0_only=sum(x['replay']['loggedPotionsNotOffered'] for x in runs if x not in other)),
+                  potions_left_belt_full=sum(x['replay']['potionsLeftBeltFull'] for x in runs))
     prim = [r for r in R if r['act'] <= 2 and r['room'] in ('E', 'B')]
-    out = dict(runs=len(runs), fights=len(R), primary_acts12=cell(prim),
+    out = dict(runs=len(runs), fights=len(R), dropped=dict(dropped), primary_acts12=cell(prim),
                primary_same_potions=cell([r for r in prim if r['same_potions']]),
                by_act_room={f'{a}-{rm}': cell([r for r in R if r['act'] == a and r['room'] == rm])
                             for a in (1, 2, 3) for rm in ('M', '?', 'E', 'B')},
                by_encounter={k: cell([r for r in R if r['enc'] == k])
                              for k in sorted({r['enc'] for r in R if r['room'] in ('E', 'B')})},
-               stop_reasons=collections.Counter(x['replay']['stopReason'].split(' ')[0] or ('main_line_died' if x['diedInMainLine'] else 'none')
+               prefix=prefix,
+               stop_reasons=collections.Counter(x['replay']['stopReason'] or ('main_line_died' if x['diedInMainLine'] else 'none')
                                                 for x in runs).most_common())
     text = json.dumps(out, indent=1)
     print(text)

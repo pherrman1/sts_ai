@@ -36,19 +36,23 @@ combat-entry states (his deck, relics, path, HP and max HP), does today's Silver
 
 HP lost = entry HP − exit HP, with exit 0 on a death, for both sides (no survivor selection). Expert exit = the logged
 HP after the floor, fruit relics (Strawberry, Pear, Mango) obtained there added back. Bot = mean over the 4 copies.
-Fights with any invalid copy or no logged exit HP are dropped and counted.
+Dropped and counted by reason: fights with any invalid copy, with no logged exit HP, and floors with two logged
+fights (Colosseum: the log keeps the last fight and the floor's exit HP covers both).
 
 - **Primary:** mean over acts 1-2 elite and boss fights of (bot HP lost − expert HP lost), 95% CI by run-clustered
   bootstrap (10,000 resamples, seed 20261028).
 - **Decision rule:** lower CI bound > +2 HP → COMBAT_GAP (on identical states the bot loses more; combat play,
   potions included, is a bottleneck). Upper CI bound < +2 HP → NO_COMBAT_GAP at this margin (§701's gap comes from
   upstream: deck, HP management, encounter path). Otherwise INCONCLUSIVE. Margin: §701's won-fight gaps are +3.5 to
-  +4.5 (elites) and +8 to +12 (bosses) in acts 1-2.
+  +4.5 (elites) and +8 to +12 (bosses) in acts 1-2. The rule is applied by hand to `analyze.py`'s
+  `primary_acts12.diff_ci`; the script prints no verdict.
 - **Co-reported:** potions used per fight, bot − expert, with the same bootstrap CI. HP lost alone would credit the bot
   for drinking more (§701: it already drinks more); a COMBAT_GAP or NO_COMBAT_GAP verdict is read together with it.
 - **Secondary (descriptive):** the same difference with copy 0 only (the expert's deal); death per fight; potions held
-  at entry; by act and room (hallways, events, act 3 included); by encounter; the subset whose entry potions equal the
-  expert's (Run History Plus logs); replay stop reasons and prefix length; CPU per fight.
+  at entry, bot and expert (the expert's where the Run History Plus log determines it); by act and room (hallways, events, act 3 included); by encounter; the subset whose entry potions equal the
+  expert's (Run History Plus logs); replay stop reasons (full text) and prefix length (end floor, end act, main-line
+  deaths); fights continued from copies 1-3 and logged reward potions not offered afterwards (split by runs with and
+  without such a continuation; `loggedPotionsNotOffered`); potions left for a full belt; CPU per fight.
 
 ## Caveats fixed in advance
 
@@ -60,6 +64,10 @@ Fights with any invalid copy or no logged exit HP are dropped and counted.
   his realized one.
 - Potions are only partly matched: after the first fight in which the bot drinks differently from him, its inventory
   differs from his (the co-reported potion difference and the same-potions subset show how much).
+- When the run continues from copy r > 0, the main line keeps that copy's combat streams (AI, card random, misc,
+  monster HP, potion, shuffle), so later potion drops and gold can differ from the log; a logged reward potion that is
+  not offered is skipped (counted, not a stop). Deck, relics and path stay the expert's while the replay is exact.
+- The expert's exit HP is the end of the floor: out-of-combat effects after a fight on that floor count for him (rare).
 - Measurement, no default change on its result.
 
 ## Cost (smoke)

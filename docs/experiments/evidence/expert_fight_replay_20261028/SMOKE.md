@@ -31,3 +31,7 @@ aggregate of the second is `smoke_analysis.json` (not evidence, n = 8 runs).
 Mean 177 s per run (one process, one core); act-3 bosses dominate (50-100 s CPU per copy in 1660344805). 329 runs
 ≈ 16 CPU-hours: ≈ 4-5 h wall at 4 lanes in one container, or < 1 h on 16 cloud workers. Expected primary n ≈ 2,000
 acts-1-2 elite/boss fights. Peak RSS was not measured (no Act 4 is played inside the measurement).
+
+3. After review (#902, reviewer K PASS): rebuilt with the dropped/prefix/potion counters and `loggedFightsOnFloor`;
+   re-ran 1693933695, 1686952006, 1632511943, 1666898585: all rc 0 and the fights are identical to smoke 2 apart from
+   CPU and the new field.
