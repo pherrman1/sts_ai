@@ -106,7 +106,9 @@ def boot(values, reps=10000, seed=905):
 
 
 def main():
-    order = [tuple(map(int, l.split("\t")[:2])) for l in open(sys.argv[1]).read().splitlines()[1:]]
+    lines = [l.split("\t") for l in open(sys.argv[1]).read().splitlines()[1:]]
+    order = [(int(l[0]), int(l[1])) for l in lines]
+    offer712 = {(int(l[0]), int(l[1])): sorted(map(int, l[5].split(","))) for l in lines if len(l) > 5}
     rows = {(r["seed"], r["decisionIndex"]): r for r in probe_rows(sys.argv[2:])}
     valid, invalid, missing = [], [], []
     for key in order:
@@ -118,6 +120,11 @@ def main():
             invalid.append(key)
     sample = valid[:128]
     stats = {k: root_stats(rows[k]) for k in sample}
+    meta = {}
+    for k in sample:
+        offer = sorted(int(m.split(",")[1]) for c in rows[k]["candidates"]
+                       for m in [c["key"].split("reward=")[1].split(":")[0]] if m.startswith("card,"))
+        meta[f"{k[0]}/{k[1]}"] = {"K": len(rows[k]["candidates"]), "offer_matches_712": offer == offer712.get(k)}
     cfgs = sorted({c for s in stats.values() for c in s})
     summary = {}
     for cfg in cfgs:
@@ -145,7 +152,8 @@ def main():
         res["horizon_floor_share"] = dict(sorted(hist.items()))
         res["cpu_per_root"] = statistics.mean(p["cpu"] for p in per)
         summary[cfg] = res
-    json.dump({"valid": len(valid), "invalid": invalid, "missing": missing, "sample": len(sample),
+    json.dump({"meta": meta, "K_gt5": sum(m["K"] > 5 for m in meta.values()),
+               "offer_mismatch": sum(not m["offer_matches_712"] for m in meta.values()), "valid": len(valid), "invalid": invalid, "missing": missing, "sample": len(sample),
                "summary": summary, "per_root": {f"{k[0]}/{k[1]}": v for k, v in stats.items()}},
               sys.stdout, indent=1)
 
