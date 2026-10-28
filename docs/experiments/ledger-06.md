@@ -24775,3 +24775,38 @@ technique: [variance-reduction.md](../knowledge-base/research/ooc/variance-reduc
 event-keyed streams on ~64 frozen roots from replays of used seeds, ≈ 2 core-h.
 Seeds: none.
 **Knowledge impact:** new KB page research/ooc/variance-reduction.md.
+
+## §TBD — OOC rollout variance arms (issue #883, phase 3): survival-weighted rollouts plus event-keyed streams leave 0.21× (card rewards) and 0.18× (map) of today's common-seed sibling-difference variance at equal CPU, mean unchanged; USEFUL, no default change (315 roots from 8 replayed used seeds, 2026-10-27/28)
+
+**Question:** do the two §699 candidates cut rollout3 sibling-difference variance per CPU without moving the
+estimand? Philipp's go, 2026-10-27 20:37Z (via the coordinator), without waiting for #881.
+**Setup:** [PREREG](evidence/ooc_variance_arms_20261027/PREREG.md). Research option `STS_OOC_SIBLING_VR_ARMS` (default
+off, forked capture child only; play identical with and without arms in the smoke). Arms are paired by repeat r:
+- base: today's common seeds;
+- indep: per-leaf seeds;
+- sw: each non-Act-4 CTM fight is drawn conditioned on survival by rejection, and the value is weighted by
+  Π (1 − death) from the sampler's own expectation;
+- keyed: one stream per (act, floor, screen, kind, occurrence);
+- swkeyed: both.
+
+Roots: depth-1 children of every map and reward root, R = 128. Data: §683 seeds 111374100–107 replayed at today's
+A20 default plus `STS_OOC_MCTS_SCREENS=map,rewards`, stopped at Act 4. Run commit `2ed59b94`, binary `c8f8d0e9…`.
+Deviation: two container restarts cut games 105–107 at floors 26–31. Their reruns reproduce the first attempt's rows
+exactly, and their complete rows are used.
+**Result:** [RESULT.md](evidence/ooc_variance_arms_20261027/RESULT.md). 315 roots (164 card rewards, 31 other rewards,
+120 map); base death rate 6.7% per rollout. Work ratio (variance × CPU, against base), card rewards / map:
+- swkeyed **0.209** [variance CI 0.110–0.221] / **0.179**;
+- sw 0.350 / 0.270;
+- keyed 0.638 / 0.607;
+- indep 5.02 / 1.49.
+
+CPU +29% for swkeyed. Bias against base, pooled and root-clustered: swkeyed +0.0003 ± 0.0009 with 4.5% of |z| > 2;
+keyed 4.0%; sw −0.0001 ± 0.0007 but 29.8% of |z| > 2, almost all negative.
+**Interpretation:** swkeyed is USEFUL by the pre-registered rule. That is about 5× the effective repeats per CPU-hour
+for rollout3 sibling comparisons. sw alone is INVALID by the letter of the per-child rule. **Inference:** this is a
+skewed-test artefact, since sw shares base's draws until a death. keyed alone is WEAK. Today's common seeds are worth
+3.8× at card rewards but only 1.15× at map roots.
+**Decision:** no default change. The follow-up candidates are swkeyed sibling-label captures, the §695 campfire price,
+and an A20 A/B as the live leaf; each is Philipp's call.
+Seeds: none new; 111374100–111374107 (§683, used) replayed.
+**Knowledge impact:** KB research/ooc/variance-reduction.md updated.

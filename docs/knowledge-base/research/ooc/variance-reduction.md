@@ -1,6 +1,7 @@
 # OOC rollout variance reduction
 
-Last verified: 2026-10-27 against `main` `ed2dcb2b` (issue #883, phases 1–2; offline decomposition §699).
+Last verified: 2026-10-28 (issue #883: phases 1–2 against `main` `ed2dcb2b`, offline decomposition §699; phase 3 measured at
+`2ed59b94`, §TBD).
 
 ## Purpose / research question
 
@@ -21,6 +22,11 @@ teacher or CTM bias (#884).
   coupling (CRN ratio 0.73–0.87 depending on weighting, against 0.30 at rest sites).
 - Latin-hypercube/antithetic draws, martingale control variates and adaptive allocation are sound but second-order
   until candidate 1 is measured. Multilevel Monte Carlo and general importance sampling are not recommended (below).
+- **Phase 3 measured both (§TBD, [result](../../../experiments/evidence/ooc_variance_arms_20261027/RESULT.md)):** on 164 card-reward and
+  120 map roots, survival weighting plus keyed streams leave 0.21× (card rewards) and 0.18× (map) of today's
+  sibling-difference variance at equal CPU, with no detectable shift in the mean. That is about 5× the effective
+  repeats per CPU-hour. Keyed streams alone: 0.64×; survival weighting alone: 0.35×, but it fails the pre-registered
+  per-child bias rule through a skewed paired test (one-sided z, pooled mean −0.0001 ± 0.0007).
 - No default change follows from this page. Either candidate changes leaf values and therefore play; a play-changing
   use needs its own paired A/B.
 
@@ -119,7 +125,7 @@ The rollout policies are greedy and deterministic, so another policy's actions h
 ratios do not exist (Precup, Sutton & Singh 2000). The only valid ratio found is candidate 1's, where the proposal
 differs only at a chance event with known probability.
 
-## Phase 3 protocol (proposed, not run)
+## Phase 3 protocol (as proposed; the run is [PREREG](../../../experiments/evidence/ooc_variance_arms_20261027/PREREG.md), R = 128 per arm, 8 replayed §683 seeds)
 
 Frozen roots: reuse #881's cohort if it exists by then; otherwise replay already-used seeds of one A20 campaign at the
 current default (as §695 did) to reach ~48 CARD_REWARD roots plus ~16 map roots. No new seeds.

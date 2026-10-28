@@ -49,7 +49,9 @@ for key, leaves in sorted(roots.items()):
             d = [p - q for p, q in zip(x, b)]
             se = math.sqrt(var(d) / len(d)) if var(d) > 0 else 0
             bias[a].append((key, mean(d), se))
-    per_root.append((screen, stats))
+    # Card-reward roots (a subset of rewards): at least two children take a card reward.
+    card = screen == "rewards" and sum("reward=card," in k for k in keys) >= 2
+    per_root.append((screen, stats, card))
 
 def ratio(rows, a, cpu=False):
     num = sum(r[1][a][0] * (r[1][a][1] if cpu else 1) for r in rows)
@@ -66,7 +68,9 @@ def boot(rows, a, cpu, n=2000):
 report = {"roots": len(per_root), "rowsDroppedInvalid": bad, "deathRate": {a: death[a][0] / max(1, death[a][1]) for a in ARMS},
           "screens": {}, "bias": {}}
 groups = collections.defaultdict(list)
-for r in per_root: groups[r[0]].append(r); groups["all"].append(r)
+for r in per_root:
+    groups[r[0]].append(r); groups["all"].append(r)
+    if r[2]: groups["card_reward"].append(r)
 for g, rows in sorted(groups.items()):
     if not any(r[1]["base"][0] > 0 for r in rows): continue
     e = {"roots": len(rows)}
