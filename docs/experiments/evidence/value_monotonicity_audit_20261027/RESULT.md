@@ -78,9 +78,35 @@ Heads are deterministic, so these rates are model error, not sampling noise.
 ## Checks
 
 - Every captured game equals its uncaptured game at this commit. 5 of 8 reproduce the §683 MAP trace exactly
-  (100, 101, 103, 106, 107). 102, 104 and 105 diverge from §683 at one map root (rows 242, 109, 65), and the
-  uncaptured replay at this commit diverges identically (421/421, 349/349, 441/441 rows equal to the captured
-  game), so that is main-branch drift since §683, not the capture.
+  (100, 101, 103, 106, 107). 102, 104 and 105 diverge from §683 at one map decision after identical states (rows 242,
+  109, 65). The uncaptured replay at this commit diverges identically (421/421, 349/349, 441/441 rows equal to the
+  captured game; `plain-uncaptured-102-104-105.tgz` on the share, sha256 in `results/raw.sha256`), so the capture
+  is not the cause.
+- **Cause of the divergence:** `mono_unit.sh` copies the §695 env, which predates #868. It does not set
+  `STS_CALLING_BELL_CARD_RNG_FIX=0`, and that fix has been on by default since §683. Uncaptured replays of 102/104/105
+  with `=0` (otherwise the same env, stopped early) match §683 on their first 249 / 216 / 156 rows, past the
+  divergence rows 242 / 109 / 65 (`trace_check.py --prefix`).
+
+## Deviation from the plan
+
+The plan (README §Data) said a diverging replay is excluded. 102/104/105 diverged and were included in the headline
+8-seed numbers above, so this is a deviation. Those three seeds carry 9,899 of the 12,562 dominating HP pairs. The
+pre-registered 5-seed analysis (100, 101, 103, 106, 107; `results/summary_5seed.json`: 91 roots, 1,873 leaves, 38,553
+pairs) gives the same conclusions:
+
+| group | estimator | 8 seeds | 5 seeds (pre-registered) |
+|---|---|---|---|
+| HP, dominating | X2-B wrong-way | 0 / 12,562 | 0 / 2,663 |
+| HP, dominating | rollout3 > 2 SE wrong | 62 (0.5 %) | 2 (0.1 %) |
+| upgrade P | X2-B wrong-way | 29.7 % | 31.2 % (6,326 / 20,277) |
+| upgrade P | rollout3 > 2 SE wrong | 10.3 % | 11.2 % (2,264) |
+| Defend+ | X2-B leaf wrong-way | 75 % | 86 % (1,131 / 1,317), −0.81 pp |
+| Bash+ | X2-B leaf wrong-way | 66 % | 68 % (1,279 / 1,872), −0.28 pp |
+| Anger+ | X2-B leaf wrong-way | 51 % | 62 % (793 / 1,277), −0.89 pp |
+
+Dropkick+, Apotheosis+ and Flame Barrier+ come from seeds in both sets and are unchanged. The 102/104/105 games are
+valid games of the same bot with the Calling Bell fix on; their pairs are within-game counterfactuals, so the fix
+changes which states are sampled, not the pair check.
 - All 65,512 variants passed the feature check: exactly `curHp`, or exactly the card's `uNN` +1. No restore error.
   All 3,166 base-variant rollouts reproduced the leaf's own repeats bit for bit.
 - Two container restarts killed runs. Seeds 105–107 were rerun from scratch, and only complete runs are analysed.

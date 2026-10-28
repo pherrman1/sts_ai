@@ -24858,12 +24858,15 @@ read) violate same-state dominance in current HP or in one upgraded card?
 this entry, default off) on the sibling capture: per depth-1 map-root leaf, HP −24…+12 and one upgrade per card id,
 feature-diff and exact-restore checked, X2-B, leaf anchor, heart1 value and 16 rollouts on common streams. 8 used
 §683 MAP seeds 111374100–107 replayed at `e00b86c` with the §695 configuration (no new seeds): 155 roots, 3,166
-leaves, 62,346 pairs; every captured game equals the uncaptured game at that commit (102/104/105 diverge from §683 by
-main drift, verified with plain replays).
+leaves, 62,346 pairs; every captured game equals the uncaptured game at that commit. **Deviation from the plan:** the
+plan excluded diverging replays, but 102/104/105 diverge from §683 (one map decision after identical states) and are
+included; cause: the env omitted `STS_CALLING_BELL_CARD_RNG_FIX=0` (#868, default on since §683), confirmed by =0
+replays that pass the divergence rows. The pre-registered 5-seed analysis (100/101/103/106/107: 1,873 leaves, 38,553
+pairs) gives the same conclusions (below).
 **Result:** HP: X2-B/anchor 0 violations (20 % exact ties), mean slope right at every step; rollout3 wrong-way beyond
 2 SE in 62 of 12,562 dominating pairs (0.5 %); the flagged exceptions (Hexaghost act 1, Red Skull, Meat on the Bone)
-look the same. Upgrades (numeric/cost only): X2-B wrong-way 29.7 % (≥ 0.5 pp: 3,002 of 32,186), rollout3 beyond 2 SE
-10.3 %; Defend+ wrong in all pairs of 4 of 8 decks, Bash+ in 66 % over 8; strong cards priced right (Demon Form+
+look the same; 5 seeds: X2-B 0 of 2,663 dominating pairs, rollout3 beyond 2 SE 2. Upgrades (numeric/cost only): X2-B wrong-way 29.7 % (≥ 0.5 pp: 3,002 of 32,186), rollout3 beyond 2 SE
+10.3 % (5 seeds: 31.2 % and 11.2 %); Defend+ wrong in all pairs of 4 of 8 decks, Bash+ in 66 % over 8; strong cards priced right (Demon Form+
 +8.8 pp, Inflame+ +5.5 pp); X2-B blind to Discovery+ (no input), Clothesline+, Dark Embrace+. Secondary (unused heads):
 student_sel's value head prices 88 % of upgrades lower; SR heads 27–35 % upgrade and 15–19 % HP wrong-way, with no
 clear trend over 25/50/100 % data (flat, as §700).
