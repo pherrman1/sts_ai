@@ -7,6 +7,7 @@
 #include <functional>
 #include <map>
 #include <mutex>
+#include <random>
 #include <sstream>
 
 #include "combat/BattleContext.h"
@@ -25,6 +26,7 @@
 #include "ooc_profile.h"
 #include "run_profile.h"
 #include "run_features.h"
+#include "driver_shared.h"
 
 using namespace sts;
 
@@ -462,9 +464,10 @@ int forcedBossRelicSelfTest() {
     return 0;
 }
 
-const char *realOocChainStep(GameContext &gc, search::ScumSearchAgent2 &agent, bool restV, bool shopV,
-                             const one_combat::PathHistory &path, std::uint64_t seed, std::uint64_t index,
-                             one_combat::LiveOocMctsMetrics &mctsMetrics) {
+namespace {
+const char *realOocChainStepBody(GameContext &gc, search::ScumSearchAgent2 &agent, bool restV, bool shopV,
+                                 const one_combat::PathHistory &path, std::uint64_t seed, std::uint64_t index,
+                                 one_combat::LiveOocMctsMetrics &mctsMetrics) {
     // Research observer (STS_OOC_CAMPFIRE_PRICE, default off): prices every option of a rest site before anything
     // decides it. Play is unchanged. A rule-forced Ruby site has no search candidates and records a price error.
     one_combat::observeOocCampfirePrice(gc, path, seed, index);
@@ -502,6 +505,82 @@ const char *realOocChainStep(GameContext &gc, search::ScumSearchAgent2 &agent, b
     runFullRunOocPolicyStep(gc, agent, restV, shopV);
     return "chain";
 }
+thread_local bool t_rootProbeActive = false;
+}
+
+std::optional<ForcedDecision> parseForcedDecision(const char *value) {
+    if (!value || !*value) return std::nullopt;
+    const std::string text(value);
+    const auto a = text.find(':');
+    const auto b = a == std::string::npos ? std::string::npos : text.find(':', a + 1);
+    const auto digits = [](const std::string &t, std::size_t limit) {
+        return !t.empty() && t.size() <= limit && t.find_first_not_of("0123456789") == std::string::npos;
+    };
+    if (b == std::string::npos || !digits(text.substr(0, a), 6) || !digits(text.substr(a + 1, b - a - 1), 19)
+            || b + 1 >= text.size())
+        throw std::runtime_error("STS_OOC_FORCE_DECISION must be INDEX:SALT:KEY (KEY a root candidate key or - for the"
+                                 " production choice; SALT 0 keeps the game's own future)");
+    return ForcedDecision{std::stoull(text.substr(0, a)), std::stoull(text.substr(a + 1, b - a - 1)), text.substr(b + 1)};
+}
+
+namespace {
+const std::optional<ForcedDecision> &forcedDecision() {
+    static const auto forced = parseForcedDecision(std::getenv("STS_OOC_FORCE_DECISION"));
+    return forced;
+}
+thread_local bool t_forcedDecisionTaken = false;
+}
+
+int forcedDecisionSelfTest() {
+    const auto check = [](bool ok, const char *what) {
+        if (!ok) throw std::runtime_error(std::string("forced decision selftest: ") + what);
+    };
+    check(!parseForcedDecision(nullptr) && !parseForcedDecision(""), "unset must be off");
+    const auto keyed = parseForcedDecision("12:7:ooc:v1:effect=5:source=7");
+    check(keyed && keyed->index == 12 && keyed->salt == 7 && keyed->key == "ooc:v1:effect=5:source=7", "keyed parse");
+    const auto production = parseForcedDecision("0:0:-");
+    check(production && production->index == 0 && production->salt == 0 && production->key == "-", "production parse");
+    for (const char *bad : {"1", "1:2", "1:2:", "a:2:k", "1:b:k", ":2:k", "1::k"}) {
+        bool refused = false;
+        try { parseForcedDecision(bad); } catch (const std::runtime_error &) { refused = true; }
+        check(refused, bad);
+    }
+    std::cout << "forced decision selftest passed\n";
+    return 0;
+}
+
+const char *realOocChainStep(GameContext &gc, search::ScumSearchAgent2 &agent, bool restV, bool shopV,
+                             const one_combat::PathHistory &path, std::uint64_t seed, std::uint64_t index,
+                             one_combat::LiveOocMctsMetrics &mctsMetrics) {
+    // Research observer (STS_OOC_ROOT_PROBE, #882, default off): prior, searches and the production choice at the
+    // listed decision indices, all in forked children. Play is unchanged.
+    if (!t_rootProbeActive && one_combat::rootProbeIndex(index)) {
+        one_combat::observeOocRootProbe(gc, path, seed, index, [&](GameContext &copy) {
+            t_rootProbeActive = true;   // only ever inside the probe's forked child
+            realOocChainStepBody(copy, agent, restV, shopV, path, seed, index, mctsMetrics);
+        });
+    }
+    const auto &forced = forcedDecision();
+    if (!forced || t_rootProbeActive || index != forced->index)
+        return realOocChainStepBody(gc, agent, restV, shopV, path, seed, index, mctsMetrics);
+    // STS_OOC_FORCE_DECISION (research, #882 forks): this decision takes KEY (or the production choice for -), then
+    // a SALT above 0 redraws the hidden future as OOC MCTS does for its own continuations; forks of one root share it.
+    if (t_forcedDecisionTaken) throw std::runtime_error("STS_OOC_FORCE_DECISION: decision index reached twice");
+    t_forcedDecisionTaken = true;
+    const char *by = "forced_decision";
+    if (forced->key == "-") by = realOocChainStepBody(gc, agent, restV, shopV, path, seed, index, mctsMetrics);
+    else {
+        std::string error;
+        if (!one_combat::executeOocRootKey(gc, path, forced->key, error))
+            throw std::runtime_error("STS_OOC_FORCE_DECISION: " + error);
+    }
+    if (forced->salt) {
+        std::seed_seq seq{forced->salt, std::uint64_t(0x464f524b4544ULL)};   // "FORKED"
+        std::mt19937_64 rng(seq);
+        one_combat::resampleCounterfactualFuture(gc, rng);
+    }
+    return by;
+}
 
 // WHOLE RUN: ScumSearchAgent2 plays Neow -> Act 3 boss (battles via MCTS,
 // map/rewards/events/campfires/shops via the ordered OOC policy chain).
@@ -536,6 +615,7 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
     }
     vDisconnect();
     t_forcedBossRelicTaken = false;
+    t_forcedDecisionTaken = false;
     GameContext gc(CharacterClass::IRONCLAD, seed, asc);
     search::ScumSearchAgent2 agent;
     agent.simulationCountBase = sims;
@@ -669,6 +749,8 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
     // A fork whose replay never reached its boss-relic root is not a fork of the source game.
     if (forcedBossRelic() && !t_forcedBossRelicTaken)
         throw std::runtime_error("STS_OOC_FORCE_BOSS_RELIC: the run ended before the act's boss-relic root");
+    if (forcedDecision() && !t_forcedDecisionTaken)
+        throw std::runtime_error("STS_OOC_FORCE_DECISION: the run ended before the forced decision index");
     floorProfile.finish(mctsMetrics, clearedStopActBoss ? "stop_act_victory"
         : gc.outcome == GameOutcome::PLAYER_VICTORY ? "victory"
         : gc.outcome == GameOutcome::PLAYER_LOSS ? "death" : "stopped");

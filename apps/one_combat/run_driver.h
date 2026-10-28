@@ -124,6 +124,15 @@ struct ForcedBossRelic { int act; int choice; };
 std::optional<ForcedBossRelic> parseForcedBossRelic(const char *value);
 int forcedBossRelicSelfTest();
 
+// STS_OOC_FORCE_DECISION=INDEX:SALT:KEY (research, #882 paired root forks): the real decision with this index takes
+// the live search model's root candidate KEY (- = whatever the production chain does), and a SALT above 0 then
+// redraws the hidden future (resampleCounterfactualFuture, seeded by SALT). Forks of one root with one SALT share
+// that future; different SALTs give independent continuations. Earlier decisions are the production chain's, so a
+// fork equals the unforced game up to INDEX. runFullRunOOC throws when the run ends before INDEX. Unset: nothing changes.
+struct ForcedDecision { std::uint64_t index; std::uint64_t salt; std::string key; };
+std::optional<ForcedDecision> parseForcedDecision(const char *value);
+int forcedDecisionSelfTest();
+
 // Concrete seams shared with retained one_combat.cpp drivers.  These keep
 // environment parsing, model loading, and the counterfactual evaluators in
 // the integration translation unit while giving the run loop its lifecycle

@@ -479,6 +479,18 @@ bool oocMctsPolicyStep(GameContext &, const PathHistory &, std::uint64_t runSeed
 // JSONL row pricing every legal campfire action (priceRootActions in a forked child). The run is unchanged.
 void observeOocCampfirePrice(const GameContext &, const PathHistory &, std::uint64_t runSeed,
     std::uint64_t decisionIndex);
+// STS_OOC_ROOT_PROBE=PATH with STS_OOC_ROOT_PROBE_INDICES=I,J,... (research, #882, default off): at each listed real
+// decision index, before anything decides it, append one ooc-root-probe-v1 row: the search model's root candidates
+// (key, label, tree prior, public effect), which candidate the production decider (`productionStep`, the real chain
+// on a copy) matches, and three fresh searches on the live configuration: PUCT at the live budget with the real
+// search seed (as a full-budget root), PUCT at STS_OOC_ROOT_PROBE_DEEP (default 32768) on the same seed, and the
+// 8192-simulation uniform reference of STS_OOC_MCTS_ROOT_COMPARE on its seed and on a second one. Each runs in a forked child; the run is unchanged.
+bool rootProbeIndex(std::uint64_t decisionIndex);
+void observeOocRootProbe(const GameContext &, const PathHistory &, std::uint64_t runSeed, std::uint64_t decisionIndex,
+    const std::function<void(GameContext &)> &productionStep);
+// Executes the live search model's root candidate whose key is `key` (STS_OOC_FORCE_DECISION). False with `error`
+// when no root candidate has that key; the policy thread state is left as before.
+bool executeOocRootKey(GameContext &, const PathHistory &, const std::string &key, std::string &error);
 // Policy-target capture (heartoutcomegen policy). arm: the next
 // oocMctsPolicyStep records its root (heart1 record, candidate keys, heart1
 // tokens, prior/visits/Q, checkpoints, selection, flags) without changing the
