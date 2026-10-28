@@ -19,6 +19,10 @@ and is about 4 HP optimistic after won boss fights.
   ([trace_check.txt](trace_check.txt)). The observer does not change play.
 - 144 audited roots (acts 1/2/3: 58/48/38; none in Act 4), 226 action pairs,
   37,215 imagined combats. Silver arm 69,600 CPU-s (19.3 CPU-h), CTM arm 74 CPU-s. No combat was unsupported.
+- Two act-3 roots of seed `111374114` (decisions 162 and 172) hit `replay_child_timeout` in the observer child and
+  have no audit row; they are not in the 144.
+- The four seeds relaunched at 23:42:18Z record env SHA `e80ceb7` (repo HEAD at launch) but ran the resume binary
+  `edee4395`, committed 3 s later as `98e7d0c`.
 - Raw rows and replays: share `ctm-audit-884/ctm-audit-884-replays-98e7d0c.tar.gz` (sha256 `960900a8fc7646ae…`);
   [report.json](report.json) is `tools/analyze_ctm_audit.py report.json cohort/A-*.audit.jsonl` (seed bootstrap 2,000,
   seed 884).
