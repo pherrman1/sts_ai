@@ -27,8 +27,10 @@ Skip, plus Singing Bowl if held; $K = |A(s)|$, usually 4. $a_{\mathrm{ref}}(s)$ 
 derivation (`oocMctsSearchSeed(seed, index)`, Silver seeds). π decides everything after the root, OOC and combat.
 
 **Future randomness ω.** The hidden future after the root is redrawn by `resampleCounterfactualFuture`
-(`sampleNoncombatFuture`), seeded by the salt of `STS_OOC_FORCE_DECISION=INDEX:SALT:KEY`. This is the same
-hidden-future kernel the OOC search applies at its own leaves, so a kernel mismatch is not part of the search bias.
+(`sampleNoncombatFuture`), seeded by the salt of `STS_OOC_FORCE_DECISION=INDEX:SALT:KEY`. The per-draw function is the
+one the OOC search uses itself, but the process differs: the fork draws once after the root action and then plays
+one coherent world, while the search redraws at every child expansion and before every rollout combat, so it never
+conditions on hidden information revealed later in its own line. That difference stays inside the search bias B.
 In the seed regime the floor-0 observation identifies the seed (§702), so without the redraw "the" future would be a
 clairvoyant fixed sequence; the redraw is what makes $Q$ a decision value. One salt shared across the actions of a
 root gives common random numbers (CRN) between the actions.
@@ -106,7 +108,7 @@ The search's own self-consistency follows from σ alone: $P_{\mathrm{self}}(s;\t
 different action than the same search would pick with unlimited budget. It is the variance part of "wrong card".
 
 σ here is search noise. The outcome noise of the ground-truth estimator (Bernoulli $Z$ over ω, per-salt paired SD
-≈ 0.36 at #882's roots) is a different quantity and enters only the error of $\hat Q$.
+≈ 0.39 mean, 0.45 RMS at #882's roots) is a different quantity and enters only the error of $\hat Q$.
 
 ### Coverage q
 
@@ -139,9 +141,10 @@ is recorded as a covariate.
 
 ## Identification and the cost of ground truth
 
-**Per-root Δ is too expensive.** At #882's roots the per-salt paired SD of a Heart difference was about 0.36
-(per-root SE 9–14 pp at 16 salts, §710). An SE of 1 pp on one δ needs ≈ 1,300 paired futures; with all K = 4
-actions per salt at ≈ 13 core-min per forked game that is ≈ 1,100 core-h per root (≈ 280 core-h for 2 pp). Gaps at
+**Per-root Δ is too expensive.** At #882's roots the per-salt paired SD of a Heart difference was 0.39 on
+average, 0.45 RMS (per-root SE median 8.8 pp, range 0–21 pp at 16 salts; recomputed from §710's analysis.json). An
+SE of 1 pp on one δ needs ≈ 2,000 paired futures; with all K = 4 actions per salt at ≈ 13 core-min per forked game
+that is ≈ 1,750 core-h per root (≈ 440 core-h for 2 pp). Gaps at
 card rewards are mostly below 2 pp (§707: 63 % of leading sibling gaps in leaf units), so per-root ground truth, and
 with it per-root $a^*$, is out of reach. Estimating the spread of true gaps by deconvolution has the same problem
 (≈ thousands of roots for a 3 pp SD).
@@ -150,7 +153,7 @@ with it per-root $a^*$, is out of reach. Estimating the spread of true gaps by d
 
 | quantity | pooled estimand | identified? |
 |---|---|---|
-| advantage of rule θ | $\bar{\mathcal{A}}(\theta) = \mathbb{E}_s \mathcal{A}(s;\theta)$ | yes, unbiased from one paired salt per root |
+| advantage of rule θ | $\bar{\mathcal{A}}(\theta) = \mathbb{E}_s \mathcal{A}(s;\theta)$ | yes, unbiased from one paired salt per root; but the expected size is ≈ −0.5 pp per root (§712: −19 pp per game over ≈ 38 card searches), far below an affordable SE (≈ 2 pp at ≈ 1,600 games) |
 | E[simple regret \| N, h] | $\bar c - \bar{\mathcal{A}}(\theta)$ | up to the constant $\bar c = \mathbb{E}_s c(s)$; curve shape fully |
 | variance regret | $\bar{\mathcal{A}}(L,h,\infty) - \bar{\mathcal{A}}(L,h,N)$ | yes, and precise (only roots where the choices differ contribute) |
 | bias regret | $\bar c - \bar{\mathcal{A}}(L,h,\infty)$ | bracketed: $\bar c \ge$ cross-fitted hindsight gain and $\ge \max_\theta \bar{\mathcal{A}}(\theta)$ |
