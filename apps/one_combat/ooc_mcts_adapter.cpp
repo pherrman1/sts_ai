@@ -1646,7 +1646,33 @@ CombatRuntimeSample::Outcome OocGameContextModel::resolveCombat(Snapshot &child,
                         : CombatRuntimeSupport{false, "missing_sampler"};
     auto reason = support.reason;
     if (support.supported) {
-        const auto sampled = prepared ? prepared->sample(rng) : combatSampler->sample(child.gc, input, rng);
+        // Survival-weighted rollout (#883): weight by P(survive) and draw from the CTM conditioned on survival by
+        // rejection; the sampler's death probability is 1 - runtime survival, as its expectation reports.
+        std::optional<CombatTransitionExpectation> weighted;
+        // Act-4 fights may be routed to native Silver (STS_OOC_MCTS_ACT4_SILVER_SIMS), whose death rate the CTM
+        // expectation does not describe; they keep the sampled death, which is also unbiased.
+        const bool act4Fight = child.gc.info.encounter == sts::MonsterEncounter::SHIELD_AND_SPEAR
+            || child.gc.info.encounter == sts::MonsterEncounter::THE_HEART;
+        if (rolloutSurvivalWeight_ && !prepared && !act4Fight) {
+            auto expected = combatSampler->expectation(child.gc, input);
+            if (expected.supported && std::isfinite(expected.death) && expected.death >= 0 && expected.death <= 1)
+                weighted = std::move(expected);
+        }
+        if (weighted && weighted->death >= 1 - 1e-6) {
+            *rolloutSurvivalWeight_ = 0;
+            child.gc.outcome = sts::GameOutcome::PLAYER_LOSS;
+            return CombatRuntimeSample::Outcome::DEATH;
+        }
+        if (weighted) *rolloutSurvivalWeight_ *= 1.0 - double(weighted->death);
+        const auto draw = [&] {
+            if (!weighted) return prepared ? prepared->sample(rng) : combatSampler->sample(child.gc, input, rng);
+            for (int attempt = 0; attempt < 100000; ++attempt) {
+                auto sample = combatSampler->sample(child.gc, input, rng);
+                if (sample.outcome != CombatRuntimeSample::Outcome::DEATH) return sample;
+            }
+            throw sts::search::OocSearchUnsupported("survival_weight_rejection_limit");
+        };
+        const auto sampled = draw();
         if (sampled.outcome != CombatRuntimeSample::Outcome::UNSUPPORTED) {
             sampledOutcome = sampled.outcome;
             ++combatSamples_;
@@ -1891,9 +1917,13 @@ std::optional<nlohmann::json> OocGameContextModel::siblingLeafExtras(sts::search
         {"outcome", int(gc.outcome)}, {"boundary", isLeafBoundary(id)}};
     if (capture.commonSeeds) row["commonSeeds"] = true;
     const auto policyBefore = captureOocPolicyThreadState();
-    const unsigned seconds = 20 + 4 * (capture.repeats + 2 * capture.longRepeats) + 30 * capture.refereeRepeats;
+    const unsigned seconds = 20 + 4 * (capture.repeats + 2 * capture.longRepeats) + 30 * capture.refereeRepeats
+        + (capture.mono ? 30 + 2 * 40 * capture.monoRepeats : 0)
+        + capture.vrRepeats * unsigned(capture.vrArms.size());
     try { row["extra"] = forkLeafReplay([&] {
         nlohmann::json out = nlohmann::json::object();
+        const auto leafCombatsBefore = options.leafCombats;
+        const bool refereeBefore = options.refereeRollout;
         const auto anchorStart = std::clock();
         try { out["x2b"] = anchorValue(gc, pathHistory(id)); }
         catch (const std::exception &e) { out["x2bError"] = e.what(); }
@@ -1941,6 +1971,38 @@ std::optional<nlohmann::json> OocGameContextModel::siblingLeafExtras(sts::search
             options.uniformLeafPolicy ? "uniform" : options.priorLeafPolicy ? "prior" : "v4";
         out["heart1RolloutSteps"] = continuation_.heart1LeafSteps - heart1StepsBefore;
         out["heart1RolloutFallbacks"] = continuation_.heart1LeafFallbacks - heart1FallbacksBefore;
+        // Issue #883 variance arms, all paired by repeat index r (kind 4); indep alone uses per-leaf seeds.
+        if (!capture.vrArms.empty()) {
+            auto &vr = out["vr"] = nlohmann::json::object();
+            // Shuffled arm order per leaf, so warm caches favour no arm on average in the CPU comparison.
+            auto order = capture.vrArms;
+            std::seed_seq orderSeq{capture.searchSeed, capture.decisionIndex, std::uint64_t(ordinal), std::uint64_t(5)};
+            std::mt19937_64 orderRng(orderSeq);
+            std::shuffle(order.begin(), order.end(), orderRng);
+            vr["order"] = order;
+            for (const auto &arm : order) {
+                options.survivalWeightedRollout = arm == "sw" || arm == "swkeyed";   // child process only
+                options.keyedRolloutStreams = arm == "keyed" || arm == "swkeyed";
+                const std::uint64_t leafKey = arm == "indep" ? ordinal : 0xFFFFFFFFull;
+                auto &values = vr[arm]["values"] = nlohmann::json::array();
+                auto &deaths = vr[arm]["terminal"] = nlohmann::json::array();
+                const auto armStart = std::clock();
+                for (unsigned r = 0; r < capture.vrRepeats; ++r) {
+                    restoreOocPolicyThreadState(policyBefore);
+                    std::seed_seq seq{capture.searchSeed, capture.decisionIndex, leafKey, std::uint64_t(4), std::uint64_t(r)};
+                    std::mt19937_64 stream(seq);
+                    bool ended = false;
+                    sts::search::OocEndpoint end;
+                    refereeActEnd_.reset();
+                    try {
+                        values.push_back(evaluateLeafUnobserved(id, stream, ended, end));
+                        deaths.push_back(ended);
+                    } catch (const std::exception &e) { values.push_back(nullptr); deaths.push_back(e.what()); }
+                }
+                vr[arm]["cpuSeconds"] = double(std::clock() - armStart) / CLOCKS_PER_SEC;
+            }
+            options.survivalWeightedRollout = options.keyedRolloutStreams = false;
+        }
         if (capture.longRepeats) {
             options.leafCombats = 5;  // child process only
             evaluations("long5", capture.longRepeats, 2);
@@ -1951,10 +2013,103 @@ std::optional<nlohmann::json> OocGameContextModel::siblingLeafExtras(sts::search
             evaluations("referee", capture.refereeRepeats, 3);
             out["refereeCpuSeconds"] = double(std::clock() - refereeStart) / CLOCKS_PER_SEC;
         }
+        if (capture.mono && gc.outcome == sts::GameOutcome::UNDECIDED) {
+            // Child process only: the leaf's own snapshot is edited in place and restored after each variant.
+            options.leafCombats = leafCombatsBefore;
+            options.refereeRollout = refereeBefore;
+            out["mono"] = monoVariants(id, policyBefore);
+        }
         return out;
     }, int(seconds) * 1000, int(seconds), std::size_t(1) << 24); }
     catch (const std::exception &e) { row["extraError"] = e.what(); }
     return row;
+}
+// STS_OOC_SIBLING_MONO (issue #886), forked child only: paired variants of one leaf that differ only in current HP
+// (within 1..maxHp) or in one upgraded card (the first upgradable copy of each card id). Each variant is checked
+// against the leaf's rich features (only curHp or that card's u feature may change; Searing Blow may change none),
+// scored with X2-B, the calibrated leaf anchor, heart1's value and monoRepeats rollouts on the repeats' streams, and
+// restored exactly before the next one.
+nlohmann::json OocGameContextModel::monoVariants(sts::search::OocStateId id, const OocPolicyThreadState &policyBefore) {
+    const auto &capture = *options.siblingCapture;
+    auto &snap = states.at(id);
+    static const std::vector<std::string> names = [] {
+        std::vector<std::string> n(richIdxMap().size());
+        for (const auto &[name, index] : richIdxMap()) n.at(index) = name;
+        return n;
+    }();
+    const auto baseState = replayStateString(snap.gc);
+    const auto baseRich = richFeatureVec(snap.gc, snap.path);
+    // Candidate metadata is cached per state and may depend on HP: variants recompute it, the leaf gets its own back.
+    struct MetadataGuard {
+        std::optional<Metadata> &slot; std::optional<Metadata> saved;
+        ~MetadataGuard() { slot = std::move(saved); }
+    } metadataGuard{snap.metadata, std::move(snap.metadata)};
+    snap.metadata.reset();
+    nlohmann::json out = {{"repeats", capture.monoRepeats}, {"act", snap.gc.act},
+        {"boss", sts::monsterEncounterEnumNames[int(snap.gc.boss)]},
+        {"redSkull", snap.gc.hasRelic(sts::RelicId::RED_SKULL)},
+        {"meatOnTheBone", snap.gc.hasRelic(sts::RelicId::MEAT_ON_THE_BONE)},
+        {"variants", nlohmann::json::array()}};
+    const auto score = [&](nlohmann::json v) {
+        snap.metadata.reset();
+        const auto rich = richFeatureVec(snap.gc, snap.path);
+        auto &diff = v["featureDiff"] = nlohmann::json::array();
+        for (std::size_t i = 0; i < rich.size() && i < baseRich.size(); ++i)
+            if (rich[i] != baseRich[i]) diff.push_back({names.at(i), baseRich[i], rich[i]});
+        if (rich.size() != baseRich.size()) v["featureSizeError"] = true;
+        try { v["x2b"] = anchorValue(snap.gc, snap.path); v["leafAnchor"] = leafAnchorValue(snap.gc, snap.path); }
+        catch (const std::exception &e) { v["anchorError"] = e.what(); }
+        if (capture.annotate) {
+            try { v["heart1"] = capture.annotate(snap.gc).at("value"); }
+            catch (const std::exception &e) { v["heart1Error"] = e.what(); }
+        }
+        const auto start = std::clock();
+        auto &list = v["rollouts"] = nlohmann::json::array();
+        for (unsigned r = 0; r < capture.monoRepeats; ++r) {
+            restoreOocPolicyThreadState(policyBefore);
+            // The repeats' seeds (kind 1): rollout r of every variant pairs with repeat r of the leaf.
+            const std::uint64_t leafKey = capture.commonSeeds ? 0xFFFFFFFFull : capture.captured - 1;
+            std::seed_seq seq{capture.searchSeed, capture.decisionIndex, leafKey, std::uint64_t(1), std::uint64_t(r)};
+            std::mt19937_64 stream(seq);
+            bool ended = false;
+            sts::search::OocEndpoint end;
+            try {
+                const double value = evaluateLeafUnobserved(id, stream, ended, end);
+                list.push_back({{"value", value}, {"terminal", ended}, {"endFloor", end.floor}, {"endHp", end.hp}});
+            } catch (const std::exception &e) { list.push_back({{"error", e.what()}}); }
+        }
+        v["rolloutCpuSeconds"] = double(std::clock() - start) / CLOCKS_PER_SEC;
+        out["variants"].push_back(std::move(v));
+    };
+    const auto restored = [&] {
+        snap.metadata.reset();
+        if (replayStateString(snap.gc) == baseState) return true;
+        out["restoreError"] = true;
+        return false;
+    };
+    score({{"kind", "base"}});
+    if (!restored()) return out;
+    const int hp = snap.gc.curHp;
+    for (const int delta : {-24, -12, -6, -3, -1, 1, 3, 6, 12}) {
+        if (hp + delta < 1 || hp + delta > snap.gc.maxHp) continue;
+        snap.gc.curHp = hp + delta;
+        score({{"kind", "hp"}, {"delta", delta}});
+        snap.gc.curHp = hp;
+        if (!restored()) return out;
+    }
+    std::set<int> seen;
+    for (int i = 0; i < snap.gc.deck.size(); ++i) {
+        const auto card = snap.gc.deck.cards[i];
+        if (!card.canUpgrade() || !seen.insert(int(card.getId())).second) continue;
+        const auto deck = snap.gc.deck;
+        snap.gc.deck.upgrade(i);
+        score({{"kind", "upgrade"}, {"card", sts::cardEnumStrings[int(card.getId())]}, {"cardId", int(card.getId())},
+            {"deckIndex", i}, {"wasUpgraded", card.isUpgraded()}, {"bottled", snap.gc.deck.isCardBottled(i)},
+            {"cardType", int(card.getType())}});
+        snap.gc.deck = deck;
+        if (!restored()) return out;
+    }
+    return out;
 }
 nlohmann::json OocGameContextModel::refereeRootActions(const std::vector<sts::search::OocActionId> &actions,
         unsigned n, std::uint64_t seed) {
@@ -1988,11 +2143,16 @@ nlohmann::json OocGameContextModel::refereeRootActions(const std::vector<sts::se
     }, int(seconds) * 1000, int(seconds), std::size_t(1) << 24); }
     catch (const std::exception &e) { return nlohmann::json{{"error", e.what()}}; }
 }
-nlohmann::json OocGameContextModel::priceRootActions(unsigned n, std::uint64_t seed) {
+nlohmann::json OocGameContextModel::priceRootActions(unsigned n, std::uint64_t seed, unsigned top) {
     if (options.refereeActEndCalibration.empty()) throw std::runtime_error("campfire price requires an act-end calibration");
     const auto policyBefore = captureOocPolicyThreadState();
-    const auto actions = legalActions(0);
-    nlohmann::json out = {{"n", n}, {"actions", nlohmann::json::array()}};
+    auto actions = legalActions(0);
+    nlohmann::json out = {{"n", n}, {"legalActions", actions.size()}, {"actions", nlohmann::json::array()}};
+    if (top > 0 && actions.size() > top) {
+        std::stable_sort(actions.begin(), actions.end(), [](const auto &a, const auto &b) { return a.prior > b.prior; });
+        actions.resize(top);
+        out["top"] = top;
+    }
     const auto start = std::clock();
     for (const auto &action : actions) {
         const auto &c = candidate(0, action.id);
@@ -2269,10 +2429,32 @@ double OocGameContextModel::evaluateLeafUnobserved(sts::search::OocStateId id,
         const GameContext &gc; sts::search::OocEndpoint &out;
         ~EndpointOnExit() { out = endpointOf(gc); }
     } endpointOnExit{child.gc, endpoint};
+    // Event-keyed streams (#883 research): each rollout event takes a fresh stream keyed by its public position, so
+    // keys are unique within one trajectory and every event still gets independent uniforms.
+    std::mt19937_64 keyedStream;
+    std::map<std::array<int, 4>, int> keyedOccurrences;
+    const std::uint64_t keyedBase = options.keyedRolloutStreams ? rng() : 0;
+    const auto streamFor = [&](int kind) -> std::mt19937_64 & {
+        if (!options.keyedRolloutStreams) return rng;
+        const std::array<int, 4> key{child.gc.act, child.gc.floorNum, int(child.gc.screenState), kind};
+        const int occurrence = keyedOccurrences[key]++;
+        std::seed_seq seq{std::uint32_t(keyedBase), std::uint32_t(keyedBase >> 32), std::uint32_t(key[0]),
+            std::uint32_t(key[1]), std::uint32_t(key[2]), std::uint32_t(key[3]), std::uint32_t(occurrence)};
+        keyedStream.seed(seq);
+        return keyedStream;
+    };
+    // Survival-weighted rollouts (#883 research) scale the value by the product of CTM survival probabilities.
+    double survivalWeight = 1;
+    struct WeightScope {
+        double *&slot; double *saved;
+        ~WeightScope() { slot = saved; }
+    } weightScope{rolloutSurvivalWeight_, rolloutSurvivalWeight_};
+    rolloutSurvivalWeight_ = options.survivalWeightedRollout ? &survivalWeight : nullptr;
     if (options.sampleNoncombat) {
-        sampleNoncombatFuture(child.gc, rng);
+        auto &start = streamFor(1);
+        sampleNoncombatFuture(child.gc, start);
         if (id == 0 && dependencies.sampleHiddenCounters)
-            dependencies.sampleHiddenCounters(child.gc, rng);
+            dependencies.sampleHiddenCounters(child.gc, start);
     }
     if (!options.checkpointLeaves) {
         if (child.gc.outcome == sts::GameOutcome::PLAYER_LOSS) { terminal = true; return 0; }
@@ -2346,8 +2528,9 @@ double OocGameContextModel::evaluateLeafUnobserved(sts::search::OocStateId id,
         }
         return value;
     };
-    return boundedContinuation(maxSteps,loggedCheckpoint,[&] {
+    const double value = boundedContinuation(maxSteps,loggedCheckpoint,[&] {
         ++continuation_.projectionSteps;
+        auto &rng = streamFor(child.gc.screenState == sts::ScreenState::BATTLE ? 2 : 3);
         if (child.gc.screenState == sts::ScreenState::BATTLE) {
             try { resolveCombat(child,rng); }
             catch (const sts::search::OocSearchUnsupported &) {
@@ -2440,6 +2623,7 @@ double OocGameContextModel::evaluateLeafUnobserved(sts::search::OocStateId id,
             }
         }
     });
+    return survivalWeight * value;
 }
 
 }
@@ -2574,6 +2758,11 @@ std::string liveRootComparePath;
 // observeOocCampfirePrice.
 std::string liveCampfirePricePath;
 unsigned liveCampfirePriceN = 16;
+// STS_OOC_CAMPFIRE_PRICE_SCREENS=all|LIST (research, default rest; LIST as STS_OOC_MCTS_SCREENS) and
+// STS_OOC_CAMPFIRE_PRICE_TOP=K (1..64, default all): the same price at other real OOC roots (sibling-value noise and
+// bias, #881), for the K highest-prior root actions only.
+std::uint32_t liveCampfirePriceScreens = 1u << int(sts::ScreenState::REST_ROOM);
+unsigned liveCampfirePriceTop = 0;
 // Search-architecture pilot (research, default mcts): STS_OOC_MCTS_SEARCH_MODE=mcts|particle|particle_beam picks the
 // planner of every searched (non-singleton) root; STS_OOC_MCTS_PARTICLES=P (default 64) and
 // STS_OOC_MCTS_BEAM=WIDTH:K:DEPTH (default 8:2:3) configure OocParticlePlanner. STS_OOC_MCTS_SEARCH_TRACE=PATH appends
@@ -2650,6 +2839,10 @@ struct LiveSiblingCapture {
     std::uint64_t every = 4, maxLeaves = 256;
     unsigned repeats = 1, longRepeats = 0, refereeRepeats = 0, maxDepth = 2;
     bool commonSeeds = false;
+    bool mono = false;
+    unsigned monoRepeats = 16;
+    std::vector<std::string> vrArms;
+    unsigned vrRepeats = 0;
 };
 std::optional<LiveSiblingCapture> liveSibling;
 std::string pendingLeafCapturePath;
@@ -3328,6 +3521,21 @@ void configureLiveOocMcts() {
         sibling.maxDepth = unsigned(knob("STS_OOC_SIBLING_MAX_DEPTH", 2, 1, 64));
         sibling.maxLeaves = knob("STS_OOC_SIBLING_MAX_LEAVES", 256, 1, 100000);
         sibling.commonSeeds = knob("STS_OOC_SIBLING_COMMON_SEEDS", 0, 0, 1) == 1;
+        sibling.mono = knob("STS_OOC_SIBLING_MONO", 0, 0, 1) == 1;
+        sibling.monoRepeats = unsigned(knob("STS_OOC_SIBLING_MONO_REPEATS", 16, 0, 256));
+        if (const char *arms = std::getenv("STS_OOC_SIBLING_VR_ARMS"); arms && *arms) {
+            const std::string list(arms);
+            for (std::size_t pos = 0; pos <= list.size();) {
+                const auto comma = std::min(list.find(',', pos), list.size());
+                const std::string arm = list.substr(pos, comma - pos);
+                if (arm != "base" && arm != "indep" && arm != "sw" && arm != "keyed" && arm != "swkeyed")
+                    throw std::runtime_error("STS_OOC_SIBLING_VR_ARMS: unknown arm '" + arm + "'");
+                sibling.vrArms.push_back(arm);
+                pos = comma + 1;
+            }
+            sibling.vrRepeats = unsigned(knob("STS_OOC_SIBLING_VR_REPEATS", 32, 1, 1024));
+        } else if (std::getenv("STS_OOC_SIBLING_VR_REPEATS"))
+            throw std::runtime_error("STS_OOC_SIBLING_VR_REPEATS requires STS_OOC_SIBLING_VR_ARMS");
         sibling.out = std::make_shared<std::ofstream>(path, std::ios::app);
         if (!*sibling.out) throw std::runtime_error("STS_OOC_SIBLING_CAPTURE cannot open output");
         // Load heart1 in the parent: forked children must not each reload it.
@@ -3417,6 +3625,7 @@ void configureLiveOocMcts() {
     livePlaySampleFloor = -1; livePlaySampleTemperature = 1;
     liveGumbelRootActions = 0; liveGumbelRootScale = 1; liveGumbelQCap = 0; liveRootComparePath.clear();
     liveCampfirePricePath.clear(); liveCampfirePriceN = 16;
+    liveCampfirePriceScreens = 1u << int(sts::ScreenState::REST_ROOM); liveCampfirePriceTop = 0;
     // "A[:B]" with A and B finite; returns false on malformed text.
     const auto parsePair = [](const std::string &text, double &a, double &b) {
         const auto colon = text.find(':');
@@ -3480,8 +3689,37 @@ void configureLiveOocMcts() {
                 throw std::runtime_error("STS_OOC_CAMPFIRE_PRICE_N must be 1..256");
             liveCampfirePriceN = unsigned(std::stoul(value));
         }
-    } else if (std::getenv("STS_OOC_CAMPFIRE_PRICE_N"))
-        throw std::runtime_error("STS_OOC_CAMPFIRE_PRICE_N requires STS_OOC_CAMPFIRE_PRICE");
+        if (const char *raw = std::getenv("STS_OOC_CAMPFIRE_PRICE_SCREENS"); raw && std::string(raw) != "rest") {
+            static const std::map<std::string, sts::ScreenState> names = {
+                {"map", sts::ScreenState::MAP_SCREEN}, {"event", sts::ScreenState::EVENT_SCREEN},
+                {"rewards", sts::ScreenState::REWARDS}, {"boss_relic", sts::ScreenState::BOSS_RELIC_REWARDS},
+                {"card_select", sts::ScreenState::CARD_SELECT}, {"treasure", sts::ScreenState::TREASURE_ROOM},
+                {"rest", sts::ScreenState::REST_ROOM}, {"shop", sts::ScreenState::SHOP_ROOM}};
+            liveCampfirePriceScreens = 0;
+            std::stringstream list(raw);
+            for (std::string name; std::getline(list, name, ',');) {
+                if (std::string(raw) == "all") {
+                    for (const auto &entry : names) liveCampfirePriceScreens |= 1u << int(entry.second);
+                    break;
+                }
+                const auto it = names.find(name);
+                if (it == names.end())
+                    throw std::runtime_error("STS_OOC_CAMPFIRE_PRICE_SCREENS must be all or a comma list of map, event, "
+                        "rewards, boss_relic, card_select, treasure, rest, shop");
+                liveCampfirePriceScreens |= 1u << int(it->second);
+            }
+            if (!liveCampfirePriceScreens) throw std::runtime_error("STS_OOC_CAMPFIRE_PRICE_SCREENS is empty");
+        }
+        if (const char *raw = std::getenv("STS_OOC_CAMPFIRE_PRICE_TOP")) {
+            const std::string value(raw);
+            if (value.empty() || value.size() > 2 || value.find_first_not_of("0123456789") != std::string::npos
+                    || std::stoul(value) < 1 || std::stoul(value) > 64)
+                throw std::runtime_error("STS_OOC_CAMPFIRE_PRICE_TOP must be 1..64");
+            liveCampfirePriceTop = unsigned(std::stoul(value));
+        }
+    } else if (std::getenv("STS_OOC_CAMPFIRE_PRICE_N") || std::getenv("STS_OOC_CAMPFIRE_PRICE_SCREENS")
+               || std::getenv("STS_OOC_CAMPFIRE_PRICE_TOP"))
+        throw std::runtime_error("STS_OOC_CAMPFIRE_PRICE_N, _SCREENS and _TOP require STS_OOC_CAMPFIRE_PRICE");
     if (liveGumbelQCap > 0 && !liveGumbelRootActions && liveRootComparePath.empty())
         throw std::runtime_error("STS_OOC_MCTS_GUMBEL_QCAP requires STS_OOC_MCTS_GUMBEL_ROOT or STS_OOC_MCTS_ROOT_COMPARE");
     if (const char *sample = std::getenv("STS_OOC_MCTS_PLAY_SAMPLE")) {
@@ -3790,14 +4028,15 @@ void configureLiveOocMcts() {
     // ADR-0057 (Philipp 2026-10-23, value-level A/B M0 +2.15 pp): unset, the plain rollout3 X2-B leaf is calibrated
     // with M0 on states at ascension 20, when the process win model is the pinned public X2-B M0 was fit on. Other
     // win models, leaves and leaf counts, captures and the leaf compare keep the raw anchor, as does
-    // STS_OOC_MCTS_LEAF_CALIBRATION=0.
+    // STS_OOC_MCTS_LEAF_CALIBRATION=0. The #886 mono capture keeps the default (its rows carry both values), so its
+    // games replay the uncaptured ones.
     if (!leafCalibrationEnv || !*leafCalibrationEnv) {
         const char *leafMode = std::getenv("STS_OOC_MCTS_LEAF_VALUE");
         if (liveEnabled && leafMode && std::string(leafMode) == "native" && liveOptions.leafCombats == 3
                 && liveOptions.checkpointLeaves && !liveOptions.stopAtMapCheckpoint && !liveOptions.directLeaf
                 && !liveOptions.screenLeaf && !liveOptions.bossLeaf && !liveOptions.bossRollout && !liveOptions.constantLeaf
                 && !liveOptions.leafWinNet && !liveOptions.heartLeaf && !liveOptions.rolloutStudent
-                && !liveOptions.heart1ValueNet && !liveLeafCompare && !liveSibling
+                && !liveOptions.heart1ValueNet && !liveLeafCompare && (!liveSibling || liveSibling->mono)
                 && !std::getenv("STS_OOC_MCTS_LEAF_CAPTURE")
                 && fileSha256Hex(g_winNet.path) == kHeartLeafAnchorSha256) {
             liveOptions.leafCalibration = a20LeafCalibration();
@@ -4768,6 +5007,8 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
         sibling->refereeRepeats = liveSibling->refereeRepeats;
         sibling->maxDepth = liveSibling->maxDepth; sibling->maxLeaves = liveSibling->maxLeaves;
         sibling->commonSeeds = liveSibling->commonSeeds;
+        sibling->mono = liveSibling->mono; sibling->monoRepeats = liveSibling->monoRepeats;
+        sibling->vrArms = liveSibling->vrArms; sibling->vrRepeats = liveSibling->vrRepeats;
         options.siblingCapture = std::move(sibling);
     }
     if (!options.priorTracePath.empty()) {
@@ -5436,18 +5677,23 @@ void observeOocCampfirePrice(const GameContext &gc, const PathHistory &path, std
 #ifdef STS_LIVE_ADVISOR
     (void)gc; (void)path; (void)seed; (void)index;
 #else
-    if (liveCampfirePricePath.empty() || !liveEnabled || gc.screenState != sts::ScreenState::REST_ROOM
+    if (liveCampfirePricePath.empty() || !liveEnabled || !(liveCampfirePriceScreens & (1u << int(gc.screenState)))
             || gc.outcome != sts::GameOutcome::UNDECIDED)
         return;
-    // One row per rest site: the chain may pass the same rest room more than once.
-    static thread_local std::pair<std::uint64_t, int> last{0, -1};
-    if (last == std::pair{seed, gc.floorNum}) return;
-    last = {seed, gc.floorNum};
+    nlohmann::json record;
+    const bool hasRecord = heart1::buildPublicLeafRecord(gc, record);
+    // One row per rest site: the chain may pass the same rest room more than once. Other screens: one row per
+    // distinct public root (same floor, screen and record), else per decision.
+    static thread_local std::tuple<std::uint64_t, int, int, std::size_t> last{0, -1, -1, 0};
+    const bool rest = gc.screenState == sts::ScreenState::REST_ROOM;
+    const std::tuple<std::uint64_t, int, int, std::size_t> key{seed, gc.floorNum, int(gc.screenState),
+        rest ? 0 : hasRecord ? std::hash<std::string>{}(record.dump()) : std::size_t(index) + 1};
+    if (last == key) return;
+    last = key;
     nlohmann::json row = {{"schema", "campfire-price-v1"}, {"seed", seed}, {"decisionIndex", index},
         {"ascension", gc.ascension}, {"act", gc.act}, {"floor", gc.floorNum}, {"hp", gc.curHp}, {"maxHp", gc.maxHp},
-        {"gold", gc.gold}, {"n", liveCampfirePriceN}};
-    nlohmann::json record;
-    if (heart1::buildPublicLeafRecord(gc, record)) row["record"] = std::move(record);
+        {"gold", gc.gold}, {"n", liveCampfirePriceN}, {"screen", int(gc.screenState)}};
+    if (hasRecord) row["record"] = std::move(record);
     const unsigned n = liveCampfirePriceN;
     const auto wallStart = std::chrono::steady_clock::now();
     // Ten options of 2n rollouts each, a few seconds per act-end rollout at most.
@@ -5459,7 +5705,8 @@ void observeOocCampfirePrice(const GameContext &gc, const PathHistory &path, std
                 auto options = liveOptions;
                 if (options.refereeActEndCalibration.empty()) options.refereeActEndCalibration = a20LeafCalibration();
                 OocGameContextModel model(gc, path, liveSamplerFor(gc), std::move(options));
-                return model.priceRootActions(n, splitMix64(oocMctsSearchSeed(seed, index) ^ 0x43414d5046495245ULL));  // "CAMPFIRE"
+                return model.priceRootActions(n, splitMix64(oocMctsSearchSeed(seed, index) ^ 0x43414d5046495245ULL),  // "CAMPFIRE"
+                                              liveCampfirePriceTop);
             } catch (const std::exception &e) { return nlohmann::json{{"error", e.what()}}; }
         }, int(seconds) * 1000, int(seconds), std::size_t(1) << 24);
     } catch (const std::exception &e) { row["priceError"] = e.what(); }
@@ -8214,6 +8461,19 @@ void oocMctsAdapterSelfTest() {
         for (const auto &a : price(30, std::make_shared<DeathSampler>()).at("actions"))
             for (const auto &e : a.at("actEnd"))
                 require(e.at("value") == 0 && e.at("terminal") == true, "campfire price: a death before the act end is 0");
+        // STS_OOC_CAMPFIRE_PRICE_TOP: only the top-K prior actions are priced, with the same streams as a full price.
+        {
+            auto o = plain; o.refereeActEndCalibration = {30, 30, 30, 30, 1};
+            OocGameContextModel m(refereeRoot,path,std::make_shared<HorizonSampler>(),o);
+            const auto top = m.priceRootActions(2, 99, 1);
+            double best = -1;
+            for (const auto &a : rootActions) best = std::max(best, a.prior);
+            require(top.at("actions").size() == 1 && top.at("top") == 1 && top.at("legalActions") == rootActions.size()
+                && top.at("actions")[0].at("prior").get<double>() == best, "campfire price top-K keeps the highest prior");
+            for (const auto &a : priced.at("actions"))
+                if (a.at("id") == top.at("actions")[0].at("id"))
+                    require(a.at("leaf") == top.at("actions")[0].at("leaf"), "campfire price top-K keeps the streams");
+        }
     }
     {
         // Observe RNG after every transition/evaluation without changing the
