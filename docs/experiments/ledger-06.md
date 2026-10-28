@@ -24912,6 +24912,35 @@ on identical states; it needs per-fight output in `expertreplay` (missing today)
 Seeds: none (existing games only).
 **Knowledge impact:** this ledger entry and its evidence only; no code, model or default change.
 
+## §709 — CTM decision-impact audit (issue #884): at 144 A20 map roots the active CTM's picks lose nothing measurable when the same leaf rollouts play their combats with production Silver (cross-fitted regret +0.0010 [−0.0024, +0.0040]); fight forecasts are close (boss HP ~4 too optimistic, elite deaths ~1 pp too high); NOT_SHOWN, stop (16 replayed §683 seeds, no new seeds, 2026-10-28)
+
+**Question (#884):** does the active CTM make errors that reverse OOC sibling-action rankings?
+**Preflight:** at A20 the default searches only map roots (ADR-0061), so the CTM shapes only map decisions (tree
+combats and the three rollout3 combats per leaf); other screens are rules or student_sel and never read it.
+**Design:** [PLAN](evidence/ctm_audit_884_20261027/PLAN.md) frozen at `515b4df` before the run; Philipp's go 20:37Z.
+New default-off observer `STS_OOC_CTM_AUDIT` (play-neutral, forked child): at every second searched real root, the
+top 3 actions by visits each get N = 16 common-seed rollouts of the search's own leaf, once with the search's CTM
+stack drawing every imagined combat and once with production Silver (the real-fight policy, base 10k) playing it;
+each imagined combat also logs the CTM forecast of its entry. Cohort = #881's: §683 MAP seeds 111374100–111374115
+replayed (§683 MAP env + `STS_CALLING_BELL_CARD_RNG_FIX=0`); all 16 replays match their §683 traces to the end.
+Code `f5279cf`/`98e7d0c` (resume after container restarts), 19.3 CPU-h.
+**Result** ([RESULT](evidence/ctm_audit_884_20261027/RESULT.md); 144 roots, acts 1/2/3 58/48/38, 37,215 combats):
+- Primary, cross-fitted regret of the CTM arm's pick under Silver combats: **+0.0010 [−0.0024, +0.0040]** (calibrated
+  Heart-kill probability per root) → `NOT_SHOWN`.
+- Arms disagree on the best action at 34.7% of roots, below the split-half flip rate within one arm (CTM 43.8%,
+  Silver 40.3%); cross-fitted oriented sibling error −0.005 [−0.015, +0.007]; median |D_silver| 0.019 vs median SE
+  0.028 at N = 16.
+- Combat level: P(death) 2.53% predicted vs 2.21% observed (elites 3.97 vs 3.00%, bosses 12.1 vs 11.0%, monsters
+  0.49 vs 0.60%); HP after a win Silver − CTM −0.69 ± 0.08 overall, bosses −4.42 ± 0.50; observed HP error variance
+  1.09× the CTM's own predictive variance (bosses 1.12×).
+**Interpretation:** CTM errors are small next to fight randomness and do not measurably move map-root rankings; those
+are noise-limited (fits §699), not CTM-bias-limited. **Inference:** a better CTM is not the lever for map decisions;
+#885 is not triggered. Not covered: non-map roots (only searched under `STS_OOC_MCTS_SCREENS=all`), Act 4, actions
+beyond the top 3.
+**Decision:** stop (#884 rule); no training, model or default change.
+Seeds: 111374100–111374115 (already used by §683 and #881), replayed; no new seeds.
+**Knowledge impact:** this entry, its evidence, and the default-off `STS_OOC_CTM_AUDIT` row in
+`docs/knowledge-base/operations/environment-variables.md`.
 ## §704 — Silver victory turn penalty 0.4 vs 0 at A20 (issue #880): removing it lengthens boss fights by ~0.7 turns without stalling; outcomes INCONCLUSIVE at 64 paired whole runs (2026-10-27)
 
 **Question:** Silver's won leaf pays 0.4 HP-equivalents per combat turn (`SilverEvalWeights::victoryTurnPenalty`). Does a

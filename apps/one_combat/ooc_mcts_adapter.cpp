@@ -2763,6 +2763,15 @@ unsigned liveCampfirePriceN = 16;
 // bias, #881), for the K highest-prior root actions only.
 std::uint32_t liveCampfirePriceScreens = 1u << int(sts::ScreenState::REST_ROOM);
 unsigned liveCampfirePriceTop = 0;
+// STS_OOC_CTM_AUDIT=PATH (research, default off; #884), with _N (1..256, default 16), _EVERY (default 1) and
+// _SILVER_SIMS (default 10000): see the CTM-audit block in oocMctsPolicyStep.
+std::string liveCtmAuditPath;
+unsigned liveCtmAuditN = 16;
+std::uint64_t liveCtmAuditEvery = 1, liveCtmAuditRoots = 0;
+std::size_t liveCtmAuditTop = 3;
+// (seed, decision index) of complete rows already in the output: a restarted replay skips them (resume).
+std::set<std::pair<std::uint64_t, std::uint64_t>> liveCtmAuditDone;
+int liveCtmAuditSilverSims = 10000;
 // Search-architecture pilot (research, default mcts): STS_OOC_MCTS_SEARCH_MODE=mcts|particle|particle_beam picks the
 // planner of every searched (non-singleton) root; STS_OOC_MCTS_PARTICLES=P (default 64) and
 // STS_OOC_MCTS_BEAM=WIDTH:K:DEPTH (default 8:2:3) configure OocParticlePlanner. STS_OOC_MCTS_SEARCH_TRACE=PATH appends
@@ -2859,7 +2868,7 @@ std::string liveTrace, liveRootLockTrace, liveCheckpointTrace, liveRootTrace;
 // planner seed comes from the same RNG. A Silver stall or failure returns
 // UNSUPPORTED.
 CombatRuntimeSample playImaginedCombatWithSilver(const GameContext &source, std::mt19937_64 &rng,
-                                                 int simulations, bool rootPrior) {
+                                                 int simulations, bool rootPrior, bool production = false) {
     GameContext gc = detachedCopy(source);
     gc.seed = rng();
     for (auto stream : {&gc.aiRng, &gc.cardRandomRng, &gc.miscRng, &gc.monsterHpRng,
@@ -2887,13 +2896,21 @@ CombatRuntimeSample playImaginedCombatWithSilver(const GameContext &source, std:
     } scope;
     S::g_disallowImaginedCombat = false;
     S::g_nativeSilverPlannerSeedOverride = plannerSeed;
-    S::g_nativeSilverRootPriorOverride = rootPrior;
-    S::g_nativeSilverBudgetOverride = S::NativeSilverBudgetOverride{};
-    // Imagined fights keep greedy playouts: STS_SILVER_ROLLOUT_PRIOR is for real fights only.
-    S::SilverSearcher::RolloutConfig rollout = S::g_nativeSilverRolloutOverride
-        ? *S::g_nativeSilverRolloutOverride : S::SilverSearcher::envRolloutConfig();
-    rollout.prior = false;
-    S::g_nativeSilverRolloutOverride = rollout;
+    if (production) {
+        // STS_OOC_CTM_AUDIT: the real-fight policy of the process (its budget policy, root prior and playouts)
+        // at a base budget of `simulations`; rootPrior is ignored.
+        S::g_nativeSilverRootPriorOverride.reset();
+        S::g_nativeSilverBudgetOverride.reset();
+        S::g_nativeSilverRolloutOverride.reset();
+    } else {
+        S::g_nativeSilverRootPriorOverride = rootPrior;
+        S::g_nativeSilverBudgetOverride = S::NativeSilverBudgetOverride{};
+        // Imagined fights keep greedy playouts: STS_SILVER_ROLLOUT_PRIOR is for real fights only.
+        S::SilverSearcher::RolloutConfig rollout = S::g_nativeSilverRolloutOverride
+            ? *S::g_nativeSilverRolloutOverride : S::SilverSearcher::envRolloutConfig();
+        rollout.prior = false;
+        S::g_nativeSilverRolloutOverride = rollout;
+    }
     std::optional<CombatTransitionPersistentState> rawPost;
     sts::g_onBattleExitRaw = [&](const sts::BattleContext &, GameContext &g) {
         if (!rawPost) rawPost = captureCombatTransitionState(g);
@@ -2930,6 +2947,125 @@ public:
     CombatRuntimeSample sample(const GameContext &source, const CombatPredictorInputV1 &,
                                std::mt19937_64 &rng) const override {
         return playImaginedCombatWithSilver(source, rng, simulations_, true);
+    }
+};
+// Research only (STS_OOC_CTM_AUDIT, #884): wraps the search's own sampler. In the "ctm" arm every imagined combat
+// is the wrapped sampler's draw; in the "silver" arm production Silver (playImaginedCombatWithSilver, production)
+// plays it instead, on the same planner RNG. Either way one row per combat records the CTM's forecast of that entry
+// (expectation of the CTM stack under the wrapper) next to the drawn outcome. Single-threaded: used in a forked child.
+class CtmAuditCombatTransitionSampler final : public CombatTransitionSampler {
+    std::shared_ptr<const CombatTransitionSampler> inner_;
+    int silverSims_;
+    nlohmann::json forecast(const GameContext &gc, const CombatPredictorInputV1 &input,
+                            const CombatRuntimeSupport &support) const {
+        nlohmann::json row = {{"arm", silver ? "silver" : "ctm"}, {"action", action}, {"repeat", repeat},
+            {"combat", combat++}, {"encounter", input.globals.encounter}, {"act", gc.act}, {"floor", gc.floorNum},
+            {"room", int(gc.curRoom)}, {"hp", gc.curHp}, {"maxHp", gc.maxHp}, {"gold", gc.gold},
+            {"potions", gc.potionCount}, {"deck", gc.deck.size()}, {"supported", support.supported}};
+        if (!support.supported) row["reason"] = support.reason;
+        try {
+            const auto e = inner_->expectation(gc, input);
+            row["ctmSupported"] = e.supported;
+            if (e.supported) {
+                double mass = 0, mean = 0, square = 0;
+                for (std::size_t i = 0; i < e.winningHpHistogram.size(); ++i) {
+                    const double hp = e.winningHpMin + int(i), p = e.winningHpHistogram[i];
+                    mass += p; mean += hp * p; square += hp * hp * p;
+                }
+                row["pDeath"] = e.death;
+                row["hpWinMean"] = mass > 0 ? mean / mass : 0.0;
+                row["hpWinSd"] = mass > 0 ? std::sqrt(std::max(0.0, square / mass - (mean / mass) * (mean / mass))) : 0.0;
+                row["hpMin"] = e.winningHpMin;
+                row["hist"] = e.winningHpHistogram;
+            }
+        } catch (const std::exception &failure) { row["ctmError"] = failure.what(); }
+        return row;
+    }
+    void record(nlohmann::json row, const CombatRuntimeSample &drawn) const {
+        static const char *names[] = {"unsupported", "death", "victory", "escape"};
+        row["outcome"] = names[int(drawn.outcome)];
+        if (drawn.outcome == CombatRuntimeSample::Outcome::VICTORY || drawn.outcome == CombatRuntimeSample::Outcome::ESCAPE) {
+            row["postHp"] = drawn.rawPost.curHp; row["postMaxHp"] = drawn.rawPost.maxHp;
+            row["postGold"] = drawn.rawPost.gold; row["postPotions"] = drawn.rawPost.potionCount;
+        }
+        // The CTM's probability of the drawn HP given a win, and its PIT P(HP < drawn) + P(HP = drawn) / 2.
+        if (row.contains("hist")) {
+            if (drawn.outcome == CombatRuntimeSample::Outcome::VICTORY) {
+                const auto hist = row["hist"].get<std::vector<double>>();
+                double mass = 0, below = 0, at = 0;
+                for (std::size_t i = 0; i < hist.size(); ++i) {
+                    const int hp = row["hpMin"].get<int>() + int(i);
+                    mass += hist[i];
+                    if (hp < drawn.rawPost.curHp) below += hist[i];
+                    else if (hp == drawn.rawPost.curHp) at = hist[i];
+                }
+                if (mass > 0) { row["hpP"] = at / mass; row["hpPit"] = (below + at / 2) / mass; }
+            }
+            row.erase("hist");
+        }
+        log.push_back(std::move(row));
+    }
+    class Prepared final : public PreparedCombatTransition {
+        const CtmAuditCombatTransitionSampler &owner_;
+        std::unique_ptr<PreparedCombatTransition> inner_;
+        GameContext gc_;
+        nlohmann::json row_;
+        CombatRuntimeSupport support_;
+    public:
+        Prepared(const CtmAuditCombatTransitionSampler &owner, std::unique_ptr<PreparedCombatTransition> inner,
+                 const GameContext &gc, nlohmann::json row)
+            : owner_(owner), inner_(std::move(inner)), gc_(detachedCopy(gc)), row_(std::move(row)),
+              support_(owner.silver ? CombatRuntimeSupport{true, {}} : inner_->support()) {}
+        const CombatRuntimeSupport &support() const override { return support_; }
+        CombatRuntimeSample sample(std::mt19937_64 &rng) const override {
+            auto drawn = owner_.silver ? playImaginedCombatWithSilver(gc_, rng, owner_.silverSims_, false, true)
+                                       : inner_->sample(rng);
+            owner_.record(row_, drawn);
+            return drawn;
+        }
+        CombatRuntimeSample sampleConditionedVictory(std::mt19937_64 &rng) const override {
+            if (owner_.silver) return {};
+            auto drawn = inner_->sampleConditionedVictory(rng);
+            auto row = row_;
+            row["conditionedVictory"] = true;
+            owner_.record(std::move(row), drawn);
+            return drawn;
+        }
+    };
+public:
+    // The arm and the rollout this combat belongs to; set by the caller before each rollout.
+    mutable bool silver = false;
+    mutable long long action = -1;
+    mutable unsigned repeat = 0, combat = 0;
+    mutable nlohmann::json log = nlohmann::json::array();
+    CtmAuditCombatTransitionSampler(std::shared_ptr<const CombatTransitionSampler> inner, int silverSims)
+        : inner_(std::move(inner)), silverSims_(silverSims) {}
+    std::unique_ptr<PreparedCombatTransition> prepare(const GameContext &gc,
+            const CombatPredictorInputV1 &input) const override {
+        auto prepared = inner_->prepare(gc, input);
+        auto row = forecast(gc, input, prepared->support());
+        return std::make_unique<Prepared>(*this, std::move(prepared), gc, std::move(row));
+    }
+    CombatRuntimeSupport support(const GameContext &gc, const CombatPredictorInputV1 &input) const override {
+        return silver ? CombatRuntimeSupport{true, {}} : inner_->support(gc, input);
+    }
+    CombatRuntimeSupport forecastSupport(const CombatPredictorInputV1 &input) const override {
+        return inner_->forecastSupport(input);
+    }
+    CombatTransitionExpectation forecastExpectation(const CombatPredictorInputV1 &input) const override {
+        return inner_->forecastExpectation(input);
+    }
+    CombatTransitionExpectation expectation(const GameContext &gc, const CombatPredictorInputV1 &input) const override {
+        return inner_->expectation(gc, input);
+    }
+    bool modelsSmokeBombEscape() const override { return silver || inner_->modelsSmokeBombEscape(); }
+    CombatRuntimeSample sample(const GameContext &gc, const CombatPredictorInputV1 &input,
+                               std::mt19937_64 &rng) const override {
+        auto row = forecast(gc, input, inner_->support(gc, input));
+        auto drawn = silver ? playImaginedCombatWithSilver(gc, rng, silverSims_, false, true)
+                            : inner_->sample(gc, input, rng);
+        record(std::move(row), drawn);
+        return drawn;
     }
 };
 // Opt-in (STS_OOC_MCTS_UNSUPPORTED_SILVER_SIMS=N): keeps the CTM for every
@@ -3626,6 +3762,8 @@ void configureLiveOocMcts() {
     liveGumbelRootActions = 0; liveGumbelRootScale = 1; liveGumbelQCap = 0; liveRootComparePath.clear();
     liveCampfirePricePath.clear(); liveCampfirePriceN = 16;
     liveCampfirePriceScreens = 1u << int(sts::ScreenState::REST_ROOM); liveCampfirePriceTop = 0;
+    liveCtmAuditPath.clear(); liveCtmAuditN = 16; liveCtmAuditEvery = 1; liveCtmAuditRoots = 0; liveCtmAuditTop = 3;
+    liveCtmAuditSilverSims = 10000;
     // "A[:B]" with A and B finite; returns false on malformed text.
     const auto parsePair = [](const std::string &text, double &a, double &b) {
         const auto colon = text.find(':');
@@ -3720,6 +3858,37 @@ void configureLiveOocMcts() {
     } else if (std::getenv("STS_OOC_CAMPFIRE_PRICE_N") || std::getenv("STS_OOC_CAMPFIRE_PRICE_SCREENS")
                || std::getenv("STS_OOC_CAMPFIRE_PRICE_TOP"))
         throw std::runtime_error("STS_OOC_CAMPFIRE_PRICE_N, _SCREENS and _TOP require STS_OOC_CAMPFIRE_PRICE");
+    if (const char *audit = std::getenv("STS_OOC_CTM_AUDIT"); audit && *audit) {
+#ifdef STS_LIVE_ADVISOR
+        throw std::runtime_error("STS_OOC_CTM_AUDIT is unavailable in the live advisor");
+#endif
+        liveCtmAuditPath = audit;
+        liveCtmAuditDone.clear();
+        {
+            std::ifstream in(liveCtmAuditPath);
+            for (std::string line; std::getline(in, line);) {
+                const auto row = nlohmann::json::parse(line, nullptr, false);   // a cut last line is not complete
+                if (!row.is_discarded() && row.contains("audit"))
+                    liveCtmAuditDone.emplace(row.at("seed").get<std::uint64_t>(), row.at("decisionIndex").get<std::uint64_t>());
+            }
+        }
+        if (!std::ofstream(liveCtmAuditPath, std::ios::app)) throw std::runtime_error("STS_OOC_CTM_AUDIT cannot open output");
+        const auto count = [](const char *name, unsigned long long low, unsigned long long high, auto &target) {
+            const char *raw = std::getenv(name);
+            if (!raw) return;
+            const std::string value(raw);
+            if (value.empty() || value.size() > 9 || value.find_first_not_of("0123456789") != std::string::npos
+                    || std::stoull(value) < low || std::stoull(value) > high)
+                throw std::runtime_error(std::string(name) + " must be " + std::to_string(low) + ".." + std::to_string(high));
+            target = static_cast<std::decay_t<decltype(target)>>(std::stoull(value));
+        };
+        count("STS_OOC_CTM_AUDIT_N", 1, 256, liveCtmAuditN);
+        count("STS_OOC_CTM_AUDIT_EVERY", 1, 1000000, liveCtmAuditEvery);
+        count("STS_OOC_CTM_AUDIT_SILVER_SIMS", 1, 999999, liveCtmAuditSilverSims);
+        count("STS_OOC_CTM_AUDIT_TOP", 2, 64, liveCtmAuditTop);
+    } else if (std::getenv("STS_OOC_CTM_AUDIT_N") || std::getenv("STS_OOC_CTM_AUDIT_EVERY")
+               || std::getenv("STS_OOC_CTM_AUDIT_SILVER_SIMS") || std::getenv("STS_OOC_CTM_AUDIT_TOP"))
+        throw std::runtime_error("STS_OOC_CTM_AUDIT_N, _EVERY, _SILVER_SIMS and _TOP require STS_OOC_CTM_AUDIT");
     if (liveGumbelQCap > 0 && !liveGumbelRootActions && liveRootComparePath.empty())
         throw std::runtime_error("STS_OOC_MCTS_GUMBEL_QCAP requires STS_OOC_MCTS_GUMBEL_ROOT or STS_OOC_MCTS_ROOT_COMPARE");
     if (const char *sample = std::getenv("STS_OOC_MCTS_PLAY_SAMPLE")) {
@@ -5278,6 +5447,81 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
             throw std::runtime_error("STS_OOC_MCTS_ROOT_COMPARE write failed");
     }
 #ifndef STS_LIVE_ADVISOR
+    if (!liveCtmAuditPath.empty() && explore && !sole && !result.aborted
+            && std::count_if(result.rootActions.begin(), result.rootActions.end(), [](const auto &a) { return !a.pruned; }) > 1
+            && liveCtmAuditRoots++ % liveCtmAuditEvery == 0 && !liveCtmAuditDone.count({seed, index})) {
+        // Research only (#884): in a forked child, N rollouts of the search's own leaf from every root action, once
+        // with the search's CTM stack resolving each imagined combat and once with production Silver; stream r is
+        // shared by the actions and the arms (common random numbers up to each rollout's first combat). Every combat
+        // also logs the CTM's forecast of its entry. The played action and the run are unchanged.
+        nlohmann::json actions = nlohmann::json::array();
+        for (const auto &a : result.rootActions)
+            actions.push_back({{"id", a.id}, {"prior", a.prior}, {"visits", a.visits}, {"q", a.q}, {"pruned", a.pruned},
+                               {"label", candidateLabel(gc, model.candidate(0, a.id))}});
+        nlohmann::json row = {{"schema", "ctm-audit-v1"}, {"seed", seed}, {"decisionIndex", index},
+            {"ascension", gc.ascension}, {"act", gc.act}, {"floor", gc.floorNum}, {"screen", int(gc.screenState)},
+            {"hp", gc.curHp}, {"maxHp", gc.maxHp}, {"gold", gc.gold}, {"searchSeed", config.seed},
+            {"simulations", result.metrics.simulations},
+            {"selectedId", result.selectedAction ? nlohmann::json(*result.selectedAction) : nlohmann::json(nullptr)},
+            {"n", liveCtmAuditN}, {"silverSims", liveCtmAuditSilverSims}, {"actions", actions}};
+        // The _TOP most-visited unpruned root actions (ties: higher prior, then lower id).
+        std::vector<const sts::search::OocRootActionStats *> ranked;
+        for (const auto &a : result.rootActions) if (!a.pruned) ranked.push_back(&a);
+        std::sort(ranked.begin(), ranked.end(), [](const auto *x, const auto *y) {
+            return x->visits != y->visits ? x->visits > y->visits : x->prior != y->prior ? x->prior > y->prior : x->id < y->id;
+        });
+        std::vector<sts::search::OocActionId> audited;
+        for (const auto *a : ranked) if (audited.size() < liveCtmAuditTop) audited.push_back(a->id);
+        row["audited"] = audited;
+        row["top"] = liveCtmAuditTop;
+        const auto auditSeed = splitMix64(config.seed ^ 0x43544d4155444954ULL);   // "CTMAUDIT"
+        const unsigned seconds = 600 + 120 * liveCtmAuditN * unsigned(audited.size());
+        const auto wallStart = std::chrono::steady_clock::now();
+        try {
+            row["audit"] = forkLeafReplay([&] {
+                nlohmann::json out = {{"arms", nlohmann::json::object()}};
+                try {
+                    ImaginedScope scope;
+                    auto wrapper = std::make_shared<CtmAuditCombatTransitionSampler>(liveSamplerFor(gc),
+                                                                                     liveCtmAuditSilverSims);
+                    const auto policyBefore = captureOocPolicyThreadState();
+                    for (const bool silver : {false, true}) {
+                        wrapper->silver = silver;
+                        wrapper->log = nlohmann::json::array();
+                        const double t0 = threadCpuSeconds();
+                        OocGameContextModel audit(gc, path, wrapper, liveOptions);
+                        nlohmann::json values = nlohmann::json::object();
+                        for (const auto &a : result.rootActions) {
+                            if (std::find(audited.begin(), audited.end(), a.id) == audited.end()) continue;
+                            auto &list = values[std::to_string(a.id)] = nlohmann::json::array();
+                            for (unsigned r = 0; r < liveCtmAuditN; ++r) {
+                                restoreOocPolicyThreadState(policyBefore);
+                                wrapper->action = a.id; wrapper->repeat = r; wrapper->combat = 0;
+                                std::seed_seq seq{auditSeed, std::uint64_t(r), std::uint64_t(7)};
+                                std::mt19937_64 stream(seq);
+                                try {
+                                    const auto child = audit.sampleSuccessor(0, a.id, stream);
+                                    const auto e = audit.evaluateLeafWithOutcome(child, stream);
+                                    list.push_back({{"value", e.value}, {"terminal", e.terminal},
+                                                    {"endFloor", e.endpoint ? e.endpoint->floor : -1},
+                                                    {"combats", wrapper->combat}});
+                                } catch (const std::exception &failure) {
+                                    list.push_back({{"error", failure.what()}, {"combats", wrapper->combat}});
+                                }
+                            }
+                        }
+                        out["arms"][silver ? "silver" : "ctm"] = {{"values", std::move(values)},
+                            {"combats", std::move(wrapper->log)}, {"cpuSeconds", threadCpuSeconds() - t0}};
+                    }
+                } catch (const std::exception &e) { out["error"] = e.what(); }
+                return out;
+            }, int(seconds) * 1000, int(seconds), std::size_t(1) << 27);
+        } catch (const std::exception &e) { row["auditError"] = e.what(); }
+        row["wallSeconds"] = std::chrono::duration<double>(std::chrono::steady_clock::now() - wallStart).count();
+        std::lock_guard<std::mutex> lock(liveTraceMutex);
+        std::ofstream out(liveCtmAuditPath, std::ios::app);
+        if (!out || !(out << row.dump() << '\n')) throw std::runtime_error("STS_OOC_CTM_AUDIT write failed");
+    }
     if (liveLeafCompare && explore && !sole && !result.aborted && result.selectedAction && !result.rootActions.empty()) {
         // Research only (value-head plan stage 2): each arm's leaf on a fresh model with this root's config, seed and
         // budget, then referee rollouts from the played action and from every differing pick.
