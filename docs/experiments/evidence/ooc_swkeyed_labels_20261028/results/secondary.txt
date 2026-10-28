@@ -1,0 +1,8 @@
+VALIDATION {'groups': 5587, 'sources': 80}; X2-B 0.6669
+  ctl_s1   conc 0.7026 small 0.6283 blend(w 0.1) 0.7293
+  swk_s1   conc 0.7132 small 0.6417 blend(w 0.15) 0.7385
+  ctl_s2   conc 0.7080 small 0.6345 blend(w 0.2) 0.7336
+  swk_s2   conc 0.7083 small 0.6373 blend(w 0.1) 0.7326
+seed 1: swk - ctl conc +0.0107 [+0.0053, +0.0159] small +0.0134 [+0.0076, +0.0194] blend +0.0091 [+0.0038, +0.0142]
+seed 2: swk - ctl conc +0.0003 [-0.0042, +0.0048] small +0.0027 [-0.0022, +0.0078] blend -0.0010 [-0.0062, +0.0037]
+seed mean: conc +0.0055 [+0.0017, +0.0093] small +0.0081 [+0.0039, +0.0125] blend +0.0041 [+0.0008, +0.0072]
