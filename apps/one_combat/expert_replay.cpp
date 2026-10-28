@@ -609,12 +609,13 @@ double threadCpuSeconds() {
 class FightReplayer {
 public:
     // Research arm (STS_EXPERT_FIGHTS_ARMS, default none): a '+'-joined set of `pp` (prior playouts in elite
-    // rooms, as STS_SILVER_PRIOR_PLAYOUT_ELITE=1) and `flat<N>` (flat N simulations at every root, singletons
-    // searched, no learned stop).
+    // rooms, as STS_SILVER_PRIOR_PLAYOUT_ELITE=1), `flat<N>` (flat N simulations at every root, singletons
+    // searched, no learned stop) and `potw<W>` (held-potion leaf weight W instead of 11, integer).
     struct Arm {
         std::string name;
         bool priorPlayoutElite = false;
         std::int64_t flat = 0;
+        double potionWeight = -1;   // < 0: production
     };
     FightReplayer(const json &run, Replayer &replayer, int replicates, int maxAct, bool expertPotions,
                   std::vector<Arm> arms = {}, std::set<std::string> armRooms = {}, int armK = 0)
@@ -696,8 +697,10 @@ public:
                 search::g_nativeSilverBudgetOverride = search::NativeSilverBudgetOverride{
                     search::NativeSilverBudgetOverride::Policy::Flat, false};
             if (arm && arm->priorPlayoutElite) search::g_nativeSilverPriorPlayoutEliteOverride = true;
+            if (arm && arm->potionWeight >= 0) search::g_nativeSilverPotionWeightOverride = arm->potionWeight;
             struct ArmReset { ~ArmReset() { search::g_nativeSilverBudgetOverride.reset();
-                                            search::g_nativeSilverPriorPlayoutEliteOverride.reset(); } } armReset;
+                                            search::g_nativeSilverPriorPlayoutEliteOverride.reset();
+                                            search::g_nativeSilverPotionWeightOverride.reset(); } } armReset;
             BattleContext bc{};
             const double t0 = threadCpuSeconds();
             a.playoutBattle(copy, bc);
@@ -851,6 +854,8 @@ int expertFightsGen(const std::string &runFile, const std::string &output) {
                 if (t == "pp") arm.priorPlayoutElite = true;
                 else if (t.size() > 4 && t.rfind("flat", 0) == 0
                          && t.find_first_not_of("0123456789", 4) == std::string::npos) arm.flat = std::stoll(t.substr(4));
+                else if (t.size() > 4 && t.rfind("potw", 0) == 0 && t.size() <= 7
+                         && t.find_first_not_of("0123456789", 4) == std::string::npos) arm.potionWeight = std::stoi(t.substr(4));
                 else throw std::runtime_error("STS_EXPERT_FIGHTS_ARMS: unknown arm part " + t);
             }
             if (arm.flat < 0 || arm.flat > 1000000) throw std::runtime_error("STS_EXPERT_FIGHTS_ARMS: flat out of range");

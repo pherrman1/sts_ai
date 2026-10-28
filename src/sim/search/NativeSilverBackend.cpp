@@ -630,6 +630,8 @@ namespace sts::search {
                     s->evalWeights.goldWeight = g_options.goldWeight;
                     s->evalWeights.maxHpWeight = g_options.maxHpWeight;
                     s->evalWeights.victoryTurnPenalty = g_options.victoryTurnPenalty;
+                    if (g_nativeSilverPotionWeightOverride)
+                        s->evalWeights.potionWeight = *g_nativeSilverPotionWeightOverride;
                     if (const auto &params = g_nativeSilverSearchParamOverride) {
                         s->explorationParameter = params->exploration;
                         s->explorationParameterChance = params->explorationChance;
@@ -1494,6 +1496,7 @@ namespace sts::search {
     thread_local std::optional<SilverSearcher::LeafHead> g_nativeSilverLeafHeadOverride;
     thread_local std::optional<NativeSilverBudgetOverride> g_nativeSilverBudgetOverride;
     thread_local std::optional<bool> g_nativeSilverPriorPlayoutEliteOverride;
+    thread_local std::optional<double> g_nativeSilverPotionWeightOverride;
     thread_local std::optional<bool> g_nativeSilverRootPriorOverride;
     thread_local std::optional<int> g_nativeSilverTreePriorOverride;
     thread_local bool g_nativeSilverRootPriorBonusOff = false;
