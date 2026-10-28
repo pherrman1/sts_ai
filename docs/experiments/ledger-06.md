@@ -25131,3 +25131,44 @@ signal). Inference: an act-3-only term or readiness as a value-head feature are 
 open variants, neither started.
 Seeds: none (existing games only).
 **Knowledge impact:** none beyond this entry; no code or default change.
+
+## §TBD — SR head, ranking vs value: search reads level and difference scale at map roots, not sibling order; at map roots no SR head or blend beats X2-B with M0 (within about 0.01–0.02, CIs touching 0), and the heads' sibling differences are about 5× over-dispersed (offline, no seeds, 2026-10-28)
+
+**Question:** Philipp, 2026-10-28 21:19Z: for the SR head, is ranking or a better value loss more important? Should
+we optimise ranking directly?
+**Data:** [README](evidence/sr_ranking_vs_value_20261028/README.md). §644's common-seed VALIDATION, re-extracted
+(578,987 rows; 5,587 roots, 1,364 at map). 11 exported SR heads (§641 SR_w1, §645/§649 SR_crn_r2 at fold,
+value-stop and ranking epochs, #903 swkeyed). Labels: as captured (rollout3 ending in raw X2-B) and with M0
+re-applied to the recorded endpoints. Training curves from the runs' summaries. Scoring reproduces §649 (0.6668 /
+0.7031).
+**Result:**
+- Code reading. Production searches map roots only (ADR-0061). The head enters as the rollout3 endpoint value or a
+  logit blend with X2-B. Q averages values of different states with 0/1 terminals. PUCT and the learned stop read Q
+  in probability units. The default M0 is not applied when a heart1 value head is set.
+- Map roots, concordance minus raw X2-B:
+  - s2_ep20 blend +0.015 [−0.008, +0.038] (raw labels), +0.019 [−0.001, +0.038] (M0 labels);
+  - X2-B with M0 +0.011 [−0.000, +0.023] (M0 labels);
+  - swk blends +0.011 to +0.023;
+  - the SR_w1 blend that lost online (§661) +0.001.
+- Against X2-B with M0 at map roots: blends +0.008 to +0.013, heads alone +0.001 to +0.005. Non-map blends: +0.045
+  [+0.036, +0.055].
+- Level: the heads sit at the M0-label level (+0.01 to +0.04), the blend 0.50 above it.
+- Scale: head sibling differences have r ≈ 0.39 with the labels but an RMS 2.2–2.4× the labels' (slope 0.16–0.18;
+  X2-B with M0 0.57). The ratio grows with training.
+- Training: from epoch 6 the selection-fold BCE correlates −0.64 to −0.97 with the mean prediction, while AUC stays
+  in 0.760–0.772.
+**Interpretation:**
+- Do not train ranking-only. A pairwise loss leaves level and scale free, and both matter: M0's level change is the
+  only leaf change that won online (§661), while the offline ranking gain of SR_w1's blend lost.
+- The ranking progress since then is about 0.01–0.015 at map roots, the only roots searched.
+- The 0.570 BCE bar mostly filters by level drift. A calibration-invariant guard (AUC, or BCE after a per-act refit)
+  plus an explicit `STS_OOC_MCTS_LEAF_CALIBRATION` would replace it.
+**Decision:** no default or candidate change.
+- If the SR head is pursued, the README orders the options:
+  1. per-epoch scoring of the existing runs to settle the selection rule;
+  2. M0-ended TRAIN labels;
+  3. one GPU round with a scale-carrying pairwise loss, gated at map roots on M0 labels;
+  4. only then an online map-root A/B.
+- Otherwise park the head.
+- No seeds used.
+**Knowledge impact:** `evaluation/current-research.md`.
