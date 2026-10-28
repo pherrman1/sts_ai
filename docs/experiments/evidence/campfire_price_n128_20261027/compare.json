@@ -1,0 +1,11 @@
+{
+ "matchedSites": 732,
+ "onlyN32": 0,
+ "onlyN128": 0,
+ "sameBestClass": 0.776,
+ "sitesWithSmith": 665,
+ "corrRestMinusSmith": 0.778,
+ "n32Separable": 195,
+ "n32SeparableSameSignAtN128": 0.979,
+ "medianSeRatioN128overN32": 0.52
+}
