@@ -411,18 +411,45 @@ void search::SilverOutcomeCapture::record(int rootEdge, const BattleContext &end
 }
 
 void search::SilverSearcher::recordEndpoint(const BattleContext &end, int treeDepth, int rolloutDepth) {
-    if (profile) profile->record(end, treeDepth, rolloutDepth);
+    if (profile) {
+        profile->record(end, treeDepth, rolloutDepth);
+        ++profile->treeRounds[profileLeafTurn - profile->rootTurn];
+        ++profile->rolloutRounds[end.turn - profileLeafTurn];
+        ++profile->totalRounds[end.turn - profile->rootTurn];
+        ++profile->rolloutActions[rolloutDepth];
+    }
     if (outcomes) outcomes->record(currentRootEdge, end);
 }
 
 void search::SilverSearcher::search(std::int64_t simulations) {
     if (root->state->outcome != Outcome::UNDECIDED) return;
+    if (profile) profile->rootTurn = root->state->turn;
     for (std::int64_t i = 0; i < simulations; ++i) {
         step();
     }
 }
 
 void search::SilverSearcher::step() {
+    if (!profile) {
+        (void)stepImpl();
+        return;
+    }
+    const std::size_t poolBefore = poolUsed;
+    const std::int64_t decisionBefore = stats.nodesCreated;
+    const std::int64_t wideningBefore = wideningCreatedNodes;
+    const auto stop = stepImpl();
+    ++profile->stops[stop];
+    const std::int64_t created = static_cast<std::int64_t>(poolUsed - poolBefore);
+    const std::int64_t decisions = stats.nodesCreated - decisionBefore;
+    const std::int64_t widened = wideningCreatedNodes - wideningBefore;
+    ++profile->newNodesPerSimulation[static_cast<int>(created)];
+    profile->wideningDecisionNodes += widened;
+    profile->expansionDecisionNodes += decisions - widened;
+    profile->chanceNodes += created - decisions;
+}
+
+search::SilverTreeProfile::Stop search::SilverSearcher::stepImpl() {
+    using Stop = SilverTreeProfile::Stop;
     ++stats.steps;
     searchStack.clear();
     searchStack.push_back(root);
@@ -433,6 +460,7 @@ void search::SilverSearcher::step() {
     currentRootEdge = -1;
     Node *cur = root;
     Edge *stagedOutcomeEdge = nullptr;  // outcome 0 of a chance node created this iteration
+    bool stagedOutcomeCreated = false;
     int depth = 0;
     int actionDepth = 0;
     while (true) {
@@ -446,16 +474,20 @@ void search::SilverSearcher::step() {
             const Node *decision = cur->isRandomNode ? cur->parent : cur;   // chance nodes have no state
             BattleContext &rollout = (rolloutScratch = *decision->state);
             updateFromPlayout(searchStack, rolloutToEnd(rollout, actionDepth));
-            return;
+            return SilverTreeProfile::DEPTH_BOUND;
         }
 
         if (cur->isRandomNode) {
             Edge *outcomeEdge;
+            bool outcomeCreated;
             if (stagedOutcomeEdge != nullptr) {
                 outcomeEdge = stagedOutcomeEdge;
                 stagedOutcomeEdge = nullptr;
+                outcomeCreated = stagedOutcomeCreated;
             } else {
+                const auto createdBefore = stats.nodesCreated;
                 outcomeEdge = selectChanceOutcome(*cur);
+                outcomeCreated = stats.nodesCreated != createdBefore;
             }
             ++outcomeEdge->visitCount;
             Node *child = outcomeEdge->node;
@@ -463,30 +495,33 @@ void search::SilverSearcher::step() {
                 if (profile) ++profile->cycleRollouts;
                 BattleContext &rollout = (rolloutScratch = *child->state);
                 updateFromPlayout(searchStack, rolloutToEnd(rollout, actionDepth));
-                return;
+                return Stop::CYCLE;
             }
             searchStack.push_back(child);
             if (child->simulationCount == 0) {
+                const bool created = outcomeCreated;
                 BattleContext &rollout = (rolloutScratch = *child->state);
                 updateFromPlayout(searchStack, rolloutToEnd(rollout, actionDepth));
-                return;
+                return created ? Stop::NEW_LEAF : Stop::UNVISITED_NODE;
             }
             cur = child;
             continue;
         }
 
         if (cur->state->outcome != Outcome::UNDECIDED) {
+            profileLeafTurn = cur->state->turn;
             recordEndpoint(*cur->state, actionDepth, 0);
             updateFromPlayout(searchStack, evaluateEndState(*cur->state));
-            return;
+            return Stop::TERMINAL_REVISIT;
         }
 
         if (cur->edges.empty()) {
             enumerateActionsForNode(*cur, *cur->state);
             if (cur->edges.empty()) {
+                profileLeafTurn = cur->state->turn;
                 recordEndpoint(*cur->state, actionDepth, 0);
                 updateFromPlayout(searchStack, evaluateEndState(*cur->state));
-                return;
+                return Stop::NO_ACTIONS;
             }
         }
 
@@ -507,7 +542,7 @@ void search::SilverSearcher::step() {
                 if (profile) ++profile->cycleRollouts;
                 BattleContext &rollout = (rolloutScratch = *edge.node->state);
                 updateFromPlayout(searchStack, rolloutToEnd(rollout, actionDepth));
-                return;
+                return Stop::CYCLE;
             }
             cur = edge.node;
             searchStack.push_back(cur);
@@ -535,6 +570,7 @@ void search::SilverSearcher::step() {
             ++stats.chanceOutcomesSampled;
             Edge outcomeEdge;
             outcomeEdge.node = getOrCreateNode(std::move(next));
+            stagedOutcomeCreated = lastNodeWasCreated;
             if (!lastNodeWasCreated) ++stats.chanceTranspositions;
             outcomeEdge.rngAdvanceSteps = 0;
             chance->edges.push_back(outcomeEdge);
@@ -548,6 +584,7 @@ void search::SilverSearcher::step() {
         // Deterministic: undo the pre-seed and deduplicate into a decision node.
         restoreSearchRng(next, preActionRng);
         Node *child = getOrCreateNode(std::move(next));
+        const bool created = lastNodeWasCreated;
         if (!lastNodeWasCreated) ++stats.detTranspositions;
         edge.node = child;
 
@@ -555,13 +592,13 @@ void search::SilverSearcher::step() {
             if (profile) ++profile->cycleRollouts;
             BattleContext &rollout = (rolloutScratch = *child->state);
             updateFromPlayout(searchStack, rolloutToEnd(rollout, actionDepth));
-            return;
+            return Stop::CYCLE;
         }
         searchStack.push_back(child);
         if (child->simulationCount == 0) {
             BattleContext &rollout = (rolloutScratch = *child->state);
             updateFromPlayout(searchStack, rolloutToEnd(rollout, actionDepth));
-            return;
+            return created ? Stop::NEW_LEAF : Stop::UNVISITED_NODE;
         }
         cur = child;
     }
@@ -594,6 +631,161 @@ void search::SilverSearcher::updateFromPlayout(const std::vector<Node *> &stack,
             if (n.hasBackedValue) n.backedValue = best;
         }
     }
+}
+
+namespace {
+
+    // What the player sees at the next decision: outcome, turn, own HP/block/
+    // energy/strength/dexterity/status flags, each monster's HP, block, liveness,
+    // last two moves (the intent), strength, Vulnerable and Weak, the hand as a
+    // multiset and the pile sizes. Card unique ids, RNG streams, hidden intent
+    // damage and draw-pile order are left out (#888 measurement).
+    std::vector<std::int64_t> publicProjection(const BattleContext &bc) {
+        std::vector<std::int64_t> key {static_cast<std::int64_t>(bc.outcome), static_cast<std::int64_t>(bc.inputState),
+            bc.turn, bc.player.curHp, bc.player.block, bc.player.energy, bc.player.strength, bc.player.dexterity,
+            static_cast<std::int64_t>(bc.player.statusBits0), static_cast<std::int64_t>(bc.player.statusBits1),
+            bc.cards.drawPile.size(), static_cast<std::int64_t>(bc.cards.discardPile.size()),
+            static_cast<std::int64_t>(bc.cards.exhaustPile.size()), bc.monsters.monsterCount};
+        for (int i = 0; i < bc.monsters.monsterCount; ++i) {
+            const auto &m = bc.monsters.arr[i];
+            key.insert(key.end(), {m.curHp, m.block, m.isAlive() ? 1 + m.halfDead : 0,
+                static_cast<std::int64_t>(m.moveHistory[0]), static_cast<std::int64_t>(m.moveHistory[1]),
+                m.strength, m.vulnerable, m.weak});
+        }
+        std::vector<std::int64_t> hand;
+        for (int i = 0; i < bc.cards.cardsInHand; ++i) {
+            const auto &c = bc.cards.hand[i];
+            hand.push_back((static_cast<std::int64_t>(c.id) << 16) | (static_cast<std::int64_t>(c.upgraded) << 8)
+                | (c.costForTurn & 0xff));
+        }
+        std::sort(hand.begin(), hand.end());
+        key.insert(key.end(), hand.begin(), hand.end());
+        return key;
+    }
+
+}
+
+search::SilverTreeSnapshot search::SilverSearcher::treeSnapshot() const {
+    SilverTreeSnapshot snap;
+    snap.allocatedNodes = static_cast<std::int64_t>(poolUsed);
+    for (std::size_t i = 0; i < poolUsed; ++i) snap.allocatedChanceNodes += allNodes[i]->isRandomNode;
+
+    std::unordered_set<const Node *> seen;
+    std::vector<const Node *> pending {root};
+    while (!pending.empty()) {
+        const Node *n = pending.back();
+        pending.pop_back();
+        if (!seen.insert(n).second) continue;
+        if (n->isRandomNode) {
+            ++snap.reachableChanceNodes;
+            snap.reachableOutcomeEdges += static_cast<std::int64_t>(n->edges.size());
+        } else {
+            ++snap.reachableDecisionNodes;
+        }
+        for (const auto &e : n->edges) {
+            if (!e.node) continue;
+            if (!n->isRandomNode) ++snap.reachableExpandedActionEdges;
+            pending.push_back(e.node);
+        }
+    }
+
+    const int rootTurn = root->state->turn;
+    const auto mostVisited = [](const Node &n) -> const Edge * {
+        const Edge *best = nullptr;
+        for (const auto &e : n.edges)
+            if (e.node && e.visitCount > 0 && (!best || e.visitCount > best->visitCount)) best = &e;
+        return best;
+    };
+    // Most-visited line; stops at an unvisited edge or a repeated node.
+    const Node *pvEndTurn = nullptr;
+    {
+        std::unordered_set<const Node *> onLine {root};
+        const Node *cur = root;
+        int actions = 0;
+        while (true) {
+            if (cur->isRandomNode) {
+                const Edge *e = mostVisited(*cur);
+                if (!e || !onLine.insert(e->node).second) break;
+                cur = e->node;
+                continue;
+            }
+            const Edge *e = mostVisited(*cur);
+            if (!e) break;
+            ++actions;
+            const bool endTurn = e->action.getActionType() == ActionType::END_TURN;
+            if (endTurn && !pvEndTurn) pvEndTurn = e->node;
+            const Node *next = e->node;
+            const BattleContext &at = next->isRandomNode ? *cur->state : *next->state;
+            // A chance node has no state: its round depth is the parent's until an outcome is followed.
+            int rounds = at.turn - rootTurn;
+            if (next->isRandomNode) {
+                const Edge *o = mostVisited(*next);
+                if (o) rounds = o->node->state->turn - rootTurn;
+            }
+            snap.pv.push_back({actions, rounds, e->visitCount, endTurn});
+            if (!onLine.insert(next).second) break;
+            cur = next;
+        }
+    }
+
+    // First End Turn transitions: depth-first through non-End-Turn actions.
+    std::unordered_set<const Node *> visited;
+    std::unordered_set<const Node *> endTurnNodes;
+    std::vector<std::pair<const Node *, int>> stack {{root, 0}};
+    while (!stack.empty()) {
+        const auto [n, depth] = stack.back();
+        stack.pop_back();
+        if (!visited.insert(n).second) continue;
+        if (n->isRandomNode) {
+            for (const auto &e : n->edges) if (e.node) stack.push_back({e.node, depth});
+            continue;
+        }
+        for (const auto &e : n->edges) {
+            if (!e.node) continue;
+            if (e.action.getActionType() != ActionType::END_TURN) {
+                stack.push_back({e.node, depth + 1});
+                continue;
+            }
+            if (!endTurnNodes.insert(e.node).second) continue;
+            SilverTreeSnapshot::EndTurn t;
+            t.edgeVisits = e.visitCount;
+            t.actionsFromRoot = depth + 1;
+            t.onPv = e.node == pvEndTurn;
+            const Node &c = *e.node;
+            if (!c.isRandomNode) {
+                t.visits = c.simulationCount;
+                t.children = t.draws = t.observable = 1;
+                t.terminalChildren = c.state->outcome != Outcome::UNDECIDED;
+                t.maxChildVisits = e.visitCount;
+                t.effectiveChildren = 1;
+            } else {
+                t.stochastic = true;
+                t.visits = c.simulationCount;
+                t.children = static_cast<int>(c.edges.size());
+                t.draws = c.outcomesGenerated;
+                const double wc = wideningCategory(c.stochasticAction) == 0 ? endTurnWideningC : chanceWideningC;
+                const double wa = wideningCategory(c.stochasticAction) == 0 ? endTurnWideningAlpha : chanceWideningAlpha;
+                t.cap = std::max(1, static_cast<int>(std::ceil(wc * std::pow(static_cast<double>(c.simulationCount + 1), wa))));
+                std::vector<std::vector<std::int64_t>> keys;
+                double sum = 0, sumSq = 0;
+                for (const auto &o : c.edges) {
+                    if (!o.node) continue;
+                    t.terminalChildren += o.node->state->outcome != Outcome::UNDECIDED;
+                    keys.push_back(publicProjection(*o.node->state));
+                    t.maxChildVisits = std::max<std::int64_t>(t.maxChildVisits, o.visitCount);
+                    sum += o.visitCount;
+                    sumSq += static_cast<double>(o.visitCount) * o.visitCount;
+                }
+                std::sort(keys.begin(), keys.end());
+                t.observable = static_cast<int>(std::unique(keys.begin(), keys.end()) - keys.begin());
+                t.effectiveChildren = sumSq > 0 ? sum * sum / sumSq : 0;
+            }
+            snap.firstEndTurns.push_back(t);
+        }
+    }
+    std::sort(snap.firstEndTurns.begin(), snap.firstEndTurns.end(),
+        [](const auto &a, const auto &b) { return a.edgeVisits > b.edgeVisits; });
+    return snap;
 }
 
 double search::SilverSearcher::selectionValue(const Node &node) const {
@@ -690,13 +882,21 @@ search::SilverSearcher::Edge *search::SilverSearcher::selectChanceOutcome(Node &
         chance.stochasticAction.execute(out);
         ++stats.chanceOutcomesSampled;
         Node *child = getOrCreateNode(std::move(out));
+        if (profile) {
+            ++profile->wideningDraws;
+            if (lastNodeWasCreated) ++wideningCreatedNodes;
+        }
         for (auto &e : chance.edges) {
             if (e.node == child) {
                 ++stats.chanceSiblingReuse;
+                if (profile) ++profile->wideningSiblingRepeats;
                 return &e;
             }
         }
-        if (!lastNodeWasCreated) ++stats.chanceTranspositions;
+        if (!lastNodeWasCreated) {
+            ++stats.chanceTranspositions;
+            if (profile) ++profile->wideningTranspositions;
+        }
         Edge e;
         e.node = child;
         e.rngAdvanceSteps = static_cast<int>(n);
@@ -763,6 +963,7 @@ double search::SilverSearcher::rolloutToEnd(BattleContext &bc, int treeDepth) {
         leafSamples->samples.push_back({bc, 0.0, static_cast<int>(searchStack.size())});
     }
     if (profile) {
+        profileLeafTurn = bc.turn;
         ++profile->rolloutCalls;
         if (bc.outcome == Outcome::UNDECIDED) ++profile->nonterminalRolloutStarts;
     }

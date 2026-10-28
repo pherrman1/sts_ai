@@ -51,6 +51,10 @@ def main():
                   {"STS_WIN_NET": "1"}):
         line = banner(extra)
         assert calibration(line) is None and SCOPE not in line, (extra, line)
+    # The #886 mono capture keeps the default, so its games replay the uncaptured ones.
+    line = banner({"STS_OOC_SIBLING_CAPTURE": "/tmp/ooc-leaf-calibration-default-sibling.jsonl",
+                   "STS_OOC_SIBLING_MONO": "1"})
+    assert calibration(line) == M0 and SCOPE in line, line
     # An explicit value is the research option: every ascension, no scope.
     line = banner({"STS_OOC_MCTS_LEAF_CALIBRATION": "-2.5,-2.9,-3.6,-3.7:1.05"})
     assert calibration(line) == [-2.5, -2.9, -3.6, -3.7, 1.05] and SCOPE not in line, line

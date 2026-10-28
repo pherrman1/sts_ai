@@ -691,7 +691,11 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
             if (traceOoc)
                 oocTraceEmit({{"seed", seed}, {"kind", "battle"}, {"fight", fightsTotal},
                               {"encounter", monsterEncounterEnumNames[static_cast<int>(bc.encounter)]},
-                              {"won", bc.outcome == Outcome::PLAYER_VICTORY}, {"pre", tracePre},
+                              {"won", bc.outcome == Outcome::PLAYER_VICTORY},
+                              {"outcome", static_cast<int>(bc.outcome)}, {"turns", bc.turn},
+                              {"room", battleRoom == Room::MONSTER ? "NORMAL" : battleRoom == Room::ELITE ? "ELITE"
+                                          : battleRoom == Room::BOSS ? "BOSS" : "OTHER"},
+                              {"escaped", bc.smokeBombUsed}, {"pre", tracePre},
                               {"post", oocTraceState(gc)}});
             // A20 Act 3 has two bosses: winning the first one leads straight into
             // the second, so the Act-3 stop waits for that fight.
