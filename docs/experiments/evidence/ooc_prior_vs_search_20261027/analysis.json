@@ -1,0 +1,622 @@
+{
+ "valid_pairs": 416,
+ "invalid": [],
+ "groups": {
+  "all": {
+   "heart": {
+    "diff_pp": -1.9230769230769231,
+    "ci95_pp": [
+     -7.9326923076923075,
+     3.8461538461538463
+    ],
+    "roots": 26
+   },
+   "act4": {
+    "diff_pp": -0.9615384615384616,
+    "ci95_pp": [
+     -7.211538461538461,
+     5.048076923076923
+    ],
+    "roots": 26
+   }
+  },
+  "search_departs": {
+   "heart": {
+    "diff_pp": 1.4423076923076923,
+    "ci95_pp": [
+     -5.288461538461538,
+     8.653846153846153
+    ],
+    "roots": 13
+   },
+   "act4": {
+    "diff_pp": 1.4423076923076923,
+    "ci95_pp": [
+     -7.6923076923076925,
+     10.096153846153847
+    ],
+    "roots": 13
+   }
+  },
+  "leaf_only": {
+   "heart": {
+    "diff_pp": -5.288461538461538,
+    "ci95_pp": [
+     -14.423076923076922,
+     2.8846153846153846
+    ],
+    "roots": 13
+   },
+   "act4": {
+    "diff_pp": -3.3653846153846154,
+    "ci95_pp": [
+     -11.538461538461538,
+     4.807692307692308
+    ],
+    "roots": 13
+   }
+  },
+  "screen:BOSS_RELIC": {
+   "heart": {
+    "diff_pp": -4.6875,
+    "ci95_pp": [
+     -26.5625,
+     15.625
+    ],
+    "roots": 4
+   },
+   "act4": {
+    "diff_pp": -3.125,
+    "ci95_pp": [
+     -15.625,
+     7.8125
+    ],
+    "roots": 4
+   }
+  },
+  "screen:CARD_SELECT": {
+   "heart": {
+    "diff_pp": -7.8125,
+    "ci95_pp": [
+     -23.4375,
+     7.8125
+    ],
+    "roots": 4
+   },
+   "act4": {
+    "diff_pp": -4.6875,
+    "ci95_pp": [
+     -20.3125,
+     6.25
+    ],
+    "roots": 4
+   }
+  },
+  "screen:EVENT": {
+   "heart": {
+    "diff_pp": -2.083333333333333,
+    "ci95_pp": [
+     -16.666666666666664,
+     14.583333333333334
+    ],
+    "roots": 3
+   },
+   "act4": {
+    "diff_pp": 0.0,
+    "ci95_pp": [
+     -16.666666666666664,
+     16.666666666666664
+    ],
+    "roots": 3
+   }
+  },
+  "screen:MAP": {
+   "heart": {
+    "diff_pp": 2.083333333333333,
+    "ci95_pp": [
+     0.0,
+     8.333333333333332
+    ],
+    "roots": 3
+   },
+   "act4": {
+    "diff_pp": 2.083333333333333,
+    "ci95_pp": [
+     -4.166666666666666,
+     12.5
+    ],
+    "roots": 3
+   }
+  },
+  "screen:REST": {
+   "heart": {
+    "diff_pp": 4.6875,
+    "ci95_pp": [
+     -4.6875,
+     14.0625
+    ],
+    "roots": 4
+   },
+   "act4": {
+    "diff_pp": 14.0625,
+    "ci95_pp": [
+     1.5625,
+     28.125
+    ],
+    "roots": 4
+   }
+  },
+  "screen:REWARDS": {
+   "heart": {
+    "diff_pp": -4.166666666666666,
+    "ci95_pp": [
+     -18.75,
+     10.416666666666668
+    ],
+    "roots": 3
+   },
+   "act4": {
+    "diff_pp": -10.416666666666668,
+    "ci95_pp": [
+     -27.083333333333332,
+     6.25
+    ],
+    "roots": 3
+   }
+  },
+  "screen:SHOP": {
+   "heart": {
+    "diff_pp": -1.25,
+    "ci95_pp": [
+     -13.750000000000002,
+     10.0
+    ],
+    "roots": 5
+   },
+   "act4": {
+    "diff_pp": -5.0,
+    "ci95_pp": [
+     -21.25,
+     11.25
+    ],
+    "roots": 5
+   }
+  }
+ },
+ "roots": [
+  {
+   "seed": 111374100,
+   "decisionIndex": 73,
+   "screen": "CARD_SELECT",
+   "why": [
+    "puctChg",
+    "deepChg",
+    "uniDis"
+   ],
+   "base": "Duplicate card: Apotheosis",
+   "alt": "Duplicate card: Impervious",
+   "leafGap": 0.017424419132015312,
+   "pairs": 16,
+   "baseHeart": 0.5625,
+   "heartDiff": -0.125,
+   "heartSE": 0.125,
+   "act4Diff": 0.0625
+  },
+  {
+   "seed": 111374100,
+   "decisionIndex": 127,
+   "screen": "REWARDS",
+   "why": [
+    "uniDis"
+   ],
+   "base": "Take card: Seeing Red",
+   "alt": "Take card: Clash",
+   "leafGap": 0.012870571105564999,
+   "pairs": 16,
+   "baseHeart": 0.25,
+   "heartDiff": -0.0625,
+   "heartSE": 0.14343262065048754,
+   "act4Diff": -0.0625
+  },
+  {
+   "seed": 111374101,
+   "decisionIndex": 69,
+   "screen": "MAP",
+   "why": [
+    "uniDis"
+   ],
+   "base": "Travel to Event room at (2,1)",
+   "alt": "Travel to Monster room at (0,1)",
+   "leafGap": 0.011114406039246905,
+   "pairs": 16,
+   "baseHeart": 0.0,
+   "heartDiff": 0.0625,
+   "heartSE": 0.0625,
+   "act4Diff": 0.0625
+  },
+  {
+   "seed": 111374102,
+   "decisionIndex": 111,
+   "screen": "MAP",
+   "why": [
+    "deepChg"
+   ],
+   "base": "Travel to Rest room at (5,14)",
+   "alt": "Travel to Rest room at (6,14)",
+   "leafGap": 0.0018599934888314795,
+   "pairs": 16,
+   "baseHeart": 0.5,
+   "heartDiff": 0.0,
+   "heartSE": 0.0,
+   "act4Diff": 0.0
+  },
+  {
+   "seed": 111374102,
+   "decisionIndex": 118,
+   "screen": "BOSS_RELIC",
+   "why": [
+    "deepChg",
+    "uniDis"
+   ],
+   "base": "Take boss relic: Busted Crown",
+   "alt": "Take boss relic: Velvet Choker",
+   "leafGap": 0.03311390011723314,
+   "pairs": 16,
+   "baseHeart": 0.3125,
+   "heartDiff": 0.125,
+   "heartSE": 0.20155644370746376,
+   "act4Diff": 0.0625
+  },
+  {
+   "seed": 111374102,
+   "decisionIndex": 143,
+   "screen": "CARD_SELECT",
+   "why": [
+    "uniDis"
+   ],
+   "base": "Upgrade card: Perfected Strike",
+   "alt": "Upgrade card: Shockwave",
+   "leafGap": 0.02851517876502635,
+   "pairs": 16,
+   "baseHeart": 0.3125,
+   "heartDiff": -0.25,
+   "heartSE": 0.11180339887498948,
+   "act4Diff": -0.1875
+  },
+  {
+   "seed": 111374103,
+   "decisionIndex": 11,
+   "screen": "SHOP",
+   "why": [
+    "uniDis"
+   ],
+   "base": "Buy relic: Bag Of Marbles",
+   "alt": "Buy potion: Colorless Potion",
+   "leafGap": 0.012671749583744951,
+   "pairs": 16,
+   "baseHeart": 0.5,
+   "heartDiff": -0.0625,
+   "heartSE": 0.21347814095749162,
+   "act4Diff": 0.0625
+  },
+  {
+   "seed": 111374103,
+   "decisionIndex": 33,
+   "screen": "REST",
+   "why": [
+    "deepChg",
+    "uniDis"
+   ],
+   "base": "Upgrade card: Armaments",
+   "alt": "Upgrade card: Inflame",
+   "leafGap": 0.020839382076957763,
+   "pairs": 16,
+   "baseHeart": 0.0625,
+   "heartDiff": 0.0625,
+   "heartSE": 0.0625,
+   "act4Diff": 0.125
+  },
+  {
+   "seed": 111374104,
+   "decisionIndex": 111,
+   "screen": "BOSS_RELIC",
+   "why": [
+    "uniDis"
+   ],
+   "base": "Take boss relic: Runic Cube",
+   "alt": "Skip boss relic",
+   "leafGap": 0.023908997668654036,
+   "pairs": 16,
+   "baseHeart": 0.0,
+   "heartDiff": 0.0,
+   "heartSE": 0.0,
+   "act4Diff": 0.0
+  },
+  {
+   "seed": 111374105,
+   "decisionIndex": 0,
+   "screen": "EVENT",
+   "why": [
+    "deepChg",
+    "uniDis"
+   ],
+   "base": "Choose event option: 2",
+   "alt": "Choose event option: 1",
+   "leafGap": 0.013713848485604557,
+   "pairs": 16,
+   "baseHeart": 0.1875,
+   "heartDiff": 0.0,
+   "heartSE": 0.09128709291752768,
+   "act4Diff": 0.125
+  },
+  {
+   "seed": 111374105,
+   "decisionIndex": 38,
+   "screen": "SHOP",
+   "why": [
+    "puctChg",
+    "deepChg",
+    "uniDis"
+   ],
+   "base": "Remove card: Defend",
+   "alt": "Remove card: Dark Embrace",
+   "leafGap": 0.04420343574226615,
+   "pairs": 16,
+   "baseHeart": 0.0625,
+   "heartDiff": -0.0625,
+   "heartSE": 0.0625,
+   "act4Diff": -0.1875
+  },
+  {
+   "seed": 111374106,
+   "decisionIndex": 38,
+   "screen": "REWARDS",
+   "why": [
+    "deepChg",
+    "uniDis"
+   ],
+   "base": "Take card: Anger",
+   "alt": "Skip card reward",
+   "leafGap": 0.027405853747947573,
+   "pairs": 16,
+   "baseHeart": 0.3125,
+   "heartDiff": 0.0,
+   "heartSE": 0.15811388300841897,
+   "act4Diff": -0.25
+  },
+  {
+   "seed": 111374107,
+   "decisionIndex": 124,
+   "screen": "BOSS_RELIC",
+   "why": [
+    "uniDis"
+   ],
+   "base": "Take boss relic: Slavers Collar",
+   "alt": "Take boss relic: Velvet Choker",
+   "leafGap": 0.038762545523104874,
+   "pairs": 16,
+   "baseHeart": 0.5,
+   "heartDiff": -0.3125,
+   "heartSE": 0.17603858478564674,
+   "act4Diff": -0.125
+  },
+  {
+   "seed": 111374107,
+   "decisionIndex": 154,
+   "screen": "CARD_SELECT",
+   "why": [
+    "puctChg",
+    "deepChg",
+    "uniDis"
+   ],
+   "base": "Sacrifice card: Defend",
+   "alt": "Sacrifice card: Fiend Fire",
+   "leafGap": 0.02605852038057621,
+   "pairs": 16,
+   "baseHeart": 0.875,
+   "heartDiff": -0.0625,
+   "heartSE": 0.0625,
+   "act4Diff": 0.0
+  },
+  {
+   "seed": 111374108,
+   "decisionIndex": 182,
+   "screen": "MAP",
+   "why": [
+    "uniDis"
+   ],
+   "base": "Travel to Rest room at (4,14)",
+   "alt": "Travel to Rest room at (6,14)",
+   "leafGap": 0.00886431337959373,
+   "pairs": 16,
+   "baseHeart": 0.0625,
+   "heartDiff": 0.0,
+   "heartSE": 0.0,
+   "act4Diff": 0.0
+  },
+  {
+   "seed": 111374109,
+   "decisionIndex": 17,
+   "screen": "EVENT",
+   "why": [
+    "uniDis"
+   ],
+   "base": "Choose event option: 0",
+   "alt": "Choose event option: 1",
+   "leafGap": 0.013099191523367526,
+   "pairs": 16,
+   "baseHeart": 0.25,
+   "heartDiff": 0.0625,
+   "heartSE": 0.17001838135919303,
+   "act4Diff": -0.0625
+  },
+  {
+   "seed": 111374109,
+   "decisionIndex": 64,
+   "screen": "SHOP",
+   "why": [
+    "uniDis"
+   ],
+   "base": "Remove card: Strike",
+   "alt": "Remove card: Feed",
+   "leafGap": 0.01404254982064465,
+   "pairs": 16,
+   "baseHeart": 0.5,
+   "heartDiff": 0.0,
+   "heartSE": 0.09128709291752768,
+   "act4Diff": -0.0625
+  },
+  {
+   "seed": 111374109,
+   "decisionIndex": 118,
+   "screen": "BOSS_RELIC",
+   "why": [
+    "puctChg",
+    "deepChg",
+    "uniDis"
+   ],
+   "base": "Take boss relic: Mark Of Pain",
+   "alt": "Take boss relic: Tiny House",
+   "leafGap": 0.10027814778434319,
+   "pairs": 16,
+   "baseHeart": 0.5,
+   "heartDiff": 0.0,
+   "heartSE": 0.12909944487358055,
+   "act4Diff": -0.0625
+  },
+  {
+   "seed": 111374110,
+   "decisionIndex": 137,
+   "screen": "REST",
+   "why": [
+    "puctChg",
+    "deepChg",
+    "uniDis"
+   ],
+   "base": "Remove card: Heavy Blade",
+   "alt": "Upgrade card: Pommel Strike",
+   "leafGap": 0.04983334245842458,
+   "pairs": 16,
+   "baseHeart": 0.0625,
+   "heartDiff": -0.0625,
+   "heartSE": 0.0625,
+   "act4Diff": 0.0
+  },
+  {
+   "seed": 111374112,
+   "decisionIndex": 76,
+   "screen": "EVENT",
+   "why": [
+    "uniDis"
+   ],
+   "base": "Choose event option: 0",
+   "alt": "Choose event option: 1",
+   "leafGap": 0.012699290636462593,
+   "pairs": 16,
+   "baseHeart": 0.125,
+   "heartDiff": -0.125,
+   "heartSE": 0.08539125638299665,
+   "act4Diff": -0.0625
+  },
+  {
+   "seed": 111374112,
+   "decisionIndex": 79,
+   "screen": "CARD_SELECT",
+   "why": [
+    "puctChg",
+    "deepChg"
+   ],
+   "base": "Take card: Feel No Pain",
+   "alt": "Take card: Shrug It Off",
+   "leafGap": 0.009057732464123364,
+   "pairs": 16,
+   "baseHeart": 0.0625,
+   "heartDiff": 0.125,
+   "heartSE": 0.08539125638299665,
+   "act4Diff": -0.0625
+  },
+  {
+   "seed": 111374114,
+   "decisionIndex": 71,
+   "screen": "SHOP",
+   "why": [
+    "uniDis"
+   ],
+   "base": "Buy relic: Bronze Scales",
+   "alt": "Remove card: Anger",
+   "leafGap": 0.021767131391125738,
+   "pairs": 16,
+   "baseHeart": 0.25,
+   "heartDiff": 0.0,
+   "heartSE": 0.12909944487358055,
+   "act4Diff": -0.1875
+  },
+  {
+   "seed": 111374114,
+   "decisionIndex": 121,
+   "screen": "REWARDS",
+   "why": [
+    "uniDis"
+   ],
+   "base": "Take card: Armaments",
+   "alt": "Leave rewards",
+   "leafGap": 0.024179524326564616,
+   "pairs": 16,
+   "baseHeart": 0.125,
+   "heartDiff": -0.0625,
+   "heartSE": 0.0625,
+   "act4Diff": 0.0
+  },
+  {
+   "seed": 111374114,
+   "decisionIndex": 160,
+   "screen": "REST",
+   "why": [
+    "uniDis"
+   ],
+   "base": "Upgrade card: Panache",
+   "alt": "Upgrade card: Shockwave",
+   "leafGap": 0.02271449090204883,
+   "pairs": 16,
+   "baseHeart": 0.0,
+   "heartDiff": 0.0625,
+   "heartSE": 0.0625,
+   "act4Diff": 0.1875
+  },
+  {
+   "seed": 111374115,
+   "decisionIndex": 150,
+   "screen": "SHOP",
+   "why": [
+    "puctChg",
+    "deepChg",
+    "uniDis"
+   ],
+   "base": "Buy relic: Medical Kit",
+   "alt": "Buy relic: Akabeko",
+   "leafGap": 0.05095767229972592,
+   "pairs": 16,
+   "baseHeart": 0.375,
+   "heartDiff": 0.0625,
+   "heartSE": 0.11063265039459795,
+   "act4Diff": 0.125
+  },
+  {
+   "seed": 111374115,
+   "decisionIndex": 175,
+   "screen": "REST",
+   "why": [
+    "deepChg"
+   ],
+   "base": "Rest",
+   "alt": "Upgrade card: Metallicize",
+   "leafGap": 0.02249738759929798,
+   "pairs": 16,
+   "baseHeart": 0.0,
+   "heartDiff": 0.125,
+   "heartSE": 0.08539125638299665,
+   "act4Diff": 0.25
+  }
+ ],
+ "leafGapVsHeartDiff_pearson": -0.1043604169236481
+}

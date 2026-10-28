@@ -1034,6 +1034,13 @@ OocGameContextModel::Metadata &OocGameContextModel::mutableMetadata(sts::search:
                 value.candidates.push_back({action.bits, "map:" + std::to_string(action.bits), {}, action});
             }
             value.sourcePriorCovered = true;
+        } else if (options.bossEdge && gc.outcome == sts::GameOutcome::UNDECIDED
+                   && gc.screenState == sts::ScreenState::MAP_SCREEN && gc.map && gc.curMapNodeY == 14) {
+            for (auto action : GameAction::getAllActionsInState(gc))
+                if (action.isValidAction(gc))
+                    value.candidates.push_back({static_cast<sts::search::OocActionId>(value.candidates.size()),
+                        "map:" + std::to_string(action.bits), {}, action});
+            value.sourcePriorCovered = true;
         } else if (gc.outcome == sts::GameOutcome::UNDECIDED && gc.screenState != sts::ScreenState::BATTLE
                    && gc.screenState != sts::ScreenState::MAP_SCREEN) {
             const auto enumeration = sts::search::enumerateOocSemanticPrimitiveBindings(gc);
@@ -1919,9 +1926,12 @@ std::optional<nlohmann::json> OocGameContextModel::siblingLeafExtras(sts::search
     if (capture.swkeyedRepeats) row["rolloutEstimator"] = "swkeyed";
     const auto policyBefore = captureOocPolicyThreadState();
     const unsigned seconds = 20 + 4 * (capture.repeats + 2 * capture.longRepeats) + 30 * capture.refereeRepeats
+        + (capture.mono ? 30 + 2 * 40 * capture.monoRepeats : 0)
         + capture.vrRepeats * unsigned(capture.vrArms.size());
     try { row["extra"] = forkLeafReplay([&] {
         nlohmann::json out = nlohmann::json::object();
+        const auto leafCombatsBefore = options.leafCombats;
+        const bool refereeBefore = options.refereeRollout;
         const auto anchorStart = std::clock();
         try { out["x2b"] = anchorValue(gc, pathHistory(id)); }
         catch (const std::exception &e) { out["x2bError"] = e.what(); }
@@ -2014,10 +2024,103 @@ std::optional<nlohmann::json> OocGameContextModel::siblingLeafExtras(sts::search
             evaluations("referee", capture.refereeRepeats, 3);
             out["refereeCpuSeconds"] = double(std::clock() - refereeStart) / CLOCKS_PER_SEC;
         }
+        if (capture.mono && gc.outcome == sts::GameOutcome::UNDECIDED) {
+            // Child process only: the leaf's own snapshot is edited in place and restored after each variant.
+            options.leafCombats = leafCombatsBefore;
+            options.refereeRollout = refereeBefore;
+            out["mono"] = monoVariants(id, policyBefore);
+        }
         return out;
     }, int(seconds) * 1000, int(seconds), std::size_t(1) << 24); }
     catch (const std::exception &e) { row["extraError"] = e.what(); }
     return row;
+}
+// STS_OOC_SIBLING_MONO (issue #886), forked child only: paired variants of one leaf that differ only in current HP
+// (within 1..maxHp) or in one upgraded card (the first upgradable copy of each card id). Each variant is checked
+// against the leaf's rich features (only curHp or that card's u feature may change; Searing Blow may change none),
+// scored with X2-B, the calibrated leaf anchor, heart1's value and monoRepeats rollouts on the repeats' streams, and
+// restored exactly before the next one.
+nlohmann::json OocGameContextModel::monoVariants(sts::search::OocStateId id, const OocPolicyThreadState &policyBefore) {
+    const auto &capture = *options.siblingCapture;
+    auto &snap = states.at(id);
+    static const std::vector<std::string> names = [] {
+        std::vector<std::string> n(richIdxMap().size());
+        for (const auto &[name, index] : richIdxMap()) n.at(index) = name;
+        return n;
+    }();
+    const auto baseState = replayStateString(snap.gc);
+    const auto baseRich = richFeatureVec(snap.gc, snap.path);
+    // Candidate metadata is cached per state and may depend on HP: variants recompute it, the leaf gets its own back.
+    struct MetadataGuard {
+        std::optional<Metadata> &slot; std::optional<Metadata> saved;
+        ~MetadataGuard() { slot = std::move(saved); }
+    } metadataGuard{snap.metadata, std::move(snap.metadata)};
+    snap.metadata.reset();
+    nlohmann::json out = {{"repeats", capture.monoRepeats}, {"act", snap.gc.act},
+        {"boss", sts::monsterEncounterEnumNames[int(snap.gc.boss)]},
+        {"redSkull", snap.gc.hasRelic(sts::RelicId::RED_SKULL)},
+        {"meatOnTheBone", snap.gc.hasRelic(sts::RelicId::MEAT_ON_THE_BONE)},
+        {"variants", nlohmann::json::array()}};
+    const auto score = [&](nlohmann::json v) {
+        snap.metadata.reset();
+        const auto rich = richFeatureVec(snap.gc, snap.path);
+        auto &diff = v["featureDiff"] = nlohmann::json::array();
+        for (std::size_t i = 0; i < rich.size() && i < baseRich.size(); ++i)
+            if (rich[i] != baseRich[i]) diff.push_back({names.at(i), baseRich[i], rich[i]});
+        if (rich.size() != baseRich.size()) v["featureSizeError"] = true;
+        try { v["x2b"] = anchorValue(snap.gc, snap.path); v["leafAnchor"] = leafAnchorValue(snap.gc, snap.path); }
+        catch (const std::exception &e) { v["anchorError"] = e.what(); }
+        if (capture.annotate) {
+            try { v["heart1"] = capture.annotate(snap.gc).at("value"); }
+            catch (const std::exception &e) { v["heart1Error"] = e.what(); }
+        }
+        const auto start = std::clock();
+        auto &list = v["rollouts"] = nlohmann::json::array();
+        for (unsigned r = 0; r < capture.monoRepeats; ++r) {
+            restoreOocPolicyThreadState(policyBefore);
+            // The repeats' seeds (kind 1): rollout r of every variant pairs with repeat r of the leaf.
+            const std::uint64_t leafKey = capture.commonSeeds ? 0xFFFFFFFFull : capture.captured - 1;
+            std::seed_seq seq{capture.searchSeed, capture.decisionIndex, leafKey, std::uint64_t(1), std::uint64_t(r)};
+            std::mt19937_64 stream(seq);
+            bool ended = false;
+            sts::search::OocEndpoint end;
+            try {
+                const double value = evaluateLeafUnobserved(id, stream, ended, end);
+                list.push_back({{"value", value}, {"terminal", ended}, {"endFloor", end.floor}, {"endHp", end.hp}});
+            } catch (const std::exception &e) { list.push_back({{"error", e.what()}}); }
+        }
+        v["rolloutCpuSeconds"] = double(std::clock() - start) / CLOCKS_PER_SEC;
+        out["variants"].push_back(std::move(v));
+    };
+    const auto restored = [&] {
+        snap.metadata.reset();
+        if (replayStateString(snap.gc) == baseState) return true;
+        out["restoreError"] = true;
+        return false;
+    };
+    score({{"kind", "base"}});
+    if (!restored()) return out;
+    const int hp = snap.gc.curHp;
+    for (const int delta : {-24, -12, -6, -3, -1, 1, 3, 6, 12}) {
+        if (hp + delta < 1 || hp + delta > snap.gc.maxHp) continue;
+        snap.gc.curHp = hp + delta;
+        score({{"kind", "hp"}, {"delta", delta}});
+        snap.gc.curHp = hp;
+        if (!restored()) return out;
+    }
+    std::set<int> seen;
+    for (int i = 0; i < snap.gc.deck.size(); ++i) {
+        const auto card = snap.gc.deck.cards[i];
+        if (!card.canUpgrade() || !seen.insert(int(card.getId())).second) continue;
+        const auto deck = snap.gc.deck;
+        snap.gc.deck.upgrade(i);
+        score({{"kind", "upgrade"}, {"card", sts::cardEnumStrings[int(card.getId())]}, {"cardId", int(card.getId())},
+            {"deckIndex", i}, {"wasUpgraded", card.isUpgraded()}, {"bottled", snap.gc.deck.isCardBottled(i)},
+            {"cardType", int(card.getType())}});
+        snap.gc.deck = deck;
+        if (!restored()) return out;
+    }
+    return out;
 }
 nlohmann::json OocGameContextModel::refereeRootActions(const std::vector<sts::search::OocActionId> &actions,
         unsigned n, std::uint64_t seed) {
@@ -2051,11 +2154,16 @@ nlohmann::json OocGameContextModel::refereeRootActions(const std::vector<sts::se
     }, int(seconds) * 1000, int(seconds), std::size_t(1) << 24); }
     catch (const std::exception &e) { return nlohmann::json{{"error", e.what()}}; }
 }
-nlohmann::json OocGameContextModel::priceRootActions(unsigned n, std::uint64_t seed) {
+nlohmann::json OocGameContextModel::priceRootActions(unsigned n, std::uint64_t seed, unsigned top) {
     if (options.refereeActEndCalibration.empty()) throw std::runtime_error("campfire price requires an act-end calibration");
     const auto policyBefore = captureOocPolicyThreadState();
-    const auto actions = legalActions(0);
-    nlohmann::json out = {{"n", n}, {"actions", nlohmann::json::array()}};
+    auto actions = legalActions(0);
+    nlohmann::json out = {{"n", n}, {"legalActions", actions.size()}, {"actions", nlohmann::json::array()}};
+    if (top > 0 && actions.size() > top) {
+        std::stable_sort(actions.begin(), actions.end(), [](const auto &a, const auto &b) { return a.prior > b.prior; });
+        actions.resize(top);
+        out["top"] = top;
+    }
     const auto start = std::clock();
     for (const auto &action : actions) {
         const auto &c = candidate(0, action.id);
@@ -2661,6 +2769,25 @@ std::string liveRootComparePath;
 // observeOocCampfirePrice.
 std::string liveCampfirePricePath;
 unsigned liveCampfirePriceN = 16;
+// STS_OOC_CAMPFIRE_PRICE_SCREENS=all|LIST (research, default rest; LIST as STS_OOC_MCTS_SCREENS) and
+// STS_OOC_CAMPFIRE_PRICE_TOP=K (1..64, default all): the same price at other real OOC roots (sibling-value noise and
+// bias, #881), for the K highest-prior root actions only.
+std::uint32_t liveCampfirePriceScreens = 1u << int(sts::ScreenState::REST_ROOM);
+unsigned liveCampfirePriceTop = 0;
+// STS_OOC_CTM_AUDIT=PATH (research, default off; #884), with _N (1..256, default 16), _EVERY (default 1) and
+// _SILVER_SIMS (default 10000): see the CTM-audit block in oocMctsPolicyStep.
+std::string liveCtmAuditPath;
+unsigned liveCtmAuditN = 16;
+std::uint64_t liveCtmAuditEvery = 1, liveCtmAuditRoots = 0;
+std::size_t liveCtmAuditTop = 3;
+// (seed, decision index) of complete rows already in the output: a restarted replay skips them (resume).
+std::set<std::pair<std::uint64_t, std::uint64_t>> liveCtmAuditDone;
+int liveCtmAuditSilverSims = 10000;
+// STS_OOC_ROOT_PROBE=PATH, STS_OOC_ROOT_PROBE_INDICES=I,J,..., STS_OOC_ROOT_PROBE_DEEP=N (research, #882, default off):
+// see observeOocRootProbe.
+std::string liveRootProbePath;
+std::set<std::uint64_t> liveRootProbeIndices;
+std::uint64_t liveRootProbeDeep = 32768;
 // Search-architecture pilot (research, default mcts): STS_OOC_MCTS_SEARCH_MODE=mcts|particle|particle_beam picks the
 // planner of every searched (non-singleton) root; STS_OOC_MCTS_PARTICLES=P (default 64) and
 // STS_OOC_MCTS_BEAM=WIDTH:K:DEPTH (default 8:2:3) configure OocParticlePlanner. STS_OOC_MCTS_SEARCH_TRACE=PATH appends
@@ -2672,6 +2799,20 @@ unsigned liveCampfirePriceN = 16;
 // ADR-TBD (§683): unset, with the heart1 prior and outside the live advisor, real roots at ascension 20 search only
 // map screens, each at the full budget (liveSearchScreensA20Default); STS_OOC_MCTS_SCREENS=all restores every screen.
 std::uint32_t liveSearchScreens = ~0u;
+// Card-reward rule (research, default unset): STS_OOC_MCTS_CARD_RULE=value|search decides every real root on a
+// card-reward screen after the rule chain. value: argmax over the root actions of the leaf anchor of each successor
+// state, no rollout (needs STS_OOC_MCTS_CARD_RULE_HEART1_VALUE). search: STS_OOC_MCTS_CARD_RULE_SIMS (default 8192)
+// simulations split evenly over every root action (uniform Gumbel root, no stops), the rest of the tree as the live
+// search, then the action with the best mean Q. STS_OOC_MCTS_CARD_RULE_HEART1_VALUE=<weights> replaces the leaf
+// anchor by that value head alone (no calibration) in these roots only; STS_OOC_MCTS_CARD_RULE_BOSS_EDGE=1 lets
+// these trees walk into the act boss (OocAdapterOptions::bossEdge). Other roots are unchanged.
+enum class LiveCardRule { Off, Value, Search };
+LiveCardRule liveCardRule = LiveCardRule::Off;
+std::shared_ptr<const one_combat::heart1::Net> liveCardRuleNet;
+std::string liveCardRulePath, liveCardRuleSha256;
+std::uint64_t liveCardRuleSims = 8192;
+bool liveCardRuleBossEdge = false;
+thread_local bool t_cardRuleRoot = false;
 bool liveSearchScreensSet = false;
 bool liveSearchScreensA20Default = false;
 bool liveMapOnlyA20(const GameContext &gc) {
@@ -2737,6 +2878,8 @@ struct LiveSiblingCapture {
     std::uint64_t every = 4, maxLeaves = 256;
     unsigned repeats = 1, longRepeats = 0, refereeRepeats = 0, maxDepth = 2;
     bool commonSeeds = false, swkeyedRepeats = false;
+    bool mono = false;
+    unsigned monoRepeats = 16;
     std::vector<std::string> vrArms;
     unsigned vrRepeats = 0;
 };
@@ -2755,7 +2898,7 @@ std::string liveTrace, liveRootLockTrace, liveCheckpointTrace, liveRootTrace;
 // planner seed comes from the same RNG. A Silver stall or failure returns
 // UNSUPPORTED.
 CombatRuntimeSample playImaginedCombatWithSilver(const GameContext &source, std::mt19937_64 &rng,
-                                                 int simulations, bool rootPrior) {
+                                                 int simulations, bool rootPrior, bool production = false) {
     GameContext gc = detachedCopy(source);
     gc.seed = rng();
     for (auto stream : {&gc.aiRng, &gc.cardRandomRng, &gc.miscRng, &gc.monsterHpRng,
@@ -2783,13 +2926,21 @@ CombatRuntimeSample playImaginedCombatWithSilver(const GameContext &source, std:
     } scope;
     S::g_disallowImaginedCombat = false;
     S::g_nativeSilverPlannerSeedOverride = plannerSeed;
-    S::g_nativeSilverRootPriorOverride = rootPrior;
-    S::g_nativeSilverBudgetOverride = S::NativeSilverBudgetOverride{};
-    // Imagined fights keep greedy playouts: STS_SILVER_ROLLOUT_PRIOR is for real fights only.
-    S::SilverSearcher::RolloutConfig rollout = S::g_nativeSilverRolloutOverride
-        ? *S::g_nativeSilverRolloutOverride : S::SilverSearcher::envRolloutConfig();
-    rollout.prior = false;
-    S::g_nativeSilverRolloutOverride = rollout;
+    if (production) {
+        // STS_OOC_CTM_AUDIT: the real-fight policy of the process (its budget policy, root prior and playouts)
+        // at a base budget of `simulations`; rootPrior is ignored.
+        S::g_nativeSilverRootPriorOverride.reset();
+        S::g_nativeSilverBudgetOverride.reset();
+        S::g_nativeSilverRolloutOverride.reset();
+    } else {
+        S::g_nativeSilverRootPriorOverride = rootPrior;
+        S::g_nativeSilverBudgetOverride = S::NativeSilverBudgetOverride{};
+        // Imagined fights keep greedy playouts: STS_SILVER_ROLLOUT_PRIOR is for real fights only.
+        S::SilverSearcher::RolloutConfig rollout = S::g_nativeSilverRolloutOverride
+            ? *S::g_nativeSilverRolloutOverride : S::SilverSearcher::envRolloutConfig();
+        rollout.prior = false;
+        S::g_nativeSilverRolloutOverride = rollout;
+    }
     std::optional<CombatTransitionPersistentState> rawPost;
     sts::g_onBattleExitRaw = [&](const sts::BattleContext &, GameContext &g) {
         if (!rawPost) rawPost = captureCombatTransitionState(g);
@@ -2826,6 +2977,125 @@ public:
     CombatRuntimeSample sample(const GameContext &source, const CombatPredictorInputV1 &,
                                std::mt19937_64 &rng) const override {
         return playImaginedCombatWithSilver(source, rng, simulations_, true);
+    }
+};
+// Research only (STS_OOC_CTM_AUDIT, #884): wraps the search's own sampler. In the "ctm" arm every imagined combat
+// is the wrapped sampler's draw; in the "silver" arm production Silver (playImaginedCombatWithSilver, production)
+// plays it instead, on the same planner RNG. Either way one row per combat records the CTM's forecast of that entry
+// (expectation of the CTM stack under the wrapper) next to the drawn outcome. Single-threaded: used in a forked child.
+class CtmAuditCombatTransitionSampler final : public CombatTransitionSampler {
+    std::shared_ptr<const CombatTransitionSampler> inner_;
+    int silverSims_;
+    nlohmann::json forecast(const GameContext &gc, const CombatPredictorInputV1 &input,
+                            const CombatRuntimeSupport &support) const {
+        nlohmann::json row = {{"arm", silver ? "silver" : "ctm"}, {"action", action}, {"repeat", repeat},
+            {"combat", combat++}, {"encounter", input.globals.encounter}, {"act", gc.act}, {"floor", gc.floorNum},
+            {"room", int(gc.curRoom)}, {"hp", gc.curHp}, {"maxHp", gc.maxHp}, {"gold", gc.gold},
+            {"potions", gc.potionCount}, {"deck", gc.deck.size()}, {"supported", support.supported}};
+        if (!support.supported) row["reason"] = support.reason;
+        try {
+            const auto e = inner_->expectation(gc, input);
+            row["ctmSupported"] = e.supported;
+            if (e.supported) {
+                double mass = 0, mean = 0, square = 0;
+                for (std::size_t i = 0; i < e.winningHpHistogram.size(); ++i) {
+                    const double hp = e.winningHpMin + int(i), p = e.winningHpHistogram[i];
+                    mass += p; mean += hp * p; square += hp * hp * p;
+                }
+                row["pDeath"] = e.death;
+                row["hpWinMean"] = mass > 0 ? mean / mass : 0.0;
+                row["hpWinSd"] = mass > 0 ? std::sqrt(std::max(0.0, square / mass - (mean / mass) * (mean / mass))) : 0.0;
+                row["hpMin"] = e.winningHpMin;
+                row["hist"] = e.winningHpHistogram;
+            }
+        } catch (const std::exception &failure) { row["ctmError"] = failure.what(); }
+        return row;
+    }
+    void record(nlohmann::json row, const CombatRuntimeSample &drawn) const {
+        static const char *names[] = {"unsupported", "death", "victory", "escape"};
+        row["outcome"] = names[int(drawn.outcome)];
+        if (drawn.outcome == CombatRuntimeSample::Outcome::VICTORY || drawn.outcome == CombatRuntimeSample::Outcome::ESCAPE) {
+            row["postHp"] = drawn.rawPost.curHp; row["postMaxHp"] = drawn.rawPost.maxHp;
+            row["postGold"] = drawn.rawPost.gold; row["postPotions"] = drawn.rawPost.potionCount;
+        }
+        // The CTM's probability of the drawn HP given a win, and its PIT P(HP < drawn) + P(HP = drawn) / 2.
+        if (row.contains("hist")) {
+            if (drawn.outcome == CombatRuntimeSample::Outcome::VICTORY) {
+                const auto hist = row["hist"].get<std::vector<double>>();
+                double mass = 0, below = 0, at = 0;
+                for (std::size_t i = 0; i < hist.size(); ++i) {
+                    const int hp = row["hpMin"].get<int>() + int(i);
+                    mass += hist[i];
+                    if (hp < drawn.rawPost.curHp) below += hist[i];
+                    else if (hp == drawn.rawPost.curHp) at = hist[i];
+                }
+                if (mass > 0) { row["hpP"] = at / mass; row["hpPit"] = (below + at / 2) / mass; }
+            }
+            row.erase("hist");
+        }
+        log.push_back(std::move(row));
+    }
+    class Prepared final : public PreparedCombatTransition {
+        const CtmAuditCombatTransitionSampler &owner_;
+        std::unique_ptr<PreparedCombatTransition> inner_;
+        GameContext gc_;
+        nlohmann::json row_;
+        CombatRuntimeSupport support_;
+    public:
+        Prepared(const CtmAuditCombatTransitionSampler &owner, std::unique_ptr<PreparedCombatTransition> inner,
+                 const GameContext &gc, nlohmann::json row)
+            : owner_(owner), inner_(std::move(inner)), gc_(detachedCopy(gc)), row_(std::move(row)),
+              support_(owner.silver ? CombatRuntimeSupport{true, {}} : inner_->support()) {}
+        const CombatRuntimeSupport &support() const override { return support_; }
+        CombatRuntimeSample sample(std::mt19937_64 &rng) const override {
+            auto drawn = owner_.silver ? playImaginedCombatWithSilver(gc_, rng, owner_.silverSims_, false, true)
+                                       : inner_->sample(rng);
+            owner_.record(row_, drawn);
+            return drawn;
+        }
+        CombatRuntimeSample sampleConditionedVictory(std::mt19937_64 &rng) const override {
+            if (owner_.silver) return {};
+            auto drawn = inner_->sampleConditionedVictory(rng);
+            auto row = row_;
+            row["conditionedVictory"] = true;
+            owner_.record(std::move(row), drawn);
+            return drawn;
+        }
+    };
+public:
+    // The arm and the rollout this combat belongs to; set by the caller before each rollout.
+    mutable bool silver = false;
+    mutable long long action = -1;
+    mutable unsigned repeat = 0, combat = 0;
+    mutable nlohmann::json log = nlohmann::json::array();
+    CtmAuditCombatTransitionSampler(std::shared_ptr<const CombatTransitionSampler> inner, int silverSims)
+        : inner_(std::move(inner)), silverSims_(silverSims) {}
+    std::unique_ptr<PreparedCombatTransition> prepare(const GameContext &gc,
+            const CombatPredictorInputV1 &input) const override {
+        auto prepared = inner_->prepare(gc, input);
+        auto row = forecast(gc, input, prepared->support());
+        return std::make_unique<Prepared>(*this, std::move(prepared), gc, std::move(row));
+    }
+    CombatRuntimeSupport support(const GameContext &gc, const CombatPredictorInputV1 &input) const override {
+        return silver ? CombatRuntimeSupport{true, {}} : inner_->support(gc, input);
+    }
+    CombatRuntimeSupport forecastSupport(const CombatPredictorInputV1 &input) const override {
+        return inner_->forecastSupport(input);
+    }
+    CombatTransitionExpectation forecastExpectation(const CombatPredictorInputV1 &input) const override {
+        return inner_->forecastExpectation(input);
+    }
+    CombatTransitionExpectation expectation(const GameContext &gc, const CombatPredictorInputV1 &input) const override {
+        return inner_->expectation(gc, input);
+    }
+    bool modelsSmokeBombEscape() const override { return silver || inner_->modelsSmokeBombEscape(); }
+    CombatRuntimeSample sample(const GameContext &gc, const CombatPredictorInputV1 &input,
+                               std::mt19937_64 &rng) const override {
+        auto row = forecast(gc, input, inner_->support(gc, input));
+        auto drawn = silver ? playImaginedCombatWithSilver(gc, rng, silverSims_, false, true)
+                            : inner_->sample(gc, input, rng);
+        record(std::move(row), drawn);
+        return drawn;
     }
 };
 // Opt-in (STS_OOC_MCTS_UNSUPPORTED_SILVER_SIMS=N): keeps the CTM for every
@@ -3312,6 +3582,10 @@ bool liveOocMctsScreenExcluded(const GameContext &gc) {
     if (liveMapOnlyA20(gc)) return gc.screenState != sts::ScreenState::MAP_SCREEN;
     return liveEnabled && liveSearchScreensSet && !(liveSearchScreens & (1u << int(gc.screenState)));
 }
+bool liveOocCardRuleApplies(const GameContext &gc) {
+    return liveEnabled && liveCardRule != LiveCardRule::Off && gc.screenState == sts::ScreenState::REWARDS
+        && gc.info.rewardsContainer.cardRewardCount > 0;
+}
 bool liveOocMctsHeart1Fallback(const GameContext &gc) {
     return liveEnabled && liveOptions.heart1Coverage && heart1FullScreen(gc);
 }
@@ -3426,6 +3700,8 @@ void configureLiveOocMcts() {
             if (sibling.swkeyedRepeats && !sibling.commonSeeds)
                 throw std::runtime_error("STS_OOC_SIBLING_ROLLOUT=swkeyed requires STS_OOC_SIBLING_COMMON_SEEDS=1");
         }
+        sibling.mono = knob("STS_OOC_SIBLING_MONO", 0, 0, 1) == 1;
+        sibling.monoRepeats = unsigned(knob("STS_OOC_SIBLING_MONO_REPEATS", 16, 0, 256));
         if (const char *arms = std::getenv("STS_OOC_SIBLING_VR_ARMS"); arms && *arms) {
             const std::string list(arms);
             for (std::size_t pos = 0; pos <= list.size();) {
@@ -3528,6 +3804,10 @@ void configureLiveOocMcts() {
     livePlaySampleFloor = -1; livePlaySampleTemperature = 1;
     liveGumbelRootActions = 0; liveGumbelRootScale = 1; liveGumbelQCap = 0; liveRootComparePath.clear();
     liveCampfirePricePath.clear(); liveCampfirePriceN = 16;
+    liveCampfirePriceScreens = 1u << int(sts::ScreenState::REST_ROOM); liveCampfirePriceTop = 0;
+    liveCtmAuditPath.clear(); liveCtmAuditN = 16; liveCtmAuditEvery = 1; liveCtmAuditRoots = 0; liveCtmAuditTop = 3;
+    liveCtmAuditSilverSims = 10000;
+    liveRootProbePath.clear(); liveRootProbeIndices.clear(); liveRootProbeDeep = 32768;
     // "A[:B]" with A and B finite; returns false on malformed text.
     const auto parsePair = [](const std::string &text, double &a, double &b) {
         const auto colon = text.find(':');
@@ -3591,8 +3871,97 @@ void configureLiveOocMcts() {
                 throw std::runtime_error("STS_OOC_CAMPFIRE_PRICE_N must be 1..256");
             liveCampfirePriceN = unsigned(std::stoul(value));
         }
-    } else if (std::getenv("STS_OOC_CAMPFIRE_PRICE_N"))
-        throw std::runtime_error("STS_OOC_CAMPFIRE_PRICE_N requires STS_OOC_CAMPFIRE_PRICE");
+        if (const char *raw = std::getenv("STS_OOC_CAMPFIRE_PRICE_SCREENS"); raw && std::string(raw) != "rest") {
+            static const std::map<std::string, sts::ScreenState> names = {
+                {"map", sts::ScreenState::MAP_SCREEN}, {"event", sts::ScreenState::EVENT_SCREEN},
+                {"rewards", sts::ScreenState::REWARDS}, {"boss_relic", sts::ScreenState::BOSS_RELIC_REWARDS},
+                {"card_select", sts::ScreenState::CARD_SELECT}, {"treasure", sts::ScreenState::TREASURE_ROOM},
+                {"rest", sts::ScreenState::REST_ROOM}, {"shop", sts::ScreenState::SHOP_ROOM}};
+            liveCampfirePriceScreens = 0;
+            std::stringstream list(raw);
+            for (std::string name; std::getline(list, name, ',');) {
+                if (std::string(raw) == "all") {
+                    for (const auto &entry : names) liveCampfirePriceScreens |= 1u << int(entry.second);
+                    break;
+                }
+                const auto it = names.find(name);
+                if (it == names.end())
+                    throw std::runtime_error("STS_OOC_CAMPFIRE_PRICE_SCREENS must be all or a comma list of map, event, "
+                        "rewards, boss_relic, card_select, treasure, rest, shop");
+                liveCampfirePriceScreens |= 1u << int(it->second);
+            }
+            if (!liveCampfirePriceScreens) throw std::runtime_error("STS_OOC_CAMPFIRE_PRICE_SCREENS is empty");
+        }
+        if (const char *raw = std::getenv("STS_OOC_CAMPFIRE_PRICE_TOP")) {
+            const std::string value(raw);
+            if (value.empty() || value.size() > 2 || value.find_first_not_of("0123456789") != std::string::npos
+                    || std::stoul(value) < 1 || std::stoul(value) > 64)
+                throw std::runtime_error("STS_OOC_CAMPFIRE_PRICE_TOP must be 1..64");
+            liveCampfirePriceTop = unsigned(std::stoul(value));
+        }
+    } else if (std::getenv("STS_OOC_CAMPFIRE_PRICE_N") || std::getenv("STS_OOC_CAMPFIRE_PRICE_SCREENS")
+               || std::getenv("STS_OOC_CAMPFIRE_PRICE_TOP"))
+        throw std::runtime_error("STS_OOC_CAMPFIRE_PRICE_N, _SCREENS and _TOP require STS_OOC_CAMPFIRE_PRICE");
+    if (const char *audit = std::getenv("STS_OOC_CTM_AUDIT"); audit && *audit) {
+#ifdef STS_LIVE_ADVISOR
+        throw std::runtime_error("STS_OOC_CTM_AUDIT is unavailable in the live advisor");
+#endif
+        liveCtmAuditPath = audit;
+        liveCtmAuditDone.clear();
+        {
+            std::ifstream in(liveCtmAuditPath);
+            for (std::string line; std::getline(in, line);) {
+                const auto row = nlohmann::json::parse(line, nullptr, false);   // a cut last line is not complete
+                if (!row.is_discarded() && row.contains("audit"))
+                    liveCtmAuditDone.emplace(row.at("seed").get<std::uint64_t>(), row.at("decisionIndex").get<std::uint64_t>());
+            }
+        }
+        if (!std::ofstream(liveCtmAuditPath, std::ios::app)) throw std::runtime_error("STS_OOC_CTM_AUDIT cannot open output");
+        const auto count = [](const char *name, unsigned long long low, unsigned long long high, auto &target) {
+            const char *raw = std::getenv(name);
+            if (!raw) return;
+            const std::string value(raw);
+            if (value.empty() || value.size() > 9 || value.find_first_not_of("0123456789") != std::string::npos
+                    || std::stoull(value) < low || std::stoull(value) > high)
+                throw std::runtime_error(std::string(name) + " must be " + std::to_string(low) + ".." + std::to_string(high));
+            target = static_cast<std::decay_t<decltype(target)>>(std::stoull(value));
+        };
+        count("STS_OOC_CTM_AUDIT_N", 1, 256, liveCtmAuditN);
+        count("STS_OOC_CTM_AUDIT_EVERY", 1, 1000000, liveCtmAuditEvery);
+        count("STS_OOC_CTM_AUDIT_SILVER_SIMS", 1, 999999, liveCtmAuditSilverSims);
+        count("STS_OOC_CTM_AUDIT_TOP", 2, 64, liveCtmAuditTop);
+    } else if (std::getenv("STS_OOC_CTM_AUDIT_N") || std::getenv("STS_OOC_CTM_AUDIT_EVERY")
+               || std::getenv("STS_OOC_CTM_AUDIT_SILVER_SIMS") || std::getenv("STS_OOC_CTM_AUDIT_TOP"))
+        throw std::runtime_error("STS_OOC_CTM_AUDIT_N, _EVERY, _SILVER_SIMS and _TOP require STS_OOC_CTM_AUDIT");
+    if (const char *probe = std::getenv("STS_OOC_ROOT_PROBE"); probe && *probe) {
+#ifdef STS_LIVE_ADVISOR
+        throw std::runtime_error("STS_OOC_ROOT_PROBE is unavailable in the live advisor");
+#endif
+        liveRootProbePath = probe;
+        if (!std::ofstream(liveRootProbePath, std::ios::app))
+            throw std::runtime_error("STS_OOC_ROOT_PROBE cannot open output");
+        const char *raw = std::getenv("STS_OOC_ROOT_PROBE_INDICES");
+        const std::string list = raw ? raw : "";
+        std::size_t at = 0;
+        while (at < list.size()) {
+            const auto comma = std::min(list.find(',', at), list.size());
+            const auto item = list.substr(at, comma - at);
+            if (item.empty() || item.size() > 6 || item.find_first_not_of("0123456789") != std::string::npos)
+                throw std::runtime_error("STS_OOC_ROOT_PROBE_INDICES must be a comma list of decision indices");
+            liveRootProbeIndices.insert(std::stoull(item));
+            at = comma + 1;
+        }
+        if (liveRootProbeIndices.empty())
+            throw std::runtime_error("STS_OOC_ROOT_PROBE requires STS_OOC_ROOT_PROBE_INDICES");
+        if (const char *deep = std::getenv("STS_OOC_ROOT_PROBE_DEEP")) {
+            const std::string value(deep);
+            if (value.empty() || value.size() > 7 || value.find_first_not_of("0123456789") != std::string::npos
+                    || std::stoull(value) < 1024 || std::stoull(value) > 262144)
+                throw std::runtime_error("STS_OOC_ROOT_PROBE_DEEP must be 1024..262144");
+            liveRootProbeDeep = std::stoull(value);
+        }
+    } else if (std::getenv("STS_OOC_ROOT_PROBE_INDICES") || std::getenv("STS_OOC_ROOT_PROBE_DEEP"))
+        throw std::runtime_error("STS_OOC_ROOT_PROBE_INDICES and _DEEP require STS_OOC_ROOT_PROBE");
     if (liveGumbelQCap > 0 && !liveGumbelRootActions && liveRootComparePath.empty())
         throw std::runtime_error("STS_OOC_MCTS_GUMBEL_QCAP requires STS_OOC_MCTS_GUMBEL_ROOT or STS_OOC_MCTS_ROOT_COMPARE");
     if (const char *sample = std::getenv("STS_OOC_MCTS_PLAY_SAMPLE")) {
@@ -3850,6 +4219,44 @@ void configureLiveOocMcts() {
             throw std::runtime_error("STS_OOC_MCTS_SCREENS needs STS_OOC_MCTS=1 with a heart1 prior (student_sel "
                 "decides the unlisted screens)");
     }
+    liveCardRule = LiveCardRule::Off; liveCardRuleNet.reset(); liveCardRulePath.clear(); liveCardRuleSha256.clear();
+    liveCardRuleSims = 8192; liveCardRuleBossEdge = false;
+    if (const char *rule = std::getenv("STS_OOC_MCTS_CARD_RULE"); rule && *rule) {
+#ifdef STS_LIVE_ADVISOR
+        throw std::runtime_error("STS_OOC_MCTS_CARD_RULE is unavailable in the live advisor");
+#else
+        const std::string value(rule);
+        if (value == "value") liveCardRule = LiveCardRule::Value;
+        else if (value == "search") liveCardRule = LiveCardRule::Search;
+        else throw std::runtime_error("STS_OOC_MCTS_CARD_RULE must be value or search");
+        if (!liveEnabled || !liveOptions.heart1Prior || liveSearchMode != LiveSearchMode::Mcts)
+            throw std::runtime_error("STS_OOC_MCTS_CARD_RULE needs STS_OOC_MCTS=1 with a heart1 prior and the mcts planner");
+        if (const char *weights = std::getenv("STS_OOC_MCTS_CARD_RULE_HEART1_VALUE"); weights && *weights) {
+            auto net = std::make_shared<one_combat::heart1::Net>();
+            std::string error;
+            if (!net->load(weights, &error)) throw std::runtime_error("STS_OOC_MCTS_CARD_RULE_HEART1_VALUE: " + error);
+            liveCardRuleNet = std::move(net);
+            liveCardRulePath = weights;
+            liveCardRuleSha256 = fileSha256Hex(weights);
+        } else if (liveCardRule == LiveCardRule::Value)
+            throw std::runtime_error("STS_OOC_MCTS_CARD_RULE=value requires STS_OOC_MCTS_CARD_RULE_HEART1_VALUE");
+        if (const char *raw = std::getenv("STS_OOC_MCTS_CARD_RULE_SIMS"); raw && *raw) {
+            const std::string sims(raw);
+            if (liveCardRule != LiveCardRule::Search || sims.size() > 7
+                    || sims.find_first_not_of("0123456789") != std::string::npos || std::stoull(sims) < 2)
+                throw std::runtime_error("STS_OOC_MCTS_CARD_RULE_SIMS must be 2..9999999 with STS_OOC_MCTS_CARD_RULE=search");
+            liveCardRuleSims = std::stoull(sims);
+        }
+        if (const char *raw = std::getenv("STS_OOC_MCTS_CARD_RULE_BOSS_EDGE"); raw && *raw) {
+            if (std::string(raw) != "1" || liveCardRule != LiveCardRule::Search)
+                throw std::runtime_error("STS_OOC_MCTS_CARD_RULE_BOSS_EDGE must be 1 with STS_OOC_MCTS_CARD_RULE=search");
+            liveCardRuleBossEdge = true;
+        }
+#endif
+    } else for (const char *key : {"STS_OOC_MCTS_CARD_RULE_HEART1_VALUE", "STS_OOC_MCTS_CARD_RULE_SIMS",
+                                   "STS_OOC_MCTS_CARD_RULE_BOSS_EDGE"})
+        if (const char *v = std::getenv(key); v && *v)
+            throw std::runtime_error(std::string(key) + " requires STS_OOC_MCTS_CARD_RULE");
     if (const char *mode = std::getenv("STS_OOC_MCTS_SEARCH_MODE"); mode && *mode) {
         const std::string value(mode);
         if (value == "particle") liveSearchMode = LiveSearchMode::Particle;
@@ -3901,14 +4308,15 @@ void configureLiveOocMcts() {
     // ADR-0057 (Philipp 2026-10-23, value-level A/B M0 +2.15 pp): unset, the plain rollout3 X2-B leaf is calibrated
     // with M0 on states at ascension 20, when the process win model is the pinned public X2-B M0 was fit on. Other
     // win models, leaves and leaf counts, captures and the leaf compare keep the raw anchor, as does
-    // STS_OOC_MCTS_LEAF_CALIBRATION=0.
+    // STS_OOC_MCTS_LEAF_CALIBRATION=0. The #886 mono capture keeps the default (its rows carry both values), so its
+    // games replay the uncaptured ones.
     if (!leafCalibrationEnv || !*leafCalibrationEnv) {
         const char *leafMode = std::getenv("STS_OOC_MCTS_LEAF_VALUE");
         if (liveEnabled && leafMode && std::string(leafMode) == "native" && liveOptions.leafCombats == 3
                 && liveOptions.checkpointLeaves && !liveOptions.stopAtMapCheckpoint && !liveOptions.directLeaf
                 && !liveOptions.screenLeaf && !liveOptions.bossLeaf && !liveOptions.bossRollout && !liveOptions.constantLeaf
                 && !liveOptions.leafWinNet && !liveOptions.heartLeaf && !liveOptions.rolloutStudent
-                && !liveOptions.heart1ValueNet && !liveLeafCompare && !liveSibling
+                && !liveOptions.heart1ValueNet && !liveLeafCompare && (!liveSibling || liveSibling->mono)
                 && !std::getenv("STS_OOC_MCTS_LEAF_CAPTURE")
                 && fileSha256Hex(g_winNet.path) == kHeartLeafAnchorSha256) {
             liveOptions.leafCalibration = a20LeafCalibration();
@@ -4174,6 +4582,10 @@ void configureLiveOocMcts() {
             + " horizon_combats=" + std::to_string(liveParticleConfig.horizonCombats) : std::string{})
         << (liveSearchCompare ? " search_compare=1" : "")
         << (liveSearchScreensSet ? " screens=" + std::string(std::getenv("STS_OOC_MCTS_SCREENS")) : std::string{})
+        << (liveCardRule == LiveCardRule::Off ? std::string{} : std::string(" card_rule=")
+            + (liveCardRule == LiveCardRule::Value ? "value" : "search:" + std::to_string(liveCardRuleSims))
+            + (liveCardRuleNet ? " card_rule_heart1_value=" + liveCardRulePath + " sha256=" + liveCardRuleSha256 : "")
+            + (liveCardRuleBossEdge ? " card_rule_boss_edge=1" : ""))
         << (liveSearchScreensA20Default ? " screens_a20_default=map_full_budget" : std::string{})
         << "]\n";
     std::cout << "[ooc-mcts-config] {\"noncombatOutcomes\":\""
@@ -4857,6 +5269,17 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
         config.rootNoiseSeed = splitMix64(config.seed ^ 0x524f4f544e4f4953ULL);   // "ROOTNOIS"
     }
     auto options = liveOptions;
+    const bool cardRule = t_cardRuleRoot;
+    if (cardRule) {
+        if (liveCardRuleNet) {
+            options.heart1ValueNet = liveCardRuleNet;
+            options.heart1ValuePath = liveCardRulePath;
+            options.heart1ValueSha256 = liveCardRuleSha256;
+            options.heart1ValueWeight = 1;
+            options.leafCalibration.clear();
+        }
+        options.bossEdge = liveCardRuleBossEdge;
+    }
     auto capture = liveLeafCapture ? liveLeafCapture->begin(seed, index, config.seed,
         simulations, options.leafCombats) : nullptr;
     if (capture) {
@@ -4879,6 +5302,7 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
         sibling->refereeRepeats = liveSibling->refereeRepeats;
         sibling->maxDepth = liveSibling->maxDepth; sibling->maxLeaves = liveSibling->maxLeaves;
         sibling->commonSeeds = liveSibling->commonSeeds; sibling->swkeyedRepeats = liveSibling->swkeyedRepeats;
+        sibling->mono = liveSibling->mono; sibling->monoRepeats = liveSibling->monoRepeats;
         sibling->vrArms = liveSibling->vrArms; sibling->vrRepeats = liveSibling->vrRepeats;
         options.siblingCapture = std::move(sibling);
     }
@@ -4980,6 +5404,31 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
     std::optional<sts::search::OocParticleResult> particleResult;
     auto result = [&] {
         DecisionLogScope logScope(decisionLog ? &*decisionLog : nullptr);
+        if (cardRule && !sole && liveCardRule == LiveCardRule::Value) {
+            sts::search::OocMctsResult r;
+            std::mt19937_64 rng(config.seed);
+            double best = 0;
+            for (const auto &a : model.legalActions(0)) {
+                const double v = model.leafAnchor(model.sampleSuccessor(0, a.id, rng));
+                r.rootActions.push_back({a.id, a.prior, 0, v, false});
+                if (!r.selectedAction || v > best) { best = v; r.selectedAction = a.id; }
+            }
+            return r;
+        }
+        if (cardRule && !sole) {
+            auto c = config;
+            c.allowUnqualifiedRootStop = false; c.stopAt512VisitGap20 = false; c.gapStopFraction = 0;
+            c.learnedStop = {}; c.learnedStopSimulations.clear();
+            gumbelConfig(c, 64, 0.0);
+            c.gumbelUniform = true;
+            auto r = searchWithSoleRootShortcut(model, c, sole, liveCardRuleSims);
+            // The evenly split root picks by mean Q (the Gumbel score would add log prior).
+            const sts::search::OocRootActionStats *best = nullptr;
+            for (const auto &a : r.rootActions)
+                if (!a.pruned && a.visits && (!best || a.q > best->q)) best = &a;
+            r.selectedAction = best ? std::optional(best->id) : std::nullopt;
+            return r;
+        }
         if (liveSearchMode != LiveSearchMode::Mcts && !sole) {
             particleResult = runLiveParticlePlanner(model, config.seed, liveSearchMode);
             return particleAsMctsResult(*particleResult);
@@ -5149,6 +5598,81 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
             throw std::runtime_error("STS_OOC_MCTS_ROOT_COMPARE write failed");
     }
 #ifndef STS_LIVE_ADVISOR
+    if (!liveCtmAuditPath.empty() && explore && !sole && !result.aborted
+            && std::count_if(result.rootActions.begin(), result.rootActions.end(), [](const auto &a) { return !a.pruned; }) > 1
+            && liveCtmAuditRoots++ % liveCtmAuditEvery == 0 && !liveCtmAuditDone.count({seed, index})) {
+        // Research only (#884): in a forked child, N rollouts of the search's own leaf from every root action, once
+        // with the search's CTM stack resolving each imagined combat and once with production Silver; stream r is
+        // shared by the actions and the arms (common random numbers up to each rollout's first combat). Every combat
+        // also logs the CTM's forecast of its entry. The played action and the run are unchanged.
+        nlohmann::json actions = nlohmann::json::array();
+        for (const auto &a : result.rootActions)
+            actions.push_back({{"id", a.id}, {"prior", a.prior}, {"visits", a.visits}, {"q", a.q}, {"pruned", a.pruned},
+                               {"label", candidateLabel(gc, model.candidate(0, a.id))}});
+        nlohmann::json row = {{"schema", "ctm-audit-v1"}, {"seed", seed}, {"decisionIndex", index},
+            {"ascension", gc.ascension}, {"act", gc.act}, {"floor", gc.floorNum}, {"screen", int(gc.screenState)},
+            {"hp", gc.curHp}, {"maxHp", gc.maxHp}, {"gold", gc.gold}, {"searchSeed", config.seed},
+            {"simulations", result.metrics.simulations},
+            {"selectedId", result.selectedAction ? nlohmann::json(*result.selectedAction) : nlohmann::json(nullptr)},
+            {"n", liveCtmAuditN}, {"silverSims", liveCtmAuditSilverSims}, {"actions", actions}};
+        // The _TOP most-visited unpruned root actions (ties: higher prior, then lower id).
+        std::vector<const sts::search::OocRootActionStats *> ranked;
+        for (const auto &a : result.rootActions) if (!a.pruned) ranked.push_back(&a);
+        std::sort(ranked.begin(), ranked.end(), [](const auto *x, const auto *y) {
+            return x->visits != y->visits ? x->visits > y->visits : x->prior != y->prior ? x->prior > y->prior : x->id < y->id;
+        });
+        std::vector<sts::search::OocActionId> audited;
+        for (const auto *a : ranked) if (audited.size() < liveCtmAuditTop) audited.push_back(a->id);
+        row["audited"] = audited;
+        row["top"] = liveCtmAuditTop;
+        const auto auditSeed = splitMix64(config.seed ^ 0x43544d4155444954ULL);   // "CTMAUDIT"
+        const unsigned seconds = 600 + 120 * liveCtmAuditN * unsigned(audited.size());
+        const auto wallStart = std::chrono::steady_clock::now();
+        try {
+            row["audit"] = forkLeafReplay([&] {
+                nlohmann::json out = {{"arms", nlohmann::json::object()}};
+                try {
+                    ImaginedScope scope;
+                    auto wrapper = std::make_shared<CtmAuditCombatTransitionSampler>(liveSamplerFor(gc),
+                                                                                     liveCtmAuditSilverSims);
+                    const auto policyBefore = captureOocPolicyThreadState();
+                    for (const bool silver : {false, true}) {
+                        wrapper->silver = silver;
+                        wrapper->log = nlohmann::json::array();
+                        const double t0 = threadCpuSeconds();
+                        OocGameContextModel audit(gc, path, wrapper, liveOptions);
+                        nlohmann::json values = nlohmann::json::object();
+                        for (const auto &a : result.rootActions) {
+                            if (std::find(audited.begin(), audited.end(), a.id) == audited.end()) continue;
+                            auto &list = values[std::to_string(a.id)] = nlohmann::json::array();
+                            for (unsigned r = 0; r < liveCtmAuditN; ++r) {
+                                restoreOocPolicyThreadState(policyBefore);
+                                wrapper->action = a.id; wrapper->repeat = r; wrapper->combat = 0;
+                                std::seed_seq seq{auditSeed, std::uint64_t(r), std::uint64_t(7)};
+                                std::mt19937_64 stream(seq);
+                                try {
+                                    const auto child = audit.sampleSuccessor(0, a.id, stream);
+                                    const auto e = audit.evaluateLeafWithOutcome(child, stream);
+                                    list.push_back({{"value", e.value}, {"terminal", e.terminal},
+                                                    {"endFloor", e.endpoint ? e.endpoint->floor : -1},
+                                                    {"combats", wrapper->combat}});
+                                } catch (const std::exception &failure) {
+                                    list.push_back({{"error", failure.what()}, {"combats", wrapper->combat}});
+                                }
+                            }
+                        }
+                        out["arms"][silver ? "silver" : "ctm"] = {{"values", std::move(values)},
+                            {"combats", std::move(wrapper->log)}, {"cpuSeconds", threadCpuSeconds() - t0}};
+                    }
+                } catch (const std::exception &e) { out["error"] = e.what(); }
+                return out;
+            }, int(seconds) * 1000, int(seconds), std::size_t(1) << 27);
+        } catch (const std::exception &e) { row["auditError"] = e.what(); }
+        row["wallSeconds"] = std::chrono::duration<double>(std::chrono::steady_clock::now() - wallStart).count();
+        std::lock_guard<std::mutex> lock(liveTraceMutex);
+        std::ofstream out(liveCtmAuditPath, std::ios::app);
+        if (!out || !(out << row.dump() << '\n')) throw std::runtime_error("STS_OOC_CTM_AUDIT write failed");
+    }
     if (liveLeafCompare && explore && !sole && !result.aborted && result.selectedAction && !result.rootActions.empty()) {
         // Research only (value-head plan stage 2): each arm's leaf on a fresh model with this root's config, seed and
         // budget, then referee rollouts from the played action and from every differing pick.
@@ -5544,22 +6068,32 @@ bool oocHypotheticalCardTaken(const GameContext &gc, const PathHistory &path, co
     step(offer);
     return offer.deck.size() > before;
 }
+bool oocCardRulePolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t seed,
+    std::uint64_t index, LiveOocMctsMetrics &metrics) {
+    struct Scope { Scope() { t_cardRuleRoot = true; } ~Scope() { t_cardRuleRoot = false; } } scope;
+    return oocMctsPolicyStep(gc, path, seed, index, metrics);
+}
 void observeOocCampfirePrice(const GameContext &gc, const PathHistory &path, std::uint64_t seed, std::uint64_t index) {
 #ifdef STS_LIVE_ADVISOR
     (void)gc; (void)path; (void)seed; (void)index;
 #else
-    if (liveCampfirePricePath.empty() || !liveEnabled || gc.screenState != sts::ScreenState::REST_ROOM
+    if (liveCampfirePricePath.empty() || !liveEnabled || !(liveCampfirePriceScreens & (1u << int(gc.screenState)))
             || gc.outcome != sts::GameOutcome::UNDECIDED)
         return;
-    // One row per rest site: the chain may pass the same rest room more than once.
-    static thread_local std::pair<std::uint64_t, int> last{0, -1};
-    if (last == std::pair{seed, gc.floorNum}) return;
-    last = {seed, gc.floorNum};
+    nlohmann::json record;
+    const bool hasRecord = heart1::buildPublicLeafRecord(gc, record);
+    // One row per rest site: the chain may pass the same rest room more than once. Other screens: one row per
+    // distinct public root (same floor, screen and record), else per decision.
+    static thread_local std::tuple<std::uint64_t, int, int, std::size_t> last{0, -1, -1, 0};
+    const bool rest = gc.screenState == sts::ScreenState::REST_ROOM;
+    const std::tuple<std::uint64_t, int, int, std::size_t> key{seed, gc.floorNum, int(gc.screenState),
+        rest ? 0 : hasRecord ? std::hash<std::string>{}(record.dump()) : std::size_t(index) + 1};
+    if (last == key) return;
+    last = key;
     nlohmann::json row = {{"schema", "campfire-price-v1"}, {"seed", seed}, {"decisionIndex", index},
         {"ascension", gc.ascension}, {"act", gc.act}, {"floor", gc.floorNum}, {"hp", gc.curHp}, {"maxHp", gc.maxHp},
-        {"gold", gc.gold}, {"n", liveCampfirePriceN}};
-    nlohmann::json record;
-    if (heart1::buildPublicLeafRecord(gc, record)) row["record"] = std::move(record);
+        {"gold", gc.gold}, {"n", liveCampfirePriceN}, {"screen", int(gc.screenState)}};
+    if (hasRecord) row["record"] = std::move(record);
     const unsigned n = liveCampfirePriceN;
     const auto wallStart = std::chrono::steady_clock::now();
     // Ten options of 2n rollouts each, a few seconds per act-end rollout at most.
@@ -5571,7 +6105,8 @@ void observeOocCampfirePrice(const GameContext &gc, const PathHistory &path, std
                 auto options = liveOptions;
                 if (options.refereeActEndCalibration.empty()) options.refereeActEndCalibration = a20LeafCalibration();
                 OocGameContextModel model(gc, path, liveSamplerFor(gc), std::move(options));
-                return model.priceRootActions(n, splitMix64(oocMctsSearchSeed(seed, index) ^ 0x43414d5046495245ULL));  // "CAMPFIRE"
+                return model.priceRootActions(n, splitMix64(oocMctsSearchSeed(seed, index) ^ 0x43414d5046495245ULL),  // "CAMPFIRE"
+                                              liveCampfirePriceTop);
             } catch (const std::exception &e) { return nlohmann::json{{"error", e.what()}}; }
         }, int(seconds) * 1000, int(seconds), std::size_t(1) << 24);
     } catch (const std::exception &e) { row["priceError"] = e.what(); }
@@ -5580,6 +6115,183 @@ void observeOocCampfirePrice(const GameContext &gc, const PathHistory &path, std
     std::ofstream out(liveCampfirePricePath, std::ios::app);
     if (!out || !(out << row.dump() << '\n')) throw std::runtime_error("STS_OOC_CAMPFIRE_PRICE write failed");
 #endif
+}
+bool rootProbeIndex(std::uint64_t index) {
+    return !liveRootProbePath.empty() && liveRootProbeIndices.count(index) > 0;
+}
+#ifndef STS_LIVE_ADVISOR
+namespace {
+// Public effect of a root step: what a candidate and the production decider can be matched on.
+std::string publicEffectFingerprint(const GameContext &g) {
+    std::ostringstream out;
+    out << int(g.screenState) << '|' << g.act << '|' << g.floorNum << '|' << g.curHp << '|' << g.maxHp << '|'
+        << g.gold << '|' << g.curMapNodeX << '|' << g.curMapNodeY << "|p";
+    for (const auto &p : g.potions) out << int(p) << ',';
+    out << "|r";
+    for (const auto &r : g.relics.relics) out << int(r.id) << ':' << r.data << ',';
+    out << "|d";
+    for (const auto &c : g.deck.cards) out << int(c.id) << ':' << int(c.upgraded) << ':' << c.misc << ',';
+    return out.str();
+}
+}
+#endif
+void observeOocRootProbe(const GameContext &gc, const PathHistory &path, std::uint64_t seed, std::uint64_t index,
+    const std::function<void(GameContext &)> &productionStep) {
+#ifdef STS_LIVE_ADVISOR
+    (void)gc; (void)path; (void)seed; (void)index; (void)productionStep;
+#else
+    if (!rootProbeIndex(index) || !liveEnabled || gc.outcome != sts::GameOutcome::UNDECIDED) return;
+    const auto searchSeed = oocMctsSearchSeed(seed, index);
+    nlohmann::json row = {{"schema", "ooc-root-probe-v1"}, {"seed", seed}, {"decisionIndex", index},
+        {"searchSeed", searchSeed}, {"ascension", gc.ascension}, {"act", gc.act}, {"floor", gc.floorNum},
+        {"screen", int(gc.screenState)}, {"selector", int(gc.info.selectScreenType)}, {"hp", gc.curHp},
+        {"maxHp", gc.maxHp}, {"gold", gc.gold}, {"deep", liveRootProbeDeep}};
+    try { row["snapshot"] = screen_leaf::snapshotJson(gc, path); }
+    catch (const std::exception &error) { row["snapshot"] = nullptr; row["snapshotError"] = error.what(); }
+    nlohmann::json record;
+    if (heart1::buildPublicLeafRecord(gc, record)) row["record"] = std::move(record);
+    const auto wallStart = std::chrono::steady_clock::now();
+    const auto plainOptions = [] {
+        auto options = liveOptions;
+        options.siblingCapture.reset();
+        options.leafObserver = {};
+        options.priorTracePath.clear();
+        return options;
+    };
+    // Every search runs in its own forked child on a fresh model, so none of them can change the run.
+    const auto search = [&](std::uint64_t sims, bool uniform, std::uint64_t salt = 0x5245464552454e43ULL) -> nlohmann::json {
+        const unsigned seconds = unsigned(120 + sims / 8);
+        try {
+            return forkLeafReplay([&] {
+                try {
+                    ImaginedScope scope;
+                    OocGameContextModel model(gc, path, liveSamplerFor(gc), plainOptions());
+                    if (model.terminalValue(0) || model.isLeafBoundary(0)) return nlohmann::json{{"error", "root_not_searchable"}};
+                    auto c = liveConfig;
+                    c.allowUnqualifiedRootStop = false; c.stopAt512VisitGap20 = false; c.gapStopFraction = 0;
+                    c.seed = searchSeed;
+                    if (uniform) {
+                        // As STS_OOC_MCTS_ROOT_COMPARE's reference: simulations split evenly over every root action.
+                        c.seed = splitMix64(searchSeed ^ salt);   // default "REFERENC", as ROOT_COMPARE
+                        c.gumbelRootActions = 64; c.gumbelScale = 0; c.gumbelUniform = true;
+                        c.gumbelSeed = splitMix64(c.seed ^ 0x47554d42454c5254ULL);   // "GUMBELRT"
+                        c.rootNoiseFraction = 0;
+                    } else {
+                        // The production full-budget root (map roots at A20): same seed, noise and selection.
+                        if (liveRootNoiseFraction > 0) {
+                            c.rootNoiseFraction = liveRootNoiseFraction;
+                            c.rootNoiseAlpha = liveRootNoiseAlpha;
+                            c.rootNoiseSeed = splitMix64(c.seed ^ 0x524f4f544e4f4953ULL);   // "ROOTNOIS"
+                        }
+                        for (std::uint64_t cp = 128; cp < sims; cp *= 2) c.rootCheckpointSimulations.push_back(cp);
+                    }
+                    const double t0 = threadCpuSeconds();
+                    const auto r = sts::search::OocMctsPlanner(c).search(model, 0, sims);
+                    nlohmann::json actions = nlohmann::json::array();
+                    for (const auto &a : r.rootActions) actions.push_back({a.id, a.visits, a.q, a.pruned});
+                    nlohmann::json checkpoints = nlohmann::json::array();
+                    for (const auto &cp : r.rootCheckpoints) {
+                        nlohmann::json xs = nlohmann::json::array();
+                        for (const auto &a : cp.actions) xs.push_back({a.id, a.visits, a.q, a.pruned});
+                        checkpoints.push_back({{"simulations", cp.simulations}, {"actions", xs}});
+                    }
+                    return nlohmann::json{{"simulations", r.metrics.simulations}, {"aborted", r.aborted},
+                        {"abortReason", r.abortReason},
+                        {"selectedId", r.selectedAction ? nlohmann::json(*r.selectedAction) : nlohmann::json(nullptr)},
+                        {"actions", actions}, {"checkpoints", checkpoints}, {"maxDepth", r.metrics.maxDepthReached},
+                        {"cpuSeconds", threadCpuSeconds() - t0}};
+                } catch (const std::exception &e) { return nlohmann::json{{"error", e.what()}}; }
+            }, int(seconds) * 1000, int(seconds), std::size_t(1) << 24);
+        } catch (const std::exception &e) { return nlohmann::json{{"error", e.what()}}; }
+    };
+    try {
+        // Candidates and the public effect of each, then the production decider's effect (up to four chain steps,
+        // so a two-step smith matches its compound candidate).
+        row["candidates"] = forkLeafReplay([&] {
+            nlohmann::json out = nlohmann::json::array();
+            try {
+                std::vector<OocGameContextModel::Candidate> candidates;
+                {
+                    ImaginedScope scope;
+                    OocGameContextModel model(gc, path, liveSamplerFor(gc), plainOptions());
+                    if (model.terminalValue(0) || model.isLeafBoundary(0)) return nlohmann::json{{"list", out}};
+                    for (const auto &a : model.legalActions(0)) {
+                        candidates.push_back(model.candidate(0, a.id));
+                        out.push_back({{"id", a.id}, {"key", candidates.back().key},
+                            {"label", candidateLabel(gc, candidates.back())}, {"prior", a.prior}});
+                    }
+                }
+                for (std::size_t i = 0; i < candidates.size(); ++i) {
+                    auto copy = detachedCopy(gc);
+                    std::string error;
+                    if (executeOocMctsRoot(copy, candidates[i], error)) {
+                        out[i]["effect"] = publicEffectFingerprint(copy);
+                        out[i]["exact"] = sts::test::oocStateFingerprint(copy);
+                    } else out[i]["effectError"] = error;
+                }
+            } catch (const std::exception &e) { return nlohmann::json{{"error", e.what()}}; }
+            return nlohmann::json{{"list", out}};
+        }, 600000, 600, std::size_t(1) << 24);
+        if (row["candidates"].contains("error")) throw std::runtime_error(row["candidates"]["error"].get<std::string>());
+        row["candidates"] = nlohmann::json(row["candidates"]["list"]);
+        row["production"] = forkLeafReplay([&] {
+            nlohmann::json out = nlohmann::json::object();
+            try {
+                std::set<std::string> effects, exacts;
+                for (const auto &c : row["candidates"]) {
+                    if (c.contains("effect")) effects.insert(c["effect"].get<std::string>());
+                    if (c.contains("exact")) exacts.insert(c["exact"].get<std::string>());
+                }
+                auto copy = detachedCopy(gc);
+                for (int step = 1; step <= 4; ++step) {
+                    productionStep(copy);
+                    const auto effect = publicEffectFingerprint(copy);
+                    out["steps"] = step;
+                    if (effects.count(effect)) {
+                        for (const auto &c : row["candidates"])
+                            if (c.value("effect", std::string()) == effect) out["keys"].push_back(c["key"]);
+                        out["exact"] = exacts.count(sts::test::oocStateFingerprint(copy)) > 0;
+                        break;
+                    }
+                    if (copy.outcome != sts::GameOutcome::UNDECIDED || copy.screenState == sts::ScreenState::BATTLE
+                            || copy.screenState == sts::ScreenState::MAP_SCREEN || copy.floorNum != gc.floorNum)
+                        break;
+                }
+                out["effect"] = publicEffectFingerprint(copy);
+            } catch (const std::exception &e) { out["error"] = e.what(); }
+            return out;
+        }, 900000, 900, std::size_t(1) << 24);
+    } catch (const std::exception &e) { row["candidateError"] = e.what(); }
+    row["puct"] = search(liveSimulations, false);
+    row["deep"] = search(liveRootProbeDeep, false);
+    row["uniform"] = search(8192, true);
+    // A second reference on its own seed: the two give each sibling Q's run-to-run noise.
+    row["uniform2"] = search(8192, true, 0x5245464552454e44ULL);
+    row["wallSeconds"] = std::chrono::duration<double>(std::chrono::steady_clock::now() - wallStart).count();
+    std::lock_guard<std::mutex> lock(liveTraceMutex);
+    std::ofstream out(liveRootProbePath, std::ios::app);
+    if (!out || !(out << row.dump() << '\n')) throw std::runtime_error("STS_OOC_ROOT_PROBE write failed");
+#endif
+}
+bool executeOocRootKey(GameContext &gc, const PathHistory &path, const std::string &key, std::string &error) {
+    if (!liveEnabled) { error = "forced_key_requires_live_ooc_mcts"; return false; }
+    std::optional<OocGameContextModel::Candidate> found;
+    {
+        // Building the model scores priors; the thread's policy state must look as if it never happened.
+        const auto policy = captureOocPolicyThreadState();
+        ImaginedScope scope;
+        auto options = liveOptions;
+        options.siblingCapture.reset();
+        options.leafObserver = {};
+        options.priorTracePath.clear();
+        OocGameContextModel model(gc, path, liveSamplerFor(gc), std::move(options));
+        if (!model.terminalValue(0) && !model.isLeafBoundary(0))
+            for (const auto &a : model.legalActions(0))
+                if (model.candidate(0, a.id).key == key) { found = model.candidate(0, a.id); break; }
+        restoreOocPolicyThreadState(policy);
+    }
+    if (!found) { error = "forced_key_not_a_root_candidate"; return false; }
+    return executeOocMctsRoot(gc, *found, error);
 }
 bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t seed,
     std::uint64_t index, LiveOocMctsMetrics &metrics) {
@@ -8326,6 +9038,19 @@ void oocMctsAdapterSelfTest() {
         for (const auto &a : price(30, std::make_shared<DeathSampler>()).at("actions"))
             for (const auto &e : a.at("actEnd"))
                 require(e.at("value") == 0 && e.at("terminal") == true, "campfire price: a death before the act end is 0");
+        // STS_OOC_CAMPFIRE_PRICE_TOP: only the top-K prior actions are priced, with the same streams as a full price.
+        {
+            auto o = plain; o.refereeActEndCalibration = {30, 30, 30, 30, 1};
+            OocGameContextModel m(refereeRoot,path,std::make_shared<HorizonSampler>(),o);
+            const auto top = m.priceRootActions(2, 99, 1);
+            double best = -1;
+            for (const auto &a : rootActions) best = std::max(best, a.prior);
+            require(top.at("actions").size() == 1 && top.at("top") == 1 && top.at("legalActions") == rootActions.size()
+                && top.at("actions")[0].at("prior").get<double>() == best, "campfire price top-K keeps the highest prior");
+            for (const auto &a : priced.at("actions"))
+                if (a.at("id") == top.at("actions")[0].at("id"))
+                    require(a.at("leaf") == top.at("actions")[0].at("leaf"), "campfire price top-K keeps the streams");
+        }
     }
     {
         // Observe RNG after every transition/evaluation without changing the

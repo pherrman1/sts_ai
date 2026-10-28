@@ -72,6 +72,7 @@ graph TD
 - [Encounter marginalization](ooc/encounter-marginalization.md) — M0/M1 strategic labels
 - [External evidence and ideas](ooc/external-evidence-and-ideas.md) — benchmarks, expert play, literature, ranked OOC candidates
 - [Variance reduction](ooc/variance-reduction.md) — rollout noise sources, CRN coupling, unbiased estimators (#883)
+- [Root quality](ooc/root-quality.md) — definitions of action gap Δ, relative bias B_rel, search variance σ, coverage q; identifiable pooled estimands
 
 ## Evidence labels
 

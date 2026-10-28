@@ -1,0 +1,1340 @@
+{
+ "runs": 329,
+ "fights": 4559,
+ "dropped": {},
+ "primary_acts12": {
+  "n": 1492,
+  "runs": 308,
+  "bot_loss": 12.38,
+  "exp_loss": 9.75,
+  "diff": 2.63,
+  "diff_ci": [
+   1.99,
+   3.29
+  ],
+  "diff_copy0": 2.39,
+  "diff_copy0_ci": [
+   1.64,
+   3.13
+  ],
+  "bot_death": 0.059,
+  "exp_death": 0.031,
+  "death_diff_ci": [
+   0.02,
+   0.04
+  ],
+  "bot_potions": 0.62,
+  "exp_potions": 0.54,
+  "potion_diff_ci": [
+   0.04,
+   0.11
+  ],
+  "bot_held": 1.25,
+  "exp_held": 1.65,
+  "exp_held_n": 884,
+  "bot_cpu_per_fight": 17.7
+ },
+ "primary_same_potions": {
+  "n": 323,
+  "runs": 147,
+  "bot_loss": 12.35,
+  "exp_loss": 12.06,
+  "diff": 0.29,
+  "diff_ci": [
+   -0.83,
+   1.39
+  ],
+  "diff_copy0": -0.16,
+  "diff_copy0_ci": [
+   -1.4,
+   1.11
+  ],
+  "bot_death": 0.036,
+  "exp_death": 0.031,
+  "death_diff_ci": [
+   -0.01,
+   0.02
+  ],
+  "bot_potions": 0.7,
+  "exp_potions": 0.52,
+  "potion_diff_ci": [
+   0.11,
+   0.24
+  ],
+  "bot_held": 1.41,
+  "exp_held": 1.41,
+  "exp_held_n": 323,
+  "bot_cpu_per_fight": 10.5
+ },
+ "by_act_room": {
+  "1-M": {
+   "n": 1400,
+   "runs": 316,
+   "bot_loss": 1.37,
+   "exp_loss": 1.14,
+   "diff": 0.22,
+   "diff_ci": [
+    -0.07,
+    0.51
+   ],
+   "diff_copy0": 0.32,
+   "diff_copy0_ci": [
+    0.06,
+    0.57
+   ],
+   "bot_death": 0.005,
+   "exp_death": 0.004,
+   "death_diff_ci": [
+    -0.0,
+    0.0
+   ],
+   "bot_potions": 0.12,
+   "exp_potions": 0.08,
+   "potion_diff_ci": [
+    0.02,
+    0.05
+   ],
+   "bot_held": 0.96,
+   "exp_held": 1.09,
+   "exp_held_n": 828,
+   "bot_cpu_per_fight": 1.6
+  },
+  "1-?": {
+   "n": 5,
+   "runs": 5,
+   "bot_loss": 0.7,
+   "exp_loss": 1.8,
+   "diff": -1.1,
+   "diff_ci": [
+    -6.55,
+    3.95
+   ],
+   "diff_copy0": -1.8,
+   "diff_copy0_ci": [
+    -8.8,
+    5.6
+   ],
+   "bot_death": 0,
+   "exp_death": 0,
+   "death_diff_ci": [
+    0,
+    0
+   ],
+   "bot_potions": 0.4,
+   "exp_potions": 0.2,
+   "potion_diff_ci": [
+    0,
+    0.6
+   ],
+   "bot_held": 1.2,
+   "exp_held": 1,
+   "exp_held_n": 1,
+   "bot_cpu_per_fight": 6.5
+  },
+  "1-E": {
+   "n": 739,
+   "runs": 306,
+   "bot_loss": 11.23,
+   "exp_loss": 10.04,
+   "diff": 1.2,
+   "diff_ci": [
+    0.43,
+    1.96
+   ],
+   "diff_copy0": 1.09,
+   "diff_copy0_ci": [
+    0.27,
+    1.91
+   ],
+   "bot_death": 0.031,
+   "exp_death": 0.015,
+   "death_diff_ci": [
+    0.01,
+    0.03
+   ],
+   "bot_potions": 0.62,
+   "exp_potions": 0.59,
+   "potion_diff_ci": [
+    -0.01,
+    0.07
+   ],
+   "bot_held": 1.33,
+   "exp_held": 1.51,
+   "exp_held_n": 441,
+   "bot_cpu_per_fight": 3.3
+  },
+  "1-B": {
+   "n": 250,
+   "runs": 250,
+   "bot_loss": 14.59,
+   "exp_loss": 12.89,
+   "diff": 1.7,
+   "diff_ci": [
+    0.3,
+    3.13
+   ],
+   "diff_copy0": 1.75,
+   "diff_copy0_ci": [
+    0.08,
+    3.42
+   ],
+   "bot_death": 0.125,
+   "exp_death": 0.064,
+   "death_diff_ci": [
+    0.03,
+    0.1
+   ],
+   "bot_potions": 0.89,
+   "exp_potions": 0.47,
+   "potion_diff_ci": [
+    0.32,
+    0.52
+   ],
+   "bot_held": 1.34,
+   "exp_held": 1.8,
+   "exp_held_n": 148,
+   "bot_cpu_per_fight": 39.1
+  },
+  "2-M": {
+   "n": 958,
+   "runs": 215,
+   "bot_loss": 3.82,
+   "exp_loss": 1.81,
+   "diff": 2.01,
+   "diff_ci": [
+    1.48,
+    2.55
+   ],
+   "diff_copy0": 2.02,
+   "diff_copy0_ci": [
+    1.46,
+    2.59
+   ],
+   "bot_death": 0.011,
+   "exp_death": 0.005,
+   "death_diff_ci": [
+    0.0,
+    0.01
+   ],
+   "bot_potions": 0.19,
+   "exp_potions": 0.24,
+   "potion_diff_ci": [
+    -0.09,
+    -0.02
+   ],
+   "bot_held": 0.98,
+   "exp_held": 1.7,
+   "exp_held_n": 574,
+   "bot_cpu_per_fight": 3.8
+  },
+  "2-?": {
+   "n": 0
+  },
+  "2-E": {
+   "n": 375,
+   "runs": 175,
+   "bot_loss": 11.0,
+   "exp_loss": 5.56,
+   "diff": 5.44,
+   "diff_ci": [
+    4.08,
+    6.83
+   ],
+   "diff_copy0": 4.76,
+   "diff_copy0_ci": [
+    3.3,
+    6.2
+   ],
+   "bot_death": 0.055,
+   "exp_death": 0.027,
+   "death_diff_ci": [
+    0.01,
+    0.05
+   ],
+   "bot_potions": 0.41,
+   "exp_potions": 0.53,
+   "potion_diff_ci": [
+    -0.19,
+    -0.05
+   ],
+   "bot_held": 1.07,
+   "exp_held": 1.73,
+   "exp_held_n": 220,
+   "bot_cpu_per_fight": 4.8
+  },
+  "2-B": {
+   "n": 128,
+   "runs": 128,
+   "bot_loss": 18.67,
+   "exp_loss": 14.21,
+   "diff": 4.46,
+   "diff_ci": [
+    1.56,
+    7.43
+   ],
+   "diff_copy0": 4.16,
+   "diff_copy0_ci": [
+    0.56,
+    7.93
+   ],
+   "bot_death": 0.107,
+   "exp_death": 0.07,
+   "death_diff_ci": [
+    0.0,
+    0.07
+   ],
+   "bot_potions": 0.66,
+   "exp_potions": 0.44,
+   "potion_diff_ci": [
+    0.07,
+    0.38
+   ],
+   "bot_held": 1.16,
+   "exp_held": 1.87,
+   "exp_held_n": 75,
+   "bot_cpu_per_fight": 96.3
+  },
+  "3-M": {
+   "n": 393,
+   "runs": 92,
+   "bot_loss": 0.49,
+   "exp_loss": -1.63,
+   "diff": 2.12,
+   "diff_ci": [
+    1.31,
+    2.96
+   ],
+   "diff_copy0": 1.68,
+   "diff_copy0_ci": [
+    0.85,
+    2.54
+   ],
+   "bot_death": 0,
+   "exp_death": 0,
+   "death_diff_ci": [
+    0,
+    0
+   ],
+   "bot_potions": 0.1,
+   "exp_potions": 0.12,
+   "potion_diff_ci": [
+    -0.07,
+    0.02
+   ],
+   "bot_held": 0.78,
+   "exp_held": 2.11,
+   "exp_held_n": 217,
+   "bot_cpu_per_fight": 8.6
+  },
+  "3-?": {
+   "n": 0
+  },
+  "3-E": {
+   "n": 190,
+   "runs": 76,
+   "bot_loss": 6.26,
+   "exp_loss": 2.75,
+   "diff": 3.51,
+   "diff_ci": [
+    1.39,
+    5.6
+   ],
+   "diff_copy0": 3.55,
+   "diff_copy0_ci": [
+    1.51,
+    5.59
+   ],
+   "bot_death": 0.016,
+   "exp_death": 0.005,
+   "death_diff_ci": [
+    -0.0,
+    0.02
+   ],
+   "bot_potions": 0.23,
+   "exp_potions": 0.28,
+   "potion_diff_ci": [
+    -0.16,
+    0.04
+   ],
+   "bot_held": 0.86,
+   "exp_held": 2.21,
+   "exp_held_n": 107,
+   "bot_cpu_per_fight": 11.5
+  },
+  "3-B": {
+   "n": 121,
+   "runs": 62,
+   "bot_loss": 13.07,
+   "exp_loss": 7.9,
+   "diff": 5.17,
+   "diff_ci": [
+    2.07,
+    8.29
+   ],
+   "diff_copy0": 5.61,
+   "diff_copy0_ci": [
+    2.4,
+    9.07
+   ],
+   "bot_death": 0.07,
+   "exp_death": 0.008,
+   "death_diff_ci": [
+    0.03,
+    0.1
+   ],
+   "bot_potions": 0.33,
+   "exp_potions": 0.06,
+   "potion_diff_ci": [
+    0.17,
+    0.38
+   ],
+   "bot_held": 0.8,
+   "exp_held": 2.47,
+   "exp_held_n": 64,
+   "bot_cpu_per_fight": 214.5
+  }
+ },
+ "by_encounter": {
+  "3 Sentries": {
+   "n": 239,
+   "runs": 209,
+   "bot_loss": 11.98,
+   "exp_loss": 10.95,
+   "diff": 1.03,
+   "diff_ci": [
+    -0.18,
+    2.24
+   ],
+   "diff_copy0": 0.9,
+   "diff_copy0_ci": [
+    -0.37,
+    2.17
+   ],
+   "bot_death": 0.026,
+   "exp_death": 0.021,
+   "death_diff_ci": [
+    -0.01,
+    0.02
+   ],
+   "bot_potions": 0.57,
+   "exp_potions": 0.54,
+   "potion_diff_ci": [
+    -0.04,
+    0.1
+   ],
+   "bot_held": 1.35,
+   "exp_held": 1.54,
+   "exp_held_n": 141,
+   "bot_cpu_per_fight": 5.7
+  },
+  "Automaton": {
+   "n": 41,
+   "runs": 41,
+   "bot_loss": 20.95,
+   "exp_loss": 11.15,
+   "diff": 9.8,
+   "diff_ci": [
+    4.05,
+    15.79
+   ],
+   "diff_copy0": 10.95,
+   "diff_copy0_ci": [
+    3.63,
+    18.32
+   ],
+   "bot_death": 0.183,
+   "exp_death": 0.073,
+   "death_diff_ci": [
+    0.04,
+    0.19
+   ],
+   "bot_potions": 0.73,
+   "exp_potions": 0.34,
+   "potion_diff_ci": [
+    0.07,
+    0.69
+   ],
+   "bot_held": 1.15,
+   "exp_held": 2.22,
+   "exp_held_n": 23,
+   "bot_cpu_per_fight": 89.6
+  },
+  "Awakened One": {
+   "n": 39,
+   "runs": 39,
+   "bot_loss": 18.02,
+   "exp_loss": 7.36,
+   "diff": 10.66,
+   "diff_ci": [
+    5.51,
+    16.47
+   ],
+   "diff_copy0": 12.26,
+   "diff_copy0_ci": [
+    6.38,
+    18.97
+   ],
+   "bot_death": 0.154,
+   "exp_death": 0.026,
+   "death_diff_ci": [
+    0.04,
+    0.22
+   ],
+   "bot_potions": 0.59,
+   "exp_potions": 0.15,
+   "potion_diff_ci": [
+    0.19,
+    0.71
+   ],
+   "bot_held": 1.03,
+   "exp_held": 2.45,
+   "exp_held_n": 20,
+   "bot_cpu_per_fight": 298.3
+  },
+  "Book of Stabbing": {
+   "n": 130,
+   "runs": 120,
+   "bot_loss": 11.97,
+   "exp_loss": 7.2,
+   "diff": 4.77,
+   "diff_ci": [
+    2.71,
+    6.89
+   ],
+   "diff_copy0": 3.82,
+   "diff_copy0_ci": [
+    1.47,
+    6.25
+   ],
+   "bot_death": 0.052,
+   "exp_death": 0.015,
+   "death_diff_ci": [
+    0.01,
+    0.07
+   ],
+   "bot_potions": 0.36,
+   "exp_potions": 0.53,
+   "potion_diff_ci": [
+    -0.29,
+    -0.06
+   ],
+   "bot_held": 1.03,
+   "exp_held": 1.64,
+   "exp_held_n": 69,
+   "bot_cpu_per_fight": 4.1
+  },
+  "Champ": {
+   "n": 36,
+   "runs": 36,
+   "bot_loss": 14.21,
+   "exp_loss": 9.36,
+   "diff": 4.85,
+   "diff_ci": [
+    0.79,
+    8.83
+   ],
+   "diff_copy0": 2.92,
+   "diff_copy0_ci": [
+    -2.81,
+    8.44
+   ],
+   "bot_death": 0.035,
+   "exp_death": 0.028,
+   "death_diff_ci": [
+    -0.01,
+    0.03
+   ],
+   "bot_potions": 0.54,
+   "exp_potions": 0.28,
+   "potion_diff_ci": [
+    0.06,
+    0.48
+   ],
+   "bot_held": 1.17,
+   "exp_held": 1.83,
+   "exp_held_n": 18,
+   "bot_cpu_per_fight": 130.4
+  },
+  "Collector": {
+   "n": 51,
+   "runs": 51,
+   "bot_loss": 20.0,
+   "exp_loss": 20.1,
+   "diff": -0.1,
+   "diff_ci": [
+    -4.84,
+    4.49
+   ],
+   "diff_copy0": -0.41,
+   "diff_copy0_ci": [
+    -5.69,
+    4.94
+   ],
+   "bot_death": 0.098,
+   "exp_death": 0.098,
+   "death_diff_ci": [
+    -0.07,
+    0.06
+   ],
+   "bot_potions": 0.7,
+   "exp_potions": 0.63,
+   "potion_diff_ci": [
+    -0.18,
+    0.32
+   ],
+   "bot_held": 1.16,
+   "exp_held": 1.65,
+   "exp_held_n": 34,
+   "bot_cpu_per_fight": 77.6
+  },
+  "Donu and Deca": {
+   "n": 39,
+   "runs": 39,
+   "bot_loss": 10.07,
+   "exp_loss": 8.08,
+   "diff": 1.99,
+   "diff_ci": [
+    -3.01,
+    6.75
+   ],
+   "diff_copy0": 2.79,
+   "diff_copy0_ci": [
+    -1.82,
+    7.13
+   ],
+   "bot_death": 0.045,
+   "exp_death": 0,
+   "death_diff_ci": [
+    0.01,
+    0.11
+   ],
+   "bot_potions": 0.27,
+   "exp_potions": 0.03,
+   "potion_diff_ci": [
+    0.12,
+    0.4
+   ],
+   "bot_held": 0.82,
+   "exp_held": 2.38,
+   "exp_held_n": 21,
+   "bot_cpu_per_fight": 188.9
+  },
+  "Giant Head": {
+   "n": 63,
+   "runs": 53,
+   "bot_loss": 4.44,
+   "exp_loss": 2.11,
+   "diff": 2.33,
+   "diff_ci": [
+    -1.38,
+    6.07
+   ],
+   "diff_copy0": 2.7,
+   "diff_copy0_ci": [
+    -0.9,
+    6.42
+   ],
+   "bot_death": 0.016,
+   "exp_death": 0.016,
+   "death_diff_ci": [
+    -0.03,
+    0.03
+   ],
+   "bot_potions": 0.23,
+   "exp_potions": 0.21,
+   "potion_diff_ci": [
+    -0.07,
+    0.12
+   ],
+   "bot_held": 0.84,
+   "exp_held": 2.06,
+   "exp_held_n": 33,
+   "bot_cpu_per_fight": 11.9
+  },
+  "Gremlin Leader": {
+   "n": 123,
+   "runs": 114,
+   "bot_loss": 5.57,
+   "exp_loss": 0.99,
+   "diff": 4.57,
+   "diff_ci": [
+    2.67,
+    6.41
+   ],
+   "diff_copy0": 4.65,
+   "diff_copy0_ci": [
+    2.05,
+    7.23
+   ],
+   "bot_death": 0.028,
+   "exp_death": 0.033,
+   "death_diff_ci": [
+    -0.03,
+    0.02
+   ],
+   "bot_potions": 0.5,
+   "exp_potions": 0.37,
+   "potion_diff_ci": [
+    0.02,
+    0.25
+   ],
+   "bot_held": 1.19,
+   "exp_held": 1.74,
+   "exp_held_n": 73,
+   "bot_cpu_per_fight": 5.9
+  },
+  "Gremlin Nob": {
+   "n": 242,
+   "runs": 210,
+   "bot_loss": 9.62,
+   "exp_loss": 8.46,
+   "diff": 1.16,
+   "diff_ci": [
+    -0.32,
+    2.59
+   ],
+   "diff_copy0": 1.91,
+   "diff_copy0_ci": [
+    0.29,
+    3.56
+   ],
+   "bot_death": 0.032,
+   "exp_death": 0.025,
+   "death_diff_ci": [
+    -0.01,
+    0.03
+   ],
+   "bot_potions": 0.71,
+   "exp_potions": 0.63,
+   "potion_diff_ci": [
+    -0.01,
+    0.16
+   ],
+   "bot_held": 1.35,
+   "exp_held": 1.48,
+   "exp_held_n": 147,
+   "bot_cpu_per_fight": 1.2
+  },
+  "Hexaghost": {
+   "n": 92,
+   "runs": 92,
+   "bot_loss": 16.57,
+   "exp_loss": 15.47,
+   "diff": 1.1,
+   "diff_ci": [
+    -0.82,
+    3.04
+   ],
+   "diff_copy0": 1.14,
+   "diff_copy0_ci": [
+    -1.34,
+    3.6
+   ],
+   "bot_death": 0.128,
+   "exp_death": 0.076,
+   "death_diff_ci": [
+    -0.0,
+    0.1
+   ],
+   "bot_potions": 0.9,
+   "exp_potions": 0.59,
+   "potion_diff_ci": [
+    0.15,
+    0.47
+   ],
+   "bot_held": 1.43,
+   "exp_held": 1.86,
+   "exp_held_n": 58,
+   "bot_cpu_per_fight": 37.5
+  },
+  "Lagavulin": {
+   "n": 263,
+   "runs": 231,
+   "bot_loss": 11.83,
+   "exp_loss": 10.5,
+   "diff": 1.33,
+   "diff_ci": [
+    0.09,
+    2.52
+   ],
+   "diff_copy0": 0.45,
+   "diff_copy0_ci": [
+    -0.88,
+    1.73
+   ],
+   "bot_death": 0.033,
+   "exp_death": 0,
+   "death_diff_ci": [
+    0.02,
+    0.05
+   ],
+   "bot_potions": 0.57,
+   "exp_potions": 0.57,
+   "potion_diff_ci": [
+    -0.08,
+    0.07
+   ],
+   "bot_held": 1.3,
+   "exp_held": 1.52,
+   "exp_held_n": 154,
+   "bot_cpu_per_fight": 3.1
+  },
+  "Nemesis": {
+   "n": 63,
+   "runs": 58,
+   "bot_loss": 6.16,
+   "exp_loss": 1.83,
+   "diff": 4.34,
+   "diff_ci": [
+    1.85,
+    7.06
+   ],
+   "diff_copy0": 4.57,
+   "diff_copy0_ci": [
+    1.58,
+    7.79
+   ],
+   "bot_death": 0.008,
+   "exp_death": 0,
+   "death_diff_ci": [
+    0,
+    0.02
+   ],
+   "bot_potions": 0.15,
+   "exp_potions": 0.3,
+   "potion_diff_ci": [
+    -0.33,
+    0.01
+   ],
+   "bot_held": 0.86,
+   "exp_held": 2.26,
+   "exp_held_n": 39,
+   "bot_cpu_per_fight": 12.1
+  },
+  "Reptomancer": {
+   "n": 64,
+   "runs": 56,
+   "bot_loss": 8.16,
+   "exp_loss": 4.3,
+   "diff": 3.86,
+   "diff_ci": [
+    -0.46,
+    8.09
+   ],
+   "diff_copy0": 3.39,
+   "diff_copy0_ci": [
+    -1.49,
+    8.13
+   ],
+   "bot_death": 0.023,
+   "exp_death": 0,
+   "death_diff_ci": [
+    0.0,
+    0.05
+   ],
+   "bot_potions": 0.3,
+   "exp_potions": 0.34,
+   "potion_diff_ci": [
+    -0.28,
+    0.15
+   ],
+   "bot_held": 0.88,
+   "exp_held": 2.29,
+   "exp_held_n": 35,
+   "bot_cpu_per_fight": 10.6
+  },
+  "Slavers": {
+   "n": 122,
+   "runs": 112,
+   "bot_loss": 15.46,
+   "exp_loss": 8.42,
+   "diff": 7.04,
+   "diff_ci": [
+    4.01,
+    10.04
+   ],
+   "diff_copy0": 5.88,
+   "diff_copy0_ci": [
+    2.88,
+    8.82
+   ],
+   "bot_death": 0.084,
+   "exp_death": 0.033,
+   "death_diff_ci": [
+    0.01,
+    0.1
+   ],
+   "bot_potions": 0.38,
+   "exp_potions": 0.7,
+   "potion_diff_ci": [
+    -0.45,
+    -0.19
+   ],
+   "bot_held": 1.01,
+   "exp_held": 1.79,
+   "exp_held_n": 78,
+   "bot_cpu_per_fight": 4.4
+  },
+  "Slime Boss": {
+   "n": 79,
+   "runs": 79,
+   "bot_loss": 10.19,
+   "exp_loss": 10.39,
+   "diff": -0.2,
+   "diff_ci": [
+    -3.15,
+    2.72
+   ],
+   "diff_copy0": -1.14,
+   "diff_copy0_ci": [
+    -4.38,
+    2.06
+   ],
+   "bot_death": 0.12,
+   "exp_death": 0.063,
+   "death_diff_ci": [
+    -0.0,
+    0.12
+   ],
+   "bot_potions": 0.87,
+   "exp_potions": 0.38,
+   "potion_diff_ci": [
+    0.31,
+    0.66
+   ],
+   "bot_held": 1.39,
+   "exp_held": 1.87,
+   "exp_held_n": 47,
+   "bot_cpu_per_fight": 36.7
+  },
+  "The Guardian": {
+   "n": 79,
+   "runs": 79,
+   "bot_loss": 16.69,
+   "exp_loss": 12.38,
+   "diff": 4.31,
+   "diff_ci": [
+    1.96,
+    6.65
+   ],
+   "diff_copy0": 5.34,
+   "diff_copy0_ci": [
+    2.63,
+    8.03
+   ],
+   "bot_death": 0.127,
+   "exp_death": 0.051,
+   "death_diff_ci": [
+    0.02,
+    0.14
+   ],
+   "bot_potions": 0.91,
+   "exp_potions": 0.43,
+   "potion_diff_ci": [
+    0.3,
+    0.66
+   ],
+   "bot_held": 1.19,
+   "exp_held": 1.65,
+   "exp_held_n": 43,
+   "bot_cpu_per_fight": 43.5
+  },
+  "Time Eater": {
+   "n": 43,
+   "runs": 43,
+   "bot_loss": 11.31,
+   "exp_loss": 8.23,
+   "diff": 3.08,
+   "diff_ci": [
+    -0.92,
+    7.03
+   ],
+   "diff_copy0": 2.14,
+   "diff_copy0_ci": [
+    -2.63,
+    7
+   ],
+   "bot_death": 0.017,
+   "exp_death": 0,
+   "death_diff_ci": [
+    0,
+    0.05
+   ],
+   "bot_potions": 0.14,
+   "exp_potions": 0,
+   "potion_diff_ci": [
+    0.05,
+    0.25
+   ],
+   "bot_held": 0.58,
+   "exp_held": 2.57,
+   "exp_held_n": 23,
+   "bot_cpu_per_fight": 161.7
+  }
+ },
+ "prefix": {
+  "end_floor_mean": 27.6,
+  "end_floor_q25_50_75": [
+   16,
+   24,
+   39
+  ],
+  "end_act": [
+   [
+    2,
+    129
+   ],
+   [
+    1,
+    108
+   ],
+   [
+    4,
+    58
+   ],
+   [
+    3,
+    34
+   ]
+  ],
+  "main_line_deaths": 31,
+  "fights_continued_from_other_copy": 79,
+  "fights_no_copy_won": 28,
+  "runs_with_other_copy": 68,
+  "logged_potions_not_offered": {
+   "runs_with_other_copy": 145,
+   "runs_copy0_only": 92
+  },
+  "potions_left_belt_full": 252
+ },
+ "stop_reasons": [
+  [
+   "act 4",
+   58
+  ],
+  [
+   "card offer differs",
+   44
+  ],
+  [
+   "main_line_died",
+   31
+  ],
+  [
+   "boss relic offer differs",
+   29
+  ],
+  [
+   "boss relic not logged",
+   20
+  ],
+  [
+   "shop removal unaffordable",
+   12
+  ],
+  [
+   "expert log ends",
+   12
+  ],
+  [
+   "logged path not on the map (Winged Boots)",
+   10
+  ],
+  [
+   "logged upgrade card not in deck",
+   10
+  ],
+  [
+   "reward relic Bottled Flame not logged",
+   6
+  ],
+  [
+   "event not logged",
+   6
+  ],
+  [
+   "reward relic Omamori not logged",
+   4
+  ],
+  [
+   "shop purchase BloodPotion unaffordable or belt full",
+   3
+  ],
+  [
+   "shop item Ancient Potion not offered",
+   3
+  ],
+  [
+   "shop purchase Fire Potion unaffordable or belt full",
+   3
+  ],
+  [
+   "reward relic StrikeDummy not logged",
+   2
+  ],
+  [
+   "reward relic PreservedInsect not logged",
+   2
+  ],
+  [
+   "reward relic Tiny Chest not logged",
+   2
+  ],
+  [
+   "reward relic Kunai not logged",
+   2
+  ],
+  [
+   "logged remove card not in deck",
+   2
+  ],
+  [
+   "sapphire key relic differs",
+   2
+  ],
+  [
+   "reward relic Oddly Smooth Stone not logged",
+   2
+  ],
+  [
+   "reward relic Singing Bowl not logged",
+   2
+  ],
+  [
+   "shop item FearPotion not offered",
+   2
+  ],
+  [
+   "shop item BloodPotion not offered",
+   2
+  ],
+  [
+   "reward relic Gremlin Horn not logged",
+   2
+  ],
+  [
+   "shop item PowerPotion not offered",
+   1
+  ],
+  [
+   "shop item SkillPotion not offered",
+   1
+  ],
+  [
+   "shop item Burning Pact not offered",
+   1
+  ],
+  [
+   "event N'loth vs log FaceTrader",
+   1
+  ],
+  [
+   "reward relic Red Skull not logged",
+   1
+  ],
+  [
+   "event Back to Basics vs log Cursed Tome",
+   1
+  ],
+  [
+   "reward relic CaptainsWheel not logged",
+   1
+  ],
+  [
+   "reward relic Eternal Feather not logged",
+   1
+  ],
+  [
+   "campfire PURGE illegal",
+   1
+  ],
+  [
+   "event WeMeetAgain vs log Purifier",
+   1
+  ],
+  [
+   "reward relic Happy Flower not logged",
+   1
+  ],
+  [
+   "reward relic Dead Branch not logged",
+   1
+  ],
+  [
+   "shop item Barricade not offered",
+   1
+  ],
+  [
+   "shop purchase Lee's Waffle unaffordable or belt full",
+   1
+  ],
+  [
+   "reward relic Pen Nib not logged",
+   1
+  ],
+  [
+   "shop purchase Gambling Chip unaffordable or belt full",
+   1
+  ],
+  [
+   "event Living Wall vs log Golden Wing",
+   1
+  ],
+  [
+   "event Cursed Tome vs log Masked Bandits",
+   1
+  ],
+  [
+   "reward relic Bottled Tornado not logged",
+   1
+  ],
+  [
+   "shop item Inflame+1 not offered",
+   1
+  ],
+  [
+   "shop purchase Anger unaffordable or belt full",
+   1
+  ],
+  [
+   "reward relic Bottled Lightning not logged",
+   1
+  ],
+  [
+   "shop purchase Weak Potion unaffordable or belt full",
+   1
+  ],
+  [
+   "event Duplicator vs log Purifier",
+   1
+  ],
+  [
+   "reward relic Boot not logged",
+   1
+  ],
+  [
+   "event Big Fish vs log Liars Game",
+   1
+  ],
+  [
+   "reward relic Lantern not logged",
+   1
+  ],
+  [
+   "reward relic Whetstone not logged",
+   1
+  ],
+  [
+   "event Drug Dealer vs log Ghosts",
+   1
+  ],
+  [
+   "Neow card reward not logged",
+   1
+  ],
+  [
+   "event The Woman in Blue vs log Match and Keep!",
+   1
+  ],
+  [
+   "shop item Fruit Juice not offered",
+   1
+  ],
+  [
+   "shop purchase Ornamental Fan unaffordable or belt full",
+   1
+  ],
+  [
+   "event Liars Game vs log Scrap Ooze",
+   1
+  ],
+  [
+   "reward relic Incense Burner not logged",
+   1
+  ],
+  [
+   "shop purchase Shovel unaffordable or belt full",
+   1
+  ],
+  [
+   "reward relic Ornamental Fan not logged",
+   1
+  ],
+  [
+   "event WeMeetAgain vs log Golden Shrine",
+   1
+  ],
+  [
+   "event Nest vs log Forgotten Altar",
+   1
+  ],
+  [
+   "event The Joust vs log Designer",
+   1
+  ],
+  [
+   "reward relic Ginger not logged",
+   1
+  ],
+  [
+   "shop purchase PowerPotion unaffordable or belt full",
+   1
+  ],
+  [
+   "shop purchase Pen Nib unaffordable or belt full",
+   1
+  ],
+  [
+   "reward relic InkBottle not logged",
+   1
+  ],
+  [
+   "reward relic Torii not logged",
+   1
+  ],
+  [
+   "reward relic Pantograph not logged",
+   1
+  ],
+  [
+   "reward relic Bag of Marbles not logged",
+   1
+  ],
+  [
+   "reward relic Bird Faced Urn not logged",
+   1
+  ],
+  [
+   "N'loth relic CeramicFish not offered",
+   1
+  ],
+  [
+   "event MindBloom vs log The Moai Head",
+   1
+  ],
+  [
+   "reward relic Nunchaku not logged",
+   1
+  ],
+  [
+   "shop purchase Ice Cream unaffordable or belt full",
+   1
+  ],
+  [
+   "shop item Sundial not offered",
+   1
+  ],
+  [
+   "event N'loth vs log Knowing Skull",
+   1
+  ],
+  [
+   "shop purchase AttackPotion unaffordable or belt full",
+   1
+  ],
+  [
+   "reward relic Blue Candle not logged",
+   1
+  ]
+ ]
+}

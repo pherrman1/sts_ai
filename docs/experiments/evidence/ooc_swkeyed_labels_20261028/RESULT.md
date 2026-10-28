@@ -62,7 +62,7 @@ The in-training holdout scores each run against its own labels, so it does not c
 **Bars:**
 - Selection BCE ≤ 0.570 holds for both seeds (0.568 and 0.559).
 - −3 HP proxy (Deviation 2): control s1 84.1 % vs treatment s1 82.9 % (−1.2 pp); control s2 83.7 % vs treatment s2
-  81.7 % (−2.0 pp). Both are within the 2 pp limit, s2 just barely.
+  81.7 % (−1.9 pp). Both are within the 2 pp limit, s2 just barely.
 
 ## Verdict (pre-registered gate): NOT_SHOWN
 - The seed-mean CI is above 0 (+0.0050 [+0.0014, +0.0084]).

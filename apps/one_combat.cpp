@@ -3084,10 +3084,10 @@ static std::string unsupportedSilverOption() {
         {"STS_SILVER_EXACT_ROOT_BUDGETS", ""}, {"STS_SILVER_SEARCH_SINGLETON_ROOTS", ""},
         {"STS_SILVER_REUSE_CAP_MODE", "allocated"}, {"STS_SILVER_NODE_REUSE_CAP", ""}, {"STS_SILVER_ACT4_STRONG", ""},
         {"STS_SILVER_VNET_LEAF_DIRECT", "0"}, {"STS_SILVER_TELEMETRY", "0"},
-        {"STS_SILVER_USELESS_TRACE", ""}, {"STS_SILVER_PUBLIC_TRACE", ""}, {"STS_SILVER_PUBLIC_TARGET", ""}, {"STS_SILVER_TREE_PROFILE", ""}, {"STS_SILVER_DEBUG_TREE", ""}, {"STS_SILVER_DEBUG_TREE_NODE_CAP", ""},
+        {"STS_SILVER_USELESS_TRACE", ""}, {"STS_SILVER_PUBLIC_TRACE", ""}, {"STS_SILVER_PUBLIC_TARGET", ""}, {"STS_SILVER_TREE_PROFILE", ""}, {"STS_SILVER_TREE_PROFILE_SCOPE", ""}, {"STS_SILVER_DEBUG_TREE", ""}, {"STS_SILVER_DEBUG_TREE_NODE_CAP", ""},
         {"STS_SILVER_LEARNED_STOP", ""}, {"STS_SILVER_LEARNED_STOP_THRESHOLD", ""},
         {"STS_SILVER_LEARNED_STOP_BOSS_FALLBACK", ""}, {"STS_SILVER_LEARNED_STOP_BOSS_MAX", ""}, {"STS_SILVER_LEARNED_STOP_MODEL", ""}, {"STS_SILVER_STOP_TRACE", ""},
-        {"STS_SILVER_FINAL_BOSS_BINARY", ""}, {"STS_SILVER_FINAL_FIGHT_LEAF", ""}, {"STS_SILVER_NO_LOSS_POTION_CREDIT", ""}, {"STS_SILVER_RELIC_HEAL_LEAF", ""}, {"STS_SILVER_A20_BOSS_HEAL_FIX", ""}, {"STS_SILVER_LOOP_GUARD", ""}, {"STS_SILVER_ESCAPE_PENALTY", ""}, {"STS_SILVER_POTION_WEIGHTS", ""}, {"STS_SILVER_CONCAVE_HP_LEAF", ""}, {"STS_SILVER_GOLD_WEIGHT", ""}, {"STS_SILVER_MAXHP_WEIGHT", ""},
+        {"STS_SILVER_FINAL_BOSS_BINARY", ""}, {"STS_SILVER_FINAL_FIGHT_LEAF", ""}, {"STS_SILVER_NO_LOSS_POTION_CREDIT", ""}, {"STS_SILVER_RELIC_HEAL_LEAF", ""}, {"STS_SILVER_A20_BOSS_HEAL_FIX", ""}, {"STS_SILVER_LOOP_GUARD", ""}, {"STS_SILVER_ESCAPE_PENALTY", ""}, {"STS_SILVER_POTION_WEIGHTS", ""}, {"STS_SILVER_CONCAVE_HP_LEAF", ""}, {"STS_SILVER_GOLD_WEIGHT", ""}, {"STS_SILVER_MAXHP_WEIGHT", ""}, {"STS_SILVER_VICTORY_TURN_PENALTY", ""},
         {"STS_SILVER_ROOT_PRIOR", ""}, {"STS_SILVER_ROOT_PRIOR_WEIGHT", ""}, {"STS_SILVER_ROOT_PRIOR_SCOPE", ""}, {"STS_SILVER_TREE_PRIOR_MIN_VISITS", ""},
         {"STS_SILVER_ROLLOUT_UNIFORM", ""}, {"STS_SILVER_ROLLOUTS_PER_LEAF", ""}, {"STS_SILVER_ROLLOUT_CARD_TABLE", ""}, {"STS_SILVER_ROLLOUT_ZERO_COST_CAP", ""}, {"STS_SILVER_ROLLOUT_ACTION_CAP", ""},
         {"STS_SILVER_ROLLOUT_ROOT_TABLE", ""}, {"STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE", ""}, {"STS_SILVER_PRIOR_PLAYOUT_ELITE", ""},
@@ -3163,7 +3163,8 @@ int main(int argc, char **argv) {
         // All three modes take the ascension as argv[4], default 20.
         const bool a20WholeRun = wholeRunMode && (argc > 4 ? std::atoi(argv[4]) : 20) == 20;
         // expertreplay plays one A20 whole run per process (no sims argument).
-        const bool wholeRunDefault = (wholeRunMode && argc <= 2) || a20WholeRun || mode == "expertreplay";
+        const bool wholeRunDefault = (wholeRunMode && argc <= 2) || a20WholeRun || mode == "expertreplay"
+            || mode == "expertfights";
         const bool adaptiveConfigured = std::getenv("STS_SILVER_ADAPTIVE")
             || std::getenv("STS_SILVER_ADAPTIVE_RETAINED_ONLY")
             || std::getenv("STS_SILVER_ADAPTIVE_TOP_GAP");
@@ -3814,6 +3815,8 @@ int main(int argc, char **argv) {
         return one_combat::heartOutcomeSelfTest();
     } else if (mode == "forcebossrelicselftest") {
         return forcedBossRelicSelfTest();
+    } else if (mode == "forcedecisionselftest") {
+        return forcedDecisionSelfTest();
     } else if (mode == "heart1recordselftest") {
         one_combat::heart1::publicRecordInvarianceSelfTest();
         std::cout << "heart1 public record invariance selftest: ok\n";
@@ -3822,6 +3825,10 @@ int main(int argc, char **argv) {
         if (argc != 5 || std::string(argv[2]) != "1")
             throw std::runtime_error("usage: one_combat expertreplay 1 RUN.json OUT.json");
         return one_combat::expertReplayGen(argv[3], argv[4]);
+    } else if (mode == "expertfights") {
+        if (argc != 5 || std::string(argv[2]) != "1")
+            throw std::runtime_error("usage: one_combat expertfights 1 RUN.json OUT.json");
+        return one_combat::expertFightsGen(argv[3], argv[4]);
     } else if (mode == "heartoutcomegen") {
         const std::string capture = argc == 6 ? argv[5] : "";
         if (argc != 6 || std::string(argv[2]) != "1"
