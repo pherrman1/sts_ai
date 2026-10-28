@@ -24988,3 +24988,25 @@ beyond the enemy's next reply comes from playouts. Candidates for separate exper
 re-picking, deeper boss search (value leaf / macro turns), cheaper terminal revisits.
 Seeds: none new; 111384000–111384003 (§696, used) replayed.
 **Knowledge impact:** combat-search.md (tree profile `search` block) and environment-variables.md updated.
+
+## §708 — Dynamic campfire price, stage 0b at A20: at N = 128 the price separates Rest from the best Smith at 44% of rest sites (gate 50%) and only 26% of its disagreements with student_sel clear 2 SE (gate 50%); the gaps shrank with more rollouts (mean |Rest − Smith| 0.030 → 0.024); STOP (same 128 replayed §683 seeds, 2026-10-28)
+
+- **Question:** does 4x the rollouts (§695 stopped on precision at N = 32) make the actEnd campfire price separable,
+  with real disagreements? Plan frozen in `942da294` with gates (a)–(c) of §695 plus (d) ≥ 50% of Rest/Smith swaps
+  clear 2 SE.
+- **Run:** the §695 binary `38bd5a71` and the same 128 §683 MAP seeds (111374100–227), replayed to the first act-4
+  state with `STS_OOC_CAMPFIRE_PRICE_N=128`; no new seeds. All 128 replays reproduce their §683 trace. 732 priced
+  sites (665 with a Smith).
+- **Gates:** (a) 44.4% FAIL; (b) Spearman vs HP fraction −0.51 [−0.58, −0.45] PASS; (c) disagreement 31.2% PASS;
+  (d) 25.7% of 175 swaps FAIL.
+- **Same sites vs N = 32:** same class 77.6%, Rest − Smith correlation 0.78, 97.9% of N = 32-separable sites keep
+  their sign; median SE ratio 0.52.
+- **Stakes (model units, not causal):** at most ≈ 2.4 pp Heart kills per game if the price were right at every swap
+  (1.3 pp for separable swaps only). At 40–60% HP (bot rests 85%, expert 13%) the price is nearly indifferent
+  (+0.004).
+- **Decision:** STOP the rollout price. Rest vs Smith gaps at real sites are mostly 1–2 pp, too small for a
+  rollout price to resolve and small in total; the high rest rate at mid HP looks cheap under this model.
+- **Evidence:** `docs/experiments/evidence/campfire_price_n128_20261027/` (PLAN, RESULT, result.json, compare.json,
+  trace_check.txt); share `campfire-price-stage0/replays-n128-38bd5a71.tar.gz`.
+Seeds: none new; 111374100–111374227 (§683, used) replayed.
+**Knowledge impact:** none (research observer only, default off).
