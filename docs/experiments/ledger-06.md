@@ -24932,7 +24932,7 @@ on identical states; it needs per-fight output in `expertreplay` (missing today)
 Seeds: none (existing games only).
 **Knowledge impact:** this ledger entry and its evidence only; no code, model or default change.
 
-## §TBD — SR head on swkeyed sibling labels (issue #883 follow-up, PR #903): labels 0.16× as noisy (split-half 0.718 → 0.829), but retraining SR_crn_r2 on them is NOT_SHOWN (seed 1 +0.011 [+0.005, +0.016], seed 2 −0.001 [−0.005, +0.003], seed mean +0.005 [+0.001, +0.008]); label noise does not limit this head (320 replayed §644 sources, 2026-10-28)
+## §714 — SR head on swkeyed sibling labels (issue #883 follow-up, PR #903): labels 0.16× as noisy (split-half 0.718 → 0.829), but retraining SR_crn_r2 on them is NOT_SHOWN (seed 1 +0.011 [+0.005, +0.016], seed 2 −0.001 [−0.005, +0.003], seed mean +0.005 [+0.001, +0.008]); label noise does not limit this head (320 replayed §644 sources, 2026-10-28)
 
 **Question:** §703's swkeyed estimator cuts the variance of rollout3 sibling differences about 5× per CPU. Retraining
 the SR head on the same groups, with only the label estimator changed: does it rank siblings better? Philipp chose
