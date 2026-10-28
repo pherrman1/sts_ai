@@ -1,7 +1,8 @@
 # Matched expert-entry fight replay: Silver vs Baalorlord on the expert's own fight states (pre-registration)
 
-Status: DRAFT, to be frozen after review and before launch. Philipp asked for the run on 2026-10-28 ("Yes replay the
-fights", reply to the #890 follow-up); worker count and launch timing are his.
+Status: FROZEN 2026-10-28 before launch (reviewer K PASS on #902 at fedd003 and the delta at 748eb3e). Philipp asked
+for the run on 2026-10-28 ("Yes replay the fights") and authorized 4 cloud workers at 16:12Z ("Let's do 4 workers");
+code, binary and inputs in `campaign.manifest`.
 
 ## Question
 
