@@ -25089,3 +25089,33 @@ likely upstream (deck building, pathing).
 Seeds: none new (external Baalorlord run seeds of §694).
 **Knowledge impact:** research mode `one_combat expertfights` and `STS_EXPERT_FIGHTS_REPLICATES`, `_MAX_ACT`,
 `_POTIONS` (environment-variables.md); no default or play change (the driver hook is unset in every other mode).
+
+## §TBD — Combat gap vs Baalorlord, paired probes on his fight states: act-2 elites are not budget-limited (flat 10k / 100k +0.0 / +0.1 HP), elite prior playouts −0.7 [−1.5, +0.1], act-2 bosses at flat 40k −3.3 [−6.8, +0.3] at 7× CPU; in-fight potion timing roughly calibrated; exploratory (used Baalorlord seeds, one container, 2026-10-28/29)
+
+**Question:** §711 left +5.4 HP per act-2 elite and +4.5 per act-2 boss on Baalorlord's own states. Is that search
+budget, playout quality, potion use, or something else? Philipp 2026-10-28: investigate and propose fixes, "maybe we
+need some small experiments".
+**Setup:** [RESULT](evidence/combat_gap_probe_20261028/RESULT.md). Offline reading of §711's records, plus a new
+research flag `STS_EXPERT_FIGHTS_ARMS` (default off). It plays production and each arm on the same copy seeds from the
+identical fight state; other copies are played only until the first win, so the main line stays §711's (bit-exact
+on 2 runs with arms off, main line unchanged with arms on). Arms: `pp` (elite prior playouts), `flat<N>`, `potw<W>`
+(held-potion leaf weight). Not pre-registered. Runs: 64 of §711's runs with act-2 elites (K = 4) and 32 with an act-2
+boss (K = 2), A20 default otherwise.
+**Result:** act-2 elites (131 fights): flat 10k −0.02 [−0.52, +0.48], flat 100k +0.13 [−0.52, +0.79], prior
+playouts −0.72 [−1.53, +0.06] (Gremlin Leader −2.1 [−3.5, −0.8]; ≈ 5× elite CPU); production 11.7 vs expert 6.8.
+Act-2 bosses (32): flat 40k −3.25 [−6.81, +0.27], deaths 0.14 → 0.09, 27 → 202 CPU-s per copy. Potion weight 5 / 22
+vs 11: act-2 elites −0.58 [−1.14, −0.02] with +0.21 potions per fight, +1.40 [+0.70, +2.20] with −0.14 potions;
+act-1 bosses −0.29 / +0.52 (CIs span 0). Offline: act-2 elites entered with no potion (31%) gap +9.6 vs +4.0 with
+one; at equal potion use act-2 elites +4 to +5, act-1 about +1; no card's presence explains the gap (72 cards, no
+positive CI excludes 0).
+**Interpretation:** elite fights are short and the search has converged: more simulations do not change the plays,
+so the act-2 elite gap is an evaluation bias (leaf value and playouts), and better playouts move it only a little.
+Bosses gain from budget, consistent with §706's one-round tree. In-fight potion timing is roughly priced right (the
+potions it drinks save ≈ 10 HP each, extra ones ≈ 3). **Inference:** ranked fixes are (1) a pre-registered paired
+boss-budget probe on all §711 boss states (flat 40k or the `STS_SILVER_LEARNED_STOP_BOSS_MAX` extension), then a
+CPU-matched whole-run A/B; (2) elite playout quality (gate elite prior playouts, ungated since ADR-0056; a stronger
+rollout policy); (3) potion carry-over across fights (unmeasured here); (4) engine fidelity of Slavers / Book /
+Gremlin Leader if the canary resumes. Stop: more simulations for elites, potion-weight changes.
+Seeds: none new (external Baalorlord run seeds of §694/§711, replayed).
+**Knowledge impact:** research flags `STS_EXPERT_FIGHTS_ARMS`, `_ARM_ROOMS`, `_ARM_REPLICATES` and their thread
+overrides (environment-variables.md); no default or play change.
