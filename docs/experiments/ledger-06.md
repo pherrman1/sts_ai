@@ -25244,7 +25244,7 @@ re-applied to the recorded endpoints. Training curves from the runs' summaries. 
 - No seeds used.
 **Knowledge impact:** `evaluation/current-research.md`.
 
-## §TBD — Root quality at card rewards, phase 1: at 8,192 uniform-root simulations (h = 3) independent search seeds disagree with a 2-seed reference on 25% (X2-B) / 21% (SR) of roots ("variance-limited" by the frozen rule), but the search's own regret is about 0.1 pp and the leaf decides more than the seed (X2-B vs SR agree on 59%); phase-2 gate FAILED (projected SE(β_SR) 0.39 > 0.35), so Δ, bias and β stay unmeasured (cloud, replays of used §712 seeds, 2026-10-28/29)
+## §717 — Root quality at card rewards, phase 1: at 8,192 uniform-root simulations (h = 3) independent search seeds disagree with a 2-seed reference on 25% (X2-B) / 21% (SR) of roots ("variance-limited" by the frozen rule), but the search's own regret is about 0.1 pp and the leaf decides more than the seed (X2-B vs SR agree on 59%); phase-2 gate FAILED (projected SE(β_SR) 0.39 > 0.35), so Δ, bias and β stay unmeasured (cloud, replays of used §712 seeds, 2026-10-28/29)
 
 **Question:** Philipp, 2026-10-28 20:17Z and 22:14Z: measure the "root quality" quantities of card-reward roots
 (Δ, B_rel, σ, q) and the curves P(wrong card | N, d), E[simple regret | N, d].

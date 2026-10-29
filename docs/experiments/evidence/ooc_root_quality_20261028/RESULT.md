@@ -1,4 +1,4 @@
-# Root quality at card rewards — phase 1 result (§TBD)
+# Root quality at card rewards — phase 1 result (§717)
 
 Pre-registration: [PREREG.md](PREREG.md) (frozen before data). Definitions:
 [root-quality.md](../../../knowledge-base/research/ooc/root-quality.md). Campaign `ooc-root-quality-p1`: RUN_COMMIT

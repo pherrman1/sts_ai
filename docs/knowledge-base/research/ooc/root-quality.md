@@ -180,7 +180,7 @@ $Z(s,a,\omega_m)$ serves every search configuration at once (look up the action 
 - §703: swkeyed rollouts give 0.21× sibling-difference variance per CPU at card rewards; relevant only if the
   variance part turns out to matter. §700: more SR data does not improve the head.
 
-## Measured (§TBD, card rewards, 128 roots)
+## Measured (§717, card rewards, 128 roots)
 
 - σ / P_self: at 8,192 simulations, h = 3, uniform root, P_self = 0.25 (X2-B) and 0.21 (SR). This is "variance-limited"
   by the pre-registered rule, but the search's own regret is about 0.1 pp, and P_self on roots with a > 1 pp lead is
