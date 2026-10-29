@@ -1,0 +1,11 @@
+runs 32 fights 32
+-- all: n=32 expert=11.91 prod=14.14 (death 0.141, pots 0.70, cpu 27.2s)
+   flat40000          loss  10.89  arm-prod -3.25 [-6.81,+0.27]  death 0.094 pots 0.69 cpu 202.3s
+-- (2, 'B'): n=32 expert=11.91 prod=14.14 (death 0.141, pots 0.70, cpu 27.2s)
+   flat40000          loss  10.89  arm-prod -3.25 [-6.81,+0.27]  death 0.094 pots 0.69 cpu 202.3s
+-- Automaton: n=13 expert=10.77 prod=10.46 (death 0.154, pots 0.77, cpu 27.3s)
+   flat40000          loss   8.92  arm-prod -1.54 [-6.54,+3.19]  death 0.115 pots 0.73 cpu 201.6s
+-- Champ: n=10 expert=8.00 prod=8.85 (death 0.000, pots 0.50, cpu 33.3s)
+   flat40000          loss   4.60  arm-prod -4.25 [-11.30,+2.80]  death 0.000 pots 0.50 cpu 228.5s
+-- Collector: n=9 expert=17.89 prod=25.33 (death 0.278, pots 0.83, cpu 20.4s)
+   flat40000          loss  20.72  arm-prod -4.61 [-12.28,+2.00]  death 0.167 pots 0.83 cpu 174.2s

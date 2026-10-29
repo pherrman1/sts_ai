@@ -630,6 +630,8 @@ namespace sts::search {
                     s->evalWeights.goldWeight = g_options.goldWeight;
                     s->evalWeights.maxHpWeight = g_options.maxHpWeight;
                     s->evalWeights.victoryTurnPenalty = g_options.victoryTurnPenalty;
+                    if (g_nativeSilverPotionWeightOverride)
+                        s->evalWeights.potionWeight = *g_nativeSilverPotionWeightOverride;
                     if (const auto &params = g_nativeSilverSearchParamOverride) {
                         s->explorationParameter = params->exploration;
                         s->explorationParameterChance = params->explorationChance;
@@ -673,7 +675,8 @@ namespace sts::search {
                 if (!g_nativeSilverRolloutOverride && !g_nativeSilverRootPriorOverride
                         && !g_nativeSilverPriorNetOverride && g_options.priorPlayoutBossElite
                         && !g_options.rootPriorPath.empty() && !g_options.rootPriorOverrideOnly
-                        && (gc.curRoom == Room::BOSS || (gc.curRoom == Room::ELITE && g_options.priorPlayoutElite)))
+                        && (gc.curRoom == Room::BOSS || (gc.curRoom == Room::ELITE
+                            && g_nativeSilverPriorPlayoutEliteOverride.value_or(g_options.priorPlayoutElite))))
                     s.rolloutConfig.prior = true;
                 // ADR-0060: Act 4's elite (Shield and Spear) plays prior playouts too, unless
                 // STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE=0 turns them off everywhere.
@@ -1492,6 +1495,8 @@ namespace sts::search {
     thread_local std::optional<int> g_nativeSilverMaxBackupOverride;
     thread_local std::optional<SilverSearcher::LeafHead> g_nativeSilverLeafHeadOverride;
     thread_local std::optional<NativeSilverBudgetOverride> g_nativeSilverBudgetOverride;
+    thread_local std::optional<bool> g_nativeSilverPriorPlayoutEliteOverride;
+    thread_local std::optional<double> g_nativeSilverPotionWeightOverride;
     thread_local std::optional<bool> g_nativeSilverRootPriorOverride;
     thread_local std::optional<int> g_nativeSilverTreePriorOverride;
     thread_local bool g_nativeSilverRootPriorBonusOff = false;
