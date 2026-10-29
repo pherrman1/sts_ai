@@ -1923,6 +1923,7 @@ std::optional<nlohmann::json> OocGameContextModel::siblingLeafExtras(sts::search
         {"hp", gc.curHp}, {"maxHp", gc.maxHp}, {"gold", gc.gold},
         {"outcome", int(gc.outcome)}, {"boundary", isLeafBoundary(id)}};
     if (capture.commonSeeds) row["commonSeeds"] = true;
+    if (capture.swkeyedRepeats) row["rolloutEstimator"] = "swkeyed";
     const auto policyBefore = captureOocPolicyThreadState();
     const unsigned seconds = 20 + 4 * (capture.repeats + 2 * capture.longRepeats) + 30 * capture.refereeRepeats
         + (capture.mono ? 30 + 2 * 40 * capture.monoRepeats : 0)
@@ -1972,7 +1973,10 @@ std::optional<nlohmann::json> OocGameContextModel::siblingLeafExtras(sts::search
         const auto rolloutStart = std::clock();
         const auto heart1StepsBefore = continuation_.heart1LeafSteps;
         const auto heart1FallbacksBefore = continuation_.heart1LeafFallbacks;
+        // STS_OOC_SIBLING_ROLLOUT=swkeyed: the label repeats use the §703 estimator (child process only).
+        options.survivalWeightedRollout = options.keyedRolloutStreams = capture.swkeyedRepeats;
         evaluations("repeats", capture.repeats, 1);
+        options.survivalWeightedRollout = options.keyedRolloutStreams = false;
         out["rolloutCpuSeconds"] = double(std::clock() - rolloutStart) / CLOCKS_PER_SEC;
         out["rolloutPolicy"] = options.heart1LeafPolicy ? "heart1" :
             options.uniformLeafPolicy ? "uniform" : options.priorLeafPolicy ? "prior" : "v4";
@@ -2883,7 +2887,7 @@ struct LiveSiblingCapture {
     std::shared_ptr<std::ofstream> out;
     std::uint64_t every = 4, maxLeaves = 256;
     unsigned repeats = 1, longRepeats = 0, refereeRepeats = 0, maxDepth = 2;
-    bool commonSeeds = false;
+    bool commonSeeds = false, swkeyedRepeats = false;
     bool mono = false;
     unsigned monoRepeats = 16;
     std::vector<std::string> vrArms;
@@ -3697,6 +3701,15 @@ void configureLiveOocMcts() {
         sibling.maxDepth = unsigned(knob("STS_OOC_SIBLING_MAX_DEPTH", 2, 1, 64));
         sibling.maxLeaves = knob("STS_OOC_SIBLING_MAX_LEAVES", 256, 1, 100000);
         sibling.commonSeeds = knob("STS_OOC_SIBLING_COMMON_SEEDS", 0, 0, 1) == 1;
+        if (const char *estimator = std::getenv("STS_OOC_SIBLING_ROLLOUT"); estimator && *estimator) {
+            const std::string name(estimator);
+            if (name != "base" && name != "swkeyed")
+                throw std::runtime_error("STS_OOC_SIBLING_ROLLOUT must be base or swkeyed");
+            sibling.swkeyedRepeats = name == "swkeyed";
+            // §703 measured swkeyed with common seeds only; per-leaf streams would undo the keyed coupling.
+            if (sibling.swkeyedRepeats && !sibling.commonSeeds)
+                throw std::runtime_error("STS_OOC_SIBLING_ROLLOUT=swkeyed requires STS_OOC_SIBLING_COMMON_SEEDS=1");
+        }
         sibling.mono = knob("STS_OOC_SIBLING_MONO", 0, 0, 1) == 1;
         sibling.monoRepeats = unsigned(knob("STS_OOC_SIBLING_MONO_REPEATS", 16, 0, 256));
         if (const char *arms = std::getenv("STS_OOC_SIBLING_VR_ARMS"); arms && *arms) {
@@ -5352,7 +5365,7 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
         sibling->repeats = liveSibling->repeats; sibling->longRepeats = liveSibling->longRepeats;
         sibling->refereeRepeats = liveSibling->refereeRepeats;
         sibling->maxDepth = liveSibling->maxDepth; sibling->maxLeaves = liveSibling->maxLeaves;
-        sibling->commonSeeds = liveSibling->commonSeeds;
+        sibling->commonSeeds = liveSibling->commonSeeds; sibling->swkeyedRepeats = liveSibling->swkeyedRepeats;
         sibling->mono = liveSibling->mono; sibling->monoRepeats = liveSibling->monoRepeats;
         sibling->vrArms = liveSibling->vrArms; sibling->vrRepeats = liveSibling->vrRepeats;
         options.siblingCapture = std::move(sibling);

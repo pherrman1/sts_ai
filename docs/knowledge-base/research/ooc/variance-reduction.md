@@ -27,6 +27,12 @@ teacher or CTM bias (#884).
   sibling-difference variance at equal CPU, with no detectable shift in the mean. That is about 5× the effective
   repeats per CPU-hour. Keyed streams alone: 0.64×; survival weighting alone: 0.35×, but it fails the pre-registered
   per-child bias rule through a skewed paired test (one-sided z, pooled mean −0.0001 ± 0.0007).
+- **First use, sibling labels for the SR value head (§714 #903,
+  [result](../../../experiments/evidence/ooc_swkeyed_labels_20261028/RESULT.md)):**
+  - The capture is `STS_OOC_SIBLING_ROLLOUT=swkeyed`; the 320 §644 sources were replayed exactly.
+  - The labels became 0.16× as noisy (split-half agreement 0.718 → 0.829), with an unchanged mean.
+  - Retraining SR_crn_r2 on them was NOT_SHOWN: seed 1 +0.011, seed 2 −0.001.
+  - Label noise does not limit that head.
 - No default change follows from this page. Either candidate changes leaf values and therefore play; a play-changing
   use needs its own paired A/B.
 

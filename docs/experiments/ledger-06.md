@@ -24932,6 +24932,46 @@ on identical states; it needs per-fight output in `expertreplay` (missing today)
 Seeds: none (existing games only).
 **Knowledge impact:** this ledger entry and its evidence only; no code, model or default change.
 
+## §714 — SR head on swkeyed sibling labels (issue #883 follow-up, PR #903): labels 0.16× as noisy (split-half 0.718 → 0.829), but retraining SR_crn_r2 on them is NOT_SHOWN (seed 1 +0.011 [+0.005, +0.016], seed 2 −0.001 [−0.005, +0.003], seed mean +0.005 [+0.001, +0.008]); label noise does not limit this head (320 replayed §644 sources, 2026-10-28)
+
+**Question:** §703's swkeyed estimator cuts the variance of rollout3 sibling differences about 5× per CPU. Retraining
+the SR head on the same groups, with only the label estimator changed: does it rank siblings better? Philipp chose
+"use it for labels first" (11:05Z) and "Go with 16 workers" (15:20Z).
+**Setup:** [PLAN](evidence/ooc_swkeyed_labels_20261028/PLAN.md) (pre-launch review PASS, then fixes; two
+deviations).
+- **Producer:**
+  - Main cannot replay §644 bit-exactly (unflagged engine fixes), so the capture uses a backport: `90eb9f07` plus
+    `STS_OOC_SIBLING_ROLLOUT=swkeyed` (code `d4a4ec3c`, RUN_COMMIT `27c85529`).
+  - It reproduces §644 exactly with the base estimator (SMOKE).
+  - Code on main: `STS_OOC_SIBLING_ROLLOUT=swkeyed` (research, default off, forked capture only).
+- **Training:** §649's SR_crn_r2 recipe, seeds 1 and 2, the same 15,129 CRN TRAIN groups with only `target` changed
+  (round-2 groups and game rows unchanged); epoch chosen by `pick_epoch.py`. Philipp's GPU; the §649 controls are
+  reused (same code and stack hashes).
+- **Gate:** head alone on the common-seed VALIDATION with §644's labels. The seed-mean paired CI must be above 0,
+  **and** each seed's difference must be positive.
+**Result** ([RESULT](evidence/ooc_swkeyed_labels_20261028/RESULT.md)):
+- **Capture:** 320/320 units, 155.8 core-h. Play and rows are exact against §644.
+- **Labels:**
+  - Split-half agreement 0.718 → 0.829; sibling-difference variance 0.16× (rewards 0.08×, map 0.31×).
+  - Pooled bias −0.0002 ± 0.0003. The row-level |z| > 2 share is 8.6 %, over the 8 % limit: a selection artefact by
+    the row's own base deaths. Philipp chose to proceed.
+- **Heads:** treatment picked epochs 18 and 11; controls 13 and 20.
+  - Head alone: control 0.6628 / 0.6668, treatment **0.6734 / 0.6661** (X2-B 0.6639).
+  - Differences: seed 1 +0.0106 [+0.0054, +0.0158], seed 2 −0.0007 [−0.0049, +0.0033], seed mean +0.0050
+    [+0.0014, +0.0084]. Blend seed mean +0.0012 [−0.0029, +0.0048].
+  - Scored on the swkeyed VALIDATION labels instead: seed mean +0.0055 [+0.0017, +0.0093], seed 2 again +0.0003.
+- **Bars:** the selection BCE holds. On the −3 HP proxy (the §649 prices data is lost, Deviation 2), the treatment is
+  1.2 pp and 1.9 pp below its controls (limit 2 pp).
+**Interpretation:**
+- NOT_SHOWN: one seed gains about one §649 seed spread, the other is level, and the epoch choice differs between
+  arms.
+- **Inference:** with §645 (cleaner CRN labels) and §700 (more data) this is the third flat lever. The head's ranking
+  is limited by the objective, recipe or features, not by label noise or volume.
+**Decision:** no default change. The swkeyed groups stay on the data branch (`gen2/value-sr-swk/`) for the
+ranking-vs-value-loss thread.
+Seeds: none new (111144512–111144831 replayed).
+**Knowledge impact:** `research/ooc/variance-reduction.md`.
+
 ## §709 — CTM decision-impact audit (issue #884): at 144 A20 map roots the active CTM's picks lose nothing measurable when the same leaf rollouts play their combats with production Silver (cross-fitted regret +0.0010 [−0.0024, +0.0040]); fight forecasts are close (boss HP ~4 too optimistic, elite deaths ~1 pp too high); NOT_SHOWN, stop (16 replayed §683 seeds, no new seeds, 2026-10-28)
 
 **Question (#884):** does the active CTM make errors that reverse OOC sibling-action rankings?
@@ -25110,6 +25150,36 @@ Seeds: none new (external Baalorlord run seeds of §694).
 **Knowledge impact:** research mode `one_combat expertfights` and `STS_EXPERT_FIGHTS_REPLICATES`, `_MAX_ACT`,
 `_POTIONS` (environment-variables.md); no default or play change (the driver hook is unset in every other mode).
 
+## §716 — Combat gap vs Baalorlord, paired probes on his fight states: act-2 elites are not budget-limited (flat 10k / 100k +0.0 / +0.1 HP), elite prior playouts −0.7 [−1.5, +0.1], act-2 bosses at flat 40k −3.3 [−6.8, +0.3] at 7× CPU; in-fight potion timing roughly calibrated; exploratory (used Baalorlord seeds, one container, 2026-10-28/29)
+
+**Question:** §711 left +5.4 HP per act-2 elite and +4.5 per act-2 boss on Baalorlord's own states. Is that search
+budget, playout quality, potion use, or something else? Philipp 2026-10-28: investigate and propose fixes, "maybe we
+need some small experiments".
+**Setup:** [RESULT](evidence/combat_gap_probe_20261028/RESULT.md). Offline reading of §711's records, plus a new
+research flag `STS_EXPERT_FIGHTS_ARMS` (default off). It plays production and each arm on the same copy seeds from the
+identical fight state; other copies are played only until the first win, so the main line stays §711's (bit-exact
+on 2 runs with arms off, main line unchanged with arms on). Arms: `pp` (elite prior playouts), `flat<N>`, `potw<W>`
+(held-potion leaf weight). Not pre-registered. Runs: 64 of §711's runs with act-2 elites (K = 4) and 32 with an act-2
+boss (K = 2), A20 default otherwise.
+**Result:** act-2 elites (131 fights): flat 10k −0.02 [−0.52, +0.48], flat 100k +0.13 [−0.52, +0.79], prior
+playouts −0.72 [−1.53, +0.06] (Gremlin Leader −2.1 [−3.5, −0.8]; ≈ 5× elite CPU); production 11.7 vs expert 6.8.
+Act-2 bosses (32): flat 40k −3.25 [−6.81, +0.27], deaths 0.14 → 0.09, 27 → 202 CPU-s per copy. Potion weight 5 / 22
+vs 11: act-2 elites −0.58 [−1.14, −0.02] with +0.21 potions per fight, +1.40 [+0.70, +2.20] with −0.14 potions;
+act-1 bosses −0.29 / +0.52 (CIs span 0). Offline: act-2 elites entered with no potion (31%) gap +9.6 vs +4.0 with
+one; at equal potion use act-2 elites +4 to +5, act-1 about +1; no card's presence explains the gap (72 cards, no
+positive CI excludes 0).
+**Interpretation:** elite fights are short and the search has converged: more simulations do not change the plays,
+so the act-2 elite gap is an evaluation bias (leaf value and playouts) or an engine-fidelity difference (untested
+here), and better playouts move it only a little. Bosses probably gain from budget (CI [−6.8, +0.3] still includes
+0), consistent with §706's one-round tree. In-fight potion timing is roughly priced right (the
+potions it drinks save ≈ 10 HP each, extra ones ≈ 3). **Inference:** ranked fixes are (1) a pre-registered paired
+boss-budget probe on all §711 boss states (flat 40k or the `STS_SILVER_LEARNED_STOP_BOSS_MAX` extension), then a
+CPU-matched whole-run A/B; (2) elite playout quality (a whole-run A/B of elite prior playouts; ADR-0056 removed them by
+Philipp's CPU decision, so re-enabling is his call after that A/B; a stronger rollout policy); (3) potion carry-over across fights (unmeasured here); (4) engine fidelity of Slavers / Book /
+Gremlin Leader if the canary resumes. Stop: more simulations for elites, potion-weight changes.
+Seeds: none new (external Baalorlord run seeds of §694/§711, replayed).
+**Knowledge impact:** research flags `STS_EXPERT_FIGHTS_ARMS`, `_ARM_ROOMS`, `_ARM_REPLICATES` and their thread
+overrides (environment-variables.md); no default or play change.
 ## §713 — Heart readiness (Act-4 CTM survival model applied to the current deck) as an OOC preference: predicts the Heart kill across games well beyond HP (+0.08 to +0.23 AUC), but the deck change of a single act-1/2 decision does not predict which paired arm kills (concordance 0.497 [0.457, 0.536]); leaf-blend STOP (offline, 4,096 games, 2026-10-25)
 
 **Question (Philipp, 2026-10-25 10:37Z):** "prefer decks that kill the heart and not just survive the next fight"
@@ -25131,3 +25201,45 @@ signal). Inference: an act-3-only term or readiness as a value-head feature are 
 open variants, neither started.
 Seeds: none (existing games only).
 **Knowledge impact:** none beyond this entry; no code or default change.
+
+## §715 — SR head, ranking vs value: search reads level and difference scale at map roots, not sibling order; at map roots no SR head or blend shows a gain over X2-B with M0 (within about 0.01–0.02, all CIs include 0), and the heads' sibling differences are 5.5–6× over-dispersed (about 3× more than X2-B with M0) (offline, no seeds, 2026-10-28)
+
+**Question:** Philipp, 2026-10-28 21:19Z: for the SR head, is ranking or a better value loss more important? Should
+we optimise ranking directly?
+**Data:** [README](evidence/sr_ranking_vs_value_20261028/README.md). §644's common-seed VALIDATION, re-extracted
+(578,987 rows; 5,587 roots, 1,364 at map). 11 exported SR heads (§641 SR_w1, §645/§649 SR_crn_r2 at fold,
+value-stop and ranking epochs, #903 swkeyed). Labels: as captured (rollout3 ending in raw X2-B) and with M0
+re-applied to the recorded endpoints. Training curves from the runs' summaries. Scoring reproduces §649 (0.6668 /
+0.7031).
+**Result:**
+- Code reading. Production searches map roots only (ADR-0061). The head enters as the rollout3 endpoint value or a
+  logit blend with X2-B. Q averages values of different states with 0/1 terminals. PUCT and the learned stop read Q
+  in probability units. The default M0 is not applied when a heart1 value head is set.
+- Map roots, concordance minus raw X2-B:
+  - s2_ep20 blend +0.015 [−0.008, +0.038] (raw labels), +0.019 [−0.001, +0.038] (M0 labels);
+  - X2-B with M0 +0.011 [−0.000, +0.023] (M0 labels);
+  - swk blends +0.011 to +0.023;
+  - the SR_w1 blend that lost online (§661) +0.001.
+- Against X2-B with M0 at map roots (M0 labels, paired bootstrap by the reviewer): blends +0.008 to +0.013, heads alone
+  −0.003 to +0.005, every CI including 0 (e.g. the s2_ep20 blend +0.008 [−0.013, +0.029]). Non-map blends: +0.045
+  [+0.036, +0.055].
+- Level: the heads sit at the M0-label level (+0.01 to +0.04), the blend 0.50 above it.
+- Scale: head sibling differences have r ≈ 0.39 with the labels but an RMS 2.2–2.4× the labels' (slope 0.16–0.18;
+  X2-B with M0 0.57). The ratio grows with training.
+- Training: from epoch 6 the selection-fold BCE correlates −0.64 to −0.97 with the mean prediction, while AUC stays
+  in 0.760–0.772 (from epoch 6).
+**Interpretation:**
+- Do not train ranking-only. A pairwise loss leaves level and scale free, and both matter: M0's level change is the
+  only leaf change that won online (§661), while the offline ranking gain of SR_w1's blend lost.
+- The ranking progress since then is about 0.01–0.015 at map roots, the only roots searched.
+- The 0.570 BCE bar mostly filters by level drift. A calibration-invariant guard (AUC, or BCE after a per-act refit)
+  plus an explicit `STS_OOC_MCTS_LEAF_CALIBRATION` would replace it.
+**Decision:** no default or candidate change.
+- If the SR head is pursued, the README orders the options:
+  1. per-epoch scoring of the existing runs to settle the selection rule;
+  2. M0-ended TRAIN labels;
+  3. one GPU round with a scale-carrying pairwise loss, gated at map roots on M0 labels;
+  4. only then an online map-root A/B.
+- Otherwise park the head.
+- No seeds used.
+**Knowledge impact:** `evaluation/current-research.md`.
