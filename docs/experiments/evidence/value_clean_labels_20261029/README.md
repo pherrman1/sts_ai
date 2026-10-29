@@ -13,14 +13,17 @@ survivors M0-calibrated X2-B). Output [`results/stage0_variance.txt`](results/st
 - Per-state variance of the act-end label / Bernoulli variance p(1 − p) of a full-game outcome at the same mean:
   all 0.141, act 1 0.067, act 2 0.122, act 3 0.257 (map 0.160, card rewards 0.133).
 - Sibling differences on shared streams / independent Bernoulli: all 0.058, act 1 0.026, act 3 0.100, map 0.140.
-- Caveat: M0 stands in for V_{k+1}; a more informative V spreads more at act ends, so the true ratio is higher (≤ 1).
+- Caveat: M0 stands in for V_{k+1}; a more informative V spreads more at act ends, so the true ratio is higher (≤ 1)
+  and the ≈ 7× saving is an upper bound.
 
 ## Stage 2: V_A4 from real Act-4 outcomes (offline, no seeds)
 Plan frozen before TEST was read: [STAGE2-PLAN.md](STAGE2-PLAN.md). Data: [`tools/extract_a4.py`](tools/extract_a4.py)
 over the share unit tars of key-rules-ab, gumbel-qcap-ab, expert-anchored-ab and card-rule-ab, games whose log says
 "Act 4 strong": 2,337 Act-4 entries, 62.2% Heart kills (extract sha256 `253e3178…`, share
-`value-clean-labels/stage2/a4.pkl`). Fit and gate: [`tools/fit_a4.py`](tools/fit_a4.py) (deterministic; rerun equals
-[`results/stage2_result.json`](results/stage2_result.json)). The CTM parser matches the CTest parity fixture to 2.7e-7.
+`value-clean-labels/stage2/a4.pkl`). Fit and gate: [`tools/fit_a4.py`](tools/fit_a4.py) (Python 3.13.17, numpy 2.5.3,
+xgboost 3.0.5, scikit-learn 1.9.1, scipy 1.18.1; a rerun with these versions equals
+[`results/stage2_result.json`](results/stage2_result.json); with xgboost 3.4.1 the reviewer's two reruns gave GC − CTM
+−0.007 and −0.010, CIs including 0, and failed the decile check, so the decile calibration is fragile and the FAIL holds). The CTM parser matches the CTest parity fixture to 2.7e-7.
 
 | TEST (569 entries) | BCE | AUC |
 |---|---|---|
@@ -31,7 +34,8 @@ over the share unit tars of key-rules-ab, gumbel-qcap-ab, expert-anchored-ab and
 | Act-4 CTM, recalibrated on TRAIN | 0.533 | 0.794 |
 | GC (G + logit CTM; picked on VALIDATION) | 0.529 | 0.798 |
 
-Gate: GC − CTM_recal BCE −0.004 [−0.028, +0.018] → **FAIL** (calibration by decile passes). The CTM sees the state
+Gate: GC − CTM_recal BCE −0.004 [−0.028, +0.018] → **FAIL** (calibration by decile passes here, fragile across
+library versions, see above). The CTM sees the state
 after the Act-4 campfire (its S&S input), the heads the Act-4 entry, so the comparison favours the CTM.
 Caveat for later stages: s0's features include the screen one-hot; capture end records are map screens.
 

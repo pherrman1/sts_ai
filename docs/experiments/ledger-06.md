@@ -25318,11 +25318,12 @@ act-end rollouts per top-3 action, M0 at the act end standing in for V_{k+1}). S
 from the key-rules, Gumbel Q-cap, expert-anchored and card-rule campaigns; seed % 4 split as §685.
 **Result:**
 - Stage 0: act-end label variance / Bernoulli p(1 − p): 0.141 overall, 0.067 / 0.122 / 0.257 in acts 1/2/3; sibling
-  differences on shared streams 0.058 (map 0.140). About 7× fewer rollouts per state than full games (lower bound on
-  the true ratio's inverse, since M0 is less informative than a better V).
+  differences on shared streams 0.058 (map 0.140). About 7× fewer rollouts per state than full games; this is an upper
+  bound on the saving, since M0 is less informative than a better V and so understates the act-end spread.
 - Stage 2 (TEST 569): GBM on the public record BCE 0.545 / AUC 0.779; recalibrated Act-4 CTM 0.533 / 0.794; GBM with
   the CTM logit as a feature (picked on VALIDATION) 0.529 / 0.798; difference to the CTM −0.004 [−0.028, +0.018] →
-  FAIL by the frozen rule; deciles calibrated. The CTM's input is the state after the Act-4 campfire (favours it).
+  FAIL by the frozen rule. Deciles pass in this run but are fragile: the reviewer's two reruns with xgboost 3.4.1
+  failed them and gave −0.007 and −0.010 (CIs include 0), so the FAIL holds. The CTM's input is the state after the Act-4 campfire (favours it).
 - Stage 1: `STS_OOC_CAMPFIRE_PRICE_RECORDS` / `_ACT_END_ONLY` (default off). Selftest PASS; replay of used seed
   111374100 through act 1 with and without records: identical trace and values, 581 of 588 act-end entries carry a
   next-act record (7 deaths); 12 ms CPU per act-1 rollout.
