@@ -122,7 +122,7 @@ def main():
     stats = {k: root_stats(rows[k]) for k in sample}
     meta = {}
     for k in sample:
-        offer = sorted(int(m.split(",")[1]) for c in rows[k]["candidates"]
+        offer = sorted(int(m.split(",")[1]) for c in rows[k]["candidates"] if "reward=" in c["key"]
                        for m in [c["key"].split("reward=")[1].split(":")[0]] if m.startswith("card,"))
         meta[f"{k[0]}/{k[1]}"] = {"K": len(rows[k]["candidates"]), "offer_matches_712": offer == offer712.get(k)}
     cfgs = sorted({c for s in stats.values() for c in s})

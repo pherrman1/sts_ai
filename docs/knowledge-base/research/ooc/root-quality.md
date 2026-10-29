@@ -180,6 +180,16 @@ $Z(s,a,\omega_m)$ serves every search configuration at once (look up the action 
 - §703: swkeyed rollouts give 0.21× sibling-difference variance per CPU at card rewards; relevant only if the
   variance part turns out to matter. §700: more SR data does not improve the head.
 
+## Measured (§TBD, card rewards, 128 roots)
+
+- σ / P_self: at 8,192 simulations, h = 3, uniform root, P_self = 0.25 (X2-B) and 0.21 (SR). This is "variance-limited"
+  by the pre-registered rule, but the search's own regret is about 0.1 pp, and P_self on roots with a > 1 pp lead is
+  about 0.06. Disagreements are mostly near-ties. ρ_eff ≈ 1.
+- The leaf and the horizon decide more than the seed: X2-B h3 and SR h3 agree on 59% of roots, and X2-B h3 agrees with
+  student_sel on 52%.
+- Δ, B_rel, β and q are not measured. The phase-2 gate projected SE(β_SR) = 0.39 > 0.35, so no forks were run.
+  [RESULT](../../../experiments/evidence/ooc_root_quality_20261028/RESULT.md).
+
 ## Open questions
 
 - Whether the bias part shrinks with h (horizon ladder) or is carried by the leaf's card pricing regardless of h.

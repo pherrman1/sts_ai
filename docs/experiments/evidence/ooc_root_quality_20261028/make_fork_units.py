@@ -6,7 +6,8 @@ Gate: x_i = mean over grid seeds of Q(i) - Q(a_ref) for leaf sr, h = 3, at the f
 SE(beta_SR) = 0.45 * sqrt(DEFF / (M * sum over selected (root, i != ref) of (x_i - mean x)^2)), DEFF = 3, M = 4.
 Selection: the 64 roots with the largest max_i |x_i|, plus 32 of the rest by splitmix64(seed ^ index ^ 0x504832) order.
 Units: one per (root, salt 1..4, distinct candidate effect), key = the first candidate key with that effect.
-Usage: python3 -I make_fork_units.py OUT_PREFIX DIR_OR_TAR...   -> OUT_PREFIX.units.txt, OUT_PREFIX.selection.json
+Pool: the 128-root phase-1 sample (per_root keys of analyze_phase1.py's output), not every probe row.
+Usage: python3 -I make_fork_units.py OUT_PREFIX PHASE1_JSON DIR_OR_TAR...   -> OUT_PREFIX.units.txt, OUT_PREFIX.selection.json
 """
 import gzip, io, json, math, sys, tarfile
 from pathlib import Path
@@ -63,8 +64,12 @@ def root_summary(row):
 
 
 def main():
-    prefix, paths = sys.argv[1], sys.argv[2:]
-    roots = sorted((root_summary(r) for r in probe_rows(paths)), key=lambda r: (r["seed"], r["index"]))
+    prefix, phase1, paths = sys.argv[1], sys.argv[2], sys.argv[3:]
+    sample = set(json.loads(Path(phase1).read_text())["per_root"])
+    roots = sorted((root_summary(r) for r in probe_rows(paths) if f"{r['seed']}/{r['decisionIndex']}" in sample),
+                   key=lambda r: (r["seed"], r["index"]))
+    if len(roots) != len(sample):
+        raise SystemExit(f"{len(sample) - len(roots)} sample roots have no probe row")
     if len({(r["seed"], r["index"]) for r in roots}) != len(roots):
         raise SystemExit("duplicate probe rows")
     spread = lambda r: max((abs(v) for v in r["x"].values()), default=0.0)
