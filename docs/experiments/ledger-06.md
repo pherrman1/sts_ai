@@ -25306,7 +25306,7 @@ boss-budget line; no whole-run A/B, no default change. 40k ≤ 20k may reflect t
 Seeds: none new (external Baalorlord run seeds of §694/§711, replayed).
 **Knowledge impact:** this ledger entry and its evidence only; no code, model or default change.
 
-## §TBD — Act-by-act clean value labels, stages 0–2: an act-end label carries 14% of a full-game outcome's per-state variance (act 1 7%, act 3 26%; sibling differences 6%); V_A4 from 2,337 real Act-4 entries does not beat the recalibrated Act-4 CTM (BCE −0.004 [−0.028, +0.018], FAIL); new default-off capture of act-end records (offline + one replay of a used seed, 2026-10-29)
+## §719 — Act-by-act clean value labels, stages 0–2: an act-end label carries 14% of a full-game outcome's per-state variance (act 1 7%, act 3 26%; sibling differences 6%); V_A4 from 2,337 real Act-4 entries does not beat the recalibrated Act-4 CTM (BCE −0.004 [−0.028, +0.018], FAIL); new default-off capture of act-end records (offline + one replay of a used seed, 2026-10-29)
 
 **Question:** Philipp, 2026-10-29: build value labels without X2-B or MCTS, from a good prior alone. Proposed design:
 V_k(s) learned backwards act by act, act-k labels = rollouts to the act's end scored by V_{k+1}, anchored on V_A4 at
