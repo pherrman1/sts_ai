@@ -25305,3 +25305,30 @@ to 40k. With §716 (elites flat to 100k), combat strength here is not bought wit
 boss-budget line; no whole-run A/B, no default change. 40k ≤ 20k may reflect the 32,768-node reuse cap (not measured here).
 Seeds: none new (external Baalorlord run seeds of §694/§711, replayed).
 **Knowledge impact:** this ledger entry and its evidence only; no code, model or default change.
+
+## §TBD — Act-by-act clean value labels, stages 0–2: an act-end label carries 14% of a full-game outcome's per-state variance (act 1 7%, act 3 26%; sibling differences 6%); V_A4 from 2,337 real Act-4 entries does not beat the recalibrated Act-4 CTM (BCE −0.004 [−0.028, +0.018], FAIL); new default-off capture of act-end records (offline + one replay of a used seed, 2026-10-29)
+
+**Question:** Philipp, 2026-10-29: build value labels without X2-B or MCTS, from a good prior alone. Proposed design:
+V_k(s) learned backwards act by act, act-k labels = rollouts to the act's end scored by V_{k+1}, anchored on V_A4 at
+the Act-4 entry; one capture stores the act-end states so the backward refits are offline. Is the label variance low
+enough, and can V_A4 be learned from real outcomes without the CTM ("only as a comparison")?
+**Data:** [README](evidence/value_clean_labels_20261029/README.md), stage-2 plan frozen before TEST
+([STAGE2-PLAN](evidence/value_clean_labels_20261029/STAGE2-PLAN.md)). Stage 0 re-reads §707's 1,872 roots (32
+act-end rollouts per top-3 action, M0 at the act end standing in for V_{k+1}). Stage 2: 2,337 Act-4-strong entries
+from the key-rules, Gumbel Q-cap, expert-anchored and card-rule campaigns; seed % 4 split as §685.
+**Result:**
+- Stage 0: act-end label variance / Bernoulli p(1 − p): 0.141 overall, 0.067 / 0.122 / 0.257 in acts 1/2/3; sibling
+  differences on shared streams 0.058 (map 0.140). About 7× fewer rollouts per state than full games (lower bound on
+  the true ratio's inverse, since M0 is less informative than a better V).
+- Stage 2 (TEST 569): GBM on the public record BCE 0.545 / AUC 0.779; recalibrated Act-4 CTM 0.533 / 0.794; GBM with
+  the CTM logit as a feature (picked on VALIDATION) 0.529 / 0.798; difference to the CTM −0.004 [−0.028, +0.018] →
+  FAIL by the frozen rule; deciles calibrated. The CTM's input is the state after the Act-4 campfire (favours it).
+- Stage 1: `STS_OOC_CAMPFIRE_PRICE_RECORDS` / `_ACT_END_ONLY` (default off). Selftest PASS; replay of used seed
+  111374100 through act 1 with and without records: identical trace and values, 581 of 588 act-end entries carry a
+  next-act record (7 deaths); 12 ms CPU per act-1 rollout.
+**Interpretation:** act-end labels are cheap and far less noisy than outcome labels, so a capture is affordable; real
+Act-4 outcomes alone (~1,200 training games) do not reach the CTM's Act-4 forecast, so V_A4 needs more data
+(act4replay copies) or the CTM as a feature. The capture stores entries, so V_A4 can be replaced offline later.
+**Decision:** no default change. Next (Philipp's call): a pilot capture on replays of used seeds.
+Seeds: none new; 111374100 (§683, used) replayed for the smoke.
+**Knowledge impact:** `operations/environment-variables.md` (two research options).

@@ -2154,7 +2154,7 @@ nlohmann::json OocGameContextModel::refereeRootActions(const std::vector<sts::se
     }, int(seconds) * 1000, int(seconds), std::size_t(1) << 24); }
     catch (const std::exception &e) { return nlohmann::json{{"error", e.what()}}; }
 }
-nlohmann::json OocGameContextModel::priceRootActions(unsigned n, std::uint64_t seed, unsigned top) {
+nlohmann::json OocGameContextModel::priceRootActions(unsigned n, std::uint64_t seed, unsigned top, bool actEndOnly) {
     if (options.refereeActEndCalibration.empty()) throw std::runtime_error("campfire price requires an act-end calibration");
     const auto policyBefore = captureOocPolicyThreadState();
     auto actions = legalActions(0);
@@ -2170,7 +2170,11 @@ nlohmann::json OocGameContextModel::priceRootActions(unsigned n, std::uint64_t s
         nlohmann::json row = {{"id", action.id}, {"prior", action.prior}, {"key", c.key},
             {"label", candidateLabel(state(0), c)}};
         // kind 5: the search's own leaf (rollout3 + calibrated X2-B); kind 6: to the act's end, act-end value.
+        // With records, an act-end entry also names its start state (an index into "starts": a sampled successor,
+        // so a stochastic action has several) and carries the public record at the act end ("endRecord").
+        std::vector<std::string> startKeys;
         for (const bool referee : {false, true}) {
+            if (!referee && actEndOnly) continue;
             options.refereeRollout = options.refereeStopAtActEnd = referee;
             auto &list = row[referee ? "actEnd" : "leaf"] = nlohmann::json::array();
             for (unsigned r = 0; r < n; ++r) {
@@ -2179,12 +2183,28 @@ nlohmann::json OocGameContextModel::priceRootActions(unsigned n, std::uint64_t s
                 std::mt19937_64 stream(seq);
                 refereeActEnd_.reset();
                 refereeActEndHp_.reset();
+                refereeActEndRecord_.reset();
                 try {
                     const auto child = sampleSuccessor(0, action.id, stream);
+                    nlohmann::json start;
+                    const bool records = referee && options.refereeActEndRecords;
+                    const bool hasStart = records && heart1::buildPublicLeafRecord(state(child), start);
                     const auto e = evaluateLeafWithOutcome(child, stream);
                     list.push_back({{"value", e.value}, {"terminal", e.terminal},
                                     {"endFloor", e.endpoint ? e.endpoint->floor : -1}});
                     if (refereeActEndHp_) list.back()["hp"] = {refereeActEndHp_->first, refereeActEndHp_->second};
+                    if (records) {
+                        if (hasStart) {
+                            const auto key = start.dump();
+                            const auto at = std::find(startKeys.begin(), startKeys.end(), key);
+                            list.back()["start"] = int(at - startKeys.begin());
+                            if (at == startKeys.end()) {
+                                startKeys.push_back(key);
+                                row["starts"].push_back(std::move(start));
+                            }
+                        } else list.back()["start"] = nullptr;
+                        if (refereeActEndRecord_) list.back()["endRecord"] = std::move(*refereeActEndRecord_);
+                    }
                 } catch (const std::exception &failure) { list.push_back({{"error", failure.what()}}); }
             }
         }
@@ -2503,6 +2523,12 @@ double OocGameContextModel::evaluateLeafUnobserved(sts::search::OocStateId id,
             const double z = std::clamp(dependencies.leafValue(child.gc, child.path), 1e-7, 1 - 1e-7);
             refereeActEnd_ = 1.0 / (1.0 + std::exp(-(cal[std::clamp(child.gc.act, 1, 4) - 1] + cal[4] * std::log(z / (1 - z)))));
             refereeActEndHp_ = std::pair{child.gc.curHp, child.gc.maxHp};
+#ifndef STS_LIVE_ADVISOR
+            if (options.refereeActEndRecords) {
+                nlohmann::json record;
+                refereeActEndRecord_ = heart1::buildPublicLeafRecord(child.gc, record) ? record : nlohmann::json();
+            }
+#endif
             if (options.refereeStopAtActEnd) return refereeActEnd_;
         }
         if (options.bossRollout)
@@ -2774,6 +2800,10 @@ unsigned liveCampfirePriceN = 16;
 // bias, #881), for the K highest-prior root actions only.
 std::uint32_t liveCampfirePriceScreens = 1u << int(sts::ScreenState::REST_ROOM);
 unsigned liveCampfirePriceTop = 0;
+// STS_OOC_CAMPFIRE_PRICE_RECORDS=1 (research, default off): each act-end rollout also writes the public records of its
+// start and act-end states (act-by-act value labels). STS_OOC_CAMPFIRE_PRICE_ACT_END_ONLY=1 (research, default off):
+// skip the leaf rollouts.
+bool liveCampfirePriceRecords = false, liveCampfirePriceActEndOnly = false;
 // STS_OOC_CTM_AUDIT=PATH (research, default off; #884), with _N (1..256, default 16), _EVERY (default 1) and
 // _SILVER_SIMS (default 10000): see the CTM-audit block in oocMctsPolicyStep.
 std::string liveCtmAuditPath;
@@ -3911,9 +3941,18 @@ void configureLiveOocMcts() {
                 throw std::runtime_error("STS_OOC_CAMPFIRE_PRICE_TOP must be 1..64");
             liveCampfirePriceTop = unsigned(std::stoul(value));
         }
+        for (const auto &[name, flag] : {std::pair<const char *, bool *>{"STS_OOC_CAMPFIRE_PRICE_RECORDS", &liveCampfirePriceRecords},
+                                         {"STS_OOC_CAMPFIRE_PRICE_ACT_END_ONLY", &liveCampfirePriceActEndOnly}})
+            if (const char *raw = std::getenv(name)) {
+                if (std::string(raw) != "0" && std::string(raw) != "1")
+                    throw std::runtime_error(std::string(name) + " must be 0 or 1");
+                *flag = std::string(raw) == "1";
+            }
     } else if (std::getenv("STS_OOC_CAMPFIRE_PRICE_N") || std::getenv("STS_OOC_CAMPFIRE_PRICE_SCREENS")
-               || std::getenv("STS_OOC_CAMPFIRE_PRICE_TOP"))
-        throw std::runtime_error("STS_OOC_CAMPFIRE_PRICE_N, _SCREENS and _TOP require STS_OOC_CAMPFIRE_PRICE");
+               || std::getenv("STS_OOC_CAMPFIRE_PRICE_TOP") || std::getenv("STS_OOC_CAMPFIRE_PRICE_RECORDS")
+               || std::getenv("STS_OOC_CAMPFIRE_PRICE_ACT_END_ONLY"))
+        throw std::runtime_error("STS_OOC_CAMPFIRE_PRICE_N, _SCREENS, _TOP, _RECORDS and _ACT_END_ONLY require "
+                                 "STS_OOC_CAMPFIRE_PRICE");
     if (const char *audit = std::getenv("STS_OOC_CTM_AUDIT"); audit && *audit) {
 #ifdef STS_LIVE_ADVISOR
         throw std::runtime_error("STS_OOC_CTM_AUDIT is unavailable in the live advisor");
@@ -6168,9 +6207,10 @@ void observeOocCampfirePrice(const GameContext &gc, const PathHistory &path, std
                 ImaginedScope scope;
                 auto options = liveOptions;
                 if (options.refereeActEndCalibration.empty()) options.refereeActEndCalibration = a20LeafCalibration();
+                options.refereeActEndRecords = liveCampfirePriceRecords;
                 OocGameContextModel model(gc, path, liveSamplerFor(gc), std::move(options));
                 return model.priceRootActions(n, splitMix64(oocMctsSearchSeed(seed, index) ^ 0x43414d5046495245ULL),  // "CAMPFIRE"
-                                              liveCampfirePriceTop);
+                                              liveCampfirePriceTop, liveCampfirePriceActEndOnly);
             } catch (const std::exception &e) { return nlohmann::json{{"error", e.what()}}; }
         }, int(seconds) * 1000, int(seconds), std::size_t(1) << 24);
     } catch (const std::exception &e) { row["priceError"] = e.what(); }
@@ -9184,6 +9224,32 @@ void oocMctsAdapterSelfTest() {
         for (const auto &a : price(30, std::make_shared<DeathSampler>()).at("actions"))
             for (const auto &e : a.at("actEnd"))
                 require(e.at("value") == 0 && e.at("terminal") == true, "campfire price: a death before the act end is 0");
+        // STS_OOC_CAMPFIRE_PRICE_RECORDS / _ACT_END_ONLY: the act-end entries keep their values and add the start and
+        // act-end public records; act-end-only drops the leaf rollouts and keeps the act-end streams.
+        {
+            auto o = plain; o.refereeActEndCalibration = {30, 30, 30, 30, 1}; o.refereeActEndRecords = true;
+            OocGameContextModel m(refereeRoot,path,std::make_shared<HorizonSampler>(),o);
+            const auto recorded = m.priceRootActions(2, 99, 0, true);
+            require(recorded.at("actions").size() == priced.at("actions").size(), "price records cover the same actions");
+            for (std::size_t i = 0; i < recorded.at("actions").size(); ++i) {
+                const auto &a = recorded.at("actions")[i], &b = priced.at("actions")[i];
+                require(!a.contains("leaf") && a.at("actEnd").size() == b.at("actEnd").size()
+                    && a.contains("starts") && !a.at("starts").empty(), "act-end-only price rows with records");
+                for (std::size_t r = 0; r < a.at("actEnd").size(); ++r) {
+                    const auto &e = a.at("actEnd")[r];
+                    require(e.at("value") == b.at("actEnd")[r].at("value") && e.at("endFloor") == b.at("actEnd")[r].at("endFloor"),
+                        "price records leave the act-end values unchanged");
+                    require(e.at("start").is_number_integer() && e.at("start").get<std::size_t>() < a.at("starts").size()
+                        && e.at("endRecord").is_object()
+                        && e.at("endRecord").at("obs.act").get<int>() > refereeRoot.act, "price records name start and act end");
+                }
+            }
+            auto d = deathCal; d.refereeActEndRecords = true;
+            OocGameContextModel dm(refereeRoot,path,std::make_shared<DeathSampler>(),d);
+            for (const auto &a : dm.priceRootActions(2, 99, 0, true).at("actions"))
+                for (const auto &e : a.at("actEnd"))
+                    require(e.at("value") == 0 && !e.contains("endRecord"), "price records: a death has no act-end record");
+        }
         // STS_OOC_CAMPFIRE_PRICE_TOP: only the top-K prior actions are priced, with the same streams as a full price.
         {
             auto o = plain; o.refereeActEndCalibration = {30, 30, 30, 30, 1};
