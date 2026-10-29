@@ -421,6 +421,17 @@ Offline only, on round-2 sibling groups (§503; targets are 64-rollout3 means, s
   [recapture](../../experiments/evidence/ooc_sibling_crn_capture_20261022/README.md),
   [retrain](../../experiments/evidence/value_sr_crn_20261022/README.md),
   [seeds](../../experiments/evidence/value_sr_crn_seeds_20261022/README.md)).
+- **Ranking vs value (§715, 2026-10-28):** search reads the leaf only at map roots (ADR-0061). It uses the leaf as
+  the rollout3 endpoint value, averaged with 0/1 terminals and read by PUCT and the learned stop in probability units,
+  so level and scale of differences matter. A sibling-ranking loss pins neither.
+  - At map roots every SR head and blend is within about 0.01–0.02 of X2-B with M0, with no demonstrated gain (all CIs include 0). The blend
+    gains (+0.045) are on screens production does not search.
+  - The heads' sibling differences are 5.5–6× over-dispersed (slope 0.16–0.18; X2-B with M0 0.57). Their level matches M0-ended
+    labels; the blend sits on raw X2-B's level, so a blend arm needs an explicit `STS_OOC_MCTS_LEAF_CALIBRATION`.
+  - In-training selection BCE tracks level drift; AUC is flat (0.760–0.772 from epoch 6).
+  - Recommendation: no ranking-only training and no further ranking-loss tuning. If the head is pursued, use a
+    calibration-invariant epoch guard and a scale-carrying pairwise loss on M0-ended labels, judged at map roots
+    ([evidence](../../experiments/evidence/sr_ranking_vs_value_20261028/README.md)).
 
 ## OOC leaf level: the search over-prices a death (stage 0, §660, 2026-10-22); the calibrated leaf wins the A/B (§661) and is the A20 default (ADR-0057, 2026-10-23); the leaf-compare metric does not qualify (§663)
 

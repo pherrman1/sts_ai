@@ -499,6 +499,11 @@ const char *realOocChainStepBody(GameContext &gc, search::ScumSearchAgent2 &agen
         return "match_and_keep";
     // STS_OOC_MCTS_SCREENS (#854; A20 default map only, ADR-TBD): after the same rule chain, student_sel decides
     // unsearched screens.
+    // STS_OOC_MCTS_CARD_RULE (research): the card rule decides card-reward screens instead.
+    if (one_combat::liveOocCardRuleApplies(gc)) {
+        if (t_realOocDecisionObserver) one_combat::armOocPolicyTarget();
+        if (one_combat::oocCardRulePolicyStep(gc, path, seed, index, mctsMetrics)) return "card_rule";
+    }
     if (one_combat::liveOocMctsScreenExcluded(gc) && one_combat::heart1::policyStep(gc)) return "heart1_screen";
     if (t_realOocDecisionObserver) one_combat::armOocPolicyTarget();
     if (one_combat::oocMctsPolicyStep(gc, path, seed, index, mctsMetrics)) return "mcts";

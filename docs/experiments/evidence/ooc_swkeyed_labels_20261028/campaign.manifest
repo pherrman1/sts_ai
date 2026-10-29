@@ -1,0 +1,10 @@
+name          ooc-swkeyed-labels
+code_commit   d4a4ec3c0125b99aea267f10d1c122d858e9779e
+binary_sha256 382997c219cc7d5fed556f8ac3c270dc5006538e575e6191c3f829f0ef40f30e
+workers       16
+share         /mnt/project-files/ooc-swkeyed-labels
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 30
+input student_sel.bin /mnt/project-files/az-gen3-explore/student_sel.bin cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7

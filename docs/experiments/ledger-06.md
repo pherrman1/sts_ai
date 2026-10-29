@@ -24549,6 +24549,26 @@ a value-based rest-vs-upgrade decision is being scoped in its own thread (2026-1
 Seeds: none (existing games only).
 **Knowledge impact:** none beyond this entry; no code or default change.
 
+## §712 — Card-reward rule screen: student_sel's card picks beat a value-head argmax (−17.6 pp Heart kills), a uniform 8,192-sim Q search with the X2-B M0 leaf (−19.1 pp) and the same search with the SR leaf (−9.4 pp); all three STOP (256 paired seeds, A20, 2026-10-27)
+
+**Question:** Philipp, 2026-10-26: the OOC search never compares card options because student_sel puts ≥0.97 prior
+on one card. Do better card decisions come from a value head or from a uniform search? Thread "Measure OOC MCTS
+depth on card rewards"; screen of 4 arms A/B/C/D, pre-registered.
+**Data:** [PREREG](evidence/card_rule_ab_20261026/PREREG.md), [RESULT](evidence/card_rule_ab_20261026/RESULT.md);
+seeds 111387000-111387255 (smoke 111387990). Run commit `5e27e0ad`, research flag `STS_OOC_MCTS_CARD_RULE` (default
+off). A = today's A20 default; B = SR_crn_r2_s2_ep20 value-head argmax of the post-pick state; C = 8,192 sims split
+evenly over the root actions, rollout3 + X2-B M0 leaf, boss edge, best mean Q; D = C with the SR head as leaf anchor.
+Only real card-reward roots differ.
+**Result:** Heart kills A 28.1%, B 10.5%, C 9.0%, D 18.8%. Paired: B−A −17.6 pp [−23.4, −12.1] (8/53), C−A −19.1 pp
+[−25.0, −13.3] (8/57), D−A −9.4 pp [−15.6, −2.7] (23/47); D−B +8.2 pp, D−C +9.8 pp. Act-4 arrival 41/23/21/33%.
+Rules pick off the student_sel argmax on 38-49% of card roots and skip 16-23%. Extra deaths come mostly in acts
+2-3. Wall per game: C 2.6×, D 3.1× A. Two units were run locally after three dead-worker attempts each; the other
+254 were verified.
+**Interpretation:** STOP for B, C and D, no follow-up runs. Neither leaf in use today ranks card options better than
+the policy prior, and the search (about 1 floor of tree plus rollout3) does not make up for it. The SR leaf beats
+X2-B as a card evaluator (D−C), which matches its larger card spread in the single-seed diagnostics.
+**Inference:** card-reward improvement has to come through the prior (training targets) or through a value head
+that has been shown to rank post-pick states against outcomes, not through search over today's leaves.
 ## §697 — Fight-luck control variates for paired A/Bs: a CTM-only baseline is biased (shifts up to 3.2 pp); fresh fight replays are unbiased and project 0.71x paired SD (~2x seeds) at m = 4; new `one_combat fightreplay` reproduces 415/415 recorded fights; offline, no seeds (2026-10-26)
 
 **Question:** experiment 6 of the 2026-10-26 deep-research report (thread "Shrink A/B variance with AIVAT"): how much
@@ -24912,6 +24932,46 @@ on identical states; it needs per-fight output in `expertreplay` (missing today)
 Seeds: none (existing games only).
 **Knowledge impact:** this ledger entry and its evidence only; no code, model or default change.
 
+## §714 — SR head on swkeyed sibling labels (issue #883 follow-up, PR #903): labels 0.16× as noisy (split-half 0.718 → 0.829), but retraining SR_crn_r2 on them is NOT_SHOWN (seed 1 +0.011 [+0.005, +0.016], seed 2 −0.001 [−0.005, +0.003], seed mean +0.005 [+0.001, +0.008]); label noise does not limit this head (320 replayed §644 sources, 2026-10-28)
+
+**Question:** §703's swkeyed estimator cuts the variance of rollout3 sibling differences about 5× per CPU. Retraining
+the SR head on the same groups, with only the label estimator changed: does it rank siblings better? Philipp chose
+"use it for labels first" (11:05Z) and "Go with 16 workers" (15:20Z).
+**Setup:** [PLAN](evidence/ooc_swkeyed_labels_20261028/PLAN.md) (pre-launch review PASS, then fixes; two
+deviations).
+- **Producer:**
+  - Main cannot replay §644 bit-exactly (unflagged engine fixes), so the capture uses a backport: `90eb9f07` plus
+    `STS_OOC_SIBLING_ROLLOUT=swkeyed` (code `d4a4ec3c`, RUN_COMMIT `27c85529`).
+  - It reproduces §644 exactly with the base estimator (SMOKE).
+  - Code on main: `STS_OOC_SIBLING_ROLLOUT=swkeyed` (research, default off, forked capture only).
+- **Training:** §649's SR_crn_r2 recipe, seeds 1 and 2, the same 15,129 CRN TRAIN groups with only `target` changed
+  (round-2 groups and game rows unchanged); epoch chosen by `pick_epoch.py`. Philipp's GPU; the §649 controls are
+  reused (same code and stack hashes).
+- **Gate:** head alone on the common-seed VALIDATION with §644's labels. The seed-mean paired CI must be above 0,
+  **and** each seed's difference must be positive.
+**Result** ([RESULT](evidence/ooc_swkeyed_labels_20261028/RESULT.md)):
+- **Capture:** 320/320 units, 155.8 core-h. Play and rows are exact against §644.
+- **Labels:**
+  - Split-half agreement 0.718 → 0.829; sibling-difference variance 0.16× (rewards 0.08×, map 0.31×).
+  - Pooled bias −0.0002 ± 0.0003. The row-level |z| > 2 share is 8.6 %, over the 8 % limit: a selection artefact by
+    the row's own base deaths. Philipp chose to proceed.
+- **Heads:** treatment picked epochs 18 and 11; controls 13 and 20.
+  - Head alone: control 0.6628 / 0.6668, treatment **0.6734 / 0.6661** (X2-B 0.6639).
+  - Differences: seed 1 +0.0106 [+0.0054, +0.0158], seed 2 −0.0007 [−0.0049, +0.0033], seed mean +0.0050
+    [+0.0014, +0.0084]. Blend seed mean +0.0012 [−0.0029, +0.0048].
+  - Scored on the swkeyed VALIDATION labels instead: seed mean +0.0055 [+0.0017, +0.0093], seed 2 again +0.0003.
+- **Bars:** the selection BCE holds. On the −3 HP proxy (the §649 prices data is lost, Deviation 2), the treatment is
+  1.2 pp and 1.9 pp below its controls (limit 2 pp).
+**Interpretation:**
+- NOT_SHOWN: one seed gains about one §649 seed spread, the other is level, and the epoch choice differs between
+  arms.
+- **Inference:** with §645 (cleaner CRN labels) and §700 (more data) this is the third flat lever. The head's ranking
+  is limited by the objective, recipe or features, not by label noise or volume.
+**Decision:** no default change. The swkeyed groups stay on the data branch (`gen2/value-sr-swk/`) for the
+ranking-vs-value-loss thread.
+Seeds: none new (111144512–111144831 replayed).
+**Knowledge impact:** `research/ooc/variance-reduction.md`.
+
 ## §709 — CTM decision-impact audit (issue #884): at 144 A20 map roots the active CTM's picks lose nothing measurable when the same leaf rollouts play their combats with production Silver (cross-fitted regret +0.0010 [−0.0024, +0.0040]); fight forecasts are close (boss HP ~4 too optimistic, elite deaths ~1 pp too high); NOT_SHOWN, stop (16 replayed §683 seeds, no new seeds, 2026-10-28)
 
 **Question (#884):** does the active CTM make errors that reverse OOC sibling-action rankings?
@@ -25120,3 +25180,66 @@ Gremlin Leader if the canary resumes. Stop: more simulations for elites, potion-
 Seeds: none new (external Baalorlord run seeds of §694/§711, replayed).
 **Knowledge impact:** research flags `STS_EXPERT_FIGHTS_ARMS`, `_ARM_ROOMS`, `_ARM_REPLICATES` and their thread
 overrides (environment-variables.md); no default or play change.
+## §713 — Heart readiness (Act-4 CTM survival model applied to the current deck) as an OOC preference: predicts the Heart kill across games well beyond HP (+0.08 to +0.23 AUC), but the deck change of a single act-1/2 decision does not predict which paired arm kills (concordance 0.497 [0.457, 0.536]); leaf-blend STOP (offline, 4,096 games, 2026-10-25)
+
+**Question (Philipp, 2026-10-25 10:37Z):** "prefer decks that kill the heart and not just survive the next fight"
+(after §683: MAP + 4.8 pp Act 4 but + 1.4 pp kills). Every real fight row of §683 (3 × 1,024) and §676 (2 × 512) was
+rescored as a Heart fight with the deployed §527 Act-4 survival model, at actual HP and at max HP (`rF`).
+**Design and result:** [RESULT](evidence/heart_readiness_stage0_20261025/RESULT.md). Exploratory, futility rule
+stated in the thread before analysis; CIs by seed bootstrap. Across games (CV, seed bootstrap) `rF` adds ΔAUC +0.111 [+0.082, +0.143] at
+act-2 entry, +0.077 at act-3 entry and +0.234 at Act-4 entry over HP, and predicts conversion given Act 4 (+0.11 from
+act-2 entry), so the stated rule did not fire. The paired check (same seed, the arms' first differing choice) does:
+at the first fight after the split the killing arm has the higher readiness in 0.497 [0.457, 0.536] of 625
+kill-discordant pairs (act 1 0.471, act 2 0.494, act 3 0.545 on 55), HP 0.502; only at act-3 entry (0.598) and Act-4
+entry (0.678 [0.615, 0.743]) do the decks predict the kill. MAP's Act-4 decks are not weaker than OFF's (Δlogit −0.02
+[−0.12, +0.07]); MAP-only and OFF-only arrivals have equal readiness, far below shared arrivals.
+**Interpretation:** readiness describes a run's Heart chances but cannot rank the children of one act-1/2 decision,
+where the search gain sits; §683's lower kills per arrival is a selection effect (rescued weak runs), not weaker
+decks. The leaf-blend line stops by
+judgement (the stated rule passed; the STOP rests on the later paired check; the bound rules out a strong, not a small,
+signal). Inference: an act-3-only term or readiness as a value-head feature are the only
+open variants, neither started.
+Seeds: none (existing games only).
+**Knowledge impact:** none beyond this entry; no code or default change.
+
+## §715 — SR head, ranking vs value: search reads level and difference scale at map roots, not sibling order; at map roots no SR head or blend shows a gain over X2-B with M0 (within about 0.01–0.02, all CIs include 0), and the heads' sibling differences are 5.5–6× over-dispersed (about 3× more than X2-B with M0) (offline, no seeds, 2026-10-28)
+
+**Question:** Philipp, 2026-10-28 21:19Z: for the SR head, is ranking or a better value loss more important? Should
+we optimise ranking directly?
+**Data:** [README](evidence/sr_ranking_vs_value_20261028/README.md). §644's common-seed VALIDATION, re-extracted
+(578,987 rows; 5,587 roots, 1,364 at map). 11 exported SR heads (§641 SR_w1, §645/§649 SR_crn_r2 at fold,
+value-stop and ranking epochs, #903 swkeyed). Labels: as captured (rollout3 ending in raw X2-B) and with M0
+re-applied to the recorded endpoints. Training curves from the runs' summaries. Scoring reproduces §649 (0.6668 /
+0.7031).
+**Result:**
+- Code reading. Production searches map roots only (ADR-0061). The head enters as the rollout3 endpoint value or a
+  logit blend with X2-B. Q averages values of different states with 0/1 terminals. PUCT and the learned stop read Q
+  in probability units. The default M0 is not applied when a heart1 value head is set.
+- Map roots, concordance minus raw X2-B:
+  - s2_ep20 blend +0.015 [−0.008, +0.038] (raw labels), +0.019 [−0.001, +0.038] (M0 labels);
+  - X2-B with M0 +0.011 [−0.000, +0.023] (M0 labels);
+  - swk blends +0.011 to +0.023;
+  - the SR_w1 blend that lost online (§661) +0.001.
+- Against X2-B with M0 at map roots (M0 labels, paired bootstrap by the reviewer): blends +0.008 to +0.013, heads alone
+  −0.003 to +0.005, every CI including 0 (e.g. the s2_ep20 blend +0.008 [−0.013, +0.029]). Non-map blends: +0.045
+  [+0.036, +0.055].
+- Level: the heads sit at the M0-label level (+0.01 to +0.04), the blend 0.50 above it.
+- Scale: head sibling differences have r ≈ 0.39 with the labels but an RMS 2.2–2.4× the labels' (slope 0.16–0.18;
+  X2-B with M0 0.57). The ratio grows with training.
+- Training: from epoch 6 the selection-fold BCE correlates −0.64 to −0.97 with the mean prediction, while AUC stays
+  in 0.760–0.772 (from epoch 6).
+**Interpretation:**
+- Do not train ranking-only. A pairwise loss leaves level and scale free, and both matter: M0's level change is the
+  only leaf change that won online (§661), while the offline ranking gain of SR_w1's blend lost.
+- The ranking progress since then is about 0.01–0.015 at map roots, the only roots searched.
+- The 0.570 BCE bar mostly filters by level drift. A calibration-invariant guard (AUC, or BCE after a per-act refit)
+  plus an explicit `STS_OOC_MCTS_LEAF_CALIBRATION` would replace it.
+**Decision:** no default or candidate change.
+- If the SR head is pursued, the README orders the options:
+  1. per-epoch scoring of the existing runs to settle the selection rule;
+  2. M0-ended TRAIN labels;
+  3. one GPU round with a scale-carrying pairwise loss, gated at map roots on M0 labels;
+  4. only then an online map-root A/B.
+- Otherwise park the head.
+- No seeds used.
+**Knowledge impact:** `evaluation/current-research.md`.
