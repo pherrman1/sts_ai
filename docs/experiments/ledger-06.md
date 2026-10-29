@@ -25150,7 +25150,7 @@ Seeds: none new (external Baalorlord run seeds of §694).
 **Knowledge impact:** research mode `one_combat expertfights` and `STS_EXPERT_FIGHTS_REPLICATES`, `_MAX_ACT`,
 `_POTIONS` (environment-variables.md); no default or play change (the driver hook is unset in every other mode).
 
-## §TBD — Combat gap vs Baalorlord, paired probes on his fight states: act-2 elites are not budget-limited (flat 10k / 100k +0.0 / +0.1 HP), elite prior playouts −0.7 [−1.5, +0.1], act-2 bosses at flat 40k −3.3 [−6.8, +0.3] at 7× CPU; in-fight potion timing roughly calibrated; exploratory (used Baalorlord seeds, one container, 2026-10-28/29)
+## §716 — Combat gap vs Baalorlord, paired probes on his fight states: act-2 elites are not budget-limited (flat 10k / 100k +0.0 / +0.1 HP), elite prior playouts −0.7 [−1.5, +0.1], act-2 bosses at flat 40k −3.3 [−6.8, +0.3] at 7× CPU; in-fight potion timing roughly calibrated; exploratory (used Baalorlord seeds, one container, 2026-10-28/29)
 
 **Question:** §711 left +5.4 HP per act-2 elite and +4.5 per act-2 boss on Baalorlord's own states. Is that search
 budget, playout quality, potion use, or something else? Philipp 2026-10-28: investigate and propose fixes, "maybe we

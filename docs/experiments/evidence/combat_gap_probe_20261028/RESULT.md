@@ -1,4 +1,4 @@
-# Combat gap vs Baalorlord: diagnosis and paired probes (exploratory, §TBD)
+# Combat gap vs Baalorlord: diagnosis and paired probes (exploratory, §716)
 
 Follow-up to §711 (`../expert_fight_replay_20261028`). Philipp, 2026-10-28 19:37Z: "start an investigation thread on
 why we are worse than baalorlord combatwise, that thread should also propose on how to fix it, maybe we need some
