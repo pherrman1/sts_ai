@@ -127,6 +127,9 @@ struct OocAdapterOptions {
     // STS_OOC_CAMPFIRE_PRICE (research; set only in a forked child): a referee rollout ends at its act-end value
     // instead of playing on to the end of the game.
     bool refereeStopAtActEnd = false;
+    // STS_OOC_CAMPFIRE_PRICE_RECORDS (research; set only in a forked child): each act-end rollout also returns the
+    // public heart1 record of its sampled start state and of its act-end state, for act-by-act value labels.
+    bool refereeActEndRecords = false;
     // Issue #883 rollout variance research (set only in a forked sibling-capture child, STS_OOC_SIBLING_VR_ARMS):
     // survivalWeightedRollout integrates each CTM death draw out of a leaf rollout: the combat is resampled until it is
     // not a death and the rollout value is multiplied by the product of the CTM survival probabilities (an exact,
@@ -319,6 +322,8 @@ private:
     // Product of CTM survival probabilities in the current survival-weighted rollout (null outside one).
     double *rolloutSurvivalWeight_ = nullptr;
     std::optional<std::pair<int, int>> refereeActEndHp_;   // curHp, maxHp at that state
+    // Public record at that state (refereeActEndRecords; null if the record cannot be built).
+    std::optional<nlohmann::json> refereeActEndRecord_;
     OocAdapterOptions options;
     OocMctsDependencies dependencies;
     mutable OocContinuationMetrics continuation_;
@@ -398,8 +403,9 @@ public:
     // Campfire price (STS_OOC_CAMPFIRE_PRICE): for every legal root action, n rollouts of the search's own leaf and n
     // rollouts to the act's end valued by refereeActEndCalibration, stream r shared by the actions. Changes the
     // model's rollout state: call it in a forked child.
-    // top > 0 prices only the top highest-prior legal actions (ties keep legal order).
-    nlohmann::json priceRootActions(unsigned n, std::uint64_t seed, unsigned top = 0);
+    // top > 0 prices only the top highest-prior legal actions (ties keep legal order). actEndOnly skips the leaf
+    // rollouts (the act-end streams are the same either way).
+    nlohmann::json priceRootActions(unsigned n, std::uint64_t seed, unsigned top = 0, bool actEndOnly = false);
 };
 // Adds game meanings and CTM provenance to a captured generic search tree.
 void annotateOocTree(const OocGameContextModel &, sts::search::OocTreeSnapshot &);

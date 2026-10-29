@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# usage: replay_unit.sh REPO RUN OUTDIR SEED N  -- replay one §683 MAP seed and price the top-3 prior actions at every OOC root (#881).
+# Same as ../campfire_price_stage0_20261026/replay_unit.sh plus STS_CALLING_BELL_CARD_RNG_FIX=0 (main is after #868)
+# and STS_OOC_CAMPFIRE_PRICE_SCREENS=all STS_OOC_CAMPFIRE_PRICE_TOP=3 ${EXTRA:-}.
+set -uo pipefail
+REPO=$1 RUN=$2 OUT=$3 SEED=$4 N=$5
+mkdir -p "$OUT"
+COMMON=("PATH=/usr/local/bin:/usr/bin:/bin" "HOME=$HOME" "STS_EXECUTABLE_GIT_SHA=$(git -C "$REPO" rev-parse HEAD)"
+  OMP_NUM_THREADS=1 OMP_DYNAMIC=FALSE
+  STS_COLLECT_KEYS=1 STS_FAIR=1 STS_STOP_AFTER_ACT=0 STS_REST_WIN=0
+  STS_KEY_SAPPHIRE=policy STS_KEY_RUBY=policy STS_KEY_EMERALD=mask
+  STS_ACTIVE_POWER_FEATURES=1 STS_REWARDLESS_COMBAT_RNG_FIX=1 STS_HAND_UPGRADE_ALL_FIX=1
+  STS_SILVER_SEARCH=1 STS_SILVER_ADAPTIVE=0 STS_SILVER_EXACT_ROOT_BUDGETS=1 STS_SILVER_LEARNED_STOP=1
+  STS_SILVER_LEARNED_STOP_MODEL=gbt-0cac7cc64364
+  STS_SILVER_REUSE_CAP_MODE=allocated STS_SILVER_VNET_LEAF_DIRECT=0
+  STS_SILVER_ROLLOUT_ROOT_TABLE=models/combat_policy_mlp_g7f_E.txt
+  STS_SILVER_ROOT_PRIOR=models/combat_policy_mlp_g7f_E.txt STS_SILVER_ROOT_PRIOR_WEIGHT=400
+  STS_SILVER_TREE_PRIOR_MIN_VISITS=8 STS_SILVER_PRIOR_PLAYOUT_ELITE=0
+  STS_OOC_HEART1_WING_BOOTS_COUNTER=1
+  STS_OOC_STRATEGIC_TOK_NN=selfplay/models/ooc_strategic_tok_final.native
+  STS_OOC_STRATEGIC_REST=1 STS_OOC_STRATEGIC_EVENT=1 STS_OOC_STRATEGIC_SHOP=1
+  STS_OOC_STRATEGIC_TREASURE=1 STS_OOC_STRATEGIC_BOSS_RELIC=1 STS_OOC_STRATEGIC_MARGIN=1.0
+  STS_OOC_MCTS=1 STS_OOC_MCTS_PRIOR=heart1full STS_OOC_MCTS_LEAF_POLICY=heart1
+  STS_OOC_MCTS_TARGET_PRIOR=1 STS_OOC_MCTS_LEAF_SELECTS=heart1 STS_OOC_MCTS_UNSUPPORTED_SILVER_SIMS=500
+  STS_OOC_MCTS_LEAF_VALUE=native STS_OOC_MCTS_LEAF_COMBATS=3 STS_OOC_MCTS_SIMS=4096
+  STS_OOC_MCTS_CPUCT=1.5 STS_OOC_MCTS_TEMPERATURE=1 STS_OOC_MCTS_ROOT_SELECTION=visits STS_OOC_MCTS_EARLY_STOP=1
+  STS_OOC_MCTS_MAX_DEPTH=32 STS_OOC_MCTS_TREE_RULES=1 STS_OOC_MCTS_WIDEN_K=4 STS_OOC_MCTS_WIDEN_ALPHA=0.75
+  STS_OOC_MCTS_PRUNE_UNSUPPORTED=1 STS_OOC_MCTS_GAP_STOP=0
+  STS_OOC_MCTS_LEARNED_STOP=models/candidates/ooc_learned_stop_trees.txt:0.99
+  STS_OOC_PUBLIC_FUTURES=8 STS_OOC_MCTS_FAST_ROOT_CAP=1024
+  STS_HEART_OUTCOME_CTM_ROWS=1 "STS_OOC_HEART1=$RUN/student_sel.bin"
+  STS_OOC_MCTS_FULL_BUDGET_FRACTION=1 STS_OOC_MCTS_SCREENS=map
+  STS_SILVER_ACT4_STRONG=0 STS_CALLING_BELL_CARD_RNG_FIX=0
+  STS_OOC_CAMPFIRE_PRICE_SCREENS=all STS_OOC_CAMPFIRE_PRICE_TOP=3 ${EXTRA:-}
+  "STS_OOC_CAMPFIRE_PRICE=$OUT/P-$SEED.price.jsonl" "STS_OOC_CAMPFIRE_PRICE_N=$N")
+cd "$REPO" || exit 2
+b=$OUT/P-$SEED
+printf '%s\n' "${COMMON[@]}" | grep '^STS_' > "$b.env"
+t0=$(date +%s)
+env -i "${COMMON[@]}" timeout 10h bash tools/seed_guard.sh "$RUN/one_combat" heartoutcomegen 1 "$SEED" "$b.jsonl" policy > "$b.log" 2> "$b.err" &
+pid=$!
+# STOP_AT_ACT4=1: stop the game at its first act-4 state (Stage 0 prices acts 1-3 only; the trace check reads the prefix).
+stopped=0
+while kill -0 $pid 2>/dev/null; do
+  if [ "${STOP_AT_ACT4:-0}" = 1 ] && grep -q '"act":2,' "$b.jsonl" 2>/dev/null; then pkill -P $pid; pkill -f "heartoutcomegen 1 $SEED " ; stopped=1; break; fi
+  sleep 5
+done
+wait $pid; rc=$?
+echo "tag=P-$SEED rc=$rc stoppedAtAct4=$stopped wall=$(( $(date +%s)-t0 ))" > "$b.done"
