@@ -25109,12 +25109,13 @@ act-1 bosses −0.29 / +0.52 (CIs span 0). Offline: act-2 elites entered with no
 one; at equal potion use act-2 elites +4 to +5, act-1 about +1; no card's presence explains the gap (72 cards, no
 positive CI excludes 0).
 **Interpretation:** elite fights are short and the search has converged: more simulations do not change the plays,
-so the act-2 elite gap is an evaluation bias (leaf value and playouts), and better playouts move it only a little.
-Bosses gain from budget, consistent with §706's one-round tree. In-fight potion timing is roughly priced right (the
+so the act-2 elite gap is an evaluation bias (leaf value and playouts) or an engine-fidelity difference (untested
+here), and better playouts move it only a little. Bosses probably gain from budget (CI [−6.8, +0.3] still includes
+0), consistent with §706's one-round tree. In-fight potion timing is roughly priced right (the
 potions it drinks save ≈ 10 HP each, extra ones ≈ 3). **Inference:** ranked fixes are (1) a pre-registered paired
 boss-budget probe on all §711 boss states (flat 40k or the `STS_SILVER_LEARNED_STOP_BOSS_MAX` extension), then a
-CPU-matched whole-run A/B; (2) elite playout quality (gate elite prior playouts, ungated since ADR-0056; a stronger
-rollout policy); (3) potion carry-over across fights (unmeasured here); (4) engine fidelity of Slavers / Book /
+CPU-matched whole-run A/B; (2) elite playout quality (a whole-run A/B of elite prior playouts; ADR-0056 removed them by
+Philipp's CPU decision, so re-enabling is his call after that A/B; a stronger rollout policy); (3) potion carry-over across fights (unmeasured here); (4) engine fidelity of Slavers / Book /
 Gremlin Leader if the canary resumes. Stop: more simulations for elites, potion-weight changes.
 Seeds: none new (external Baalorlord run seeds of §694/§711, replayed).
 **Knowledge impact:** research flags `STS_EXPERT_FIGHTS_ARMS`, `_ARM_ROOMS`, `_ARM_REPLICATES` and their thread
