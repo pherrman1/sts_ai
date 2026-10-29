@@ -25266,8 +25266,9 @@ definitions in `research/ooc/root-quality.md`. Campaign: RUN_COMMIT f9fd31a0, bi
 - Median |seen gap| to the production pick: 0.5–0.9 pp (X2-B) and 1.6–1.9 pp (SR).
 - h0: 93% of endpoints within 2 floors; h3: 8%.
 - K > 5 roots (12): P_self 0.58–0.63.
+- K ≤ 5 roots (116), not pre-registered: P_self(8,192, h3) SR 0.168 [0.119, 0.220] (inconclusive), X2-B 0.211 [0.162, 0.261]. SR's verdict rests on the 12 multi-group roots; the all-128 verdict stands.
 - Exploratory self-regret at 8,192 (other half's mean Q): 0.12 pp [0.06, 0.21] (X2-B h3) and 0.11 pp (SR h3).
-- On roots with a > 1 pp lead: P_self 0.07 (X2-B, 20% of roots) and 0.06 (SR, 46% of roots).
+- On roots with a > 1 pp lead: P_self 0.07 (X2-B, 20% of roots, mean over halves) and 0.06 (SR, 46%).
 - Argmax agreement: X2-B h3 vs SR h3 59%; X2-B h3 vs student_sel 52%; SR h3 vs student_sel 64%.
 - Gate: projected SE(β_SR) 0.393 > 0.35, so there is no phase 2.
 **Interpretation:**

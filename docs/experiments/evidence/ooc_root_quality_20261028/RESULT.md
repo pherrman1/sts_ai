@@ -42,6 +42,9 @@ scored, then swapped). CI = root bootstrap, 10,000 resamples. Source: [phase1.js
   - SR: 0.207, lower bound 0.152.
   - Both pass the rule (mean > 0.20, lower bound > 0.10). The pre-registered next step is swkeyed rollouts in search
     (§703). See the exploratory section for how much this costs.
+  - Not pre-registered (from the reviewer): on the 116 roots with K ≤ 5, SR's P_self(8,192) is 0.168 [0.119, 0.220],
+    which is inconclusive by the same rule; X2-B's is 0.211 [0.162, 0.261]. SR's verdict therefore comes from the
+    12 multi-group roots (0.58). The pre-registered all-128 verdict stands.
 - Unresolved roots stay in the primary mean, as pre-registered. Resolved-only P_self(8,192) is 0.05–0.14.
 - ρ_eff ≈ 1 (0.87–1.33): the seed-to-seed spread of Q differences matches the iid prediction from per-simulation
   moments. Common rollouts neither help nor hurt much.
@@ -79,7 +82,8 @@ Q̄ is noisy, so this regret has a small upward bias.
 
 | | X2-B h3 | SR h3 |
 |---|---|---|
-| share of clear roots | 20% (29 roots) | 46% (64 roots) |
+| share of clear roots (mean over the two halves) | 20% | 46% |
+| roots clear in at least one half (P_self scored there) | 29 | 64 |
 | P_self(8,192) on clear roots | 0.07 [0.00, 0.17] | 0.06 [0.02, 0.11] |
 
 Most of the headline P_self comes from near-ties.
