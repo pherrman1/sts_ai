@@ -1,0 +1,11 @@
+name          boss-budget-probe
+code_commit   32f7ee762938b3cff785e33192d46959aae66e5e
+binary_sha256 3f52f67752aa9fdf0296026bff8daa23821659cd08f4784f531ee38924855604
+workers       16
+share         /mnt/project-files/boss-budget-probe
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 45
+input student_sel.bin /mnt/project-files/az-gen3-explore/student_sel.bin cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7
+input expert_runs.tar /mnt/project-files/expert-replay/expert_runs.tar 895eac8fa092d0fb0e56735841f8425f269cdfc3d9eacde84d4905a240fd0f24
