@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Boss-budget probe (PREREG.md): copy of ../expert_fight_replay_20261028/run_unit.sh; only the E= line differs
-# (frozen arms flat20000,flat40000 on rooms 1B,2B,3B, 2 copies each; act cap 3).
+# Boss-budget probe (PREREG.md): copy of ../expert_fight_replay_20261028/run_unit.sh; only the E= line (frozen arms
+# flat20000,flat40000 on rooms 1B,2B,3B, 2 copies each; act cap 3) and the timeout (10 h instead of 7 h) differ.
 # usage: run_unit.sh REPO RUN UNIT_OUT RUN_ID -- one expert seed (RUN_ID.json in $RUN/expert_runs.tar) of the matched
 # expert-entry fight replay (PREREG.md): one_combat expertfights replays the expert's logged out-of-combat decisions
 # while they stay exact and ends the run at the first one that is not; at every fight in that prefix HP and max HP are
@@ -8,7 +8,7 @@
 # encounter is played STS_EXPERT_FIGHTS_REPLICATES=4 times by Silver (copy 0 on the game's battle seed). Today's A20 default
 # combat stack: learned Silver stop, exact root budgets, g7f_E root table + prior, boss-only prior playouts.
 # The OOC MCTS environment is set as in the #868 X arm for parity, although no OOC search runs inside the prefix.
-# 7 h timeout (rc 124); always exits 0 (rc in the .done line).
+# 10 h timeout (rc 124; §711: 7 h); always exits 0 (rc in the .done line).
 set -uo pipefail
 REPO=$1 RUN=$2 OUT=$3 ID=$4
 [ -s "$RUN/student_sel.bin" ] || { echo "missing $RUN/student_sel.bin" >&2; exit 2; }
@@ -45,7 +45,7 @@ b=$OUT/F-$ID
 E=("${COMMON[@]}" STS_EXPERT_FIGHTS_REPLICATES=4 STS_EXPERT_FIGHTS_MAX_ACT=3 STS_EXPERT_FIGHTS_POTIONS=own STS_EXPERT_FIGHTS_ARMS=flat20000,flat40000 STS_EXPERT_FIGHTS_ARM_ROOMS=1B,2B,3B STS_EXPERT_FIGHTS_ARM_REPLICATES=2)
 printf '%s\n' "${E[@]}" | grep '^STS_' > "$b.env"
 start=$(date -u +%FT%TZ); t0=$(date +%s)
-env -i "${E[@]}" timeout 7h bash tools/seed_guard.sh "$RUN/one_combat" expertfights 1 "$RUN_JSON" "$b.fights.json" > "$b.log" 2> "$b.err"
+env -i "${E[@]}" timeout 10h bash tools/seed_guard.sh "$RUN/one_combat" expertfights 1 "$RUN_JSON" "$b.fights.json" > "$b.log" 2> "$b.err"
 rc=$?
 if [ "$rc" = 0 ]; then
   grep -qF "[heart1] loaded $RUN/student_sel.bin " "$b.log" "$b.err" || rc=95

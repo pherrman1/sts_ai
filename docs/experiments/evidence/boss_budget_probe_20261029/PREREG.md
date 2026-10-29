@@ -1,6 +1,6 @@
 # Boss-budget probe on Baalorlord's boss states (pre-registration)
 
-Status: DRAFT until the pre-launch review passes, then FROZEN before launch. Philipp asked for it on 2026-10-29 07:50Z
+Status: FROZEN 2026-10-29 before launch (pre-launch review PASS with fixes: decision regions made disjoint, SMOKE.md, 10 h timeout, cost line). Philipp asked for it on 2026-10-29 07:50Z
 ("Let's go on 16 workers") after §716 ranked it as fix 1. Code, binary and inputs are in `campaign.manifest`.
 
 ## Question
@@ -15,7 +15,7 @@ half the budget (20k) keep?
 - States: the 250 of §711's 329 Baalorlord runs that reached a boss inside the exact-replay prefix (499 boss fights:
   250 act-1, 128 act-2, 121 act-3; `units.txt`, ordered by §711 boss CPU, longest first). External run seeds of
   §694; no 111xxxxxx block (seed guard: `expertfights` is guarded at argument 2 as in §711).
-- Mode: `one_combat expertfights` exactly as in §711 (`run_unit.sh` differs from §711's only in the `E=` line), plus
+- Mode: `one_combat expertfights` exactly as in §711 (`run_unit.sh` differs from §711's only in the `E=` line and the unit timeout, 10 h instead of 7 h), plus
   the §716 research arms: `STS_EXPERT_FIGHTS_ARMS=flat20000,flat40000`, `STS_EXPERT_FIGHTS_ARM_ROOMS=1B,2B,3B`,
   `STS_EXPERT_FIGHTS_ARM_REPLICATES=2`. In every boss fight, copies 0 and 1 are played by production and by each
   arm, on the same copy seeds (copy 0 = the game's battle seed). Other fights and copies are played only until
@@ -31,11 +31,13 @@ transition heal as in §711, on every side. Side value = mean over its 2 copies.
 run-clustered bootstrap (10,000 resamples, seed 20261029).
 
 - **Primary:** mean over all act-1-3 boss fights of (flat40000 − production) HP lost.
-- **Decision rule (applied by hand to `primary.flat40000_minus_prod_ci`):**
-  - upper bound < 0 → **BUDGET_HELPS**. Boss budget is a lever. Next: a CPU-matched whole-run A/B design
-    (Philipp's go).
-  - lower bound > −1 HP → **NO_USEFUL_GAIN** (margin 1 HP per boss fight). Boss budget is not the lever. Stop.
-  - otherwise **INCONCLUSIVE**.
+- **Decision rule (applied by hand to `primary.flat40000_minus_prod_ci` = [lo, hi]; margin 1 HP per boss fight;
+  the three regions do not overlap):**
+  - hi < 0 and lo ≤ −1 → **BUDGET_HELPS**: boss budget is a lever worth pricing. Next is a CPU-matched whole-run
+    A/B design (Philipp's go).
+  - lo > −1 → **NO_USEFUL_GAIN**: any gain is below 1 HP per boss fight (that covers hi < 0, "helps below
+    margin", which is reported as such). Boss budget is not a lever worth 7×+ CPU. Stop.
+  - otherwise (lo ≤ −1 and hi ≥ 0) → **INCONCLUSIVE**.
 - **Co-reported:** death per fight (arm − production, CI), potions per fight, CPU ratio arm/production, flat20000 −
   production with the same CI, by act and by encounter (n ≥ 20), production − expert.
 - No default change on this result. Any default change needs a whole-run A/B. The CPU-match rule for that A/B (B
@@ -53,6 +55,7 @@ run-clustered bootstrap (10,000 resamples, seed 20261029).
 
 ## Cost
 
-Production boss CPU in §711 is 3.3 h per copy. flat40000 is ≈ 7.4× and flat20000 ≈ 3.7× (estimated). With 2 copies
-of each side, ≈ 80-90 CPU-h in total, ≈ 1.5-2 h on 16 workers × 4 lanes. The longest unit (3 bosses including
-Awakened One) is ≈ 4-5 h. The unit timeout is 7 h (rc 124). See `SMOKE.md`.
+Production boss CPU in §711 is 3.3 h per copy. In the smokes, flat40000 is 9.1× and flat20000 4.3× production
+(`SMOKE.md`). With 2 copies of each side that is ≈ 95-100 CPU-h in total, ≈ 2 h on 16 workers × 4 lanes, plus the
+tail. The longest unit (1655315178: Hexaghost, Automaton, Awakened One) needs ≈ 5.4 h of CPU, about 6.5-7.5 h on
+slow containers. The unit timeout is 10 h (rc 124).
