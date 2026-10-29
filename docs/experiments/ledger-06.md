@@ -25284,7 +25284,7 @@ definitions in `research/ooc/root-quality.md`. Campaign: RUN_COMMIT f9fd31a0, bi
 - No new seeds used.
 **Knowledge impact:** `research/ooc/root-quality.md` (measured section).
 
-## §TBD — Boss-budget probe on Baalorlord's 499 boss states: flat 40k Silver vs today's learned stop −0.25 HP [−1.10, +0.61] per fight (INCONCLUSIVE, just outside the 1-HP no-gain margin), flat 20k −0.46 [−1.27, +0.34], deaths unchanged, at 7.7× / 4.0× CPU; §716's act-2 −3.25 was a favourable subset (16 workers, used Baalorlord seeds, 2026-10-29)
+## §718 — Boss-budget probe on Baalorlord's 499 boss states: flat 40k Silver vs today's learned stop −0.25 HP [−1.10, +0.61] per fight (INCONCLUSIVE, just outside the 1-HP no-gain margin), flat 20k −0.46 [−1.27, +0.34], deaths unchanged, at 7.7× / 4.0× CPU; §716's act-2 −3.25 was a favourable subset (16 workers, used Baalorlord seeds, 2026-10-29)
 
 **Question:** §716 ranked boss search budget as fix 1 (act-2 bosses at flat 40k −3.25 [−6.81, +0.27] on 32 fights).
 On all of §711's act-1-3 boss states, does a larger flat budget lower HP lost?

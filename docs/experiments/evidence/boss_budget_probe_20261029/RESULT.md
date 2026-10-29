@@ -1,4 +1,4 @@
-# Boss-budget probe: result (§TBD)
+# Boss-budget probe: result (§718)
 
 Campaign `boss-budget-probe`, frozen per `PREREG.md` (pre-launch review PASS + delta PASS; run commit `ae23bb13`,
 code `32f7ee76`, binary `3f52f677…`). 16 cloud workers, 2026-10-29 08:33-11:4xZ (Philipp: "Let's go on 16 workers").
