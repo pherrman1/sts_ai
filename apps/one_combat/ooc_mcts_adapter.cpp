@@ -2788,6 +2788,16 @@ int liveCtmAuditSilverSims = 10000;
 std::string liveRootProbePath;
 std::set<std::uint64_t> liveRootProbeIndices;
 std::uint64_t liveRootProbeDeep = 32768;
+// STS_OOC_ROOT_PROBE_GRID=LEAF:H,... (research, root quality, default off): instead of the deep and uniform searches, the
+// probe runs uniform-root searches per (leaf, horizon) with _GRID_SEEDS seeds of _GRID_SIMS simulations; see
+// observeOocRootProbe. _GRID_SR is the heart1 value head of leaf `sr`; _EXIT=1 ends the process after the last row.
+struct RootProbeGridEntry { bool sr; unsigned horizon; };
+std::vector<RootProbeGridEntry> liveRootProbeGrid;
+unsigned liveRootProbeGridSeeds = 4;
+std::uint64_t liveRootProbeGridSims = 16384;
+std::shared_ptr<const one_combat::heart1::Net> liveRootProbeGridNet;
+std::string liveRootProbeGridNetPath, liveRootProbeGridNetSha256;
+bool liveRootProbeExit = false;
 // Search-architecture pilot (research, default mcts): STS_OOC_MCTS_SEARCH_MODE=mcts|particle|particle_beam picks the
 // planner of every searched (non-singleton) root; STS_OOC_MCTS_PARTICLES=P (default 64) and
 // STS_OOC_MCTS_BEAM=WIDTH:K:DEPTH (default 8:2:3) configure OocParticlePlanner. STS_OOC_MCTS_SEARCH_TRACE=PATH appends
@@ -3808,6 +3818,8 @@ void configureLiveOocMcts() {
     liveCtmAuditPath.clear(); liveCtmAuditN = 16; liveCtmAuditEvery = 1; liveCtmAuditRoots = 0; liveCtmAuditTop = 3;
     liveCtmAuditSilverSims = 10000;
     liveRootProbePath.clear(); liveRootProbeIndices.clear(); liveRootProbeDeep = 32768;
+    liveRootProbeGrid.clear(); liveRootProbeGridSeeds = 4; liveRootProbeGridSims = 16384; liveRootProbeGridNet.reset();
+    liveRootProbeGridNetPath.clear(); liveRootProbeGridNetSha256.clear(); liveRootProbeExit = false;
     // "A[:B]" with A and B finite; returns false on malformed text.
     const auto parsePair = [](const std::string &text, double &a, double &b) {
         const auto colon = text.find(':');
@@ -3960,8 +3972,56 @@ void configureLiveOocMcts() {
                 throw std::runtime_error("STS_OOC_ROOT_PROBE_DEEP must be 1024..262144");
             liveRootProbeDeep = std::stoull(value);
         }
-    } else if (std::getenv("STS_OOC_ROOT_PROBE_INDICES") || std::getenv("STS_OOC_ROOT_PROBE_DEEP"))
-        throw std::runtime_error("STS_OOC_ROOT_PROBE_INDICES and _DEEP require STS_OOC_ROOT_PROBE");
+        const auto number = [](const char *key, std::uint64_t lo, std::uint64_t hi) {
+            const std::string value(std::getenv(key));
+            if (value.empty() || value.size() > 7 || value.find_first_not_of("0123456789") != std::string::npos
+                    || std::stoull(value) < lo || std::stoull(value) > hi)
+                throw std::runtime_error(std::string(key) + " must be " + std::to_string(lo) + ".." + std::to_string(hi));
+            return std::stoull(value);
+        };
+        if (const char *grid = std::getenv("STS_OOC_ROOT_PROBE_GRID"); grid && *grid) {
+            const std::string list(grid);
+            std::size_t at = 0;
+            while (at <= list.size()) {
+                const auto comma = std::min(list.find(',', at), list.size());
+                const auto item = list.substr(at, comma - at);
+                const auto colon = item.find(':');
+                const auto leaf = item.substr(0, colon);
+                const auto h = colon == std::string::npos ? std::string() : item.substr(colon + 1);
+                if ((leaf != "x2b" && leaf != "sr") || (h != "0" && h != "1" && h != "3" && h != "5"))
+                    throw std::runtime_error("STS_OOC_ROOT_PROBE_GRID must be a comma list of x2b|sr:0|1|3|5");
+                liveRootProbeGrid.push_back({leaf == "sr", unsigned(std::stoul(h))});
+                at = comma + 1;
+            }
+            if (std::getenv("STS_OOC_ROOT_PROBE_GRID_SEEDS"))
+                liveRootProbeGridSeeds = unsigned(number("STS_OOC_ROOT_PROBE_GRID_SEEDS", 1, 16));
+            if (std::getenv("STS_OOC_ROOT_PROBE_GRID_SIMS"))
+                liveRootProbeGridSims = number("STS_OOC_ROOT_PROBE_GRID_SIMS", 256, 262144);
+            const bool needsSr = std::any_of(liveRootProbeGrid.begin(), liveRootProbeGrid.end(),
+                [](const RootProbeGridEntry &e) { return e.sr; });
+            const char *weights = std::getenv("STS_OOC_ROOT_PROBE_GRID_SR");
+            if (needsSr != (weights && *weights))
+                throw std::runtime_error("STS_OOC_ROOT_PROBE_GRID_SR is required exactly when the grid has an sr leaf");
+            if (needsSr) {
+                auto net = std::make_shared<one_combat::heart1::Net>();
+                std::string error;
+                if (!net->load(weights, &error)) throw std::runtime_error("STS_OOC_ROOT_PROBE_GRID_SR: " + error);
+                liveRootProbeGridNet = std::move(net);
+                liveRootProbeGridNetPath = weights;
+                liveRootProbeGridNetSha256 = fileSha256Hex(weights);
+            }
+        } else if (std::getenv("STS_OOC_ROOT_PROBE_GRID_SEEDS") || std::getenv("STS_OOC_ROOT_PROBE_GRID_SIMS")
+                   || std::getenv("STS_OOC_ROOT_PROBE_GRID_SR"))
+            throw std::runtime_error("STS_OOC_ROOT_PROBE_GRID_SEEDS, _SIMS and _SR require STS_OOC_ROOT_PROBE_GRID");
+        if (const char *exitAfter = std::getenv("STS_OOC_ROOT_PROBE_EXIT"); exitAfter && *exitAfter) {
+            if (std::string(exitAfter) != "1") throw std::runtime_error("STS_OOC_ROOT_PROBE_EXIT must be 1");
+            liveRootProbeExit = true;
+        }
+    } else if (std::getenv("STS_OOC_ROOT_PROBE_INDICES") || std::getenv("STS_OOC_ROOT_PROBE_DEEP")
+               || std::getenv("STS_OOC_ROOT_PROBE_GRID") || std::getenv("STS_OOC_ROOT_PROBE_GRID_SEEDS")
+               || std::getenv("STS_OOC_ROOT_PROBE_GRID_SIMS") || std::getenv("STS_OOC_ROOT_PROBE_GRID_SR")
+               || std::getenv("STS_OOC_ROOT_PROBE_EXIT"))
+        throw std::runtime_error("STS_OOC_ROOT_PROBE_INDICES, _DEEP, _GRID* and _EXIT require STS_OOC_ROOT_PROBE");
     if (liveGumbelQCap > 0 && !liveGumbelRootActions && liveRootComparePath.empty())
         throw std::runtime_error("STS_OOC_MCTS_GUMBEL_QCAP requires STS_OOC_MCTS_GUMBEL_ROOT or STS_OOC_MCTS_ROOT_COMPARE");
     if (const char *sample = std::getenv("STS_OOC_MCTS_PLAY_SAMPLE")) {
@@ -4587,6 +4647,10 @@ void configureLiveOocMcts() {
             + (liveCardRuleNet ? " card_rule_heart1_value=" + liveCardRulePath + " sha256=" + liveCardRuleSha256 : "")
             + (liveCardRuleBossEdge ? " card_rule_boss_edge=1" : ""))
         << (liveSearchScreensA20Default ? " screens_a20_default=map_full_budget" : std::string{})
+        << (liveRootProbeGrid.empty() ? std::string{} : " root_probe_grid=" + std::string(std::getenv("STS_OOC_ROOT_PROBE_GRID"))
+            + " seeds=" + std::to_string(liveRootProbeGridSeeds) + " sims=" + std::to_string(liveRootProbeGridSims)
+            + (liveRootProbeGridNet ? " sr=" + liveRootProbeGridNetPath + " sha256=" + liveRootProbeGridNetSha256 : ""))
+        << (liveRootProbeExit ? " root_probe_exit=1" : "")
         << "]\n";
     std::cout << "[ooc-mcts-config] {\"noncombatOutcomes\":\""
         << (liveOptions.sampleNoncombat ? "sampled" : "exact")
@@ -6263,14 +6327,96 @@ void observeOocRootProbe(const GameContext &gc, const PathHistory &path, std::ui
         }, 900000, 900, std::size_t(1) << 24);
     } catch (const std::exception &e) { row["candidateError"] = e.what(); }
     row["puct"] = search(liveSimulations, false);
-    row["deep"] = search(liveRootProbeDeep, false);
-    row["uniform"] = search(8192, true);
-    // A second reference on its own seed: the two give each sibling Q's run-to-run noise.
-    row["uniform2"] = search(8192, true, 0x5245464552454e44ULL);
+    if (liveRootProbeGrid.empty()) {
+        row["deep"] = search(liveRootProbeDeep, false);
+        row["uniform"] = search(8192, true);
+        // A second reference on its own seed: the two give each sibling Q's run-to-run noise.
+        row["uniform2"] = search(8192, true, 0x5245464552454e44ULL);
+    } else {
+        // Root-quality grid (STS_OOC_ROOT_PROBE_GRID): per (leaf, horizon) and seed r, a uniform root of
+        // _GRID_SIMS simulations (split evenly over the root actions, no stops, boss edge as §712's card rule)
+        // with doubling checkpoints from 256, and each root child's backed-up value moments and endpoint floors.
+        const auto gridSearch = [&](const RootProbeGridEntry &entry, unsigned r) -> nlohmann::json {
+            const unsigned seconds = unsigned(240 + liveRootProbeGridSims / 4);
+            try {
+                return forkLeafReplay([&] {
+                    try {
+                        ImaginedScope scope;
+                        auto options = plainOptions();
+                        options.leafCombats = entry.horizon;
+                        options.bossEdge = true;
+                        if (entry.sr) {   // as §712 arm D: the SR head alone is the leaf anchor, no M0
+                            options.heart1ValueNet = liveRootProbeGridNet;
+                            options.heart1ValuePath = liveRootProbeGridNetPath;
+                            options.heart1ValueSha256 = liveRootProbeGridNetSha256;
+                            options.heart1ValueWeight = 1;
+                            options.leafCalibration.clear();
+                        }
+                        OocGameContextModel model(gc, path, liveSamplerFor(gc), options);
+                        if (model.terminalValue(0) || model.isLeafBoundary(0)) return nlohmann::json{{"error", "root_not_searchable"}};
+                        auto c = liveConfig;
+                        c.allowUnqualifiedRootStop = false; c.stopAt512VisitGap20 = false; c.gapStopFraction = 0;
+                        c.learnedStop = {}; c.learnedStopSimulations.clear();
+                        c.seed = splitMix64(searchSeed ^ splitMix64(0x47524944ULL + 64 * r + 8 * entry.horizon
+                            + (entry.sr ? 4 : 0)));   // "GRID"
+                        c.gumbelRootActions = 64; c.gumbelScale = 0; c.gumbelUniform = true;
+                        c.gumbelSeed = splitMix64(c.seed ^ 0x47554d42454c5254ULL);   // "GUMBELRT"
+                        c.rootNoiseFraction = 0;
+                        c.captureValueDistribution = true;
+                        for (std::uint64_t cp = 256; cp < liveRootProbeGridSims; cp *= 2)
+                            c.rootCheckpointSimulations.push_back(cp);
+                        const double t0 = threadCpuSeconds();
+                        const auto res = sts::search::OocMctsPlanner(c).search(model, 0, liveRootProbeGridSims);
+                        nlohmann::json actions = nlohmann::json::array();
+                        for (const auto &a : res.rootActions) {
+                            nlohmann::json x = {{"id", a.id}, {"visits", a.visits}, {"q", a.q}, {"pruned", a.pruned}};
+                            if (const auto v = res.actionValues.find(a.id); v != res.actionValues.end())
+                                x["values"] = {{"count", v->second.count}, {"sum", v->second.sum},
+                                    {"sumSquares", v->second.sumSquares}, {"deaths", v->second.bins[0]},
+                                    {"wins", v->second.bins[21]}};
+                            if (const auto hp = res.actionHp.find(a.id); hp != res.actionHp.end()) {
+                                nlohmann::json floors = nlohmann::json::object();
+                                for (const auto &[floor, n] : hp->second.floors) floors[std::to_string(floor)] = n;
+                                x["endpointFloors"] = std::move(floors);
+                                x["endpointUnresolved"] = hp->second.unresolved;
+                            }
+                            actions.push_back(std::move(x));
+                        }
+                        nlohmann::json checkpoints = nlohmann::json::array();
+                        for (const auto &cp : res.rootCheckpoints) {
+                            nlohmann::json xs = nlohmann::json::array();
+                            for (const auto &a : cp.actions) xs.push_back({a.id, a.visits, a.q, a.pruned});
+                            checkpoints.push_back({{"simulations", cp.simulations}, {"actions", xs}});
+                        }
+                        return nlohmann::json{{"leaf", entry.sr ? "sr" : "x2b"}, {"horizon", entry.horizon},
+                            {"repeat", r}, {"seed", c.seed}, {"simulations", res.metrics.simulations},
+                            {"aborted", res.aborted}, {"abortReason", res.abortReason},
+                            {"actions", actions}, {"checkpoints", checkpoints},
+                            {"maxDepth", res.metrics.maxDepthReached}, {"depthSum", res.metrics.depthSum},
+                            {"cpuSeconds", threadCpuSeconds() - t0}};
+                    } catch (const std::exception &e) { return nlohmann::json{{"error", e.what()}}; }
+                }, int(seconds) * 1000, int(seconds), std::size_t(1) << 24);
+            } catch (const std::exception &e) { return nlohmann::json{{"error", e.what()}}; }
+        };
+        nlohmann::json grid = nlohmann::json::array();
+        for (const auto &entry : liveRootProbeGrid)
+            for (unsigned r = 0; r < liveRootProbeGridSeeds; ++r) grid.push_back(gridSearch(entry, r));
+        row["grid"] = std::move(grid);
+        row["gridSims"] = liveRootProbeGridSims;
+        if (liveRootProbeGridNet) row["gridSrSha256"] = liveRootProbeGridNetSha256;
+    }
     row["wallSeconds"] = std::chrono::duration<double>(std::chrono::steady_clock::now() - wallStart).count();
     std::lock_guard<std::mutex> lock(liveTraceMutex);
-    std::ofstream out(liveRootProbePath, std::ios::app);
-    if (!out || !(out << row.dump() << '\n')) throw std::runtime_error("STS_OOC_ROOT_PROBE write failed");
+    {
+        std::ofstream out(liveRootProbePath, std::ios::app);
+        if (!out || !(out << row.dump() << '\n')) throw std::runtime_error("STS_OOC_ROOT_PROBE write failed");
+    }
+    if (liveRootProbeExit && index == *liveRootProbeIndices.rbegin()) {
+        // STS_OOC_ROOT_PROBE_EXIT=1: the probe row is all this run is for; skip the rest of the game.
+        std::cout << "[ooc-root-probe] exit after decision " << index << std::endl;
+        std::fflush(nullptr);
+        std::_Exit(0);
+    }
 #endif
 }
 bool executeOocRootKey(GameContext &gc, const PathHistory &path, const std::string &key, std::string &error) {

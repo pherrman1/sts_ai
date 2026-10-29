@@ -1,0 +1,11 @@
+name          ooc-root-quality-p1
+code_commit   4868ae57eebc688b987ad68bb0e26317dc3f32a1
+binary_sha256 dc0a5fa36bb7db9474107858549aaee57f02c7efc9b6b599ee4c52a98f090279
+workers       32
+share         /mnt/project-files/ooc-root-quality
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 45
+input student_sel.bin /mnt/project-files/card-rule-ab/student_sel.bin cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7
+input sr_value.bin /mnt/project-files/card-rule-ab/sr_value.bin 28523fb5b63c1977b6f63d3c832f592db4f901b92d2f06aa2783401840006dbb

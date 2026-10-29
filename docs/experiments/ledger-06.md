@@ -25243,3 +25243,43 @@ re-applied to the recorded endpoints. Training curves from the runs' summaries. 
 - Otherwise park the head.
 - No seeds used.
 **Knowledge impact:** `evaluation/current-research.md`.
+
+## §717 — Root quality at card rewards, phase 1: at 8,192 uniform-root simulations (h = 3) independent search seeds disagree with a 2-seed reference on 25% (X2-B) / 21% (SR) of roots ("variance-limited" by the frozen rule), but the search's own regret is about 0.1 pp and the leaf decides more than the seed (X2-B vs SR agree on 59%); phase-2 gate FAILED (projected SE(β_SR) 0.39 > 0.35), so Δ, bias and β stay unmeasured (cloud, replays of used §712 seeds, 2026-10-28/29)
+
+**Question:** Philipp, 2026-10-28 20:17Z and 22:14Z: measure the "root quality" quantities of card-reward roots
+(Δ, B_rel, σ, q) and the curves P(wrong card | N, d), E[simple regret | N, d].
+**Data:** [RESULT](evidence/ooc_root_quality_20261028/RESULT.md), [PREREG](evidence/ooc_root_quality_20261028/PREREG.md),
+definitions in `research/ooc/root-quality.md`. Campaign: RUN_COMMIT f9fd31a0, binary dc0a5fa3, 32 workers.
+- Pool: 144 card-reward roots, replays of §712 arm-A seeds 111387000–255.
+- 143 units delivered. One game ends before its root on the run commit.
+- 136 valid roots, the first 128 used. Invalid: 2 diverged screens and 5 Singing Bowl rewards.
+- Per root: 8 configurations (X2-B M0 / SR leaf × h 0, 1, 3, 5) × 4 search seeds × 16,384 simulations, uniform root,
+  best mean Q.
+- Unit tars on data branch `claude/ooc-root-quality-data`.
+**Result:**
+- Cross-fitted P_self(8,192):
+  - X2-B: 0.31 / 0.29 / 0.25 [0.20, 0.31] / 0.28 for h 0/1/3/5;
+  - SR: 0.10 / 0.16 / 0.21 [0.15, 0.26] / 0.22;
+  - at 16,384: 0.22 (X2-B h3) and 0.19 (SR h3);
+  - resolved roots only: 0.05–0.14.
+- ρ_eff ≈ 1 (0.87–1.33).
+- Median |seen gap| to the production pick: 0.5–0.9 pp (X2-B) and 1.6–1.9 pp (SR).
+- h0: 93% of endpoints within 2 floors; h3: 8%.
+- K > 5 roots (12): P_self 0.58–0.63.
+- K ≤ 5 roots (116), not pre-registered: P_self(8,192, h3) SR 0.168 [0.119, 0.220] (inconclusive), X2-B 0.211 [0.162, 0.261]. SR's verdict rests on the 12 multi-group roots; the all-128 verdict stands.
+- Exploratory self-regret at 8,192 (other half's mean Q): 0.12 pp [0.06, 0.21] (X2-B h3) and 0.11 pp (SR h3).
+- On roots with a > 1 pp lead: P_self 0.07 (X2-B, 20% of roots, mean over halves) and 0.06 (SR, 46%).
+- Argmax agreement: X2-B h3 vs SR h3 59%; X2-B h3 vs student_sel 52%; SR h3 vs student_sel 64%.
+- Gate: projected SE(β_SR) 0.393 > 0.35, so there is no phase 2.
+**Interpretation:**
+- At card rewards the search's seed noise mostly picks between near-ties: frequent different picks, about 0.1 pp in its
+  own values.
+- Which card wins is set by the leaf and the horizon (bias), and that bias against the true Q needs forks that this
+  scale cannot power.
+- Variance reduction in search (swkeyed, the frozen rule's next step) can gain at most about 0.1 pp per card decision
+  by the search's own measure.
+**Decision:** no default, model or training change.
+- Phase 2 not run (frozen gate).
+- The swkeyed-in-search step is formally triggered but not started. It is Philipp's call, given the small self-regret.
+- No new seeds used.
+**Knowledge impact:** `research/ooc/root-quality.md` (measured section).

@@ -1,9 +1,10 @@
-# Root quality at A20 card rewards: Δ, B_rel, σ, q (pre-registration DRAFT)
+# Root quality at A20 card rewards: Δ, B_rel, σ, q (pre-registration)
 
-Status: **draft, not frozen, nothing has run.** Written 2026-10-28 in the project thread "Measure root quality at
-card rewards" (Philipp, 2026-10-28 20:17Z). Definitions: [root-quality.md](../../../knowledge-base/research/ooc/root-quality.md).
-Every run below needs Philipp's typed go and worker count; the coordinator starts workers. Freeze (RUN_COMMIT,
-binary hash, model hashes, root list, salts) happens after the implementation PR and the smoke, before launch.
+Status: **phase 1 frozen for launch (see `campaign.manifest`, `FREEZE.md`); phase 2 frozen by rule, launched only
+after the gate.** Written 2026-10-28 in the project thread "Measure root quality at card rewards" (Philipp,
+2026-10-28 20:17Z). Definitions: [root-quality.md](../../../knowledge-base/research/ooc/root-quality.md).
+Authorization: Philipp 2026-10-28 20:29Z "Let's go with 32 workers", re-confirmed on the corrected costs 20:32Z
+(decision card: "Ja, Phase 1 + gated Phase 2"). The coordinator starts workers.
 
 ## Question
 
@@ -42,19 +43,24 @@ differences are large enough. $\bar{\mathcal A}$ curves and q are reported descr
 
 - **Seeds:** replays of the used §712 seeds 111387000–111387255 with the arm-A environment of
   [card_rule_ab_20261026/run_unit.sh](../card_rule_ab_20261026/run_unit.sh) (today's A20 default as of the §712 run).
-  No new seeds. Smoke seed 111387990 (used). Fallback if main no longer replays these games bit-exactly: pin the
-  RUN_COMMIT to the §712 run commit `5e27e0ad` plus the probe change (as #882 did with its base), or use the #881
-  cohort (§683 MAP seeds 111374100–115, replay env of §695), decided at freeze and recorded.
-- **Population S:** card-reward OOC roots (REWARDS screen with a card reward, after the rule chain) of the arm-A
-  games, each game weighted equally.
-- **Phase-1 pool:** 128 seeds (the first 128 of the block whose A-arm game has at least one card-reward root), one
-  root per seed, chosen uniformly among that game's card-reward roots by `splitmix64(seed ^ 0x524f4f5451)` (frozen).
+  No new seeds. **Replay finding (smoke):** main at the run commit plays these seeds deterministically (probe-on ==
+  probe-off, 141/141 rows) but not bit-exactly as the §712 record: on 111387000 the first difference is a late map
+  MCTS decision (decision 58, floor 13; the search's Q drifts after ~2,000 simulations). The games are therefore
+  replays of used seeds under today's code; roots are selected from the §712 record and validated on main (below).
+- **Population S:** card-reward OOC roots (REWARDS screen with a card reward, after the rule chain, decided by
+  student_sel, floor ≥ 1) of the arm-A games, each game weighted equally.
+- **Phase-1 pool:** the first 144 seeds of the block whose §712 A-arm game has a card-reward root (128 + 16 spares),
+  one root per seed, chosen uniformly among that game's card-reward roots by `splitmix64(seed ^ 0x524f4f5451)`
+  ([select_roots.py](select_roots.py) → [roots.tsv](roots.tsv), [units.txt](units.txt)). A probed root is **valid**
+  when main's state at that decision index is a card reward (candidates = Skip + cards); the first 128 valid roots in
+  seed order are the sample, the rest are reported and unused.
 - **Phase-2 sample:** 96 of the 128, selected on phase-1 output only (rule under Phase 2); inclusion
   probabilities are recorded and population estimates are Horvitz–Thompson weighted.
 
 ## Phase 0 — implementation (one PR, research flag default off, independent review)
 
-Extend `STS_OOC_ROOT_PROBE` with a grid option (name fixed in the PR, e.g. `STS_OOC_ROOT_PROBE_GRID`):
+Implemented as `STS_OOC_ROOT_PROBE_GRID` (+ `_GRID_SEEDS`, `_GRID_SIMS`, `_GRID_SR`, `STS_OOC_ROOT_PROBE_EXIT`), see
+`operations/environment-variables.md`:
 
 - per listed root, uniform-root searches (as the probe's `uniform`) for each (L, h) of the grid and R seeds, with
   root checkpoints at 256, 512, …, $N_{\max}$ (uniform allocation is non-adaptive at the root, so checkpoints of
@@ -63,7 +69,9 @@ Extend `STS_OOC_ROOT_PROBE` with a grid option (name fixed in the PR, e.g. `STS_
   and the histogram of the floor at which each simulation's value was fixed (for $G_a$);
 - the leaf model per search (X2-B M0 or the SR head via the existing heart1 value path) and h via
   `STS_OOC_MCTS_LEAF_COMBATS` semantics;
-- forked children only; play and run unchanged (identity gate: probe-on game == A-arm record).
+- the boss edge of §712's card rule (the map step into the act boss is a tree edge), no stops, no root noise;
+- forked children only; play unchanged (checked: probe-on game == probe-off game on main, 141/141 rows);
+- `STS_OOC_ROOT_PROBE_EXIT=1` ends the process after the probe row, so a phase-1 unit plays only up to its root.
 
 Ground truth uses `STS_OOC_FORCE_DECISION=INDEX:SALT:KEY` (on main since #904) unchanged: one game per (root, salt,
 key). Check: the forced $a_{\mathrm{ref}}$ game equals the `-` game for the same salt on the smoke seed.
@@ -71,8 +79,8 @@ key). Check: the forced $a_{\mathrm{ref}}$ game equals the `-` game for the same
 ## Phase 1 — search grid (no forked games)
 
 - Leaves L ∈ {X2-B M0 (A20 default), SR `SR_crn_r2_s2_ep20` (`28523fb5…`, as §712 D)}, horizons h ∈ {0, 1, 3, 5}:
-  8 configurations; R = 4 search seeds each; $N_{\max}$ = 16,384 (4,096 per child at K = 4); plus the production
-  PUCT root (live budget) on the same 4 seeds for reference.
+  8 configurations; R = 4 search seeds each; $N_{\max}$ = 16,384 (4,096 per child at K = 4); plus the probe's
+  production PUCT root (live budget, real search seed) for reference.
 - Outputs per root: $\hat Q$ curves, $\sigma_{D,i}(N)$, $\sigma_a$, $\rho_{\mathrm{eff}}$, $P_{\mathrm{self}}(N)$,
   $\Pr[\hat a \ne a_{\mathrm{ref}}](N)$, $G_a$, tree depth.
 - $P_{\mathrm{self}}$ is **cross-fitted**: checkpoints of one run are nested, so a seed's 8,192 pick is correlated with
@@ -82,9 +90,9 @@ key). Check: the forced $a_{\mathrm{ref}}$ game equals the `-` game for the same
   the primary mean, which biases $P_{\mathrm{self}}$ upward (toward "variance-limited", the conservative direction
   for the stop decision). $P_{\mathrm{self}}$ over resolved roots only and the share of unresolved roots are
   reported next to it.
-- Cost: ≈ 105 core-s per 16,384-sim search averaged over h (60 s per 8,192 at h = 3, §712 SMOKE) × 8 × 4 ≈
-  56 core-min per root → ≈ 120 core-h of searches for 128 roots, plus ≈ 30 core-h of replays to reach the roots and
-  the production-PUCT reference searches: **≈ 150–160 core-h**. Answers σ, $P_{\mathrm{self}}$, the search side of q, and the seen gaps; not Δ or B.
+- Cost (measured, smoke 111387001/9): one seed of all 8 configurations = 1,006 core-s (h = 0: 11–19 s, h = 5:
+  204–244 s), so ≈ 67 core-min per root plus the replay to the root and the PUCT reference: 144 units ≈ **170 core-h**,
+  ≈ 2 h on 32 workers × 4 lanes. Answers σ, $P_{\mathrm{self}}$, the search side of q, and the seen gaps; not Δ or B.
 
 ## Phase 2 — ground-truth forks
 
@@ -99,9 +107,12 @@ key). Check: the forced $a_{\mathrm{ref}}$ game equals the `-` game for the same
   death floor. **≈ 340 core-h** at ≈ 13 core-min per game (#882: ≈ 12; card roots are earlier, so slightly longer).
 - Every θ of phase 1 is evaluated by lookup in the same $Z(s,a,\omega_m)$ table.
 
-**Total ≈ 490–500 core-h (≈ 4 h on 32 workers × 4 lanes)**, plus ≈ 15 core-h of pilot (smoke seed and 4 roots × 4
-salts) to check the per-game cost and the paired SD. Phase 1 alone (≈ 150–160 core-h) measures σ, $P_{\mathrm{self}}$,
-the seen gaps and the search side of q.
+- Gate, selection and units: [make_fork_units.py](make_fork_units.py) (DEFF = 3 for root clustering, M = 4). Phase 2
+  is a second campaign (same run commit and binary) launched only if the gate passes; its units file is generated by
+  that script from the phase-1 tars and committed, with the phase-2 analysis script, before launch.
+
+**Total ≈ 510 core-h (≈ 4–5 h on 32 workers × 4 lanes)**. Phase 1 alone (≈ 170 core-h) measures σ,
+$P_{\mathrm{self}}$, the seen gaps and the search side of q. Phase-1 analysis: [analyze_phase1.py](analyze_phase1.py).
 
 ## Estimators and their error
 
@@ -127,6 +138,11 @@ $p_\theta$ = share of the R search seeds choosing a. All CIs: two-stage bootstra
 - P(wrong card | N, h): reported three ways, labelled: $P_{\mathrm{self}}$ (variance part, exact), $\Pr[\hat a \ne
   a_{\mathrm{ref}}]$ (observable), and a model-based empirical-Bayes estimate (normal hierarchical model on
   $\delta_i(s)$ with the measured salt variance; posterior $\Pr[\hat a \ne a^*]$). Only the first two are evidence.
+
+- **Per-root table and RMS relative bias** (Philipp 2026-10-28 22:14Z, added before any phase-2 data): per (root,
+  competitor) Δ_ref, Δ_MCTS, B_ab = Δ_MCTS − Δ_ref, its SE, search SD, rank agreement with the in-sample best, regret,
+  tree depth, labelled noisy per root (SE ≈ 0.22 per pair at M = 4). Pooled: method-of-moments mean square of B_ab
+  (E[(x − D)²] − Var D − Var x), root-clustered bootstrap; detects only RMS ≳ 10 pp at this size. Descriptive, no rule.
 
 ## Decision rules (diagnostic; no default, model or training change follows from this run)
 

@@ -1,0 +1,1843 @@
+{
+ "roots_in_pool": 128,
+ "selected": 96,
+ "projected_se_beta_sr": 0.39281241907218134,
+ "gate": 0.35,
+ "gate_pass": false,
+ "roots": [
+  {
+   "seed": 111387071,
+   "index": 10,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,311,0,0:group=[42,0,0;279,0,0;311,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[42,0,0;279,0,0;311,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.17574815304477195,
+    "ooc:v1:effect=5:source=7:reward=card,279,0,0:group=[42,0,0;279,0,0;311,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.23390296129940918,
+    "ooc:v1:effect=5:source=7:reward=card,42,0,0:group=[42,0,0;279,0,0;311,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.2505468773606361
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[42,0,0;279,0,0;311,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,279,0,0:group=[42,0,0;279,0,0;311,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,311,0,0:group=[42,0,0;279,0,0;311,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,42,0,0:group=[42,0,0;279,0,0;311,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387133,
+   "index": 14,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,339,0,0:group=[67,0,0;132,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[67,0,0;132,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.03423400115574482,
+    "ooc:v1:effect=5:source=7:reward=card,132,0,0:group=[67,0,0;132,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.2421493865663614,
+    "ooc:v1:effect=5:source=7:reward=card,67,0,0:group=[67,0,0;132,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.06338273541144618
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[67,0,0;132,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,132,0,0:group=[67,0,0;132,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,339,0,0:group=[67,0,0;132,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,67,0,0:group=[67,0,0;132,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387052,
+   "index": 10,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,222,0,0:group=[38,0,0;132,0,0;222,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[38,0,0;132,0,0;222,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.08365965015971993,
+    "ooc:v1:effect=5:source=7:reward=card,132,0,0:group=[38,0,0;132,0,0;222,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.22608253010387663,
+    "ooc:v1:effect=5:source=7:reward=card,38,0,0:group=[38,0,0;132,0,0;222,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.09823601198767556
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[38,0,0;132,0,0;222,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,132,0,0:group=[38,0,0;132,0,0;222,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,222,0,0:group=[38,0,0;132,0,0;222,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,38,0,0:group=[38,0,0;132,0,0;222,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387000,
+   "index": 37,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,198,0,0:group=[132,0,0;198,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[132,0,0;198,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.009344295112361234,
+    "ooc:v1:effect=5:source=7:reward=card,132,0,0:group=[132,0,0;198,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.22565647473821476,
+    "ooc:v1:effect=5:source=7:reward=card,362,0,0:group=[132,0,0;198,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.22309303666351651
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[132,0,0;198,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,132,0,0:group=[132,0,0;198,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,198,0,0:group=[132,0,0;198,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,362,0,0:group=[132,0,0;198,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387060,
+   "index": 4,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,57,0,0:group=[42,0,0;57,0,0;67,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[42,0,0;57,0,0;67,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.11517740933677423,
+    "ooc:v1:effect=5:source=7:reward=card,42,0,0:group=[42,0,0;57,0,0;67,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.2130871515675597,
+    "ooc:v1:effect=5:source=7:reward=card,67,0,0:group=[42,0,0;57,0,0;67,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.12115875455593061
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[42,0,0;57,0,0;67,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,42,0,0:group=[42,0,0;57,0,0;67,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,57,0,0:group=[42,0,0;57,0,0;67,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,67,0,0:group=[42,0,0;57,0,0;67,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387130,
+   "index": 25,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,222,0,0:group=[14,0,0;222,0,0;264,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[14,0,0;222,0,0;264,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.12569060223962428,
+    "ooc:v1:effect=5:source=7:reward=card,14,0,0:group=[14,0,0;222,0,0;264,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.128952537584589,
+    "ooc:v1:effect=5:source=7:reward=card,264,0,0:group=[14,0,0;222,0,0;264,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.20254656358378448
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[14,0,0;222,0,0;264,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,14,0,0:group=[14,0,0;222,0,0;264,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,222,0,0:group=[14,0,0;222,0,0;264,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,264,0,0:group=[14,0,0;222,0,0;264,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387103,
+   "index": 8,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,311,0,0:group=[279,0,0;311,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[279,0,0;311,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.10450615647202313,
+    "ooc:v1:effect=5:source=7:reward=card,279,0,0:group=[279,0,0;311,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.19400717251268246,
+    "ooc:v1:effect=5:source=7:reward=card,347,0,0:group=[279,0,0;311,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.058893377872629965
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[279,0,0;311,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,279,0,0:group=[279,0,0;311,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,311,0,0:group=[279,0,0;311,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,347,0,0:group=[279,0,0;311,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387041,
+   "index": 40,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,198,0,0:group=[14,0,0;52,0,0;198,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[14,0,0;52,0,0;198,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.03321840575041912,
+    "ooc:v1:effect=5:source=7:reward=card,14,0,0:group=[14,0,0;52,0,0;198,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.09140645551452953,
+    "ooc:v1:effect=5:source=7:reward=card,329,0,0:group=[14,0,0;52,0,0;198,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.19069333445152223,
+    "ooc:v1:effect=5:source=7:reward=card,52,0,0:group=[14,0,0;52,0,0;198,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.10270397681473176
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[14,0,0;52,0,0;198,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,14,0,0:group=[14,0,0;52,0,0;198,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,198,0,0:group=[14,0,0;52,0,0;198,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,329,0,0:group=[14,0,0;52,0,0;198,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,52,0,0:group=[14,0,0;52,0,0;198,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387127,
+   "index": 23,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,107,0,0:group=[107,0,0;181,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[107,0,0;181,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.16484491596671702,
+    "ooc:v1:effect=5:source=7:reward=card,181,0,0:group=[107,0,0;181,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.16733253935602668,
+    "ooc:v1:effect=5:source=7:reward=card,345,0,0:group=[107,0,0;181,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.18016902531353884
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[107,0,0;181,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,107,0,0:group=[107,0,0;181,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,181,0,0:group=[107,0,0;181,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,345,0,0:group=[107,0,0;181,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387018,
+   "index": 45,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,11,0,0:group=[11,0,0;65,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[11,0,0;65,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.007285490338654943,
+    "ooc:v1:effect=5:source=7:reward=card,329,0,0:group=[11,0,0;65,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.16673344381764313,
+    "ooc:v1:effect=5:source=7:reward=card,65,0,0:group=[11,0,0;65,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.017874349947403168
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[11,0,0;65,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,11,0,0:group=[11,0,0;65,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,329,0,0:group=[11,0,0;65,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,65,0,0:group=[11,0,0;65,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387053,
+   "index": 36,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,57,0,0:group=[57,0,0;181,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[57,0,0;181,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.020637201775937197,
+    "ooc:v1:effect=5:source=7:reward=card,181,0,0:group=[57,0,0;181,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.04650204670809366,
+    "ooc:v1:effect=5:source=7:reward=card,329,0,0:group=[57,0,0;181,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.16260238211076847
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[57,0,0;181,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,181,0,0:group=[57,0,0;181,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,329,0,0:group=[57,0,0;181,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,57,0,0:group=[57,0,0;181,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387097,
+   "index": 37,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,11,0,0:group=[11,0,0;329,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[11,0,0;329,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.006999833923932053,
+    "ooc:v1:effect=5:source=7:reward=card,329,0,0:group=[11,0,0;329,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.1503581444483289,
+    "ooc:v1:effect=5:source=7:reward=card,345,0,0:group=[11,0,0;329,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.0776255267363567
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[11,0,0;329,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,11,0,0:group=[11,0,0;329,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,329,0,0:group=[11,0,0;329,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,345,0,0:group=[11,0,0;329,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387125,
+   "index": 10,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,311,0,0:group=[301,0,0;311,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[301,0,0;311,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.0955890779771997,
+    "ooc:v1:effect=5:source=7:reward=card,301,0,0:group=[301,0,0;311,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.05251043818218863,
+    "ooc:v1:effect=5:source=7:reward=card,362,0,0:group=[301,0,0;311,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.1428236918300381
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[301,0,0;311,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,301,0,0:group=[301,0,0;311,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,311,0,0:group=[301,0,0;311,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,362,0,0:group=[301,0,0;311,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387061,
+   "index": 82,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,300,0,0:group=[297,0,0;300,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[297,0,0;300,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.06403526231970114,
+    "ooc:v1:effect=5:source=7:reward=card,297,0,0:group=[297,0,0;300,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.06464075545556269,
+    "ooc:v1:effect=5:source=7:reward=card,329,0,0:group=[297,0,0;300,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.14281894121105276
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[297,0,0;300,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,297,0,0:group=[297,0,0;300,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,300,0,0:group=[297,0,0;300,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,329,0,0:group=[297,0,0;300,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387108,
+   "index": 148,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,24,0,0:group=[24,0,0;67,0,1;178,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[24,0,0;67,0,1;178,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.05445336868836814,
+    "ooc:v1:effect=5:source=7:reward=card,178,0,1:group=[24,0,0;67,0,1;178,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.09186168736608741,
+    "ooc:v1:effect=5:source=7:reward=card,67,0,1:group=[24,0,0;67,0,1;178,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.13562540923227195
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[24,0,0;67,0,1;178,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,178,0,1:group=[24,0,0;67,0,1;178,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,24,0,0:group=[24,0,0;67,0,1;178,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,67,0,1:group=[24,0,0;67,0,1;178,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387059,
+   "index": 53,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,300,0,0:group=[42,0,0;297,0,0;300,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[42,0,0;297,0,0;300,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.1084723514496007,
+    "ooc:v1:effect=5:source=7:reward=card,297,0,0:group=[42,0,0;297,0,0;300,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.12077229287614699,
+    "ooc:v1:effect=5:source=7:reward=card,42,0,0:group=[42,0,0;297,0,0;300,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.13554395375775716
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[42,0,0;297,0,0;300,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,297,0,0:group=[42,0,0;297,0,0;300,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,300,0,0:group=[42,0,0;297,0,0;300,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,42,0,0:group=[42,0,0;297,0,0;300,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387088,
+   "index": 10,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,11,0,0:group=[11,0,0;42,0,0;258,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[11,0,0;42,0,0;258,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.05058038045576552,
+    "ooc:v1:effect=5:source=7:reward=card,258,0,0:group=[11,0,0;42,0,0;258,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.06109828664341954,
+    "ooc:v1:effect=5:source=7:reward=card,42,0,0:group=[11,0,0;42,0,0;258,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.13440321051513038
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[11,0,0;42,0,0;258,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,11,0,0:group=[11,0,0;42,0,0;258,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,258,0,0:group=[11,0,0;42,0,0;258,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,42,0,0:group=[11,0,0;42,0,0;258,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387099,
+   "index": 13,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,222,0,0:group=[181,0,0;222,0,0;261,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[181,0,0;222,0,0;261,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.07761115773060953,
+    "ooc:v1:effect=5:source=7:reward=card,181,0,0:group=[181,0,0;222,0,0;261,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.09367618659374803,
+    "ooc:v1:effect=5:source=7:reward=card,261,0,0:group=[181,0,0;222,0,0;261,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.12968399850201934
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[181,0,0;222,0,0;261,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,181,0,0:group=[181,0,0;222,0,0;261,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,222,0,0:group=[181,0,0;222,0,0;261,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,261,0,0:group=[181,0,0;222,0,0;261,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387001,
+   "index": 9,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,244,0,0:group=[39,0,0;244,0,0;261,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[39,0,0;244,0,0;261,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.08586960160134965,
+    "ooc:v1:effect=5:source=7:reward=card,261,0,0:group=[39,0,0;244,0,0;261,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.12884626152963263,
+    "ooc:v1:effect=5:source=7:reward=card,39,0,0:group=[39,0,0;244,0,0;261,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.030913501709872365
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[39,0,0;244,0,0;261,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,244,0,0:group=[39,0,0;244,0,0;261,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,261,0,0:group=[39,0,0;244,0,0;261,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,39,0,0:group=[39,0,0;244,0,0;261,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387011,
+   "index": 74,
+   "ref": "ooc:v1:effect=14:source=7:none",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[179,0,0;297,0,0;355,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.0017877210386176845,
+    "ooc:v1:effect=12:source=7:reward=none:group=[198,0,0;279,0,1;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.0009152030058854344,
+    "ooc:v1:effect=5:source=7:reward=card,179,0,0:group=[179,0,0;297,0,0;355,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.003593402659474665,
+    "ooc:v1:effect=5:source=7:reward=card,198,0,0:group=[198,0,0;279,0,1;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.0034995280616543223,
+    "ooc:v1:effect=5:source=7:reward=card,279,0,1:group=[198,0,0;279,0,1;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.07523088849035281,
+    "ooc:v1:effect=5:source=7:reward=card,297,0,0:group=[179,0,0;297,0,0;355,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.01734894747348159,
+    "ooc:v1:effect=5:source=7:reward=card,355,0,0:group=[179,0,0;297,0,0;355,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.043251150038120856,
+    "ooc:v1:effect=5:source=7:reward=card,362,0,0:group=[198,0,0;279,0,1;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.12795622541788898
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[179,0,0;297,0,0;355,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=14:source=7:none",
+    "ooc:v1:effect=5:source=7:reward=card,179,0,0:group=[179,0,0;297,0,0;355,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,198,0,0:group=[198,0,0;279,0,1;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,279,0,1:group=[198,0,0;279,0,1;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,297,0,0:group=[179,0,0;297,0,0;355,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,355,0,0:group=[179,0,0;297,0,0;355,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,362,0,0:group=[198,0,0;279,0,1;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387087,
+   "index": 43,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,222,0,0:group=[140,0,0;198,0,0;222,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[140,0,0;198,0,0;222,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.08038191667655019,
+    "ooc:v1:effect=5:source=7:reward=card,140,0,0:group=[140,0,0;198,0,0;222,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.12698380922366204,
+    "ooc:v1:effect=5:source=7:reward=card,198,0,0:group=[140,0,0;198,0,0;222,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.07065185214965207
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[140,0,0;198,0,0;222,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,140,0,0:group=[140,0,0;198,0,0;222,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,198,0,0:group=[140,0,0;198,0,0;222,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,222,0,0:group=[140,0,0;198,0,0;222,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387068,
+   "index": 10,
+   "ref": "ooc:v1:effect=12:source=7:reward=none:group=[93,0,0;345,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=5:source=7:reward=card,345,0,0:group=[93,0,0;345,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.041556228995843686,
+    "ooc:v1:effect=5:source=7:reward=card,362,0,0:group=[93,0,0;345,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.1233959719070655,
+    "ooc:v1:effect=5:source=7:reward=card,93,0,0:group=[93,0,0;345,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.03060837688210072
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[93,0,0;345,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,345,0,0:group=[93,0,0;345,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,362,0,0:group=[93,0,0;345,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,93,0,0:group=[93,0,0;345,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387121,
+   "index": 5,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,249,0,0:group=[42,0,0;249,0,0;301,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[42,0,0;249,0,0;301,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.06088086190661643,
+    "ooc:v1:effect=5:source=7:reward=card,301,0,0:group=[42,0,0;249,0,0;301,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.020701308060056392,
+    "ooc:v1:effect=5:source=7:reward=card,42,0,0:group=[42,0,0;249,0,0;301,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.11397349083718857
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[42,0,0;249,0,0;301,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,249,0,0:group=[42,0,0;249,0,0;301,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,301,0,0:group=[42,0,0;249,0,0;301,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,42,0,0:group=[42,0,0;249,0,0;301,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387040,
+   "index": 161,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,12,0,0:group=[12,0,0;100,0,0;335,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[100,0,0;212,0,0;218,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.06503115173445138,
+    "ooc:v1:effect=12:source=7:reward=none:group=[12,0,0;100,0,0;335,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.09430738083242064,
+    "ooc:v1:effect=12:source=7:reward=none:group=[36,0,0;64,0,0;177,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.0592179542942009,
+    "ooc:v1:effect=14:source=7:none": -0.10618524037789981,
+    "ooc:v1:effect=5:source=7:reward=card,100,0,0:group=[100,0,0;212,0,0;218,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.07560693692773078,
+    "ooc:v1:effect=5:source=7:reward=card,100,0,0:group=[12,0,0;100,0,0;335,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.10172699182002293,
+    "ooc:v1:effect=5:source=7:reward=card,177,0,1:group=[36,0,0;64,0,0;177,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.025510977166974314,
+    "ooc:v1:effect=5:source=7:reward=card,212,0,0:group=[100,0,0;212,0,0;218,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.09045351202249223,
+    "ooc:v1:effect=5:source=7:reward=card,218,0,0:group=[100,0,0;212,0,0;218,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.003977109319832334,
+    "ooc:v1:effect=5:source=7:reward=card,335,0,0:group=[12,0,0;100,0,0;335,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.10432336411682482,
+    "ooc:v1:effect=5:source=7:reward=card,36,0,0:group=[36,0,0;64,0,0;177,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.04533867213292836,
+    "ooc:v1:effect=5:source=7:reward=card,64,0,0:group=[36,0,0;64,0,0;177,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.0045546808139877715
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[100,0,0;212,0,0;218,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=14:source=7:none",
+    "ooc:v1:effect=5:source=7:reward=card,100,0,0:group=[100,0,0;212,0,0;218,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,12,0,0:group=[12,0,0;100,0,0;335,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,177,0,1:group=[36,0,0;64,0,0;177,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,212,0,0:group=[100,0,0;212,0,0;218,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,218,0,0:group=[100,0,0;212,0,0;218,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,335,0,0:group=[12,0,0;100,0,0;335,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,36,0,0:group=[36,0,0;64,0,0;177,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,64,0,0:group=[36,0,0;64,0,0;177,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387046,
+   "index": 4,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,193,0,0:group=[193,0,0;345,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[193,0,0;345,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.0808303556883294,
+    "ooc:v1:effect=5:source=7:reward=card,345,0,0:group=[193,0,0;345,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.10556288280132868,
+    "ooc:v1:effect=5:source=7:reward=card,347,0,0:group=[193,0,0;345,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.05116649990929173
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[193,0,0;345,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,193,0,0:group=[193,0,0;345,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,345,0,0:group=[193,0,0;345,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,347,0,0:group=[193,0,0;345,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387113,
+   "index": 42,
+   "ref": "ooc:v1:effect=12:source=7:reward=none:group=[14,0,0;42,0,0;67,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=5:source=7:reward=card,14,0,0:group=[14,0,0;42,0,0;67,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.03443095985512412,
+    "ooc:v1:effect=5:source=7:reward=card,42,0,0:group=[14,0,0;42,0,0;67,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.10274436676155385,
+    "ooc:v1:effect=5:source=7:reward=card,67,0,0:group=[14,0,0;42,0,0;67,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.04186049935647307
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[14,0,0;42,0,0;67,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,14,0,0:group=[14,0,0;42,0,0;67,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,42,0,0:group=[14,0,0;42,0,0;67,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,67,0,0:group=[14,0,0;42,0,0;67,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387008,
+   "index": 50,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,147,0,0:group=[47,0,0;147,0,0;289,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[47,0,0;147,0,0;289,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.07211807616661206,
+    "ooc:v1:effect=5:source=7:reward=card,289,0,0:group=[47,0,0;147,0,0;289,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.07825579252769567,
+    "ooc:v1:effect=5:source=7:reward=card,47,0,0:group=[47,0,0;147,0,0;289,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.10151884805747802
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[47,0,0;147,0,0;289,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,147,0,0:group=[47,0,0;147,0,0;289,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,289,0,0:group=[47,0,0;147,0,0;289,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,47,0,0:group=[47,0,0;147,0,0;289,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387012,
+   "index": 4,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,11,0,0:group=[11,0,0;39,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[11,0,0;39,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.0563380299308317,
+    "ooc:v1:effect=5:source=7:reward=card,345,0,0:group=[11,0,0;39,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.09560369438000099,
+    "ooc:v1:effect=5:source=7:reward=card,39,0,0:group=[11,0,0;39,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.02299878825950588
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[11,0,0;39,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,11,0,0:group=[11,0,0;39,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,345,0,0:group=[11,0,0;39,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,39,0,0:group=[11,0,0;39,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387069,
+   "index": 38,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,289,0,0:group=[42,0,0;181,0,0;289,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[42,0,0;181,0,0;289,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.004120847782795312,
+    "ooc:v1:effect=5:source=7:reward=card,181,0,0:group=[42,0,0;181,0,0;289,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.005108284862271606,
+    "ooc:v1:effect=5:source=7:reward=card,42,0,0:group=[42,0,0;181,0,0;289,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.09110478569840347
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[42,0,0;181,0,0;289,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,181,0,0:group=[42,0,0;181,0,0;289,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,289,0,0:group=[42,0,0;181,0,0;289,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,42,0,0:group=[42,0,0;181,0,0;289,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387002,
+   "index": 53,
+   "ref": "ooc:v1:effect=12:source=7:reward=none:group=[67,0,0;261,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=5:source=7:reward=card,261,0,0:group=[67,0,0;261,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.08867496017856857,
+    "ooc:v1:effect=5:source=7:reward=card,345,0,0:group=[67,0,0;261,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.06607590217909809,
+    "ooc:v1:effect=5:source=7:reward=card,67,0,0:group=[67,0,0;261,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.05484514161575349
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[67,0,0;261,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,261,0,0:group=[67,0,0;261,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,345,0,0:group=[67,0,0;261,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,67,0,0:group=[67,0,0;261,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387010,
+   "index": 11,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,249,0,0:group=[140,0,0;181,0,0;249,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[140,0,0;181,0,0;249,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.047396843698494395,
+    "ooc:v1:effect=5:source=7:reward=card,140,0,0:group=[140,0,0;181,0,0;249,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.08501731892615214,
+    "ooc:v1:effect=5:source=7:reward=card,181,0,0:group=[140,0,0;181,0,0;249,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.05249580939267727
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[140,0,0;181,0,0;249,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,140,0,0:group=[140,0,0;181,0,0;249,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,181,0,0:group=[140,0,0;181,0,0;249,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,249,0,0:group=[140,0,0;181,0,0;249,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387086,
+   "index": 13,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,112,0,0:group=[112,0,0;289,0,0;292,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[112,0,0;289,0,0;292,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.07173939226114195,
+    "ooc:v1:effect=5:source=7:reward=card,289,0,0:group=[112,0,0;289,0,0;292,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.06641822762007132,
+    "ooc:v1:effect=5:source=7:reward=card,292,0,0:group=[112,0,0;289,0,0;292,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.08302095869759746
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[112,0,0;289,0,0;292,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,112,0,0:group=[112,0,0;289,0,0;292,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,289,0,0:group=[112,0,0;289,0,0;292,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,292,0,0:group=[112,0,0;289,0,0;292,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387042,
+   "index": 29,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,249,0,0:group=[181,0,0;249,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[181,0,0;249,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.04049778188213113,
+    "ooc:v1:effect=5:source=7:reward=card,181,0,0:group=[181,0,0;249,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.05746353366757759,
+    "ooc:v1:effect=5:source=7:reward=card,345,0,0:group=[181,0,0;249,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.07859570407757363
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[181,0,0;249,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,181,0,0:group=[181,0,0;249,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,249,0,0:group=[181,0,0;249,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,345,0,0:group=[181,0,0;249,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387079,
+   "index": 83,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,301,0,0:group=[301,0,0;329,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[301,0,0;329,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.0014302857049307005,
+    "ooc:v1:effect=12:source=7:reward=none:group=[67,0,1;147,0,0;197,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.05353842982489837,
+    "ooc:v1:effect=14:source=7:none": -0.061546709941775496,
+    "ooc:v1:effect=5:source=7:reward=card,147,0,0:group=[67,0,1;147,0,0;197,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.001063001570647204,
+    "ooc:v1:effect=5:source=7:reward=card,197,0,0:group=[67,0,1;147,0,0;197,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.06487315158417456,
+    "ooc:v1:effect=5:source=7:reward=card,329,0,0:group=[301,0,0;329,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.07634157361842661,
+    "ooc:v1:effect=5:source=7:reward=card,345,0,0:group=[301,0,0;329,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.044413856508033034,
+    "ooc:v1:effect=5:source=7:reward=card,67,0,1:group=[67,0,1;147,0,0;197,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.06786015327594372
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[301,0,0;329,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=14:source=7:none",
+    "ooc:v1:effect=5:source=7:reward=card,147,0,0:group=[67,0,1;147,0,0;197,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,197,0,0:group=[67,0,1;147,0,0;197,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,301,0,0:group=[301,0,0;329,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,329,0,0:group=[301,0,0;329,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,345,0,0:group=[301,0,0;329,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,67,0,1:group=[67,0,1;147,0,0;197,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387049,
+   "index": 158,
+   "ref": "ooc:v1:effect=12:source=7:reward=none:group=[11,0,1;14,0,0;65,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=5:source=7:reward=card,11,0,1:group=[11,0,1;14,0,0;65,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.058525633318551484,
+    "ooc:v1:effect=5:source=7:reward=card,14,0,0:group=[11,0,1;14,0,0;65,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.02396251412424255,
+    "ooc:v1:effect=5:source=7:reward=card,65,0,0:group=[11,0,1;14,0,0;65,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.07445243952434422
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[11,0,1;14,0,0;65,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,11,0,1:group=[11,0,1;14,0,0;65,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,14,0,0:group=[11,0,1;14,0,0;65,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,65,0,0:group=[11,0,1;14,0,0;65,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387051,
+   "index": 9,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,198,0,0:group=[198,0,0;339,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[198,0,0;339,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.018167447502491565,
+    "ooc:v1:effect=5:source=7:reward=card,339,0,0:group=[198,0,0;339,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.005736282329535547,
+    "ooc:v1:effect=5:source=7:reward=card,362,0,0:group=[198,0,0;339,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.0743641340461161
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[198,0,0;339,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,198,0,0:group=[198,0,0;339,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,339,0,0:group=[198,0,0;339,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,362,0,0:group=[198,0,0;339,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387063,
+   "index": 17,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,154,0,0:group=[154,0,0;279,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[154,0,0;279,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.028901275038389712,
+    "ooc:v1:effect=5:source=7:reward=card,279,0,0:group=[154,0,0;279,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.0579362700300802,
+    "ooc:v1:effect=5:source=7:reward=card,329,0,0:group=[154,0,0;279,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.07407623811255559
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[154,0,0;279,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,154,0,0:group=[154,0,0;279,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,279,0,0:group=[154,0,0;279,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,329,0,0:group=[154,0,0;279,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387006,
+   "index": 81,
+   "ref": "ooc:v1:effect=12:source=7:reward=none:group=[39,0,0;42,0,0;297,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=5:source=7:reward=card,297,0,0:group=[39,0,0;42,0,0;297,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.0029471877387172163,
+    "ooc:v1:effect=5:source=7:reward=card,39,0,0:group=[39,0,0;42,0,0;297,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.005775237287192314,
+    "ooc:v1:effect=5:source=7:reward=card,42,0,0:group=[39,0,0;42,0,0;297,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.07205787154632654
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[39,0,0;42,0,0;297,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,297,0,0:group=[39,0,0;42,0,0;297,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,39,0,0:group=[39,0,0;42,0,0;297,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,42,0,0:group=[39,0,0;42,0,0;297,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387067,
+   "index": 41,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,244,0,0:group=[67,0,0;244,0,0;297,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[67,0,0;244,0,0;297,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.024133333134935486,
+    "ooc:v1:effect=5:source=7:reward=card,297,0,0:group=[67,0,0;244,0,0;297,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.03866052961768396,
+    "ooc:v1:effect=5:source=7:reward=card,67,0,0:group=[67,0,0;244,0,0;297,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.07148576721107835
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[67,0,0;244,0,0;297,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,244,0,0:group=[67,0,0;244,0,0;297,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,297,0,0:group=[67,0,0;244,0,0;297,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,67,0,0:group=[67,0,0;244,0,0;297,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387005,
+   "index": 5,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,65,0,0:group=[65,0,0;152,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[65,0,0;152,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.0711356082670545,
+    "ooc:v1:effect=5:source=7:reward=card,152,0,0:group=[65,0,0;152,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.0619126730854668,
+    "ooc:v1:effect=5:source=7:reward=card,339,0,0:group=[65,0,0;152,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.02254748795290873
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[65,0,0;152,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,152,0,0:group=[65,0,0;152,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,339,0,0:group=[65,0,0;152,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,65,0,0:group=[65,0,0;152,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387107,
+   "index": 57,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,107,0,0:group=[40,0,0;107,0,0;141,0,0;202,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[40,0,0;107,0,0;141,0,0;202,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.05335650900449576,
+    "ooc:v1:effect=5:source=7:reward=card,141,0,0:group=[40,0,0;107,0,0;141,0,0;202,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.060569782079941306,
+    "ooc:v1:effect=5:source=7:reward=card,202,0,0:group=[40,0,0;107,0,0;141,0,0;202,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.07064587494328645,
+    "ooc:v1:effect=5:source=7:reward=card,40,0,0:group=[40,0,0;107,0,0;141,0,0;202,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.05138786219544417
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[40,0,0;107,0,0;141,0,0;202,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,107,0,0:group=[40,0,0;107,0,0;141,0,0;202,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,141,0,0:group=[40,0,0;107,0,0;141,0,0;202,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,202,0,0:group=[40,0,0;107,0,0;141,0,0;202,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,40,0,0:group=[40,0,0;107,0,0;141,0,0;202,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387096,
+   "index": 80,
+   "ref": "ooc:v1:effect=12:source=7:reward=none:group=[67,0,0;198,0,0;261,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=5:source=7:reward=card,198,0,0:group=[67,0,0;198,0,0;261,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.000251881603302917,
+    "ooc:v1:effect=5:source=7:reward=card,261,0,1:group=[67,0,0;198,0,0;261,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.06782269151085252,
+    "ooc:v1:effect=5:source=7:reward=card,67,0,0:group=[67,0,0;198,0,0;261,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.0498641897184387
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[67,0,0;198,0,0;261,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,198,0,0:group=[67,0,0;198,0,0;261,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,261,0,1:group=[67,0,0;198,0,0;261,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,67,0,0:group=[67,0,0;198,0,0;261,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387090,
+   "index": 23,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,266,0,0:group=[179,0,0;266,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[179,0,0;266,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.051853309519508534,
+    "ooc:v1:effect=5:source=7:reward=card,179,0,0:group=[179,0,0;266,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.02435982836472754,
+    "ooc:v1:effect=5:source=7:reward=card,345,0,0:group=[179,0,0;266,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.06627734008353336
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[179,0,0;266,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,179,0,0:group=[179,0,0;266,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,266,0,0:group=[179,0,0;266,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,345,0,0:group=[179,0,0;266,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387033,
+   "index": 124,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,27,0,0:group=[11,0,1;27,0,0;140,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[11,0,1;27,0,0;140,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.005970247268846873,
+    "ooc:v1:effect=5:source=7:reward=card,11,0,1:group=[11,0,1;27,0,0;140,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.06503902679595175,
+    "ooc:v1:effect=5:source=7:reward=card,140,0,0:group=[11,0,1;27,0,0;140,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.033490701272934686
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[11,0,1;27,0,0;140,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,11,0,1:group=[11,0,1;27,0,0;140,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,140,0,0:group=[11,0,1;27,0,0;140,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,27,0,0:group=[11,0,1;27,0,0;140,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387003,
+   "index": 17,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,301,0,0:group=[38,0,0;198,0,0;301,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[38,0,0;198,0,0;301,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.0488786315461813,
+    "ooc:v1:effect=5:source=7:reward=card,198,0,0:group=[38,0,0;198,0,0;301,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.030029096528600308,
+    "ooc:v1:effect=5:source=7:reward=card,38,0,0:group=[38,0,0;198,0,0;301,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.0646147062295161
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[38,0,0;198,0,0;301,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,198,0,0:group=[38,0,0;198,0,0;301,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,301,0,0:group=[38,0,0;198,0,0;301,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,38,0,0:group=[38,0,0;198,0,0;301,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387027,
+   "index": 6,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,301,0,0:group=[67,0,0;301,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[67,0,0;301,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.05635377587354501,
+    "ooc:v1:effect=5:source=7:reward=card,347,0,0:group=[67,0,0;301,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.02626374594443731,
+    "ooc:v1:effect=5:source=7:reward=card,67,0,0:group=[67,0,0;301,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.06285963775816346
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[67,0,0;301,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,301,0,0:group=[67,0,0;301,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,347,0,0:group=[67,0,0;301,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,67,0,0:group=[67,0,0;301,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387004,
+   "index": 34,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,222,0,0:group=[42,0,0;157,0,0;222,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[42,0,0;157,0,0;222,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.04567192081409087,
+    "ooc:v1:effect=5:source=7:reward=card,157,0,0:group=[42,0,0;157,0,0;222,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.05417688905958825,
+    "ooc:v1:effect=5:source=7:reward=card,42,0,0:group=[42,0,0;157,0,0;222,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.06217693607847734
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[42,0,0;157,0,0;222,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,157,0,0:group=[42,0,0;157,0,0;222,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,222,0,0:group=[42,0,0;157,0,0;222,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,42,0,0:group=[42,0,0;157,0,0;222,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387032,
+   "index": 15,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,11,0,0:group=[11,0,0;27,0,0;244,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[11,0,0;27,0,0;244,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.06027490052026824,
+    "ooc:v1:effect=5:source=7:reward=card,244,0,0:group=[11,0,0;27,0,0;244,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.0050161339996943055,
+    "ooc:v1:effect=5:source=7:reward=card,27,0,0:group=[11,0,0;27,0,0;244,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.039439542554672385
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[11,0,0;27,0,0;244,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,11,0,0:group=[11,0,0;27,0,0;244,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,244,0,0:group=[11,0,0;27,0,0;244,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,27,0,0:group=[11,0,0;27,0,0;244,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387036,
+   "index": 176,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,83,0,0:group=[27,0,0;83,0,0;140,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[122,0,0;157,0,0;355,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.008039419087137012,
+    "ooc:v1:effect=12:source=7:reward=none:group=[27,0,0;83,0,0;140,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.002593360995850613,
+    "ooc:v1:effect=12:source=7:reward=none:group=[65,0,0;198,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.040197095435684616,
+    "ooc:v1:effect=12:source=7:reward=none:group=[73,0,1;112,0,0;157,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.03682572614107882,
+    "ooc:v1:effect=14:source=7:none": -0.023070948755402165,
+    "ooc:v1:effect=5:source=7:reward=card,112,0,0:group=[73,0,1;112,0,0;157,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.010892116182572575,
+    "ooc:v1:effect=5:source=7:reward=card,122,0,0:group=[122,0,0;157,0,0;355,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.022302904564315384,
+    "ooc:v1:effect=5:source=7:reward=card,140,0,0:group=[27,0,0;83,0,0;140,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.020487551867219955,
+    "ooc:v1:effect=5:source=7:reward=card,157,0,0:group=[122,0,0;157,0,0;355,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.016061602961009558,
+    "ooc:v1:effect=5:source=7:reward=card,157,0,0:group=[73,0,1;112,0,0;157,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.056560045328610864,
+    "ooc:v1:effect=5:source=7:reward=card,198,0,0:group=[65,0,0;198,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.04304979253112029,
+    "ooc:v1:effect=5:source=7:reward=card,27,0,0:group=[27,0,0;83,0,0;140,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.007261410788381717,
+    "ooc:v1:effect=5:source=7:reward=card,339,0,0:group=[65,0,0;198,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.013744813278008361,
+    "ooc:v1:effect=5:source=7:reward=card,355,0,0:group=[122,0,0;157,0,0;355,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.04045643153526968,
+    "ooc:v1:effect=5:source=7:reward=card,65,0,0:group=[65,0,0;198,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.04338803359143062,
+    "ooc:v1:effect=5:source=7:reward=card,73,0,1:group=[73,0,1;112,0,0;157,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.028786307053941917
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[122,0,0;157,0,0;355,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=14:source=7:none",
+    "ooc:v1:effect=5:source=7:reward=card,112,0,0:group=[73,0,1;112,0,0;157,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,122,0,0:group=[122,0,0;157,0,0;355,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,140,0,0:group=[27,0,0;83,0,0;140,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,157,0,0:group=[122,0,0;157,0,0;355,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,198,0,0:group=[65,0,0;198,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,27,0,0:group=[27,0,0;83,0,0;140,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,339,0,0:group=[65,0,0;198,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,355,0,0:group=[122,0,0;157,0,0;355,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,65,0,0:group=[65,0,0;198,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,73,0,1:group=[73,0,1;112,0,0;157,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,83,0,0:group=[27,0,0;83,0,0;140,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387124,
+   "index": 106,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,295,0,0:group=[157,0,0;295,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[157,0,0;295,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.05551391126812197,
+    "ooc:v1:effect=5:source=7:reward=card,157,0,0:group=[157,0,0;295,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.0016359839384884889,
+    "ooc:v1:effect=5:source=7:reward=card,345,0,0:group=[157,0,0;295,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.010275931519672987
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[157,0,0;295,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,157,0,0:group=[157,0,0;295,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,295,0,0:group=[157,0,0;295,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,345,0,0:group=[157,0,0;295,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387102,
+   "index": 7,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,112,0,0:group=[112,0,0;258,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[112,0,0;258,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.04781908503935492,
+    "ooc:v1:effect=5:source=7:reward=card,258,0,0:group=[112,0,0;258,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.05516716446373168,
+    "ooc:v1:effect=5:source=7:reward=card,347,0,0:group=[112,0,0;258,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.024669226036242886
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[112,0,0;258,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,112,0,0:group=[112,0,0;258,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,258,0,0:group=[112,0,0;258,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,347,0,0:group=[112,0,0;258,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387074,
+   "index": 180,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,178,0,0:group=[178,0,0;258,0,1;355,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[11,0,1;27,0,1;149,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.03915975103734448,
+    "ooc:v1:effect=12:source=7:reward=none:group=[178,0,0;258,0,1;355,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.017116182572614158,
+    "ooc:v1:effect=12:source=7:reward=none:group=[42,0,1;157,0,1;178,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.004927385892116165,
+    "ooc:v1:effect=12:source=7:reward=none:group=[42,0,1;57,0,1;198,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.01167012448132787,
+    "ooc:v1:effect=14:source=7:none": -0.05426264526053182,
+    "ooc:v1:effect=5:source=7:reward=card,11,0,1:group=[11,0,1;27,0,1;149,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.019735127088153837,
+    "ooc:v1:effect=5:source=7:reward=card,149,0,1:group=[11,0,1;27,0,1;149,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.018412863070539465,
+    "ooc:v1:effect=5:source=7:reward=card,157,0,1:group=[42,0,1;157,0,1;178,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.0254464458835848,
+    "ooc:v1:effect=5:source=7:reward=card,178,0,1:group=[42,0,1;157,0,1;178,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.01167012448132787,
+    "ooc:v1:effect=5:source=7:reward=card,198,0,1:group=[42,0,1;57,0,1;198,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.0036307053941908585,
+    "ooc:v1:effect=5:source=7:reward=card,258,0,1:group=[178,0,0;258,0,1;355,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.004668049792531104,
+    "ooc:v1:effect=5:source=7:reward=card,27,0,1:group=[11,0,1;27,0,1;149,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.0012966804979253066,
+    "ooc:v1:effect=5:source=7:reward=card,355,0,0:group=[178,0,0;258,0,1;355,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.008558091286307024,
+    "ooc:v1:effect=5:source=7:reward=card,42,0,1:group=[42,0,1;157,0,1;178,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.003112033195020736,
+    "ooc:v1:effect=5:source=7:reward=card,42,0,1:group=[42,0,1;57,0,1;198,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.00778008298755184,
+    "ooc:v1:effect=5:source=7:reward=card,57,0,1:group=[42,0,1;57,0,1;198,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.0007736994954391507
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[11,0,1;27,0,1;149,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=14:source=7:none",
+    "ooc:v1:effect=5:source=7:reward=card,11,0,1:group=[11,0,1;27,0,1;149,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,149,0,1:group=[11,0,1;27,0,1;149,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,157,0,1:group=[42,0,1;157,0,1;178,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,178,0,0:group=[178,0,0;258,0,1;355,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,178,0,1:group=[42,0,1;157,0,1;178,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,198,0,1:group=[42,0,1;57,0,1;198,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,258,0,1:group=[178,0,0;258,0,1;355,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,27,0,1:group=[11,0,1;27,0,1;149,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,355,0,0:group=[178,0,0;258,0,1;355,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,42,0,1:group=[42,0,1;157,0,1;178,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,57,0,1:group=[42,0,1;57,0,1;198,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387066,
+   "index": 45,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,149,0,0:group=[149,0,0;197,0,0;349,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[149,0,0;197,0,0;349,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.006475647047774452,
+    "ooc:v1:effect=14:source=7:none": -0.000625573713668337,
+    "ooc:v1:effect=29:source=7:reward=potion,23:group=[]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.042292410251084545,
+    "ooc:v1:effect=29:source=7:reward=potion,34:group=[]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.015709130932842957,
+    "ooc:v1:effect=5:source=7:reward=card,197,0,0:group=[149,0,0;197,0,0;349,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.011397198492805946,
+    "ooc:v1:effect=5:source=7:reward=card,349,0,0:group=[149,0,0;197,0,0;349,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.05415911720413846
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[149,0,0;197,0,0;349,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=14:source=7:none",
+    "ooc:v1:effect=29:source=7:reward=potion,23:group=[]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=29:source=7:reward=potion,34:group=[]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,149,0,0:group=[149,0,0;197,0,0;349,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,197,0,0:group=[149,0,0;197,0,0;349,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,349,0,0:group=[149,0,0;197,0,0;349,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387021,
+   "index": 50,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,301,0,0:group=[30,0,0;198,0,0;301,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[30,0,0;198,0,0;301,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.011994262873328068,
+    "ooc:v1:effect=5:source=7:reward=card,198,0,0:group=[30,0,0;198,0,0;301,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.006295631241716004,
+    "ooc:v1:effect=5:source=7:reward=card,30,0,0:group=[30,0,0;198,0,0;301,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.05354142288231292
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[30,0,0;198,0,0;301,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,198,0,0:group=[30,0,0;198,0,0;301,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,30,0,0:group=[30,0,0;198,0,0;301,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,301,0,0:group=[30,0,0;198,0,0;301,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387014,
+   "index": 31,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,249,0,0:group=[148,0,0;157,0,0;249,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[148,0,0;157,0,0;249,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.027344623465897083,
+    "ooc:v1:effect=5:source=7:reward=card,148,0,0:group=[148,0,0;157,0,0;249,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.010181037458916992,
+    "ooc:v1:effect=5:source=7:reward=card,157,0,0:group=[148,0,0;157,0,0;249,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.05321832454949331
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[148,0,0;157,0,0;249,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,148,0,0:group=[148,0,0;157,0,0;249,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,157,0,0:group=[148,0,0;157,0,0;249,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,249,0,0:group=[148,0,0;157,0,0;249,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387135,
+   "index": 117,
+   "ref": "ooc:v1:effect=12:source=7:reward=none:group=[198,0,0;269,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=5:source=7:reward=card,198,0,0:group=[198,0,0;269,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.0019437457887400977,
+    "ooc:v1:effect=5:source=7:reward=card,269,0,0:group=[198,0,0;269,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.04773520948241744,
+    "ooc:v1:effect=5:source=7:reward=card,329,0,0:group=[198,0,0;269,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.05285890467429699
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[198,0,0;269,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,198,0,0:group=[198,0,0;269,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,269,0,0:group=[198,0,0;269,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,329,0,0:group=[198,0,0;269,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387048,
+   "index": 67,
+   "ref": "ooc:v1:effect=12:source=7:reward=none:group=[181,0,0;297,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=5:source=7:reward=card,181,0,0:group=[181,0,0;297,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.030478184958779908,
+    "ooc:v1:effect=5:source=7:reward=card,297,0,0:group=[181,0,0;297,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.007514237901232512,
+    "ooc:v1:effect=5:source=7:reward=card,345,0,0:group=[181,0,0;297,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.05267804008815091
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[181,0,0;297,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,181,0,0:group=[181,0,0;297,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,297,0,0:group=[181,0,0;297,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,345,0,0:group=[181,0,0;297,0,0;345,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387075,
+   "index": 136,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,93,0,0:group=[93,0,0;178,0,1;222,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[93,0,0;178,0,1;222,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.049776022465448044,
+    "ooc:v1:effect=5:source=7:reward=card,178,0,1:group=[93,0,0;178,0,1;222,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.04888254600666142,
+    "ooc:v1:effect=5:source=7:reward=card,222,0,0:group=[93,0,0;178,0,1;222,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.010313459003721936
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[93,0,0;178,0,1;222,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,178,0,1:group=[93,0,0;178,0,1;222,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,222,0,0:group=[93,0,0;178,0,1;222,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,93,0,0:group=[93,0,0;178,0,1;222,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387131,
+   "index": 15,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,347,0,0:group=[38,0,0;288,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[38,0,0;288,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.029019359209680927,
+    "ooc:v1:effect=5:source=7:reward=card,288,0,0:group=[38,0,0;288,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.04709235726012524,
+    "ooc:v1:effect=5:source=7:reward=card,38,0,0:group=[38,0,0;288,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.03754844503865073
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[38,0,0;288,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,288,0,0:group=[38,0,0;288,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,347,0,0:group=[38,0,0;288,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,38,0,0:group=[38,0,0;288,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387117,
+   "index": 3,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,179,0,0:group=[157,0,0;179,0,0;289,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[157,0,0;179,0,0;289,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.038653788958800915,
+    "ooc:v1:effect=5:source=7:reward=card,157,0,0:group=[157,0,0;179,0,0;289,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.046435263815272576,
+    "ooc:v1:effect=5:source=7:reward=card,289,0,0:group=[157,0,0;179,0,0;289,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.045017280330131186
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[157,0,0;179,0,0;289,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,157,0,0:group=[157,0,0;179,0,0;289,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,179,0,0:group=[157,0,0;179,0,0;289,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,289,0,0:group=[157,0,0;179,0,0;289,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387089,
+   "index": 45,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,112,0,0:group=[67,0,0;112,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[67,0,0;112,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.008327964417804201,
+    "ooc:v1:effect=5:source=7:reward=card,339,0,0:group=[67,0,0;112,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.003845952190562385,
+    "ooc:v1:effect=5:source=7:reward=card,67,0,0:group=[67,0,0;112,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.04550006626972508
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[67,0,0;112,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,112,0,0:group=[67,0,0;112,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,339,0,0:group=[67,0,0;112,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,67,0,0:group=[67,0,0;112,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387065,
+   "index": 116,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,147,0,0:group=[30,0,0;119,0,1;147,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=10:source=7:reward=potion,43:group=[]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.0006649744915691452,
+    "ooc:v1:effect=12:source=7:reward=none:group=[30,0,0;119,0,1;147,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.02919227477688706,
+    "ooc:v1:effect=14:source=7:none": -0.02671809526459172,
+    "ooc:v1:effect=5:source=7:reward=card,119,0,1:group=[30,0,0;119,0,1;147,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.031036300239890652,
+    "ooc:v1:effect=5:source=7:reward=card,30,0,0:group=[30,0,0;119,0,1;147,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.045050933676477514
+   },
+   "keys": [
+    "ooc:v1:effect=10:source=7:reward=potion,43:group=[]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=14:source=7:none",
+    "ooc:v1:effect=5:source=7:reward=card,119,0,1:group=[30,0,0;119,0,1;147,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,147,0,0:group=[30,0,0;119,0,1;147,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,30,0,0:group=[30,0,0;119,0,1;147,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387105,
+   "index": 173,
+   "ref": "ooc:v1:effect=14:source=7:none",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[11,0,0;65,0,1;198,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.028350515463917536,
+    "ooc:v1:effect=12:source=7:reward=none:group=[244,0,1;249,0,0;269,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.011102299762093537,
+    "ooc:v1:effect=12:source=7:reward=none:group=[42,0,0;198,0,0;249,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.03291038858049167,
+    "ooc:v1:effect=5:source=7:reward=card,11,0,0:group=[11,0,0;65,0,1;198,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.027343818838664102,
+    "ooc:v1:effect=5:source=7:reward=card,198,0,0:group=[11,0,0;65,0,1;198,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.0019469934418386847,
+    "ooc:v1:effect=5:source=7:reward=card,198,0,0:group=[42,0,0;198,0,0;249,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.03170889820374356,
+    "ooc:v1:effect=5:source=7:reward=card,244,0,1:group=[244,0,1;249,0,0;269,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.0034101494153041534,
+    "ooc:v1:effect=5:source=7:reward=card,249,0,0:group=[244,0,1;249,0,0;269,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.02397080296564824,
+    "ooc:v1:effect=5:source=7:reward=card,249,0,0:group=[42,0,0;198,0,0;249,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.001029197034351781,
+    "ooc:v1:effect=5:source=7:reward=card,269,0,0:group=[244,0,1;249,0,0;269,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.034883501378346726,
+    "ooc:v1:effect=5:source=7:reward=card,42,0,0:group=[42,0,0;198,0,0;249,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.043613660108505425,
+    "ooc:v1:effect=5:source=7:reward=card,65,0,1:group=[11,0,0;65,0,1;198,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.03885175534660068
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[11,0,0;65,0,1;198,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=14:source=7:none",
+    "ooc:v1:effect=5:source=7:reward=card,11,0,0:group=[11,0,0;65,0,1;198,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,198,0,0:group=[11,0,0;65,0,1;198,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,244,0,1:group=[244,0,1;249,0,0;269,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,249,0,0:group=[244,0,1;249,0,0;269,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,269,0,0:group=[244,0,1;249,0,0;269,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,42,0,0:group=[42,0,0;198,0,0;249,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,65,0,1:group=[11,0,0;65,0,1;198,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387039,
+   "index": 11,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,258,0,0:group=[65,0,0;208,0,0;258,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[65,0,0;208,0,0;258,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.0033979222848908863,
+    "ooc:v1:effect=5:source=7:reward=card,208,0,0:group=[65,0,0;208,0,0;258,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.012678901538396903,
+    "ooc:v1:effect=5:source=7:reward=card,65,0,0:group=[65,0,0;208,0,0;258,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.041460589644316787
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[65,0,0;208,0,0;258,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,208,0,0:group=[65,0,0;208,0,0;258,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,258,0,0:group=[65,0,0;208,0,0;258,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,65,0,0:group=[65,0,0;208,0,0;258,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "top",
+   "inclusion": 1.0
+  },
+  {
+   "seed": 111387077,
+   "index": 48,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,289,0,0:group=[65,0,0;202,0,0;289,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[65,0,0;202,0,0;289,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.009354511787616468,
+    "ooc:v1:effect=5:source=7:reward=card,202,0,0:group=[65,0,0;202,0,0;289,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.0026213357197527876,
+    "ooc:v1:effect=5:source=7:reward=card,65,0,0:group=[65,0,0;202,0,0;289,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.0024737220080919
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[65,0,0;202,0,0;289,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,202,0,0:group=[65,0,0;202,0,0;289,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,289,0,0:group=[65,0,0;202,0,0;289,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,65,0,0:group=[65,0,0;202,0,0;289,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "random",
+   "inclusion": 0.5
+  },
+  {
+   "seed": 111387092,
+   "index": 56,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,234,0,0:group=[149,0,0;187,0,0;234,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[149,0,0;187,0,0;234,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.023162886692806667,
+    "ooc:v1:effect=5:source=7:reward=card,149,0,0:group=[149,0,0;187,0,0;234,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.024888129683117363,
+    "ooc:v1:effect=5:source=7:reward=card,187,0,0:group=[149,0,0;187,0,0;234,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.01443458415730893
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[149,0,0;187,0,0;234,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,149,0,0:group=[149,0,0;187,0,0;234,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,187,0,0:group=[149,0,0;187,0,0;234,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,234,0,0:group=[149,0,0;187,0,0;234,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "random",
+   "inclusion": 0.5
+  },
+  {
+   "seed": 111387016,
+   "index": 100,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,147,0,0:group=[69,0,0;147,0,0;157,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[69,0,0;147,0,0;157,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.013071508738932303,
+    "ooc:v1:effect=5:source=7:reward=card,157,0,1:group=[69,0,0;147,0,0;157,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.01693178363870749,
+    "ooc:v1:effect=5:source=7:reward=card,69,0,0:group=[69,0,0;147,0,0;157,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.0135504864892254
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[69,0,0;147,0,0;157,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,147,0,0:group=[69,0,0;147,0,0;157,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,157,0,1:group=[69,0,0;147,0,0;157,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,69,0,0:group=[69,0,0;147,0,0;157,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "random",
+   "inclusion": 0.5
+  },
+  {
+   "seed": 111387057,
+   "index": 42,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,67,0,0:group=[67,0,0;157,0,0;181,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[67,0,0;157,0,0;181,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.007773456989267256,
+    "ooc:v1:effect=5:source=7:reward=card,157,0,0:group=[67,0,0;157,0,0;181,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.007559230930797016,
+    "ooc:v1:effect=5:source=7:reward=card,181,0,0:group=[67,0,0;157,0,0;181,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.00029951021197759456
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[67,0,0;157,0,0;181,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,157,0,0:group=[67,0,0;157,0,0;181,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,181,0,0:group=[67,0,0;157,0,0;181,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,67,0,0:group=[67,0,0;157,0,0;181,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "random",
+   "inclusion": 0.5
+  },
+  {
+   "seed": 111387093,
+   "index": 78,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,208,0,0:group=[157,0,0;170,0,0;208,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[157,0,0;170,0,0;208,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.0023073830208132085,
+    "ooc:v1:effect=5:source=7:reward=card,157,0,0:group=[157,0,0;170,0,0;208,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.007510262084310083,
+    "ooc:v1:effect=5:source=7:reward=card,170,0,0:group=[157,0,0;170,0,0;208,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.004819952654644528
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[157,0,0;170,0,0;208,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,157,0,0:group=[157,0,0;170,0,0;208,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,170,0,0:group=[157,0,0;170,0,0;208,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,208,0,0:group=[157,0,0;170,0,0;208,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "random",
+   "inclusion": 0.5
+  },
+  {
+   "seed": 111387031,
+   "index": 64,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,69,0,0:group=[69,0,0;140,0,0;191,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[69,0,0;140,0,0;191,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.001573982489586085,
+    "ooc:v1:effect=5:source=7:reward=card,140,0,0:group=[69,0,0;140,0,0;191,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.012843576169819876,
+    "ooc:v1:effect=5:source=7:reward=card,191,0,0:group=[69,0,0;140,0,0;191,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.0021598922214011752
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[69,0,0;140,0,0;191,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,140,0,0:group=[69,0,0;140,0,0;191,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,191,0,0:group=[69,0,0;140,0,0;191,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,69,0,0:group=[69,0,0;140,0,0;191,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "random",
+   "inclusion": 0.5
+  },
+  {
+   "seed": 111387128,
+   "index": 115,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,191,0,0:group=[67,0,1;191,0,0;198,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[67,0,1;191,0,0;198,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.0033193070666145408,
+    "ooc:v1:effect=5:source=7:reward=card,198,0,0:group=[67,0,1;191,0,0;198,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.0030101931629840095,
+    "ooc:v1:effect=5:source=7:reward=card,67,0,1:group=[67,0,1;191,0,0;198,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.014976095469555362
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[67,0,1;191,0,0;198,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,191,0,0:group=[67,0,1;191,0,0;198,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,198,0,0:group=[67,0,1;191,0,0;198,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,67,0,1:group=[67,0,1;191,0,0;198,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "random",
+   "inclusion": 0.5
+  },
+  {
+   "seed": 111387081,
+   "index": 150,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,355,0,0:group=[264,0,1;355,0,0;362,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[264,0,1;355,0,0;362,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -1.743207641642651e-05,
+    "ooc:v1:effect=5:source=7:reward=card,264,0,1:group=[264,0,1;355,0,0;362,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -8.073863930333591e-05,
+    "ooc:v1:effect=5:source=7:reward=card,362,0,1:group=[264,0,1;355,0,0;362,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -5.7336610147720665e-05
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[264,0,1;355,0,0;362,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,264,0,1:group=[264,0,1;355,0,0;362,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,355,0,0:group=[264,0,1;355,0,0;362,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,362,0,1:group=[264,0,1;355,0,0;362,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "random",
+   "inclusion": 0.5
+  },
+  {
+   "seed": 111387047,
+   "index": 42,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,301,0,0:group=[67,0,0;301,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[67,0,0;301,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.0013853859242847957,
+    "ooc:v1:effect=5:source=7:reward=card,347,0,0:group=[67,0,0;301,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.0009724011406518959,
+    "ooc:v1:effect=5:source=7:reward=card,67,0,0:group=[67,0,0;301,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.004222017832171849
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[67,0,0;301,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,301,0,0:group=[67,0,0;301,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,347,0,0:group=[67,0,0;301,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,67,0,0:group=[67,0,0;301,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "random",
+   "inclusion": 0.5
+  },
+  {
+   "seed": 111387035,
+   "index": 84,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,14,0,1:group=[14,0,1;67,0,0;297,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[14,0,1;67,0,0;297,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.004587894982385854,
+    "ooc:v1:effect=5:source=7:reward=card,297,0,0:group=[14,0,1;67,0,0;297,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.0056360532618306355,
+    "ooc:v1:effect=5:source=7:reward=card,67,0,0:group=[14,0,1;67,0,0;297,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.006455120500766619
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[14,0,1;67,0,0;297,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,14,0,1:group=[14,0,1;67,0,0;297,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,297,0,0:group=[14,0,1;67,0,0;297,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,67,0,0:group=[14,0,1;67,0,0;297,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "random",
+   "inclusion": 0.5
+  },
+  {
+   "seed": 111387094,
+   "index": 149,
+   "ref": "ooc:v1:effect=12:source=7:reward=none:group=[69,0,0;181,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=5:source=7:reward=card,181,0,0:group=[69,0,0;181,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -3.582901044606251e-05,
+    "ooc:v1:effect=5:source=7:reward=card,339,0,0:group=[69,0,0;181,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -1.9034521119041563e-05,
+    "ooc:v1:effect=5:source=7:reward=card,69,0,0:group=[69,0,0;181,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -3.386432113956961e-05
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[69,0,0;181,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,181,0,0:group=[69,0,0;181,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,339,0,0:group=[69,0,0;181,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,69,0,0:group=[69,0,0;181,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "random",
+   "inclusion": 0.5
+  },
+  {
+   "seed": 111387015,
+   "index": 175,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,250,0,0:group=[11,0,0;250,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[11,0,0;250,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.0010204777688333864,
+    "ooc:v1:effect=5:source=7:reward=card,11,0,0:group=[11,0,0;250,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.0029761859031819,
+    "ooc:v1:effect=5:source=7:reward=card,329,0,0:group=[11,0,0;250,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.002694044252909266
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[11,0,0;250,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,11,0,0:group=[11,0,0;250,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,250,0,0:group=[11,0,0;250,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,329,0,0:group=[11,0,0;250,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "random",
+   "inclusion": 0.5
+  },
+  {
+   "seed": 111387126,
+   "index": 10,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,289,0,0:group=[65,0,0;279,0,0;289,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[65,0,0;279,0,0;289,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.003781981558155255,
+    "ooc:v1:effect=5:source=7:reward=card,279,0,0:group=[65,0,0;279,0,0;289,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.015196148306670678,
+    "ooc:v1:effect=5:source=7:reward=card,65,0,0:group=[65,0,0;279,0,0;289,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.015170937233084672
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[65,0,0;279,0,0;289,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,279,0,0:group=[65,0,0;279,0,0;289,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,289,0,0:group=[65,0,0;279,0,0;289,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,65,0,0:group=[65,0,0;279,0,0;289,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "random",
+   "inclusion": 0.5
+  },
+  {
+   "seed": 111387084,
+   "index": 172,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,27,0,0:group=[27,0,0;42,0,0;181,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[27,0,0;42,0,0;181,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.00262451171875,
+    "ooc:v1:effect=5:source=7:reward=card,181,0,0:group=[27,0,0;42,0,0;181,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.00250244140625,
+    "ooc:v1:effect=5:source=7:reward=card,42,0,0:group=[27,0,0;42,0,0;181,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.0166015625
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[27,0,0;42,0,0;181,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,181,0,0:group=[27,0,0;42,0,0;181,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,27,0,0:group=[27,0,0;42,0,0;181,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,42,0,0:group=[27,0,0;42,0,0;181,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "random",
+   "inclusion": 0.5
+  },
+  {
+   "seed": 111387030,
+   "index": 117,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,250,0,0:group=[14,0,0;250,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[14,0,0;250,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.013779811117775431,
+    "ooc:v1:effect=5:source=7:reward=card,14,0,0:group=[14,0,0;250,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.0010829351461562053,
+    "ooc:v1:effect=5:source=7:reward=card,347,0,0:group=[14,0,0;250,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.014467354282757167
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[14,0,0;250,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,14,0,0:group=[14,0,0;250,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,250,0,0:group=[14,0,0;250,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,347,0,0:group=[14,0,0;250,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "random",
+   "inclusion": 0.5
+  },
+  {
+   "seed": 111387073,
+   "index": 157,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,170,0,0:group=[124,0,0;170,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[124,0,0;170,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.001120674605148607,
+    "ooc:v1:effect=5:source=7:reward=card,124,0,0:group=[124,0,0;170,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.012441390979596421,
+    "ooc:v1:effect=5:source=7:reward=card,339,0,0:group=[124,0,0;170,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.0020876378648134464
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[124,0,0;170,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,124,0,0:group=[124,0,0;170,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,170,0,0:group=[124,0,0;170,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,339,0,0:group=[124,0,0;170,0,0;339,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "random",
+   "inclusion": 0.5
+  },
+  {
+   "seed": 111387109,
+   "index": 4,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,69,0,0:group=[14,0,0;65,0,0;69,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[14,0,0;65,0,0;69,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.02017941503493763,
+    "ooc:v1:effect=5:source=7:reward=card,14,0,0:group=[14,0,0;65,0,0;69,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.009139920792269551,
+    "ooc:v1:effect=5:source=7:reward=card,65,0,0:group=[14,0,0;65,0,0;69,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.0024249590889345446
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[14,0,0;65,0,0;69,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,14,0,0:group=[14,0,0;65,0,0;69,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,65,0,0:group=[14,0,0;65,0,0;69,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,69,0,0:group=[14,0,0;65,0,0;69,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "random",
+   "inclusion": 0.5
+  },
+  {
+   "seed": 111387115,
+   "index": 150,
+   "ref": "ooc:v1:effect=12:source=7:reward=none:group=[124,0,0;152,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=5:source=7:reward=card,124,0,0:group=[124,0,0;152,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.022070302665678214,
+    "ooc:v1:effect=5:source=7:reward=card,152,0,0:group=[124,0,0;152,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.02946739327252694,
+    "ooc:v1:effect=5:source=7:reward=card,329,0,0:group=[124,0,0;152,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.013906736307930684
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[124,0,0;152,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,124,0,0:group=[124,0,0;152,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,152,0,0:group=[124,0,0;152,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,329,0,0:group=[124,0,0;152,0,0;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "random",
+   "inclusion": 0.5
+  },
+  {
+   "seed": 111387129,
+   "index": 104,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,289,0,1:group=[154,0,0;198,0,0;289,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[154,0,0;198,0,0;289,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.000411863076811075,
+    "ooc:v1:effect=5:source=7:reward=card,154,0,0:group=[154,0,0;198,0,0;289,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.00013974123934316386,
+    "ooc:v1:effect=5:source=7:reward=card,198,0,0:group=[154,0,0;198,0,0;289,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.0001751314561771822
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[154,0,0;198,0,0;289,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,154,0,0:group=[154,0,0;198,0,0;289,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,198,0,0:group=[154,0,0;198,0,0;289,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,289,0,1:group=[154,0,0;198,0,0;289,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "random",
+   "inclusion": 0.5
+  },
+  {
+   "seed": 111387083,
+   "index": 138,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,154,0,1:group=[27,0,0;154,0,1;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[27,0,0;154,0,1;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.003806320217453002,
+    "ooc:v1:effect=5:source=7:reward=card,27,0,0:group=[27,0,0;154,0,1;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.0024803779498671907,
+    "ooc:v1:effect=5:source=7:reward=card,329,0,0:group=[27,0,0;154,0,1;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.024351263298469907
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[27,0,0;154,0,1;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,154,0,1:group=[27,0,0;154,0,1;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,27,0,0:group=[27,0,0;154,0,1;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,329,0,0:group=[27,0,0;154,0,1;329,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "random",
+   "inclusion": 0.5
+  },
+  {
+   "seed": 111387104,
+   "index": 161,
+   "ref": "ooc:v1:effect=12:source=7:reward=none:group=[14,0,0;67,0,0;347,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=5:source=7:reward=card,14,0,0:group=[14,0,0;67,0,0;347,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.001771031464125744,
+    "ooc:v1:effect=5:source=7:reward=card,347,0,1:group=[14,0,0;67,0,0;347,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.0011004602895080748,
+    "ooc:v1:effect=5:source=7:reward=card,67,0,0:group=[14,0,0;67,0,0;347,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.004458047197604953
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[14,0,0;67,0,0;347,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,14,0,0:group=[14,0,0;67,0,0;347,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,347,0,1:group=[14,0,0;67,0,0;347,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,67,0,0:group=[14,0,0;67,0,0;347,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "random",
+   "inclusion": 0.5
+  },
+  {
+   "seed": 111387114,
+   "index": 10,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,27,0,0:group=[27,0,0;301,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[27,0,0;301,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.0337337717013942,
+    "ooc:v1:effect=5:source=7:reward=card,301,0,0:group=[27,0,0;301,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.02157337284674929,
+    "ooc:v1:effect=5:source=7:reward=card,347,0,0:group=[27,0,0;301,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.004127331324781575
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[27,0,0;301,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,27,0,0:group=[27,0,0;301,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,301,0,0:group=[27,0,0;301,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,347,0,0:group=[27,0,0;301,0,0;347,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "random",
+   "inclusion": 0.5
+  },
+  {
+   "seed": 111387026,
+   "index": 8,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,148,0,0:group=[148,0,0;339,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[148,0,0;339,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.00636529063035169,
+    "ooc:v1:effect=5:source=7:reward=card,339,0,0:group=[148,0,0;339,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.002508820185321503,
+    "ooc:v1:effect=5:source=7:reward=card,362,0,0:group=[148,0,0;339,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.02254309439545394
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[148,0,0;339,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,148,0,0:group=[148,0,0;339,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,339,0,0:group=[148,0,0;339,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,362,0,0:group=[148,0,0;339,0,0;362,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "random",
+   "inclusion": 0.5
+  },
+  {
+   "seed": 111387062,
+   "index": 70,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,11,0,1:group=[11,0,1;157,0,0;288,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[11,0,1;157,0,0;288,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.009059120703313321,
+    "ooc:v1:effect=5:source=7:reward=card,157,0,0:group=[11,0,1;157,0,0;288,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.008786526820260397,
+    "ooc:v1:effect=5:source=7:reward=card,288,0,0:group=[11,0,1;157,0,0;288,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.008618166854499308
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[11,0,1;157,0,0;288,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,11,0,1:group=[11,0,1;157,0,0;288,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,157,0,0:group=[11,0,1;157,0,0;288,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,288,0,0:group=[11,0,1;157,0,0;288,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "random",
+   "inclusion": 0.5
+  },
+  {
+   "seed": 111387134,
+   "index": 96,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,148,0,0:group=[11,0,0;148,0,0;191,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[11,0,0;148,0,0;191,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.011666307507261789,
+    "ooc:v1:effect=5:source=7:reward=card,11,0,0:group=[11,0,0;148,0,0;191,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.013840140551453037,
+    "ooc:v1:effect=5:source=7:reward=card,191,0,1:group=[11,0,0;148,0,0;191,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.011089572228948394
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[11,0,0;148,0,0;191,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,11,0,0:group=[11,0,0;148,0,0;191,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,148,0,0:group=[11,0,0;148,0,0;191,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,191,0,1:group=[11,0,0;148,0,0;191,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "random",
+   "inclusion": 0.5
+  },
+  {
+   "seed": 111387095,
+   "index": 119,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,198,0,1:group=[14,0,0;198,0,1;362,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[14,0,0;198,0,1;362,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -3.1813406439903e-05,
+    "ooc:v1:effect=5:source=7:reward=card,14,0,0:group=[14,0,0;198,0,1;362,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -9.449952606352494e-05,
+    "ooc:v1:effect=5:source=7:reward=card,362,0,1:group=[14,0,0;198,0,1;362,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.0004704261923715306
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[14,0,0;198,0,1;362,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,14,0,0:group=[14,0,0;198,0,1;362,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,198,0,1:group=[14,0,0;198,0,1;362,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,362,0,1:group=[14,0,0;198,0,1;362,0,1;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "random",
+   "inclusion": 0.5
+  },
+  {
+   "seed": 111387028,
+   "index": 53,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,189,0,0:group=[187,0,0;189,0,0;208,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[187,0,0;189,0,0;208,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.009725304990543653,
+    "ooc:v1:effect=5:source=7:reward=card,187,0,0:group=[187,0,0;189,0,0;208,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.005905869686240935,
+    "ooc:v1:effect=5:source=7:reward=card,208,0,0:group=[187,0,0;189,0,0;208,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.011032776684348164
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[187,0,0;189,0,0;208,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,187,0,0:group=[187,0,0;189,0,0;208,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,189,0,0:group=[187,0,0;189,0,0;208,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,208,0,0:group=[187,0,0;189,0,0;208,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "random",
+   "inclusion": 0.5
+  },
+  {
+   "seed": 111387056,
+   "index": 32,
+   "ref": "ooc:v1:effect=12:source=7:reward=none:group=[38,0,0;329,0,0;355,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=5:source=7:reward=card,329,0,0:group=[38,0,0;329,0,0;355,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.01703406437868915,
+    "ooc:v1:effect=5:source=7:reward=card,355,0,0:group=[38,0,0;329,0,0;355,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.007453673011718082,
+    "ooc:v1:effect=5:source=7:reward=card,38,0,0:group=[38,0,0;329,0,0;355,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.0065431594363785685
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[38,0,0;329,0,0;355,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,329,0,0:group=[38,0,0;329,0,0;355,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,355,0,0:group=[38,0,0;329,0,0;355,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,38,0,0:group=[38,0,0;329,0,0;355,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "random",
+   "inclusion": 0.5
+  },
+  {
+   "seed": 111387037,
+   "index": 106,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,147,0,0:group=[14,0,1;27,0,1;147,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[14,0,1;27,0,1;147,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.006649934478457941,
+    "ooc:v1:effect=5:source=7:reward=card,14,0,1:group=[14,0,1;27,0,1;147,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.006190567790307355,
+    "ooc:v1:effect=5:source=7:reward=card,27,0,1:group=[14,0,1;27,0,1;147,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.0008517994987229244
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[14,0,1;27,0,1;147,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,14,0,1:group=[14,0,1;27,0,1;147,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,147,0,0:group=[14,0,1;27,0,1;147,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,27,0,1:group=[14,0,1;27,0,1;147,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "random",
+   "inclusion": 0.5
+  },
+  {
+   "seed": 111387034,
+   "index": 88,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,197,0,0:group=[197,0,0;300,0,0;355,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[197,0,0;300,0,0;355,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.002057685338265145,
+    "ooc:v1:effect=5:source=7:reward=card,300,0,0:group=[197,0,0;300,0,0;355,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.023029732189006412,
+    "ooc:v1:effect=5:source=7:reward=card,355,0,0:group=[197,0,0;300,0,0;355,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.004259805749366876
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[197,0,0;300,0,0;355,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,197,0,0:group=[197,0,0;300,0,0;355,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,300,0,0:group=[197,0,0;300,0,0;355,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,355,0,0:group=[197,0,0;300,0,0;355,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "random",
+   "inclusion": 0.5
+  },
+  {
+   "seed": 111387025,
+   "index": 105,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,24,0,0:group=[24,0,0;40,0,0;208,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[24,0,0;40,0,0;208,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.0002948941054718747,
+    "ooc:v1:effect=5:source=7:reward=card,208,0,0:group=[24,0,0;40,0,0;208,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.0007837549503268478,
+    "ooc:v1:effect=5:source=7:reward=card,40,0,0:group=[24,0,0;40,0,0;208,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.0016902853548030738
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[24,0,0;40,0,0;208,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,208,0,0:group=[24,0,0;40,0,0;208,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,24,0,0:group=[24,0,0;40,0,0;208,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,40,0,0:group=[24,0,0;40,0,0;208,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "random",
+   "inclusion": 0.5
+  },
+  {
+   "seed": 111387029,
+   "index": 127,
+   "ref": "ooc:v1:effect=5:source=7:reward=card,193,0,1:group=[14,0,0;193,0,1;300,0,0;349,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+   "x": {
+    "ooc:v1:effect=12:source=7:reward=none:group=[14,0,0;193,0,1;300,0,0;349,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.006175671839352852,
+    "ooc:v1:effect=5:source=7:reward=card,14,0,0:group=[14,0,0;193,0,1;300,0,0;349,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.008196604679698445,
+    "ooc:v1:effect=5:source=7:reward=card,300,0,0:group=[14,0,0;193,0,1;300,0,0;349,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": 0.00016808112676217762,
+    "ooc:v1:effect=5:source=7:reward=card,349,0,0:group=[14,0,0;193,0,1;300,0,0;349,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0": -0.004129454767084735
+   },
+   "keys": [
+    "ooc:v1:effect=12:source=7:reward=none:group=[14,0,0;193,0,1;300,0,0;349,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,14,0,0:group=[14,0,0;193,0,1;300,0,0;349,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,193,0,1:group=[14,0,0;193,0,1;300,0,0;349,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,300,0,0:group=[14,0,0;193,0,1;300,0,0;349,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0",
+    "ooc:v1:effect=5:source=7:reward=card,349,0,0:group=[14,0,0;193,0,1;300,0,0;349,0,0;]:groupOccurrence=0:occurrence=0:sapphirePaired=0"
+   ],
+   "stratum": "random",
+   "inclusion": 0.5
+  }
+ ]
+}
