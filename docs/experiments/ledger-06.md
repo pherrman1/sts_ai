@@ -25283,3 +25283,25 @@ definitions in `research/ooc/root-quality.md`. Campaign: RUN_COMMIT f9fd31a0, bi
 - The swkeyed-in-search step is formally triggered but not started. It is Philipp's call, given the small self-regret.
 - No new seeds used.
 **Knowledge impact:** `research/ooc/root-quality.md` (measured section).
+
+## §TBD — Boss-budget probe on Baalorlord's 499 boss states: flat 40k Silver vs today's learned stop −0.25 HP [−1.10, +0.61] per fight (INCONCLUSIVE, just outside the 1-HP no-gain margin), flat 20k −0.46 [−1.27, +0.34], deaths unchanged, at 7.7× / 4.0× CPU; §716's act-2 −3.25 was a favourable subset (16 workers, used Baalorlord seeds, 2026-10-29)
+
+**Question:** §716 ranked boss search budget as fix 1 (act-2 bosses at flat 40k −3.25 [−6.81, +0.27] on 32 fights).
+On all of §711's act-1-3 boss states, does a larger flat budget lower HP lost?
+**Setup:** [PREREG](evidence/boss_budget_probe_20261029/PREREG.md), frozen before launch (pre-launch review PASS and
+delta PASS; Philipp "Let's go on 16 workers"). `one_combat expertfights` as in §711, with §716's arms `flat20000`
+and `flat40000` in every boss room, 2 copies per side on the same copy seeds as production. The main line is
+§711's. 250 runs, 499 boss fights. Run commit `ae23bb13`, code `32f7ee76`, binary `3f52f677…`; 250/250 units verified.
+**Result:** [RESULT](evidence/boss_budget_probe_20261029/RESULT.md). Production 15.41 HP lost (deaths 0.110), flat 20k
+14.95 (0.100), flat 40k 15.16 (0.102), expert 12.02. Primary flat40000 − production **−0.25 [−1.10, +0.61]** →
+**INCONCLUSIVE** by the pre-registered rule (lower bound 0.10 HP past the −1 margin). flat20000 − production −0.46
+[−1.27, +0.34]; death differences −0.01 [−0.03, +0.01]; CPU 7.7× / 4.0×. By act (40k): −0.53 / −0.40 / +0.49; every
+encounter CI includes 0 (Automaton −2.2, Awakened One +2.0). §716's 32 act-2 fights reproduce exactly (32/32
+identical flat-40k exits), so its −3.25 was a favourable subset of the 128.
+**Interpretation:** raising the root budget 2-4× buys at most about 1 HP per boss fight at 4-8× the CPU, and deaths
+do not move. The bot's +3.4 [+2.0, +4.8] boss gap to Baalorlord on these states is not a search-budget problem up
+to 40k. With §716 (elites flat to 100k), combat strength here is not bought with simulations. It is in the evaluation
+(leaf value, playout policy), or in untested engine fidelity. **Decision:** stop the boss-budget line; no whole-run
+A/B, no default change. 40k ≤ 20k may reflect the 32,768-node reuse cap (not measured here).
+Seeds: none new (external Baalorlord run seeds of §694/§711, replayed).
+**Knowledge impact:** this ledger entry and its evidence only; no code, model or default change.

@@ -1,0 +1,619 @@
+{
+ "fights": 499,
+ "dropped": {},
+ "primary": {
+  "n": 499,
+  "runs": 250,
+  "expert": 12.02,
+  "prod": {
+   "": 15.412,
+   "_death": 0.11,
+   "_potions": 0.697,
+   "_cpu": 25.188
+  },
+  "flat20000": {
+   "": 14.951,
+   "_death": 0.1,
+   "_potions": 0.705,
+   "_cpu": 100.557
+  },
+  "flat40000": {
+   "": 15.162,
+   "_death": 0.102,
+   "_potions": 0.702,
+   "_cpu": 195.181
+  },
+  "flat20000_minus_prod": -0.46,
+  "flat20000_minus_prod_ci": [
+   -1.27,
+   0.34
+  ],
+  "flat20000_death_diff_ci": [
+   -0.03,
+   0.01
+  ],
+  "flat20000_cpu_ratio": 3.99,
+  "flat40000_minus_prod": -0.25,
+  "flat40000_minus_prod_ci": [
+   -1.1,
+   0.61
+  ],
+  "flat40000_death_diff_ci": [
+   -0.03,
+   0.01
+  ],
+  "flat40000_cpu_ratio": 7.75,
+  "prod_minus_expert_ci": [
+   1.95,
+   4.82
+  ]
+ },
+ "by_act": {
+  "1": {
+   "n": 250,
+   "runs": 250,
+   "expert": 12.89,
+   "prod": {
+    "": 14.672,
+    "_death": 0.126,
+    "_potions": 0.88,
+    "_cpu": 9.332
+   },
+   "flat20000": {
+    "": 14.5,
+    "_death": 0.114,
+    "_potions": 0.882,
+    "_cpu": 47.328
+   },
+   "flat40000": {
+    "": 14.144,
+    "_death": 0.122,
+    "_potions": 0.896,
+    "_cpu": 93.208
+   },
+   "flat20000_minus_prod": -0.17,
+   "flat20000_minus_prod_ci": [
+    -1.03,
+    0.67
+   ],
+   "flat20000_death_diff_ci": [
+    -0.04,
+    0.01
+   ],
+   "flat20000_cpu_ratio": 5.07,
+   "flat40000_minus_prod": -0.53,
+   "flat40000_minus_prod_ci": [
+    -1.42,
+    0.34
+   ],
+   "flat40000_death_diff_ci": [
+    -0.03,
+    0.02
+   ],
+   "flat40000_cpu_ratio": 9.99,
+   "prod_minus_expert_ci": [
+    0.22,
+    3.34
+   ]
+  },
+  "2": {
+   "n": 128,
+   "runs": 128,
+   "expert": 14.21,
+   "prod": {
+    "": 18.547,
+    "_death": 0.113,
+    "_potions": 0.672,
+    "_cpu": 25.183
+   },
+   "flat20000": {
+    "": 17.555,
+    "_death": 0.09,
+    "_potions": 0.676,
+    "_cpu": 107.734
+   },
+   "flat40000": {
+    "": 18.145,
+    "_death": 0.09,
+    "_potions": 0.668,
+    "_cpu": 207.603
+   },
+   "flat20000_minus_prod": -0.99,
+   "flat20000_minus_prod_ci": [
+    -3.15,
+    1.07
+   ],
+   "flat20000_death_diff_ci": [
+    -0.06,
+    0.01
+   ],
+   "flat20000_cpu_ratio": 4.28,
+   "flat40000_minus_prod": -0.4,
+   "flat40000_minus_prod_ci": [
+    -2.45,
+    1.53
+   ],
+   "flat40000_death_diff_ci": [
+    -0.07,
+    0.02
+   ],
+   "flat40000_cpu_ratio": 8.24,
+   "prod_minus_expert_ci": [
+    1.03,
+    7.76
+   ]
+  },
+  "3": {
+   "n": 121,
+   "runs": 62,
+   "expert": 7.9,
+   "prod": {
+    "": 13.624,
+    "_death": 0.074,
+    "_potions": 0.347,
+    "_cpu": 57.953
+   },
+   "flat20000": {
+    "": 13.128,
+    "_death": 0.083,
+    "_potions": 0.372,
+    "_cpu": 202.94
+   },
+   "flat40000": {
+    "": 14.112,
+    "_death": 0.074,
+    "_potions": 0.339,
+    "_cpu": 392.728
+   },
+   "flat20000_minus_prod": -0.5,
+   "flat20000_minus_prod_ci": [
+    -2.29,
+    1.38
+   ],
+   "flat20000_death_diff_ci": [
+    -0.02,
+    0.04
+   ],
+   "flat20000_cpu_ratio": 3.5,
+   "flat40000_minus_prod": 0.49,
+   "flat40000_minus_prod_ci": [
+    -1.63,
+    2.82
+   ],
+   "flat40000_death_diff_ci": [
+    -0.03,
+    0.03
+   ],
+   "flat40000_cpu_ratio": 6.78,
+   "prod_minus_expert_ci": [
+    2.49,
+    9.14
+   ]
+  }
+ },
+ "by_encounter": {
+  "Automaton": {
+   "n": 41,
+   "runs": 41,
+   "expert": 11.15,
+   "prod": {
+    "": 22.012,
+    "_death": 0.207,
+    "_potions": 0.756,
+    "_cpu": 22.716
+   },
+   "flat20000": {
+    "": 18.622,
+    "_death": 0.134,
+    "_potions": 0.768,
+    "_cpu": 99.638
+   },
+   "flat40000": {
+    "": 19.817,
+    "_death": 0.122,
+    "_potions": 0.744,
+    "_cpu": 193.615
+   },
+   "flat20000_minus_prod": -3.39,
+   "flat20000_minus_prod_ci": [
+    -8.29,
+    1.26
+   ],
+   "flat20000_death_diff_ci": [
+    -0.18,
+    0.02
+   ],
+   "flat20000_cpu_ratio": 4.39,
+   "flat40000_minus_prod": -2.2,
+   "flat40000_minus_prod_ci": [
+    -6.22,
+    1.72
+   ],
+   "flat40000_death_diff_ci": [
+    -0.21,
+    0.02
+   ],
+   "flat40000_cpu_ratio": 8.52,
+   "prod_minus_expert_ci": [
+    4.34,
+    17.54
+   ]
+  },
+  "Awakened One": {
+   "n": 39,
+   "runs": 39,
+   "expert": 7.36,
+   "prod": {
+    "": 19.038,
+    "_death": 0.154,
+    "_potions": 0.615,
+    "_cpu": 87.628
+   },
+   "flat20000": {
+    "": 18.205,
+    "_death": 0.154,
+    "_potions": 0.667,
+    "_cpu": 276.536
+   },
+   "flat40000": {
+    "": 21.038,
+    "_death": 0.141,
+    "_potions": 0.641,
+    "_cpu": 515.482
+   },
+   "flat20000_minus_prod": -0.83,
+   "flat20000_minus_prod_ci": [
+    -4.15,
+    2.45
+   ],
+   "flat20000_death_diff_ci": [
+    -0.04,
+    0.04
+   ],
+   "flat20000_cpu_ratio": 3.16,
+   "flat40000_minus_prod": 2.0,
+   "flat40000_minus_prod_ci": [
+    -1.55,
+    5.5
+   ],
+   "flat40000_death_diff_ci": [
+    -0.05,
+    0.03
+   ],
+   "flat40000_cpu_ratio": 5.88,
+   "prod_minus_expert_ci": [
+    6.14,
+    18.04
+   ]
+  },
+  "Champ": {
+   "n": 36,
+   "runs": 36,
+   "expert": 9.36,
+   "prod": {
+    "": 13.236,
+    "_death": 0.014,
+    "_potions": 0.542,
+    "_cpu": 35.242
+   },
+   "flat20000": {
+    "": 12.667,
+    "_death": 0.028,
+    "_potions": 0.569,
+    "_cpu": 141.797
+   },
+   "flat40000": {
+    "": 12.389,
+    "_death": 0.042,
+    "_potions": 0.556,
+    "_cpu": 268.814
+   },
+   "flat20000_minus_prod": -0.57,
+   "flat20000_minus_prod_ci": [
+    -3.89,
+    2.83
+   ],
+   "flat20000_death_diff_ci": [
+    0.0,
+    0.04
+   ],
+   "flat20000_cpu_ratio": 4.02,
+   "flat40000_minus_prod": -0.85,
+   "flat40000_minus_prod_ci": [
+    -4.15,
+    2.26
+   ],
+   "flat40000_death_diff_ci": [
+    0.0,
+    0.07
+   ],
+   "flat40000_cpu_ratio": 7.63,
+   "prod_minus_expert_ci": [
+    -0.81,
+    8.28
+   ]
+  },
+  "Collector": {
+   "n": 51,
+   "runs": 51,
+   "expert": 20.1,
+   "prod": {
+    "": 19.51,
+    "_death": 0.108,
+    "_potions": 0.696,
+    "_cpu": 20.065
+   },
+   "flat20000": {
+    "": 20.147,
+    "_death": 0.098,
+    "_potions": 0.676,
+    "_cpu": 90.199
+   },
+   "flat40000": {
+    "": 20.863,
+    "_death": 0.098,
+    "_potions": 0.686,
+    "_cpu": 175.641
+   },
+   "flat20000_minus_prod": 0.64,
+   "flat20000_minus_prod_ci": [
+    -1.94,
+    3.28
+   ],
+   "flat20000_death_diff_ci": [
+    -0.04,
+    0.02
+   ],
+   "flat20000_cpu_ratio": 4.5,
+   "flat40000_minus_prod": 1.35,
+   "flat40000_minus_prod_ci": [
+    -1.84,
+    4.33
+   ],
+   "flat40000_death_diff_ci": [
+    -0.05,
+    0.03
+   ],
+   "flat40000_cpu_ratio": 8.75,
+   "prod_minus_expert_ci": [
+    -5.79,
+    4.67
+   ]
+  },
+  "Donu and Deca": {
+   "n": 39,
+   "runs": 39,
+   "expert": 8.08,
+   "prod": {
+    "": 9.808,
+    "_death": 0.051,
+    "_potions": 0.295,
+    "_cpu": 47.463
+   },
+   "flat20000": {
+    "": 10.077,
+    "_death": 0.051,
+    "_potions": 0.295,
+    "_cpu": 172.997
+   },
+   "flat40000": {
+    "": 11.782,
+    "_death": 0.064,
+    "_potions": 0.282,
+    "_cpu": 356.31
+   },
+   "flat20000_minus_prod": 0.27,
+   "flat20000_minus_prod_ci": [
+    -2.36,
+    3.31
+   ],
+   "flat20000_death_diff_ci": [
+    -0.04,
+    0.04
+   ],
+   "flat20000_cpu_ratio": 3.64,
+   "flat40000_minus_prod": 1.97,
+   "flat40000_minus_prod_ci": [
+    -1.1,
+    5.76
+   ],
+   "flat40000_death_diff_ci": [
+    -0.03,
+    0.05
+   ],
+   "flat40000_cpu_ratio": 7.51,
+   "prod_minus_expert_ci": [
+    -3.09,
+    6.23
+   ]
+  },
+  "Hexaghost": {
+   "n": 92,
+   "runs": 92,
+   "expert": 15.47,
+   "prod": {
+    "": 16.674,
+    "_death": 0.141,
+    "_potions": 0.88,
+    "_cpu": 8.812
+   },
+   "flat20000": {
+    "": 16.636,
+    "_death": 0.13,
+    "_potions": 0.88,
+    "_cpu": 43.264
+   },
+   "flat40000": {
+    "": 16.092,
+    "_death": 0.147,
+    "_potions": 0.902,
+    "_cpu": 85.154
+   },
+   "flat20000_minus_prod": -0.04,
+   "flat20000_minus_prod_ci": [
+    -1.28,
+    1.23
+   ],
+   "flat20000_death_diff_ci": [
+    -0.06,
+    0.03
+   ],
+   "flat20000_cpu_ratio": 4.91,
+   "flat40000_minus_prod": -0.58,
+   "flat40000_minus_prod_ci": [
+    -1.81,
+    0.73
+   ],
+   "flat40000_death_diff_ci": [
+    -0.04,
+    0.05
+   ],
+   "flat40000_cpu_ratio": 9.66,
+   "prod_minus_expert_ci": [
+    -1.01,
+    3.32
+   ]
+  },
+  "Slime Boss": {
+   "n": 79,
+   "runs": 79,
+   "expert": 10.39,
+   "prod": {
+    "": 10.152,
+    "_death": 0.108,
+    "_potions": 0.854,
+    "_cpu": 8.507
+   },
+   "flat20000": {
+    "": 9.07,
+    "_death": 0.082,
+    "_potions": 0.848,
+    "_cpu": 47.157
+   },
+   "flat40000": {
+    "": 9.316,
+    "_death": 0.089,
+    "_potions": 0.867,
+    "_cpu": 92.168
+   },
+   "flat20000_minus_prod": -1.08,
+   "flat20000_minus_prod_ci": [
+    -2.77,
+    0.61
+   ],
+   "flat20000_death_diff_ci": [
+    -0.06,
+    0.01
+   ],
+   "flat20000_cpu_ratio": 5.54,
+   "flat40000_minus_prod": -0.84,
+   "flat40000_minus_prod_ci": [
+    -2.7,
+    1.03
+   ],
+   "flat40000_death_diff_ci": [
+    -0.06,
+    0.02
+   ],
+   "flat40000_cpu_ratio": 10.83,
+   "prod_minus_expert_ci": [
+    -3.53,
+    3.03
+   ]
+  },
+  "The Guardian": {
+   "n": 79,
+   "runs": 79,
+   "expert": 12.38,
+   "prod": {
+    "": 16.861,
+    "_death": 0.127,
+    "_potions": 0.905,
+    "_cpu": 10.761
+   },
+   "flat20000": {
+    "": 17.443,
+    "_death": 0.127,
+    "_potions": 0.918,
+    "_cpu": 52.233
+   },
+   "flat40000": {
+    "": 16.703,
+    "_death": 0.127,
+    "_potions": 0.918,
+    "_cpu": 103.626
+   },
+   "flat20000_minus_prod": 0.58,
+   "flat20000_minus_prod_ci": [
+    -0.77,
+    2.01
+   ],
+   "flat20000_death_diff_ci": [
+    -0.04,
+    0.04
+   ],
+   "flat20000_cpu_ratio": 4.85,
+   "flat40000_minus_prod": -0.16,
+   "flat40000_minus_prod_ci": [
+    -1.67,
+    1.25
+   ],
+   "flat40000_death_diff_ci": [
+    -0.03,
+    0.03
+   ],
+   "flat40000_cpu_ratio": 9.63,
+   "prod_minus_expert_ci": [
+    1.98,
+    6.96
+   ]
+  },
+  "Time Eater": {
+   "n": 43,
+   "runs": 43,
+   "expert": 8.23,
+   "prod": {
+    "": 12.174,
+    "_death": 0.023,
+    "_potions": 0.151,
+    "_cpu": 40.552
+   },
+   "flat20000": {
+    "": 11.291,
+    "_death": 0.047,
+    "_potions": 0.174,
+    "_cpu": 163.348
+   },
+   "flat40000": {
+    "": 9.942,
+    "_death": 0.023,
+    "_potions": 0.116,
+    "_cpu": 314.423
+   },
+   "flat20000_minus_prod": -0.88,
+   "flat20000_minus_prod_ci": [
+    -4.3,
+    2.72
+   ],
+   "flat20000_death_diff_ci": [
+    -0.02,
+    0.08
+   ],
+   "flat20000_cpu_ratio": 4.03,
+   "flat40000_minus_prod": -2.23,
+   "flat40000_minus_prod_ci": [
+    -4.67,
+    0.15
+   ],
+   "flat40000_death_diff_ci": [
+    -0.03,
+    0.03
+   ],
+   "flat40000_cpu_ratio": 7.75,
+   "prod_minus_expert_ci": [
+    -0.62,
+    8.65
+   ]
+  }
+ }
+}
