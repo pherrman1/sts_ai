@@ -33,7 +33,7 @@ The split for every fit stays by seed % 4, as in stage 2.
   plus the tail.
 - A unit can take up to about 5.5 h (base game 65 min max × 5).
 - The capture adds about 5-15 core-h over the 32 pilot units.
-- Storage: about 30 kB gzip per game, about 5 MB per capture game. 1,280 tars and the claims total roughly
+- Storage: about 30 kB gzip per game, about 4 MB per capture game (smoke: 3.6 MB). 1,280 tars and the claims total roughly
   0.4 GB and about 6k files.
 
 ## Analysis (after verify; offline, nothing more to launch)
