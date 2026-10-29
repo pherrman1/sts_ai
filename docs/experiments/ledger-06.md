@@ -25301,7 +25301,7 @@ identical flat-40k exits), so its −3.25 was a favourable subset of the 128.
 **Interpretation:** raising the root budget 2-4× buys at most about 1 HP per boss fight at 4-8× the CPU, and deaths
 do not move. The bot's +3.4 [+2.0, +4.8] boss gap to Baalorlord on these states is not a search-budget problem up
 to 40k. With §716 (elites flat to 100k), combat strength here is not bought with simulations. It is in the evaluation
-(leaf value, playout policy), or in untested engine fidelity. **Decision:** stop the boss-budget line; no whole-run
-A/B, no default change. 40k ≤ 20k may reflect the 32,768-node reuse cap (not measured here).
+(leaf value, playout policy), or in untested engine fidelity. **Decision (judgement, not the rule's output):** stop the
+boss-budget line; no whole-run A/B, no default change. 40k ≤ 20k may reflect the 32,768-node reuse cap (not measured here).
 Seeds: none new (external Baalorlord run seeds of §694/§711, replayed).
 **Knowledge impact:** this ledger entry and its evidence only; no code, model or default change.
