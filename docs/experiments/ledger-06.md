@@ -25356,3 +25356,23 @@ labels (act 4 to the game's end) + a per-act level calibration on real games; th
 Next: stage 4 capture (size after this result, Philipp's go).
 Seeds: none new (replays of used seeds).
 **Knowledge impact:** none.
+
+## §TBD — Act-4 value models as a Silver combat leaf, teacher check: V_A4 (Act-4 entry) and a new Heart-entry value V_H price a potion at 8-9 and 12-13 HP against the leaf's 11, potion types flat, Fairy 15-30 vs ≈ 37, max HP wrong sign, 1-3 HP steps mostly unresolved → no Act-4 combat-leaf probe (offline, no seeds, 2026-10-30)
+
+**Question:** Philipp (2026-10-29 22:10Z): use V_A4 (§720) as a combat leaf in Act 4. Do Act-4 value models put
+end-state prices on HP and potions that differ from Silver's leaf formula enough to be worth a fight-level probe?
+**Data:** [RESULT](evidence/act4_leaf_teacher_20261030/RESULT.md). §720's G_5/GC_5 refit exactly (and a monotone
+variant) on the 536 run-1 Act-4 entries; new V_H (monotone GBM, CV on non-TEST seeds) on 4,832 Heart entries (after
+Shield & Spear) from run 1 and the stage-2 campaigns. Perturbation prices as in the 2026-10-21 OOC-label leaf note.
+TEST outcomes were read before (§719/§720), so TEST numbers are descriptive.
+**Result:**
+- V_A4: potion 8.2-9.2 HP (formula 11); Fairy 15-21 (≈ 37); −3 HP lowers V in 78-80% of states (monotone G 95%,
+  TEST BCE 0.532 vs 0.529); max HP −0.4 to −0.7 HP per point. The last-act-3-boss leaf already uses the healed HP.
+- V_H: TEST BCE G 0.468, GC 0.464, CTM_recal 0.486 (GC − CTM −0.022 [−0.040, −0.006]), HP+potion logistic 0.544.
+  Potion 12.6-13.1 HP, types 9-16 (flat), Fairy 27-30; V per HP 0.02-0.04 / 0.66-0.89 / 0.45 pp below 40% / 40-70% /
+  above 70% HP; −1 HP lowers V in 37-45% of states; max HP slightly negative.
+**Decision:** no Act-4 combat-leaf probe: the prices are within 2-3 HP per potion of the formula, which §716's
+potion-weight arms show moves fight HP by under 1.5 HP. Teacher gate fails (HP resolution, Fairy, max HP). Rerun the
+scripts on later Act-4 value models. The combat gap stays with elite/boss evaluation (§716, §718).
+Seeds: none.
+**Knowledge impact:** none.
