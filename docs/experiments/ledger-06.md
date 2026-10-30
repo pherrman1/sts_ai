@@ -25357,6 +25357,37 @@ Next: stage 4 capture (size after this result, Philipp's go).
 Seeds: none new (replays of used seeds).
 **Knowledge impact:** none.
 
+## §722 — Improve V_A4 offline: GBM + L2-LR ensemble on all Act-4 entries (incl. 4,480 older ones) beats §720's G by −0.050 BCE [−0.064, −0.037] in seed-grouped CV (R² 0.20 → 0.28, run-1 entries 0.17 → 0.26 of a 0.43 ceiling); hyperparameters, monotonicity, MLP, token attention, state augmentation and relic counters do not help; correction: §720's GC uses the post-shop S&S row (2026-10-30)
+
+**Question:** Philipp, 2026-10-30: can V_A4 (§720) be improved by architecture, parameters, more data, other models?
+It must stay a drop-in on the public Act-4 entry record (stage 5 anchor).
+**Data:** [README](evidence/value_a4_improve_20261030/README.md), [RESULT](evidence/value_a4_improve_20261030/RESULT.md).
+§719/§720 entries + 4,480 older Act-4 entries from 8 earlier campaigns (Act 4 not strong; source flag).
+§720's TEST was already read, so all selection is 5-fold CV × 3 grouped by seed on seed % 4 != 3, scored on the core
+entries; old TEST read once as a secondary.
+**Result:**
+- Correction to §720: GC's CTM feature is the S&S elite row, i.e. after the Act-4 rest site and shop (deck differs
+  from the entry in 79%); GC is not a function of the entry record. The CTM evaluated on the entry record is as good
+  (−0.021 [−0.033, −0.010] vs G). §720's PASS holds with G alone: G − CTM_recal −0.059 [−0.106, −0.014] on its TEST
+  (conservative: the comparator also used the S&S row); stage 5 uses G.
+- CV vs G (BCE 0.541): entry-CTM + deck aggregates −0.026; ensemble GBM + LR −0.038; all data GBM −0.040; **ENS_all
+  −0.050 [−0.064, −0.037]**, BCE 0.491, R² 0.283 (run-1 entries 0.260 vs ceiling 0.43).
+- Learning curve steep (GBM 25 → 100% of seeds: 0.538 → 0.516); older entries help (−0.012 [−0.018, −0.005]).
+- No effect: depth/eta/colsample/regularization, monotone constraints, campaign one-hot, relic-counter phases +
+  Ritual Dagger/Searing Blow state (−0.0001 [−0.0019, +0.0017]). Worse: MLPs, heart1-like tokens + transformer from
+  scratch (+0.022 vs ENS_all), later-Act-4-state augmentation.
+- Old TEST (secondary): ENS_all 0.519 vs §720 G 0.529 / GC 0.532.
+- heart1.pt encoder (frozen, PC): a linear probe on its 256-d embedding alone matches ENS_rc (0.490 vs 0.491);
+  averaging both −0.010 [−0.016, −0.004] (arms chosen after CV, mildly optimistic); heart1's value head alone 0.604.
+  Fine-tuning heart1 (frozen + MLP head / top 2 layers / full, PC GPU) is worse than that linear probe (full +0.009
+  [+0.001, +0.016]) with this recipe (≤ 12 epochs; the frozen arm was still improving at the cap).
+- Remaining old games (§497 Heart-outcome train/val, 482 entries; AZ gen0/gen1b from the PC, 1,250): −0.0017
+  [−0.006, +0.003] together; old data is exhausted.
+**Decision:** drop-in model `tools/va4_model.py` + `model/` (ENS_all with relic counters and card state, trained on
+seed % 4 != 3) for stage 5 to adopt; no default change (offline value, not used in play).
+Next (Philipp's call): adopt the heart1 linear probe as an add-on (needs torch + heart1.pt at scoring time), or keep the record-only model.
+Seeds: none.
+**Knowledge impact:** none (offline value model; no default, flag or knowledge-base change).
 ## §721 — Act-4 value models as a Silver combat leaf, teacher check: V_A4 (Act-4 entry) and a new Heart-entry value V_H price a potion at 8-9 and 12-13 HP against the leaf's 11, potion types flat, Fairy 15-30 vs ≈ 37, max HP wrong sign, 1-3 HP steps mostly unresolved → no Act-4 combat-leaf probe (offline, no seeds, 2026-10-30)
 
 **Question:** Philipp (2026-10-29 22:10Z): use V_A4 (§720) as a combat leaf in Act 4. Do Act-4 value models put
@@ -25376,3 +25407,28 @@ potion-weight arms show moves fight HP by under 1.5 HP. Teacher gate fails (HP r
 scripts on later Act-4 value models. The combat gap stays with elite/boss evaluation (§716, §718).
 Seeds: none.
 **Knowledge impact:** none.
+
+## §723 — Incense Burner phase before the Heart, causal paired probe: forcing the counter to an "aligned" phase (Intangible on a Heart attack) raises Heart kill by +12.0 pp [+9.7, +14.5] over a "wasted" phase (PHASE_MATTERS); one more Shield & Spear turn is worth +14 pp at counter 2 and −18 pp at counter 4 (630 states × 6 counters, replays of used seeds, 2026-10-30)
+
+**Question:** Philipp (2026-10-30 13:02Z): can stalling Shield & Spear to line Incense Burner's Intangible up with the
+Heart's big hits pay off? Silver's leaf and the Act-4 values ignore the counter (§721, issue #914). Causal proof of
+concept before any systematic cross-fight state term.
+**Data:** [PREREG](evidence/incense_heart_probe_20261030/PREREG.md),
+[RESULT](evidence/incense_heart_probe_20261030/RESULT.md). All 630 Incense Heart entries from §721's states, each
+replayed with `one_combat act4replay` at counter 0..5 with the same battle and planner seed (seeds 111384000-629,
+inside the used §696 expert-anchored block, also replayed by §720 run 1). Heart search: learned stop, one-action
+roots unsearched (`STS_ACT4REPLAY_BUDGET=learned`,
+new, research only), reuse cap 262,144. 16 workers (Philipp 14:45Z), 63 CPU-h. 630/630 units verified.
+**Result:**
+- Heart kill by counter 0-5: 68 / 72 / 62 / 76 / 80 / 62%; aligned − wasted +12.0 pp [+9.7, +14.5]; HP left +5.6.
+- Turns in the CSV/RESULT count from 0 (actual Heart turns one more).
+- One more S&S turn: 0→1 +3.7, 1→2 −10.2, 2→3 +14.0, 3→4 +4.4, 4→5 −17.9, 5→0 +6.0 pp. 61% of states have the same
+  outcome under all six counters.
+- One duplicated state (#913 review's duplicate tar); without it unchanged.
+- Caveats: not production's flat-40k Heart search; the stall's own cost (HP, potions in S&S) is not in the arms.
+- §721 addendum ([ADDENDUM](evidence/act4_leaf_teacher_20261030/ADDENDUM.md)): V_H refit without 10 duplicate
+  records leaves §721 unchanged (GC − CTM −0.019 [−0.037, −0.003]).
+**Decision:** PHASE_MATTERS (pre-registered). Next: a priced S&S end-state term for the counter (default off, #914)
+and its whole-run gate, Philipp's call.
+Seeds: none new (111384000-629 in the used §696 expert-anchored block 111384000-385023).
+**Knowledge impact:** cross-fight relic counters can be worth ≈ 10 pp of Heart kill; issue #914.

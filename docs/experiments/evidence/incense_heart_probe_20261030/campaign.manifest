@@ -1,0 +1,10 @@
+name          incense-heart-probe
+code_commit   d5386fcf99f63d518c01c8c99de81b8abcdfcbe7
+binary_sha256 b6c03fc8931f6cb2263fe65c225126a4bdfa1925637e963ba4c488abdc74799f
+workers       16
+share         /mnt/project-files/incense-heart-probe
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 30
+input heart_states.tar /mnt/project-files/incense-heart-probe/heart_states.tar 1a9824dcb9d2e95413f14c513474073367c2e0fe04008b815e6f88431632755d
