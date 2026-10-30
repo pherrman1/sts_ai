@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Stage-3 pilot checks (README "Analysis"). Descriptive, no gate; test-run once on the 32 pilot games + 60 other units
-before this commit (only the run time changed nothing in the definitions).
+before this commit; the test changed nothing in the definitions).
 usage: pilot_analysis.py UNITS_DIR OUT.json     UNITS_DIR = verify_campaign.py --extract output (out/units/<id>/...)
 
 Provisional V_{k+1} (only for this check, not a deliverable): a GBM on the first state of act k+1 of every non-pilot
