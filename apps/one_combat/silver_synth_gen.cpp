@@ -989,10 +989,6 @@ void silverFocusEvalGen(int nSeeds, int asc, const std::string &outPrefix, long 
 // arm shares the battle seed (SEED_OFFSET + state * REPLICATES + r) and the planner seed, so arms
 // differ only in the budget. One CSV row per (state, replicate, arm). STS_ACT4REPLAY_COMBAT=known swaps Silver for the
 // research-only known-RNG searcher (ADR-TBD); the last column records the regime.
-// STS_ACT4REPLAY_BUDGET=learned (2026-10-30) replaces the flat exact budget with the whole-run learned stop outside
-// Act 4 strong: STS_SILVER_LEARNED_STOP=1, STS_SILVER_ACT4_STRONG=0, STS_SILVER_EXACT_ROOT_BUDGETS=0 (one-action
-// roots are committed without search), an optional STS_SILVER_LEARNED_STOP_BOSS_MAX extension; SIMS is then only a
-// row label. The budget column records the policy.
 namespace {
 
 GameContext act4ReplayContext(const nlohmann::json &s, std::uint64_t seed, MonsterEncounter enc) {
@@ -1072,31 +1068,17 @@ void act4Replay(int nStates, const std::string &statesPath, const std::string &o
         for (std::string tok; std::getline(ss, tok, ',');) sims.push_back(std::stoi(tok));
     }
     if (sims.empty()) throw std::runtime_error("act4replay: empty budget list");
-    // STS_ACT4REPLAY_BUDGET: unset or "flat" keeps the flat exact budget; "learned" runs the learned stop.
-    const char *budgetEnv = std::getenv("STS_ACT4REPLAY_BUDGET");
-    const std::string budgetPolicy = budgetEnv ? budgetEnv : "flat";
-    if (budgetPolicy != "flat" && budgetPolicy != "learned")
-        throw std::runtime_error("act4replay: STS_ACT4REPLAY_BUDGET must be flat or learned");
-    const bool learned = budgetPolicy == "learned";
-    std::map<std::string, std::string> required = {
-        {"STS_FAIR", "1"}, {"STS_SILVER_SEARCH", "1"}, {"STS_SILVER_EXACT_ROOT_BUDGETS", learned ? "0" : "1"},
+    const std::map<std::string, std::string> required = {
+        {"STS_FAIR", "1"}, {"STS_SILVER_SEARCH", "1"}, {"STS_SILVER_EXACT_ROOT_BUDGETS", "1"},
         {"STS_SILVER_REUSE_CAP_MODE", "allocated"}, {"STS_SILVER_ADAPTIVE", "0"}, {"STS_SILVER_VNET_LEAF_DIRECT", "0"},
-        {"STS_SILVER_LEARNED_STOP", learned ? "1" : "0"}};
-    if (learned) {
-        required["STS_SILVER_ACT4_STRONG"] = "0";
-        required["STS_SILVER_LEARNED_STOP_BOSS_FALLBACK"] = "0";
-    }
+        {"STS_SILVER_LEARNED_STOP", "0"}};
     for (const auto &[name, value] : required) {
         const char *actual = std::getenv(name.c_str());
         if (!actual || value != actual) throw std::runtime_error("act4replay: requires " + name + "=" + value);
     }
-    if (const char *single = std::getenv("STS_SILVER_SEARCH_SINGLETON_ROOTS"); learned && single && std::atoi(single) != 0)
-        throw std::runtime_error("act4replay: learned budget commits one-action roots; unset STS_SILVER_SEARCH_SINGLETON_ROOTS");
-    if (!search::nativeSilverBackendInstalled() || search::nativeSilverAdaptiveEnabled()
-            || search::nativeSilverExactRootBudgets() == learned || search::nativeSilverLearnedStopEnabled() != learned)
-        throw std::runtime_error(learned ? "act4replay: learned budget requires learned-stop native Silver"
-                                         : "act4replay: requires flat exact-budget native Silver");
-
+    if (!search::nativeSilverBackendInstalled() || !search::nativeSilverExactRootBudgets()
+            || search::nativeSilverAdaptiveEnabled() || search::nativeSilverLearnedStopEnabled())
+        throw std::runtime_error("act4replay: requires flat exact-budget native Silver");
     // STS_ACT4REPLAY_COMBAT=known: research-only known-RNG combat (KnownRngSearcher, P300's stage-value search). Its rows are a
     // separate series (ADR-0002) and carry regime=known_rng; unset or "fair" keeps native Silver.
     const char *combatEnv = std::getenv("STS_ACT4REPLAY_COMBAT");
@@ -1105,8 +1087,6 @@ void act4Replay(int nStates, const std::string &statesPath, const std::string &o
         throw std::runtime_error("act4replay: STS_ACT4REPLAY_COMBAT must be fair or known");
     const bool knownRng = combat == "known";
     const char *regime = knownRng ? "known_rng" : "fair";
-    if (learned && knownRng)
-        throw std::runtime_error("act4replay: STS_ACT4REPLAY_BUDGET=learned needs STS_ACT4REPLAY_COMBAT=fair");
     std::vector<nlohmann::json> states;
     {
         std::ifstream in(statesPath);
@@ -1118,7 +1098,7 @@ void act4Replay(int nStates, const std::string &statesPath, const std::string &o
     if (std::filesystem::exists(rowsPath)) throw std::runtime_error("act4replay: refusing to overwrite " + rowsPath);
     std::ofstream rows(rowsPath);
     rows << "state,id,encounter,replicate,sims,battleSeed,preHp,preMaxHp,prePotions,valid,won,curHp,potionCount,turns,"
-            "cpuSeconds,regime,budget\n";
+            "cpuSeconds,regime\n";
     const int jobs = nStates * replicates;
     #pragma omp parallel for schedule(dynamic)
     for (int j = 0; j < jobs; ++j) {
@@ -1157,11 +1137,11 @@ void act4Replay(int nStates, const std::string &statesPath, const std::string &o
                 out << si << ',' << s.value("id", std::string()) << ',' << encName << ',' << r << ',' << budget << ','
                     << battleSeed << ',' << preHp << ',' << preMaxHp << ',' << prePotions << ',' << (valid ? 1 : 0)
                     << ',' << (won ? 1 : 0) << ',' << (won ? bc.player.curHp : 0) << ',' << bc.potionCount << ','
-                    << bc.turn << ',' << std::setprecision(6) << cpu << ',' << regime << ',' << budgetPolicy << '\n';
+                    << bc.turn << ',' << std::setprecision(6) << cpu << ',' << regime << '\n';
             }
         } catch (const std::exception &e) {
             search::g_nativeSilverPlannerSeedOverride.reset();
-            out << si << ',' << s.value("id", std::string()) << ",ERROR," << r << ",0,0,0,0,0,0,0,0,0,0,0," << regime << ',' << budgetPolicy << " # " << e.what() << '\n';
+            out << si << ',' << s.value("id", std::string()) << ",ERROR," << r << ",0,0,0,0,0,0,0,0,0,0,0," << regime << " # " << e.what() << '\n';
         }
         #pragma omp critical(act4_replay_write)
         {
