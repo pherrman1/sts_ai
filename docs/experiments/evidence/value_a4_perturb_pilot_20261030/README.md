@@ -33,7 +33,14 @@ the perturbations can only enter training folds.
 - In the #917 smoke 2 (4 processes on 4 CPUs), Act 4 took 6.3-10.3 min per child, mean about 8.5.
 - A unit is therefore about 14 + 16 × 8.5 ≈ 150 min, up to about 4 h. In total that is about 160 lane-h.
 - 16 workers × 4 lanes = 64 lanes, one unit each, so about 2.5-4 h wall.
-- Storage is about 17 games' jsonl per unit, gzip ≈ 0.5 MB per unit and 64 tars.
+- Storage: each unit holds 18 game files plus their CTM files (about 0.8 MB raw per child), gzip about 2 MB per
+  unit, so about 130 MB and 64 tars in total. The share is tight (capture 2 is running): check the free space
+  before the launch.
+
+## Smoke (2026-10-30, this container, 1 process, binary a4da3156…)
+Unit `111384012 182` with `run_unit.sh` as frozen. The prefix up to the entry took 16 min, and child 0 took 10 min.
+**Child 0 equals run 1's `base-111384012.jsonl` byte for byte after the header, 417/417 rows (`cmp`).** So this
+binary replays run 1, and the CRN control is run 1's real game.
 
 ## Verify (before the analysis)
 - Every unit has rc 0 and an `a4p-SEED.json` with 16 children.
