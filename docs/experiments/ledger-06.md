@@ -25385,10 +25385,12 @@ concept before any systematic cross-fight state term.
 **Data:** [PREREG](evidence/incense_heart_probe_20261030/PREREG.md),
 [RESULT](evidence/incense_heart_probe_20261030/RESULT.md). All 630 Incense Heart entries from §721's states, each
 replayed with `one_combat act4replay` at counter 0..5 with the same battle and planner seed (seeds 111384000-629,
-inside the used run-1 block). Heart search: learned stop, one-action roots unsearched (`STS_ACT4REPLAY_BUDGET=learned`,
+inside the used §696 expert-anchored block, also replayed by §720 run 1). Heart search: learned stop, one-action
+roots unsearched (`STS_ACT4REPLAY_BUDGET=learned`,
 new, research only), reuse cap 262,144. 16 workers (Philipp 14:45Z), 63 CPU-h. 630/630 units verified.
 **Result:**
 - Heart kill by counter 0-5: 68 / 72 / 62 / 76 / 80 / 62%; aligned − wasted +12.0 pp [+9.7, +14.5]; HP left +5.6.
+- Turns in the CSV/RESULT count from 0 (actual Heart turns one more).
 - One more S&S turn: 0→1 +3.7, 1→2 −10.2, 2→3 +14.0, 3→4 +4.4, 4→5 −17.9, 5→0 +6.0 pp. 61% of states have the same
   outcome under all six counters.
 - One duplicated state (#913 review's duplicate tar); without it unchanged.
@@ -25397,5 +25399,5 @@ new, research only), reuse cap 262,144. 16 workers (Philipp 14:45Z), 63 CPU-h. 6
   records leaves §721 unchanged (GC − CTM −0.019 [−0.037, −0.003]).
 **Decision:** PHASE_MATTERS (pre-registered). Next: a priced S&S end-state term for the counter (default off, #914)
 and its whole-run gate, Philipp's call.
-Seeds: none new (111384000-629 replays of used run-1 seeds).
+Seeds: none new (111384000-629 in the used §696 expert-anchored block 111384000-385023).
 **Knowledge impact:** cross-fight relic counters can be worth ≈ 10 pp of Heart kill; issue #914.
