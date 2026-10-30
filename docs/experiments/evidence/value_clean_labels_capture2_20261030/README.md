@@ -16,3 +16,6 @@ Cost: stage 4 measured ~0.75 lane-h per unit (256 units, 12:05-13:15Z on 176 lan
 Analysis (stage 5b) is written and committed before this data is read: fresh TEST = capture-2 seeds with seed % 4 == 3;
 TRAIN/VALIDATION = the other capture-2 seeds plus the stage-4 and pilot games (their TEST seeds excluded from the
 gate); level calibration only on real run-1 states of games that are not used to fit that act's model.
+
+Script: stage5b.py RUN1_UNITS STAGE4_UNITS CAPTURE2_UNITS OUT_DIR (committed before capture-2 data exists;
+plumbing-tested on 8 run-1 + 4 stage-4 games with STAGE5B_C2 pointed at four stage-4 seeds; no capture-2 data read).
