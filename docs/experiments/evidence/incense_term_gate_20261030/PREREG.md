@@ -1,6 +1,6 @@
 # Incense Burner term at Shield & Spear: paired S&S → Heart gate (pre-registration)
 
-Status: DRAFT until Philipp's go for the run (workers). Philipp: "Ja mach das" (2026-10-30 17:13Z) to the next step
+Status: FROZEN 2026-10-30 before launch; prelaunch review PASS (ffbb092b). Philipp: "Yes do 16 workers" (19:08Z). Philipp: "Ja mach das" (2026-10-30 17:13Z) to the next step
 of §723: a priced S&S end-state term for the Incense counter (default off, issue #914) with its own gate. Code, binary
 and inputs are in `campaign.manifest`.
 

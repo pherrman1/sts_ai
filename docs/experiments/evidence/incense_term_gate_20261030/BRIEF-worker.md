@@ -3,7 +3,7 @@
 YOUR WORKER NUMBER: W=<n>   (pass it unpadded; never 03)
 RUN_COMMIT=<RUN_COMMIT>  CAMPAIGN=docs/experiments/evidence/incense_term_gate_20261030
 
-Philipp authorized this run on <DATE/TIME> (<his words>).
+Philipp authorized this run on 2026-10-30 at 19:08Z ("Yes do 16 workers").
 - Do not change seeds, scripts, environments, binary, weights or timeouts.
 - Work in /home/user/sts_ai. Run nothing from /mnt/project-files (noexec).
 - The worker script uploads only to /mnt/project-files/incense-term-gate (units/, claims/, wWW.DONE.json). Write
