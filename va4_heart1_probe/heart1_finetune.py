@@ -67,7 +67,7 @@ def main():
             for p in enc.parameters(): p.requires_grad_(args.mode == 'full')
             if args.mode == 'top2':
                 for name, p in enc.named_parameters():
-                    if name.startswith('layers.2') or name.startswith('layers.3') or not name.startswith(('layers.', 'emb', 'embed')): p.requires_grad_(True)
+                    if name.startswith('layers.2') or name.startswith('layers.3') or not name.startswith(('layers.', 'obs_embed', 'choice_embed')): p.requires_grad_(True)
             m = Model(enc, 256).to(dev)
             groups = [{'params': m.head.parameters(), 'lr': 1e-3}]
             encp = [p for p in enc.parameters() if p.requires_grad]
