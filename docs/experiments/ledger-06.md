@@ -25357,7 +25357,7 @@ Next: stage 4 capture (size after this result, Philipp's go).
 Seeds: none new (replays of used seeds).
 **Knowledge impact:** none.
 
-## §TBD — Improve V_A4 offline: GBM + L2-LR ensemble on all Act-4 entries (incl. 4,480 older ones) beats §720's G by −0.050 BCE [−0.064, −0.037] in seed-grouped CV (R² 0.20 → 0.28, run-1 entries 0.17 → 0.26 of a 0.43 ceiling); hyperparameters, monotonicity, MLP, token attention, state augmentation and relic counters do not help; correction: §720's GC uses the post-shop S&S row (2026-10-30)
+## §722 — Improve V_A4 offline: GBM + L2-LR ensemble on all Act-4 entries (incl. 4,480 older ones) beats §720's G by −0.050 BCE [−0.064, −0.037] in seed-grouped CV (R² 0.20 → 0.28, run-1 entries 0.17 → 0.26 of a 0.43 ceiling); hyperparameters, monotonicity, MLP, token attention, state augmentation and relic counters do not help; correction: §720's GC uses the post-shop S&S row (2026-10-30)
 
 **Question:** Philipp, 2026-10-30: can V_A4 (§720) be improved by architecture, parameters, more data, other models?
 It must stay a drop-in on the public Act-4 entry record (stage 5 anchor).
