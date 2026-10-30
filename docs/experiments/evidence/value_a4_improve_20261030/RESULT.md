@@ -1,0 +1,52 @@
+# Improve V_A4: result (2026-10-30)
+
+## Correction to §720: GC uses post-entry information
+GC's CTM feature is the CTM at the **S&S elite row**, i.e. after the Act-4 rest site and shop: the S&S deck differs
+from the entry deck in 79% of run-1 entries (shop buys/removes, smith). GC is therefore not a function of the entry
+record and cannot be a drop-in V_A4. The CTM evaluated **on the entry record** (`core.ctm_entry_feats`) works as well
+(CV: GCe −0.021 [−0.033, −0.010] vs G; leaked GCss −0.023 [−0.035, −0.011]). §720's PASS stands with G alone
+(TEST 0.529 vs CTM_recal 0.589); stage 5 uses G.
+
+## Main result (CV on the dev pool, [`logs/cmp_g.log`](logs/cmp_g.log))
+| dev core (5-fold × 3, by seed) | BCE | R² all | R² run-1 entries | vs G (BCE) |
+|---|---|---|---|---|
+| G (§720 record-only GBM) | 0.541 | 0.197 | 0.169 | — |
+| GBM + entry-CTM + deck aggregates, core data | 0.516 | 0.242 | 0.216 | −0.026 [−0.038, −0.014] |
+| ensemble GBM + L2-LR, core data | 0.503 | 0.264 | 0.242 | −0.038 [−0.049, −0.026] |
+| GBM, all data | 0.502 | 0.264 | 0.237 | −0.040 [−0.053, −0.026] |
+| **ensemble GBM + L2-LR, all data (ENS_all)** | **0.491** | **0.283** | **0.260** | **−0.050 [−0.064, −0.037]** |
+
+Ceiling (true p, from the within-entry variance of the 5 run-1 outcomes) on the 406 dev run-1 entries: R² 0.43.
+ENS_all reaches 0.26 (61%), G 0.17 (40%). OOF deciles are calibrated within a few pp (one decile 0.43 vs 0.51,
+[`logs/oldtest_check.log`](logs/oldtest_check.log)).
+
+## What helps, what does not (paired CV)
+- **More data**: learning curve on core data, GBM 25/50/75/100% of seeds 0.538 / 0.528 / 0.523 / 0.516
+  ([`exp3`](logs/exp3.log)); adding the 4,480 older (not Act-4-strong) entries with a source flag: GBM −0.013
+  [−0.020, −0.006], ensemble −0.012 [−0.018, −0.005] ([`exp5`](logs/exp5.log), [`exp6`](logs/exp6.log)).
+- **Ensemble GBM + LR**: −0.011 to −0.012 vs either member, at every data size.
+- **No effect** (all within ±0.005, CIs include 0 or hurt): depth 1-4, eta, colsample, min_child_weight, lambda,
+  monotone constraints on HP/CTM ([`exp1`](logs/exp1.log), [`exp2`](logs/exp2.log)); campaign one-hot; relic-counter
+  phases (Incense Burner, Pen Nib, Nunchaku, Ink Bottle, Happy Flower, Sundial) + Ritual Dagger / Searing Blow state
+  −0.0001 [−0.0019, +0.0017] ([`exp8`](logs/exp8_counters.log)); kept in the model anyway (no cost, needed for future
+  decisions); down-weighting stage-2 data or training on run 1 only (worse).
+- **Worse**: sklearn MLPs +0.014 and more ([`exp4`](logs/exp4.log)); heart1-like typed tokens
+  (`tools/heart_record_encoder.py`) + transformer + attention pooling, from scratch: +0.011 vs GBM, +0.022 vs
+  ENS_all, neutral as a third ensemble member ([`exp7`](logs/exp7_attn.log)); augmenting with later Act-4 states of
+  the same games: +0.002 / +0.006 ([`exp6`](logs/exp6.log)).
+
+## Old TEST (already read; secondary, [`logs/oldtest_check.log`](logs/oldtest_check.log))
+Trained on the whole dev pool (early stop on seed % 4 == 2), 130 run-1 TEST entries / 650 games: ENS_all (with
+counters) BCE 0.519, R² 0.27; GBM core 0.531; §720 G 0.529, GC 0.532. ENS_all − GBM core −0.012 [−0.035, +0.011]:
+same direction as CV, TEST too small to show it alone.
+
+## Drop-in model ([`tools/va4_model.py`](tools/va4_model.py), [`model/`](model/))
+`va4_model.load().predict(states)` on Act-4 entry state rows (`{'act', 'floor', 'record'}`), public record only.
+Mean of the GBM (1,285 rounds) and the LR (C = 0.003), trained by `fit_va4.py` on all 5,484 entries with
+seed % 4 != 3 (7,108 games); stage 5's TEST seeds stay out. Source flags are set to today's default (run1 = 1,
+strong = 1). Selftest: predictions from raw records equal the training matrix (max |Δ| 6e-17). sha256 va4_gbm.ubj
+4c346c1b…, va4_lr.json 06276b52….
+
+## Not settled
+- Gains are CV on the dev pool; no fresh holdout exists. A fresh check needs new Act-4 games.
+- A pretrained encoder (heart1.pt) as features: probe requested on the PC (follow-up).
