@@ -43,7 +43,7 @@ Each candidate below got its own thread on 2026-10-26. All ten are now tested. S
 | 10 | P300 cross-check | Done, §692: known RNG does not inflate P300's card values; its top-5 cards beat its bottom-5 by +6.0 pp [+3.8, +8.3] under fair Silver too |
 
 Only idea 1 moved the Heart rate. Ideas 3 and 7 point away from OOC choices, and §688's HP-loss finding started a
-combat-gap line: §701 (observational, 1.4-3× more HP lost per elite/boss fight), §711 (matched expert fight states:
+combat-gap line: §701 (observational: 2-3× more HP lost at matched entry HP and deck size with near-starter decks), §711 (matched expert fight states:
 +2.6 HP per acts-1-2 elite/boss fight [+2.0, +3.3], inconclusive; act-2 elites +5.4, Automaton +9.8, Awakened One
 +10.7), §716 (act-2 elites are not budget-limited) and §718 (bosses at flat 40k: −0.25 HP, inconclusive).
 
