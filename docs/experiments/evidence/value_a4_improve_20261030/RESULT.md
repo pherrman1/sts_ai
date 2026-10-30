@@ -50,3 +50,16 @@ strong = 1). Selftest: predictions from raw records equal the training matrix (m
 ## Not settled
 - Gains are CV on the dev pool; no fresh holdout exists. A fresh check needs new Act-4 games.
 - A pretrained encoder (heart1.pt) as features: probe requested on the PC (follow-up).
+
+## heart1.pt encoder probe (Philipp 14:26Z; [`exp9`](logs/exp9_heart1_probe.log), [`exp9b`](logs/exp9b_combos.log))
+The frozen heart1.pt (sha256 deaba59d…, silverbot 84ab3ea, dim 256, 4 layers, 8 heads) encoded the 7,353 entry
+records on the PC (`tools/heart1_embed.py`, run via Remote Control; output `heart1_embed.npz` sha256 22a9bb4f… on the
+data branch `claude/va4-heart1-probe-data` @ 46ab578f). Same CV; the probe arms were chosen after seeing CV (3 C values,
+4 combinations), so their CV numbers are mildly optimistic.
+- Decodability (ridge, seed-grouped CV): deck size R² 0.93, CTM survival logit 0.84, gold 0.81, HP fraction 0.52.
+- **Linear probe on the 256-d pooled embedding alone** (LR, C = 0.01): BCE 0.490, R² 0.286, the same as ENS_rc (0.491;
+  −0.001 [−0.013, +0.012]). heart1's own value head alone: 0.604 (poor at the Act-4 entry).
+- Adding the embedding: ENS_rc + probe (1:1) −0.010 [−0.016, −0.004] vs ENS_rc, BCE 0.481, R² 0.302 (run-1 entries
+  0.276 of 0.43); embedding as extra columns in GBM/LR −0.007 [−0.013, −0.000].
+- Interpretation: heart1's encoder carries most of what V_A4 can learn from 7k entries; the gain from combining is
+  small and needs torch + heart1.pt at scoring time (PC). Not in the drop-in model.

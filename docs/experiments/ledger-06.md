@@ -25376,8 +25376,10 @@ entries; old TEST read once as a secondary.
   Ritual Dagger/Searing Blow state (−0.0001 [−0.0019, +0.0017]). Worse: MLPs, heart1-like tokens + transformer from
   scratch (+0.022 vs ENS_all), later-Act-4-state augmentation.
 - Old TEST (secondary): ENS_all 0.519 vs §720 G 0.529 / GC 0.532.
+- heart1.pt encoder (frozen, PC): a linear probe on its 256-d embedding alone matches ENS_rc (0.490 vs 0.491);
+  averaging both −0.010 [−0.016, −0.004] (arms chosen after CV, mildly optimistic); heart1's value head alone 0.604.
 **Decision:** drop-in model `tools/va4_model.py` + `model/` (ENS_all with relic counters and card state, trained on
 seed % 4 != 3) for stage 5 to adopt; no default change (offline value, not used in play).
-Next: heart1.pt encoder linear probe at the Act-4 entry (Philipp, 14:26Z) on the PC.
+Next (Philipp's call): fine-tune heart1's encoder on Act-4 outcomes (PC GPU), or keep the record-only model.
 Seeds: none.
 **Knowledge impact:** none.
