@@ -25356,3 +25356,30 @@ labels (act 4 to the game's end) + a per-act level calibration on real games; th
 Next: stage 4 capture (size after this result, Philipp's go).
 Seeds: none new (replays of used seeds).
 **Knowledge impact:** none.
+
+## §TBD — Improve V_A4 offline: GBM + L2-LR ensemble on all Act-4 entries (incl. 4,480 older ones) beats §720's G by −0.050 BCE [−0.064, −0.037] in seed-grouped CV (R² 0.20 → 0.28, run-1 entries 0.17 → 0.26 of a 0.43 ceiling); hyperparameters, monotonicity, MLP, token attention, state augmentation and relic counters do not help; correction: §720's GC uses the post-shop S&S row (2026-10-30)
+
+**Question:** Philipp, 2026-10-30: can V_A4 (§720) be improved by architecture, parameters, more data, other models?
+It must stay a drop-in on the public Act-4 entry record (stage 5 anchor).
+**Data:** [README](evidence/value_a4_improve_20261030/README.md), [RESULT](evidence/value_a4_improve_20261030/RESULT.md).
+§719/§720 entries + 4,480 older Act-4 entries extracted from 7 earlier campaigns (Act 4 not strong; source flag).
+§720's TEST was already read, so all selection is 5-fold CV × 3 grouped by seed on seed % 4 != 3, scored on the core
+entries; old TEST read once as a secondary.
+**Result:**
+- Correction to §720: GC's CTM feature is the S&S elite row, i.e. after the Act-4 rest site and shop (deck differs
+  from the entry in 79%); GC is not a function of the entry record. The CTM evaluated on the entry record is as good
+  (−0.021 [−0.033, −0.010] vs G). §720's PASS holds with G alone; stage 5 uses G.
+- CV vs G (BCE 0.541): entry-CTM + deck aggregates −0.026; ensemble GBM + LR −0.038; all data GBM −0.040; **ENS_all
+  −0.050 [−0.064, −0.037]**, BCE 0.491, R² 0.283 (run-1 entries 0.260 vs ceiling 0.43).
+- Learning curve steep (GBM 25 → 100% of seeds: 0.538 → 0.516); older entries help (−0.012 [−0.018, −0.005]).
+- No effect: depth/eta/colsample/regularization, monotone constraints, campaign one-hot, relic-counter phases +
+  Ritual Dagger/Searing Blow state (−0.0001 [−0.0019, +0.0017]). Worse: MLPs, heart1-like tokens + transformer from
+  scratch (+0.022 vs ENS_all), later-Act-4-state augmentation.
+- Old TEST (secondary): ENS_all 0.519 vs §720 G 0.529 / GC 0.532.
+- heart1.pt encoder (frozen, PC): a linear probe on its 256-d embedding alone matches ENS_rc (0.490 vs 0.491);
+  averaging both −0.010 [−0.016, −0.004] (arms chosen after CV, mildly optimistic); heart1's value head alone 0.604.
+**Decision:** drop-in model `tools/va4_model.py` + `model/` (ENS_all with relic counters and card state, trained on
+seed % 4 != 3) for stage 5 to adopt; no default change (offline value, not used in play).
+Next (Philipp's call): fine-tune heart1's encoder on Act-4 outcomes (PC GPU), or keep the record-only model.
+Seeds: none.
+**Knowledge impact:** none.
