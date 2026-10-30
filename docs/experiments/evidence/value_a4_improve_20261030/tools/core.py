@@ -13,6 +13,19 @@ EXTRA = {'ctm-calibration-ab', 'az-gen3-explore'}  # Act-4 not strong
 
 
 def entries(include_extra=False):
+    if include_extra == 4:  # + AZ gen0 / gen1b self-play Act-4 games from the PC (data branch az_gen01_a4.jsonl.gz)
+        import gzip, json
+        es = entries(3)
+        for l in gzip.open(D + 'az_gen01_a4.jsonl.gz', 'rt'):
+            r = json.loads(l)
+            es.append(dict(src='extra', camp=r['campaign'], seed=r['seed'], entry=r['entry'], ctm=[], kills=[r['heartKilled']], strong=False))
+        return es
+    if include_extra == 3:  # + §497 Heart-outcome collection (extract_heart_outcome.py -> ho497_a4.pkl)
+        es = entries(2)
+        for r in pickle.load(open(D + 'ho497_a4.pkl', 'rb')):
+            if r['reachedA4']:
+                es.append(dict(src='extra', camp=r['campaign'], seed=r['seed'], entry=r['entry'], ctm=[], kills=[r['heartKilled']], strong=False))
+        return es
     if include_extra == 2:
         es = entries(True); seen = set()
         for r in pickle.load(open(D + 'more_a4.pkl', 'rb')):

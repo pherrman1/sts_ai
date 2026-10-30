@@ -85,3 +85,13 @@ With this recipe (≤ 12 epochs, encoder LR 2e-5, one MLP head) fine-tuning does
 frozen embedding at ~5.5k training entries; the best combination stays ENS_rc + linear probe (BCE 0.481, R² 0.302).
 The frozen arm was still improving at the 12-epoch cap in several folds (best = last epoch in 5 of 15), so it is
 under-trained; this is not a general negative for fine-tuning.
+
+## More old games ([`exp11`](logs/exp11_ho497.log), [`exp11 4`](logs/exp11_ho497_azgen01.log); logs trimmed like exp9/10)
+- §497 Heart-outcome collection (train + validation deliveries only, SEALED-test never opened;
+  `tools/extract_heart_outcome.py`): 1,440 games, 482 Act-4 entries. Added to ENS_rc's training set: −0.0001
+  [−0.004, +0.004].
+- AZ gen0 self-play (111140712-142375) + gen1b A/B (111142376-142887) from the PC, exported by Remote Control
+  (`az_gen01_a4.jsonl.gz` sha256 06c0021f…, data branch @ 5b24c9f): 1,250 Act-4 entries (956 outside TEST). Both
+  sources together: −0.0017 [−0.006, +0.003].
+- Adding seeds changes the fold assignment, so these paired differences also carry fold noise. No further Act-4
+  games exist on the share or the PC outside two unchecked sources (live traces, external disk).
