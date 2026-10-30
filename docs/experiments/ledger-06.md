@@ -25433,7 +25433,7 @@ and its whole-run gate, Philipp's call.
 Seeds: none new (111384000-629 in the used §696 expert-anchored block 111384000-385023).
 **Knowledge impact:** cross-fight relic counters can be worth ≈ 10 pp of Heart kill; issue #914.
 
-## §TBD — Incense Burner term at Shield & Spear: pricing the counter in Silver's S&S leaf raises Heart kill by +5.9 pp [+4.1, +7.8] (PASS); 94% vs 63% of runs reach the Heart on an aligned counter at −1.3 S&S HP and +0.5 pp S&S death (592 S&S states × 2 arms × 4, replays of used seeds, 2026-10-30)
+## §724 — Incense Burner term at Shield & Spear: pricing the counter in Silver's S&S leaf raises Heart kill by +5.9 pp [+4.1, +7.8] (PASS); 94% vs 63% of runs reach the Heart on an aligned counter at −1.3 S&S HP and +0.5 pp S&S death (592 S&S states × 2 arms × 4, replays of used seeds, 2026-10-30)
 
 **Question:** Philipp (2026-10-30 17:13Z, "Ja mach das" to §723's next step): does a priced S&S end-state term for the
 Incense Burner counter (`STS_SILVER_INCENSE_HEART_PHASE`, research, default off) make Silver line Intangible up with
