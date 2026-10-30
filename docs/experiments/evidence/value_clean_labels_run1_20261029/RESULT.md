@@ -17,6 +17,11 @@ stage-2 entries (1 outcome) + run-1 entries (5), TRAIN/VALIDATION by seed % 4; T
 | Act-4 CTM, recalibrated on TRAIN | 0.589 | 0.798 |
 | G (GBM on the public entry record), 5 labels | 0.529 | 0.898 |
 | GC (G + CTM logit), 5 labels — picked on VALIDATION | 0.532 | 0.882 |
+
+Correction (2026-10-30, [value_a4_improve](../value_a4_improve_20261030/RESULT.md)): the CTM feature in GC and the
+CTM comparators are taken at the S&S row, after the Act-4 rest site and shop, so GC is not a function of the entry
+record. G alone passes: G − CTM_recal −0.059 [−0.106, −0.014].
+
 | GC, base outcome only for run-1 entries | 0.543 | 0.872 |
 
 - Gate (stage 2's): picked − CTM_recal = **−0.056 [−0.085, −0.028] → PASS** (stage 2: −0.004 [−0.028, +0.018]).

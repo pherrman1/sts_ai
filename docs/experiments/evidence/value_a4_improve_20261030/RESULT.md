@@ -4,8 +4,10 @@
 GC's CTM feature is the CTM at the **S&S elite row**, i.e. after the Act-4 rest site and shop: the S&S deck differs
 from the entry deck in 79% of run-1 entries (shop buys/removes, smith). GC is therefore not a function of the entry
 record and cannot be a drop-in V_A4. The CTM evaluated **on the entry record** (`core.ctm_entry_feats`) works as well
-(CV: GCe −0.021 [−0.033, −0.010] vs G; leaked GCss −0.023 [−0.035, −0.011]). §720's PASS stands with G alone
-(TEST 0.529 vs CTM_recal 0.589); stage 5 uses G.
+(CV: GCe −0.021 [−0.033, −0.010] vs G; leaked GCss −0.023 [−0.035, −0.011]). §720's PASS stands with G alone:
+G − CTM_recal on §720's TEST −0.059 [−0.106, −0.014] (reviewer's rerun of `fit_a4_run1.py`, TEST already read). §720's
+CTM_recal comparator was itself evaluated on the S&S row (post-shop information in its favour), so the corrected PASS
+is conservative. Stage 5 uses G.
 
 ## Main result (CV on the dev pool, [`logs/cmp_g.log`](logs/cmp_g.log))
 | dev core (5-fold × 3, by seed) | BCE | R² all | R² run-1 entries | vs G (BCE) |
@@ -15,6 +17,9 @@ record and cannot be a drop-in V_A4. The CTM evaluated **on the entry record** (
 | ensemble GBM + L2-LR, core data | 0.503 | 0.264 | 0.242 | −0.038 [−0.049, −0.026] |
 | GBM, all data | 0.502 | 0.264 | 0.237 | −0.040 [−0.053, −0.026] |
 | **ensemble GBM + L2-LR, all data (ENS_all)** | **0.491** | **0.283** | **0.260** | **−0.050 [−0.064, −0.037]** |
+
+Selection caveat: the GBM settings (depth 3, colsample 0.2) and LR C = 0.003 were chosen on the same dev CV that scores
+them, so the table is mildly optimistic; the hyperparameter spread is about ±0.005, small next to −0.050.
 
 Ceiling (true p, from the within-entry variance of the 5 run-1 outcomes) on the 406 dev run-1 entries: R² 0.43.
 ENS_all reaches 0.26 (61%), G 0.17 (40%). OOF deciles are calibrated within a few pp (one decile 0.43 vs 0.51,
@@ -29,7 +34,8 @@ ENS_all reaches 0.26 (61%), G 0.17 (40%). OOF deciles are calibrated within a fe
   monotone constraints on HP/CTM ([`exp1`](logs/exp1.log), [`exp2`](logs/exp2.log)); campaign one-hot; relic-counter
   phases (Incense Burner, Pen Nib, Nunchaku, Ink Bottle, Happy Flower, Sundial) + Ritual Dagger / Searing Blow state
   −0.0001 [−0.0019, +0.0017] ([`exp8`](logs/exp8_counters.log)); kept in the model anyway (no cost, needed for future
-  decisions); down-weighting stage-2 data or training on run 1 only (worse).
+  decisions). Support is thin: Searing Blow in 301 entries (52 upgraded), Ritual Dagger in 1 of 7,353, so the Ritual
+  Dagger columns are untested; down-weighting stage-2 data or training on run 1 only (worse).
 - **Worse**: sklearn MLPs +0.014 and more ([`exp4`](logs/exp4.log)); heart1-like typed tokens
   (`tools/heart_record_encoder.py`) + transformer + attention pooling, from scratch: +0.011 vs GBM, +0.022 vs
   ENS_all, neutral as a third ensemble member ([`exp7`](logs/exp7_attn.log)); augmenting with later Act-4 states of
@@ -43,7 +49,8 @@ same direction as CV, TEST too small to show it alone.
 ## Drop-in model ([`tools/va4_model.py`](tools/va4_model.py), [`model/`](model/))
 `va4_model.load().predict(states)` on Act-4 entry state rows (`{'act', 'floor', 'record'}`), public record only.
 Mean of the GBM (1,285 rounds) and the LR (C = 0.003), trained by `fit_va4.py` on all 5,484 entries with
-seed % 4 != 3 (7,108 games); stage 5's TEST seeds stay out. Source flags are set to today's default (run1 = 1,
+seed % 4 != 3 (7,108 games); stage 5's TEST seeds stay out. Its predictions on those training entries are
+in-sample; where stage 5 scores such entries and it matters, use out-of-fold V_A4 (`core.oof`) instead. Source flags are set to today's default (run1 = 1,
 strong = 1). Selftest: predictions from raw records equal the training matrix (max |Δ| 6e-17). sha256 va4_gbm.ubj
 4c346c1b…, va4_lr.json 06276b52….
 
@@ -74,5 +81,7 @@ fix during the smoke, 45f7eec: top2 had also trained the input embeddings). Same
 | top2 layers trained | 0.505 | 0.261 | +0.015 [+0.007, +0.022] | −0.006 [−0.013, +0.000] |
 | full encoder trained | 0.499 | 0.272 | +0.009 [+0.001, +0.016] | −0.008 [−0.014, −0.002] |
 | (linear probe, exp9) | 0.490 | 0.286 | — | −0.010 [−0.016, −0.004] |
-Fine-tuning does not beat the plain linear probe on the frozen embedding at ~5.5k training entries; the best
-combination stays ENS_rc + linear probe (BCE 0.481, R² 0.302).
+With this recipe (≤ 12 epochs, encoder LR 2e-5, one MLP head) fine-tuning does not beat the plain linear probe on the
+frozen embedding at ~5.5k training entries; the best combination stays ENS_rc + linear probe (BCE 0.481, R² 0.302).
+The frozen arm was still improving at the 12-epoch cap in several folds (best = last epoch in 5 of 15), so it is
+under-trained; this is not a general negative for fine-tuning.
