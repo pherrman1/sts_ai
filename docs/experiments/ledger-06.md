@@ -25334,7 +25334,7 @@ Act-4 outcomes alone (~1,200 training games) do not reach the CTM's Act-4 foreca
 Seeds: none new; 111374100 (§683, used) replayed for the smoke.
 **Knowledge impact:** `operations/environment-variables.md` (two research options).
 
-## §TBD — Clean value labels run 1: V_A4 from real Act-4 outcomes (5 per entry) beats the recalibrated Act-4 CTM (BCE −0.056 [−0.085, −0.028], PASS); 59% of Act-4 outcome variance is luck at the entry; pilot act-end labels have 1.7-2.6 pp SE in acts 1-3, but CTM rollouts die too often from act 2 on (1,280 replays of used seeds, 2026-10-29/30)
+## §720 — Clean value labels run 1: V_A4 from real Act-4 outcomes (5 per entry) beats the recalibrated Act-4 CTM (BCE −0.056 [−0.085, −0.028], PASS); 59% of Act-4 outcome variance is luck at the entry; pilot act-end labels have 1.7-2.6 pp SE in acts 1-3, but CTM rollouts die too often from act 2 on (1,280 replays of used seeds, 2026-10-29/30)
 
 **Question:** after §719 (V_A4 FAIL with one outcome per entry), Philipp chose more Act-4 data and the pilot capture in
 parallel (16:44Z, 44 workers; full scope confirmed 19:19Z). Can V_A4 beat the Act-4 CTM with more and cleaner real
