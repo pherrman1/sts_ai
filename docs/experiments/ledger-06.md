@@ -25357,7 +25357,7 @@ Next: stage 4 capture (size after this result, Philipp's go).
 Seeds: none new (replays of used seeds).
 **Knowledge impact:** none.
 
-## §TBD — Act-4 value models as a Silver combat leaf, teacher check: V_A4 (Act-4 entry) and a new Heart-entry value V_H price a potion at 8-9 and 12-13 HP against the leaf's 11, potion types flat, Fairy 15-30 vs ≈ 37, max HP wrong sign, 1-3 HP steps mostly unresolved → no Act-4 combat-leaf probe (offline, no seeds, 2026-10-30)
+## §721 — Act-4 value models as a Silver combat leaf, teacher check: V_A4 (Act-4 entry) and a new Heart-entry value V_H price a potion at 8-9 and 12-13 HP against the leaf's 11, potion types flat, Fairy 15-30 vs ≈ 37, max HP wrong sign, 1-3 HP steps mostly unresolved → no Act-4 combat-leaf probe (offline, no seeds, 2026-10-30)
 
 **Question:** Philipp (2026-10-29 22:10Z): use V_A4 (§720) as a combat leaf in Act 4. Do Act-4 value models put
 end-state prices on HP and potions that differ from Silver's leaf formula enough to be worth a fight-level probe?
