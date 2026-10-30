@@ -21,6 +21,8 @@ stage-2 entries (1 outcome) + run-1 entries (5), TRAIN/VALIDATION by seed % 4; T
 
 - Gate (stage 2's): picked − CTM_recal = **−0.056 [−0.085, −0.028] → PASS** (stage 2: −0.004 [−0.028, +0.018]).
 - 5 labels vs 1 per run-1 entry: −0.011 [−0.028, +0.005], not shown.
+- Single-label TEST BCE (README plan, comparable with stage 2; [`explore_ctm_recal.py`](explore_ctm_recal.py), same
+  GC model scored against the base game only): GC 0.507 vs CTM_recal 0.569, −0.062 [−0.106, −0.018].
 - Label noise: within-entry variance of the 5 outcomes / p(1 − p) = **0.59**. 41% of the Act-4 outcome variance is
   explained by the entry state; that is the ceiling for any V_A4 at the entry.
 - Deviation, disclosed: the first run had a bug in the comparator only (`np.repeat` paired the CTM logits with the
@@ -33,13 +35,13 @@ stage-2 entries (1 outcome) + run-1 entries (5), TRAIN/VALIDATION by seed % 4; T
   labels are 5-game means (narrower CI). Stage 2's TEST was older-config games with one outcome each.
 
 ## Pilot capture ([`pilot_analysis.py`](pilot_analysis.py), [`pilot_result.json`](pilot_result.json))
-32 games, 3,782 roots (acts 1-4), N = 64, top 3. Act-end values scored with a provisional V_{k+1} (GBM on real
+32 games, 3,782 roots (acts 1-4), N = 64, top 3. Computed on the verified 1,280-unit extract (a first pass used 1,279). Act-end values scored with a provisional V_{k+1} (GBM on real
 outcomes at act k+1's first state of the 1,248 non-pilot base games; act 4: base + forks).
 
 | | act 1 | act 2 | act 3 | act 4 |
 |---|---|---|---|---|
-| rollout variance / p(1 − p) | 0.107 | 0.193 | 0.251 | 1 (game end) |
-| sibling difference / independent | 0.042 | 0.076 | 0.096 | 0.215 |
+| rollout variance / p(1 − p) | 0.107 | 0.196 | 0.240 | 1 (game end) |
+| sibling difference / independent | 0.042 | 0.077 | 0.093 | 0.215 |
 | median label SE (64 rollouts) | 1.7 pp | 2.0 pp | 2.6 pp | 4.8 pp |
 | death in act: rollouts (first root of the pilot games) / real (all base games) | 15% / 14% | 36% / 27% | 53% / 33% | 45% / 37% |
 

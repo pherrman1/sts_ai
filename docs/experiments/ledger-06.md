@@ -25346,9 +25346,10 @@ labels, and are act-end rollout labels clean enough for acts 1-3?
 **Result:**
 - V_A4: 536 entries × 5 games + 2,337 stage-2 entries. TEST (130 entries, 650 games): GC 0.532 vs CTM_recal 0.589,
   −0.056 [−0.085, −0.028] PASS; G 0.529; 5 vs 1 label −0.011 [−0.028, +0.005]. A one-line comparator bug (CTM
-  recalibration) was fixed after the first TEST read; models unchanged (disclosed in RESULT).
+  recalibration) was fixed after the first TEST read; models unchanged (disclosed in RESULT). Single-label TEST
+  (stage 2's scoring): −0.062 [−0.106, −0.018].
 - Within-entry outcome variance / p(1 − p) = 0.59.
-- Pilot: rollout variance / Bernoulli 0.11 / 0.19 / 0.25 (acts 1-3), sibling differences 0.04 / 0.08 / 0.10, median
+- Pilot: rollout variance / Bernoulli 0.11 / 0.20 / 0.24 (acts 1-3), sibling differences 0.04 / 0.08 / 0.09, median
   label SE 1.7 / 2.0 / 2.6 pp; rollout vs real death in act 15/14%, 36/27%, 53/33%, 45/37% (acts 1-4).
 **Decision:** no default change. Plan (Philipp, 2026-10-29 22:36Z) now treats all acts alike: act-end CTM rollout
 labels (act 4 to the game's end) + a per-act level calibration on real games; this run is the level anchor.
