@@ -25333,3 +25333,26 @@ Act-4 outcomes alone (~1,200 training games) do not reach the CTM's Act-4 foreca
 **Decision:** no default change. Next (Philipp's call): a pilot capture on replays of used seeds.
 Seeds: none new; 111374100 (§683, used) replayed for the smoke.
 **Knowledge impact:** `operations/environment-variables.md` (two research options).
+
+## §720 — Clean value labels run 1: V_A4 from real Act-4 outcomes (5 per entry) beats the recalibrated Act-4 CTM (BCE −0.056 [−0.085, −0.028], PASS); 59% of Act-4 outcome variance is luck at the entry; pilot act-end labels have 1.7-2.6 pp SE in acts 1-3, but CTM rollouts die too often from act 2 on (1,280 replays of used seeds, 2026-10-29/30)
+
+**Question:** after §719 (V_A4 FAIL with one outcome per entry), Philipp chose more Act-4 data and the pilot capture in
+parallel (16:44Z, 44 workers; full scope confirmed 19:19Z). Can V_A4 beat the Act-4 CTM with more and cleaner real
+labels, and are act-end rollout labels clean enough for acts 1-3?
+**Data:** [README](evidence/value_clean_labels_run1_20261029/README.md),
+[RESULT](evidence/value_clean_labels_run1_20261029/RESULT.md). 1,280 units on used seeds (111387000-255,
+111384000-385023) at today's A20 default; each base game reaching Act 4 got 4 forks from its first Act-4 decision
+(`STS_OOC_FORCE_DECISION=INDEX:SALT:-`); 32 units also ran the §719 act-end capture. Scripts frozen before the data.
+**Result:**
+- V_A4: 536 entries × 5 games + 2,337 stage-2 entries. TEST (130 entries, 650 games): GC 0.532 vs CTM_recal 0.589,
+  −0.056 [−0.085, −0.028] PASS; G 0.529; 5 vs 1 label −0.011 [−0.028, +0.005]. A one-line comparator bug (CTM
+  recalibration) was fixed after the first TEST read; models unchanged (disclosed in RESULT). Single-label TEST
+  (stage 2's scoring): −0.062 [−0.106, −0.018].
+- Within-entry outcome variance / p(1 − p) = 0.59.
+- Pilot: rollout variance / Bernoulli 0.11 / 0.20 / 0.24 (acts 1-3), sibling differences 0.04 / 0.08 / 0.09, median
+  label SE 1.7 / 2.0 / 2.6 pp; rollout vs real death in act 15/14%, 36/27%, 53/33%, 45/37% (acts 1-4).
+**Decision:** no default change. Plan (Philipp, 2026-10-29 22:36Z) now treats all acts alike: act-end CTM rollout
+labels (act 4 to the game's end) + a per-act level calibration on real games; this run is the level anchor.
+Next: stage 4 capture (size after this result, Philipp's go).
+Seeds: none new (replays of used seeds).
+**Knowledge impact:** none.
