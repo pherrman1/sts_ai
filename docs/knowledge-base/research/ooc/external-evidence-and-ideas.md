@@ -1,7 +1,7 @@
 # External evidence and candidate ideas for the A20 OOC plateau
 
 Last verified: 2026-10-26 (web research with 3-vote adversarial claim verification, plus read-only checks of this
-repository at `8cce22b`; follow-up status checked against main at `db216ff`).
+repository at `8cce22b`; follow-up status checked against main at `93cef2b` on 2026-10-30).
 
 ## Purpose / research question
 
@@ -25,22 +25,27 @@ Evidence status labels:
 - No verified evidence says larger or equivariant networks, graph map encoders, Stochastic MuZero or distributional
   value heads would lift this bot. New information sources and structural fixes rank higher.
 
-## Follow-up status (2026-10-26)
+## Follow-up status (2026-10-30)
 
-Each candidate below got its own thread on 2026-10-26. Status on main at `db216ff`:
+Each candidate below got its own thread on 2026-10-26. All ten are now tested. Status on main at `93cef2b`:
 
 | # | Idea | Status |
 | --- | --- | --- |
-| 1 | Key rules A/B | Design done (seeds 111382000-111383023 assigned); paired A/B being frozen |
+| 1 | Key rules A/B | Done, §691: flexible keys beat the rigid rules by +6.1 pp Heart kills [+3.4, +8.6] with student_sel alone (KEYS_EXPLAIN); flexible keys are the default since [ADR-0063](../../../../decisions/0063-flexible-heart-keys-default.md) |
 | 2 | Expert audit | Done, §688: elite dose matches experts; the bot rests 3× as often, skips 2.4× less and loses 1.4-3× more HP per elite/boss fight; deviations come from the prior |
-| 3 | Expert replay | Fidelity probe in draft PR #868 (348 vanilla expert runs usable); Calling Bell engine fix and replay mode in progress |
+| 3 | Expert replay | Done, §694: replaying Baalorlord's OOC decisions on his seeds leaves the Heart rate unchanged, −2.1 pp [−7.9, +3.6] (NOT_SHOWN, 329 seeds); per-type ablations not run |
 | 4 | Elite dose at map roots | STOP, §686: no elite deficit; declined elites worth ≤ ~1-2 pp per flipped root |
-| 5 | Boss-relic forks | #856 Stage A running (draft PR #860) |
-| 6 | AIVAT | Offline estimate: unbiased fight re-simulation gives ~2× effective seeds; the CTM-only baseline is biased (up to 3 pp). Replay mode being built |
-| 7 | Expert-decision ranker | Expert-anchored student_sel fine-tune in training; A/B not started |
+| 5 | Boss-relic forks | Stage A done, §690: relic choice matters (τ ≈ 11 pp), but student_sel already picks the table's best relic at 74% of roots and a context-free table override loses; STOP before Stage B (Philipp) |
+| 6 | AIVAT | Done, §697 + §698: unbiased with fresh fight replays, but the pilot cut the paired SD only to 0.80× (projected 0.71×); almost all of it comes from the Heart; no recommendation |
+| 7 | Expert-decision ranker | Done, §696: student_sel fine-tuned toward Baalorlord's choices, −0.7 pp [−3.4, +2.0] (NOT_SHOWN) |
 | 8 | HP into the Heart | Done, §687: the policy rests when it can; forced pre-boss Ruby costs ≤ 0.65 pp; no run |
-| 9 | Bounded Q tilt | Draft PR #869 (default-off Gumbel Q cap); offline root replays running |
-| 10 | P300 cross-check | Draft PR #870 (known-RNG `act4replay` arm); calibration running |
+| 9 | Bounded Q tilt | Done, §689 (offline) + §693: Gumbel root with the Muesli Q cap at map roots, 25.2% vs 27.7% Heart kills (NOT_SHOWN) |
+| 10 | P300 cross-check | Done, §692: known RNG does not inflate P300's card values; its top-5 cards beat its bottom-5 by +6.0 pp [+3.8, +8.3] under fair Silver too |
+
+Only idea 1 moved the Heart rate. Ideas 3 and 7 point away from OOC choices, and §688's HP-loss finding started a
+combat-gap line: §701 (observational: 2-3× more HP lost at matched entry HP and deck size with near-starter decks), §711 (matched expert fight states:
++2.6 HP per acts-1-2 elite/boss fight [+2.0, +3.3], inconclusive; act-2 elites +5.4, Automaton +9.8, Awakened One
++10.7), §716 (act-2 elites are not budget-limited) and §718 (bosses at flat 40k: −0.25 HP, inconclusive).
 
 The audit (§688) refutes the "fewer elites" reading under [Where the gap is](#where-the-gap-is) and corrects two
 expert-profile numbers below.
@@ -82,7 +87,7 @@ Expert: Baalorlord's 676 Ironclad runs (77 / 81 / 46 / 47 deaths, 425 kills; Ver
   (Slavers 17, 3 Sentries 13, Gremlin Nob 9, Shield and Spear 8) (Verified).
 - **Inference:** the bot survives Act 1 at expert level and then falls apart, worst in Act 3. That fits a run that
   under-invests early (fewer elites, weaker deck) as well as the rigid key rules below. §688 and §686 later found no
-  elite deficit; the key rules are being tested (idea 1).
+  elite deficit; the key rules explained +6.1 pp (§691, idea 1).
 
 ## Expert-play reference profile
 
@@ -269,6 +274,9 @@ SpireBench and the LLM results date from Sept-Oct 2026 and may change.
 
 - ~~Does the bot take fewer elites than experts?~~ Answered: no (§686, §688). Whether more elite exposure causes
   better Act 2-4 outcomes for a Silver-strength fighter stays open.
-- How much of the 17.6% → ~24% jump do the key rules explain?
-- Can expert `.run` files be replayed faithfully enough to split the expert gap into OOC and combat parts?
-- How much variance would AIVAT-style chance corrections remove from a paired A20 A/B?
+- ~~How much of the 17.6% → ~24% jump do the key rules explain?~~ Answered: +6.1 pp of it (§691).
+- ~~Can expert `.run` files be replayed faithfully enough to split the expert gap into OOC and combat parts?~~
+  Answered: yes for 329 vanilla runs; the expert's OOC choices do not lift the bot (§694), and on matched fight
+  states Silver loses more HP from act 2 on (§711).
+- ~~How much variance would AIVAT-style chance corrections remove from a paired A20 A/B?~~ Measured: paired SD
+  0.80× in the §698 pilot, mostly from the Heart.
