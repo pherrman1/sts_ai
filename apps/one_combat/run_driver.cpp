@@ -218,7 +218,7 @@ thread_local bool t_oocHypotheticalStep = false;
 thread_local BossEntryHook *t_bossEntryHook = nullptr;
 thread_local std::function<void(const sts::GameContext &, const one_combat::PathHistory &)> t_realRunContextObserver;
 thread_local std::function<void(std::uint64_t, const char *)> t_realOocDecisionObserver;
-thread_local std::function<void(int)> t_a4PerturbChildOutput;
+thread_local std::function<void(const nlohmann::json &)> t_a4PerturbChildOutput;
 thread_local std::function<void(nlohmann::json)> t_a4PerturbSummary;
 thread_local std::function<const char *(sts::GameContext &)> t_oocDecisionOverride;
 thread_local std::function<bool(sts::GameContext &, sts::search::ScumSearchAgent2 &)> t_battleOverride;
@@ -623,13 +623,17 @@ void forkA4Perturbations(GameContext &gc, const one_combat::A4PerturbSpec &spec,
         auto preview = gc;
         a4PerturbFuture(preview, spec.salt);
         auto result = one_combat::applyA4Perturbation(preview, spec.specSeed, child);
+        result.update({{"salt", spec.salt}, {"decisionIndex", spec.index}, {"specSeed", spec.specSeed}});
         std::cout.flush(); std::cerr.flush(); std::fflush(nullptr);
+        const auto started = std::chrono::steady_clock::now();
         const pid_t pid = fork();
         if (pid < 0) throw std::runtime_error("STS_A4_PERTURB: fork failed");
         if (pid == 0) {
-            t_a4PerturbChildOutput(child);
+            t_a4PerturbChildOutput(result);
             a4PerturbFuture(gc, spec.salt);
-            if (one_combat::applyA4Perturbation(gc, spec.specSeed, child) != result)
+            auto applied = one_combat::applyA4Perturbation(gc, spec.specSeed, child);
+            applied.update({{"salt", spec.salt}, {"decisionIndex", spec.index}, {"specSeed", spec.specSeed}});
+            if (applied != result)
                 throw std::runtime_error("STS_A4_PERTURB: child differs from its preview");
             std::cerr << "[a4perturb] " << result.dump() << '\n';
             return;
@@ -640,6 +644,7 @@ void forkA4Perturbations(GameContext &gc, const one_combat::A4PerturbSpec &spec,
         const bool exited = WIFEXITED(status) && WEXITSTATUS(status) == 0;
         ok = ok && exited;
         result["exitStatus"] = WIFEXITED(status) ? WEXITSTATUS(status) : 128 + WTERMSIG(status);
+        result["wallSeconds"] = std::chrono::duration<double>(std::chrono::steady_clock::now() - started).count();
         summary["results"].push_back(std::move(result));
     }
     summary["ok"] = ok;

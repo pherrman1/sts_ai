@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
+#include <functional>
 #include <iterator>
 #include "ooc_mcts_adapter.h"
 
@@ -18,10 +19,16 @@ public:
     explicit Writer(const std::string &path) : file_(std::fopen(path.c_str(), "wx")), path_(path) {
         if (!file_) throw std::runtime_error("heart outcome output exists or cannot be created");
     }
-    // STS_A4_PERTURB child: continue in a new file that starts with every row written so far.
-    void forkTo(const std::string &path) {
+    // STS_A4_PERTURB child: continue in a new file that starts with every row written so far, the first row
+    // (the header) passed through `header`.
+    void forkTo(const std::string &path, const std::function<nlohmann::json(nlohmann::json)> &header = {}) {
         std::ifstream in(path_, std::ios::binary);
-        const std::string written((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+        std::string written((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+        if (header && !written.empty()) {
+            const auto end = written.find('\n');
+            if (end == std::string::npos) throw std::runtime_error("heart outcome child output: no header row");
+            written = header(nlohmann::json::parse(written.substr(0, end))).dump() + written.substr(end);
+        }
         std::FILE *next = std::fopen(path.c_str(), "wx");
         if (!next || std::fwrite(written.data(), 1, written.size(), next) != written.size() || std::fflush(next))
             throw std::runtime_error("heart outcome child output exists or cannot be written");
@@ -183,10 +190,16 @@ int heartOutcomeGen(std::uint64_t seed, const std::string &output, bool capture,
                 trainingRunValid(decided), decided, rawCaptureCount, record, predictorInput));
         };
     }
-    // STS_A4_PERTURB: every child continues in its own files; the parent's file ends with the summary row.
-    t_a4PerturbChildOutput = [&](int child) {
-        const auto path = a4PerturbChildPath(output, child);
-        writer.forkTo(path);
+    // STS_A4_PERTURB: every child continues in its own files, its header carrying the child's perturbation and naming
+    // the child's CTM file; the parent's file ends with the summary row.
+    t_a4PerturbChildOutput = [&](const nlohmann::json &perturbation) {
+        const auto path = a4PerturbChildPath(output, perturbation.at("child").get<int>());
+        writer.forkTo(path, [&](nlohmann::json row) {
+            row["a4Perturb"] = perturbation;
+            if (row.contains("ctmRows"))
+                row["ctmRows"]["path"] = std::filesystem::path(ctmRowsPath(path)).filename().string();
+            return row;
+        });
         if (ctmWriter) ctmWriter->forkTo(ctmRowsPath(path));
     };
     t_a4PerturbSummary = [&](nlohmann::json row) {
@@ -240,13 +253,14 @@ int heartOutcomeSelfTest() {
         {
             Writer parent(path.string() + ".parent");
             parent.write({{"type", "header"}});
-            parent.forkTo(child);
+            parent.forkTo(child, [](nlohmann::json row) { row["a4Perturb"] = 3; return row; });
             parent.write({{"type", "outcome"}});
         }
         std::ifstream parentFile(path.string() + ".parent"), childFile(child);
         const std::string parentText((std::istreambuf_iterator<char>(parentFile)), std::istreambuf_iterator<char>());
         const std::string childText((std::istreambuf_iterator<char>(childFile)), std::istreambuf_iterator<char>());
-        if (parentText != "{\"type\":\"header\"}\n" || childText != parentText + "{\"type\":\"outcome\"}\n")
+        if (parentText != "{\"type\":\"header\"}\n"
+                || childText != "{\"a4Perturb\":3,\"type\":\"header\"}\n{\"type\":\"outcome\"}\n")
             throw std::runtime_error("a4 perturb child output changed");
         std::filesystem::remove(path); std::filesystem::remove(path.string() + ".parent"); std::filesystem::remove(child);
     } catch (...) {

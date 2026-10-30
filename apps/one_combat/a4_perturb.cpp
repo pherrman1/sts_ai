@@ -8,6 +8,7 @@
 #include <iostream>
 #include <map>
 #include <random>
+#include <set>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -15,6 +16,7 @@
 #include "constants/Cards.h"
 #include "constants/Potions.h"
 #include "constants/Relics.h"
+#include "heart1_policy.h"
 
 using namespace sts;
 
@@ -215,13 +217,15 @@ nlohmann::json applyA4Perturbation(GameContext &gc, std::uint64_t specSeed, int 
         out.update({{"field", "curHp"}, {"before", gc.curHp}, {"after", after}, {"percent", up ? pct : -pct}});
         gc.curHp = after;
     } else if (op == "max_hp") {
-        // +-(3..10) max HP; current HP stays unless the new max is below it.
-        const int delta = draw.between(3, 10);
-        const int after = std::max(1, gc.maxHp + (draw.coin() ? delta : -delta));
-        out.update({{"field", "maxHp"}, {"before", gc.maxHp}, {"after", after}, {"curHpBefore", gc.curHp}});
-        gc.maxHp = after;
-        gc.curHp = std::min(gc.curHp, gc.maxHp);
-        out["curHpAfter"] = gc.curHp;
+        // +-(3..10) max HP as the game changes it: a gain heals the same amount (playerIncreaseMaxHp, no heal under
+        // Mark of the Bloom), a loss lowers current HP only to the new max (loseMaxHp).
+        int delta = draw.between(3, 10);
+        const bool up = draw.coin();
+        if (!up) delta = std::min(delta, gc.maxHp - 1);
+        out.update({{"field", "maxHp"}, {"before", gc.maxHp}, {"curHpBefore", gc.curHp}});
+        if (up) gc.playerIncreaseMaxHp(delta);
+        else gc.loseMaxHp(delta);
+        out.update({{"after", gc.maxHp}, {"curHpAfter", gc.curHp}});
     } else if (op == "gold") {
         const int delta = draw.between(25, 150);
         bool up = draw.coin();
@@ -353,8 +357,17 @@ int a4PerturbSelfTest() {
         if (base.obtainRelic(r)) throw std::logic_error("fixture relic opened a screen");
     base.relics.getRelicValueRef(RelicId::PEN_NIB) = 4;
     base.obtainPotion(Potion::FIRE_POTION);
+    base.screenState = ScreenState::MAP_SCREEN;
     const auto before = fields(base);
     const auto countsBefore = deckCounts(base);
+    // The public record (heart1-public-record-v2) the child's entry row carries.
+    const auto record = [&](const GameContext &gc) {
+        nlohmann::json r;
+        std::string reason;
+        check(heart1::buildPublicLeafRecord(gc, r, &reason), "fixture record: " + reason);
+        return r;
+    };
+    const auto recordBefore = record(base);
 
     {
         auto copy = base;
@@ -387,8 +400,11 @@ int a4PerturbSelfTest() {
                                 || after.transformable != before.transformable || after.bottles != before.bottles;
         bool expected = false;
         if (op == "hp") expected = hp && !maxHp && !gold && !deck && !relics && !pools && !potions;
-        else if (op == "max_hp")
-            expected = maxHp && (!hp || copy.curHp == copy.maxHp) && !gold && !deck && !relics && !pools && !potions;
+        else if (op == "max_hp") {
+            const int gain = after.maxHp - before.maxHp;
+            const int curHp = gain > 0 ? std::min(before.curHp + gain, after.maxHp) : std::min(before.curHp, after.maxHp);
+            expected = maxHp && after.curHp == curHp && !gold && !deck && !relics && !pools && !potions;
+        }
         else if (op == "gold") expected = gold && !hp && !maxHp && !deck && !relics && !pools && !potions;
         else if (op == "card_add" || op == "card_remove" || op == "upgrade" || op == "unupgrade")
             expected = deck && !hp && !maxHp && !gold && !relics && !pools && !potions;
@@ -424,6 +440,37 @@ int a4PerturbSelfTest() {
                 check(after.pools[i] == expectedPool, at + " pools: only the added relic leaves them");
             }
         }
+        // The public record changes exactly in the operator's keys (fixed_observation: 0 HP, 1 max HP, 2 gold).
+        const auto recordAfter = record(copy);
+        std::set<std::string> changed;
+        for (const auto &[key, value] : recordAfter.items()) if (recordBefore.value(key, nlohmann::json()) != value) changed.insert(key);
+        for (const auto &[key, value] : recordBefore.items()) if (!recordAfter.contains(key)) changed.insert(key);
+        std::set<int> fixed;
+        for (int i = 0; i < int(recordBefore["obs.fixed_observation"].size()); ++i)
+            if (recordBefore["obs.fixed_observation"][i] != recordAfter["obs.fixed_observation"][i]) fixed.insert(i);
+        const std::set<std::string> fixedKey = {"obs.fixed_observation"};
+        std::set<std::string> wantKeys;
+        std::set<int> wantFixed;
+        if (op == "hp") { wantKeys = fixedKey; wantFixed = {0}; }
+        else if (op == "max_hp") {
+            wantKeys = fixedKey; wantFixed = {1};
+            if (after.curHp != before.curHp) wantFixed.insert(0);
+        } else if (op == "gold") { wantKeys = fixedKey; wantFixed = {2}; }
+        else if (op == "card_add" || op == "card_remove" || op == "upgrade" || op == "unupgrade") {
+            for (const auto &[key, value] : recordAfter.items()) if (key.rfind("obs.deck.", 0) == 0) wantKeys.insert(key);
+            changed.erase("obs.deck.misc");   // equal unless the card carries misc
+            wantKeys.erase("obs.deck.misc");
+        } else if (op.rfind("relic_", 0) == 0) {
+            wantKeys = {"obs.relics.relics", "obs.relics.relic_counters"};
+            if (op == "relic_counter") wantKeys = {"obs.relics.relic_counters"};
+        } else if (op.rfind("potion_", 0) == 0) wantKeys = {"obs.potions"};
+        if (op == "upgrade" || op == "unupgrade") wantKeys = {"obs.deck.upgrades"};
+        if (op == "relic_remove" || op == "relic_add" || op == "relic_swap") {
+            // relic_counters always lists one entry per relic; its values change only with the relic list.
+            if (!changed.count("obs.relics.relic_counters")) wantKeys.erase("obs.relics.relic_counters");
+        }
+        check(changed == wantKeys && fixed == wantFixed, at + " public record keys changed: " + nlohmann::json(changed).dump()
+              + " fixed " + nlohmann::json(fixed).dump());
         if (op == "card_remove") check(row["card"]["id"] != "PARASITE" && row["card"]["id"] != "ASCENDERS_BANE"
                                        && copy.deck.size() == base.deck.size() - 1, at + " removed card");
         if (op == "relic_counter") check(row["before"] != row["after"], at + " counter unchanged");

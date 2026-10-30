@@ -14,7 +14,7 @@ namespace one_combat {
 // the other. Each child redraws the hidden future with resampleCounterfactualFuture seeded by SALT (0 keeps the game's
 // own future), so all K children share one future, then applies its perturbation and plays to the end. Child 0 is the
 // unchanged control; child k > 0 applies one realistic change drawn from (SPECSEED, k). heartoutcomegen writes child
-// k to OUT.pKK.jsonl (+ .ctm.jsonl; the header gains a4PerturbChild) and the parent appends an a4_perturb row
+// k to OUT.pKK.jsonl (+ .ctm.jsonl; the header gains a4Perturb, the child's perturbation) and the parent appends an a4_perturb row
 // naming every child to OUT.jsonl.
 struct A4PerturbSpec {
     std::uint64_t index;
