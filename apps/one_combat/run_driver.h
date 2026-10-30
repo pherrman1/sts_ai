@@ -42,6 +42,11 @@ extern thread_local std::function<void(const sts::GameContext &, const one_comba
 // "chain", "heart_key", ...). While set, the driver arms
 // one_combat::armOocPolicyTarget before the OOC MCTS step.
 extern thread_local std::function<void(std::uint64_t, const char *)> t_realOocDecisionObserver;
+// STS_A4_PERTURB (a4_perturb.h): the run's output owner (heartoutcomegen) sets both. In forked child k,
+// t_a4PerturbChildOutput moves every output to the child's own files before the child changes the state; the parent
+// passes its summary row (which children ran, what each changed, how each exited) to t_a4PerturbSummary and exits.
+extern thread_local std::function<void(int)> t_a4PerturbChildOutput;
+extern thread_local std::function<void(nlohmann::json)> t_a4PerturbSummary;
 // Research-only (expertreplay): when set, runFullRunOOC offers each real
 // out-of-combat step to it first. It either acts on gc and returns the handler
 // name for the decision trace, or returns nullptr without touching gc and the

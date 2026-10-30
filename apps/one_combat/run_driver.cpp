@@ -2,7 +2,10 @@
 #include "run_driver.h"
 
 #include <algorithm>
+#include <cerrno>
 #include <chrono>
+#include <cstdio>
+#include <iostream>
 #include <fstream>
 #include <functional>
 #include <map>
@@ -27,6 +30,9 @@
 #include "run_profile.h"
 #include "run_features.h"
 #include "driver_shared.h"
+#include "a4_perturb.h"
+#include <sys/wait.h>
+#include <unistd.h>
 
 using namespace sts;
 
@@ -212,6 +218,8 @@ thread_local bool t_oocHypotheticalStep = false;
 thread_local BossEntryHook *t_bossEntryHook = nullptr;
 thread_local std::function<void(const sts::GameContext &, const one_combat::PathHistory &)> t_realRunContextObserver;
 thread_local std::function<void(std::uint64_t, const char *)> t_realOocDecisionObserver;
+thread_local std::function<void(int)> t_a4PerturbChildOutput;
+thread_local std::function<void(nlohmann::json)> t_a4PerturbSummary;
 thread_local std::function<const char *(sts::GameContext &)> t_oocDecisionOverride;
 thread_local std::function<bool(sts::GameContext &, sts::search::ScumSearchAgent2 &)> t_battleOverride;
 thread_local std::function<void(const sts::GameContext &, const sts::BattleContext &,
@@ -588,6 +596,59 @@ const char *realOocChainStep(GameContext &gc, search::ScumSearchAgent2 &agent, b
     return by;
 }
 
+namespace {
+thread_local bool t_a4PerturbForked = false;
+
+void a4PerturbFuture(GameContext &gc, std::uint64_t salt) {
+    if (!salt) return;
+    std::seed_seq seq{salt, std::uint64_t(0x464f524b4544ULL)};   // "FORKED", as STS_OOC_FORCE_DECISION
+    std::mt19937_64 rng(seq);
+    one_combat::resampleCounterfactualFuture(gc, rng);
+}
+
+// STS_A4_PERTURB at its decision: forks the children one after the other and returns only in a child, with gc
+// perturbed and the child's outputs moved. The parent appends its summary row and exits (0 iff every child did).
+void forkA4Perturbations(GameContext &gc, const one_combat::A4PerturbSpec &spec, std::uint64_t seed) {
+    if (!t_a4PerturbChildOutput || !t_a4PerturbSummary)
+        throw std::runtime_error("STS_A4_PERTURB needs an output owner that forks its files (heartoutcomegen)");
+    if (gc.act != 4) throw std::runtime_error("STS_A4_PERTURB: decision " + std::to_string(spec.index) + " is in act "
+                                              + std::to_string(gc.act) + ", not act 4");
+    nlohmann::json summary = {{"type", "a4_perturb"}, {"schema", "a4-perturb-v1"}, {"seed", seed},
+        {"decisionIndex", spec.index}, {"salt", spec.salt}, {"children", spec.children}, {"specSeed", spec.specSeed},
+        {"act", gc.act}, {"floor", gc.floorNum}, {"screen", int(gc.screenState)}, {"curHp", gc.curHp},
+        {"maxHp", gc.maxHp}, {"gold", gc.gold}, {"results", nlohmann::json::array()}};
+    bool ok = true;
+    for (int child = 0; child < spec.children; ++child) {
+        // What the child will do, on a copy: the perturbation is a pure function of the resampled state.
+        auto preview = gc;
+        a4PerturbFuture(preview, spec.salt);
+        auto result = one_combat::applyA4Perturbation(preview, spec.specSeed, child);
+        std::cout.flush(); std::cerr.flush(); std::fflush(nullptr);
+        const pid_t pid = fork();
+        if (pid < 0) throw std::runtime_error("STS_A4_PERTURB: fork failed");
+        if (pid == 0) {
+            t_a4PerturbChildOutput(child);
+            a4PerturbFuture(gc, spec.salt);
+            if (one_combat::applyA4Perturbation(gc, spec.specSeed, child) != result)
+                throw std::runtime_error("STS_A4_PERTURB: child differs from its preview");
+            std::cerr << "[a4perturb] " << result.dump() << '\n';
+            return;
+        }
+        int status = 0;
+        while (waitpid(pid, &status, 0) < 0)
+            if (errno != EINTR) throw std::runtime_error("STS_A4_PERTURB: wait failed");
+        const bool exited = WIFEXITED(status) && WEXITSTATUS(status) == 0;
+        ok = ok && exited;
+        result["exitStatus"] = WIFEXITED(status) ? WEXITSTATUS(status) : 128 + WTERMSIG(status);
+        summary["results"].push_back(std::move(result));
+    }
+    summary["ok"] = ok;
+    t_a4PerturbSummary(std::move(summary));
+    std::cout.flush(); std::cerr.flush(); std::fflush(nullptr);
+    std::_Exit(ok ? 0 : 1);
+}
+}
+
 // WHOLE RUN: ScumSearchAgent2 plays Neow -> Act 3 boss (battles via MCTS,
 // map/rewards/events/campfires/shops via the ordered OOC policy chain).
 RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool shopV,
@@ -622,6 +683,10 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
     vDisconnect();
     t_forcedBossRelicTaken = false;
     t_forcedDecisionTaken = false;
+    t_a4PerturbForked = false;
+    const auto &a4Perturb = one_combat::a4PerturbSpec();
+    if (a4Perturb && (forcedDecision() || forcedBossRelic()))
+        throw std::runtime_error("STS_A4_PERTURB cannot be combined with STS_OOC_FORCE_DECISION or _FORCE_BOSS_RELIC");
     GameContext gc(CharacterClass::IRONCLAD, seed, asc);
     search::ScumSearchAgent2 agent;
     agent.simulationCountBase = sims;
@@ -643,6 +708,12 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
     FloorProfile floorProfile;
     try {
     while (gc.outcome == GameOutcome::UNDECIDED) {
+        // STS_A4_PERTURB: before anything sees the state of its decision, so each child records its own entry.
+        if (a4Perturb && !t_a4PerturbForked && gc.screenState != ScreenState::BATTLE
+                && oocDecisionIndex == a4Perturb->index) {
+            t_a4PerturbForked = true;
+            forkA4Perturbations(gc, *a4Perturb, seed);
+        }
         floorProfile.advance(gc, mctsMetrics);
         path.update(gc);
         if (t_realRunContextObserver) t_realRunContextObserver(gc, path);
@@ -761,6 +832,8 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
         throw std::runtime_error("STS_OOC_FORCE_BOSS_RELIC: the run ended before the act's boss-relic root");
     if (forcedDecision() && !t_forcedDecisionTaken)
         throw std::runtime_error("STS_OOC_FORCE_DECISION: the run ended before the forced decision index");
+    if (a4Perturb && !t_a4PerturbForked)
+        throw std::runtime_error("STS_A4_PERTURB: the run ended before the perturbed decision index");
     floorProfile.finish(mctsMetrics, clearedStopActBoss ? "stop_act_victory"
         : gc.outcome == GameOutcome::PLAYER_VICTORY ? "victory"
         : gc.outcome == GameOutcome::PLAYER_LOSS ? "death" : "stopped");

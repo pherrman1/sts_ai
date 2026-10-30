@@ -11,6 +11,7 @@
 #include "one_combat/rollout_student.h"
 #include "one_combat/expert_replay.h"
 #include "one_combat/heart_outcome_capture.h"
+#include "one_combat/a4_perturb.h"
 #include "one_combat/heart_leaf_tail.h"
 #include "one_combat/differential_replay_native.h"
 #include "one_combat/screen_leaf_s0.h"
@@ -3817,6 +3818,8 @@ int main(int argc, char **argv) {
         return forcedBossRelicSelfTest();
     } else if (mode == "forcedecisionselftest") {
         return forcedDecisionSelfTest();
+    } else if (mode == "a4perturbselftest") {
+        return one_combat::a4PerturbSelfTest();
     } else if (mode == "heart1recordselftest") {
         one_combat::heart1::publicRecordInvarianceSelfTest();
         std::cout << "heart1 public record invariance selftest: ok\n";
