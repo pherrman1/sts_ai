@@ -453,6 +453,7 @@ add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/ooc_policy.cpp
     apps/one_combat/ooc_v4_encoding.cpp
     apps/one_combat/run_driver.cpp
+    apps/one_combat/a4_perturb.cpp
     apps/one_combat/ooc_tree_rules.cpp
     apps/one_combat/heart_outcome_capture.cpp
     apps/one_combat/expert_replay.cpp
@@ -485,6 +486,7 @@ target_link_options(one_combat PRIVATE -Wl,--gc-sections)
 add_test(NAME heart_outcome_capture COMMAND one_combat heartoutcomeselftest)
 add_test(NAME forced_boss_relic COMMAND one_combat forcebossrelicselftest)
 add_test(NAME forced_decision COMMAND one_combat forcedecisionselftest)
+add_test(NAME a4_perturb COMMAND one_combat a4perturbselftest)
 add_test(NAME heart1_public_record_invariance COMMAND one_combat heart1recordselftest)
 add_test(NAME heart_outcome_collection_python COMMAND python3 -m unittest discover
     -s ${CMAKE_CURRENT_SOURCE_DIR}/tests -p test_heart_outcome_collect.py)
