@@ -1,0 +1,10 @@
+name          value-clean-labels-stage4
+code_commit   6af9656302b024e61e07d1cdf1e7874f50131f72
+binary_sha256 44188a46a1cde1baac2dbb6f993d5a99027a82be4c72773757d55fb061ef4ae6
+workers       44
+share         /mnt/project-files/value-clean-labels-stage4
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 45
+input student_sel.bin /mnt/project-files/az-gen3-explore/student_sel.bin cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7
