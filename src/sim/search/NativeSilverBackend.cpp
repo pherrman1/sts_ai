@@ -75,6 +75,8 @@ namespace sts::search {
             double maxHpWeight = SilverEvalWeights{}.maxHpWeight;
             // Research-only per-turn victory penalty (STS_SILVER_VICTORY_TURN_PENALTY, #880).
             double victoryTurnPenalty = SilverEvalWeights{}.victoryTurnPenalty;
+            // Research-only Incense Burner phase term at Shield & Spear (STS_SILVER_INCENSE_HEART_PHASE).
+            double incenseHeartPhaseScale = 0;
             // Research-only learned stopping (NativeSilverStopModel.h).
             bool learnedStop = false;
             double learnedStopThreshold = 0;
@@ -630,6 +632,7 @@ namespace sts::search {
                     s->evalWeights.goldWeight = g_options.goldWeight;
                     s->evalWeights.maxHpWeight = g_options.maxHpWeight;
                     s->evalWeights.victoryTurnPenalty = g_options.victoryTurnPenalty;
+                    s->evalWeights.incenseHeartPhaseScale = g_options.incenseHeartPhaseScale;
                     if (g_nativeSilverPotionWeightOverride)
                         s->evalWeights.potionWeight = *g_nativeSilverPotionWeightOverride;
                     if (const auto &params = g_nativeSilverSearchParamOverride) {
@@ -1080,6 +1083,17 @@ namespace sts::search {
                 if (end == raw || *end != '\0' || !std::isfinite(*target) || *target < 0 || *target > 100)
                     throw std::runtime_error(std::string(name) + " must be a number in [0, 100]");
             }
+        }
+        if (const char *raw = std::getenv("STS_SILVER_INCENSE_HEART_PHASE"); raw && *raw) {
+            // "1" = the default price; any other value is the HP per pp of Heart kill (0 = off).
+            char *end = nullptr;
+            const double v = std::strtod(raw, &end);
+            if (end == raw || *end != '\0' || !std::isfinite(v) || v < 0 || v > 10)
+                throw std::runtime_error("STS_SILVER_INCENSE_HEART_PHASE must be a number in [0, 10] (1 = default price)");
+            g_options.incenseHeartPhaseScale = std::string(raw) == "1" ? kDefaultIncenseHeartPhaseScale : v;
+            if (g_options.incenseHeartPhaseScale > 0)
+                std::cerr << "[silver] research leaf: incense heart phase scale=" << g_options.incenseHeartPhaseScale
+                          << " HP/pp\n";
         }
         if (g_options.goldWeight != SilverEvalWeights{}.goldWeight || g_options.maxHpWeight != SilverEvalWeights{}.maxHpWeight
                 || g_options.victoryTurnPenalty != SilverEvalWeights{}.victoryTurnPenalty

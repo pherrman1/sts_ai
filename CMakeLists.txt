@@ -819,6 +819,8 @@ add_test(NAME silver_concave_hp_leaf COMMAND $<TARGET_FILE:unit-test> silver_con
 set_tests_properties(silver_concave_hp_leaf PROPERTIES LABELS "core")
 add_test(NAME silver_victory_turn_penalty COMMAND $<TARGET_FILE:unit-test> silver_victory_turn_penalty)
 set_tests_properties(silver_victory_turn_penalty PROPERTIES LABELS "core")
+add_test(NAME silver_incense_heart_phase COMMAND $<TARGET_FILE:unit-test> silver_incense_heart_phase)
+set_tests_properties(silver_incense_heart_phase PROPERTIES LABELS "core")
 set_tests_properties(silver_rollout_zero_cost_loop PROPERTIES LABELS "core")
 add_test(NAME ooc_reward_continuation COMMAND $<TARGET_FILE:unit-test> ooc_reward_continuation)
 add_test(NAME ooc_semantic COMMAND $<TARGET_FILE:unit-test> ooc_semantic)

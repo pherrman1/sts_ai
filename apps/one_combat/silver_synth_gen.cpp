@@ -1107,6 +1107,14 @@ void act4Replay(int nStates, const std::string &statesPath, const std::string &o
     const char *regime = knownRng ? "known_rng" : "fair";
     if (learned && knownRng)
         throw std::runtime_error("act4replay: STS_ACT4REPLAY_BUDGET=learned needs STS_ACT4REPLAY_COMBAT=fair");
+    // STS_ACT4REPLAY_CHAIN=heart (research, 2026-10-30): a Shield & Spear state that is won goes straight on to the
+    // Heart from the end state (HP, potions, relic counters via exitBattle; no S&S rewards), same budget policy.
+    const char *chainEnv = std::getenv("STS_ACT4REPLAY_CHAIN");
+    const std::string chainName = chainEnv ? chainEnv : "";
+    if (!chainName.empty() && chainName != "heart")
+        throw std::runtime_error("act4replay: STS_ACT4REPLAY_CHAIN must be unset or heart");
+    const bool chain = chainName == "heart";
+    if (chain && knownRng) throw std::runtime_error("act4replay: STS_ACT4REPLAY_CHAIN=heart needs STS_ACT4REPLAY_COMBAT=fair");
     std::vector<nlohmann::json> states;
     {
         std::ifstream in(statesPath);
@@ -1118,7 +1126,8 @@ void act4Replay(int nStates, const std::string &statesPath, const std::string &o
     if (std::filesystem::exists(rowsPath)) throw std::runtime_error("act4replay: refusing to overwrite " + rowsPath);
     std::ofstream rows(rowsPath);
     rows << "state,id,encounter,replicate,sims,battleSeed,preHp,preMaxHp,prePotions,valid,won,curHp,potionCount,turns,"
-            "cpuSeconds,regime,budget\n";
+            "cpuSeconds,regime,budget" << (chain ? ",ssIncenseCounter,heartValid,heartWon,heartHp,heartTurns,heartCpuSeconds" : "")
+         << '\n';
     const int jobs = nStates * replicates;
     #pragma omp parallel for schedule(dynamic)
     for (int j = 0; j < jobs; ++j) {
@@ -1132,6 +1141,8 @@ void act4Replay(int nStates, const std::string &statesPath, const std::string &o
                 if (encName == monsterEncounterEnumNames[i]) enc = static_cast<MonsterEncounter>(i);
             if (enc != MonsterEncounter::THE_HEART && enc != MonsterEncounter::SHIELD_AND_SPEAR)
                 throw std::runtime_error("act4replay: unsupported encounter " + encName);
+            if (chain && enc != MonsterEncounter::SHIELD_AND_SPEAR)
+                throw std::runtime_error("act4replay: STS_ACT4REPLAY_CHAIN=heart needs SHIELD_AND_SPEAR states");
             const auto battleSeed = static_cast<std::uint64_t>(seedOffset) + static_cast<std::uint64_t>(j);
             for (const int budget : sims) {
                 trainingRunStart();
@@ -1157,7 +1168,35 @@ void act4Replay(int nStates, const std::string &statesPath, const std::string &o
                 out << si << ',' << s.value("id", std::string()) << ',' << encName << ',' << r << ',' << budget << ','
                     << battleSeed << ',' << preHp << ',' << preMaxHp << ',' << prePotions << ',' << (valid ? 1 : 0)
                     << ',' << (won ? 1 : 0) << ',' << (won ? bc.player.curHp : 0) << ',' << bc.potionCount << ','
-                    << bc.turn << ',' << std::setprecision(6) << cpu << ',' << regime << ',' << budgetPolicy << '\n';
+                    << bc.turn << ',' << std::setprecision(6) << cpu << ',' << regime << ',' << budgetPolicy;
+                if (chain) {
+                    // -1 = no Incense Burner; the Heart columns are 0 unless S&S was won.
+                    const int counter = bc.player.hasRelic<RelicId::INCENSE_BURNER>() ? bc.player.incenseBurnerCounter : -1;
+                    bool heartValid = false, heartWon = false;
+                    int heartHp = 0, heartTurns = 0;
+                    double heartCpu = 0;
+                    if (valid && won) {
+                        bc.exitBattle(copy);
+                        copy.curMapNodeY = 3;
+                        copy.floorNum = 56;
+                        copy.curRoom = Room::BOSS;
+                        copy.enterBattle(MonsterEncounter::THE_HEART);
+                        trainingRunStart();
+                        search::g_nativeSilverPlannerSeedOverride = key(battleSeed, si, 0xA48, r);
+                        BattleContext heart;
+                        const auto h0 = threadCpuNanos();
+                        agent.playoutBattle(copy, heart);
+                        heartCpu = static_cast<double>(threadCpuNanos() - h0) / 1e9;
+                        search::g_nativeSilverPlannerSeedOverride.reset();
+                        heartValid = trainingRunValid(heart.outcome != Outcome::UNDECIDED);
+                        heartWon = heart.outcome == Outcome::PLAYER_VICTORY;
+                        heartHp = heartWon ? heart.player.curHp : 0;
+                        heartTurns = heart.turn;
+                    }
+                    out << ',' << counter << ',' << (heartValid ? 1 : 0) << ',' << (heartWon ? 1 : 0) << ',' << heartHp
+                        << ',' << heartTurns << ',' << std::setprecision(6) << heartCpu;
+                }
+                out << '\n';
             }
         } catch (const std::exception &e) {
             search::g_nativeSilverPlannerSeedOverride.reset();

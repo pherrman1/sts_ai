@@ -79,7 +79,16 @@ namespace sts::search {
         // with M the root max HP (slope 1 at 75% HP), and the held-potion term is
         // scaled by sqrt(u'(h)).
         double concaveHpK = 0;
+        // Research-only (STS_SILVER_INCENSE_HEART_PHASE=s HP per pp; 0 = off): a Shield & Spear win
+        // with Incense Burner adds s × kIncenseHeartPhaseKillPp[counter], the Heart kill rate (pp,
+        // relative to the state mean) measured for that counter at the Heart's start (§TBD Incense
+        // probe). The Heart follows directly, so the counter at the win is the Heart's.
+        double incenseHeartPhaseScale = 0;
     };
+    // Incense Heart probe (2026-10-30): Heart kill minus the state mean, pp, counter 0..5.
+    inline constexpr std::array<double, 6> kIncenseHeartPhaseKillPp{-1.75, 1.90, -8.25, 5.71, 10.16, -7.78};
+    // 1 / (0.75 pp of Heart kill per HP), V_H's slope at 40-70% HP (§721).
+    inline constexpr double kDefaultIncenseHeartPhaseScale = 1.33;
     // Parses "NAME=w,...[,*=w]" (Potion enum names) into per-type weights; unlisted
     // types get the "*" weight, else `fallback`. Throws on unknown names or bad numbers.
     std::array<double, kSilverPotionTypeCount> parseSilverPotionWeights(const std::string &spec, double fallback);
