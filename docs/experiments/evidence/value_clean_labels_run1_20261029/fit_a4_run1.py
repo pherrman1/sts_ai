@@ -94,7 +94,7 @@ def main(p2, p1, out):
     lc = np.log(np.clip(cf, 1e-4, 1 - 1e-4) / (1 - np.clip(cf, 1e-4, 1 - 1e-4)))
     info['ctm_missing'] = int(np.isnan(c).sum())
     # CTM recalibration on TRAIN games (per-game weights)
-    Xg = np.repeat(lc[tr, None], 2, 0); yg = np.r_[np.ones(tr.sum()), np.zeros(tr.sum())]
+    Xg = np.r_[lc[tr], lc[tr]][:, None]; yg = np.r_[np.ones(tr.sum()), np.zeros(tr.sum())]
     wg = np.r_[y5[tr] * n[tr], (1 - y5[tr]) * n[tr]]
     rec = LogisticRegression(C=1e6).fit(Xg, yg, sample_weight=wg); c_cal = rec.predict_proba(lc[:, None])[:, 1]
     XC = np.hstack([X, lc[:, None]])
