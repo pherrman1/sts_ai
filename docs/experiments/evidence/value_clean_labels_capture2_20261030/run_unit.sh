@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+# Clean value labels, run 1 (../value_clean_labels_run1_20261029/README.md); stage 4 and capture 2 run it verbatim with K = 0. One unit = one replayed (used) seed at today's A20 default:
+#   run_unit.sh REPO RUN OUT SEED CAPTURE K
+# 1. base game (§712 arm A environment verbatim, as ../ooc_root_quality_20261028/run_unit.sh); CAPTURE=1 adds the
+#    stage-1 act-end record capture (STS_OOC_CAMPFIRE_PRICE*, observer only, play unchanged).
+# 2. if the game reached act 4: K forks from its first act-4 decision, STS_OOC_FORCE_DECISION=INDEX:SALT:- with
+#    SALT 1..K (production choice, hidden future redrawn as in #882), no capture. Each fork must replay the base
+#    game exactly up to that decision.
+# RUN holds one_combat and student_sel.bin (cf6bf7fb...).
+set -uo pipefail
+REPO=$1 RUN=$2 OUT=$3 SEED=$4 CAPTURE=$5 K=$6
+HERE=$(cd "$(dirname "$0")" && pwd)
+[ "$(sha256sum < "$RUN/student_sel.bin" | cut -c1-16)" = cf6bf7fb7c3147dc ] || { echo "bad $RUN/student_sel.bin" >&2; exit 2; }
+[[ "$CAPTURE" =~ ^[01]$ && "$K" =~ ^[0-9]$ ]] || { echo "CAPTURE must be 0/1, K 0-9" >&2; exit 2; }
+mkdir -p "$OUT"
+COMMON=("PATH=/usr/local/bin:/usr/bin:/bin" "HOME=$HOME" "STS_EXECUTABLE_GIT_SHA=$(git -C "$REPO" rev-parse HEAD)"
+  OMP_NUM_THREADS=1 OMP_DYNAMIC=FALSE
+  STS_COLLECT_KEYS=1 STS_FAIR=1 STS_STOP_AFTER_ACT=0 STS_REST_WIN=0
+  STS_KEY_SAPPHIRE=policy STS_KEY_RUBY=policy STS_KEY_EMERALD=mask
+  STS_ACTIVE_POWER_FEATURES=1 STS_REWARDLESS_COMBAT_RNG_FIX=1 STS_HAND_UPGRADE_ALL_FIX=1
+  STS_SILVER_SEARCH=1 STS_SILVER_ADAPTIVE=0 STS_SILVER_EXACT_ROOT_BUDGETS=1 STS_SILVER_LEARNED_STOP=1
+  STS_SILVER_LEARNED_STOP_MODEL=gbt-0cac7cc64364
+  STS_SILVER_REUSE_CAP_MODE=allocated STS_SILVER_VNET_LEAF_DIRECT=0
+  STS_SILVER_ROLLOUT_ROOT_TABLE=models/combat_policy_mlp_g7f_E.txt
+  STS_SILVER_ROOT_PRIOR=models/combat_policy_mlp_g7f_E.txt STS_SILVER_ROOT_PRIOR_WEIGHT=400
+  STS_SILVER_TREE_PRIOR_MIN_VISITS=8 STS_SILVER_PRIOR_PLAYOUT_ELITE=0
+  STS_OOC_HEART1_WING_BOOTS_COUNTER=1
+  STS_OOC_STRATEGIC_TOK_NN=selfplay/models/ooc_strategic_tok_final.native
+  STS_OOC_STRATEGIC_REST=1 STS_OOC_STRATEGIC_EVENT=1 STS_OOC_STRATEGIC_SHOP=1
+  STS_OOC_STRATEGIC_TREASURE=1 STS_OOC_STRATEGIC_BOSS_RELIC=1 STS_OOC_STRATEGIC_MARGIN=1.0
+  STS_OOC_MCTS=1 STS_OOC_MCTS_PRIOR=heart1full STS_OOC_MCTS_LEAF_POLICY=heart1
+  STS_OOC_MCTS_TARGET_PRIOR=1 STS_OOC_MCTS_LEAF_SELECTS=heart1 STS_OOC_MCTS_UNSUPPORTED_SILVER_SIMS=500
+  STS_OOC_MCTS_LEAF_VALUE=native STS_OOC_MCTS_LEAF_COMBATS=3 STS_OOC_MCTS_SIMS=4096
+  STS_OOC_MCTS_CPUCT=1.5 STS_OOC_MCTS_TEMPERATURE=1 STS_OOC_MCTS_ROOT_SELECTION=visits STS_OOC_MCTS_EARLY_STOP=1
+  STS_OOC_MCTS_MAX_DEPTH=32 STS_OOC_MCTS_TREE_RULES=1 STS_OOC_MCTS_WIDEN_K=4 STS_OOC_MCTS_WIDEN_ALPHA=0.75
+  STS_OOC_MCTS_PRUNE_UNSUPPORTED=1 STS_OOC_MCTS_GAP_STOP=0
+  STS_OOC_MCTS_LEARNED_STOP=models/candidates/ooc_learned_stop_trees.txt:0.99
+  STS_OOC_PUBLIC_FUTURES=8 STS_OOC_MCTS_FAST_ROOT_CAP=1024 STS_OOC_MCTS_FULL_BUDGET_FRACTION=0.25
+  STS_HEART_OUTCOME_CTM_ROWS=1 "STS_OOC_HEART1=$RUN/student_sel.bin")
+cd "$REPO" || exit 2
+start=$(date -u +%FT%TZ); t0=$(date +%s)
+# game TAG EXTRA...: one heartoutcomegen game with the common environment plus EXTRA; rc 0 only if it ran as frozen.
+game() {
+  local tag=$1; shift
+  local b=$OUT/$tag E=("${COMMON[@]}" "$@") rc
+  printf '%s\n' "${E[@]}" | grep '^STS_' > "$b.env"
+  env -i "${E[@]}" timeout 7h bash tools/seed_guard.sh "$RUN/one_combat" heartoutcomegen 1 "$SEED" "$b.jsonl" policy > "$b.log" 2> "$b.err"
+  rc=$?
+  if [ "$rc" = 0 ]; then
+    grep -qF "[heart1] loaded $RUN/student_sel.bin " "$b.log" "$b.err" || rc=95
+    grep -q "leaf_calibration=-2.5384.* leaf_calibration_min_ascension=20" "$b.log" "$b.err" || rc=93
+    ! grep -q " card_rule=" "$b.log" "$b.err" || rc=92
+  fi
+  echo "$tag rc=$rc wall=$(( $(date +%s)-t0 ))" >> "$OUT/games.txt"
+  return $rc
+}
+finish() { echo "tag=$SEED rc=$1 start=$start wall=$(( $(date +%s)-t0 ))" > "$OUT/$SEED.done"; gzip -9 -f "$OUT"/*.jsonl 2>/dev/null; exit $1; }
+CAP=()
+[ "$CAPTURE" = 1 ] && CAP=("STS_OOC_CAMPFIRE_PRICE=$OUT/base-$SEED.price.jsonl" STS_OOC_CAMPFIRE_PRICE_N=64
+  STS_OOC_CAMPFIRE_PRICE_TOP=3 STS_OOC_CAMPFIRE_PRICE_SCREENS=all STS_OOC_CAMPFIRE_PRICE_RECORDS=1
+  STS_OOC_CAMPFIRE_PRICE_ACT_END_ONLY=1)
+game "base-$SEED" "${CAP[@]}" || finish $?
+if [ "$CAPTURE" = 1 ]; then [ -s "$OUT/base-$SEED.price.jsonl" ] || finish 89; fi
+INDEX=$(python3 "$HERE/a4_fork.py" entry "$OUT/base-$SEED.jsonl") || finish 88
+echo "entry=$INDEX" >> "$OUT/games.txt"
+[ "$INDEX" = none ] && finish 0
+games=("$OUT/base-$SEED.jsonl")
+for SALT in $(seq 1 "$K"); do
+  game "fork-$SEED-$SALT" "STS_OOC_FORCE_DECISION=$INDEX:$SALT:-" || finish $?
+  python3 "$HERE/a4_fork.py" prefix "$OUT/base-$SEED.jsonl" "$OUT/fork-$SEED-$SALT.jsonl" "$INDEX" || finish 87
+  games+=("$OUT/fork-$SEED-$SALT.jsonl")
+done
+python3 "$HERE/a4_fork.py" summary "$OUT/a4-$SEED.json" "$SEED" "$INDEX" "${games[@]}" || finish 86
+finish 0
