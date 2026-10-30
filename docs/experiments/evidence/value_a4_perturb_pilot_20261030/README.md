@@ -50,13 +50,33 @@ binary replays run 1, and the CRN control is run 1's real game.
   control is not run 1's base game, and the count is reported.
 - Each child's entry record differs from the control's only in its operator's fields (as in the #917 self-test).
 
-## Analysis (offline; the gate is fixed before the run)
-- **Gate.** Use the CV of #915 (`../value_a4_improve_20261030/tools/core.py`: dev pool, seed-grouped 5-fold × 3).
-  ENS_rc + perturbation rows (children 1-15; their seed's fold decides where they go, so they are only ever in
-  training folds of their own seed) is compared with ENS_rc, both scored on the real dev entries. The
-  perturbation rows get the source flag `perturbed`.
-  - **PASS:** the paired seed-cluster bootstrap 95% CI of the BCE difference is below 0. Then the next step is to
-    scale up to a few hundred entries, which needs Philipp's go.
-  - **Otherwise:** NOT_SHOWN, and the ledger records it.
-- **Secondary.** CRN effects per operator (paired child − control, per entry), as a sanity check of signs and a
-  direct read of HP, gold, potion and relic worth at the Act-4 entry.
+## Analysis (offline; fixed before the data is read, reviewer F4 of the prelaunch review)
+Analysis code reuses `../value_a4_improve_20261030/tools/` (`core.py`, `feats.py`, `exp3lib.py`) unchanged.
+- **Baseline A = ENS_rc exactly as `exp8_counters.py`.** `core.build(2)` (all Act-4 entries), features X0 + relic
+  counters + card state, GBM `xg` + LR `lr(C=0.003)`, mean of the two. CV `core.oof` on the dev pool
+  (seed % 4 ≠ 3), 5 folds × reps 0-2 (`core.folds`), inner early-stopping fold (f + 1) % 5.
+- **Arm B = A + perturbation rows.** These are children 1-15 of every unit; child 0 is left out, because it
+  duplicates run 1's base game, which is already in the data.
+  - Each row is the child's post-perturbation entry record, built through exactly the same feature path as a real
+    record, including the entry CTM on that record, with y = heartKilled, n = 1 and weight 1.
+  - Flags: run1 = 0, strong = 1. The third source flag column (zero in exp8) is set to 1 for these rows only, and
+    it is a feature in both GBM and LR.
+  - The folds belong to the unit's seed. A perturbation row enters only the training part `tr` of an outer fold
+    whose test fold and inner early-stopping fold both exclude its seed. It never enters `te` or `iv`. That needs a
+    small wrapper around `core.oof`, because `oof` uses one mask for train and test; the wrapper is committed with
+    the analysis.
+- **Scoring:** `core.score` and `core.per_seed_loss` on the real dev core rows only (`dc`: pool & src != 'extra'),
+  identical rows for A and B.
+- **Gate:** `core.paired(L_B, L_A, d, dc)`, a seed-cluster bootstrap with 2,000 draws and rng 7. PASS iff the
+  upper end of the 95% CI is below 0. Then the next step is to scale up to a few hundred entries, which needs
+  Philipp's go. Otherwise the result is NOT_SHOWN at pilot size (F5): 64 entries × 15 add about 13% rows, while
+  the learning curve predicts only about −0.002 BCE, so a null result does not rule out a larger campaign.
+- **Also reported, not gated:** the same paired difference on the 64 pilot seeds' real rows vs all other dev rows,
+  and `run1` scores.
+- **Secondary:** CRN effects per operator (paired child − control outcome per entry, cluster bootstrap by seed).
+  These are a sanity check of signs and a direct read of HP, gold, potion and relic worth at the Act-4 entry.
+
+## Verify scripts
+- `control_check.py UNIT_DIR RUN1_TARS...`: control vs run 1.
+- `entry_diff_check.py a4p-*.json`: each child's entry record differs from child 0's only in its operator's fields
+  (reviewer F3; it runs clean on the #917 smoke 2 children).

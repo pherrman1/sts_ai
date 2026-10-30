@@ -70,7 +70,8 @@ def main(argv):
         if hdr.get("a4Perturb", {}).get("child") != c["child"]:
             raise SystemExit(f"{g}: header a4Perturb does not name child {c['child']}")
         if prefix(rs, index)[:len(base) - 1] != base[:-1]:
-            # the last parent state is the entry state, which the child's perturbation changes
+            # the parent stops before recording the entry state; its last prefix row is the state before the
+            # entry, which the child records again with its own row order, so compare all but that row
             raise SystemExit(f"{g}: prefix differs from the parent")
         states = {r["index"]: r for r in rs if r.get("type") == "state"}
         result["children"].append({
