@@ -2,7 +2,7 @@
 """Run on the PC (heart1.pt + silverbot checkout). Encodes every Act-4 entry record with the frozen heart1 network.
 usage: heart1_embed.py ENTRIES.jsonl.gz HEART1_PT SILVERBOT_DIR OUT.npz [--device cuda]
 Writes pooled (N x dim) encoder output, the network's value-head output if it has one, and identity hashes.
-Model hyperparameters are read off the checkpoint shapes (dim, layers); heads default to 4 (override --heads).
+Model hyperparameters are read off the checkpoint shapes (dim, layers); heads default to 8 (heart1's training/labeling value) (override --heads).
 The trim (map rows >= mapY) and the appended-companion pattern follow tools/heart_outcome_value.py (§498)."""
 import argparse, gzip, json, hashlib, sys, copy
 from pathlib import Path
@@ -18,7 +18,7 @@ def trim_record(record):
 
 def main():
     a = argparse.ArgumentParser(); a.add_argument('entries'); a.add_argument('checkpoint'); a.add_argument('silverbot'); a.add_argument('out')
-    a.add_argument('--device', default='cuda'); a.add_argument('--heads', type=int, default=4); a.add_argument('--batch', type=int, default=256)
+    a.add_argument('--device', default='cuda'); a.add_argument('--heads', type=int, default=8); a.add_argument('--batch', type=int, default=256)
     a.add_argument('--mlp_mult', type=int, default=4)
     args = a.parse_args()
     sb = Path(args.silverbot); sys.path[:0] = [str(sb), str(sb / 'build')]
@@ -27,7 +27,7 @@ def main():
     shapes = {k: tuple(v.shape) for k, v in sd.items()}
     print(json.dumps(shapes, indent=0)[:3000])
     dim = next(v[-1] for k, v in shapes.items() if 'emb' in k.lower() and len(v) == 2)
-    layers = len({k.split('.')[k.split('.').index('layers') + 1] for k in sd if '.layers.' in k}) or 2
+    layers = len({k.split('.')[1] for k in sd if k.startswith('layers.')})
     use_value = any('value' in k.lower() for k in sd)
     hp = network.ModelHP(dim=dim, n_layers=layers, n_heads=args.heads, mlp_dim_mult=args.mlp_mult, use_value_head=use_value)
     net = network.NN(hp); net.load_state_dict(sd, strict=True); net = net.requires_grad_(False).eval().to(args.device)
