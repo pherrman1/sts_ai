@@ -63,3 +63,16 @@ data branch `claude/va4-heart1-probe-data` @ 46ab578f). Same CV; the probe arms 
   0.276 of 0.43); embedding as extra columns in GBM/LR −0.007 [−0.013, −0.000].
 - Interpretation: heart1's encoder carries most of what V_A4 can learn from 7k entries; the gain from combining is
   small and needs torch + heart1.pt at scoring time (PC). Not in the drop-in model.
+
+## heart1.pt fine-tune (Philipp 15:06Z; [`exp10`](logs/exp10_finetune_eval.log))
+`tools/heart1_finetune.py` on the PC GPU (Remote Control; data branch `claude/va4-heart1-probe-data` @ 4a5475a; one
+fix during the smoke, 45f7eec: top2 had also trained the input embeddings). Same folds (reps 0-2), new head on
+[pooled, source flags], per-game BCE, early stop on the inner fold; frozen 14 min, top2 19 min, full 28 min.
+| OOF, dev core | BCE | R² | vs linear probe (LR on frozen embedding) | ENS_rc + this (1:1) vs ENS_rc |
+|---|---|---|---|---|
+| frozen encoder, MLP head | 0.508 | 0.254 | +0.018 [+0.011, +0.026] | −0.004 [−0.011, +0.003] |
+| top2 layers trained | 0.505 | 0.261 | +0.015 [+0.007, +0.022] | −0.006 [−0.013, +0.000] |
+| full encoder trained | 0.499 | 0.272 | +0.009 [+0.001, +0.016] | −0.008 [−0.014, −0.002] |
+| (linear probe, exp9) | 0.490 | 0.286 | — | −0.010 [−0.016, −0.004] |
+Fine-tuning does not beat the plain linear probe on the frozen embedding at ~5.5k training entries; the best
+combination stays ENS_rc + linear probe (BCE 0.481, R² 0.302).
