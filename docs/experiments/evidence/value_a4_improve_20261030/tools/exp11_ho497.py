@@ -1,6 +1,6 @@
-"""usage: VA4_DATA=DIR exp11_ho497.py [3|4]: 3 = + 482 §497 Heart-outcome entries; 4 = also + 1,250 AZ gen0/gen1b entries.
-+ 482 §497 Heart-outcome entries (older stack, student C) on top of exp8's ENS_rc training set; scored on the same dev
-core rows. usage: VA4_DATA=DIR exp11_ho497.py"""
+"""Old-game sources on top of exp8's ENS_rc training set, scored on the same dev core rows.
+usage: VA4_DATA=DIR exp11_ho497.py [3|4]: 3 = + 482 §497 Heart-outcome entries (older stack, student C);
+4 = also + 1,250 AZ gen0/gen1b entries (az_gen01_a4.jsonl.gz)."""
 import sys, json, pickle, numpy as np, core, feats
 LV = int(sys.argv[1]) if len(sys.argv) > 1 else 3
 from exp3lib import xg, lr

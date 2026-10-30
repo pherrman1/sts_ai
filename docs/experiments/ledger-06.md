@@ -25381,6 +25381,8 @@ entries; old TEST read once as a secondary.
   averaging both −0.010 [−0.016, −0.004] (arms chosen after CV, mildly optimistic); heart1's value head alone 0.604.
   Fine-tuning heart1 (frozen + MLP head / top 2 layers / full, PC GPU) is worse than that linear probe (full +0.009
   [+0.001, +0.016]) with this recipe (≤ 12 epochs; the frozen arm was still improving at the cap).
+- Remaining old games (§497 Heart-outcome train/val, 482 entries; AZ gen0/gen1b from the PC, 1,250): −0.0017
+  [−0.006, +0.003] together; old data is exhausted.
 **Decision:** drop-in model `tools/va4_model.py` + `model/` (ENS_all with relic counters and card state, trained on
 seed % 4 != 3) for stage 5 to adopt; no default change (offline value, not used in play).
 Next (Philipp's call): adopt the heart1 linear probe as an add-on (needs torch + heart1.pt at scoring time), or keep the record-only model.

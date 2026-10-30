@@ -89,7 +89,8 @@ under-trained; this is not a general negative for fine-tuning.
 ## More old games ([`exp11`](logs/exp11_ho497.log), [`exp11 4`](logs/exp11_ho497_azgen01.log); logs trimmed like exp9/10)
 - §497 Heart-outcome collection (train + validation deliveries only, SEALED-test never opened;
   `tools/extract_heart_outcome.py`): 1,440 games, 482 Act-4 entries. Added to ENS_rc's training set: −0.0001
-  [−0.004, +0.004].
+  [−0.004, +0.004]. These records have no `obs.deck.misc`, so their Searing Blow / Ritual Dagger misc columns are 0
+  (`feats.card_state` fallback). Extract on the share: `/mnt/project-files/value-a4-improve/ho497_a4.pkl`.
 - AZ gen0 self-play (111140712-142375) + gen1b A/B (111142376-142887) from the PC, exported by Remote Control
   (`az_gen01_a4.jsonl.gz` sha256 06c0021f…, data branch @ 5b24c9f): 1,250 Act-4 entries (956 outside TEST). Both
   sources together: −0.0017 [−0.006, +0.003].
