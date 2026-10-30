@@ -2,6 +2,8 @@
 """Stage 5: backward fit V_A4 -> V_A3 -> V_A2 -> V_A1 + per-act level calibration + gate (README "Analysis").
 Written and committed before the stage-4 capture was read; plumbing test-run once on the 32 run-1 pilot games only
 (stage-4 dir empty): runs end to end, numbers meaningless at that size (act 2 stopped at 0 trees).
+First full run was OOM-killed in act 1 (start records kept in memory); fix = keep feature vectors instead of records,
+no change to any definition. Acts 3 and 2 of that run are reproduced by the rerun.
 usage: stage5_fit.py RUN1_UNITS STAGE4_UNITS STAGE2_A4.pkl RUN1_A4.pkl OUT_DIR
   RUN1_UNITS / STAGE4_UNITS = verify_campaign.py --extract dirs (out/units/<id>/...).
 
@@ -136,12 +138,12 @@ def main(run1_units, stage4_units, p2, p1, out):
                     for e, v in zip(ends, vals):
                         if e.get('start') is not None: starts[e['start']].append(v)
                     for si, vs in starts.items():
-                        ex.append((s, a['starts'][si], float(np.mean(vs)), len(vs)))
+                        ex.append((s, feat_record(a['starts'][si]), float(np.mean(vs)), len(vs)))  # features, not records (memory)
                     acts.append((a['key'], float(vals.mean()) if len(vals) else None,
-                                 [(a['starts'][si], len(vs)) for si, vs in starts.items()]))
+                                 [(feat_record(a['starts'][si]), len(vs)) for si, vs in starts.items()]))
                 if split(s) == 'test' and r['screen'] == 5 and len(acts) >= 2:
                     test_roots.append((s, acts, qs.get(r['decisionIndex'], {})))
-        Xk = np.array([feat_record(e[1]) for e in ex]); yk = np.array([e[2] for e in ex]); wk = np.array([e[3] for e in ex], float)
+        Xk = np.array([e[1] for e in ex]); yk = np.array([e[2] for e in ex]); wk = np.array([e[3] for e in ex], float)
         spk = np.array([split(e[0]) for e in ex])
         predk, info = gbm(Xk, yk, wk, spk == 'train', spk == 'validation', mono=True)
         info['examples'] = {t: int((spk == t).sum()) for t in ('train', 'validation', 'test')}
@@ -160,7 +162,7 @@ def main(run1_units, stage4_units, p2, p1, out):
             for key, lab, sts in acts:
                 if lab is None or not sts: continue
                 w = np.array([c for _, c in sts], float)
-                pv[key] = float((Vcal[k](np.array([feat_record(x) for x, _ in sts])) * w).sum() / w.sum())
+                pv[key] = float((Vcal[k](np.array([x for x, _ in sts])) * w).sum() / w.sum())
             labs = {key: lab for key, lab, _ in acts if lab is not None}
             keys = [x for x in labs if x in pv and x in q]
             for i in range(len(keys)):
