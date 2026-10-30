@@ -25432,3 +25432,24 @@ new, research only), reuse cap 262,144. 16 workers (Philipp 14:45Z), 63 CPU-h. 6
 and its whole-run gate, Philipp's call.
 Seeds: none new (111384000-629 in the used §696 expert-anchored block 111384000-385023).
 **Knowledge impact:** cross-fight relic counters can be worth ≈ 10 pp of Heart kill; issue #914.
+
+## §724 — Incense Burner term at Shield & Spear: pricing the counter in Silver's S&S leaf raises Heart kill by +5.9 pp [+4.1, +7.8] (PASS); 94% vs 63% of runs reach the Heart on an aligned counter at −1.3 S&S HP and +0.5 pp S&S death (592 S&S states × 2 arms × 4, replays of used seeds, 2026-10-30)
+
+**Question:** Philipp (2026-10-30 17:13Z, "Ja mach das" to §723's next step): does a priced S&S end-state term for the
+Incense Burner counter (`STS_SILVER_INCENSE_HEART_PHASE`, research, default off) make Silver line Intangible up with
+the Heart's attacks and raise the Heart kill rate after the stall's cost?
+**Data:** [PREREG](evidence/incense_term_gate_20261030/PREREG.md),
+[RESULT](evidence/incense_term_gate_20261030/RESULT.md). Term: a won S&S leaf with Incense Burner adds 1.33 HP × §723's
+Heart kill pp for the counter (−1.75 … +10.16). All 592 S&S entries holding Incense Burner (79 exact duplicates
+disclosed) played S&S → Heart (`act4replay`, new `STS_ACT4REPLAY_CHAIN=heart`) with the term off and on, 4 paired
+replicates, battle seeds in the used blocks 111384000, 111382000, 111395000, 111398100 (+ state). Silver as §723
+(learned stop, Act 4 strong off). 16 workers (Philipp 19:08Z), 70 CPU-h, 592/592 units verified, all rc=0.
+**Result:**
+- Heart kill 57.3% → 63.1%, on − off +5.9 pp [+4.1, +7.8]; first copy of the 513 distinct states +5.9 [+4.0, +8.0].
+- Aligned counter at the Heart 63% → 94% (mostly counter 4, else 1); S&S HP −1.3 [−2.1, −0.6], S&S turns +0.5,
+  S&S death +0.5 pp [−0.1, +1.2]. Gain similar for every counter at S&S entry. CPU +3%.
+- Caveats: research Heart search, not flat 40k Act 4 strong; price fitted on largely the same games; scale untuned.
+**Decision:** PASS (pre-registered). Default candidate; a production-budget check and the default switch are Philipp's
+call. Issue #914: first cross-fight state term with a fight-level win.
+Seeds: none new (replays in used blocks).
+**Knowledge impact:** Incense Burner timing is worth ≈ 6 pp of Heart kill for Incense runs at research budget.

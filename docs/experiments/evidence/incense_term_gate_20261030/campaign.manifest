@@ -1,0 +1,10 @@
+name          incense-term-gate
+code_commit   bfd45383eaaeb5efcfb1658b3225f6f3ed89d2e4
+binary_sha256 0ef572a565cf73f6b3bc5465fffeaf672716d69868cc1ac7236db7e89f2b2e30
+workers       16
+share         /mnt/project-files/incense-term-gate
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 45
+input ss_states.tar /mnt/project-files/incense-term-gate/ss_states.tar 5ad87557394e7380acb55ac3723e026ab699ecb4e5715c285feece318f1e4c88
