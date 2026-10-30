@@ -40,7 +40,7 @@ outcomes at act k+1's first state of the 1,248 non-pilot base games; act 4: base
 
 | | act 1 | act 2 | act 3 | act 4 |
 |---|---|---|---|---|
-| rollout variance / p(1 − p) | 0.107 | 0.196 | 0.240 | 1 (game end) |
+| rollout variance / p(1 − p) | 0.107 | 0.195 | 0.240 | 1 (game end) |
 | sibling difference / independent | 0.042 | 0.077 | 0.093 | 0.215 |
 | median label SE (64 rollouts) | 1.7 pp | 2.0 pp | 2.6 pp | 4.8 pp |
 | death in act: rollouts (first root of the pilot games) / real (all base games) | 15% / 14% | 36% / 27% | 53% / 33% | 45% / 37% |
