@@ -1165,7 +1165,8 @@ void act4Replay(int nStates, const std::string &statesPath, const std::string &o
                 const bool decided = bc.outcome != Outcome::UNDECIDED;
                 const bool won = bc.outcome == Outcome::PLAYER_VICTORY;
                 const bool valid = trainingRunValid(decided);
-                out << si << ',' << s.value("id", std::string()) << ',' << encName << ',' << r << ',' << budget << ','
+                std::ostringstream row;   // written only once the whole row (and any chained Heart) is done
+                row << si << ',' << s.value("id", std::string()) << ',' << encName << ',' << r << ',' << budget << ','
                     << battleSeed << ',' << preHp << ',' << preMaxHp << ',' << prePotions << ',' << (valid ? 1 : 0)
                     << ',' << (won ? 1 : 0) << ',' << (won ? bc.player.curHp : 0) << ',' << bc.potionCount << ','
                     << bc.turn << ',' << std::setprecision(6) << cpu << ',' << regime << ',' << budgetPolicy;
@@ -1176,6 +1177,7 @@ void act4Replay(int nStates, const std::string &statesPath, const std::string &o
                     int heartHp = 0, heartTurns = 0;
                     double heartCpu = 0;
                     if (valid && won) {
+                        copy.regainControlAction = [](GameContext &) {};   // no S&S rewards
                         bc.exitBattle(copy);
                         copy.curMapNodeY = 3;
                         copy.floorNum = 56;
@@ -1193,10 +1195,10 @@ void act4Replay(int nStates, const std::string &statesPath, const std::string &o
                         heartHp = heartWon ? heart.player.curHp : 0;
                         heartTurns = heart.turn;
                     }
-                    out << ',' << counter << ',' << (heartValid ? 1 : 0) << ',' << (heartWon ? 1 : 0) << ',' << heartHp
+                    row << ',' << counter << ',' << (heartValid ? 1 : 0) << ',' << (heartWon ? 1 : 0) << ',' << heartHp
                         << ',' << heartTurns << ',' << std::setprecision(6) << heartCpu;
                 }
-                out << '\n';
+                out << row.str() << '\n';
             }
         } catch (const std::exception &e) {
             search::g_nativeSilverPlannerSeedOverride.reset();
