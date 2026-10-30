@@ -25408,7 +25408,7 @@ scripts on later Act-4 value models. The combat gap stays with elite/boss evalua
 Seeds: none.
 **Knowledge impact:** none.
 
-## §TBD — Incense Burner phase before the Heart, causal paired probe: forcing the counter to an "aligned" phase (Intangible on a Heart attack) raises Heart kill by +12.0 pp [+9.7, +14.5] over a "wasted" phase (PHASE_MATTERS); one more Shield & Spear turn is worth +14 pp at counter 2 and −18 pp at counter 4 (630 states × 6 counters, replays of used seeds, 2026-10-30)
+## §723 — Incense Burner phase before the Heart, causal paired probe: forcing the counter to an "aligned" phase (Intangible on a Heart attack) raises Heart kill by +12.0 pp [+9.7, +14.5] over a "wasted" phase (PHASE_MATTERS); one more Shield & Spear turn is worth +14 pp at counter 2 and −18 pp at counter 4 (630 states × 6 counters, replays of used seeds, 2026-10-30)
 
 **Question:** Philipp (2026-10-30 13:02Z): can stalling Shield & Spear to line Incense Burner's Intangible up with the
 Heart's big hits pay off? Silver's leaf and the Act-4 values ignore the counter (§721, issue #914). Causal proof of
