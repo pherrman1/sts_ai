@@ -1,0 +1,12 @@
+{
+ "rows_train": 5484,
+ "games_train": 7108.0,
+ "gbm_best_iter_trainonly": 963,
+ "gbm_rounds": 1285,
+ "selftest_max_abs_diff": 5.551115123125783e-17,
+ "mean_pred_trainrows": 0.5963858591687694,
+ "sha256": {
+  "va4_gbm.ubj": "4c346c1b5feb7d651251911ba93aba186350b366ce9142c9f3d0085184e105df",
+  "va4_lr.json": "06276b52f44d849aabadf5c43e893c38a182bbf5ad4740689a8fa200a8301250"
+ }
+}
