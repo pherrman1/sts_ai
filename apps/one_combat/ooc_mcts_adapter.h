@@ -511,6 +511,13 @@ void observeOocRootProbe(const GameContext &, const PathHistory &, std::uint64_t
 // Executes the live search model's root candidate whose key is `key` (STS_OOC_FORCE_DECISION). False with `error`
 // when no root candidate has that key; the policy thread state is left as before.
 bool executeOocRootKey(GameContext &, const PathHistory &, const std::string &key, std::string &error);
+// STS_OOC_VALUE_CHOOSER=CMD (research, default off; §725 follow-up): at real decisions on the listed screens
+// (STS_OOC_VALUE_CHOOSER_SCREENS, default rewards,boss_relic,card_select) in the listed acts (STS_OOC_VALUE_CHOOSER_ACTS,
+// default 1,2), after the rule chain and before student_sel, the top STS_OOC_VALUE_CHOOSER_TOP (default 3) root
+// candidates by prior each get the public record of a sampled successor; the external scorer CMD (one process per run,
+// JSON lines on stdin/stdout: {"act":A,"records":[...]} -> {"values":[...]}) prices them and the best is executed
+// (ties: higher prior). STS_OOC_VALUE_CHOOSER_LOG=PATH appends one row per choice. False when it does not apply.
+bool valueChooserStep(GameContext &, const PathHistory &, std::uint64_t runSeed, std::uint64_t decisionIndex);
 // Policy-target capture (heartoutcomegen policy). arm: the next
 // oocMctsPolicyStep records its root (heart1 record, candidate keys, heart1
 // tokens, prior/visits/Q, checkpoints, selection, flags) without changing the

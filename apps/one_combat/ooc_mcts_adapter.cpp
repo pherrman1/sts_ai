@@ -6479,6 +6479,186 @@ bool executeOocRootKey(GameContext &gc, const PathHistory &path, const std::stri
     if (!found) { error = "forced_key_not_a_root_candidate"; return false; }
     return executeOocMctsRoot(gc, *found, error);
 }
+namespace {
+struct ValueChooserConfig {
+    std::string command, logPath;
+    unsigned screens = 0, acts = 0, top = 3;
+};
+const std::optional<ValueChooserConfig> &valueChooserConfig() {
+    static const auto config = [] () -> std::optional<ValueChooserConfig> {
+        const char *command = std::getenv("STS_OOC_VALUE_CHOOSER");
+        if (!command || !*command) {
+            for (const char *key : {"STS_OOC_VALUE_CHOOSER_SCREENS", "STS_OOC_VALUE_CHOOSER_ACTS",
+                                    "STS_OOC_VALUE_CHOOSER_TOP", "STS_OOC_VALUE_CHOOSER_LOG"})
+                if (std::getenv(key)) throw std::runtime_error(std::string(key) + " requires STS_OOC_VALUE_CHOOSER");
+            return std::nullopt;
+        }
+        ValueChooserConfig c;
+        c.command = command;
+        const auto list = [](const char *key, const char *fallback) {
+            const char *raw = std::getenv(key);
+            std::vector<std::string> out;
+            std::stringstream in(raw && *raw ? raw : fallback);
+            for (std::string item; std::getline(in, item, ',');) out.push_back(item);
+            return out;
+        };
+        const std::map<std::string, sts::ScreenState> names{{"event", sts::ScreenState::EVENT_SCREEN},
+            {"rewards", sts::ScreenState::REWARDS}, {"boss_relic", sts::ScreenState::BOSS_RELIC_REWARDS},
+            {"card_select", sts::ScreenState::CARD_SELECT}, {"treasure", sts::ScreenState::TREASURE_ROOM},
+            {"rest", sts::ScreenState::REST_ROOM}, {"shop", sts::ScreenState::SHOP_ROOM}};
+        for (const auto &name : list("STS_OOC_VALUE_CHOOSER_SCREENS", "rewards,boss_relic,card_select")) {
+            const auto at = names.find(name);
+            if (at == names.end())
+                throw std::runtime_error("STS_OOC_VALUE_CHOOSER_SCREENS: unknown screen " + name
+                                         + " (event, rewards, boss_relic, card_select, treasure, rest, shop)");
+            c.screens |= 1u << int(at->second);
+        }
+        for (const auto &act : list("STS_OOC_VALUE_CHOOSER_ACTS", "1,2")) {
+            if (act != "1" && act != "2" && act != "3") throw std::runtime_error("STS_OOC_VALUE_CHOOSER_ACTS must list 1, 2, 3");
+            c.acts |= 1u << std::stoi(act);
+        }
+        if (const char *raw = std::getenv("STS_OOC_VALUE_CHOOSER_TOP")) {
+            const std::string t(raw);
+            if (t.empty() || t.size() > 2 || t.find_first_not_of("0123456789") != std::string::npos
+                    || std::stoi(t) < 2 || std::stoi(t) > 16)
+                throw std::runtime_error("STS_OOC_VALUE_CHOOSER_TOP must be 2..16");
+            c.top = unsigned(std::stoi(t));
+        }
+        if (const char *log = std::getenv("STS_OOC_VALUE_CHOOSER_LOG")) c.logPath = log;
+        return c;
+    }();
+    return config;
+}
+
+// The scorer process: started on first use, JSON lines over two pipes, one request at a time.
+class ValueChooserServer {
+public:
+    explicit ValueChooserServer(const std::string &command) {
+        int toChild[2], fromChild[2];
+        if (pipe(toChild) != 0) throw std::runtime_error("STS_OOC_VALUE_CHOOSER: pipe failed");
+        if (pipe(fromChild) != 0) { close(toChild[0]); close(toChild[1]); throw std::runtime_error("STS_OOC_VALUE_CHOOSER: pipe failed"); }
+        std::fflush(nullptr);
+        pid_ = fork();
+        if (pid_ < 0) throw std::runtime_error("STS_OOC_VALUE_CHOOSER: fork failed");
+        if (pid_ == 0) {
+            dup2(toChild[0], 0); dup2(fromChild[1], 1);
+            close(toChild[0]); close(toChild[1]); close(fromChild[0]); close(fromChild[1]);
+            execl("/bin/sh", "sh", "-c", command.c_str(), static_cast<char *>(nullptr));
+            _exit(127);
+        }
+        close(toChild[0]); close(fromChild[1]);
+        write_ = toChild[1]; read_ = fromChild[0];
+        fcntl(write_, F_SETFD, FD_CLOEXEC); fcntl(read_, F_SETFD, FD_CLOEXEC);
+    }
+    ~ValueChooserServer() {
+        if (write_ >= 0) close(write_);
+        if (read_ >= 0) close(read_);
+        if (pid_ > 0) waitpid(pid_, nullptr, 0);
+    }
+    nlohmann::json ask(const nlohmann::json &request) {
+        const auto line = request.dump() + '\n';
+        for (std::size_t at = 0; at < line.size();) {
+            const ssize_t n = write(write_, line.data() + at, line.size() - at);
+            if (n < 0 && errno == EINTR) continue;
+            if (n <= 0) throw std::runtime_error("STS_OOC_VALUE_CHOOSER: scorer write failed");
+            at += std::size_t(n);
+        }
+        for (;;) {
+            const auto end = buffer_.find('\n');
+            if (end != std::string::npos) {
+                const auto reply = nlohmann::json::parse(buffer_.substr(0, end));
+                buffer_.erase(0, end + 1);
+                return reply;
+            }
+            char chunk[65536];
+            const ssize_t n = read(read_, chunk, sizeof chunk);
+            if (n < 0 && errno == EINTR) continue;
+            if (n <= 0) throw std::runtime_error("STS_OOC_VALUE_CHOOSER: scorer exited");
+            buffer_.append(chunk, std::size_t(n));
+        }
+    }
+private:
+    pid_t pid_ = -1;
+    int write_ = -1, read_ = -1;
+    std::string buffer_;
+};
+std::mutex valueChooserMutex;
+}
+
+bool valueChooserStep(GameContext &gc, const PathHistory &path, std::uint64_t seed, std::uint64_t index) {
+#ifdef STS_LIVE_ADVISOR
+    (void)gc; (void)path; (void)seed; (void)index;
+    if (valueChooserConfig()) throw std::runtime_error("STS_OOC_VALUE_CHOOSER is unavailable in the live advisor");
+    return false;
+#else
+    const auto &config = valueChooserConfig();
+    if (!config || !(config->screens & (1u << int(gc.screenState))) || !(config->acts & (1u << gc.act))
+            || gc.outcome != sts::GameOutcome::UNDECIDED)
+        return false;
+    if (!liveEnabled) throw std::runtime_error("STS_OOC_VALUE_CHOOSER requires live OOC MCTS (STS_OOC_MCTS=1)");
+    // Candidates and successor records in a forked child: building the model scores priors, sampling may draw.
+    const auto options0 = liveOptions;
+    auto found = forkLeafReplay([&] {
+        try {
+            ImaginedScope scope;
+            auto options = options0;
+            options.siblingCapture.reset();
+            options.leafObserver = {};
+            options.priorTracePath.clear();
+            OocGameContextModel model(gc, path, liveSamplerFor(gc), std::move(options));
+            nlohmann::json out = {{"actions", nlohmann::json::array()}, {"legal", 0}};
+            if (model.terminalValue(0) || model.isLeafBoundary(0)) return out;
+            auto actions = model.legalActions(0);
+            out["legal"] = actions.size();
+            if (actions.size() < 2) return out;
+            std::stable_sort(actions.begin(), actions.end(), [](const auto &a, const auto &b) { return a.prior > b.prior; });
+            if (actions.size() > config->top) actions.resize(config->top);
+            std::mt19937_64 stream(splitMix64(oocMctsSearchSeed(seed, index) ^ 0x56414c5545434855ULL));   // "VALUECHU"
+            for (const auto &a : actions) {
+                const auto &c = model.candidate(0, a.id);
+                const auto child = model.sampleSuccessor(0, a.id, stream);
+                nlohmann::json record;
+                if (!heart1::buildPublicLeafRecord(model.state(child), record))
+                    return nlohmann::json{{"error", "no_public_record"}, {"key", c.key}};
+                out["actions"].push_back({{"key", c.key}, {"prior", a.prior}, {"label", candidateLabel(model.state(0), c)},
+                                          {"record", std::move(record)}});
+            }
+            return out;
+        } catch (const std::exception &e) { return nlohmann::json{{"error", e.what()}}; }
+    }, 120000, 120, std::size_t(1) << 24);
+    if (found.contains("error")) throw std::runtime_error("STS_OOC_VALUE_CHOOSER: " + found.dump());
+    auto &actions = found["actions"];
+    if (actions.size() < 2) return false;
+    nlohmann::json request = {{"act", gc.act}, {"floor", gc.floorNum}, {"records", nlohmann::json::array()}};
+    for (auto &a : actions) request["records"].push_back(std::move(a["record"]));
+    nlohmann::json reply;
+    {
+        std::lock_guard<std::mutex> lock(valueChooserMutex);
+        static ValueChooserServer server(config->command);
+        reply = server.ask(request);
+    }
+    if (!reply.contains("values") || reply["values"].size() != actions.size())
+        throw std::runtime_error("STS_OOC_VALUE_CHOOSER: bad scorer reply " + reply.dump().substr(0, 300));
+    std::size_t best = 0;
+    for (std::size_t i = 1; i < actions.size(); ++i)   // candidates are in prior order: ties keep the higher prior
+        if (reply["values"][i].get<double>() > reply["values"][best].get<double>()) best = i;
+    const auto key = actions[best]["key"].get<std::string>();
+    if (!config->logPath.empty()) {
+        nlohmann::json row = {{"schema", "value-chooser-v1"}, {"seed", seed}, {"decisionIndex", index}, {"act", gc.act},
+            {"floor", gc.floorNum}, {"screen", int(gc.screenState)}, {"legal", found["legal"]}, {"chosen", best},
+            {"candidates", nlohmann::json::array()}};
+        for (std::size_t i = 0; i < actions.size(); ++i)
+            row["candidates"].push_back({{"key", actions[i]["key"]}, {"label", actions[i]["label"]},
+                                         {"prior", actions[i]["prior"]}, {"value", reply["values"][i]}});
+        std::lock_guard<std::mutex> lock(liveTraceMutex);
+        std::ofstream out(config->logPath, std::ios::app);
+        if (!out || !(out << row.dump() << '\n')) throw std::runtime_error("STS_OOC_VALUE_CHOOSER_LOG write failed");
+    }
+    std::string error;
+    if (!executeOocRootKey(gc, path, key, error)) throw std::runtime_error("STS_OOC_VALUE_CHOOSER: " + error);
+    return true;
+#endif
+}
 bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t seed,
     std::uint64_t index, LiveOocMctsMetrics &metrics) {
     if (leafStabilityMode && (index != leafStabilityMode->roots.size()
