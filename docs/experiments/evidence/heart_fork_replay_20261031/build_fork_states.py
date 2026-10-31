@@ -2,6 +2,9 @@
 heart_states.tar -> act4replay JSONL, one file each (SEED-bNN.jsonl: b00 = base, b01..b04 = forks 1-4).
 
   build_fork_states.py RUN1_UNITS_DIR META.json OUT_DIR
+  RUN1_UNITS_DIR: out/units of the extracted run-1 tars (/mnt/project-files/value-clean-labels-run1/units/SEED_*.tar,
+  *.ctm.jsonl.gz only). META.json: heart_states.tar's. fork_states.tar = the b01..b04 files + meta.json
+  (cd OUT_DIR && tar cf fork_states.tar $(ls *-b0[1-4].jsonl) meta.json); b00 equals #923's p00 and is not rerun.
 """
 import gzip, json, glob, os, re, sys
 REPO = os.path.dirname(os.path.abspath(__file__)).split('/docs/')[0]
@@ -18,7 +21,7 @@ def heart(path):
     h = [x for x in rs if x.get('roomClass') == 'BOSS' and x['act'] == 4]
     return h[-1] if h else None
 for s in seeds:
-    d = glob.glob(os.path.join(units, f'{s}_*'))[0]
+    d = [x for x in glob.glob(os.path.join(units, f'{s}_*')) if os.path.isdir(x)][0]
     for k, f in [(0, f'base-{s}.ctm.jsonl.gz')] + [(i, f'fork-{s}-{i}.ctm.jsonl.gz') for i in range(1, 5)]:
         h = heart(os.path.join(d, f))
         if h is None:

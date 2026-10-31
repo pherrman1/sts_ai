@@ -35,3 +35,9 @@ None new. The battle seeds are the used entry seeds and seed + 1, the same seeds
   - Otherwise **INCONCLUSIVE**.
 - **Also reported.** Win rates for forks and controls, in game and fresh, plus the per-entry fresh-fork minus
   fresh-control difference.
+
+## Notes after the prelaunch review (no change to the rule)
+- The per-entry CI half-width is expected to be about ±0.07, so INCONCLUSIVE is a likely outcome even when the
+  truth is clear (reviewer K).
+- `build_fork_states.py` now globs only directories and documents how the tar was made. Rerun on the same extract,
+  it gives byte-identical files and `meta.json` (only the tar's own metadata differs).
