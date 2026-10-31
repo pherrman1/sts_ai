@@ -17,7 +17,7 @@ workers, 19:55-20:52Z. Every unit has 2 valid rows and printed the production lo
   - The in-game control beats its fresh replay by +8.3 pp [−0.9, +18.3].
   - The in-game children match their fresh replays, −1.9 pp [−7.8, +3.9].
   - The difference-in-differences is −10.3 pp [−20.0, −0.6].
-- **Per operator** (fresh child − fresh control, n entries, no CIs, exploratory):
+- **Per operator** (fresh child − fresh control, n children, 180 in total, no CIs, exploratory):
   - relic_add +9.5 (21), unupgrade +5.3 (19), max_hp +5.0 (10), relic_counter +5.0 (10).
   - card_remove +2.9 (17), upgrade +2.9 (17).
   - hp 0 (18), potion_remove 0 (9), relic_swap 0 (7).
@@ -37,7 +37,8 @@ Remaining candidates, none of them tested here:
    does not. But the children carry it in game too.
 3. **Something the in-game control shares with run 1 but the children do not.** The control replays run 1 byte for
    byte. One example would be Silver's tree reuse across fights or within the Heart, which only matches exactly on the
-   unperturbed path.
+   unperturbed path. This is less likely, though: run 1's redrawn unperturbed forks of the same entries,
+   which leave that path, also won 70.7% in game (§726).
 
 So the perturbation effects on Heart win are not evidence against V_A4's causal signs. A re-scoped check of candidate 3:
 - Replay the controls in game with tree reuse forced off.
