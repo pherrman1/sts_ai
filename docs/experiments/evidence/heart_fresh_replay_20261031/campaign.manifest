@@ -1,0 +1,10 @@
+name          heart-fresh-replay
+code_commit   93cef2bd0980f8271e42e4d0deb673805bbcd487
+binary_sha256 a4da31565c5852750f4382ccb25859ee6466d459031b3997cf74711777229f49
+workers       16
+share         /mnt/project-files/heart-fresh-replay
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 45
+input heart_states.tar /mnt/project-files/heart-fresh-replay/heart_states.tar 5daf06192e842210660b2d8c83b7cc53d0c83f0e84b5fb1f7d146bed1b7fc26b
