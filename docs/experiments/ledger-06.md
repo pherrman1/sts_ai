@@ -25484,7 +25484,7 @@ Seeds: none new (replays of used seeds 111384000-385023 and 111387032-255).
 **Knowledge impact:** score XGBoost models on the same sparse format they were trained on; act-end rollout labels
 carry ranking signal in act 1 but not yet in acts 2-3 at 1,280 games.
 
-## §TBD — V_A4 Act-4 entry perturbation pilot: 960 perturbed continuations of 64 run-1 entries (common random numbers) do not improve V_A4 in #915's CV (B − A −0.0005 BCE [−0.0026, +0.0017], NOT_SHOWN at pilot size); controls replay run 1 64/64 byte for byte, but perturbed children kill the Heart 7.6 pp less than controls (seed-clustered CI [−15, 0]; −8 [−14, −2] vs run 1's five games), even for upgrades and max-HP gains, concentrated in the Heart fight at equal Heart-entry HP; no combat-input bug found (review) (sign anomaly, open) (replays of used seeds, 2026-10-30/31)
+## §726 — V_A4 Act-4 entry perturbation pilot: 960 perturbed continuations of 64 run-1 entries (common random numbers) do not improve V_A4 in #915's CV (B − A −0.0005 BCE [−0.0026, +0.0017], NOT_SHOWN at pilot size); controls replay run 1 64/64 byte for byte, but perturbed children kill the Heart 7.6 pp less than controls (seed-clustered CI [−15, 0]; −8 [−14, −2] vs run 1's five games), even for upgrades and max-HP gains, concentrated in the Heart fight at equal Heart-entry HP; no combat-input bug found (review) (sign anomaly, open) (replays of used seeds, 2026-10-30/31)
 
 **Question:** Philipp (2026-10-30): V_A4 is data-limited (§722); do realistic perturbations of frozen Act-4 entry
 states (HP, max HP, gold, cards, upgrades, relics, counters, potions) add useful, causal training data?
