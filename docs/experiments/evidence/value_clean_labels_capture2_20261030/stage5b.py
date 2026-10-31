@@ -128,6 +128,10 @@ def main(run1_units, stage4_units, cap2_units, out, workers=4):
                     'encoder_columns': FF.N_FULL}, 'acts': {}}
     V = None
     for k in (3, 2, 1):
+        done = os.path.join(out, f'act{k}.json')   # resume: one act takes ~2 h, longer than a cloud background job may run
+        if os.path.exists(done) and os.path.exists(os.path.join(out, f'V_A{k}.pkl')):
+            res['acts'][k] = json.load(open(done)); V = pickle.load(open(os.path.join(out, f'V_A{k}.pkl'), 'rb'))
+            print(k, 'resumed', flush=True); continue
         with Pool(int(workers), initializer=_init, initargs=(V,)) as pool:
             G = [g for g in pool.map(per_game, [(s, pr, g, k) for s, (pr, g) in sorted(cap.items())], chunksize=1) if g['X'] is not None]
         Xk = sp.vstack([g['X'] for g in G]).tocsr(); yk = np.concatenate([g['y'] for g in G]); wk = np.concatenate([g['w'] for g in G])
@@ -185,6 +189,7 @@ def main(run1_units, stage4_units, cap2_units, out, workers=4):
         res['acts'][k] = {'model': info, 'concordance': conc, 'real_loss': real_loss, 'hp_inversions': hp_inv,
                           'upgrade_wrong_way': {'pairs': up_n, 'share': up_bad / max(up_n, 1)}}
         print(k, json.dumps(res['acts'][k]), flush=True)
+        json.dump(res['acts'][k], open(done, 'w'), indent=1, default=float)
         del G
     g = {}
     for k in (1, 2, 3):
