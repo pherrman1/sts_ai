@@ -13,9 +13,9 @@ Play is unchanged by the capture (observer only), so every replay reproduces its
 Cost: stage 4 measured ~0.75 lane-h per unit (256 units, 12:05-13:15Z on 176 lanes) -> ~740 lane-h,
 ~11-12 h on 16 workers x 4 lanes. Share ~4 GB. (The card's "350 lane-h / 2 h on 44" was my underestimate.)
 
-Analysis (stage 5b) is written and committed before this data is read: fresh TEST = capture-2 seeds with seed % 4 == 3;
+Analysis (stage 5b) is written and committed before this data is read (timing below): fresh TEST = capture-2 seeds with seed % 4 == 3;
 TRAIN/VALIDATION = the other capture-2 seeds plus the stage-4 and pilot games (their TEST seeds excluded from the
 gate); level calibration only on real run-1 states of games that are not used to fit that act's model.
 
-Script: stage5b.py RUN1_UNITS STAGE4_UNITS CAPTURE2_UNITS OUT_DIR (committed before capture-2 data exists;
+Script: stage5b.py RUN1_UNITS STAGE4_UNITS CAPTURE2_UNITS OUT_DIR (committed 9aa2562a at 17:38Z 10-30, after the first capture-2 tars landed on the share (17:10Z) but before any were read;
 plumbing-tested on 8 run-1 + 4 stage-4 games with STAGE5B_C2 pointed at four stage-4 seeds; no capture-2 data read).

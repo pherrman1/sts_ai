@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Stage 5b: backward fit V_A3 -> V_A2 -> V_A1 on all captured games, gate on the FRESH capture-2 TEST.
-Written and committed before the capture-2 data is read (README).  Same label definitions, encoder (full_feats.py),
+Committed 17:38Z 10-30 after the first capture-2 tars landed (17:10Z), before any were read (README).  Same label definitions, encoder (full_feats.py),
 V_A4 anchor (#915 va4_model) and gate as ../value_clean_labels_stage4_20261030/stage5_full.py, with three changes:
   1. splits: capture-2 seeds (111384032-111385023) by seed % 4 (3 TEST, 2 VALIDATION, else TRAIN); the already read
      pilot + stage-4 games are TRAIN (seed % 4 != 2) or VALIDATION (== 2) and never enter the gate.

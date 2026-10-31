@@ -1,6 +1,6 @@
 # Stage 5b result: backward fit V_A3 -> V_A2 -> V_A1 on 1,280 captured games, gate FAIL in all three acts
 
-Script `stage5b.py` (committed 9aa2562a before the capture-2 data was read; eval fix 73e7b2f7, resume 34314cf9).
+Script `stage5b.py` (committed 9aa2562a at 17:38Z 10-30, after the first capture-2 tars landed on the share (17:10Z) but before any were read; eval fix 73e7b2f7, resume 34314cf9).
 Data: run-1 pilot (32) + stage 4 (256) + capture 2 (992) price-captured replays = 1,280 games; 48,644 real run-1
 map states. Fresh TEST = capture-2 seeds with seed % 4 == 3 (never read before this run). Encoder `full_feats.py`
 (3,239 columns), act-end anchor for act 3 = #915 V_A4 ensemble (§722).

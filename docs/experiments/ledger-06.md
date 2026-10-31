@@ -25464,7 +25464,7 @@ replays, 44 workers, Philipp 10-30 11:59Z) and capture 2 ([evidence](evidence/va
 RUN_COMMIT 6573b9ce, 992 replays, 16 workers, Philipp 10-30 card + "nur 16 workers"), plus §720's 32 pilot games.
 Full encoder `full_feats.py` (3,239 columns: deck, upgrades, relics + counters, potions, gold, all offered
 cards/relics/potions, map min/max per room type over all reachable paths, ...). Stage 5 (`stage5_fit.py`,
-`stage5_full.py`) fitted on the 288 stage-4 games; stage 5b (`stage5b.py`, committed before capture 2 was read) on all
+`stage5_full.py`) fitted on the 288 stage-4 games; stage 5b (`stage5b.py`, committed 17:38Z 10-30, after the first capture-2 tars landed at 17:10Z but before any were read) on all
 1,280, gate on the fresh capture-2 TEST (seed % 4 == 3), calibration on VALIDATION games.
 **Result:**
 - Stage 5 FAIL with both feature sets (s0: act 3 concordance +0.006, act 2 −0.057; full encoder: act 1 +0.09
