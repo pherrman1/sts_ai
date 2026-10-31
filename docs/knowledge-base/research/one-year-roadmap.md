@@ -1,6 +1,6 @@
 # One-year roadmap to the A20 Heart kill (2026-11 to 2027-10)
 
-Last verified: 2026-10-31 against main `d4b4a1b` (ledger through §728, ADRs through 0063). Research and design only:
+Last verified: 2026-10-31 against main `6c96c25` (ledger through §728, ADRs through 0063). Research and design only:
 no gameplay seeds were run for this page.
 
 ## Purpose / research question
@@ -24,15 +24,15 @@ a planning number to be checked by the first experiments.
 ## Current conclusion
 
 1. **Compute is not the binding constraint any more; signal is.** At measured costs, one year of 200 cores buys
-   roughly 6 million production-strength A20 games or several hundred million cheap-combat games (table below).
+   roughly 4 million production-strength A20 games or several hundred million cheap-combat games (table below).
    Every recent dead end failed on signal, not cost: the value chooser lost −15.0 pp because value gaps of 0.01-0.02
    overrode a confident policy (§727); outcome labels could not rank siblings (§685, rho 0.49); act values failed
-   their gates (§725); AZ generations changed ~3% of choices for ~0 pp (§621, §643).
+   their gates (§725); AZ gen 2 changed ~3% of choices for +0.6 pp (§621, NOT_SHOWN), and the gen-3 prior was negative offline (§643).
 2. **What moved the Heart rate were structural fixes and the PPO-trained prior,** not value heads or search
    variants: flexible keys +6.1 pp (§691), the Incense Burner term at Shield and Spear +5.9 pp (§724), the calibrated
-   leaf M0 +2.15 pp (§661), map-only search +4.8 pp Act-4 arrival (§683), Act 4 strong +2.4 pp (§682), and before
+   leaf M0 +2.15 pp (§661), map-only search +4.8 pp Act-4 arrival (§683), the Act-4 strong replay +2.4 pp (§682, inconclusive, adopted by Philipp's call), and before
    that heart1/student as the prior (+23-25 pp Act-3 clears, §486/§488). heart1 is the one demonstrated route to a
-   strong run policy: PPO on ~0.66-1.3M games, ~6-7k core-hours, with only ~1/21 of its games at A20.
+   strong run policy: PPO on ~0.66M games, ~6-7k core-hours, with only ~1/21 of its games at A20.
 3. **Therefore the year should be spent on (a) a loss-mining and structural-fix pipeline, (b) much larger standard
    gates, (c) our own A20 PPO loop in this engine, and (d) run-aware combat leaves fed by that loop's value head.**
    "One monolithic network", "no rollouts" and Stochastic MuZero are deferred behind explicit gates; human imitation
@@ -45,7 +45,7 @@ a planning number to be checked by the first experiments.
 | 1. Make the engine exact first (months 0-3, thousands of replayed runs) | **Re-scope to a background track on the PC.** It does not gate the other work. | The game JAR exists only on the PC, so differential tests cannot use the cloud cores. The one-step parity probe (#651) found real bugs at a low step rate (canary 2: 260 matching, 30 mismatching steps through Act 2, most of them representation or export issues), each fixed as a default-on flag ([differential correctness](../evaluation/differential-correctness.md)). Simulator exactness changes live transfer, not the simulated Heart rate we gate on. |
 | 2. 1000× throughput, batched GPU inference | **Drop GPU batching; keep targeted CPU speed-ups.** | The GPU sits on the PC, the cores in cloud containers: actors cannot share a GPU batch. Combat CPU is already profiled (MLP prior 54%, playouts 83%; #780 and #789 gave 1.27-1.54× and −11..−15%). The dead ends did not die of cost (point 1 above). |
 | 3. One network for combat and OOC | **Keep two nets, share the target.** A shared run-state encoder is fine for OOC (heart1 already is one); the combat prior must stay a µs-scale MLP. | heart1 costs ~30 ms per call natively, student_sel d64 ~0.8 ms; OOC MCTS makes ~500 prior calls per decision. The Silver prior is called inside every playout step. What should be shared is the value target (P(Heart kill)), which the Incense term showed pays inside combat (§724). |
-| 4. AlphaZero / Stochastic MuZero without rollouts | **MuZero dropped** (we have an exact simulator; a learned model only adds error). **"No rollouts" deferred** until a value head beats rollout3 at sibling ranking. **Search-distillation loops deprioritised.** | Every value head so far ranks siblings at or below X2-B/rollout3 (§641-§649, §700, §715); Gumbel roots lost (§635 −11.6 pp, §693 NOT_SHOWN); the CRN particle search lost (§680); search changes ~6.5% of decisions; AZ gens 2-3 NOT_SHOWN (§621, §643). |
+| 4. AlphaZero / Stochastic MuZero without rollouts | **MuZero dropped** (we have an exact simulator; a learned model only adds error). **"No rollouts" deferred** until a value head beats rollout3 at sibling ranking. **Search-distillation loops deprioritised.** | Every value head so far ranks siblings at or below X2-B/rollout3 (§641-§649, §700, §715); Gumbel roots lost (§635 −11.4 pp, §693 NOT_SHOWN); the CRN particle search lost (§680); search changes ~6.5% of decisions; AZ gen 2 NOT_SHOWN (§621), gen-3 prior negative offline (§643). |
 | 5. Imitation bootstrap, league | **Imitation of our own best policy: already done** (student_sel). **Human imitation: drop** (§694 −2.1 pp, §696 −0.7 pp, NOT_SHOWN). **League: drop** (single-player game, no opponent to overfit to). | — |
 | 6. Evaluation as infrastructure | **Keep, rank high.** 200 cores make 1-pp gates affordable. | Paired SD per pair ≈ 0.42-0.46 (§691: ±2.6 pp at 1,024 pairs; §727: ±2.3 pp at 1,536). AIVAT cut SD only to 0.80× (§698), so sample size is the lever. |
 | 7. Team split | Not applicable: threads, at most two implementation/research threads at once unless Philipp asks. | Project instructions. |
@@ -53,15 +53,15 @@ a planning number to be checked by the first experiments.
 ## Measured costs and the yearly budget
 
 Per-game CPU, A20, from the 2026-10-31 rollout-cost measurement (no ledger entry; main `593db4f`, v3 build,
-4-CPU cloud, smoke-size n; raw `/mnt/project-files/rollout-cost/summary.txt`) and §685:
+4-CPU cloud, smoke-size n; raw `/mnt/project-files/rollout-cost/summary.txt`) and the §727 records:
 
 | Configuration | Core-seconds per game | Heart kills seen | Source |
 | --- | ---: | --- | --- |
-| Production default (map-only OOC MCTS + production Silver) | ~540 (0.15 core-h) | ~25-27% (§691, §727 arm A) | §685: a paired 1,024-seed A/B ≈ 310 core-h |
+| Production default (map-only OOC MCTS + production Silver) | ~826 (0.23 core-h) | ~25-27% (§691, §727 arm A) | §727 arm A, mean over 1,536 games (§685's older ≈ 310 core-h per 1,024-seed A/B implies ~540 s) |
 | student_sel alone + production Silver | 237 mean (113 median) | 2/13 | rollout-cost arm R |
 | student_sel + flat Silver 1,000 | 13.7 | 1/8 | arm G1000 |
 | student_sel + flat Silver 200 | 5.6 | 5/30 | arm G200 |
-| Full CTM rollout from act start (no real combat) | 0.014-0.037 | pessimistic (act-1 leaf 0.10 vs real) | arm CTM, §663 |
+| Full CTM rollout from an act start to game end (no real combat; per act start, not per game) | 0.014-0.037 | pessimistic (act-1 leaf 0.10 vs real) | arm CTM, §663 |
 | Full OOC MCTS on every screen (old default) | 971 (830 of it OOC search) | 1 game | arm M |
 
 **Assumption:** 50% effective utilisation (container resets every 2-3 h, ~3× container speed spread, idle tails;
@@ -69,13 +69,13 @@ project memory 10-23/10-31). Then one year gives about **0.9M core-hours**:
 
 | Use | Games per year at 0.9M core-h | Per day (200 cores, 50%) |
 | --- | ---: | ---: |
-| Production-strength games | ~6M | ~16k |
+| Production-strength games (826 s) | ~3.9M | ~10k |
 | Silver-1,000 self-play games (+ ~3 s policy forward with a heart1-size net) | ~190M | ~520k |
-| Silver-200 self-play games | ~580M | ~1.5M |
+| Silver-200 self-play games (+ ~3 s policy forward) | ~380M | ~1.0M |
 
-Gate cost (Inference, from SD ≈ 0.44 per pair): half-width ±2.6 pp needs 1,024 pairs (310 core-h, ~3 h); ±1.3 pp
-needs 4,096 pairs (~1,240 core-h, ~12 h); ±1.0 pp needs ~7,000 pairs (~2,100 core-h, ~1 day). Forty 1-pp gates cost
-~85k core-h, under 10% of the year.
+Gate cost (Inference, from SD ≈ 0.44 per pair): half-width ±2.6 pp needs 1,024 pairs (~470 core-h, ~5 h); ±1.3 pp
+needs 4,096 pairs (~1,900 core-h, ~19 h); ±1.0 pp needs ~7,000 pairs (~3,200 core-h, ~1.3 days). Forty 1-pp gates cost
+~130k core-h, about 14% of the year.
 
 GPU (Measured, project memory): student_sel and its variants train on the 3060 Ti; heart1-size (dim 256, 4 layers,
 ~4-5M parameters) fine-tunes fit; the PC runs one GPU job at a time. **Inference:** a PPO learner for a heart1-size
@@ -91,8 +91,8 @@ Gains are **Inference** ranges for planning; the decision rules below decide.
 
 | Rank | Phase | Expected gain | Compute | Why this rank |
 | ---: | --- | --- | --- | --- |
-| 1 | **Loss mining + structural fixes** (key/counter/phase rules, missing state in leaves, rule bugs) | +4 to +8 pp over the year, in 1-6 pp steps | Low: offline mining, then ~0.3-2k core-h per gate | Highest historical yield per core-hour (§691, §724, §661, §683, §682). Deaths given arrival: act 2 25%, act 3 40%, act 4 43% vs Baalorlord 14/9/10% ([external evidence](ooc/external-evidence-and-ideas.md#where-the-gap-is)). |
-| 2 | **Bigger standard gates** (4,096-7,000 pairs, frozen seed bank) | 0 pp directly; makes 1-2 pp changes visible and stops false negatives | ~1-2k core-h per gate | Many plausible effects are 1-3 pp (§707: most leading-sibling gaps < 2 pp), below today's ~4 pp detection limit. |
+| 1 | **Loss mining + structural fixes** (key/counter/phase rules, missing state in leaves, rule bugs) | +4 to +8 pp over the year, in 1-6 pp steps | Low: offline mining, then ~0.5-3k core-h per gate | Highest historical yield per core-hour (§691, §724, §661, §683, §682). Deaths given arrival: act 2 25%, act 3 40%, act 4 43% vs Baalorlord 14/9/10% ([external evidence](ooc/external-evidence-and-ideas.md#where-the-gap-is)). |
+| 2 | **Bigger standard gates** (4,096-7,000 pairs, frozen seed bank) | 0 pp directly; makes 1-2 pp changes visible and stops false negatives | ~2-3k core-h per gate | Many plausible effects are 1-3 pp (§707: most leading-sibling gaps < 2 pp), below today's ~4 pp detection limit. |
 | 3 | **A20 PPO fine-tune of the run policy in this engine** (heart1 recipe: outcome-driven, value baseline, init from heart1/student_sel, cheap combat if X1 passes) | 0 to +8 pp | Medium: ~5-20k core-h per million games + GPU | The only method that produced the current prior; heart1 saw ~5% A20 games, in its own engine with other rules; the distilled student was trained on keys-off acts 1-3 data and agreed with heart1 only 61-73% in key/Act-4 states (2026-10-17 audit), so the prior has never been optimised for this objective (Inference). Search distillation (AZ gens) had nothing to teach (§621, §643). |
 | 4 | **Run-aware combat leaf** (Silver's end-of-fight score replaced or corrected by a post-fight run value from phase 3's value head) | 0 to +5 pp | Low-medium: fight replays (`fightreplay`, `expertfights`, act4replay) | The single combat term that priced a future state won +5.9 pp (§724). Combat itself costs HP from act 2 on (§711: act-2 elites +5.4, act-3 bosses +5.2 HP vs expert on his states); budget does not help (§716, §718), Silver is near-optimal on last turns (§654), so the lever is what the fight leaves for later. §721's teacher check blocks today's V_A4 (max HP wrong sign, 1-3 HP unresolved), so this waits for a better value head. |
 | 5 | **Boss and act-2 elite planning** (better playout policy in bosses, distribution-following chance re-picks) | 0 to +3 pp | Medium | Trees plan about one round; bosses get 70-88% of simulated actions from playouts (§706); prior playouts are the only budget lever that paid (§681, ADR-0056). |
@@ -116,7 +116,7 @@ Gains are **Inference** ranges for planning; the decision rules below decide.
 
 | # | Experiment | Cost | Decision rule |
 | --- | --- | --- | --- |
-| X1 | **Cheap-combat proxy validity.** Re-run two known paired effects with flat Silver 1,000 instead of production combat: flexible vs rigid keys (production +6.1 pp, §691) and the value chooser (−15.0 pp, §727), 1,024 fresh pairs each. Also records the Heart level at Silver 1,000. | ~30 core-h (4 arms × 1,024 games × ~14 s; `bestbench`/heartoutcomegen, new seeds) | **Valid** if both effects keep their sign with CI excluding 0 and each proxy point estimate lies within 50-150% of production: PPO self-play and screening may use Silver 1,000. **Invalid** otherwise: rerun at Silver 5,000 or production learned stop before any PPO plan, and re-cost phase 3 (×10-40). |
+| X1 | **Cheap-combat proxy validity** (pre-registered and running: [PREREG](../../experiments/evidence/cheap_combat_proxy_20261031/PREREG.md)). Replay §691's flexible-vs-rigid keys contrast (production +6.1 pp) on its 1,024 seeds with flat Silver 1,000 and 200 in combat, student_sel alone out of combat; optional same-runner production control. The value-chooser rerun first planned here was dropped: that flag needs map search, ~600 s per game, ~350 core-h. | ~11 core-h cheap arms (one container); control ~150 core-h at 1,024 seeds | **VALID** at a strength if the CI excludes 0 and the point estimate lies in [+3.0, +9.1] (50-150% of §691): PPO self-play and screens may use it. **INVALID** if the CI upper bound < +3.0: re-cost phase 3 at production combat (×10-40). Otherwise INCONCLUSIVE. |
 | X2 | **PPO pilot P0** in silverbot's own engine (already designed, project memory 2026-10-25): 60 A20-only iterations from `heart1.pt` on the PC, 1,000 paired their-engine seeds at 1,000 sims vs heart1. | ~150 core-h + ~12-15 h GPU slot | **GO** (build our own loop, Q2) if ΔHeart ≥ +2 pp with CI > 0, or Act-4 CI > 0 and ΔHeart ≥ 0. **STOP** phase 3 if ΔHeart ≤ 0. |
 | X3 | **Actor/learner channel.** Cloud actors write only seed + action indices + per-decision log-probs; the PC replays them deterministically to rebuild states and features. Measure bytes per game, replay ms per game on the PC and byte identity. | Smoke seeds only; one thread-day | **Use it** if < 5 KB per game, < 50 ms replay per game and 100% identity. Otherwise train small nets (d64) on cloud CPUs and keep the GPU for distillation. |
 | X4 | **Gate power from existing data.** Paired SD per pair and per-act from §661/§676/§683/§691/§727 records; choose the standard gate size per expected effect. | Offline, no seeds | Adopt the size giving ±1.0-1.5 pp half-width for changes whose plausible effect is ≤ 3 pp; keep 1,024 pairs only for screens expected ≥ 5 pp. |
