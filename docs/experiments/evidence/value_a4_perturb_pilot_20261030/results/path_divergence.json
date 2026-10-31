@@ -1,0 +1,132 @@
+{
+ "card_add": {
+  "same": 58,
+  "length": 6,
+  "floor55": 3
+ },
+ "card_remove": {
+  "same": 72,
+  "length": 7,
+  "floor55": 4
+ },
+ "gold": {
+  "floor54": 67,
+  "same": 15,
+  "floor55": 1,
+  "length": 3,
+  "floor53": 1
+ },
+ "hp": {
+  "same": 83,
+  "floor53": 2,
+  "length": 1,
+  "floor55": 1
+ },
+ "max_hp": {
+  "same": 61,
+  "floor54": 4,
+  "length": 3
+ },
+ "potion_add": {
+  "same": 58,
+  "floor54": 11,
+  "floor53": 4,
+  "floor55": 3,
+  "length": 10
+ },
+ "potion_remove": {
+  "same": 23,
+  "floor53": 4,
+  "floor54": 7,
+  "length": 2
+ },
+ "relic_add": {
+  "same": 70,
+  "floor53": 7,
+  "floor54": 3,
+  "length": 5
+ },
+ "relic_counter": {
+  "same": 41,
+  "floor55": 2,
+  "length": 1,
+  "floor53": 1
+ },
+ "relic_remove": {
+  "same": 62,
+  "floor54": 3,
+  "floor55": 2,
+  "length": 6,
+  "floor53": 1
+ },
+ "relic_swap": {
+  "same": 52,
+  "floor53": 3,
+  "floor55": 3,
+  "length": 4,
+  "floor54": 5
+ },
+ "unupgrade": {
+  "same": 86,
+  "length": 1
+ },
+ "upgrade": {
+  "same": 81,
+  "floor55": 1,
+  "length": 6
+ },
+ "same_path_mean_diff": {
+  "card_add": [
+   58,
+   -0.13793103448275862
+  ],
+  "card_remove": [
+   72,
+   -0.1111111111111111
+  ],
+  "gold": [
+   15,
+   0.0
+  ],
+  "hp": [
+   83,
+   -0.024096385542168676
+  ],
+  "max_hp": [
+   61,
+   -0.19672131147540983
+  ],
+  "potion_add": [
+   58,
+   0.06896551724137931
+  ],
+  "potion_remove": [
+   23,
+   -0.17391304347826086
+  ],
+  "relic_add": [
+   70,
+   0.05714285714285714
+  ],
+  "relic_counter": [
+   41,
+   -0.1951219512195122
+  ],
+  "relic_remove": [
+   62,
+   -0.12903225806451613
+  ],
+  "relic_swap": [
+   52,
+   0.0
+  ],
+  "unupgrade": [
+   86,
+   -0.11627906976744186
+  ],
+  "upgrade": [
+   81,
+   -0.08641975308641975
+  ]
+ }
+}
