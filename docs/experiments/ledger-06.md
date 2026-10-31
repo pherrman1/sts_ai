@@ -25484,27 +25484,6 @@ Seeds: none new (replays of used seeds 111384000-385023 and 111387032-255).
 **Knowledge impact:** score XGBoost models on the same sparse format they were trained on; act-end rollout labels
 carry ranking signal in act 1 but not yet in acts 2-3 at 1,280 games.
 
-## §TBD — Value chooser A/B: §725's act values V_A1/V_A2 choosing card rewards, card select and boss relics in acts 1-2 lose −15.0 pp Heart kills [−17.3, −12.7] to student_sel (FAIL); act-2 deaths +19 pp, V overrides the prior in 47% of choices on ~0.02 value gaps (1,536 paired seeds, A20, 2026-10-31)
-
-**Question:** Philipp (2026-10-31 10:47Z "Joa mach go, aber nimm auch Karten Belohnungen mit", 10:48Z "so viele seeds
-auf 32 workern"): after §725 and an exploratory check (V beats the policy prior's concordance with rollout labels at
-non-map decisions by +0.11 in act 1, +0.05 in act 2, on capture-2 TEST, second look), does letting V decide those
-decisions raise the Heart kill rate?
-**Data:** [README](evidence/value_chooser_ab_20261031/README.md) (pre-registration), prelaunch review PASS (reviewer J,
-clean v3 build, flag-unset = main 426/426 rows), [RESULT](evidence/value_chooser_ab_20261031/RESULT.md). New research
-flag `STS_OOC_VALUE_CHOOSER` (default off; external Python scorer; top 3 candidates by prior, one successor record
-each; REWARDS card picks only). Arm A today's A20 default (capture-2 environment), arm B + the chooser with V_A1/V_A2.
-Seeds 111312000-111313535 (new), smokes 111387991-992. 32 workers (Philipp), 1,536/1,536 units verified.
-**Result:**
-- Heart kill A 25.1% / B 10.1%, B − A **−15.0 pp [−17.3, −12.7]**; Act 4 reached −24.0 pp; death in act 1 +8.7 pp,
-  act 2 +19.4 pp.
-- B overrides the prior's top in 47% of 29,330 choices; it skips card rewards twice as often (17.3% vs 8.4%); mean
-  value gap when overriding +0.020.
-**Decision:** FAIL (pre-registered). No default change; the flag stays research only.
-Seeds: 111312000-111313535 USED (new), smokes 111387991-992 USED.
-**Knowledge impact:** an act value with better offline ranking on rollout labels is not a better decider than
-student_sel: tiny value gaps override a confident policy and lose a lot (second time after §712). Offline
-concordance on self-generated rollout labels is not evidence for play.
 ## §726 — V_A4 Act-4 entry perturbation pilot: 960 perturbed continuations of 64 run-1 entries (common random numbers) do not improve V_A4 in #915's CV (B − A −0.0005 BCE [−0.0026, +0.0017], NOT_SHOWN at pilot size); controls replay run 1 64/64 byte for byte, but perturbed children kill the Heart 7.6 pp less than controls (seed-clustered CI [−15, 0]; −8 [−14, −2] vs run 1's five games), even for upgrades and max-HP gains, concentrated in the Heart fight at equal Heart-entry HP; no combat-input bug found (review) (sign anomaly, open) (replays of used seeds, 2026-10-30/31)
 
 **Question:** Philipp (2026-10-30): V_A4 is data-limited (§722); do realistic perturbations of frozen Act-4 entry
@@ -25530,3 +25509,25 @@ cheap Heart-fight engine check.
 Seeds: none new (replays of used seeds 111384000-385023 and 111387000-255).
 **Knowledge impact:** pilot-size perturbation rows do not move V_A4; perturbation effects need a combat-consistency
 check before they are used as causal effect estimates.
+
+## §TBD — Value chooser A/B: §725's act values V_A1/V_A2 choosing card rewards, card select and boss relics in acts 1-2 lose −15.0 pp Heart kills [−17.3, −12.7] to student_sel (FAIL); act-2 deaths +19 pp, V overrides the prior in 47% of choices on ~0.01-0.02 value gaps (1,536 paired seeds, A20, 2026-10-31)
+
+**Question:** Philipp (2026-10-31 10:47Z "Joa mach go, aber nimm auch Karten Belohnungen mit", 10:48Z "so viele seeds
+auf 32 workern"): after §725 and an exploratory check (V beats the policy prior's concordance with rollout labels at
+non-map decisions by +0.11 in act 1, +0.05 in act 2, on capture-2 TEST, second look), does letting V decide those
+decisions raise the Heart kill rate?
+**Data:** [README](evidence/value_chooser_ab_20261031/README.md) (pre-registration), prelaunch review PASS (reviewer J,
+clean v3 build, flag-unset = main 426/426 rows), [RESULT](evidence/value_chooser_ab_20261031/RESULT.md). New research
+flag `STS_OOC_VALUE_CHOOSER` (default off; external Python scorer; top 3 candidates by prior, one successor record
+each; REWARDS card picks only). Arm A today's A20 default (capture-2 environment), arm B + the chooser with V_A1/V_A2.
+Seeds 111312000-111313535 (new), smokes 111387991-992. 32 workers (Philipp), 1,536/1,536 units verified.
+**Result:**
+- Heart kill A 25.1% / B 10.1%, B − A **−15.0 pp [−17.3, −12.7]**; Act 4 reached −24.0 pp; death in act 1 +8.7 pp,
+  act 2 +19.4 pp.
+- B overrides the prior's top in 47% of 29,330 choices; it skips card rewards twice as often (17.3% vs 8.4%); mean
+  value gap when overriding +0.022 (median +0.011).
+**Decision:** FAIL (pre-registered). No default change; the flag stays research only.
+Seeds: 111312000-111313535 USED (new), smokes 111387991-992 USED.
+**Knowledge impact:** an act value with better offline ranking on rollout labels is not a better decider than
+student_sel: tiny value gaps override a confident policy and lose a lot (second time after §712). Offline
+concordance on self-generated rollout labels is not evidence for play.

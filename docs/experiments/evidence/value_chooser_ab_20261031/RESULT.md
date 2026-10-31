@@ -11,7 +11,7 @@ Campaign RUN_COMMIT 3d62ff5e (code 8f5b17d6, binary d39c2b98), 32 workers, 1,536
 | Heart reached | 39.5% | 16.5% | −23.1 pp [−25.7, −20.5] |
 | death in act 1 | 14.0% | 22.7% | +8.7 pp [+6.5, +10.9] |
 | death in act 2 | 23.1% | 42.5% | +19.4 pp [+16.5, +22.3] |
-| death in act 3 | 21.8% | 17.7% | −4.1 pp (fewer runs get there) |
+| death in act 3 | 21.8% | 17.7% | −4.1 pp [−6.9, −1.4] (fewer runs get there) |
 | final floor | 42.1 | 32.4 | −9.7 [−10.5, −8.8] |
 
 Decision (pre-registered): **FAIL** (CI upper bound < 0).
@@ -21,7 +21,7 @@ Decision (pre-registered): **FAIL** (CI upper bound < 0).
   1,628/3,652, act-1 boss relic 607/1,187, act-2 card rewards 3,624/7,808, act-2 card select 1,125/1,757, act-2 boss
   relic 287/535.
 - At card rewards B skips twice as often (17.3% vs the prior's top 8.4%); when it overrides, its value gap over the
-  prior's top is small (mean +0.020).
+  prior's top is small (mean +0.022, median +0.011; prior ties make the 47% a slight lower bound).
 - First B override: act-1 card rewards in 1,319 units (Heart kill −14.9 pp), act-1 card select in 210 (−15.7 pp);
   7 units never overrode.
 - Wall B/A 0.66 (B games are shorter because they die earlier; not a cost comparison).
