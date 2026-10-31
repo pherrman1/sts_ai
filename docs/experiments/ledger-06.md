@@ -25553,7 +25553,7 @@ Seeds: none new (used seeds 111384000-385023 and 111387000-255, plus seed + 1).
 **Knowledge impact:** §726's perturbation effects are no evidence against causal signs of V_A4 features; compare
 perturbed and control states with the same (fresh) Heart-play pipeline.
 
-## §TBD — A20 loss mining on 2,816 production games: bosses kill 49% of runs, 80% of deaths start depleted; Ruby, campfires, double-boss pricing and boss-aware picks each ≤ 0.5 pp; potion effect observational only (offer instrument invalid); four gaps ranked (Awakened One, Heart entry, act-2 bosses, low-HP attrition), plausible ~2-4 pp in total; offline, no seeds (2026-10-31)
+## §729 — A20 loss mining on 2,816 production games: bosses kill 49% of runs, 80% of deaths start depleted; Ruby, campfires, double-boss pricing and boss-aware picks each ≤ 0.5 pp; potion effect observational only (offer instrument invalid); four gaps ranked (Awakened One, Heart entry, act-2 bosses, low-HP attrition), plausible ~2-4 pp in total; offline, no seeds (2026-10-31)
 
 **Question:** Philipp, 2026-10-31 22:34Z ("Ja starte das mal", loss analysis, roadmap X5): where and why do today's
 A20 runs die, which deaths could a different decision plausibly have avoided, and what would each fix be worth?

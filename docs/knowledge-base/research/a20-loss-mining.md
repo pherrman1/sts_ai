@@ -1,6 +1,6 @@
 # A20 loss mining: where production runs die and what is avoidable
 
-Last verified: 2026-10-31 against 2,816 recorded production A20 games (§TBD, [evidence](../../experiments/evidence/loss_mining_20261031/README.md)).
+Last verified: 2026-10-31 against 2,816 recorded production A20 games (§729, [evidence](../../experiments/evidence/loss_mining_20261031/README.md)).
 
 ## Question
 
