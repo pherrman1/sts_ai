@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """Heart-entry perturbation labels, stage A checks (PREREG.md; written before any campaign data was read).
 usage: analyze.py EXTRACT_DIR VARIANTS.jsonl OUT_DIR
-EXTRACT_DIR holds the units' files (any depth): u<I>-v<k>-r<r>.csv (one row each) and u<I>.done. VARIANTS.jsonl =
-variants.tar's variants.jsonl. A base counts only if its unit ended with rc=0 and all 32 fights are valid.
-Writes OUT_DIR/labels.csv (one row per base, variant, replicate) and OUT_DIR/analysis.json.
+EXTRACT_DIR holds the units' files (any depth): u<I>-v<k>.csv (one row each) and u<I>.done. VARIANTS.jsonl =
+variants.tar's variants.jsonl. A base counts only if its unit ended with rc=0 and all 16 fights are valid.
+Writes OUT_DIR/labels.csv (one row per base and variant) and OUT_DIR/analysis.json.
 95% CIs: bootstrap over source seeds (10,000, seed 20261031)."""
 import sys, os, re, glob, csv, json, collections
 import numpy as np
-BLOCKS, K, R = (111384000, 111382000), 16, 2
+K = 16
+def seed_of(i, k): return (111382000 if k == 1 else 111384000) + i
 EXPECT = {'hp_up': '+', 'hp_down': '-', 'potion_add': '+', 'potion_remove': '-', 'card_upgrade': '+', 'max_hp_up': '+'}
 INCENSE_PP = [-1.75, 1.90, -8.25, 5.71, 10.16, -7.78]   # §723
 
@@ -17,25 +18,24 @@ def main(ext, variants, outdir):
     for p in glob.glob(os.path.join(ext, '**', 'u*.done'), recursive=True):
         m = re.match(r'u(\d+)\.done$', os.path.basename(p))
         if m: rcs[int(m.group(1))] = (re.search(r'\brc=(-?\d+)', open(p).read()) or [None, 'missing'])[1]
-    for p in glob.glob(os.path.join(ext, '**', 'u*-v*-r*.csv'), recursive=True):
-        m = re.match(r'u(\d+)-v(\d+)-r(\d+)\.csv$', os.path.basename(p))
+    for p in glob.glob(os.path.join(ext, '**', 'u*-v*.csv'), recursive=True):
+        m = re.match(r'u(\d+)-v(\d+)\.csv$', os.path.basename(p))
         if not m: continue
-        i, k, r = map(int, m.groups()); x = list(csv.DictReader(open(p)))
+        i, k = map(int, m.groups()); x = list(csv.DictReader(open(p)))
         if (len(x) != 1 or x[0]['encounter'] != 'THE_HEART' or x[0]['budget'] != 'learned'
-                or int(x[0]['battleSeed']) != BLOCKS[r] + i or x[0]['id'] != meta[i]['game'] or (k, r) in rows[i]):
+                or int(x[0]['battleSeed']) != seed_of(i, k) or x[0]['id'] != meta[i]['game'] or k in rows[i]):
             bad.append(os.path.basename(p)); continue
-        rows[i][(k, r)] = x[0]
-    good = sorted(i for i in rows if rcs.get(i) == '0' and len(rows[i]) == K * R
+        rows[i][k] = x[0]
+    good = sorted(i for i in rows if rcs.get(i) == '0' and len(rows[i]) == K
                   and all(x['valid'] == '1' for x in rows[i].values()))
     os.makedirs(outdir, exist_ok=True)
     with open(os.path.join(outdir, 'labels.csv'), 'w') as f:
-        f.write('base,source_seed,variant,op,replicate,won,hp_left,turns,cpu_seconds\n')
+        f.write('base,source_seed,variant,op,battle_seed,won,hp_left,turns,cpu_seconds\n')
         for i in good:
             for k in range(K):
-                for r in range(R):
-                    x = rows[i][(k, r)]
-                    f.write(f"{i},{meta[i]['seed']},{k},{meta[i]['variants'][k]['op']},{r},{x['won']},{x['curHp']},{x['turns']},{x['cpuSeconds']}\n")
-    W = np.array([[[float(rows[i][(k, r)]['won']) for r in range(R)] for k in range(K)] for i in good])   # base x k x r
+                x = rows[i][k]
+                f.write(f"{i},{meta[i]['seed']},{k},{meta[i]['variants'][k]['op']},{seed_of(i, k)},{x['won']},{x['curHp']},{x['turns']},{x['cpuSeconds']}\n")
+    W = np.array([[float(rows[i][k]['won']) for k in range(K)] for i in good])   # base x k
     seeds = np.array([meta[i]['seed'] for i in good])
     us = np.unique(seeds); idx = {s: np.where(seeds == s)[0] for s in us}; rng = np.random.default_rng(20261031)
     boots = [rng.integers(0, len(us), len(us)) for _ in range(10000)]
@@ -48,15 +48,16 @@ def main(ext, variants, outdir):
         sums = np.array([sum(by.get(s, [])) for s in us]); cnts = np.array([len(by.get(s, [])) for s in us])
         bs = [sums[b].sum() / max(cnts[b].sum(), 1) for b in boots]
         return {'n': int(len(vals)), 'mean': float(vals.mean()), 'ci': [float(np.percentile(bs, 2.5)), float(np.percentile(bs, 97.5))]}
-    # Determinism: placebo (k=1) vs control (k=0), every field of the row.
-    fields = ('won', 'curHp', 'potionCount', 'turns')
-    mism = sum(any(rows[i][(1, r)][f] != rows[i][(0, r)][f] for f in fields) for i in good for r in range(R))
-    # Paired effect per operator: kill(variant) - kill(control), same base and replicate, averaged over replicates.
+    # Noise: outcome differs from the control after only reseeding (k = 1) vs after one state change (k >= 2).
+    flip_reseed = cluster_stat(range(len(good)), W[:, 1] != W[:, 0]) if len(good) else None
+    flip_pert = cluster_stat([b for b in range(len(good)) for k in range(2, K)],
+                             [W[b, k] != W[b, 0] for b in range(len(good)) for k in range(2, K)]) if len(good) else None
+    # Paired effect per operator: kill(variant) - kill(control), same base and battle seed.
     by_op = collections.defaultdict(lambda: ([], []))
     for bi, i in enumerate(good):
         for k in range(2, K):
             op = meta[i]['variants'][k]['op']
-            by_op[op][0].append(bi); by_op[op][1].append(W[bi, k].mean() - W[bi, 0].mean())
+            by_op[op][0].append(bi); by_op[op][1].append(W[bi, k] - W[bi, 0])
     ops = {op: cluster_stat(*v) for op, v in sorted(by_op.items())}
     signs = {}
     for op, e in EXPECT.items():
@@ -73,22 +74,21 @@ def main(ext, variants, outdir):
             v = meta[i]['variants'][k]
             if v['op'] == 'relic_counter' and v['change']['relic'] == 'INCENSE_BURNER':
                 a, b = v['change']['counter']; xs.append((INCENSE_PP[b] - INCENSE_PP[a]) / 100)
-                ys.append(W[bi, k].mean() - W[bi, 0].mean()); bis.append(bi)
+                ys.append(W[bi, k] - W[bi, 0]); bis.append(bi)
     inc = {'n': len(xs)}
     if len(xs) >= 3:
         xs, ys = np.array(xs), np.array(ys); inc['slope_obs_on_723'] = float(np.polyfit(xs, ys, 1)[0])
         inc['corr'] = float(np.corrcoef(xs, ys)[0, 1])
-    rep_agree = float((W[:, :, 0] == W[:, :, 1]).mean()) if len(good) else None
-    all_pert = [(bi, W[bi, k].mean() - W[bi, 0].mean()) for bi in range(len(good)) for k in range(2, K)]
+    all_pert = [(bi, W[bi, k] - W[bi, 0]) for bi in range(len(good)) for k in range(2, K)]
     res = {'bases_valid': len(good), 'bases_seen': len(rows), 'unit_rc_counts': dict(collections.Counter(rcs.values())),
            'bad_rows': bad[:20], 'n_bad': len(bad), 'source_seeds': int(len(us)),
-           'determinism_placebo_mismatches': int(mism), 'determinism_pairs': len(good) * R,
-           'control_kill': cluster_stat(range(len(good)), W[:, 0].mean(1)) if len(good) else None,
+           'outcome_flip_reseed_only': flip_reseed, 'outcome_flip_one_change': flip_pert,
+           'control_kill': cluster_stat(range(len(good)), W[:, 0]) if len(good) else None,
+           'reseed_minus_control_kill': cluster_stat(range(len(good)), W[:, 1] - W[:, 0]) if len(good) else None,
            'mean_perturbation_effect': cluster_stat(*zip(*all_pert)) if all_pert else None,
            'effect_by_operator': ops, 'sign_checks': signs, 'incense_vs_723': inc,
-           'replicate_outcome_agreement': rep_agree,
            'cpu_seconds_total': float(sum(float(x['cpuSeconds']) for i in good for x in rows[i].values()))}
-    res['labels_usable'] = (res['determinism_placebo_mismatches'] == 0 and 'INCONSISTENT' not in signs.values())
+    res['labels_usable'] = 'INCONSISTENT' not in signs.values()
     json.dump(res, open(os.path.join(outdir, 'analysis.json'), 'w'), indent=1); print(json.dumps(res, indent=1))
 
 if __name__ == '__main__':

@@ -111,7 +111,7 @@ def main(repo, pkl, out, n, seed):
         vs = []
         for k in range(K):
             s = json.loads(json.dumps(s0))
-            op, detail = ('control', {}) if k == 0 else ('placebo', {}) if k == 1 else \
+            op, detail = ('control', {}) if k == 0 else ('reseed', {}) if k == 1 else \
                 perturb(s, random.Random(f'{seed}:{i}:{k}'), tabs)
             fs[k].write(json.dumps(s) + '\n'); vs.append({'k': k, 'op': op, 'change': detail})
         meta.write(json.dumps({'i': i, 'campaign': r['campaign'], 'game': r['game'], 'seed': r['seed'],
