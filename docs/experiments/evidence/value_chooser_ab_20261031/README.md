@@ -19,7 +19,7 @@ can show a win).
   played (ties: higher prior). Map (OOC MCTS), events, shops, campfires and act 3 stay production.
 
 **Seeds.** 1,536 fresh seeds 111312000-111313535 (free per the seed ledger; no hit in main's units/ledger/READMEs).
-Smoke: 111387991 (free card-rule smoke seed), author only. Power: paired SD ≈ 0.42 per pair → CI ±2.1 pp at 1,536
+Smokes: 111387991 (author) and 111387992 (prelaunch review), both USED. Power: paired SD ≈ 0.42 per pair → CI ±2.1 pp at 1,536
 pairs; a true +3 pp has ≈ 80% power.
 
 **Primary metric.** Heart kill rate B − A over all 1,536 paired seeds, 95% seed-bootstrap CI (10,000 resamples).
@@ -41,7 +41,8 @@ act 2 floor 33 (460 s); B logged 21 choices (14 card rewards, 4 card select, 1 b
 the prior's top. An earlier build (d11fd502) let V decide key/relic/leave rows and once left a relic; fixed in
 8f5b17d6 (card picks only on REWARDS).
 
-**Cost.** ≈ 14 s per floor per game → ≈ 25 min per unit (2 games) → ≈ 650 lane-h, ≈ 5-6 h on 32 workers × 4 lanes.
+**Cost.** Author smoke ≈ 25 min per unit, review smoke 30-45 min → ≈ 650-1,150 lane-h, ≈ 7-9 h on 32 workers × 4 lanes.
 Share ≈ 1-2 GB.
 
-**Analysis.** `analyze.py` (to be committed before any campaign tar is read).
+**Analysis.** `analyze.py`, committed before any campaign tar exists (secondaries: Heart reach, act-1..4 deaths,
+first B choice off the prior's top by act/screen with its kill difference, wall ratio as CPU proxy). Workers: BRIEF.md.

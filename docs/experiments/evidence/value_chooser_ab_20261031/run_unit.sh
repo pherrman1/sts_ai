@@ -11,8 +11,7 @@ HERE=$(cd "$(dirname "$0")" && pwd)
 [ "$(sha256sum < "$RUN/student_sel.bin" | cut -c1-16)" = cf6bf7fb7c3147dc ] || { echo "bad $RUN/student_sel.bin" >&2; exit 2; }
 [ "$(sha256sum < "$HERE/V_A1.pkl" | cut -c1-12)" = d7e69feed627 ] || { echo "bad V_A1.pkl" >&2; exit 2; }
 [ "$(sha256sum < "$HERE/V_A2.pkl" | cut -c1-12)" = e557c80cbfa6 ] || { echo "bad V_A2.pkl" >&2; exit 2; }
-env -i PATH=/usr/local/bin:/usr/bin:/bin python3 -c "import xgboost, scipy, numpy" 2>/dev/null \
-  || pip install -q xgboost==3.0.5 scipy numpy >/dev/null 2>&1
+# the worker brief installs xgboost once per container (BRIEF.md); never from the lanes
 env -i PATH=/usr/local/bin:/usr/bin:/bin python3 -c "import xgboost, scipy, numpy" || { echo "python3 lacks xgboost/scipy/numpy" >&2; exit 3; }
 mkdir -p "$OUT"
 COMMON=("PATH=/usr/local/bin:/usr/bin:/bin" "HOME=$HOME" "STS_EXECUTABLE_GIT_SHA=$(git -C "$REPO" rev-parse HEAD)"
