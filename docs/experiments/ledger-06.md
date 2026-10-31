@@ -25453,3 +25453,33 @@ replicates, battle seeds in the used blocks 111384000, 111382000, 111395000, 111
 call. Issue #914: first cross-fight state term with a fight-level win.
 Seeds: none new (replays in used blocks).
 **Knowledge impact:** Incense Burner timing is worth ≈ 6 pp of Heart kill for Incense runs at research budget.
+
+## §TBD — Clean value labels stages 4-5b: backward-fitted act values V_A3, V_A2, V_A1 on 1,280 price-captured games fail the gate in every act; V_A1 ranks map choices better than search q (+0.064 [+0.035, +0.093]) but misses real logloss by +0.010; V_A2/V_A3 do not rank better; stage 5's "overfit" verdict was an eval bug (replays of used seeds, 2026-10-30/31)
+
+**Question:** Philipp (2026-10-29/30, uniform act-by-act scheme after §720): can act values V_A3 → V_A2 → V_A1, fitted
+backward on CTM rollouts to each act's end (0 on death, else the next act's calibrated value; act 3 anchored on §722's
+V_A4) and level calibrated on real games, rank map choices better than the search's q and predict real outcomes?
+**Data:** stage 4 ([evidence](evidence/value_clean_labels_stage4_20261030/), RUN_COMMIT c9eb4f97, 256 capture-only
+replays, 44 workers, Philipp 10-30 11:59Z) and capture 2 ([evidence](evidence/value_clean_labels_capture2_20261030/),
+RUN_COMMIT 6573b9ce, 992 replays, 16 workers, Philipp 10-30 card + "nur 16 workers"), plus §720's 32 pilot games.
+Full encoder `full_feats.py` (3,239 columns: deck, upgrades, relics + counters, potions, gold, all offered
+cards/relics/potions, map min/max per room type over all reachable paths, ...). Stage 5 (`stage5_fit.py`,
+`stage5_full.py`) fitted on the 288 stage-4 games; stage 5b (`stage5b.py`, committed before capture 2 was read) on all
+1,280, gate on the fresh capture-2 TEST (seed % 4 == 3), calibration on VALIDATION games.
+**Result:**
+- Stage 5 FAIL with both feature sets (s0: act 3 concordance +0.006, act 2 −0.057; full encoder: act 1 +0.09
+  [+0.04, +0.14], acts 2-3 ≈ 0). Its stage-4 TEST was read twice and is burned.
+- Stage 5b ([RESULT](evidence/value_clean_labels_capture2_20261030/RESULT.md)), V − q per act:
+  - act 3: concordance −0.014 [−0.053, +0.025]; real logloss 0.526 vs 0.641, −0.115 [−0.216, −0.017]; FAIL (a).
+  - act 2: concordance −0.018 [−0.048, +0.015]; real logloss −0.012 [−0.077, +0.047]; FAIL (a).
+  - act 1: concordance +0.064 [+0.035, +0.093]; real logloss 0.539 vs 0.529, +0.010 [−0.020, +0.039]; FAIL (b).
+  - All acts: 0 HP inversions, upgrade wrong-way 8.8-13.8% (< 29.7%).
+- Eval bug, disclosed: the gate's (b)-(d) fed dense arrays to XGBoost models trained on CSR (absent = missing), which
+  gives nonsense predictions (validation logloss 0.48 sparse vs 1.10 dense). Found after reading stage 5b's act-3 TEST
+  numbers, fixed (73e7b2f7) and rerun; fits, calibration and concordance were CSR and unchanged. Stage 5's
+  "real logloss much worse than q → overfit" (act 2 0.99 vs 0.56) came from this bug; those (b)-(d) numbers are invalid.
+**Decision:** FAIL (pre-registered, all three acts). No act value replaces search q at map roots. Act 1's ranking gain
+is the one positive signal; whether V_A1 with a better level fit is worth a probe is Philipp's call.
+Seeds: none new (replays of used seeds 111384000-385023 and 111387032-255).
+**Knowledge impact:** score XGBoost models on the same sparse format they were trained on; act-end rollout labels
+carry ranking signal in act 1 but not yet in acts 2-3 at 1,280 games.
