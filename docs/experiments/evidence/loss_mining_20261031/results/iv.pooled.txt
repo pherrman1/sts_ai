@@ -1,0 +1,3 @@
+act1 n=2658: first stage potions per offer +0.138 (F~90); reduced form death per offer -0.17pp ± 0.52; HP per offer +0.10; Wald IV death per potion -1.2pp ± 3.7 (ignores HP channel)
+act2 n=2105: first stage potions per offer +0.128 (F~89); reduced form death per offer +0.29pp ± 0.57; HP per offer -0.20; Wald IV death per potion +2.3pp ± 4.5 (ignores HP channel)
+act3 n=1577: first stage potions per offer +0.098 (F~43); reduced form death per offer +1.25pp ± 0.54; HP per offer -0.39; Wald IV death per potion +12.8pp ± 5.9 (ignores HP channel)
