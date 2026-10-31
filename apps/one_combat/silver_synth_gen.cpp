@@ -983,7 +983,8 @@ void silverFocusEvalGen(int nSeeds, int asc, const std::string &outPrefix, long 
 // (Shield + Spear, the Heart) under several flat exact Silver budgets. Each JSONL line gives the
 // encounter, HP, max HP, deck (trace names, "+" = upgraded once), relics, potions and potion
 // capacity of one recorded fight start. The state is rebuilt on a fresh A20 GameContext moved to
-// Act 4 (card misc reset; relic counters reset unless the line gives "relicData", one value per relic,
+// Act 4 (card misc reset unless the line gives "deckMisc", one value per card; relic counters reset unless the line
+// gives "relicData", one value per relic,
 // e.g. an unused Lizard Tail; "bottleIdxs" [attack, skill, power] deck indices bottle those cards; an
 // approximation shared by all arms). "Strike"/"Defend" are Ironclad's (STRIKE_RED/DEFEND_RED). Copy r of every
 // arm shares the battle seed (SEED_OFFSET + state * REPLICATES + r) and the planner seed, so arms
@@ -1014,6 +1015,13 @@ GameContext act4ReplayContext(const nlohmann::json &s, std::uint64_t seed, Monst
         Card c(it->second);
         if (up) c.upgrade();
         gc.deck.obtainRaw(c);
+    }
+    // Optional "deckMisc" (one value per deck card) restores Card::misc, e.g. Searing Blow's upgrade count.
+    if (s.contains("deckMisc")) {
+        const auto misc = s.at("deckMisc").get<std::vector<int>>();
+        if (static_cast<int>(misc.size()) != gc.deck.size())
+            throw std::runtime_error("act4replay: deckMisc must give one value per deck card");
+        for (int i = 0; i < gc.deck.size(); ++i) gc.deck.cards[i].misc = static_cast<std::int16_t>(misc[i]);
     }
     gc.relics.relics.clear();
     const auto relicData = s.value("relicData", std::vector<int>{});
