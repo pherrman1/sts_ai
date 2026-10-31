@@ -22,7 +22,7 @@ how the state was built. Philipp: "Mach 16 worker" (2026-10-31 19:14Z).
   identical for the control and its children (the second replicate uses seed + 1). The search is production's Heart
   under ADR-0060: flat 40,000 per root, exact root budgets (every root searched), node reuse cap 262,144, g7f_E root
   table and prior, boss prior playouts.
-- **Binary:** the same as the pilot's (code 93cef2bd, a4da3156…). The smoke `111384012-p00` took 598 CPU-s for one
+- **Binary:** main 593db4fe (596f14cc…). Its only search change since the pilot binary 93cef2bd is #918's default-off Shield & Spear term, which this run does not set. The smoke `111384012-p00` took 598 CPU-s for one
   fight (won with 10 HP) and printed "flat budget; exact root budgets" and "research node reuse cap 262144".
 
 ## Seeds

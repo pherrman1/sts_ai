@@ -1,6 +1,6 @@
 name          heart-fresh-replay
 code_commit   593db4fe597835402ca9d383f810261c67b3ff08
-binary_sha256 unset
+binary_sha256 596f14cc50bea99f1ecfe1c7f34697ec5958474ec22ab6e9f555b8cbdfe264bd
 workers       16
 share         /mnt/project-files/heart-fresh-replay
 configure_preset linux-gcc-release-x86-64-v3
