@@ -25531,3 +25531,24 @@ Seeds: 111312000-111313535 USED (new), smokes 111387991-992 USED.
 **Knowledge impact:** an act value with better offline ranking on rollout labels is not a better decider than
 student_sel: tiny value gaps override a confident policy and lose a lot (second time after §712). Offline
 concordance on self-generated rollout labels is not evidence for play.
+
+## §728 — Fresh Heart replay at production search: §726's perturbation sign anomaly does not reproduce; perturbed children win the Heart as often as controls when their Heart-entry states are rebuilt (−0.3 pp [−6.4, +5.6] vs −10.6 in game); the in-game gap sits in the controls (in game +8.3 pp [−0.9, +18.3] above their fresh replay), verdict IN_GAME_ARTIFACT (replays of used seeds, 2026-10-31)
+
+**Question:** Philipp (2026-10-31): is §726's sign anomaly (perturbed children kill the Heart less often) a real
+effect or an in-game artifact? "Mach 16 worker".
+**Data:** [README](evidence/heart_fresh_replay_20261031/README.md) (pre-registered analysis),
+[RESULT](evidence/heart_fresh_replay_20261031/RESULT.md). 240 Heart-entry states from the #919 pilot (60 entries,
+control + 3 random children each), rebuilt with `act4replay` (HP, max HP, deck, relics + counters, potions, bottles;
+no gold or card misc). 2 fights each at production Act-4 Heart search (ADR-0060: flat 40k, exact root budgets,
+reuse cap 262144, g7f_E), battle seed = entry seed (+1). 16 workers, ~1 h, 240/240 verified.
+**Result:**
+- Fresh children − control: −0.3 pp [−6.4, +5.6] (seed-clustered, 60 entries) vs in game −10.6 [−19.4, −1.7] on the
+  same states → IN_GAME_ARTIFACT (pre-registered). Learned-stop local replay: −3.3 [−8.3, +1.7].
+- Fresh controls 66.7% vs in game 75.0% (+8.3 [−0.9, +18.3]); fresh children 66.4% vs in game 64.4%
+  (−1.9 [−7.8, +3.9]); difference-in-differences −10.3 [−20.0, −0.6].
+**Decision:** The perturbed children are not weaker at the Heart. The pilot's gap came from the in-game control's
+Heart conversion: noise, dropped state (gold, misc) or something only the unperturbed path has (e.g. exact-match
+Silver tree reuse). Not tested further here.
+Seeds: none new (used seeds 111384000-385023 and 111387000-255, plus seed + 1).
+**Knowledge impact:** §726's perturbation effects are no evidence against causal signs of V_A4 features; compare
+perturbed and control states with the same (fresh) Heart-play pipeline.
