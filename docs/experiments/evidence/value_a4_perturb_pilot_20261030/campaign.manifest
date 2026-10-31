@@ -1,0 +1,10 @@
+name          value-a4-perturb-pilot
+code_commit   93cef2bd0980f8271e42e4d0deb673805bbcd487
+binary_sha256 a4da31565c5852750f4382ccb25859ee6466d459031b3997cf74711777229f49
+workers       16
+share         /mnt/project-files/value-a4-perturb-pilot
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 45
+input student_sel.bin /mnt/project-files/az-gen3-explore/student_sel.bin cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7
