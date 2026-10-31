@@ -18,8 +18,13 @@ chest/relic/gold/potion rule chain before student_sel); heartoutcomegen refuses 
 cannot play cheap combat. The P arms measure the key effect on this runner.
 Key flags are explicit in both arms (R `=first`), so the effect does not depend on the binary's default.
 
-**Provenance.** Binary `d74cfded889b9440…` = §691's binary (code `db216ff0`, from the bin cache); `models/` and
-`selfplay/models/` at the run commit are byte-identical to `db216ff0`. One 4-CPU cloud container, 4 lanes.
+**Provenance.** Binary `d39c2b9895fc6070…` (main `6c96c25`, preset linux-gcc-release-x86-64-v3, bin cache); run
+commit = this branch, whose build inputs equal `6c96c25`. student_sel `cf6bf7fb`. Cheap arms run locally in one 4-CPU
+cloud container; the P control runs as a worker campaign (`control/`, 8 workers, Philipp's decision card 2026-10-31
+22:37Z). Amendment before any campaign result was read: the first frozen version (e1f94b4) used §691's binary
+`d74cfded` (code `db216ff0`); the worker tooling requires the run commit's build inputs to match the binary's code,
+so all arms moved to the main binary. The ~45 cheap-arm games already played on `d74cfded` were discarded unread.
+The primary reference stays §691's +6.05; the same-runner P control is now the secondary reference on the same binary.
 
 **Seeds.** §691's 1,024 seeds 111382000-111383023 (USED; replays, nothing new consumed), so every seed is also paired
 with its production result in §691. Smokes: 111383024 (cheap arms) and 111383025 (P arms), both §691 smokes (USED).

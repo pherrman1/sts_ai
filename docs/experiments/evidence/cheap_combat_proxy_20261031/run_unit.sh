@@ -7,10 +7,10 @@
 #   1000  flat Silver 1,000 sims per decision (learned stop off, Act 4 strong off), bestbench 1000
 #   200   flat Silver 200 the same way
 # ARMS (default "R1000 F1000 R200 F200"; control units "RP FP") picks the games; order rotated by seed. Always exits 0.
-# Binary d74cfded (code db216ff0, = §691's binary); student_sel cf6bf7fb.
+# Binary d39c2b98 (main 6c96c25, v3 preset, bin cache); student_sel cf6bf7fb. Key flags explicit in both arms.
 set -uo pipefail
 REPO=$1 RUN=$2 OUT=$3 SEED=$4
-[ "$(sha256sum < "$RUN/one_combat" | cut -c1-16)" = d74cfded889b9440 ] || { echo "bad $RUN/one_combat" >&2; exit 2; }
+[ "$(sha256sum < "$RUN/one_combat" | cut -c1-16)" = d39c2b9895fc6070 ] || { echo "bad $RUN/one_combat" >&2; exit 2; }
 [ "$(sha256sum < "$RUN/student_sel.bin" | cut -c1-16)" = cf6bf7fb7c3147dc ] || { echo "bad $RUN/student_sel.bin" >&2; exit 2; }
 mkdir -p "$OUT"
 COMMON=("PATH=/usr/local/bin:/usr/bin:/bin" "HOME=$HOME" "STS_EXECUTABLE_GIT_SHA=$(git -C "$REPO" rev-parse HEAD)"
