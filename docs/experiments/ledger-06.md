@@ -25510,7 +25510,7 @@ Seeds: none new (replays of used seeds 111384000-385023 and 111387000-255).
 **Knowledge impact:** pilot-size perturbation rows do not move V_A4; perturbation effects need a combat-consistency
 check before they are used as causal effect estimates.
 
-## §TBD — Value chooser A/B: §725's act values V_A1/V_A2 choosing card rewards, card select and boss relics in acts 1-2 lose −15.0 pp Heart kills [−17.3, −12.7] to student_sel (FAIL); act-2 deaths +19 pp, V overrides the prior in 47% of choices on ~0.01-0.02 value gaps (1,536 paired seeds, A20, 2026-10-31)
+## §727 — Value chooser A/B: §725's act values V_A1/V_A2 choosing card rewards, card select and boss relics in acts 1-2 lose −15.0 pp Heart kills [−17.3, −12.7] to student_sel (FAIL); act-2 deaths +19 pp, V overrides the prior in 47% of choices on ~0.01-0.02 value gaps (1,536 paired seeds, A20, 2026-10-31)
 
 **Question:** Philipp (2026-10-31 10:47Z "Joa mach go, aber nimm auch Karten Belohnungen mit", 10:48Z "so viele seeds
 auf 32 workern"): after §725 and an exploratory check (V beats the policy prior's concordance with rollout labels at
