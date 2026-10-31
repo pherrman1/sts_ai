@@ -9,7 +9,8 @@ import json, sys
 
 ALLOWED = [  # (op prefix, allowed record-key prefix), first match wins
     ("relic_counter", ("obs.relics.relic_counters",)),
-    ("upgrade", ("obs.deck.upgrades",)), ("downgrade", ("obs.deck.upgrades",)), ("unupgrade", ("obs.deck.upgrades",)),
+    # Searing Blow keeps its upgrade count in obs.deck.misc
+    ("upgrade", ("obs.deck.upgrades", "obs.deck.misc")), ("unupgrade", ("obs.deck.upgrades", "obs.deck.misc")),
     ("card", ("obs.deck.",)), ("relic", ("obs.relics.",)), ("potion", ("obs.potions",)),
     ("hp", ("obs.fixed_observation",)), ("max_hp", ("obs.fixed_observation",)), ("maxhp", ("obs.fixed_observation",)),
     ("gold", ("obs.fixed_observation",)),
