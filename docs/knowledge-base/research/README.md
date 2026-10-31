@@ -73,6 +73,7 @@ graph TD
 - [External evidence and ideas](ooc/external-evidence-and-ideas.md) — benchmarks, expert play, literature, ranked OOC candidates
 - [Variance reduction](ooc/variance-reduction.md) — rollout noise sources, CRN coupling, unbiased estimators (#883)
 - [Root quality](ooc/root-quality.md) — definitions of action gap Δ, relative bias B_rel, search variance σ, coverage q; identifiable pooled estimands
+- [One-year roadmap](one-year-roadmap.md) — 2026-11 to 2027-10 plan on 200 cores + one 8 GB GPU: phases ranked by Heart-kill gain per compute, first experiments X1-X7
 
 ## Evidence labels
 
