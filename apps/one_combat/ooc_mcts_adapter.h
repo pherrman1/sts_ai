@@ -516,7 +516,9 @@ bool executeOocRootKey(GameContext &, const PathHistory &, const std::string &ke
 // default 1,2), after the rule chain and before student_sel, the top STS_OOC_VALUE_CHOOSER_TOP (default 3) root
 // candidates by prior each get the public record of a sampled successor; the external scorer CMD (one process per run,
 // JSON lines on stdin/stdout: {"act":A,"records":[...]} -> {"values":[...]}) prices them and the best is executed
-// (ties: higher prior). STS_OOC_VALUE_CHOOSER_LOG=PATH appends one row per choice. False when it does not apply.
+// (ties: higher prior). On REWARDS only card picks (take a card / skip) when the prior's top is one, keys, relics,
+// potions and leaving stay production. STS_OOC_VALUE_CHOOSER_LOG=PATH appends one row per choice. False when it does
+// not apply.
 bool valueChooserStep(GameContext &, const PathHistory &, std::uint64_t runSeed, std::uint64_t decisionIndex);
 // Policy-target capture (heartoutcomegen policy). arm: the next
 // oocMctsPolicyStep records its root (heart1 record, candidate keys, heart1

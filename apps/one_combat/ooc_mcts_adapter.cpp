@@ -6612,6 +6612,18 @@ bool valueChooserStep(GameContext &gc, const PathHistory &path, std::uint64_t se
             out["legal"] = actions.size();
             if (actions.size() < 2) return out;
             std::stable_sort(actions.begin(), actions.end(), [](const auto &a, const auto &b) { return a.prior > b.prior; });
+            if (gc.screenState == sts::ScreenState::REWARDS) {
+                // Card rewards only: take a card (effect 5) or skip it (effect 12), when the prior's top is one of
+                // them. Keys, relics, potions and leaving stay with production.
+                const auto card = [&](const auto &a) {
+                    const auto &key = model.candidate(0, a.id).key;
+                    return key.rfind("ooc:v1:effect=5:", 0) == 0 || key.rfind("ooc:v1:effect=12:", 0) == 0;
+                };
+                if (!card(actions.front())) return out;
+                actions.erase(std::remove_if(actions.begin(), actions.end(), [&](const auto &a) { return !card(a); }),
+                              actions.end());
+                if (actions.size() < 2) return out;
+            }
             if (actions.size() > config->top) actions.resize(config->top);
             std::mt19937_64 stream(splitMix64(oocMctsSearchSeed(seed, index) ^ 0x56414c5545434855ULL));   // "VALUECHU"
             for (const auto &a : actions) {
