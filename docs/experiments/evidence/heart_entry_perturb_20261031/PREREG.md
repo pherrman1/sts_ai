@@ -24,6 +24,10 @@ with §724's paired S&S → Heart chain.
   has: deck with upgrades and card misc (new `deckMisc` in act4replay: Searing Blow's upgrade count), relics with
   counters, potions and slots, HP, max HP. Not carried, the same in every variant: bottled cards (the record has no
   bottle index), gold (no use in the Heart; §726 found gold feeds the combat prior), map.
+- Disclosed after the prelaunch review (generator as frozen): 50 potion_swap variants swap a potion for the same type
+  (no-ops, identical to the control); hp_down is drawn about twice as often as hp_up (1,712 vs 823), because "hp" at
+  full HP becomes hp_down; relic_add draws the relic's counter uniformly, including spent values (Lizard Tail, Omamori,
+  Girya at 0), and applies no on-pickup effects, so some relic_add labels have a true effect of about 0.
 - Play: `one_combat act4replay`, one fight per (base, variant): battle seed 111384000 + I (used block §696) for every
   variant except the reseed, which uses 111382000 + I (used block §691); no new seeds. All variants on the first seed
   share its battle and planner seed. One replicate: the smoke showed that one state change usually changes the whole
