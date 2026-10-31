@@ -25454,7 +25454,7 @@ call. Issue #914: first cross-fight state term with a fight-level win.
 Seeds: none new (replays in used blocks).
 **Knowledge impact:** Incense Burner timing is worth ≈ 6 pp of Heart kill for Incense runs at research budget.
 
-## §TBD — Clean value labels stages 4-5b: backward-fitted act values V_A3, V_A2, V_A1 on 1,280 price-captured games fail the gate in every act; V_A1 ranks map choices better than search q (+0.064 [+0.035, +0.093]) but misses real logloss by +0.010; V_A2/V_A3 do not rank better; stage 5's "overfit" verdict was an eval bug (replays of used seeds, 2026-10-30/31)
+## §725 — Clean value labels stages 4-5b: backward-fitted act values V_A3, V_A2, V_A1 on 1,280 price-captured games fail the gate in every act; V_A1 ranks map choices better than search q (+0.064 [+0.035, +0.093]) but misses real logloss by +0.010; V_A2/V_A3 do not rank better; stage 5's "overfit" verdict was an eval bug (replays of used seeds, 2026-10-30/31)
 
 **Question:** Philipp (2026-10-29/30, uniform act-by-act scheme after §720): can act values V_A3 → V_A2 → V_A1, fitted
 backward on CTM rollouts to each act's end (0 on death, else the next act's calibrated value; act 3 anchored on §722's
