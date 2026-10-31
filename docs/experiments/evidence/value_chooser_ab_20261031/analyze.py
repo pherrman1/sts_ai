@@ -54,7 +54,7 @@ def main(units, out):
     metric('heart_kill', lambda o: float(o['heartKilled']))
     metric('act4_reached', lambda o: float(o['finalAct'] >= 4))
     metric('final_floor', lambda o: float(o['finalFloor']))
-    metric('heart_reached', lambda o: float(o['finalAct'] >= 4 and (o['heartKilled'] or o['finalFloor'] >= 55)))
+    metric('heart_reached', lambda o: float(o['finalAct'] >= 4 and (o['heartKilled'] or o['finalFloor'] >= 56)))   # S&S floor 55, Heart 56
     metric('death_act4', lambda o: float(o['finalAct'] >= 4 and not o['heartKilled']))
     for k in (1, 2, 3):
         metric(f'death_act{k}', lambda o, k=k: float(o['finalAct'] == k and not o['heartKilled'] and o['finalHp'] <= 0))
