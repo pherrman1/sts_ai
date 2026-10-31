@@ -53,12 +53,13 @@ HP lost per earlier hallway/elite fight; `bossreg.py`):
 The Heart slope (0.71 pp per HP) matches V_H's 0.75 pp per HP (§721, used by the Incense term), and the Heart potion
 rate (15 HP) is close to V_H's 12-13 HP, so the observational Heart prices and the Heart-entry value agree.
 
-**Potions are not confirmed causally.** Potions offered by luck before the boss (given fights and elites fought) raise
-the potions held at the boss by only 0.10-0.14 per offer (the bot drinks ~90% of extra potions on the way), and the
-instrumented effect per potion is −1.2 ± 3.7 pp (act 1), +2.3 ± 4.5 (act 2), +12.8 ± 5.9 (act 3, weak instrument):
-no protective effect is visible, unlike the −3 to −5 pp per potion of the observational model. Inference: the
-potion–death association is mostly deck strength (weak decks drink earlier), consistent with §513 (per-type potion
-weights NOT_SHOWN). Belt-full waste is nil (potion rewards taken 91-100%, belt never full at the offer).
+**The potion rates are observational only.** An attempted instrument (potions offered before the boss) is
+**invalid**: the records list a potion offer only when the belt has room (`potions_offered` is built from valid take
+actions), so recorded offers depend on how often the bot drank, which tracks deck strength and also drives boss
+death (independent review of #926). Its estimates (`iv.py`) are kept for transparency but support no conclusion, and
+the potion–death association stays an upper bound, neither confirmed nor refuted. Belt-full waste is **not
+measurable** from these records either: about 21% of won hallway/elite fights end with a full belt, and a potion
+that drops then is never logged (open: the engine could log dropped potions).
 
 ## Checked and small (no gate proposed)
 
@@ -82,7 +83,7 @@ weights NOT_SHOWN). Belt-full waste is nil (potion rewards taken 91-100%, belt n
 | # | gap | runs affected | ceiling | plausible | evidence class |
 |---|---|---:|---:|---:|---|
 | 1 | Awakened One play | 8.2% die there | +2.5 pp (to Time Eater's rate), +4.0 pp (to the expert's) | 0.5-1.5 pp | per-fight 23% vs 3% expert; not deck-explained |
-| 2 | Heart entry state (S&S → Heart) | 14.3% die at the Heart | +1.9 pp per +10 HP at Heart entry | 0.3 pp measured + ≤ 0.5 pp | Heart deaths lost 31 HP at S&S vs 10 for Heart wins |
+| 2 | Heart entry state (S&S → Heart) | 14.3% die at the Heart | +1.9 pp per +10 HP at Heart entry | ≈ 0.27 pp (Incense, research search) + ≤ 0.5 pp | Heart deaths lost 31 HP at S&S vs 10 for Heart wins |
 | 3 | Act-2 bosses at healthy entry | 4.3% die healthy | +2.4 pp (act-2 boss death halved), +0.9 pp (Collector to Champ) | 0.3-1 pp | deck-limited, not budget-limited (§716) |
 | 4 | Low-HP attrition in acts 1-2 hallways/elites | 9.4% die below 50% HP | not estimable offline | ≤ 1 pp | §686 routes; HP-loss gap §701 |
 
@@ -106,8 +107,9 @@ The Heart kills 36% of arrivals. Heart deaths entered at 64% HP with 0.68 potion
 wins entered at 87% with 1.29 potions after losing 10.4 (both sets agree within 2 HP). Silver's S&S leaf prices HP
 1:1 and potions at 11 HP, close to the Heart's measured 15 HP per potion, so relative prices are not the gap. The one
 priced S&S term found so far, the Incense counter (§724), gives **+5.9 pp of Heart kills in S&S states that hold
-Incense Burner**; 12% of S&S arrivals hold it and 41.5% of runs reach S&S, so **≈ +0.3 pp of all runs**
-(Inference; the term is default off).
+Incense Burner**; 11.1% of S&S arrivals hold it and 41.5% of runs reach S&S, so **≈ +0.27 pp of all runs**
+(Inference; the term is default off; §724 measured it at research Heart search with learned stop, not the
+Act-4-strong production budget, so its production size is unverified).
 
 **Gate:** extend §724 from Incense to every relic counter that carries into the Heart (Pen Nib, Nunchaku, Sundial,
 Happy Flower, Ink Bottle, …) and to max HP, priced by the Heart-entry perturbation labels of #922 (in flight), on all

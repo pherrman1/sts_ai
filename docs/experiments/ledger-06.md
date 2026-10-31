@@ -25553,7 +25553,7 @@ Seeds: none new (used seeds 111384000-385023 and 111387000-255, plus seed + 1).
 **Knowledge impact:** §726's perturbation effects are no evidence against causal signs of V_A4 features; compare
 perturbed and control states with the same (fresh) Heart-play pipeline.
 
-## §TBD — A20 loss mining on 2,816 production games: bosses kill 49% of runs, 80% of deaths start depleted; Ruby, campfires, double-boss pricing and boss-aware picks each ≤ 0.5 pp; potion effect not confirmed by potion-offer luck; four gaps ranked (Awakened One, Heart entry, act-2 bosses, low-HP attrition), plausible ~2-4 pp in total; offline, no seeds (2026-10-31)
+## §TBD — A20 loss mining on 2,816 production games: bosses kill 49% of runs, 80% of deaths start depleted; Ruby, campfires, double-boss pricing and boss-aware picks each ≤ 0.5 pp; potion effect observational only (offer instrument invalid); four gaps ranked (Awakened One, Heart entry, act-2 bosses, low-HP attrition), plausible ~2-4 pp in total; offline, no seeds (2026-10-31)
 
 **Question:** Philipp, 2026-10-31 22:34Z ("Ja starte das mal", loss analysis, roadmap X5): where and why do today's
 A20 runs die, which deaths could a different decision plausibly have avoided, and what would each fix be worth?
@@ -25566,15 +25566,16 @@ each set and pooled. Observational; levers are upper bounds.
   hallways 4.3%; same in both sets within ~1 pp. Per fight: Heart 35.8%, Awakened One 23.1%, Collector 21.7%, other
   bosses 6-14%. 80% of deaths start below 80% HP or without a potion; 14.6% of runs die healthy.
 - Exchange rates from per-act boss-death logits: −0.34/−0.39/−0.36/−0.71 pp per entry HP (act 1/2/3/Heart; Heart
-  matches V_H's 0.75); a potion = 18/21/12/15 HP. Potion-offer luck raises boss-entry potions by only 0.10-0.14 per
-  offer and shows no protective effect (−1.2 ± 3.7, +2.3 ± 4.5, +12.8 ± 5.9 pp per potion, acts 1-3): the potion
-  association is not confirmed causally.
+  matches V_H's 0.75); a potion = 18/21/12/15 HP (observational upper bounds). A potion-offer instrument is
+  invalid (offers are recorded only when the belt has room, so they track past drinking and deck strength; review);
+  belt-full potion waste is not measurable from these records (~21% of won hallway/elite fights end with a full belt).
 - Small: pre-boss Ruby Recall below 60% HP in 5.0% of runs, ≤ +0.50 pp (confirms §687); campfire use before low-HP
   deaths unremarkable; second act-3 boss at 77% HP and half the potions, but its leaf already omits the act heal and
   prices potions near the measured rate; card picks ignore the visible boss (power picks 51% at all three act-3
   bosses) yet deck features explain little (powers OR 1.08 per power at Awakened One only).
 - Gaps: (1) Awakened One, 8.2% of runs, ceiling +2.5 pp to Time Eater's rate; (2) Heart entry, Heart losers lost 31
-  HP at S&S vs 10; the Incense term's +5.9 pp is per Incense S&S state, ≈ +0.3 pp of all runs; (3) act-2 bosses at
+  HP at S&S vs 10; the Incense term's +5.9 pp is per Incense S&S state (11.1% of S&S arrivals), ≈ +0.27 pp of all
+  runs, measured at research Heart search; (3) act-2 bosses at
   healthy entry, 4.3% of runs; (4) acts 1-2 hallway/elite deaths below 50% HP, 9.4% of runs.
 **Decision:** no code or default change. Proposed gates (not run): Awakened One `fightreplay` production vs flat 40k
 on the 1,001 recorded entries (≈ 130 core-h); Heart-entry counter pricing at S&S from #922 labels on 1,168 S&S entries

@@ -36,7 +36,7 @@ numpy, pandas, statsmodels. Card, relic, potion and encounter names come from `i
 | `bossreg.py` | per-act logistic boss-death models, potion/HP exchange rate, counterfactual levers |
 | `rest2.py`, `act3.py` | campfire action before each boss, A20 double act-3 boss, Ruby Recall timing |
 | `heart.py` | Shield & Spear → Heart transfer (HP lost, potions used) |
-| `potflow.py`, `iv.py` | potion offers, use by room; potion-offer luck as an instrument for boss death |
+| `potflow.py`, `iv.py` | potion use by room; potion-offer instrument (invalid, see Limits) |
 | `deckfeat.py`, `bosscond.py` | deck features per boss; do card picks change with the visible act boss |
 | `lowhp.py` | non-boss deaths below 50% HP: preceding campfire and fight |
 
@@ -44,6 +44,10 @@ numpy, pandas, statsmodels. Card, relic, potion and encounter names come from `i
 
 Observational. Boss-death models control for HP, max HP, potions, deck size, upgrades, curses, Strikes/Defends,
 relic count and HP lost per earlier hallway/elite fight of the act, but deck strength is only partly observed, so
-lever sizes are upper bounds. The potion instrument (number of potions offered before the boss, given fights and
-elites fought) is weak in act 3 and may not satisfy exclusion (offers come with fights and events). No combat logs:
+lever sizes are upper bounds. The potion instrument (`iv.py`, potions offered before the boss) is **invalid**:
+`potions_offered` is built from valid take actions, so a potion dropping onto a full belt is never recorded (0 of
+53,450 full-belt reward states show an offer), and recorded offers depend on past drinking, i.e. on deck strength.
+For the same reason `potflow.py`'s "belt full at offer 0%" is an artefact; belt-full waste is not measurable here.
+Both scripts stay for transparency. `common.rests`' `lift` rule never fires (Girya adds strength, not max HP), so
+lifts land in "other"; no reported number depends on it. No combat logs:
 in-fight play is not observable here.
