@@ -25484,7 +25484,7 @@ Seeds: none new (replays of used seeds 111384000-385023 and 111387032-255).
 **Knowledge impact:** score XGBoost models on the same sparse format they were trained on; act-end rollout labels
 carry ranking signal in act 1 but not yet in acts 2-3 at 1,280 games.
 
-## §TBD — V_A4 Act-4 entry perturbation pilot: 960 perturbed continuations of 64 run-1 entries (common random numbers) do not improve V_A4 in #915's CV (B − A −0.0005 BCE [−0.0026, +0.0017], NOT_SHOWN at pilot size); controls replay run 1 64/64 byte for byte, but perturbed children kill the Heart 7.6 pp less than controls, even for upgrades and max-HP gains (sign anomaly, open) (replays of used seeds, 2026-10-30/31)
+## §TBD — V_A4 Act-4 entry perturbation pilot: 960 perturbed continuations of 64 run-1 entries (common random numbers) do not improve V_A4 in #915's CV (B − A −0.0005 BCE [−0.0026, +0.0017], NOT_SHOWN at pilot size); controls replay run 1 64/64 byte for byte, but perturbed children kill the Heart 7.6 pp less than controls (seed-clustered CI [−15, 0]; −8 [−14, −2] vs run 1's five games), even for upgrades and max-HP gains, concentrated in the Heart fight at equal Heart-entry HP; no combat-input bug found (review) (sign anomaly, open) (replays of used seeds, 2026-10-30/31)
 
 **Question:** Philipp (2026-10-30): V_A4 is data-limited (§722); do realistic perturbations of frozen Act-4 entry
 states (HP, max HP, gold, cards, upgrades, relics, counters, potions) add useful, causal training data?
@@ -25498,12 +25498,14 @@ change only in the operator's fields (960/960).
   own rows −0.0037 [−0.0103, +0.0030].
 - CRN effects: relic add +8 pp, potion add +5 pp; HP +0.17 pp per HP; relic remove −18, counter redraw −20,
   max HP −21, unupgrade −12 pp.
-- Children's mean kill rate is 62.7% vs 70.3% for the controls (run 1's redrawn forks of the same entries: 70.7%).
-  Upgrade −7 pp, max-HP gain −15 pp, HP gain −3 pp. The gold children whose path does not change reproduce the
+- Children's mean kill rate is 62.7% vs 70.3% for the controls, −7.6 pp [−15.1, +0.1] (run 1's redrawn forks of the
+  same entries: 70.7%; vs all five run-1 games about −8 [−14, −2]). Upgrade −7 pp [−18, +4], max-HP gain −15 pp,
+  HP gain −3 pp. Review: first Act-4 elite HP loss moves the right way per operator; the gap is in Heart conversion
+  (66% vs 75%) at equal Heart-entry HP. The gold children whose path does not change reproduce the
   control exactly (15/15).
 **Decision:** NOT_SHOWN (pre-registered). Before any scale-up, separate the sign anomaly (a real effect vs a stale
 combat-derived state after in-place edits; the #917 self-test checks the GameContext and the record only) with a
-cheap engine check.
+cheap Heart-fight engine check.
 Seeds: none new (replays of used seeds 111384000-385023 and 111387000-255).
 **Knowledge impact:** pilot-size perturbation rows do not move V_A4; perturbation effects need a combat-consistency
 check before they are used as causal effect estimates.

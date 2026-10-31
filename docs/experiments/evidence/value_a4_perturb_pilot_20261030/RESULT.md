@@ -13,8 +13,8 @@ slow) needed 4 attempts after container resets.
 | `entry_diff_check.py`: entry record changes only in the operator's fields | 960/960 (Searing Blow keeps its upgrade count in `obs.deck.misc`, allowed for (un)upgrade); 2 hp children change no record field (203→204 HP, both on seed 111384265) |
 
 ## Gate (pre-registered, `gate.py`, [results/gate_result.json](results/gate_result.json))
-`gate.py` checks: the wrapper with no perturbation rows reproduces exp8 exactly (GBM rep 0, max |Δ| = 0), and the
-controls' feature rows equal the run-1 rows exactly.
+`gate.py` checks that the wrapper with no perturbation rows reproduces exp8 exactly (`GATE_CHECK=1`: GBM rep 0, max |Δ| =
+0). That the controls' feature rows equal the run-1 rows exactly was checked separately, here and in the results review.
 
 | | BCE (dev core, per game) | R² | run-1 BCE | run-1 R² |
 |---|---|---|---|---|
@@ -45,9 +45,10 @@ of these entries. Run 1's four redrawn-future forks of the same 64 entries kill 
 | relic_counter (redraw) | 45 | −0.20 | [−0.36, −0.06] |
 | max_hp | 68 | −0.21 | [−0.35, −0.07] |
 
-**Sign check: not clean.** Across all 960 children the kill rate is 62.7% vs 70.3% for the controls (−7.6 pp). Changes
-that should not hurt are also negative on average:
-- upgrade −7 pp;
+**Sign check: not clean, borderline.** Across all 960 children the kill rate is 62.7% vs 70.3% for the controls:
+−7.6 pp, seed-clustered CI [−15.1, +0.1], which includes 0. Against all five run-1 games of the same entries the gap
+is about −8 pp [−14, −2] (results review). Changes that should not hurt are also negative on average:
+- upgrade −7 pp [−18, +4];
 - HP gain −3 pp (n 36);
 - max-HP gain (with the matching heal, as the game does) −15 pp (n 26), max-HP loss −24 pp (n 42);
 - gold gain −4 pp (n 47).
@@ -62,6 +63,17 @@ Exploratory ([`path_divergence.py`](path_divergence.py), [results/path_divergenc
   is still negative: max_hp −0.20 (n 61), relic_counter −0.20 (41), card_add −0.14 (58), unupgrade −0.12 (86),
   upgrade −0.09 (81), hp −0.02 (83).
 
+Results review (`/mnt/project-files/reviews/pr919-results-review.md`), from the raw records:
+- The perturbations reach the first Act-4 fight exactly as intended (flags, upgradeable count, max HP, relic bits,
+  potions).
+- The combat RNG equals the control's in 941/960 children.
+- The 69 children whose Act-4 fight inputs all equal the control's reproduce it exactly.
+- HP lost in the first Act-4 elite fight moves the right way per operator (relic_add −6.7, upgrade −1.4,
+  relic_remove +6.5), and the mean over all children is +0.08, so there is no level shift there.
+- The deficit sits in the **Heart fight**. Heart-entry HP is about 75 in all groups, but conversion is 66% for
+  children vs 75% for controls and 73% for run-1 forks.
+- No combat-input bug was found. A Silver- or Heart-internal cache is the one thing the records cannot rule out.
+
 Possible reasons, not separated by this pilot:
 1. **Real effect.** The bot's own Act-4 entry state is locally better than a random nearby one, even for upgrades.
 2. **Engine or search inconsistency.** After an in-place edit of HP, max HP, deck or relic counters, a derived
@@ -74,8 +86,8 @@ The max-HP gain at −15 pp and the counter redraw at −20 pp are the clearest 
 ## Decision
 Gate: **NOT_SHOWN** (pre-registered). Do not scale up as is. First clear the sign anomaly with a cheap engine-level
 check:
-- replay a few max-HP-gain, upgrade and counter-redraw children's first Act-4 combat with `act4replay`, both from
-  the perturbed child's state and from a freshly constructed state with the same fields;
+- replay a few children's **Heart fight** with `act4replay`, both from the perturbed child's state and from a
+  freshly constructed state with the same fields (the review places the deficit there);
 - or add an operator that changes only a combat-irrelevant field (for example gold with the shop excluded) next to
   a `max_hp +0` control.
 
