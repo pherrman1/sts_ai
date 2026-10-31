@@ -989,6 +989,10 @@ void silverFocusEvalGen(int nSeeds, int asc, const std::string &outPrefix, long 
 // arm shares the battle seed (SEED_OFFSET + state * REPLICATES + r) and the planner seed, so arms
 // differ only in the budget. One CSV row per (state, replicate, arm). STS_ACT4REPLAY_COMBAT=known swaps Silver for the
 // research-only known-RNG searcher (ADR-TBD); the last column records the regime.
+// STS_ACT4REPLAY_BUDGET=learned (2026-10-30) replaces the flat exact budget with the whole-run learned stop outside
+// Act 4 strong: STS_SILVER_LEARNED_STOP=1, STS_SILVER_ACT4_STRONG=0, STS_SILVER_EXACT_ROOT_BUDGETS=0 (one-action
+// roots are committed without search), an optional STS_SILVER_LEARNED_STOP_BOSS_MAX extension; SIMS is then only a
+// row label. The budget column records the policy.
 namespace {
 
 GameContext act4ReplayContext(const nlohmann::json &s, std::uint64_t seed, MonsterEncounter enc) {
@@ -1068,17 +1072,31 @@ void act4Replay(int nStates, const std::string &statesPath, const std::string &o
         for (std::string tok; std::getline(ss, tok, ',');) sims.push_back(std::stoi(tok));
     }
     if (sims.empty()) throw std::runtime_error("act4replay: empty budget list");
-    const std::map<std::string, std::string> required = {
-        {"STS_FAIR", "1"}, {"STS_SILVER_SEARCH", "1"}, {"STS_SILVER_EXACT_ROOT_BUDGETS", "1"},
+    // STS_ACT4REPLAY_BUDGET: unset or "flat" keeps the flat exact budget; "learned" runs the learned stop.
+    const char *budgetEnv = std::getenv("STS_ACT4REPLAY_BUDGET");
+    const std::string budgetPolicy = budgetEnv ? budgetEnv : "flat";
+    if (budgetPolicy != "flat" && budgetPolicy != "learned")
+        throw std::runtime_error("act4replay: STS_ACT4REPLAY_BUDGET must be flat or learned");
+    const bool learned = budgetPolicy == "learned";
+    std::map<std::string, std::string> required = {
+        {"STS_FAIR", "1"}, {"STS_SILVER_SEARCH", "1"}, {"STS_SILVER_EXACT_ROOT_BUDGETS", learned ? "0" : "1"},
         {"STS_SILVER_REUSE_CAP_MODE", "allocated"}, {"STS_SILVER_ADAPTIVE", "0"}, {"STS_SILVER_VNET_LEAF_DIRECT", "0"},
-        {"STS_SILVER_LEARNED_STOP", "0"}};
+        {"STS_SILVER_LEARNED_STOP", learned ? "1" : "0"}};
+    if (learned) {
+        required["STS_SILVER_ACT4_STRONG"] = "0";
+        required["STS_SILVER_LEARNED_STOP_BOSS_FALLBACK"] = "0";
+    }
     for (const auto &[name, value] : required) {
         const char *actual = std::getenv(name.c_str());
         if (!actual || value != actual) throw std::runtime_error("act4replay: requires " + name + "=" + value);
     }
-    if (!search::nativeSilverBackendInstalled() || !search::nativeSilverExactRootBudgets()
-            || search::nativeSilverAdaptiveEnabled() || search::nativeSilverLearnedStopEnabled())
-        throw std::runtime_error("act4replay: requires flat exact-budget native Silver");
+    if (const char *single = std::getenv("STS_SILVER_SEARCH_SINGLETON_ROOTS"); learned && single && std::atoi(single) != 0)
+        throw std::runtime_error("act4replay: learned budget commits one-action roots; unset STS_SILVER_SEARCH_SINGLETON_ROOTS");
+    if (!search::nativeSilverBackendInstalled() || search::nativeSilverAdaptiveEnabled()
+            || search::nativeSilverExactRootBudgets() == learned || search::nativeSilverLearnedStopEnabled() != learned)
+        throw std::runtime_error(learned ? "act4replay: learned budget requires learned-stop native Silver"
+                                         : "act4replay: requires flat exact-budget native Silver");
+
     // STS_ACT4REPLAY_COMBAT=known: research-only known-RNG combat (KnownRngSearcher, P300's stage-value search). Its rows are a
     // separate series (ADR-0002) and carry regime=known_rng; unset or "fair" keeps native Silver.
     const char *combatEnv = std::getenv("STS_ACT4REPLAY_COMBAT");
@@ -1087,6 +1105,16 @@ void act4Replay(int nStates, const std::string &statesPath, const std::string &o
         throw std::runtime_error("act4replay: STS_ACT4REPLAY_COMBAT must be fair or known");
     const bool knownRng = combat == "known";
     const char *regime = knownRng ? "known_rng" : "fair";
+    if (learned && knownRng)
+        throw std::runtime_error("act4replay: STS_ACT4REPLAY_BUDGET=learned needs STS_ACT4REPLAY_COMBAT=fair");
+    // STS_ACT4REPLAY_CHAIN=heart (research, 2026-10-30): a Shield & Spear state that is won goes straight on to the
+    // Heart from the end state (HP, potions, relic counters via exitBattle; no S&S rewards), same budget policy.
+    const char *chainEnv = std::getenv("STS_ACT4REPLAY_CHAIN");
+    const std::string chainName = chainEnv ? chainEnv : "";
+    if (!chainName.empty() && chainName != "heart")
+        throw std::runtime_error("act4replay: STS_ACT4REPLAY_CHAIN must be unset or heart");
+    const bool chain = chainName == "heart";
+    if (chain && knownRng) throw std::runtime_error("act4replay: STS_ACT4REPLAY_CHAIN=heart needs STS_ACT4REPLAY_COMBAT=fair");
     std::vector<nlohmann::json> states;
     {
         std::ifstream in(statesPath);
@@ -1098,7 +1126,8 @@ void act4Replay(int nStates, const std::string &statesPath, const std::string &o
     if (std::filesystem::exists(rowsPath)) throw std::runtime_error("act4replay: refusing to overwrite " + rowsPath);
     std::ofstream rows(rowsPath);
     rows << "state,id,encounter,replicate,sims,battleSeed,preHp,preMaxHp,prePotions,valid,won,curHp,potionCount,turns,"
-            "cpuSeconds,regime\n";
+            "cpuSeconds,regime,budget" << (chain ? ",ssIncenseCounter,heartValid,heartWon,heartHp,heartTurns,heartCpuSeconds" : "")
+         << '\n';
     const int jobs = nStates * replicates;
     #pragma omp parallel for schedule(dynamic)
     for (int j = 0; j < jobs; ++j) {
@@ -1112,6 +1141,8 @@ void act4Replay(int nStates, const std::string &statesPath, const std::string &o
                 if (encName == monsterEncounterEnumNames[i]) enc = static_cast<MonsterEncounter>(i);
             if (enc != MonsterEncounter::THE_HEART && enc != MonsterEncounter::SHIELD_AND_SPEAR)
                 throw std::runtime_error("act4replay: unsupported encounter " + encName);
+            if (chain && enc != MonsterEncounter::SHIELD_AND_SPEAR)
+                throw std::runtime_error("act4replay: STS_ACT4REPLAY_CHAIN=heart needs SHIELD_AND_SPEAR states");
             const auto battleSeed = static_cast<std::uint64_t>(seedOffset) + static_cast<std::uint64_t>(j);
             for (const int budget : sims) {
                 trainingRunStart();
@@ -1134,14 +1165,44 @@ void act4Replay(int nStates, const std::string &statesPath, const std::string &o
                 const bool decided = bc.outcome != Outcome::UNDECIDED;
                 const bool won = bc.outcome == Outcome::PLAYER_VICTORY;
                 const bool valid = trainingRunValid(decided);
-                out << si << ',' << s.value("id", std::string()) << ',' << encName << ',' << r << ',' << budget << ','
+                std::ostringstream row;   // written only once the whole row (and any chained Heart) is done
+                row << si << ',' << s.value("id", std::string()) << ',' << encName << ',' << r << ',' << budget << ','
                     << battleSeed << ',' << preHp << ',' << preMaxHp << ',' << prePotions << ',' << (valid ? 1 : 0)
                     << ',' << (won ? 1 : 0) << ',' << (won ? bc.player.curHp : 0) << ',' << bc.potionCount << ','
-                    << bc.turn << ',' << std::setprecision(6) << cpu << ',' << regime << '\n';
+                    << bc.turn << ',' << std::setprecision(6) << cpu << ',' << regime << ',' << budgetPolicy;
+                if (chain) {
+                    // -1 = no Incense Burner; the Heart columns are 0 unless S&S was won.
+                    const int counter = bc.player.hasRelic<RelicId::INCENSE_BURNER>() ? bc.player.incenseBurnerCounter : -1;
+                    bool heartValid = false, heartWon = false;
+                    int heartHp = 0, heartTurns = 0;
+                    double heartCpu = 0;
+                    if (valid && won) {
+                        copy.regainControlAction = [](GameContext &) {};   // no S&S rewards
+                        bc.exitBattle(copy);
+                        copy.curMapNodeY = 3;
+                        copy.floorNum = 56;
+                        copy.curRoom = Room::BOSS;
+                        copy.enterBattle(MonsterEncounter::THE_HEART);
+                        trainingRunStart();
+                        search::g_nativeSilverPlannerSeedOverride = key(battleSeed, si, 0xA48, r);
+                        BattleContext heart;
+                        const auto h0 = threadCpuNanos();
+                        agent.playoutBattle(copy, heart);
+                        heartCpu = static_cast<double>(threadCpuNanos() - h0) / 1e9;
+                        search::g_nativeSilverPlannerSeedOverride.reset();
+                        heartValid = trainingRunValid(heart.outcome != Outcome::UNDECIDED);
+                        heartWon = heart.outcome == Outcome::PLAYER_VICTORY;
+                        heartHp = heartWon ? heart.player.curHp : 0;
+                        heartTurns = heart.turn;
+                    }
+                    row << ',' << counter << ',' << (heartValid ? 1 : 0) << ',' << (heartWon ? 1 : 0) << ',' << heartHp
+                        << ',' << heartTurns << ',' << std::setprecision(6) << heartCpu;
+                }
+                out << row.str() << '\n';
             }
         } catch (const std::exception &e) {
             search::g_nativeSilverPlannerSeedOverride.reset();
-            out << si << ',' << s.value("id", std::string()) << ",ERROR," << r << ",0,0,0,0,0,0,0,0,0,0,0," << regime << " # " << e.what() << '\n';
+            out << si << ',' << s.value("id", std::string()) << ",ERROR," << r << ",0,0,0,0,0,0,0,0,0,0,0," << regime << ',' << budgetPolicy << " # " << e.what() << '\n';
         }
         #pragma omp critical(act4_replay_write)
         {

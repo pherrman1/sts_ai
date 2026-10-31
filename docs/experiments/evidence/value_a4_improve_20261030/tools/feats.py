@@ -39,7 +39,7 @@ def card_state(es_records):
     out = np.zeros((len(es_records), 4 * len(STATE_CARDS)), np.float32)
     for i, rec in enumerate(es_records):
         for j, cid in enumerate(STATE_CARDS):
-            ms = [m for c, m in zip(rec['obs.deck.cards'], rec['obs.deck.misc']) if c == cid]
+            ms = [m for c, m in zip(rec['obs.deck.cards'], rec.get('obs.deck.misc', [0] * len(rec['obs.deck.cards']))) if c == cid]  # §497 records lack misc
             us = [u for c, u in zip(rec['obs.deck.cards'], rec['obs.deck.upgrades']) if c == cid]
             if ms: out[i, 4 * j:4 * j + 4] = sum(ms), max(ms), sum(us), max(us)
     return out

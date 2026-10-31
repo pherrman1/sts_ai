@@ -3576,6 +3576,44 @@ int testSilverVictoryTurnPenalty() {
     return 0;
 }
 
+// Incense Heart phase (STS_SILVER_INCENSE_HEART_PHASE): off by default; on, a Shield & Spear win
+// with Incense Burner moves by scale × the probe's pp for the counter; no other fight, no loss.
+int testSilverIncenseHeartPhase() {
+    auto fail = [&](const std::string &msg) {
+        std::cout << "silver_incense_heart_phase FAIL: " << msg << '\n';
+        return 1;
+    };
+    GameContext gc(CharacterClass::IRONCLAD, 424243, 20);
+    gc.relics.add({RelicId::INCENSE_BURNER, 0});
+    gc.curRoom = Room::ELITE;
+    BattleContext bc;
+    bc.init(gc, MonsterEncounter::SHIELD_AND_SPEAR);
+    search::SilverSearchContext context;
+    context.act = 4;
+    search::SilverSearcher searcher(silverSearchRoot(bc), context);
+    auto score = [&](const BattleContext &base, Outcome outcome, int counter) {
+        BattleContext end = base;
+        end.outcome = outcome;
+        end.player.incenseBurnerCounter = counter;
+        return searcher.scoreEndState(end);
+    };
+    if (searcher.evalWeights.incenseHeartPhaseScale != 0) return fail("default is not off");
+    if (score(bc, Outcome::PLAYER_VICTORY, 4) != score(bc, Outcome::PLAYER_VICTORY, 2)) return fail("off: counter moves win");
+    const double loss = score(bc, Outcome::PLAYER_LOSS, 4);
+    searcher.evalWeights.incenseHeartPhaseScale = search::kDefaultIncenseHeartPhaseScale;
+    const double expect = search::kDefaultIncenseHeartPhaseScale
+        * (search::kIncenseHeartPhaseKillPp[4] - search::kIncenseHeartPhaseKillPp[2]);
+    if (std::abs((score(bc, Outcome::PLAYER_VICTORY, 4) - score(bc, Outcome::PLAYER_VICTORY, 2)) - expect) > 1e-9)
+        return fail("on: counter 4 vs 2 is not the priced difference");
+    if (loss != score(bc, Outcome::PLAYER_LOSS, 4)) return fail("loss branch changed");
+    BattleContext other;
+    other.init(gc, MonsterEncounter::GREMLIN_NOB);
+    if (score(other, Outcome::PLAYER_VICTORY, 4) != score(other, Outcome::PLAYER_VICTORY, 2))
+        return fail("on: another fight depends on the counter");
+    std::cout << "silver_incense_heart_phase PASS\n";
+    return 0;
+}
+
 // #544: a replayable zero-cost draw (two Finesse) must not trap Silver's
 // rollout policy in a loop that never attacks. Before the fix every playout
 // here ran ~142k actions to the engine's loop guard and scored that loss
@@ -6848,6 +6886,8 @@ int main(int argc, const char* argv[]) {
         return testSilverConcaveHpLeaf();
     } else if (command == "silver_victory_turn_penalty") {
         return testSilverVictoryTurnPenalty();
+    } else if (command == "silver_incense_heart_phase") {
+        return testSilverIncenseHeartPhase();
     } else if (command == "silver_rollout_zero_cost_loop") {
         return testSilverRolloutZeroCostLoop();
     } else if (command == "match_and_keep") {

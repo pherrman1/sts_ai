@@ -1,7 +1,11 @@
 #include "heart_outcome_capture.h"
 #include "driver_shared.h"
 #include "heart1_policy.h"
+#include <cstdio>
 #include <cstdlib>
+#include <fstream>
+#include <functional>
+#include <iterator>
 #include "ooc_mcts_adapter.h"
 
 extern bool g_collectKeys;
@@ -10,9 +14,27 @@ namespace one_combat {
 namespace {
 class Writer {
     std::FILE *file_;
+    std::string path_;
 public:
-    explicit Writer(const std::string &path) : file_(std::fopen(path.c_str(), "wx")) {
+    explicit Writer(const std::string &path) : file_(std::fopen(path.c_str(), "wx")), path_(path) {
         if (!file_) throw std::runtime_error("heart outcome output exists or cannot be created");
+    }
+    // STS_A4_PERTURB child: continue in a new file that starts with every row written so far, the first row
+    // (the header) passed through `header`.
+    void forkTo(const std::string &path, const std::function<nlohmann::json(nlohmann::json)> &header = {}) {
+        std::ifstream in(path_, std::ios::binary);
+        std::string written((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+        if (header && !written.empty()) {
+            const auto end = written.find('\n');
+            if (end == std::string::npos) throw std::runtime_error("heart outcome child output: no header row");
+            written = header(nlohmann::json::parse(written.substr(0, end))).dump() + written.substr(end);
+        }
+        std::FILE *next = std::fopen(path.c_str(), "wx");
+        if (!next || std::fwrite(written.data(), 1, written.size(), next) != written.size() || std::fflush(next))
+            throw std::runtime_error("heart outcome child output exists or cannot be written");
+        std::fclose(file_);
+        file_ = next;
+        path_ = path;
     }
     ~Writer() { if (file_) std::fclose(file_); }
     Writer(const Writer &) = delete;
@@ -27,6 +49,7 @@ public:
 struct ObserverScope {
     ~ObserverScope() {
         t_realRunContextObserver = {}; t_realOocDecisionObserver = {}; t_realCombatObserver = {};
+        t_a4PerturbChildOutput = {}; t_a4PerturbSummary = {};
         takeOocPolicyTarget();
     }
 };
@@ -52,6 +75,16 @@ std::string ctmRowsPath(const std::string &output) {
     if (output.size() > suffix.size() && output.compare(output.size() - suffix.size(), suffix.size(), suffix) == 0)
         return output.substr(0, output.size() - suffix.size()) + ".ctm.jsonl";
     return output + ".ctm.jsonl";
+}
+
+// STS_A4_PERTURB child k: OUT.jsonl -> OUT.pKK.jsonl; any other name gets .pKK.jsonl appended.
+std::string a4PerturbChildPath(const std::string &output, int child) {
+    const std::string suffix = ".jsonl";
+    char tag[8];
+    std::snprintf(tag, sizeof tag, ".p%02d", child);
+    if (output.size() > suffix.size() && output.compare(output.size() - suffix.size(), suffix.size(), suffix) == 0)
+        return output.substr(0, output.size() - suffix.size()) + tag + suffix;
+    return output + tag + suffix;
 }
 
 // Combat models and Silver settings the run used, beside the policy identity
@@ -157,6 +190,24 @@ int heartOutcomeGen(std::uint64_t seed, const std::string &output, bool capture,
                 trainingRunValid(decided), decided, rawCaptureCount, record, predictorInput));
         };
     }
+    // STS_A4_PERTURB: every child continues in its own files, its header carrying the child's perturbation and naming
+    // the child's CTM file; the parent's file ends with the summary row.
+    t_a4PerturbChildOutput = [&](const nlohmann::json &perturbation) {
+        const auto path = a4PerturbChildPath(output, perturbation.at("child").get<int>());
+        writer.forkTo(path, [&](nlohmann::json row) {
+            row["a4Perturb"] = perturbation;
+            if (row.contains("ctmRows"))
+                row["ctmRows"]["path"] = std::filesystem::path(ctmRowsPath(path)).filename().string();
+            return row;
+        });
+        if (ctmWriter) ctmWriter->forkTo(ctmRowsPath(path));
+    };
+    t_a4PerturbSummary = [&](nlohmann::json row) {
+        for (auto &result : row["results"])
+            result["file"] = std::filesystem::path(a4PerturbChildPath(output, result["child"].get<int>()))
+                                 .filename().string();
+        writer.write(row);
+    };
     // Health failures invalidate the whole trajectory, never become losses.
     trainingRunStart();
     const auto result = runFullRunOOC(seed, 10000, 20, deployedRestV(), true);
@@ -194,8 +245,29 @@ int heartOutcomeSelfTest() {
         if (nlohmann::json::parse(first).at("type") != "header"
             || nlohmann::json::parse(last).at("label") != 0)
             throw std::runtime_error("heart writer framing changed");
-        std::filesystem::remove(path);
-    } catch (...) { std::filesystem::remove(path); throw; }
+        // STS_A4_PERTURB child output: the child file repeats the rows so far, then only the child writes to it.
+        const auto child = a4PerturbChildPath(path.string(), 3);
+        if (std::filesystem::path(child).filename().string()
+                != path.stem().string() + ".p03.jsonl" || a4PerturbChildPath("x", 12) != "x.p12.jsonl")
+            throw std::runtime_error("a4 perturb child path changed");
+        {
+            Writer parent(path.string() + ".parent");
+            parent.write({{"type", "header"}});
+            parent.forkTo(child, [](nlohmann::json row) { row["a4Perturb"] = 3; return row; });
+            parent.write({{"type", "outcome"}});
+        }
+        std::ifstream parentFile(path.string() + ".parent"), childFile(child);
+        const std::string parentText((std::istreambuf_iterator<char>(parentFile)), std::istreambuf_iterator<char>());
+        const std::string childText((std::istreambuf_iterator<char>(childFile)), std::istreambuf_iterator<char>());
+        if (parentText != "{\"type\":\"header\"}\n"
+                || childText != "{\"a4Perturb\":3,\"type\":\"header\"}\n{\"type\":\"outcome\"}\n")
+            throw std::runtime_error("a4 perturb child output changed");
+        std::filesystem::remove(path); std::filesystem::remove(path.string() + ".parent"); std::filesystem::remove(child);
+    } catch (...) {
+        std::filesystem::remove(path); std::filesystem::remove(path.string() + ".parent");
+        std::filesystem::remove(a4PerturbChildPath(path.string(), 3));
+        throw;
+    }
     std::cout << "heart outcome writer selftest passed\n";
     return 0;
 }

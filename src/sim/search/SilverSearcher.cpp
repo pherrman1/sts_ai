@@ -1286,6 +1286,12 @@ double search::SilverSearcher::evaluateEndState(const BattleContext &bc) const {
             - (bc.turn * evalWeights.victoryTurnPenalty) + deathSaveValue;
         score += evalWeights.goldWeight * (effectiveGold(bc) - effectiveGold(*rootState));
         score += evalWeights.maxHpWeight * (bc.player.maxHp - rootState->player.maxHp);
+        if (evalWeights.incenseHeartPhaseScale > 0 && bc.encounter == MonsterEncounter::SHIELD_AND_SPEAR
+                && bc.player.hasRelic<RelicId::INCENSE_BURNER>()) {
+            const int counter = bc.player.incenseBurnerCounter;
+            if (counter >= 0 && counter < 6)
+                score += evalWeights.incenseHeartPhaseScale * kIncenseHeartPhaseKillPp[counter];
+        }
         if (bc.smokeBombUsed) {
             // Forfeited rewards, capped at half the remaining HP: death also
             // scores positively, so an uncapped penalty could make a low-HP
