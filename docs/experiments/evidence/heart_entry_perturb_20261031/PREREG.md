@@ -1,6 +1,7 @@
 # Heart-entry perturbation labels: causal data for an all-feature Heart-entry value (pre-registration)
 
-Status: DRAFT until Philipp's go for the run (workers). Philipp (2026-10-31): a value model that sees cross-fight
+Status: FROZEN 2026-10-31 before launch; prelaunch review PASS (32d9ccb5, disclosures 2ee649de). Philipp: "Yes go"
+(19:14Z) to "start with 16 workers once the review passes". Philipp (2026-10-31): a value model that sees cross-fight
 interactions in general, not one hand term per relic like §724's Incense term ("Let's go plan", 14:06Z). Issue #914.
 
 ## Idea

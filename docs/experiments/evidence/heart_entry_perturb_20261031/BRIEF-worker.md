@@ -3,7 +3,7 @@
 YOUR WORKER NUMBER: W=<n>   (pass it unpadded; never 03)
 RUN_COMMIT=<RUN_COMMIT>  CAMPAIGN=docs/experiments/evidence/heart_entry_perturb_20261031
 
-Philipp authorized this run on <DATE/TIME> (<his words>).
+Philipp authorized this run on 2026-10-31 at 19:14Z ("Yes go" to 16 workers).
 - Do not change seeds, scripts, environments, binary, weights or timeouts.
 - Work in /home/user/sts_ai. Run nothing from /mnt/project-files (noexec).
 - The worker script uploads only to /mnt/project-files/heart-entry-perturb (units/, claims/, wWW.DONE.json). Write
