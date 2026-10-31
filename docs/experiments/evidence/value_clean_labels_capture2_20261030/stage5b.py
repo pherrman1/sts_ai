@@ -35,6 +35,9 @@ class VCal:
     def __call__(self, Z):
         import xgboost as xgb
         if self.bst is None: self.bst = xgb.Booster(); self.bst.load_model(bytearray(self.raw))
+        # trained on CSR, where XGBoost reads absent entries as MISSING; a dense 0 would take the other branch.
+        # Fix after the first run (results commit discloses it): (b)-(d) used dense input, which scored nonsense.
+        if not sp.issparse(Z): Z = sp.csr_matrix(Z)
         p = self.bst.predict(xgb.DMatrix(Z), iteration_range=(0, self.it + 1))
         return 1 / (1 + np.exp(-(self.a + self.b * S5.logit(p))))
 
