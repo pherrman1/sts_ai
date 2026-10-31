@@ -16,7 +16,7 @@ card misc are the candidates.
   - Run 1's base game (b00) matches the #923 control state field for field on all 60 entries, so it is not rerun.
   - The tar is `fork_states.tar` (sha256 c7497c47…, with `meta.json` holding the in-game Heart outcome).
 - **Search:** identical to #923. `run_unit.sh` differs only in the file names. Two replicates on battle seeds SEED and
-  SEED + 1, which are the same as the #923 control's. Binary 593db4fe / 596f14cc.
+  SEED + 1, which are the same as the #923 control's. Binary: main 6c96c25a. Its only change since #923's 593db4fe is #921's default-off out-of-combat value chooser, which this combat-only run does not touch.
 
 ## Seeds
 None new. The battle seeds are the used entry seeds and seed + 1, the same seeds #923 used.
