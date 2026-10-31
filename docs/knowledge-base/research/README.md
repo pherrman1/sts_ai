@@ -73,6 +73,7 @@ graph TD
 - [External evidence and ideas](ooc/external-evidence-and-ideas.md) — benchmarks, expert play, literature, ranked OOC candidates
 - [Variance reduction](ooc/variance-reduction.md) — rollout noise sources, CRN coupling, unbiased estimators (#883)
 - [Root quality](ooc/root-quality.md) — definitions of action gap Δ, relative bias B_rel, search variance σ, coverage q; identifiable pooled estimands
+- [A20 loss mining](a20-loss-mining.md) — where production A20 runs die, exchange rates (HP, potions) at bosses, ranked structural gaps with gates
 
 ## Evidence labels
 

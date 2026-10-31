@@ -25552,3 +25552,34 @@ Silver tree reuse). Not tested further here.
 Seeds: none new (used seeds 111384000-385023 and 111387000-255, plus seed + 1).
 **Knowledge impact:** §726's perturbation effects are no evidence against causal signs of V_A4 features; compare
 perturbed and control states with the same (fresh) Heart-play pipeline.
+
+## §TBD — A20 loss mining on 2,816 production games: bosses kill 49% of runs, 80% of deaths start depleted; Ruby, campfires, double-boss pricing and boss-aware picks each ≤ 0.5 pp; potion effect not confirmed by potion-offer luck; four gaps ranked (Awakened One, Heart entry, act-2 bosses, low-HP attrition), plausible ~2-4 pp in total; offline, no seeds (2026-10-31)
+
+**Question:** Philipp, 2026-10-31 22:34Z ("Ja starte das mal", loss analysis, roadmap X5): where and why do today's
+A20 runs die, which deaths could a different decision plausibly have avoided, and what would each fix be worth?
+**Data:** [README](evidence/loss_mining_20261031/README.md), page
+[research/a20-loss-mining.md](../knowledge-base/research/a20-loss-mining.md). §727 arm A (1,536 games, 25.1%) and the
+§720 run-1 base games (1,280, 26.3%): CTM rows per fight plus game records; `run_all.sh` reproduces every table on
+each set and pooled. Observational; levers are upper bounds.
+**Result:**
+- Deaths (share of runs): act-3 bosses 14.5%, Heart 14.3%, act-2 boss 11.9%, act-1 boss 8.3%, elites 15.4%, act-2
+  hallways 4.3%; same in both sets within ~1 pp. Per fight: Heart 35.8%, Awakened One 23.1%, Collector 21.7%, other
+  bosses 6-14%. 80% of deaths start below 80% HP or without a potion; 14.6% of runs die healthy.
+- Exchange rates from per-act boss-death logits: −0.34/−0.39/−0.36/−0.71 pp per entry HP (act 1/2/3/Heart; Heart
+  matches V_H's 0.75); a potion = 18/21/12/15 HP. Potion-offer luck raises boss-entry potions by only 0.10-0.14 per
+  offer and shows no protective effect (−1.2 ± 3.7, +2.3 ± 4.5, +12.8 ± 5.9 pp per potion, acts 1-3): the potion
+  association is not confirmed causally.
+- Small: pre-boss Ruby Recall below 60% HP in 5.0% of runs, ≤ +0.50 pp (confirms §687); campfire use before low-HP
+  deaths unremarkable; second act-3 boss at 77% HP and half the potions, but its leaf already omits the act heal and
+  prices potions near the measured rate; card picks ignore the visible boss (power picks 51% at all three act-3
+  bosses) yet deck features explain little (powers OR 1.08 per power at Awakened One only).
+- Gaps: (1) Awakened One, 8.2% of runs, ceiling +2.5 pp to Time Eater's rate; (2) Heart entry, Heart losers lost 31
+  HP at S&S vs 10; the Incense term's +5.9 pp is per Incense S&S state, ≈ +0.3 pp of all runs; (3) act-2 bosses at
+  healthy entry, 4.3% of runs; (4) acts 1-2 hallway/elite deaths below 50% HP, 9.4% of runs.
+**Decision:** no code or default change. Proposed gates (not run): Awakened One `fightreplay` production vs flat 40k
+on the 1,001 recorded entries (≈ 130 core-h); Heart-entry counter pricing at S&S from #922 labels on 1,168 S&S entries
+(≈ 140 core-h); offline boss × deck interaction CV for act-2 bosses; offline low-HP map-root divergence check.
+**Interpretation:** Inference: decision-level gaps left in recorded games are each ≤ ~1 pp plausible; most death
+mass is combat HP loss at bosses (§701, §711), so the large levers are combat-side (roadmap phases 3-5).
+Seeds: none (existing games only).
+**Knowledge impact:** new page `research/a20-loss-mining.md`, linked from the research README.

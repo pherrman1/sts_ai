@@ -1,0 +1,16 @@
+deaths by stage x entry resource (share of all runs):
+  act3 boss      14.1% | healthy (HP>=80%, >=1 potion): 2.0 | mid HP 50-80%: 2.3 | mid HP, 0 potions: 3.1 | low HP (<50%): 6.8
+  Heart          14.1% | healthy (HP>=80%, >=1 potion): 2.9 | mid HP 50-80%: 3.0 | mid HP, 0 potions: 4.0 | low HP (<50%): 4.3
+  act2 boss      11.6% | healthy (HP>=80%, >=1 potion): 3.2 | mid HP 50-80%: 3.1 | mid HP, 0 potions: 3.6 | low HP (<50%): 1.6
+  act1 boss       8.4% | healthy (HP>=80%, >=1 potion): 0.9 | mid HP 50-80%: 4.9 | mid HP, 0 potions: 1.6 | low HP (<50%): 0.9
+  act2 elite      6.7% | healthy (HP>=80%, >=1 potion): 1.2 | mid HP 50-80%: 1.1 | mid HP, 0 potions: 1.7 | low HP (<50%): 2.7
+  act2 normal     4.7% | healthy (HP>=80%, >=1 potion): 0.0 | mid HP 50-80%: 0.2 | mid HP, 0 potions: 0.4 | low HP (<50%): 4.1
+  act3 elite      4.6% | healthy (HP>=80%, >=1 potion): 0.8 | mid HP 50-80%: 0.9 | mid HP, 0 potions: 1.2 | low HP (<50%): 1.6
+  act1 elite      4.4% | healthy (HP>=80%, >=1 potion): 0.6 | mid HP 50-80%: 0.9 | mid HP, 0 potions: 0.4 | low HP (<50%): 2.4
+  act3 normal     1.6% | healthy (HP>=80%, >=1 potion): 0.4 | mid HP 50-80%: 0.0 | mid HP, 0 potions: 0.2 | low HP (<50%): 0.9
+  S&S             1.4% | healthy (HP>=80%, >=1 potion): 0.9 | mid HP 50-80%: 0.0 | mid HP, 0 potions: 0.5 | low HP (<50%): 0.0
+  act1 normal     1.0% | healthy (HP>=80%, >=1 potion): 0.0 | mid HP 50-80%: 0.1 | mid HP, 0 potions: 0.0 | low HP (<50%): 0.9
+  act3 other      0.5% | healthy (HP>=80%, >=1 potion): 0.2 | mid HP 50-80%: 0.1 | mid HP, 0 potions: 0.2 | low HP (<50%): 0.0
+  act2 other      0.4% | healthy (HP>=80%, >=1 potion): 0.1 | mid HP 50-80%: 0.1 | mid HP, 0 potions: 0.1 | low HP (<50%): 0.2
+all deaths by resource: {'low HP (<50%)': '26.6%', 'healthy (HP>=80%, >=1 potion)': '13.2%', 'mid HP, 0 potions': '17.1%', 'mid HP 50-80%': '16.6%'}
+non-boss death entry HP: [(('S&S', '85+'), 18), (('act1 elite', '50-70'), 14), (('act1 elite', '70-85'), 6), (('act1 elite', '85+'), 5), (('act1 elite', '<50'), 31), (('act1 normal', '50-70'), 1), (('act1 normal', '<50'), 12), (('act2 elite', '50-70'), 18), (('act2 elite', '70-85'), 18), (('act2 elite', '85+'), 16), (('act2 elite', '<50'), 34), (('act2 normal', '50-70'), 5), (('act2 normal', '70-85'), 2), (('act2 normal', '<50'), 53), (('act3 elite', '50-70'), 12), (('act3 elite', '70-85'), 14), (('act3 elite', '85+'), 12), (('act3 elite', '<50'), 21), (('act3 normal', '50-70'), 3), (('act3 normal', '70-85'), 2), (('act3 normal', '85+'), 3), (('act3 normal', '<50'), 12)]
