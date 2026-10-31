@@ -25532,7 +25532,7 @@ Seeds: 111312000-111313535 USED (new), smokes 111387991-992 USED.
 student_sel: tiny value gaps override a confident policy and lose a lot (second time after §712). Offline
 concordance on self-generated rollout labels is not evidence for play.
 
-## §TBD — Fresh Heart replay at production search: §726's perturbation sign anomaly does not reproduce; perturbed children win the Heart as often as controls when their Heart-entry states are rebuilt (−0.3 pp [−6.4, +5.6] vs −10.6 in game); the in-game gap sits in the controls (in game +8.3 pp [−0.9, +18.3] above their fresh replay), verdict IN_GAME_ARTIFACT (replays of used seeds, 2026-10-31)
+## §728 — Fresh Heart replay at production search: §726's perturbation sign anomaly does not reproduce; perturbed children win the Heart as often as controls when their Heart-entry states are rebuilt (−0.3 pp [−6.4, +5.6] vs −10.6 in game); the in-game gap sits in the controls (in game +8.3 pp [−0.9, +18.3] above their fresh replay), verdict IN_GAME_ARTIFACT (replays of used seeds, 2026-10-31)
 
 **Question:** Philipp (2026-10-31): is §726's sign anomaly (perturbed children kill the Heart less often) a real
 effect or an in-game artifact? "Mach 16 worker".
