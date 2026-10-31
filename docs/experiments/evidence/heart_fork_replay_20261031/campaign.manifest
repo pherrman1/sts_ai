@@ -1,6 +1,6 @@
 name          heart-fork-replay
 code_commit   6c96c25a9412b2f5748351cc1c9c0c6eeb35f2f0
-binary_sha256 unset
+binary_sha256 d39c2b9895fc607078cc98b91dc7af075d4fd92c7c573aa57874afea1430835e
 workers       16
 share         /mnt/project-files/heart-fork-replay
 configure_preset linux-gcc-release-x86-64-v3
