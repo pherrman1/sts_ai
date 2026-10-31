@@ -14,10 +14,10 @@ how the state was built. Philipp: "Mach 16 worker" (2026-10-31 19:14Z).
 - **States:** 240 Heart-entry states from the pilot tars (`build_states.py`, rng 20261031): for each of 60 entries
   whose control reached the Heart, the control plus 3 random children that reached the Heart.
   - Each state comes from the child's CTM `pre` row at the Heart: HP, max HP, deck with upgrades, relics with
-    counters, potions, potion capacity.
-  - `act4replay` does not carry card misc (Searing Blow, Ritual Dagger), bottles or gold. The combat prior g7f_E
+    counters, potions, potion capacity, bottled cards (`bottleIdxs`; 61 of 240 states have one).
+  - `act4replay` does not carry card misc (Searing Blow, Ritual Dagger) or gold. The combat prior g7f_E
     reads gold (`feat gold`), so the replay plays every state at act4replay's default gold.
-  - The tar is `heart_states.tar` (sha256 5daf0619…, holding `meta.json` with the in-game outcome per state).
+  - The tar is `heart_states.tar` (sha256 af4c7a0d…; bottles added after the prelaunch review, 5daf0619 had none, holding `meta.json` with the in-game outcome per state).
 - **Search:** one unit per state, `one_combat act4replay` with 2 replicates. The battle seed is the entry's seed,
   identical for the control and its children (the second replicate uses seed + 1). The search is production's Heart
   under ADR-0060: flat 40,000 per root, exact root budgets (every root searched), node reuse cap 262,144, g7f_E root

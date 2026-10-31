@@ -23,7 +23,7 @@ for p in sorted(glob.glob(os.path.join(data_dir, '**', 'a4p-*.json'), recursive=
         line = {'id': f"{r['seed']}-p{c['child']:02d}", 'enc': 'THE_HEART', 'hp': pre['curHp'], 'maxHp': pre['maxHp'],
                 'deck': [CARDS[x['id']] + ('+' if x['upgraded'] else '') for x in pre['deck']],
                 'relics': [RELICS[x['id']] for x in pre['relics']], 'relicData': [x['data'] for x in pre['relics']],
-                'potions': [POTS[x] for x in pre['potions'] if x > 1], 'potionCapacity': pre['potionCapacity']}
+                'potions': [POTS[x] for x in pre['potions'] if x > 1], 'potionCapacity': pre['potionCapacity'], 'bottleIdxs': pre['bottleIdxs']}
         fn = f"{r['seed']}-p{c['child']:02d}.jsonl"; open(os.path.join(out, fn), 'w').write(json.dumps(line) + '\n')
         meta.append(dict(file=fn, seed=r['seed'], child=c['child'], op=c['op'], insituHeartWon=h['transition']['combatOutcome'] == 1))
 json.dump(meta, open(os.path.join(out, 'meta.json'), 'w'))
