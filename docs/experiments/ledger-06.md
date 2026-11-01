@@ -25640,3 +25640,21 @@ converged refit moves A − L to ≈ +0.00004 (verdict unchanged).
 Seeds: none.
 **Knowledge impact:** an outcome model fit across states confounds HP/potions with deck strength; per-change effects
 need a fit that uses the paired design.
+
+## §733 — Heart-entry value fit on the paired design (stage B2): a fixed-effects GBM on §731's within-base differences does not predict single-change effects better than Silver's leaf (+0.00146 [−0.00010, +0.00302], NOT_SHOWN as frozen; WORSE in a 3.4.1 rerun) and is worse than §732's pooled fit (+0.0014 [+0.0004, +0.0024]); HP/potion effects 1.6-2.6x too large, relic effects missed; fits hit the alternation cap (offline, no seeds, 2026-11-01)
+
+**Question:** after §732, does fitting only the paired (within-base) signal of §731's labels give a value that prices
+single changes right?
+**Data:** [PREREG](evidence/heart_entry_value_paired_20261101/PREREG.md) (prereg review FAIL → convergence fix → PASS),
+[RESULT](evidence/heart_entry_value_paired_20261101/RESULT.md). Model logit P = base offset + f(state), XGBoost with
+base_margin, alternating with Newton offsets; held-out D̂ from A's control level + f differences; L converged.
+**Result:** primary B2 − L +0.00146 [−0.00010, +0.00302] NOT_SHOWN as frozen (xgboost 3.0.5); the reviewer's 3.4.1
+rerun gives WORSE (+0.00172 [+0.00011, +0.00333]); skill vs no effect A −0.0014, L −0.0014, B2
++0.0000; operator calibration error A 0.00068, L 0.00074, B2 0.00118. Mean effects (pp, observed): HP down B2 −11.9
+(−7.1), potion removed −11.7 (−7.2), relic removed −0.1 (−5.0). Disclosed: all 65 fits stopped at 20 alternations
+(final offset change 0.10-0.17).
+**Decision:** NOT_SHOWN → no stage C. Next (Philipp): many more labels per change type, or a constrained price-per-field
+model.
+Seeds: none.
+**Knowledge impact:** at 16,000 paired labels, flexible models learn no more than the average price per change type;
+Silver's leaf prices HP and potions at about 40-60% of their Heart-kill effect.
