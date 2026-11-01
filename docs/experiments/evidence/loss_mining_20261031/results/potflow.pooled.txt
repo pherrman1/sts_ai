@@ -1,0 +1,3 @@
+act1: runs=2816 potion offers/run=4.14 taken=100% belt full at offer=0% full&not taken/run=0.00 | used per run: elite 1.45 hallway 0.59 event 0.05
+act2: runs=2425 potion offers/run=3.45 taken=95% belt full at offer=0% full&not taken/run=0.00 | used per run: elite 1.29 hallway 1.14 event 0.10
+act3: runs=1771 potion offers/run=3.49 taken=91% belt full at offer=0% full&not taken/run=0.00 | used per run: elite 1.25 hallway 0.96 event 0.18
