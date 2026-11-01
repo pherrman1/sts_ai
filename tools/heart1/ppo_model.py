@@ -318,8 +318,8 @@ def collate(feats):
         for name, (tok, feat) in x["fv"].items():
             lst = fvl.setdefault(name, ([], []))
             lst[0].append(tok.astype(np.int64) + b * T); lst[1].append(feat)
-    fv = {k: (torch.from_numpy(np.concatenate(v[0])), torch.from_numpy(np.concatenate(v[1])))
-          for k, v in fvl.items()}
+    fv = {k: (torch.from_numpy(np.concatenate(fvl[k][0])), torch.from_numpy(np.concatenate(fvl[k][1])))
+          for k in FIXEDVECS if k in fvl}   # fixed order: the trunk sums in dict order
     pad = torch.ones(B, T, dtype=torch.bool)
     choice_index = torch.zeros(B, Cn, dtype=torch.long)
     choice_mask = torch.ones(B, Cn, dtype=torch.bool)   # True = padding
@@ -335,12 +335,91 @@ def collate(feats):
     }
 
 
+class FeatureStore:
+    """All featurised records of an update in flat arrays; batch(indices) == collate([feats[i] for i in indices])
+    (same tensors, same order) with vectorised numpy gathers instead of per-record Python loops."""
+
+    def __init__(self, feats):
+        self.n = np.array([x["n"] for x in feats], dtype=np.int64)
+        self.n_obs = np.array([x["n_obs"] for x in feats], dtype=np.int64)
+        self.n_choice = self.n - self.n_obs
+        self.emb = {}
+        N = len(feats)
+        cnt = np.array([len(x["emb"]) for x in feats], dtype=np.int64)
+        allemb = np.concatenate([x["emb"] for x in feats]).astype(np.int64)
+        rec = np.repeat(np.arange(N), cnt)
+        order = np.lexsort((rec, allemb[:, 0]))   # by table, then record; stable keeps in-record order
+        allemb, rec = allemb[order], rec[order]
+        bounds = np.searchsorted(allemb[:, 0], np.arange(len(TABLE_NAMES) + 1))
+        for ti, name in enumerate(TABLE_NAMES):
+            lo, hi = bounds[ti], bounds[ti + 1]
+            lens = np.bincount(rec[lo:hi], minlength=N).astype(np.int64)
+            start = np.concatenate([[0], np.cumsum(lens)[:-1]]).astype(np.int64)
+            self.emb[name] = (start, lens, allemb[lo:hi, 1].copy(), allemb[lo:hi, 2].copy())
+        names = []
+        for x in feats:
+            for k in x["fv"]:
+                if k not in names:
+                    names.append(k)
+        self.fv_order = [k for k in FIXEDVECS if k in names]
+        self.fv = {}
+        for k in self.fv_order:
+            w = FIXEDVECS[k][1]
+            toks = [x["fv"][k][0] if k in x["fv"] else np.zeros(0, np.int16) for x in feats]
+            vals = [x["fv"][k][1] if k in x["fv"] else np.zeros((0, w), np.float32) for x in feats]
+            self.fv[k] = self._flat(toks, vals)
+
+    @staticmethod
+    def _flat(toks, vals):
+        lens = np.array([len(t) for t in toks], dtype=np.int64)
+        start = np.concatenate([[0], np.cumsum(lens)[:-1]]).astype(np.int64)
+        tok = np.concatenate(toks).astype(np.int64) if len(toks) else np.zeros(0, np.int64)
+        val = np.concatenate(vals) if len(vals) else np.zeros(0)
+        return start, lens, tok, val
+
+    @staticmethod
+    def _gather(entry, idx, T):
+        start, lens, tok, val = entry
+        ln = lens[idx]
+        total = int(ln.sum())
+        if total == 0:
+            return None
+        b = np.repeat(np.arange(len(idx)), ln)
+        off = np.arange(total) - np.repeat(np.cumsum(ln) - ln, ln)
+        src = np.repeat(start[idx], ln) + off
+        return tok[src] + b * T, val[src]
+
+    def batch(self, indices):
+        idx = np.asarray(indices, dtype=np.int64)
+        B = len(idx)
+        n, n_obs, n_choice = self.n[idx], self.n_obs[idx], self.n_choice[idx]
+        T = int(n.max())
+        Cn = max(int(n_choice.max()), 1)
+        emb, fv = {}, {}
+        for name, entry in self.emb.items():
+            g = self._gather(entry, idx, T)
+            if g is not None:
+                emb[name] = (torch.from_numpy(g[0]), torch.from_numpy(g[1].astype(np.int64)))
+        for name in self.fv_order:
+            g = self._gather(self.fv[name], idx, T)
+            if g is not None:
+                fv[name] = (torch.from_numpy(g[0]), torch.from_numpy(np.ascontiguousarray(g[1], dtype=np.float32)))
+        ar_t = np.arange(T)
+        pad = torch.from_numpy(ar_t[None, :] >= n[:, None])
+        ar_c = np.arange(Cn)
+        choice_mask = torch.from_numpy(ar_c[None, :] >= n_choice[:, None])
+        choice_index = torch.from_numpy(np.where(choice_mask.numpy(), 0, n_obs[:, None] + ar_c[None, :]))
+        return {"B": B, "T": T, "emb": emb, "fv": fv, "pad": pad, "choice_index": choice_index,
+                "choice_mask": choice_mask}
+
+
 def batch_to(batch, device):
     out = dict(batch)
-    out["emb"] = {k: (a.to(device), b.to(device)) for k, (a, b) in batch["emb"].items()}
-    out["fv"] = {k: (a.to(device), b.to(device)) for k, (a, b) in batch["fv"].items()}
+    nb = device.type == "cuda" if isinstance(device, torch.device) else str(device).startswith("cuda")
+    out["emb"] = {k: (a.to(device, non_blocking=nb), b.to(device, non_blocking=nb)) for k, (a, b) in batch["emb"].items()}
+    out["fv"] = {k: (a.to(device, non_blocking=nb), b.to(device, non_blocking=nb)) for k, (a, b) in batch["fv"].items()}
     for k in ("pad", "choice_index", "choice_mask"):
-        out[k] = batch[k].to(device)
+        out[k] = batch[k].to(device, non_blocking=nb)
     return out
 
 
