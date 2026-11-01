@@ -25,6 +25,27 @@ is missing, and what should let it beat the original. This page refines roadmap 
 4. **Cheapest decision gate:** a PC pilot (60 A20 iterations × 512 games from student_sel, ~31k games,
    ~170 core-h, ~14 h) and a 2,048-pair Silver-1,000 gate of policy alone (~23 core-h).
 
+## Decision net (Philipp, 2026-11-01)
+
+Constraints set by Philipp: **one net makes every OOC decision, no OOC MCTS for now, and every decision and every
+public input must be covered.** This replaces the earlier "start from student_sel" choice below.
+
+- **Architecture:** heart1-size (d256, 4 layers) extended with the student inputs (`x_act`, `x_deck_misc`,
+  `x_relic_counter`) and the #941 v2 inputs through zero-initialised embeddings, so the extended net reproduces heart1
+  exactly at the start (the original added ascension the same way). Without OOC MCTS the 30 ms forward costs ~2 s per
+  game, so student_sel's speed no longer matters; d256 gives capacity and a trained value head. Learner on the PC GPU.
+- **Start weights by a cheap pre-check G0:** heart1 alone vs student_sel alone in our engine, Silver 1,000, 2,048
+  paired A20 seeds (~25 core-h). Not worse → start from heart1; clearly worse → distil student_sel into the d256
+  architecture and start there.
+- **Decisions the net does not make today** (`realOocChainStepBody`, `STS_OOC_MCTS=0`): keys (`heartKeyAction`
+  runs before the net), potion discard (no token), Match and Keep, unmapped event options and unsupported screens
+  (old chain), reward relics and gold (auto-taken), chest/relic rules after a declined step. Plan: tokens for all of
+  them; gold stays automatic (no choice); keys pending Philipp's call.
+- **Inputs the net does not see today:** shop prices, removal price and count, fought encounters (#941 v2), Wing
+  Boots charges (#638); original heart1 also lacks act, deck misc and relic counters. Private state stays out.
+- **S0 acceptance adds:** every decision logged with its source (net / rule / chain / automatic) and its full v2
+  record; in smoke games the net makes 100% of real choices except gold, and every exception is listed with a reason.
+
 ## The original (External)
 
 | Item | heart1 |
@@ -88,7 +109,7 @@ lineage instead of building two nets. PPO self-play records in v2 format (`obs.v
 | Stage | Content | Cost | Decision |
 | --- | --- | --- | --- |
 | S0 | PR 1 sampler + trajectory export; PR 2 PPO trainer + export. Checks: temperature 0 byte-identical to today's greedy choices, native vs torch log-prob < 1e-5, one-iteration smoke | 1-2 thread-days, smoke seeds | review PASS per PR |
-| S1 | PC pilot: student_sel, A20, Silver 1,000, reward V3, 512 games per iteration, 3 value-only warm-up iterations, 60 PPO iterations | ~31k games, ~170 core-h, ~14 h on 12 threads | G1 |
+| S1 | PC pilot: decision net (see above; originally student_sel), A20, Silver 1,000, reward V3, 512 games per iteration, 3 value-only warm-up iterations, 60 PPO iterations | ~31k games, ~170 core-h, ~14 h on 12 threads | G1 |
 | G1 | final vs student_sel, policy alone (`STS_OOC_MCTS=0`), Silver 1,000, 2,048 fresh paired A20 seeds, SPRT standard | ~23 core-h | GO if ΔHeart 95% CI > 0; one more 60-iteration block if point > 0, CI includes 0 and the in-sample A20 curve rises; STOP if ΔHeart ≤ 0 with a flat curve |
 | S2 | production confirmation: new net as map-MCTS prior vs the default, AZ matched-CPU rule | 1,024-4,096 pairs, ~470-1,900 core-h | default change is Philipp's call |
 | S3 | cloud actor/learner, 0.5-1M A20 games, Silver-1,000 checkpoint gates every ~200k games, production A/B every ~1M; d256 on the GPU if d64 saturates | ~6k core-h per 1M games + sync engineering | after G1 GO |
