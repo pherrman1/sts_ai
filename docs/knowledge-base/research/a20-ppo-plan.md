@@ -71,17 +71,30 @@ on the in-sample A20 Heart curve plus a 2,048-pair Silver-1,000 gate of the fina
 | Priority | Parameter | Original | Arms |
 | ---: | --- | --- | --- |
 | 1 | reward | floor/190 + 0.05/key + 0.6 Heart + deck shaping | 1{Heart} + PBRS (M0 value); 1{Heart} alone |
-| 1 | games per iteration | 256 → 512 | 512 / 1,024 / 2,048 |
+| 1 | games per iteration | 256 → 512 | 512 / 1,024 / 2,048 at a fixed total game budget (literature A3) |
 | 1 | policy LR, entropy | 3e-5 → 1e-5; 0.05 → 0.0007 | 3e-6 to 3e-5; 0.002 / 0.01 |
-| 2 | KL anchor to the start net | none | 0 / 0.01 / 0.1 |
-| 2 | value warm-up | none | 0 / 3 / 10 iterations |
+| 1 | KL anchor to the start net | none | 0 / fixed 0.01 / decaying from 0.1 (literature A1: decaying anchor) |
+| 1 | value warm-up (policy frozen) | none | 0 / 3 / 10 iterations (literature A1: needed when starting from a policy) |
 | 2 | epochs, minibatch | 2, 192 | 1 / 2 / 4; 192 / 1,024 |
-| 3 | GAE λ, γ, clip | 0.97, 1, 0.2 | λ 0.9 / 0.97 / 1; clip 0.1 / 0.2 |
+| 2 | GAE λ, γ, clip | 0.97, 1, 0.2 | λ 0.97 / 1.0 (literature A2: critics fit levels, not siblings; stay near Monte Carlo); clip 0.1 / 0.2 |
 | 3 | sampling | temperature 1 | per-game coordinated exploration (V8) |
 | 3 | net size, start | d256 from heart1 | G0 result; d128 control |
 
 About 15 arms ≈ 1,400 core-h of training + ~350 core-h of gates (Inference). S0 first measures the GPU update time,
 which decides whether 1,024-2,048 games per iteration are feasible.
+
+## Literature check (2026-11-01)
+
+The [PPO literature page](ppo-and-combat-leaf-literature.md) (five verified sources: DouZero, VinePPO, PORL, KataGo,
+one paired-rollout preprint) supports four plan choices and demotes one:
+
+- **Keep:** candidate-token action scoring (DouZero); near-Monte-Carlo advantages with the critic only as a baseline
+  (VinePPO, DouZero; matches §685/§715/§727), so nothing in the loop may rank card choices by the critic; critic
+  warm-up with the policy frozen and a decaying KL anchor (PORL); expect an early-iteration dip.
+- **Progress metric:** agreement with the start net is not one (DouZero); track the in-sample A20 Heart curve and gates.
+- **Demoted:** V4 forked advantages (see the table below), pending the offline probe A4.
+- Unverified in the literature, so Inference only: V6 asymmetric critic, V8 per-game exploration, gains from
+  auxiliary heads on the shared trunk.
 
 ## The original (External)
 
@@ -126,11 +139,11 @@ So only ~1/21 of its games were A20, its reward is not P(Heart kill), and its en
 | V1 | A20 only | original saw ~5% A20 and barely adapts card choice to ascension |
 | V2 | our engine | train where we play; no engine gap, and without OOC MCTS no re-distillation is needed |
 | V3 | reward 1{Heart} + potential-based shaping with Φ = M0-calibrated leaf value | the objective becomes the Heart rate (shaping telescopes at γ = 1) with lower variance |
-| V4 | forked common-random-number advantages at a fraction of card choices (VinePPO-style) | targets the original's diagnosed credit problem; our engine can copy states. §685: single outcomes rank siblings poorly, so use only as advantage estimates inside PPO |
+| V4 | forked common-random-number advantages at a fraction of card choices (VinePPO-style) | **low priority** ([literature](ppo-and-combat-leaf-literature.md) §A5): VinePPO needs K ≈ 9 forks per state, pairing can raise gradient variance, and at rho 0.49 a 2 pp sibling gap needs ~480 paired forks; §738 found per-floor RNG keying gains only ~1.04× effective seeds. Run only if the offline gradient-variance probe (literature A4) shows a gain per core-s |
 | V5 | record v2 inputs (#941) for policy and critic | public run state heart1 never saw; PPO self-play produces v2 records for free |
-| V6 | asymmetric critic with hidden information, training only | lower-variance baseline, unbiased gradient; needs Philipp's call against ADR-0002 |
+| V6 | asymmetric critic with hidden information, training only | lower-variance baseline; no verified literature (PerfectDou only a hint), bias open; needs Philipp's call against ADR-0002 |
 | V7 | combat curriculum: Silver 1,000, then a few iterations at production combat | reduces the train/deploy combat gap |
-| V8 | per-game coordinated exploration (card bias or temperature drawn per game) | the original found per-decision entropy cannot discover multi-pick builds |
+| V8 | per-game coordinated exploration (card bias or temperature drawn per game) | the original found per-decision entropy cannot discover multi-pick builds; no literature either way, §640 measured a 5 pp cost of per-decision noise |
 | V9 | KL to map-MCTS policy as auxiliary | low priority: AZ generations had little to teach (§621, §643) |
 
 The PPO value head is also the run value wanted for the run-aware Silver leaf (roadmap phase 4) and for #941's
