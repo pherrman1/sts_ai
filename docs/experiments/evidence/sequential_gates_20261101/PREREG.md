@@ -60,8 +60,10 @@ stored records. It is valid only if a stored control record is what the same con
 
 - **B1 (same binary):** replay arm A of §727 (`value_chooser_ab_20261031`, RUN_COMMIT/code `8f5b17d6`, binary
   `d39c2b98…` from the share's bin-cache, `run_unit.sh` arm A environment verbatim, no chooser) on its first 32 seeds
-  111312000-111312031 (used, replays). Compare with the stored `A-<seed>.jsonl.gz`: the outcome record and every
-  decision row after removing wall-clock/timing fields.
+  111312000-111312031 (used, replays). Compare with the stored `A-<seed>.jsonl.gz` (`compare.py`): every state,
+  decision and outcome row exactly and in order; only the header row (producer SHA, artifact paths and hashes) is
+  excluded and reported. (Amended before any run: the stored records were found to carry no wall-clock fields, so
+  nothing else is removed.)
 - **B2 (current main):** the same 32 seeds and environment with a fresh `e55f482` build (x86-64-v3 preset). Report
   whether main's changes since `8f5b17d6` alter default play (expected only where a play-changing default changed).
 - Cost: 64 games ≈ 64 × ~830 s ≈ 15 core-h, run locally in this thread's container (4 lanes), via `tools/seed_guard.sh`.
