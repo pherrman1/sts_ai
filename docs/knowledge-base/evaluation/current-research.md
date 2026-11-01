@@ -41,6 +41,11 @@ stopping, root mechanism, internal-node FPU, the learned root prior, and the
 are history. Reopening one means porting it to native Silver first. OOC research
 contracts now bind native Silver teachers.
 
+## One-year plan (2026-11 to 2027-10)
+
+The ranked plan for the year and its first experiments (X1-X7, each still needing pre-registration and
+Philipp's go) are in [research/one-year-roadmap.md](../research/one-year-roadmap.md).
+
 ## Key rules (§691; flexible keys default since ADR-0063)
 
 1,024 paired A20 seeds, student_sel alone: flexible keys (Sapphire and Ruby by policy, Emerald route mask) kill the
