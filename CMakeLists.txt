@@ -499,7 +499,8 @@ set_tests_properties(heart_outcome_capture PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
 set_tests_properties(heart1_public_record_invariance PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
-set_tests_properties(heart1_ppo PROPERTIES LABELS "core;smoke")
+set_tests_properties(heart1_ppo PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
 add_test(NAME heart1_ppo_python COMMAND python3 -m unittest discover
     -s ${CMAKE_CURRENT_SOURCE_DIR}/tests -p test_heart1_ppo.py)
 set_tests_properties(heart1_ppo_python PROPERTIES LABELS "core;smoke")
