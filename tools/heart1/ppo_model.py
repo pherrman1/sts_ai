@@ -476,9 +476,9 @@ class PolicyNet(nn.Module):
         p = self.tables["card"]
         x = torch.zeros(B * T, D, device=p.device, dtype=p.dtype)
         for k, (tok, row) in batch["emb"].items():
-            x = x.index_add(0, tok, self.tables[k][row])
+            x = x.index_add(0, tok, self.tables[k][row].to(x.dtype))
         for k, (tok, feat) in batch["fv"].items():
-            x = x.index_add(0, tok, self.fixedvecs[k](feat))
+            x = x.index_add(0, tok, self.fixedvecs[k](feat).to(x.dtype))  # Linear output is bf16 under autocast
         x = x.view(B, T, D)
         for b in self.blocks:
             x = b(x, batch["pad"])
