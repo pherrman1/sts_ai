@@ -96,8 +96,9 @@ def rho(ya, yb):
 
 
 def summarize(pairs, mask_a, mask_b, ykey=("ya", "yb"), draws=2000):
-    cl = np.array([hash((p["campaign"], p["seed"])) for p in pairs])
-    ucl, inv = np.unique(cl, return_inverse=True)
+    keys = {}
+    inv = np.array([keys.setdefault((p["campaign"], p["seed"]), len(keys)) for p in pairs])
+    ucl = np.arange(len(keys))
     ya = np.array([p[ykey[0]] for p in pairs], float)
     yb = np.array([p[ykey[1]] for p in pairs], float)
     ma, mb = np.asarray(mask_a), np.asarray(mask_b)
