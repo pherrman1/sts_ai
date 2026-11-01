@@ -63,6 +63,13 @@ GameContext baseState() {
     gc.map->burningEliteY = 2;
     gc.curMapNodeX = -1;
     gc.curMapNodeY = -1;
+    // Two normal fights and one elite already fought this act (v2 record input).
+    gc.monsterList.push_back(MonsterEncounter::SPHERIC_GUARDIAN);
+    gc.monsterList.push_back(MonsterEncounter::CHOSEN);
+    gc.monsterListOffset = 2;
+    gc.eliteMonsterList.push_back(MonsterEncounter::SLAVERS);
+    gc.eliteMonsterListOffset = 1;
+    gc.shopRemoveCount = 1;
     return gc;
 }
 
@@ -75,8 +82,10 @@ void scramblePrivate(GameContext &gc, int k) {
                          &gc.potionRng, &gc.relicRng, &gc.shuffleRng, &gc.treasureRng};
     int i = 0;
     for (auto *rng : streams) *rng = Random(97ULL * (k + 1) + i++);
-    gc.monsterList.clear();
-    gc.eliteMonsterList.clear();
+    // The consumed queue prefix (encounters already fought) is public; only the
+    // unconsumed suffix is private.
+    gc.monsterList.resize(std::min<int>(gc.monsterListOffset, gc.monsterList.size()));
+    gc.eliteMonsterList.resize(std::min<int>(gc.eliteMonsterListOffset, gc.eliteMonsterList.size()));
     const MonsterEncounter normals[] = {MonsterEncounter::CULTIST, MonsterEncounter::JAW_WORM,
                                         MonsterEncounter::SNECKO, MonsterEncounter::CHOSEN};
     const MonsterEncounter elites[] = {MonsterEncounter::GREMLIN_LEADER, MonsterEncounter::SLAVERS,
@@ -172,7 +181,10 @@ void publicRecordInvarianceSelfTest() {
         check("map", gc, {hp, relicCounter,
             [](GameContext &g) { g.map->nodes[2][3].room = Room::TREASURE; },
             [](GameContext &g) { g.map->burningEliteX = -1; g.map->burningEliteY = -1; },
-            [](GameContext &g) { g.boss = MonsterEncounter::AUTOMATON; }});
+            [](GameContext &g) { g.boss = MonsterEncounter::AUTOMATON; },
+            [](GameContext &g) { g.monsterList[1] = MonsterEncounter::SHELL_PARASITE; },
+            [](GameContext &g) { g.eliteMonsterListOffset = 0; },
+            [](GameContext &g) { g.shopRemoveCount = 2; }});
     }
     {
         auto gc = baseState();
@@ -206,7 +218,11 @@ void publicRecordInvarianceSelfTest() {
         check("shop", gc, {relicCounter,
             [](GameContext &g) { g.info.shop.cards[2] = Card(CardId::OFFERING); },
             [](GameContext &g) { g.info.shop.relics[1] = RelicId::ORICHALCUM; },
-            [](GameContext &g) { g.gold = 50; }});
+            [](GameContext &g) { g.gold = 50; },
+            [](GameContext &g) { g.info.shop.cardPrice(3) = 61; },
+            [](GameContext &g) { g.info.shop.relicPrice(0) = 61; },
+            [](GameContext &g) { g.info.shop.potionPrice(2) = 61; },
+            [](GameContext &g) { g.info.shop.removeCost = 125; }});
     }
     {
         auto gc = baseState();
