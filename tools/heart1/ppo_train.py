@@ -175,7 +175,7 @@ class Learner:
         if batch is None:
             batch = self._batch(feats)
         batch = batch_to(batch, self.device)
-        with torch.autocast("cuda", dtype=torch.bfloat16, enabled=self.args.amp and self.device.type == "cuda"):
+        with torch.autocast("cuda", dtype=torch.bfloat16, enabled=bool(self.args.amp) and self.device.type == "cuda"):
             logits, value = net(batch)
         return logits.float(), value.float()
 
@@ -188,8 +188,8 @@ class Learner:
         for i in range(0, N, chunk):
             lg, v = self._forward(self.net, batch=self._batch(store=store, idx=range(i, min(i + chunk, N))))
             vals.extend(v.tolist())
-            lg = lg.cpu()
-            logits.extend([lg[b, :store.n_choice[i + b]].tolist() for b in range(lg.shape[0])])
+            rows = lg.cpu().tolist()   # one host copy per chunk, not one per row
+            logits.extend([rows[b][:store.n_choice[i + b]] for b in range(len(rows))])
         return vals, logits
 
     @torch.no_grad()
