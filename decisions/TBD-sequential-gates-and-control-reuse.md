@@ -30,6 +30,8 @@ Evidence ([sequential_gates_20261101](../docs/experiments/evidence/sequential_ga
    approximation (Fishtest), α = β = 0.05, on the per-pair difference of the pre-registered primary metric.
    - Variants: **gainer** H0 δ = 0 vs H1 δ = +2 pp (H1 = PASS, H0 = NOT_SHOWN); **non-regression** H0 δ = −1.5 pp vs
      H1 δ = 0 (H1 = NOT_WORSE, H0 = WORSE) for guards and CPU savings. A pre-registration may set other bounds.
+     The gainer variant never says WORSE: a harmful candidate stops as NOT_SHOWN, which rejects it; a
+     pre-registration that needs "worse" adds the non-regression variant.
    - Pairs count in the pre-registered order (ascending seed or unit index); a look after every 64 contiguous
      completed pairs; a gap waits for its unit.
    - Hard cap = the campaign's pre-registered size (the fixed design it replaces). No crossing by the cap: read the
@@ -47,7 +49,9 @@ Evidence ([sequential_gates_20261101](../docs/experiments/evidence/sequential_ga
 
 ## Consequences
 
-- Clear results cost about 40% less; inconclusive ones cost the same. Small effects still need bigger gates.
+- Clear results cost less (39% pooled over the seven replayed campaigns, all from effects ≥ 4.8 pp); effects near
+  the hypotheses run to the cap and cost the same, so for typical small effects the expected saving is about 0. Small
+  effects still need bigger gates. The self-test's 6% null false-pass rate is for a 4,000-pair cap.
 - Pre-registrations name the variant, bounds, look size, order and cap; reviewers check the stopping record
   (`sprt_gate.py` output on the pairs file) against them.
 - Pairs files (`key,a,b`) become a standard campaign output.

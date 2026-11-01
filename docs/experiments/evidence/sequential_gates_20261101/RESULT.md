@@ -49,9 +49,10 @@ differ; CTM rows exact). Raw: [partB/](partB/).
 - **B1 32/32 → control reuse is adopted** with the per-campaign sentinel (decision rule in PREREG). A recorded control
   game is exactly what the same configuration plays again: the games are seed-deterministic, and nothing in the
   records depends on the run directory, the machine or the lane count.
-- **B2 32/32:** a fresh build of today's main replays §727's control games exactly, so main's changes since `8f5b17d6`
-  (through `e55f482`) leave default play unchanged on these seeds, and §727's arm A is a valid control bank for main at
-  `e55f482`. Any later play-changing default makes it stale; the sentinel catches that before arm B runs.
+- **B2 32/32:** a fresh build of today's main, run with §727's explicit arm-A flags, replays §727's control games
+  exactly. So main's changes through `e55f482` do not alter play under that flag set (defaults matter only for the flags
+  §727 leaves unset), and §727's arm A is a valid control bank for main at `e55f482` when a campaign uses the bank's
+  recorded environment. Any later play-changing default makes it stale; the sentinel catches that before arm B runs.
 - B1's game 111312029 was killed by this session's background time limit and was replayed alone with the same binary,
   worktree and environment ([partB/NOTE.txt](partB/NOTE.txt)).
 - Scope: one bank (§727 arm A, Heart outcome records), 32 seeds, x86-64-v3 builds in cloud containers. A bank recorded

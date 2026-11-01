@@ -25833,12 +25833,14 @@ path), decision, outcome and CTM row with the stored records (rule: B1 32/32 →
 **Result:** Part A: every extracted rate reproduces the recorded one; 0 flips (also 0% over 200 random orders per
 campaign); §683 PASS at 640/1,024, §691 PASS at 640/1,024, §724 PASS at 192/592 states, §727 H0 at 256/1,536; §661,
 §676, §693 run to the cap (effects between the hypotheses or 512-pair campaigns). Saving 39.3% → ADOPT. Part B: B1
-32/32 identical, B2 32/32 identical (11,298 rows each) → ADOPT reuse with the sentinel; main's changes through
-`e55f482` do not alter default play on these seeds.
+32/32 identical, B2 32/32 identical (11,298 rows each) → ADOPT reuse with the sentinel; main through `e55f482`, run
+with §727's explicit flags, replays these seeds exactly.
 **Interpretation:** the saving comes only from clear effects (|Δ| ≥ 4.8 pp stop at 17-63% of the pairs); small
 effects still cost the full gate, so gate size (roadmap X4) is unchanged by this. Control reuse roughly halves the
 cost of a candidate gate where a valid bank exists, but each bank is valid only until a play-changing default lands.
-The §724 unit (S&S state) ignores within-seed correlation (stopped far past the boundary, LLR 4.87).
+The §724 unit (S&S state) ignores within-seed correlation (stopped far past the boundary, LLR 4.87). The gainer
+variant never says WORSE (§727's FAIL becomes NOT_SHOWN); a pre-registration that needs "worse" adds the
+non-regression variant. Review: K PASS (`/mnt/project-files/reviews/pr938.md`, 4/4 independent spot replays identical).
 Seeds: none new (Part B replayed used seeds 111312000-111312031). Cost ≈ 15.8 core-h, local (Part A: none).
 **Knowledge impact:** ADR-TBD; benchmark protocol section "Paired campaigns: sequential stopping and control reuse";
 literature review ranks 1 and 2 marked adopted.
