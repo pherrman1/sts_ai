@@ -25790,3 +25790,66 @@ so the causal gain is likely smaller). Consistent with §699 (combat death draws
 streams WEAK). Keyed run-level RNG for evaluation is not built.
 Seeds: none (existing games only).
 **Knowledge impact:** literature review idea 7 marked dropped (`research/search-and-value-literature.md`).
+
+## §739 — Cheap-combat proxy check (roadmap X1): §691's flexible-vs-rigid keys effect on its 1,024 seeds, student_sel alone out of combat: same-runner production +5.76 pp [+3.13, +8.50], flat Silver 1,000 +4.49 pp [+2.34, +6.64] → VALID (DiD −1.27 [−4.39, +1.95]), flat Silver 200 +2.34 pp [+0.49, +4.20] → INCONCLUSIVE (DiD −3.42 [−6.45, −0.39]); Silver 1,000 ≈ 12× cheaper per unit of power (2026-11-01)
+
+**Question (Philipp, 2026-10-31 22:27Z "Okay try den billigen Kampf"):** does an OOC policy effect measured with
+production combat survive when real combats are played by flat cheap Silver? If yes, PPO self-play and OOC screens
+can use cheap combat.
+**Design:** [PREREG](evidence/cheap_combat_proxy_20261031/PREREG.md), [RESULT](evidence/cheap_combat_proxy_20261031/RESULT.md),
+[run_unit.sh](evidence/cheap_combat_proxy_20261031/run_unit.sh), [analyze.py](evidence/cheap_combat_proxy_20261031/analyze.py),
+per-game [games.csv](evidence/cheap_combat_proxy_20261031/games.csv). R (`STS_KEY_*=first`) vs F (policy/policy/mask)
+× combat {flat Silver 1,000, flat Silver 200 (`STS_SILVER_LEARNED_STOP=0 STS_SILVER_ACT4_STRONG=0`), production
+(learned stop, Act 4 strong)}; bestbench with `STS_OOC_MCTS=0` (key rules, then student_sel `cf6bf7fb` argmax).
+Binary `d39c2b98` (main `6c96c25`), run commit `930cd7f2`. Rule: VALID if CI > 0 and D in [+3.03, +9.08] (50-150% of
+§691's +6.05); INVALID if CI upper < +3.03.
+**Result:** 6,144 games, all rc 0. Heart R → F: Silver 1,000 12.3% → 16.8%; Silver 200 6.7% → 9.1%; production
+19.6% → 25.4% (+5.76, within 0.3 pp of §691, so the runner change is harmless here). Act 3 cleared (floor ≥ 52, also
+counts keyless act-3 clears): +3.22 [+0.49, +5.86], +3.03 [+0.78, +5.27], +6.93 [+4.10, +9.77]. Mean wall per game
+R/F: 18.4/20.5 s, 2.9/3.2 s, 224.9/276.8 s.
+**Interpretation:** Silver 1,000 keeps ~78% of the effect with about the same power per pair (z 4.1 vs 4.2) at 1/13
+of the CPU per pair → ≈ 12× cheaper gates for this kind of OOC effect (Inference: one effect). Silver 200 attenuates
+it to ~40% (DiD CI excludes 0): biased toward 0, at most a coarse pre-screen. Scope: one OOC effect, mostly an act-1
+Sapphire-chest choice; licenses cheap combat for ranking OOC policy changes (confirm at production before a default),
+not for combat changes or absolute rates. Deck-building effects that depend on fight skill are untested.
+Seeds: none new (§691's 111382000-111383023 replayed; smokes 111383024/025, used). Cost ≈ 156 core-h (control 143 on
+8 workers, Philipp's card 2026-10-31 22:37Z and "Go 8 workers" 23:00Z).
+**Knowledge impact:** roadmap X1 row and limitations updated (`research/one-year-roadmap.md`).
+
+## §740 — Loss clusters on 15,363 A20 games (roadmap X5, offline part) and gate power (X4): only Awakened One clears the X5 rule (8.3% of runs; bound +1.0 to +3.1 pp Heart kills); every other boss/elite ≤ +0.84 pp; Heart SD 0.421 per seed pair → ±1.0 / ±1.5 pp need 6,821 / 3,032 pairs (offline, no seeds, 2026-11-01)
+
+**Question (Philipp, 2026-11-01 "start a thread for x5"):** roadmap X5: which death clusters cover ≥ 2% of runs and
+show ≥ +1 pp Heart-kill potential? Plus X4: paired SD per pair and per act from existing records.
+**Data:** [README](evidence/loss_clusters_x5_20261101/README.md), [run_all.sh](evidence/loss_clusters_x5_20261101/run_all.sh),
+tables in `results/`. Nine A20 campaigns (§661, §676, §683, §691, §693, §712, §720, §727, expert-anchored A/B), 18,688
+games; primary set 15,363 (arms within 4 pp of their campaign's best; drops §727 B, §691 R, §712 B-D), of which
+1,351 are exact copies across §720 base, expert-anchored A and §712 A (6,912 unique seeds, ~7 independent
+replications; deduplicated, the bounds move ≤ 0.05 pp, Awakened One +3.08 [+2.76, +3.40]). §698's replay of
+the §676 guard (23,503 fights × 4 fresh draws) for luck vs state.
+**Result:**
+- Clusters ≥ 2% of runs: Heart 14.6%, Awakened One 8.3%, act-2 hallways 4.9% (88% below 50% HP), Collector 4.7%,
+  Hexaghost 3.6%, Automaton 3.5%, Time Eater 3.4%, Donu & Deca 3.0%, Reptomancer 2.9%, Champ 2.8%, Slavers 2.5%,
+  Gremlin Leader 2.4%, act-3 hallways 2.3%, Slime Boss 2.2%, Book of Stabbing 2.0%; same order in every campaign.
+- Sibling-standardized bound (same act, same entry-HP band and potions, × P(kill | survived)): Awakened One
+  +3.11 pp [+2.81, +3.43] (every campaign +2.4 to +4.0; mechanically positive for an act's hardest boss, continuation pooled over all survivors), Reptomancer +0.84 [+0.67, +1.01], Collector +0.64
+  [+0.47, +0.84], Hexaghost +0.40 [+0.26, +0.53], all others ≤ +0.12 or negative. Expert-relative (Baalorlord
+  per-fight rates, §701/§729): Awakened One 7.6× his rate vs 6.0× for act-3 bosses → ≈ +1.0 pp; vs Donu's 8.6× → 0.
+- Luck vs state (§676 replays): 69% of Awakened One deaths and 67% of Heart deaths die again in ≥ 3 of 4 redraws of
+  the same entry state; Collector 51%, act-2 hallways 37%, S&S 18%.
+- Deck/relics beyond resources (seed-grouped CV log-loss gain, GBM): Heart +0.069 [+0.059, +0.079], Champ +0.051,
+  Hexaghost +0.044, Awakened One +0.032, Collector and Time Eater +0.024; none in hallways or act-2 elites. Weakest
+  out-of-fold deck quartile: 50% of Awakened One deaths (46% per fight). Strikes left and curses risky at every boss (Heart at
+  ≥ 80% HP: 16% death with 0-1 Strikes vs 27% with 4+), observational.
+- X4: 12 near-null arm pairs (|ΔHeart| < 3 pp, 11,264 pairs): paired SD 0.421 (r +0.51) Heart, 0.262 / 0.436 / 0.464
+  reaching act 2 / 3 / 4; pairs for ±1.0 / ±1.5 / ±2.0 pp half-width 6,821 / 3,032 / 1,706; MDE 3.7 pp at 1,024
+  pairs, 1.8 pp at 4,096. Combat-only arm pairs 0.34-0.39.
+**Interpretation:** by the X5 rule one gate candidate remains, Awakened One, whose bound depends on the reference
+(+1.0 expert-relative to +3.1 sibling). Its deaths are fixed by the entry state under production play; whether by the
+state or the play needs a stronger-player replay. Proposed: `fightreplay` of ≈ 512 recorded Awakened One entries
+(§727 A, §720 base) at production vs flat 40k, 2 CRN copies, ≈ 125 core-h, decision ≥ 4 pp per-fight death drop;
+§718 (no 40k gain on expert boss states) makes a null more likely. The other clusters are below +1 pp each; the Heart
+and act-2 hallway mass sit in the Heart-entry (§724, #935) and low-HP attrition gaps. The roadmap's ~7,000-pair gate
+for ±1 pp is confirmed.
+Seeds: none (existing games only).
+**Knowledge impact:** `research/a20-loss-mining.md` (new X5 section), roadmap X4/X5 rows
+(`research/one-year-roadmap.md`).
