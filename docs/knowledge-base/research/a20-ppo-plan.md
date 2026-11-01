@@ -50,6 +50,38 @@ public input must be covered.** This replaces the earlier "start from student_se
 - **S0 acceptance adds:** every decision logged with its source (net / rule / chain / automatic) and its full v2
   record; in smoke games the net makes 100% of real choices except gold, and every exception is listed with a reason.
 
+## Cost per game and training recipe: test, don't copy (Philipp, 2026-11-01)
+
+**Silver prior.** X1's 19.5 s already include the g7f_E root and tree prior (weight 400, tree from 8 visits,
+ADR-0049) and boss-only prior playouts (ADR-0056); "flat" there meant only no learned stop and no Act-4 strong
+(`run_unit.sh`). The original played Silver without a learned prior. The prior costs ~3× per simulation (§452) and
+was NOT_SHOWN better at matched CPU (§453), so it is itself a cost parameter.
+
+**Cost arms**, each in X1's design (§691 keys contrast on its 1,024 USED seeds, policy alone, DiD against X1's
+production control, ~3-7 core-h per arm): K1 200 sims in normal fights and 1,000 in elites/bosses; K2 learned stop at
+1,000; K3 = K1 + K2; K4 no boss prior playouts; K5 no Silver prior (as the original); K6 cost of a fork resumed at
+the act-2 start. A cost arm is admitted if the key effect stays VALID; the cheapest admitted arm is used. One OOC
+effect only; a second (deck-building) contrast would make the admission safer.
+
+**Training recipe.** The original's parameters were hand choices of one mixed-ascension run. Screen them with short
+runs (30 iterations × 512 games, ~15k games, ~90 core-h each), one parameter per arm, same start and seeds, compared
+on the in-sample A20 Heart curve plus a 2,048-pair Silver-1,000 gate of the final net (~23 core-h):
+
+| Priority | Parameter | Original | Arms |
+| ---: | --- | --- | --- |
+| 1 | reward | floor/190 + 0.05/key + 0.6 Heart + deck shaping | 1{Heart} + PBRS (M0 value); 1{Heart} alone |
+| 1 | games per iteration | 256 → 512 | 512 / 1,024 / 2,048 |
+| 1 | policy LR, entropy | 3e-5 → 1e-5; 0.05 → 0.0007 | 3e-6 to 3e-5; 0.002 / 0.01 |
+| 2 | KL anchor to the start net | none | 0 / 0.01 / 0.1 |
+| 2 | value warm-up | none | 0 / 3 / 10 iterations |
+| 2 | epochs, minibatch | 2, 192 | 1 / 2 / 4; 192 / 1,024 |
+| 3 | GAE λ, γ, clip | 0.97, 1, 0.2 | λ 0.9 / 0.97 / 1; clip 0.1 / 0.2 |
+| 3 | sampling | temperature 1 | per-game coordinated exploration (V8) |
+| 3 | net size, start | d256 from heart1 | G0 result; d128 control |
+
+About 15 arms ≈ 1,400 core-h of training + ~350 core-h of gates (Inference). S0 first measures the GPU update time,
+which decides whether 1,024-2,048 games per iteration are feasible.
+
 ## The original (External)
 
 | Item | heart1 |
