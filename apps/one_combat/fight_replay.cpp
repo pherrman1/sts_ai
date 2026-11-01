@@ -18,11 +18,16 @@
 // (common random numbers across arms; each arm's replays stay independent of its own recorded fight).
 // Budgets come from the process environment exactly as in runFullRunOOC (fightSims at base 10000, learned stop,
 // Act-4 strong): run it with the campaign's frozen environment.
+// Research arm (default off): STS_FIGHT_REPLAY_FLAT=N plays every replicate with flat N simulations at every root
+// (singletons searched, no learned stop), the same override as expertfights' `flat<N>` arm (§716/§718). Replicate 0
+// then no longer reproduces the recorded fight, so its identity check is skipped (no "identity" field); the redraws
+// r >= 1 keep the same battle seeds as a production replay, so the two arms are paired copy by copy.
 #include "one_combat/driver_shared.h"
 #include "one_combat/combat_predictor_input.h"
 #include "one_combat/combat_transition.h"
 #include "one_combat/run_driver.h"
 
+#include <cstdlib>
 #include <ctime>
 #include <fstream>
 #include <iostream>
@@ -119,10 +124,25 @@ struct Played {
     bool valid = false;
 };
 
+int flatSims() {
+    static const int n = [] {
+        const char *e = std::getenv("STS_FIGHT_REPLAY_FLAT");
+        if (!e || !*e) return 0;
+        const int v = std::atoi(e);
+        need(v >= 1 && v <= 1000000, "STS_FIGHT_REPLAY_FLAT must be 1..1000000");
+        return v;
+    }();
+    return n;
+}
+
 Played play(GameContext gc) {
     Played p;
     search::ScumSearchAgent2 agent;
-    agent.simulationCountBase = fightSims(gc, 10000);
+    agent.simulationCountBase = flatSims() > 0 ? flatSims() : fightSims(gc, 10000);
+    if (flatSims() > 0)
+        search::g_nativeSilverBudgetOverride = search::NativeSilverBudgetOverride{
+            search::NativeSilverBudgetOverride::Policy::Flat, false};
+    struct BudgetReset { ~BudgetReset() { search::g_nativeSilverBudgetOverride.reset(); } } budgetReset;
     agent.rng = std::default_random_engine(gc.seed);   // out-of-combat only; combat never draws from it
     BattleContext bc{};
     trainingRunStart();
@@ -182,7 +202,7 @@ int fightReplay(int nRows, const std::string &rowsPath, const std::string &outPa
             result["post"] = p.post;
             result["turns"] = p.turns;
             result["cpuSeconds"] = p.cpuSeconds;
-            if (r == 0) {
+            if (r == 0 && flatSims() == 0) {
                 const auto &t = row.at("transition");
                 mismatch = !p.valid || t.at("combatOutcome").get<int>() != static_cast<int>(p.outcome)
                     || t.at("post") != p.post;
@@ -200,7 +220,8 @@ int fightReplay(int nRows, const std::string &rowsPath, const std::string &outPa
             out.flush();
         }
     }
-    std::cout << "fightreplay rows=" << nRows << " replicates=" << replicates << " identity_mismatches=" << mismatches
+    std::cout << "fightreplay rows=" << nRows << " replicates=" << replicates
+              << " flat=" << flatSims() << " identity_mismatches=" << mismatches
               << " errors=" << errors << " -> " << outPath << '\n';
     return mismatches || errors ? 1 : 0;
 }
