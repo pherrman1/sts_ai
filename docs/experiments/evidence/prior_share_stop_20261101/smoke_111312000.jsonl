@@ -1,0 +1,2 @@
+{"h": 0.9, "decisions_compared": 206, "full_map_roots": 23, "predicted_stops": 16, "mismatches": 0, "sims_on_over_off": 0.41304347826086957, "diverged": null, "off_decisions": 206, "on_decisions": 206}
+{"h": 0.95, "decisions_compared": 206, "full_map_roots": 23, "predicted_stops": 12, "mismatches": 0, "sims_on_over_off": 0.5434782608695652, "diverged": null, "off_decisions": 206, "on_decisions": 206}
