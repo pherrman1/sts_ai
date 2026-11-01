@@ -25659,7 +25659,7 @@ Seeds: none.
 **Knowledge impact:** at 16,000 paired labels, flexible models learn no more than the average price per change type;
 Silver's leaf prices HP and potions at about 40-60% of their Heart-kill effect.
 
-## §TBD — Map-root value-of-computation audit (#927 rank 6): roots whose prior top is ≥ 0.98 take 54.6% of map simulations and change 1.9% of picks (pick at 1,024 ≠ 4,096 at 1.5% of them, 3.7% of all map roots); by the #927 rule not dropped, so the 1,024 vs 4,096 SPRT is justified (offline, no seeds, 2026-11-01)
+## §737 — Map-root value-of-computation audit (#927 rank 6): roots whose prior top is ≥ 0.98 take 54.6% of map simulations and change 1.9% of picks (pick at 1,024 ≠ 4,096 at 1.5% of them, 3.7% of all map roots); by the #927 rule not dropped, so the 1,024 vs 4,096 SPRT is justified (offline, no seeds, 2026-11-01)
 
 **Question (Philipp, 2026-11-01 07:25Z, item 6 of #927's cheap methods):** how many map-search simulations are spent
 at roots where student_sel's prior top is ≥ 0.98, and how often do they change the decision?
