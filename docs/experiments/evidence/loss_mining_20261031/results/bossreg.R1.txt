@@ -1,0 +1,27 @@
+games 1280; P(Heart kill | survived boss): act1#1 0.305, act2#1 0.419, act3#1 0.544, act3#2 0.629, act4#1 1.000
+act1 boss fights n=1211 deaths=107 (8.8%)
+   hp -0.0497±0.0119  maxhp +0.0219±0.0260  pots -0.9454±0.1486  deck -0.1660±0.0745  ups -0.2021±0.0885  curse +0.3249±1.1155  basic +0.2154±0.1733  relics -0.2733±0.1150  hall_loss +0.0928±0.0445  elite_loss -0.0007±0.0129
+   one potion = 19.0 HP of entry HP (coefficient ratio); mean d(death)/dHP -0.36 pp per HP
+act2 boss fights n=952 deaths=148 (15.5%)
+   hp -0.0406±0.0061  maxhp +0.0079±0.0078  pots -0.8274±0.1307  deck -0.0503±0.0373  ups -0.0234±0.0274  curse +0.2775±0.1859  basic +0.1176±0.0472  relics -0.0824±0.0529  hall_loss +0.0230±0.0209  elite_loss +0.0235±0.0075
+   one potion = 20.4 HP of entry HP (coefficient ratio); mean d(death)/dHP -0.42 pp per HP
+act3 boss fights n=1336 deaths=181 (13.5%)
+   hp -0.0484±0.0052  maxhp +0.0166±0.0060  pots -0.5045±0.1289  deck -0.0236±0.0226  ups -0.0703±0.0243  curse +0.3238±0.1222  basic +0.0258±0.0371  relics -0.1176±0.0514  hall_loss +0.0491±0.0239  elite_loss +0.0412±0.0093
+   one potion = 10.4 HP of entry HP (coefficient ratio); mean d(death)/dHP -0.34 pp per HP
+act4 boss fights n=518 deaths=181 (34.9%)
+   hp -0.0495±0.0055  maxhp +0.0233±0.0067  pots -0.6738±0.1501  deck -0.0423±0.0258  ups -0.0077±0.0204  curse +0.1005±0.1444  basic +0.0898±0.0405  relics -0.0755±0.0480
+   one potion = 13.6 HP of entry HP (coefficient ratio); mean d(death)/dHP -0.78 pp per HP
+levers (observational upper bounds; confounded by deck strength):
+  +5 HP at boss entry                           act1: fights  1211, fight death  -1.60 pp, run Heart kill +0.46 pp
+  +10 HP at boss entry                          act1: fights  1211, fight death  -2.91 pp, run Heart kill +0.84 pp
+  +1 potion at boss entry if a slot is free     act1: fights  1211, fight death  -3.35 pp, run Heart kill +0.97 pp
+  +5 HP at boss entry                           act2: fights   952, fight death  -1.35 pp, run Heart kill +0.42 pp
+  +10 HP at boss entry                          act2: fights   952, fight death  -2.42 pp, run Heart kill +0.76 pp
+  +1 potion at boss entry if a slot is free     act2: fights   952, fight death  -5.10 pp, run Heart kill +1.59 pp
+  +5 HP at boss entry                           act3: fights  1336, fight death  -1.22 pp, run Heart kill +0.76 pp
+  +10 HP at boss entry                          act3: fights  1336, fight death  -2.30 pp, run Heart kill +1.42 pp
+  +1 potion at boss entry if a slot is free     act3: fights  1336, fight death  -2.68 pp, run Heart kill +1.66 pp
+  +5 HP at boss entry                           act4: fights   518, fight death  -2.71 pp, run Heart kill +1.10 pp
+  +10 HP at boss entry                          act4: fights   518, fight death  -5.10 pp, run Heart kill +2.06 pp
+  +1 potion at boss entry if a slot is free     act4: fights   518, fight death  -8.09 pp, run Heart kill +3.27 pp
+  rest instead of pre-boss Ruby Recall at <60% HP act3: fights    71, fight death -20.52 pp, run Heart kill +0.62 pp

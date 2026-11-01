@@ -1,0 +1,18 @@
+low-HP (<50%) non-boss deaths acts 1-2: {(2, 'ELITE'): '34 (2.7%)', (2, 'NORMAL'): '53 (4.1%)', (1, 'NORMAL'): '12 (0.9%)', (1, 'ELITE'): '31 (2.4%)'}
+last campfire in that act before death (choice, HP band, within 3 floors):
+   no campfire this act yet 50
+   ('rest', '<50', True) 19
+   ('rest', '<50', False) 14
+   ('smith', '<50', True) 11
+   ('rest', '50-70', False) 10
+   ('smith', '85+', False) 8
+   ('smith', '70-85', False) 6
+   ('rest', '70-85', False) 3
+   ('rest', '50-70', True) 2
+   ('rest', '70-85', True) 2
+   ('smith', '85+', True) 1
+   ('smith', '50-70', False) 1
+   ('smith', '50-70', True) 1
+   ('rest', '85+', False) 1
+   ('other', '<50', False) 1
+HP lost in the fight before the fatal one: mean 17.130769230769232 median 14.0 entry HP of fatal fight median 20.0

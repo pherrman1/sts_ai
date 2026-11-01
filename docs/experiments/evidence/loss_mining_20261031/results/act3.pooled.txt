@@ -1,0 +1,6 @@
+act3 boss 1: n=1577 death=12.1% entryHP=88% pots=1.54  P(kill|survived)=0.521
+act3 boss 2: n=1386 death=15.7% entryHP=77% pots=0.76 boss1 HP loss=12.2  P(kill|survived)=0.618
+boss1 enc death: {'AWAKENED_ONE': (np.float64(20.7), 535), 'DONU_AND_DECA': (np.float64(6.0), 529), 'TIME_EATER': (np.float64(9.4), 513)}
+boss2 enc death: {'AWAKENED_ONE': (np.float64(25.8), 466), 'DONU_AND_DECA': (np.float64(8.7), 438), 'TIME_EATER': (np.float64(12.4), 482)}
+first Ruby recall site: {(3, 'preboss'): 929, (3, 'earlier'): 582, (2, 'earlier'): 92} runs=2816
+pre-boss recall at <60% HP: 141 (5.0% of runs); of these passed an earlier act-3 campfire at >=60%: 73
