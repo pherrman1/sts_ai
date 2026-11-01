@@ -346,9 +346,10 @@ class FeatureStore:
         self.emb = {}
         N = len(feats)
         cnt = np.array([len(x["emb"]) for x in feats], dtype=np.int64)
-        allemb = np.concatenate([x["emb"] for x in feats]).astype(np.int64)
-        rec = np.repeat(np.arange(N), cnt)
-        order = np.lexsort((rec, allemb[:, 0]))   # by table, then record; stable keeps in-record order
+        allemb = np.concatenate([x["emb"] for x in feats])   # int16: int64 copies cost ~1 GB per 100k decisions
+        rec = np.repeat(np.arange(N, dtype=np.int32), cnt)
+        # rec is already ascending, so a stable sort by table gives table, then record, then in-record order.
+        order = np.argsort(allemb[:, 0], kind="stable")
         allemb, rec = allemb[order], rec[order]
         bounds = np.searchsorted(allemb[:, 0], np.arange(len(TABLE_NAMES) + 1))
         for ti, name in enumerate(TABLE_NAMES):
@@ -373,7 +374,7 @@ class FeatureStore:
     def _flat(toks, vals):
         lens = np.array([len(t) for t in toks], dtype=np.int64)
         start = np.concatenate([[0], np.cumsum(lens)[:-1]]).astype(np.int64)
-        tok = np.concatenate(toks).astype(np.int64) if len(toks) else np.zeros(0, np.int64)
+        tok = np.concatenate(toks) if len(toks) else np.zeros(0, np.int16)
         val = np.concatenate(vals) if len(vals) else np.zeros(0)
         return start, lens, tok, val
 
@@ -387,7 +388,7 @@ class FeatureStore:
         b = np.repeat(np.arange(len(idx)), ln)
         off = np.arange(total) - np.repeat(np.cumsum(ln) - ln, ln)
         src = np.repeat(start[idx], ln) + off
-        return tok[src] + b * T, val[src]
+        return tok[src].astype(np.int64) + b * T, val[src]
 
     def batch(self, indices):
         idx = np.asarray(indices, dtype=np.int64)
