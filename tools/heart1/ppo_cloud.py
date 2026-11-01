@@ -420,7 +420,7 @@ class ArmLearner:
                 self.store.delete(n)
             elif rest.startswith("net-") and int(rest[4:8]) < it - 1:
                 self.store.delete(n)
-            elif rest.startswith("stats-") and int(rest[6:10]) < it:
+            elif rest.startswith("stats-") and int(rest[6:10]) < it - 1:   # newest two: no read races
                 self.store.delete(n)
 
     @property
@@ -454,6 +454,15 @@ class ArmLearner:
         games = ppo_train.load_games(files, self.learner.net.trim_map)
         if len(games) != self.cfg["games"]:
             sys.exit(f"{self.arm} iteration {it}: {len(games)} games, expected {self.cfg['games']}")
+        # Per-game outcomes for the paired analysis (a rerun of this iteration after a crash rewrites its rows).
+        rows = os.path.join(self.dir, f"games-{it:04d}.csv")
+        with open(rows + ".tmp", "w") as f:
+            f.write("arm,iteration,seed,heart_kill,floor,net\n")
+            for g in sorted(games, key=lambda g: g["seed"]):
+                o = g["outcome"]
+                f.write(f"{self.arm},{it},{g['seed']},{int(bool(o.get('heart_kill')))},{o.get('floor', '')},"
+                        f"{metas[0]['net']}\n")
+        os.replace(rows + ".tmp", rows)
         load_s = time.time() - t0
         stats = self.learner.update(games, value_only=it < self.cfg["value_warmup"],
                                     log=lambda line: log(f"{self.arm} {line}"))
@@ -468,8 +477,10 @@ class ArmLearner:
                       "learn_s": time.time() - t0, "pipeline": self.cfg["pipeline"]})
         self.meta["iterations"].append(stats)
         self._write_meta()
+        keep = os.path.join(self.dir, "parts")   # the raw games stay on the learner's disk
+        os.makedirs(keep, exist_ok=True)
         for f in files:
-            os.remove(f)
+            os.replace(f, os.path.join(keep, os.path.basename(f)))
         # Publish the net and the stats (actors read them to skip consumed iterations), delete the consumed parts
         # and every net but the newest two (the learner's disk keeps all of them).
         self.republish()

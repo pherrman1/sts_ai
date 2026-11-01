@@ -150,7 +150,15 @@ class Heart1PpoTest(unittest.TestCase):
                 s.put(f"A/traj-0001-p{k}", p, {"games": 4, "sha256": ppo_cloud.sha256(p), "net": "net-0000",
                                                 "net_sha256": n0, "actor_s": 1.0, "seed_first": 1})
             self.assertTrue(again.step(s.names("")))
-            self.assertEqual(sorted(s.names("")), ["A/config", "A/net-0001", "A/net-0002", "A/stats-0002"])
+            self.assertEqual(sorted(s.names("")), ["A/config", "A/net-0001", "A/net-0002", "A/stats-0001",
+                                                   "A/stats-0002"])
+            import csv
+            with open(os.path.join(d, "local", "A", "games-0001.csv")) as f:
+                rows = list(csv.DictReader(f))
+            self.assertEqual(sorted(r["seed"] for r in rows), sorted(str(x) for x in seeds))
+            self.assertEqual(sum(int(r["heart_kill"]) for r in rows),
+                             sum(1 for l in lines if '"type":"game"' in l and '"heart_kill":true' in l))
+            self.assertEqual(len(os.listdir(os.path.join(d, "local", "A", "parts"))), 4)
             self.assertTrue(again.done())
             with self.assertRaises(ValueError):   # size cap
                 big = os.path.join(d, "big")
