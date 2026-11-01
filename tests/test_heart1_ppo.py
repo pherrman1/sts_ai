@@ -87,5 +87,52 @@ class Heart1PpoTest(unittest.TestCase):
                 rc = subprocess.run([sys.executable, "-c", code], timeout=300).returncode
                 self.assertEqual(rc, 3, path)
 
+    def test_cloud_store_round_trip(self):
+        """ppo_cloud: two actor parts in a dir store -> one serve step -> next net and stats published, parts gone."""
+        import gzip
+        import json
+        import ppo_cloud
+        import ppo_model
+        here = os.path.dirname(os.path.abspath(__file__))
+        traj = os.path.join(here, "..", "docs", "experiments", "evidence", "ppo_s0_smoke_20261101", "cov8.jsonl.gz")
+        rows = {k: 4096 for k in ppo_model.TABLES}
+        rows["fixed_action"] = ppo_model.FA_COUNT
+        torch.manual_seed(0)
+        net = ppo_model.PolicyNet(16, 2, 32, 1, rows, False)
+        with tempfile.TemporaryDirectory() as d:
+            init = os.path.join(d, "init.bin")
+            net.to_bin(init)
+            env = os.path.join(d, "a.env")
+            with open(env, "w") as f:
+                f.write("STS_FAIR=1\n")
+            store = "dir:" + os.path.join(d, "store")
+            ppo_cloud.cmd_init([store, "A", "--init", init, "--env-file", env, "--one-combat-sha", "0" * 64,
+                                "--iterations", "2", "--games", "8", "--parts", "2", "--seed-base", "1",
+                                "--value-warmup", "0", "--", "--epochs", "1"])
+            with self.assertRaises(SystemExit):   # frozen once
+                ppo_cloud.cmd_init([store, "A", "--init", init, "--env-file", env, "--one-combat-sha", "0" * 64,
+                                    "--iterations", "2", "--games", "8", "--seed-base", "1"])
+            with gzip.open(traj, "rt") as f:
+                lines = [l for l in f if l.strip()]
+            seeds = sorted({json.loads(l)["seed"] for l in lines if '"type":"game"' in l})
+            s = ppo_cloud.open_store(store)
+            for k, part in enumerate((seeds[:4], seeds[4:])):
+                p = os.path.join(d, f"p{k}.jsonl.gz")
+                with gzip.open(p, "wt") as f:
+                    f.writelines(l for l in lines if json.loads(l)["seed"] in part)
+                s.put(f"A/traj-0000-p{k}", p, {"games": 4, "sha256": ppo_cloud.sha256(p), "net": "net-0000",
+                                                "net_sha256": "x", "actor_s": 1.0, "seed_first": part[0]})
+            learner = ppo_cloud.ArmLearner(s, os.path.join(d, "local"), "A", "cpu")
+            self.assertFalse(learner.step(s.names("A/traj-0000-p0")))   # part 1 missing from the listing
+            self.assertTrue(learner.step(s.names("")))
+            names = s.names("")
+            self.assertIn("A/net-0001", names)
+            self.assertIn("A/stats", names)
+            self.assertFalse([n for n in names if "traj" in n])
+            again = ppo_cloud.ArmLearner(s, os.path.join(d, "local"), "A", "cpu")   # resumes from state.pt
+            self.assertEqual(again.next_it, 1)
+            self.assertEqual(ppo_cloud.trained_iterations(s, "A", d), 1)
+
+
 if __name__ == "__main__":
     unittest.main()

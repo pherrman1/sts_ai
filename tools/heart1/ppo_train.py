@@ -175,6 +175,8 @@ def add_hparams(ap):
     ap.add_argument("--value-coef", type=float, default=0.5)
     ap.add_argument("--entropy-coef", type=float, default=0.002)
     ap.add_argument("--kl-coef", type=float, default=0.0, help="KL(pi || start net) penalty")
+    ap.add_argument("--kl-decay-iters", type=int, default=0,
+                    help="> 0: the KL coefficient falls linearly from --kl-coef at update 0 to 0 at this update")
     ap.add_argument("--max-grad-norm", type=float, default=1.0)
     ap.add_argument("--norm-adv", type=int, default=1, help="normalise advantages per update")
     ap.add_argument("--value-clip", type=float, default=0.0, help="PPO value clipping range (0 = off)")
@@ -300,7 +302,8 @@ class Learner:
         temp_t = torch.tensor(temps)
         dev = self.device
         anchor_lp = None
-        if a.kl_coef > 0 and self.anchor is not None and not value_only:
+        kl_coef = a.kl_coef * (max(0.0, 1.0 - self.iteration / a.kl_decay_iters) if a.kl_decay_iters > 0 else 1.0)
+        if kl_coef > 0 and self.anchor is not None and not value_only:
             rows = []
             for chunk in self.anchor_logp(feats, temps, store=store):
                 rows.extend(list(chunk))
@@ -375,7 +378,7 @@ class Learner:
             if value_only:
                 loss = a.value_coef * value_loss
             else:
-                loss = policy_loss + a.value_coef * value_loss - a.entropy_coef * entropy + a.kl_coef * kl_anchor
+                loss = policy_loss + a.value_coef * value_loss - a.entropy_coef * entropy + kl_coef * kl_anchor
             self.opt.zero_grad(set_to_none=True)
             loss.backward()
             if value_only:
@@ -408,7 +411,7 @@ class Learner:
         out = {k: v / max(nmb, 1) for k, v in stats.items()}
         out.update(stats_first)
         heart = sum(1 for g in games if g["outcome"].get("heart_kill")) / max(len(games), 1)
-        out.update({"iteration": self.iteration, "games": len(games), "decisions": len(steps),
+        out.update({"iteration": self.iteration, "kl_coef": kl_coef, "games": len(games), "decisions": len(steps),
                     "policy_decisions": int(policy_mask.sum()), "minibatches": nmb, "prep_s": prep,
                     "train_s": train_s, "heart_rate": heart, "value_only": value_only,
                     "max_dlogp_behaviour": max(dlogp) if dlogp else 0.0,
