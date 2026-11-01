@@ -47,16 +47,22 @@ NET_SOURCES = ("heart1_ppo", "heart1_ppo_single")
 # ---------------------------------------------------------------- trajectories
 
 def _parse_line(line, trim_map=None):
-    """One trajectory line -> row; with trim_map, a net decision's record is featurised (worker-safe)."""
+    """One trajectory line -> row; with trim_map, a net decision's record is featurised (worker-safe).
+
+    Errors come back as {"type": "_error"} rows instead of raising in the worker, so the pool always drains and
+    closes normally (terminating a pool mid-stream can deadlock); load_games raises them afterwards."""
     if not line.strip():
         return None
-    row = json.loads(line)
-    if trim_map is not None and row["type"] == "decision":
-        rec = row.pop("record", None)
-        row.pop("logits", None)
-        if row["source"] in NET_SOURCES:
-            row["feat"] = featurize(rec, trim_map)
-    return row
+    try:
+        row = json.loads(line)
+        if trim_map is not None and row["type"] == "decision":
+            rec = row.pop("record", None)
+            row.pop("logits", None)
+            if row["source"] in NET_SOURCES:
+                row["feat"] = featurize(rec, trim_map)
+        return row
+    except Exception as e:   # noqa: BLE001 - re-raised by the parent with the line number
+        return {"type": "_error", "error": f"{type(e).__name__}: {e}"}
 
 
 def load_games(paths, trim_map=None, workers=None):
@@ -91,9 +97,11 @@ def load_games(paths, trim_map=None, workers=None):
             pool.join()
     pending, games, seen = {}, [], set()
     for path, rows in parsed:
-        for row in rows:
+        for lineno, row in enumerate(rows, 1):
             if row is None:
                 continue
+            if row["type"] == "_error":
+                raise ValueError(f"{path}:{lineno}: {row['error']}")
             key = (path, row["seed"])
             if row["type"] == "decision":
                 pending.setdefault(key, []).append(row)
