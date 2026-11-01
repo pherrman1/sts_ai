@@ -2769,9 +2769,13 @@ double liveFullBudgetFraction = 0;
 // root that is not a full-budget root searches at most this many simulations (its early stops
 // still apply below it). Unset: 1024 (Philipp 2026-10-21); 0 restores the uncapped fast roots.
 std::uint64_t liveFastRootCap = 0;
-// STS_OOC_MCTS_FULL_ROOT_SIMS (opt-in, off by default): a full-budget root of a playout-cap-randomized run
-// searches exactly this many simulations instead of STS_OOC_MCTS_SIMS (offline scoring keeps the whole budget).
+// STS_OOC_MCTS_FULL_ROOT_SIMS=N: a full-budget root of a playout-cap-randomized run searches exactly N simulations
+// instead of STS_OOC_MCTS_SIMS (offline scoring keeps the whole budget). Unset: at ascension 20 under ADR-0061's
+// map-only default, every searched map root stops at 1,024 (kA20MapRootSims, ADR-0065, SPRT §741); =0 restores the
+// whole STS_OOC_MCTS_SIMS budget there.
 std::uint64_t liveFullRootSims = 0;
+bool liveFullRootSimsExplicit = false;
+constexpr std::uint64_t kA20MapRootSims = 1024;
 // Self-play exploration for AZ data runs (both opt-in, off by default):
 // STS_OOC_MCTS_ROOT_NOISE=FRACTION[:ALPHA] mixes Dirichlet noise into the root PUCT prior;
 // STS_OOC_MCTS_PLAY_SAMPLE=FLOOR[:TEMPERATURE] plays a root action sampled in proportion to
@@ -3695,7 +3699,7 @@ void configureLiveOocMcts() {
     liveCheckpointTrace.clear();
     liveReuseTrace.clear();
     liveSimulations = 512; liveConfig = {}; liveOptions = {true};
-    liveFullBudgetFraction = 0; liveFastRootCap = 0; liveFullRootSims = 0;
+    liveFullBudgetFraction = 0; liveFastRootCap = 0; liveFullRootSims = 0; liveFullRootSimsExplicit = false;
     liveLearnedStopNet.reset(); liveLearnedStopTau = 0;
     liveGraphPath.clear(); liveGraphDecisionIndex = 1;
     liveLeafCapture.reset();
@@ -3834,11 +3838,12 @@ void configureLiveOocMcts() {
         throw std::runtime_error("STS_OOC_MCTS_FAST_ROOT_CAP requires STS_OOC_MCTS_FULL_BUDGET_FRACTION");
     if (const char *full = std::getenv("STS_OOC_MCTS_FULL_ROOT_SIMS"); full && *full) {
         const std::string value(full);
-        if (value.size() > 12 || value.find_first_not_of("0123456789") != std::string::npos || std::stoull(value) == 0)
-            throw std::runtime_error("STS_OOC_MCTS_FULL_ROOT_SIMS must be a positive integer");
-        if (liveFullBudgetFraction <= 0)
-            throw std::runtime_error("STS_OOC_MCTS_FULL_ROOT_SIMS requires STS_OOC_MCTS_FULL_BUDGET_FRACTION");
+        if (value.empty() || value.size() > 12 || value.find_first_not_of("0123456789") != std::string::npos)
+            throw std::runtime_error("STS_OOC_MCTS_FULL_ROOT_SIMS must be a non-negative integer (0 = whole budget)");
         liveFullRootSims = std::stoull(value);
+        liveFullRootSimsExplicit = true;
+        if (liveFullRootSims > 0 && liveFullBudgetFraction <= 0)
+            throw std::runtime_error("STS_OOC_MCTS_FULL_ROOT_SIMS requires STS_OOC_MCTS_FULL_BUDGET_FRACTION");
     }
     liveRootNoiseFraction = 0; liveRootNoiseAlpha = 0.3;
     livePlaySampleFloor = -1; livePlaySampleTemperature = 1;
@@ -4686,6 +4691,8 @@ void configureLiveOocMcts() {
             + (liveCardRuleNet ? " card_rule_heart1_value=" + liveCardRulePath + " sha256=" + liveCardRuleSha256 : "")
             + (liveCardRuleBossEdge ? " card_rule_boss_edge=1" : ""))
         << (liveSearchScreensA20Default ? " screens_a20_default=map_full_budget" : std::string{})
+        << (liveSearchScreensA20Default && !liveFullRootSimsExplicit && liveFullBudgetFraction > 0
+            ? " map_root_sims_a20_default=" + std::to_string(kA20MapRootSims) : std::string{})
         << (liveRootProbeGrid.empty() ? std::string{} : " root_probe_grid=" + std::string(std::getenv("STS_OOC_ROOT_PROBE_GRID"))
             + " seeds=" + std::to_string(liveRootProbeGridSeeds) + " sims=" + std::to_string(liveRootProbeGridSims)
             + (liveRootProbeGridNet ? " sr=" + liveRootProbeGridNetPath + " sha256=" + liveRootProbeGridNetSha256 : ""))
@@ -4724,6 +4731,8 @@ void configureLiveOocMcts() {
         << (liveOptions.leafCalibrationMinAscension > 0
             ? ",\"leafCalibrationMinAscension\":" + std::to_string(liveOptions.leafCalibrationMinAscension) : std::string{})
         << (liveSearchScreensA20Default ? ",\"searchScreensA20Default\":\"map_full_budget\"" : std::string{})
+        << (liveSearchScreensA20Default && !liveFullRootSimsExplicit && liveFullBudgetFraction > 0
+            ? ",\"mapRootSimsA20Default\":" + std::to_string(kA20MapRootSims) : std::string{})
         << (liveLeafCompare ? ",\"leafCompare\":" + [] {
                 nlohmann::json arms = nlohmann::json::array();
                 for (const auto &arm : liveLeafCompare->arms) {
@@ -5440,6 +5449,9 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
     const bool fastCapped = explore && liveFastRootCap > 0 && !fullBudget && !sole && simulations > liveFastRootCap;
     if (fastCapped) simulations = liveFastRootCap;
     if (explore && fullBudget && liveFullRootSims > 0) simulations = liveFullRootSims;
+    // A20 map-only default (ADR-0065): a searched map root stops at 1,024 unless STS_OOC_MCTS_FULL_ROOT_SIMS is set.
+    if (explore && fullBudget && !liveFullRootSimsExplicit && liveMapOnlyA20(gc) && simulations > kA20MapRootSims)
+        simulations = kA20MapRootSims;
     if (fullBudget) { config.allowUnqualifiedRootStop = false; config.stopAt512VisitGap20 = false; config.gapStopFraction = 0; }
     // Gumbel root and Dirichlet noise are two exploration schemes: the Gumbel draw replaces the noise.
     const auto gumbelConfig = [](sts::search::OocMctsConfig &c, std::uint32_t m, double scale) {
