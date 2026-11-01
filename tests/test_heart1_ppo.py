@@ -116,21 +116,40 @@ class Heart1PpoTest(unittest.TestCase):
                 lines = [l for l in f if l.strip()]
             seeds = sorted({json.loads(l)["seed"] for l in lines if '"type":"game"' in l})
             s = ppo_cloud.open_store(store)
+            s.get("A/net-0000", os.path.join(d, "n0.bin"))
+            n0 = ppo_cloud.sha256(os.path.join(d, "n0.bin"))
             for k, part in enumerate((seeds[:4], seeds[4:])):
                 p = os.path.join(d, f"p{k}.jsonl.gz")
                 with gzip.open(p, "wt") as f:
                     f.writelines(l for l in lines if json.loads(l)["seed"] in part)
                 s.put(f"A/traj-0000-p{k}", p, {"games": 4, "sha256": ppo_cloud.sha256(p), "net": "net-0000",
-                                                "net_sha256": "x", "actor_s": 1.0, "seed_first": part[0]})
+                                                "net_sha256": n0, "actor_s": 1.0, "seed_first": part[0]})
             learner = ppo_cloud.ArmLearner(s, os.path.join(d, "local"), "A", "cpu")
             self.assertFalse(learner.step(s.names("A/traj-0000-p0")))   # part 1 missing from the listing
-            self.assertTrue(learner.step(s.names("")))
+            real_put = s.put
+
+            def failing_put(name, path, meta):   # the learner dies while publishing net-0001
+                if name == "A/net-0001":
+                    raise RuntimeError("push failed")
+                real_put(name, path, meta)
+            s.put = failing_put
+            with self.assertRaises(RuntimeError):
+                learner.step(s.names(""))
+            s.put = real_put
+            self.assertNotIn("A/net-0001", s.names(""))
+            again = ppo_cloud.ArmLearner(s, os.path.join(d, "local"), "A", "cpu")   # restart republishes
+            self.assertEqual(again.next_it, 1)
             names = s.names("")
             self.assertIn("A/net-0001", names)
             self.assertIn("A/stats", names)
             self.assertFalse([n for n in names if "traj" in n])
-            again = ppo_cloud.ArmLearner(s, os.path.join(d, "local"), "A", "cpu")   # resumes from state.pt
-            self.assertEqual(again.next_it, 1)
+            with open(os.path.join(d, "local", "A", "loop.json")) as f:
+                self.assertEqual(len(json.load(f)["iterations"]), 1)
+            with self.assertRaises(ValueError):   # size cap
+                big = os.path.join(d, "big")
+                with open(big, "wb") as f:
+                    f.truncate((ppo_cloud.MAX_PUT_MB + 1) * 2**20)
+                s.put("A/big", big, {})
             self.assertEqual(ppo_cloud.trained_iterations(s, "A", d), 1)
 
 

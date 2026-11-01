@@ -18,7 +18,9 @@ exchange games and nets through git refs `refs/heads/ppo-xfer/screen1/<ARM>/...`
 create refs; the PC deletes every consumed ref). `--pipeline 1` (iteration i played by net_{i-1}, PPO ratio against
 the recorded log-probs). `STS_OOC_HEART1_PPO=1`: the net makes every out-of-combat decision
 (gold automatic), sampled at temperature 1 with salt = iteration. Ascension 20. Binary: current main's `one_combat`
-(sha in `screen.manifest`).
+(sha in `screen.manifest`; main 336c1f8, not the cost campaign's 6c96c25 binary, so the chosen combat setting
+transfers approximately; all arms share it). With `STS_OOC_HEART1_PPO=1` the net decides before any rule, so the
+`STS_OOC_STRATEGIC_*` and key flags of the cost campaign's env are absent from `actors_base.env` on purpose.
 
 **Base recipe** (`ppo_train.py` defaults unless named): reward `heart` (1 for a Heart kill, else 0), γ 1, GAE λ 0.97,
 clip 0.2, 2 epochs, minibatch 192, lr 1e-5, value-lr multiplier 1, value coefficient 0.5, entropy 0.002, KL to the
@@ -50,3 +52,11 @@ G1 (2,048 fresh paired seeds, policy alone, Silver 1,000) before anything else u
 1,024 games ~2×); actors ~20 min per 512 games on 2 containers at Silver 1,000. ~30 rounds ≈ 12-14 h wall.
 19 × 15,360 games ≈ 290k games ≈ 1,600 core-h of play at ~20 s per game (less with a cheaper admitted cost arm).
 A CPU learner would take ~1 h per 512-game update (measured 463 s for 32 games on 2 contended threads), hence the GPU.
+
+**Transport volume** (git refs under `refs/heads/ppo-xfer/screen1/`, deleted after use; per stored file ≤ 64 MB):
+585 nets (17 × 31 + 61 + 16) × 24.2 MB with heart1 ≈ 14 GB pushed (student_sel: 1.4 MB, ≈ 0.8 GB); trajectories
+≈ 12.5 KB per game × 292k games ≈ 3.6 GB. Live at any time: the newest two nets per arm (≈ 0.9 GB with heart1) plus
+unconsumed parts. After the screen `ppo_cloud.py cleanup` deletes every ref; all nets stay on the PC.
+
+**Workers.** Exactly 40 actor workers (one per part); the screen starts after the cost-arm campaign has released its
+24. A worker whose container resets re-runs `setup` and `start` (the actor resumes; at most one part is replayed).

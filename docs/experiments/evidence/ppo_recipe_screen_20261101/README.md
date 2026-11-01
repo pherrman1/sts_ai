@@ -9,4 +9,7 @@ Launch order (author):
    `screen.manifest` (the run commit).
 2. PC: `python3 tools/heart1/ppo_cloud.py serve git:https://github.com/pherrman1/sts_ai#ppo-xfer/screen1 ~/ppo-screen1 $(awk '!/^#/{print $1}' arms.txt)`
    in the background (RC session).
-3. Workers W=1..40: `bash tools/heart1/ppo_cloud_worker.sh setup|start|wait docs/experiments/evidence/ppo_recipe_screen_20261101 W`.
+3. Workers W=1..40: `bash tools/heart1/ppo_cloud_worker.sh setup|start|wait docs/experiments/evidence/ppo_recipe_screen_20261101 W`;
+   after a container reset, `setup` and `start` again.
+4. End (PC, deletes are refused from the cloud): `python3 tools/heart1/ppo_cloud.py cleanup git:https://github.com/pherrman1/sts_ai#ppo-xfer/screen1 $(awk '!/^#/{print $1}' arms.txt)`;
+   the smoke arm likewise with `#ppo-xfer/smoke1 SMOKE`.
