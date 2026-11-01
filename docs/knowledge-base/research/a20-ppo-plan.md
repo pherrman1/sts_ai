@@ -22,8 +22,9 @@ is missing, and what should let it beat the original. This page refines roadmap 
    (Inference from its schedule: 2,575 iterations of 256, later 512 games).
 3. **Missing pieces are plumbing:** sampled play with log-probs, a trajectory export, a PPO trainer for our record
    format, and an iteration loop. Two implementation PRs before a pilot.
-4. **Cheapest decision gate:** a PC pilot (60 A20 iterations × 512 games from student_sel, ~31k games,
-   ~170 core-h, ~14 h) and a 2,048-pair Silver-1,000 gate of policy alone (~23 core-h).
+4. **Cheapest decision gates:** G0 picks the start weights (heart1 vs student_sel alone, ~25 core-h); then a PC pilot
+   (60 A20 iterations × 512 games with the d256 decision net, ~31k games, ~170-200 core-h, ~14 h) and a 2,048-pair
+   Silver-1,000 gate of policy alone (~23 core-h).
 
 ## Decision net (Philipp, 2026-11-01)
 
@@ -111,8 +112,9 @@ So only ~1/21 of its games were A20, its reward is not P(Heart kill), and its en
 1. Sampling at temperature 1 with log-prob and value per decision (`heart1::policyStep` is greedy only).
 2. Trajectory export: record, chosen index, log-prob, value per decision; outcome per game; compact (share quota
    10 GB / 50,000 files).
-3. Fallback accounting: screens without a heart1 encoding stay on the chain and are excluded from the gradient;
-   the potion-discard output is still missing.
+3. Full coverage: tokens for every decision the net does not make today (keys, potion discard, Match and Keep,
+   unmapped events and screens, reward-relic skip; see Decision net). The chain remains only as a logged exception
+   with a reason; gold stays automatic.
 4. PPO trainer for our record format: GAE, clipping, value warm-up (student_sel's value head is untrained), KL anchor
    to the start net, checkpoint/resume, `.bin` export.
 5. Iteration loop (one machine for the pilot; resumable cloud actors/learner later) and a reserved training seed block.
@@ -122,7 +124,7 @@ So only ~1/21 of its games were A20, its reward is not P(Heart kill), and its en
 | # | Change | Rationale |
 | --- | --- | --- |
 | V1 | A20 only | original saw ~5% A20 and barely adapts card choice to ascension |
-| V2 | our engine | train where we play; no engine gap, no re-distillation for a d64 run |
+| V2 | our engine | train where we play; no engine gap, and without OOC MCTS no re-distillation is needed |
 | V3 | reward 1{Heart} + potential-based shaping with Φ = M0-calibrated leaf value | the objective becomes the Heart rate (shaping telescopes at γ = 1) with lower variance |
 | V4 | forked common-random-number advantages at a fraction of card choices (VinePPO-style) | targets the original's diagnosed credit problem; our engine can copy states. §685: single outcomes rank siblings poorly, so use only as advantage estimates inside PPO |
 | V5 | record v2 inputs (#941) for policy and critic | public run state heart1 never saw; PPO self-play produces v2 records for free |
@@ -145,10 +147,11 @@ lineage instead of building two nets. PPO self-play records in v2 format (`obs.v
 | Stage | Content | Cost | Decision |
 | --- | --- | --- | --- |
 | S0 | PR 1 sampler + trajectory export; PR 2 PPO trainer + export. Checks: temperature 0 byte-identical to today's greedy choices, native vs torch log-prob < 1e-5, one-iteration smoke | 1-2 thread-days, smoke seeds | review PASS per PR |
-| S1 | PC pilot: decision net (see above; originally student_sel), A20, Silver 1,000, reward V3, 512 games per iteration, 3 value-only warm-up iterations, 60 PPO iterations | ~31k games, ~170 core-h, ~14 h on 12 threads | G1 |
-| G1 | final vs student_sel, policy alone (`STS_OOC_MCTS=0`), Silver 1,000, 2,048 fresh paired A20 seeds, SPRT standard | ~23 core-h | GO if ΔHeart 95% CI > 0; one more 60-iteration block if point > 0, CI includes 0 and the in-sample A20 curve rises; STOP if ΔHeart ≤ 0 with a flat curve |
+| G0 | start weights: heart1 alone vs student_sel alone in our engine, Silver 1,000, 2,048 paired A20 seeds | ~25 core-h | heart1 not worse → start from heart1; clearly worse → distil student_sel into the d256 net |
+| S1 | PC pilot: d256 decision net (start per G0), A20, Silver 1,000 (or the cheapest admitted cost arm), reward V3, 512 games per iteration, 3 value-only warm-up iterations, 60 PPO iterations | ~31k games, ~170-200 core-h, ~14 h on 12 threads | G1 |
+| G1 | final vs the start net, policy alone (`STS_OOC_MCTS=0`), Silver 1,000, 2,048 fresh paired A20 seeds, SPRT standard | ~23 core-h | GO if ΔHeart 95% CI > 0; one more 60-iteration block if point > 0, CI includes 0 and the in-sample A20 curve rises; STOP if ΔHeart ≤ 0 with a flat curve |
 | S2 | production confirmation: new net as map-MCTS prior vs the default, AZ matched-CPU rule | 1,024-4,096 pairs, ~470-1,900 core-h | default change is Philipp's call |
-| S3 | cloud actor/learner, 0.5-1M A20 games, Silver-1,000 checkpoint gates every ~200k games, production A/B every ~1M; d256 on the GPU if d64 saturates | ~6k core-h per 1M games + sync engineering | after G1 GO |
+| S3 | cloud actor/learner, 0.5-1M A20 games, Silver-1,000 checkpoint gates every ~200k games, production A/B every ~1M; learner on the PC GPU | ~6k core-h per 1M games + sync engineering | after G1 GO |
 | S4 | V3-V8 one at a time | ~25-100 core-h per gate + training | each gated |
 
 Every run needs a pre-registration, the seed-run guard, frozen provenance and Philipp's typed go.
@@ -157,7 +160,7 @@ Every run needs a pre-registration, the seed-run guard, frozen provenance and Ph
 
 - 31k pilot games are few against the original's ~1.1M; the pilot tests direction, not ceiling.
 - X1 validated cheap combat on one key effect; card effects whose value depends on fight skill are untested.
-- Is d64 enough capacity, or is d256 on the GPU needed?
+- Does the 3060 Ti update keep pace with 1,024-2,048 games per iteration (measured in S0)?
 - Can an asynchronous cloud loop stay close enough to on-policy across container resets?
 
 ## Relevant sources
