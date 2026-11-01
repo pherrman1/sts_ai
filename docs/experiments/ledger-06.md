@@ -25790,3 +25790,28 @@ so the causal gain is likely smaller). Consistent with §699 (combat death draws
 streams WEAK). Keyed run-level RNG for evaluation is not built.
 Seeds: none (existing games only).
 **Knowledge impact:** literature review idea 7 marked dropped (`research/search-and-value-literature.md`).
+
+## §739 — Cheap-combat proxy check (roadmap X1): §691's flexible-vs-rigid keys effect on its 1,024 seeds, student_sel alone out of combat: same-runner production +5.76 pp [+3.13, +8.50], flat Silver 1,000 +4.49 pp [+2.34, +6.64] → VALID (DiD −1.27 [−4.39, +1.95]), flat Silver 200 +2.34 pp [+0.49, +4.20] → INCONCLUSIVE (DiD −3.42 [−6.45, −0.39]); Silver 1,000 ≈ 12× cheaper per unit of power (2026-11-01)
+
+**Question (Philipp, 2026-10-31 22:27Z "Okay try den billigen Kampf"):** does an OOC policy effect measured with
+production combat survive when real combats are played by flat cheap Silver? If yes, PPO self-play and OOC screens
+can use cheap combat.
+**Design:** [PREREG](evidence/cheap_combat_proxy_20261031/PREREG.md), [RESULT](evidence/cheap_combat_proxy_20261031/RESULT.md),
+[run_unit.sh](evidence/cheap_combat_proxy_20261031/run_unit.sh), [analyze.py](evidence/cheap_combat_proxy_20261031/analyze.py),
+per-game [games.csv](evidence/cheap_combat_proxy_20261031/games.csv). R (`STS_KEY_*=first`) vs F (policy/policy/mask)
+× combat {flat Silver 1,000, flat Silver 200 (`STS_SILVER_LEARNED_STOP=0 STS_SILVER_ACT4_STRONG=0`), production
+(learned stop, Act 4 strong)}; bestbench with `STS_OOC_MCTS=0` (key rules, then student_sel `cf6bf7fb` argmax).
+Binary `d39c2b98` (main `6c96c25`), run commit `930cd7f2`. Rule: VALID if CI > 0 and D in [+3.03, +9.08] (50-150% of
+§691's +6.05); INVALID if CI upper < +3.03.
+**Result:** 6,144 games, all rc 0. Heart R → F: Silver 1,000 12.3% → 16.8%; Silver 200 6.7% → 9.1%; production
+19.6% → 25.4% (+5.76, within 0.3 pp of §691, so the runner change is harmless here). Act 3 cleared (floor ≥ 52, also
+counts keyless act-3 clears): +3.22 [+0.49, +5.86], +3.03 [+0.78, +5.27], +6.93 [+4.10, +9.77]. Mean wall per game
+R/F: 18.4/20.5 s, 2.9/3.2 s, 224.9/276.8 s.
+**Interpretation:** Silver 1,000 keeps ~78% of the effect with about the same power per pair (z 4.1 vs 4.2) at 1/13
+of the CPU per pair → ≈ 12× cheaper gates for this kind of OOC effect (Inference: one effect). Silver 200 attenuates
+it to ~40% (DiD CI excludes 0): biased toward 0, at most a coarse pre-screen. Scope: one OOC effect, mostly an act-1
+Sapphire-chest choice; licenses cheap combat for ranking OOC policy changes (confirm at production before a default),
+not for combat changes or absolute rates. Deck-building effects that depend on fight skill are untested.
+Seeds: none new (§691's 111382000-111383023 replayed; smokes 111383024/025, used). Cost ≈ 156 core-h (control 143 on
+8 workers, Philipp's card 2026-10-31 22:37Z and "Go 8 workers" 23:00Z).
+**Knowledge impact:** roadmap X1 row and limitations updated (`research/one-year-roadmap.md`).
