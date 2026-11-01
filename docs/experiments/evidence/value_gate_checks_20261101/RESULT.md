@@ -49,7 +49,8 @@ and scoring unchanged:
   0.41-0.43 (§720/§722).
 
 **Reading.** By the stated rule (point estimate < 0.33) the 10^5-game outcome-only capture is not bought: ~23k core-h
-would raise V_A4's R² by about +0.035 (0.284 → ~0.32). The call is borderline (the bootstrap straddles 0.33), and only
+would raise V_A4's R² by about +0.035 (0.284 → ~0.32). The call is borderline (the bootstrap straddles 0.33; it resamples only test seeds with the predictions fixed and
+extrapolates about 23× beyond the data, so the real interval is wider), and only
 the no-saturation envelope reaches 0.39. Nothing on record uses V_A4 in play, and §727 shows value-led choices lose at
 today's accuracy, so the borderline case does not justify the cost.
 
@@ -60,24 +61,25 @@ true action values are re-estimated per root and labels re-simulated as truth + 
 columns (common-seed structure kept), 20 simulations, §577 concordance per root → source → mean:
 - naive: truth = observed means (reproduces the analytic number: 0.880 vs 0.873);
 - js: posterior-mean shrinkage (too smooth → low);
-- **vm: variance-matched scaling (centred SS = observed − noise), the central estimate**;
+- **vm: variance-matched scaling (centred SS = observed − noise) per root, the central estimate**; vm pooled uses one
+  scaling per scope (map / non-map), which keeps noise-dominated roots' observed shape and so sits higher;
 - hidden: vm plus #644's hidden-state term on every action (overstates deterministic siblings' noise → low).
 
-| roots, labels | best head or blend (§715) | X2-B with M0 | ceiling vm | vm + hidden (val / train σ_h²) | js | naive | gap best → vm |
-|---|---|---|---|---|---|---|---|
-| map, M0 | 0.615 | 0.602 | **0.770** | 0.748 / 0.740 | 0.751 | 0.858 | **+0.155** |
-| map, raw | 0.622 | 0.599 | 0.763 | 0.743 / 0.740 | 0.745 | 0.861 | +0.141 |
-| non-map, M0 | 0.752 | 0.706 | 0.824 | 0.734 / 0.715 | 0.802 | 0.889 | +0.072 |
-| non-map, raw | 0.733 | 0.684 | 0.792 | 0.711 / 0.696 | 0.762 | 0.885 | +0.058 |
-| all, M0 | 0.719 | 0.681 | 0.811 | 0.737 / 0.721 | 0.790 | 0.881 | +0.092 |
+| roots, labels | best head or blend (§715) | X2-B with M0 | ceiling vm | vm pooled | vm + hidden (val / train σ_h²) | js | naive | gap best → vm |
+|---|---|---|---|---|---|---|---|---|
+| map, M0 | 0.615 | 0.602 | **0.770** | 0.846 | 0.748 / 0.740 | 0.751 | 0.858 | **+0.155** |
+| map, raw | 0.622 | 0.599 | 0.763 | 0.846 | 0.743 / 0.740 | 0.745 | 0.861 | +0.141 |
+| non-map, M0 | 0.752 | 0.706 | 0.824 | 0.860 | 0.734 / 0.715 | 0.802 | 0.889 | +0.072 |
+| non-map, raw | 0.733 | 0.684 | 0.792 | 0.840 | 0.711 / 0.696 | 0.762 | 0.885 | +0.058 |
+| all, M0 | 0.719 | 0.681 | 0.811 | 0.857 | 0.737 / 0.721 | 0.790 | 0.881 | +0.092 |
 
 (The best evaluator is picked post hoc from §715's 24, which flatters it slightly.)
 
 **Reading.** At map roots, the only roots production searches (ADR-0061), the best head is 0.12-0.16 below the
 ceiling under every truth model, including the lowest one. Label noise does not explain the map-root plateau, so
-rule (c) does not stop value work there. Off the map the heads are 0.06-0.07 below the central ceiling and at or above
-the hidden-state variant, so they are close to the noise limit. Better labels would barely help there, and production
-does not search those roots. These are rollout3 labels, the search's own estimator (§715 caveat), so "ceiling" means
+rule (c) does not stop value work there. Off the map the gap depends on the truth model: 0.06-0.07 below the central
+ceiling, up to about 0.11 below the pooled one, and at or above the hidden-state variant. So the heads may be close to
+the noise limit there, but this is not settled; production does not search those roots. These are rollout3 labels, the search's own estimator (§715 caveat), so "ceiling" means
 agreement with that estimator, not with the true action value.
 
 ## Overall
@@ -86,7 +88,7 @@ agreement with that estimator, not with the true action value.
 |---|---|---|
 | (a) | subgroup visible, aggregate flat → targeted probes | holder gain −0.0038 (CI incl. 0), aggregate −0.0001; dilution makes the aggregate gate blind → **probes, not BCE, for state terms** |
 | (b) | R²(10^5) < 0.33 → no capture | 0.327 at 10^5 entries, 0.319 at 10^5 games → **no outcome-only capture** (borderline) |
-| (c) | best within 0.05 of ceiling → stop | map gap +0.14-0.16 → **do not stop on noise grounds**; non-map near the limit |
+| (c) | best within 0.05 of ceiling → stop | map gap +0.12-0.23 under every variant → **do not stop on noise grounds**; non-map gap −0.05 to +0.11, unsettled |
 
 Together: more outcome-only rows are not the lever (b, and §700), and the label-noise limit is not what blocks map-root
 ranking (c). Map-root headroom has to come from what the labels and heads represent: features, level and scale

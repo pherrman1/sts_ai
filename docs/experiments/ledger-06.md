@@ -25673,14 +25673,15 @@ noise ceiling → stop outcome-label value work.
   non-holders +0.0004 [−0.0013, +0.0022], all −0.0001 [−0.0019, +0.0017]; a 6-offset phase probe −0.0044 on holders.
   Holders are 12% of games, so the aggregate gate needs an entry-level effect of about ±11 pp on every holder.
 - (b) R² 0.216 / 0.244 / 0.266 / 0.284 at 588 / 1,141 / 2,234 / 4,387 training entries (gain per doubling 0.028 →
-  0.018). Power law R∞ 0.348: 0.327 at 10^5 entries [0.268, 0.409], 0.319 at ~4×10^4 entries (10^5 games);
+  0.018). Power law R∞ 0.348: 0.327 at 10^5 entries [0.268, 0.409], 0.319 at ~4×10^4 entries (10^5 games; the CI ignores refit noise and a 23× extrapolation, so it is too narrow);
   log-linear envelope 0.391.
 - (c) Ceiling with variance-matched true values (noise removed from the observed gaps): map 0.763-0.770 (lowest
-  variant 0.740), non-map 0.792-0.824, vs best head/blend map 0.615-0.622, non-map 0.733-0.752; the analytic
+  variant 0.740, pooled 0.846), non-map 0.792-0.824 (0.70-0.86 across truth models), vs best head/blend map 0.615-0.622, non-map 0.733-0.752; the analytic
   observed-gap ceiling is reproduced (0.880 vs 0.873) and is optimistic by ~0.09.
 **Decision:** (a) state terms are judged by causal probes (§723/§724/§731 design), subgroup BCE as a secondary report;
 (b) no 10^5-game outcome-only capture (borderline, rule applied as stated); (c) do not stop map-root value work on noise
-grounds: the gap is in features, level and scale, not label noise; off-map heads are near the limit. No default change.
+grounds: the gap is in features, level and scale, not label noise; whether off-map heads are near the limit depends on
+the truth model. No default change.
 Seeds: none.
 **Knowledge impact:** aggregate BCE is blind to state terms that touch ~10% of entries at today's data size; more
 outcome-only Act-4 rows buy ~+0.035 R² per 10^5 games; map-root sibling ranking is not label-noise limited.
