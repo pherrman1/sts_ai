@@ -1,0 +1,23 @@
+{
+ "entries": 60,
+ "fork_states": 234,
+ "ingame_minus_fresh_forks": [
+  0.030555555555555558,
+  [
+   -0.025,
+   0.07847222222222222
+  ]
+ ],
+ "verdict": "NO_REBUILD_LOSS",
+ "ingame_forks": 0.7435897435897436,
+ "fresh_forks": 0.7094017094017094,
+ "fresh_control": 0.6666666666666666,
+ "ingame_control": 0.75,
+ "fresh_forks_minus_fresh_control": [
+  0.04027777777777778,
+  [
+   -0.05,
+   0.12918402777777768
+  ]
+ ]
+}

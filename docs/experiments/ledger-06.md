@@ -25552,3 +25552,23 @@ Silver tree reuse). Not tested further here.
 Seeds: none new (used seeds 111384000-385023 and 111387000-255, plus seed + 1).
 **Knowledge impact:** §726's perturbation effects are no evidence against causal signs of V_A4 features; compare
 perturbed and control states with the same (fresh) Heart-play pipeline.
+
+## §TBD — Fresh Heart replay of run-1 forks: unperturbed in-game Heart states keep their win rate when rebuilt (74.4% in game vs 70.9% fresh, +3.1 pp [−2.5, +7.8]), verdict NO_REBUILD_LOSS; #923's fresh-control gap is mostly noise, and perturbed children stay ~4.5 pp below forks fresh and ~10 pp below in game (replays of used seeds, 2026-10-31/11-01)
+
+**Question:** Philipp (2026-10-31, "Spiel nochmal", fork replay chosen): does the `act4replay` rebuild itself lose
+Heart wins on unperturbed in-game states (#923's control: 75% in game, 66.7% fresh)?
+**Data:** [README](evidence/heart_fork_replay_20261031/README.md) (pre-registered analysis),
+[RESULT](evidence/heart_fork_replay_20261031/RESULT.md). The Heart-entry states of run 1's redrawn-future forks
+1-4 of the 60 #923 entries (234 that reached the Heart; base = #923 control, field for field), at #923's
+production search, 2 fights each on the same battle seeds. 16 workers, ~2 h, 234/234 verified.
+**Result:**
+- In game minus fresh, forks: +3.1 pp [−2.5, +7.8] → NO_REBUILD_LOSS (pre-registered: the CI includes 0 and lies
+  below +0.083).
+- Fresh forks minus fresh control: +4.0 [−5.0, +12.9]. Heart win, in game / fresh: forks 74.4 / 70.9, control
+  75.0 / 66.7, perturbed children 64.4 / 66.4.
+**Decision:** the rebuild is roughly unbiased, so #923's control gap is mostly noise. §726's −7.6/−10.6 pp splits
+into an unclear mix of a modest fresh effect (children −4.5 pp vs forks) and an in-game penalty. No further Heart
+replays planned; perturbed rows stay noisy labels for V_A4.
+Seeds: none new (used entry seeds and seed + 1, as in #923).
+**Knowledge impact:** `act4replay` Heart rebuilds are usable as a fresh-state benchmark at production search, with a
+bias of at most a few points.
