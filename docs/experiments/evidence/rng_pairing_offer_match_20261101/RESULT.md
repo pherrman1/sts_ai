@@ -50,7 +50,7 @@ Offline, no gameplay seeds, about 15 CPU-minutes on one cloud container. Code [a
   of keying is likely smaller than the observed gap. The upper end of the primary CI (0.162) is above 0.1, but even
   that value implies ≤ 1.07× effective seeds. Reviewer K's more generous ceiling (keying also stops matched pairs
   from desyncing later; lift differ and match-then-desync pairs to the 3-offer-aligned rho 0.525) gives ≈ 1.08×,
-  ≈ 1.15× at the CI ends, still below 1.2× ([review](/mnt/project-files/reviews/pr934-review.md)).
+  ≈ 1.15× at the CI ends, still below 1.2× (review of PR #934).
 - Consistent with §703 (keyed rollout streams alone: WEAK, 0.64× work) and §699 (combat death draws dominate
   sibling-difference noise): the run-level stream is not where whole-game pairing loses its correlation.
 
