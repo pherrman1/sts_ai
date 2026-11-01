@@ -25658,3 +25658,36 @@ model.
 Seeds: none.
 **Knowledge impact:** at 16,000 paired labels, flexible models learn no more than the average price per change type;
 Silver's leaf prices HP and potions at about 40-60% of their Heart-kill effect.
+
+## §734 — §709 re-cut by imagined-fight index × act (research rank 3): CTM death error does not grow over index 0-3 in any act (elite+boss slope +0.001 [−0.006, +0.007] per index); act-2/3 bosses near-calibrated (15.1% forecast vs 13.7% observed, 1.11× [0.80, 2.23]; index 0-1 1.35×, 2-3 0.98×), so the full-rollout diagnostic's ~3× rests on its 4 games; act-2/3 elites 1.4× pessimistic from index 0; within root-action CTM-vs-Silver rollout ρ 0.10 [0.04, 0.15] (offline, no seeds, 2026-11-01)
+
+**Question:** is the CTM's act-2/3 boss over-forecast (2026-10-31 full-rollout diagnostic: act 2 15.5% vs 5.3%, act 3
+17.7% vs 6.7%, 8 roots in 4 games) already present close to real play, does the error grow with the imagined-fight
+index, and how strongly do CTM and Silver rollouts correlate? (rank 3 of
+[search-and-value-literature.md](../knowledge-base/research/search-and-value-literature.md)).
+**Data:** [RESULT](evidence/ctm_depth_reslice_20261101/RESULT.md). §709's audit rows (same share archive, sha256
+`960900a8…`): 144 roots, 16 seeds, 18,547 Silver-arm and 18,499 CTM-arm fights, index 0-3 (`combat` field). Silver arm =
+CTM forecast vs production Silver outcome on rollout-policy states; CTM arm vs Silver arm entry states = drift from
+CTM-drawn history. New `tools/analyze_ctm_audit_depth.py`, seed bootstrap 2,000.
+**Result:**
+- Trend of (observed − forecast) deaths per index includes 0 in every act (act 2-3 bosses +0.006 [−0.030, +0.050];
+  act 1 bosses −0.029 [−0.058, −0.002], i.e. the CTM gets less pessimistic, not more).
+- Act-2/3 bosses: index 0-1 16.0% vs 11.9% (1.35× [0.87, 3.93], n 413), index 2-3 14.6% vs 14.8% (n 641). One seed
+  (111374104) carries 76 of 144 deaths; leave-one-seed-out pred/obs 1.03-1.34. By forecast bin the excess is at 20-50%
+  forecasts: 31.7% vs 13.9% (n 108, −0.18 [−0.27, −0.03]); other bins calibrated. 75 of 715 four-seed subsets reach
+  pred/obs ≥ 2.5.
+- Act-2/3 elites: 5.0% vs 3.6%, 1.40× [1.23, 1.84], same at index 0-1 (1.48×) and 2-3 (1.31×). Boss HP given a win
+  about 6 HP too optimistic at all indices.
+- Drift over ≤ 3 fights: CTM-arm entry potions within ±0.2 of the Silver arm (acts 2-3 all CIs include 0).
+- ρ of per-rollout leaf values between arms: raw 0.74 [0.64, 0.81] (shared root state), within root-action 0.10
+  [0.04, 0.15].
+**Interpretation:** the rank-3 falsifier "≥ 2× at index 0-1" is not met, but neither is any trend over index 0-3; near
+real play the CTM is calibrated for act-2/3 bosses apart from mid-risk states, and the diagnostic's ~3× does not
+appear within ≤ 3 imagined fights. **Inference:** the candidate causes are long-range drift (e.g. potion
+deficit building over a whole game) or chance in 4 games; this data cannot separate them (index ≤ 3). Sampled CTM
+rollouts give no variance reduction for Silver rollouts (1 − ρ² ≈ 0.99): PPI/MFMC only as debiasers.
+**Decision:** no model or default change (diagnostic). Depth ≥ 4 is tested by the paired full-game audit in progress
+(seeds 111388204-219); a CTM recalibration of mid-risk boss forecasts and act-2/3 elites is a candidate only if that
+audit confirms a level bias.
+Seeds: none (offline).
+**Knowledge impact:** this entry; rank 3 / Problem 2 in `search-and-value-literature.md`.
