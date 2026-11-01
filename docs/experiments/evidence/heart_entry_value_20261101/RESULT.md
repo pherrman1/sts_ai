@@ -1,7 +1,7 @@
 # All-feature Heart-entry value (stage B): result
 
 Pre-registration: [PREREG.md](PREREG.md) (review FAIL → Lizard Tail fix 3e1a4807 → delta PASS, before the real fit).
-Run: frozen `fit_value.py` on §731's `labels.csv` and `variants.tar` states, output
+Run: frozen `fit_value.py` (xgboost 3.0.5, scikit-learn 1.9.1) on §731's `labels.csv` and `variants.tar` states, output
 [results/value.json](results/value.json). 1,000 bases, 699 source seeds, 14,000 pairs, 436 features; offline, ~8 min.
 
 ## Primary
@@ -43,12 +43,14 @@ Incense phase.
   100 lbfgs iterations). Refit on float64 (`results/l_convergence_check.py`, exploratory) every fold converges and L's
   MSE drops from 0.13497 to 0.13480, which moves A − L to about +0.00004. The verdict stays NOT_SHOWN; the frozen
   number favoured A.
-- Exploratory ceiling: predicting each pair by its operator's mean effect (cross-fit) scores −0.0011 against no
+- The reviewer's rerun with xgboost 3.4.1 gives A − L +0.000004 [−0.00114, +0.00114] (L identical, A slightly
+  different): same verdict.
+- Exploratory ceiling (`results/op_mean_ceiling.py`): predicting each pair by its operator's mean effect (cross-fit) scores −0.0011 against no
   effect. With effects of a few pp against ±1 outcome noise, this statistic leaves little room between models.
 
 ## Reading
 - A predicts which states win the Heart far better than L (BCE −0.16), but not what a single change does. Its HP and
-  potion effects are 1.2-2x too large and it misses relic removal (−0.7 vs −5.0 pp) and the Incense phase.
+  potion effects are 1.2-2.3x too large and it misses relic removal (−0.7 vs −5.0 pp) and the Incense phase.
 - Training on all fights as independent outcomes mostly teaches between-state differences (strong decks also have
   more HP and potions), so HP and potions take credit for deck strength. The paired structure (same seed, one
   change) is not used by the fit.

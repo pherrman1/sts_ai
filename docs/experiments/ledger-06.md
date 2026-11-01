@@ -25625,7 +25625,7 @@ Seeds: none new (replays of used blocks 111384000-384999 and 111382000-382999).
 **Knowledge impact:** same-seed perturbations of Heart-entry states give clean causal labels; resource losses are
 priced clearly, gains of cards/relics/max HP are below about 2 pp at this size.
 
-## §TBD — All-feature Heart-entry value from §731's perturbation labels (stage B): predicts which states win (BCE −0.16 vs Silver's leaf) but not single-change effects: paired-difference error A − leaf −0.00013 [−0.00134, +0.00109], NOT_SHOWN; HP/potion effects 1.2-2x too large, relic removal and Incense phase missed (offline, no seeds, 2026-11-01)
+## §732 — All-feature Heart-entry value from §731's perturbation labels (stage B): predicts which states win (BCE −0.16 vs Silver's leaf) but not single-change effects: paired-difference error A − leaf −0.00013 [−0.00134, +0.00109], NOT_SHOWN; HP/potion effects 1.2-2.3x too large, relic removal and Incense phase missed (offline, no seeds, 2026-11-01)
 
 **Question:** Philipp (2026-10-31): a general value that sees cross-fight interactions. Does an all-feature
 Heart-entry GBM, trained on §731's 16,000 fights, predict the causal effect of single changes better than the
