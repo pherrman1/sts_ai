@@ -25553,7 +25553,7 @@ Seeds: none new (used seeds 111384000-385023 and 111387000-255, plus seed + 1).
 **Knowledge impact:** §726's perturbation effects are no evidence against causal signs of V_A4 features; compare
 perturbed and control states with the same (fresh) Heart-play pipeline.
 
-## §TBD — Fresh Heart replay of run-1 forks: unperturbed in-game Heart states keep their win rate when rebuilt (74.4% in game vs 70.9% fresh, +3.1 pp [−2.5, +7.8]), verdict NO_REBUILD_LOSS; #923's fresh-control gap is mostly noise; perturbed children vs forks −4.3 pp fresh and −9.3 pp in game, both CIs include 0 (replays of used seeds, 2026-10-31/11-01)
+## §730 — Fresh Heart replay of run-1 forks: unperturbed in-game Heart states keep their win rate when rebuilt (74.4% in game vs 70.9% fresh, +3.1 pp [−2.5, +7.8]), verdict NO_REBUILD_LOSS; #923's fresh-control gap is mostly noise; perturbed children vs forks −4.3 pp fresh and −9.3 pp in game, both CIs include 0 (replays of used seeds, 2026-10-31/11-01)
 
 **Question:** Philipp (2026-10-31, "Spiel nochmal", fork replay chosen): does the `act4replay` rebuild itself lose
 Heart wins on unperturbed in-game states (#923's control: 75% in game, 66.7% fresh)?
