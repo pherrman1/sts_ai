@@ -25509,3 +25509,99 @@ cheap Heart-fight engine check.
 Seeds: none new (replays of used seeds 111384000-385023 and 111387000-255).
 **Knowledge impact:** pilot-size perturbation rows do not move V_A4; perturbation effects need a combat-consistency
 check before they are used as causal effect estimates.
+
+## §727 — Value chooser A/B: §725's act values V_A1/V_A2 choosing card rewards, card select and boss relics in acts 1-2 lose −15.0 pp Heart kills [−17.3, −12.7] to student_sel (FAIL); act-2 deaths +19 pp, V overrides the prior in 47% of choices on ~0.01-0.02 value gaps (1,536 paired seeds, A20, 2026-10-31)
+
+**Question:** Philipp (2026-10-31 10:47Z "Joa mach go, aber nimm auch Karten Belohnungen mit", 10:48Z "so viele seeds
+auf 32 workern"): after §725 and an exploratory check (V beats the policy prior's concordance with rollout labels at
+non-map decisions by +0.11 in act 1, +0.05 in act 2, on capture-2 TEST, second look), does letting V decide those
+decisions raise the Heart kill rate?
+**Data:** [README](evidence/value_chooser_ab_20261031/README.md) (pre-registration), prelaunch review PASS (reviewer J,
+clean v3 build, flag-unset = main 426/426 rows), [RESULT](evidence/value_chooser_ab_20261031/RESULT.md). New research
+flag `STS_OOC_VALUE_CHOOSER` (default off; external Python scorer; top 3 candidates by prior, one successor record
+each; REWARDS card picks only). Arm A today's A20 default (capture-2 environment), arm B + the chooser with V_A1/V_A2.
+Seeds 111312000-111313535 (new), smokes 111387991-992. 32 workers (Philipp), 1,536/1,536 units verified.
+**Result:**
+- Heart kill A 25.1% / B 10.1%, B − A **−15.0 pp [−17.3, −12.7]**; Act 4 reached −24.0 pp; death in act 1 +8.7 pp,
+  act 2 +19.4 pp.
+- B overrides the prior's top in 47% of 29,330 choices; it skips card rewards twice as often (17.3% vs 8.4%); mean
+  value gap when overriding +0.022 (median +0.011).
+**Decision:** FAIL (pre-registered). No default change; the flag stays research only.
+Seeds: 111312000-111313535 USED (new), smokes 111387991-992 USED.
+**Knowledge impact:** an act value with better offline ranking on rollout labels is not a better decider than
+student_sel: tiny value gaps override a confident policy and lose a lot (second time after §712). Offline
+concordance on self-generated rollout labels is not evidence for play.
+
+## §728 — Fresh Heart replay at production search: §726's perturbation sign anomaly does not reproduce; perturbed children win the Heart as often as controls when their Heart-entry states are rebuilt (−0.3 pp [−6.4, +5.6] vs −10.6 in game); the in-game gap sits in the controls (in game +8.3 pp [−0.9, +18.3] above their fresh replay), verdict IN_GAME_ARTIFACT (replays of used seeds, 2026-10-31)
+
+**Question:** Philipp (2026-10-31): is §726's sign anomaly (perturbed children kill the Heart less often) a real
+effect or an in-game artifact? "Mach 16 worker".
+**Data:** [README](evidence/heart_fresh_replay_20261031/README.md) (pre-registered analysis),
+[RESULT](evidence/heart_fresh_replay_20261031/RESULT.md). 240 Heart-entry states from the #919 pilot (60 entries,
+control + 3 random children each), rebuilt with `act4replay` (HP, max HP, deck, relics + counters, potions, bottles;
+no gold or card misc). 2 fights each at production Act-4 Heart search (ADR-0060: flat 40k, exact root budgets,
+reuse cap 262144, g7f_E), battle seed = entry seed (+1). 16 workers, ~1 h, 240/240 verified.
+**Result:**
+- Fresh children − control: −0.3 pp [−6.4, +5.6] (seed-clustered, 60 entries) vs in game −10.6 [−19.4, −1.7] on the
+  same states → IN_GAME_ARTIFACT (pre-registered). Learned-stop local replay: −3.3 [−8.3, +1.7].
+- Fresh controls 66.7% vs in game 75.0% (+8.3 [−0.9, +18.3]); fresh children 66.4% vs in game 64.4%
+  (−1.9 [−7.8, +3.9]); difference-in-differences −10.3 [−20.0, −0.6].
+**Decision:** The perturbed children are not weaker at the Heart. The pilot's gap came from the in-game control's
+Heart conversion: noise, dropped state (gold, misc) or something only the unperturbed path has (e.g. exact-match
+Silver tree reuse). Not tested further here.
+Seeds: none new (used seeds 111384000-385023 and 111387000-255, plus seed + 1).
+**Knowledge impact:** §726's perturbation effects are no evidence against causal signs of V_A4 features; compare
+perturbed and control states with the same (fresh) Heart-play pipeline.
+
+## §730 — Fresh Heart replay of run-1 forks: unperturbed in-game Heart states keep their win rate when rebuilt (74.4% in game vs 70.9% fresh, +3.1 pp [−2.5, +7.8]), verdict NO_REBUILD_LOSS; #923's fresh-control gap is mostly noise; perturbed children vs forks −4.3 pp fresh and −9.3 pp in game, both CIs include 0 (replays of used seeds, 2026-10-31/11-01)
+
+**Question:** Philipp (2026-10-31, "Spiel nochmal", fork replay chosen): does the `act4replay` rebuild itself lose
+Heart wins on unperturbed in-game states (#923's control: 75% in game, 66.7% fresh)?
+**Data:** [README](evidence/heart_fork_replay_20261031/README.md) (pre-registered analysis),
+[RESULT](evidence/heart_fork_replay_20261031/RESULT.md). The Heart-entry states of run 1's redrawn-future forks
+1-4 of the 60 #923 entries (234 that reached the Heart; base = #923 control, field for field), at #923's
+production search, 2 fights each on the same battle seeds. 16 workers, ~2 h, 234/234 verified.
+**Result:**
+- In game minus fresh, forks: +3.1 pp [−2.5, +7.8] → NO_REBUILD_LOSS (pre-registered: the CI includes 0 and lies
+  below +0.083).
+- Fresh forks minus fresh control: +4.0 [−5.0, +12.9]. Heart win, in game / fresh: forks 74.4 / 70.9, control
+  75.0 / 66.7, perturbed children 64.4 / 66.4.
+- Children minus forks, per entry: fresh −4.3 [−12.5, +4.2], in game −9.3 [−18.2, +0.3], difference-in-differences
+  −5.0 [−13.3, +3.8]; all include 0.
+**Decision:** the rebuild is roughly unbiased, so #923's control gap is mostly noise. §726's −7.6/−10.6 pp splits
+into a possible modest fresh effect (about −4 pp) and a possible in-game penalty (about −5 pp), neither shown. No further Heart
+replays planned; perturbed rows stay noisy labels for V_A4.
+Seeds: none new (used entry seeds and seed + 1, as in #923).
+**Knowledge impact:** `act4replay` Heart rebuilds are usable as a fresh-state benchmark at production search, with a
+bias of +3 pp (CI up to about +8).
+## §729 — A20 loss mining on 2,816 production games: bosses kill 49% of runs, 80% of deaths start depleted; Ruby, campfires, double-boss pricing and boss-aware picks each ≤ 0.5 pp; potion effect observational only (offer instrument invalid); four gaps ranked (Awakened One, Heart entry, act-2 bosses, low-HP attrition), plausible ~2-4 pp in total; offline, no seeds (2026-10-31)
+
+**Question:** Philipp, 2026-10-31 22:34Z ("Ja starte das mal", loss analysis, roadmap X5): where and why do today's
+A20 runs die, which deaths could a different decision plausibly have avoided, and what would each fix be worth?
+**Data:** [README](evidence/loss_mining_20261031/README.md), page
+[research/a20-loss-mining.md](../knowledge-base/research/a20-loss-mining.md). §727 arm A (1,536 games, 25.1%) and the
+§720 run-1 base games (1,280, 26.3%): CTM rows per fight plus game records; `run_all.sh` reproduces every table on
+each set and pooled. Observational; levers are upper bounds.
+**Result:**
+- Deaths (share of runs): act-3 bosses 14.5%, Heart 14.3%, act-2 boss 11.9%, act-1 boss 8.3%, elites 15.4%, act-2
+  hallways 4.3%; same in both sets within ~1 pp. Per fight: Heart 35.8%, Awakened One 23.1%, Collector 21.7%, other
+  bosses 6-14%. 80% of deaths start below 80% HP or without a potion; 14.6% of runs die healthy.
+- Exchange rates from per-act boss-death logits: −0.34/−0.39/−0.36/−0.71 pp per entry HP (act 1/2/3/Heart; Heart
+  matches V_H's 0.75); a potion = 18/21/12/15 HP (observational upper bounds). A potion-offer instrument is
+  invalid (offers are recorded only when the belt has room, so they track past drinking and deck strength; review);
+  belt-full potion waste is not measurable from these records (~21% of won hallway/elite fights end with a full belt).
+- Small: pre-boss Ruby Recall below 60% HP in 5.0% of runs, ≤ +0.50 pp (confirms §687); campfire use before low-HP
+  deaths unremarkable; second act-3 boss at 77% HP and half the potions, but its leaf already omits the act heal and
+  prices potions near the measured rate; card picks ignore the visible boss (power picks 51% at all three act-3
+  bosses) yet deck features explain little (powers OR 1.08 per power at Awakened One only).
+- Gaps: (1) Awakened One, 8.2% of runs, ceiling +2.5 pp to Time Eater's rate; (2) Heart entry, Heart losers lost 31
+  HP at S&S vs 10; the Incense term's +5.9 pp is per Incense S&S state (11.1% of S&S arrivals), ≈ +0.27 pp of all
+  runs, measured at research Heart search; (3) act-2 bosses at
+  healthy entry, 4.3% of runs; (4) acts 1-2 hallway/elite deaths below 50% HP, 9.4% of runs.
+**Decision:** no code or default change. Proposed gates (not run): Awakened One `fightreplay` production vs flat 40k
+on the 1,001 recorded entries (≈ 130 core-h); Heart-entry counter pricing at S&S from #922 labels on 1,168 S&S entries
+(≈ 140 core-h); offline boss × deck interaction CV for act-2 bosses; offline low-HP map-root divergence check.
+**Interpretation:** Inference: decision-level gaps left in recorded games are each ≤ ~1 pp plausible; most death
+mass is combat HP loss at bosses (§701, §711), so the large levers are combat-side (roadmap phases 3-5).
+Seeds: none (existing games only).
+**Knowledge impact:** new page `research/a20-loss-mining.md`, linked from the research README.

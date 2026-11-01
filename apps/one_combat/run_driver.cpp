@@ -512,6 +512,7 @@ const char *realOocChainStepBody(GameContext &gc, search::ScumSearchAgent2 &agen
         if (t_realOocDecisionObserver) one_combat::armOocPolicyTarget();
         if (one_combat::oocCardRulePolicyStep(gc, path, seed, index, mctsMetrics)) return "card_rule";
     }
+    if (one_combat::valueChooserStep(gc, path, seed, index)) return "value_chooser";   // research, default off
     if (one_combat::liveOocMctsScreenExcluded(gc) && one_combat::heart1::policyStep(gc)) return "heart1_screen";
     if (t_realOocDecisionObserver) one_combat::armOocPolicyTarget();
     if (one_combat::oocMctsPolicyStep(gc, path, seed, index, mctsMetrics)) return "mcts";
