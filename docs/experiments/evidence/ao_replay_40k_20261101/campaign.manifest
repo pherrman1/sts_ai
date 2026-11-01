@@ -1,7 +1,7 @@
 name          ao-replay-40k
-code_commit   TBD
+code_commit   53d591b622fd76da251ce563251481264f6467fd
 binary_sha256 TBD
-workers       TBD
+workers       16
 share         /mnt/project-files/ao-replay-40k
 configure_preset linux-gcc-release-x86-64-v3
 parallel      4
