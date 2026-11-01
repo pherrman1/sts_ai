@@ -1,8 +1,9 @@
 # §709 re-cut by imagined-fight index × act (research rank 3, 2026-11-01)
 
-**Verdict: no depth trend within §709's range, and no act-2/3 boss over-forecast near real play.** The "3×" act-2/3
+**Verdict: no detectable depth trend within §709's range, and no ≥ 2× act-2/3 boss over-forecast near real play.** The "3×" act-2/3
 boss over-forecast of the 2026-10-31 full-rollout diagnostic does not appear in §709 at any imagined-fight index
-0-3. The CTM forecast error does not grow over index 0-3 in any act. The one stable bias is mild elite pessimism in
+0-3. No growth of the CTM forecast error over index 0-3 is detectable in any act (the act-2/3 boss slope CI
+still allows −0.03 per index, about 1.6× by index 3). The one stable bias is mild elite pessimism in
 acts 2-3 (about 1.4×), already present at index 0-1. The per-rollout CTM-vs-Silver correlation within a root action is
 ρ ≈ 0.10, so sampled CTM rollouts are useless as a control variate for Silver rollouts.
 
@@ -78,7 +79,7 @@ No new compute, no seeds: offline re-analysis of the §709 rows.
   act-2/3 bosses are near-calibrated at index 2-3. So the long-rollout over-forecast claim rests on the 8-root, 4-game
   diagnostic alone.
 - Inference: the diagnostic's act-2/3 boss numbers (forecast 15.5% / 17.7%, observed 5.3% / 6.7%) are outside what
-  §709 shows near real play (act 2 8.9 / 6.1%, act 3 22.6 / 22.8%). In §709, 75 of 715 four-seed subsets reach
+  §709 shows near real play (act 2 8.9 / 6.1%, act 3 22.6 / 22.8%). In §709, 75 of the 715 four-seed subsets of the 13 seeds with act-2/3 boss fights reach
   pred/obs ≥ 2.5 for act-2/3 bosses (135 reach ≥ 2; subsets with 0 deaths counted as exceeding), so a 4-game sample can show a 2.5-3× excess by chance at
   roughly 10-20% odds. Together with the 20-50% bin result, the most specific lead is a CTM over-forecast on
   mid-risk boss states, not an error that grows with depth.
