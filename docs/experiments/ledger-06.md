@@ -25854,7 +25854,7 @@ Seeds: none (existing games only).
 **Knowledge impact:** `research/a20-loss-mining.md` (new X5 section), roadmap X4/X5 rows
 (`research/one-year-roadmap.md`).
 
-## §TBD — Map-simulations SPRT (#927 rank 6 follow-up): 1,024 map simulations are NOT_WORSE than 4,096 (H1 crossing at 1,024 pairs, LLR 3.36); Heart kills +0.65 pp [−0.98, +2.34] over 1,536 pairs, −75% map simulations, −42% wall per diverging game (indicative); secondaries lean earlier deaths (final floor −0.64 [−1.10, −0.17], act-1 deaths +1.2 pp) → default candidate for Philipp (cloud replay of §727 seeds, 2026-11-01)
+## §741 — Map-simulations SPRT (#927 rank 6 follow-up): 1,024 map simulations are NOT_WORSE than 4,096 (H1 crossing at 1,024 pairs, LLR 3.36); Heart kills +0.65 pp [−0.98, +2.34] over 1,536 pairs, −75% map simulations, −42% wall per diverging game (indicative); secondaries lean earlier deaths (final floor −0.64 [−1.10, −0.17], act-1 deaths +1.2 pp) → default candidate for Philipp (cloud replay of §727 seeds, 2026-11-01)
 
 **Question (Philipp, 2026-11-01, after §737):** is a 1,024-simulation map search worse than today's 4,096 by more
 than 1.5 pp in A20 Heart kills? Authorization: Philipp 08:26Z "Go mit 24 workern".
