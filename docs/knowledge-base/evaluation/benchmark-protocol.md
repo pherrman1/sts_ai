@@ -143,6 +143,18 @@ link to it.
 
 ## Gate protocol
 
+### Paired campaigns: sequential stopping and control reuse (ADR-TBD)
+
+New paired A/B campaigns stop sequentially with `tools/sprt_gate.py` (generalised SPRT, α = β = 0.05; gainer
+0 vs +2 pp, non-regression −1.5 vs 0 pp), looking after every 64 contiguous completed pairs in pre-registered seed
+order, with the pre-registered fixed size as the hard cap; a cap falls back to the fixed-sample CI. Replayed on seven
+recorded campaigns it changed no verdict and saved 39% of the pairs
+([evidence](../../experiments/evidence/sequential_gates_20261101/RESULT.md)). A campaign may reuse a recorded control
+arm after a 32-seed identity sentinel passes ([ADR-TBD](../../../decisions/TBD-sequential-gates-and-control-reuse.md)).
+`python3 tools/sprt_gate.py --self-test` checks the tool.
+
+### Self-play gate (retired loop)
+
 `selfplay/loop.sh::gate_stats` computes a normal-theory paired mean interval
 `mean ± GATE_Z*SE` at adaptive looks. Promotion is allowed only on the final
 hard-cap look; earlier "promote" signals are advisory and downgraded to
@@ -208,7 +220,8 @@ These parameters do not change the win-CI decision rule or simulation budgets.
 
 - What thread/scheduling configuration is required for bit-reproducible fair
   whole-run evaluation?
-- Should alpha-spending style boundaries replace hard-cap-only gate promotion?
+- Should alpha-spending style boundaries replace hard-cap-only gate promotion? (Answered for paired campaigns by
+  ADR-TBD: SPRT with a hard cap; the retired self-play loop keeps its rule.)
 - Should `bestbench` embed revision, flags, and artifact hashes in a sidecar?
 
 ## Relevant code
