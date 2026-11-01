@@ -38,6 +38,7 @@ FA_COUNT = 178            # heart1_policy.h kFaCount
 FA_PPO_FIRST = 166        # kFaDiscardPotion
 ROOM_ELITE, ROOM_REST = None, None   # set from the engine enum below
 FOUGHT_ROWS = 80
+MAX_FOUGHT = 32   # native kMaxFoughtEncounters (#946): only the first 32 fought encounters are embedded
 RUN_COUNTERS = 2
 
 # include/constants/Rooms.h Room enum order (heart1_policy.cpp reads static_cast<int>(Room::ELITE / REST)).
@@ -246,7 +247,7 @@ def featurize(rec, trim_map=False):
     e("x_act", int(_clamp(rec.get("obs.act", 0) or 0, 0, 4)))
     run = rec.get("obs.v2.run_counters") or []
     f("x2_run", [_clamp(run[k] if k < len(run) else -1, -1, LIMIT) for k in range(RUN_COUNTERS)])
-    for enc in rec.get("obs.v2.fought") or []:
+    for enc in (rec.get("obs.v2.fought") or [])[:MAX_FOUGHT]:
         e("x2_fought", enc)
     t[0] += 1
     minE, maxE, dR, reach, dest, cone, burn = map_dag_features(rec)
