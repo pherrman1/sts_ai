@@ -25720,3 +25720,30 @@ required guard for any future value-led decider; no shrunk-chooser A/B for V_A1/
 need a chooser that overrides only above the margin (a new A/B, Philipp's call).
 Seeds: none.
 **Knowledge impact:** `research/search-and-value-literature.md` idea 8 marked checked (inconclusive).
+
+## §736 — Value-gate checks (#927 rank 5): the aggregate BCE gate cannot see an Incense-size term (holder gain −0.0038 [−0.0107, +0.0030] vs aggregate −0.0001); V_A4's learning curve predicts R² 0.327 at 10^5 entries (0.319 at 10^5 games) → no outcome-only capture; at map roots the best value head is 0.14-0.16 below the simulated sibling-label noise ceiling (0.76-0.77) → label noise is not what limits it (offline, no seeds, 2026-11-01)
+
+**Question:** Philipp, 2026-11-01 07:25Z: run #927's rank-5 checks. Rules stated in the literature review before
+the numbers: (a) subgroup gain visible but aggregate flat → targeted probes instead of the BCE gate; (b) extrapolated
+R² < 0.33 at 10^5 entries → no outcome-only capture (~23k core-h); (c) best head within ~0.05 of a simulated
+noise ceiling → stop outcome-label value work.
+**Data:** [README](evidence/value_gate_checks_20261101/README.md), [RESULT](evidence/value_gate_checks_20261101/RESULT.md).
+(a)/(b): #915's V_A4 data and protocol (dev seeds only, 5-fold CV × 3; ENS_all/ENS_rc reproduce §722 exactly).
+(c): §644's common-seed VALIDATION (80 sources, 5,587 roots, 1,364 map), §715's head concordances.
+**Result:**
+- (a) ENS_rc − ENS_all (relic-counter phases): Incense holders (271 entries, 459 games) −0.0038 [−0.0107, +0.0030],
+  non-holders +0.0004 [−0.0013, +0.0022], all −0.0001 [−0.0019, +0.0017]; a 6-offset phase probe −0.0044 on holders.
+  Holders are 12% of games, so the aggregate gate needs an entry-level effect of about ±11 pp on every holder.
+- (b) R² 0.216 / 0.244 / 0.266 / 0.284 at 588 / 1,141 / 2,234 / 4,387 training entries (gain per doubling 0.028 →
+  0.018). Power law R∞ 0.348: 0.327 at 10^5 entries [0.268, 0.409], 0.319 at ~4×10^4 entries (10^5 games; the CI ignores refit noise and a 23× extrapolation, so it is too narrow);
+  log-linear envelope 0.391.
+- (c) Ceiling with variance-matched true values (noise removed from the observed gaps): map 0.763-0.770 (lowest
+  variant 0.740, pooled 0.846), non-map 0.792-0.824 (0.70-0.86 across truth models), vs best head/blend map 0.615-0.622, non-map 0.733-0.752; the analytic
+  observed-gap ceiling is reproduced (0.880 vs 0.873) and is optimistic by ~0.09.
+**Decision:** (a) state terms are judged by causal probes (§723/§724/§731 design), subgroup BCE as a secondary report;
+(b) no 10^5-game outcome-only capture (borderline, rule applied as stated); (c) do not stop map-root value work on noise
+grounds: the gap is in features, level and scale, not label noise; whether off-map heads are near the limit depends on
+the truth model. No default change.
+Seeds: none.
+**Knowledge impact:** aggregate BCE is blind to state terms that touch ~10% of entries at today's data size; more
+outcome-only Act-4 rows buy ~+0.035 R² per 10^5 games; map-root sibling ranking is not label-noise limited.
