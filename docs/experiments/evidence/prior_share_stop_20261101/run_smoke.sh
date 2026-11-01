@@ -29,8 +29,7 @@ COMMON=("PATH=/usr/local/bin:/usr/bin:/bin" "HOME=$HOME" "STS_EXECUTABLE_GIT_SHA
   STS_HEART_OUTCOME_CTM_ROWS=1 "STS_OOC_HEART1=$RUN/student_sel.bin")
 cd "$REPO" || exit 2
 E=("${COMMON[@]}" "$@")
-printf '%s
-' "${E[@]}" | grep '^STS_' > "$OUT/$TAG.env"
+printf '%s\n' "${E[@]}" | grep '^STS_' > "$OUT/$TAG.env"
 t0=$(date +%s)
 env -i "${E[@]}" timeout 3h bash tools/seed_guard.sh "$BIN" heartoutcomegen 1 "$SEED" "$OUT/$TAG.jsonl" policy > "$OUT/$TAG.log" 2> "$OUT/$TAG.err"
 echo "$TAG rc=$? wall=$(( $(date +%s)-t0 ))" >> "$OUT/games.txt"
