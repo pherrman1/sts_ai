@@ -2,7 +2,7 @@
 """Map-simulations SPRT analysis (README.md, pre-registered before any campaign tar was read).
 
 usage: analyze.py CAMPAIGN_SHARE A_UNITS_DIR OUT_JSON
-  CAMPAIGN_SHARE  /mnt/project-files/map-sims-sprt   (wNN.tar from tools/cloud/worker.sh)
+  CAMPAIGN_SHARE  /mnt/project-files/map-sims-sprt   (units/<id>.wNN.tar or wNN.tar from tools/cloud/worker.sh)
   A_UNITS_DIR     /mnt/project-files/value-chooser-ab/units  (§727 unit tars; arm A records are reused)
 """
 import gzip, hashlib, io, json, os, random, sys, tarfile
@@ -63,9 +63,12 @@ assert sorted(A) == sorted(DIV) and len(A) == 1536
 
 # arm B (this campaign)
 B, problems = {}, []
-for n in sorted(os.listdir(SHARE)):
-    if not (n.startswith('w') and n.endswith('.tar')): continue
-    with tarfile.open(os.path.join(SHARE, n)) as tf:
+# queue schedule (manifest `schedule queue`): one tar per unit in SHARE/units/<id>.wNN.tar; static schedule: SHARE/wNN.tar
+TARS = [os.path.join(SHARE, n) for n in sorted(os.listdir(SHARE)) if n.startswith('w') and n.endswith('.tar')]
+if os.path.isdir(os.path.join(SHARE, 'units')):
+    TARS += [os.path.join(SHARE, 'units', n) for n in sorted(os.listdir(os.path.join(SHARE, 'units'))) if n.endswith('.tar')]
+for t in TARS:
+    with tarfile.open(t) as tf:
         for m in tf.getmembers():
             p = m.name.split('/')
             if len(p) == 4 and p[3].startswith('B-') and p[3].endswith('.jsonl.gz') and '.ctm.' not in p[3]:

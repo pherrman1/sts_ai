@@ -25853,3 +25853,26 @@ for ±1 pp is confirmed.
 Seeds: none (existing games only).
 **Knowledge impact:** `research/a20-loss-mining.md` (new X5 section), roadmap X4/X5 rows
 (`research/one-year-roadmap.md`).
+
+## §TBD — Map-simulations SPRT (#927 rank 6 follow-up): 1,024 map simulations are NOT_WORSE than 4,096 (H1 crossing at 1,024 pairs, LLR 3.36); Heart kills +0.65 pp [−0.98, +2.34] over 1,536 pairs, −75% map simulations, −42% wall per diverging game; secondaries lean earlier deaths (final floor −0.64 [−1.10, −0.17], act-1 deaths +1.2 pp) → default candidate for Philipp (cloud replay of §727 seeds, 2026-11-01)
+
+**Question (Philipp, 2026-11-01, after §737):** is a 1,024-simulation map search worse than today's 4,096 by more
+than 1.5 pp in A20 Heart kills? Authorization: Philipp 08:26Z "Go mit 24 workern".
+**Design:** [README](evidence/map_sims_sprt_20261101/README.md) (pre-registered, prelaunch review PASS),
+[RESULT](evidence/map_sims_sprt_20261101/RESULT.md), `result.json`. Control reuse: arm A = §727 arm A (production,
+1,536 games); a checkpoint-k tree equals a k-simulation search, so B (`STS_OOC_MCTS_FULL_ROOT_SIMS=1024`, code
+`1cd21a15`, RUN_COMMIT `b01a0e81`) was played only on the 652 seeds where A's 1,024 checkpoint differs from its pick,
+plus 64 sentinels; all others count d = 0. 24 cloud workers, 716 units, ≈ 140 core-h.
+**Result:** reuse VALID (64/64 sentinels identical, 652/652 diverging units identical up to and picking the predicted
+key, verify_campaign 716 OK). Nonregression GSPRT (d0 −1.5 pp, d1 0, α = β = 0.05, looks of 64) crossed H1 at 1,024
+pairs, so the verdict is **NOT_WORSE**. Heart kills 25.07% → 25.72%, +0.65 pp [−0.98, +2.34] over all 1,536 pairs
+(stopping-time mean +1.66 pp, biased by optional stopping). Secondaries (descriptive, uncorrected): Act 4 −0.72 pp,
+Heart reached −0.98 pp (both n.s.), final floor −0.64 [−1.10, −0.17], act-1 deaths +1.17 [+0.20, +2.15] pp. Map
+simulations per diverging game drop from 69,959 to 17,125, and wall from 956 s to 558 s (indicative).
+Deviation (disclosed): the pre-registered loader read only static-schedule `wNN.tar`. The queue schedule writes
+`units/<id>.wNN.tar`, so the first run read no B unit and returned INVALID; only the loader was fixed.
+**Decision:** per the pre-registration, 1,024 map simulations become a default candidate. Philipp decides, in its own
+PR + ADR, which must note that the learned OOC stop (> 2,048 sims) and the gap stop were tuned at 4,096. Stage 2 (§683
+replay) is not run, since it was pre-registered for a CAP only.
+Seeds: none new (USED §727 block 111312000-111313535 replayed).
+**Knowledge impact:** none beyond this entry; no code or default change.
