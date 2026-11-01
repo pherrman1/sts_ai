@@ -29,7 +29,9 @@ Two questions from Philipp (2026-11-01):
   - candidate-token action scoring;
   - critic warm-up with the policy frozen;
   - a KL anchor that decays.
-  It does not support forked common-random-number advantages as planned, and §738 already measured why.
+  KataGo's ablation also supports auxiliary heads on a shared trunk (a learning-efficiency gain in Go; the transfer
+  is Inference). Forked common-random-number advantages stay low priority: §738 measured why, and the paired-rollout
+  preprint is mixed evidence.
 - **(B)** No source supports a learned run value as Silver's leaf. The usable template is KataGo's bounded,
   recentred score utility on top of a dominant term. Together with §724 (Incense Burner, +5.9 pp) and §721 (V-derived
   prices ≈ formula), this points to a few targeted, bounded run-aware terms rather than a generic V leaf.
@@ -42,7 +44,7 @@ Two questions from Philipp (2026-11-01):
    - DouZero (ICML 2021, arXiv 2106.06135): "we do not observe a clear benefit of using TD learning … in the sparse
      reward setting".
    - This matches §685, §715 and §727 here.
-   - Plan consequence: GAE λ 0.97 or 1.0, with the critic used only as a variance-reducing baseline. Nothing in the
+   - Plan consequence (Inference): GAE λ 0.97 or 1.0, with the critic used only as a variance-reducing baseline. Nothing in the
      loop should rely on the critic to rank card choices.
    - Counterweight (not verified here): PerfectDou reportedly beat DouZero with PPO + GAE and a perfect-information
      critic.
@@ -55,7 +57,7 @@ Two questions from Philipp (2026-11-01):
    - A behaviour-cloning anchor removes the early drop but may cap the ceiling. Wolczyk et al. (ICML 2024, not
      verified here) found a KL/BC anchor helped on NetHack, so the effect is setting-dependent.
    - The setting is off-policy SAC on continuous control.
-   - Plan consequence: keep the S1 value warm-up; make the KL arm decaying rather than fixed; expect an
+   - Plan consequence (Inference): keep the S1 value warm-up; make the KL arm decaying rather than fixed; expect an
      early-iteration dip.
 4. **Agreement with the teacher is not a progress metric** (Verified 2-1). In DouZero, agreement with human moves
    rose and then fell while strength kept rising. DouZero trained from scratch, so this is weak evidence about
@@ -63,24 +65,29 @@ Two questions from Philipp (2026-11-01):
 5. **Forked advantages depend on shared randomness** (Verified 3-0 for VinePPO's mechanism).
    - VinePPO needs cheap resets and uses K = 9 rollouts per state. It was up to 3.0× faster in wall-clock (1.5× at
      7B), but each iteration was 2-5× slower.
-   - A 2026 preprint (arXiv 2609.24144; claims 2-1 to 3-0, preprint, 3 seeds) shows pairing can lower reward-contrast
-     variance by ~9% while raising gradient variance ~2.2×. So lower contrast variance does not guarantee a better
-     gradient.
-   - Our numbers (Inference): at rho 0.49, resolving a 2 pp sibling difference needs about 480 paired forks. K = 9
+   - A 2026 preprint (arXiv 2609.24144, "Luck Is Not Skill"; preprint, LLM agents, group-relative RL, 3 seeds) is
+     **mixed evidence**. Its constructed one-step bandit counterexample (§4.3, App. A.1) has pairing lower the
+     reward-contrast variance by ~9% while raising gradient variance ~2.2×, which shows a gain is not guaranteed. Its
+     real gradient probe, however, found pairing **lowered** gradient-covariance traces at every checkpoint, by 21-30%
+     (grader flips) and 40-63% (tool faults). Transfer to our whole-game forks is Inference.
+   - Our numbers (Inference): at rho 0.49, about 480 paired forks give a standard error of ≈ 2 pp on a sibling
+     difference (1σ); resolving a 2 pp difference at 95% needs ≈ 1,900. K = 9
      forks are noise per decision and can only help as an aggregate gradient term.
    - **Correction to the research synthesis:** it proposed a training-only per-floor RNG reseed as "the real
      enabler". §738 measured the ceiling of exactly that keying: overall rho 0.488 → ≈ 0.506, ≈ 1.04× effective
      seeds, with a map-root gap of −0.004. Event-keyed streams do help inside OOC rollouts (§703: 0.18-0.21× sibling
      variance with survival weighting), but that is a rollout estimator, not whole-game forks.
-   - Plan consequence: V4 (forked CRN advantages) is low priority unless an offline gradient-variance probe on stored
-     states shows a gain.
+   - Plan consequence (Inference): V4 (forked CRN advantages) is low priority unless an offline gradient-variance
+     probe on stored states shows a gain. This rests on §738 and our rho; the preprint supports neither side strongly.
 6. **Unsupported plan items.**
    - Per-game coordinated exploration (V8): no surviving evidence either way. Our only measurement is the 5 pp cost
      of per-decision noise in self-play (§640), and that came from a different design.
    - Asymmetric critic (V6): PerfectDou is the only hint, unverified; the bias question is open, and the critic
      touches ADR-0002.
-   - Auxiliary heads: the KataGo auxiliary-target claim was **refuted 1-2** in this round (it was Extracted, not
-     verified, in the earlier review). The shared-trunk plan should not cite it as evidence of a gain.
+   - Auxiliary heads: **Verified** in KataGo (arXiv 1902.10565): §4.1 "these auxiliary targets noticeably improve the
+     efficiency of learning", and the §5.2 ablation shows a noticeable drop in learning efficiency without the
+     ownership and score targets. That is Go; whether CTM/value heads on our shared trunk give a similar gain is
+     Inference. (Corrected after review K, 2026-11-02: the earlier "refuted 1-2" vote was wrong.)
 
 ### Ranked experiments for (A)
 
@@ -132,7 +139,6 @@ Two questions from Philipp (2026-11-01):
 - "MC variance under luck is best handled by sample volume" (actor-scaling claim, 1-2).
 - "An online critic beats an offline-pretrained critic as initialisation" (1-2). Whether to warm-start the critic
   from our supervised value models stays open.
-- KataGo's auxiliary targets improving learning efficiency (1-2).
 - "PORL needs a competent prior" (1-2).
 
 ## Sources
