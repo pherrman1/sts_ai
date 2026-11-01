@@ -24,14 +24,18 @@ encounter 53.
   simulations at every root, singletons searched, no learned stop; the same override as expertfights' `flat40000`
   (§716/§718). Copies 0-2 use the same battle seeds as P's copies 0-2, so the arms are paired copy by copy.
 
-Code main 8eec7b9 = §727's combat code (only `silver_synth_gen.cpp` differs) plus the F switch.
+Code main 8eec7b9 = §727's combat code (only `silver_synth_gen.cpp` differs) plus the F switch; main's later #940
+(`ooc_mcts_adapter.cpp`, map-root sims) does not touch combat replay. Prelaunch review K PASS at 6b3ac8f
+(/mnt/project-files/reviews/pr939-prelaunch.md).
 
 **Primary metric.** Per-fight death rate F − P (mean of the 3 paired copies per entry, then mean over entries), 95%
 entry bootstrap (4,000, rng 740). `analyze.py UNITS_DIR`.
 - PLANNING_LIMITED: dDeath ≤ −4 pp and CI upper < 0.
 - NOT_PLANNING_LIMITED: CI lower > −4 pp.
 - otherwise INCONCLUSIVE.
-A unit counts only with rc 0 and all 6 replays valid; others are listed, not imputed.
+The RESULT reports the CI next to the label: NOT_PLANNING_LIMITED also covers a real gain smaller than 4 pp.
+F differs from P in two ways at once (more simulations, and singleton roots searched / no learned stop), so a
+difference is attributed to "more search" as a bundle. A unit counts only with rc 0 and all 6 replays valid; others are listed, not imputed.
 
 **Secondary (descriptive).** HP lost F − P (death = entry HP), CPU per copy, identity count, recorded-death share, and
 the run-level translation −dDeath × 5,543/15,363 AO entries per run × 0.59 P(Heart kill | survived AO) (§740).
