@@ -61,17 +61,21 @@ stored records. It is valid only if a stored control record is what the same con
 - **B1 (same binary):** replay arm A of §727 (`value_chooser_ab_20261031`, RUN_COMMIT/code `8f5b17d6`, binary
   `d39c2b98…` from the share's bin-cache, `run_unit.sh` arm A environment verbatim, no chooser) on its first 32 seeds
   111312000-111312031 (used, replays). Compare with the stored `A-<seed>.jsonl.gz` (`compare.py`): every state,
-  decision and outcome row exactly and in order; only the header row (producer SHA, artifact paths and hashes) is
-  excluded and reported. (Amended before any run: the stored records were found to carry no wall-clock fields, so
-  nothing else is removed.)
-- **B2 (current main):** the same 32 seeds and environment with a fresh `e55f482` build (x86-64-v3 preset). Report
+  decision and outcome row exactly and in order; the header row (configuration and provenance) leaf by leaf, allowing
+  only `.producerSha` and a `.policy.model_artifacts[i].path` that ends in `/student_sel.bin` on both sides (the run
+  directory differs); and the `A-<seed>.ctm.jsonl.gz` rows exactly. A game is identical only if all three hold.
+  (Amended before any run, after the prelaunch review: the stored records carry no wall-clock fields, so nothing else
+  is removed.)
+- **B2 (current main):** the same 32 seeds and environment with a fresh `e55f482` build (x86-64-v3 preset; this
+  container's build `b8f0628b…`; engine sources identical at the branch head). Report
   whether main's changes since `8f5b17d6` alter default play (expected only where a play-changing default changed).
 - Cost: 64 games ≈ 64 × ~830 s ≈ 15 core-h, run locally in this thread's container (4 lanes), via `tools/seed_guard.sh`.
 - **Decision:** B1 byte-identical on 32/32 (outcome + decision rows, timing excluded) → control reuse is adopted with a
   per-campaign sentinel (below). Any B1 mismatch → no reuse until the cause is found and fixed. B2 is descriptive: it
   says whether today's control bank must be re-recorded at main before the first reuse.
 - Sentinel for every reusing campaign (the standard): the candidate binary with its flag off replays 32 bank seeds
-  first; any non-identical control record stops the campaign before arm B starts and forces a fresh control arm.
+  first; any non-identical control record stops the campaign before arm B starts and forces a fresh control arm. The sentinel
+  uses the same identity rule as `compare.py` (rows, header allowlist, CTM rows).
 
 ## What adoption changes
 

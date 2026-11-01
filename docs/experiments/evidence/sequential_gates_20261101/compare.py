@@ -2,14 +2,51 @@
 """Part B of PREREG.md: compare replayed §727 arm-A games with the stored records.
 usage: compare.py OUT_DIR [OUT_JSON]
 Stored: /mnt/project-files/value-chooser-ab/units/<seed>.w*.tar -> A-<seed>.jsonl.gz.
-The header row (provenance: producer SHA, artifact paths and hashes) is reported but not compared; every other row
-(state, decision, outcome) is compared exactly, in order, with no key removed (the stored records carry no
-wall-clock fields). A game is IDENTICAL only if all of them match."""
+Every state, decision and outcome row is compared exactly, in order (the stored records carry no wall-clock fields).
+The header row (configuration and provenance) is compared leaf by leaf; the only allowed differences are
+`.producerSha` and a `.policy.model_artifacts[i].path` whose old and new values both end in `/student_sel.bin`
+(the run directory differs). The `A-<seed>.ctm.jsonl.gz` rows are compared exactly too.
+A game is IDENTICAL only if all three hold. The per-campaign sentinel uses the same rule."""
 import glob, gzip, json, os, sys, tarfile
 
 SEEDS = range(111312000, 111312032)
-def strip(r):
-    return r
+def flat(x, p=''):
+    if isinstance(x, dict):
+        for k, v in x.items():
+            yield from flat(v, f'{p}.{k}')
+    elif isinstance(x, list):
+        for i, v in enumerate(x):
+            yield from flat(v, f'{p}[{i}]')
+    else:
+        yield p, x
+
+
+def header_diffs(ha, hb):
+    """Leaf paths that differ, minus the allowlist."""
+    fa, fb = dict(flat(ha)), dict(flat(hb))
+    out = []
+    for k in sorted(set(fa) | set(fb)):
+        va, vb = fa.get(k, '<absent>'), fb.get(k, '<absent>')
+        if va == vb or k == '.producerSha':
+            continue
+        if k.startswith('.policy.model_artifacts[') and k.endswith('].path') and str(va).endswith('/student_sel.bin') \
+                and str(vb).endswith('/student_sel.bin'):
+            continue
+        out.append(k)
+    return out
+
+
+def ctm_equal(seed, out):
+    old = None
+    for p in glob.glob(f'/mnt/project-files/value-chooser-ab/units/{seed}.w*.tar'):
+        with tarfile.open(p) as t:
+            for m in t.getmembers():
+                if m.name.endswith(f'/A-{seed}.ctm.jsonl.gz'):
+                    old = t.extractfile(m).read()
+    newp = os.path.join(out, f'A-{seed}.ctm.jsonl.gz')
+    if old is None or not os.path.exists(newp):
+        return None
+    return gzip.decompress(old).splitlines() == gzip.decompress(open(newp, 'rb').read()).splitlines()
 
 
 def rows(blob):
@@ -34,21 +71,23 @@ def main(out, js=None):
             res['missing'] += 1; res['games'][s] = {'status': 'missing', 'done': done.strip()}; continue
         ra, rb = rows(old), rows(open(newp, 'rb').read())
         ha = [r for r in ra if r.get('type') == 'header']; hb = [r for r in rb if r.get('type') == 'header']
-        hdiff = sorted(k for k in set(ha[0]) | set(hb[0]) if ha[0].get(k) != hb[0].get(k)) if ha and hb else ['missing header']
+        hdiff = header_diffs(ha[0], hb[0]) if ha and hb else ['missing header']
+        ctm = ctm_equal(s, out)
         a = [r for r in ra if r.get('type') != 'header']; b = [r for r in rb if r.get('type') != 'header']
         first = next((i for i, (x, y) in enumerate(zip(a, b)) if x != y), None)
-        if first is None and len(a) == len(b):
-            res['identical'] += 1; res['games'][s] = {'status': 'identical', 'rows': len(a), 'header_diff_keys': hdiff}
+        if first is None and len(a) == len(b) and not hdiff and ctm:
+            res['identical'] += 1; res['games'][s] = {'status': 'identical', 'rows': len(a)}
         else:
             res['different'] += 1
             i = first if first is not None else min(len(a), len(b))
             keys = sorted({k for k in set(a[i]) | set(b[i]) if a[i].get(k) != b[i].get(k)}) if i < min(len(a), len(b)) else []
+            i = None if first is None and len(a) == len(b) else i
             oa = [r for r in a if r.get('type') == 'outcome'][-1:]; ob = [r for r in b if r.get('type') == 'outcome'][-1:]
             res['games'][s] = {'status': 'different', 'rows_old': len(a), 'rows_new': len(b), 'first_diff_row': i,
-                               'row_type': (a[i] if i < len(a) else b[i]).get('type'), 'diff_keys': keys[:20],
+                               'row_type': None if i is None else (a[i] if i < len(a) else b[i]).get('type'), 'diff_keys': keys[:20],
                                'outcome_equal': oa == ob,
                                'heart_old': oa and oa[0].get('heartKilled'), 'heart_new': ob and ob[0].get('heartKilled'),
-                               'header_diff_keys': hdiff}
+                               'header_diff_keys': hdiff[:20], 'ctm_equal': ctm}
     print(json.dumps({k: res[k] for k in ('identical', 'different', 'missing')}))
     for s, g in res['games'].items():
         if g['status'] != 'identical':
