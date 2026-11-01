@@ -1,7 +1,7 @@
 # A20 loss mining: where production runs die and what is avoidable
 
 Last verified: 2026-10-31 against 2,816 recorded production A20 games (§729, [evidence](../../experiments/evidence/loss_mining_20261031/README.md));
-extended 2026-11-01 to 15,363 games of nine campaigns (roadmap X5, §TBD, [evidence](../../experiments/evidence/loss_clusters_x5_20261101/README.md)).
+extended 2026-11-01 to 15,363 games of nine campaigns (roadmap X5, §740, [evidence](../../experiments/evidence/loss_clusters_x5_20261101/README.md)).
 
 ## Question
 

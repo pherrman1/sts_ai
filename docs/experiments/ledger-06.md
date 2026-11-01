@@ -25816,7 +25816,7 @@ Seeds: none new (§691's 111382000-111383023 replayed; smokes 111383024/025, use
 8 workers, Philipp's card 2026-10-31 22:37Z and "Go 8 workers" 23:00Z).
 **Knowledge impact:** roadmap X1 row and limitations updated (`research/one-year-roadmap.md`).
 
-## §TBD — Loss clusters on 15,363 A20 games (roadmap X5, offline part) and gate power (X4): only Awakened One clears the X5 rule (8.3% of runs; bound +1.0 to +3.1 pp Heart kills); every other boss/elite ≤ +0.84 pp; Heart SD 0.421 per seed pair → ±1.0 / ±1.5 pp need 6,821 / 3,032 pairs (offline, no seeds, 2026-11-01)
+## §740 — Loss clusters on 15,363 A20 games (roadmap X5, offline part) and gate power (X4): only Awakened One clears the X5 rule (8.3% of runs; bound +1.0 to +3.1 pp Heart kills); every other boss/elite ≤ +0.84 pp; Heart SD 0.421 per seed pair → ±1.0 / ±1.5 pp need 6,821 / 3,032 pairs (offline, no seeds, 2026-11-01)
 
 **Question (Philipp, 2026-11-01 "start a thread for x5"):** roadmap X5: which death clusters cover ≥ 2% of runs and
 show ≥ +1 pp Heart-kill potential? Plus X4: paired SD per pair and per act from existing records.
