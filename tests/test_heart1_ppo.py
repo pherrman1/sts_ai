@@ -39,6 +39,28 @@ class Heart1PpoTest(unittest.TestCase):
             self.assertTrue(torch.count_nonzero(z.tables["x_act"]) == 0)
             self.assertTrue(torch.count_nonzero(z.fixedvecs["x2_price"].proj.weight) == 0)
 
+    def test_feature_store_matches_collate(self):
+        import random
+        import ppo_model
+        import ppo_train
+        traj = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "docs", "experiments", "evidence",
+                            "ppo_s0_smoke_20261101", "cov8.jsonl.gz")
+        games = ppo_train.load_games([traj], False)[:2]
+        feats = [s["feat"] for g in games for s in g["steps"]]
+        store = ppo_model.FeatureStore(feats)
+        idx = list(range(len(feats)))
+        random.Random(0).shuffle(idx)
+        for i in range(0, len(idx), 37):
+            mb = idx[i:i + 37]
+            a, b = ppo_model.collate([feats[j] for j in mb]), store.batch(mb)
+            self.assertEqual((a["B"], a["T"]), (b["B"], b["T"]))
+            for k in ("pad", "choice_index", "choice_mask"):
+                self.assertTrue(torch.equal(a[k], b[k]), k)
+            for d in ("emb", "fv"):
+                self.assertEqual(list(a[d]), list(b[d]))
+                for k in a[d]:
+                    self.assertTrue(torch.equal(a[d][k][0], b[d][k][0]) and torch.equal(a[d][k][1], b[d][k][1]), k)
+
 
 if __name__ == "__main__":
     unittest.main()

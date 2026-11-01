@@ -13,7 +13,12 @@ Per iteration i (resumable; finished iterations are listed in RUN/loop.json):
         --init heart1.bin --iterations 60 --games 512 --seed-base SEED --threads 12 --value-warmup 3 -- --lr 1e-5
 
 Everything after `--` goes to the learner (ppo_train.py update hyperparameters). Seeds must be a reserved block:
-the loop prints the whole range it will use before the first game. Collection and update are not pipelined.
+the loop prints the whole range it will use before the first game.
+
+--pipeline 1 overlaps collection and update: iteration i+1's actors start with net_i as soon as iteration i's games
+are in, while the learner trains on them. Every iteration after the first of a call is then played by a net one
+update old; PPO's ratio against the recorded behaviour log-probs is the off-policy correction (loop.json records
+which net played each iteration). Default 0 keeps the strictly on-policy schedule.
 """
 import argparse
 import gzip
@@ -58,7 +63,8 @@ def read_env(path):
     return env
 
 
-def run_actors(args, env_base, net, it, out_dir, trim_map):
+def start_actors(args, env_base, net, it, out_dir):
+    """Launch iteration it's actors (non-blocking); finish_actors waits and loads the games."""
     traj = os.path.join(out_dir, "traj.jsonl")
     for f in (traj, os.path.join(out_dir, "results.csv")):
         if os.path.exists(f):
@@ -69,15 +75,24 @@ def run_actors(args, env_base, net, it, out_dir, trim_map):
            "STS_OOC_HEART1_PPO_TRAJ": traj, "OMP_NUM_THREADS": str(args.threads)}
     cmd = ["bash", os.path.join(REPO, "tools", "seed_guard.sh"), args.one_combat, "bestbench", str(args.sims),
            str(args.games), str(args.asc), str(seed), os.path.join(out_dir, "results.csv")]
-    t0 = time.time()
-    with open(os.path.join(out_dir, "actors.log"), "w") as log, open(os.path.join(out_dir, "actors.err"), "w") as err:
-        rc = subprocess.run(cmd, env=env, cwd=REPO, stdout=log, stderr=err).returncode
+    log = open(os.path.join(out_dir, "actors.log"), "w")
+    err = open(os.path.join(out_dir, "actors.err"), "w")
+    proc = subprocess.Popen(cmd, env=env, cwd=REPO, stdout=log, stderr=err)
+    return {"proc": proc, "files": (log, err), "t0": time.time(), "traj": traj, "seed": seed, "it": it,
+            "out_dir": out_dir, "net": net}
+
+
+def finish_actors(args, job, trim_map):
+    rc = job["proc"].wait()
+    for f in job["files"]:
+        f.close()
+    it, out_dir, traj, seed = job["it"], job["out_dir"], job["traj"], job["seed"]
     if rc != 0:
         sys.exit(f"iteration {it}: actors exited {rc} (see {out_dir}/actors.err)")
     games = ppo_train.load_games([traj], trim_map)
     if len(games) != args.games:
         sys.exit(f"iteration {it}: {len(games)} games in {traj}, expected {args.games}")
-    return traj, games, seed, time.time() - t0
+    return traj, games, seed, time.time() - job["t0"]
 
 
 def main():
@@ -100,6 +115,9 @@ def main():
     ap.add_argument("--value-warmup", type=int, default=0)
     ap.add_argument("--keep-traj", type=int, default=1, help="1 = gzip each iteration's trajectory, 0 = delete it")
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+    ap.add_argument("--pipeline", type=int, default=0,
+                    help="1 = play iteration i+1 with net_i while the learner updates on iteration i (one-iteration "
+                         "stale behaviour policy, corrected by the PPO ratio against the recorded log-probs)")
     args = ap.parse_args(argv)
     hp = argparse.ArgumentParser(prog="learner")
     ppo_train.add_hparams(hp)
@@ -128,28 +146,43 @@ def main():
     if learner.iteration != done:
         sys.exit(f"{state} is at iteration {learner.iteration}, loop.json at {done}")
 
-    for it in range(done, args.iterations):
+    def launch(it, net):
         out_dir = os.path.join(args.run, f"iter_{it:04d}")
         os.makedirs(out_dir, exist_ok=True)
-        net = os.path.join(args.run, f"net_{it:04d}.bin")
-        traj, games, seed, actor_s = run_actors(args, meta["env"], net, it, out_dir, learner.net.trim_map)
-        value_only = it < args.value_warmup
-        stats = learner.update(games, value_only=value_only, log=lambda line: print(line, flush=True))
-        nxt = os.path.join(args.run, f"net_{it + 1:04d}.bin")
-        learner.net.to("cpu").to_bin(nxt)
-        learner.net.to(args.device)
-        ppo_train.save(learner, state)
-        if args.keep_traj:
-            with open(traj, "rb") as src, gzip.open(traj + ".gz", "wb") as dst:
-                shutil.copyfileobj(src, dst)
-        os.remove(traj)
-        stats.update({"seed_first": seed, "actor_s": actor_s, "net": os.path.basename(net), "net_sha16": sha16(net),
-                      "next_sha16": sha16(nxt)})
-        meta["iterations"].append(stats)
-        tmp = meta_path + ".tmp"
-        with open(tmp, "w") as f:
-            json.dump(meta, f, indent=1)
-        os.replace(tmp, meta_path)
+        return start_actors(args, meta["env"], net, it, out_dir)
+
+    pending = None
+    try:
+        for it in range(done, args.iterations):
+            # Behaviour net: the current net, or (pipelined, after the first iteration of this call) the previous one.
+            job = pending or launch(it, os.path.join(args.run, f"net_{it:04d}.bin"))
+            pending = None
+            traj, games, seed, actor_s = finish_actors(args, job, learner.net.trim_map)
+            net = job["net"]
+            if args.pipeline and it + 1 < args.iterations:
+                # net_it is the newest net (iteration it's update is about to run): one update stale.
+                pending = launch(it + 1, os.path.join(args.run, f"net_{it:04d}.bin"))
+            value_only = it < args.value_warmup
+            stats = learner.update(games, value_only=value_only, log=lambda line: print(line, flush=True))
+            nxt = os.path.join(args.run, f"net_{it + 1:04d}.bin")
+            learner.net.to("cpu").to_bin(nxt)
+            learner.net.to(args.device)
+            ppo_train.save(learner, state)
+            if args.keep_traj:
+                with open(traj, "rb") as src, gzip.open(traj + ".gz", "wb") as dst:
+                    shutil.copyfileobj(src, dst)
+            os.remove(traj)
+            stats.update({"seed_first": seed, "actor_s": actor_s, "net": os.path.basename(net), "net_sha16": sha16(net),
+                          "next_sha16": sha16(nxt), "pipeline": args.pipeline})
+            meta["iterations"].append(stats)
+            tmp = meta_path + ".tmp"
+            with open(tmp, "w") as f:
+                json.dump(meta, f, indent=1)
+            os.replace(tmp, meta_path)
+    finally:
+        if pending is not None and pending["proc"].poll() is None:
+            pending["proc"].terminate()   # never leave an orphan writing into an iteration directory
+            pending["proc"].wait()
 
 
 if __name__ == "__main__":
