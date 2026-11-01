@@ -275,6 +275,20 @@ void encodeObservation(const GameContext &gc, Record &r) {
     r.burningEliteY = map.burningEliteY;
     r.mapX = gc.curMapNodeX;
     r.mapY = gc.curMapNodeY;
+
+    // v2 inputs (Record::runCounters): removals bought so far and the shop's current
+    // removal price (-1 outside a shop or once bought). The pity counters (potion
+    // chance, card rarity offset, "?" room chances) stay out: the game does not show
+    // them and the invariance selftest treats them as private.
+    const bool inShop = gc.screenState == ScreenState::SHOP_ROOM;
+    r.runCounters = {gc.shopRemoveCount, inShop ? gc.info.shop.removeCost : -1};
+    // Encounters already fought this act: the consumed prefix of the queues. OOC
+    // MCTS resamples only the unconsumed suffix, so this prefix is never hidden.
+    r.foughtEncounters.clear();
+    for (int i = 0; i < std::min<int>(gc.monsterListOffset, gc.monsterList.size()); ++i)
+        r.foughtEncounters.push_back(static_cast<int>(gc.monsterList[i]));
+    for (int i = 0; i < std::min<int>(gc.eliteMonsterListOffset, gc.eliteMonsterList.size()); ++i)
+        r.foughtEncounters.push_back(static_cast<int>(gc.eliteMonsterList[i]));
 }
 
 // Reward groups expose their valid cards in order. Shop action indices instead
@@ -297,6 +311,7 @@ bool buildChoice(const GameContext &gc, Choice &out, std::string *reason) {
     out = Choice{};
     Record &r = out.record;
     std::vector<GA> cardActs, relicActs, potionActs, fixedActs, pathActs;
+    std::vector<int> cardPrices, relicPrices, potionPrices;  // shop only (Record::offerPrices)
     auto actions = GA::getAllActionsInState(gc);
     actions.erase(std::remove_if(actions.begin(), actions.end(), [&](const GA &a) {
         return !search::heartKeyActionAllowed(gc, g_collectKeys, a);
@@ -359,14 +374,19 @@ bool buildChoice(const GameContext &gc, Choice &out, std::string *reason) {
             const auto &shop = gc.info.shop;
             for (const auto &a : actions) {
                 switch (a.getRewardsActionType()) {
-                    case RT::CARD: card(shop.cards[a.getIdx1()], a); break;
+                    case RT::CARD:
+                        card(shop.cards[a.getIdx1()], a);
+                        cardPrices.push_back(shop.cardPrice(a.getIdx1()));
+                        break;
                     case RT::RELIC:
                         r.offeredRelics.push_back(static_cast<int>(shop.relics[a.getIdx1()]));
                         relicActs.push_back(a);
+                        relicPrices.push_back(shop.relicPrice(a.getIdx1()));
                         break;
                     case RT::POTION:
                         r.offeredPotions.push_back(static_cast<int>(shop.potions[a.getIdx1()]));
                         potionActs.push_back(a);
+                        potionPrices.push_back(shop.potionPrice(a.getIdx1()));
                         break;
                     case RT::SKIP: fixed(simpleFixed(FA_SKIP), a); break;
                     case RT::CARD_REMOVE: fixed(simpleFixed(FA_REMOVE), a); break;
@@ -418,6 +438,8 @@ bool buildChoice(const GameContext &gc, Choice &out, std::string *reason) {
     encodeObservation(gc, r);
     r.screenState = static_cast<int>(gc.screenState);
     r.selectScreenType = static_cast<int>(gc.info.selectScreenType);
+    if (gc.screenState == ScreenState::SHOP_ROOM)
+        for (auto *v : {&cardPrices, &relicPrices, &potionPrices}) r.offerPrices.insert(r.offerPrices.end(), v->begin(), v->end());
     for (auto *v : {&cardActs, &relicActs, &potionActs, &fixedActs, &pathActs})
         out.actions.insert(out.actions.end(), v->begin(), v->end());
     return true;
@@ -460,7 +482,9 @@ nlohmann::json recordToJson(const Record &r) {
             {"cards_offered.cards", r.offeredCards}, {"cards_offered.upgrades", r.offeredUpgrades},
             {"relics_offered", r.offeredRelics}, {"potions_offered", r.offeredPotions},
             {"fixed_actions", fixed}, {"paths_offered", r.paths},
-            {"screen_state", r.screenState}, {"select_screen_type", r.selectScreenType}};
+            {"screen_state", r.screenState}, {"select_screen_type", r.selectScreenType},
+            {"obs.v2.run_counters", r.runCounters}, {"obs.v2.fought", r.foughtEncounters},
+            {"offer_prices", r.offerPrices}};
 }
 
 bool buildPublicLeafRecord(const GameContext &gc, nlohmann::json &out, std::string *reason) {
@@ -540,6 +564,9 @@ Record recordFromJson(const nlohmann::json &j) {
     r.paths = ints("paths_offered");
     r.screenState = j.at("screen_state").get<int>();
     r.selectScreenType = j.at("select_screen_type").get<int>();
+    if (j.contains("obs.v2.run_counters")) r.runCounters = ints("obs.v2.run_counters");
+    if (j.contains("obs.v2.fought")) r.foughtEncounters = ints("obs.v2.fought");
+    if (j.contains("offer_prices")) r.offerPrices = ints("offer_prices");
     return r;
 }
 
@@ -1183,6 +1210,12 @@ bool Net::load(const std::string &file, std::string *error) {
         relicCounter_ = fixedVec("x_relic_counter", 1);
         act_ = embedding("x_act.weight");
     }
+    extraInputsV2_ = tensors.count("x2_run.proj.weight") > 0;
+    if (extraInputsV2_) {
+        runCounters_ = fixedVec("x2_run", kRunCounterCount);
+        offerPrice_ = fixedVec("x2_price", 1);
+        fought_ = embedding("x2_fought.weight");
+    }
     blocks_.assign(layers, {});
     for (int i = 0; i < layers; ++i) {
         const std::string L = "layers." + std::to_string(i) + ".";
@@ -1246,6 +1279,7 @@ std::uint64_t recordHash(const Record &r) {
     mix(std::int64_t(r.fixedActions.size()));
     for (const auto &f : r.fixedActions) { mix(f.action); mix(f.gold); mix(f.card); mix(f.relic); mix(f.info); }
     ints(r.paths); mix(r.screenState); mix(r.selectScreenType);
+    ints(r.runCounters); ints(r.foughtEncounters); ints(r.offerPrices);
     return h;
 }
 
@@ -1331,10 +1365,19 @@ Output Net::forwardRecord(const Record &r, bool logitsOnly) const {
         if (extraInputs_) {
             addEmbedding(obsPosition_, 3, row(t));
             addEmbedding(act_, int(clampInput(r.act, 0, 4)), row(t));
-            ++t;
         } else {
-            position(obsPosition_, 3);
+            addEmbedding(obsPosition_, 3, row(t));
         }
+        if (extraInputsV2_) {
+            // v2 (student_inputs.py --v2): run counters clamped to [-1, 999]; a record
+            // without them (older captures) reads all -1. Fought encounters are summed.
+            float run[kRunCounterCount];
+            for (int k = 0; k < kRunCounterCount; ++k)
+                run[k] = clampInput(k < int(r.runCounters.size()) ? r.runCounters[k] : -1, -1, 999);
+            addFixedVec(runCounters_, run, row(t));
+            for (int e : r.foughtEncounters) addEmbedding(fought_, e, row(t));
+        }
+        ++t;
     }
     // Map tokens: the per-token additions of silverbot's order, one feature at a
     // time over all map rows so each projection runs batched.
@@ -1367,14 +1410,25 @@ Output Net::forwardRecord(const Record &r, bool logitsOnly) const {
             position(obsPosition_, 4);
         }
     }
+    // v2 shop prices (clamped to [-1, 999]) on the tokens that have one (shop offers),
+    // added after the token's position embedding like the other extra inputs.
+    int priceIdx = 0;
+    const auto price = [&] {
+        if (!extraInputsV2_) return;
+        const int i = priceIdx++;
+        if (i >= int(r.offerPrices.size()) || r.offerPrices[i] < 0) return;
+        const float p = clampInput(r.offerPrices[i], -1, 999);
+        addFixedVec(offerPrice_, &p, row(t - 1));
+    };
     for (std::size_t i = 0; i < r.offeredCards.size(); ++i) {
         addEmbedding(card_, r.offeredCards[i], row(t));
         addEmbedding(upgrade_, r.offeredUpgrades[i], row(t));
         addEmbedding(selectScreen_, r.selectScreenType, row(t));
         position(choicePosition_, 0);
+        price();
     }
-    for (int id : r.offeredRelics) { addEmbedding(relic_, id, row(t)); position(choicePosition_, 1); }
-    for (int id : r.offeredPotions) { addEmbedding(potion_, id, row(t)); position(choicePosition_, 2); }
+    for (int id : r.offeredRelics) { addEmbedding(relic_, id, row(t)); position(choicePosition_, 1); price(); }
+    for (int id : r.offeredPotions) { addEmbedding(potion_, id, row(t)); position(choicePosition_, 2); price(); }
     for (const auto &f : r.fixedActions) {
         float *out = row(t);
         addEmbedding(fixedAction_, f.action, out);

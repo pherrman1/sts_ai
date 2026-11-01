@@ -37,6 +37,8 @@ struct FixedChoice {
 
 // Mirror of flatten_dict(Choice.as_dict()) in silverbot: the raw record that
 // collate_fn turns into tensors. JSON keys match the Python record exactly.
+inline constexpr int kRunCounterCount = 2;
+
 struct Record {
     std::vector<int> fixedObservation;  // 10 entries
     std::vector<int> deckCards, deckUpgrades;
@@ -58,6 +60,15 @@ struct Record {
     std::vector<int> paths;
     int screenState = 0;
     int selectScreenType = 0;
+    // Shared-encoder input extension v2 (not read by heart1, student C or student_sel;
+    // only by nets with x2_* weights). Public run state the v1 record leaves out:
+    // runCounters = kRunCounterCount entries (see encodeObservation), foughtEncounters =
+    // the normal and elite encounters already fought this act (MonsterEncounter ids),
+    // offerPrices = the shop price of each offered card, relic and potion token in
+    // token order (empty outside shops). Records from before it carry none of them.
+    std::vector<int> runCounters;
+    std::vector<int> foughtEncounters;
+    std::vector<int> offerPrices;
 
     bool operator==(const Record &) const = default;
 
@@ -121,6 +132,7 @@ public:
     int layers() const { return int(blocks_.size()); }
     bool trimMap() const { return trimMap_; }
     bool extraInputs() const { return extraInputs_; }
+    bool extraInputsV2() const { return extraInputsV2_; }
 
     struct Linear { int out = 0, in = 0; std::vector<float> w, b; };
     struct Embedding { int rows = 0, dim = 0; std::vector<float> w; };
@@ -154,6 +166,12 @@ private:
     bool extraInputs_ = false;
     FixedVec deckMisc_, relicCounter_;
     Embedding act_;
+    // Optional v2 inputs (tools/heart1/student_inputs.py --v2): x2_run (run counters)
+    // and x2_fought (sum over fought encounters) on the fixed-observation token,
+    // x2_price on shop card/relic/potion choice tokens. Present iff x2_run is.
+    bool extraInputsV2_ = false;
+    FixedVec runCounters_, offerPrice_;
+    Embedding fought_;
     std::vector<Block> blocks_;
     std::vector<float> finalNorm_, valueNorm_;
     Linear choiceLogits_, valueHead_;
