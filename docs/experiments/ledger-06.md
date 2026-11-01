@@ -25659,28 +25659,6 @@ Seeds: none.
 **Knowledge impact:** at 16,000 paired labels, flexible models learn no more than the average price per change type;
 Silver's leaf prices HP and potions at about 40-60% of their Heart-kill effect.
 
-## §737 — Map-root value-of-computation audit (#927 rank 6): roots whose prior top is ≥ 0.98 take 54.6% of map simulations and change 1.9% of picks (pick at 1,024 ≠ 4,096 at 1.5% of them, 3.7% of all map roots); by the #927 rule not dropped, so the 1,024 vs 4,096 SPRT is justified (offline, no seeds, 2026-11-01)
-
-**Question (Philipp, 2026-11-01 07:25Z, item 6 of #927's cheap methods):** how many map-search simulations are spent
-at roots where student_sel's prior top is ≥ 0.98, and how often do they change the decision?
-**Data:** [RESULT](evidence/map_root_voc_audit_20261101/RESULT.md), `analyze.py`. Logged root rows (prior, visits, Q,
-checkpoints 128-4,096) of §727 arm A (production, `3d62ff5e`, 1,536 games; 23,826 searched non-singleton map roots,
-all 4,096 simulations) and, as replication, §683 arm MAP (`772df240`, 1,024 games, 16,322 roots). Checkpoint picks use
-`visits_q_id`; Inference (code read): the checkpoint-k tree equals a k-simulation search at a full-budget root.
-**Result (A; MAP within 0.4 pp on every headline rate):** prior ≥ 0.98 roots are 54.6% of roots and of map simulations
-(CPU-weighted 54.7%); played ≠ prior argmax 1.94% ± 0.12 (0.16 per game), pick at 1,024 ≠ 4,096 1.54%, ≠ prior
-already at 1,024 0.39%. Prior < 0.98: departs 11.6%. All map roots: departs 6.3% (1.0 per game), 1,024 ≠ 4,096 3.74%
-(0.58 per game), 2,048 ≠ 4,096 2.44%. With prior ≥ 0.8 departures appear late (at 128 simulations 4 of 18,698 roots
-off the prior; 425 of 426 flips from 1,024 to 4,096 move away from it). At prior ≥ 0.98 departures carry a large
-search Q gap (median +0.069, prior argmax median 1,430 visits), so they are stable leaf-vs-prior disagreements, not
-Q noise (Inference); whether they help is §710's open question.
-**Decision:** by #927's rule (change > ~3% or little CPU → drop; "little" taken as < 25%, set after the first pass,
-disclosed) the class is not dropped: the non-inferiority SPRT 1,024 vs 4,096 map simulations ([−1.5, 0] pp) is
-justified. Sizing (Inference): a global 1,024 cap changes 0.58 picks per game and saves 75% of map simulations (≈ 490
-of ≈ 650 s estimated map-search CPU per game); a cap only at prior ≥ 0.98 changes 0.13 picks per game and saves 41%.
-The SPRT needs Philipp's typed go, worker count, new seeds and frozen provenance.
-Seeds: none (replays of logged §727 and §683 games only).
-**Knowledge impact:** none beyond this entry; no code or default change.
 ## §734 — §709 re-cut by imagined-fight index × act (research rank 3): no detectable growth of CTM death error over index 0-3 in any act (elite+boss slope +0.001 [−0.006, +0.007] per index); act-2/3 bosses show no ≥ 2× excess (15.1% forecast vs 13.7% observed, 1.11× [0.80, 2.23]; 1.34× without seed 111374104; index 0-1 1.35×, 2-3 0.98×), so the full-rollout diagnostic's ~3× rests on its 4 games; act-2/3 elites 1.4× pessimistic from index 0; within root-action CTM-vs-Silver rollout ρ 0.10 [0.04, 0.15] (offline, no seeds, 2026-11-01)
 
 **Question:** is the CTM's act-2/3 boss over-forecast (2026-10-31 full-rollout diagnostic: act 2 15.5% vs 5.3%, act 3
@@ -25769,3 +25747,26 @@ the truth model. No default change.
 Seeds: none.
 **Knowledge impact:** aggregate BCE is blind to state terms that touch ~10% of entries at today's data size; more
 outcome-only Act-4 rows buy ~+0.035 R² per 10^5 games; map-root sibling ranking is not label-noise limited.
+
+## §737 — Map-root value-of-computation audit (#927 rank 6): roots whose prior top is ≥ 0.98 take 54.6% of map simulations and change 1.9% of picks (pick at 1,024 ≠ 4,096 at 1.5% of them, 3.7% of all map roots); by the #927 rule not dropped, so the 1,024 vs 4,096 SPRT is justified (offline, no seeds, 2026-11-01)
+
+**Question (Philipp, 2026-11-01 07:25Z, item 6 of #927's cheap methods):** how many map-search simulations are spent
+at roots where student_sel's prior top is ≥ 0.98, and how often do they change the decision?
+**Data:** [RESULT](evidence/map_root_voc_audit_20261101/RESULT.md), `analyze.py`. Logged root rows (prior, visits, Q,
+checkpoints 128-4,096) of §727 arm A (production, `3d62ff5e`, 1,536 games; 23,826 searched non-singleton map roots,
+all 4,096 simulations) and, as replication, §683 arm MAP (`772df240`, 1,024 games, 16,322 roots). Checkpoint picks use
+`visits_q_id`; Inference (code read): the checkpoint-k tree equals a k-simulation search at a full-budget root.
+**Result (A; MAP within 0.4 pp on every headline rate):** prior ≥ 0.98 roots are 54.6% of roots and of map simulations
+(CPU-weighted 54.7%); played ≠ prior argmax 1.94% ± 0.12 (0.16 per game), pick at 1,024 ≠ 4,096 1.54%, ≠ prior
+already at 1,024 0.39%. Prior < 0.98: departs 11.6%. All map roots: departs 6.3% (1.0 per game), 1,024 ≠ 4,096 3.74%
+(0.58 per game), 2,048 ≠ 4,096 2.44%. With prior ≥ 0.8 departures appear late (at 128 simulations 4 of 18,698 roots
+off the prior; 425 of 426 flips from 1,024 to 4,096 move away from it). At prior ≥ 0.98 departures carry a large
+search Q gap (median +0.069, prior argmax median 1,430 visits), so they are stable leaf-vs-prior disagreements, not
+Q noise (Inference); whether they help is §710's open question.
+**Decision:** by #927's rule (change > ~3% or little CPU → drop; "little" taken as < 25%, set after the first pass,
+disclosed) the class is not dropped: the non-inferiority SPRT 1,024 vs 4,096 map simulations ([−1.5, 0] pp) is
+justified. Sizing (Inference): a global 1,024 cap changes 0.58 picks per game and saves 75% of map simulations (≈ 490
+of ≈ 650 s estimated map-search CPU per game); a cap only at prior ≥ 0.98 changes 0.13 picks per game and saves 41%.
+The SPRT needs Philipp's typed go, worker count, new seeds and frozen provenance.
+Seeds: none (replays of logged §727 and §683 games only).
+**Knowledge impact:** none beyond this entry; no code or default change.
