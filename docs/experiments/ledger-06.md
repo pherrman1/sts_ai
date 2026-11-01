@@ -25905,3 +25905,26 @@ non-regression variant. Review: K PASS (`/mnt/project-files/reviews/pr938.md`, 4
 Seeds: none new (Part B replayed used seeds 111312000-111312031). Cost ≈ 15.8 core-h, local (Part A: none).
 **Knowledge impact:** ADR-0064; benchmark protocol section "Paired campaigns: sequential stopping and control reuse";
 literature review ranks 1 and 2 marked adopted.
+
+## §743 — Awakened One replay (X5 gate 1): flat 40k loses 1.2 pp fewer recorded A20 Awakened One fights than production (25.0% → 23.8%, CI −2.9 to +0.3 pp; 304 entries × 3 paired copies) at 7.5× CPU → NOT_PLANNING_LIMITED; Awakened One deaths are deck/state-limited (cloud replay of §727 seeds, 2026-11-01)
+
+**Question (Philipp, 2026-11-01 card "Smoke, dann ~125 core-h"; run go 17:02Z "16 worker go"):** §740 left one X5
+candidate, Awakened One. Does more search (flat 40,000 simulations per root, no learned stop) lose fewer of its
+recorded fights than production, from the same pre-combat states with the same battle seeds?
+**Data:** [README](evidence/ao_replay_40k_20261101/README.md) (prereg, review K PASS), [RESULT](evidence/ao_replay_40k_20261101/RESULT.md),
+`result.json`. 304 of §727 arm A's 544 Awakened One entries (seeds 111312001-111312805), `one_combat fightreplay` with
+new default-off `STS_FIGHT_REPLAY_FLAT` (#939), 3 copies per arm (copy 0 = recorded seed, 1-2 = SEED_BASE 740000001
+redraws, shared by both arms). RUN_COMMIT 15737bbe, code 53d591b6, binary dda31542, 16 cloud workers, 304/304 units
+verified. No new seeds.
+**Result:**
+- Per-fight death: P 25.0%, F 23.8%, dDeath −1.2 pp [−2.9, +0.3] → NOT_PLANNING_LIMITED (CI lower > −4 pp). Run-level
+  translation ≈ +0.26 pp Heart kills (≤ +0.6 pp at the CI end).
+- Identity 304/304 (production copy 0 reproduces every recorded fight). HP lost −0.7 [−1.9, +0.5]. CPU per copy P 60 s,
+  F 447 s (7.5×).
+- Descriptive: where P died in all 3 copies (50 entries), F still died in 96% of copies; no entry-HP trend.
+**Interpretation:** consistent with §718 (40k no gain on expert boss states) and §740's 69% state-determined deaths:
+Awakened One is lost before the fight starts. A small real search gain (≤ ~3 pp per fight, ≤ ~0.6 pp per run) is not
+excluded, but it costs 7.5× CPU.
+**Decision:** no Awakened One budget follow-up; the X5 lever moves to deck building (phase 3/5 metric). No default change.
+Seeds: none new (replayed §727 seeds 111312001-111312805; redraws SEED_BASE 740000001). Cost ≈ 128 core-h, cloud.
+**Knowledge impact:** KB `research/a20-loss-mining.md` (X5 gate result, open question closed), `research/one-year-roadmap.md` (X5 row).
