@@ -2,9 +2,9 @@
 """Stage B2: Heart-entry value fit on the paired design (PREREG.md; written before fitting real labels).
 usage: fit_paired.py LABELS.csv VARIANTS_DIR OUT_DIR [--permute]
 Same data, features, folds, pairs and bootstrap as §732's fit_value.py (imported). New model:
-  B2  fixed-effects GBM: logit P(win) = b_base + f(state). Fitted by alternating (3 times) a per-base offset b (Newton,
-      on the base's own 16 fights; bases with all wins or all losses get b = +-8, which removes them from the fit)
-      and the trees f (XGBoost with base_margin = b). f learns only differences between states of the same base.
+  B2  fixed-effects GBM: logit P(win) = b_base + f(state). b starts at logit((wins + 0.5) / 17), f at 0; then
+      alternate the trees f (XGBoost with base_margin = b) and the offsets b (Newton on the base's own 16 fights)
+      until max|delta b| < 0.01 (8 to 20 alternations, logged). Bases with all wins or all losses get weight 0. f learns only differences between states of the same base.
       Hyperparameters (depth {2, 3, 4} x rounds {50, 200, 500, 1000}, mcw 20, eta 0.03) by 4-fold CV grouped by source
       seed inside each outer training set, scored by the conditional log loss on the validation bases (b refitted on
       the validation base's own fights, f fixed).
@@ -26,26 +26,34 @@ K = 16
 def sig(z): return 1 / (1 + np.exp(-z))
 def logit(p): p = np.clip(p, 1e-4, 1 - 1e-4); return np.log(p / (1 - p))
 
-def offsets(f, y, nb):
-    """Per-base b with sum_k sig(b + f_k) = sum_k y_k (Newton); all-0/all-1 bases -> -8/+8."""
-    F = f.reshape(nb, K); Y = y.reshape(nb, K); s = Y.sum(1); b = np.zeros(nb)
+def offsets(f, y, nb, b0=None):
+    """Per-base b with sum_k sig(b + f_k) = sum_k y_k (Newton from b0); all-0/all-1 bases -> -8/+8 (weight 0 in fits)."""
+    F = f.reshape(nb, K); Y = y.reshape(nb, K); s = Y.sum(1); b = np.zeros(nb) if b0 is None else b0.reshape(nb, K)[:, 0].copy()
     for _ in range(50):
         p = sig(b[:, None] + F); g = p.sum(1) - s; h = np.maximum((p * (1 - p)).sum(1), 1e-6); b -= np.clip(g / h, -2, 2)
     b[s == 0] = -8; b[s == K] = 8
     return np.repeat(b, K)
 
-def fe_fit(X, y, nb, depth, rounds, mono):
-    b = np.zeros(len(y)); booster = None
-    for _ in range(3):
-        d = xgb.DMatrix(X, label=y, base_margin=b)
-        booster = xgb.train(V.params(depth, 20, mono), d, rounds)
+FE_LOG = []
+def fe_fit(X, y, nb, depth, rounds, mono, min_it=8, max_it=20, tol=0.01):
+    """Start from b = logit((wins + 0.5) / 17), f = 0; alternate trees f (base_margin = b) and offsets b until
+    max|delta b| < tol (at least min_it, at most max_it alternations). All-win/all-loss bases get weight 0."""
+    Y = y.reshape(nb, K); s = Y.sum(1)
+    b = np.repeat(logit((s + 0.5) / (K + 1)), K); w = np.repeat(((s > 0) & (s < K)).astype(float), K)
+    booster = None; it = 0; db = np.inf
+    while it < max_it and (it < min_it or db >= tol):
+        prm = dict(V.params(depth, 20, mono), base_score=0.5)   # margin 0 without base_margin
+        booster = xgb.train(prm, xgb.DMatrix(X, label=y, base_margin=b, weight=w), rounds)
         f = booster.predict(xgb.DMatrix(X), output_margin=True)   # no base_margin -> f(state) only
-        b = offsets(f, y, nb)
+        nb_ = offsets(f, y, nb, b); live = w > 0
+        d = nb_[live] - b[live]; db = float(np.max(np.abs(d - d.mean()))) if live.any() else 0.0; b = nb_; it += 1  # b + f is invariant to a shared shift
+    FE_LOG.append({'n_bases': nb, 'depth': depth, 'rounds': rounds, 'alternations': it, 'final_max_abs_db': db})
     return booster
 
 def cond_loss(booster, X, y, nb, rounds):
     f = booster.predict(xgb.DMatrix(X), output_margin=True, iteration_range=(0, rounds))
-    b = offsets(f, y, nb); return V.bce(sig(b + f), y).sum()
+    b = offsets(f, y, nb); live = np.repeat(((y.reshape(nb, K).sum(1) > 0) & (y.reshape(nb, K).sum(1) < K)), K)
+    return V.bce(sig(b + f), y)[live].sum()   # all-win/all-loss bases carry no conditional information
 
 def fe_select(X, y, g, nb, mono, info):
     gb = g.reshape(nb, K)[:, 0]; folds = (gb // 5) % 4; best = None
@@ -88,7 +96,7 @@ def main(labels, vdir, out, permute=False):
     rng = np.random.default_rng(20261102)
     def stat(v): return {'mean': float(v.mean()), 'ci': V.boot(seeds, v, rng)}
     res = {'versions': {'xgboost': xgb.__version__, 'numpy': np.__version__}, 'n_bases': nb, 'n_pairs': int(len(D)),
-           'n_features': len(F.names), 'hyper': info}
+           'n_features': len(F.names), 'hyper': info, 'fe_fits': FE_LOG}
     res['primary_B2_minus_L'] = stat(SE['B2'] - SE['L'])
     res['B2_minus_A'] = stat(SE['B2'] - SE['A']); res['A_minus_L'] = stat(SE['A'] - SE['L'])
     res['mse'] = {m: float(SE[m].mean()) for m in SE}

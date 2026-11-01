@@ -11,12 +11,15 @@ has a cleaner signal: each base's 16 fights share the state except one change (1
 B2 fits only that within-base signal.
 
 ## Model (`fit_paired.py`)
-- **B2**: logit P(Heart kill) = b_base + f(state), with a free offset per base (fixed effects). Fitting alternates three
-  times between the offsets (Newton on the base's own 16 fights; a base with 16 wins or 16 losses gets ±8 and drops
-  out) and the trees f (XGBoost with base_margin = offset, same features and monotone constraints as §732's A).
+- **B2**: logit P(Heart kill) = b_base + f(state), with a free offset per base (fixed effects). The offsets start
+  at logit((wins + 0.5) / 17) with f = 0; then the fit alternates the trees f (XGBoost with base_margin = offset,
+  same features and monotone constraints as §732's A) and the offsets (Newton on the base's own 16 fights) until
+  the largest offset change (net of the shared shift, which b + f does not see) is below 0.01, with 8 to 20 alternations (logged per fit in `paired.json`). A base with
+  16 wins or 16 losses carries no within-base information and gets weight 0 (and no conditional loss).
   Hyperparameters depth {2, 3, 4} × rounds {50, 200, 500, 1000} (min child weight 20, eta 0.03), chosen by 4-fold CV
   grouped by source seed inside each outer training set, by conditional log loss on the validation bases (offset
-  refitted on the validation base's own fights, f fixed).
+  refitted on the validation base's own fights, f fixed). The round counts are scored on one 1,000-round fit
+  truncated at each count, an approximation of a separate fit per count.
 - On a held-out base: D̂_B2 = σ(a0 + f(state k) − f(control)) − σ(a0), with a0 = logit of A's prediction for the
   control. A is §732's all-feature GBM, refitted on the same outer training set by the same code; no outcome of the
   held-out base is used.
@@ -48,3 +51,13 @@ operator mean D and mean D̂ for each model; B2's Incense counter effects agains
 ## Caveats
 As §732: research Heart search, single changes drawn from Heart-entry frequencies, rare card and relic types. A0 comes
 from A, so B2's level on a held-out base is A's; only the differences are B2's.
+
+## Review changes before the real fit
+The prereg review (FAIL) found that 3 alternations from b = 0 leave f mostly the pooled, confounded fit (synthetic
+check: within-base slope 57% too steep). Fixed as above: smoothed-logit start, alternation to convergence,
+weight 0 for all-win/all-loss bases.
+Two more fixes found while checking that one: the trees now use base_score 0.5 (margin 0), so f(state) has no hidden
+intercept; and convergence is measured net of a shared shift of all offsets. Synthetic check (reviewer's setup: 1,000
+bases × 16, HP correlated with hidden deck strength, true within-base slope 0.020): within-base slope of f pooled
+0.057; B2 depth 2 with 200 rounds 0.027 (10 alternations), 50 rounds 0.011 (underfit); a linear fixed-effects logit
+on the same data 0.022 (incidental-parameter bias).
