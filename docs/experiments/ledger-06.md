@@ -25658,3 +25658,18 @@ model.
 Seeds: none.
 **Knowledge impact:** at 16,000 paired labels, flexible models learn no more than the average price per change type;
 Silver's leaf prices HP and potions at about 40-60% of their Heart-kill effect.
+
+## §TBD — Heart-entry perturbation labels, round 2: 52,032 more paired Heart fights on 3,252 Heart-entry states replicate §731 (potion removed −8.1, HP down −7.5, relic removed −5.1, HP up +6.1, potion added +5.4 pp; card changes ≈ 0); labels usable; Incense counter slope vs §723 0.92 (n 320); one base excluded (Silver stall) (new seeds, 2026-11-01)
+
+**Question:** Philipp chose more labels after §732/§733; does a second round on the remaining Heart-entry states give
+usable labels, and does it replicate §731?
+**Data:** [PREREG](evidence/heart_entry_perturb2_20261101/PREREG.md), [RESULT](evidence/heart_entry_perturb2_20261101/RESULT.md).
+3,253 bases × 16 variants as §731 (same generator, same research Heart search), binary e55f4827 (§731 units replay
+identically). 16 workers (Philipp 07:20Z), 752 CPU-h, 3253/3253 verified; `labels_all.csv` = 4,252 bases, 68,032 fights.
+**Result:** control kill 64.7%; reseed − control −1.8 pp [−3.3, −0.2] (different seed blocks); effects as in the
+title, all clear ones with §731's sign; sign checks consistent except card upgrade (unresolved). One base excluded:
+a fight aborted with "stall: exceeded 1000 decisions" (seed 111342268).
+**Decision:** labels usable; stage B3 (pre-registered) fits on both rounds.
+Seeds: 111341024-111344276 and 111350256-111353508 used.
+**Knowledge impact:** single-change Heart-entry prices replicate across 4,252 states; card changes are near 0 on
+average.
