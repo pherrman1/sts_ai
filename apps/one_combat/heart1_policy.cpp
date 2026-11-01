@@ -289,6 +289,7 @@ void encodeObservation(const GameContext &gc, Record &r) {
         r.foughtEncounters.push_back(static_cast<int>(gc.monsterList[i]));
     for (int i = 0; i < std::min<int>(gc.eliteMonsterListOffset, gc.eliteMonsterList.size()); ++i)
         r.foughtEncounters.push_back(static_cast<int>(gc.eliteMonsterList[i]));
+    if (int(r.foughtEncounters.size()) > kMaxFoughtEncounters) r.foughtEncounters.resize(kMaxFoughtEncounters);
 }
 
 // Reward groups expose their valid cards in order. Shop action indices instead
@@ -1375,7 +1376,8 @@ Output Net::forwardRecord(const Record &r, bool logitsOnly) const {
             for (int k = 0; k < kRunCounterCount; ++k)
                 run[k] = clampInput(k < int(r.runCounters.size()) ? r.runCounters[k] : -1, -1, 999);
             addFixedVec(runCounters_, run, row(t));
-            for (int e : r.foughtEncounters) addEmbedding(fought_, e, row(t));
+            const int nFought = std::min<int>(r.foughtEncounters.size(), kMaxFoughtEncounters);
+            for (int i = 0; i < nFought; ++i) addEmbedding(fought_, r.foughtEncounters[i], row(t));
         }
         ++t;
     }

@@ -38,6 +38,7 @@ struct FixedChoice {
 // Mirror of flatten_dict(Choice.as_dict()) in silverbot: the raw record that
 // collate_fn turns into tensors. JSON keys match the Python record exactly.
 inline constexpr int kRunCounterCount = 2;
+inline constexpr int kMaxFoughtEncounters = 32;  // student_inputs.py MAX_FOUGHT
 
 struct Record {
     std::vector<int> fixedObservation;  // 10 entries
