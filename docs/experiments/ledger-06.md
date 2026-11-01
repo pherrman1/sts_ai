@@ -25791,7 +25791,7 @@ streams WEAK). Keyed run-level RNG for evaluation is not built.
 Seeds: none (existing games only).
 **Knowledge impact:** literature review idea 7 marked dropped (`research/search-and-value-literature.md`).
 
-## §TBD — Cheap-combat proxy check (roadmap X1): §691's flexible-vs-rigid keys effect on its 1,024 seeds, student_sel alone out of combat: same-runner production +5.76 pp [+3.13, +8.50], flat Silver 1,000 +4.49 pp [+2.34, +6.64] → VALID (DiD −1.27 [−4.39, +1.95]), flat Silver 200 +2.34 pp [+0.49, +4.20] → INCONCLUSIVE (DiD −3.42 [−6.45, −0.39]); Silver 1,000 ≈ 12× cheaper per unit of power (2026-11-01)
+## §739 — Cheap-combat proxy check (roadmap X1): §691's flexible-vs-rigid keys effect on its 1,024 seeds, student_sel alone out of combat: same-runner production +5.76 pp [+3.13, +8.50], flat Silver 1,000 +4.49 pp [+2.34, +6.64] → VALID (DiD −1.27 [−4.39, +1.95]), flat Silver 200 +2.34 pp [+0.49, +4.20] → INCONCLUSIVE (DiD −3.42 [−6.45, −0.39]); Silver 1,000 ≈ 12× cheaper per unit of power (2026-11-01)
 
 **Question (Philipp, 2026-10-31 22:27Z "Okay try den billigen Kampf"):** does an OOC policy effect measured with
 production combat survive when real combats are played by flat cheap Silver? If yes, PPO self-play and OOC screens

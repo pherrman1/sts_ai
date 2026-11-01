@@ -1,4 +1,4 @@
-# Cheap-combat proxy check (roadmap X1): result, 2026-11-01
+# Cheap-combat proxy check (roadmap X1): result, 2026-11-01 (§739)
 
 Pre-registration: [PREREG.md](PREREG.md) (frozen in e1f94b4; arms moved to the main binary in 930cd7f2 before any
 campaign game was read). Analysis: `analyze.py` as frozen, run on the 6,144 games (`games.csv`, `result.json`).
