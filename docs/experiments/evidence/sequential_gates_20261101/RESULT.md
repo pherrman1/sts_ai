@@ -22,7 +22,7 @@ campaign's size). Every extracted rate reproduces the recorded one. Raw: [partA/
 
 - **Flips: 0 of 7** (also 0% over 200 random orders for every campaign). **Pair-weighted saving: 39.3%**
   (3,776 of 6,224 pairs needed). Decision rule (flips ≤ 1 and saving ≥ 10%): **ADOPT**.
-- Where the effect is large (|Δ| ≥ 4.8 pp) the SPRT stops at 13-63% of the pairs. Where the effect lies between the
+- Where the effect is large (|Δ| ≥ 4.8 pp) the SPRT stops at 17-63% of the pairs. Where the effect lies between the
   hypotheses or the campaign is small (§661 +1.4 pp, §676, §693 −2.5 pp at 512 pairs) it runs to the cap and costs the
   same as today, falling back to the fixed-sample reading. So the saving comes from clear results, and it does not
   make small effects cheaper; for those, gate size (X4 in the roadmap) still decides.
