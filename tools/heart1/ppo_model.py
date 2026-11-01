@@ -26,6 +26,7 @@ import struct
 import sys
 from collections import OrderedDict
 
+import numpy as np
 import torch
 from torch import nn
 import torch.nn.functional as F
@@ -91,6 +92,8 @@ FIXEDVECS = OrderedDict([
     ("x2_run", ("x2_run", RUN_COUNTERS)),
     ("x2_price", ("x2_price", 1)),
 ])
+TABLE_INDEX = {k: i for i, k in enumerate(TABLES)}
+TABLE_NAMES = list(TABLES)
 ZERO_INIT_TABLES = {"x_act": 5, "x2_fought": FOUGHT_ROWS}
 ZERO_INIT_FIXEDVECS = {"x_deck_misc", "x_relic_counter", "x2_run", "x2_price"}
 # silverbot's EmbedCache duplicates (export_heart1_weights.py SHARED): written on export for completeness.
@@ -215,7 +218,10 @@ def featurize(rec, trim_map=False):
     """One record -> token component lists. Every token is a sum of table rows and FixedVec projections.
 
     Returns {"n": tokens, "n_obs": observation tokens, "n_choice": choice tokens,
-             "emb": {table: [(token, row)]}, "fv": {fixedvec: [(token, [features])]}}.
+             "emb": int16 array (k, 3) of (table index in TABLES, token, row),
+             "fv": {fixedvec: (int16 tokens (k,), float32 features (k, width))}}.
+    Packed numpy arrays keep a featurised record at a few KB (Python tuples cost ~100 KB per record, 22 GB of host
+    RAM for 2,048 games in the 3060 Ti bench).
     All optional inputs are listed; the net adds those it has (zero-initialised ones add exactly zero)."""
     if trim_map and rec["obs.mapY"] >= 0:
         rec = trimmed_map(rec)
@@ -289,7 +295,12 @@ def featurize(rec, trim_map=False):
         f("path_x", [px]); e("path_room", dest[k]); f("cone", [c / MAP_AGG_CAP for c in cone[k]])
         e("reaches_burn", burn[k]); e("choice_pos", 4)
         t[0] += 1
-    return {"n": t[0], "n_obs": n_obs, "n_choice": t[0] - n_obs, "emb": emb, "fv": fv}
+    packed = np.array([(TABLE_INDEX[name], tok, row) for name, items in emb.items() for tok, row in items],
+                      dtype=np.int16).reshape(-1, 3)
+    fvp = {name: (np.array([tok for tok, _ in items], dtype=np.int16),
+                  np.array([x for _, x in items], dtype=np.float32).reshape(len(items), -1))
+           for name, items in fv.items()}
+    return {"n": t[0], "n_obs": n_obs, "n_choice": t[0] - n_obs, "emb": packed, "fv": fvp}
 
 
 def collate(feats):
@@ -297,17 +308,18 @@ def collate(feats):
     B = len(feats)
     T = max(x["n"] for x in feats)
     Cn = max(max(x["n_choice"] for x in feats), 1)
-    emb, fv = {}, {}
+    allemb = np.concatenate([x["emb"].astype(np.int64) + np.array([0, b * T, 0]) for b, x in enumerate(feats)])
+    emb = {}
+    for ti in np.unique(allemb[:, 0]):   # TABLES order
+        sel = allemb[allemb[:, 0] == ti]
+        emb[TABLE_NAMES[ti]] = (torch.from_numpy(sel[:, 1].copy()), torch.from_numpy(sel[:, 2].copy()))
+    fvl = {}
     for b, x in enumerate(feats):
-        base = b * T
-        for name, items in x["emb"].items():
-            lst = emb.setdefault(name, ([], []))
-            for tok, row in items:
-                lst[0].append(base + tok); lst[1].append(row)
-        for name, items in x["fv"].items():
-            lst = fv.setdefault(name, ([], []))
-            for tok, feat in items:
-                lst[0].append(base + tok); lst[1].append(feat)
+        for name, (tok, feat) in x["fv"].items():
+            lst = fvl.setdefault(name, ([], []))
+            lst[0].append(tok.astype(np.int64) + b * T); lst[1].append(feat)
+    fv = {k: (torch.from_numpy(np.concatenate(v[0])), torch.from_numpy(np.concatenate(v[1])))
+          for k, v in fvl.items()}
     pad = torch.ones(B, T, dtype=torch.bool)
     choice_index = torch.zeros(B, Cn, dtype=torch.long)
     choice_mask = torch.ones(B, Cn, dtype=torch.bool)   # True = padding
@@ -318,8 +330,7 @@ def collate(feats):
         choice_mask[b, :nc] = False
     return {
         "B": B, "T": T,
-        "emb": {k: (torch.tensor(v[0], dtype=torch.long), torch.tensor(v[1], dtype=torch.long)) for k, v in emb.items()},
-        "fv": {k: (torch.tensor(v[0], dtype=torch.long), torch.tensor(v[1], dtype=torch.float32)) for k, v in fv.items()},
+        "emb": emb, "fv": fv,
         "pad": pad, "choice_index": choice_index, "choice_mask": choice_mask,
     }
 

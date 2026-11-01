@@ -58,7 +58,7 @@ def read_env(path):
     return env
 
 
-def run_actors(args, env_base, net, it, out_dir):
+def run_actors(args, env_base, net, it, out_dir, trim_map):
     traj = os.path.join(out_dir, "traj.jsonl")
     for f in (traj, os.path.join(out_dir, "results.csv")):
         if os.path.exists(f):
@@ -74,7 +74,7 @@ def run_actors(args, env_base, net, it, out_dir):
         rc = subprocess.run(cmd, env=env, cwd=REPO, stdout=log, stderr=err).returncode
     if rc != 0:
         sys.exit(f"iteration {it}: actors exited {rc} (see {out_dir}/actors.err)")
-    games = ppo_train.load_games([traj])
+    games = ppo_train.load_games([traj], trim_map)
     if len(games) != args.games:
         sys.exit(f"iteration {it}: {len(games)} games in {traj}, expected {args.games}")
     return traj, games, seed, time.time() - t0
@@ -132,7 +132,7 @@ def main():
         out_dir = os.path.join(args.run, f"iter_{it:04d}")
         os.makedirs(out_dir, exist_ok=True)
         net = os.path.join(args.run, f"net_{it:04d}.bin")
-        traj, games, seed, actor_s = run_actors(args, meta["env"], net, it, out_dir)
+        traj, games, seed, actor_s = run_actors(args, meta["env"], net, it, out_dir, learner.net.trim_map)
         value_only = it < args.value_warmup
         stats = learner.update(games, value_only=value_only, log=lambda line: print(line, flush=True))
         nxt = os.path.join(args.run, f"net_{it + 1:04d}.bin")

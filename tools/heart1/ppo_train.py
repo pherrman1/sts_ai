@@ -19,6 +19,8 @@ Decisions with one choice (source heart1_ppo_single) train the critic only; fall
 
 `bench` times one update on synthetic copies of real trajectory games (no learning signal needed):
     python3 tools/heart1/ppo_train.py bench --init heart1.bin --traj smoke.jsonl --games 512 1024 2048 --device cuda
+Records are featurised once while loading (load_games); "load_featurize_s" and "feature_gb" extrapolate that cost
+and the packed host memory to N games and are not part of "total_s" (critic pass "prep_s" + training "train_s").
 """
 import argparse
 import gzip
@@ -41,8 +43,11 @@ NET_SOURCES = ("heart1_ppo", "heart1_ppo_single")
 
 # ---------------------------------------------------------------- trajectories
 
-def load_games(paths):
-    """Games with all their net decisions, in decision order. A game without its "game" line is dropped."""
+def load_games(paths, trim_map=None):
+    """Games with all their net decisions, in decision order. A game without its "game" line is dropped.
+
+    With trim_map (the learner net's flag), each step's record is featurised when its game completes and only the
+    packed features are kept ("feat"; record and logits are dropped), so host memory stays at a few KB per decision."""
     pending, games, seen = {}, [], set()
     for path in paths:
         with (gzip.open(path, "rt") if path.endswith(".gz") else open(path)) as f:
@@ -60,8 +65,12 @@ def load_games(paths):
                         raise ValueError(f"{path}: seed {row['seed']} has two game lines (reused seed?)")
                     seen.add(key)
                     steps = sorted(pending.pop(key, []), key=lambda r: r["idx"])
-                    games.append({"seed": row["seed"], "outcome": row["outcome"], "info": row,
-                                  "steps": [s for s in steps if s["source"] in NET_SOURCES]})
+                    steps = [s for s in steps if s["source"] in NET_SOURCES]
+                    if trim_map is not None:
+                        for s in steps:
+                            s["feat"] = featurize(s.pop("record"), trim_map)
+                            s.pop("logits", None)
+                    games.append({"seed": row["seed"], "outcome": row["outcome"], "info": row, "steps": steps})
     return games
 
 
@@ -181,7 +190,7 @@ class Learner:
         for g in games:
             for s in g["steps"]:
                 steps.append(s)
-                feats.append(featurize(s["record"], self.net.trim_map))
+                feats.append(s["feat"] if "feat" in s else featurize(s["record"], self.net.trim_map))
         if not steps:
             raise ValueError("no net decisions in the trajectories")
         t0 = time.time()
@@ -351,7 +360,7 @@ def cmd_update(argv):
     args = ap.parse_args(argv)
     torch.manual_seed(args.seed)
     learner = make_learner(args, torch.device(args.device))
-    games = load_games(args.traj)
+    games = load_games(args.traj, learner.net.trim_map)
     logf = open(args.log, "a") if args.log else None
 
     def log(line):
@@ -374,9 +383,13 @@ def cmd_bench(argv):
     ap.add_argument("--out", help="append one JSON line per size")
     add_hparams(ap)
     args = ap.parse_args(argv)
-    base = load_games(args.traj)
+    t0 = time.time()
+    base = load_games(args.traj, PolicyNet.from_bin(args.init).trim_map)
     if not base:
         sys.exit("no games")
+    feat_s = (time.time() - t0) / len(base)
+    feat_bytes = sum(s["feat"]["emb"].nbytes + sum(a.nbytes + b.nbytes for a, b in s["feat"]["fv"].values())
+                     for g in base for s in g["steps"]) / len(base)
     dev = torch.device(args.device)
     for n in args.games:
         games = [base[i % len(base)] for i in range(n)]
@@ -386,7 +399,8 @@ def cmd_bench(argv):
         stats = learner.update(games, log=lambda _: None)
         row = {"games": n, "decisions": stats["decisions"], "epochs": args.epochs, "minibatch": args.minibatch,
                "prep_s": round(stats["prep_s"], 2), "train_s": round(stats["train_s"], 2),
-               "total_s": round(time.time() - t0, 2), "device": str(dev),
+               "total_s": round(time.time() - t0, 2), "load_featurize_s": round(feat_s * n, 2),
+               "feature_gb": round(feat_bytes * n / 2**30, 3), "device": str(dev),
                "gpu": torch.cuda.get_device_name(0) if dev.type == "cuda" else "",
                "max_mem_gb": round(torch.cuda.max_memory_allocated() / 2**30, 2) if dev.type == "cuda" else 0}
         print(json.dumps(row), flush=True)
