@@ -25624,3 +25624,19 @@ scored on held-out paired differences vs Silver's leaf) gets its own pre-registr
 Seeds: none new (replays of used blocks 111384000-384999 and 111382000-382999).
 **Knowledge impact:** same-seed perturbations of Heart-entry states give clean causal labels; resource losses are
 priced clearly, gains of cards/relics/max HP are below about 2 pp at this size.
+
+## §TBD — All-feature Heart-entry value from §731's perturbation labels (stage B): predicts which states win (BCE −0.16 vs Silver's leaf) but not single-change effects: paired-difference error A − leaf −0.00013 [−0.00134, +0.00109], NOT_SHOWN; HP/potion effects 1.2-2x too large, relic removal and Incense phase missed (offline, no seeds, 2026-11-01)
+
+**Question:** Philipp (2026-10-31): a general value that sees cross-fight interactions. Does an all-feature
+Heart-entry GBM, trained on §731's 16,000 fights, predict the causal effect of single changes better than the
+structure of Silver's S&S win leaf?
+**Data:** [PREREG](evidence/heart_entry_value_20261101/PREREG.md) (prereg review FAIL → Lizard Tail fix → PASS),
+[RESULT](evidence/heart_entry_value_20261101/RESULT.md). 5-fold cross-fitting by source seed, 14,000 pairs.
+**Result:** primary −0.00013 [−0.00134, +0.00109] NOT_SHOWN. Skill vs no effect: A −0.0014, L −0.0012, leaf-input
+GBM +0.0006; operator-mean ceiling −0.0011. A's mean effects (pp, observed in brackets): HP down −10.9 (−7.1), potion
+removed −8.7 (−7.2), relic removed −0.7 (−5.0), Incense corr 0.17. Disclosed: L's fold-4 logistic did not converge;
+converged refit moves A − L to ≈ +0.00004 (verdict unchanged).
+**Decision:** NOT_SHOWN → no stage C. Next options to Philipp: within-base (paired) fit, more labels, observational states.
+Seeds: none.
+**Knowledge impact:** an outcome model fit across states confounds HP/potions with deck strength; per-change effects
+need a fit that uses the paired design.
