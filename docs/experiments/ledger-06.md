@@ -25926,3 +25926,5 @@ verified. No new seeds.
 Awakened One is lost before the fight starts. A small real search gain (≤ ~3 pp per fight, ≤ ~0.6 pp per run) is not
 excluded, but it costs 7.5× CPU.
 **Decision:** no Awakened One budget follow-up; the X5 lever moves to deck building (phase 3/5 metric). No default change.
+Seeds: none new (replayed §727 seeds 111312001-111312805; redraws SEED_BASE 740000001). Cost ≈ 128 core-h, cloud.
+**Knowledge impact:** KB `research/a20-loss-mining.md` (X5 gate result, open question closed), `research/one-year-roadmap.md` (X5 row).
