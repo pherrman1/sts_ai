@@ -14,7 +14,7 @@ Rewards (--reward):
   heart       1{Heart kill} at game end.
   original    floor/190 + 0.05 per key + 0.6 Heart (heart1's late reward without its deck-quality shaping).
   heart_pbrs  1{Heart} + potential-based shaping gamma*phi(s') - phi(s) with phi from each decision line's "phi"
-              (missing phi: the shaping term is 0 for that step; phi at the terminal state is 0).
+              (a missing phi counts as 0, so the shaping still telescopes; phi at the terminal state is 0).
 Decisions with one choice (source heart1_ppo_single) train the critic only; fallback lines (chain) are skipped.
 
 `bench` times one update on synthetic copies of real trajectory games (no learning signal needed):
@@ -43,7 +43,7 @@ NET_SOURCES = ("heart1_ppo", "heart1_ppo_single")
 
 def load_games(paths):
     """Games with all their net decisions, in decision order. A game without its "game" line is dropped."""
-    pending, games = {}, []
+    pending, games, seen = {}, [], set()
     for path in paths:
         with (gzip.open(path, "rt") if path.endswith(".gz") else open(path)) as f:
             for line in f:
@@ -56,6 +56,9 @@ def load_games(paths):
                 elif row["type"] == "game":
                     if row.get("schema") != SCHEMA:
                         raise ValueError(f"{path}: schema {row.get('schema')} is not {SCHEMA}")
+                    if key in seen:
+                        raise ValueError(f"{path}: seed {row['seed']} has two game lines (reused seed?)")
+                    seen.add(key)
                     steps = sorted(pending.pop(key, []), key=lambda r: r["idx"])
                     games.append({"seed": row["seed"], "outcome": row["outcome"], "info": row,
                                   "steps": [s for s in steps if s["source"] in NET_SOURCES]})
@@ -79,10 +82,10 @@ def step_rewards(game, kind, gamma):
     if n == 0:
         return r
     if kind == "heart_pbrs":
-        phi = [s.get("phi") for s in steps] + [0.0]   # terminal potential 0 keeps the objective unchanged
+        # missing phi = 0 keeps the sum telescoping; terminal potential 0 keeps the objective unchanged
+        phi = [float(s.get("phi") or 0.0) for s in steps] + [0.0]
         for t in range(n):
-            if phi[t] is not None and phi[t + 1] is not None:
-                r[t] += gamma * phi[t + 1] - phi[t]
+            r[t] += gamma * phi[t + 1] - phi[t]
     r[-1] += terminal_reward(game["outcome"], kind)
     return r
 
@@ -169,7 +172,7 @@ class Learner:
         for i in range(0, len(feats), chunk):
             lg, _ = self._forward(self.anchor, feats[i:i + chunk])
             t = torch.tensor(temps[i:i + chunk], device=lg.device)[:, None]
-            out.append(F.log_softmax(lg / t, dim=-1).cpu())
+            out.append(F.log_softmax(lg.float() / t, dim=-1).cpu())
         return out
 
     def update(self, games, value_only=False, log=print):
@@ -209,6 +212,9 @@ class Learner:
         ret_t, old_v = torch.tensor(ret), torch.tensor(values)
         old_logp = torch.tensor([float(s["logp"]) for s in steps])
         chosen = torch.tensor([int(s["chosen"]) for s in steps])
+        if any(s["n"] > 1 and s["temp"] <= 0 for s in steps):
+            raise ValueError("trajectory has greedy (temperature 0) decisions: their logp is not a sampling "
+                             "probability, so PPO ratios are meaningless; collect with STS_OOC_HEART1_TEMPERATURE>0")
         temps = [float(s["temp"]) if s["temp"] > 0 else 1.0 for s in steps]
         temp_t = torch.tensor(temps)
         anchor_lp = None
@@ -233,7 +239,7 @@ class Learner:
                 logits, value = self._forward(self.net, [feats[j] for j in mb])
                 dev = logits.device
                 t = temp_t[mb].to(dev)[:, None]
-                logp_all = F.log_softmax(logits / t, dim=-1)
+                logp_all = F.log_softmax(logits.float() / t, dim=-1)   # fp32 even under bf16 autocast
                 pad = torch.isneginf(logits)
                 logp_safe = logp_all.masked_fill(pad, 0.0)   # 0 * -inf would make NaN gradients
                 pm = policy_mask[mb].to(dev)
