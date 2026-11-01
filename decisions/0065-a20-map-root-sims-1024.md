@@ -1,4 +1,4 @@
-# ADR-TBD: At A20, every searched map root stops at 1,024 OOC MCTS simulations
+# ADR-0065: At A20, every searched map root stops at 1,024 OOC MCTS simulations
 
 Date: 2026-11-01
 Status: accepted

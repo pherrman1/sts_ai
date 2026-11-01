@@ -2771,7 +2771,7 @@ double liveFullBudgetFraction = 0;
 std::uint64_t liveFastRootCap = 0;
 // STS_OOC_MCTS_FULL_ROOT_SIMS=N: a full-budget root of a playout-cap-randomized run searches exactly N simulations
 // instead of STS_OOC_MCTS_SIMS (offline scoring keeps the whole budget). Unset: at ascension 20 under ADR-0061's
-// map-only default, every searched map root stops at 1,024 (kA20MapRootSims, ADR-TBD, SPRT §741); =0 restores the
+// map-only default, every searched map root stops at 1,024 (kA20MapRootSims, ADR-0065, SPRT §741); =0 restores the
 // whole STS_OOC_MCTS_SIMS budget there.
 std::uint64_t liveFullRootSims = 0;
 bool liveFullRootSimsExplicit = false;
@@ -5449,7 +5449,7 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
     const bool fastCapped = explore && liveFastRootCap > 0 && !fullBudget && !sole && simulations > liveFastRootCap;
     if (fastCapped) simulations = liveFastRootCap;
     if (explore && fullBudget && liveFullRootSims > 0) simulations = liveFullRootSims;
-    // A20 map-only default (ADR-TBD): a searched map root stops at 1,024 unless STS_OOC_MCTS_FULL_ROOT_SIMS is set.
+    // A20 map-only default (ADR-0065): a searched map root stops at 1,024 unless STS_OOC_MCTS_FULL_ROOT_SIMS is set.
     if (explore && fullBudget && !liveFullRootSimsExplicit && liveMapOnlyA20(gc) && simulations > kA20MapRootSims)
         simulations = kA20MapRootSims;
     if (fullBudget) { config.allowUnqualifiedRootStop = false; config.stopAt512VisitGap20 = false; config.gapStopFraction = 0; }
