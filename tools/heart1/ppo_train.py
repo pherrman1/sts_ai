@@ -21,6 +21,7 @@ Decisions with one choice (source heart1_ppo_single) train the critic only; fall
     python3 tools/heart1/ppo_train.py bench --init heart1.bin --traj smoke.jsonl --games 512 1024 2048 --device cuda
 """
 import argparse
+import gzip
 import json
 import math
 import os
@@ -44,7 +45,7 @@ def load_games(paths):
     """Games with all their net decisions, in decision order. A game without its "game" line is dropped."""
     pending, games = {}, []
     for path in paths:
-        with open(path) as f:
+        with (gzip.open(path, "rt") if path.endswith(".gz") else open(path)) as f:
             for line in f:
                 if not line.strip():
                     continue
