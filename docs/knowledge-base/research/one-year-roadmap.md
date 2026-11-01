@@ -83,7 +83,7 @@ net is GPU-feasible; silverbot's trainer ran at ~11-13 min per 256-game iteratio
 
 The binding constraints are therefore (Inference): the **cloud→PC data channel** for any learner on the GPU (the
 share has a 10 GB / 50,000-file quota), **sequential review and decision bandwidth**, and **whether cheap combat is a
-valid proxy** for production combat (experiment X1).
+valid proxy** for production combat (experiment X1: VALID at flat Silver 1,000 for an OOC policy effect, see below).
 
 ## Phases ranked by expected Heart-kill gain per compute
 
@@ -116,7 +116,7 @@ Gains are **Inference** ranges for planning; the decision rules below decide.
 
 | # | Experiment | Cost | Decision rule |
 | --- | --- | --- | --- |
-| X1 | **Cheap-combat proxy validity** (pre-registered and running: [PREREG](../../experiments/evidence/cheap_combat_proxy_20261031/PREREG.md)). Replay §691's flexible-vs-rigid keys contrast (production +6.1 pp) on its 1,024 seeds with flat Silver 1,000 and 200 in combat, student_sel alone out of combat; optional same-runner production control. The value-chooser rerun first planned here was dropped: that flag needs map search, ~600 s per game, ~350 core-h. | ~11 core-h cheap arms (one container); control ~150 core-h at 1,024 seeds | **VALID** at a strength if the CI excludes 0 and the point estimate lies in [+3.0, +9.1] (50-150% of §691): PPO self-play and screens may use it. **INVALID** if the CI upper bound < +3.0: re-cost phase 3 at production combat (×10-40). Otherwise INCONCLUSIVE. |
+| X1 | **Cheap-combat proxy validity**: **done 2026-11-01, VALID at Silver 1,000, INCONCLUSIVE at Silver 200** ([RESULT](../../experiments/evidence/cheap_combat_proxy_20261031/RESULT.md), [PREREG](../../experiments/evidence/cheap_combat_proxy_20261031/PREREG.md)). §691's flexible-vs-rigid keys contrast on its 1,024 seeds, student_sel alone out of combat: production (same runner) +5.76 pp, flat Silver 1,000 +4.49 pp [+2.34, +6.64] (DiD −1.27 [−4.39, +1.95]), Silver 200 +2.34 pp [+0.49, +4.20] (DiD −3.42 [−6.45, −0.39]). Silver 1,000 has about the same power per pair at 1/13 of the CPU (≈ 12× cheaper per unit of power). One OOC effect only: licenses cheap combat for ranking OOC policy changes, with production confirmation before a default. | 12.8 core-h cheap arms + 143 core-h control | Used: PPO self-play and OOC screens may run at flat Silver 1,000; Silver 200 at most a coarse pre-screen. |
 | X2 | **PPO pilot P0** in silverbot's own engine (already designed, project memory 2026-10-25): 60 A20-only iterations from `heart1.pt` on the PC, 1,000 paired their-engine seeds at 1,000 sims vs heart1. | ~150 core-h + ~12-15 h GPU slot | **GO** (build our own loop, Q2) if ΔHeart ≥ +2 pp with CI > 0, or Act-4 CI > 0 and ΔHeart ≥ 0. **STOP** phase 3 if ΔHeart ≤ 0. |
 | X3 | **Actor/learner channel.** Cloud actors write only seed + action indices + per-decision log-probs; the PC replays them deterministically to rebuild states and features. Measure bytes per game, replay ms per game on the PC and byte identity. | Smoke seeds only; one thread-day | **Use it** if < 5 KB per game, < 50 ms replay per game and 100% identity. Otherwise train small nets (d64) on cloud CPUs and keep the GPU for distillation. |
 | X4 | **Gate power from existing data.** Paired SD per pair and per-act from §661/§676/§683/§691/§727 records; choose the standard gate size per expected effect. | Offline, no seeds | Adopt the size giving ±1.0-1.5 pp half-width for changes whose plausible effect is ≤ 3 pp; keep 1,024 pairs only for screens expected ≥ 5 pp. |
@@ -157,8 +157,11 @@ graph TD
 
 ## Known limitations
 
-- The per-game costs of the cheap configurations come from smoke-size samples (8-30 games); X1 measures them
-  properly.
+- X1 measured the cheap per-game costs on 1,024 games each (Silver 1,000 ≈ 19.5 s, Silver 200 ≈ 3.0 s, production
+  on the bestbench runner ≈ 251 s, all with student_sel alone out of combat); other cheap-configuration costs in this
+  page still come from smoke-size samples (8-30 games).
+- X1 validated cheap combat on one OOC effect (keys, mostly an act-1 chest choice); deck-building effects whose value
+  depends on fight skill are untested.
 - Gain ranges are planning estimates, not forecasts.
 - PPO in this engine has no trainer yet; silverbot's `rl_train.py` targets its own engine.
 
