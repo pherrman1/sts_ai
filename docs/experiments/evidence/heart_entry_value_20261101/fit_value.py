@@ -5,8 +5,8 @@ LABELS.csv = §731 results/labels.csv. VARIANTS_DIR holds variants.tar's v0..v15
 Cross-fitting: 5 outer folds by source seed (seed % 5); inside each, hyperparameters by 4-fold CV grouped by source
 seed on the outer-training bases; every fight gets an out-of-fold prediction. Models:
   A   all-feature GBM (every state field), monotone + in HP, max HP, HP fraction, potion count, each potion type.
-  LI  the same GBM on the Silver leaf's inputs only (HP, max HP, HP fraction, potions by type, Fairy, Lizard Tail).
-  L   Silver's S&S win leaf L = HP + 2 max HP + 11 potions + 0.3 max HP [Fairy] + 0.5 max HP [Lizard Tail]
+  LI  the same GBM on the Silver leaf's inputs only (HP, max HP, HP fraction, potions by type, Fairy, Lizard Tail and its counter).
+  L   Silver's S&S win leaf L = HP + 2 max HP + 11 potions + 0.3 max HP [Fairy] + 0.5 max HP [unused Lizard Tail]
       (Mark of the Bloom: no death saves), mapped to a kill probability by a logistic fit on the training bases.
 Primary: on all pairs (base, k = 2..15), D = won_k - won_0, Dhat_M = p_M(s_k) - p_M(s_0); mean of
 (D - Dhat_A)^2 - (D - Dhat_L)^2, 95% CI by bootstrap over source seeds (10,000, seed 20261101).
@@ -23,7 +23,7 @@ def leaf(s):
     m = s['maxHp']; v = s['hp'] + 2 * m + 11 * len(s['potions'])
     if 'MARK_OF_THE_BLOOM' not in s['relics']:
         if 'FAIRY_POTION' in s['potions']: v += m * (0.6 if 'SACRED_BARK' in s['relics'] else 0.3)
-        if 'LIZARD_TAIL' in s['relics']: v += 0.5 * m
+        if 'LIZARD_TAIL' in s['relics'] and s['relicData'][s['relics'].index('LIZARD_TAIL')] == 1: v += 0.5 * m  # unused only
     return v
 
 class Feat:
@@ -35,7 +35,7 @@ class Feat:
         self.names += [f'pot:{p}' for p in pot] + [f'relic:{r}' for r in rel] + [f'ctr:{r}' for r in sorted(COUNTERS)]
         self.names += [f'card:{c}' for c in cards] + [f'up:{c}' for c in cards] + ['searing_misc']
         self.ix = {n: i for i, n in enumerate(self.names)}
-        self.leaf_inputs = ['hp', 'maxHp', 'hp_frac', 'potions', 'capacity', 'empty_slots'] + [f'pot:{p}' for p in pot] + ['relic:LIZARD_TAIL', 'relic:MARK_OF_THE_BLOOM', 'relic:SACRED_BARK']
+        self.leaf_inputs = ['hp', 'maxHp', 'hp_frac', 'potions', 'capacity', 'empty_slots'] + [f'pot:{p}' for p in pot] + ['relic:LIZARD_TAIL', 'ctr:LIZARD_TAIL', 'relic:MARK_OF_THE_BLOOM', 'relic:SACRED_BARK']
         self.leaf_inputs = [n for n in self.leaf_inputs if n in self.ix]
     def row(self, s):
         x = np.zeros(len(self.names), np.float32); ix = self.ix

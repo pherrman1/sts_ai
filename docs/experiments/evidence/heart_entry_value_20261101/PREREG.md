@@ -26,9 +26,9 @@ used).
   type and L. Grid depth {2, 3, 4, 6} × min child weight {5, 20}, eta 0.03, early stopping, chosen by 4-fold CV
   grouped by source seed inside each outer training set.
 - **LI** (leaf inputs): the same GBM on HP, max HP, HP fraction, potions (count, capacity, empty slots, each type),
-  Lizard Tail, Mark of the Bloom, Sacred Bark.
+  Lizard Tail and its counter, Mark of the Bloom, Sacred Bark.
 - **L** (Silver's S&S win leaf at A20 defaults, `SilverSearcher::evaluateEndState`): L = HP + 2 × max HP + 11 ×
-  potions + 0.3 × max HP if a Fairy is held (0.6 with Sacred Bark) + 0.5 × max HP with Lizard Tail (no death saves with
+  potions + 0.3 × max HP if a Fairy is held (0.6 with Sacred Bark) + 0.5 × max HP with an unused Lizard Tail (counter 1; the engine gives a spent tail no death save) (no death saves with
   Mark of the Bloom); turn penalty, gold and post-battle healing are the same within a pair and left out. Mapped to a
   kill probability by a logistic fit on the training bases.
 
