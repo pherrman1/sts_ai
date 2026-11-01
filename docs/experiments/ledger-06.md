@@ -25553,6 +25553,27 @@ Seeds: none new (used seeds 111384000-385023 and 111387000-255, plus seed + 1).
 **Knowledge impact:** §726's perturbation effects are no evidence against causal signs of V_A4 features; compare
 perturbed and control states with the same (fresh) Heart-play pipeline.
 
+## §730 — Fresh Heart replay of run-1 forks: unperturbed in-game Heart states keep their win rate when rebuilt (74.4% in game vs 70.9% fresh, +3.1 pp [−2.5, +7.8]), verdict NO_REBUILD_LOSS; #923's fresh-control gap is mostly noise; perturbed children vs forks −4.3 pp fresh and −9.3 pp in game, both CIs include 0 (replays of used seeds, 2026-10-31/11-01)
+
+**Question:** Philipp (2026-10-31, "Spiel nochmal", fork replay chosen): does the `act4replay` rebuild itself lose
+Heart wins on unperturbed in-game states (#923's control: 75% in game, 66.7% fresh)?
+**Data:** [README](evidence/heart_fork_replay_20261031/README.md) (pre-registered analysis),
+[RESULT](evidence/heart_fork_replay_20261031/RESULT.md). The Heart-entry states of run 1's redrawn-future forks
+1-4 of the 60 #923 entries (234 that reached the Heart; base = #923 control, field for field), at #923's
+production search, 2 fights each on the same battle seeds. 16 workers, ~2 h, 234/234 verified.
+**Result:**
+- In game minus fresh, forks: +3.1 pp [−2.5, +7.8] → NO_REBUILD_LOSS (pre-registered: the CI includes 0 and lies
+  below +0.083).
+- Fresh forks minus fresh control: +4.0 [−5.0, +12.9]. Heart win, in game / fresh: forks 74.4 / 70.9, control
+  75.0 / 66.7, perturbed children 64.4 / 66.4.
+- Children minus forks, per entry: fresh −4.3 [−12.5, +4.2], in game −9.3 [−18.2, +0.3], difference-in-differences
+  −5.0 [−13.3, +3.8]; all include 0.
+**Decision:** the rebuild is roughly unbiased, so #923's control gap is mostly noise. §726's −7.6/−10.6 pp splits
+into a possible modest fresh effect (about −4 pp) and a possible in-game penalty (about −5 pp), neither shown. No further Heart
+replays planned; perturbed rows stay noisy labels for V_A4.
+Seeds: none new (used entry seeds and seed + 1, as in #923).
+**Knowledge impact:** `act4replay` Heart rebuilds are usable as a fresh-state benchmark at production search, with a
+bias of +3 pp (CI up to about +8).
 ## §729 — A20 loss mining on 2,816 production games: bosses kill 49% of runs, 80% of deaths start depleted; Ruby, campfires, double-boss pricing and boss-aware picks each ≤ 0.5 pp; potion effect observational only (offer instrument invalid); four gaps ranked (Awakened One, Heart entry, act-2 bosses, low-HP attrition), plausible ~2-4 pp in total; offline, no seeds (2026-10-31)
 
 **Question:** Philipp, 2026-10-31 22:34Z ("Ja starte das mal", loss analysis, roadmap X5): where and why do today's
