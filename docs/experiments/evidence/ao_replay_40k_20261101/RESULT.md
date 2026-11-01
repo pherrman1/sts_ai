@@ -1,4 +1,4 @@
-# Awakened One replay: result (2026-11-01, §TBD)
+# Awakened One replay: result (2026-11-01, §743)
 
 Campaign `ao-replay-40k` (README.md prereg, review K PASS), RUN_COMMIT 15737bbe, code 53d591b6, binary dda31542,
 16 cloud workers, 17:08-21:43 UTC. `verify_campaign.py`: 304/304 units OK, 0 missing, 0 bad. Output tars on

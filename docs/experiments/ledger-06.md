@@ -25906,7 +25906,7 @@ Seeds: none new (Part B replayed used seeds 111312000-111312031). Cost ≈ 15.8 
 **Knowledge impact:** ADR-0064; benchmark protocol section "Paired campaigns: sequential stopping and control reuse";
 literature review ranks 1 and 2 marked adopted.
 
-## §TBD — Awakened One replay (X5 gate 1): flat 40k loses 1.2 pp fewer recorded A20 Awakened One fights than production (25.0% → 23.8%, CI −2.9 to +0.3 pp; 304 entries × 3 paired copies) at 7.5× CPU → NOT_PLANNING_LIMITED; Awakened One deaths are deck/state-limited (cloud replay of §727 seeds, 2026-11-01)
+## §743 — Awakened One replay (X5 gate 1): flat 40k loses 1.2 pp fewer recorded A20 Awakened One fights than production (25.0% → 23.8%, CI −2.9 to +0.3 pp; 304 entries × 3 paired copies) at 7.5× CPU → NOT_PLANNING_LIMITED; Awakened One deaths are deck/state-limited (cloud replay of §727 seeds, 2026-11-01)
 
 **Question (Philipp, 2026-11-01 card "Smoke, dann ~125 core-h"; run go 17:02Z "16 worker go"):** §740 left one X5
 candidate, Awakened One. Does more search (flat 40,000 simulations per root, no learned stop) lose fewer of its
