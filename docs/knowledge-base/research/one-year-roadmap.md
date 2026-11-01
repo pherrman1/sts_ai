@@ -58,9 +58,9 @@ Per-game CPU, A20, from the 2026-10-31 rollout-cost measurement (no ledger entry
 | Configuration | Core-seconds per game | Heart kills seen | Source |
 | --- | ---: | --- | --- |
 | Production default (map-only OOC MCTS + production Silver) | ~826 (0.23 core-h) | ~25-27% (§691, §727 arm A) | §727 arm A, mean over 1,536 games (§685's older ≈ 310 core-h per 1,024-seed A/B implies ~540 s) |
-| student_sel alone + production Silver | 237 mean (113 median) | 2/13 | rollout-cost arm R |
-| student_sel + flat Silver 1,000 | 13.7 | 1/8 | arm G1000 |
-| student_sel + flat Silver 200 | 5.6 | 5/30 | arm G200 |
+| student_sel alone + production Silver | 251 mean (X1, 2,048 games; smoke 237) | 461/2,048 | X1 arms RP/FP |
+| student_sel + flat Silver 1,000 | 19.5 (X1, 2,048 games; smoke 13.7) | 298/2,048 | X1 arms R1000/F1000 |
+| student_sel + flat Silver 200 | 3.0 (X1, 2,048 games; smoke 5.6) | 162/2,048 | X1 arms R200/F200 |
 | Full CTM rollout from an act start to game end (no real combat; per act start, not per game) | 0.014-0.037 | pessimistic (act-1 leaf 0.10 vs real) | arm CTM, §663 |
 | Full OOC MCTS on every screen (old default) | 971 (830 of it OOC search) | 1 game | arm M |
 
@@ -70,8 +70,8 @@ project memory 10-23/10-31). Then one year gives about **0.9M core-hours**:
 | Use | Games per year at 0.9M core-h | Per day (200 cores, 50%) |
 | --- | ---: | ---: |
 | Production-strength games (826 s) | ~3.9M | ~10k |
-| Silver-1,000 self-play games (+ ~3 s policy forward with a heart1-size net) | ~190M | ~520k |
-| Silver-200 self-play games (+ ~3 s policy forward) | ~380M | ~1.0M |
+| Silver-1,000 self-play games (19.5 s measured in X1 + ~3 s policy forward with a heart1-size net) | ~144M | ~380k |
+| Silver-200 self-play games (3.0 s measured in X1 + ~3 s policy forward) | ~540M | ~1.4M |
 
 Gate cost (Inference, from SD ≈ 0.44 per pair): half-width ±2.6 pp needs 1,024 pairs (~470 core-h, ~5 h); ±1.3 pp
 needs 4,096 pairs (~1,900 core-h, ~19 h); ±1.0 pp needs ~7,000 pairs (~3,200 core-h, ~1.3 days). Forty 1-pp gates cost
@@ -157,9 +157,9 @@ graph TD
 
 ## Known limitations
 
-- X1 measured the cheap per-game costs on 1,024 games each (Silver 1,000 ≈ 19.5 s, Silver 200 ≈ 3.0 s, production
-  on the bestbench runner ≈ 251 s, all with student_sel alone out of combat); other cheap-configuration costs in this
-  page still come from smoke-size samples (8-30 games).
+- The student_sel-alone costs are X1's (2,048 games per combat setting): the cheap walls come from one local
+  container, the production ones from 8 worker containers whose speed varies up to ~3×, so cross-setting ratios are
+  approximate. The other costs in the table come from smoke-size samples or §727.
 - X1 validated cheap combat on one OOC effect (keys, mostly an act-1 chest choice); deck-building effects whose value
   depends on fight skill are untested.
 - Gain ranges are planning estimates, not forecasts.

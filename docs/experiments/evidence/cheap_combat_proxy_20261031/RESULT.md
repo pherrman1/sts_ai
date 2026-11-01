@@ -52,3 +52,5 @@ pre-screen. Roadmap phase 3 keeps its cheap-combat cost estimate (Silver 1,000 �
 ## Cost
 
 Cheap arms 1,024 × 44.9 s ≈ 12.8 core-h; control 1,024 × 501.8 s ≈ 143 core-h. Seeds: none new.
+The cheap walls come from one local container and the control's from 8 worker containers (speed varies up to ~3×
+across containers), so the 1/13 CPU ratio is approximate; its order is safe.
