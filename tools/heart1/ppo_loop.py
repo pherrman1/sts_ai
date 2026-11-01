@@ -63,8 +63,10 @@ def read_env(path):
     return env
 
 
-def start_actors(args, env_base, net, it, out_dir):
-    """Launch iteration it's actors (non-blocking); finish_actors waits and loads the games."""
+def start_actors(args, env_base, net, it, out_dir, new_session=False):
+    """Launch iteration it's actors (non-blocking); finish_actors waits and loads the games.
+
+    new_session=True puts the game processes in their own process group (ppo_cloud.py kills the whole group)."""
     traj = os.path.join(out_dir, "traj.jsonl")
     for f in (traj, os.path.join(out_dir, "results.csv")):
         if os.path.exists(f):
@@ -77,7 +79,7 @@ def start_actors(args, env_base, net, it, out_dir):
            str(args.games), str(args.asc), str(seed), os.path.join(out_dir, "results.csv")]
     log = open(os.path.join(out_dir, "actors.log"), "w")
     err = open(os.path.join(out_dir, "actors.err"), "w")
-    proc = subprocess.Popen(cmd, env=env, cwd=REPO, stdout=log, stderr=err)
+    proc = subprocess.Popen(cmd, env=env, cwd=REPO, stdout=log, stderr=err, start_new_session=new_session)
     return {"proc": proc, "files": (log, err), "t0": time.time(), "traj": traj, "seed": seed, "it": it,
             "out_dir": out_dir, "net": net}
 
