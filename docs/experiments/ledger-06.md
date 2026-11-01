@@ -25659,33 +25659,6 @@ Seeds: none.
 **Knowledge impact:** at 16,000 paired labels, flexible models learn no more than the average price per change type;
 Silver's leaf prices HP and potions at about 40-60% of their Heart-kill effect.
 
-## §735 — Optimizer's-curse shrinkage on §727's value chooser: at α = 0.17 (§715) and a 1-pp margin only 7.8% of V's overrides survive; whether the surviving ones lose less is not shown (first override surviving minus not −4.6 pp Heart kills [−20.2, +11.1]), INCONCLUSIVE on the sign question (offline re-slice of read §727 logs, no seeds, 2026-11-01)
-
-**Question:** Philipp (2026-11-01, idea 8 of the literature review #927): if §727's value differences are shrunk by
-α ≈ 0.16-0.18 (§715), do the overrides that remain (α·ΔV > 1 pp) still lose? Then V's sign at large gaps is wrong,
-not only its scale.
-**Data:** [README](evidence/value_chooser_shrinkage_20261101/README.md), `analyze.py`, [result](evidence/value_chooser_shrinkage_20261101/result.json).
-§727's 1,536 units (29,330 logged choices, 13,939 overrides; top-3 candidates with prior and V). Post hoc on
-outcomes already read for §727 (disclosed). Units split by whether B's first override (before which A and B play
-identically; review: 199/199 sampled units) survives shrinkage; primary contrast L − S. Review (reviewer K) reproduced
-result.json byte for byte.
-**Result:**
-- Surviving overrides at α 0.17: 21.7% / 7.8% / 2.5% for margins 0.5 / 1 / 2 pp (median ΔV 0.011).
-- α 0.17, 1 pp: L − S −4.6 pp [−20.2, +11.1] (first override survives, 41 units, −19.5; does not, 1,488, −14.9).
-  L − S −2.2 to −4.6 with CIs including 0 at all α 0.16-0.18 and margins 0.5-1 pp; margin 2 pp (16-17 units)
-  uninformative.
-- Confound: after the first override L units make 8.3 more overrides (0.8 surviving), S units 8.1 (0.68), so L's own
-  −19.5 pp is mostly the later small-override stream that also costs S −14.9.
-- Count regression (endogenous): −2.7 pp per surviving override [−5.6, +0.2]; bins: ΔV 0.059-0.1 −34.8 pp (23 units),
-  > 0.1 0.0 (18). Neither settles the sign.
-**Interpretation:** INCONCLUSIVE. Shrinkage at α ≈ 0.17 and a 1-pp margin would cut overrides from about nine per game
-to about 0.7, and most of §727's overrides are near-ties (median ΔV 0.011); whether V_A1/V_A2's few large gaps point the right way
-is not measurable from these logs, because every unit keeps overriding afterwards.
-**Decision:** no code, default or model change. Shrinkage (α·ΔV with an out-of-sample α plus a margin) stays a
-required guard for any future value-led decider; no shrunk-chooser A/B for V_A1/V_A2. Testing the large-gap sign would
-need a chooser that overrides only above the margin (a new A/B, Philipp's call).
-Seeds: none.
-**Knowledge impact:** `research/search-and-value-literature.md` idea 8 marked checked (inconclusive).
 ## §734 — §709 re-cut by imagined-fight index × act (research rank 3): no detectable growth of CTM death error over index 0-3 in any act (elite+boss slope +0.001 [−0.006, +0.007] per index); act-2/3 bosses show no ≥ 2× excess (15.1% forecast vs 13.7% observed, 1.11× [0.80, 2.23]; 1.34× without seed 111374104; index 0-1 1.35×, 2-3 0.98×), so the full-rollout diagnostic's ~3× rests on its 4 games; act-2/3 elites 1.4× pessimistic from index 0; within root-action CTM-vs-Silver rollout ρ 0.10 [0.04, 0.15] (offline, no seeds, 2026-11-01)
 
 **Question:** is the CTM's act-2/3 boss over-forecast (2026-10-31 full-rollout diagnostic: act 2 15.5% vs 5.3%, act 3
@@ -25719,3 +25692,31 @@ rollouts give no variance reduction for Silver rollouts (1 − ρ² ≈ 0.99): P
 audit confirms a level bias.
 Seeds: none (offline).
 **Knowledge impact:** this entry; rank 3 / Problem 2 in `search-and-value-literature.md`.
+
+## §735 — Optimizer's-curse shrinkage on §727's value chooser: at α = 0.17 (§715) and a 1-pp margin only 7.8% of V's overrides survive; whether the surviving ones lose less is not shown (first override surviving minus not −4.6 pp Heart kills [−20.2, +11.1]), INCONCLUSIVE on the sign question (offline re-slice of read §727 logs, no seeds, 2026-11-01)
+
+**Question:** Philipp (2026-11-01, idea 8 of the literature review #927): if §727's value differences are shrunk by
+α ≈ 0.16-0.18 (§715), do the overrides that remain (α·ΔV > 1 pp) still lose? Then V's sign at large gaps is wrong,
+not only its scale.
+**Data:** [README](evidence/value_chooser_shrinkage_20261101/README.md), `analyze.py`, [result](evidence/value_chooser_shrinkage_20261101/result.json).
+§727's 1,536 units (29,330 logged choices, 13,939 overrides; top-3 candidates with prior and V). Post hoc on
+outcomes already read for §727 (disclosed). Units split by whether B's first override (before which A and B play
+identically; review: 199/199 sampled units) survives shrinkage; primary contrast L − S. Review (reviewer K) reproduced
+result.json byte for byte.
+**Result:**
+- Surviving overrides at α 0.17: 21.7% / 7.8% / 2.5% for margins 0.5 / 1 / 2 pp (median ΔV 0.011).
+- α 0.17, 1 pp: L − S −4.6 pp [−20.2, +11.1] (first override survives, 41 units, −19.5; does not, 1,488, −14.9).
+  L − S −2.2 to −4.6 with CIs including 0 at all α 0.16-0.18 and margins 0.5-1 pp; margin 2 pp (16-17 units)
+  uninformative.
+- Confound: after the first override L units make 8.3 more overrides (0.8 surviving), S units 8.1 (0.68), so L's own
+  −19.5 pp is mostly the later small-override stream that also costs S −14.9.
+- Count regression (endogenous): −2.7 pp per surviving override [−5.6, +0.2]; bins: ΔV 0.059-0.1 −34.8 pp (23 units),
+  > 0.1 0.0 (18). Neither settles the sign.
+**Interpretation:** INCONCLUSIVE. Shrinkage at α ≈ 0.17 and a 1-pp margin would cut overrides from about nine per game
+to about 0.7, and most of §727's overrides are near-ties (median ΔV 0.011); whether V_A1/V_A2's few large gaps point the right way
+is not measurable from these logs, because every unit keeps overriding afterwards.
+**Decision:** no code, default or model change. Shrinkage (α·ΔV with an out-of-sample α plus a margin) stays a
+required guard for any future value-led decider; no shrunk-chooser A/B for V_A1/V_A2. Testing the large-gap sign would
+need a chooser that overrides only above the margin (a new A/B, Philipp's call).
+Seeds: none.
+**Knowledge impact:** `research/search-and-value-literature.md` idea 8 marked checked (inconclusive).
