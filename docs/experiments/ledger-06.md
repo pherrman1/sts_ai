@@ -25606,7 +25606,7 @@ mass is combat HP loss at bosses (§701, §711), so the large levers are combat-
 Seeds: none (existing games only).
 **Knowledge impact:** new page `research/a20-loss-mining.md`, linked from the research README.
 
-## §TBD — Heart-entry perturbation labels (stage A of the general value model): 16,000 paired Heart fights on 1,000 distinct Heart-entry states; signs consistent (HP −7.1/+3.8 pp, potion −7.2/+5.0, relic removed −5.0, counter −2.7), card upgrade and max HP up unresolved, none inconsistent → labels usable; one change flips the outcome in 13.6% of pairs vs 20.3% for a reseed; mean effect −1.0 pp [−2.5, +0.5], no §726-style anomaly (replays of used seeds, 2026-10-31/11-01)
+## §731 — Heart-entry perturbation labels (stage A of the general value model): 16,000 paired Heart fights on 1,000 distinct Heart-entry states; pre-registered signs consistent (HP −7.1/+3.8 pp, potion −7.2/+5.0; also relic removed −5.0, counter changed −2.7), card upgrade and max HP up unresolved, none inconsistent → labels usable; one change flips the outcome in 13.6% of pairs vs 20.3% for a reseed; mean effect −1.0 pp [−2.5, +0.5], no §726-style anomaly (replays of used seeds, 2026-10-31/11-01)
 
 **Question:** Philipp (2026-10-31): a value model that sees cross-fight interactions in general, not one Incense rule.
 Stage A: do single-change perturbations of Heart-entry states, played on the control's battle seed, give causal
