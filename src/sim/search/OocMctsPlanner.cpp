@@ -348,6 +348,9 @@ OocMctsPlanner::OocMctsPlanner(OocMctsConfig config) : config(config) {
         || config.wideningAlpha >= 1
         || !std::isfinite(config.gumbelQCap) || config.gumbelQCap < 0)
         throw std::invalid_argument("OOC MCTS invalid PUCT/PW configuration");
+    if (config.priorShareStopFraction != 0
+        && (!(config.priorShareStopFraction > 0.5) || !(config.priorShareStopFraction <= 1)))
+        throw std::invalid_argument("OOC MCTS prior-share stop fraction must be in (0.5, 1]");
     if ((!config.rootCheckpointSimulations.empty() && !config.rootCheckpointSimulations.front())
         || !std::is_sorted(config.rootCheckpointSimulations.begin(),
                         config.rootCheckpointSimulations.end())
@@ -453,6 +456,29 @@ OocMctsResult OocMctsPlanner::search(OocGenerativeModel &model, OocStateId root,
                         stats.push_back({action.action.id, action.action.prior, action.visits, action.q()});
                 if (stats.size() >= 2 && config.learnedStop(search.metrics.simulations, stats)) {
                     search.metrics.earlyStopLearned = true;
+                    search.metrics.savedSimulations = remaining;
+                    break;
+                }
+            }
+            if (remaining && !gumbelRoot && config.priorShareStopFraction > 0 && !config.observeRootLock
+                && !config.selectByMeanQ
+                && std::find(config.priorShareStopSimulations.begin(), config.priorShareStopSimulations.end(),
+                       search.metrics.simulations) != config.priorShareStopSimulations.end()) {
+                // Offline rule of map_root_maxq_count_20261101/budget_stop.py (S_prior): the visit leader must be
+                // the prior argmax and hold at least the fraction of all root visits. The fraction is above 1/2,
+                // so a qualifying leader is unique and is the action the search would play now.
+                const ChanceNode *leader = nullptr, *priorArgmax = nullptr;
+                std::uint64_t total = 0;
+                for (const auto &action : node.actions) {
+                    total += action.visits;
+                    if (!priorArgmax || action.action.prior > priorArgmax->action.prior
+                        || (action.action.prior == priorArgmax->action.prior && action.action.id < priorArgmax->action.id))
+                        priorArgmax = &action;
+                    if (!action.pruned && (!leader || action.visits > leader->visits)) leader = &action;
+                }
+                if (leader && leader == priorArgmax && total
+                    && double(leader->visits) >= config.priorShareStopFraction * double(total)) {
+                    search.metrics.earlyStopPriorShare = true;
                     search.metrics.savedSimulations = remaining;
                     break;
                 }

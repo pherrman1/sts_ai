@@ -404,6 +404,63 @@ void tests() {
     const auto learnedObserved = OocMctsPlanner(learnedObservedConfig).search(learnedObservedModel, 0, 2048);
     require(learnedObserved.metrics.simulations == 2048 && !learnedObserved.metrics.earlyStopLearned
         && learnedCalls.empty(), "full-budget observation disables the learned stop");
+    // Prior-share stop: fires at a listed checkpoint only when the visit leader is the prior argmax with >= H visits.
+    const auto shareOracle = [](const OocMctsResult &r, double h) {
+        // budget_stop.py S_prior on the root statistics (prior argmax: highest prior, lowest id).
+        std::uint64_t total = 0, top = 0; OocActionId leader = 0; const OocRootActionStats *arg = nullptr;
+        for (const auto &a : r.rootActions) {
+            total += a.visits;
+            if (a.visits > top) { top = a.visits; leader = a.id; }
+            if (!arg || a.prior > arg->prior || (a.prior == arg->prior && a.id < arg->id)) arg = &a;
+        }
+        return leader == arg->id && double(top) >= h * double(total);
+    };
+    auto shareConfig = config;
+    shareConfig.priorShareStopSimulations = {128, 256, 512};
+    shareConfig.priorShareStopFraction = 0.9;
+    auto shareModel = deterministic(.001, .999);   // prior argmax is the better action 2
+    const auto shareStopped = OocMctsPlanner(shareConfig).search(shareModel, 0, 2048);
+    require(shareStopped.metrics.earlyStopPriorShare && shareStopped.metrics.simulations == 128
+        && shareStopped.metrics.savedSimulations == 1920 && shareStopped.selectedAction == 2
+        && shareOracle(shareStopped, 0.9), "prior-share stop fires at the first checkpoint where the offline rule holds");
+    auto shareStrictConfig = shareConfig;
+    shareStrictConfig.priorShareStopFraction = 1;
+    auto shareStrictModel = deterministic(.001, .999);
+    const auto shareStrict = OocMctsPlanner(shareStrictConfig).search(shareStrictModel, 0, 2048);
+    require(!shareStrict.metrics.earlyStopPriorShare && shareStrict.metrics.simulations == 2048,
+        "a share above the leader's share never stops");
+    auto shareAgainstConfig = shareConfig;
+    shareAgainstConfig.cPuct = 0;
+    auto shareAgainstModel = deterministic(.999, .001);   // prior argmax is action 1, the visit leader is action 2
+    const auto shareAgainst = OocMctsPlanner(shareAgainstConfig).search(shareAgainstModel, 0, 2048);
+    auto shareAgainstBaseConfig = shareAgainstConfig; shareAgainstBaseConfig.priorShareStopFraction = 0;
+    auto shareAgainstBaseModel = deterministic(.999, .001);
+    const auto shareAgainstBase = OocMctsPlanner(shareAgainstBaseConfig).search(shareAgainstBaseModel, 0, 2048);
+    require(!shareAgainst.metrics.earlyStopPriorShare && shareAgainst.metrics.simulations == 2048
+        && shareAgainst.selectedAction == 2 && shareAgainstBase.selectedAction == 2,
+        "a visit leader that is not the prior argmax never stops");
+    auto shareOffConfig = shareConfig;
+    shareOffConfig.priorShareStopFraction = 0;
+    auto shareOffModel = deterministic(.001, .999), shareBaseModel = deterministic(.001, .999);
+    const auto shareOff = OocMctsPlanner(shareOffConfig).search(shareOffModel, 0, 2048);
+    const auto shareBase = OocMctsPlanner(config).search(shareBaseModel, 0, 2048);
+    require(!shareOff.metrics.earlyStopPriorShare && shareOff.metrics.simulations == 2048
+        && shareOff.metrics.simulations == shareBase.metrics.simulations
+        && shareOff.selectedAction == shareBase.selectedAction && shareOff.rootActions.size() == shareBase.rootActions.size(),
+        "a zero prior-share fraction leaves the search unchanged");
+    for (std::size_t i = 0; i < shareOff.rootActions.size(); ++i)
+        require(shareOff.rootActions[i].visits == shareBase.rootActions[i].visits
+            && shareOff.rootActions[i].q == shareBase.rootActions[i].q, "prior-share off: identical root statistics");
+    for (const double badShare : {0.5, 0.3, 1.01, -1.0}) {
+        auto invalidShareConfig = config; invalidShareConfig.priorShareStopFraction = badShare;
+        rejects([&] { OocMctsPlanner invalid(invalidShareConfig); });
+    }
+    auto shareObservedConfig = shareConfig;
+    shareObservedConfig.observeRootLock = true;
+    auto shareObservedModel = deterministic();
+    const auto shareObserved = OocMctsPlanner(shareObservedConfig).search(shareObservedModel, 0, 2048);
+    require(shareObserved.metrics.simulations == 2048 && !shareObserved.metrics.earlyStopPriorShare,
+        "full-budget observation disables the prior-share stop");
     for (const auto &thresholds : std::vector<std::vector<std::uint64_t>>{{0},{2,1},{2,2}}) {
         auto invalidCheckpointConfig=config; invalidCheckpointConfig.rootCheckpointSimulations=thresholds;
         rejects([&] { OocMctsPlanner invalid(invalidCheckpointConfig); });

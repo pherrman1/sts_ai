@@ -105,6 +105,13 @@ struct OocMctsConfig {
     // statistics (in root action order). Off when learnedStop is empty.
     std::vector<std::uint64_t> learnedStopSimulations;
     std::function<bool(std::uint64_t, const std::vector<OocRootActionStats> &)> learnedStop;
+    // Opt-in prior-share stop (STS_OOC_MCTS_PRIOR_SHARE_STOP): after each listed
+    // simulation count, stop when the most-visited live root action is the prior
+    // argmax (ties: lowest id) and holds at least priorShareStopFraction of the
+    // root visits. Off when the fraction is 0; a fraction must be in (0.5, 1] so
+    // the most-visited action is unique.
+    std::vector<std::uint64_t> priorShareStopSimulations;
+    double priorShareStopFraction = 0;
     // Optional research budget checked after each completed simulation. The
     // host includes model/root preparation in its deadline. Empty is unchanged.
     std::function<bool()> budgetExhausted;
@@ -198,6 +205,7 @@ struct OocMctsMetrics {
     std::uint64_t earlyStopVisitGap20 = 0;
     std::uint64_t earlyStopGapLadder = 0;
     std::uint64_t earlyStopLearned = 0;
+    std::uint64_t earlyStopPriorShare = 0;
     std::uint64_t earlyStopBudget = 0;
     std::uint64_t savedSimulations = 0;
     std::uint64_t hypotheticalLockSimulation = 0, hypotheticalRemainingSimulations = 0;
