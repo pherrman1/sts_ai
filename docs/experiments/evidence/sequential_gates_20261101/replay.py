@@ -32,7 +32,11 @@ def tar_outcomes(share_dir, arms):
         with tarfile.open(path) as t:
             m = {x.name: x for x in t.getmembers() if x.isfile()}
             rd = lambda n: t.extractfile(m[n]).read()
-            unit_done = {re.search(r'/(\d+)\.done$', n).group(1): rd(n).decode() for n in m if re.search(r'/\d+\.done$', n)}
+            unit_done = {}
+            for n in m:  # the unit's own <seed>/<seed>.done; the worker's empty units/<seed>.done must not override it
+                mm = re.search(r'/(\d+)/(\d+)\.done$', n)
+                if mm and mm.group(1) == mm.group(2):
+                    unit_done[mm.group(1)] = rd(n).decode()
             for n in m:
                 mm = re.search(r'/([A-Za-z]+)-(\d+)\.jsonl\.gz$', n)
                 if not mm or mm.group(1) not in arms:
