@@ -139,6 +139,9 @@ def add_hparams(ap):
     ap.add_argument("--value-clip", type=float, default=0.0, help="PPO value clipping range (0 = off)")
     ap.add_argument("--amp", type=int, default=1, help="bf16 autocast on CUDA")
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--compile", type=int, default=0,
+                    help="1 = torch.compile the net (dynamic shapes) to fuse the fp32 RMSNorm and other elementwise "
+                         "ops; same math up to rounding; first minibatches pay the compile time (0 = off)")
     ap.add_argument("--bucket", type=int, default=0,
                     help="length-bucketed minibatches: sort each window of BUCKET*minibatch shuffled decisions by "
                          "token count before cutting minibatches (less padding; changes minibatch composition; 0 = off)")
@@ -158,6 +161,7 @@ class Learner:
             {"params": value_params, "lr": args.lr * args.value_lr_mult},
         ], eps=1e-6)
         self.iteration = 0
+        self._compiled = {}
 
     def state(self):
         return {"net": self.net.state_dict(), "opt": self.opt.state_dict(), "iteration": self.iteration,
@@ -176,8 +180,15 @@ class Learner:
             batch = self._batch(feats)
         batch = batch_to(batch, self.device)
         with torch.autocast("cuda", dtype=torch.bfloat16, enabled=bool(self.args.amp) and self.device.type == "cuda"):
-            logits, value = net(batch)
+            logits, value = self._callable(net)(batch)
         return logits.float(), value.float()
+
+    def _callable(self, net):
+        if not getattr(self.args, "compile", 0):
+            return net
+        if id(net) not in self._compiled:   # compiled wrapper shares the module's parameters
+            self._compiled[id(net)] = torch.compile(net, dynamic=True)
+        return self._compiled[id(net)]
 
     @torch.no_grad()
     def evaluate(self, feats, chunk=256, store=None):
