@@ -75,6 +75,7 @@ graph TD
 - [Root quality](ooc/root-quality.md) — definitions of action gap Δ, relative bias B_rel, search variance σ, coverage q; identifiable pooled estimands
 - [One-year roadmap](one-year-roadmap.md) — 2026-11 to 2027-10 plan on 200 cores + one 8 GB GPU: phases ranked by Heart-kill gain per compute, first experiments X1-X7
 - [A20 PPO plan](a20-ppo-plan.md) — our own heart1-style A20 PPO in this engine: what the original did, what is missing, improvements, staged plan with a cheap first gate
+- [PPO and combat-leaf literature](ppo-and-combat-leaf-literature.md) — evidence on the PPO plan's choices and on a run-aware Silver leaf; ranked A/B-gated experiments
 - [A20 loss mining](a20-loss-mining.md) — where production A20 runs die, exchange rates (HP, potions) at bosses, ranked structural gaps with gates
 - [Search and learned value](search-and-value-literature.md) — literature on search + value in stochastic games mapped to four open problems; 19 ideas ranked by Heart-kill gain per compute, each with a falsifying test
 

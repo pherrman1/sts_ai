@@ -165,6 +165,8 @@ Every run needs a pre-registration, the seed-run guard, frozen provenance and Ph
 
 ## Relevant sources
 
+- [PPO and combat-leaf literature](ppo-and-combat-leaf-literature.md): literature check of this plan (2026-11-01).
+
 - External: `README.md`, `EXPERIMENT_LOG.md` (2026-05-31 to 2026-07-05), `run_heart1_supervised.sh` at `84ab3ea`.
 - [One-year roadmap](one-year-roadmap.md), [cheap-combat proxy result](../../experiments/evidence/cheap_combat_proxy_20261031/RESULT.md) (§739),
   ADR-0047, ADR-0057, ADR-0064, `THIRD_PARTY_NOTICES.md`, PR #941.
