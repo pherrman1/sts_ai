@@ -11,6 +11,7 @@ import sys, os, json, csv
 import numpy as np
 import xgboost as xgb
 from sklearn.linear_model import LogisticRegression
+import sklearn
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'heart_entry_value_20261101'))
 import fit_value as V  # noqa
 K = 16
@@ -52,13 +53,22 @@ def main(labels, vdir, out, permute=False):
     def stat(v, sel=None):
         sel = np.ones(len(v), bool) if sel is None else sel
         return {'n': int(sel.sum()), 'mean': float(v[sel].mean()), 'ci': V.boot(seeds[sel], v[sel], rng)}
-    res = {'versions': {'xgboost': xgb.__version__}, 'n_bases': nb, 'n_bases_round2': int((rnd == 2).sum()),
+    res = {'versions': {'xgboost': xgb.__version__, 'sklearn': sklearn.__version__, 'numpy': np.__version__}, 'n_bases': nb, 'n_bases_round2': int((rnd == 2).sum()),
            'n_source_seeds': int(len(us)), 'n_pairs': int(len(D)), 'n_features': len(F.names), 'hyper': info}
     res['primary_A_minus_L'] = stat(SE['A1.0'] - SE['L'])
     res['A_minus_L_round2_pairs'] = stat(SE['A1.0'] - SE['L'], rp == 2)
     res['skill_vs_zero'] = {m: stat(SE[m] - SE['zero']) for m in Dh}
     res['learning_curve_A_minus_zero'] = {f: res['skill_vs_zero'][f'A{f}'] for f in fr}
     res['A100_minus_A25'] = stat(SE['A1.0'] - SE['A0.25'])
+    res['A100_minus_A50'] = stat(SE['A1.0'] - SE['A0.5'])
+    res['A_minus_L_curve'] = {f: stat(SE[f'A{f}'] - SE['L']) for f in fr}
+    nbase = {f: float(np.mean([x['n_train_bases'] for x in info[f'A{f}']])) for f in fr}
+    xs = np.log2([nbase[f] for f in fr]); ys = np.array([res['A_minus_L_curve'][f]['mean'] for f in fr])
+    sl, ic = np.polyfit(xs, ys, 1)   # descriptive only
+    res['curve_extrapolation'] = {'train_bases': nbase, 'slope_per_doubling': float(sl),
+                                  'bases_where_A_minus_L_reaches_0': float(2 ** (-ic / sl)) if sl < 0 else None}
+    res['curve_branch'] = bool(res['A100_minus_A50']['ci'][1] < 0
+                               and res['A_minus_L_curve'][1.0]['mean'] < res['A_minus_L_curve'][0.5]['mean'])
     res['mse'] = {m: float(SE[m].mean()) for m in SE}
     res['corr_D'] = {m: float(np.corrcoef(D, Dh[m])[0, 1]) for m in Dh}
     res['by_op'] = {o: {'n': int((opp == o).sum()), 'D': float(D[opp == o].mean()),
