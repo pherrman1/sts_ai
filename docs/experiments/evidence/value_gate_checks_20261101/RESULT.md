@@ -88,7 +88,7 @@ agreement with that estimator, not with the true action value.
 |---|---|---|
 | (a) | subgroup visible, aggregate flat → targeted probes | holder gain −0.0038 (CI incl. 0), aggregate −0.0001; dilution makes the aggregate gate blind → **probes, not BCE, for state terms** |
 | (b) | R²(10^5) < 0.33 → no capture | 0.327 at 10^5 entries, 0.319 at 10^5 games → **no outcome-only capture** (borderline) |
-| (c) | best within 0.05 of ceiling → stop | map gap +0.12-0.23 under every variant → **do not stop on noise grounds**; non-map gap −0.05 to +0.11, unsettled |
+| (c) | best within 0.05 of ceiling → stop | map gap +0.12-0.24 under every variant → **do not stop on noise grounds**; non-map gap −0.04 to +0.11, unsettled |
 
 Together: more outcome-only rows are not the lever (b, and §700), and the label-noise limit is not what blocks map-root
 ranking (c). Map-root headroom has to come from what the labels and heads represent: features, level and scale
