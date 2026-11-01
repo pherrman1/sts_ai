@@ -25771,7 +25771,7 @@ The SPRT needs Philipp's typed go, worker count, new seeds and frozen provenance
 Seeds: none (replays of logged §727 and §683 games only).
 **Knowledge impact:** none beyond this entry; no code or default change.
 
-## §TBD — Per-floor RNG keying for evaluation (literature idea 7): on §685's 8,510 first-divergence pairs, children whose next card offer happened to coincide correlate at rho 0.506 vs 0.417 when it differed, gap 0.089 [0.018, 0.162] < 0.1 → DROP; at map roots the gap is −0.004; ceiling ≈ 1.04× (≤ 1.07×) effective seeds (offline, no seeds, 2026-11-01)
+## §738 — Per-floor RNG keying for evaluation (literature idea 7): on §685's 8,510 first-divergence pairs, children whose next card offer happened to coincide correlate at rho 0.506 vs 0.417 when it differed, gap 0.089 [0.018, 0.162] < 0.1 → DROP; at map roots the gap is −0.004; ceiling ≈ 1.04× (≤ 1.07×) effective seeds (offline, no seeds, 2026-11-01)
 
 **Question (Philipp, 2026-11-01, idea 7 of the #927 literature review):** would keying run-level streams (card,
 relic, potion, event) by seed × floor × room make paired whole-game A/Bs worth building? Cheapest check from the
