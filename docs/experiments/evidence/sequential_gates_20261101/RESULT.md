@@ -34,6 +34,26 @@ campaign's size). Every extracted rate reproduces the recorded one. Raw: [partA/
   boundary's edge (LLR 4.87 vs 2.94).
 - Simulated null false-pass rate of the gainer test (self-test, ρ 0.5 pairs, 300 runs): 6.0%.
 
-## Part B: determinism smoke for control-arm reuse
+## Part B: determinism smoke for control-arm reuse — ADOPT (with sentinel)
 
-Pending (B1 running locally since 07:44Z).
+Replays of §727 arm A on its first 32 seeds (111312000-111312031, used), §727's arm A environment verbatim
+([run_b.sh](run_b.sh)), compared with the stored control records by [compare.py](compare.py) (all state, decision and
+outcome rows exact and in order; header leaf by leaf with only `.producerSha` and the `student_sel.bin` path allowed to
+differ; CTM rows exact). Raw: [partB/](partB/).
+
+| Run | Binary | Model files | Identical | Different | Rows compared | Core-h |
+|---|---|---|---|---|---|---|
+| B1 (same binary) | bin-cache `d39c2b98…` | worktree `8f5b17d6` (§727's code) | **32 / 32** | 0 | 11,298 | 7.5 |
+| B2 (current main) | fresh `e55f482` build `b8f0628b…` | worktree `e55f482` | **32 / 32** | 0 | 11,298 | 8.3 |
+
+- **B1 32/32 → control reuse is adopted** with the per-campaign sentinel (decision rule in PREREG). A recorded control
+  game is exactly what the same configuration plays again: the games are seed-deterministic, and nothing in the
+  records depends on the run directory, the machine or the lane count.
+- **B2 32/32:** a fresh build of today's main replays §727's control games exactly, so main's changes since `8f5b17d6`
+  (through `e55f482`) leave default play unchanged on these seeds, and §727's arm A is a valid control bank for main at
+  `e55f482`. Any later play-changing default makes it stale; the sentinel catches that before arm B runs.
+- B1's game 111312029 was killed by this session's background time limit and was replayed alone with the same binary,
+  worktree and environment ([partB/NOTE.txt](partB/NOTE.txt)).
+- Scope: one bank (§727 arm A, Heart outcome records), 32 seeds, x86-64-v3 builds in cloud containers. A bank recorded
+  with another generator or another CPU preset needs its own sentinel; the sentinel is the standing check, this smoke
+  only shows that the check can pass.

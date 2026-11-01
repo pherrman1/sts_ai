@@ -20,7 +20,9 @@ Evidence ([sequential_gates_20261101](../docs/experiments/evidence/sequential_ga
 - **Sequential stopping:** replaying the SPRT on seven recorded campaigns (§661, §676, §683, §691, §693, §724, §727)
   changed no verdict (0 of 7; 0% over 200 random seed orders each) and needed 3,776 of 6,224 pairs (39% saved).
   Clear effects stop at 17-63% of the pairs; effects between the hypotheses run to the cap at today's cost.
-- **Control reuse:** see Part B of the same evidence (determinism smoke on 32 recorded control games).
+- **Control reuse:** replaying 32 recorded control games of §727 (seeds 111312000-111312031) gave 32/32 identical
+  records with the original binary and 32/32 with a fresh build of main `e55f482` (11,298 rows each; header, decision,
+  outcome and CTM rows).
 
 ## Decision
 
