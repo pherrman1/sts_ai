@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Part B of PREREG.md: replay §727 arm A (value_chooser_ab_20261031/run_unit.sh, arm A environment verbatim, no
 # chooser) on seeds 111312000-111312031 (used; replays) and write A-<seed>.jsonl.gz for compare.py.
-#   run_b.sh REPO BIN OUT [LANES]
+#   run_b.sh REPO BIN OUT [LANES]     (SEEDS="..." overrides the seed list, e.g. to finish a killed game)
 # REPO: checkout whose model files the game reads (B1: a detached worktree at 8f5b17d6; B2: main e55f482).
 # BIN:  one_combat (B1: bin-cache one_combat-d39c2b98...; B2: fresh linux-gcc-release-x86-64-v3 build at e55f482).
 # OUT:  fresh output dir; student_sel.bin (cf6bf7fb...) is copied there from the share.
@@ -49,5 +49,5 @@ one() {
   gzip -9 -f "$b.jsonl" "$b.ctm.jsonl" 2>/dev/null
 }
 export -f one; export OUT REPO BIN HERE HOME
-seq 111312000 111312031 | xargs -P "$LANES" -I{} bash -c 'one {}'
+printf '%s\n' ${SEEDS:-$(seq 111312000 111312031)} | xargs -P "$LANES" -I{} bash -c 'one {}'
 echo "run_b done $(ls "$OUT"/*.done | wc -l) games"
