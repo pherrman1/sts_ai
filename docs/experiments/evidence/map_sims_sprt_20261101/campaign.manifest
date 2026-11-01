@@ -1,0 +1,10 @@
+name          map-sims-sprt
+code_commit   1cd21a159f73c742eabdf75a50fb1ce19787fb87
+binary_sha256 b8f0628b25b124c52baa353f51446a00162c0b99e919383780d3281805ac7341
+workers       24
+share         /mnt/project-files/map-sims-sprt
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 45
+input student_sel.bin /mnt/project-files/az-gen3-explore/student_sel.bin cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7
