@@ -30,6 +30,9 @@ the replacement.
 
 - [ADR-TBD](TBD-a20-map-root-sims-1024.md) caps every A20 map-only search root at 1,024 simulations instead of the
   whole 4,096 budget (`STS_OOC_MCTS_FULL_ROOT_SIMS=0` restores it; adopted on §741's NOT_WORSE SPRT, −75% map CPU).
+- [ADR-0064](0064-sequential-gates-and-control-reuse.md) makes paired A/B gates stop sequentially (`tools/sprt_gate.py`,
+  GSPRT α = β = 0.05, looks every 64 pairs, cap = the fixed size) and allows a recorded control arm after a 32-seed
+  identity sentinel (adopted on §742: 0/7 verdict flips, 39% pairs saved; 32/32 control replays identical).
 - [ADR-0063](0063-flexible-heart-keys-default.md) makes flexible keys the default: Sapphire and Ruby follow the policy
   (Act-3 treasure row and pre-boss campfire backstops), Emerald masks the Act-3 route (`STS_KEY_*=first` restores
   ADR-0041's rules; adopted on §691, +6.05 pp Heart kills at A20).
