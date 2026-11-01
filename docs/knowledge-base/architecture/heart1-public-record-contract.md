@@ -1,6 +1,6 @@
 # heart1/student_sel public record: field inventory and training-to-live contract
 
-Last verified: 2026-10-18 against main `b5dd5557` (issue #506 steps 1-2); v2 extension 2026-11-01.
+Last verified: 2026-10-18 against main `b5dd5557` (issue #506 steps 1-2); v2 extension 2026-11-01; PPO coverage tokens 2026-11-01.
 
 This page covers the one input that is both the A20 OOC prior in simulation and
 live (student_sel, ADR-0042/ADR-0047) and the planned AZ-loop training record:
@@ -58,6 +58,7 @@ reconstructible from public history; **P** private (must not appear).
 | `obs.v2.run_counters` (v2 extension) | `[shopRemoveCount, removeCost in a shop else -1]` | O / R | `projected.shopRemoveCount`, shop `removeCost` | open (step 3) |
 | `obs.v2.fought` (v2 extension) | consumed prefixes `monsterList[0..monsterListOffset)`, `eliteMonsterList[0..eliteMonsterListOffset)` | R | combat ledger (`live_ooc_state.cpp` fills the same prefixes) | open (step 3); OOC MCTS resamples only the unconsumed suffix |
 | `offer_prices` (v2 extension) | shop `cardPrice/relicPrice/potionPrice` per offered card, relic, potion token, token order; empty outside shops | O | shop capture `price` | open (step 3) |
+| `fixed_actions[].potion` and fixed-action ids 166-177 (PPO coverage, `ChoiceOptions::fullCoverage`) | potion discard per discardable held potion when a reward/shop potion is blocked by full slots (`potion` = held potion id); Match and Keep slots: 167 unseen (`card` = face-up card or none), 168 seen (`card` = that card), 169 seen twin of the face-up card, `gold` = attempts left; 170+option for unmapped event options (`gold` = event id) | O | potion bar, Match and Keep board, event screen | simulator tested (`heart1pposelftest`: unseen card identity does not reach the record); live open. Only `STS_OOC_HEART1_PPO` builds them; the default choice space and its JSON are unchanged (`potion` is written only when set) |
 | `leaf.publicBattleEncounter` | `info.encounter` at the battle-start boundary | O | `publicEnemy` / room | qualified for the encounter just entered; never a queue entry |
 | `leaf.matchAttempts`, `leaf.matchSlots` | Match and Keep board, unseen cards masked | O | event capture | qualified in simulator (masking tested); live open |
 
