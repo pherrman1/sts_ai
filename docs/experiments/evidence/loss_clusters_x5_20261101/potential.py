@@ -2,7 +2,7 @@
 For each boss (and act-2/3 elite), the per-fight death rate is compared with the same act's sibling encounters at
 the SAME entry-HP band and potion count (direct standardization on the cluster's own entries). Excess deaths x
 P(Heart kill | survived this fight) = Heart-kill potential if the cluster were made as survivable as its siblings at
-equal entry resources. Seed-clustered bootstrap CI (2,000 draws over seeds)."""
+equal entry resources. Seed-clustered bootstrap CI (300 draws over seeds)."""
 import sys, collections
 import numpy as np
 from common import *

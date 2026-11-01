@@ -22,7 +22,10 @@ that has per-fight CTM rows. Findings: [research/a20-loss-mining.md](../../../kn
 18,688 complete games; the **primary set** (15,363) keeps every arm within 4 pp of its campaign's best arm
 (`common.primary`), which drops only arms that failed their gate badly. All are A20 Ironclad with the learned-stop
 Silver combat of their date (Act 4 strong from §691 on), student_sel out of combat, with or without OOC MCTS. The
-campaigns share some seed blocks (e.g. r1 and expanch both use 111384000+), so all CIs resample seeds.
+campaigns share some seed blocks, so all CIs resample seeds. 1,351 primary games are exact copies (same seed,
+same config): 878 expanch A = r1 base, 109 equal to both expanch arms and r1 base, 245 cardrule A = r1 base, and one
+repeated seed each in expanch and r1. The primary set holds 6,912 unique seeds; r1, expanch A and cardrule A are not
+independent replications. Removing the copies moves the bounds ≤ 0.05 pp (review of #936).
 
 `aivat-replay-676` (§698): every recorded fight of the §676 guard (1,024 games, 23,503 fights) replayed from the
 identical entry state with 4 fresh combat draws at that date's production combat (Act 4 strong off).

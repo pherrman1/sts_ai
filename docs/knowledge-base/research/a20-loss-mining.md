@@ -150,7 +150,12 @@ gate candidate if it covers ≥ 2% of runs and a replay or counterfactual bound 
 Heart 14.6% (37.0%; 12.5-15.4), Awakened One 8.3% (22.9%; 5.9-9.6), act-2 hallways 4.9% (88% of them entered below
 50% HP; 3.9-7.5), Collector 4.7% (18.9%), Hexaghost 3.6%, Automaton 3.5%, Time Eater 3.4%, Donu & Deca 3.0%,
 Reptomancer 2.9%, Champ 2.8%, Slavers 2.5%, Gremlin Leader 2.4%, act-3 hallways 2.3%, Slime Boss 2.2%, Book of
-Stabbing 2.0%. Same ranking as §729 on 5.5× the data; every share replicates in every campaign.
+Stabbing 2.0%. Same ranking as §729 on more data; the shares hold in every campaign. **Duplicates:** 1,351 of the
+15,363 primary games are exact copies (same seed, same config) across §720 base, expert-anchored A and §712 A (878
+expanch A = r1 base, 109 equal to both expanch arms and r1, 245 card-rule A = r1 base, one repeated seed each in
+expanch and r1), so the primary set holds 6,912 unique seeds and about 7, not 9, independent campaign replications;
+the seed bootstrap already clusters them, and without them the bounds move ≤ 0.05 pp (Awakened One +3.08 [+2.76,
++3.40], Reptomancer +0.86, Collector +0.67; independent review of #936).
 
 **Counterfactual bound** (`potential.py`): each boss/elite against its act siblings at the same entry-HP band and
 potion count, excess deaths × P(Heart kill | survived it), seed bootstrap:
@@ -164,7 +169,9 @@ potion count, excess deaths × P(Heart kill | survived it), seed bootstrap:
 | Slavers, Gremlin Leader | 0.3, 0.2 | ≤ +0.12 pp | include 0 | |
 | all other bosses/elites | < 0 | < 0 | | |
 
-The sibling bound overstates intrinsic-difficulty gaps. Against the expert (§701 / §729: Baalorlord dies per fight at
+Two caveats on this bound: against the sibling mean the hardest sibling always comes out positive (the excesses within
+an act roughly offset), and the pooled P(kill | survived) overstates what marginal survivors, who would leave the
+fight at low HP, go on to achieve. The sibling bound also overstates intrinsic-difficulty gaps. Against the expert (§701 / §729: Baalorlord dies per fight at
 Awakened One 3.0%, Donu & Deca 1.0%, act-3 bosses 2.3%) our Awakened One rate is 7.6× his, Donu & Deca 8.6×, act-3
 bosses overall 6.0×: relative to the expert, Awakened One is no worse than its siblings. Bringing it to the act-3
 ratio (18.1% per fight) gives ≈ +1.0 pp, to Donu's ratio 0. **So Awakened One is the only cluster whose bound reaches
@@ -181,8 +188,8 @@ would win it), which a replay with a stronger player answers and these data cann
 **Deck signature** (`decksig.py`, seed-grouped CV): deck and relics predict death beyond entry HP, max HP, potions
 and gold at the Heart (log-loss gain +0.069 [+0.059, +0.079], GBM), Hexaghost (+0.044), Awakened One (+0.032), Champ
 (+0.051), Collector (+0.024), Time Eater (+0.024); not in hallways or act-2 elites (deaths there are HP only). The
-out-of-fold weakest-deck quartile carries 46% of Awakened One deaths (per fight 46% vs 6% in the strongest quartile)
-and 40% of Hexaghost deaths. Recurrent signals across bosses: Strikes left in the deck and curses are risky, Dead
+out-of-fold weakest-deck quartile carries 50% of Awakened One deaths (per fight 46% vs 6% in the strongest quartile)
+and 61% of Hexaghost deaths. Recurrent signals across bosses: Strikes left in the deck and curses are risky, Dead
 Branch, Feel No Pain/Corruption, Demon Form/Inflame and Barricade protective. With ≥ 80% entry HP, Heart death is
 16% with 0-1 Strikes vs 27% with 4+ (act-2 bosses 6% vs 12%; `strikes.py`). Observational: a refined deck also marks
 a strong run, so this is a hypothesis for the phase-3 prior (removal/transform value), not a rule.

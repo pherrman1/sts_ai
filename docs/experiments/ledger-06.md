@@ -25822,21 +25822,23 @@ Seeds: none new (§691's 111382000-111383023 replayed; smokes 111383024/025, use
 show ≥ +1 pp Heart-kill potential? Plus X4: paired SD per pair and per act from existing records.
 **Data:** [README](evidence/loss_clusters_x5_20261101/README.md), [run_all.sh](evidence/loss_clusters_x5_20261101/run_all.sh),
 tables in `results/`. Nine A20 campaigns (§661, §676, §683, §691, §693, §712, §720, §727, expert-anchored A/B), 18,688
-games; primary set 15,363 (arms within 4 pp of their campaign's best; drops §727 B, §691 R, §712 B-D). §698's replay of
+games; primary set 15,363 (arms within 4 pp of their campaign's best; drops §727 B, §691 R, §712 B-D), of which
+1,351 are exact copies across §720 base, expert-anchored A and §712 A (6,912 unique seeds, ~7 independent
+replications; deduplicated, the bounds move ≤ 0.05 pp, Awakened One +3.08 [+2.76, +3.40]). §698's replay of
 the §676 guard (23,503 fights × 4 fresh draws) for luck vs state.
 **Result:**
 - Clusters ≥ 2% of runs: Heart 14.6%, Awakened One 8.3%, act-2 hallways 4.9% (88% below 50% HP), Collector 4.7%,
   Hexaghost 3.6%, Automaton 3.5%, Time Eater 3.4%, Donu & Deca 3.0%, Reptomancer 2.9%, Champ 2.8%, Slavers 2.5%,
   Gremlin Leader 2.4%, act-3 hallways 2.3%, Slime Boss 2.2%, Book of Stabbing 2.0%; same order in every campaign.
 - Sibling-standardized bound (same act, same entry-HP band and potions, × P(kill | survived)): Awakened One
-  +3.11 pp [+2.81, +3.43] (every campaign +2.4 to +4.0), Reptomancer +0.84 [+0.67, +1.01], Collector +0.64
+  +3.11 pp [+2.81, +3.43] (every campaign +2.4 to +4.0; mechanically positive for an act's hardest boss, continuation pooled over all survivors), Reptomancer +0.84 [+0.67, +1.01], Collector +0.64
   [+0.47, +0.84], Hexaghost +0.40 [+0.26, +0.53], all others ≤ +0.12 or negative. Expert-relative (Baalorlord
   per-fight rates, §701/§729): Awakened One 7.6× his rate vs 6.0× for act-3 bosses → ≈ +1.0 pp; vs Donu's 8.6× → 0.
 - Luck vs state (§676 replays): 69% of Awakened One deaths and 67% of Heart deaths die again in ≥ 3 of 4 redraws of
   the same entry state; Collector 51%, act-2 hallways 37%, S&S 18%.
 - Deck/relics beyond resources (seed-grouped CV log-loss gain, GBM): Heart +0.069 [+0.059, +0.079], Champ +0.051,
   Hexaghost +0.044, Awakened One +0.032, Collector and Time Eater +0.024; none in hallways or act-2 elites. Weakest
-  out-of-fold deck quartile: 46% of Awakened One deaths. Strikes left and curses risky at every boss (Heart at
+  out-of-fold deck quartile: 50% of Awakened One deaths (46% per fight). Strikes left and curses risky at every boss (Heart at
   ≥ 80% HP: 16% death with 0-1 Strikes vs 27% with 4+), observational.
 - X4: 12 near-null arm pairs (|ΔHeart| < 3 pp, 11,264 pairs): paired SD 0.421 (r +0.51) Heart, 0.262 / 0.436 / 0.464
   reaching act 2 / 3 / 4; pairs for ±1.0 / ±1.5 / ±2.0 pp half-width 6,821 / 3,032 / 1,706; MDE 3.7 pp at 1,024
