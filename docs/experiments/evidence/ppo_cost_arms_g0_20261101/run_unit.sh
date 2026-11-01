@@ -5,11 +5,11 @@
 # Combat C (base: flat Silver 1,000 = learned stop off, Act 4 strong off, bestbench 1000):
 #   B   base (replays X1's F1000; same-container cost reference and a determinism check)
 #   K1  STS_SIMS_NORMAL=200 (hallway and event fights 200 sims, elites/bosses 1,000)
-#   K2  learned Silver stop on (gbt-0cac7cc64364), cap 1,000
-#   K3  K1 + K2
 #   K4  no boss prior playouts (STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE=0)
 #   K5  no learned Silver prior: no root/tree prior, rollout root table off, no prior playouts (the original's Silver)
-# Seeds 111382000-111383023 (X1's, USED): games R/F x K1..K5 plus FB. Seeds 111372000-111374047 (G0): F-keys base combat
+#   K15 K1 + K5
+# (The learned stop is not a cost arm: it searches its checkpoints to 10k whatever the base budget, ~8x slower.)
+# Seeds 111382000-111383023 (X1's, USED): games R/F x K1 K4 K5 K15 plus FB. Seeds 111372000-111374047 (G0): F-keys base combat
 # with student_sel (GS) and heart1 (GH). Smokes 111386992 (K layout), 111386993 (G0 layout). Order rotated by seed. Always exits 0.
 # Binary d39c2b98 (main 6c96c25, X1's), student_sel cf6bf7fb, heart1.bin 1e92f2a6 (silverbot heart1.pt deaba59d).
 set -uo pipefail
@@ -35,7 +35,7 @@ PRIOR=(STS_SILVER_ROLLOUT_ROOT_TABLE=models/combat_policy_mlp_g7f_E.txt
   STS_SILVER_ROOT_PRIOR=models/combat_policy_mlp_g7f_E.txt STS_SILVER_ROOT_PRIOR_WEIGHT=400
   STS_SILVER_TREE_PRIOR_MIN_VISITS=8)
 if { [ "$SEED" -ge 111382000 ] && [ "$SEED" -le 111383023 ]; } || [ "$SEED" = 111386992 ]; then
-  ARMS=(RK1 FK1 RK2 FK2 RK3 FK3 RK4 FK4 RK5 FK5 FB)
+  ARMS=(RK1 FK1 RK4 FK4 RK5 FK5 RK15 FK15 FB)
 elif { [ "$SEED" -ge 111372000 ] && [ "$SEED" -le 111374047 ]; } || [ "$SEED" = 111386993 ]; then
   ARMS=(GS GH)
 else
@@ -61,10 +61,10 @@ for ((i = 0; i < N; i++)); do
   case $c in
     B)  X+=("${PRIOR[@]}" STS_SILVER_LEARNED_STOP=0) ;;
     K1) X+=("${PRIOR[@]}" STS_SILVER_LEARNED_STOP=0 STS_SIMS_NORMAL=200) ;;
-    K2) X+=("${PRIOR[@]}" STS_SILVER_LEARNED_STOP=1) ;;
-    K3) X+=("${PRIOR[@]}" STS_SILVER_LEARNED_STOP=1 STS_SIMS_NORMAL=200) ;;
     K4) X+=("${PRIOR[@]}" STS_SILVER_LEARNED_STOP=0 STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE=0) ;;
     K5) X+=(STS_SILVER_LEARNED_STOP=0 STS_SILVER_ROLLOUT_ROOT_TABLE=0 STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE=0) ;;
+    K15) X+=(STS_SILVER_LEARNED_STOP=0 STS_SILVER_ROLLOUT_ROOT_TABLE=0 STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE=0
+             STS_SIMS_NORMAL=200) ;;
     *) echo "bad arm $arm" >&2; exit 2 ;;
   esac
   b=$OUT/$arm-$SEED
@@ -77,16 +77,13 @@ for ((i = 0; i < N; i++)); do
     grep -qF "[heart1] loaded $RUN/$net.bin " "$b.log" "$b.err" || rc=95
     grep -q "seeds $SEED..$SEED  asc 20  sims 1000 " "$b.log" || rc=94
     grep -q "^BEST  *win%=" "$b.log" || rc=93
+    grep -q "flat budget" "$b.log" "$b.err" || rc=92
     case $c in
-      K2|K3) grep -q "learned stop" "$b.log" "$b.err" || rc=92 ;;
-      *) grep -q "flat budget" "$b.log" "$b.err" || rc=92 ;;
-    esac
-    case $c in
-      K1|K3) grep -q "tiered sims: normal=200 elite=-1 boss=-1" "$b.log" "$b.err" || rc=90 ;;
+      K1|K15) grep -q "tiered sims: normal=200 elite=-1 boss=-1" "$b.log" "$b.err" || rc=90 ;;
       *) ! grep -q "tiered sims" "$b.log" "$b.err" || rc=90 ;;
     esac
     case $c in
-      K5) ! grep -q "root prior ON" "$b.log" "$b.err" || rc=89 ;;
+      K5|K15) ! grep -q "root prior ON" "$b.log" "$b.err" || rc=89 ;;
       *) grep -qF "[research Silver root prior ON: models/combat_policy_mlp_g7f_E.txt weight 400; tree prior K=8]" "$b.log" "$b.err" || rc=89 ;;
     esac
     case ${X[0]} in

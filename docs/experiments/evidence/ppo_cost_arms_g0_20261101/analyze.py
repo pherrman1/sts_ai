@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""PPO cost arms K1-K5 and G0 (PREREG.md). usage: analyze.py OUT_ROOT X1_GAMES_CSV [result.json]
+"""PPO cost arms K1 K4 K5 K15 and G0 (PREREG.md). usage: analyze.py OUT_ROOT X1_GAMES_CSV [result.json]
 
 OUT_ROOT holds one directory per seed with ARM-SEED.{done,log} from run_unit.sh. X1_GAMES_CSV is
 docs/experiments/evidence/cheap_combat_proxy_20261031/games.csv on main (§739). Frozen before any campaign game ran.
@@ -60,7 +60,7 @@ def main():
     games, bad = load(sys.argv[1])
     x1 = {int(r["seed"]): r for r in csv.DictReader(open(sys.argv[2]))}
     out = {"games": len(games), "bad_or_missing": bad, "reference_691_pp": P, "arms": {}}
-    for k in ("K1", "K2", "K3", "K4", "K5"):
+    for k in ("K1", "K4", "K5", "K15"):
         r = paired(games, "R" + k, "F" + k, K_SEEDS)
         cs = [x for x in K_SEEDS if all((a, x) in games for a in ("R" + k, "F" + k, "FB"))]
         cost = (sum(games[("R" + k, x)][3] + games[("F" + k, x)][3] for x in cs)
