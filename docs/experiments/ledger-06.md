@@ -25641,7 +25641,7 @@ Seeds: none.
 **Knowledge impact:** an outcome model fit across states confounds HP/potions with deck strength; per-change effects
 need a fit that uses the paired design.
 
-## §TBD — Heart-entry value fit on the paired design (stage B2): a fixed-effects GBM on §731's within-base differences does not predict single-change effects better than Silver's leaf (+0.00146 [−0.00010, +0.00302], NOT_SHOWN as frozen; WORSE in a 3.4.1 rerun) and is worse than §732's pooled fit (+0.0014 [+0.0004, +0.0024]); HP/potion effects 1.6-2.6x too large, relic effects missed; fits hit the alternation cap (offline, no seeds, 2026-11-01)
+## §733 — Heart-entry value fit on the paired design (stage B2): a fixed-effects GBM on §731's within-base differences does not predict single-change effects better than Silver's leaf (+0.00146 [−0.00010, +0.00302], NOT_SHOWN as frozen; WORSE in a 3.4.1 rerun) and is worse than §732's pooled fit (+0.0014 [+0.0004, +0.0024]); HP/potion effects 1.6-2.6x too large, relic effects missed; fits hit the alternation cap (offline, no seeds, 2026-11-01)
 
 **Question:** after §732, does fitting only the paired (within-base) signal of §731's labels give a value that prices
 single changes right?
