@@ -201,7 +201,12 @@ a flat 40k boss budget (learned stop off), 2 CRN copies per arm. Cost from §698
 cost. Decision: a ≥ 4 pp lower per-fight death at 40k marks it planning-limited (next: priced boss budget, whole-run
 A/B); otherwise Awakened One is deck/evaluation-limited and goes to phase 3/5 as a named metric. Prior: §718 found no
 gain from 40k on Baalorlord's boss states (Awakened One +2.0 HP, n.s.), so a null result is the more likely outcome;
-the replay is on our own, weaker states, which §718 did not cover. Needs Philipp's go.
+the replay is on our own, weaker states, which §718 did not cover.
+
+**Result (§743, 304 entries × 3 paired copies, ~128 core-h):** NOT_PLANNING_LIMITED. Flat 40k loses 1.2 pp fewer
+Awakened One fights than production (25.0% → 23.8%, CI −2.9 to +0.3 pp) at 7.5× CPU; ≈ +0.26 pp Heart kills per run.
+Where production died in all 3 copies, 40k still died in 96%. Awakened One deaths are deck/state-limited
+([RESULT](../../experiments/evidence/ao_replay_40k_20261101/RESULT.md)).
 
 **X4 gate sizes** (`x4_power.py`, 12 near-null arm pairs, |ΔHeart| < 3 pp, 11,264 pairs): paired SD per seed pair
 0.421 for Heart kill (pairing correlation +0.51), 0.262 for reaching act 2, 0.436 act 3, 0.464 act 4. Pairs for a 95%
@@ -223,6 +228,6 @@ pairs ≈ 470 core-h, MDE ≈ 3.5 pp; 4,096 pairs ≈ 1,880 core-h).
 
 ## Open questions
 
-- Is Awakened One planning-limited or deck-limited? (gate 1; X5 bound +1.0 to +3.1 pp, 40k replay proposed)
+- ~~Is Awakened One planning-limited or deck-limited?~~ Deck/state-limited (§743: 40k −1.2 pp [−2.9, +0.3] per fight).
 - Which carried relic counters besides Incense matter at the Heart? (#922 labels, gate 2)
 - Are there boss-specific deck needs the prior misses? (gate 3)

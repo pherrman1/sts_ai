@@ -23,6 +23,7 @@ Records are featurised once while loading (load_games); "load_featurize_s" and "
 and the packed host memory to N games and are not part of "total_s" (critic pass "prep_s" + training "train_s").
 """
 import argparse
+import functools
 import gzip
 import json
 import math
@@ -45,34 +46,74 @@ NET_SOURCES = ("heart1_ppo", "heart1_ppo_single")
 
 # ---------------------------------------------------------------- trajectories
 
-def load_games(paths, trim_map=None):
+def _parse_line(line, trim_map=None):
+    """One trajectory line -> row; with trim_map, a net decision's record is featurised (worker-safe).
+
+    Errors come back as {"type": "_error"} rows instead of raising in the worker, so the pool always drains and
+    closes normally (terminating a pool mid-stream can deadlock); load_games raises them afterwards."""
+    if not line.strip():
+        return None
+    try:
+        row = json.loads(line)
+        if trim_map is not None and row["type"] == "decision":
+            rec = row.pop("record", None)
+            row.pop("logits", None)
+            if row["source"] in NET_SOURCES:
+                row["feat"] = featurize(rec, trim_map)
+        return row
+    except Exception as e:   # noqa: BLE001 - re-raised by the parent with the line number
+        return {"type": "_error", "error": f"{type(e).__name__}: {e}"}
+
+
+def load_games(paths, trim_map=None, workers=None):
     """Games with all their net decisions, in decision order. A game without its "game" line is dropped.
 
-    With trim_map (the learner net's flag), each step's record is featurised when its game completes and only the
-    packed features are kept ("feat"; record and logits are dropped), so host memory stays at a few KB per decision."""
+    With trim_map (the learner net's flag), each net decision's record is featurised while loading and only the
+    packed features are kept ("feat"; record and logits are dropped), so host memory stays at a few KB per decision.
+    Parsing and featurising run in `workers` processes (default min(8, CPUs); 1 = in-process); the result is the
+    same either way."""
+    if workers is None:
+        workers = min(8, os.cpu_count() or 1)
+    pool = None
+    if workers > 1 and trim_map is not None:
+        import multiprocessing as mp
+        pool = mp.get_context("fork" if hasattr(os, "fork") else "spawn").Pool(workers)
+    parse = functools.partial(_parse_line, trim_map=trim_map)
+    # Parse every file completely before validating: raising while imap still streams a file and then terminating
+    # the pool can deadlock (the task feeder holds the queue lock on a full pipe).
+    parsed = []
+    ok = False
+    try:
+        for path in paths:
+            with (gzip.open(path, "rt") if path.endswith(".gz") else open(path)) as f:
+                parsed.append((path, list(pool.imap(parse, f, chunksize=64) if pool else map(parse, f))))
+        ok = True
+    finally:
+        if pool:
+            if ok:
+                pool.close()
+            else:
+                pool.terminate()
+            pool.join()
     pending, games, seen = {}, [], set()
-    for path in paths:
-        with (gzip.open(path, "rt") if path.endswith(".gz") else open(path)) as f:
-            for line in f:
-                if not line.strip():
-                    continue
-                row = json.loads(line)
-                key = (path, row["seed"])
-                if row["type"] == "decision":
-                    pending.setdefault(key, []).append(row)
-                elif row["type"] == "game":
-                    if row.get("schema") != SCHEMA:
-                        raise ValueError(f"{path}: schema {row.get('schema')} is not {SCHEMA}")
-                    if key in seen:
-                        raise ValueError(f"{path}: seed {row['seed']} has two game lines (reused seed?)")
-                    seen.add(key)
-                    steps = sorted(pending.pop(key, []), key=lambda r: r["idx"])
-                    steps = [s for s in steps if s["source"] in NET_SOURCES]
-                    if trim_map is not None:
-                        for s in steps:
-                            s["feat"] = featurize(s.pop("record"), trim_map)
-                            s.pop("logits", None)
-                    games.append({"seed": row["seed"], "outcome": row["outcome"], "info": row, "steps": steps})
+    for path, rows in parsed:
+        for lineno, row in enumerate(rows, 1):
+            if row is None:
+                continue
+            if row["type"] == "_error":
+                raise ValueError(f"{path}:{lineno}: {row['error']}")
+            key = (path, row["seed"])
+            if row["type"] == "decision":
+                pending.setdefault(key, []).append(row)
+            elif row["type"] == "game":
+                if row.get("schema") != SCHEMA:
+                    raise ValueError(f"{path}: schema {row.get('schema')} is not {SCHEMA}")
+                if key in seen:
+                    raise ValueError(f"{path}: seed {row['seed']} has two game lines (reused seed?)")
+                seen.add(key)
+                steps = sorted(pending.pop(key, []), key=lambda r: r["idx"])
+                steps = [s for s in steps if s["source"] in NET_SOURCES]
+                games.append({"seed": row["seed"], "outcome": row["outcome"], "info": row, "steps": steps})
     return games
 
 
@@ -139,6 +180,9 @@ def add_hparams(ap):
     ap.add_argument("--value-clip", type=float, default=0.0, help="PPO value clipping range (0 = off)")
     ap.add_argument("--amp", type=int, default=1, help="bf16 autocast on CUDA")
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--compile", type=int, default=0,
+                    help="1 = torch.compile the net (dynamic shapes) to fuse the fp32 RMSNorm and other elementwise "
+                         "ops; same math up to rounding; first minibatches pay the compile time (0 = off)")
     ap.add_argument("--bucket", type=int, default=0,
                     help="length-bucketed minibatches: sort each window of BUCKET*minibatch shuffled decisions by "
                          "token count before cutting minibatches (less padding; changes minibatch composition; 0 = off)")
@@ -158,6 +202,7 @@ class Learner:
             {"params": value_params, "lr": args.lr * args.value_lr_mult},
         ], eps=1e-6)
         self.iteration = 0
+        self._compiled = {}
 
     def state(self):
         return {"net": self.net.state_dict(), "opt": self.opt.state_dict(), "iteration": self.iteration,
@@ -176,8 +221,15 @@ class Learner:
             batch = self._batch(feats)
         batch = batch_to(batch, self.device)
         with torch.autocast("cuda", dtype=torch.bfloat16, enabled=bool(self.args.amp) and self.device.type == "cuda"):
-            logits, value = net(batch)
+            logits, value = self._callable(net)(batch)
         return logits.float(), value.float()
+
+    def _callable(self, net):
+        if not getattr(self.args, "compile", 0):
+            return net
+        if id(net) not in self._compiled:   # compiled wrapper shares the module's parameters
+            self._compiled[id(net)] = torch.compile(net, dynamic=True)
+        return self._compiled[id(net)]
 
     @torch.no_grad()
     def evaluate(self, feats, chunk=256, store=None):
