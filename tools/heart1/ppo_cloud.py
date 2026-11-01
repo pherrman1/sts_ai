@@ -14,7 +14,8 @@ Names in the store, per arm:
   ARM/net-NNNN          the net after NNNN updates (net-0000 = start); only the newest two stay (init, then learner)
   ARM/traj-NNNN-pK      part K of iteration NNNN's games, gzipped jsonl; meta: games, sha256,
                         behaviour net, actor seconds, first seed                             (actor of part K)
-  ARM/stats             the learner's loop.json (per-iteration stats)                        (learner)
+  ARM/stats-NNNN        the learner's loop.json after NNNN updates; only the newest stays      (learner)
+Every name is written once (no ref is ever overwritten, so no force-push is needed).
 
 Iteration i is split into P parts of GAMES/P games: part k plays seeds SEED_BASE + i*GAMES + k*GAMES/P ... with
 STS_OOC_HEART1_SAMPLE_SALT=i (the same seeds and salts in every arm). Behaviour net: net_i (pipeline 0) or
@@ -88,6 +89,8 @@ class DirStore:
 
     def put(self, name, path, meta):
         check_size(path)
+        if os.path.exists(self._p(name)):   # as git refs without force-push: a name is written once
+            raise FileExistsError(f"{name} exists in the store")
         os.makedirs(os.path.dirname(self._p(name)), exist_ok=True)
         tmp = f"{self._p(name)}.tmp{os.getpid()}"
         shutil.copyfile(path, tmp)
@@ -193,11 +196,18 @@ def wait_for(store, name, what):
         waited += POLL_S
 
 
+def latest_stats(store, arm, names=None):
+    names = store.names(f"{arm}/stats-") if names is None else names
+    s = sorted(n for n in names if n.startswith(f"{arm}/stats-"))
+    return s[-1] if s else None
+
+
 def trained_iterations(store, arm, work):
-    if f"{arm}/stats" not in store.names(f"{arm}/stats"):
+    name = latest_stats(store, arm)
+    if name is None:
         return 0
     p = os.path.join(work, "stats.json")
-    store.get(f"{arm}/stats", p)
+    store.get(name, p)
     return len(json.load(open(p))["iterations"])
 
 
@@ -402,12 +412,15 @@ class ArmLearner:
         if it > 0:
             if net not in names:
                 self.store.put(net, local, {"sha256": sha256(local), "updates": it})
-            self.store.put(f"{self.arm}/stats", self.meta_path, {"iterations": it})
+            if f"{self.arm}/stats-{it:04d}" not in names:
+                self.store.put(f"{self.arm}/stats-{it:04d}", self.meta_path, {"iterations": it})
         for n in sorted(names):
             rest = n[len(self.arm) + 1:]
             if rest.startswith("traj-") and int(rest[5:9]) < it:
                 self.store.delete(n)
             elif rest.startswith("net-") and int(rest[4:8]) < it - 1:
+                self.store.delete(n)
+            elif rest.startswith("stats-") and int(rest[6:10]) < it:
                 self.store.delete(n)
 
     @property
@@ -503,9 +516,10 @@ def cmd_status(argv):
     names = store.names("")
     for arm in argv[1:]:
         its = []
-        if f"{arm}/stats" in names:
+        latest = latest_stats(store, arm, names)
+        if latest:
             with tempfile.TemporaryDirectory() as tmp:
-                store.get(f"{arm}/stats", os.path.join(tmp, "s"))
+                store.get(latest, os.path.join(tmp, "s"))
                 its = json.load(open(os.path.join(tmp, "s")))["iterations"]
         pending = sorted(n.split("/", 1)[1] for n in names if n.startswith(f"{arm}/traj-"))
         heart = [round(100 * s["heart_rate"], 1) for s in its if "heart_rate" in s]

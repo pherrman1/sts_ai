@@ -141,16 +141,23 @@ class Heart1PpoTest(unittest.TestCase):
             self.assertEqual(again.next_it, 1)
             names = s.names("")
             self.assertIn("A/net-0001", names)
-            self.assertIn("A/stats", names)
+            self.assertIn("A/stats-0001", names)
             self.assertFalse([n for n in names if "traj" in n])
             with open(os.path.join(d, "local", "A", "loop.json")) as f:
                 self.assertEqual(len(json.load(f)["iterations"]), 1)
+            for k in range(2):   # iteration 1 (pipeline: still played by net-0000); every name is written once
+                p = os.path.join(d, f"p{k}.jsonl.gz")
+                s.put(f"A/traj-0001-p{k}", p, {"games": 4, "sha256": ppo_cloud.sha256(p), "net": "net-0000",
+                                                "net_sha256": n0, "actor_s": 1.0, "seed_first": 1})
+            self.assertTrue(again.step(s.names("")))
+            self.assertEqual(sorted(s.names("")), ["A/config", "A/net-0001", "A/net-0002", "A/stats-0002"])
+            self.assertTrue(again.done())
             with self.assertRaises(ValueError):   # size cap
                 big = os.path.join(d, "big")
                 with open(big, "wb") as f:
                     f.truncate((ppo_cloud.MAX_PUT_MB + 1) * 2**20)
                 s.put("A/big", big, {})
-            self.assertEqual(ppo_cloud.trained_iterations(s, "A", d), 1)
+            self.assertEqual(ppo_cloud.trained_iterations(s, "A", d), 2)
 
 
 if __name__ == "__main__":
