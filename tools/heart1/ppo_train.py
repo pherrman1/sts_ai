@@ -23,6 +23,7 @@ Records are featurised once while loading (load_games); "load_featurize_s" and "
 and the packed host memory to N games and are not part of "total_s" (critic pass "prep_s" + training "train_s").
 """
 import argparse
+import functools
 import gzip
 import json
 import math
@@ -45,34 +46,56 @@ NET_SOURCES = ("heart1_ppo", "heart1_ppo_single")
 
 # ---------------------------------------------------------------- trajectories
 
-def load_games(paths, trim_map=None):
+def _parse_line(line, trim_map=None):
+    """One trajectory line -> row; with trim_map, a net decision's record is featurised (worker-safe)."""
+    if not line.strip():
+        return None
+    row = json.loads(line)
+    if trim_map is not None and row["type"] == "decision":
+        rec = row.pop("record", None)
+        row.pop("logits", None)
+        if row["source"] in NET_SOURCES:
+            row["feat"] = featurize(rec, trim_map)
+    return row
+
+
+def load_games(paths, trim_map=None, workers=None):
     """Games with all their net decisions, in decision order. A game without its "game" line is dropped.
 
-    With trim_map (the learner net's flag), each step's record is featurised when its game completes and only the
-    packed features are kept ("feat"; record and logits are dropped), so host memory stays at a few KB per decision."""
+    With trim_map (the learner net's flag), each net decision's record is featurised while loading and only the
+    packed features are kept ("feat"; record and logits are dropped), so host memory stays at a few KB per decision.
+    Parsing and featurising run in `workers` processes (default min(8, CPUs); 1 = in-process); the result is the
+    same either way."""
+    if workers is None:
+        workers = min(8, os.cpu_count() or 1)
+    pool = None
+    if workers > 1 and trim_map is not None:
+        import multiprocessing as mp
+        pool = mp.get_context("fork" if hasattr(os, "fork") else "spawn").Pool(workers)
+    parse = functools.partial(_parse_line, trim_map=trim_map)
     pending, games, seen = {}, [], set()
-    for path in paths:
-        with (gzip.open(path, "rt") if path.endswith(".gz") else open(path)) as f:
-            for line in f:
-                if not line.strip():
-                    continue
-                row = json.loads(line)
-                key = (path, row["seed"])
-                if row["type"] == "decision":
-                    pending.setdefault(key, []).append(row)
-                elif row["type"] == "game":
-                    if row.get("schema") != SCHEMA:
-                        raise ValueError(f"{path}: schema {row.get('schema')} is not {SCHEMA}")
-                    if key in seen:
-                        raise ValueError(f"{path}: seed {row['seed']} has two game lines (reused seed?)")
-                    seen.add(key)
-                    steps = sorted(pending.pop(key, []), key=lambda r: r["idx"])
-                    steps = [s for s in steps if s["source"] in NET_SOURCES]
-                    if trim_map is not None:
-                        for s in steps:
-                            s["feat"] = featurize(s.pop("record"), trim_map)
-                            s.pop("logits", None)
-                    games.append({"seed": row["seed"], "outcome": row["outcome"], "info": row, "steps": steps})
+    try:
+        for path in paths:
+            with (gzip.open(path, "rt") if path.endswith(".gz") else open(path)) as f:
+                rows = pool.imap(parse, f, chunksize=64) if pool else map(parse, f)
+                for row in rows:
+                    if row is None:
+                        continue
+                    key = (path, row["seed"])
+                    if row["type"] == "decision":
+                        pending.setdefault(key, []).append(row)
+                    elif row["type"] == "game":
+                        if row.get("schema") != SCHEMA:
+                            raise ValueError(f"{path}: schema {row.get('schema')} is not {SCHEMA}")
+                        if key in seen:
+                            raise ValueError(f"{path}: seed {row['seed']} has two game lines (reused seed?)")
+                        seen.add(key)
+                        steps = sorted(pending.pop(key, []), key=lambda r: r["idx"])
+                        steps = [s for s in steps if s["source"] in NET_SOURCES]
+                        games.append({"seed": row["seed"], "outcome": row["outcome"], "info": row, "steps": steps})
+    finally:
+        if pool:
+            pool.terminate()
     return games
 
 
