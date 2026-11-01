@@ -19,11 +19,12 @@ Fresh forks minus fresh control, per entry: +4.0 pp [−5.0, +12.9].
 - **The rebuild loses at most a few points.** It does not lose the ~8 pp of #923's control gap. So the fresh
   control's 66.7% against 75% in game is mostly noise in one control per entry: its fresh replay also sits 4 pp below
   the forks' fresh replay.
-- **The in-game children stay low.** 64.4%, about 10 pp below both unperturbed in-game groups (74-75%). Fresh, they
-  sit 4.5 pp below the forks (66.4% vs 70.9%).
-- Together with §728 this leaves two readings that this data cannot separate:
-  - a modest real effect of the perturbed states, about −4 pp fresh,
-  - plus an in-game penalty of a few points for the children.
+- **Children vs forks** (per entry over 60 entries, rng 7, 2,000 draws; results review). All three CIs include 0:
+  - fresh: −4.3 pp [−12.5, +4.2]
+  - in game: −9.3 pp [−18.2, +0.3]
+  - difference-in-differences (children in game − fresh) − (forks in game − fresh): −5.0 pp [−13.3, +3.8]
+- So a modest real effect of the perturbed states (about −4 pp fresh) and an in-game penalty for the children
+  (about −5 pp) are both possible. Neither is shown.
 - §726's −7.6/−10.6 pp should not be read as a clean causal effect of the perturbations. For V_A4 training, perturbed
   rows remain usable only as noisy labels.
 - Power: the per-entry CI half-width is about ±0.05, so a rebuild loss of up to about +8 pp is not excluded at its
