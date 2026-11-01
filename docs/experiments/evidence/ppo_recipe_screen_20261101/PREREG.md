@@ -35,7 +35,7 @@ minibatch 512; λ 1.0; clip 0.1; games per iteration at the same total of 15,360
 total budget are priority 1; λ only 0.97 / 1.0).
 
 **Seeds.** All arms play the same block 111400000-111415359 (new; no use on main or in the ledger): iteration i of an
-arm with G games per iteration plays 111400000 + G i …, split into its parts. Smokes 111419990-111419999.
+arm with G games per iteration plays 111400000 + G i …, split into its parts. Smokes 111419990-111420001 (smoke1 used 111419990-997, smoke2 111419990-111420001).
 
 **Primary metric.** Per arm, the Heart-kill rate of its last third of games (seeds 111410240-111415359, 5,120 games:
 iterations 20-29 at 512, 40-59 at 256, 10-14 at 1,024; identical seeds in every arm), paired by seed against BASE: D = arm − BASE with a 95% seed bootstrap
