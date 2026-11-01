@@ -25605,3 +25605,22 @@ on the 1,001 recorded entries (≈ 130 core-h); Heart-entry counter pricing at S
 mass is combat HP loss at bosses (§701, §711), so the large levers are combat-side (roadmap phases 3-5).
 Seeds: none (existing games only).
 **Knowledge impact:** new page `research/a20-loss-mining.md`, linked from the research README.
+
+## §TBD — Heart-entry perturbation labels (stage A of the general value model): 16,000 paired Heart fights on 1,000 distinct Heart-entry states; signs consistent (HP −7.1/+3.8 pp, potion −7.2/+5.0, relic removed −5.0, counter −2.7), card upgrade and max HP up unresolved, none inconsistent → labels usable; one change flips the outcome in 13.6% of pairs vs 20.3% for a reseed; mean effect −1.0 pp [−2.5, +0.5], no §726-style anomaly (replays of used seeds, 2026-10-31/11-01)
+
+**Question:** Philipp (2026-10-31): a value model that sees cross-fight interactions in general, not one Incense rule.
+Stage A: do single-change perturbations of Heart-entry states, played on the control's battle seed, give causal
+labels with sensible signs?
+**Data:** [PREREG](evidence/heart_entry_perturb_20261031/PREREG.md), [RESULT](evidence/heart_entry_perturb_20261031/RESULT.md),
+`labels.csv`. 1,000 of 4,253 distinct Heart-entry states (§721 sources), 16 variants each (control, reseed, 14 single
+changes), `act4replay` with new `deckMisc`; research Heart search as §723/§724. 16 workers (Philipp 19:14Z), 197 CPU-h,
+1000/1000 verified.
+**Result:** control kill 65.4%; reseed − control −0.7 pp. Effects (pp): HP down −7.1 [−9.3, −4.9], potion removed
+−7.2 [−11.1, −3.3], relic removed −5.0 [−7.1, −2.9], counter changed −2.7 [−5.4, −0.1], HP up +3.8 [+0.6, +7.0],
+potion added +5.0 [+1.7, +8.3]; card add/remove/upgrade, relic add, max HP ±: |effect| ≤ 2.2, CIs include 0. Incense
+counter changes vs §723: slope 0.63, corr 0.24 (n 92).
+**Decision:** labels usable (pre-registered). Stage B (all-feature Heart-entry value, CV grouped by source seed,
+scored on held-out paired differences vs Silver's leaf) gets its own pre-registration.
+Seeds: none new (replays of used blocks 111384000-384999 and 111382000-382999).
+**Knowledge impact:** same-seed perturbations of Heart-entry states give clean causal labels; resource losses are
+priced clearly, gains of cards/relics/max HP are below about 2 pp at this size.
