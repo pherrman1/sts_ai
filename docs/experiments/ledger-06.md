@@ -25658,3 +25658,28 @@ model.
 Seeds: none.
 **Knowledge impact:** at 16,000 paired labels, flexible models learn no more than the average price per change type;
 Silver's leaf prices HP and potions at about 40-60% of their Heart-kill effect.
+
+## §TBD — Optimizer's-curse shrinkage on §727's value chooser: at α = 0.17 (§715) and a 1-pp margin only 7.8% of V's overrides survive, and those still lose (units whose first override survives −19.5 pp Heart kills [−34.1, −4.9] vs −14.9 for the rest; −2.7 pp per extra surviving override [−5.6, +0.2]); not a scale-only problem (offline re-slice of read §727 logs, no seeds, 2026-11-01)
+
+**Question:** Philipp (2026-11-01, idea 8 of the literature review #927): if §727's value differences are shrunk by
+α ≈ 0.16-0.18 (§715), do the overrides that remain (α·ΔV > 1 pp) still lose? Then V's sign at large gaps is wrong,
+not only its scale.
+**Data:** [README](evidence/value_chooser_shrinkage_20261101/README.md), `analyze.py`, [result](evidence/value_chooser_shrinkage_20261101/result.json).
+§727's 1,536 units (29,330 logged choices, 13,939 overrides; top-3 candidates with prior and V). Post hoc on
+outcomes already read for §727 (disclosed); decision rule fixed in the README before the first run. Primary: units
+split by whether B's first override (before which A and B play identically) survives shrinkage.
+**Result:**
+- Surviving overrides at α 0.17: 21.7% / 7.8% / 2.5% for margins 0.5 / 1 / 2 pp (median ΔV 0.011).
+- α 0.17, 1 pp: first override survives (41 units) −19.5 pp [−34.1, −4.9]; does not (1,488) −14.9 [−17.3, −12.7];
+  difference −4.6 [−20.2, +11.1]. Same picture for α 0.16/0.18 and margin 0.5 pp (−16.9 to −19.5, CIs below 0).
+  Margin 2 pp (16-17 units, ΔV > 0.11): 0.0 / −5.9 pp, CIs ±19 pp, uninformative.
+- No dose-response: first-override ΔV 0.059-0.1 −34.8 pp [−56.5, −17.4] (23 units).
+- Count regression (endogenous): −2.7 pp per surviving override [−5.6, +0.2], +0.3 per other override.
+**Interpretation:** shrinkage would remove ~92% of the overrides, but V_A1/V_A2's large gaps are no better guides
+than the small ones, so §727's −15 pp is not only the optimizer's curse on near-ties. The heads' ranking is wrong
+in direction for real play at large gaps too (consistent with §727's knowledge note: rollout-label concordance does
+not carry to play). Large-minus-small is not tight (CI includes 0); the ΔV > 0.11 tail is unmeasured.
+**Decision:** no code, default or model change. Shrinkage (α·ΔV with an out-of-sample α plus a margin) stays a
+required guard for any future value-led decider, but it does not rescue V_A1/V_A2; no shrunk-chooser A/B.
+Seeds: none.
+**Knowledge impact:** `research/search-and-value-literature.md` idea 8 marked checked.
