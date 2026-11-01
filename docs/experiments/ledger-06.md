@@ -25658,3 +25658,23 @@ model.
 Seeds: none.
 **Knowledge impact:** at 16,000 paired labels, flexible models learn no more than the average price per change type;
 Silver's leaf prices HP and potions at about 40-60% of their Heart-kill effect.
+
+## §TBD — Per-floor RNG keying for evaluation (literature idea 7): on §685's 8,510 first-divergence pairs, children whose next card offer happened to coincide correlate at rho 0.506 vs 0.417 when it differed, gap 0.089 [0.021, 0.163] < 0.1 → DROP; at map roots the gap is −0.004; ceiling ≈ 1.04× (≤ 1.07×) effective seeds (offline, no seeds, 2026-11-01)
+
+**Question (Philipp, 2026-11-01, idea 7 of the #927 literature review):** would keying run-level streams (card,
+relic, potion, event) by seed × floor × room make paired whole-game A/Bs worth building? Cheapest check from the
+review: compare outcome rho of §685 pairs whose next offer coincides vs differs; drop if the gap is < 0.1.
+**Design:** [RESULT](evidence/rng_pairing_offer_match_20261101/RESULT.md), [analyze.py](evidence/rng_pairing_offer_match_20261101/analyze.py).
+Pairs as `s0.py extract` (§685). Next offer = first combat-reward card offer above the root floor; MATCH = identical
+card ids + upgrades (the sequential card stream still aligned). rho = phi of Heart kills; cluster bootstrap by seed.
+**Result:** match 6,633 pairs rho 0.506 [0.471, 0.539], differ 1,703 rho 0.417 [0.346, 0.481], 174 missing; **gap
+0.089 [0.021, 0.163] → DROP**. Act-4 arrival 0.145; next relic offer 0.066, potion 0.098; match vs same-floor-different
+cards 0.036 [−0.112, +0.199]. Map roots (81% of differ pairs) −0.004 [−0.102, +0.094]; other root screens ≤ 153
+differ pairs each, CIs include 0. By campaign §661 0.117, §683 0.038, §676 0.009.
+**Interpretation:** even if keying lifted every differ pair to the match pairs' rho, overall rho moves 0.488 → ≈ 0.506
+(CI end ≈ 0.521): ≈ 1.04× (≤ 1.07×) effective seeds, not the 1.2-1.7× hoped for. Where streams desync most (map
+roots) a coincidental match gives no extra correlation; the pooled gap mostly marks similar children (observational,
+so the causal gain is likely smaller). Consistent with §699 (combat death draws dominate) and §703 (keyed rollout
+streams WEAK). Keyed run-level RNG for evaluation is not built.
+Seeds: none (existing games only).
+**Knowledge impact:** literature review idea 7 marked dropped (`research/search-and-value-literature.md`).
