@@ -92,9 +92,10 @@ one paired-rollout preprint) supports four plan choices and demotes one:
   (VinePPO, DouZero; matches §685/§715/§727), so nothing in the loop may rank card choices by the critic; critic
   warm-up with the policy frozen and a decaying KL anchor (PORL); expect an early-iteration dip.
 - **Progress metric:** agreement with the start net is not one (DouZero); track the in-sample A20 Heart curve and gates.
-- **Demoted:** V4 forked advantages (see the table below), pending the offline probe A4.
-- Unverified in the literature, so Inference only: V6 asymmetric critic, V8 per-game exploration, gains from
-  auxiliary heads on the shared trunk.
+- **Demoted:** V4 forked advantages (see the table below), on §738 and our rho; pending the offline probe A4.
+- Auxiliary heads: KataGo's ablation shows a learning-efficiency gain from auxiliary targets (Verified, Go); the
+  transfer to CTM/value heads on our shared trunk is Inference.
+- Unverified in the literature, so Inference only: V6 asymmetric critic, V8 per-game exploration.
 
 ## The original (External)
 
@@ -139,7 +140,7 @@ So only ~1/21 of its games were A20, its reward is not P(Heart kill), and its en
 | V1 | A20 only | original saw ~5% A20 and barely adapts card choice to ascension |
 | V2 | our engine | train where we play; no engine gap, and without OOC MCTS no re-distillation is needed |
 | V3 | reward 1{Heart} + potential-based shaping with Φ = M0-calibrated leaf value | the objective becomes the Heart rate (shaping telescopes at γ = 1) with lower variance |
-| V4 | forked common-random-number advantages at a fraction of card choices (VinePPO-style) | **low priority** ([literature](ppo-and-combat-leaf-literature.md), (A) item 5): VinePPO needs K ≈ 9 forks per state, pairing can raise gradient variance, and at rho 0.49 a 2 pp sibling gap needs ~480 paired forks (Inference); §738 found per-floor RNG keying gains only ~1.04× effective seeds. Run only if the offline gradient-variance probe (literature A4) shows a gain per core-s |
+| V4 | forked common-random-number advantages at a fraction of card choices (VinePPO-style) | **low priority** ([literature](ppo-and-combat-leaf-literature.md), (A) item 5): VinePPO needs K ≈ 9 forks per state, the paired-rollout preprint is mixed (a toy counterexample, but −21 to −63% gradient covariance in its real probe), and at rho 0.49 a 2 pp sibling gap needs ~1,900 paired forks at 95% (~480 for 1σ; Inference); §738 found per-floor RNG keying gains only ~1.04× effective seeds. Run only if the offline gradient-variance probe (literature A4) shows a gain per core-s |
 | V5 | record v2 inputs (#941) for policy and critic | public run state heart1 never saw; PPO self-play produces v2 records for free |
 | V6 | asymmetric critic with hidden information, training only | lower-variance baseline; no verified literature (PerfectDou only a hint), bias open; needs Philipp's call against ADR-0002 |
 | V7 | combat curriculum: Silver 1,000, then a few iterations at production combat | reduces the train/deploy combat gap |
