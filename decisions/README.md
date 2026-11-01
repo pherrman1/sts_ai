@@ -28,9 +28,9 @@ the replacement.
 
 ## Current architecture ADRs
 
-- [ADR-TBD](TBD-sequential-gates-and-control-reuse.md) makes paired A/B gates stop sequentially (`tools/sprt_gate.py`,
+- [ADR-0064](0064-sequential-gates-and-control-reuse.md) makes paired A/B gates stop sequentially (`tools/sprt_gate.py`,
   GSPRT α = β = 0.05, looks every 64 pairs, cap = the fixed size) and allows a recorded control arm after a 32-seed
-  identity sentinel (adopted on §TBD: 0/7 verdict flips, 39% pairs saved; 32/32 control replays identical).
+  identity sentinel (adopted on §742: 0/7 verdict flips, 39% pairs saved; 32/32 control replays identical).
 - [ADR-0063](0063-flexible-heart-keys-default.md) makes flexible keys the default: Sapphire and Ruby follow the policy
   (Act-3 treasure row and pre-boss campfire backstops), Emerald masks the Act-3 route (`STS_KEY_*=first` restores
   ADR-0041's rules; adopted on §691, +6.05 pp Heart kills at A20).

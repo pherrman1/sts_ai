@@ -1,4 +1,4 @@
-# ADR-TBD: Paired A/B gates stop sequentially (SPRT) and may reuse a recorded control arm
+# ADR-0064: Paired A/B gates stop sequentially (SPRT) and may reuse a recorded control arm
 
 Date: 2026-11-01
 Status: accepted
@@ -15,7 +15,7 @@ clear after a fraction of it (§727 lost −15 pp; §724 won +5.9 pp per state).
 proposed two cheaper designs, and Philipp asked to make both the standard (2026-11-01 07:25Z: "führe 1 und 2 als
 Standard ein. Ersparnis für Rechenzeit darf auch bei 10% liegen").
 
-Evidence ([sequential_gates_20261101](../docs/experiments/evidence/sequential_gates_20261101/RESULT.md), ledger §TBD):
+Evidence ([sequential_gates_20261101](../docs/experiments/evidence/sequential_gates_20261101/RESULT.md), ledger §742):
 
 - **Sequential stopping:** replaying the SPRT on seven recorded campaigns (§661, §676, §683, §691, §693, §724, §727)
   changed no verdict (0 of 7; 0% over 200 random seed orders each) and needed 3,776 of 6,224 pairs (39% saved).
