@@ -41,6 +41,9 @@ public input must be covered.** This replaces the earlier "start from student_se
   runs before the net), potion discard (no token), Match and Keep, unmapped event options and unsupported screens
   (old chain), reward relics and gold (auto-taken), chest/relic rules after a declined step. Plan: tokens for all of
   them; gold stays automatic (no choice); keys pending Philipp's call.
+- **Shared trunk (CTM thread, 2026-11-01):** CTM and value heads go on this d256 trunk as auxiliary heads; a separately
+  trained fast CTM (DeepSets retrain on 378k real fights) stays for simulator use where speed matters (rollout3 calls it
+  thousands of times per decision). The #941 x2_* embeddings are zero-initialised at any width.
 - **Inputs the net does not see today:** shop prices, removal price and count, fought encounters (#941 v2), Wing
   Boots charges (#638); original heart1 also lacks act, deck misc and relic counters. Private state stays out.
 - **S0 acceptance adds:** every decision logged with its source (net / rule / chain / automatic) and its full v2
