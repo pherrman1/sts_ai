@@ -60,6 +60,9 @@ call ([ADR-0063](../../../decisions/0063-flexible-heart-keys-default.md); `STS_K
 (Heart −1.4 pp [−4.0, +1.4]). The gain sits in act-1/2 map choices; arrivals convert weakly into kills (+1.4 pp, n.s.).
 Philipp made map-only search the A20 default together with Act 4 strong, without an A/B
 ([ADR-0061](../../../decisions/0061-ooc-map-only-search-a20.md); `STS_OOC_MCTS_SCREENS=all` restores every screen).
+Since 2026-11-01 those map roots search 1,024 simulations instead of 4,096 (§741 SPRT NOT_WORSE: Heart +0.65 pp
+[−0.98, +2.34], −75% map simulations; final floor −0.64, act-1 deaths +1.2 pp;
+[ADR-0065](../../../decisions/0065-a20-map-root-sims-1024.md); `STS_OOC_MCTS_FULL_ROOT_SIMS=0` restores 4,096).
 
 ## Act-4 combat strength (§681, §682; A20 default "Act 4 strong" since ADR-0060)
 
