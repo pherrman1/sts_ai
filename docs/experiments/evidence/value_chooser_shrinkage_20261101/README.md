@@ -31,8 +31,11 @@ with prior and V_A1/V_A2 value, and the chosen index; index 0 = the prior's top 
 - Shrinkage removes almost everything: of 13,939 overrides, 7.8% survive at α 0.17, τ 1 pp (2.5% at 2 pp, 21.7% at
   0.5 pp). ΔV quantiles: median 0.011, 90% 0.051, 99% 0.171.
 - **Primary (α 0.17, τ 1 pp):** L (41 units) −19.5 pp [−34.1, −4.9]; S (1,488) −14.9 [−17.3, −12.7];
-  L − S −4.6 [−20.2, +11.1] → **rule: surviving overrides still lose; not scale only.**
-- Grid: L is −16.9 to −19.5 pp with CI below 0 at τ 0.5 and 1 pp for all α (L − S −2.2 to −4.6, CIs include 0).
+  L − S −4.6 [−20.2, +11.1]. The README's rule as first written read L's CI below 0 as "not scale only"; the
+  review (reviewer K, 2026-11-01) showed that L alone is confounded: L units go on to make 8.3 more overrides each
+  (0.8 surviving), S units 8.1 (0.68), and S loses −14.9 pp from that same later stream. The contrast that isolates the
+  first surviving override is **L − S, which includes 0 in every grid cell → INCONCLUSIVE on the sign question.**
+- Grid: L − S −2.2 to −4.6 pp at τ 0.5 and 1 pp for all α, every CI including 0 (L alone −16.9 to −19.5).
   At τ 2 pp (16-17 units, ΔV > 0.11) L is 0.0 / −5.9 pp with CIs about ±19 pp: uninformative.
 - First-override ΔV bins (Heart kill B − A): ≤0.005 −14.0, 0.005-0.01 −14.3, 0.01-0.02 −18.2, 0.02-0.04 −13.5,
   0.04-0.059 −22.0, 0.059-0.1 −34.8 [−56.5, −17.4] (23), > 0.1 0.0 [−22, +22] (18). No dose-response toward gain;
@@ -43,9 +46,12 @@ with prior and V_A1/V_A2 value, and the chosen index; index 0 = the prior's top 
 - 1,086 overrides (7.8%) tie the prior's top in prior; counted as overrides as in §727.
 
 ## Reading
-Shrinkage would have stopped ~92% of the overrides, but the ones it keeps are not better: units whose first
-override had a "large" shrunk gain lose at least as much, and each extra large override costs about −2.7 pp (CI to
-+0.2). So §727's loss is not only the optimizer's curse on tiny gaps; V_A1/V_A2's large gaps point the wrong way
-as often as the small ones (or worse). Only the extreme tail (ΔV > 0.11, ~17 units) is unmeasured. Shrinkage stays a
-required guard for any future value-led decider, but it does not rescue these heads. Not shown with a tight CI:
-L − S includes 0 everywhere.
+**INCONCLUSIVE on the sign question.** Shrinkage would have stopped ~92% of the overrides. Whether the ones it keeps
+are worse, equal or better than the rest is not measurable here: every unit keeps overriding afterwards (about 8 more
+overrides, mostly small), so a unit's outcome is dominated by that later stream, and the contrast for the first
+surviving override (L − S, −4.6 pp [−20.2, +11.1]) includes 0. The count regression ([−5.6, +0.2]) and the bins
+(−34.8 pp for 23 units, 0.0 for 18) do not settle it either. What the logs do show: under α ≈ 0.17 and a 1-pp
+margin, a shrunk chooser would override about once per game instead of about nine times. Shrinkage stays a required
+guard for any future value-led decider; no shrunk-chooser A/B is proposed for V_A1/V_A2 (§727's failure and this
+evidence give no reason to expect a gain). A clean test of the large-gap sign would need a chooser that overrides only
+above the margin, i.e. a new A/B.
