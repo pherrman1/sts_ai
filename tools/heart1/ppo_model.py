@@ -566,11 +566,15 @@ class PolicyNet(nn.Module):
     def trunk(self, batch):
         B, T, D = batch["B"], batch["T"], self.dim
         p = self.tables["card"]
-        x = torch.zeros(B * T, D, device=p.device, dtype=p.dtype)
+        # One index_add over all components (tables in order, then fixed vectors): per token the same summation
+        # order as one call per component, without a full (B*T, D) copy per component. index_select instead of
+        # tables[k][row]: its backward is an index_add, not the sort-based index_put kernel (23% of CUDA time).
+        toks, srcs = [], []
         for k, (tok, row) in batch["emb"].items():
-            x = x.index_add(0, tok, self.tables[k][row].to(x.dtype))
+            toks.append(tok); srcs.append(self.tables[k].index_select(0, row).to(p.dtype))
         for k, (tok, feat) in batch["fv"].items():
-            x = x.index_add(0, tok, self.fixedvecs[k](feat).to(x.dtype))  # Linear output is bf16 under autocast
+            toks.append(tok); srcs.append(self.fixedvecs[k](feat).to(p.dtype))  # Linear output is bf16 under autocast
+        x = torch.zeros(B * T, D, device=p.device, dtype=p.dtype).index_add(0, torch.cat(toks), torch.cat(srcs))
         x = x.view(B, T, D)
         for b in self.blocks:
             x = b(x, batch["pad"])
