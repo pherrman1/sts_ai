@@ -29,7 +29,7 @@ is missing, and what should let it beat the original. This page refines roadmap 
 ## Decision net (Philipp, 2026-11-01)
 
 Constraints set by Philipp: **one net makes every OOC decision, no OOC MCTS for now, and every decision and every
-public input must be covered.** This replaces the earlier "start from student_sel" choice below.
+public input must be covered.** This replaces the first draft's start from student_sel.
 
 - **Architecture:** heart1-size (d256, 4 layers) extended with the student inputs (`x_act`, `x_deck_misc`,
   `x_relic_counter`) and the #941 v2 inputs through zero-initialised embeddings, so the extended net reproduces heart1
