@@ -61,6 +61,27 @@ class Heart1PpoTest(unittest.TestCase):
                 for k in a[d]:
                     self.assertTrue(torch.equal(a[d][k][0], b[d][k][0]) and torch.equal(a[d][k][1], b[d][k][1]), k)
 
+    def test_load_games_pool_error_does_not_hang(self):
+        """A validation error with worker processes must raise, not deadlock the pool (review of #952)."""
+        import gzip
+        import json
+        import subprocess
+        here = os.path.dirname(os.path.abspath(__file__))
+        traj = os.path.join(here, "..", "docs", "experiments", "evidence", "ppo_s0_smoke_20261101", "cov8.jsonl.gz")
+        with tempfile.TemporaryDirectory() as d:
+            bad = os.path.join(d, "bad.jsonl")
+            with gzip.open(traj, "rt") as src, open(bad, "w") as dst:
+                for line in src:
+                    row = json.loads(line)
+                    if row["type"] == "game":
+                        row["schema"] = "not-the-schema"   # first game line already fails validation
+                    dst.write(json.dumps(row) + "\n")
+            code = ("import sys; sys.path.insert(0, %r); import ppo_train\n"
+                    "try:\n    ppo_train.load_games([%r], False, workers=2)\nexcept ValueError:\n    sys.exit(3)\n"
+                    % (os.path.join(here, "..", "tools", "heart1"), bad))
+            rc = subprocess.run([sys.executable, "-c", code], timeout=120).returncode
+            self.assertEqual(rc, 3)
+
 
 if __name__ == "__main__":
     unittest.main()

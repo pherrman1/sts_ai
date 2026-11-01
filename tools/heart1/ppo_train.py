@@ -73,29 +73,39 @@ def load_games(paths, trim_map=None, workers=None):
         import multiprocessing as mp
         pool = mp.get_context("fork" if hasattr(os, "fork") else "spawn").Pool(workers)
     parse = functools.partial(_parse_line, trim_map=trim_map)
-    pending, games, seen = {}, [], set()
+    # Parse every file completely before validating: raising while imap still streams a file and then terminating
+    # the pool can deadlock (the task feeder holds the queue lock on a full pipe).
+    parsed = []
+    ok = False
     try:
         for path in paths:
             with (gzip.open(path, "rt") if path.endswith(".gz") else open(path)) as f:
-                rows = pool.imap(parse, f, chunksize=64) if pool else map(parse, f)
-                for row in rows:
-                    if row is None:
-                        continue
-                    key = (path, row["seed"])
-                    if row["type"] == "decision":
-                        pending.setdefault(key, []).append(row)
-                    elif row["type"] == "game":
-                        if row.get("schema") != SCHEMA:
-                            raise ValueError(f"{path}: schema {row.get('schema')} is not {SCHEMA}")
-                        if key in seen:
-                            raise ValueError(f"{path}: seed {row['seed']} has two game lines (reused seed?)")
-                        seen.add(key)
-                        steps = sorted(pending.pop(key, []), key=lambda r: r["idx"])
-                        steps = [s for s in steps if s["source"] in NET_SOURCES]
-                        games.append({"seed": row["seed"], "outcome": row["outcome"], "info": row, "steps": steps})
+                parsed.append((path, list(pool.imap(parse, f, chunksize=64) if pool else map(parse, f))))
+        ok = True
     finally:
         if pool:
-            pool.terminate()
+            if ok:
+                pool.close()
+            else:
+                pool.terminate()
+            pool.join()
+    pending, games, seen = {}, [], set()
+    for path, rows in parsed:
+        for row in rows:
+            if row is None:
+                continue
+            key = (path, row["seed"])
+            if row["type"] == "decision":
+                pending.setdefault(key, []).append(row)
+            elif row["type"] == "game":
+                if row.get("schema") != SCHEMA:
+                    raise ValueError(f"{path}: schema {row.get('schema')} is not {SCHEMA}")
+                if key in seen:
+                    raise ValueError(f"{path}: seed {row['seed']} has two game lines (reused seed?)")
+                seen.add(key)
+                steps = sorted(pending.pop(key, []), key=lambda r: r["idx"])
+                steps = [s for s in steps if s["source"] in NET_SOURCES]
+                games.append({"seed": row["seed"], "outcome": row["outcome"], "info": row, "steps": steps})
     return games
 
 
