@@ -51,7 +51,7 @@ are worse, equal or better than the rest is not measurable here: every unit keep
 overrides, mostly small), so a unit's outcome is dominated by that later stream, and the contrast for the first
 surviving override (L − S, −4.6 pp [−20.2, +11.1]) includes 0. The count regression ([−5.6, +0.2]) and the bins
 (−34.8 pp for 23 units, 0.0 for 18) do not settle it either. What the logs do show: under α ≈ 0.17 and a 1-pp
-margin, a shrunk chooser would override about once per game instead of about nine times. Shrinkage stays a required
+margin, a shrunk chooser would override about 0.7 times per game instead of about nine times. Shrinkage stays a required
 guard for any future value-led decider; no shrunk-chooser A/B is proposed for V_A1/V_A2 (§727's failure and this
 evidence give no reason to expect a gain). A clean test of the large-gap sign would need a chooser that overrides only
 above the margin, i.e. a new A/B.

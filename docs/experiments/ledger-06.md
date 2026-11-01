@@ -25659,7 +25659,7 @@ Seeds: none.
 **Knowledge impact:** at 16,000 paired labels, flexible models learn no more than the average price per change type;
 Silver's leaf prices HP and potions at about 40-60% of their Heart-kill effect.
 
-## §TBD — Optimizer's-curse shrinkage on §727's value chooser: at α = 0.17 (§715) and a 1-pp margin only 7.8% of V's overrides survive; whether the surviving ones lose less is not shown (first override surviving minus not −4.6 pp Heart kills [−20.2, +11.1]), INCONCLUSIVE on the sign question (offline re-slice of read §727 logs, no seeds, 2026-11-01)
+## §735 — Optimizer's-curse shrinkage on §727's value chooser: at α = 0.17 (§715) and a 1-pp margin only 7.8% of V's overrides survive; whether the surviving ones lose less is not shown (first override surviving minus not −4.6 pp Heart kills [−20.2, +11.1]), INCONCLUSIVE on the sign question (offline re-slice of read §727 logs, no seeds, 2026-11-01)
 
 **Question:** Philipp (2026-11-01, idea 8 of the literature review #927): if §727's value differences are shrunk by
 α ≈ 0.16-0.18 (§715), do the overrides that remain (α·ΔV > 1 pp) still lose? Then V's sign at large gaps is wrong,
@@ -25679,7 +25679,7 @@ result.json byte for byte.
 - Count regression (endogenous): −2.7 pp per surviving override [−5.6, +0.2]; bins: ΔV 0.059-0.1 −34.8 pp (23 units),
   > 0.1 0.0 (18). Neither settles the sign.
 **Interpretation:** INCONCLUSIVE. Shrinkage at α ≈ 0.17 and a 1-pp margin would cut overrides from about nine per game
-to about one, so §727's loss is mostly overrides on near-ties; whether V_A1/V_A2's few large gaps point the right way
+to about 0.7, and most of §727's overrides are near-ties (median ΔV 0.011); whether V_A1/V_A2's few large gaps point the right way
 is not measurable from these logs, because every unit keeps overriding afterwards.
 **Decision:** no code, default or model change. Shrinkage (α·ΔV with an out-of-sample α plus a margin) stays a
 required guard for any future value-led decider; no shrunk-chooser A/B for V_A1/V_A2. Testing the large-gap sign would
