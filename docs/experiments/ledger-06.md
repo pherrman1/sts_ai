@@ -25673,3 +25673,19 @@ a fight aborted with "stall: exceeded 1000 decisions" (seed 111342268).
 Seeds: 111341024-111344276 and 111350256-111353508 used.
 **Knowledge impact:** single-change Heart-entry prices replicate across 4,252 states; card changes are near 0 on
 average.
+
+## §TBD — General Heart-entry value model on both label rounds (stage B3): the all-feature GBM beats Silver's leaf on 59,528 paired labels, A − L −0.0018 [−0.0024, −0.0012] PASS; still improving with more data; overstates HP/potion and misses relic removal on average (2026-11-02)
+
+**Question:** with 4,252 Heart-entry states (§731 + round 2), does the all-feature value model A predict paired
+single-change effects better than Silver's leaf L, and is it still learning?
+**Data:** [PREREG](evidence/heart_entry_value_all_20261101/PREREG.md), [RESULT](evidence/heart_entry_value_all_20261101/RESULT.md).
+§732's A refit on 25/50/100% of training source seeds, 5-fold cross-fit by source seed, L converged float64;
+xgboost 3.0.5.
+**Result:** A − L −0.00180 [−0.00240, −0.00121] PASS (round-2 pairs −0.00202); skill vs no effect A −0.0035, L
+−0.0017, op-mean −0.0016; A − L at 25/50/100% −0.0009/−0.0014/−0.0018; A100 − A50 −0.0004 [−0.0007, −0.0001].
+Mean effects (pp, observed / A): HP down −7.4/−9.4, HP up +5.5/+8.7, potion added +5.3/+8.8, relic removed
+−5.0/−1.0, max HP down −2.2/−0.2.
+**Decision:** PASS → pre-register stage C (A as Silver's S&S win leaf in §724's chain); runs need Philipp's go.
+Seeds: none.
+**Knowledge impact:** a general all-feature value model learns cross-state prices from ~3,400 Heart-entry states
+and keeps improving with data; its average scale for HP/potions is too high and relic loss is barely seen.
