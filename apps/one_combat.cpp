@@ -1,6 +1,8 @@
 #include "sim/search/RunGoal.h"
 #include <cstring>
 #include <stdexcept>
+#include <unistd.h>
+#include <filesystem>
 #include "one_combat/ooc_selective_silver_audit.h"
 #include "one_combat/ooc_selective_silver_sampler.h"
 // one_combat.cpp -- integration driver for full-run evaluation, data generation,
@@ -1299,6 +1301,11 @@ static bool bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
     std::ofstream results;
     if (!resultsFile.empty()) {
         results.open(resultsFile, std::ios::app);
+        if (!results) {
+            // An unwritable path used to drop every row and exit 0.
+            std::cerr << "bestbench: cannot open results file " << resultsFile << " for append\n";
+            return false;
+        }
         if (results.tellp() == 0) {
             results << "seed,won,floor,act,hpEnd,maxHp,fightsLost,deathCombat,deathEncounter,sec\n";
             results.flush();
@@ -1372,8 +1379,23 @@ static bool bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
     }
     int wins = 0, completed = 0; long long floor = 0, hp = 0; double sec = 0;
     std::vector<std::pair<std::uint64_t, std::string>> failures;
+    // A seed whose combat aborts (CombatAbort: the backend threw at a stall, a knowledge-tracker inconsistency
+    // or an invalid action) is a completed LOSS row at the floor of the abort with
+    // deathEncounter=kDeathEncounterCombatAbort, not a missing row: a missing row would drop the seed from the
+    // paired analysis of both arms, biasing the comparison toward the arm that aborts (benchmark protocol:
+    // "an unresolved battle is a loss, not a victory"). The abort is still reported on stderr and counted here.
+    std::vector<std::tuple<std::uint64_t, int, std::string>> aborts;
     BenchProgress prog(nSeeds, "BEST");
     auto wall0 = std::chrono::steady_clock::now();
+    const auto writeRow = [&](std::uint64_t seed, const RunResult &r) {
+        #pragma omp critical(bestbench_results)
+        if (results.is_open()) {
+            results << seed << ',' << (r.won ? 1 : 0) << ',' << r.floor << ','
+                    << r.act << ',' << r.hpEnd << ',' << r.maxHp << ','
+                    << r.fightsLost << ',' << r.deathCombat << ',' << r.deathEncounter << ',' << r.sec << '\n';
+            results.flush();
+        }
+    };
     // Do not create a one-iteration outer OpenMP team when the all-OOC oracle
     // is asked to parallelize its branches; that would otherwise serialize the
     // nested region. Multi-seed benches keep the proven outer parallelism.
@@ -1382,13 +1404,14 @@ static bool bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
         try {
             RunResult r = runFullRunOOC(seed, sims, asc, restV, true);
             wins += r.won; floor += r.floor; hp += r.hpEnd; sec += r.sec; ++completed;
-            if (results.is_open()) {
-                results << seed << ',' << (r.won ? 1 : 0) << ',' << r.floor << ','
-                        << r.act << ',' << r.hpEnd << ',' << r.maxHp << ','
-                        << r.fightsLost << ',' << r.deathCombat << ',' << r.deathEncounter << ',' << r.sec << '\n';
-                results.flush();
-            }
+            writeRow(seed, r);
             prog.tick(r.won, r.floor, r.hpEnd);
+        } catch (const CombatAbort &e) {
+            const RunResult &r = e.partial;
+            floor += r.floor; hp += r.hpEnd; sec += r.sec; ++completed;
+            writeRow(seed, r);
+            aborts.emplace_back(seed, r.floor, e.what());
+            prog.tick(false, r.floor, r.hpEnd);
         } catch (const std::exception &e) {
             failures.emplace_back(seed, e.what());
         } catch (...) {
@@ -1401,14 +1424,15 @@ static bool bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
             try {
                 RunResult r = runFullRunOOC(seed, sims, asc, restV, true);
                 wins += r.won; floor += r.floor; hp += r.hpEnd; sec += r.sec; ++completed;
-                #pragma omp critical(bestbench_results)
-                if (results.is_open()) {
-                    results << seed << ',' << (r.won ? 1 : 0) << ',' << r.floor << ','
-                            << r.act << ',' << r.hpEnd << ',' << r.maxHp << ','
-                            << r.fightsLost << ',' << r.deathCombat << ',' << r.deathEncounter << ',' << r.sec << '\n';
-                    results.flush();
-                }
+                writeRow(seed, r);
                 prog.tick(r.won, r.floor, r.hpEnd);
+            } catch (const CombatAbort &e) {
+                const RunResult &r = e.partial;
+                floor += r.floor; hp += r.hpEnd; sec += r.sec; ++completed;
+                writeRow(seed, r);
+                #pragma omp critical(bestbench_failures)
+                aborts.emplace_back(seed, r.floor, e.what());
+                prog.tick(false, r.floor, r.hpEnd);
             } catch (const std::exception &e) {
                 #pragma omp critical(bestbench_failures)
                 failures.emplace_back(seed, e.what());
@@ -1424,6 +1448,14 @@ static bool bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
         std::printf("BEST                    win%%=%5.1f   avg_floor=%5.1f   avg_hp_end=%5.1f   cpu_sec/run=%.2f   wall=%.1fs\n",
                     100.0 * wins / completed, (double)floor / completed,
                     (double)hp / completed, sec / completed, wall);
+    }
+    if (!aborts.empty()) {
+        std::sort(aborts.begin(), aborts.end());
+        for (const auto &[seed, abortFloor, message] : aborts) {
+            std::cerr << "[bestbench-combat-abort] seed=" << seed << " floor=" << abortFloor
+                      << " recorded as loss (deathEncounter=" << kDeathEncounterCombatAbort << ") error=" << message << '\n';
+        }
+        std::cerr << "bestbench: " << aborts.size() << " combat abort(s) recorded as loss rows\n";
     }
     if (!failures.empty()) {
         std::sort(failures.begin(), failures.end());
@@ -3818,6 +3850,39 @@ int main(int argc, char **argv) {
         return forcedBossRelicSelfTest();
     } else if (mode == "forcedecisionselftest") {
         return forcedDecisionSelfTest();
+    } else if (mode == "rundriverlossselftest") {   // rundriverlossselftest <nSeeds=1> <seed=0>: one seed only
+        if (argc > 2 && std::string(argv[2]) != "1")
+            throw std::runtime_error("rundriverlossselftest plays exactly one seed");
+        const std::uint64_t seed = argc > 3 ? std::stoull(argv[3]) : 0;
+        if (const int rc = runDriverLossAccountingSelfTest(seed)) return rc;
+        // bestbench records a CombatAbort as a completed loss row (deathEncounter=-2) and still succeeds.
+        const auto savedBackend = search::g_externalCombatBackend;
+        search::g_externalCombatBackend = [](search::ScumSearchAgent2 &, GameContext &gc, BattleContext &bc) {
+            bc.init(gc);
+            throw std::runtime_error("selftest: stall");
+        };
+        const std::string path = (std::filesystem::temp_directory_path()
+            / ("sts_rundriverloss_" + std::to_string(seed) + "_" + std::to_string(::getpid()) + ".csv")).string();
+        const bool ok = bestBench(1, 1, 20, seed, path, "rundriverlossselftest");
+        search::g_externalCombatBackend = savedBackend;
+        std::vector<std::string> lines;
+        { std::ifstream in(path); for (std::string line; std::getline(in, line);) lines.push_back(line); }
+        std::error_code ec;
+        std::filesystem::remove(path, ec); std::filesystem::remove(path + ".meta.json", ec);
+        const auto fail = [&](const std::string &what) {
+            std::cerr << "FAIL rundriverlossselftest bestbench abort row: " << what << '\n';
+            for (const auto &l : lines) std::cerr << "  " << l << '\n';
+            return 1;
+        };
+        if (!ok) return fail("bestBench returned false for a combat abort");
+        if (lines.size() != 2) return fail("expected header + one row");
+        std::vector<std::string> f;
+        { std::stringstream ss(lines[1]); for (std::string x; std::getline(ss, x, ',');) f.push_back(x); }
+        if (f.size() != 10 || f[0] != std::to_string(seed) || f[1] != "0" || f[6] != "1" || f[7] != "1"
+                || f[8] != std::to_string(kDeathEncounterCombatAbort))
+            return fail("row is not seed,won=0,...,fightsLost=1,deathCombat=1,deathEncounter=-2");
+        std::cout << "rundriverlossselftest bestbench abort row OK: " << lines[1] << '\n';
+        return 0;
     } else if (mode == "a4perturbselftest") {
         return one_combat::a4PerturbSelfTest();
     } else if (mode == "heart1pposelftest") {

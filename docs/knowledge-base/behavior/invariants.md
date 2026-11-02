@@ -1,6 +1,6 @@
 # Important invariants
 
-Last verified: 2026-09-24 for the Searcher2/3 and self-play removals; 2026-09-20 against the current working tree.
+Last verified: 2026-11-02 for combat-abort and UNDECIDED-exit loss accounting; 2026-09-24 for the Searcher2/3 and self-play removals.
 
 ## Purpose
 
@@ -20,9 +20,15 @@ Since 2026-08-11 a small runtime monitor checks four high-confidence invariants
 at every combat decision boundary and battle-loop exit during normal runs:
 
 - `UNDECIDED_BATTLE_EXIT`: a battle loop in `ScumSearchAgent2` must not exit
-  while `bc.outcome == Outcome::UNDECIDED` (the 1000-decision stall guard
-  converts stalls to `PLAYER_LOSS` first, so any UNDECIDED exit is
-  unintentional).
+  while `bc.outcome == Outcome::UNDECIDED`; any UNDECIDED exit is
+  unintentional. The native Silver backend (the only combat backend) does
+  not convert a stall to `PLAYER_LOSS`: at 1,000 combat decisions, on a
+  knowledge-tracker inconsistency, or on an invalid action it throws
+  (`src/sim/search/NativeSilverBackend.cpp::fail`); `runFullRunOOC` rethrows
+  that as `CombatAbort` with the run as it stood, and `bestbench` records the
+  seed as a loss row at the abort floor with
+  `deathEncounter = kDeathEncounterCombatAbort` (-2) instead of dropping it
+  (`apps/one_combat/run_driver.h`, `apps/one_combat.cpp::bestBench`).
 - `NO_LEGAL_PROGRESSION`: at a genuine agent decision boundary with an
   unresolved combat, the CANONICAL live legal action set is empty
   (`hasLegalProgressionAction`, built on `Action::enumerateCardSelectActions`
@@ -49,6 +55,12 @@ See
   helper equal to `outcome != UNDECIDED`, not an independent flag
   (`include/combat/BattleContext.h`; `src/combat/BattleContext.cpp::init`,
   `afterMonsterTurns`).
+- A battle that exits `UNDECIDED` is a run loss: `BattleContext::exitBattle`
+  sets `GameOutcome::PLAYER_LOSS` (the §112/§113 skip-win guard), and
+  `runFullRunOOC` records the death (`fightsLost`, `deathCombat`,
+  `deathEncounter`) from the game outcome after `exitBattle`, not from
+  `bc.outcome` alone, so such a row never looks like a healthy non-win
+  (`apps/one_combat/run_driver.cpp`; CTest `run_driver_loss_accounting`).
 - Combat outcome is first-write-wins: every combat-resolution outcome setter
   (monster death/suicide, looter/mugger escape, `Player::wouldDie`) is guarded
   by `if (outcome == Outcome::UNDECIDED)`, and `executeActions()` breaks as
