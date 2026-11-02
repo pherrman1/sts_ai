@@ -78,7 +78,8 @@ metric; review K).**
   Such a game counts as no Heart kill (a game line with no decisions: no training signal). Cap: at most ⌊1% of one
   actor part⌋ (2 of a 256-game part, i.e. every arm but G_256; 1 of G_256's 128-game parts); a part above the cap stops its
   actor as any other failure does. The arm then stops at that iteration and is reported **INCOMPLETE** (no verdict;
-  its games up to then are listed), not continued with a raised cap.
+  its games up to then are listed), not continued with a raised cap. If BASE is INCOMPLETE, no arm gets a verdict; if
+  BASE_S1 is INCOMPLETE, PROMISING uses the CI rule alone (D CI lower bound > 0), and RESULT says so.
 - **Analysis additions.** RESULT lists the stalled games per arm (from the actor parts' meta `"stalled"` and the
   stalled game lines kept in the PC's `parts/`; `games-NNNN.csv` is unchanged), and reports, next to the primary D,
   a sensitivity D that drops every seed on which any arm stalled (in any iteration of the last third). The verdict
