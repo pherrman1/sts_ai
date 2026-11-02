@@ -185,6 +185,10 @@ def add_hparams(ap):
     ap.add_argument("--compile", type=int, default=0,
                     help="1 = torch.compile the net (dynamic shapes) to fuse the fp32 RMSNorm and other elementwise "
                          "ops; same math up to rounding; first minibatches pay the compile time (0 = off)")
+    ap.add_argument("--micro-batch", type=int, default=0,
+                    help="memory only: run each minibatch's forward/backward in chunks of at most this many decisions "
+                         "and accumulate the gradient before the one optimizer step (same loss and gradient up to "
+                         "rounding; 0 = off, as does any value >= minibatch)")
     ap.add_argument("--bucket", type=int, default=0,
                     help="length-bucketed minibatches: sort each window of BUCKET*minibatch shuffled decisions by "
                          "token count before cutting minibatches (less padding; changes minibatch composition; 0 = off)")
@@ -339,48 +343,31 @@ class Learner:
         first = None
         nmb = 0
         t1 = time.time()
+        micro = getattr(a, "micro_batch", 0)
+
+        def chunks(idx):   # one chunk (the whole minibatch) unless --micro-batch splits it
+            step = micro if 0 < micro < len(idx) else len(idx)
+            return [idx[i:i + step] for i in range(0, len(idx), step)]
+
+        def collate_mb(idx):
+            return [(c, self._batch(store=store, idx=c)) for c in chunks(idx)]
+
         pool = ThreadPoolExecutor(max_workers=1)   # collates minibatch k+1 while the GPU runs minibatch k
-        nxt = pool.submit(self._batch, store=store, idx=minibatches[0])
-        for k, mb_list in enumerate(minibatches):
-            batch = nxt.result()
+        nxt = pool.submit(collate_mb, minibatches[0])
+        for k, mb_full in enumerate(minibatches):
+            parts = nxt.result()
             if k + 1 < len(minibatches):
-                nxt = pool.submit(self._batch, store=store, idx=minibatches[k + 1])
-            mb = torch.tensor(mb_list, device=dev)
-            logits, value = self._forward(self.net, batch=batch)
-            t = temp_t[mb][:, None]
-            logp_all = F.log_softmax(logits.float() / t, dim=-1)   # fp32 even under bf16 autocast
-            pad = torch.isneginf(logits)
-            logp_safe = logp_all.masked_fill(pad, 0.0)   # 0 * -inf would make NaN gradients
-            pm = policy_mask[mb]
-            lp = logp_all.gather(1, chosen[mb][:, None]).squeeze(1)
-            ratio = torch.exp(lp - old_logp[mb])
-            ad = adv_t[mb]
-            pg = -torch.min(ratio * ad, ratio.clamp(1 - a.clip, 1 + a.clip) * ad)
-            denom = pm.sum().clamp_min(1)
-            policy_loss = (pg * pm).sum() / denom
-            p_all = logp_safe.exp().masked_fill(pad, 0.0)
-            ent = -(p_all * logp_safe).sum(-1)
-            entropy = (ent * pm).sum() / denom
-            rt = ret_t[mb]
-            if a.value_clip > 0:
-                ov = old_v[mb]
-                vc = ov + (value - ov).clamp(-a.value_clip, a.value_clip)
-                value_loss = 0.5 * torch.max((value - rt) ** 2, (vc - rt) ** 2).mean()
-            else:
-                value_loss = 0.5 * ((value - rt) ** 2).mean()
-            kl_anchor = torch.zeros((), device=dev)
-            if anchor_lp is not None:
-                alp = anchor_lp[mb][:, :logp_all.shape[1]]
-                if alp.shape[1] < logp_all.shape[1]:
-                    alp = F.pad(alp, (0, logp_all.shape[1] - alp.shape[1]), value=float("-inf"))
-                alp = alp.masked_fill(pad | torch.isneginf(alp), 0.0)
-                kl_anchor = ((p_all * (logp_safe - alp)).sum(-1) * pm).sum() / denom
-            if value_only:
-                loss = a.value_coef * value_loss
-            else:
-                loss = policy_loss + a.value_coef * value_loss - a.entropy_coef * entropy + kl_coef * kl_anchor
+                nxt = pool.submit(collate_mb, minibatches[k + 1])
             self.opt.zero_grad(set_to_none=True)
-            loss.backward()
+            # Every loss term is a sum over the minibatch's decisions divided by a minibatch-wide count, so chunk
+            # sums with those counts add up to the full minibatch's loss (and gradient).
+            denom = policy_mask[torch.tensor(mb_full, device=dev)].sum().clamp_min(1)
+            n_full = len(mb_full)
+            row = None
+            for mb_list, batch in parts:
+                row_c = self._minibatch_loss(mb_list, batch, len(parts) == 1, denom, n_full, temp_t, policy_mask,
+                                             chosen, old_logp, adv_t, ret_t, old_v, anchor_lp, kl_coef, value_only)
+                row = row_c if row is None else row + row_c
             if value_only:
                 # Value warm-up: only the value head and its norm move; the shared trunk (and so the
                 # policy) stays put.
@@ -389,10 +376,6 @@ class Learner:
             torch.nn.utils.clip_grad_norm_(self.net.parameters(), a.max_grad_norm)
             self.opt.step()
             with torch.no_grad():
-                row = torch.stack([policy_loss.detach().float(), value_loss.detach().float(),
-                                   entropy.detach().float(), kl_anchor.detach().float(),
-                                   ((((ratio - 1).abs() > a.clip) & pm).sum() / denom).float(),
-                                   ((((ratio - 1) - torch.log(ratio)) * pm).sum() / denom).float()])
                 acc += row
                 if first is None:
                     first = row.clone()   # first minibatch: ratio is ~1 up to bf16/fp32 forward noise
@@ -401,6 +384,60 @@ class Learner:
         if self.device.type == "cuda":
             torch.cuda.synchronize()
         train_s = time.time() - t1
+        return self._finish_update(games, steps, names, acc, first, nmb, kl_coef, policy_mask, prep, train_s,
+                                   value_only, dlogp, ret_t, old_v, log)
+
+    def _minibatch_loss(self, mb_list, batch, whole, denom, n_full, temp_t, policy_mask, chosen, old_logp, adv_t,
+                        ret_t, old_v, anchor_lp, kl_coef, value_only):
+        """Forward and backward of one minibatch (whole) or one chunk of it; returns its stats row."""
+        a, dev = self.args, self.device
+        mb = torch.tensor(mb_list, device=dev)
+        logits, value = self._forward(self.net, batch=batch)
+        t = temp_t[mb][:, None]
+        logp_all = F.log_softmax(logits.float() / t, dim=-1)   # fp32 even under bf16 autocast
+        pad = torch.isneginf(logits)
+        logp_safe = logp_all.masked_fill(pad, 0.0)   # 0 * -inf would make NaN gradients
+        pm = policy_mask[mb]
+        lp = logp_all.gather(1, chosen[mb][:, None]).squeeze(1)
+        ratio = torch.exp(lp - old_logp[mb])
+        ad = adv_t[mb]
+        pg = -torch.min(ratio * ad, ratio.clamp(1 - a.clip, 1 + a.clip) * ad)
+        if whole:   # the original expressions, bit for bit
+            denom = pm.sum().clamp_min(1)
+            vmean = torch.mean
+        else:
+            vmean = lambda x: x.sum() / n_full   # noqa: E731
+        policy_loss = (pg * pm).sum() / denom
+        p_all = logp_safe.exp().masked_fill(pad, 0.0)
+        ent = -(p_all * logp_safe).sum(-1)
+        entropy = (ent * pm).sum() / denom
+        rt = ret_t[mb]
+        if a.value_clip > 0:
+            ov = old_v[mb]
+            vc = ov + (value - ov).clamp(-a.value_clip, a.value_clip)
+            value_loss = 0.5 * vmean(torch.max((value - rt) ** 2, (vc - rt) ** 2))
+        else:
+            value_loss = 0.5 * vmean((value - rt) ** 2)
+        kl_anchor = torch.zeros((), device=dev)
+        if anchor_lp is not None:
+            alp = anchor_lp[mb][:, :logp_all.shape[1]]
+            if alp.shape[1] < logp_all.shape[1]:
+                alp = F.pad(alp, (0, logp_all.shape[1] - alp.shape[1]), value=float("-inf"))
+            alp = alp.masked_fill(pad | torch.isneginf(alp), 0.0)
+            kl_anchor = ((p_all * (logp_safe - alp)).sum(-1) * pm).sum() / denom
+        if value_only:
+            loss = a.value_coef * value_loss
+        else:
+            loss = policy_loss + a.value_coef * value_loss - a.entropy_coef * entropy + kl_coef * kl_anchor
+        loss.backward()   # accumulates into .grad across the chunks of one minibatch
+        with torch.no_grad():
+            return torch.stack([policy_loss.detach().float(), value_loss.detach().float(),
+                                entropy.detach().float(), kl_anchor.detach().float(),
+                                ((((ratio - 1).abs() > a.clip) & pm).sum() / denom).float(),
+                                ((((ratio - 1) - torch.log(ratio)) * pm).sum() / denom).float()])
+
+    def _finish_update(self, games, steps, names, acc, first, nmb, kl_coef, policy_mask, prep, train_s, value_only,
+                       dlogp, ret_t, old_v, log):
         stats = dict(zip(names, acc.tolist()))
         if first is not None:
             f = first.tolist()
@@ -414,6 +451,7 @@ class Learner:
         out.update({"iteration": self.iteration, "kl_coef": kl_coef, "games": len(games), "decisions": len(steps),
                     "policy_decisions": int(policy_mask.sum()), "minibatches": nmb, "prep_s": prep,
                     "train_s": train_s, "heart_rate": heart, "value_only": value_only,
+                    "micro_batch": getattr(self.args, "micro_batch", 0),
                     "max_dlogp_behaviour": max(dlogp) if dlogp else 0.0,
                     "mean_return": float(ret_t.mean()), "mean_value": float(old_v.mean())})
         log(json.dumps(out))

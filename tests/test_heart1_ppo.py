@@ -87,6 +87,41 @@ class Heart1PpoTest(unittest.TestCase):
                 rc = subprocess.run([sys.executable, "-c", code], timeout=300).returncode
                 self.assertEqual(rc, 3, path)
 
+    def test_micro_batch_accumulation(self):
+        """--micro-batch: chunked forward/backward + one step == the whole minibatch (rounding); >= minibatch: bitwise."""
+        import argparse
+        import copy
+        import ppo_model
+        import ppo_train
+        here = os.path.dirname(os.path.abspath(__file__))
+        traj = os.path.join(here, "..", "docs", "experiments", "evidence", "ppo_s0_smoke_20261101", "cov8.jsonl.gz")
+        rows = {k: 4096 for k in ppo_model.TABLES}
+        rows["fixed_action"] = ppo_model.FA_COUNT
+        torch.manual_seed(0)
+        net = ppo_model.PolicyNet(16, 2, 32, 1, rows, False)
+        games = ppo_train.load_games([traj], net.trim_map)
+
+        def run(micro, value_clip):
+            ap = argparse.ArgumentParser()
+            ppo_train.add_hparams(ap)
+            args = ap.parse_args(["--minibatch", "64", "--epochs", "1", "--kl-coef", "0.1", "--entropy-coef", "0.01",
+                                  "--micro-batch", str(micro), "--value-clip", str(value_clip)])
+            learner = ppo_train.Learner(copy.deepcopy(net), copy.deepcopy(net), args, torch.device("cpu"))
+            stats = learner.update(copy.deepcopy(games), log=lambda line: None)
+            return learner.net.state_dict(), stats
+
+        for value_clip in (0, 0.2):
+            ref, s_ref = run(0, value_clip)
+            same, s_same = run(64, value_clip)
+            chunked, s_ch = run(23, value_clip)
+            for k in ref:
+                self.assertTrue(torch.equal(ref[k], same[k]), k)
+                self.assertTrue(torch.allclose(ref[k], chunked[k], atol=1e-6, rtol=1e-5), k)
+            for k in ("policy", "value", "entropy", "kl_anchor", "clipfrac", "approx_kl"):
+                self.assertAlmostEqual(s_ref[k], s_ch[k], places=5)
+                self.assertEqual(s_ref[k], s_same[k])
+            self.assertEqual(s_ref["minibatches"], s_ch["minibatches"])
+
     def test_cloud_store_round_trip(self):
         """ppo_cloud: two actor parts in a dir store -> one serve step -> next net and stats published, parts gone."""
         import gzip
