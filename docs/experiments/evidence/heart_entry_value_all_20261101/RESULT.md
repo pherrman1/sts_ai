@@ -43,7 +43,7 @@ the paired A − op-mean difference was not pre-registered and is not computed).
 | potion swapped | 3,602 | −0.5 | −0.4 | 0.0 | −0.5 |
 
 A ranks states better than any other model but is miscalibrated on average: it overstates HP and potion changes by
-1.1-1.6× and understates relic removal (−1.0 vs −5.0) and max-HP loss (−0.2 vs −2.2). A is trained on win/loss of
+1.1-1.7× and understates relic removal (−1.0 vs −5.0) and max-HP loss (−0.2 vs −2.2). A is trained on win/loss of
 states, not on the paired differences, so these average errors are not corrected by the fit.
 
 ## Decision (pre-registered)
