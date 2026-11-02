@@ -487,10 +487,17 @@ const char *realOocChainStepBody(GameContext &gc, search::ScumSearchAgent2 &agen
         search::GameAction(forced->choice).execute(gc);
         return "forced_boss_relic";
     }
-    if (const auto key = search::heartKeyAction(gc, g_collectKeys)) {
-        key->execute(gc);
-        return "heart_key";
+    // STS_OOC_HEART1_PPO (S0, opt-in): the net decides before any rule; the key rule
+    // runs first only in the STS_OOC_HEART1_PPO_KEY_RULE comparison arm.
+    const bool ppo = one_combat::heart1::ppoEnabled();
+    if (!ppo || one_combat::heart1::ppoKeyRule()) {
+        if (const auto key = search::heartKeyAction(gc, g_collectKeys)) {
+            key->execute(gc);
+            return "heart_key";
+        }
     }
+    if (ppo)
+        if (const char *by = one_combat::heart1::ppoStep(gc, index)) return by;
     if (one_combat::heart1::enabled() && !one_combat::liveOocMctsEnabled() && one_combat::heart1::policyStep(gc))
         return "heart1";
     if (const auto chest = treasureChestRuleAction(gc)) {
@@ -512,6 +519,7 @@ const char *realOocChainStepBody(GameContext &gc, search::ScumSearchAgent2 &agen
         if (t_realOocDecisionObserver) one_combat::armOocPolicyTarget();
         if (one_combat::oocCardRulePolicyStep(gc, path, seed, index, mctsMetrics)) return "card_rule";
     }
+    if (one_combat::valueChooserStep(gc, path, seed, index)) return "value_chooser";   // research, default off
     if (one_combat::liveOocMctsScreenExcluded(gc) && one_combat::heart1::policyStep(gc)) return "heart1_screen";
     if (t_realOocDecisionObserver) one_combat::armOocPolicyTarget();
     if (one_combat::oocMctsPolicyStep(gc, path, seed, index, mctsMetrics)) return "mcts";
@@ -676,6 +684,8 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
             || search::nativeSilverLearnedStopEnabled() || search::nativeSilverReuseCap() != 32768)
             throw std::runtime_error("live OOC MCTS requires ordinary exact-10k Silver real combat with reuse cap 32768");
     }
+    if (one_combat::heart1::ppoEnabled() && (!one_combat::heart1::enabled() || one_combat::liveOocMctsEnabled()))
+        throw std::runtime_error("STS_OOC_HEART1_PPO needs STS_OOC_HEART1 and STS_OOC_MCTS=0");
     if (one_combat::liveOocMctsEnabled()) {
         if (e2cCapture) throw std::runtime_error("live OOC MCTS does not support combat corpus capture");
         // With live OOC MCTS, heart1 only serves as the tree prior (STS_OOC_MCTS_PRIOR=heart1);
@@ -704,6 +714,7 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
         one_combat::beginE2cRun(seed, path);
     }
     beginRealOocChainRun(shopV);
+    if (one_combat::heart1::ppoEnabled()) one_combat::heart1::ppoBeginGame(seed);
     t_curPath = &path;
     one_combat::LiveOocMctsMetrics mctsMetrics;
     std::uint64_t oocDecisionIndex = 0;
@@ -803,7 +814,9 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
             const char *traceBy = "chain";
             // Non-ADR-0041 key variants mask some actions; report a policy that ignored the mask.
             std::vector<int> keyMaskAllowedX;
-            if (!search::heartKeyRules().isAdr0041() && gc.screenState == ScreenState::MAP_SCREEN) {
+            // A PPO net that learns the keys sees every edge: no mask to violate.
+            const bool keyMaskApplies = !one_combat::heart1::ppoEnabled() || one_combat::heart1::ppoKeyRule();
+            if (keyMaskApplies && !search::heartKeyRules().isAdr0041() && gc.screenState == ScreenState::MAP_SCREEN) {
                 bool masked = false;
                 for (const auto a : search::GameAction::getAllActionsInState(gc)) {
                     if (!a.isValidAction(gc)) continue;
@@ -848,6 +861,14 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
                               fightsLost,
                               std::chrono::duration<double>(t1 - t0).count(),
                               deathCombat, deathEncounter };
+    if (one_combat::heart1::ppoEnabled())
+        one_combat::heart1::ppoEndGame(gc, {{"won", result.won}, {"heart_kill", result.won && g_collectKeys && g_stopAfterAct == 0},
+            {"game_outcome", static_cast<int>(gc.outcome)}, {"act", gc.act}, {"floor", gc.floorNum},
+            {"hp", gc.curHp}, {"max_hp", gc.maxHp}, {"gold", gc.gold},
+            {"keys", {gc.redKey ? 1 : 0, gc.greenKey ? 1 : 0, gc.blueKey ? 1 : 0}},
+            {"collect_keys", g_collectKeys}, {"stop_after_act", g_stopAfterAct},
+            {"fights", fightsTotal}, {"fights_lost", fightsLost}, {"death_encounter", deathEncounter},
+            {"deck_size", int(gc.deck.cards.size())}, {"wall_s", result.sec}});
     if (!g_oocStrategicTracePath.empty() && !t_oocStrategicTraceRows.empty()) {
         std::lock_guard<std::mutex> lock(g_oocStrategicTraceMutex);
         std::ofstream f(g_oocStrategicTracePath, std::ios::app);

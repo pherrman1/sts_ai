@@ -1,0 +1,82 @@
+# V_A4 Act-4 entry perturbations, pilot (2026-10-30)
+
+Follows §722 (#915). V_A4 is data-limited: the CV learning curve is about −0.01 BCE per doubling, and the old
+data is exhausted. Philipp proposed freezing Act-4 entry states and playing realistic perturbations of them
+(HP, gold, cards, upgrades, relics, relic counters). The plan is
+`/mnt/project-files/value-a4-improve/PERTURB-PLAN.md`, the mechanism `STS_A4_PERTURB` (#917, research flag,
+default off). Philipp gave the go for this pilot on 16 workers (2026-10-30 17:41Z).
+
+## What runs
+One unit per run-1 Act-4 entry: one `heartoutcomegen` game in run 1's environment
+([`../value_clean_labels_run1_20261029/run_unit.sh`](../value_clean_labels_run1_20261029/run_unit.sh), the A20
+default of 10-29, verbatim), plus `STS_A4_PERTURB=INDEX:0:16:SEED`.
+
+- The game is replayed unchanged up to INDEX, the entry's first Act-4 decision in run 1 (`units.txt`).
+- There `runFullRunOOC` forks K = 16 children, one after the other, on the game's own hidden future (SALT 0), so
+  all children of an entry share one future (common random numbers).
+- Child 0 is the unchanged control. With SALT 0 it must reproduce run 1's base game from that entry (checked
+  after the run, see Verify).
+- Children 1-15 apply one perturbation each, drawn from (SPECSEED = SEED, k), from the #917 menu: HP, max HP, gold,
+  add or remove a card, upgrade or un-upgrade, add, remove or swap a relic, redraw a counter, add or remove a potion.
+- [`a4_perturb.py`](a4_perturb.py) checks the parent's `a4_perturb` row (K children, all exit 0, fork at INDEX in
+  act 4) and that every child replays the parent up to the entry, then writes `a4p-SEED.json`. That file holds,
+  per child, the perturbation, the entry record after it (heart1-public-record-v2) and the outcome.
+
+## Seeds
+Only replays of used seeds, no new seeds. The units are 64 of run 1's 406 dev-pool Act-4 entries (seed % 4 ≠ 3;
+536 entries in total), drawn with numpy `default_rng(20261030)`. 47 come from expert-anchored-ab
+(111384000-385023) and 17 from card-rule-ab (111387000-255). The run-1 TEST seeds (seed % 4 = 3) are not used, so
+the perturbations can only enter training folds.
+
+## Cost (estimate)
+- The replay to the entry takes about 14 min (run 1).
+- In the #917 smoke 2 (4 processes on 4 CPUs), Act 4 took 6.3-10.3 min per child, mean about 8.5.
+- A unit is therefore about 14 + 16 × 8.5 ≈ 150 min, up to about 4 h. In total that is about 160 lane-h.
+- 16 workers × 4 lanes = 64 lanes, one unit each, so about 2.5-4 h wall.
+- Storage: each unit holds 18 game files plus their CTM files (about 0.8 MB raw per child), gzip about 2 MB per
+  unit, so about 130 MB and 64 tars in total. The share is tight (capture 2 is running): check the free space
+  before the launch.
+
+## Smoke (2026-10-30, this container, 1 process, binary a4da3156…)
+Unit `111384012 182` with `run_unit.sh` as frozen. The prefix up to the entry took 16 min, and child 0 took 10 min.
+**Child 0 equals run 1's `base-111384012.jsonl` byte for byte after the header, 417/417 rows (`cmp`).** So this
+binary replays run 1, and the CRN control is run 1's real game.
+
+## Verify (before the analysis)
+- Every unit has rc 0 and an `a4p-SEED.json` with 16 children.
+- **Control reproduces run 1.** In every unit, the child-0 game rows must be identical to run 1's
+  `base-SEED.jsonl` (`/mnt/project-files/value-clean-labels-run1/units/`), apart from the header. A mismatch means
+  this binary does not replay run 1. Such a unit's children are then still valid perturbation data, but the
+  control is not run 1's base game, and the count is reported.
+- Each child's entry record differs from the control's only in its operator's fields (as in the #917 self-test).
+
+## Analysis (offline; fixed before the data is read, reviewer F4 of the prelaunch review)
+Analysis code reuses `../value_a4_improve_20261030/tools/` (`core.py`, `feats.py`, `exp3lib.py`) unchanged.
+- **Baseline A = ENS_rc exactly as `exp8_counters.py`.** `core.build(2)` (all Act-4 entries), features X0 + relic
+  counters + card state, GBM `xg` + LR `lr(C=0.003)`, mean of the two. CV `core.oof` on the dev pool
+  (seed % 4 ≠ 3), 5 folds × reps 0-2 (`core.folds`), inner early-stopping fold (f + 1) % 5.
+- **Arm B = A + perturbation rows.** These are children 1-15 of every unit; child 0 is left out, because it
+  duplicates run 1's base game, which is already in the data.
+  - Each row is the child's post-perturbation entry record, built through exactly the same feature path as a real
+    record, including the entry CTM on that record, with y = heartKilled, n = 1 and weight 1.
+  - Flags: run1 = 0, strong = 1. The third source flag column (zero in exp8) is set to 1 for these rows only, and
+    it is a feature in both GBM and LR.
+  - The folds belong to the unit's seed. A perturbation row enters only the training part `tr` of an outer fold
+    whose test fold and inner early-stopping fold both exclude its seed. It never enters `te` or `iv`. That needs a
+    small wrapper around `core.oof`, because `oof` uses one mask for train and test; the wrapper is committed with
+    the analysis.
+- **Scoring:** `core.score` and `core.per_seed_loss` on the real dev core rows only (`dc`: pool & src != 'extra'),
+  identical rows for A and B.
+- **Gate:** `core.paired(L_B, L_A, d, dc)`, a seed-cluster bootstrap with 2,000 draws and rng 7. PASS iff the
+  upper end of the 95% CI is below 0. Then the next step is to scale up to a few hundred entries, which needs
+  Philipp's go. Otherwise the result is NOT_SHOWN at pilot size (F5): 64 entries × 15 add about 13% rows, while
+  the learning curve predicts only about −0.002 BCE, so a null result does not rule out a larger campaign.
+- **Also reported, not gated:** the same paired difference on the 64 pilot seeds' real rows vs all other dev rows,
+  and `run1` scores.
+- **Secondary:** CRN effects per operator (paired child − control outcome per entry, cluster bootstrap by seed).
+  These are a sanity check of signs and a direct read of HP, gold, potion and relic worth at the Act-4 entry.
+
+## Verify scripts
+- `control_check.py UNIT_DIR RUN1_TARS...`: control vs run 1.
+- `entry_diff_check.py a4p-*.json`: each child's entry record differs from child 0's only in its operator's fields
+  (reviewer F3; it runs clean on the #917 smoke 2 children).

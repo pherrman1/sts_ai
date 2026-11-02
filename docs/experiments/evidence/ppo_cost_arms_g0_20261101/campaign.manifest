@@ -1,0 +1,11 @@
+name          ppo-cost-arms-g0
+code_commit   6c96c25a9412b2f5748351cc1c9c0c6eeb35f2f0
+binary_sha256 d39c2b9895fc607078cc98b91dc7af075d4fd92c7c573aa57874afea1430835e
+workers       24
+share         /mnt/project-files/ppo-cost-arms-g0
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 45
+input student_sel.bin /mnt/project-files/az-gen3-explore/student_sel.bin cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7
+input heart1.bin /mnt/project-files/a20-ppo/heart1.bin 1e92f2a6b2432cc9a2c67c37a7d30566dcfc7a1d45f0877f5ef697078304563f

@@ -1,0 +1,1 @@
+B1 game 111312029 was killed by the session's background time limit and replayed alone (same binary, worktree, environment; run_b.sh SEEDS=111312029).

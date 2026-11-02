@@ -1,0 +1,48 @@
+== A.pkl: n=1536 kill=0.251
+  kill                                       385  25.1%
+  act3_BOSS                                  228  14.8%
+  act4_BOSS                                  222  14.5%
+  act2_BOSS                                  186  12.1%
+  act1_BOSS                                  126   8.2%
+  act2_ELITE                                  98   6.4%
+  act1_ELITE                                  70   4.6%
+  act3_ELITE                                  64   4.2%
+  act2_NORMAL                                 60   3.9%
+  act3_NORMAL                                 35   2.3%
+  act4_ELITE                                  25   1.6%
+  act1_NORMAL                                 11   0.7%
+  act2_OTHER                                  10   0.7%
+  act3_OTHER                                   8   0.5%
+  act1_OTHER                                   7   0.5%
+  nonfight act1 hp0 fl11                       1   0.1%
+  deaths by encounter:
+  THE_HEART                    deaths  222 (14.5% of runs)  fought   607 death rate  36.6%
+  AWAKENED_ONE                 deaths  120 ( 7.8% of runs)  fought   544 death rate  22.1%
+  COLLECTOR                    deaths   83 ( 5.4% of runs)  fought   371 death rate  22.4%
+  TIME_EATER                   deaths   68 ( 4.4% of runs)  fought   559 death rate  12.2%
+  HEXAGHOST                    deaths   63 ( 4.1% of runs)  fought   635 death rate   9.9%
+  AUTOMATON                    deaths   52 ( 3.4% of runs)  fought   409 death rate  12.7%
+  CHAMP                        deaths   51 ( 3.3% of runs)  fought   373 death rate  13.7%
+  DONU_AND_DECA                deaths   40 ( 2.6% of runs)  fought   524 death rate   7.6%
+  GREMLIN_LEADER               deaths   38 ( 2.5% of runs)  fought   891 death rate   4.3%
+  SLIME_BOSS                   deaths   37 ( 2.4% of runs)  fought   565 death rate   6.5%
+  REPTOMANCER                  deaths   34 ( 2.2% of runs)  fought   778 death rate   4.4%
+  BOOK_OF_STABBING             deaths   30 ( 2.0% of runs)  fought   880 death rate   3.4%
+  SLAVERS                      deaths   30 ( 2.0% of runs)  fought   884 death rate   3.4%
+  GIANT_HEAD                   deaths   29 ( 1.9% of runs)  fought   768 death rate   3.8%
+  THREE_SENTRIES               deaths   29 ( 1.9% of runs)  fought  1292 death rate   2.2%
+  THE_GUARDIAN                 deaths   26 ( 1.7% of runs)  fought   529 death rate   4.9%
+  SHIELD_AND_SPEAR             deaths   25 ( 1.6% of runs)  fought   632 death rate   4.0%
+  GREMLIN_NOB                  deaths   24 ( 1.6% of runs)  fought  1268 death rate   1.9%
+  LAGAVULIN                    deaths   17 ( 1.1% of runs)  fought  1258 death rate   1.4%
+  SHELLED_PARASITE_AND_FUNGI   deaths   16 ( 1.0% of runs)  fought   460 death rate   3.5%
+  THREE_CULTIST                deaths   11 ( 0.7% of runs)  fought   460 death rate   2.4%
+  TRANSIENT                    deaths   10 ( 0.7% of runs)  fought   382 death rate   2.6%
+  MASKED_BANDITS_EVENT         deaths    8 ( 0.5% of runs)  fought   203 death rate   3.9%
+  MYSTERIOUS_SPHERE_EVENT      deaths    8 ( 0.5% of runs)  fought   245 death rate   3.3%
+  SNAKE_PLANT                  deaths    8 ( 0.5% of runs)  fought   752 death rate   1.1%
+  CULTIST_AND_CHOSEN           deaths    7 ( 0.5% of runs)  fought   425 death rate   1.6%
+  JAW_WORM_HORDE               deaths    7 ( 0.5% of runs)  fought   374 death rate   1.9%
+  LAGAVULIN_EVENT              deaths    6 ( 0.4% of runs)  fought    28 death rate  21.4%
+  SENTRY_AND_SPHERE            deaths    6 ( 0.4% of runs)  fought   303 death rate   2.0%
+  MAW                          deaths    5 ( 0.3% of runs)  fought   373 death rate   1.3%
