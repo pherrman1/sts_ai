@@ -385,15 +385,20 @@ class ArmLearner:
                 sys.exit(f"{arm}/net-0000 sha256 mismatch")
         self.hparams.state, self.hparams.init = self.state, net0
         torch.manual_seed(self.hparams.seed)
-        self.learner = ppo_train.make_learner(self.hparams, torch.device(device))
+        # The learner (net, anchor, Adam moments) lives on the device only during its own update: one serve trains
+        # many arms, and keeping every arm resident ran a 8 GB GPU out of memory after ten arms (screen1, 2026-11-02).
+        # Each step reloads it from state.pt, the same path a restart takes.
+        learner = ppo_train.make_learner(self.hparams, torch.device("cpu"))
+        self.iteration0, self.trim_map = learner.iteration, learner.net.trim_map
+        del learner
         n = len(self.meta["iterations"])
-        if self.learner.iteration == n + 1 and os.path.exists(os.path.join(self.dir, f"net-{n + 1:04d}.bin")):
+        if self.iteration0 == n + 1 and os.path.exists(os.path.join(self.dir, f"net-{n + 1:04d}.bin")):
             # Crashed after the checkpoint, before loop.json: the update is done, its stats line is lost.
             self.meta["iterations"].append({"iteration": n + 1, "stats_lost": True,
                                             "next_sha256": sha256(os.path.join(self.dir, f"net-{n + 1:04d}.bin"))})
             self._write_meta()
-        elif self.learner.iteration != n:
-            sys.exit(f"{self.state} is at iteration {self.learner.iteration}, loop.json at {n}")
+        elif self.iteration0 != n:
+            sys.exit(f"{self.state} is at iteration {self.iteration0}, loop.json at {n}")
         self.republish()
 
     def _write_meta(self):
@@ -451,7 +456,7 @@ class ArmLearner:
                          f"{sha256(local_net)[:12]}")
             files.append(f)
             metas.append(m)
-        games = ppo_train.load_games(files, self.learner.net.trim_map)
+        games = ppo_train.load_games(files, self.trim_map)
         if len(games) != self.cfg["games"]:
             sys.exit(f"{self.arm} iteration {it}: {len(games)} games, expected {self.cfg['games']}")
         # Per-game outcomes for the paired analysis (a rerun of this iteration after a crash rewrites its rows).
@@ -464,13 +469,19 @@ class ArmLearner:
                         f"{metas[0]['net']}\n")
         os.replace(rows + ".tmp", rows)
         load_s = time.time() - t0
-        stats = self.learner.update(games, value_only=it < self.cfg["value_warmup"],
+        import torch
+        learner = ppo_train.make_learner(self.hparams, torch.device(self.device))
+        if learner.iteration != it:
+            sys.exit(f"{self.state} is at iteration {learner.iteration}, expected {it}")
+        stats = learner.update(games, value_only=it < self.cfg["value_warmup"],
                                     log=lambda line: log(f"{self.arm} {line}"))
         del games
         nxt = os.path.join(self.dir, f"net-{it + 1:04d}.bin")
-        self.learner.net.to("cpu").to_bin(nxt)
-        self.learner.net.to(self.device)
-        ppo_train.save(self.learner, self.state)
+        learner.net.to("cpu").to_bin(nxt)
+        ppo_train.save(learner, self.state)
+        del learner
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
         stats.update({"seed_first": min(m["seed_first"] for m in metas), "actor_s": max(m["actor_s"] for m in metas),
                       "net": metas[0]["net"], "nets": sorted({m["net"] for m in metas}),
                       "net_sha256": metas[0]["net_sha256"], "next_sha256": sha256(nxt), "load_s": load_s,
