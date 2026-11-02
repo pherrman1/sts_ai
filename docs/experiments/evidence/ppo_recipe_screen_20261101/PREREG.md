@@ -80,6 +80,9 @@ metric; review K).**
   actor as any other failure does. The arm then stops at that iteration and is reported **INCOMPLETE** (no verdict;
   its games up to then are listed), not continued with a raised cap. If BASE is INCOMPLETE, no arm gets a verdict; if
   BASE_S1 is INCOMPLETE, PROMISING uses the CI rule alone (D CI lower bound > 0), and RESULT says so.
+- Learner order (#968, from ~12:30 CET): least progress first (iteration / the arm's iterations) instead of oldest
+  iteration first, so G_256 (60 iterations) is no longer held to the pace of the 30-iteration arms. Order only: every
+  arm's updates, seeds and minibatches are unchanged (each arm's shuffling has its own seeded RNG).
 - **Analysis additions.** RESULT lists the stalled games per arm (from the actor parts' meta `"stalled"` and the
   stalled game lines kept in the PC's `parts/`; `games-NNNN.csv` is unchanged), and reports, next to the primary D,
   a sensitivity D that drops every seed on which any arm stalled (in any iteration of the last third). The verdict
