@@ -63,3 +63,23 @@ unconsumed parts. After the screen `ppo_cloud.py cleanup` deletes every ref; all
 
 **Workers.** Exactly 40 actor workers (one per part); the screen starts after the cost-arm campaign has released its
 24. A worker whose container resets re-runs `setup` and `start` (the actor resumes; at most one part is replayed).
+
+**Amendments during the run (2026-11-02, before any arm reached iteration 20, the first iteration of the primary
+metric; review K).**
+- Learner (no effect on the arms' math): #963 reloads each arm's learner from `state.pt` per update (the 8 GB GPU ran
+  out of memory with all 19 arms resident; K: nets, stats and Adam moments byte-identical to the resident learner).
+  #964 adds `--micro-batch`; the PC serve runs with `--micro-batch 192` from 09:02 CET, which only changes MB_512
+  (minibatch 512 does not fit the card): gradient accumulation over chunks of ≤ 192 decisions with minibatch-wide
+  denominators, one step per minibatch, so MB_512's update equals the unchunked one up to rounding (K: ≤ 2.9e-6 in the
+  parameters). MB_512 used it from its iteration 0; every other arm (minibatch 192) is bitwise unchanged.
+- **Combat stalls count as losses** (#965, worker RUN_COMMIT f32c9a96, build inputs and binary unchanged). A sampled
+  policy can build a deck whose fight never ends; the native Silver backend then stops the game at 1,000 combat
+  decisions ("stall"), and the game's trajectory is lost. First case: WU_10 iteration 7, seed 111403638 (floor 45).
+  Such a game counts as no Heart kill (a game line with no decisions: no training signal). Cap: at most ⌊1% of one
+  actor part⌋ (2 of a 256-game part, i.e. every arm but G_256; 1 of G_256's 128-game parts); a part above the cap stops its
+  actor as any other failure does. The arm then stops at that iteration and is reported **INCOMPLETE** (no verdict;
+  its games up to then are listed), not continued with a raised cap.
+- **Analysis additions.** RESULT lists the stalled games per arm (from the actor parts' meta `"stalled"` and the
+  stalled game lines kept in the PC's `parts/`; `games-NNNN.csv` is unchanged), and reports, next to the primary D,
+  a sensitivity D that drops every seed on which any arm stalled (in any iteration of the last third). The verdict
+  uses the primary D; a sensitivity D that changes a verdict is named in RESULT.
