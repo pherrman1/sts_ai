@@ -1,6 +1,6 @@
 # STS1 Java reference audit
 
-Last verified: 2026-10-20 for Mummified Hand; 2026-10-20 for Du-Vu Doll and the relic counter scan; 2026-10-20 for the Spire Shield/Spear death and back-attack rows; 2026-10-19 for half-dead Darkling powers, block on dead monsters, the Mugger death roll and the large slime split; 2026-10-19 for the end-of-turn ethereal exhaust order; 2026-10-18 for powers on dead targets and Curl Up; 2026-10-06 against `desktop-1.0.jar` V2.3.4 and the
+Last verified: 2026-11-02 for the lethal heal, empty-pile and blocked-hit Thorns rows (recalled Java semantics, **Unverified** against the pinned JAR in that change); 2026-10-20 for Mummified Hand; 2026-10-20 for Du-Vu Doll and the relic counter scan; 2026-10-20 for the Spire Shield/Spear death and back-attack rows; 2026-10-19 for half-dead Darkling powers, block on dead monsters, the Mugger death roll and the large slime split; 2026-10-19 for the end-of-turn ethereal exhaust order; 2026-10-18 for powers on dead targets and Curl Up; 2026-10-06 against `desktop-1.0.jar` V2.3.4 and the
 `monster_ai_java_parity` and `first_strong_exclusions` unit tests.
 
 ## Purpose
@@ -480,6 +480,58 @@ card has its own on-exhaust effect, and no rule reads the exhaust pile order
 (Exhume shows a grid). No engine change; the combat parity probe compares the
 exhaust pile as a multiset (`UNORDERED_PILES` in `tools/combat_parity.py`).
 
+### Heal queued behind a killing blow (mismatch, fixed)
+
+**Unverified** against the pinned JAR for this change (no JAR in the working
+environment; recalled from the game source): `ReaperAction.update` damages
+each living monster, sums the HP lost, queues `HealAction(source, source,
+healAmount)` with `addToBot`, and calls `clearPostCombatActions` when
+`areMonstersBasicallyDead`. `Bite.use` queues a `DamageAction` then a
+`HealAction`. `GameActionManager.clearPostCombatActions` removes every queued
+action except `GainBlockAction`, `UseCardAction`, `HealAction`,
+`GainGoldAction` and `DAMAGE`-type actions, so a lethal Reaper or Bite still
+heals. Native queued the heal unflagged and the victory break dropped it.
+`STS_POST_VICTORY_HEAL_FIX` (default on, `=0` restores) flags both heals
+`executeAfterCombatVictory`, and `executeActions` runs every flagged action
+before clearing the queue.
+
+Test: `post_victory_heal`.
+
+### Empty piles are not a loss (mismatch, fixed)
+
+The game has no rule that ends a fight when hand, draw and discard are all
+empty; `AbstractPlayer` dies only at 0 HP (**Inference** from the absence of
+any such check in `AbstractRoom`, `GameActionManager` and `AbstractPlayer`;
+not re-read for this change). Combust, Juggernaut, Metallicize, Plated Armor,
+Mercury Hourglass, Stone Calendar, applied Poison and damage potions all
+still win without cards. Native declared `PLAYER_LOSS` mid-turn unless the
+player had Omega, Thorns or a bomb. `STS_EMPTY_PILE_LOSS_FIX` (default on,
+`=0` restores) removes the rule.
+
+Test: `empty_pile_loss`.
+
+### Thorns on a blocked hit (mismatch, fixed; Malleable and Reactive open)
+
+`AbstractMonster.damage` runs `decrementBlock`, then every power's
+`onAttacked(info, damageAmount)`, and only then checks `damageAmount > 0`
+before reducing HP (the same ordering the Curl Up and Angry rows above rely
+on). `ThornsPower.onAttacked` queues its `DamageAction` whenever
+`info.owner != null` and the type is neither `THORNS` nor `HP_LOSS`; it has no
+`damageAmount` guard (high confidence; recalled, **Unverified** against the
+pinned JAR in this change). Native reached Thorns only through
+`attackedUnblockedHelper`, entered when post-block damage was above 0, so a
+fully blocked Strike into a Spiker cost nothing. `STS_THORNS_BLOCKED_HIT_FIX`
+(default on, `=0` restores) queues the retaliation on a blocked or
+zero-damage hit.
+
+**Open question:** `MalleablePower.onAttacked` and `ReactivePower.onAttacked`
+are believed to carry the same owner/type guard and no amount guard, so a
+blocked hit on a Writhing Mass should still gain Malleable block and reroll
+its move. They stay inside the unblocked helper until that is read from the
+bytecode.
+
+Test: `thorns_blocked_hit`.
+
 ## Ironclad relics
 
 ### Pools
@@ -620,6 +672,9 @@ pinned JAR.
 
 ## Ambiguous or not yet inspected
 
+- `MalleablePower.onAttacked` and `ReactivePower.onAttacked` on a fully
+  blocked hit: native skips both (see the Thorns row above); the Java guards
+  have not been read for this.
 - Gremlin `escapeNext` (resolved: unreachable in vanilla). Java's gremlin
   turns check `escapeNext` before choosing their escape move (99). The native
   Gremlin Wizard and Shield Gremlin do not; the other native gremlins do, but
