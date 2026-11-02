@@ -122,6 +122,35 @@ class Heart1PpoTest(unittest.TestCase):
                 self.assertEqual(s_ref[k], s_same[k])
             self.assertEqual(s_ref["minibatches"], s_ch["minibatches"])
 
+    def test_stalled_game_lines(self):
+        """ppo_cloud actor: bestbench stall failures become loss game lines; anything else stops the actor."""
+        import json
+        import ppo_cloud
+        import ppo_train
+        err = ("[bestbench-seed-failure] seed=111403638 error=native Silver backend: stall: exceeded 1000 decisions "
+               "floor=45 encounter=47\nbestbench: FAILED requested=256 completed=255 failed=1\n")
+        lines = ppo_cloud.stalled_game_lines(err, 256)
+        self.assertEqual(len(lines), 1)
+        self.assertIn('"type":"game"', lines[0])
+        row = json.loads(lines[0])
+        self.assertEqual((row["seed"], row["schema"], row["outcome"]["floor"], row["outcome"]["heart_kill"]),
+                         ("111403638", ppo_train.SCHEMA, 45, False))
+        with tempfile.TemporaryDirectory() as d:   # the learner loads it as a game without decisions
+            p = os.path.join(d, "t.jsonl")
+            with open(p, "w") as f:
+                f.write(lines[0] + "\n")
+            games = ppo_train.load_games([p], workers=1)
+            self.assertEqual((len(games), games[0]["steps"]), (1, []))
+            self.assertEqual(ppo_train.step_rewards(games[0], "original", 1.0), [])
+        other = err.replace("stall: exceeded 1000 decisions", "knowledge tracker lost consistency")
+        self.assertIsNone(ppo_cloud.stalled_game_lines(other, 256))
+        self.assertIsNone(ppo_cloud.stalled_game_lines(err.replace("failed=1", "failed=2"), 256))
+        self.assertIsNone(ppo_cloud.stalled_game_lines(err, 50))       # count mismatch with the part
+        self.assertIsNone(ppo_cloud.stalled_game_lines("Segmentation fault\n", 256))
+        many = "".join(f"[bestbench-seed-failure] seed={i} error=stall: exceeded 1000 decisions floor=1\n"
+                       for i in range(4)) + "bestbench: FAILED requested=256 completed=252 failed=4\n"
+        self.assertIsNone(ppo_cloud.stalled_game_lines(many, 256))     # > 1% of the part
+
     def test_cloud_store_round_trip(self):
         """ppo_cloud: two actor parts in a dir store -> one serve step -> next net and stats published, parts gone."""
         import gzip
