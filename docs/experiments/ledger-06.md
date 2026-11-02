@@ -25982,3 +25982,24 @@ Mean effects (pp, observed / A): HP down −7.4/−9.4, HP up +5.5/+8.7, potion 
 Seeds: none.
 **Knowledge impact:** a general all-feature value model learns cross-state prices from ~3,400 Heart-entry states
 and keeps improving with data; its average scale for HP/potions is too high and relic loss is barely seen.
+
+## §747 — heart1's value head as a Silver combat leaf, teacher check (B2): FAIL on HP resolution (−3 HP lowers V in 82.7% of 20,677 post-fight states, 1-HP price p10 −2.9 / p90 +4.3 secant units); Fairy 35 HP, max HP +1.6 HP/pt and per-type potion order (r 0.76, 0.37 without Fairy) are better than gen 1b → no heart1 leaf, no B3 (offline, no seeds, 2026-11-02)
+
+**Question:** Philipp (2026-11-02 10:40Z): try the 2026-11-01 literature result (B) on using the heart1 net's value
+head as Silver's leaf value. The page's plan runs B2 first: the §721 teacher check on the critic.
+**Data:** [README](evidence/heart1_value_leaf_teacher_20261102/README.md) (pre-registration, five gates T1-T5,
+pushed before scoring), [RESULT](evidence/heart1_value_leaf_teacher_20261102/RESULT.md). heart1.bin `1e92f2a6…`,
+`one_combat heart1score`. 20,677 post-fight REWARDS states in acts 1-3 from the 2,048 §691 games (every elite, boss
+and event fight + 6,000 hallway fights), plus §721's 4,832 Heart entries, each perturbed as `prices.py` (2026-10-21
+gen 1b check): 328,146 records.
+**Result (post-fight states):**
+- T1 −3 HP lowers V: 82.7% (need 95%), FAIL. −1/−6/−12 HP: 67/91/95%. Boss states 71%, act 3 76%.
+- T5 1-HP resolution: median abs(price − 1) 1.50 secant units (need ⅓), FAIL.
+- T2 max HP +5 raises V in 92.6%, pass (+1.6 HP per point). T3 Fairy 35.0 HP, pass. T4 per-type r 0.755 with §510,
+  pass. Post hoc: 0.37 without Fairy, and Block, Essence of Steel and Swift are priced +5-9 HP vs ≈ 0 in §510.
+- Non-Fairy potion median 5.8 HP (§510 7.8, formula 11). Heart entries (descriptive): T1 75.8%, T2 70.1%.
+**Decision:** FAIL per the pre-registered rule. No heart1 leaf, no B3 flag. heart1's critic resolves levels and
+potions, not the 1-3 HP differences a leaf has to rank. Rerun `build_states.py` + `gates.py` on the own A20 PPO
+critic (reward 1{Heart} + PBRS).
+Seeds: none.
+**Knowledge impact:** B2 line in `research/ppo-and-combat-leaf-literature.md`.
