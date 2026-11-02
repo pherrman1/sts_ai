@@ -506,11 +506,17 @@ def cmd_serve(argv):
     ap.add_argument("local")
     ap.add_argument("arms", nargs="+")
     ap.add_argument("--device", default=None)
+    ap.add_argument("--micro-batch", type=int, default=0,
+                    help="memory only: ppo_train --micro-batch for every arm whose minibatch exceeds it (same "
+                         "gradient up to rounding; recorded in each update's stats; 0 = each arm's own setting)")
     a = ap.parse_args(argv)
     import torch
     device = a.device or ("cuda" if torch.cuda.is_available() else "cpu")
     store = open_store(a.store)
     learners = [ArmLearner(store, a.local, arm, device) for arm in a.arms]
+    if a.micro_batch > 0:
+        for x in learners:
+            x.hparams.micro_batch = a.micro_batch
     log(f"serving {len(learners)} arms on {device}: " +
         ", ".join(f"{x.arm}@{x.next_it}/{x.cfg['iterations']}" for x in learners))
     while not all(x.done() for x in learners):
