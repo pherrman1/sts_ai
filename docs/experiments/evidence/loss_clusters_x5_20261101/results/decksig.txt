@@ -1,0 +1,120 @@
+
+== THE_HEART: entries 6067, deaths 2245 (14.61% of runs, 37.0% per fight)
+   CV log loss: base 0.6590  R 0.5294  RD 0.4609  GBM 0.4604
+   deck gain RD-R +0.0685 CI [0.0525 0.084 ];  GBM-R +0.0690 CI [0.0593 0.0786]
+   protective: hp -0.67, potions -0.66, R:DEAD_BRANCH -0.55, R:SELF_FORMING_CLAY -0.50, FEEL_NO_PAIN -0.47, hpfrac -0.46, FEEL_NO_PAIN+ -0.44, CORRUPTION -0.34
+   risky:      R:BRIMSTONE +0.33, STRIKE_RED+ +0.31, STRIKE_RED +0.22, curses +0.21, ANGER +0.19, DEFEND_RED +0.16, CARNAGE+ +0.15, PERFECTED_STRIKE+ +0.15
+   deaths by out-of-fold deck-risk quartile (per-fight rate, share of runs): Q1 11.0% / 1.09%; Q2 29.1% / 2.87%; Q3 43.7% / 4.31%; Q4 64.3% / 6.35%
+   per-fight death, HP band x deck risk (low/high): <50% 54/85%; 50-80% 30/61%; >=80% 10/37%
+
+== AWAKENED_ONE: entries 5543, deaths 1270 (8.27% of runs, 22.9% per fight)
+   CV log loss: base 0.5382  R 0.4079  RD 0.3767  GBM 0.3764
+   deck gain RD-R +0.0312 CI [0.0154 0.048 ];  GBM-R +0.0316 CI [0.0228 0.0408]
+   protective: R:DEAD_BRANCH -0.62, hp -0.62, potions -0.61, hpfrac -0.51, SPOT_WEAKNESS+ -0.50, maxhp -0.45, REAPER -0.36, APOTHEOSIS -0.33
+   risky:      STRIKE_RED +0.33, R:PANDORAS_BOX +0.27, curses +0.23, HEADBUTT +0.20, STRIKE_RED+ +0.17, EVOLVE +0.16, INFLAME +0.14, FEED+ +0.14
+   deaths by out-of-fold deck-risk quartile (per-fight rate, share of runs): Q1 6.0% / 0.54%; Q2 13.6% / 1.23%; Q3 25.8% / 2.32%; Q4 46.2% / 4.17%
+   per-fight death, HP band x deck risk (low/high): <50% 50/78%; 50-80% 20/46%; >=80% 4/21%
+
+== act2 normal: entries 66454, deaths 745 (4.85% of runs, 1.1% per fight)
+   CV log loss: base 0.0615  R 0.0337  RD 0.0340  GBM 0.0328
+   deck gain RD-R -0.0003 CI [-0.0015  0.001 ];  GBM-R +0.0008 CI [-0.      0.0017]
+   protective: hpfrac -1.24, hp -1.11, potions -0.90, R:RED_SKULL -0.43, IMPERVIOUS -0.29, R:ORICHALCUM -0.29, R:HORN_CLEAT -0.29, UPPERCUT+ -0.25
+   risky:      R:SLAVERS_COLLAR +0.18, SECOND_WIND +0.14, HAVOC +0.14, R:QUESTION_CARD +0.12, FLEX+ +0.12, DISARM +0.11, R:MATRYOSHKA +0.11, BARRICADE +0.11
+   deaths by out-of-fold deck-risk quartile (per-fight rate, share of runs): Q1 0.4% / 0.48%; Q2 1.0% / 1.07%; Q3 1.0% / 1.11%; Q4 2.0% / 2.19%
+   per-fight death, HP band x deck risk (low/high): <50% 6/12%; 50-80% 0/1%; >=80% 0/0%
+
+== COLLECTOR: entries 3845, deaths 727 (4.73% of runs, 18.9% per fight)
+   CV log loss: base 0.4849  R 0.4232  RD 0.4303  GBM 0.3988
+   deck gain RD-R -0.0072 CI [-0.0321  0.0178];  GBM-R +0.0244 CI [0.0115 0.0382]
+   protective: potions -0.64, hp -0.57, R:DEAD_BRANCH -0.42, hpfrac -0.41, R:BRIMSTONE -0.36, R:ORANGE_PELLETS -0.36, R:SNECKO_EYE -0.35, OFFERING+ -0.34
+   risky:      TWIN_STRIKE +0.23, curses +0.22, DEFEND_RED+ +0.22, DEFEND_RED +0.20, SHRUG_IT_OFF +0.15, R:MEAT_ON_THE_BONE +0.14, CLOTHESLINE +0.14, HEADBUTT +0.14
+   deaths by out-of-fold deck-risk quartile (per-fight rate, share of runs): Q1 7.1% / 0.44%; Q2 14.1% / 0.89%; Q3 18.8% / 1.18%; Q4 35.6% / 2.23%
+   per-fight death, HP band x deck risk (low/high): <50% 42/66%; 50-80% 17/41%; >=80% 7/21%
+
+== HEXAGHOST: entries 4855, deaths 551 (3.59% of runs, 11.3% per fight)
+   CV log loss: base 0.3538  R 0.3146  RD 0.2654  GBM 0.2702
+   deck gain RD-R +0.0492 CI [0.0298 0.068 ];  GBM-R +0.0444 CI [0.0312 0.0576]
+   protective: potions -0.95, ANGER -0.69, R:RED_SKULL -0.64, decksize -0.58, DEMON_FORM+ -0.52, UPPERCUT+ -0.49, SPOT_WEAKNESS+ -0.49, HEADBUTT+ -0.45
+   risky:      DEFEND_RED +0.34, FEEL_NO_PAIN +0.29, POWER_THROUGH +0.27, DEFEND_RED+ +0.24, BARRICADE +0.24, curses +0.21, R:WHITE_BEAST_STATUE +0.20, FEED +0.20
+   deaths by out-of-fold deck-risk quartile (per-fight rate, share of runs): Q1 1.1% / 0.08%; Q2 6.9% / 0.55%; Q3 9.7% / 0.77%; Q4 27.7% / 2.19%
+   per-fight death, HP band x deck risk (low/high): <50% 10/25%; 50-80% 4/20%; >=80% 2/15%
+
+== AUTOMATON: entries 3852, deaths 540 (3.51% of runs, 14.0% per fight)
+   CV log loss: base 0.4053  R 0.3446  RD 0.3492  GBM 0.3320
+   deck gain RD-R -0.0046 CI [-0.0275  0.0218];  GBM-R +0.0126 CI [0.0005 0.0258]
+   protective: potions -0.72, hp -0.56, DEMON_FORM+ -0.46, INFLAME+ -0.42, R:DEAD_BRANCH -0.39, BARRICADE -0.38, hpfrac -0.38, R:BRIMSTONE -0.36
+   risky:      STRIKE_RED+ +0.31, GHOSTLY_ARMOR +0.23, DEFEND_RED +0.21, STRIKE_RED +0.20, curses +0.19, R:WHITE_BEAST_STATUE +0.18, BLUDGEON +0.17, R:MAGIC_FLOWER +0.17
+   deaths by out-of-fold deck-risk quartile (per-fight rate, share of runs): Q1 5.4% / 0.34%; Q2 9.0% / 0.57%; Q3 13.1% / 0.82%; Q4 28.6% / 1.79%
+   per-fight death, HP band x deck risk (low/high): <50% 35/56%; 50-80% 13/33%; >=80% 5/15%
+
+== TIME_EATER: entries 5336, deaths 517 (3.37% of runs, 9.7% per fight)
+   CV log loss: base 0.3182  R 0.2225  RD 0.2066  GBM 0.1984
+   deck gain RD-R +0.0159 CI [0.0036 0.029 ];  GBM-R +0.0241 CI [0.0157 0.033 ]
+   protective: hp -0.76, hpfrac -0.74, potions -0.73, BARRICADE -0.47, R:SNECKO_EYE -0.47, R:POCKETWATCH -0.42, R:RUNIC_PYRAMID -0.41, R:DEAD_BRANCH -0.41
+   risky:      STRIKE_RED +0.33, BATTLE_TRANCE +0.26, STRIKE_RED+ +0.21, curses +0.21, HAVOC +0.17, CARNAGE+ +0.16, CARNAGE +0.16, R:REGAL_PILLOW +0.16
+   deaths by out-of-fold deck-risk quartile (per-fight rate, share of runs): Q1 1.6% / 0.14%; Q2 4.3% / 0.37%; Q3 10.9% / 0.94%; Q4 22.0% / 1.91%
+   per-fight death, HP band x deck risk (low/high): <50% 18/53%; 50-80% 4/20%; >=80% 1/5%
+
+== DONU_AND_DECA: entries 5267, deaths 454 (2.96% of runs, 8.6% per fight)
+   CV log loss: base 0.2936  R 0.1922  RD 0.2009  GBM 0.1811
+   deck gain RD-R -0.0088 CI [-0.0218  0.003 ];  GBM-R +0.0110 CI [0.0043 0.0184]
+   protective: hp -0.92, potions -0.75, hpfrac -0.67, DARK_EMBRACE -0.57, R:PANTOGRAPH -0.44, R:MUMMIFIED_HAND -0.42, FEEL_NO_PAIN -0.37, R:LIZARD_TAIL -0.37
+   risky:      curses +0.31, FEED +0.25, DEFEND_RED +0.22, R:BOTTLED_LIGHTNING +0.21, STRIKE_RED+ +0.20, R:OMAMORI +0.18, CLASH +0.17, STRIKE_RED +0.16
+   deaths by out-of-fold deck-risk quartile (per-fight rate, share of runs): Q1 1.2% / 0.10%; Q2 5.5% / 0.47%; Q3 9.3% / 0.79%; Q4 18.5% / 1.59%
+   per-fight death, HP band x deck risk (low/high): <50% 22/52%; 50-80% 4/14%; >=80% 1/3%
+
+== act3 elite:REPTOMANCER: entries 7837, deaths 452 (2.94% of runs, 5.8% per fight)
+   CV log loss: base 0.2205  R 0.1777  RD 0.1867  GBM 0.1751
+   deck gain RD-R -0.0090 CI [-0.0181  0.0004];  GBM-R +0.0025 CI [-0.0031  0.0077]
+   protective: potions -0.69, R:GREMLIN_HORN -0.62, hp -0.54, hpfrac -0.43, R:DEAD_BRANCH -0.42, R:LETTER_OPENER -0.32, R:MERCURY_HOURGLASS -0.31, R:MUMMIFIED_HAND -0.30
+   risky:      curses +0.25, STRIKE_RED+ +0.23, STRIKE_RED +0.19, IRON_WAVE +0.18, BANDAGE_UP+ +0.18, ANGER +0.16, FIEND_FIRE+ +0.13, BERSERK +0.13
+   deaths by out-of-fold deck-risk quartile (per-fight rate, share of runs): Q1 1.8% / 0.23%; Q2 4.0% / 0.51%; Q3 5.4% / 0.69%; Q4 11.8% / 1.51%
+   per-fight death, HP band x deck risk (low/high): <50% 22/41%; 50-80% 6/13%; >=80% 1/5%
+
+== CHAMP: entries 3811, deaths 431 (2.81% of runs, 11.3% per fight)
+   CV log loss: base 0.3529  R 0.3192  RD 0.3018  GBM 0.2684
+   deck gain RD-R +0.0174 CI [-0.0036  0.0385];  GBM-R +0.0509 CI [0.0375 0.0667]
+   protective: DEMON_FORM+ -0.76, DEMON_FORM -0.71, R:BRIMSTONE -0.57, potions -0.56, INFLAME+ -0.54, BARRICADE -0.48, INFLAME -0.45, R:DEAD_BRANCH -0.42
+   risky:      STRIKE_RED +0.41, POWER_THROUGH +0.28, OFFERING +0.23, CLEAVE +0.21, ANGER +0.21, STRIKE_RED+ +0.20, curses +0.19, DEFEND_RED +0.19
+   deaths by out-of-fold deck-risk quartile (per-fight rate, share of runs): Q1 1.5% / 0.09%; Q2 7.7% / 0.48%; Q3 10.4% / 0.64%; Q4 25.6% / 1.59%
+   per-fight death, HP band x deck risk (low/high): <50% 27/44%; 50-80% 8/23%; >=80% 2/15%
+
+== act2 elite:SLAVERS: entries 8874, deaths 382 (2.49% of runs, 4.3% per fight)
+   CV log loss: base 0.1775  R 0.1282  RD 0.1318  GBM 0.1321
+   deck gain RD-R -0.0035 CI [-0.0123  0.0052];  GBM-R -0.0039 CI [-0.0107  0.0029]
+   protective: hpfrac -0.85, potions -0.84, hp -0.70, R:RED_SKULL -0.41, R:GREMLIN_HORN -0.39, R:HORN_CLEAT -0.37, R:COFFEE_DRIPPER -0.37, R:PRESERVED_INSECT -0.35
+   risky:      FEEL_NO_PAIN +0.22, HAVOC+ +0.20, POWER_THROUGH +0.19, DARK_EMBRACE +0.19, FEEL_NO_PAIN+ +0.18, R:BOTTLED_LIGHTNING +0.18, APPARITION+ +0.18, UPPERCUT+ +0.17
+   deaths by out-of-fold deck-risk quartile (per-fight rate, share of runs): Q1 1.3% / 0.18%; Q2 2.6% / 0.38%; Q3 4.1% / 0.59%; Q4 9.2% / 1.33%
+   per-fight death, HP band x deck risk (low/high): <50% 19/43%; 50-80% 2/9%; >=80% 1/2%
+
+== act2 elite:GREMLIN_LEADER: entries 8955, deaths 372 (2.42% of runs, 4.2% per fight)
+   CV log loss: base 0.1728  R 0.1485  RD 0.1478  GBM 0.1397
+   deck gain RD-R +0.0007 CI [-0.0101  0.0103];  GBM-R +0.0089 CI [0.0027 0.0149]
+   protective: potions -0.72, hp -0.57, R:BRIMSTONE -0.48, SHOCKWAVE -0.47, R:GREMLIN_HORN -0.47, IMMOLATE+ -0.46, R:RED_SKULL -0.42, hpfrac -0.40
+   risky:      curses +0.27, DEFEND_RED +0.26, DEFEND_RED+ +0.24, FEEL_NO_PAIN +0.22, BODY_SLAM+ +0.21, SEEING_RED +0.21, METALLICIZE +0.18, R:WAR_PAINT +0.17
+   deaths by out-of-fold deck-risk quartile (per-fight rate, share of runs): Q1 1.3% / 0.20%; Q2 2.2% / 0.33%; Q3 3.7% / 0.54%; Q4 9.3% / 1.36%
+   per-fight death, HP band x deck risk (low/high): <50% 10/21%; 50-80% 2/8%; >=80% 1/4%
+
+== act3 normal: entries 49575, deaths 348 (2.27% of runs, 0.7% per fight)
+   CV log loss: base 0.0418  R 0.0258  RD 0.0286  GBM 0.0260
+   deck gain RD-R -0.0028 CI [-0.0042 -0.0014];  GBM-R -0.0002 CI [-0.001   0.0005]
+   protective: hpfrac -0.92, hp -0.83, potions -0.61, R:DEAD_BRANCH -0.43, R:RED_SKULL -0.30, R:CHARONS_ASHES -0.28, R:STRIKE_DUMMY -0.27, R:ORRERY -0.27
+   risky:      R:CALLING_BELL +0.27, curses +0.23, PUMMEL+ +0.23, DEMON_FORM+ +0.22, FEED +0.19, decksize +0.16, R:SMILING_MASK +0.15, R:SLAVERS_COLLAR +0.15
+   deaths by out-of-fold deck-risk quartile (per-fight rate, share of runs): Q1 0.3% / 0.22%; Q2 0.5% / 0.42%; Q3 0.7% / 0.59%; Q4 1.3% / 1.04%
+   per-fight death, HP band x deck risk (low/high): <50% 5/13%; 50-80% 0/1%; >=80% 0/0%
+
+== SLIME_BOSS: entries 4831, deaths 340 (2.21% of runs, 7.0% per fight)
+   CV log loss: base 0.2546  R 0.2279  RD 0.2165  GBM 0.2201
+   deck gain RD-R +0.0115 CI [-0.0035  0.0276];  GBM-R +0.0079 CI [-0.0031  0.019 ]
+   protective: potions -0.69, INFLAME+ -0.62, DEMON_FORM+ -0.52, hp -0.49, hpfrac -0.44, upgrades -0.40, APOTHEOSIS+ -0.39, HEADBUTT -0.36
+   risky:      CLASH +0.30, DARK_EMBRACE +0.29, R:PEAR +0.27, SHRUG_IT_OFF +0.26, DARK_SHACKLES +0.25, DISARM+ +0.24, POWER_THROUGH +0.22, FLAME_BARRIER +0.20
+   deaths by out-of-fold deck-risk quartile (per-fight rate, share of runs): Q1 1.1% / 0.08%; Q2 5.1% / 0.40%; Q3 6.3% / 0.49%; Q4 15.6% / 1.23%
+   per-fight death, HP band x deck risk (low/high): <50% 7/29%; 50-80% 4/13%; >=80% 1/5%
+
+== act2 elite:BOOK_OF_STABBING: entries 8813, deaths 310 (2.02% of runs, 3.5% per fight)
+   CV log loss: base 0.1523  R 0.1078  RD 0.1092  GBM 0.1071
+   deck gain RD-R -0.0014 CI [-0.0089  0.0062];  GBM-R +0.0007 CI [-0.0053  0.0066]
+   protective: potions -0.82, hpfrac -0.74, hp -0.70, R:PRESERVED_INSECT -0.50, OFFERING -0.37, R:LIZARD_TAIL -0.37, DISARM -0.35, R:SNECKO_EYE -0.35
+   risky:      curses +0.39, CLASH +0.23, CLEAVE+ +0.22, BARRICADE +0.21, EXHUME +0.20, BASH+ +0.18, BARRICADE+ +0.18, SECOND_WIND+ +0.18
+   deaths by out-of-fold deck-risk quartile (per-fight rate, share of runs): Q1 0.7% / 0.10%; Q2 2.1% / 0.31%; Q3 3.8% / 0.54%; Q4 7.4% / 1.07%
+   per-fight death, HP band x deck risk (low/high): <50% 14/31%; 50-80% 1/7%; >=80% 0/2%

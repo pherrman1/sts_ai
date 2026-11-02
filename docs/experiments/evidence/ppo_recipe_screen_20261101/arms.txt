@@ -1,0 +1,20 @@
+# name     games iters warmup parts  learner hyperparameters (everything else = ppo_train.py defaults)
+BASE       512   30    3      2      --seed 0
+BASE_S1    512   30    3      2      --seed 1
+REW_ORIG   512   30    3      2      --seed 0 --reward original
+LR_3E6     512   30    3      2      --seed 0 --lr 3e-6
+LR_3E5     512   30    3      2      --seed 0 --lr 3e-5
+ENT_01     512   30    3      2      --seed 0 --entropy-coef 0.01
+ENT_0007   512   30    3      2      --seed 0 --entropy-coef 0.0007
+KL_01      512   30    3      2      --seed 0 --kl-coef 0.01
+KL_1       512   30    3      2      --seed 0 --kl-coef 0.1
+KL_DEC     512   30    3      2      --seed 0 --kl-coef 0.1 --kl-decay-iters 15
+WU_0       512   30    0      2      --seed 0
+WU_10      512   30    10     2      --seed 0
+EP_1       512   30    3      2      --seed 0 --epochs 1
+EP_4       512   30    3      2      --seed 0 --epochs 4
+MB_512     512   30    3      2      --seed 0 --minibatch 512
+LAM_1      512   30    3      2      --seed 0 --lam 1.0
+CLIP_01    512   30    3      2      --seed 0 --clip 0.1
+G_256      256   60    6      2      --seed 0
+G_1024     1024  15    2      4      --seed 0

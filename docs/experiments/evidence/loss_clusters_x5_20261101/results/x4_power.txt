@@ -1,0 +1,31 @@
+campaign  armX-armY  pairs | per milestone: SD(diff) corr  pairs for +-1.0pp / +-1.5pp half-width
+vchooser  A-B      1536 | dKill -15.0pp | act2 0.448 r=+0.33 7716/3430 | act3 0.577 r=+0.28 12777/5679 | act4 0.526 r=+0.29 10621/4721 | kill 0.456 r=+0.27 7998/3555
+keys      F-R      1024 | dKill -6.1pp | act2 0.297 r=+0.68 3378/1502 | act3 0.439 r=+0.60 7402/3290 | act4 0.453 r=+0.56 7889/3506 | kill 0.427 r=+0.50 6994/3109
+expanch   A-B      1024 | dKill -0.7pp null | act2 0.297 r=+0.63 3380/1503 | act3 0.456 r=+0.55 7999/3555 | act4 0.501 r=+0.49 9651/4290 | kill 0.443 r=+0.49 7547/3354
+maponly   D-MAP    1024 | dKill +1.4pp null | act2 0.236 r=+0.76 2141/952 | act3 0.419 r=+0.61 6756/3003 | act4 0.471 r=+0.55 8519/3786 | kill 0.435 r=+0.48 7278/3235
+maponly   D-OFF    1024 | dKill +0.0pp null | act2 0.221 r=+0.79 1873/833 | act3 0.406 r=+0.65 6319/2809 | act4 0.473 r=+0.53 8590/3818 | kill 0.433 r=+0.48 7211/3205
+maponly   MAP-OFF    1024 | dKill -1.4pp null | act2 0.200 r=+0.83 1537/683 | act3 0.384 r=+0.68 5678/2524 | act4 0.404 r=+0.66 6259/2782 | kill 0.395 r=+0.57 6002/2668
+ctmcal    A-C       512 | dKill +2.1pp null | act2 0.176 r=+0.86 1194/531 | act3 0.321 r=+0.77 3952/1757 | act4 0.406 r=+0.66 6338/2817 | kill 0.393 r=+0.59 5922/2632
+qcap      A-B       512 | dKill -2.5pp null | act2 0.269 r=+0.67 2782/1237 | act3 0.447 r=+0.57 7659/3404 | act4 0.482 r=+0.52 8937/3972 | kill 0.482 r=+0.40 8922/3966
+vlevel    A-M      1024 | dKill +1.4pp null | act2 0.308 r=+0.48 3643/1619 | act3 0.479 r=+0.49 8806/3914 | act4 0.482 r=+0.52 8938/3973 | kill 0.431 r=+0.49 7128/3168
+vlevel    A-MS     1024 | dKill +1.6pp null | act2 0.304 r=+0.52 3547/1577 | act3 0.497 r=+0.45 9482/4214 | act4 0.508 r=+0.47 9912/4406 | kill 0.440 r=+0.47 7426/3301
+vlevel    A-S      1024 | dKill -1.4pp null | act2 0.221 r=+0.68 1877/834 | act3 0.411 r=+0.61 6491/2885 | act4 0.440 r=+0.60 7435/3305 | kill 0.412 r=+0.51 6527/2901
+vlevel    M-MS     1024 | dKill +0.2pp null | act2 0.221 r=+0.77 1876/834 | act3 0.354 r=+0.73 4807/2137 | act4 0.405 r=+0.66 6306/2803 | kill 0.340 r=+0.69 4432/1970
+vlevel    M-S      1024 | dKill -2.7pp null | act2 0.307 r=+0.47 3628/1613 | act3 0.477 r=+0.50 8744/3887 | act4 0.472 r=+0.54 8562/3806 | kill 0.432 r=+0.48 7182/3192
+vlevel    MS-S      1024 | dKill -2.9pp null | act2 0.300 r=+0.52 3453/1535 | act3 0.491 r=+0.47 9270/4120 | act4 0.492 r=+0.50 9306/4136 | kill 0.423 r=+0.50 6877/3057
+cardrule  A-B       255 | dKill -17.3pp | act2 0.374 r=+0.31 5386/2394 | act3 0.578 r=+0.30 12856/5714 | act4 0.534 r=+0.33 10941/4863 | kill 0.454 r=+0.33 7927/3523
+cardrule  A-C       255 | dKill -18.8pp | act2 0.416 r=+0.27 6653/2957 | act3 0.612 r=+0.23 14368/6386 | act4 0.545 r=+0.28 11404/5069 | kill 0.465 r=+0.26 8314/3695
+cardrule  A-D       255 | dKill -9.0pp | act2 0.354 r=+0.42 4819/2142 | act3 0.500 r=+0.46 9621/4276 | act4 0.552 r=+0.35 11687/5195 | kill 0.513 r=+0.26 10123/4499
+cardrule  B-C       255 | dKill -1.6pp | act2 0.340 r=+0.45 4452/1979 | act3 0.562 r=+0.35 12118/5386 | act4 0.482 r=+0.32 8909/3960 | kill 0.366 r=+0.25 5133/2282
+cardrule  B-D       255 | dKill +8.2pp | act2 0.343 r=+0.36 4528/2013 | act3 0.570 r=+0.30 12482/5548 | act4 0.552 r=+0.24 11699/5200 | kill 0.440 r=+0.23 7452/3312
+cardrule  C-D       255 | dKill +9.8pp | act2 0.365 r=+0.40 5105/2269 | act3 0.559 r=+0.34 12002/5334 | act4 0.522 r=+0.30 10471/4654 | kill 0.419 r=+0.27 6738/2995
+
+pooled (pair-weighted; "null" = pairs with |dKill| < 3 pp, card-rule excluded for n=255):
+  act2: SD 0.299, corr +0.60, pairs for +-1.0pp 3441, +-1.5pp 1530, +-2pp 861, MDE(80%) at 1024 2.62pp, at 4096 1.31pp
+  act3: SD 0.466, corr +0.53, pairs for +-1.0pp 8338, +-1.5pp 3706, +-2pp 2085, MDE(80%) at 1024 4.08pp, at 4096 2.04pp
+  act4: SD 0.477, corr +0.50, pairs for +-1.0pp 8747, +-1.5pp 3888, +-2pp 2187, MDE(80%) at 1024 4.18pp, at 4096 2.09pp
+  kill: SD 0.428, corr +0.46, pairs for +-1.0pp 7029, +-1.5pp 3124, +-2pp 1758, MDE(80%) at 1024 3.74pp, at 4096 1.87pp
+  null act2: SD 0.262, corr +0.66, pairs for +-1.0pp 2631, +-1.5pp 1170, +-2pp 658, MDE(80%) at 1024 2.29pp, at 4096 1.14pp
+  null act3: SD 0.436, corr +0.58, pairs for +-1.0pp 7287, +-1.5pp 3239, +-2pp 1822, MDE(80%) at 1024 3.81pp, at 4096 1.91pp
+  null act4: SD 0.464, corr +0.55, pairs for +-1.0pp 8283, +-1.5pp 3682, +-2pp 2071, MDE(80%) at 1024 4.06pp, at 4096 2.03pp
+  null kill: SD 0.421, corr +0.51, pairs for +-1.0pp 6821, +-1.5pp 3032, +-2pp 1706, MDE(80%) at 1024 3.69pp, at 4096 1.84pp

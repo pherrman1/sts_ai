@@ -1,6 +1,7 @@
 # A20 loss mining: where production runs die and what is avoidable
 
-Last verified: 2026-10-31 against 2,816 recorded production A20 games (§729, [evidence](../../experiments/evidence/loss_mining_20261031/README.md)).
+Last verified: 2026-10-31 against 2,816 recorded production A20 games (§729, [evidence](../../experiments/evidence/loss_mining_20261031/README.md));
+extended 2026-11-01 to 15,363 games of nine campaigns (roadmap X5, §740, [evidence](../../experiments/evidence/loss_clusters_x5_20261101/README.md)).
 
 ## Question
 
@@ -138,6 +139,82 @@ route at low HP (§686 measured the elite take rate falling to 0.26-0.55 at 20-5
 50%, compare children by hallway/elite fights before the next campfire; continue to a leaf check (X2-B's HP slope at
 low HP against the observed death hazard) only if the safer child shows ≥ +1 pp Heart kills.
 
+## X5: loss clusters on 15,363 games (2026-11-01)
+
+Roadmap X5 on every A20 campaign with per-fight rows: nine campaigns, 18,688 games, primary set 15,363 (arms within
+4 pp of their campaign's best; §727 B, §691 R and §712 B-D dropped), plus the 23,503 fights of §698's replay of the §676
+guard (4 fresh combat draws per recorded entry state). Offline, no seeds. Rule from the roadmap: a cluster becomes a
+gate candidate if it covers ≥ 2% of runs and a replay or counterfactual bound shows ≥ +1 pp Heart-kill potential.
+
+**Clusters ≥ 2% of runs** (share of runs; per-fight death; range of the share over the nine campaigns):
+Heart 14.6% (37.0%; 12.5-15.4), Awakened One 8.3% (22.9%; 5.9-9.6), act-2 hallways 4.9% (88% of them entered below
+50% HP; 3.9-7.5), Collector 4.7% (18.9%), Hexaghost 3.6%, Automaton 3.5%, Time Eater 3.4%, Donu & Deca 3.0%,
+Reptomancer 2.9%, Champ 2.8%, Slavers 2.5%, Gremlin Leader 2.4%, act-3 hallways 2.3%, Slime Boss 2.2%, Book of
+Stabbing 2.0%. Same ranking as §729 on more data; the shares hold in every campaign. **Duplicates:** 1,351 of the
+15,363 primary games are exact copies (same seed, same config) across §720 base, expert-anchored A and §712 A (878
+expanch A = r1 base, 109 equal to both expanch arms and r1, 245 card-rule A = r1 base, one repeated seed each in
+expanch and r1), so the primary set holds 6,912 unique seeds and about 7, not 9, independent campaign replications;
+the seed bootstrap already clusters them, and without them the bounds move ≤ 0.05 pp (Awakened One +3.08 [+2.76,
++3.40], Reptomancer +0.86, Collector +0.67; independent review of #936).
+
+**Counterfactual bound** (`potential.py`): each boss/elite against its act siblings at the same entry-HP band and
+potion count, excess deaths × P(Heart kill | survived it), seed bootstrap:
+
+| cluster | excess deaths (% of runs) | Heart-kill potential | 95% CI | range over 9 campaigns |
+|---|---:|---:|---|---|
+| Awakened One | 5.29 | **+3.11 pp** | [+2.81, +3.43] | +2.4 to +4.0 |
+| Reptomancer | 1.82 | +0.84 pp | [+0.67, +1.01] | +0.6 to +1.2 |
+| Collector | 1.59 | +0.64 pp | [+0.47, +0.84] | +0.3 to +1.2 |
+| Hexaghost | 1.37 | +0.40 pp | [+0.26, +0.53] | −0.1 to +0.7 |
+| Slavers, Gremlin Leader | 0.3, 0.2 | ≤ +0.12 pp | include 0 | |
+| all other bosses/elites | < 0 | < 0 | | |
+
+Two caveats on this bound: against the sibling mean the hardest sibling always comes out positive (the excesses within
+an act roughly offset), and the pooled P(kill | survived) overstates what marginal survivors, who would leave the
+fight at low HP, go on to achieve. The sibling bound also overstates intrinsic-difficulty gaps. Against the expert (§701 / §729: Baalorlord dies per fight at
+Awakened One 3.0%, Donu & Deca 1.0%, act-3 bosses 2.3%) our Awakened One rate is 7.6× his, Donu & Deca 8.6×, act-3
+bosses overall 6.0×: relative to the expert, Awakened One is no worse than its siblings. Bringing it to the act-3
+ratio (18.1% per fight) gives ≈ +1.0 pp, to Donu's ratio 0. **So Awakened One is the only cluster whose bound reaches
++1 pp, between +1.0 (expert-relative, small expert samples) and +3.1 pp (sibling).** The Heart and the act-2 hallways
+have no sibling; the Heart is covered by the Heart-entry work (§724, #935), the act-2 hallway deaths are gap 4 below.
+
+**Luck vs state** (`aivat_luck.py`, §676 guard): of the real Awakened One deaths, 69% die again in ≥ 3 of 4 redraws
+from the same entry state (Heart 67%, Hexaghost 64%, Time Eater 55%, Collector 51%, Slime Boss 52%, act-2 hallways 37%,
+S&S 18%); only 6% of Awakened One and Heart deaths survive all four redraws. Entry-state variance is 68% of Awakened One
+outcome variance (Heart 59%, Collector 49%). Inference: Awakened One and Heart deaths are decided by the entry state
+under production play; the open question is whether the state is lost (deck/HP) or the play is (a stronger player
+would win it), which a replay with a stronger player answers and these data cannot.
+
+**Deck signature** (`decksig.py`, seed-grouped CV): deck and relics predict death beyond entry HP, max HP, potions
+and gold at the Heart (log-loss gain +0.069 [+0.059, +0.079], GBM), Hexaghost (+0.044), Awakened One (+0.032), Champ
+(+0.051), Collector (+0.024), Time Eater (+0.024); not in hallways or act-2 elites (deaths there are HP only). The
+out-of-fold weakest-deck quartile carries 50% of Awakened One deaths (per fight 46% vs 6% in the strongest quartile)
+and 61% of Hexaghost deaths. Recurrent signals across bosses: Strikes left in the deck and curses are risky, Dead
+Branch, Feel No Pain/Corruption, Demon Form/Inflame and Barricade protective. With ≥ 80% entry HP, Heart death is
+16% with 0-1 Strikes vs 27% with 4+ (act-2 bosses 6% vs 12%; `strikes.py`). Observational: a refined deck also marks
+a strong run, so this is a hypothesis for the phase-3 prior (removal/transform value), not a rule.
+
+**Gate candidate (only one): Awakened One, play vs state.** Replay recorded Awakened One entries of the two newest
+campaigns (§727 A, §720 base; 1,001 entries) with `one_combat fightreplay` under the production environment and under
+a flat 40k boss budget (learned stop off), 2 CRN copies per arm. Cost from §698's 51 CPU-s per production copy and
+§718's 7.7× at 40k: ≈ 512 entries × 2 × (51 + 390) s ≈ 125 core-h (all 1,001 ≈ 245); a 16-entry smoke fixes the real
+cost. Decision: a ≥ 4 pp lower per-fight death at 40k marks it planning-limited (next: priced boss budget, whole-run
+A/B); otherwise Awakened One is deck/evaluation-limited and goes to phase 3/5 as a named metric. Prior: §718 found no
+gain from 40k on Baalorlord's boss states (Awakened One +2.0 HP, n.s.), so a null result is the more likely outcome;
+the replay is on our own, weaker states, which §718 did not cover.
+
+**Result (§743, 304 entries × 3 paired copies, ~128 core-h):** NOT_PLANNING_LIMITED. Flat 40k loses 1.2 pp fewer
+Awakened One fights than production (25.0% → 23.8%, CI −2.9 to +0.3 pp) at 7.5× CPU; ≈ +0.26 pp Heart kills per run.
+Where production died in all 3 copies, 40k still died in 96%. Awakened One deaths are deck/state-limited
+([RESULT](../../experiments/evidence/ao_replay_40k_20261101/RESULT.md)).
+
+**X4 gate sizes** (`x4_power.py`, 12 near-null arm pairs, |ΔHeart| < 3 pp, 11,264 pairs): paired SD per seed pair
+0.421 for Heart kill (pairing correlation +0.51), 0.262 for reaching act 2, 0.436 act 3, 0.464 act 4. Pairs for a 95%
+half-width of ±1.0 / ±1.5 / ±2.0 pp: 6,821 / 3,032 / 1,706 (Heart). MDE (80% power) 3.7 pp at 1,024 pairs, 1.8 pp at
+4,096. The SD falls when arms diverge late: combat-only changes 0.34-0.39 (§676 A-C, §661 M-MS), early OOC changes
+0.43-0.48. A change that only touches one fight (e.g. Awakened One play) is far cheaper to gate by fight replay than
+by whole runs.
+
 ## What this means for the roadmap
 
 The decision-level ("structural") gaps that existing games still show are each ≤ ~1 pp plausible, about 2-4 pp in
@@ -151,6 +228,6 @@ pairs ≈ 470 core-h, MDE ≈ 3.5 pp; 4,096 pairs ≈ 1,880 core-h).
 
 ## Open questions
 
-- Is Awakened One planning-limited or deck-limited? (gate 1)
+- ~~Is Awakened One planning-limited or deck-limited?~~ Deck/state-limited (§743: 40k −1.2 pp [−2.9, +0.3] per fight).
 - Which carried relic counters besides Incense matter at the Heart? (#922 labels, gate 2)
 - Are there boss-specific deck needs the prior misses? (gate 3)
