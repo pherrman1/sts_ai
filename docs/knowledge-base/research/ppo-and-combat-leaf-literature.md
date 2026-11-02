@@ -1,6 +1,6 @@
 # PPO run policy and a run-aware combat leaf: literature check
 
-Last verified: 2026-11-01 (second web research round, 3-vote adversarial claim verification; read-only checks of
+Last verified: 2026-11-02 for (A) item 7 (learner review fixes); 2026-11-01 (second web research round, 3-vote adversarial claim verification; read-only checks of
 this repository at `336c1f8c`). No seeds were run for this page.
 
 Labels: **Verified** = survived a 3-vote check against the primary source (19 of 24 checked claims did);
@@ -92,6 +92,22 @@ Two questions from Philipp (2026-11-01):
      efficiency of learning", and the §5.2 ablation shows a noticeable drop in learning efficiency without the
      ownership and score targets. That is Go; whether CTM/value heads on our shared trunk give a similar gain is
      Inference. (Corrected after review K, 2026-11-02: the earlier "refuted 1-2" vote was wrong.)
+7. **Learner implementation review (2026-11-02, read-only, our code, not literature).** Four findings in
+   `tools/heart1/ppo_train.py` / `ppo_model.py`, fixed after the recipe screen (its arms kept the reviewed code):
+   - Game order followed `one_combat bestbench`'s OpenMP completion order, so the per-update shuffle (which permutes
+     positions, not games) made minibatch composition depend on thread timing: a replayed part could give a
+     different net. `load_games` now sorts games by seed (steps by idx), tested on the same games in two line orders.
+   - `load_games` keyed games by (file, seed): the same seed in two files counted twice, silently. Now an error;
+     `update --expect-games N` fails on a count mismatch (a file cut at a line boundary loses games without a parse
+     error; the cloud runner already checked counts and sha256).
+   - The choice-logit and value Linears ran inside the bf16 autocast region, so the learner's log-probs carried bf16
+     rounding against the fp32 behaviour log-probs the actor records (final-layer rounding alone: |Δlogp| p99
+     1.5e-2, max 3.5e-2 on the S0 smoke records; `max_dlogp_behaviour` in each arm's `loop.json`). Both heads now
+     run in fp32; the trunk stays bf16. The CUDA-side drop in `max_dlogp_behaviour` is **Unverified** (no CUDA
+     machine in the fixing session); on CPU the heads are bitwise the fp32 heads.
+   - `--reward heart_pbrs` read Φ from a `phi` field no actor writes, so it equalled `heart`. Chosen fix: the
+     learner refuses `heart_pbrs` when no decision line carries `phi`; exporting Φ from `ppoStep` stays open (plan
+     row V3).
 
 ### Ranked experiments for (A)
 
