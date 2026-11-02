@@ -25928,3 +25928,26 @@ excluded, but it costs 7.5× CPU.
 **Decision:** no Awakened One budget follow-up; the X5 lever moves to deck building (phase 3/5 metric). No default change.
 Seeds: none new (replayed §727 seeds 111312001-111312805; redraws SEED_BASE 740000001). Cost ≈ 128 core-h, cloud.
 **Knowledge impact:** KB `research/a20-loss-mining.md` (X5 gate result, open question closed), `research/one-year-roadmap.md` (X5 row).
+
+## §744 — PPO cost arms and G0: K15 (200 hallway sims, no learned Silver prior) keeps the §691 key effect at ~1/6 of Silver 1,000's CPU (D +3.5 pp [+1.7, +5.4], VALID; boss prior playouts alone are ~70% of the cost); heart1 alone ≈ student_sel alone at A20 (−0.2 pp [−2.0, +1.5], 2,048 pairs) → PPO starts from heart1 and plays K15 (cloud, 2026-11-02)
+
+**Question (Philipp, 2026-11-01 22:12Z card "PC + Cloud für Kosten-Arme", 22:17Z "masch einfach alles go, ich approve
+den ganzen run"):** which cheaper Silver settings keep an OOC policy effect (X1 design) for PPO self-play, and does
+heart1 alone play A20 at least as well as student_sel alone (G0, start weights of the PPO net)?
+**Data:** [PREREG](evidence/ppo_cost_arms_g0_20261101/PREREG.md) (review K PASS + delta PASS; K2/K3 dropped before
+launch: the learned stop searches its checkpoints to 10k whatever the base), [RESULT](evidence/ppo_cost_arms_g0_20261101/RESULT.md),
+`result.json`, `games.csv`. Runner and binary d39c2b98 as X1 (§739), `STS_OOC_MCTS=0`, the net alone. Cost arms on
+X1's 1,024 USED seeds (R/F keys × K1, K4, K5, K15 + FB = X1's F1000), G0 F keys on 2,048 new seeds. RUN_COMMIT
+45a46940, 24 cloud workers, 3,072/3,072 units verified.
+**Result:**
+- Key effect F − R: K1 +3.32 [+1.07, +5.57] VALID (CPU 0.76× B); K4 +4.49 [+2.44, +6.64] VALID (0.30×); K5 +2.83
+  [+0.68, +4.88] INCONCLUSIVE (0.26×); K15 +3.52 [+1.66, +5.37] VALID (0.16×). Chosen (cheapest admitted): **K15**.
+  F levels: B 16.8%, K4 14.9%, K15 10.9%. DiD vs X1's 1000 arm all include 0.
+- FB reproduces X1's F1000 on 1,024/1,024 seeds (determinism).
+- G0: student_sel 16.3%, heart1 16.1%, D −0.24 pp [−2.00, +1.51] → **HEART1**; act 3 −0.8 pp [−2.9, +1.3].
+**Interpretation:** for ranking OOC choices of the PPO policy, combat can be ~6× cheaper than Silver 1,000; per
+core-hour K15 yields ~3.5× the Heart kills. One OOC effect only (mostly the act-1 Sapphire key); card and path choices
+whose value depends on fight skill are not covered. Boss prior playouts dominate Silver 1,000's cost.
+**Decision:** the PPO recipe screen (#960) plays K15 and starts from heart1 (as pre-registered). No default change.
+Seeds: 111372000-111374047 USED (G0); smokes 111386992-993. Cost ≈ 37 core-h, cloud.
+**Knowledge impact:** KB `research/a20-ppo-plan.md` (cost arms and G0 rows: results).
