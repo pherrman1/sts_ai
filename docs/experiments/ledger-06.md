@@ -25552,3 +25552,379 @@ Silver tree reuse). Not tested further here.
 Seeds: none new (used seeds 111384000-385023 and 111387000-255, plus seed + 1).
 **Knowledge impact:** §726's perturbation effects are no evidence against causal signs of V_A4 features; compare
 perturbed and control states with the same (fresh) Heart-play pipeline.
+
+## §730 — Fresh Heart replay of run-1 forks: unperturbed in-game Heart states keep their win rate when rebuilt (74.4% in game vs 70.9% fresh, +3.1 pp [−2.5, +7.8]), verdict NO_REBUILD_LOSS; #923's fresh-control gap is mostly noise; perturbed children vs forks −4.3 pp fresh and −9.3 pp in game, both CIs include 0 (replays of used seeds, 2026-10-31/11-01)
+
+**Question:** Philipp (2026-10-31, "Spiel nochmal", fork replay chosen): does the `act4replay` rebuild itself lose
+Heart wins on unperturbed in-game states (#923's control: 75% in game, 66.7% fresh)?
+**Data:** [README](evidence/heart_fork_replay_20261031/README.md) (pre-registered analysis),
+[RESULT](evidence/heart_fork_replay_20261031/RESULT.md). The Heart-entry states of run 1's redrawn-future forks
+1-4 of the 60 #923 entries (234 that reached the Heart; base = #923 control, field for field), at #923's
+production search, 2 fights each on the same battle seeds. 16 workers, ~2 h, 234/234 verified.
+**Result:**
+- In game minus fresh, forks: +3.1 pp [−2.5, +7.8] → NO_REBUILD_LOSS (pre-registered: the CI includes 0 and lies
+  below +0.083).
+- Fresh forks minus fresh control: +4.0 [−5.0, +12.9]. Heart win, in game / fresh: forks 74.4 / 70.9, control
+  75.0 / 66.7, perturbed children 64.4 / 66.4.
+- Children minus forks, per entry: fresh −4.3 [−12.5, +4.2], in game −9.3 [−18.2, +0.3], difference-in-differences
+  −5.0 [−13.3, +3.8]; all include 0.
+**Decision:** the rebuild is roughly unbiased, so #923's control gap is mostly noise. §726's −7.6/−10.6 pp splits
+into a possible modest fresh effect (about −4 pp) and a possible in-game penalty (about −5 pp), neither shown. No further Heart
+replays planned; perturbed rows stay noisy labels for V_A4.
+Seeds: none new (used entry seeds and seed + 1, as in #923).
+**Knowledge impact:** `act4replay` Heart rebuilds are usable as a fresh-state benchmark at production search, with a
+bias of +3 pp (CI up to about +8).
+## §729 — A20 loss mining on 2,816 production games: bosses kill 49% of runs, 80% of deaths start depleted; Ruby, campfires, double-boss pricing and boss-aware picks each ≤ 0.5 pp; potion effect observational only (offer instrument invalid); four gaps ranked (Awakened One, Heart entry, act-2 bosses, low-HP attrition), plausible ~2-4 pp in total; offline, no seeds (2026-10-31)
+
+**Question:** Philipp, 2026-10-31 22:34Z ("Ja starte das mal", loss analysis, roadmap X5): where and why do today's
+A20 runs die, which deaths could a different decision plausibly have avoided, and what would each fix be worth?
+**Data:** [README](evidence/loss_mining_20261031/README.md), page
+[research/a20-loss-mining.md](../knowledge-base/research/a20-loss-mining.md). §727 arm A (1,536 games, 25.1%) and the
+§720 run-1 base games (1,280, 26.3%): CTM rows per fight plus game records; `run_all.sh` reproduces every table on
+each set and pooled. Observational; levers are upper bounds.
+**Result:**
+- Deaths (share of runs): act-3 bosses 14.5%, Heart 14.3%, act-2 boss 11.9%, act-1 boss 8.3%, elites 15.4%, act-2
+  hallways 4.3%; same in both sets within ~1 pp. Per fight: Heart 35.8%, Awakened One 23.1%, Collector 21.7%, other
+  bosses 6-14%. 80% of deaths start below 80% HP or without a potion; 14.6% of runs die healthy.
+- Exchange rates from per-act boss-death logits: −0.34/−0.39/−0.36/−0.71 pp per entry HP (act 1/2/3/Heart; Heart
+  matches V_H's 0.75); a potion = 18/21/12/15 HP (observational upper bounds). A potion-offer instrument is
+  invalid (offers are recorded only when the belt has room, so they track past drinking and deck strength; review);
+  belt-full potion waste is not measurable from these records (~21% of won hallway/elite fights end with a full belt).
+- Small: pre-boss Ruby Recall below 60% HP in 5.0% of runs, ≤ +0.50 pp (confirms §687); campfire use before low-HP
+  deaths unremarkable; second act-3 boss at 77% HP and half the potions, but its leaf already omits the act heal and
+  prices potions near the measured rate; card picks ignore the visible boss (power picks 51% at all three act-3
+  bosses) yet deck features explain little (powers OR 1.08 per power at Awakened One only).
+- Gaps: (1) Awakened One, 8.2% of runs, ceiling +2.5 pp to Time Eater's rate; (2) Heart entry, Heart losers lost 31
+  HP at S&S vs 10; the Incense term's +5.9 pp is per Incense S&S state (11.1% of S&S arrivals), ≈ +0.27 pp of all
+  runs, measured at research Heart search; (3) act-2 bosses at
+  healthy entry, 4.3% of runs; (4) acts 1-2 hallway/elite deaths below 50% HP, 9.4% of runs.
+**Decision:** no code or default change. Proposed gates (not run): Awakened One `fightreplay` production vs flat 40k
+on the 1,001 recorded entries (≈ 130 core-h); Heart-entry counter pricing at S&S from #922 labels on 1,168 S&S entries
+(≈ 140 core-h); offline boss × deck interaction CV for act-2 bosses; offline low-HP map-root divergence check.
+**Interpretation:** Inference: decision-level gaps left in recorded games are each ≤ ~1 pp plausible; most death
+mass is combat HP loss at bosses (§701, §711), so the large levers are combat-side (roadmap phases 3-5).
+Seeds: none (existing games only).
+**Knowledge impact:** new page `research/a20-loss-mining.md`, linked from the research README.
+
+## §731 — Heart-entry perturbation labels (stage A of the general value model): 16,000 paired Heart fights on 1,000 distinct Heart-entry states; pre-registered signs consistent (HP −7.1/+3.8 pp, potion −7.2/+5.0; also relic removed −5.0, counter changed −2.7), card upgrade and max HP up unresolved, none inconsistent → labels usable; one change flips the outcome in 13.6% of pairs vs 20.3% for a reseed; mean effect −1.0 pp [−2.5, +0.5], no §726-style anomaly (replays of used seeds, 2026-10-31/11-01)
+
+**Question:** Philipp (2026-10-31): a value model that sees cross-fight interactions in general, not one Incense rule.
+Stage A: do single-change perturbations of Heart-entry states, played on the control's battle seed, give causal
+labels with sensible signs?
+**Data:** [PREREG](evidence/heart_entry_perturb_20261031/PREREG.md), [RESULT](evidence/heart_entry_perturb_20261031/RESULT.md),
+`labels.csv`. 1,000 of 4,253 distinct Heart-entry states (§721 sources), 16 variants each (control, reseed, 14 single
+changes), `act4replay` with new `deckMisc`; research Heart search as §723/§724. 16 workers (Philipp 19:14Z), 197 CPU-h,
+1000/1000 verified.
+**Result:** control kill 65.4%; reseed − control −0.7 pp. Effects (pp): HP down −7.1 [−9.3, −4.9], potion removed
+−7.2 [−11.1, −3.3], relic removed −5.0 [−7.1, −2.9], counter changed −2.7 [−5.4, −0.1], HP up +3.8 [+0.6, +7.0],
+potion added +5.0 [+1.7, +8.3]; card add/remove/upgrade, relic add, max HP ±: |effect| ≤ 2.2, CIs include 0. Incense
+counter changes vs §723: slope 0.63, corr 0.24 (n 92).
+**Decision:** labels usable (pre-registered). Stage B (all-feature Heart-entry value, CV grouped by source seed,
+scored on held-out paired differences vs Silver's leaf) gets its own pre-registration.
+Seeds: none new (replays of used blocks 111384000-384999 and 111382000-382999).
+**Knowledge impact:** same-seed perturbations of Heart-entry states give clean causal labels; resource losses are
+priced clearly, gains of cards/relics/max HP are below about 2 pp at this size.
+
+## §732 — All-feature Heart-entry value from §731's perturbation labels (stage B): predicts which states win (BCE −0.16 vs Silver's leaf) but not single-change effects: paired-difference error A − leaf −0.00013 [−0.00134, +0.00109], NOT_SHOWN; HP/potion effects 1.2-2.3x too large, relic removal and Incense phase missed (offline, no seeds, 2026-11-01)
+
+**Question:** Philipp (2026-10-31): a general value that sees cross-fight interactions. Does an all-feature
+Heart-entry GBM, trained on §731's 16,000 fights, predict the causal effect of single changes better than the
+structure of Silver's S&S win leaf?
+**Data:** [PREREG](evidence/heart_entry_value_20261101/PREREG.md) (prereg review FAIL → Lizard Tail fix → PASS),
+[RESULT](evidence/heart_entry_value_20261101/RESULT.md). 5-fold cross-fitting by source seed, 14,000 pairs.
+**Result:** primary −0.00013 [−0.00134, +0.00109] NOT_SHOWN. Skill vs no effect: A −0.0014, L −0.0012, leaf-input
+GBM +0.0006; operator-mean ceiling −0.0011. A's mean effects (pp, observed in brackets): HP down −10.9 (−7.1), potion
+removed −8.7 (−7.2), relic removed −0.7 (−5.0), Incense corr 0.17. Disclosed: L's fold-4 logistic did not converge;
+converged refit moves A − L to ≈ +0.00004 (verdict unchanged).
+**Decision:** NOT_SHOWN → no stage C. Next options to Philipp: within-base (paired) fit, more labels, observational states.
+Seeds: none.
+**Knowledge impact:** an outcome model fit across states confounds HP/potions with deck strength; per-change effects
+need a fit that uses the paired design.
+
+## §733 — Heart-entry value fit on the paired design (stage B2): a fixed-effects GBM on §731's within-base differences does not predict single-change effects better than Silver's leaf (+0.00146 [−0.00010, +0.00302], NOT_SHOWN as frozen; WORSE in a 3.4.1 rerun) and is worse than §732's pooled fit (+0.0014 [+0.0004, +0.0024]); HP/potion effects 1.6-2.6x too large, relic effects missed; fits hit the alternation cap (offline, no seeds, 2026-11-01)
+
+**Question:** after §732, does fitting only the paired (within-base) signal of §731's labels give a value that prices
+single changes right?
+**Data:** [PREREG](evidence/heart_entry_value_paired_20261101/PREREG.md) (prereg review FAIL → convergence fix → PASS),
+[RESULT](evidence/heart_entry_value_paired_20261101/RESULT.md). Model logit P = base offset + f(state), XGBoost with
+base_margin, alternating with Newton offsets; held-out D̂ from A's control level + f differences; L converged.
+**Result:** primary B2 − L +0.00146 [−0.00010, +0.00302] NOT_SHOWN as frozen (xgboost 3.0.5); the reviewer's 3.4.1
+rerun gives WORSE (+0.00172 [+0.00011, +0.00333]); skill vs no effect A −0.0014, L −0.0014, B2
++0.0000; operator calibration error A 0.00068, L 0.00074, B2 0.00118. Mean effects (pp, observed): HP down B2 −11.9
+(−7.1), potion removed −11.7 (−7.2), relic removed −0.1 (−5.0). Disclosed: all 65 fits stopped at 20 alternations
+(final offset change 0.10-0.17).
+**Decision:** NOT_SHOWN → no stage C. Next (Philipp): many more labels per change type, or a constrained price-per-field
+model.
+Seeds: none.
+**Knowledge impact:** at 16,000 paired labels, flexible models learn no more than the average price per change type;
+Silver's leaf prices HP and potions at about 40-60% of their Heart-kill effect.
+
+## §734 — §709 re-cut by imagined-fight index × act (research rank 3): no detectable growth of CTM death error over index 0-3 in any act (elite+boss slope +0.001 [−0.006, +0.007] per index); act-2/3 bosses show no ≥ 2× excess (15.1% forecast vs 13.7% observed, 1.11× [0.80, 2.23]; 1.34× without seed 111374104; index 0-1 1.35×, 2-3 0.98×), so the full-rollout diagnostic's ~3× rests on its 4 games; act-2/3 elites 1.4× pessimistic from index 0; within root-action CTM-vs-Silver rollout ρ 0.10 [0.04, 0.15] (offline, no seeds, 2026-11-01)
+
+**Question:** is the CTM's act-2/3 boss over-forecast (2026-10-31 full-rollout diagnostic: act 2 15.5% vs 5.3%, act 3
+17.7% vs 6.7%, 8 roots in 4 games) already present close to real play, does the error grow with the imagined-fight
+index, and how strongly do CTM and Silver rollouts correlate? (rank 3 of
+[search-and-value-literature.md](../knowledge-base/research/search-and-value-literature.md)).
+**Data:** [RESULT](evidence/ctm_depth_reslice_20261101/RESULT.md). §709's audit rows (same share archive, sha256
+`960900a8…`): 144 roots, 16 seeds, 18,547 Silver-arm and 18,499 CTM-arm fights, index 0-3 (`combat` field). Silver arm =
+CTM forecast vs production Silver outcome on rollout-policy states; CTM arm vs Silver arm entry states = drift from
+CTM-drawn history. New `tools/analyze_ctm_audit_depth.py`, seed bootstrap 2,000.
+**Result:**
+- Trend of (observed − forecast) deaths per index includes 0 in every act (act 2-3 bosses +0.006 [−0.030, +0.050];
+  act 1 bosses −0.029 [−0.058, −0.002], i.e. the CTM gets less pessimistic, not more).
+- Act-2/3 bosses: index 0-1 16.0% vs 11.9% (1.35× [0.87, 3.93], n 413), index 2-3 14.6% vs 14.8% (n 641). One seed
+  (111374104) carries 76 of 144 deaths; leave-one-seed-out pred/obs 1.03-1.34. By forecast bin the excess is at 20-50%
+  forecasts: 31.7% vs 13.9% (n 108, −0.18 [−0.27, −0.03]); other bins calibrated. 75 of the 715 four-seed subsets of the 13
+  seeds with act-2/3 boss fights reach pred/obs ≥ 2.5.
+- Act-2/3 elites: 5.0% vs 3.6%, 1.40× [1.23, 1.84], same at index 0-1 (1.48×) and 2-3 (1.31×). Boss HP given a win
+  about 6 HP too optimistic at all indices.
+- Drift over ≤ 3 fights: CTM-arm entry potions within ±0.2 of the Silver arm (acts 2-3 all CIs include 0).
+- ρ of per-rollout leaf values between arms: raw 0.74 [0.64, 0.81] (shared root state), within root-action 0.10
+  [0.04, 0.15].
+**Interpretation:** the rank-3 falsifier "≥ 2× at index 0-1" is not met, but no trend over index 0-3 is detectable either (the
+act-2/3 boss slope CI still allows −0.03 per index); near
+real play the CTM is calibrated for act-2/3 bosses apart from mid-risk states, and the diagnostic's ~3× does not
+appear within ≤ 3 imagined fights. **Inference:** the candidate causes are long-range drift (e.g. potion
+deficit building over a whole game) or chance in 4 games; this data cannot separate them (index ≤ 3). Sampled CTM
+rollouts give no variance reduction for Silver rollouts (1 − ρ² ≈ 0.99): PPI/MFMC only as debiasers.
+**Decision:** no model or default change (diagnostic). Depth ≥ 4 is tested by the paired full-game audit in progress
+(seeds 111388204-219); a CTM recalibration of mid-risk boss forecasts and act-2/3 elites is a candidate only if that
+audit confirms a level bias.
+Seeds: none (offline).
+**Knowledge impact:** this entry; rank 3 / Problem 2 in `search-and-value-literature.md`.
+
+## §735 — Optimizer's-curse shrinkage on §727's value chooser: at α = 0.17 (§715) and a 1-pp margin only 7.8% of V's overrides survive; whether the surviving ones lose less is not shown (first override surviving minus not −4.6 pp Heart kills [−20.2, +11.1]), INCONCLUSIVE on the sign question (offline re-slice of read §727 logs, no seeds, 2026-11-01)
+
+**Question:** Philipp (2026-11-01, idea 8 of the literature review #927): if §727's value differences are shrunk by
+α ≈ 0.16-0.18 (§715), do the overrides that remain (α·ΔV > 1 pp) still lose? Then V's sign at large gaps is wrong,
+not only its scale.
+**Data:** [README](evidence/value_chooser_shrinkage_20261101/README.md), `analyze.py`, [result](evidence/value_chooser_shrinkage_20261101/result.json).
+§727's 1,536 units (29,330 logged choices, 13,939 overrides; top-3 candidates with prior and V). Post hoc on
+outcomes already read for §727 (disclosed). Units split by whether B's first override (before which A and B play
+identically; review: 199/199 sampled units) survives shrinkage; primary contrast L − S. Review (reviewer K) reproduced
+result.json byte for byte.
+**Result:**
+- Surviving overrides at α 0.17: 21.7% / 7.8% / 2.5% for margins 0.5 / 1 / 2 pp (median ΔV 0.011).
+- α 0.17, 1 pp: L − S −4.6 pp [−20.2, +11.1] (first override survives, 41 units, −19.5; does not, 1,488, −14.9).
+  L − S −2.2 to −4.6 with CIs including 0 at all α 0.16-0.18 and margins 0.5-1 pp; margin 2 pp (16-17 units)
+  uninformative.
+- Confound: after the first override L units make 8.3 more overrides (0.8 surviving), S units 8.1 (0.68), so L's own
+  −19.5 pp is mostly the later small-override stream that also costs S −14.9.
+- Count regression (endogenous): −2.7 pp per surviving override [−5.6, +0.2]; bins: ΔV 0.059-0.1 −34.8 pp (23 units),
+  > 0.1 0.0 (18). Neither settles the sign.
+**Interpretation:** INCONCLUSIVE. Shrinkage at α ≈ 0.17 and a 1-pp margin would cut overrides from about nine per game
+to about 0.7, and most of §727's overrides are near-ties (median ΔV 0.011); whether V_A1/V_A2's few large gaps point the right way
+is not measurable from these logs, because every unit keeps overriding afterwards.
+**Decision:** no code, default or model change. Shrinkage (α·ΔV with an out-of-sample α plus a margin) stays a
+required guard for any future value-led decider; no shrunk-chooser A/B for V_A1/V_A2. Testing the large-gap sign would
+need a chooser that overrides only above the margin (a new A/B, Philipp's call).
+Seeds: none.
+**Knowledge impact:** `research/search-and-value-literature.md` idea 8 marked checked (inconclusive).
+
+## §736 — Value-gate checks (#927 rank 5): the aggregate BCE gate cannot see an Incense-size term (holder gain −0.0038 [−0.0107, +0.0030] vs aggregate −0.0001); V_A4's learning curve predicts R² 0.327 at 10^5 entries (0.319 at 10^5 games) → no outcome-only capture; at map roots the best value head is 0.14-0.16 below the simulated sibling-label noise ceiling (0.76-0.77) → label noise is not what limits it (offline, no seeds, 2026-11-01)
+
+**Question:** Philipp, 2026-11-01 07:25Z: run #927's rank-5 checks. Rules stated in the literature review before
+the numbers: (a) subgroup gain visible but aggregate flat → targeted probes instead of the BCE gate; (b) extrapolated
+R² < 0.33 at 10^5 entries → no outcome-only capture (~23k core-h); (c) best head within ~0.05 of a simulated
+noise ceiling → stop outcome-label value work.
+**Data:** [README](evidence/value_gate_checks_20261101/README.md), [RESULT](evidence/value_gate_checks_20261101/RESULT.md).
+(a)/(b): #915's V_A4 data and protocol (dev seeds only, 5-fold CV × 3; ENS_all/ENS_rc reproduce §722 exactly).
+(c): §644's common-seed VALIDATION (80 sources, 5,587 roots, 1,364 map), §715's head concordances.
+**Result:**
+- (a) ENS_rc − ENS_all (relic-counter phases): Incense holders (271 entries, 459 games) −0.0038 [−0.0107, +0.0030],
+  non-holders +0.0004 [−0.0013, +0.0022], all −0.0001 [−0.0019, +0.0017]; a 6-offset phase probe −0.0044 on holders.
+  Holders are 12% of games, so the aggregate gate needs an entry-level effect of about ±11 pp on every holder.
+- (b) R² 0.216 / 0.244 / 0.266 / 0.284 at 588 / 1,141 / 2,234 / 4,387 training entries (gain per doubling 0.028 →
+  0.018). Power law R∞ 0.348: 0.327 at 10^5 entries [0.268, 0.409], 0.319 at ~4×10^4 entries (10^5 games; the CI ignores refit noise and a 23× extrapolation, so it is too narrow);
+  log-linear envelope 0.391.
+- (c) Ceiling with variance-matched true values (noise removed from the observed gaps): map 0.763-0.770 (lowest
+  variant 0.740, pooled 0.846), non-map 0.792-0.824 (0.70-0.86 across truth models), vs best head/blend map 0.615-0.622, non-map 0.733-0.752; the analytic
+  observed-gap ceiling is reproduced (0.880 vs 0.873) and is optimistic by ~0.09.
+**Decision:** (a) state terms are judged by causal probes (§723/§724/§731 design), subgroup BCE as a secondary report;
+(b) no 10^5-game outcome-only capture (borderline, rule applied as stated); (c) do not stop map-root value work on noise
+grounds: the gap is in features, level and scale, not label noise; whether off-map heads are near the limit depends on
+the truth model. No default change.
+Seeds: none.
+**Knowledge impact:** aggregate BCE is blind to state terms that touch ~10% of entries at today's data size; more
+outcome-only Act-4 rows buy ~+0.035 R² per 10^5 games; map-root sibling ranking is not label-noise limited.
+
+## §737 — Map-root value-of-computation audit (#927 rank 6): roots whose prior top is ≥ 0.98 take 54.6% of map simulations and change 1.9% of picks (pick at 1,024 ≠ 4,096 at 1.5% of them, 3.7% of all map roots); by the #927 rule not dropped, so the 1,024 vs 4,096 SPRT is justified (offline, no seeds, 2026-11-01)
+
+**Question (Philipp, 2026-11-01 07:25Z, item 6 of #927's cheap methods):** how many map-search simulations are spent
+at roots where student_sel's prior top is ≥ 0.98, and how often do they change the decision?
+**Data:** [RESULT](evidence/map_root_voc_audit_20261101/RESULT.md), `analyze.py`. Logged root rows (prior, visits, Q,
+checkpoints 128-4,096) of §727 arm A (production, `3d62ff5e`, 1,536 games; 23,826 searched non-singleton map roots,
+all 4,096 simulations) and, as replication, §683 arm MAP (`772df240`, 1,024 games, 16,322 roots). Checkpoint picks use
+`visits_q_id`; Inference (code read): the checkpoint-k tree equals a k-simulation search at a full-budget root.
+**Result (A; MAP within 0.4 pp on every headline rate):** prior ≥ 0.98 roots are 54.6% of roots and of map simulations
+(CPU-weighted 54.7%); played ≠ prior argmax 1.94% ± 0.12 (0.16 per game), pick at 1,024 ≠ 4,096 1.54%, ≠ prior
+already at 1,024 0.39%. Prior < 0.98: departs 11.6%. All map roots: departs 6.3% (1.0 per game), 1,024 ≠ 4,096 3.74%
+(0.58 per game), 2,048 ≠ 4,096 2.44%. With prior ≥ 0.8 departures appear late (at 128 simulations 4 of 18,698 roots
+off the prior; 425 of 426 flips from 1,024 to 4,096 move away from it). At prior ≥ 0.98 departures carry a large
+search Q gap (median +0.069, prior argmax median 1,430 visits), so they are stable leaf-vs-prior disagreements, not
+Q noise (Inference); whether they help is §710's open question.
+**Decision:** by #927's rule (change > ~3% or little CPU → drop; "little" taken as < 25%, set after the first pass,
+disclosed) the class is not dropped: the non-inferiority SPRT 1,024 vs 4,096 map simulations ([−1.5, 0] pp) is
+justified. Sizing (Inference): a global 1,024 cap changes 0.58 picks per game and saves 75% of map simulations (≈ 490
+of ≈ 650 s estimated map-search CPU per game); a cap only at prior ≥ 0.98 changes 0.13 picks per game and saves 41%.
+The SPRT needs Philipp's typed go, worker count, new seeds and frozen provenance.
+Seeds: none (replays of logged §727 and §683 games only).
+**Knowledge impact:** none beyond this entry; no code or default change.
+
+## §738 — Per-floor RNG keying for evaluation (literature idea 7): on §685's 8,510 first-divergence pairs, children whose next card offer happened to coincide correlate at rho 0.506 vs 0.417 when it differed, gap 0.089 [0.018, 0.162] < 0.1 → DROP; at map roots the gap is −0.004; ceiling ≈ 1.04× (≤ 1.07×) effective seeds (offline, no seeds, 2026-11-01)
+
+**Question (Philipp, 2026-11-01, idea 7 of the #927 literature review):** would keying run-level streams (card,
+relic, potion, event) by seed × floor × room make paired whole-game A/Bs worth building? Cheapest check from the
+review: compare outcome rho of §685 pairs whose next offer coincides vs differs; drop if the gap is < 0.1.
+**Design:** [RESULT](evidence/rng_pairing_offer_match_20261101/RESULT.md), [analyze.py](evidence/rng_pairing_offer_match_20261101/analyze.py).
+Pairs as `s0.py extract` (§685). Next offer = first combat-reward card offer above the root floor; MATCH = identical
+card ids + upgrades (the sequential card stream still aligned). rho = phi of Heart kills; cluster bootstrap by seed.
+**Result:** match 6,633 pairs rho 0.506 [0.472, 0.540], differ 1,703 rho 0.417 [0.348, 0.482], 174 missing; **gap
+0.089 [0.018, 0.162] → DROP**. Act-4 arrival 0.145; next relic offer 0.066, potion 0.098; match vs same-floor-different
+cards 0.036 [−0.110, +0.192]. The 0.1 rule is met by the point estimate only (CI spans 0.1); the drop rests on the ceiling. Map roots (81% of differ pairs) −0.004 [−0.100, +0.098]; other root screens ≤ 153
+differ pairs each, CIs include 0. By campaign §661 0.117, §683 0.038, §676 0.009.
+**Interpretation:** even if keying lifted every differ pair to the match pairs' rho, overall rho moves 0.488 → ≈ 0.506
+(CI end ≈ 0.521): ≈ 1.04× (≤ 1.07×) effective seeds, not the 1.2-1.7× hoped for; the reviewer's generous ceiling (no later desync either) ≈ 1.08×, ≤ 1.15×. Where streams desync most (map
+roots) a coincidental match gives no extra correlation; the pooled gap mostly marks similar children (observational,
+so the causal gain is likely smaller). Consistent with §699 (combat death draws dominate) and §703 (keyed rollout
+streams WEAK). Keyed run-level RNG for evaluation is not built.
+Seeds: none (existing games only).
+**Knowledge impact:** literature review idea 7 marked dropped (`research/search-and-value-literature.md`).
+
+## §739 — Cheap-combat proxy check (roadmap X1): §691's flexible-vs-rigid keys effect on its 1,024 seeds, student_sel alone out of combat: same-runner production +5.76 pp [+3.13, +8.50], flat Silver 1,000 +4.49 pp [+2.34, +6.64] → VALID (DiD −1.27 [−4.39, +1.95]), flat Silver 200 +2.34 pp [+0.49, +4.20] → INCONCLUSIVE (DiD −3.42 [−6.45, −0.39]); Silver 1,000 ≈ 12× cheaper per unit of power (2026-11-01)
+
+**Question (Philipp, 2026-10-31 22:27Z "Okay try den billigen Kampf"):** does an OOC policy effect measured with
+production combat survive when real combats are played by flat cheap Silver? If yes, PPO self-play and OOC screens
+can use cheap combat.
+**Design:** [PREREG](evidence/cheap_combat_proxy_20261031/PREREG.md), [RESULT](evidence/cheap_combat_proxy_20261031/RESULT.md),
+[run_unit.sh](evidence/cheap_combat_proxy_20261031/run_unit.sh), [analyze.py](evidence/cheap_combat_proxy_20261031/analyze.py),
+per-game [games.csv](evidence/cheap_combat_proxy_20261031/games.csv). R (`STS_KEY_*=first`) vs F (policy/policy/mask)
+× combat {flat Silver 1,000, flat Silver 200 (`STS_SILVER_LEARNED_STOP=0 STS_SILVER_ACT4_STRONG=0`), production
+(learned stop, Act 4 strong)}; bestbench with `STS_OOC_MCTS=0` (key rules, then student_sel `cf6bf7fb` argmax).
+Binary `d39c2b98` (main `6c96c25`), run commit `930cd7f2`. Rule: VALID if CI > 0 and D in [+3.03, +9.08] (50-150% of
+§691's +6.05); INVALID if CI upper < +3.03.
+**Result:** 6,144 games, all rc 0. Heart R → F: Silver 1,000 12.3% → 16.8%; Silver 200 6.7% → 9.1%; production
+19.6% → 25.4% (+5.76, within 0.3 pp of §691, so the runner change is harmless here). Act 3 cleared (floor ≥ 52, also
+counts keyless act-3 clears): +3.22 [+0.49, +5.86], +3.03 [+0.78, +5.27], +6.93 [+4.10, +9.77]. Mean wall per game
+R/F: 18.4/20.5 s, 2.9/3.2 s, 224.9/276.8 s.
+**Interpretation:** Silver 1,000 keeps ~78% of the effect with about the same power per pair (z 4.1 vs 4.2) at 1/13
+of the CPU per pair → ≈ 12× cheaper gates for this kind of OOC effect (Inference: one effect). Silver 200 attenuates
+it to ~40% (DiD CI excludes 0): biased toward 0, at most a coarse pre-screen. Scope: one OOC effect, mostly an act-1
+Sapphire-chest choice; licenses cheap combat for ranking OOC policy changes (confirm at production before a default),
+not for combat changes or absolute rates. Deck-building effects that depend on fight skill are untested.
+Seeds: none new (§691's 111382000-111383023 replayed; smokes 111383024/025, used). Cost ≈ 156 core-h (control 143 on
+8 workers, Philipp's card 2026-10-31 22:37Z and "Go 8 workers" 23:00Z).
+**Knowledge impact:** roadmap X1 row and limitations updated (`research/one-year-roadmap.md`).
+
+## §740 — Loss clusters on 15,363 A20 games (roadmap X5, offline part) and gate power (X4): only Awakened One clears the X5 rule (8.3% of runs; bound +1.0 to +3.1 pp Heart kills); every other boss/elite ≤ +0.84 pp; Heart SD 0.421 per seed pair → ±1.0 / ±1.5 pp need 6,821 / 3,032 pairs (offline, no seeds, 2026-11-01)
+
+**Question (Philipp, 2026-11-01 "start a thread for x5"):** roadmap X5: which death clusters cover ≥ 2% of runs and
+show ≥ +1 pp Heart-kill potential? Plus X4: paired SD per pair and per act from existing records.
+**Data:** [README](evidence/loss_clusters_x5_20261101/README.md), [run_all.sh](evidence/loss_clusters_x5_20261101/run_all.sh),
+tables in `results/`. Nine A20 campaigns (§661, §676, §683, §691, §693, §712, §720, §727, expert-anchored A/B), 18,688
+games; primary set 15,363 (arms within 4 pp of their campaign's best; drops §727 B, §691 R, §712 B-D), of which
+1,351 are exact copies across §720 base, expert-anchored A and §712 A (6,912 unique seeds, ~7 independent
+replications; deduplicated, the bounds move ≤ 0.05 pp, Awakened One +3.08 [+2.76, +3.40]). §698's replay of
+the §676 guard (23,503 fights × 4 fresh draws) for luck vs state.
+**Result:**
+- Clusters ≥ 2% of runs: Heart 14.6%, Awakened One 8.3%, act-2 hallways 4.9% (88% below 50% HP), Collector 4.7%,
+  Hexaghost 3.6%, Automaton 3.5%, Time Eater 3.4%, Donu & Deca 3.0%, Reptomancer 2.9%, Champ 2.8%, Slavers 2.5%,
+  Gremlin Leader 2.4%, act-3 hallways 2.3%, Slime Boss 2.2%, Book of Stabbing 2.0%; same order in every campaign.
+- Sibling-standardized bound (same act, same entry-HP band and potions, × P(kill | survived)): Awakened One
+  +3.11 pp [+2.81, +3.43] (every campaign +2.4 to +4.0; mechanically positive for an act's hardest boss, continuation pooled over all survivors), Reptomancer +0.84 [+0.67, +1.01], Collector +0.64
+  [+0.47, +0.84], Hexaghost +0.40 [+0.26, +0.53], all others ≤ +0.12 or negative. Expert-relative (Baalorlord
+  per-fight rates, §701/§729): Awakened One 7.6× his rate vs 6.0× for act-3 bosses → ≈ +1.0 pp; vs Donu's 8.6× → 0.
+- Luck vs state (§676 replays): 69% of Awakened One deaths and 67% of Heart deaths die again in ≥ 3 of 4 redraws of
+  the same entry state; Collector 51%, act-2 hallways 37%, S&S 18%.
+- Deck/relics beyond resources (seed-grouped CV log-loss gain, GBM): Heart +0.069 [+0.059, +0.079], Champ +0.051,
+  Hexaghost +0.044, Awakened One +0.032, Collector and Time Eater +0.024; none in hallways or act-2 elites. Weakest
+  out-of-fold deck quartile: 50% of Awakened One deaths (46% per fight). Strikes left and curses risky at every boss (Heart at
+  ≥ 80% HP: 16% death with 0-1 Strikes vs 27% with 4+), observational.
+- X4: 12 near-null arm pairs (|ΔHeart| < 3 pp, 11,264 pairs): paired SD 0.421 (r +0.51) Heart, 0.262 / 0.436 / 0.464
+  reaching act 2 / 3 / 4; pairs for ±1.0 / ±1.5 / ±2.0 pp half-width 6,821 / 3,032 / 1,706; MDE 3.7 pp at 1,024
+  pairs, 1.8 pp at 4,096. Combat-only arm pairs 0.34-0.39.
+**Interpretation:** by the X5 rule one gate candidate remains, Awakened One, whose bound depends on the reference
+(+1.0 expert-relative to +3.1 sibling). Its deaths are fixed by the entry state under production play; whether by the
+state or the play needs a stronger-player replay. Proposed: `fightreplay` of ≈ 512 recorded Awakened One entries
+(§727 A, §720 base) at production vs flat 40k, 2 CRN copies, ≈ 125 core-h, decision ≥ 4 pp per-fight death drop;
+§718 (no 40k gain on expert boss states) makes a null more likely. The other clusters are below +1 pp each; the Heart
+and act-2 hallway mass sit in the Heart-entry (§724, #935) and low-HP attrition gaps. The roadmap's ~7,000-pair gate
+for ±1 pp is confirmed.
+Seeds: none (existing games only).
+**Knowledge impact:** `research/a20-loss-mining.md` (new X5 section), roadmap X4/X5 rows
+(`research/one-year-roadmap.md`).
+
+## §741 — Map-simulations SPRT (#927 rank 6 follow-up): 1,024 map simulations are NOT_WORSE than 4,096 (H1 crossing at 1,024 pairs, LLR 3.36); Heart kills +0.65 pp [−0.98, +2.34] over 1,536 pairs, −75% map simulations, −42% wall per diverging game (indicative); secondaries lean earlier deaths (final floor −0.64 [−1.10, −0.17], act-1 deaths +1.2 pp) → default candidate for Philipp (cloud replay of §727 seeds, 2026-11-01)
+
+**Question (Philipp, 2026-11-01, after §737):** is a 1,024-simulation map search worse than today's 4,096 by more
+than 1.5 pp in A20 Heart kills? Authorization: Philipp 08:26Z "Go mit 24 workern".
+**Design:** [README](evidence/map_sims_sprt_20261101/README.md) (pre-registered, prelaunch review PASS),
+[RESULT](evidence/map_sims_sprt_20261101/RESULT.md), `result.json`. Control reuse: arm A = §727 arm A (production,
+1,536 games); a checkpoint-k tree equals a k-simulation search, so B (`STS_OOC_MCTS_FULL_ROOT_SIMS=1024`, code
+`1cd21a15`, RUN_COMMIT `b01a0e81`) was played only on the 652 seeds where A's 1,024 checkpoint differs from its pick,
+plus 64 sentinels; all others count d = 0. 24 cloud workers, 716 units, ≈ 140 core-h.
+**Result:** reuse VALID (64/64 sentinels identical, 652/652 diverging units identical up to and picking the predicted
+key, verify_campaign 716 OK). Nonregression GSPRT (d0 −1.5 pp, d1 0, α = β = 0.05, looks of 64) crossed H1 at 1,024
+pairs, so the verdict is **NOT_WORSE**. Heart kills 25.07% → 25.72%, +0.65 pp [−0.98, +2.34] over all 1,536 pairs
+(stopping-time mean +1.66 pp, biased by optional stopping). Secondaries (descriptive, uncorrected): Act 4 −0.72 pp,
+Heart reached −0.98 pp (both n.s.), final floor −0.64 [−1.10, −0.17], act-1 deaths +1.17 [+0.20, +2.15] pp. Map
+simulations per diverging game drop from 69,959 to 17,125, and wall from 956 s to 558 s (indicative).
+Deviation (disclosed): the pre-registered loader read only static-schedule `wNN.tar`. The queue schedule writes
+`units/<id>.wNN.tar`, so the first run read no B unit and returned INVALID; only the loader was fixed.
+**Decision:** per the pre-registration, 1,024 map simulations become a default candidate. Philipp decides, in its own
+PR + ADR, which must note that the learned OOC stop (> 2,048 sims) and the gap stop were tuned at 4,096. Stage 2 (§683
+replay) is not run, since it was pre-registered for a CAP only.
+Seeds: none new (USED §727 block 111312000-111313535 replayed).
+**Knowledge impact:** none beyond this entry; no code or default change.
+
+## §742 — Sequential gates and control-arm reuse become the standard for paired campaigns: SPRT replay on seven recorded campaigns changes 0 of 7 verdicts and needs 3,776 of 6,224 pairs (39% saved) → ADOPT; 32 recorded §727 control games replay identically with the original binary (32/32) and with a fresh main `e55f482` build (32/32) → control reuse ADOPT with a 32-seed sentinel (2026-11-01)
+
+**Question (Philipp, 2026-11-01 07:25Z "führe 1 und 2 als Standard ein. Ersparnis für Rechenzeit darf auch bei 10%
+liegen"):** make ranks 1 (sequential stopping) and 2 (control-arm reuse) of the literature review
+(`research/search-and-value-literature.md`) the standard, if a pre-registered check passes with ≥ 10% saving.
+**Design:** [PREREG](evidence/sequential_gates_20261101/PREREG.md) (committed `68112c4` before any replay),
+[RESULT](evidence/sequential_gates_20261101/RESULT.md), [replay.py](evidence/sequential_gates_20261101/replay.py),
+[run_b.sh](evidence/sequential_gates_20261101/run_b.sh), [compare.py](evidence/sequential_gates_20261101/compare.py),
+tool `tools/sprt_gate.py` (generalised SPRT, normal approximation, α = β = 0.05, looks every 64 pairs in ascending
+seed order, hard cap = the campaign's fixed size; gainer H0 0 / H1 +2 pp, non-regression H0 −1.5 / H1 0 pp).
+Part A replays the per-seed paired outcomes of §661, §676, §683, §691, §693, §724, §727 (rule: ADOPT if ≤ 1 flip and
+pair-weighted saving ≥ 10%). Part B replays §727 arm A on seeds 111312000-111312031 (B1 binary `d39c2b98` + code
+`8f5b17d6`; B2 fresh `e55f482` build `b8f0628b`) and compares every header (allowlist: producer SHA, student_sel
+path), decision, outcome and CTM row with the stored records (rule: B1 32/32 → reuse with sentinel).
+**Result:** Part A: every extracted rate reproduces the recorded one; 0 flips (also 0% over 200 random orders per
+campaign); §683 PASS at 640/1,024, §691 PASS at 640/1,024, §724 PASS at 192/592 states, §727 H0 at 256/1,536; §661,
+§676, §693 run to the cap (effects between the hypotheses or 512-pair campaigns). Saving 39.3% → ADOPT. Part B: B1
+32/32 identical, B2 32/32 identical (11,298 rows each) → ADOPT reuse with the sentinel; main through `e55f482`, run
+with §727's explicit flags, replays these seeds exactly.
+**Interpretation:** the saving comes only from clear effects (|Δ| ≥ 4.8 pp stop at 17-63% of the pairs); small
+effects still cost the full gate, so gate size (roadmap X4) is unchanged by this. Control reuse roughly halves the
+cost of a candidate gate where a valid bank exists, but each bank is valid only until a play-changing default lands.
+The §724 unit (S&S state) ignores within-seed correlation (stopped far past the boundary, LLR 4.87). The gainer
+variant never says WORSE (§727's FAIL becomes NOT_SHOWN); a pre-registration that needs "worse" adds the
+non-regression variant. Review: K PASS (`/mnt/project-files/reviews/pr938.md`, 4/4 independent spot replays identical).
+Seeds: none new (Part B replayed used seeds 111312000-111312031). Cost ≈ 15.8 core-h, local (Part A: none).
+**Knowledge impact:** ADR-0064; benchmark protocol section "Paired campaigns: sequential stopping and control reuse";
+literature review ranks 1 and 2 marked adopted.
+
+## §743 — Awakened One replay (X5 gate 1): flat 40k loses 1.2 pp fewer recorded A20 Awakened One fights than production (25.0% → 23.8%, CI −2.9 to +0.3 pp; 304 entries × 3 paired copies) at 7.5× CPU → NOT_PLANNING_LIMITED; Awakened One deaths are deck/state-limited (cloud replay of §727 seeds, 2026-11-01)
+
+**Question (Philipp, 2026-11-01 card "Smoke, dann ~125 core-h"; run go 17:02Z "16 worker go"):** §740 left one X5
+candidate, Awakened One. Does more search (flat 40,000 simulations per root, no learned stop) lose fewer of its
+recorded fights than production, from the same pre-combat states with the same battle seeds?
+**Data:** [README](evidence/ao_replay_40k_20261101/README.md) (prereg, review K PASS), [RESULT](evidence/ao_replay_40k_20261101/RESULT.md),
+`result.json`. 304 of §727 arm A's 544 Awakened One entries (seeds 111312001-111312805), `one_combat fightreplay` with
+new default-off `STS_FIGHT_REPLAY_FLAT` (#939), 3 copies per arm (copy 0 = recorded seed, 1-2 = SEED_BASE 740000001
+redraws, shared by both arms). RUN_COMMIT 15737bbe, code 53d591b6, binary dda31542, 16 cloud workers, 304/304 units
+verified. No new seeds.
+**Result:**
+- Per-fight death: P 25.0%, F 23.8%, dDeath −1.2 pp [−2.9, +0.3] → NOT_PLANNING_LIMITED (CI lower > −4 pp). Run-level
+  translation ≈ +0.26 pp Heart kills (≤ +0.6 pp at the CI end).
+- Identity 304/304 (production copy 0 reproduces every recorded fight). HP lost −0.7 [−1.9, +0.5]. CPU per copy P 60 s,
+  F 447 s (7.5×).
+- Descriptive: where P died in all 3 copies (50 entries), F still died in 96% of copies; no entry-HP trend.
+**Interpretation:** consistent with §718 (40k no gain on expert boss states) and §740's 69% state-determined deaths:
+Awakened One is lost before the fight starts. A small real search gain (≤ ~3 pp per fight, ≤ ~0.6 pp per run) is not
+excluded, but it costs 7.5× CPU.
+**Decision:** no Awakened One budget follow-up; the X5 lever moves to deck building (phase 3/5 metric). No default change.
+Seeds: none new (replayed §727 seeds 111312001-111312805; redraws SEED_BASE 740000001). Cost ≈ 128 core-h, cloud.
+**Knowledge impact:** KB `research/a20-loss-mining.md` (X5 gate result, open question closed), `research/one-year-roadmap.md` (X5 row).

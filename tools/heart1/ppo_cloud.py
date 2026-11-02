@@ -1,0 +1,544 @@
+"""PPO with cloud actors and one remote learner (the PC GPU), meeting in a store: a shared directory or git refs.
+
+Actors run in cloud containers (4 CPUs, no GPU); one learner process (`serve`) trains every arm of a screen on a GPU
+machine that shares no filesystem with them. They exchange files through a store:
+  dir:PATH              a directory both sides see (tests; a shared mount)
+  git:URL#PREFIX        one ref per file, refs/heads/PREFIX/<name>, each an orphan commit holding the file
+                        ("data") and its metadata ("meta.json"). Actors only create new refs; the learner deletes
+                        every ref it has consumed and old nets, so nothing accumulates (cloud git proxies refuse
+                        deletes and force-pushes; the learner's own credentials do not).
+
+Names in the store, per arm:
+  ARM/config            arm.json: start net sha, actor env, games, parts, seed base, sims, asc, iterations,
+                        value warm-up, learner hyperparameters, one_combat sha, pipeline       (written by init)
+  ARM/net-NNNN          the net after NNNN updates (net-0000 = start); only the newest two stay (init, then learner)
+  ARM/traj-NNNN-pK      part K of iteration NNNN's games, gzipped jsonl; meta: games, sha256,
+                        behaviour net, actor seconds, first seed                             (actor of part K)
+  ARM/stats-NNNN        the learner's loop.json after NNNN updates; only the newest stays      (learner)
+Every name is written once (no ref is ever overwritten, so no force-push is needed).
+
+Iteration i is split into P parts of GAMES/P games: part k plays seeds SEED_BASE + i*GAMES + k*GAMES/P ... with
+STS_OOC_HEART1_SAMPLE_SALT=i (the same seeds and salts in every arm). Behaviour net: net_i (pipeline 0) or
+net_{max(i-1,0)} (pipeline 1: actors play iteration i while the learner trains on i-1; the PPO ratio against the
+recorded log-probs corrects the one-update lag, as ppo_loop.py --pipeline). Actors never run more than one iteration
+ahead. The learner keeps its checkpoint (state.pt) and every net per arm in a local directory and resumes from it.
+
+    python3 tools/heart1/ppo_cloud.py init STORE ARM --init start.bin --env-file actors.env --one-combat-sha SHA \
+        --iterations 30 --games 512 --parts 2 --seed-base SEED [--pipeline 1] [--value-warmup 3] -- --lr 1e-5 ...
+    python3 tools/heart1/ppo_cloud.py actor STORE ARM --part K --one-combat one_combat [--threads 4]
+    python3 tools/heart1/ppo_cloud.py serve STORE LOCAL_DIR ARM [ARM ...] [--device cuda]
+    python3 tools/heart1/ppo_cloud.py status STORE ARM [ARM ...]
+    python3 tools/heart1/ppo_cloud.py cleanup STORE ARM [ARM ...]     (end of a screen: delete every ref of the arms)
+"""
+import argparse
+import gzip
+import hashlib
+import json
+import os
+import shutil
+import signal
+import subprocess
+import sys
+import tempfile
+import time
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import ppo_loop  # noqa: E402
+
+POLL_S = int(os.environ.get("PPO_CLOUD_POLL_S", "30"))
+MAX_PUT_MB = 64   # one stored file; GitHub warns at 50 MB and refuses at 100 MB per file
+
+
+def check_size(path):
+    mb = os.path.getsize(path) / 2**20
+    if mb > MAX_PUT_MB:
+        raise ValueError(f"{path}: {mb:.1f} MB exceeds the store cap of {MAX_PUT_MB} MB")
+
+
+def log(msg):
+    print(f"[ppo_cloud {time.strftime('%H:%M:%S')}] {msg}", flush=True)
+
+
+def sha256(path):
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+# ---------------------------------------------------------------- stores
+
+class DirStore:
+    def __init__(self, path):
+        self.root = path
+
+    def _p(self, name):
+        return os.path.join(self.root, name)
+
+    def names(self, prefix):
+        out = set()
+        for d, _, files in os.walk(self.root):
+            for f in files:
+                if f.endswith(".meta") or ".tmp" in f:
+                    continue
+                rel = os.path.relpath(os.path.join(d, f), self.root)
+                if rel.startswith(prefix):
+                    out.add(rel)
+        return out
+
+    def put(self, name, path, meta):
+        check_size(path)
+        if os.path.exists(self._p(name)):   # as git refs without force-push: a name is written once
+            raise FileExistsError(f"{name} exists in the store")
+        os.makedirs(os.path.dirname(self._p(name)), exist_ok=True)
+        tmp = f"{self._p(name)}.tmp{os.getpid()}"
+        shutil.copyfile(path, tmp)
+        with open(tmp + "m", "w") as f:
+            json.dump(meta, f)
+        os.replace(tmp + "m", self._p(name) + ".meta")
+        os.replace(tmp, self._p(name))   # the data file appears last: present means complete
+
+    def get(self, name, path):
+        tmp = f"{path}.tmp{os.getpid()}"
+        shutil.copyfile(self._p(name), tmp)
+        os.replace(tmp, path)
+        return json.load(open(self._p(name) + ".meta"))
+
+    def delete(self, name):
+        for f in (self._p(name), self._p(name) + ".meta"):
+            if os.path.exists(f):
+                os.remove(f)
+
+
+class GitStore:
+    """One orphan commit per file under refs/heads/PREFIX/, through a scratch bare repository without refs."""
+
+    def __init__(self, url, prefix):
+        self.url, self.prefix = url, prefix.strip("/")
+        self.repo = tempfile.mkdtemp(prefix="ppo-store-")
+        self._git("init", "-q", "--bare", self.repo, here=False)
+        self._since_gc = 0
+
+    def _git(self, *args, here=True, data=None, check=True, tries=5):
+        cmd = ["git"] + (["-C", self.repo] if here else []) + list(args)
+        for k in range(tries):
+            r = subprocess.run(cmd, input=data, capture_output=True)
+            if r.returncode == 0 or not check:
+                return r
+            if k + 1 < tries:
+                time.sleep(2 ** (k + 1))
+        raise RuntimeError(f"{' '.join(cmd[3:6])}: {r.stderr.decode(errors='replace')[-400:]}")
+
+    def _ref(self, name):
+        return f"refs/heads/{self.prefix}/{name}"
+
+    def names(self, prefix):
+        r = self._git("ls-remote", self.url, f"refs/heads/{self.prefix}/{prefix}*")
+        head = f"refs/heads/{self.prefix}/"
+        out = set()
+        for line in r.stdout.decode().splitlines():
+            ref = line.split("\t", 1)[1]
+            if ref.startswith(head) and ref[len(head):].startswith(prefix):
+                out.add(ref[len(head):])
+        return out
+
+    def put(self, name, path, meta):
+        check_size(path)
+        blob = self._git("hash-object", "-w", path).stdout.decode().strip()
+        mblob = self._git("hash-object", "-w", "--stdin", data=json.dumps(meta).encode()).stdout.decode().strip()
+        tree = self._git("mktree", data=f"100644 blob {blob}\tdata\n100644 blob {mblob}\tmeta.json\n".encode()
+                         ).stdout.decode().strip()
+        commit = self._git("-c", "user.name=ppo-cloud", "-c", "user.email=ppo-cloud@localhost", "commit-tree", tree,
+                           "-m", name).stdout.decode().strip()
+        self._git("push", "-q", self.url, f"{commit}:{self._ref(name)}")
+        self._gc()
+
+    def get(self, name, path):
+        self._git("fetch", "-q", "--depth", "1", self.url, self._ref(name))
+        tmp = f"{path}.tmp{os.getpid()}"
+        with open(tmp, "wb") as f:
+            subprocess.run(["git", "-C", self.repo, "cat-file", "blob", "FETCH_HEAD:data"], stdout=f, check=True)
+        os.replace(tmp, path)
+        meta = json.loads(self._git("cat-file", "blob", "FETCH_HEAD:meta.json").stdout)
+        self._gc()
+        return meta
+
+    def delete(self, name):
+        self._git("push", "-q", self.url, f":{self._ref(name)}")
+
+    def _gc(self):
+        self._since_gc += 1
+        if self._since_gc >= 20:   # the scratch repo holds no refs: drop what was fetched and pushed
+            shutil.rmtree(self.repo, ignore_errors=True)
+            self._git("init", "-q", "--bare", self.repo, here=False)
+            self._since_gc = 0
+
+
+def open_store(spec):
+    kind, _, rest = spec.partition(":")
+    if kind == "dir":
+        return DirStore(rest)
+    if kind == "git":
+        url, _, prefix = rest.partition("#")
+        if not prefix:
+            sys.exit("git store needs git:URL#PREFIX")
+        return GitStore(url, prefix)
+    sys.exit(f"unknown store {spec}")
+
+
+def wait_for(store, name, what):
+    waited = 0
+    while name not in store.names(name):
+        if waited % 1800 == 0:
+            log(f"waiting for {what}")
+        time.sleep(POLL_S)
+        waited += POLL_S
+
+
+def latest_stats(store, arm, names=None):
+    names = store.names(f"{arm}/stats-") if names is None else names
+    s = sorted(n for n in names if n.startswith(f"{arm}/stats-"))
+    return s[-1] if s else None
+
+
+def trained_iterations(store, arm, work):
+    name = latest_stats(store, arm)
+    if name is None:
+        return 0
+    p = os.path.join(work, "stats.json")
+    store.get(name, p)
+    return len(json.load(open(p))["iterations"])
+
+
+# ---------------------------------------------------------------- commands
+
+def cmd_init(argv):
+    learner_argv = []
+    if "--" in argv:
+        k = argv.index("--")
+        argv, learner_argv = argv[:k], argv[k + 1:]
+    ap = argparse.ArgumentParser(prog="ppo_cloud.py init")
+    ap.add_argument("store")
+    ap.add_argument("arm")
+    ap.add_argument("--init", required=True)
+    ap.add_argument("--env-file", required=True)
+    ap.add_argument("--one-combat-sha", required=True, help="sha256 of the actors' one_combat")
+    ap.add_argument("--iterations", type=int, required=True)
+    ap.add_argument("--games", type=int, default=512)
+    ap.add_argument("--parts", type=int, default=1)
+    ap.add_argument("--seed-base", type=int, required=True)
+    ap.add_argument("--sims", type=int, default=1000)
+    ap.add_argument("--asc", type=int, default=20)
+    ap.add_argument("--value-warmup", type=int, default=0)
+    ap.add_argument("--pipeline", type=int, default=1)
+    args = ap.parse_args(argv)
+    if args.games % args.parts:
+        sys.exit("--games must be a multiple of --parts")
+    import ppo_train
+    from ppo_model import PolicyNet
+    hp = argparse.ArgumentParser(prog="learner")
+    ppo_train.add_hparams(hp)
+    hp.parse_args(learner_argv)   # validate now, not on the learner
+    store = open_store(args.store)
+    if store.names(f"{args.arm}/config"):
+        sys.exit(f"{args.arm}/config exists in the store; an arm is frozen once")
+    with tempfile.TemporaryDirectory() as tmp:
+        net0 = os.path.join(tmp, "net0.bin")
+        PolicyNet.from_bin(args.init).to_bin(net0)   # extended with zero-init inputs, as ppo_loop
+        cfg = {"arm": args.arm, "init": os.path.basename(args.init), "init_sha256": sha256(args.init),
+               "net0_sha256": sha256(net0), "env": ppo_loop.read_env(args.env_file),
+               "one_combat_sha256": args.one_combat_sha, "iterations": args.iterations, "games": args.games,
+               "parts": args.parts, "seed_base": args.seed_base, "sims": args.sims, "asc": args.asc,
+               "value_warmup": args.value_warmup, "pipeline": args.pipeline, "learner_argv": learner_argv}
+        cp = os.path.join(tmp, "config.json")
+        with open(cp, "w") as f:
+            json.dump(cfg, f, indent=1)
+        store.put(f"{args.arm}/net-0000", net0, {"sha256": cfg["net0_sha256"], "updates": 0})
+        store.put(f"{args.arm}/config", cp, {"sha256": sha256(cp)})
+    last = args.seed_base + args.iterations * args.games - 1
+    print(f"{args.arm}: seeds {args.seed_base}..{last}, {args.iterations} x {args.games} in {args.parts} parts")
+
+
+def kill_stale_child(pidfile):
+    """A previous actor that died without its game process (killed alone) must not keep writing."""
+    try:
+        pid = int(open(pidfile).read())
+        cmd = open(f"/proc/{pid}/cmdline", "rb").read()
+    except (OSError, ValueError):
+        return
+    if b"bestbench" in cmd or b"seed_guard" in cmd:
+        try:
+            os.killpg(pid, signal.SIGKILL)   # the game processes run in their own group (new_session)
+        except OSError:
+            return
+        log(f"killed a stale game process {pid}")
+        time.sleep(1)
+
+
+def cmd_actor(argv):
+    ap = argparse.ArgumentParser(prog="ppo_cloud.py actor")
+    ap.add_argument("store")
+    ap.add_argument("arm")
+    ap.add_argument("--part", type=int, default=0)
+    ap.add_argument("--one-combat", required=True)
+    ap.add_argument("--threads", type=int, default=os.cpu_count() or 4)
+    ap.add_argument("--work", default=None, help="local scratch (default $HOME/ppo-actor-ARM-pK)")
+    a = ap.parse_args(argv)
+    store = open_store(a.store)
+    work = a.work or os.path.join(os.environ.get("HOME", "/tmp"), f"ppo-actor-{a.arm}-p{a.part}")
+    os.makedirs(work, exist_ok=True)
+    child_pid = os.path.join(work, "child.pid")
+    kill_stale_child(child_pid)
+    job = None
+
+    def on_term(signum, _frame):
+        if job is not None and job["proc"].poll() is None:
+            os.killpg(job["proc"].pid, signal.SIGKILL)
+        sys.exit(128 + signum)
+    signal.signal(signal.SIGTERM, on_term)
+    wait_for(store, f"{a.arm}/config", "the arm's config")
+    store.get(f"{a.arm}/config", os.path.join(work, "config.json"))
+    cfg = json.load(open(os.path.join(work, "config.json")))
+    if not 0 <= a.part < cfg["parts"]:
+        sys.exit(f"part {a.part} outside 0..{cfg['parts'] - 1}")
+    if sha256(a.one_combat) != cfg["one_combat_sha256"]:
+        sys.exit(f"{a.one_combat} sha256 is not the arm's {cfg['one_combat_sha256']}")
+    n_part = cfg["games"] // cfg["parts"]
+    marker = os.path.join(work, "published.txt")
+    published = set(open(marker).read().split()) if os.path.exists(marker) else set()
+    for it in range(cfg["iterations"]):
+        name = f"{a.arm}/traj-{it:04d}-p{a.part}"
+        if name in published:
+            continue
+        # The learner deletes consumed parts, so after a restart the stats say what was already trained.
+        if it < trained_iterations(store, a.arm, work) or name in store.names(name):
+            published.add(name)
+            continue
+        b = max(it - 1, 0) if cfg["pipeline"] else it
+        net_name = f"{a.arm}/net-{b:04d}"
+        wait_for(store, net_name, f"iteration {it}: {net_name}")
+        local_net = os.path.join(work, f"net-{b:04d}.bin")
+        meta = store.get(net_name, local_net)
+        if sha256(local_net) != meta["sha256"]:
+            sys.exit(f"{net_name}: sha256 mismatch")
+        out = os.path.join(work, f"iter_{it:04d}")
+        os.makedirs(out, exist_ok=True)
+        log(f"iteration {it} part {a.part}: playing {n_part} games with net-{b:04d}")
+        # start_actors plays seeds seed_base + it*games ...; part k of iteration it starts at
+        # SEED_BASE + it*GAMES + k*n_part.
+        run = argparse.Namespace(seed_base=cfg["seed_base"] + it * (cfg["games"] - n_part) + a.part * n_part,
+                                 games=n_part, one_combat=a.one_combat, sims=cfg["sims"], asc=cfg["asc"],
+                                 threads=a.threads)
+        job = ppo_loop.start_actors(run, cfg["env"], local_net, it, out, new_session=True)
+        with open(child_pid, "w") as f:
+            f.write(str(job["proc"].pid))
+        rc = job["proc"].wait()
+        for f in job["files"]:
+            f.close()
+        if rc != 0:
+            sys.exit(f"iteration {it}: actors exited {rc} (see {out}/actors.err)")
+        n = 0
+        with open(job["traj"]) as f:
+            for line in f:
+                n += '"type":"game"' in line and '"type":"decision"' not in line
+        if n != n_part:
+            sys.exit(f"iteration {it}: {n} game lines in {job['traj']}, expected {n_part}")
+        gz = job["traj"] + ".gz"
+        with open(job["traj"], "rb") as src, gzip.open(gz, "wb", compresslevel=6) as dst:
+            shutil.copyfileobj(src, dst)
+        store.put(name, gz, {"games": n, "sha256": sha256(gz), "net": f"net-{b:04d}", "net_sha256": meta["sha256"],
+                             "actor_s": time.time() - job["t0"], "seed_first": job["seed"],
+                             "host": os.uname().nodename})
+        job = None
+        published.add(name)
+        with open(marker, "a") as f:
+            f.write(name + "\n")
+        shutil.rmtree(out)
+        os.remove(local_net)
+        log(f"iteration {it} part {a.part}: published")
+    log("actor done")
+    print("ACTOR_DONE", flush=True)
+
+
+class ArmLearner:
+    def __init__(self, store, local, arm, device):
+        import torch
+        import ppo_train
+        self.store, self.arm, self.device = store, arm, device
+        self.dir = os.path.join(local, arm)
+        os.makedirs(self.dir, exist_ok=True)
+        cfg_path = os.path.join(self.dir, "config.json")
+        if not os.path.exists(cfg_path):
+            store.get(f"{arm}/config", cfg_path)
+        self.cfg = json.load(open(cfg_path))
+        hp = argparse.ArgumentParser(prog="learner")
+        ppo_train.add_hparams(hp)
+        self.hparams = hp.parse_args(self.cfg["learner_argv"])
+        self.state = os.path.join(self.dir, "state.pt")
+        self.meta_path = os.path.join(self.dir, "loop.json")
+        self.meta = json.load(open(self.meta_path)) if os.path.exists(self.meta_path) else {"iterations": []}
+        net0 = os.path.join(self.dir, "net-0000.bin")
+        if not os.path.exists(net0):
+            m = store.get(f"{arm}/net-0000", net0)
+            if sha256(net0) != m["sha256"] or m["sha256"] != self.cfg["net0_sha256"]:
+                sys.exit(f"{arm}/net-0000 sha256 mismatch")
+        self.hparams.state, self.hparams.init = self.state, net0
+        torch.manual_seed(self.hparams.seed)
+        self.learner = ppo_train.make_learner(self.hparams, torch.device(device))
+        n = len(self.meta["iterations"])
+        if self.learner.iteration == n + 1 and os.path.exists(os.path.join(self.dir, f"net-{n + 1:04d}.bin")):
+            # Crashed after the checkpoint, before loop.json: the update is done, its stats line is lost.
+            self.meta["iterations"].append({"iteration": n + 1, "stats_lost": True,
+                                            "next_sha256": sha256(os.path.join(self.dir, f"net-{n + 1:04d}.bin"))})
+            self._write_meta()
+        elif self.learner.iteration != n:
+            sys.exit(f"{self.state} is at iteration {self.learner.iteration}, loop.json at {n}")
+        self.republish()
+
+    def _write_meta(self):
+        tmp = self.meta_path + ".tmp"
+        with open(tmp, "w") as f:
+            json.dump(self.meta, f, indent=1)
+        os.replace(tmp, self.meta_path)
+
+    def republish(self):
+        """Make the store match the local state (idempotent): the newest net and the stats present, consumed parts
+        and older nets gone. Covers a crash anywhere between the checkpoint and the end of step()."""
+        it = self.next_it
+        names = self.store.names(f"{self.arm}/")
+        net = f"{self.arm}/net-{it:04d}"
+        local = os.path.join(self.dir, f"net-{it:04d}.bin")
+        if it > 0:
+            if net not in names:
+                self.store.put(net, local, {"sha256": sha256(local), "updates": it})
+            if f"{self.arm}/stats-{it:04d}" not in names:
+                self.store.put(f"{self.arm}/stats-{it:04d}", self.meta_path, {"iterations": it})
+        for n in sorted(names):
+            rest = n[len(self.arm) + 1:]
+            if rest.startswith("traj-") and int(rest[5:9]) < it:
+                self.store.delete(n)
+            elif rest.startswith("net-") and int(rest[4:8]) < it - 1:
+                self.store.delete(n)
+            elif rest.startswith("stats-") and int(rest[6:10]) < it - 1:   # newest two: no read races
+                self.store.delete(n)
+
+    @property
+    def next_it(self):
+        return len(self.meta["iterations"])
+
+    def done(self):
+        return self.next_it >= self.cfg["iterations"]
+
+    def step(self, available):
+        """Train iteration next_it if all its parts are in the store; returns True if it trained."""
+        import ppo_train
+        it = self.next_it
+        parts = [f"{self.arm}/traj-{it:04d}-p{k}" for k in range(self.cfg["parts"])]
+        if self.done() or not all(p in available for p in parts):
+            return False
+        t0 = time.time()
+        files, metas = [], []
+        for p in parts:
+            f = os.path.join(self.dir, os.path.basename(p) + ".jsonl.gz")
+            m = self.store.get(p, f)
+            if sha256(f) != m["sha256"]:
+                sys.exit(f"{p}: sha256 mismatch")
+            want = max(it - 1, 0) if self.cfg["pipeline"] else it
+            local_net = os.path.join(self.dir, f"net-{want:04d}.bin")
+            if m["net"] != f"net-{want:04d}" or m["net_sha256"] != sha256(local_net):
+                sys.exit(f"{p}: played by {m['net']} {m['net_sha256'][:12]}, expected net-{want:04d} "
+                         f"{sha256(local_net)[:12]}")
+            files.append(f)
+            metas.append(m)
+        games = ppo_train.load_games(files, self.learner.net.trim_map)
+        if len(games) != self.cfg["games"]:
+            sys.exit(f"{self.arm} iteration {it}: {len(games)} games, expected {self.cfg['games']}")
+        # Per-game outcomes for the paired analysis (a rerun of this iteration after a crash rewrites its rows).
+        rows = os.path.join(self.dir, f"games-{it:04d}.csv")
+        with open(rows + ".tmp", "w") as f:
+            f.write("arm,iteration,seed,heart_kill,floor,net\n")
+            for g in sorted(games, key=lambda g: g["seed"]):
+                o = g["outcome"]
+                f.write(f"{self.arm},{it},{g['seed']},{int(bool(o.get('heart_kill')))},{o.get('floor', '')},"
+                        f"{metas[0]['net']}\n")
+        os.replace(rows + ".tmp", rows)
+        load_s = time.time() - t0
+        stats = self.learner.update(games, value_only=it < self.cfg["value_warmup"],
+                                    log=lambda line: log(f"{self.arm} {line}"))
+        del games
+        nxt = os.path.join(self.dir, f"net-{it + 1:04d}.bin")
+        self.learner.net.to("cpu").to_bin(nxt)
+        self.learner.net.to(self.device)
+        ppo_train.save(self.learner, self.state)
+        stats.update({"seed_first": min(m["seed_first"] for m in metas), "actor_s": max(m["actor_s"] for m in metas),
+                      "net": metas[0]["net"], "nets": sorted({m["net"] for m in metas}),
+                      "net_sha256": metas[0]["net_sha256"], "next_sha256": sha256(nxt), "load_s": load_s,
+                      "learn_s": time.time() - t0, "pipeline": self.cfg["pipeline"]})
+        self.meta["iterations"].append(stats)
+        self._write_meta()
+        keep = os.path.join(self.dir, "parts")   # the raw games stay on the learner's disk
+        os.makedirs(keep, exist_ok=True)
+        for f in files:
+            os.replace(f, os.path.join(keep, os.path.basename(f)))
+        # Publish the net and the stats (actors read them to skip consumed iterations), delete the consumed parts
+        # and every net but the newest two (the learner's disk keeps all of them).
+        self.republish()
+        log(f"{self.arm} iteration {it}: net-{it + 1:04d} published (load {load_s:.0f} s, "
+            f"learn {time.time() - t0:.0f} s, heart {100 * stats['heart_rate']:.1f}%)")
+        return True
+
+
+def cmd_serve(argv):
+    ap = argparse.ArgumentParser(prog="ppo_cloud.py serve")
+    ap.add_argument("store")
+    ap.add_argument("local")
+    ap.add_argument("arms", nargs="+")
+    ap.add_argument("--device", default=None)
+    a = ap.parse_args(argv)
+    import torch
+    device = a.device or ("cuda" if torch.cuda.is_available() else "cpu")
+    store = open_store(a.store)
+    learners = [ArmLearner(store, a.local, arm, device) for arm in a.arms]
+    log(f"serving {len(learners)} arms on {device}: " +
+        ", ".join(f"{x.arm}@{x.next_it}/{x.cfg['iterations']}" for x in learners))
+    while not all(x.done() for x in learners):
+        available = store.names("")
+        trained = False
+        for x in sorted(learners, key=lambda x: x.next_it):   # oldest first: no arm falls behind
+            trained |= x.step(available)
+        if not trained:
+            time.sleep(POLL_S)
+    log("all arms done")
+    print("SERVE_DONE", flush=True)
+
+
+def cmd_cleanup(argv):
+    """Delete every ref of the given arms from the store (end of a screen; run where deletes are allowed)."""
+    store = open_store(argv[0])
+    for arm in argv[1:]:
+        for n in sorted(store.names(f"{arm}/")):
+            store.delete(n)
+            print(f"deleted {n}")
+
+
+def cmd_status(argv):
+    store = open_store(argv[0])
+    names = store.names("")
+    for arm in argv[1:]:
+        its = []
+        latest = latest_stats(store, arm, names)
+        if latest:
+            with tempfile.TemporaryDirectory() as tmp:
+                store.get(latest, os.path.join(tmp, "s"))
+                its = json.load(open(os.path.join(tmp, "s")))["iterations"]
+        pending = sorted(n.split("/", 1)[1] for n in names if n.startswith(f"{arm}/traj-"))
+        heart = [round(100 * s["heart_rate"], 1) for s in its if "heart_rate" in s]
+        print(f"{arm}: trained {len(its)} pending {pending} heart% last5 {heart[-5:]}")
+
+
+if __name__ == "__main__":
+    cmds = {"init": cmd_init, "actor": cmd_actor, "serve": cmd_serve, "status": cmd_status, "cleanup": cmd_cleanup}
+    if len(sys.argv) < 2 or sys.argv[1] not in cmds:
+        sys.exit("usage: ppo_cloud.py {init|actor|serve|status|cleanup} ...")
+    cmds[sys.argv[1]](sys.argv[2:])

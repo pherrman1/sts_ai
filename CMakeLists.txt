@@ -488,6 +488,7 @@ add_test(NAME forced_boss_relic COMMAND one_combat forcebossrelicselftest)
 add_test(NAME forced_decision COMMAND one_combat forcedecisionselftest)
 add_test(NAME a4_perturb COMMAND one_combat a4perturbselftest)
 add_test(NAME heart1_public_record_invariance COMMAND one_combat heart1recordselftest)
+add_test(NAME heart1_ppo COMMAND one_combat heart1pposelftest)
 add_test(NAME heart_outcome_collection_python COMMAND python3 -m unittest discover
     -s ${CMAKE_CURRENT_SOURCE_DIR}/tests -p test_heart_outcome_collect.py)
 add_test(NAME heart_outcome_import_python COMMAND python3 -m unittest discover
@@ -498,6 +499,11 @@ set_tests_properties(heart_outcome_capture PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
 set_tests_properties(heart1_public_record_invariance PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
+set_tests_properties(heart1_ppo PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
+add_test(NAME heart1_ppo_python COMMAND python3 -m unittest discover
+    -s ${CMAKE_CURRENT_SOURCE_DIR}/tests -p test_heart1_ppo.py)
+set_tests_properties(heart1_ppo_python PROPERTIES LABELS "core;smoke")
 
 # Offline full-state transport for frozen #379 replay; no generated game seeds.
 add_executable(screen_leaf_snapshot_test

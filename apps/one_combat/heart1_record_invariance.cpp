@@ -6,6 +6,7 @@
 // chest rolls) must give byte-identical records and identical legal actions,
 // and changing one visible field must change the record. Hand-built states, no
 // game seed is driven. This is simulator-side invariance, not live parity.
+#include <iostream>
 #include "heart1_policy.h"
 
 #include <algorithm>
@@ -63,6 +64,13 @@ GameContext baseState() {
     gc.map->burningEliteY = 2;
     gc.curMapNodeX = -1;
     gc.curMapNodeY = -1;
+    // Two normal fights and one elite already fought this act (v2 record input).
+    gc.monsterList.push_back(MonsterEncounter::SPHERIC_GUARDIAN);
+    gc.monsterList.push_back(MonsterEncounter::CHOSEN);
+    gc.monsterListOffset = 2;
+    gc.eliteMonsterList.push_back(MonsterEncounter::SLAVERS);
+    gc.eliteMonsterListOffset = 1;
+    gc.shopRemoveCount = 1;
     return gc;
 }
 
@@ -75,8 +83,10 @@ void scramblePrivate(GameContext &gc, int k) {
                          &gc.potionRng, &gc.relicRng, &gc.shuffleRng, &gc.treasureRng};
     int i = 0;
     for (auto *rng : streams) *rng = Random(97ULL * (k + 1) + i++);
-    gc.monsterList.clear();
-    gc.eliteMonsterList.clear();
+    // The consumed queue prefix (encounters already fought) is public; only the
+    // unconsumed suffix is private.
+    gc.monsterList.resize(std::min<int>(gc.monsterListOffset, gc.monsterList.size()));
+    gc.eliteMonsterList.resize(std::min<int>(gc.eliteMonsterListOffset, gc.eliteMonsterList.size()));
     const MonsterEncounter normals[] = {MonsterEncounter::CULTIST, MonsterEncounter::JAW_WORM,
                                         MonsterEncounter::SNECKO, MonsterEncounter::CHOSEN};
     const MonsterEncounter elites[] = {MonsterEncounter::GREMLIN_LEADER, MonsterEncounter::SLAVERS,
@@ -172,7 +182,10 @@ void publicRecordInvarianceSelfTest() {
         check("map", gc, {hp, relicCounter,
             [](GameContext &g) { g.map->nodes[2][3].room = Room::TREASURE; },
             [](GameContext &g) { g.map->burningEliteX = -1; g.map->burningEliteY = -1; },
-            [](GameContext &g) { g.boss = MonsterEncounter::AUTOMATON; }});
+            [](GameContext &g) { g.boss = MonsterEncounter::AUTOMATON; },
+            [](GameContext &g) { g.monsterList[1] = MonsterEncounter::SHELL_PARASITE; },
+            [](GameContext &g) { g.eliteMonsterListOffset = 0; },
+            [](GameContext &g) { g.shopRemoveCount = 2; }});
     }
     {
         auto gc = baseState();
@@ -206,7 +219,11 @@ void publicRecordInvarianceSelfTest() {
         check("shop", gc, {relicCounter,
             [](GameContext &g) { g.info.shop.cards[2] = Card(CardId::OFFERING); },
             [](GameContext &g) { g.info.shop.relics[1] = RelicId::ORICHALCUM; },
-            [](GameContext &g) { g.gold = 50; }});
+            [](GameContext &g) { g.gold = 50; },
+            [](GameContext &g) { g.info.shop.cardPrice(3) = 61; },
+            [](GameContext &g) { g.info.shop.relicPrice(0) = 61; },
+            [](GameContext &g) { g.info.shop.potionPrice(2) = 61; },
+            [](GameContext &g) { g.info.shop.removeCost = 125; }});
     }
     {
         auto gc = baseState();
@@ -268,6 +285,103 @@ void publicRecordInvarianceSelfTest() {
         gc.info.encounter = MonsterEncounter::SNAKE_PLANT;
         check("battle start", gc, {hp, [](GameContext &g) { g.info.encounter = MonsterEncounter::CENTURION_AND_HEALER; }});
     }
+}
+
+
+// PPO full-coverage tokens (ChoiceOptions::fullCoverage): potion discards, Match and
+// Keep slots and unmapped event options; the default options keep the trained space.
+void ppoCoverageSelfTest() {
+    const auto require = [](bool ok, const std::string &what) {
+        if (!ok) throw std::runtime_error("heart1 ppo coverage selftest: " + what);
+    };
+    ChoiceOptions full;
+    full.fullCoverage = true;
+    full.keyMask = false;
+    {
+        // Full potion slots and a potion reward: one discard token per held potion.
+        auto gc = baseState();
+        gc.screenState = ScreenState::REWARDS;
+        gc.potions[0] = Potion::FIRE_POTION;
+        gc.potions[1] = Potion::BLOCK_POTION;
+        gc.potionCount = 2;
+        auto &r = gc.info.rewardsContainer;
+        CardReward cards;
+        cards.push_back(Card(CardId::POMMEL_STRIKE));
+        r.addCardReward(cards);
+        r.addPotion(Potion::STRENGTH_POTION);
+        Choice plain, ppo;
+        require(buildChoice(gc, plain), "default rewards choice");
+        require(buildChoice(gc, ppo, nullptr, full), "full rewards choice");
+        require(ppo.record.choiceCount() == plain.record.choiceCount() + 2, "two discard tokens");
+        for (const auto &f : plain.record.fixedActions) require(f.potion == -1, "default tokens carry no potion");
+        int discards = 0;
+        for (std::size_t i = 0; i < ppo.record.fixedActions.size(); ++i) {
+            const auto &f = ppo.record.fixedActions[i];
+            if (f.action != kFaDiscardPotion) continue;
+            const auto &a = ppo.actions[ppo.record.offeredCards.size() + ppo.record.offeredRelics.size()
+                                        + ppo.record.offeredPotions.size() + i];
+            require(a.isPotionAction() && a.isPotionDiscard(), "discard token runs a discard");
+            require(f.potion == static_cast<int>(gc.potions[a.getIdx1()]), "discard token names its potion");
+            auto copy = gc;
+            a.execute(copy);
+            require(copy.potions[a.getIdx1()] == Potion::EMPTY_POTION_SLOT && copy.potionCount == 1, "slot emptied");
+            ++discards;
+        }
+        require(discards == 2, "discard count");
+        require(recordFromJson(recordToJson(ppo.record)) == ppo.record, "JSON round trip with potion");
+        require(recordToJson(plain.record).dump().find("\"potion\"") == std::string::npos, "default JSON unchanged");
+        // A free slot: no discard tokens.
+        gc.potions[1] = Potion::EMPTY_POTION_SLOT;
+        gc.potionCount = 1;
+        require(buildChoice(gc, ppo, nullptr, full) && ppo.record.choiceCount() == plain.record.choiceCount() + 1,
+                "free slot: the potion reward itself, no discard");
+        for (const auto &f : ppo.record.fixedActions) require(f.action != kFaDiscardPotion, "no discard with a free slot");
+    }
+    {
+        // Match and Keep: unseen slot, seen twin of the face-up card, a matched pair.
+        auto gc = baseState();
+        gc.screenState = ScreenState::EVENT_SCREEN;
+        gc.curEvent = Event::MATCH_AND_KEEP;
+        gc.info.eventData = 4;
+        gc.info.toSelectCards.clear();
+        gc.info.toSelectCards.push_back(SelectScreenCard(Card(CardId::CARNAGE), GameContext::MATCH_AND_KEEP_UNSEEN));
+        gc.info.toSelectCards.push_back(SelectScreenCard(Card(CardId::INFLAME), GameContext::MATCH_AND_KEEP_SEEN));
+        gc.info.toSelectCards.push_back(SelectScreenCard(Card(CardId::INFLAME), GameContext::MATCH_AND_KEEP_FACE_UP));
+        gc.info.toSelectCards.push_back(SelectScreenCard(Card(CardId::BASH), GameContext::MATCH_AND_KEEP_MATCHED));
+        gc.info.toSelectCards.push_back(SelectScreenCard(Card(CardId::SHRUG_IT_OFF), GameContext::MATCH_AND_KEEP_SEEN));
+        Choice c;
+        std::string reason;
+        require(!buildChoice(gc, c, &reason) && reason == "match_and_keep", "default declines Match and Keep");
+        require(buildChoice(gc, c, &reason, full), "full Match and Keep: " + reason);
+        const auto &f = c.record.fixedActions;
+        require(f.size() == 3 && c.actions.size() == 3, "three open slots");
+        require(f[0].action == kFaMatchUnseen && f[0].card == static_cast<int>(CardId::INFLAME) && f[0].gold == 4,
+                "unseen slot names the face-up card and the attempts");
+        require(f[1].action == kFaMatchPair && f[1].card == static_cast<int>(CardId::INFLAME), "pair slot");
+        require(f[2].action == kFaMatchSeen && f[2].card == static_cast<int>(CardId::SHRUG_IT_OFF), "seen slot");
+        require(c.actions[0].getIdx1() == 0 && c.actions[1].getIdx1() == 1 && c.actions[2].getIdx1() == 4,
+                "slot actions");
+        // The unseen slot's card is private.
+        auto hidden = gc;
+        hidden.info.toSelectCards[0].card = Card(CardId::OFFERING);
+        Choice h;
+        require(buildChoice(hidden, h, nullptr, full) && recordToJson(h.record) == recordToJson(c.record),
+                "record independent of an unseen card");
+    }
+    {
+        // An event option without a silverbot mapping (Falling, out-of-range option).
+        auto gc = baseState();
+        gc.screenState = ScreenState::EVENT_SCREEN;
+        gc.curEvent = Event::FALLING;
+        Choice c;
+        const auto a = search::GameAction::getAllActionsInState(gc);
+        if (std::any_of(a.begin(), a.end(), [](const search::GameAction &x) { return x.getIdx1() >= 4; })) {
+            require(buildChoice(gc, c, nullptr, full), "unmapped option is a token");
+            require(std::any_of(c.record.fixedActions.begin(), c.record.fixedActions.end(), [](const FixedChoice &f) {
+                return f.action >= kFaEventOption0 && f.gold == static_cast<int>(Event::FALLING); }), "event token");
+        }
+    }
+    std::cout << "heart1 ppo coverage selftest passed\n";
 }
 
 }  // namespace one_combat::heart1

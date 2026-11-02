@@ -1,6 +1,6 @@
 # heart1/student_sel public record: field inventory and training-to-live contract
 
-Last verified: 2026-10-18 against main `b5dd5557` (issue #506 steps 1-2).
+Last verified: 2026-10-18 against main `b5dd5557` (issue #506 steps 1-2); v2 extension 2026-11-01; PPO coverage tokens 2026-11-01.
 
 This page covers the one input that is both the A20 OOC prior in simulation and
 live (student_sel, ADR-0042/ADR-0047) and the planned AZ-loop training record:
@@ -55,16 +55,27 @@ reconstructible from public history; **P** private (must not appear).
 | `fixed_actions` (+`gold/card/relic/info`) | event option mapping, Neow bonus/drawback, rest options, skip/remove/key/chest | O | event/screen capture | open (step 3); event payloads are option-text values (Face Trader HP, We Meet Again gold/card, N'loth relics, Golden Idol/Winding Halls HP, Falling card, World of Goop gold loss, Neow drawback) |
 | `paths_offered` | legal map moves (`mapMoveCost`, includes Wing Boots jumps) | O | map + Wing Boots `liveCounter` | open: depends on Wing Boots charges, which the record itself does not encode (#638) |
 | `screen_state`, `select_screen_type` | `screenState`, `info.selectScreenType` | O | screen capture | open (step 3) |
+| `obs.v2.run_counters` (v2 extension) | `[shopRemoveCount, removeCost in a shop else -1]` | O / R | `projected.shopRemoveCount`, shop `removeCost` | open (step 3) |
+| `obs.v2.fought` (v2 extension) | consumed prefixes `monsterList[0..monsterListOffset)`, `eliteMonsterList[0..eliteMonsterListOffset)` | R | combat ledger (`live_ooc_state.cpp` fills the same prefixes) | open (step 3); OOC MCTS resamples only the unconsumed suffix |
+| `offer_prices` (v2 extension) | shop `cardPrice/relicPrice/potionPrice` per offered card, relic, potion token, token order; empty outside shops | O | shop capture `price` | open (step 3) |
+| `fixed_actions[].potion` and fixed-action ids 166-177 (PPO coverage, `ChoiceOptions::fullCoverage`) | potion discard per discardable held potion when a reward/shop potion is blocked by full slots (`potion` = held potion id); Match and Keep slots: 167 unseen (`card` = face-up card or none), 168 seen (`card` = that card), 169 seen twin of the face-up card, `gold` = attempts left; 170+option for unmapped event options (`gold` = event id) | O | potion bar, Match and Keep board, event screen | simulator tested (`heart1pposelftest`: unseen card identity does not reach the record); live open. Only `STS_OOC_HEART1_PPO` builds them; the default choice space and its JSON are unchanged (`potion` is written only when set) |
 | `leaf.publicBattleEncounter` | `info.encounter` at the battle-start boundary | O | `publicEnemy` / room | qualified for the encounter just entered; never a queue entry |
 | `leaf.matchAttempts`, `leaf.matchSlots` | Match and Keep board, unseen cards masked | O | event capture | qualified in simulator (masking tested); live open |
 
 Fields deliberately absent (private or omitted): seed, all 14 RNG streams,
-`monsterList`/`eliteMonsterList`, `secondBoss`, `potionChance`,
+the unconsumed parts of `monsterList`/`eliteMonsterList`, `secondBoss`, `potionChance`,
 `cardRarityFactor`, room chances, event/shrine/relic/colorless pools, chest
-`tier`/`haveGold` before opening, Dead Adventurer `info.rewards`, shop prices,
-remove cost, Wing Boots charges, card/potion pity history. Shop prices, remove
-cost and Wing Boots charges are public but omitted; omission is the same in
-training and live. Neither path invents a value for them.
+`tier`/`haveGold` before opening, Dead Adventurer `info.rewards`, Wing Boots
+charges, card/potion pity history. Wing Boots charges are public but omitted;
+omission is the same in training and live. Neither path invents a value for them.
+
+The v2 extension (2026-11-01, shared-encoder work) adds the public run state the
+v1 record left out: shop prices, the removal price and count, and the encounters
+already fought this act. Only nets with `x2_*` weights read it
+(`tools/heart1/student_inputs.py` `ExtraInputsV2NN`, zero-initialised, so a v1
+checkpoint loads with identical logits); heart1, student C and student_sel ignore
+it. Records captured before it carry none of these keys; a v2 net reads missing
+run counters as -1 and adds nothing for missing fought encounters or prices.
 
 ## Known live/simulator mismatch: relic counters of counterless relics
 
@@ -103,8 +114,11 @@ Adventurer, We Meet Again, Neow) and battle start:
   legal choice tokens;
 - each listed public change (HP, gold, a relic counter, a deck upgrade, an
   offered card/relic/potion, a map room, the burning elite, the act boss, an
-  event payload, the encounter just entered, the select type) changes the
-  record.
+  event payload, the encounter just entered, the select type, and for v2 a
+  fought encounter, the elite fought count, the removal count, a shop card,
+  relic or potion price and the removal price) changes the record. The private
+  realizations keep the consumed queue prefixes (fought encounters) and
+  scramble only the unconsumed suffix.
 
 The older fixture in `priorMappingSelfTest` (rest room, battle start, Match and
 Keep masking) remains. Passing these tests shows the encoder ignores private

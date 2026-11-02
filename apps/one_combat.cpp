@@ -3820,6 +3820,10 @@ int main(int argc, char **argv) {
         return forcedDecisionSelfTest();
     } else if (mode == "a4perturbselftest") {
         return one_combat::a4PerturbSelfTest();
+    } else if (mode == "heart1pposelftest") {
+        one_combat::heart1::ppoSelfTest();
+        one_combat::heart1::ppoCoverageSelfTest();
+        return 0;
     } else if (mode == "heart1recordselftest") {
         one_combat::heart1::publicRecordInvarianceSelfTest();
         std::cout << "heart1 public record invariance selftest: ok\n";
