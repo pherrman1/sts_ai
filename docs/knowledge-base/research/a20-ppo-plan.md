@@ -143,7 +143,7 @@ So only ~1/21 of its games were A20, its reward is not P(Heart kill), and its en
 | --- | --- | --- |
 | V1 | A20 only | original saw ~5% A20 and barely adapts card choice to ascension |
 | V2 | our engine | train where we play; no engine gap, and without OOC MCTS no re-distillation is needed |
-| V3 | reward 1{Heart} + potential-based shaping with Φ = M0-calibrated leaf value | the objective becomes the Heart rate (shaping telescopes at γ = 1) with lower variance |
+| V3 | reward 1{Heart} + potential-based shaping with Φ = M0-calibrated leaf value | the objective becomes the Heart rate (shaping telescopes at γ = 1) with lower variance. **Not implemented on the actor side (code read 2026-11-02):** the trajectory exporter writes no `phi` field and `ppo_train.py` treats a missing `phi` as 0, so `--reward heart_pbrs` currently equals `heart`. By Ng et al. 1999 the shaped critic learns V − M0, so V3 equals a critic initialised at M0 ([literature](ppo-and-combat-leaf-literature.md), (A) item 7); export Φ and run A6 before S1 uses V3, or replace V3 by that initialisation |
 | V4 | forked common-random-number advantages at a fraction of card choices (VinePPO-style) | **low priority** ([literature](ppo-and-combat-leaf-literature.md), (A) item 5): VinePPO needs K ≈ 9 forks per state, the paired-rollout preprint is mixed (a toy counterexample, but −21 to −63% gradient covariance in its real probe), and at rho 0.49 a 2 pp sibling gap needs ~1,900 paired forks at 95% (~480 for 1σ; Inference); §738 found per-floor RNG keying gains only ~1.04× effective seeds. Run only if the offline gradient-variance probe (literature A4) shows a gain per core-s |
 | V5 | record v2 inputs (#941) for policy and critic | public run state heart1 never saw; PPO self-play produces v2 records for free |
 | V6 | asymmetric critic with hidden information, training only | lower-variance baseline; no verified literature (PerfectDou only a hint), bias open; needs Philipp's call against ADR-0002 |
@@ -185,6 +185,15 @@ Screen 1 tested only one reward change (REW_ORIG, NOT_SHOWN). Reward design is a
 - X1 validated cheap combat on one key effect; card effects whose value depends on fight skill are untested.
 - Does the 3060 Ti update keep pace with 1,024-2,048 games per iteration (measured in S0)?
 - Can an asynchronous cloud loop stay close enough to on-policy across container resets?
+- Two learner facts from the 2026-11-02 code review of the loop (read-only; shared by every arm of the recipe screen,
+  so they add noise, not a bias between arms): (a) games inside a part are written in OpenMP completion order and
+  `load_games` keeps file order, so the minibatch permutation (seeded per arm and iteration) acts on a
+  nondeterministic game order; a replayed part can produce a different net, and "byte-identical" holds only for the
+  same file. Sorting games by seed before indexing would remove it (not changed during the screen). (b) Under bf16
+  autocast the choice-logit head emits bf16 logits while the recorded behaviour log-probs are fp32, so the PPO ratio is
+  not 1 even for the behaviour net (final-layer rounding alone: |Δlogp| p99 1.5e-2, max 3.5e-2 on the smoke records);
+  the per-update stat `max_dlogp_behaviour` measures the full effect at iterations 0-3, where the policy is still
+  net-0000. An fp32 head would remove it.
 
 ## Relevant sources
 
