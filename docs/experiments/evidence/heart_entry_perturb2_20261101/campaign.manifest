@@ -1,0 +1,10 @@
+name          heart-entry-perturb2
+code_commit   e55f4827afcd0aa52e3caf96d2db06aa4431624d
+binary_sha256 b8f0628b25b124c52baa353f51446a00162c0b99e919383780d3281805ac7341
+workers       16
+share         /mnt/project-files/heart-entry-perturb2
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 60
+input variants.tar /mnt/project-files/heart-entry-perturb2/variants.tar bac886ef2754e0c4a371c4e54d99095e66740617e946a091b7f1d4bf02755712
