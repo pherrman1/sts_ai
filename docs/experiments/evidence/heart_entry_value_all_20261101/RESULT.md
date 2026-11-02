@@ -4,6 +4,8 @@ Pre-registration: [PREREG.md](PREREG.md) (review FAIL → curve-rule fix → PAS
 Run: frozen `fit_all.py` on `../heart_entry_perturb2_20261101/results/labels_all.csv` (4,252 bases, 1,437 source
 seeds, 59,528 pairs, 440 features), output [results/all.json](results/all.json); 69 min wall, 265 CPU-min.
 Versions: xgboost 3.0.5, scikit-learn 1.9.1, numpy 2.5.3 (written to all.json).
+The results reviewer's rerun with xgboost 3.4.1 also gives PASS (A − L −0.00179 [−0.00240, −0.00119], A100 − A50
+−0.00041 [−0.00069, −0.00014], per-change means within 0.1 pp), so unlike §733 the verdict holds across versions.
 
 ## Primary
 Paired-difference squared error, A (all-feature GBM, 100% of training seeds) − L (Silver leaf, converged):
