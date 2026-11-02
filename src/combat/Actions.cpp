@@ -1602,12 +1602,11 @@ void ActData_ReaperAction::operator()(BattleContext &bc) const {
         }
 
         if (healAmount > 0) {
-            bc.addToBot( Actions::HealPlayer(healAmount) );
+            // Java ReaperAction queues HealAction, which clearPostCombatActions
+            // keeps when the hits were lethal, so a lethal Reaper still heals
+            // (STS_POST_VICTORY_HEAL_FIX=0 restores the dropped heal).
+            bc.addToBot( Actions::HealPlayer(healAmount, postVictoryHealFix()) );
         }
-
-        //if (AbstractDungeon.getCurrRoom().monsters.areMonstersBasicallyDead()) {
-        //                AbstractDungeon.actionManager.clearPostCombatActions();
-        //            }
     }
 
 void ActData_RitualDaggerAction::operator()(BattleContext &bc) const {

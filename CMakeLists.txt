@@ -290,6 +290,30 @@ add_test(NAME blood_potion_heal COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guar
 set_tests_properties(blood_potion_heal PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(post_victory_heal_test tests/post_victory_heal_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(post_victory_heal_test PRIVATE include json/include)
+add_test(NAME post_victory_heal COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:post_victory_heal_test>)
+set_tests_properties(post_victory_heal PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(empty_pile_loss_test tests/empty_pile_loss_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(empty_pile_loss_test PRIVATE include json/include)
+add_test(NAME empty_pile_loss COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:empty_pile_loss_test>)
+set_tests_properties(empty_pile_loss PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(thorns_blocked_hit_test tests/thorns_blocked_hit_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(thorns_blocked_hit_test PRIVATE include json/include)
+add_test(NAME thorns_blocked_hit COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:thorns_blocked_hit_test>)
+set_tests_properties(thorns_blocked_hit PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(hand_upgrade_all_test tests/hand_upgrade_all_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(hand_upgrade_all_test PRIVATE include json/include)
