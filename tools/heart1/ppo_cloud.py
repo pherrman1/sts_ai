@@ -35,6 +35,7 @@ import gzip
 import hashlib
 import json
 import os
+import re
 import shutil
 import signal
 import subprocess
@@ -46,6 +47,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import ppo_loop  # noqa: E402
 
 POLL_S = int(os.environ.get("PPO_CLOUD_POLL_S", "30"))
+MAX_STALL_FRACTION = 0.01   # more stalled games than this in one part stops the actor (something else is broken)
 MAX_PUT_MB = 64   # one stored file; GitHub warns at 50 MB and refuses at 100 MB per file
 
 
@@ -336,8 +338,15 @@ def cmd_actor(argv):
         rc = job["proc"].wait()
         for f in job["files"]:
             f.close()
+        stalled = []
         if rc != 0:
-            sys.exit(f"iteration {it}: actors exited {rc} (see {out}/actors.err)")
+            with open(os.path.join(out, "actors.err")) as f:
+                stalled = stalled_game_lines(f.read(), n_part)
+            if stalled is None:
+                sys.exit(f"iteration {it}: actors exited {rc} (see {out}/actors.err)")
+            with open(job["traj"], "a") as f:
+                f.writelines(line + "\n" for line in stalled)
+            log(f"iteration {it} part {a.part}: {len(stalled)} stalled game(s) count as losses")
         n = 0
         with open(job["traj"]) as f:
             for line in f:
@@ -349,7 +358,7 @@ def cmd_actor(argv):
             shutil.copyfileobj(src, dst)
         store.put(name, gz, {"games": n, "sha256": sha256(gz), "net": f"net-{b:04d}", "net_sha256": meta["sha256"],
                              "actor_s": time.time() - job["t0"], "seed_first": job["seed"],
-                             "host": os.uname().nodename})
+                             "host": os.uname().nodename, "stalled": len(stalled)})
         job = None
         published.add(name)
         with open(marker, "a") as f:
@@ -359,6 +368,30 @@ def cmd_actor(argv):
         log(f"iteration {it} part {a.part}: published")
     log("actor done")
     print("ACTOR_DONE", flush=True)
+
+
+def stalled_game_lines(err_text, n_part):
+    """bestbench's per-seed failures -> one "game" line per seed if every failure is a combat stall, else None.
+
+    A sampled policy can build a deck whose fight never ends; the native Silver backend then stops the run at 1,000
+    combat decisions ("stall: exceeded 1000 decisions") and the game's trajectory lines are lost (they are flushed
+    only at game end). Such a game counts as a loss: a game line with no decisions (no training signal, the Heart
+    rate counts it). Any other failure, a count that does not match bestbench's summary, or more than
+    MAX_STALL_FRACTION of the part returns None (the actor stops as before)."""
+    fails = re.findall(r"^\[bestbench-seed-failure\] seed=(\d+) error=(.*)$", err_text, re.M)
+    summary = re.search(r"^bestbench: FAILED requested=(\d+) completed=(\d+) failed=(\d+)$", err_text, re.M)
+    if not fails or not summary or int(summary.group(3)) != len(fails) or int(summary.group(1)) != n_part:
+        return None
+    if len(fails) > MAX_STALL_FRACTION * n_part or not all("stall: exceeded" in msg for _, msg in fails):
+        return None
+    lines = []
+    for seed, msg in fails:
+        floor = re.search(r"floor=(\d+)", msg)
+        lines.append(json.dumps({"type": "game", "schema": ppo_loop.ppo_train.SCHEMA, "seed": seed, "decisions": 0,
+                                 "stalled": msg.strip(), "outcome": {"heart_kill": False, "stalled": True,
+                                                                     "floor": int(floor.group(1)) if floor else 0}},
+                                separators=(",", ":")))   # compact like the native lines (the actor counts them)
+    return lines
 
 
 class ArmLearner:
