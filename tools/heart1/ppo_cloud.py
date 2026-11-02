@@ -555,7 +555,9 @@ def cmd_serve(argv):
     while not all(x.done() for x in learners):
         available = store.names("")
         trained = False
-        for x in sorted(learners, key=lambda x: x.next_it):   # oldest first: no arm falls behind
+        # Least progress first (fraction of the arm's iterations): no arm falls behind, and an arm with more, smaller
+        # iterations (G_256: 60) is not held to the pace of the 30-iteration arms. Order only; each arm is independent.
+        for x in sorted(learners, key=lambda x: (x.next_it / x.cfg["iterations"], x.next_it)):
             trained |= x.step(available)
         if not trained:
             time.sleep(POLL_S)
