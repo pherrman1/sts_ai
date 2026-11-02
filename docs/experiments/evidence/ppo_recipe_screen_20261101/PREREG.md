@@ -11,6 +11,9 @@ Heart-kill rate in short runs of our own engine?
 - Start net: G0 of `ppo_cost_arms_g0_20261101` (HEART1 → `heart1.bin` `1e92f2a6`; STUDENT_SEL → student_sel
   `cf6bf7fb`), extended with zero-init inputs by `ppo_cloud.py init`.
 - Combat: the same campaign's chosen cost arm (B, K1, K4, K5 or K15), applied to `actors_base.env` by `make_arms.sh`.
+- **Launch (§744, 2026-11-02): start net heart1 (G0: −0.24 pp [−2.00, +1.51] → HEART1), combat K15** (200 hallway
+  sims, no learned Silver prior; `actors_frozen.env`). Actors' binary `71cfd280` built at main `defaa93` (includes
+  #957's CombatReward fix after the f17d898 smoke binary).
 
 **Runner.** `tools/heart1/ppo_cloud.py`: cloud actor containers (4 game threads each; 2 per arm, 4 for G_1024) play
 the games; one learner process on Philipp's PC (RTX 3060 Ti, bf16) trains every arm, oldest iteration first. They

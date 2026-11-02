@@ -2,6 +2,7 @@
 # usage: make_arms.sh STORE START_NET ONE_COMBAT_SHA COMBAT
 # Freezes one ppo_cloud arm (config + net-0000) per line of arms.txt in STORE (git:URL#PREFIX) (author only, once, after G0 and the
 # cost arms decided START_NET and COMBAT; see PREREG.md). COMBAT is B, K1, K4, K5 or K15 (ppo_cost_arms_g0_20261101).
+# DRY=1 only writes actors_frozen.env (for the launch commit's review) and touches no store.
 set -euo pipefail
 STORE=$1 NET=$2 SHA=$3 COMBAT=$4
 D=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
@@ -19,6 +20,7 @@ case $COMBAT in
   *) echo "bad COMBAT $COMBAT" >&2; exit 2 ;;
 esac
 SEED_BASE=111400000
+if [ "${DRY:-0}" = 1 ]; then cp "$ENV" "$D/actors_frozen.env"; rm -f "$ENV"; echo "wrote $D/actors_frozen.env"; exit 0; fi
 grep -v '^\s*#' "$D/arms.txt" | while read -r name games iters warm parts hp; do
   [ -n "$name" ] || continue
   # shellcheck disable=SC2086
