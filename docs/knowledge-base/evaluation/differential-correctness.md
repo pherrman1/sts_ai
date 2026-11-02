@@ -1,6 +1,6 @@
 # Java/native differential correctness
 
-Last verified: 2026-09-28 against the native adapter and a bounded live capture; parity probe section 2026-10-19 against its unit tests; Mayhem paragraph 2026-10-19 against the pinned bytecode; Magnetism paragraph 2026-10-20 against its unit test and the live verdicts (Java semantics recalled, not re-read from bytecode); unplayable-autoplay paragraph 2026-10-20 against the pinned-jar javap.
+Last verified: 2026-11-02 for the out-of-combat relic and event rules section against its unit tests; 2026-09-28 against the native adapter and a bounded live capture; parity probe section 2026-10-19 against its unit tests; Mayhem paragraph 2026-10-19 against the pinned bytecode; Magnetism paragraph 2026-10-20 against its unit test and the live verdicts (Java semantics recalled, not re-read from bytecode); unplayable-autoplay paragraph 2026-10-20 against the pinned-jar javap.
 
 ## Purpose
 
@@ -524,6 +524,53 @@ native kept the Flight status bit at amount 0 (`monsters[0].statusBits` bit
 full damage and gets no Flight back at its next start of turn; native still
 halved damage and `applyStartOfTurnPowers` reset Flight to 3/4.
 `STS_BYRD_GROUNDED_FLIGHT_FIX` (default on, `=0` restores) removes the status.
+
+## Out-of-combat relic and event rules (2026-11-02)
+
+A read-only review of `GameContext.cpp` found out-of-combat rules that
+differed from the game. Each is fixed behind a default-on flag (`=0`
+restores the legacy rule; see
+[environment-variables](../operations/environment-variables.md)) with a unit
+test under `tests/`. The Java rules are recalled from the decompiled game, not
+re-read from the pinned bytecode (**Unverified** until a `javap` row lands in
+the [Java reference audit](../behavior/java-reference-audit.md)).
+
+Fixes that change the replay of recorded seeds past the point they apply:
+
+- `STS_MATRYOSHKA_COUNTER_FIX`: Matryoshka's counter starts at 2, so the next
+  two non-boss chests roll one extra `relicRng` tier and pop one extra relic
+  from that pool. Every later relic draw of the run shifts.
+- `STS_NLOTHS_FACE_COUNTER_FIX`: N'loth's Hungry Face's counter starts at 1;
+  that chest holds no relic and pops none from the pool, so later draws shift
+  the other way. Only runs that owned the face (or imported its counter) differ.
+- `STS_VAMPIRES_STRIKE_TAG_FIX`: all STRIKE-tagged cards leave the deck, not
+  only starter Strikes, so later combat shuffles and draws differ when the
+  deck held a non-starter Strike.
+- `STS_OOC_ENTROPIC_BREW_FIX`: the same `potionRng` draws, but limited (no
+  Fruit Juice) and placed into the first empty slots with Sozu refusing them,
+  so the potions held afterwards differ.
+- `Deck::removeAllMatching` (no flag, memory safety): the loop started one
+  past the end of the fixed list; when that stale slot matched, the real last
+  card was dropped. Only Vampires uses it; legacy replays where a removed
+  Strike sat in the stale slot lost a card.
+
+Fixes that change amounts only, not RNG consumption or sequences:
+`STS_OLD_COIN_GOLD_FIX` (+300 gold on pickup, Ectoplasm/Bloody Idol apply),
+`STS_GOLD_REWARD_IDOL_FIX` (Golden Idol's `round(25%)` on chest, Tiny House
+and event-fight gold rewards; the wiki confirms the Tiny House case) and
+`STS_ASTROLABE_COLORLESS_UPGRADE_FIX` (a transformed colorless card is
+upgraded). Freeze files and teacher captures recorded before 2026-11-02 that
+compare gold, deck contents or relic sequences must set the affected flags to
+`0`.
+
+Reviewed and kept: `returnRandomScreenlessRelic` (event relics, Calling Bell)
+draws with `returnRandomRelic` until the relic is not a Bottled relic or
+Whetstone, so the skipped relics leave the pool for the run and later pool
+indices shift. The review proposed granting the relic with its screen or
+putting it back; Java `AbstractDungeon.returnRandomScreenlessRelic` loops the
+same way (recalled, **Open question** until re-read from bytecode), so the
+engine is unchanged and `tests/screenless_relic_pool_test.cpp` pins the
+contract.
 
 For localizing a divergence against the pinned game bytecode, see the
 [STS1 Java reference audit](../behavior/java-reference-audit.md).

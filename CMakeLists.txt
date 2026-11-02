@@ -394,6 +394,54 @@ add_test(NAME deck_obtain_raw COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.
 set_tests_properties(deck_obtain_raw PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
 
+add_executable(matryoshka_counter_test tests/matryoshka_counter_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(matryoshka_counter_test PRIVATE include json/include)
+add_test(NAME matryoshka_counter COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:matryoshka_counter_test>)
+set_tests_properties(matryoshka_counter PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
+
+add_executable(old_coin_gold_test tests/old_coin_gold_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(old_coin_gold_test PRIVATE include json/include)
+add_test(NAME old_coin_gold COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:old_coin_gold_test>)
+set_tests_properties(old_coin_gold PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
+
+add_executable(vampires_strike_tag_test tests/vampires_strike_tag_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(vampires_strike_tag_test PRIVATE include json/include)
+add_test(NAME vampires_strike_tag COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:vampires_strike_tag_test>)
+set_tests_properties(vampires_strike_tag PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
+
+add_executable(screenless_relic_pool_test tests/screenless_relic_pool_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(screenless_relic_pool_test PRIVATE include json/include)
+add_test(NAME screenless_relic_pool COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:screenless_relic_pool_test>)
+set_tests_properties(screenless_relic_pool PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
+
+add_executable(gold_reward_idol_test tests/gold_reward_idol_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(gold_reward_idol_test PRIVATE include json/include)
+add_test(NAME gold_reward_idol COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:gold_reward_idol_test>)
+set_tests_properties(gold_reward_idol PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
+
+add_executable(ooc_relic_minor_fix_test tests/ooc_relic_minor_fix_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(ooc_relic_minor_fix_test PRIVATE include json/include)
+add_test(NAME ooc_relic_minor_fix COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:ooc_relic_minor_fix_test>)
+set_tests_properties(ooc_relic_minor_fix PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
+
 add_executable(remove_obtain_weight_test tests/remove_obtain_weight_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(remove_obtain_weight_test PRIVATE include json/include)
