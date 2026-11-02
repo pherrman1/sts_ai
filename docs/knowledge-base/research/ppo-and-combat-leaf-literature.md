@@ -35,7 +35,7 @@ Two questions from Philipp (2026-11-01):
 - **(B)** No source supports a learned run value as Silver's leaf. The usable template is KataGo's bounded,
   recentred score utility on top of a dominant term. Together with §724 (Incense Burner, +5.9 pp) and §721 (V-derived
   prices ≈ formula), this points to a few targeted, bounded run-aware terms rather than a generic V leaf.
-- **B2 on heart1's critic (2026-11-02, §TBD): FAIL.** heart1's value head prices Fairy (35 HP), max HP (+1.6 HP per
+- **B2 on heart1's critic (2026-11-02, §747): FAIL.** heart1's value head prices Fairy (35 HP), max HP (+1.6 HP per
   point) and partly the potion types right. But −3 HP lowers it in only 83% of 20,677 post-fight states, and its 1-HP
   price is noise (p10 −2.9, p90 +4.3 secant units). There is no heart1 leaf and no B3. Rerun on the own A20 PPO critic
   ([evidence](../../experiments/evidence/heart1_value_leaf_teacher_20261102/RESULT.md)).
@@ -133,7 +133,7 @@ Two questions from Philipp (2026-11-01):
 | # | Experiment | Cost class | Falsified if |
 | ---: | --- | --- | --- |
 | B1 | Targeted terms first: for each unpriced fight-end variable, a causal paired probe as in §723 (force the variable, play on) to measure its Heart-kill price; price only those that clear their CI, in Silver's leaf as in §724 | offline probes + fight-level gate | no variable beyond Incense shows a price outside its CI |
-| B2 | When the PPO critic exists: §721's teacher check repeated on it; heart1's critic FAILED (2026-11-02, §TBD), rerun on our own critic. Checks: signs, SE of the 1-HP price ≤ ⅓ of the formula's, max HP ≥ 0 | offline | it fails the same checks as V_A4/V_H |
+| B2 | When the PPO critic exists: §721's teacher check repeated on it; heart1's critic FAILED (2026-11-02, §747), rerun on our own critic. Checks: signs, SE of the 1-HP price ≤ ⅓ of the formula's, max HP ≥ 0 | offline | it fails the same checks as V_A4/V_H |
 | B3 | Only if B2 passes: shrunk, clipped V-prices set at elite/boss fight start vs the formula, paired fight-level gate, then a run A/B | gate | SPRT NOT_WORSE/WORSE |
 | B4 | KataGo-style bounded arctan term on fight-end HP, recentred on the root's expected HP, weight grid {0.1, 0.25, 0.5} | fight-level gate | no weight beats the formula |
 

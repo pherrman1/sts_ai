@@ -25983,7 +25983,7 @@ Seeds: none.
 **Knowledge impact:** a general all-feature value model learns cross-state prices from ~3,400 Heart-entry states
 and keeps improving with data; its average scale for HP/potions is too high and relic loss is barely seen.
 
-## §TBD — heart1's value head as a Silver combat leaf, teacher check (B2): FAIL on HP resolution (−3 HP lowers V in 82.7% of 20,677 post-fight states, 1-HP price p10 −2.9 / p90 +4.3 secant units); Fairy 35 HP, max HP +1.6 HP/pt and per-type potion order (r 0.76, 0.37 without Fairy) are better than gen 1b → no heart1 leaf, no B3 (offline, no seeds, 2026-11-02)
+## §747 — heart1's value head as a Silver combat leaf, teacher check (B2): FAIL on HP resolution (−3 HP lowers V in 82.7% of 20,677 post-fight states, 1-HP price p10 −2.9 / p90 +4.3 secant units); Fairy 35 HP, max HP +1.6 HP/pt and per-type potion order (r 0.76, 0.37 without Fairy) are better than gen 1b → no heart1 leaf, no B3 (offline, no seeds, 2026-11-02)
 
 **Question:** Philipp (2026-11-02 10:40Z): try the 2026-11-01 literature result (B) on using the heart1 net's value
 head as Silver's leaf value. The page's plan runs B2 first: the §721 teacher check on the critic.
