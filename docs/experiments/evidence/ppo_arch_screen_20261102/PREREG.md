@@ -51,7 +51,7 @@ semantics below are binding):
 | AUX | auxiliary heads on the pooled trunk: final floor / 57 (MSE) and Act 4 reached (BCE), weight 0.1 each, targets from the game line | heads zero-initialised, policy unchanged | KataGo's auxiliary-target efficiency gain (Verified in Go) |
 | VAL_SPARSE | value loss on a subsample per game: each act's first decision plus 3 uniformly random decisions (seeded per game), policy loss on all decisions | learner-only change | value flattening (arXiv 2609.18708; Extracted): sparse supervision gives the critic resolution at the states that matter |
 
-Eight arms, 16 actor parts, 16 workers.
+Design A: eight arms, 16 actor parts, 16 workers. Design B (chosen): the six change arms in `arms.txt`, 24 actor parts.
 
 **Seeds.** All arms play the block 111440000-111455359 (15,360 seeds; no use on main, in the ledger or in any
 evidence file: the only nine-digit strings with that prefix in the repository are decimal fractions inside model
@@ -95,29 +95,49 @@ decided as B below: fewer arms that run later and reuse screen 2's controls.
   BASE's updates. Under B this screen plays no seeds of its own beyond the sentinel; the reserved block above stays
   reserved for A or for fresh controls.
 
-**Binding under B (overrides the sections above where they differ).**
-- **Arms:** IN_DECK, IN_RUN, DEPTH6, CRITIC_SEP, AUX, VAL_SPARSE; each from screen 2's BASE learner state after
-  update 30 (`state-0030.pt`: net, optimiser, iteration; sha in `screen.manifest`), constructed as in the arms table, learner seed 0,
-  30 more iterations (30-59), no warm-up (the value head is already trained; CRITIC_SEP's copied critic and the
-  zero-initialised aux heads get no special warm-up). Same learner code, flags and binary as screen 2 apart from
-  the arm's change (screen 2's learner commit #973; the P1 binary only if the sentinel passes).
-- **Seeds:** iteration i plays exactly screen 2's seeds for iteration i (inside 111470000-111500719, as its PREREG
-  freezes them), with screen 2's parts layout. The block 111440000-111455359 is used only if fresh controls are
-  needed.
-- **Controls and sentinel:** screen 2's BASE (iterations 30-59) and BASE_S1, reused under ADR-0064 §2: before any
-  change arm runs, the arm binary with the arch flags off replays 32 of screen 2's BASE iteration-30 seeds with the
-  net BASE played them with (net-0030, or the net the `--pipeline 1` lag assigns, as screen 2's `loop.json` records)
-  and every game must equal screen 2's record (`compare.py` rule). Failure: fresh BASE and BASE_S1
-  continuations from the same state on the same seeds, played before the change arms.
+**Binding under B (overrides the sections above where they differ; `arms.txt` is design B).**
+- **Fork point.** Screen 2 (#975) runs `serve --keep-state 30`, which copies BASE's `state.pt` right after update 30
+  (the update trained on iteration 29's games) to `~/ppo-screen2/BASE/state-0030.pt`: net-0030, Adam moments and
+  iteration counter 30. That file and `net-0030.bin` are the fork point; screen 2's RESULT records their sha256 and
+  this screen's `screen.manifest` repeats them. #975 must be merged and the serve started with `--keep-state 30`
+  before screen 2 reaches update 30; otherwise this design falls back to a fresh-Adam fork from `net-0030.bin`
+  (recorded as an amendment, re-reviewed by K) and the six arms keep their seeds.
+- **Arms:** IN_DECK, IN_RUN, DEPTH6, CRITIC_SEP, AUX, VAL_SPARSE, learner seed 0. Each arm's start state = the fork
+  point with the arm's construction (arms table) applied to net-0030; existing Adam moments are kept, new tensors
+  get zero moments. P2 provides this as `ppo_cloud.py init --from-state <state-0030.pt> --construct <arm flags>`,
+  which writes the arm's `state.pt` at iteration 30 and its `net-0030.bin`, and records both sha256.
+- **Iterations 30-59, warm-up 0, screen 2's layout:** 512 games per iteration in 4 parts of 128, seed base
+  111470000, iteration i plays exactly screen 2's seeds of iteration i. Under `--pipeline 1` iteration i is played
+  by net-(i−1), so iteration 30 was played by BASE's net-0029, before any arm change exists: every arm's iteration
+  30 games equal BASE's. They are not replayed; each arm's update 31 trains on BASE's kept iteration-30 `parts/`
+  (copied, sha256 in the manifest). The arms' own games start at iteration 31 (net-0030 of the arm). 6 arms × 4
+  parts = 24 actor parts.
+- **Binaries and engine drift.** DEPTH6, CRITIC_SEP, AUX and VAL_SPARSE change only the learner; their actors run
+  screen 2's binary (sha256 `71cfd280e121…22d1`) and environment unchanged. IN_DECK and IN_RUN need the P1 binary,
+  which is built from defaa930 (the code commit that produced binary 71cfd280, screen 1 `screen.manifest`; screen 2
+  uses the same binary) with only P1's diff applied (a build branch, not main), so no
+  engine change merged after that commit (e.g. #970, #976) enters; its sha256 goes in the manifest. If a P1 build
+  on that commit is not possible, every default-on engine flag merged after it is pinned to `=0` in these arms'
+  env, listed in the manifest.
+- **Actor sentinel (ADR-0064 §2, IN_DECK and IN_RUN only).** Before those arms run: the P1 binary replays 32 of
+  screen 2's BASE iteration-30 seeds with BASE's net-0029, once as stored and once extended by each input arm's
+  zero-initialised construction. Every trajectory line (each decision with its logp, and the game line) and every
+  outcome must equal screen 2's BASE record. A failure stops IN_DECK and IN_RUN (the four learner-only arms go on)
+  until a fixed binary passes.
+- **Learner check (all arms).** P2 with all arch flags off, started from `state-0030.pt` and trained on BASE's
+  iteration-30 `parts/` on the PC GPU with screen 2's settings, must reproduce screen 2's BASE `net-0031.bin`
+  sha256 exactly. If screen 2's own learner code does not reproduce its net-0031 bit for bit on a rerun, the bar is
+  instead: P2's max |Δparameter| to net-0031 is no larger than that rerun's. A failure stops the screen.
+- **Controls:** screen 2's BASE and BASE_S1 over iterations 30-59, as played (screen 2's PREREG never
+  futility-stops them). If screen 2 is aborted before both reach iteration 59, design B is void and A is used.
 - **Primary metric:** Heart-kill rate over iterations 40-59 (20 × 512 = 10,240 seeds, screen 2's primary window),
   D = arm − BASE paired by seed, 95% seed bootstrap (10,000 resamples). Noise floor = |BASE_S1 − BASE| on the same
   window. PROMISING / WORSE / NOT_SHOWN as above. Because each arm shares BASE's first 30 iterations, arm − BASE
   varies less than BASE_S1 − BASE (an independent run), so the noise-floor condition is conservative.
 - **Screen 2 outcome:** if screen 2 has a PROMISING arm, B still forks from screen 2's BASE (not from the winner);
-  combining is S1's job. If screen 2 stops early on its futility rule before iteration 59, B forks from BASE's state after update 30 only if BASE itself was played to 59 (screen 2's PREREG
-  guarantees this); otherwise B falls back to A.
-- **Workers and cost:** 6 arms × 30 iterations × 512 games ≈ 92,000 games ≈ 140 core-h (5.5 s/game, DEPTH6 more),
-  learner 6 × 30 updates on the PC GPU; worker count with Philipp's go.
+  combining is S1's job.
+- **Workers and cost:** 6 arms × 29 played iterations × 512 games ≈ 89,000 games ≈ 140 core-h (5.5 s/game, DEPTH6
+  more), learner 6 × 29 updates on the PC GPU; worker count with Philipp's go.
 
 **Critic secondary (pre-registered, offline, no seeds).** For BASE, CRITIC_SEP, AUX and VAL_SPARSE the final net's
 critic takes the §747 teacher check on the 20,677 post-fight states of `heart1_value_leaf_teacher_20261102`
@@ -135,7 +155,8 @@ seeds, policy alone, Silver 1,000). No ADR before S1.
 - P1 (native + torch): `x3_deck` and `x3_run` FixedVec inputs in `apps/one_combat/heart1_policy.cpp` and
   `tools/heart1/ppo_model.py` (zero-init, exported always, parity by `tools/heart1/ppo_parity.py --perturb` on cov8:
   max |Δlogit| ≤ 1e-4 and a perturbation that moves logits by ≥ 1). Also the native cost measurement command.
-- P2 (learner): `ppo_train.py` flags `--extra-blocks N` (identity-initialised), `--critic separate`,
+- P2 (learner; design B also needs `ppo_cloud.py init --from-state/--construct` and the learner check under
+  "Binding under B"): `ppo_train.py` flags `--extra-blocks N` (identity-initialised), `--critic separate`,
   `--aux-heads floor,act4 --aux-weight 0.1`, `--value-sparse 3`; `ppo_cloud.py init` applies the arm's construction
   once and records the resulting net-0000 sha per arm; `to_bin` writes critic and aux tensors under names the native
   loader does not read. Unit tests: each construction reproduces BASE's logits bit-for-bit on cov8 before training;
@@ -160,6 +181,10 @@ same seeds.
   power note and open design choice A/B added; schedule after screen 2.
 - 2026-11-03 10:37 CET (before launch): Philipp chose design B; "Binding under B" added. Fork point stated as
   screen 2's `state-0030.pt` (after update 30, `serve --keep-state 30`).
+- 2026-11-03 (before launch), review K FAIL fixes: sentinel uses net-0029 (pipeline lag) and compares trajectory
+  lines; iteration-30 games reused from BASE's parts; fork state = #975's `state-0030.pt` with a fallback; `arms.txt`
+  rewritten for B; P1 built on screen 2's binary commit (engine drift); learner bit-for-bit check; screen 2 abort
+  case restated.
 
 **Knowledge impact.** `a20-ppo-plan.md` "Training recipe" row "net size, start" points here; results go to the
 ledger as one entry and to the plan page; an ADR only after S1 and G1.
