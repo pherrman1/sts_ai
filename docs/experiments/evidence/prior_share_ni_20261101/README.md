@@ -41,9 +41,16 @@ outcome; the fallback (C on all other seeds) goes to Philipp.
 ADR-0064 (`sprt_gate.py` = `tools/sprt_gate.py` of main 520d4e4b, vendored, variant `nonregression`, d0 = −0.015, d1 = 0, α = β = 0.05, look every 64 pairs,
 cap 1,536). H1 crossing → **NOT_WORSE**; H0 crossing → **WORSE**; CAP → fixed-sample reading (mean d, 95% seed
 bootstrap, 10,000 resamples): NOT_WORSE if the lower bound > −1.5 pp, WORSE if the upper bound < 0, else
-INCONCLUSIVE. The mean d and its CI are reported in every case. Note (Inference): |mean d| ≤ 49/1,536 = 3.2 pp by
-construction, so WORSE needs C to lose the Heart kill net on ≈ 23 of the 49 diverging seeds; the gate mainly checks
-that the speedup is not paid for by a visible regression on the roots where the pick changes.
+INCONCLUSIVE. The mean d and its CI are reported in every case. What the gate can show (reviewer J): R kills the Heart on 20 of the 49 diverging seeds, so mean d ≥ −20/1,536 =
+−1.30 pp by construction and the −1.5 pp margin cannot be crossed: **NOT_WORSE is nearly guaranteed** (the SPRT's H0
+needs ≈ 12 net kill losses, mean < −0.75 pp, to cross WORSE). The informative number is the **kill difference on the
+49 diverging seeds** (secondary, with its CI); the gate itself mainly confirms that the speedup costs nothing
+visible on the other 1,487 seeds, where C plays R's game.
+
+**Failed units.** A diverging unit whose 4th attempt fails with a game error (`claims/<id>.a4/failed`, rc not one of
+run_unit's configuration checks 88/89/92/93/95) counts as a C loss (d = −kill_R; secondaries keep R's values) and is
+reported. A failed sentinel, or a configuration-check rc, stays missing: INVALID. Duplicate unit tars (the queue can
+run a unit twice): the first tar in sorted order is used and the duplicate reported, as in `verify_campaign.py`.
 
 **Secondaries (descriptive).** Kill difference on the 49 diverging seeds alone; Act 4 reached, Heart reached,
 final floor, death by act (C − R with CIs); map simulations and wall per played game, R vs C (different
