@@ -26027,3 +26027,22 @@ worse, as expected with little signal in a sparse 1{Heart} reward (~40 kills per
 shaping, PBRS with a simple potential; C++ φ emission needed), fewer arms, pre-registered futility rule. No default change.
 Seeds: 111400000-111415359 USED. Cost ≈ 290k games ≈ 1,600 core-h cloud + ~21 h PC GPU.
 **Knowledge impact:** KB `research/a20-ppo-plan.md` (screen-1 row, reward axis).
+
+## §749 — Combat rule-fidelity fixes: lethal Reaper/Bite still heals, empty piles are no loss, Thorns retaliates on fully blocked hits; three default-on engine fixes (`=0` restores), unit tests, no gameplay run (2026-11-03)
+
+**Question:** do three combat rules found in code review match Java: the heal behind a lethal Reaper/Bite, the
+legacy "empty hand, draw and discard = loss" rule, and Thorns against a fully blocked hit?
+**Data:** PR #976; `tests/post_victory_heal_test.cpp`, `tests/empty_pile_loss_test.cpp`,
+`tests/thorns_blocked_hit_test.cpp` (each also checks `=0`). Java semantics recalled, not re-read against the JAR
+(**unverified**; see `behavior/java-reference-audit.md`). No seeds.
+**Result:** `STS_POST_VICTORY_HEAL_FIX` flags the Reaper/Bite heal `executeAfterCombatVictory` and runs every flagged
+action at victory (Thorns retaliation still dropped, issue 85); `STS_EMPTY_PILE_LOSS_FIX` removes the invented loss
+(turn > 500 and Silver loop guards bound a stall); `STS_THORNS_BLOCKED_HIT_FIX` applies Spiker Thorns on blocked or
+zero-damage hits. ctest core|smoke 157/157. Independent review PASS (randomised ring-buffer model test of
+`popPostVictoryAction`, multi-flag drain run).
+**Interpretation:** implementation success only; the winrate effect is unmeasured and expected small (Reaper/Bite
+HP after lethal hits, Spiker fights, rare empty-pile states). Engine trajectories change, so earlier recorded
+numbers are not bit-comparable.
+**Decision:** fixes on by default (engine-fix policy). Open: Malleable and Reactive on blocked hits.
+**Knowledge impact:** KB `behavior/invariants.md`, `behavior/java-reference-audit.md`,
+`evaluation/differential-correctness.md`, `operations/environment-variables.md`.
