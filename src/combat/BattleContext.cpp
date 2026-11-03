@@ -134,21 +134,6 @@ namespace sts {
         return cachedFixFlag(cache, "STS_MUMMIFIED_HAND_PLAYED_CARD_FIX");
     }
 
-    bool postVictoryHealFix() {
-        thread_local CachedFixFlag cache;
-        return cachedFixFlag(cache, "STS_POST_VICTORY_HEAL_FIX");
-    }
-
-    bool emptyPileLossFix() {
-        thread_local CachedFixFlag cache;
-        return cachedFixFlag(cache, "STS_EMPTY_PILE_LOSS_FIX");
-    }
-
-    bool thornsBlockedHitFix() {
-        thread_local CachedFixFlag cache;
-        return cachedFixFlag(cache, "STS_THORNS_BLOCKED_HIT_FIX");
-    }
-
     // STS_BLOOD_FOR_BLOOD_COPY_COST_FIX: unset or 1 = a generated Blood for
     // Blood gets BloodForBlood.makeCopy()'s updateCost(-damagedThisCombat)
     // (javap, live parity problem 76). 0 = the legacy base cost of 4; other
@@ -1088,20 +1073,9 @@ void BattleContext::executeActions() {
         // the killing blow ends the fight immediately, so queued retaliation
         // actions such as Thorns/Spikes must never execute after victory).
         if (outcome != Outcome::UNDECIDED) {
-            // Actions flagged executeAfterCombatVictory (heals: Toy
-            // Ornithopter, Reaper, Bite) are what Java's clearPostCombatActions
-            // keeps; every one of them runs, in queue order, before the fight
-            // ends. Everything else in the queue is dropped.
             if (outcome == Outcome::PLAYER_VICTORY && actionQueue.hasPostVictoryAction()) {
-                // STS_POST_VICTORY_HEAL_FIX=0 restores the legacy path, which
-                // ran only the first flagged action.
-                const bool drainAll = postVictoryHealFix();
-                do {
-                    auto a = std::move(actionQueue.popPostVictoryAction());
-                    a(*this);
-                } while (drainAll && outcome == Outcome::PLAYER_VICTORY
-                         && actionQueue.hasPostVictoryAction());
-                actionQueue.clear();
+                auto a = std::move(actionQueue.popPostVictoryAction());
+                a(*this);
             }
             break;
         }
@@ -1124,13 +1098,8 @@ void BattleContext::executeActions() {
             continue;
         }
 
-        // Legacy "can't win" rule: the game has no such loss (only HP 0
-        // loses; Combust, Juggernaut, Metallicize, Plated Armor, Mercury
-        // Hourglass, Stone Calendar, applied Poison and potions still win
-        // with no cards). STS_EMPTY_PILE_LOSS_FIX=0 restores it; otherwise
-        // the turn > 500 guard above and Silver's loop guard bound the fight.
-        if (cards.cardsInHand + cards.discardPile.size() + cards.drawPile.size() == 0
-                && !emptyPileLossFix()) {
+        // can't win check
+        if (cards.cardsInHand + cards.discardPile.size() + cards.drawPile.size() == 0) {
             bool hasDamageWithoutCards = player.hasStatus<PS::OMEGA>() ||
                     player.hasStatus<PS::THORNS>() ||
                     player.bomb1 ||
@@ -1409,8 +1378,7 @@ void BattleContext::useAttackCard() {
 
         case CardId::BITE:
             addToBot( Actions::AttackEnemy(t, calculateCardDamage(c, t, up ? 8 : 7)) );
-            // Java keeps HealAction after the killing blow (clearPostCombatActions).
-            addToBot( Actions::HealPlayer(up ? 3 : 2, postVictoryHealFix()) );
+            addToBot( Actions::HealPlayer(up ? 3 : 2) );
             break;
 
         case CardId::BODY_SLAM:

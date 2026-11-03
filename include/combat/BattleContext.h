@@ -183,46 +183,6 @@ namespace sts {
     // (live parity problem 48). 0 = the legacy pick. Other values are fatal.
     bool mummifiedHandPlayedCardFix();
 
-    // STS_POST_VICTORY_HEAL_FIX: unset/1 (default) = the heal that Reaper or
-    // Bite queues behind its damage still runs when that damage kills the
-    // last monster. Java's ReaperAction and Bite queue a HealAction after the
-    // DamageAction, and AbstractMonster.die -> clearPostCombatActions keeps
-    // HealAction (with GainBlockAction, UseCardAction, GainGoldAction), so
-    // the game heals on a lethal Reaper. The engine queued the heal without
-    // executeAfterCombatVictory, and executeActions drops unflagged actions
-    // once the outcome is decided (issue 85), so the heal was lost and the
-    // player left the fight at the pre-Reaper HP. Thorns/Spikes retaliation
-    // is still never run after victory. 0 = the legacy engine drops the
-    // heal and the legacy victory path, which runs only the first flagged
-    // action. Other values are fatal. Read when the heal is queued and at
-    // victory when a flagged action is queued.
-    bool postVictoryHealFix();
-
-    // STS_EMPTY_PILE_LOSS_FIX: unset/1 (default) = an empty hand, draw and
-    // discard pile is not a loss. The legacy engine declared PLAYER_LOSS
-    // mid-turn when all three were empty and the player had no Omega,
-    // Thorns or bomb; the game has no such rule (Combust, Juggernaut,
-    // Metallicize, Plated Armor, Mercury Hourglass, Stone Calendar, applied
-    // Poison and damage potions can all still win, and only HP 0 loses).
-    // Non-terminating fights are bounded by the turn > 500 guard in
-    // executeActions and the native Silver no-progress loop guard. 0 =
-    // the legacy loss. Other values are fatal. Read only when every pile is
-    // empty.
-    bool emptyPileLossFix();
-
-    // STS_THORNS_BLOCKED_HIT_FIX: unset/1 (default) = a monster's Thorns
-    // (Spiker; Guardian's Sharp Hide is a separate power) retaliates against a
-    // fully blocked or zero-damage attack. Java AbstractMonster.damage runs
-    // every power's onAttacked after decrementBlock whatever the remaining
-    // amount, and ThornsPower.onAttacked has no damage guard (it checks only
-    // owner != null and type not THORNS/HP_LOSS). The engine only entered
-    // attackedUnblockedHelper, which holds Thorns, when post-block damage
-    // was > 0. Malleable and Reactive share that helper and are left as
-    // they were (open: their Java guards were not re-read for this fix). 0
-    // = the legacy engine skips Thorns on a blocked hit. Other values are
-    // fatal. Read only on a blocked or zero-damage hit against Thorns.
-    bool thornsBlockedHitFix();
-
     // STS_BLOOD_FOR_BLOOD_COPY_COST_FIX: unset/1 (default) = a Blood for Blood
     // generated in combat (Discovery, Infernal Blade, Dead Branch, Nilry's Codex) starts at 4
     // minus the times the player lost HP this combat, as Java's makeCopy does

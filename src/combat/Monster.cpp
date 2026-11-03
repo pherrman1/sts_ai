@@ -520,12 +520,6 @@ void Monster::attacked(BattleContext &bc, int damage) {
 
     if (damage > 0) { // todo can damage be zero???
         attackedUnblockedHelper(bc, damage);
-    } else if (hasStatus<MS::THORNS>() && thornsBlockedHitFix()) {
-        // Java runs every onAttacked hook after decrementBlock whatever the
-        // remaining amount, and ThornsPower.onAttacked has no damage guard,
-        // so a fully blocked hit still takes Thorns damage
-        // (STS_THORNS_BLOCKED_HIT_FIX=0 restores the skipped retaliation).
-        bc.addToTop( Actions::DamagePlayer(getStatus<MS::THORNS>()) );
     }
 }
 

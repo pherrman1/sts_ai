@@ -325,9 +325,7 @@ void Deck::removeAllMatching(GameContext &gc, const std::function<bool(const Car
 //    }
 //    cards.resize(x);
 
-    // Start at the last card: cards[size()] is a stale slot of the fixed
-    // list, and removing it dropped the real last card instead.
-    for (int i = cards.size() - 1; i >= 0; --i) {
+    for (int i = cards.size(); i >= 0; --i) {
         if (p(cards[i])) {
             remove(gc, i);
         }

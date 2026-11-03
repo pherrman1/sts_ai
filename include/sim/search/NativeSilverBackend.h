@@ -4,7 +4,6 @@
 #include <cstdint>
 #include <functional>
 #include <optional>
-#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -16,16 +15,6 @@ namespace sts {
 }
 
 namespace sts::search {
-
-    // Thrown by the native Silver backend when a live fight cannot continue for a game-state reason: a
-    // 1,000-decision stall, a knowledge-tracker inconsistency, a failed search-root conversion or an action that is
-    // invalid on the live state. Configuration and I/O errors (a missing model, an incompatible budget option)
-    // throw a plain std::runtime_error instead, so a caller that turns a combat abort into a recorded loss
-    // (bestbench, ADR-0064 pairing) never turns a misconfigured arm into a run of losses.
-    class CombatStateFailure : public std::runtime_error {
-    public:
-        using std::runtime_error::runtime_error;
-    };
 
     // Combat backend that runs SilverSearcher on the main engine. Installed into
     // g_externalCombatBackend; process-wide, call once before parallel runs.

@@ -473,69 +473,6 @@ int forcedBossRelicSelfTest() {
     return 0;
 }
 
-int runDriverLossAccountingSelfTest(std::uint64_t seed) {
-    const auto check = [](bool ok, const std::string &what) {
-        if (!ok) throw std::runtime_error("run driver loss accounting selftest: " + what);
-    };
-    auto &backend = search::g_externalCombatBackend;
-    const auto saved = backend;
-    struct Restore { std::function<void()> undo; ~Restore() { undo(); } } restore{[&] { backend = saved; }};
-    int fightFloor = -1, encounter = -1;
-    // 1. A battle the backend leaves UNDECIDED (the broken-loop shape of issue 87): exitBattle maps it to a run
-    //    loss, and the row must record that death instead of looking like a healthy non-win.
-    backend = [&](search::ScumSearchAgent2 &, GameContext &gc, BattleContext &bc) {
-        bc.init(gc);
-        fightFloor = gc.floorNum;
-        encounter = static_cast<int>(bc.encounter);
-    };
-    const RunResult undecided = runFullRunOOC(seed, 1, 20, false, true);
-    check(fightFloor >= 1 && encounter >= 0, "undecided exit: the substitute backend never ran a fight");
-    check(!undecided.won, "undecided exit: won");
-    check(undecided.floor == fightFloor, "undecided exit: floor is not the fight's floor");
-    check(undecided.fightsLost == 1, "undecided exit: fightsLost != 1");
-    check(undecided.deathCombat == 1, "undecided exit: deathCombat != 1");
-    check(undecided.deathEncounter == encounter, "undecided exit: deathEncounter is not the fight's encounter");
-    // 2. A backend that throws a game-state failure (stall, knowledge inconsistency, invalid action): CombatAbort
-    //    with the backend's message and the run as it stood, the aborted fight counted as the death with the
-    //    abort sentinel.
-    backend = [&](search::ScumSearchAgent2 &, GameContext &gc, BattleContext &bc) {
-        bc.init(gc);
-        fightFloor = gc.floorNum;
-        throw search::CombatStateFailure("selftest: stall");
-    };
-    bool caught = false;
-    try {
-        (void)runFullRunOOC(seed, 1, 20, false, true);
-    } catch (const CombatAbort &e) {
-        caught = true;
-        const RunResult &r = e.partial;
-        check(std::string(e.what()) == "selftest: stall", "abort: message");
-        check(!r.won && r.floor == fightFloor, "abort: won/floor");
-        check(r.fightsLost == 1 && r.deathCombat == 1, "abort: fightsLost/deathCombat");
-        check(r.deathEncounter == kDeathEncounterCombatAbort, "abort: deathEncounter sentinel");
-        check(r.sec >= 0, "abort: sec");
-    }
-    check(caught, "abort: runFullRunOOC did not throw CombatAbort");
-    // 3. A backend that throws a plain runtime_error (a configuration or I/O error, e.g. a missing model file):
-    //    not a combat abort. It must leave runFullRunOOC unchanged, so the caller reports a seed failure.
-    backend = [&](search::ScumSearchAgent2 &, GameContext &gc, BattleContext &bc) {
-        bc.init(gc);
-        throw std::runtime_error("selftest: cannot open model");
-    };
-    bool plain = false;
-    try {
-        (void)runFullRunOOC(seed, 1, 20, false, true);
-    } catch (const CombatAbort &) {
-        check(false, "config error: converted to CombatAbort");
-    } catch (const std::runtime_error &e) {
-        plain = std::string(e.what()) == "selftest: cannot open model";
-    }
-    check(plain, "config error: runFullRunOOC did not rethrow the plain runtime_error");
-    std::cout << "run driver loss accounting selftest passed (seed " << seed << ", floor " << fightFloor
-              << ", encounter " << encounter << ")\n";
-    return 0;
-}
-
 namespace {
 const char *realOocChainStepBody(GameContext &gc, search::ScumSearchAgent2 &agent, bool restV, bool shopV,
                                  const one_combat::PathHistory &path, std::uint64_t seed, std::uint64_t index,
@@ -818,21 +755,20 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
             // Runic-Dome hooks see the initial hidden intent lifecycle.
             const double combatWall = floorProfile.on() ? one_combat::runProfileWall() : 0;
             const double combatCpu = floorProfile.on() ? one_combat::oocProfileCpu() : 0;
-            try {
+            {
                 one_combat::OocProfileScope combatProfile(one_combat::OocProfileBucket::RealCombat);
                 agent.playoutBattle(gc, bc);
-            } catch (const search::CombatStateFailure &e) {
-                // The backend gave up on this fight for a game-state reason (stall, knowledge inconsistency,
-                // root conversion, invalid action). The run cannot continue; hand the caller the run as it stood
-                // so the seed can be recorded as a loss. Every other exception (configuration, I/O, a planner's
-                // OocSearchUnsupported) propagates unchanged and stays a seed failure.
-                throw CombatAbort(e.what(), RunResult{false, gc.floorNum, gc.act, gc.curHp, gc.maxHp, fightsLost + 1,
-                    std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count(),
-                    fightsTotal + 1, kDeathEncounterCombatAbort});
             }
             if (floorProfile.on()) floorProfile.combat(bc,
                 one_combat::runProfileWall() - combatWall, one_combat::oocProfileCpu() - combatCpu);
             ++fightsTotal;
+            if (bc.outcome == Outcome::PLAYER_LOSS) {
+                ++fightsLost;
+                if (deathCombat < 0) {
+                    deathCombat = fightsTotal;
+                    deathEncounter = (int)bc.encounter;
+                }
+            }
             if (one_combat::e2cCaptureActive())
                 one_combat::beginE2cFight(fightsTotal - 1, gc, bc);
             if (combatPre) {
@@ -848,16 +784,6 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
                 }
                 t_realCombatObserver(*combatPre, bc, rawCaptureCount, record);
             } else one_combat::exitBattleWithE2cRawCapture(bc, gc);
-            // The death is the game's verdict, not the battle's: exitBattle maps a battle left UNDECIDED (the
-            // loop exited without a resolution) to a run loss as well, and that row must not look like a
-            // healthy non-win (issue 87, accounting half).
-            if (bc.outcome == Outcome::PLAYER_LOSS || gc.outcome == GameOutcome::PLAYER_LOSS) {
-                ++fightsLost;
-                if (deathCombat < 0) {
-                    deathCombat = fightsTotal;
-                    deathEncounter = (int)bc.encounter;
-                }
-            }
             if (bossHook) bossHook->after(gc, bc);
             if (traceOoc)
                 oocTraceEmit({{"seed", seed}, {"kind", "battle"}, {"fight", fightsTotal},

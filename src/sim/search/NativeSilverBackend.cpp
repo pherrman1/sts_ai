@@ -514,20 +514,10 @@ namespace sts::search {
             bool active_ = true;
         };
 
-        std::string failMessage(const GameContext &gc, const BattleContext &bc, const std::string &what) {
-            return "native Silver backend: " + what
-                + " seed=" + std::to_string(gc.seed) + " floor=" + std::to_string(bc.floorNum)
-                + " encounter=" + std::to_string(static_cast<int>(bc.encounter));
-        }
-
-        // Configuration error: not a property of the fight, so never recorded as a combat loss.
         [[noreturn]] void fail(const GameContext &gc, const BattleContext &bc, const std::string &what) {
-            throw std::runtime_error(failMessage(gc, bc, what));
-        }
-
-        // The live fight cannot continue (see CombatStateFailure).
-        [[noreturn]] void failState(const GameContext &gc, const BattleContext &bc, const std::string &what) {
-            throw CombatStateFailure(failMessage(gc, bc, what));
+            throw std::runtime_error("native Silver backend: " + what
+                + " seed=" + std::to_string(gc.seed) + " floor=" + std::to_string(bc.floorNum)
+                + " encounter=" + std::to_string(static_cast<int>(bc.encounter)));
         }
 
         void runNativeSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc) {
@@ -725,11 +715,11 @@ namespace sts::search {
             NoProgressFingerprint previous;
             int noProgressRun = 0;
             while (bc.outcome == Outcome::UNDECIDED) {
-                if (++decision > 1000) failState(gc, bc, "stall: exceeded 1000 decisions");
+                if (++decision > 1000) fail(gc, bc, "stall: exceeded 1000 decisions");
                 if (g_onCombatDecision) g_onCombatDecision(bc);
                 knowledge.reconcilePublicDrawPileCardinality(bc);
                 if (knowledge.consistencyFailureCount != 0) {
-                    failState(gc, bc, "knowledge tracker lost consistency");
+                    fail(gc, bc, "knowledge tracker lost consistency");
                 }
 
                 // No-progress loop guard. Observes only the live state, so a
@@ -751,7 +741,7 @@ namespace sts::search {
 
                 BattleContext root;
                 if (const auto error = nativeSilverSearchRoot(bc, knowledge, root); !error.empty()) {
-                    failState(gc, bc, "conversion: " + error);
+                    fail(gc, bc, "conversion: " + error);
                 }
                 std::int64_t inheritedVisits = prepareSearcher(searcher, root, true);
                 configureSearcher(*searcher, false);
@@ -894,7 +884,7 @@ namespace sts::search {
                 const auto action = SilverSearcher::translateAction(
                     searcher->bestAction(), searcher->rootSearchState(), bc);
                 if (!action.isValidAction(bc)) {
-                    failState(gc, bc, "selected action is not valid on the live state");
+                    fail(gc, bc, "selected action is not valid on the live state");
                 }
                 traceUselessAction(gc, bc, decision, *searcher, action, configured, simulations);
                 tracePublicAction(gc, bc, knowledge, decision, *searcher, action,

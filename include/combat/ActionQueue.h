@@ -146,9 +146,6 @@ namespace sts {
         return false;
     }
 
-    // Removes and returns the first action flagged executeAfterCombatVictory,
-    // keeping the rest of the queue in order so the caller can drain every
-    // flagged action. Returns a default Action when none is flagged.
     template<int capacity>
     Action ActionQueue<capacity>::popPostVictoryAction() {
         int cur = front;
@@ -158,23 +155,7 @@ namespace sts {
             }
             if (postVictoryBits[cur]) {
                 Action a = arr[cur];
-                // Shift the later slots down over the removed one.
-                int dst = cur;
-                for (int j = i + 1; j < size; ++j) {
-                    int src = dst + 1;
-                    if (src >= capacity) {
-                        src = 0;
-                    }
-                    arr[dst] = arr[src];
-                    bits[dst] = bits[src];
-                    postVictoryBits[dst] = postVictoryBits[src];
-                    dst = src;
-                }
-                --size;
-                back = front + size;
-                if (back > capacity) {
-                    back -= capacity;
-                }
+                clear();
                 return a;
             }
             ++cur;

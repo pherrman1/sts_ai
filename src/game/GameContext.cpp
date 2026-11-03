@@ -1213,54 +1213,6 @@ static bool callingBellCardRngFix() {
     throw std::runtime_error("STS_CALLING_BELL_CARD_RNG_FIX must be 0 or 1");
 }
 
-// Default-on out-of-combat correctness fixes (2026-11-02 read-only review of
-// this file): unset, empty or 1 = the game's rule, 0 = the legacy simulator
-// rule, other values are fatal. Each is read per use so tests can switch it.
-// The Java rules below were checked with javap against the pinned
-// desktop-1.0.jar (V2.3.4, 2026-11-03; see java-reference-audit.md).
-static bool defaultOnFix(const char *name) {
-    const char *value = std::getenv(name);
-    if (!value || !*value || std::string(value) == "1") return true;
-    if (std::string(value) == "0") return false;
-    throw std::runtime_error(std::string(name) + " must be 0 or 1");
-}
-
-// Matryoshka's counter starts at 2 (Java Matryoshka constructor), so the next
-// two non-boss chests add a relic; legacy left it 0 and never added one.
-static bool matryoshkaCounterFix() { return defaultOnFix("STS_MATRYOSHKA_COUNTER_FIX"); }
-// N'loth's Hungry Face's counter starts at 1 (Java NlothsMask constructor).
-// The next non-boss chest still draws its relic from the pool; afterwards
-// NlothsMask.onChestOpenAfter calls AbstractRoom.removeOneRelicFromRewards,
-// which drops the first relic reward (Matryoshka's, when present) and the
-// sapphire key linked to it. Legacy left the counter at 0.
-static bool nlothsFaceCounterFix() { return defaultOnFix("STS_NLOTHS_FACE_COUNTER_FIX"); }
-// Old Coin grants 300 gold on pickup (Java OldCoin.onEquip gainGold); legacy
-// granted nothing.
-static bool oldCoinGoldFix() { return defaultOnFix("STS_OLD_COIN_GOLD_FIX"); }
-// Vampires keeps the legacy rule: Java Vampires removes cards tagged
-// CardTags.STARTER_STRIKE, which isStarterStrike matches.
-// Golden Idol's 25% applies to non-stolen gold reward items outside a
-// TreasureRoom (Java RewardItem.applyGoldBonus skips TreasureRoom): Tiny House
-// (boss chest room) and the event fights; legacy applied it only to ordinary
-// combat rewards. Chest gold gets no bonus in either mode.
-static bool goldRewardIdolFix() { return defaultOnFix("STS_GOLD_REWARD_IDOL_FIX"); }
-// Out-of-combat Entropic Brew (Java EntropicBrew.use outside COMBAT): with
-// Sozu it draws nothing; otherwise it draws potionSlots unlimited potions
-// (returnRandomPotion(false)) and obtains each into the first empty slot.
-// Legacy also ignored Sozu and put each draw into its own slot index.
-static bool oocEntropicBrewFix() { return defaultOnFix("STS_OOC_ENTROPIC_BREW_FIX"); }
-// Astrolabe upgrades a transformed colorless card too (Java transformCard
-// autoUpgrade); legacy returned it unupgraded.
-static bool astrolabeColorlessUpgradeFix() { return defaultOnFix("STS_ASTROLABE_COLORLESS_UPGRADE_FIX"); }
-
-// Gold reward item amount: Golden Idol adds round(25%) to non-stolen gold.
-static int goldRewardAmount(const GameContext &gc, int goldAmt) {
-    if (goldRewardIdolFix() && gc.hasRelic(RelicId::GOLDEN_IDOL)) {
-        goldAmt += std::round(static_cast<float>(goldAmt) * 0.25f);
-    }
-    return goldAmt;
-}
-
 void GameContext::rollEscapedCombatRewardRng() {
     // Java builds the rewards and only skips the reward screen, so the gold,
     // elite relic (popped from its pool) and potion rolls happen and the
@@ -1351,9 +1303,9 @@ void GameContext::afterBattle() {
             break;
 
         case Room::EVENT:
-            if (curEvent == Event::MYSTERIOUS_SPHERE) {
+            if (curEvent == Event::MYSTERIOUS_SPHERE) { // todo gold from golden idol?
                 Rewards reward;
-                reward.addGold(goldRewardAmount(*this, info.gold));
+                reward.addGold(info.gold);
                 reward.addRelic(info.bossRelics[0]);
                 addPotionRewards(reward);
                 reward.addCardReward(createCardReward(Room::EVENT));
@@ -1595,20 +1547,6 @@ bool GameContext::obtainRelic(RelicId r) {
             break;
         }
 
-        case RelicId::MATRYOSHKA:
-            if (matryoshkaCounterFix()) relicData = 2;
-            break;
-
-        case RelicId::NLOTHS_HUNGRY_FACE:
-            if (nlothsFaceCounterFix()) relicData = 1;
-            break;
-
-        case RelicId::OLD_COIN:
-            // Ectoplasm blocks the gain and Bloody Idol heals on it, as for
-            // any other gold gain.
-            if (oldCoinGoldFix()) obtainGold(300);
-            break;
-
         case RelicId::OMAMORI: {
             relicData = 2;
             break;
@@ -1677,7 +1615,7 @@ bool GameContext::obtainRelic(RelicId r) {
 
             playerIncreaseMaxHp(5);
             Rewards reward;
-            reward.addGold(goldRewardAmount(*this, 50));
+            reward.addGold(50);
             reward.addPotion(getRandomPotion(miscRng, cc));
             reward.addCardReward(createCardReward(curRoom));
             openCombatRewardScreen(reward);
@@ -1781,10 +1719,6 @@ RelicId GameContext::returnNonCampfireRelic(RelicTier tier, bool shopRoom) {
     return relic;
 }
 
-// Java AbstractDungeon.returnRandomScreenlessRelic (recalled, not re-read from
-// bytecode): events and Calling Bell draw with returnRandomRelic until the
-// relic is not a Bottled relic or Whetstone, so the skipped relics leave the
-// pool for the rest of the run, just as here. Reviewed 2026-11-02 and kept.
 RelicId GameContext::returnRandomScreenlessRelic(RelicTier tier, bool shopRoom) {
     RelicId r;
     do {
@@ -1915,11 +1849,7 @@ Card GameContext::getTransformedCard(Random &rng, CardId exclude, bool autoUpgra
     if (color == CardColor::CURSE) {
         return getRandomCurse(rng, exclude);
     } else  if (color == CardColor::COLORLESS) {
-        Card transformed(returnTrulyRandomColorlessCardFromAvailable(rng, exclude));
-        if (autoUpgrade && astrolabeColorlessUpgradeFix() && transformed.canUpgrade()) {
-            transformed.upgrade();
-        }
-        return transformed;
+        return returnTrulyRandomColorlessCardFromAvailable(rng, exclude);
     }
 
     CardId transformCard = returnTrulyRandomCardFromAvailable(rng, exclude);
@@ -2146,29 +2076,17 @@ void GameContext::openTreasureRoomChest() {
     if (info.haveGold) {
         int amount = chestGoldAmounts[static_cast<int>(info.chestSize)];
         amount = std::round(treasureRng.random(amount*0.9f, amount*1.1f));
-        // Java RewardItem.applyGoldBonus gives no Golden Idol bonus in a
-        // TreasureRoom.
         reward.addGold(amount);
     }
 
     auto relic = returnRandomRelic(info.tier, false);
-    bool sapphireKey = !hasKey(Key::SAPPHIRE_KEY);
     if (hasRelic(RelicId::NLOTHS_HUNGRY_FACE) && relics.getRelicValue(RelicId::NLOTHS_HUNGRY_FACE) > 0) {
         --relics.getRelicValueRef(RelicId::NLOTHS_HUNGRY_FACE);
-        if (nlothsFaceCounterFix() && reward.relicCount > 0) {
-            // Java removeOneRelicFromRewards drops the first relic reward,
-            // here Matryoshka's, and keeps the chest relic and its key.
-            reward.removeRelicReward(0);
-            reward.addRelic(relic);
-        } else if (nlothsFaceCounterFix()) {
-            // The chest relic goes, and the sapphire key linked to it too.
-            sapphireKey = false;
-        }
     } else {
         reward.addRelic(relic);
     }
 
-    if (sapphireKey) {
+    if (!hasKey(Key::SAPPHIRE_KEY)) {
         reward.sapphireKey = true;
     }
 
@@ -2457,17 +2375,6 @@ void GameContext::drinkPotion(Potion p) {
             break;
 
         case Potion::ENTROPIC_BREW: {
-            if (oocEntropicBrewFix()) {
-                // Java EntropicBrew.use out of combat: Sozu only flashes;
-                // otherwise one unlimited draw per slot, each obtained into
-                // the first empty slot (dropped when full).
-                if (!hasRelic(RelicId::SOZU)) {
-                    for (int i = 0; i < potionCapacity; ++i) {
-                        obtainPotion(returnRandomPotion(potionRng, cc, false));
-                    }
-                }
-                break;
-            }
             Potion randPotions[5];
             for (int i = 0 ; i < potionCapacity; ++i) {
                 randPotions[i] = returnRandomPotion(potionRng, cc);
@@ -3036,7 +2943,7 @@ void GameContext::chooseEventOption(int idx) {
                         }
                         gc.relicsOnCombatEnd();
                         Rewards reward;
-                        reward.addGold(goldRewardAmount(gc, goldAmt));
+                        reward.addGold(goldAmt);
                         if (addRelic) {
                             reward.addRelic(combatRewardRelic);
                         }
@@ -3430,7 +3337,7 @@ void GameContext::chooseEventOption(int idx) {
                     }
                     gc.relicsOnCombatEnd();
                     Rewards reward;
-                    reward.addGold(goldRewardAmount(gc, goldAmt));
+                    reward.addGold(goldAmt);
                     reward.addRelic(gc.hasRelic(RelicId::RED_MASK)?RelicId::CIRCLET:RelicId::RED_MASK);
                     gc.addPotionRewards(reward);
                     reward.addCardReward(gc.createCardReward(Room::EVENT));
@@ -3464,7 +3371,7 @@ void GameContext::chooseEventOption(int idx) {
                     regainControlAction = [=](GameContext &gc) {
                         gc.relicsOnCombatEnd();
                         Rewards reward;
-                        reward.addGold(goldRewardAmount(gc, goldAmt));
+                        reward.addGold(goldAmt);
                         reward.addRelic(rareRelic);
                         gc.addPotionRewards(reward);
                         reward.addCardReward(gc.createCardReward(Room::EVENT));
@@ -3516,7 +3423,7 @@ void GameContext::chooseEventOption(int idx) {
                     }
                     gc.relicsOnCombatEnd();
                     Rewards reward;
-                    reward.addGold(goldRewardAmount(gc, goldAmt));
+                    reward.addGold(goldAmt);
                     reward.addRelic(RelicId::ODD_MUSHROOM);
                     gc.addPotionRewards(reward);
                     reward.addCardReward(gc.createCardReward(Room::EVENT));
