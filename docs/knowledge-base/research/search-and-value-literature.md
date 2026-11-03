@@ -1,7 +1,9 @@
 # Search and learned value for Heart kills
 
 Last verified: 2026-11-01 against main 6c96c25 (ledger through §728). Literature review and read-only code/record
-checks; no gameplay seeds were run.
+checks; no gameplay seeds were run. 2026-11-02 follow-up: the sources the first round left unread (coverage bullet 1)
+were read in one pass by one agent (no 3-vote check); its Verified means the primary text was read, Extracted means a
+summariser pass or abstract.
 
 ## Purpose / research question
 
@@ -60,6 +62,8 @@ are read-only checks at 6c96c25.
 - Drop: Stochastic MuZero-style learned dynamics (it only matched AlphaZero with a perfect simulator at equal
   simulations; Verified), distributional value heads for a Bernoulli objective, ReBeL / Student-of-Games machinery,
   ISMCTS as a fix for a clairvoyance Silver does not have, and further root-allocation schemes (§635, §693, §712).
+  Student of Games trails AlphaZero by 172 Elo in chess and ≈1,170 in Go at equal search, and its authors expect MCTS
+  to be the more efficient choice without hidden information (Extracted, 2026-11-02).
 
 ## Ranked ideas
 
@@ -71,7 +75,7 @@ pessimism, 3 = Heart/boss losses, 4 = signal and gate power.
 
 | Rank | Idea | Prob. | Evidence (label) | Expected Heart-kill gain | Compute | Cheapest falsifying experiment and decision rule | Overlap with existing work |
 |---|---|---|---|---|---|---|---|
-| 1 | Sequential gates: gainer SPRT [0, +2 pp] and non-regression SPRT [−1.5, 0 pp], α = β = 0.05, hard cap = inconclusive | 4 | Simulated ASN 52-54% of fixed n at H0 and H1 (Inference (simulation)); chess pentanomial pairs need 1,809 vs 2,191 games (Verified) | 0 pp direct; ≈45-50k core-h/yr saved (≈5% of budget) | ~0 (minutes of CPU) | Replay the stopping rule in pre-registered seed order on §661, §676, §683, §691, §693, §724, §727 (§724: cluster its 4 replicates per state; §683: one pairwise contrast per arm vs control). Drop if the verdict flips in > 1 of 7 or the ASN saving is < 25% | X4 sizes fixed gates; benchmark-protocol open question on alpha spending. New: early stopping with futility. Adopted §742 (2026-11-01): 0/7 flips, 39% saved; ADR-0064 |
+| 1 | Sequential gates: gainer SPRT [0, +2 pp] and non-regression SPRT [−1.5, 0 pp], α = β = 0.05, hard cap = inconclusive | 4 | Simulated ASN 52-54% of fixed n at H0 and H1 (Inference (simulation)); chess pentanomial pairs need 1,809 vs 2,191 games (Verified) | 0 pp direct; ≈45-50k core-h/yr saved (≈5% of budget) | ~0 (minutes of CPU) | Replay the stopping rule in pre-registered seed order on §661, §676, §683, §691, §693, §724, §727 (§724: cluster its 4 replicates per state; §683: one pairwise contrast per arm vs control). Drop if the verdict flips in > 1 of 7 or the ASN saving is < 25% | X4 sizes fixed gates; benchmark-protocol open question on alpha spending. New: early stopping with futility. Adopted §742 (2026-11-01): 0/7 flips, 39% saved; ADR-0064. Fishtest's non-regression bounds put H1 at +0.25 Elo, not 0, so an exactly neutral change terminates (Extracted); zero-seed replay of §742's seven verdicts under [−1.5, +0.25] pp pending |
 | 2 | Control-arm reuse: play the default once on a frozen, bit-reproducible seed bank; keep a held-out confirmation bank | 4 | 16-candidate simulation: adopted gain 3.71 → 5.89 pp at equal core-h (Inference (simulation)); cost per pair 0.459 → 0.23 core-h | 0 pp direct; +50-60% expected adopted gain | ~15 core-h smoke | Re-run 32 recorded control seeds of the current default. Any non-identical record → no reuse until determinism is fixed | Roadmap phase 2 (frozen 7,000-pair bank). New: reusing arm A; holdout rotation. Adopted §742 (2026-11-01) with a 32-seed sentinel: §727 control replays 32/32 identical; ADR-0064 |
 | 3 | Re-cut §709's raw combat rows by imagined-fight index × act; estimate the CTM-vs-Silver outcome correlation ρ from its paired arms | 2 | Diagnostic re-cut: pooled boss/Act-4 fights at index ≥ 10 forecast 18.2% vs observed 10.2% (n = 147), index 3-9 21.1% vs 23.3% (n = 60), but depth is confounded with act (acts 2-3 over-forecast at both depths) (repo; low confidence); MBPO error linear in k (Extracted) | 0 pp direct; gates all CTM repair (rank 13) | 0 core-h (existing share archive) | Boss over-prediction ≥ 2× already at index 0-1 → depth compounding falsified (look for covariate or teacher shift). No trend over indices 0-3 → the long-rollout claim rests on the 8-root diagnostic alone. ρ < 0.5 → PPI/MFMC only as debiasers | §709, §663. Done: §734 (no trend; ρ 0.10) |
 | 4 | Price unpriced run state in Silver's fight-end score: counter relics (Pen Nib, Nunchaku, Sundial, Ink Bottle, Happy Flower), Ritual Dagger, Lesson Learned, curses and cards added | 3 (1) | §724 +5.9 pp [+4.1, +7.8] per Incense-holding S&S entry (≈13% of Heart entries, ≈ +0.3 pp per run) from one such term; §723 phase effect +12.0 pp; terminal value should be the outer value at sub-game exit (POLO, ReBeL; Recall) | Σ prevalence × per-state effect: ≈ +0.1-0.5 pp per item that passes (Incense ≈ +0.3), 0 to ~+1.5 pp in total | Prevalence count 0; per item a §723-style probe, ~70 core-h at research budget, ~300-400 at production budget | Count each item in Heart-reaching runs; drop items < 2%. Per item, a forced-state probe on the next fight; drop if its CI includes 0 or the term changes < 1% of root picks. Survivors get a §724-style gate | Roadmap phase 4 waits for a PPO value head; §724's production check is pending. New: hand-priced terms that need no value head |
@@ -79,7 +83,7 @@ pessimism, 3 = Heart/boss losses, 4 = signal and gate power.
 | 6 | Map-root value-of-computation audit, then a non-regression SPRT of 1,024 vs 4,096 map sims | 4 (3) | Expected computations ≤ VPI/c; VOI root 64% vs UCT in 9×9 Go (Verified); learned model at 625 sims −4.7 pp (Verified); §710: departures at 2-8% of roots, not better in play | 0 pp; map search is ≈80% of game CPU, so a 2-3× cut makes gates ~1.5-2× cheaper | 0 for the audit (decision rows log prior, visits, q and checkpoints); ~470 core-h SPRT | Tabulate sims spent and decision changes by prior-top bin. If roots with prior ≥ 0.98 change > ~3% of decisions or use little CPU, drop. Else SPRT [−1.5, 0] | ADR-0053 learned stop. New |
 | 7 | Keyed run-level RNG (card, relic, event, potion streams keyed by seed × floor × room) as an evaluation-only mode | 4 | Run-level streams advance sequentially; combat streams reseed per floor (code read); §685 whole-game sibling ρ 0.49 (§684's 0.68 is a fight-level Heart CRN correlation, not comparable); keyed rollout streams alone 0.638× (§703: WEAK) | 0 pp; 1.2-1.7× effective seeds if post-divergence ρ reaches 0.65-0.70 (an untested target) | 0 for the check; engineering | In §685's 8,510 first-divergence pairs, compare outcome ρ for pairs whose next offers coincide vs not. Drop if the gap is < 0.1. **Checked §738: gap 0.089 [0.018, 0.162], −0.004 at map roots, ≤ 1.07× effective seeds → DROPPED** | None; whole-game analogue of §703 |
 | 8 | Optimizer's-curse shrinkage: any value-led override uses α·ΔV with α = out-of-sample slope per screen | 1, 4 | Disappointment 0.85 SD with 3 equal options; posterior-mean remedy (Verified); §715 slope 0.16-0.18; §727 −15.0 pp | 0 pp (protective; required before V decides anything) | 0 | On §727 choice logs: if overrides with α·ΔV > 1 pp still lose as much per choice as the rest, the head's sign is wrong, not its scale | External idea 9 (§689/§693). New: empirical-Bayes α. Checked 2026-11-01 (ledger, value chooser shrinkage): only 7.8% of §727 overrides survive α 0.17 / 1 pp; sign at large gaps INCONCLUSIVE (surviving minus rest −4.6 pp [−20.2, +11.1]) |
-| 9 | Silver chance nodes in Heart and boss trees: replace visit-proportional re-picking at the cap by the quasi-random rule argmax P(c)/(N(c)+1); merge outcomes by public equivalence (card copies) | 3 | §706: 91% re-picks, ~40 effective of ~240 outcomes; Hearthstone draw bucketing 60.1% → 72.3% (Verified); Stochastic MuZero rule (Verified; effect not isolated) | 0 to +2 pp | ~140 core-h (128 Heart states × 8 × 2 arms at ~4 min) plus §718 boss states | Equal sims, CRN, §681/§682 Heart and §718 boss states. Drop if median tree rounds do not rise, or if boss HP lost is not ≥ 1 lower and ΔHeart ≤ 0 | §706 candidate; roadmap phase 5. §518 (per-category widening) already null |
+| 9 | Silver chance nodes in Heart and boss trees: replace visit-proportional re-picking at the cap by the quasi-random rule argmax P(c)/(N(c)+1); merge outcomes by public equivalence (card copies) | 3 | §706: 91% re-picks, ~40 effective of ~240 outcomes; Hearthstone draw bucketing 60.1% → 72.3% (Verified); Stochastic MuZero rule (Verified; effect not isolated); published re-pick rules at the cap are least-visited child (Auger et al. 2013, with a consistency proof; Verified) and renormalised outcome probability (Lanctot et al. 2013; Verified), and Silver's visit-proportional rule is neither; in Pig, widening lost to full enumeration at 6 outcomes (variance 0.71 → 5.3, regret 0.41 → 0.96; Verified) | 0 to +2 pp | ~140 core-h (128 Heart states × 8 × 2 arms at ~4 min) plus §718 boss states | Zero-seed first: replay §706's logged visit sequences under each published rule and count effective outcomes; drop the rule arm if neither raises them from ~40 to ≥ 100 of ~240 at equal visits, and enumerate small public-equivalent outcome sets instead of sampling them. Then equal sims, CRN, §681/§682 Heart and §718 boss states. Drop if median tree rounds do not rise, or if boss HP lost is not ≥ 1 lower and ΔHeart ≤ 0 | §706 candidate; roadmap phase 5. §518 (per-category widening) already null |
 | 10 | Boss and Heart playout balance: measure playout bias against a reference, then NN-free PPA/MAST-lite adaptation | 3 | Balanced playout 1367 vs strong RL playout 1159 Elo inside search (Verified); MoGo playout 48.6% vs RLGO 9.4% (Verified); PPA 31 W / 1 T / 8 L (Verified); §681 +4.5 HP | 0 to +2 pp | ≤ 10 core-h with stored references; ~100-150 core-h of fight replays | Offline: does balance MSE order greedy vs prior as the §541/§681 HP results do? If not, drop the metric. Replays: drop if HP lost is not ≥ 1 below greedy, or if it loses to prior playouts at equal CPU | Roadmap phase 5. New: balance objective, online adaptation |
 | 11 | heart1 vs student_sel as the OOC policy on cheap combat (distillation gap) | 1 | NetHack BC 7,784 vs teacher 17,274 with ~55B samples (Verified); student agrees with heart1 on 61-73% of key/Act-4 states | 0 to +2 pp if the gap is real | ~8-140 core-h (1,024 pairs at 14-240 core-s per game) | Only after X1 is VALID. If the CI excludes heart1 > student by ≥ 2 pp, distillation is not a lever; otherwise distil more before search work | X1, X2 |
 | 12 | Heart root-parallel ensemble 4 × 10k (vote) vs 1 × 40k | 3 | Ensemble determinization +9.6 to +13.2 points at 250k sims (Verified); one deep tree beat 40 shallow ones at small budgets (Cowling; Verified) | 0 to +1 pp (plus 4× wall-clock parallelism) | ~140 core-h | §681 Heart states with CRN: drop if ΔHeart ≤ 0 | ADR-0060 budget |
@@ -95,7 +99,10 @@ pessimism, 3 = Heart/boss losses, 4 = signal and gate power.
 
 The AlphaZero family offers better targets, not a shortcut around data. Search-derived value targets (root value
 "soft-Z", greedy child, greedy leaf) learned faster and ended stronger than the outcome z on Connect-Four and
-Breakthrough; numbers are figure-only ([Willemsen et al.](https://ir.cwi.nl/pub/30870/30870.pdf); Verified). KataGo gets
+Breakthrough; numbers are figure-only ([Willemsen et al.](https://ir.cwi.nl/pub/30870/30870.pdf); Verified). MuZero
+Reanalyse found 5-step TD toward observed rewards better than regressing to search values at 20M Atari frames (126.6%
+vs 115.3% median) and the reverse on small DM Control sets, with linear score gains needing exponentially more data
+([arXiv 2104.06294](https://arxiv.org/abs/2104.06294); Extracted), consistent with §736. KataGo gets
 only a "slight" gain from short-horizon heads; its larger gains come inside the search: uncertainty-weighted playouts
 with variance-scaled cPUCT (≈ +75 Elo) and subtree bias correction (+30 to +60 Elo) ([KataGo
 methods](https://github.com/lightvector/KataGo/blob/master/docs/KataGoMethods.md); Verified). All of this runs on
@@ -143,10 +150,22 @@ For the roadmap's PPO loop (X2, X3) the lessons concern the loop. Critic-weighte
 battles ([Metamon](https://arxiv.org/html/2504.04395v2); Verified), supporting rank 17 before asynchronous PPO. OpenAI
 Five kept staleness at 0-1 versions and sample reuse at ~1; reuse 2-3 halved speed ([Berner et
 al.](https://arxiv.org/pdf/1912.06680); Verified); per-decision KL and clip fraction between X2 checkpoints at lags 1-8
-test this at zero seeds. Potential-based shaping equals initialising Q with the potential
-([Wiewiora](https://arxiv.org/pdf/1106.5267); Verified), i.e. a critic offset for PPO with γ = 1 (Inference), so
-act-value shaping cannot fix credit assignment by itself. On [Craftax](https://arxiv.org/html/2402.16801v1), 10× more
-PPO steps "barely" helped past saturation (Verified; the authors note learning-rate decay may explain it).
+test this at zero seeds. Potential-based shaping leaves every policy's value shifted by −Φ ([Ng, Harada,
+Russell 1999](https://people.eecs.berkeley.edu/~russell/papers/icml99-shaping.pdf), Corollary 2 and Remark 1;
+Verified) and equals initialising Q with the potential ([Wiewiora](https://arxiv.org/pdf/1106.5267); Verified), i.e. a
+critic offset for PPO with γ = 1 (Inference), so act-value shaping cannot fix credit assignment by itself. With γ = 1
+the potential must be 0 at terminal states or the shaped optimum moves (Ng et al.; Verified); `ppo_train.py` sets the
+terminal potential to 0 (code read). The plan's V3 reward (1{Heart} + PBRS with Φ = M0) is therefore the unshaped
+objective with the critic started at M0, so its only possible gain is baseline variance, and the original heart1
+floor and key terms are non-potential shaping that can trade Heart kills for floor progress (Inference). On
+[Craftax](https://arxiv.org/html/2402.16801v1), 10× more PPO steps "barely" helped past saturation (Verified; the
+authors note learning-rate decay may explain it). A shaped two-policy PPO on Balatro from scratch reached ante 3 of 8
+at 2×10^7 steps with no full run and no reward ablation, the authors blaming horizon rather than tactics ([arXiv
+2610.39049](https://arxiv.org/abs/2610.39049); Extracted). On-policy data, not the KL term, is what limits forgetting
+in LLM RL fine-tuning ([arXiv 2510.18874](https://arxiv.org/abs/2510.18874); Extracted), and a KL measured on the
+current batch does not stop drift on earlier distributions ([arXiv 2607.04364](https://arxiv.org/abs/2607.04364);
+Extracted), so the anchor's remaining job here is the early dip, and drift should be measured as KL to heart1 on a
+fixed held-out set of acts 1-3 states (Inference).
 
 ## Problem 2: CTM pessimism probably compounds with depth, so it binds mainly long-rollout consumers
 
@@ -212,7 +231,11 @@ disambiguation ≈0.6 and lose only ≈0.1 points per game to equilibrium ([Long
 al.](https://cdn.aaai.org/ojs/7562/7562-13-11092-1-2-20201228.pdf); Verified). StS draws fit that favourable regime
 (Inference), which matches S3's particle ISMCTS adding nothing (§115) and belief plus chain switched on together costing −11.3 pp (§124).
 ReBeL and Student of Games exist because an opponent conditions on private information; here the draw-order belief is
-computable from public pile contents (Inference). BetaZero's small lesson: give the value belief-spread features, as
+computable from public pile contents (Inference). POMCP's belief machinery pays when observations disambiguate hidden
+state over many steps, which has no target here; its Battleship result, where the tree "only provided a small benefit
+over the PO-rollout algorithm, due to small differences between the value of actions, but high variance in the
+returns" ([Silver & Veness 2010](https://Www.Gwern.net/doc/reinforcement-learning/model/2010-silver.pdf); Verified),
+is the regime §707/§709 measure at map roots (Inference). BetaZero's small lesson: give the value belief-spread features, as
 mean-only inputs were "inadequate" ([Moss et al.](https://arxiv.org/pdf/2306.00249); Verified).
 
 The tree's real weaknesses are in chance sampling. At the first End Turn on the principal line there are 50-250
@@ -278,7 +301,10 @@ adopted effects from 3.71 to 5.89 pp at equal core-h, more than any screening sc
 **Sequential tests** follow Fishtest practice: SPRT on game pairs with bounds in normalised Elo, pentanomial pair
 scoring (1,809 vs 2,191 games in one comparison), and a short-control run before a long-control run ([Fishtest
 mathematics](https://github.com/official-stockfish/fishtest/wiki/Fishtest-mathematics);
-[vdbergh/pentanomial](https://github.com/vdbergh/pentanomial); Verified). On D, a simulated [0, +2 pp] SPRT stopped
+[vdbergh/pentanomial](https://github.com/vdbergh/pentanomial); Verified). Fishtest runs the long-control test as a
+separate pass after a passed short-control test and never pools the two, and its non-regression H1 is +0.25 Elo, not
+0 ([Fishtest FAQ](https://github.com/official-stockfish/fishtest/wiki/Fishtest-faq); Extracted); the X1 cheap proxy
+followed by a production gate is the same two-stage structure (Inference). On D, a simulated [0, +2 pp] SPRT stopped
 after 2,815-2,929 pairs at the null and at the design effect, against 5,412 for the equivalent fixed test (Inference
 (simulation)). A 4-look O'Brien-Fleming design costs ≤ 2.2% extra at the cap and ≈77% of fixed n under the alternative
 ([SAS](https://support.sas.com/documentation/cdl/en/statug/63347/HTML/default/statug_seqdesign_sect004.htm); Extracted).
@@ -364,7 +390,10 @@ rank 18's variants are cheap offline checks with small stakes.
    chance edge samples a fresh particle on every visit up to 256 visits, unless outcomes merge by key (Inference). Two
    source notes reasoned from 2 and 0.5 and reached opposite readings ("too stingy" vs "wide by published standards");
    at production values the widening is wider still against tuned DPW practice (k_o 2-8, α_o 1/100-1/10;
-   [POMCPOW](https://arxiv.org/pdf/1709.06196); Verified). §518 concerns Silver, not the OOC planner.
+   [POMCPOW](https://arxiv.org/pdf/1709.06196); Verified). Published chance-node α are tuned at 0.1-0.3 with C 2-25
+   on four dice and tile games ([Lanctot et al. 2013](https://arxiv.org/pdf/1304.6057); Verified), and consistency
+   needs α ≤ 0.25 at every random layer but the last ([Auger et al. 2013](https://gwern.net/doc/reinforcement-learning/model/2013-auger.pdf);
+   Verified). §518 concerns Silver, not the OOC planner.
 3. **Silver has no general draw-order leak and is not PIMC.** The single exception is a shuffle-in into a pile with no
    known top (Wild Strike, Reckless Charge, the Chosen's Hex Dazed, monster status insertions). There Silver samples an
    unknown card into a known top, a one-card leak until that card is drawn (`CardPile.h`, branch at line 131). ISMCTS or
@@ -393,13 +422,21 @@ rank 18's variants are cheap offline checks with small stakes.
 
 ## Known limitations / coverage gaps
 
-- Web fetches were rate-limited (100 per hour, shared). Unread or abstract-only: the Balatro RL preprint (arXiv
-  2610.39049, the closest new deckbuilder RL result; read it first in any follow-up), Student of Games full text, the
-  CATS/PATS paper, Couëtoux et al. 2011 full text, Ng et al. 1999 original, MuZero Reanalyse and Unplugged, the
-  OpenBench wiki, Fishtest's resource tables, POMCP 2010, AutoAscend internals and the AgenticSTS paper. Hamrick et al.
-  was verified in one note and not re-fetched in the follow-up.
-- No published StS agent beats this bot under fair information (the best LLM agent: 4/15 A20 Ironclad Heart kills,
-  [Epoch](https://epoch.ai/publications/ai-systems-are-improving-rapidly-at-slay-the-spire-and-its-sequel); Verified).
+- Still unread after the 2026-11-02 follow-up: Couëtoux et al. 2011 (HAL blocks automated fetches; its rule and
+  consistency constants are taken from Auger et al. 2013), Fishtest's resource-estimation tables (linked out of the
+  wiki), Choe & Kim 2019 (Hearthstone DPW; server error), the score tables of the NetHack Challenge report (only the
+  AutoAscend section was read), and the appendices of Student of Games, AgenticSTS and SpireBench. No paper named
+  CATS/PATS was found in three searches; the first round's reference is dropped. Hamrick et al. was verified in one
+  note and not re-fetched. The follow-up's full-text reads of Balatro, Student of Games, MuZero Unplugged, AgenticSTS,
+  SpireBench and the OpenBench/Fishtest wikis went through a summariser and are labelled Extracted.
+- No published StS agent beats this bot under fair information. Under the real game at A20 Ironclad on 10 held-out
+  seeds, the best of 20 LLMs clears 1.6 acts on average and only one model kills the Heart once (1/10;
+  [SpireBench](https://arxiv.org/abs/2610.12596); Extracted); Epoch's earlier figure is 4/15
+  ([Epoch](https://epoch.ai/publications/ai-systems-are-improving-rapidly-at-slay-the-spire-and-its-sequel); Verified).
+  SpireBench's Mega Crit telemetry gives a population baseline: 206,082 A20 Ironclad runs, 0.73 mean acts, about 4%
+  Heart kills; four expert streamers 2.5-3.1 acts with Act-4 win 46-65% (not seed-matched; whether "Act-4 win" is per
+  run or per arrival is unresolved; Extracted). [AgenticSTS](https://arxiv.org/abs/2607.02255) plays StS 2 at A0-A10
+  with 10 games per cell and no search or RL (Extracted).
   No StS, Hearthstone or MTG system reports fair-information boss or Heart search metrics, uses a learned combat-outcome
   model inside a deck-building planner under planner shift, or studies ascension curricula. All mappings to this bot are
   Inference.
@@ -455,5 +492,16 @@ rank 18's variants are cheap offline checks with small stakes.
   https://ar5iv.labs.arxiv.org/html/2307.09423; Craftax https://arxiv.org/html/2402.16801v1; OpenAI Five
   https://arxiv.org/pdf/1912.06680; Epoch SpireClimb
   https://epoch.ai/publications/ai-systems-are-improving-rapidly-at-slay-the-spire-and-its-sequel
+- 2026-11-02 follow-up: Balatro RL https://arxiv.org/abs/2610.39049; Ng, Harada, Russell 1999
+  https://people.eecs.berkeley.edu/~russell/papers/icml99-shaping.pdf; MuZero Unplugged/Reanalyse
+  https://arxiv.org/abs/2104.06294; POMCP https://Www.Gwern.net/doc/reinforcement-learning/model/2010-silver.pdf;
+  Auger, Couëtoux, Teytaud 2013 https://gwern.net/doc/reinforcement-learning/model/2013-auger.pdf; Lanctot et al. 2013
+  https://arxiv.org/pdf/1304.6057; OpenBench wiki
+  https://github.com/AndyGrant/OpenBench/wiki/SPRT-and-Fixed%E2%80%90Game-Workloads; Fishtest FAQ
+  https://github.com/official-stockfish/fishtest/wiki/Fishtest-faq; NetHack Challenge report (AutoAscend §4.2.1)
+  https://proceedings.mlr.press/v176/hambro22a/hambro22a.pdf; AgenticSTS https://arxiv.org/abs/2607.02255; SpireBench
+  https://arxiv.org/abs/2610.12596; Retaining by Doing https://arxiv.org/abs/2510.18874; RL Forgets
+  https://arxiv.org/abs/2607.04364; Relative Value Learning https://arxiv.org/abs/2607.21120; value flattening (SP3O)
+  https://arxiv.org/abs/2609.18708. The agent's full notes are in the PR that added this paragraph, not on the share.
 - Source notes (not in the repository): `/mnt/project-files/deep-research-20261031/notes/` on the project share, eight
   files, one per strand plus `repo_fact_checks.md` (all code facts). The share is not durable; this page is the record.
