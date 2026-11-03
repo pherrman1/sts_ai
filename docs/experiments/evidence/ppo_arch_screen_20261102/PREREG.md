@@ -204,6 +204,14 @@ same seeds.
   Offering, Warcry, Dark Embrace, Evolve, Brutality; colorless Master of Strategy, Finesse, Flash of Steel, Deep
   Breath, Impatience, Thinking Ahead); the upgraded share and mean cost are integers (percent, cost x100, rounded
   half up).
+- 2026-11-03 (before launch), P3: `analyze.py` (primary, cost ratio from `loop.json` `actor_s`, critic secondary),
+  `make_arms.sh` (the init commands), `learner_check.py` (the learner check, via the serve code path) and `README.md`
+  (launch order). `arms.txt` columns reordered to `ppo_cloud_worker.sh`'s layout (name games iterations warmup parts;
+  the fork point moves to the init column as `BASE@0030`; content unchanged). The worker script reads an optional
+  per-arm `binary_sha256:ARM` manifest key, so IN_DECK's actors get the P1 binary and the others 71cfd280. The
+  critic secondary scores `state.pt` with the new `ppo_train.py score` (gates.py reads its "value" lines). The cost
+  measurement command is `one_combat heart1logitscheck` (logits only, the actor's forward), not `heart1score`.
+  The arms use their own store prefix `ppo-xfer/arch`.
 
 **Knowledge impact.** `a20-ppo-plan.md` "Training recipe" row "net size, start" points here; results go to the
 ledger as one entry and to the plan page; an ADR only after S1 and G1.

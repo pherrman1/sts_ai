@@ -391,6 +391,53 @@ class Heart1PpoTest(unittest.TestCase):
             restored.load_state_dict(arm.state_dict())
             self.assertTrue(torch.equal(restored(batch)[0], arm(batch)[0]))
 
+    def test_score_state_reads_the_critic(self):
+        """ppo_train.py score: the checkpoint's critic value per record (critic secondary of the arch screen), in
+        input order; with a separate critic it is critic_net's value, not the policy trunk's."""
+        import gzip
+        import json
+        import subprocess
+        import ppo_model
+        import ppo_train
+        here = os.path.dirname(os.path.abspath(__file__))
+        traj = os.path.join(here, "..", "docs", "experiments", "evidence", "ppo_s0_smoke_20261101", "cov8.jsonl.gz")
+        rows = {k: 4096 for k in ppo_model.TABLES}
+        rows["fixed_action"] = ppo_model.FA_COUNT
+        torch.manual_seed(2)
+        plain = ppo_model.PolicyNet(16, 2, 32, 2, rows, False)
+        with torch.no_grad():
+            for p in plain.parameters():
+                p.copy_(0.3 * torch.randn_like(p))
+        net = ppo_model.construct(plain, critic="separate", aux=("floor",))
+        with torch.no_grad():
+            for p in net.critic_net.parameters():
+                p.add_(0.2 * torch.randn_like(p))
+        recs = []
+        with gzip.open(traj, "rt") as f:
+            for line in f:
+                recs.append(json.loads(line)["record"])
+                if len(recs) == 37:
+                    break
+        with torch.no_grad():
+            want = net(ppo_model.collate([ppo_model.featurize(r, False) for r in recs]))[1].tolist()
+            policy_v = plain(ppo_model.collate([ppo_model.featurize(r, False) for r in recs]))[1].tolist()
+        self.assertNotEqual(want, policy_v)
+        with tempfile.TemporaryDirectory() as d:
+            st = os.path.join(d, "state.pt")
+            torch.save({"shape": ppo_train.shape_of(net), "net": net.state_dict(), "iteration": 7}, st)
+            rj = os.path.join(d, "r.jsonl")
+            with open(rj, "w") as f:
+                for i, r in enumerate(recs):   # both line forms
+                    f.write(json.dumps({"record": r} if i % 2 else r) + "\n")
+            out = os.path.join(d, "v.jsonl")
+            subprocess.run([sys.executable, os.path.join(here, "..", "tools", "heart1", "ppo_train.py"), "score",
+                            st, rj, out, "--batch", "8"], check=True, capture_output=True)
+            with open(out) as f:
+                got = [json.loads(l)["value"] for l in f]
+        self.assertEqual(len(got), len(recs))
+        for a, b in zip(got, want):
+            self.assertAlmostEqual(a, b, places=5)
+
     def test_value_sparse_mask(self):
         import ppo_train
         games = [{"seed": "5", "steps": [{"act": a} for a in (1, 1, 1, 2, 2, 2, 2, 3, 3, 3)]},

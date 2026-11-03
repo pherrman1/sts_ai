@@ -1,13 +1,16 @@
 # Design B (PREREG.md "Binding under B"). Every arm starts from screen 2's BASE state-0030.pt (net-0030 + Adam,
-# iteration 30) with its construction applied by `ppo_cloud.py init --fork-dir ... --fork-at 30 -- <flags>` (P2).
-# Iterations 30-59, warm-up 0, screen 2's layout (4 parts x 128, seed base 111470000). Iteration 30's games are BASE's
-# (copied parts/), so the arms' own games are iterations 31-59. Controls: screen 2's BASE and BASE_S1 (not run here).
-# Learner hyperparameters = screen 2 BASE's (ppo_train.py defaults at screen 2's learner commit) plus the arm flags,
-# which are the prerequisite PRs' names; semantics are fixed by PREREG.md. binary: screen2 = sha256 71cfd280..., P1 =
-# the P1 diff built on defaa930 (the commit that produced 71cfd280), sha256 in screen.manifest.
-# name       games start end  warmup parts init               binary   learner flags
-IN_DECK      512   30    60   0      4     screen2:BASE@0030  P1       --seed 0 --inputs x3_deck
-DEPTH6       512   30    60   0      4     screen2:BASE@0030  screen2  --seed 0 --extra-blocks 2
-CRITIC_SEP   512   30    60   0      4     screen2:BASE@0030  screen2  --seed 0 --critic separate
-AUX          512   30    60   0      4     screen2:BASE@0030  screen2  --seed 0 --aux-heads floor,act4 --aux-weight 0.1
-VAL_SPARSE   512   30    60   0      4     screen2:BASE@0030  screen2  --seed 0 --value-sparse 3
+# iteration 30) with its construction applied by `ppo_cloud.py init --fork-dir ... --fork-at 30 -- <flags>` (P2;
+# make_arms.sh). Iterations 30-59 of 60, warm-up 0, screen 2's layout (4 parts x 128, seed base 111470000).
+# Iteration 30's games are BASE's (copied parts/), so the arms' own games are iterations 31-59. Controls: screen 2's
+# BASE and BASE_S1 (not run here). Learner hyperparameters = screen 2 BASE's (ppo_train.py defaults at screen 2's
+# learner commit) plus the arm flags, which are the prerequisite PRs' names; semantics are fixed by PREREG.md.
+# binary: screen2 = sha256 71cfd280..., P1 = the P1 diff built on defaa930 (the commit that produced 71cfd280),
+# sha256 in screen.manifest (key binary_sha256:IN_DECK).
+# Columns 1-5 are the ppo_cloud_worker.sh layout (name games iterations warmup parts; workers take the parts in file
+# order, W=1..20). init = SOURCE_ARM@FORK_UPDATE in screen 2's serve directory.
+# name       games iters warmup parts init         binary   learner flags
+IN_DECK      512   60    0      4     BASE@0030    P1       --seed 0 --inputs x3_deck
+DEPTH6       512   60    0      4     BASE@0030    screen2  --seed 0 --extra-blocks 2
+CRITIC_SEP   512   60    0      4     BASE@0030    screen2  --seed 0 --critic separate
+AUX          512   60    0      4     BASE@0030    screen2  --seed 0 --aux-heads floor,act4 --aux-weight 0.1
+VAL_SPARSE   512   60    0      4     BASE@0030    screen2  --seed 0 --value-sparse 3

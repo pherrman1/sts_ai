@@ -817,8 +817,51 @@ def cmd_selftest(argv):
     print("ppo_train selftest passed")
 
 
+def cmd_score(argv):
+    """score STATE.pt records.jsonl out.jsonl: the learner checkpoint's critic value per record ({"value": v}).
+
+    The arch screen's critic secondary (PREREG ppo_arch_screen_20261102) reads the critic from state.pt, because a
+    separate critic and the aux heads are not exported to the native .bin. The output has heart1score's "value"
+    field, one line per record in input order, so the §747 teacher check (heart1_value_leaf_teacher_20261102
+    gates.py) reads it unchanged. Records are JSON objects, or {"record": ...} lines."""
+    ap = argparse.ArgumentParser(prog="ppo_train.py score")
+    ap.add_argument("state")
+    ap.add_argument("records")
+    ap.add_argument("out")
+    ap.add_argument("--device", default="cpu")
+    ap.add_argument("--batch", type=int, default=256)
+    a = ap.parse_args(argv)
+    st = torch.load(a.state, map_location="cpu", weights_only=False)
+    net = net_from_shape(st["shape"])
+    net.load_state_dict(st["net"])
+    dev = torch.device(a.device)
+    net = net.to(dev).eval()
+    opener = gzip.open if a.records.endswith(".gz") else open
+    n = 0
+    with torch.no_grad(), open(a.out + ".tmp", "w") as out:
+        chunk = []
+
+        def flush():
+            out_ = net(batch_to(collate([featurize(r, net.trim_map) for r in chunk]), dev))
+            for v in out_[1].float().cpu().tolist():
+                out.write(json.dumps({"value": v}) + "\n")
+
+        with opener(a.records, "rt") as f:
+            for line in f:
+                if not line.strip():
+                    continue
+                row = json.loads(line)
+                chunk.append(row.get("record", row))
+                if len(chunk) == a.batch:
+                    flush(); n += len(chunk); chunk = []
+        if chunk:
+            flush(); n += len(chunk)
+    os.replace(a.out + ".tmp", a.out)
+    print(f"{a.state}: {n} values (structure {shape_structure(st['shape'])}, iteration {st.get('iteration')})")
+
+
 if __name__ == "__main__":
-    cmds = {"update": cmd_update, "bench": cmd_bench, "selftest": cmd_selftest}
+    cmds = {"update": cmd_update, "bench": cmd_bench, "selftest": cmd_selftest, "score": cmd_score}
     if len(sys.argv) < 2 or sys.argv[1] not in cmds:
-        sys.exit("usage: ppo_train.py {update|bench|selftest} ...")
+        sys.exit("usage: ppo_train.py {update|bench|selftest|score} ...")
     cmds[sys.argv[1]](sys.argv[2:])
