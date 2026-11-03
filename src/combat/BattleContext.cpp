@@ -1093,10 +1093,14 @@ void BattleContext::executeActions() {
             // keeps; every one of them runs, in queue order, before the fight
             // ends. Everything else in the queue is dropped.
             if (outcome == Outcome::PLAYER_VICTORY && actionQueue.hasPostVictoryAction()) {
-                while (outcome == Outcome::PLAYER_VICTORY && actionQueue.hasPostVictoryAction()) {
+                // STS_POST_VICTORY_HEAL_FIX=0 restores the legacy path, which
+                // ran only the first flagged action.
+                const bool drainAll = postVictoryHealFix();
+                do {
                     auto a = std::move(actionQueue.popPostVictoryAction());
                     a(*this);
-                }
+                } while (drainAll && outcome == Outcome::PLAYER_VICTORY
+                         && actionQueue.hasPostVictoryAction());
                 actionQueue.clear();
             }
             break;

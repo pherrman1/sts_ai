@@ -545,7 +545,7 @@ three rule gaps, each fixed behind a default-on flag with a unit test:
   `STS_EMPTY_PILE_LOSS_FIX` (default on, `=0` restores the legacy loss)
   removes it; the `turn > 500` guard and Silver's no-progress loop guard bound
   a stalled fight (`tests/empty_pile_loss_test.cpp`).
-- A fully blocked or zero-damage hit on a Thorns monster (Spiker, Guardian)
+- A fully blocked or zero-damage hit on a Thorns monster (Spiker; Guardian's Sharp Hide is a separate power)
   dealt no Thorns damage, because Thorns lives in
   `Monster::attackedUnblockedHelper`, which `attacked` entered only when
   post-block damage was above 0. Java `AbstractMonster.damage` runs every

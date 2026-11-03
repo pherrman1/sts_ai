@@ -193,7 +193,9 @@ namespace sts {
     // once the outcome is decided (issue 85), so the heal was lost and the
     // player left the fight at the pre-Reaper HP. Thorns/Spikes retaliation
     // is still never run after victory. 0 = the legacy engine drops the
-    // heal. Other values are fatal. Read only when the heal is queued.
+    // heal and the legacy victory path, which runs only the first flagged
+    // action. Other values are fatal. Read when the heal is queued and at
+    // victory when a flagged action is queued.
     bool postVictoryHealFix();
 
     // STS_EMPTY_PILE_LOSS_FIX: unset/1 (default) = an empty hand, draw and
@@ -209,7 +211,7 @@ namespace sts {
     bool emptyPileLossFix();
 
     // STS_THORNS_BLOCKED_HIT_FIX: unset/1 (default) = a monster's Thorns
-    // (Spiker, Guardian, Sharp Hide via DamagePlayer) retaliates against a
+    // (Spiker; Guardian's Sharp Hide is a separate power) retaliates against a
     // fully blocked or zero-damage attack. Java AbstractMonster.damage runs
     // every power's onAttacked after decrementBlock whatever the remaining
     // amount, and ThornsPower.onAttacked has no damage guard (it checks only

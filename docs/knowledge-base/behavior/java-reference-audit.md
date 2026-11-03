@@ -490,10 +490,13 @@ healAmount)` with `addToBot`, and calls `clearPostCombatActions` when
 `HealAction`. `GameActionManager.clearPostCombatActions` removes every queued
 action except `GainBlockAction`, `UseCardAction`, `HealAction`,
 `GainGoldAction` and `DAMAGE`-type actions, so a lethal Reaper or Bite still
-heals. Native queued the heal unflagged and the victory break dropped it.
+heals. Thorns retaliation from the killing blow is still dropped, as issue 85
+records: its source monster is dying, so the action cancels itself
+(`shouldCancelAction`; recalled, **unverified**). Native queued the heal unflagged and the victory break dropped it.
 `STS_POST_VICTORY_HEAL_FIX` (default on, `=0` restores) flags both heals
 `executeAfterCombatVictory`, and `executeActions` runs every flagged action
-before clearing the queue.
+before clearing the queue (`=0` also restores the legacy path that runs only
+the first flagged action).
 
 Test: `post_victory_heal`.
 
