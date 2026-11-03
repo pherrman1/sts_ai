@@ -26120,7 +26120,7 @@ Philipp. No default change.
 Seeds: 111520000-111522047 and 111529990-111529991 USED. Cost ≈ 4,096 games ≈ 29 core-h.
 **Knowledge impact:** KB `research/a20-ppo-plan.md` (G1 row).
 
-## §TBD — Prior-share stop H = 0.9 at A20 map roots vs the 1,024 default, 1,536 paired seeds by control reuse: NOT_WORSE, Heart −0.07 pp [−0.59, +0.46] at 0.38x map sims; diverging seeds 19 vs 20 kills (cloud, 2026-11-03)
+## §753 — Prior-share stop H = 0.9 at A20 map roots vs the 1,024 default, 1,536 paired seeds by control reuse: NOT_WORSE, Heart −0.07 pp [−0.59, +0.46] at 0.38x map sims; diverging seeds 19 vs 20 kills (cloud, 2026-11-03)
 
 **Question (Philipp, 2026-11-01 "Hm ich will eigentlich hauptsächlich n speedup", resumed 2026-11-03 20:19 CET "Mach
 auf 4 workern weiter"):** does #942's map-root prior-share stop (`STS_OOC_MCTS_PRIOR_SHARE_STOP=0.9`) cost less than
