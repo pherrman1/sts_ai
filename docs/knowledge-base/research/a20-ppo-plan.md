@@ -1,6 +1,6 @@
 # Our own A20 PPO run policy (heart1 recipe, improved): plan
 
-Last verified: 2026-11-01 against main `53d591b` and `daniel-ziegler/sts_lightspeed` at `84ab3ea` (README,
+Last verified: 2026-11-02 for the learner review fixes (V3 row, known limitations); 2026-11-01 against main `53d591b` and `daniel-ziegler/sts_lightspeed` at `84ab3ea` (README,
 `EXPERIMENT_LOG.md`, `run_heart1_supervised.sh` read, nothing executed). Research and design only: no gameplay
 seeds were run for this page. Labels: **Measured** (cited ledger entry or artifact), **Inference** (reasoning here),
 **External** (stated in the original repository, not reproduced by us unless noted).
@@ -143,7 +143,7 @@ So only ~1/21 of its games were A20, its reward is not P(Heart kill), and its en
 | --- | --- | --- |
 | V1 | A20 only | original saw ~5% A20 and barely adapts card choice to ascension |
 | V2 | our engine | train where we play; no engine gap, and without OOC MCTS no re-distillation is needed |
-| V3 | reward 1{Heart} + potential-based shaping with Φ = M0-calibrated leaf value | the objective becomes the Heart rate (shaping telescopes at γ = 1) with lower variance |
+| V3 | reward 1{Heart} + potential-based shaping with Φ = M0-calibrated leaf value | the objective becomes the Heart rate (shaping telescopes at γ = 1) with lower variance. **Not runnable yet (2026-11-02):** `ppo_train.py --reward heart_pbrs` reads Φ from each decision line's `phi`, but `one_combat`'s `ppoStep` exports no leaf value (the M0 leaf lives in the OOC MCTS adapter, which PPO play runs without), so the learner now refuses `heart_pbrs` when no decision line carries `phi` instead of silently training the plain `heart` reward. Exporting Φ in `ppoStep` is open (which leaf, its cost per decision) |
 | V4 | forked common-random-number advantages at a fraction of card choices (VinePPO-style) | **low priority** ([literature](ppo-and-combat-leaf-literature.md), (A) item 5): VinePPO needs K ≈ 9 forks per state, the paired-rollout preprint is mixed (a toy counterexample, but −21 to −63% gradient covariance in its real probe), and at rho 0.49 a 2 pp sibling gap needs ~1,900 paired forks at 95% (~480 for 1σ; Inference); §738 found per-floor RNG keying gains only ~1.04× effective seeds. Run only if the offline gradient-variance probe (literature A4) shows a gain per core-s |
 | V5 | record v2 inputs (#941) for policy and critic | public run state heart1 never saw; PPO self-play produces v2 records for free |
 | V6 | asymmetric critic with hidden information, training only | lower-variance baseline; no verified literature (PerfectDou only a hint), bias open; needs Philipp's call against ADR-0002 |
@@ -166,6 +166,7 @@ lineage instead of building two nets. PPO self-play records in v2 format (`obs.v
 | --- | --- | --- | --- |
 | S0 | PR 1 sampler + trajectory export; PR 2 PPO trainer + export. Checks: temperature 0 byte-identical to today's greedy choices, native vs torch log-prob < 1e-5, one-iteration smoke | 1-2 thread-days, smoke seeds | review PASS per PR |
 | G0 | start weights: heart1 alone vs student_sel alone in our engine, Silver 1,000, 2,048 paired A20 seeds | ~25 core-h | heart1 not worse → start from heart1; clearly worse → distil student_sel into the d256 net. **Done (§744): 16.1% vs 16.3%, −0.2 pp [−2.0, +1.5] → heart1** |
+| Screen 1 | 19 recipe arms × 15,360 sampled games from heart1, K15 combat, last third paired vs BASE | ~290k games, PC learner + 40 cloud actors, ~21 h | **Done (§748): no arm PROMISING, LAM_1 WORSE (−0.9 pp [−1.8, −0.1]), whole-run noise 0.8 pp, no arm rises beyond seed-block noise → recipe = BASE; next proposal (Inference): a reward/learning-signal screen** |
 | S1 | PC pilot: d256 decision net (start per G0), A20, Silver 1,000 (or the cheapest admitted cost arm), reward V3, 512 games per iteration, 3 value-only warm-up iterations, 60 PPO iterations | ~31k games, ~170-200 core-h, ~14 h on 12 threads | G1 |
 | G1 | final vs the start net, policy alone (`STS_OOC_MCTS=0`), Silver 1,000, 2,048 fresh paired A20 seeds, SPRT standard | ~23 core-h | GO if ΔHeart 95% CI > 0; one more 60-iteration block if point > 0, CI includes 0 and the in-sample A20 curve rises; STOP if ΔHeart ≤ 0 with a flat curve |
 | S2 | production confirmation: new net as map-MCTS prior vs the default, AZ matched-CPU rule | 1,024-4,096 pairs, ~470-1,900 core-h | default change is Philipp's call |
@@ -174,12 +175,23 @@ lineage instead of building two nets. PPO self-play records in v2 format (`obs.v
 
 Every run needs a pre-registration, the seed-run guard, frozen provenance and Philipp's typed go.
 
+## Reward is a test axis too (Philipp, 2026-11-02)
+
+Screen 1 tested only one reward change (REW_ORIG, NOT_SHOWN). Reward design is a tunable parameter to rethink and test, not a given. Candidates for the next screen (Inference): act-clear bonus, floor and key weights, PBRS with a simple potential (floor/190 + keys) or a value model as φ (C++ does not emit φ today; the learner refuses `heart_pbrs` when no decision line carries φ, see row V3), a critic pre-trained on screen-1 games. Using the PPO critic itself as φ is redundant with GAE. A next screen should have fewer arms, a pre-registered futility rule and the validated `--compile` speed-up, because whole-run noise is ~0.8 pp (§748).
+
 ## Known limitations and open questions
 
 - 31k pilot games are few against the original's ~1.1M; the pilot tests direction, not ceiling.
 - X1 validated cheap combat on one key effect; card effects whose value depends on fight skill are untested.
 - Does the 3060 Ti update keep pace with 1,024-2,048 games per iteration (measured in S0)?
 - Can an asynchronous cloud loop stay close enough to on-policy across container resets?
+- Learner review of 2026-11-02 (read-only, during the recipe screen; fixed in the PR after the screen, see
+  [literature (A) item 7](ppo-and-combat-leaf-literature.md#a-evidence-on-the-ppo-plan)): game order in a trajectory
+  file followed OpenMP completion order, so a replayed part could give a different net (now sorted by seed); a seed in
+  two files was double-counted silently (now an error; `update --expect-games`); the choice-logit and value Linears
+  ran in bf16 under autocast against fp32 behaviour log-probs (now fp32); `heart_pbrs` silently equalled `heart`
+  (now refused without `phi`). None of these affected the screen's pre-registered comparisons, whose learner ran the
+  reviewed code unchanged for every arm.
 
 ## Relevant sources
 

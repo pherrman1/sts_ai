@@ -1,6 +1,6 @@
 # Important invariants
 
-Last verified: 2026-09-24 for the Searcher2/3 and self-play removals; 2026-09-20 against the current working tree.
+Last verified: 2026-11-02 for post-victory actions and the removed empty-pile loss (`post_victory_heal`, `empty_pile_loss`); 2026-09-24 for the Searcher2/3 and self-play removals; 2026-09-20 against the current working tree.
 
 ## Purpose
 
@@ -51,12 +51,23 @@ See
   `afterMonsterTurns`).
 - Combat outcome is first-write-wins: every combat-resolution outcome setter
   (monster death/suicide, looter/mugger escape, `Player::wouldDie`) is guarded
-  by `if (outcome == Outcome::UNDECIDED)`, and `executeActions()` breaks as
+  by `if (outcome == Outcome::UNDECIDED)`, and `executeActions()` stops as
   soon as an outcome is decided, so queued retaliation actions (Thorns/Spikes,
   player-damage actions) never execute after victory — the killing blow ends
   the fight immediately (`src/combat/Monster.cpp::die`/`suicideAction`,
   `src/combat/MonsterSpecific.cpp` LOOTER/MUGGER escape,
   `src/combat/Player.cpp::wouldDie`, `src/combat/BattleContext.cpp::executeActions`).
+  The one exception is an action queued with `executeAfterCombatVictory`
+  (`Actions::HealPlayer` from Toy Ornithopter, Reaper and Bite): on
+  `PLAYER_VICTORY` every such action runs in queue order before the queue is
+  cleared, as Java's `clearPostCombatActions` keeps `HealAction`
+  (`ActionQueue::popPostVictoryAction`, `STS_POST_VICTORY_HEAL_FIX`; CTest
+  `post_victory_heal`, `thorns_retaliation`).
+- Combat is lost only by HP loss or the loop guards. An empty hand, draw and
+  discard pile is not a loss (`STS_EMPTY_PILE_LOSS_FIX`, default on; the
+  legacy mid-turn `PLAYER_LOSS` is kept behind `=0`). Non-terminating fights
+  end through `executeActions`' `turn > 500` and loop-count guards and the
+  native Silver no-progress loop guard (CTest `empty_pile_loss`).
 - Smoke Bomb is a successful combat escape, not a normal rewarded victory. Use
   is valid only outside boss encounters and without `SURROUNDED`; successful
   use consumes the potion, finishes combat bookkeeping, returns to the map,
