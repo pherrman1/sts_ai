@@ -1,0 +1,5570 @@
+{
+ "cards": [
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 0,
+   "name": "INVALID",
+   "starter": false,
+   "type": "INVALID"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 1,
+   "name": "ACCURACY",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 2,
+   "name": "ACROBATICS",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 3,
+   "name": "ADRENALINE",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 4,
+   "name": "AFTER_IMAGE",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 5,
+   "name": "AGGREGATE",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 6,
+   "name": "ALCHEMIZE",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 7,
+   "name": "ALL_FOR_ONE",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 8,
+   "name": "ALL_OUT_ATTACK",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 9,
+   "name": "ALPHA",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 10,
+   "name": "AMPLIFY",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    0,
+    0
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 11,
+   "name": "ANGER",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    2,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 12,
+   "name": "APOTHEOSIS",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 13,
+   "name": "APPARITION",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 14,
+   "name": "ARMAMENTS",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    -3,
+    -3
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 15,
+   "name": "ASCENDERS_BANE",
+   "starter": false,
+   "type": "CURSE"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 16,
+   "name": "AUTO_SHIELDS",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 17,
+   "name": "A_THOUSAND_CUTS",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 18,
+   "name": "BACKFLIP",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    0,
+    0
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 19,
+   "name": "BACKSTAB",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 20,
+   "name": "BALL_LIGHTNING",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    0,
+    0
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 21,
+   "name": "BANDAGE_UP",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 22,
+   "name": "BANE",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 23,
+   "name": "BARRAGE",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    3,
+    2
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 24,
+   "name": "BARRICADE",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    2,
+    2
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 25,
+   "name": "BASH",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 26,
+   "name": "BATTLE_HYMN",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    0,
+    0
+   ],
+   "draws": true,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 27,
+   "name": "BATTLE_TRANCE",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 28,
+   "name": "BEAM_CELL",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 29,
+   "name": "BECOME_ALMIGHTY",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    0,
+    0
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 30,
+   "name": "BERSERK",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    2,
+    2
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 31,
+   "name": "BETA",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 32,
+   "name": "BIASED_COGNITION",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 33,
+   "name": "BITE",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 34,
+   "name": "BLADE_DANCE",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 35,
+   "name": "BLASPHEMY",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    0,
+    0
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 36,
+   "name": "BLIND",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 37,
+   "name": "BLIZZARD",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    0,
+    0
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 38,
+   "name": "BLOODLETTING",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    4,
+    3
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 39,
+   "name": "BLOOD_FOR_BLOOD",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    3,
+    3
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 40,
+   "name": "BLUDGEON",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 41,
+   "name": "BLUR",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    0
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 42,
+   "name": "BODY_SLAM",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 43,
+   "name": "BOOT_SEQUENCE",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 44,
+   "name": "BOUNCING_FLASK",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 45,
+   "name": "BOWLING_BASH",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 46,
+   "name": "BRILLIANCE",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    0,
+    0
+   ],
+   "draws": true,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 47,
+   "name": "BRUTALITY",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 48,
+   "name": "BUFFER",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 49,
+   "name": "BULLET_TIME",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 50,
+   "name": "BULLSEYE",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    -2,
+    -2
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 51,
+   "name": "BURN",
+   "starter": false,
+   "type": "STATUS"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": true,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 52,
+   "name": "BURNING_PACT",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 53,
+   "name": "BURST",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    false
+   ],
+   "id": 54,
+   "name": "CALCULATED_GAMBLE",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 55,
+   "name": "CALTROPS",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 56,
+   "name": "CAPACITOR",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    2,
+    2
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 57,
+   "name": "CARNAGE",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 58,
+   "name": "CARVE_REALITY",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 59,
+   "name": "CATALYST",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 60,
+   "name": "CHAOS",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 61,
+   "name": "CHARGE_BATTERY",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 62,
+   "name": "CHILL",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 63,
+   "name": "CHOKE",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    2,
+    2
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 64,
+   "name": "CHRYSALIS",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    0,
+    0
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 65,
+   "name": "CLASH",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 66,
+   "name": "CLAW",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 67,
+   "name": "CLEAVE",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 68,
+   "name": "CLOAK_AND_DAGGER",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    2,
+    2
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 69,
+   "name": "CLOTHESLINE",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    -3,
+    -3
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 70,
+   "name": "CLUMSY",
+   "starter": false,
+   "type": "CURSE"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 71,
+   "name": "COLD_SNAP",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 72,
+   "name": "COLLECT",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 73,
+   "name": "COMBUST",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 74,
+   "name": "COMPILE_DRIVER",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 75,
+   "name": "CONCENTRATE",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 76,
+   "name": "CONCLUDE",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 77,
+   "name": "CONJURE_BLADE",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 78,
+   "name": "CONSECRATE",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 79,
+   "name": "CONSUME",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 80,
+   "name": "COOLHEADED",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 81,
+   "name": "CORE_SURGE",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 82,
+   "name": "CORPSE_EXPLOSION",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    3,
+    2
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 83,
+   "name": "CORRUPTION",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 84,
+   "name": "CREATIVE_AI",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 85,
+   "name": "CRESCENDO",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 86,
+   "name": "CRIPPLING_CLOUD",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 87,
+   "name": "CRUSH_JOINTS",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    -3,
+    -3
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 88,
+   "name": "CURSE_OF_THE_BELL",
+   "starter": false,
+   "type": "CURSE"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 89,
+   "name": "CUT_THROUGH_FATE",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 90,
+   "name": "DAGGER_SPRAY",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 91,
+   "name": "DAGGER_THROW",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 92,
+   "name": "DARKNESS",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    2,
+    1
+   ],
+   "draws": true,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 93,
+   "name": "DARK_EMBRACE",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    0,
+    0
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 94,
+   "name": "DARK_SHACKLES",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 95,
+   "name": "DASH",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    -2,
+    -2
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 96,
+   "name": "DAZED",
+   "starter": false,
+   "type": "STATUS"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 97,
+   "name": "DEADLY_POISON",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    -3,
+    -3
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 98,
+   "name": "DECAY",
+   "starter": false,
+   "type": "CURSE"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 99,
+   "name": "DECEIVE_REALITY",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    0,
+    0
+   ],
+   "draws": true,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 100,
+   "name": "DEEP_BREATH",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 101,
+   "name": "DEFEND_BLUE",
+   "starter": true,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 102,
+   "name": "DEFEND_GREEN",
+   "starter": true,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 103,
+   "name": "DEFEND_PURPLE",
+   "starter": true,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 104,
+   "name": "DEFEND_RED",
+   "starter": true,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 105,
+   "name": "DEFLECT",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 106,
+   "name": "DEFRAGMENT",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    3,
+    3
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 107,
+   "name": "DEMON_FORM",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 108,
+   "name": "DEUS_EX_MACHINA",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 109,
+   "name": "DEVA_FORM",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 110,
+   "name": "DEVOTION",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 111,
+   "name": "DIE_DIE_DIE",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 112,
+   "name": "DISARM",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    false
+   ],
+   "id": 113,
+   "name": "DISCOVERY",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 114,
+   "name": "DISTRACTION",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 115,
+   "name": "DODGE_AND_ROLL",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 116,
+   "name": "DOOM_AND_GLOOM",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 117,
+   "name": "DOPPELGANGER",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 118,
+   "name": "DOUBLE_ENERGY",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 119,
+   "name": "DOUBLE_TAP",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    -3,
+    -3
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 120,
+   "name": "DOUBT",
+   "starter": false,
+   "type": "CURSE"
+  },
+  {
+   "cost": [
+    0,
+    0
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 121,
+   "name": "DRAMATIC_ENTRANCE",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 122,
+   "name": "DROPKICK",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 123,
+   "name": "DUALCAST",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 124,
+   "name": "DUAL_WIELD",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 125,
+   "name": "ECHO_FORM",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 126,
+   "name": "ELECTRODYNAMICS",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 127,
+   "name": "EMPTY_BODY",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 128,
+   "name": "EMPTY_FIST",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 129,
+   "name": "EMPTY_MIND",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 130,
+   "name": "ENDLESS_AGONY",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    0,
+    0
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 131,
+   "name": "ENLIGHTENMENT",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    2,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 132,
+   "name": "ENTRENCH",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 133,
+   "name": "ENVENOM",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 134,
+   "name": "EQUILIBRIUM",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 135,
+   "name": "ERUPTION",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 136,
+   "name": "ESCAPE_PLAN",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 137,
+   "name": "ESTABLISHMENT",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 138,
+   "name": "EVALUATE",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 139,
+   "name": "EVISCERATE",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": true,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 140,
+   "name": "EVOLVE",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    1,
+    0
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 141,
+   "name": "EXHUME",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 142,
+   "name": "EXPERTISE",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 143,
+   "name": "EXPUNGER",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 144,
+   "name": "FAME_AND_FORTUNE",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 145,
+   "name": "FASTING",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 146,
+   "name": "FEAR_NO_EVIL",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 147,
+   "name": "FEED",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 148,
+   "name": "FEEL_NO_PAIN",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    2,
+    2
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 149,
+   "name": "FIEND_FIRE",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    0,
+    0
+   ],
+   "draws": true,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 150,
+   "name": "FINESSE",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 151,
+   "name": "FINISHER",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 152,
+   "name": "FIRE_BREATHING",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 153,
+   "name": "FISSION",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    2,
+    2
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 154,
+   "name": "FLAME_BARRIER",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    0,
+    0
+   ],
+   "draws": true,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 155,
+   "name": "FLASH_OF_STEEL",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 156,
+   "name": "FLECHETTES",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    0,
+    0
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 157,
+   "name": "FLEX",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 158,
+   "name": "FLURRY_OF_BLOWS",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 159,
+   "name": "FLYING_KNEE",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 160,
+   "name": "FLYING_SLEEVES",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 161,
+   "name": "FOLLOW_UP",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 162,
+   "name": "FOOTWORK",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 163,
+   "name": "FORCE_FIELD",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 164,
+   "name": "FOREIGN_INFLUENCE",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 165,
+   "name": "FORESIGHT",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    0,
+    0
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 166,
+   "name": "FORETHOUGHT",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 167,
+   "name": "FTL",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 168,
+   "name": "FUSION",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 169,
+   "name": "GENETIC_ALGORITHM",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 170,
+   "name": "GHOSTLY_ARMOR",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 171,
+   "name": "GLACIER",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 172,
+   "name": "GLASS_KNIFE",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    0,
+    0
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 173,
+   "name": "GOOD_INSTINCTS",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 174,
+   "name": "GO_FOR_THE_EYES",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 175,
+   "name": "GRAND_FINALE",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 176,
+   "name": "HALT",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    2,
+    2
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 177,
+   "name": "HAND_OF_GREED",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    0
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 178,
+   "name": "HAVOC",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 179,
+   "name": "HEADBUTT",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 180,
+   "name": "HEATSINKS",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    2,
+    2
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 181,
+   "name": "HEAVY_BLADE",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 182,
+   "name": "HEEL_HOOK",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 183,
+   "name": "HELLO_WORLD",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 184,
+   "name": "HEMOKINESIS",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    false
+   ],
+   "id": 185,
+   "name": "HOLOGRAM",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 186,
+   "name": "HYPERBEAM",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    2,
+    2
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 187,
+   "name": "IMMOLATE",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    0,
+    0
+   ],
+   "draws": true,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 188,
+   "name": "IMPATIENCE",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    2,
+    2
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 189,
+   "name": "IMPERVIOUS",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 190,
+   "name": "INDIGNATION",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    0
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 191,
+   "name": "INFERNAL_BLADE",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 192,
+   "name": "INFINITE_BLADES",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 193,
+   "name": "INFLAME",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    -3,
+    -3
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 194,
+   "name": "INJURY",
+   "starter": false,
+   "type": "CURSE"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 195,
+   "name": "INNER_PEACE",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    0,
+    0
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 196,
+   "name": "INSIGHT",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    0,
+    0
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 197,
+   "name": "INTIMIDATE",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 198,
+   "name": "IRON_WAVE",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    0,
+    0
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 199,
+   "name": "JAX",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    0,
+    0
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 200,
+   "name": "JACK_OF_ALL_TRADES",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 201,
+   "name": "JUDGMENT",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    2,
+    2
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 202,
+   "name": "JUGGERNAUT",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 203,
+   "name": "JUST_LUCKY",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 204,
+   "name": "LEAP",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 205,
+   "name": "LEG_SWEEP",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 206,
+   "name": "LESSON_LEARNED",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 207,
+   "name": "LIKE_WATER",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    false
+   ],
+   "id": 208,
+   "name": "LIMIT_BREAK",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 209,
+   "name": "LIVE_FOREVER",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 210,
+   "name": "LOOP",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 211,
+   "name": "MACHINE_LEARNING",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    1,
+    0
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 212,
+   "name": "MADNESS",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    2,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 213,
+   "name": "MAGNETISM",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    -1,
+    -1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 214,
+   "name": "MALAISE",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 215,
+   "name": "MASTERFUL_STAB",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    0,
+    0
+   ],
+   "draws": true,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 216,
+   "name": "MASTER_OF_STRATEGY",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 217,
+   "name": "MASTER_REALITY",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    2,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 218,
+   "name": "MAYHEM",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 219,
+   "name": "MEDITATE",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 220,
+   "name": "MELTER",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 221,
+   "name": "MENTAL_FORTRESS",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 222,
+   "name": "METALLICIZE",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    2,
+    2
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 223,
+   "name": "METAMORPHOSIS",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 224,
+   "name": "METEOR_STRIKE",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    2,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 225,
+   "name": "MIND_BLAST",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    0,
+    0
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 226,
+   "name": "MIRACLE",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    -1,
+    -1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 227,
+   "name": "MULTI_CAST",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    -3,
+    -3
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 228,
+   "name": "NECRONOMICURSE",
+   "starter": false,
+   "type": "CURSE"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 229,
+   "name": "NEUTRALIZE",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 230,
+   "name": "NIGHTMARE",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 231,
+   "name": "NIRVANA",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    -3,
+    -3
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 232,
+   "name": "NORMALITY",
+   "starter": false,
+   "type": "CURSE"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 233,
+   "name": "NOXIOUS_FUMES",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    0,
+    0
+   ],
+   "draws": true,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 234,
+   "name": "OFFERING",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    3,
+    3
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 235,
+   "name": "OMEGA",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 236,
+   "name": "OMNISCIENCE",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 237,
+   "name": "OUTMANEUVER",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 238,
+   "name": "OVERCLOCK",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    -3,
+    -3
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 239,
+   "name": "PAIN",
+   "starter": false,
+   "type": "CURSE"
+  },
+  {
+   "cost": [
+    0,
+    0
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 240,
+   "name": "PANACEA",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    0,
+    0
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 241,
+   "name": "PANACHE",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    0,
+    0
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 242,
+   "name": "PANIC_BUTTON",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    -3,
+    -3
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 243,
+   "name": "PARASITE",
+   "starter": false,
+   "type": "CURSE"
+  },
+  {
+   "cost": [
+    2,
+    2
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 244,
+   "name": "PERFECTED_STRIKE",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 245,
+   "name": "PERSEVERANCE",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 246,
+   "name": "PHANTASMAL_KILLER",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 247,
+   "name": "PIERCING_WAIL",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 248,
+   "name": "POISONED_STAB",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": true,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 249,
+   "name": "POMMEL_STRIKE",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 250,
+   "name": "POWER_THROUGH",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 251,
+   "name": "PRAY",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 252,
+   "name": "PREDATOR",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 253,
+   "name": "PREPARED",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 254,
+   "name": "PRESSURE_POINTS",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 255,
+   "name": "PRIDE",
+   "starter": false,
+   "type": "CURSE"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 256,
+   "name": "PROSTRATE",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 257,
+   "name": "PROTECT",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 258,
+   "name": "PUMMEL",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    0,
+    0
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 259,
+   "name": "PURITY",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 260,
+   "name": "QUICK_SLASH",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    0,
+    0
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 261,
+   "name": "RAGE",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 262,
+   "name": "RAGNAROK",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    false
+   ],
+   "id": 263,
+   "name": "RAINBOW",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 264,
+   "name": "RAMPAGE",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 265,
+   "name": "REACH_HEAVEN",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    2,
+    2
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 266,
+   "name": "REAPER",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 267,
+   "name": "REBOOT",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 268,
+   "name": "REBOUND",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    0,
+    0
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 269,
+   "name": "RECKLESS_CHARGE",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 270,
+   "name": "RECURSION",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 271,
+   "name": "RECYCLE",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 272,
+   "name": "REFLEX",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    -3,
+    -3
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 273,
+   "name": "REGRET",
+   "starter": false,
+   "type": "CURSE"
+  },
+  {
+   "cost": [
+    -1,
+    -1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 274,
+   "name": "REINFORCED_BODY",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 275,
+   "name": "REPROGRAM",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 276,
+   "name": "RIDDLE_WITH_HOLES",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 277,
+   "name": "RIP_AND_TEAR",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 278,
+   "name": "RITUAL_DAGGER",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 279,
+   "name": "RUPTURE",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 280,
+   "name": "RUSHDOWN",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    0,
+    0
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 281,
+   "name": "SADISTIC_NATURE",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 282,
+   "name": "SAFETY",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 283,
+   "name": "SANCTITY",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 284,
+   "name": "SANDS_OF_TIME",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 285,
+   "name": "SASH_WHIP",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 286,
+   "name": "SCRAPE",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 287,
+   "name": "SCRAWL",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    2,
+    2
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 288,
+   "name": "SEARING_BLOW",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 289,
+   "name": "SECOND_WIND",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    0,
+    0
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    false
+   ],
+   "id": 290,
+   "name": "SECRET_TECHNIQUE",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    0,
+    0
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    false
+   ],
+   "id": 291,
+   "name": "SECRET_WEAPON",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    0
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 292,
+   "name": "SEEING_RED",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 293,
+   "name": "SEEK",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 294,
+   "name": "SELF_REPAIR",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 295,
+   "name": "SENTINEL",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 296,
+   "name": "SETUP",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    2,
+    2
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 297,
+   "name": "SEVER_SOUL",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    -3,
+    -3
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 298,
+   "name": "SHAME",
+   "starter": false,
+   "type": "CURSE"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 299,
+   "name": "SHIV",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    2,
+    2
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 300,
+   "name": "SHOCKWAVE",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": true,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 301,
+   "name": "SHRUG_IT_OFF",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 302,
+   "name": "SIGNATURE_MOVE",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 303,
+   "name": "SIMMERING_FURY",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 304,
+   "name": "SKEWER",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 305,
+   "name": "SKIM",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 306,
+   "name": "SLICE",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 307,
+   "name": "SLIMED",
+   "starter": false,
+   "type": "STATUS"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 308,
+   "name": "SMITE",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 309,
+   "name": "SNEAKY_STRIKE",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 310,
+   "name": "SPIRIT_SHIELD",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 311,
+   "name": "SPOT_WEAKNESS",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 312,
+   "name": "STACK",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 313,
+   "name": "STATIC_DISCHARGE",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 314,
+   "name": "STEAM_BARRIER",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 315,
+   "name": "STORM",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 316,
+   "name": "STORM_OF_STEEL",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 317,
+   "name": "STREAMLINE",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 318,
+   "name": "STRIKE_BLUE",
+   "starter": true,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 319,
+   "name": "STRIKE_GREEN",
+   "starter": true,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 320,
+   "name": "STRIKE_PURPLE",
+   "starter": true,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 321,
+   "name": "STRIKE_RED",
+   "starter": true,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 322,
+   "name": "STUDY",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 323,
+   "name": "SUCKER_PUNCH",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 324,
+   "name": "SUNDER",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 325,
+   "name": "SURVIVOR",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 326,
+   "name": "SWEEPING_BEAM",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    0,
+    0
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 327,
+   "name": "SWIFT_STRIKE",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 328,
+   "name": "SWIVEL",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 329,
+   "name": "SWORD_BOOMERANG",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 330,
+   "name": "TACTICIAN",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 331,
+   "name": "TALK_TO_THE_HAND",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 332,
+   "name": "TANTRUM",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 333,
+   "name": "TEMPEST",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 334,
+   "name": "TERROR",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    2,
+    2
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 335,
+   "name": "THE_BOMB",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    0,
+    0
+   ],
+   "draws": true,
+   "exhaust": [
+    true,
+    false
+   ],
+   "id": 336,
+   "name": "THINKING_AHEAD",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 337,
+   "name": "THIRD_EYE",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 338,
+   "name": "THROUGH_VIOLENCE",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 339,
+   "name": "THUNDERCLAP",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 340,
+   "name": "THUNDER_STRIKE",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 341,
+   "name": "TOOLS_OF_THE_TRADE",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 342,
+   "name": "TRANQUILITY",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    -1,
+    -1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 343,
+   "name": "TRANSMUTATION",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    0,
+    0
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 344,
+   "name": "TRIP",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 345,
+   "name": "TRUE_GRIT",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 346,
+   "name": "TURBO",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 347,
+   "name": "TWIN_STRIKE",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 348,
+   "name": "UNLOAD",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    2,
+    2
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 349,
+   "name": "UPPERCUT",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 350,
+   "name": "VAULT",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 351,
+   "name": "VIGILANCE",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    0,
+    0
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 352,
+   "name": "VIOLENCE",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    -2,
+    -2
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 353,
+   "name": "VOID",
+   "starter": false,
+   "type": "STATUS"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 354,
+   "name": "WALLOP",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    0,
+    0
+   ],
+   "draws": true,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 355,
+   "name": "WARCRY",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 356,
+   "name": "WAVE_OF_THE_HAND",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 357,
+   "name": "WEAVE",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 358,
+   "name": "WELL_LAID_PLANS",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 359,
+   "name": "WHEEL_KICK",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    -1,
+    -1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 360,
+   "name": "WHIRLWIND",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 361,
+   "name": "WHITE_NOISE",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 362,
+   "name": "WILD_STRIKE",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 363,
+   "name": "WINDMILL_STRIKE",
+   "starter": false,
+   "type": "ATTACK"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    true,
+    true
+   ],
+   "id": 364,
+   "name": "WISH",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 365,
+   "name": "WORSHIP",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    -2,
+    -2
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 366,
+   "name": "WOUND",
+   "starter": false,
+   "type": "STATUS"
+  },
+  {
+   "cost": [
+    3,
+    3
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 367,
+   "name": "WRAITH_FORM",
+   "starter": false,
+   "type": "POWER"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 368,
+   "name": "WREATH_OF_FLAME",
+   "starter": false,
+   "type": "SKILL"
+  },
+  {
+   "cost": [
+    -3,
+    -3
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 369,
+   "name": "WRITHE",
+   "starter": false,
+   "type": "CURSE"
+  },
+  {
+   "cost": [
+    1,
+    1
+   ],
+   "draws": false,
+   "exhaust": [
+    false,
+    false
+   ],
+   "id": 370,
+   "name": "ZAP",
+   "starter": false,
+   "type": "SKILL"
+  }
+ ],
+ "schema": "heart1-x3-card-table-v1"
+}

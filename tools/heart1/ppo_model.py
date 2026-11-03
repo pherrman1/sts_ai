@@ -21,6 +21,7 @@ Parity: `python3 tools/heart1/ppo_model.py score NET.bin records.jsonl out.jsonl
 record line (a bare record or a row with "record"), the same shape as `one_combat heart1score`.
 """
 import json
+import os
 import math
 import struct
 import sys
@@ -92,6 +93,11 @@ FIXEDVECS = OrderedDict([
     ("x2_run", ("x2_run", RUN_COUNTERS)),
     ("x2_price", ("x2_price", 1)),
 ])
+# Optional inputs a net has only when built with them (ppo_model.construct(inputs=...), or a .bin that holds
+# them): featurize always emits them, the trunk adds those its net has. x3_deck = the arch screen's IN_DECK.
+X3_DECK_COUNT = 10
+OPTIONAL_FIXEDVECS = OrderedDict([("x3_deck", ("x3_deck", X3_DECK_COUNT))])
+ALL_FIXEDVECS = OrderedDict(list(FIXEDVECS.items()) + list(OPTIONAL_FIXEDVECS.items()))
 TABLE_INDEX = {k: i for i, k in enumerate(TABLES)}
 TABLE_NAMES = list(TABLES)
 ZERO_INIT_TABLES = {"x_act": 5, "x2_fought": FOUGHT_ROWS}
@@ -214,6 +220,47 @@ def map_dag_features(rec):
     return minE, maxE, dR, reach, dest, cone, burn
 
 
+X3_CARD_TABLE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "x3_card_table.json")
+_card_table = None
+
+
+def _cards():
+    """The engine's per-card facts (`one_combat heart1cardtable`, committed as x3_card_table.json)."""
+    global _card_table
+    if _card_table is None:
+        with open(X3_CARD_TABLE) as f:
+            t = json.load(f)
+        if t.get("schema") != "heart1-x3-card-table-v1":
+            raise ValueError(f"{X3_CARD_TABLE}: schema {t.get('schema')}")
+        _card_table = t["cards"]
+    return _card_table
+
+
+def _rounded_percent(num, den):
+    return (200 * num + den) // (2 * den) if den > 0 else 0
+
+
+def deck_aggregates(rec):
+    """x3_deck inputs (mirror of heart1_policy.cpp deckAggregates): attacks, skills, powers, starter
+    Strikes+Defends, exhausting cards, drawing cards, upgraded share (percent), mean energy cost of cards with
+    cost >= 0 (x100), deck size, curses; integers clamped to [-1, 999]."""
+    cards = _cards()
+    a = sk = pw = st = ex = dr = upg = cost_sum = costed = cu = 0
+    ids, ups = rec["obs.deck.cards"], rec["obs.deck.upgrades"]
+    for i, cid in enumerate(ids):
+        if not 0 <= cid < len(cards):
+            continue
+        c = cards[cid]
+        up = 1 if i < len(ups) and ups[i] != 0 else 0
+        t = c["type"]
+        a += t == "ATTACK"; sk += t == "SKILL"; pw += t == "POWER"; cu += t == "CURSE"
+        st += bool(c["starter"]); ex += bool(c["exhaust"][up]); dr += bool(c["draws"]); upg += up
+        if c["cost"][up] >= 0:
+            cost_sum += c["cost"][up]; costed += 1
+    v = [a, sk, pw, st, ex, dr, _rounded_percent(upg, len(ids)), _rounded_percent(cost_sum, costed), len(ids), cu]
+    return [_clamp(x, -1, LIMIT) for x in v]
+
+
 def featurize(rec, trim_map=False):
     """One record -> token component lists. Every token is a sum of table rows and FixedVec projections.
 
@@ -255,6 +302,7 @@ def featurize(rec, trim_map=False):
     f("x2_run", [_clamp(run[k] if k < len(run) else -1, -1, LIMIT) for k in range(RUN_COUNTERS)])
     for enc in (rec.get("obs.v2.fought") or [])[:MAX_FOUGHT]:
         e("x2_fought", enc)
+    f("x3_deck", deck_aggregates(rec))
     t[0] += 1
     minE, maxE, dR, reach, dest, cone, burn = map_dag_features(rec)
     mx_, my_ = rec["obs.mapX"], rec["obs.mapY"]
@@ -319,7 +367,7 @@ def collate(feats):
             lst = fvl.setdefault(name, ([], []))
             lst[0].append(tok.astype(np.int64) + b * T); lst[1].append(feat)
     fv = {k: (torch.from_numpy(np.concatenate(fvl[k][0])), torch.from_numpy(np.concatenate(fvl[k][1])))
-          for k in FIXEDVECS if k in fvl}   # fixed order: the trunk sums in dict order
+          for k in ALL_FIXEDVECS if k in fvl}   # fixed order: the trunk sums in dict order
     pad = torch.ones(B, T, dtype=torch.bool)
     choice_index = torch.zeros(B, Cn, dtype=torch.long)
     choice_mask = torch.ones(B, Cn, dtype=torch.bool)   # True = padding
@@ -362,10 +410,10 @@ class FeatureStore:
             for k in x["fv"]:
                 if k not in names:
                     names.append(k)
-        self.fv_order = [k for k in FIXEDVECS if k in names]
+        self.fv_order = [k for k in ALL_FIXEDVECS if k in names]
         self.fv = {}
         for k in self.fv_order:
-            w = FIXEDVECS[k][1]
+            w = ALL_FIXEDVECS[k][1]
             toks = [x["fv"][k][0] if k in x["fv"] else np.zeros(0, np.int16) for x in feats]
             vals = [x["fv"][k][1] if k in x["fv"] else np.zeros((0, w), np.float32) for x in feats]
             self.fv[k] = self._flat(toks, vals)
@@ -486,6 +534,7 @@ class PolicyNet(nn.Module):
         self.choice_logits = nn.Linear(dim, 1)
         self.value_head = nn.Linear(dim, 1)
         self.extra_blocks, self.critic_mode, self.aux_names = 0, "shared", ()   # set by construct()
+        self.extra_inputs = ()   # optional inputs (OPTIONAL_FIXEDVECS) by construct() or from_bin
 
     # -- native .bin <-> module
     @classmethod
@@ -522,6 +571,12 @@ class PolicyNet(nn.Module):
                     nn.init.zeros_(m.proj.weight); nn.init.zeros_(m.proj.bias)
                 else:
                     raise KeyError(f"{path}: missing {prefix}")
+            for k, (prefix, n) in OPTIONAL_FIXEDVECS.items():   # only nets built with them hold them
+                if prefix + ".proj.weight" in s:
+                    m = FixedVec(dim, n, s[prefix + ".num_embed.inv_freq"])
+                    m.proj.weight.copy_(s[prefix + ".proj.weight"]); m.proj.bias.copy_(s[prefix + ".proj.bias"])
+                    net.fixedvecs[k] = m
+                    net.extra_inputs = net.extra_inputs + (k,)
             for i, b in enumerate(net.blocks):
                 L = f"layers.{i}."
                 b.norm1.w.copy_(s[L + "norm1.w"]); b.norm2.w.copy_(s[L + "norm2.w"])
@@ -541,7 +596,9 @@ class PolicyNet(nn.Module):
             out[name] = self.tables[k].detach()
             for alias in SHARED_ALIASES.get(k, []):
                 out[alias] = self.tables[k].detach()
-        for k, (prefix, _) in FIXEDVECS.items():
+        for k, (prefix, _) in ALL_FIXEDVECS.items():
+            if k not in self.fixedvecs:   # an optional input this net does not have
+                continue
             m = self.fixedvecs[k]
             out[prefix + ".num_embed.inv_freq"] = m.inv_freq
             out[prefix + ".proj.weight"] = m.proj.weight.detach(); out[prefix + ".proj.bias"] = m.proj.bias.detach()
@@ -574,6 +631,8 @@ class PolicyNet(nn.Module):
         for k, (tok, row) in batch["emb"].items():
             toks.append(tok); srcs.append(self.tables[k].index_select(0, row).to(p.dtype))
         for k, (tok, feat) in batch["fv"].items():
+            if k not in self.fixedvecs:   # optional input (x3_deck) the net was not built with
+                continue
             toks.append(tok); srcs.append(self.fixedvecs[k](feat).to(p.dtype))  # Linear output is bf16 under autocast
         x = torch.zeros(B * T, D, device=p.device, dtype=p.dtype).index_add(0, torch.cat(toks), torch.cat(srcs))
         x = x.view(B, T, D)
@@ -621,7 +680,7 @@ class PolicyNet(nn.Module):
 AUX_TARGETS = ("floor", "act4")   # final floor / 57 (MSE); Act 4 reached (BCE on a logit)
 
 
-def construct(net, extra_blocks=0, critic="shared", aux=(), seed=0):
+def construct(net, extra_blocks=0, critic="shared", aux=(), seed=0, inputs=()):
     """A copy of `net` with the arch screen's policy-preserving changes (PREREG ppo_arch_screen_20261102):
 
     - extra_blocks N: N transformer blocks appended after the last one, with out_proj (weight and bias) and w2
@@ -629,6 +688,8 @@ def construct(net, extra_blocks=0, critic="shared", aux=(), seed=0):
     - critic "separate": critic_net, a full copy of the trunk (embeddings, fixed vectors, blocks, norms) with the
       net's value head; the value then comes from it alone.
     - aux names (subset of AUX_TARGETS): aux_head, a zero-initialised Linear(dim, len(aux)) on the pooled trunk.
+    - inputs (subset of OPTIONAL_FIXEDVECS, e.g. x3_deck): zero-initialised optional input projections (exported,
+      so a native net built with them reads them; inv_freq as the fixed observation's).
     Policy logits (and, before training, the value) equal the source net's; the native export writes only the
     policy net (to_bin: depth included, critic and aux heads not, since actors use the policy logits alone)."""
     import copy
@@ -637,8 +698,13 @@ def construct(net, extra_blocks=0, critic="shared", aux=(), seed=0):
     aux = tuple(aux)
     if any(a not in AUX_TARGETS for a in aux) or len(set(aux)) != len(aux):
         raise ValueError(f"aux heads {aux}: a subset of {AUX_TARGETS}")
+    inputs = tuple(inputs)
+    if any(k not in OPTIONAL_FIXEDVECS for k in inputs) or len(set(inputs)) != len(inputs):
+        raise ValueError(f"inputs {inputs}: a subset of {tuple(OPTIONAL_FIXEDVECS)}")
     if getattr(net, "critic_net", None) is not None or getattr(net, "aux_head", None) is not None:
         raise ValueError("construct() applies to a plain net, not to one already constructed")
+    if any(k in net.fixedvecs for k in inputs):
+        raise ValueError(f"the net already has inputs {[k for k in inputs if k in net.fixedvecs]}")
     out = copy.deepcopy(net)
     g = torch.Generator().manual_seed(int(seed))
     D = out.dim
@@ -655,14 +721,19 @@ def construct(net, extra_blocks=0, critic="shared", aux=(), seed=0):
                     lin.bias.copy_((torch.rand(lin.bias.shape, generator=g) * 2 - 1) * r)
             b.out_proj.weight.zero_(); b.out_proj.bias.zero_(); b.w2.weight.zero_()
             out.blocks.append(b)
+        for k in inputs:
+            m = FixedVec(D, OPTIONAL_FIXEDVECS[k][1], out.fixedvecs["fixed_obs"].inv_freq).to(out.norm.w.device)
+            nn.init.zeros_(m.proj.weight); nn.init.zeros_(m.proj.bias)
+            out.fixedvecs[k] = m
     if critic == "separate":
-        out.critic_net = copy.deepcopy(net)
+        out.critic_net = copy.deepcopy(net)   # the plain trunk (no extra blocks or inputs)
     if aux:
         out.aux_head = nn.Linear(D, len(aux))
         with torch.no_grad():
             out.aux_head.weight.zero_(); out.aux_head.bias.zero_()
     out.extra_blocks = int(extra_blocks) + getattr(net, "extra_blocks", 0)
     out.critic_mode, out.aux_names = critic, aux
+    out.extra_inputs = tuple(getattr(net, "extra_inputs", ())) + inputs
     return out
 
 
@@ -707,14 +778,21 @@ def perturb_main(argv):
         for k in ZERO_INIT_TABLES:
             net.tables[k].copy_(0.3 * torch.randn(net.tables[k].shape, generator=g))
         net.tables["fixed_action"][FA_PPO_FIRST:] = 0.3 * torch.randn(FA_COUNT - FA_PPO_FIRST, net.dim, generator=g)
-        for k in ZERO_INIT_FIXEDVECS:
+        for k in list(ZERO_INIT_FIXEDVECS) + [k for k in OPTIONAL_FIXEDVECS if k in net.fixedvecs]:
             m = net.fixedvecs[k].proj
             m.weight.copy_(0.02 * torch.randn(m.weight.shape, generator=g)); m.bias.copy_(0.1 * torch.randn(m.bias.shape, generator=g))
     net.to_bin(argv[1])
 
 
+def addinputs_main(argv):
+    """addinputs IN.bin OUT.bin NAME[,NAME]: IN with zero-initialised optional inputs (x3_deck) added."""
+    if len(argv) != 3:
+        sys.exit("usage: ppo_model.py addinputs IN.bin OUT.bin x3_deck")
+    construct(PolicyNet.from_bin(argv[0]), inputs=[x for x in argv[2].split(",") if x]).to_bin(argv[1])
+
+
 if __name__ == "__main__":
-    cmds = {"score": score_main, "extend": extend_main, "perturb": perturb_main}
+    cmds = {"score": score_main, "extend": extend_main, "perturb": perturb_main, "addinputs": addinputs_main}
     if len(sys.argv) < 2 or sys.argv[1] not in cmds:
-        sys.exit("usage: ppo_model.py {score|extend|perturb} ...")
+        sys.exit("usage: ppo_model.py {score|extend|perturb|addinputs} ...")
     cmds[sys.argv[1]](sys.argv[2:])

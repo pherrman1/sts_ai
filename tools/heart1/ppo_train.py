@@ -29,7 +29,9 @@ Architecture arms (PREREG ppo_arch_screen_20261102; all off by default, and off 
   --aux-heads floor,act4 [--aux-weight 0.1]   zero-init heads on the pooled trunk: final floor/57 (MSE), Act 4
                       reached (BCE), from the game line; added to the full loss only (not to a value warm-up).
   --value-sparse K    value loss on each act's first decision plus K seeded random decisions per game.
-The first three are structure: a fresh --init applies them to the start net; a resumed --state must already have
+  --inputs x3_deck    zero-init deck aggregates (ppo_model.deck_aggregates) on the fixed-observation token;
+                      exported, so actors need a one_combat that reads x3_deck (heart1_policy.cpp deckAggregates).
+--extra-blocks, --critic, --aux-heads and --inputs are structure: a fresh --init applies them to the start net; a resumed --state must already have
 them (fork_learner / `ppo_cloud.py init --fork-dir` adds them to a running arm's checkpoint).
 
 `bench` times one update on synthetic copies of real trajectory games (no learning signal needed):
@@ -54,7 +56,8 @@ import torch.nn.functional as F
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import ppo_phi  # noqa: E402
-from ppo_model import AUX_TARGETS, FeatureStore, PolicyNet, batch_to, collate, construct, featurize  # noqa: E402
+from ppo_model import (AUX_TARGETS, OPTIONAL_FIXEDVECS, FeatureStore, PolicyNet, batch_to, collate,  # noqa: E402
+                       construct, featurize)
 
 SCHEMA = "heart1-ppo-traj-v1"
 NET_SOURCES = ("heart1_ppo", "heart1_ppo_single")
@@ -245,6 +248,7 @@ def add_hparams(ap):
     # start (--init) applies them to the start net, `ppo_cloud.py init --fork-dir` to a running arm's state
     # (fork_learner); a resumed state must already have the same structure.
     ap.add_argument("--extra-blocks", type=int, default=0, help="identity-initialised transformer blocks appended")
+    ap.add_argument("--inputs", default="", help="comma list of optional zero-init inputs (x3_deck)")
     ap.add_argument("--critic", default="shared", choices=["shared", "separate"],
                     help="separate: the value comes from a copied trunk; the policy trunk gets no value gradient")
     ap.add_argument("--aux-heads", default="", help="comma list of auxiliary targets (floor, act4), zero-init heads")
@@ -300,10 +304,21 @@ def aux_names(args):
     return names
 
 
+def input_names(args):
+    names = tuple(x for x in getattr(args, "inputs", "").split(",") if x)
+    bad = [x for x in names if x not in OPTIONAL_FIXEDVECS]
+    if bad:
+        sys.exit(f"--inputs {bad}: choose from {tuple(OPTIONAL_FIXEDVECS)}")
+    return names
+
+
 def structure_of(args):
     """The net structure the arch flags ask for (compared with a resumed state's)."""
-    return {"extra_blocks": getattr(args, "extra_blocks", 0), "critic": getattr(args, "critic", "shared"),
-            "aux": list(aux_names(args))}
+    st = {"extra_blocks": getattr(args, "extra_blocks", 0), "critic": getattr(args, "critic", "shared"),
+          "aux": list(aux_names(args))}
+    if input_names(args):   # key only when used: older structures compare equal
+        st["inputs"] = list(input_names(args))
+    return st
 
 
 def aux_targets(outcome, names):
@@ -614,22 +629,28 @@ class Learner:
 def shape_of(net):
     shape = {"dim": net.dim, "heads": net.heads, "hidden": net.hidden, "layers": len(net.blocks),
              "trim_map": net.trim_map, "rows": {k: int(v.shape[0]) for k, v in net.tables.items()}}
-    if net.extra_blocks or net.critic_mode != "shared" or net.aux_names:   # arch arms only: older states unchanged
+    if net.extra_blocks or net.critic_mode != "shared" or net.aux_names or net.extra_inputs:
+        # arch arms only: older states unchanged
         shape.update({"extra_blocks": net.extra_blocks, "critic": net.critic_mode, "aux": list(net.aux_names)})
+        if net.extra_inputs:
+            shape["inputs"] = list(net.extra_inputs)
     return shape
 
 
 def shape_structure(shape):
-    return {"extra_blocks": shape.get("extra_blocks", 0), "critic": shape.get("critic", "shared"),
-            "aux": list(shape.get("aux", []))}
+    st = {"extra_blocks": shape.get("extra_blocks", 0), "critic": shape.get("critic", "shared"),
+          "aux": list(shape.get("aux", []))}
+    if shape.get("inputs"):
+        st["inputs"] = list(shape["inputs"])
+    return st
 
 
 def net_from_shape(shape):
     st = shape_structure(shape)
     net = PolicyNet(shape["dim"], shape["heads"], shape["hidden"], shape["layers"] - st["extra_blocks"],
                     shape["rows"], shape["trim_map"])
-    if st != shape_structure({}):
-        net = construct(net, st["extra_blocks"], st["critic"], st["aux"])   # weights come from the state dict
+    if st != shape_structure({}):   # weights come from the state dict
+        net = construct(net, st["extra_blocks"], st["critic"], st["aux"], inputs=st.get("inputs", ()))
     return net
 
 
@@ -656,7 +677,8 @@ def make_learner(args, device):
     anchor = PolicyNet.from_bin(args.init)
     st = structure_of(args)
     if st != shape_structure({}):
-        net = construct(net, st["extra_blocks"], st["critic"], st["aux"], seed=args.seed)
+        net = construct(net, st["extra_blocks"], st["critic"], st["aux"], seed=args.seed,
+                        inputs=[k for k in st.get("inputs", ()) if k not in net.fixedvecs])
     return Learner(net, anchor, args, device)
 
 
@@ -672,13 +694,14 @@ def fork_learner(state_path, args, device=None):
     if shape_structure(st["shape"]) != shape_structure({}):
         sys.exit(f"{state_path}: already has structure {shape_structure(st['shape'])}; forks start from a plain arm")
     base = argparse.Namespace(**vars(args))
-    base.extra_blocks, base.critic, base.aux_heads, base.state = 0, "shared", "", state_path
+    base.extra_blocks, base.critic, base.aux_heads, base.inputs, base.state = 0, "shared", "", "", state_path
     src = make_learner(base, device)
     want = structure_of(args)
     if want == shape_structure({}):
         src.args = args
         return src
-    net = construct(src.net, want["extra_blocks"], want["critic"], want["aux"], seed=args.seed)
+    net = construct(src.net, want["extra_blocks"], want["critic"], want["aux"], seed=args.seed,
+                    inputs=want.get("inputs", ()))
     learner = Learner(net, src.anchor, args, device)
     learner.iteration = src.iteration
     old = dict(src.net.named_parameters())

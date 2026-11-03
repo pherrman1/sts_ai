@@ -334,6 +334,63 @@ class Heart1PpoTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             ppo_model.construct(sep, extra_blocks=1)   # constructions apply to a plain net once
 
+    def test_x3_deck_input(self):
+        """IN_DECK: deck_aggregates on a known deck; an x3_deck net keeps the logits until trained, survives the .bin
+        and state round trips, and a net without it ignores the emitted feature (old nets unchanged)."""
+        import ppo_model
+        import ppo_train
+        cards = {c["name"]: c["id"] for c in ppo_model._cards()}
+        rec = {"obs.deck.cards": [cards["STRIKE_RED"]] * 5 + [cards["DEFEND_RED"]] * 4
+               + [cards["BASH"], cards["POMMEL_STRIKE"], cards["INFLAME"], cards["TRUE_GRIT"], cards["REGRET"]],
+               "obs.deck.upgrades": [0] * 9 + [1, 0, 0, 1, 0]}
+        # attacks 7, skills 5, powers 1, starter 9, exhaust 1 (True Grit+ only exhausts... per table), draws 1,
+        # upgraded 2/14 -> 14 %, size 14, curses 1
+        agg = ppo_model.deck_aggregates(rec)
+        tab = {c["id"]: c for c in ppo_model._cards()}
+        self.assertEqual(agg[:4], [7, 5, 1, 9])
+        self.assertEqual(agg[5], 1)
+        self.assertEqual(agg[6], 14)
+        self.assertEqual(agg[8:], [14, 1])
+        self.assertEqual(agg[4], sum(1 for i, c in enumerate(rec["obs.deck.cards"])
+                                     if tab[c]["exhaust"][rec["obs.deck.upgrades"][i]]))
+        costs = [tab[c]["cost"][u] for c, u in zip(rec["obs.deck.cards"], rec["obs.deck.upgrades"])
+                 if tab[c]["cost"][u] >= 0]
+        self.assertEqual(agg[7], (200 * sum(costs) + len(costs)) // (2 * len(costs)))
+        self.assertEqual(ppo_model.deck_aggregates({"obs.deck.cards": [], "obs.deck.upgrades": []}), [0] * 10)
+        here = os.path.dirname(os.path.abspath(__file__))
+        traj = os.path.join(here, "..", "docs", "experiments", "evidence", "ppo_s0_smoke_20261101", "cov8.jsonl.gz")
+        rows = {k: 4096 for k in ppo_model.TABLES}
+        rows["fixed_action"] = ppo_model.FA_COUNT
+        torch.manual_seed(2)
+        net = ppo_model.PolicyNet(16, 2, 32, 1, rows, False)
+        with torch.no_grad():
+            for p in net.parameters():
+                p.copy_(0.3 * torch.randn_like(p))
+        games = ppo_train.load_games([traj], net.trim_map)[:3]
+        feats = [st["feat"] for g in games for st in g["steps"]]
+        self.assertIn("x3_deck", feats[0]["fv"])
+        batch = ppo_model.collate(feats)
+        self.assertEqual(ppo_model.FeatureStore(feats).batch(range(len(feats)))["fv"].keys(), batch["fv"].keys())
+        with torch.no_grad():
+            ref = net(batch)[0]
+            arm = ppo_model.construct(net, inputs=("x3_deck",))
+            self.assertTrue(torch.equal(arm(batch)[0], ref))
+            self.assertEqual(arm.extra_inputs, ("x3_deck",))
+            with tempfile.TemporaryDirectory() as d:
+                path = os.path.join(d, "x3.bin")
+                arm.fixedvecs["x3_deck"].proj.weight.normal_(0, 0.05)   # trained: must change the logits
+                arm.to_bin(path)
+                back = ppo_model.PolicyNet.from_bin(path)
+                self.assertEqual(back.extra_inputs, ("x3_deck",))
+                self.assertTrue(torch.equal(back(batch)[0], arm(batch)[0]))
+                self.assertFalse(torch.equal(back(batch)[0], ref))
+                plain = os.path.join(d, "plain.bin")
+                net.to_bin(plain)
+                self.assertNotIn("x3_deck.proj.weight", ppo_model.read_bin(plain))
+            restored = ppo_train.net_from_shape(ppo_train.shape_of(arm))
+            restored.load_state_dict(arm.state_dict())
+            self.assertTrue(torch.equal(restored(batch)[0], arm(batch)[0]))
+
     def test_value_sparse_mask(self):
         import ppo_train
         games = [{"seed": "5", "steps": [{"act": a} for a in (1, 1, 1, 2, 2, 2, 2, 3, 3, 3)]},

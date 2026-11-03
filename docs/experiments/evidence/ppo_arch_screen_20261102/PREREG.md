@@ -195,6 +195,15 @@ same seeds.
   net inputs: removal price and removals bought (`x2_run`, #941), Wing Boots charges (relic counter), free potion
   slots (potion tokens incl. empty slots), floors to the boss (the floor on the fixed token), elites ahead (map-DAG
   minE/maxE per node). Design B now has five change arms.
+- 2026-11-03 (before launch), P1 implementation: `x3_deck` is an optional input that only IN_DECK's net has
+  (`ppo_train --inputs x3_deck`, zero-initialised at the fork), not "exported always": an always-present zero input
+  would get gradient in every arm and break their identity with BASE. The aggregates are computed from the record's
+  deck by the same rule natively (`heart1_policy.cpp deckAggregates`) and in torch (`ppo_model.deck_aggregates` with
+  the engine's card table `tools/heart1/x3_card_table.json` from `one_combat heart1cardtable`), so the trajectory
+  format is unchanged. "Cards that draw" is a hand list (Pommel Strike, Shrug It Off, Battle Trance, Burning Pact,
+  Offering, Warcry, Dark Embrace, Evolve, Brutality; colorless Master of Strategy, Finesse, Flash of Steel, Deep
+  Breath, Impatience, Thinking Ahead); the upgraded share and mean cost are integers (percent, cost x100, rounded
+  half up).
 
 **Knowledge impact.** `a20-ppo-plan.md` "Training recipe" row "net size, start" points here; results go to the
 ledger as one entry and to the plan page; an ADR only after S1 and G1.

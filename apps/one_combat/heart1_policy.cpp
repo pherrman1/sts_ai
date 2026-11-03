@@ -1271,6 +1271,8 @@ bool Net::load(const std::string &file, std::string *error) {
         relicCounter_ = fixedVec("x_relic_counter", 1);
         act_ = embedding("x_act.weight");
     }
+    extraInputsV3_ = tensors.count("x3_deck.proj.weight") > 0;
+    if (extraInputsV3_) deckAgg_ = fixedVec("x3_deck", kDeckAggCount);
     extraInputsV2_ = tensors.count("x2_run.proj.weight") > 0;
     if (extraInputsV2_) {
         runCounters_ = fixedVec("x2_run", kRunCounterCount);
@@ -1438,6 +1440,11 @@ Output Net::forwardRecord(const Record &r, bool logitsOnly) const {
             addFixedVec(runCounters_, run, row(t));
             const int nFought = std::min<int>(r.foughtEncounters.size(), kMaxFoughtEncounters);
             for (int i = 0; i < nFought; ++i) addEmbedding(fought_, r.foughtEncounters[i], row(t));
+        }
+        if (extraInputsV3_) {
+            float agg[kDeckAggCount];
+            deckAggregates(r, agg);
+            addFixedVec(deckAgg_, agg, row(t));
         }
         ++t;
     }
@@ -2313,6 +2320,78 @@ Net loadOrThrow(const std::string &path) {
     return model;
 }
 }  // namespace
+
+namespace {
+
+// Cards whose play (or, for a power, whose effect) draws cards: the Ironclad and
+// colorless pool. A hand list for the x3_deck "draws" aggregate (arch screen IN_DECK).
+bool drawsCards(CardId id) {
+    switch (id) {
+        case CardId::POMMEL_STRIKE: case CardId::SHRUG_IT_OFF: case CardId::BATTLE_TRANCE:
+        case CardId::BURNING_PACT: case CardId::OFFERING: case CardId::WARCRY:
+        case CardId::DARK_EMBRACE: case CardId::EVOLVE: case CardId::BRUTALITY:
+        case CardId::MASTER_OF_STRATEGY: case CardId::FINESSE: case CardId::FLASH_OF_STEEL:
+        case CardId::DEEP_BREATH: case CardId::IMPATIENCE: case CardId::THINKING_AHEAD:
+            return true;
+        default:
+            return false;
+    }
+}
+
+constexpr int kCardIdCount = int(sizeof(cardTypes) / sizeof(cardTypes[0]));
+
+int roundedPercent(int num, int den) { return den > 0 ? (200 * num + den) / (2 * den) : 0; }
+
+}  // namespace
+
+void deckAggregates(const Record &r, float out[kDeckAggCount]) {
+    int attacks = 0, skills = 0, powers = 0, starter = 0, exhaust = 0, draws = 0, upgraded = 0;
+    int costSum = 0, costed = 0, curses = 0;
+    const int n = int(r.deckCards.size());
+    for (int i = 0; i < n; ++i) {
+        const int raw = r.deckCards[i];
+        if (raw < 0 || raw >= kCardIdCount) continue;
+        const auto id = static_cast<CardId>(raw);
+        const bool up = i < int(r.deckUpgrades.size()) && r.deckUpgrades[i] != 0;
+        switch (getCardType(id)) {
+            case CardType::ATTACK: ++attacks; break;
+            case CardType::SKILL: ++skills; break;
+            case CardType::POWER: ++powers; break;
+            case CardType::CURSE: ++curses; break;
+            default: break;
+        }
+        starter += isStarterStrikeOrDefend(id);
+        exhaust += doesCardExhaust(id, up);
+        draws += drawsCards(id);
+        upgraded += up;
+        const int cost = getEnergyCost(id, up);
+        if (cost >= 0) { costSum += cost; ++costed; }
+    }
+    const int v[kDeckAggCount] = {attacks, skills, powers, starter, exhaust, draws, roundedPercent(upgraded, n),
+                                  roundedPercent(costSum, costed), n, curses};
+    for (int k = 0; k < kDeckAggCount; ++k) out[k] = float(std::min(std::max(v[k], -1), 999));
+}
+
+int cardTableCommand(int argc, char **argv) {
+    if (argc != 3) {
+        std::fprintf(stderr, "usage: one_combat heart1cardtable <out.json>\n");
+        return 2;
+    }
+    nlohmann::json cards = nlohmann::json::array();
+    for (int raw = 0; raw < kCardIdCount; ++raw) {
+        const auto id = static_cast<CardId>(raw);
+        cards.push_back({{"id", raw}, {"name", cardEnumStrings[raw]},
+                         {"type", cardTypeStrings[int(getCardType(id))]},
+                         {"cost", {getEnergyCost(id, false), getEnergyCost(id, true)}},
+                         {"exhaust", {doesCardExhaust(id, false), doesCardExhaust(id, true)}},
+                         {"starter", isStarterStrikeOrDefend(id)}, {"draws", drawsCards(id)}});
+    }
+    std::ofstream out(argv[2]);
+    if (!out) throw std::runtime_error("heart1cardtable: cannot open output");
+    out << nlohmann::json({{"schema", "heart1-x3-card-table-v1"}, {"cards", cards}}).dump(1) << '\n';
+    std::printf("heart1cardtable cards=%d -> %s\n", kCardIdCount, argv[2]);
+    return 0;
+}
 
 int scoreCommand(int argc, char **argv) {
     if (argc != 5) {
