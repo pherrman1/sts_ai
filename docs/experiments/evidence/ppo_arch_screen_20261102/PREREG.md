@@ -104,8 +104,10 @@ decided as B below: fewer arms that run later and reuse screen 2's controls.
   (recorded as an amendment, re-reviewed by K) and the six arms keep their seeds.
 - **Arms:** IN_DECK, IN_RUN, DEPTH6, CRITIC_SEP, AUX, VAL_SPARSE, learner seed 0. Each arm's start state = the fork
   point with the arm's construction (arms table) applied to net-0030; existing Adam moments are kept, new tensors
-  get zero moments. P2 provides this as `ppo_cloud.py init --from-state <state-0030.pt> --construct <arm flags>`,
-  which writes the arm's `state.pt` at iteration 30 and its `net-0030.bin`, and records both sha256.
+  get zero moments. P2 provides this as `ppo_cloud.py init STORE ARM --fork-dir ~/ppo-screen2/BASE --fork-at 30
+  --local ~/ppo-screen2 ... -- <arm flags>` on the PC, which writes the arm's `state.pt` at iteration 30, its
+  `net-0030.bin` and loop.json, puts BASE's iteration-30 parts into the store as the arm's, and records every sha256
+  in the arm's config (`fork`).
 - **Iterations 30-59, warm-up 0, screen 2's layout:** 512 games per iteration in 4 parts of 128, seed base
   111470000, iteration i plays exactly screen 2's seeds of iteration i. Under `--pipeline 1` iteration i is played
   by net-(i−1), so iteration 30 was played by BASE's net-0029, before any arm change exists: every arm's iteration
@@ -155,11 +157,12 @@ seeds, policy alone, Silver 1,000). No ADR before S1.
 - P1 (native + torch): `x3_deck` and `x3_run` FixedVec inputs in `apps/one_combat/heart1_policy.cpp` and
   `tools/heart1/ppo_model.py` (zero-init, exported always, parity by `tools/heart1/ppo_parity.py --perturb` on cov8:
   max |Δlogit| ≤ 1e-4 and a perturbation that moves logits by ≥ 1). Also the native cost measurement command.
-- P2 (learner; design B also needs `ppo_cloud.py init --from-state/--construct` and the learner check under
+- P2 (learner; design B also needs `ppo_cloud.py init --fork-dir/--fork-at/--local` and the learner check under
   "Binding under B"): `ppo_train.py` flags `--extra-blocks N` (identity-initialised), `--critic separate`,
   `--aux-heads floor,act4 --aux-weight 0.1`, `--value-sparse 3`; `ppo_cloud.py init` applies the arm's construction
-  once and records the resulting net-0000 sha per arm; `to_bin` writes critic and aux tensors under names the native
-  loader does not read. Unit tests: each construction reproduces BASE's logits bit-for-bit on cov8 before training;
+  once and records the resulting net sha per arm. The native export (`to_bin`) holds the policy net only (depth
+  included); the separate critic and the aux heads live in the learner's `state.pt`, which the critic secondary
+  reads (a critic copy in the .bin would roughly double each actor download). Unit tests: each construction reproduces BASE's logits bit-for-bit on cov8 before training;
   the micro-batch test still passes with every flag.
 - P3 (analysis): screen 1's `analyze.py` extended with the cost ratio and the critic secondary.
 - The PPO learner fixes from the 2026-11-02 loop review (seed-sorted game order, fp32 choice head, cross-file seed
@@ -185,6 +188,9 @@ same seeds.
   lines; iteration-30 games reused from BASE's parts; fork state = #975's `state-0030.pt` with a fallback; `arms.txt`
   rewritten for B; P1 built on screen 2's binary commit (engine drift); learner bit-for-bit check; screen 2 abort
   case restated.
+- 2026-11-03 (before launch), P2 implementation: the fork command is `init --fork-dir/--fork-at/--local` (not
+  `--from-state/--construct`); critic and aux tensors stay in `state.pt`, not in the native .bin (semantics
+  unchanged).
 
 **Knowledge impact.** `a20-ppo-plan.md` "Training recipe" row "net size, start" points here; results go to the
 ledger as one entry and to the plan page; an ADR only after S1 and G1.

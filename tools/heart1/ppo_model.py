@@ -485,6 +485,7 @@ class PolicyNet(nn.Module):
         self.value_head_norm = RMSNorm(dim)
         self.choice_logits = nn.Linear(dim, 1)
         self.value_head = nn.Linear(dim, 1)
+        self.extra_blocks, self.critic_mode, self.aux_names = 0, "shared", ()   # set by construct()
 
     # -- native .bin <-> module
     @classmethod
@@ -599,8 +600,70 @@ class PolicyNet(nn.Module):
         return logits, value, pooled
 
     def forward(self, batch):
-        logits, value, _ = self.heads_out(self.trunk(batch), batch)
-        return logits, value
+        """(logits, value), or (logits, value, aux) when the net has auxiliary heads (see construct()).
+
+        With a separate critic (critic_net) the value comes from the critic's own trunk and head, so the policy
+        trunk gets no value gradient; the net's own value_head is then unused (and stays in the native export)."""
+        logits, value, pooled = self.heads_out(self.trunk(batch), batch)
+        critic = getattr(self, "critic_net", None)
+        if critic is not None:
+            _, value, _ = critic.heads_out(critic.trunk(batch), batch)
+        aux_head = getattr(self, "aux_head", None)
+        if aux_head is None:
+            return logits, value
+        with torch.autocast(pooled.device.type, enabled=False):
+            aux = aux_head(pooled.float())
+        return logits, value, aux
+
+
+# ---------------------------------------------------------------- architecture constructions (arch screen, P2)
+
+AUX_TARGETS = ("floor", "act4")   # final floor / 57 (MSE); Act 4 reached (BCE on a logit)
+
+
+def construct(net, extra_blocks=0, critic="shared", aux=(), seed=0):
+    """A copy of `net` with the arch screen's policy-preserving changes (PREREG ppo_arch_screen_20261102):
+
+    - extra_blocks N: N transformer blocks appended after the last one, with out_proj (weight and bias) and w2
+      zero, so each new pre-norm residual block is the identity; their other weights are drawn from `seed`.
+    - critic "separate": critic_net, a full copy of the trunk (embeddings, fixed vectors, blocks, norms) with the
+      net's value head; the value then comes from it alone.
+    - aux names (subset of AUX_TARGETS): aux_head, a zero-initialised Linear(dim, len(aux)) on the pooled trunk.
+    Policy logits (and, before training, the value) equal the source net's; the native export writes only the
+    policy net (to_bin: depth included, critic and aux heads not, since actors use the policy logits alone)."""
+    import copy
+    if critic not in ("shared", "separate"):
+        raise ValueError(f"critic {critic!r}: shared or separate")
+    aux = tuple(aux)
+    if any(a not in AUX_TARGETS for a in aux) or len(set(aux)) != len(aux):
+        raise ValueError(f"aux heads {aux}: a subset of {AUX_TARGETS}")
+    if getattr(net, "critic_net", None) is not None or getattr(net, "aux_head", None) is not None:
+        raise ValueError("construct() applies to a plain net, not to one already constructed")
+    out = copy.deepcopy(net)
+    g = torch.Generator().manual_seed(int(seed))
+    D = out.dim
+    with torch.no_grad():
+        for _ in range(extra_blocks):
+            b = Block(D, out.heads, out.hidden).to(out.norm.w.device, out.norm.w.dtype)
+            bound = math.sqrt(6.0 / (D + D))   # xavier-uniform per q/k/v slice, as nn.MultiheadAttention
+            b.in_proj_weight.copy_((torch.rand(3 * D, D, generator=g) * 2 - 1) * bound)
+            b.in_proj_bias.zero_()
+            for lin, fan_in in ((b.w1, D), (b.v, D)):   # nn.Linear's default range
+                r = 1.0 / math.sqrt(fan_in)
+                lin.weight.copy_((torch.rand(lin.weight.shape, generator=g) * 2 - 1) * r)
+                if lin.bias is not None:
+                    lin.bias.copy_((torch.rand(lin.bias.shape, generator=g) * 2 - 1) * r)
+            b.out_proj.weight.zero_(); b.out_proj.bias.zero_(); b.w2.weight.zero_()
+            out.blocks.append(b)
+    if critic == "separate":
+        out.critic_net = copy.deepcopy(net)
+    if aux:
+        out.aux_head = nn.Linear(D, len(aux))
+        with torch.no_grad():
+            out.aux_head.weight.zero_(); out.aux_head.bias.zero_()
+    out.extra_blocks = int(extra_blocks) + getattr(net, "extra_blocks", 0)
+    out.critic_mode, out.aux_names = critic, aux
+    return out
 
 
 def _records(path):

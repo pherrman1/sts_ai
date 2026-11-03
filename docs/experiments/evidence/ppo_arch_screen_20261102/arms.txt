@@ -1,5 +1,5 @@
 # Design B (PREREG.md "Binding under B"). Every arm starts from screen 2's BASE state-0030.pt (net-0030 + Adam,
-# iteration 30) with its construction applied by `ppo_cloud.py init --from-state ... --construct <flags>` (P2).
+# iteration 30) with its construction applied by `ppo_cloud.py init --fork-dir ... --fork-at 30 -- <flags>` (P2).
 # Iterations 30-59, warm-up 0, screen 2's layout (4 parts x 128, seed base 111470000). Iteration 30's games are BASE's
 # (copied parts/), so the arms' own games are iterations 31-59. Controls: screen 2's BASE and BASE_S1 (not run here).
 # Learner hyperparameters = screen 2 BASE's (ppo_train.py defaults at screen 2's learner commit) plus the arm flags,
