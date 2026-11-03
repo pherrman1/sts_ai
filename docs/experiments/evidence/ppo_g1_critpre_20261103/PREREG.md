@@ -33,8 +33,10 @@ Both nets came to the cloud via the single-commit ref `ppo-xfer/g1-nets` (6d5a2a
 `ca8db597`, with 0 fallbacks and 7-24 s per game. The four games end on the same floors on both binaries.
 
 **Primary analysis** (`analyze.py`, frozen here):
-- **Failed games:** a game counts if it finished rc 0, with all its log checks passing. That includes a game that
-  ends inside an over-long combat, which then plays out as the engine ends it. A game with rc ≠ 0 or a missing
+- **Failed games:** a game counts if it finished rc 0, with all its log checks passing. A combat stall (bestbench's
+  CombatAbort, `[bestbench-combat-abort] seed=N`) ends the game as a loss with rc 0 before the `[heart1_ppo]` line;
+  `run_unit.sh` accepts the abort line in its place, and the game counts as a loss (as the screens' stall = loss).
+  Aborted games are listed in `result.json` and do not count toward the drop cap. A game with rc ≠ 0 or a missing
   game is rerun once by the lead, locally, with the same unit. A seed that still lacks a valid game in either arm is
   dropped from both arms and listed in `result.json`; dropped seeds are never imputed. More than 1% dropped
   (> 20 seeds) = **INCOMPLETE**, no verdict.

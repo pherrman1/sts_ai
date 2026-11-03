@@ -5,7 +5,8 @@
 
 OUT_ROOT holds one directory per seed with ARM-SEED.{done,log} from run_unit.sh (the unpacked worker tars).
 A seed counts only if both of its games finished rc 0 (after the lead's one local rerun of each failed unit);
-dropped seeds are listed in result.json, never imputed. More than 1% dropped (> 20 seeds) = INCOMPLETE, no verdict.
+dropped seeds are listed in result.json, never imputed. A combat abort (stall) is a loss with rc 0 and is counted;
+the aborted games are listed (abort=1 in the .done file). More than 1% dropped (> 20 seeds) = INCOMPLETE, no verdict.
 The gate gets the analysed seeds gap-free (key = rank in ascending seed order), so a dropped seed cannot stall it.
 Primary: the standard sequential gate (tools/sprt_gate.py, variant gainer, look 64, cap 2,048) on d = kill GC - kill GH
 in ascending seed order. If it ends at CAP, the fixed-sample reading decides: 95% seed bootstrap of the mean d
@@ -28,7 +29,7 @@ MAX_DROPPED = len(SEEDS) // 100   # 20 seeds = 1%
 
 
 def load(root):
-    games, bad = {}, []
+    games, bad, aborts = {}, [], []
     for done in Path(root).glob("*/*.done"):
         d = dict(kv.split("=", 1) for kv in done.read_text().split())
         arm, seed = d["tag"].rsplit("-", 1)
@@ -40,8 +41,10 @@ def load(root):
         key = (arm, int(seed))
         if key in games:
             raise ValueError(f"{d['tag']} twice")
+        if d.get("abort") == "1":
+            aborts.append(d["tag"])   # a combat stall: the game ended as a loss (counted, not dropped)
         games[key] = (int(float(m.group(1)) == 100.0), int(floor >= 52), floor, float(m.group(3)))
-    return games, sorted(bad)
+    return games, sorted(bad), sorted(aborts)
 
 
 def boot(x, seed=20261103):
@@ -51,7 +54,7 @@ def boot(x, seed=20261103):
 
 
 def main(root, out, pairs_path=None):
-    games, bad = load(root)
+    games, bad, aborts = load(root)
     seeds = [s for s in SEEDS if ("GH", s) in games and ("GC", s) in games]
     missing = [s for s in SEEDS if s not in set(seeds)]
     h = np.array([games[("GH", s)] for s in seeds], float)
@@ -68,7 +71,7 @@ def main(root, out, pairs_path=None):
         raise RuntimeError(f"sprt_gate failed: {gate.stderr.strip()}")
     d = c[:, 0] - h[:, 0]
     lo, hi = boot(d)
-    res = {"n": len(seeds), "missing": missing, "bad": bad, "heart_gh": h[:, 0].mean(), "heart_gc": c[:, 0].mean(),
+    res = {"n": len(seeds), "missing": missing, "bad": bad, "aborts": aborts, "heart_gh": h[:, 0].mean(), "heart_gc": c[:, 0].mean(),
            "D": d.mean(), "lo": lo, "hi": hi,
            "act3_D": float((c[:, 1] - h[:, 1]).mean()), "act3_ci": boot(c[:, 1] - h[:, 1]),
            "floor_D": float((c[:, 2] - h[:, 2]).mean()), "floor_ci": boot(c[:, 2] - h[:, 2]),
@@ -107,12 +110,15 @@ def self_test():
         for arm, p in (("GH", 0.09), ("GC", 0.12)):
             k = rng.random() < p
             rc = 1 if (s in drop and arm == "GC") else 0
-            Path(d, f"{arm}-{s}.done").write_text(f"tag={arm}-{s} rc={rc} start=x wall=1")
+            ab = int(s == 111520700 and arm == "GH")   # a combat-abort game: rc 0, a loss, counted
+            k = k and not ab
+            Path(d, f"{arm}-{s}.done").write_text(f"tag={arm}-{s} rc={rc} start=x wall=1 abort={ab}")
             Path(d, f"{arm}-{s}.log").write_text(
                 f"BEST  win%= {100.0 if k else 0.0}  avg_floor= {56 if k else 30}  x cpu_sec/run= 20.0\n")
     main(t, os.path.join(t, "r.json"))
     r = json.load(open(os.path.join(t, "r.json")))
     assert r["missing"] == sorted(drop) and r["n"] == len(SEEDS) - 2, r["missing"]
+    assert r["aborts"] == ["GH-111520700"], r["aborts"]
     assert r["sprt"]["pairs"]["gap_after"] is None and r["sprt"]["verdict"] != "PARTIAL", r["sprt"]
     assert r["verdict"] in ("GO", "NOT_SHOWN", "STOP", "INCONCLUSIVE"), r["verdict"]
     print("self-test OK")
