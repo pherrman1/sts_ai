@@ -101,23 +101,27 @@ class Heart1PpoTest(unittest.TestCase):
         net = ppo_model.PolicyNet(16, 2, 32, 1, rows, False)
         games = ppo_train.load_games([traj], net.trim_map)
 
-        def run(micro, value_clip):
+        arch = ["--extra-blocks", "1", "--critic", "separate", "--aux-heads", "floor,act4", "--value-sparse", "3"]
+
+        def run(micro, value_clip, flags=()):
             ap = argparse.ArgumentParser()
             ppo_train.add_hparams(ap)
             args = ap.parse_args(["--minibatch", "64", "--epochs", "1", "--kl-coef", "0.1", "--entropy-coef", "0.01",
-                                  "--micro-batch", str(micro), "--value-clip", str(value_clip)])
-            learner = ppo_train.Learner(copy.deepcopy(net), copy.deepcopy(net), args, torch.device("cpu"))
+                                  "--micro-batch", str(micro), "--value-clip", str(value_clip)] + list(flags))
+            st = ppo_train.structure_of(args)
+            start = ppo_model.construct(net, st["extra_blocks"], st["critic"], st["aux"], seed=0) if flags else net
+            learner = ppo_train.Learner(copy.deepcopy(start), copy.deepcopy(net), args, torch.device("cpu"))
             stats = learner.update(copy.deepcopy(games), log=lambda line: None)
             return learner.net.state_dict(), stats
 
-        for value_clip in (0, 0.2):
-            ref, s_ref = run(0, value_clip)
-            same, s_same = run(64, value_clip)
-            chunked, s_ch = run(23, value_clip)
+        for value_clip, flags in ((0, ()), (0.2, ()), (0, arch), (0.2, arch)):
+            ref, s_ref = run(0, value_clip, flags)
+            same, s_same = run(64, value_clip, flags)
+            chunked, s_ch = run(23, value_clip, flags)
             for k in ref:
                 self.assertTrue(torch.equal(ref[k], same[k]), k)
                 self.assertTrue(torch.allclose(ref[k], chunked[k], atol=1e-6, rtol=1e-5), k)
-            for k in ("policy", "value", "entropy", "kl_anchor", "clipfrac", "approx_kl"):
+            for k in ("policy", "value", "entropy", "kl_anchor", "clipfrac", "approx_kl", "aux"):
                 self.assertAlmostEqual(s_ref[k], s_ch[k], places=5)
                 self.assertEqual(s_ref[k], s_same[k])
             self.assertEqual(s_ref["minibatches"], s_ch["minibatches"])
@@ -275,6 +279,176 @@ class Heart1PpoTest(unittest.TestCase):
                     f.truncate((ppo_cloud.MAX_PUT_MB + 1) * 2**20)
                 s.put("A/big", big, {})
             self.assertEqual(ppo_cloud.trained_iterations(s, "A", d), 2)
+
+    def test_arch_constructions_preserve_the_policy(self):
+        """Arch screen arms: extra identity blocks, a separate critic and zero-init aux heads leave the logits (and,
+        untrained, the value) bit-identical; the native export keeps the depth; the policy trunk gets no value
+        gradient with a separate critic."""
+        import ppo_model
+        import ppo_train
+        here = os.path.dirname(os.path.abspath(__file__))
+        traj = os.path.join(here, "..", "docs", "experiments", "evidence", "ppo_s0_smoke_20261101", "cov8.jsonl.gz")
+        rows = {k: 4096 for k in ppo_model.TABLES}
+        rows["fixed_action"] = ppo_model.FA_COUNT
+        torch.manual_seed(1)
+        net = ppo_model.PolicyNet(16, 2, 32, 2, rows, False)
+        with torch.no_grad():
+            for p in net.parameters():
+                p.copy_(0.3 * torch.randn_like(p))
+        games = ppo_train.load_games([traj], net.trim_map)[:3]
+        batch = ppo_model.collate([s["feat"] for g in games for s in g["steps"]])
+        with torch.no_grad():
+            ref_logits, ref_value = net(batch)
+        for kw in ({"extra_blocks": 2}, {"critic": "separate"}, {"aux": ("floor", "act4")},
+                   {"extra_blocks": 1, "critic": "separate", "aux": ("act4",)}):
+            arm = ppo_model.construct(net, seed=3, **kw)
+            with torch.no_grad():
+                out = arm(batch)
+            self.assertTrue(torch.equal(out[0], ref_logits), kw)
+            self.assertTrue(torch.equal(out[1], ref_value), kw)
+            self.assertEqual(len(out), 3 if "aux" in kw else 2)
+            if "aux" in kw:
+                self.assertEqual(int(torch.count_nonzero(out[2])), 0)
+            self.assertEqual(len(arm.blocks), 2 + kw.get("extra_blocks", 0))
+            with tempfile.TemporaryDirectory() as d:   # the native export: policy net, depth included
+                path = os.path.join(d, "a.bin")
+                arm.to_bin(path)
+                back = ppo_model.PolicyNet.from_bin(path)
+                self.assertEqual(len(back.blocks), len(arm.blocks))
+                with torch.no_grad():
+                    self.assertTrue(torch.equal(back(batch)[0], ref_logits), kw)
+            restored = ppo_train.net_from_shape(ppo_train.shape_of(arm))
+            restored.load_state_dict(arm.state_dict())
+            with torch.no_grad():
+                self.assertTrue(torch.equal(restored(batch)[0], ref_logits), kw)
+        sep = ppo_model.construct(net, critic="separate")
+        sep(batch)[1].sum().backward()
+        for name, p in sep.named_parameters():
+            if name.startswith("critic_net."):
+                continue
+            self.assertTrue(p.grad is None or int(torch.count_nonzero(p.grad)) == 0, name)
+        self.assertGreater(sum(int(torch.count_nonzero(p.grad)) for n, p in sep.named_parameters()
+                               if n.startswith("critic_net.") and p.grad is not None), 0)
+        with self.assertRaises(ValueError):
+            ppo_model.construct(net, aux=("hp",))
+        with self.assertRaises(ValueError):
+            ppo_model.construct(sep, extra_blocks=1)   # constructions apply to a plain net once
+
+    def test_value_sparse_mask(self):
+        import ppo_train
+        games = [{"seed": "5", "steps": [{"act": a} for a in (1, 1, 1, 2, 2, 2, 2, 3, 3, 3)]},
+                 {"seed": "6", "steps": [{"act": 1}, {"act": 1}]}]
+        m = ppo_train.value_sparse_mask(games, 3, 0, 7)
+        self.assertEqual(len(m), 12)
+        self.assertTrue(m[0] and m[3] and m[7])            # each act's first decision
+        self.assertEqual(sum(m[:10]), 6)                    # plus 3 others
+        self.assertEqual(m[10:], [True, True])              # fewer than k left: all
+        self.assertEqual(m, ppo_train.value_sparse_mask(games, 3, 0, 7))
+        self.assertNotEqual(m, ppo_train.value_sparse_mask(games, 3, 0, 8))
+
+    def test_cloud_fork(self):
+        """init --fork-dir: a flags-off fork reproduces the source arm's next update bit for bit (the arch screen's
+        learner check); an arm fork keeps the policy, Adam moments of old tensors, and starts its actors at N+1."""
+        import gzip
+        import json
+        import ppo_cloud
+        import ppo_model
+        import ppo_train
+        here = os.path.dirname(os.path.abspath(__file__))
+        traj = os.path.join(here, "..", "docs", "experiments", "evidence", "ppo_s0_smoke_20261101", "cov8.jsonl.gz")
+        rows = {k: 4096 for k in ppo_model.TABLES}
+        rows["fixed_action"] = ppo_model.FA_COUNT
+        torch.manual_seed(0)
+        net = ppo_model.PolicyNet(16, 2, 32, 1, rows, False)
+        with tempfile.TemporaryDirectory() as d:
+            init = os.path.join(d, "init.bin")
+            net.to_bin(init)
+            env = os.path.join(d, "a.env")
+            with open(env, "w") as f:
+                f.write("STS_FAIR=1\n")
+            store = "dir:" + os.path.join(d, "store")
+            local = os.path.join(d, "local")
+            common = ["--env-file", env, "--one-combat-sha", "0" * 64, "--games", "8", "--parts", "2",
+                      "--seed-base", "1", "--value-warmup", "0"]
+            ppo_cloud.cmd_init([store, "A", "--init", init, "--iterations", "4"] + common + ["--", "--epochs", "1"])
+            with gzip.open(traj, "rt") as f:
+                lines = [l for l in f if l.strip()]
+            seeds = sorted({json.loads(l)["seed"] for l in lines if '"type":"game"' in l})
+            s = ppo_cloud.open_store(store)
+            parts = []
+            for k, part in enumerate((seeds[:4], seeds[4:])):
+                p = os.path.join(d, f"p{k}.jsonl.gz")
+                with gzip.open(p, "wt") as f:
+                    f.writelines(l for l in lines if json.loads(l)["seed"] in part)
+                parts.append(p)
+            a = ppo_cloud.ArmLearner(s, local, "A", "cpu")
+            a.keep_state = {2}
+
+            def feed(arm, it, net_name):
+                sha = ppo_cloud.sha256(os.path.join(local, arm, f"{net_name}.bin"))
+                for k, p in enumerate(parts):
+                    s.put(f"{arm}/traj-{it:04d}-p{k}", p, {"games": 4, "sha256": ppo_cloud.sha256(p),
+                                                           "net": net_name, "net_sha256": sha, "actor_s": 1.0,
+                                                           "seed_first": 1})
+            for it in range(4):   # pipeline 1: iteration i played by net-(i-1)
+                feed("A", it, f"net-{max(it - 1, 0):04d}")
+                self.assertTrue(a.step(s.names("")))
+            src = os.path.join(local, "A")
+            hp = ["--epochs", "1"]
+            fork = [store, "B", "--fork-dir", src, "--fork-at", "2", "--local", local, "--iterations", "4"] + common
+            with self.assertRaises(SystemExit):   # the source's seeds and layout are binding
+                ppo_cloud.cmd_init([x if x != "8" else "16" for x in fork] + ["--"] + hp)
+            ppo_cloud.cmd_init(fork + ["--"] + hp)
+            b = ppo_cloud.ArmLearner(s, local, "B", "cpu")
+            self.assertEqual(b.next_it, 2)
+            self.assertEqual(sorted(n for n in s.names("B/")),
+                             ["B/config", "B/net-0002", "B/stats-0002", "B/traj-0002-p0", "B/traj-0002-p1"])
+            self.assertTrue(b.step(s.names("")))   # trains on A's reused iteration-2 parts
+            self.assertEqual(ppo_cloud.sha256(os.path.join(local, "B", "net-0003.bin")),
+                             ppo_cloud.sha256(os.path.join(src, "net-0003.bin")))
+            sb = torch.load(os.path.join(local, "B", "state.pt"), weights_only=False)
+            self.assertEqual(sb["iteration"], 3)
+            cfg = json.load(open(os.path.join(local, "B", "config.json")))
+            self.assertEqual(cfg["start_iteration"], 3)
+            self.assertEqual(cfg["fork"]["at"], 2)
+            # An arm with every structural flag: same policy at the fork, old Adam moments kept, new tensors none.
+            hc = ["--epochs", "1", "--extra-blocks", "1", "--critic", "separate", "--aux-heads", "floor,act4",
+                  "--value-sparse", "2"]
+            ppo_cloud.cmd_init([store, "C", "--fork-dir", src, "--fork-at", "2", "--local", local,
+                                "--iterations", "4"] + common + ["--"] + hc)
+            games = ppo_train.load_games([parts[0]], False)
+            batch = ppo_model.collate([st["feat"] for g in games for st in g["steps"]])
+            with torch.no_grad():
+                ref = ppo_model.PolicyNet.from_bin(os.path.join(src, "net-0002.bin"))(batch)[0]
+                got = ppo_model.PolicyNet.from_bin(os.path.join(local, "C", "net-0002.bin"))(batch)[0]
+            self.assertTrue(torch.equal(ref, got))
+            ap = __import__("argparse").ArgumentParser()
+            ppo_train.add_hparams(ap)
+
+            def args_for(argv, state):
+                ns = ap.parse_args(argv)
+                ns.state, ns.init = state, None
+                return ns
+            cl = ppo_train.make_learner(args_for(hc, os.path.join(local, "C", "state.pt")), torch.device("cpu"))
+            src_l = ppo_train.make_learner(args_for(hp, os.path.join(src, "state-0002.pt")), torch.device("cpu"))
+            old = dict(src_l.net.named_parameters())
+            n_old = n_new = 0
+            for name, p in cl.net.named_parameters():
+                if name in old:
+                    n_old += 1
+                    self.assertTrue(torch.equal(cl.opt.state[p]["exp_avg"], src_l.opt.state[old[name]]["exp_avg"]))
+                else:
+                    n_new += 1
+                    self.assertNotIn(p, cl.opt.state)
+            self.assertGreater(n_old, 0)
+            self.assertGreater(n_new, 0)
+            with self.assertRaises(SystemExit):   # a running arm's structure is fixed: flags must match its state
+                ppo_train.make_learner(args_for(hp, os.path.join(local, "C", "state.pt")), torch.device("cpu"))
+            c = ppo_cloud.ArmLearner(s, local, "C", "cpu")
+            self.assertTrue(c.step(s.names("")))
+            st = json.load(open(os.path.join(local, "C", "loop.json")))["iterations"][-1]
+            self.assertLess(st["value_decisions"], st["decisions"])
+            self.assertGreater(st["aux"], 0)
 
     def test_load_games_seed_order_and_minibatches(self):
         """load_games: the same games in another line order (bestbench writes each game when its thread finishes)

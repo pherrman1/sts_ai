@@ -23,6 +23,15 @@ Rewards (--reward):
               end (changes the objective; screens still judge arms by Heart kills).
 Decisions with one choice (source heart1_ppo_single) train the critic only; fallback lines (chain) are skipped.
 
+Architecture arms (PREREG ppo_arch_screen_20261102; all off by default, and off means the code paths of before):
+  --extra-blocks N    N identity-initialised blocks appended (ppo_model.construct); exported, so actors run them.
+  --critic separate   the value comes from a copied trunk (critic_net); the policy trunk gets no value gradient.
+  --aux-heads floor,act4 [--aux-weight 0.1]   zero-init heads on the pooled trunk: final floor/57 (MSE), Act 4
+                      reached (BCE), from the game line; added to the full loss only (not to a value warm-up).
+  --value-sparse K    value loss on each act's first decision plus K seeded random decisions per game.
+The first three are structure: a fresh --init applies them to the start net; a resumed --state must already have
+them (fork_learner / `ppo_cloud.py init --fork-dir` adds them to a running arm's checkpoint).
+
 `bench` times one update on synthetic copies of real trajectory games (no learning signal needed):
     python3 tools/heart1/ppo_train.py bench --init heart1.bin --traj smoke.jsonl --games 512 1024 2048 --device cuda
 Records are featurised once while loading (load_games); "load_featurize_s" and "feature_gb" extrapolate that cost
@@ -45,7 +54,7 @@ import torch.nn.functional as F
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import ppo_phi  # noqa: E402
-from ppo_model import FeatureStore, PolicyNet, batch_to, collate, featurize  # noqa: E402
+from ppo_model import AUX_TARGETS, FeatureStore, PolicyNet, batch_to, collate, construct, featurize  # noqa: E402
 
 SCHEMA = "heart1-ppo-traj-v1"
 NET_SOURCES = ("heart1_ppo", "heart1_ppo_single")
@@ -232,6 +241,16 @@ def add_hparams(ap):
                     help="memory only: run each minibatch's forward/backward in chunks of at most this many decisions "
                          "and accumulate the gradient before the one optimizer step (same loss and gradient up to "
                          "rounding; 0 = off, as does any value >= minibatch)")
+    # Architecture arms (PREREG ppo_arch_screen_20261102). The first three change the net's structure: a fresh
+    # start (--init) applies them to the start net, `ppo_cloud.py init --fork-dir` to a running arm's state
+    # (fork_learner); a resumed state must already have the same structure.
+    ap.add_argument("--extra-blocks", type=int, default=0, help="identity-initialised transformer blocks appended")
+    ap.add_argument("--critic", default="shared", choices=["shared", "separate"],
+                    help="separate: the value comes from a copied trunk; the policy trunk gets no value gradient")
+    ap.add_argument("--aux-heads", default="", help="comma list of auxiliary targets (floor, act4), zero-init heads")
+    ap.add_argument("--aux-weight", type=float, default=0.1, help="loss weight of each auxiliary head")
+    ap.add_argument("--value-sparse", type=int, default=0,
+                    help="value loss only on each act's first decision plus N random decisions per game (0 = all)")
     ap.add_argument("--bucket", type=int, default=0,
                     help="length-bucketed minibatches: sort each window of BUCKET*minibatch shuffled decisions by "
                          "token count before cutting minibatches (less padding; changes minibatch composition; 0 = off)")
@@ -273,6 +292,40 @@ def plan_minibatches(a, feats, iteration):
     return minibatches
 
 
+def aux_names(args):
+    names = tuple(x for x in args.aux_heads.split(",") if x) if getattr(args, "aux_heads", "") else ()
+    bad = [x for x in names if x not in AUX_TARGETS]
+    if bad:
+        sys.exit(f"--aux-heads {bad}: choose from {AUX_TARGETS}")
+    return names
+
+
+def structure_of(args):
+    """The net structure the arch flags ask for (compared with a resumed state's)."""
+    return {"extra_blocks": getattr(args, "extra_blocks", 0), "critic": getattr(args, "critic", "shared"),
+            "aux": list(aux_names(args))}
+
+
+def aux_targets(outcome, names):
+    t = {"floor": min(max(float(outcome.get("floor", 0) or 0), 0.0), 57.0) / 57.0,
+         "act4": 1.0 if int(outcome.get("act", 0) or 0) >= 4 else 0.0}
+    return [t[n] for n in names]
+
+
+def value_sparse_mask(games, k, seed, iteration):
+    """--value-sparse k: per game, each act's first net decision plus k others drawn uniformly (seeded by the
+    learner seed, the iteration and the game seed, so a rerun picks the same decisions)."""
+    mask = []
+    for g in games:
+        acts = [s.get("act") for s in g["steps"]]
+        keep = {t for t in range(len(acts)) if t == 0 or acts[t] != acts[t - 1]}
+        rest = [t for t in range(len(acts)) if t not in keep]
+        rng = random.Random(f"{seed}:{iteration}:{g['seed']}")
+        keep.update(rng.sample(rest, min(k, len(rest))))
+        mask.extend(t in keep for t in range(len(acts)))
+    return mask
+
+
 class Learner:
     def __init__(self, net, anchor, args, device):
         self.net, self.anchor, self.args, self.device = net.to(device), anchor, args, device
@@ -280,7 +333,10 @@ class Learner:
             self.anchor = self.anchor.to(device).eval()
             for p in self.anchor.parameters():
                 p.requires_grad_(False)
-        value_params = list(net.value_head.parameters()) + list(net.value_head_norm.parameters())
+        if getattr(net, "critic_net", None) is not None:   # the critic's whole trunk takes the value rate
+            value_params = list(net.critic_net.parameters())
+        else:
+            value_params = list(net.value_head.parameters()) + list(net.value_head_norm.parameters())
         ids = {id(p) for p in value_params}
         self.opt = torch.optim.Adam([
             {"params": [p for p in net.parameters() if id(p) not in ids], "lr": args.lr},
@@ -306,8 +362,9 @@ class Learner:
             batch = self._batch(feats)
         batch = batch_to(batch, self.device)
         with torch.autocast("cuda", dtype=torch.bfloat16, enabled=bool(self.args.amp) and self.device.type == "cuda"):
-            logits, value = self._callable(net)(batch)
-        return logits.float(), value.float()
+            out = self._callable(net)(batch)
+        aux = out[2].float() if len(out) > 2 else None
+        return out[0].float(), out[1].float(), aux
 
     def _callable(self, net):
         if not getattr(self.args, "compile", 0):
@@ -323,7 +380,7 @@ class Learner:
         N = len(store.n)
         vals, logits = [], []
         for i in range(0, N, chunk):
-            lg, v = self._forward(self.net, batch=self._batch(store=store, idx=range(i, min(i + chunk, N))))
+            lg, v, _ = self._forward(self.net, batch=self._batch(store=store, idx=range(i, min(i + chunk, N))))
             vals.extend(v.tolist())
             rows = lg.cpu().tolist()   # one host copy per chunk, not one per row
             logits.extend([rows[b][:store.n_choice[i + b]] for b in range(len(rows))])
@@ -335,7 +392,7 @@ class Learner:
         store = store or FeatureStore(feats)
         N = len(store.n)
         for i in range(0, N, chunk):
-            lg, _ = self._forward(self.anchor, batch=self._batch(store=store, idx=range(i, min(i + chunk, N))))
+            lg, _, _ = self._forward(self.anchor, batch=self._batch(store=store, idx=range(i, min(i + chunk, N))))
             t = torch.tensor(temps[i:i + chunk], device=lg.device)[:, None]
             out.append(F.log_softmax(lg.float() / t, dim=-1).cpu())
         return out
@@ -387,6 +444,13 @@ class Learner:
         temps = [float(s["temp"]) if s["temp"] > 0 else 1.0 for s in steps]
         temp_t = torch.tensor(temps)
         dev = self.device
+        names_aux = getattr(self.net, "aux_names", ())
+        aux_t = None
+        if names_aux:
+            aux_t = torch.tensor([aux_targets(g["outcome"], names_aux) for g in games for _ in g["steps"]]).to(dev)
+        vmask = None
+        if getattr(a, "value_sparse", 0) > 0:
+            vmask = torch.tensor(value_sparse_mask(games, a.value_sparse, a.seed, self.iteration)).to(dev)
         anchor_lp = None
         kl_coef = a.kl_coef * (max(0.0, 1.0 - self.iteration / a.kl_decay_iters) if a.kl_decay_iters > 0 else 1.0)
         if kl_coef > 0 and self.anchor is not None and not value_only:
@@ -406,7 +470,7 @@ class Learner:
 
         self.net.train()
         minibatches = plan_minibatches(a, feats, self.iteration)
-        names = ("policy", "value", "entropy", "kl_anchor", "clipfrac", "approx_kl")
+        names = ("policy", "value", "entropy", "kl_anchor", "clipfrac", "approx_kl", "aux")
         acc = torch.zeros(len(names), device=dev)   # accumulated on the device: one sync per update
         first = None
         nmb = 0
@@ -431,10 +495,12 @@ class Learner:
             # sums with those counts add up to the full minibatch's loss (and gradient).
             denom = policy_mask[torch.tensor(mb_full, device=dev)].sum().clamp_min(1)
             n_full = len(mb_full)
+            vden = vmask[torch.tensor(mb_full, device=dev)].sum().clamp_min(1) if vmask is not None else None
             row = None
             for mb_list, batch in parts:
                 row_c = self._minibatch_loss(mb_list, batch, len(parts) == 1, denom, n_full, temp_t, policy_mask,
-                                             chosen, old_logp, adv_t, ret_t, old_v, anchor_lp, kl_coef, value_only)
+                                             chosen, old_logp, adv_t, ret_t, old_v, anchor_lp, kl_coef, value_only,
+                                             aux_t, vmask, vden)
                 row = row_c if row is None else row + row_c
             if value_only:
                 # Value warm-up: only the value head and its norm move; the shared trunk (and so the
@@ -453,14 +519,15 @@ class Learner:
             torch.cuda.synchronize()
         train_s = time.time() - t1
         return self._finish_update(games, steps, names, acc, first, nmb, kl_coef, policy_mask, prep, train_s,
-                                   value_only, dlogp, ret_t, old_v, log)
+                                   value_only, dlogp, ret_t, old_v, log,
+                                   int(vmask.sum()) if vmask is not None else len(steps))
 
     def _minibatch_loss(self, mb_list, batch, whole, denom, n_full, temp_t, policy_mask, chosen, old_logp, adv_t,
-                        ret_t, old_v, anchor_lp, kl_coef, value_only):
+                        ret_t, old_v, anchor_lp, kl_coef, value_only, aux_t=None, vmask=None, vden=None):
         """Forward and backward of one minibatch (whole) or one chunk of it; returns its stats row."""
         a, dev = self.args, self.device
         mb = torch.tensor(mb_list, device=dev)
-        logits, value = self._forward(self.net, batch=batch)
+        logits, value, aux = self._forward(self.net, batch=batch)
         t = temp_t[mb][:, None]
         logp_all = F.log_softmax(logits.float() / t, dim=-1)   # fp32 even under bf16 autocast
         pad = torch.isneginf(logits)
@@ -480,12 +547,26 @@ class Learner:
         ent = -(p_all * logp_safe).sum(-1)
         entropy = (ent * pm).sum() / denom
         rt = ret_t[mb]
+        if vmask is not None:   # --value-sparse: mean over the minibatch's selected decisions
+            vm = vmask[mb].to(value.dtype)
+            vmean = lambda x: (x * vm).sum() / vden   # noqa: E731
         if a.value_clip > 0:
             ov = old_v[mb]
             vc = ov + (value - ov).clamp(-a.value_clip, a.value_clip)
             value_loss = 0.5 * vmean(torch.max((value - rt) ** 2, (vc - rt) ** 2))
         else:
             value_loss = 0.5 * vmean((value - rt) ** 2)
+        aux_loss = torch.zeros((), device=dev)
+        if aux is not None:   # per head: MSE (floor) or BCE on a logit (act4), mean over the minibatch
+            amean = torch.mean if whole else (lambda x: x.sum() / n_full)   # noqa: E731
+            names_aux = self.net.aux_names
+            tgt = aux_t[mb]
+            for j, n in enumerate(names_aux):
+                if n == "act4":
+                    term = F.binary_cross_entropy_with_logits(aux[:, j], tgt[:, j], reduction="none")
+                else:
+                    term = (aux[:, j] - tgt[:, j]) ** 2
+                aux_loss = aux_loss + amean(term)
         kl_anchor = torch.zeros((), device=dev)
         if anchor_lp is not None:
             alp = anchor_lp[mb][:, :logp_all.shape[1]]
@@ -497,15 +578,18 @@ class Learner:
             loss = a.value_coef * value_loss
         else:
             loss = policy_loss + a.value_coef * value_loss - a.entropy_coef * entropy + kl_coef * kl_anchor
+            if aux is not None:
+                loss = loss + a.aux_weight * aux_loss
         loss.backward()   # accumulates into .grad across the chunks of one minibatch
         with torch.no_grad():
             return torch.stack([policy_loss.detach().float(), value_loss.detach().float(),
                                 entropy.detach().float(), kl_anchor.detach().float(),
                                 ((((ratio - 1).abs() > a.clip) & pm).sum() / denom).float(),
-                                ((((ratio - 1) - torch.log(ratio)) * pm).sum() / denom).float()])
+                                ((((ratio - 1) - torch.log(ratio)) * pm).sum() / denom).float(),
+                                aux_loss.detach().float()])
 
     def _finish_update(self, games, steps, names, acc, first, nmb, kl_coef, policy_mask, prep, train_s, value_only,
-                       dlogp, ret_t, old_v, log):
+                       dlogp, ret_t, old_v, log, value_decisions=None):
         stats = dict(zip(names, acc.tolist()))
         if first is not None:
             f = first.tolist()
@@ -517,7 +601,8 @@ class Learner:
         out.update(stats_first)
         heart = sum(1 for g in games if g["outcome"].get("heart_kill")) / max(len(games), 1)
         out.update({"iteration": self.iteration, "kl_coef": kl_coef, "games": len(games), "decisions": len(steps),
-                    "policy_decisions": int(policy_mask.sum()), "minibatches": nmb, "prep_s": prep,
+                    "policy_decisions": int(policy_mask.sum()), "value_decisions": value_decisions,
+                    "minibatches": nmb, "prep_s": prep,
                     "train_s": train_s, "heart_rate": heart, "value_only": value_only,
                     "micro_batch": getattr(self.args, "micro_batch", 0),
                     "max_dlogp_behaviour": max(dlogp) if dlogp else 0.0,
@@ -527,21 +612,38 @@ class Learner:
 
 
 def shape_of(net):
-    return {"dim": net.dim, "heads": net.heads, "hidden": net.hidden, "layers": len(net.blocks),
-            "trim_map": net.trim_map, "rows": {k: int(v.shape[0]) for k, v in net.tables.items()}}
+    shape = {"dim": net.dim, "heads": net.heads, "hidden": net.hidden, "layers": len(net.blocks),
+             "trim_map": net.trim_map, "rows": {k: int(v.shape[0]) for k, v in net.tables.items()}}
+    if net.extra_blocks or net.critic_mode != "shared" or net.aux_names:   # arch arms only: older states unchanged
+        shape.update({"extra_blocks": net.extra_blocks, "critic": net.critic_mode, "aux": list(net.aux_names)})
+    return shape
+
+
+def shape_structure(shape):
+    return {"extra_blocks": shape.get("extra_blocks", 0), "critic": shape.get("critic", "shared"),
+            "aux": list(shape.get("aux", []))}
 
 
 def net_from_shape(shape):
-    return PolicyNet(shape["dim"], shape["heads"], shape["hidden"], shape["layers"], shape["rows"], shape["trim_map"])
+    st = shape_structure(shape)
+    net = PolicyNet(shape["dim"], shape["heads"], shape["hidden"], shape["layers"] - st["extra_blocks"],
+                    shape["rows"], shape["trim_map"])
+    if st != shape_structure({}):
+        net = construct(net, st["extra_blocks"], st["critic"], st["aux"])   # weights come from the state dict
+    return net
 
 
 def make_learner(args, device):
     if args.state and os.path.exists(args.state):
         st = torch.load(args.state, map_location="cpu", weights_only=False)
+        if shape_structure(st["shape"]) != structure_of(args):
+            sys.exit(f"{args.state}: net structure {shape_structure(st['shape'])} but the flags ask for "
+                     f"{structure_of(args)}; a running arm changes structure only through a fork "
+                     f"(ppo_cloud.py init --fork-dir)")
         net = net_from_shape(st["shape"]); net.load_state_dict(st["net"])
         anchor = None
         if st.get("anchor") is not None:
-            anchor = net_from_shape(st["shape"]); anchor.load_state_dict(st["anchor"])
+            anchor = net_from_shape(st.get("anchor_shape", st["shape"])); anchor.load_state_dict(st["anchor"])
         learner = Learner(net, anchor, args, device)
         learner.opt.load_state_dict(st["opt"])
         for g, lr in zip(learner.opt.param_groups, (args.lr, args.lr * args.value_lr_mult)):
@@ -552,12 +654,47 @@ def make_learner(args, device):
         sys.exit("no --state to resume and no --init net")
     net = PolicyNet.from_bin(args.init)
     anchor = PolicyNet.from_bin(args.init)
+    st = structure_of(args)
+    if st != shape_structure({}):
+        net = construct(net, st["extra_blocks"], st["critic"], st["aux"], seed=args.seed)
     return Learner(net, anchor, args, device)
+
+
+def fork_learner(state_path, args, device=None):
+    """A running arm's checkpoint with the arch flags of `args` applied (arch screen design B).
+
+    The source state must have the plain structure. Net, anchor and iteration are kept; the arm's construction
+    is applied to the net (construct(), seeded by args.seed); every parameter that exists in the source keeps
+    its Adam moments and step, and new tensors (extra blocks, the critic copy, aux heads) start with none
+    (Adam's zero moments). With no arch flag set the result is the source state itself, bit for bit."""
+    device = device or torch.device("cpu")
+    st = torch.load(state_path, map_location="cpu", weights_only=False)
+    if shape_structure(st["shape"]) != shape_structure({}):
+        sys.exit(f"{state_path}: already has structure {shape_structure(st['shape'])}; forks start from a plain arm")
+    base = argparse.Namespace(**vars(args))
+    base.extra_blocks, base.critic, base.aux_heads, base.state = 0, "shared", "", state_path
+    src = make_learner(base, device)
+    want = structure_of(args)
+    if want == shape_structure({}):
+        src.args = args
+        return src
+    net = construct(src.net, want["extra_blocks"], want["critic"], want["aux"], seed=args.seed)
+    learner = Learner(net, src.anchor, args, device)
+    learner.iteration = src.iteration
+    old = dict(src.net.named_parameters())
+    for name, p in learner.net.named_parameters():
+        q = old.get(name)
+        if q is not None and q.shape == p.shape and q in src.opt.state:
+            learner.opt.state[p] = {k: v.clone() for k, v in src.opt.state[q].items()}
+    return learner
 
 
 def save(learner, path):
     tmp = path + ".tmp"
-    torch.save(learner.state(), tmp)
+    st = learner.state()
+    if learner.anchor is not None and shape_of(learner.anchor) != st["shape"]:
+        st["anchor_shape"] = shape_of(learner.anchor)   # a constructed net keeps its plain start net as anchor
+    torch.save(st, tmp)
     os.replace(tmp, path)
 
 

@@ -25,6 +25,10 @@ ahead. The learner keeps its checkpoint (state.pt) and every net per arm in a lo
 
     python3 tools/heart1/ppo_cloud.py init STORE ARM --init start.bin --env-file actors.env --one-combat-sha SHA \
         --iterations 30 --games 512 --parts 2 --seed-base SEED [--pipeline 1] [--value-warmup 3] -- --lr 1e-5 ...
+    python3 tools/heart1/ppo_cloud.py init STORE ARM --fork-dir LOCAL/BASE --fork-at 30 --local LOCAL --env-file ... \
+        --one-combat-sha SHA --iterations 60 --games 512 --parts 4 --seed-base SEED -- --seed 0 --extra-blocks 2
+        (on the learner machine: a new arm that continues BASE's run from its kept checkpoint state-0030.pt, see
+        cmd_init; BASE's iteration-30 games are reused, so the arm's actors start at iteration 31)
     python3 tools/heart1/ppo_cloud.py actor STORE ARM --part K --one-combat one_combat [--threads 4]
     python3 tools/heart1/ppo_cloud.py serve STORE LOCAL_DIR ARM [ARM ...] [--device cuda]
     python3 tools/heart1/ppo_cloud.py status STORE ARM [ARM ...]
@@ -223,7 +227,10 @@ def cmd_init(argv):
     ap = argparse.ArgumentParser(prog="ppo_cloud.py init")
     ap.add_argument("store")
     ap.add_argument("arm")
-    ap.add_argument("--init", required=True)
+    ap.add_argument("--init", help="start net (.bin); not with --fork-dir")
+    ap.add_argument("--fork-dir", help="a source arm's learner directory (serve LOCAL/ARM) holding state-N.pt")
+    ap.add_argument("--fork-at", type=int, help="the source's update count N to fork at (serve --keep-state N)")
+    ap.add_argument("--local", help="with --fork-dir: the serve LOCAL directory the new arm's learner will use")
     ap.add_argument("--env-file", required=True)
     ap.add_argument("--one-combat-sha", required=True, help="sha256 of the actors' one_combat")
     ap.add_argument("--iterations", type=int, required=True)
@@ -237,14 +244,19 @@ def cmd_init(argv):
     args = ap.parse_args(argv)
     if args.games % args.parts:
         sys.exit("--games must be a multiple of --parts")
+    if bool(args.init) == bool(args.fork_dir):
+        sys.exit("give exactly one of --init and --fork-dir")
     import ppo_train
     from ppo_model import PolicyNet
     hp = argparse.ArgumentParser(prog="learner")
     ppo_train.add_hparams(hp)
-    ppo_train.phi_model_for(hp.parse_args(learner_argv))   # validate now (incl. the phi model's sha), not on the learner
+    hparams = hp.parse_args(learner_argv)
+    ppo_train.phi_model_for(hparams)   # validate now (incl. the phi model's sha), not on the learner
     store = open_store(args.store)
     if store.names(f"{args.arm}/config"):
         sys.exit(f"{args.arm}/config exists in the store; an arm is frozen once")
+    if args.fork_dir:
+        return init_fork(args, learner_argv, hparams, store)
     with tempfile.TemporaryDirectory() as tmp:
         net0 = os.path.join(tmp, "net0.bin")
         PolicyNet.from_bin(args.init).to_bin(net0)   # extended with zero-init inputs, as ppo_loop
@@ -260,6 +272,89 @@ def cmd_init(argv):
         store.put(f"{args.arm}/config", cp, {"sha256": sha256(cp)})
     last = args.seed_base + args.iterations * args.games - 1
     print(f"{args.arm}: seeds {args.seed_base}..{last}, {args.iterations} x {args.games} in {args.parts} parts")
+
+
+def init_fork(args, learner_argv, hparams, store):
+    """A new arm continuing a source arm (arch screen design B, PREREG ppo_arch_screen_20261102).
+
+    Runs on the learner machine, next to the source arm's serve directory. From the source's kept checkpoint
+    state-N.pt (serve --keep-state N: after update N, net-N, Adam moments, iteration N) it writes the new arm's
+    learner directory LOCAL/ARM: state.pt with the arm's arch flags applied (ppo_train.fork_learner), loop.json =
+    the source's first N iterations (loop-N.json), net-N.bin (the constructed net) and the source's net-(N-1).bin.
+    Under --pipeline 1 iteration N was played by net-(N-1), before any arm change exists, so the source's games of
+    iteration N are the arm's: its kept parts/traj-N-pK go into the store as the arm's iteration-N parts, and the
+    arm's actors start at iteration N+1 with the arm's net-N. Same seeds, games, parts, sims, asc and actor env as
+    the source (checked); the actors' one_combat may differ (a new input arm's binary)."""
+    import ppo_train
+    import torch
+    src, n = os.path.abspath(args.fork_dir), args.fork_at
+    if n is None or n < 1 or not args.local:
+        sys.exit("--fork-dir needs --fork-at N (>= 1) and --local")
+    src_cfg = json.load(open(os.path.join(src, "config.json")))
+    env = ppo_loop.read_env(args.env_file)
+    for key, mine in (("games", args.games), ("parts", args.parts), ("seed_base", args.seed_base),
+                      ("sims", args.sims), ("asc", args.asc), ("pipeline", args.pipeline), ("env", env)):
+        if src_cfg[key] != mine:
+            sys.exit(f"fork: {key} {mine!r} differs from the source's {src_cfg[key]!r}")
+    if not args.pipeline:
+        sys.exit("fork: needs --pipeline 1 (iteration N reused from the source was played by net-(N-1))")
+    if args.value_warmup > n:
+        sys.exit("fork: the value warm-up would reach past the fork point")
+    if args.iterations <= n:
+        sys.exit("fork: --iterations must exceed --fork-at")
+    paths = {"state": f"state-{n:04d}.pt", "loop_n": f"loop-{n:04d}.json", "loop": "loop.json",
+             "net_prev": f"net-{n - 1:04d}.bin", "net_n": f"net-{n:04d}.bin"}
+    paths = {k: os.path.join(src, v) for k, v in paths.items()}
+    n_part = args.games // args.parts
+    parts = [os.path.join(src, "parts", f"traj-{n:04d}-p{k}.jsonl.gz") for k in range(args.parts)]
+    for p in list(paths.values()) + parts:
+        if not os.path.exists(p):
+            sys.exit(f"fork: {p} missing")
+    loop_n, loop = json.load(open(paths["loop_n"])), json.load(open(paths["loop"]))
+    if len(loop_n["iterations"]) != n or loop_n["iterations"][-1].get("next_sha256") != sha256(paths["net_n"]):
+        sys.exit(f"fork: {paths['loop_n']} is not the record of {paths['net_n']} after {n} updates")
+    if loop["iterations"][:n] != loop_n["iterations"]:
+        sys.exit("fork: the source's loop.json does not continue loop-N.json")
+    behaviour = sha256(paths["net_prev"])
+    if len(loop["iterations"]) > n:   # the source has trained iteration N: its games must be net-(N-1)'s
+        rec = loop["iterations"][n]
+        if rec.get("net") != f"net-{n - 1:04d}" or rec.get("net_sha256") != behaviour:
+            sys.exit(f"fork: the source's iteration {n} was played by {rec.get('net')} {rec.get('net_sha256')}")
+    learner = ppo_train.fork_learner(paths["state"], hparams, torch.device("cpu"))
+    if learner.iteration != n:
+        sys.exit(f"fork: {paths['state']} is at iteration {learner.iteration}, not {n}")
+    arm_dir = os.path.join(args.local, args.arm)
+    if os.path.exists(arm_dir) and os.listdir(arm_dir):
+        sys.exit(f"fork: {arm_dir} exists and is not empty")
+    os.makedirs(arm_dir, exist_ok=True)
+    ppo_train.save(learner, os.path.join(arm_dir, "state.pt"))
+    net_n = os.path.join(arm_dir, f"net-{n:04d}.bin")
+    learner.net.to_bin(net_n)
+    shutil.copyfile(paths["net_prev"], os.path.join(arm_dir, f"net-{n - 1:04d}.bin"))
+    fork = {"source_arm": src_cfg["arm"], "source_dir": src, "at": n, "state_sha256": sha256(paths["state"]),
+            "loop_sha256": sha256(paths["loop_n"]), "source_net_sha256": sha256(paths["net_n"]),
+            "behaviour_net_sha256": behaviour, "arm_net_sha256": sha256(net_n),
+            "parts_sha256": [sha256(p) for p in parts], "arm_state_sha256": sha256(os.path.join(arm_dir, "state.pt"))}
+    with open(os.path.join(arm_dir, "loop.json"), "w") as f:
+        json.dump({"iterations": loop_n["iterations"], "fork": fork}, f, indent=1)
+    cfg = {"arm": args.arm, "init": None, "init_sha256": None, "net0_sha256": None, "env": env,
+           "one_combat_sha256": args.one_combat_sha, "iterations": args.iterations, "games": args.games,
+           "parts": args.parts, "seed_base": args.seed_base, "sims": args.sims, "asc": args.asc,
+           "value_warmup": args.value_warmup, "pipeline": args.pipeline, "learner_argv": learner_argv,
+           "start_iteration": n + 1, "fork": fork}
+    cp = os.path.join(arm_dir, "config.json")
+    with open(cp, "w") as f:
+        json.dump(cfg, f, indent=1)
+    store.put(f"{args.arm}/net-{n:04d}", net_n, {"sha256": fork["arm_net_sha256"], "updates": n})
+    for k, p in enumerate(parts):
+        store.put(f"{args.arm}/traj-{n:04d}-p{k}", p,
+                  {"games": n_part, "sha256": fork["parts_sha256"][k], "net": f"net-{n - 1:04d}",
+                   "net_sha256": behaviour, "actor_s": 0.0, "seed_first": args.seed_base + n * args.games + k * n_part,
+                   "host": f"fork:{src_cfg['arm']}", "stalled": 0, "reused_from": src_cfg["arm"]})
+    store.put(f"{args.arm}/config", cp, {"sha256": sha256(cp)})
+    last = args.seed_base + args.iterations * args.games - 1
+    print(f"{args.arm}: fork of {src_cfg['arm']} at update {n}; actors play iterations {n + 1}..{args.iterations - 1} "
+          f"(seeds {args.seed_base + (n + 1) * args.games}..{last}); state {fork['arm_state_sha256'][:12]}")
 
 
 def kill_stale_child(pidfile):
@@ -309,7 +404,7 @@ def cmd_actor(argv):
     n_part = cfg["games"] // cfg["parts"]
     marker = os.path.join(work, "published.txt")
     published = set(open(marker).read().split()) if os.path.exists(marker) else set()
-    for it in range(cfg["iterations"]):
+    for it in range(cfg.get("start_iteration", 0), cfg["iterations"]):   # a fork starts after its reused iteration
         name = f"{a.arm}/traj-{it:04d}-p{a.part}"
         if name in published:
             continue
@@ -413,7 +508,11 @@ class ArmLearner:
         self.meta_path = os.path.join(self.dir, "loop.json")
         self.meta = json.load(open(self.meta_path)) if os.path.exists(self.meta_path) else {"iterations": []}
         net0 = os.path.join(self.dir, "net-0000.bin")
-        if not os.path.exists(net0):
+        if self.cfg.get("fork"):   # init_fork wrote state.pt, loop.json and the nets here
+            net0 = None
+            if not os.path.exists(self.state):
+                sys.exit(f"{arm}: fork arm without {self.state} (run ppo_cloud.py init --fork-dir on this machine)")
+        elif not os.path.exists(net0):
             m = store.get(f"{arm}/net-0000", net0)
             if sha256(net0) != m["sha256"] or m["sha256"] != self.cfg["net0_sha256"]:
                 sys.exit(f"{arm}/net-0000 sha256 mismatch")
