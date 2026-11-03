@@ -1,0 +1,10 @@
+name          prior-share-ni
+code_commit   85bf1ba06d7ee55423cab3f1e1f6616605b6d005
+binary_sha256 d3289b5230648338467ef8925c9852a4e50ac98366ae14a6ae647014cc01a827
+workers       4
+share         /mnt/project-files/prior-share-ni
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 45
+input student_sel.bin /mnt/project-files/az-gen3-explore/student_sel.bin cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7
