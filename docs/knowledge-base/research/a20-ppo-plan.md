@@ -177,7 +177,7 @@ Every run needs a pre-registration, the seed-run guard, frozen provenance and Ph
 
 ## Reward is a test axis too (Philipp, 2026-11-02)
 
-Screen 1 tested only one reward change (REW_ORIG, NOT_SHOWN). Reward design is a tunable parameter to rethink and test, not a given. Candidates for the next screen (Inference): act-clear bonus, floor and key weights, PBRS with a simple potential (floor/190 + keys) or a value model as φ (C++ does not emit φ today; `heart_pbrs` without φ equals `heart`), a critic pre-trained on screen-1 games. Using the PPO critic itself as φ is redundant with GAE. A next screen should have fewer arms, a pre-registered futility rule and the validated `--compile` speed-up, because whole-run noise is ~0.8 pp (§748).
+Screen 1 tested only one reward change (REW_ORIG, NOT_SHOWN). Reward design is a tunable parameter to rethink and test, not a given. Candidates for the next screen (Inference): act-clear bonus, floor and key weights, PBRS with a simple potential (floor/190 + keys) or a value model as φ (C++ does not emit φ today; the learner refuses `heart_pbrs` when no decision line carries φ, see row V3), a critic pre-trained on screen-1 games. Using the PPO critic itself as φ is redundant with GAE. A next screen should have fewer arms, a pre-registered futility rule and the validated `--compile` speed-up, because whole-run noise is ~0.8 pp (§748).
 
 ## Known limitations and open questions
 
