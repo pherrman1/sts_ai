@@ -35,7 +35,7 @@ If any unit fails either check, or any unit is missing, the reuse is invalid: ve
 outcome; the fallback (C on all other seeds) goes to Philipp.
 
 **Seeds.** None new: the 1,536 USED §727 seeds 111312000-111313535 are replayed (81 of them in C). Smoke on
-111312000 (sent), 111312002 and one further div seed (author container).
+111312009, 111312081 (sent), 111312023, 111312024 (div), author container (see Smoke).
 
 **Primary.** d_i = kill_C − kill_R per seed (A20 Heart kill), all 1,536 seeds in ascending order. SPRT per
 ADR-0064 (`sprt_gate.py` = `tools/sprt_gate.py` of main 520d4e4b, vendored, variant `nonregression`, d0 = −0.015, d1 = 0, α = β = 0.05, look every 64 pairs,
