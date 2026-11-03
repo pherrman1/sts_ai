@@ -47,6 +47,8 @@ reading → INCONCLUSIVE (CI includes 0, D > 0).
 ## Decision
 - CRIT_PRE's net is **not adopted**, and the S1 pilot does not start from it. As pre-registered, the next PPO step is
   decided with Philipp.
+- The plan's G1 rule ("one more 60-iteration block if point > 0, CI includes 0 and the in-sample A20 curve rises")
+  does not apply: CRIT_PRE's in-sample curve is flat (block rates 8.4-9.0%, §751). Inference.
 - No default change.
 
 Seeds 111520000-111522047 and 111529990-111529991 USED. Cost: 4,096 games ≈ 29 core-h.
