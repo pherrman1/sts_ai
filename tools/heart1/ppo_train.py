@@ -15,6 +15,8 @@ Rewards (--reward):
   original    floor/190 + 0.05 per key + 0.6 Heart (heart1's late reward without its deck-quality shaping).
   heart_pbrs  1{Heart} + potential-based shaping gamma*phi(s') - phi(s) with phi from each decision line's "phi"
               (a missing phi counts as 0, so the shaping still telescopes; phi at the terminal state is 0).
+              No actor writes "phi" yet (one_combat's ppoStep exports no leaf value), so an update refuses
+              heart_pbrs unless at least one decision line carries it: otherwise it would silently equal heart.
   heart_phi   as heart_pbrs, with phi computed in Python by --phi-model (ppo_phi.py) from each net decision's
               record while loading; every net decision must have one.
   heart_act   1{Heart} + --act-bonus per act cleared (final floor >= 17, 34, 51) + --key-bonus per key, at game
@@ -72,8 +74,19 @@ def _parse_line(line, trim_map=None, phi_model=None):
         return {"type": "_error", "error": f"{type(e).__name__}: {e}"}
 
 
+def seed_key(seed):
+    """Sort key of a game seed (decimal strings in seed order; anything else after them, as text)."""
+    s = str(seed)
+    return (0, int(s)) if s.isdigit() else (1, s)
+
+
 def load_games(paths, trim_map=None, workers=None, phi_model=None):
     """Games with all their net decisions, in decision order. A game without its "game" line is dropped.
+
+    The games come back sorted by seed (steps by idx), whatever order the files list them in: `one_combat bestbench`
+    writes each game when its thread finishes, so the file order depends on thread timing, and the learner's
+    per-update shuffle permutes positions, not games. A seed may appear in one file only (the same games in two
+    parts would be double-counted).
 
     With trim_map (the learner net's flag), each net decision's record is featurised while loading and only the
     packed features are kept ("feat"; record and logits are dropped), so host memory stays at a few KB per decision.
@@ -103,7 +116,7 @@ def load_games(paths, trim_map=None, workers=None, phi_model=None):
             else:
                 pool.terminate()
             pool.join()
-    pending, games, seen = {}, [], set()
+    pending, games, seen = {}, [], {}   # seen: seed -> path of its game line
     for path, rows in parsed:
         for lineno, row in enumerate(rows, 1):
             if row is None:
@@ -116,12 +129,17 @@ def load_games(paths, trim_map=None, workers=None, phi_model=None):
             elif row["type"] == "game":
                 if row.get("schema") != SCHEMA:
                     raise ValueError(f"{path}: schema {row.get('schema')} is not {SCHEMA}")
-                if key in seen:
+                first = seen.get(row["seed"])
+                if first == path:
                     raise ValueError(f"{path}: seed {row['seed']} has two game lines (reused seed?)")
-                seen.add(key)
+                if first is not None:
+                    raise ValueError(f"seed {row['seed']} has a game line in {first} and in {path} "
+                                     f"(the same games twice?)")
+                seen[row["seed"]] = path
                 steps = sorted(pending.pop(key, []), key=lambda r: r["idx"])
                 steps = [s for s in steps if s["source"] in NET_SOURCES]
                 games.append({"seed": row["seed"], "outcome": row["outcome"], "info": row, "steps": steps})
+    games.sort(key=lambda g: seed_key(g["seed"]))
     return games
 
 
@@ -232,6 +250,29 @@ def phi_model_for(args):
     return ppo_phi.load(path, args.phi_sha256)
 
 
+def plan_minibatches(a, feats, iteration):
+    """The update's minibatches as lists of decision indices into `feats` (epochs x shuffled cuts).
+
+    Depends only on the hyperparameters, the decision count (and, with --bucket, each decision's token count)
+    and the iteration: with load_games' seed order the same games give the same minibatches."""
+    idx = list(range(len(feats)))
+    rng = random.Random(a.seed * 1000003 + iteration)
+    minibatches = []
+    for _ in range(a.epochs):
+        rng.shuffle(idx)
+        order = idx
+        if a.bucket > 0:
+            w = a.bucket * a.minibatch
+            order = [j for i in range(0, len(idx), w)
+                     for j in sorted(idx[i:i + w], key=lambda j: feats[j]["n"])]
+            cut = [order[i:i + a.minibatch] for i in range(0, len(order), a.minibatch)]
+            rng.shuffle(cut)
+            minibatches.extend(cut)
+        else:
+            minibatches.extend(order[i:i + a.minibatch] for i in range(0, len(order), a.minibatch))
+    return minibatches
+
+
 class Learner:
     def __init__(self, net, anchor, args, device):
         self.net, self.anchor, self.args, self.device = net.to(device), anchor, args, device
@@ -308,6 +349,9 @@ class Learner:
                 feats.append(s["feat"] if "feat" in s else featurize(s["record"], self.net.trim_map))
         if not steps:
             raise ValueError("no net decisions in the trajectories")
+        if a.reward == "heart_pbrs" and not any("phi" in s for s in steps):
+            raise ValueError("--reward heart_pbrs: no decision line carries \"phi\" (the actor exports no "
+                             "potential), so the shaping would be 0 and the reward silently equal to heart")
         t0 = time.time()
         store = FeatureStore(feats)
         values, logits_now = self.evaluate(feats, store=store)
@@ -361,21 +405,7 @@ class Learner:
         prep = time.time() - t0
 
         self.net.train()
-        idx = list(range(len(steps)))
-        rng = random.Random(a.seed * 1000003 + self.iteration)
-        minibatches = []
-        for _ in range(a.epochs):
-            rng.shuffle(idx)
-            order = idx
-            if a.bucket > 0:
-                w = a.bucket * a.minibatch
-                order = [j for i in range(0, len(idx), w)
-                         for j in sorted(idx[i:i + w], key=lambda j: feats[j]["n"])]
-                cut = [order[i:i + a.minibatch] for i in range(0, len(order), a.minibatch)]
-                rng.shuffle(cut)
-                minibatches.extend(cut)
-            else:
-                minibatches.extend(order[i:i + a.minibatch] for i in range(0, len(order), a.minibatch))
+        minibatches = plan_minibatches(a, feats, self.iteration)
         names = ("policy", "value", "entropy", "kl_anchor", "clipfrac", "approx_kl")
         acc = torch.zeros(len(names), device=dev)   # accumulated on the device: one sync per update
         first = None
@@ -542,11 +572,16 @@ def cmd_update(argv):
     ap.add_argument("--value-only", action="store_true", help="critic warm-up: no policy, entropy or KL terms")
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     ap.add_argument("--log", help="append the iteration's stats line here")
+    ap.add_argument("--expect-games", type=int,
+                    help="fail unless the trajectories hold exactly this many games (a file cut at a line boundary "
+                         "loses its last games without any parse error)")
     add_hparams(ap)
     args = ap.parse_args(argv)
     torch.manual_seed(args.seed)
     learner = make_learner(args, torch.device(args.device))
     games = load_games(args.traj, learner.net.trim_map, phi_model=phi_model_for(args))
+    if args.expect_games is not None and len(games) != args.expect_games:
+        sys.exit(f"{len(games)} games in {' '.join(args.traj)}, expected {args.expect_games}")
     logf = open(args.log, "a") if args.log else None
 
     def log(line):
