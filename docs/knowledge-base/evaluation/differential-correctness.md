@@ -1,6 +1,6 @@
 # Java/native differential correctness
 
-Last verified: 2026-11-02 for the lethal-heal, empty-pile and blocked-hit Thorns paragraph against its unit tests (Java semantics recalled, not re-read from bytecode); 2026-09-28 against the native adapter and a bounded live capture; parity probe section 2026-10-19 against its unit tests; Mayhem paragraph 2026-10-19 against the pinned bytecode; Magnetism paragraph 2026-10-20 against its unit test and the live verdicts (Java semantics recalled, not re-read from bytecode); unplayable-autoplay paragraph 2026-10-20 against the pinned-jar javap.
+Last verified: 2026-11-03 for the out-of-combat relic and event rules section against its unit tests and the pinned-jar javap; 2026-11-02 for the lethal-heal, empty-pile and blocked-hit Thorns paragraph against its unit tests (Java semantics recalled, not re-read from bytecode); 2026-09-28 against the native adapter and a bounded live capture; parity probe section 2026-10-19 against its unit tests; Mayhem paragraph 2026-10-19 against the pinned bytecode; Magnetism paragraph 2026-10-20 against its unit test and the live verdicts (Java semantics recalled, not re-read from bytecode); unplayable-autoplay paragraph 2026-10-20 against the pinned-jar javap.
 
 ## Purpose
 
@@ -524,6 +524,54 @@ native kept the Flight status bit at amount 0 (`monsters[0].statusBits` bit
 full damage and gets no Flight back at its next start of turn; native still
 halved damage and `applyStartOfTurnPowers` reset Flight to 3/4.
 `STS_BYRD_GROUNDED_FLIGHT_FIX` (default on, `=0` restores) removes the status.
+
+## Out-of-combat relic and event rules (2026-11-02)
+
+A read-only review of `GameContext.cpp` found out-of-combat rules that
+differed from the game. Each is fixed behind a default-on flag (`=0`
+restores the legacy rule; see
+[environment-variables](../operations/environment-variables.md)) with a unit
+test under `tests/`. Every rule below was checked with `javap` against the
+pinned jar on 2026-11-03 (rows in the
+[Java reference audit](../behavior/java-reference-audit.md)); that check
+overturned three of the recalled rules, which were corrected before merge.
+
+Fixes that change the replay of recorded seeds past the point they apply:
+
+- `STS_MATRYOSHKA_COUNTER_FIX`: Matryoshka's counter starts at 2, so the next
+  two non-boss chests roll one extra `relicRng` tier and pop one extra relic
+  from that pool. Every later relic draw of the run shifts.
+- `STS_NLOTHS_FACE_COUNTER_FIX`: N'loth's Hungry Face's counter starts at 1.
+  The next non-boss chest still pops its relic from the pool; then the first
+  relic reward is removed (Matryoshka's, when it added one, otherwise the
+  chest relic together with its linked sapphire key). Only runs that owned
+  the face (or imported its counter) differ.
+- `STS_OOC_ENTROPIC_BREW_FIX`: with Sozu no `potionRng` draw happens;
+  otherwise the same unlimited draws fill the first empty slots in order, so
+  the potions held afterwards differ.
+- `Deck::removeAllMatching` (no flag, memory safety): the loop started one
+  past the end of the fixed list; when that stale slot matched, the real last
+  card was dropped. Only Vampires uses it; legacy replays where a removed
+  Strike sat in the stale slot lost a card.
+
+Fixes that change amounts only, not RNG consumption or sequences:
+`STS_OLD_COIN_GOLD_FIX` (+300 gold on pickup through `gainGold`, so
+Ectoplasm and Bloody Idol apply), `STS_GOLD_REWARD_IDOL_FIX` (Golden Idol's
+`round(25%)` on Tiny House and event-fight gold rewards; Java skips it in a
+`TreasureRoom`, so chest gold stays unboosted) and
+`STS_ASTROLABE_COLORLESS_UPGRADE_FIX` (a transformed colorless card is
+upgraded). Freeze files and teacher captures recorded before 2026-11-03 that
+compare gold, deck contents or relic sequences must set the affected flags to
+`0`.
+
+Checked and kept:
+
+- Vampires removes only `CardTags.STARTER_STRIKE` cards, which the engine's
+  `isStarterStrike` already matched; the proposed STRIKE-tag fix was dropped.
+- `returnRandomScreenlessRelic` (event relics, Calling Bell) redraws with
+  `returnRandomRelicKey` while the relic is a Bottled relic or Whetstone, so
+  the skipped relics leave the pool for the run, as in the engine.
+  `tests/screenless_relic_pool_test.cpp` pins the contract.
 
 Code review of the victory path (2026-11-02, no live problem number) found
 three rule gaps, each fixed behind a default-on flag with a unit test:
