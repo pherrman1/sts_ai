@@ -77,9 +77,9 @@ and INCOMPLETE rule (#965); the sensitivity D without stalled seeds is reported 
 0.82 pp, CI half-width ~0.87 pp on 5,120 paired seeds, and none of 18 recipe changes left that band. An architecture
 arm that changes only what training can use is unlikely to move the Heart rate by > 1 pp in 30 updates when the
 recipe arms did not, so with this design the most likely outcome is NOT_SHOWN for every arm. Two ways to buy power,
-to be decided before review K (open, see "Open design choice"): more games per arm, or fewer arms that run longer.
+decided as B below: fewer arms that run later and reuse screen 2's controls.
 
-**Open design choice (decided by Philipp before review K; recorded here as an amendment).**
+**Design choice: B (Philipp, 2026-11-03 10:37 CET, decision card).** A stays as the written fallback.
 - **A, as written:** 8 arms × 30 iterations from net-0000, fresh controls. ~±0.9 pp; self-contained.
 - **B, continuation:** every construction above is policy-preserving from *any* net, so the six change arms start
   from screen 2's BASE net after its iteration 29 (screen 2 runs fresh BASE and BASE_S1 from heart1 for 60 × 512 on
@@ -93,6 +93,29 @@ to be decided before review K (open, see "Open design choice"): more games per a
   the PC and its sha frozen in `screen.manifest`; the learner code must be screen 2's (#973), so P2 must not change
   BASE's updates. Under B this screen plays no seeds of its own beyond the sentinel; the reserved block above stays
   reserved for A or for fresh controls.
+
+**Binding under B (overrides the sections above where they differ).**
+- **Arms:** IN_DECK, IN_RUN, DEPTH6, CRITIC_SEP, AUX, VAL_SPARSE; each from screen 2's BASE learner state after its
+  iteration 29 (net and optimiser; sha in `screen.manifest`), constructed as in the arms table, learner seed 0,
+  30 more iterations (30-59), no warm-up (the value head is already trained; CRITIC_SEP's copied critic and the
+  zero-initialised aux heads get no special warm-up). Same learner code, flags and binary as screen 2 apart from
+  the arm's change (screen 2's learner commit #973; the P1 binary only if the sentinel passes).
+- **Seeds:** iteration i plays exactly screen 2's seeds for iteration i (inside 111470000-111500719, as its PREREG
+  freezes them), with screen 2's parts layout. The block 111440000-111455359 is used only if fresh controls are
+  needed.
+- **Controls and sentinel:** screen 2's BASE (iterations 30-59) and BASE_S1, reused under ADR-0064 §2: before any
+  change arm runs, the arm binary with the arch flags off and screen 2's BASE net-0030 replays 32 seeds of screen 2's
+  iteration 30 and every game must equal screen 2's record (`compare.py` rule). Failure: fresh BASE and BASE_S1
+  continuations from the same state on the same seeds, played before the change arms.
+- **Primary metric:** Heart-kill rate over iterations 40-59 (20 × 512 = 10,240 seeds, screen 2's primary window),
+  D = arm − BASE paired by seed, 95% seed bootstrap (10,000 resamples). Noise floor = |BASE_S1 − BASE| on the same
+  window. PROMISING / WORSE / NOT_SHOWN as above. Because each arm shares BASE's first 30 iterations, arm − BASE
+  varies less than BASE_S1 − BASE (an independent run), so the noise-floor condition is conservative.
+- **Screen 2 outcome:** if screen 2 has a PROMISING arm, B still forks from screen 2's BASE (not from the winner);
+  combining is S1's job. If screen 2 stops early on its futility rule before iteration 59, B forks from BASE at
+  iteration 29 only if BASE itself was played to 59; otherwise B falls back to A.
+- **Workers and cost:** 6 arms × 30 iterations × 512 games ≈ 92,000 games ≈ 140 core-h (5.5 s/game, DEPTH6 more),
+  learner 6 × 30 updates on the PC GPU; worker count with Philipp's go.
 
 **Critic secondary (pre-registered, offline, no seeds).** For BASE, CRITIC_SEP, AUX and VAL_SPARSE the final net's
 critic takes the §747 teacher check on the 20,677 post-fight states of `heart1_value_leaf_teacher_20261102`
@@ -131,7 +154,8 @@ Transport: 8 × 31 nets × 24-36 MB ≈ 7 GB pushed, ≈ 1 GB of trajectories; `
 review K's verdict, as in screen 1.
 
 - 2026-11-03 (before launch, no games played): base recipe resolved to screen 1's BASE (§748); screen 2 dependency,
-  power note and open design choice A/B added; schedule after screen 2. A change to an arm's construction or to the base recipe restarts that
+  power note and open design choice A/B added; schedule after screen 2.
+- 2026-11-03 10:37 CET (before launch): Philipp chose design B; "Binding under B" added. A change to an arm's construction or to the base recipe restarts that
 arm on the same seeds.
 
 **Knowledge impact.** `a20-ppo-plan.md` "Training recipe" row "net size, start" points here; results go to the
