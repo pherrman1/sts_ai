@@ -166,6 +166,7 @@ lineage instead of building two nets. PPO self-play records in v2 format (`obs.v
 | --- | --- | --- | --- |
 | S0 | PR 1 sampler + trajectory export; PR 2 PPO trainer + export. Checks: temperature 0 byte-identical to today's greedy choices, native vs torch log-prob < 1e-5, one-iteration smoke | 1-2 thread-days, smoke seeds | review PASS per PR |
 | G0 | start weights: heart1 alone vs student_sel alone in our engine, Silver 1,000, 2,048 paired A20 seeds | ~25 core-h | heart1 not worse → start from heart1; clearly worse → distil student_sel into the d256 net. **Done (§744): 16.1% vs 16.3%, −0.2 pp [−2.0, +1.5] → heart1** |
+| Screen 1 | 19 recipe arms × 15,360 sampled games from heart1, K15 combat, last third paired vs BASE | ~290k games, PC learner + 40 cloud actors, ~21 h | **Done (§748): no arm PROMISING, LAM_1 WORSE (−0.9 pp [−1.8, −0.1]), whole-run noise 0.8 pp, no in-sample rise → recipe = BASE; signal (reward/critic), not optimiser settings, is the next lever** |
 | S1 | PC pilot: d256 decision net (start per G0), A20, Silver 1,000 (or the cheapest admitted cost arm), reward V3, 512 games per iteration, 3 value-only warm-up iterations, 60 PPO iterations | ~31k games, ~170-200 core-h, ~14 h on 12 threads | G1 |
 | G1 | final vs the start net, policy alone (`STS_OOC_MCTS=0`), Silver 1,000, 2,048 fresh paired A20 seeds, SPRT standard | ~23 core-h | GO if ΔHeart 95% CI > 0; one more 60-iteration block if point > 0, CI includes 0 and the in-sample A20 curve rises; STOP if ΔHeart ≤ 0 with a flat curve |
 | S2 | production confirmation: new net as map-MCTS prior vs the default, AZ matched-CPU rule | 1,024-4,096 pairs, ~470-1,900 core-h | default change is Philipp's call |
@@ -173,6 +174,10 @@ lineage instead of building two nets. PPO self-play records in v2 format (`obs.v
 | S4 | V3-V8 one at a time | ~25-100 core-h per gate + training | each gated |
 
 Every run needs a pre-registration, the seed-run guard, frozen provenance and Philipp's typed go.
+
+## Reward is a test axis too (Philipp, 2026-11-02)
+
+Screen 1 tested only one reward change (REW_ORIG, NOT_SHOWN). Reward design is a tunable parameter to rethink and test, not a given. Candidates for the next screen (Inference): act-clear bonus, floor and key weights, PBRS with a simple potential (floor/190 + keys) or a value model as φ (C++ does not emit φ today; `heart_pbrs` without φ equals `heart`), a critic pre-trained on screen-1 games. Using the PPO critic itself as φ is redundant with GAE. A next screen should have fewer arms, a pre-registered futility rule and the validated `--compile` speed-up, because whole-run noise is ~0.8 pp (§748).
 
 ## Known limitations and open questions
 
