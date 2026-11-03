@@ -26003,3 +26003,46 @@ potions, not the 1-3 HP differences a leaf has to rank. Rerun `build_states.py` 
 critic (reward 1{Heart} + PBRS).
 Seeds: none.
 **Knowledge impact:** B2 line in `research/ppo-and-combat-leaf-literature.md`.
+
+## §748 — PPO recipe screen 1: 19 one-change arms × 15,360 sampled A20 games from heart1 (K15 combat): no arm PROMISING; LAM_1 (λ 1.0) WORSE −0.92 pp [−1.78, −0.08]; best KL_1 +0.72 [−0.14, +1.58] below whole-run noise (BASE_S1 +0.82); no arm rises beyond seed-block noise → recipe stays BASE, no G1; next proposal: reward/learning-signal screen (PC + cloud, 2026-11-03)
+
+**Question (Philipp, 2026-11-01 "ich approve den ganzen run", 2026-11-02 "Ok 14 gb"):** which single PPO recipe
+changes improve heart1 under our engine's A20 self-play (screen before the S1 pilot)?
+**Data:** [PREREG](evidence/ppo_recipe_screen_20261101/PREREG.md) (K PASS; amendments #966/#967/#968 before any arm
+reached iteration 20), [RESULT](evidence/ppo_recipe_screen_20261101/RESULT.md), `result.json`, `s1res.tgz` (games
+CSVs, per-iteration stats, stalls, serve log). Seeds 111400000-111415359 (all arms), learner on the PC (RTX 3060 Ti,
+#963 per-update reload, #964 micro-batch 192, #968 least-progress order), 40 cloud actors, RUN_COMMIT 11c857c9
+(restarts f32c9a96, #965 stall = loss). 2026-11-02 08:00 CET to 2026-11-03 04:49 CET with a 20:32-23:13 pause.
+**Result:**
+- Primary (last third, 5,120 paired seeds vs BASE 7.54%): BASE_S1 +0.82 [−0.08, +1.70]; KL_1 +0.72, KL_DEC +0.64,
+  WU_0 +0.64, EP_1 +0.59, LR_3E6 +0.57, ENT_0007 +0.41, G_256 +0.16, ENT_01 +0.14, WU_10 +0.12, MB_512 +0.08,
+  REW_ORIG +0.02, EP_4 −0.04, G_1024 −0.25, KL_01 −0.29, CLIP_01 −0.35, LR_3E5 −0.49 (all NOT_SHOWN); LAM_1 −0.92
+  [−1.78, −0.08] WORSE (18 comparisons, ~0.45 false WORSE expected).
+- 9 stalled games (≤ 1 per part, no INCOMPLETE arm); the stall-free sensitivity D changes no verdict.
+- Mean Heart rate per seed third 8.04 / 7.55 / 7.67% (unpaired thirds); no arm rises beyond seed-block noise (largest +0.47 pp, WU_0). BASE approx-KL ~0.011 per update, entropy
+  0.208 → 0.222; LR_3E5 KL ~0.03-0.04, entropy → 0.33.
+**Interpretation (Inference):** the policy moves but without measurable gain; smaller/anchored steps lean better, larger ones
+worse, as expected with little signal in a sparse 1{Heart} reward (~40 kills per 512 games). Whole-run noise ~0.8 pp. The screen cannot separate a weak signal from too few/small updates, a weak critic or effects < 1 pp.
+**Decision:** S1 recipe = BASE, no G1 (no candidate). Next proposal (Philipp's go needed): a reward screen (act/floor/key
+shaping, PBRS with a simple potential; C++ φ emission needed), fewer arms, pre-registered futility rule. No default change.
+Seeds: 111400000-111415359 USED. Cost ≈ 290k games ≈ 1,600 core-h cloud + ~21 h PC GPU.
+**Knowledge impact:** KB `research/a20-ppo-plan.md` (screen-1 row, reward axis).
+
+## §749 — Combat rule-fidelity fixes: lethal Reaper/Bite still heals, empty piles are no loss, Thorns retaliates on fully blocked hits; three default-on engine fixes (`=0` restores), unit tests, no gameplay run (2026-11-03)
+
+**Question:** do three combat rules found in code review match Java: the heal behind a lethal Reaper/Bite, the
+legacy "empty hand, draw and discard = loss" rule, and Thorns against a fully blocked hit?
+**Data:** PR #976; `tests/post_victory_heal_test.cpp`, `tests/empty_pile_loss_test.cpp`,
+`tests/thorns_blocked_hit_test.cpp` (each also checks `=0`). Java semantics recalled, not re-read against the JAR
+(**unverified**; see `behavior/java-reference-audit.md`). No seeds.
+**Result:** `STS_POST_VICTORY_HEAL_FIX` flags the Reaper/Bite heal `executeAfterCombatVictory` and runs every flagged
+action at victory (Thorns retaliation still dropped, issue 85); `STS_EMPTY_PILE_LOSS_FIX` removes the invented loss
+(turn > 500 and Silver loop guards bound a stall); `STS_THORNS_BLOCKED_HIT_FIX` applies Spiker Thorns on blocked or
+zero-damage hits. ctest core|smoke 157/157. Independent review PASS (randomised ring-buffer model test of
+`popPostVictoryAction`, multi-flag drain run).
+**Interpretation:** implementation success only; the winrate effect is unmeasured and expected small (Reaper/Bite
+HP after lethal hits, Spiker fights, rare empty-pile states). Engine trajectories change, so earlier recorded
+numbers are not bit-comparable.
+**Decision:** fixes on by default (engine-fix policy). Open: Malleable and Reactive on blocked hits.
+**Knowledge impact:** KB `behavior/invariants.md`, `behavior/java-reference-audit.md`,
+`evaluation/differential-correctness.md`, `operations/environment-variables.md`.

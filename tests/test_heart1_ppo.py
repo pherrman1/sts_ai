@@ -122,6 +122,45 @@ class Heart1PpoTest(unittest.TestCase):
                 self.assertEqual(s_ref[k], s_same[k])
             self.assertEqual(s_ref["minibatches"], s_ch["minibatches"])
 
+    def test_phi_potentials(self):
+        """heart_phi: potentials computed while loading (both loader paths), telescoping, and the fit's floor table."""
+        import csv
+        import json
+        import ppo_model
+        import ppo_phi
+        import ppo_phi_fit
+        import ppo_train
+        root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
+        traj = os.path.join(root, "docs", "experiments", "evidence", "ppo_s0_smoke_20261101", "cov8.jsonl.gz")
+        with tempfile.TemporaryDirectory() as d:
+            rows = [("A", 0, 1, 1, 56), ("A", 0, 2, 0, 16), ("A", 0, 3, 0, 33), ("A", 0, 4, 0, "")]
+            with open(os.path.join(d, "games-0000.csv"), "w", newline="") as f:
+                w = csv.writer(f)
+                w.writerow(["arm", "iteration", "seed", "heart_kill", "floor", "net"])
+                for r in rows:
+                    w.writerow(list(r) + ["net-0000"])
+            out = os.path.join(d, "phi.json")
+            ppo_phi_fit.cmd_floor_table(["--games", os.path.join(d, "games-*.csv"), "--out", out])
+            t = json.load(open(out))["table"]
+            # 3 games with a floor, 1 kill: P(kill | reached f) = 1/3 up to 16, 1/2 on 17..33, 1 on 34..56.
+            self.assertAlmostEqual(t[16], 1 / 3, places=5)
+            self.assertAlmostEqual(t[17], 1 / 2, places=5)
+            self.assertAlmostEqual(t[34], 1.0, places=5)
+            m = ppo_phi.load(out)
+            trim = ppo_model.PolicyNet(16, 2, 32, 1, {**{k: 8 for k in ppo_model.TABLES},
+                                                        "fixed_action": ppo_model.FA_COUNT}).trim_map
+            for trim_map, workers in ((None, 1), (trim, 2)):
+                games = ppo_train.load_games([traj], trim_map, workers=workers, phi_model=m)
+                for g in games:
+                    self.assertTrue(g["steps"])
+                    for s in g["steps"]:
+                        self.assertEqual(s["phi_py"], ppo_phi.value(m, s, None))
+                    r = ppo_train.step_rewards(g, "heart_phi", 1.0)
+                    heart = 1.0 if g["outcome"].get("heart_kill") else 0.0
+                    self.assertAlmostEqual(sum(r), heart - g["steps"][0]["phi_py"], places=9)
+            with self.assertRaises(ValueError):
+                ppo_phi.load(out, sha256="0" * 64)
+
     def test_stalled_game_lines(self):
         """ppo_cloud actor: bestbench stall failures become loss game lines; anything else stops the actor."""
         import json
@@ -213,7 +252,13 @@ class Heart1PpoTest(unittest.TestCase):
                 p = os.path.join(d, f"p{k}.jsonl.gz")
                 s.put(f"A/traj-0001-p{k}", p, {"games": 4, "sha256": ppo_cloud.sha256(p), "net": "net-0000",
                                                 "net_sha256": n0, "actor_s": 1.0, "seed_first": 1})
+            again.keep_state = {2}   # serve --keep-state 2: the fork point after update 2
             self.assertTrue(again.step(s.names("")))
+            loc = os.path.join(d, "local", "A")
+            self.assertFalse(os.path.exists(os.path.join(loc, "state-0001.pt")))
+            self.assertEqual(torch.load(os.path.join(loc, "state-0002.pt"), weights_only=False)["iteration"], 2)
+            with open(os.path.join(loc, "loop-0002.json")) as f:
+                self.assertEqual(len(json.load(f)["iterations"]), 2)
             self.assertEqual(sorted(s.names("")), ["A/config", "A/net-0001", "A/net-0002", "A/stats-0001",
                                                    "A/stats-0002"])
             import csv
@@ -230,6 +275,114 @@ class Heart1PpoTest(unittest.TestCase):
                     f.truncate((ppo_cloud.MAX_PUT_MB + 1) * 2**20)
                 s.put("A/big", big, {})
             self.assertEqual(ppo_cloud.trained_iterations(s, "A", d), 2)
+
+    def test_load_games_seed_order_and_minibatches(self):
+        """load_games: the same games in another line order (bestbench writes each game when its thread finishes)
+        give the same game and step sequence and the same minibatch index sequences; a seed in two files raises."""
+        import argparse
+        import gzip
+        import json
+        import random
+        import ppo_train
+        here = os.path.dirname(os.path.abspath(__file__))
+        traj = os.path.join(here, "..", "docs", "experiments", "evidence", "ppo_s0_smoke_20261101", "cov8.jsonl.gz")
+        blocks = {}   # seed -> its lines (decisions, then the game line), as the actor writes them
+        with gzip.open(traj, "rt") as f:
+            for line in f:
+                if line.strip():
+                    blocks.setdefault(json.loads(line)["seed"], []).append(line)
+        seeds = list(blocks)
+        self.assertGreater(len(seeds), 3)
+        rng = random.Random(1)
+
+        def write(path, order, shuffle_steps):
+            with open(path, "w") as f:
+                for s in order:
+                    lines = blocks[s][:-1]
+                    if shuffle_steps:
+                        rng.shuffle(lines)
+                    f.writelines(lines + blocks[s][-1:])
+
+        with tempfile.TemporaryDirectory() as d:
+            a, b = os.path.join(d, "a.jsonl"), os.path.join(d, "b.jsonl")
+            write(a, seeds, False)
+            write(b, seeds[::-1], True)
+            ga = ppo_train.load_games([a], False, workers=1)
+            gb = ppo_train.load_games([b], False, workers=1)
+            self.assertEqual([g["seed"] for g in ga], sorted(seeds, key=ppo_train.seed_key))
+            ids = [[(g["seed"], s["idx"]) for g in gs for s in g["steps"]] for gs in (ga, gb)]
+            self.assertEqual(ids[0], ids[1])
+            self.assertEqual([g["outcome"] for g in ga], [g["outcome"] for g in gb])
+            ap = argparse.ArgumentParser()
+            ppo_train.add_hparams(ap)
+            for extra in ([], ["--bucket", "2"]):
+                args = ap.parse_args(["--minibatch", "64", "--epochs", "2"] + extra)
+                plans = [ppo_train.plan_minibatches(args, [s["feat"] for g in gs for s in g["steps"]], 3)
+                         for gs in (ga, gb)]
+                self.assertEqual(plans[0], plans[1])
+                self.assertEqual(sum(len(mb) for mb in plans[0]), 2 * len(ids[0]))
+            with self.assertRaises(ValueError):   # the same seeds in two files
+                ppo_train.load_games([a, b], None, workers=1)
+            half = len(seeds) // 2
+            c, e = os.path.join(d, "c.jsonl"), os.path.join(d, "e.jsonl")
+            write(c, seeds[half:], True)
+            write(e, seeds[:half], True)
+            gce = ppo_train.load_games([c, e], None, workers=1)   # disjoint files: seed order across files
+            self.assertEqual([g["seed"] for g in gce], [g["seed"] for g in ga])
+
+    def test_heads_fp32_under_autocast(self):
+        """heads_out: the choice-logit and value Linears run in fp32 inside a bf16 autocast region, bitwise the
+        fp32 heads on the same trunk output (the actor's behaviour log-probs are fp32)."""
+        import ppo_model
+        import ppo_train
+        here = os.path.dirname(os.path.abspath(__file__))
+        traj = os.path.join(here, "..", "docs", "experiments", "evidence", "ppo_s0_smoke_20261101", "cov8.jsonl.gz")
+        rows = {k: 4096 for k in ppo_model.TABLES}
+        rows["fixed_action"] = ppo_model.FA_COUNT
+        torch.manual_seed(0)
+        net = ppo_model.PolicyNet(16, 2, 32, 1, rows, False).eval()
+        games = ppo_train.load_games([traj], net.trim_map, workers=1)[:1]
+        batch = ppo_model.collate([s["feat"] for s in games[0]["steps"]][:8])
+        with torch.no_grad():
+            with torch.autocast("cpu", dtype=torch.bfloat16):
+                x = net.trunk(batch)
+                self.assertEqual(net.choice_logits(net.norm(x)).dtype, torch.bfloat16)   # autocast is live
+                logits, value, _ = net.heads_out(x, batch)
+            self.assertEqual((logits.dtype, value.dtype), (torch.float32, torch.float32))
+            ref_logits, ref_value, _ = net.heads_out(x, batch)
+            self.assertTrue(torch.equal(logits, ref_logits) and torch.equal(value, ref_value))
+
+    def test_heart_pbrs_needs_phi_and_expect_games(self):
+        """--reward heart_pbrs refuses trajectories without any "phi" (it would equal heart); update --expect-games
+        fails on a game-count mismatch (a file cut at a line boundary loses games without a parse error)."""
+        import argparse
+        import copy
+        import ppo_model
+        import ppo_train
+        here = os.path.dirname(os.path.abspath(__file__))
+        traj = os.path.join(here, "..", "docs", "experiments", "evidence", "ppo_s0_smoke_20261101", "cov8.jsonl.gz")
+        rows = {k: 4096 for k in ppo_model.TABLES}
+        rows["fixed_action"] = ppo_model.FA_COUNT
+        torch.manual_seed(0)
+        net = ppo_model.PolicyNet(16, 2, 32, 1, rows, False)
+        games = ppo_train.load_games([traj], net.trim_map, workers=1)[:2]
+        ap = argparse.ArgumentParser()
+        ppo_train.add_hparams(ap)
+        args = ap.parse_args(["--reward", "heart_pbrs", "--minibatch", "64", "--epochs", "1"])
+        learner = ppo_train.Learner(copy.deepcopy(net), None, args, torch.device("cpu"))
+        with self.assertRaises(ValueError):
+            learner.update(copy.deepcopy(games), log=lambda line: None)
+        with_phi = copy.deepcopy(games)
+        with_phi[0]["steps"][0]["phi"] = 0.3
+        self.assertEqual(learner.update(with_phi, log=lambda line: None)["games"], 2)
+        with tempfile.TemporaryDirectory() as d:
+            init = os.path.join(d, "init.bin")
+            net.to_bin(init)
+            argv = ["--state", os.path.join(d, "state.pt"), "--init", init, "--traj", traj, "--device", "cpu",
+                    "--out-bin", os.path.join(d, "out.bin"), "--expect-games", str(len(ppo_train.load_games([traj], None, workers=1)) + 1)]
+            with self.assertRaises(SystemExit):
+                ppo_train.cmd_update(argv)
+            self.assertFalse(os.path.exists(os.path.join(d, "state.pt")))
 
 
 if __name__ == "__main__":

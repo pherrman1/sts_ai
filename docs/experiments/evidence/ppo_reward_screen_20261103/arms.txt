@@ -1,0 +1,7 @@
+# name     games iters warmup parts init     learner hyperparameters (everything else = ppo_train.py defaults)
+BASE       512   60    3      4     heart1   --seed 0
+BASE_S1    512   60    3      4     heart1   --seed 1
+PBRS_FLOOR 512   60    3      4     heart1   --seed 0 --reward heart_phi --phi-model docs/experiments/evidence/ppo_reward_screen_20261103/phi_floor.json --phi-sha256 PHI_FLOOR_SHA
+PBRS_STATE 512   60    3      4     heart1   --seed 0 --reward heart_phi --phi-model docs/experiments/evidence/ppo_reward_screen_20261103/phi_state.json --phi-sha256 PHI_STATE_SHA
+CRIT_PRE   512   60    3      4     critpre  --seed 0
+ACT_BONUS  512   60    3      4     heart1   --seed 0 --reward heart_act --act-bonus 0.1 --key-bonus 0.05

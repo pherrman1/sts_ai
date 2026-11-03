@@ -1,6 +1,6 @@
 # Java/native differential correctness
 
-Last verified: 2026-09-28 against the native adapter and a bounded live capture; parity probe section 2026-10-19 against its unit tests; Mayhem paragraph 2026-10-19 against the pinned bytecode; Magnetism paragraph 2026-10-20 against its unit test and the live verdicts (Java semantics recalled, not re-read from bytecode); unplayable-autoplay paragraph 2026-10-20 against the pinned-jar javap.
+Last verified: 2026-11-02 for the lethal-heal, empty-pile and blocked-hit Thorns paragraph against its unit tests (Java semantics recalled, not re-read from bytecode); 2026-09-28 against the native adapter and a bounded live capture; parity probe section 2026-10-19 against its unit tests; Mayhem paragraph 2026-10-19 against the pinned bytecode; Magnetism paragraph 2026-10-20 against its unit test and the live verdicts (Java semantics recalled, not re-read from bytecode); unplayable-autoplay paragraph 2026-10-20 against the pinned-jar javap.
 
 ## Purpose
 
@@ -524,6 +524,37 @@ native kept the Flight status bit at amount 0 (`monsters[0].statusBits` bit
 full damage and gets no Flight back at its next start of turn; native still
 halved damage and `applyStartOfTurnPowers` reset Flight to 3/4.
 `STS_BYRD_GROUNDED_FLIGHT_FIX` (default on, `=0` restores) removes the status.
+
+Code review of the victory path (2026-11-02, no live problem number) found
+three rule gaps, each fixed behind a default-on flag with a unit test:
+
+- A lethal Reaper or Bite dropped its heal. The engine queued `HealPlayer`
+  without `executeAfterCombatVictory`, and since issue 85 `executeActions`
+  runs only flagged actions once the outcome is decided. Java's `ReaperAction`
+  and `Bite` queue a `HealAction` behind the damage, and
+  `AbstractMonster.die` -> `clearPostCombatActions` keeps `HealAction`, so the
+  game heals. `STS_POST_VICTORY_HEAL_FIX` (default on, `=0` restores) flags
+  both heals, and the post-victory drain now runs every flagged action in
+  queue order instead of the first one only. Thorns retaliation from the
+  killing blow is still dropped (`tests/post_victory_heal_test.cpp`, and the
+  issue-85 `thorns_retaliation` check).
+- The engine declared `PLAYER_LOSS` mid-turn when hand, draw and discard were
+  all empty and the player had no Omega, Thorns or bomb. The game has no such
+  rule: Combust, Juggernaut, Metallicize, Plated Armor, Mercury Hourglass,
+  Stone Calendar, Poison already applied and damage potions can still win.
+  `STS_EMPTY_PILE_LOSS_FIX` (default on, `=0` restores the legacy loss)
+  removes it; the `turn > 500` guard and Silver's no-progress loop guard bound
+  a stalled fight (`tests/empty_pile_loss_test.cpp`).
+- A fully blocked or zero-damage hit on a Thorns monster (Spiker; Guardian's Sharp Hide is a separate power)
+  dealt no Thorns damage, because Thorns lives in
+  `Monster::attackedUnblockedHelper`, which `attacked` entered only when
+  post-block damage was above 0. Java `AbstractMonster.damage` runs every
+  `onAttacked` after `decrementBlock` whatever the amount, and
+  `ThornsPower.onAttacked` has no damage guard. `STS_THORNS_BLOCKED_HIT_FIX`
+  (default on, `=0` restores) queues the retaliation on a blocked hit
+  (`tests/thorns_blocked_hit_test.cpp`). Malleable and Reactive share the
+  helper and are unchanged: **Open question** whether their `onAttacked` also
+  runs on a blocked hit (believed so; not re-read from bytecode here).
 
 For localizing a divergence against the pinned game bytecode, see the
 [STS1 Java reference audit](../behavior/java-reference-audit.md).
