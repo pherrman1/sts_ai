@@ -581,14 +581,22 @@ class PolicyNet(nn.Module):
         return x
 
     def heads_out(self, x, batch):
-        """(logits (B, C) with -inf on padding, value (B,), pooled (B, D))."""
+        """(logits (B, C) with -inf on padding, value (B,), pooled (B, D)).
+
+        The two output Linears run in fp32 even inside a bf16 autocast region (the trunk may stay bf16): the
+        actor records its behaviour log-probs from the native fp32 net, and a bf16 final layer alone moves the
+        learner's log-probs by up to ~3e-2 against them, which the PPO ratio would read as a policy change. This
+        removes only the final-layer rounding: a bf16 trunk still leaves a gap (on heart1.bin under CPU bf16
+        autocast, mean |dlogp| against full fp32 drops from 0.013 to 0.008, while the max, ~0.1, comes from the trunk)."""
         xn = self.norm(x)
         idx = batch["choice_index"]
         xc = torch.gather(xn, 1, idx[..., None].expand(-1, -1, xn.shape[-1]))
-        logits = self.choice_logits(xc).squeeze(-1).masked_fill(batch["choice_mask"], float("-inf"))
         valid = (~batch["pad"]).to(xn.dtype)[..., None]
         pooled = (self.value_head_norm(xn) * valid).sum(1) / valid.sum(1)
-        return logits, self.value_head(pooled).squeeze(-1), pooled
+        with torch.autocast(x.device.type, enabled=False):
+            logits = self.choice_logits(xc.float()).squeeze(-1).masked_fill(batch["choice_mask"], float("-inf"))
+            value = self.value_head(pooled.float()).squeeze(-1)
+        return logits, value, pooled
 
     def forward(self, batch):
         logits, value, _ = self.heads_out(self.trunk(batch), batch)
