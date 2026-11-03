@@ -24,6 +24,21 @@ When `resultsFile` is supplied it appends and flushes this header:
 seed,won,floor,act,hpEnd,maxHp,fightsLost,deathCombat,deathEncounter,sec
 ```
 
+Every requested seed gets exactly one row or the run fails. A seed whose
+combat aborts (the native Silver backend throws `search::CombatStateFailure`
+at a 1,000-decision stall, a knowledge-tracker inconsistency, a failed
+search-root conversion or an invalid action; `CombatAbort` in
+`apps/one_combat/run_driver.h`) is a loss row at the floor of the abort with
+`deathEncounter = -2` (`kDeathEncounterCombatAbort`), reported on stderr as
+`[bestbench-combat-abort]` and counted; analyses can count those rows, and the
+paired join keeps the seed in both arms. A seed that fails outside combat,
+or with any other exception from the backend (a configuration or I/O error
+such as a missing model file, which would otherwise turn a misconfigured arm
+into a run of losses), gets no row, `[bestbench-seed-failure]` and exit 1. An unwritable results
+path fails before any seed runs. A battle that exits `UNDECIDED` is a run
+loss and is recorded as the death (`fightsLost`, `deathCombat`,
+`deathEncounter`) like any other.
+
 Other modes include combat-only, data-generation, `reprobench`, and `runtrace`.
 `runtrace` is a debugging policy and does not exactly mirror `runFullRunOOC`.
 
@@ -151,7 +166,12 @@ order, with the pre-registered fixed size as the hard cap; a cap falls back to t
 recorded campaigns it changed no verdict and saved 39% of the pairs
 ([evidence](../../experiments/evidence/sequential_gates_20261101/RESULT.md)). A campaign may reuse a recorded control
 arm after a 32-seed identity sentinel passes ([ADR-0064](../../../decisions/0064-sequential-gates-and-control-reuse.md)).
-`python3 tools/sprt_gate.py --self-test` checks the tool.
+A look is taken only once the consumed prefix holds a discordant pair (some `d != 0`); a prefix of ties is no
+evidence, and the tool's variance floor would otherwise turn it into an immediate verdict. The pairs file must
+have unique integer keys; only the contiguous key run from the smallest key (or `--start`) counts, pairs after
+a gap wait for their unit, and fewer contiguous pairs than `--cap` without a crossing report `PARTIAL` (no
+verdict yet), distinct from `CAP`. `python3 tools/sprt_gate.py --self-test` checks the tool (CTest
+`sprt_gate_selftest`).
 
 ### Self-play gate (retired loop)
 

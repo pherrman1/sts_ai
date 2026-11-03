@@ -39,6 +39,7 @@ declare -A ONE_COMBAT_SEED_INDEX=(
   ["oocfactoreval"]=2      ["oocmargtradeoffeval"]=2 ["oock3tradeoffeval"]=2
   ["oocsemanticfullruneval"]=2 ["oockbudgeteval"]=2
   ["oocsemanticcapture"]=2 ["oocsemanticeval"]=2
+  ["rundriverlossselftest"]=2
 )
 
 declare -A PYTHON_SEED_INDEX=(

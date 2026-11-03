@@ -4,7 +4,7 @@
 > Searcher2 invariant sites and regressions below are historical; the
 > `takeAction` backstop and the canonical classification helpers remain.
 
-Last verified: 2026-09-24 for the Searcher2/3 removals; 2026-08-22 against the current working tree.
+Last verified: 2026-11-02 for stalls under the native backend; 2026-09-24 for the Searcher2/3 removals.
 
 ## Purpose
 
@@ -34,9 +34,11 @@ Hard-failure reasons (checked at the sites listed under "Exact invariant
 locations"):
 
 - `UNDECIDED_BATTLE_EXIT` — a battle loop in `ScumSearchAgent2` exits while
-  `bc.outcome == Outcome::UNDECIDED`. The 1000-decision stall guard converts
-  stalls to `PLAYER_LOSS` before breaking, so only unintentional unresolved
-  exits reach this check. It is the secondary safety net that may fire after a
+  `bc.outcome == Outcome::UNDECIDED`. The historical Searcher2 1000-decision
+  stall guard converted stalls to `PLAYER_LOSS` before breaking; the native
+  Silver backend instead throws at 1,000 decisions (see "Stalls under the
+  native backend" below), so only unintentional unresolved exits reach this
+  check. It is the secondary safety net that may fire after a
   primary `NO_LEGAL_PROGRESSION` / `ACTION_SELECTION_FAILED` (the duplicate
   diagnostics are intentional).
 - `NO_LEGAL_PROGRESSION` — at a genuine agent decision boundary with
@@ -103,9 +105,9 @@ avoided.
 - `takeAction(BattleContext&, Action)` is the single choke point for live-state
   combat commits in `ScumSearchAgent2`; `SimpleAgent` has its own separate
   `takeAction` and is not instrumented.
-- The stall guard is an intentional termination mechanism:
+- The historical stall guard was an intentional termination mechanism:
   `PLAYER_LOSS && curHp > 0` is **not** a hard invariant, and
-  `UNDECIDED_BATTLE_EXIT` deliberately does not fire after a stall conversion.
+  `UNDECIDED_BATTLE_EXIT` deliberately did not fire after a stall conversion.
 - `hasLegalProgressionAction` is only meaningful at genuine agent decision
   states (`PLAYER_NORMAL` / `CARD_SELECT`); other input states return false.
 - A HARD failure implies the run's combat is broken (the row `won=0,
@@ -190,11 +192,35 @@ that the pre-correction code silently retried). Both tests fail on the
 pre-correction baseline where those states would cycle to the 1000-decision
 `[battle-stall]` → `PLAYER_LOSS`.
 
+## Stalls under the native backend
+
+The native Silver backend (ADR-0022, the only combat backend) does not convert
+a stall to `PLAYER_LOSS`. At 1,000 combat decisions, on a knowledge-tracker
+inconsistency, on a failed search-root conversion or on an invalid action it
+throws `search::CombatStateFailure`
+(`src/sim/search/NativeSilverBackend.cpp::failState`, message with seed, floor
+and encounter). `runFullRunOOC` rethrows that exception, and only that one, as
+`CombatAbort`
+(`apps/one_combat/run_driver.h`), carrying the run as it stood: `won=0`, the
+floor/act/HP of the aborted fight, that fight counted in `fightsLost` and
+`deathCombat`, and `deathEncounter = kDeathEncounterCombatAbort` (-2).
+`bestbench` records that as a loss row and reports
+`[bestbench-combat-abort] seed=… floor=…` on stderr with a count, exiting 0; a
+missing row would drop the seed from the paired analysis of both arms and bias
+the comparison toward the arm that aborts. `[bestbench-seed-failure]` (no row,
+exit 1) is kept for every other exception, including the backend's
+configuration and I/O errors (`fail`: a missing model, an incompatible budget
+option), so a misconfigured arm cannot read as a run of losses. Other
+`runFullRunOOC` callers see a `std::runtime_error` as before. A battle that exits `UNDECIDED`
+without throwing is recorded as a death from the game outcome after
+`exitBattle` (`run_driver_loss_accounting` CTest covers both shapes).
+
 ## Open questions
 
-- Should a captured failure also be registered in the run-level CSV as a
-  distinct death reason (e.g. `deathCombat` classification), or does the
-  stderr diagnostic + capture suffice for now?
+- Should a sim-health HARD failure that does not abort the combat also be
+  registered in the run-level CSV as a distinct death reason, or does the
+  stderr diagnostic + capture suffice for now? (A combat abort now is:
+  `deathEncounter = -2`.)
 - What additional high-confidence invariants (queued-action / state-transition
   checks, pile-count consistency) should join the monitor?
 - Should the monitor eventually gate datagen chunks (fail-fast) rather than
