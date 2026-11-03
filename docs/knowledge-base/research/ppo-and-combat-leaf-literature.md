@@ -103,7 +103,7 @@ Two questions from Philipp (2026-11-01):
    - The choice-logit and value Linears ran inside the bf16 autocast region, so the learner's log-probs carried bf16
      rounding against the fp32 behaviour log-probs the actor records (final-layer rounding alone: |Δlogp| p99
      1.5e-2, max 3.5e-2 on the S0 smoke records; `max_dlogp_behaviour` in each arm's `loop.json`). Both heads now
-     run in fp32; the trunk stays bf16. The CUDA-side drop in `max_dlogp_behaviour` is **Unverified** (no CUDA
+     run in fp32; the trunk stays bf16, so its rounding remains (review of #973, CPU bf16-autocast proxy on heart1.bin: mean |Δlogp| against full fp32 0.013 → 0.008, max ~0.095 from the trunk). The CUDA-side drop in `max_dlogp_behaviour` is **Unverified** (no CUDA
      machine in the fixing session); on CPU the heads are bitwise the fp32 heads.
    - `--reward heart_pbrs` read Φ from a `phi` field no actor writes, so it equalled `heart`. Chosen fix: the
      learner refuses `heart_pbrs` when no decision line carries `phi`; exporting Φ from `ppoStep` stays open (plan

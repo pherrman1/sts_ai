@@ -585,7 +585,9 @@ class PolicyNet(nn.Module):
 
         The two output Linears run in fp32 even inside a bf16 autocast region (the trunk may stay bf16): the
         actor records its behaviour log-probs from the native fp32 net, and a bf16 final layer alone moves the
-        learner's log-probs by up to ~3e-2 against them, which the PPO ratio would read as a policy change."""
+        learner's log-probs by up to ~3e-2 against them, which the PPO ratio would read as a policy change. This
+        removes only the final-layer rounding: a bf16 trunk still leaves a gap (on heart1.bin under CPU bf16
+        autocast, mean |dlogp| against full fp32 drops from 0.013 to 0.008, while the max, ~0.1, comes from the trunk)."""
         xn = self.norm(x)
         idx = batch["choice_index"]
         xc = torch.gather(xn, 1, idx[..., None].expand(-1, -1, xn.shape[-1]))
