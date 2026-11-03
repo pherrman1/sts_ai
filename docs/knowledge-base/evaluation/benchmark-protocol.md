@@ -25,13 +25,16 @@ seed,won,floor,act,hpEnd,maxHp,fightsLost,deathCombat,deathEncounter,sec
 ```
 
 Every requested seed gets exactly one row or the run fails. A seed whose
-combat aborts (the native Silver backend throws at a 1,000-decision stall, a
-knowledge-tracker inconsistency or an invalid action; `CombatAbort` in
+combat aborts (the native Silver backend throws `search::CombatStateFailure`
+at a 1,000-decision stall, a knowledge-tracker inconsistency, a failed
+search-root conversion or an invalid action; `CombatAbort` in
 `apps/one_combat/run_driver.h`) is a loss row at the floor of the abort with
 `deathEncounter = -2` (`kDeathEncounterCombatAbort`), reported on stderr as
 `[bestbench-combat-abort]` and counted; analyses can count those rows, and the
-paired join keeps the seed in both arms. A seed that fails outside combat
-gets no row, `[bestbench-seed-failure]` and exit 1. An unwritable results
+paired join keeps the seed in both arms. A seed that fails outside combat,
+or with any other exception from the backend (a configuration or I/O error
+such as a missing model file, which would otherwise turn a misconfigured arm
+into a run of losses), gets no row, `[bestbench-seed-failure]` and exit 1. An unwritable results
 path fails before any seed runs. A battle that exits `UNDECIDED` is a run
 loss and is recorded as the death (`fightsLost`, `deathCombat`,
 `deathEncounter`) like any other.

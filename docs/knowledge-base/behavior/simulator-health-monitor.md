@@ -196,9 +196,11 @@ pre-correction baseline where those states would cycle to the 1000-decision
 
 The native Silver backend (ADR-0022, the only combat backend) does not convert
 a stall to `PLAYER_LOSS`. At 1,000 combat decisions, on a knowledge-tracker
-inconsistency, or on an invalid action it throws
-(`src/sim/search/NativeSilverBackend.cpp::fail`, message with seed, floor and
-encounter). `runFullRunOOC` rethrows the backend's exception as `CombatAbort`
+inconsistency, on a failed search-root conversion or on an invalid action it
+throws `search::CombatStateFailure`
+(`src/sim/search/NativeSilverBackend.cpp::failState`, message with seed, floor
+and encounter). `runFullRunOOC` rethrows that exception, and only that one, as
+`CombatAbort`
 (`apps/one_combat/run_driver.h`), carrying the run as it stood: `won=0`, the
 floor/act/HP of the aborted fight, that fight counted in `fightsLost` and
 `deathCombat`, and `deathEncounter = kDeathEncounterCombatAbort` (-2).
@@ -206,8 +208,10 @@ floor/act/HP of the aborted fight, that fight counted in `fightsLost` and
 `[bestbench-combat-abort] seed=… floor=…` on stderr with a count, exiting 0; a
 missing row would drop the seed from the paired analysis of both arms and bias
 the comparison toward the arm that aborts. `[bestbench-seed-failure]` (no row,
-exit 1) is reserved for non-combat exceptions. Other `runFullRunOOC` callers
-see the same `std::runtime_error` as before. A battle that exits `UNDECIDED`
+exit 1) is kept for every other exception, including the backend's
+configuration and I/O errors (`fail`: a missing model, an incompatible budget
+option), so a misconfigured arm cannot read as a run of losses. Other
+`runFullRunOOC` callers see a `std::runtime_error` as before. A battle that exits `UNDECIDED`
 without throwing is recorded as a death from the game outcome after
 `exitBattle` (`run_driver_loss_accounting` CTest covers both shapes).
 

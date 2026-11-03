@@ -1,4 +1,5 @@
 #include "sim/search/RunGoal.h"
+#include "sim/search/NativeSilverBackend.h"
 #include <cstring>
 #include <stdexcept>
 #include <unistd.h>
@@ -1379,11 +1380,12 @@ static bool bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
     }
     int wins = 0, completed = 0; long long floor = 0, hp = 0; double sec = 0;
     std::vector<std::pair<std::uint64_t, std::string>> failures;
-    // A seed whose combat aborts (CombatAbort: the backend threw at a stall, a knowledge-tracker inconsistency
-    // or an invalid action) is a completed LOSS row at the floor of the abort with
+    // A seed whose combat aborts (CombatAbort: the backend threw search::CombatStateFailure at a stall, a
+    // knowledge-tracker inconsistency, a root conversion or an invalid action) is a completed LOSS row at the floor of the abort with
     // deathEncounter=kDeathEncounterCombatAbort, not a missing row: a missing row would drop the seed from the
     // paired analysis of both arms, biasing the comparison toward the arm that aborts (benchmark protocol:
-    // "an unresolved battle is a loss, not a victory"). The abort is still reported on stderr and counted here.
+    // "an unresolved battle is a loss, not a victory"). The abort is still reported on stderr and counted here. Any other exception (a configuration or
+    // I/O error, e.g. a missing model) is a seed failure: no row, [bestbench-seed-failure], exit 1.
     std::vector<std::tuple<std::uint64_t, int, std::string>> aborts;
     BenchProgress prog(nSeeds, "BEST");
     auto wall0 = std::chrono::steady_clock::now();
@@ -3855,33 +3857,45 @@ int main(int argc, char **argv) {
             throw std::runtime_error("rundriverlossselftest plays exactly one seed");
         const std::uint64_t seed = argc > 3 ? std::stoull(argv[3]) : 0;
         if (const int rc = runDriverLossAccountingSelfTest(seed)) return rc;
-        // bestbench records a CombatAbort as a completed loss row (deathEncounter=-2) and still succeeds.
-        const auto savedBackend = search::g_externalCombatBackend;
-        search::g_externalCombatBackend = [](search::ScumSearchAgent2 &, GameContext &gc, BattleContext &bc) {
-            bc.init(gc);
-            throw std::runtime_error("selftest: stall");
+        // bestbench on one seed with a substitute backend that throws `thrown`; returns bestBench's result and the
+        // lines of the results file (header first).
+        const auto benchWith = [&](std::function<void()> thrown, std::vector<std::string> &lines) {
+            const auto savedBackend = search::g_externalCombatBackend;
+            search::g_externalCombatBackend = [thrown](search::ScumSearchAgent2 &, GameContext &gc, BattleContext &bc) {
+                bc.init(gc);
+                thrown();
+            };
+            const std::string path = (std::filesystem::temp_directory_path()
+                / ("sts_rundriverloss_" + std::to_string(seed) + "_" + std::to_string(::getpid()) + ".csv")).string();
+            const bool ok = bestBench(1, 1, 20, seed, path, "rundriverlossselftest");
+            search::g_externalCombatBackend = savedBackend;
+            lines.clear();
+            { std::ifstream in(path); for (std::string line; std::getline(in, line);) lines.push_back(line); }
+            std::error_code ec;
+            std::filesystem::remove(path, ec); std::filesystem::remove(path + ".meta.json", ec);
+            return ok;
         };
-        const std::string path = (std::filesystem::temp_directory_path()
-            / ("sts_rundriverloss_" + std::to_string(seed) + "_" + std::to_string(::getpid()) + ".csv")).string();
-        const bool ok = bestBench(1, 1, 20, seed, path, "rundriverlossselftest");
-        search::g_externalCombatBackend = savedBackend;
         std::vector<std::string> lines;
-        { std::ifstream in(path); for (std::string line; std::getline(in, line);) lines.push_back(line); }
-        std::error_code ec;
-        std::filesystem::remove(path, ec); std::filesystem::remove(path + ".meta.json", ec);
         const auto fail = [&](const std::string &what) {
-            std::cerr << "FAIL rundriverlossselftest bestbench abort row: " << what << '\n';
+            std::cerr << "FAIL rundriverlossselftest bestbench: " << what << '\n';
             for (const auto &l : lines) std::cerr << "  " << l << '\n';
             return 1;
         };
+        // 1. A combat abort (CombatStateFailure) is a completed loss row (deathEncounter=-2) and still succeeds.
+        bool ok = benchWith([] { throw search::CombatStateFailure("selftest: stall"); }, lines);
         if (!ok) return fail("bestBench returned false for a combat abort");
-        if (lines.size() != 2) return fail("expected header + one row");
+        if (lines.size() != 2) return fail("abort: expected header + one row");
         std::vector<std::string> f;
         { std::stringstream ss(lines[1]); for (std::string x; std::getline(ss, x, ',');) f.push_back(x); }
         if (f.size() != 10 || f[0] != std::to_string(seed) || f[1] != "0" || f[6] != "1" || f[7] != "1"
                 || f[8] != std::to_string(kDeathEncounterCombatAbort))
-            return fail("row is not seed,won=0,...,fightsLost=1,deathCombat=1,deathEncounter=-2");
+            return fail("abort: row is not seed,won=0,...,fightsLost=1,deathCombat=1,deathEncounter=-2");
         std::cout << "rundriverlossselftest bestbench abort row OK: " << lines[1] << '\n';
+        // 2. A plain runtime_error (configuration or I/O error) is a seed failure: no row, bestBench fails.
+        ok = benchWith([] { throw std::runtime_error("selftest: cannot open model"); }, lines);
+        if (ok) return fail("bestBench succeeded on a configuration error");
+        if (lines.size() > 1) return fail("config error: a data row was written");
+        std::cout << "rundriverlossselftest bestbench config error OK: no row, failure reported\n";
         return 0;
     } else if (mode == "a4perturbselftest") {
         return one_combat::a4PerturbSelfTest();

@@ -18,7 +18,6 @@
 #include "sim/search/MatchAndKeepPolicy.h"
 #include "sim/search/ScumSearchAgent2.h"
 #include "sim/search/NativeSilverBackend.h"
-#include "sim/search/OocMctsPlanner.h"
 #include "e2c_capture.h"
 #include "ooc_policy.h"
 #include "ooc_native_fallback.h"
@@ -496,12 +495,13 @@ int runDriverLossAccountingSelfTest(std::uint64_t seed) {
     check(undecided.fightsLost == 1, "undecided exit: fightsLost != 1");
     check(undecided.deathCombat == 1, "undecided exit: deathCombat != 1");
     check(undecided.deathEncounter == encounter, "undecided exit: deathEncounter is not the fight's encounter");
-    // 2. A backend that throws (stall, knowledge inconsistency, invalid action): CombatAbort with the backend's
-    //    message and the run as it stood, the aborted fight counted as the death with the abort sentinel.
+    // 2. A backend that throws a game-state failure (stall, knowledge inconsistency, invalid action): CombatAbort
+    //    with the backend's message and the run as it stood, the aborted fight counted as the death with the
+    //    abort sentinel.
     backend = [&](search::ScumSearchAgent2 &, GameContext &gc, BattleContext &bc) {
         bc.init(gc);
         fightFloor = gc.floorNum;
-        throw std::runtime_error("selftest: stall");
+        throw search::CombatStateFailure("selftest: stall");
     };
     bool caught = false;
     try {
@@ -516,6 +516,21 @@ int runDriverLossAccountingSelfTest(std::uint64_t seed) {
         check(r.sec >= 0, "abort: sec");
     }
     check(caught, "abort: runFullRunOOC did not throw CombatAbort");
+    // 3. A backend that throws a plain runtime_error (a configuration or I/O error, e.g. a missing model file):
+    //    not a combat abort. It must leave runFullRunOOC unchanged, so the caller reports a seed failure.
+    backend = [&](search::ScumSearchAgent2 &, GameContext &gc, BattleContext &bc) {
+        bc.init(gc);
+        throw std::runtime_error("selftest: cannot open model");
+    };
+    bool plain = false;
+    try {
+        (void)runFullRunOOC(seed, 1, 20, false, true);
+    } catch (const CombatAbort &) {
+        check(false, "config error: converted to CombatAbort");
+    } catch (const std::runtime_error &e) {
+        plain = std::string(e.what()) == "selftest: cannot open model";
+    }
+    check(plain, "config error: runFullRunOOC did not rethrow the plain runtime_error");
     std::cout << "run driver loss accounting selftest passed (seed " << seed << ", floor " << fightFloor
               << ", encounter " << encounter << ")\n";
     return 0;
@@ -806,11 +821,11 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
             try {
                 one_combat::OocProfileScope combatProfile(one_combat::OocProfileBucket::RealCombat);
                 agent.playoutBattle(gc, bc);
-            } catch (const search::OocSearchUnsupported &) {
-                throw;  // a planner's own signal (imagined combat refused); not a combat abort
-            } catch (const std::exception &e) {
-                // The backend gave up on this fight (stall, knowledge inconsistency, invalid action). The run
-                // cannot continue; hand the caller the run as it stood so the seed can be recorded as a loss.
+            } catch (const search::CombatStateFailure &e) {
+                // The backend gave up on this fight for a game-state reason (stall, knowledge inconsistency,
+                // root conversion, invalid action). The run cannot continue; hand the caller the run as it stood
+                // so the seed can be recorded as a loss. Every other exception (configuration, I/O, a planner's
+                // OocSearchUnsupported) propagates unchanged and stays a seed failure.
                 throw CombatAbort(e.what(), RunResult{false, gc.floorNum, gc.act, gc.curHp, gc.maxHp, fightsLost + 1,
                     std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count(),
                     fightsTotal + 1, kDeathEncounterCombatAbort});

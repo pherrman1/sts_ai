@@ -23,12 +23,15 @@ at every combat decision boundary and battle-loop exit during normal runs:
   while `bc.outcome == Outcome::UNDECIDED`; any UNDECIDED exit is
   unintentional. The native Silver backend (the only combat backend) does
   not convert a stall to `PLAYER_LOSS`: at 1,000 combat decisions, on a
-  knowledge-tracker inconsistency, or on an invalid action it throws
-  (`src/sim/search/NativeSilverBackend.cpp::fail`); `runFullRunOOC` rethrows
-  that as `CombatAbort` with the run as it stood, and `bestbench` records the
+  knowledge-tracker inconsistency, a failed search-root conversion or an
+  invalid action it throws `search::CombatStateFailure`
+  (`src/sim/search/NativeSilverBackend.cpp::failState`); `runFullRunOOC`
+  rethrows that, and only that, as `CombatAbort` with the run as it stood, and `bestbench` records the
   seed as a loss row at the abort floor with
   `deathEncounter = kDeathEncounterCombatAbort` (-2) instead of dropping it
   (`apps/one_combat/run_driver.h`, `apps/one_combat.cpp::bestBench`).
+  Configuration and I/O errors (a missing model, an incompatible budget
+  option) stay plain `std::runtime_error`: no row, seed failure, exit 1.
 - `NO_LEGAL_PROGRESSION`: at a genuine agent decision boundary with an
   unresolved combat, the CANONICAL live legal action set is empty
   (`hasLegalProgressionAction`, built on `Action::enumerateCardSelectActions`

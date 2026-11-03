@@ -22,12 +22,13 @@ struct RunResult {
     int deathEncounter = -1;
 };
 
-// deathEncounter of a run whose combat aborted (the native Silver backend threw: 1,000-decision stall,
-// knowledge-tracker inconsistency, invalid action). Distinct from -1 (no death) and from every encounter id, so a
+// deathEncounter of a run whose combat aborted (the native Silver backend threw search::CombatStateFailure:
+// 1,000-decision stall, knowledge-tracker inconsistency, root conversion, invalid action). Distinct from -1 (no death) and from every encounter id, so a
 // results CSV can count aborts; bestbench records such a run as a loss row at the floor of the abort.
 constexpr int kDeathEncounterCombatAbort = -2;
 
-// Thrown by runFullRunOOC when the combat backend throws: the message is the backend's, `partial` is the run as it
+// Thrown by runFullRunOOC when the combat backend throws search::CombatStateFailure (any other exception, e.g. a
+// configuration or I/O error, propagates unchanged): the message is the backend's, `partial` is the run as it
 // stood at the abort (won=false, the floor/act/HP of the aborted fight counted as the death, deathEncounter =
 // kDeathEncounterCombatAbort). Derived from std::runtime_error so callers that catch std::exception are unchanged.
 struct CombatAbort : std::runtime_error {
@@ -38,7 +39,8 @@ struct CombatAbort : std::runtime_error {
 RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV,
                         bool shopV, bool e2cCapture = false);
 // Checks the run-level loss accounting on one seed with substitute combat backends: a battle left UNDECIDED is
-// a recorded death (exitBattle maps it to a run loss), a throwing backend is a CombatAbort with the partial result.
+// a recorded death (exitBattle maps it to a run loss), a CombatStateFailure is a CombatAbort with the partial result,
+// and a plain runtime_error from the backend propagates unchanged.
 int runDriverLossAccountingSelfTest(std::uint64_t seed);
 
 namespace one_combat { struct PathHistory; }
