@@ -19,7 +19,8 @@ launch and lives in screen.manifest, not here.
 
 Critic secondary (--critic): CRITIC_DIR/<ARM>/gates.json for BASE, CRITIC_SEP, AUX and VAL_SPARSE, written by
 heart1_value_leaf_teacher_20261102/gates.py on `ppo_train.py score <final state.pt>` values. Group "postfight",
-V = sigmoid(value) (gates.py's primary mode). CRITIC_BETTER if T1 (share of states where -3 HP lowers V) is >= 5 pp
+V = the raw value (gates.py mode "raw"): the PPO critic is trained by MSE on a 0/1 Heart return, so its output is
+already on the probability scale (amendment after review K; heart1's §747 check used sigmoid). CRITIC_BETTER if T1 (share of states where -3 HP lowers V) is >= 5 pp
 above BASE's and T5 (median |1-HP price - 1| in secant units) is below BASE's; else NOT_BETTER. It does not change
 the primary verdict.
 """
@@ -37,6 +38,7 @@ WINDOW = (40, 60)
 ARMS = ("IN_DECK", "DEPTH6", "CRITIC_SEP", "AUX", "VAL_SPARSE")
 CRITIC_ARMS = ("CRITIC_SEP", "AUX", "VAL_SPARSE")
 COST_BAR = 1.3
+CRITIC_MODE = "raw"
 T1_KEY, T5_KEY = "T1_minus3HpLowersV>=0.95", "T5_median|hp1-1|<=1/3"
 
 
@@ -108,7 +110,7 @@ def critic(cdir):
         p = os.path.join(cdir, a, "gates.json")
         if os.path.exists(p):
             with open(p) as f:
-                g = json.load(f)["sigmoid"]["postfight"]["gates"]
+                g = json.load(f)[CRITIC_MODE]["postfight"]["gates"]
             vals[a] = {"T1": g[T1_KEY][0], "T5": g[T5_KEY][0]}
     if "BASE" not in vals:
         sys.exit(f"{cdir}/BASE/gates.json missing: no critic verdicts")
@@ -158,7 +160,7 @@ def main(arch, screen2, out, cdir=None):
                      "cost": cost(dirs[a], base_s)})
     res = {"window_iterations": list(WINDOW), "seeds": [lo, hi], "n": len(seeds), "base": B.mean(),
            "base_s1": S1.mean(), "noise_abs_s1_minus_base": noise, "stall_seeds_window": sorted(drop),
-           "cost_bar": COST_BAR, "arms": rows, "critic": critic(cdir)}
+           "cost_bar": COST_BAR, "critic_mode": CRITIC_MODE, "arms": rows, "critic": critic(cdir)}
     with open(out, "w") as f:
         json.dump(res, f, indent=1)
     print(f"window it {WINDOW[0]}-{WINDOW[1] - 1}, n {len(seeds)}: BASE {100 * B.mean():.2f}% "

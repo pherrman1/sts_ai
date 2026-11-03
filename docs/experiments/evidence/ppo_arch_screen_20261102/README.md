@@ -9,7 +9,8 @@ Nothing here runs before screen 2 (`ppo_reward_screen_20261103`) is SERVE_DONE a
 Launch order (author; `S2=~/ppo-screen2`, screen 2's serve directory, kept with `--keep-state 30`):
 1. **P1 binary.** Build branch from `defaa930` (the commit behind binary `71cfd280…`) with only P1's C++ diff
    (`apps/one_combat/heart1_policy.{h,cpp}`, `apps/one_combat.cpp`, PR #978) applied; build `one_combat`
-   (`linux-gcc-release-x86-64-v3`, as the bin cache); copy it to `/mnt/project-files/bin-cache/one_combat-<sha>`.
+   (`linux-gcc-release-x86-64-v3`, as the bin cache); copy it to `/mnt/project-files/bin-cache/one_combat-<sha>`; that copied file's sha256 is the manifest's
+   `binary_sha256:IN_DECK` (toolchains differ, so never a sha from another build).
 2. **Run commit.** Main (with #977, #978 and this PR) with the build inputs of the step-1 branch
    (`git checkout <build branch> -- apps src include extern cmake CMakeLists.txt CMakePresets.json json pybind11 models selfplay/models`),
    so `ppo_cloud_worker.sh setup` accepts it. `screen.manifest`: `code_commit` = the build-branch commit,
@@ -35,4 +36,4 @@ Launch order (author; `S2=~/ppo-screen2`, screen 2's serve directory, kept with 
     `meta.json` sha256 `03b0838c…`), then per arm in BASE, CRITIC_SEP, AUX, VAL_SPARSE:
     `python3 tools/heart1/ppo_train.py score $S2/ARM/state.pt records.jsonl CRIT/ARM/values.jsonl --device cuda` and
     `python3 docs/experiments/evidence/heart1_value_leaf_teacher_20261102/gates.py meta.json CRIT/ARM/values.jsonl docs/experiments/evidence/potion_price_probe_20261017/analysis.json CRIT/ARM/gates.json`.
-    BASE's critic is screen 2's final BASE `state.pt`.
+    BASE's critic is screen 2's final BASE `state.pt`. The verdict uses gates.py's `raw` mode (PREREG amendment).

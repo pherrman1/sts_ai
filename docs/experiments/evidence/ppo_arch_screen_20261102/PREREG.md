@@ -212,6 +212,10 @@ same seeds.
   critic secondary scores `state.pt` with the new `ppo_train.py score` (gates.py reads its "value" lines). The cost
   measurement command is `one_combat heart1logitscheck` (logits only, the actor's forward), not `heart1score`.
   The arms use their own store prefix `ppo-xfer/arch`.
+- 2026-11-03 (before launch), review K (S1): the critic secondary decides on gates.py's **raw** mode (V = the
+  critic's value as output), not sigmoid: the PPO critic is fit by MSE to a 0/1 Heart return and is already on the
+  probability scale (heart1's shaped-return value was the reason for sigmoid in §747). Sigmoid is reported only as
+  robustness. The manifest records the sha256 of the P1 binary actually copied to the bin cache.
 
 **Knowledge impact.** `a20-ppo-plan.md` "Training recipe" row "net size, start" points here; results go to the
 ledger as one entry and to the plan page; an ADR only after S1 and G1.
