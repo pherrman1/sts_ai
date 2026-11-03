@@ -3,6 +3,7 @@
 # SCREEN/screen.manifest names:
 #   code_commit   40-char sha whose build inputs the run commit must equal
 #   binary_sha256 the actors' one_combat (from the binary cache, else built at the run commit)
+#   binary_sha256:ARM  optional per-arm override (an arm whose actors need another build, e.g. a new input)
 #   store         the ppo_cloud store, e.g. git:https://github.com/OWNER/REPO#ppo-xfer/NAME
 # SCREEN/arms.txt lists the arms (name games iterations warmup parts ...); workers 1..sum(parts) take the parts in
 # file order: W=1 is part 0 of the first arm, and so on.
@@ -23,6 +24,8 @@ CODE=$(key code_commit) BIN=$(key binary_sha256) STORE=$(key store)
 read -r NAME PART < <(awk -v w="$W" '!/^[[:space:]]*(#|$)/{for (k = 0; k < $5; k++) if (++n == w) {print $1, k; exit}}' \
   "$D/arms.txt")
 [ -n "${NAME:-}" ] || stop "W=$W is beyond the screen's $(awk '!/^[[:space:]]*(#|$)/{s+=$5} END{print s}' "$D/arms.txt") workers"
+ARM_BIN=$(key "binary_sha256:$NAME")
+[ -n "$ARM_BIN" ] && BIN=$ARM_BIN
 RUN=$HOME/ppo-screen-w$W
 PID=$RUN/pid LOG=$RUN/actor.log
 BUILD_INPUTS="apps src include extern cmake CMakeLists.txt CMakePresets.json json pybind11 models selfplay/models"

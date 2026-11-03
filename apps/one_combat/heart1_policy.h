@@ -65,6 +65,9 @@ struct ChoiceOptions {
 // collate_fn turns into tensors. JSON keys match the Python record exactly.
 inline constexpr int kRunCounterCount = 2;
 inline constexpr int kMaxFoughtEncounters = 32;  // student_inputs.py MAX_FOUGHT
+// Arch screen IN_DECK (x3_deck, tools/heart1/ppo_model.py deck_aggregates): ten
+// hand-made deck aggregates computed from the record's deck (no new record field).
+inline constexpr int kDeckAggCount = 10;
 
 struct Record {
     std::vector<int> fixedObservation;  // 10 entries
@@ -162,6 +165,7 @@ public:
     bool trimMap() const { return trimMap_; }
     bool extraInputs() const { return extraInputs_; }
     bool extraInputsV2() const { return extraInputsV2_; }
+    bool extraInputsV3() const { return extraInputsV3_; }
 
     struct Linear { int out = 0, in = 0; std::vector<float> w, b; };
     struct Embedding { int rows = 0, dim = 0; std::vector<float> w; };
@@ -201,6 +205,10 @@ private:
     bool extraInputsV2_ = false;
     FixedVec runCounters_, offerPrice_;
     Embedding fought_;
+    // Optional x3_deck (arch screen IN_DECK): deckAggregates() on the fixed-observation
+    // token. Present iff x3_deck.proj.weight is; independent of the v1/v2 extras.
+    bool extraInputsV3_ = false;
+    FixedVec deckAgg_;
     std::vector<Block> blocks_;
     std::vector<float> finalNorm_, valueNorm_;
     Linear choiceLogits_, valueHead_;
@@ -312,6 +320,15 @@ void linearSelfTest();
 int scoreCommand(int argc, char **argv);
 // heart1logitscheck <weights> <records.jsonl> [reps]: logits-only parity and timing.
 int logitsCheckCommand(int argc, char **argv);
+// heart1cardtable <out.json>: the per-card table deckAggregates() uses (type, energy
+// cost, exhaust, starter Strike/Defend, draws), for ppo_model.py's mirror.
+int cardTableCommand(int argc, char **argv);
+
+// x3_deck inputs of a record, each an integer clamped to [-1, 999]: attacks, skills,
+// powers, starter Strikes+Defends, exhausting cards, drawing cards, upgraded share
+// (percent, rounded half up), mean energy cost of cards with cost >= 0 (x100, rounded
+// half up), deck size, curses.
+void deckAggregates(const Record &r, float out[kDeckAggCount]);
 // heart1replay <weights> <asc> <seed> <plan.json> <out.jsonl>: replay one seed's
 // out-of-combat action bits and write our record and logits where the plan asks.
 int replayCommand(int argc, char **argv);

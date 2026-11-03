@@ -4118,6 +4118,8 @@ int main(int argc, char **argv) {
         return one_combat::oocLearnedStopTestCommand(argc, argv);
     } else if (mode == "heart1logitscheck") {
         return one_combat::heart1::logitsCheckCommand(argc, argv);
+    } else if (mode == "heart1cardtable") {   // x3_deck card table for ppo_model.py's deck_aggregates
+        return one_combat::heart1::cardTableCommand(argc, argv);
     } else if (mode == "heart1score") {   // heart1 parity: native logits for silverbot records
         return one_combat::heart1::scoreCommand(argc, argv);
     } else if (mode == "heart1replay") {  // heart1 parity: replay one seed's OOC action bits
