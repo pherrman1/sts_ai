@@ -26046,3 +26046,25 @@ numbers are not bit-comparable.
 **Decision:** fixes on by default (engine-fix policy). Open: Malleable and Reactive on blocked hits.
 **Knowledge impact:** KB `behavior/invariants.md`, `behavior/java-reference-audit.md`,
 `evaluation/differential-correctness.md`, `operations/environment-variables.md`.
+
+## §750 — Out-of-combat relic and event rule fixes, checked with javap: Matryoshka and N'loth's Hungry Face counters, Old Coin gold, Golden Idol on event and Tiny House gold, out-of-combat Entropic Brew, Astrolabe colorless upgrade; six default-on engine fixes (`=0` restores), unit tests, no gameplay run (2026-11-03)
+
+**Question:** do the out-of-combat relic, event and potion rules found in a read-only review of `GameContext.cpp`
+match Java?
+**Data:** PR #970; `tests/{matryoshka_counter,old_coin_gold,vampires_strike_tag,screenless_relic_pool,gold_reward_idol,ooc_relic_minor_fix}_test.cpp`
+(each flag also checked at `=0` and malformed). Java rules checked with `javap -c -p -constants` against the pinned
+`desktop-1.0.jar` (SHA-256 verified). No seeds.
+**Result:** `STS_MATRYOSHKA_COUNTER_FIX` (counter 2), `STS_NLOTHS_FACE_COUNTER_FIX` (counter 1; the chest relic is
+still drawn, then the first relic reward is removed: Matryoshka's, else the chest relic with its sapphire key),
+`STS_OLD_COIN_GOLD_FIX` (`gainGold(300)`), `STS_GOLD_REWARD_IDOL_FIX` (Idol bonus on Tiny House and event-fight gold;
+Java skips `TreasureRoom`, so chest gold stays unboosted), `STS_OOC_ENTROPIC_BREW_FIX` (Sozu: no draw; else
+unlimited draws into the first empty slots), `STS_ASTROLABE_COLORLESS_UPGRADE_FIX`; `Deck::removeAllMatching`
+loop-bound fix without a flag. Kept after javap: Vampires removes only `STARTER_STRIKE` cards (proposed STRIKE-tag fix
+dropped), and the `returnRandomScreenlessRelic` loop. The first review (recalled Java) FAILED on three rules that javap
+then refuted; the corrected re-review PASSED. ctest core|smoke 163/163; CI green.
+**Interpretation:** implementation success only; the winrate effect is unmeasured and expected small. Replays diverge
+after Matryoshka/N'loth chests, out-of-combat Entropic Brew and the stale-slot removal; Old Coin, Idol and Astrolabe
+change amounts only.
+**Decision:** fixes on by default (engine-fix policy).
+**Knowledge impact:** KB `behavior/java-reference-audit.md`, `evaluation/differential-correctness.md`,
+`operations/environment-variables.md`.
