@@ -142,8 +142,8 @@ Two questions from Philipp (2026-11-01):
 | A2 | GAE λ 1.0 vs 0.97 | short PPO arm | no difference in the in-sample A20 curve or the gate |
 | A3 | 512 vs 2,048 games per iteration at a fixed game budget | short PPO arm | the larger batch is not better per game |
 | A4 | Offline gradient-variance probe on ~200 stored mid-run states: GAE, critic baseline, prefix-replay forks | offline | fork gradients are not lower-variance per core-s than GAE; then drop V4 |
-| A5 | Sparse value supervision: value loss on ≈3-5 well-separated decisions per game (act boundaries plus random) vs all decisions, judged by B2's 1-HP standard error on the resulting critic (item 9) | short PPO arm + offline B2 | the 1-HP SE does not shrink |
-| A6 | Zero-seed advantage identity once Φ is exported: GAE advantages under 1{Heart} + PBRS(M0) with a zero critic vs 1{Heart} with the critic initialised at M0, on one stored iteration (item 7) | offline, minutes | they differ beyond the learned residual (then the exporter's terminal handling is wrong), or they agree (then drop V3 as an arm) |
+| A5 | Sparse value supervision: value loss on ≈3-5 well-separated decisions per game (act boundaries plus random) vs all decisions, judged by B2's 1-HP standard error on the resulting critic (item 10) | short PPO arm + offline B2 | the 1-HP SE does not shrink |
+| A6 | Zero-seed advantage identity once Φ is exported: GAE advantages under 1{Heart} + PBRS(M0) with a zero critic vs 1{Heart} with the critic initialised at M0, on one stored iteration (item 8) | offline, minutes | they differ beyond the learned residual (then the exporter's terminal handling is wrong), or they agree (then drop V3 as an arm) |
 
 ## (B) Evidence on a run-aware Silver leaf
 
