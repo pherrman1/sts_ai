@@ -27,7 +27,7 @@ reading → INCONCLUSIVE (CI includes 0, D > 0).
 - **Mean final floor:** −1.61 [−2.37, −0.85]. CRIT_PRE ends lower on average.
 - **Deaths by act:**
 
-  | Arm | Act 1 | Act 2 | Act 3 | Floor ≥ 51 |
+  | Arm | Died in Act 1 | Died in Act 2 | Died in Act 3 | Reached floor 51 |
   |---|---|---|---|---|
   | GH | 348 | 565 | 302 | 833 |
   | GC | 441 | 553 | 271 | 783 |
@@ -39,8 +39,9 @@ reading → INCONCLUSIVE (CI includes 0, D > 0).
 - CRIT_PRE's net is not shown better than heart1 at the gate's 2 pp scale. The point estimate (+0.78 pp) matches the
   screen's in-sample D (+0.74 pp vs the control). That is consistent with a small gain, and also with none.
 - The policy changed in a way the Heart rate alone hides. CRIT_PRE dies in Act 1 about 27% more often (441 vs 348) and
-  reaches the last act less often, yet converts more of its late runs into Heart kills. Both nets are greedy, so this is
-  a systematic change of style, not noise from sampling. The lower mean floor is the clearest paired difference in G1.
+  reaches the last act less often, yet converts more of its late runs into Heart kills. The Act-1 difference holds
+  paired: +4.5 pp [+2.7, +6.3], McNemar p ≈ 8e-7 (222 vs 129 discordant pairs), so it is a systematic change of
+  style. The lower mean floor is the clearest paired difference in G1.
 - heart1 in PPO mode at temperature 0 (the net also makes the key choices) plays at 17.3% on this engine. G0's 16.1% was
   policyStep with the key rules on the older binary, so the two are not directly comparable.
 
