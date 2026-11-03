@@ -22,7 +22,8 @@ heart1_value_leaf_teacher_20261102/gates.py on `ppo_train.py score <final state.
 V = the raw value (gates.py mode "raw"): the PPO critic is trained by MSE on a 0/1 Heart return, so its output is
 already on the probability scale (amendment after review K; heart1's §747 check used sigmoid). CRITIC_BETTER if T1 (share of states where -3 HP lowers V) is >= 5 pp
 above BASE's and T5 (median |1-HP price - 1| in secant units) is below BASE's; else NOT_BETTER. It does not change
-the primary verdict.
+the primary verdict. CRIT_PRE/gates.json (screen 2's PROMISING pre-trained critic), if present, is a reference
+row without a verdict (PREREG amendment 19:52 CET).
 """
 import csv
 import glob
@@ -124,6 +125,13 @@ def critic(cdir):
         better = v["T1"] - b["T1"] >= 0.05 and v["T5"] < b["T5"]
         rows.append({"arm": a, **v, "dT1": v["T1"] - b["T1"], "dT5": v["T5"] - b["T5"],
                      "verdict": "CRITIC_BETTER" if better else "NOT_BETTER"})
+    p = os.path.join(cdir, "CRIT_PRE", "gates.json")   # screen 2's PROMISING arm: reference row, no verdict
+    if os.path.exists(p):
+        with open(p) as f:
+            g = json.load(f)[CRITIC_MODE]["postfight"]["gates"]
+        v = {"T1": g[T1_KEY][0], "T5": g[T5_KEY][0]}
+        rows.append({"arm": "CRIT_PRE", **v, "dT1": v["T1"] - b["T1"], "dT5": v["T5"] - b["T5"],
+                     "reference": True})
     return rows
 
 

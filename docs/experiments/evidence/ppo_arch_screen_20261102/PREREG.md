@@ -216,6 +216,18 @@ same seeds.
   critic's value as output), not sigmoid: the PPO critic is fit by MSE to a 0/1 Heart return and is already on the
   probability scale (heart1's shaped-return value was the reason for sigmoid in §747). Sigmoid is reported only as
   robustness. The manifest records the sha256 of the P1 binary actually copied to the bin cache.
-
+- 2026-11-03 19:52 CET (before launch, no arch games played): screen 2 SERVE_DONE with **CRIT_PRE PROMISING**
+  (D +0.74 pp [+0.18, +1.32], iterations 40-59, vs mean(BASE, BASE_S1)); the other screen-2 arms NOT_SHOWN.
+  Amendment required by "Screen 2 dependency", resolved under "Binding under B" ("B still forks from screen 2's
+  BASE, not from the winner; combining is S1's job"): base recipe, start state (BASE `state-0030.pt`, sha256
+  `cd1c90c6…`), controls (BASE, BASE_S1) and all five arms are unchanged. Re-statement of CRITIC_SEP and
+  VAL_SPARSE: they test their change on BASE's critic (trained from heart1's head by on-policy updates, no
+  pre-training), i.e. "does the critic change help a non-pre-trained critic". A PROMISING verdict for either does
+  not show that it adds to CRIT_PRE; CRIT_PRE's pre-trained critic and a PROMISING critic arm are not stacked
+  automatically. S1 (Decision section) then tests BASE + CRIT_PRE start + the PROMISING arch changes together in
+  the one confirmation run; if CRITIC_SEP or VAL_SPARSE is PROMISING, S1 additionally runs CRIT_PRE + that arm
+  alone as its own arm against CRIT_PRE, because the two act on the same component. The critic secondary adds
+  screen 2's final CRIT_PRE `state.pt` as a reported reference row (not a verdict row). Re-reviewed by K before
+  launch.
 **Knowledge impact.** `a20-ppo-plan.md` "Training recipe" row "net size, start" points here; results go to the
 ledger as one entry and to the plan page; an ADR only after S1 and G1.
