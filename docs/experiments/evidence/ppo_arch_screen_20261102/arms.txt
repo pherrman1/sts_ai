@@ -1,4 +1,4 @@
-# name       games iters warmup parts  learner hyperparameters (BASE_ARGV = the resolved base recipe from screen.manifest)
+# name       games iters warmup parts  learner hyperparameters (BASE_ARGV = screen 1's BASE recipe, i.e. ppo_train.py defaults; resolved argv in screen.manifest)
 # Flags after BASE_ARGV are the prerequisite PR's names (PREREG.md "Prerequisites"); semantics are fixed by PREREG.md.
 BASE         512   30    3      2      BASE_ARGV --seed 0
 BASE_S1      512   30    3      2      BASE_ARGV --seed 1
