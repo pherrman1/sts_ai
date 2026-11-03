@@ -92,3 +92,16 @@ seeds, policy alone, Silver 1,000) before anything uses its net. No default chan
 3. `make_arms.sh` writes the six arms into `git:https://github.com/pherrman1/sts_ai#ppo-xfer/screen2`.
 4. Start the PC serve and the 24 workers (`ppo_cloud_worker.sh`, as screen 1).
 5. At the end, `ppo_cloud.py cleanup` on the PC.
+
+## Launch record (2026-11-03)
+- RUN_COMMIT `da82e08ef7c166a236015663480dd0dfd0dbb025`. Arms frozen at 10:58 CET from heart1.bin `1e92f2a6…`
+  (net-0000 `4288d095…` for every arm except CRIT_PRE, whose net-0000 is `94d0d1a3…`, i.e. critpre.bin). The
+  learner has served since 10:59 CET.
+- Learner-only check (one update on screen 1's BASE iteration 0, 512 games), all exit 0:
+
+  | Reward | Mean return | approx-KL | max_dlogp_behaviour |
+  |---|---|---|---|
+  | base | 0.390 | 0.0072 | 0.083 |
+  | phi_floor | 0.365 | 0.0070 | 0.083 |
+  | phi_state | 0.366 | 0.0071 | 0.081 |
+  | act | 0.457 | 0.0071 | 0.081 |
