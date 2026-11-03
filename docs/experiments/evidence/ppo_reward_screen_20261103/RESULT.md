@@ -60,8 +60,9 @@ within a block but differ between blocks, so a change between blocks is not pair
 | CRIT_PRE | 8.38 | 7.73 | 8.85 | 8.09 | 8.95 | 8.59 |
 | ACT_BONUS | 8.30 | 7.60 | 7.34 | 7.07 | 7.58 | 7.48 |
 
-Iterations 0-3 play heart1's policy in every arm (3 value-only warm-up updates) and give identical games: 8.84% on
-2,048 seeds. CRIT_PRE has the highest rate in 5 of 6 blocks (not in 10-19).
+Iterations 0-4 play heart1's policy in every arm (3 value-only warm-up updates; net-0003, used by iteration 4, still has
+heart1's policy tensors, and the arms diverge from iteration 5) and give identical games: 8.91% on 2,560 seeds
+(binomial SE 0.56 pp). CRIT_PRE has the highest rate in 5 of 6 blocks (not in 10-19).
 
 **Training statistics** (`loop.json`, policy iterations):
 
@@ -75,19 +76,23 @@ Iterations 0-3 play heart1's policy in every arm (3 value-only warm-up updates) 
 | ACT_BONUS | 0.0110 | 0.215 → 0.268 | 0.0092 | 0.364 / 0.366 |
 
 Every arm's policy moves by about the same amount (KL ~0.011 per update) and its entropy rises. At the first policy
-update the control critic still overestimates the return by ~0.04 (heart1's critic was trained on the original's
-reward and starts at ~0.57; 3 warm-up iterations do not close the gap). CRIT_PRE's critic is calibrated from the
+update the control critic's mean value is above the mean λ-return by ~0.04 (heart1's critic was trained on the
+original's reward and starts at ~0.57; 3 warm-up iterations do not close the gap). The λ-return bootstraps from that
+critic, so the gap to the Monte Carlo target is larger than 0.04: iteration 4's games are identical in every arm, so
+its Monte Carlo return is the same for all, and CRIT_PRE's λ-return there is 0.147 vs the controls' 0.170. CRIT_PRE's critic is calibrated from the
 start. By iterations 40-59 every critic is calibrated in its mean (mean value = mean return within 0.003).
 
 ## Interpretation (Inference)
-- **The learning signal from a better-calibrated critic matters; a reshaped reward does not.** PBRS changes only what
+- **Screen-level hypothesis: a calibrated critic start helps; a reshaped reward does not.** PBRS changes only what
   the critic has to fit (V − Φ). With both potentials the critic still starts off (PBRS arms at iteration 4:
   value 0.143 vs shaped return 0.088), and the arms do not beat the control. The act/key bonus adds a target that is
   not the Heart kill and leans worse.
-- **CRIT_PRE does not show learning beyond heart1.** Its last-third rate (8.77%) is about heart1's rate on the
-  warm-up seeds (8.84%, different seeds, unpaired). The more likely reading is that every arm's policy updates drift
-  slightly down from heart1 under a miscalibrated early critic, and CRIT_PRE avoids most of that drift. G1 (final
-  net vs heart1 on fresh paired seeds) is the test that separates "better than heart1" from "less worse".
+- **Whether CRIT_PRE learns beyond heart1 or only declines less is open.** Its last-third rate (8.77%) is
+  −0.14 pp from heart1's rate on the warm-up seeds (8.91%), and the control's (8.03%) is −0.88 pp. Both comparisons use
+  different seeds (unpaired); with binomial SEs of ~0.56 pp (warm-up) and ~0.27 pp (last third) alone, the control's
+  gap is ~1.4 SE, before any seed-block variation. Both readings fit the data: (a) the controls drift down under a
+  miscalibrated early critic and CRIT_PRE avoids that, or (b) all arms stay near heart1 and CRIT_PRE gains a little.
+  G1 (final net vs heart1 on fresh paired seeds) decides.
 - Whole-run noise is again ~0.6-0.8 pp (screen 1: 0.82), so single-run differences below ~0.5 pp stay unresolved.
 
 ## Decision

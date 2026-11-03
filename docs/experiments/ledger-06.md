@@ -26084,12 +26084,12 @@ da82e08e, binary 71cfd280. 2026-11-03 10:59-19:52 CET, no pause.
   ACT_BONUS −0.50 [−1.04, +0.06] NOT_SHOWN.
 - Futility look (iterations 20-29): all CONTINUE (CRIT_PRE +0.99 [+0.20, +1.78]).
 - 2 stalled games (BASE_S1, ≤ 1 per part); the stall-free sensitivity D changes no verdict.
-- Iterations 0-3 (heart1's policy in every arm): 8.84%. CRIT_PRE has the highest block rate in 5 of 6 blocks. At the
-  first policy update the control critic overestimates the return (0.206 vs 0.170); CRIT_PRE's is calibrated (0.143
-  vs 0.147). Approx-KL ~0.011 per update and rising entropy in every arm.
-**Interpretation (Inference):** a calibrated critic start helps; reshaping the reward (PBRS with floor or state
-potential) or adding act/key bonuses does not. CRIT_PRE's last-third rate is about heart1's warm-up rate (unpaired),
-so it more likely avoids the early drift of the other arms than learns beyond heart1; G1 separates the two.
+- Iterations 0-4 (heart1's policy in every arm, identical games): 8.91% on 2,560 seeds. CRIT_PRE has the highest block rate in 5 of 6 blocks. At the
+  first policy update the control critic is above the mean λ-return (0.206 vs 0.170, and the λ-return itself
+  bootstraps from that critic); CRIT_PRE's is calibrated (0.143 vs 0.147). Approx-KL ~0.011 per update and rising entropy in every arm.
+**Interpretation (Inference):** narrow screen-level hypothesis: a calibrated critic start helps; reshaping the reward (PBRS with floor or state
+potential) or adding act/key bonuses does not. Vs heart1's warm-up rate (unpaired seeds) CRIT_PRE is −0.14 pp and the control
+−0.88 pp (~1.4 binomial SE): both "controls drift down, CRIT_PRE avoids it" and "CRIT_PRE gains a little" fit; G1 decides.
 Whole-run noise again ~0.6-0.8 pp.
 **Decision:** reward stays `heart`. CRIT_PRE is the candidate critic setup for the next pilot; its net is used only
 after G1 (net-0060 vs heart1, policy alone, Silver 1,000, 2,048 fresh paired seeds; Philipp's go needed). The
