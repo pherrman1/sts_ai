@@ -26068,3 +26068,32 @@ change amounts only.
 **Decision:** fixes on by default (engine-fix policy).
 **Knowledge impact:** KB `behavior/java-reference-audit.md`, `evaluation/differential-correctness.md`,
 `operations/environment-variables.md`.
+
+## §751 — PPO reward screen 2: 6 arms × 30,720 sampled A20 games from heart1 (K15 combat): CRIT_PRE (critic pre-trained on screen-1 games, λ 1 targets) PROMISING +0.74 pp [+0.18, +1.32] vs control (bar 0.52); PBRS_FLOOR −0.32, PBRS_STATE −0.14, ACT_BONUS −0.50 NOT_SHOWN → reward stays 1{Heart}, CRIT_PRE is the candidate critic setup pending G1 (PC + cloud, 2026-11-03)
+
+**Question (Philipp, 2026-11-03 09:29 CET "mach den reward screen"; 24 workers "yes go für 24 haiku worker"):** does
+a different learning signal (potential-based shaping, an act/key bonus, or a pre-trained critic) make PPO from heart1
+raise the A20 Heart-kill rate where screen 1's base recipe (§748) did not?
+**Data:** [PREREG](evidence/ppo_reward_screen_20261103/PREREG.md) (K PASS, #975), [RESULT](evidence/ppo_reward_screen_20261103/RESULT.md),
+`result.json`, `s2res.tgz` (games CSVs, per-iteration stats, stalls, futility look, serve log; sha256 `2f575565…`).
+Seeds 111470000-111500719 (all arms), learner on the PC (RTX 3060 Ti, micro-batch 192), 24 cloud actors, RUN_COMMIT
+da82e08e, binary 71cfd280. 2026-11-03 10:59-19:52 CET, no pause.
+**Result:**
+- Primary (iterations 40-59, 10,240 paired seeds vs C = (BASE 7.72% + BASE_S1 8.33%)/2, noise 0.61 pp): CRIT_PRE
+  8.77%, +0.74 [+0.18, +1.32] PROMISING; PBRS_STATE −0.14 [−0.70, +0.42], PBRS_FLOOR −0.32 [−0.86, +0.23],
+  ACT_BONUS −0.50 [−1.04, +0.06] NOT_SHOWN.
+- Futility look (iterations 20-29): all CONTINUE (CRIT_PRE +0.99 [+0.20, +1.78]).
+- 2 stalled games (BASE_S1, ≤ 1 per part); the stall-free sensitivity D changes no verdict.
+- Iterations 0-4 (heart1's policy in every arm, identical games): 8.91% on 2,560 seeds. CRIT_PRE has the highest block rate in 5 of 6 blocks. At the
+  first policy update the control critic is above the mean λ-return (0.206 vs 0.170, and the λ-return itself
+  bootstraps from that critic); CRIT_PRE's is calibrated (0.143 vs 0.147). Approx-KL ~0.011 per update and rising entropy in every arm.
+**Interpretation (Inference):** narrow screen-level hypothesis: a calibrated critic start helps; reshaping the reward (PBRS with floor or state
+potential) or adding act/key bonuses does not. Vs heart1's warm-up rate (unpaired seeds) CRIT_PRE is −0.14 pp and the control
+−0.88 pp (~1.4 binomial SE): both "controls drift down, CRIT_PRE avoids it" and "CRIT_PRE gains a little" fit; G1 decides.
+Whole-run noise again ~0.6-0.8 pp.
+**Decision:** reward stays `heart`. CRIT_PRE is the candidate critic setup for the next pilot; its net is used only
+after G1 (net-0060 vs heart1, policy alone, Silver 1,000, 2,048 fresh paired seeds; Philipp's go needed). The
+architecture screen (design B) needs a PREREG amendment for CRITIC_SEP/VAL_SPARSE against the pre-trained critic. No
+default change.
+Seeds: 111470000-111500719 USED. Cost ≈ 184k games ≈ 210 core-h cloud + ~9 h PC GPU (+ ~1 h pre-training).
+**Knowledge impact:** KB `research/a20-ppo-plan.md` (screen-2 row, reward axis result).
