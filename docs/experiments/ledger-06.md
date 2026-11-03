@@ -25905,3 +25905,217 @@ non-regression variant. Review: K PASS (`/mnt/project-files/reviews/pr938.md`, 4
 Seeds: none new (Part B replayed used seeds 111312000-111312031). Cost ≈ 15.8 core-h, local (Part A: none).
 **Knowledge impact:** ADR-0064; benchmark protocol section "Paired campaigns: sequential stopping and control reuse";
 literature review ranks 1 and 2 marked adopted.
+
+## §743 — Awakened One replay (X5 gate 1): flat 40k loses 1.2 pp fewer recorded A20 Awakened One fights than production (25.0% → 23.8%, CI −2.9 to +0.3 pp; 304 entries × 3 paired copies) at 7.5× CPU → NOT_PLANNING_LIMITED; Awakened One deaths are deck/state-limited (cloud replay of §727 seeds, 2026-11-01)
+
+**Question (Philipp, 2026-11-01 card "Smoke, dann ~125 core-h"; run go 17:02Z "16 worker go"):** §740 left one X5
+candidate, Awakened One. Does more search (flat 40,000 simulations per root, no learned stop) lose fewer of its
+recorded fights than production, from the same pre-combat states with the same battle seeds?
+**Data:** [README](evidence/ao_replay_40k_20261101/README.md) (prereg, review K PASS), [RESULT](evidence/ao_replay_40k_20261101/RESULT.md),
+`result.json`. 304 of §727 arm A's 544 Awakened One entries (seeds 111312001-111312805), `one_combat fightreplay` with
+new default-off `STS_FIGHT_REPLAY_FLAT` (#939), 3 copies per arm (copy 0 = recorded seed, 1-2 = SEED_BASE 740000001
+redraws, shared by both arms). RUN_COMMIT 15737bbe, code 53d591b6, binary dda31542, 16 cloud workers, 304/304 units
+verified. No new seeds.
+**Result:**
+- Per-fight death: P 25.0%, F 23.8%, dDeath −1.2 pp [−2.9, +0.3] → NOT_PLANNING_LIMITED (CI lower > −4 pp). Run-level
+  translation ≈ +0.26 pp Heart kills (≤ +0.6 pp at the CI end).
+- Identity 304/304 (production copy 0 reproduces every recorded fight). HP lost −0.7 [−1.9, +0.5]. CPU per copy P 60 s,
+  F 447 s (7.5×).
+- Descriptive: where P died in all 3 copies (50 entries), F still died in 96% of copies; no entry-HP trend.
+**Interpretation:** consistent with §718 (40k no gain on expert boss states) and §740's 69% state-determined deaths:
+Awakened One is lost before the fight starts. A small real search gain (≤ ~3 pp per fight, ≤ ~0.6 pp per run) is not
+excluded, but it costs 7.5× CPU.
+**Decision:** no Awakened One budget follow-up; the X5 lever moves to deck building (phase 3/5 metric). No default change.
+Seeds: none new (replayed §727 seeds 111312001-111312805; redraws SEED_BASE 740000001). Cost ≈ 128 core-h, cloud.
+**Knowledge impact:** KB `research/a20-loss-mining.md` (X5 gate result, open question closed), `research/one-year-roadmap.md` (X5 row).
+
+## §744 — PPO cost arms and G0: K15 (200 hallway sims, no learned Silver prior) keeps the §691 key effect at ~1/6 of Silver 1,000's CPU (D +3.5 pp [+1.7, +5.4], VALID; boss prior playouts alone are ~70% of the cost); heart1 alone ≈ student_sel alone at A20 (−0.2 pp [−2.0, +1.5], 2,048 pairs) → PPO starts from heart1 and plays K15 (cloud, 2026-11-02)
+
+**Question (Philipp, 2026-11-01 22:12Z card "PC + Cloud für Kosten-Arme", 22:17Z "masch einfach alles go, ich approve
+den ganzen run"):** which cheaper Silver settings keep an OOC policy effect (X1 design) for PPO self-play, and does
+heart1 alone play A20 at least as well as student_sel alone (G0, start weights of the PPO net)?
+**Data:** [PREREG](evidence/ppo_cost_arms_g0_20261101/PREREG.md) (review K PASS + delta PASS; K2/K3 dropped before
+launch: the learned stop searches its checkpoints to 10k whatever the base), [RESULT](evidence/ppo_cost_arms_g0_20261101/RESULT.md),
+`result.json`, `games.csv`. Runner and binary d39c2b98 as X1 (§739), `STS_OOC_MCTS=0`, the net alone. Cost arms on
+X1's 1,024 USED seeds (R/F keys × K1, K4, K5, K15 + FB = X1's F1000), G0 F keys on 2,048 new seeds. RUN_COMMIT
+45a46940, 24 cloud workers, 3,072/3,072 units verified.
+**Result:**
+- Key effect F − R: K1 +3.32 [+1.07, +5.57] VALID (CPU 0.76× B); K4 +4.49 [+2.44, +6.64] VALID (0.30×); K5 +2.83
+  [+0.68, +4.88] INCONCLUSIVE (0.26×); K15 +3.52 [+1.66, +5.37] VALID (0.16×). Chosen (cheapest admitted): **K15**.
+  F levels: B 16.8%, K4 14.9%, K15 10.9%. DiD vs X1's 1000 arm all include 0.
+- FB reproduces X1's F1000 on 1,024/1,024 seeds (determinism).
+- G0: student_sel 16.3%, heart1 16.1%, D −0.24 pp [−2.00, +1.51] → **HEART1**; act 3 −0.8 pp [−2.9, +1.3].
+**Interpretation:** for ranking OOC choices of the PPO policy, combat can be ~6× cheaper than Silver 1,000; per
+core-hour K15 yields ~3.5× the Heart kills. One OOC effect only (mostly the act-1 Sapphire key); card and path choices
+whose value depends on fight skill are not covered. Boss prior playouts dominate Silver 1,000's cost.
+**Decision:** the PPO recipe screen (#960) plays K15 and starts from heart1 (as pre-registered). No default change.
+Seeds: 111372000-111374047 USED (G0); smokes 111386992-993. Cost ≈ 37 core-h, cloud.
+**Knowledge impact:** KB `research/a20-ppo-plan.md` (cost arms and G0 rows: results).
+
+## §745 — Heart-entry perturbation labels, round 2: 52,032 more paired Heart fights on 3,252 Heart-entry states replicate §731 (potion removed −8.1, HP down −7.5, relic removed −5.1, HP up +6.1, potion added +5.4 pp; card changes ≈ 0); labels usable; Incense counter slope vs §723 0.92 (n 320); one base excluded (Silver stall) (new seeds, 2026-11-01)
+
+**Question:** Philipp chose more labels after §732/§733; does a second round on the remaining Heart-entry states give
+usable labels, and does it replicate §731?
+**Data:** [PREREG](evidence/heart_entry_perturb2_20261101/PREREG.md), [RESULT](evidence/heart_entry_perturb2_20261101/RESULT.md).
+3,253 bases × 16 variants as §731 (same generator, same research Heart search), binary e55f4827 (§731 units replay
+identically). 16 workers (Philipp 07:20Z), 752 CPU-h, 3253/3253 verified; `labels_all.csv` = 4,252 bases, 68,032 fights.
+**Result:** control kill 64.7%; reseed − control −1.8 pp [−3.3, −0.2] (different seed blocks); effects as in the
+title, all clear ones with §731's sign; sign checks consistent except card upgrade (unresolved). One base excluded:
+a fight aborted with "stall: exceeded 1000 decisions" (seed 111342268).
+**Decision:** labels usable; stage B3 (pre-registered) fits on both rounds.
+Seeds: 111341024-111344276 and 111350256-111353508 used.
+**Knowledge impact:** single-change Heart-entry prices replicate across 4,252 states; card changes are near 0 on
+average.
+
+## §746 — General Heart-entry value model on both label rounds (stage B3): the all-feature GBM beats Silver's leaf on 59,528 paired labels, A − L −0.0018 [−0.0024, −0.0012] PASS; still improving with more data; overstates HP/potion and misses relic removal on average (2026-11-02)
+
+**Question:** with 4,252 Heart-entry states (§731 + round 2), does the all-feature value model A predict paired
+single-change effects better than Silver's leaf L, and is it still learning?
+**Data:** [PREREG](evidence/heart_entry_value_all_20261101/PREREG.md), [RESULT](evidence/heart_entry_value_all_20261101/RESULT.md).
+§732's A refit on 25/50/100% of training source seeds, 5-fold cross-fit by source seed, L converged float64;
+xgboost 3.0.5.
+**Result:** A − L −0.00180 [−0.00240, −0.00121] PASS (round-2 pairs −0.00202); skill vs no effect A −0.0035, L
+−0.0017, op-mean −0.0016; A − L at 25/50/100% −0.0009/−0.0014/−0.0018; A100 − A50 −0.0004 [−0.0007, −0.0001].
+Mean effects (pp, observed / A): HP down −7.4/−9.4, HP up +5.5/+8.7, potion added +5.3/+8.8, relic removed
+−5.0/−1.0, max HP down −2.2/−0.2.
+**Decision:** PASS → pre-register stage C (A as Silver's S&S win leaf in §724's chain); runs need Philipp's go.
+Seeds: none.
+**Knowledge impact:** a general all-feature value model learns cross-state prices from ~3,400 Heart-entry states
+and keeps improving with data; its average scale for HP/potions is too high and relic loss is barely seen.
+
+## §747 — heart1's value head as a Silver combat leaf, teacher check (B2): FAIL on HP resolution (−3 HP lowers V in 82.7% of 20,677 post-fight states, 1-HP price p10 −2.9 / p90 +4.3 secant units); Fairy 35 HP, max HP +1.6 HP/pt and per-type potion order (r 0.76, 0.37 without Fairy) are better than gen 1b → no heart1 leaf, no B3 (offline, no seeds, 2026-11-02)
+
+**Question:** Philipp (2026-11-02 10:40Z): try the 2026-11-01 literature result (B) on using the heart1 net's value
+head as Silver's leaf value. The page's plan runs B2 first: the §721 teacher check on the critic.
+**Data:** [README](evidence/heart1_value_leaf_teacher_20261102/README.md) (pre-registration, five gates T1-T5,
+pushed before scoring), [RESULT](evidence/heart1_value_leaf_teacher_20261102/RESULT.md). heart1.bin `1e92f2a6…`,
+`one_combat heart1score`. 20,677 post-fight REWARDS states in acts 1-3 from the 2,048 §691 games (every elite, boss
+and event fight + 6,000 hallway fights), plus §721's 4,832 Heart entries, each perturbed as `prices.py` (2026-10-21
+gen 1b check): 328,146 records.
+**Result (post-fight states):**
+- T1 −3 HP lowers V: 82.7% (need 95%), FAIL. −1/−6/−12 HP: 67/91/95%. Boss states 71%, act 3 76%.
+- T5 1-HP resolution: median abs(price − 1) 1.50 secant units (need ⅓), FAIL.
+- T2 max HP +5 raises V in 92.6%, pass (+1.6 HP per point). T3 Fairy 35.0 HP, pass. T4 per-type r 0.755 with §510,
+  pass. Post hoc: 0.37 without Fairy, and Block, Essence of Steel and Swift are priced +5-9 HP vs ≈ 0 in §510.
+- Non-Fairy potion median 5.8 HP (§510 7.8, formula 11). Heart entries (descriptive): T1 75.8%, T2 70.1%.
+**Decision:** FAIL per the pre-registered rule. No heart1 leaf, no B3 flag. heart1's critic resolves levels and
+potions, not the 1-3 HP differences a leaf has to rank. Rerun `build_states.py` + `gates.py` on the own A20 PPO
+critic (reward 1{Heart} + PBRS).
+Seeds: none.
+**Knowledge impact:** B2 line in `research/ppo-and-combat-leaf-literature.md`.
+
+## §748 — PPO recipe screen 1: 19 one-change arms × 15,360 sampled A20 games from heart1 (K15 combat): no arm PROMISING; LAM_1 (λ 1.0) WORSE −0.92 pp [−1.78, −0.08]; best KL_1 +0.72 [−0.14, +1.58] below whole-run noise (BASE_S1 +0.82); no arm rises beyond seed-block noise → recipe stays BASE, no G1; next proposal: reward/learning-signal screen (PC + cloud, 2026-11-03)
+
+**Question (Philipp, 2026-11-01 "ich approve den ganzen run", 2026-11-02 "Ok 14 gb"):** which single PPO recipe
+changes improve heart1 under our engine's A20 self-play (screen before the S1 pilot)?
+**Data:** [PREREG](evidence/ppo_recipe_screen_20261101/PREREG.md) (K PASS; amendments #966/#967/#968 before any arm
+reached iteration 20), [RESULT](evidence/ppo_recipe_screen_20261101/RESULT.md), `result.json`, `s1res.tgz` (games
+CSVs, per-iteration stats, stalls, serve log). Seeds 111400000-111415359 (all arms), learner on the PC (RTX 3060 Ti,
+#963 per-update reload, #964 micro-batch 192, #968 least-progress order), 40 cloud actors, RUN_COMMIT 11c857c9
+(restarts f32c9a96, #965 stall = loss). 2026-11-02 08:00 CET to 2026-11-03 04:49 CET with a 20:32-23:13 pause.
+**Result:**
+- Primary (last third, 5,120 paired seeds vs BASE 7.54%): BASE_S1 +0.82 [−0.08, +1.70]; KL_1 +0.72, KL_DEC +0.64,
+  WU_0 +0.64, EP_1 +0.59, LR_3E6 +0.57, ENT_0007 +0.41, G_256 +0.16, ENT_01 +0.14, WU_10 +0.12, MB_512 +0.08,
+  REW_ORIG +0.02, EP_4 −0.04, G_1024 −0.25, KL_01 −0.29, CLIP_01 −0.35, LR_3E5 −0.49 (all NOT_SHOWN); LAM_1 −0.92
+  [−1.78, −0.08] WORSE (18 comparisons, ~0.45 false WORSE expected).
+- 9 stalled games (≤ 1 per part, no INCOMPLETE arm); the stall-free sensitivity D changes no verdict.
+- Mean Heart rate per seed third 8.04 / 7.55 / 7.67% (unpaired thirds); no arm rises beyond seed-block noise (largest +0.47 pp, WU_0). BASE approx-KL ~0.011 per update, entropy
+  0.208 → 0.222; LR_3E5 KL ~0.03-0.04, entropy → 0.33.
+**Interpretation (Inference):** the policy moves but without measurable gain; smaller/anchored steps lean better, larger ones
+worse, as expected with little signal in a sparse 1{Heart} reward (~40 kills per 512 games). Whole-run noise ~0.8 pp. The screen cannot separate a weak signal from too few/small updates, a weak critic or effects < 1 pp.
+**Decision:** S1 recipe = BASE, no G1 (no candidate). Next proposal (Philipp's go needed): a reward screen (act/floor/key
+shaping, PBRS with a simple potential; C++ φ emission needed), fewer arms, pre-registered futility rule. No default change.
+Seeds: 111400000-111415359 USED. Cost ≈ 290k games ≈ 1,600 core-h cloud + ~21 h PC GPU.
+**Knowledge impact:** KB `research/a20-ppo-plan.md` (screen-1 row, reward axis).
+
+## §749 — Combat rule-fidelity fixes: lethal Reaper/Bite still heals, empty piles are no loss, Thorns retaliates on fully blocked hits; three default-on engine fixes (`=0` restores), unit tests, no gameplay run (2026-11-03)
+
+**Question:** do three combat rules found in code review match Java: the heal behind a lethal Reaper/Bite, the
+legacy "empty hand, draw and discard = loss" rule, and Thorns against a fully blocked hit?
+**Data:** PR #976; `tests/post_victory_heal_test.cpp`, `tests/empty_pile_loss_test.cpp`,
+`tests/thorns_blocked_hit_test.cpp` (each also checks `=0`). Java semantics recalled, not re-read against the JAR
+(**unverified**; see `behavior/java-reference-audit.md`). No seeds.
+**Result:** `STS_POST_VICTORY_HEAL_FIX` flags the Reaper/Bite heal `executeAfterCombatVictory` and runs every flagged
+action at victory (Thorns retaliation still dropped, issue 85); `STS_EMPTY_PILE_LOSS_FIX` removes the invented loss
+(turn > 500 and Silver loop guards bound a stall); `STS_THORNS_BLOCKED_HIT_FIX` applies Spiker Thorns on blocked or
+zero-damage hits. ctest core|smoke 157/157. Independent review PASS (randomised ring-buffer model test of
+`popPostVictoryAction`, multi-flag drain run).
+**Interpretation:** implementation success only; the winrate effect is unmeasured and expected small (Reaper/Bite
+HP after lethal hits, Spiker fights, rare empty-pile states). Engine trajectories change, so earlier recorded
+numbers are not bit-comparable.
+**Decision:** fixes on by default (engine-fix policy). Open: Malleable and Reactive on blocked hits.
+**Knowledge impact:** KB `behavior/invariants.md`, `behavior/java-reference-audit.md`,
+`evaluation/differential-correctness.md`, `operations/environment-variables.md`.
+
+## §750 — Out-of-combat relic and event rule fixes, checked with javap: Matryoshka and N'loth's Hungry Face counters, Old Coin gold, Golden Idol on event and Tiny House gold, out-of-combat Entropic Brew, Astrolabe colorless upgrade; six default-on engine fixes (`=0` restores), unit tests, no gameplay run (2026-11-03)
+
+**Question:** do the out-of-combat relic, event and potion rules found in a read-only review of `GameContext.cpp`
+match Java?
+**Data:** PR #970; `tests/{matryoshka_counter,old_coin_gold,vampires_strike_tag,screenless_relic_pool,gold_reward_idol,ooc_relic_minor_fix}_test.cpp`
+(each flag also checked at `=0` and malformed). Java rules checked with `javap -c -p -constants` against the pinned
+`desktop-1.0.jar` (SHA-256 verified). No seeds.
+**Result:** `STS_MATRYOSHKA_COUNTER_FIX` (counter 2), `STS_NLOTHS_FACE_COUNTER_FIX` (counter 1; the chest relic is
+still drawn, then the first relic reward is removed: Matryoshka's, else the chest relic with its sapphire key),
+`STS_OLD_COIN_GOLD_FIX` (`gainGold(300)`), `STS_GOLD_REWARD_IDOL_FIX` (Idol bonus on Tiny House and event-fight gold;
+Java skips `TreasureRoom`, so chest gold stays unboosted), `STS_OOC_ENTROPIC_BREW_FIX` (Sozu: no draw; else
+unlimited draws into the first empty slots), `STS_ASTROLABE_COLORLESS_UPGRADE_FIX`; `Deck::removeAllMatching`
+loop-bound fix without a flag. Kept after javap: Vampires removes only `STARTER_STRIKE` cards (proposed STRIKE-tag fix
+dropped), and the `returnRandomScreenlessRelic` loop. The first review (recalled Java) FAILED on three rules that javap
+then refuted; the corrected re-review PASSED. ctest core|smoke 163/163; CI green.
+**Interpretation:** implementation success only; the winrate effect is unmeasured and expected small. Replays diverge
+after Matryoshka/N'loth chests, out-of-combat Entropic Brew and the stale-slot removal; Old Coin, Idol and Astrolabe
+change amounts only.
+**Decision:** fixes on by default (engine-fix policy).
+**Knowledge impact:** KB `behavior/java-reference-audit.md`, `evaluation/differential-correctness.md`,
+`operations/environment-variables.md`.
+
+## §751 — PPO reward screen 2: 6 arms × 30,720 sampled A20 games from heart1 (K15 combat): CRIT_PRE (critic pre-trained on screen-1 games, λ 1 targets) PROMISING +0.74 pp [+0.18, +1.32] vs control (bar 0.52); PBRS_FLOOR −0.32, PBRS_STATE −0.14, ACT_BONUS −0.50 NOT_SHOWN → reward stays 1{Heart}, CRIT_PRE is the candidate critic setup pending G1 (PC + cloud, 2026-11-03)
+
+**Question (Philipp, 2026-11-03 09:29 CET "mach den reward screen"; 24 workers "yes go für 24 haiku worker"):** does
+a different learning signal (potential-based shaping, an act/key bonus, or a pre-trained critic) make PPO from heart1
+raise the A20 Heart-kill rate where screen 1's base recipe (§748) did not?
+**Data:** [PREREG](evidence/ppo_reward_screen_20261103/PREREG.md) (K PASS, #975), [RESULT](evidence/ppo_reward_screen_20261103/RESULT.md),
+`result.json`, `s2res.tgz` (games CSVs, per-iteration stats, stalls, futility look, serve log; sha256 `2f575565…`).
+Seeds 111470000-111500719 (all arms), learner on the PC (RTX 3060 Ti, micro-batch 192), 24 cloud actors, RUN_COMMIT
+da82e08e, binary 71cfd280. 2026-11-03 10:59-19:52 CET, no pause.
+**Result:**
+- Primary (iterations 40-59, 10,240 paired seeds vs C = (BASE 7.72% + BASE_S1 8.33%)/2, noise 0.61 pp): CRIT_PRE
+  8.77%, +0.74 [+0.18, +1.32] PROMISING; PBRS_STATE −0.14 [−0.70, +0.42], PBRS_FLOOR −0.32 [−0.86, +0.23],
+  ACT_BONUS −0.50 [−1.04, +0.06] NOT_SHOWN.
+- Futility look (iterations 20-29): all CONTINUE (CRIT_PRE +0.99 [+0.20, +1.78]).
+- 2 stalled games (BASE_S1, ≤ 1 per part); the stall-free sensitivity D changes no verdict.
+- Iterations 0-4 (heart1's policy in every arm, identical games): 8.91% on 2,560 seeds. CRIT_PRE has the highest block rate in 5 of 6 blocks. At the
+  first policy update the control critic is above the mean λ-return (0.206 vs 0.170, and the λ-return itself
+  bootstraps from that critic); CRIT_PRE's is calibrated (0.143 vs 0.147). Approx-KL ~0.011 per update and rising entropy in every arm.
+**Interpretation (Inference):** narrow screen-level hypothesis: a calibrated critic start helps; reshaping the reward (PBRS with floor or state
+potential) or adding act/key bonuses does not. Vs heart1's warm-up rate (unpaired seeds) CRIT_PRE is −0.14 pp and the control
+−0.88 pp (~1.4 binomial SE): both "controls drift down, CRIT_PRE avoids it" and "CRIT_PRE gains a little" fit; G1 decides.
+Whole-run noise again ~0.6-0.8 pp.
+**Decision:** reward stays `heart`. CRIT_PRE is the candidate critic setup for the next pilot; its net is used only
+after G1 (net-0060 vs heart1, policy alone, Silver 1,000, 2,048 fresh paired seeds; Philipp's go needed). The
+architecture screen (design B) needs a PREREG amendment for CRITIC_SEP/VAL_SPARSE against the pre-trained critic. No
+default change.
+Seeds: 111470000-111500719 USED. Cost ≈ 184k games ≈ 210 core-h cloud + ~9 h PC GPU (+ ~1 h pre-training).
+**Knowledge impact:** KB `research/a20-ppo-plan.md` (screen-2 row, reward axis result).
+
+## §752 — G1: CRIT_PRE's PPO net-0060 vs heart1, policy alone, 2,048 paired A20 seeds (Silver 1,000): INCONCLUSIVE, Heart +0.78 pp [−1.12, +2.64] (18.12% vs 17.33%), gate CAP; mean floor −1.61 [−2.37, −0.85], more Act-1 deaths → net not adopted (cloud, 2026-11-03)
+
+**Question (Philipp, 2026-11-03 20:16 CET "Ja Spiel gegen Heart1 auf 8 workern"):** does reward screen 2's PROMISING
+CRIT_PRE arm (§751) yield a net that plays A20 better than its start net heart1 on fresh paired seeds?
+**Data:** [PREREG](evidence/ppo_g1_critpre_20261103/PREREG.md) (K PASS after deltas R1-R3),
+[RESULT](evidence/ppo_g1_critpre_20261103/RESULT.md), `result.json`, `games.csv`. 2,048 units on 8 cloud workers,
+RUN_COMMIT 01ccb389, binary ca8db597 (main 520d4e4b), nets 4288d095 (heart1 as net-0000) and 1575c27e (CRIT_PRE
+net-0060), PPO mode at temperature 0, combat B (flat Silver 1,000 with the g7f_E prior). `verify_campaign.py`: 2,048 OK,
+0 missing or bad; every game rc 0, no combat aborts, no dropped seed.
+**Result:**
+- Heart kill heart1 17.33%, CRIT_PRE 18.12%, D +0.78 pp [−1.12, +2.64]. The sequential gate (gainer, d1 = +2 pp) hit
+  CAP with LLR −0.46, so the fixed-sample reading gives INCONCLUSIVE.
+- Act 3 cleared −0.63 pp [−2.88, +1.61]; mean final floor −1.61 [−2.37, −0.85]; Act-1 deaths 441 vs 348; runs
+  reaching floor 51 783 vs 833. CPU 24.7 vs 26.0 s per game.
+**Interpretation (Inference):** no gain at the gate's 2 pp scale. The point estimate equals the screen's in-sample D,
+so a small gain is neither shown nor excluded. CRIT_PRE's greedy policy differs systematically from heart1's: it dies
+more in Act 1 and converts more late runs into kills.
+**Decision:** the net is not adopted, and the S1 pilot does not start from it; the next PPO step is decided with
+Philipp. No default change.
+Seeds: 111520000-111522047 and 111529990-111529991 USED. Cost ≈ 4,096 games ≈ 29 core-h.
+**Knowledge impact:** KB `research/a20-ppo-plan.md` (G1 row).

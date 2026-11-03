@@ -35,7 +35,8 @@ void Rewards::removeGoldReward(int idx) {
 }
 
 void Rewards::removeCardReward(int removeIdx) {
-    for (int i = removeIdx; i < cardRewardCount; ++i) {
+    // Shift the later groups down; reading cardRewards[cardRewardCount] would index past a full array.
+    for (int i = removeIdx; i + 1 < cardRewardCount; ++i) {
         cardRewards[i] = cardRewards[i+1];
     }
     --cardRewardCount;

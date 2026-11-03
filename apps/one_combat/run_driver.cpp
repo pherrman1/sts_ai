@@ -473,6 +473,69 @@ int forcedBossRelicSelfTest() {
     return 0;
 }
 
+int runDriverLossAccountingSelfTest(std::uint64_t seed) {
+    const auto check = [](bool ok, const std::string &what) {
+        if (!ok) throw std::runtime_error("run driver loss accounting selftest: " + what);
+    };
+    auto &backend = search::g_externalCombatBackend;
+    const auto saved = backend;
+    struct Restore { std::function<void()> undo; ~Restore() { undo(); } } restore{[&] { backend = saved; }};
+    int fightFloor = -1, encounter = -1;
+    // 1. A battle the backend leaves UNDECIDED (the broken-loop shape of issue 87): exitBattle maps it to a run
+    //    loss, and the row must record that death instead of looking like a healthy non-win.
+    backend = [&](search::ScumSearchAgent2 &, GameContext &gc, BattleContext &bc) {
+        bc.init(gc);
+        fightFloor = gc.floorNum;
+        encounter = static_cast<int>(bc.encounter);
+    };
+    const RunResult undecided = runFullRunOOC(seed, 1, 20, false, true);
+    check(fightFloor >= 1 && encounter >= 0, "undecided exit: the substitute backend never ran a fight");
+    check(!undecided.won, "undecided exit: won");
+    check(undecided.floor == fightFloor, "undecided exit: floor is not the fight's floor");
+    check(undecided.fightsLost == 1, "undecided exit: fightsLost != 1");
+    check(undecided.deathCombat == 1, "undecided exit: deathCombat != 1");
+    check(undecided.deathEncounter == encounter, "undecided exit: deathEncounter is not the fight's encounter");
+    // 2. A backend that throws a game-state failure (stall, knowledge inconsistency, invalid action): CombatAbort
+    //    with the backend's message and the run as it stood, the aborted fight counted as the death with the
+    //    abort sentinel.
+    backend = [&](search::ScumSearchAgent2 &, GameContext &gc, BattleContext &bc) {
+        bc.init(gc);
+        fightFloor = gc.floorNum;
+        throw search::CombatStateFailure("selftest: stall");
+    };
+    bool caught = false;
+    try {
+        (void)runFullRunOOC(seed, 1, 20, false, true);
+    } catch (const CombatAbort &e) {
+        caught = true;
+        const RunResult &r = e.partial;
+        check(std::string(e.what()) == "selftest: stall", "abort: message");
+        check(!r.won && r.floor == fightFloor, "abort: won/floor");
+        check(r.fightsLost == 1 && r.deathCombat == 1, "abort: fightsLost/deathCombat");
+        check(r.deathEncounter == kDeathEncounterCombatAbort, "abort: deathEncounter sentinel");
+        check(r.sec >= 0, "abort: sec");
+    }
+    check(caught, "abort: runFullRunOOC did not throw CombatAbort");
+    // 3. A backend that throws a plain runtime_error (a configuration or I/O error, e.g. a missing model file):
+    //    not a combat abort. It must leave runFullRunOOC unchanged, so the caller reports a seed failure.
+    backend = [&](search::ScumSearchAgent2 &, GameContext &gc, BattleContext &bc) {
+        bc.init(gc);
+        throw std::runtime_error("selftest: cannot open model");
+    };
+    bool plain = false;
+    try {
+        (void)runFullRunOOC(seed, 1, 20, false, true);
+    } catch (const CombatAbort &) {
+        check(false, "config error: converted to CombatAbort");
+    } catch (const std::runtime_error &e) {
+        plain = std::string(e.what()) == "selftest: cannot open model";
+    }
+    check(plain, "config error: runFullRunOOC did not rethrow the plain runtime_error");
+    std::cout << "run driver loss accounting selftest passed (seed " << seed << ", floor " << fightFloor
+              << ", encounter " << encounter << ")\n";
+    return 0;
+}
+
 namespace {
 const char *realOocChainStepBody(GameContext &gc, search::ScumSearchAgent2 &agent, bool restV, bool shopV,
                                  const one_combat::PathHistory &path, std::uint64_t seed, std::uint64_t index,
@@ -487,10 +550,17 @@ const char *realOocChainStepBody(GameContext &gc, search::ScumSearchAgent2 &agen
         search::GameAction(forced->choice).execute(gc);
         return "forced_boss_relic";
     }
-    if (const auto key = search::heartKeyAction(gc, g_collectKeys)) {
-        key->execute(gc);
-        return "heart_key";
+    // STS_OOC_HEART1_PPO (S0, opt-in): the net decides before any rule; the key rule
+    // runs first only in the STS_OOC_HEART1_PPO_KEY_RULE comparison arm.
+    const bool ppo = one_combat::heart1::ppoEnabled();
+    if (!ppo || one_combat::heart1::ppoKeyRule()) {
+        if (const auto key = search::heartKeyAction(gc, g_collectKeys)) {
+            key->execute(gc);
+            return "heart_key";
+        }
     }
+    if (ppo)
+        if (const char *by = one_combat::heart1::ppoStep(gc, index)) return by;
     if (one_combat::heart1::enabled() && !one_combat::liveOocMctsEnabled() && one_combat::heart1::policyStep(gc))
         return "heart1";
     if (const auto chest = treasureChestRuleAction(gc)) {
@@ -677,6 +747,8 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
             || search::nativeSilverLearnedStopEnabled() || search::nativeSilverReuseCap() != 32768)
             throw std::runtime_error("live OOC MCTS requires ordinary exact-10k Silver real combat with reuse cap 32768");
     }
+    if (one_combat::heart1::ppoEnabled() && (!one_combat::heart1::enabled() || one_combat::liveOocMctsEnabled()))
+        throw std::runtime_error("STS_OOC_HEART1_PPO needs STS_OOC_HEART1 and STS_OOC_MCTS=0");
     if (one_combat::liveOocMctsEnabled()) {
         if (e2cCapture) throw std::runtime_error("live OOC MCTS does not support combat corpus capture");
         // With live OOC MCTS, heart1 only serves as the tree prior (STS_OOC_MCTS_PRIOR=heart1);
@@ -705,6 +777,7 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
         one_combat::beginE2cRun(seed, path);
     }
     beginRealOocChainRun(shopV);
+    if (one_combat::heart1::ppoEnabled()) one_combat::heart1::ppoBeginGame(seed);
     t_curPath = &path;
     one_combat::LiveOocMctsMetrics mctsMetrics;
     std::uint64_t oocDecisionIndex = 0;
@@ -745,20 +818,21 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
             // Runic-Dome hooks see the initial hidden intent lifecycle.
             const double combatWall = floorProfile.on() ? one_combat::runProfileWall() : 0;
             const double combatCpu = floorProfile.on() ? one_combat::oocProfileCpu() : 0;
-            {
+            try {
                 one_combat::OocProfileScope combatProfile(one_combat::OocProfileBucket::RealCombat);
                 agent.playoutBattle(gc, bc);
+            } catch (const search::CombatStateFailure &e) {
+                // The backend gave up on this fight for a game-state reason (stall, knowledge inconsistency,
+                // root conversion, invalid action). The run cannot continue; hand the caller the run as it stood
+                // so the seed can be recorded as a loss. Every other exception (configuration, I/O, a planner's
+                // OocSearchUnsupported) propagates unchanged and stays a seed failure.
+                throw CombatAbort(e.what(), RunResult{false, gc.floorNum, gc.act, gc.curHp, gc.maxHp, fightsLost + 1,
+                    std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count(),
+                    fightsTotal + 1, kDeathEncounterCombatAbort});
             }
             if (floorProfile.on()) floorProfile.combat(bc,
                 one_combat::runProfileWall() - combatWall, one_combat::oocProfileCpu() - combatCpu);
             ++fightsTotal;
-            if (bc.outcome == Outcome::PLAYER_LOSS) {
-                ++fightsLost;
-                if (deathCombat < 0) {
-                    deathCombat = fightsTotal;
-                    deathEncounter = (int)bc.encounter;
-                }
-            }
             if (one_combat::e2cCaptureActive())
                 one_combat::beginE2cFight(fightsTotal - 1, gc, bc);
             if (combatPre) {
@@ -774,6 +848,16 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
                 }
                 t_realCombatObserver(*combatPre, bc, rawCaptureCount, record);
             } else one_combat::exitBattleWithE2cRawCapture(bc, gc);
+            // The death is the game's verdict, not the battle's: exitBattle maps a battle left UNDECIDED (the
+            // loop exited without a resolution) to a run loss as well, and that row must not look like a
+            // healthy non-win (issue 87, accounting half).
+            if (bc.outcome == Outcome::PLAYER_LOSS || gc.outcome == GameOutcome::PLAYER_LOSS) {
+                ++fightsLost;
+                if (deathCombat < 0) {
+                    deathCombat = fightsTotal;
+                    deathEncounter = (int)bc.encounter;
+                }
+            }
             if (bossHook) bossHook->after(gc, bc);
             if (traceOoc)
                 oocTraceEmit({{"seed", seed}, {"kind", "battle"}, {"fight", fightsTotal},
@@ -804,7 +888,9 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
             const char *traceBy = "chain";
             // Non-ADR-0041 key variants mask some actions; report a policy that ignored the mask.
             std::vector<int> keyMaskAllowedX;
-            if (!search::heartKeyRules().isAdr0041() && gc.screenState == ScreenState::MAP_SCREEN) {
+            // A PPO net that learns the keys sees every edge: no mask to violate.
+            const bool keyMaskApplies = !one_combat::heart1::ppoEnabled() || one_combat::heart1::ppoKeyRule();
+            if (keyMaskApplies && !search::heartKeyRules().isAdr0041() && gc.screenState == ScreenState::MAP_SCREEN) {
                 bool masked = false;
                 for (const auto a : search::GameAction::getAllActionsInState(gc)) {
                     if (!a.isValidAction(gc)) continue;
@@ -849,6 +935,14 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
                               fightsLost,
                               std::chrono::duration<double>(t1 - t0).count(),
                               deathCombat, deathEncounter };
+    if (one_combat::heart1::ppoEnabled())
+        one_combat::heart1::ppoEndGame(gc, {{"won", result.won}, {"heart_kill", result.won && g_collectKeys && g_stopAfterAct == 0},
+            {"game_outcome", static_cast<int>(gc.outcome)}, {"act", gc.act}, {"floor", gc.floorNum},
+            {"hp", gc.curHp}, {"max_hp", gc.maxHp}, {"gold", gc.gold},
+            {"keys", {gc.redKey ? 1 : 0, gc.greenKey ? 1 : 0, gc.blueKey ? 1 : 0}},
+            {"collect_keys", g_collectKeys}, {"stop_after_act", g_stopAfterAct},
+            {"fights", fightsTotal}, {"fights_lost", fightsLost}, {"death_encounter", deathEncounter},
+            {"deck_size", int(gc.deck.cards.size())}, {"wall_s", result.sec}});
     if (!g_oocStrategicTracePath.empty() && !t_oocStrategicTraceRows.empty()) {
         std::lock_guard<std::mutex> lock(g_oocStrategicTraceMutex);
         std::ofstream f(g_oocStrategicTracePath, std::ios::app);

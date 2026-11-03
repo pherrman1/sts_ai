@@ -1,6 +1,6 @@
 # STS1 Java reference audit
 
-Last verified: 2026-10-20 for Mummified Hand; 2026-10-20 for Du-Vu Doll and the relic counter scan; 2026-10-20 for the Spire Shield/Spear death and back-attack rows; 2026-10-19 for half-dead Darkling powers, block on dead monsters, the Mugger death roll and the large slime split; 2026-10-19 for the end-of-turn ethereal exhaust order; 2026-10-18 for powers on dead targets and Curl Up; 2026-10-06 against `desktop-1.0.jar` V2.3.4 and the
+Last verified: 2026-11-03 for the out-of-combat relic and event audit; 2026-11-02 for the lethal heal, empty-pile and blocked-hit Thorns rows (recalled Java semantics, **Unverified** against the pinned JAR in that change); 2026-10-20 for Mummified Hand; 2026-10-20 for Du-Vu Doll and the relic counter scan; 2026-10-20 for the Spire Shield/Spear death and back-attack rows; 2026-10-19 for half-dead Darkling powers, block on dead monsters, the Mugger death roll and the large slime split; 2026-10-19 for the end-of-turn ethereal exhaust order; 2026-10-18 for powers on dead targets and Curl Up; 2026-10-06 against `desktop-1.0.jar` V2.3.4 and the
 `monster_ai_java_parity` and `first_strong_exclusions` unit tests.
 
 ## Purpose
@@ -480,6 +480,61 @@ card has its own on-exhaust effect, and no rule reads the exhaust pile order
 (Exhume shows a grid). No engine change; the combat parity probe compares the
 exhaust pile as a multiset (`UNORDERED_PILES` in `tools/combat_parity.py`).
 
+### Heal queued behind a killing blow (mismatch, fixed)
+
+**Unverified** against the pinned JAR for this change (no JAR in the working
+environment; recalled from the game source): `ReaperAction.update` damages
+each living monster, sums the HP lost, queues `HealAction(source, source,
+healAmount)` with `addToBot`, and calls `clearPostCombatActions` when
+`areMonstersBasicallyDead`. `Bite.use` queues a `DamageAction` then a
+`HealAction`. `GameActionManager.clearPostCombatActions` removes every queued
+action except `GainBlockAction`, `UseCardAction`, `HealAction`,
+`GainGoldAction` and `DAMAGE`-type actions, so a lethal Reaper or Bite still
+heals. Thorns retaliation from the killing blow is still dropped, as issue 85
+records: its source monster is dying, so the action cancels itself
+(`shouldCancelAction`; recalled, **unverified**). Native queued the heal unflagged and the victory break dropped it.
+`STS_POST_VICTORY_HEAL_FIX` (default on, `=0` restores) flags both heals
+`executeAfterCombatVictory`, and `executeActions` runs every flagged action
+before clearing the queue (`=0` also restores the legacy path that runs only
+the first flagged action).
+
+Test: `post_victory_heal`.
+
+### Empty piles are not a loss (mismatch, fixed)
+
+The game has no rule that ends a fight when hand, draw and discard are all
+empty; `AbstractPlayer` dies only at 0 HP (**Inference** from the absence of
+any such check in `AbstractRoom`, `GameActionManager` and `AbstractPlayer`;
+not re-read for this change). Combust, Juggernaut, Metallicize, Plated Armor,
+Mercury Hourglass, Stone Calendar, applied Poison and damage potions all
+still win without cards. Native declared `PLAYER_LOSS` mid-turn unless the
+player had Omega, Thorns or a bomb. `STS_EMPTY_PILE_LOSS_FIX` (default on,
+`=0` restores) removes the rule.
+
+Test: `empty_pile_loss`.
+
+### Thorns on a blocked hit (mismatch, fixed; Malleable and Reactive open)
+
+`AbstractMonster.damage` runs `decrementBlock`, then every power's
+`onAttacked(info, damageAmount)`, and only then checks `damageAmount > 0`
+before reducing HP (the same ordering the Curl Up and Angry rows above rely
+on). `ThornsPower.onAttacked` queues its `DamageAction` whenever
+`info.owner != null` and the type is neither `THORNS` nor `HP_LOSS`; it has no
+`damageAmount` guard (high confidence; recalled, **Unverified** against the
+pinned JAR in this change). Native reached Thorns only through
+`attackedUnblockedHelper`, entered when post-block damage was above 0, so a
+fully blocked Strike into a Spiker cost nothing. `STS_THORNS_BLOCKED_HIT_FIX`
+(default on, `=0` restores) queues the retaliation on a blocked or
+zero-damage hit.
+
+**Open question:** `MalleablePower.onAttacked` and `ReactivePower.onAttacked`
+are believed to carry the same owner/type guard and no amount guard, so a
+blocked hit on a Writhing Mass should still gain Malleable block and reroll
+its move. They stay inside the unblocked helper until that is read from the
+bytecode.
+
+Test: `thorns_blocked_hit`.
+
 ## Ironclad relics
 
 ### Pools
@@ -618,8 +673,29 @@ pinned JAR.
 | Fountain of Cleansing eligibility | `isCursed()` ignores Ascender's Bane, Curse of the Bell, Necronomicurse | `deck.hasCurse()`, whose curse count already skips untransformable curses | Parity |
 | Act-3 boss rewards | gold is added and then skipped with the reward screen for TheBeyond bosses | no rewards | Parity |
 
+## Out-of-combat relic and event audit (2026-11-03)
+
+Scope: the rules behind the 2026-11-02 out-of-combat fixes (#970), checked
+with `javap -c -p -constants` against the pinned JAR (SHA-256 verified) with
+OpenJDK 21 `javap`. Three of the recalled rules were wrong and were corrected
+before merge.
+
+| Mechanic | Java reference | Native before the fix | Status |
+|---|---|---|---|
+| Matryoshka | constructor sets `counter = 2`; `onChestOpen(bossChest)`: if not a boss chest and `counter > 0`, decrement, `relicRng.randomBoolean(0.75f)` picks COMMON else UNCOMMON, `addRelicToRewards`; runs before the chest's own relic | counter 0, never fired | **Mismatch, fixed** (`STS_MATRYOSHKA_COUNTER_FIX`) |
+| N'loth's Hungry Face | constructor sets `counter = 1`; `AbstractChest.open` adds gold, curse, the chest relic and the sapphire key first; then `onChestOpenAfter` decrements and calls `AbstractRoom.removeOneRelicFromRewards`, which removes the first RELIC reward and, when the next reward is its `relicLink`, that sapphire key too | counter 0; an imported counter dropped the chest relic but kept the key, and kept Matryoshka's relic instead of removing it | **Mismatch, fixed** (`STS_NLOTHS_FACE_COUNTER_FIX`); the relic is still drawn from the pool |
+| Old Coin | `onEquip`: `player.gainGold(300)` | no gold | **Mismatch, fixed** (`STS_OLD_COIN_GOLD_FIX`) |
+| Vampires | removes master-deck cards whose `tags` contain `CardTags.STARTER_STRIKE` | `isStarterStrike` | Parity (a proposed STRIKE-tag change was dropped) |
+| Golden Idol | `RewardItem.applyGoldBonus(false)` adds `MathUtils.round(gold*0.25f)` unless `getCurrRoom() instanceof TreasureRoom`; `incrementGold` recomputes it on the total; Tiny House (`TreasureRoomBoss`, not a `TreasureRoom`) and the Dead Adventurer, Masked Bandits, Mind Bloom, Mushrooms and Mysterious Sphere fights add gold through `addGoldToRewards` | bonus only on monster, elite, boss and Colosseum rewards | **Mismatch, fixed** (`STS_GOLD_REWARD_IDOL_FIX`); chest gold correctly has none |
+| Entropic Brew out of combat | with Sozu only `flash()`; otherwise `potionSlots` times `returnRandomPotion()` (unlimited) into `ObtainPotionEffect` (first empty slot) | ignored Sozu; each draw went to the slot of its index | **Mismatch, fixed** (`STS_OOC_ENTROPIC_BREW_FIX`) |
+| Astrolabe transform | `transformCard(c, autoUpgrade, rng)` upgrades the result, colorless included, when `autoUpgrade && canUpgrade()` | colorless results unupgraded | **Mismatch, fixed** (`STS_ASTROLABE_COLORLESS_UPGRADE_FIX`) |
+| Screenless relic draw | `returnRandomScreenlessRelic` redraws `returnRandomRelicKey(tier)` while the relic is Bottled Flame, Bottled Lightning, Bottled Tornado or Whetstone, so skipped relics leave the pool | same loop | Parity |
+
 ## Ambiguous or not yet inspected
 
+- `MalleablePower.onAttacked` and `ReactivePower.onAttacked` on a fully
+  blocked hit: native skips both (see the Thorns row above); the Java guards
+  have not been read for this.
 - Gremlin `escapeNext` (resolved: unreachable in vanilla). Java's gremlin
   turns check `escapeNext` before choosing their escape move (99). The native
   Gremlin Wizard and Shield Gremlin do not; the other native gremlins do, but

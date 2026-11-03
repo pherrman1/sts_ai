@@ -1,6 +1,6 @@
 # Important invariants
 
-Last verified: 2026-09-24 for the Searcher2/3 and self-play removals; 2026-09-20 against the current working tree.
+Last verified: 2026-11-03 for combat-abort and UNDECIDED-exit loss accounting; 2026-11-02 for post-victory actions and the removed empty-pile loss (`post_victory_heal`, `empty_pile_loss`); 2026-09-24 for the Searcher2/3 and self-play removals; 2026-09-20 against the current working tree.
 
 ## Purpose
 
@@ -20,9 +20,18 @@ Since 2026-08-11 a small runtime monitor checks four high-confidence invariants
 at every combat decision boundary and battle-loop exit during normal runs:
 
 - `UNDECIDED_BATTLE_EXIT`: a battle loop in `ScumSearchAgent2` must not exit
-  while `bc.outcome == Outcome::UNDECIDED` (the 1000-decision stall guard
-  converts stalls to `PLAYER_LOSS` first, so any UNDECIDED exit is
-  unintentional).
+  while `bc.outcome == Outcome::UNDECIDED`; any UNDECIDED exit is
+  unintentional. The native Silver backend (the only combat backend) does
+  not convert a stall to `PLAYER_LOSS`: at 1,000 combat decisions, on a
+  knowledge-tracker inconsistency, a failed search-root conversion or an
+  invalid action it throws `search::CombatStateFailure`
+  (`src/sim/search/NativeSilverBackend.cpp::failState`); `runFullRunOOC`
+  rethrows that, and only that, as `CombatAbort` with the run as it stood, and `bestbench` records the
+  seed as a loss row at the abort floor with
+  `deathEncounter = kDeathEncounterCombatAbort` (-2) instead of dropping it
+  (`apps/one_combat/run_driver.h`, `apps/one_combat.cpp::bestBench`).
+  Configuration and I/O errors (a missing model, an incompatible budget
+  option) stay plain `std::runtime_error`: no row, seed failure, exit 1.
 - `NO_LEGAL_PROGRESSION`: at a genuine agent decision boundary with an
   unresolved combat, the CANONICAL live legal action set is empty
   (`hasLegalProgressionAction`, built on `Action::enumerateCardSelectActions`
@@ -49,14 +58,31 @@ See
   helper equal to `outcome != UNDECIDED`, not an independent flag
   (`include/combat/BattleContext.h`; `src/combat/BattleContext.cpp::init`,
   `afterMonsterTurns`).
+- A battle that exits `UNDECIDED` is a run loss: `BattleContext::exitBattle`
+  sets `GameOutcome::PLAYER_LOSS` (the §112/§113 skip-win guard), and
+  `runFullRunOOC` records the death (`fightsLost`, `deathCombat`,
+  `deathEncounter`) from the game outcome after `exitBattle`, not from
+  `bc.outcome` alone, so such a row never looks like a healthy non-win
+  (`apps/one_combat/run_driver.cpp`; CTest `run_driver_loss_accounting`).
 - Combat outcome is first-write-wins: every combat-resolution outcome setter
   (monster death/suicide, looter/mugger escape, `Player::wouldDie`) is guarded
-  by `if (outcome == Outcome::UNDECIDED)`, and `executeActions()` breaks as
+  by `if (outcome == Outcome::UNDECIDED)`, and `executeActions()` stops as
   soon as an outcome is decided, so queued retaliation actions (Thorns/Spikes,
   player-damage actions) never execute after victory — the killing blow ends
   the fight immediately (`src/combat/Monster.cpp::die`/`suicideAction`,
   `src/combat/MonsterSpecific.cpp` LOOTER/MUGGER escape,
   `src/combat/Player.cpp::wouldDie`, `src/combat/BattleContext.cpp::executeActions`).
+  The one exception is an action queued with `executeAfterCombatVictory`
+  (`Actions::HealPlayer` from Toy Ornithopter, Reaper and Bite): on
+  `PLAYER_VICTORY` every such action runs in queue order before the queue is
+  cleared, as Java's `clearPostCombatActions` keeps `HealAction`
+  (`ActionQueue::popPostVictoryAction`, `STS_POST_VICTORY_HEAL_FIX`; CTest
+  `post_victory_heal`, `thorns_retaliation`).
+- Combat is lost only by HP loss or the loop guards. An empty hand, draw and
+  discard pile is not a loss (`STS_EMPTY_PILE_LOSS_FIX`, default on; the
+  legacy mid-turn `PLAYER_LOSS` is kept behind `=0`). Non-terminating fights
+  end through `executeActions`' `turn > 500` and loop-count guards and the
+  native Silver no-progress loop guard (CTest `empty_pile_loss`).
 - Smoke Bomb is a successful combat escape, not a normal rewarded victory. Use
   is valid only outside boss encounters and without `SURROUNDED`; successful
   use consumes the potion, finishes combat bookkeeping, returns to the map,

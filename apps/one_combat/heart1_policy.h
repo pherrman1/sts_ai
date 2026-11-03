@@ -32,11 +32,43 @@ struct FixedChoice {
     int card = 0;     // CardId::INVALID
     int relic = 180;  // RelicId::INVALID
     int info = 0;     // EventFixedInfo::NONE
+    // PPO full-coverage extension (ChoiceOptions::fullCoverage): the held potion a
+    // discard token names, added through the potion table. -1 (every heart1 token)
+    // adds nothing, so records and outputs of the original choice space are unchanged.
+    int potion = -1;
     bool operator==(const FixedChoice &) const = default;
+};
+
+// Fixed-action ids of the PPO full-coverage tokens (after silverbot's last id,
+// FA_OPEN_CHEST = 165). A net whose fixed-action table is shorter reads them as
+// zero rows (the zero-initialised extension), so heart1 and student_sel score them.
+inline constexpr int kFaDiscardPotion = 166;  // potion = the held potion; one per discardable slot
+inline constexpr int kFaMatchUnseen = 167;    // Match and Keep: flip an unseen slot (card = the face-up card, if any)
+inline constexpr int kFaMatchSeen = 168;      // flip a seen slot (card = its card)
+inline constexpr int kFaMatchPair = 169;      // flip the seen twin of the face-up card (card = that card)
+inline constexpr int kFaEventOption0 = 170;   // event option without a silverbot mapping: + min(option, 7),
+                                              // gold = the event id
+inline constexpr int kFaCount = 178;          // fixed-action ids 0..177
+
+// Choice construction options. The defaults are the trained heart1 choice space.
+struct ChoiceOptions {
+    // PPO (STS_OOC_HEART1_PPO): add tokens for every real choice heart1's space
+    // lacks: potion discards on reward and shop screens whose potion offer is blocked
+    // by full slots, Match and Keep slots, and unmapped event options.
+    bool fullCoverage = false;
+    // Drop actions the heart key rules mask (heartKeyActionAllowed). False lets the
+    // net see every legal action, as when it learns the keys itself.
+    bool keyMask = true;
 };
 
 // Mirror of flatten_dict(Choice.as_dict()) in silverbot: the raw record that
 // collate_fn turns into tensors. JSON keys match the Python record exactly.
+inline constexpr int kRunCounterCount = 2;
+inline constexpr int kMaxFoughtEncounters = 32;  // student_inputs.py MAX_FOUGHT
+// Arch screen IN_DECK (x3_deck, tools/heart1/ppo_model.py deck_aggregates): ten
+// hand-made deck aggregates computed from the record's deck (no new record field).
+inline constexpr int kDeckAggCount = 10;
+
 struct Record {
     std::vector<int> fixedObservation;  // 10 entries
     std::vector<int> deckCards, deckUpgrades;
@@ -58,6 +90,15 @@ struct Record {
     std::vector<int> paths;
     int screenState = 0;
     int selectScreenType = 0;
+    // Shared-encoder input extension v2 (not read by heart1, student C or student_sel;
+    // only by nets with x2_* weights). Public run state the v1 record leaves out:
+    // runCounters = kRunCounterCount entries (see encodeObservation), foughtEncounters =
+    // the normal and elite encounters already fought this act (MonsterEncounter ids),
+    // offerPrices = the shop price of each offered card, relic and potion token in
+    // token order (empty outside shops). Records from before it carry none of them.
+    std::vector<int> runCounters;
+    std::vector<int> foughtEncounters;
+    std::vector<int> offerPrices;
 
     bool operator==(const Record &) const = default;
 
@@ -79,7 +120,8 @@ Record recordFromJson(const nlohmann::json &);
 
 // construct_choice for our engine. False with a reason when silverbot has no
 // encoding for the screen (it returns None there and defers to its agent).
-bool buildChoice(const sts::GameContext &, Choice &, std::string *reason = nullptr);
+bool buildChoice(const sts::GameContext &, Choice &, std::string *reason = nullptr,
+                 const ChoiceOptions &options = {});
 
 // Leaf-only public observation extension. It does not change trained heart1
 // choice construction. Battle starts expose their current visible encounter;
@@ -95,9 +137,10 @@ bool wingBootsCounter();
 // screen, select_type, deck_misc, wing_boots_counter).
 nlohmann::json captureBase(const sts::GameContext &, const char *kind);
 
-// take_free_rewards: gold always, relics unless a key shares the screen.
+// take_free_rewards: gold always, relics unless a key shares the screen (or
+// relics = false, the PPO mode where the net decides reward relics).
 // Returns the number of actions executed.
-int takeFreeRewards(sts::GameContext &);
+int takeFreeRewards(sts::GameContext &, bool relics = true);
 
 struct Output {
     std::vector<float> logits;  // one per choice token, token order
@@ -121,6 +164,8 @@ public:
     int layers() const { return int(blocks_.size()); }
     bool trimMap() const { return trimMap_; }
     bool extraInputs() const { return extraInputs_; }
+    bool extraInputsV2() const { return extraInputsV2_; }
+    bool extraInputsV3() const { return extraInputsV3_; }
 
     struct Linear { int out = 0, in = 0; std::vector<float> w, b; };
     struct Embedding { int rows = 0, dim = 0; std::vector<float> w; };
@@ -154,6 +199,16 @@ private:
     bool extraInputs_ = false;
     FixedVec deckMisc_, relicCounter_;
     Embedding act_;
+    // Optional v2 inputs (tools/heart1/student_inputs.py --v2): x2_run (run counters)
+    // and x2_fought (sum over fought encounters) on the fixed-observation token,
+    // x2_price on shop card/relic/potion choice tokens. Present iff x2_run is.
+    bool extraInputsV2_ = false;
+    FixedVec runCounters_, offerPrice_;
+    Embedding fought_;
+    // Optional x3_deck (arch screen IN_DECK): deckAggregates() on the fixed-observation
+    // token. Present iff x3_deck.proj.weight is; independent of the v1/v2 extras.
+    bool extraInputsV3_ = false;
+    FixedVec deckAgg_;
     std::vector<Block> blocks_;
     std::vector<float> finalNorm_, valueNorm_;
     Linear choiceLogits_, valueHead_;
@@ -165,6 +220,44 @@ const Net &net();
 // The run-driver hook: one real out-of-combat step by heart1 (greedy, the
 // temperature-0 eval policy). False leaves the step to the ordinary chain.
 bool policyStep(sts::GameContext &);
+
+// ---------------------------------------------------------------- PPO (S0)
+// STS_OOC_HEART1_PPO=1 (opt-in, needs STS_OOC_HEART1 and STS_OOC_MCTS=0): the net
+// makes every out-of-combat decision except gold, which stays automatic. Choices use
+// ChoiceOptions{fullCoverage, keyMask = false}; the heart key rule and the chain's
+// rules do not run first (STS_OOC_HEART1_PPO_KEY_RULE=1 keeps heartKeyAction and the
+// key mask as a comparison arm). Choices are sampled at STS_OOC_HEART1_TEMPERATURE
+// (default 1; 0 = argmax, first maximum) with a counter-based RNG keyed by the run
+// seed, STS_OOC_HEART1_SAMPLE_SALT (default 0) and the decision index, so a game is
+// reproducible and never touches the game's RNG. STS_OOC_HEART1_PPO_TRAJ=<file>
+// appends one JSON line per decision and one per game (schema "heart1-ppo-traj-v1").
+bool ppoEnabled();
+// STS_OOC_HEART1_PPO_KEY_RULE=1: heartKeyAction and the key mask stay on (comparison arm).
+bool ppoKeyRule();
+double ppoTemperature();
+
+// Index sampled from softmax(logits / temperature) at uniform u in [0, 1);
+// temperature 0 returns the argmax (first maximum). *logp: the log-probability
+// of the returned index under softmax(logits / max(temperature, 1)) for
+// temperature 0, else under the sampling distribution.
+int sampleChoice(const std::vector<float> &logits, double temperature, double u, double *logp = nullptr);
+// The counter-based uniform in [0, 1) of decision `index` of a run.
+double sampleUniform(std::uint64_t runSeed, std::uint64_t salt, std::uint64_t index);
+
+// One PPO decision at a real out-of-combat state. Returns the decision source
+// ("heart1_ppo", "heart1_ppo_single", "auto_gold") or nullptr when the net has no
+// choice here: a "fallback" line with the reason is logged and the caller falls back
+// to the chain (STS_OOC_HEART1_PPO_STRICT=1 throws instead).
+const char *ppoStep(sts::GameContext &, std::uint64_t decisionIndex);
+// Per game: clear this thread's buffer; append the outcome line and flush the
+// game's lines to STS_OOC_HEART1_PPO_TRAJ under a process-wide lock.
+void ppoBeginGame(std::uint64_t seed);
+void ppoEndGame(const sts::GameContext &, const nlohmann::json &outcome);
+// Throws std::runtime_error when the sampler or the coverage tokens break their
+// rules (heart1pposelftest).
+void ppoSelfTest();
+// Coverage tokens on fixture states (heart1_record_invariance.cpp).
+void ppoCoverageSelfTest();
 
 // STS_OOC_SIBLING_CAPTURE annotation of one tree leaf: {"value", "record"} (heart1's
 // value head and its input record), or {"unsupported": reason}.
@@ -227,6 +320,15 @@ void linearSelfTest();
 int scoreCommand(int argc, char **argv);
 // heart1logitscheck <weights> <records.jsonl> [reps]: logits-only parity and timing.
 int logitsCheckCommand(int argc, char **argv);
+// heart1cardtable <out.json>: the per-card table deckAggregates() uses (type, energy
+// cost, exhaust, starter Strike/Defend, draws), for ppo_model.py's mirror.
+int cardTableCommand(int argc, char **argv);
+
+// x3_deck inputs of a record, each an integer clamped to [-1, 999]: attacks, skills,
+// powers, starter Strikes+Defends, exhausting cards, drawing cards, upgraded share
+// (percent, rounded half up), mean energy cost of cards with cost >= 0 (x100, rounded
+// half up), deck size, curses.
+void deckAggregates(const Record &r, float out[kDeckAggCount]);
 // heart1replay <weights> <asc> <seed> <plan.json> <out.jsonl>: replay one seed's
 // out-of-combat action bits and write our record and logits where the plan asks.
 int replayCommand(int argc, char **argv);

@@ -1,8 +1,11 @@
 # Issue 87: Gambler's Brew at an empty hand ends the run as an invisible loss (hpEnd > 0, deathEnc = -1)
 
 - **Status:** generic empty-hand multi-select progression fixed for the currently
-  supported `GAMBLE` and `EXHAUST_MANY` tasks (Phase 11); independent loss-
-  accounting questions remain open
+  supported `GAMBLE` and `EXHAUST_MANY` tasks (Phase 11); the loss-accounting
+  half is closed since 2026-11-02: `runFullRunOOC` records the death from the
+  game outcome after `exitBattle` (candidate fix 3, second form), so an
+  UNDECIDED battle exit yields `fightsLost=1`, `deathCombat`, `deathEncounter`
+  of that fight (CTest `run_driver_loss_accounting`)
 - **Detection:** the runtime simulator health monitor (2026-08-11, see
   [`behavior/simulator-health-monitor.md`](../behavior/simulator-health-monitor.md))
   now automatically flags this seed: seed 126711 at the recorded stack fires
@@ -40,8 +43,10 @@ is unchanged and remains necessary because the real game does not allow the
 potion to be used with an empty hand.
 
 The issue is not treated as evidence of a win-rate improvement. The separate
-UNDECIDED/loss-accounting mechanism described below remains independently
-relevant if any other unresolved battle path reaches it.
+UNDECIDED/loss-accounting mechanism described below (step 6) is closed: the
+run loop now records the death whenever the game outcome is a loss after
+`exitBattle`, so any other unresolved battle path that reaches it produces a
+truthful row.
 
 The historical seed-126711 reproduction was not observed on the requested
 current baseline before the Phase 10 edit: the exact guarded configuration

@@ -18,6 +18,8 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <iostream>
+#include <utility>
 
 #include "constants/Events.h"
 #include "game/Map.h"
@@ -275,6 +277,21 @@ void encodeObservation(const GameContext &gc, Record &r) {
     r.burningEliteY = map.burningEliteY;
     r.mapX = gc.curMapNodeX;
     r.mapY = gc.curMapNodeY;
+
+    // v2 inputs (Record::runCounters): removals bought so far and the shop's current
+    // removal price (-1 outside a shop or once bought). The pity counters (potion
+    // chance, card rarity offset, "?" room chances) stay out: the game does not show
+    // them and the invariance selftest treats them as private.
+    const bool inShop = gc.screenState == ScreenState::SHOP_ROOM;
+    r.runCounters = {gc.shopRemoveCount, inShop ? gc.info.shop.removeCost : -1};
+    // Encounters already fought this act: the consumed prefix of the queues. OOC
+    // MCTS resamples only the unconsumed suffix, so this prefix is never hidden.
+    r.foughtEncounters.clear();
+    for (int i = 0; i < std::min<int>(gc.monsterListOffset, gc.monsterList.size()); ++i)
+        r.foughtEncounters.push_back(static_cast<int>(gc.monsterList[i]));
+    for (int i = 0; i < std::min<int>(gc.eliteMonsterListOffset, gc.eliteMonsterList.size()); ++i)
+        r.foughtEncounters.push_back(static_cast<int>(gc.eliteMonsterList[i]));
+    if (int(r.foughtEncounters.size()) > kMaxFoughtEncounters) r.foughtEncounters.resize(kMaxFoughtEncounters);
 }
 
 // Reward groups expose their valid cards in order. Shop action indices instead
@@ -289,7 +306,7 @@ std::vector<Card> validCards(const Cards &cards, int n) {
 
 }  // namespace
 
-bool buildChoice(const GameContext &gc, Choice &out, std::string *reason) {
+bool buildChoice(const GameContext &gc, Choice &out, std::string *reason, const ChoiceOptions &options) {
     const auto fail = [&](const char *why) {
         if (reason) *reason = why;
         return false;
@@ -297,10 +314,12 @@ bool buildChoice(const GameContext &gc, Choice &out, std::string *reason) {
     out = Choice{};
     Record &r = out.record;
     std::vector<GA> cardActs, relicActs, potionActs, fixedActs, pathActs;
+    std::vector<int> cardPrices, relicPrices, potionPrices;  // shop only (Record::offerPrices)
     auto actions = GA::getAllActionsInState(gc);
-    actions.erase(std::remove_if(actions.begin(), actions.end(), [&](const GA &a) {
-        return !search::heartKeyActionAllowed(gc, g_collectKeys, a);
-    }), actions.end());
+    if (options.keyMask)
+        actions.erase(std::remove_if(actions.begin(), actions.end(), [&](const GA &a) {
+            return !search::heartKeyActionAllowed(gc, g_collectKeys, a);
+        }), actions.end());
     const auto fixed = [&](const FixedChoice &c, const GA &a) {
         r.fixedActions.push_back(c);
         fixedActs.push_back(a);
@@ -310,6 +329,21 @@ bool buildChoice(const GameContext &gc, Choice &out, std::string *reason) {
         r.offeredCards.push_back(static_cast<int>(c.id));
         r.offeredUpgrades.push_back(c.getUpgraded());
         cardActs.push_back(a);
+    };
+    // fullCoverage: one discard token per discardable held potion when a potion
+    // offer is blocked only by full slots (the one case where discarding gains).
+    const auto discardTokens = [&](bool blockedOffer) {
+        if (!options.fullCoverage || !blockedOffer || gc.hasRelic(RelicId::SOZU)
+                || gc.potionCount < gc.potionCapacity)
+            return;
+        for (int slot = 0; slot < gc.potionCapacity; ++slot) {
+            const GA discard(0xC0000000u | static_cast<unsigned>(slot));
+            if (!discard.isValidAction(gc)) continue;
+            FixedChoice c;
+            c.action = kFaDiscardPotion;
+            c.potion = static_cast<int>(gc.potions[slot]);
+            fixed(c, discard);
+        }
     };
 
     switch (gc.screenState) {
@@ -350,6 +384,7 @@ bool buildChoice(const GameContext &gc, Choice &out, std::string *reason) {
                     default: break;  // gold is not in the choice space
                 }
             }
+            discardTokens(rc.potionCount > 0);
             break;
         }
         case ScreenState::TREASURE_ROOM:
@@ -359,19 +394,32 @@ bool buildChoice(const GameContext &gc, Choice &out, std::string *reason) {
             const auto &shop = gc.info.shop;
             for (const auto &a : actions) {
                 switch (a.getRewardsActionType()) {
-                    case RT::CARD: card(shop.cards[a.getIdx1()], a); break;
+                    case RT::CARD:
+                        card(shop.cards[a.getIdx1()], a);
+                        cardPrices.push_back(shop.cardPrice(a.getIdx1()));
+                        break;
                     case RT::RELIC:
                         r.offeredRelics.push_back(static_cast<int>(shop.relics[a.getIdx1()]));
                         relicActs.push_back(a);
+                        relicPrices.push_back(shop.relicPrice(a.getIdx1()));
                         break;
                     case RT::POTION:
                         r.offeredPotions.push_back(static_cast<int>(shop.potions[a.getIdx1()]));
                         potionActs.push_back(a);
+                        potionPrices.push_back(shop.potionPrice(a.getIdx1()));
                         break;
                     case RT::SKIP: fixed(simpleFixed(FA_SKIP), a); break;
                     case RT::CARD_REMOVE: fixed(simpleFixed(FA_REMOVE), a); break;
                     default: break;
                 }
+            }
+            {
+                bool blocked = false;
+                for (int i = 0; i < 3; ++i) {
+                    const int price = shop.potionPrice(i);
+                    blocked = blocked || (price != -1 && gc.gold >= price);
+                }
+                discardTokens(blocked);
             }
             break;
         }
@@ -404,10 +452,40 @@ bool buildChoice(const GameContext &gc, Choice &out, std::string *reason) {
             }
             break;
         case ScreenState::EVENT_SCREEN:
-            if (gc.curEvent == Event::MATCH_AND_KEEP) return fail("match_and_keep");
+            if (gc.curEvent == Event::MATCH_AND_KEEP) {
+                if (!options.fullCoverage) return fail("match_and_keep");
+                // Public information only: a slot's card once flipped (seen), the
+                // face-up card of a pending pair, and the attempts left.
+                const auto &slots = gc.info.toSelectCards;
+                int faceUp = kCardInvalid;
+                for (const auto &slot : slots)
+                    if (slot.deckIdx == GameContext::MATCH_AND_KEEP_FACE_UP) faceUp = static_cast<int>(slot.card.id);
+                for (const auto &a : actions) {
+                    const int i = a.getIdx1();
+                    if (i < 0 || i >= int(slots.size())) continue;
+                    FixedChoice c;
+                    c.gold = gc.info.eventData;
+                    if (slots[i].deckIdx == GameContext::MATCH_AND_KEEP_UNSEEN) {
+                        c.action = kFaMatchUnseen;
+                        c.card = faceUp;
+                    } else {
+                        c.card = static_cast<int>(slots[i].card.id);
+                        c.action = faceUp != kCardInvalid && c.card == faceUp ? kFaMatchPair : kFaMatchSeen;
+                    }
+                    fixed(c, a);
+                }
+                break;
+            }
             for (const auto &a : actions) {
-                const int fa = eventFixedAction(gc, a.getIdx1());
-                if (fa < 0) return fail("unmapped_event");
+                int fa = eventFixedAction(gc, a.getIdx1());
+                if (fa < 0 && !options.fullCoverage) return fail("unmapped_event");
+                if (fa < 0) {
+                    FixedChoice c;
+                    c.action = kFaEventOption0 + std::min(a.getIdx1(), kFaCount - 1 - kFaEventOption0);
+                    c.gold = static_cast<int>(gc.curEvent);
+                    fixed(c, a);
+                    continue;
+                }
                 fixed(eventFixedChoice(gc, a.getIdx1(), fa), a);
             }
             break;
@@ -418,19 +496,21 @@ bool buildChoice(const GameContext &gc, Choice &out, std::string *reason) {
     encodeObservation(gc, r);
     r.screenState = static_cast<int>(gc.screenState);
     r.selectScreenType = static_cast<int>(gc.info.selectScreenType);
+    if (gc.screenState == ScreenState::SHOP_ROOM)
+        for (auto *v : {&cardPrices, &relicPrices, &potionPrices}) r.offerPrices.insert(r.offerPrices.end(), v->begin(), v->end());
     for (auto *v : {&cardActs, &relicActs, &potionActs, &fixedActs, &pathActs})
         out.actions.insert(out.actions.end(), v->begin(), v->end());
     return true;
 }
 
-int takeFreeRewards(GameContext &gc) {
+int takeFreeRewards(GameContext &gc, bool relics) {
     int taken = 0;
     while (gc.outcome == GameOutcome::UNDECIDED && gc.screenState == ScreenState::REWARDS) {
         const auto actions = GA::getAllActionsInState(gc);
         const bool hasKey = std::any_of(actions.begin(), actions.end(),
                                         [](const GA &a) { return a.getRewardsActionType() == RT::KEY; });
         const auto it = std::find_if(actions.begin(), actions.end(), [&](const GA &a) {
-            return a.getRewardsActionType() == RT::GOLD || (a.getRewardsActionType() == RT::RELIC && !hasKey);
+            return a.getRewardsActionType() == RT::GOLD || (relics && a.getRewardsActionType() == RT::RELIC && !hasKey);
         });
         if (it == actions.end()) break;
         it->execute(gc);
@@ -443,9 +523,11 @@ int takeFreeRewards(GameContext &gc) {
 
 nlohmann::json recordToJson(const Record &r) {
     nlohmann::json fixed = nlohmann::json::array();
-    for (const auto &f : r.fixedActions)
+    for (const auto &f : r.fixedActions) {
         fixed.push_back({{"action", f.action}, {"gold", f.gold}, {"card", f.card},
                          {"relic", f.relic}, {"info", f.info}});
+        if (f.potion >= 0) fixed.back()["potion"] = f.potion;
+    }
     nlohmann::json pathXs = nlohmann::json::array();
     for (const auto &p : r.mapPathXs) pathXs.push_back({p[0], p[1], p[2]});
     return {{"obs.fixed_observation", r.fixedObservation},
@@ -460,7 +542,9 @@ nlohmann::json recordToJson(const Record &r) {
             {"cards_offered.cards", r.offeredCards}, {"cards_offered.upgrades", r.offeredUpgrades},
             {"relics_offered", r.offeredRelics}, {"potions_offered", r.offeredPotions},
             {"fixed_actions", fixed}, {"paths_offered", r.paths},
-            {"screen_state", r.screenState}, {"select_screen_type", r.selectScreenType}};
+            {"screen_state", r.screenState}, {"select_screen_type", r.selectScreenType},
+            {"obs.v2.run_counters", r.runCounters}, {"obs.v2.fought", r.foughtEncounters},
+            {"offer_prices", r.offerPrices}};
 }
 
 bool buildPublicLeafRecord(const GameContext &gc, nlohmann::json &out, std::string *reason) {
@@ -535,11 +619,15 @@ Record recordFromJson(const nlohmann::json &j) {
         c.card = f.value("card", kCardInvalid);
         c.relic = f.value("relic", kRelicInvalid);
         c.info = f.value("info", 0);
+        c.potion = f.value("potion", -1);
         r.fixedActions.push_back(c);
     }
     r.paths = ints("paths_offered");
     r.screenState = j.at("screen_state").get<int>();
     r.selectScreenType = j.at("select_screen_type").get<int>();
+    if (j.contains("obs.v2.run_counters")) r.runCounters = ints("obs.v2.run_counters");
+    if (j.contains("obs.v2.fought")) r.foughtEncounters = ints("obs.v2.fought");
+    if (j.contains("offer_prices")) r.offerPrices = ints("offer_prices");
     return r;
 }
 
@@ -1183,6 +1271,14 @@ bool Net::load(const std::string &file, std::string *error) {
         relicCounter_ = fixedVec("x_relic_counter", 1);
         act_ = embedding("x_act.weight");
     }
+    extraInputsV3_ = tensors.count("x3_deck.proj.weight") > 0;
+    if (extraInputsV3_) deckAgg_ = fixedVec("x3_deck", kDeckAggCount);
+    extraInputsV2_ = tensors.count("x2_run.proj.weight") > 0;
+    if (extraInputsV2_) {
+        runCounters_ = fixedVec("x2_run", kRunCounterCount);
+        offerPrice_ = fixedVec("x2_price", 1);
+        fought_ = embedding("x2_fought.weight");
+    }
     blocks_.assign(layers, {});
     for (int i = 0; i < layers; ++i) {
         const std::string L = "layers." + std::to_string(i) + ".";
@@ -1244,8 +1340,9 @@ std::uint64_t recordHash(const Record &r) {
     mix(r.burningEliteX); mix(r.burningEliteY); mix(r.mapX); mix(r.mapY);
     ints(r.offeredCards); ints(r.offeredUpgrades); ints(r.offeredRelics); ints(r.offeredPotions);
     mix(std::int64_t(r.fixedActions.size()));
-    for (const auto &f : r.fixedActions) { mix(f.action); mix(f.gold); mix(f.card); mix(f.relic); mix(f.info); }
+    for (const auto &f : r.fixedActions) { mix(f.action); mix(f.gold); mix(f.card); mix(f.relic); mix(f.info); mix(f.potion); }
     ints(r.paths); mix(r.screenState); mix(r.selectScreenType);
+    ints(r.runCounters); ints(r.foughtEncounters); ints(r.offerPrices);
     return h;
 }
 
@@ -1331,10 +1428,25 @@ Output Net::forwardRecord(const Record &r, bool logitsOnly) const {
         if (extraInputs_) {
             addEmbedding(obsPosition_, 3, row(t));
             addEmbedding(act_, int(clampInput(r.act, 0, 4)), row(t));
-            ++t;
         } else {
-            position(obsPosition_, 3);
+            addEmbedding(obsPosition_, 3, row(t));
         }
+        if (extraInputsV2_) {
+            // v2 (student_inputs.py --v2): run counters clamped to [-1, 999]; a record
+            // without them (older captures) reads all -1. Fought encounters are summed.
+            float run[kRunCounterCount];
+            for (int k = 0; k < kRunCounterCount; ++k)
+                run[k] = clampInput(k < int(r.runCounters.size()) ? r.runCounters[k] : -1, -1, 999);
+            addFixedVec(runCounters_, run, row(t));
+            const int nFought = std::min<int>(r.foughtEncounters.size(), kMaxFoughtEncounters);
+            for (int i = 0; i < nFought; ++i) addEmbedding(fought_, r.foughtEncounters[i], row(t));
+        }
+        if (extraInputsV3_) {
+            float agg[kDeckAggCount];
+            deckAggregates(r, agg);
+            addFixedVec(deckAgg_, agg, row(t));
+        }
+        ++t;
     }
     // Map tokens: the per-token additions of silverbot's order, one feature at a
     // time over all map rows so each projection runs batched.
@@ -1367,22 +1479,37 @@ Output Net::forwardRecord(const Record &r, bool logitsOnly) const {
             position(obsPosition_, 4);
         }
     }
+    // v2 shop prices (clamped to [-1, 999]) on the tokens that have one (shop offers),
+    // added after the token's position embedding like the other extra inputs.
+    int priceIdx = 0;
+    const auto price = [&] {
+        if (!extraInputsV2_) return;
+        const int i = priceIdx++;
+        if (i >= int(r.offerPrices.size()) || r.offerPrices[i] < 0) return;
+        const float p = clampInput(r.offerPrices[i], -1, 999);
+        addFixedVec(offerPrice_, &p, row(t - 1));
+    };
     for (std::size_t i = 0; i < r.offeredCards.size(); ++i) {
         addEmbedding(card_, r.offeredCards[i], row(t));
         addEmbedding(upgrade_, r.offeredUpgrades[i], row(t));
         addEmbedding(selectScreen_, r.selectScreenType, row(t));
         position(choicePosition_, 0);
+        price();
     }
-    for (int id : r.offeredRelics) { addEmbedding(relic_, id, row(t)); position(choicePosition_, 1); }
-    for (int id : r.offeredPotions) { addEmbedding(potion_, id, row(t)); position(choicePosition_, 2); }
+    for (int id : r.offeredRelics) { addEmbedding(relic_, id, row(t)); position(choicePosition_, 1); price(); }
+    for (int id : r.offeredPotions) { addEmbedding(potion_, id, row(t)); position(choicePosition_, 2); price(); }
     for (const auto &f : r.fixedActions) {
         float *out = row(t);
-        addEmbedding(fixedAction_, f.action, out);
+        // PPO tokens (ids kFaDiscardPotion..kFaCount-1) beyond a shorter table read as
+        // zero rows; any other out-of-range id stays fatal.
+        if (f.action < fixedAction_.rows || f.action < kFaDiscardPotion || f.action >= kFaCount)
+            addEmbedding(fixedAction_, f.action, out);
         const float gold = float(f.gold);
         addFixedVec(gold_, &gold, out);
         addEmbedding(card_, f.card, out);
         addEmbedding(relic_, f.relic, out);
         addEmbedding(info_, f.info, out);
+        if (f.potion >= 0) addEmbedding(potion_, f.potion, out);
         position(choicePosition_, 3);
     }
     {
@@ -1549,6 +1676,212 @@ bool policyStep(GameContext &gc) {
     }
     choice.actions[chosen].execute(gc);
     return true;
+}
+
+// ---------------------------------------------------------------- PPO (S0)
+
+namespace {
+bool envFlag(const char *key) {
+    const char *v = std::getenv(key);
+    if (!v || !*v || std::string(v) == "0") return false;
+    if (std::string(v) == "1") return true;
+    throw std::runtime_error(std::string(key) + " must be 0 or 1");
+}
+
+std::uint64_t splitmix64(std::uint64_t x) {
+    x += 0x9e3779b97f4a7c15ull;
+    x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9ull;
+    x = (x ^ (x >> 27)) * 0x94d049bb133111ebull;
+    return x ^ (x >> 31);
+}
+
+std::uint64_t ppoSalt() {
+    const char *v = std::getenv("STS_OOC_HEART1_SAMPLE_SALT");
+    if (!v || !*v) return 0;
+    const std::string text(v);
+    if (text.size() > 19 || text.find_first_not_of("0123456789") != std::string::npos)
+        throw std::runtime_error("STS_OOC_HEART1_SAMPLE_SALT must be a decimal integer");
+    return std::stoull(text);
+}
+
+// This thread's lines of the current game (written whole at its end).
+struct PpoGame {
+    std::uint64_t seed = 0;
+    std::string lines;
+    int decisions = 0, single = 0, fallbacks = 0, autoGold = 0, pendingGold = 0;
+    std::map<std::string, int> fallbackReasons;
+};
+thread_local PpoGame t_ppo;
+std::mutex g_ppoTrajMutex;
+}  // namespace
+
+bool ppoEnabled() {
+    static const bool on = envFlag("STS_OOC_HEART1_PPO");
+    return on;
+}
+
+bool ppoKeyRule() {
+    static const bool on = envFlag("STS_OOC_HEART1_PPO_KEY_RULE");
+    return on;
+}
+
+double ppoTemperature() {
+    static const double t = [] {
+        const char *v = std::getenv("STS_OOC_HEART1_TEMPERATURE");
+        if (!v || !*v) return 1.0;
+        char *end = nullptr;
+        const double x = std::strtod(v, &end);
+        if (!end || *end || !(x >= 0) || !std::isfinite(x))
+            throw std::runtime_error("STS_OOC_HEART1_TEMPERATURE must be a finite number >= 0");
+        return x;
+    }();
+    return t;
+}
+
+double sampleUniform(std::uint64_t runSeed, std::uint64_t salt, std::uint64_t index) {
+    const std::uint64_t x = splitmix64(runSeed ^ splitmix64(salt ^ splitmix64(index ^ 0x5050'4f53'414d'504cull)));
+    return double(x >> 11) * 0x1.0p-53;
+}
+
+int sampleChoice(const std::vector<float> &logits, double temperature, double u, double *logp) {
+    if (logits.empty()) throw std::runtime_error("heart1 sampleChoice: no logits");
+    const int n = int(logits.size());
+    const double t = temperature > 0 ? temperature : 1.0;
+    double mx = -std::numeric_limits<double>::infinity();
+    for (float l : logits) mx = std::max(mx, double(l) / t);
+    double sum = 0;
+    for (float l : logits) sum += std::exp(double(l) / t - mx);
+    const double logSum = std::log(sum);
+    int chosen = 0;
+    if (temperature <= 0) {
+        // Temperature 0: np.argmax, first maximum in token order (policyStep's rule).
+        chosen = int(std::max_element(logits.begin(), logits.end()) - logits.begin());
+    } else {
+        double acc = 0;
+        chosen = -1;
+        for (int i = 0; i < n; ++i) {
+            const double p = std::exp(double(logits[i]) / t - mx - logSum);
+            acc += p;
+            if (u < acc) { chosen = i; break; }
+        }
+        if (chosen < 0)  // u beyond the rounded total: the last index with mass
+            for (int i = n - 1; i >= 0 && chosen < 0; --i)
+                if (std::exp(double(logits[i]) / t - mx - logSum) > 0) chosen = i;
+        if (chosen < 0) chosen = n - 1;
+    }
+    if (logp) *logp = double(logits[chosen]) / t - mx - logSum;
+    return chosen;
+}
+
+void ppoBeginGame(std::uint64_t seed) {
+    t_ppo = PpoGame{};
+    t_ppo.seed = seed;
+}
+
+namespace {
+void ppoLine(const nlohmann::json &line) {
+    t_ppo.lines += line.dump();
+    t_ppo.lines += '\n';
+}
+
+const char *ppoFallback(const GameContext &gc, std::uint64_t index, const std::string &reason) {
+    if (envFlag("STS_OOC_HEART1_PPO_STRICT"))
+        throw std::runtime_error("STS_OOC_HEART1_PPO_STRICT: no net choice at screen "
+                                 + std::to_string(int(gc.screenState)) + ": " + reason);
+    ++t_ppo.fallbacks;
+    ++t_ppo.fallbackReasons[reason];
+    ppoLine({{"type", "fallback"}, {"seed", std::to_string(gc.seed)}, {"idx", index}, {"act", gc.act},
+             {"floor", gc.floorNum}, {"screen", int(gc.screenState)}, {"event", int(gc.curEvent)},
+             {"reason", reason}, {"auto_gold", std::exchange(t_ppo.pendingGold, 0)}});
+    return nullptr;
+}
+}  // namespace
+
+const char *ppoStep(GameContext &gc, std::uint64_t index) {
+    if (!enabled()) throw std::runtime_error("STS_OOC_HEART1_PPO needs STS_OOC_HEART1");
+    const Net &model = net();
+    const int gold = takeFreeRewards(gc, /*relics=*/false);
+    t_ppo.pendingGold += gold;
+    t_ppo.autoGold += gold;
+    if (gc.outcome != GameOutcome::UNDECIDED || gc.screenState == ScreenState::BATTLE)
+        return gold > 0 ? "auto_gold" : ppoFallback(gc, index, "not_a_decision");
+    ChoiceOptions options;
+    options.fullCoverage = true;
+    options.keyMask = ppoKeyRule();
+    Choice choice;
+    std::string reason;
+    if (!buildChoice(gc, choice, &reason, options)) return ppoFallback(gc, index, reason);
+    const int nChoice = choice.record.choiceCount();
+    if (nChoice == 0) return ppoFallback(gc, index, "no_choice");
+    // Full forward: the value is the critic's input for GAE.
+    const Output scored = model.forward(choice.record, /*logitsOnly=*/false);
+    const double temperature = ppoTemperature();
+    double logp = 0;
+    const int chosen = nChoice == 1 ? 0
+        : sampleChoice(scored.logits, temperature, sampleUniform(gc.seed, ppoSalt(), index), &logp);
+    const char *source = nChoice == 1 ? "heart1_ppo_single" : "heart1_ppo";
+    (nChoice == 1 ? t_ppo.single : t_ppo.decisions)++;
+    ppoLine({{"type", "decision"}, {"seed", std::to_string(gc.seed)}, {"idx", index}, {"act", gc.act},
+             {"floor", gc.floorNum}, {"screen", int(gc.screenState)}, {"source", source}, {"n", nChoice},
+             {"record", recordToJson(choice.record)}, {"logits", scored.logits}, {"value", scored.value},
+             {"chosen", chosen}, {"logp", logp}, {"temp", temperature},
+             {"bits", choice.actions[chosen].bits}, {"auto_gold", std::exchange(t_ppo.pendingGold, 0)}});
+    choice.actions[chosen].execute(gc);
+    return source;
+}
+
+void ppoEndGame(const GameContext &gc, const nlohmann::json &outcome) {
+    const char *path = std::getenv("STS_OOC_HEART1_PPO_TRAJ");
+    nlohmann::json reasons = nlohmann::json::object();
+    for (const auto &[k, v] : t_ppo.fallbackReasons) reasons[k] = v;
+    nlohmann::json game = {{"type", "game"}, {"schema", "heart1-ppo-traj-v1"}, {"seed", std::to_string(gc.seed)},
+        {"net", enabled() ? net().path() : ""}, {"temp", ppoTemperature()}, {"salt", std::to_string(ppoSalt())},
+        {"key_rule", ppoKeyRule()}, {"decisions", t_ppo.decisions}, {"single", t_ppo.single},
+        {"fallbacks", t_ppo.fallbacks}, {"fallback_reasons", reasons}, {"auto_gold", t_ppo.autoGold},
+        {"outcome", outcome}};
+    ppoLine(game);
+    std::fprintf(stderr, "[heart1_ppo] seed=%llu decisions=%d single=%d fallbacks=%d auto_gold=%d\n",
+                 static_cast<unsigned long long>(gc.seed), t_ppo.decisions, t_ppo.single, t_ppo.fallbacks,
+                 t_ppo.autoGold);
+    if (path && *path) {
+        std::lock_guard<std::mutex> lock(g_ppoTrajMutex);
+        std::ofstream out(path, std::ios::app | std::ios::binary);
+        out << t_ppo.lines;
+        out.flush();
+        if (!out) throw std::runtime_error(std::string("STS_OOC_HEART1_PPO_TRAJ: cannot write ") + path);
+    }
+    t_ppo = PpoGame{};
+}
+
+void ppoSelfTest() {
+    const auto check = [](bool ok, const std::string &what) {
+        if (!ok) throw std::runtime_error("heart1 ppo selftest: " + what);
+    };
+    // Temperature 0 is the argmax with the first maximum.
+    const std::vector<float> tie{0.5f, 2.f, 2.f, -1.f};
+    for (double u : {0.0, 0.3, 0.999}) check(sampleChoice(tie, 0, u) == 1, "argmax first maximum");
+    // Sampled frequencies follow softmax(logits / T).
+    const std::vector<float> logits{1.f, 0.f, -0.5f, 2.f};
+    for (double t : {1.0, 0.5, 2.0}) {
+        std::vector<double> p(logits.size()), count(logits.size(), 0);
+        double sum = 0;
+        for (std::size_t i = 0; i < logits.size(); ++i) sum += p[i] = std::exp(logits[i] / t);
+        for (auto &x : p) x /= sum;
+        const int n = 200000;
+        for (int k = 0; k < n; ++k) {
+            double logp = 0;
+            const int c = sampleChoice(logits, t, sampleUniform(12345, 7, std::uint64_t(k)), &logp);
+            check(std::abs(logp - std::log(p[c])) < 1e-12, "log-prob of the sampled index");
+            count[c] += 1;
+        }
+        for (std::size_t i = 0; i < p.size(); ++i)
+            check(std::abs(count[i] / n - p[i]) < 0.005, "sample frequency at temperature " + std::to_string(t));
+    }
+    // The uniform is a pure function of (seed, salt, index) and differs across them.
+    check(sampleUniform(1, 2, 3) == sampleUniform(1, 2, 3), "uniform is deterministic");
+    check(sampleUniform(1, 2, 3) != sampleUniform(1, 3, 3) && sampleUniform(1, 2, 3) != sampleUniform(1, 2, 4),
+          "uniform depends on salt and index");
+    std::cout << "heart1 ppo selftest passed\n";
 }
 
 std::optional<std::vector<double>> mapPriorLogits(const Choice &choice, const std::vector<float> &logits,
@@ -1987,6 +2320,78 @@ Net loadOrThrow(const std::string &path) {
     return model;
 }
 }  // namespace
+
+namespace {
+
+// Cards whose play (or, for a power, whose effect) draws cards: the Ironclad and
+// colorless pool. A hand list for the x3_deck "draws" aggregate (arch screen IN_DECK).
+bool drawsCards(CardId id) {
+    switch (id) {
+        case CardId::POMMEL_STRIKE: case CardId::SHRUG_IT_OFF: case CardId::BATTLE_TRANCE:
+        case CardId::BURNING_PACT: case CardId::OFFERING: case CardId::WARCRY:
+        case CardId::DARK_EMBRACE: case CardId::EVOLVE: case CardId::BRUTALITY:
+        case CardId::MASTER_OF_STRATEGY: case CardId::FINESSE: case CardId::FLASH_OF_STEEL:
+        case CardId::DEEP_BREATH: case CardId::IMPATIENCE: case CardId::THINKING_AHEAD:
+            return true;
+        default:
+            return false;
+    }
+}
+
+constexpr int kCardIdCount = int(sizeof(cardTypes) / sizeof(cardTypes[0]));
+
+int roundedPercent(int num, int den) { return den > 0 ? (200 * num + den) / (2 * den) : 0; }
+
+}  // namespace
+
+void deckAggregates(const Record &r, float out[kDeckAggCount]) {
+    int attacks = 0, skills = 0, powers = 0, starter = 0, exhaust = 0, draws = 0, upgraded = 0;
+    int costSum = 0, costed = 0, curses = 0;
+    const int n = int(r.deckCards.size());
+    for (int i = 0; i < n; ++i) {
+        const int raw = r.deckCards[i];
+        if (raw < 0 || raw >= kCardIdCount) continue;
+        const auto id = static_cast<CardId>(raw);
+        const bool up = i < int(r.deckUpgrades.size()) && r.deckUpgrades[i] != 0;
+        switch (getCardType(id)) {
+            case CardType::ATTACK: ++attacks; break;
+            case CardType::SKILL: ++skills; break;
+            case CardType::POWER: ++powers; break;
+            case CardType::CURSE: ++curses; break;
+            default: break;
+        }
+        starter += isStarterStrikeOrDefend(id);
+        exhaust += doesCardExhaust(id, up);
+        draws += drawsCards(id);
+        upgraded += up;
+        const int cost = getEnergyCost(id, up);
+        if (cost >= 0) { costSum += cost; ++costed; }
+    }
+    const int v[kDeckAggCount] = {attacks, skills, powers, starter, exhaust, draws, roundedPercent(upgraded, n),
+                                  roundedPercent(costSum, costed), n, curses};
+    for (int k = 0; k < kDeckAggCount; ++k) out[k] = float(std::min(std::max(v[k], -1), 999));
+}
+
+int cardTableCommand(int argc, char **argv) {
+    if (argc != 3) {
+        std::fprintf(stderr, "usage: one_combat heart1cardtable <out.json>\n");
+        return 2;
+    }
+    nlohmann::json cards = nlohmann::json::array();
+    for (int raw = 0; raw < kCardIdCount; ++raw) {
+        const auto id = static_cast<CardId>(raw);
+        cards.push_back({{"id", raw}, {"name", cardEnumStrings[raw]},
+                         {"type", cardTypeStrings[int(getCardType(id))]},
+                         {"cost", {getEnergyCost(id, false), getEnergyCost(id, true)}},
+                         {"exhaust", {doesCardExhaust(id, false), doesCardExhaust(id, true)}},
+                         {"starter", isStarterStrikeOrDefend(id)}, {"draws", drawsCards(id)}});
+    }
+    std::ofstream out(argv[2]);
+    if (!out) throw std::runtime_error("heart1cardtable: cannot open output");
+    out << nlohmann::json({{"schema", "heart1-x3-card-table-v1"}, {"cards", cards}}).dump(1) << '\n';
+    std::printf("heart1cardtable cards=%d -> %s\n", kCardIdCount, argv[2]);
+    return 0;
+}
 
 int scoreCommand(int argc, char **argv) {
     if (argc != 5) {

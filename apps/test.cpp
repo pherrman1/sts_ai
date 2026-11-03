@@ -35,6 +35,7 @@
 #include "sim/RandomAgent.h"
 #include "sim/search/ScumSearchAgent2.h"
 #include "sim/search/SimpleAgent.h"
+#include "sim/search/RunGoal.h"
 
 #include "sim/search/CombatObservation.h"
 #include "sim/search/CombatValueNet.h"
@@ -4118,6 +4119,29 @@ int testIssueFixes() {
         return 1;
     };
 
+    // Rewards::removeCardReward on a full rewards screen (5 card groups) must not read past the
+    // array (libstdc++ assertions, on by default in GCC 15 Debug builds, abort on it) and must keep
+    // the remaining groups in order.
+    {
+        Rewards r;
+        const CardId ids[5] = {CardId::BASH, CardId::ANGER, CardId::CLEAVE, CardId::CLOTHESLINE, CardId::FLEX};
+        for (const auto id : ids) {
+            CardReward group;
+            group.push_back(Card(id));
+            r.addCardReward(group);
+        }
+        r.removeCardReward(2);
+        if (r.cardRewardCount != 4 || r.cardRewards[0][0].getId() != CardId::BASH
+                || r.cardRewards[1][0].getId() != CardId::ANGER || r.cardRewards[2][0].getId() != CardId::CLOTHESLINE
+                || r.cardRewards[3][0].getId() != CardId::FLEX) {
+            return fail("removeCardReward on 5 groups: wrong remaining groups");
+        }
+        r.removeCardReward(3);
+        if (r.cardRewardCount != 3 || r.cardRewards[2][0].getId() != CardId::CLOTHESLINE) {
+            return fail("removeCardReward of the last group: wrong remaining groups");
+        }
+    }
+
     // #56: chooseDiscardToHandCard must honor its forZeroCost parameter, not
     // the stale cardSelectInfo.cardSelectTask field.
     {
@@ -6223,7 +6247,8 @@ int testCardQueueOverflow() {
 // Regression test for key collection in the default OOC policy chain: the
 // rewards handlers must take the emerald (burning elite) and sapphire (chest)
 // keys, and act-3+ rest rooms must take the ruby key (RECALL), otherwise
-// Act 4 is unreachable. This pins the shared fallback behavior
+// Act 4 is unreachable (ScumSearchAgent2 follows the ADR-0063 Ruby rule: by
+// default only the pre-boss campfire forces Recall). This pins the shared fallback behavior
 // (ScumSearchAgent2::stepRewardsPolicy / REST_ROOM case and
 // SimpleAgent::stepRestScreen); the apps/one_combat.cpp REWARDS/rest chains
 // mirror these handlers.
@@ -6261,17 +6286,33 @@ int testKeyCollection() {
               "stepRewardsPolicy: sapphire key not taken");
     }
 
-    // 3) Ruby key is taken at an act-3 rest room (ScumSearchAgent2 fallback).
-    {
-        GameContext gc(sts::CharacterClass::IRONCLAD, 3, 0);
+    // 3) Ruby key at act-3 rest rooms (ScumSearchAgent2 fallback). ADR-0063 (default, STS_KEY_RUBY=policy):
+    //    Recall is forced only at the pre-boss campfire (row 14), which every map has; an earlier act-3
+    //    campfire is the policy's choice (here: Smith, 80/80 HP). ADR-0041 rules (STS_KEY_RUBY=first):
+    //    Recall at the first act-3 campfire. heartKeyRules() is read from the environment once, so the
+    //    ADR-0041 case sets the rules directly and the previous rules are restored afterwards.
+    const auto restRuby = [&](int seed, int row, const char *what, bool expectRuby) {
+        GameContext gc(sts::CharacterClass::IRONCLAD, seed, 0);
         gc.screenState = ScreenState::REST_ROOM;
         gc.regainControlAction = [](auto &gs) { gs.screenState = ScreenState::MAP_SCREEN; };
         gc.act = 3;
+        gc.curMapNodeY = row;
         search::ScumSearchAgent2 agent;
-        agent.rng = std::default_random_engine(3);
+        agent.rng = std::default_random_engine(seed);
         agent.stepOutOfCombatPolicy(gc);
-        check(gc.hasKey(sts::Key::RUBY_KEY),
-              "ScumSearchAgent2 REST_ROOM act 3: ruby key not taken");
+        check(gc.hasKey(sts::Key::RUBY_KEY) == expectRuby,
+              std::string("ScumSearchAgent2 REST_ROOM act 3 ") + what
+              + (expectRuby ? ": ruby key not taken" : ": ruby key forced"));
+    };
+    {
+        const auto saved = search::heartKeyRules();
+        if (!std::getenv("STS_KEY_RUBY")) {
+            restRuby(3, 14, "pre-boss campfire (ADR-0063 default)", true);
+            restRuby(3, 5, "mid-act campfire (ADR-0063 default)", false);
+        }
+        search::heartKeyRules() = search::HeartKeyRules{};
+        restRuby(3, 5, "mid-act campfire (ADR-0041 rules)", true);
+        search::heartKeyRules() = saved;
     }
 
     // 4) Ruby key is taken at an act-3 rest room (SimpleAgent fallback).

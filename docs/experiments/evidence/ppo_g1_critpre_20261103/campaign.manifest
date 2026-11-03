@@ -1,0 +1,11 @@
+name          ppo-g1-critpre
+code_commit   520d4e4be331170cc088ec356f089d0bf01def29
+binary_sha256 ca8db597c04fca7d107c9e6a6517f4758c5f290496b8231690f68fad9c280ceb
+workers       8
+share         /mnt/project-files/ppo-g1-critpre
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 45
+input critpre.bin /mnt/project-files/ppo-g1-critpre/critpre_net0060.bin 1575c27e92fb35c284e9df1c6190b91606c13a68aeed9666ce63df48307bc786
+input heart1.bin /mnt/project-files/ppo-g1-critpre/heart1_net0000.bin 4288d0956ab75c3c8977f498ddbf73097b9ee226800369724bda6989f0bceab6

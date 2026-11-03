@@ -1,0 +1,89 @@
+{
+ "window_iterations": [
+  40,
+  60
+ ],
+ "seeds": [
+  111490480,
+  111500719
+ ],
+ "n": 10240,
+ "base": 0.07724609375,
+ "base_s1": 0.08330078125,
+ "control": 0.0802734375,
+ "noise_abs_s1_minus_base": 0.006054687500000003,
+ "promising_bar": 0.005243513186976095,
+ "stall_seeds_window": [
+  111493711
+ ],
+ "arms": [
+  {
+   "arm": "BASE",
+   "complete": true
+  },
+  {
+   "arm": "BASE_S1",
+   "complete": true
+  },
+  {
+   "arm": "PBRS_FLOOR",
+   "complete": true,
+   "rate": 0.07705078125,
+   "D": -0.00322265625,
+   "lo": -0.008642578125,
+   "hi": 0.002294921875,
+   "verdict": "NOT_SHOWN",
+   "D_sens": -0.0032229709932610606,
+   "lo_sens": -0.008741087996874695,
+   "hi_sens": 0.0021987010450239103,
+   "verdict_sens": "NOT_SHOWN",
+   "stalls": 0,
+   "stalls_window": 0
+  },
+  {
+   "arm": "PBRS_STATE",
+   "complete": true,
+   "rate": 0.07890625,
+   "D": -0.0013671875,
+   "lo": -0.00703125,
+   "hi": 0.004150390625,
+   "verdict": "NOT_SHOWN",
+   "D_sens": -0.0013673210274440864,
+   "lo_sens": -0.00688543803105772,
+   "hi_sens": 0.004199628870006837,
+   "verdict_sens": "NOT_SHOWN",
+   "stalls": 0,
+   "stalls_window": 0
+  },
+  {
+   "arm": "CRIT_PRE",
+   "complete": true,
+   "rate": 0.0876953125,
+   "D": 0.007421875,
+   "lo": 0.001806640625,
+   "hi": 0.01318359375,
+   "verdict": "PROMISING",
+   "D_sens": 0.0074225998632678975,
+   "lo_sens": 0.001707930461959177,
+   "hi_sens": 0.013087215548393398,
+   "verdict_sens": "PROMISING",
+   "stalls": 0,
+   "stalls_window": 0
+  },
+  {
+   "arm": "ACT_BONUS",
+   "complete": true,
+   "rate": 0.07529296875,
+   "D": -0.00498046875,
+   "lo": -0.010400390625,
+   "hi": 0.000634765625,
+   "verdict": "NOT_SHOWN",
+   "D_sens": -0.004980955171403457,
+   "lo_sens": -0.010499072175017091,
+   "hi_sens": 0.0005371618322101767,
+   "verdict_sens": "NOT_SHOWN",
+   "stalls": 0,
+   "stalls_window": 0
+  }
+ ]
+}
