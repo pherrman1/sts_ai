@@ -38,8 +38,8 @@ least-progress-first order).
 | BASE | base recipe, learner seed 0 |
 | BASE_S1 | learner seed 1. Together with BASE it forms the control, and BASE_S1 − BASE is the run-to-run noise |
 | PBRS_FLOOR | `--reward heart_phi` with Φ = `phi_floor.json`: P(Heart kill \| the game reached floor f), from screen 1's 291,840 games (all arms; 0.078 at floor 0, 0.086 at 16, 0.140 at 33, 0.257 at 50, 0.515 at 56). Computed from each decision's floor (`ppo_phi.py`) |
-| PBRS_STATE | `--reward heart_phi` with Φ = `phi_state.json`: L2 logistic regression of the Heart kill on public run state (logit of the floor table, HP fraction, max HP, gold, keys, deck size, relics, potions, act; `ppo_phi.FEATURES`). Fit by `ppo_phi_fit.py logistic` on every 4th game (by seed) of screen 1's BASE trajectories and scored on BASE_S1's. Admitted only if its hold-out log-loss is below the floor table's; otherwise the arm is dropped before launch and RESULT says so |
-| CRIT_PRE | start net = heart1 with its critic pre-trained by `ppo_critic_pretrain.py`: 1 pass of value-only updates (base hparams, reward `heart`) over screen 1's BASE and BASE_S1 trajectories (60 recorded iterations, 30,720 games). Only the value head and its norm move, so the policy is heart1's bit for bit (checked at freeze) |
+| PBRS_STATE | `--reward heart_phi` with Φ = `phi_state.json`: L2 logistic regression of the Heart kill on public run state (logit of the floor table, HP fraction, max HP, gold, keys, deck size, relics, potions, act; `ppo_phi.FEATURES`). Fit by `ppo_phi_fit.py logistic` on every 4th game (by seed) of screen 1's BASE trajectories and scored on BASE_S1's. Admitted only if its hold-out log-loss is below the floor table's; otherwise the arm is dropped before launch and RESULT says so. **Fit (PC, 2026-11-03):** 395,058 fit and 396,674 hold-out decisions, hold-out log-loss 0.3528 (state) vs 0.3664 (floor table) vs 0.3855 (constant), so the arm is **admitted**. `phi_state.json` sha256 `8e345898…c262` |
+| CRIT_PRE | start net = heart1 with its critic pre-trained by `ppo_critic_pretrain.py`: 1 pass of value-only updates (base hparams except λ = 1, i.e. Monte Carlo targets that do not bootstrap from heart1's miscalibrated critic; reward `heart`) over screen 1's BASE and BASE_S1 trajectories (60 recorded iterations, 30,720 games). Only the value head and its norm move, so the policy is heart1's bit for bit (checked at freeze) |
 | ACT_BONUS | `--reward heart_act`: 1{Heart} + 0.1 per act cleared (final floor ≥ 17 / 34 / 51) + 0.05 per key, at game end |
 
 The original's reward (floor/190 + keys + Heart) was screen 1's REW_ORIG (NOT_SHOWN, +0.02 pp) and is not repeated.
@@ -53,8 +53,9 @@ plays 111470000 + 512·i ..., in 4 parts of 128 games. That gives 24 actor worke
   every arm), paired by seed against the control C = (BASE + BASE_S1)/2. D = arm − C, with a 95% seed bootstrap
   (10,000 resamples).
 - **Verdicts.**
-  - **PROMISING** if the CI lower bound > 0 and D > |BASE_S1 − BASE|/2. The second term is the run noise of an
-    average of two runs, if |BASE_S1 − BASE| estimates √2 of one run's.
+  - **PROMISING** if the CI lower bound > 0 and D > (√3/2)·|BASE_S1 − BASE| ≈ 0.87·|BASE_S1 − BASE|. With a
+    run-to-run sd σ per run, |BASE_S1 − BASE| estimates √2σ and D = arm − C has run sd √(1 + 1/2)σ, so the bar
+    is one run-noise sd of D, as screen 1's bar was one sd of its D (review K).
   - **WORSE** if the CI upper bound < 0.
   - **NOT_SHOWN** otherwise.
 - **Futility look** (one, at iteration 30, when every arm has trained iteration 29). Same statistic over iterations
@@ -63,7 +64,11 @@ plays 111470000 + 512·i ..., in 4 parts of 128 games. That gives 24 actor worke
 - **Stalls (as screen 1, #965/#966).** A combat over 1,000 decisions counts as a loss, capped at ⌊1%⌋ of a part (1
   per 128-game part); above the cap the arm is INCOMPLETE. RESULT lists stalls per arm and a sensitivity D without
   any stalled seed of the window; a sensitivity D that changes a verdict is named. If BASE or BASE_S1 is
-  INCOMPLETE, there are no verdicts.
+  INCOMPLETE, there are no verdicts. `analyze.py` reports the sensitivity D with its own CI and verdict, and arms
+  stopped at the futility look as FUTILE (from the look's `futility.json`).
+- **Smoke.** No actor smoke and no smoke seeds: the actors, binary and env are screen 1's. The new code is
+  learner-only; before launch, one learner update per new reward runs on recorded screen-1 trajectories on the PC
+  (no new games).
 - **Secondary.** Per-iteration Heart rate, approx-KL, entropy, value loss and explained variance of the critic
   (`loop.json`). For PBRS arms, the mean |V − (return − Φ)| per iteration. For CRIT_PRE, the pre-training log.
 
