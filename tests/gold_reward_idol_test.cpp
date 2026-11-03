@@ -1,7 +1,9 @@
 // STS_GOLD_REWARD_IDOL_FIX (default on): Golden Idol adds round(25%) to every
-// non-stolen gold reward item, as Java RewardItem(int gold) does: chest gold,
-// Tiny House and the event fights (Dead Adventurer, Masked Bandits, Mind
-// Bloom, Mushrooms, Mysterious Sphere); =0 restores the legacy bonus on
+// non-stolen gold reward item outside a TreasureRoom, as Java
+// RewardItem.applyGoldBonus does (javap, V2.3.4): no bonus on chest gold in
+// either mode; Tiny House (boss chest room) and the event fights (Dead
+// Adventurer, Masked Bandits, Mind Bloom, Mushrooms, Mysterious Sphere) get
+// it; =0 restores the legacy bonus on
 // ordinary combat rewards only. RNG is read from copies, so the expected
 // base amounts come from the same rolls. No game seed, map or fight.
 #include "game/GameContext.h"
@@ -83,7 +85,7 @@ static void check(bool fixed) {
         Random copy = gc.treasureRng;
         const int base = static_cast<int>(std::round(copy.random(25 * 0.9f, 25 * 1.1f)));
         gc.openTreasureRoomChest();
-        expectGold(gc, base, fixed, "chest");
+        expectGold(gc, base, false, "chest");
         require(gc.treasureRng == copy, "chest consumed extra treasureRng");
 
         auto plain = fixture(false);

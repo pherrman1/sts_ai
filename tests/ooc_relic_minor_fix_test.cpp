@@ -1,8 +1,11 @@
 // Three default-on out-of-combat fixes (=0 restores the legacy rule each):
-// STS_NLOTHS_FACE_COUNTER_FIX: N'loth's Hungry Face starts at 1, so the next
-//   non-boss chest holds no relic and draws none from the pool.
-// STS_OOC_ENTROPIC_BREW_FIX: out-of-combat Entropic Brew draws limited
-//   potions (no Fruit Juice) into the first empty slots, as in combat.
+// STS_NLOTHS_FACE_COUNTER_FIX: N'loth's Hungry Face starts at 1; the next
+//   non-boss chest still draws its relic from the pool, then the first relic
+//   reward (Matryoshka's, if any) is removed, with the sapphire key linked to
+//   it (Java removeOneRelicFromRewards).
+// STS_OOC_ENTROPIC_BREW_FIX: out-of-combat Entropic Brew draws nothing with
+//   Sozu; otherwise potionSlots unlimited draws into the first empty slots.
+// Java rules checked with javap against the pinned V2.3.4 jar (2026-11-03).
 // STS_ASTROLABE_COLORLESS_UPGRADE_FIX: Astrolabe upgrades a transformed
 //   colorless card too.
 // Direct public fixtures: no game seed, map or fight.
@@ -58,27 +61,44 @@ static void nlothsFace(bool fixed) {
     gc.openTreasureRoomChest();
     const auto &first = gc.info.rewardsContainer;
     if (fixed) {
-        require(first.relicCount == 0, "the face must empty the first chest");
-        require(gc.commonRelicPool == std::vector<RelicId>{RelicId::ANCHOR, RelicId::LANTERN},
-                "an eaten relic must not leave the pool");
+        // The relic is drawn (and leaves the pool), then removed together
+        // with the sapphire key linked to it.
+        require(first.relicCount == 0 && !first.sapphireKey, "the face must empty the first chest");
     } else {
-        require(first.relicCount == 1 && first.relics[0] == RelicId::ANCHOR, "legacy chest relic");
-        require(gc.commonRelicPool == std::vector<RelicId>{RelicId::LANTERN}, "legacy pool draw");
+        require(first.relicCount == 1 && first.relics[0] == RelicId::ANCHOR && first.sapphireKey,
+                "legacy chest relic");
     }
+    require(gc.commonRelicPool == std::vector<RelicId>{RelicId::LANTERN}, "the chest relic leaves the pool");
     require(gc.relics.getRelicValue(RelicId::NLOTHS_HUNGRY_FACE) == 0, "face counter after the chest");
 
     gc.openTreasureRoomChest();
     const auto &second = gc.info.rewardsContainer;
-    require(second.relicCount == 1 && second.relics[0] == (fixed ? RelicId::ANCHOR : RelicId::LANTERN),
+    require(second.relicCount == 1 && second.relics[0] == RelicId::LANTERN && second.sapphireKey,
             "second chest relic");
 
-    // A counter imported as 1 under the legacy rule consumed the chest but
-    // still drew the relic from the pool.
+    // A counter imported as 1: both modes draw the relic and consume the
+    // chest; only the fix also drops the linked sapphire key.
     auto imported = chestFixture();
     imported.relics.add({RelicId::NLOTHS_HUNGRY_FACE, 1});
     imported.openTreasureRoomChest();
     require(imported.info.rewardsContainer.relicCount == 0, "counter 1 must consume the chest in both modes");
-    require(imported.commonRelicPool.size() == (fixed ? 2u : 1u), "imported counter pool draw");
+    require(imported.info.rewardsContainer.sapphireKey == !fixed, "imported counter sapphire key");
+    require(imported.commonRelicPool.size() == 1u, "imported counter pool draw");
+
+    // With Matryoshka the face removes Matryoshka's relic, which comes first,
+    // and the chest relic keeps its sapphire key.
+    auto both = chestFixture();
+    both.uncommonRelicPool = {RelicId::BLUE_CANDLE};
+    both.relics.add({RelicId::NLOTHS_HUNGRY_FACE, 1});
+    both.relics.add({RelicId::MATRYOSHKA, 1});
+    both.openTreasureRoomChest();
+    const auto &r = both.info.rewardsContainer;
+    // Matryoshka draws first (common Anchor or uncommon Blue Candle), then
+    // the common chest relic.
+    const RelicId matryoshkaRelic = both.uncommonRelicPool.empty() ? RelicId::BLUE_CANDLE : RelicId::ANCHOR;
+    const RelicId chestRelic = matryoshkaRelic == RelicId::ANCHOR ? RelicId::LANTERN : RelicId::ANCHOR;
+    require(r.relicCount == 1 && r.sapphireKey, "Matryoshka + face reward count");
+    require(r.relics[0] == (fixed ? chestRelic : matryoshkaRelic), "Matryoshka + face kept relic");
 }
 
 static std::array<Potion, 5> drinkBrew(GameContext &gc) {
@@ -95,24 +115,21 @@ static void entropicBrew(bool fixed) {
     gc.potionRng = Random(5);
     Random copy = gc.potionRng;
     std::array<Potion, 5> expected = gc.potions;
+    // Three unlimited draws in both modes.
+    const Potion q0 = returnRandomPotion(copy, gc.cc, false);
+    const Potion q1 = returnRandomPotion(copy, gc.cc, false);
+    const Potion q2 = returnRandomPotion(copy, gc.cc, false);
     if (fixed) {
-        // Three limited draws fill the brew's own slot and the empty slot
-        // in order; the third draw finds no slot.
-        const Potion p1 = returnRandomPotion(copy, gc.cc, true);
-        const Potion p2 = returnRandomPotion(copy, gc.cc, true);
-        returnRandomPotion(copy, gc.cc, true);
-        expected = {p1, Potion::BLOCK_POTION, p2, Potion::EMPTY_POTION_SLOT, Potion::EMPTY_POTION_SLOT};
+        // The draws fill the brew's own slot and the empty slot in order;
+        // the third finds no slot.
+        expected = {q0, Potion::BLOCK_POTION, q1, Potion::EMPTY_POTION_SLOT, Potion::EMPTY_POTION_SLOT};
     } else {
-        const Potion q0 = returnRandomPotion(copy, gc.cc, false);
-        returnRandomPotion(copy, gc.cc, false);
-        const Potion q2 = returnRandomPotion(copy, gc.cc, false);
         expected = {q0, Potion::BLOCK_POTION, q2, Potion::EMPTY_POTION_SLOT, Potion::EMPTY_POTION_SLOT};
     }
     require(drinkBrew(gc) == expected, "Entropic Brew slots");
     require(gc.potionCount == 3 && gc.potionRng == copy, "Entropic Brew count/RNG");
 
-    int fruitJuice = 0;
-    for (int seed = 1; seed <= 300; ++seed) {
+    for (int seed = 1; seed <= 50; ++seed) {
         auto full = fixture();
         full.potionCapacity = 5;
         full.potions = {Potion::ENTROPIC_BREW, Potion::EMPTY_POTION_SLOT, Potion::EMPTY_POTION_SLOT,
@@ -121,11 +138,9 @@ static void entropicBrew(bool fixed) {
         full.potionRng = Random(seed);
         for (const auto potion : drinkBrew(full)) {
             require(potion != Potion::EMPTY_POTION_SLOT, "a five-draw brew left a slot empty");
-            if (potion == Potion::FRUIT_JUICE) ++fruitJuice;
         }
         require(full.potionCount == 5, "five-draw brew count");
     }
-    require(fixed ? fruitJuice == 0 : fruitJuice > 0, "Fruit Juice from Entropic Brew: " + std::to_string(fruitJuice));
 
     auto sozu = fixture();
     sozu.potionCapacity = 3;
@@ -135,14 +150,17 @@ static void entropicBrew(bool fixed) {
     sozu.potionRng = Random(5);
     sozu.relics.add({RelicId::SOZU, 0});
     Random sozuCopy = sozu.potionRng;
-    for (int i = 0; i < 3; ++i) returnRandomPotion(sozuCopy, sozu.cc, fixed);
+    if (!fixed) {
+        for (int i = 0; i < 3; ++i) returnRandomPotion(sozuCopy, sozu.cc, false);
+    }
     const auto afterSozu = drinkBrew(sozu);
-    require(sozu.potionRng == sozuCopy, "Sozu brew still rolls every draw");
     if (fixed) {
+        require(sozu.potionRng == sozuCopy, "Sozu brew must draw no potion");
         require(sozu.potionCount == 0 && afterSozu[0] == Potion::EMPTY_POTION_SLOT
                 && afterSozu[1] == Potion::EMPTY_POTION_SLOT && afterSozu[2] == Potion::EMPTY_POTION_SLOT,
                 "Sozu must refuse brewed potions");
     } else {
+        require(sozu.potionRng == sozuCopy, "legacy Sozu brew rolled every draw");
         require(sozu.potionCount == 3 && afterSozu[0] != Potion::EMPTY_POTION_SLOT, "legacy brew ignored Sozu");
     }
 }

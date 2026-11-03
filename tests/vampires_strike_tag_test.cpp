@@ -1,12 +1,11 @@
-// STS_VAMPIRES_STRIKE_TAG_FIX (default on): the Vampires event removes every
-// STRIKE-tagged card (Twin Strike, Pommel Strike, Swift Strike, ...), as the
-// game checks the STRIKE card tag; =0 restores the legacy removal of starter
-// Strikes only. Also pins Deck::removeAllMatching's loop bound: it must not
-// read the stale slot past the end of the deck. No game seed.
+// The Vampires event removes only the starter Strikes: Java Vampires checks
+// CardTags.STARTER_STRIKE (javap, pinned desktop-1.0.jar V2.3.4, 2026-11-03),
+// so Twin, Pommel and Swift Strike stay. Also pins Deck::removeAllMatching's
+// loop bound: it must not read the stale slot past the end of the deck. No
+// game seed.
 #include "game/GameContext.h"
 #include "sim/search/GameAction.h"
 
-#include <cstdlib>
 #include <iostream>
 #include <stdexcept>
 #include <string>
@@ -17,11 +16,6 @@ using namespace sts::search;
 
 static void require(bool value, const std::string &message) {
     if (!value) throw std::runtime_error(message);
-}
-
-static void setFlag(const char *value) {
-    if (value) setenv("STS_VAMPIRES_STRIKE_TAG_FIX", value, 1);
-    else unsetenv("STS_VAMPIRES_STRIKE_TAG_FIX");
 }
 
 static GameContext fixture(const std::vector<Card> &cards) {
@@ -49,20 +43,18 @@ static const std::vector<Card> START {
     Card(CardId::BASH), Card(CardId::STRIKE_RED), Card(CardId::DEFEND_RED), Card(CardId::SWIFT_STRIKE),
 };
 
-static std::vector<Card> expected(bool fixed) {
-    std::vector<Card> result = fixed
-        ? std::vector<Card>{Card(CardId::BASH), Card(CardId::DEFEND_RED)}
-        : std::vector<Card>{Card(CardId::TWIN_STRIKE), Card(CardId::POMMEL_STRIKE, 1), Card(CardId::BASH),
-                            Card(CardId::DEFEND_RED), Card(CardId::SWIFT_STRIKE)};
+static std::vector<Card> expected() {
+    std::vector<Card> result{Card(CardId::TWIN_STRIKE), Card(CardId::POMMEL_STRIKE, 1), Card(CardId::BASH),
+                             Card(CardId::DEFEND_RED), Card(CardId::SWIFT_STRIKE)};
     for (int i = 0; i < 5; ++i) result.push_back(Card(CardId::BITE));
     return result;
 }
 
-static void check(bool fixed) {
+static void check() {
     auto gc = fixture(START);
     require(!GameAction(0).isValidAction(gc) && GameAction(1).isValidAction(gc), "Vampires options without Blood Vial");
     GameAction(1).execute(gc);
-    require(deck(gc) == expected(fixed), "Vampires (max HP) removal set");
+    require(deck(gc) == expected(), "Vampires (max HP) removal set");
     require(gc.maxHp == 56 && gc.curHp == 40, "Vampires max HP loss: " + std::to_string(gc.maxHp));
     require(gc.screenState == ScreenState::MAP_SCREEN && gc.gold == 123, "Vampires did not return control");
 
@@ -70,7 +62,7 @@ static void check(bool fixed) {
     vial.relics.add({RelicId::BLOOD_VIAL, 0});
     require(GameAction(0).isValidAction(vial), "Blood Vial option missing");
     GameAction(0).execute(vial);
-    require(deck(vial) == expected(fixed) && !vial.hasRelic(RelicId::BLOOD_VIAL) && vial.maxHp == 80,
+    require(deck(vial) == expected() && !vial.hasRelic(RelicId::BLOOD_VIAL) && vial.maxHp == 80,
             "Vampires (Blood Vial) removal set");
 
     auto leave = fixture(START);
@@ -95,18 +87,7 @@ static void staleSlot() {
 int main() {
     try {
         staleSlot();
-        setFlag(nullptr);
-        check(true);
-        setFlag("1");
-        check(true);
-        setFlag("0");
-        check(false);
-        setFlag("yes");
-        bool rejected = false;
-        try { auto gc = fixture(START); GameAction(1).execute(gc); }
-        catch (const std::runtime_error &) { rejected = true; }
-        require(rejected, "malformed flag accepted");
-        setFlag(nullptr);
+        check();
         std::cout << "vampires_strike_tag: OK\n";
         return 0;
     } catch (const std::exception &e) {
