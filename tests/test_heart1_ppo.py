@@ -252,7 +252,13 @@ class Heart1PpoTest(unittest.TestCase):
                 p = os.path.join(d, f"p{k}.jsonl.gz")
                 s.put(f"A/traj-0001-p{k}", p, {"games": 4, "sha256": ppo_cloud.sha256(p), "net": "net-0000",
                                                 "net_sha256": n0, "actor_s": 1.0, "seed_first": 1})
+            again.keep_state = {2}   # serve --keep-state 2: the fork point after update 2
             self.assertTrue(again.step(s.names("")))
+            loc = os.path.join(d, "local", "A")
+            self.assertFalse(os.path.exists(os.path.join(loc, "state-0001.pt")))
+            self.assertEqual(torch.load(os.path.join(loc, "state-0002.pt"), weights_only=False)["iteration"], 2)
+            with open(os.path.join(loc, "loop-0002.json")) as f:
+                self.assertEqual(len(json.load(f)["iterations"]), 2)
             self.assertEqual(sorted(s.names("")), ["A/config", "A/net-0001", "A/net-0002", "A/stats-0001",
                                                    "A/stats-0002"])
             import csv

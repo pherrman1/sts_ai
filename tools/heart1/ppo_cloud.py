@@ -525,6 +525,8 @@ class ArmLearner:
                       "learn_s": time.time() - t0, "pipeline": self.cfg["pipeline"]})
         self.meta["iterations"].append(stats)
         self._write_meta()
+        if it + 1 in self.keep_state:   # the fork point's loop.json (its first it + 1 iterations), next to state-NNNN.pt
+            shutil.copyfile(self.meta_path, os.path.join(self.dir, f"loop-{it + 1:04d}.json"))
         keep = os.path.join(self.dir, "parts")   # the raw games stay on the learner's disk
         os.makedirs(keep, exist_ok=True)
         for f in files:
@@ -547,7 +549,8 @@ def cmd_serve(argv):
                     help="memory only: ppo_train --micro-batch for every arm whose minibatch exceeds it (same "
                          "gradient up to rounding; recorded in each update's stats; 0 = each arm's own setting)")
     ap.add_argument("--keep-state", type=int, nargs="*", default=[],
-                    help="also keep each arm's checkpoint after these update counts as ARM/state-NNNN.pt (fork points)")
+                    help="also keep each arm's checkpoint and loop.json after these update counts as ARM/state-NNNN.pt and "
+                         "ARM/loop-NNNN.json (fork points; net-NNNN.bin is kept anyway)")
     a = ap.parse_args(argv)
     import torch
     device = a.device or ("cuda" if torch.cuda.is_available() else "cpu")
