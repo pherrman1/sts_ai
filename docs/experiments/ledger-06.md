@@ -26004,7 +26004,7 @@ critic (reward 1{Heart} + PBRS).
 Seeds: none.
 **Knowledge impact:** B2 line in `research/ppo-and-combat-leaf-literature.md`.
 
-## §748 — PPO recipe screen 1: 19 one-change arms × 15,360 sampled A20 games from heart1 (K15 combat): no arm PROMISING; LAM_1 (λ 1.0) WORSE −0.92 pp [−1.78, −0.08]; best KL_1 +0.72 [−0.14, +1.58] below whole-run noise (BASE_S1 +0.82); no in-sample rise → recipe stays BASE, no G1; the learning signal, not optimiser settings, is the next lever (PC + cloud, 2026-11-03)
+## §748 — PPO recipe screen 1: 19 one-change arms × 15,360 sampled A20 games from heart1 (K15 combat): no arm PROMISING; LAM_1 (λ 1.0) WORSE −0.92 pp [−1.78, −0.08]; best KL_1 +0.72 [−0.14, +1.58] below whole-run noise (BASE_S1 +0.82); no arm rises beyond seed-block noise → recipe stays BASE, no G1; next proposal: reward/learning-signal screen (PC + cloud, 2026-11-03)
 
 **Question (Philipp, 2026-11-01 "ich approve den ganzen run", 2026-11-02 "Ok 14 gb"):** which single PPO recipe
 changes improve heart1 under our engine's A20 self-play (screen before the S1 pilot)?
@@ -26019,10 +26019,10 @@ CSVs, per-iteration stats, stalls, serve log). Seeds 111400000-111415359 (all ar
   REW_ORIG +0.02, EP_4 −0.04, G_1024 −0.25, KL_01 −0.29, CLIP_01 −0.35, LR_3E5 −0.49 (all NOT_SHOWN); LAM_1 −0.92
   [−1.78, −0.08] WORSE (18 comparisons, ~0.45 false WORSE expected).
 - 9 stalled games (≤ 1 per part, no INCOMPLETE arm); the stall-free sensitivity D changes no verdict.
-- Mean Heart rate per seed third 8.0 / 7.6 / 7.7%; no arm rises. BASE approx-KL ~0.011 per update, entropy
+- Mean Heart rate per seed third 8.04 / 7.55 / 7.67% (unpaired thirds); no arm rises beyond seed-block noise (largest +0.47 pp, WU_0). BASE approx-KL ~0.011 per update, entropy
   0.208 → 0.222; LR_3E5 KL ~0.03-0.04, entropy → 0.33.
-**Interpretation:** the policy moves but without measurable gain; smaller/anchored steps lean better, larger ones
-worse, as expected with little signal in a sparse 1{Heart} reward (~40 kills per 512 games). Whole-run noise ~0.8 pp.
+**Interpretation (Inference):** the policy moves but without measurable gain; smaller/anchored steps lean better, larger ones
+worse, as expected with little signal in a sparse 1{Heart} reward (~40 kills per 512 games). Whole-run noise ~0.8 pp. The screen cannot separate a weak signal from too few/small updates, a weak critic or effects < 1 pp.
 **Decision:** S1 recipe = BASE, no G1 (no candidate). Next proposal (Philipp's go needed): a reward screen (act/floor/key
 shaping, PBRS with a simple potential; C++ φ emission needed), fewer arms, pre-registered futility rule. No default change.
 Seeds: 111400000-111415359 USED. Cost ≈ 290k games ≈ 1,600 core-h cloud + ~21 h PC GPU.

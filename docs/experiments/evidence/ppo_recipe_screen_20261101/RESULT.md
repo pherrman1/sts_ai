@@ -80,9 +80,9 @@ between thirds):
 
 | | First third | Middle third | Last third |
 |---|---|---|---|
-| Mean of 19 arms | 8.0% | 7.6% | 7.7% |
+| Mean of 19 arms | 8.04% | 7.55% | 7.67% |
 
-No arm shows a rising curve. Because the seeds change between thirds, the slight dip is not paired and is not
+No arm rises beyond seed-block noise: the largest first-to-last rise is +0.47 pp (WU_0, 7.71 → 7.85 → 8.18), and KL_DEC and BASE_S1 also end above their start. Because the seeds change between thirds, the slight dip is not paired and is not
 evidence of decline.
 
 **Training statistics** (`loop.json`):
@@ -98,7 +98,7 @@ Together these point to updates that move the policy without a useful signal beh
   steps (LR_3E5, λ 1.0; EP_4 at mid-run) lean worse, and smaller or anchored steps (KL_1, LR_3E6, EP_1) lean
   better. That is the pattern expected when the gradient carries little signal: staying close to the start net is
   the safest choice.
-- The bottleneck is more likely the learning signal than the optimiser settings. Next lever: reward design, with an
+- The bottleneck is more likely the learning signal than the optimiser settings. The screen cannot separate this from too few or too small updates, a weak critic, or effects under 1 pp. Next lever: reward design, with an
   act/floor/key bonus or PBRS (Philipp, 2026-11-02), and a critic that resolves fine state differences. Longer runs
   are a second lever.
 - Whole-run noise of ~0.8 pp means any later screen needs either far more games per arm or fewer, larger-effect arms.
