@@ -399,6 +399,7 @@ class ArmLearner:
         import torch
         import ppo_train
         self.store, self.arm, self.device = store, arm, device
+        self.keep_state = set()   # update counts after which state.pt is also kept as state-NNNN.pt (serve --keep-state)
         self.dir = os.path.join(local, arm)
         os.makedirs(self.dir, exist_ok=True)
         cfg_path = os.path.join(self.dir, "config.json")
@@ -513,6 +514,8 @@ class ArmLearner:
         nxt = os.path.join(self.dir, f"net-{it + 1:04d}.bin")
         learner.net.to("cpu").to_bin(nxt)
         ppo_train.save(learner, self.state)
+        if it + 1 in self.keep_state:   # a fork point other screens resume from (net, optimizer, iteration)
+            shutil.copyfile(self.state, os.path.join(self.dir, f"state-{it + 1:04d}.pt"))
         del learner
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
@@ -543,11 +546,15 @@ def cmd_serve(argv):
     ap.add_argument("--micro-batch", type=int, default=0,
                     help="memory only: ppo_train --micro-batch for every arm whose minibatch exceeds it (same "
                          "gradient up to rounding; recorded in each update's stats; 0 = each arm's own setting)")
+    ap.add_argument("--keep-state", type=int, nargs="*", default=[],
+                    help="also keep each arm's checkpoint after these update counts as ARM/state-NNNN.pt (fork points)")
     a = ap.parse_args(argv)
     import torch
     device = a.device or ("cuda" if torch.cuda.is_available() else "cpu")
     store = open_store(a.store)
     learners = [ArmLearner(store, a.local, arm, device) for arm in a.arms]
+    for x in learners:
+        x.keep_state = set(a.keep_state)
     if a.micro_batch > 0:
         for x in learners:
             x.hparams.micro_batch = a.micro_batch

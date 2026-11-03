@@ -62,7 +62,9 @@ plays 111470000 + 512·i ..., in 4 parts of 128 games. That gives 24 actor worke
   - **NOT_SHOWN** otherwise.
 - **Futility look** (one, at iteration 30, when every arm has trained iteration 29). Same statistic over iterations
   20-29 (`analyze.py --futility`). An arm with a CI upper bound < 0 is stopped and reported **FUTILE**; the learner
-  restarts without it and its workers are released. There is no early stop for success.
+  restarts without it and its workers are released. There is no early stop for success. BASE and BASE_S1 are controls: the look never stops them, and they always play to iteration 59.
+  The learner keeps every arm's checkpoint after update 30 (`serve --keep-state 30` writes `state-0030.pt`). The
+  architecture screen (#974, design B) forks from BASE's, and RESULT records its sha256.
 - **Stalls (as screen 1, #965/#966).** A combat over 1,000 decisions counts as a loss, capped at ⌊1%⌋ of a part (1
   per 128-game part); above the cap the arm is INCOMPLETE. RESULT lists stalls per arm and a sensitivity D without
   any stalled seed of the window; a sensitivity D that changes a verdict is named. If BASE or BASE_S1 is
