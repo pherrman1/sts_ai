@@ -1,0 +1,18 @@
+code_commit   280702e832c0528bee70c5f422c7d5149fed5aa2
+binary_sha256 71cfd280e121811f394ec8e6c285a1aca5368e100e2f6ae005d94442a6f922d1
+binary_sha256:IN_DECK cf7d4bbb8d3bb4dfeb0df287a91f8e2bfe3b7fdaf3533364f8b840fd2a4ab9f2
+store         git:https://github.com/pherrman1/sts_ai#ppo-xfer/arch
+# Launch record (PREREG.md "Binding under B"; README.md launch order). Philipp's typed go 2026-11-03 19:07 CET:
+# "Go mit 20 workern nach Screen 2". Workers W=1..20 = arms.txt parts in order.
+# code_commit = defaa930's engine build inputs + P1's apps diff (#978) only; tools = main a5121137.
+# IN_DECK binary: built at code_commit, preset linux-gcc-release-x86-64-v3, sha256 cf7d4bbb... (the file copied to
+#   /mnt/project-files/bin-cache; review K's independent build gave the same sha). Other arms: screen 2's 71cfd280.
+# Local sentinel pre-check (cloud, 2026-11-03): cf7d4bbb vs 71cfd280 with heart1.bin (as stored and x3 zero-init),
+#   smoke seeds 111459990-111459993, salt 30: SENTINEL_OK (all trajectory lines equal).
+# Fork point (screen 2 BASE, serve --keep-state 30):
+fork_state_sha256   cd1c90c6ec81e37dd1ce54b2691b8ff95b0ba249521c89fbc58f4174863728a1
+fork_loop_sha256    70d0a8cf40a6e32a4fdaac99ce6a687bd00ddeb866a9b4eff82efa930b0a0e2a
+fork_net_sha256     f7fd6086e9073cf2599cb9c957e49e526fcd36f3c9598c85b97bf4c8e038a998
+# Seeds: screen 2's block, iterations 31-59 (111485872-111500719), paired with screen 2's controls; no new block.
+# Pending before the workers start (filled in on the PC after screen 2's SERVE_DONE): learner check, the
+# iteration-30 parts' sha256 (each arm's config "fork"), cost rule ms/record, PC sentinel on BASE net-0029.
