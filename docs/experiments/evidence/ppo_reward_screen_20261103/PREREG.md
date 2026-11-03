@@ -21,6 +21,8 @@ bonus changes the objective; it is judged by Heart kills like every arm.
 - Start net heart1 (`1e92f2a6`), extended with zero-init inputs by `ppo_cloud.py init`.
 - Combat K15: `actors_frozen.env` is screen 1's file, byte for byte.
 - Actors' one_combat `71cfd280`. Build inputs are unchanged since `defaa93`, so the binary comes from the bin cache.
+  Every arm stays on this engine, even if the combat-rule fixes (#976) reach main during the run. RUN_COMMIT is #975's
+  reviewed head, which has the same build inputs as `defaa93`; it is not a main merge commit.
 - `STS_OOC_HEART1_PPO=1`, temperature 1, salt = iteration, A20, `--pipeline 1`.
 - Base recipe: `ppo_train.py` defaults, i.e. reward `heart`, γ 1, λ 0.97, clip 0.2, 2 epochs, minibatch 192, lr
   1e-5, entropy 0.002, KL 0, 3 value-only warm-up iterations, 512 games per iteration.
