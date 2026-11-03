@@ -122,6 +122,45 @@ class Heart1PpoTest(unittest.TestCase):
                 self.assertEqual(s_ref[k], s_same[k])
             self.assertEqual(s_ref["minibatches"], s_ch["minibatches"])
 
+    def test_phi_potentials(self):
+        """heart_phi: potentials computed while loading (both loader paths), telescoping, and the fit's floor table."""
+        import csv
+        import json
+        import ppo_model
+        import ppo_phi
+        import ppo_phi_fit
+        import ppo_train
+        root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
+        traj = os.path.join(root, "docs", "experiments", "evidence", "ppo_s0_smoke_20261101", "cov8.jsonl.gz")
+        with tempfile.TemporaryDirectory() as d:
+            rows = [("A", 0, 1, 1, 56), ("A", 0, 2, 0, 16), ("A", 0, 3, 0, 33), ("A", 0, 4, 0, "")]
+            with open(os.path.join(d, "games-0000.csv"), "w", newline="") as f:
+                w = csv.writer(f)
+                w.writerow(["arm", "iteration", "seed", "heart_kill", "floor", "net"])
+                for r in rows:
+                    w.writerow(list(r) + ["net-0000"])
+            out = os.path.join(d, "phi.json")
+            ppo_phi_fit.cmd_floor_table(["--games", os.path.join(d, "games-*.csv"), "--out", out])
+            t = json.load(open(out))["table"]
+            # 3 games with a floor, 1 kill: P(kill | reached f) = 1/3 up to 16, 1/2 on 17..33, 1 on 34..56.
+            self.assertAlmostEqual(t[16], 1 / 3, places=5)
+            self.assertAlmostEqual(t[17], 1 / 2, places=5)
+            self.assertAlmostEqual(t[34], 1.0, places=5)
+            m = ppo_phi.load(out)
+            trim = ppo_model.PolicyNet(16, 2, 32, 1, {**{k: 8 for k in ppo_model.TABLES},
+                                                        "fixed_action": ppo_model.FA_COUNT}).trim_map
+            for trim_map, workers in ((None, 1), (trim, 2)):
+                games = ppo_train.load_games([traj], trim_map, workers=workers, phi_model=m)
+                for g in games:
+                    self.assertTrue(g["steps"])
+                    for s in g["steps"]:
+                        self.assertEqual(s["phi_py"], ppo_phi.value(m, s, None))
+                    r = ppo_train.step_rewards(g, "heart_phi", 1.0)
+                    heart = 1.0 if g["outcome"].get("heart_kill") else 0.0
+                    self.assertAlmostEqual(sum(r), heart - g["steps"][0]["phi_py"], places=9)
+            with self.assertRaises(ValueError):
+                ppo_phi.load(out, sha256="0" * 64)
+
     def test_stalled_game_lines(self):
         """ppo_cloud actor: bestbench stall failures become loss game lines; anything else stops the actor."""
         import json

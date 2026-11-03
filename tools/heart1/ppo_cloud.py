@@ -241,7 +241,7 @@ def cmd_init(argv):
     from ppo_model import PolicyNet
     hp = argparse.ArgumentParser(prog="learner")
     ppo_train.add_hparams(hp)
-    hp.parse_args(learner_argv)   # validate now, not on the learner
+    ppo_train.phi_model_for(hp.parse_args(learner_argv))   # validate now (incl. the phi model's sha), not on the learner
     store = open_store(args.store)
     if store.names(f"{args.arm}/config"):
         sys.exit(f"{args.arm}/config exists in the store; an arm is frozen once")
@@ -423,6 +423,7 @@ class ArmLearner:
         # Each step reloads it from state.pt, the same path a restart takes.
         learner = ppo_train.make_learner(self.hparams, torch.device("cpu"))
         self.iteration0, self.trim_map = learner.iteration, learner.net.trim_map
+        self.phi_model = ppo_train.phi_model_for(self.hparams)   # None unless --reward heart_phi (sha checked)
         del learner
         n = len(self.meta["iterations"])
         if self.iteration0 == n + 1 and os.path.exists(os.path.join(self.dir, f"net-{n + 1:04d}.bin")):
@@ -489,7 +490,7 @@ class ArmLearner:
                          f"{sha256(local_net)[:12]}")
             files.append(f)
             metas.append(m)
-        games = ppo_train.load_games(files, self.trim_map)
+        games = ppo_train.load_games(files, self.trim_map, phi_model=self.phi_model)
         if len(games) != self.cfg["games"]:
             sys.exit(f"{self.arm} iteration {it}: {len(games)} games, expected {self.cfg['games']}")
         # Per-game outcomes for the paired analysis (a rerun of this iteration after a crash rewrites its rows).
