@@ -4,11 +4,11 @@
 # bit-identical to heart1) and GC = CRIT_PRE's net-0060 (1575c27e). Both in PPO mode as trained (STS_OOC_HEART1_PPO=1:
 # the net makes every out-of-combat decision, keys included) at temperature 0 (argmax, the eval policy).
 # Combat: G0's base B = flat Silver 1,000 (learned stop off, Act 4 strong off, g7f_E root and tree prior, boss prior
-# playouts), not the K15 self-play combat. Binary 71cfd280 (build inputs defaa930, the screen's actors' engine).
+# playouts), not the K15 self-play combat. Binary ca8db597 (main 520d4e4b, x86-64-v3; the screen's actors played on 71cfd280).
 # Seeds 111520000-111522047 (new), smokes 111529990-111529991 (local, not analysed). Order rotated by seed. Exits 0.
 set -uo pipefail
 REPO=$1 RUN=$2 OUT=$3 SEED=$4
-[ "$(sha256sum < "$RUN/one_combat" | cut -c1-16)" = 71cfd280e121811f ] || { echo "bad $RUN/one_combat" >&2; exit 2; }
+[ "$(sha256sum < "$RUN/one_combat" | cut -c1-16)" = ca8db597c04fca7d ] || { echo "bad $RUN/one_combat" >&2; exit 2; }
 [ "$(sha256sum < "$RUN/critpre.bin" | cut -c1-16)" = 1575c27e92fb35c2 ] || { echo "bad $RUN/critpre.bin" >&2; exit 2; }
 [ "$(sha256sum < "$RUN/heart1.bin" | cut -c1-16)" = 4288d0956ab75c3c ] || { echo "bad $RUN/heart1.bin" >&2; exit 2; }
 if ! { { [ "$SEED" -ge 111520000 ] && [ "$SEED" -le 111522047 ]; } || [ "$SEED" = 111529990 ] || [ "$SEED" = 111529991 ]; }; then

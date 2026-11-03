@@ -18,7 +18,9 @@ Both nets came to the cloud via the single-commit ref `ppo-xfer/g1-nets` (6d5a2a
 `/mnt/project-files/ppo-g1-critpre/`; `campaign.manifest` hash-checks them.
 
 **Runner** (`run_unit.sh`): `bestbench 1000 1 20 SEED` through `tools/seed_guard.sh`.
-- **Engine:** binary `71cfd280` (build inputs defaa930), the screen's actors' engine. It does not include #970/#976.
+- **Engine:** current main (`520d4e4b`, binary `ca8db597`, linux-gcc-release-x86-64-v3), including the default-on
+  rule fixes #970/#976. The screen's actors played on `71cfd280` (defaa930); G1 measures real play on today's engine,
+  and both arms share it.
 - **Out of combat:** `STS_OOC_HEART1_PPO=1`, so the net makes every out-of-combat decision, keys included, as in
   training. `STS_OOC_HEART1_TEMPERATURE=0` (argmax, the eval policy). `STS_OOC_MCTS=0`.
 - **Combat:** G0's base B: flat Silver 1,000, learned stop off, Act 4 strong off, g7f_E root and tree prior, boss
@@ -27,8 +29,8 @@ Both nets came to the cloud via the single-commit ref `ppo-xfer/g1-nets` (6d5a2a
   net, the seed/ascension/sims line, flat budget, the root prior and the `[heart1_ppo]` game line.
 
 **Seeds.** 111520000-111522047 (2,048, new: no use on main, in the ledger or in any PREREG; clear of the arch screen's
-111440000-111460001). Smokes 111529990-111529991, local, not analysed. Both smokes ran rc 0 for both arms, with 0
-fallbacks and 9-24 s per game.
+111440000-111460001). Smokes 111529990-111529991, local, not analysed. Both smokes ran rc 0 for both arms, first on `71cfd280` and then on
+`ca8db597`, with 0 fallbacks and 7-24 s per game. The four games end on the same floors on both binaries.
 
 **Primary analysis** (`analyze.py`, frozen here):
 - A seed counts only if both games finished rc 0. Missing games are listed, not imputed.

@@ -1,6 +1,6 @@
 name          ppo-g1-critpre
 code_commit   520d4e4be331170cc088ec356f089d0bf01def29
-binary_sha256 unset
+binary_sha256 ca8db597c04fca7d107c9e6a6517f4758c5f290496b8231690f68fad9c280ceb
 workers       8
 share         /mnt/project-files/ppo-g1-critpre
 configure_preset linux-gcc-release-x86-64-v3
