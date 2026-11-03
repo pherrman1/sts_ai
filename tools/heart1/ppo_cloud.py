@@ -241,7 +241,7 @@ def cmd_init(argv):
     from ppo_model import PolicyNet
     hp = argparse.ArgumentParser(prog="learner")
     ppo_train.add_hparams(hp)
-    hp.parse_args(learner_argv)   # validate now, not on the learner
+    ppo_train.phi_model_for(hp.parse_args(learner_argv))   # validate now (incl. the phi model's sha), not on the learner
     store = open_store(args.store)
     if store.names(f"{args.arm}/config"):
         sys.exit(f"{args.arm}/config exists in the store; an arm is frozen once")
@@ -399,6 +399,7 @@ class ArmLearner:
         import torch
         import ppo_train
         self.store, self.arm, self.device = store, arm, device
+        self.keep_state = set()   # update counts after which state.pt is also kept as state-NNNN.pt (serve --keep-state)
         self.dir = os.path.join(local, arm)
         os.makedirs(self.dir, exist_ok=True)
         cfg_path = os.path.join(self.dir, "config.json")
@@ -423,6 +424,7 @@ class ArmLearner:
         # Each step reloads it from state.pt, the same path a restart takes.
         learner = ppo_train.make_learner(self.hparams, torch.device("cpu"))
         self.iteration0, self.trim_map = learner.iteration, learner.net.trim_map
+        self.phi_model = ppo_train.phi_model_for(self.hparams)   # None unless --reward heart_phi (sha checked)
         del learner
         n = len(self.meta["iterations"])
         if self.iteration0 == n + 1 and os.path.exists(os.path.join(self.dir, f"net-{n + 1:04d}.bin")):
@@ -489,7 +491,7 @@ class ArmLearner:
                          f"{sha256(local_net)[:12]}")
             files.append(f)
             metas.append(m)
-        games = ppo_train.load_games(files, self.trim_map)
+        games = ppo_train.load_games(files, self.trim_map, phi_model=self.phi_model)
         if len(games) != self.cfg["games"]:
             sys.exit(f"{self.arm} iteration {it}: {len(games)} games, expected {self.cfg['games']}")
         # Per-game outcomes for the paired analysis (a rerun of this iteration after a crash rewrites its rows).
@@ -512,6 +514,8 @@ class ArmLearner:
         nxt = os.path.join(self.dir, f"net-{it + 1:04d}.bin")
         learner.net.to("cpu").to_bin(nxt)
         ppo_train.save(learner, self.state)
+        if it + 1 in self.keep_state:   # a fork point other screens resume from (net, optimizer, iteration)
+            shutil.copyfile(self.state, os.path.join(self.dir, f"state-{it + 1:04d}.pt"))
         del learner
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
@@ -521,6 +525,8 @@ class ArmLearner:
                       "learn_s": time.time() - t0, "pipeline": self.cfg["pipeline"]})
         self.meta["iterations"].append(stats)
         self._write_meta()
+        if it + 1 in self.keep_state:   # the fork point's loop.json (its first it + 1 iterations), next to state-NNNN.pt
+            shutil.copyfile(self.meta_path, os.path.join(self.dir, f"loop-{it + 1:04d}.json"))
         keep = os.path.join(self.dir, "parts")   # the raw games stay on the learner's disk
         os.makedirs(keep, exist_ok=True)
         for f in files:
@@ -542,11 +548,16 @@ def cmd_serve(argv):
     ap.add_argument("--micro-batch", type=int, default=0,
                     help="memory only: ppo_train --micro-batch for every arm whose minibatch exceeds it (same "
                          "gradient up to rounding; recorded in each update's stats; 0 = each arm's own setting)")
+    ap.add_argument("--keep-state", type=int, nargs="*", default=[],
+                    help="also keep each arm's checkpoint and loop.json after these update counts as ARM/state-NNNN.pt and "
+                         "ARM/loop-NNNN.json (fork points; net-NNNN.bin is kept anyway)")
     a = ap.parse_args(argv)
     import torch
     device = a.device or ("cuda" if torch.cuda.is_available() else "cpu")
     store = open_store(a.store)
     learners = [ArmLearner(store, a.local, arm, device) for arm in a.arms]
+    for x in learners:
+        x.keep_state = set(a.keep_state)
     if a.micro_batch > 0:
         for x in learners:
             x.hparams.micro_batch = a.micro_batch
