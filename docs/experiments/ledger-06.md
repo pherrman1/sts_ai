@@ -26119,3 +26119,26 @@ more in Act 1 and converts more late runs into kills.
 Philipp. No default change.
 Seeds: 111520000-111522047 and 111529990-111529991 USED. Cost ≈ 4,096 games ≈ 29 core-h.
 **Knowledge impact:** KB `research/a20-ppo-plan.md` (G1 row).
+
+## §753 — Prior-share stop H = 0.9 at A20 map roots vs the 1,024 default, 1,536 paired seeds by control reuse: NOT_WORSE, Heart −0.07 pp [−0.59, +0.46] at 0.38x map sims; diverging seeds 19 vs 20 kills (cloud, 2026-11-03)
+
+**Question (Philipp, 2026-11-01 "Hm ich will eigentlich hauptsächlich n speedup", resumed 2026-11-03 20:19 CET "Mach
+auf 4 workern weiter"):** does #942's map-root prior-share stop (`STS_OOC_MCTS_PRIOR_SHARE_STOP=0.9`) cost less than
+1.5 pp of Heart kills against the ADR-0065 1,024 default?
+**Data:** [pre-registration](evidence/prior_share_ni_20261101/README.md) (J PASS after deltas),
+[RESULT](evidence/prior_share_ni_20261101/RESULT.md), `result.json`, `divergence_ps90.json`. Control = §741 arm B
+(else §727 arm A) records; arm played only on the 49 seeds whose control picks differ under the rule plus 32
+sentinels (ADR-0064 reuse). 81 units on 4 workers, RUN_COMMIT aefeffc7, binary d3289b52 (code 85bf1ba0).
+`verify_campaign.py` 81 OK, 0 missing or bad; no failed units. Sentinels 32/32 identical; diverging units 49/49
+prefix and pick as predicted.
+**Result:**
+- Heart kill R 25.72%, C 25.65%, d −0.07 pp [−0.59, +0.46]; SPRT nonregression accepts at 128 pairs (LLR 3.76).
+- Diverging seeds: 19 vs 20 kills (−2.0 pp [−18.4, +12.2]). Secondaries (Act 4, Heart reached, floor, deaths by act)
+  all CIs include 0.
+- Map-root sims 0.38x of 1,024; diverging games 6,512 vs 18,662 map sims per game.
+**Interpretation (Inference):** the gate is nearly guaranteed by construction (3% of games diverge); the diverging-seed
+count shows no visible loss. End-to-end speedup is smaller than the map-sim ratio because combat dominates CPU.
+**Decision:** option stays default off here; a default change is Philipp's call (own PR + ADR on current main, which
+has #957/#970/#976 that this run predates).
+Seeds: none new (111312000-111313535 replayed). Cost ≈ 81 games ≈ 14 core-h.
+**Knowledge impact:** KB `operations/environment-variables.md` (`STS_OOC_MCTS_PRIOR_SHARE_STOP` row: NI result).
