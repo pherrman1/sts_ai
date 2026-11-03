@@ -13,3 +13,6 @@ Launch order (author):
    after a container reset, `setup` and `start` again.
 4. End (PC, deletes are refused from the cloud): `python3 tools/heart1/ppo_cloud.py cleanup git:https://github.com/pherrman1/sts_ai#ppo-xfer/screen1 $(awk '!/^#/{print $1}' arms.txt)`;
    the smoke arm likewise with `#ppo-xfer/smoke1 SMOKE`.
+
+Result: [RESULT.md](RESULT.md) (no arm PROMISING; LAM_1 WORSE; S1 recipe = BASE). Data `s1res.tgz` (games CSVs,
+loop stats, stalls, serve log), analysis `analyze.py` → `result.json`.
