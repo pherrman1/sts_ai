@@ -7,7 +7,6 @@
 # the P1 diff built on defaa930 (the commit that produced 71cfd280), sha256 in screen.manifest.
 # name       games start end  warmup parts init               binary   learner flags
 IN_DECK      512   30    60   0      4     screen2:BASE@0030  P1       --seed 0 --inputs x3_deck
-IN_RUN       512   30    60   0      4     screen2:BASE@0030  P1       --seed 0 --inputs x3_run
 DEPTH6       512   30    60   0      4     screen2:BASE@0030  screen2  --seed 0 --extra-blocks 2
 CRITIC_SEP   512   30    60   0      4     screen2:BASE@0030  screen2  --seed 0 --critic separate
 AUX          512   30    60   0      4     screen2:BASE@0030  screen2  --seed 0 --aux-heads floor,act4 --aux-weight 0.1

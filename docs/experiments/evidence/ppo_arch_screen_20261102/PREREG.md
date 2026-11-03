@@ -45,13 +45,13 @@ semantics below are binding):
 | BASE | none | screen 1 net-0000, BASE recipe | reference |
 | BASE_S1 | learner seed 1 | same | noise floor of a whole run (minibatch order and chaotic divergence; screen 1's definition, +0.82 pp there) |
 | IN_DECK | deck aggregate inputs `x3_deck` (10 scalars on the fixed-observation token): counts of attacks, skills, powers, Strikes+Defends, exhaust-tagged cards, cards that draw; upgraded share; mean cost; deck size; curse count | zero-initialised FixedVec | hand aggregates learn faster than counting from tokens at 10^4 games (tabular-vs-net evidence, literature page Problem 1) |
-| IN_RUN | public run inputs `x3_run` (6 scalars): card-removal price, removals bought, floors to the next boss, elite rooms reachable ahead on the current map, Wing Boots charges, free potion slots | zero-initialised FixedVec | the plan's list of public state the net does not see |
+| ~~IN_RUN~~ | **dropped 2026-11-03 (amendment):** all six quantities are already inputs (x2_run removal price and count, the Wing Boots relic counter, potion tokens incl. empty slots, the floor, map-DAG minE/maxE per node) | — | — |
 | DEPTH6 | two extra transformer blocks after block 4 | `out_proj` and `w2` zero-initialised in the new blocks (pre-norm residual blocks are then exact identities) | more reasoning steps over the token set; the single "bigger" arm |
 | CRITIC_SEP | separate critic trunk | critic trunk = copy of the policy trunk at start, with its own RMSNorm and value head; the policy trunk receives no value gradient | the shared mean-pooled linear head is the thinnest part of the design; §747 and the value-flattening paper point at the critic |
 | AUX | auxiliary heads on the pooled trunk: final floor / 57 (MSE) and Act 4 reached (BCE), weight 0.1 each, targets from the game line | heads zero-initialised, policy unchanged | KataGo's auxiliary-target efficiency gain (Verified in Go) |
 | VAL_SPARSE | value loss on a subsample per game: each act's first decision plus 3 uniformly random decisions (seeded per game), policy loss on all decisions | learner-only change | value flattening (arXiv 2609.18708; Extracted): sparse supervision gives the critic resolution at the states that matter |
 
-Design A: eight arms, 16 actor parts, 16 workers. Design B (chosen): the six change arms in `arms.txt`, 24 actor parts.
+Design A: eight arms, 16 actor parts, 16 workers. Design B (chosen): the five change arms in `arms.txt` (IN_RUN dropped), 20 actor parts.
 
 **Seeds.** All arms play the block 111440000-111455359 (15,360 seeds; no use on main, in the ledger or in any
 evidence file: the only nine-digit strings with that prefix in the repository are decimal fractions inside model
@@ -81,7 +81,7 @@ decided as B below: fewer arms that run later and reuse screen 2's controls.
 
 **Design choice: B (Philipp, 2026-11-03 10:37 CET, decision card).** A stays as the written fallback.
 - **A, as written:** 8 arms × 30 iterations from net-0000, fresh controls. ~±0.9 pp; self-contained.
-- **B, continuation:** every construction above is policy-preserving from *any* net, so the six change arms start
+- **B, continuation:** every construction above is policy-preserving from *any* net, so the change arms (five after the IN_RUN amendment) start
   from screen 2's BASE learner state after update 30 (screen 2 runs fresh BASE and BASE_S1 from heart1 for 60 × 512 on
   the hardened learner code of #973, seed block 111470000-111500719, frozen in its PREREG). They use screen 2's
   saved BASE learner state at that point (`serve --keep-state 30`: `~/ppo-screen2/BASE/state-0030.pt` and
@@ -101,8 +101,8 @@ decided as B below: fewer arms that run later and reuse screen 2's controls.
   iteration counter 30. That file and `net-0030.bin` are the fork point; screen 2's RESULT records their sha256 and
   this screen's `screen.manifest` repeats them. #975 must be merged and the serve started with `--keep-state 30`
   before screen 2 reaches update 30; otherwise this design falls back to a fresh-Adam fork from `net-0030.bin`
-  (recorded as an amendment, re-reviewed by K) and the six arms keep their seeds.
-- **Arms:** IN_DECK, IN_RUN, DEPTH6, CRITIC_SEP, AUX, VAL_SPARSE, learner seed 0. Each arm's start state = the fork
+  (recorded as an amendment, re-reviewed by K) and the arms keep their seeds.
+- **Arms:** IN_DECK, DEPTH6, CRITIC_SEP, AUX, VAL_SPARSE, learner seed 0. Each arm's start state = the fork
   point with the arm's construction (arms table) applied to net-0030; existing Adam moments are kept, new tensors
   get zero moments. P2 provides this as `ppo_cloud.py init STORE ARM --fork-dir ~/ppo-screen2/BASE --fork-at 30
   --local ~/ppo-screen2 ... -- <arm flags>` on the PC, which writes the arm's `state.pt` at iteration 30, its
@@ -112,19 +112,19 @@ decided as B below: fewer arms that run later and reuse screen 2's controls.
   111470000, iteration i plays exactly screen 2's seeds of iteration i. Under `--pipeline 1` iteration i is played
   by net-(i−1), so iteration 30 was played by BASE's net-0029, before any arm change exists: every arm's iteration
   30 games equal BASE's. They are not replayed; each arm's update 31 trains on BASE's kept iteration-30 `parts/`
-  (copied, sha256 in the manifest). The arms' own games start at iteration 31 (net-0030 of the arm). 6 arms × 4
-  parts = 24 actor parts.
+  (copied, sha256 in the manifest). The arms' own games start at iteration 31 (net-0030 of the arm). 5 arms × 4
+  parts = 20 actor parts.
 - **Binaries and engine drift.** DEPTH6, CRITIC_SEP, AUX and VAL_SPARSE change only the learner; their actors run
-  screen 2's binary (sha256 `71cfd280e121…22d1`) and environment unchanged. IN_DECK and IN_RUN need the P1 binary,
+  screen 2's binary (sha256 `71cfd280e121…22d1`) and environment unchanged. IN_DECK needs the P1 binary,
   which is built from defaa930 (the code commit that produced binary 71cfd280, screen 1 `screen.manifest`; screen 2
   uses the same binary) with only P1's diff applied (a build branch, not main), so no
   engine change merged after that commit (e.g. #970, #976) enters; its sha256 goes in the manifest. If a P1 build
   on that commit is not possible, every default-on engine flag merged after it is pinned to `=0` in these arms'
   env, listed in the manifest.
-- **Actor sentinel (ADR-0064 §2, IN_DECK and IN_RUN only).** Before those arms run: the P1 binary replays 32 of
-  screen 2's BASE iteration-30 seeds with BASE's net-0029, once as stored and once extended by each input arm's
+- **Actor sentinel (ADR-0064 §2, IN_DECK only).** Before that arm runs: the P1 binary replays 32 of
+  screen 2's BASE iteration-30 seeds with BASE's net-0029, once as stored and once extended by IN_DECK's
   zero-initialised construction. Every trajectory line (each decision with its logp, and the game line) and every
-  outcome must equal screen 2's BASE record. A failure stops IN_DECK and IN_RUN (the four learner-only arms go on)
+  outcome must equal screen 2's BASE record. A failure stops IN_DECK (the four learner-only arms go on)
   until a fixed binary passes.
 - **Learner check (all arms).** P2 with all arch flags off, started from `state-0030.pt` and trained on BASE's
   iteration-30 `parts/` on the PC GPU with screen 2's settings, must reproduce screen 2's BASE `net-0031.bin`
@@ -138,8 +138,8 @@ decided as B below: fewer arms that run later and reuse screen 2's controls.
   varies less than BASE_S1 − BASE (an independent run), so the noise-floor condition is conservative.
 - **Screen 2 outcome:** if screen 2 has a PROMISING arm, B still forks from screen 2's BASE (not from the winner);
   combining is S1's job.
-- **Workers and cost:** 6 arms × 29 played iterations × 512 games ≈ 89,000 games ≈ 140 core-h (5.5 s/game, DEPTH6
-  more), learner 6 × 29 updates on the PC GPU; worker count with Philipp's go.
+- **Workers and cost:** 5 arms × 29 played iterations × 512 games ≈ 74,000 games ≈ 115 core-h (5.5 s/game, DEPTH6
+  more), learner 5 × 29 updates on the PC GPU; worker count with Philipp's go.
 
 **Critic secondary (pre-registered, offline, no seeds).** For BASE, CRITIC_SEP, AUX and VAL_SPARSE the final net's
 critic takes the §747 teacher check on the 20,677 post-fight states of `heart1_value_leaf_teacher_20261102`
@@ -154,7 +154,7 @@ screen. A PROMISING arm is a hypothesis for S1, not a default; the final net sti
 seeds, policy alone, Silver 1,000). No ADR before S1.
 
 **Prerequisites (implementation PRs, each with the implementation-review skill, before launch).**
-- P1 (native + torch): `x3_deck` and `x3_run` FixedVec inputs in `apps/one_combat/heart1_policy.cpp` and
+- P1 (native + torch): the `x3_deck` FixedVec input (IN_RUN's `x3_run` dropped) in `apps/one_combat/heart1_policy.cpp` and
   `tools/heart1/ppo_model.py` (zero-init, exported always, parity by `tools/heart1/ppo_parity.py --perturb` on cov8:
   max |Δlogit| ≤ 1e-4 and a perturbation that moves logits by ≥ 1). Also the native cost measurement command.
 - P2 (learner; design B also needs `ppo_cloud.py init --fork-dir/--fork-at/--local` and the learner check under
@@ -191,6 +191,10 @@ same seeds.
 - 2026-11-03 (before launch), P2 implementation: the fork command is `init --fork-dir/--fork-at/--local` (not
   `--from-state/--construct`); critic and aux tensors stay in `state.pt`, not in the native .bin (semantics
   unchanged).
+- 2026-11-03 14:54 CET (before launch): IN_RUN dropped (Philipp, decision card). Its six quantities are already
+  net inputs: removal price and removals bought (`x2_run`, #941), Wing Boots charges (relic counter), free potion
+  slots (potion tokens incl. empty slots), floors to the boss (the floor on the fixed token), elites ahead (map-DAG
+  minE/maxE per node). Design B now has five change arms.
 
 **Knowledge impact.** `a20-ppo-plan.md` "Training recipe" row "net size, start" points here; results go to the
 ledger as one entry and to the plan page; an ADR only after S1 and G1.
