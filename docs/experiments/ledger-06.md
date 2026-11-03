@@ -26097,3 +26097,25 @@ architecture screen (design B) needs a PREREG amendment for CRITIC_SEP/VAL_SPARS
 default change.
 Seeds: 111470000-111500719 USED. Cost ≈ 184k games ≈ 210 core-h cloud + ~9 h PC GPU (+ ~1 h pre-training).
 **Knowledge impact:** KB `research/a20-ppo-plan.md` (screen-2 row, reward axis result).
+
+## §752 — G1: CRIT_PRE's PPO net-0060 vs heart1, policy alone, 2,048 paired A20 seeds (Silver 1,000): INCONCLUSIVE, Heart +0.78 pp [−1.12, +2.64] (18.12% vs 17.33%), gate CAP; mean floor −1.61 [−2.37, −0.85], more Act-1 deaths → net not adopted (cloud, 2026-11-03)
+
+**Question (Philipp, 2026-11-03 20:16 CET "Ja Spiel gegen Heart1 auf 8 workern"):** does reward screen 2's PROMISING
+CRIT_PRE arm (§751) yield a net that plays A20 better than its start net heart1 on fresh paired seeds?
+**Data:** [PREREG](evidence/ppo_g1_critpre_20261103/PREREG.md) (K PASS after deltas R1-R3),
+[RESULT](evidence/ppo_g1_critpre_20261103/RESULT.md), `result.json`, `games.csv`. 2,048 units on 8 cloud workers,
+RUN_COMMIT 01ccb389, binary ca8db597 (main 520d4e4b), nets 4288d095 (heart1 as net-0000) and 1575c27e (CRIT_PRE
+net-0060), PPO mode at temperature 0, combat B (flat Silver 1,000 with the g7f_E prior). `verify_campaign.py`: 2,048 OK,
+0 missing or bad; every game rc 0, no combat aborts, no dropped seed.
+**Result:**
+- Heart kill heart1 17.33%, CRIT_PRE 18.12%, D +0.78 pp [−1.12, +2.64]. The sequential gate (gainer, d1 = +2 pp) hit
+  CAP with LLR −0.46, so the fixed-sample reading gives INCONCLUSIVE.
+- Act 3 cleared −0.63 pp [−2.88, +1.61]; mean final floor −1.61 [−2.37, −0.85]; Act-1 deaths 441 vs 348; runs
+  reaching floor 51 783 vs 833. CPU 24.7 vs 26.0 s per game.
+**Interpretation (Inference):** no gain at the gate's 2 pp scale. The point estimate equals the screen's in-sample D,
+so a small gain is neither shown nor excluded. CRIT_PRE's greedy policy differs systematically from heart1's: it dies
+more in Act 1 and converts more late runs into kills.
+**Decision:** the net is not adopted, and the S1 pilot does not start from it; the next PPO step is decided with
+Philipp. No default change.
+Seeds: 111520000-111522047 and 111529990-111529991 USED. Cost ≈ 4,096 games ≈ 29 core-h.
+**Knowledge impact:** KB `research/a20-ppo-plan.md` (G1 row).
