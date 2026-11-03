@@ -82,14 +82,17 @@ to be decided before review K (open, see "Open design choice"): more games per a
 **Open design choice (decided by Philipp before review K; recorded here as an amendment).**
 - **A, as written:** 8 arms × 30 iterations from net-0000, fresh controls. ~±0.9 pp; self-contained.
 - **B, continuation:** every construction above is policy-preserving from *any* net, so the six change arms start
-  from screen 1's BASE net after iteration 29 (its saved learner state; Adam moments of new tensors start at 0) and
-  run 30 more iterations on the seeds screen 2 uses for its BASE/BASE_S1 continuation, evaluated on iterations
-  40-59 as screen 2. The controls are then screen 2's BASE and BASE_S1 continuation, reused under ADR-0064's
-  control-reuse rule: the P1 binary with zero-initialised inputs replays 32 of those seeds and every game must be
-  identical before any change arm runs; a failed sentinel forces fresh BASE/BASE_S1 arms. Six arms instead of eight,
-  ~±0.6 pp (screen 2's estimate), and later iterations, where the policy has drifted from heart1. Requires screen
-  2's continuation seeds and the screen 1 BASE learner state (on the PC, `~/ppo-screen1`) to be frozen in
-  `screen.manifest`.
+  from screen 2's BASE net after its iteration 29 (screen 2 runs fresh BASE and BASE_S1 from heart1 for 60 × 512 on
+  the hardened learner code of #973, seed block 111470000-111500719, frozen in its PREREG). They use screen 2's
+  saved BASE learner state at that point (Adam moments of new tensors start at 0) and play iterations 30-59 on
+  screen 2's seeds for those iterations, evaluated on iterations 40-59 as screen 2. The controls are screen 2's BASE
+  and BASE_S1, reused under ADR-0064's control-reuse rule: the P1 binary with zero-initialised inputs replays 32 of
+  those seeds and every game must be identical before any change arm runs; a failed sentinel forces fresh
+  BASE/BASE_S1 continuations. Six arms instead of eight, ~±0.6 pp (screen 2's estimate), and later iterations,
+  where the policy has drifted from heart1. Requires screen 2's BASE learner state after iteration 29 to be kept on
+  the PC and its sha frozen in `screen.manifest`; the learner code must be screen 2's (#973), so P2 must not change
+  BASE's updates. Under B this screen plays no seeds of its own beyond the sentinel; the reserved block above stays
+  reserved for A or for fresh controls.
 
 **Critic secondary (pre-registered, offline, no seeds).** For BASE, CRITIC_SEP, AUX and VAL_SPARSE the final net's
 critic takes the §747 teacher check on the 20,677 post-fight states of `heart1_value_leaf_teacher_20261102`
