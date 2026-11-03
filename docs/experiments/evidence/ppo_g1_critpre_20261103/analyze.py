@@ -4,7 +4,9 @@
     python3 analyze.py OUT_ROOT result.json [pairs.csv]
 
 OUT_ROOT holds one directory per seed with ARM-SEED.{done,log} from run_unit.sh (the unpacked worker tars).
-A seed counts only if both of its games finished rc 0; missing or bad games are listed, never imputed.
+A seed counts only if both of its games finished rc 0 (after the lead's one local rerun of each failed unit);
+dropped seeds are listed in result.json, never imputed. More than 1% dropped (> 20 seeds) = INCOMPLETE, no verdict.
+The gate gets the analysed seeds gap-free (key = rank in ascending seed order), so a dropped seed cannot stall it.
 Primary: the standard sequential gate (tools/sprt_gate.py, variant gainer, look 64, cap 2,048) on d = kill GC - kill GH
 in ascending seed order. If it ends at CAP, the fixed-sample reading decides: 95% seed bootstrap of the mean d
 (10,000 resamples, seed 20261103). Secondary: Act-3 clears and mean floor, paired the same way.
@@ -22,6 +24,7 @@ import numpy as np
 WIN = re.compile(r"^BEST\s+win%=\s*([\d.]+)\s+avg_floor=\s*([\d.]+).*?cpu_sec/run=\s*([\d.]+)", re.M)
 SEEDS = range(111520000, 111522048)
 REPO = Path(__file__).resolve().parents[4]
+MAX_DROPPED = len(SEEDS) // 100   # 20 seeds = 1%
 
 
 def load(root):
@@ -57,10 +60,12 @@ def main(root, out, pairs_path=None):
     with open(pairs_path, "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(["key", "a", "b"])
-        for s, a, b in zip(seeds, h[:, 0], c[:, 0]):
-            w.writerow([s, int(a), int(b)])
+        for k, (a, b) in enumerate(zip(h[:, 0], c[:, 0])):
+            w.writerow([k, int(a), int(b)])
     gate = subprocess.run([sys.executable, str(REPO / "tools" / "sprt_gate.py"), pairs_path, "--variant", "gainer",
                            "--look", "64", "--cap", "2048"], capture_output=True, text=True)
+    if gate.returncode != 0:
+        raise RuntimeError(f"sprt_gate failed: {gate.stderr.strip()}")
     d = c[:, 0] - h[:, 0]
     lo, hi = boot(d)
     res = {"n": len(seeds), "missing": missing, "bad": bad, "heart_gh": h[:, 0].mean(), "heart_gc": c[:, 0].mean(),
@@ -68,9 +73,11 @@ def main(root, out, pairs_path=None):
            "act3_D": float((c[:, 1] - h[:, 1]).mean()), "act3_ci": boot(c[:, 1] - h[:, 1]),
            "floor_D": float((c[:, 2] - h[:, 2]).mean()), "floor_ci": boot(c[:, 2] - h[:, 2]),
            "cpu_gh": h[:, 3].mean(), "cpu_gc": c[:, 3].mean(),
-           "sprt": json.loads(gate.stdout) if gate.returncode == 0 else {"error": gate.stderr.strip()}}
+           "sprt": json.loads(gate.stdout)}
     sv = res["sprt"].get("verdict")
-    if sv == "PASS":
+    if len(missing) > MAX_DROPPED:
+        res["verdict"] = "INCOMPLETE"
+    elif sv == "PASS":
         res["verdict"] = "GO"
     elif sv == "NOT_SHOWN":
         res["verdict"] = "NOT_SHOWN"
@@ -87,5 +94,32 @@ def main(root, out, pairs_path=None):
     print("verdict", res["verdict"])
 
 
+def self_test():
+    """Synthetic campaign with dropped seeds in the middle: the gate still sees a gap-free run and gives a verdict."""
+    import random
+    import tempfile
+    t = tempfile.mkdtemp()
+    rng = random.Random(1)
+    drop = {111520500, 111521000}
+    for s in SEEDS:
+        d = os.path.join(t, str(s))
+        os.makedirs(d)
+        for arm, p in (("GH", 0.09), ("GC", 0.12)):
+            k = rng.random() < p
+            rc = 1 if (s in drop and arm == "GC") else 0
+            Path(d, f"{arm}-{s}.done").write_text(f"tag={arm}-{s} rc={rc} start=x wall=1")
+            Path(d, f"{arm}-{s}.log").write_text(
+                f"BEST  win%= {100.0 if k else 0.0}  avg_floor= {56 if k else 30}  x cpu_sec/run= 20.0\n")
+    main(t, os.path.join(t, "r.json"))
+    r = json.load(open(os.path.join(t, "r.json")))
+    assert r["missing"] == sorted(drop) and r["n"] == len(SEEDS) - 2, r["missing"]
+    assert r["sprt"]["pairs"]["gap_after"] is None and r["sprt"]["verdict"] != "PARTIAL", r["sprt"]
+    assert r["verdict"] in ("GO", "NOT_SHOWN", "STOP", "INCONCLUSIVE"), r["verdict"]
+    print("self-test OK")
+
+
 if __name__ == "__main__":
-    main(*sys.argv[1:])
+    if sys.argv[1:] == ["--self-test"]:
+        self_test()
+    else:
+        main(*sys.argv[1:])

@@ -33,7 +33,13 @@ Both nets came to the cloud via the single-commit ref `ppo-xfer/g1-nets` (6d5a2a
 `ca8db597`, with 0 fallbacks and 7-24 s per game. The four games end on the same floors on both binaries.
 
 **Primary analysis** (`analyze.py`, frozen here):
-- A seed counts only if both games finished rc 0. Missing games are listed, not imputed.
+- **Failed games:** a game counts if it finished rc 0, with all its log checks passing. That includes a game that
+  ends inside an over-long combat, which then plays out as the engine ends it. A game with rc ≠ 0 or a missing
+  game is rerun once by the lead, locally, with the same unit. A seed that still lacks a valid game in either arm is
+  dropped from both arms and listed in `result.json`; dropped seeds are never imputed. More than 1% dropped
+  (> 20 seeds) = **INCOMPLETE**, no verdict.
+- The gate gets the analysed seeds without gaps (key = rank in ascending seed order), so a dropped seed cannot hold
+  it at PARTIAL. `analyze.py --self-test` covers two dropped seeds in the middle. A failing gate subprocess raises.
 - d = Heart kill GC − GH per seed.
 - **Standard sequential gate:** `tools/sprt_gate.py`, variant gainer (d0 = 0, d1 = +2 pp, α = β = 0.05), look 64,
   cap 2,048, consumed in ascending seed order.
