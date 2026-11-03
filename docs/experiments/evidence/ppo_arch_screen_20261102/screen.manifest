@@ -14,5 +14,23 @@ fork_state_sha256   cd1c90c6ec81e37dd1ce54b2691b8ff95b0ba249521c89fbc58f41748637
 fork_loop_sha256    70d0a8cf40a6e32a4fdaac99ce6a687bd00ddeb866a9b4eff82efa930b0a0e2a
 fork_net_sha256     f7fd6086e9073cf2599cb9c957e49e526fcd36f3c9598c85b97bf4c8e038a998
 # Seeds: screen 2's block, iterations 31-59 (111485872-111500719), paired with screen 2's controls; no new block.
-# Pending before the workers start (filled in on the PC after screen 2's SERVE_DONE): learner check, the
-# iteration-30 parts' sha256 (each arm's config "fork"), cost rule ms/record, PC sentinel on BASE net-0029.
+# PC steps 2026-11-03 (after screen 2 SERVE_DONE 19:52 CET; worktree at 7e3bd2a8, which contains amendment 0fcc0abc):
+# Learner check: exact sha FAILED (fork net-0031 4ebce6f0..., BASE f22ccc4c..., max|dparam| 8.144e-4); pre-registered
+#   fallback: screen 2's own learner (da82e08e) rerun on update 30 gives max|dparam| 9.652e-4 (rerun 1, the bar;
+#   rerun 2 1.073e-3; rerun1 vs rerun2 8.24e-4) -> PASS via fallback (GPU learner is not bitwise reproducible).
+# PC sentinel: oc_p1 sha cf7d4bbb, net-0029, parts traj-0030-p0, seeds 111485360-111485391 (no BASE stalls), salt 30:
+#   SENTINEL_OK (stored and x3 zero-init).
+behaviour_net_sha256 5ce9411ef4010fb9e41806febf8900c5e60eb1645d512cc29475ad6779127fb7
+# iteration-30 parts sha256 (prefixes): 3e655f1e d4b95751 98469b0c f8710b8a (full values in each arm's config "fork")
+arm_net_0030:IN_DECK    0d16ba57b9756672f89cfd04c6b4db553379e0a1199cf83cdf854bd5299f69c8
+arm_net_0030:DEPTH6     8d66721cb25794ebef63dd9db6a58cb1c421d1463b1985d78fb0ebdf0a4e7160
+arm_net_0030:CRITIC_SEP f7fd6086e9073cf2599cb9c957e49e526fcd36f3c9598c85b97bf4c8e038a998
+arm_net_0030:AUX        f7fd6086e9073cf2599cb9c957e49e526fcd36f3c9598c85b97bf4c8e038a998
+arm_net_0030:VAL_SPARSE f7fd6086e9073cf2599cb9c957e49e526fcd36f3c9598c85b97bf4c8e038a998
+# Serve pid 476028 (PC, ~/ppo-arch-serve.log), all arms net-0031 published 20:18-20:26 CET; workers W1,5,9 then all 20
+#   started by 20:34 CET.
+# Cost rule (cloud container, one thread, heart1logitscheck on the 977 cov8 records, 3 runs x 3 reps; logits_only_us):
+#   BASE (71cfd280, net f7fd6086)  16138 15547 16280   median 16138
+#   IN_DECK (cf7d4bbb)             15887 16233 16369   median 16233  ratio 1.01
+#   DEPTH6 (71cfd280)              27121 26201 26957   median 26957  ratio 1.67 (> 1.5: run anyway; adoption needs actor_s <= 1.3)
+#   CRITIC_SEP, AUX, VAL_SPARSE: actor net = BASE's (ratio 1.00).
