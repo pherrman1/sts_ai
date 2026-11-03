@@ -229,5 +229,6 @@ same seeds.
   alone as its own arm against CRIT_PRE, because the two act on the same component. The critic secondary adds
   screen 2's final CRIT_PRE `state.pt` as a reported reference row (not a verdict row). Re-reviewed by K before
   launch.
+
 **Knowledge impact.** `a20-ppo-plan.md` "Training recipe" row "net size, start" points here; results go to the
 ledger as one entry and to the plan page; an ADR only after S1 and G1.
