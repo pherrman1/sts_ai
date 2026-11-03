@@ -6,7 +6,7 @@ reward screen (screen 2) finished, because both screens use the single PC GPU le
 about the architecture of our ppo net"); design reasoning in
 [a20-ppo-plan.md](../../../knowledge-base/research/a20-ppo-plan.md) ("Decision net") and the 2026-11-02 literature
 follow-up ([ppo-and-combat-leaf-literature.md](../../../knowledge-base/research/ppo-and-combat-leaf-literature.md),
-(A) items 7-9). Screen 1 (`ppo_recipe_screen_20261101`, §748) found no PROMISING arm, so the base recipe is screen 1's
+(A) items 8-10). Screen 1 (`ppo_recipe_screen_20261101`, §748) found no PROMISING arm, so the base recipe is screen 1's
 BASE. This screen runs after the reward screen (screen 2), not in parallel with it.
 
 **Question.** Which changes to the decision net's inputs, depth, critic and auxiliary targets, one at a time from the

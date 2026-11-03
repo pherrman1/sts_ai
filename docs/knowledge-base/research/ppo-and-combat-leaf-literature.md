@@ -1,6 +1,6 @@
 # PPO run policy and a run-aware combat leaf: literature check
 
-Last verified: 2026-11-01 (second web research round, 3-vote adversarial claim verification; read-only checks of
+Last verified: 2026-11-02 for (A) item 7 (learner review fixes); 2026-11-01 (second web research round, 3-vote adversarial claim verification; read-only checks of
 this repository at `336c1f8c`). No seeds were run for this page.
 
 Labels: **Verified** = survived a 3-vote check against the primary source (19 of 24 checked claims did);
@@ -94,23 +94,40 @@ Two questions from Philipp (2026-11-01):
      efficiency of learning", and the §5.2 ablation shows a noticeable drop in learning efficiency without the
      ownership and score targets. That is Go; whether CTM/value heads on our shared trunk give a similar gain is
      Inference. (Corrected after review K, 2026-11-02: the earlier "refuted 1-2" vote was wrong.)
+7. **Learner implementation review (2026-11-02, read-only, our code, not literature).** Four findings in
+   `tools/heart1/ppo_train.py` / `ppo_model.py`, fixed after the recipe screen (its arms kept the reviewed code):
+   - Game order followed `one_combat bestbench`'s OpenMP completion order, so the per-update shuffle (which permutes
+     positions, not games) made minibatch composition depend on thread timing: a replayed part could give a
+     different net. `load_games` now sorts games by seed (steps by idx), tested on the same games in two line orders.
+   - `load_games` keyed games by (file, seed): the same seed in two files counted twice, silently. Now an error;
+     `update --expect-games N` fails on a count mismatch (a file cut at a line boundary loses games without a parse
+     error; the cloud runner already checked counts and sha256).
+   - The choice-logit and value Linears ran inside the bf16 autocast region, so the learner's log-probs carried bf16
+     rounding against the fp32 behaviour log-probs the actor records (final-layer rounding alone: |Δlogp| p99
+     1.5e-2, max 3.5e-2 on the S0 smoke records; `max_dlogp_behaviour` in each arm's `loop.json`). Both heads now
+     run in fp32; the trunk stays bf16, so its rounding remains (review of #973, CPU bf16-autocast proxy on heart1.bin: mean |Δlogp| against full fp32 0.013 → 0.008, max ~0.095 from the trunk). The CUDA-side drop in `max_dlogp_behaviour` is **Unverified** (no CUDA
+     machine in the fixing session); on CPU the heads are bitwise the fp32 heads.
+   - `--reward heart_pbrs` read Φ from a `phi` field no actor writes, so it equalled `heart`. Chosen fix: the
+     learner refuses `heart_pbrs` when no decision line carries `phi`; exporting Φ from `ppoStep` stays open (plan
+     row V3).
 
-7. **PBRS from the M0 value is the M0-initialised critic, not a different objective** (Ng, Harada, Russell 1999,
+8. **PBRS from the M0 value is the M0-initialised critic, not a different objective** (Ng, Harada, Russell 1999,
    Corollary 2 and Remark 1; Verified, one read, 2026-11-02). Shaping by γΦ(s') − Φ(s) shifts every policy's value by
    −Φ and needs Φ(terminal) = 0 at γ = 1; `ppo_train.py` does set the terminal potential to 0 (code read). Plan
    consequence (Inference): V3 can only lower baseline variance against a critic that already learns the level, and
    it is **not implemented on the actor side**: `heart1_policy.cpp` writes no `phi` field and the learner treats a
-   missing `phi` as 0, so `--reward heart_pbrs` currently equals `heart` (code read 2026-11-02). Before V3 is run,
+   missing `phi` as 0, so `--reward heart_pbrs` equalled `heart` (code read 2026-11-02; since #973 the learner
+   refuses it without `phi`, item 7). Before V3 is run,
    either export Φ or drop V3 in favour of a critic initialised from M0. The original heart1 floor and key terms are
    non-potential shaping that can trade Heart kills for floor progress (Inference from the necessity half of
    Theorem 1); that is the hypothesis the REW_ORIG arm tests.
-8. **The anchor's job is the early dip, not forgetting** (Extracted, 2026-11-02). On-policy data rather than the KL
+9. **The anchor's job is the early dip, not forgetting** (Extracted, 2026-11-02). On-policy data rather than the KL
    term is what limits forgetting in LLM RL post-training (Retaining by Doing, ICML 2026, arXiv 2510.18874), and a
    KL measured on the current batch does not stop drift on earlier distributions (RL Forgets, arXiv 2607.04364).
    Plan consequence (Inference): if the KL arms must be cut, cut fixed 0.01 before decaying-from-0.1, and measure
    KL to heart1 per checkpoint on a fixed held-out set of acts 1-3 states; a checkpoint whose acts 1-3 KL exceeds its
    Act-4 KL is drifting where it should not.
-9. **PPO critics flatten across intermediate states** (value flattening, SP3O, arXiv 2609.18708; Extracted,
+10. **PPO critics flatten across intermediate states** (value flattening, SP3O, arXiv 2609.18708; Extracted,
    2026-11-02): an implicit variance penalty in the value loss and redundant updates on temporally correlated states
    leave the critic flat where Monte Carlo continuations shift. §747's heart1 result (−3 HP lowers V in only 83% of
    post-fight states; 1-HP price p10 −2.9 to p90 +4.3) reads as this failure (Inference). Related: a trained pairwise

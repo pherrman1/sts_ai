@@ -1,6 +1,6 @@
 # Our own A20 PPO run policy (heart1 recipe, improved): plan
 
-Last verified: 2026-11-01 against main `53d591b` and `daniel-ziegler/sts_lightspeed` at `84ab3ea` (README,
+Last verified: 2026-11-02 for the learner review fixes (V3 row, known limitations); 2026-11-01 against main `53d591b` and `daniel-ziegler/sts_lightspeed` at `84ab3ea` (README,
 `EXPERIMENT_LOG.md`, `run_heart1_supervised.sh` read, nothing executed). Research and design only: no gameplay
 seeds were run for this page. Labels: **Measured** (cited ledger entry or artifact), **Inference** (reasoning here),
 **External** (stated in the original repository, not reproduced by us unless noted).
@@ -82,7 +82,7 @@ on the in-sample A20 Heart curve plus a 2,048-pair Silver-1,000 gate of the fina
 | 2 | epochs, minibatch | 2, 192 | 1 / 2 / 4; 192 / 1,024 |
 | 2 | GAE λ, γ, clip | 0.97, 1, 0.2 | λ 0.97 / 1.0 (literature A2: critics fit levels, not siblings; stay near Monte Carlo); clip 0.1 / 0.2 |
 | 3 | sampling | temperature 1 | per-game coordinated exploration (V8) |
-| 3 | net size, start | d256 from heart1 | G0 result (§744: start from heart1). Architecture arms (inputs, depth, separate critic, auxiliary heads, sparse value supervision) are pre-registered as a follow-on screen in `docs/experiments/evidence/ppo_arch_screen_20261102/PREREG.md` (draft, 2026-11-02); width is deferred to the ~10^6-game regime |
+| 3 | net size, start | d256 from heart1 | G0 result (§744: start from heart1). Architecture arms (inputs, depth, separate critic, auxiliary heads, sparse value supervision) are pre-registered as a follow-on screen in `docs/experiments/evidence/ppo_arch_screen_20261102/PREREG.md` (design B: forks from screen 2's BASE after update 30); width is deferred to the ~10^6-game regime |
 
 About 15 arms ≈ 1,400 core-h of training + ~350 core-h of gates (Inference). S0 first measures the GPU update time,
 which decides whether 1,024-2,048 games per iteration are feasible.
@@ -143,7 +143,7 @@ So only ~1/21 of its games were A20, its reward is not P(Heart kill), and its en
 | --- | --- | --- |
 | V1 | A20 only | original saw ~5% A20 and barely adapts card choice to ascension |
 | V2 | our engine | train where we play; no engine gap, and without OOC MCTS no re-distillation is needed |
-| V3 | reward 1{Heart} + potential-based shaping with Φ = M0-calibrated leaf value | the objective becomes the Heart rate (shaping telescopes at γ = 1) with lower variance. **Not implemented on the actor side (code read 2026-11-02):** the trajectory exporter writes no `phi` field and `ppo_train.py` treats a missing `phi` as 0, so `--reward heart_pbrs` currently equals `heart`. By Ng et al. 1999 the shaped critic learns V − M0, so V3 equals a critic initialised at M0 ([literature](ppo-and-combat-leaf-literature.md), (A) item 7); export Φ and run A6 before S1 uses V3, or replace V3 by that initialisation |
+| V3 | reward 1{Heart} + potential-based shaping with Φ = M0-calibrated leaf value | the objective becomes the Heart rate (shaping telescopes at γ = 1) with lower variance. **Not runnable yet (2026-11-02):** `ppo_train.py --reward heart_pbrs` reads Φ from each decision line's `phi`, but `one_combat`'s `ppoStep` exports no leaf value (the M0 leaf lives in the OOC MCTS adapter, which PPO play runs without), so the learner now refuses `heart_pbrs` when no decision line carries `phi` instead of silently training the plain `heart` reward. Exporting Φ in `ppoStep` is open (which leaf, its cost per decision) |
 | V4 | forked common-random-number advantages at a fraction of card choices (VinePPO-style) | **low priority** ([literature](ppo-and-combat-leaf-literature.md), (A) item 5): VinePPO needs K ≈ 9 forks per state, the paired-rollout preprint is mixed (a toy counterexample, but −21 to −63% gradient covariance in its real probe), and at rho 0.49 a 2 pp sibling gap needs ~1,900 paired forks at 95% (~480 for 1σ; Inference); §738 found per-floor RNG keying gains only ~1.04× effective seeds. Run only if the offline gradient-variance probe (literature A4) shows a gain per core-s |
 | V5 | record v2 inputs (#941) for policy and critic | public run state heart1 never saw; PPO self-play produces v2 records for free |
 | V6 | asymmetric critic with hidden information, training only | lower-variance baseline; no verified literature (PerfectDou only a hint), bias open; needs Philipp's call against ADR-0002 |
@@ -177,7 +177,7 @@ Every run needs a pre-registration, the seed-run guard, frozen provenance and Ph
 
 ## Reward is a test axis too (Philipp, 2026-11-02)
 
-Screen 1 tested only one reward change (REW_ORIG, NOT_SHOWN). Reward design is a tunable parameter to rethink and test, not a given. Candidates for the next screen (Inference): act-clear bonus, floor and key weights, PBRS with a simple potential (floor/190 + keys) or a value model as φ (C++ does not emit φ today; `heart_pbrs` without φ equals `heart`), a critic pre-trained on screen-1 games. Using the PPO critic itself as φ is redundant with GAE. A next screen should have fewer arms, a pre-registered futility rule and the validated `--compile` speed-up, because whole-run noise is ~0.8 pp (§748).
+Screen 1 tested only one reward change (REW_ORIG, NOT_SHOWN). Reward design is a tunable parameter to rethink and test, not a given. Candidates for the next screen (Inference): act-clear bonus, floor and key weights, PBRS with a simple potential (floor/190 + keys) or a value model as φ (C++ does not emit φ today; the learner refuses `heart_pbrs` when no decision line carries φ, see row V3), a critic pre-trained on screen-1 games. Using the PPO critic itself as φ is redundant with GAE. A next screen should have fewer arms, a pre-registered futility rule and the validated `--compile` speed-up, because whole-run noise is ~0.8 pp (§748).
 
 ## Known limitations and open questions
 
@@ -185,15 +185,13 @@ Screen 1 tested only one reward change (REW_ORIG, NOT_SHOWN). Reward design is a
 - X1 validated cheap combat on one key effect; card effects whose value depends on fight skill are untested.
 - Does the 3060 Ti update keep pace with 1,024-2,048 games per iteration (measured in S0)?
 - Can an asynchronous cloud loop stay close enough to on-policy across container resets?
-- Two learner facts from the 2026-11-02 code review of the loop (read-only; shared by every arm of the recipe screen,
-  so they add noise, not a bias between arms): (a) games inside a part are written in OpenMP completion order and
-  `load_games` keeps file order, so the minibatch permutation (seeded per arm and iteration) acts on a
-  nondeterministic game order; a replayed part can produce a different net, and "byte-identical" holds only for the
-  same file. Sorting games by seed before indexing would remove it (not changed during the screen). (b) Under bf16
-  autocast the choice-logit head emits bf16 logits while the recorded behaviour log-probs are fp32, so the PPO ratio is
-  not 1 even for the behaviour net (final-layer rounding alone: |Δlogp| p99 1.5e-2, max 3.5e-2 on the smoke records);
-  the per-update stat `max_dlogp_behaviour` measures the full effect at iterations 0-3, where the policy is still
-  net-0000. An fp32 head would remove it.
+- Learner review of 2026-11-02 (read-only, during the recipe screen; fixed in the PR after the screen, see
+  [literature (A) item 7](ppo-and-combat-leaf-literature.md#a-evidence-on-the-ppo-plan)): game order in a trajectory
+  file followed OpenMP completion order, so a replayed part could give a different net (now sorted by seed); a seed in
+  two files was double-counted silently (now an error; `update --expect-games`); the choice-logit and value Linears
+  ran in bf16 under autocast against fp32 behaviour log-probs (now fp32); `heart_pbrs` silently equalled `heart`
+  (now refused without `phi`). None of these affected the screen's pre-registered comparisons, whose learner ran the
+  reviewed code unchanged for every arm.
 
 ## Relevant sources
 
