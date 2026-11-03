@@ -4,7 +4,9 @@ Last verified: 2026-11-02 for (A) item 7 (learner review fixes); 2026-11-01 (sec
 this repository at `336c1f8c`). No seeds were run for this page.
 
 Labels: **Verified** = survived a 3-vote check against the primary source (19 of 24 checked claims did);
-**Inference** = reasoning on this page, not stated by a source.
+**Inference** = reasoning on this page, not stated by a source. Items marked "2026-11-02" come from a one-agent
+follow-up read without the vote check: there, Verified means the primary text was read once, Extracted means an
+abstract or a summariser pass.
 
 ## Purpose / research question
 
@@ -109,6 +111,29 @@ Two questions from Philipp (2026-11-01):
      learner refuses `heart_pbrs` when no decision line carries `phi`; exporting Φ from `ppoStep` stays open (plan
      row V3).
 
+8. **PBRS from the M0 value is the M0-initialised critic, not a different objective** (Ng, Harada, Russell 1999,
+   Corollary 2 and Remark 1; Verified, one read, 2026-11-02). Shaping by γΦ(s') − Φ(s) shifts every policy's value by
+   −Φ and needs Φ(terminal) = 0 at γ = 1; `ppo_train.py` does set the terminal potential to 0 (code read). Plan
+   consequence (Inference): V3 can only lower baseline variance against a critic that already learns the level, and
+   it is **not implemented on the actor side**: `heart1_policy.cpp` writes no `phi` field and the learner treats a
+   missing `phi` as 0, so `--reward heart_pbrs` equalled `heart` (code read 2026-11-02; since #973 the learner
+   refuses it without `phi`, item 7). Before V3 is run,
+   either export Φ or drop V3 in favour of a critic initialised from M0. The original heart1 floor and key terms are
+   non-potential shaping that can trade Heart kills for floor progress (Inference from the necessity half of
+   Theorem 1); that is the hypothesis the REW_ORIG arm tests.
+9. **The anchor's job is the early dip, not forgetting** (Extracted, 2026-11-02). On-policy data rather than the KL
+   term is what limits forgetting in LLM RL post-training (Retaining by Doing, ICML 2026, arXiv 2510.18874), and a
+   KL measured on the current batch does not stop drift on earlier distributions (RL Forgets, arXiv 2607.04364).
+   Plan consequence (Inference): if the KL arms must be cut, cut fixed 0.01 before decaying-from-0.1, and measure
+   KL to heart1 per checkpoint on a fixed held-out set of acts 1-3 states; a checkpoint whose acts 1-3 KL exceeds its
+   Act-4 KL is drifting where it should not.
+10. **PPO critics flatten across intermediate states** (value flattening, SP3O, arXiv 2609.18708; Extracted,
+   2026-11-02): an implicit variance penalty in the value loss and redundant updates on temporally correlated states
+   leave the critic flat where Monte Carlo continuations shift. §747's heart1 result (−3 HP lowers V in only 83% of
+   post-fight states; 1-HP price p10 −2.9 to p90 +4.3) reads as this failure (Inference). Related: a trained pairwise
+   difference critic (Relative Value Learning, ICLR 2026, arXiv 2607.21120; Extracted) is the learned form of the
+   paired-difference head; B2's checks apply to it unchanged.
+
 ### Ranked experiments for (A)
 
 | # | Experiment | Cost class | Falsified if |
@@ -117,6 +142,8 @@ Two questions from Philipp (2026-11-01):
 | A2 | GAE λ 1.0 vs 0.97 | short PPO arm | no difference in the in-sample A20 curve or the gate |
 | A3 | 512 vs 2,048 games per iteration at a fixed game budget | short PPO arm | the larger batch is not better per game |
 | A4 | Offline gradient-variance probe on ~200 stored mid-run states: GAE, critic baseline, prefix-replay forks | offline | fork gradients are not lower-variance per core-s than GAE; then drop V4 |
+| A5 | Sparse value supervision: value loss on ≈3-5 well-separated decisions per game (act boundaries plus random) vs all decisions, judged by B2's 1-HP standard error on the resulting critic (item 10) | short PPO arm + offline B2 | the 1-HP SE does not shrink |
+| A6 | Zero-seed advantage identity once Φ is exported: GAE advantages under 1{Heart} + PBRS(M0) with a zero critic vs 1{Heart} with the critic initialised at M0, on one stored iteration (item 8) | offline, minutes | they differ beyond the learned residual (then the exporter's terminal handling is wrong), or they agree (then drop V3 as an arm) |
 
 ## (B) Evidence on a run-aware Silver leaf
 
@@ -168,6 +195,9 @@ Two questions from Philipp (2026-11-01):
 - PORL: https://arxiv.org/html/2505.16856v1
 - Paired rollouts ("Luck Is Not Skill", preprint): https://arxiv.org/pdf/2609.24144
 - KataGo: https://arxiv.org/pdf/1902.10565
+- 2026-11-02 follow-up: Ng, Harada, Russell 1999 https://people.eecs.berkeley.edu/~russell/papers/icml99-shaping.pdf;
+  Retaining by Doing https://arxiv.org/abs/2510.18874; RL Forgets https://arxiv.org/abs/2607.04364; Relative Value
+  Learning https://arxiv.org/abs/2607.21120; value flattening (SP3O) https://arxiv.org/abs/2609.18708
 
 ## Relationships
 
@@ -179,5 +209,6 @@ Two questions from Philipp (2026-11-01):
 ## Open questions
 
 - Does a PPO critic trained on ~10⁶ A20 games resolve 1-HP prices that V_A4 could not?
+- Is heart1's 1-HP noise (§747) value flattening, i.e. curable by sparse value supervision (A5)?
 - Does per-game coordinated exploration discover multi-pick builds without §640's cost?
 - Is a privileged critic's bias acceptable in single-agent stochastic card RL?

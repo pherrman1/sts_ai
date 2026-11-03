@@ -17,6 +17,10 @@ Rewards (--reward):
               (a missing phi counts as 0, so the shaping still telescopes; phi at the terminal state is 0).
               No actor writes "phi" yet (one_combat's ppoStep exports no leaf value), so an update refuses
               heart_pbrs unless at least one decision line carries it: otherwise it would silently equal heart.
+  heart_phi   as heart_pbrs, with phi computed in Python by --phi-model (ppo_phi.py) from each net decision's
+              record while loading; every net decision must have one.
+  heart_act   1{Heart} + --act-bonus per act cleared (final floor >= 17, 34, 51) + --key-bonus per key, at game
+              end (changes the objective; screens still judge arms by Heart kills).
 Decisions with one choice (source heart1_ppo_single) train the critic only; fallback lines (chain) are skipped.
 
 `bench` times one update on synthetic copies of real trajectory games (no learning signal needed):
@@ -40,6 +44,7 @@ import torch
 import torch.nn.functional as F
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import ppo_phi  # noqa: E402
 from ppo_model import FeatureStore, PolicyNet, batch_to, collate, featurize  # noqa: E402
 
 SCHEMA = "heart1-ppo-traj-v1"
@@ -48,7 +53,7 @@ NET_SOURCES = ("heart1_ppo", "heart1_ppo_single")
 
 # ---------------------------------------------------------------- trajectories
 
-def _parse_line(line, trim_map=None):
+def _parse_line(line, trim_map=None, phi_model=None):
     """One trajectory line -> row; with trim_map, a net decision's record is featurised (worker-safe).
 
     Errors come back as {"type": "_error"} rows instead of raising in the worker, so the pool always drains and
@@ -57,6 +62,8 @@ def _parse_line(line, trim_map=None):
         return None
     try:
         row = json.loads(line)
+        if phi_model is not None and row["type"] == "decision" and row["source"] in NET_SOURCES:
+            row["phi_py"] = ppo_phi.value(phi_model, row, row["record"])
         if trim_map is not None and row["type"] == "decision":
             rec = row.pop("record", None)
             row.pop("logits", None)
@@ -73,7 +80,7 @@ def seed_key(seed):
     return (0, int(s)) if s.isdigit() else (1, s)
 
 
-def load_games(paths, trim_map=None, workers=None):
+def load_games(paths, trim_map=None, workers=None, phi_model=None):
     """Games with all their net decisions, in decision order. A game without its "game" line is dropped.
 
     The games come back sorted by seed (steps by idx), whatever order the files list them in: `one_combat bestbench`
@@ -83,6 +90,7 @@ def load_games(paths, trim_map=None, workers=None):
 
     With trim_map (the learner net's flag), each net decision's record is featurised while loading and only the
     packed features are kept ("feat"; record and logits are dropped), so host memory stays at a few KB per decision.
+    With phi_model (ppo_phi.load), each net decision gets "phi_py" (its potential) before the record is dropped.
     Parsing and featurising run in `workers` processes (default min(8, CPUs); 1 = in-process); the result is the
     same either way."""
     if workers is None:
@@ -91,7 +99,7 @@ def load_games(paths, trim_map=None, workers=None):
     if workers > 1 and trim_map is not None:
         import multiprocessing as mp
         pool = mp.get_context("fork" if hasattr(os, "fork") else "spawn").Pool(workers)
-    parse = functools.partial(_parse_line, trim_map=trim_map)
+    parse = functools.partial(_parse_line, trim_map=trim_map, phi_model=phi_model)
     # Parse every file completely before validating: raising while imap still streams a file and then terminating
     # the pool can deadlock (the task feeder holds the queue lock on a full pipe).
     parsed = []
@@ -135,17 +143,23 @@ def load_games(paths, trim_map=None, workers=None):
     return games
 
 
-def terminal_reward(outcome, kind):
+ACT_FLOORS = (17, 34, 51)   # first floor after each act's boss: a final floor at or above it means the act was cleared
+
+
+def terminal_reward(outcome, kind, act_bonus=0.1, key_bonus=0.05):
     heart = 1.0 if outcome.get("heart_kill") else 0.0
-    if kind in ("heart", "heart_pbrs"):
+    if kind in ("heart", "heart_pbrs", "heart_phi"):
         return heart
+    if kind == "heart_act":
+        acts = sum(1 for f in ACT_FLOORS if outcome.get("floor", 0) >= f)
+        return heart + act_bonus * acts + key_bonus * sum(outcome.get("keys", []))
     if kind == "original":
         return outcome.get("floor", 0) / 190.0 + 0.05 * sum(outcome.get("keys", [])) + 0.6 * heart
     raise ValueError(f"unknown reward {kind}")
 
 
-def step_rewards(game, kind, gamma):
-    """Per-step rewards: 0 except the last step's terminal reward, plus PBRS terms for heart_pbrs."""
+def step_rewards(game, kind, gamma, act_bonus=0.1, key_bonus=0.05):
+    """Per-step rewards: 0 except the last step's terminal reward, plus PBRS terms for heart_pbrs / heart_phi."""
     steps = game["steps"]
     n = len(steps)
     r = [0.0] * n
@@ -156,7 +170,14 @@ def step_rewards(game, kind, gamma):
         phi = [float(s.get("phi") or 0.0) for s in steps] + [0.0]
         for t in range(n):
             r[t] += gamma * phi[t + 1] - phi[t]
-    r[-1] += terminal_reward(game["outcome"], kind)
+    elif kind == "heart_phi":
+        missing = sum(1 for s in steps if "phi_py" not in s)
+        if missing:
+            raise ValueError(f"seed {game.get('seed')}: {missing} decisions without phi_py (load with --phi-model)")
+        phi = [float(s["phi_py"]) for s in steps] + [0.0]
+        for t in range(n):
+            r[t] += gamma * phi[t + 1] - phi[t]
+    r[-1] += terminal_reward(game["outcome"], kind, act_bonus, key_bonus)
     return r
 
 
@@ -182,7 +203,11 @@ def default_args(ns=None):
 
 
 def add_hparams(ap):
-    ap.add_argument("--reward", default="heart", choices=["heart", "original", "heart_pbrs"])
+    ap.add_argument("--reward", default="heart", choices=["heart", "original", "heart_pbrs", "heart_phi", "heart_act"])
+    ap.add_argument("--phi-model", default="", help="heart_phi: ppo_phi model JSON (path relative to the repo root)")
+    ap.add_argument("--phi-sha256", default="", help="heart_phi: required sha256 of --phi-model")
+    ap.add_argument("--act-bonus", type=float, default=0.1, help="heart_act: reward per act cleared")
+    ap.add_argument("--key-bonus", type=float, default=0.05, help="heart_act: reward per key")
     ap.add_argument("--gamma", type=float, default=1.0)
     ap.add_argument("--lam", type=float, default=0.97)
     ap.add_argument("--clip", type=float, default=0.2)
@@ -210,6 +235,19 @@ def add_hparams(ap):
     ap.add_argument("--bucket", type=int, default=0,
                     help="length-bucketed minibatches: sort each window of BUCKET*minibatch shuffled decisions by "
                          "token count before cutting minibatches (less padding; changes minibatch composition; 0 = off)")
+
+
+REPO = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
+
+
+def phi_model_for(args):
+    """The potential model of --reward heart_phi (None for every other reward); checks --phi-sha256."""
+    if args.reward != "heart_phi":
+        return None
+    if not args.phi_model or not args.phi_sha256:
+        sys.exit("--reward heart_phi needs --phi-model and --phi-sha256")
+    path = args.phi_model if os.path.isabs(args.phi_model) else os.path.join(REPO, args.phi_model)
+    return ppo_phi.load(path, args.phi_sha256)
 
 
 def plan_minibatches(a, feats, iteration):
@@ -331,7 +369,7 @@ class Learner:
         k = 0
         for g in games:
             n = len(g["steps"])
-            r = step_rewards(g, a.reward, a.gamma)
+            r = step_rewards(g, a.reward, a.gamma, a.act_bonus, a.key_bonus)
             ad, rt = gae(r, values[k:k + n], a.gamma, a.lam)
             adv.extend(ad); ret.extend(rt)
             k += n
@@ -541,7 +579,7 @@ def cmd_update(argv):
     args = ap.parse_args(argv)
     torch.manual_seed(args.seed)
     learner = make_learner(args, torch.device(args.device))
-    games = load_games(args.traj, learner.net.trim_map)
+    games = load_games(args.traj, learner.net.trim_map, phi_model=phi_model_for(args))
     if args.expect_games is not None and len(games) != args.expect_games:
         sys.exit(f"{len(games)} games in {' '.join(args.traj)}, expected {args.expect_games}")
     logf = open(args.log, "a") if args.log else None
@@ -605,6 +643,17 @@ def cmd_selftest(argv):
     r = step_rewards(g, "heart_pbrs", 1.0)
     assert [round(x, 9) for x in r] == [0.3, 0.5], r   # 0.5-0.2 ; 0-0.5+1 -> sum = 1 - phi(s0)
     assert abs(terminal_reward(g["outcome"], "original") - (57 / 190 + 0.15 + 0.6)) < 1e-12
+    g2 = {"steps": [{"phi_py": 0.1}, {"phi_py": 0.4}], "outcome": {"heart_kill": False, "floor": 34, "keys": [1, 0, 0]}}
+    r = step_rewards(g2, "heart_phi", 1.0)
+    assert [round(x, 9) for x in r] == [0.3, -0.4], r   # sum = 0 - phi(s0): the objective is unchanged
+    try:
+        step_rewards({"steps": [{}], "outcome": {}}, "heart_phi", 1.0)
+        raise AssertionError("heart_phi without phi_py must raise")
+    except ValueError:
+        pass
+    assert abs(terminal_reward(g2["outcome"], "heart_act") - (0.2 + 0.05)) < 1e-12   # acts 1, 2 cleared + 1 key
+    assert abs(terminal_reward(g["outcome"], "heart_act", 0.1, 0.05) - (1 + 0.3 + 0.15)) < 1e-12
+    assert step_rewards(g2, "heart_act", 1.0, 0.0, 0.0) == [0.0, 0.0]
     print("ppo_train selftest passed")
 
 
