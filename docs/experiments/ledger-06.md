@@ -26142,3 +26142,35 @@ count shows no visible loss. End-to-end speedup is smaller than the map-sim rati
 has #957/#970/#976 that this run predates).
 Seeds: none new (111312000-111313535 replayed). Cost ≈ 81 games ≈ 14 core-h.
 **Knowledge impact:** KB `operations/environment-variables.md` (`STS_OOC_MCTS_PRIOR_SHARE_STOP` row: NI result).
+
+## §TBD — PPO architecture screen (design B): 5 arms forked from screen 2's BASE after update 30, 29 updates × 512 sampled A20 games each (K15 combat): IN_DECK −0.07, DEPTH6 +0.25, CRITIC_SEP −0.20, AUX +0.03, VAL_SPARSE −0.11 pp vs BASE, all NOT_SHOWN (noise 0.61); no critic arm CRITIC_BETTER → architecture stays BASE (PC + cloud, 2026-11-04)
+
+**Question (Philipp, 2026-11-03: design B chosen 10:37 CET; "Go mit 20 workern nach Screen 2" 19:07 CET):** does one
+change to the decision net's inputs (deck aggregates), depth (+2 identity blocks), critic (separate trunk), auxiliary
+targets (floor, Act 4) or value supervision (sparse) raise the A20 Heart-kill rate of PPO from heart1?
+**Data:** [PREREG](evidence/ppo_arch_screen_20261102/PREREG.md) (K PASS incl. amendments up to 0fcc0abc, #974/#977/#978),
+[RESULT](evidence/ppo_arch_screen_20261102/RESULT.md), `result.json`, `archres.tgz` (sha256 `1afb422c…`),
+[screen.manifest](evidence/ppo_arch_screen_20261102/screen.manifest). Fork point screen 2 BASE `state-0030.pt`
+(`cd1c90c6…`); controls = screen 2's BASE and BASE_S1 on the same seeds (111485872-111500719). RUN_COMMIT 30529219,
+binaries 71cfd280 and (IN_DECK) cf7d4bbb = defaa930 + P1 only. 20 cloud actors, learner on the PC (RTX 3060 Ti),
+2026-11-03 20:18 CET to 2026-11-04 02:01 CET; learner CUDA OOM 21:51 (foreign GPU process), restarted 23:05 from saved
+state, no games lost.
+**Result:**
+- Pre-launch: learner check passed via the pre-registered fallback (fork 8.14e-4 ≤ screen 2 rerun 9.65e-4 max
+  |Δparam|; GPU learner not bitwise reproducible); IN_DECK sentinel 32/32 trajectories identical; native forward cost
+  IN_DECK 1.01×, DEPTH6 1.67×.
+- Primary (iterations 40-59, 10,240 paired seeds vs BASE 7.72%; BASE_S1 8.33%, noise 0.61 pp): DEPTH6 +0.25
+  [−0.37, +0.89], AUX +0.03 [−0.58, +0.65], IN_DECK −0.07 [−0.67, +0.57], VAL_SPARSE −0.11 [−0.71, +0.51], CRITIC_SEP
+  −0.20 [−0.82, +0.41]: all NOT_SHOWN. No stalls in the arms; BASE_S1's window stall changes nothing.
+- Cost (actor_s vs screen 2 BASE): 0.78-0.86× for BASE-forward arms (faster containers), DEPTH6 1.02× (≈1.25× vs
+  the others); all ≤ 1.3.
+- Critic secondary (§747 post-fight states, gates.py raw): T1 BASE 0.734, CRITIC_SEP 0.617, AUX 0.718, VAL_SPARSE
+  0.665 (CRIT_PRE 0.721, heart1 0.827); T5 1.99 / 3.25 / 2.22 / 2.42 (1.94, 1.50): all NOT_BETTER.
+**Interpretation (Inference):** at 30 updates none of these architecture changes moves the Heart rate by ≥ ≈0.6 pp,
+the screen's CI half-width; with screens 1 and 2 this makes three axes (recipe, reward, architecture) flat at this
+scale, apart from CRIT_PRE's +0.74 (whose G1, §752, was INCONCLUSIVE). Every PPO critic ends less HP-sensitive than
+heart1's (not pre-registered): on-policy fitting of a sparse 1{Heart} return flattens the post-fight value surface.
+**Decision:** S1 architecture = BASE's net; nothing adopted. No default change. Seeds: no new block (screen 2's
+replayed by design); 111459990-111459993 USED (local sentinel pre-check). Cost ≈ 74,000 games ≈ 115 core-h cloud +
+≈ 5.7 h PC GPU.
+**Knowledge impact:** KB `research/a20-ppo-plan.md` (architecture row).
