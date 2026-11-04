@@ -26143,7 +26143,7 @@ has #957/#970/#976 that this run predates).
 Seeds: none new (111312000-111313535 replayed). Cost ≈ 81 games ≈ 14 core-h.
 **Knowledge impact:** KB `operations/environment-variables.md` (`STS_OOC_MCTS_PRIOR_SHARE_STOP` row: NI result).
 
-## §TBD — PPO architecture screen (design B): 5 arms forked from screen 2's BASE after update 30, 29 updates × 512 sampled A20 games each (K15 combat): IN_DECK −0.07, DEPTH6 +0.25, CRITIC_SEP −0.20, AUX +0.03, VAL_SPARSE −0.11 pp vs BASE, all NOT_SHOWN (noise 0.61); no critic arm CRITIC_BETTER → architecture stays BASE (PC + cloud, 2026-11-04)
+## §754 — PPO architecture screen (design B): 5 arms forked from screen 2's BASE after update 30, 29 updates × 512 sampled A20 games each (K15 combat): IN_DECK −0.07, DEPTH6 +0.25, CRITIC_SEP −0.20, AUX +0.03, VAL_SPARSE −0.11 pp vs BASE, all NOT_SHOWN (noise 0.61); no critic arm CRITIC_BETTER → architecture stays BASE (PC + cloud, 2026-11-04)
 
 **Question (Philipp, 2026-11-03: design B chosen 10:37 CET; "Go mit 20 workern nach Screen 2" 19:07 CET):** does one
 change to the decision net's inputs (deck aggregates), depth (+2 identity blocks), critic (separate trunk), auxiliary

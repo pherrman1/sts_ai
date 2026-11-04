@@ -82,7 +82,7 @@ on the in-sample A20 Heart curve plus a 2,048-pair Silver-1,000 gate of the fina
 | 2 | epochs, minibatch | 2, 192 | 1 / 2 / 4; 192 / 1,024 |
 | 2 | GAE λ, γ, clip | 0.97, 1, 0.2 | λ 0.97 / 1.0 (literature A2: critics fit levels, not siblings; stay near Monte Carlo); clip 0.1 / 0.2 |
 | 3 | sampling | temperature 1 | per-game coordinated exploration (V8) |
-| 3 | net size, start | d256 from heart1 | G0 result (§744: start from heart1). Architecture arms (inputs, depth, separate critic, auxiliary heads, sparse value supervision) are pre-registered as a follow-on screen in `docs/experiments/evidence/ppo_arch_screen_20261102/PREREG.md` (design B: forks from screen 2's BASE after update 30). **Result §TBD (2026-11-04):** all five NOT_SHOWN (|D| ≤ 0.25 pp, CI half-width ≈0.6 pp), no critic arm CRITIC_BETTER, so the architecture stays BASE's net; width is deferred to the ~10^6-game regime |
+| 3 | net size, start | d256 from heart1 | G0 result (§744: start from heart1). Architecture arms (inputs, depth, separate critic, auxiliary heads, sparse value supervision) are pre-registered as a follow-on screen in `docs/experiments/evidence/ppo_arch_screen_20261102/PREREG.md` (design B: forks from screen 2's BASE after update 30). **Result §754 (2026-11-04):** all five NOT_SHOWN (|D| ≤ 0.25 pp, CI half-width ≈0.6 pp), no critic arm CRITIC_BETTER, so the architecture stays BASE's net; width is deferred to the ~10^6-game regime |
 
 About 15 arms ≈ 1,400 core-h of training + ~350 core-h of gates (Inference). S0 first measures the GPU update time,
 which decides whether 1,024-2,048 games per iteration are feasible.
