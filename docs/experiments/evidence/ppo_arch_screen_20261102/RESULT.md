@@ -36,7 +36,7 @@ net (heart1-size, shared critic, no extra inputs or heads).
 
 ## Stalls (combat > 1,000 decisions, counted as losses)
 
-None in the five arms. Screen 2's BASE_S1 had 2 (111482055, 111493711); 111493711 is in the window, and the
+None in the five arms: no stall file was written for any arm (the bundle has `stalled_seeds.txt` only for screen 2's BASE_S1), and analyze.py counts 0 stalls each. Screen 2's BASE_S1 had 2 (111482055, 111493711); 111493711 is in the window, and the
 sensitivity D drops it from every arm. It changes no verdict.
 
 ## Primary metric: Heart kills, iterations 40-59
@@ -93,7 +93,7 @@ GPU, `gates.py` raw mode, group `postfight`.
 | heart1 (§747, for comparison) | 0.827 | 1.50 | 19,092 | |
 
 No critic arm is CRITIC_BETTER: all three are less HP-sensitive than BASE's critic (T1 lower, T5 higher). Sigmoid mode
-gives the same values to three decimals (the PPO values lie in −0.46..1.28, mean 0.19, where sigmoid is close to linear and the ratios barely change). Value files:
+gives the same values to three decimals (the PPO values lie in −0.62..1.85 across the five critics, BASE's mean 0.19, a range where sigmoid changes these ratios very little). Value files:
 store `ppo-xfer/arch` `_critic/values-<ARM>`; `gates.json` per arm reproduced from them in the cloud.
 
 **Observation (Inference, not pre-registered):** every PPO critic after 60 updates is less HP-sensitive than heart1's

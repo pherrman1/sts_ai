@@ -26169,7 +26169,7 @@ state, no games lost.
 **Interpretation (Inference):** at 30 updates none of these architecture changes moves the Heart rate by ≥ ≈0.6 pp,
 the screen's CI half-width; with screens 1 and 2 this makes three axes (recipe, reward, architecture) flat at this
 scale, apart from CRIT_PRE's +0.74 (whose G1, §752, was INCONCLUSIVE). Every PPO critic ends less HP-sensitive than
-heart1's (not pre-registered): on-policy fitting of a sparse 1{Heart} return flattens the post-fight value surface.
+heart1's (not pre-registered): on-policy fitting of a sparse 1{Heart} return seems to flatten the post-fight value surface.
 **Decision:** S1 architecture = BASE's net; nothing adopted. No default change. Seeds: no new block (screen 2's
 replayed by design); 111459990-111459993 USED (local sentinel pre-check). Cost ≈ 74,000 games ≈ 115 core-h cloud +
 ≈ 5.7 h PC GPU.
