@@ -65,7 +65,7 @@ Since 2026-11-01 those map roots search 1,024 simulations instead of 4,096 (§74
 [ADR-0065](../../../decisions/0065-a20-map-root-sims-1024.md); `STS_OOC_MCTS_FULL_ROOT_SIMS=0` restores 4,096).
 Since 2026-11-04 such a root stops at 128/256/512 simulations once the prior argmax holds 90% of the visits (§753
 NOT_WORSE: Heart −0.07 pp [−0.59, +0.46], 0.38x map simulations;
-[ADR-TBD](../../../decisions/TBD-a20-map-root-prior-share-stop.md); `STS_OOC_MCTS_PRIOR_SHARE_STOP=0` restores).
+[ADR-0066](../../../decisions/0066-a20-map-root-prior-share-stop.md); `STS_OOC_MCTS_PRIOR_SHARE_STOP=0` restores).
 
 ## Act-4 combat strength (§681, §682; A20 default "Act 4 strong" since ADR-0060)
 

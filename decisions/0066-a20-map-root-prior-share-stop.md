@@ -1,4 +1,4 @@
-# ADR-TBD: At A20, a searched map root stops early once the prior argmax holds 90% of the visits
+# ADR-0066: At A20, a searched map root stops early once the prior argmax holds 90% of the visits
 
 Date: 2026-11-04
 Status: accepted
