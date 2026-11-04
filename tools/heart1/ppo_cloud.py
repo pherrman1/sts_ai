@@ -481,7 +481,6 @@ def max_stalls(n_part):
     return max(1, int(MAX_STALL_FRACTION * n_part))
 
 
-GAME_SEED = re.compile(r'"type":"game".*?"seed":"(\d+)"')
 COMBAT_ABORT = re.compile(r"^\[bestbench-combat-abort\] seed=(\d+) floor=(\d+)(.*)$", re.M)
 
 
@@ -493,7 +492,11 @@ def aborted_game_lines(err_text, traj_text, first_seed, n_part, cap):
     written. Returns [] if no game is missing, one loss line per missing seed if the missing seeds are exactly the
     aborted ones and there are at most cap of them, else None (the actor stops)."""
     want = {str(s) for s in range(first_seed, first_seed + n_part)}
-    have = {s for s in GAME_SEED.findall(traj_text) if s in want}
+    have = set()
+    for line in traj_text.splitlines():   # the native lines have sorted keys ("type" comes last): parse them
+        if '"type":"game"' in line and '"type":"decision"' not in line:
+            have.add(str(json.loads(line).get("seed")))
+    have &= want
     missing = want - have
     if not missing:
         return []

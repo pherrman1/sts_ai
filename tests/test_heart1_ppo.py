@@ -215,6 +215,19 @@ class Heart1PpoTest(unittest.TestCase):
         self.assertIsNone(ppo_cloud.aborted_game_lines(err, traj, 100, 5, 1))          # 104 missing too
         self.assertIsNone(ppo_cloud.aborted_game_lines(err, traj, 100, 4, 0))          # over the cap
         self.assertEqual(ppo_cloud.aborted_game_lines(err, traj, 100, 2, 1), [])       # abort of another part: nothing missing
+        # real native output (sorted keys, "type" last): cov8 = seeds 111388903..910
+        import gzip
+        cov8 = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "docs", "experiments", "evidence", "ppo_s0_smoke_20261101", "cov8.jsonl.gz")
+        with gzip.open(cov8, "rt") as f:
+            real = f.read()
+        self.assertLess(real.index('"seed"'), real.index('"type":"game"'))
+        self.assertEqual(ppo_cloud.aborted_game_lines("", real, 111388903, 8, 1), [])
+        kept = "".join(l + "\n" for l in real.splitlines()
+                       if not ('"type":"game"' in l and '"seed":"111388906"' in l))
+        ab = "[bestbench-combat-abort] seed=111388906 floor=20 recorded as loss (deathEncounter=-2) error=stall\n"
+        lines = ppo_cloud.aborted_game_lines(ab, kept, 111388903, 8, 1)
+        self.assertEqual([json.loads(l)["seed"] for l in lines], ["111388906"])
+        self.assertIsNone(ppo_cloud.aborted_game_lines("", kept, 111388903, 8, 1))
 
     def test_cloud_store_round_trip(self):
         """ppo_cloud: two actor parts in a dir store -> one serve step -> next net and stats published, parts gone."""
