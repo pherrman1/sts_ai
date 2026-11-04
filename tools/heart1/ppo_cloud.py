@@ -442,6 +442,17 @@ def cmd_actor(argv):
             with open(job["traj"], "a") as f:
                 f.writelines(line + "\n" for line in stalled)
             log(f"iteration {it} part {a.part}: {len(stalled)} stalled game(s) count as losses")
+        with open(job["traj"]) as f:
+            traj_text = f.read()
+        with open(os.path.join(out, "actors.err")) as f:
+            aborted = aborted_game_lines(f.read(), traj_text, job["seed"], n_part, max_stalls(n_part) - len(stalled))
+        if aborted is None:
+            sys.exit(f"iteration {it}: missing game lines that are not combat aborts (see {out}/actors.err)")
+        if aborted:
+            with open(job["traj"], "a") as f:
+                f.writelines(line + "\n" for line in aborted)
+            log(f"iteration {it} part {a.part}: {len(aborted)} combat-aborted game(s) count as losses")
+            stalled += aborted
         n = 0
         with open(job["traj"]) as f:
             for line in f:
@@ -465,6 +476,36 @@ def cmd_actor(argv):
     print("ACTOR_DONE", flush=True)
 
 
+def max_stalls(n_part):
+    """Stalled or aborted games one part may count as losses: 1% of the part, at least 1 (a 13-game part allows 1)."""
+    return max(1, int(MAX_STALL_FRACTION * n_part))
+
+
+GAME_SEED = re.compile(r'"type":"game".*?"seed":"(\d+)"')
+COMBAT_ABORT = re.compile(r"^\[bestbench-combat-abort\] seed=(\d+) floor=(\d+)(.*)$", re.M)
+
+
+def aborted_game_lines(err_text, traj_text, first_seed, n_part, cap):
+    """Games of the part (seeds first_seed .. first_seed + n_part - 1) without a game line -> loss game lines.
+
+    Since d3dc5eac bestbench ends a stalled combat as a CombatAbort: it records a loss row, prints
+    "[bestbench-combat-abort] seed=N floor=F ..." and exits 0, but the game's trajectory (ppoEndGame) is never
+    written. Returns [] if no game is missing, one loss line per missing seed if the missing seeds are exactly the
+    aborted ones and there are at most cap of them, else None (the actor stops)."""
+    want = {str(s) for s in range(first_seed, first_seed + n_part)}
+    have = {s for s in GAME_SEED.findall(traj_text) if s in want}
+    missing = want - have
+    if not missing:
+        return []
+    aborts = {seed: (int(floor), rest.strip()) for seed, floor, rest in COMBAT_ABORT.findall(err_text)}
+    if set(aborts) != missing or len(missing) > cap:
+        return None
+    return [json.dumps({"type": "game", "schema": ppo_loop.ppo_train.SCHEMA, "seed": seed, "decisions": 0,
+                        "stalled": "combat abort " + aborts[seed][1],
+                        "outcome": {"heart_kill": False, "stalled": True, "floor": aborts[seed][0]}},
+                       separators=(",", ":")) for seed in sorted(missing, key=int)]
+
+
 def stalled_game_lines(err_text, n_part):
     """bestbench's per-seed failures -> one "game" line per seed if every failure is a combat stall, else None.
 
@@ -472,12 +513,12 @@ def stalled_game_lines(err_text, n_part):
     combat decisions ("stall: exceeded 1000 decisions") and the game's trajectory lines are lost (they are flushed
     only at game end). Such a game counts as a loss: a game line with no decisions (no training signal, the Heart
     rate counts it). Any other failure, a count that does not match bestbench's summary, or more than
-    MAX_STALL_FRACTION of the part returns None (the actor stops as before)."""
+    max_stalls(n_part) returns None (the actor stops as before)."""
     fails = re.findall(r"^\[bestbench-seed-failure\] seed=(\d+) error=(.*)$", err_text, re.M)
     summary = re.search(r"^bestbench: FAILED requested=(\d+) completed=(\d+) failed=(\d+)$", err_text, re.M)
     if not fails or not summary or int(summary.group(3)) != len(fails) or int(summary.group(1)) != n_part:
         return None
-    if len(fails) > MAX_STALL_FRACTION * n_part or not all("stall: exceeded" in msg for _, msg in fails):
+    if len(fails) > max_stalls(n_part) or not all("stall: exceeded" in msg for _, msg in fails):
         return None
     lines = []
     for seed, msg in fails:

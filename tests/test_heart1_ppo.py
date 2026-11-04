@@ -193,6 +193,28 @@ class Heart1PpoTest(unittest.TestCase):
         many = "".join(f"[bestbench-seed-failure] seed={i} error=stall: exceeded 1000 decisions floor=1\n"
                        for i in range(4)) + "bestbench: FAILED requested=256 completed=252 failed=4\n"
         self.assertIsNone(ppo_cloud.stalled_game_lines(many, 256))     # > 1% of the part
+        self.assertIsNotNone(ppo_cloud.stalled_game_lines(err.replace("256", "13"), 13))   # 13-game part: cap 1
+        self.assertEqual((ppo_cloud.max_stalls(13), ppo_cloud.max_stalls(256), ppo_cloud.max_stalls(520)), (1, 2, 5))
+
+    def test_aborted_game_lines(self):
+        """ppo_cloud actor: a CombatAbort (rc 0, no game line) becomes a loss line; other missing games stop it."""
+        import json
+        import ppo_cloud
+        import ppo_train
+        traj = "".join('{"type":"decision","x":1}\n{"type":"game","schema":"heart1-ppo-traj-v1","seed":"%d",'
+                       '"decisions":5}\n' % s for s in (100, 101, 103))
+        err = ("[bestbench-combat-abort] seed=102 floor=33 recorded as loss (deathEncounter=-2) error=stall\n"
+               "bestbench: 1 combat abort(s) recorded as loss rows\n")
+        self.assertEqual(ppo_cloud.aborted_game_lines("", traj, 100, 2, 1), [])        # 100, 101 both present
+        lines = ppo_cloud.aborted_game_lines(err, traj, 100, 4, 1)
+        self.assertEqual(len(lines), 1)
+        row = json.loads(lines[0])
+        self.assertEqual((row["seed"], row["schema"], row["decisions"], row["outcome"]["floor"],
+                          row["outcome"]["heart_kill"]), ("102", ppo_train.SCHEMA, 0, 33, False))
+        self.assertIsNone(ppo_cloud.aborted_game_lines("", traj, 100, 4, 1))           # missing, no abort line
+        self.assertIsNone(ppo_cloud.aborted_game_lines(err, traj, 100, 5, 1))          # 104 missing too
+        self.assertIsNone(ppo_cloud.aborted_game_lines(err, traj, 100, 4, 0))          # over the cap
+        self.assertEqual(ppo_cloud.aborted_game_lines(err, traj, 100, 2, 1), [])       # abort of another part: nothing missing
 
     def test_cloud_store_round_trip(self):
         """ppo_cloud: two actor parts in a dir store -> one serve step -> next net and stats published, parts gone."""

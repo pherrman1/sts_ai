@@ -35,7 +35,11 @@ combat (CRIT_PRE's recipe), produce a net that plays A20 better than heart1?
 - **Seeds:** 111540000-111654399 (220 × 520, new: no use on main, in the ledger or in any PREREG). Smoke
   111539900-111539915 (local, 2 iterations × 8 games on a dir store, not analysed): actors and learner ran, warm-up
   return = Monte Carlo, ~105 decisions per game.
-- **Stalls:** a stall counts as a loss (`ppo_cloud.py`, #965), at most 1% per part, as in the screens.
+- **Stalls:** a stall counts as a loss, as in the screens. On `ca8db597` a stalled combat is a CombatAbort (d3dc5eac):
+  bestbench exits 0 and the game's trajectory line is missing. The actor adds a loss game line (no decisions) for each
+  missing seed if the missing seeds are exactly the `[bestbench-combat-abort]` seeds (`aborted_game_lines`, added
+  for this run after K's pre-launch review); any other missing game stops the actor. At most `max_stalls` = max(1,
+  1% of the part) stalls per part, i.e. 1 of 13.
 
 ## Evaluation (primary)
 G1's runner and analysis (`../ppo_g1_critpre_20261103/`), frozen there:
@@ -45,7 +49,8 @@ G1's runner and analysis (`../ppo_g1_critpre_20261103/`), frozen there:
 
 The arms:
 - **GH (control) is reused from G1** (§752, 17.33%): same seeds, binary, flags and net. A sentinel of 32 GH seeds
-  (111520000-111520031) is rerun first. It must reproduce G1's GH games exactly (Heart kill and final floor), else
+  (111520000-111520031) is rerun first. It must reproduce G1's GH games exactly (Heart kill, final floor and the `[heart1_ppo]` line's
+  `decisions=`), else
   GH is replayed in full.
 - **GC = net-0220**, played fresh.
 
@@ -67,6 +72,7 @@ before it plays.
 - No default change in either case.
 
 ## Cost
-- **Actors:** 114,400 games × ~20-25 s ≈ 640-800 core-h on 40 workers.
-- **Learner:** 220 updates × ~70-100 s ≈ 5-6 h on the PC. Wall time is ~6-7 h if the actors keep pace.
+- **Actors:** 114,400 games × ~20-30 s ≈ 640-1,000 core-h on 40 workers.
+- **Learner:** 220 updates × ~70-100 s ≈ 5-6 h on the PC. A part of 13 games on 4 lanes takes ~100-130 s (K's
+  estimate), so the actors set the pace: ~7-8 h wall.
 - **Evaluation:** 4 × 2,048 + 32 games × ~25 s ≈ 57 core-h.
