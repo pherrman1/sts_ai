@@ -26068,3 +26068,77 @@ change amounts only.
 **Decision:** fixes on by default (engine-fix policy).
 **Knowledge impact:** KB `behavior/java-reference-audit.md`, `evaluation/differential-correctness.md`,
 `operations/environment-variables.md`.
+
+## §751 — PPO reward screen 2: 6 arms × 30,720 sampled A20 games from heart1 (K15 combat): CRIT_PRE (critic pre-trained on screen-1 games, λ 1 targets) PROMISING +0.74 pp [+0.18, +1.32] vs control (bar 0.52); PBRS_FLOOR −0.32, PBRS_STATE −0.14, ACT_BONUS −0.50 NOT_SHOWN → reward stays 1{Heart}, CRIT_PRE is the candidate critic setup pending G1 (PC + cloud, 2026-11-03)
+
+**Question (Philipp, 2026-11-03 09:29 CET "mach den reward screen"; 24 workers "yes go für 24 haiku worker"):** does
+a different learning signal (potential-based shaping, an act/key bonus, or a pre-trained critic) make PPO from heart1
+raise the A20 Heart-kill rate where screen 1's base recipe (§748) did not?
+**Data:** [PREREG](evidence/ppo_reward_screen_20261103/PREREG.md) (K PASS, #975), [RESULT](evidence/ppo_reward_screen_20261103/RESULT.md),
+`result.json`, `s2res.tgz` (games CSVs, per-iteration stats, stalls, futility look, serve log; sha256 `2f575565…`).
+Seeds 111470000-111500719 (all arms), learner on the PC (RTX 3060 Ti, micro-batch 192), 24 cloud actors, RUN_COMMIT
+da82e08e, binary 71cfd280. 2026-11-03 10:59-19:52 CET, no pause.
+**Result:**
+- Primary (iterations 40-59, 10,240 paired seeds vs C = (BASE 7.72% + BASE_S1 8.33%)/2, noise 0.61 pp): CRIT_PRE
+  8.77%, +0.74 [+0.18, +1.32] PROMISING; PBRS_STATE −0.14 [−0.70, +0.42], PBRS_FLOOR −0.32 [−0.86, +0.23],
+  ACT_BONUS −0.50 [−1.04, +0.06] NOT_SHOWN.
+- Futility look (iterations 20-29): all CONTINUE (CRIT_PRE +0.99 [+0.20, +1.78]).
+- 2 stalled games (BASE_S1, ≤ 1 per part); the stall-free sensitivity D changes no verdict.
+- Iterations 0-4 (heart1's policy in every arm, identical games): 8.91% on 2,560 seeds. CRIT_PRE has the highest block rate in 5 of 6 blocks. At the
+  first policy update the control critic is above the mean λ-return (0.206 vs 0.170, and the λ-return itself
+  bootstraps from that critic); CRIT_PRE's is calibrated (0.143 vs 0.147). Approx-KL ~0.011 per update and rising entropy in every arm.
+**Interpretation (Inference):** narrow screen-level hypothesis: a calibrated critic start helps; reshaping the reward (PBRS with floor or state
+potential) or adding act/key bonuses does not. Vs heart1's warm-up rate (unpaired seeds) CRIT_PRE is −0.14 pp and the control
+−0.88 pp (~1.4 binomial SE): both "controls drift down, CRIT_PRE avoids it" and "CRIT_PRE gains a little" fit; G1 decides.
+Whole-run noise again ~0.6-0.8 pp.
+**Decision:** reward stays `heart`. CRIT_PRE is the candidate critic setup for the next pilot; its net is used only
+after G1 (net-0060 vs heart1, policy alone, Silver 1,000, 2,048 fresh paired seeds; Philipp's go needed). The
+architecture screen (design B) needs a PREREG amendment for CRITIC_SEP/VAL_SPARSE against the pre-trained critic. No
+default change.
+Seeds: 111470000-111500719 USED. Cost ≈ 184k games ≈ 210 core-h cloud + ~9 h PC GPU (+ ~1 h pre-training).
+**Knowledge impact:** KB `research/a20-ppo-plan.md` (screen-2 row, reward axis result).
+
+## §752 — G1: CRIT_PRE's PPO net-0060 vs heart1, policy alone, 2,048 paired A20 seeds (Silver 1,000): INCONCLUSIVE, Heart +0.78 pp [−1.12, +2.64] (18.12% vs 17.33%), gate CAP; mean floor −1.61 [−2.37, −0.85], more Act-1 deaths → net not adopted (cloud, 2026-11-03)
+
+**Question (Philipp, 2026-11-03 20:16 CET "Ja Spiel gegen Heart1 auf 8 workern"):** does reward screen 2's PROMISING
+CRIT_PRE arm (§751) yield a net that plays A20 better than its start net heart1 on fresh paired seeds?
+**Data:** [PREREG](evidence/ppo_g1_critpre_20261103/PREREG.md) (K PASS after deltas R1-R3),
+[RESULT](evidence/ppo_g1_critpre_20261103/RESULT.md), `result.json`, `games.csv`. 2,048 units on 8 cloud workers,
+RUN_COMMIT 01ccb389, binary ca8db597 (main 520d4e4b), nets 4288d095 (heart1 as net-0000) and 1575c27e (CRIT_PRE
+net-0060), PPO mode at temperature 0, combat B (flat Silver 1,000 with the g7f_E prior). `verify_campaign.py`: 2,048 OK,
+0 missing or bad; every game rc 0, no combat aborts, no dropped seed.
+**Result:**
+- Heart kill heart1 17.33%, CRIT_PRE 18.12%, D +0.78 pp [−1.12, +2.64]. The sequential gate (gainer, d1 = +2 pp) hit
+  CAP with LLR −0.46, so the fixed-sample reading gives INCONCLUSIVE.
+- Act 3 cleared −0.63 pp [−2.88, +1.61]; mean final floor −1.61 [−2.37, −0.85]; Act-1 deaths 441 vs 348; runs
+  reaching floor 51 783 vs 833. CPU 24.7 vs 26.0 s per game.
+**Interpretation (Inference):** no gain at the gate's 2 pp scale. The point estimate equals the screen's in-sample D,
+so a small gain is neither shown nor excluded. CRIT_PRE's greedy policy differs systematically from heart1's: it dies
+more in Act 1 and converts more late runs into kills.
+**Decision:** the net is not adopted, and the S1 pilot does not start from it; the next PPO step is decided with
+Philipp. No default change.
+Seeds: 111520000-111522047 and 111529990-111529991 USED. Cost ≈ 4,096 games ≈ 29 core-h.
+**Knowledge impact:** KB `research/a20-ppo-plan.md` (G1 row).
+
+## §753 — Prior-share stop H = 0.9 at A20 map roots vs the 1,024 default, 1,536 paired seeds by control reuse: NOT_WORSE, Heart −0.07 pp [−0.59, +0.46] at 0.38x map sims; diverging seeds 19 vs 20 kills (cloud, 2026-11-03)
+
+**Question (Philipp, 2026-11-01 "Hm ich will eigentlich hauptsächlich n speedup", resumed 2026-11-03 20:19 CET "Mach
+auf 4 workern weiter"):** does #942's map-root prior-share stop (`STS_OOC_MCTS_PRIOR_SHARE_STOP=0.9`) cost less than
+1.5 pp of Heart kills against the ADR-0065 1,024 default?
+**Data:** [pre-registration](evidence/prior_share_ni_20261101/README.md) (J PASS after deltas),
+[RESULT](evidence/prior_share_ni_20261101/RESULT.md), `result.json`, `divergence_ps90.json`. Control = §741 arm B
+(else §727 arm A) records; arm played only on the 49 seeds whose control picks differ under the rule plus 32
+sentinels (ADR-0064 reuse). 81 units on 4 workers, RUN_COMMIT aefeffc7, binary d3289b52 (code 85bf1ba0).
+`verify_campaign.py` 81 OK, 0 missing or bad; no failed units. Sentinels 32/32 identical; diverging units 49/49
+prefix and pick as predicted.
+**Result:**
+- Heart kill R 25.72%, C 25.65%, d −0.07 pp [−0.59, +0.46]; SPRT nonregression accepts at 128 pairs (LLR 3.76).
+- Diverging seeds: 19 vs 20 kills (−2.0 pp [−18.4, +12.2]). Secondaries (Act 4, Heart reached, floor, deaths by act)
+  all CIs include 0.
+- Map-root sims 0.38x of 1,024; diverging games 6,512 vs 18,662 map sims per game.
+**Interpretation (Inference):** the gate is nearly guaranteed by construction (3% of games diverge); the diverging-seed
+count shows no visible loss. End-to-end speedup is smaller than the map-sim ratio because combat dominates CPU.
+**Decision:** option stays default off here; a default change is Philipp's call (own PR + ADR on current main, which
+has #957/#970/#976 that this run predates).
+Seeds: none new (111312000-111313535 replayed). Cost ≈ 81 games ≈ 14 core-h.
+**Knowledge impact:** KB `operations/environment-variables.md` (`STS_OOC_MCTS_PRIOR_SHARE_STOP` row: NI result).

@@ -15,3 +15,6 @@ Launch order (author):
    (`--keep-state` takes a list, so it goes after the arms). Launched 2026-11-03 10:59 CET, pid 231433.
 4. Workers W=1..24: `bash tools/heart1/ppo_cloud_worker.sh setup|start|wait docs/experiments/evidence/ppo_reward_screen_20261103 W`.
 5. Iteration 30: `analyze.py RUN futility.json --futility` (one look). End: `ppo_cloud.py cleanup` on the PC.
+
+Result: [RESULT.md](RESULT.md) (CRIT_PRE PROMISING +0.74 pp; PBRS_FLOOR, PBRS_STATE, ACT_BONUS NOT_SHOWN). Data
+`s2res.tgz` (games CSVs, loop stats, stalls, futility look, serve log), analysis `analyze.py` → `result.json`.
