@@ -26,7 +26,11 @@ Launch order (author; `S2=~/ppo-screen2`, screen 2's serve directory, kept with 
    (`DRY=1` first). Each arm's learner directory appears as `$S2/ARM`.
 6. **Sentinel (IN_DECK):** the P1 binary replays 32 of BASE's iteration-30 seeds with `$S2/BASE/net-0029.bin`, as
    stored and with `ppo_model.py addinputs net-0029.bin x.bin x3_deck`; every trajectory line and outcome must equal
-   BASE's kept iteration-30 parts. A failure holds IN_DECK only.
+   BASE's kept iteration-30 parts. A failure holds IN_DECK only. Command (P1 binary as `oc_p1`, executable):
+   `python3 sentinel.py oc_p1 $S2/BASE/net-0029.bin $S2/BASE/parts/traj-0030-p0.jsonl.gz ~/arch-sentinel --env-file ../ppo_reward_screen_20261103/actors_frozen.env --seed-first 111485360 --n 32 --salt 30`
+   -> `SENTINEL_OK`. First check the part's stall record (`$S2/BASE/stalled_seeds.txt`, part meta "stalled"): a
+   stalled seed's line in the part is synthetic, so if any of 111485360-111485391 stalled in BASE, use the next 32
+   seeds of part 0 with no stall (`--seed-first` = the first of them; review K, 2026-11-03).
 7. **Learner:** `python3 tools/heart1/ppo_cloud.py serve --micro-batch 192 git:https://github.com/pherrman1/sts_ai#ppo-xfer/arch $S2 $(awk '!/^#/{print $1}' arms.txt)`.
    Each arm first trains iteration 30 on the reused parts, then waits for its actors.
 8. **Workers** W=1..20 (count with Philipp's go): `bash tools/heart1/ppo_cloud_worker.sh setup|start|wait docs/experiments/evidence/ppo_arch_screen_20261102 W`.
