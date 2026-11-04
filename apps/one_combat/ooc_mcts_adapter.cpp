@@ -2780,7 +2780,7 @@ constexpr std::uint64_t kA20MapRootSims = 1024;
 // completed simulations (those below its budget) once the most-visited action is the prior argmax and holds at least
 // H of the root visits (OocMctsConfig::priorShareStopFraction). Offline rule S_prior of
 // docs/experiments/evidence/map_root_maxq_count_20261101/budget_stop.py. Needs STS_OOC_MCTS_FULL_BUDGET_FRACTION.
-// Unset: at ascension 20 under ADR-0061's map-only default, H = 0.9 (kA20PriorShareStop, ADR-TBD, NI §753); =0
+// Unset: at ascension 20 under ADR-0061's map-only default, H = 0.9 (kA20PriorShareStop, ADR-0066, NI §753); =0
 // restores the full map-root budget there.
 double livePriorShareStop = 0;
 bool livePriorShareStopExplicit = false;
@@ -2871,7 +2871,7 @@ bool liveSearchScreensA20Default = false;
 bool liveMapOnlyA20(const GameContext &gc) {
     return liveEnabled && liveSearchScreensA20Default && gc.ascension >= 20;
 }
-// The A20 prior-share default (ADR-TBD) is in force for this run: map-only default, playout caps on, flag unset.
+// The A20 prior-share default (ADR-0066) is in force for this run: map-only default, playout caps on, flag unset.
 bool livePriorShareA20Default() {
     return liveSearchScreensA20Default && !livePriorShareStopExplicit && liveFullBudgetFraction > 0;
 }
