@@ -193,6 +193,12 @@ def step_rewards(game, kind, gamma, act_bonus=0.1, key_bonus=0.05):
     return r
 
 
+def update_lam(a, value_only):
+    """GAE lambda of one update: --warmup-lam for value-only updates when set (>= 0), else --lam."""
+    w = getattr(a, "warmup_lam", -1.0)
+    return w if value_only and w >= 0 else a.lam
+
+
 def gae(rewards, values, gamma, lam):
     """Advantages and returns for one episode; the value after the last step is 0 (terminal)."""
     n = len(rewards)
@@ -222,6 +228,8 @@ def add_hparams(ap):
     ap.add_argument("--key-bonus", type=float, default=0.05, help="heart_act: reward per key")
     ap.add_argument("--gamma", type=float, default=1.0)
     ap.add_argument("--lam", type=float, default=0.97)
+    ap.add_argument("--warmup-lam", type=float, default=-1.0,
+                    help="GAE lambda of value-only (warm-up) updates; < 0 = --lam (default). 1.0 = Monte Carlo targets")
     ap.add_argument("--clip", type=float, default=0.2)
     ap.add_argument("--epochs", type=int, default=2)
     ap.add_argument("--minibatch", type=int, default=192, help="decisions per minibatch")
@@ -442,7 +450,7 @@ class Learner:
         for g in games:
             n = len(g["steps"])
             r = step_rewards(g, a.reward, a.gamma, a.act_bonus, a.key_bonus)
-            ad, rt = gae(r, values[k:k + n], a.gamma, a.lam)
+            ad, rt = gae(r, values[k:k + n], a.gamma, update_lam(a, value_only))
             adv.extend(ad); ret.extend(rt)
             k += n
         adv_t = torch.tensor(adv)

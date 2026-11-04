@@ -450,6 +450,21 @@ class Heart1PpoTest(unittest.TestCase):
         self.assertEqual(m, ppo_train.value_sparse_mask(games, 3, 0, 7))
         self.assertNotEqual(m, ppo_train.value_sparse_mask(games, 3, 0, 8))
 
+    def test_warmup_lam(self):
+        import argparse
+        import ppo_train
+        ap = argparse.ArgumentParser()
+        ppo_train.add_hparams(ap)
+        base = ap.parse_args([])
+        self.assertEqual(ppo_train.update_lam(base, True), base.lam)        # default: warm-up uses --lam
+        self.assertEqual(ppo_train.update_lam(base, False), base.lam)
+        mc = ap.parse_args(["--warmup-lam", "1.0"])
+        self.assertEqual(ppo_train.update_lam(mc, True), 1.0)               # value-only: Monte Carlo targets
+        self.assertEqual(ppo_train.update_lam(mc, False), mc.lam)           # policy updates keep --lam
+        # lambda 1 with gamma 1: the return is the game's reward, whatever the critic says
+        _, ret = ppo_train.gae([0.0, 0.0, 1.0], [0.9, 0.1, 0.5], 1.0, 1.0)
+        self.assertEqual([round(x, 6) for x in ret], [1.0, 1.0, 1.0])
+
     def test_cloud_fork(self):
         """init --fork-dir: a flags-off fork reproduces the source arm's next update bit for bit (the arch screen's
         learner check); an arm fork keeps the policy, Adam moments of old tensors, and starts its actors at N+1."""
