@@ -290,6 +290,30 @@ add_test(NAME blood_potion_heal COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guar
 set_tests_properties(blood_potion_heal PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(post_victory_heal_test tests/post_victory_heal_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(post_victory_heal_test PRIVATE include json/include)
+add_test(NAME post_victory_heal COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:post_victory_heal_test>)
+set_tests_properties(post_victory_heal PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(empty_pile_loss_test tests/empty_pile_loss_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(empty_pile_loss_test PRIVATE include json/include)
+add_test(NAME empty_pile_loss COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:empty_pile_loss_test>)
+set_tests_properties(empty_pile_loss PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(thorns_blocked_hit_test tests/thorns_blocked_hit_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(thorns_blocked_hit_test PRIVATE include json/include)
+add_test(NAME thorns_blocked_hit COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:thorns_blocked_hit_test>)
+set_tests_properties(thorns_blocked_hit PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(hand_upgrade_all_test tests/hand_upgrade_all_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(hand_upgrade_all_test PRIVATE include json/include)
@@ -392,6 +416,54 @@ target_include_directories(deck_obtain_raw_test PRIVATE include json/include)
 add_test(NAME deck_obtain_raw COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
     $<TARGET_FILE:deck_obtain_raw_test>)
 set_tests_properties(deck_obtain_raw PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
+
+add_executable(matryoshka_counter_test tests/matryoshka_counter_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(matryoshka_counter_test PRIVATE include json/include)
+add_test(NAME matryoshka_counter COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:matryoshka_counter_test>)
+set_tests_properties(matryoshka_counter PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
+
+add_executable(old_coin_gold_test tests/old_coin_gold_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(old_coin_gold_test PRIVATE include json/include)
+add_test(NAME old_coin_gold COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:old_coin_gold_test>)
+set_tests_properties(old_coin_gold PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
+
+add_executable(vampires_strike_tag_test tests/vampires_strike_tag_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(vampires_strike_tag_test PRIVATE include json/include)
+add_test(NAME vampires_strike_tag COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:vampires_strike_tag_test>)
+set_tests_properties(vampires_strike_tag PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
+
+add_executable(screenless_relic_pool_test tests/screenless_relic_pool_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(screenless_relic_pool_test PRIVATE include json/include)
+add_test(NAME screenless_relic_pool COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:screenless_relic_pool_test>)
+set_tests_properties(screenless_relic_pool PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
+
+add_executable(gold_reward_idol_test tests/gold_reward_idol_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(gold_reward_idol_test PRIVATE include json/include)
+add_test(NAME gold_reward_idol COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:gold_reward_idol_test>)
+set_tests_properties(gold_reward_idol PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
+
+add_executable(ooc_relic_minor_fix_test tests/ooc_relic_minor_fix_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(ooc_relic_minor_fix_test PRIVATE include json/include)
+add_test(NAME ooc_relic_minor_fix COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:ooc_relic_minor_fix_test>)
+set_tests_properties(ooc_relic_minor_fix PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
 
 add_executable(remove_obtain_weight_test tests/remove_obtain_weight_test.cpp
@@ -787,6 +859,7 @@ set_tests_properties(ooc_particle_planner PROPERTIES LABELS "core")
 add_test(NAME silver_useless_analysis COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/tests/test_silver_useless.py)
 add_test(NAME run_profile_analysis COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/tests/test_run_profile.py)
 add_test(NAME paired_analysis_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/paired_analysis.py --self-test)
+add_test(NAME sprt_gate_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/sprt_gate.py --self-test)
 add_test(NAME silver_tree_profile_analysis COMMAND python3
     ${CMAKE_SOURCE_DIR}/tools/tests/test_silver_tree_profile.py)
 add_test(NAME py_compile_parity_test COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/parity_test.py)
@@ -1393,7 +1466,7 @@ set_tests_properties(combat_transition_native_fixture
     PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 set_tests_properties(combat_transition_fixture_contract
     PROPERTIES DEPENDS combat_transition_native_fixture)
-set_tests_properties(paired_analysis_selftest py_compile_parity_test py_compile_analyze_ooc_factor check_replay_selftest vnettest_selftest winnettest_selftest battlecontext_roundtrip designer_in_spire cardqueue_overflow keys_collect issue_fixes thorns_retaliation awakened_one_stage2 darkling_victory poison_lose_hp time_eater_exhaust simhealth_gamble_empty_hand gamblers_brew_legality simhealth_selection_failure training_integrity e2c_observer_scope analyze_postcombat_raw_terminal_selftest export_win_model_selftest runwin_e2c_native_parity
+set_tests_properties(paired_analysis_selftest sprt_gate_selftest py_compile_parity_test py_compile_analyze_ooc_factor check_replay_selftest vnettest_selftest winnettest_selftest battlecontext_roundtrip designer_in_spire cardqueue_overflow keys_collect issue_fixes thorns_retaliation awakened_one_stage2 darkling_victory poison_lose_hp time_eater_exhaust simhealth_gamble_empty_hand gamblers_brew_legality simhealth_selection_failure training_integrity e2c_observer_scope analyze_postcombat_raw_terminal_selftest export_win_model_selftest runwin_e2c_native_parity
     runwin_e2c_production_native_parity e2c_runwin_projection_parity PROPERTIES ENVIRONMENT "PYTHONPYCACHEPREFIX=${CMAKE_BINARY_DIR}/pycache")
 
 # Labels provide fast, intention-revealing local tiers while the unfiltered
@@ -1410,7 +1483,7 @@ set_tests_properties(vnettest_selftest winnettest_selftest
     runwin_e2c_native_parity runwin_e2c_production_native_parity
     e2c_runwin_projection_parity PROPERTIES LABELS "integration")
 set_tests_properties(py_compile_parity_test py_compile_analyze_ooc_factor
-    check_replay_selftest check_benchmark_canary_selftest export_win_model_selftest
+    check_replay_selftest check_benchmark_canary_selftest export_win_model_selftest sprt_gate_selftest
     PROPERTIES LABELS "tooling")
 set_tests_properties(analyze_postcombat_raw_terminal_selftest vwin_terminal_pricing_audit_selftest PROPERTIES LABELS "research-repro")
 set_property(TEST paired_analysis_selftest check_replay_selftest
@@ -1418,6 +1491,11 @@ set_property(TEST paired_analysis_selftest check_replay_selftest
 
 add_test(NAME ooc_mcts_adapter COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
     $<TARGET_FILE:one_combat> oocmctsselftest)
+# Run-level loss accounting of runFullRunOOC on one seed with substitute combat backends (UNDECIDED exit
+# recorded as the death; a throwing backend becomes CombatAbort with the partial result).
+add_test(NAME run_driver_loss_accounting COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:one_combat> rundriverlossselftest 1 0)
+set_tests_properties(run_driver_loss_accounting PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration")
 set_tests_properties(ooc_mcts_adapter PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     LABELS "integration" ENVIRONMENT "STS_NATIVE_OOC=1;STS_OOC_STRATEGIC_TOK_NN=${CMAKE_SOURCE_DIR}/selfplay/models/ooc_strategic_tok_final.native")
 add_test(NAME arm_c_rollout_analysis COMMAND python3
