@@ -1,0 +1,11 @@
+name          price-table-stagec
+code_commit   fb1477a5084b48e9edeec56fc1cd94d109bf428f
+binary_sha256 PENDING
+workers       40
+share         /mnt/project-files/price-table-stagec
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 45
+claim_settle_seconds 60
+input ss_states.tar /mnt/project-files/price-table-stagec/ss_states.tar 3422ca467f998538612541841fe5bd56a6d328f25aa34158dba46d9cfb009bab

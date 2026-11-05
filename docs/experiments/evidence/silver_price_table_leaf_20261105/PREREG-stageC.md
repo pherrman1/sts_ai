@@ -1,7 +1,8 @@
 # Stage C: §746 model A as Silver's Shield & Spear leaf, through the price table (pre-registration DRAFT)
 
-Status: **DRAFT, not frozen, not run.** Written with the price-table flag (leaf plan stage 0, thread B). Running it
-needs Philipp's typed go, a prelaunch review and a frozen RUN_COMMIT / binary / model sha in `campaign.manifest`.
+Status: **FROZEN for launch** (campaign `stagec/`; RUN_COMMIT, binary and inputs in `stagec/campaign.manifest`).
+Philipp's go: 2026-11-05 20:05 CET "go auf 40 workern". Written with the price-table flag (leaf plan stage 0,
+thread B); the anchor arm and P2-P4 after review J of #988 / #991.
 §746's pre-registered decision ("PASS → pre-register stage C: A as Silver's S&S win leaf in §724's S&S → Heart
 chain") is what this document carries out.
 
@@ -24,10 +25,15 @@ win leaf uses model A's prices (`STS_SILVER_PRICE_TABLE_LEAF=a746`), i.e. does H
 
 ## Design (§724's, changed only where stated)
 - States: §724's 592 S&S entries holding Incense Burner (`ss_states.tar`, share `incense-term-gate/`), plus S&S
-  entries without Incense Burner from the same source campaigns (`extract_ss.py` with the Incense filter removed;
-  deduplicated as §724; at most 432, drawn with seed 20261105). The second set has to be extracted and counted
-  before freezing; the frozen manifest records its final size. The cap of 432 = 1,024 − 592 comes from the seeds
-  (below).
+  entries without Incense Burner from the same source campaigns (`stagec/tools/extract_ss.py`, §724's script with
+  the Incense filter as an argument; with the filter on it reproduces §724's 592 states exactly, per campaign;
+  with it off: 4,425 states after §724's deduplication). `stagec/tools/build_states.py` keeps §724's 592 lines
+  verbatim as lines 0..591 and appends the first 432 of the other states shuffled with seed 20261105 (lines
+  592..1023): 1,024 states, `ss_states.tar` sha256 `3422ca46…` (share `price-table-stagec/`). The cap of 432 =
+  1,024 − 592 comes from the seeds (below).
+- Anchors (frozen before launch): `silver_price_table_test --report` on the 1,024 states (share
+  `price-table-stagec/tables.jsonl`): Incense states 398 at the floor / 81 inside / 113 at the cap; other states
+  308 / 61 / 63; no flat table.
 - Play: `one_combat act4replay` with `STS_ACT4REPLAY_CHAIN=heart`, learned budget, Silver as §724 (learned stop
   gbt-0cac7cc64364, ≤ 10k per root, one-action roots unsearched, Act 4 strong off, node reuse cap 262,144, g7f_E root
   table and root/tree prior, boss prior playouts); `run_unit.sh` = §724's with the arm list below.
@@ -46,15 +52,17 @@ win leaf uses model A's prices (`STS_SILVER_PRICE_TABLE_LEAF=a746`), i.e. does H
   replicate is dropped as a whole, from every arm and every comparison (`analyze.py` states this rule and reports
   the dropped units with their reason); no partial unit enters a gate.
 
-## Endpoints and analysis (`analyze.py`, frozen before launch)
+## Endpoints and analysis (`stagec/analyze.py`, frozen before launch)
 Heart kill = S&S won and Heart won, averaged over the 4 replicates per state and arm. CIs: 95% bootstrap over source
 seeds (10,000, seed 20261105).
 - **Co-primary:** T − D and TA − D Heart kill over all states, each with its own sequential gate (ADR-0064,
   `tools/sprt_gate.py`): gainer variant H0 δ = 0 vs H1 δ = +2 pp, α = 0.025 per gate (Bonferroni over the two), β =
   0.05, a look every 64 contiguous units, hard cap = all states; without a crossing by the cap, the fixed-sample CI
   (97.5%) decides: lo > 0 PASS, hi < 0 HARMFUL, else INCONCLUSIVE. Unit order: one seeded permutation (seed
-  20261105) of all units, Incense and other states mixed, fixed in `campaign.manifest` before launch and used by
-  both gates; units enter a look only when all units before them in that order are complete.
+  20261105, Python `random.Random(20261105).shuffle` of 0..1023) of all units, Incense and other states mixed, =
+  the line order of `stagec/units.txt`, used by both gates. The gate key is the unit's rank in that order among
+  the non-dropped units (0..N−1, start 0), not the state index; a unit not yet finished is a gap, so a look uses
+  only the finished prefix.
 - **Secondary:** TA − T over all states and over the states where the anchor is not at the floor (TA plays as T at
   the floor, so the difference there must be 0; a nonzero difference is a determinism failure and reported).
 - **Secondary (Incense states, descriptive):** T − I, TA − I and TI − I Heart kill; TI − I is the question
