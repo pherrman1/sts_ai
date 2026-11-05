@@ -51,8 +51,9 @@ hook `setNativeSilverPriceTableBuilder` (`NativeSilverBackend`).
 `STS_SILVER_PRICE_TABLE_LEAF=a746:anchor` (or `a746:ENC,...:anchor`) sets the fight's win bonus to
 V(root)/s − (U(start HP) + Σ held potion prices), the same as V(1 HP with the start potions)/s − 1 − Σ potion prices:
 a loss then costs, against a win that ends in the start state, what the model says. The raw value is clamped to
-[53, 212]. The floor keeps every win above the loss / unfinished leaf, which scores up to 37 for monster damage plus
-survival terms; the cap 212 = 4 × 53 is the scale floor's factor. On §724's 592 S&S states the raw anchor has
+[53, 212]. The floor keeps at least the default leaf's balance between wins and the loss / unfinished leaf
+(monster damage up to 37, 1.5 per survived turn up to turn 100, half the potion score, death saves); a lower bonus
+would let long losing lines outscore short wins. The cap 212 = 4 × 53 is the scale floor's factor. On §724's 592 S&S states the raw anchor has
 quantiles −37 / −15 / 11 / 114 / 1,064 (5/25/50/75/95%), so the floor binds in 398 states (TA plays as T there), 81
 are inside and 113 hit the cap; mean bonus 92.5 (README). Counted in `PriceTableLeafStats` (`anchorLow`,
 `anchorHigh`); the spec records `anchor`.
