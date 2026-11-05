@@ -97,8 +97,21 @@ fix the budget (see the rollout-cost note in the ledger); keep it off for labels
 
 ## Cost
 
-See the smoke section of the PR description (filled from `tools/fight_end_pairs/smoke.sh` on the used
-smoke seeds 111459990 and 111459991).
+Smoke 2026-11-05 (`tools/fight_end_pairs/smoke.sh`, options `n=2,ooc=heart1`, default variants, used smoke
+seeds 111459990-993, binary `119323af` of commit `f166386b`, four processes on a four-core cloud container):
+4 source runs, 8 forks, 56 copies, 3 skips (`pot:*` without potions), all rows valid, rc 0.
+
+- CPU per continuation at Silver 1,000 on one core: mean 9.9 s (act-1 forks 8.3 s, act 2 14.8 s, act 3
+  4.5 s); a continuation that reaches the Heart costs 20-70 s, one that dies in the next fight < 1 s.
+  About 24,700 Silver simulations per CPU second.
+- Source run: mean 15.7 s (5-30 s).
+- Row size about 3.9 KB (the heart1 record is about 2.4 KB of it).
+- Stage-2 pilot projection (512 games × 4 fight ends × base + 6 ≈ 14k continuations): about 40 core-h
+  at this mix, plus about 2 core-h of source runs; more if the pilot's Heart reach rate is higher than in
+  these four seeds (1 Heart kill in 4 source runs).
+- Label noise: the copies share RNG streams, but one different OOC decision (route, rest, shop) changes
+  every later draw, so single-copy outcomes diverge widely (e.g. 111459993 fork 1: base dies on floor 29,
+  `hp:-8` kills the Heart). Expected; the pilot's sample size has to carry it.
 
 ## Related
 
