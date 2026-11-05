@@ -26119,3 +26119,79 @@ more in Act 1 and converts more late runs into kills.
 Philipp. No default change.
 Seeds: 111520000-111522047 and 111529990-111529991 USED. Cost ≈ 4,096 games ≈ 29 core-h.
 **Knowledge impact:** KB `research/a20-ppo-plan.md` (G1 row).
+
+## §753 — Prior-share stop H = 0.9 at A20 map roots vs the 1,024 default, 1,536 paired seeds by control reuse: NOT_WORSE, Heart −0.07 pp [−0.59, +0.46] at 0.38x map sims; diverging seeds 19 vs 20 kills (cloud, 2026-11-03)
+
+**Question (Philipp, 2026-11-01 "Hm ich will eigentlich hauptsächlich n speedup", resumed 2026-11-03 20:19 CET "Mach
+auf 4 workern weiter"):** does #942's map-root prior-share stop (`STS_OOC_MCTS_PRIOR_SHARE_STOP=0.9`) cost less than
+1.5 pp of Heart kills against the ADR-0065 1,024 default?
+**Data:** [pre-registration](evidence/prior_share_ni_20261101/README.md) (J PASS after deltas),
+[RESULT](evidence/prior_share_ni_20261101/RESULT.md), `result.json`, `divergence_ps90.json`. Control = §741 arm B
+(else §727 arm A) records; arm played only on the 49 seeds whose control picks differ under the rule plus 32
+sentinels (ADR-0064 reuse). 81 units on 4 workers, RUN_COMMIT aefeffc7, binary d3289b52 (code 85bf1ba0).
+`verify_campaign.py` 81 OK, 0 missing or bad; no failed units. Sentinels 32/32 identical; diverging units 49/49
+prefix and pick as predicted.
+**Result:**
+- Heart kill R 25.72%, C 25.65%, d −0.07 pp [−0.59, +0.46]; SPRT nonregression accepts at 128 pairs (LLR 3.76).
+- Diverging seeds: 19 vs 20 kills (−2.0 pp [−18.4, +12.2]). Secondaries (Act 4, Heart reached, floor, deaths by act)
+  all CIs include 0.
+- Map-root sims 0.38x of 1,024; diverging games 6,512 vs 18,662 map sims per game.
+**Interpretation (Inference):** the gate is nearly guaranteed by construction (3% of games diverge); the diverging-seed
+count shows no visible loss. End-to-end speedup is smaller than the map-sim ratio because combat dominates CPU.
+**Decision:** option stays default off here; a default change is Philipp's call (own PR + ADR on current main, which
+has #957/#970/#976 that this run predates).
+Seeds: none new (111312000-111313535 replayed). Cost ≈ 81 games ≈ 14 core-h.
+**Knowledge impact:** KB `operations/environment-variables.md` (`STS_OOC_MCTS_PRIOR_SHARE_STOP` row: NI result).
+
+## §754 — PPO architecture screen (design B): 5 arms forked from screen 2's BASE after update 30, 29 updates × 512 sampled A20 games each (K15 combat): IN_DECK −0.07, DEPTH6 +0.25, CRITIC_SEP −0.20, AUX +0.03, VAL_SPARSE −0.11 pp vs BASE, all NOT_SHOWN (noise 0.61); no critic arm CRITIC_BETTER → architecture stays BASE (PC + cloud, 2026-11-04)
+
+**Question (Philipp, 2026-11-03: design B chosen 10:37 CET; "Go mit 20 workern nach Screen 2" 19:07 CET):** does one
+change to the decision net's inputs (deck aggregates), depth (+2 identity blocks), critic (separate trunk), auxiliary
+targets (floor, Act 4) or value supervision (sparse) raise the A20 Heart-kill rate of PPO from heart1?
+**Data:** [PREREG](evidence/ppo_arch_screen_20261102/PREREG.md) (K PASS incl. amendments up to 0fcc0abc, #974/#977/#978),
+[RESULT](evidence/ppo_arch_screen_20261102/RESULT.md), `result.json`, `archres.tgz` (sha256 `1afb422c…`),
+[screen.manifest](evidence/ppo_arch_screen_20261102/screen.manifest). Fork point screen 2 BASE `state-0030.pt`
+(`cd1c90c6…`); controls = screen 2's BASE and BASE_S1 on the same seeds (111485872-111500719). RUN_COMMIT 30529219,
+binaries 71cfd280 and (IN_DECK) cf7d4bbb = defaa930 + P1 only. 20 cloud actors, learner on the PC (RTX 3060 Ti),
+2026-11-03 20:18 CET to 2026-11-04 02:01 CET; learner CUDA OOM 21:51 (foreign GPU process), restarted 23:05 from saved
+state, no games lost.
+**Result:**
+- Pre-launch: learner check passed via the pre-registered fallback (fork 8.14e-4 ≤ screen 2 rerun 9.65e-4 max
+  |Δparam|; GPU learner not bitwise reproducible); IN_DECK sentinel 32/32 trajectories identical; native forward cost
+  IN_DECK 1.01×, DEPTH6 1.67×.
+- Primary (iterations 40-59, 10,240 paired seeds vs BASE 7.72%; BASE_S1 8.33%, noise 0.61 pp): DEPTH6 +0.25
+  [−0.37, +0.89], AUX +0.03 [−0.58, +0.65], IN_DECK −0.07 [−0.67, +0.57], VAL_SPARSE −0.11 [−0.71, +0.51], CRITIC_SEP
+  −0.20 [−0.82, +0.41]: all NOT_SHOWN. No stalls in the arms; BASE_S1's window stall changes nothing.
+- Cost (actor_s vs screen 2 BASE): 0.78-0.86× for BASE-forward arms (faster containers), DEPTH6 1.02× (≈1.25× vs
+  the others); all ≤ 1.3.
+- Critic secondary (§747 post-fight states, gates.py raw): T1 BASE 0.734, CRITIC_SEP 0.617, AUX 0.718, VAL_SPARSE
+  0.665 (CRIT_PRE 0.721, heart1 0.827); T5 1.99 / 3.25 / 2.22 / 2.42 (1.94, 1.50): all NOT_BETTER.
+**Interpretation (Inference):** at 30 updates none of these architecture changes moves the Heart rate by ≥ ≈0.6 pp,
+the screen's CI half-width; with screens 1 and 2 this makes three axes (recipe, reward, architecture) flat at this
+scale, apart from CRIT_PRE's +0.74 (whose G1, §752, was INCONCLUSIVE). Every PPO critic ends less HP-sensitive than
+heart1's (not pre-registered): on-policy fitting of a sparse 1{Heart} return seems to flatten the post-fight value surface.
+**Decision:** S1 architecture = BASE's net; nothing adopted. No default change. Seeds: no new block (screen 2's
+replayed by design); 111459990-111459993 USED (local sentinel pre-check). Cost ≈ 74,000 games ≈ 115 core-h cloud +
+≈ 5.7 h PC GPU.
+**Knowledge impact:** KB `research/a20-ppo-plan.md` (architecture row).
+
+## §755 — LONG_B critic (net-0208) as a Silver combat leaf, teacher check (B2 rerun of §747): FAIL on HP resolution (−3 HP lowers V in 79.2% of 18,054 post-fight states vs heart1 86.2% on the same states; 1-HP price p10 −3.2 / p90 +4.6 secant units); Fairy 50 HP, max HP +2.5 HP/pt, per-type r 0.78 pass; outcome AUC 0.77 vs heart1 0.56 → no LONG_B leaf, no B3 (offline, no seeds, 2026-11-05)
+
+**Question:** Philipp (2026-11-05 15:54 CET): is the almost finished LONG_B value head suitable as Silver's combat
+leaf? §747 said to rerun B2 on the own A20 PPO critic.
+**Data:** [README](evidence/longb_value_leaf_teacher_20261105/README.md) (pre-registration, §747's gates T1-T5
+unchanged, pushed before scoring), [RESULT](evidence/longb_value_leaf_teacher_20261105/RESULT.md). LONG_B net-0208
+`8c2d7daf…`, `one_combat heart1score` (binary `78849fcf…` = the run's actor binary; parity with the actors' logged
+values 0.0). States: 18,054 post-fight REWARDS states in acts 1-3 (11,500 hallway, 5,195 elite, 1,359 boss) from the
+1,040 LONG_B games of iterations 208-209 (read from the run's git store; §691 records lack the v2 inputs), perturbed
+as `prices.py`: 237,814 records. heart1 scored on the same records as a paired control.
+**Result (primary, acts 1-3):**
+- T1 −3 HP lowers V: 79.2% (need 95%), FAIL (heart1 86.2%). Boss 64%, act 2/3 74/75%.
+- T5 1-HP resolution: median abs(price − 1) 1.57 secant units (need ⅓), FAIL (heart1 1.30).
+- T2 max HP +5 raises V in 96.0% (+2.5 HP per point), T3 Fairy 50.3 HP, T4 per-type r 0.776: pass.
+- Descriptive: AUC of V vs Heart kill 0.77 (acts 0.67/0.80/0.84) vs heart1 0.56. Non-Fairy potion median 6.7 HP.
+- Mid-combat states: not scorable; the record has no combat fields, and Silver's leaf only prices fight-end states.
+**Decision:** FAIL per the pre-registered rule. No LONG_B leaf, no B3 flag. PPO training raised the critic's level
+accuracy and potion prices but not its 1-3 HP resolution.
+Seeds: none.
+**Knowledge impact:** B2 lines in `research/ppo-and-combat-leaf-literature.md`.

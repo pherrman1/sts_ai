@@ -28,6 +28,9 @@ the replacement.
 
 ## Current architecture ADRs
 
+- [ADR-0066](0066-a20-map-root-prior-share-stop.md) stops an A20 map root at 128/256/512 simulations once the prior
+  argmax holds 90% of the visits (`STS_OOC_MCTS_PRIOR_SHARE_STOP=0` restores the full budget; §753 NOT_WORSE, 0.38x
+  map simulations).
 - [ADR-0065](0065-a20-map-root-sims-1024.md) caps every A20 map-only search root at 1,024 simulations instead of the
   whole 4,096 budget (`STS_OOC_MCTS_FULL_ROOT_SIMS=0` restores it; adopted on §741's NOT_WORSE SPRT, −75% map CPU).
 - [ADR-0064](0064-sequential-gates-and-control-reuse.md) makes paired A/B gates stop sequentially (`tools/sprt_gate.py`,
