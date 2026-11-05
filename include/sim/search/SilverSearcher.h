@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <array>
 #include <map>
@@ -111,8 +112,12 @@ namespace sts::search {
             std::vector<double> price;
         };
         std::vector<Counter> counters;
-        // Diagnostics: the scale (model value per fight-start HP) and the model's win value V(root) / scale.
-        double hpUnit = 0, rootWinValue = 0;
+        // Win bonus for this fight; NaN = SilverEvalWeights::winBonus. The ":anchor" option sets it so that the
+        // table's win at the fight-start state equals the model's own win value V(root) / scale, clamped.
+        double winBonus = std::numeric_limits<double>::quiet_NaN();
+        // Diagnostics: the scale (model value per fight-start HP), the model's win value V(root) / scale and the
+        // unclamped anchored win bonus (NaN when not anchored).
+        double hpUnit = 0, rootWinValue = 0, anchorRaw = std::numeric_limits<double>::quiet_NaN();
 
         [[nodiscard]] double hpCurve(double hp) const;
         // Counter value of `c` after the fight ends in `bc` (as exitBattle writes it to the relic).

@@ -16,7 +16,7 @@ Code: `apps/one_combat/silver_price_table.{h,cpp}` (features, model, table build
 `SilverPriceTable` and the victory branch of `SilverSearcher::evaluateEndState` (`src/sim/search/SilverSearcher.cpp`),
 hook `setNativeSilverPriceTableBuilder` (`NativeSilverBackend`).
 
-1. **Flag.** `STS_SILVER_PRICE_TABLE_LEAF=a746[:ENC,...]` or `<model>.trees:ENC,...`; `a746` defaults to Shield &
+1. **Flag.** `STS_SILVER_PRICE_TABLE_LEAF=a746[:ENC,...][:anchor]` or `<model>.trees:ENC,...[:anchor]`; `a746` defaults to Shield &
    Spear (model A is a Heart-entry model, so the fight before the Heart is the only fight where its target is the
    next state). one_combat installs the builder after the native Silver backend; any other binary fails the fight if
    the option is set. The spec, model paths and sha256 are recorded in the Silver leaf specification
@@ -47,6 +47,17 @@ hook `setNativeSilverPriceTableBuilder` (`NativeSilverBackend`).
    counter (`ctr:LIZARD_TAIL` 1 = unused, 0 = used). A death saved in the fight shows up as the consumed save plus the
    revive HP. Mark of the Bloom is a model feature, so no special case.
 
+## Anchored win bonus (`:anchor`, stage C arm TA)
+`STS_SILVER_PRICE_TABLE_LEAF=a746:anchor` (or `a746:ENC,...:anchor`) sets the fight's win bonus to
+V(root)/s − (U(start HP) + Σ held potion prices), the same as V(1 HP with the start potions)/s − 1 − Σ potion prices:
+a loss then costs, against a win that ends in the start state, what the model says. The raw value is clamped to
+[53, 212]. The floor keeps at least the default leaf's balance between wins and the loss / unfinished leaf
+(monster damage up to 37, 1.5 per survived turn up to turn 100, half the potion score, death saves); a lower bonus
+would let long losing lines outscore short wins. The cap 212 = 4 × 53 is the scale floor's factor. On §724's 592 S&S states the raw anchor has
+quantiles −37 / −15 / 11 / 114 / 1,064 (5/25/50/75/95%), so the floor binds in 398 states (TA plays as T there), 81
+are inside and 113 hit the cap; mean bonus 92.5 (README). Counted in `PriceTableLeafStats` (`anchorLow`,
+`anchorHigh`); the spec records `anchor`.
+
 ## Model a746
 §746 model A: XGBoost GBM on §732's 440 state features (HP, max HP, HP fraction, potions and slots, deck and upgrades,
 relics, relic counters, Searing Blow misc, Silver's S&S leaf L), monotone + in HP, max HP, HP fraction, potion count,
@@ -59,7 +70,8 @@ them.
 - `silver_price_table` (ctest, core): feature rows equal Python's Feat.row and margins equal XGBoost's on stored
   states; GameContext → state names; every stored state's table has a non-decreasing HP curve and non-negative potion
   prices; the leaf without a table is Silver's default; with a table more HP never lowers a win and removing a held
-  potion never raises it; table build time.
+  potion never raises it; table build time; with `:anchor` the raw bonus plus the start state's table value equals
+  V(root)/s, the bonus stays in [53, 212] and the leaf uses it.
 - `silver_price_table_off_identity` (ctest, core): a 4-state S&S → Heart act4replay (seeds 111459990-993, flat 500
   sims) gives main 4851f703's rows with the option unset and =0; with `a746` it loads, logs and plays.
 
@@ -70,6 +82,6 @@ them.
 - Model A is miscalibrated on single changes (§746: HP and potion effects 1.1-1.7× too large, relic removal and
   max-HP loss too small); the table inherits that. The refit prices the Incense phase at about 0.6× §723 (README).
 - `winBonus` stays 53 while U spans up to 4× the HP range (median U(start HP) 146 at S&S), so the table's price of
-  dying relative to an S&S win differs from the model's own (0.3-2.4×, median 1.27×; README). A death-anchored win
-  bonus (V(1 HP) / s) would make it consistent but changes winBonus's meaning; not built.
+  dying relative to an S&S win differs from the model's own (0.3-2.4×, median 1.27×; README). The `:anchor` option
+  (below) makes it consistent where the model prices dying above 53, not below.
 - The table is linear between knots and additive across potions and counters (no interactions).

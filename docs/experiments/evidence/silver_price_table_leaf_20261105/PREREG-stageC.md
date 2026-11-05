@@ -18,35 +18,48 @@ win leaf uses model A's prices (`STS_SILVER_PRICE_TABLE_LEAF=a746`), i.e. does H
   fight (the Heart included) keep the default leaf.
 - Prices are in units of model A's own 1-HP slope at the S&S start HP (see the README for the scale rule and its
   floor).
+- Second candidate (Philipp's choice 2026-11-05): `STS_SILVER_PRICE_TABLE_LEAF=a746:anchor`, the same table with the
+  fight's win bonus anchored to the model, V(root)/s − the table's value of the start state, clamped to [53, 212]
+  (KB page, "Anchored win bonus").
 
 ## Design (§724's, changed only where stated)
 - States: §724's 592 S&S entries holding Incense Burner (`ss_states.tar`, share `incense-term-gate/`), plus S&S
   entries without Incense Burner from the same source campaigns (`extract_ss.py` with the Incense filter removed;
-  deduplicated as §724; at most 1,024, drawn with seed 20261105). The second set has to be extracted and counted
-  before freezing; its size changes only the cost.
+  deduplicated as §724; at most 432, drawn with seed 20261105). The second set has to be extracted and counted
+  before freezing; the frozen manifest records its final size. The cap of 432 = 1,024 − 592 comes from the seeds
+  (below).
 - Play: `one_combat act4replay` with `STS_ACT4REPLAY_CHAIN=heart`, learned budget, Silver as §724 (learned stop
   gbt-0cac7cc64364, ≤ 10k per root, one-action roots unsearched, Act 4 strong off, node reuse cap 262,144, g7f_E root
   table and root/tree prior, boss prior playouts); `run_unit.sh` = §724's with the arm list below.
-- Arms (all states): **D** default S&S leaf; **T** `STS_SILVER_PRICE_TABLE_LEAF=a746`.
+- Arms (all states): **D** default S&S leaf; **T** `STS_SILVER_PRICE_TABLE_LEAF=a746`; **TA**
+  `STS_SILVER_PRICE_TABLE_LEAF=a746:anchor`.
   Arms (Incense states only): **I** `STS_SILVER_INCENSE_HEART_PHASE=1` (§724's PASS arm); **TI** T and I together
   (the table's own Incense counter prices plus §724's term on top).
 - 4 paired replicates; replicate r uses battle seed BLOCK[r] + state, BLOCK = §724's four used blocks (111384000,
-  111382000, 111395000, 111398100). States beyond index 591 need the block extents checked against the ledger and
-  the seed guard before freezing (only used seeds; otherwise the extra states are dropped). All arms share every
+  111382000, 111395000, 111398100). Checked against the ledger (ledger-06): the used extents are 111384000-111385023
+  (§696), 111382000-111383023 (§691), 111395000-111396023 and 111398100-111399123, i.e. BLOCK + 0..1023 in every
+  block. State indices 0..1023 therefore replay only used seeds; Incense states keep §724's indices 0..591, the
+  other states get 592..1023. The seed guard is run on the frozen seed list before launch. All arms share every
   battle and planner seed.
-- Unit = one state (all its arms and replicates); rc and validity as §724 (+ the price-table log line in T/TI, its
-  absence in D/I).
+- Unit = one state (all its arms and replicates); rc and validity as §724 (+ the price-table log line in T/TA/TI,
+  with "win bonus anchored" in TA only, and its absence in D/I). A unit with any invalid row or rc ≠ 0 in any arm or
+  replicate is dropped as a whole, from every arm and every comparison (`analyze.py` states this rule and reports
+  the dropped units with their reason); no partial unit enters a gate.
 
 ## Endpoints and analysis (`analyze.py`, frozen before launch)
 Heart kill = S&S won and Heart won, averaged over the 4 replicates per state and arm. CIs: 95% bootstrap over source
 seeds (10,000, seed 20261105).
-- **Primary:** T − D Heart kill over all states. Sequential gate (ADR-0064, `tools/sprt_gate.py`): gainer variant
-  H0 δ = 0 vs H1 δ = +2 pp, α = β = 0.05, per-state differences in ascending unit order, a look every 64 contiguous
-  units, hard cap = all states; without a crossing by the cap, the fixed-sample CI decides: lo > 0 PASS,
-  hi < 0 HARMFUL, else INCONCLUSIVE.
-- **Secondary (Incense states, descriptive unless stated):** T − I and TI − I Heart kill; TI − I is the question
+- **Co-primary:** T − D and TA − D Heart kill over all states, each with its own sequential gate (ADR-0064,
+  `tools/sprt_gate.py`): gainer variant H0 δ = 0 vs H1 δ = +2 pp, α = 0.025 per gate (Bonferroni over the two), β =
+  0.05, a look every 64 contiguous units, hard cap = all states; without a crossing by the cap, the fixed-sample CI
+  (97.5%) decides: lo > 0 PASS, hi < 0 HARMFUL, else INCONCLUSIVE. Unit order: one seeded permutation (seed
+  20261105) of all units, Incense and other states mixed, fixed in `campaign.manifest` before launch and used by
+  both gates; units enter a look only when all units before them in that order are complete.
+- **Secondary:** TA − T over all states and over the states where the anchor is not at the floor (TA plays as T at
+  the floor, so the difference there must be 0; a nonzero difference is a determinism failure and reported).
+- **Secondary (Incense states, descriptive):** T − I, TA − I and TI − I Heart kill; TI − I is the question
   whether the table adds to §724's term.
-- **Co-reported:** Heart kill per arm; S&S death per arm (the table keeps winBonus = 53 while its HP range is up to
+- **Co-reported:** Heart kill per arm; the anchor's raw value and its clamp share (floor / inside / cap) per state set; S&S death per arm (the table keeps winBonus = 53 while its HP range is up to
   4× the default's, so its price of dying differs from the model's own; README); Heart kill given an S&S win; S&S HP left, potions used and
   turns; counter at the Heart and the aligned-counter share (Incense states); CPU per run and table build time; the
   share of S&S fights whose table fell back to the default leaf (flat HP curve); all endpoints on the first copy of
@@ -60,7 +73,8 @@ seeds (10,000, seed 20261105).
   potion changes by 1.1-1.7×) and how often T ends S&S with fewer potions at higher HP.
 
 ## Decision
-- PASS → stage 4's model comparison uses T as the price-table baseline; a whole-run SPRT (Silver 1000) of the table
+- PASS of one candidate → stage 4's model comparison uses it as the price-table baseline (both PASS: the one with
+  the larger point estimate); a whole-run SPRT (Silver 1000) of the table
   at S&S is proposed to Philipp. No default change from stage C.
 - INCONCLUSIVE or HARMFUL → report; the table flag stays research-only; stage 2's labels decide the next model.
 - In every case TI − I is reported to say whether §724's term should stay on top of a table.
@@ -73,11 +87,13 @@ and Philipp wants the approximation error measured.
 
 ## Cost (estimate; to be replaced by the smoke)
 §724: ≈ 53 CPU-s per S&S + Heart run, the term +3%. Table build ≈ 0.6 ms per S&S fight (README), negligible.
-- Incense states: 592 × 4 arms × 4 replicates = 9,472 runs ≈ 140 CPU-h.
-- Other states (≤ 1,024): ≤ 1,024 × 2 × 4 = 8,192 runs ≈ 120 CPU-h.
-- Total ≈ 260 CPU-h (≈ 4 h on 16 workers × 4 lanes), less if the SPRT stops early.
+- Incense states: 592 × 5 arms (D, T, TA, I, TI) × 4 replicates = 11,840 runs ≈ 175 CPU-h.
+- Other states (≤ 432): ≤ 432 × 3 (D, T, TA) × 4 = 5,184 runs ≈ 76 CPU-h.
+- Total ≈ 250 CPU-h (≈ 4 h on 16 workers × 4 lanes), less if both gates stop early.
 
 ## Caveats
 Research Heart search, not production's flat 40k Act-4-strong search (as §724). Model A was fitted on Heart-entry
 states of the same source campaigns (§731/§745 bases come from §721's records), so its prices are not out of
 sample for these S&S entries. The scale rule (1-HP slope at the start HP with a floor) is a design choice, not tuned.
+The anchor's floor 53 means TA can only raise the price of dying, never lower it: in about two thirds of the Incense
+states the model prices dying below 53 and TA plays as T, so TA − D has less power than T − D.

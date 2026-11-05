@@ -86,11 +86,12 @@ int report(const one_combat::PriceModel &model, const std::string &statesPath, c
         if (line.empty()) continue;
         const auto j = nlohmann::json::parse(line);
         int rows = 0;
-        const auto t = one_combat::buildPriceTable(model, one_combat::priceStateFromJson(j), &rows);
+        const auto t = one_combat::buildPriceTable(model, one_combat::priceStateFromJson(j), &rows, true);
         nlohmann::json r = {{"i", n++}, {"id", j.value("id", std::string())}, {"hp", j.at("hp")}, {"maxHp", j.at("maxHp")},
                             {"rows", rows}, {"flat", !t}};
         if (t) {
             r["hpUnit"] = t->hpUnit; r["rootWinValue"] = t->rootWinValue;
+            r["anchorRaw"] = t->anchorRaw; r["anchorWinBonus"] = t->winBonus;
             r["hpKnots"] = t->hpKnots; r["hpValue"] = t->hpValue;
             r["maxHpPrice"] = t->maxHpPrice; r["goldPrice"] = t->goldPrice;
             nlohmann::json pots = nlohmann::json::object();
@@ -173,7 +174,7 @@ int main(int argc, char **argv) {
 
     // The search leaf: no table = Silver's default win leaf; with a table, more HP never lowers a win and
     // removing a held potion never raises it.
-    int leafChecks = 0;
+    int leafChecks = 0, anchorInside = 0;
     for (std::size_t i = 0; i < 16 && i < states.size(); ++i) {
         GameContext gc = gameFromState(states[i]);
         BattleContext bc;
@@ -210,9 +211,31 @@ int main(int argc, char **argv) {
         BattleContext b = bc;
         require(std::abs(priced.winNowValue(b) - (53.0 + priced.priceTable->stateValue(bc, bc.player.curHp) - 0.4 * bc.turn)) < 1e-9,
                 "table leaf at the root: winBonus + U(hp) + potions + counters");
+        // Anchored: winBonus + stateValue(root) = V(root) / scale before the clamp; the leaf uses the clamped bonus.
+        auto anchored = one_combat::buildPriceTable(model, one_combat::priceStateFromGame(gc), nullptr, true);
+        require(anchored && std::isnan(priced.priceTable->winBonus), "unanchored table keeps the default win bonus");
+        // The start state's table value (HP + potions; counters at their start value price 0).
+        double start = anchored->hpCurve(bc.player.curHp);
+        for (int k = 0; k < bc.potionCapacity; ++k) {
+            const auto t = static_cast<int>(bc.potions[k]);
+            if (bc.potions[k] == Potion::EMPTY_POTION_SLOT || t >= search::kSilverPotionTypeCount) continue;
+            start += anchored->potionPriced[t] ? anchored->potionPrice[t] : anchored->unpricedPotion;
+        }
+        require(std::abs(anchored->anchorRaw + start - anchored->rootWinValue) < 1e-9,
+                "anchor: raw bonus + the start state's table value = V(root) / scale");
+        require(anchored->winBonus >= 53.0 - 1e-12 && anchored->winBonus <= one_combat::kAnchorCapFactor * 53.0 + 1e-12,
+                "anchor: clamped to [53, 212]");
+        search::SilverSearcher anchoredSearch(bc, ctx);
+        anchoredSearch.priceTable = anchored;
+        BattleContext c = bc;
+        require(std::abs(anchoredSearch.winNowValue(c) - (anchored->winBonus + anchored->stateValue(bc, bc.player.curHp)
+                                                          - 0.4 * bc.turn)) < 1e-9,
+                "anchored leaf at the root uses the table's win bonus");
+        if (anchored->anchorRaw >= 53.0 && anchored->anchorRaw <= one_combat::kAnchorCapFactor * 53.0) ++anchorInside;
         ++leafChecks;
     }
     require(leafChecks > 0, "leaf checks ran");
+    std::cout << "anchor unclamped at " << anchorInside << " of " << leafChecks << " leaf-check states\n";
     if (failures) return 1;
     std::cout << "PASS silver price table (" << rows << " parity rows, max margin diff " << maxMarginDiff << ")\n";
     return 0;
