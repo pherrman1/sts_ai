@@ -26250,3 +26250,23 @@ potions wrongly (as §746 measured); the next model comes from the leaf plan's p
 Untested follow-up (needs Philipp's go): a counters-only table.
 Seeds: none new (replays of the used blocks 111384000-385023, 111382000-383023, 111395000-396023, 111398100-399123).
 **Knowledge impact:** KB `research/combat-search/silver-price-table-leaf.md` (stage C result).
+
+## §758 — Counters-only price table at Shield & Spear (§757 follow-up): Silver's default leaf + model A's relic-counter prices raises Heart kill vs the default leaf, sequential gate PASS at 256 states; descriptive +2.44 pp [+1.14, +3.70] on 975 states (Incense +4.72, others −0.66), as good as the full table on Incense states without its loss elsewhere; selection caveat, needs new-seed confirmation (stage C's states and seeds, control reused, 2026-11-06)
+
+**Question:** Philipp (2026-11-05 23:25 CET, "ja 40 worker" 23:28 CET): §757's table helped where it priced the
+Incense counter and hurt where it re-priced HP and potions. Does pricing only the counters, on top of the default
+leaf (`STS_SILVER_PRICE_TABLE_LEAF=a746:counters`, #993), raise Heart kill?
+**Data:** [PREREG](evidence/silver_price_table_leaf_20261105/counters/PREREG.md) (J prelaunch PASS),
+[RESULT](evidence/silver_price_table_leaf_20261105/counters/RESULT.md), `counters/results/analysis.json`. Stage C's
+1,024 S&S states, seeds and Silver; only arm C played (4 replicates); stage C's D/T/I runs as control, checked by 32
+sentinel D units (32/32 identical except CPU). RUN_COMMIT 119c5a05, binary a7c9a729, 40 workers. 975 of 1,024 C units
+delivered at analysis time (share inode limit stall, then Philipp stopped the run at 00:30 CET); 0 dropped, all rc 0.
+**Result:**
+- Gate C − D (gainer, α = β = 0.05, look 64): PASS, H1 at 256 states (LLR 3.04).
+- All 975 analysed states: D 54.59%, T 56.28%, C 57.03%; C − D +2.44 [+1.14, +3.70], C − T +0.74 [−0.45, +1.92].
+- Incense states (561): C − D +4.72 [+2.90, +6.64], C − T +0.04, C − I −1.11 [−2.77, +0.52]; aligned counter 89%.
+- Other states (414): C − D −0.66 [−2.11, +0.81] (T − D was −2.4 in §757); potions used D 0.86, T 1.00, C 0.84.
+**Decision:** PASS per the pre-registered rule; no default change. Caveat (review J): C was chosen after §757 and
+reuses its D runs, so the PASS is conditional on that sample; a new-seed confirmation comes before a whole-run S&S test.
+Seeds: none new (stage C's).
+**Knowledge impact:** KB `research/combat-search/silver-price-table-leaf.md` (counters-only result).
