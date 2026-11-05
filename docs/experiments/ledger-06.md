@@ -26196,7 +26196,7 @@ accuracy and potion prices but not its 1-3 HP resolution.
 Seeds: none.
 **Knowledge impact:** B2 lines in `research/ppo-and-combat-leaf-literature.md`.
 
-## §TBD — LONG_B: 220-update PPO run from heart1 on combat B (Silver 1,000) with an online pre-trained critic; final net-0220 vs heart1, policy alone, 2,048 paired A20 seeds: GO, Heart +6.69 pp [+4.54, +8.79] (24.02% vs 17.33%), SPRT PASS at 576 pairs; gain grows across checkpoints (+1.4/+3.6/+5.5/+6.7 pp), more Act-1 deaths (PC + cloud, 2026-11-05)
+## §756 — LONG_B: 220-update PPO run from heart1 on combat B (Silver 1,000) with an online pre-trained critic; final net-0220 vs heart1, policy alone, 2,048 paired A20 seeds: GO, Heart +6.69 pp [+4.54, +8.79] (24.02% vs 17.33%), SPRT PASS at 576 pairs; gain grows across checkpoints (+1.4/+3.6/+5.5/+6.7 pp), more Act-1 deaths (PC + cloud, 2026-11-05)
 
 **Question (Philipp, 2026-11-04 10:47 CET "40 worker", 23:52 CET "go LONG_B"):** does a longer PPO run from heart1, on
 stronger self-play combat and with a critic pre-trained on that combat, produce a net that plays A20 better than heart1?
