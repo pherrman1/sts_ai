@@ -26119,3 +26119,24 @@ more in Act 1 and converts more late runs into kills.
 Philipp. No default change.
 Seeds: 111520000-111522047 and 111529990-111529991 USED. Cost ≈ 4,096 games ≈ 29 core-h.
 **Knowledge impact:** KB `research/a20-ppo-plan.md` (G1 row).
+
+## §TBD — LONG_B critic (net-0208) as a Silver combat leaf, teacher check (B2 rerun of §747): FAIL on HP resolution (−3 HP lowers V in 79.2% of 18,054 post-fight states vs heart1 86.2% on the same states; 1-HP price p10 −3.2 / p90 +4.6 secant units); Fairy 50 HP, max HP +2.5 HP/pt, per-type r 0.78 pass; outcome AUC 0.77 vs heart1 0.56 → no LONG_B leaf, no B3 (offline, no seeds, 2026-11-05)
+
+**Question:** Philipp (2026-11-05 15:54 CET): is the almost finished LONG_B value head suitable as Silver's combat
+leaf? §747 said to rerun B2 on the own A20 PPO critic.
+**Data:** [README](evidence/longb_value_leaf_teacher_20261105/README.md) (pre-registration, §747's gates T1-T5
+unchanged, pushed before scoring), [RESULT](evidence/longb_value_leaf_teacher_20261105/RESULT.md). LONG_B net-0208
+`8c2d7daf…`, `one_combat heart1score` (binary `78849fcf…` = the run's actor binary; parity with the actors' logged
+values 0.0). States: 18,054 post-fight REWARDS states in acts 1-3 (11,500 hallway, 5,195 elite, 1,359 boss) from the
+1,040 LONG_B games of iterations 208-209 (read from the run's git store; §691 records lack the v2 inputs), perturbed
+as `prices.py`: 237,814 records. heart1 scored on the same records as a paired control.
+**Result (primary, acts 1-3):**
+- T1 −3 HP lowers V: 79.2% (need 95%), FAIL (heart1 86.2%). Boss 64%, act 2/3 74/75%.
+- T5 1-HP resolution: median abs(price − 1) 1.57 secant units (need ⅓), FAIL (heart1 1.30).
+- T2 max HP +5 raises V in 96.0% (+2.5 HP per point), T3 Fairy 50.3 HP, T4 per-type r 0.776: pass.
+- Descriptive: AUC of V vs Heart kill 0.77 (acts 0.67/0.80/0.84) vs heart1 0.56. Non-Fairy potion median 6.7 HP.
+- Mid-combat states: not scorable; the record has no combat fields, and Silver's leaf only prices fight-end states.
+**Decision:** FAIL per the pre-registered rule. No LONG_B leaf, no B3 flag. PPO training raised the critic's level
+accuracy and potion prices but not its 1-3 HP resolution.
+Seeds: none.
+**Knowledge impact:** B2 lines in `research/ppo-and-combat-leaf-literature.md`.

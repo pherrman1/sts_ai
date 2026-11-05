@@ -1,0 +1,3194 @@
+{
+ "sigmoid": {
+  "act4elite": {
+   "states": 311,
+   "positive12HpSecant": [
+    279,
+    306
+   ],
+   "hpMinus1LowersV": 0.6816720257234726,
+   "hpMinus3LowersV": 0.7909967845659164,
+   "hpMinus6LowersV": 0.8520900321543409,
+   "hpMinus12LowersV": 0.9117647058823529,
+   "hpMinus24LowersV": 0.9697986577181208,
+   "hp1PriceInSecantUnits": {
+    "n": 279,
+    "p10": -2.6182523976970664,
+    "p50": 1.2200437605686718,
+    "p90": 4.279514937438319
+   },
+   "maxHpPerPointHpEq": {
+    "n": 279,
+    "p10": -0.5291438428276324,
+    "p50": 0.21114085173381372,
+    "p90": 1.6443941446199168
+   },
+   "potionNonFairyHpEq": {
+    "n": 139,
+    "p10": 0.30481491945684197,
+    "p50": 5.429461285182247,
+    "p90": 23.679931657002367
+   },
+   "fairyHpEq": {
+    "n": 57,
+    "p10": 12.693024126856066,
+    "p50": 27.224444337594157,
+    "p90": 89.04154837211722
+   },
+   "perType": [
+    {
+     "potion": "FAIRY_POTION",
+     "heart1HpEq": 27.224444337594157,
+     "sec510HpEq": 44.062342441438595,
+     "n": 57
+    }
+   ],
+   "gates": {
+    "T1_minus3HpLowersV>=0.95": [
+     0.7909967845659164,
+     false
+    ],
+    "T2_maxHp+5RaisesV>=0.90": [
+     0.6688102893890675,
+     false
+    ],
+    "T3_fairyMedian>=30HP": [
+     27.224444337594157,
+     false
+    ],
+    "T4_perTypeR>=0.5": [
+     null,
+     false
+    ],
+    "T5_median|hp1-1|<=1/3": [
+     1.54291882113536,
+     false
+    ]
+   },
+   "allPass": false
+  },
+  "act4elite:ELITE": {
+   "states": 311,
+   "positive12HpSecant": [
+    279,
+    306
+   ],
+   "hpMinus1LowersV": 0.6816720257234726,
+   "hpMinus3LowersV": 0.7909967845659164,
+   "hpMinus6LowersV": 0.8520900321543409,
+   "hpMinus12LowersV": 0.9117647058823529,
+   "hpMinus24LowersV": 0.9697986577181208,
+   "hp1PriceInSecantUnits": {
+    "n": 279,
+    "p10": -2.6182523976970664,
+    "p50": 1.2200437605686718,
+    "p90": 4.279514937438319
+   },
+   "maxHpPerPointHpEq": {
+    "n": 279,
+    "p10": -0.5291438428276324,
+    "p50": 0.21114085173381372,
+    "p90": 1.6443941446199168
+   },
+   "potionNonFairyHpEq": {
+    "n": 139,
+    "p10": 0.30481491945684197,
+    "p50": 5.429461285182247,
+    "p90": 23.679931657002367
+   },
+   "fairyHpEq": {
+    "n": 57,
+    "p10": 12.693024126856066,
+    "p50": 27.224444337594157,
+    "p90": 89.04154837211722
+   },
+   "perType": [
+    {
+     "potion": "FAIRY_POTION",
+     "heart1HpEq": 27.224444337594157,
+     "sec510HpEq": 44.062342441438595,
+     "n": 57
+    }
+   ],
+   "gates": {
+    "T1_minus3HpLowersV>=0.95": [
+     0.7909967845659164,
+     false
+    ],
+    "T2_maxHp+5RaisesV>=0.90": [
+     0.6688102893890675,
+     false
+    ],
+    "T3_fairyMedian>=30HP": [
+     27.224444337594157,
+     false
+    ],
+    "T4_perTypeR>=0.5": [
+     null,
+     false
+    ],
+    "T5_median|hp1-1|<=1/3": [
+     1.54291882113536,
+     false
+    ]
+   },
+   "allPass": false
+  },
+  "act4elite:act4": {
+   "states": 311,
+   "positive12HpSecant": [
+    279,
+    306
+   ],
+   "hpMinus1LowersV": 0.6816720257234726,
+   "hpMinus3LowersV": 0.7909967845659164,
+   "hpMinus6LowersV": 0.8520900321543409,
+   "hpMinus12LowersV": 0.9117647058823529,
+   "hpMinus24LowersV": 0.9697986577181208,
+   "hp1PriceInSecantUnits": {
+    "n": 279,
+    "p10": -2.6182523976970664,
+    "p50": 1.2200437605686718,
+    "p90": 4.279514937438319
+   },
+   "maxHpPerPointHpEq": {
+    "n": 279,
+    "p10": -0.5291438428276324,
+    "p50": 0.21114085173381372,
+    "p90": 1.6443941446199168
+   },
+   "potionNonFairyHpEq": {
+    "n": 139,
+    "p10": 0.30481491945684197,
+    "p50": 5.429461285182247,
+    "p90": 23.679931657002367
+   },
+   "fairyHpEq": {
+    "n": 57,
+    "p10": 12.693024126856066,
+    "p50": 27.224444337594157,
+    "p90": 89.04154837211722
+   },
+   "perType": [
+    {
+     "potion": "FAIRY_POTION",
+     "heart1HpEq": 27.224444337594157,
+     "sec510HpEq": 44.062342441438595,
+     "n": 57
+    }
+   ],
+   "gates": {
+    "T1_minus3HpLowersV>=0.95": [
+     0.7909967845659164,
+     false
+    ],
+    "T2_maxHp+5RaisesV>=0.90": [
+     0.6688102893890675,
+     false
+    ],
+    "T3_fairyMedian>=30HP": [
+     27.224444337594157,
+     false
+    ],
+    "T4_perTypeR>=0.5": [
+     null,
+     false
+    ],
+    "T5_median|hp1-1|<=1/3": [
+     1.54291882113536,
+     false
+    ]
+   },
+   "allPass": false
+  },
+  "postfight": {
+   "states": 18054,
+   "positive12HpSecant": [
+    17135,
+    17707
+   ],
+   "hpMinus1LowersV": 0.6921457848676194,
+   "hpMinus3LowersV": 0.8623497479643273,
+   "hpMinus6LowersV": 0.9351872368712608,
+   "hpMinus12LowersV": 0.9676963912576947,
+   "hpMinus24LowersV": 0.9773823884197829,
+   "hp1PriceInSecantUnits": {
+    "n": 17135,
+    "p10": -2.2566751280013655,
+    "p50": 1.04631693233062,
+    "p90": 3.8139680750792184
+   },
+   "maxHpPerPointHpEq": {
+    "n": 17135,
+    "p10": 0.23747306316861788,
+    "p50": 1.5018533077848777,
+    "p90": 3.8686500823634686
+   },
+   "potionNonFairyHpEq": {
+    "n": 11434,
+    "p10": -1.048936823540523,
+    "p50": 5.08399054586738,
+    "p90": 13.576106085683424
+   },
+   "fairyHpEq": {
+    "n": 1396,
+    "p10": 15.567839105776734,
+    "p50": 30.54526881519372,
+    "p90": 80.96868874142473
+   },
+   "perType": [
+    {
+     "potion": "ANCIENT_POTION",
+     "heart1HpEq": 0.7719969440355688,
+     "sec510HpEq": 10.133719465279736,
+     "n": 553
+    },
+    {
+     "potion": "ATTACK_POTION",
+     "heart1HpEq": 8.79904419453458,
+     "sec510HpEq": 21.13857693326883,
+     "n": 306
+    },
+    {
+     "potion": "BLESSING_OF_THE_FORGE",
+     "heart1HpEq": 6.782311800053517,
+     "sec510HpEq": 3.8231881989976664,
+     "n": 557
+    },
+    {
+     "potion": "BLOCK_POTION",
+     "heart1HpEq": 7.730933847808862,
+     "sec510HpEq": 0.6114073150984252,
+     "n": 374
+    },
+    {
+     "potion": "BLOOD_POTION",
+     "heart1HpEq": 8.677213049878747,
+     "sec510HpEq": 17.977144641380857,
+     "n": 191
+    },
+    {
+     "potion": "COLORLESS_POTION",
+     "heart1HpEq": 8.071761319517183,
+     "sec510HpEq": 11.590434361191837,
+     "n": 328
+    },
+    {
+     "potion": "DEXTERITY_POTION",
+     "heart1HpEq": 2.761158115505578,
+     "sec510HpEq": 10.268286310010545,
+     "n": 813
+    },
+    {
+     "potion": "DUPLICATION_POTION",
+     "heart1HpEq": 7.861767036918665,
+     "sec510HpEq": 8.937582746086544,
+     "n": 321
+    },
+    {
+     "potion": "ELIXIR_POTION",
+     "heart1HpEq": -0.8002192169155748,
+     "sec510HpEq": 2.442375178211144,
+     "n": 341
+    },
+    {
+     "potion": "ENERGY_POTION",
+     "heart1HpEq": 7.453961078809251,
+     "sec510HpEq": 8.847723251920044,
+     "n": 480
+    },
+    {
+     "potion": "ESSENCE_OF_STEEL",
+     "heart1HpEq": 5.191868839533361,
+     "sec510HpEq": -2.225445901318456,
+     "n": 470
+    },
+    {
+     "potion": "EXPLOSIVE_POTION",
+     "heart1HpEq": 7.21972663651711,
+     "sec510HpEq": 9.41560885166549,
+     "n": 556
+    },
+    {
+     "potion": "FAIRY_POTION",
+     "heart1HpEq": 30.54526881519372,
+     "sec510HpEq": 44.062342441438595,
+     "n": 1396
+    },
+    {
+     "potion": "FEAR_POTION",
+     "heart1HpEq": 3.567881483498316,
+     "sec510HpEq": 13.589591230026556,
+     "n": 566
+    },
+    {
+     "potion": "FIRE_POTION",
+     "heart1HpEq": 6.990307179498235,
+     "sec510HpEq": 9.214921163194223,
+     "n": 282
+    },
+    {
+     "potion": "FLEX_POTION",
+     "heart1HpEq": 4.602552447317242,
+     "sec510HpEq": 3.86333051667142,
+     "n": 563
+    },
+    {
+     "potion": "GAMBLERS_BREW",
+     "heart1HpEq": 0.2772862791752226,
+     "sec510HpEq": 10.40982394732179,
+     "n": 269
+    },
+    {
+     "potion": "LIQUID_BRONZE",
+     "heart1HpEq": 2.0500048741343533,
+     "sec510HpEq": -1.2475907574249223,
+     "n": 487
+    },
+    {
+     "potion": "LIQUID_MEMORIES",
+     "heart1HpEq": 10.856729995532113,
+     "sec510HpEq": 5.743576443779658,
+     "n": 282
+    },
+    {
+     "potion": "POWER_POTION",
+     "heart1HpEq": 8.488924028720549,
+     "sec510HpEq": 13.294443927557106,
+     "n": 419
+    },
+    {
+     "potion": "REGEN_POTION",
+     "heart1HpEq": 13.641789715079785,
+     "sec510HpEq": 8.70060496012738,
+     "n": 222
+    },
+    {
+     "potion": "SKILL_POTION",
+     "heart1HpEq": 7.354809236458411,
+     "sec510HpEq": 14.940790413925836,
+     "n": 427
+    },
+    {
+     "potion": "SPEED_POTION",
+     "heart1HpEq": -1.0203501686414767,
+     "sec510HpEq": -0.8837336106714787,
+     "n": 801
+    },
+    {
+     "potion": "STRENGTH_POTION",
+     "heart1HpEq": 7.825363464458453,
+     "sec510HpEq": 7.0345151832561745,
+     "n": 395
+    },
+    {
+     "potion": "SWIFT_POTION",
+     "heart1HpEq": 5.271742165620673,
+     "sec510HpEq": -5.789670333977336,
+     "n": 487
+    },
+    {
+     "potion": "WEAK_POTION",
+     "heart1HpEq": 2.750038330666465,
+     "sec510HpEq": 0.5968023420183278,
+     "n": 523
+    }
+   ],
+   "gates": {
+    "T1_minus3HpLowersV>=0.95": [
+     0.8623497479643273,
+     false
+    ],
+    "T2_maxHp+5RaisesV>=0.90": [
+     0.9351390273623573,
+     true
+    ],
+    "T3_fairyMedian>=30HP": [
+     30.54526881519372,
+     true
+    ],
+    "T4_perTypeR>=0.5": [
+     0.7426473836715906,
+     true
+    ],
+    "T5_median|hp1-1|<=1/3": [
+     1.3033655684386285,
+     false
+    ]
+   },
+   "allPass": false
+  },
+  "postfight:BOSS": {
+   "states": 1359,
+   "positive12HpSecant": [
+    1064,
+    1251
+   ],
+   "hpMinus1LowersV": 0.6129506990434143,
+   "hpMinus3LowersV": 0.7284768211920529,
+   "hpMinus6LowersV": 0.7888153053715967,
+   "hpMinus12LowersV": 0.8505195843325339,
+   "hpMinus24LowersV": 0.8751258811681772,
+   "hp1PriceInSecantUnits": {
+    "n": 1064,
+    "p10": -4.775215633413131,
+    "p50": 0.9211081842054365,
+    "p90": 7.191250786336991
+   },
+   "maxHpPerPointHpEq": {
+    "n": 1064,
+    "p10": 0.36376003657297495,
+    "p50": 2.471377183100687,
+    "p90": 12.819402449358252
+   },
+   "potionNonFairyHpEq": {
+    "n": 481,
+    "p10": -8.69161548455658,
+    "p50": 3.7076257677262494,
+    "p90": 23.081613450591774
+   },
+   "fairyHpEq": {
+    "n": 105,
+    "p10": 15.735791392566021,
+    "p50": 41.20316941170443,
+    "p90": 137.3852774782257
+   },
+   "perType": [
+    {
+     "potion": "DEXTERITY_POTION",
+     "heart1HpEq": 2.425041007936334,
+     "sec510HpEq": 10.268286310010545,
+     "n": 37
+    },
+    {
+     "potion": "EXPLOSIVE_POTION",
+     "heart1HpEq": 9.792760349652921,
+     "sec510HpEq": 9.41560885166549,
+     "n": 30
+    },
+    {
+     "potion": "FAIRY_POTION",
+     "heart1HpEq": 41.20316941170443,
+     "sec510HpEq": 44.062342441438595,
+     "n": 105
+    },
+    {
+     "potion": "FLEX_POTION",
+     "heart1HpEq": 3.0439219733031893,
+     "sec510HpEq": 3.86333051667142,
+     "n": 32
+    },
+    {
+     "potion": "SPEED_POTION",
+     "heart1HpEq": -5.624432694523817,
+     "sec510HpEq": -0.8837336106714787,
+     "n": 45
+    }
+   ],
+   "gates": {
+    "T1_minus3HpLowersV>=0.95": [
+     0.7284768211920529,
+     false
+    ],
+    "T2_maxHp+5RaisesV>=0.90": [
+     0.9492273730684326,
+     true
+    ],
+    "T3_fairyMedian>=30HP": [
+     41.20316941170443,
+     true
+    ],
+    "T4_perTypeR>=0.5": [
+     0.9838390339895794,
+     true
+    ],
+    "T5_median|hp1-1|<=1/3": [
+     2.0368404341116872,
+     false
+    ]
+   },
+   "allPass": false
+  },
+  "postfight:ELITE": {
+   "states": 5195,
+   "positive12HpSecant": [
+    4919,
+    5050
+   ],
+   "hpMinus1LowersV": 0.6833493743984601,
+   "hpMinus3LowersV": 0.8596727622714149,
+   "hpMinus6LowersV": 0.9389680400462072,
+   "hpMinus12LowersV": 0.974059405940594,
+   "hpMinus24LowersV": 0.9823413996075867,
+   "hp1PriceInSecantUnits": {
+    "n": 4919,
+    "p10": -2.2790240626212297,
+    "p50": 0.969521120951758,
+    "p90": 3.655251499321903
+   },
+   "maxHpPerPointHpEq": {
+    "n": 4919,
+    "p10": 0.1647147810810454,
+    "p50": 1.4166210516686426,
+    "p90": 3.641700048741057
+   },
+   "potionNonFairyHpEq": {
+    "n": 2955,
+    "p10": -1.5606986538569587,
+    "p50": 4.754327519545047,
+    "p90": 13.21012022626677
+   },
+   "fairyHpEq": {
+    "n": 469,
+    "p10": 16.43270217720135,
+    "p50": 30.977091138999167,
+    "p90": 84.7123446260012
+   },
+   "perType": [
+    {
+     "potion": "ANCIENT_POTION",
+     "heart1HpEq": 0.44585734207308997,
+     "sec510HpEq": 10.133719465279736,
+     "n": 160
+    },
+    {
+     "potion": "ATTACK_POTION",
+     "heart1HpEq": 9.407255977415309,
+     "sec510HpEq": 21.13857693326883,
+     "n": 45
+    },
+    {
+     "potion": "BLESSING_OF_THE_FORGE",
+     "heart1HpEq": 6.6660456078101635,
+     "sec510HpEq": 3.8231881989976664,
+     "n": 146
+    },
+    {
+     "potion": "BLOCK_POTION",
+     "heart1HpEq": 8.013518052622453,
+     "sec510HpEq": 0.6114073150984252,
+     "n": 95
+    },
+    {
+     "potion": "BLOOD_POTION",
+     "heart1HpEq": 9.428198777367419,
+     "sec510HpEq": 17.977144641380857,
+     "n": 44
+    },
+    {
+     "potion": "COLORLESS_POTION",
+     "heart1HpEq": 8.340640456669139,
+     "sec510HpEq": 11.590434361191837,
+     "n": 74
+    },
+    {
+     "potion": "DEXTERITY_POTION",
+     "heart1HpEq": 2.89503833900951,
+     "sec510HpEq": 10.268286310010545,
+     "n": 258
+    },
+    {
+     "potion": "DUPLICATION_POTION",
+     "heart1HpEq": 6.318816818161882,
+     "sec510HpEq": 8.937582746086544,
+     "n": 58
+    },
+    {
+     "potion": "ELIXIR_POTION",
+     "heart1HpEq": -1.2688433924299987,
+     "sec510HpEq": 2.442375178211144,
+     "n": 108
+    },
+    {
+     "potion": "ENERGY_POTION",
+     "heart1HpEq": 7.616073502245328,
+     "sec510HpEq": 8.847723251920044,
+     "n": 131
+    },
+    {
+     "potion": "ESSENCE_OF_STEEL",
+     "heart1HpEq": 5.745131040658171,
+     "sec510HpEq": -2.225445901318456,
+     "n": 120
+    },
+    {
+     "potion": "EXPLOSIVE_POTION",
+     "heart1HpEq": 7.464771081136172,
+     "sec510HpEq": 9.41560885166549,
+     "n": 149
+    },
+    {
+     "potion": "FAIRY_POTION",
+     "heart1HpEq": 30.977091138999167,
+     "sec510HpEq": 44.062342441438595,
+     "n": 469
+    },
+    {
+     "potion": "FEAR_POTION",
+     "heart1HpEq": 4.038858034800245,
+     "sec510HpEq": 13.589591230026556,
+     "n": 147
+    },
+    {
+     "potion": "FIRE_POTION",
+     "heart1HpEq": 5.931230546533219,
+     "sec510HpEq": 9.214921163194223,
+     "n": 70
+    },
+    {
+     "potion": "FLEX_POTION",
+     "heart1HpEq": 4.3149256545453785,
+     "sec510HpEq": 3.86333051667142,
+     "n": 132
+    },
+    {
+     "potion": "GAMBLERS_BREW",
+     "heart1HpEq": 1.6429144301867424,
+     "sec510HpEq": 10.40982394732179,
+     "n": 60
+    },
+    {
+     "potion": "LIQUID_BRONZE",
+     "heart1HpEq": 2.404628748811846,
+     "sec510HpEq": -1.2475907574249223,
+     "n": 133
+    },
+    {
+     "potion": "LIQUID_MEMORIES",
+     "heart1HpEq": 10.83457853638517,
+     "sec510HpEq": 5.743576443779658,
+     "n": 54
+    },
+    {
+     "potion": "POWER_POTION",
+     "heart1HpEq": 8.309212229843277,
+     "sec510HpEq": 13.294443927557106,
+     "n": 97
+    },
+    {
+     "potion": "REGEN_POTION",
+     "heart1HpEq": 13.449947489425748,
+     "sec510HpEq": 8.70060496012738,
+     "n": 65
+    },
+    {
+     "potion": "SKILL_POTION",
+     "heart1HpEq": 6.87631059391558,
+     "sec510HpEq": 14.940790413925836,
+     "n": 100
+    },
+    {
+     "potion": "SPEED_POTION",
+     "heart1HpEq": -1.6068650885995739,
+     "sec510HpEq": -0.8837336106714787,
+     "n": 250
+    },
+    {
+     "potion": "STRENGTH_POTION",
+     "heart1HpEq": 8.32541774364996,
+     "sec510HpEq": 7.0345151832561745,
+     "n": 113
+    },
+    {
+     "potion": "SWIFT_POTION",
+     "heart1HpEq": 5.258510608495526,
+     "sec510HpEq": -5.789670333977336,
+     "n": 122
+    },
+    {
+     "potion": "WEAK_POTION",
+     "heart1HpEq": 2.9022578772786938,
+     "sec510HpEq": 0.5968023420183278,
+     "n": 149
+    }
+   ],
+   "gates": {
+    "T1_minus3HpLowersV>=0.95": [
+     0.8596727622714149,
+     false
+    ],
+    "T2_maxHp+5RaisesV>=0.90": [
+     0.9251203079884505,
+     true
+    ],
+    "T3_fairyMedian>=30HP": [
+     30.977091138999167,
+     true
+    ],
+    "T4_perTypeR>=0.5": [
+     0.7519121483243061,
+     true
+    ],
+    "T5_median|hp1-1|<=1/3": [
+     1.3109583720575988,
+     false
+    ]
+   },
+   "allPass": false
+  },
+  "postfight:NORMAL": {
+   "states": 11500,
+   "positive12HpSecant": [
+    11152,
+    11406
+   ],
+   "hpMinus1LowersV": 0.7054782608695652,
+   "hpMinus3LowersV": 0.8793808157231063,
+   "hpMinus6LowersV": 0.9507783285503087,
+   "hpMinus12LowersV": 0.977731018762055,
+   "hpMinus24LowersV": 0.9845454545454545,
+   "hp1PriceInSecantUnits": {
+    "n": 11152,
+    "p10": -2.0781026964126768,
+    "p50": 1.0762812271731907,
+    "p90": 3.72350698243768
+   },
+   "maxHpPerPointHpEq": {
+    "n": 11152,
+    "p10": 0.25190711941854044,
+    "p50": 1.4976798241026898,
+    "p90": 3.511091021197894
+   },
+   "potionNonFairyHpEq": {
+    "n": 7998,
+    "p10": -0.5491464392697598,
+    "p50": 5.212303628428941,
+    "p90": 13.397305029509925
+   },
+   "fairyHpEq": {
+    "n": 822,
+    "p10": 15.17740357768402,
+    "p50": 29.56387433078077,
+    "p90": 70.24066480098818
+   },
+   "perType": [
+    {
+     "potion": "ANCIENT_POTION",
+     "heart1HpEq": 0.9812871261922451,
+     "sec510HpEq": 10.133719465279736,
+     "n": 364
+    },
+    {
+     "potion": "ATTACK_POTION",
+     "heart1HpEq": 8.435835939502523,
+     "sec510HpEq": 21.13857693326883,
+     "n": 246
+    },
+    {
+     "potion": "BLESSING_OF_THE_FORGE",
+     "heart1HpEq": 6.818435538245937,
+     "sec510HpEq": 3.8231881989976664,
+     "n": 391
+    },
+    {
+     "potion": "BLOCK_POTION",
+     "heart1HpEq": 7.674462265252955,
+     "sec510HpEq": 0.6114073150984252,
+     "n": 263
+    },
+    {
+     "potion": "BLOOD_POTION",
+     "heart1HpEq": 7.90393991068594,
+     "sec510HpEq": 17.977144641380857,
+     "n": 139
+    },
+    {
+     "potion": "COLORLESS_POTION",
+     "heart1HpEq": 7.88166507806681,
+     "sec510HpEq": 11.590434361191837,
+     "n": 247
+    },
+    {
+     "potion": "DEXTERITY_POTION",
+     "heart1HpEq": 2.7195419754698476,
+     "sec510HpEq": 10.268286310010545,
+     "n": 518
+    },
+    {
+     "potion": "DUPLICATION_POTION",
+     "heart1HpEq": 7.885337331990554,
+     "sec510HpEq": 8.937582746086544,
+     "n": 251
+    },
+    {
+     "potion": "ELIXIR_POTION",
+     "heart1HpEq": -0.3702856395465098,
+     "sec510HpEq": 2.442375178211144,
+     "n": 212
+    },
+    {
+     "potion": "ENERGY_POTION",
+     "heart1HpEq": 7.388346082887187,
+     "sec510HpEq": 8.847723251920044,
+     "n": 328
+    },
+    {
+     "potion": "ESSENCE_OF_STEEL",
+     "heart1HpEq": 5.038140427107158,
+     "sec510HpEq": -2.225445901318456,
+     "n": 325
+    },
+    {
+     "potion": "EXPLOSIVE_POTION",
+     "heart1HpEq": 7.095417049042248,
+     "sec510HpEq": 9.41560885166549,
+     "n": 377
+    },
+    {
+     "potion": "FAIRY_POTION",
+     "heart1HpEq": 29.56387433078077,
+     "sec510HpEq": 44.062342441438595,
+     "n": 822
+    },
+    {
+     "potion": "FEAR_POTION",
+     "heart1HpEq": 3.4526048313538977,
+     "sec510HpEq": 13.589591230026556,
+     "n": 392
+    },
+    {
+     "potion": "FIRE_POTION",
+     "heart1HpEq": 7.374916667437842,
+     "sec510HpEq": 9.214921163194223,
+     "n": 205
+    },
+    {
+     "potion": "FLEX_POTION",
+     "heart1HpEq": 4.655663456547386,
+     "sec510HpEq": 3.86333051667142,
+     "n": 399
+    },
+    {
+     "potion": "GAMBLERS_BREW",
+     "heart1HpEq": 0.3399096812494812,
+     "sec510HpEq": 10.40982394732179,
+     "n": 190
+    },
+    {
+     "potion": "LIQUID_BRONZE",
+     "heart1HpEq": 1.865195610016798,
+     "sec510HpEq": -1.2475907574249223,
+     "n": 335
+    },
+    {
+     "potion": "LIQUID_MEMORIES",
+     "heart1HpEq": 10.815138552132959,
+     "sec510HpEq": 5.743576443779658,
+     "n": 214
+    },
+    {
+     "potion": "POWER_POTION",
+     "heart1HpEq": 8.539564477203678,
+     "sec510HpEq": 13.294443927557106,
+     "n": 313
+    },
+    {
+     "potion": "REGEN_POTION",
+     "heart1HpEq": 13.673275014665972,
+     "sec510HpEq": 8.70060496012738,
+     "n": 152
+    },
+    {
+     "potion": "SKILL_POTION",
+     "heart1HpEq": 7.481240795887882,
+     "sec510HpEq": 14.940790413925836,
+     "n": 319
+    },
+    {
+     "potion": "SPEED_POTION",
+     "heart1HpEq": -0.5823991260418412,
+     "sec510HpEq": -0.8837336106714787,
+     "n": 506
+    },
+    {
+     "potion": "STRENGTH_POTION",
+     "heart1HpEq": 7.439560696752538,
+     "sec510HpEq": 7.0345151832561745,
+     "n": 273
+    },
+    {
+     "potion": "SWIFT_POTION",
+     "heart1HpEq": 5.211372780672081,
+     "sec510HpEq": -5.789670333977336,
+     "n": 348
+    },
+    {
+     "potion": "WEAK_POTION",
+     "heart1HpEq": 2.745226206527147,
+     "sec510HpEq": 0.5968023420183278,
+     "n": 356
+    }
+   ],
+   "gates": {
+    "T1_minus3HpLowersV>=0.95": [
+     0.8793808157231063,
+     false
+    ],
+    "T2_maxHp+5RaisesV>=0.90": [
+     0.938,
+     true
+    ],
+    "T3_fairyMedian>=30HP": [
+     29.56387433078077,
+     false
+    ],
+    "T4_perTypeR>=0.5": [
+     0.7359538455005563,
+     true
+    ],
+    "T5_median|hp1-1|<=1/3": [
+     1.249693416581105,
+     false
+    ]
+   },
+   "allPass": false
+  },
+  "postfight:act1": {
+   "states": 8957,
+   "positive12HpSecant": [
+    8627,
+    8752
+   ],
+   "hpMinus1LowersV": 0.7188790889806855,
+   "hpMinus3LowersV": 0.9101261583119348,
+   "hpMinus6LowersV": 0.9706374902311041,
+   "hpMinus12LowersV": 0.985717550274223,
+   "hpMinus24LowersV": 0.9908732116428219,
+   "hp1PriceInSecantUnits": {
+    "n": 8627,
+    "p10": -1.661457056438268,
+    "p50": 1.0572677552252567,
+    "p90": 3.3325892265020967
+   },
+   "maxHpPerPointHpEq": {
+    "n": 8627,
+    "p10": 0.694636542965275,
+    "p50": 1.7206456546796738,
+    "p90": 3.726124553101662
+   },
+   "potionNonFairyHpEq": {
+    "n": 5038,
+    "p10": -1.4524722158571775,
+    "p50": 5.694443140012133,
+    "p90": 13.054624458982216
+   },
+   "fairyHpEq": {
+    "n": 291,
+    "p10": 14.064657468700375,
+    "p50": 24.447132205331034,
+    "p90": 47.34386126206818
+   },
+   "perType": [
+    {
+     "potion": "ANCIENT_POTION",
+     "heart1HpEq": -1.3250566496519172,
+     "sec510HpEq": 10.133719465279736,
+     "n": 232
+    },
+    {
+     "potion": "ATTACK_POTION",
+     "heart1HpEq": 10.360060490332584,
+     "sec510HpEq": 21.13857693326883,
+     "n": 164
+    },
+    {
+     "potion": "BLESSING_OF_THE_FORGE",
+     "heart1HpEq": 7.898566024878384,
+     "sec510HpEq": 3.8231881989976664,
+     "n": 235
+    },
+    {
+     "potion": "BLOCK_POTION",
+     "heart1HpEq": 9.62311189613144,
+     "sec510HpEq": 0.6114073150984252,
+     "n": 131
+    },
+    {
+     "potion": "BLOOD_POTION",
+     "heart1HpEq": 7.233706343300156,
+     "sec510HpEq": 17.977144641380857,
+     "n": 58
+    },
+    {
+     "potion": "COLORLESS_POTION",
+     "heart1HpEq": 7.85113054128908,
+     "sec510HpEq": 11.590434361191837,
+     "n": 189
+    },
+    {
+     "potion": "DEXTERITY_POTION",
+     "heart1HpEq": 1.7296680081174043,
+     "sec510HpEq": 10.268286310010545,
+     "n": 331
+    },
+    {
+     "potion": "DUPLICATION_POTION",
+     "heart1HpEq": 9.012030122461544,
+     "sec510HpEq": 8.937582746086544,
+     "n": 155
+    },
+    {
+     "potion": "ELIXIR_POTION",
+     "heart1HpEq": -2.866729560251507,
+     "sec510HpEq": 2.442375178211144,
+     "n": 107
+    },
+    {
+     "potion": "ENERGY_POTION",
+     "heart1HpEq": 8.299271744153236,
+     "sec510HpEq": 8.847723251920044,
+     "n": 211
+    },
+    {
+     "potion": "ESSENCE_OF_STEEL",
+     "heart1HpEq": 5.687974253215499,
+     "sec510HpEq": -2.225445901318456,
+     "n": 225
+    },
+    {
+     "potion": "EXPLOSIVE_POTION",
+     "heart1HpEq": 9.40640792733151,
+     "sec510HpEq": 9.41560885166549,
+     "n": 221
+    },
+    {
+     "potion": "FAIRY_POTION",
+     "heart1HpEq": 24.447132205331034,
+     "sec510HpEq": 44.062342441438595,
+     "n": 291
+    },
+    {
+     "potion": "FEAR_POTION",
+     "heart1HpEq": 3.5870114369550956,
+     "sec510HpEq": 13.589591230026556,
+     "n": 234
+    },
+    {
+     "potion": "FIRE_POTION",
+     "heart1HpEq": 8.81153159704103,
+     "sec510HpEq": 9.214921163194223,
+     "n": 123
+    },
+    {
+     "potion": "FLEX_POTION",
+     "heart1HpEq": 5.154895718572897,
+     "sec510HpEq": 3.86333051667142,
+     "n": 221
+    },
+    {
+     "potion": "GAMBLERS_BREW",
+     "heart1HpEq": -1.338173621890978,
+     "sec510HpEq": 10.40982394732179,
+     "n": 92
+    },
+    {
+     "potion": "LIQUID_BRONZE",
+     "heart1HpEq": 1.7401764635036951,
+     "sec510HpEq": -1.2475907574249223,
+     "n": 245
+    },
+    {
+     "potion": "LIQUID_MEMORIES",
+     "heart1HpEq": 10.662678697643322,
+     "sec510HpEq": 5.743576443779658,
+     "n": 146
+    },
+    {
+     "potion": "POWER_POTION",
+     "heart1HpEq": 9.142737971244406,
+     "sec510HpEq": 13.294443927557106,
+     "n": 227
+    },
+    {
+     "potion": "REGEN_POTION",
+     "heart1HpEq": 16.789237949869637,
+     "sec510HpEq": 8.70060496012738,
+     "n": 71
+    },
+    {
+     "potion": "SKILL_POTION",
+     "heart1HpEq": 7.498828524420473,
+     "sec510HpEq": 14.940790413925836,
+     "n": 253
+    },
+    {
+     "potion": "SPEED_POTION",
+     "heart1HpEq": -3.044001612073955,
+     "sec510HpEq": -0.8837336106714787,
+     "n": 232
+    },
+    {
+     "potion": "STRENGTH_POTION",
+     "heart1HpEq": 8.036817802464764,
+     "sec510HpEq": 7.0345151832561745,
+     "n": 177
+    },
+    {
+     "potion": "SWIFT_POTION",
+     "heart1HpEq": 4.784841150112827,
+     "sec510HpEq": -5.789670333977336,
+     "n": 281
+    },
+    {
+     "potion": "WEAK_POTION",
+     "heart1HpEq": 2.6770956770090657,
+     "sec510HpEq": 0.5968023420183278,
+     "n": 278
+    }
+   ],
+   "gates": {
+    "T1_minus3HpLowersV>=0.95": [
+     0.9101261583119348,
+     false
+    ],
+    "T2_maxHp+5RaisesV>=0.90": [
+     0.9916266607122921,
+     true
+    ],
+    "T3_fairyMedian>=30HP": [
+     24.447132205331034,
+     false
+    ],
+    "T4_perTypeR>=0.5": [
+     0.6198530128959518,
+     true
+    ],
+    "T5_median|hp1-1|<=1/3": [
+     1.1067757138955012,
+     false
+    ]
+   },
+   "allPass": false
+  },
+  "postfight:act2": {
+   "states": 5478,
+   "positive12HpSecant": [
+    5174,
+    5360
+   ],
+   "hpMinus1LowersV": 0.6794450529390288,
+   "hpMinus3LowersV": 0.8364067920394377,
+   "hpMinus6LowersV": 0.9212929145361578,
+   "hpMinus12LowersV": 0.9652985074626865,
+   "hpMinus24LowersV": 0.9794851166532582,
+   "hp1PriceInSecantUnits": {
+    "n": 5174,
+    "p10": -2.708226893525499,
+    "p50": 0.9940576980891664,
+    "p90": 4.147310626909018
+   },
+   "maxHpPerPointHpEq": {
+    "n": 5174,
+    "p10": 0.22096127777782465,
+    "p50": 1.4123293218940471,
+    "p90": 4.39288041571952
+   },
+   "potionNonFairyHpEq": {
+    "n": 3578,
+    "p10": -1.2746578978681136,
+    "p50": 4.540614909029934,
+    "p90": 13.730751245717705
+   },
+   "fairyHpEq": {
+    "n": 550,
+    "p10": 17.573902517324658,
+    "p50": 31.99413255911373,
+    "p90": 83.95355529438858
+   },
+   "perType": [
+    {
+     "potion": "ANCIENT_POTION",
+     "heart1HpEq": 1.7424806555856442,
+     "sec510HpEq": 10.133719465279736,
+     "n": 181
+    },
+    {
+     "potion": "ATTACK_POTION",
+     "heart1HpEq": 7.51239030951685,
+     "sec510HpEq": 21.13857693326883,
+     "n": 88
+    },
+    {
+     "potion": "BLESSING_OF_THE_FORGE",
+     "heart1HpEq": 6.661245093814957,
+     "sec510HpEq": 3.8231881989976664,
+     "n": 192
+    },
+    {
+     "potion": "BLOCK_POTION",
+     "heart1HpEq": 5.973620459885867,
+     "sec510HpEq": 0.6114073150984252,
+     "n": 106
+    },
+    {
+     "potion": "BLOOD_POTION",
+     "heart1HpEq": 10.56692794748032,
+     "sec510HpEq": 17.977144641380857,
+     "n": 66
+    },
+    {
+     "potion": "COLORLESS_POTION",
+     "heart1HpEq": 9.626027186147562,
+     "sec510HpEq": 11.590434361191837,
+     "n": 85
+    },
+    {
+     "potion": "DEXTERITY_POTION",
+     "heart1HpEq": 3.31586052296334,
+     "sec510HpEq": 10.268286310010545,
+     "n": 305
+    },
+    {
+     "potion": "DUPLICATION_POTION",
+     "heart1HpEq": 7.05003492392826,
+     "sec510HpEq": 8.937582746086544,
+     "n": 92
+    },
+    {
+     "potion": "ELIXIR_POTION",
+     "heart1HpEq": -0.7287997287106291,
+     "sec510HpEq": 2.442375178211144,
+     "n": 155
+    },
+    {
+     "potion": "ENERGY_POTION",
+     "heart1HpEq": 5.841212767406768,
+     "sec510HpEq": 8.847723251920044,
+     "n": 142
+    },
+    {
+     "potion": "ESSENCE_OF_STEEL",
+     "heart1HpEq": 5.007601443822187,
+     "sec510HpEq": -2.225445901318456,
+     "n": 145
+    },
+    {
+     "potion": "EXPLOSIVE_POTION",
+     "heart1HpEq": 5.867283011922201,
+     "sec510HpEq": 9.41560885166549,
+     "n": 159
+    },
+    {
+     "potion": "FAIRY_POTION",
+     "heart1HpEq": 31.99413255911373,
+     "sec510HpEq": 44.062342441438595,
+     "n": 550
+    },
+    {
+     "potion": "FEAR_POTION",
+     "heart1HpEq": 2.7101265531838195,
+     "sec510HpEq": 13.589591230026556,
+     "n": 184
+    },
+    {
+     "potion": "FIRE_POTION",
+     "heart1HpEq": 5.9527539961892915,
+     "sec510HpEq": 9.214921163194223,
+     "n": 71
+    },
+    {
+     "potion": "FLEX_POTION",
+     "heart1HpEq": 4.23645162072601,
+     "sec510HpEq": 3.86333051667142,
+     "n": 196
+    },
+    {
+     "potion": "GAMBLERS_BREW",
+     "heart1HpEq": 0.7617192134632431,
+     "sec510HpEq": 10.40982394732179,
+     "n": 108
+    },
+    {
+     "potion": "LIQUID_BRONZE",
+     "heart1HpEq": 1.8567500556882164,
+     "sec510HpEq": -1.2475907574249223,
+     "n": 126
+    },
+    {
+     "potion": "LIQUID_MEMORIES",
+     "heart1HpEq": 12.153472074562199,
+     "sec510HpEq": 5.743576443779658,
+     "n": 73
+    },
+    {
+     "potion": "POWER_POTION",
+     "heart1HpEq": 7.373440143938861,
+     "sec510HpEq": 13.294443927557106,
+     "n": 121
+    },
+    {
+     "potion": "REGEN_POTION",
+     "heart1HpEq": 13.117286459284603,
+     "sec510HpEq": 8.70060496012738,
+     "n": 72
+    },
+    {
+     "potion": "SKILL_POTION",
+     "heart1HpEq": 7.118186147692212,
+     "sec510HpEq": 14.940790413925836,
+     "n": 107
+    },
+    {
+     "potion": "SPEED_POTION",
+     "heart1HpEq": -1.2278964125391387,
+     "sec510HpEq": -0.8837336106714787,
+     "n": 270
+    },
+    {
+     "potion": "STRENGTH_POTION",
+     "heart1HpEq": 8.620350574997033,
+     "sec510HpEq": 7.0345151832561745,
+     "n": 131
+    },
+    {
+     "potion": "SWIFT_POTION",
+     "heart1HpEq": 6.554339715444067,
+     "sec510HpEq": -5.789670333977336,
+     "n": 146
+    },
+    {
+     "potion": "WEAK_POTION",
+     "heart1HpEq": 3.1681147109196135,
+     "sec510HpEq": 0.5968023420183278,
+     "n": 134
+    }
+   ],
+   "gates": {
+    "T1_minus3HpLowersV>=0.95": [
+     0.8364067920394377,
+     false
+    ],
+    "T2_maxHp+5RaisesV>=0.90": [
+     0.9357429718875502,
+     true
+    ],
+    "T3_fairyMedian>=30HP": [
+     31.99413255911373,
+     true
+    ],
+    "T4_perTypeR>=0.5": [
+     0.7415877670495259,
+     true
+    ],
+    "T5_median|hp1-1|<=1/3": [
+     1.4477464090253485,
+     false
+    ]
+   },
+   "allPass": false
+  },
+  "postfight:act3": {
+   "states": 3619,
+   "positive12HpSecant": [
+    3334,
+    3595
+   ],
+   "hpMinus1LowersV": 0.6452058579718154,
+   "hpMinus3LowersV": 0.7833655705996132,
+   "hpMinus6LowersV": 0.8684719535783365,
+   "hpMinus12LowersV": 0.9273991655076496,
+   "hpMinus24LowersV": 0.9431428571428572,
+   "hp1PriceInSecantUnits": {
+    "n": 3334,
+    "p10": -3.867733922303134,
+    "p50": 1.09994654055515,
+    "p90": 5.1304309433384985
+   },
+   "maxHpPerPointHpEq": {
+    "n": 3334,
+    "p10": -0.49486540904821097,
+    "p50": 0.7813908607024573,
+    "p90": 3.568744085068679
+   },
+   "potionNonFairyHpEq": {
+    "n": 2818,
+    "p10": -0.06725945111628748,
+    "p50": 4.695250537955648,
+    "p90": 15.084380574416283
+   },
+   "fairyHpEq": {
+    "n": 555,
+    "p10": 14.394174177699592,
+    "p50": 31.62980626845893,
+    "p90": 93.56171317350037
+   },
+   "perType": [
+    {
+     "potion": "ANCIENT_POTION",
+     "heart1HpEq": 5.1730280288761055,
+     "sec510HpEq": 10.133719465279736,
+     "n": 140
+    },
+    {
+     "potion": "ATTACK_POTION",
+     "heart1HpEq": 5.175142934572122,
+     "sec510HpEq": 21.13857693326883,
+     "n": 54
+    },
+    {
+     "potion": "BLESSING_OF_THE_FORGE",
+     "heart1HpEq": 4.975506902460336,
+     "sec510HpEq": 3.8231881989976664,
+     "n": 130
+    },
+    {
+     "potion": "BLOCK_POTION",
+     "heart1HpEq": 6.251946979011363,
+     "sec510HpEq": 0.6114073150984252,
+     "n": 137
+    },
+    {
+     "potion": "BLOOD_POTION",
+     "heart1HpEq": 9.115969003154786,
+     "sec510HpEq": 17.977144641380857,
+     "n": 67
+    },
+    {
+     "potion": "COLORLESS_POTION",
+     "heart1HpEq": 7.202354335734951,
+     "sec510HpEq": 11.590434361191837,
+     "n": 54
+    },
+    {
+     "potion": "DEXTERITY_POTION",
+     "heart1HpEq": 4.0491660518839945,
+     "sec510HpEq": 10.268286310010545,
+     "n": 177
+    },
+    {
+     "potion": "DUPLICATION_POTION",
+     "heart1HpEq": 5.886043278320876,
+     "sec510HpEq": 8.937582746086544,
+     "n": 74
+    },
+    {
+     "potion": "ELIXIR_POTION",
+     "heart1HpEq": 1.8380684856957636,
+     "sec510HpEq": 2.442375178211144,
+     "n": 79
+    },
+    {
+     "potion": "ENERGY_POTION",
+     "heart1HpEq": 6.894764943884813,
+     "sec510HpEq": 8.847723251920044,
+     "n": 127
+    },
+    {
+     "potion": "ESSENCE_OF_STEEL",
+     "heart1HpEq": 4.330456011979457,
+     "sec510HpEq": -2.225445901318456,
+     "n": 100
+    },
+    {
+     "potion": "EXPLOSIVE_POTION",
+     "heart1HpEq": 3.6476729542730153,
+     "sec510HpEq": 9.41560885166549,
+     "n": 176
+    },
+    {
+     "potion": "FAIRY_POTION",
+     "heart1HpEq": 31.62980626845893,
+     "sec510HpEq": 44.062342441438595,
+     "n": 555
+    },
+    {
+     "potion": "FEAR_POTION",
+     "heart1HpEq": 5.557429774172501,
+     "sec510HpEq": 13.589591230026556,
+     "n": 148
+    },
+    {
+     "potion": "FIRE_POTION",
+     "heart1HpEq": 4.670624662884651,
+     "sec510HpEq": 9.214921163194223,
+     "n": 88
+    },
+    {
+     "potion": "FLEX_POTION",
+     "heart1HpEq": 3.932173933426515,
+     "sec510HpEq": 3.86333051667142,
+     "n": 146
+    },
+    {
+     "potion": "GAMBLERS_BREW",
+     "heart1HpEq": 3.103431567101859,
+     "sec510HpEq": 10.40982394732179,
+     "n": 69
+    },
+    {
+     "potion": "LIQUID_BRONZE",
+     "heart1HpEq": 2.9792249131058046,
+     "sec510HpEq": -1.2475907574249223,
+     "n": 116
+    },
+    {
+     "potion": "LIQUID_MEMORIES",
+     "heart1HpEq": 9.186746109953129,
+     "sec510HpEq": 5.743576443779658,
+     "n": 63
+    },
+    {
+     "potion": "POWER_POTION",
+     "heart1HpEq": 7.334528016717322,
+     "sec510HpEq": 13.294443927557106,
+     "n": 71
+    },
+    {
+     "potion": "REGEN_POTION",
+     "heart1HpEq": 7.906737571537496,
+     "sec510HpEq": 8.70060496012738,
+     "n": 79
+    },
+    {
+     "potion": "SKILL_POTION",
+     "heart1HpEq": 6.352103074232253,
+     "sec510HpEq": 14.940790413925836,
+     "n": 67
+    },
+    {
+     "potion": "SPEED_POTION",
+     "heart1HpEq": 1.2461680179272796,
+     "sec510HpEq": -0.8837336106714787,
+     "n": 299
+    },
+    {
+     "potion": "STRENGTH_POTION",
+     "heart1HpEq": 6.571584564489078,
+     "sec510HpEq": 7.0345151832561745,
+     "n": 87
+    },
+    {
+     "potion": "SWIFT_POTION",
+     "heart1HpEq": 5.1627363296026605,
+     "sec510HpEq": -5.789670333977336,
+     "n": 60
+    },
+    {
+     "potion": "WEAK_POTION",
+     "heart1HpEq": 2.8412384281449574,
+     "sec510HpEq": 0.5968023420183278,
+     "n": 111
+    }
+   ],
+   "gates": {
+    "T1_minus3HpLowersV>=0.95": [
+     0.7833655705996132,
+     false
+    ],
+    "T2_maxHp+5RaisesV>=0.90": [
+     0.794418347609837,
+     false
+    ],
+    "T3_fairyMedian>=30HP": [
+     31.62980626845893,
+     true
+    ],
+    "T4_perTypeR>=0.5": [
+     0.8058523586790832,
+     true
+    ],
+    "T5_median|hp1-1|<=1/3": [
+     1.727071490904223,
+     false
+    ]
+   },
+   "allPass": false
+  }
+ },
+ "raw": {
+  "act4elite": {
+   "states": 311,
+   "positive12HpSecant": [
+    279,
+    306
+   ],
+   "hpMinus1LowersV": 0.6816720257234726,
+   "hpMinus3LowersV": 0.7909967845659164,
+   "hpMinus6LowersV": 0.8520900321543409,
+   "hpMinus12LowersV": 0.9117647058823529,
+   "hpMinus24LowersV": 0.9697986577181208,
+   "hp1PriceInSecantUnits": {
+    "n": 279,
+    "p10": -2.6102408118034726,
+    "p50": 1.2266991934014362,
+    "p90": 4.27577958367012
+   },
+   "maxHpPerPointHpEq": {
+    "n": 279,
+    "p10": -0.5296695149259028,
+    "p50": 0.21132161617999837,
+    "p90": 1.6427166348011395
+   },
+   "potionNonFairyHpEq": {
+    "n": 139,
+    "p10": 0.30473077032953677,
+    "p50": 5.444695639875877,
+    "p90": 23.697682089080434
+   },
+   "fairyHpEq": {
+    "n": 57,
+    "p10": 12.690569735872923,
+    "p50": 27.260625688406,
+    "p90": 88.47178930087848
+   },
+   "perType": [
+    {
+     "potion": "FAIRY_POTION",
+     "heart1HpEq": 27.260625688406,
+     "sec510HpEq": 44.062342441438595,
+     "n": 57
+    }
+   ],
+   "gates": {
+    "T1_minus3HpLowersV>=0.95": [
+     0.7909967845659164,
+     false
+    ],
+    "T2_maxHp+5RaisesV>=0.90": [
+     0.6688102893890675,
+     false
+    ],
+    "T3_fairyMedian>=30HP": [
+     27.260625688406,
+     false
+    ],
+    "T4_perTypeR>=0.5": [
+     null,
+     false
+    ],
+    "T5_median|hp1-1|<=1/3": [
+     1.5444458067680236,
+     false
+    ]
+   },
+   "allPass": false
+  },
+  "act4elite:ELITE": {
+   "states": 311,
+   "positive12HpSecant": [
+    279,
+    306
+   ],
+   "hpMinus1LowersV": 0.6816720257234726,
+   "hpMinus3LowersV": 0.7909967845659164,
+   "hpMinus6LowersV": 0.8520900321543409,
+   "hpMinus12LowersV": 0.9117647058823529,
+   "hpMinus24LowersV": 0.9697986577181208,
+   "hp1PriceInSecantUnits": {
+    "n": 279,
+    "p10": -2.6102408118034726,
+    "p50": 1.2266991934014362,
+    "p90": 4.27577958367012
+   },
+   "maxHpPerPointHpEq": {
+    "n": 279,
+    "p10": -0.5296695149259028,
+    "p50": 0.21132161617999837,
+    "p90": 1.6427166348011395
+   },
+   "potionNonFairyHpEq": {
+    "n": 139,
+    "p10": 0.30473077032953677,
+    "p50": 5.444695639875877,
+    "p90": 23.697682089080434
+   },
+   "fairyHpEq": {
+    "n": 57,
+    "p10": 12.690569735872923,
+    "p50": 27.260625688406,
+    "p90": 88.47178930087848
+   },
+   "perType": [
+    {
+     "potion": "FAIRY_POTION",
+     "heart1HpEq": 27.260625688406,
+     "sec510HpEq": 44.062342441438595,
+     "n": 57
+    }
+   ],
+   "gates": {
+    "T1_minus3HpLowersV>=0.95": [
+     0.7909967845659164,
+     false
+    ],
+    "T2_maxHp+5RaisesV>=0.90": [
+     0.6688102893890675,
+     false
+    ],
+    "T3_fairyMedian>=30HP": [
+     27.260625688406,
+     false
+    ],
+    "T4_perTypeR>=0.5": [
+     null,
+     false
+    ],
+    "T5_median|hp1-1|<=1/3": [
+     1.5444458067680236,
+     false
+    ]
+   },
+   "allPass": false
+  },
+  "act4elite:act4": {
+   "states": 311,
+   "positive12HpSecant": [
+    279,
+    306
+   ],
+   "hpMinus1LowersV": 0.6816720257234726,
+   "hpMinus3LowersV": 0.7909967845659164,
+   "hpMinus6LowersV": 0.8520900321543409,
+   "hpMinus12LowersV": 0.9117647058823529,
+   "hpMinus24LowersV": 0.9697986577181208,
+   "hp1PriceInSecantUnits": {
+    "n": 279,
+    "p10": -2.6102408118034726,
+    "p50": 1.2266991934014362,
+    "p90": 4.27577958367012
+   },
+   "maxHpPerPointHpEq": {
+    "n": 279,
+    "p10": -0.5296695149259028,
+    "p50": 0.21132161617999837,
+    "p90": 1.6427166348011395
+   },
+   "potionNonFairyHpEq": {
+    "n": 139,
+    "p10": 0.30473077032953677,
+    "p50": 5.444695639875877,
+    "p90": 23.697682089080434
+   },
+   "fairyHpEq": {
+    "n": 57,
+    "p10": 12.690569735872923,
+    "p50": 27.260625688406,
+    "p90": 88.47178930087848
+   },
+   "perType": [
+    {
+     "potion": "FAIRY_POTION",
+     "heart1HpEq": 27.260625688406,
+     "sec510HpEq": 44.062342441438595,
+     "n": 57
+    }
+   ],
+   "gates": {
+    "T1_minus3HpLowersV>=0.95": [
+     0.7909967845659164,
+     false
+    ],
+    "T2_maxHp+5RaisesV>=0.90": [
+     0.6688102893890675,
+     false
+    ],
+    "T3_fairyMedian>=30HP": [
+     27.260625688406,
+     false
+    ],
+    "T4_perTypeR>=0.5": [
+     null,
+     false
+    ],
+    "T5_median|hp1-1|<=1/3": [
+     1.5444458067680236,
+     false
+    ]
+   },
+   "allPass": false
+  },
+  "postfight": {
+   "states": 18054,
+   "positive12HpSecant": [
+    17135,
+    17707
+   ],
+   "hpMinus1LowersV": 0.6921457848676194,
+   "hpMinus3LowersV": 0.8623497479643273,
+   "hpMinus6LowersV": 0.9351872368712608,
+   "hpMinus12LowersV": 0.9676963912576947,
+   "hpMinus24LowersV": 0.9773823884197829,
+   "hp1PriceInSecantUnits": {
+    "n": 17135,
+    "p10": -2.262195789905953,
+    "p50": 1.0515324834894793,
+    "p90": 3.82155028120696
+   },
+   "maxHpPerPointHpEq": {
+    "n": 17135,
+    "p10": 0.23882450935451244,
+    "p50": 1.5127944764183379,
+    "p90": 3.8964745988328393
+   },
+   "potionNonFairyHpEq": {
+    "n": 11434,
+    "p10": -1.0510567521350966,
+    "p50": 5.096528533523131,
+    "p90": 13.569546638903368
+   },
+   "fairyHpEq": {
+    "n": 1396,
+    "p10": 15.537500661739934,
+    "p50": 30.368421435028264,
+    "p90": 80.63766139500402
+   },
+   "perType": [
+    {
+     "potion": "ANCIENT_POTION",
+     "heart1HpEq": 0.7755307664627563,
+     "sec510HpEq": 10.133719465279736,
+     "n": 553
+    },
+    {
+     "potion": "ATTACK_POTION",
+     "heart1HpEq": 8.807631852960274,
+     "sec510HpEq": 21.13857693326883,
+     "n": 306
+    },
+    {
+     "potion": "BLESSING_OF_THE_FORGE",
+     "heart1HpEq": 6.792206554052298,
+     "sec510HpEq": 3.8231881989976664,
+     "n": 557
+    },
+    {
+     "potion": "BLOCK_POTION",
+     "heart1HpEq": 7.748484156608562,
+     "sec510HpEq": 0.6114073150984252,
+     "n": 374
+    },
+    {
+     "potion": "BLOOD_POTION",
+     "heart1HpEq": 8.684113995861978,
+     "sec510HpEq": 17.977144641380857,
+     "n": 191
+    },
+    {
+     "potion": "COLORLESS_POTION",
+     "heart1HpEq": 8.083265006780021,
+     "sec510HpEq": 11.590434361191837,
+     "n": 328
+    },
+    {
+     "potion": "DEXTERITY_POTION",
+     "heart1HpEq": 2.769730274609243,
+     "sec510HpEq": 10.268286310010545,
+     "n": 813
+    },
+    {
+     "potion": "DUPLICATION_POTION",
+     "heart1HpEq": 7.873654496155703,
+     "sec510HpEq": 8.937582746086544,
+     "n": 321
+    },
+    {
+     "potion": "ELIXIR_POTION",
+     "heart1HpEq": -0.8058741398224792,
+     "sec510HpEq": 2.442375178211144,
+     "n": 341
+    },
+    {
+     "potion": "ENERGY_POTION",
+     "heart1HpEq": 7.462429573738001,
+     "sec510HpEq": 8.847723251920044,
+     "n": 480
+    },
+    {
+     "potion": "ESSENCE_OF_STEEL",
+     "heart1HpEq": 5.201090310920445,
+     "sec510HpEq": -2.225445901318456,
+     "n": 470
+    },
+    {
+     "potion": "EXPLOSIVE_POTION",
+     "heart1HpEq": 7.238310796568693,
+     "sec510HpEq": 9.41560885166549,
+     "n": 556
+    },
+    {
+     "potion": "FAIRY_POTION",
+     "heart1HpEq": 30.368421435028264,
+     "sec510HpEq": 44.062342441438595,
+     "n": 1396
+    },
+    {
+     "potion": "FEAR_POTION",
+     "heart1HpEq": 3.579120124883281,
+     "sec510HpEq": 13.589591230026556,
+     "n": 566
+    },
+    {
+     "potion": "FIRE_POTION",
+     "heart1HpEq": 7.002958487592592,
+     "sec510HpEq": 9.214921163194223,
+     "n": 282
+    },
+    {
+     "potion": "FLEX_POTION",
+     "heart1HpEq": 4.614477278680754,
+     "sec510HpEq": 3.86333051667142,
+     "n": 563
+    },
+    {
+     "potion": "GAMBLERS_BREW",
+     "heart1HpEq": 0.278543846242282,
+     "sec510HpEq": 10.40982394732179,
+     "n": 269
+    },
+    {
+     "potion": "LIQUID_BRONZE",
+     "heart1HpEq": 2.058321201842986,
+     "sec510HpEq": -1.2475907574249223,
+     "n": 487
+    },
+    {
+     "potion": "LIQUID_MEMORIES",
+     "heart1HpEq": 10.861370015586672,
+     "sec510HpEq": 5.743576443779658,
+     "n": 282
+    },
+    {
+     "potion": "POWER_POTION",
+     "heart1HpEq": 8.498672890963654,
+     "sec510HpEq": 13.294443927557106,
+     "n": 419
+    },
+    {
+     "potion": "REGEN_POTION",
+     "heart1HpEq": 13.63006058584902,
+     "sec510HpEq": 8.70060496012738,
+     "n": 222
+    },
+    {
+     "potion": "SKILL_POTION",
+     "heart1HpEq": 7.364611134522639,
+     "sec510HpEq": 14.940790413925836,
+     "n": 427
+    },
+    {
+     "potion": "SPEED_POTION",
+     "heart1HpEq": -1.0238928271655212,
+     "sec510HpEq": -0.8837336106714787,
+     "n": 801
+    },
+    {
+     "potion": "STRENGTH_POTION",
+     "heart1HpEq": 7.838507563481613,
+     "sec510HpEq": 7.0345151832561745,
+     "n": 395
+    },
+    {
+     "potion": "SWIFT_POTION",
+     "heart1HpEq": 5.282163505073254,
+     "sec510HpEq": -5.789670333977336,
+     "n": 487
+    },
+    {
+     "potion": "WEAK_POTION",
+     "heart1HpEq": 2.761006731215132,
+     "sec510HpEq": 0.5968023420183278,
+     "n": 523
+    }
+   ],
+   "gates": {
+    "T1_minus3HpLowersV>=0.95": [
+     0.8623497479643273,
+     false
+    ],
+    "T2_maxHp+5RaisesV>=0.90": [
+     0.9351390273623573,
+     true
+    ],
+    "T3_fairyMedian>=30HP": [
+     30.368421435028264,
+     true
+    ],
+    "T4_perTypeR>=0.5": [
+     0.741700477260339,
+     true
+    ],
+    "T5_median|hp1-1|<=1/3": [
+     1.3079196674417637,
+     false
+    ]
+   },
+   "allPass": false
+  },
+  "postfight:BOSS": {
+   "states": 1359,
+   "positive12HpSecant": [
+    1064,
+    1251
+   ],
+   "hpMinus1LowersV": 0.6129506990434143,
+   "hpMinus3LowersV": 0.7284768211920529,
+   "hpMinus6LowersV": 0.7888153053715967,
+   "hpMinus12LowersV": 0.8505195843325339,
+   "hpMinus24LowersV": 0.8751258811681772,
+   "hp1PriceInSecantUnits": {
+    "n": 1064,
+    "p10": -4.778206710488888,
+    "p50": 0.9284688376999113,
+    "p90": 7.194744405309095
+   },
+   "maxHpPerPointHpEq": {
+    "n": 1064,
+    "p10": 0.36597404968230773,
+    "p50": 2.4858553114668642,
+    "p90": 12.894176262136105
+   },
+   "potionNonFairyHpEq": {
+    "n": 481,
+    "p10": -8.699351342902546,
+    "p50": 3.7164133311174465,
+    "p90": 23.061715637079065
+   },
+   "fairyHpEq": {
+    "n": 105,
+    "p10": 15.71662760388172,
+    "p50": 40.99702714347264,
+    "p90": 136.24506346000834
+   },
+   "perType": [
+    {
+     "potion": "DEXTERITY_POTION",
+     "heart1HpEq": 2.4353753316933804,
+     "sec510HpEq": 10.268286310010545,
+     "n": 37
+    },
+    {
+     "potion": "EXPLOSIVE_POTION",
+     "heart1HpEq": 9.79837025147856,
+     "sec510HpEq": 9.41560885166549,
+     "n": 30
+    },
+    {
+     "potion": "FAIRY_POTION",
+     "heart1HpEq": 40.99702714347264,
+     "sec510HpEq": 44.062342441438595,
+     "n": 105
+    },
+    {
+     "potion": "FLEX_POTION",
+     "heart1HpEq": 3.0590160521137424,
+     "sec510HpEq": 3.86333051667142,
+     "n": 32
+    },
+    {
+     "potion": "SPEED_POTION",
+     "heart1HpEq": -5.63499344158119,
+     "sec510HpEq": -0.8837336106714787,
+     "n": 45
+    }
+   ],
+   "gates": {
+    "T1_minus3HpLowersV>=0.95": [
+     0.7284768211920529,
+     false
+    ],
+    "T2_maxHp+5RaisesV>=0.90": [
+     0.9492273730684326,
+     true
+    ],
+    "T3_fairyMedian>=30HP": [
+     40.99702714347264,
+     true
+    ],
+    "T4_perTypeR>=0.5": [
+     0.9836712746567511,
+     true
+    ],
+    "T5_median|hp1-1|<=1/3": [
+     2.03925148276835,
+     false
+    ]
+   },
+   "allPass": false
+  },
+  "postfight:ELITE": {
+   "states": 5195,
+   "positive12HpSecant": [
+    4919,
+    5050
+   ],
+   "hpMinus1LowersV": 0.6833493743984601,
+   "hpMinus3LowersV": 0.8596727622714149,
+   "hpMinus6LowersV": 0.9389680400462072,
+   "hpMinus12LowersV": 0.974059405940594,
+   "hpMinus24LowersV": 0.9823413996075867,
+   "hp1PriceInSecantUnits": {
+    "n": 4919,
+    "p10": -2.2834681045769747,
+    "p50": 0.9741466502091187,
+    "p90": 3.664117773967102
+   },
+   "maxHpPerPointHpEq": {
+    "n": 4919,
+    "p10": 0.1655820333153177,
+    "p50": 1.426484069312465,
+    "p90": 3.673134805038442
+   },
+   "potionNonFairyHpEq": {
+    "n": 2955,
+    "p10": -1.5661797714497239,
+    "p50": 4.769863807316795,
+    "p90": 13.20766125491485
+   },
+   "fairyHpEq": {
+    "n": 469,
+    "p10": 16.40210082546934,
+    "p50": 30.84411661829629,
+    "p90": 84.39756002800702
+   },
+   "perType": [
+    {
+     "potion": "ANCIENT_POTION",
+     "heart1HpEq": 0.4489008964477339,
+     "sec510HpEq": 10.133719465279736,
+     "n": 160
+    },
+    {
+     "potion": "ATTACK_POTION",
+     "heart1HpEq": 9.417297614422871,
+     "sec510HpEq": 21.13857693326883,
+     "n": 45
+    },
+    {
+     "potion": "BLESSING_OF_THE_FORGE",
+     "heart1HpEq": 6.677403823953768,
+     "sec510HpEq": 3.8231881989976664,
+     "n": 146
+    },
+    {
+     "potion": "BLOCK_POTION",
+     "heart1HpEq": 8.019695835511937,
+     "sec510HpEq": 0.6114073150984252,
+     "n": 95
+    },
+    {
+     "potion": "BLOOD_POTION",
+     "heart1HpEq": 9.432367494144053,
+     "sec510HpEq": 17.977144641380857,
+     "n": 44
+    },
+    {
+     "potion": "COLORLESS_POTION",
+     "heart1HpEq": 8.345742953915277,
+     "sec510HpEq": 11.590434361191837,
+     "n": 74
+    },
+    {
+     "potion": "DEXTERITY_POTION",
+     "heart1HpEq": 2.902126459969532,
+     "sec510HpEq": 10.268286310010545,
+     "n": 258
+    },
+    {
+     "potion": "DUPLICATION_POTION",
+     "heart1HpEq": 6.330800542155325,
+     "sec510HpEq": 8.937582746086544,
+     "n": 58
+    },
+    {
+     "potion": "ELIXIR_POTION",
+     "heart1HpEq": -1.2775044857130196,
+     "sec510HpEq": 2.442375178211144,
+     "n": 108
+    },
+    {
+     "potion": "ENERGY_POTION",
+     "heart1HpEq": 7.627803796897094,
+     "sec510HpEq": 8.847723251920044,
+     "n": 131
+    },
+    {
+     "potion": "ESSENCE_OF_STEEL",
+     "heart1HpEq": 5.758612925919655,
+     "sec510HpEq": -2.225445901318456,
+     "n": 120
+    },
+    {
+     "potion": "EXPLOSIVE_POTION",
+     "heart1HpEq": 7.480037936365644,
+     "sec510HpEq": 9.41560885166549,
+     "n": 149
+    },
+    {
+     "potion": "FAIRY_POTION",
+     "heart1HpEq": 30.84411661829629,
+     "sec510HpEq": 44.062342441438595,
+     "n": 469
+    },
+    {
+     "potion": "FEAR_POTION",
+     "heart1HpEq": 4.04954991637277,
+     "sec510HpEq": 13.589591230026556,
+     "n": 147
+    },
+    {
+     "potion": "FIRE_POTION",
+     "heart1HpEq": 5.942516628235138,
+     "sec510HpEq": 9.214921163194223,
+     "n": 70
+    },
+    {
+     "potion": "FLEX_POTION",
+     "heart1HpEq": 4.328341259208468,
+     "sec510HpEq": 3.86333051667142,
+     "n": 132
+    },
+    {
+     "potion": "GAMBLERS_BREW",
+     "heart1HpEq": 1.6473130025284508,
+     "sec510HpEq": 10.40982394732179,
+     "n": 60
+    },
+    {
+     "potion": "LIQUID_BRONZE",
+     "heart1HpEq": 2.4132727778292704,
+     "sec510HpEq": -1.2475907574249223,
+     "n": 133
+    },
+    {
+     "potion": "LIQUID_MEMORIES",
+     "heart1HpEq": 10.840331108801134,
+     "sec510HpEq": 5.743576443779658,
+     "n": 54
+    },
+    {
+     "potion": "POWER_POTION",
+     "heart1HpEq": 8.316296803469061,
+     "sec510HpEq": 13.294443927557106,
+     "n": 97
+    },
+    {
+     "potion": "REGEN_POTION",
+     "heart1HpEq": 13.446687272701155,
+     "sec510HpEq": 8.70060496012738,
+     "n": 65
+    },
+    {
+     "potion": "SKILL_POTION",
+     "heart1HpEq": 6.893897766459067,
+     "sec510HpEq": 14.940790413925836,
+     "n": 100
+    },
+    {
+     "potion": "SPEED_POTION",
+     "heart1HpEq": -1.6168055957662093,
+     "sec510HpEq": -0.8837336106714787,
+     "n": 250
+    },
+    {
+     "potion": "STRENGTH_POTION",
+     "heart1HpEq": 8.328884822480228,
+     "sec510HpEq": 7.0345151832561745,
+     "n": 113
+    },
+    {
+     "potion": "SWIFT_POTION",
+     "heart1HpEq": 5.273470564529001,
+     "sec510HpEq": -5.789670333977336,
+     "n": 122
+    },
+    {
+     "potion": "WEAK_POTION",
+     "heart1HpEq": 2.9126500934015995,
+     "sec510HpEq": 0.5968023420183278,
+     "n": 149
+    }
+   ],
+   "gates": {
+    "T1_minus3HpLowersV>=0.95": [
+     0.8596727622714149,
+     false
+    ],
+    "T2_maxHp+5RaisesV>=0.90": [
+     0.9251203079884505,
+     true
+    ],
+    "T3_fairyMedian>=30HP": [
+     30.84411661829629,
+     true
+    ],
+    "T4_perTypeR>=0.5": [
+     0.7512136787576349,
+     true
+    ],
+    "T5_median|hp1-1|<=1/3": [
+     1.3141440848702304,
+     false
+    ]
+   },
+   "allPass": false
+  },
+  "postfight:NORMAL": {
+   "states": 11500,
+   "positive12HpSecant": [
+    11152,
+    11406
+   ],
+   "hpMinus1LowersV": 0.7054782608695652,
+   "hpMinus3LowersV": 0.8793808157231063,
+   "hpMinus6LowersV": 0.9507783285503087,
+   "hpMinus12LowersV": 0.977731018762055,
+   "hpMinus24LowersV": 0.9845454545454545,
+   "hp1PriceInSecantUnits": {
+    "n": 11152,
+    "p10": -2.088519221358254,
+    "p50": 1.0816328326965752,
+    "p90": 3.734012250687106
+   },
+   "maxHpPerPointHpEq": {
+    "n": 11152,
+    "p10": 0.25279690986461417,
+    "p50": 1.5112917253161111,
+    "p90": 3.5390077439817165
+   },
+   "potionNonFairyHpEq": {
+    "n": 7998,
+    "p10": -0.5518138086036812,
+    "p50": 5.226320870956818,
+    "p90": 13.393135875621306
+   },
+   "fairyHpEq": {
+    "n": 822,
+    "p10": 15.148285758940656,
+    "p50": 29.421657919669197,
+    "p90": 69.83689887986488
+   },
+   "perType": [
+    {
+     "potion": "ANCIENT_POTION",
+     "heart1HpEq": 0.9863621047037325,
+     "sec510HpEq": 10.133719465279736,
+     "n": 364
+    },
+    {
+     "potion": "ATTACK_POTION",
+     "heart1HpEq": 8.446134954258216,
+     "sec510HpEq": 21.13857693326883,
+     "n": 246
+    },
+    {
+     "potion": "BLESSING_OF_THE_FORGE",
+     "heart1HpEq": 6.836412995884053,
+     "sec510HpEq": 3.8231881989976664,
+     "n": 391
+    },
+    {
+     "potion": "BLOCK_POTION",
+     "heart1HpEq": 7.678720471005584,
+     "sec510HpEq": 0.6114073150984252,
+     "n": 263
+    },
+    {
+     "potion": "BLOOD_POTION",
+     "heart1HpEq": 7.910957026492975,
+     "sec510HpEq": 17.977144641380857,
+     "n": 139
+    },
+    {
+     "potion": "COLORLESS_POTION",
+     "heart1HpEq": 7.886205070134424,
+     "sec510HpEq": 11.590434361191837,
+     "n": 247
+    },
+    {
+     "potion": "DEXTERITY_POTION",
+     "heart1HpEq": 2.7289452614074374,
+     "sec510HpEq": 10.268286310010545,
+     "n": 518
+    },
+    {
+     "potion": "DUPLICATION_POTION",
+     "heart1HpEq": 7.893347033813179,
+     "sec510HpEq": 8.937582746086544,
+     "n": 251
+    },
+    {
+     "potion": "ELIXIR_POTION",
+     "heart1HpEq": -0.37114104103710466,
+     "sec510HpEq": 2.442375178211144,
+     "n": 212
+    },
+    {
+     "potion": "ENERGY_POTION",
+     "heart1HpEq": 7.398240145684026,
+     "sec510HpEq": 8.847723251920044,
+     "n": 328
+    },
+    {
+     "potion": "ESSENCE_OF_STEEL",
+     "heart1HpEq": 5.049095866244337,
+     "sec510HpEq": -2.225445901318456,
+     "n": 325
+    },
+    {
+     "potion": "EXPLOSIVE_POTION",
+     "heart1HpEq": 7.118772814207466,
+     "sec510HpEq": 9.41560885166549,
+     "n": 377
+    },
+    {
+     "potion": "FAIRY_POTION",
+     "heart1HpEq": 29.421657919669197,
+     "sec510HpEq": 44.062342441438595,
+     "n": 822
+    },
+    {
+     "potion": "FEAR_POTION",
+     "heart1HpEq": 3.4672506616398344,
+     "sec510HpEq": 13.589591230026556,
+     "n": 392
+    },
+    {
+     "potion": "FIRE_POTION",
+     "heart1HpEq": 7.398348762055138,
+     "sec510HpEq": 9.214921163194223,
+     "n": 205
+    },
+    {
+     "potion": "FLEX_POTION",
+     "heart1HpEq": 4.667082794143767,
+     "sec510HpEq": 3.86333051667142,
+     "n": 399
+    },
+    {
+     "potion": "GAMBLERS_BREW",
+     "heart1HpEq": 0.34093731640347447,
+     "sec510HpEq": 10.40982394732179,
+     "n": 190
+    },
+    {
+     "potion": "LIQUID_BRONZE",
+     "heart1HpEq": 1.8690862356232276,
+     "sec510HpEq": -1.2475907574249223,
+     "n": 335
+    },
+    {
+     "potion": "LIQUID_MEMORIES",
+     "heart1HpEq": 10.820400269000979,
+     "sec510HpEq": 5.743576443779658,
+     "n": 214
+    },
+    {
+     "potion": "POWER_POTION",
+     "heart1HpEq": 8.55427100267221,
+     "sec510HpEq": 13.294443927557106,
+     "n": 313
+    },
+    {
+     "potion": "REGEN_POTION",
+     "heart1HpEq": 13.660892579192492,
+     "sec510HpEq": 8.70060496012738,
+     "n": 152
+    },
+    {
+     "potion": "SKILL_POTION",
+     "heart1HpEq": 7.491498084926418,
+     "sec510HpEq": 14.940790413925836,
+     "n": 319
+    },
+    {
+     "potion": "SPEED_POTION",
+     "heart1HpEq": -0.584504479408994,
+     "sec510HpEq": -0.8837336106714787,
+     "n": 506
+    },
+    {
+     "potion": "STRENGTH_POTION",
+     "heart1HpEq": 7.45503360308068,
+     "sec510HpEq": 7.0345151832561745,
+     "n": 273
+    },
+    {
+     "potion": "SWIFT_POTION",
+     "heart1HpEq": 5.229405386454084,
+     "sec510HpEq": -5.789670333977336,
+     "n": 348
+    },
+    {
+     "potion": "WEAK_POTION",
+     "heart1HpEq": 2.754104640691161,
+     "sec510HpEq": 0.5968023420183278,
+     "n": 356
+    }
+   ],
+   "gates": {
+    "T1_minus3HpLowersV>=0.95": [
+     0.8793808157231063,
+     false
+    ],
+    "T2_maxHp+5RaisesV>=0.90": [
+     0.938,
+     true
+    ],
+    "T3_fairyMedian>=30HP": [
+     29.421657919669197,
+     false
+    ],
+    "T4_perTypeR>=0.5": [
+     0.7351699823450508,
+     true
+    ],
+    "T5_median|hp1-1|<=1/3": [
+     1.2552834373264663,
+     false
+    ]
+   },
+   "allPass": false
+  },
+  "postfight:act1": {
+   "states": 8957,
+   "positive12HpSecant": [
+    8627,
+    8752
+   ],
+   "hpMinus1LowersV": 0.7188790889806855,
+   "hpMinus3LowersV": 0.9101261583119348,
+   "hpMinus6LowersV": 0.9706374902311041,
+   "hpMinus12LowersV": 0.985717550274223,
+   "hpMinus24LowersV": 0.9908732116428219,
+   "hp1PriceInSecantUnits": {
+    "n": 8627,
+    "p10": -1.6679853416686439,
+    "p50": 1.062261084368784,
+    "p90": 3.3421156012340285
+   },
+   "maxHpPerPointHpEq": {
+    "n": 8627,
+    "p10": 0.6998798538342872,
+    "p50": 1.7350059645207216,
+    "p90": 3.7622791600699244
+   },
+   "potionNonFairyHpEq": {
+    "n": 5038,
+    "p10": -1.4604151353339927,
+    "p50": 5.706852990199471,
+    "p90": 13.050179579297623
+   },
+   "fairyHpEq": {
+    "n": 291,
+    "p10": 14.04765596682537,
+    "p50": 24.335979931789765,
+    "p90": 46.89878848385095
+   },
+   "perType": [
+    {
+     "potion": "ANCIENT_POTION",
+     "heart1HpEq": -1.3314459728465642,
+     "sec510HpEq": 10.133719465279736,
+     "n": 232
+    },
+    {
+     "potion": "ATTACK_POTION",
+     "heart1HpEq": 10.368053290320656,
+     "sec510HpEq": 21.13857693326883,
+     "n": 164
+    },
+    {
+     "potion": "BLESSING_OF_THE_FORGE",
+     "heart1HpEq": 7.907801333540826,
+     "sec510HpEq": 3.8231881989976664,
+     "n": 235
+    },
+    {
+     "potion": "BLOCK_POTION",
+     "heart1HpEq": 9.62998724344282,
+     "sec510HpEq": 0.6114073150984252,
+     "n": 131
+    },
+    {
+     "potion": "BLOOD_POTION",
+     "heart1HpEq": 7.253833854306047,
+     "sec510HpEq": 17.977144641380857,
+     "n": 58
+    },
+    {
+     "potion": "COLORLESS_POTION",
+     "heart1HpEq": 7.865037252907376,
+     "sec510HpEq": 11.590434361191837,
+     "n": 189
+    },
+    {
+     "potion": "DEXTERITY_POTION",
+     "heart1HpEq": 1.7342301399745501,
+     "sec510HpEq": 10.268286310010545,
+     "n": 331
+    },
+    {
+     "potion": "DUPLICATION_POTION",
+     "heart1HpEq": 9.021546081726516,
+     "sec510HpEq": 8.937582746086544,
+     "n": 155
+    },
+    {
+     "potion": "ELIXIR_POTION",
+     "heart1HpEq": -2.884385291560004,
+     "sec510HpEq": 2.442375178211144,
+     "n": 107
+    },
+    {
+     "potion": "ENERGY_POTION",
+     "heart1HpEq": 8.302578997378548,
+     "sec510HpEq": 8.847723251920044,
+     "n": 211
+    },
+    {
+     "potion": "ESSENCE_OF_STEEL",
+     "heart1HpEq": 5.699402757196102,
+     "sec510HpEq": -2.225445901318456,
+     "n": 225
+    },
+    {
+     "potion": "EXPLOSIVE_POTION",
+     "heart1HpEq": 9.412490793529557,
+     "sec510HpEq": 9.41560885166549,
+     "n": 221
+    },
+    {
+     "potion": "FAIRY_POTION",
+     "heart1HpEq": 24.335979931789765,
+     "sec510HpEq": 44.062342441438595,
+     "n": 291
+    },
+    {
+     "potion": "FEAR_POTION",
+     "heart1HpEq": 3.59739471436656,
+     "sec510HpEq": 13.589591230026556,
+     "n": 234
+    },
+    {
+     "potion": "FIRE_POTION",
+     "heart1HpEq": 8.82693067833576,
+     "sec510HpEq": 9.214921163194223,
+     "n": 123
+    },
+    {
+     "potion": "FLEX_POTION",
+     "heart1HpEq": 5.167232922007534,
+     "sec510HpEq": 3.86333051667142,
+     "n": 221
+    },
+    {
+     "potion": "GAMBLERS_BREW",
+     "heart1HpEq": -1.3459362615900832,
+     "sec510HpEq": 10.40982394732179,
+     "n": 92
+    },
+    {
+     "potion": "LIQUID_BRONZE",
+     "heart1HpEq": 1.746295513617072,
+     "sec510HpEq": -1.2475907574249223,
+     "n": 245
+    },
+    {
+     "potion": "LIQUID_MEMORIES",
+     "heart1HpEq": 10.667274948327119,
+     "sec510HpEq": 5.743576443779658,
+     "n": 146
+    },
+    {
+     "potion": "POWER_POTION",
+     "heart1HpEq": 9.154290034017892,
+     "sec510HpEq": 13.294443927557106,
+     "n": 227
+    },
+    {
+     "potion": "REGEN_POTION",
+     "heart1HpEq": 16.75486870930788,
+     "sec510HpEq": 8.70060496012738,
+     "n": 71
+    },
+    {
+     "potion": "SKILL_POTION",
+     "heart1HpEq": 7.505656164723394,
+     "sec510HpEq": 14.940790413925836,
+     "n": 253
+    },
+    {
+     "potion": "SPEED_POTION",
+     "heart1HpEq": -3.0609915004794948,
+     "sec510HpEq": -0.8837336106714787,
+     "n": 232
+    },
+    {
+     "potion": "STRENGTH_POTION",
+     "heart1HpEq": 8.052744998639685,
+     "sec510HpEq": 7.0345151832561745,
+     "n": 177
+    },
+    {
+     "potion": "SWIFT_POTION",
+     "heart1HpEq": 4.799632254357403,
+     "sec510HpEq": -5.789670333977336,
+     "n": 281
+    },
+    {
+     "potion": "WEAK_POTION",
+     "heart1HpEq": 2.688587907486103,
+     "sec510HpEq": 0.5968023420183278,
+     "n": 278
+    }
+   ],
+   "gates": {
+    "T1_minus3HpLowersV>=0.95": [
+     0.9101261583119348,
+     false
+    ],
+    "T2_maxHp+5RaisesV>=0.90": [
+     0.9916266607122921,
+     true
+    ],
+    "T3_fairyMedian>=30HP": [
+     24.335979931789765,
+     false
+    ],
+    "T4_perTypeR>=0.5": [
+     0.6184286451250504,
+     true
+    ],
+    "T5_median|hp1-1|<=1/3": [
+     1.1092488009762465,
+     false
+    ]
+   },
+   "allPass": false
+  },
+  "postfight:act2": {
+   "states": 5478,
+   "positive12HpSecant": [
+    5174,
+    5360
+   ],
+   "hpMinus1LowersV": 0.6794450529390288,
+   "hpMinus3LowersV": 0.8364067920394377,
+   "hpMinus6LowersV": 0.9212929145361578,
+   "hpMinus12LowersV": 0.9652985074626865,
+   "hpMinus24LowersV": 0.9794851166532582,
+   "hp1PriceInSecantUnits": {
+    "n": 5174,
+    "p10": -2.715559471075865,
+    "p50": 0.9966660187818452,
+    "p90": 4.153313854477051
+   },
+   "maxHpPerPointHpEq": {
+    "n": 5174,
+    "p10": 0.22193238792480038,
+    "p50": 1.4191713124047407,
+    "p90": 4.4060077899934065
+   },
+   "potionNonFairyHpEq": {
+    "n": 3578,
+    "p10": -1.2789814888855946,
+    "p50": 4.554452146389433,
+    "p90": 13.722098693365123
+   },
+   "fairyHpEq": {
+    "n": 550,
+    "p10": 17.529108615785667,
+    "p50": 31.77791210207353,
+    "p90": 83.56689217612423
+   },
+   "perType": [
+    {
+     "potion": "ANCIENT_POTION",
+     "heart1HpEq": 1.753421973976394,
+     "sec510HpEq": 10.133719465279736,
+     "n": 181
+    },
+    {
+     "potion": "ATTACK_POTION",
+     "heart1HpEq": 7.5248200653911255,
+     "sec510HpEq": 21.13857693326883,
+     "n": 88
+    },
+    {
+     "potion": "BLESSING_OF_THE_FORGE",
+     "heart1HpEq": 6.668921425412394,
+     "sec510HpEq": 3.8231881989976664,
+     "n": 192
+    },
+    {
+     "potion": "BLOCK_POTION",
+     "heart1HpEq": 5.986820127456548,
+     "sec510HpEq": 0.6114073150984252,
+     "n": 106
+    },
+    {
+     "potion": "BLOOD_POTION",
+     "heart1HpEq": 10.574964606987066,
+     "sec510HpEq": 17.977144641380857,
+     "n": 66
+    },
+    {
+     "potion": "COLORLESS_POTION",
+     "heart1HpEq": 9.632228977954254,
+     "sec510HpEq": 11.590434361191837,
+     "n": 85
+    },
+    {
+     "potion": "DEXTERITY_POTION",
+     "heart1HpEq": 3.3227064348699513,
+     "sec510HpEq": 10.268286310010545,
+     "n": 305
+    },
+    {
+     "potion": "DUPLICATION_POTION",
+     "heart1HpEq": 7.064609555720967,
+     "sec510HpEq": 8.937582746086544,
+     "n": 92
+    },
+    {
+     "potion": "ELIXIR_POTION",
+     "heart1HpEq": -0.7333300521166581,
+     "sec510HpEq": 2.442375178211144,
+     "n": 155
+    },
+    {
+     "potion": "ENERGY_POTION",
+     "heart1HpEq": 5.852844688817687,
+     "sec510HpEq": 8.847723251920044,
+     "n": 142
+    },
+    {
+     "potion": "ESSENCE_OF_STEEL",
+     "heart1HpEq": 5.01332965935315,
+     "sec510HpEq": -2.225445901318456,
+     "n": 145
+    },
+    {
+     "potion": "EXPLOSIVE_POTION",
+     "heart1HpEq": 5.880777828521982,
+     "sec510HpEq": 9.41560885166549,
+     "n": 159
+    },
+    {
+     "potion": "FAIRY_POTION",
+     "heart1HpEq": 31.77791210207353,
+     "sec510HpEq": 44.062342441438595,
+     "n": 550
+    },
+    {
+     "potion": "FEAR_POTION",
+     "heart1HpEq": 2.715529973711851,
+     "sec510HpEq": 13.589591230026556,
+     "n": 184
+    },
+    {
+     "potion": "FIRE_POTION",
+     "heart1HpEq": 5.9662879099865,
+     "sec510HpEq": 9.214921163194223,
+     "n": 71
+    },
+    {
+     "potion": "FLEX_POTION",
+     "heart1HpEq": 4.249341499880994,
+     "sec510HpEq": 3.86333051667142,
+     "n": 196
+    },
+    {
+     "potion": "GAMBLERS_BREW",
+     "heart1HpEq": 0.7659074783926373,
+     "sec510HpEq": 10.40982394732179,
+     "n": 108
+    },
+    {
+     "potion": "LIQUID_BRONZE",
+     "heart1HpEq": 1.86021871869989,
+     "sec510HpEq": -1.2475907574249223,
+     "n": 126
+    },
+    {
+     "potion": "LIQUID_MEMORIES",
+     "heart1HpEq": 12.153126737513507,
+     "sec510HpEq": 5.743576443779658,
+     "n": 73
+    },
+    {
+     "potion": "POWER_POTION",
+     "heart1HpEq": 7.395392222362183,
+     "sec510HpEq": 13.294443927557106,
+     "n": 121
+    },
+    {
+     "potion": "REGEN_POTION",
+     "heart1HpEq": 13.11371024497575,
+     "sec510HpEq": 8.70060496012738,
+     "n": 72
+    },
+    {
+     "potion": "SKILL_POTION",
+     "heart1HpEq": 7.1333454084404995,
+     "sec510HpEq": 14.940790413925836,
+     "n": 107
+    },
+    {
+     "potion": "SPEED_POTION",
+     "heart1HpEq": -1.232864288807391,
+     "sec510HpEq": -0.8837336106714787,
+     "n": 270
+    },
+    {
+     "potion": "STRENGTH_POTION",
+     "heart1HpEq": 8.627853418575087,
+     "sec510HpEq": 7.0345151832561745,
+     "n": 131
+    },
+    {
+     "potion": "SWIFT_POTION",
+     "heart1HpEq": 6.566780932802862,
+     "sec510HpEq": -5.789670333977336,
+     "n": 146
+    },
+    {
+     "potion": "WEAK_POTION",
+     "heart1HpEq": 3.176782082120653,
+     "sec510HpEq": 0.5968023420183278,
+     "n": 134
+    }
+   ],
+   "gates": {
+    "T1_minus3HpLowersV>=0.95": [
+     0.8364067920394377,
+     false
+    ],
+    "T2_maxHp+5RaisesV>=0.90": [
+     0.9357429718875502,
+     true
+    ],
+    "T3_fairyMedian>=30HP": [
+     31.77791210207353,
+     true
+    ],
+    "T4_perTypeR>=0.5": [
+     0.7407513135658296,
+     true
+    ],
+    "T5_median|hp1-1|<=1/3": [
+     1.4512752587676698,
+     false
+    ]
+   },
+   "allPass": false
+  },
+  "postfight:act3": {
+   "states": 3619,
+   "positive12HpSecant": [
+    3334,
+    3595
+   ],
+   "hpMinus1LowersV": 0.6452058579718154,
+   "hpMinus3LowersV": 0.7833655705996132,
+   "hpMinus6LowersV": 0.8684719535783365,
+   "hpMinus12LowersV": 0.9273991655076496,
+   "hpMinus24LowersV": 0.9431428571428572,
+   "hp1PriceInSecantUnits": {
+    "n": 3334,
+    "p10": -3.8728636668076084,
+    "p50": 1.102458597726815,
+    "p90": 5.138716669039052
+   },
+   "maxHpPerPointHpEq": {
+    "n": 3334,
+    "p10": -0.49577275438279894,
+    "p50": 0.7843036539065782,
+    "p90": 3.5781627237907183
+   },
+   "potionNonFairyHpEq": {
+    "n": 2818,
+    "p10": -0.06750974508628729,
+    "p50": 4.6980618654827975,
+    "p90": 15.079859786619476
+   },
+   "fairyHpEq": {
+    "n": 555,
+    "p10": 14.372691289624454,
+    "p50": 31.542674877065522,
+    "p90": 93.31189701274553
+   },
+   "perType": [
+    {
+     "potion": "ANCIENT_POTION",
+     "heart1HpEq": 5.179787727279322,
+     "sec510HpEq": 10.133719465279736,
+     "n": 140
+    },
+    {
+     "potion": "ATTACK_POTION",
+     "heart1HpEq": 5.186556764882561,
+     "sec510HpEq": 21.13857693326883,
+     "n": 54
+    },
+    {
+     "potion": "BLESSING_OF_THE_FORGE",
+     "heart1HpEq": 4.98084696226843,
+     "sec510HpEq": 3.8231881989976664,
+     "n": 130
+    },
+    {
+     "potion": "BLOCK_POTION",
+     "heart1HpEq": 6.259312224275866,
+     "sec510HpEq": 0.6114073150984252,
+     "n": 137
+    },
+    {
+     "potion": "BLOOD_POTION",
+     "heart1HpEq": 9.119835609390472,
+     "sec510HpEq": 17.977144641380857,
+     "n": 67
+    },
+    {
+     "potion": "COLORLESS_POTION",
+     "heart1HpEq": 7.213572916276735,
+     "sec510HpEq": 11.590434361191837,
+     "n": 54
+    },
+    {
+     "potion": "DEXTERITY_POTION",
+     "heart1HpEq": 4.06098842255394,
+     "sec510HpEq": 10.268286310010545,
+     "n": 177
+    },
+    {
+     "potion": "DUPLICATION_POTION",
+     "heart1HpEq": 5.896595491079141,
+     "sec510HpEq": 8.937582746086544,
+     "n": 74
+    },
+    {
+     "potion": "ELIXIR_POTION",
+     "heart1HpEq": 1.8417076164587782,
+     "sec510HpEq": 2.442375178211144,
+     "n": 79
+    },
+    {
+     "potion": "ENERGY_POTION",
+     "heart1HpEq": 6.9014887145829995,
+     "sec510HpEq": 8.847723251920044,
+     "n": 127
+    },
+    {
+     "potion": "ESSENCE_OF_STEEL",
+     "heart1HpEq": 4.343533466528063,
+     "sec510HpEq": -2.225445901318456,
+     "n": 100
+    },
+    {
+     "potion": "EXPLOSIVE_POTION",
+     "heart1HpEq": 3.655456339330101,
+     "sec510HpEq": 9.41560885166549,
+     "n": 176
+    },
+    {
+     "potion": "FAIRY_POTION",
+     "heart1HpEq": 31.542674877065522,
+     "sec510HpEq": 44.062342441438595,
+     "n": 555
+    },
+    {
+     "potion": "FEAR_POTION",
+     "heart1HpEq": 5.56372418807012,
+     "sec510HpEq": 13.589591230026556,
+     "n": 148
+    },
+    {
+     "potion": "FIRE_POTION",
+     "heart1HpEq": 4.678963027366702,
+     "sec510HpEq": 9.214921163194223,
+     "n": 88
+    },
+    {
+     "potion": "FLEX_POTION",
+     "heart1HpEq": 3.946710397444546,
+     "sec510HpEq": 3.86333051667142,
+     "n": 146
+    },
+    {
+     "potion": "GAMBLERS_BREW",
+     "heart1HpEq": 3.1065693543710915,
+     "sec510HpEq": 10.40982394732179,
+     "n": 69
+    },
+    {
+     "potion": "LIQUID_BRONZE",
+     "heart1HpEq": 2.9896436537339737,
+     "sec510HpEq": -1.2475907574249223,
+     "n": 116
+    },
+    {
+     "potion": "LIQUID_MEMORIES",
+     "heart1HpEq": 9.196164163137249,
+     "sec510HpEq": 5.743576443779658,
+     "n": 63
+    },
+    {
+     "potion": "POWER_POTION",
+     "heart1HpEq": 7.338994026742372,
+     "sec510HpEq": 13.294443927557106,
+     "n": 71
+    },
+    {
+     "potion": "REGEN_POTION",
+     "heart1HpEq": 7.908139154411527,
+     "sec510HpEq": 8.70060496012738,
+     "n": 79
+    },
+    {
+     "potion": "SKILL_POTION",
+     "heart1HpEq": 6.3599747663015425,
+     "sec510HpEq": 14.940790413925836,
+     "n": 67
+    },
+    {
+     "potion": "SPEED_POTION",
+     "heart1HpEq": 1.2451718947669748,
+     "sec510HpEq": -0.8837336106714787,
+     "n": 299
+    },
+    {
+     "potion": "STRENGTH_POTION",
+     "heart1HpEq": 6.573289120563655,
+     "sec510HpEq": 7.0345151832561745,
+     "n": 87
+    },
+    {
+     "potion": "SWIFT_POTION",
+     "heart1HpEq": 5.165001996347169,
+     "sec510HpEq": -5.789670333977336,
+     "n": 60
+    },
+    {
+     "potion": "WEAK_POTION",
+     "heart1HpEq": 2.848164653532563,
+     "sec510HpEq": 0.5968023420183278,
+     "n": 111
+    }
+   ],
+   "gates": {
+    "T1_minus3HpLowersV>=0.95": [
+     0.7833655705996132,
+     false
+    ],
+    "T2_maxHp+5RaisesV>=0.90": [
+     0.794418347609837,
+     false
+    ],
+    "T3_fairyMedian>=30HP": [
+     31.542674877065522,
+     true
+    ],
+    "T4_perTypeR>=0.5": [
+     0.8059162715393167,
+     true
+    ],
+    "T5_median|hp1-1|<=1/3": [
+     1.7297656706374982,
+     false
+    ]
+   },
+   "allPass": false
+  }
+ }
+}
