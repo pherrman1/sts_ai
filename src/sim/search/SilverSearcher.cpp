@@ -1230,6 +1230,78 @@ double search::SilverSearcher::winNowValue(BattleContext &bc) const {
     return value;
 }
 
+double search::SilverPriceTable::hpCurve(double hp) const {
+    const std::size_t n = hpKnots.size();
+    if (n == 0) return hp;
+    if (n == 1) return hpValue[0] + (hp - hpKnots[0]);
+    std::size_t i = 1;
+    while (i + 1 < n && hp > hpKnots[i]) ++i;   // segment [i-1, i]; the end segments extend the curve
+    const double x0 = hpKnots[i - 1], x1 = hpKnots[i];
+    return hpValue[i - 1] + (hp - x0) * (hpValue[i] - hpValue[i - 1]) / (x1 - x0);
+}
+
+int search::SilverPriceTable::endCounter(const BattleContext &bc, const Counter &c) {
+    const auto &p = bc.player;
+    switch (c.relic) {
+        case RelicId::HAPPY_FLOWER: return p.happyFlowerCounter;
+        case RelicId::INCENSE_BURNER: return p.incenseBurnerCounter;
+        case RelicId::INK_BOTTLE: return p.inkBottleCounter;
+        case RelicId::NUNCHAKU: return p.nunchakuCounter;
+        case RelicId::PEN_NIB: return p.penNibCounter == -1 ? 9 : p.penNibCounter;
+        case RelicId::SUNDIAL: return p.sundialCounter;
+        case RelicId::LIZARD_TAIL: return p.hasRelic<RelicId::LIZARD_TAIL>() ? c.rootValue : 0;
+        case RelicId::OMAMORI: {
+            const auto &wm = bc.monsters.arr[0];
+            const bool parasite = wm.id == MonsterId::WRITHING_MASS && wm.miscInfo;
+            return parasite && c.rootValue > 0 ? c.rootValue - 1 : c.rootValue;
+        }
+        default: return c.rootValue;   // not changed in combat (e.g. Girya)
+    }
+}
+
+double search::SilverPriceTable::stateValue(const BattleContext &bc, int healedHp) const {
+    double v = hpCurve(healedHp);
+    for (int i = 0; i < bc.potionCapacity; ++i) {
+        const auto t = static_cast<int>(bc.potions[i]);
+        if (bc.potions[i] == Potion::EMPTY_POTION_SLOT || t < 0 || t >= kSilverPotionTypeCount) continue;
+        v += potionPriced[t] ? potionPrice[t] : unpricedPotion;
+    }
+    for (const auto &c : counters) {
+        if (c.price.empty()) continue;
+        const int k = std::clamp(endCounter(bc, c), 0, static_cast<int>(c.price.size()) - 1);
+        v += c.price[k];
+    }
+    return v;
+}
+
+double search::SilverSearcher::withIncenseTerm(const BattleContext &bc, double score) const {
+    if (evalWeights.incenseHeartPhaseScale > 0 && bc.encounter == MonsterEncounter::SHIELD_AND_SPEAR
+            && bc.player.hasRelic<RelicId::INCENSE_BURNER>()) {
+        const int counter = bc.player.incenseBurnerCounter;
+        if (counter >= 0 && counter < 6)
+            score += evalWeights.incenseHeartPhaseScale * kIncenseHeartPhaseKillPp[counter];
+    }
+    return score;
+}
+
+double search::SilverSearcher::withVictoryPenalties(const BattleContext &bc, double score) const {
+    if (bc.smokeBombUsed) {
+        // Forfeited rewards, capped at half the remaining HP: death also
+        // scores positively, so an uncapped penalty could make a low-HP
+        // escape look worse than dying. The cap keeps emergencies cheap.
+        const double penalty = context.eliteRewards ? evalWeights.eliteEscapePenalty
+                                                    : evalWeights.escapePenalty;
+        score -= std::min(penalty, 0.5 * bc.player.curHp);
+    }
+    // An implanted Writhing Mass adds a Parasite unless a charged Omamori absorbs it.
+    const auto &wm = bc.monsters.arr[0];
+    if (wm.id == MonsterId::WRITHING_MASS && wm.miscInfo
+            && (!bc.player.hasRelic<RelicId::OMAMORI>() || !context.omamoriCharged)) {
+        score -= evalWeights.parasitePenalty;
+    }
+    return score;
+}
+
 double search::SilverSearcher::evaluateEndState(const BattleContext &bc) const {
     if (context.finalBossBinary && context.act == 3 && context.actBossRoom && bc.ascension == 0) {
         // The run ends here. Neither a loss nor an unresolved rollout earns
@@ -1249,6 +1321,15 @@ double search::SilverSearcher::evaluateEndState(const BattleContext &bc) const {
             - (spikers ? 0 : bc.energyWasted * evalWeights.energyWasteWeight)
             + bc.cardsDrawn * evalWeights.drawWeight
             + (bc.turn > 100 ? 0 : bc.turn * evalWeights.turnSurvivalWeight);
+    }
+    if (priceTable && bc.outcome == Outcome::PLAYER_VICTORY) {
+        // Research price-table leaf (SilverPriceTable): the table's state value replaces the HP, potion,
+        // death-save, gold, max-HP and Incense terms of the victory branch below.
+        double score = evalWeights.winBonus + priceTable->stateValue(bc, postBattleHealedHp(bc, context))
+            - (bc.turn * evalWeights.victoryTurnPenalty);
+        score += priceTable->goldPrice * (effectiveGold(bc) - effectiveGold(*rootState));
+        score += priceTable->maxHpPrice * (bc.player.maxHp - rootState->player.maxHp);
+        return withVictoryPenalties(bc, withIncenseTerm(bc, score));
     }
     double potionScore = bc.potionCount * evalWeights.potionWeight;
     if (evalWeights.potionTypeWeightsOn) {
@@ -1286,27 +1367,7 @@ double search::SilverSearcher::evaluateEndState(const BattleContext &bc) const {
             - (bc.turn * evalWeights.victoryTurnPenalty) + deathSaveValue;
         score += evalWeights.goldWeight * (effectiveGold(bc) - effectiveGold(*rootState));
         score += evalWeights.maxHpWeight * (bc.player.maxHp - rootState->player.maxHp);
-        if (evalWeights.incenseHeartPhaseScale > 0 && bc.encounter == MonsterEncounter::SHIELD_AND_SPEAR
-                && bc.player.hasRelic<RelicId::INCENSE_BURNER>()) {
-            const int counter = bc.player.incenseBurnerCounter;
-            if (counter >= 0 && counter < 6)
-                score += evalWeights.incenseHeartPhaseScale * kIncenseHeartPhaseKillPp[counter];
-        }
-        if (bc.smokeBombUsed) {
-            // Forfeited rewards, capped at half the remaining HP: death also
-            // scores positively, so an uncapped penalty could make a low-HP
-            // escape look worse than dying. The cap keeps emergencies cheap.
-            const double penalty = context.eliteRewards ? evalWeights.eliteEscapePenalty
-                                                        : evalWeights.escapePenalty;
-            score -= std::min(penalty, 0.5 * bc.player.curHp);
-        }
-        // An implanted Writhing Mass adds a Parasite unless a charged Omamori absorbs it.
-        const auto &wm = bc.monsters.arr[0];
-        if (wm.id == MonsterId::WRITHING_MASS && wm.miscInfo
-                && (!bc.player.hasRelic<RelicId::OMAMORI>() || !context.omamoriCharged)) {
-            score -= evalWeights.parasitePenalty;
-        }
-        return score;
+        return withVictoryPenalties(bc, withIncenseTerm(bc, score));
     }
 
     const bool couldHaveSpikers = bc.encounter == MonsterEncounter::THREE_SHAPES

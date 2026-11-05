@@ -65,6 +65,7 @@ graph TD
 - [Belief state](combat-search/belief-state.md) — belief maintenance, filtering, collapse
 - [Particle budget](combat-search/particle-budget.md) — particle-count sensitivity
 - [Leaf evaluation](combat-search/leaf-evaluation.md) — rollout, VNet, utility alternatives
+- [Silver price-table leaf](combat-search/silver-price-table-leaf.md) — research flag: per-fight prices from a learned run-value model (§746 model A at Shield & Spear)
 - [VNet combat value](combat-models/vnet.md) — VNet evolution and deployment
 - [Policy prior](combat-models/policy-prior.md) — GBM policy prior and v2
 - [PVNet & alternatives](combat-models/pvnet-and-alternatives.md) — neural shared nets

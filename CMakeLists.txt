@@ -530,6 +530,7 @@ add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/heart_outcome_capture.cpp
     apps/one_combat/expert_replay.cpp
     apps/one_combat/heart1_policy.cpp
+    apps/one_combat/silver_price_table.cpp
     apps/one_combat/heart1_record_invariance.cpp
     apps/one_combat/rollout_student.cpp
     apps/one_combat/differential_state.cpp
@@ -589,6 +590,17 @@ add_executable(screen_leaf_gbm_test
     apps/one_combat/compact_tree.cpp)
 target_include_directories(screen_leaf_gbm_test PRIVATE include json/include apps/one_combat)
 add_test(NAME screen_leaf_gbm_features COMMAND screen_leaf_gbm_test)
+add_executable(silver_price_table_test tests/silver_price_table_test.cpp
+    apps/one_combat/silver_price_table.cpp apps/one_combat/compact_tree.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(silver_price_table_test PRIVATE include json/include apps apps/one_combat)
+add_test(NAME silver_price_table COMMAND silver_price_table_test WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+set_tests_properties(silver_price_table PROPERTIES LABELS "core")
+# STS_SILVER_PRICE_TABLE_LEAF unset / =0 gives main's act4replay rows; =a746 runs.
+add_test(NAME silver_price_table_off_identity
+    COMMAND bash ${CMAKE_SOURCE_DIR}/tests/silver_price_table_off_identity.sh $<TARGET_FILE:one_combat>
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+set_tests_properties(silver_price_table_off_identity PROPERTIES LABELS "core")
 add_executable(heart_leaf_test tests/heart_leaf_test.cpp
     apps/one_combat/heart_leaf.cpp apps/one_combat/run_features.cpp apps/one_combat/compact_tree.cpp
     $<TARGET_OBJECTS:sts_core_objects>)

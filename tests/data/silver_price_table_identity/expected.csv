@@ -1,0 +1,5 @@
+state,id,encounter,replicate,sims,battleSeed,preHp,preMaxHp,prePotions,valid,won,curHp,potionCount,turns,regime,budget,ssIncenseCounter,heartValid,heartWon,heartHp,heartTurns
+0,B-111384093,SHIELD_AND_SPEAR,0,500,111459990,71,71,1,1,1,71,0,4,fair,flat,2,1,1,47,7
+1,fork-111387150-2,SHIELD_AND_SPEAR,0,500,111459991,75,75,2,1,1,78,1,2,fair,flat,3,1,1,23,6
+2,fork-111384973-3,SHIELD_AND_SPEAR,0,500,111459992,78,78,2,1,1,59,0,2,fair,flat,3,1,1,15,8
+3,F-111382000,SHIELD_AND_SPEAR,0,500,111459993,110,110,1,1,1,65,0,4,fair,flat,2,1,0,0,5

@@ -107,12 +107,15 @@ namespace sts::search {
             std::string leafHeadPath, leafHeadTrunkPath;
             double leafHeadBlend = 0.5, leafHeadTurnPenalty = 1;
             bool leafHeadWinCap = false;
+            // STS_SILVER_PRICE_TABLE_LEAF (research, default off): the spec; the installed builder (one_combat) parses it.
+            std::string priceTableLeaf;
             // No-progress loop guard: after this many consecutive free player
             // decisions in one turn that change nothing tracked by
             // NoProgressFingerprint, End Turn is forced (0 = off).
             int loopGuardCap = 50;
         };
         Options g_options;
+        NativeSilverPriceTableBuilder g_priceTableBuilder;
         CombatValueNet g_rootPriorNet;
         SilverValueHead g_leafHead;
         CombatValueNet g_leafHeadTrunk;
@@ -608,6 +611,17 @@ namespace sts::search {
             if (g_nativeSilverLabelSearch && (adaptive || learnedStop || lockOnly || stopTrace))
                 fail(gc, bc, "the label search requires a flat budget");
 
+            // STS_SILVER_PRICE_TABLE_LEAF: this fight's price table, built once from the fight-start state, for
+            // whole-run fights as the leaf head; a research override (rollout, root prior, prior net) keeps the
+            // default leaf.
+            std::shared_ptr<const SilverPriceTable> priceTable;
+            if (!g_options.priceTableLeaf.empty() && !g_nativeSilverRolloutOverride
+                    && !g_nativeSilverRootPriorOverride && !g_nativeSilverPriorNetOverride) {
+                if (!g_priceTableBuilder)
+                    fail(gc, bc, "STS_SILVER_PRICE_TABLE_LEAF needs a binary that installs the price-table builder");
+                priceTable = g_priceTableBuilder(gc, bc);
+            }
+
             std::unique_ptr<SilverSearcher> searcher;
             // g_nativeSilverLabelSearch: searches each root again as `searcher` does, without the leaf head.
             std::unique_ptr<SilverSearcher> labelSearcher;
@@ -643,6 +657,7 @@ namespace sts::search {
                     s->evalWeights.maxHpWeight = g_options.maxHpWeight;
                     s->evalWeights.victoryTurnPenalty = g_options.victoryTurnPenalty;
                     s->evalWeights.incenseHeartPhaseScale = g_options.incenseHeartPhaseScale;
+                    s->priceTable = priceTable;
                     if (g_nativeSilverPotionWeightOverride)
                         s->evalWeights.potionWeight = *g_nativeSilverPotionWeightOverride;
                     if (const auto &params = g_nativeSilverSearchParamOverride) {
@@ -994,6 +1009,10 @@ namespace sts::search {
         return {};
     }
 
+    void setNativeSilverPriceTableBuilder(NativeSilverPriceTableBuilder builder) {
+        g_priceTableBuilder = std::move(builder);
+    }
+
     void installNativeSilverBackend() {
         g_publicTrace.clear();
         g_publicTarget.reset();
@@ -1093,6 +1112,12 @@ namespace sts::search {
                 if (end == raw || *end != '\0' || !std::isfinite(*target) || *target < 0 || *target > 100)
                     throw std::runtime_error(std::string(name) + " must be a number in [0, 100]");
             }
+        }
+        {
+            const char *raw = std::getenv("STS_SILVER_PRICE_TABLE_LEAF");
+            g_options.priceTableLeaf = raw && std::string(raw) != "0" ? raw : "";
+            if (!g_options.priceTableLeaf.empty() && g_options.concaveHpK != 0)
+                throw std::runtime_error("STS_SILVER_PRICE_TABLE_LEAF replaces the HP term: unset STS_SILVER_CONCAVE_HP_LEAF");
         }
         if (const char *raw = std::getenv("STS_SILVER_INCENSE_HEART_PHASE"); raw && *raw) {
             // "1" = the default price; any other value is the HP per pp of Heart kill (0 = off).
