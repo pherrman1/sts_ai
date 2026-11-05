@@ -210,12 +210,18 @@ class GitStore:
         """One push that writes every (name, path, meta) of puts and deletes every name of deletes (put() and
         delete() push one ref per call). Retried as a whole; a retry after a partial success sees the new refs
         already there (same commit for a put: the push is a no-op for it; a delete of a gone ref is skipped)."""
-        specs = [f"{self._commit(p, m, n)}:{self._ref(n)}" for n, p, m in puts]
-        if deletes:
-            have = self.names("")
-            specs += [f":{self._ref(n)}" for n in deletes if n in have]
-        if specs:
-            self._git("push", "-q", self.url, *specs)
+        puts = [f"{self._commit(p, m, n)}:{self._ref(n)}" for n, p, m in puts]
+        for k in range(5):   # each retry re-filters the deletes: a partly applied push leaves some refs gone
+            have = self.names("") if deletes else set()
+            specs = puts + [f":{self._ref(n)}" for n in deletes if n in have]
+            if not specs:
+                break
+            r = self._git("push", "-q", self.url, *specs, check=False, tries=1)
+            if r.returncode == 0:
+                break
+            if k == 4:
+                raise RuntimeError(f"push: {r.stderr.decode(errors='replace')[-400:]}")
+            time.sleep(2 ** (k + 1))
         self._gc()
 
     def _gc(self):
