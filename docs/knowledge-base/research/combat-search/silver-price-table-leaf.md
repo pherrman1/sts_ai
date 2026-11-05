@@ -64,6 +64,12 @@ quantiles −37 / −15 / 11 / 114 / 1,064 (5/25/50/75/95%), so the floor binds 
 are inside and 113 hit the cap; mean bonus 92.5 (README). Counted in `PriceTableLeafStats` (`anchorLow`,
 `anchorHigh`); the spec records `anchor`.
 
+## Counters only (`:counters`, §757 follow-up)
+`STS_SILVER_PRICE_TABLE_LEAF=a746:counters` keeps Silver's default victory leaf (HP, 11 per potion, death saves,
+gold / max HP) and adds only Σ the table's counter prices at the end values; Lizard Tail's counter is not priced
+(the default leaf's death save covers it). Motivation: §757's table helped where a counter is priced (Incense) and
+hurt where it re-priced HP and potions. Campaign `silver_price_table_leaf_20261105/counters/`.
+
 ## Model a746
 §746 model A: XGBoost GBM on §732's 440 state features (HP, max HP, HP fraction, potions and slots, deck and upgrades,
 relics, relic counters, Searing Blow misc, Silver's S&S leaf L), monotone + in HP, max HP, HP fraction, potion count,

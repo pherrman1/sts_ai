@@ -73,14 +73,16 @@ struct PriceModel {
 // [winBonus, kAnchorCapFactor × winBonus] (SilverEvalWeights defaults).
 inline constexpr double kAnchorCapFactor = 4;
 std::shared_ptr<const sts::search::SilverPriceTable> buildPriceTable(const PriceModel &model, const PriceState &root,
-                                                                     int *rows = nullptr, bool anchor = false);
+                                                                     int *rows = nullptr, bool anchor = false,
+                                                                     bool countersOnly = false);
 
 struct PriceTableLeafStats {
     std::atomic<std::int64_t> tables{0}, flat{0}, rows{0}, unknownNames{0}, buildNanos{0}, anchorLow{0}, anchorHigh{0};
 };
 PriceTableLeafStats &priceTableLeafStats();
 
-// Reads STS_SILVER_PRICE_TABLE_LEAF=<model>[:<ENC,...>][:anchor] (unset or 0 = off) after installNativeSilverBackend(); when on, loads the
+// countersOnly: Silver's default victory leaf plus the table's counter prices only (Lizard Tail left out).
+// Reads STS_SILVER_PRICE_TABLE_LEAF=<model>[:<ENC,...>][:anchor|:counters] (unset or 0 = off) after installNativeSilverBackend(); when on, loads the
 // model and installs the builder. Throws on a bad spec or a model that does not load. Returns true when on.
 bool installSilverPriceTableLeafFromEnv();
 // The spec for manifests (model files with sha256, fights); null when off.

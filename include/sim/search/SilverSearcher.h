@@ -118,12 +118,17 @@ namespace sts::search {
         // Diagnostics: the scale (model value per fight-start HP), the model's win value V(root) / scale and the
         // unclamped anchored win bonus (NaN when not anchored).
         double hpUnit = 0, rootWinValue = 0, anchorRaw = std::numeric_limits<double>::quiet_NaN();
+        // ":counters" option: the default victory leaf stays and only the counter prices are added to it
+        // (the builder then leaves out Lizard Tail, which the default leaf prices as a death save).
+        bool countersOnly = false;
 
         [[nodiscard]] double hpCurve(double hp) const;
         // Counter value of `c` after the fight ends in `bc` (as exitBattle writes it to the relic).
         [[nodiscard]] static int endCounter(const BattleContext &bc, const Counter &c);
         // U(healedHp) + held potions + counters (no gold / max-HP / turn terms).
         [[nodiscard]] double stateValue(const BattleContext &bc, int healedHp) const;
+        // Σ counter prices at the end values.
+        [[nodiscard]] double counterValue(const BattleContext &bc) const;
     };
 
     // Incense Heart probe (2026-10-30): Heart kill minus the state mean, pp, counter 0..5.
