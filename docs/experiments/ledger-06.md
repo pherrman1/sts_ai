@@ -26221,4 +26221,4 @@ with more Act-1 deaths, which is consistent with the 1{Heart} reward.
 separate A/B and Philipp's call. No default change.
 Seeds: 111540000-111654399 USED (training); the evaluation reused G1's 111520000-111522047. Cost ≈ 800 core-h of
 training actors plus 62 core-h of evaluation.
-**Knowledge impact:** KB `research/a20-ppo-plan.md` (LONG_B row).
+**Knowledge impact:** KB `research/a20-ppo-plan.md` (G1 row, LONG_B addition).
