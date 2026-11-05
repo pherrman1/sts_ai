@@ -10,7 +10,7 @@ Pre-registration: [../PREREG-stageC.md](../PREREG-stageC.md). Philipp's go: 2026
 - `tools/build_states.py`: 1,024 states (§724's 592 verbatim + 432 others, seed 20261105) → share
   `price-table-stagec/ss_states.tar` (sha256 `3422ca467f998538612541841fe5bd56a6d328f25aa34158dba46d9cfb009bab`).
 - Anchors: `silver_price_table_test --report` on those states → share `price-table-stagec/tables.jsonl`
-  (Incense 398 floor / 81 inside / 113 cap; others 308 / 61 / 63; no flat table).
+  (sha256 `cd3ec9cc7784…`; Incense 398 floor / 81 inside / 113 cap; others 308 / 61 / 63; no flat table).
 - `units.txt`: state indices 0..1023 in `random.Random(20261105).shuffle` order (the gate order).
 - Binary: v3 preset at code_commit `fb1477a5` (= #991's code), sha256 `4ace2751…`, in the share bin-cache.
 

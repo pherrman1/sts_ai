@@ -26222,3 +26222,30 @@ separate A/B and Philipp's call. No default change.
 Seeds: 111540000-111654399 USED (training); the evaluation reused G1's 111520000-111522047. Cost ≈ 800 core-h of
 training actors plus 62 core-h of evaluation.
 **Knowledge impact:** KB `research/a20-ppo-plan.md` (G1 row, LONG_B addition).
+
+## §TBD — §746 model A as Silver's Shield & Spear win leaf through a per-fight price table (stage C of the leaf plan): INCONCLUSIVE overall, Heart +1.59 pp [−0.05, +3.23] (97.5%) for the table, +1.25 [−0.45, +2.92] with the anchored win bonus; the table recovers most of §724's Incense gain (+4.5 vs +5.9 pp) but loses −2.4 pp [−4.2, −0.7] on states without Incense Burner (more potions and HP spent, more S&S deaths) → flag stays research-only (1,021 S&S states × 3-5 arms × 4, replays of used seeds, 2026-11-05)
+
+**Question:** Philipp (leaf plan, 2026-11-05; go "go auf 40 workern" 20:05 CET): does Silver play Shield & Spear
+better for the Heart when its win leaf uses §746 model A's prices, built once per fight as a price table
+(`STS_SILVER_PRICE_TABLE_LEAF=a746`, #988), and does anchoring the win bonus to the model (`a746:anchor`, #991) help?
+**Data:** [PREREG](evidence/silver_price_table_leaf_20261105/PREREG-stageC.md) (frozen; J prelaunch PASS),
+[RESULT](evidence/silver_price_table_leaf_20261105/stagec/RESULT.md), `stagec/results/analysis.json`. 1,024 S&S entry
+states: §724's 592 Incense states (re-extracted exactly) + 432 states without Incense Burner from the same five
+campaigns (seed 20261105). `act4replay`, chain S&S → Heart, §724's research Silver; arms D (default leaf), T (table),
+TA (table + anchored win bonus, clamp [53, 212]), and on Incense states I (§724's term) and TI; 4 paired replicates
+(battle seed BLOCK[r] + state). RUN_COMMIT 47a5289c, binary 4ace2751, 40 workers, ≈ 205 CPU-h. 1,021 units rc 0;
+3 units still on their second attempt were dropped on Philipp's instruction (the only deviation).
+**Result:**
+- Heart kill D 55.04%, T 56.64%, TA 56.29%. Co-primary gates (gainer, α 0.025): both CAP without a crossing;
+  T − D +1.59 pp [−0.05, +3.23], TA − D +1.25 [−0.45, +2.92] (97.5% CIs) → INCONCLUSIVE.
+- Incense states (589): T − D +4.54 [+2.51, +6.56], I − D +5.90 [+4.15, +7.73], T − I −1.36 [−2.99, +0.27],
+  TI − I −1.06 [−2.58, +0.47]. Aligned counter at the Heart: D 62%, T 87%, I 94%.
+- Other states (432): T − D −2.43 [−4.20, −0.70], TA − D −3.36 [−5.27, −1.49]; S&S death 5.3 → 6.1 / 6.4%, potions
+  used in S&S 0.80 → 0.92 / 0.93.
+- Anchor: TA = T in all 706 states where it sits at the floor (determinism check); elsewhere TA − T −1.11 [−3.19, +0.92].
+**Decision:** INCONCLUSIVE per the pre-registered rule. The price-table flag stays research-only, no default change;
+§724's Incense term remains the better Incense treatment. Model A prices the Incense phase usefully but HP and
+potions wrongly (as §746 measured); the next model comes from the leaf plan's paired fight-end labels (thread A).
+Untested follow-up (needs Philipp's go): a counters-only table.
+Seeds: none new (replays of the used blocks 111384000-385023, 111382000-383023, 111395000-396023, 111398100-399123).
+**Knowledge impact:** KB `research/combat-search/silver-price-table-leaf.md` (stage C result).
