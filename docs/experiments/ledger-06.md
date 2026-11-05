@@ -26195,3 +26195,30 @@ as `prices.py`: 237,814 records. heart1 scored on the same records as a paired c
 accuracy and potion prices but not its 1-3 HP resolution.
 Seeds: none.
 **Knowledge impact:** B2 lines in `research/ppo-and-combat-leaf-literature.md`.
+
+## §756 — LONG_B: 220-update PPO run from heart1 on combat B (Silver 1,000) with an online pre-trained critic; final net-0220 vs heart1, policy alone, 2,048 paired A20 seeds: GO, Heart +6.69 pp [+4.54, +8.79] (24.02% vs 17.33%), SPRT PASS at 576 pairs; gain grows across checkpoints (+1.4/+3.6/+5.5/+6.7 pp), more Act-1 deaths (PC + cloud, 2026-11-05)
+
+**Question (Philipp, 2026-11-04 10:47 CET "40 worker", 23:52 CET "go LONG_B"):** does a longer PPO run from heart1, on
+stronger self-play combat and with a critic pre-trained on that combat, produce a net that plays A20 better than heart1?
+**Data:** [PREREG](evidence/ppo_long_b_20261104/PREREG.md) (K PASS R3, amendment 2026-11-05),
+[RESULT](evidence/ppo_long_b_20261104/RESULT.md), `eval/result.json`, `eval/games.csv`. Training: 220 updates × 520
+sampled games (20 value-only with Monte Carlo targets, 200 PPO with §748's base recipe), 40 cloud actor parts, learner
+on the PC. Evaluation: G1's runner and seeds, PPO mode at T 0, combat B, binary 78849fcf (bc33e470, behaviour-preserving
+equivalent-copy speedup, K PASS). The 32-seed GH sentinel was 32/32 equal to G1, so G1's GH games are the control.
+`verify_campaign.py`: 2,048 OK; every game rc 0, no aborts, no dropped seed.
+**Result:**
+- Heart kill: heart1 17.33%, net-0220 24.02%, D +6.69 pp [+4.54, +8.79]. Sequential gate (gainer, d1 = +2 pp): PASS,
+  H1 at 576 pairs (LLR 3.14).
+- Checkpoints net-0070, 0120 and 0170: +1.42 [−0.54, +3.32], +3.61 [+1.51, +5.66] and +5.47 [+3.42, +7.52] pp.
+- net-0220 secondary: Act 3 cleared +3.22 pp [+0.73, +5.66], mean floor −1.18 [−2.01, −0.38]. Act-1 deaths 410 vs 348,
+  paired +3.0 pp (McNemar p ≈ 0.002). Kill share of runs reaching floor 51: 59.0% vs 42.6%. CPU 27.0 s per game.
+- In-sample (T 1): Heart 14.97% (warm-up) → 19.69% (last 20 updates); entropy 0.215 → 0.297; Act 2 reached −3 to −5 pp
+  in most blocks. Critic AUC by act 0.63/0.76/0.81/0.76, first decision 0.51.
+**Interpretation (Inference):** first PPO net that beats heart1, by a wide margin. The gain is larger at T 0 than
+in-sample and still rising at 200 updates. It comes from converting more late runs into Heart kills, paid for partly
+with more Act-1 deaths, which is consistent with the 1{Heart} reward.
+**Decision:** net-0220 (sha256 408b2982…) is the S1 start and the next PPO baseline. A production prior use needs a
+separate A/B and Philipp's call. No default change.
+Seeds: 111540000-111654399 USED (training); the evaluation reused G1's 111520000-111522047. Cost ≈ 800 core-h of
+training actors plus 62 core-h of evaluation.
+**Knowledge impact:** KB `research/a20-ppo-plan.md` (G1 row, LONG_B addition).

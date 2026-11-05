@@ -1,0 +1,14 @@
+name          ppo-long-b-eval
+code_commit   bc33e4706934c9946a8e1071ec0a1c0f598c467a
+binary_sha256 78849fcf768f6e84bb6341bced818f24bfa11e0a59fa80eae2854cf226379550
+workers       40
+share         /mnt/project-files/ppo-long-b/eval
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 90
+input heart1.bin /mnt/project-files/ppo-g1-critpre/heart1_net0000.bin 4288d0956ab75c3c8977f498ddbf73097b9ee226800369724bda6989f0bceab6
+input l070.bin /mnt/project-files/ppo-long-b/nets/net-0070.bin 826662956005a1af84d5a503a9b1cc7b5b0d6592b740daaf3a20dfad54e60ba5
+input l120.bin /mnt/project-files/ppo-long-b/nets/net-0120.bin 3862aeeeeeaa9210cde60b0d80b8aa406bce6b7ed8d552734e5b4e1a2fc5ae55
+input l170.bin /mnt/project-files/ppo-long-b/nets/net-0170.bin 4afc9a593990482c72d71fe04bcc213d5e49a0e7f93ab3ef36a47ffeca3b44ad
+input l220.bin /mnt/project-files/ppo-long-b/nets/net-0220.bin 408b2982a1a8757f4d2146bc81279cc80f5dd22c35dbd5ae048feda82b9c3c19

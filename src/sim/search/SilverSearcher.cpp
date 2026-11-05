@@ -213,6 +213,15 @@ search::SilverSearcher::Node *search::SilverSearcher::findNodeUpToEquivalentCopy
     cards.insert(cards.end(), state.cards.drawPile.begin(), state.cards.drawPile.end());
     cards.insert(cards.end(), state.cards.discardPile.begin(), state.cards.discardPile.end());
     cards.insert(cards.end(), state.cards.exhaustPile.begin(), state.cards.exhaustPile.end());
+    // A pair whose swapped state's hash is in no slot cannot be found: skip
+    // the copy. The same pairs in the same order reach findNode otherwise.
+    const SwapHasher swapHasher(state);
+    const auto hashPresent = [this](std::size_t hash) {
+        for (std::size_t i = hash & stateToNodeMask; stateToNode[i].node != nullptr; i = (i + 1) & stateToNodeMask) {
+            if (stateToNode[i].hash == hash) return true;
+        }
+        return false;
+    };
     BattleContext candidate;
     for (std::size_t i = 0; i < cards.size(); ++i) {
         if (cards[i].usesSpecialData()) continue;
@@ -220,6 +229,7 @@ search::SilverSearcher::Node *search::SilverSearcher::findNodeUpToEquivalentCopy
             if (cards[i].uniqueId == cards[j].uniqueId || !cardsEquivalentForSearch(cards[i], cards[j])) {
                 continue;
             }
+            if (!hashPresent(swapHasher.hashWithSwap(cards[i].uniqueId, cards[j].uniqueId))) continue;
             candidate = state;
             swapUniqueIds(candidate, cards[i].uniqueId, cards[j].uniqueId);
             Node *node = findNode(candidate);
