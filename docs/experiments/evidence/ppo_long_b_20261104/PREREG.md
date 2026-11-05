@@ -56,7 +56,7 @@ At 12:05 CET he approved the engine change: "implementiere die erste option. idc
   (GH, heart1 net-0000, evaluation flags) are 32/32 equal to `sentinel_expected.csv`.
 - **Iterations before and after the pause** play the same games. Only the wall time differs.
 - **The store keeps the config frozen.** `ppo_cloud.py rebin` writes `LONG_B/rebin` once (old `ca8db597`, new
-  `78849fcf`). The actor accepts either binary, and every part's meta records the `one_combat_sha256` it played.
+  `78849fcf`). The actor accepts either binary. Parts from actors started at d9d7852a or later record the `one_combat_sha256` they played in their meta; parts from actor processes started before the resume (d485e8eb, which keep running and play the replaced file) do not. The RESULT lists which workers kept their old process. The games are identical, so the analysis does not depend on it.
 - **The evaluation** stays pinned to `ca8db597` unless its freeze says otherwise.
 
 ## Evaluation (primary)
