@@ -116,6 +116,17 @@ class DirStore:
             if os.path.exists(f):
                 os.remove(f)
 
+    def get_many(self, items):
+        """[(name, path)] -> [meta], as get() one by one."""
+        return [self.get(n, p) for n, p in items]
+
+    def update(self, puts=(), deletes=()):
+        """Write every (name, path, meta) of puts, then delete every name of deletes."""
+        for n, p, m in puts:
+            self.put(n, p, m)
+        for n in deletes:
+            self.delete(n)
+
 
 class GitStore:
     """One orphan commit per file under refs/heads/PREFIX/, through a scratch bare repository without refs."""
@@ -150,14 +161,7 @@ class GitStore:
         return out
 
     def put(self, name, path, meta):
-        check_size(path)
-        blob = self._git("hash-object", "-w", path).stdout.decode().strip()
-        mblob = self._git("hash-object", "-w", "--stdin", data=json.dumps(meta).encode()).stdout.decode().strip()
-        tree = self._git("mktree", data=f"100644 blob {blob}\tdata\n100644 blob {mblob}\tmeta.json\n".encode()
-                         ).stdout.decode().strip()
-        commit = self._git("-c", "user.name=ppo-cloud", "-c", "user.email=ppo-cloud@localhost", "commit-tree", tree,
-                           "-m", name).stdout.decode().strip()
-        self._git("push", "-q", self.url, f"{commit}:{self._ref(name)}")
+        self._git("push", "-q", self.url, f"{self._commit(path, meta, name)}:{self._ref(name)}")
         self._gc()
 
     def get(self, name, path):
@@ -172,6 +176,47 @@ class GitStore:
 
     def delete(self, name):
         self._git("push", "-q", self.url, f":{self._ref(name)}")
+
+    def _commit(self, path, meta, name):
+        """One orphan commit holding path as data and meta as meta.json, in the scratch repository."""
+        check_size(path)
+        blob = self._git("hash-object", "-w", path).stdout.decode().strip()
+        mblob = self._git("hash-object", "-w", "--stdin", data=json.dumps(meta).encode()).stdout.decode().strip()
+        tree = self._git("mktree", data=f"100644 blob {blob}\tdata\n100644 blob {mblob}\tmeta.json\n".encode()
+                         ).stdout.decode().strip()
+        return self._git("-c", "user.name=ppo-cloud", "-c", "user.email=ppo-cloud@localhost", "commit-tree", tree,
+                         "-m", name).stdout.decode().strip()
+
+    def get_many(self, items):
+        """[(name, path)] -> [meta]: one fetch for every name (get() fetches one ref per call)."""
+        if not items:
+            return []
+        specs = [f"+{self._ref(n)}:refs/many/{k}" for k, (n, _) in enumerate(items)]
+        self._git("fetch", "-q", "--depth", "1", "--no-tags", self.url, *specs)
+        metas = []
+        for k, (_, path) in enumerate(items):
+            tmp = f"{path}.tmp{os.getpid()}"
+            with open(tmp, "wb") as f:
+                subprocess.run(["git", "-C", self.repo, "cat-file", "blob", f"refs/many/{k}:data"], stdout=f,
+                               check=True)
+            os.replace(tmp, path)
+            metas.append(json.loads(self._git("cat-file", "blob", f"refs/many/{k}:meta.json").stdout))
+        shutil.rmtree(self.repo, ignore_errors=True)   # drop the local refs and objects: the next call starts clean
+        self._git("init", "-q", "--bare", self.repo, here=False)
+        self._since_gc = 0
+        return metas
+
+    def update(self, puts=(), deletes=()):
+        """One push that writes every (name, path, meta) of puts and deletes every name of deletes (put() and
+        delete() push one ref per call). Retried as a whole; a retry after a partial success sees the new refs
+        already there (same commit for a put: the push is a no-op for it; a delete of a gone ref is skipped)."""
+        specs = [f"{self._commit(p, m, n)}:{self._ref(n)}" for n, p, m in puts]
+        if deletes:
+            have = self.names("")
+            specs += [f":{self._ref(n)}" for n in deletes if n in have]
+        if specs:
+            self._git("push", "-q", self.url, *specs)
+        self._gc()
 
     def _gc(self):
         self._since_gc += 1
@@ -592,19 +637,23 @@ class ArmLearner:
         names = self.store.names(f"{self.arm}/")
         net = f"{self.arm}/net-{it:04d}"
         local = os.path.join(self.dir, f"net-{it:04d}.bin")
+        puts, deletes = [], []
         if it > 0:
             if net not in names:
-                self.store.put(net, local, {"sha256": sha256(local), "updates": it})
+                puts.append((net, local, {"sha256": sha256(local), "updates": it}))
             if f"{self.arm}/stats-{it:04d}" not in names:
-                self.store.put(f"{self.arm}/stats-{it:04d}", self.meta_path, {"iterations": it})
+                puts.append((f"{self.arm}/stats-{it:04d}", self.meta_path, {"iterations": it}))
         for n in sorted(names):
             rest = n[len(self.arm) + 1:]
             if rest.startswith("traj-") and int(rest[5:9]) < it:
-                self.store.delete(n)
+                deletes.append(n)
             elif rest.startswith("net-") and int(rest[4:8]) < it - 1:
-                self.store.delete(n)
+                deletes.append(n)
             elif rest.startswith("stats-") and int(rest[6:10]) < it - 1:   # newest two: no read races
-                self.store.delete(n)
+                deletes.append(n)
+        # The new net first, in its own push: the actors wait for it; the clean-up push follows.
+        self.store.update(puts=puts)
+        self.store.update(deletes=deletes)
 
     @property
     def next_it(self):
@@ -621,10 +670,9 @@ class ArmLearner:
         if self.done() or not all(p in available for p in parts):
             return False
         t0 = time.time()
-        files, metas = [], []
-        for p in parts:
-            f = os.path.join(self.dir, os.path.basename(p) + ".jsonl.gz")
-            m = self.store.get(p, f)
+        files = [os.path.join(self.dir, os.path.basename(p) + ".jsonl.gz") for p in parts]
+        metas = self.store.get_many(list(zip(parts, files)))   # one fetch for all parts
+        for p, f, m in zip(parts, files, metas):
             if sha256(f) != m["sha256"]:
                 sys.exit(f"{p}: sha256 mismatch")
             want = max(it - 1, 0) if self.cfg["pipeline"] else it
@@ -632,8 +680,6 @@ class ArmLearner:
             if m["net"] != f"net-{want:04d}" or m["net_sha256"] != sha256(local_net):
                 sys.exit(f"{p}: played by {m['net']} {m['net_sha256'][:12]}, expected net-{want:04d} "
                          f"{sha256(local_net)[:12]}")
-            files.append(f)
-            metas.append(m)
         games = ppo_train.load_games(files, self.trim_map, phi_model=self.phi_model)
         if len(games) != self.cfg["games"]:
             sys.exit(f"{self.arm} iteration {it}: {len(games)} games, expected {self.cfg['games']}")

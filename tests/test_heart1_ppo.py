@@ -229,6 +229,33 @@ class Heart1PpoTest(unittest.TestCase):
         self.assertEqual([json.loads(l)["seed"] for l in lines], ["111388906"])
         self.assertIsNone(ppo_cloud.aborted_game_lines("", kept, 111388903, 8, 1))
 
+    def test_git_store_batched(self):
+        """ppo_cloud GitStore: get_many fetches several refs at once, update writes and deletes in one push."""
+        import subprocess
+        import ppo_cloud
+        with tempfile.TemporaryDirectory() as d:
+            remote = os.path.join(d, "remote.git")
+            subprocess.run(["git", "init", "-q", "--bare", remote], check=True)
+            st = ppo_cloud.open_store(f"git:file://{remote}#ppo-xfer/t")
+            files = []
+            for k in range(3):
+                p = os.path.join(d, f"in{k}")
+                with open(p, "wb") as f:
+                    f.write(bytes([k]) * (100 + k))
+                files.append(p)
+            st.put("A/traj-0000-p0", files[0], {"k": 0})
+            st.update(puts=[("A/traj-0000-p1", files[1], {"k": 1}), ("A/net-0001", files[2], {"k": 2})])
+            self.assertEqual(st.names("A/"), {"A/traj-0000-p0", "A/traj-0000-p1", "A/net-0001"})
+            outs = [os.path.join(d, f"out{k}") for k in range(3)]
+            metas = st.get_many([("A/traj-0000-p0", outs[0]), ("A/traj-0000-p1", outs[1]), ("A/net-0001", outs[2])])
+            self.assertEqual([m["k"] for m in metas], [0, 1, 2])
+            for a, b in zip(files, outs):
+                self.assertEqual(open(a, "rb").read(), open(b, "rb").read())
+            st.update(deletes=["A/traj-0000-p0", "A/traj-0000-p1", "A/gone"])   # a missing name is skipped
+            self.assertEqual(st.names("A/"), {"A/net-0001"})
+            self.assertEqual(st.get_many([]), [])
+            st.update()   # nothing to do
+
     def test_cloud_store_round_trip(self):
         """ppo_cloud: two actor parts in a dir store -> one serve step -> next net and stats published, parts gone."""
         import gzip
