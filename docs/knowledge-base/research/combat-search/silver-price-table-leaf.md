@@ -69,7 +69,7 @@ are inside and 113 hit the cap; mean bonus 92.5 (README). Counted in `PriceTable
 gold / max HP) and adds only Σ the table's counter prices at the end values; Lizard Tail's counter is not priced
 (the default leaf's death save covers it). Motivation: §757's table helped where a counter is priced (Incense) and
 hurt where it re-priced HP and potions. Campaign `silver_price_table_leaf_20261105/counters/`.
-Result (§TBD): gate PASS at 256 states; C − D +2.44 pp [+1.14, +3.70] on 975 states (Incense +4.7, others −0.7),
+Result (§758): gate PASS at 256 states; C − D +2.44 pp [+1.14, +3.70] on 975 states (Incense +4.7, others −0.7),
 selection-conditional (reuses §757's D runs); needs a new-seed confirmation ([RESULT](../../../experiments/evidence/silver_price_table_leaf_20261105/counters/RESULT.md)).
 
 ## Model a746

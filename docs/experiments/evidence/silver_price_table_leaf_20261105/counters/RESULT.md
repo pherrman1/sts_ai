@@ -5,11 +5,12 @@ PREREG: [PREREG.md](PREREG.md) (J prelaunch PASS). RUN_COMMIT `119c5a05`, binary
 1,024 stage C units (share `price-table-stagec/units/`, all delivered).
 
 ## Deliveries
-1,006 of 1,056 unit tars: all 32 sentinel units and 974 of 1,024 C units, all rc 0, 0 bad rows, 0 dropped. The run
+1,007 of 1,056 unit tars at analysis time: all 32 sentinel units and 975 of 1,024 C units, all rc 0, 0 bad rows, 0 dropped. The run
 stalled for ~25 min when the share reached its 50,000-file limit (claim `mkdir` failed with EIO); Philipp approved
 deleting stage C's `claims/` (00:23 CET), and the run resumed. At 00:30 CET Philipp stopped it to free the workers;
-the 50 missing C units were never claimed or never finished. The gate had crossed before (below), so the missing
-units cannot change the verdict.
+the other 49 C units were unfinished at analysis time. Units already in flight kept finishing after the stop (982 C
+units on the share at J's review); with them the gate is unchanged (PASS at 256, LLR 3.04) and C − D is +2.42
+[+1.18, +3.70]. The gate had crossed before, so the missing units cannot change the verdict.
 
 ## Sentinel
 32/32 sentinel units: every D row equals stage C's except the CPU columns → stage C's D/T/I runs are a valid control.
