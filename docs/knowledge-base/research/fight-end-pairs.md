@@ -99,7 +99,7 @@ fix the budget (see the rollout-cost note in the ledger); keep it off for labels
 
 Smoke 2026-11-05 (`tools/fight_end_pairs/smoke.sh`, options `n=2,ooc=heart1`, default variants, used smoke
 seeds 111459990-993, binary `119323af` of commit `f166386b`, four processes on a four-core cloud container):
-4 source runs, 8 forks, 56 copies, 3 skips (`pot:*` without potions), all rows valid, rc 0.
+4 source runs, 8 forks, 56 copies, 2 skips (`pot:*` without potions), all rows valid, rc 0.
 
 - CPU per continuation at Silver 1,000 on one core: mean 9.9 s (act-1 forks 8.3 s, act 2 14.8 s, act 3
   4.5 s); a continuation that reaches the Heart costs 20-70 s, one that dies in the next fight < 1 s.
