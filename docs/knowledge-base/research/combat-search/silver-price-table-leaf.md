@@ -4,7 +4,7 @@ Status: research flag `STS_SILVER_PRICE_TABLE_LEAF`, off by default (leaf plan s
 Evidence and model provenance: [silver_price_table_leaf_20261105](../../../experiments/evidence/silver_price_table_leaf_20261105/README.md).
 Stage C pre-registration (frozen, run 2026-11-05, INCONCLUSIVE): [PREREG-stageC.md](../../../experiments/evidence/silver_price_table_leaf_20261105/PREREG-stageC.md).
 
-## Stage C result (2026-11-05, §TBD)
+## Stage C result (2026-11-05, §757)
 INCONCLUSIVE: Heart kill at S&S → Heart over 1,021 states T − D +1.59 pp [−0.05, +3.23] (97.5%), TA − D +1.25.
 On Incense states the table recovers most of §724's term (+4.5 vs +5.9 pp); on states without Incense Burner it
 loses −2.4 pp (more potions and HP spent in S&S). The flag stays research-only

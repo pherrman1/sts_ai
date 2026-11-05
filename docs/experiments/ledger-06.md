@@ -26223,7 +26223,7 @@ Seeds: 111540000-111654399 USED (training); the evaluation reused G1's 111520000
 training actors plus 62 core-h of evaluation.
 **Knowledge impact:** KB `research/a20-ppo-plan.md` (G1 row, LONG_B addition).
 
-## §TBD — §746 model A as Silver's Shield & Spear win leaf through a per-fight price table (stage C of the leaf plan): INCONCLUSIVE overall, Heart +1.59 pp [−0.05, +3.23] (97.5%) for the table, +1.25 [−0.45, +2.92] with the anchored win bonus; the table recovers most of §724's Incense gain (+4.5 vs +5.9 pp) but loses −2.4 pp [−4.2, −0.7] on states without Incense Burner (more potions and HP spent, more S&S deaths) → flag stays research-only (1,021 S&S states × 3-5 arms × 4, replays of used seeds, 2026-11-05)
+## §757 — §746 model A as Silver's Shield & Spear win leaf through a per-fight price table (stage C of the leaf plan): INCONCLUSIVE overall, Heart +1.59 pp [−0.05, +3.23] (97.5%) for the table, +1.25 [−0.45, +2.92] with the anchored win bonus; the table recovers most of §724's Incense gain (+4.5 vs +5.9 pp) but loses −2.4 pp [−4.2, −0.7] on states without Incense Burner (more potions and HP spent, more S&S deaths) → flag stays research-only (1,021 S&S states × 3-5 arms × 4, replays of used seeds, 2026-11-05)
 
 **Question:** Philipp (leaf plan, 2026-11-05; go "go auf 40 workern" 20:05 CET): does Silver play Shield & Spear
 better for the Heart when its win leaf uses §746 model A's prices, built once per fight as a price table
