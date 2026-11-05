@@ -1629,7 +1629,8 @@ finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
                         const OocPrefixObserver *prefixObserver,
                         OocContinuationCost *finalCost,
                         bool useFrozenV4,
-                        std::vector<CombatEvalFight> *combatCapture) {
+                        std::vector<CombatEvalFight> *combatCapture,
+                        const OocFightEndObserver *fightEndObserver) {
     const int healthBefore = search::g_simHealthFailureCount;
     const auto continuationWallStart = std::chrono::steady_clock::now();
     const std::clock_t continuationCpuStart = std::clock();
@@ -1705,6 +1706,8 @@ finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
                 endHp = passed ? gc.curHp : 0;
                 endMaxHp = gc.maxHp;
                 bc.exitBattle(gc);
+                if (fightEndObserver)
+                    (*fightEndObserver)(gc, OocFightEnd{fights, battleAct, gc.floorNum, room, bc.encounter, passed});
             }
             if (probe) {
                 probe->fights.push_back({room, bc.encounter, gc.floorNum, endHp,
@@ -3785,6 +3788,28 @@ int main(int argc, char **argv) {
                   << " extra=" << (extra.empty() ? "-" : extra) << " -> " << out << '\n';
         potionPriceProbe(nSeeds, seedStart, sims, asc, out, statesPerRun, fightsAhead, hpDelta,
                          sample == "all", extra);
+
+    } else if (mode == "fightendpairgen") {
+        // Paired fight-end continuations (research only; docs/knowledge-base/research/fight-end-pairs.md):
+        // fightendpairgen NSEEDS SEED_START SIMS ASC OUT [OPTIONS=-] [VARIANTS=default]
+        // OPTIONS: comma list n=FORKS_PER_RUN, rooms=NORMAL+ELITE+BOSS(+OTHER), acts=1+2+3+4,
+        // strata=none|room|act|room_act, horizon=end|N, ooc=heart1. VARIANTS: comma list of
+        // hp:-N, pot:NAME|*, maxhp:-N, gold:-N, curse:NAME, ctr:RELIC|*:+-N, noop ("default" =
+        // hp:-3,hp:-8,hp:-15,pot:*,maxhp:-5,gold:-50). Writes OUT (JSONL) and OUT.manifest.json.
+        if (argc < 7) { std::cerr << "usage: fightendpairgen NSEEDS SEED_START SIMS ASC OUT [OPTIONS=-] [VARIANTS=default]\n"; return 2; }
+        const int nSeeds = std::stoi(argv[2]);
+        const std::uint64_t seedStart = std::stoull(argv[3]);
+        const int sims = std::stoi(argv[4]);
+        const int asc = std::stoi(argv[5]);
+        const std::string out = argv[6];
+        const std::string options = argc > 7 ? argv[7] : "-";
+        const std::string variants = argc > 8 ? argv[8] : "default";
+        std::cout << "fightendpairgen seeds " << seedStart << ".." << seedStart + nSeeds - 1 << " sims=" << sims
+                  << " asc=" << asc << " options=" << options << " variants=" << variants << " -> " << out << '\n';
+        one_combat::fightEndPairGen(nSeeds, seedStart, sims, asc, out, options, variants);
+
+    } else if (mode == "fightendpairselftest") {
+        return one_combat::fightEndPairSelfTest(argc, argv);
 
     } else if (mode == "oocfactoreval") {
         // nDecisions is explicit for tools/seed_guard.sh and checked against

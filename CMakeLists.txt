@@ -545,6 +545,7 @@ add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/fight_replay.cpp
     apps/one_combat/ooc_factor_eval.cpp
     apps/one_combat/potion_price_probe.cpp
+    apps/one_combat/fight_end_pairs.cpp
     apps/one_combat/strategic_gen.cpp
     apps/one_combat/counterfactual_gen.cpp
     apps/one_combat/ooc_checkpoint_policy.cpp
@@ -559,6 +560,8 @@ add_test(NAME heart_outcome_capture COMMAND one_combat heartoutcomeselftest)
 add_test(NAME forced_boss_relic COMMAND one_combat forcebossrelicselftest)
 add_test(NAME forced_decision COMMAND one_combat forcedecisionselftest)
 add_test(NAME a4_perturb COMMAND one_combat a4perturbselftest)
+add_test(NAME fight_end_pairs COMMAND one_combat fightendpairselftest)
+set_tests_properties(fight_end_pairs PROPERTIES LABELS "core;smoke")
 add_test(NAME heart1_public_record_invariance COMMAND one_combat heart1recordselftest)
 add_test(NAME heart1_ppo COMMAND one_combat heart1pposelftest)
 add_test(NAME heart_outcome_collection_python COMMAND python3 -m unittest discover
