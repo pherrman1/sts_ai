@@ -41,6 +41,12 @@ Two questions from Philipp (2026-11-01):
   point) and partly the potion types right. But −3 HP lowers it in only 83% of 20,677 post-fight states, and its 1-HP
   price is noise (p10 −2.9, p90 +4.3 secant units). There is no heart1 leaf and no B3. Rerun on the own A20 PPO critic
   ([evidence](../../experiments/evidence/heart1_value_leaf_teacher_20261102/RESULT.md)).
+- **B2 on the own A20 PPO critic (LONG_B net-0208, 2026-11-05, §755): FAIL, same gates.** On 18,054 post-fight
+  states from LONG_B's own games it predicts the Heart kill far better than heart1 (AUC 0.77 vs 0.56) and prices
+  Fairy (50 HP), max HP (+2.5 HP per point) and potion types right. But −3 HP lowers V in only 79% (heart1 86% on
+  the same states), and the 1-HP price is noise (p10 −3.2, p90 +4.6). More PPO training sharpened levels, not HP
+  differences. No LONG_B leaf, no B3
+  ([evidence](../../experiments/evidence/longb_value_leaf_teacher_20261105/RESULT.md)).
 
 ## (A) Evidence on the PPO plan
 
@@ -176,7 +182,7 @@ Two questions from Philipp (2026-11-01):
 | # | Experiment | Cost class | Falsified if |
 | ---: | --- | --- | --- |
 | B1 | Targeted terms first: for each unpriced fight-end variable, a causal paired probe as in §723 (force the variable, play on) to measure its Heart-kill price; price only those that clear their CI, in Silver's leaf as in §724 | offline probes + fight-level gate | no variable beyond Incense shows a price outside its CI |
-| B2 | When the PPO critic exists: §721's teacher check repeated on it; heart1's critic FAILED (2026-11-02, §747), rerun on our own critic. Checks: signs, SE of the 1-HP price ≤ ⅓ of the formula's, max HP ≥ 0 | offline | it fails the same checks as V_A4/V_H |
+| B2 | When the PPO critic exists: §721's teacher check repeated on it; heart1's critic FAILED (2026-11-02, §747), the own LONG_B critic FAILED too (2026-11-05, §755). Checks: signs, SE of the 1-HP price ≤ ⅓ of the formula's, max HP ≥ 0 | offline | it fails the same checks as V_A4/V_H |
 | B3 | Only if B2 passes: shrunk, clipped V-prices set at elite/boss fight start vs the formula, paired fight-level gate, then a run A/B | gate | SPRT NOT_WORSE/WORSE |
 | B4 | KataGo-style bounded arctan term on fight-end HP, recentred on the root's expected HP, weight grid {0.1, 0.25, 0.5} | fight-level gate | no weight beats the formula |
 
