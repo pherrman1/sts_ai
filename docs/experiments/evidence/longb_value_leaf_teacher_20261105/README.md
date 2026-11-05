@@ -21,7 +21,7 @@ its net and trajectory refs are read with `git fetch` only.
 §747's states (§691 key-rules-ab records, §721 Heart entries) predate the v2 inputs (`obs.v2.run_counters`,
 `obs.v2.fought`, `offer_prices`, #941/#946) that LONG_B's net reads. Scoring them would test the net off its input
 distribution. **Primary set:** the post-fight states in the LONG_B trajectory parts still in the store when this
-check started (iterations 208 and 209: 78 parts, 1,040 games, played by net-0207/0208 on combat B). Per game and
+check started (iterations 208 and 209: 80 parts (2 × 40), 1,040 games, played by net-0207/0208 on combat B). Per game and
 floor, the first REWARDS-screen decision; room from the map node at (mapX, mapY): MONSTER → NORMAL, ELITE → ELITE,
 mapY 15 → BOSS; events, treasure and shops dropped (§747 kept event fights; there they did not change the verdict).
 `build_states_traj.py` → acts 1-3: 18,054 states (11,500 hallway, 5,195 elite, 1,359 boss); plus 311 Act-4 elite

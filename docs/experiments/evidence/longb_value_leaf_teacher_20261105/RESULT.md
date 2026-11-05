@@ -1,8 +1,9 @@
 # LONG_B critic as a Silver combat leaf: teacher check (B2 rerun) result
 
 Pre-registration: [README.md](README.md) (commit `6e8a78c6`, pushed before any score was read). Offline only: no
-seeds, no game runs, no GPU, nothing on the PC. One 4-core cloud container, 2026-11-05 ~15:00-17:45 CET. The LONG_B
-run (paused at update 208) was only read: its net and trajectory refs with `git fetch`.
+seeds, no game runs, no GPU, nothing on the PC. One 4-core cloud container, 2026-11-05 15:56-17:27 CET (pre-registration commit 16:00 CET, result 17:27 CET). The LONG_B
+run (paused at update 208) was only read: its net and trajectory refs with `git fetch`. After review, the README's part
+count was corrected from 78 to 80 (a typo; the builder always read all 80 parts); nothing else in it changed.
 
 ## Provenance
 
@@ -12,7 +13,7 @@ run (paused at update 208) was only read: its net and trajectory refs with `git 
 | control (descriptive) | heart1 `/mnt/project-files/a20-ppo/heart1.bin`, sha256 `1e92f2a6…` |
 | scorer | `one_combat heart1score`, linux-gcc-release-x86-64-v3 from `23738b84`; binary sha256 `78849fcf768f6e84…`, identical to LONG_B's post-pause actor binary |
 | parity | net-0207 on the iteration-208 base records (behaviour net-0207) and net-0208 on the iteration-209 base records (behaviour net-0208) reproduce the actors' logged `value` exactly: max abs diff 0.0 on 8,977 and 9,388 states |
-| states | 78 trajectory parts (`traj-0208-p*`, `traj-0209-p*`), 1,040 games; `build_states_traj.py` → 18,365 states, 237,814 records; `meta.json` sha256 `0e5934cf…` |
+| states | 80 trajectory parts (2 × 40) (`traj-0208-p*`, `traj-0209-p*`), 1,040 games; `build_states_traj.py` → 18,365 states, 237,814 records; `meta.json` sha256 `0e5934cf…` |
 | scores | `/mnt/project-files/longb-value-leaf-teacher/` (`meta.json.gz`, `values_net0208.jsonl.gz` sha256 of uncompressed `b314714e…`, `values_heart1.jsonl.gz` `ff3bee7e…`) |
 | gates | §747 `gates.py`, unchanged → `gates_net0208.json`, `gates_heart1.json`; `describe.py` → `describe_*.json` |
 
