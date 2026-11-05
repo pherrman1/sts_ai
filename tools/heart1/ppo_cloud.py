@@ -15,6 +15,8 @@ Names in the store, per arm:
   ARM/traj-NNNN-pK      part K of iteration NNNN's games, gzipped jsonl; meta: games, sha256,
                         behaviour net, actor seconds, first seed                             (actor of part K)
   ARM/stats-NNNN        the learner's loop.json after NNNN updates; only the newest stays      (learner)
+  ARM/rebin             optional, written once: a replacement one_combat sha256 the actors may also use, for an
+                        engine change that plays the same games (cmd_rebin)
 Every name is written once (no ref is ever overwritten, so no force-push is needed).
 
 Iteration i is split into P parts of GAMES/P games: part k plays seeds SEED_BASE + i*GAMES + k*GAMES/P ... with
@@ -33,6 +35,7 @@ ahead. The learner keeps its checkpoint (state.pt) and every net per arm in a lo
     python3 tools/heart1/ppo_cloud.py serve STORE LOCAL_DIR ARM [ARM ...] [--device cuda]
     python3 tools/heart1/ppo_cloud.py status STORE ARM [ARM ...]
     python3 tools/heart1/ppo_cloud.py cleanup STORE ARM [ARM ...]     (end of a screen: delete every ref of the arms)
+    python3 tools/heart1/ppo_cloud.py rebin STORE ARM --new SHA --reason TEXT
 """
 import argparse
 import gzip
@@ -450,8 +453,9 @@ def cmd_actor(argv):
     cfg = json.load(open(os.path.join(work, "config.json")))
     if not 0 <= a.part < cfg["parts"]:
         sys.exit(f"part {a.part} outside 0..{cfg['parts'] - 1}")
-    if sha256(a.one_combat) != cfg["one_combat_sha256"]:
-        sys.exit(f"{a.one_combat} sha256 is not the arm's {cfg['one_combat_sha256']}")
+    bin_sha = sha256(a.one_combat)
+    if bin_sha not in allowed_binaries(store, a.arm, cfg, work):
+        sys.exit(f"{a.one_combat} sha256 is not the arm's {cfg['one_combat_sha256']} (or its rebin)")
     n_part = cfg["games"] // cfg["parts"]
     marker = os.path.join(work, "published.txt")
     published = set(open(marker).read().split()) if os.path.exists(marker) else set()
@@ -515,7 +519,7 @@ def cmd_actor(argv):
             shutil.copyfileobj(src, dst)
         store.put(name, gz, {"games": n, "sha256": sha256(gz), "net": f"net-{b:04d}", "net_sha256": meta["sha256"],
                              "actor_s": time.time() - job["t0"], "seed_first": job["seed"],
-                             "host": os.uname().nodename, "stalled": len(stalled)})
+                             "host": os.uname().nodename, "stalled": len(stalled), "one_combat_sha256": bin_sha})
         job = None
         published.add(name)
         with open(marker, "a") as f:
@@ -771,6 +775,43 @@ def cmd_serve(argv):
     print("SERVE_DONE", flush=True)
 
 
+def allowed_binaries(store, arm, cfg, work):
+    """The one_combat sha256s an actor of the arm may play with: the config's, plus the replacement an ARM/rebin
+    names (cmd_rebin) if that rebin replaces exactly the config's binary."""
+    ok = {cfg["one_combat_sha256"]}
+    if store.names(f"{arm}/rebin"):
+        m = store.get(f"{arm}/rebin", os.path.join(work, "rebin.json"))
+        if m.get("old") == cfg["one_combat_sha256"]:
+            ok.add(m["new"])
+    return ok
+
+
+def cmd_rebin(argv):
+    """Write ARM/rebin once: actors may then also play with binary NEW in place of the config's. Only for an engine
+    change shown to play the same games (the evidence goes in the PREREG); the config itself stays frozen."""
+    ap = argparse.ArgumentParser(prog="ppo_cloud.py rebin")
+    ap.add_argument("store")
+    ap.add_argument("arm")
+    ap.add_argument("--new", required=True, help="sha256 of the replacement one_combat")
+    ap.add_argument("--reason", required=True)
+    args = ap.parse_args(argv)
+    if not re.fullmatch(r"[0-9a-f]{64}", args.new):
+        sys.exit("--new must be a 64-char sha256")
+    store = open_store(args.store)
+    if store.names(f"{args.arm}/rebin"):
+        sys.exit(f"{args.arm}/rebin exists; an arm is rebinned at most once")
+    with tempfile.TemporaryDirectory() as tmp:
+        store.get(f"{args.arm}/config", os.path.join(tmp, "config.json"))
+        old = json.load(open(os.path.join(tmp, "config.json")))["one_combat_sha256"]
+        if args.new == old:
+            sys.exit("--new is the config's binary")
+        rp = os.path.join(tmp, "rebin.json")
+        with open(rp, "w") as f:
+            json.dump({"old": old, "new": args.new, "reason": args.reason, "time": time.time()}, f, indent=1)
+        store.put(f"{args.arm}/rebin", rp, {"old": old, "new": args.new, "sha256": sha256(rp)})
+    print(f"{args.arm}: actors may play {args.new[:16]} in place of {old[:16]}")
+
+
 def cmd_cleanup(argv):
     """Delete every ref of the given arms from the store (end of a screen; run where deletes are allowed)."""
     store = open_store(argv[0])
@@ -796,7 +837,8 @@ def cmd_status(argv):
 
 
 if __name__ == "__main__":
-    cmds = {"init": cmd_init, "actor": cmd_actor, "serve": cmd_serve, "status": cmd_status, "cleanup": cmd_cleanup}
+    cmds = {"init": cmd_init, "actor": cmd_actor, "serve": cmd_serve, "status": cmd_status, "cleanup": cmd_cleanup,
+            "rebin": cmd_rebin}
     if len(sys.argv) < 2 or sys.argv[1] not in cmds:
-        sys.exit("usage: ppo_cloud.py {init|actor|serve|status|cleanup} ...")
+        sys.exit("usage: ppo_cloud.py {init|actor|serve|status|cleanup|rebin} ...")
     cmds[sys.argv[1]](sys.argv[2:])

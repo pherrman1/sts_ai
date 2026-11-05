@@ -55,6 +55,8 @@ At 12:05 CET he approved the engine change: "implementiere die erste option. idc
 - **Parity:** the replay is identical (trajectory and result, except wall time) and takes 50 s. The 32 G1 sentinel seeds
   (GH, heart1 net-0000, evaluation flags) are 32/32 equal to `sentinel_expected.csv`.
 - **Iterations before and after the pause** play the same games. Only the wall time differs.
+- **The store keeps the config frozen.** `ppo_cloud.py rebin` writes `LONG_B/rebin` once (old `ca8db597`, new
+  `78849fcf`). The actor accepts either binary, and every part's meta records the `one_combat_sha256` it played.
 - **The evaluation** stays pinned to `ca8db597` unless its freeze says otherwise.
 
 ## Evaluation (primary)

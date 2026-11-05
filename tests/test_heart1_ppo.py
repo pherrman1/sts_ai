@@ -256,6 +256,33 @@ class Heart1PpoTest(unittest.TestCase):
             self.assertEqual(st.get_many([]), [])
             st.update()   # nothing to do
 
+    def test_rebin(self):
+        """ppo_cloud rebin: written once, adds exactly one replacement binary for the config's, config unchanged."""
+        import json
+        import ppo_cloud
+        old, new = "a" * 64, "b" * 64
+        with tempfile.TemporaryDirectory() as d:
+            st = ppo_cloud.open_store(f"dir:{d}/store")
+            cp = os.path.join(d, "config.json")
+            with open(cp, "w") as f:
+                json.dump({"one_combat_sha256": old}, f)
+            st.put("A/config", cp, {})
+            work = os.path.join(d, "work")
+            os.makedirs(work)
+            cfg = {"one_combat_sha256": old}
+            self.assertEqual(ppo_cloud.allowed_binaries(st, "A", cfg, work), {old})
+            with self.assertRaises(SystemExit):
+                ppo_cloud.cmd_rebin([f"dir:{d}/store", "A", "--new", old, "--reason", "same"])
+            with self.assertRaises(SystemExit):
+                ppo_cloud.cmd_rebin([f"dir:{d}/store", "A", "--new", "xyz", "--reason", "bad sha"])
+            ppo_cloud.cmd_rebin([f"dir:{d}/store", "A", "--new", new, "--reason", "test"])
+            self.assertEqual(ppo_cloud.allowed_binaries(st, "A", cfg, work), {old, new})
+            self.assertEqual(ppo_cloud.allowed_binaries(st, "A", {"one_combat_sha256": "c" * 64}, work), {"c" * 64})
+            with self.assertRaises(SystemExit):
+                ppo_cloud.cmd_rebin([f"dir:{d}/store", "A", "--new", "c" * 64, "--reason", "twice"])
+            st.get("A/config", os.path.join(d, "back.json"))
+            self.assertEqual(json.load(open(os.path.join(d, "back.json"))), {"one_combat_sha256": old})
+
     def test_cloud_store_round_trip(self):
         """ppo_cloud: two actor parts in a dir store -> one serve step -> next net and stats published, parts gone."""
         import gzip
