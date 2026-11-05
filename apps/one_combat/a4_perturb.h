@@ -33,4 +33,8 @@ nlohmann::json applyA4Perturbation(sts::GameContext &gc, std::uint64_t specSeed,
 
 int a4PerturbSelfTest();
 
+// The range of an out-of-combat relic counter (RelicInstance::data in 0..limit-1) as the relic_counter
+// operator uses it; 0 for relics without such a counter. fightendpairgen's ctr: copies share it.
+int a4CounterLimit(sts::RelicId r);
+
 }  // namespace one_combat
