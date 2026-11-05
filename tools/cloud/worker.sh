@@ -138,7 +138,7 @@ is_running() { [ -e "$RUN/lock" ] && ! flock -n "$RUN/lock" true; }
 # invisible for longer than the settle time; verify_campaign.py then reports it and keeps the first tar.
 QMAX=4
 QDIR=$SHARE/claims UDIR=$SHARE/units
-SETTLE=$(key claim_settle_seconds); SETTLE=${SETTLE:-900}
+SETTLE=$(key claim_settle_seconds); SETTLE=${SETTLE:-60}
 [[ "$SETTLE" =~ ^[0-9]+$ ]] || stop "manifest claim_settle_seconds must be a non-negative integer"
 pending_units() {  # unit lines without an uploaded tar: this worker's static units in order, then the others reversed
   local have; have=$(ls "$UDIR" 2>/dev/null | sed -n 's/\.w[0-9][0-9]*\.tar$//p' | sort -u)
