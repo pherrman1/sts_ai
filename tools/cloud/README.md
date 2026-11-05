@@ -31,7 +31,7 @@ share         /mnt/project-files/<dir>  # where wWW.tar and wWW.DONE.json are up
 parallel      4                         # units run at once per worker (default 4)
 schedule      queue                     # optional, default static; see "Queue schedule" below
 lease_minutes 30                        # queue only: a claim without heartbeat for this long may be taken over
-claim_settle_seconds 900                # queue only: how long a non-owner claimer waits before its owner check
+claim_settle_seconds 60                 # queue only: how long a non-owner claimer waits before its owner check
 input studentc.bin /mnt/project-files/student-c-488/studentc.bin <sha256>   # copied into RUN, hash-checked
 ```
 
@@ -99,12 +99,15 @@ its static units (line i -> worker i % workers + 1) in order, then other workers
   other containers see a new dir late; in the value-leaf A/B up to 4 workers ran one unit, 34 of the first 143 tars. So every
   claimer also writes `cand.<KEY>.wWW.<pid>` into the dir. The static owner's first attempt has KEY 0 and starts
   at once. Any other claimer (stealing another worker's unit, or taking over an expired claim) uses KEY = epoch,
-  waits `claim_settle_seconds` (default 900), and runs the unit only if its candidate sorts first. While the unit
+  waits `claim_settle_seconds` (default 60), and runs the unit only if its candidate sorts first. While the unit
   runs, its owner rewrites `hb` (`wWW EPOCH`) every minute. A claim whose heartbeat is older than
   `lease_minutes`, or that holds `failed`, may be taken over as attempt n+1, at most 4 attempts per unit.
-  Lanes start 3 s apart. The settle time is long because other containers can miss a claim for minutes: in the
-  value-leaf A/B (old code), copies of one unit finished up to about 10 min apart. Waiting only costs stealing
-  lanes, which run near the end.
+  Lanes start 3 s apart. The default was 900 s because in the value-leaf A/B (old code) copies of one unit
+  finished up to about 10 min apart. In the LONG_B eval (40 workers, 2026-11-05) that wait was the whole tail:
+  all 100 stolen units slept 900 s, the last own unit finished at 35.5 min and the run at 51.3 min, while the
+  candidates of all 34 contested claims were written within 4 s of each other. Hence 60 s since then; a
+  campaign that sees duplicates can set a larger value in its manifest (a duplicate only costs CPU: the
+  verifier keeps the first tar).
 - **Upload:** a finished unit goes to the share at once as `SHARE/units/<id>.wWW.tar` (unit dir, `.done`,
   `.log`, `FROZEN.txt`, `SETUP.txt`). A worker that dies later loses nothing, and a restarted worker uploads
   units it finished locally but had not uploaded.
