@@ -1,7 +1,7 @@
 #ifndef STS_ONE_COMBAT_SILVER_PRICE_TABLE_H
 #define STS_ONE_COMBAT_SILVER_PRICE_TABLE_H
 
-// Research-only Silver price-table leaf (STS_SILVER_PRICE_TABLE_LEAF=<model>[:<ENCOUNTER,...>], default off;
+// Research-only Silver price-table leaf (STS_SILVER_PRICE_TABLE_LEAF=<model>[:<ENCOUNTER,...>][:anchor], default off;
 // docs/knowledge-base/research/combat-search/silver-price-table-leaf.md). At the start of a selected fight the model scores about
 // 20-40 perturbed copies of the fight-start state once; the differences become the fight's
 // search::SilverPriceTable, so the search tree never calls the model.
@@ -69,15 +69,18 @@ struct PriceModel {
 };
 
 // Fight-start prices (search::SilverPriceTable); null when the model's HP curve is flat (no scale).
+// anchor: the fight's win bonus = V(root) / scale − the table's value of the start state, clamped to
+// [winBonus, kAnchorCapFactor × winBonus] (SilverEvalWeights defaults).
+inline constexpr double kAnchorCapFactor = 4;
 std::shared_ptr<const sts::search::SilverPriceTable> buildPriceTable(const PriceModel &model, const PriceState &root,
-                                                                     int *rows = nullptr);
+                                                                     int *rows = nullptr, bool anchor = false);
 
 struct PriceTableLeafStats {
-    std::atomic<std::int64_t> tables{0}, flat{0}, rows{0}, unknownNames{0}, buildNanos{0};
+    std::atomic<std::int64_t> tables{0}, flat{0}, rows{0}, unknownNames{0}, buildNanos{0}, anchorLow{0}, anchorHigh{0};
 };
 PriceTableLeafStats &priceTableLeafStats();
 
-// Reads STS_SILVER_PRICE_TABLE_LEAF (unset or 0 = off) after installNativeSilverBackend(); when on, loads the
+// Reads STS_SILVER_PRICE_TABLE_LEAF=<model>[:<ENC,...>][:anchor] (unset or 0 = off) after installNativeSilverBackend(); when on, loads the
 // model and installs the builder. Throws on a bad spec or a model that does not load. Returns true when on.
 bool installSilverPriceTableLeafFromEnv();
 // The spec for manifests (model files with sha256, fights); null when off.

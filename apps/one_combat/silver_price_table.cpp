@@ -163,7 +163,7 @@ int potionId(const std::string &name) {
 }  // namespace
 
 std::shared_ptr<const search::SilverPriceTable> buildPriceTable(const PriceModel &model, const PriceState &root,
-                                                                int *rowsOut) {
+                                                                int *rowsOut, bool anchor) {
     int rows = 0, unknown = 0;
     const auto V = [&](const PriceState &s) { ++rows; return model.predict(s, &unknown); };
     const int m = std::max(root.maxHp, 1);
@@ -226,6 +226,20 @@ std::shared_ptr<const search::SilverPriceTable> buildPriceTable(const PriceModel
         }
         t->counters.push_back(std::move(c));
     }
+    if (anchor) {
+        // winBonus + stateValue(root) = V(root) / scale, so a loss (V = 0) against a start-like win is priced
+        // as the model prices it; clamped to [default, 4 x default] (the scale floor's factor).
+        double rootState = t->hpCurve(std::clamp(root.hp, 1, m));
+        for (const auto &p : root.potions) {
+            const int id = potionId(p);
+            if (id >= 0 && id < search::kSilverPotionTypeCount) rootState += t->potionPriced[id] ? t->potionPrice[id] : t->unpricedPotion;
+        }
+        const double def = search::SilverEvalWeights{}.winBonus;
+        t->anchorRaw = t->rootWinValue - rootState;
+        t->winBonus = std::clamp(t->anchorRaw, def, kAnchorCapFactor * def);
+        if (t->anchorRaw < def) ++stats.anchorLow;
+        if (t->anchorRaw > kAnchorCapFactor * def) ++stats.anchorHigh;
+    }
     if (rowsOut) *rowsOut = rows;
     ++stats.tables; stats.rows += rows; stats.unknownNames += unknown;
     return t;
@@ -242,6 +256,7 @@ struct LeafConfig {
     std::string spec;
     PriceModel model;
     std::set<MonsterEncounter> fights;
+    bool anchor = false;
 };
 std::unique_ptr<LeafConfig> g_config;
 
@@ -262,9 +277,17 @@ bool installSilverPriceTableLeafFromEnv() {
     }
     auto cfg = std::make_unique<LeafConfig>();
     cfg->spec = raw;
-    const auto colon = cfg->spec.find(':');
-    const std::string model = cfg->spec.substr(0, colon);
-    std::string fights = colon == std::string::npos ? "" : cfg->spec.substr(colon + 1);
+    // <model>[:<ENC,...>][:anchor]
+    std::vector<std::string> parts;
+    {
+        std::stringstream sp(cfg->spec);
+        for (std::string tok; std::getline(sp, tok, ':');) parts.push_back(tok);
+    }
+    if (parts.size() > 3) throw std::runtime_error("STS_SILVER_PRICE_TABLE_LEAF: at most <model>:<fights>:anchor");
+    if (parts.size() >= 2 && parts.back() == "anchor") { cfg->anchor = true; parts.pop_back(); }
+    const std::string model = parts.empty() ? "" : parts[0];
+    std::string fights = parts.size() > 1 ? parts[1] : "";
+    if (parts.size() > 2) throw std::runtime_error("STS_SILVER_PRICE_TABLE_LEAF: the third field can only be anchor");
     std::string trees, vocab;
     if (model == "a746") {
         trees = "models/candidates/silver_price_a746.trees";
@@ -289,14 +312,15 @@ bool installSilverPriceTableLeafFromEnv() {
     cfg->model.name = model;
     if (!cfg->model.load(trees, vocab))
         throw std::runtime_error("STS_SILVER_PRICE_TABLE_LEAF: cannot load " + trees + " / " + vocab);
-    std::cerr << "[silver] research leaf: price table " << model << " at " << fights << "\n";
+    std::cerr << "[silver] research leaf: price table " << model << " at " << fights
+              << (cfg->anchor ? " win bonus anchored" : "") << "\n";
     g_config = std::move(cfg);
     const LeafConfig *config = g_config.get();
     search::setNativeSilverPriceTableBuilder(
         [config](const GameContext &gc, const BattleContext &bc) -> std::shared_ptr<const search::SilverPriceTable> {
             if (!config->fights.count(bc.encounter)) return nullptr;
             const auto t0 = threadNanos();
-            auto table = buildPriceTable(config->model, priceStateFromGame(gc));
+            auto table = buildPriceTable(config->model, priceStateFromGame(gc), nullptr, config->anchor);
             priceTableLeafStats().buildNanos += threadNanos() - t0;
             return table;
         });
@@ -308,7 +332,7 @@ nlohmann::json silverPriceTableLeafSpecification() {
     nlohmann::json fights = nlohmann::json::array();
     for (const auto e : g_config->fights) fights.push_back(monsterEncounterEnumNames[static_cast<int>(e)]);
     return {{"spec", g_config->spec}, {"model", g_config->model.name}, {"trees", g_config->model.treesPath},
-            {"vocab", g_config->model.vocabPath}, {"fights", fights}};
+            {"vocab", g_config->model.vocabPath}, {"fights", fights}, {"anchor", g_config->anchor}};
 }
 
 }  // namespace one_combat

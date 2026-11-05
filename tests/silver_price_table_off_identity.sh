@@ -26,4 +26,13 @@ diff "$D/expected.csv" "$T/zero.rows" || { echo "FAIL: rows with the option =0 d
 run on STS_SILVER_PRICE_TABLE_LEAF=a746
 grep -q "\[silver\] research leaf: price table a746 at SHIELD_AND_SPEAR" "$T/on.log" || { echo "FAIL: on run lacks its log line"; exit 1; }
 [ "$(tail -n +2 "$T/on.rows" | cut -d, -f10 | grep -c '^1$')" = 4 ] || { echo "FAIL: on run rows not all valid"; exit 1; }
-echo "PASS price-table leaf off identity (4 states; on run: $(tail -n +2 "$T/on.rows" | cut -d, -f11 | paste -sd' ') S&S wins)"
+! grep -q "win bonus anchored" "$T/on.log" || { echo "FAIL: plain on run logs an anchor"; exit 1; }
+run anchor STS_SILVER_PRICE_TABLE_LEAF=a746:anchor
+grep -q "\[silver\] research leaf: price table a746 at SHIELD_AND_SPEAR win bonus anchored" "$T/anchor.log" \
+  || { echo "FAIL: anchor run lacks its log line"; exit 1; }
+[ "$(tail -n +2 "$T/anchor.rows" | cut -d, -f10 | grep -c '^1$')" = 4 ] || { echo "FAIL: anchor run rows not all valid"; exit 1; }
+if env -i "${E[@]}" STS_SILVER_PRICE_TABLE_LEAF=a746:SHIELD_AND_SPEAR:bogus bash tools/seed_guard.sh "$BIN" act4replay 4 \
+    "$D/states.jsonl" "$T/bad" 111459990 500 1 > "$T/bad.log" 2>&1; then
+  echo "FAIL: a bad third spec field was accepted"; exit 1
+fi
+echo "PASS price-table leaf off identity (4 states; on run: $(tail -n +2 "$T/on.rows" | cut -d, -f11 | paste -sd' ') S&S wins; anchor: $(tail -n +2 "$T/anchor.rows" | cut -d, -f11 | paste -sd' '))"

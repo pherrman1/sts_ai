@@ -1325,7 +1325,8 @@ double search::SilverSearcher::evaluateEndState(const BattleContext &bc) const {
     if (priceTable && bc.outcome == Outcome::PLAYER_VICTORY) {
         // Research price-table leaf (SilverPriceTable): the table's state value replaces the HP, potion,
         // death-save, gold, max-HP and Incense terms of the victory branch below.
-        double score = evalWeights.winBonus + priceTable->stateValue(bc, postBattleHealedHp(bc, context))
+        const double bonus = std::isfinite(priceTable->winBonus) ? priceTable->winBonus : evalWeights.winBonus;
+        double score = bonus + priceTable->stateValue(bc, postBattleHealedHp(bc, context))
             - (bc.turn * evalWeights.victoryTurnPenalty);
         score += priceTable->goldPrice * (effectiveGold(bc) - effectiveGold(*rootState));
         score += priceTable->maxHpPrice * (bc.player.maxHp - rootState->player.maxHp);

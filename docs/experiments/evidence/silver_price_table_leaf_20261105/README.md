@@ -58,6 +58,13 @@ Stage C (the first experiment with this flag): [PREREG-stageC.md](PREREG-stageC.
   §731's labels only; the refit adds §745's 320 Incense counter changes. These states and §723's are from the same
   source campaigns as the labels, so this is not an out-of-sample check.
 
+## Anchored win bonus on the same 592 states (descriptive)
+`silver_price_table_test --report` now builds the anchored table (`anchorRaw`, `anchorWinBonus`; the other fields are
+unchanged); output `leaf-plan/price-table/ss_tables_anchor.jsonl` on the share. Raw anchor V(root)/s − (U(start) +
+potion prices): 5/25/50/75/95% = −36.9 / −14.5 / 10.8 / 113.8 / 1,063.5. Clamped to [53, 212]: 398 states at the
+floor (anchored table = plain table), 81 inside, 113 at the cap; mean bonus 92.5. Stage C's TA arm therefore differs
+from T in about a third of the Incense states; the share for the other states is reported at freeze.
+
 ## Smoke (stage C configuration, not a result)
 `act4replay` with `STS_ACT4REPLAY_CHAIN=heart`, learned budget, §724's Silver settings, the 4 identity states, battle
 seeds 111459990-993 (used smoke block), OMP 4, arms off and `STS_SILVER_PRICE_TABLE_LEAF=a746`: both rc 0, 136 s
