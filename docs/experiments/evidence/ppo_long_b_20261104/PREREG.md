@@ -41,6 +41,22 @@ combat (CRIT_PRE's recipe), produce a net that plays A20 better than heart1?
   for this run after K's pre-launch review); any other missing game stops the actor. At most `max_stalls` = max(1,
   1% of the part) stalls per part, i.e. 1 of 13.
 
+## Amendment 2026-11-05: engine speedup during the pause
+Philipp paused the run at update ~157 (11:20 CET, GPU needed) and asked to streamline the process in the meantime.
+At 12:05 CET he approved the engine change: "implementiere die erste option. idc. wenn wir die engine in der pause
+ändern, mach das einfach."
+- **The hangs:** the 17-35 min stalls were single long games. The replay of seed 111595870 (net-0106, salt 107) is an
+  Act-3 stalemate that runs to the turn cap. ~97% of its 1,467 s was spent in
+  `SilverSearcher::findNodeUpToEquivalentCopy`, which copied and rehashed the state for every pair of equivalent cards.
+- **The change, bc33e470 (K PASS):** a pair is skipped when its swapped state's hash (`SwapHasher`, incremental) is in no
+  transposition-table slot. Every other pair takes the old path, so the search result is unchanged by construction.
+- **Run commit after the pause:** `code_commit` bc33e470, binary `78849fcf` (linux-gcc-release-x86-64-v3, the preset
+  of `ca8db597`).
+- **Parity:** the replay is identical (trajectory and result, except wall time) and takes 50 s. The 32 G1 sentinel seeds
+  (GH, heart1 net-0000, evaluation flags) are 32/32 equal to `sentinel_expected.csv`.
+- **Iterations before and after the pause** play the same games. Only the wall time differs.
+- **The evaluation** stays pinned to `ca8db597` unless its freeze says otherwise.
+
 ## Evaluation (primary)
 G1's runner and analysis (`../ppo_g1_critpre_20261103/`), frozen there:
 - PPO mode at temperature 0, combat B, binary ca8db597.
