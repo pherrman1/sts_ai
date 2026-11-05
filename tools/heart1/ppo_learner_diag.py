@@ -13,7 +13,8 @@ for the update's own movement. It reads, never changes, the training data.
 
 Definitions (all over the update's games / net decisions):
   outcome      act2/act3/act4 = share of games whose final floor is >= 17 / 34 / 51 (ACT_FLOORS); mean_floor;
-               death_act = share of games lost in act k (act of the final floor); stalled = games without decisions.
+               death_act = share of games lost in act k (act of the final floor); no_decisions = games without net
+               decisions (a pre-d3dc5eac stall loss line; a CombatAbort has no game line and load_games drops it).
   critic       V = the learner's critic at update start (before this update's training); target mc = the Monte
                Carlo return of the configured reward (lambda = 1; equals 1{Heart} for --reward heart with gamma 1);
                y = 1{Heart kill} of the decision's game. Per group (all, act1..act4 by the decision's own act,
@@ -54,7 +55,7 @@ def outcome_stats(games):
         if not h:
             death[str(min(act_of_floor(f), 4))] += 1
     out = {"games": n, "heart": _r(sum(heart) / n), "mean_floor": _r(sum(floors) / n, 3),
-           "stalled": sum(1 for g in games if not g["steps"])}
+           "no_decisions": sum(1 for g in games if not g["steps"])}
     for k, f in zip((2, 3, 4), ACT_FLOORS):
         out[f"act{k}"] = _r(sum(1 for x in floors if x >= f) / n)
     out["death_act"] = {k: _r(v / n) for k, v in death.items()}
@@ -134,11 +135,14 @@ def _padded(rows, temps):
 def _kl_rows(lp, lq):
     """Per-row KL(p || q), entropy of p and of q, argmax agreement, for padded log-prob tensors."""
     pad = torch.isneginf(lp)
-    p, q = lp.exp().masked_fill(pad, 0.0), lq.exp().masked_fill(torch.isneginf(lq), 0.0)
-    lp0, lq0 = lp.masked_fill(pad, 0.0), lq.masked_fill(torch.isneginf(lq), 0.0)
-    kl = (p * (lp0 - lq0)).sum(-1).clamp_min(0.0)
+    qpad = torch.isneginf(lq)
+    p, q = lp.exp().masked_fill(pad, 0.0), lq.exp().masked_fill(qpad, 0.0)
+    # A choice that q rules out (-inf) but p does not makes KL(p || q) infinite; it stays inf (reported as None).
+    lp0 = lp.masked_fill(pad, 0.0)
+    lq0 = lq.masked_fill(pad, 0.0)
+    kl = torch.where(p > 0, p * (lp0 - lq0), torch.zeros_like(p)).sum(-1).clamp_min(0.0)
     ent_p = -(p * lp0).sum(-1)
-    ent_q = -(q * lq0).sum(-1)
+    ent_q = -(q * lq.masked_fill(qpad, 0.0)).sum(-1)
     agree = (lp.argmax(-1) == lq.argmax(-1)).double()
     return kl, ent_p, ent_q, agree
 

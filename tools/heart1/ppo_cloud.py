@@ -705,6 +705,22 @@ class ArmLearner:
         if puts:
             log(f"{self.arm} iteration {it}: parts retained in the store as {len(puts)} kept chunk(s)")
 
+    def retain_missing(self):
+        """serve --retain-every at start: write the kept chunks of trained retained iterations the store lacks (a
+        failed push in retain() exits the learner after loop.json, so a resume would otherwise skip them)."""
+        if self.retain_every <= 0:
+            return
+        have = self.store.names(f"{self.arm}/kept-")
+        keep = os.path.join(self.dir, "parts")
+        for it in range(0, self.next_it, self.retain_every):
+            if any(n.startswith(f"{self.arm}/kept-{it:04d}-") for n in have):
+                continue
+            paths = [os.path.join(keep, f"traj-{it:04d}-p{k}.jsonl.gz") for k in range(self.cfg["parts"])]
+            if all(os.path.exists(p) for p in paths):
+                self.retain(it, paths)
+            else:
+                log(f"{self.arm} iteration {it}: not retained and its parts are not all in {keep}")
+
     @property
     def next_it(self):
         return len(self.meta["iterations"])
@@ -804,6 +820,7 @@ def cmd_serve(argv):
     for x in learners:
         x.keep_state = set(a.keep_state)
         x.retain_every = a.retain_every
+        x.retain_missing()
     if a.micro_batch > 0:
         for x in learners:
             x.hparams.micro_batch = a.micro_batch

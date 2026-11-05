@@ -52,6 +52,9 @@ if len(A.nets) < 2:
 NETS = A.net_dir or A.run
 TRAJ = A.traj_dir or os.path.join(A.run, "parts")
 OUT, MAXD, IT = A.out, A.max_decisions, A.iteration
+_o, _r = os.path.abspath(OUT), os.path.abspath(A.run)
+if _o == _r or _o.startswith(_r + os.sep):
+    sys.exit("--out must not be inside --run (the run directory is read only)")
 os.makedirs(OUT, exist_ok=True)
 torch.set_num_threads(A.threads)
 

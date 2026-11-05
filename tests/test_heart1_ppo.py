@@ -783,7 +783,7 @@ class Heart1PpoTest(unittest.TestCase):
                  {"outcome": {"heart_kill": False, "floor": 20}, "steps": [{"act": 1}]},
                  {"outcome": {"heart_kill": False, "floor": 5}, "steps": []}]
         o = D.outcome_stats(games)
-        self.assertEqual((o["act2"], o["act3"], o["act4"], o["stalled"]), (round(2 / 3, 5), round(1 / 3, 5),
+        self.assertEqual((o["act2"], o["act3"], o["act4"], o["no_decisions"]), (round(2 / 3, 5), round(1 / 3, 5),
                                                                            round(1 / 3, 5), 1))
         self.assertEqual(o["death_act"], {"1": round(1 / 3, 5), "2": round(1 / 3, 5), "3": 0.0, "4": 0.0})
         c = D.critic_stats(games, [0.6, 0.9, 0.2], [1.0, 1.0, 0.0])
@@ -801,6 +801,10 @@ class Heart1PpoTest(unittest.TestCase):
         self.assertEqual(sh["agree"], 1.0)   # argmax 0 in both rows (a uniform row has argmax 0)
         t2 = D.shift_stats([[1.0, 0.0]], [[1.0, 0.0]], [2.0], [1])
         self.assertEqual(t2["mean"], 0.0)
+        ruled_out = D.finite(D.shift_stats([[0.0, 0.0]], [[0.0, float("-inf")]], [1.0], [5]))
+        self.assertIsNone(ruled_out["mean"])   # q rules out a choice p plays: infinite KL, not 0
+        one_sided = D.shift_stats([[0.0, float("-inf")]], [[0.0, 0.0]], [1.0], [5])
+        self.assertAlmostEqual(one_sided["mean"], round(math.log(2), 6), places=6)
 
     def test_diag_leaves_training_unchanged(self):
         """--diag 1 adds a "diag" block and nothing else: same stats, same weights as --diag 0."""
@@ -909,6 +913,11 @@ class Heart1PpoTest(unittest.TestCase):
             self.assertEqual(got, ["traj-0000-p0.jsonl.gz", "traj-0000-p1.jsonl.gz"])
             for g in got:
                 self.assertEqual(ppo_cloud.sha256(os.path.join(d, "out", "A", "parts", g)), shas[g])
+            s.delete("A/kept-0000-c0")   # a failed retain push: the next serve start writes it again
+            again = ppo_cloud.ArmLearner(s, os.path.join(d, "local"), "A", "cpu")
+            again.retain_every = 2
+            again.retain_missing()
+            self.assertIn("A/kept-0000-c0", s.names("A/kept-"))
             ppo_cloud.cmd_cleanup([store, "A"])
             self.assertEqual(sorted(s.names("")), ["A/kept-0000-c0"])
             ppo_cloud.cmd_cleanup([store, "A", "--with-kept"])

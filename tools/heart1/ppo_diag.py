@@ -9,7 +9,8 @@ means per arm, replica noise, entropy vs survival across arms, 11 figures, summa
 DIR holds the unpacked screen bundles as DIR/s1res, DIR/s2res, DIR/archres (one sub-directory per arm with loop.json
 and games-*.csv; s1res.tgz and s2res.tgz unpack with their top directory, archres.tgz without: unpack it inside
 DIR/archres). The bundles are docs/experiments/evidence/ppo_recipe_screen_20261101/s1res.tgz,
-ppo_reward_screen_20261103/s2res.tgz and ppo_arch_screen_20261102/archres.tgz. Needs numpy and matplotlib.
+ppo_reward_screen_20261103/s2res.tgz (on main since #975/#979) and ppo_arch_screen_20261102/archres.tgz (on main since
+#982, ede4a70d). Without DIR/archres the architecture screen is skipped. Needs numpy and matplotlib.
 """
 import argparse
 import csv
@@ -286,7 +287,7 @@ def fig_entropy_survival(summary, fname):
     """Per arm: policy entropy at the end of the window vs paired Δ Act 2 reached and Δ Heart."""
     pts = []
     for key, mk in (("screen1", "o"), ("screen2", "s"), ("arch", "^")):
-        for arm, r in summary[key + "_paired"].items():
+        for arm, r in summary.get(key + "_paired", {}).items():   # arch is optional
             ent = summary[key + "_learner"][arm]["entropy_last"]
             pts.append((key, mk, arm, ent, r["act2"][0], r["act2"][1], r["act2"][2], r["heart"][0]))
     fig, axes = plt.subplots(1, 2, figsize=(13, 5))
@@ -319,6 +320,8 @@ def write_tables(summary):
          "Act N reached = final floor ≥ 17 / 34 / 51. Learner stats are means over policy updates.\n"]
     for key, name in (("screen1", "Screen 1 recipe, window 20–29 vs BASE"), ("screen2", "Screen 2 reward, window 40–59 vs (BASE+BASE_S1)/2"),
                       ("arch", "Architecture screen, window 40–59 vs BASE")):
+        if key + "_paired" not in summary:   # arch is optional
+            continue
         L.append(f"\n## {name}\n")
         L.append("| arm | Heart D [CI] | Act 4 D [CI] | Act 3 D [CI] | Act 2 D [CI] | floor D [CI] | n |")
         L.append("|---|---|---|---|---|---|---|")
@@ -344,11 +347,14 @@ def main(argv=None):
     D, OUT = a.data, a.out
     S = OUT
     os.makedirs(OUT, exist_ok=True)
-    s1, s2, ar = load_screen("screen1"), load_screen("screen2"), load_screen("arch")
+    s1, s2 = load_screen("screen1"), load_screen("screen2")
+    ar = load_screen("arch") if os.path.isdir(os.path.join(D, SCREENS["arch"]["dir"])) else None
+    if ar is None:
+        print(f"no {D}/archres: architecture screen skipped (figures 06 and 10, its tables and its entropy points)")
     summary = {}
 
     # Learner-stat means per arm (policy updates only) and heart-rate noise
-    for key, arms in (("screen1", s1), ("screen2", s2), ("arch", ar)):
+    for key, arms in (("screen1", s1), ("screen2", s2)) + ((("arch", ar),) if ar else ()):
         tab = {}
         for arm, a in arms.items():
             st = [r for r in a["stats"] if not r["value_only"]]
@@ -369,8 +375,9 @@ def main(argv=None):
                         "train_s": float(np.mean([r["train_s"] for r in st])), "actor_s": float(np.mean([r.get("actor_s", 0) for r in st]))}
         summary[key + "_learner"] = tab
 
-    r1, r2, ra = paired_table("screen1", s1), paired_table("screen2", s2), paired_table("arch", ar)
-    for key, rows in (("screen1", r1), ("screen2", r2), ("arch", ra)):
+    r1, r2 = paired_table("screen1", s1), paired_table("screen2", s2)
+    ra = paired_table("arch", ar) if ar else None
+    for key, rows in (("screen1", r1), ("screen2", r2)) + ((("arch", ra),) if ar else ()):
         summary[key + "_paired"] = {r["arm"]: {m: r[m] for m in ("heart", "act4", "act3", "act2", "floor")} | {"n": r["n"]} for r in rows}
     json.dump(summary, open(os.path.join(S, "summary.json"), "w"), indent=1)
 
@@ -385,11 +392,13 @@ def main(argv=None):
     summary["screen2_run_noise_pp"] = noise2
     fig_forest("screen2", r2, "04_screen2_forest.png", noise=noise2)
     fig_forest("screen1", r1, "05_screen1_forest.png", noise=abs(summary["screen1_paired"]["BASE_S1"]["heart"][0]))
-    fig_forest("arch", ra, "06_arch_forest.png", noise=noise2)
+    if ar:
+        fig_forest("arch", ra, "06_arch_forest.png", noise=noise2)
     fig_power(r2, "07_power.png")
     fig_staleness(s2, "08_screen2_staleness.png")
     fig_families(s1, "09_screen1_families.png")
-    fig_learner("arch", ar, ["BASE", "CRIT_PRE", "DEPTH6", "CRITIC_SEP", "AUX", "VAL_SPARSE", "IN_DECK"], "10_arch_learner.png", ncol=4)
+    if ar:
+        fig_learner("arch", ar, ["BASE", "CRIT_PRE", "DEPTH6", "CRITIC_SEP", "AUX", "VAL_SPARSE", "IN_DECK"], "10_arch_learner.png", ncol=4)
     fig_entropy_survival(summary, "11_entropy_vs_survival.png")
     json.dump(summary, open(os.path.join(S, "summary.json"), "w"), indent=1)
     write_tables(summary)
