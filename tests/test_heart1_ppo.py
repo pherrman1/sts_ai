@@ -658,6 +658,81 @@ class Heart1PpoTest(unittest.TestCase):
             self.assertLess(st["value_decisions"], st["decisions"])
             self.assertGreater(st["aux"], 0)
 
+    def test_cloud_continue(self):
+        """init --fork-dir --continue: a finished arm extended past its last update reproduces, bit for bit, the arm
+        that was frozen with more iterations (LONG_C); actors start at iteration N with net-(N-1)."""
+        import gzip
+        import json
+        import ppo_cloud
+        import ppo_model
+        here = os.path.dirname(os.path.abspath(__file__))
+        traj = os.path.join(here, "..", "docs", "experiments", "evidence", "ppo_s0_smoke_20261101", "cov8.jsonl.gz")
+        rows = {k: 4096 for k in ppo_model.TABLES}
+        rows["fixed_action"] = ppo_model.FA_COUNT
+        torch.manual_seed(0)
+        net = ppo_model.PolicyNet(16, 2, 32, 1, rows, False)
+        with tempfile.TemporaryDirectory() as d:
+            init = os.path.join(d, "init.bin")
+            net.to_bin(init)
+            env = os.path.join(d, "a.env")
+            with open(env, "w") as f:
+                f.write("STS_FAIR=1\n")
+            store = "dir:" + os.path.join(d, "store")
+            local = os.path.join(d, "local")
+            common = ["--env-file", env, "--one-combat-sha", "0" * 64, "--games", "8", "--parts", "2",
+                      "--seed-base", "1", "--value-warmup", "1"]
+            hp = ["--epochs", "1"]
+            ppo_cloud.cmd_init([store, "A", "--init", init, "--iterations", "2"] + common + ["--"] + hp)
+            ppo_cloud.cmd_init([store, "L", "--init", init, "--iterations", "4"] + common + ["--"] + hp)
+            with gzip.open(traj, "rt") as f:
+                lines = [l for l in f if l.strip()]
+            seeds = sorted({json.loads(l)["seed"] for l in lines if '"type":"game"' in l})
+            s = ppo_cloud.open_store(store)
+            parts = []
+            for k, part in enumerate((seeds[:4], seeds[4:])):
+                p = os.path.join(d, f"p{k}.jsonl.gz")
+                with gzip.open(p, "wt") as f:
+                    f.writelines(l for l in lines if json.loads(l)["seed"] in part)
+                parts.append(p)
+
+            def feed(arm, it):
+                net_name = f"net-{max(it - 1, 0):04d}"   # pipeline 1
+                sha = ppo_cloud.sha256(os.path.join(local, arm, f"{net_name}.bin"))
+                for k, p in enumerate(parts):
+                    s.put(f"{arm}/traj-{it:04d}-p{k}", p, {"games": 4, "sha256": ppo_cloud.sha256(p),
+                                                           "net": net_name, "net_sha256": sha, "actor_s": 1.0,
+                                                           "seed_first": 1})
+            a = ppo_cloud.ArmLearner(s, local, "A", "cpu")
+            longer = ppo_cloud.ArmLearner(s, local, "L", "cpu")
+            for arm, learner, n in (("A", a, 2), ("L", longer, 4)):
+                for it in range(n):
+                    feed(arm, it)
+                    self.assertTrue(learner.step(s.names("")))
+            self.assertTrue(a.done())
+            src = os.path.join(local, "A")
+            cont = [store, "B", "--fork-dir", src, "--fork-at", "2", "--continue", "--local", local] + common
+            for bad in (["--iterations", "4", "--fork-at", "1"],          # the source finished after 2, not 1
+                        ["--iterations", "4", "--", "--epochs", "1", "--extra-blocks", "1"]):   # no arch flags
+                argv = [x for x in cont if x not in ("--fork-at", "2")] if "--fork-at" in bad else list(cont)
+                with self.assertRaises(SystemExit):
+                    ppo_cloud.cmd_init(argv + bad + ([] if "--" in bad else ["--"] + hp))
+            ppo_cloud.cmd_init(cont + ["--iterations", "4", "--"] + hp)
+            cfg = json.load(open(os.path.join(local, "B", "config.json")))
+            self.assertEqual(cfg["start_iteration"], 2)
+            self.assertTrue(cfg["fork"]["continue"])
+            b = ppo_cloud.ArmLearner(s, local, "B", "cpu")
+            self.assertEqual(b.next_it, 2)
+            self.assertEqual(sorted(s.names("B/")), ["B/config", "B/net-0001", "B/net-0002", "B/stats-0002"])
+            self.assertEqual(ppo_cloud.sha256(os.path.join(local, "B", "net-0001.bin")),
+                             ppo_cloud.sha256(os.path.join(src, "net-0001.bin")))
+            for it in (2, 3):   # the continuation's games are the longer arm's (same seeds, same behaviour nets)
+                feed("B", it)
+                self.assertTrue(b.step(s.names("")))
+                self.assertEqual(ppo_cloud.sha256(os.path.join(local, "B", f"net-{it + 1:04d}.bin")),
+                                 ppo_cloud.sha256(os.path.join(local, "L", f"net-{it + 1:04d}.bin")))
+            self.assertTrue(b.done())
+            self.assertEqual(len(json.load(open(os.path.join(local, "B", "loop.json")))["iterations"]), 4)
+
     def test_load_games_seed_order_and_minibatches(self):
         """load_games: the same games in another line order (bestbench writes each game when its thread finishes)
         give the same game and step sequence and the same minibatch index sequences; a seed in two files raises."""
