@@ -26174,6 +26174,7 @@ heart1's (not pre-registered): on-policy fitting of a sparse 1{Heart} return see
 replayed by design); 111459990-111459993 USED (local sentinel pre-check). Cost ≈ 74,000 games ≈ 115 core-h cloud +
 ≈ 5.7 h PC GPU.
 **Knowledge impact:** KB `research/a20-ppo-plan.md` (architecture row).
+
 ## §TBD — LONG_B critic (net-0208) as a Silver combat leaf, teacher check (B2 rerun of §747): FAIL on HP resolution (−3 HP lowers V in 79.2% of 18,054 post-fight states vs heart1 86.2% on the same states; 1-HP price p10 −3.2 / p90 +4.6 secant units); Fairy 50 HP, max HP +2.5 HP/pt, per-type r 0.78 pass; outcome AUC 0.77 vs heart1 0.56 → no LONG_B leaf, no B3 (offline, no seeds, 2026-11-05)
 
 **Question:** Philipp (2026-11-05 15:54 CET): is the almost finished LONG_B value head suitable as Silver's combat
