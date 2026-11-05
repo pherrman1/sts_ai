@@ -26234,7 +26234,9 @@ states: §724's 592 Incense states (re-extracted exactly) + 432 states without I
 campaigns (seed 20261105). `act4replay`, chain S&S → Heart, §724's research Silver; arms D (default leaf), T (table),
 TA (table + anchored win bonus, clamp [53, 212]), and on Incense states I (§724's term) and TI; 4 paired replicates
 (battle seed BLOCK[r] + state). RUN_COMMIT 47a5289c, binary 4ace2751, 40 workers, ≈ 205 CPU-h. 1,021 units rc 0;
-3 units still on their second attempt were dropped on Philipp's instruction (the only deviation).
+3 units still on their second attempt were dropped on Philipp's instruction (the only deviation); 170 and 439 finished
+later without changing the result (T − D +1.59 [−0.05, +3.22]); only a T − D ≥ +0.75 on unit 447 could have
+turned T PASS (10 of 1,023 finished states).
 **Result:**
 - Heart kill D 55.04%, T 56.64%, TA 56.29%. Co-primary gates (gainer, α 0.025): both CAP without a crossing;
   T − D +1.59 pp [−0.05, +3.23], TA − D +1.25 [−0.45, +2.92] (97.5% CIs) → INCONCLUSIVE.

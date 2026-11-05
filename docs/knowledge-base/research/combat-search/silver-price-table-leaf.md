@@ -2,7 +2,7 @@
 
 Status: research flag `STS_SILVER_PRICE_TABLE_LEAF`, off by default (leaf plan stage 0, thread B, 2026-11-05).
 Evidence and model provenance: [silver_price_table_leaf_20261105](../../../experiments/evidence/silver_price_table_leaf_20261105/README.md).
-Stage C pre-registration draft (not run): [PREREG-stageC.md](../../../experiments/evidence/silver_price_table_leaf_20261105/PREREG-stageC.md).
+Stage C pre-registration (frozen, run 2026-11-05, INCONCLUSIVE): [PREREG-stageC.md](../../../experiments/evidence/silver_price_table_leaf_20261105/PREREG-stageC.md).
 
 ## Stage C result (2026-11-05, §TBD)
 INCONCLUSIVE: Heart kill at S&S → Heart over 1,021 states T − D +1.59 pp [−0.05, +3.23] (97.5%), TA − D +1.25.
