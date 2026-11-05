@@ -232,6 +232,15 @@ int main(int argc, char **argv) {
                                                           - 0.4 * bc.turn)) < 1e-9,
                 "anchored leaf at the root uses the table's win bonus");
         if (anchored->anchorRaw >= 53.0 && anchored->anchorRaw <= one_combat::kAnchorCapFactor * 53.0) ++anchorInside;
+        // Counters only: the default win leaf plus the counter prices; no Lizard Tail counter.
+        auto ctr = one_combat::buildPriceTable(model, one_combat::priceStateFromGame(gc), nullptr, false, true);
+        require(ctr && ctr->countersOnly, "counters-only table built");
+        for (const auto &cc : ctr->counters) require(cc.relic != RelicId::LIZARD_TAIL, "counters only: no Lizard Tail counter");
+        search::SilverSearcher ctrSearch(bc, ctx);
+        ctrSearch.priceTable = ctr;
+        BattleContext e = bc;
+        require(std::abs(ctrSearch.winNowValue(e) - (p0 + ctr->counterValue(bc))) < 1e-9,
+                "counters-only leaf = default leaf + counter prices");
         ++leafChecks;
     }
     require(leafChecks > 0, "leaf checks ran");

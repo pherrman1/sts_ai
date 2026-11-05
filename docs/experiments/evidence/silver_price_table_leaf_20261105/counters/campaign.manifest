@@ -1,0 +1,11 @@
+name          price-table-counters
+code_commit   2b9c429760e316ebb505c60b6ec3f107081e1038
+binary_sha256 a7c9a7292d1e7ce4c51c1a76105dbbdcb3a0c2dc38014389544c20f794c25d33
+workers       40
+share         /mnt/project-files/price-table-counters
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 45
+claim_settle_seconds 60
+input ss_states.tar /mnt/project-files/price-table-stagec/ss_states.tar 3422ca467f998538612541841fe5bd56a6d328f25aa34158dba46d9cfb009bab

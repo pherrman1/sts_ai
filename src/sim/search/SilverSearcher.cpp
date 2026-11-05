@@ -1276,6 +1276,11 @@ double search::SilverPriceTable::stateValue(const BattleContext &bc, int healedH
         if (bc.potions[i] == Potion::EMPTY_POTION_SLOT || t < 0 || t >= kSilverPotionTypeCount) continue;
         v += potionPriced[t] ? potionPrice[t] : unpricedPotion;
     }
+    return v + counterValue(bc);
+}
+
+double search::SilverPriceTable::counterValue(const BattleContext &bc) const {
+    double v = 0;
     for (const auto &c : counters) {
         if (c.price.empty()) continue;
         const int k = std::clamp(endCounter(bc, c), 0, static_cast<int>(c.price.size()) - 1);
@@ -1332,7 +1337,7 @@ double search::SilverSearcher::evaluateEndState(const BattleContext &bc) const {
             + bc.cardsDrawn * evalWeights.drawWeight
             + (bc.turn > 100 ? 0 : bc.turn * evalWeights.turnSurvivalWeight);
     }
-    if (priceTable && bc.outcome == Outcome::PLAYER_VICTORY) {
+    if (priceTable && !priceTable->countersOnly && bc.outcome == Outcome::PLAYER_VICTORY) {
         // Research price-table leaf (SilverPriceTable): the table's state value replaces the HP, potion,
         // death-save, gold, max-HP and Incense terms of the victory branch below.
         const double bonus = std::isfinite(priceTable->winBonus) ? priceTable->winBonus : evalWeights.winBonus;
@@ -1378,6 +1383,7 @@ double search::SilverSearcher::evaluateEndState(const BattleContext &bc) const {
             - (bc.turn * evalWeights.victoryTurnPenalty) + deathSaveValue;
         score += evalWeights.goldWeight * (effectiveGold(bc) - effectiveGold(*rootState));
         score += evalWeights.maxHpWeight * (bc.player.maxHp - rootState->player.maxHp);
+        if (priceTable) score += priceTable->counterValue(bc);   // ":counters" research option
         return withVictoryPenalties(bc, withIncenseTerm(bc, score));
     }
 
