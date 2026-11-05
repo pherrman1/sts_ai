@@ -561,7 +561,8 @@ add_test(NAME forced_boss_relic COMMAND one_combat forcebossrelicselftest)
 add_test(NAME forced_decision COMMAND one_combat forcedecisionselftest)
 add_test(NAME a4_perturb COMMAND one_combat a4perturbselftest)
 add_test(NAME fight_end_pairs COMMAND one_combat fightendpairselftest)
-set_tests_properties(fight_end_pairs PROPERTIES LABELS "core;smoke")
+set_tests_properties(fight_end_pairs PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
 add_test(NAME heart1_public_record_invariance COMMAND one_combat heart1recordselftest)
 add_test(NAME heart1_ppo COMMAND one_combat heart1pposelftest)
 add_test(NAME heart_outcome_collection_python COMMAND python3 -m unittest discover
