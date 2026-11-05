@@ -8,9 +8,10 @@ Analysis: `analyze.py` → `results/analysis.json`.
 1,021 of 1,024 units on the share (unit tars sha256-of-sha256 list `191d5078…`), all rc 0, 0 bad rows, 0 invalid
 runs. Units 170, 439 and 447 were on their second attempt after container restarts when Philipp said at 22:58 CET
 "lass einfach die 3 einheiten ignorieren und jz auswertung machn"; they are counted as dropped (whole unit, every
-arm, P4) and never analysed. This is the only deviation from the PREREG. Units 170 and 439 finished afterwards
-(23:00 / 23:03 CET; d = 0 in both gates); with them T − D stays +1.59 pp [−0.05, +3.22]. Unit 447 was still running:
-T − D would turn PASS only if that one state's T − D were ≥ +0.75 (true for 10 of the 1,023 finished states). 1,021 states from 534 source seeds
+arm, P4) and never analysed. This is the only deviation from the PREREG. All three finished afterwards
+(23:00-23:07 CET, rc 0). Sensitivity on all 1,024 units (not the primary): T − D +1.59 pp [−0.05, +3.22], TA − D
++1.25 [−0.44, +2.91], both gates CAP → INCONCLUSIVE, the same verdict (before 447 arrived, only a T − D ≥ +0.75 on
+that one state could have turned T PASS; 10 of 1,023 finished states had one). 1,021 states from 534 source seeds
 (589 Incense states / 185 seeds, 432 others / 352 seeds).
 
 ## Primary (co-primary gates, gainer, α = 0.025 each)
