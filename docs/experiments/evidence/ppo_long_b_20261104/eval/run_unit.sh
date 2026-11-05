@@ -6,8 +6,8 @@
 # Order rotated by seed. Exits 0.
 set -uo pipefail
 REPO=$1 RUN=$2 OUT=$3 SEED=$4
-[ "$(sha256sum < "$RUN/one_combat" | cut -c1-16)" = ca8db597c04fca7d ] || { echo "bad $RUN/one_combat" >&2; exit 2; }
-for n in l070:@SHA0070@ l120:@SHA0120@ l170:@SHA0170@ l220:@SHA0220@; do
+[ "$(sha256sum < "$RUN/one_combat" | cut -c1-16)" = 78849fcf768f6e84 ] || { echo "bad $RUN/one_combat" >&2; exit 2; }
+for n in l070:826662956005a1af l120:3862aeeeeeaa9210 l170:4afc9a593990482c l220:408b2982a1a8757f; do
   [ "$(sha256sum < "$RUN/${n%%:*}.bin" | cut -c1-16)" = "${n#*:}" ] || { echo "bad $RUN/${n%%:*}.bin" >&2; exit 2; }
 done
 [ "$(sha256sum < "$RUN/heart1.bin" | cut -c1-16)" = 4288d0956ab75c3c ] || { echo "bad $RUN/heart1.bin" >&2; exit 2; }

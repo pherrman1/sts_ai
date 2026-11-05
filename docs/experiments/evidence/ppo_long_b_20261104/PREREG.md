@@ -57,11 +57,11 @@ At 12:05 CET he approved the engine change: "implementiere die erste option. idc
 - **Iterations before and after the pause** play the same games. Only the wall time differs.
 - **The store keeps the config frozen.** `ppo_cloud.py rebin` writes `LONG_B/rebin` once (old `ca8db597`, new
   `78849fcf`). The actor accepts either binary. Parts from actors started at d9d7852a or later record the `one_combat_sha256` they played in their meta; parts from actor processes started before the resume (d485e8eb, which keep running and play the replaced file) do not. The RESULT lists which workers kept their old process. The games are identical, so the analysis does not depend on it.
-- **The evaluation** stays pinned to `ca8db597` unless its freeze says otherwise.
+- **The evaluation** runs on the same binary `78849fcf` (code_commit bc33e470; frozen 2026-11-05 after SERVE_DONE). The run commit no longer has 520d4e4b's build inputs, and the 32-seed sentinel already reproduced G1's GH games on `78849fcf`. The sentinel is replayed in the evaluation as planned: any mismatch is CONTROL_INVALID.
 
 ## Evaluation (primary)
 G1's runner and analysis (`../ppo_g1_critpre_20261103/`), frozen there:
-- PPO mode at temperature 0, combat B, binary ca8db597.
+- PPO mode at temperature 0, combat B, binary ca8db597 (78849fcf after the 2026-11-05 amendment, see above).
 - G1's seeds 111520000-111522047.
 - d = Heart kill GC − GH, gate `sprt_gate.py` gainer (d1 = +2 pp), look 64, cap 2,048, then the fixed-sample fallback.
 
