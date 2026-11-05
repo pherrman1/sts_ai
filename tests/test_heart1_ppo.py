@@ -766,6 +766,154 @@ class Heart1PpoTest(unittest.TestCase):
                 ppo_train.cmd_update(argv)
             self.assertFalse(os.path.exists(os.path.join(d, "state.pt")))
 
+    def test_learner_diag_arithmetic(self):
+        """ppo_learner_diag: AUC with ties, explained variance, outcome shares, KL against a hand computation."""
+        import math
+        import ppo_learner_diag as D
+        import ppo_train
+        self.assertEqual(D.ACT_FLOORS, ppo_train.ACT_FLOORS)
+        self.assertEqual([D.act_of_floor(f) for f in (0, 16, 17, 33, 34, 51, 57)], [1, 1, 2, 2, 3, 4, 4])
+        self.assertEqual(D.auc([0.1, 0.4, 0.35, 0.8], [0, 0, 1, 1]), 0.75)
+        self.assertEqual(D.auc([0.5, 0.5], [0, 1]), 0.5)                     # a tie counts half
+        self.assertIsNone(D.auc([0.1, 0.2], [1, 1]))
+        self.assertAlmostEqual(D.explained_variance([1.0, 0.0, 1.0], [1.0, 0.0, 1.0]), 1.0)
+        self.assertAlmostEqual(D.explained_variance([0.5, 0.5], [1.0, 0.0]), 0.0)   # a constant baseline
+        self.assertIsNone(D.explained_variance([0.2, 0.3], [1.0, 1.0]))
+        games = [{"outcome": {"heart_kill": True, "floor": 57}, "steps": [{"act": 1}, {"act": 4}]},
+                 {"outcome": {"heart_kill": False, "floor": 20}, "steps": [{"act": 1}]},
+                 {"outcome": {"heart_kill": False, "floor": 5}, "steps": []}]
+        o = D.outcome_stats(games)
+        self.assertEqual((o["act2"], o["act3"], o["act4"], o["stalled"]), (round(2 / 3, 5), round(1 / 3, 5),
+                                                                           round(1 / 3, 5), 1))
+        self.assertEqual(o["death_act"], {"1": round(1 / 3, 5), "2": round(1 / 3, 5), "3": 0.0, "4": 0.0})
+        c = D.critic_stats(games, [0.6, 0.9, 0.2], [1.0, 1.0, 0.0])
+        self.assertEqual((c["all"]["n"], c["act1"]["n"], c["act4"]["n"], c["first"]["n"]), (3, 2, 1, 2))
+        self.assertEqual(c["all"]["auc"], 1.0)
+        self.assertAlmostEqual(c["all"]["brier"], round((0.16 + 0.01 + 0.04) / 3, 5))
+        p, q = [1.0, 0.0, -1.0], [0.0, 0.0, 0.0]
+        pp = [math.exp(x) / sum(math.exp(y) for y in p) for x in p]
+        kl = sum(a * math.log(a * 3) for a in pp)
+        sh = D.shift_stats([p, [2.0, 1.0]], [q, [2.0, 1.0]], [1.0, 1.0], [8, 5])
+        self.assertAlmostEqual(sh["screens"]["shop"]["kl"], round(kl, 6), places=6)
+        self.assertEqual(sh["screens"]["map"]["kl"], 0.0)
+        self.assertEqual(sh["screens"]["shop"]["kl_share"], 1.0)
+        self.assertAlmostEqual(sh["screens"]["shop"]["entropy"], round(math.log(3), 5))
+        self.assertEqual(sh["agree"], 1.0)   # argmax 0 in both rows (a uniform row has argmax 0)
+        t2 = D.shift_stats([[1.0, 0.0]], [[1.0, 0.0]], [2.0], [1])
+        self.assertEqual(t2["mean"], 0.0)
+
+    def test_diag_leaves_training_unchanged(self):
+        """--diag 1 adds a "diag" block and nothing else: same stats, same weights as --diag 0."""
+        import argparse
+        import copy
+        import ppo_model
+        import ppo_train
+        here = os.path.dirname(os.path.abspath(__file__))
+        traj = os.path.join(here, "..", "docs", "experiments", "evidence", "ppo_s0_smoke_20261101", "cov8.jsonl.gz")
+        rows = {k: 4096 for k in ppo_model.TABLES}
+        rows["fixed_action"] = ppo_model.FA_COUNT
+        torch.manual_seed(0)
+        net = ppo_model.PolicyNet(16, 2, 32, 1, rows, False)
+        plain = ppo_train.load_games([traj], net.trim_map, workers=1)
+        kept = ppo_train.load_games([traj], net.trim_map, workers=1, keep_logits=True)
+        self.assertTrue(all("blogits" not in s for g in plain for s in g["steps"]))
+        self.assertTrue(all(len(s["blogits"]) == s["n"] for g in kept for s in g["steps"] if s["n"] > 1))
+        ap = argparse.ArgumentParser()
+        ppo_train.add_hparams(ap)
+        out = {}
+        for diag, games in ((0, plain), (1, kept)):
+            args = ap.parse_args(["--minibatch", "64", "--epochs", "1", "--diag", str(diag)])
+            torch.manual_seed(1)
+            learner = ppo_train.Learner(copy.deepcopy(net), None, args, torch.device("cpu"))
+            st = learner.update(copy.deepcopy(games), log=lambda line: None)
+            out[diag] = (st, {k: v.clone() for k, v in learner.net.state_dict().items()})
+        s0, s1 = out[0][0], dict(out[1][0])
+        d = s1.pop("diag")
+        self.assertNotIn("diag", s0)
+        for k in s0:
+            if not k.endswith("_s"):
+                self.assertEqual(s0[k], s1[k], k)
+        for k, v in out[0][1].items():
+            self.assertTrue(torch.equal(v, out[1][1][k]), k)
+        self.assertEqual(d["outcome"]["games"], len(plain))
+        self.assertEqual(d["outcome"]["heart"], round(s0["heart_rate"], 5))
+        self.assertEqual(d["critic"]["all"]["n"], s0["decisions"])
+        self.assertEqual(d["kl_behaviour"]["n"], s0["policy_decisions"])
+        self.assertEqual(d["kl_behaviour"]["missing"], 0)
+        self.assertEqual(d["kl_update"]["n"], s0["policy_decisions"])
+        self.assertGreater(d["kl_behaviour"]["mean"], 0.0)   # a random net vs heart1's logits
+        self.assertGreaterEqual(d["kl_update"]["mean"], 0.0)
+        json_line = __import__("json").dumps(s1 | {"diag": d}, allow_nan=False)   # loop.json stays valid JSON
+        self.assertIn('"kl_behaviour"', json_line)
+        with tempfile.TemporaryDirectory() as tmp:   # offline: ppo_train.py diag on stored games
+            init = os.path.join(tmp, "init.bin")
+            net.to_bin(init)
+            line_path = os.path.join(tmp, "diag.jsonl")
+            ppo_train.cmd_diag(["--init", init, "--traj", traj, "--device", "cpu", "--out", line_path])
+            with open(line_path) as f:
+                off = __import__("json").loads(f.read())
+            self.assertEqual(off["outcome"], d["outcome"])
+            self.assertEqual(off["critic"]["all"]["n"], d["critic"]["all"]["n"])
+            self.assertAlmostEqual(off["kl_behaviour"]["mean"], d["kl_behaviour"]["mean"], places=4)
+
+    def test_cloud_retain_every(self):
+        """serve --retain-every: the consumed parts of retained iterations stay in the store as kept chunks, cleanup
+        keeps them unless --with-kept, and `kept --fetch` restores the exact parts."""
+        import gzip
+        import json
+        import ppo_cloud
+        import ppo_model
+        here = os.path.dirname(os.path.abspath(__file__))
+        traj = os.path.join(here, "..", "docs", "experiments", "evidence", "ppo_s0_smoke_20261101", "cov8.jsonl.gz")
+        rows = {k: 4096 for k in ppo_model.TABLES}
+        rows["fixed_action"] = ppo_model.FA_COUNT
+        torch.manual_seed(0)
+        net = ppo_model.PolicyNet(16, 2, 32, 1, rows, False)
+        with tempfile.TemporaryDirectory() as d:
+            init = os.path.join(d, "init.bin")
+            net.to_bin(init)
+            env = os.path.join(d, "a.env")
+            with open(env, "w") as f:
+                f.write("STS_FAIR=1\n")
+            store = "dir:" + os.path.join(d, "store")
+            ppo_cloud.cmd_init([store, "A", "--init", init, "--env-file", env, "--one-combat-sha", "0" * 64,
+                                "--iterations", "2", "--games", "8", "--parts", "2", "--seed-base", "1",
+                                "--value-warmup", "0", "--pipeline", "0", "--", "--epochs", "1", "--diag", "1"])
+            with gzip.open(traj, "rt") as f:
+                lines = [l for l in f if l.strip()]
+            seeds = sorted({json.loads(l)["seed"] for l in lines if '"type":"game"' in l})
+            s = ppo_cloud.open_store(store)
+            learner = ppo_cloud.ArmLearner(s, os.path.join(d, "local"), "A", "cpu")
+            learner.retain_every = 2
+            shas = {}
+            for it in range(2):
+                net_name = f"net-{it:04d}"
+                n_sha = ppo_cloud.sha256(os.path.join(d, "local", "A", f"{net_name}.bin"))
+                for k, part in enumerate((seeds[:4], seeds[4:])):
+                    p = os.path.join(d, f"traj-{it:04d}-p{k}.jsonl.gz")
+                    with gzip.open(p, "wt") as f:
+                        f.writelines(l for l in lines if json.loads(l)["seed"] in part)
+                    shas[os.path.basename(p)] = ppo_cloud.sha256(p)
+                    s.put(f"A/traj-{it:04d}-p{k}", p, {"games": 4, "sha256": shas[os.path.basename(p)],
+                                                       "net": net_name, "net_sha256": n_sha, "actor_s": 1.0,
+                                                       "seed_first": part[0]})
+                self.assertTrue(learner.step(s.names("")))
+            names = sorted(s.names(""))
+            self.assertEqual([n for n in names if "/kept-" in n], ["A/kept-0000-c0"])   # 0 % 2 == 0, not 1
+            self.assertFalse([n for n in names if "/traj-" in n])
+            with open(os.path.join(d, "local", "A", "loop.json")) as f:
+                its = json.load(f)["iterations"]
+            self.assertTrue(all("kl_behaviour" in x["diag"] for x in its))
+            ppo_cloud.cmd_kept([store, "A", "--fetch", os.path.join(d, "out")])
+            got = sorted(os.listdir(os.path.join(d, "out", "A", "parts")))
+            self.assertEqual(got, ["traj-0000-p0.jsonl.gz", "traj-0000-p1.jsonl.gz"])
+            for g in got:
+                self.assertEqual(ppo_cloud.sha256(os.path.join(d, "out", "A", "parts", g)), shas[g])
+            ppo_cloud.cmd_cleanup([store, "A"])
+            self.assertEqual(sorted(s.names("")), ["A/kept-0000-c0"])
+            ppo_cloud.cmd_cleanup([store, "A", "--with-kept"])
+            self.assertEqual(sorted(s.names("")), [])
+
 
 if __name__ == "__main__":
     unittest.main()

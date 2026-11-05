@@ -34,6 +34,11 @@ Architecture arms (PREREG ppo_arch_screen_20261102; all off by default, and off 
 --extra-blocks, --critic, --aux-heads and --inputs are structure: a fresh --init applies them to the start net; a resumed --state must already have
 them (fork_learner / `ppo_cloud.py init --fork-dir` adds them to a running arm's checkpoint).
 
+--diag 1 (off by default) adds a "diag" block to each stats line: outcome decomposition, critic vs the Monte Carlo
+outcome per act, full-batch KL behaviour -> learner and of the update itself, per screen (ppo_learner_diag.py).
+`diag` computes the start-of-update part offline for stored games and a net:
+    python3 tools/heart1/ppo_train.py diag --init run/net_0004.bin --traj traj-0004-p*.jsonl.gz [--reward ...]
+
 `bench` times one update on synthetic copies of real trajectory games (no learning signal needed):
     python3 tools/heart1/ppo_train.py bench --init heart1.bin --traj smoke.jsonl --games 512 1024 2048 --device cuda
 Records are featurised once while loading (load_games); "load_featurize_s" and "feature_gb" extrapolate that cost
@@ -55,6 +60,7 @@ import torch
 import torch.nn.functional as F
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import ppo_learner_diag  # noqa: E402
 import ppo_phi  # noqa: E402
 from ppo_model import (AUX_TARGETS, OPTIONAL_FIXEDVECS, FeatureStore, PolicyNet, batch_to, collate,  # noqa: E402
                        construct, featurize)
@@ -65,8 +71,9 @@ NET_SOURCES = ("heart1_ppo", "heart1_ppo_single")
 
 # ---------------------------------------------------------------- trajectories
 
-def _parse_line(line, trim_map=None, phi_model=None):
+def _parse_line(line, trim_map=None, phi_model=None, keep_logits=False):
     """One trajectory line -> row; with trim_map, a net decision's record is featurised (worker-safe).
+    keep_logits keeps a decision's behaviour logits as "blogits" (--diag: full-batch KL behaviour -> learner).
 
     Errors come back as {"type": "_error"} rows instead of raising in the worker, so the pool always drains and
     closes normally (terminating a pool mid-stream can deadlock); load_games raises them afterwards."""
@@ -78,7 +85,9 @@ def _parse_line(line, trim_map=None, phi_model=None):
             row["phi_py"] = ppo_phi.value(phi_model, row, row["record"])
         if trim_map is not None and row["type"] == "decision":
             rec = row.pop("record", None)
-            row.pop("logits", None)
+            blogits = row.pop("logits", None)
+            if keep_logits and blogits is not None:
+                row["blogits"] = blogits
             if row["source"] in NET_SOURCES:
                 row["feat"] = featurize(rec, trim_map)
         return row
@@ -92,7 +101,7 @@ def seed_key(seed):
     return (0, int(s)) if s.isdigit() else (1, s)
 
 
-def load_games(paths, trim_map=None, workers=None, phi_model=None):
+def load_games(paths, trim_map=None, workers=None, phi_model=None, keep_logits=False):
     """Games with all their net decisions, in decision order. A game without its "game" line is dropped.
 
     The games come back sorted by seed (steps by idx), whatever order the files list them in: `one_combat bestbench`
@@ -104,14 +113,14 @@ def load_games(paths, trim_map=None, workers=None, phi_model=None):
     packed features are kept ("feat"; record and logits are dropped), so host memory stays at a few KB per decision.
     With phi_model (ppo_phi.load), each net decision gets "phi_py" (its potential) before the record is dropped.
     Parsing and featurising run in `workers` processes (default min(8, CPUs); 1 = in-process); the result is the
-    same either way."""
+    same either way. keep_logits (--diag) keeps each decision's behaviour logits as "blogits"."""
     if workers is None:
         workers = min(8, os.cpu_count() or 1)
     pool = None
     if workers > 1 and trim_map is not None:
         import multiprocessing as mp
         pool = mp.get_context("fork" if hasattr(os, "fork") else "spawn").Pool(workers)
-    parse = functools.partial(_parse_line, trim_map=trim_map, phi_model=phi_model)
+    parse = functools.partial(_parse_line, trim_map=trim_map, phi_model=phi_model, keep_logits=keep_logits)
     # Parse every file completely before validating: raising while imap still streams a file and then terminating
     # the pool can deadlock (the task feeder holds the queue lock on a full pipe).
     parsed = []
@@ -263,6 +272,11 @@ def add_hparams(ap):
     ap.add_argument("--aux-weight", type=float, default=0.1, help="loss weight of each auxiliary head")
     ap.add_argument("--value-sparse", type=int, default=0,
                     help="value loss only on each act's first decision plus N random decisions per game (0 = all)")
+    ap.add_argument("--diag", type=int, default=0,
+                    help="1 = per-update diagnostics in the stats line under \"diag\" (ppo_learner_diag: outcome "
+                         "decomposition, critic vs Monte Carlo outcome per act, full-batch KL behaviour -> learner and "
+                         "of the update itself, per screen); costs one extra forward pass and the behaviour logits in "
+                         "host memory; training is unchanged (0 = off)")
     ap.add_argument("--bucket", type=int, default=0,
                     help="length-bucketed minibatches: sort each window of BUCKET*minibatch shuffled decisions by "
                          "token count before cutting minibatches (less padding; changes minibatch composition; 0 = off)")
@@ -446,13 +460,18 @@ class Learner:
                 dlogp.append(abs(lp - s["logp"]))
         # Advantages per game.
         adv, ret = [], []
+        diag_on = bool(getattr(a, "diag", 0))
+        mc = []   # --diag: Monte Carlo returns (lambda = 1) for the critic check
         k = 0
         for g in games:
             n = len(g["steps"])
             r = step_rewards(g, a.reward, a.gamma, a.act_bonus, a.key_bonus)
             ad, rt = gae(r, values[k:k + n], a.gamma, update_lam(a, value_only))
             adv.extend(ad); ret.extend(rt)
+            if diag_on:
+                mc.extend(gae(r, values[k:k + n], a.gamma, 1.0)[1])
             k += n
+        diag = self.diagnose(games, steps, values, logits_now, mc, ret) if diag_on else None
         adv_t = torch.tensor(adv)
         policy_mask = torch.tensor([s["n"] > 1 for s in steps])
         if a.norm_adv and policy_mask.sum() > 1:
@@ -541,9 +560,23 @@ class Learner:
         if self.device.type == "cuda":
             torch.cuda.synchronize()
         train_s = time.time() - t1
+        if diag is not None:   # the update's own movement, full batch (one more forward pass)
+            t2 = time.time()
+            _, logits_end = self.evaluate(feats, store=store)
+            diag["kl_update"] = ppo_learner_diag.update_shift(steps, logits_now, logits_end)
+            diag["diag_s"] = round(diag.pop("_start_s") + time.time() - t2, 2)
+            diag = ppo_learner_diag.finite(diag)
         return self._finish_update(games, steps, names, acc, first, nmb, kl_coef, policy_mask, prep, train_s,
                                    value_only, dlogp, ret_t, old_v, log,
-                                   int(vmask.sum()) if vmask is not None else len(steps))
+                                   int(vmask.sum()) if vmask is not None else len(steps), diag)
+
+    def diagnose(self, games, steps, values, logits_now, mc, lam_targets=None):
+        """--diag at update start: outcomes, critic vs Monte Carlo outcome, KL behaviour -> learner (no training)."""
+        t0 = time.time()
+        return {"outcome": ppo_learner_diag.outcome_stats(games),
+                "critic": ppo_learner_diag.critic_stats(games, values, mc, lam_targets),
+                "kl_behaviour": ppo_learner_diag.behaviour_shift(steps, logits_now),
+                "_start_s": time.time() - t0}
 
     def _minibatch_loss(self, mb_list, batch, whole, denom, n_full, temp_t, policy_mask, chosen, old_logp, adv_t,
                         ret_t, old_v, anchor_lp, kl_coef, value_only, aux_t=None, vmask=None, vden=None):
@@ -612,7 +645,7 @@ class Learner:
                                 aux_loss.detach().float()])
 
     def _finish_update(self, games, steps, names, acc, first, nmb, kl_coef, policy_mask, prep, train_s, value_only,
-                       dlogp, ret_t, old_v, log, value_decisions=None):
+                       dlogp, ret_t, old_v, log, value_decisions=None, diag=None):
         stats = dict(zip(names, acc.tolist()))
         if first is not None:
             f = first.tolist()
@@ -630,6 +663,8 @@ class Learner:
                     "micro_batch": getattr(self.args, "micro_batch", 0),
                     "max_dlogp_behaviour": max(dlogp) if dlogp else 0.0,
                     "mean_return": float(ret_t.mean()), "mean_value": float(old_v.mean())})
+        if diag is not None:   # --diag only: the stats line of a run without it is unchanged
+            out["diag"] = diag
         log(json.dumps(out))
         return out
 
@@ -747,7 +782,7 @@ def cmd_update(argv):
     args = ap.parse_args(argv)
     torch.manual_seed(args.seed)
     learner = make_learner(args, torch.device(args.device))
-    games = load_games(args.traj, learner.net.trim_map, phi_model=phi_model_for(args))
+    games = load_games(args.traj, learner.net.trim_map, phi_model=phi_model_for(args), keep_logits=bool(args.diag))
     if args.expect_games is not None and len(games) != args.expect_games:
         sys.exit(f"{len(games)} games in {' '.join(args.traj)}, expected {args.expect_games}")
     logf = open(args.log, "a") if args.log else None
@@ -868,8 +903,49 @@ def cmd_score(argv):
     print(f"{a.state}: {n} values (structure {shape_structure(st['shape'])}, iteration {st.get('iteration')})")
 
 
+def cmd_diag(argv):
+    """diag --init NET.bin | --state STATE.pt --traj PARTS...: the --diag start-of-update block for stored games,
+    without training (outcomes, critic of that net vs the Monte Carlo outcome, KL(behaviour || that net)).
+
+    For runs that did not log --diag: e.g. a LONG_B iteration's kept parts with the net that trained on them
+    (net-NNNN.bin for iteration NNNN; the stored behaviour logits give kl_behaviour). One JSON line."""
+    ap = argparse.ArgumentParser(prog="ppo_train.py diag")
+    ap.add_argument("--state", help="learner checkpoint (critic of a separate-critic arm lives only here)")
+    ap.add_argument("--init", help="native .bin net (when no --state)")
+    ap.add_argument("--traj", nargs="+", required=True)
+    ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+    ap.add_argument("--out", help="append the JSON line here")
+    add_hparams(ap)   # reward, gamma: the Monte Carlo target
+    args = ap.parse_args(argv)
+    if not args.state and not args.init:
+        sys.exit("diag needs --state or --init")
+    if args.state and not os.path.exists(args.state):
+        sys.exit(f"{args.state} does not exist (diag never creates a state)")
+    learner = make_learner(args, torch.device(args.device))
+    games = load_games(args.traj, learner.net.trim_map, phi_model=phi_model_for(args), keep_logits=True)
+    steps = [s for g in games for s in g["steps"]]
+    if not steps:
+        sys.exit("no net decisions in the trajectories")
+    values, logits = learner.evaluate([s["feat"] for s in steps])
+    mc, k = [], 0
+    for g in games:
+        n = len(g["steps"])
+        mc.extend(gae(step_rewards(g, args.reward, args.gamma, args.act_bonus, args.key_bonus),
+                      values[k:k + n], args.gamma, 1.0)[1])
+        k += n
+    d = learner.diagnose(games, steps, values, logits, mc)
+    d.pop("_start_s")
+    line = json.dumps(ppo_learner_diag.finite({"net": args.state or args.init, "iteration": learner.iteration,
+                                               "traj": args.traj, "decisions": len(steps), **d}))
+    print(line, flush=True)
+    if args.out:
+        with open(args.out, "a") as f:
+            f.write(line + "\n")
+
+
 if __name__ == "__main__":
-    cmds = {"update": cmd_update, "bench": cmd_bench, "selftest": cmd_selftest, "score": cmd_score}
+    cmds = {"update": cmd_update, "bench": cmd_bench, "selftest": cmd_selftest, "score": cmd_score,
+            "diag": cmd_diag}
     if len(sys.argv) < 2 or sys.argv[1] not in cmds:
-        sys.exit("usage: ppo_train.py {update|bench|selftest|score} ...")
+        sys.exit("usage: ppo_train.py {update|bench|selftest|score|diag} ...")
     cmds[sys.argv[1]](sys.argv[2:])
