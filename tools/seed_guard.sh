@@ -36,6 +36,7 @@ declare -A ONE_COMBAT_SEED_INDEX=(
   ["strategicgen"]=2        ["strategicgen2"]=2
   ["strategicmarggen"]=2
   ["potionpriceprobe"]=2
+  ["fightendpairgen"]=2
   ["oocfactoreval"]=2      ["oocmargtradeoffeval"]=2 ["oock3tradeoffeval"]=2
   ["oocsemanticfullruneval"]=2 ["oockbudgeteval"]=2
   ["oocsemanticcapture"]=2 ["oocsemanticeval"]=2

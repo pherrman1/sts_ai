@@ -15,6 +15,8 @@ Names in the store, per arm:
   ARM/traj-NNNN-pK      part K of iteration NNNN's games, gzipped jsonl; meta: games, sha256,
                         behaviour net, actor seconds, first seed                             (actor of part K)
   ARM/stats-NNNN        the learner's loop.json after NNNN updates; only the newest stays      (learner)
+  ARM/rebin             optional, written once: a replacement one_combat sha256 the actors may also use, for an
+                        engine change that plays the same games (cmd_rebin)
 Every name is written once (no ref is ever overwritten, so no force-push is needed).
 
 Iteration i is split into P parts of GAMES/P games: part k plays seeds SEED_BASE + i*GAMES + k*GAMES/P ... with
@@ -33,6 +35,7 @@ ahead. The learner keeps its checkpoint (state.pt) and every net per arm in a lo
     python3 tools/heart1/ppo_cloud.py serve STORE LOCAL_DIR ARM [ARM ...] [--device cuda]
     python3 tools/heart1/ppo_cloud.py status STORE ARM [ARM ...]
     python3 tools/heart1/ppo_cloud.py cleanup STORE ARM [ARM ...]     (end of a screen: delete every ref of the arms)
+    python3 tools/heart1/ppo_cloud.py rebin STORE ARM --new SHA --reason TEXT
 """
 import argparse
 import gzip
@@ -116,6 +119,17 @@ class DirStore:
             if os.path.exists(f):
                 os.remove(f)
 
+    def get_many(self, items):
+        """[(name, path)] -> [meta], as get() one by one."""
+        return [self.get(n, p) for n, p in items]
+
+    def update(self, puts=(), deletes=()):
+        """Write every (name, path, meta) of puts, then delete every name of deletes."""
+        for n, p, m in puts:
+            self.put(n, p, m)
+        for n in deletes:
+            self.delete(n)
+
 
 class GitStore:
     """One orphan commit per file under refs/heads/PREFIX/, through a scratch bare repository without refs."""
@@ -150,14 +164,7 @@ class GitStore:
         return out
 
     def put(self, name, path, meta):
-        check_size(path)
-        blob = self._git("hash-object", "-w", path).stdout.decode().strip()
-        mblob = self._git("hash-object", "-w", "--stdin", data=json.dumps(meta).encode()).stdout.decode().strip()
-        tree = self._git("mktree", data=f"100644 blob {blob}\tdata\n100644 blob {mblob}\tmeta.json\n".encode()
-                         ).stdout.decode().strip()
-        commit = self._git("-c", "user.name=ppo-cloud", "-c", "user.email=ppo-cloud@localhost", "commit-tree", tree,
-                           "-m", name).stdout.decode().strip()
-        self._git("push", "-q", self.url, f"{commit}:{self._ref(name)}")
+        self._git("push", "-q", self.url, f"{self._commit(path, meta, name)}:{self._ref(name)}")
         self._gc()
 
     def get(self, name, path):
@@ -172,6 +179,53 @@ class GitStore:
 
     def delete(self, name):
         self._git("push", "-q", self.url, f":{self._ref(name)}")
+
+    def _commit(self, path, meta, name):
+        """One orphan commit holding path as data and meta as meta.json, in the scratch repository."""
+        check_size(path)
+        blob = self._git("hash-object", "-w", path).stdout.decode().strip()
+        mblob = self._git("hash-object", "-w", "--stdin", data=json.dumps(meta).encode()).stdout.decode().strip()
+        tree = self._git("mktree", data=f"100644 blob {blob}\tdata\n100644 blob {mblob}\tmeta.json\n".encode()
+                         ).stdout.decode().strip()
+        return self._git("-c", "user.name=ppo-cloud", "-c", "user.email=ppo-cloud@localhost", "commit-tree", tree,
+                         "-m", name).stdout.decode().strip()
+
+    def get_many(self, items):
+        """[(name, path)] -> [meta]: one fetch for every name (get() fetches one ref per call)."""
+        if not items:
+            return []
+        specs = [f"+{self._ref(n)}:refs/many/{k}" for k, (n, _) in enumerate(items)]
+        self._git("fetch", "-q", "--depth", "1", "--no-tags", self.url, *specs)
+        metas = []
+        for k, (_, path) in enumerate(items):
+            tmp = f"{path}.tmp{os.getpid()}"
+            with open(tmp, "wb") as f:
+                subprocess.run(["git", "-C", self.repo, "cat-file", "blob", f"refs/many/{k}:data"], stdout=f,
+                               check=True)
+            os.replace(tmp, path)
+            metas.append(json.loads(self._git("cat-file", "blob", f"refs/many/{k}:meta.json").stdout))
+        shutil.rmtree(self.repo, ignore_errors=True)   # drop the local refs and objects: the next call starts clean
+        self._git("init", "-q", "--bare", self.repo, here=False)
+        self._since_gc = 0
+        return metas
+
+    def update(self, puts=(), deletes=()):
+        """One push that writes every (name, path, meta) of puts and deletes every name of deletes (put() and
+        delete() push one ref per call). Retried as a whole; a retry after a partial success sees the new refs
+        already there (same commit for a put: the push is a no-op for it; a delete of a gone ref is skipped)."""
+        puts = [f"{self._commit(p, m, n)}:{self._ref(n)}" for n, p, m in puts]
+        for k in range(5):   # each retry re-filters the deletes: a partly applied push leaves some refs gone
+            have = self.names("") if deletes else set()
+            specs = puts + [f":{self._ref(n)}" for n in deletes if n in have]
+            if not specs:
+                break
+            r = self._git("push", "-q", self.url, *specs, check=False, tries=1)
+            if r.returncode == 0:
+                break
+            if k == 4:
+                raise RuntimeError(f"push: {r.stderr.decode(errors='replace')[-400:]}")
+            time.sleep(2 ** (k + 1))
+        self._gc()
 
     def _gc(self):
         self._since_gc += 1
@@ -399,8 +453,9 @@ def cmd_actor(argv):
     cfg = json.load(open(os.path.join(work, "config.json")))
     if not 0 <= a.part < cfg["parts"]:
         sys.exit(f"part {a.part} outside 0..{cfg['parts'] - 1}")
-    if sha256(a.one_combat) != cfg["one_combat_sha256"]:
-        sys.exit(f"{a.one_combat} sha256 is not the arm's {cfg['one_combat_sha256']}")
+    bin_sha = sha256(a.one_combat)
+    if bin_sha not in allowed_binaries(store, a.arm, cfg, work):
+        sys.exit(f"{a.one_combat} sha256 is not the arm's {cfg['one_combat_sha256']} (or its rebin)")
     n_part = cfg["games"] // cfg["parts"]
     marker = os.path.join(work, "published.txt")
     published = set(open(marker).read().split()) if os.path.exists(marker) else set()
@@ -442,6 +497,17 @@ def cmd_actor(argv):
             with open(job["traj"], "a") as f:
                 f.writelines(line + "\n" for line in stalled)
             log(f"iteration {it} part {a.part}: {len(stalled)} stalled game(s) count as losses")
+        with open(job["traj"]) as f:
+            traj_text = f.read()
+        with open(os.path.join(out, "actors.err")) as f:
+            aborted = aborted_game_lines(f.read(), traj_text, job["seed"], n_part, max_stalls(n_part) - len(stalled))
+        if aborted is None:
+            sys.exit(f"iteration {it}: missing game lines that are not combat aborts (see {out}/actors.err)")
+        if aborted:
+            with open(job["traj"], "a") as f:
+                f.writelines(line + "\n" for line in aborted)
+            log(f"iteration {it} part {a.part}: {len(aborted)} combat-aborted game(s) count as losses")
+            stalled += aborted
         n = 0
         with open(job["traj"]) as f:
             for line in f:
@@ -453,7 +519,7 @@ def cmd_actor(argv):
             shutil.copyfileobj(src, dst)
         store.put(name, gz, {"games": n, "sha256": sha256(gz), "net": f"net-{b:04d}", "net_sha256": meta["sha256"],
                              "actor_s": time.time() - job["t0"], "seed_first": job["seed"],
-                             "host": os.uname().nodename, "stalled": len(stalled)})
+                             "host": os.uname().nodename, "stalled": len(stalled), "one_combat_sha256": bin_sha})
         job = None
         published.add(name)
         with open(marker, "a") as f:
@@ -465,6 +531,39 @@ def cmd_actor(argv):
     print("ACTOR_DONE", flush=True)
 
 
+def max_stalls(n_part):
+    """Stalled or aborted games one part may count as losses: 1% of the part, at least 1 (a 13-game part allows 1)."""
+    return max(1, int(MAX_STALL_FRACTION * n_part))
+
+
+COMBAT_ABORT = re.compile(r"^\[bestbench-combat-abort\] seed=(\d+) floor=(\d+)(.*)$", re.M)
+
+
+def aborted_game_lines(err_text, traj_text, first_seed, n_part, cap):
+    """Games of the part (seeds first_seed .. first_seed + n_part - 1) without a game line -> loss game lines.
+
+    Since d3dc5eac bestbench ends a stalled combat as a CombatAbort: it records a loss row, prints
+    "[bestbench-combat-abort] seed=N floor=F ..." and exits 0, but the game's trajectory (ppoEndGame) is never
+    written. Returns [] if no game is missing, one loss line per missing seed if the missing seeds are exactly the
+    aborted ones and there are at most cap of them, else None (the actor stops)."""
+    want = {str(s) for s in range(first_seed, first_seed + n_part)}
+    have = set()
+    for line in traj_text.splitlines():   # the native lines have sorted keys ("type" comes last): parse them
+        if '"type":"game"' in line and '"type":"decision"' not in line:
+            have.add(str(json.loads(line).get("seed")))
+    have &= want
+    missing = want - have
+    if not missing:
+        return []
+    aborts = {seed: (int(floor), rest.strip()) for seed, floor, rest in COMBAT_ABORT.findall(err_text)}
+    if set(aborts) != missing or len(missing) > cap:
+        return None
+    return [json.dumps({"type": "game", "schema": ppo_loop.ppo_train.SCHEMA, "seed": seed, "decisions": 0,
+                        "stalled": "combat abort " + aborts[seed][1],
+                        "outcome": {"heart_kill": False, "stalled": True, "floor": aborts[seed][0]}},
+                       separators=(",", ":")) for seed in sorted(missing, key=int)]
+
+
 def stalled_game_lines(err_text, n_part):
     """bestbench's per-seed failures -> one "game" line per seed if every failure is a combat stall, else None.
 
@@ -472,12 +571,12 @@ def stalled_game_lines(err_text, n_part):
     combat decisions ("stall: exceeded 1000 decisions") and the game's trajectory lines are lost (they are flushed
     only at game end). Such a game counts as a loss: a game line with no decisions (no training signal, the Heart
     rate counts it). Any other failure, a count that does not match bestbench's summary, or more than
-    MAX_STALL_FRACTION of the part returns None (the actor stops as before)."""
+    max_stalls(n_part) returns None (the actor stops as before)."""
     fails = re.findall(r"^\[bestbench-seed-failure\] seed=(\d+) error=(.*)$", err_text, re.M)
     summary = re.search(r"^bestbench: FAILED requested=(\d+) completed=(\d+) failed=(\d+)$", err_text, re.M)
     if not fails or not summary or int(summary.group(3)) != len(fails) or int(summary.group(1)) != n_part:
         return None
-    if len(fails) > MAX_STALL_FRACTION * n_part or not all("stall: exceeded" in msg for _, msg in fails):
+    if len(fails) > max_stalls(n_part) or not all("stall: exceeded" in msg for _, msg in fails):
         return None
     lines = []
     for seed, msg in fails:
@@ -548,19 +647,23 @@ class ArmLearner:
         names = self.store.names(f"{self.arm}/")
         net = f"{self.arm}/net-{it:04d}"
         local = os.path.join(self.dir, f"net-{it:04d}.bin")
+        puts, deletes = [], []
         if it > 0:
             if net not in names:
-                self.store.put(net, local, {"sha256": sha256(local), "updates": it})
+                puts.append((net, local, {"sha256": sha256(local), "updates": it}))
             if f"{self.arm}/stats-{it:04d}" not in names:
-                self.store.put(f"{self.arm}/stats-{it:04d}", self.meta_path, {"iterations": it})
+                puts.append((f"{self.arm}/stats-{it:04d}", self.meta_path, {"iterations": it}))
         for n in sorted(names):
             rest = n[len(self.arm) + 1:]
             if rest.startswith("traj-") and int(rest[5:9]) < it:
-                self.store.delete(n)
+                deletes.append(n)
             elif rest.startswith("net-") and int(rest[4:8]) < it - 1:
-                self.store.delete(n)
+                deletes.append(n)
             elif rest.startswith("stats-") and int(rest[6:10]) < it - 1:   # newest two: no read races
-                self.store.delete(n)
+                deletes.append(n)
+        # The new net first, in its own push: the actors wait for it; the clean-up push follows.
+        self.store.update(puts=puts)
+        self.store.update(deletes=deletes)
 
     @property
     def next_it(self):
@@ -577,10 +680,9 @@ class ArmLearner:
         if self.done() or not all(p in available for p in parts):
             return False
         t0 = time.time()
-        files, metas = [], []
-        for p in parts:
-            f = os.path.join(self.dir, os.path.basename(p) + ".jsonl.gz")
-            m = self.store.get(p, f)
+        files = [os.path.join(self.dir, os.path.basename(p) + ".jsonl.gz") for p in parts]
+        metas = self.store.get_many(list(zip(parts, files)))   # one fetch for all parts
+        for p, f, m in zip(parts, files, metas):
             if sha256(f) != m["sha256"]:
                 sys.exit(f"{p}: sha256 mismatch")
             want = max(it - 1, 0) if self.cfg["pipeline"] else it
@@ -588,8 +690,6 @@ class ArmLearner:
             if m["net"] != f"net-{want:04d}" or m["net_sha256"] != sha256(local_net):
                 sys.exit(f"{p}: played by {m['net']} {m['net_sha256'][:12]}, expected net-{want:04d} "
                          f"{sha256(local_net)[:12]}")
-            files.append(f)
-            metas.append(m)
         games = ppo_train.load_games(files, self.trim_map, phi_model=self.phi_model)
         if len(games) != self.cfg["games"]:
             sys.exit(f"{self.arm} iteration {it}: {len(games)} games, expected {self.cfg['games']}")
@@ -675,6 +775,43 @@ def cmd_serve(argv):
     print("SERVE_DONE", flush=True)
 
 
+def allowed_binaries(store, arm, cfg, work):
+    """The one_combat sha256s an actor of the arm may play with: the config's, plus the replacement an ARM/rebin
+    names (cmd_rebin) if that rebin replaces exactly the config's binary."""
+    ok = {cfg["one_combat_sha256"]}
+    if store.names(f"{arm}/rebin"):
+        m = store.get(f"{arm}/rebin", os.path.join(work, "rebin.json"))
+        if m.get("old") == cfg["one_combat_sha256"]:
+            ok.add(m["new"])
+    return ok
+
+
+def cmd_rebin(argv):
+    """Write ARM/rebin once: actors may then also play with binary NEW in place of the config's. Only for an engine
+    change shown to play the same games (the evidence goes in the PREREG); the config itself stays frozen."""
+    ap = argparse.ArgumentParser(prog="ppo_cloud.py rebin")
+    ap.add_argument("store")
+    ap.add_argument("arm")
+    ap.add_argument("--new", required=True, help="sha256 of the replacement one_combat")
+    ap.add_argument("--reason", required=True)
+    args = ap.parse_args(argv)
+    if not re.fullmatch(r"[0-9a-f]{64}", args.new):
+        sys.exit("--new must be a 64-char sha256")
+    store = open_store(args.store)
+    if store.names(f"{args.arm}/rebin"):
+        sys.exit(f"{args.arm}/rebin exists; an arm is rebinned at most once")
+    with tempfile.TemporaryDirectory() as tmp:
+        store.get(f"{args.arm}/config", os.path.join(tmp, "config.json"))
+        old = json.load(open(os.path.join(tmp, "config.json")))["one_combat_sha256"]
+        if args.new == old:
+            sys.exit("--new is the config's binary")
+        rp = os.path.join(tmp, "rebin.json")
+        with open(rp, "w") as f:
+            json.dump({"old": old, "new": args.new, "reason": args.reason, "time": time.time()}, f, indent=1)
+        store.put(f"{args.arm}/rebin", rp, {"old": old, "new": args.new, "sha256": sha256(rp)})
+    print(f"{args.arm}: actors may play {args.new[:16]} in place of {old[:16]}")
+
+
 def cmd_cleanup(argv):
     """Delete every ref of the given arms from the store (end of a screen; run where deletes are allowed)."""
     store = open_store(argv[0])
@@ -700,7 +837,8 @@ def cmd_status(argv):
 
 
 if __name__ == "__main__":
-    cmds = {"init": cmd_init, "actor": cmd_actor, "serve": cmd_serve, "status": cmd_status, "cleanup": cmd_cleanup}
+    cmds = {"init": cmd_init, "actor": cmd_actor, "serve": cmd_serve, "status": cmd_status, "cleanup": cmd_cleanup,
+            "rebin": cmd_rebin}
     if len(sys.argv) < 2 or sys.argv[1] not in cmds:
-        sys.exit("usage: ppo_cloud.py {init|actor|serve|status|cleanup} ...")
+        sys.exit("usage: ppo_cloud.py {init|actor|serve|status|cleanup|rebin} ...")
     cmds[sys.argv[1]](sys.argv[2:])

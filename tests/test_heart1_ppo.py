@@ -193,6 +193,95 @@ class Heart1PpoTest(unittest.TestCase):
         many = "".join(f"[bestbench-seed-failure] seed={i} error=stall: exceeded 1000 decisions floor=1\n"
                        for i in range(4)) + "bestbench: FAILED requested=256 completed=252 failed=4\n"
         self.assertIsNone(ppo_cloud.stalled_game_lines(many, 256))     # > 1% of the part
+        self.assertIsNotNone(ppo_cloud.stalled_game_lines(err.replace("256", "13"), 13))   # 13-game part: cap 1
+        self.assertEqual((ppo_cloud.max_stalls(13), ppo_cloud.max_stalls(256), ppo_cloud.max_stalls(520)), (1, 2, 5))
+
+    def test_aborted_game_lines(self):
+        """ppo_cloud actor: a CombatAbort (rc 0, no game line) becomes a loss line; other missing games stop it."""
+        import json
+        import ppo_cloud
+        import ppo_train
+        traj = "".join('{"type":"decision","x":1}\n{"type":"game","schema":"heart1-ppo-traj-v1","seed":"%d",'
+                       '"decisions":5}\n' % s for s in (100, 101, 103))
+        err = ("[bestbench-combat-abort] seed=102 floor=33 recorded as loss (deathEncounter=-2) error=stall\n"
+               "bestbench: 1 combat abort(s) recorded as loss rows\n")
+        self.assertEqual(ppo_cloud.aborted_game_lines("", traj, 100, 2, 1), [])        # 100, 101 both present
+        lines = ppo_cloud.aborted_game_lines(err, traj, 100, 4, 1)
+        self.assertEqual(len(lines), 1)
+        row = json.loads(lines[0])
+        self.assertEqual((row["seed"], row["schema"], row["decisions"], row["outcome"]["floor"],
+                          row["outcome"]["heart_kill"]), ("102", ppo_train.SCHEMA, 0, 33, False))
+        self.assertIsNone(ppo_cloud.aborted_game_lines("", traj, 100, 4, 1))           # missing, no abort line
+        self.assertIsNone(ppo_cloud.aborted_game_lines(err, traj, 100, 5, 1))          # 104 missing too
+        self.assertIsNone(ppo_cloud.aborted_game_lines(err, traj, 100, 4, 0))          # over the cap
+        self.assertEqual(ppo_cloud.aborted_game_lines(err, traj, 100, 2, 1), [])       # abort of another part: nothing missing
+        # real native output (sorted keys, "type" last): cov8 = seeds 111388903..910
+        import gzip
+        cov8 = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "docs", "experiments", "evidence", "ppo_s0_smoke_20261101", "cov8.jsonl.gz")
+        with gzip.open(cov8, "rt") as f:
+            real = f.read()
+        self.assertLess(real.index('"seed"'), real.index('"type":"game"'))
+        self.assertEqual(ppo_cloud.aborted_game_lines("", real, 111388903, 8, 1), [])
+        kept = "".join(l + "\n" for l in real.splitlines()
+                       if not ('"type":"game"' in l and '"seed":"111388906"' in l))
+        ab = "[bestbench-combat-abort] seed=111388906 floor=20 recorded as loss (deathEncounter=-2) error=stall\n"
+        lines = ppo_cloud.aborted_game_lines(ab, kept, 111388903, 8, 1)
+        self.assertEqual([json.loads(l)["seed"] for l in lines], ["111388906"])
+        self.assertIsNone(ppo_cloud.aborted_game_lines("", kept, 111388903, 8, 1))
+
+    def test_git_store_batched(self):
+        """ppo_cloud GitStore: get_many fetches several refs at once, update writes and deletes in one push."""
+        import subprocess
+        import ppo_cloud
+        with tempfile.TemporaryDirectory() as d:
+            remote = os.path.join(d, "remote.git")
+            subprocess.run(["git", "init", "-q", "--bare", remote], check=True)
+            st = ppo_cloud.open_store(f"git:file://{remote}#ppo-xfer/t")
+            files = []
+            for k in range(3):
+                p = os.path.join(d, f"in{k}")
+                with open(p, "wb") as f:
+                    f.write(bytes([k]) * (100 + k))
+                files.append(p)
+            st.put("A/traj-0000-p0", files[0], {"k": 0})
+            st.update(puts=[("A/traj-0000-p1", files[1], {"k": 1}), ("A/net-0001", files[2], {"k": 2})])
+            self.assertEqual(st.names("A/"), {"A/traj-0000-p0", "A/traj-0000-p1", "A/net-0001"})
+            outs = [os.path.join(d, f"out{k}") for k in range(3)]
+            metas = st.get_many([("A/traj-0000-p0", outs[0]), ("A/traj-0000-p1", outs[1]), ("A/net-0001", outs[2])])
+            self.assertEqual([m["k"] for m in metas], [0, 1, 2])
+            for a, b in zip(files, outs):
+                self.assertEqual(open(a, "rb").read(), open(b, "rb").read())
+            st.update(deletes=["A/traj-0000-p0", "A/traj-0000-p1", "A/gone"])   # a missing name is skipped
+            self.assertEqual(st.names("A/"), {"A/net-0001"})
+            self.assertEqual(st.get_many([]), [])
+            st.update()   # nothing to do
+
+    def test_rebin(self):
+        """ppo_cloud rebin: written once, adds exactly one replacement binary for the config's, config unchanged."""
+        import json
+        import ppo_cloud
+        old, new = "a" * 64, "b" * 64
+        with tempfile.TemporaryDirectory() as d:
+            st = ppo_cloud.open_store(f"dir:{d}/store")
+            cp = os.path.join(d, "config.json")
+            with open(cp, "w") as f:
+                json.dump({"one_combat_sha256": old}, f)
+            st.put("A/config", cp, {})
+            work = os.path.join(d, "work")
+            os.makedirs(work)
+            cfg = {"one_combat_sha256": old}
+            self.assertEqual(ppo_cloud.allowed_binaries(st, "A", cfg, work), {old})
+            with self.assertRaises(SystemExit):
+                ppo_cloud.cmd_rebin([f"dir:{d}/store", "A", "--new", old, "--reason", "same"])
+            with self.assertRaises(SystemExit):
+                ppo_cloud.cmd_rebin([f"dir:{d}/store", "A", "--new", "xyz", "--reason", "bad sha"])
+            ppo_cloud.cmd_rebin([f"dir:{d}/store", "A", "--new", new, "--reason", "test"])
+            self.assertEqual(ppo_cloud.allowed_binaries(st, "A", cfg, work), {old, new})
+            self.assertEqual(ppo_cloud.allowed_binaries(st, "A", {"one_combat_sha256": "c" * 64}, work), {"c" * 64})
+            with self.assertRaises(SystemExit):
+                ppo_cloud.cmd_rebin([f"dir:{d}/store", "A", "--new", "c" * 64, "--reason", "twice"])
+            st.get("A/config", os.path.join(d, "back.json"))
+            self.assertEqual(json.load(open(os.path.join(d, "back.json"))), {"one_combat_sha256": old})
 
     def test_cloud_store_round_trip(self):
         """ppo_cloud: two actor parts in a dir store -> one serve step -> next net and stats published, parts gone."""
@@ -449,6 +538,21 @@ class Heart1PpoTest(unittest.TestCase):
         self.assertEqual(m[10:], [True, True])              # fewer than k left: all
         self.assertEqual(m, ppo_train.value_sparse_mask(games, 3, 0, 7))
         self.assertNotEqual(m, ppo_train.value_sparse_mask(games, 3, 0, 8))
+
+    def test_warmup_lam(self):
+        import argparse
+        import ppo_train
+        ap = argparse.ArgumentParser()
+        ppo_train.add_hparams(ap)
+        base = ap.parse_args([])
+        self.assertEqual(ppo_train.update_lam(base, True), base.lam)        # default: warm-up uses --lam
+        self.assertEqual(ppo_train.update_lam(base, False), base.lam)
+        mc = ap.parse_args(["--warmup-lam", "1.0"])
+        self.assertEqual(ppo_train.update_lam(mc, True), 1.0)               # value-only: Monte Carlo targets
+        self.assertEqual(ppo_train.update_lam(mc, False), mc.lam)           # policy updates keep --lam
+        # lambda 1 with gamma 1: the return is the game's reward, whatever the critic says
+        _, ret = ppo_train.gae([0.0, 0.0, 1.0], [0.9, 0.1, 0.5], 1.0, 1.0)
+        self.assertEqual([round(x, 6) for x in ret], [1.0, 1.0, 1.0])
 
     def test_cloud_fork(self):
         """init --fork-dir: a flags-off fork reproduces the source arm's next update bit for bit (the arch screen's

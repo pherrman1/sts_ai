@@ -973,6 +973,61 @@ int testSilverSearcher() {
               "a non-equivalent card difference is not remapped");
     }
 
+    // SwapHasher: the hash of a state with two card uniqueIds exchanged equals
+    // hashBattleState of the swapped copy, for every pair (concrete and
+    // information-set draw piles, known top, discard and exhaust, an id absent
+    // from every pile). findNodeUpToEquivalentCopy skips pairs on it.
+    {
+        const auto swapIds = [](BattleContext &b, std::int16_t x, std::int16_t y) {
+            const auto swap = [x, y](CardInstance &c) {
+                if (c.uniqueId == x) c.uniqueId = y;
+                else if (c.uniqueId == y) c.uniqueId = x;
+            };
+            for (int i = 0; i < b.cards.cardsInHand; ++i) swap(b.cards.hand[i]);
+            b.cards.drawPile.mutateAll(swap);
+            for (auto &c : b.cards.discardPile) swap(c);
+            for (auto &c : b.cards.exhaustPile) swap(c);
+        };
+        const auto checkAll = [&](const BattleContext &s, const char *what) {
+            std::vector<std::int16_t> ids {999};
+            for (int i = 0; i < s.cards.cardsInHand; ++i) ids.push_back(s.cards.hand[i].uniqueId);
+            for (const auto &c : s.cards.drawPile) ids.push_back(c.uniqueId);
+            for (const auto &c : s.cards.discardPile) ids.push_back(c.uniqueId);
+            for (const auto &c : s.cards.exhaustPile) ids.push_back(c.uniqueId);
+            const search::SwapHasher hasher(s);
+            int bad = 0;
+            for (const auto a : ids) {
+                for (const auto b : ids) {
+                    BattleContext c = s;
+                    swapIds(c, a, b);
+                    if (hasher.hashWithSwap(a, b) != search::hashBattleState(c)) ++bad;
+                }
+            }
+            check(bad == 0 && ids.size() > 8, what);
+        };
+        const GameContext gc(CharacterClass::IRONCLAD, 0x5EF0u, 0);
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::CULTIST);
+        while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+            bc.executeActions();
+        }
+        CardInstance strike(CardId::STRIKE_RED);
+        strike.uniqueId = 70;
+        bc.cards.discardPile.push_back(strike);
+        strike.uniqueId = 71;
+        bc.cards.exhaustPile.push_back(strike);
+        checkAll(bc, "swap hash: concrete draw pile");
+        BattleContext root = silverSearchRoot(bc);
+        check(!root.cards.drawPile.isConcrete(), "swap hash: search root has an information-set draw pile");
+        checkAll(root, "swap hash: information-set draw pile");
+        strike.uniqueId = 72;
+        root.cards.drawPile.addToTop(strike);
+        root.cards.drawPile.addToBottom(CardInstance(CardId::DEFEND_RED));
+        checkAll(root, "swap hash: known top and bottom");
+        root.cards.drawPile.addToTop(root.cards.hand[0]);
+        checkAll(root, "swap hash: duplicate uniqueId");
+    }
+
     // A root with one legal action exposes it without any simulation.
     {
         const GameContext gc(CharacterClass::IRONCLAD, 0x5EEEu, 0);

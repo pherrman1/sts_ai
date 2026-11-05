@@ -146,6 +146,8 @@ void addRelic(GameContext &gc, RelicId r) {
 }
 }  // namespace
 
+int a4CounterLimit(RelicId r) { return counterLimit(r); }
+
 std::optional<A4PerturbSpec> parseA4Perturb(const char *value) {
     if (!value || !*value) return std::nullopt;
     const std::string text(value);
