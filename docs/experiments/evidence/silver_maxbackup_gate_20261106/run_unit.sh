@@ -6,7 +6,7 @@
 # Order rotated by seed. Exits 0.
 set -uo pipefail
 REPO=$1 RUN=$2 OUT=$3 SEED=$4
-[ "$(sha256sum < "$RUN/one_combat" | cut -c1-16)" = @BIN16@ ] || { echo "bad $RUN/one_combat" >&2; exit 2; }
+[ "$(sha256sum < "$RUN/one_combat" | cut -c1-16)" = 73a32e99d1640d53 ] || { echo "bad $RUN/one_combat" >&2; exit 2; }
 [ "$(sha256sum < "$RUN/l220.bin" | cut -c1-16)" = 408b2982a1a8757f ] || { echo "bad $RUN/l220.bin" >&2; exit 2; }
 if ! { [ "$SEED" -ge 111760000 ] && [ "$SEED" -le 111762047 ]; } && ! { [ "$SEED" -ge 111769990 ] && [ "$SEED" -le 111769999 ]; }; then
   echo "seed $SEED outside the frozen block" >&2; exit 2

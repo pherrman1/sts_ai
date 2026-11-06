@@ -44,4 +44,4 @@ Otherwise it stays off. Ledger entry either way.
 **Cost.** 2 × 2,048 games at ~21–25 s (M ~+20%) ≈ 28 core-h; 30 workers × 4 lanes ≈ 15–20 min plus setup; the SPRT
 is read after the full run (no early stop of the campaign).
 
-**Smoke (author container, before launch).** See README.md.
+**Smoke (author container, before launch).** 111769990–111769991, both arms rc 0 with all checks; see README.md.
