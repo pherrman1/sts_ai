@@ -56,11 +56,11 @@ int main() {
     try {
         unsetenv("STS_COMBAT_TURN_CAP");
         refreshEngineFlags();
-        require(combatTurnCap() == 100, "LONG_C run build: unset = 100");
-        requireCap(100);
+        require(combatTurnCap() == 500, "unset keeps the historical cap of 500");
+        requireCap(500);
         setenv("STS_COMBAT_TURN_CAP", "", 1);
         refreshEngineFlags();
-        require(combatTurnCap() == 100, "LONG_C run build: empty = 100");
+        require(combatTurnCap() == 500, "empty keeps the historical cap of 500");
         setenv("STS_COMBAT_TURN_CAP", "100", 1);
         refreshEngineFlags();
         require(combatTurnCap() == 100, "100 sets the cap");
