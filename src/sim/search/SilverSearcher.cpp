@@ -386,7 +386,7 @@ void search::SilverTreeProfile::record(const BattleContext &state, int treeDepth
     if (state.outcome == Outcome::PLAYER_VICTORY) kind = VICTORY;
     else if (state.outcome == Outcome::PLAYER_LOSS) {
         // executeActions uses PLAYER_LOSS for safety and no-damage stops too.
-        if (state.turn > 500) kind = TURN_LIMIT;
+        if (state.turn > combatTurnCap()) kind = TURN_LIMIT;
         else if (state.player.curHp <= 0) kind = DEATH;
         else kind = ENGINE_STOP;
     }

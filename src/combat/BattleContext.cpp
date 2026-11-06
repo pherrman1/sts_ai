@@ -39,6 +39,27 @@ namespace sts {
     std::uint32_t engineFlagEpoch() { return g_engineFlagEpoch.load(std::memory_order_relaxed); }
     void refreshEngineFlags() { g_engineFlagEpoch.fetch_add(1, std::memory_order_relaxed); }
 
+    int combatTurnCap() {
+        struct Cache { std::uint32_t epoch = 0; int value = kDefaultCombatTurnCap; };
+        thread_local Cache cache;
+        const std::uint32_t epoch = engineFlagEpoch();
+        if (cache.epoch != epoch) {
+            int cap = kDefaultCombatTurnCap;
+            if (const char *raw = std::getenv("STS_COMBAT_TURN_CAP"); raw && *raw) {
+                const std::string text(raw);
+                const bool digits = text.size() <= 3
+                    && text.find_first_not_of("0123456789") == std::string::npos;
+                const int parsed = digits ? std::stoi(text) : 0;
+                if (parsed < 1 || parsed > kDefaultCombatTurnCap)
+                    throw std::runtime_error("STS_COMBAT_TURN_CAP must be an integer in [1, 500]");
+                cap = parsed;
+            }
+            cache.value = cap;
+            cache.epoch = epoch;
+        }
+        return cache.value;
+    }
+
     bool cachedFixFlag(CachedFixFlag &cache, const char *name) {
         const std::uint32_t epoch = engineFlagEpoch();
         if (cache.epoch != epoch) {
@@ -1058,16 +1079,17 @@ void BattleContext::executeActions() {
 
     while (true)
     {
-        if (++loopCount > 1000000 || monsters.monstersAlive < 0 || turn > 500) {
+        const int turnCap = combatTurnCap();
+        if (++loopCount > 1000000 || monsters.monstersAlive < 0 || turn > turnCap) {
             // something went wrong
-            if (turn > 500) {
+            if (turn > turnCap) {
                 outcome = Outcome::PLAYER_LOSS;
                 break;
             }
 
             // Loop-guard trip (seed 128087 hit this): a pathological fight that never
             // terminates must not crash the whole datagen run. Log it and treat the
-            // fight as lost, matching the turn > 500 behavior already below.
+            // fight as lost, matching the turn-cap behavior just above.
             std::cerr << "[loop-guard] seed " << seed
                       << " loopCount " << loopCount
                       << " monstersAlive " << monsters.monstersAlive
@@ -1128,7 +1150,7 @@ void BattleContext::executeActions() {
         // loses; Combust, Juggernaut, Metallicize, Plated Armor, Mercury
         // Hourglass, Stone Calendar, applied Poison and potions still win
         // with no cards). STS_EMPTY_PILE_LOSS_FIX=0 restores it; otherwise
-        // the turn > 500 guard above and Silver's loop guard bound the fight.
+        // the turn-cap guard above (STS_COMBAT_TURN_CAP) and Silver's loop guard bound the fight.
         if (cards.cardsInHand + cards.discardPile.size() + cards.drawPile.size() == 0
                 && !emptyPileLossFix()) {
             bool hasDamageWithoutCards = player.hasStatus<PS::OMEGA>() ||
