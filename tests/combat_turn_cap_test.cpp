@@ -57,7 +57,7 @@ int main() {
         unsetenv("STS_COMBAT_TURN_CAP");
         refreshEngineFlags();
         require(combatTurnCap() == 100, "LONG_C run build: unset = 100");
-        requireCap(500);
+        requireCap(100);
         setenv("STS_COMBAT_TURN_CAP", "", 1);
         refreshEngineFlags();
         require(combatTurnCap() == 100, "LONG_C run build: empty = 100");

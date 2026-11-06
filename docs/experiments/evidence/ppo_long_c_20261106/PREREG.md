@@ -73,3 +73,38 @@ Act-1 deaths, Act-3 deaths, share of floor-51 runs that kill the Heart; in-sampl
 3. Workers W = 1..40: `bash tools/heart1/ppo_cloud_worker.sh setup|start|wait docs/experiments/evidence/ppo_long_c_20261106 W`
    (two first, the rest after their first part).
 4. End: copy net-0270/0320/0370/0420 for the evaluation, then `ppo_cloud.py cleanup` of the store refs on the PC.
+
+## Deviation from update 271 on: combat turn cap 100 (Philipp, 2026-11-06 15:23 CET)
+Philipp paused LONG_C at update 270 (10:42 CET) and asked to continue with a combat turn cap of 100.
+
+**Why.** A replay of the 18 longest games of LONG_B and LONG_C found that 15 of them had a 420-500-turn fight. In
+these fights Silver ends its turn with energy and attacks in hand, because every playout reaches the 500-turn
+guard and so all moves score the same. The fights were Sentries on floors 6-12, Shapes/Repulsors on floors 36-44
+and a Spiker. 4 of them were lost at the guard with 17-101 HP left, and one such game stalls a whole update for up
+to 40 min. Normal fights last at most 19 turns (21k fights), and the longest legitimate one lasts 34
+(Awakened One). Analysis: thread "Fix stalemate combats in long seeds"; engine option `STS_COMBAT_TURN_CAP`,
+PR #996.
+
+**What changes.** Only the actor binary changes. The run commit is 79baf670 plus #996's two engine commits
+(3072ef43, 7f3e7422) plus one run-branch-only commit (e387fbd4) that makes an unset `STS_COMBAT_TURN_CAP` mean 100.
+The arm's env is frozen in its store config, so the cap travels in the binary. The actors switch through
+`ppo_cloud.py rebin LONG_C --new <sha>`. The config, seeds, recipe, learner and learner state are unchanged. A fight
+whose turn counter passes 100 ends as PLAYER_LOSS, and Silver's playouts see the same cap, so the search starts
+attacking around turn 90.
+
+**Check before the switch (PC, 79baf670 + both #996 commits, with STS_COMBAT_TURN_CAP=100, which means the same as
+the run build left unset).**
+- Cap unset: seed 111558435 reproduces byte-identically, apart from `wall_s`.
+- Cap 100 on the 15 stalemate seeds: every Sentry fight is still won, at the same or higher HP.
+- The 3 Shapes deaths at the guard become wins (111595870, 111619871, 111680130).
+- Wall time drops, e.g. 111680130 from 1,054 to 33 s, and the Sentry seeds run 2-6x faster.
+- Review of #996: K PASS.
+
+**Boundary.** The learner was stopped after net-0270. Every part played before the restart, with the old binary
+78849fcf, is trained as it is. All 40 workers are restarted on the new binary before the learner resumes. Each part
+records its `one_combat_sha256`, so the boundary can be checked from the parts. In-sample curves get a marker at the
+switch.
+
+**Evaluation.** The evaluation stays as preregistered: binary 78849fcf, cap 500, with the reused L220 control. This
+compares nets, not caps, and the stalemate fights are too rare (18 in 140,400 games) to move the result. A
+cap-100 evaluation would be a separate decision.

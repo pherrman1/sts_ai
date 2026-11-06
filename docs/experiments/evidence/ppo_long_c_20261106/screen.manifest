@@ -1,3 +1,3 @@
-code_commit   bc33e4706934c9946a8e1071ec0a1c0f598c467a
-binary_sha256 78849fcf768f6e84bb6341bced818f24bfa11e0a59fa80eae2854cf226379550
+code_commit   e387fbd4058c9d576eedeaab554deb7eff22ac9f
+binary_sha256 63508ecc683a4be937381a5898f39e1a2baa131affcce48f642c637b0dc491c9
 store         git:https://github.com/pherrman1/sts_ai#ppo-xfer/longc

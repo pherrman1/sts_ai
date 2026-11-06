@@ -3,4 +3,4 @@
 Pre-registration and launch order: [PREREG.md](PREREG.md). Arm: [arms.txt](arms.txt). Actors:
 [actors_frozen.env](actors_frozen.env) (combat B, identical to LONG_B's). Binary and store: [screen.manifest](screen.manifest).
 The arm is frozen on the PC by [make_arms.sh](make_arms.sh) (`ppo_cloud.py init --fork-dir … --continue`).
-Status: prepared, not launched (needs Philipp's typed go incl. the worker count).
+Status: launched 2026-11-06 00:49 CET; paused at update 270; from update 271 on, actors play with turn cap 100 (binary 63508ecc, see PREREG "Deviation").
