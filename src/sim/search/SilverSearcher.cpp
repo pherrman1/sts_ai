@@ -807,7 +807,13 @@ double search::SilverSearcher::selectionValue(const Node &node) const {
 int search::SilverSearcher::envMaxBackupMinVisits() {
     static const int value = [] {
         const char *raw = std::getenv("STS_SILVER_MAX_BACKUP");
-        return raw && *raw ? std::max(0, std::atoi(raw)) : 0;
+        if (!raw || !*raw) return 0;
+        // Strict: a typo must not silently run as off (or "4x" as 4).
+        char *end = nullptr;
+        const long v = std::strtol(raw, &end, 10);
+        if (end == raw || *end != '\0' || v < 0 || v > 1000000)
+            throw std::runtime_error("STS_SILVER_MAX_BACKUP must be an integer in [0, 1000000]");
+        return static_cast<int>(v);
     }();
     return value;
 }
@@ -1317,6 +1323,18 @@ double search::SilverSearcher::withVictoryPenalties(const BattleContext &bc, dou
     return score;
 }
 
+double search::SilverSearcher::belowWinCeiling(const BattleContext &bc, double loss) const {
+    // STS_SILVER_LOSS_CEILING: a fight not won (death, turn-cap loss, unresolved playout) scores below a
+    // 0-HP win at the same turn, W - G * exp(-loss / G) with G = winBonus. The default loss value keeps
+    // ordering losses (more damage, longer survival), but its survival and draw credits (up to 150 and
+    // unbounded) no longer outrank ordinary wins: at 17 HP a win is ~74, a turn-65 death ~134, a stalled
+    // turn-450 playout ~81.
+    const double g = evalWeights.winBonus;
+    const double ceiling = context.finalFightLeaf ? evalWeights.winBonus + rootState->player.maxHp
+                                                  : evalWeights.winBonus - bc.turn * evalWeights.victoryTurnPenalty;
+    return ceiling - g * std::exp(std::min(700.0, -loss / g));
+}
+
 double search::SilverSearcher::evaluateEndState(const BattleContext &bc) const {
     if (context.finalBossBinary && context.act == 3 && context.actBossRoom && bc.ascension == 0) {
         // The run ends here. Neither a loss nor an unresolved rollout earns
@@ -1331,11 +1349,12 @@ double search::SilverSearcher::evaluateEndState(const BattleContext &bc) const {
             return evalWeights.winBonus + rootState->player.maxHp;
         const bool spikers = bc.encounter == MonsterEncounter::THREE_SHAPES
             || bc.encounter == MonsterEncounter::FOUR_SHAPES;
-        return (1 - nonMinionMonsterCurHpRatio(bc)) * evalWeights.monsterDamageWeight
+        const double loss = (1 - nonMinionMonsterCurHpRatio(bc)) * evalWeights.monsterDamageWeight
             - bc.monsters.monstersAlive * evalWeights.aliveWeight
             - (spikers ? 0 : bc.energyWasted * evalWeights.energyWasteWeight)
             + bc.cardsDrawn * evalWeights.drawWeight
             + (bc.turn > 100 ? 0 : bc.turn * evalWeights.turnSurvivalWeight);
+        return evalWeights.lossCeiling ? belowWinCeiling(bc, loss) : loss;
     }
     if (priceTable && !priceTable->countersOnly && bc.outcome == Outcome::PLAYER_VICTORY) {
         // Research price-table leaf (SilverPriceTable): the table's state value replaces the HP, potion,
@@ -1394,9 +1413,10 @@ double search::SilverSearcher::evaluateEndState(const BattleContext &bc) const {
     const double aliveScore = bc.monsters.monstersAlive * -evalWeights.aliveWeight;
     // No survival credit for the engine's turn-cap loss, or stalling would pay.
     const double survivalScore = bc.turn > 100 ? 0 : bc.turn * evalWeights.turnSurvivalWeight;
-    return (1 - nonMinionMonsterCurHpRatio(bc)) * evalWeights.monsterDamageWeight + aliveScore
+    const double loss = (1 - nonMinionMonsterCurHpRatio(bc)) * evalWeights.monsterDamageWeight + aliveScore
         + energyPenalty + drawBonus + (context.noLossPotionCredit ? 0 : potionScore / 2) + survivalScore
         + deathSaveValue;
+    return evalWeights.lossCeiling ? belowWinCeiling(bc, loss) : loss;
 }
 
 namespace {

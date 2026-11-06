@@ -85,6 +85,13 @@ namespace sts::search {
         // relative to the state mean) measured for that counter at the Heart's start (§TBD Incense
         // probe). The Heart follows directly, so the counter at the win is the Heart's.
         double incenseHeartPhaseScale = 0;
+        // Research-only (STS_SILVER_LOSS_CEILING=1, default off): every end that is not a win (death,
+        // turn-cap loss, unresolved playout) maps its default loss value L to W - G * exp(-L / G), G =
+        // winBonus, W = the value of a 0-HP win at the same turn (the final-fight leaf's fixed win value
+        // there). Losses keep their order and stay below W (a win with negative escape, Parasite, gold, max-HP or
+        // price-table terms can still fall below it); by default the survival
+        // credit (up to 150) and the uncapped draw credit put deaths and stalemates above low-HP wins.
+        bool lossCeiling = false;
     };
     // Research-only (STS_SILVER_PRICE_TABLE_LEAF, default off; docs/knowledge-base/research/combat-search/silver-price-table-leaf.md):
     // prices from a learned run-value model, computed once per fight at fight start by a builder outside the
@@ -510,6 +517,7 @@ namespace sts::search {
         void enumeratePotionActions(Node &node, const BattleContext &bc);
 
         [[nodiscard]] double evaluateEndState(const BattleContext &bc) const;
+        [[nodiscard]] double belowWinCeiling(const BattleContext &bc, double loss) const;
         // The victory branch's Incense term and its Smoke Bomb / Parasite penalties, applied in order.
         [[nodiscard]] double withIncenseTerm(const BattleContext &bc, double score) const;
         [[nodiscard]] double withVictoryPenalties(const BattleContext &bc, double score) const;

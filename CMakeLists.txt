@@ -613,6 +613,10 @@ add_test(NAME silver_price_table_off_identity
     COMMAND bash ${CMAKE_SOURCE_DIR}/tests/silver_price_table_off_identity.sh $<TARGET_FILE:one_combat>
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 set_tests_properties(silver_price_table_off_identity PROPERTIES LABELS "core")
+add_test(NAME silver_stalemate_flags_log
+    COMMAND bash ${CMAKE_SOURCE_DIR}/tests/silver_stalemate_flags_log.sh $<TARGET_FILE:one_combat>
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+set_tests_properties(silver_stalemate_flags_log PROPERTIES LABELS "core")
 add_executable(heart_leaf_test tests/heart_leaf_test.cpp
     apps/one_combat/heart_leaf.cpp apps/one_combat/run_features.cpp apps/one_combat/compact_tree.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
@@ -924,6 +928,8 @@ add_test(NAME silver_concave_hp_leaf COMMAND $<TARGET_FILE:unit-test> silver_con
 set_tests_properties(silver_concave_hp_leaf PROPERTIES LABELS "core")
 add_test(NAME silver_victory_turn_penalty COMMAND $<TARGET_FILE:unit-test> silver_victory_turn_penalty)
 set_tests_properties(silver_victory_turn_penalty PROPERTIES LABELS "core")
+add_test(NAME silver_loss_ceiling COMMAND $<TARGET_FILE:unit-test> silver_loss_ceiling)
+set_tests_properties(silver_loss_ceiling PROPERTIES LABELS "core")
 add_test(NAME silver_incense_heart_phase COMMAND $<TARGET_FILE:unit-test> silver_incense_heart_phase)
 set_tests_properties(silver_incense_heart_phase PROPERTIES LABELS "core")
 set_tests_properties(silver_rollout_zero_cost_loop PROPERTIES LABELS "core")

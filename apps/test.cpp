@@ -3632,6 +3632,63 @@ int testSilverVictoryTurnPenalty() {
     return 0;
 }
 
+// STS_SILVER_LOSS_CEILING: off is the default leaf; on, every non-win end maps its default loss value L to
+// W - G exp(-L/G) (W = 0-HP win at that turn, G = winBonus): losses keep their order, wins keep their value,
+// and neither a turn-65 death with survival credit nor a turn-cap stalemate outranks a low-HP win.
+int testSilverLossCeiling() {
+    auto fail = [&](const std::string &msg) {
+        std::cout << "silver_loss_ceiling FAIL: " << msg << '\n';
+        return 1;
+    };
+    GameContext gc(CharacterClass::IRONCLAD, 424243, 20);
+    gc.curRoom = Room::MONSTER;
+    BattleContext bc;
+    bc.init(gc, MonsterEncounter::CULTIST);
+    search::SilverSearchContext context;
+    context.act = 1;
+    context.noLossPotionCredit = true;
+    search::SilverSearcher searcher(silverSearchRoot(bc), context);
+    auto end = [&](Outcome outcome, int turn, int hp, int draws, int monsterHp) {
+        BattleContext e = bc;
+        e.outcome = outcome;
+        e.turn = turn;
+        e.player.curHp = hp;
+        e.cardsDrawn = draws;
+        e.potionCount = 0;
+        e.monsters.arr[0].curHp = monsterHp;
+        return e;
+    };
+    const int half = bc.monsters.arr[0].maxHp / 2;
+    const auto capLoss = end(Outcome::PLAYER_LOSS, 501, 40, 2100, half);
+    const auto unresolved = end(Outcome::UNDECIDED, 453, 40, 2100, half);
+    const auto lateDeath = end(Outcome::PLAYER_LOSS, 65, 0, 300, 1);
+    const auto earlyDeath = end(Outcome::PLAYER_LOSS, 5, 0, 20, half);
+    const auto lowWin = end(Outcome::PLAYER_VICTORY, 4, 1, 20, 0);
+    const auto lateWin = end(Outcome::PLAYER_VICTORY, 400, 1, 2000, 0);
+    const auto v = [&](const BattleContext &e) { return searcher.scoreEndState(e); };
+    const double offCap = v(capLoss), offLateDeath = v(lateDeath), offLowWin = v(lowWin), offLateWin = v(lateWin);
+    if (!(offCap > offLateWin)) return fail("fixture lost the default stalemate inversion");
+    if (!(offLateDeath > offLowWin)) return fail("fixture lost the default death inversion");
+    searcher.evalWeights.lossCeiling = true;
+    if (!(v(capLoss) < v(lateWin))) return fail("cap loss still above a late win");
+    if (!(v(unresolved) < v(lateWin))) return fail("unresolved playout still above a later win");
+    if (!(v(lateDeath) < v(lowWin))) return fail("late death still above a low-HP win");
+    if (!(v(lateDeath) > v(earlyDeath))) return fail("loss order lost");
+    if (v(lowWin) != offLowWin || v(lateWin) != offLateWin) return fail("win changed");
+    const double g = searcher.evalWeights.winBonus;
+    const double expected = g - 65 * searcher.evalWeights.victoryTurnPenalty - g * std::exp(-offLateDeath / g);
+    if (std::abs(v(lateDeath) - expected) > 1e-9) return fail("mapping is not W - G exp(-L/G)");
+    auto finalCtx = context; finalCtx.finalFightLeaf = true;
+    search::SilverSearcher finalSearcher(silverSearchRoot(bc), finalCtx);
+    finalSearcher.evalWeights.lossCeiling = true;
+    if (!(finalSearcher.scoreEndState(lateDeath) < finalSearcher.scoreEndState(lowWin)))
+        return fail("final-fight leaf death above its win");
+    searcher.evalWeights.lossCeiling = false;
+    if (v(capLoss) != offCap || v(lateDeath) != offLateDeath) return fail("off is not the default");
+    std::cout << "silver_loss_ceiling PASS\n";
+    return 0;
+}
+
 // Incense Heart phase (STS_SILVER_INCENSE_HEART_PHASE): off by default; on, a Shield & Spear win
 // with Incense Burner moves by scale × the probe's pp for the counter; no other fight, no loss.
 int testSilverIncenseHeartPhase() {
@@ -6982,6 +7039,8 @@ int main(int argc, const char* argv[]) {
         return testSilverConcaveHpLeaf();
     } else if (command == "silver_victory_turn_penalty") {
         return testSilverVictoryTurnPenalty();
+    } else if (command == "silver_loss_ceiling") {
+        return testSilverLossCeiling();
     } else if (command == "silver_incense_heart_phase") {
         return testSilverIncenseHeartPhase();
     } else if (command == "silver_rollout_zero_cost_loop") {
