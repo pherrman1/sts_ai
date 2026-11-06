@@ -26270,3 +26270,40 @@ delivered at analysis time (share inode limit stall, then Philipp stopped the ru
 reuses its D runs, so the PASS is conditional on that sample; a new-seed confirmation comes before a whole-run S&S test.
 Seeds: none new (stage C's).
 **Knowledge impact:** KB `research/combat-search/silver-price-table-leaf.md` (counters-only result).
+## §759 — Silver stalemate fights (LONG_B/LONG_C 420–500-turn fights): two leaf inversions and a mean-backup tie; on the 16 known stall fights `STS_SILVER_MAX_BACKUP=4` wins all 16 in 3–26 turns (base: 12 wins at turns 424–499, 4 turn-cap losses), new `STS_SILVER_LOSS_CEILING` fixes the Fiend Fire loss but not the sure-win ties (replays of used seeds, exploratory, 2026-11-06)
+
+**Question (Philipp, 2026-11-06):** fix both stalemate scenarios: sure-win fights (3 Sentries, Shapes with only
+Repulsors left) that Silver drags to the turn cap, and 111680130 floor 44, where a turn-4 Fiend Fire on the Spiker
+exhausted every attack and the fight was lost at the cap.
+**Diagnosis** (PC replays, `~/longc-diag-out/stalemate/{REPORT,FIENDFIRE}.md`):
+- Sure-win tie: every playout wins at the same HP; End Turn and the best card play are within 0.2–2 mean points at
+  stall roots (111558435 turn 4: End Turn 114 visits / 109.7 vs card 137 / 110.1). Potion edges explored after a card
+  play lower that child's mean (playouts never drink), which outweighs the 0.4/turn victory penalty.
+- Leaf inversion 1 (stalemates): a not-won end keeps the uncapped draw credit and pays no turn penalty. At the
+  111680130 turn-4 root (17/75 HP) Fiend Fire → Spiker had 282 visits, mean 81.2, 0 wins (166 turn-cap losses, 116
+  playouts at the 1,000-action cap, mean end turn 453; draw +63.5, damage +24.5), against Bash children that won 39/39
+  playouts at about 74.3. A greedy line without Fiend Fire wins that turn at 17 HP.
+- Leaf inversion 2 (deaths): survival credit (1.5/turn up to turn 100) puts deaths above low-HP wins (End Turn's 11
+  deaths scored 110.8 there; under a stall-only fix, Burning Pact lines with ~98% deaths at turn ~65 reach 130–140).
+**Intervention:** research flags, default off. `STS_SILVER_LOSS_CEILING=1` (new, #TBD): a non-win end's default loss
+value L becomes W − G·exp(−L/G), G = winBonus, W = a 0-HP win at the same turn, so losses keep their order but stay
+below every win at that turn. `STS_SILVER_MAX_BACKUP=4` (§624, now accepted by `one_combat`). A first variant
+(`STALL_LEAF`: no survival/draw credit and the turn penalty for alive non-win ends after turn 100) was replaced after
+the probe below.
+**Probe:** the 16 stall fights of the LONG_B/LONG_C long games (12 Sentry, 4 Shapes), each arm only on the target
+floor from the same run state; BASE at ba996dee and 4cb624e4 reproduces the original fights decision for decision.
+- BASE: 12 Sentry fights won at turns 424–499, 4 Shapes fights lost at the 501-turn cap.
+- MAXB (m = 4), MAXB + STALL, CEIL + MAXB: all 16 won in 3–26 turns; end HP ≥ BASE in 15/16 (111557779 40 vs 42),
+  e.g. 111604302 13 → 53–57 HP, 111568362 18 → 49, 111595870 loss → 110/110; 111680130 won on turn 3 (MAXB 19 HP,
+  CEIL + MAXB 24 HP). Play changes from turn 0–2.
+- STALL: Sentry fights identical to BASE until turn 489+; 3 Shapes losses become wins at turns 499–500; 111680130
+  avoids the Fiend Fire but dies at turn 84 to inversion 2.
+- CEIL: 111680130 won on turn 4 at 32/75 HP; 111565805 won on turn 19, the other two Shapes losses won at turns
+  499–501; 3/12 Sentry fights shorter (263, 20, 23 turns), 9 still 424–500 turns.
+**Interpretation:** the sure-win stall is a mean-backup tie, which max backup removes; the loss ceiling removes the
+two leaf inversions (the Fiend Fire loss) but not the tie. 16 hand-picked fights say nothing about win rate: §624's
+A20 A/B (max backup + block-first playout) was NOT_SHOWN, max backup costs about +20% CPU per simulation, and the
+learned stop was trained on mean-backup trees.
+**Decision:** both flags stay default off; a whole-run gate on new seeds needs Philipp's go. Seeds: none new
+(replays of LONG_B/LONG_C seeds 111557779–111680130 as listed in PROBE.md).
+**Knowledge impact:** KB `architecture/combat-search.md`, `operations/environment-variables.md`.
