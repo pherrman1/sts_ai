@@ -3632,6 +3632,58 @@ int testSilverVictoryTurnPenalty() {
     return 0;
 }
 
+// STS_SILVER_STALL_LEAF: off is bit-identical; on, a not-won end with the player alive after turn 100
+// (turn-cap loss, unresolved playout) loses survival and draw credit, pays the victory turn penalty and
+// ranks below a late win. Deaths and stalls up to turn 100 keep the default loss value.
+int testSilverStallLeaf() {
+    auto fail = [&](const std::string &msg) {
+        std::cout << "silver_stall_leaf FAIL: " << msg << '\n';
+        return 1;
+    };
+    GameContext gc(CharacterClass::IRONCLAD, 424243, 20);
+    gc.curRoom = Room::MONSTER;
+    BattleContext bc;
+    bc.init(gc, MonsterEncounter::CULTIST);
+    search::SilverSearchContext context;
+    context.act = 1;
+    context.noLossPotionCredit = true;
+    search::SilverSearcher searcher(silverSearchRoot(bc), context);
+    auto end = [&](Outcome outcome, int turn, int hp, int draws) {
+        BattleContext e = bc;
+        e.outcome = outcome;
+        e.turn = turn;
+        e.player.curHp = hp;
+        e.cardsDrawn = draws;
+        e.monsters.arr[0].curHp = e.monsters.arr[0].maxHp / 2;
+        return e;
+    };
+    const auto capLoss = end(Outcome::PLAYER_LOSS, 501, 40, 2000);
+    const auto unresolved = end(Outcome::UNDECIDED, 300, 40, 1500);
+    const auto lateWin = end(Outcome::PLAYER_VICTORY, 400, 1, 2000);
+    const auto death = end(Outcome::PLAYER_LOSS, 7, 0, 30);
+    const auto earlyStall = end(Outcome::UNDECIDED, 60, 40, 300);
+    const double offCap = searcher.scoreEndState(capLoss), offWin = searcher.scoreEndState(lateWin);
+    const double offDeath = searcher.scoreEndState(death), offEarly = searcher.scoreEndState(earlyStall);
+    if (!(offCap > offWin)) return fail("fixture lost the default inversion (cap loss above late win)");
+    searcher.evalWeights.stallLeaf = true;
+    if (!(searcher.scoreEndState(capLoss) < searcher.scoreEndState(lateWin))) return fail("cap loss still above late win");
+    if (!(searcher.scoreEndState(unresolved) < searcher.scoreEndState(end(Outcome::PLAYER_VICTORY, 340, 1, 0))))
+        return fail("unresolved playout above a win 40 turns later");
+    const auto &m = capLoss.monsters.arr[0];
+    const double expected = (1 - static_cast<double>(m.curHp) / m.maxHp) * searcher.evalWeights.monsterDamageWeight - searcher.evalWeights.aliveWeight
+        - capLoss.energyWasted * searcher.evalWeights.energyWasteWeight - 501 * searcher.evalWeights.victoryTurnPenalty;
+    if (std::abs(searcher.scoreEndState(capLoss) - expected) > 1e-9) return fail("stalled value is not damage+alive+energy-turns");
+    if (searcher.scoreEndState(end(Outcome::PLAYER_LOSS, 501, 40, 0)) != searcher.scoreEndState(capLoss))
+        return fail("draw credit survives");
+    if (searcher.scoreEndState(death) != offDeath) return fail("death changed");
+    if (searcher.scoreEndState(earlyStall) != offEarly) return fail("stall up to turn 100 changed");
+    if (searcher.scoreEndState(lateWin) != offWin) return fail("win changed");
+    searcher.evalWeights.stallLeaf = false;
+    if (searcher.scoreEndState(capLoss) != offCap) return fail("off is not the default");
+    std::cout << "silver_stall_leaf PASS\n";
+    return 0;
+}
+
 // Incense Heart phase (STS_SILVER_INCENSE_HEART_PHASE): off by default; on, a Shield & Spear win
 // with Incense Burner moves by scale × the probe's pp for the counter; no other fight, no loss.
 int testSilverIncenseHeartPhase() {
@@ -6982,6 +7034,8 @@ int main(int argc, const char* argv[]) {
         return testSilverConcaveHpLeaf();
     } else if (command == "silver_victory_turn_penalty") {
         return testSilverVictoryTurnPenalty();
+    } else if (command == "silver_stall_leaf") {
+        return testSilverStallLeaf();
     } else if (command == "silver_incense_heart_phase") {
         return testSilverIncenseHeartPhase();
     } else if (command == "silver_rollout_zero_cost_loop") {

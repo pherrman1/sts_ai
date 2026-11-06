@@ -1317,6 +1317,21 @@ double search::SilverSearcher::withVictoryPenalties(const BattleContext &bc, dou
     return score;
 }
 
+bool search::SilverSearcher::stalledEnd(const BattleContext &bc) const {
+    // Not won, player alive, past the 100 turns that earn survival credit: the engine's turn-cap loss or a
+    // playout stopped by the loop guard or its action cap. A death is not a stall.
+    return evalWeights.stallLeaf && bc.outcome != Outcome::PLAYER_VICTORY && bc.player.curHp > 0 && bc.turn > 100;
+}
+
+double search::SilverSearcher::stalledEndValue(const BattleContext &bc, bool spikers) const {
+    // STS_SILVER_STALL_LEAF: the loss branch's damage, alive and energy terms, no survival or draw credit
+    // (both grow with the turn), and the victory branch's turn penalty.
+    return (1 - nonMinionMonsterCurHpRatio(bc)) * evalWeights.monsterDamageWeight
+        - bc.monsters.monstersAlive * evalWeights.aliveWeight
+        - (spikers ? 0 : bc.energyWasted * evalWeights.energyWasteWeight)
+        - bc.turn * evalWeights.victoryTurnPenalty;
+}
+
 double search::SilverSearcher::evaluateEndState(const BattleContext &bc) const {
     if (context.finalBossBinary && context.act == 3 && context.actBossRoom && bc.ascension == 0) {
         // The run ends here. Neither a loss nor an unresolved rollout earns
@@ -1331,6 +1346,7 @@ double search::SilverSearcher::evaluateEndState(const BattleContext &bc) const {
             return evalWeights.winBonus + rootState->player.maxHp;
         const bool spikers = bc.encounter == MonsterEncounter::THREE_SHAPES
             || bc.encounter == MonsterEncounter::FOUR_SHAPES;
+        if (stalledEnd(bc)) return stalledEndValue(bc, spikers);
         return (1 - nonMinionMonsterCurHpRatio(bc)) * evalWeights.monsterDamageWeight
             - bc.monsters.monstersAlive * evalWeights.aliveWeight
             - (spikers ? 0 : bc.energyWasted * evalWeights.energyWasteWeight)
@@ -1389,6 +1405,8 @@ double search::SilverSearcher::evaluateEndState(const BattleContext &bc) const {
 
     const bool couldHaveSpikers = bc.encounter == MonsterEncounter::THREE_SHAPES
         || bc.encounter == MonsterEncounter::FOUR_SHAPES;
+    if (stalledEnd(bc))
+        return stalledEndValue(bc, couldHaveSpikers) + (context.noLossPotionCredit ? 0 : potionScore / 2) + deathSaveValue;
     const double energyPenalty = bc.energyWasted * -evalWeights.energyWasteWeight * (couldHaveSpikers ? 0 : 1);
     const double drawBonus = bc.cardsDrawn * evalWeights.drawWeight;
     const double aliveScore = bc.monsters.monstersAlive * -evalWeights.aliveWeight;

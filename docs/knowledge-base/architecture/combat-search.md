@@ -311,6 +311,13 @@ unchanged. Ledger-06 (#880, 64 paired A20 whole runs) was INCONCLUSIVE: `0`
 lengthens boss fights by ~0.7 turns (all combats 3.99 → 4.16) without stalling;
 Heart kills 17 → 19 and final floor −2.39 [−5.92, +1.06] are noise. The default
 stays 0.4.
+Research-only `STS_SILVER_STALL_LEAF=1` (default off) targets the 420–500-turn
+stalemates found in LONG_B/LONG_C long games: the loss branch's draw credit grows
+with the turn and it pays no turn penalty, so a turn-cap loss at turn 400 scored
+about +84 against about −17 for a win. On, a fight that ends after turn 100 neither
+won nor with the player dead scores damage, alive and energy terms minus
+`victoryTurnPenalty` per turn (no survival or draw credit), and ranks below any
+win within 40 turns of it. Deaths and ends up to turn 100 are unchanged.
 
 `STS_MULTISELECT_MODE=all|single|none` controls subsets. `all` is default and
 the complete validity contract; `single` keeps empty, singleton, and full

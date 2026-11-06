@@ -85,6 +85,12 @@ namespace sts::search {
         // relative to the state mean) measured for that counter at the Heart's start (§TBD Incense
         // probe). The Heart follows directly, so the counter at the win is the Heart's.
         double incenseHeartPhaseScale = 0;
+        // Research-only (STS_SILVER_STALL_LEAF=1, default off): a fight that ends after turn 100 neither won
+        // nor with the player dead (the engine's turn-cap loss, the loop guard, a playout at its action cap)
+        // scores like a loss without survival or draw credit and pays the victory turn penalty for every
+        // turn. Such a stalled line then ranks below any win reached within (winBonus - monsterDamageWeight)
+        // / victoryTurnPenalty turns of it, instead of above late wins (turn-400 cap loss +84 vs win -17).
+        bool stallLeaf = false;
     };
     // Research-only (STS_SILVER_PRICE_TABLE_LEAF, default off; docs/knowledge-base/research/combat-search/silver-price-table-leaf.md):
     // prices from a learned run-value model, computed once per fight at fight start by a builder outside the
@@ -510,6 +516,8 @@ namespace sts::search {
         void enumeratePotionActions(Node &node, const BattleContext &bc);
 
         [[nodiscard]] double evaluateEndState(const BattleContext &bc) const;
+        [[nodiscard]] bool stalledEnd(const BattleContext &bc) const;
+        [[nodiscard]] double stalledEndValue(const BattleContext &bc, bool spikers) const;
         // The victory branch's Incense term and its Smoke Bomb / Parasite penalties, applied in order.
         [[nodiscard]] double withIncenseTerm(const BattleContext &bc, double score) const;
         [[nodiscard]] double withVictoryPenalties(const BattleContext &bc, double score) const;
