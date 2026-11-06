@@ -165,7 +165,7 @@ def load_training(patterns, exclude_patterns, per_game, want_feat, trim_map=Fals
     fn = functools.partial(_train_part, per_game=per_game, want_feat=want_feat, trim_map=trim_map, exclude=exclude,
                            game_frac=game_frac)
     rows = []
-    workers = workers or min(8, os.cpu_count() or 1)
+    workers = workers or min(4, os.cpu_count() or 1)
     if workers > 1 and len(files) > 1:
         import multiprocessing as mp
         with mp.get_context("fork").Pool(workers) as pool:
@@ -288,6 +288,7 @@ def cmd_fit_gbm(argv):
     ap.add_argument("--depth", type=int, default=6)
     ap.add_argument("--eta", type=float, default=0.05)
     ap.add_argument("--min-count", type=int, default=20, help="drop flat features seen in fewer training rows")
+    ap.add_argument("--threads", type=int, default=4, help="xgboost threads (keep the PC usable while LONG_C trains)")
     ap.add_argument("--workers", type=int, default=0)
     ap.add_argument("--out", required=True)
     a = ap.parse_args(argv)
@@ -303,7 +304,8 @@ def cmd_fit_gbm(argv):
     dtr = xgb.DMatrix(to_csr([r["flat"] for r in tr], vocab), label=[r["y"] for r in tr])
     dva = xgb.DMatrix(to_csr([r["flat"] for r in va], vocab), label=[r["y"] for r in va])
     params = {"objective": "binary:logistic", "eval_metric": "logloss", "max_depth": a.depth, "eta": a.eta,
-              "subsample": 0.8, "colsample_bytree": 0.8, "min_child_weight": 20, "tree_method": "hist", "seed": 0}
+              "subsample": 0.8, "colsample_bytree": 0.8, "min_child_weight": 20, "tree_method": "hist", "seed": 0,
+              "nthread": a.threads}
     bst = xgb.train(params, dtr, a.rounds, evals=[(dva, "val")], early_stopping_rounds=100, verbose_eval=200)
     model_path = a.out + ".ubj"
     bst.save_model(model_path)
@@ -353,11 +355,13 @@ def cmd_fit_net(argv):
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--workers", type=int, default=0)
     ap.add_argument("--device", default="cuda" if _cuda() else "cpu")
+    ap.add_argument("--threads", type=int, default=4, help="torch CPU threads")
     ap.add_argument("--out", required=True)
     a = ap.parse_args(argv)
     import torch
     import torch.nn.functional as F
     import ppo_model
+    torch.set_num_threads(a.threads)
     torch.manual_seed(a.seed)
     device = torch.device(a.device)
     net = ppo_model.PolicyNet.from_bin(a.init).to(device)

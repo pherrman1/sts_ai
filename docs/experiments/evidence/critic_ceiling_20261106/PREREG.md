@@ -4,8 +4,10 @@ Philipp, 2026-11-06 17:35 CET, asked for a thread on the PPO critic ("besserer C
 Formung"). It chose "Offline-Messung zuerst" at 17:43 CET. The plan doc (German) is
 https://claude.ai/artifact/9vuBefK6eBKK2AFaZVRhak.
 
-Offline only: no seeds, no games, no workers. LONG_C (run 8816689e) is not touched. Its trajectory parts are read
-only after the run has finished (update 420), on the PC, with the GPU free.
+Offline only: no seeds, no games, no workers. LONG_C (run 8816689e) is not touched: its trajectory parts on the PC
+are only read. Philipp, 2026-11-06 17:55 CET ("Kannst du nicht einfach die neueste Long c version nehmen?"): use the
+newest LONG_C data instead of waiting for update 420. The GBM runs on the PC CPU while LONG_C trains (4 threads); the
+net needs the GPU (after LONG_C) or runs on CPU with fewer games.
 
 ## Question
 
@@ -26,19 +28,21 @@ win chance there varies by 5-10 pp. A GO here means "there is predictable signal
 
 ## Data
 
-- Test: LONG_C parts of iterations 400-419 (20 × 40 parts, ≈ 10,400 games, played by net-0399 … net-0418). The online
-  critic is the `value` field of each decision line, which is what PPO trained with.
-- Training, primary: LONG_C parts of iterations 220-399 (≈ 93,600 games). Secondary (descriptive): also LONG_B parts
-  0-219. `--exclude-from` the test parts, and `evaluate --train-seeds-from` refuses any shared seed.
+- Freeze point N: the newest LONG_C update whose 40 parts are all complete when the run starts, rounded down to a
+  multiple of 20 (N is recorded in the RESULT before any score is read).
+- Test: LONG_C parts of iterations N-20 … N-1 (≈ 10,400 games, played by net-(N-21) … net-(N-2)). The online critic is
+  the `value` field of each decision line, which is what PPO trained with.
+- Training, primary: LONG_C parts of iterations 220 … N-21. Secondary (descriptive): also LONG_B parts 0-219.
+  `--exclude-from` the test parts, and `evaluate --train-seeds-from` refuses any shared seed.
 - Per training game: the first net decision of each act plus 8 more drawn uniformly (seeded by the game seed). If host
-  memory does not fit, `--game-frac` keeps a seed-hashed share. Any value other than 1.0 is reported.
+  memory or CPU time does not fit, `--game-frac` keeps a seed-hashed share. Any value other than 1.0 is reported.
 
 ## Estimators
 
 `tools/heart1/critic_ceiling.py` (tests: `tests/test_critic_ceiling.py`, ctest `critic_ceiling_python`):
 
 - **online**: the logged actor value, clipped to [1e-4, 1 − 1e-4].
-- **net**: the trunk of LONG_C `net-0399.bin` (all actor inputs through `ppo_model.featurize`), with its value head
+- **net**: the trunk of LONG_C `net-(N-21).bin` (the actor net of the first test iteration) (all actor inputs through `ppo_model.featurize`), with its value head
   reset to a logit head at the base rate. Trunk and head train with BCE on the outcome: `--epochs 3 --lr 1e-4
   --head-lr 1e-3 --minibatch 256`. The best epoch is chosen on a 5% seed-hashed split of the training games.
 - **gbm**: xgboost on `flat_features()`. Every record field enters (`RECORD_FIELDS`), and an unknown field is an
@@ -63,5 +67,6 @@ online has a 97.5% game-cluster bootstrap CI (2,000 resamples, seed 20261106) en
 
 ## Cost
 
-The PC GPU for a few hours after LONG_C ends (≈ 22:10 CET 2026-11-06 at the earliest), plus CPU for the GBM.
+The PC CPU for the GBM now; the PC GPU for a few hours after LONG_C ends (≈ 22:10 CET 2026-11-06), or the CPU for a
+smaller net fit.
 No core-hours on cloud workers.
