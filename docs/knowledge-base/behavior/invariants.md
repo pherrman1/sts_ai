@@ -81,7 +81,7 @@ See
 - Combat is lost only by HP loss or the loop guards. An empty hand, draw and
   discard pile is not a loss (`STS_EMPTY_PILE_LOSS_FIX`, default on; the
   legacy mid-turn `PLAYER_LOSS` is kept behind `=0`). Non-terminating fights
-  end through `executeActions`' turn-cap (`STS_COMBAT_TURN_CAP`, 500 by default) and loop-count guards and the
+  end through `executeActions`' `turn > 500` and loop-count guards and the
   native Silver no-progress loop guard (CTest `empty_pile_loss`).
 - Smoke Bomb is a successful combat escape, not a normal rewarded victory. Use
   is valid only outside boss encounters and without `SURROUNDED`; successful

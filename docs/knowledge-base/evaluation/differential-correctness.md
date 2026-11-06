@@ -591,7 +591,7 @@ three rule gaps, each fixed behind a default-on flag with a unit test:
   rule: Combust, Juggernaut, Metallicize, Plated Armor, Mercury Hourglass,
   Stone Calendar, Poison already applied and damage potions can still win.
   `STS_EMPTY_PILE_LOSS_FIX` (default on, `=0` restores the legacy loss)
-  removes it; the `STS_COMBAT_TURN_CAP` guard (500 by default) and Silver's no-progress loop guard bound
+  removes it; the `turn > 500` guard and Silver's no-progress loop guard bound
   a stalled fight (`tests/empty_pile_loss_test.cpp`).
 - A fully blocked or zero-damage hit on a Thorns monster (Spiker; Guardian's Sharp Hide is a separate power)
   dealt no Thorns damage, because Thorns lives in
