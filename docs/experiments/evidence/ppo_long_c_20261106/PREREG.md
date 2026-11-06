@@ -98,6 +98,7 @@ the run build left unset).**
 - Cap 100 on the 15 stalemate seeds: every Sentry fight is still won, at the same or higher HP.
 - The 3 Shapes deaths at the guard become wins (111595870, 111619871, 111680130).
 - Wall time drops, e.g. 111680130 from 1,054 to 33 s, and the Sentry seeds run 2-6x faster.
+- The stalemate fights now last 95-101 turns, and two Shapes fights are won in the last legal turn (101). Silver still stalls until 1-5 turns before the cap, so cap 100 bounds the time but does not fix the behaviour. A heavier stalemate can still be lost at the cap. The fix to the evaluation is a separate thread.
 - Review of #996: K PASS.
 
 **Boundary.** The learner was stopped after net-0270. Every part played before the restart, with the old binary
