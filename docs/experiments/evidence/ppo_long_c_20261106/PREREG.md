@@ -74,7 +74,7 @@ Act-1 deaths, Act-3 deaths, share of floor-51 runs that kill the Heart; in-sampl
    (two first, the rest after their first part).
 4. End: copy net-0270/0320/0370/0420 for the evaluation, then `ppo_cloud.py cleanup` of the store refs on the PC.
 
-## Deviation from update 271 on: combat turn cap 100 (Philipp, 2026-11-06 15:23 CET)
+## Deviation from iteration 272 on: combat turn cap 100 (Philipp, 2026-11-06 15:23 CET)
 Philipp paused LONG_C at update 270 (10:42 CET) and asked to continue with a combat turn cap of 100.
 
 **Why.** A replay of the 18 longest games of LONG_B and LONG_C found that 15 of them had a 420-500-turn fight. In
@@ -101,8 +101,9 @@ the run build left unset).**
 - The stalemate fights now last 95-101 turns, and two Shapes fights are won in the last legal turn (101). Silver still stalls until 1-5 turns before the cap, so cap 100 bounds the time but does not fix the behaviour. A heavier stalemate can still be lost at the cap. The fix to the evaluation is a separate thread.
 - Review of #996: K PASS.
 
-**Boundary.** The learner was stopped after net-0270. Every part played before the restart, with the old binary
-78849fcf, is trained as it is. All 40 workers are restarted on the new binary before the learner resumes. Each part
+**Boundary.** The learner was stopped after net-0270. By then the actors had already played iterations 270 and
+271 (pipeline 1) with the old binary 78849fcf, and these parts are trained as they are. Iteration 272 onward is
+played with 63508ecc (rebin written 2026-11-06 15:42 CET). All 40 workers are restarted on the new binary before the learner resumes. Each part
 records its `one_combat_sha256`, so the boundary can be checked from the parts. In-sample curves get a marker at the
 switch.
 
