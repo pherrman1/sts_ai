@@ -67,6 +67,14 @@ namespace sts {
     std::uint32_t engineFlagEpoch();
     void refreshEngineFlags();
 
+    // STS_COMBAT_TURN_CAP: a fight whose turn counter passes the cap ends as
+    // PLAYER_LOSS (the game has no such rule; the guard bounds non-terminating
+    // fights). Unset or empty = 500, the historical cap; otherwise an integer
+    // in [1, 500], anything else throws. Search rollouts copy the engine, so
+    // they see the same cap. Read once per engine-flag epoch per thread.
+    inline constexpr int kDefaultCombatTurnCap = 500;
+    int combatTurnCap();
+
     // STS_DEAD_TARGET_DEBUFF_FIX: unset or 1 = a debuff or buff on a dead,
     // half-dead or escaped monster does nothing, as in the game
     // (ApplyPowerAction.update returns first when target.isDeadOrEscaped();
@@ -204,7 +212,7 @@ namespace sts {
     // Thorns or bomb; the game has no such rule (Combust, Juggernaut,
     // Metallicize, Plated Armor, Mercury Hourglass, Stone Calendar, applied
     // Poison and damage potions can all still win, and only HP 0 loses).
-    // Non-terminating fights are bounded by the turn > 500 guard in
+    // Non-terminating fights are bounded by the STS_COMBAT_TURN_CAP guard in
     // executeActions and the native Silver no-progress loop guard. 0 =
     // the legacy loss. Other values are fatal. Read only when every pile is
     // empty.
