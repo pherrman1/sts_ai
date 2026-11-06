@@ -75,8 +75,8 @@ namespace sts::search {
             double maxHpWeight = SilverEvalWeights{}.maxHpWeight;
             // Research-only per-turn victory penalty (STS_SILVER_VICTORY_TURN_PENALTY, #880).
             double victoryTurnPenalty = SilverEvalWeights{}.victoryTurnPenalty;
-            // Research-only stalled-end leaf (STS_SILVER_STALL_LEAF, SilverEvalWeights::stallLeaf).
-            bool stallLeaf = false;
+            // Research-only loss ceiling (STS_SILVER_LOSS_CEILING, SilverEvalWeights::lossCeiling).
+            bool lossCeiling = false;
             // Research-only Incense Burner phase term at Shield & Spear (STS_SILVER_INCENSE_HEART_PHASE).
             double incenseHeartPhaseScale = 0;
             // Research-only learned stopping (NativeSilverStopModel.h).
@@ -658,7 +658,7 @@ namespace sts::search {
                     s->evalWeights.goldWeight = g_options.goldWeight;
                     s->evalWeights.maxHpWeight = g_options.maxHpWeight;
                     s->evalWeights.victoryTurnPenalty = g_options.victoryTurnPenalty;
-                    s->evalWeights.stallLeaf = g_options.stallLeaf;
+                    s->evalWeights.lossCeiling = g_options.lossCeiling;
                     s->evalWeights.incenseHeartPhaseScale = g_options.incenseHeartPhaseScale;
                     s->priceTable = priceTable;
                     if (g_nativeSilverPotionWeightOverride)
@@ -1135,10 +1135,10 @@ namespace sts::search {
         }
         if (g_options.goldWeight != SilverEvalWeights{}.goldWeight || g_options.maxHpWeight != SilverEvalWeights{}.maxHpWeight
                 || g_options.victoryTurnPenalty != SilverEvalWeights{}.victoryTurnPenalty
-                || g_options.concaveHpK != 0 || g_options.potionTypeWeightsOn || g_options.stallLeaf)
+                || g_options.concaveHpK != 0 || g_options.potionTypeWeightsOn || g_options.lossCeiling)
             std::cerr << "[silver] research leaf: gold=" << g_options.goldWeight << " maxhp=" << g_options.maxHpWeight
                       << " victoryTurnPenalty=" << g_options.victoryTurnPenalty
-                      << " stallLeaf=" << (g_options.stallLeaf ? 1 : 0)
+                      << " lossCeiling=" << (g_options.lossCeiling ? 1 : 0)
                       << " concave=" << g_options.concaveHpK << " potionWeights=" << (g_options.potionTypeWeightsOn ? "on" : "off")
                       << "\n";
         if (const char *raw = std::getenv("STS_SILVER_LEARNED_STOP")) {
@@ -1258,7 +1258,7 @@ namespace sts::search {
         for (const auto &[name, flag] : {std::pair<const char *, bool *>{"STS_SILVER_NO_LOSS_POTION_CREDIT", &g_options.noLossPotionCredit},
                                           {"STS_SILVER_RELIC_HEAL_LEAF", &g_options.relicHealLeaf},
                                           {"STS_SILVER_A20_BOSS_HEAL_FIX", &g_options.a20BossHealFix},
-                                          {"STS_SILVER_STALL_LEAF", &g_options.stallLeaf}}) {
+                                          {"STS_SILVER_LOSS_CEILING", &g_options.lossCeiling}}) {
             if (const char *raw = std::getenv(name)) {
                 const std::string value(raw);
                 if (value != "0" && value != "1")

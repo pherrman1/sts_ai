@@ -311,13 +311,17 @@ unchanged. Ledger-06 (#880, 64 paired A20 whole runs) was INCONCLUSIVE: `0`
 lengthens boss fights by ~0.7 turns (all combats 3.99 → 4.16) without stalling;
 Heart kills 17 → 19 and final floor −2.39 [−5.92, +1.06] are noise. The default
 stays 0.4.
-Research-only `STS_SILVER_STALL_LEAF=1` (default off) targets the 420–500-turn
-stalemates found in LONG_B/LONG_C long games: the loss branch's draw credit grows
-with the turn and it pays no turn penalty, so a turn-cap loss at turn 400 scored
-about +84 against about −17 for a win. On, a fight that ends after turn 100 neither
-won nor with the player dead scores damage, alive and energy terms minus
-`victoryTurnPenalty` per turn (no survival or draw credit), and ranks below any
-win within 40 turns of it. Deaths and ends up to turn 100 are unchanged.
+Research-only `STS_SILVER_LOSS_CEILING=1` (default off) targets the 420–500-turn
+stalemates found in LONG_B/LONG_C long games and the low-HP inversions behind
+them: the loss branch's draw credit is uncapped and its survival credit reaches
+150, so a turn-cap loss at turn 400 scored about +84 against about −17 for a win,
+and on seed 111680130 (floor 44, 17 HP) a Fiend Fire line that only stalled
+(mean 81.2, draw credit +63.5) and turn-65 deaths (about 134) beat a turn-4 win
+(about 74). On, a non-win end's default value L becomes W − G·exp(−L/G)
+(G = `winBonus`, W = a 0-HP win at that turn): losses keep their order but stay
+below every win at the same turn. `STS_SILVER_MAX_BACKUP` (ledger §624) is the
+tie-breaker candidate for sure-win stalls, where potion edges lower a card play's
+mean below End Turn's; `one_combat` accepts it since 2026-11-06.
 
 `STS_MULTISELECT_MODE=all|single|none` controls subsets. `all` is default and
 the complete validity contract; `single` keeps empty, singleton, and full

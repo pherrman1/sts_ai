@@ -3632,12 +3632,12 @@ int testSilverVictoryTurnPenalty() {
     return 0;
 }
 
-// STS_SILVER_STALL_LEAF: off is bit-identical; on, a not-won end with the player alive after turn 100
-// (turn-cap loss, unresolved playout) loses survival and draw credit, pays the victory turn penalty and
-// ranks below a late win. Deaths and stalls up to turn 100 keep the default loss value.
-int testSilverStallLeaf() {
+// STS_SILVER_LOSS_CEILING: off is the default leaf; on, every non-win end maps its default loss value L to
+// W - G exp(-L/G) (W = 0-HP win at that turn, G = winBonus): losses keep their order, wins keep their value,
+// and neither a turn-65 death with survival credit nor a turn-cap stalemate outranks a low-HP win.
+int testSilverLossCeiling() {
     auto fail = [&](const std::string &msg) {
-        std::cout << "silver_stall_leaf FAIL: " << msg << '\n';
+        std::cout << "silver_loss_ceiling FAIL: " << msg << '\n';
         return 1;
     };
     GameContext gc(CharacterClass::IRONCLAD, 424243, 20);
@@ -3648,39 +3648,44 @@ int testSilverStallLeaf() {
     context.act = 1;
     context.noLossPotionCredit = true;
     search::SilverSearcher searcher(silverSearchRoot(bc), context);
-    auto end = [&](Outcome outcome, int turn, int hp, int draws) {
+    auto end = [&](Outcome outcome, int turn, int hp, int draws, int monsterHp) {
         BattleContext e = bc;
         e.outcome = outcome;
         e.turn = turn;
         e.player.curHp = hp;
         e.cardsDrawn = draws;
-        e.monsters.arr[0].curHp = e.monsters.arr[0].maxHp / 2;
+        e.potionCount = 0;
+        e.monsters.arr[0].curHp = monsterHp;
         return e;
     };
-    const auto capLoss = end(Outcome::PLAYER_LOSS, 501, 40, 2000);
-    const auto unresolved = end(Outcome::UNDECIDED, 300, 40, 1500);
-    const auto lateWin = end(Outcome::PLAYER_VICTORY, 400, 1, 2000);
-    const auto death = end(Outcome::PLAYER_LOSS, 7, 0, 30);
-    const auto earlyStall = end(Outcome::UNDECIDED, 60, 40, 300);
-    const double offCap = searcher.scoreEndState(capLoss), offWin = searcher.scoreEndState(lateWin);
-    const double offDeath = searcher.scoreEndState(death), offEarly = searcher.scoreEndState(earlyStall);
-    if (!(offCap > offWin)) return fail("fixture lost the default inversion (cap loss above late win)");
-    searcher.evalWeights.stallLeaf = true;
-    if (!(searcher.scoreEndState(capLoss) < searcher.scoreEndState(lateWin))) return fail("cap loss still above late win");
-    if (!(searcher.scoreEndState(unresolved) < searcher.scoreEndState(end(Outcome::PLAYER_VICTORY, 340, 1, 0))))
-        return fail("unresolved playout above a win 40 turns later");
-    const auto &m = capLoss.monsters.arr[0];
-    const double expected = (1 - static_cast<double>(m.curHp) / m.maxHp) * searcher.evalWeights.monsterDamageWeight - searcher.evalWeights.aliveWeight
-        - capLoss.energyWasted * searcher.evalWeights.energyWasteWeight - 501 * searcher.evalWeights.victoryTurnPenalty;
-    if (std::abs(searcher.scoreEndState(capLoss) - expected) > 1e-9) return fail("stalled value is not damage+alive+energy-turns");
-    if (searcher.scoreEndState(end(Outcome::PLAYER_LOSS, 501, 40, 0)) != searcher.scoreEndState(capLoss))
-        return fail("draw credit survives");
-    if (searcher.scoreEndState(death) != offDeath) return fail("death changed");
-    if (searcher.scoreEndState(earlyStall) != offEarly) return fail("stall up to turn 100 changed");
-    if (searcher.scoreEndState(lateWin) != offWin) return fail("win changed");
-    searcher.evalWeights.stallLeaf = false;
-    if (searcher.scoreEndState(capLoss) != offCap) return fail("off is not the default");
-    std::cout << "silver_stall_leaf PASS\n";
+    const int half = bc.monsters.arr[0].maxHp / 2;
+    const auto capLoss = end(Outcome::PLAYER_LOSS, 501, 40, 2100, half);
+    const auto unresolved = end(Outcome::UNDECIDED, 453, 40, 2100, half);
+    const auto lateDeath = end(Outcome::PLAYER_LOSS, 65, 0, 300, 1);
+    const auto earlyDeath = end(Outcome::PLAYER_LOSS, 5, 0, 20, half);
+    const auto lowWin = end(Outcome::PLAYER_VICTORY, 4, 1, 20, 0);
+    const auto lateWin = end(Outcome::PLAYER_VICTORY, 400, 1, 2000, 0);
+    const auto v = [&](const BattleContext &e) { return searcher.scoreEndState(e); };
+    const double offCap = v(capLoss), offLateDeath = v(lateDeath), offLowWin = v(lowWin), offLateWin = v(lateWin);
+    if (!(offCap > offLateWin)) return fail("fixture lost the default stalemate inversion");
+    if (!(offLateDeath > offLowWin)) return fail("fixture lost the default death inversion");
+    searcher.evalWeights.lossCeiling = true;
+    if (!(v(capLoss) < v(lateWin))) return fail("cap loss still above a late win");
+    if (!(v(unresolved) < v(lateWin))) return fail("unresolved playout still above a later win");
+    if (!(v(lateDeath) < v(lowWin))) return fail("late death still above a low-HP win");
+    if (!(v(lateDeath) > v(earlyDeath))) return fail("loss order lost");
+    if (v(lowWin) != offLowWin || v(lateWin) != offLateWin) return fail("win changed");
+    const double g = searcher.evalWeights.winBonus;
+    const double expected = g - 65 * searcher.evalWeights.victoryTurnPenalty - g * std::exp(-offLateDeath / g);
+    if (std::abs(v(lateDeath) - expected) > 1e-9) return fail("mapping is not W - G exp(-L/G)");
+    auto finalCtx = context; finalCtx.finalFightLeaf = true;
+    search::SilverSearcher finalSearcher(silverSearchRoot(bc), finalCtx);
+    finalSearcher.evalWeights.lossCeiling = true;
+    if (!(finalSearcher.scoreEndState(lateDeath) < finalSearcher.scoreEndState(lowWin)))
+        return fail("final-fight leaf death above its win");
+    searcher.evalWeights.lossCeiling = false;
+    if (v(capLoss) != offCap || v(lateDeath) != offLateDeath) return fail("off is not the default");
+    std::cout << "silver_loss_ceiling PASS\n";
     return 0;
 }
 
@@ -7034,8 +7039,8 @@ int main(int argc, const char* argv[]) {
         return testSilverConcaveHpLeaf();
     } else if (command == "silver_victory_turn_penalty") {
         return testSilverVictoryTurnPenalty();
-    } else if (command == "silver_stall_leaf") {
-        return testSilverStallLeaf();
+    } else if (command == "silver_loss_ceiling") {
+        return testSilverLossCeiling();
     } else if (command == "silver_incense_heart_phase") {
         return testSilverIncenseHeartPhase();
     } else if (command == "silver_rollout_zero_cost_loop") {

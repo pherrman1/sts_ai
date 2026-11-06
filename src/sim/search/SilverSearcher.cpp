@@ -1317,19 +1317,16 @@ double search::SilverSearcher::withVictoryPenalties(const BattleContext &bc, dou
     return score;
 }
 
-bool search::SilverSearcher::stalledEnd(const BattleContext &bc) const {
-    // Not won, player alive, past the 100 turns that earn survival credit: the engine's turn-cap loss or a
-    // playout stopped by the loop guard or its action cap. A death is not a stall.
-    return evalWeights.stallLeaf && bc.outcome != Outcome::PLAYER_VICTORY && bc.player.curHp > 0 && bc.turn > 100;
-}
-
-double search::SilverSearcher::stalledEndValue(const BattleContext &bc, bool spikers) const {
-    // STS_SILVER_STALL_LEAF: the loss branch's damage, alive and energy terms, no survival or draw credit
-    // (both grow with the turn), and the victory branch's turn penalty.
-    return (1 - nonMinionMonsterCurHpRatio(bc)) * evalWeights.monsterDamageWeight
-        - bc.monsters.monstersAlive * evalWeights.aliveWeight
-        - (spikers ? 0 : bc.energyWasted * evalWeights.energyWasteWeight)
-        - bc.turn * evalWeights.victoryTurnPenalty;
+double search::SilverSearcher::belowWinCeiling(const BattleContext &bc, double loss) const {
+    // STS_SILVER_LOSS_CEILING: a fight not won (death, turn-cap loss, unresolved playout) scores below a
+    // 0-HP win at the same turn, W - G * exp(-loss / G) with G = winBonus. The default loss value keeps
+    // ordering losses (more damage, longer survival), but its survival and draw credits (up to 150 and
+    // unbounded) no longer outrank wins: at 17 HP a win is ~74, a turn-65 death ~134, a stalled
+    // turn-450 playout ~81.
+    const double g = evalWeights.winBonus;
+    const double ceiling = context.finalFightLeaf ? evalWeights.winBonus + rootState->player.maxHp
+                                                  : evalWeights.winBonus - bc.turn * evalWeights.victoryTurnPenalty;
+    return ceiling - g * std::exp(std::min(700.0, -loss / g));
 }
 
 double search::SilverSearcher::evaluateEndState(const BattleContext &bc) const {
@@ -1346,12 +1343,12 @@ double search::SilverSearcher::evaluateEndState(const BattleContext &bc) const {
             return evalWeights.winBonus + rootState->player.maxHp;
         const bool spikers = bc.encounter == MonsterEncounter::THREE_SHAPES
             || bc.encounter == MonsterEncounter::FOUR_SHAPES;
-        if (stalledEnd(bc)) return stalledEndValue(bc, spikers);
-        return (1 - nonMinionMonsterCurHpRatio(bc)) * evalWeights.monsterDamageWeight
+        const double loss = (1 - nonMinionMonsterCurHpRatio(bc)) * evalWeights.monsterDamageWeight
             - bc.monsters.monstersAlive * evalWeights.aliveWeight
             - (spikers ? 0 : bc.energyWasted * evalWeights.energyWasteWeight)
             + bc.cardsDrawn * evalWeights.drawWeight
             + (bc.turn > 100 ? 0 : bc.turn * evalWeights.turnSurvivalWeight);
+        return evalWeights.lossCeiling ? belowWinCeiling(bc, loss) : loss;
     }
     if (priceTable && !priceTable->countersOnly && bc.outcome == Outcome::PLAYER_VICTORY) {
         // Research price-table leaf (SilverPriceTable): the table's state value replaces the HP, potion,
@@ -1405,16 +1402,15 @@ double search::SilverSearcher::evaluateEndState(const BattleContext &bc) const {
 
     const bool couldHaveSpikers = bc.encounter == MonsterEncounter::THREE_SHAPES
         || bc.encounter == MonsterEncounter::FOUR_SHAPES;
-    if (stalledEnd(bc))
-        return stalledEndValue(bc, couldHaveSpikers) + (context.noLossPotionCredit ? 0 : potionScore / 2) + deathSaveValue;
     const double energyPenalty = bc.energyWasted * -evalWeights.energyWasteWeight * (couldHaveSpikers ? 0 : 1);
     const double drawBonus = bc.cardsDrawn * evalWeights.drawWeight;
     const double aliveScore = bc.monsters.monstersAlive * -evalWeights.aliveWeight;
     // No survival credit for the engine's turn-cap loss, or stalling would pay.
     const double survivalScore = bc.turn > 100 ? 0 : bc.turn * evalWeights.turnSurvivalWeight;
-    return (1 - nonMinionMonsterCurHpRatio(bc)) * evalWeights.monsterDamageWeight + aliveScore
+    const double loss = (1 - nonMinionMonsterCurHpRatio(bc)) * evalWeights.monsterDamageWeight + aliveScore
         + energyPenalty + drawBonus + (context.noLossPotionCredit ? 0 : potionScore / 2) + survivalScore
         + deathSaveValue;
+    return evalWeights.lossCeiling ? belowWinCeiling(bc, loss) : loss;
 }
 
 namespace {
