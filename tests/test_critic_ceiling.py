@@ -56,11 +56,26 @@ class CriticCeilingArithmetic(unittest.TestCase):
         b = cc.bootstrap_diff(gid, y, online, good, G, 300, 1)
         self.assertAlmostEqual(b["logloss_diff"], float(cc.logloss(y, good).mean() - cc.logloss(y, online).mean()))
         self.assertAlmostEqual(b["ev_diff"], cc.ev(y, good) - cc.ev(y, online), places=9)
-        self.assertLess(b["logloss_ci975"][1], 0)
+        self.assertLess(b["logloss_ci9875"][1], 0)
+        self.assertGreater(b["ev_ci9875"][0], 0)
         v = cc.verdict({"net": {"act1": b, "all": b}}, 0.02)
         self.assertEqual(v["decision"], "GO")
         same = cc.bootstrap_diff(gid, y, online, online, G, 50, 1)
         self.assertEqual(cc.verdict({"net": {"act1": same, "all": same}}, 0.02)["decision"], "NO_GO")
+
+    def test_platt_recovers_a_logistic_link(self):
+        import critic_ceiling as cc
+        rng = np.random.default_rng(5)
+        acts = rng.integers(1, 5, 20000)
+        v = rng.normal(0.2, 0.15, 20000)
+        true = {1: (-2.0, 3.0), 2: (-1.0, 2.0), 3: (-1.5, 5.0), 4: (0.0, 1.0)}
+        y = (rng.uniform(size=20000) < cc.apply_platt(true, acts, v)).astype(float)
+        cal = cc.fit_platt(acts, v, y)
+        for act in cc.ACTS:
+            self.assertAlmostEqual(cal[act][0], true[act][0], delta=0.25)
+            self.assertAlmostEqual(cal[act][1], true[act][1], delta=0.8)
+        # values <= 0 are mapped to a finite probability, unlike clipping to EPS
+        self.assertGreater(float(cc.apply_platt(cal, [1], [-0.1])[0]), 0.01)
 
     def test_every_record_field_has_a_flat_encoding(self):
         import critic_ceiling as cc
@@ -80,6 +95,10 @@ class CriticCeilingArithmetic(unittest.TestCase):
         self.assertEqual(seen - set(cc.RECORD_FIELDS), set())
         with self.assertRaises(ValueError):
             cc.flat_features(dict(rec, **{"obs.new_field": 1}))
+        with self.assertRaises(ValueError):   # nested fixed_actions keys are checked too
+            cc.flat_features(dict(rec, fixed_actions=[{"action": 3, "new_key": 1}]))
+        x = cc.flat_features(dict(rec, fixed_actions=[{"action": 3, "info": 7}]))
+        self.assertEqual(x.get("fa3_info7"), 1.0)
 
 
 @unittest.skipIf(torch is None, "torch or xgboost not installed")
@@ -143,8 +162,10 @@ class CriticCeilingRoundTrip(unittest.TestCase):
             n_dec = sum(1 for p in test for l in gzip.open(p, "rt")
                         if json.loads(l)["type"] == "decision" and json.loads(l)["source"] in
                         ("heart1_ppo", "heart1_ppo_single"))
-            for k in ("online", "net", "gbm"):
+            for k in ("online", "online_cal", "net", "gbm"):
                 self.assertEqual(rep["estimators"][k]["all"]["n"], n_dec)
+            self.assertEqual(set(rep["bootstrap"]), {"net", "gbm"})   # the rule compares with online_cal
+            self.assertIn("platt_by_act", rep["meta"]["online_cal"])
             self.assertIn(rep["verdict"]["decision"], ("GO", "NO_GO"))
             # the gbm sees the planted gold signal (win 0.8 vs 0.1) that the random online critic cannot
             self.assertGreater(rep["estimators"]["gbm"]["all"]["auc"], 0.75)

@@ -41,12 +41,16 @@ win chance there varies by 5-10 pp. A GO here means "there is predictable signal
 
 `tools/heart1/critic_ceiling.py` (tests: `tests/test_critic_ceiling.py`, ctest `critic_ceiling_python`):
 
-- **online**: the logged actor value, clipped to [1e-4, 1 − 1e-4].
+- **online**: the logged actor value, clipped to [1e-4, 1 − 1e-4] (descriptive only).
+- **online_cal**: the logged value recalibrated per act (Platt, y ~ a + b·v, fitted on the logged values of every
+  net decision in the training parts; no test data). It is the comparator of the decision rule. The value head is
+  trained with MSE, so it is no calibrated probability. A value ≤ 0 in a kill game costs 9.2 nats after clipping, and
+  on cov8 the raw online log loss is 0.965, worse than a constant (review K, F1).
 - **net**: the trunk of LONG_C `net-(N-21).bin` (the actor net of the first test iteration) (all actor inputs through `ppo_model.featurize`), with its value head
   reset to a logit head at the base rate. Trunk and head train with BCE on the outcome: `--epochs 3 --lr 1e-4
   --head-lr 1e-3 --minibatch 256`. The best epoch is chosen on a 5% seed-hashed split of the training games.
-- **gbm**: xgboost on `flat_features()`. Every record field enters (`RECORD_FIELDS`), and an unknown field is an
-  error. Settings: depth 6, eta 0.05, up to 3,000 rounds, early stopping on the same 5% split.
+- **gbm**: xgboost on `flat_features()`. Every record field enters (`RECORD_FIELDS`), and so does every key of
+  each `fixed_actions` entry, including `info` (`FIXED_ACTION_KEYS`). An unknown field or key is an error. Settings: depth 6, eta 0.05, up to 3,000 rounds, early stopping on the same 5% split.
 
 ## Metrics
 
@@ -54,16 +58,26 @@ Computed per act (1-4), at the first decision of the run and over all decisions,
 games: AUC, log loss, Brier, EV = 1 − Var(y − v)/Var(y), and sd of GAE advantages at λ 0.97 and at λ 1 with that
 estimator's values.
 
-## Decision rule (fixed before any score is read)
+## Decision rule (fixed before any score is read; amended 2026-11-06 ≈ 18:05 CET after review K, before any score)
 
-For each offline estimator (net, gbm) and scope (act 1, all decisions): **BETTER** if the log-loss difference against
-online has a 97.5% game-cluster bootstrap CI (2,000 resamples, seed 20261106) entirely below 0 **and** the EV gain is
-≥ 0.02 (point estimate). Bonferroni covers the two estimators; the two scopes are both reported.
+For each offline estimator (net, gbm) and scope (act 1, all decisions), compared with **online_cal**: **BETTER** if all
+three of these hold:
+
+- the log-loss difference has a 98.75% game-cluster bootstrap CI (2,000 resamples, seed 20261106) entirely below 0;
+- the EV gain has a 98.75% CI entirely above 0;
+- the EV gain is ≥ 0.02 (point estimate).
+
+98.75% is Bonferroni over 2 estimators × 2 scopes. Differences against raw online are reported as description.
 
 - **GO** (stage 1 proposal: arm A with Φ = the better offline estimator, needs Philipp's typed go) if any estimator is
   BETTER on any scope.
 - **NO_GO** otherwise. The critic direction is then dropped. The result goes to the ledger, together with the
   remaining lever, paired CRN continuations (option G in the plan doc).
+
+## Known bias
+
+The training games come from older nets (220 … N-21) than the test games (N-20 … N-1). The offline estimators predict
+a slightly different policy's outcome, which works against GO (review K, F4). The RESULT states this.
 
 ## Cost
 

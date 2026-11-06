@@ -12,6 +12,9 @@ No games are played. Inputs are recorded PPO trajectory parts (traj-NNNN-pXX.jso
 Estimators, each a probability of a Heart kill per net decision (sources heart1_ppo and heart1_ppo_single):
   online  the "value" each decision line carries (the actor net's value head, the critic PPO trained with),
           clipped to [EPS, 1 - EPS] for the log loss.
+  online_cal  the same value recalibrated per act (Platt, y ~ a + b v) on the logged values of the --train-seeds-from
+          parts: the comparator of the decision rule, since the MSE-trained head is not a calibrated probability
+          (values <= 0 in kill games cost 9.2 nats each after clipping; review K F1).
   net     a copy of --init (all of the actor's inputs, ppo_model.featurize) whose value head is refitted as a
           logit with binary cross-entropy on the game's outcome; trunk and head train, the policy is not used.
   gbm     xgboost on flat_features(): every record field enters (bags of ids, per-id counts and counters, map
@@ -22,7 +25,8 @@ seed), so long games do not dominate; 5% of the training games (by seed hash) ar
 evaluate scores every net decision of the test games and reports, per act (1-4) and over all decisions: n, AUC,
 log loss, Brier, EV = 1 - Var(y - v) / Var(y) against the game's outcome, and the sd of the GAE advantages
 (gamma 1, terminal reward 1{Heart}) at lambda --lam and at lambda 1, computed with that estimator's values.
-Differences net - online and gbm - online in act-1 and all-decision log loss and EV get a game-cluster bootstrap CI.
+Differences net - online_cal and gbm - online_cal (and, descriptive, against raw online) in act-1 and all-decision
+log loss and EV get a game-cluster bootstrap CI.
 The decision rule (PREREG critic_ceiling_20261106) is applied in "verdict".
 
 Bound worth keeping in mind (no code): with a 0/1 outcome, a critic's MSE against the outcome is Var(y) (1 - EV), so an
@@ -47,6 +51,7 @@ SCHEMA = "heart1-ppo-traj-v1"
 NET_SOURCES = ("heart1_ppo", "heart1_ppo_single")
 EPS = 1e-4
 ACTS = (1, 2, 3, 4)
+FIXED_ACTION_KEYS = {"action", "gold", "card", "relic", "potion", "info"}
 
 # Every record field and how flat_features() uses it (an unlisted field raises: the GBM must see all inputs).
 RECORD_FIELDS = {
@@ -75,7 +80,7 @@ RECORD_FIELDS = {
     "relics_offered": "indicator per offered relic id",
     "potions_offered": "count per offered potion id",
     "offer_prices": "min, max, sum of prices >= 0, number priced",
-    "fixed_actions": "count per action id; gold sum; card/relic/potion ids per action",
+    "fixed_actions": "count per action id; gold sum; card/relic/potion/info ids per action (FIXED_ACTION_KEYS)",
     "paths_offered": "count; per offered path destination room type count; burning elite reach count",
 }
 
@@ -250,7 +255,11 @@ def flat_features(rec):
         add("price_min", min(prices)); add("price_max", max(prices)); add("price_sum", sum(prices))
     add("price_n", len(prices))
     for fa in rec["fixed_actions"]:
+        if set(fa) - FIXED_ACTION_KEYS:
+            raise ValueError(f"fixed_actions keys without a flat encoding: {sorted(set(fa) - FIXED_ACTION_KEYS)}")
         add(f"fa{fa['action']}"); add("fa_gold", fa.get("gold", 0))
+        if fa.get("info", 0):
+            add(f"fa{fa['action']}_info{fa['info']}")
         for k in ("card", "relic", "potion"):
             if k in fa and fa[k] is not None and fa[k] >= 0:
                 add(f"fa_{k}{fa[k]}")
@@ -532,19 +541,51 @@ def bootstrap_diff(gid, y, va, vb, G, B, seed):
     def ci(d, q):
         return [float(np.percentile(d, q)), float(np.percentile(d, 100 - q))]
     return {"games": int(len(Sa)), "logloss_diff": float(lb - la), "logloss_ci95": ci(dl, 2.5),
-            "logloss_ci975": ci(dl, 1.25), "ev_diff": float(eb - ea), "ev_ci95": ci(de, 2.5), "ev_ci975": ci(de, 1.25)}
+            "logloss_ci9875": ci(dl, 0.625), "ev_diff": float(eb - ea), "ev_ci95": ci(de, 2.5),
+            "ev_ci9875": ci(de, 0.625)}
 
 
 def verdict(boot, ev_margin):
-    """PREREG rule: an offline estimator is BETTER on a scope when its log-loss difference vs online has a 97.5% CI
-    (Bonferroni over net/gbm) entirely below 0 and its EV gain is at least ev_margin (point estimate). GO for stage 1
-    when some estimator is BETTER on act 1 or on all decisions; otherwise NO_GO."""
+    """PREREG rule (amended after review K F1/F2): against online_cal (the online critic recalibrated per act on the
+    training parts), an offline estimator is BETTER on a scope when its log-loss difference has a 98.75% CI entirely
+    below 0, its EV-gain 98.75% CI entirely above 0, and its EV gain is at least ev_margin (point estimate); 98.75% =
+    Bonferroni over 2 estimators x 2 scopes. GO for stage 1 when some estimator is BETTER on act 1 or on all
+    decisions; otherwise NO_GO."""
     out = {}
     for name, scopes in boot.items():
-        out[name] = {sc: ("BETTER" if b["logloss_ci975"][1] < 0 and b["ev_diff"] >= ev_margin else "NOT_BETTER")
-                     for sc, b in scopes.items()}
+        out[name] = {sc: ("BETTER" if b["logloss_ci9875"][1] < 0 and b["ev_ci9875"][0] > 0 and b["ev_diff"] >= ev_margin
+                          else "NOT_BETTER") for sc, b in scopes.items()}
     go = any(v == "BETTER" for d in out.values() for v in d.values())
     return {"by_estimator": out, "ev_margin": ev_margin, "decision": "GO" if go else "NO_GO"}
+
+
+def fit_platt(acts, v, y, iters=50, ridge=1e-6):
+    """Per act (1-4): logistic regression y ~ a + b v on the raw logged online value (Newton steps)."""
+    acts, v, y = np.asarray(acts), np.asarray(v, dtype=np.float64), np.asarray(y, dtype=np.float64)
+    out = {}
+    for act in ACTS:
+        m = acts == act
+        if m.sum() < 2 or y[m].min() == y[m].max():
+            yb = float(np.clip(y[m].mean() if m.any() else y.mean(), EPS, 1 - EPS))
+            out[act] = (math.log(yb / (1 - yb)), 0.0)
+            continue
+        X = np.stack([np.ones(int(m.sum())), v[m]], 1)
+        w = np.zeros(2)
+        for _ in range(iters):
+            p = 1 / (1 + np.exp(-(X @ w)))
+            g = X.T @ (p - y[m])
+            H = (X * (p * (1 - p))[:, None]).T @ X + ridge * np.eye(2)
+            step = np.linalg.solve(H, g)
+            w -= step
+            if np.abs(step).max() < 1e-10:
+                break
+        out[act] = (float(w[0]), float(w[1]))
+    return out
+
+
+def apply_platt(cal, acts, v):
+    z = np.array([cal[int(a)][0] + cal[int(a)][1] * x for a, x in zip(acts, v)])
+    return 1 / (1 + np.exp(-z))
 
 
 def cmd_evaluate(argv):
@@ -556,14 +597,21 @@ def cmd_evaluate(argv):
     ap.add_argument("--boot", type=int, default=2000)
     ap.add_argument("--boot-seed", type=int, default=20261106)
     ap.add_argument("--ev-margin", type=float, default=0.02)
-    ap.add_argument("--train-seeds-from", nargs="*", default=[], help="parts used in training: test must not share seeds")
+    ap.add_argument("--train-seeds-from", nargs="*", default=[],
+                    help="parts used in training: test must not share seeds; their logged values fit online_cal")
     ap.add_argument("--out", required=True)
     a = ap.parse_args(argv)
     files = expand(a.test)
-    train_seeds = set()
+    train_seeds, ca, cv, cy = set(), [], [], []
     for p in (expand(a.train_seeds_from) if a.train_seeds_from else []):
-        train_seeds.update(g["seed"] for g in read_part(p))
+        for g in read_part(p):
+            train_seeds.add(g["seed"])
+            for s in g["steps"]:
+                ca.append(act_of(s)); cv.append(float(s["value"])); cy.append(g["y"])
+    cal = fit_platt(ca, cv, cy) if cv else None
     ests = {"online": None}
+    if cal is not None:
+        ests["online_cal"] = None
     if a.net:
         ests["net"] = Net(a.net)
     if a.gbm:
@@ -581,7 +629,10 @@ def cmd_evaluate(argv):
             if not g["steps"]:
                 continue
             recs = [s["record"] for s in g["steps"]]
-            vals = {"online": np.clip(np.array([float(s["value"]) for s in g["steps"]]), EPS, 1 - EPS)}
+            raw = np.array([float(s["value"]) for s in g["steps"]])
+            vals = {"online": np.clip(raw, EPS, 1 - EPS)}
+            if cal is not None:
+                vals["online_cal"] = np.clip(apply_platt(cal, [act_of(s) for s in g["steps"]], raw), EPS, 1 - EPS)
             for k, m in ests.items():
                 if m is not None:
                     vals[k] = np.clip(m.predict(recs), EPS, 1 - EPS)
@@ -599,17 +650,25 @@ def cmd_evaluate(argv):
     for act in ACTS:
         scopes[f"act{act}"] = C["act"] == act
     report = {"schema": "critic-ceiling-report-v1", "test_files": len(files), "games": gid, "lam": a.lam,
-              "estimators": {}, "bootstrap": {}, "meta": {}}
+              "estimators": {}, "bootstrap": {}, "bootstrap_vs_raw_online": {},
+              "meta": {"online_cal": {"platt_by_act": cal, "rows": len(cv)}} if cal is not None else {}}
     for k in ests:
         A_l, A_1 = np.asarray(advs[k]["lam"]), np.asarray(advs[k]["one"])
         report["estimators"][k] = {sc: summarize(C["y"][m], C[k][m], A_l[m], A_1[m]) for sc, m in scopes.items()}
         if ests[k] is not None:
             report["meta"][k] = ests[k].meta if k == "gbm" else {x: y for x, y in ests[k].meta.items() if x != "log"}
     for k in ests:
-        if k == "online":
+        if k in ("online", "online_cal"):
             continue
-        report["bootstrap"][k] = {sc: bootstrap_diff(gids[m], C["y"][m], C["online"][m], C[k][m], gid, a.boot,
-                                                    a.boot_seed) for sc in ("act1", "all") for m in [scopes[sc]]}
+        both = {}
+        for base in ("online_cal", "online"):
+            if base in C:
+                both[base] = {sc: bootstrap_diff(gids[m], C["y"][m], C[base][m], C[k][m], gid, a.boot, a.boot_seed)
+                              for sc in ("act1", "all") for m in [scopes[sc]]}
+        if "online_cal" in both:
+            report["bootstrap"][k] = both["online_cal"]
+        report["bootstrap_vs_raw_online"][k] = both["online"]
+    # The rule needs the recalibrated comparator; without --train-seeds-from there is no verdict.
     report["verdict"] = verdict(report["bootstrap"], a.ev_margin) if report["bootstrap"] else None
     json.dump(report, open(a.out, "w"), indent=1, default=str)
     for k, d in report["estimators"].items():
