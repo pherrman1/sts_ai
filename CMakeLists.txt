@@ -589,6 +589,9 @@ set_tests_properties(heart1_ppo PROPERTIES
 add_test(NAME heart1_ppo_python COMMAND python3 -m unittest discover
     -s ${CMAKE_CURRENT_SOURCE_DIR}/tests -p test_heart1_ppo.py)
 set_tests_properties(heart1_ppo_python PROPERTIES LABELS "core;smoke")
+add_test(NAME critic_ceiling_python COMMAND python3 -m unittest discover
+    -s ${CMAKE_CURRENT_SOURCE_DIR}/tests -p test_critic_ceiling.py)
+set_tests_properties(critic_ceiling_python PROPERTIES LABELS "core;smoke")
 
 # Offline full-state transport for frozen #379 replay; no generated game seeds.
 add_executable(screen_leaf_snapshot_test
