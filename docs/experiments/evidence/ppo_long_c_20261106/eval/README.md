@@ -15,7 +15,7 @@ They are copied to /mnt/project-files/ppo-long-c/nets/. net-0220 is copied from 
 Primary: d = Heart kill L420 − L220 per seed, sprt_gate gainer (d1 = +2 pp), look 64, cap = min(2,048, analysed
 seeds), then the bootstrap fallback. Secondary: L270, L320, L370 vs L220. `python3 analyze.py --self-test` covers
 drops, an abort and a sentinel mismatch (CONTROL_INVALID).
-Cost: 4 × 2,048 + 32 games × ~27 s ≈ 62 core-h. 40 workers (Philipp 2026-11-06 23:43 CET "Ja go auf 40 workern").
+Cost: 4 × 2,048 + 32 games × ~27 s ≈ 62 core-h. 26 workers: Philipp 2026-11-06 23:43 CET "Ja go auf 40 workern", then 23:47 CET split fairly with the MAX_BACKUP gate (26 eval, 14 gate). claim_settle_seconds 60.
 
 Run commit: the branch with the cap-100 commits reverted (212020ff, 315d7706, 4b7a9139; J M1). Its build inputs
 are then equal to bc33e470 again, which `tools/cloud/worker.sh setup` requires.
