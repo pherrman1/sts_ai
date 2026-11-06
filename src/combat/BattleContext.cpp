@@ -44,7 +44,9 @@ namespace sts {
         thread_local Cache cache;
         const std::uint32_t epoch = engineFlagEpoch();
         if (cache.epoch != epoch) {
-            int cap = kDefaultCombatTurnCap;
+            // LONG_C run build only (not for main): unset = 100, the PREREG deviation from update 271 on.
+            // The arm's env is frozen in its store config, so the cap travels in the binary (ppo_cloud.py rebin).
+            int cap = 100;
             if (const char *raw = std::getenv("STS_COMBAT_TURN_CAP"); raw && *raw) {
                 const std::string text(raw);
                 const bool digits = text.size() <= 3
