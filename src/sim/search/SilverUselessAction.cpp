@@ -26,7 +26,7 @@ SilverUselessProof proveSilverUselessBlock(const BattleContext &before, const Ac
     for (int i = 0; i < before.monsters.monsterCount; ++i)
         if (!before.monsters.arr[i].isDeadOrEscaped() && before.monsters.arr[i].isAttacking())
             return reject("incoming_attack");
-    if (before.loopCount >= 900000 || before.turn >= combatTurnCap() || before.undefinedBehaviorEvoked)
+    if (before.loopCount >= 900000 || before.turn >= 500 || before.undefinedBehaviorEvoked)
         return reject("safety_boundary");
 
     // Never let copied diagnostic actions update the live observer or leave a
