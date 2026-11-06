@@ -1133,12 +1133,19 @@ namespace sts::search {
                 std::cerr << "[silver] research leaf: incense heart phase scale=" << g_options.incenseHeartPhaseScale
                           << " HP/pp\n";
         }
+        if (const char *raw = std::getenv("STS_SILVER_LOSS_CEILING")) {
+            const std::string value(raw);
+            if (value != "0" && value != "1") throw std::runtime_error("STS_SILVER_LOSS_CEILING must be 0 or 1");
+            g_options.lossCeiling = value == "1";
+            if (g_options.lossCeiling) std::cerr << "[silver] research leaf: loss ceiling on\n";
+        }
+        if (const int m = SilverSearcher::envMaxBackupMinVisits(); m > 0)
+            std::cerr << "[silver] research search: max backup min visits=" << m << "\n";
         if (g_options.goldWeight != SilverEvalWeights{}.goldWeight || g_options.maxHpWeight != SilverEvalWeights{}.maxHpWeight
                 || g_options.victoryTurnPenalty != SilverEvalWeights{}.victoryTurnPenalty
-                || g_options.concaveHpK != 0 || g_options.potionTypeWeightsOn || g_options.lossCeiling)
+                || g_options.concaveHpK != 0 || g_options.potionTypeWeightsOn)
             std::cerr << "[silver] research leaf: gold=" << g_options.goldWeight << " maxhp=" << g_options.maxHpWeight
                       << " victoryTurnPenalty=" << g_options.victoryTurnPenalty
-                      << " lossCeiling=" << (g_options.lossCeiling ? 1 : 0)
                       << " concave=" << g_options.concaveHpK << " potionWeights=" << (g_options.potionTypeWeightsOn ? "on" : "off")
                       << "\n";
         if (const char *raw = std::getenv("STS_SILVER_LEARNED_STOP")) {
@@ -1257,8 +1264,7 @@ namespace sts::search {
         }
         for (const auto &[name, flag] : {std::pair<const char *, bool *>{"STS_SILVER_NO_LOSS_POTION_CREDIT", &g_options.noLossPotionCredit},
                                           {"STS_SILVER_RELIC_HEAL_LEAF", &g_options.relicHealLeaf},
-                                          {"STS_SILVER_A20_BOSS_HEAL_FIX", &g_options.a20BossHealFix},
-                                          {"STS_SILVER_LOSS_CEILING", &g_options.lossCeiling}}) {
+                                          {"STS_SILVER_A20_BOSS_HEAL_FIX", &g_options.a20BossHealFix}}) {
             if (const char *raw = std::getenv(name)) {
                 const std::string value(raw);
                 if (value != "0" && value != "1")

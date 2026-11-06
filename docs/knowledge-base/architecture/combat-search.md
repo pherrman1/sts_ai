@@ -319,7 +319,8 @@ and on seed 111680130 (floor 44, 17 HP) a Fiend Fire line that only stalled
 (mean 81.2, draw credit +63.5) and turn-65 deaths (about 134) beat a turn-4 win
 (about 74). On, a non-win end's default value L becomes W − G·exp(−L/G)
 (G = `winBonus`, W = a 0-HP win at that turn): losses keep their order but stay
-below every win at the same turn. `STS_SILVER_MAX_BACKUP` (ledger §624) is the
+below a 0-HP win at the same turn (a win with negative escape, Parasite, gold,
+max-HP or price-table terms can still fall below it). `STS_SILVER_MAX_BACKUP` (ledger §624) is the
 tie-breaker candidate for sure-win stalls, where potion edges lower a card play's
 mean below End Turn's; `one_combat` accepts it since 2026-11-06.
 

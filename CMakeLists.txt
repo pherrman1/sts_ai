@@ -613,6 +613,10 @@ add_test(NAME silver_price_table_off_identity
     COMMAND bash ${CMAKE_SOURCE_DIR}/tests/silver_price_table_off_identity.sh $<TARGET_FILE:one_combat>
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 set_tests_properties(silver_price_table_off_identity PROPERTIES LABELS "core")
+add_test(NAME silver_stalemate_flags_log
+    COMMAND bash ${CMAKE_SOURCE_DIR}/tests/silver_stalemate_flags_log.sh $<TARGET_FILE:one_combat>
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+set_tests_properties(silver_stalemate_flags_log PROPERTIES LABELS "core")
 add_executable(heart_leaf_test tests/heart_leaf_test.cpp
     apps/one_combat/heart_leaf.cpp apps/one_combat/run_features.cpp apps/one_combat/compact_tree.cpp
     $<TARGET_OBJECTS:sts_core_objects>)

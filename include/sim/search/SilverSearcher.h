@@ -88,7 +88,8 @@ namespace sts::search {
         // Research-only (STS_SILVER_LOSS_CEILING=1, default off): every end that is not a win (death,
         // turn-cap loss, unresolved playout) maps its default loss value L to W - G * exp(-L / G), G =
         // winBonus, W = the value of a 0-HP win at the same turn (the final-fight leaf's fixed win value
-        // there). Losses keep their order but never outrank a win at the same turn; by default the survival
+        // there). Losses keep their order and stay below W (a win with negative escape, Parasite, gold, max-HP or
+        // price-table terms can still fall below it); by default the survival
         // credit (up to 150) and the uncapped draw credit put deaths and stalemates above low-HP wins.
         bool lossCeiling = false;
     };

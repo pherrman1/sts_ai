@@ -26275,7 +26275,7 @@ Seeds: none new (stage C's).
 **Question (Philipp, 2026-11-06):** fix both stalemate scenarios: sure-win fights (3 Sentries, Shapes with only
 Repulsors left) that Silver drags to the turn cap, and 111680130 floor 44, where a turn-4 Fiend Fire on the Spiker
 exhausted every attack and the fight was lost at the cap.
-**Diagnosis** (PC replays, `~/longc-diag-out/stalemate/{REPORT,FIENDFIRE}.md`):
+**Diagnosis** (PC replays; [FIENDFIRE](evidence/silver_stalemate_20261106/FIENDFIRE.md)):
 - Sure-win tie: every playout wins at the same HP; End Turn and the best card play are within 0.2–2 mean points at
   stall roots (111558435 turn 4: End Turn 114 visits / 109.7 vs card 137 / 110.1). Potion edges explored after a card
   play lower that child's mean (playouts never drink), which outweighs the 0.4/turn victory penalty.
@@ -26285,25 +26285,27 @@ exhausted every attack and the fight was lost at the cap.
   playouts at about 74.3. A greedy line without Fiend Fire wins that turn at 17 HP.
 - Leaf inversion 2 (deaths): survival credit (1.5/turn up to turn 100) puts deaths above low-HP wins (End Turn's 11
   deaths scored 110.8 there; under a stall-only fix, Burning Pact lines with ~98% deaths at turn ~65 reach 130–140).
-**Intervention:** research flags, default off. `STS_SILVER_LOSS_CEILING=1` (new, #TBD): a non-win end's default loss
-value L becomes W − G·exp(−L/G), G = winBonus, W = a 0-HP win at the same turn, so losses keep their order but stay
-below every win at that turn. `STS_SILVER_MAX_BACKUP=4` (§624, now accepted by `one_combat`). A first variant
+**Intervention:** research flags, default off. `STS_SILVER_LOSS_CEILING=1` (new, #997): a non-win end's default loss
+value L becomes W − G·exp(−L/G), G = winBonus, W = a 0-HP win at the same turn, so losses keep their order and stay
+below a 0-HP win at that turn (wins with negative escape, Parasite, gold, max-HP or price-table terms can fall below). `STS_SILVER_MAX_BACKUP=4` (§624, now accepted by `one_combat`). A first variant
 (`STALL_LEAF`: no survival/draw credit and the turn penalty for alive non-win ends after turn 100) was replaced after
 the probe below.
 **Probe:** the 16 stall fights of the LONG_B/LONG_C long games (12 Sentry, 4 Shapes), each arm only on the target
-floor from the same run state; BASE at ba996dee and 4cb624e4 reproduces the original fights decision for decision.
+floor from the same run state; BASE at ba996dee and 4cb624e4 reproduces the original fights decision for decision
+([PROBE](evidence/silver_stalemate_20261106/PROBE.md)). Turns are `bc.turn` at fight end, from 0: the engine declares
+the cap loss once turn > 500, so wins end at turn ≤ 500 and every cap loss shows 501.
 - BASE: 12 Sentry fights won at turns 424–499, 4 Shapes fights lost at the 501-turn cap.
 - MAXB (m = 4), MAXB + STALL, CEIL + MAXB: all 16 won in 3–26 turns; end HP ≥ BASE in 15/16 (111557779 40 vs 42),
   e.g. 111604302 13 → 53–57 HP, 111568362 18 → 49, 111595870 loss → 110/110; 111680130 won on turn 3 (MAXB 19 HP,
-  CEIL + MAXB 24 HP). Play changes from turn 0–2.
+  CEIL + MAXB 24 HP). Play changes from turn 0–3.
 - STALL: Sentry fights identical to BASE until turn 489+; 3 Shapes losses become wins at turns 499–500; 111680130
   avoids the Fiend Fire but dies at turn 84 to inversion 2.
-- CEIL: 111680130 won on turn 4 at 32/75 HP; 111565805 won on turn 19, the other two Shapes losses won at turns
-  499–501; 3/12 Sentry fights shorter (263, 20, 23 turns), 9 still 424–500 turns.
+- CEIL: 111680130 won on turn 4 at 32/75 HP; 111565805 won on turn 19, the other two Shapes losses won at turn
+  499; 3/12 Sentry fights shorter (263, 20, 23 turns), 9 still 424–500 turns.
 **Interpretation:** the sure-win stall is a mean-backup tie, which max backup removes; the loss ceiling removes the
 two leaf inversions (the Fiend Fire loss) but not the tie. 16 hand-picked fights say nothing about win rate: §624's
 A20 A/B (max backup + block-first playout) was NOT_SHOWN, max backup costs about +20% CPU per simulation, and the
 learned stop was trained on mean-backup trees.
 **Decision:** both flags stay default off; a whole-run gate on new seeds needs Philipp's go. Seeds: none new
-(replays of LONG_B/LONG_C seeds 111557779–111680130 as listed in PROBE.md).
+(replays of the LONG_B/LONG_C seeds listed in PROBE.md).
 **Knowledge impact:** KB `architecture/combat-search.md`, `operations/environment-variables.md`.
