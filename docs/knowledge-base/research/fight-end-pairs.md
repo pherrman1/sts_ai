@@ -115,8 +115,9 @@ death save, every other potion 3.7, a max-HP point 2.4 and a gold 0.12 (Silver's
 HP value scaled per act (0.23 / 0.20 / 0.09 / 0.38 pp per HP). They explain the non-HP pairs better than Silver's
 default leaf (+14 bp of skill [8, 20]). Prices per act are not clearly better, and no state-dependent model
 (net-0420's critic, MLP heads on its trunk, LightGBM) beats the global prices: the outcome noise of one pair (about
-40 pp) is too large for per-situation prices at this size, and 2.2 times more units did not improve the HP slope. The
-prices were not gated in whole runs (Philipp, 2026-11-08); §542 found similar cheap potion weights worse.
+40 pp) is too large for per-situation prices at this size, and 2.2 times more units did not improve the HP slope. A
+whole-run gate of P1 and of PF (P1 with every non-Fairy potion at 11) is pre-registered in
+`evidence/silver_leaf_price_gate_20261108/`; §542 found similar cheap potion weights worse.
 
 ## Tests
 

@@ -1,4 +1,4 @@
-# Leaf plan, stage 4: offline fit on all 1,938 pilot units (result, 2026-11-08 00:30 CET; decision 00:40 CET)
+# Leaf plan, stage 4: offline fit on all 1,938 pilot units (result, 2026-11-08 00:30 CET; decisions 00:40 and 00:48 CET)
 
 Exploratory, offline, 0 core-h of new games. Plan: [PLAN.md](PLAN.md) (saved 00:15 CET; its header says 00:20 by
 mistake), written before the fit on all units finished (00:16 CET). Data: the stage-2 pilot (PR #1003, ledger §763),
@@ -7,7 +7,7 @@ w = eligible / sampled. Cross-fitting with 5 folds by unit; unit-cluster bootstr
 
 **Selection by the PLAN rule: P1 (four global prices) is the gate candidate.** It beats Silver's default leaf with
 the whole CI above 0. The per-act prices P4 do not beat P1 clearly, and no state-dependent model beats P1. Philipp
-decided not to gate it (last section).
+asked for the gate with the three proposed arms (last section).
 
 ## Deviations from PLAN.md
 
@@ -38,8 +38,8 @@ per-act HP scale fitted on the HP pairs, so this measures the relative prices of
 
 V0 in `leaf_prices.py` (critic difference, own scale) scores 10.0 [−0.0, 19.8]; the table uses `train_eval.py`'s V0.
 
-By family (point estimates, bp vs C): potions P1 109, P4 124, L 61, V0 116, H2 121, G 54; max HP P1 −1, P4 +1,
-L −1, heads −17 to −31, V0 −31; gold all between −6 and +3. So P1 gains over L on potions (mostly Fairy against the
+By family (point estimates, bp vs C): potions P1 109, P4 124, L 61, V0 116, H2 120, G 54; max HP P1 −1, P4 +1,
+L −1, heads −17 to −25, V0 −31; gold all between −6 and +3. So P1 gains over L on potions (mostly Fairy against the
 rest) and a little on gold. The learned heads match P1 on potions but lose on max HP.
 
 ## P1 prices (HP units, all data; range over the 5 training folds)
@@ -106,14 +106,14 @@ little (heads 0.71-0.80 → 0.79-0.88). Max HP and gold have no usable state dep
   So the measured price is plausibly a lower bound for a good leaf weight. The Fairy price, by contrast, was never
   tested (W kept it at 11) and is the most robust number of the pilot.
 
-## Decision (Philipp, 2026-11-08 00:40 CET): no gate
+## Decision (Philipp, 2026-11-08): gate D / P1 / PF
 
-"Ich glaube wir müssen p1 nicht messen, das ist vermutlich verschwendetes compute." Prices are to follow the E1
-approach instead (fight-luck replays; learned price head thread). A gate was drafted, built and smoke-tested but not
-launched: arms D, P1 and PF (= P1 with every non-Fairy potion at 11), net-0420 policy, combat B,
-`bestbench 1000 1 20`, seeds 111820000-111822047, two SPRTs at α 0.025, ≈ 36 core-h. The draft (PREREG, campaign,
-analysis, smoke logs) is in `/mnt/project-files/leaf-plan/stage4/gate-draft/`; its binary c201818cb248cef2… (main
-ccc53a48) is in the bin cache. Of its seeds only the smokes 111829990-111829991 were played; the block stays unused.
+00:40 CET: "Ich glaube wir müssen p1 nicht messen, das ist vermutlich verschwendetes compute." 00:48 CET: "Na gut
+lass doch p1 messen, die 3 vorgeschlagenen arms von dir." The whole-run gate is pre-registered in
+`../silver_leaf_price_gate_20261108/PREREG.md`: arms D, P1 and PF (= P1 with every non-Fairy potion at 11),
+net-0420 policy, combat B, `bestbench 1000 1 20`, seeds 111820000-111822047, two SPRTs at α 0.025, ≈ 36 core-h.
+Binary c201818cb248cef2… (main ccc53a48) is in the bin cache; the smokes 111829990-111829991 passed in all three arms.
+Prices beyond this gate are to follow the E1 approach (fight-luck replays; learned price head thread).
 
 What carries over:
 
