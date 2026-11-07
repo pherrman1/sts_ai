@@ -85,6 +85,12 @@ Act-1 deaths net-0420 vs net-0220, paired: +2.6 pp. Discordant pairs 243 vs 189,
   (`/mnt/project-files/ppo-long-c/nets/`) as candidates for a later confirmation.
 - No default change. The next step is decided with Philipp.
 
+**Decision update (Philipp, 2026-11-07 08:56 CET):** "eigentlich will ich net 0420 als baseline, 1.5pp ist schon
+enough". net-0420 (sha256 8c0bd16c31499270f192666919e0a11e1d6ca57e2d7a188b6d2a019f3ac742d2) replaces net-0220 as the
+PPO baseline and the start of the next PPO run. This is a choice of starting point, not a gate verdict: the primary
+stays INCONCLUSIVE (+1.46 pp [−0.73, +3.66] vs net-0220). Against heart1 it is +8.15 pp [+5.91, +10.40]. Production
+use still needs its own A/B. Learner state for a continuation: PC `~/ppo-longb/LONG_C/state.pt`.
+
 ## Cost
 - Training actors: 104,000 games, ~20-27 s each, ≈ 600-780 core-h on 40 workers.
 - Evaluation: 8,224 games × ~20 s ≈ 46 core-h on 26 workers (the other 14 ran the MAX_BACKUP gate).
