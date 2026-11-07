@@ -2,7 +2,7 @@
 
 Last verified: 2026-11-07 (`ooc=ppo` and the source row's `heartKill` added for the stage-2 pilot;
 pilot result and inclusion weights in ledger §763; `luck=`, `luck_identity=` and `n=0` added for E1 of the learned
-price head, result in ledger §TBD).
+price head, result in ledger §764).
 
 ## Purpose
 
@@ -72,7 +72,7 @@ run end.
    once more unchanged (replicate 0), which must reproduce the real fight (`identity`). `n=0` (no forks) is
    allowed, for luck-only runs. Source and fork rows are unchanged by `luck=` apart from the source row's
    `luck` tally and its `cost.cpuMs`/`wallMs`, which then include the replays. E1 of the learned price head
-   (§TBD, `docs/experiments/evidence/learned_price_head_e1_20261107/`) replayed the leaf pilot's first block
+   (§764, `docs/experiments/evidence/learned_price_head_e1_20261107/`) replayed the leaf pilot's first block
    this way: the fight-end HP prices from luck and from the pilot's CRN pairs agree within noise (ratio 0.87,
    INCONCLUSIVE against the [0.67, 1.5] band).
 

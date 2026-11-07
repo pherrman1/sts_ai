@@ -26391,7 +26391,7 @@ rate, and its effect on ordinary fights is at best neutral.
 Cost ≈ 30 core-h cloud.
 **Knowledge impact:** none beyond this entry (KB `architecture/combat-search.md` already calls it a research flag).
 
-## §TBD — E1 of the learned price head: fight luck (one fresh replay of every fight) vs the leaf pilot's CRN fork pairs on the same 8,160 A20 source runs (net-0420, combat B): fight-end HP price 0.155 vs 0.178 pp per HP, ratio 0.87 (90% CI [0.60, 1.31]) → INCONCLUSIVE (GO band [0.67, 1.5] missed at the lower end, 95% CI contains 1); luck carries ~25-40× more information per core-h (cloud, 2026-11-07)
+## §764 — E1 of the learned price head: fight luck (one fresh replay of every fight) vs the leaf pilot's CRN fork pairs on the same 8,160 A20 source runs (net-0420, combat B): fight-end HP price 0.155 vs 0.178 pp per HP, ratio 0.87 (90% CI [0.60, 1.31]) → INCONCLUSIVE (GO band [0.67, 1.5] missed at the lower end, 95% CI contains 1); luck carries ~25-40× more information per core-h (cloud, 2026-11-07)
 
 **Question (Philipp, 2026-11-07 09:31 CET: a net that guesses Silver's price table per encounter; E1 go 17:45 CET "jap
 find ich gut, mach das"; 40 workers 22:21 CET):** the price-head design (https://claude.ai/artifact/PzKavVUBmYiitvHLFhg7qp)
