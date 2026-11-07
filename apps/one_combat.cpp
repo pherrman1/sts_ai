@@ -1641,6 +1641,9 @@ finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
     agent.simulationCountTotal = 0;
     agent.rng = std::default_random_engine(agentSeed);
     t_curPath = &path;
+    // ooc=ppo (fightendpairgen): the PPO net decides first, as in the PPO runner; counters per call.
+    std::uint64_t ppoIndex = 0;
+    if (t_counterfactualPpo) one_combat::heart1::ppoBeginGame(gc.seed);
     struct ContinuationScope {
         bool saved = t_oocContinuation;
         ContinuationScope() { t_oocContinuation = true; }
@@ -1735,7 +1738,8 @@ finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
             // The deployed OOC step (§431); useFrozenV4 selects the same step.
             if (gc.screenState == ScreenState::REST_ROOM
                 && search::GameAction::getAllActionsInState(gc).empty()) break;
-            if (!(t_counterfactualHeart1 && one_combat::heart1::policyStep(gc)))
+            const bool byPpo = t_counterfactualPpo && one_combat::heart1::ppoStep(gc, ppoIndex++) != nullptr;
+            if (!byPpo && !(t_counterfactualHeart1 && one_combat::heart1::policyStep(gc)))
                 deployedOocPolicyStep(gc, agent);
         }
     }

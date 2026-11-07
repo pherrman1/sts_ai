@@ -123,6 +123,10 @@ extern thread_local bool t_oocContinuation;
 // Research-only (potionpriceprobe ooc=heart1): finishOocCounterfactual lets the
 // STS_OOC_HEART1 student take each out-of-combat step it encodes before the deployed chain.
 extern thread_local bool t_counterfactualHeart1;
+// Research-only (fightendpairgen ooc=ppo): finishOocCounterfactual lets the STS_OOC_HEART1_PPO net take every
+// out-of-combat step it encodes before any rule, as the PPO runner's chain does (heart1::ppoStep, temperature and
+// salt from the environment); the net's per-game counters restart with each call.
+extern thread_local bool t_counterfactualPpo;
 
 // Match and Keep: one fixed-pattern click (sim/search/MatchAndKeepPolicy.h).
 // Cards are valued by the active guide as a lone card reward: OOC MCTS when

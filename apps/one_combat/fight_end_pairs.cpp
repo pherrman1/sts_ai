@@ -16,6 +16,7 @@
 #include "one_combat/ooc_policy.h"
 #include "one_combat/run_driver.h"
 #include "one_combat/a4_perturb.h"
+#include "one_combat/ooc_mcts_adapter.h"
 
 #include <cmath>
 #include <optional>
@@ -38,6 +39,7 @@ struct FightEndOptions {
     int horizon = -1;                // horizon=end|N (fights per copy; N is for tests)
     int sourceFights = -1;           // source_fights=end|N (tests only)
     bool oocHeart1 = false;          // ooc=heart1: as potionpriceprobe's EXTRA
+    bool oocPpo = false;             // ooc=ppo: the STS_OOC_HEART1_PPO net first, as the PPO runner's chain
 };
 
 std::vector<std::string> splitOn(const std::string &s, char sep) {
@@ -86,8 +88,10 @@ FightEndOptions parseOptions(const std::string &spec) {
         } else if (key == "horizon") o.horizon = value == "end" ? -1 : parsePositive(value, "horizon");
         else if (key == "source_fights") o.sourceFights = value == "end" ? -1 : parsePositive(value, "source_fights");
         else if (key == "ooc") {
-            if (value != "heart1") throw std::runtime_error("fightendpairgen: ooc=heart1 is the only ooc option");
-            o.oocHeart1 = true;
+            if (value != "heart1" && value != "ppo")
+                throw std::runtime_error("fightendpairgen: ooc is heart1 or ppo");
+            o.oocHeart1 = value == "heart1";
+            o.oocPpo = value == "ppo";
         } else throw std::runtime_error("fightendpairgen: unknown option " + key);
     }
     return o;
@@ -97,7 +101,7 @@ nlohmann::json optionsJson(const FightEndOptions &o) {
     return {{"n", o.forksPerRun}, {"rooms", o.rooms}, {"acts", o.acts}, {"strata", o.strata},
             {"horizon", o.horizon < 0 ? nlohmann::json("end") : nlohmann::json(o.horizon)},
             {"source_fights", o.sourceFights < 0 ? nlohmann::json("end") : nlohmann::json(o.sourceFights)},
-            {"ooc", o.oocHeart1 ? "heart1" : "deployed"}};
+            {"ooc", o.oocPpo ? "ppo" : o.oocHeart1 ? "heart1" : "deployed"}};
 }
 
 // ----------------------------------------------------------------- variants
@@ -382,11 +386,24 @@ void fightEndPairGen(int nSeeds, std::uint64_t seedStart, int sims, int asc, con
     if (nSeeds <= 0 || sims <= 0) throw std::runtime_error("fightendpairgen: invalid arguments");
     if (opt.oocHeart1 && !heart1::enabled())
         throw std::runtime_error("fightendpairgen: ooc=heart1 needs STS_OOC_HEART1");
+    if (opt.oocPpo && (!heart1::enabled() || !heart1::ppoEnabled() || liveOocMctsEnabled()))
+        throw std::runtime_error("fightendpairgen: ooc=ppo needs STS_OOC_HEART1, STS_OOC_HEART1_PPO=1 and STS_OOC_MCTS=0");
     struct Heart1Scope {
         bool saved = t_counterfactualHeart1;
         explicit Heart1Scope(bool on) { t_counterfactualHeart1 = on; }
         ~Heart1Scope() { t_counterfactualHeart1 = saved; }
     } heart1Scope(opt.oocHeart1);
+    struct PpoScope {
+        bool saved = t_counterfactualPpo;
+        explicit PpoScope(bool on) { t_counterfactualPpo = on; }
+        ~PpoScope() { t_counterfactualPpo = saved; }
+    } ppoScope(opt.oocPpo);
+    // ooc=ppo: the net's counters of the call just played (decisions, fallbacks), for the rows.
+    const auto ppoCounts = [&]() -> nlohmann::json {
+        const heart1::PpoGameCounts c = heart1::ppoGameCounts();
+        return {{"decisions", c.decisions}, {"single", c.single}, {"fallbacks", c.fallbacks},
+                {"autoGold", c.autoGold}};
+    };
     const nlohmann::json args = {{"nSeeds", nSeeds}, {"seedStart", seedStart}, {"sims", sims}, {"asc", asc},
                                  {"options", optionsJson(opt)},
                                  {"variants", variantSpec.empty() || variantSpec == "default" ? kDefaultVariants
@@ -412,7 +429,11 @@ void fightEndPairGen(int nSeeds, std::uint64_t seedStart, int sims, int asc, con
         std::default_random_engine reservoir(seed * 2862933555777941757ULL + 97);
         int fightEnds = 0, eligible = 0;
         std::map<std::string, int> ineligible;
+        bool sourceLastWon = false;
+        MonsterEncounter sourceLastEncounter = MonsterEncounter::INVALID;
         const OocFightEndObserver observer = [&](const GameContext &gc, const OocFightEnd &fe) {
+            sourceLastWon = fe.won;
+            sourceLastEncounter = fe.encounter;
             if (!fe.won) return;
             ++fightEnds;
             const std::string room = combatEvalRoomClass(fe.room);
@@ -441,12 +462,16 @@ void fightEndPairGen(int nSeeds, std::uint64_t seedStart, int sims, int asc, con
             for (auto &f : r.second) sampled.push_back(std::move(f));
         std::sort(sampled.begin(), sampled.end(),
                   [](const auto &a, const auto &b) { return a.fightIndex < b.fightIndex; });
-        out << nlohmann::json{{"kind", "source"}, {"seed", seed}, {"valid", source.valid}, {"won", source.won},
-                              {"floor", source.floor}, {"fightEnds", fightEnds}, {"eligible", eligible},
-                              {"ineligible", ineligible}, {"sampled", sampled.size()},
-                              {"cost", {{"cpuMs", sourceCost.cpuMs}, {"wallMs", sourceCost.wallMs},
-                                        {"silverSimulations", sourceCost.silverSimulations}}}}.dump()
-            << '\n';
+        const bool sourceHeartKill = source.valid && source.won > 0.5 && sourceLastWon
+            && sourceLastEncounter == MonsterEncounter::THE_HEART;
+        nlohmann::json sourceRow{{"kind", "source"}, {"seed", seed}, {"valid", source.valid}, {"won", source.won},
+                                 {"heartKill", sourceHeartKill},
+                                 {"floor", source.floor}, {"fightEnds", fightEnds}, {"eligible", eligible},
+                                 {"ineligible", ineligible}, {"sampled", sampled.size()},
+                                 {"cost", {{"cpuMs", sourceCost.cpuMs}, {"wallMs", sourceCost.wallMs},
+                                           {"silverSimulations", sourceCost.silverSimulations}}}};
+        if (opt.oocPpo) sourceRow["ppo"] = ppoCounts();
+        out << sourceRow.dump() << '\n';
         std::cout << "[fightendpairgen] seed=" << seed << " sourceFloor=" << source.floor
                   << " sourceWon=" << source.won << " fightEnds=" << fightEnds << " eligible=" << eligible
                   << " sampled=" << sampled.size() << std::endl;
@@ -505,6 +530,7 @@ void fightEndPairGen(int nSeeds, std::uint64_t seedStart, int sims, int asc, con
                     {"deathEncounter", lost && track.died ? encounterName(track.deathEncounter) : ""},
                     {"finalHp", r.hp}, {"fights", track.fights}, {"lastFightFloor", track.lastFloor},
                     {"lastFightHp", track.lastHp}, {"horizon", opt.horizon < 0 ? -1 : opt.horizon}};
+                if (opt.oocPpo) row["ppo"] = ppoCounts();
                 row["silverSims"] = sims;
                 row["cost"] = {{"cpuMs", cost.cpuMs}, {"wallMs", cost.wallMs},
                                {"silverSimulations", cost.silverSimulations},
@@ -567,8 +593,11 @@ void fastSelfTest() {
     }
     const auto o = parseOptions("n=2,rooms=ELITE+BOSS,acts=2+3,strata=room_act,horizon=3,ooc=heart1");
     check(o.forksPerRun == 2 && o.rooms.size() == 2 && o.acts.size() == 2 && o.strata == "room_act"
-              && o.horizon == 3 && o.oocHeart1, "option parse");
-    for (const char *bad : {"n=0", "rooms=SHOP", "acts=5", "strata=floor", "x=1", "n"}) {
+              && o.horizon == 3 && o.oocHeart1 && !o.oocPpo, "option parse");
+    const auto p = parseOptions("n=4,ooc=ppo");
+    check(p.oocPpo && !p.oocHeart1 && optionsJson(p).at("ooc") == "ppo", "ooc=ppo parse");
+    check(optionsJson(parseOptions("-")).at("ooc") == "deployed", "ooc default");
+    for (const char *bad : {"n=0", "rooms=SHOP", "acts=5", "strata=floor", "x=1", "n", "ooc=student"}) {
         bool threw = false;
         try { parseOptions(bad); } catch (const std::runtime_error &) { threw = true; }
         check(threw, std::string("option accepted: ") + bad);

@@ -253,6 +253,9 @@ const char *ppoStep(sts::GameContext &, std::uint64_t decisionIndex);
 // game's lines to STS_OOC_HEART1_PPO_TRAJ under a process-wide lock.
 void ppoBeginGame(std::uint64_t seed);
 void ppoEndGame(const sts::GameContext &, const nlohmann::json &outcome);
+// This thread's counters since the last ppoBeginGame (the [heart1_ppo] game line's fields).
+struct PpoGameCounts { int decisions = 0, single = 0, fallbacks = 0, autoGold = 0; };
+PpoGameCounts ppoGameCounts();
 // Throws std::runtime_error when the sampler or the coverage tokens break their
 // rules (heart1pposelftest).
 void ppoSelfTest();

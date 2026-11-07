@@ -1,6 +1,7 @@
 # Paired fight-end continuations (`fightendpairgen`)
 
-Last verified: 2026-11-05 against the branch that adds the mode (research tooling, no ledger §).
+Last verified: 2026-11-07 (`ooc=ppo` and the source row's `heartKill` added for the stage-2 pilot;
+research tooling, no ledger §).
 
 ## Purpose
 
@@ -45,12 +46,18 @@ run end.
    index) with `finishOocCounterfactual(..., maxFights = -1, bootstrap = false)`: to the run end, no
    model bootstrap. `ooc=heart1` lets the `STS_OOC_HEART1` student take every OOC step it encodes inside
    the continuations (as `potionpriceprobe`'s EXTRA); without it the continuation is the ordinary OOC
-   chain.
+   chain. `ooc=ppo` (needs `STS_OOC_HEART1`, `STS_OOC_HEART1_PPO=1`, `STS_OOC_MCTS=0`) plays the PPO
+   net as the PPO runner's chain does: `heart1::ppoStep` before any rule, with full coverage, no key
+   rule, and temperature and salt from the environment; a screen the net has no choice for falls back to
+   the deployed chain. The net's counters restart with every `finishOocCounterfactual` call and are
+   written as `ppo` (`decisions`, `single`, `fallbacks`, `autoGold`) in the source and copy rows.
+   `ooc=heart1` (the student path: partial coverage, free relics auto-taken, then the rule chain) is
+   not the PPO policy, even with a PPO net loaded.
 
 ## Output
 
-`OUT` is JSONL. One `source` row per seed (source outcome, fight ends, eligible count, ineligible reasons,
-cost), one `skip` row per skipped token, one `copy` row per copy:
+`OUT` is JSONL. One `source` row per seed (source outcome incl. `heartKill`, fight ends, eligible count,
+ineligible reasons, cost), one `skip` row per skipped token, one `copy` row per copy:
 
 - position: `seed`, `fork`, `fightIndex`, `act`, `floor`, `room`, `encounter`, `variant`, `change`,
   `contSeed`;
@@ -66,8 +73,9 @@ cost), one `skip` row per skipped token, one `copy` row per copy:
   per potion, Fairy/Lizard Tail death-save HP as §732's L counts it, max HP, gold, Incense counter) and
   `silverL = hp + 2 maxHp + 11 potions + deathSave`, §732's L. Fight-local terms (win bonus, turn
   penalty) are omitted;
-- `obsV2`: only when `g_fightEndPairsExtraObservation` is set. LONG_B's `obs.v2.*` inputs are not on
-  main (branch lwvhth); a branch that has them sets this hook instead of changing the row code.
+- `obsV2`: only when `g_fightEndPairsExtraObservation` is set (unset on main). Since #989 (LONG_B
+  merged) the `heart1` record itself carries `obs.v2.run_counters` and `obs.v2.fought`, the v2 inputs of
+  the LONG_B/LONG_C nets.
 
 `OUT.manifest.json` records the arguments, `git_sha`, `executable_sha256`,
 `effectiveOocPolicySpecification()`, `effectiveSilverLeafSpecification()`, whether the learned stop is
@@ -80,6 +88,10 @@ pilot the intended setting is §739's cheap proxy, `tools/fight_end_pairs/smoke.
 (`STS_SILVER_LEARNED_STOP=0 STS_SILVER_ACT4_STRONG=0`), `STS_OOC_MCTS=0`, student_sel (`cf6bf7fb`) via
 `STS_OOC_HEART1` and `ooc=heart1`, flexible keys. Under the learned stop the `SIMS` argument does not
 fix the budget (see the rollout-cost note in the ledger); keep it off for labels.
+
+The stage-2 pilot (2026-11-07, `docs/experiments/evidence/fight_end_pairs_pilot_20261107/`) uses Philipp's
+PPO baseline net-0420 instead, with `ooc=ppo` in combat B (LONG_B/LONG_C's evaluation environment): flat
+Silver 1,000, learned stop and Act-4 strong off, g7f_E root and tree prior, temperature 0.
 
 ## Tests
 
