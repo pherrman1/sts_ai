@@ -13,6 +13,8 @@ https://claude.ai/artifact/PzKavVUBmYiitvHLFhg7qp. E0 (offline, §698 replays): 
 - `analyze.py E1_UNITS PILOT_UNITS OUT.json`: gates, luck regression, CRN slope, ratio, decision.
 - `selftest_analyze.py [SEEDS]`: synthetic check of `analyze.py` (known price; same price gives GO, a CRN price
   at half gives FAIL).
+- `RESULT.md`: the run and the decision (**INCONCLUSIVE**: ratio 0.87, 90% CI [0.60, 1.31]); `e1_result.json` (the
+  output of `analyze.py`), `inputs.sha256` (the tars analysed).
 
 Generator: `apps/one_combat/fight_end_pairs.cpp` (`luck=`, `luck_identity=`, `n=0`), KB
 `docs/knowledge-base/research/fight-end-pairs.md`.
