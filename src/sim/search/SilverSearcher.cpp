@@ -188,6 +188,7 @@ void search::SilverSearcher::resetForSearch() {
     decisionStatesUsed = 0;
     stateToNodeUsed = 0;
     std::memset(static_cast<void *>(stateToNode.data()), 0, stateToNode.size() * sizeof(DedupSlot));
+    riskOutcomes.reset();
     root = allocNode();
     root->state = allocDecisionState();
     *root->state = *rootState;
@@ -281,6 +282,7 @@ void search::SilverSearcher::rerootAt(Node *newRoot, bool compact) {
         }
     }
     root = newRoot;
+    riskOutcomes.reset();   // its edges are indexed like the old root's
     *rootState = *newRoot->state;
     retainPublicDamageBeliefs(*rootState);
     retainPublicDamageBeliefs(*root->state);
@@ -429,6 +431,7 @@ void search::SilverSearcher::recordEndpoint(const BattleContext &end, int treeDe
         ++profile->rolloutActions[rolloutDepth];
     }
     if (outcomes) outcomes->record(currentRootEdge, end);
+    if (riskVeto.delta > 0) riskOutcomes.record(currentRootEdge, end);
 }
 
 void search::SilverSearcher::search(std::int64_t simulations) {
@@ -802,6 +805,30 @@ double search::SilverSearcher::selectionValue(const Node &node) const {
     if (maxBackupMinVisits > 0 && node.hasBackedValue && node.simulationCount >= maxBackupMinVisits)
         return node.backedValue;
     return node.evaluationSum / node.simulationCount;
+}
+
+search::SilverSearcher::RiskVeto search::SilverSearcher::envRiskVeto() {
+    static const RiskVeto value = [] {
+        RiskVeto v;
+        const char *raw = std::getenv("STS_SILVER_RISK_VETO");
+        if (!raw || !*raw) return v;
+        // Strict: "delta" or "delta,share", delta in [0, 1] (0 = off), share in [0, 1].
+        const std::string text(raw);
+        const auto comma = text.find(',');
+        const auto number = [&](const std::string &part, double &out) {
+            char *end = nullptr;
+            out = std::strtod(part.c_str(), &end);
+            return !part.empty() && end == part.c_str() + part.size() && std::isfinite(out) && out >= 0 && out <= 1;
+        };
+        double delta = 0, share = v.minShare;
+        const bool ok = number(text.substr(0, comma), delta)
+            && (comma == std::string::npos || number(text.substr(comma + 1), share));
+        if (!ok) throw std::runtime_error("STS_SILVER_RISK_VETO must be delta or delta,share with both in [0, 1]");
+        v.delta = delta;
+        v.minShare = share;
+        return v;
+    }();
+    return value;
 }
 
 int search::SilverSearcher::envMaxBackupMinVisits() {
@@ -1539,6 +1566,33 @@ search::Action search::SilverSearcher::bestAction() const {
         if (root->edges[i].visitCount > maxVisits) {
             maxVisits = root->edges[i].visitCount;
             bestEdgeIdx = i;
+        }
+    }
+    lastRiskVeto = -1;
+    if (riskVeto.delta > 0) {
+        const auto &edges = riskOutcomes.edges;
+        const auto layer = [&](int i) -> const SilverOutcomeCapture::Layer * {
+            if (i >= static_cast<int>(edges.size()) || edges[i].count < std::max<std::int64_t>(1, riskVeto.minSamples))
+                return nullptr;
+            return &edges[i];
+        };
+        const auto deathRate = [](const SilverOutcomeCapture::Layer &l) {
+            return static_cast<double>(l.deaths) / static_cast<double>(l.count);
+        };
+        if (const auto *best = layer(bestEdgeIdx)) {
+            const double bestDeath = deathRate(*best);
+            int pick = -1;
+            for (int i = 0; i < static_cast<int>(root->edges.size()); ++i) {
+                if (i == bestEdgeIdx) continue;
+                const auto *l = layer(i);
+                if (!l || root->edges[i].visitCount < riskVeto.minShare * maxVisits) continue;
+                if (bestDeath - deathRate(*l) < riskVeto.delta) continue;
+                if (pick < 0 || root->edges[i].visitCount > root->edges[pick].visitCount) pick = i;
+            }
+            if (pick >= 0) {
+                lastRiskVeto = pick;
+                bestEdgeIdx = pick;
+            }
         }
     }
     return root->edges[bestEdgeIdx].action;
