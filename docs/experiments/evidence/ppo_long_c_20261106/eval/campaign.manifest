@@ -1,0 +1,15 @@
+name          ppo-long-c-eval
+code_commit   bc33e4706934c9946a8e1071ec0a1c0f598c467a
+binary_sha256 78849fcf768f6e84bb6341bced818f24bfa11e0a59fa80eae2854cf226379550
+workers       26
+share         /mnt/project-files/ppo-long-c/eval
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 90
+claim_settle_seconds 60
+input l220.bin /mnt/project-files/ppo-long-c/nets/net-0220.bin 408b2982a1a8757f4d2146bc81279cc80f5dd22c35dbd5ae048feda82b9c3c19
+input l270.bin /mnt/project-files/ppo-long-c/nets/net-0270.bin e55177a42fd1fcd9fbdc87195f967f9b4c4f324b01bf841136ba5bbca8213ea7
+input l320.bin /mnt/project-files/ppo-long-c/nets/net-0320.bin c955a8c1abb02d8876b317280d8f6e78485d02a0367810e4e5fbb997b62792fe
+input l370.bin /mnt/project-files/ppo-long-c/nets/net-0370.bin 8faba759165855a011000e41a6b27ea2c99ef42bb332d028f239ef48c5d68f1d
+input l420.bin /mnt/project-files/ppo-long-c/nets/net-0420.bin 8c0bd16c31499270f192666919e0a11e1d6ca57e2d7a188b6d2a019f3ac742d2

@@ -31,6 +31,9 @@ ahead. The learner keeps its checkpoint (state.pt) and every net per arm in a lo
         --one-combat-sha SHA --iterations 60 --games 512 --parts 4 --seed-base SEED -- --seed 0 --extra-blocks 2
         (on the learner machine: a new arm that continues BASE's run from its kept checkpoint state-0030.pt, see
         cmd_init; BASE's iteration-30 games are reused, so the arm's actors start at iteration 31)
+    python3 tools/heart1/ppo_cloud.py init STORE ARM --fork-dir LOCAL/BASE --fork-at 220 --continue --local LOCAL ...
+        (a finished source arm extended past its last update: no games are reused, the arm's actors start at
+        iteration 220 with net-0219 as under --pipeline 1, i.e. as if BASE had been frozen with more iterations)
     python3 tools/heart1/ppo_cloud.py actor STORE ARM --part K --one-combat one_combat [--threads 4]
     python3 tools/heart1/ppo_cloud.py serve STORE LOCAL_DIR ARM [ARM ...] [--device cuda]
     python3 tools/heart1/ppo_cloud.py status STORE ARM [ARM ...]
@@ -285,6 +288,9 @@ def cmd_init(argv):
     ap.add_argument("--fork-dir", help="a source arm's learner directory (serve LOCAL/ARM) holding state-N.pt")
     ap.add_argument("--fork-at", type=int, help="the source's update count N to fork at (serve --keep-state N)")
     ap.add_argument("--local", help="with --fork-dir: the serve LOCAL directory the new arm's learner will use")
+    ap.add_argument("--continue", dest="cont", action="store_true",
+                    help="with --fork-dir: extend a source that finished after exactly --fork-at updates (its state.pt "
+                         "and loop.json, or state-N.pt/loop-N.json); no reused games, actors start at iteration N")
     ap.add_argument("--env-file", required=True)
     ap.add_argument("--one-combat-sha", required=True, help="sha256 of the actors' one_combat")
     ap.add_argument("--iterations", type=int, required=True)
@@ -300,6 +306,8 @@ def cmd_init(argv):
         sys.exit("--games must be a multiple of --parts")
     if bool(args.init) == bool(args.fork_dir):
         sys.exit("give exactly one of --init and --fork-dir")
+    if args.cont and not args.fork_dir:
+        sys.exit("--continue needs --fork-dir")
     import ppo_train
     from ppo_model import PolicyNet
     hp = argparse.ArgumentParser(prog="learner")
@@ -338,7 +346,13 @@ def init_fork(args, learner_argv, hparams, store):
     Under --pipeline 1 iteration N was played by net-(N-1), before any arm change exists, so the source's games of
     iteration N are the arm's: its kept parts/traj-N-pK go into the store as the arm's iteration-N parts, and the
     arm's actors start at iteration N+1 with the arm's net-N. Same seeds, games, parts, sims, asc and actor env as
-    the source (checked); the actors' one_combat may differ (a new input arm's binary)."""
+    the source (checked); the actors' one_combat may differ (a new input arm's binary).
+
+    --continue (LONG_C, 2026-11-05): the source finished after exactly N updates, so no iteration-N games exist.
+    state-N.pt/loop-N.json are used if kept, else the source's state.pt/loop.json (checked to be at N). The arm
+    reuses no games: its actors start at iteration N, played by the source's net-(N-1) (pipeline 1, put into the
+    store here), and the learner's first update is N+1, so the arm's games, seeds and nets are those the source
+    would have produced with a larger --iterations."""
     import ppo_train
     import torch
     src, n = os.path.abspath(args.fork_dir), args.fork_at
@@ -361,6 +375,16 @@ def init_fork(args, learner_argv, hparams, store):
     paths = {k: os.path.join(src, v) for k, v in paths.items()}
     n_part = args.games // args.parts
     parts = [os.path.join(src, "parts", f"traj-{n:04d}-p{k}.jsonl.gz") for k in range(args.parts)]
+    if args.cont:
+        parts = []
+        src_loop = json.load(open(paths["loop"])) if os.path.exists(paths["loop"]) else {"iterations": []}
+        if len(src_loop["iterations"]) != n:
+            sys.exit(f"fork --continue: the source's loop.json has {len(src_loop['iterations'])} updates, not {n}")
+        if src_cfg["iterations"] != n:
+            sys.exit(f"fork --continue: the source was frozen with {src_cfg['iterations']} iterations, not {n}")
+        for key, alt in (("state", "state.pt"), ("loop_n", "loop.json")):
+            if not os.path.exists(paths[key]):
+                paths[key] = os.path.join(src, alt)
     for p in list(paths.values()) + parts:
         if not os.path.exists(p):
             sys.exit(f"fork: {p} missing")
@@ -374,6 +398,8 @@ def init_fork(args, learner_argv, hparams, store):
         rec = loop["iterations"][n]
         if rec.get("net") != f"net-{n - 1:04d}" or rec.get("net_sha256") != behaviour:
             sys.exit(f"fork: the source's iteration {n} was played by {rec.get('net')} {rec.get('net_sha256')}")
+    if args.cont and ppo_train.structure_of(hparams) != ppo_train.shape_structure({}):
+        sys.exit("fork --continue: no arch flags (the arm continues the source unchanged)")
     learner = ppo_train.fork_learner(paths["state"], hparams, torch.device("cpu"))
     if learner.iteration != n:
         sys.exit(f"fork: {paths['state']} is at iteration {learner.iteration}, not {n}")
@@ -385,7 +411,8 @@ def init_fork(args, learner_argv, hparams, store):
     net_n = os.path.join(arm_dir, f"net-{n:04d}.bin")
     learner.net.to_bin(net_n)
     shutil.copyfile(paths["net_prev"], os.path.join(arm_dir, f"net-{n - 1:04d}.bin"))
-    fork = {"source_arm": src_cfg["arm"], "source_dir": src, "at": n, "state_sha256": sha256(paths["state"]),
+    fork = {"source_arm": src_cfg["arm"], "source_dir": src, "at": n, "continue": bool(args.cont),
+            "state_sha256": sha256(paths["state"]),
             "loop_sha256": sha256(paths["loop_n"]), "source_net_sha256": sha256(paths["net_n"]),
             "behaviour_net_sha256": behaviour, "arm_net_sha256": sha256(net_n),
             "parts_sha256": [sha256(p) for p in parts], "arm_state_sha256": sha256(os.path.join(arm_dir, "state.pt"))}
@@ -395,11 +422,14 @@ def init_fork(args, learner_argv, hparams, store):
            "one_combat_sha256": args.one_combat_sha, "iterations": args.iterations, "games": args.games,
            "parts": args.parts, "seed_base": args.seed_base, "sims": args.sims, "asc": args.asc,
            "value_warmup": args.value_warmup, "pipeline": args.pipeline, "learner_argv": learner_argv,
-           "start_iteration": n + 1, "fork": fork}
+           "start_iteration": n if args.cont else n + 1, "fork": fork}
     cp = os.path.join(arm_dir, "config.json")
     with open(cp, "w") as f:
         json.dump(cfg, f, indent=1)
     store.put(f"{args.arm}/net-{n:04d}", net_n, {"sha256": fork["arm_net_sha256"], "updates": n})
+    if args.cont:   # iteration N's behaviour net (pipeline 1); the learner deletes it after update N+1
+        store.put(f"{args.arm}/net-{n - 1:04d}", os.path.join(arm_dir, f"net-{n - 1:04d}.bin"),
+                  {"sha256": behaviour, "updates": n - 1})
     for k, p in enumerate(parts):
         store.put(f"{args.arm}/traj-{n:04d}-p{k}", p,
                   {"games": n_part, "sha256": fork["parts_sha256"][k], "net": f"net-{n - 1:04d}",
@@ -407,8 +437,10 @@ def init_fork(args, learner_argv, hparams, store):
                    "host": f"fork:{src_cfg['arm']}", "stalled": 0, "reused_from": src_cfg["arm"]})
     store.put(f"{args.arm}/config", cp, {"sha256": sha256(cp)})
     last = args.seed_base + args.iterations * args.games - 1
-    print(f"{args.arm}: fork of {src_cfg['arm']} at update {n}; actors play iterations {n + 1}..{args.iterations - 1} "
-          f"(seeds {args.seed_base + (n + 1) * args.games}..{last}); state {fork['arm_state_sha256'][:12]}")
+    first = cfg["start_iteration"]
+    print(f"{args.arm}: {'continuation' if args.cont else 'fork'} of {src_cfg['arm']} at update {n}; actors play "
+          f"iterations {first}..{args.iterations - 1} (seeds {args.seed_base + first * args.games}..{last}); "
+          f"state {fork['arm_state_sha256'][:12]}")
 
 
 def kill_stale_child(pidfile):
