@@ -7,6 +7,10 @@
 - `run_unit.sh`: `fightendpairgen 8 FIRST 1000 20 OUT n=4,ooc=ppo default` under net-0420 in combat B.
 - `analyze.py`: the pre-registered analysis.
 - `BRIEF-worker.md`: the Haiku worker brief.
+- `RESULT.md`: the result (GO with the deviation-1 weights; the frozen unweighted analysis is NO-GO).
+- `results/analysis.json`: `analyze.py` on the 1,938 uploaded units.
+- `descriptive.py` and `results/descriptive.json`: the RESULT tables and the descriptive extras (potion types with
+  CIs, source-run cost, weights by act).
 
 Share: `/mnt/project-files/fight-end-pairs-pilot`. Workers run `bash tools/cloud/worker.sh setup|start docs/experiments/evidence/fight_end_pairs_pilot_20261107 W` at RUN_COMMIT.
 

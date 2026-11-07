@@ -1,7 +1,7 @@
 # Paired fight-end continuations (`fightendpairgen`)
 
 Last verified: 2026-11-07 (`ooc=ppo` and the source row's `heartKill` added for the stage-2 pilot;
-research tooling, no ledger §).
+pilot result and inclusion weights in ledger §TBD).
 
 ## Purpose
 
@@ -26,6 +26,12 @@ run end.
 2. **Sampling.** A reservoir of `n` forks per source run (per stratum with `strata=`), filtered by
    `rooms=` (`NORMAL`, `ELITE`, `BOSS`, `OTHER` = event fights; default the first three) and `acts=`.
    The reservoir RNG is seeded from the source seed only.
+   **Weights.** A run with K eligible fight ends (per stratum) gives each of them with probability
+   min(n, K) / K, and K depends on the run's own future. The base copy replays the source run exactly,
+   so unweighted, forks of runs that die soon after the fight are over-sampled and the base outcome is
+   biased towards a loss. Every analysis of these pairs must weight each fork by `eligible / sampled`
+   of its source row (exact for `strata=none`; per stratum otherwise). In the stage-2 pilot the
+   unweighted HP price even has the wrong sign (§TBD).
 3. **Copies.** Each fork gives `base` plus one copy per `VARIANTS` token. Every change touches only its
    own field and no game `Random`:
 
@@ -93,6 +99,15 @@ The stage-2 pilot (2026-11-07, `docs/experiments/evidence/fight_end_pairs_pilot_
 PPO baseline net-0420 instead, with `ooc=ppo` in combat B (LONG_B/LONG_C's evaluation environment): flat
 Silver 1,000, learned stop and Act-4 strong off, g7f_E root and tree prior, temperature 0.
 
+## Stage-2 pilot result (§TBD)
+
+1,938 units, 15,504 A20 source runs under net-0420 (`ooc=ppo`, combat B), 61,739 forks with 6.5 copies each,
+weighted by `eligible / sampled`. Every change costs Heart kill in acts 1-3. The HP slope is 0.192 pp per HP
+[0.147, 0.234] (acts 1-3); the 8-HP price is −1.93 / −1.68 / −0.49 pp in acts 1 / 2 / 3, resolved at z ≥ 3 in acts
+1-2 only. At that slope a potion is worth 12.0 HP (Fairy 75 HP, the others 3.6 HP), a max-HP point 2.9 HP and a gold
+0.13 HP. Right after the act-1 and act-2 bosses HP is nearly free, since the act transition heals 75% of the missing
+HP at A20. Per cell, 10-21% of the pairs disagree, and the pairing efficiency ρ is 0.47-0.77.
+
 ## Tests
 
 - `one_combat fightendpairselftest` (CTest `fight_end_pairs`, labels `core;smoke`): spec parsing and
@@ -121,6 +136,10 @@ seeds 111459990-993, binary `119323af` of commit `f166386b`, four processes on a
 - Stage-2 pilot projection (512 games × 4 fight ends × base + 6 ≈ 14k continuations): about 40 core-h
   at this mix, plus about 2 core-h of source runs; more if the pilot's Heart reach rate is higher than in
   these four seeds (1 Heart kill in 4 source runs).
+- Stage-2 pilot (net-0420, `ooc=ppo`, combat B): 16.8 s per continuation (acts 1-4: 14.3, 19.6, 22.1, 8.0 s),
+  20.7 s per source run, 3.98 forks per run and 6.48 copies per fork; 1,958 core-h for 1,938 units of 8 runs. About
+  59 min wall per unit on one lane (p90 88 min, max 160 min). One failing continuation kills the whole unit
+  (10 of 1,948 units ended rc 1; the repro of one of them is a `CombatStateFailure` stall).
 - Label noise: the copies share RNG streams, but one different OOC decision (route, rest, shop) changes
   every later draw, so single-copy outcomes diverge widely (e.g. 111459993 fork 1: base dies on floor 29,
   `hp:-8` kills the Heart). Expected; the pilot's sample size has to carry it.
