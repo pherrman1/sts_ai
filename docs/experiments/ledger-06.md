@@ -26379,9 +26379,9 @@ change. Seeds: none. Cost ≈ 5.5 h PC (GPU ≈ 19 min), no cloud core-hours.
 sims) ends all 16 known stall fights early. Does it also win more on normal A20 runs?
 **Data:** [PREREG](evidence/silver_maxbackup_gate_20261106/PREREG.md),
 [RESULT](evidence/silver_maxbackup_gate_20261106/RESULT.md), `result.json`. Run commit e58879bb (main c01bad53 +
-campaign files), binary 73a32e99…, `bestbench 1000 1 20`, net-0220, seeds 111760000–111762047. Run stopped 17:33 CET
+campaign files), binary 73a32e99…, `bestbench 1000 1 20`, net-0220, seeds 111760000–111762047. Run stopped 18:33 CET
 for LONG_C and relaunched unchanged 23:57 CET (14 workers); no analysis before the end, every unit played.
-**Result:** 2,045 pairs (3 seeds dropped: games killed by the 17:33 CET stop; 1 combat abort in D, counted as a
+**Result:** 2,045 pairs (3 seeds dropped: games killed by the 18:33 CET stop; 1 combat abort in D, counted as a
 loss). Heart D 21.96%, M 21.66%, d −0.29 pp [−2.20, +1.61]. SPRT gainer (d0 0, d1 +2 pp): H0 at 640 pairs →
 NOT_SHOWN. Nonregression (d0 −1.5 pp): CAP, bootstrap lo −2.20 → not NOT_WORSE. Act-3 clears −0.05 pp
 [−2.25, +2.15]; final floor −0.50 [−1.21, +0.21]; cpu M/D 1.018; no game over 300 s in either arm.
