@@ -26343,7 +26343,7 @@ Seeds: 111654400-111758399 USED (training); the evaluation reused G1's 111520000
 training actors plus ~46 core-h of evaluation.
 **Knowledge impact:** KB `research/a20-ppo-plan.md` (LONG_C row).
 
-## §TBD — Offline critic ceiling check for the PPO critic (stage 0 of the act-1 critic plan): a separate-trunk BCE net and an all-field GBM trained offline on LONG_C 220–399 do not beat LONG_C's recalibrated online critic on 10,400 held-out games (400–419), act 1 or overall (act-1 AUC 0.655 / 0.662 vs 0.671, EV 0.062 / 0.063 vs 0.072; log loss worse, 98.75% CIs above 0) → NO_GO, no learned Φ / better-critic arm for act 1 (PC, offline, no seeds, 2026-11-07)
+## §761 — Offline critic ceiling check for the PPO critic (stage 0 of the act-1 critic plan): a separate-trunk BCE net and an all-field GBM trained offline on LONG_C 220–399 do not beat LONG_C's recalibrated online critic on 10,400 held-out games (400–419), act 1 or overall (act-1 AUC 0.655 / 0.662 vs 0.671, EV 0.062 / 0.063 vs 0.072; log loss worse, 98.75% CIs above 0) → NO_GO, no learned Φ / better-critic arm for act 1 (PC, offline, no seeds, 2026-11-07)
 
 **Question (Philipp, 2026-11-06 17:35 CET "besserer Critic oder potential basierte Formung?"; "Offline-Messung zuerst"
 17:43 CET; "Go" 23:32 CET):** the PPO critic barely predicts the outcome in act 1 (§756). Does a critic trained offline

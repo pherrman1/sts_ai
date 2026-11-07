@@ -182,7 +182,7 @@ Screen 1 tested only one reward change (REW_ORIG, NOT_SHOWN). Reward design is a
 
 **Screen 2 result (§751).** Potential-based shaping (floor table or logistic state potential) and an act/key bonus did not beat the control; a critic pre-trained on screen 1's games with Monte Carlo targets did (+0.74 pp, narrow). Screen-level hypothesis (Inference): the lever is the critic's calibration at the start, not the reward's shape. The reward stays 1{Heart}.
 
-**Critic ceiling (§TBD, 2026-11-07).** On LONG_C's last 20 updates, a separate-trunk BCE critic and an all-field GBM trained offline on 180 earlier updates do not beat the online critic recalibrated per act (act-1 AUC 0.66 vs 0.67, EV 0.06 vs 0.07). Act 1 looks near its ceiling at this data scale. A better critic or a learned Φ (PBRS equals the critic Φ + V under GAE) is therefore not a lever for act-1 credit. More games per update and paired CRN continuations remain.
+**Critic ceiling (§761, 2026-11-07).** On LONG_C's last 20 updates, a separate-trunk BCE critic and an all-field GBM trained offline on 180 earlier updates do not beat the online critic recalibrated per act (act-1 AUC 0.66 vs 0.67, EV 0.06 vs 0.07). Act 1 looks near its ceiling at this data scale. A better critic or a learned Φ (PBRS equals the critic Φ + V under GAE) is therefore not a lever for act-1 credit. More games per update and paired CRN continuations remain.
 
 ## Known limitations and open questions
 
