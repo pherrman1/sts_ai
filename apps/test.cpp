@@ -3632,6 +3632,171 @@ int testSilverVictoryTurnPenalty() {
     return 0;
 }
 
+// STS_SILVER_RISK_VETO (research, default off). Part 1: on a real A20 Gremlin Nob search, recording the
+// per-edge playout ends never changes the search (same root visits as off) and off records nothing.
+// Part 2: on that root with set visits and playout counts, bestAction keeps the most-visited edge b unless
+// another edge j with at least share * b's visits and minSamples resolved playouts dies at least delta less
+// often than b; then it plays the most-visited such j. The expected pick is recomputed here for a grid of
+// settings and checked against named cases.
+int testSilverRiskVeto() {
+    int failures = 0;
+    const auto check = [&failures](bool ok, const std::string &msg) {
+        if (!ok) { std::cout << "    " << msg << '\n'; ++failures; }
+    };
+    GameContext gc(CharacterClass::IRONCLAD, 0x415C5u, 20);
+    gc.curRoom = Room::ELITE;
+    BattleContext bc;
+    bc.init(gc, MonsterEncounter::GREMLIN_NOB);
+    bc.player.curHp = 60;   // the playouts both win and die here
+    search::SilverSearchContext context;
+    context.act = 1;
+    constexpr int kSims = 3000;
+    search::SilverSearcher off(silverSearchRoot(bc), context);
+    off.riskVeto = {};
+    off.search(kSims);
+    search::SilverSearcher on(silverSearchRoot(bc), context);
+    on.riskVeto = {0.05, 0.25, 32};
+    on.search(kSims);
+    const auto &offEdges = off.rootNode().edges;
+    auto &onEdges = const_cast<search::SilverSearcher::Node &>(on.rootNode()).edges;
+    check(offEdges.size() == onEdges.size() && offEdges.size() >= 4, "fixture has the same >= 4 root edges");
+    if (offEdges.size() != onEdges.size() || onEdges.size() < 4) {
+        std::cout << "silver_risk_veto FAIL (fixture)\n";
+        return 1;
+    }
+    bool sameVisits = true;
+    for (std::size_t i = 0; i < offEdges.size(); ++i)
+        sameVisits = sameVisits && offEdges[i].visitCount == onEdges[i].visitCount
+            && offEdges[i].action.bits == onEdges[i].action.bits;
+    check(sameVisits, "recording for the veto changed the search");
+    check(off.riskOutcomeCapture().root.count == 0, "off records nothing");
+    const auto &real = on.riskOutcomeCapture();
+    std::int64_t edgeSum = 0;
+    for (const auto &l : real.edges) edgeSum += l.count + l.unresolved;
+    check(real.root.deaths > 0 && real.root.deaths < real.root.count, "fixture has both deaths and wins");
+    check(edgeSum == real.root.count + real.root.unresolved && real.root.count + real.root.unresolved >= kSims,
+          "every playout end is recorded under its root edge");
+
+    // Part 2: set visits and per-edge (deaths, resolved playouts) on the same root.
+    auto &cap = const_cast<search::SilverOutcomeCapture &>(real);
+    const auto set = [&](int i, std::int32_t visits, std::int64_t deaths, std::int64_t count) {
+        onEdges[i].visitCount = visits;
+        if (cap.edges.size() <= static_cast<std::size_t>(i)) cap.edges.resize(i + 1);
+        cap.edges[i] = {};
+        cap.edges[i].deaths = deaths;
+        cap.edges[i].count = count;
+    };
+    for (int i = 4; i < static_cast<int>(onEdges.size()); ++i) set(i, 0, 0, 0);
+    set(0, 100, 50, 100);   // b: death 0.50
+    set(1, 60, 20, 60);     // 0.33, share 0.6
+    set(2, 20, 2, 40);      // 0.05, share 0.2
+    set(3, 5, 0, 40);       // 0.00, share 0.05
+    const auto played = [&]() {
+        const auto a = on.bestAction();
+        for (int i = 0; i < static_cast<int>(onEdges.size()); ++i) if (onEdges[i].action.bits == a.bits) return i;
+        return -1;
+    };
+    const auto expected = [&](const search::SilverSearcher::RiskVeto &v) {
+        int best = 0;
+        for (int i = 1; i < static_cast<int>(onEdges.size()); ++i)
+            if (onEdges[i].visitCount > onEdges[best].visitCount) best = i;
+        const auto rate = [&](int i) -> double {
+            if (i >= static_cast<int>(cap.edges.size()) || cap.edges[i].count < v.minSamples) return -1;
+            return static_cast<double>(cap.edges[i].deaths) / static_cast<double>(cap.edges[i].count);
+        };
+        if (v.delta <= 0 || rate(best) < 0) return best;
+        int pick = -1;
+        for (int i = 0; i < static_cast<int>(onEdges.size()); ++i) {
+            if (i == best || rate(i) < 0 || onEdges[i].visitCount < v.minShare * onEdges[best].visitCount) continue;
+            if (rate(best) - rate(i) < v.delta) continue;
+            if (pick < 0 || onEdges[i].visitCount > onEdges[pick].visitCount) pick = i;
+        }
+        return pick < 0 ? best : pick;
+    };
+    struct Case { double delta, share; std::int64_t samples; int want; const char *what; };
+    const Case cases[] = {
+        {0.0, 0.25, 32, 0, "delta 0 is off"},
+        {0.1, 0.25, 32, 1, "a safer edge with enough visits overrules b"},
+        {0.2, 0.25, 32, 0, "edge 1 is not delta safer; edge 2 lacks visits"},
+        {0.2, 0.1, 32, 2, "lower share admits edge 2"},
+        {0.1, 0.1, 32, 1, "most-visited safe edge wins over the safest"},
+        {0.1, 0.0, 32, 1, "share 0 admits all edges, most visited safe edge plays"},
+        {0.6, 0.0, 32, 0, "no edge is 0.6 safer"},
+        {0.2, 0.1, 50, 0, "edge 2 lacks resolved playouts"},
+        {0.1, 0.25, 101, 0, "b lacks resolved playouts"},
+        {0.5, 0.0, 1, 3, "equal-to-delta difference counts"},
+    };
+    for (const auto &c : cases) {
+        on.riskVeto = {c.delta, c.share, c.samples};
+        check(played() == c.want, std::string("case: ") + c.what);
+        check((on.lastRiskVetoEdge() >= 0) == (c.want != 0), std::string("telemetry: ") + c.what);
+    }
+    for (const double delta : {0.0, 1e-9, 0.02, 0.05, 0.1, 0.2, 0.3, 0.45, 0.5, 1.0})
+        for (const double share : {0.0, 0.05, 0.1, 0.2, 0.25, 0.5, 0.6, 1.0})
+            for (const std::int64_t samples : {std::int64_t{1}, std::int64_t{32}, std::int64_t{41}, std::int64_t{100000}}) {
+                on.riskVeto = {delta, share, samples};
+                check(played() == expected(on.riskVeto), "grid pick differs from the rule");
+            }
+    on.setRoot(silverSearchRoot(bc));
+    check(on.riskOutcomeCapture().root.count == 0 && on.riskOutcomeCapture().edges.empty(), "setRoot clears the capture");
+    if (failures == 0) { std::cout << "silver_risk_veto PASS\n"; return 0; }
+    std::cout << "silver_risk_veto FAIL (" << failures << " cases)\n";
+    return 1;
+}
+
+// Stage 0 of the combat-network plan: production Silver's search root (nativeSilverSearchRoot) is a
+// function of public information only. Two live states that differ only in the order of the unobserved
+// draw pile and in all six live combat RNG streams must give the same root, the same root visit counts
+// and the same played action, with the risk veto off and on.
+int testSilverHiddenInfoDecisionInvariance() {
+    int failures = 0;
+    const auto check = [&failures](bool ok, const std::string &msg) {
+        if (!ok) { std::cout << "    " << msg << '\n'; ++failures; }
+    };
+    int compared = 0;
+    for (const auto encounter : {MonsterEncounter::GREMLIN_NOB, MonsterEncounter::JAW_WORM, MonsterEncounter::LAGAVULIN}) {
+        GameContext gc(CharacterClass::IRONCLAD, 0xFA1Bu + static_cast<int>(encounter), 20);
+        gc.curRoom = encounter == MonsterEncounter::JAW_WORM ? Room::MONSTER : Room::ELITE;
+        BattleContext live;
+        live.init(gc, encounter);
+        BattleContext other = live;
+        auto &pile = other.cards.drawPile.concreteCards();
+        check(pile.size() >= 2, "fixture draw pile has two cards");
+        if (pile.size() < 2) continue;
+        std::reverse(pile.begin(), pile.end());
+        other.aiRng = Random(101); other.cardRandomRng = Random(102); other.miscRng = Random(103);
+        other.monsterHpRng = Random(104); other.potionRng = Random(105); other.shuffleRng = Random(106);
+        for (const double delta : {0.0, 0.05}) {
+            search::CombatKnowledgeState liveKnowledge, otherKnowledge;
+            liveKnowledge.initializeFromLiveBattle(live);
+            otherKnowledge.initializeFromLiveBattle(other);
+            BattleContext liveRoot, otherRoot;
+            const auto e1 = search::nativeSilverSearchRoot(live, liveKnowledge, liveRoot);
+            const auto e2 = search::nativeSilverSearchRoot(other, otherKnowledge, otherRoot);
+            check(e1.empty() && e2.empty(), "native root not representable: " + e1 + e2);
+            if (!e1.empty() || !e2.empty()) continue;
+            check(liveRoot.equalForSearch(otherRoot), "hidden draw order or live RNG reached the search root");
+            search::SilverSearchContext context;
+            context.act = 1;
+            search::SilverSearcher a(liveRoot, context), b(otherRoot, context);
+            a.riskVeto = b.riskVeto = {delta, 0.25, 32};
+            a.search(2000);
+            b.search(2000);
+            const auto &ea = a.rootNode().edges, &eb = b.rootNode().edges;
+            bool same = ea.size() == eb.size();
+            for (std::size_t i = 0; same && i < ea.size(); ++i)
+                same = ea[i].visitCount == eb[i].visitCount && ea[i].action.bits == eb[i].action.bits;
+            check(same, "root visits differ under hidden-information changes");
+            check(a.bestAction().bits == b.bestAction().bits, "played action differs under hidden-information changes");
+            ++compared;
+        }
+    }
+    check(compared == 6, "not every fixture was compared");
+    if (failures == 0) { std::cout << "silver_hidden_info_invariance PASS\n"; return 0; }
+    std::cout << "silver_hidden_info_invariance FAIL (" << failures << " cases)\n";
+    return 1;
+}
+
 // STS_SILVER_LOSS_CEILING: off is the default leaf; on, every non-win end maps its default loss value L to
 // W - G exp(-L/G) (W = 0-HP win at that turn, G = winBonus): losses keep their order, wins keep their value,
 // and neither a turn-65 death with survival credit nor a turn-cap stalemate outranks a low-HP win.
@@ -7041,6 +7206,10 @@ int main(int argc, const char* argv[]) {
         return testSilverVictoryTurnPenalty();
     } else if (command == "silver_loss_ceiling") {
         return testSilverLossCeiling();
+    } else if (command == "silver_risk_veto") {
+        return testSilverRiskVeto();
+    } else if (command == "silver_hidden_info_invariance") {
+        return testSilverHiddenInfoDecisionInvariance();
     } else if (command == "silver_incense_heart_phase") {
         return testSilverIncenseHeartPhase();
     } else if (command == "silver_rollout_zero_cost_loop") {

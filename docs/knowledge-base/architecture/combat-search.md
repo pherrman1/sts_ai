@@ -324,6 +324,16 @@ max-HP or price-table terms can still fall below it). `STS_SILVER_MAX_BACKUP` (l
 tie-breaker candidate for sure-win stalls, where potion edges lower a card play's
 mean below End Turn's; `one_combat` accepts it since 2026-11-06.
 
+Research-only `STS_SILVER_RISK_VETO=delta[,share]` (default off, 2026-11-07) is
+stage R of the combat-network plan: a risk-averse root choice without a network.
+Silver keeps its most-visited root edge unless another edge with at least
+`share` (default 0.25) of its visits dies at least `delta` less often in its
+resolved playouts (both edges with 32 or more); then it plays the most-visited
+such edge. It only changes `bestAction`; the search itself is unchanged
+(`silver_risk_veto`). `silver_hidden_info_invariance` checks that production
+Silver's search root, root visits and played action do not change when the
+unobserved draw-pile order and all six live combat RNG streams change.
+
 `STS_MULTISELECT_MODE=all|single|none` controls subsets. `all` is default and
 the complete validity contract; `single` keeps empty, singleton, and full
 selections; `none` keeps only empty. By default (ADR-0034) masks selecting the
