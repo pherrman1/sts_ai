@@ -1141,6 +1141,9 @@ namespace sts::search {
         }
         if (const int m = SilverSearcher::envMaxBackupMinVisits(); m > 0)
             std::cerr << "[silver] research search: max backup min visits=" << m << "\n";
+        if (const auto v = SilverSearcher::envRiskVeto(); v.delta > 0)
+            std::cerr << "[silver] research search: risk veto delta=" << v.delta << " share=" << v.minShare
+                      << " min samples=" << v.minSamples << "\n";
         if (g_options.goldWeight != SilverEvalWeights{}.goldWeight || g_options.maxHpWeight != SilverEvalWeights{}.maxHpWeight
                 || g_options.victoryTurnPenalty != SilverEvalWeights{}.victoryTurnPenalty
                 || g_options.concaveHpK != 0 || g_options.potionTypeWeightsOn)

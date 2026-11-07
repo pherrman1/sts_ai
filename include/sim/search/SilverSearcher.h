@@ -376,6 +376,24 @@ namespace sts::search {
         // simulation's path; the root still plays the most-visited edge.
         int maxBackupMinVisits = envMaxBackupMinVisits();
         static int envMaxBackupMinVisits();
+        // Research (STS_SILVER_RISK_VETO=delta[,share], default off): a risk-averse root choice.
+        // Each root edge's death rate is the share of deaths among the resolved playouts (wins
+        // plus deaths) that ended under it since the last setRoot or reroot. bestAction keeps the
+        // most-visited edge b unless another edge j has at least share * b's visits, both have at
+        // least minSamples resolved playouts, and death(b) - death(j) >= delta; then it plays the
+        // most-visited such j (ties: enumeration order). Search, selection and RNG are unchanged.
+        struct RiskVeto {
+            double delta = 0;            // 0 = off
+            double minShare = 0.25;
+            std::int64_t minSamples = 32;
+        };
+        RiskVeto riskVeto = envRiskVeto();
+        static RiskVeto envRiskVeto();
+        // Root edge the risk veto overruled the most-visited edge for at the last bestAction
+        // call, or -1 (research telemetry).
+        [[nodiscard]] int lastRiskVetoEdge() const { return lastRiskVeto; }
+        // The risk veto's playout ends per root edge since the last setRoot or reroot (empty when off).
+        [[nodiscard]] const SilverOutcomeCapture &riskOutcomeCapture() const { return riskOutcomes; }
         // Research-only playout policy for RolloutConfig::prior (same signature as nodePrior).
         std::function<std::vector<double>(const BattleContext &, const std::vector<Edge> &)> rolloutPrior;
         // STS_SILVER_LEAF_HEAD (set by NativeSilverBackend; default off): an undecided leaf is worth
@@ -469,6 +487,8 @@ namespace sts::search {
         std::size_t stateToNodeUsed = 0;
         bool lastNodeWasCreated = false;
         int currentRootEdge = -1;   // root edge of the simulation in progress
+        SilverOutcomeCapture riskOutcomes;   // risk veto: playout ends per root edge (riskVeto.delta > 0)
+        mutable int lastRiskVeto = -1;
 
         std::default_random_engine randGen;
         SilverRolloutAgent rolloutAgent;
