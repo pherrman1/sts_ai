@@ -188,6 +188,18 @@ struct OocFightEnd {
     bool won = false;
 };
 using OocFightEndObserver = std::function<void(const GameContext &, const OocFightEnd &)>;
+// One real fight of finishOocCounterfactual about to start (research, fightendpairgen luck=): reported at the battle
+// screen before Silver initializes the battle, with the budget the fight gets. The callback receives a const state; it
+// may play detached copies of it, but must leave every state the continuation reads unchanged.
+struct OocFightStart {
+    int fightIndex = 0;            // fights finished before this one (the index its OocFightEnd will carry)
+    int act = 0;                   // the battle's act
+    int floor = 0;
+    Room room = Room::INVALID;
+    MonsterEncounter encounter = MonsterEncounter::INVALID;
+    int simulationCountBase = 0;   // the agent's budget for this fight
+};
+using OocFightStartObserver = std::function<void(const GameContext &, const OocFightStart &)>;
 struct CombatEvalLabel {
     bool decided, healthOk, escaped, trueDeath, won, turnCapLoss, progressAmbiguous, labelValid;
     double terminalHp, terminalMaxHp, winHpFrac, lossRemainingFrac, signedOutcome;
@@ -242,7 +254,8 @@ finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
                         OocContinuationCost *finalCost = nullptr,
                         bool useFrozenV4 = false,
                         std::vector<CombatEvalFight> *combatCapture = nullptr,
-                        const OocFightEndObserver *fightEndObserver = nullptr);
+                        const OocFightEndObserver *fightEndObserver = nullptr,
+                        const OocFightStartObserver *fightStartObserver = nullptr);
 // Effective OOC policy identity: teacher checks and the bestbench sidecar.
 nlohmann::json effectiveOocPolicySpecification();
 // Effective Silver leaf valuation (leaf terms, escape penalty, rollout card table)

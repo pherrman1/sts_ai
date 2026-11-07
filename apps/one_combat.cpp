@@ -1631,7 +1631,8 @@ finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
                         OocContinuationCost *finalCost,
                         bool useFrozenV4,
                         std::vector<CombatEvalFight> *combatCapture,
-                        const OocFightEndObserver *fightEndObserver) {
+                        const OocFightEndObserver *fightEndObserver,
+                        const OocFightStartObserver *fightStartObserver) {
     const int healthBefore = search::g_simHealthFailureCount;
     const auto continuationWallStart = std::chrono::steady_clock::now();
     const std::clock_t continuationCpuStart = std::clock();
@@ -1689,6 +1690,9 @@ finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
                     virtualBattle.exitBattle(gc);
                 }
             } else {
+                if (fightStartObserver)
+                    (*fightStartObserver)(gc, OocFightStart{fights, battleAct, gc.floorNum, room, gc.info.encounter,
+                                                            agent.simulationCountBase});
                 const std::int64_t simulationsBefore = agent.simulationCountTotal;
                 const int fightHealthBefore = search::g_simHealthFailureCount;
                 std::optional<CombatEvalFight> captured;
@@ -3799,8 +3803,9 @@ int main(int argc, char **argv) {
     } else if (mode == "fightendpairgen") {
         // Paired fight-end continuations (research only; docs/knowledge-base/research/fight-end-pairs.md):
         // fightendpairgen NSEEDS SEED_START SIMS ASC OUT [OPTIONS=-] [VARIANTS=default]
-        // OPTIONS: comma list n=FORKS_PER_RUN, rooms=NORMAL+ELITE+BOSS(+OTHER), acts=1+2+3+4,
-        // strata=none|room|act|room_act, horizon=end|N, ooc=heart1. VARIANTS: comma list of
+        // OPTIONS: comma list n=FORKS_PER_RUN (0 = none), rooms=NORMAL+ELITE+BOSS(+OTHER), acts=1+2+3+4,
+        // strata=none|room|act|room_act, horizon=end|N, ooc=heart1|ppo, luck=R (R fresh replays of every source
+        // fight, one "luck" row per fight), luck_identity=N (first N seeds also replay each fight unchanged). VARIANTS: comma list of
         // hp:-N, pot:NAME|*, maxhp:-N, gold:-N, curse:NAME, ctr:RELIC|*:+-N, noop ("default" =
         // hp:-3,hp:-8,hp:-15,pot:*,maxhp:-5,gold:-50). Writes OUT (JSONL) and OUT.manifest.json.
         if (argc < 7) { std::cerr << "usage: fightendpairgen NSEEDS SEED_START SIMS ASC OUT [OPTIONS=-] [VARIANTS=default]\n"; return 2; }
