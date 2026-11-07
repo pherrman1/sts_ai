@@ -1,0 +1,11 @@
+name          fight-end-pairs-pilot
+code_commit   6e72a8d8c7e2adecb07f8659effad76386a08106
+binary_sha256 968615927ae7fc8d0422d2c6b74395a827cd2f22b3ad07b3587842e017cbc266
+workers       40
+share         /mnt/project-files/fight-end-pairs-pilot
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 45
+claim_settle_seconds 60
+input net-0420.bin /mnt/project-files/ppo-long-c/nets/net-0420.bin 8c0bd16c31499270f192666919e0a11e1d6ca57e2d7a188b6d2a019f3ac742d2
