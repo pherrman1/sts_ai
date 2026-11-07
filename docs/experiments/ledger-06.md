@@ -26427,3 +26427,18 @@ inclusion weights the HP price changes sign, so every use of these pairs has to 
 a model fit on these labels; act 3 needs its own label run). No default change. Seeds: 111780000-111788191 and
 111790000-111802287 USED (`units.txt`; 612 units unplayed, not reused), smoke 111789990. Cost ≈ 1,958 core-h cloud.
 **Knowledge impact:** KB `research/fight-end-pairs.md` (inclusion weights; pilot result and cost).
+
+## §TBD — Silver risk veto (`STS_SILVER_RISK_VETO`) probe on §711 Baalorlord expert states: dropped after the smoke, the veto never fires at delta 0.05 / 0.10 (max eligible playout death-rate gap 0.038 over 674 roots; 0 vetoes in 2,279 decisions) (cloud, 2026-11-08)
+
+**Question (Philipp, go 2026-11-08 00:07 CET):** does the risk veto (#1005) change fight outcomes on §711's expert
+states (arms veto 0.05 / 0.10, act 1-3 elites and bosses, 2 copies, 40 workers)?
+**Data:** [RESULT](evidence/risk_veto_probe_20261108/RESULT.md). Smoke of two units on an unmerged arm build (8a63785b,
+binary 22ee0a36…), plus a debug print of per-edge playout deaths.
+**Result:** 0 vetoes in 2,279 Silver decisions; arm outcomes equal production. Of 674 roots, eligible gaps ≥ 0.01 /
+0.02 / 0.05: 13 / 4 / 0; max 0.038.
+**Interpretation (Inference):** with expert decks the rollout leaf rarely dies and competing edges die at nearly the
+same rate, so a playout-death veto has nothing to act on.
+**Decision:** Philipp dropped the probe 00:29 CET; the flag stays default off; risk-aware choice waits for a learned
+value. No seeds. Cost ≈ 1 core-h.
+**Knowledge impact:** none beyond this entry.
+
