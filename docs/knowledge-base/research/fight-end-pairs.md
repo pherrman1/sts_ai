@@ -1,6 +1,7 @@
 # Paired fight-end continuations (`fightendpairgen`)
 
-Last verified: 2026-11-05 against the branch that adds the mode (research tooling, no ledger §).
+Last verified: 2026-11-07 (`ooc=ppo` and the source row's `heartKill` added for the stage-2 pilot;
+pilot result and inclusion weights in ledger §763).
 
 ## Purpose
 
@@ -25,6 +26,12 @@ run end.
 2. **Sampling.** A reservoir of `n` forks per source run (per stratum with `strata=`), filtered by
    `rooms=` (`NORMAL`, `ELITE`, `BOSS`, `OTHER` = event fights; default the first three) and `acts=`.
    The reservoir RNG is seeded from the source seed only.
+   **Weights.** A run with K eligible fight ends (per stratum) gives each of them with probability
+   min(n, K) / K, and K depends on the run's own future. The base copy replays the source run exactly,
+   so unweighted, forks of runs that die soon after the fight are over-sampled and the base outcome is
+   biased towards a loss. Every analysis of these pairs must weight each fork by `eligible / sampled`
+   of its source row (exact for `strata=none`; per stratum otherwise). In the stage-2 pilot the
+   unweighted HP price even has the wrong sign (§763).
 3. **Copies.** Each fork gives `base` plus one copy per `VARIANTS` token. Every change touches only its
    own field and no game `Random`:
 
@@ -45,12 +52,18 @@ run end.
    index) with `finishOocCounterfactual(..., maxFights = -1, bootstrap = false)`: to the run end, no
    model bootstrap. `ooc=heart1` lets the `STS_OOC_HEART1` student take every OOC step it encodes inside
    the continuations (as `potionpriceprobe`'s EXTRA); without it the continuation is the ordinary OOC
-   chain.
+   chain. `ooc=ppo` (needs `STS_OOC_HEART1`, `STS_OOC_HEART1_PPO=1`, `STS_OOC_MCTS=0`) plays the PPO
+   net as the PPO runner's chain does: `heart1::ppoStep` before any rule, with full coverage, no key
+   rule, and temperature and salt from the environment; a screen the net has no choice for falls back to
+   the deployed chain. The net's counters restart with every `finishOocCounterfactual` call and are
+   written as `ppo` (`decisions`, `single`, `fallbacks`, `autoGold`) in the source and copy rows.
+   `ooc=heart1` (the student path: partial coverage, free relics auto-taken, then the rule chain) is
+   not the PPO policy, even with a PPO net loaded.
 
 ## Output
 
-`OUT` is JSONL. One `source` row per seed (source outcome, fight ends, eligible count, ineligible reasons,
-cost), one `skip` row per skipped token, one `copy` row per copy:
+`OUT` is JSONL. One `source` row per seed (source outcome incl. `heartKill`, fight ends, eligible count,
+ineligible reasons, cost), one `skip` row per skipped token, one `copy` row per copy:
 
 - position: `seed`, `fork`, `fightIndex`, `act`, `floor`, `room`, `encounter`, `variant`, `change`,
   `contSeed`;
@@ -66,8 +79,9 @@ cost), one `skip` row per skipped token, one `copy` row per copy:
   per potion, Fairy/Lizard Tail death-save HP as §732's L counts it, max HP, gold, Incense counter) and
   `silverL = hp + 2 maxHp + 11 potions + deathSave`, §732's L. Fight-local terms (win bonus, turn
   penalty) are omitted;
-- `obsV2`: only when `g_fightEndPairsExtraObservation` is set. LONG_B's `obs.v2.*` inputs are not on
-  main (branch lwvhth); a branch that has them sets this hook instead of changing the row code.
+- `obsV2`: only when `g_fightEndPairsExtraObservation` is set (unset on main). Since #989 (LONG_B
+  merged) the `heart1` record itself carries `obs.v2.run_counters` and `obs.v2.fought`, the v2 inputs of
+  the LONG_B/LONG_C nets.
 
 `OUT.manifest.json` records the arguments, `git_sha`, `executable_sha256`,
 `effectiveOocPolicySpecification()`, `effectiveSilverLeafSpecification()`, whether the learned stop is
@@ -80,6 +94,19 @@ pilot the intended setting is §739's cheap proxy, `tools/fight_end_pairs/smoke.
 (`STS_SILVER_LEARNED_STOP=0 STS_SILVER_ACT4_STRONG=0`), `STS_OOC_MCTS=0`, student_sel (`cf6bf7fb`) via
 `STS_OOC_HEART1` and `ooc=heart1`, flexible keys. Under the learned stop the `SIMS` argument does not
 fix the budget (see the rollout-cost note in the ledger); keep it off for labels.
+
+The stage-2 pilot (2026-11-07, `docs/experiments/evidence/fight_end_pairs_pilot_20261107/`) uses Philipp's
+PPO baseline net-0420 instead, with `ooc=ppo` in combat B (LONG_B/LONG_C's evaluation environment): flat
+Silver 1,000, learned stop and Act-4 strong off, g7f_E root and tree prior, temperature 0.
+
+## Stage-2 pilot result (§763)
+
+1,938 units, 15,504 A20 source runs under net-0420 (`ooc=ppo`, combat B), 61,739 forks with 6.5 copies each,
+weighted by `eligible / sampled`. Every change costs Heart kill in acts 1-3. The HP slope is 0.192 pp per HP
+[0.147, 0.234] (acts 1-3); the 8-HP price is −1.93 / −1.68 / −0.49 pp in acts 1 / 2 / 3, resolved at z ≥ 3 in acts
+1-2 only. At that slope a potion is worth 12.0 HP (Fairy 75 HP, the others 3.6 HP), a max-HP point 2.9 HP and a gold
+0.13 HP. Right after the act-1 and act-2 bosses HP is nearly free, since the act transition heals 75% of the missing
+HP at A20. Per cell, 10-21% of the pairs disagree, and the pairing efficiency ρ is 0.47-0.77.
 
 ## Tests
 
@@ -109,6 +136,10 @@ seeds 111459990-993, binary `119323af` of commit `f166386b`, four processes on a
 - Stage-2 pilot projection (512 games × 4 fight ends × base + 6 ≈ 14k continuations): about 40 core-h
   at this mix, plus about 2 core-h of source runs; more if the pilot's Heart reach rate is higher than in
   these four seeds (1 Heart kill in 4 source runs).
+- Stage-2 pilot (net-0420, `ooc=ppo`, combat B): 16.8 s per continuation (acts 1-4: 14.3, 19.6, 22.1, 8.0 s),
+  20.7 s per source run, 3.98 forks per run and 6.48 copies per fork; 1,958 core-h for 1,938 units of 8 runs. About
+  59 min wall per unit on one lane (p90 88 min, max 160 min). One failing continuation kills the whole unit
+  (10 of 1,948 units ended rc 1; the repro of one of them is a `CombatStateFailure` stall).
 - Label noise: the copies share RNG streams, but one different OOC decision (route, rest, shop) changes
   every later draw, so single-copy outcomes diverge widely (e.g. 111459993 fork 1: base dies on floor 29,
   `hp:-8` kills the Heart). Expected; the pilot's sample size has to carry it.

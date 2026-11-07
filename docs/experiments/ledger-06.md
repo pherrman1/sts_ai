@@ -26390,3 +26390,40 @@ rate, and its effect on ordinary fights is at best neutral.
 **Decision:** stays a research flag, default off. Seeds used: 111760000–111762047 (+ smokes 111769990–111769991).
 Cost ≈ 30 core-h cloud.
 **Knowledge impact:** none beyond this entry (KB `architecture/combat-search.md` already calls it a research flag).
+
+## §763 — Stage-2 leaf pilot: paired fight-end continuations to the run end under net-0420 (combat B), 1,938 units = 15,504 A20 source runs, 61,739 forks × 6.5 copies: GO with inclusion weights (PREREG deviation 1, before the stop): every change costs Heart kill in acts 1-3, HP slope β 0.192 pp/HP [0.147, 0.234], 8-HP price resolved in acts 1-2 (z 5.6 / 4.3) but not act 3 (z 1.2), projected label cost 638 core-h; the frozen unweighted analysis is NO-GO (β −0.056, length bias of the fork sampler) (cloud, 2026-11-07)
+
+**Question (Philipp, 2026-11-07 08:57 CET "wir könnten noch die vielen core hours für silver combat leafs machen?";
+go 09:09 CET, run until he stops it with a 12 h cap 09:26 CET):** do paired fight-end continuations resolve Silver leaf
+prices (HP, potion, max HP, gold) per act, and what would a label factory cost?
+**Data:** [PREREG](evidence/fight_end_pairs_pilot_20261107/PREREG.md) (K PASS; deviation 1 K delta PASS),
+[RESULT](evidence/fight_end_pairs_pilot_20261107/RESULT.md), `results/analysis.json`, `results/descriptive.json`.
+Run commit 41cb91db (code 6e72a8d8, #1003), binary 96861592…, `fightendpairgen 8 FIRST 1000 20 OUT
+n=4,ooc=ppo default`: up to 4 won fights per run, copies base, −3/−8/−15 HP, each held potion, −5 max HP, −50 gold,
+each played to the run end on the fork's continuation seed. net-0420 (8c0bd16c…) plays OOC, combat B (flat Silver
+1,000). 40 workers from 09:38 CET; Philipp did not stop the run, the 12 h cap did (stop sent 21:39-21:44 CET). 1,948 of
+2,560 units started, 1,938 uploaded and valid; 10 not uploaded (rc 1, as F1: one failing continuation kills the unit;
+the repro of 111781808 is a `CombatStateFailure` stall), 0.5% < 2%, not re-run.
+**Result:**
+- Deviation 1 weights every fork by eligible / sampled, the exact inverse inclusion probability of the reservoir.
+  Committed 16:17 CET, five hours before the stop, after the interim training (exploratory, Philipp 12:48 CET) showed
+  every change as a gain in act 1 (act-1 base Heart kill 16.9% unweighted vs 29.2% weighted on 250 units).
+- Weighted (primary), Δ Heart kill pooled acts 1-4: −3 HP −0.50 pp [−0.97, −0.03], −8 HP −1.57 [−2.06, −1.04], −15 HP
+  −2.94 [−3.50, −2.35], potion −2.29 [−2.91, −1.71], −5 max HP −2.77 [−3.37, −2.13], −50 gold −1.23 [−1.89, −0.57]
+  → S pass. β 0.192 [0.147, 0.234]; 8-HP price act 1 −1.93 pp (z 5.6), act 2 −1.68 (z 4.3), act 3 −0.49 (z 1.2);
+  cost* 638 core-h [430, 1,078] ≤ 20,000 → P pass → **GO**. Potions and max HP are below 0 in each of acts 1-3. The
+  formula ignores that forks of one run are correlated; with the seed-bootstrap SE the cost is ~960 core-h.
+- Unweighted (frozen): every act-1 cell positive (+1.3 to +2.8 pp), β −0.056 [−0.090, −0.021] → P fails → NO-GO. The
+  decisions differ; in acts 3-4 the two analyses agree within 0.3 pp.
+- Prices at β (descriptive): potion 12.0 HP (Fairy 75 HP [65, 85]; the rest 3.6 HP [0.6, 6.7]), max HP 2.9 HP per
+  point, gold 0.13 HP per gold. After the act-1 and act-2 bosses HP is nearly free (−15 HP +0.10 / −0.29 pp; the act
+  transition heals 75% of missing HP), potions and max HP are not.
+- Source runs: Heart 24.39% (§760: 25.49%), PPO fallbacks 0. Base copies weighted 35.5% (per eligible fight end;
+  winning runs have more of them), unweighted 24.5%. CPU 16.8 s per continuation, 1,958 core-h in all.
+**Interpretation (Inference):** CRN fight-end pairs resolve per-act leaf prices at this size: HP in acts 1-2, potions
+and max HP in acts 1-3. Act 3's HP price is a third of the pooled one and needs act-3 forks (`acts=3`). Without the
+inclusion weights the HP price changes sign, so every use of these pairs has to weight by eligible / sampled.
+**Decision:** GO under the amended PREREG: stage 3 / stage 4 is proposed to Philipp with its own go (acts 1-2 can go to
+a model fit on these labels; act 3 needs its own label run). No default change. Seeds: 111780000-111788191 and
+111790000-111802287 USED (`units.txt`; 612 units unplayed, not reused), smoke 111789990. Cost ≈ 1,958 core-h cloud.
+**Knowledge impact:** KB `research/fight-end-pairs.md` (inclusion weights; pilot result and cost).

@@ -1778,6 +1778,10 @@ void ppoBeginGame(std::uint64_t seed) {
     t_ppo.seed = seed;
 }
 
+PpoGameCounts ppoGameCounts() {
+    return {t_ppo.decisions, t_ppo.single, t_ppo.fallbacks, t_ppo.autoGold};
+}
+
 namespace {
 void ppoLine(const nlohmann::json &line) {
     t_ppo.lines += line.dump();
