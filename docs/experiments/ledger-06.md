@@ -26309,3 +26309,36 @@ learned stop was trained on mean-backup trees.
 **Decision:** both flags stay default off; a whole-run gate on new seeds needs Philipp's go. Seeds: none new
 (replays of the LONG_B/LONG_C seeds listed in PROBE.md).
 **Knowledge impact:** KB `architecture/combat-search.md`, `operations/environment-variables.md`.
+
+## §760 — LONG_C: LONG_B continued for 200 more PPO updates (220 → 420; actors with combat turn cap 100 from iteration 272); final net-0420 vs LONG_B's net-0220, policy alone, 2,048 paired A20 seeds: INCONCLUSIVE, Heart +1.46 pp [−0.73, +3.66] (25.49% vs 24.02%), SPRT CAP; in-sample flat ~19.8%; more Act-1 deaths, better late conversion (PC + cloud, 2026-11-07)
+
+**Question (Philipp, 2026-11-06 00:30 CET "nochmal 200 iterationen mit dem gleichen plan"):** does LONG_B's recipe keep
+improving with 200 more updates?
+**Data:** [PREREG](evidence/ppo_long_c_20261106/PREREG.md) (J PASS; Deviation: turn cap 100),
+[RESULT](evidence/ppo_long_c_20261106/RESULT.md), `eval/result.json`, `eval/games.csv`. Training: updates 220-419 from
+LONG_B's learner state (`ppo_cloud.py init --continue`), 520 games per update, 40 cloud actor parts, learner on the PC.
+Iterations 220-271 ran binary 78849fcf, iterations 272-419 ran 63508ecc (run-only default `STS_COMBAT_TURN_CAP`=100,
+after §759's stalemate analysis). Evaluation: LONG_B's runner, T 0, combat B, binary 78849fcf (turn guard 500), G1's
+seeds; control = LONG_B's L220 games, sentinel 32/32 equal. `verify_campaign.py`: 2,048 OK; every game rc 0, no
+aborts, no dropped seed.
+**Result:**
+- Heart kill: net-0220 24.02%, net-0420 25.49%, D +1.46 pp [−0.73, +3.66]. Sequential gate (gainer, d1 = +2 pp): CAP at
+  2,048 (LLR 0.73), bootstrap CI includes 0 → INCONCLUSIVE.
+- Checkpoints net-0270, 0320 and 0370 vs net-0220: −0.39 [−2.54, +1.71], −0.10 [−2.25, +2.10], +1.86 [−0.34, +4.05] pp.
+  Against heart1 (G1's GH): +6.30 / +6.59 / +8.54 / +8.15 pp for 0270/0320/0370/0420.
+- net-0420 secondary: Act 3 cleared +0.39 pp [−2.00, +2.73], mean floor −0.59 [−1.40, +0.22]. Act-1 deaths 464 vs 410
+  (McNemar p ≈ 0.011), Act-3 deaths 185 vs 232; kill share of runs reaching floor 51 61.7% vs 59.0%. CPU 20.6 s/game.
+- In-sample (T 1): Heart flat at ~19.8% (LONG_B's last 20: 19.69%); Act 2 reached 80.3% → 75.7%; mean floor 37.6 →
+  36.5 from ~update 260 (Act-1 deaths 20% → 22%).
+- Stalls: two games hit the 1,000-decision stall guard after the cap (iteration 361 seed 111728207, iteration 411
+  part 32; ~35 min each, counted losses). The turn cap bounds turns, not decisions.
+- PREREG wording fix: the learner's torch reseed at serve start does not change update 221's minibatches (they come
+  from iteration-seeded `random.Random`); only GPU floating-point non-determinism differs.
+**Interpretation (Inference):** LONG_B's checkpoint rise does not continue at the same rate; 200 more updates add at
+most ~2 pp, and the in-sample curve is flat. The policy keeps trading Act-1 safety for late conversion, as the reward
+1{Heart} allows. The cap deviation touched ~1 in 8,000 games and the evaluation ran without it.
+**Decision:** no GO. net-0220 stays the PPO baseline; net-0420 (8c0bd16c…) and net-0370 (8faba759…) are kept. Next lever:
+critic or potential-based shaping, decided with Philipp. No default change; the cap-100 default never reached main.
+Seeds: 111654400-111758399 USED (training); the evaluation reused G1's 111520000-111522047. Cost ≈ 600-780 core-h of
+training actors plus ~46 core-h of evaluation.
+**Knowledge impact:** KB `research/a20-ppo-plan.md` (LONG_C row).
