@@ -9,6 +9,12 @@
 // plays on the same continuation seed (common random numbers) to the run end.
 // One JSONL row per copy: the outcome, the heart1 public record, the plain
 // state §732's features read, and Silver's victory-leaf terms of the copy.
+// Fight luck (luck=R, research, default off): at the start of every source fight, R detached copies of the state
+// play only that fight on fresh battle and carried streams (fightreplay's redraw) with the fight's own budget; one
+// "luck" row per fight carries the real and the replayed fight ends, the per-fight luck u = y_real - y_replay of a
+// luck regression. luck_identity=N replays the fights of the first N source seeds once more unchanged (replicate
+// 0), which must reproduce the real fight. The replays never touch the run: own copy, own agent, the run's health
+// counters and battle-exit hooks restored, so source and fork rows equal those of the same call without luck.
 // See docs/knowledge-base/research/fight-end-pairs.md.
 
 #include "one_combat/driver_shared.h"
@@ -17,9 +23,13 @@
 #include "one_combat/run_driver.h"
 #include "one_combat/a4_perturb.h"
 #include "one_combat/ooc_mcts_adapter.h"
+#include "sim/search/NativeSilverBackend.h"
+#include "sim/search/SimHealth.h"
 
 #include <cmath>
+#include <ctime>
 #include <optional>
+#include <random>
 #include <sstream>
 #include <unistd.h>
 
@@ -32,7 +42,7 @@ namespace {
 // ------------------------------------------------------------------ options
 
 struct FightEndOptions {
-    int forksPerRun = 4;             // n=: reservoir size (per stratum when stratified)
+    int forksPerRun = 4;             // n=: reservoir size (per stratum when stratified); 0 = no forks
     std::vector<std::string> rooms{"NORMAL", "ELITE", "BOSS"};   // rooms=A+B
     std::vector<int> acts{1, 2, 3, 4};                            // acts=1+2
     std::string strata = "none";     // strata=none|room|act|room_act
@@ -40,6 +50,8 @@ struct FightEndOptions {
     int sourceFights = -1;           // source_fights=end|N (tests only)
     bool oocHeart1 = false;          // ooc=heart1: as potionpriceprobe's EXTRA
     bool oocPpo = false;             // ooc=ppo: the STS_OOC_HEART1_PPO net first, as the PPO runner's chain
+    int luck = 0;                    // luck=R (0-8): R fresh replays of every source fight; 0 = off
+    int luckIdentity = 0;            // luck_identity=N: the first N source seeds also replay every fight unchanged
 };
 
 std::vector<std::string> splitOn(const std::string &s, char sep) {
@@ -60,6 +72,13 @@ int parsePositive(const std::string &text, const std::string &what) {
     return std::stoi(text);
 }
 
+int parseCount(const std::string &text, const std::string &what, int maxValue) {
+    if (text.empty() || text.find_first_not_of("0123456789") != std::string::npos || text.size() > 6
+            || std::stoi(text) > maxValue)
+        throw std::runtime_error("fightendpairgen: bad " + what + " " + text);
+    return std::stoi(text);
+}
+
 FightEndOptions parseOptions(const std::string &spec) {
     FightEndOptions o;
     if (spec.empty() || spec == "-") return o;
@@ -68,7 +87,7 @@ FightEndOptions parseOptions(const std::string &spec) {
         const auto eq = item.find('=');
         if (eq == std::string::npos) throw std::runtime_error("fightendpairgen: bad option " + item);
         const std::string key = item.substr(0, eq), value = item.substr(eq + 1);
-        if (key == "n") o.forksPerRun = parsePositive(value, "n");
+        if (key == "n") o.forksPerRun = parseCount(value, "n", 999999);
         else if (key == "rooms") {
             o.rooms = splitOn(value, '+');
             for (const auto &r : o.rooms)
@@ -92,7 +111,9 @@ FightEndOptions parseOptions(const std::string &spec) {
                 throw std::runtime_error("fightendpairgen: ooc is heart1 or ppo");
             o.oocHeart1 = value == "heart1";
             o.oocPpo = value == "ppo";
-        } else throw std::runtime_error("fightendpairgen: unknown option " + key);
+        } else if (key == "luck") o.luck = parseCount(value, "luck", 8);
+        else if (key == "luck_identity") o.luckIdentity = parseCount(value, "luck_identity", 999999);
+        else throw std::runtime_error("fightendpairgen: unknown option " + key);
     }
     return o;
 }
@@ -101,7 +122,8 @@ nlohmann::json optionsJson(const FightEndOptions &o) {
     return {{"n", o.forksPerRun}, {"rooms", o.rooms}, {"acts", o.acts}, {"strata", o.strata},
             {"horizon", o.horizon < 0 ? nlohmann::json("end") : nlohmann::json(o.horizon)},
             {"source_fights", o.sourceFights < 0 ? nlohmann::json("end") : nlohmann::json(o.sourceFights)},
-            {"ooc", o.oocPpo ? "ppo" : o.oocHeart1 ? "heart1" : "deployed"}};
+            {"ooc", o.oocPpo ? "ppo" : o.oocHeart1 ? "heart1" : "deployed"}, {"luck", o.luck},
+            {"luck_identity", o.luckIdentity}};
 }
 
 // ----------------------------------------------------------------- variants
@@ -330,6 +352,99 @@ std::uint64_t continuationSeed(std::uint64_t seed, int fightIndex) {
     return z ? z : 1;
 }
 
+// ---------------------------------------------------------------- fight luck
+
+// Replicate r >= 1 of a source fight: a fresh battle seed (BattleContext::init and the Silver planner derive the
+// combat streams from seed + floor) and fresh carried streams with their counters kept, the redraw of fightreplay
+// (fight_replay.cpp). Keyed by (run seed, fight index, replicate) with its own constant, so a replay is
+// independent of the run's own fight and of every fork's continuation seed.
+std::uint64_t luckRedraw(GameContext &gc, std::uint64_t seed, int fightIndex, int r) {
+    std::uint64_t z = seed * 0x9e3779b97f4a7c15ULL + static_cast<std::uint64_t>(fightIndex + 1) * 0xd1b54a32d192ed03ULL
+        + static_cast<std::uint64_t>(r) * 0xa0761d6478bd642fULL + 0x46454e444c55434bULL;   // "FENDLUCK"
+    z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ULL;
+    z = (z ^ (z >> 27)) * 0x94d049bb133111ebULL;
+    z ^= z >> 31;
+    std::mt19937_64 rng(z);
+    gc.seed = rng();
+    for (auto stream : {&gc.aiRng, &gc.cardRandomRng, &gc.miscRng, &gc.monsterHpRng, &gc.potionRng,
+                        &gc.shuffleRng}) {
+        const auto counter = stream->counter;
+        *stream = Random(rng());
+        stream->counter = counter;
+    }
+    return gc.seed;
+}
+
+// The fight-end fields a luck regression reads (the real end also gets plainState, for identity checks).
+nlohmann::json luckFields(const GameContext &gc) {
+    int upgrades = 0;
+    long long misc = 0;
+    for (const auto &c : gc.deck.cards) {
+        upgrades += c.getUpgraded();
+        misc += c.misc;
+    }
+    nlohmann::json potions = nlohmann::json::array(), data = nlohmann::json::array();
+    for (int i = 0; i < gc.potionCapacity; ++i)
+        if (gc.potions[i] != Potion::EMPTY_POTION_SLOT && gc.potions[i] != Potion::INVALID)
+            potions.push_back(potionEnumNames[static_cast<int>(gc.potions[i])]);
+    for (const auto &r : gc.relics.relics) data.push_back(r.data);
+    return {{"hp", gc.curHp}, {"maxHp", gc.maxHp}, {"potionCount", gc.potionCount}, {"potions", potions},
+            {"gold", gc.gold}, {"deckSize", gc.deck.size()}, {"upgrades", upgrades}, {"misc", misc},
+            {"relicData", data}};
+}
+
+struct LuckReplay {
+    int replicate = 0;
+    std::uint64_t battleSeed = 0;
+    bool won = false, alive = false;
+    int combatOutcome = 0, turns = 0, healthFailures = 0;
+    double cpuMs = 0;
+    std::int64_t simulations = 0;
+    std::string error;            // a CombatStateFailure of the replay (the run is unaffected)
+    nlohmann::json fields, state; // state: replicate 0 only (identity check)
+};
+
+// One replay of the fight that starts at `start`: its own detached copy and agent with the fight's budget, the
+// battle exited as the run exits it. The run's health counters and battle-exit hooks are restored afterwards.
+LuckReplay playLuckReplay(const GameContext &start, const OocFightStart &fs, std::uint64_t seed, int replicate) {
+    LuckReplay out;
+    out.replicate = replicate;
+    GameContext gc = detachedCounterfactualCopy(start);
+    out.battleSeed = replicate == 0 ? gc.seed : luckRedraw(gc, seed, fs.fightIndex, replicate);
+    search::ScumSearchAgent2 agent;
+    agent.simulationCountBase = fs.simulationCountBase;
+    agent.simulationCountTotal = 0;
+    agent.rng = std::default_random_engine(gc.seed);   // out-of-combat only; the fight never draws from it
+    const int healthTotal = search::g_simHealthFailureCount;
+    const auto healthByReason = search::g_simHealthFailureCounts;
+    struct ExitHooksOff {
+        decltype(g_onBattleExitRaw) raw = std::move(g_onBattleExitRaw);
+        decltype(g_onBattleExitPersistent) persistent = std::move(g_onBattleExitPersistent);
+        ExitHooksOff() { g_onBattleExitRaw = nullptr; g_onBattleExitPersistent = nullptr; }
+        ~ExitHooksOff() { g_onBattleExitRaw = std::move(raw); g_onBattleExitPersistent = std::move(persistent); }
+    } hooksOff;
+    BattleContext bc;
+    const std::clock_t cpuStart = std::clock();
+    try {
+        agent.playoutBattle(gc, bc);
+        bc.exitBattle(gc);
+    } catch (const search::CombatStateFailure &e) {
+        out.error = e.what();
+    }
+    out.cpuMs = 1000.0 * static_cast<double>(std::clock() - cpuStart) / CLOCKS_PER_SEC;
+    out.healthFailures = search::g_simHealthFailureCount - healthTotal;
+    search::g_simHealthFailureCount = healthTotal;   // the run's validity counts the run's own fights only
+    search::g_simHealthFailureCounts = healthByReason;
+    out.simulations = agent.simulationCountTotal;
+    out.combatOutcome = static_cast<int>(bc.outcome);
+    out.turns = bc.turn;
+    out.won = out.error.empty() && bc.outcome == Outcome::PLAYER_VICTORY;
+    out.alive = out.error.empty() && gc.outcome != GameOutcome::PLAYER_LOSS;
+    out.fields = luckFields(gc);
+    if (replicate == 0) out.state = plainState(gc);
+    return out;
+}
+
 struct SampledFork {
     GameContext gc;
     PathHistory path;
@@ -383,6 +498,7 @@ void fightEndPairGen(int nSeeds, std::uint64_t seedStart, int sims, int asc, con
                      const std::string &optionSpec, const std::string &variantSpec, bool manifest) {
     const FightEndOptions opt = parseOptions(optionSpec);
     const std::vector<ChangeToken> tokens = parseVariants(variantSpec);
+    const bool luckOn = opt.luck > 0 || opt.luckIdentity > 0;
     if (nSeeds <= 0 || sims <= 0) throw std::runtime_error("fightendpairgen: invalid arguments");
     if (opt.oocHeart1 && !heart1::enabled())
         throw std::runtime_error("fightendpairgen: ooc=heart1 needs STS_OOC_HEART1");
@@ -431,9 +547,75 @@ void fightEndPairGen(int nSeeds, std::uint64_t seedStart, int sims, int asc, con
         std::map<std::string, int> ineligible;
         bool sourceLastWon = false;
         MonsterEncounter sourceLastEncounter = MonsterEncounter::INVALID;
+        // luck=: the replays of each source fight are played at its start and written with its end as one row.
+        struct PendingLuck {
+            int fightIndex = -1, budget = 0;
+            MonsterEncounter encounter = MonsterEncounter::INVALID;
+            nlohmann::json start, relics = nlohmann::json::array();
+            std::vector<LuckReplay> replays;
+        };
+        std::optional<PendingLuck> pendingLuck;
+        struct LuckTally {
+            int fights = 0, replays = 0, errors = 0, healthFailures = 0, identityChecked = 0, identityMismatches = 0;
+            double cpuMs = 0;
+        } luckTally;
+        const bool identitySeed = s < opt.luckIdentity;
+        const OocFightStartObserver luckStart = [&](const GameContext &gc, const OocFightStart &fs) {
+            if (pendingLuck) throw std::runtime_error("fightendpairgen: fight started before the last one ended");
+            PendingLuck p;
+            p.fightIndex = fs.fightIndex;
+            p.budget = fs.simulationCountBase;
+            p.encounter = fs.encounter;
+            p.start = luckFields(gc);
+            for (const auto &r : gc.relics.relics) p.relics.push_back(relicEnumNames[static_cast<int>(r.id)]);
+            for (int r = identitySeed ? 0 : 1; r <= opt.luck; ++r) p.replays.push_back(playLuckReplay(gc, fs, seed, r));
+            pendingLuck = std::move(p);
+        };
+        const auto writeLuckRow = [&](const GameContext &gc, const OocFightEnd &fe) {
+            if (!pendingLuck || pendingLuck->fightIndex != fe.fightIndex)
+                throw std::runtime_error("fightendpairgen: no luck replays for fight " + std::to_string(fe.fightIndex));
+            const nlohmann::json realFields = luckFields(gc), realState = plainState(gc);
+            const bool realAlive = gc.outcome != GameOutcome::PLAYER_LOSS;
+            nlohmann::json row = {{"kind", "luck"}, {"seed", seed}, {"fightIndex", fe.fightIndex}, {"act", fe.act},
+                                  {"floor", fe.floor}, {"room", combatEvalRoomClass(fe.room)},
+                                  {"encounter", encounterName(fe.encounter)}, {"budget", pendingLuck->budget},
+                                  {"relics", pendingLuck->relics}, {"start", pendingLuck->start},
+                                  {"real", {{"won", fe.won}, {"alive", realAlive}, {"fields", realFields},
+                                            {"state", realState}}}};
+            if (pendingLuck->encounter != fe.encounter) row["startEncounter"] = encounterName(pendingLuck->encounter);
+            nlohmann::json replays = nlohmann::json::array();
+            for (const auto &r : pendingLuck->replays) {
+                ++luckTally.replays;
+                luckTally.cpuMs += r.cpuMs;
+                luckTally.errors += !r.error.empty();
+                luckTally.healthFailures += r.healthFailures;
+                if (r.replicate == 0) {   // a check, not a luck draw
+                    const bool same = r.error.empty() && r.healthFailures == 0 && r.won == fe.won
+                        && r.alive == realAlive && r.fields == realFields && r.state == realState;
+                    ++luckTally.identityChecked;
+                    luckTally.identityMismatches += !same;
+                    row["identity"] = same;
+                    if (!same)
+                        row["identityReplay"] = {{"won", r.won}, {"alive", r.alive}, {"fields", r.fields},
+                                                 {"error", r.error}, {"healthFailures", r.healthFailures}};
+                    continue;
+                }
+                nlohmann::json x = {{"r", r.replicate}, {"battleSeed", r.battleSeed}, {"won", r.won},
+                                    {"alive", r.alive}, {"combatOutcome", r.combatOutcome}, {"turns", r.turns},
+                                    {"cpuMs", r.cpuMs}, {"simulations", r.simulations},
+                                    {"healthFailures", r.healthFailures}, {"fields", r.fields}};
+                if (!r.error.empty()) x["error"] = r.error;
+                replays.push_back(std::move(x));
+            }
+            row["replays"] = std::move(replays);
+            ++luckTally.fights;
+            out << row.dump() << '\n';
+            pendingLuck.reset();
+        };
         const OocFightEndObserver observer = [&](const GameContext &gc, const OocFightEnd &fe) {
             sourceLastWon = fe.won;
             sourceLastEncounter = fe.encounter;
+            if (luckOn) writeLuckRow(gc, fe);
             if (!fe.won) return;
             ++fightEnds;
             const std::string room = combatEvalRoomClass(fe.room);
@@ -445,6 +627,7 @@ void fightEndPairGen(int nSeeds, std::uint64_t seedStart, int sims, int asc, con
             else if (!t_curPath) why = "no_path";
             if (!why.empty()) { ++ineligible[why]; return; }
             ++eligible;
+            if (opt.forksPerRun == 0) return;
             auto &[seen, kept] = reservoirs[stratumOf(opt, room, fe.act)];
             ++seen;
             SampledFork f{detachedCounterfactualCopy(gc), *t_curPath, captureOocPolicyThreadState(),
@@ -456,7 +639,9 @@ void fightEndPairGen(int nSeeds, std::uint64_t seedStart, int sims, int asc, con
         OocContinuationCost sourceCost;
         const OocCounterfactualResult source = finishOocCounterfactual(
             GameContext(CharacterClass::IRONCLAD, seed, asc), sims, seed, PathHistory{}, opt.sourceFights, false,
-            nullptr, 0, nullptr, false, nullptr, &sourceCost, false, nullptr, &observer);
+            nullptr, 0, nullptr, false, nullptr, &sourceCost, false, nullptr, &observer,
+            luckOn ? &luckStart : nullptr);
+        if (pendingLuck) throw std::runtime_error("fightendpairgen: a source fight started but never ended");
         std::vector<SampledFork> sampled;
         for (auto &[stratum, r] : reservoirs)
             for (auto &f : r.second) sampled.push_back(std::move(f));
@@ -471,10 +656,22 @@ void fightEndPairGen(int nSeeds, std::uint64_t seedStart, int sims, int asc, con
                                  {"cost", {{"cpuMs", sourceCost.cpuMs}, {"wallMs", sourceCost.wallMs},
                                            {"silverSimulations", sourceCost.silverSimulations}}}};
         if (opt.oocPpo) sourceRow["ppo"] = ppoCounts();
+        // luck=: cost.cpuMs/wallMs then include the replays (luck.cpuMs); every other field is the run's own.
+        if (luckOn)
+            sourceRow["luck"] = {{"replicates", opt.luck}, {"identitySeed", identitySeed},
+                                 {"fights", luckTally.fights}, {"replays", luckTally.replays},
+                                 {"errors", luckTally.errors}, {"healthFailures", luckTally.healthFailures},
+                                 {"identityChecked", luckTally.identityChecked},
+                                 {"identityMismatches", luckTally.identityMismatches}, {"cpuMs", luckTally.cpuMs}};
         out << sourceRow.dump() << '\n';
+        out.flush();
         std::cout << "[fightendpairgen] seed=" << seed << " sourceFloor=" << source.floor
                   << " sourceWon=" << source.won << " fightEnds=" << fightEnds << " eligible=" << eligible
-                  << " sampled=" << sampled.size() << std::endl;
+                  << " sampled=" << sampled.size();
+        if (luckOn)
+            std::cout << " luckFights=" << luckTally.fights << " luckReplays=" << luckTally.replays
+                      << " luckErrors=" << luckTally.errors << " identityMismatches=" << luckTally.identityMismatches;
+        std::cout << std::endl;
         for (int fork = 0; fork < static_cast<int>(sampled.size()); ++fork) {
             const SampledFork &f = sampled[fork];
             const std::uint64_t contSeed = continuationSeed(seed, f.fightIndex);
@@ -597,7 +794,12 @@ void fastSelfTest() {
     const auto p = parseOptions("n=4,ooc=ppo");
     check(p.oocPpo && !p.oocHeart1 && optionsJson(p).at("ooc") == "ppo", "ooc=ppo parse");
     check(optionsJson(parseOptions("-")).at("ooc") == "deployed", "ooc default");
-    for (const char *bad : {"n=0", "rooms=SHOP", "acts=5", "strata=floor", "x=1", "n", "ooc=student"}) {
+    const auto l = parseOptions("n=0,ooc=ppo,luck=1,luck_identity=2");
+    check(l.forksPerRun == 0 && l.oocPpo && l.luck == 1 && l.luckIdentity == 2 && optionsJson(l).at("luck") == 1
+              && optionsJson(l).at("luck_identity") == 2, "luck option parse");
+    check(parseOptions("-").luck == 0 && parseOptions("-").luckIdentity == 0, "luck default off");
+    for (const char *bad : {"n=-1", "rooms=SHOP", "acts=5", "strata=floor", "x=1", "n", "ooc=student", "luck=9",
+                            "luck=x", "luck_identity=-1", "luck="}) {
         bool threw = false;
         try { parseOptions(bad); } catch (const std::runtime_error &) { threw = true; }
         check(threw, std::string("option accepted: ") + bad);
@@ -669,6 +871,20 @@ void fastSelfTest() {
     check(skipped.copies.size() == 2 && skipped.copies[1].name == "hp:-3", "copies at the bounds");
     check(continuationSeed(1, 0) != continuationSeed(1, 1) && continuationSeed(1, 0) == continuationSeed(1, 0),
           "continuation seed");
+
+    // Luck redraw: deterministic per (seed, fight, replicate), new seed and carried streams, counters and every
+    // persistent field kept.
+    GameContext r1 = detachedCounterfactualCopy(base), r1b = detachedCounterfactualCopy(base),
+                r2 = detachedCounterfactualCopy(base), f2 = detachedCounterfactualCopy(base);
+    const auto s1 = luckRedraw(r1, base.seed, 3, 1), s1b = luckRedraw(r1b, base.seed, 3, 1);
+    const auto s2 = luckRedraw(r2, base.seed, 3, 2), sf = luckRedraw(f2, base.seed, 4, 1);
+    check(s1 == s1b && rngFingerprint(r1) == rngFingerprint(r1b), "luck redraw is not deterministic");
+    check(s1 != s2 && s1 != sf && s1 != base.seed && rngFingerprint(r1) != rngFingerprint(r2), "luck redraw repeats");
+    check(r1.miscRng.counter == base.miscRng.counter && r1.potionRng.counter == base.potionRng.counter
+              && r1.miscRng.seed0 != base.miscRng.seed0 && r1.cardRng.seed0 == base.cardRng.seed0
+              && r1.relicRng.seed0 == base.relicRng.seed0, "luck redraw streams");
+    check(plainState(r1) == plainState(base) && luckFields(r1) == luckFields(base), "luck redraw changes the state");
+    check(luckFields(base).at("potionCount") == 2 && luckFields(base).at("hp") == 30, "luck fields");
     std::cout << "fightendpairselftest: fast checks passed\n";
 }
 
@@ -715,7 +931,39 @@ void fullSelfTest(int sims, const std::string &dir) {
         return os.str();
     };
     check(play(false) == play(true), "fight-end observer changes the run");
-    std::cout << "fightendpairselftest: full checks passed (" << pairs << " noop/base pairs)\n";
+
+    // luck=: the replays leave every source and fork row unchanged, replicate 0 reproduces each real fight, and
+    // the fresh replays are new draws of it.
+    const std::string c = dir + "/fightendpairs-luck.jsonl";
+    fightEndPairGen(1, seed, sims, 20, c, opts + ",luck=1,luck_identity=1", "noop,hp:-8,pot:*", false);
+    std::vector<nlohmann::json> plain;
+    int luckRows = 0, differs = 0;
+    for (auto row : readRows(c)) {
+        if (row.at("kind") == "luck") {
+            check(row.at("fightIndex") == luckRows, "luck rows out of order");
+            ++luckRows;
+            check(row.value("identity", false), "replicate 0 differs from the real fight " + row.dump());
+            check(!row.contains("startEncounter"), "fight-start encounter differs from the fight's");
+            const auto &reps = row.at("replays");
+            check(reps.size() == 1 && reps[0].at("r") == 1 && !reps[0].contains("error")
+                      && reps[0].at("healthFailures") == 0 && reps[0].at("simulations").get<long long>() > 0,
+                  "fresh replay row");
+            differs += reps[0].at("fields") != row.at("real").at("fields") || reps[0].at("won") != row.at("real").at("won");
+            continue;
+        }
+        if (row.at("kind") == "source") {
+            const auto &l = row.at("luck");
+            check(l.at("fights") == luckRows && l.at("replays") == 2 * luckRows && l.at("identityChecked") == luckRows
+                      && l.at("identityMismatches") == 0 && l.at("errors") == 0 && l.at("identitySeed") == true,
+                  "source luck tally");
+            row.erase("luck");
+        }
+        plain.push_back(std::move(row));
+    }
+    check(luckRows > 0 && plain == ra, "luck replays change the source or fork rows");
+    check(differs > 0, "no fresh replay differs from its real fight");
+    std::cout << "fightendpairselftest: full checks passed (" << pairs << " noop/base pairs, " << luckRows
+              << " luck fights, " << differs << " differ)\n";
 }
 
 } // namespace

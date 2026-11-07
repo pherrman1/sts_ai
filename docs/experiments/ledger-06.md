@@ -26391,6 +26391,34 @@ rate, and its effect on ordinary fights is at best neutral.
 Cost ≈ 30 core-h cloud.
 **Knowledge impact:** none beyond this entry (KB `architecture/combat-search.md` already calls it a research flag).
 
+## §764 — E1 of the learned price head: fight luck (one fresh replay of every fight) vs the leaf pilot's CRN fork pairs on the same 8,160 A20 source runs (net-0420, combat B): fight-end HP price 0.155 vs 0.178 pp per HP, ratio 0.87 (90% CI [0.60, 1.31]) → INCONCLUSIVE (GO band [0.67, 1.5] missed at the lower end, 95% CI contains 1); luck carries ~25-40× more information per core-h (cloud, 2026-11-07)
+
+**Question (Philipp, 2026-11-07 09:31 CET: a net that guesses Silver's price table per encounter; E1 go 17:45 CET "jap
+find ich gut, mach das"; 40 workers 22:21 CET):** the price-head design (https://claude.ai/artifact/PzKavVUBmYiitvHLFhg7qp)
+trains on fight-luck labels (cheap; HP and potions) and CRN fork pairs (every field; expensive). Under the leaf pilot's
+policy and combat, on the same source runs, does fight luck give the same fight-end HP price as the CRN pairs?
+**Data:** [PREREG](evidence/learned_price_head_e1_20261107/PREREG.md) (K PASS after F1, two delta PASSes),
+[RESULT](evidence/learned_price_head_e1_20261107/RESULT.md), `e1_result.json`, `inputs.sha256`. Generator
+`fightendpairgen` with `n=0,ooc=ppo,luck=1,luck_identity=1` at `065e4280` (binary `26775caf…`), RUN_COMMIT `f29d1695`.
+Source runs = the pilot's first block 111780000–111788191 (no new seeds). CRN = the pilot's (#1003) forks, weighted by
+π⁻¹ = eligible/sampled and by the fight's leave-one-out HP-luck variance.
+**Result:**
+- Gates: the source rows equal the pilot's on all 8,160 shared seeds, all 32,502 fork states are identical, all 10,943
+  unchanged replays reproduce their fight, 0 replay errors in 175,807 fights, and exchangeability passes in all 12
+  act × room cells.
+- β_luck 0.155 pp per HP [0.119, 0.190]; β_CRN 0.178 [0.111, 0.250]; ρ 0.87, 90% CI [0.60, 1.31], 95% CI [0.56, 1.43].
+  Per act ρ = 1.08 / 0.63 / 1.33, all 90% CIs containing 1.
+- Descriptive: a won Heart fight is worth 99.1 ± 2.2 pp, which checks the ×2 scale. HP after Shield and Spear is worth
+  0.53 ± 0.08 pp per HP. Potions, luck vs CRN: 1.9 vs 2.0, −0.9 vs 2.8 and 1.5 vs 2.8 pp per potion in acts 1–3. An
+  unused Lizard Tail is worth 18.4 ± 5.5 pp. Information per core-h on the pooled HP price: luck ~40× CRN (~25× if only
+  the HP copies and the base are charged).
+**Interpretation (Inference):** luck and CRN agree within noise. The CRN reference is the limiting side (twice the SE
+at ten times the cost), so luck labels look usable for HP prices, but their calibration is not certified inside the
+pre-registered band.
+**Decision:** INCONCLUSIVE. No default change; `luck=` stays a research option. Seeds: none new. Cost 95.7 core-h (40
+cloud workers, 64 min).
+**Knowledge impact:** KB `research/fight-end-pairs.md` (luck rows; E1 pointer).
+
 ## §763 — Stage-2 leaf pilot: paired fight-end continuations to the run end under net-0420 (combat B), 1,938 units = 15,504 A20 source runs, 61,739 forks × 6.5 copies: GO with inclusion weights (PREREG deviation 1, before the stop): every change costs Heart kill in acts 1-3, HP slope β 0.192 pp/HP [0.147, 0.234], 8-HP price resolved in acts 1-2 (z 5.6 / 4.3) but not act 3 (z 1.2), projected label cost 638 core-h; the frozen unweighted analysis is NO-GO (β −0.056, length bias of the fork sampler) (cloud, 2026-11-07)
 
 **Question (Philipp, 2026-11-07 08:57 CET "wir könnten noch die vielen core hours für silver combat leafs machen?";
@@ -26466,3 +26494,17 @@ stays the offline benchmark on CRN pairs; luck replays cannot price max HP, gold
 prices. A full CRN factory (stage 3) is not supported by these learning curves. No default change. Cost: 0 core-h
 cloud (about 5 core-h of author-container CPU for the embeddings and fits).
 **Knowledge impact:** KB `research/fight-end-pairs.md` (stage-4 paragraph).
+## §765 — Silver risk veto (`STS_SILVER_RISK_VETO`) probe on §711 Baalorlord expert states: dropped after the smoke, the veto never fires at delta 0.05 / 0.10 (max eligible playout death-rate gap 0.038 over 674 eligible roots; 0 vetoes in 2,279 decisions) (cloud, 2026-11-08)
+
+**Question (Philipp, go 2026-11-08 00:07 CET):** does the risk veto (#1005) change fight outcomes on §711's expert
+states (arms veto 0.05 / 0.10, act 1-3 elites and bosses, 2 copies, 40 workers)?
+**Data:** [RESULT](evidence/risk_veto_probe_20261108/RESULT.md). Smoke of two units on an unmerged arm build (8a63785b,
+binary 22ee0a36…), plus a debug print of per-edge playout deaths.
+**Result:** 0 vetoes in 2,279 Silver decisions; arm outcomes equal production. Of 674 eligible roots (675 printed), gaps ≥ 0.01 /
+0.02 / 0.05: 13 / 4 / 0; max 0.038.
+**Interpretation (Inference):** with expert decks the rollout leaf rarely dies and competing edges die at nearly the
+same rate, so a playout-death veto has nothing to act on.
+**Decision:** Philipp dropped the probe 00:29 CET; the flag stays default off; risk-aware choice waits for a learned
+value. No seeds. Cost ≈ 1 core-h.
+**Knowledge impact:** none beyond this entry.
+
