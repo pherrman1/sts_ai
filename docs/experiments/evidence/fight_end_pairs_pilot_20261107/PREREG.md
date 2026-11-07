@@ -2,7 +2,7 @@
 
 Status: **FROZEN for launch** once `campaign.manifest` carries `code_commit` and `binary_sha256` (prelaunch review K).
 
-**Question.** Leaf plan, stage 2. Philipp asked on 2026-11-07 at 08:57 CET: "wir könnten noch die vielen core hours für silver combat leafs machen?". His go came at 09:09 CET: "wir können den pilot einfach ausweiten, sodass 40 worker etwa 5-6h brauchen". The pilot asks two things:
+**Question.** Leaf plan, stage 2. Philipp asked on 2026-11-07 at 08:57 CET: "wir könnten noch die vielen core hours für silver combat leafs machen?". His go came at 09:09 CET: "wir können den pilot einfach ausweiten, sodass 40 worker etwa 5-6h brauchen". He confirmed it at 09:24 CET ("du hast mein go für später"). At 09:26 CET he changed the stop: "kannst du ansttaddessen einfach die worker weiterlaufen lassen undich stoppe iwann den lauf? bzw mit max cap von 12h anstatt 5.5h?". The pilot asks two things:
 
 1. Do paired fight-end continuations to the run end resolve Silver leaf prices per act?
 2. What would a label factory that resolves them cost?
@@ -21,7 +21,12 @@ Combat is combat B of LONG_B and LONG_C: flat Silver 1,000 sims per root, learne
 
 **Engine.** RUN_COMMIT = main 7074a3e5 + this PR (code + campaign); the binary sha256 is in `campaign.manifest`.
 
-**Seeds.** 8,192 new source seeds, 111780000-111788191, in 1,024 units of 8 seeds (`units.txt`, one first seed per line). Smoke seeds are 111789990-111789999. Before freezing, the ledger and the seed notes showed nothing in use above 111769991.
+**Seeds.** 20,480 new source seeds in 2,560 units of 8 seeds (`units.txt`, one first seed per line):
+
+- 111780000-111788191 (units 1-1,024);
+- 111790000-111802287 (units 1,025-2,560).
+
+Smoke seeds are 111789990-111789999. Before freezing, the ledger and the seed notes showed nothing in use above 111769991. The author's smoke played 111789990 (one source seed, `run_unit.sh`) with this code and binary; that seed is not in `units.txt`.
 
 **Generator call.** Each unit runs `one_combat fightendpairgen 8 FIRST 1000 20 OUT n=4,ooc=ppo default`:
 
@@ -31,12 +36,18 @@ Combat is combat B of LONG_B and LONG_C: flat Silver 1,000 sims per root, learne
 
 **Workers.** 40 workers with 4 lanes each, queue schedule (`campaign.manifest`).
 
-**Stop rule.** The run ends when all units are done, or 5.5 h after the first worker starts, whichever comes first. At the stop, every worker gets `worker.sh stop`: no new units start, and running units finish and upload. Philipp may stop the run earlier.
+**Stop rule.** The run ends at the first of three events:
+
+- all units are done;
+- Philipp stops it;
+- 12 h have passed since the first worker started (hard cap).
+
+At the stop, every worker gets `worker.sh stop`: no new units start, and running units finish and upload.
 
 - Any started unit that is not uploaded at the stop is re-run before the analysis, if the units missing that way are more than 2% of the started units.
 - The analysis then uses every uploaded unit. Units start in queue order, independent of their outcome, so the uploaded units are a seed-exchangeable sample.
 
-**Expected cost.** About 3.7 forks per run and about 6.5 copies per fork give about 197,000 continuations. Measured cost is 10-13 s per continuation (smoke), plus 20.6 s per source run (§760). That is about 760 core-h, or about 4.7 h on 160 lanes. If the throughput is lower, the stop rule cuts the run at 5.5 h.
+**Expected cost.** About 3.7 forks per run and about 6.5 copies per fork. Continuations cost 5-35 s each in the smokes (a continuation that reaches the Heart takes 30-45 s), and a source run costs 20.6 s (§760). That puts one unit at about 50-60 lane-minutes. All 2,560 units would take about 14 h on 160 lanes, so the 12 h cap or Philipp's stop ends the run first, at no more than about 1,900 core-h.
 
 ## Analysis (`analyze.py`, pre-registered)
 

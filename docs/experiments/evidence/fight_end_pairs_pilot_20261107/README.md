@@ -3,7 +3,7 @@
 `PREREG.md` has the design. Files:
 
 - `campaign.manifest`
-- `units.txt`: 1,024 units, each line the first of eight source seeds, 111780000-111788191.
+- `units.txt`: 2,560 units, each line the first of eight source seeds, 111780000-111788191 and 111790000-111802287.
 - `run_unit.sh`: `fightendpairgen 8 FIRST 1000 20 OUT n=4,ooc=ppo default` under net-0420 in combat B.
 - `analyze.py`: the pre-registered analysis.
 - `BRIEF-worker.md`: the Haiku worker brief.
@@ -14,7 +14,7 @@ Code in this PR (default off): `fightendpairgen` option `ooc=ppo` (net-0420 play
 
 ## Stop
 
-The run stops 5.5 h after the first worker starts. Each worker then gets `worker.sh stop` (no new units; running units finish and upload). Analysis:
+The run stops when Philipp says so, at the latest 12 h after the first worker starts. Each worker then gets `worker.sh stop` (no new units; running units finish and upload). Analysis:
 
 ```
 python3 analyze.py /mnt/project-files/fight-end-pairs-pilot/units results/analysis.json
@@ -22,4 +22,8 @@ python3 analyze.py /mnt/project-files/fight-end-pairs-pilot/units results/analys
 
 ## Smoke
 
-Not yet run in the author container; results go here before launch.
+Author container, 2026-11-07, binary `96861592…`, combat B, net-0420:
+
+- **Policy path.** On the used seeds 111769990 and 111769991, the `fightendpairgen` source run (`ooc=ppo`) equals LONG_B's `bestbench` PPO game. 111769990 is a win on floor 56 with decisions=107, single=51, fallbacks=0 and auto_gold=31. 111769991 is a loss on floor 6 with decisions=8, single=5, fallbacks=0 and auto_gold=3. The heart1 records carry `obs.v2.*`.
+- **`run_unit.sh`.** On smoke seed 111789990 (N = 1): rc 0, every check passed, 163 s wall. The source run is a loss on floor 33 with 4 forks and 28 copies, 5.4 s CPU per continuation, and a 4.5 KB `jsonl.gz`.
+- **`analyze.py`.** On that tar it runs end to end (1 unit, 4 forks).

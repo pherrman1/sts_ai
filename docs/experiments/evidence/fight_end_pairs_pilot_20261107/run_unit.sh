@@ -8,11 +8,12 @@ set -uo pipefail
 REPO=$1 RUN=$2 OUT=$3 FIRST=$4
 [ "$(sha256sum < "$RUN/one_combat" | cut -c1-16)" = 968615927ae7fc8d ] || { echo "bad $RUN/one_combat" >&2; exit 2; }
 [ "$(sha256sum < "$RUN/net-0420.bin" | cut -c1-16)" = 8c0bd16c31499270 ] || { echo "bad $RUN/net-0420.bin" >&2; exit 2; }
-if ! { [ "$FIRST" -ge 111780000 ] && [ "$FIRST" -le 111788184 ] && [ $(( (FIRST - 111780000) % 8 )) = 0 ]; } \
+in_block() { [ "$FIRST" -ge "$1" ] && [ "$FIRST" -le "$2" ] && [ $(( (FIRST - $1) % 8 )) = 0 ]; }
+if ! in_block 111780000 111788184 && ! in_block 111790000 111802280 \
     && ! { [ "$FIRST" -ge 111789990 ] && [ "$FIRST" -le 111789999 ]; }; then
   echo "seed $FIRST outside the frozen block" >&2; exit 2
 fi
-N=8; [ "$FIRST" -ge 111789990 ] && N=1   # smoke seeds: one source seed
+N=8; [ "$FIRST" -ge 111789990 ] && [ "$FIRST" -le 111789999 ] && N=1   # smoke seeds: one source seed
 mkdir -p "$OUT"
 E=("PATH=/usr/local/bin:/usr/bin:/bin" "HOME=$HOME" "STS_EXECUTABLE_GIT_SHA=$(git -C "$REPO" rev-parse HEAD)"
   OMP_NUM_THREADS=1 OMP_DYNAMIC=FALSE

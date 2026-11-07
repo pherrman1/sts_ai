@@ -2,7 +2,7 @@
 """Stage-2 leaf pilot analysis (PREREG.md; written before any campaign row was read).
 usage: analyze.py UNITS_DIR OUT.json [--first-seeds units.txt]
 UNITS_DIR holds the uploaded unit tars (<first seed>.wNN.tar; the first tar per unit id is used). A unit counts when
-its result.txt says rc=0 and its JSONL has one source row per source seed (8; 1 for smoke seeds). Pairs: (fork,
+its result.txt says rc=0 and its JSONL has one source row per source seed (8; 1 for smoke seeds 111789990-999). Pairs: (fork,
 variant) with a valid base and a valid variant row; D = y_variant - y_base for y = heartKill (primary) and
 finalFloor (secondary). CIs: percentile bootstrap over source seeds, 2,000 resamples, seed 20261107."""
 import collections, gzip, io, json, math, os, re, sys, tarfile
@@ -38,7 +38,7 @@ def load_units(units_dir):
                 bad[uid] = 'rc ' + (rc.group(1) if rc else '?')
                 continue
             rows = [json.loads(l) for l in gzip.open(io.BytesIO(t.extractfile(files[jl[0]]).read()), 'rt')]
-        n_source = 1 if int(uid) >= 111789990 else 8
+        n_source = 1 if 111789990 <= int(uid) <= 111789999 else 8
         if sum(r['kind'] == 'source' for r in rows) != n_source:
             bad[uid] = 'source rows'
             continue
