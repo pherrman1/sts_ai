@@ -1,11 +1,11 @@
-# Worker brief: learned-price-head-e1 (20 workers)
+# Worker brief: learned-price-head-e1 (40 workers)
 
 Authorization: Philipp 2026-11-07 17:45 CET in the project chat, "jap find ich gut, mach das", on the coordinator's
 plan to run E1 of the learned price head (about 88 core-h on the leaf pilot's seeds; measured projection about
 94 core-h) after the pilot's stop at 21:38 CET.
 RUN_COMMIT=<RUN_COMMIT>   (set in the share copy of this brief after the prelaunch review)
 
-YOUR WORKER NUMBER: W=<n>   (pass it unpadded, 1..20; never 03)
+YOUR WORKER NUMBER: W=<n>   (pass it unpadded, 1..40; never 03)
 CAMPAIGN=docs/experiments/evidence/learned_price_head_e1_20261107
 Work in /home/user/sts_ai. Run nothing from /mnt/project-files (noexec). Do not change seeds, scripts, environments,
 binary, models or timeouts. The worker script uploads only to /mnt/project-files/learned-price-head/e1 (units/,
@@ -24,4 +24,4 @@ If you worked on an earlier campaign, its files are finished; leave them alone, 
 Stay alive until the author thread says your units are verified.
 If any step is refused or prints STOP, reply with the exact output and stop. Do not work around it.
 Expect about 11 min per unit (5-25 min; 16 A20 runs, each fight replayed once), 4 units at a time; 512 units shared by
-20 workers through the queue, so about 1.5 h in all.
+40 workers through the queue, so about 45 min in all.

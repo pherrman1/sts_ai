@@ -1,7 +1,7 @@
 name          learned-price-head-e1
 code_commit   065e4280ad2ef90f0e602c15a74a71ac1451c515
 binary_sha256 26775caf3c986e383e44825af84ba11d846c2dd3e85421122c8dd74f5d406894
-workers       20
+workers       40
 share         /mnt/project-files/learned-price-head/e1
 configure_preset linux-gcc-release-x86-64-v3
 parallel      4

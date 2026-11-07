@@ -52,14 +52,15 @@ the fight-start hook of `finishOocCounterfactual` (default off); binary `26775ca
 linux-gcc-release-x86-64-v3; the same build of the pilot tip reproduced the pilot's binary `968615927ae7fc8d…`
 exactly). RUN_COMMIT = this campaign's commit on top.
 
-**Units and workers.** 512 units of 16 seeds (`units.txt`); 20 workers with 4 lanes each, queue schedule. No stop
+**Units and workers.** 512 units of 16 seeds (`units.txt`); 40 workers with 4 lanes each, queue schedule (Philipp,
+2026-11-07 22:21 CET, "Let's go 40, falls die pilot worker fertig sind"; frozen first with 20). No stop
 rule: every unit runs. A unit that fails all four attempts is dropped whole and listed in the RESULT.
 
 **Expected cost.** The pilot's 8,080 uploaded source runs of this block used 20.6 s CPU each on average (median
 12.8 s). In the smoke one fresh replay per fight cost 0.88 of the source run, and the source run itself 7% more
 than the pilot's on the same seeds. With the identity replays (one seed in 16) that is about 41 s per seed, so
 8,192 × 41 s ≈ **94 core-h** (about 90-100). The go's "about 88 core-h" assumed 14 s per source run (the pilot's
-first unit). A unit takes about 11 min (5-25 min); 20 workers × 4 lanes need about 1.5 h.
+first unit). A unit takes about 11 min (5-25 min); 40 workers × 4 lanes need about 45 min.
 
 ## Smoke (author, before freezing)
 
