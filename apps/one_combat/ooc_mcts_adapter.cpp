@@ -2776,11 +2776,15 @@ std::uint64_t liveFastRootCap = 0;
 std::uint64_t liveFullRootSims = 0;
 bool liveFullRootSimsExplicit = false;
 constexpr std::uint64_t kA20MapRootSims = 1024;
-// STS_OOC_MCTS_PRIOR_SHARE_STOP=H (research, default off; H in (0.5, 1], 0 = off): a full-budget map root stops after
-// 128, 256 or 512 completed simulations (those below its budget) once the most-visited action is the prior argmax and
-// holds at least H of the root visits (OocMctsConfig::priorShareStopFraction). Offline rule S_prior of
+// STS_OOC_MCTS_PRIOR_SHARE_STOP=H (H in (0.5, 1], 0 = off): a full-budget map root stops after 128, 256 or 512
+// completed simulations (those below its budget) once the most-visited action is the prior argmax and holds at least
+// H of the root visits (OocMctsConfig::priorShareStopFraction). Offline rule S_prior of
 // docs/experiments/evidence/map_root_maxq_count_20261101/budget_stop.py. Needs STS_OOC_MCTS_FULL_BUDGET_FRACTION.
+// Unset: at ascension 20 under ADR-0061's map-only default, H = 0.9 (kA20PriorShareStop, ADR-0066, NI §753); =0
+// restores the full map-root budget there.
 double livePriorShareStop = 0;
+bool livePriorShareStopExplicit = false;
+constexpr double kA20PriorShareStop = 0.9;
 // Self-play exploration for AZ data runs (both opt-in, off by default):
 // STS_OOC_MCTS_ROOT_NOISE=FRACTION[:ALPHA] mixes Dirichlet noise into the root PUCT prior;
 // STS_OOC_MCTS_PLAY_SAMPLE=FLOOR[:TEMPERATURE] plays a root action sampled in proportion to
@@ -2866,6 +2870,15 @@ bool liveSearchScreensSet = false;
 bool liveSearchScreensA20Default = false;
 bool liveMapOnlyA20(const GameContext &gc) {
     return liveEnabled && liveSearchScreensA20Default && gc.ascension >= 20;
+}
+// The A20 prior-share default (ADR-0066) is in force for this run: map-only default, playout caps on, flag unset.
+bool livePriorShareA20Default() {
+    return liveSearchScreensA20Default && !livePriorShareStopExplicit && liveFullBudgetFraction > 0;
+}
+// Prior-share stop fraction for a root at gc (0 = off): the explicit flag, else the A20 default.
+double livePriorShareFor(const GameContext &gc) {
+    if (livePriorShareStopExplicit) return livePriorShareStop;
+    return livePriorShareA20Default() && liveMapOnlyA20(gc) ? kA20PriorShareStop : 0;
 }
 enum class LiveSearchMode { Mcts, Particle, ParticleBeam };
 LiveSearchMode liveSearchMode = LiveSearchMode::Mcts;
@@ -3851,6 +3864,8 @@ void configureLiveOocMcts() {
             throw std::runtime_error("STS_OOC_MCTS_FULL_ROOT_SIMS requires STS_OOC_MCTS_FULL_BUDGET_FRACTION");
     }
     livePriorShareStop = 0;
+    livePriorShareStopExplicit = false;
+    if (const char *raw = std::getenv("STS_OOC_MCTS_PRIOR_SHARE_STOP"); raw && *raw) livePriorShareStopExplicit = true;
     if (const char *raw = std::getenv("STS_OOC_MCTS_PRIOR_SHARE_STOP"); raw && *raw && std::string(raw) != "0") {
         const std::string value(raw);
         std::size_t used = 0;
@@ -4711,6 +4726,7 @@ void configureLiveOocMcts() {
         << (liveSearchScreensA20Default ? " screens_a20_default=map_full_budget" : std::string{})
         << (liveSearchScreensA20Default && !liveFullRootSimsExplicit && liveFullBudgetFraction > 0
             ? " map_root_sims_a20_default=" + std::to_string(kA20MapRootSims) : std::string{})
+        << (livePriorShareA20Default() ? " prior_share_stop_a20_default=" + std::to_string(kA20PriorShareStop) : std::string{})
         << (liveRootProbeGrid.empty() ? std::string{} : " root_probe_grid=" + std::string(std::getenv("STS_OOC_ROOT_PROBE_GRID"))
             + " seeds=" + std::to_string(liveRootProbeGridSeeds) + " sims=" + std::to_string(liveRootProbeGridSims)
             + (liveRootProbeGridNet ? " sr=" + liveRootProbeGridNetPath + " sha256=" + liveRootProbeGridNetSha256 : ""))
@@ -4752,6 +4768,7 @@ void configureLiveOocMcts() {
         << (liveSearchScreensA20Default ? ",\"searchScreensA20Default\":\"map_full_budget\"" : std::string{})
         << (liveSearchScreensA20Default && !liveFullRootSimsExplicit && liveFullBudgetFraction > 0
             ? ",\"mapRootSimsA20Default\":" + std::to_string(kA20MapRootSims) : std::string{})
+        << (livePriorShareA20Default() ? ",\"priorShareStopA20Default\":" + std::to_string(kA20PriorShareStop) : std::string{})
         << (liveLeafCompare ? ",\"leafCompare\":" + [] {
                 nlohmann::json arms = nlohmann::json::array();
                 for (const auto &arm : liveLeafCompare->arms) {
@@ -5472,10 +5489,11 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
     if (explore && fullBudget && !liveFullRootSimsExplicit && liveMapOnlyA20(gc) && simulations > kA20MapRootSims)
         simulations = kA20MapRootSims;
     if (fullBudget) { config.allowUnqualifiedRootStop = false; config.stopAt512VisitGap20 = false; config.gapStopFraction = 0; }
-    const bool priorShareStop = explore && fullBudget && livePriorShareStop > 0
+    const double priorShareH = livePriorShareFor(gc);
+    const bool priorShareStop = explore && fullBudget && priorShareH > 0
         && gc.screenState == sts::ScreenState::MAP_SCREEN;
     if (priorShareStop) {
-        config.priorShareStopFraction = livePriorShareStop;
+        config.priorShareStopFraction = priorShareH;
         for (const std::uint64_t checkpoint : {128, 256, 512})
             if (checkpoint < simulations) config.priorShareStopSimulations.push_back(checkpoint);
     }
@@ -6042,8 +6060,8 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
         if (liveFullBudgetFraction > 0) (*policyRoot)["fullBudget"] = fullBudget;
         if (liveFastRootCap > 0) (*policyRoot)["fastRootCap"] = liveFastRootCap;
         if (liveFullRootSims > 0) (*policyRoot)["fullRootSims"] = liveFullRootSims;
-        if (livePriorShareStop > 0) {
-            (*policyRoot)["priorShareStop"] = livePriorShareStop;
+        if (const double h = livePriorShareFor(gc); h > 0) {
+            (*policyRoot)["priorShareStop"] = h;
             (*policyRoot)["earlyStopPriorShare"] = m.earlyStopPriorShare;
         }
         if (explore && liveRootNoiseFraction > 0 && !config.gumbelRootActions)
@@ -6847,7 +6865,7 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
             {"early_stop_gap_ladder", m.earlyStopGapLadder}, {"early_stop_learned", m.earlyStopLearned},
             {"unsupported_simulations", m.unsupportedSimulations}, {"pruned_actions", m.prunedActions},
             {"cpu_budget_seconds", liveOptions.cpuBudgetSeconds}, {"early_stop_budget", m.earlyStopBudget}};
-        if (livePriorShareStop > 0) decisionProfile["early_stop_prior_share"] = m.earlyStopPriorShare;
+        if (livePriorShareFor(gc) > 0) decisionProfile["early_stop_prior_share"] = m.earlyStopPriorShare;
     }
     if (!liveCheckpointTrace.empty()) {
         ImaginedScope scope;

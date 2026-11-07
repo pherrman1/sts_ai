@@ -18,6 +18,7 @@
 #include "sim/search/SilverWireState.h"
 #include "sim/search/RunGoal.h"
 #include "one_combat/heart1_policy.h"
+#include "one_combat/silver_price_table.h"
 #include "one_combat/silver_synth_keys.h"
 #include "sim/search/PotionRewardPolicy.h"
 
@@ -88,6 +89,12 @@ nlohmann::json effectiveSilverLeafSpecification() {
                              {"blend", leaf.leafHeadBlend}, {"turn_penalty", leaf.leafHeadTurnPenalty}};
     // Recorded only when on, so earlier leaf head specifications match.
     if (!leaf.leafHead.empty() && leaf.leafHeadWinCap) spec["leaf_head"]["win_cap"] = true;
+    // Recorded only when on (STS_SILVER_PRICE_TABLE_LEAF, research, default off).
+    if (auto table = one_combat::silverPriceTableLeafSpecification(); !table.is_null()) {
+        table["trees_sha256"] = fileSha256(table["trees"].get<std::string>());
+        table["vocab_sha256"] = fileSha256(table["vocab"].get<std::string>());
+        spec["price_table_leaf"] = table;
+    }
     return spec;
 }
 

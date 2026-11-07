@@ -26119,3 +26119,193 @@ more in Act 1 and converts more late runs into kills.
 Philipp. No default change.
 Seeds: 111520000-111522047 and 111529990-111529991 USED. Cost ≈ 4,096 games ≈ 29 core-h.
 **Knowledge impact:** KB `research/a20-ppo-plan.md` (G1 row).
+
+## §753 — Prior-share stop H = 0.9 at A20 map roots vs the 1,024 default, 1,536 paired seeds by control reuse: NOT_WORSE, Heart −0.07 pp [−0.59, +0.46] at 0.38x map sims; diverging seeds 19 vs 20 kills (cloud, 2026-11-03)
+
+**Question (Philipp, 2026-11-01 "Hm ich will eigentlich hauptsächlich n speedup", resumed 2026-11-03 20:19 CET "Mach
+auf 4 workern weiter"):** does #942's map-root prior-share stop (`STS_OOC_MCTS_PRIOR_SHARE_STOP=0.9`) cost less than
+1.5 pp of Heart kills against the ADR-0065 1,024 default?
+**Data:** [pre-registration](evidence/prior_share_ni_20261101/README.md) (J PASS after deltas),
+[RESULT](evidence/prior_share_ni_20261101/RESULT.md), `result.json`, `divergence_ps90.json`. Control = §741 arm B
+(else §727 arm A) records; arm played only on the 49 seeds whose control picks differ under the rule plus 32
+sentinels (ADR-0064 reuse). 81 units on 4 workers, RUN_COMMIT aefeffc7, binary d3289b52 (code 85bf1ba0).
+`verify_campaign.py` 81 OK, 0 missing or bad; no failed units. Sentinels 32/32 identical; diverging units 49/49
+prefix and pick as predicted.
+**Result:**
+- Heart kill R 25.72%, C 25.65%, d −0.07 pp [−0.59, +0.46]; SPRT nonregression accepts at 128 pairs (LLR 3.76).
+- Diverging seeds: 19 vs 20 kills (−2.0 pp [−18.4, +12.2]). Secondaries (Act 4, Heart reached, floor, deaths by act)
+  all CIs include 0.
+- Map-root sims 0.38x of 1,024; diverging games 6,512 vs 18,662 map sims per game.
+**Interpretation (Inference):** the gate is nearly guaranteed by construction (3% of games diverge); the diverging-seed
+count shows no visible loss. End-to-end speedup is smaller than the map-sim ratio because combat dominates CPU.
+**Decision:** option stays default off here; a default change is Philipp's call (own PR + ADR on current main, which
+has #957/#970/#976 that this run predates).
+Seeds: none new (111312000-111313535 replayed). Cost ≈ 81 games ≈ 14 core-h.
+**Knowledge impact:** KB `operations/environment-variables.md` (`STS_OOC_MCTS_PRIOR_SHARE_STOP` row: NI result).
+
+## §754 — PPO architecture screen (design B): 5 arms forked from screen 2's BASE after update 30, 29 updates × 512 sampled A20 games each (K15 combat): IN_DECK −0.07, DEPTH6 +0.25, CRITIC_SEP −0.20, AUX +0.03, VAL_SPARSE −0.11 pp vs BASE, all NOT_SHOWN (noise 0.61); no critic arm CRITIC_BETTER → architecture stays BASE (PC + cloud, 2026-11-04)
+
+**Question (Philipp, 2026-11-03: design B chosen 10:37 CET; "Go mit 20 workern nach Screen 2" 19:07 CET):** does one
+change to the decision net's inputs (deck aggregates), depth (+2 identity blocks), critic (separate trunk), auxiliary
+targets (floor, Act 4) or value supervision (sparse) raise the A20 Heart-kill rate of PPO from heart1?
+**Data:** [PREREG](evidence/ppo_arch_screen_20261102/PREREG.md) (K PASS incl. amendments up to 0fcc0abc, #974/#977/#978),
+[RESULT](evidence/ppo_arch_screen_20261102/RESULT.md), `result.json`, `archres.tgz` (sha256 `1afb422c…`),
+[screen.manifest](evidence/ppo_arch_screen_20261102/screen.manifest). Fork point screen 2 BASE `state-0030.pt`
+(`cd1c90c6…`); controls = screen 2's BASE and BASE_S1 on the same seeds (111485872-111500719). RUN_COMMIT 30529219,
+binaries 71cfd280 and (IN_DECK) cf7d4bbb = defaa930 + P1 only. 20 cloud actors, learner on the PC (RTX 3060 Ti),
+2026-11-03 20:18 CET to 2026-11-04 02:01 CET; learner CUDA OOM 21:51 (foreign GPU process), restarted 23:05 from saved
+state, no games lost.
+**Result:**
+- Pre-launch: learner check passed via the pre-registered fallback (fork 8.14e-4 ≤ screen 2 rerun 9.65e-4 max
+  |Δparam|; GPU learner not bitwise reproducible); IN_DECK sentinel 32/32 trajectories identical; native forward cost
+  IN_DECK 1.01×, DEPTH6 1.67×.
+- Primary (iterations 40-59, 10,240 paired seeds vs BASE 7.72%; BASE_S1 8.33%, noise 0.61 pp): DEPTH6 +0.25
+  [−0.37, +0.89], AUX +0.03 [−0.58, +0.65], IN_DECK −0.07 [−0.67, +0.57], VAL_SPARSE −0.11 [−0.71, +0.51], CRITIC_SEP
+  −0.20 [−0.82, +0.41]: all NOT_SHOWN. No stalls in the arms; BASE_S1's window stall changes nothing.
+- Cost (actor_s vs screen 2 BASE): 0.78-0.86× for BASE-forward arms (faster containers), DEPTH6 1.02× (≈1.25× vs
+  the others); all ≤ 1.3.
+- Critic secondary (§747 post-fight states, gates.py raw): T1 BASE 0.734, CRITIC_SEP 0.617, AUX 0.718, VAL_SPARSE
+  0.665 (CRIT_PRE 0.721, heart1 0.827); T5 1.99 / 3.25 / 2.22 / 2.42 (1.94, 1.50): all NOT_BETTER.
+**Interpretation (Inference):** at 30 updates none of these architecture changes moves the Heart rate by ≥ ≈0.6 pp,
+the screen's CI half-width; with screens 1 and 2 this makes three axes (recipe, reward, architecture) flat at this
+scale, apart from CRIT_PRE's +0.74 (whose G1, §752, was INCONCLUSIVE). Every PPO critic ends less HP-sensitive than
+heart1's (not pre-registered): on-policy fitting of a sparse 1{Heart} return seems to flatten the post-fight value surface.
+**Decision:** S1 architecture = BASE's net; nothing adopted. No default change. Seeds: no new block (screen 2's
+replayed by design); 111459990-111459993 USED (local sentinel pre-check). Cost ≈ 74,000 games ≈ 115 core-h cloud +
+≈ 5.7 h PC GPU.
+**Knowledge impact:** KB `research/a20-ppo-plan.md` (architecture row).
+
+## §755 — LONG_B critic (net-0208) as a Silver combat leaf, teacher check (B2 rerun of §747): FAIL on HP resolution (−3 HP lowers V in 79.2% of 18,054 post-fight states vs heart1 86.2% on the same states; 1-HP price p10 −3.2 / p90 +4.6 secant units); Fairy 50 HP, max HP +2.5 HP/pt, per-type r 0.78 pass; outcome AUC 0.77 vs heart1 0.56 → no LONG_B leaf, no B3 (offline, no seeds, 2026-11-05)
+
+**Question:** Philipp (2026-11-05 15:54 CET): is the almost finished LONG_B value head suitable as Silver's combat
+leaf? §747 said to rerun B2 on the own A20 PPO critic.
+**Data:** [README](evidence/longb_value_leaf_teacher_20261105/README.md) (pre-registration, §747's gates T1-T5
+unchanged, pushed before scoring), [RESULT](evidence/longb_value_leaf_teacher_20261105/RESULT.md). LONG_B net-0208
+`8c2d7daf…`, `one_combat heart1score` (binary `78849fcf…` = the run's actor binary; parity with the actors' logged
+values 0.0). States: 18,054 post-fight REWARDS states in acts 1-3 (11,500 hallway, 5,195 elite, 1,359 boss) from the
+1,040 LONG_B games of iterations 208-209 (read from the run's git store; §691 records lack the v2 inputs), perturbed
+as `prices.py`: 237,814 records. heart1 scored on the same records as a paired control.
+**Result (primary, acts 1-3):**
+- T1 −3 HP lowers V: 79.2% (need 95%), FAIL (heart1 86.2%). Boss 64%, act 2/3 74/75%.
+- T5 1-HP resolution: median abs(price − 1) 1.57 secant units (need ⅓), FAIL (heart1 1.30).
+- T2 max HP +5 raises V in 96.0% (+2.5 HP per point), T3 Fairy 50.3 HP, T4 per-type r 0.776: pass.
+- Descriptive: AUC of V vs Heart kill 0.77 (acts 0.67/0.80/0.84) vs heart1 0.56. Non-Fairy potion median 6.7 HP.
+- Mid-combat states: not scorable; the record has no combat fields, and Silver's leaf only prices fight-end states.
+**Decision:** FAIL per the pre-registered rule. No LONG_B leaf, no B3 flag. PPO training raised the critic's level
+accuracy and potion prices but not its 1-3 HP resolution.
+Seeds: none.
+**Knowledge impact:** B2 lines in `research/ppo-and-combat-leaf-literature.md`.
+
+## §756 — LONG_B: 220-update PPO run from heart1 on combat B (Silver 1,000) with an online pre-trained critic; final net-0220 vs heart1, policy alone, 2,048 paired A20 seeds: GO, Heart +6.69 pp [+4.54, +8.79] (24.02% vs 17.33%), SPRT PASS at 576 pairs; gain grows across checkpoints (+1.4/+3.6/+5.5/+6.7 pp), more Act-1 deaths (PC + cloud, 2026-11-05)
+
+**Question (Philipp, 2026-11-04 10:47 CET "40 worker", 23:52 CET "go LONG_B"):** does a longer PPO run from heart1, on
+stronger self-play combat and with a critic pre-trained on that combat, produce a net that plays A20 better than heart1?
+**Data:** [PREREG](evidence/ppo_long_b_20261104/PREREG.md) (K PASS R3, amendment 2026-11-05),
+[RESULT](evidence/ppo_long_b_20261104/RESULT.md), `eval/result.json`, `eval/games.csv`. Training: 220 updates × 520
+sampled games (20 value-only with Monte Carlo targets, 200 PPO with §748's base recipe), 40 cloud actor parts, learner
+on the PC. Evaluation: G1's runner and seeds, PPO mode at T 0, combat B, binary 78849fcf (bc33e470, behaviour-preserving
+equivalent-copy speedup, K PASS). The 32-seed GH sentinel was 32/32 equal to G1, so G1's GH games are the control.
+`verify_campaign.py`: 2,048 OK; every game rc 0, no aborts, no dropped seed.
+**Result:**
+- Heart kill: heart1 17.33%, net-0220 24.02%, D +6.69 pp [+4.54, +8.79]. Sequential gate (gainer, d1 = +2 pp): PASS,
+  H1 at 576 pairs (LLR 3.14).
+- Checkpoints net-0070, 0120 and 0170: +1.42 [−0.54, +3.32], +3.61 [+1.51, +5.66] and +5.47 [+3.42, +7.52] pp.
+- net-0220 secondary: Act 3 cleared +3.22 pp [+0.73, +5.66], mean floor −1.18 [−2.01, −0.38]. Act-1 deaths 410 vs 348,
+  paired +3.0 pp (McNemar p ≈ 0.002). Kill share of runs reaching floor 51: 59.0% vs 42.6%. CPU 27.0 s per game.
+- In-sample (T 1): Heart 14.97% (warm-up) → 19.69% (last 20 updates); entropy 0.215 → 0.297; Act 2 reached −3 to −5 pp
+  in most blocks. Critic AUC by act 0.63/0.76/0.81/0.76, first decision 0.51.
+**Interpretation (Inference):** first PPO net that beats heart1, by a wide margin. The gain is larger at T 0 than
+in-sample and still rising at 200 updates. It comes from converting more late runs into Heart kills, paid for partly
+with more Act-1 deaths, which is consistent with the 1{Heart} reward.
+**Decision:** net-0220 (sha256 408b2982…) is the S1 start and the next PPO baseline. A production prior use needs a
+separate A/B and Philipp's call. No default change.
+Seeds: 111540000-111654399 USED (training); the evaluation reused G1's 111520000-111522047. Cost ≈ 800 core-h of
+training actors plus 62 core-h of evaluation.
+**Knowledge impact:** KB `research/a20-ppo-plan.md` (G1 row, LONG_B addition).
+
+## §757 — §746 model A as Silver's Shield & Spear win leaf through a per-fight price table (stage C of the leaf plan): INCONCLUSIVE overall, Heart +1.59 pp [−0.05, +3.23] (97.5%) for the table, +1.25 [−0.45, +2.92] with the anchored win bonus; the table recovers most of §724's Incense gain (+4.5 vs +5.9 pp) but loses −2.4 pp [−4.2, −0.7] on states without Incense Burner (more potions and HP spent, more S&S deaths) → flag stays research-only (1,021 S&S states × 3-5 arms × 4, replays of used seeds, 2026-11-05)
+
+**Question:** Philipp (leaf plan, 2026-11-05; go "go auf 40 workern" 20:05 CET): does Silver play Shield & Spear
+better for the Heart when its win leaf uses §746 model A's prices, built once per fight as a price table
+(`STS_SILVER_PRICE_TABLE_LEAF=a746`, #988), and does anchoring the win bonus to the model (`a746:anchor`, #991) help?
+**Data:** [PREREG](evidence/silver_price_table_leaf_20261105/PREREG-stageC.md) (frozen; J prelaunch PASS),
+[RESULT](evidence/silver_price_table_leaf_20261105/stagec/RESULT.md), `stagec/results/analysis.json`. 1,024 S&S entry
+states: §724's 592 Incense states (re-extracted exactly) + 432 states without Incense Burner from the same five
+campaigns (seed 20261105). `act4replay`, chain S&S → Heart, §724's research Silver; arms D (default leaf), T (table),
+TA (table + anchored win bonus, clamp [53, 212]), and on Incense states I (§724's term) and TI; 4 paired replicates
+(battle seed BLOCK[r] + state). RUN_COMMIT 47a5289c, binary 4ace2751, 40 workers, ≈ 205 CPU-h. 1,021 units rc 0;
+3 units still on their second attempt were dropped on Philipp's instruction (the only deviation); all three finished
+later; all 1,024 units give the same verdict (T − D +1.59 [−0.05, +3.22], TA − D +1.25 [−0.44, +2.91]).
+**Result:**
+- Heart kill D 55.04%, T 56.64%, TA 56.29%. Co-primary gates (gainer, α 0.025): both CAP without a crossing;
+  T − D +1.59 pp [−0.05, +3.23], TA − D +1.25 [−0.45, +2.92] (97.5% CIs) → INCONCLUSIVE.
+- Incense states (589): T − D +4.54 [+2.51, +6.56], I − D +5.90 [+4.15, +7.73], T − I −1.36 [−2.99, +0.27],
+  TI − I −1.06 [−2.58, +0.47]. Aligned counter at the Heart: D 62%, T 87%, I 94%.
+- Other states (432): T − D −2.43 [−4.20, −0.70], TA − D −3.36 [−5.27, −1.49]; S&S death 5.3 → 6.1 / 6.4%, potions
+  used in S&S 0.80 → 0.92 / 0.93.
+- Anchor: TA = T in all 706 states where it sits at the floor (determinism check); elsewhere TA − T −1.11 [−3.19, +0.92].
+**Decision:** INCONCLUSIVE per the pre-registered rule. The price-table flag stays research-only, no default change;
+§724's Incense term remains the better Incense treatment. Model A prices the Incense phase usefully but HP and
+potions wrongly (as §746 measured); the next model comes from the leaf plan's paired fight-end labels (thread A).
+Untested follow-up (needs Philipp's go): a counters-only table.
+Seeds: none new (replays of the used blocks 111384000-385023, 111382000-383023, 111395000-396023, 111398100-399123).
+**Knowledge impact:** KB `research/combat-search/silver-price-table-leaf.md` (stage C result).
+
+## §758 — Counters-only price table at Shield & Spear (§757 follow-up): Silver's default leaf + model A's relic-counter prices raises Heart kill vs the default leaf, sequential gate PASS at 256 states; descriptive +2.44 pp [+1.14, +3.70] on 975 states (Incense +4.72, others −0.66), as good as the full table on Incense states without its loss elsewhere; selection caveat, needs new-seed confirmation (stage C's states and seeds, control reused, 2026-11-06)
+
+**Question:** Philipp (2026-11-05 23:25 CET, "ja 40 worker" 23:28 CET): §757's table helped where it priced the
+Incense counter and hurt where it re-priced HP and potions. Does pricing only the counters, on top of the default
+leaf (`STS_SILVER_PRICE_TABLE_LEAF=a746:counters`, #993), raise Heart kill?
+**Data:** [PREREG](evidence/silver_price_table_leaf_20261105/counters/PREREG.md) (J prelaunch PASS),
+[RESULT](evidence/silver_price_table_leaf_20261105/counters/RESULT.md), `counters/results/analysis.json`. Stage C's
+1,024 S&S states, seeds and Silver; only arm C played (4 replicates); stage C's D/T/I runs as control, checked by 32
+sentinel D units (32/32 identical except CPU). RUN_COMMIT 119c5a05, binary a7c9a729, 40 workers. 975 of 1,024 C units
+delivered at analysis time (share inode limit stall, then Philipp stopped the run at 00:30 CET); 0 dropped, all rc 0.
+**Result:**
+- Gate C − D (gainer, α = β = 0.05, look 64): PASS, H1 at 256 states (LLR 3.04).
+- All 975 analysed states: D 54.59%, T 56.28%, C 57.03%; C − D +2.44 [+1.14, +3.70], C − T +0.74 [−0.45, +1.92].
+- Incense states (561): C − D +4.72 [+2.90, +6.64], C − T +0.04, C − I −1.11 [−2.77, +0.52]; aligned counter 89%.
+- Other states (414): C − D −0.66 [−2.11, +0.81] (T − D was −2.4 in §757); potions used D 0.86, T 1.00, C 0.84.
+**Decision:** PASS per the pre-registered rule; no default change. Caveat (review J): C was chosen after §757 and
+reuses its D runs, so the PASS is conditional on that sample; a new-seed confirmation comes before a whole-run S&S test.
+Seeds: none new (stage C's).
+**Knowledge impact:** KB `research/combat-search/silver-price-table-leaf.md` (counters-only result).
+## §759 — Silver stalemate fights (LONG_B/LONG_C 420–500-turn fights): two leaf inversions and a mean-backup tie; on the 16 known stall fights `STS_SILVER_MAX_BACKUP=4` wins all 16 in 3–26 turns (base: 12 wins at turns 424–499, 4 turn-cap losses), new `STS_SILVER_LOSS_CEILING` fixes the Fiend Fire loss but not the sure-win ties (replays of used seeds, exploratory, 2026-11-06)
+
+**Question (Philipp, 2026-11-06):** fix both stalemate scenarios: sure-win fights (3 Sentries, Shapes with only
+Repulsors left) that Silver drags to the turn cap, and 111680130 floor 44, where a turn-4 Fiend Fire on the Spiker
+exhausted every attack and the fight was lost at the cap.
+**Diagnosis** (PC replays; [FIENDFIRE](evidence/silver_stalemate_20261106/FIENDFIRE.md)):
+- Sure-win tie: every playout wins at the same HP; End Turn and the best card play are within 0.2–2 mean points at
+  stall roots (111558435 turn 4: End Turn 114 visits / 109.7 vs card 137 / 110.1). Potion edges explored after a card
+  play lower that child's mean (playouts never drink), which outweighs the 0.4/turn victory penalty.
+- Leaf inversion 1 (stalemates): a not-won end keeps the uncapped draw credit and pays no turn penalty. At the
+  111680130 turn-4 root (17/75 HP) Fiend Fire → Spiker had 282 visits, mean 81.2, 0 wins (166 turn-cap losses, 116
+  playouts at the 1,000-action cap, mean end turn 453; draw +63.5, damage +24.5), against Bash children that won 39/39
+  playouts at about 74.3. A greedy line without Fiend Fire wins that turn at 17 HP.
+- Leaf inversion 2 (deaths): survival credit (1.5/turn up to turn 100) puts deaths above low-HP wins (End Turn's 11
+  deaths scored 110.8 there; under a stall-only fix, Burning Pact lines with ~98% deaths at turn ~65 reach 130–140).
+**Intervention:** research flags, default off. `STS_SILVER_LOSS_CEILING=1` (new, #997): a non-win end's default loss
+value L becomes W − G·exp(−L/G), G = winBonus, W = a 0-HP win at the same turn, so losses keep their order and stay
+below a 0-HP win at that turn (wins with negative escape, Parasite, gold, max-HP or price-table terms can fall below). `STS_SILVER_MAX_BACKUP=4` (§624, now accepted by `one_combat`). A first variant
+(`STALL_LEAF`: no survival/draw credit and the turn penalty for alive non-win ends after turn 100) was replaced after
+the probe below.
+**Probe:** the 16 stall fights of the LONG_B/LONG_C long games (12 Sentry, 4 Shapes), each arm only on the target
+floor from the same run state; BASE at ba996dee and 4cb624e4 reproduces the original fights decision for decision
+([PROBE](evidence/silver_stalemate_20261106/PROBE.md)). Turns are `bc.turn` at fight end, from 0: the engine declares
+the cap loss once turn > 500, so wins end at turn ≤ 500 and every cap loss shows 501.
+- BASE: 12 Sentry fights won at turns 424–499, 4 Shapes fights lost at the 501-turn cap.
+- MAXB (m = 4), MAXB + STALL, CEIL + MAXB: all 16 won in 3–26 turns; end HP ≥ BASE in 15/16 (111557779 40 vs 42),
+  e.g. 111604302 13 → 53–57 HP, 111568362 18 → 49, 111595870 loss → 110/110; 111680130 won on turn 3 (MAXB 19 HP,
+  CEIL + MAXB 24 HP). Play changes from turn 0–3.
+- STALL: Sentry fights identical to BASE until turn 489+; 3 Shapes losses become wins at turns 499–500; 111680130
+  avoids the Fiend Fire but dies at turn 84 to inversion 2.
+- CEIL: 111680130 won on turn 4 at 32/75 HP; 111565805 won on turn 19, the other two Shapes losses won at turn
+  499; 3/12 Sentry fights shorter (263, 20, 23 turns), 9 still 424–500 turns.
+**Interpretation:** the sure-win stall is a mean-backup tie, which max backup removes; the loss ceiling removes the
+two leaf inversions (the Fiend Fire loss) but not the tie. 16 hand-picked fights say nothing about win rate: §624's
+A20 A/B (max backup + block-first playout) was NOT_SHOWN, max backup costs about +20% CPU per simulation, and the
+learned stop was trained on mean-backup trees.
+**Decision:** both flags stay default off; a whole-run gate on new seeds needs Philipp's go. Seeds: none new
+(replays of the LONG_B/LONG_C seeds listed in PROBE.md).
+**Knowledge impact:** KB `architecture/combat-search.md`, `operations/environment-variables.md`.

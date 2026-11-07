@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <array>
 #include <map>
@@ -84,7 +85,59 @@ namespace sts::search {
         // relative to the state mean) measured for that counter at the Heart's start (§TBD Incense
         // probe). The Heart follows directly, so the counter at the win is the Heart's.
         double incenseHeartPhaseScale = 0;
+        // Research-only (STS_SILVER_LOSS_CEILING=1, default off): every end that is not a win (death,
+        // turn-cap loss, unresolved playout) maps its default loss value L to W - G * exp(-L / G), G =
+        // winBonus, W = the value of a 0-HP win at the same turn (the final-fight leaf's fixed win value
+        // there). Losses keep their order and stay below W (a win with negative escape, Parasite, gold, max-HP or
+        // price-table terms can still fall below it); by default the survival
+        // credit (up to 150) and the uncapped draw credit put deaths and stalemates above low-HP wins.
+        bool lossCeiling = false;
     };
+    // Research-only (STS_SILVER_PRICE_TABLE_LEAF, default off; docs/knowledge-base/research/combat-search/silver-price-table-leaf.md):
+    // prices from a learned run-value model, computed once per fight at fight start by a builder outside the
+    // search (apps/one_combat/silver_price_table.*), so the tree never calls a model. All prices are in units of
+    // the model's own 1-HP slope at the fight-start HP. On a victory the table's value replaces Silver's HP,
+    // held-potion, death-save (Fairy, Lizard Tail), gold, max-HP and Incense terms; winBonus, the turn penalty,
+    // the Smoke Bomb and Parasite penalties stay, and STS_SILVER_INCENSE_HEART_PHASE, if also set, adds on top.
+    struct SilverPriceTable {
+        // U(h): piecewise linear through (hpKnots[i], hpValue[i]), knots ascending, U(1) = 1; outside the knots
+        // the end segments' slopes extend it.
+        std::vector<int> hpKnots;
+        std::vector<double> hpValue;
+        // Held potion of type t is worth potionPrice[t] when potionPriced[t] (a type held at fight start),
+        // else unpricedPotion (Silver's flat potion weight).
+        std::array<double, kSilverPotionTypeCount> potionPrice{};
+        std::array<bool, kSilverPotionTypeCount> potionPriced{};
+        double unpricedPotion = 11;
+        // Per point of max HP and gold against the search root, as Silver's own gold and max-HP terms.
+        double maxHpPrice = 0, goldPrice = 0;
+        // Relic counter value v at the win (BattleContext::updateRelicsOnExit's mapping) is worth price[v]
+        // (v clamped to the priced range); price[rootValue] = 0.
+        struct Counter {
+            RelicId relic = RelicId::INVALID;
+            int rootValue = 0;
+            std::vector<double> price;
+        };
+        std::vector<Counter> counters;
+        // Win bonus for this fight; NaN = SilverEvalWeights::winBonus. The ":anchor" option sets it so that the
+        // table's win at the fight-start state equals the model's own win value V(root) / scale, clamped.
+        double winBonus = std::numeric_limits<double>::quiet_NaN();
+        // Diagnostics: the scale (model value per fight-start HP), the model's win value V(root) / scale and the
+        // unclamped anchored win bonus (NaN when not anchored).
+        double hpUnit = 0, rootWinValue = 0, anchorRaw = std::numeric_limits<double>::quiet_NaN();
+        // ":counters" option: the default victory leaf stays and only the counter prices are added to it
+        // (the builder then leaves out Lizard Tail, which the default leaf prices as a death save).
+        bool countersOnly = false;
+
+        [[nodiscard]] double hpCurve(double hp) const;
+        // Counter value of `c` after the fight ends in `bc` (as exitBattle writes it to the relic).
+        [[nodiscard]] static int endCounter(const BattleContext &bc, const Counter &c);
+        // U(healedHp) + held potions + counters (no gold / max-HP / turn terms).
+        [[nodiscard]] double stateValue(const BattleContext &bc, int healedHp) const;
+        // Σ counter prices at the end values.
+        [[nodiscard]] double counterValue(const BattleContext &bc) const;
+    };
+
     // Incense Heart probe (2026-10-30): Heart kill minus the state mean, pp, counter 0..5.
     inline constexpr std::array<double, 6> kIncenseHeartPhaseKillPp{-1.75, 1.90, -8.25, 5.71, 10.16, -7.78};
     // 1 / (0.75 pp of Heart kill per HP), V_H's slope at 40-70% HP (§721).
@@ -338,6 +391,8 @@ namespace sts::search {
             bool winCap = false;
         };
         LeafHead leafHead;
+        // Research-only price-table leaf (SilverPriceTable); null = Silver's default win leaf.
+        std::shared_ptr<const SilverPriceTable> priceTable;
 
         SilverSearcher(const BattleContext &root, const SilverSearchContext &context);
         ~SilverSearcher();
@@ -462,6 +517,10 @@ namespace sts::search {
         void enumeratePotionActions(Node &node, const BattleContext &bc);
 
         [[nodiscard]] double evaluateEndState(const BattleContext &bc) const;
+        [[nodiscard]] double belowWinCeiling(const BattleContext &bc, double loss) const;
+        // The victory branch's Incense term and its Smoke Bomb / Parasite penalties, applied in order.
+        [[nodiscard]] double withIncenseTerm(const BattleContext &bc, double score) const;
+        [[nodiscard]] double withVictoryPenalties(const BattleContext &bc, double score) const;
     };
 
     // Research hook (exact_combat_solver --leaf-oracle; empty = production): when set and it

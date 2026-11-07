@@ -176,6 +176,18 @@ struct OocContinuationCost {
 };
 using OocPrefixObserver = std::function<void(const GameContext &, int,
                                                const OocContinuationCost &)>;
+// One real (not predicted) fight of finishOocCounterfactual, reported right after
+// BattleContext::exitBattle: on a win the state is the reward screen before any
+// reward is taken. The callback receives a const state and must not consume RNG.
+struct OocFightEnd {
+    int fightIndex = 0;   // fights finished before this one in the continuation
+    int act = 0;          // the battle's act
+    int floor = 0;
+    Room room = Room::INVALID;
+    MonsterEncounter encounter = MonsterEncounter::INVALID;
+    bool won = false;
+};
+using OocFightEndObserver = std::function<void(const GameContext &, const OocFightEnd &)>;
 struct CombatEvalLabel {
     bool decided, healthOk, escaped, trueDeath, won, turnCapLoss, progressAmbiguous, labelValid;
     double terminalHp, terminalMaxHp, winHpFrac, lossRemainingFrac, signedOutcome;
@@ -229,7 +241,8 @@ finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
                         const OocPrefixObserver *prefixObserver = nullptr,
                         OocContinuationCost *finalCost = nullptr,
                         bool useFrozenV4 = false,
-                        std::vector<CombatEvalFight> *combatCapture = nullptr);
+                        std::vector<CombatEvalFight> *combatCapture = nullptr,
+                        const OocFightEndObserver *fightEndObserver = nullptr);
 // Effective OOC policy identity: teacher checks and the bestbench sidecar.
 nlohmann::json effectiveOocPolicySpecification();
 // Effective Silver leaf valuation (leaf terms, escape penalty, rollout card table)
@@ -540,6 +553,13 @@ constexpr int kPriceProbeActHorizon = -1;
 void potionPriceProbe(int nSeeds, std::uint64_t seedStart, int sims, int asc,
                       const std::string &outFile, int statesPerRun, int fightsAhead,
                       int hpDelta, bool allStates = false, const std::string &extra = "");
+namespace one_combat {
+// fightendpairgen (research): paired fight-end continuations to the run end (fight_end_pairs.cpp).
+void fightEndPairGen(int nSeeds, std::uint64_t seedStart, int sims, int asc, const std::string &outFile,
+                     const std::string &options, const std::string &variants, bool manifest = true);
+// fightendpairselftest [full [SIMS [DIR]]]
+int fightEndPairSelfTest(int argc, char **argv);
+}
 void strategicMargGen(int nSeeds, int outerSims,
                              int H, int maxPerRun, const std::string &outFile,
                              long long seedOffset);

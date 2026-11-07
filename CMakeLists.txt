@@ -162,6 +162,14 @@ add_test(NAME curl_up_lethal COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.s
 set_tests_properties(curl_up_lethal PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(combat_turn_cap_test tests/combat_turn_cap_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(combat_turn_cap_test PRIVATE include json/include)
+add_test(NAME combat_turn_cap COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:combat_turn_cap_test>)
+set_tests_properties(combat_turn_cap PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(exhaust_empty_hand_test tests/exhaust_empty_hand_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(exhaust_empty_hand_test PRIVATE include json/include)
@@ -530,6 +538,7 @@ add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/heart_outcome_capture.cpp
     apps/one_combat/expert_replay.cpp
     apps/one_combat/heart1_policy.cpp
+    apps/one_combat/silver_price_table.cpp
     apps/one_combat/heart1_record_invariance.cpp
     apps/one_combat/rollout_student.cpp
     apps/one_combat/differential_state.cpp
@@ -545,6 +554,7 @@ add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/fight_replay.cpp
     apps/one_combat/ooc_factor_eval.cpp
     apps/one_combat/potion_price_probe.cpp
+    apps/one_combat/fight_end_pairs.cpp
     apps/one_combat/strategic_gen.cpp
     apps/one_combat/counterfactual_gen.cpp
     apps/one_combat/ooc_checkpoint_policy.cpp
@@ -559,6 +569,9 @@ add_test(NAME heart_outcome_capture COMMAND one_combat heartoutcomeselftest)
 add_test(NAME forced_boss_relic COMMAND one_combat forcebossrelicselftest)
 add_test(NAME forced_decision COMMAND one_combat forcedecisionselftest)
 add_test(NAME a4_perturb COMMAND one_combat a4perturbselftest)
+add_test(NAME fight_end_pairs COMMAND one_combat fightendpairselftest)
+set_tests_properties(fight_end_pairs PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
 add_test(NAME heart1_public_record_invariance COMMAND one_combat heart1recordselftest)
 add_test(NAME heart1_ppo COMMAND one_combat heart1pposelftest)
 add_test(NAME heart_outcome_collection_python COMMAND python3 -m unittest discover
@@ -576,6 +589,9 @@ set_tests_properties(heart1_ppo PROPERTIES
 add_test(NAME heart1_ppo_python COMMAND python3 -m unittest discover
     -s ${CMAKE_CURRENT_SOURCE_DIR}/tests -p test_heart1_ppo.py)
 set_tests_properties(heart1_ppo_python PROPERTIES LABELS "core;smoke")
+add_test(NAME critic_ceiling_python COMMAND python3 -m unittest discover
+    -s ${CMAKE_CURRENT_SOURCE_DIR}/tests -p test_critic_ceiling.py)
+set_tests_properties(critic_ceiling_python PROPERTIES LABELS "core;smoke")
 
 # Offline full-state transport for frozen #379 replay; no generated game seeds.
 add_executable(screen_leaf_snapshot_test
@@ -589,6 +605,21 @@ add_executable(screen_leaf_gbm_test
     apps/one_combat/compact_tree.cpp)
 target_include_directories(screen_leaf_gbm_test PRIVATE include json/include apps/one_combat)
 add_test(NAME screen_leaf_gbm_features COMMAND screen_leaf_gbm_test)
+add_executable(silver_price_table_test tests/silver_price_table_test.cpp
+    apps/one_combat/silver_price_table.cpp apps/one_combat/compact_tree.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(silver_price_table_test PRIVATE include json/include apps apps/one_combat)
+add_test(NAME silver_price_table COMMAND silver_price_table_test WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+set_tests_properties(silver_price_table PROPERTIES LABELS "core")
+# STS_SILVER_PRICE_TABLE_LEAF unset / =0 gives main's act4replay rows; =a746 runs.
+add_test(NAME silver_price_table_off_identity
+    COMMAND bash ${CMAKE_SOURCE_DIR}/tests/silver_price_table_off_identity.sh $<TARGET_FILE:one_combat>
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+set_tests_properties(silver_price_table_off_identity PROPERTIES LABELS "core")
+add_test(NAME silver_stalemate_flags_log
+    COMMAND bash ${CMAKE_SOURCE_DIR}/tests/silver_stalemate_flags_log.sh $<TARGET_FILE:one_combat>
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+set_tests_properties(silver_stalemate_flags_log PROPERTIES LABELS "core")
 add_executable(heart_leaf_test tests/heart_leaf_test.cpp
     apps/one_combat/heart_leaf.cpp apps/one_combat/run_features.cpp apps/one_combat/compact_tree.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
@@ -900,6 +931,8 @@ add_test(NAME silver_concave_hp_leaf COMMAND $<TARGET_FILE:unit-test> silver_con
 set_tests_properties(silver_concave_hp_leaf PROPERTIES LABELS "core")
 add_test(NAME silver_victory_turn_penalty COMMAND $<TARGET_FILE:unit-test> silver_victory_turn_penalty)
 set_tests_properties(silver_victory_turn_penalty PROPERTIES LABELS "core")
+add_test(NAME silver_loss_ceiling COMMAND $<TARGET_FILE:unit-test> silver_loss_ceiling)
+set_tests_properties(silver_loss_ceiling PROPERTIES LABELS "core")
 add_test(NAME silver_incense_heart_phase COMMAND $<TARGET_FILE:unit-test> silver_incense_heart_phase)
 set_tests_properties(silver_incense_heart_phase PROPERTIES LABELS "core")
 set_tests_properties(silver_rollout_zero_cost_loop PROPERTIES LABELS "core")

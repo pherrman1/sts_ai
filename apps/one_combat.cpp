@@ -11,6 +11,7 @@
 
 #include "one_combat/driver_shared.h"
 #include "one_combat/heart1_policy.h"
+#include "one_combat/silver_price_table.h"
 #include "one_combat/rollout_student.h"
 #include "one_combat/expert_replay.h"
 #include "one_combat/heart_outcome_capture.h"
@@ -1629,7 +1630,8 @@ finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
                         const OocPrefixObserver *prefixObserver,
                         OocContinuationCost *finalCost,
                         bool useFrozenV4,
-                        std::vector<CombatEvalFight> *combatCapture) {
+                        std::vector<CombatEvalFight> *combatCapture,
+                        const OocFightEndObserver *fightEndObserver) {
     const int healthBefore = search::g_simHealthFailureCount;
     const auto continuationWallStart = std::chrono::steady_clock::now();
     const std::clock_t continuationCpuStart = std::clock();
@@ -1705,6 +1707,8 @@ finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
                 endHp = passed ? gc.curHp : 0;
                 endMaxHp = gc.maxHp;
                 bc.exitBattle(gc);
+                if (fightEndObserver)
+                    (*fightEndObserver)(gc, OocFightEnd{fights, battleAct, gc.floorNum, room, bc.encounter, passed});
             }
             if (probe) {
                 probe->fights.push_back({room, bc.encounter, gc.floorNum, endHp,
@@ -3122,12 +3126,13 @@ static std::string unsupportedSilverOption() {
         {"STS_SILVER_USELESS_TRACE", ""}, {"STS_SILVER_PUBLIC_TRACE", ""}, {"STS_SILVER_PUBLIC_TARGET", ""}, {"STS_SILVER_TREE_PROFILE", ""}, {"STS_SILVER_TREE_PROFILE_SCOPE", ""}, {"STS_SILVER_DEBUG_TREE", ""}, {"STS_SILVER_DEBUG_TREE_NODE_CAP", ""},
         {"STS_SILVER_LEARNED_STOP", ""}, {"STS_SILVER_LEARNED_STOP_THRESHOLD", ""},
         {"STS_SILVER_LEARNED_STOP_BOSS_FALLBACK", ""}, {"STS_SILVER_LEARNED_STOP_BOSS_MAX", ""}, {"STS_SILVER_LEARNED_STOP_MODEL", ""}, {"STS_SILVER_STOP_TRACE", ""},
-        {"STS_SILVER_FINAL_BOSS_BINARY", ""}, {"STS_SILVER_FINAL_FIGHT_LEAF", ""}, {"STS_SILVER_NO_LOSS_POTION_CREDIT", ""}, {"STS_SILVER_RELIC_HEAL_LEAF", ""}, {"STS_SILVER_A20_BOSS_HEAL_FIX", ""}, {"STS_SILVER_LOOP_GUARD", ""}, {"STS_SILVER_ESCAPE_PENALTY", ""}, {"STS_SILVER_POTION_WEIGHTS", ""}, {"STS_SILVER_CONCAVE_HP_LEAF", ""}, {"STS_SILVER_GOLD_WEIGHT", ""}, {"STS_SILVER_MAXHP_WEIGHT", ""}, {"STS_SILVER_VICTORY_TURN_PENALTY", ""}, {"STS_SILVER_INCENSE_HEART_PHASE", ""},
+        {"STS_SILVER_FINAL_BOSS_BINARY", ""}, {"STS_SILVER_FINAL_FIGHT_LEAF", ""}, {"STS_SILVER_NO_LOSS_POTION_CREDIT", ""}, {"STS_SILVER_RELIC_HEAL_LEAF", ""}, {"STS_SILVER_A20_BOSS_HEAL_FIX", ""}, {"STS_SILVER_LOOP_GUARD", ""}, {"STS_SILVER_ESCAPE_PENALTY", ""}, {"STS_SILVER_POTION_WEIGHTS", ""}, {"STS_SILVER_CONCAVE_HP_LEAF", ""}, {"STS_SILVER_GOLD_WEIGHT", ""}, {"STS_SILVER_MAXHP_WEIGHT", ""}, {"STS_SILVER_VICTORY_TURN_PENALTY", ""}, {"STS_SILVER_LOSS_CEILING", ""}, {"STS_SILVER_INCENSE_HEART_PHASE", ""}, {"STS_SILVER_PRICE_TABLE_LEAF", ""},
         {"STS_SILVER_ROOT_PRIOR", ""}, {"STS_SILVER_ROOT_PRIOR_WEIGHT", ""}, {"STS_SILVER_ROOT_PRIOR_SCOPE", ""}, {"STS_SILVER_TREE_PRIOR_MIN_VISITS", ""},
         {"STS_SILVER_ROLLOUT_UNIFORM", ""}, {"STS_SILVER_ROLLOUTS_PER_LEAF", ""}, {"STS_SILVER_ROLLOUT_CARD_TABLE", ""}, {"STS_SILVER_ROLLOUT_ZERO_COST_CAP", ""}, {"STS_SILVER_ROLLOUT_ACTION_CAP", ""},
         {"STS_SILVER_ROLLOUT_ROOT_TABLE", ""}, {"STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE", ""}, {"STS_SILVER_PRIOR_PLAYOUT_ELITE", ""},
         {"STS_SILVER_LEAF_HEAD", ""}, {"STS_SILVER_LEAF_HEAD_TRUNK", ""}, {"STS_SILVER_LEAF_HEAD_BLEND", ""},
         {"STS_SILVER_LEAF_HEAD_TURN_PENALTY", ""}, {"STS_SILVER_LEAF_HEAD_WIN_CAP", ""},
+        {"STS_SILVER_MAX_BACKUP", ""},
     };
     // Vendored-only diagnostics without the STS_SILVER_ prefix.
     static const char *const kRemoved[] = {
@@ -3704,6 +3709,7 @@ int main(int argc, char **argv) {
         return 2;
     }
     search::installNativeSilverBackend();
+    one_combat::installSilverPriceTableLeafFromEnv();   // research, default off (STS_SILVER_PRICE_TABLE_LEAF)
     if (!search::nativeSilverRootPriorPath().empty())
         std::cout << "[research Silver root prior ON: " << search::nativeSilverRootPriorPath()
                   << " weight " << search::nativeSilverRootPriorWeight()
@@ -3785,6 +3791,28 @@ int main(int argc, char **argv) {
                   << " extra=" << (extra.empty() ? "-" : extra) << " -> " << out << '\n';
         potionPriceProbe(nSeeds, seedStart, sims, asc, out, statesPerRun, fightsAhead, hpDelta,
                          sample == "all", extra);
+
+    } else if (mode == "fightendpairgen") {
+        // Paired fight-end continuations (research only; docs/knowledge-base/research/fight-end-pairs.md):
+        // fightendpairgen NSEEDS SEED_START SIMS ASC OUT [OPTIONS=-] [VARIANTS=default]
+        // OPTIONS: comma list n=FORKS_PER_RUN, rooms=NORMAL+ELITE+BOSS(+OTHER), acts=1+2+3+4,
+        // strata=none|room|act|room_act, horizon=end|N, ooc=heart1. VARIANTS: comma list of
+        // hp:-N, pot:NAME|*, maxhp:-N, gold:-N, curse:NAME, ctr:RELIC|*:+-N, noop ("default" =
+        // hp:-3,hp:-8,hp:-15,pot:*,maxhp:-5,gold:-50). Writes OUT (JSONL) and OUT.manifest.json.
+        if (argc < 7) { std::cerr << "usage: fightendpairgen NSEEDS SEED_START SIMS ASC OUT [OPTIONS=-] [VARIANTS=default]\n"; return 2; }
+        const int nSeeds = std::stoi(argv[2]);
+        const std::uint64_t seedStart = std::stoull(argv[3]);
+        const int sims = std::stoi(argv[4]);
+        const int asc = std::stoi(argv[5]);
+        const std::string out = argv[6];
+        const std::string options = argc > 7 ? argv[7] : "-";
+        const std::string variants = argc > 8 ? argv[8] : "default";
+        std::cout << "fightendpairgen seeds " << seedStart << ".." << seedStart + nSeeds - 1 << " sims=" << sims
+                  << " asc=" << asc << " options=" << options << " variants=" << variants << " -> " << out << '\n';
+        one_combat::fightEndPairGen(nSeeds, seedStart, sims, asc, out, options, variants);
+
+    } else if (mode == "fightendpairselftest") {
+        return one_combat::fightEndPairSelfTest(argc, argv);
 
     } else if (mode == "oocfactoreval") {
         // nDecisions is explicit for tools/seed_guard.sh and checked against

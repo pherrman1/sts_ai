@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -39,6 +40,13 @@ namespace sts::search {
     // legal action is committed without search unless root budgets are exact
     // or STS_SILVER_SEARCH_SINGLETON_ROOTS=1.
     void installNativeSilverBackend();
+    // Research-only (STS_SILVER_PRICE_TABLE_LEAF, default off): builds a fight's SilverPriceTable once at fight
+    // start, or returns null for a fight that keeps the default leaf. The binary that owns the model installs it
+    // (one_combat: apps/one_combat/silver_price_table.h); with the option set and no builder installed, a fight
+    // fails. Called from parallel runs: the builder must be thread-safe. An empty function uninstalls it.
+    using NativeSilverPriceTableBuilder =
+        std::function<std::shared_ptr<const SilverPriceTable>(const GameContext &, const BattleContext &)>;
+    void setNativeSilverPriceTableBuilder(NativeSilverPriceTableBuilder builder);
     class SilverSearcher;
     bool nativeSilverBackendInstalled();
     // Research-only root prior bonus (STS_SILVER_ROOT_PRIOR=<combat_policy_trees_v1
