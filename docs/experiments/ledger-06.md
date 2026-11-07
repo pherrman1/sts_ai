@@ -26310,7 +26310,7 @@ learned stop was trained on mean-backup trees.
 (replays of the LONG_B/LONG_C seeds listed in PROBE.md).
 **Knowledge impact:** KB `architecture/combat-search.md`, `operations/environment-variables.md`.
 
-## §TBD — LONG_C: LONG_B continued for 200 more PPO updates (220 → 420; actors with combat turn cap 100 from iteration 272); final net-0420 vs LONG_B's net-0220, policy alone, 2,048 paired A20 seeds: INCONCLUSIVE, Heart +1.46 pp [−0.73, +3.66] (25.49% vs 24.02%), SPRT CAP; in-sample flat ~19.8%; more Act-1 deaths, better late conversion (PC + cloud, 2026-11-07)
+## §760 — LONG_C: LONG_B continued for 200 more PPO updates (220 → 420; actors with combat turn cap 100 from iteration 272); final net-0420 vs LONG_B's net-0220, policy alone, 2,048 paired A20 seeds: INCONCLUSIVE, Heart +1.46 pp [−0.73, +3.66] (25.49% vs 24.02%), SPRT CAP; in-sample flat ~19.8%; more Act-1 deaths, better late conversion (PC + cloud, 2026-11-07)
 
 **Question (Philipp, 2026-11-06 00:30 CET "nochmal 200 iterationen mit dem gleichen plan"):** does LONG_B's recipe keep
 improving with 200 more updates?
