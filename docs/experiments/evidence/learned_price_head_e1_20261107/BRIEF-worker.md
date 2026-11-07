@@ -2,7 +2,8 @@
 
 Authorization: Philipp 2026-11-07 17:45 CET in the project chat, "jap find ich gut, mach das", on the coordinator's
 plan to run E1 of the learned price head (about 88 core-h on the leaf pilot's seeds; measured projection about
-94 core-h) after the pilot's stop at 21:38 CET.
+94 core-h) after the pilot's stop at 21:38 CET. 40 workers: Philipp 22:21 CET, "Let's go 40, falls die pilot worker
+fertig sind" (start only once the pilot's workers are done).
 RUN_COMMIT=<RUN_COMMIT>   (set in the share copy of this brief after the prelaunch review)
 
 YOUR WORKER NUMBER: W=<n>   (pass it unpadded, 1..40; never 03)
