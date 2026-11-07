@@ -1,7 +1,7 @@
 # Paired fight-end continuations (`fightendpairgen`)
 
 Last verified: 2026-11-07 (`ooc=ppo` and the source row's `heartKill` added for the stage-2 pilot;
-pilot result and inclusion weights in ledger §TBD).
+pilot result and inclusion weights in ledger §763).
 
 ## Purpose
 
@@ -31,7 +31,7 @@ run end.
    so unweighted, forks of runs that die soon after the fight are over-sampled and the base outcome is
    biased towards a loss. Every analysis of these pairs must weight each fork by `eligible / sampled`
    of its source row (exact for `strata=none`; per stratum otherwise). In the stage-2 pilot the
-   unweighted HP price even has the wrong sign (§TBD).
+   unweighted HP price even has the wrong sign (§763).
 3. **Copies.** Each fork gives `base` plus one copy per `VARIANTS` token. Every change touches only its
    own field and no game `Random`:
 
@@ -99,7 +99,7 @@ The stage-2 pilot (2026-11-07, `docs/experiments/evidence/fight_end_pairs_pilot_
 PPO baseline net-0420 instead, with `ooc=ppo` in combat B (LONG_B/LONG_C's evaluation environment): flat
 Silver 1,000, learned stop and Act-4 strong off, g7f_E root and tree prior, temperature 0.
 
-## Stage-2 pilot result (§TBD)
+## Stage-2 pilot result (§763)
 
 1,938 units, 15,504 A20 source runs under net-0420 (`ooc=ppo`, combat B), 61,739 forks with 6.5 copies each,
 weighted by `eligible / sampled`. Every change costs Heart kill in acts 1-3. The HP slope is 0.192 pp per HP

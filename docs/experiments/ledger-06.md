@@ -26391,7 +26391,7 @@ rate, and its effect on ordinary fights is at best neutral.
 Cost ≈ 30 core-h cloud.
 **Knowledge impact:** none beyond this entry (KB `architecture/combat-search.md` already calls it a research flag).
 
-## §TBD — Stage-2 leaf pilot: paired fight-end continuations to the run end under net-0420 (combat B), 1,938 units = 15,504 A20 source runs, 61,739 forks × 6.5 copies: GO with inclusion weights (PREREG deviation 1, before the stop): every change costs Heart kill in acts 1-3, HP slope β 0.192 pp/HP [0.147, 0.234], 8-HP price resolved in acts 1-2 (z 5.6 / 4.3) but not act 3 (z 1.2), projected label cost 638 core-h; the frozen unweighted analysis is NO-GO (β −0.056, length bias of the fork sampler) (cloud, 2026-11-07)
+## §763 — Stage-2 leaf pilot: paired fight-end continuations to the run end under net-0420 (combat B), 1,938 units = 15,504 A20 source runs, 61,739 forks × 6.5 copies: GO with inclusion weights (PREREG deviation 1, before the stop): every change costs Heart kill in acts 1-3, HP slope β 0.192 pp/HP [0.147, 0.234], 8-HP price resolved in acts 1-2 (z 5.6 / 4.3) but not act 3 (z 1.2), projected label cost 638 core-h; the frozen unweighted analysis is NO-GO (β −0.056, length bias of the fork sampler) (cloud, 2026-11-07)
 
 **Question (Philipp, 2026-11-07 08:57 CET "wir könnten noch die vielen core hours für silver combat leafs machen?";
 go 09:09 CET, run until he stops it with a 12 h cap 09:26 CET):** do paired fight-end continuations resolve Silver leaf
