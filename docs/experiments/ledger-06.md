@@ -26372,7 +26372,7 @@ left for act-1 credit: more games per update, or paired CRN continuations from a
 change. Seeds: none. Cost ≈ 5.5 h PC (GPU ≈ 19 min), no cloud core-hours.
 **Knowledge impact:** KB `research/a20-ppo-plan.md` (critic ceiling paragraph).
 
-## §TBD — `STS_SILVER_MAX_BACKUP=4` alone vs defaults, 2,045 paired A20 seeds at 1,000 sims: NOT_SHOWN, Heart −0.29 pp [−2.20, +1.61] (21.66% vs 21.96%), SPRT gainer accepts H0 at 640 pairs; nonregression not shown; stays a research flag (cloud, 2026-11-07)
+## §762 — `STS_SILVER_MAX_BACKUP=4` alone vs defaults, 2,045 paired A20 seeds at 1,000 sims: NOT_SHOWN, Heart −0.29 pp [−2.20, +1.61] (21.66% vs 21.96%), SPRT gainer accepts H0 at 640 pairs; nonregression not shown; stays a research flag (cloud, 2026-11-07)
 
 **Question (Philipp, 2026-11-06: card "MAX_BACKUP=4 allein", "Ja go mit 30 workern" 17:27 CET; relaunch "verteil die
 40 worker fair auf die beiden aufgaben" 23:47 CET):** §759 showed that max backup (decision node = best child with ≥ 4
