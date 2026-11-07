@@ -55,6 +55,7 @@ At the stop, every worker gets `worker.sh stop`: no new units start, and running
 
 - A unit counts only if `result.txt` shows rc 0 and all 8 source rows are present. A failed unit is dropped whole.
 - A fork enters only with a valid base row. A pair (fork, variant) enters only with a valid variant row.
+- Every fork is weighted by w = eligible / sampled of its source run ([deviation 1](#deviation-1-2026-11-07-before-the-stop-inverse-probability-weights)). The weighted analysis is primary.
 
 **Pairs.** D = y_variant − y_base, with:
 
@@ -104,3 +105,29 @@ No default change in any case.
 ## Deviations
 
 Deviations are reported in the RESULT.
+
+### Deviation 1 (2026-11-07, before the stop): inverse-probability weights
+
+**What changes.** `analyze.py` weights every fork by w = eligible / sampled of its source run. Both fields are already in every source row. The weights enter:
+
+- the cell means and their bootstrap CIs, the discordance, Var(D), ρ and the base Heart-kill rate;
+- β and the projection;
+- the descriptive room and potion-type cells.
+
+The decision applies S and P to the weighted estimates. The frozen unweighted analysis is still computed and reported under `unweighted`. Rows, seeds, the stop rule and every threshold stay as frozen.
+
+**Why.** The generator reservoir-samples up to 4 of the K eligible fight ends of a source run. Each of them is therefore sampled with probability min(4, K) / K. K depends on the run's own future: a run that dies soon after a fight end has a small K, so that fight end is sampled more often. The base copy replays the source run exactly; its Heart kill matched the source run's in all 3,827 interim forks checked. Unweighted base outcomes are therefore biased towards a loss, and every family looks too cheap.
+
+Weighting by the inverse inclusion probability restores the population of all eligible fight ends. In that population the base outcome is an unbiased draw given the state, and each variant copy shares the base's continuation seed.
+
+**How it was found.** The exploratory interim training that Philipp asked for at 12:48 CET is not part of this analysis; its files are on the share under `leaf-plan/pilot-interim-training/`. In it, every family had a positive mean D in act 1. A check on 250 interim units (snapshot 14:46 UTC) gave an act-1 base Heart-kill rate of 16.9% unweighted and 29.2% weighted. The weighted act-1 HP effects were monotone: −0.9, −2.1 and −4.5 pp for −3, −8 and −15 HP.
+
+So interim data informed this deviation. The stop does not depend on it: the hard cap stays at 21:38 CET (20:38 UTC), unless Philipp stops the run earlier.
+
+**Projection.** σ²_a becomes the per-fork variance equivalent of the weighted hp:-8 mean:
+
+σ²_a = pairs · Var(weighted mean) = pairs · Σ w²(D − Δ)² / (Σ w)²
+
+With w = 1 this equals Var(D).
+
+**Check.** On 20 interim units, the `unweighted` part of the amended script reproduces the frozen script's output exactly. The common fields match as well.
