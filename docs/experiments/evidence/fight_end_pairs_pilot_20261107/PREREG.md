@@ -116,7 +116,7 @@ Deviations are reported in the RESULT.
 
 The decision applies S and P to the weighted estimates. The frozen unweighted analysis is still computed and reported under `unweighted`. Rows, seeds, the stop rule and every threshold stay as frozen.
 
-**Why.** The generator reservoir-samples up to 4 of the K eligible fight ends of a source run. Each of them is therefore sampled with probability min(4, K) / K. K depends on the run's own future: a run that dies soon after a fight end has a small K, so that fight end is sampled more often. The base copy replays the source run exactly; its Heart kill matched the source run's in all 3,827 interim forks checked. Unweighted base outcomes are therefore biased towards a loss, and every family looks too cheap.
+**Why.** The generator reservoir-samples up to 4 of the K eligible fight ends of a source run. Each of them is therefore sampled with probability min(4, K) / K. This is exact for the pilot's call: it uses `strata=none`, so there is one reservoir per run (Algorithm R with its own RNG, `apps/one_combat/fight_end_pairs.cpp`, lines 427-454). K depends on the run's own future: a run that dies soon after a fight end has a small K, so that fight end is sampled more often. The base copy replays the source run exactly; its Heart kill matched the source run's in all 3,827 interim forks checked. Unweighted base outcomes are therefore biased towards a loss, and every family looks too cheap.
 
 Weighting by the inverse inclusion probability restores the population of all eligible fight ends. In that population the base outcome is an unbiased draw given the state, and each variant copy shares the base's continuation seed.
 
