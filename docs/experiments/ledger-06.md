@@ -26363,11 +26363,11 @@ Comparator online_cal = the logged value Platt-recalibrated per act on the train
   act 1 +0.045, −0.008. Every scope NOT_BETTER → NO_GO.
 - Descriptive, not pre-registered: the GBM ranks acts 3–4 better (AUC 0.833 / 0.839 vs 0.825 / 0.817, EV 0.331 / 0.318
   vs 0.315 / 0.282; no CI).
-**Interpretation (Inference):** at this data scale the online critic is at about the reachable act-1 ceiling. The
-remaining act-1 outcome variance is not predictable from the state record, so a better critic or a learned Φ does
-not sharpen act-1 credit. The offline models train on older policies, which works against them and fits their worse
-calibration (more LONG_B data makes act 1 worse). Levers left for act-1 credit: more games per update, or paired CRN
-continuations from act-1 decisions.
+**Interpretation (Inference):** these two offline estimators do not predict act 1 better than the online critic
+(their lower AUC is calibration-free); within these model classes and data, act 1 looks near its ceiling, so a better
+critic or a learned Φ is not a lever for act-1 credit here. Limits: the net used half the games and stopped at epoch 1,
+and both trained on older policies, which works against them; adding LONG_B (at half the games) did not help. Levers
+left for act-1 credit: more games per update, or paired CRN continuations from act-1 decisions.
 **Decision:** NO_GO for stage 1 (no Φ = offline-critic PPO arm). The act-1 critic direction is dropped. No default
 change. Seeds: none. Cost ≈ 5.5 h PC (GPU ≈ 19 min), no cloud core-hours.
 **Knowledge impact:** KB `research/a20-ppo-plan.md` (critic ceiling paragraph).

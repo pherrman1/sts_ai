@@ -63,10 +63,10 @@ The per-act Platt fit (act 1: a −2.59, b 5.69) barely changes the online criti
 - **Inference:** the online PPO critic already gets about as much act-1 signal as these records and model classes offer.
   - Act-1 EV is 0.07 and AUC 0.67. At the run's first decision, AUC is 0.53 and EV ≈ 0.
   - Neither a separate-trunk net (BCE, 470k rows) nor an all-field GBM (941k rows) beats it, and doubling the data with LONG_B does not help.
-  - So in act 1, the remaining variance of the 0/1 outcome is, as far as we can measure it, not predictable from the state. It comes from what happens later in the run.
+  - Within these model classes and data, act 1 therefore looks near its ceiling. The lower offline AUC is calibration-free, so it carries the NO_GO. Limits: the net used half the games and stopped at epoch 1, and both offline models trained on older policies.
 - **Known bias (PREREG):** the offline models train on older policies (220-399) than the test (400-419). That works against them.
   - Their worse act-1 log loss together with similar AUC fits a calibration offset from this policy shift.
-  - Adding even older games (LONG_B) makes act-1 log loss worse, which fits the same reading.
+  - Adding LONG_B (at half the games, with online_cal refitted on other parts) did not help. Act-1 EV is 0.064 vs 0.063, and act-1 log loss is +0.045 vs +0.042 against each run's online_cal. That comparison is confounded.
 - **Not pre-registered, descriptive:** in acts 3-4 the GBM ranks better than the online critic (AUC 0.833 vs 0.825 and 0.839 vs 0.817; EV 0.331 vs 0.315 and 0.318 vs 0.282). No CI was computed for these scopes. A late-act Φ is a separate question.
 - For PPO, a better critic or a learned Φ (potential-based shaping) is not a lever for act 1 at this data scale. The remaining levers for act-1 credit assignment are more games per update and paired CRN continuations from act-1 decisions (option G of the plan doc). Both cost actor time.
 
