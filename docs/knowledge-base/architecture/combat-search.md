@@ -330,9 +330,11 @@ Silver keeps its most-visited root edge unless another edge with at least
 `share` (default 0.25) of its visits dies at least `delta` less often in its
 resolved playouts (both edges with 32 or more); then it plays the most-visited
 such edge. It only changes `bestAction`; the search itself is unchanged
-(`silver_risk_veto`). `silver_hidden_info_invariance` checks that production
-Silver's search root, root visits and played action do not change when the
-unobserved draw-pile order and all six live combat RNG streams change.
+(`silver_risk_veto`). `silver_hidden_info_invariance` checks that the
+production search root (`nativeSilverSearchRoot`) and a plain `SilverSearcher`
+on it (no root or tree prior, learned stop or leaf models; turn-0 A20 starter
+fights) give the same root, root visits and played action when the unobserved
+draw-pile order and all six live combat RNG streams change.
 
 `STS_MULTISELECT_MODE=all|single|none` controls subsets. `all` is default and
 the complete validity contract; `single` keeps empty, singleton, and full

@@ -3744,9 +3744,10 @@ int testSilverRiskVeto() {
     return 1;
 }
 
-// Stage 0 of the combat-network plan: production Silver's search root (nativeSilverSearchRoot) is a
-// function of public information only. Two live states that differ only in the order of the unobserved
-// draw pile and in all six live combat RNG streams must give the same root, the same root visit counts
+// Stage 0 of the combat-network plan: the production search root (nativeSilverSearchRoot) is a function
+// of public information only. Two live states that differ only in the order of the unobserved draw pile
+// and in all six live combat RNG streams must give the same root and, under a plain SilverSearcher (no
+// root or tree prior, learned stop or leaf models; turn-0 A20 starter fights), the same root visit counts
 // and the same played action, with the risk veto off and on.
 int testSilverHiddenInfoDecisionInvariance() {
     int failures = 0;
