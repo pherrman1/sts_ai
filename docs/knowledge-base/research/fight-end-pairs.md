@@ -1,7 +1,7 @@
 # Paired fight-end continuations (`fightendpairgen`)
 
 Last verified: 2026-11-07 (`ooc=ppo` and the source row's `heartKill` added for the stage-2 pilot;
-research tooling, no ledger §).
+`luck=`, `luck_identity=` and `n=0` added for E1 of the learned price head; research tooling, no ledger §).
 
 ## Purpose
 
@@ -53,6 +53,18 @@ run end.
    written as `ppo` (`decisions`, `single`, `fallbacks`, `autoGold`) in the source and copy rows.
    `ooc=heart1` (the student path: partial coverage, free relics auto-taken, then the rule chain) is
    not the PPO policy, even with a PPO net loaded.
+5. **Fight luck (`luck=R`, research, default off; learned price head E1).** A fight-start observer
+   (`OocFightStartObserver`, the second new optional argument of `finishOocCounterfactual`; called at the
+   battle screen before Silver initializes the battle, with the fight's budget) lets the source run replay
+   every one of its fights, all rooms and acts, R times: a `detachedCounterfactualCopy` of the fight-start
+   state, a fresh battle seed and fresh carried streams (aiRng, cardRandomRng, miscRng, monsterHpRng,
+   potionRng, shuffleRng; counters kept; `fightreplay`'s redraw, keyed by seed, fight index and replicate),
+   its own `ScumSearchAgent2` with the fight's `simulationCountBase`, the battle exited as the run exits it.
+   The replay restores the run's health counters and battle-exit hooks; a `CombatStateFailure` of a replay is
+   recorded in its row and the run goes on. `luck_identity=N` replays the fights of the first N source seeds
+   once more unchanged (replicate 0), which must reproduce the real fight (`identity`). `n=0` (no forks) is
+   allowed, for luck-only runs. Source and fork rows are unchanged by `luck=` apart from the source row's
+   `luck` tally and its `cost.cpuMs`/`wallMs`, which then include the replays.
 
 ## Output
 
@@ -76,6 +88,15 @@ ineligible reasons, cost), one `skip` row per skipped token, one `copy` row per 
 - `obsV2`: only when `g_fightEndPairsExtraObservation` is set (unset on main). Since #989 (LONG_B
   merged) the `heart1` record itself carries `obs.v2.run_counters` and `obs.v2.fought`, the v2 inputs of
   the LONG_B/LONG_C nets.
+
+With `luck=`, one `luck` row per source fight, written at its end: `seed`, `fightIndex`, `act`, `floor`,
+`room`, `encounter`, `budget`, `relics` (names, the order of every `relicData`), `start` (fight-start
+fields), `real` (`won`, `alive`, `fields`, `state`) and `replays` (per fresh replay `r`, `battleSeed`,
+`won`, `alive`, `combatOutcome`, `turns`, `cpuMs`, `simulations`, `healthFailures`, `fields`, `error` if it
+threw). `fields` = `hp`, `maxHp`, `potionCount`, `potions`, `gold`, `deckSize`, `upgrades`, `misc`,
+`relicData`. Identity seeds add `identity` (and `identityReplay` when it is false). The source row gets
+`luck`: `replicates`, `identitySeed`, `fights`, `replays`, `errors`, `healthFailures`,
+`identityChecked`, `identityMismatches`, `cpuMs`.
 
 `OUT.manifest.json` records the arguments, `git_sha`, `executable_sha256`,
 `effectiveOocPolicySpecification()`, `effectiveSilverLeafSpecification()`, whether the learned stop is
@@ -103,7 +124,12 @@ Silver 1,000, learned stop and Act-4 strong off, g7f_E root and tree prior, temp
   two-fight horizon): the same arguments twice give identical JSONL apart from `cpuMs`/`wallMs`; base
   played twice (across the runs) and noop vs base (within a run) give the same outcome, record, leaf
   terms, simulation and decision counts; a no-op fight-end observer leaves a run's result and fight
-  list unchanged (the default-off identity of the hook).
+  list unchanged (the default-off identity of the hook). With `luck=1,luck_identity=1` the same call gives
+  identical source and fork rows (apart from the source row's `luck` tally), every replicate-0 replay
+  reproduces its fight, and the fresh replays differ from the real fights.
+- Fast checks also cover the `luck`, `luck_identity` and `n=0` options and the luck redraw (deterministic per
+  seed, fight and replicate; new seed and carried streams, counters and every other stream kept; state
+  unchanged).
 - Off-path identity against main: `potionpriceprobe 1 111459992 50 20 OUT 2 3 8` with the main binary
   (4851f703) and this branch gives identical CSV apart from `cpuMs`.
 
