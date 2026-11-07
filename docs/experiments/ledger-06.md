@@ -26371,3 +26371,22 @@ left for act-1 credit: more games per update, or paired CRN continuations from a
 **Decision:** NO_GO for stage 1 (no Φ = offline-critic PPO arm). The act-1 critic direction is dropped. No default
 change. Seeds: none. Cost ≈ 5.5 h PC (GPU ≈ 19 min), no cloud core-hours.
 **Knowledge impact:** KB `research/a20-ppo-plan.md` (critic ceiling paragraph).
+
+## §762 — `STS_SILVER_MAX_BACKUP=4` alone vs defaults, 2,045 paired A20 seeds at 1,000 sims: NOT_SHOWN, Heart −0.29 pp [−2.20, +1.61] (21.66% vs 21.96%), SPRT gainer accepts H0 at 640 pairs; nonregression not shown; stays a research flag (cloud, 2026-11-07)
+
+**Question (Philipp, 2026-11-06: card "MAX_BACKUP=4 allein", "Ja go mit 30 workern" 17:27 CET; relaunch "verteil die
+40 worker fair auf die beiden aufgaben" 23:47 CET):** §759 showed that max backup (decision node = best child with ≥ 4
+sims) ends all 16 known stall fights early. Does it also win more on normal A20 runs?
+**Data:** [PREREG](evidence/silver_maxbackup_gate_20261106/PREREG.md),
+[RESULT](evidence/silver_maxbackup_gate_20261106/RESULT.md), `result.json`. Run commit e58879bb (main c01bad53 +
+campaign files), binary 73a32e99…, `bestbench 1000 1 20`, net-0220, seeds 111760000–111762047. Run stopped 18:33 CET
+for LONG_C and relaunched unchanged 23:57 CET (14 workers); no analysis before the end, every unit played.
+**Result:** 2,045 pairs (3 seeds dropped: games killed by the 18:33 CET stop; 1 combat abort in D, counted as a
+loss). Heart D 21.96%, M 21.66%, d −0.29 pp [−2.20, +1.61]. SPRT gainer (d0 0, d1 +2 pp): H0 at 640 pairs →
+NOT_SHOWN. Nonregression (d0 −1.5 pp): CAP, bootstrap lo −2.20 → not NOT_WORSE. Act-3 clears −0.05 pp
+[−2.25, +2.15]; final floor −0.50 [−1.21, +0.21]; cpu M/D 1.018; no game over 300 s in either arm.
+**Interpretation (Inference):** max backup fixes stall fights but they are too rare in normal runs to move the win
+rate, and its effect on ordinary fights is at best neutral.
+**Decision:** stays a research flag, default off. Seeds used: 111760000–111762047 (+ smokes 111769990–111769991).
+Cost ≈ 30 core-h cloud.
+**Knowledge impact:** none beyond this entry (KB `architecture/combat-search.md` already calls it a research flag).

@@ -1,0 +1,10 @@
+name          silver-maxbackup-gate
+code_commit   c01bad5387172784dcf8e09def73125b57fbb46b
+binary_sha256 73a32e99d1640d53d1de959c502877a178a2de0fd54f822318b046f7cce66674
+workers       30
+share         /mnt/project-files/silver-maxbackup-gate
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 90
+input l220.bin /mnt/project-files/ppo-long-b/nets/net-0220.bin 408b2982a1a8757f4d2146bc81279cc80f5dd22c35dbd5ae048feda82b9c3c19
