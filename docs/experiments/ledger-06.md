@@ -26456,7 +26456,7 @@ a model fit on these labels; act 3 needs its own label run). No default change. 
 111790000-111802287 USED (`units.txt`; 612 units unplayed, not reused), smoke 111789990. Cost ≈ 1,958 core-h cloud.
 **Knowledge impact:** KB `research/fight-end-pairs.md` (inclusion weights; pilot result and cost).
 
-## §TBD — Silver risk veto (`STS_SILVER_RISK_VETO`) probe on §711 Baalorlord expert states: dropped after the smoke, the veto never fires at delta 0.05 / 0.10 (max eligible playout death-rate gap 0.038 over 674 eligible roots; 0 vetoes in 2,279 decisions) (cloud, 2026-11-08)
+## §765 — Silver risk veto (`STS_SILVER_RISK_VETO`) probe on §711 Baalorlord expert states: dropped after the smoke, the veto never fires at delta 0.05 / 0.10 (max eligible playout death-rate gap 0.038 over 674 eligible roots; 0 vetoes in 2,279 decisions) (cloud, 2026-11-08)
 
 **Question (Philipp, go 2026-11-08 00:07 CET):** does the risk veto (#1005) change fight outcomes on §711's expert
 states (arms veto 0.05 / 0.10, act 1-3 elites and bosses, 2 copies, 40 workers)?
