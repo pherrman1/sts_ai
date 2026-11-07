@@ -14,11 +14,14 @@ Two units (1675881103, 1648247344) on an arm build (branch commit 8a63785b, not 
 thread-local veto override and a `riskVetoes` counter in the per-combat stats; binary 22ee0a36…). Both units rc 0.
 
 - `riskVetoes` = 0 over 2,279 Silver decisions in the veto arms; the arm outcomes equal production exactly.
-- A debug print (not committed) of the per-root-edge playout outcomes at delta 0.05 covered 674 roots. Eligible gap =
-  death rate of the most-visited edge minus that of an edge with ≥ 25% of its visits, both with ≥ 32 resolved
-  playouts. Largest gap 0.038. Roots with gap ≥ 0.005 / 0.01 / 0.02 / 0.03 / 0.05: 18 / 13 / 4 / 3 / 0.
-- Unit 1675881103: 171 roots, 83 with any playout death, max gap 0.0087. Unit 1648247344: 504 roots, 406 with any
-  death, max gap 0.038.
+- A debug print (not committed) of the per-root-edge playout outcomes at delta 0.05 covered 675 roots, 674 of them
+  eligible (in one root the most-visited edge had < 32 resolved playouts). Eligible gap = death rate of the
+  most-visited edge minus that of an edge with ≥ 25% of its visits, both with ≥ 32 resolved playouts. Largest gap
+  0.038. Roots with gap ≥ 0.005 / 0.01 / 0.02 / 0.03 / 0.05: 18 / 13 / 4 / 3 / 0.
+- Unit 1675881103: 171 roots, 83 with any playout death, max gap 0.0087. Unit 1648247344: 504 roots (503 eligible),
+  406 with any death, max gap 0.038; all 13 roots ≥ 0.01 are in this unit.
+- Raw data: `/mnt/project-files/risk-veto-probe/smoke/` (unit outputs `u*/`, debug runs `udbg*/` with the `.err` print,
+  `gap.py`). The arm build is not kept on origin; its diff is `arm-build-8a63785b.patch` in the same folder.
 
 ## Interpretation (inference)
 
