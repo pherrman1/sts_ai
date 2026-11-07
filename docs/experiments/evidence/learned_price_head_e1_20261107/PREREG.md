@@ -111,7 +111,9 @@ u_f over its fights form the regressors:
 
 R_g = the source run's `heartKill`. OLS with intercept, HC1 standard errors. With one replay the regressor is
 y_real − y_replay, whose variance is twice the luck variance, so every luck coefficient is scaled by
-(M + 1)/M = 2. **β_luck** = 2 × coefficient of h_a123, in pp per HP.
+(M + 1)/M = 2. **β_luck** = 2 × coefficient of h_a123, in pp per HP. The scale needs the replay to be independent
+of the real fight given its start. The only streams the two share are the exit rewards' treasure and card streams:
+that part is identical in both and drops out of u (it touches the gold control, not HP).
 
 **CRN slope.** Pilot forks in acts 1-3 (seeds in S) with a valid base copy and at least one valid HP copy
 (`hp:-3`, `hp:-8`, `hp:-15`). Per fork i, the least-squares line through the origin over its valid HP copies,
@@ -120,9 +122,11 @@ y_real − y_replay, whose variance is twice the luck variance, so every luck co
 - π_i⁻¹ = eligible / sampled of its source run (the pilot's inverse inclusion probability, its deviation 1);
 - v_i = the luck weight of its fight. The pooled OLS coefficient weights each fight's price by the variance of its
   HP luck net of the other regressors, a property of the fight start. v_i estimates it without the fork's own
-  luck: the mean of ũ_f² over E1 fights in the same cell (act, encounter, start-HP band 1-30 / 31-50 / 51+), where
-  ũ_f is the fight's HP luck minus its least-squares fit on the same fight's survival, potion, max-HP and gold luck
-  (fight level, per act). A cell with fewer than 30 fights falls back to (act, room, band), then (act, room).
+  luck: the mean of ũ_f² over the other E1 fights in the same cell (act, encounter, start-HP band 1-30 / 31-50 /
+  51+; leave-one-out, the fork's own fight leaves the cell's sum and count at every level), where ũ_f is the
+  fight's HP luck minus its least-squares fit on the same fight's survival, potion, max-HP and gold luck (fight
+  level, per act, fitted on all fights). A cell with fewer than 30 other fights falls back to (act, room, band),
+  then (act, room).
 
 **β_CRN** = Σ w_i θ_i / Σ w_i, in pp per HP. With both weights, β_luck and β_CRN estimate the same luck-weighted
 mean of fight-end HP prices over all won NORMAL/ELITE/BOSS fights in acts 1-3.

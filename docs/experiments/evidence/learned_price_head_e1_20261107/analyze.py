@@ -142,7 +142,7 @@ def main(e1_dir, pilot_dir, out_path):
                          s * f['misc']] + [s * rel.get(c, 0) for c in counters], float)
 
     G = collections.defaultdict(lambda: collections.defaultdict(float))   # per seed: column -> luck sum
-    fight_u = []                                                           # acts 1-3 N/E/B: (act, room, enc, band, u)
+    fight_u = []                                         # acts 1-3 N/E/B: (act, room, enc, band, u, seed, fightIndex)
     g5 = collections.defaultdict(list)
     for (seed, fi), r in luck.items():
         if not replay_ok(r):
@@ -154,7 +154,7 @@ def main(e1_dir, pilot_dir, out_path):
             for c, x in zip(comps, u):
                 G[seed][f'{c}_c'] += x                      # controls: every act 1-3 fight
             if room in ROOMS:
-                fight_u.append((act, room, r['encounter'], band(r['start']['hp']), u))
+                fight_u.append((act, room, r['encounter'], band(r['start']['hp']), u, seed, fi))
                 for c, x in zip(comps, u):
                     G[seed][f'{c}_a{act}'] += x
                     G[seed][f'{c}_a123'] += x
@@ -198,8 +198,9 @@ def main(e1_dir, pilot_dir, out_path):
         res['const'] = (float(b[0]), float(se[0]))
         return res, float(e.var(ddof=X.shape[1])), X, y
 
-    # ---- luck weights v for the CRN forks: HP luck net of the fight's other luck, cell means of its square
-    resid = {}
+    # ---- luck weights v for the CRN forks: HP luck net of the fight's other luck, cell means of its square over the
+    # other fights of the cell (leave-one-out: the fork's own fight leaves its cell's mean and count)
+    resid, own_e2 = {}, {}
     for act in (1, 2, 3):
         rows = [x for x in fight_u if x[0] == act]
         if not rows:
@@ -209,19 +210,22 @@ def main(e1_dir, pilot_dir, out_path):
         coef = np.linalg.lstsq(Z, U[:, 1], rcond=None)[0]
         for x, e in zip(rows, U[:, 1] - Z @ coef):
             resid.setdefault(act, []).append((x[1], x[2], x[3], float(e) ** 2))
-    cells = collections.defaultdict(list)
+            own_e2[(x[5], x[6])] = float(e) ** 2
+    cells = collections.defaultdict(lambda: [0.0, 0])                       # key -> [sum of e^2, fights]
     for act, lst in resid.items():
         for room, enc, bd, e2 in lst:
-            cells[('enc', act, enc, bd)].append(e2)
-            cells[('room_band', act, room, bd)].append(e2)
-            cells[('room', act, room)].append(e2)
-    vmean = {k: (float(np.mean(v)), len(v)) for k, v in cells.items()}
+            for key in (('enc', act, enc, bd), ('room_band', act, room, bd), ('room', act, room)):
+                cells[key][0] += e2
+                cells[key][1] += 1
 
-    def v_of(act, room, enc, bd):
+    def v_of(act, room, enc, bd, own):
+        """Cell mean of e^2 without the fork's own fight (own = its e^2, or None when its replay was dropped)."""
         for key in (('enc', act, enc, bd), ('room_band', act, room, bd), ('room', act, room)):
-            m = vmean.get(key)
-            if m and m[1] >= MIN_CELL:
-                return m[0], key[0]
+            tot, n = cells.get(key, (0.0, 0))
+            if own is not None and n > 0:
+                tot, n = tot - own, n - 1
+            if n >= MIN_CELL:
+                return tot / n, key[0]
         return float('nan'), 'none'
 
     # ---- CRN forks on S (seeds in both)
@@ -240,7 +244,8 @@ def main(e1_dir, pilot_dir, out_path):
         lr = luck.get((seed, base['fightIndex']))
         if lr is None:
             continue
-        v, lvl = v_of(base['act'], base['room'], lr['encounter'], band(lr['start']['hp']))
+        v, lvl = v_of(base['act'], base['room'], lr['encounter'], band(lr['start']['hp']),
+                      own_e2.get((seed, base['fightIndex'])))
         v_level[lvl] += 1
         src = p_src[seed]
         pi_inv = src['eligible'] / src['sampled'] if src.get('sampled') else 1.0
