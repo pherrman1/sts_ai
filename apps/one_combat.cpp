@@ -3136,7 +3136,7 @@ static std::string unsupportedSilverOption() {
         {"STS_SILVER_ROLLOUT_ROOT_TABLE", ""}, {"STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE", ""}, {"STS_SILVER_PRIOR_PLAYOUT_ELITE", ""},
         {"STS_SILVER_LEAF_HEAD", ""}, {"STS_SILVER_LEAF_HEAD_TRUNK", ""}, {"STS_SILVER_LEAF_HEAD_BLEND", ""},
         {"STS_SILVER_LEAF_HEAD_TURN_PENALTY", ""}, {"STS_SILVER_LEAF_HEAD_WIN_CAP", ""},
-        {"STS_SILVER_MAX_BACKUP", ""},
+        {"STS_SILVER_MAX_BACKUP", ""}, {"STS_SILVER_RISK_VETO", ""},
     };
     // Vendored-only diagnostics without the STS_SILVER_ prefix.
     static const char *const kRemoved[] = {
