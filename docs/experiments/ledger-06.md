@@ -26309,3 +26309,65 @@ learned stop was trained on mean-backup trees.
 **Decision:** both flags stay default off; a whole-run gate on new seeds needs Philipp's go. Seeds: none new
 (replays of the LONG_B/LONG_C seeds listed in PROBE.md).
 **Knowledge impact:** KB `architecture/combat-search.md`, `operations/environment-variables.md`.
+
+## §760 — LONG_C: LONG_B continued for 200 more PPO updates (220 → 420; actors with combat turn cap 100 from iteration 272); final net-0420 vs LONG_B's net-0220, policy alone, 2,048 paired A20 seeds: INCONCLUSIVE, Heart +1.46 pp [−0.73, +3.66] (25.49% vs 24.02%), SPRT CAP; in-sample flat ~19.8%; more Act-1 deaths, better late conversion (PC + cloud, 2026-11-07)
+
+**Question (Philipp, 2026-11-06 00:30 CET "nochmal 200 iterationen mit dem gleichen plan"):** does LONG_B's recipe keep
+improving with 200 more updates?
+**Data:** [PREREG](evidence/ppo_long_c_20261106/PREREG.md) (J PASS; Deviation: turn cap 100),
+[RESULT](evidence/ppo_long_c_20261106/RESULT.md), `eval/result.json`, `eval/games.csv`. Training: updates 220-419 from
+LONG_B's learner state (`ppo_cloud.py init --continue`), 520 games per update, 40 cloud actor parts, learner on the PC.
+Iterations 220-271 ran binary 78849fcf, iterations 272-419 ran 63508ecc (run-only default `STS_COMBAT_TURN_CAP`=100,
+after §759's stalemate analysis). Evaluation: LONG_B's runner, T 0, combat B, binary 78849fcf (turn guard 500), G1's
+seeds; control = LONG_B's L220 games, sentinel 32/32 equal. `verify_campaign.py`: 2,048 OK; every game rc 0, no
+aborts, no dropped seed.
+**Result:**
+- Heart kill: net-0220 24.02%, net-0420 25.49%, D +1.46 pp [−0.73, +3.66]. Sequential gate (gainer, d1 = +2 pp): CAP at
+  2,048 (LLR 0.73), bootstrap CI includes 0 → INCONCLUSIVE.
+- Checkpoints net-0270, 0320 and 0370 vs net-0220: −0.39 [−2.54, +1.71], −0.10 [−2.25, +2.10], +1.86 [−0.34, +4.05] pp.
+  Against heart1 (G1's GH): +6.30 / +6.59 / +8.54 / +8.15 pp for 0270/0320/0370/0420.
+- net-0420 secondary: Act 3 cleared +0.39 pp [−2.00, +2.73], mean floor −0.59 [−1.40, +0.22]. Act-1 deaths 464 vs 410
+  (McNemar p ≈ 0.011), Act-3 deaths 185 vs 232; kill share of runs reaching floor 51 61.7% vs 59.0%. CPU 20.6 s/game.
+- In-sample (T 1): Heart flat at ~19.8% (LONG_B's last 20: 19.69%); Act 2 reached 80.3% → 75.7%; mean floor 37.6 →
+  36.5 from ~update 260 (Act-1 deaths 20% → 22%).
+- Stalls: two games hit the 1,000-decision stall guard after the cap (iteration 361 seed 111728207, iteration 411
+  part 32; ~35 min each, counted losses). The turn cap bounds turns, not decisions.
+- PREREG wording fix: the learner's torch reseed at serve start does not change update 221's minibatches (they come
+  from iteration-seeded `random.Random`); only GPU floating-point non-determinism differs.
+**Interpretation (Inference):** LONG_B's checkpoint rise does not continue at the same rate; 200 more updates add at
+most ~2 pp, and the in-sample curve is flat. The policy keeps trading Act-1 safety for late conversion, as the reward
+1{Heart} allows. The cap deviation touched ~1 in 8,000 games and the evaluation ran without it.
+**Decision:** no GO. net-0220 stays the PPO baseline; net-0420 (8c0bd16c…) and net-0370 (8faba759…) are kept. Next lever:
+critic or potential-based shaping, decided with Philipp. No default change; the cap-100 default never reached main.
+Seeds: 111654400-111758399 USED (training); the evaluation reused G1's 111520000-111522047. Cost ≈ 600-780 core-h of
+training actors plus ~46 core-h of evaluation.
+**Knowledge impact:** KB `research/a20-ppo-plan.md` (LONG_C row).
+
+## §761 — Offline critic ceiling check for the PPO critic (stage 0 of the act-1 critic plan): a separate-trunk BCE net and an all-field GBM trained offline on LONG_C 220–399 do not beat LONG_C's recalibrated online critic on 10,400 held-out games (400–419), act 1 or overall (act-1 AUC 0.655 / 0.662 vs 0.671, EV 0.062 / 0.063 vs 0.072; log loss worse, 98.75% CIs above 0) → NO_GO, no learned Φ / better-critic arm for act 1 (PC, offline, no seeds, 2026-11-07)
+
+**Question (Philipp, 2026-11-06 17:35 CET "besserer Critic oder potential basierte Formung?"; "Offline-Messung zuerst"
+17:43 CET; "Go" 23:32 CET):** the PPO critic barely predicts the outcome in act 1 (§756). Does a critic trained offline
+on many more games predict act 1 clearly better? With GAE, PBRS with a fixed Φ equals the critic Φ + V, so this also
+decides whether a learned Φ can help.
+**Data:** [PREREG](evidence/critic_ceiling_20261106/PREREG.md) (K PASS after F1-F4, #998),
+[RESULT](evidence/critic_ceiling_20261106/RESULT.md), `report_primary.json`, `report_gbm_secondary.json`,
+`commands.log`. Tool `tools/heart1/critic_ceiling.py` at 22b30629. N = 420: test LONG_C 0400–0419 (10,400 games,
+1,140,464 decisions, Heart 20.55%); train 0220–0399 (secondary + LONG_B 0000–0219). Init `net-0399` (`accf8720…`).
+Comparator online_cal = the logged value Platt-recalibrated per act on the training parts.
+**Result:**
+- Act 1 AUC / EV: online_cal 0.671 / 0.072; net (`--game-frac 0.5`, host RAM) 0.655 / 0.062; GBM 0.662 / 0.063;
+  GBM + LONG_B (0.5) 0.662 / 0.064. All decisions: 0.784 / 0.243; 0.773 / 0.227; 0.782 / 0.242; 0.781 / 0.239.
+  First decision of the run: AUC 0.51–0.53, EV ≈ 0 for every estimator.
+- vs online_cal (Δ log loss, Δ EV, 98.75% CI): net act 1 +0.025 [+0.019, +0.030], −0.010 [−0.015, −0.006]; net all
+  +0.014, −0.016; GBM act 1 +0.042 [+0.034, +0.049], −0.010; GBM all +0.017, −0.001 [−0.008, +0.006]; GBM + LONG_B
+  act 1 +0.045, −0.008. Every scope NOT_BETTER → NO_GO.
+- Descriptive, not pre-registered: the GBM ranks acts 3–4 better (AUC 0.833 / 0.839 vs 0.825 / 0.817, EV 0.331 / 0.318
+  vs 0.315 / 0.282; no CI).
+**Interpretation (Inference):** these two offline estimators do not predict act 1 better than the online critic
+(their lower AUC is calibration-free); within these model classes and data, act 1 looks near its ceiling, so a better
+critic or a learned Φ is not a lever for act-1 credit here. Limits: the net used half the games and stopped at epoch 1,
+and both trained on older policies, which works against them; adding LONG_B (at half the games) did not help. Levers
+left for act-1 credit: more games per update, or paired CRN continuations from act-1 decisions.
+**Decision:** NO_GO for stage 1 (no Φ = offline-critic PPO arm). The act-1 critic direction is dropped. No default
+change. Seeds: none. Cost ≈ 5.5 h PC (GPU ≈ 19 min), no cloud core-hours.
+**Knowledge impact:** KB `research/a20-ppo-plan.md` (critic ceiling paragraph).
