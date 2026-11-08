@@ -26594,7 +26594,7 @@ units of the pilot's second block (7,344 seeds, about 45 core-h, needs Philipp's
 stay reserved by §763).
 **Knowledge impact:** KB `research/fight-end-pairs.md` (point 6).
 
-## §TBD — Teacher check on Baalorlord's A20 elite and boss states (§711's 329 runs, 1,878 fights × 4 copies): a Gumbel root with 16,000 simulations loses 0.88 HP per fight less than production, [−1.20, −0.57] (98.75%), at 3.15× CPU → TEACHER_FOUND; rpl4, flat 4,000 and the Gumbel root at 4,000 do not resolve (cloud, 2026-11-08)
+## §770 — Teacher check on Baalorlord's A20 elite and boss states (§711's 329 runs, 1,878 fights × 4 copies): a Gumbel root with 16,000 simulations loses 0.88 HP per fight less than production, [−1.20, −0.57] (98.75%), at 3.15× CPU → TEACHER_FOUND; rpl4, flat 4,000 and the Gumbel root at 4,000 do not resolve (cloud, 2026-11-08)
 
 **Question (combat plan stage 1; Philipp, 2026-11-08 00:49 CET "Mach Stufe 0 und 1 in parallel", 00:57 CET go for up
 to 18 workers per stage):** is there a combat teacher that plays Baalorlord's A20 elite and boss states better than
