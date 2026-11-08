@@ -693,7 +693,8 @@ namespace sts::search {
                 s.outcomes = label ? nullptr : g_nativeSilverOutcomeCapture;
                 s.rootPrior = nativeSilverRootPrior(s);
                 if (!s.rootPrior.empty() && nativeSilverCombatNetPriorOn()) s.rootPrior = nativeSilverCombatNetRootPrior(s);
-                s.rootPriorWeight = s.rootPrior.empty() ? 0 : g_options.rootPriorWeight;
+                s.rootPriorWeight = s.rootPrior.empty() ? 0
+                    : g_nativeSilverPriorWeightOverride.value_or(g_options.rootPriorWeight);
                 s.rootPriorBonus = !g_nativeSilverRootPriorBonusOff;
                 s.nodePrior = nullptr;
                 if (!s.rootPrior.empty() && g_nativeSilverTreePriorOverride) {
@@ -1641,6 +1642,7 @@ namespace sts::search {
     thread_local std::optional<bool> g_nativeSilverCombatNetPriorOverride;
     thread_local std::optional<double> g_nativeSilverCombatNetPriorTempOverride;
     thread_local std::optional<int> g_nativeSilverTreePriorOverride;
+    thread_local std::optional<double> g_nativeSilverPriorWeightOverride;
     thread_local bool g_nativeSilverRootPriorBonusOff = false;
     thread_local const CombatValueNet *g_nativeSilverPriorNetOverride = nullptr;
     thread_local const CombatValueNet *g_nativeSilverRolloutRootTableOverride = nullptr;

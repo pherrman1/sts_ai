@@ -871,6 +871,7 @@ int search::SilverSearcher::selectBestEdgeToSearch(const Node &cur) const {
         return 0;
     }
     if (&cur == root && forcedRootEdge >= 0) return forcedRootEdge;
+    if (gumbelNonRoot && &cur != root) return selectGumbelNonRoot(cur, *gumbelNonRoot);
     if (nodePrior) {
         // Tree prior: the first untried edge is the one with the highest prior.
         const auto &prior = &cur == root ? rootPrior : cur.prior;
@@ -895,6 +896,58 @@ int search::SilverSearcher::selectBestEdgeToSearch(const Node &cur) const {
         }
     }
     return bestEdge;
+}
+
+int search::SilverSearcher::selectGumbelNonRoot(const Node &cur, const GumbelRoot &gumbel) const {
+    const int n = static_cast<int>(cur.edges.size());
+    const bool usePrior = cur.prior.size() == cur.edges.size();
+    double lo = std::numeric_limits<double>::infinity(), hi = -lo;
+    std::int64_t sumN = 0;
+    std::int32_t maxN = 0;
+    double priorVisited = 0, priorQ = 0;
+    thread_local std::vector<double> q, z;
+    thread_local std::vector<char> visited;
+    q.assign(n, 0.0);
+    z.assign(n, 0.0);
+    visited.assign(n, 0);
+    for (int i = 0; i < n; ++i) {
+        const auto &e = cur.edges[i];
+        sumN += e.visitCount;
+        maxN = std::max(maxN, e.visitCount);
+        if (e.visitCount == 0 || e.node == nullptr || e.node->simulationCount == 0) continue;
+        visited[i] = 1;
+        q[i] = selectionValue(*e.node);
+        lo = std::min(lo, q[i]);
+        hi = std::max(hi, q[i]);
+        const double p = usePrior ? cur.prior[i] : 1.0 / n;
+        priorVisited += p;
+        priorQ += p * q[i];
+    }
+    // v_mix (the paper's eq. 33) with the node's mean value as the value estimate.
+    const double vHat = cur.simulationCount > 0 ? cur.evaluationSum / static_cast<double>(cur.simulationCount) : 0.0;
+    const double total = static_cast<double>(sumN);
+    const double vMix = priorVisited > 0 ? (vHat + total / priorVisited * priorQ) / (1.0 + total) : vHat;
+    const double sigma = (gumbel.cVisit + maxN) * gumbel.cScale;
+    double zMax = -std::numeric_limits<double>::infinity();
+    for (int i = 0; i < n; ++i) {
+        const double qi = visited[i] ? q[i] : vMix;
+        const double q01 = hi > lo ? std::clamp((qi - lo) / (hi - lo), 0.0, 1.0) : 0.5;
+        const double logit = usePrior ? std::log(std::max(cur.prior[i], 1e-12)) : 0.0;
+        z[i] = logit + sigma * q01;
+        zMax = std::max(zMax, z[i]);
+    }
+    double zSum = 0;
+    for (int i = 0; i < n; ++i) zSum += (z[i] = std::exp(z[i] - zMax));
+    int best = 0;
+    double bestScore = -std::numeric_limits<double>::infinity();
+    for (int i = 0; i < n; ++i) {
+        const double score = z[i] / zSum - static_cast<double>(cur.edges[i].visitCount) / (1.0 + total);
+        if (score > bestScore) {
+            best = i;
+            bestScore = score;
+        }
+    }
+    return best;
 }
 
 int search::SilverSearcher::wideningCap(int category, std::int64_t visits) {
@@ -1619,7 +1672,7 @@ std::int64_t search::SilverSearcher::searchGumbelRoot(std::int64_t simulations, 
     std::vector<double> base(n);   // g + logit
     for (int i = 0; i < n; ++i) {
         const double logit = usePrior ? std::log(std::max(rootPrior[i], 1e-12)) : 0.0;
-        base[i] = -std::log(-std::log(unit(rng))) + logit;
+        base[i] = gumbel.noise * -std::log(-std::log(unit(rng))) + logit;
     }
     std::vector<int> candidates(n);
     for (int i = 0; i < n; ++i) candidates[i] = i;
@@ -1645,13 +1698,19 @@ std::int64_t search::SilverSearcher::searchGumbelRoot(std::int64_t simulations, 
     std::int64_t spent = 0;
     struct ForcedReset {
         int &edge;
-        ~ForcedReset() { edge = -1; }
-    } forcedReset{forcedRootEdge};
+        const GumbelRoot *&nonRoot;
+        ~ForcedReset() { edge = -1; nonRoot = nullptr; }
+    } forcedReset{forcedRootEdge, gumbelNonRoot};
+    gumbelNonRoot = gumbel.nonRoot ? &gumbel : nullptr;
     for (int phase = 0; phase < phases && candidates.size() > 1; ++phase) {
         const std::int64_t left = simulations - spent;
         const int phasesLeft = phases - phase;
-        const std::int64_t each = std::max<std::int64_t>(
-            1, left / (phasesLeft * static_cast<std::int64_t>(candidates.size())));
+        const auto cands = static_cast<std::int64_t>(candidates.size());
+        // backLoaded: phase p gets 2^p / (2^P - 2^p) of what is left (the last phase all of it).
+        const std::int64_t each = gumbel.backLoaded
+            ? std::max<std::int64_t>(1, static_cast<std::int64_t>(static_cast<double>(left) * std::ldexp(1.0, phase)
+                  / (std::ldexp(1.0, phases) - std::ldexp(1.0, phase))) / cands)
+            : std::max<std::int64_t>(1, left / (phasesLeft * cands));
         for (const int c : candidates) {
             forcedRootEdge = c;
             for (std::int64_t s = 0; s < each; ++s) step();
