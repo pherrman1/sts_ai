@@ -612,6 +612,8 @@ namespace sts::search {
 
             if (g_nativeSilverLabelSearch && (adaptive || learnedStop || lockOnly || stopTrace))
                 fail(gc, bc, "the label search requires a flat budget");
+            if (g_nativeSilverGumbelRootOverride && (adaptive || learnedStop || lockOnly || stopTrace))
+                fail(gc, bc, "the Gumbel root requires a flat budget");
 
             // STS_SILVER_PRICE_TABLE_LEAF: this fight's price table, built once from the fight-start state, for
             // whole-run fights as the leaf head; a research override (rollout, root prior, prior net) keeps the
@@ -697,6 +699,8 @@ namespace sts::search {
                 }
                 s.rolloutConfig = g_nativeSilverRolloutOverride
                     ? *g_nativeSilverRolloutOverride : SilverSearcher::envRolloutConfig();
+                if (g_nativeSilverRolloutsPerLeafOverride)
+                    s.rolloutConfig.perLeaf = *g_nativeSilverRolloutsPerLeafOverride;
                 s.maxBackupMinVisits = g_nativeSilverMaxBackupOverride.value_or(
                     SilverSearcher::envMaxBackupMinVisits());
                 // ADR-0050: boss rooms (and elite rooms with STS_SILVER_PRIOR_PLAYOUT_ELITE=1, ADR-0056)
@@ -875,6 +879,10 @@ namespace sts::search {
                             searcher->search(kAdaptiveTotal - kAdaptiveInitial);
                             simulations = kAdaptiveTotal;
                         }
+                    } else if (g_nativeSilverGumbelRootOverride) {
+                        simulations = searcher->searchGumbelRoot(flatBudget, *g_nativeSilverGumbelRootOverride,
+                            nativeSilverBattleSeed(bc) ^ (0x9e3779b97f4a7c15ULL * static_cast<std::uint64_t>(decision + 1)));
+                        ++g_nativeSilverCombatStats.gumbelRoots;
                     } else {
                         searcher->search(flatBudget);
                         simulations = flatBudget;
@@ -1556,6 +1564,8 @@ namespace sts::search {
     thread_local NativeSilverCombatStats g_nativeSilverCombatStats;
     thread_local std::optional<SilverSearcher::RolloutConfig> g_nativeSilverRolloutOverride;
     thread_local std::optional<int> g_nativeSilverMaxBackupOverride;
+    thread_local std::optional<int> g_nativeSilverRolloutsPerLeafOverride;
+    thread_local std::optional<SilverSearcher::GumbelRoot> g_nativeSilverGumbelRootOverride;
     thread_local std::optional<SilverSearcher::LeafHead> g_nativeSilverLeafHeadOverride;
     thread_local std::optional<NativeSilverBudgetOverride> g_nativeSilverBudgetOverride;
     thread_local std::optional<bool> g_nativeSilverPriorPlayoutEliteOverride;

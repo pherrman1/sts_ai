@@ -89,6 +89,8 @@ namespace sts::search {
         std::int64_t minRootSteps = -1, maxRootSteps = -1;
         // Leaf playouts and the actions inside them (SilverSearchStats).
         std::int64_t rolloutPlayouts = 0, rolloutActions = 0;
+        // Roots searched by the Gumbel root (g_nativeSilverGumbelRootOverride).
+        std::int64_t gumbelRoots = 0;
     };
     extern thread_local NativeSilverCombatStats g_nativeSilverCombatStats;
 
@@ -207,6 +209,14 @@ namespace sts::search {
     // Research-only (maxbackup armset): when set, replaces STS_SILVER_MAX_BACKUP
     // (SilverSearcher::maxBackupMinVisits; 0 = off) for the current thread's searches. Unset elsewhere.
     extern thread_local std::optional<int> g_nativeSilverMaxBackupOverride;
+    // Research-only (combat plan stage 1, expertfights arm rpl<k>): when set, replaces only the number of
+    // greedy playouts per leaf (SilverSearcher::RolloutConfig::perLeaf) of the current thread's searches; every
+    // other rollout setting, prior playouts included, stays production. Unset elsewhere.
+    extern thread_local std::optional<int> g_nativeSilverRolloutsPerLeafOverride;
+    // Research-only (combat plan stage 1, expertfights arm gsh<k>): when set, every searched root of the current
+    // thread's fights runs SilverSearcher::searchGumbelRoot with the flat budget instead of plain search; requires
+    // a flat budget (fails under learned stop, adaptive, lock-only or stop trace). Unset elsewhere.
+    extern thread_local std::optional<SilverSearcher::GumbelRoot> g_nativeSilverGumbelRootOverride;
     // Research-only (leafhead armset): when set, this leaf head (an empty one: none) replaces the whole-run
     // STS_SILVER_LEAF_HEAD setting (SilverSearcher::leafHead) for the current thread's searches. Unset elsewhere.
     extern thread_local std::optional<SilverSearcher::LeafHead> g_nativeSilverLeafHeadOverride;

@@ -3638,6 +3638,85 @@ int testSilverVictoryTurnPenalty() {
 // another edge j with at least share * b's visits and minSamples resolved playouts dies at least delta less
 // often than b; then it plays the most-visited such j. The expected pick is recomputed here for a grid of
 // settings and checked against named cases.
+// Research (combat plan stage 1): SilverSearcher::searchGumbelRoot. On a Nob root: the pick is a root edge,
+// at most `simulations` run and every one of them is a root visit, every candidate kept to the last phase
+// has the most visits, the same seed repeats the search exactly, bestAction returns the pick, and a plain
+// search afterwards forgets it and is free to pick by visits again.
+int testSilverGumbelRoot() {
+    int failures = 0;
+    const auto check = [&failures](bool ok, const std::string &msg) {
+        if (!ok) { std::cout << "    " << msg << '\n'; ++failures; }
+    };
+    GameContext gc(CharacterClass::IRONCLAD, 0x415C5u, 20);
+    gc.curRoom = Room::ELITE;
+    BattleContext bc;
+    bc.init(gc, MonsterEncounter::GREMLIN_NOB);
+    search::SilverSearchContext context;
+    context.act = 1;
+    constexpr std::int64_t kSims = 2000;
+    const auto run = [&](std::uint64_t seed, int k, bool prior) {
+        auto s = std::make_unique<search::SilverSearcher>(silverSearchRoot(bc), context);
+        s->riskVeto = {};
+        const auto n = s->prepareRootActions();
+        if (prior) {
+            s->rootPrior.assign(n, 0.0);
+            for (std::size_t i = 0; i < n; ++i) s->rootPrior[i] = 1.0 / static_cast<double>(i + 1);
+        }
+        search::SilverSearcher::GumbelRoot g;
+        g.k = k;
+        const auto spent = s->searchGumbelRoot(kSims, g, seed);
+        return std::make_pair(std::move(s), spent);
+    };
+    auto [a, spentA] = run(7, 4, true);
+    const auto &edges = a->rootNode().edges;
+    check(edges.size() >= 4, "fixture has >= 4 root edges");
+    const int pick = a->lastGumbelEdge();
+    check(pick >= 0 && pick < static_cast<int>(edges.size()), "the pick is a root edge");
+    check(spentA > 0 && spentA <= kSims, "spent within the budget");
+    std::int64_t rootVisits = 0;
+    int visited = 0;
+    for (const auto &e : edges) { rootVisits += e.visitCount; visited += e.visitCount > 0; }
+    check(rootVisits == spentA, "every simulation is a root visit");
+    check(visited <= 4, "only the k = 4 sampled edges are searched");
+    std::int32_t maxVisits = 0;
+    for (const auto &e : edges) maxVisits = std::max(maxVisits, e.visitCount);
+    check(pick >= 0 && edges[pick].visitCount == maxVisits, "the last candidate has the most visits");
+    check(pick >= 0 && a->bestAction().bits == edges[pick].action.bits, "bestAction returns the pick");
+
+    auto [b, spentB] = run(7, 4, true);
+    bool same = spentA == spentB && b->lastGumbelEdge() == pick && b->rootNode().edges.size() == edges.size();
+    for (std::size_t i = 0; same && i < edges.size(); ++i)
+        same = b->rootNode().edges[i].visitCount == edges[i].visitCount;
+    check(same, "the same seed repeats the search");
+
+    bool seedMatters = false;
+    auto [ref, spentRef] = run(7, 2, false);
+    for (std::uint64_t seed = 8; seed < 40 && !seedMatters; ++seed) {
+        auto [c, spentC] = run(seed, 2, false);
+        for (std::size_t i = 0; i < edges.size() && i < c->rootNode().edges.size(); ++i)
+            seedMatters = seedMatters
+                || (c->rootNode().edges[i].visitCount > 0) != (ref->rootNode().edges[i].visitCount > 0);
+    }
+    check(seedMatters, "other seeds sample other candidate sets");
+
+    auto [u, spentU] = run(11, 64, false);
+    check(u->lastGumbelEdge() >= 0, "uniform prior with k above the edge count picks an edge");
+    int visitedU = 0;
+    for (const auto &e : u->rootNode().edges) visitedU += e.visitCount > 0;
+    check(visitedU == static_cast<int>(u->rootNode().edges.size()), "k above the edge count searches every edge");
+
+    a->search(500);
+    check(a->lastGumbelEdge() == -1, "a plain search forgets the pick");
+    int most = 0;
+    for (int i = 1; i < static_cast<int>(edges.size()); ++i)
+        if (edges[i].visitCount > edges[most].visitCount) most = i;
+    check(a->bestAction().bits == edges[most].action.bits, "after a plain search bestAction is most visits");
+
+    if (failures == 0) { std::cout << "silver_gumbel_root PASS\n"; return 0; }
+    std::cout << "silver_gumbel_root FAIL (" << failures << " cases)\n";
+    return 1;
+}
+
 int testSilverRiskVeto() {
     int failures = 0;
     const auto check = [&failures](bool ok, const std::string &msg) {
@@ -7209,6 +7288,8 @@ int main(int argc, const char* argv[]) {
         return testSilverLossCeiling();
     } else if (command == "silver_risk_veto") {
         return testSilverRiskVeto();
+    } else if (command == "silver_gumbel_root") {
+        return testSilverGumbelRoot();
     } else if (command == "silver_hidden_info_invariance") {
         return testSilverHiddenInfoDecisionInvariance();
     } else if (command == "silver_incense_heart_phase") {

@@ -189,6 +189,7 @@ void search::SilverSearcher::resetForSearch() {
     stateToNodeUsed = 0;
     std::memset(static_cast<void *>(stateToNode.data()), 0, stateToNode.size() * sizeof(DedupSlot));
     riskOutcomes.reset();
+    gumbelChoice = -1;
     root = allocNode();
     root->state = allocDecisionState();
     *root->state = *rootState;
@@ -241,6 +242,7 @@ search::SilverSearcher::Node *search::SilverSearcher::findNodeUpToEquivalentCopy
 }
 
 void search::SilverSearcher::rerootAt(Node *newRoot, bool compact) {
+    gumbelChoice = -1;
     if (compact) {
         // Keep everything reachable from the new root, following child edges and
         // chance nodes' borrowed parent state; node and state addresses survive.
@@ -435,6 +437,7 @@ void search::SilverSearcher::recordEndpoint(const BattleContext &end, int treeDe
 }
 
 void search::SilverSearcher::search(std::int64_t simulations) {
+    gumbelChoice = -1;
     if (root->state->outcome != Outcome::UNDECIDED) return;
     if (profile) profile->rootTurn = root->state->turn;
     for (std::int64_t i = 0; i < simulations; ++i) {
@@ -867,6 +870,7 @@ int search::SilverSearcher::selectBestEdgeToSearch(const Node &cur) const {
     if (cur.edges.size() == 1) {
         return 0;
     }
+    if (&cur == root && forcedRootEdge >= 0) return forcedRootEdge;
     if (nodePrior) {
         // Tree prior: the first untried edge is the one with the highest prior.
         const auto &prior = &cur == root ? rootPrior : cur.prior;
@@ -1560,6 +1564,10 @@ search::Action search::SilverSearcher::bestAction() const {
     if (root->edges.empty()) {
         throw std::runtime_error("SilverSearcher::bestAction() called with no available actions");
     }
+    if (gumbelChoice >= 0 && gumbelChoice < static_cast<int>(root->edges.size())) {
+        lastRiskVeto = -1;
+        return root->edges[gumbelChoice].action;
+    }
     int bestEdgeIdx = 0;
     std::int32_t maxVisits = root->edges[0].visitCount;
     for (int i = 1; i < static_cast<int>(root->edges.size()); ++i) {
@@ -1596,6 +1604,66 @@ search::Action search::SilverSearcher::bestAction() const {
         }
     }
     return root->edges[bestEdgeIdx].action;
+}
+
+std::int64_t search::SilverSearcher::searchGumbelRoot(std::int64_t simulations, const GumbelRoot &gumbel,
+                                                      std::uint64_t seed) {
+    gumbelChoice = -1;
+    if (root->state->outcome != Outcome::UNDECIDED) return 0;
+    if (prepareRootActions() < 2 || simulations <= 0) return 0;
+    if (profile) profile->rootTurn = root->state->turn;
+    const int n = static_cast<int>(root->edges.size());
+    const bool usePrior = static_cast<int>(rootPrior.size()) == n;
+    std::mt19937_64 rng(seed);
+    std::uniform_real_distribution<double> unit(std::nextafter(0.0, 1.0), 1.0);
+    std::vector<double> base(n);   // g + logit
+    for (int i = 0; i < n; ++i) {
+        const double logit = usePrior ? std::log(std::max(rootPrior[i], 1e-12)) : 0.0;
+        base[i] = -std::log(-std::log(unit(rng))) + logit;
+    }
+    std::vector<int> candidates(n);
+    for (int i = 0; i < n; ++i) candidates[i] = i;
+    std::stable_sort(candidates.begin(), candidates.end(), [&](int a, int b) { return base[a] > base[b]; });
+    candidates.resize(std::min(n, std::max(1, gumbel.k)));
+    const auto score = [&](int i) {
+        double lo = std::numeric_limits<double>::infinity(), hi = -lo;
+        std::int32_t maxVisits = 0;
+        for (const auto &e : root->edges) {
+            maxVisits = std::max(maxVisits, e.visitCount);
+            if (e.visitCount == 0 || e.node == nullptr || e.node->simulationCount == 0) continue;
+            const double q = selectionValue(*e.node);
+            lo = std::min(lo, q);
+            hi = std::max(hi, q);
+        }
+        const auto &e = root->edges[i];
+        double q01 = 0;
+        if (e.visitCount > 0 && e.node != nullptr && e.node->simulationCount > 0)
+            q01 = hi > lo ? (selectionValue(*e.node) - lo) / (hi - lo) : 0.5;
+        return base[i] + (gumbel.cVisit + maxVisits) * gumbel.cScale * q01;
+    };
+    const int phases = std::max(1, static_cast<int>(std::ceil(std::log2(static_cast<double>(candidates.size())))));
+    std::int64_t spent = 0;
+    struct ForcedReset {
+        int &edge;
+        ~ForcedReset() { edge = -1; }
+    } forcedReset{forcedRootEdge};
+    for (int phase = 0; phase < phases && candidates.size() > 1; ++phase) {
+        const std::int64_t left = simulations - spent;
+        const int phasesLeft = phases - phase;
+        const std::int64_t each = std::max<std::int64_t>(
+            1, left / (phasesLeft * static_cast<std::int64_t>(candidates.size())));
+        for (const int c : candidates) {
+            forcedRootEdge = c;
+            for (std::int64_t s = 0; s < each; ++s) step();
+            spent += each;
+        }
+        std::vector<double> scores(n);
+        for (const int c : candidates) scores[c] = score(c);
+        std::stable_sort(candidates.begin(), candidates.end(), [&](int a, int b) { return scores[a] > scores[b]; });
+        candidates.resize((candidates.size() + 1) / 2);
+    }
+    gumbelChoice = candidates.front();
+    return spent;
 }
 
 double search::SilverSearcher::topTwoVisitShareGap() const {
