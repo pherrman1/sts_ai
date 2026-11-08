@@ -119,8 +119,8 @@ Validation is D0's h = 1 split: 162,828 rows from D0 runs only. No D1 row and no
 - w is chosen from {1, 0.5, 0.25} after the D0 pretrain. Each candidate trains 3 epochs as above, and the criterion
   is `eval.json` "validation" `policy_ce + value_nll` at that final checkpoint (D0 h = 1, unweighted), not the best
   logged step. w = 1 is the run above. The chosen w is the largest w whose sum is ≤ the minimum sum + 0.005.
-- Epochs stay at 3 for the D0 pretrain. The D1 fine-tune's epochs are chosen on D1's h = 1 split, as in the main
-  text.
+- Epochs stay at 3 for the D0 pretrain. The D1 fine-tune also runs 3 epochs with the same settings (`--init` from
+  the D0 checkpoint). Its validation curve on D1's h = 1 split is reported, and the final checkpoint goes to the gate.
 - The chosen w is used for N's D0 pretrain and its D1 fine-tune, and for the no-aux ablation's D1 fine-tune.
 - The D0-only reference for the descriptive table is N's D0 checkpoint at the chosen w.
 - G1, G2, the holdout and the descriptive tables are unchanged.
