@@ -623,10 +623,14 @@ public:
         int gumbelK = 0;            // 0: plain search
         int maxBackup = 0;          // 0: production (STS_SILVER_MAX_BACKUP of the process)
     };
+    // armCopies (STS_EXPERT_FIGHTS_ARM_COPIES, default empty = all): floor -> copies to play (empty set = all
+    // copies of that floor). When set, only the listed floors are arm fights, and on them production and each arm
+    // play only the listed copies in full (production still plays the copies the main line needs).
     FightReplayer(const json &run, Replayer &replayer, int replicates, int maxAct, bool expertPotions,
-                  std::vector<Arm> arms = {}, std::set<std::string> armRooms = {}, int armK = 0)
+                  std::vector<Arm> arms = {}, std::set<std::string> armRooms = {}, int armK = 0,
+                  std::map<int, std::set<int>> armCopies = {})
         : log_(run), replayer_(replayer), k_(replicates), maxAct_(maxAct), expertPotions_(expertPotions),
-          arms_(std::move(arms)), armRooms_(std::move(armRooms)), armK_(armK) {}
+          arms_(std::move(arms)), armRooms_(std::move(armRooms)), armK_(armK), armCopies_(std::move(armCopies)) {}
 
     bool onBattle(GameContext &gc, search::ScumSearchAgent2 &agent) {
         if (replayer_.stopped() || gc.act > maxAct_) return false;
@@ -745,10 +749,16 @@ public:
         // With research arms (STS_EXPERT_FIGHTS_ARMS) only fights in armRooms_ play copies 0..armK_-1 in full,
         // production and each arm on the same copy seeds; any other copy is played only until the first win (the
         // main line continues from the first winning copy either way, so it is the same as without arms).
-        const bool armFight = !arms_.empty() && armRooms_.count(std::to_string(gc.act) + roomLetter(gc.curRoom));
+        const bool armFight = !arms_.empty() && armRooms_.count(std::to_string(gc.act) + roomLetter(gc.curRoom))
+            && (armCopies_.empty() || armCopies_.count(f));
         const int full = arms_.empty() ? k_ : armFight ? armK_ : 0;
+        auto selected = [&](int r) {
+            if (armCopies_.empty()) return true;
+            const auto it = armCopies_.find(f);
+            return it != armCopies_.end() && (it->second.empty() || it->second.count(r));
+        };
         for (int r = 0; r < k_; ++r) {
-            if (r >= full && next) break;
+            if (next && (r >= full || !selected(r))) continue;
             const bool hadWinner = next.has_value();
             reps.push_back(playCopy(r, nullptr, &next));
             if (!hadWinner && next) continuedFrom = r;
@@ -757,7 +767,8 @@ public:
             json armReps = json::object();
             for (const auto &arm : arms_) {
                 json ar = json::array();
-                for (int r = 0; r < armK_; ++r) ar.push_back(playCopy(r, &arm, nullptr));
+                for (int r = 0; r < armK_; ++r)
+                    if (selected(r)) ar.push_back(playCopy(r, &arm, nullptr));
                 armReps[arm.name] = ar;
             }
             rec["arms"] = armReps;
@@ -784,6 +795,7 @@ private:
     std::vector<Arm> arms_;
     std::set<std::string> armRooms_;
     int armK_;
+    std::map<int, std::set<int>> armCopies_;
     json fights_ = json::array(), syncs_ = json::array();
 };
 
@@ -905,7 +917,30 @@ int expertFightsGen(const std::string &runFile, const std::string &output) {
         throw std::runtime_error("STS_EXPERT_FIGHTS_ARM_ROOMS requires STS_EXPERT_FIGHTS_ARMS");
     }
     const int armK = envInt("STS_EXPERT_FIGHTS_ARM_REPLICATES", replicates, 1, replicates);
-    FightReplayer fights(run, replayer, replicates, maxAct, potionMode == "expert", arms, armRooms, armK);
+    // Research (default unset = every arm fight, every copy): STS_EXPERT_FIGHTS_ARM_COPIES=<floor>[:<copy>],...
+    // limits the arm fights to the listed floors and, for floor:copy entries, to those copies (a bare floor = all
+    // copies), so one long fight's copies can run in separate processes. Copy seeds depend only on (seed, floor,
+    // copy), so a copy played alone equals the same copy played with the others.
+    std::map<int, std::set<int>> armCopies;
+    if (const char *v = std::getenv("STS_EXPERT_FIGHTS_ARM_COPIES"); v && *v) {
+        if (arms.empty()) throw std::runtime_error("STS_EXPERT_FIGHTS_ARM_COPIES requires STS_EXPERT_FIGHTS_ARMS");
+        auto num = [](const std::string &t, int lo, int hi) {
+            if (t.empty() || t.size() > 3 || t.find_first_not_of("0123456789") != std::string::npos)
+                throw std::runtime_error("STS_EXPERT_FIGHTS_ARM_COPIES: bad entry " + t);
+            const int x = std::stoi(t);
+            if (x < lo || x > hi) throw std::runtime_error("STS_EXPERT_FIGHTS_ARM_COPIES: out of range " + t);
+            return x;
+        };
+        std::set<int> allCopies;
+        for (const auto &t : split(v, ',')) {
+            const auto c = t.find(':');
+            const int floor = num(t.substr(0, c), 1, 60);
+            if (c == std::string::npos) allCopies.insert(floor);
+            else armCopies[floor].insert(num(t.substr(c + 1), 0, armK - 1));
+        }
+        for (const int floor : allCopies) armCopies[floor].clear();   // empty set: every copy of that floor
+    }
+    FightReplayer fights(run, replayer, replicates, maxAct, potionMode == "expert", arms, armRooms, armK, armCopies);
     // The run ends at the first decision the log does not replay exactly: the
     // measurement only covers the expert's own states.
     t_oocDecisionOverride = [&](GameContext &gc) -> const char * {
@@ -923,7 +958,10 @@ int expertFightsGen(const std::string &runFile, const std::string &output) {
         {"playId", run.value("play_id", std::string())}, {"seedPlayed", seedPlayed}, {"engineSeed", seed},
         {"replicates", replicates}, {"maxAct", maxAct}, {"potionMode", potionMode},
         {"arms", [&] { json a = json::array(); for (const auto &x : arms) a.push_back(x.name); return a; }()},
-        {"armRooms", armRooms}, {"armReplicates", armK}, {"endFloor", result.floor}, {"endAct", result.act},
+        {"armRooms", armRooms}, {"armReplicates", armK},
+        {"armCopies", [&] { json a = json::object();
+                            for (const auto &[floor, copies] : armCopies) a[std::to_string(floor)] = copies;
+                            return a; }()}, {"endFloor", result.floor}, {"endAct", result.act},
         {"diedInMainLine", result.deathCombat >= 0}, {"sec", result.sec},
         {"expert", {{"victory", run.value("victory", false)}, {"floorReached", run["floor_reached"]}}},
         {"replay", replayer.summary()}, {"potionLog", fights.potionLog()}, {"fights", fights.fights()},
