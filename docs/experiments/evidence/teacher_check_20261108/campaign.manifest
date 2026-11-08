@@ -1,7 +1,7 @@
 name          teacher-check
 code_commit   a51a2ed2fb894bb9c3c6038e7dbf9692fe402dfd
 binary_sha256 44d6d0c93012058078c400569cb08f2682b3907c9ef3a43f9618ed27b2bf4265
-workers       18
+workers       14
 share         /mnt/project-files/combat-plan/teacher-check
 configure_preset linux-gcc-release-x86-64-v3
 parallel      4
