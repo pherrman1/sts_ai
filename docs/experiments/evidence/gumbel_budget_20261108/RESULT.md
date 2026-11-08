@@ -54,7 +54,7 @@ gain is worth its CPU is Philipp's call (PREREG). No default change.
 | gsh16+flat16000+mb4 | 10.43 | **−0.29** | **[−0.49, −0.09]** | 4.8% (−0.37 pp [−0.8, 0.0]) | 0.520 | 3.32 |
 
 hi < 0 → **MAX_BACKUP_HELPS**. Max backup with min 4 visits under the Gumbel root at 16k gains as much as doubling the
-budget to 32k (−0.24). It costs only 5% more CPU than g16, against 2.1× for 32k. It also uses fewer potions (0.520 vs
+budget to 32k (−0.24). Its CPU ratio is 3.32× against 3.15× for g16 (ratios from different campaigns and machines, so roughly equal cost), against 6.71× for 32k. It also uses fewer potions (0.520 vs
 0.546).
 
 ## Secondary (95% CIs)
@@ -82,11 +82,11 @@ budget to 32k (−0.24). It costs only 5% more CPU than g16, against 2.1× for 3
 - Max backup's gain is in elite fights (−0.44 [−0.65, −0.23]). On bosses it is +0.11 [−0.42, +0.66], not resolved.
   Elite − boss difference: not tested.
 - More budget helps elites and bosses alike as point estimates, but only the elite cut resolves.
-- CPU ratios of g64 run from 12.1× (act 3) to 16.2× (act 1). mb4 runs from 3.1× to 3.8×.
+- CPU ratios of g64 run from 12.2× (act 3) to 16.2× (act 1). mb4 runs from 3.1× to 3.8×.
 
 By encounter (n ≥ 20; all have wide CIs), g64 − g16:
 - Largest gains: Collector −1.81 [−3.65, +0.04], Giant Head −1.31 [−2.38, −0.19], Reptomancer −1.20, Time Eater −1.11,
-  Lagavulin −0.47 [−0.90, −0.04].
+  The Guardian −0.61, Slime Boss −0.59, Lagavulin −0.47 [−0.90, −0.04].
 - Positive: Automaton +1.22 [−0.49, +2.96], Champ +0.57, Awakened One +0.34, Gremlin Leader +0.10.
 
 mb4 − g16 by encounter:
@@ -102,12 +102,12 @@ All cuts are in `results/analysis.json`.
   - 32k gains −0.24 for 2.1× g16's CPU.
   - 64k gains −0.37 for 4.3×.
   - The step from 32k to 64k (−0.12) is not resolved.
-- Max backup at 16k gets the 32k gain at about g16's cost. It is the cheapest improvement found here.
+- Max backup at 16k gets the 32k gain at about g16's cost (CPU ratios compared across campaigns). It is the cheapest improvement found here.
 - Max backup combined with 32k or 64k was not run, so whether the two gains add up is unknown.
 - §762 found max backup NOT_SHOWN in whole runs at about 1,000 simulations with the plain root. This is a different
   regime: a high budget, the Gumbel root, and elite and boss fights only. Its gain sits in elites, not bosses.
-- The flat-16k control settles §770's open question: the budget alone does not help. With a flat root, 16k
-  simulations are no better than production's learned stop at 4.5k.
+- The flat-16k control settles §770's open question: the budget alone was not shown to help. With a flat root, 16k
+  simulations are not detectably better than production's learned stop at 4.5k (−0.09 [−0.27, +0.09]).
 - Exploratory: these states were used before (§711/§716/§718/§770), the main line is production's, and one Gumbel
   setting (k 16, c_visit 50, c_scale 1) was used at every budget, not re-tuned.
 - These fights are the combat plan's stage-3 test set. No training data was recorded.

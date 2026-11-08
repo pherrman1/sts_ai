@@ -26674,7 +26674,7 @@ On D0 validation, lowering w from 1 to 0.25 improved both heads: top-1 0.518 →
 **Knowledge impact:** the combat plan (stage 3 design). Single seed: a shared-trunk policy+value net needed a small
 value weight (0.25 here) and the aux heads.
 
-## §TBD — Gumbel budget check on §770's elite and boss states (1,878 fights × 4 copies): 64k simulations under the Gumbel root lose 0.37 HP per fight less than 16k, [−0.57, −0.16] (97.5%), 32k 0.24 less [−0.46, −0.02], at 13.5× / 6.7× production's CPU → MORE_SIMS_HELP; max backup (min 4 visits) at 16k −0.29 [−0.49, −0.09] at 3.3× → MAX_BACKUP_HELPS; flat 16k without the Gumbel root equals production (cloud, 2026-11-08)
+## §TBD — Gumbel budget check on §770's elite and boss states (1,878 fights × 4 copies): 64k simulations under the Gumbel root lose 0.37 HP per fight less than 16k, [−0.57, −0.16] (97.5%), 32k 0.24 less [−0.46, −0.02], at 13.5× / 6.7× production's CPU → MORE_SIMS_HELP; max backup (min 4 visits) at 16k −0.29 [−0.49, −0.09] at 3.3× → MAX_BACKUP_HELPS; flat 16k without the Gumbel root is not detectably different from production (cloud, 2026-11-08)
 
 **Question (Philipp, 2026-11-08 13:00 CET, go for 40 cloud workers; max-backup arm at his request 13:25 CET):** does
 §770's Gumbel root (gsh16+flat16000, g16) keep improving with 32,000 or 64,000 simulations? How much of the 16k gain
@@ -26700,9 +26700,9 @@ g16 was reused from §770's units, gated on production reproducing §770 (≥ 99
   - g64 − g32: −0.12 [−0.33, +0.08].
 - Gap to Baalorlord closed (point estimates): g16 31%, g32 39%, mb4 41%, g64 44%.
 **Interpretation (Inference):** gains continue past 16k with diminishing returns per CPU, and 32k → 64k is not
-resolved. Max backup gives the 32k gain at about g16's cost, mainly in elites. Its combination with a larger budget was
+resolved. Max backup gives the 32k gain at about g16's cost (3.32× vs 3.15×, ratios across campaigns), mainly in elites. Its combination with a larger budget was
 not run. §762's NOT_SHOWN (whole runs, about 1k simulations, plain root) is a different regime. The flat-16k control
-shows that §770's gain is the Gumbel root rule together with the budget; a flat root at 16k is no better than
+shows that §770's gain is the Gumbel root rule together with the budget; a flat root at 16k is not detectably better than
 production's learned stop. Exploratory: states used before, main line is production's, one Gumbel setting at every
 budget (not re-tuned).
 **Decision:** MORE_SIMS_HELP (gsh16+flat64000) and MAX_BACKUP_HELPS. No default change. Which arm becomes the combat
