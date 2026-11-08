@@ -26623,7 +26623,7 @@ Gumbel-root combat needs its own pre-registration and Philipp's go. Seeds: none 
 Cost: 132 lane-hours.
 **Knowledge impact:** the combat plan (stage 2 targets come from the Gumbel root at 16k).
 
-## §TBD — Combat net stage 2: a transformer (4 layers, d 128, 1.27 M parameters) pretrained on 1.63 M production roots and fine-tuned on 1,024 A20 runs played by the Gumbel-16k teacher beats the g7f_E prior on policy cross-entropy, −0.124 [−0.131, −0.119], and the (encounter × HP decile) table on value NLL, −0.161 [−0.229, −0.094] → STAGE3_GO; top-1 to the Gumbel pick is not above the prior (+0.31 pp [−0.12, +0.74]), a policy-only net is +1.77 pp [+1.34, +2.20] (cloud + PC GPU, 2026-11-08)
+## §771 — Combat net stage 2: a transformer (4 layers, d 128, 1.27 M parameters) pretrained on 1.63 M production roots and fine-tuned on 1,024 A20 runs played by the Gumbel-16k teacher beats the g7f_E prior on policy cross-entropy, −0.124 [−0.131, −0.119], and the (encounter × HP decile) table on value NLL, −0.161 [−0.229, −0.094] → STAGE3_GO; top-1 to the Gumbel pick is not above the prior (+0.31 pp [−0.12, +0.74]), a policy-only net is +1.77 pp [+1.34, +2.20] (cloud + PC GPU, 2026-11-08)
 
 **Question (combat plan stage 2; Philipp chose stage 2 on 2026-11-08 09:07 CET and gave the go at 10:54 CET with 40
 workers):** can a combat net learn Silver's root decision and the fight's outcome well enough to justify a fight gate
