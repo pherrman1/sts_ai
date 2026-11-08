@@ -1,0 +1,160 @@
+#!/usr/bin/env python3
+"""Train the combat net on tensorize.py arrays (combat plan stage 2, 2026-11-08).
+
+usage: train.py DATA_DIR OUT_DIR [--epochs N] [--batch B] [--lr LR] [--d D] [--layers L] [--no-aux] [--no-value]
+                [--max-steps N] [--device cpu|cuda] [--seed S] [--init CKPT]
+
+Holdout: runs whose seed has (seed * 2654435761) % 2^32 % 10 == 0 (10% of runs, never split inside a run).
+Writes OUT_DIR/model.pt, OUT_DIR/log.jsonl (one line per evaluation) and OUT_DIR/eval.json (final holdout
+metrics): policy cross-entropy and top-1 agreement with the played action on multi-edge roots, value NLL and death
+Brier score / 10-bin ECE, aux HP-loss MAE, each also by room (monster / elite / boss).
+"""
+
+import argparse
+import json
+import os
+import sys
+import time
+
+import numpy as np
+import torch
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import model as M  # noqa: E402
+
+
+def holdout_mask(seeds):
+    return ((seeds.astype(np.uint64) * np.uint64(2654435761)) % np.uint64(2 ** 32) % np.uint64(10)) == 0
+
+
+@torch.no_grad()
+def evaluate(net, A, idx, batch, device):
+    net.eval()
+    sums = {"n": 0, "multi": 0, "pol_ce": 0.0, "top1": 0, "top1_n": 0, "nll": 0.0, "brier": 0.0, "aux_mae1": 0.0,
+            "aux_mae2": 0.0}
+    room = {r: {"multi": 0, "top1": 0, "top1_n": 0, "nll": 0.0, "n": 0} for r in range(4)}
+    pdeath, died = [], []
+    for s in range(0, len(idx), batch):
+        b = {k: v.to(device) for k, v in M.collate(A, idx[s:s + batch]).items()}
+        logits, vlog, aux = net(b)
+        logp = torch.log_softmax(logits, -1).masked_fill(~b["act_mask"], 0)
+        multi = b["multi"] > 0
+        ce = -(b["policy"] * logp).sum(-1)
+        pick = logits.argmax(-1)
+        has = multi & (b["chosen"] >= 0)
+        hit = (pick == b["chosen"]) & has
+        vc = M.value_class(b["won"], b["endFrac"])
+        nll = torch.nn.functional.cross_entropy(vlog, vc, reduction="none")
+        pd = torch.softmax(vlog, -1)[:, 0]
+        d = (b["won"] == 0).float()
+        sums["n"] += len(vc)
+        sums["multi"] += int(multi.sum())
+        sums["pol_ce"] += float((ce * multi).sum())
+        sums["top1"] += int(hit.sum())
+        sums["top1_n"] += int(has.sum())
+        sums["nll"] += float(nll.sum())
+        sums["brier"] += float(((pd - d) ** 2).sum())
+        sums["aux_mae1"] += float((aux[:, 0] * 10 - b["hpLoss1"]).abs().sum())
+        sums["aux_mae2"] += float((aux[:, 1] * 10 - b["hpLoss2"]).abs().sum())
+        pdeath.append(pd.cpu().numpy())
+        died.append(d.cpu().numpy())
+        for r in range(4):
+            sel = b["elite_boss"] == r
+            room[r]["n"] += int(sel.sum())
+            room[r]["nll"] += float(nll[sel].sum())
+            room[r]["multi"] += int((multi & sel).sum())
+            room[r]["top1"] += int((hit & sel).sum())
+            room[r]["top1_n"] += int((has & sel).sum())
+    pdeath, died = np.concatenate(pdeath), np.concatenate(died)
+    bins = np.minimum((pdeath * 10).astype(int), 9)
+    ece = sum(abs(pdeath[bins == k].mean() - died[bins == k].mean()) * (bins == k).sum()
+              for k in range(10) if (bins == k).any()) / len(pdeath)
+    n, mm = max(1, sums["n"]), max(1, sums["multi"])
+    out = {"rows": sums["n"], "multiRows": sums["multi"], "policy_ce": sums["pol_ce"] / mm,
+           "top1": sums["top1"] / max(1, sums["top1_n"]), "value_nll": sums["nll"] / n, "death_brier": sums["brier"] / n,
+           "death_ece": float(ece), "death_rate": float(died.mean()), "aux_mae1": sums["aux_mae1"] / n,
+           "aux_mae2": sums["aux_mae2"] / n,
+           "by_room": {name: {"rows": room[r]["n"], "value_nll": room[r]["nll"] / max(1, room[r]["n"]),
+                              "top1": room[r]["top1"] / max(1, room[r]["top1_n"])}
+                       for r, name in enumerate(("monster", "elite", "boss", "other"))}}
+    net.train()
+    return out
+
+
+def main(argv):
+    ap = argparse.ArgumentParser()
+    ap.add_argument("data")
+    ap.add_argument("out")
+    ap.add_argument("--epochs", type=float, default=1.0)
+    ap.add_argument("--batch", type=int, default=256)
+    ap.add_argument("--lr", type=float, default=3e-4)
+    ap.add_argument("--d", type=int, default=128)
+    ap.add_argument("--layers", type=int, default=4)
+    ap.add_argument("--no-aux", action="store_true")
+    ap.add_argument("--no-value", action="store_true")
+    ap.add_argument("--max-steps", type=int, default=0)
+    ap.add_argument("--eval-every", type=int, default=2000)
+    ap.add_argument("--eval-rows", type=int, default=50000)
+    ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+    ap.add_argument("--seed", type=int, default=20261108)
+    ap.add_argument("--init", default="")
+    args = ap.parse_args(argv)
+    os.makedirs(args.out, exist_ok=True)
+    torch.manual_seed(args.seed)
+    rng = np.random.default_rng(args.seed)
+    A = M.Arrays(args.data)
+    seeds = np.asarray(A.a["seed"])
+    hold = holdout_mask(seeds)
+    train_idx, test_idx = np.nonzero(~hold)[0], np.nonzero(hold)[0]
+    eval_idx = test_idx if len(test_idx) <= args.eval_rows else rng.choice(test_idx, args.eval_rows, replace=False)
+    caps = A.meta["caps"]
+    net = M.CombatNet(d=args.d, layers=args.layers, g_len=caps["G_LEN"], m_num=caps["M_NUM"], q_len=caps["Q_LEN"],
+                      a_len=caps["A_LEN"], aux=not args.no_aux, value=not args.no_value).to(args.device)
+    if args.init:
+        net.load_state_dict(torch.load(args.init, map_location=args.device))
+    params = sum(p.numel() for p in net.parameters())
+    opt = torch.optim.AdamW(net.parameters(), lr=args.lr, weight_decay=0.01)
+    steps = int(args.epochs * len(train_idx) / args.batch)
+    if args.max_steps:
+        steps = min(steps, args.max_steps)
+    sched = torch.optim.lr_scheduler.OneCycleLR(opt, max_lr=args.lr, total_steps=max(1, steps), pct_start=0.05)
+    log = open(os.path.join(args.out, "log.jsonl"), "w")
+    cfg = {k: v for k, v in vars(args).items()}
+    cfg.update({"params": params, "trainRows": int(len(train_idx)), "holdoutRows": int(len(test_idx)),
+                "trainRuns": int(len(np.unique(seeds[~hold]))), "holdoutRuns": int(len(np.unique(seeds[hold]))),
+                "steps": steps, "data_meta": A.meta})
+    log.write(json.dumps({"config": cfg}) + "\n")
+    print(json.dumps({k: cfg[k] for k in ("params", "trainRows", "holdoutRows", "steps", "device")}), flush=True)
+    t0 = time.time()
+    perm = rng.permutation(train_idx)
+    pos = 0
+    for step in range(steps):
+        if pos + args.batch > len(perm):
+            perm, pos = rng.permutation(train_idx), 0
+        bi = perm[pos:pos + args.batch]
+        pos += args.batch
+        b = {k: v.to(args.device) for k, v in M.collate(A, bi).items()}
+        logits, vlog, aux = net(b)
+        loss, parts = M.losses(net, b, logits, vlog, aux)
+        opt.zero_grad()
+        loss.backward()
+        torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
+        opt.step()
+        sched.step()
+        if (step + 1) % args.eval_every == 0 or step + 1 == steps:
+            ev = evaluate(net, A, eval_idx, 512, args.device)
+            rec = {"step": step + 1, "sec": round(time.time() - t0, 1), "train": parts, "eval": ev}
+            log.write(json.dumps(rec) + "\n")
+            log.flush()
+            print(json.dumps({"step": step + 1, "sec": rec["sec"], **{k: round(ev[k], 4) for k in
+                              ("policy_ce", "top1", "value_nll", "death_ece", "aux_mae1")}}), flush=True)
+    torch.save(net.state_dict(), os.path.join(args.out, "model.pt"))
+    final = evaluate(net, A, test_idx, 512, args.device)
+    json.dump({"config": {k: cfg[k] for k in cfg if k != "data_meta"}, "holdout": final},
+              open(os.path.join(args.out, "eval.json"), "w"), indent=1)
+    print(json.dumps({"final": {k: final[k] for k in ("rows", "policy_ce", "top1", "value_nll", "death_ece")}}))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
