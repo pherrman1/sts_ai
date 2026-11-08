@@ -359,6 +359,8 @@ namespace sts::search {
         std::atomic<std::int64_t> g_combats {0};
         std::atomic<std::int64_t> g_decisions {0};
         std::atomic<std::int64_t> g_simulations {0};
+        std::atomic<std::int64_t> g_wholeRunGumbelRoots {0};   // STS_SILVER_GUMBEL_ROOT searches
+        std::atomic<std::int64_t> g_wholeRunGumbelSims {0};
         std::atomic<std::int64_t> g_reroots {0};
         std::atomic<std::int64_t> g_freshRoots {0};
         std::atomic<std::int64_t> g_singletonSkips {0};
@@ -902,6 +904,10 @@ namespace sts::search {
                         simulations = searcher->searchGumbelRoot(flatBudget, *gumbelRoot,
                             nativeSilverBattleSeed(bc) ^ (0x9e3779b97f4a7c15ULL * static_cast<std::uint64_t>(decision + 1)));
                         ++g_nativeSilverCombatStats.gumbelRoots;
+                        if (wholeRunGumbel) {
+                            ++g_wholeRunGumbelRoots;
+                            g_wholeRunGumbelSims += simulations;
+                        }
                     } else {
                         searcher->search(flatBudget);
                         simulations = flatBudget;
@@ -1188,6 +1194,12 @@ namespace sts::search {
             if (g_options.gumbelRootK > 0)
                 std::cerr << "[silver] research search: whole-run Gumbel root k=" << g_options.gumbelRootK
                           << " max backup=" << g_options.gumbelRootMaxBackup << " (acts 1-3)\n";
+            if (g_options.gumbelRootK > 0)
+                std::atexit([] {
+                    std::cerr << "[silver] whole-run Gumbel roots=" << g_wholeRunGumbelRoots.load()
+                              << " sims=" << g_wholeRunGumbelSims.load() << " (all decisions " << g_decisions.load()
+                              << ", sims " << g_simulations.load() << ")\n";
+                });
         }
         if (const auto v = SilverSearcher::envRiskVeto(); v.delta > 0)
             std::cerr << "[silver] research search: risk veto delta=" << v.delta << " share=" << v.minShare
