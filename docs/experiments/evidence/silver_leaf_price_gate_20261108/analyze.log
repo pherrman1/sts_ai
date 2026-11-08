@@ -1,0 +1,5 @@
+bad 0 (env mismatch 0) aborts 2
+P1 - D: n 2048 dropped 0  heart D 25.83% P1 23.34%  d -2.49 [-4.39, -0.59] pp  floor d -2.14  cpu ratio 0.898  verdict NOT_SHOWN (sprt NOT_SHOWN), nonregression reading NOT_SHOWN (sprt CAP)
+PF - D: n 2048 dropped 0  heart D 25.83% PF 25.98%  d +0.15 [-1.32, +1.56] pp  floor d -0.16  cpu ratio 0.997  verdict NOT_SHOWN (sprt NOT_SHOWN), nonregression reading NOT_WORSE (sprt NOT_WORSE)
+P1 - PF: n 2048 d -2.64 [-4.54, -0.73] pp
+candidate None
