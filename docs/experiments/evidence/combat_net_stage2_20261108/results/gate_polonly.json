@@ -1,0 +1,96 @@
+{
+ "model": "/home/philippherrmann/combatnet/polonly_d1",
+ "data": "/home/philippherrmann/combatnet/d1_arr",
+ "holdoutRows": 58702,
+ "holdoutRuns": 100,
+ "G1": {
+  "policyCE_net_minus_prior": {
+   "mean": -0.13115432040784483,
+   "ci": [
+    -0.13722082136107402,
+    -0.1255028407036502
+   ],
+   "rows": 54773,
+   "runs": 100
+  },
+  "pass": true
+ },
+ "top1": {
+  "top1_net": 0.525970825041535,
+  "top1_prior": 0.5082431124824275,
+  "net_minus_prior": {
+   "mean": 0.01772771255910759,
+   "ci": [
+    0.013353218789541287,
+    0.02201595476884755
+   ],
+   "rows": 54773,
+   "runs": 100
+  },
+  "top1_ref": 0.5113833458090665,
+  "net_minus_ref": {
+   "mean": 0.014587479232468552,
+   "ci": [
+    0.011558205001719845,
+    0.017695775229153048
+   ],
+   "rows": 54773,
+   "runs": 100
+  },
+  "by_room": {
+   "monster": {
+    "rows": 22035,
+    "top1_net": 0.5665078284547311,
+    "top1_prior": 0.5435897435897435
+   },
+   "elite": {
+    "rows": 16156,
+    "top1_net": 0.5325575637534044,
+    "top1_prior": 0.5146075761327061
+   },
+   "boss": {
+    "rows": 15257,
+    "top1_net": 0.46286950252343184,
+    "top1_prior": 0.45225142557514586
+   },
+   "other": {
+    "rows": 1325,
+    "top1_net": 0.4981132075471698,
+    "top1_prior": 0.48754716981132074
+   }
+  }
+ },
+ "G2": {
+  "valueNLL_net_minus_baseline": {
+   "mean": 0.8013588602967947,
+   "ci": [
+    0.7499128481820255,
+    0.8512557452157397
+   ],
+   "rows": 58702,
+   "runs": 100
+  },
+  "net": 3.072606086730957,
+  "baseline": 2.2712471181990654,
+  "baselineCells": 618,
+  "fallback": {
+   "cell": 58700,
+   "encounter": 2,
+   "global": 0
+  },
+  "pass": false
+ },
+ "G3_sanity": {
+  "ece": 0.002155022760835082,
+  "deathRate": 0.04362713365813771,
+  "reliability": [
+   {
+    "bin": 0,
+    "rows": 58702,
+    "pred": 0.04147211089730263,
+    "obs": 0.04362713365813771
+   }
+  ]
+ },
+ "verdict": "NO_GO"
+}

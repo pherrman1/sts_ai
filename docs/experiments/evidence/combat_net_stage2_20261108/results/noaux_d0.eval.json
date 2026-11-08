@@ -1,0 +1,63 @@
+{
+ "config": {
+  "data": "/home/philippherrmann/combatnet/d0_arr",
+  "out": "/home/philippherrmann/combatnet/noaux_d0",
+  "epochs": 3.0,
+  "batch": 256,
+  "lr": 0.0003,
+  "d": 128,
+  "layers": 4,
+  "no_aux": true,
+  "no_value": false,
+  "max_steps": 0,
+  "eval_every": 2000,
+  "eval_rows": 50000,
+  "device": "cuda",
+  "seed": 20261108,
+  "init": "",
+  "workers": 11,
+  "no_bucket": false,
+  "no_amp": false,
+  "params": 1268376,
+  "trainRows": 1309699,
+  "valRows": 162828,
+  "gateRowsUntouched": 160946,
+  "trainRuns": 2457,
+  "valRuns": 307,
+  "steps": 15348
+ },
+ "validation": {
+  "rows": 162828,
+  "multiRows": 151635,
+  "policy_ce": 1.3002634097581156,
+  "top1": 0.5124630895693119,
+  "value_nll": 2.0303395275729117,
+  "death_brier": 0.022757825812309614,
+  "death_ece": 0.006715948140390687,
+  "death_rate": 0.045766085386276245,
+  "aux_mae1": 5.359009696935522,
+  "aux_mae2": 7.341680765462396,
+  "by_room": {
+   "monster": {
+    "rows": 66455,
+    "value_nll": 1.8159207300070348,
+    "top1": 0.554471439648488
+   },
+   "elite": {
+    "rows": 48184,
+    "value_nll": 2.12447369872544,
+    "top1": 0.5126993768419158
+   },
+   "boss": {
+    "rows": 43875,
+    "value_nll": 2.256894679577602,
+    "top1": 0.4501189730745147
+   },
+   "other": {
+    "rows": 4314,
+    "value_nll": 1.977797380989218,
+    "top1": 0.482615083251714
+   }
+  }
+ }
+}
