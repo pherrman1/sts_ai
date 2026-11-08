@@ -1,0 +1,45 @@
+# Combat states for the combat net (combat plan stage 0, 2026-11-08)
+
+Stage 0 of the [combat plan](https://claude.ai/artifact/HvTqKL592wjb21Zgb3Sho4): a training set of A20 combat roots
+searched by production Silver. Philipp asked for stages 0 and 1 in parallel on 2026-11-08 00:49 CET and gave the go
+for up to 18 workers per stage at 00:57 CET ("du hast für beide phasen je 18 worker zur Verfügung, starte die wenn
+nötig ... Frag nicht nach Erlaubnis"). Seeds from the coordinator (00:59 CET): 111860000-111863071, smokes
+111869990-111869999. Data generation only: no gameplay comparison, no gate, no default change.
+
+## What
+
+`one_combat silverazgen` exactly as `../silver_leaf_a20_prod_20261022` (same `record_env.sh`; `run_unit.sh` differs only
+in the 6 h timeout), on the current binary: A20, student_sel argmax out of combat through the production chain, flat
+10,000-simulation production Silver in every fight (`STS_AZGEN_PRODUCTION_COMBAT=1`: g7f_E root prior with its bonus,
+tree prior K = 8, boss prior playouts). One row per searched root (the public search state as `wire`, every root edge
+with visits and Q, the played action) and one row per fight (outcome, end HP, Silver's end score). 384 units of 8
+natural runs (`units.txt`), queue schedule, 4 lanes per worker.
+
+Why flat 10k instead of today's learned stop: the rows are policy targets, and the learned stop ends many roots after
+1-3k simulations; §716/§718 found no play difference between 10k and the learned stop on Baalorlord's states. The
+October campaign (`../silver_leaf_a20_prod_20261022`, 1,536 runs, archived on the share) is the same data on the
+2026-10-22 binary and can be pooled once its wire schema is checked against this encoder.
+
+## Smoke (2026-11-08, binary of code 1a37c74a, two natural runs at once)
+
+| seed | roots | fights | end | wall |
+|---|---|---|---|---|
+| 111869990 | 683 | 28 | floor 39, Spire Growth | 167 s |
+| 111869991 | 818 | (see log) | | 303 s |
+
+Both ended rc 134 only because the smoke ran with `STS_EXECUTABLE_GIT_SHA=PENDING` (the manifest write refuses it);
+the rows were complete. About 0.3 s per root. Expected for the campaign: 3,072 runs × ~750 roots ≈ 2.3M roots,
+≈ 190 lane-hours, ≈ 2.7 h on 18 workers × 4 lanes.
+
+## Processing (after the run)
+
+1. `python3 tools/cloud/verify_campaign.py docs/experiments/evidence/combat_states_20261108 --extract <dir>`.
+2. `python3 -I tools/combat_net/pack_states.py OUT.jsonl.gz <dir>/**/natural-*.jsonl.gz`: one training row per root
+   (tokens from `tools/combat_net/wire_encoder.py`, Silver's root visit shares, the fight's real outcome, realized HP
+   loss to the next one and two turns). The encoder raises on any wire field it does not list
+   (`tests/test_combat_net_wire.py` checks that every listed field reaches the encoding), so the pack fails rather than
+   drop a field.
+
+Deviations from the plan's stage-0 row, recorded here: the "incoming damage" auxiliary labels are the realized HP loss
+on the played line, not an exact simulator quantity; max damage / max block of the hand are not computed yet (they
+need a small search per root and belong to stage 2's ablation); potions used per fight are not in the fight rows.
