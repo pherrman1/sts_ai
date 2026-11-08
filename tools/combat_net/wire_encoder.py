@@ -121,6 +121,7 @@ for _k in ROLL_INPUTS:
 SPEC["monsters[].moveHistory[]"] = "monsters"
 SPEC["monsters[].smallPowers[]"] = "monsters"
 SPEC["monsters[].pendingAttackPredicates[]"] = "monsters"
+SPEC["monsters[].pendingAttackPredicates[][]"] = "monsters"   # each entry is a (step, attacking) pair
 SPEC["monsters[].pendingRollInputHistory[]"] = "monsters"
 SPEC["monsters[].occupantGeneration"] = f"{IGNORE}: slot-reuse counter for transposition keys"
 SPEC["potions[]"] = "potions"
