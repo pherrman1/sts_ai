@@ -26589,7 +26589,8 @@ marginal values under the policy that runs with 11 HP weights, not leaf weights 
 already gated as PF, which was neutral. Neither the HP price (§TBD-a) nor the potion types beyond the Fairy show
 structure that a learned price head could use.
 **Decision:** PARTIAL (a measurement, no default change). Seeds: none new. Cost: 50.2 core-h. Possible follow-ups,
-not started: an offline estimate from all rolls with the attenuation modelled (0 core-h), or E1-R on the pilot's
-second block (about 75 core-h, needs Philipp's go).
+not started: an offline estimate from all rolls with the attenuation modelled (0 core-h), or E1-R on the 918 played
+units of the pilot's second block (7,344 seeds, about 45 core-h, needs Philipp's go; the block's 612 unplayed units
+stay reserved by §763).
 **Knowledge impact:** KB `research/fight-end-pairs.md` (point 6).
 

@@ -112,8 +112,9 @@ PARTIAL (a measurement; no default change).
 - No follow-up run is started by this result.
 - Two follow-ups are possible:
   - an offline estimate that uses every roll with the chance rule's attenuation modelled (exploratory, 0 core-h);
-  - E1-R on the leaf pilot's second block (12,288 seeds, about 75 core-h, needs Philipp's go), for SE(V_boss) of
-    about 0.66 pp.
+  - E1-R on the leaf pilot's second block, on its 918 played units (7,344 seeds, about 45 core-h, needs Philipp's
+    go), for SE(V_boss) of about 0.76 pp. The block's 612 unplayed units are reserved by §763 and would need an
+    explicit release first.
 
 ## Commands
 
