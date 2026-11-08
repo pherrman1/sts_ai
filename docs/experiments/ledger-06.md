@@ -26470,3 +26470,26 @@ same rate, so a playout-death veto has nothing to act on.
 value. No seeds. Cost ≈ 1 core-h.
 **Knowledge impact:** none beyond this entry.
 
+
+## §TBD-a — E1-S: does the fight-luck HP price depend on the fight-start state? Offline on E1's luck rows (8,192 A20 runs, 165,773 fights): NOT_SHOWN
+
+**Question (Philipp, 2026-11-08 00:40 CET: P1 gate dropped, prices from the luck approach; 00:46 CET yes to this
+offline test):** a context-dependent price net only pays if the HP price varies with the situation in ways Silver's
+leaf does not model. Beyond act × room, does E1's fight-end HP price change with the fight-start HP fraction, floor,
+potions held or max HP?
+**Data:** [PLAN](evidence/learned_price_head_e1s_20261108/PLAN.md) (written before any interaction was fitted),
+[RESULT](evidence/learned_price_head_e1s_20261108/RESULT.md), `e1s_result.json`, `e1_state_dep.py` (reuses E1's
+`analyze.py`). E1's per-act-room luck model (§764) plus HP-luck × feature interactions (features standardised within
+act) and survival-luck × feature controls; HC1, ×2 scale. 0 core-h.
+**Result:** joint Wald χ²(4) = 6.36, p = 0.17 (rule: p < 0.01 and some |γ| ≥ 20% of the price); placebo p = 0.71.
+Per SD of the feature, as a share of the pooled 0.155 pp per HP: HP fraction −15 ± 12%, floor −40 ± 19%, potions
++3 ± 12%, max HP −11 ± 12%. Per act joint p 0.59 / 0.21 / 0.87. By room the price is highest after normal fights,
+then elites, then bosses, in every act; the act-boss prices match Silver's 75% heal model. Start-HP-fraction
+terciles show no monotone pattern.
+**Interpretation (Inference):** at this sample size the luck HP price is about constant within act × room; effects of
+a third of the price per SD would likely have shown. No support for a context-dependent HP price net, as with the CRN
+pairs of the leaf plan's stage 4. The hint that HP is cheaper late in acts 1-2 (z about −2) would need about twice
+the data.
+**Decision:** NOT_SHOWN. The context-dependent HP head stays parked; next are potion prices from reward luck (E1-R,
+`fightendpairgen rewards=1`). Seeds: none new. Cost: 0 core-h.
+**Knowledge impact:** none beyond this entry.
