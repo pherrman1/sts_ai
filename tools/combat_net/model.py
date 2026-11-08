@@ -110,15 +110,15 @@ class CombatNet(nn.Module):
               + self.move(m[..., 2].clamp(0, MOVE_V - 1)) + 0.5 * self.move(m[..., 3].clamp(0, MOVE_V - 1))
               + self.mon_num(b["mnum"]) + self.tok_type.weight[2])
         M = m.shape[1]
-        m_mask = torch.arange(M)[None, :] < b["nmon"][:, None]
+        m_mask = torch.arange(M, device=m.device)[None, :] < b["nmon"][:, None]
         s = b["smap"]
         st = self.stat(s[..., 0].clamp(0, STAT_V - 1)) + self.stat_num(slog(s[..., 1:2].float())) + self.tok_type.weight[3]
         s_mask = s[..., 0] > 0
         q = b["queues"]
         qt = self.queue(slog(q.float())) + self.tok_type.weight[4]
-        q_mask = torch.arange(q.shape[1])[None, :] < b["nqueue"][:, None]
+        q_mask = torch.arange(q.shape[1], device=q.device)[None, :] < b["nqueue"][:, None]
         x = torch.cat([g[:, None], ct, mt, st, qt], 1)
-        mask = torch.cat([torch.ones(B, 1, dtype=torch.bool), b["card_mask"], m_mask, s_mask, q_mask], 1)
+        mask = torch.cat([torch.ones(B, 1, dtype=torch.bool, device=m.device), b["card_mask"], m_mask, s_mask, q_mask], 1)
         h = self.norm(self.trunk(x, src_key_padding_mask=~mask))
         cls = h[:, 0]
         mon_h = h[:, 1 + ct.shape[1]:1 + ct.shape[1] + M]
