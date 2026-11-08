@@ -70,3 +70,20 @@ V_boss may end unresolved at this size.
 python3 -I docs/experiments/evidence/learned_price_head_e1r_20261108/selftest_analyze.py 20000
 python3 -I docs/experiments/evidence/learned_price_head_e1r_20261108/analyze.py SNAP/e1runits SNAP/e1units e1r_result.json
 ```
+
+## Amendment (2026-11-08 01:33 CET, after the prelaunch review K, before any row of the run existed)
+
+- **G3:** fewer than 502 of the 512 units count → decision INCOMPLETE; the estimates are then descriptive
+  (`decision_ci` keeps the CI rule).
+- **G1:** a source row that differs from E1's, or no seed to compare, voids only the HP conversion
+  (`boss_hp_units` = null, with the reason); the potion estimates need no E1 row.
+- **G2 in practice:** `run_unit.sh` fails a unit at its first inconsistent roll (rc 88). The queue retries it, the
+  run is deterministic, so it fails again and is dropped. G2's 0.1% tolerance therefore never applies to the units
+  that count, and a systematic inconsistency shows up as unit loss under G3. `analyze.py` lists such units as
+  `G2_rc88_units`.
+- **Descriptive additions:** V_boss split by Sozu (with Sozu a dropped potion cannot be taken, so those drops
+  attenuate the pooled V_boss), and the implied value of a non-Fairy drop, V_boss − q × C_Fairy.
+- **Correction of the synthetic check's label:** the boss coefficient is the value of an average drop, the Fairy
+  share included: V + W × q, in the check 3.0 + 10 × 0.06 = 3.6 pp, not 3.0. The check's estimate 3.05 ± 0.52 is
+  within 1.1 SE of that, and eight further seeds average 3.49 (sd 0.40). So V_boss is the value of a reward potion of
+  random type, as defined above.

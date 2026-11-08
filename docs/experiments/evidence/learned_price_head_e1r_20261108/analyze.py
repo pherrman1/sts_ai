@@ -11,13 +11,19 @@ f_r = dropped_r * (fairy_r - q) (q = Fairy share of all drops) is a second, inde
 value of a Fairy drop minus that of any other drop. Game-level OLS of
 heartKill on the per-game sums, HC1 SEs. potionChance resets at every act transition, so a drop at the act 1-2 boss
 reward or at act 4's elite reward changes no later drop chance; a mid-act drop lowers the next chances (-10 instead
-of +10, decaying by 0.8 per roll) and its coefficient is attenuated (descriptive only)."""
+of +10, decaying by 0.8 per roll) and its coefficient is attenuated (descriptive only).
+Gates (PREREG, amendment of 2026-11-08 before any row of the run was read): G2 more than 0.1% inconsistent rolls ->
+VOID; G3 fewer than 502 of the 512 units count -> INCOMPLETE (the estimates stay descriptive); G1 a source row that
+differs from E1's (or no seed to compare) voids the HP conversion `boss_hp_units` only. run_unit.sh already fails a unit
+at its first inconsistent roll (rc 88), so such units are listed as `G2_rc88_units` and count against G3."""
 import collections, gzip, io, json, math, os, re, sys, tarfile
 import numpy as np
 
 FIRST, LAST = 111780000, 111788191
 G1_FIELDS = ('valid', 'won', 'heartKill', 'floor', 'fightEnds', 'eligible', 'ineligible', 'ppo')
 MIN_TYPE_DROPS = 500
+N_UNITS = 512
+G3_MIN_UNITS = math.ceil(0.98 * N_UNITS)          # 502 (PREREG G3)
 BETA_HP_E1 = 0.155          # E1's pooled luck HP price (pp per HP, §764), for HP units (descriptive)
 
 
@@ -71,8 +77,9 @@ def roll_class(x):
     return f"mid_a{x['act']}"
 
 
-def analyse(games, e1_src=None):
-    """games: {seed: source row with 'rewards'}; e1_src: {seed: E1 source row} or None. Returns the result dict."""
+def analyse(games, e1_src=None, n_units=None):
+    """games: {seed: source row with 'rewards'}; e1_src: {seed: E1 source row} or None (G1 not checked, no HP
+    conversion); n_units: units that count (G3), None in synthetic checks. Returns the result dict."""
     out = {'games': len(games)}
     if e1_src is not None:
         both = sorted(set(games) & set(e1_src))
@@ -133,15 +140,36 @@ def analyse(games, e1_src=None):
     out['primary']['fairy_ci95'] = lo(prim['f_fairy'])
     ok_b = out['primary']['boss_ci95'][0] > 0 or out['primary']['boss_ci95'][1] < 0
     ok_f = out['primary']['fairy_ci95'][0] > 0 or out['primary']['fairy_ci95'][1] < 0
-    out['decision'] = 'USABLE' if ok_b and ok_f else ('PARTIAL' if ok_b or ok_f else 'UNRESOLVED')
+    out['decision_ci'] = 'USABLE' if ok_b and ok_f else ('PARTIAL' if ok_b or ok_f else 'UNRESOLVED')
+    out['decision'] = out['decision_ci']
+    if n_units is not None:
+        out['units'] = n_units
+        out['G3_units_needed'] = G3_MIN_UNITS
     if out['G2_inconsistent'] > 0.001 * max(out['rolls'], 1):
-        out['decision'] = 'VOID (rolls disagree with the engine)'
+        out['decision'] = 'VOID (G2: rolls disagree with the engine)'
+    elif n_units is not None and n_units < G3_MIN_UNITS:
+        out['decision'] = 'INCOMPLETE (G3: %d of %d units count, %d needed)' % (n_units, N_UNITS, G3_MIN_UNITS)
     out['levels'] = {k: prim[k] for k in level}
-    out['boss_hp_units'] = prim['u_boss'][0] / BETA_HP_E1
+    # V_boss is an average drop, the Fairy share included; a non-Fairy drop is worth about V_boss - qF * C_Fairy
+    # (descriptive; the two regressors are orthogonal by construction, so their covariance is left out)
+    (vb, sb), (cf, sf) = prim['u_boss'], prim['f_fairy']
+    out['boss_non_fairy_pp'] = (vb - qF * cf, math.sqrt(sb ** 2 + (qF * sf) ** 2))
+    g1_ok = e1_src is not None and out['G1_seeds'] > 0 and not out['G1_mismatch']
+    out['boss_hp_units'] = prim['u_boss'][0] / BETA_HP_E1 if g1_ok else None
+    if not g1_ok:
+        out['boss_hp_units_void'] = ('G1 not checked' if e1_src is None else
+                                     'G1: %d of %d seeds differ from E1' % (len(out['G1_mismatch']), out['G1_seeds']))
+    sozu_rolls = 0
     for s, x in rolls:
         if x['room'] == 'BOSS':
-            G[s][f'u_boss_a{x["act"]}'] += x['dropped'] - x['chance'] / 100.0
+            u = x['dropped'] - x['chance'] / 100.0
+            G[s][f'u_boss_a{x["act"]}'] += u
+            G[s]['u_boss_sozu' if x['sozu'] else 'u_boss_nosozu'] += u
+            sozu_rolls += bool(x['sozu'])
     out['boss_by_act'] = fit(['u_boss_a1', 'u_boss_a2', 'u_ss', 'u_mid_a1', 'u_mid_a2', 'u_mid_a3', 'f_fairy'])
+    # with Sozu a dropped potion cannot be taken, so those drops are worth about nothing (descriptive, review N2)
+    out['boss_sozu_rolls'] = sozu_rolls
+    out['boss_sozu'] = fit(['u_boss_nosozu', 'u_boss_sozu', 'u_ss', 'u_mid_a1', 'u_mid_a2', 'u_mid_a3', 'f_fairy'])
     out['mid_by_later_rolls'] = fit(['u_boss', 'u_ss'] + [f'u_mid_k{b}' for b in ('0', '1-2', '3-5', '6+')] + ['f_fairy'])
     out['slots'] = fit(['u_boss_free', 'u_boss_full', 'u_ss_free', 'u_ss_full', 'u_mid_a1', 'u_mid_a2', 'u_mid_a3',
                         'f_fairy'])
@@ -160,13 +188,14 @@ def main(e1r_dir, e1_dir, out_path):
         assert 'rewards' in g, 'source row without rewards log'
     e1_units, _ = load_units(e1_dir, 'le-')
     e1_src = {r['seed']: r for rows in e1_units.values() for r in rows}
-    out = analyse(games, e1_src)
-    out['units'] = len(units)
+    out = analyse(games, e1_src, n_units=len(units))
     out['bad_units'] = bad
+    out['G2_rc88_units'] = sorted(u for u, why in bad.items() if why == 'rc 88')
     json.dump(out, open(out_path, 'w'), indent=1)
     print(json.dumps({k: out[k] for k in ('decision', 'games', 'units', 'rolls', 'drops', 'G1_seeds', 'primary')},
                      indent=1))
-    print('G1 mismatches:', len(out['G1_mismatch']), 'G2 inconsistent:', out['G2_inconsistent'])
+    print('G1 mismatches:', len(out['G1_mismatch']), 'G2 inconsistent:', out['G2_inconsistent'],
+          'rc-88 units:', len(out['G2_rc88_units']), 'HP units:', out['boss_hp_units'])
 
 
 if __name__ == '__main__':
