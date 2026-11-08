@@ -105,6 +105,10 @@ class WireCoverage(unittest.TestCase):
         self.assertEqual(p["c"], [25, 10, 0, 2, 2, 0, 0, 0])
         self.assertEqual(p["p"], [0, -1])
         self.assertEqual(p["sel"], [])
+        q = we.parse_semantic("sa/t=4/s=1/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=6/"
+                              "sel=189_27_0_2_2_0_0_0+104_6_0_1_1_0_0_0")
+        self.assertEqual(q["sel"], [[189, 27, 0, 2, 2, 0, 0, 0], [104, 6, 0, 1, 1, 0, 0, 0]])
+        self.assertEqual(q["task"], [6])
 
 
 if __name__ == "__main__":

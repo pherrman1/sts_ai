@@ -128,6 +128,8 @@ SPEC["pendingActionQueue[]"] = "queues"
 SPEC["pendingCardQueue[]"] = "queues"
 # Queue items are flattened generically (any scalar below an item is encoded).
 QUEUE_PREFIXES = ("pendingActionQueue[].", "pendingCardQueue[].")
+# Items of these monster lists are flattened generically too (every scalar below an item is encoded).
+MONSTER_LIST_PREFIXES = ("monsters[].pendingAttackPredicates[].", "monsters[].pendingRollInputHistory[].")
 
 
 def leaf_paths(x: Any, p: str = "") -> Iterator[Tuple[str, Any]]:
@@ -149,6 +151,8 @@ def classify(path: str) -> str:
         return SPEC[path]
     if path.startswith(QUEUE_PREFIXES):
         return "queues"
+    if path.startswith(MONSTER_LIST_PREFIXES):
+        return "monsters"
     raise KeyError(f"wire path not in wire_encoder.SPEC: {path}")
 
 
@@ -234,9 +238,13 @@ def encode(wire: Dict[str, Any]) -> Dict[str, Any]:
 _SEM = re.compile(r"([a-z]+)=([^/]*)")
 
 
-def parse_semantic(s: str) -> Dict[str, List[int]]:
-    """A root edge's semantic fingerprint ("sa/t=1/s=1/c=25_10_0_2_2_0_0_0/o=0/p=0_-1/x=1/...") as int lists."""
-    out: Dict[str, List[int]] = {}
+def parse_semantic(s: str) -> Dict[str, Any]:
+    """A root edge's semantic fingerprint ("sa/t=1/s=1/c=25_10_0_2_2_0_0_0/o=0/p=0_-1/x=1/...") as int lists; `sel`
+    (the cards of a card-select action) is a list of such card lists."""
+    out: Dict[str, Any] = {}
     for k, v in _SEM.findall(s):
-        out[k] = [int(t) for t in v.split("_") if t not in ("",)] if v else []
+        if k == "sel":   # selected cards: '+'-joined, each card '_'-joined like `c`
+            out[k] = [[int(t) for t in part.split("_")] for part in v.split("+")] if v else []
+        else:
+            out[k] = [int(t) for t in v.split("_")] if v else []
     return out
