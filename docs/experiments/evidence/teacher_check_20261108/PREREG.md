@@ -58,5 +58,11 @@ Bonferroni).
   side, so the CIs are narrow but the effect may be small.
 - Gumbel's sigma(q) needs bounded values; Silver's scores are not, hence the min-max normalization. This is one
   reasonable choice, not a tuned one.
-- The CPU of one unit is about 10x a production-only unit; the smoke's longest unit (29 fights) took 335 s with three
-  arms at 2 copies.
+- The CPU of one unit is about 10x a production-only unit.
+
+## Smoke (2026-11-08, binary 44d6d0c9, `run_unit.sh` as frozen; not part of the analysis)
+
+Units 1675881103 and 1648247344, both rc 0, 147 s and 1,112 s wall. `analyze.py` on them: 18 elite/boss fights, 0
+dropped. HP lost per fight: production 4.89, rpl4 4.17, flat4000 6.69, gsh16+flat4000 4.85, gsh16+flat16000 4.90 (2 runs,
+no CIs). CPU ratio to production 3.09 / 1.03 / 0.95 / 3.85; simulations per decision 3,954 (production), 3,986,
+4,000, 3,808, 15,404. Expected campaign cost: about 329 units × 10-20 min ≈ 55-110 lane-hours.
