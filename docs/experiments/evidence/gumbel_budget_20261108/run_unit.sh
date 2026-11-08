@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
-# Gumbel budget check (PREREG.md): copy of ../teacher_check_20261108/run_unit.sh (same binary, environment, copy
-# seeds); only the unit split and the arms differ. One unit = one Baalorlord run x one act x one arm set:
+# Gumbel budget check (PREREG.md): copy of ../teacher_check_20261108/run_unit.sh (same environment and copy seeds;
+# binary: main 30b212ee + expertfights arm token mb<M>, combat search code as §770's); only the unit split and the
+# arms differ. One unit = one Baalorlord run x one act x one arm set:
 #   SET g64    -> STS_EXPERT_FIGHTS_ARMS=gsh16+flat64000
 #   SET g32f16 -> STS_EXPERT_FIGHTS_ARMS=flat16000,gsh16+flat32000
+#   SET g16mb  -> STS_EXPERT_FIGHTS_ARMS=gsh16+flat16000+mb4 (max backup, min 4 visits, this arm's searches only)
 # with STS_EXPERT_FIGHTS_ARM_ROOMS=<ACT>E,<ACT>B, so arms (and production's 4 full copies) play only in that act's
 # elite and boss fights. The main line is production's either way (FightReplayer), so the states equal stage 1's.
 # usage: run_unit.sh REPO RUN UNIT_OUT RUN_ID ACT SET
@@ -12,6 +14,7 @@ REPO=$1 RUN=$2 OUT=$3 ID=$4 ACT=${5:-} SET=${6:-}
 case "$SET" in
   g64) ARMS=gsh16+flat64000 ;;
   g32f16) ARMS=flat16000,gsh16+flat32000 ;;
+  g16mb) ARMS=gsh16+flat16000+mb4 ;;
   *) echo "bad arm set '$SET'" >&2; exit 2 ;;
 esac
 [[ "$ACT" =~ ^[123]$ ]] || { echo "bad act '$ACT'" >&2; exit 2; }

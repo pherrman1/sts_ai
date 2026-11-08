@@ -5,8 +5,8 @@ gsh16+flat16000 (§770) on the same Baalorlord elite and boss states and copy se
 usage: python3 -I analyze.py <units_dir> <stage1_units_dir> [out.json]
 
 units_dir holds this campaign's unit tars or their extracted contents (one `F-<run>-a<act>-<set>.fights.json` per
-unit, SET g64 = gsh16+flat64000, SET g32f16 = flat16000 and gsh16+flat32000); stage1_units_dir holds the teacher check's
-(../teacher_check_20261108, `F-<run>.fights.json`). Tars are read in place. Adapted from
+unit, SET g64 = gsh16+flat64000, SET g32f16 = flat16000 and gsh16+flat32000, SET g16mb = gsh16+flat16000+mb4);
+stage1_units_dir holds the teacher check's (../teacher_check_20261108, `F-<run>.fights.json`). Tars are read in place. Adapted from
 ../teacher_check_20261108/analyze.py: same fight selection, drops, HP-lost definition (entry HP - exit HP, 0 on a loss,
 floor-51 exits inverted for the Act-4 heal), side value = mean over the 4 copies, run-clustered bootstrap with 10,000
 resamples and seed 20261108.
@@ -19,7 +19,8 @@ side is dropped (`missing_side`).
 """
 import collections, io, json, os, random, re, statistics as st, sys, tarfile
 
-NEW = ('flat16000', 'gsh16+flat32000', 'gsh16+flat64000')
+MB = 'gsh16+flat16000+mb4'
+NEW = ('flat16000', 'gsh16+flat32000', 'gsh16+flat64000', MB)
 OLD = ('gsh16+flat16000', 'gsh16+flat4000', 'flat4000', 'rpl4')
 G16 = 'gsh16+flat16000'
 PRIMARY = ('gsh16+flat32000', 'gsh16+flat64000')   # each minus G16, 97.5% CI (two arms, Bonferroni)
@@ -184,6 +185,11 @@ def summary(R):
         out[f'{a}_minus_g16_ci975'] = boot(R, lambda r, a=a: r[a] - r[G16], level=LEVEL)
         out[f'{a}_minus_g16_death'] = round(st.mean(r[a + '_death'] - r[G16 + '_death'] for r in R), 4)
         out[f'{a}_minus_g16_death_ci'] = boot(R, lambda r, a=a: r[a + '_death'] - r[G16 + '_death'])
+    # Separate pre-registered contrast: max backup under the Gumbel root at 16k, paired with mean-backup g16.
+    out['mb_minus_g16'] = round(st.mean(r[MB] - r[G16] for r in R), 2)
+    out['mb_minus_g16_ci'] = boot(R, lambda r: r[MB] - r[G16])
+    out['mb_minus_g16_death'] = round(st.mean(r[MB + '_death'] - r[G16 + '_death'] for r in R), 4)
+    out['mb_minus_g16_death_ci'] = boot(R, lambda r: r[MB + '_death'] - r[G16 + '_death'])
     for a, b in SECONDARY:
         out[f'{a}_minus_{b}'] = round(st.mean(r[a] - r[b] for r in R), 2)
         out[f'{a}_minus_{b}_ci'] = boot(R, lambda r, a=a, b=b: r[a] - r[b])
@@ -212,12 +218,24 @@ def decision(p, repro_share):
     return 'INCONCLUSIVE'
 
 
+def decision_mb(p, repro_share):
+    if repro_share is None or repro_share < 0.99:
+        return 'NOT_PAIRED'
+    ci = p['mb_minus_g16_ci']
+    if ci and ci[1] < 0:
+        return 'MAX_BACKUP_HELPS'
+    if ci and ci[0] > THRESH:
+        return 'MAX_BACKUP_NO_GAIN'
+    return 'INCONCLUSIVE'
+
+
 def main():
     info = {}
     R = rows(sys.argv[1], sys.argv[2], info)
     p = summary(R)
     res = dict(**info, fights=len(R), primary=p,
                decision=decision(p, info['reproduction']['share']) if p else None,
+               decision_max_backup=decision_mb(p, info['reproduction']['share']) if p else None,
                by_act={a: summary([r for r in R if r['act'] == a]) for a in (1, 2, 3)},
                by_room={m: summary([r for r in R if r['room'] == m]) for m in ('E', 'B')},
                by_act_room={f'{a}{m}': summary([r for r in R if r['act'] == a and r['room'] == m])

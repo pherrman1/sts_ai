@@ -1,6 +1,6 @@
 name          gumbel-budget
-code_commit   a51a2ed2fb894bb9c3c6038e7dbf9692fe402dfd
-binary_sha256 44d6d0c93012058078c400569cb08f2682b3907c9ef3a43f9618ed27b2bf4265
+code_commit   d430d406824b52d981b8836de65f8655bc64ef87
+binary_sha256 3e801097c5e8c18d859203f56dc3e7f6f2bb09df16f0a20c9cf9b0ff5c692a5e
 workers       40
 share         /mnt/project-files/combat-plan/gumbel-budget
 configure_preset linux-gcc-release-x86-64-v3
