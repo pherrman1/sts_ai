@@ -45,9 +45,10 @@ def load_net(model_dir, caps, device):
 @torch.no_grad()
 def forward_all(net, A, idx, device, batch=512):
     """Per row: log-softmax over its kept edges (list of arrays) and value log-probs (21)."""
+    assert np.all(np.diff(idx) > 0), "idx must be sorted (collate returns rows in sorted order)"
     logp, vlogp = [], []
     for s in range(0, len(idx), batch):
-        part = np.sort(idx[s:s + batch])
+        part = idx[s:s + batch]
         b = {k: v.to(device) for k, v in M.collate(A, part).items()}
         logits, vlog, _ = net(b)
         lp = torch.log_softmax(logits, -1).cpu().numpy()

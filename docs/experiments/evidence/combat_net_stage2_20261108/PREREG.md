@@ -53,7 +53,7 @@ Can a combat net learn Silver's root decision and the fight's outcome well enoug
 
 - **G3 (sanity, not gated):** death-class reliability in 10 bins (rows, mean predicted, observed) and its ECE. At a
   low row-level death rate an ECE threshold passes almost automatically, so it is reported, not gated.
-- Both gates are floors: the prior and the baseline are weak on purpose, because they are what Silver uses today.
+- Both gates are floors: the prior is what Silver uses today, and the baseline is the simplest state-aware value.
   Stage 3 (fights) decides whether the net helps.
 - **Descriptive, reported with run-clustered 95% CIs:**
   - top-1 agreement with the Gumbel pick (`gumbelChoice`) for N, for the prior argmax and for the D0-only ablation;
