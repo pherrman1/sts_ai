@@ -26711,7 +26711,7 @@ seeds, §770's copy seeds). Cost: 425 lane-hours.
 **Knowledge impact:** the combat plan (teacher target for stages 2-3). Max backup is not dead: it helps under the
 Gumbel root at high budget.
 
-## §TBD — Combat net stage 3a: the policy-only combat net (polonly_d1) as Silver's root prior on §770's elite and boss states (1,878 fights × 4 copies) gains nothing, T = 1 −0.06 [−0.29, +0.17] and T = 0.55 −0.10 [−0.32, +0.11] HP per fight (97.5%) at 1.02× / 0.98× CPU → NO_GAIN; at a flat 4,000 simulations without the learned stop also null, −0.17 [−0.39, +0.05] and +0.07 [−0.15, +0.30] → FLAT_NO_GAIN (cloud, 2026-11-08)
+## §773 — Combat net stage 3a: the policy-only combat net (polonly_d1) as Silver's root prior on §770's elite and boss states (1,878 fights × 4 copies) gains nothing, T = 1 −0.06 [−0.29, +0.17] and T = 0.55 −0.10 [−0.32, +0.11] HP per fight (97.5%) at 1.02× / 0.98× CPU → NO_GAIN; at a flat 4,000 simulations without the learned stop also null, −0.17 [−0.39, +0.05] and +0.07 [−0.15, +0.30] → FLAT_NO_GAIN (cloud, 2026-11-08)
 
 **Question (combat plan stage 3a; Philipp asked to prepare it on 2026-11-08 13:26 CET, chose the flat-budget pair on
 top at 18:21 CET and gave the go with his worker count):** does production play Baalorlord's A20 elite and boss states
