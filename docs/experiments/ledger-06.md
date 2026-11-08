@@ -26509,3 +26509,34 @@ prices. A full CRN factory (stage 3) is not supported by these learning curves. 
 cloud (about 5 core-h of author-container CPU for the embeddings and fits).
 **Knowledge impact:** KB `research/fight-end-pairs.md` (stage-4 paragraph).
 
+## §767 — Silver leaf price gate, whole A20 runs (net-0420 alone, combat B, flat 1,000), 2,048 seeds × 3 arms: the stage-4 prices P1 lose Heart kills, −2.49 pp [−4.39, −0.59] → NOT_SHOWN; PF (P1 with non-Fairy potions at 11) +0.15 pp [−1.32, +1.56] → NOT_SHOWN, non-regression NOT_WORSE; no candidate (cloud, 2026-11-08)
+
+**Question (Philipp, 2026-11-08 00:48 CET: "Na gut lass doch p1 messen, die 3 vorgeschlagenen arms von dir."; 4
+workers 00:50 CET):** do the global victory-leaf prices of stage 4 (§766) raise the Heart kill rate of whole runs over
+Silver's default leaf (P1)? Does the part no gate had tested, the Fairy price with max HP and gold at potions 11, do so
+on its own (PF)?
+**Data:** [PREREG](evidence/silver_leaf_price_gate_20261108/PREREG.md) (K prelaunch PASS at f07d1c90, on main with
+#1007 before the result), [RESULT](evidence/silver_leaf_price_gate_20261108/RESULT.md), `result.json`,
+`pairs_P1.csv`, `pairs_PF.csv`. Run commit b57c85c2 (main ccc53a48 + campaign files), binary c201818cb248cef2…,
+`bestbench 1000 1 20`, net-0420 as the whole OOC policy (temperature 0, no OOC MCTS), combat B. Arms on every seed
+111820000-111822047: D (defaults); P1 (`STS_SILVER_POTION_WEIGHTS=*=3.7,FAIRY_POTION=47.6`,
+`STS_SILVER_MAXHP_WEIGHT=2.4`, `STS_SILVER_GOLD_WEIGHT=0.12`); PF (P1 with `*=11`).
+**Result:** 6,144 games, all rc 0 with every check; 0 dropped seeds; 0 `.env` mismatches (check added before any outcome
+was read, review G-N1); 2 combat aborts (seed 111821505 in D and PF, counted as losses). Heart D 25.83%, P1 23.34%,
+PF 25.98%. P1 − D −2.49 pp [−4.39, −0.59]: SPRT gainer (d0 0, d1 +2 pp, α 0.025) H0 at 1,024 pairs → NOT_SHOWN;
+nonregression (d0 −1.5 pp) CAP, bootstrap lo −4.39 → not NOT_WORSE. PF − D +0.15 [−1.32, +1.56]: H0 at 704 pairs →
+NOT_SHOWN; nonregression H1 at 1,856 pairs, lo −1.32 → NOT_WORSE. P1 − PF −2.64 [−4.54, −0.73]. Act-3 clears P1
+−4.54 pp [−6.54, −2.49], PF −0.39 [−1.86, +1.03]; final floor P1 −2.14 [−2.83, −1.44], PF −0.16 [−0.53, +0.21];
+cpu vs D 0.898 / 0.997; no game over 300 s. No effect on the data: one-off upload retries on the share, and four
+claims orphaned by a W2 container reset (03:24 CET), released with the queue's `failed` marker and re-run as a2.
+**Interpretation (Inference):** §542 repeats with Heart-kill prices under another policy: pricing non-Fairy potions far
+below 11 loses whole runs, already before the Heart (act-3 clears −4.5 pp). The pilot's 3.6-HP potion price is a
+marginal value under a policy that spends potions at 11, not a leaf weight. The Fairy, max HP and gold changes are
+neutral (a gain above 1.6 pp is ruled out). P1's `*` also sets Smoke Bomb to 3.7 (§542 kept 11), so Smoke Bomb's
+share of P1 − PF is not separated. Price models from CRN forks or fight luck need a whole-run check or labels measured
+under the leaf they feed before they become leaf weights.
+**Decision:** no candidate, no default change; the three leaf flags stay research-only. Seeds used:
+111820000-111822047 (+ smokes 111829990-111829991; 111829992-111829999 unplayed, not reused). Cost ≈ 32 core-h cloud.
+**Knowledge impact:** KB `architecture/combat-search.md` (victory-leaf weights) and `research/fight-end-pairs.md`
+(stage-4 paragraph).
+
