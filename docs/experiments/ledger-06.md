@@ -26594,3 +26594,31 @@ units of the pilot's second block (7,344 seeds, about 45 core-h, needs Philipp's
 stay reserved by §763).
 **Knowledge impact:** KB `research/fight-end-pairs.md` (point 6).
 
+## §770 — Teacher check on Baalorlord's A20 elite and boss states (§711's 329 runs, 1,878 fights × 4 copies): a Gumbel root with 16,000 simulations loses 0.88 HP per fight less than production, [−1.20, −0.57] (98.75%), at 3.15× CPU → TEACHER_FOUND; rpl4, flat 4,000 and the Gumbel root at 4,000 do not resolve (cloud, 2026-11-08)
+
+**Question (combat plan stage 1; Philipp, 2026-11-08 00:49 CET "Mach Stufe 0 und 1 in parallel", 00:57 CET go for up
+to 18 workers per stage):** is there a combat teacher that plays Baalorlord's A20 elite and boss states better than
+today's production Silver? If yes, stage 2 trains the combat net on its targets; if no, a net can only copy Silver.
+**Data:** [PREREG](evidence/teacher_check_20261108/PREREG.md), [RESULT](evidence/teacher_check_20261108/RESULT.md),
+`results/analysis.json`, `analyze.py`. `one_combat expertfights` (code a51a2ed2, binary 44d6d0c9, run commit 75604d31)
+on §711's 329 units, arms rpl4 / flat4000 / gsh16+flat4000 / gsh16+flat16000 against production on the same 4 copy
+seeds per fight. The Gumbel root (`SilverSearcher::searchGumbelRoot`, Danihelka et al. 2022): Gumbel-top-16 over the
+g7f_E root prior, sequential halving, pick by g + logit + σ(q), c_visit 50, c_scale 1, q min-max normalized. 14
+workers, 132 lane-hours. 329 of 329 units rc 0, nothing excluded; 1,878 fights from 309 runs, 0 dropped.
+**Result:** production 11.60 HP lost per fight (Baalorlord 8.74). Arm − production (98.75%): rpl4 −0.07 [−0.31,
++0.17] at 3.36× CPU; flat4000 +0.22 [−0.05, +0.48]; gsh16+flat4000 −0.15 [−0.45, +0.14] at 0.78×; **gsh16+flat16000
+−0.88 [−1.20, −0.57]** at 3.15× (14,733 simulations per decision, production 4,547). Deaths 5.5% per fight, no arm
+differs. Secondary (95%): Gumbel root at equal budget gsh16+flat4000 − flat4000 −0.37 [−0.59, −0.15]; 4× budget under
+the Gumbel root −0.73 [−0.93, −0.52]. gsh16+flat16000 by cut: act 1 −0.43, act 2 −1.23, act 3 −1.65; elites −0.62,
+bosses −1.54 [−2.14, −0.99]; act-2 bosses −2.53 [−3.63, −1.41]; every encounter with n ≥ 20 negative (Automaton −3.73).
+**Interpretation (Inference):** the Gumbel root at 16k closes about 31% of the 2.86-HP gap to Baalorlord. More
+flat budget was not shown to gain this much before (§718 boss states: flat 40k −0.25 [−1.10, +0.61], flat 20k −0.46
+[−1.27, +0.34]; §716 act-2 bosses flat 40k −3.3 [−6.8, +0.3]). Both the root rule (−0.37 at 4k against flat 4k) and
+the 4× budget under it (−0.73) contribute; without a flat-16k arm, whether the Gumbel root makes extra simulations
+more useful than a flat root does is not measured, and §716/§718 bound flat-budget gains on bosses only loosely. At
+about production's CPU the Gumbel root alone is −0.15 [−0.45, +0.14], unresolved. Exploratory: these states were used
+before, the main line is production's, and one Gumbel setting was tested, not tuned.
+**Decision:** TEACHER_FOUND: gsh16+flat16000 is the stage-2 teacher candidate. No default change; a whole-run A/B of a
+Gumbel-root combat needs its own pre-registration and Philipp's go. Seeds: none new (§694's external run seeds).
+Cost: 132 lane-hours.
+**Knowledge impact:** the combat plan (stage 2 targets come from the Gumbel root at 16k).

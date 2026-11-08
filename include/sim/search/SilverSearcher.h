@@ -394,6 +394,24 @@ namespace sts::search {
         [[nodiscard]] int lastRiskVetoEdge() const { return lastRiskVeto; }
         // The risk veto's playout ends per root edge since the last setRoot or reroot (empty when off).
         [[nodiscard]] const SilverOutcomeCapture &riskOutcomeCapture() const { return riskOutcomes; }
+        // Research (combat plan stage 1, default off): Gumbel AlphaZero root search (Danihelka et al.
+        // 2022, "Policy improvement by planning with Gumbel"). Samples up to k root edges without
+        // replacement by Gumbel-top-k over log rootPrior (uniform when rootPrior does not match the
+        // root's edges), then runs sequential halving: each phase splits an equal share of
+        // `simulations` over the remaining candidates (the root edge of every simulation is forced),
+        // keeps the better half by g + logit + sigma(q), and ends with one candidate, which
+        // bestAction() then returns (before any risk veto). sigma(q) = (cVisit + max root edge
+        // visits) * cScale * q01, q01 the edge's selection value min-max normalized over the visited
+        // root edges (Silver's scores are not bounded). Below the root the search is unchanged.
+        // `seed` fixes the Gumbel draws. A root with one edge searches nothing.
+        struct GumbelRoot {
+            int k = 16;
+            double cVisit = 50;
+            double cScale = 1.0;
+        };
+        // Returns the simulations run (at most `simulations`).
+        std::int64_t searchGumbelRoot(std::int64_t simulations, const GumbelRoot &gumbel, std::uint64_t seed);
+        [[nodiscard]] int lastGumbelEdge() const { return gumbelChoice; }
         // Research-only playout policy for RolloutConfig::prior (same signature as nodePrior).
         std::function<std::vector<double>(const BattleContext &, const std::vector<Edge> &)> rolloutPrior;
         // STS_SILVER_LEAF_HEAD (set by NativeSilverBackend; default off): an undecided leaf is worth
@@ -489,6 +507,8 @@ namespace sts::search {
         int currentRootEdge = -1;   // root edge of the simulation in progress
         SilverOutcomeCapture riskOutcomes;   // risk veto: playout ends per root edge (riskVeto.delta > 0)
         mutable int lastRiskVeto = -1;
+        int forcedRootEdge = -1;   // searchGumbelRoot: the root edge every simulation takes (-1 = free)
+        int gumbelChoice = -1;     // searchGumbelRoot's pick for bestAction (-1 = most visits)
 
         std::default_random_engine randGen;
         SilverRolloutAgent rolloutAgent;

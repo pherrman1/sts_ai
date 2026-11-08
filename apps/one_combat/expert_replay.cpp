@@ -610,12 +610,16 @@ class FightReplayer {
 public:
     // Research arm (STS_EXPERT_FIGHTS_ARMS, default none): a '+'-joined set of `pp` (prior playouts in elite
     // rooms, as STS_SILVER_PRIOR_PLAYOUT_ELITE=1), `flat<N>` (flat N simulations at every root, singletons
-    // searched, no learned stop) and `potw<W>` (held-potion leaf weight W instead of 11, integer).
+    // searched, no learned stop), `potw<W>` (held-potion leaf weight W instead of 11, integer), `rpl<K>` (K
+    // greedy playouts per leaf, 2..64, other rollout settings production) and `gsh<K>` (Gumbel root with K
+    // sampled root edges, 2..64, SilverSearcher::searchGumbelRoot; needs flat<N>).
     struct Arm {
         std::string name;
         bool priorPlayoutElite = false;
         std::int64_t flat = 0;
         double potionWeight = -1;   // < 0: production
+        int rolloutsPerLeaf = 0;    // 0: production
+        int gumbelK = 0;            // 0: plain search
     };
     FightReplayer(const json &run, Replayer &replayer, int replicates, int maxAct, bool expertPotions,
                   std::vector<Arm> arms = {}, std::set<std::string> armRooms = {}, int armK = 0)
@@ -698,9 +702,17 @@ public:
                     search::NativeSilverBudgetOverride::Policy::Flat, false};
             if (arm && arm->priorPlayoutElite) search::g_nativeSilverPriorPlayoutEliteOverride = true;
             if (arm && arm->potionWeight >= 0) search::g_nativeSilverPotionWeightOverride = arm->potionWeight;
+            if (arm && arm->rolloutsPerLeaf > 0) search::g_nativeSilverRolloutsPerLeafOverride = arm->rolloutsPerLeaf;
+            if (arm && arm->gumbelK > 0) {
+                search::SilverSearcher::GumbelRoot g;
+                g.k = arm->gumbelK;
+                search::g_nativeSilverGumbelRootOverride = g;
+            }
             struct ArmReset { ~ArmReset() { search::g_nativeSilverBudgetOverride.reset();
                                             search::g_nativeSilverPriorPlayoutEliteOverride.reset();
-                                            search::g_nativeSilverPotionWeightOverride.reset(); } } armReset;
+                                            search::g_nativeSilverPotionWeightOverride.reset();
+                                            search::g_nativeSilverRolloutsPerLeafOverride.reset();
+                                            search::g_nativeSilverGumbelRootOverride.reset(); } } armReset;
             BattleContext bc{};
             const double t0 = threadCpuSeconds();
             a.playoutBattle(copy, bc);
@@ -713,7 +725,10 @@ public:
             json rep = {{"r", r}, {"won", won}, {"valid", valid}, {"exitHp", won ? copy.curHp : 0},
                         {"exitMaxHp", copy.maxHp}, {"turns", bc.turn}, {"cpu", cpu},
                         {"potionsUsed", minus(entryPotions, exitPotions)},
-                        {"potionsGained", minus(exitPotions, entryPotions)}};
+                        {"potionsGained", minus(exitPotions, entryPotions)},
+                        {"decisions", search::g_nativeSilverCombatStats.decisions},
+                        {"simulations", search::g_nativeSilverCombatStats.simulations},
+                        {"gumbelRoots", search::g_nativeSilverCombatStats.gumbelRoots}};
             if (won && winner && !*winner) {
                 copy.seed = gc.seed;
                 *winner = std::move(copy);
@@ -856,9 +871,19 @@ int expertFightsGen(const std::string &runFile, const std::string &output) {
                          && t.find_first_not_of("0123456789", 4) == std::string::npos) arm.flat = std::stoll(t.substr(4));
                 else if (t.size() > 4 && t.rfind("potw", 0) == 0 && t.size() <= 7
                          && t.find_first_not_of("0123456789", 4) == std::string::npos) arm.potionWeight = std::stoi(t.substr(4));
+                else if (t.size() > 3 && t.size() <= 5 && t.rfind("rpl", 0) == 0
+                         && t.find_first_not_of("0123456789", 3) == std::string::npos) arm.rolloutsPerLeaf = std::stoi(t.substr(3));
+                else if (t.size() > 3 && t.size() <= 5 && t.rfind("gsh", 0) == 0
+                         && t.find_first_not_of("0123456789", 3) == std::string::npos) arm.gumbelK = std::stoi(t.substr(3));
                 else throw std::runtime_error("STS_EXPERT_FIGHTS_ARMS: unknown arm part " + t);
             }
             if (arm.flat < 0 || arm.flat > 1000000) throw std::runtime_error("STS_EXPERT_FIGHTS_ARMS: flat out of range");
+            if (arm.rolloutsPerLeaf != 0 && (arm.rolloutsPerLeaf < 2 || arm.rolloutsPerLeaf > 64))
+                throw std::runtime_error("STS_EXPERT_FIGHTS_ARMS: rpl out of range (2..64)");
+            if (arm.gumbelK != 0 && (arm.gumbelK < 2 || arm.gumbelK > 64))
+                throw std::runtime_error("STS_EXPERT_FIGHTS_ARMS: gsh out of range (2..64)");
+            if (arm.gumbelK > 0 && arm.flat == 0)
+                throw std::runtime_error("STS_EXPERT_FIGHTS_ARMS: gsh needs flat<N>");
             arms.push_back(arm);
         }
         const char *rooms = std::getenv("STS_EXPERT_FIGHTS_ARM_ROOMS");

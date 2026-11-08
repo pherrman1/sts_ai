@@ -592,6 +592,9 @@ set_tests_properties(heart1_ppo_python PROPERTIES LABELS "core;smoke")
 add_test(NAME critic_ceiling_python COMMAND python3 -m unittest discover
     -s ${CMAKE_CURRENT_SOURCE_DIR}/tests -p test_critic_ceiling.py)
 set_tests_properties(critic_ceiling_python PROPERTIES LABELS "core;smoke")
+add_test(NAME combat_net_wire_python COMMAND python3 -m unittest discover
+    -s ${CMAKE_CURRENT_SOURCE_DIR}/tests -p test_combat_net_wire.py)
+set_tests_properties(combat_net_wire_python PROPERTIES LABELS "core;smoke")
 
 # Offline full-state transport for frozen #379 replay; no generated game seeds.
 add_executable(screen_leaf_snapshot_test
@@ -939,6 +942,8 @@ add_test(NAME silver_loss_ceiling COMMAND $<TARGET_FILE:unit-test> silver_loss_c
 set_tests_properties(silver_loss_ceiling PROPERTIES LABELS "core")
 add_test(NAME silver_risk_veto COMMAND $<TARGET_FILE:unit-test> silver_risk_veto)
 set_tests_properties(silver_risk_veto PROPERTIES LABELS "core")
+add_test(NAME silver_gumbel_root COMMAND $<TARGET_FILE:unit-test> silver_gumbel_root)
+set_tests_properties(silver_gumbel_root PROPERTIES LABELS "core")
 add_test(NAME silver_hidden_info_invariance COMMAND $<TARGET_FILE:unit-test> silver_hidden_info_invariance)
 set_tests_properties(silver_hidden_info_invariance PROPERTIES LABELS "core")
 add_test(NAME silver_incense_heart_phase COMMAND $<TARGET_FILE:unit-test> silver_incense_heart_phase)
