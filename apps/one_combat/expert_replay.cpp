@@ -612,7 +612,8 @@ public:
     // rooms, as STS_SILVER_PRIOR_PLAYOUT_ELITE=1), `flat<N>` (flat N simulations at every root, singletons
     // searched, no learned stop), `potw<W>` (held-potion leaf weight W instead of 11, integer), `rpl<K>` (K
     // greedy playouts per leaf, 2..64, other rollout settings production) and `gsh<K>` (Gumbel root with K
-    // sampled root edges, 2..64, SilverSearcher::searchGumbelRoot; needs flat<N>).
+    // sampled root edges, 2..64, SilverSearcher::searchGumbelRoot; needs flat<N>) and `mb<M>` (max backup with
+    // minimum M visits, as STS_SILVER_MAX_BACKUP=M but for this arm's searches only, 1..1000000).
     struct Arm {
         std::string name;
         bool priorPlayoutElite = false;
@@ -620,6 +621,7 @@ public:
         double potionWeight = -1;   // < 0: production
         int rolloutsPerLeaf = 0;    // 0: production
         int gumbelK = 0;            // 0: plain search
+        int maxBackup = 0;          // 0: production (STS_SILVER_MAX_BACKUP of the process)
     };
     FightReplayer(const json &run, Replayer &replayer, int replicates, int maxAct, bool expertPotions,
                   std::vector<Arm> arms = {}, std::set<std::string> armRooms = {}, int armK = 0)
@@ -703,6 +705,7 @@ public:
             if (arm && arm->priorPlayoutElite) search::g_nativeSilverPriorPlayoutEliteOverride = true;
             if (arm && arm->potionWeight >= 0) search::g_nativeSilverPotionWeightOverride = arm->potionWeight;
             if (arm && arm->rolloutsPerLeaf > 0) search::g_nativeSilverRolloutsPerLeafOverride = arm->rolloutsPerLeaf;
+            if (arm && arm->maxBackup > 0) search::g_nativeSilverMaxBackupOverride = arm->maxBackup;
             if (arm && arm->gumbelK > 0) {
                 search::SilverSearcher::GumbelRoot g;
                 g.k = arm->gumbelK;
@@ -712,7 +715,8 @@ public:
                                             search::g_nativeSilverPriorPlayoutEliteOverride.reset();
                                             search::g_nativeSilverPotionWeightOverride.reset();
                                             search::g_nativeSilverRolloutsPerLeafOverride.reset();
-                                            search::g_nativeSilverGumbelRootOverride.reset(); } } armReset;
+                                            search::g_nativeSilverGumbelRootOverride.reset();
+                                            search::g_nativeSilverMaxBackupOverride.reset(); } } armReset;
             BattleContext bc{};
             const double t0 = threadCpuSeconds();
             a.playoutBattle(copy, bc);
@@ -875,6 +879,8 @@ int expertFightsGen(const std::string &runFile, const std::string &output) {
                          && t.find_first_not_of("0123456789", 3) == std::string::npos) arm.rolloutsPerLeaf = std::stoi(t.substr(3));
                 else if (t.size() > 3 && t.size() <= 5 && t.rfind("gsh", 0) == 0
                          && t.find_first_not_of("0123456789", 3) == std::string::npos) arm.gumbelK = std::stoi(t.substr(3));
+                else if (t.size() > 2 && t.size() <= 9 && t.rfind("mb", 0) == 0
+                         && t.find_first_not_of("0123456789", 2) == std::string::npos) arm.maxBackup = std::stoi(t.substr(2));
                 else throw std::runtime_error("STS_EXPERT_FIGHTS_ARMS: unknown arm part " + t);
             }
             if (arm.flat < 0 || arm.flat > 1000000) throw std::runtime_error("STS_EXPERT_FIGHTS_ARMS: flat out of range");
@@ -882,6 +888,8 @@ int expertFightsGen(const std::string &runFile, const std::string &output) {
                 throw std::runtime_error("STS_EXPERT_FIGHTS_ARMS: rpl out of range (2..64)");
             if (arm.gumbelK != 0 && (arm.gumbelK < 2 || arm.gumbelK > 64))
                 throw std::runtime_error("STS_EXPERT_FIGHTS_ARMS: gsh out of range (2..64)");
+            if (arm.maxBackup < 0 || arm.maxBackup > 1000000)
+                throw std::runtime_error("STS_EXPERT_FIGHTS_ARMS: mb out of range (1..1000000)");
             if (arm.gumbelK > 0 && arm.flat == 0)
                 throw std::runtime_error("STS_EXPERT_FIGHTS_ARMS: gsh needs flat<N>");
             arms.push_back(arm);
