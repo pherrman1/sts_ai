@@ -26470,7 +26470,7 @@ same rate, so a playout-death veto has nothing to act on.
 value. No seeds. Cost ≈ 1 core-h.
 **Knowledge impact:** none beyond this entry.
 
-## §TBD — Leaf plan stage 4, offline fit of victory-leaf prices on the §763 pilot pairs (1,938 units, 338,434 weighted pairs): four global prices (P1) beat Silver's default leaf in cross-family skill, +14.4 bp [8.3, 20.2]; per-act prices and every state-dependent model (net-0420 critic, trunk heads, LightGBM) do not beat P1; gate D / P1 / PF pre-registered (cloud, 2026-11-08)
+## §766 — Leaf plan stage 4, offline fit of victory-leaf prices on the §763 pilot pairs (1,938 units, 338,434 weighted pairs): four global prices (P1) beat Silver's default leaf in cross-family skill, +14.4 bp [8.3, 20.2]; per-act prices and every state-dependent model (net-0420 critic, trunk heads, LightGBM) do not beat P1; gate D / P1 / PF pre-registered (cloud, 2026-11-08)
 
 **Question (Philipp, 2026-11-08 00:06 CET, card "Offline-Fit, dann Gate"):** which victory-leaf prices do the pilot's
 CRN pairs support, and does a state-dependent leaf predict them better than fixed prices?

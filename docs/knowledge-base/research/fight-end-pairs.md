@@ -133,7 +133,7 @@ weighted by `eligible / sampled`. Every change costs Heart kill in acts 1-3. The
 0.13 HP. Right after the act-1 and act-2 bosses HP is nearly free, since the act transition heals 75% of the missing
 HP at A20. Per cell, 10-21% of the pairs disagree, and the pairing efficiency ρ is 0.47-0.77.
 
-## Stage-4 offline fit (§TBD)
+## Stage-4 offline fit (§766)
 
 On the pilot's pairs (5 folds by unit, weighted), four global prices in HP units fit best: Fairy 47.6 on top of its
 death save, every other potion 3.7, a max-HP point 2.4 and a gold 0.12 (Silver's leaf: 11, 11, 2 and 0.25), with the
