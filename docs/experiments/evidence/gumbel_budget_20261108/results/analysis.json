@@ -1,0 +1,3901 @@
+{
+ "units_rc": {
+  "no_done_line": 0,
+  "0": 1728
+ },
+ "stage1_units_rc": {
+  "no_done_line": 0,
+  "0": 329
+ },
+ "units_rc0": 1728,
+ "prod_conflicts_between_arm_sets": 0,
+ "reproduction": {
+  "fights_compared": 1878,
+  "identical": 1878,
+  "differ": 0,
+  "share": 1.0,
+  "stage1_fights_without_new_prod": 0
+ },
+ "dropped": {},
+ "fights": 1878,
+ "primary": {
+  "n": 1878,
+  "runs": 309,
+  "expert": 8.74,
+  "prod": {
+   "": 11.595,
+   "_death": 0.055,
+   "_potions": 0.555,
+   "_cpu": 6.241
+  },
+  "flat16000": {
+   "": 11.503,
+   "_death": 0.055,
+   "_potions": 0.556,
+   "_cpu": 21.982
+  },
+  "gsh16+flat32000": {
+   "": 10.469,
+   "_death": 0.049,
+   "_potions": 0.549,
+   "_cpu": 41.895
+  },
+  "gsh16+flat64000": {
+   "": 10.346,
+   "_death": 0.047,
+   "_potions": 0.541,
+   "_cpu": 84.324
+  },
+  "gsh16+flat16000+mb4": {
+   "": 10.427,
+   "_death": 0.048,
+   "_potions": 0.52,
+   "_cpu": 20.713
+  },
+  "gsh16+flat16000": {
+   "": 10.712,
+   "_death": 0.052,
+   "_potions": 0.546,
+   "_cpu": 21.576
+  },
+  "gsh16+flat32000_minus_g16": -0.24,
+  "gsh16+flat32000_minus_g16_ci": [
+   -0.435,
+   -0.052
+  ],
+  "gsh16+flat32000_minus_g16_ci975": [
+   -0.462,
+   -0.024
+  ],
+  "gsh16+flat32000_minus_g16_death": -0.0032,
+  "gsh16+flat32000_minus_g16_death_ci": [
+   -0.007,
+   0.0
+  ],
+  "gsh16+flat64000_minus_g16": -0.37,
+  "gsh16+flat64000_minus_g16_ci": [
+   -0.543,
+   -0.183
+  ],
+  "gsh16+flat64000_minus_g16_ci975": [
+   -0.571,
+   -0.159
+  ],
+  "gsh16+flat64000_minus_g16_death": -0.0049,
+  "gsh16+flat64000_minus_g16_death_ci": [
+   -0.009,
+   -0.001
+  ],
+  "mb_minus_g16": -0.29,
+  "mb_minus_g16_ci": [
+   -0.49,
+   -0.085
+  ],
+  "mb_minus_g16_death": -0.0037,
+  "mb_minus_g16_death_ci": [
+   -0.008,
+   0.0
+  ],
+  "flat16000_minus_gsh16+flat16000": 0.79,
+  "flat16000_minus_gsh16+flat16000_ci": [
+   0.566,
+   1.018
+  ],
+  "gsh16+flat64000_minus_gsh16+flat32000": -0.12,
+  "gsh16+flat64000_minus_gsh16+flat32000_ci": [
+   -0.326,
+   0.081
+  ],
+  "flat16000_minus_prod": -0.09,
+  "flat16000_minus_prod_ci": [
+   -0.27,
+   0.089
+  ],
+  "gsh16+flat32000_minus_prod": -1.13,
+  "gsh16+flat32000_minus_prod_ci": [
+   -1.392,
+   -0.862
+  ],
+  "gsh16+flat64000_minus_prod": -1.25,
+  "gsh16+flat64000_minus_prod_ci": [
+   -1.495,
+   -1.009
+  ],
+  "gsh16+flat16000+mb4_minus_prod": -1.17,
+  "gsh16+flat16000+mb4_minus_prod_ci": [
+   -1.424,
+   -0.916
+  ],
+  "gsh16+flat16000_minus_prod": -0.88,
+  "gsh16+flat16000_minus_prod_ci": [
+   -1.132,
+   -0.64
+  ],
+  "flat16000_cpu_ratio": 3.52,
+  "gsh16+flat32000_cpu_ratio": 6.71,
+  "gsh16+flat64000_cpu_ratio": 13.51,
+  "gsh16+flat16000+mb4_cpu_ratio": 3.32,
+  "gsh16+flat16000_cpu_ratio": 3.15,
+  "prod_sims_per_decision": 4547,
+  "flat16000_sims_per_decision": 16000,
+  "gsh16+flat32000_sims_per_decision": 29447,
+  "gsh16+flat64000_sims_per_decision": 59003,
+  "gsh16+flat16000+mb4_sims_per_decision": 14810,
+  "gsh16+flat16000_sims_per_decision": 14733,
+  "prod_minus_expert_ci": [
+   2.169,
+   3.555
+  ]
+ },
+ "decision": "MORE_SIMS_HELP (gsh16+flat64000)",
+ "decision_max_backup": "MAX_BACKUP_HELPS",
+ "by_act": {
+  "1": {
+   "n": 998,
+   "runs": 309,
+   "expert": 10.77,
+   "prod": {
+    "": 12.111,
+    "_death": 0.055,
+    "_potions": 0.686,
+    "_cpu": 2.303
+   },
+   "flat16000": {
+    "": 11.902,
+    "_death": 0.053,
+    "_potions": 0.687,
+    "_cpu": 10.197
+   },
+   "gsh16+flat32000": {
+    "": 11.307,
+    "_death": 0.051,
+    "_potions": 0.682,
+    "_cpu": 18.327
+   },
+   "gsh16+flat64000": {
+    "": 11.292,
+    "_death": 0.048,
+    "_potions": 0.676,
+    "_cpu": 37.212
+   },
+   "gsh16+flat16000+mb4": {
+    "": 11.464,
+    "_death": 0.049,
+    "_potions": 0.633,
+    "_cpu": 8.792
+   },
+   "gsh16+flat16000": {
+    "": 11.679,
+    "_death": 0.053,
+    "_potions": 0.678,
+    "_cpu": 9.237
+   },
+   "gsh16+flat32000_minus_g16": -0.37,
+   "gsh16+flat32000_minus_g16_ci": [
+    -0.596,
+    -0.143
+   ],
+   "gsh16+flat32000_minus_g16_ci975": [
+    -0.624,
+    -0.113
+   ],
+   "gsh16+flat32000_minus_g16_death": -0.0023,
+   "gsh16+flat32000_minus_g16_death_ci": [
+    -0.008,
+    0.003
+   ],
+   "gsh16+flat64000_minus_g16": -0.39,
+   "gsh16+flat64000_minus_g16_ci": [
+    -0.628,
+    -0.148
+   ],
+   "gsh16+flat64000_minus_g16_ci975": [
+    -0.662,
+    -0.117
+   ],
+   "gsh16+flat64000_minus_g16_death": -0.0058,
+   "gsh16+flat64000_minus_g16_death_ci": [
+    -0.011,
+    -0.0
+   ],
+   "mb_minus_g16": -0.21,
+   "mb_minus_g16_ci": [
+    -0.463,
+    0.035
+   ],
+   "mb_minus_g16_death": -0.0043,
+   "mb_minus_g16_death_ci": [
+    -0.01,
+    0.001
+   ],
+   "flat16000_minus_gsh16+flat16000": 0.22,
+   "flat16000_minus_gsh16+flat16000_ci": [
+    -0.019,
+    0.468
+   ],
+   "gsh16+flat64000_minus_gsh16+flat32000": -0.02,
+   "gsh16+flat64000_minus_gsh16+flat32000_ci": [
+    -0.23,
+    0.196
+   ],
+   "flat16000_minus_prod": -0.21,
+   "flat16000_minus_prod_ci": [
+    -0.41,
+    -0.006
+   ],
+   "gsh16+flat32000_minus_prod": -0.8,
+   "gsh16+flat32000_minus_prod_ci": [
+    -1.058,
+    -0.551
+   ],
+   "gsh16+flat64000_minus_prod": -0.82,
+   "gsh16+flat64000_minus_prod_ci": [
+    -1.077,
+    -0.571
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -0.65,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -0.908,
+    -0.383
+   ],
+   "gsh16+flat16000_minus_prod": -0.43,
+   "gsh16+flat16000_minus_prod_ci": [
+    -0.679,
+    -0.184
+   ],
+   "flat16000_cpu_ratio": 4.43,
+   "gsh16+flat32000_cpu_ratio": 7.96,
+   "gsh16+flat64000_cpu_ratio": 16.16,
+   "gsh16+flat16000+mb4_cpu_ratio": 3.82,
+   "gsh16+flat16000_cpu_ratio": 3.64,
+   "prod_sims_per_decision": 4133,
+   "flat16000_sims_per_decision": 16000,
+   "gsh16+flat32000_sims_per_decision": 28812,
+   "gsh16+flat64000_sims_per_decision": 57805,
+   "gsh16+flat16000+mb4_sims_per_decision": 14553,
+   "gsh16+flat16000_sims_per_decision": 14418,
+   "prod_minus_expert_ci": [
+    0.651,
+    2.014
+   ]
+  },
+  "2": {
+   "n": 536,
+   "runs": 184,
+   "expert": 7.63,
+   "prod": {
+    "": 12.435,
+    "_death": 0.067,
+    "_potions": 0.484,
+    "_cpu": 5.581
+   },
+   "flat16000": {
+    "": 12.505,
+    "_death": 0.069,
+    "_potions": 0.486,
+    "_cpu": 20.834
+   },
+   "gsh16+flat32000": {
+    "": 11.268,
+    "_death": 0.058,
+    "_potions": 0.484,
+    "_cpu": 39.433
+   },
+   "gsh16+flat64000": {
+    "": 11.099,
+    "_death": 0.059,
+    "_potions": 0.472,
+    "_cpu": 79.836
+   },
+   "gsh16+flat16000+mb4": {
+    "": 10.912,
+    "_death": 0.062,
+    "_potions": 0.462,
+    "_cpu": 19.548
+   },
+   "gsh16+flat16000": {
+    "": 11.208,
+    "_death": 0.063,
+    "_potions": 0.479,
+    "_cpu": 20.194
+   },
+   "gsh16+flat32000_minus_g16": 0.06,
+   "gsh16+flat32000_minus_g16_ci": [
+    -0.331,
+    0.438
+   ],
+   "gsh16+flat32000_minus_g16_ci975": [
+    -0.375,
+    0.498
+   ],
+   "gsh16+flat32000_minus_g16_death": -0.0047,
+   "gsh16+flat32000_minus_g16_death_ci": [
+    -0.013,
+    0.003
+   ],
+   "gsh16+flat64000_minus_g16": -0.11,
+   "gsh16+flat64000_minus_g16_ci": [
+    -0.487,
+    0.265
+   ],
+   "gsh16+flat64000_minus_g16_ci975": [
+    -0.542,
+    0.32
+   ],
+   "gsh16+flat64000_minus_g16_death": -0.0037,
+   "gsh16+flat64000_minus_g16_death_ci": [
+    -0.011,
+    0.004
+   ],
+   "mb_minus_g16": -0.3,
+   "mb_minus_g16_ci": [
+    -0.725,
+    0.147
+   ],
+   "mb_minus_g16_death": -0.0014,
+   "mb_minus_g16_death_ci": [
+    -0.01,
+    0.007
+   ],
+   "flat16000_minus_gsh16+flat16000": 1.3,
+   "flat16000_minus_gsh16+flat16000_ci": [
+    0.878,
+    1.722
+   ],
+   "gsh16+flat64000_minus_gsh16+flat32000": -0.17,
+   "gsh16+flat64000_minus_gsh16+flat32000_ci": [
+    -0.573,
+    0.233
+   ],
+   "flat16000_minus_prod": 0.07,
+   "flat16000_minus_prod_ci": [
+    -0.298,
+    0.444
+   ],
+   "gsh16+flat32000_minus_prod": -1.17,
+   "gsh16+flat32000_minus_prod_ci": [
+    -1.636,
+    -0.707
+   ],
+   "gsh16+flat64000_minus_prod": -1.34,
+   "gsh16+flat64000_minus_prod_ci": [
+    -1.858,
+    -0.835
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -1.52,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -2.038,
+    -1.017
+   ],
+   "gsh16+flat16000_minus_prod": -1.23,
+   "gsh16+flat16000_minus_prod_ci": [
+    -1.684,
+    -0.769
+   ],
+   "flat16000_cpu_ratio": 3.73,
+   "gsh16+flat32000_cpu_ratio": 7.07,
+   "gsh16+flat64000_cpu_ratio": 14.3,
+   "gsh16+flat16000+mb4_cpu_ratio": 3.5,
+   "gsh16+flat16000_cpu_ratio": 3.36,
+   "prod_sims_per_decision": 4559,
+   "flat16000_sims_per_decision": 16000,
+   "gsh16+flat32000_sims_per_decision": 29598,
+   "gsh16+flat64000_sims_per_decision": 59312,
+   "gsh16+flat16000+mb4_sims_per_decision": 14856,
+   "gsh16+flat16000_sims_per_decision": 14799,
+   "prod_minus_expert_ci": [
+    3.553,
+    6.091
+   ]
+  },
+  "3": {
+   "n": 344,
+   "runs": 83,
+   "expert": 4.58,
+   "prod": {
+    "": 8.786,
+    "_death": 0.037,
+    "_potions": 0.286,
+    "_cpu": 18.693
+   },
+   "flat16000": {
+    "": 8.781,
+    "_death": 0.039,
+    "_potions": 0.282,
+    "_cpu": 57.96
+   },
+   "gsh16+flat32000": {
+    "": 6.791,
+    "_death": 0.028,
+    "_potions": 0.266,
+    "_cpu": 114.107
+   },
+   "gsh16+flat64000": {
+    "": 6.43,
+    "_death": 0.028,
+    "_potions": 0.257,
+    "_cpu": 227.998
+   },
+   "gsh16+flat16000+mb4": {
+    "": 6.662,
+    "_death": 0.026,
+    "_potions": 0.281,
+    "_cpu": 57.111
+   },
+   "gsh16+flat16000": {
+    "": 7.134,
+    "_death": 0.032,
+    "_potions": 0.27,
+    "_cpu": 59.525
+   },
+   "gsh16+flat32000_minus_g16": -0.34,
+   "gsh16+flat32000_minus_g16_ci": [
+    -0.972,
+    0.287
+   ],
+   "gsh16+flat32000_minus_g16_ci975": [
+    -1.067,
+    0.372
+   ],
+   "gsh16+flat32000_minus_g16_death": -0.0036,
+   "gsh16+flat32000_minus_g16_death_ci": [
+    -0.01,
+    0.003
+   ],
+   "gsh16+flat64000_minus_g16": -0.7,
+   "gsh16+flat64000_minus_g16_ci": [
+    -1.263,
+    -0.153
+   ],
+   "gsh16+flat64000_minus_g16_ci975": [
+    -1.346,
+    -0.085
+   ],
+   "gsh16+flat64000_minus_g16_death": -0.0044,
+   "gsh16+flat64000_minus_g16_death_ci": [
+    -0.011,
+    0.002
+   ],
+   "mb_minus_g16": -0.47,
+   "mb_minus_g16_ci": [
+    -1.141,
+    0.184
+   ],
+   "mb_minus_g16_death": -0.0058,
+   "mb_minus_g16_death_ci": [
+    -0.013,
+    0.001
+   ],
+   "flat16000_minus_gsh16+flat16000": 1.65,
+   "flat16000_minus_gsh16+flat16000_ci": [
+    0.929,
+    2.398
+   ],
+   "gsh16+flat64000_minus_gsh16+flat32000": -0.36,
+   "gsh16+flat64000_minus_gsh16+flat32000_ci": [
+    -0.916,
+    0.183
+   ],
+   "flat16000_minus_prod": -0.01,
+   "flat16000_minus_prod_ci": [
+    -0.538,
+    0.529
+   ],
+   "gsh16+flat32000_minus_prod": -1.99,
+   "gsh16+flat32000_minus_prod_ci": [
+    -2.848,
+    -1.183
+   ],
+   "gsh16+flat64000_minus_prod": -2.36,
+   "gsh16+flat64000_minus_prod_ci": [
+    -3.225,
+    -1.549
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -2.12,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -3.006,
+    -1.291
+   ],
+   "gsh16+flat16000_minus_prod": -1.65,
+   "gsh16+flat16000_minus_prod_ci": [
+    -2.519,
+    -0.846
+   ],
+   "flat16000_cpu_ratio": 3.1,
+   "gsh16+flat32000_cpu_ratio": 6.1,
+   "gsh16+flat64000_cpu_ratio": 12.2,
+   "gsh16+flat16000+mb4_cpu_ratio": 3.06,
+   "gsh16+flat16000_cpu_ratio": 2.88,
+   "prod_sims_per_decision": 5209,
+   "flat16000_sims_per_decision": 16000,
+   "gsh16+flat32000_sims_per_decision": 30345,
+   "gsh16+flat64000_sims_per_decision": 60671,
+   "gsh16+flat16000+mb4_sims_per_decision": 15173,
+   "gsh16+flat16000_sims_per_decision": 15182,
+   "prod_minus_expert_ci": [
+    2.34,
+    6.187
+   ]
+  }
+ },
+ "by_room": {
+  "E": {
+   "n": 1350,
+   "runs": 307,
+   "expert": 7.46,
+   "prod": {
+    "": 10.187,
+    "_death": 0.036,
+    "_potions": 0.501,
+    "_cpu": 0.953
+   },
+   "flat16000": {
+    "": 10.146,
+    "_death": 0.036,
+    "_potions": 0.506,
+    "_cpu": 3.98
+   },
+   "gsh16+flat32000": {
+    "": 9.292,
+    "_death": 0.034,
+    "_potions": 0.509,
+    "_cpu": 7.427
+   },
+   "gsh16+flat64000": {
+    "": 9.194,
+    "_death": 0.032,
+    "_potions": 0.5,
+    "_cpu": 15.336
+   },
+   "gsh16+flat16000+mb4": {
+    "": 9.123,
+    "_death": 0.033,
+    "_potions": 0.472,
+    "_cpu": 3.818
+   },
+   "gsh16+flat16000": {
+    "": 9.563,
+    "_death": 0.036,
+    "_potions": 0.503,
+    "_cpu": 3.551
+   },
+   "gsh16+flat32000_minus_g16": -0.27,
+   "gsh16+flat32000_minus_g16_ci": [
+    -0.476,
+    -0.067
+   ],
+   "gsh16+flat32000_minus_g16_ci975": [
+    -0.506,
+    -0.038
+   ],
+   "gsh16+flat32000_minus_g16_death": -0.0017,
+   "gsh16+flat32000_minus_g16_death_ci": [
+    -0.005,
+    0.002
+   ],
+   "gsh16+flat64000_minus_g16": -0.37,
+   "gsh16+flat64000_minus_g16_ci": [
+    -0.578,
+    -0.169
+   ],
+   "gsh16+flat64000_minus_g16_ci975": [
+    -0.603,
+    -0.137
+   ],
+   "gsh16+flat64000_minus_g16_death": -0.0035,
+   "gsh16+flat64000_minus_g16_death_ci": [
+    -0.007,
+    -0.0
+   ],
+   "mb_minus_g16": -0.44,
+   "mb_minus_g16_ci": [
+    -0.649,
+    -0.226
+   ],
+   "mb_minus_g16_death": -0.0033,
+   "mb_minus_g16_death_ci": [
+    -0.007,
+    0.0
+   ],
+   "flat16000_minus_gsh16+flat16000": 0.58,
+   "flat16000_minus_gsh16+flat16000_ci": [
+    0.37,
+    0.798
+   ],
+   "gsh16+flat64000_minus_gsh16+flat32000": -0.1,
+   "gsh16+flat64000_minus_gsh16+flat32000_ci": [
+    -0.305,
+    0.099
+   ],
+   "flat16000_minus_prod": -0.04,
+   "flat16000_minus_prod_ci": [
+    -0.231,
+    0.15
+   ],
+   "gsh16+flat32000_minus_prod": -0.9,
+   "gsh16+flat32000_minus_prod_ci": [
+    -1.142,
+    -0.643
+   ],
+   "gsh16+flat64000_minus_prod": -0.99,
+   "gsh16+flat64000_minus_prod_ci": [
+    -1.24,
+    -0.748
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -1.06,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -1.309,
+    -0.813
+   ],
+   "gsh16+flat16000_minus_prod": -0.62,
+   "gsh16+flat16000_minus_prod_ci": [
+    -0.862,
+    -0.376
+   ],
+   "flat16000_cpu_ratio": 4.18,
+   "gsh16+flat32000_cpu_ratio": 7.79,
+   "gsh16+flat64000_cpu_ratio": 16.09,
+   "gsh16+flat16000+mb4_cpu_ratio": 4.01,
+   "gsh16+flat16000_cpu_ratio": 3.66,
+   "prod_sims_per_decision": 4284,
+   "flat16000_sims_per_decision": 16000,
+   "gsh16+flat32000_sims_per_decision": 29636,
+   "gsh16+flat64000_sims_per_decision": 59393,
+   "gsh16+flat16000+mb4_sims_per_decision": 14930,
+   "gsh16+flat16000_sims_per_decision": 14835,
+   "prod_minus_expert_ci": [
+    2.033,
+    3.405
+   ]
+  },
+  "B": {
+   "n": 528,
+   "runs": 254,
+   "expert": 12.01,
+   "prod": {
+    "": 15.193,
+    "_death": 0.106,
+    "_potions": 0.692,
+    "_cpu": 19.761
+   },
+   "flat16000": {
+    "": 14.97,
+    "_death": 0.103,
+    "_potions": 0.684,
+    "_cpu": 68.01
+   },
+   "gsh16+flat32000": {
+    "": 13.476,
+    "_death": 0.087,
+    "_potions": 0.652,
+    "_cpu": 130.024
+   },
+   "gsh16+flat64000": {
+    "": 13.291,
+    "_death": 0.085,
+    "_potions": 0.647,
+    "_cpu": 260.714
+   },
+   "gsh16+flat16000+mb4": {
+    "": 13.759,
+    "_death": 0.089,
+    "_potions": 0.642,
+    "_cpu": 63.91
+   },
+   "gsh16+flat16000": {
+    "": 13.649,
+    "_death": 0.094,
+    "_potions": 0.658,
+    "_cpu": 67.66
+   },
+   "gsh16+flat32000_minus_g16": -0.17,
+   "gsh16+flat32000_minus_g16_ci": [
+    -0.682,
+    0.333
+   ],
+   "gsh16+flat32000_minus_g16_ci975": [
+    -0.75,
+    0.404
+   ],
+   "gsh16+flat32000_minus_g16_death": -0.0071,
+   "gsh16+flat32000_minus_g16_death_ci": [
+    -0.017,
+    0.002
+   ],
+   "gsh16+flat64000_minus_g16": -0.36,
+   "gsh16+flat64000_minus_g16_ci": [
+    -0.832,
+    0.123
+   ],
+   "gsh16+flat64000_minus_g16_ci975": [
+    -0.894,
+    0.19
+   ],
+   "gsh16+flat64000_minus_g16_death": -0.0085,
+   "gsh16+flat64000_minus_g16_death_ci": [
+    -0.02,
+    0.003
+   ],
+   "mb_minus_g16": 0.11,
+   "mb_minus_g16_ci": [
+    -0.42,
+    0.662
+   ],
+   "mb_minus_g16_death": -0.0047,
+   "mb_minus_g16_death_ci": [
+    -0.016,
+    0.007
+   ],
+   "flat16000_minus_gsh16+flat16000": 1.32,
+   "flat16000_minus_gsh16+flat16000_ci": [
+    0.718,
+    1.956
+   ],
+   "gsh16+flat64000_minus_gsh16+flat32000": -0.19,
+   "gsh16+flat64000_minus_gsh16+flat32000_ci": [
+    -0.691,
+    0.32
+   ],
+   "flat16000_minus_prod": -0.22,
+   "flat16000_minus_prod_ci": [
+    -0.716,
+    0.293
+   ],
+   "gsh16+flat32000_minus_prod": -1.72,
+   "gsh16+flat32000_minus_prod_ci": [
+    -2.3,
+    -1.136
+   ],
+   "gsh16+flat64000_minus_prod": -1.9,
+   "gsh16+flat64000_minus_prod_ci": [
+    -2.498,
+    -1.333
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -1.43,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -1.985,
+    -0.866
+   ],
+   "gsh16+flat16000_minus_prod": -1.54,
+   "gsh16+flat16000_minus_prod_ci": [
+    -2.137,
+    -0.987
+   ],
+   "flat16000_cpu_ratio": 3.44,
+   "gsh16+flat32000_cpu_ratio": 6.58,
+   "gsh16+flat64000_cpu_ratio": 13.19,
+   "gsh16+flat16000+mb4_cpu_ratio": 3.23,
+   "gsh16+flat16000_cpu_ratio": 3.09,
+   "prod_sims_per_decision": 4903,
+   "flat16000_sims_per_decision": 16000,
+   "gsh16+flat32000_sims_per_decision": 29189,
+   "gsh16+flat64000_sims_per_decision": 58474,
+   "gsh16+flat16000+mb4_sims_per_decision": 14646,
+   "gsh16+flat16000_sims_per_decision": 14593,
+   "prod_minus_expert_ci": [
+    1.796,
+    4.568
+   ]
+  }
+ },
+ "by_act_room": {
+  "1E": {
+   "n": 744,
+   "runs": 307,
+   "expert": 10.03,
+   "prod": {
+    "": 11.243,
+    "_death": 0.031,
+    "_potions": 0.616,
+    "_cpu": 0.598
+   },
+   "flat16000": {
+    "": 11.141,
+    "_death": 0.03,
+    "_potions": 0.619,
+    "_cpu": 2.722
+   },
+   "gsh16+flat32000": {
+    "": 10.593,
+    "_death": 0.032,
+    "_potions": 0.627,
+    "_cpu": 5.083
+   },
+   "gsh16+flat64000": {
+    "": 10.607,
+    "_death": 0.028,
+    "_potions": 0.618,
+    "_cpu": 10.647
+   },
+   "gsh16+flat16000+mb4": {
+    "": 10.762,
+    "_death": 0.029,
+    "_potions": 0.57,
+    "_cpu": 2.622
+   },
+   "gsh16+flat16000": {
+    "": 10.959,
+    "_death": 0.033,
+    "_potions": 0.618,
+    "_cpu": 2.405
+   },
+   "gsh16+flat32000_minus_g16": -0.37,
+   "gsh16+flat32000_minus_g16_ci": [
+    -0.595,
+    -0.147
+   ],
+   "gsh16+flat32000_minus_g16_ci975": [
+    -0.629,
+    -0.117
+   ],
+   "gsh16+flat32000_minus_g16_death": -0.0013,
+   "gsh16+flat32000_minus_g16_death_ci": [
+    -0.006,
+    0.003
+   ],
+   "gsh16+flat64000_minus_g16": -0.35,
+   "gsh16+flat64000_minus_g16_ci": [
+    -0.621,
+    -0.096
+   ],
+   "gsh16+flat64000_minus_g16_ci975": [
+    -0.662,
+    -0.063
+   ],
+   "gsh16+flat64000_minus_g16_death": -0.005,
+   "gsh16+flat64000_minus_g16_death_ci": [
+    -0.009,
+    -0.001
+   ],
+   "mb_minus_g16": -0.2,
+   "mb_minus_g16_ci": [
+    -0.455,
+    0.064
+   ],
+   "mb_minus_g16_death": -0.004,
+   "mb_minus_g16_death_ci": [
+    -0.009,
+    0.0
+   ],
+   "flat16000_minus_gsh16+flat16000": 0.18,
+   "flat16000_minus_gsh16+flat16000_ci": [
+    -0.037,
+    0.395
+   ],
+   "gsh16+flat64000_minus_gsh16+flat32000": 0.01,
+   "gsh16+flat64000_minus_gsh16+flat32000_ci": [
+    -0.209,
+    0.228
+   ],
+   "flat16000_minus_prod": -0.1,
+   "flat16000_minus_prod_ci": [
+    -0.292,
+    0.089
+   ],
+   "gsh16+flat32000_minus_prod": -0.65,
+   "gsh16+flat32000_minus_prod_ci": [
+    -0.894,
+    -0.404
+   ],
+   "gsh16+flat64000_minus_prod": -0.64,
+   "gsh16+flat64000_minus_prod_ci": [
+    -0.907,
+    -0.38
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -0.48,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -0.753,
+    -0.21
+   ],
+   "gsh16+flat16000_minus_prod": -0.28,
+   "gsh16+flat16000_minus_prod_ci": [
+    -0.521,
+    -0.049
+   ],
+   "flat16000_cpu_ratio": 4.55,
+   "gsh16+flat32000_cpu_ratio": 8.5,
+   "gsh16+flat64000_cpu_ratio": 17.81,
+   "gsh16+flat16000+mb4_cpu_ratio": 4.39,
+   "gsh16+flat16000_cpu_ratio": 3.93,
+   "prod_sims_per_decision": 3994,
+   "flat16000_sims_per_decision": 16000,
+   "gsh16+flat32000_sims_per_decision": 29300,
+   "gsh16+flat64000_sims_per_decision": 58788,
+   "gsh16+flat16000+mb4_sims_per_decision": 14809,
+   "gsh16+flat16000_sims_per_decision": 14673,
+   "prod_minus_expert_ci": [
+    0.451,
+    1.978
+   ]
+  },
+  "1B": {
+   "n": 254,
+   "runs": 254,
+   "expert": 12.91,
+   "prod": {
+    "": 14.654,
+    "_death": 0.127,
+    "_potions": 0.89,
+    "_cpu": 7.298
+   },
+   "flat16000": {
+    "": 14.133,
+    "_death": 0.12,
+    "_potions": 0.887,
+    "_cpu": 32.092
+   },
+   "gsh16+flat32000": {
+    "": 13.398,
+    "_death": 0.108,
+    "_potions": 0.844,
+    "_cpu": 57.12
+   },
+   "gsh16+flat64000": {
+    "": 13.298,
+    "_death": 0.105,
+    "_potions": 0.846,
+    "_cpu": 115.023
+   },
+   "gsh16+flat16000+mb4": {
+    "": 13.52,
+    "_death": 0.108,
+    "_potions": 0.816,
+    "_cpu": 26.867
+   },
+   "gsh16+flat16000": {
+    "": 13.787,
+    "_death": 0.113,
+    "_potions": 0.852,
+    "_cpu": 29.248
+   },
+   "gsh16+flat32000_minus_g16": -0.39,
+   "gsh16+flat32000_minus_g16_ci": [
+    -0.954,
+    0.198
+   ],
+   "gsh16+flat32000_minus_g16_ci975": [
+    -1.036,
+    0.295
+   ],
+   "gsh16+flat32000_minus_g16_death": -0.0049,
+   "gsh16+flat32000_minus_g16_death_ci": [
+    -0.022,
+    0.011
+   ],
+   "gsh16+flat64000_minus_g16": -0.49,
+   "gsh16+flat64000_minus_g16_ci": [
+    -1.056,
+    0.093
+   ],
+   "gsh16+flat64000_minus_g16_ci975": [
+    -1.135,
+    0.176
+   ],
+   "gsh16+flat64000_minus_g16_death": -0.0079,
+   "gsh16+flat64000_minus_g16_death_ci": [
+    -0.026,
+    0.01
+   ],
+   "mb_minus_g16": -0.27,
+   "mb_minus_g16_ci": [
+    -0.861,
+    0.35
+   ],
+   "mb_minus_g16_death": -0.0049,
+   "mb_minus_g16_death_ci": [
+    -0.021,
+    0.011
+   ],
+   "flat16000_minus_gsh16+flat16000": 0.35,
+   "flat16000_minus_gsh16+flat16000_ci": [
+    -0.306,
+    1.019
+   ],
+   "gsh16+flat64000_minus_gsh16+flat32000": -0.1,
+   "gsh16+flat64000_minus_gsh16+flat32000_ci": [
+    -0.646,
+    0.444
+   ],
+   "flat16000_minus_prod": -0.52,
+   "flat16000_minus_prod_ci": [
+    -1.117,
+    0.091
+   ],
+   "gsh16+flat32000_minus_prod": -1.26,
+   "gsh16+flat32000_minus_prod_ci": [
+    -1.936,
+    -0.572
+   ],
+   "gsh16+flat64000_minus_prod": -1.36,
+   "gsh16+flat64000_minus_prod_ci": [
+    -1.993,
+    -0.716
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -1.13,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -1.776,
+    -0.484
+   ],
+   "gsh16+flat16000_minus_prod": -0.87,
+   "gsh16+flat16000_minus_prod_ci": [
+    -1.556,
+    -0.181
+   ],
+   "flat16000_cpu_ratio": 4.4,
+   "gsh16+flat32000_cpu_ratio": 7.83,
+   "gsh16+flat64000_cpu_ratio": 15.76,
+   "gsh16+flat16000+mb4_cpu_ratio": 3.68,
+   "gsh16+flat16000_cpu_ratio": 3.57,
+   "prod_sims_per_decision": 4356,
+   "flat16000_sims_per_decision": 16000,
+   "gsh16+flat32000_sims_per_decision": 28023,
+   "gsh16+flat64000_sims_per_decision": 56196,
+   "gsh16+flat16000+mb4_sims_per_decision": 14132,
+   "gsh16+flat16000_sims_per_decision": 14002,
+   "prod_minus_expert_ci": [
+    0.32,
+    3.135
+   ]
+  },
+  "2E": {
+   "n": 397,
+   "runs": 183,
+   "expert": 5.22,
+   "prod": {
+    "": 10.402,
+    "_death": 0.054,
+    "_potions": 0.409,
+    "_cpu": 0.917
+   },
+   "flat16000": {
+    "": 10.618,
+    "_death": 0.058,
+    "_potions": 0.419,
+    "_cpu": 3.97
+   },
+   "gsh16+flat32000": {
+    "": 9.554,
+    "_death": 0.054,
+    "_potions": 0.428,
+    "_cpu": 7.314
+   },
+   "gsh16+flat64000": {
+    "": 9.544,
+    "_death": 0.055,
+    "_potions": 0.418,
+    "_cpu": 15.247
+   },
+   "gsh16+flat16000+mb4": {
+    "": 9.128,
+    "_death": 0.052,
+    "_potions": 0.402,
+    "_cpu": 3.771
+   },
+   "gsh16+flat16000": {
+    "": 9.633,
+    "_death": 0.054,
+    "_potions": 0.423,
+    "_cpu": 3.48
+   },
+   "gsh16+flat32000_minus_g16": -0.08,
+   "gsh16+flat32000_minus_g16_ci": [
+    -0.479,
+    0.315
+   ],
+   "gsh16+flat32000_minus_g16_ci975": [
+    -0.537,
+    0.371
+   ],
+   "gsh16+flat32000_minus_g16_death": -0.0006,
+   "gsh16+flat32000_minus_g16_death_ci": [
+    -0.009,
+    0.008
+   ],
+   "gsh16+flat64000_minus_g16": -0.09,
+   "gsh16+flat64000_minus_g16_ci": [
+    -0.469,
+    0.298
+   ],
+   "gsh16+flat64000_minus_g16_ci975": [
+    -0.529,
+    0.354
+   ],
+   "gsh16+flat64000_minus_g16_death": 0.0006,
+   "gsh16+flat64000_minus_g16_death_ci": [
+    -0.008,
+    0.009
+   ],
+   "mb_minus_g16": -0.51,
+   "mb_minus_g16_ci": [
+    -0.917,
+    -0.092
+   ],
+   "mb_minus_g16_death": -0.0019,
+   "mb_minus_g16_death_ci": [
+    -0.01,
+    0.007
+   ],
+   "flat16000_minus_gsh16+flat16000": 0.98,
+   "flat16000_minus_gsh16+flat16000_ci": [
+    0.568,
+    1.418
+   ],
+   "gsh16+flat64000_minus_gsh16+flat32000": -0.01,
+   "gsh16+flat64000_minus_gsh16+flat32000_ci": [
+    -0.364,
+    0.341
+   ],
+   "flat16000_minus_prod": 0.22,
+   "flat16000_minus_prod_ci": [
+    -0.139,
+    0.576
+   ],
+   "gsh16+flat32000_minus_prod": -0.85,
+   "gsh16+flat32000_minus_prod_ci": [
+    -1.288,
+    -0.412
+   ],
+   "gsh16+flat64000_minus_prod": -0.86,
+   "gsh16+flat64000_minus_prod_ci": [
+    -1.35,
+    -0.371
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -1.27,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -1.744,
+    -0.811
+   ],
+   "gsh16+flat16000_minus_prod": -0.77,
+   "gsh16+flat16000_minus_prod_ci": [
+    -1.227,
+    -0.313
+   ],
+   "flat16000_cpu_ratio": 4.33,
+   "gsh16+flat32000_cpu_ratio": 7.98,
+   "gsh16+flat64000_cpu_ratio": 16.63,
+   "gsh16+flat16000+mb4_cpu_ratio": 4.11,
+   "gsh16+flat16000_cpu_ratio": 3.79,
+   "prod_sims_per_decision": 4310,
+   "flat16000_sims_per_decision": 16000,
+   "gsh16+flat32000_sims_per_decision": 29624,
+   "gsh16+flat64000_sims_per_decision": 59355,
+   "gsh16+flat16000+mb4_sims_per_decision": 14904,
+   "gsh16+flat16000_sims_per_decision": 14822,
+   "prod_minus_expert_ci": [
+    3.827,
+    6.535
+   ]
+  },
+  "2B": {
+   "n": 139,
+   "runs": 139,
+   "expert": 14.53,
+   "prod": {
+    "": 18.239,
+    "_death": 0.104,
+    "_potions": 0.696,
+    "_cpu": 18.904
+   },
+   "flat16000": {
+    "": 17.896,
+    "_death": 0.101,
+    "_potions": 0.678,
+    "_cpu": 68.997
+   },
+   "gsh16+flat32000": {
+    "": 16.162,
+    "_death": 0.072,
+    "_potions": 0.642,
+    "_cpu": 131.168
+   },
+   "gsh16+flat64000": {
+    "": 15.54,
+    "_death": 0.072,
+    "_potions": 0.628,
+    "_cpu": 264.31
+   },
+   "gsh16+flat16000+mb4": {
+    "": 16.007,
+    "_death": 0.088,
+    "_potions": 0.633,
+    "_cpu": 64.607
+   },
+   "gsh16+flat16000": {
+    "": 15.707,
+    "_death": 0.088,
+    "_potions": 0.64,
+    "_cpu": 67.93
+   },
+   "gsh16+flat32000_minus_g16": 0.46,
+   "gsh16+flat32000_minus_g16_ci": [
+    -0.507,
+    1.424
+   ],
+   "gsh16+flat32000_minus_g16_ci975": [
+    -0.638,
+    1.563
+   ],
+   "gsh16+flat32000_minus_g16_death": -0.0162,
+   "gsh16+flat32000_minus_g16_death_ci": [
+    -0.038,
+    0.002
+   ],
+   "gsh16+flat64000_minus_g16": -0.17,
+   "gsh16+flat64000_minus_g16_ci": [
+    -1.356,
+    0.98
+   ],
+   "gsh16+flat64000_minus_g16_ci975": [
+    -1.513,
+    1.129
+   ],
+   "gsh16+flat64000_minus_g16_death": -0.0162,
+   "gsh16+flat64000_minus_g16_death_ci": [
+    -0.038,
+    0.005
+   ],
+   "mb_minus_g16": 0.3,
+   "mb_minus_g16_ci": [
+    -0.896,
+    1.495
+   ],
+   "mb_minus_g16_death": 0.0,
+   "mb_minus_g16_death_ci": [
+    -0.027,
+    0.027
+   ],
+   "flat16000_minus_gsh16+flat16000": 2.19,
+   "flat16000_minus_gsh16+flat16000_ci": [
+    1.133,
+    3.25
+   ],
+   "gsh16+flat64000_minus_gsh16+flat32000": -0.62,
+   "gsh16+flat64000_minus_gsh16+flat32000_ci": [
+    -1.887,
+    0.567
+   ],
+   "flat16000_minus_prod": -0.34,
+   "flat16000_minus_prod_ci": [
+    -1.477,
+    0.779
+   ],
+   "gsh16+flat32000_minus_prod": -2.08,
+   "gsh16+flat32000_minus_prod_ci": [
+    -3.295,
+    -0.874
+   ],
+   "gsh16+flat64000_minus_prod": -2.7,
+   "gsh16+flat64000_minus_prod_ci": [
+    -4.085,
+    -1.345
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -2.23,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -3.493,
+    -0.905
+   ],
+   "gsh16+flat16000_minus_prod": -2.53,
+   "gsh16+flat16000_minus_prod_ci": [
+    -3.628,
+    -1.414
+   ],
+   "flat16000_cpu_ratio": 3.65,
+   "gsh16+flat32000_cpu_ratio": 6.94,
+   "gsh16+flat64000_cpu_ratio": 13.98,
+   "gsh16+flat16000+mb4_cpu_ratio": 3.42,
+   "gsh16+flat16000_cpu_ratio": 3.31,
+   "prod_sims_per_decision": 4929,
+   "flat16000_sims_per_decision": 16000,
+   "gsh16+flat32000_sims_per_decision": 29560,
+   "gsh16+flat64000_sims_per_decision": 59248,
+   "gsh16+flat16000+mb4_sims_per_decision": 14785,
+   "gsh16+flat16000_sims_per_decision": 14765,
+   "prod_minus_expert_ci": [
+    0.723,
+    6.561
+   ]
+  },
+  "3E": {
+   "n": 209,
+   "runs": 82,
+   "expert": 2.55,
+   "prod": {
+    "": 6.019,
+    "_death": 0.017,
+    "_potions": 0.267,
+    "_cpu": 2.287
+   },
+   "flat16000": {
+    "": 5.712,
+    "_death": 0.017,
+    "_potions": 0.266,
+    "_cpu": 8.473
+   },
+   "gsh16+flat32000": {
+    "": 4.164,
+    "_death": 0.007,
+    "_potions": 0.243,
+    "_cpu": 15.986
+   },
+   "gsh16+flat64000": {
+    "": 3.502,
+    "_death": 0.006,
+    "_potions": 0.234,
+    "_cpu": 32.199
+   },
+   "gsh16+flat16000+mb4": {
+    "": 3.281,
+    "_death": 0.008,
+    "_potions": 0.254,
+    "_cpu": 8.164
+   },
+   "gsh16+flat16000": {
+    "": 4.464,
+    "_death": 0.012,
+    "_potions": 0.244,
+    "_cpu": 7.766
+   },
+   "gsh16+flat32000_minus_g16": -0.3,
+   "gsh16+flat32000_minus_g16_ci": [
+    -1.037,
+    0.434
+   ],
+   "gsh16+flat32000_minus_g16_ci975": [
+    -1.158,
+    0.524
+   ],
+   "gsh16+flat32000_minus_g16_death": -0.0048,
+   "gsh16+flat32000_minus_g16_death_ci": [
+    -0.012,
+    0.002
+   ],
+   "gsh16+flat64000_minus_g16": -0.96,
+   "gsh16+flat64000_minus_g16_ci": [
+    -1.688,
+    -0.277
+   ],
+   "gsh16+flat64000_minus_g16_ci975": [
+    -1.794,
+    -0.167
+   ],
+   "gsh16+flat64000_minus_g16_death": -0.006,
+   "gsh16+flat64000_minus_g16_death_ci": [
+    -0.012,
+    -0.001
+   ],
+   "mb_minus_g16": -1.18,
+   "mb_minus_g16_ci": [
+    -2.013,
+    -0.374
+   ],
+   "mb_minus_g16_death": -0.0036,
+   "mb_minus_g16_death_ci": [
+    -0.01,
+    0.002
+   ],
+   "flat16000_minus_gsh16+flat16000": 1.25,
+   "flat16000_minus_gsh16+flat16000_ci": [
+    0.505,
+    2.041
+   ],
+   "gsh16+flat64000_minus_gsh16+flat32000": -0.66,
+   "gsh16+flat64000_minus_gsh16+flat32000_ci": [
+    -1.39,
+    0.004
+   ],
+   "flat16000_minus_prod": -0.31,
+   "flat16000_minus_prod_ci": [
+    -1.039,
+    0.411
+   ],
+   "gsh16+flat32000_minus_prod": -1.86,
+   "gsh16+flat32000_minus_prod_ci": [
+    -2.791,
+    -0.972
+   ],
+   "gsh16+flat64000_minus_prod": -2.52,
+   "gsh16+flat64000_minus_prod_ci": [
+    -3.399,
+    -1.655
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -2.74,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -3.679,
+    -1.78
+   ],
+   "gsh16+flat16000_minus_prod": -1.56,
+   "gsh16+flat16000_minus_prod_ci": [
+    -2.459,
+    -0.672
+   ],
+   "flat16000_cpu_ratio": 3.71,
+   "gsh16+flat32000_cpu_ratio": 6.99,
+   "gsh16+flat64000_cpu_ratio": 14.08,
+   "gsh16+flat16000+mb4_cpu_ratio": 3.57,
+   "gsh16+flat16000_cpu_ratio": 3.31,
+   "prod_sims_per_decision": 4851,
+   "flat16000_sims_per_decision": 16000,
+   "gsh16+flat32000_sims_per_decision": 30365,
+   "gsh16+flat64000_sims_per_decision": 60749,
+   "gsh16+flat16000+mb4_sims_per_decision": 15211,
+   "gsh16+flat16000_sims_per_decision": 15193,
+   "prod_minus_expert_ci": [
+    1.469,
+    5.51
+   ]
+  },
+  "3B": {
+   "n": 135,
+   "runs": 69,
+   "expert": 7.71,
+   "prod": {
+    "": 13.07,
+    "_death": 0.069,
+    "_potions": 0.317,
+    "_cpu": 44.092
+   },
+   "flat16000": {
+    "": 13.533,
+    "_death": 0.072,
+    "_potions": 0.307,
+    "_cpu": 134.572
+   },
+   "gsh16+flat32000": {
+    "": 10.859,
+    "_death": 0.061,
+    "_potions": 0.302,
+    "_cpu": 266.012
+   },
+   "gsh16+flat64000": {
+    "": 10.961,
+    "_death": 0.061,
+    "_potions": 0.291,
+    "_cpu": 531.125
+   },
+   "gsh16+flat16000+mb4": {
+    "": 11.896,
+    "_death": 0.054,
+    "_potions": 0.324,
+    "_cpu": 132.889
+   },
+   "gsh16+flat16000": {
+    "": 11.269,
+    "_death": 0.063,
+    "_potions": 0.311,
+    "_cpu": 139.656
+   },
+   "gsh16+flat32000_minus_g16": -0.41,
+   "gsh16+flat32000_minus_g16_ci": [
+    -1.793,
+    0.921
+   ],
+   "gsh16+flat32000_minus_g16_ci975": [
+    -2.002,
+    1.102
+   ],
+   "gsh16+flat32000_minus_g16_death": -0.0019,
+   "gsh16+flat32000_minus_g16_death_ci": [
+    -0.013,
+    0.011
+   ],
+   "gsh16+flat64000_minus_g16": -0.31,
+   "gsh16+flat64000_minus_g16_ci": [
+    -1.429,
+    0.783
+   ],
+   "gsh16+flat64000_minus_g16_ci975": [
+    -1.626,
+    0.95
+   ],
+   "gsh16+flat64000_minus_g16_death": -0.0019,
+   "gsh16+flat64000_minus_g16_death_ci": [
+    -0.015,
+    0.011
+   ],
+   "mb_minus_g16": 0.63,
+   "mb_minus_g16_ci": [
+    -0.797,
+    2.009
+   ],
+   "mb_minus_g16_death": -0.0093,
+   "mb_minus_g16_death_ci": [
+    -0.024,
+    0.006
+   ],
+   "flat16000_minus_gsh16+flat16000": 2.26,
+   "flat16000_minus_gsh16+flat16000_ci": [
+    0.778,
+    3.866
+   ],
+   "gsh16+flat64000_minus_gsh16+flat32000": 0.1,
+   "gsh16+flat64000_minus_gsh16+flat32000_ci": [
+    -1.034,
+    1.208
+   ],
+   "flat16000_minus_prod": 0.46,
+   "flat16000_minus_prod_ci": [
+    -0.586,
+    1.522
+   ],
+   "gsh16+flat32000_minus_prod": -2.21,
+   "gsh16+flat32000_minus_prod_ci": [
+    -3.457,
+    -0.971
+   ],
+   "gsh16+flat64000_minus_prod": -2.11,
+   "gsh16+flat64000_minus_prod_ci": [
+    -3.645,
+    -0.669
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -1.17,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -2.655,
+    0.302
+   ],
+   "gsh16+flat16000_minus_prod": -1.8,
+   "gsh16+flat16000_minus_prod_ci": [
+    -3.308,
+    -0.4
+   ],
+   "flat16000_cpu_ratio": 3.05,
+   "gsh16+flat32000_cpu_ratio": 6.03,
+   "gsh16+flat64000_cpu_ratio": 12.05,
+   "gsh16+flat16000+mb4_cpu_ratio": 3.01,
+   "gsh16+flat16000_cpu_ratio": 2.85,
+   "prod_sims_per_decision": 5547,
+   "flat16000_sims_per_decision": 16000,
+   "gsh16+flat32000_sims_per_decision": 30325,
+   "gsh16+flat64000_sims_per_decision": 60600,
+   "gsh16+flat16000+mb4_sims_per_decision": 15137,
+   "gsh16+flat16000_sims_per_decision": 15171,
+   "prod_minus_expert_ci": [
+    1.962,
+    8.794
+   ]
+  }
+ },
+ "by_encounter": {
+  "3 Sentries": {
+   "n": 235,
+   "runs": 208,
+   "expert": 11.1,
+   "prod": {
+    "": 12.247,
+    "_death": 0.027,
+    "_potions": 0.577,
+    "_cpu": 1.024
+   },
+   "flat16000": {
+    "": 11.806,
+    "_death": 0.027,
+    "_potions": 0.593,
+    "_cpu": 4.181
+   },
+   "gsh16+flat32000": {
+    "": 11.37,
+    "_death": 0.028,
+    "_potions": 0.619,
+    "_cpu": 7.528
+   },
+   "gsh16+flat64000": {
+    "": 11.506,
+    "_death": 0.028,
+    "_potions": 0.603,
+    "_cpu": 15.766
+   },
+   "gsh16+flat16000+mb4": {
+    "": 11.264,
+    "_death": 0.022,
+    "_potions": 0.566,
+    "_cpu": 3.814
+   },
+   "gsh16+flat16000": {
+    "": 11.8,
+    "_death": 0.031,
+    "_potions": 0.587,
+    "_cpu": 3.554
+   },
+   "gsh16+flat32000_minus_g16": -0.43,
+   "gsh16+flat32000_minus_g16_ci": [
+    -0.767,
+    -0.092
+   ],
+   "gsh16+flat32000_minus_g16_ci975": [
+    -0.814,
+    -0.041
+   ],
+   "gsh16+flat32000_minus_g16_death": -0.0032,
+   "gsh16+flat32000_minus_g16_death_ci": [
+    -0.012,
+    0.004
+   ],
+   "gsh16+flat64000_minus_g16": -0.29,
+   "gsh16+flat64000_minus_g16_ci": [
+    -0.732,
+    0.157
+   ],
+   "gsh16+flat64000_minus_g16_ci975": [
+    -0.803,
+    0.213
+   ],
+   "gsh16+flat64000_minus_g16_death": -0.0032,
+   "gsh16+flat64000_minus_g16_death_ci": [
+    -0.009,
+    0.002
+   ],
+   "mb_minus_g16": -0.54,
+   "mb_minus_g16_ci": [
+    -0.955,
+    -0.108
+   ],
+   "mb_minus_g16_death": -0.0085,
+   "mb_minus_g16_death_ci": [
+    -0.018,
+    -0.001
+   ],
+   "flat16000_minus_gsh16+flat16000": 0.01,
+   "flat16000_minus_gsh16+flat16000_ci": [
+    -0.397,
+    0.426
+   ],
+   "gsh16+flat64000_minus_gsh16+flat32000": 0.14,
+   "gsh16+flat64000_minus_gsh16+flat32000_ci": [
+    -0.201,
+    0.46
+   ],
+   "flat16000_minus_prod": -0.44,
+   "flat16000_minus_prod_ci": [
+    -0.804,
+    -0.088
+   ],
+   "gsh16+flat32000_minus_prod": -0.88,
+   "gsh16+flat32000_minus_prod_ci": [
+    -1.253,
+    -0.514
+   ],
+   "gsh16+flat64000_minus_prod": -0.74,
+   "gsh16+flat64000_minus_prod_ci": [
+    -1.209,
+    -0.284
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -0.98,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -1.47,
+    -0.497
+   ],
+   "gsh16+flat16000_minus_prod": -0.45,
+   "gsh16+flat16000_minus_prod_ci": [
+    -0.878,
+    -0.034
+   ],
+   "flat16000_cpu_ratio": 4.08,
+   "gsh16+flat32000_cpu_ratio": 7.35,
+   "gsh16+flat64000_cpu_ratio": 15.4,
+   "gsh16+flat16000+mb4_cpu_ratio": 3.72,
+   "gsh16+flat16000_cpu_ratio": 3.36,
+   "prod_sims_per_decision": 4553,
+   "flat16000_sims_per_decision": 16000,
+   "gsh16+flat32000_sims_per_decision": 28912,
+   "gsh16+flat64000_sims_per_decision": 58030,
+   "gsh16+flat16000+mb4_sims_per_decision": 14640,
+   "gsh16+flat16000_sims_per_decision": 14508,
+   "prod_minus_expert_ci": [
+    -0.092,
+    2.38
+   ]
+  },
+  "Automaton": {
+   "n": 44,
+   "runs": 44,
+   "expert": 11.09,
+   "prod": {
+    "": 20.057,
+    "_death": 0.176,
+    "_potions": 0.716,
+    "_cpu": 18.239
+   },
+   "flat16000": {
+    "": 18.847,
+    "_death": 0.153,
+    "_potions": 0.716,
+    "_cpu": 67.341
+   },
+   "gsh16+flat32000": {
+    "": 18.176,
+    "_death": 0.114,
+    "_potions": 0.682,
+    "_cpu": 121.78
+   },
+   "gsh16+flat64000": {
+    "": 17.551,
+    "_death": 0.114,
+    "_potions": 0.676,
+    "_cpu": 243.898
+   },
+   "gsh16+flat16000+mb4": {
+    "": 16.244,
+    "_death": 0.119,
+    "_potions": 0.659,
+    "_cpu": 59.795
+   },
+   "gsh16+flat16000": {
+    "": 16.33,
+    "_death": 0.142,
+    "_potions": 0.699,
+    "_cpu": 62.295
+   },
+   "gsh16+flat32000_minus_g16": 1.85,
+   "gsh16+flat32000_minus_g16_ci": [
+    -0.102,
+    3.812
+   ],
+   "gsh16+flat32000_minus_g16_ci975": [
+    -0.386,
+    4.08
+   ],
+   "gsh16+flat32000_minus_g16_death": -0.0284,
+   "gsh16+flat32000_minus_g16_death_ci": [
+    -0.08,
+    0.011
+   ],
+   "gsh16+flat64000_minus_g16": 1.22,
+   "gsh16+flat64000_minus_g16_ci": [
+    -0.494,
+    2.96
+   ],
+   "gsh16+flat64000_minus_g16_ci975": [
+    -0.693,
+    3.239
+   ],
+   "gsh16+flat64000_minus_g16_death": -0.0284,
+   "gsh16+flat64000_minus_g16_death_ci": [
+    -0.074,
+    0.017
+   ],
+   "mb_minus_g16": -0.09,
+   "mb_minus_g16_ci": [
+    -2.193,
+    2.142
+   ],
+   "mb_minus_g16_death": -0.0227,
+   "mb_minus_g16_death_ci": [
+    -0.085,
+    0.034
+   ],
+   "flat16000_minus_gsh16+flat16000": 2.52,
+   "flat16000_minus_gsh16+flat16000_ci": [
+    0.375,
+    4.625
+   ],
+   "gsh16+flat64000_minus_gsh16+flat32000": -0.62,
+   "gsh16+flat64000_minus_gsh16+flat32000_ci": [
+    -2.466,
+    1.222
+   ],
+   "flat16000_minus_prod": -1.21,
+   "flat16000_minus_prod_ci": [
+    -3.494,
+    1.102
+   ],
+   "gsh16+flat32000_minus_prod": -1.88,
+   "gsh16+flat32000_minus_prod_ci": [
+    -3.801,
+    0.051
+   ],
+   "gsh16+flat64000_minus_prod": -2.51,
+   "gsh16+flat64000_minus_prod_ci": [
+    -4.08,
+    -0.949
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -3.81,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -6.028,
+    -1.506
+   ],
+   "gsh16+flat16000_minus_prod": -3.73,
+   "gsh16+flat16000_minus_prod_ci": [
+    -5.705,
+    -1.83
+   ],
+   "flat16000_cpu_ratio": 3.69,
+   "gsh16+flat32000_cpu_ratio": 6.68,
+   "gsh16+flat64000_cpu_ratio": 13.37,
+   "gsh16+flat16000+mb4_cpu_ratio": 3.28,
+   "gsh16+flat16000_cpu_ratio": 3.2,
+   "prod_sims_per_decision": 4994,
+   "flat16000_sims_per_decision": 16000,
+   "gsh16+flat32000_sims_per_decision": 29122,
+   "gsh16+flat64000_sims_per_decision": 58620,
+   "gsh16+flat16000+mb4_sims_per_decision": 14623,
+   "gsh16+flat16000_sims_per_decision": 14494,
+   "prod_minus_expert_ci": [
+    3.847,
+    14.227
+   ]
+  },
+  "Awakened One": {
+   "n": 44,
+   "runs": 44,
+   "expert": 6.27,
+   "prod": {
+    "": 17.04,
+    "_death": 0.136,
+    "_potions": 0.568,
+    "_cpu": 66.11
+   },
+   "flat16000": {
+    "": 17.312,
+    "_death": 0.142,
+    "_potions": 0.54,
+    "_cpu": 187.723
+   },
+   "gsh16+flat32000": {
+    "": 14.807,
+    "_death": 0.131,
+    "_potions": 0.58,
+    "_cpu": 376.345
+   },
+   "gsh16+flat64000": {
+    "": 14.824,
+    "_death": 0.131,
+    "_potions": 0.545,
+    "_cpu": 781.785
+   },
+   "gsh16+flat16000+mb4": {
+    "": 14.71,
+    "_death": 0.108,
+    "_potions": 0.597,
+    "_cpu": 196.074
+   },
+   "gsh16+flat16000": {
+    "": 14.489,
+    "_death": 0.125,
+    "_potions": 0.58,
+    "_cpu": 199.272
+   },
+   "gsh16+flat32000_minus_g16": 0.32,
+   "gsh16+flat32000_minus_g16_ci": [
+    -1.807,
+    2.58
+   ],
+   "gsh16+flat32000_minus_g16_ci975": [
+    -2.131,
+    2.881
+   ],
+   "gsh16+flat32000_minus_g16_death": 0.0057,
+   "gsh16+flat32000_minus_g16_death_ci": [
+    -0.017,
+    0.028
+   ],
+   "gsh16+flat64000_minus_g16": 0.34,
+   "gsh16+flat64000_minus_g16_ci": [
+    -1.494,
+    2.153
+   ],
+   "gsh16+flat64000_minus_g16_ci975": [
+    -1.784,
+    2.42
+   ],
+   "gsh16+flat64000_minus_g16_death": 0.0057,
+   "gsh16+flat64000_minus_g16_death_ci": [
+    -0.023,
+    0.04
+   ],
+   "mb_minus_g16": 0.22,
+   "mb_minus_g16_ci": [
+    -2.278,
+    2.693
+   ],
+   "mb_minus_g16_death": -0.017,
+   "mb_minus_g16_death_ci": [
+    -0.045,
+    0.011
+   ],
+   "flat16000_minus_gsh16+flat16000": 2.82,
+   "flat16000_minus_gsh16+flat16000_ci": [
+    0.023,
+    5.756
+   ],
+   "gsh16+flat64000_minus_gsh16+flat32000": 0.02,
+   "gsh16+flat64000_minus_gsh16+flat32000_ci": [
+    -1.955,
+    1.892
+   ],
+   "flat16000_minus_prod": 0.27,
+   "flat16000_minus_prod_ci": [
+    -1.591,
+    2.182
+   ],
+   "gsh16+flat32000_minus_prod": -2.23,
+   "gsh16+flat32000_minus_prod_ci": [
+    -5.091,
+    0.449
+   ],
+   "gsh16+flat64000_minus_prod": -2.22,
+   "gsh16+flat64000_minus_prod_ci": [
+    -4.767,
+    0.165
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -2.33,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -5.5,
+    0.75
+   ],
+   "gsh16+flat16000_minus_prod": -2.55,
+   "gsh16+flat16000_minus_prod_ci": [
+    -5.511,
+    0.358
+   ],
+   "flat16000_cpu_ratio": 2.84,
+   "gsh16+flat32000_cpu_ratio": 5.69,
+   "gsh16+flat64000_cpu_ratio": 11.83,
+   "gsh16+flat16000+mb4_cpu_ratio": 2.97,
+   "gsh16+flat16000_cpu_ratio": 2.75,
+   "prod_sims_per_decision": 5596,
+   "flat16000_sims_per_decision": 16000,
+   "gsh16+flat32000_sims_per_decision": 29764,
+   "gsh16+flat64000_sims_per_decision": 59553,
+   "gsh16+flat16000+mb4_sims_per_decision": 14841,
+   "gsh16+flat16000_sims_per_decision": 14940,
+   "prod_minus_expert_ci": [
+    5.432,
+    16.256
+   ]
+  },
+  "Book of Stabbing": {
+   "n": 139,
+   "runs": 127,
+   "expert": 6.73,
+   "prod": {
+    "": 11.455,
+    "_death": 0.054,
+    "_potions": 0.36,
+    "_cpu": 0.799
+   },
+   "flat16000": {
+    "": 11.603,
+    "_death": 0.059,
+    "_potions": 0.379,
+    "_cpu": 3.512
+   },
+   "gsh16+flat32000": {
+    "": 10.568,
+    "_death": 0.049,
+    "_potions": 0.381,
+    "_cpu": 6.398
+   },
+   "gsh16+flat64000": {
+    "": 10.475,
+    "_death": 0.049,
+    "_potions": 0.367,
+    "_cpu": 13.671
+   },
+   "gsh16+flat16000+mb4": {
+    "": 10.248,
+    "_death": 0.052,
+    "_potions": 0.342,
+    "_cpu": 3.34
+   },
+   "gsh16+flat16000": {
+    "": 10.705,
+    "_death": 0.054,
+    "_potions": 0.383,
+    "_cpu": 3.069
+   },
+   "gsh16+flat32000_minus_g16": -0.14,
+   "gsh16+flat32000_minus_g16_ci": [
+    -0.743,
+    0.478
+   ],
+   "gsh16+flat32000_minus_g16_ci975": [
+    -0.835,
+    0.566
+   ],
+   "gsh16+flat32000_minus_g16_death": -0.0054,
+   "gsh16+flat32000_minus_g16_death_ci": [
+    -0.021,
+    0.011
+   ],
+   "gsh16+flat64000_minus_g16": -0.23,
+   "gsh16+flat64000_minus_g16_ci": [
+    -0.858,
+    0.411
+   ],
+   "gsh16+flat64000_minus_g16_ci975": [
+    -0.944,
+    0.493
+   ],
+   "gsh16+flat64000_minus_g16_death": -0.0054,
+   "gsh16+flat64000_minus_g16_death_ci": [
+    -0.017,
+    0.006
+   ],
+   "mb_minus_g16": -0.46,
+   "mb_minus_g16_ci": [
+    -1.129,
+    0.221
+   ],
+   "mb_minus_g16_death": -0.0018,
+   "mb_minus_g16_death_ci": [
+    -0.018,
+    0.014
+   ],
+   "flat16000_minus_gsh16+flat16000": 0.9,
+   "flat16000_minus_gsh16+flat16000_ci": [
+    0.132,
+    1.665
+   ],
+   "gsh16+flat64000_minus_gsh16+flat32000": -0.09,
+   "gsh16+flat64000_minus_gsh16+flat32000_ci": [
+    -0.567,
+    0.379
+   ],
+   "flat16000_minus_prod": 0.15,
+   "flat16000_minus_prod_ci": [
+    -0.363,
+    0.673
+   ],
+   "gsh16+flat32000_minus_prod": -0.89,
+   "gsh16+flat32000_minus_prod_ci": [
+    -1.653,
+    -0.137
+   ],
+   "gsh16+flat64000_minus_prod": -0.98,
+   "gsh16+flat64000_minus_prod_ci": [
+    -1.849,
+    -0.154
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -1.21,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -2.01,
+    -0.427
+   ],
+   "gsh16+flat16000_minus_prod": -0.75,
+   "gsh16+flat16000_minus_prod_ci": [
+    -1.54,
+    0.065
+   ],
+   "flat16000_cpu_ratio": 4.4,
+   "gsh16+flat32000_cpu_ratio": 8.01,
+   "gsh16+flat64000_cpu_ratio": 17.11,
+   "gsh16+flat16000+mb4_cpu_ratio": 4.18,
+   "gsh16+flat16000_cpu_ratio": 3.88,
+   "prod_sims_per_decision": 4152,
+   "flat16000_sims_per_decision": 16000,
+   "gsh16+flat32000_sims_per_decision": 29625,
+   "gsh16+flat64000_sims_per_decision": 59246,
+   "gsh16+flat16000+mb4_sims_per_decision": 14924,
+   "gsh16+flat16000_sims_per_decision": 14801,
+   "prod_minus_expert_ci": [
+    2.748,
+    6.736
+   ]
+  },
+  "Champ": {
+   "n": 40,
+   "runs": 40,
+   "expert": 10.53,
+   "prod": {
+    "": 14.113,
+    "_death": 0.05,
+    "_potions": 0.537,
+    "_cpu": 25.456
+   },
+   "flat16000": {
+    "": 14.025,
+    "_death": 0.037,
+    "_potions": 0.5,
+    "_cpu": 90.128
+   },
+   "gsh16+flat32000": {
+    "": 11.981,
+    "_death": 0.037,
+    "_potions": 0.475,
+    "_cpu": 180.086
+   },
+   "gsh16+flat64000": {
+    "": 12.125,
+    "_death": 0.037,
+    "_potions": 0.475,
+    "_cpu": 357.851
+   },
+   "gsh16+flat16000+mb4": {
+    "": 12.0,
+    "_death": 0.05,
+    "_potions": 0.469,
+    "_cpu": 86.716
+   },
+   "gsh16+flat16000": {
+    "": 11.556,
+    "_death": 0.031,
+    "_potions": 0.487,
+    "_cpu": 89.951
+   },
+   "gsh16+flat32000_minus_g16": 0.42,
+   "gsh16+flat32000_minus_g16_ci": [
+    -1.244,
+    2.275
+   ],
+   "gsh16+flat32000_minus_g16_ci975": [
+    -1.481,
+    2.562
+   ],
+   "gsh16+flat32000_minus_g16_death": 0.0063,
+   "gsh16+flat32000_minus_g16_death_ci": [
+    -0.019,
+    0.031
+   ],
+   "gsh16+flat64000_minus_g16": 0.57,
+   "gsh16+flat64000_minus_g16_ci": [
+    -1.725,
+    2.919
+   ],
+   "gsh16+flat64000_minus_g16_ci975": [
+    -2.05,
+    3.288
+   ],
+   "gsh16+flat64000_minus_g16_death": 0.0063,
+   "gsh16+flat64000_minus_g16_death_ci": [
+    -0.031,
+    0.05
+   ],
+   "mb_minus_g16": 0.44,
+   "mb_minus_g16_ci": [
+    -1.962,
+    2.869
+   ],
+   "mb_minus_g16_death": 0.0187,
+   "mb_minus_g16_death_ci": [
+    -0.019,
+    0.069
+   ],
+   "flat16000_minus_gsh16+flat16000": 2.47,
+   "flat16000_minus_gsh16+flat16000_ci": [
+    0.662,
+    4.3
+   ],
+   "gsh16+flat64000_minus_gsh16+flat32000": 0.14,
+   "gsh16+flat64000_minus_gsh16+flat32000_ci": [
+    -2.663,
+    2.719
+   ],
+   "flat16000_minus_prod": -0.09,
+   "flat16000_minus_prod_ci": [
+    -2.044,
+    1.85
+   ],
+   "gsh16+flat32000_minus_prod": -2.13,
+   "gsh16+flat32000_minus_prod_ci": [
+    -4.338,
+    0.081
+   ],
+   "gsh16+flat64000_minus_prod": -1.99,
+   "gsh16+flat64000_minus_prod_ci": [
+    -4.206,
+    0.206
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -2.11,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -4.6,
+    0.394
+   ],
+   "gsh16+flat16000_minus_prod": -2.56,
+   "gsh16+flat16000_minus_prod_ci": [
+    -4.45,
+    -0.669
+   ],
+   "flat16000_cpu_ratio": 3.54,
+   "gsh16+flat32000_cpu_ratio": 7.07,
+   "gsh16+flat64000_cpu_ratio": 14.06,
+   "gsh16+flat16000+mb4_cpu_ratio": 3.41,
+   "gsh16+flat16000_cpu_ratio": 3.22,
+   "prod_sims_per_decision": 5205,
+   "flat16000_sims_per_decision": 16000,
+   "gsh16+flat32000_sims_per_decision": 30159,
+   "gsh16+flat64000_sims_per_decision": 60210,
+   "gsh16+flat16000+mb4_sims_per_decision": 15053,
+   "gsh16+flat16000_sims_per_decision": 15081,
+   "prod_minus_expert_ci": [
+    -1.856,
+    8.65
+   ]
+  },
+  "Collector": {
+   "n": 55,
+   "runs": 55,
+   "expert": 20.18,
+   "prod": {
+    "": 19.786,
+    "_death": 0.086,
+    "_potions": 0.795,
+    "_cpu": 14.671
+   },
+   "flat16000": {
+    "": 19.95,
+    "_death": 0.105,
+    "_potions": 0.777,
+    "_cpu": 54.954
+   },
+   "gsh16+flat32000": {
+    "": 17.591,
+    "_death": 0.064,
+    "_potions": 0.732,
+    "_cpu": 103.102
+   },
+   "gsh16+flat64000": {
+    "": 16.414,
+    "_death": 0.064,
+    "_potions": 0.7,
+    "_cpu": 212.61
+   },
+   "gsh16+flat16000+mb4": {
+    "": 18.732,
+    "_death": 0.091,
+    "_potions": 0.732,
+    "_cpu": 52.377
+   },
+   "gsh16+flat16000": {
+    "": 18.227,
+    "_death": 0.086,
+    "_potions": 0.705,
+    "_cpu": 56.422
+   },
+   "gsh16+flat32000_minus_g16": -0.64,
+   "gsh16+flat32000_minus_g16_ci": [
+    -1.909,
+    0.668
+   ],
+   "gsh16+flat32000_minus_g16_ci975": [
+    -2.123,
+    0.859
+   ],
+   "gsh16+flat32000_minus_g16_death": -0.0227,
+   "gsh16+flat32000_minus_g16_death_ci": [
+    -0.055,
+    0.005
+   ],
+   "gsh16+flat64000_minus_g16": -1.81,
+   "gsh16+flat64000_minus_g16_ci": [
+    -3.65,
+    0.045
+   ],
+   "gsh16+flat64000_minus_g16_ci975": [
+    -3.927,
+    0.3
+   ],
+   "gsh16+flat64000_minus_g16_death": -0.0227,
+   "gsh16+flat64000_minus_g16_death_ci": [
+    -0.05,
+    0.0
+   ],
+   "mb_minus_g16": 0.5,
+   "mb_minus_g16_ci": [
+    -1.264,
+    2.218
+   ],
+   "mb_minus_g16_death": 0.0045,
+   "mb_minus_g16_death_ci": [
+    -0.027,
+    0.036
+   ],
+   "flat16000_minus_gsh16+flat16000": 1.72,
+   "flat16000_minus_gsh16+flat16000_ci": [
+    0.164,
+    3.264
+   ],
+   "gsh16+flat64000_minus_gsh16+flat32000": -1.18,
+   "gsh16+flat64000_minus_gsh16+flat32000_ci": [
+    -3.127,
+    0.682
+   ],
+   "flat16000_minus_prod": 0.16,
+   "flat16000_minus_prod_ci": [
+    -1.441,
+    1.75
+   ],
+   "gsh16+flat32000_minus_prod": -2.2,
+   "gsh16+flat32000_minus_prod_ci": [
+    -4.314,
+    -0.15
+   ],
+   "gsh16+flat64000_minus_prod": -3.37,
+   "gsh16+flat64000_minus_prod_ci": [
+    -6.045,
+    -0.641
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -1.05,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -3.055,
+    1.041
+   ],
+   "gsh16+flat16000_minus_prod": -1.56,
+   "gsh16+flat16000_minus_prod_ci": [
+    -3.323,
+    0.255
+   ],
+   "flat16000_cpu_ratio": 3.75,
+   "gsh16+flat32000_cpu_ratio": 7.03,
+   "gsh16+flat64000_cpu_ratio": 14.49,
+   "gsh16+flat16000+mb4_cpu_ratio": 3.57,
+   "gsh16+flat16000_cpu_ratio": 3.52,
+   "prod_sims_per_decision": 4617,
+   "flat16000_sims_per_decision": 16000,
+   "gsh16+flat32000_sims_per_decision": 29375,
+   "gsh16+flat64000_sims_per_decision": 58890,
+   "gsh16+flat16000+mb4_sims_per_decision": 14676,
+   "gsh16+flat16000_sims_per_decision": 14713,
+   "prod_minus_expert_ci": [
+    -5.045,
+    4.173
+   ]
+  },
+  "Donu and Deca": {
+   "n": 44,
+   "runs": 44,
+   "expert": 7.09,
+   "prod": {
+    "": 10.716,
+    "_death": 0.051,
+    "_potions": 0.199,
+    "_cpu": 35.483
+   },
+   "flat16000": {
+    "": 11.028,
+    "_death": 0.051,
+    "_potions": 0.21,
+    "_cpu": 113.176
+   },
+   "gsh16+flat32000": {
+    "": 9.057,
+    "_death": 0.051,
+    "_potions": 0.199,
+    "_cpu": 221.669
+   },
+   "gsh16+flat64000": {
+    "": 8.722,
+    "_death": 0.034,
+    "_potions": 0.188,
+    "_cpu": 417.812
+   },
+   "gsh16+flat16000+mb4": {
+    "": 9.903,
+    "_death": 0.04,
+    "_potions": 0.239,
+    "_cpu": 103.719
+   },
+   "gsh16+flat16000": {
+    "": 8.818,
+    "_death": 0.051,
+    "_potions": 0.193,
+    "_cpu": 115.477
+   },
+   "gsh16+flat32000_minus_g16": 0.24,
+   "gsh16+flat32000_minus_g16_ci": [
+    -1.898,
+    2.449
+   ],
+   "gsh16+flat32000_minus_g16_ci975": [
+    -2.227,
+    2.756
+   ],
+   "gsh16+flat32000_minus_g16_death": 0.0,
+   "gsh16+flat32000_minus_g16_death_ci": [
+    -0.017,
+    0.017
+   ],
+   "gsh16+flat64000_minus_g16": -0.1,
+   "gsh16+flat64000_minus_g16_ci": [
+    -2.284,
+    2.028
+   ],
+   "gsh16+flat64000_minus_g16_ci975": [
+    -2.608,
+    2.386
+   ],
+   "gsh16+flat64000_minus_g16_death": -0.017,
+   "gsh16+flat64000_minus_g16_death_ci": [
+    -0.04,
+    0.0
+   ],
+   "mb_minus_g16": 1.09,
+   "mb_minus_g16_ci": [
+    -1.438,
+    3.841
+   ],
+   "mb_minus_g16_death": -0.0114,
+   "mb_minus_g16_death_ci": [
+    -0.045,
+    0.017
+   ],
+   "flat16000_minus_gsh16+flat16000": 2.21,
+   "flat16000_minus_gsh16+flat16000_ci": [
+    0.0,
+    4.773
+   ],
+   "gsh16+flat64000_minus_gsh16+flat32000": -0.34,
+   "gsh16+flat64000_minus_gsh16+flat32000_ci": [
+    -2.08,
+    1.409
+   ],
+   "flat16000_minus_prod": 0.31,
+   "flat16000_minus_prod_ci": [
+    -1.688,
+    2.284
+   ],
+   "gsh16+flat32000_minus_prod": -1.66,
+   "gsh16+flat32000_minus_prod_ci": [
+    -3.511,
+    0.148
+   ],
+   "gsh16+flat64000_minus_prod": -1.99,
+   "gsh16+flat64000_minus_prod_ci": [
+    -4.534,
+    0.358
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -0.81,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -3.091,
+    1.477
+   ],
+   "gsh16+flat16000_minus_prod": -1.9,
+   "gsh16+flat16000_minus_prod_ci": [
+    -4.432,
+    0.261
+   ],
+   "flat16000_cpu_ratio": 3.19,
+   "gsh16+flat32000_cpu_ratio": 6.25,
+   "gsh16+flat64000_cpu_ratio": 11.78,
+   "gsh16+flat16000+mb4_cpu_ratio": 2.92,
+   "gsh16+flat16000_cpu_ratio": 2.93,
+   "prod_sims_per_decision": 5784,
+   "flat16000_sims_per_decision": 16000,
+   "gsh16+flat32000_sims_per_decision": 30503,
+   "gsh16+flat64000_sims_per_decision": 60978,
+   "gsh16+flat16000+mb4_sims_per_decision": 15228,
+   "gsh16+flat16000_sims_per_decision": 15241,
+   "prod_minus_expert_ci": [
+    -1.812,
+    8.932
+   ]
+  },
+  "Giant Head": {
+   "n": 71,
+   "runs": 58,
+   "expert": 2.1,
+   "prod": {
+    "": 3.363,
+    "_death": 0.014,
+    "_potions": 0.303,
+    "_cpu": 2.316
+   },
+   "flat16000": {
+    "": 3.014,
+    "_death": 0.018,
+    "_potions": 0.296,
+    "_cpu": 8.687
+   },
+   "gsh16+flat32000": {
+    "": 1.863,
+    "_death": 0.007,
+    "_potions": 0.285,
+    "_cpu": 16.275
+   },
+   "gsh16+flat64000": {
+    "": 0.894,
+    "_death": 0.011,
+    "_potions": 0.292,
+    "_cpu": 33.991
+   },
+   "gsh16+flat16000+mb4": {
+    "": 0.792,
+    "_death": 0.011,
+    "_potions": 0.299,
+    "_cpu": 8.189
+   },
+   "gsh16+flat16000": {
+    "": 2.201,
+    "_death": 0.007,
+    "_potions": 0.282,
+    "_cpu": 7.861
+   },
+   "gsh16+flat32000_minus_g16": -0.34,
+   "gsh16+flat32000_minus_g16_ci": [
+    -1.713,
+    0.919
+   ],
+   "gsh16+flat32000_minus_g16_ci975": [
+    -1.93,
+    1.104
+   ],
+   "gsh16+flat32000_minus_g16_death": 0.0,
+   "gsh16+flat32000_minus_g16_death_ci": [
+    0.0,
+    0.0
+   ],
+   "gsh16+flat64000_minus_g16": -1.31,
+   "gsh16+flat64000_minus_g16_ci": [
+    -2.382,
+    -0.187
+   ],
+   "gsh16+flat64000_minus_g16_ci975": [
+    -2.536,
+    -0.011
+   ],
+   "gsh16+flat64000_minus_g16_death": 0.0035,
+   "gsh16+flat64000_minus_g16_death_ci": [
+    0.0,
+    0.011
+   ],
+   "mb_minus_g16": -1.41,
+   "mb_minus_g16_ci": [
+    -2.588,
+    -0.205
+   ],
+   "mb_minus_g16_death": 0.0035,
+   "mb_minus_g16_death_ci": [
+    0.0,
+    0.011
+   ],
+   "flat16000_minus_gsh16+flat16000": 0.81,
+   "flat16000_minus_gsh16+flat16000_ci": [
+    -0.304,
+    2.031
+   ],
+   "gsh16+flat64000_minus_gsh16+flat32000": -0.97,
+   "gsh16+flat64000_minus_gsh16+flat32000_ci": [
+    -2.059,
+    0.127
+   ],
+   "flat16000_minus_prod": -0.35,
+   "flat16000_minus_prod_ci": [
+    -1.706,
+    1.027
+   ],
+   "gsh16+flat32000_minus_prod": -1.5,
+   "gsh16+flat32000_minus_prod_ci": [
+    -3.034,
+    -0.125
+   ],
+   "gsh16+flat64000_minus_prod": -2.47,
+   "gsh16+flat64000_minus_prod_ci": [
+    -3.899,
+    -1.074
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -2.57,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -3.913,
+    -1.254
+   ],
+   "gsh16+flat16000_minus_prod": -1.16,
+   "gsh16+flat16000_minus_prod_ci": [
+    -2.261,
+    -0.108
+   ],
+   "flat16000_cpu_ratio": 3.75,
+   "gsh16+flat32000_cpu_ratio": 7.03,
+   "gsh16+flat64000_cpu_ratio": 14.67,
+   "gsh16+flat16000+mb4_cpu_ratio": 3.54,
+   "gsh16+flat16000_cpu_ratio": 3.32,
+   "prod_sims_per_decision": 4803,
+   "flat16000_sims_per_decision": 16000,
+   "gsh16+flat32000_sims_per_decision": 30302,
+   "gsh16+flat64000_sims_per_decision": 60672,
+   "gsh16+flat16000+mb4_sims_per_decision": 15173,
+   "gsh16+flat16000_sims_per_decision": 15147,
+   "prod_minus_expert_ci": [
+    -2.693,
+    4.971
+   ]
+  },
+  "Gremlin Leader": {
+   "n": 129,
+   "runs": 120,
+   "expert": 0.8,
+   "prod": {
+    "": 5.101,
+    "_death": 0.031,
+    "_potions": 0.492,
+    "_cpu": 1.108
+   },
+   "flat16000": {
+    "": 5.481,
+    "_death": 0.033,
+    "_potions": 0.488,
+    "_cpu": 4.891
+   },
+   "gsh16+flat32000": {
+    "": 4.188,
+    "_death": 0.035,
+    "_potions": 0.504,
+    "_cpu": 9.212
+   },
+   "gsh16+flat64000": {
+    "": 4.176,
+    "_death": 0.031,
+    "_potions": 0.508,
+    "_cpu": 18.71
+   },
+   "gsh16+flat16000+mb4": {
+    "": 3.829,
+    "_death": 0.039,
+    "_potions": 0.498,
+    "_cpu": 4.733
+   },
+   "gsh16+flat16000": {
+    "": 4.072,
+    "_death": 0.033,
+    "_potions": 0.502,
+    "_cpu": 4.386
+   },
+   "gsh16+flat32000_minus_g16": 0.12,
+   "gsh16+flat32000_minus_g16_ci": [
+    -0.61,
+    0.832
+   ],
+   "gsh16+flat32000_minus_g16_ci975": [
+    -0.719,
+    0.936
+   ],
+   "gsh16+flat32000_minus_g16_death": 0.0019,
+   "gsh16+flat32000_minus_g16_death_ci": [
+    -0.012,
+    0.014
+   ],
+   "gsh16+flat64000_minus_g16": 0.1,
+   "gsh16+flat64000_minus_g16_ci": [
+    -0.652,
+    0.865
+   ],
+   "gsh16+flat64000_minus_g16_ci975": [
+    -0.773,
+    0.973
+   ],
+   "gsh16+flat64000_minus_g16_death": -0.0019,
+   "gsh16+flat64000_minus_g16_death_ci": [
+    -0.015,
+    0.01
+   ],
+   "mb_minus_g16": -0.24,
+   "mb_minus_g16_ci": [
+    -1.073,
+    0.585
+   ],
+   "mb_minus_g16_death": 0.0058,
+   "mb_minus_g16_death_ci": [
+    -0.006,
+    0.019
+   ],
+   "flat16000_minus_gsh16+flat16000": 1.41,
+   "flat16000_minus_gsh16+flat16000_ci": [
+    0.762,
+    2.061
+   ],
+   "gsh16+flat64000_minus_gsh16+flat32000": -0.01,
+   "gsh16+flat64000_minus_gsh16+flat32000_ci": [
+    -0.716,
+    0.687
+   ],
+   "flat16000_minus_prod": 0.38,
+   "flat16000_minus_prod_ci": [
+    -0.352,
+    1.13
+   ],
+   "gsh16+flat32000_minus_prod": -0.91,
+   "gsh16+flat32000_minus_prod_ci": [
+    -1.677,
+    -0.164
+   ],
+   "gsh16+flat64000_minus_prod": -0.92,
+   "gsh16+flat64000_minus_prod_ci": [
+    -1.818,
+    -0.037
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -1.27,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -2.131,
+    -0.43
+   ],
+   "gsh16+flat16000_minus_prod": -1.03,
+   "gsh16+flat16000_minus_prod_ci": [
+    -1.868,
+    -0.204
+   ],
+   "flat16000_cpu_ratio": 4.42,
+   "gsh16+flat32000_cpu_ratio": 8.32,
+   "gsh16+flat64000_cpu_ratio": 16.89,
+   "gsh16+flat16000+mb4_cpu_ratio": 4.27,
+   "gsh16+flat16000_cpu_ratio": 3.86,
+   "prod_sims_per_decision": 4211,
+   "flat16000_sims_per_decision": 16000,
+   "gsh16+flat32000_sims_per_decision": 29931,
+   "gsh16+flat64000_sims_per_decision": 59961,
+   "gsh16+flat16000+mb4_sims_per_decision": 15050,
+   "gsh16+flat16000_sims_per_decision": 14969,
+   "prod_minus_expert_ci": [
+    2.498,
+    6.168
+   ]
+  },
+  "Gremlin Nob": {
+   "n": 242,
+   "runs": 211,
+   "expert": 8.5,
+   "prod": {
+    "": 9.665,
+    "_death": 0.032,
+    "_potions": 0.704,
+    "_cpu": 0.219
+   },
+   "flat16000": {
+    "": 9.696,
+    "_death": 0.028,
+    "_potions": 0.706,
+    "_cpu": 1.246
+   },
+   "gsh16+flat32000": {
+    "": 9.092,
+    "_death": 0.031,
+    "_potions": 0.692,
+    "_cpu": 2.399
+   },
+   "gsh16+flat64000": {
+    "": 9.042,
+    "_death": 0.029,
+    "_potions": 0.676,
+    "_cpu": 4.941
+   },
+   "gsh16+flat16000+mb4": {
+    "": 9.205,
+    "_death": 0.032,
+    "_potions": 0.643,
+    "_cpu": 1.224
+   },
+   "gsh16+flat16000": {
+    "": 9.326,
+    "_death": 0.031,
+    "_potions": 0.701,
+    "_cpu": 1.136
+   },
+   "gsh16+flat32000_minus_g16": -0.23,
+   "gsh16+flat32000_minus_g16_ci": [
+    -0.629,
+    0.15
+   ],
+   "gsh16+flat32000_minus_g16_ci975": [
+    -0.681,
+    0.203
+   ],
+   "gsh16+flat32000_minus_g16_death": 0.0,
+   "gsh16+flat32000_minus_g16_death_ci": [
+    -0.004,
+    0.004
+   ],
+   "gsh16+flat64000_minus_g16": -0.28,
+   "gsh16+flat64000_minus_g16_ci": [
+    -0.715,
+    0.142
+   ],
+   "gsh16+flat64000_minus_g16_ci975": [
+    -0.779,
+    0.204
+   ],
+   "gsh16+flat64000_minus_g16_death": -0.0021,
+   "gsh16+flat64000_minus_g16_death_ci": [
+    -0.008,
+    0.003
+   ],
+   "mb_minus_g16": -0.12,
+   "mb_minus_g16_ci": [
+    -0.517,
+    0.283
+   ],
+   "mb_minus_g16_death": 0.001,
+   "mb_minus_g16_death_ci": [
+    -0.007,
+    0.009
+   ],
+   "flat16000_minus_gsh16+flat16000": 0.37,
+   "flat16000_minus_gsh16+flat16000_ci": [
+    -0.035,
+    0.774
+   ],
+   "gsh16+flat64000_minus_gsh16+flat32000": -0.05,
+   "gsh16+flat64000_minus_gsh16+flat32000_ci": [
+    -0.461,
+    0.378
+   ],
+   "flat16000_minus_prod": 0.03,
+   "flat16000_minus_prod_ci": [
+    -0.285,
+    0.35
+   ],
+   "gsh16+flat32000_minus_prod": -0.57,
+   "gsh16+flat32000_minus_prod_ci": [
+    -1.025,
+    -0.13
+   ],
+   "gsh16+flat64000_minus_prod": -0.62,
+   "gsh16+flat64000_minus_prod_ci": [
+    -1.083,
+    -0.162
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -0.46,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -0.9,
+    -0.019
+   ],
+   "gsh16+flat16000_minus_prod": -0.34,
+   "gsh16+flat16000_minus_prod_ci": [
+    -0.818,
+    0.123
+   ],
+   "flat16000_cpu_ratio": 5.69,
+   "gsh16+flat32000_cpu_ratio": 10.95,
+   "gsh16+flat64000_cpu_ratio": 22.55,
+   "gsh16+flat16000+mb4_cpu_ratio": 5.59,
+   "gsh16+flat16000_cpu_ratio": 5.14,
+   "prod_sims_per_decision": 3388,
+   "flat16000_sims_per_decision": 16000,
+   "gsh16+flat32000_sims_per_decision": 29545,
+   "gsh16+flat64000_sims_per_decision": 59243,
+   "gsh16+flat16000+mb4_sims_per_decision": 14925,
+   "gsh16+flat16000_sims_per_decision": 14772,
+   "prod_minus_expert_ci": [
+    -0.287,
+    2.647
+   ]
+  },
+  "Hexaghost": {
+   "n": 93,
+   "runs": 93,
+   "expert": 15.34,
+   "prod": {
+    "": 16.656,
+    "_death": 0.137,
+    "_potions": 0.895,
+    "_cpu": 6.883
+   },
+   "flat16000": {
+    "": 16.18,
+    "_death": 0.134,
+    "_potions": 0.89,
+    "_cpu": 29.109
+   },
+   "gsh16+flat32000": {
+    "": 15.444,
+    "_death": 0.129,
+    "_potions": 0.852,
+    "_cpu": 52.85
+   },
+   "gsh16+flat64000": {
+    "": 15.763,
+    "_death": 0.121,
+    "_potions": 0.866,
+    "_cpu": 106.367
+   },
+   "gsh16+flat16000+mb4": {
+    "": 15.522,
+    "_death": 0.124,
+    "_potions": 0.839,
+    "_cpu": 25.163
+   },
+   "gsh16+flat16000": {
+    "": 16.059,
+    "_death": 0.134,
+    "_potions": 0.849,
+    "_cpu": 26.643
+   },
+   "gsh16+flat32000_minus_g16": -0.62,
+   "gsh16+flat32000_minus_g16_ci": [
+    -1.516,
+    0.301
+   ],
+   "gsh16+flat32000_minus_g16_ci975": [
+    -1.645,
+    0.43
+   ],
+   "gsh16+flat32000_minus_g16_death": -0.0054,
+   "gsh16+flat32000_minus_g16_death_ci": [
+    -0.032,
+    0.022
+   ],
+   "gsh16+flat64000_minus_g16": -0.3,
+   "gsh16+flat64000_minus_g16_ci": [
+    -1.14,
+    0.57
+   ],
+   "gsh16+flat64000_minus_g16_ci975": [
+    -1.258,
+    0.72
+   ],
+   "gsh16+flat64000_minus_g16_death": -0.0134,
+   "gsh16+flat64000_minus_g16_death_ci": [
+    -0.048,
+    0.022
+   ],
+   "mb_minus_g16": -0.54,
+   "mb_minus_g16_ci": [
+    -1.551,
+    0.519
+   ],
+   "mb_minus_g16_death": -0.0108,
+   "mb_minus_g16_death_ci": [
+    -0.046,
+    0.022
+   ],
+   "flat16000_minus_gsh16+flat16000": 0.12,
+   "flat16000_minus_gsh16+flat16000_ci": [
+    -0.927,
+    1.156
+   ],
+   "gsh16+flat64000_minus_gsh16+flat32000": 0.32,
+   "gsh16+flat64000_minus_gsh16+flat32000_ci": [
+    -0.481,
+    1.167
+   ],
+   "flat16000_minus_prod": -0.48,
+   "flat16000_minus_prod_ci": [
+    -1.296,
+    0.403
+   ],
+   "gsh16+flat32000_minus_prod": -1.21,
+   "gsh16+flat32000_minus_prod_ci": [
+    -2.204,
+    -0.218
+   ],
+   "gsh16+flat64000_minus_prod": -0.89,
+   "gsh16+flat64000_minus_prod_ci": [
+    -1.761,
+    -0.027
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -1.13,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -2.013,
+    -0.218
+   ],
+   "gsh16+flat16000_minus_prod": -0.6,
+   "gsh16+flat16000_minus_prod_ci": [
+    -1.551,
+    0.382
+   ],
+   "flat16000_cpu_ratio": 4.23,
+   "gsh16+flat32000_cpu_ratio": 7.68,
+   "gsh16+flat64000_cpu_ratio": 15.45,
+   "gsh16+flat16000+mb4_cpu_ratio": 3.66,
+   "gsh16+flat16000_cpu_ratio": 3.49,
+   "prod_sims_per_decision": 4345,
+   "flat16000_sims_per_decision": 16000,
+   "gsh16+flat32000_sims_per_decision": 28153,
+   "gsh16+flat64000_sims_per_decision": 56281,
+   "gsh16+flat16000+mb4_sims_per_decision": 14209,
+   "gsh16+flat16000_sims_per_decision": 14027,
+   "prod_minus_expert_ci": [
+    -0.675,
+    3.325
+   ]
+  },
+  "Lagavulin": {
+   "n": 267,
+   "runs": 233,
+   "expert": 10.48,
+   "prod": {
+    "": 11.79,
+    "_death": 0.034,
+    "_potions": 0.571,
+    "_cpu": 0.566
+   },
+   "flat16000": {
+    "": 11.864,
+    "_death": 0.034,
+    "_potions": 0.565,
+    "_cpu": 2.776
+   },
+   "gsh16+flat32000": {
+    "": 11.27,
+    "_death": 0.036,
+    "_potions": 0.576,
+    "_cpu": 5.364
+   },
+   "gsh16+flat64000": {
+    "": 11.232,
+    "_death": 0.027,
+    "_potions": 0.579,
+    "_cpu": 11.312
+   },
+   "gsh16+flat16000+mb4": {
+    "": 11.732,
+    "_death": 0.032,
+    "_potions": 0.507,
+    "_cpu": 2.84
+   },
+   "gsh16+flat16000": {
+    "": 11.698,
+    "_death": 0.037,
+    "_potions": 0.569,
+    "_cpu": 2.545
+   },
+   "gsh16+flat32000_minus_g16": -0.43,
+   "gsh16+flat32000_minus_g16_ci": [
+    -0.829,
+    -0.03
+   ],
+   "gsh16+flat32000_minus_g16_ci975": [
+    -0.89,
+    0.022
+   ],
+   "gsh16+flat32000_minus_g16_death": -0.0009,
+   "gsh16+flat32000_minus_g16_death_ci": [
+    -0.011,
+    0.008
+   ],
+   "gsh16+flat64000_minus_g16": -0.47,
+   "gsh16+flat64000_minus_g16_ci": [
+    -0.899,
+    -0.035
+   ],
+   "gsh16+flat64000_minus_g16_ci975": [
+    -0.962,
+    0.017
+   ],
+   "gsh16+flat64000_minus_g16_death": -0.0094,
+   "gsh16+flat64000_minus_g16_death_ci": [
+    -0.021,
+    -0.001
+   ],
+   "mb_minus_g16": 0.03,
+   "mb_minus_g16_ci": [
+    -0.439,
+    0.508
+   ],
+   "mb_minus_g16_death": -0.0047,
+   "mb_minus_g16_death_ci": [
+    -0.015,
+    0.004
+   ],
+   "flat16000_minus_gsh16+flat16000": 0.17,
+   "flat16000_minus_gsh16+flat16000_ci": [
+    -0.203,
+    0.533
+   ],
+   "gsh16+flat64000_minus_gsh16+flat32000": -0.04,
+   "gsh16+flat64000_minus_gsh16+flat32000_ci": [
+    -0.446,
+    0.363
+   ],
+   "flat16000_minus_prod": 0.07,
+   "flat16000_minus_prod_ci": [
+    -0.271,
+    0.424
+   ],
+   "gsh16+flat32000_minus_prod": -0.52,
+   "gsh16+flat32000_minus_prod_ci": [
+    -0.944,
+    -0.101
+   ],
+   "gsh16+flat64000_minus_prod": -0.56,
+   "gsh16+flat64000_minus_prod_ci": [
+    -1.012,
+    -0.101
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -0.06,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -0.547,
+    0.442
+   ],
+   "gsh16+flat16000_minus_prod": -0.09,
+   "gsh16+flat16000_minus_prod_ci": [
+    -0.48,
+    0.289
+   ],
+   "flat16000_cpu_ratio": 4.91,
+   "gsh16+flat32000_cpu_ratio": 9.48,
+   "gsh16+flat64000_cpu_ratio": 19.99,
+   "gsh16+flat16000+mb4_cpu_ratio": 5.02,
+   "gsh16+flat16000_cpu_ratio": 4.44,
+   "prod_sims_per_decision": 3766,
+   "flat16000_sims_per_decision": 16000,
+   "gsh16+flat32000_sims_per_decision": 29551,
+   "gsh16+flat64000_sims_per_decision": 59291,
+   "gsh16+flat16000+mb4_sims_per_decision": 14911,
+   "gsh16+flat16000_sims_per_decision": 14785,
+   "prod_minus_expert_ci": [
+    0.126,
+    2.489
+   ]
+  },
+  "Nemesis": {
+   "n": 69,
+   "runs": 63,
+   "expert": 1.12,
+   "prod": {
+    "": 6.355,
+    "_death": 0.011,
+    "_potions": 0.163,
+    "_cpu": 2.352
+   },
+   "flat16000": {
+    "": 6.435,
+    "_death": 0.004,
+    "_potions": 0.185,
+    "_cpu": 8.255
+   },
+   "gsh16+flat32000": {
+    "": 4.855,
+    "_death": 0.004,
+    "_potions": 0.152,
+    "_cpu": 16.442
+   },
+   "gsh16+flat64000": {
+    "": 4.322,
+    "_death": 0,
+    "_potions": 0.138,
+    "_cpu": 31.417
+   },
+   "gsh16+flat16000+mb4": {
+    "": 3.732,
+    "_death": 0,
+    "_potions": 0.167,
+    "_cpu": 8.4
+   },
+   "gsh16+flat16000": {
+    "": 4.696,
+    "_death": 0.004,
+    "_potions": 0.149,
+    "_cpu": 7.825
+   },
+   "gsh16+flat32000_minus_g16": 0.16,
+   "gsh16+flat32000_minus_g16_ci": [
+    -0.889,
+    1.346
+   ],
+   "gsh16+flat32000_minus_g16_ci975": [
+    -1.021,
+    1.538
+   ],
+   "gsh16+flat32000_minus_g16_death": 0.0,
+   "gsh16+flat32000_minus_g16_death_ci": [
+    -0.011,
+    0.011
+   ],
+   "gsh16+flat64000_minus_g16": -0.37,
+   "gsh16+flat64000_minus_g16_ci": [
+    -1.369,
+    0.627
+   ],
+   "gsh16+flat64000_minus_g16_ci975": [
+    -1.51,
+    0.781
+   ],
+   "gsh16+flat64000_minus_g16_death": -0.0036,
+   "gsh16+flat64000_minus_g16_death_ci": [
+    -0.011,
+    0.0
+   ],
+   "mb_minus_g16": -0.96,
+   "mb_minus_g16_ci": [
+    -2.058,
+    0.146
+   ],
+   "mb_minus_g16_death": -0.0036,
+   "mb_minus_g16_death_ci": [
+    -0.011,
+    0.0
+   ],
+   "flat16000_minus_gsh16+flat16000": 1.74,
+   "flat16000_minus_gsh16+flat16000_ci": [
+    0.662,
+    2.857
+   ],
+   "gsh16+flat64000_minus_gsh16+flat32000": -0.53,
+   "gsh16+flat64000_minus_gsh16+flat32000_ci": [
+    -1.549,
+    0.359
+   ],
+   "flat16000_minus_prod": 0.08,
+   "flat16000_minus_prod_ci": [
+    -1.066,
+    1.261
+   ],
+   "gsh16+flat32000_minus_prod": -1.5,
+   "gsh16+flat32000_minus_prod_ci": [
+    -2.942,
+    -0.139
+   ],
+   "gsh16+flat64000_minus_prod": -2.03,
+   "gsh16+flat64000_minus_prod_ci": [
+    -3.457,
+    -0.625
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -2.62,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -3.789,
+    -1.465
+   ],
+   "gsh16+flat16000_minus_prod": -1.66,
+   "gsh16+flat16000_minus_prod_ci": [
+    -3.101,
+    -0.283
+   ],
+   "flat16000_cpu_ratio": 3.51,
+   "gsh16+flat32000_cpu_ratio": 6.99,
+   "gsh16+flat64000_cpu_ratio": 13.36,
+   "gsh16+flat16000+mb4_cpu_ratio": 3.57,
+   "gsh16+flat16000_cpu_ratio": 3.26,
+   "prod_sims_per_decision": 4901,
+   "flat16000_sims_per_decision": 16000,
+   "gsh16+flat32000_sims_per_decision": 30492,
+   "gsh16+flat64000_sims_per_decision": 61032,
+   "gsh16+flat16000+mb4_sims_per_decision": 15301,
+   "gsh16+flat16000_sims_per_decision": 15289,
+   "prod_minus_expert_ci": [
+    2.582,
+    7.904
+   ]
+  },
+  "Reptomancer": {
+   "n": 69,
+   "runs": 61,
+   "expert": 4.45,
+   "prod": {
+    "": 8.417,
+    "_death": 0.025,
+    "_potions": 0.333,
+    "_cpu": 2.191
+   },
+   "flat16000": {
+    "": 7.764,
+    "_death": 0.029,
+    "_potions": 0.315,
+    "_cpu": 8.473
+   },
+   "gsh16+flat32000": {
+    "": 5.841,
+    "_death": 0.011,
+    "_potions": 0.29,
+    "_cpu": 15.234
+   },
+   "gsh16+flat64000": {
+    "": 5.366,
+    "_death": 0.007,
+    "_potions": 0.272,
+    "_cpu": 31.136
+   },
+   "gsh16+flat16000+mb4": {
+    "": 5.391,
+    "_death": 0.014,
+    "_potions": 0.293,
+    "_cpu": 7.903
+   },
+   "gsh16+flat16000": {
+    "": 6.562,
+    "_death": 0.025,
+    "_potions": 0.301,
+    "_cpu": 7.608
+   },
+   "gsh16+flat32000_minus_g16": -0.72,
+   "gsh16+flat32000_minus_g16_ci": [
+    -2.075,
+    0.675
+   ],
+   "gsh16+flat32000_minus_g16_ci975": [
+    -2.257,
+    0.875
+   ],
+   "gsh16+flat32000_minus_g16_death": -0.0145,
+   "gsh16+flat32000_minus_g16_death_ci": [
+    -0.036,
+    0.004
+   ],
+   "gsh16+flat64000_minus_g16": -1.2,
+   "gsh16+flat64000_minus_g16_ci": [
+    -2.579,
+    0.141
+   ],
+   "gsh16+flat64000_minus_g16_ci975": [
+    -2.811,
+    0.308
+   ],
+   "gsh16+flat64000_minus_g16_death": -0.0181,
+   "gsh16+flat64000_minus_g16_death_ci": [
+    -0.038,
+    -0.004
+   ],
+   "mb_minus_g16": -1.17,
+   "mb_minus_g16_ci": [
+    -2.768,
+    0.432
+   ],
+   "mb_minus_g16_death": -0.0109,
+   "mb_minus_g16_death_ci": [
+    -0.028,
+    0.004
+   ],
+   "flat16000_minus_gsh16+flat16000": 1.2,
+   "flat16000_minus_gsh16+flat16000_ci": [
+    -0.087,
+    2.663
+   ],
+   "gsh16+flat64000_minus_gsh16+flat32000": -0.47,
+   "gsh16+flat64000_minus_gsh16+flat32000_ci": [
+    -2.008,
+    0.922
+   ],
+   "flat16000_minus_prod": -0.65,
+   "flat16000_minus_prod_ci": [
+    -1.775,
+    0.518
+   ],
+   "gsh16+flat32000_minus_prod": -2.58,
+   "gsh16+flat32000_minus_prod_ci": [
+    -4.197,
+    -0.964
+   ],
+   "gsh16+flat64000_minus_prod": -3.05,
+   "gsh16+flat64000_minus_prod_ci": [
+    -4.827,
+    -1.395
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -3.03,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -4.822,
+    -1.07
+   ],
+   "gsh16+flat16000_minus_prod": -1.86,
+   "gsh16+flat16000_minus_prod_ci": [
+    -3.493,
+    -0.271
+   ],
+   "flat16000_cpu_ratio": 3.87,
+   "gsh16+flat32000_cpu_ratio": 6.95,
+   "gsh16+flat64000_cpu_ratio": 14.21,
+   "gsh16+flat16000+mb4_cpu_ratio": 3.61,
+   "gsh16+flat16000_cpu_ratio": 3.36,
+   "prod_sims_per_decision": 4860,
+   "flat16000_sims_per_decision": 16000,
+   "gsh16+flat32000_sims_per_decision": 30308,
+   "gsh16+flat64000_sims_per_decision": 60556,
+   "gsh16+flat16000+mb4_sims_per_decision": 15166,
+   "gsh16+flat16000_sims_per_decision": 15152,
+   "prod_minus_expert_ci": [
+    -0.223,
+    7.957
+   ]
+  },
+  "Slavers": {
+   "n": 129,
+   "runs": 117,
+   "expert": 8.02,
+   "prod": {
+    "": 14.57,
+    "_death": 0.078,
+    "_potions": 0.38,
+    "_cpu": 0.853
+   },
+   "flat16000": {
+    "": 14.694,
+    "_death": 0.081,
+    "_potions": 0.393,
+    "_cpu": 3.544
+   },
+   "gsh16+flat32000": {
+    "": 13.828,
+    "_death": 0.078,
+    "_potions": 0.403,
+    "_cpu": 6.402
+   },
+   "gsh16+flat64000": {
+    "": 13.909,
+    "_death": 0.085,
+    "_potions": 0.384,
+    "_cpu": 13.483
+   },
+   "gsh16+flat16000+mb4": {
+    "": 13.219,
+    "_death": 0.066,
+    "_potions": 0.372,
+    "_cpu": 3.274
+   },
+   "gsh16+flat16000": {
+    "": 14.039,
+    "_death": 0.076,
+    "_potions": 0.388,
+    "_cpu": 3.017
+   },
+   "gsh16+flat32000_minus_g16": -0.21,
+   "gsh16+flat32000_minus_g16_ci": [
+    -0.804,
+    0.348
+   ],
+   "gsh16+flat32000_minus_g16_ci975": [
+    -0.895,
+    0.441
+   ],
+   "gsh16+flat32000_minus_g16_death": 0.0019,
+   "gsh16+flat32000_minus_g16_death_ci": [
+    -0.01,
+    0.015
+   ],
+   "gsh16+flat64000_minus_g16": -0.13,
+   "gsh16+flat64000_minus_g16_ci": [
+    -0.727,
+    0.435
+   ],
+   "gsh16+flat64000_minus_g16_ci975": [
+    -0.808,
+    0.512
+   ],
+   "gsh16+flat64000_minus_g16_death": 0.0097,
+   "gsh16+flat64000_minus_g16_death_ci": [
+    -0.007,
+    0.026
+   ],
+   "mb_minus_g16": -0.82,
+   "mb_minus_g16_ci": [
+    -1.474,
+    -0.183
+   ],
+   "mb_minus_g16_death": -0.0097,
+   "mb_minus_g16_death_ci": [
+    -0.026,
+    0.006
+   ],
+   "flat16000_minus_gsh16+flat16000": 0.66,
+   "flat16000_minus_gsh16+flat16000_ci": [
+    0.008,
+    1.304
+   ],
+   "gsh16+flat64000_minus_gsh16+flat32000": 0.08,
+   "gsh16+flat64000_minus_gsh16+flat32000_ci": [
+    -0.538,
+    0.696
+   ],
+   "flat16000_minus_prod": 0.12,
+   "flat16000_minus_prod_ci": [
+    -0.385,
+    0.638
+   ],
+   "gsh16+flat32000_minus_prod": -0.74,
+   "gsh16+flat32000_minus_prod_ci": [
+    -1.462,
+    -0.055
+   ],
+   "gsh16+flat64000_minus_prod": -0.66,
+   "gsh16+flat64000_minus_prod_ci": [
+    -1.482,
+    0.121
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -1.35,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -2.128,
+    -0.605
+   ],
+   "gsh16+flat16000_minus_prod": -0.53,
+   "gsh16+flat16000_minus_prod_ci": [
+    -1.208,
+    0.126
+   ],
+   "flat16000_cpu_ratio": 4.16,
+   "gsh16+flat32000_cpu_ratio": 7.51,
+   "gsh16+flat64000_cpu_ratio": 15.81,
+   "gsh16+flat16000+mb4_cpu_ratio": 3.84,
+   "gsh16+flat16000_cpu_ratio": 3.58,
+   "prod_sims_per_decision": 4606,
+   "flat16000_sims_per_decision": 16000,
+   "gsh16+flat32000_sims_per_decision": 29268,
+   "gsh16+flat64000_sims_per_decision": 58780,
+   "gsh16+flat16000+mb4_sims_per_decision": 14709,
+   "gsh16+flat16000_sims_per_decision": 14675,
+   "prod_minus_expert_ci": [
+    3.776,
+    9.393
+   ]
+  },
+  "Slime Boss": {
+   "n": 80,
+   "runs": 80,
+   "expert": 10.47,
+   "prod": {
+    "": 9.878,
+    "_death": 0.119,
+    "_potions": 0.875,
+    "_cpu": 6.978
+   },
+   "flat16000": {
+    "": 9.25,
+    "_death": 0.097,
+    "_potions": 0.859,
+    "_cpu": 33.087
+   },
+   "gsh16+flat32000": {
+    "": 8.938,
+    "_death": 0.087,
+    "_potions": 0.806,
+    "_cpu": 58.884
+   },
+   "gsh16+flat64000": {
+    "": 8.509,
+    "_death": 0.078,
+    "_potions": 0.819,
+    "_cpu": 120.145
+   },
+   "gsh16+flat16000+mb4": {
+    "": 9.2,
+    "_death": 0.075,
+    "_potions": 0.769,
+    "_cpu": 27.564
+   },
+   "gsh16+flat16000": {
+    "": 9.103,
+    "_death": 0.084,
+    "_potions": 0.819,
+    "_cpu": 30.676
+   },
+   "gsh16+flat32000_minus_g16": -0.17,
+   "gsh16+flat32000_minus_g16_ci": [
+    -1.209,
+    0.884
+   ],
+   "gsh16+flat32000_minus_g16_ci975": [
+    -1.378,
+    1.022
+   ],
+   "gsh16+flat32000_minus_g16_death": 0.0031,
+   "gsh16+flat32000_minus_g16_death_ci": [
+    -0.019,
+    0.028
+   ],
+   "gsh16+flat64000_minus_g16": -0.59,
+   "gsh16+flat64000_minus_g16_ci": [
+    -1.766,
+    0.591
+   ],
+   "gsh16+flat64000_minus_g16_ci975": [
+    -1.956,
+    0.759
+   ],
+   "gsh16+flat64000_minus_g16_death": -0.0063,
+   "gsh16+flat64000_minus_g16_death_ci": [
+    -0.031,
+    0.019
+   ],
+   "mb_minus_g16": 0.1,
+   "mb_minus_g16_ci": [
+    -0.934,
+    1.188
+   ],
+   "mb_minus_g16_death": -0.0094,
+   "mb_minus_g16_death_ci": [
+    -0.031,
+    0.013
+   ],
+   "flat16000_minus_gsh16+flat16000": 0.15,
+   "flat16000_minus_gsh16+flat16000_ci": [
+    -1.172,
+    1.5
+   ],
+   "gsh16+flat64000_minus_gsh16+flat32000": -0.43,
+   "gsh16+flat64000_minus_gsh16+flat32000_ci": [
+    -1.497,
+    0.562
+   ],
+   "flat16000_minus_prod": -0.63,
+   "flat16000_minus_prod_ci": [
+    -1.756,
+    0.453
+   ],
+   "gsh16+flat32000_minus_prod": -0.94,
+   "gsh16+flat32000_minus_prod_ci": [
+    -2.319,
+    0.484
+   ],
+   "gsh16+flat64000_minus_prod": -1.37,
+   "gsh16+flat64000_minus_prod_ci": [
+    -2.7,
+    -0.066
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -0.68,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -2.103,
+    0.716
+   ],
+   "gsh16+flat16000_minus_prod": -0.78,
+   "gsh16+flat16000_minus_prod_ci": [
+    -2.206,
+    0.616
+   ],
+   "flat16000_cpu_ratio": 4.74,
+   "gsh16+flat32000_cpu_ratio": 8.44,
+   "gsh16+flat64000_cpu_ratio": 17.22,
+   "gsh16+flat16000+mb4_cpu_ratio": 3.95,
+   "gsh16+flat16000_cpu_ratio": 3.94,
+   "prod_sims_per_decision": 4307,
+   "flat16000_sims_per_decision": 16000,
+   "gsh16+flat32000_sims_per_decision": 28441,
+   "gsh16+flat64000_sims_per_decision": 56902,
+   "gsh16+flat16000+mb4_sims_per_decision": 14310,
+   "gsh16+flat16000_sims_per_decision": 14272,
+   "prod_minus_expert_ci": [
+    -3.516,
+    2.263
+   ]
+  },
+  "The Guardian": {
+   "n": 81,
+   "runs": 81,
+   "expert": 12.53,
+   "prod": {
+    "": 17.071,
+    "_death": 0.123,
+    "_potions": 0.898,
+    "_cpu": 8.091
+   },
+   "flat16000": {
+    "": 16.605,
+    "_death": 0.127,
+    "_potions": 0.91,
+    "_cpu": 34.532
+   },
+   "gsh16+flat32000": {
+    "": 15.454,
+    "_death": 0.105,
+    "_potions": 0.87,
+    "_cpu": 60.281
+   },
+   "gsh16+flat64000": {
+    "": 15.198,
+    "_death": 0.114,
+    "_potions": 0.852,
+    "_cpu": 119.903
+   },
+   "gsh16+flat16000+mb4": {
+    "": 15.488,
+    "_death": 0.123,
+    "_potions": 0.836,
+    "_cpu": 28.134
+   },
+   "gsh16+flat16000": {
+    "": 15.806,
+    "_death": 0.117,
+    "_potions": 0.889,
+    "_cpu": 30.827
+   },
+   "gsh16+flat32000_minus_g16": -0.35,
+   "gsh16+flat32000_minus_g16_ci": [
+    -1.395,
+    0.71
+   ],
+   "gsh16+flat32000_minus_g16_ci975": [
+    -1.543,
+    0.84
+   ],
+   "gsh16+flat32000_minus_g16_death": -0.0123,
+   "gsh16+flat32000_minus_g16_death_ci": [
+    -0.046,
+    0.015
+   ],
+   "gsh16+flat64000_minus_g16": -0.61,
+   "gsh16+flat64000_minus_g16_ci": [
+    -1.559,
+    0.361
+   ],
+   "gsh16+flat64000_minus_g16_ci975": [
+    -1.71,
+    0.494
+   ],
+   "gsh16+flat64000_minus_g16_death": -0.0031,
+   "gsh16+flat64000_minus_g16_death_ci": [
+    -0.031,
+    0.025
+   ],
+   "mb_minus_g16": -0.32,
+   "mb_minus_g16_ci": [
+    -1.358,
+    0.738
+   ],
+   "mb_minus_g16_death": 0.0062,
+   "mb_minus_g16_death_ci": [
+    -0.019,
+    0.031
+   ],
+   "flat16000_minus_gsh16+flat16000": 0.8,
+   "flat16000_minus_gsh16+flat16000_ci": [
+    -0.247,
+    1.914
+   ],
+   "gsh16+flat64000_minus_gsh16+flat32000": -0.26,
+   "gsh16+flat64000_minus_gsh16+flat32000_ci": [
+    -1.225,
+    0.716
+   ],
+   "flat16000_minus_prod": -0.47,
+   "flat16000_minus_prod_ci": [
+    -1.59,
+    0.704
+   ],
+   "gsh16+flat32000_minus_prod": -1.62,
+   "gsh16+flat32000_minus_prod_ci": [
+    -2.802,
+    -0.435
+   ],
+   "gsh16+flat64000_minus_prod": -1.87,
+   "gsh16+flat64000_minus_prod_ci": [
+    -3.015,
+    -0.744
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -1.58,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -2.698,
+    -0.503
+   ],
+   "gsh16+flat16000_minus_prod": -1.27,
+   "gsh16+flat16000_minus_prod_ci": [
+    -2.509,
+    -0.114
+   ],
+   "flat16000_cpu_ratio": 4.27,
+   "gsh16+flat32000_cpu_ratio": 7.45,
+   "gsh16+flat64000_cpu_ratio": 14.82,
+   "gsh16+flat16000+mb4_cpu_ratio": 3.48,
+   "gsh16+flat16000_cpu_ratio": 3.34,
+   "prod_sims_per_decision": 4404,
+   "flat16000_sims_per_decision": 16000,
+   "gsh16+flat32000_sims_per_decision": 27572,
+   "gsh16+flat64000_sims_per_decision": 55558,
+   "gsh16+flat16000+mb4_sims_per_decision": 13916,
+   "gsh16+flat16000_sims_per_decision": 13768,
+   "prod_minus_expert_ci": [
+    2.293,
+    6.827
+   ]
+  },
+  "Time Eater": {
+   "n": 47,
+   "runs": 47,
+   "expert": 9.64,
+   "prod": {
+    "": 11.559,
+    "_death": 0.021,
+    "_potions": 0.191,
+    "_cpu": 31.538
+   },
+   "flat16000": {
+    "": 12.34,
+    "_death": 0.027,
+    "_potions": 0.181,
+    "_cpu": 104.844
+   },
+   "gsh16+flat32000": {
+    "": 8.851,
+    "_death": 0.005,
+    "_potions": 0.138,
+    "_cpu": 204.234
+   },
+   "gsh16+flat64000": {
+    "": 9.441,
+    "_death": 0.021,
+    "_potions": 0.149,
+    "_cpu": 402.546
+   },
+   "gsh16+flat16000+mb4": {
+    "": 11.128,
+    "_death": 0.016,
+    "_potions": 0.149,
+    "_cpu": 101.045
+   },
+   "gsh16+flat16000": {
+    "": 10.548,
+    "_death": 0.016,
+    "_potions": 0.17,
+    "_cpu": 106.48
+   },
+   "gsh16+flat32000_minus_g16": -1.7,
+   "gsh16+flat32000_minus_g16_ci": [
+    -3.612,
+    0.048
+   ],
+   "gsh16+flat32000_minus_g16_ci975": [
+    -3.952,
+    0.266
+   ],
+   "gsh16+flat32000_minus_g16_death": -0.0106,
+   "gsh16+flat32000_minus_g16_death_ci": [
+    -0.027,
+    0.0
+   ],
+   "gsh16+flat64000_minus_g16": -1.11,
+   "gsh16+flat64000_minus_g16_ci": [
+    -2.707,
+    0.42
+   ],
+   "gsh16+flat64000_minus_g16_ci975": [
+    -2.941,
+    0.622
+   ],
+   "gsh16+flat64000_minus_g16_death": 0.0053,
+   "gsh16+flat64000_minus_g16_death_ci": [
+    -0.011,
+    0.027
+   ],
+   "mb_minus_g16": 0.58,
+   "mb_minus_g16_ci": [
+    -1.42,
+    2.601
+   ],
+   "mb_minus_g16_death": 0.0,
+   "mb_minus_g16_death_ci": [
+    -0.021,
+    0.027
+   ],
+   "flat16000_minus_gsh16+flat16000": 1.79,
+   "flat16000_minus_gsh16+flat16000_ci": [
+    -0.543,
+    4.17
+   ],
+   "gsh16+flat64000_minus_gsh16+flat32000": 0.59,
+   "gsh16+flat64000_minus_gsh16+flat32000_ci": [
+    -1.027,
+    2.527
+   ],
+   "flat16000_minus_prod": 0.78,
+   "flat16000_minus_prod_ci": [
+    -1.0,
+    2.612
+   ],
+   "gsh16+flat32000_minus_prod": -2.71,
+   "gsh16+flat32000_minus_prod_ci": [
+    -4.66,
+    -0.851
+   ],
+   "gsh16+flat64000_minus_prod": -2.12,
+   "gsh16+flat64000_minus_prod_ci": [
+    -3.957,
+    -0.303
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -0.43,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -2.489,
+    1.649
+   ],
+   "gsh16+flat16000_minus_prod": -1.01,
+   "gsh16+flat16000_minus_prod_ci": [
+    -2.723,
+    0.713
+   ],
+   "flat16000_cpu_ratio": 3.32,
+   "gsh16+flat32000_cpu_ratio": 6.48,
+   "gsh16+flat64000_cpu_ratio": 12.76,
+   "gsh16+flat16000+mb4_cpu_ratio": 3.2,
+   "gsh16+flat16000_cpu_ratio": 2.95,
+   "prod_sims_per_decision": 5243,
+   "flat16000_sims_per_decision": 16000,
+   "gsh16+flat32000_sims_per_decision": 31001,
+   "gsh16+flat64000_sims_per_decision": 61894,
+   "gsh16+flat16000+mb4_sims_per_decision": 15523,
+   "gsh16+flat16000_sims_per_decision": 15459,
+   "prod_minus_expert_ci": [
+    -3.08,
+    6.957
+   ]
+  }
+ }
+}
