@@ -40,15 +40,16 @@ weights stay on the PC under `~/combatnet/<run>/model.pt`, with sha256 listed be
 | noaux_d0 (w 1) | D0 | 1.3003 | 0.5125 | 2.0303 | 0.67 pp | `335e7a96…b40a` |
 | noaux_d0_w025 | D0 | 1.2741 | 0.5318 | 2.0000 | 0.73 pp | `104682ee…3fdf` |
 | polonly_d0 | D0 | 1.2496 | 0.5514 | (untrained) | | `085be0fc…a659` |
-| **N_d1** (main net N) | D0 → D1 | 1.5311 | 0.5181 | 1.9686 | 1.08 pp | `ee405d52…9547` |
-| noaux_d1 | D0 → D1 | 1.5342 | 0.5096 | 2.3845 | 2.01 pp | `8f462c13…c8f2` |
+| **N_d1** (main net N) | D0 → D1 | 1.5311 | 0.5181 | 1.9686 | 1.07 pp | `ee405d52…9547` |
+| noaux_d1 | D0 → D1 | 1.5341 | 0.5096 | 2.3845 | 2.01 pp | `8f462c13…c8f2` |
 | polonly_d1 | D0 → D1 | 1.5251 | 0.5299 | (untrained) | | `3edda753…7d264` |
 
 Validation rows: 162,828 for the D0 runs and 55,664 for the D1 runs. D1's policy CE is higher than D0's because the
 targets differ: the Gumbel root's visit shares after sequential halving are spread over 16 sampled edges.
 
-The transient value spike at step 6,000 (N_d0 at w = 1: validation value NLL 2.08 → 2.94 → 2.20) does not appear at w
-= 0.5 or 0.25 with the aux heads. It does appear without them (noaux_d0_w025: 2.31 at step 6,000).
+N_d0 at w = 1 showed a transient value spike at step 6,000: validation value NLL 2.08 → 2.94 → 2.20, a rise of
++0.86. It does not appear at w = 0.5 or 0.25 with the aux heads. Without them there is only a small bump
+(noaux_d0_w025: 2.23 → 2.31 → 2.05).
 
 ## Gate (D1 holdout: 100 runs, 58,702 roots; run-clustered bootstrap, 10,000 resamples, seed 20261108)
 
@@ -84,8 +85,12 @@ Main net N = N_d1, with `--ref N_d0_w025` (D0-only).
 ## Interpretation
 
 - **N passes both floors by clear margins.** Its value head predicts the fight's end-HP class better than the
-  (encounter × HP decile) table, and its death probability is calibrated to under 1 pp ECE. That is the input stage 3
-  needs for a learned leaf or a risk rule.
+  (encounter × HP decile) table, which is the input stage 3 needs for a learned leaf.
+- **The death probability is not calibrated enough for a risk rule as is.** The overall ECE of 0.79 pp hides two
+  errors in opposite directions.
+  - Bin 0 holds 92% of the rows, and there N predicts about half the observed deaths (0.43% vs 0.91%).
+  - Bins 4-7 over-predict deaths by 8-12 pp.
+  - A risk rule needs recalibration (e.g. temperature or isotonic on validation) or its own check before it is used.
 - **The policy gain is in the distribution, not in the argmax.**
   - G1 measures cross-entropy to the teacher's visit shares. N matches that spread better than the g7f_E prior.
   - On the teacher's single pick, N's top-1 equals the prior's (+0.3 pp, not resolved), and the D1 fine-tune lowered
@@ -97,8 +102,9 @@ Main net N = N_d1, with `--ref N_d0_w025` (D0-only).
   - Lowering w from 1 to 0.25 already helped both heads, but the shared trunk still costs policy quality.
   - Stage 3 should test the prior from a policy-only net and the leaf or risk rule from N, rather than one net for
     both, unless a single net is needed for inference cost.
-- **The aux heads matter for the value head** (single seed). Without them, D1 fine-tuning made the value NLL worse
-  than the baseline (+0.34), and the step-6,000 value spike returned. With them the value head is stable.
+- **The aux heads matter for the value head** (single seed). On the holdout, noaux_d1's value NLL is worse than the
+  baseline (+0.344), while N's is better (−0.161). In pretraining, the no-aux run at w = 0.25 also showed a small
+  value bump at step 6,000 (+0.08) that the run with aux did not.
 - Exploratory limits:
   - Single seed per configuration.
   - The value weight was chosen on D0 validation only.

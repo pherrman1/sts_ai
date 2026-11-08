@@ -26643,7 +26643,8 @@ eval and log of all 9 training runs).
 - G1, policy CE to the teacher's visit shares minus the g7f_E prior: −0.124 [−0.131, −0.119] on 54,773 roots. PASS.
 - G2, value NLL minus the (encounter × HP decile) baseline: −0.161 [−0.229, −0.094] (net 2.110, baseline 2.271).
   PASS.
-- G3: death ECE 0.79 pp. The middle bins are too pessimistic, by about 0.1.
+- G3: death ECE 0.79 pp. It is not calibrated at the ends: in bin 0 (92% of the rows) N predicts 0.43% deaths
+  against 0.91% observed, and bins 4-7 over-predict by 8-12 pp.
 
 Descriptive top-1 agreement with the Gumbel pick:
 
@@ -26656,7 +26657,8 @@ Descriptive top-1 agreement with the Gumbel pick:
 On D0 validation, lowering w from 1 to 0.25 improved both heads: top-1 0.518 → 0.536 and value NLL 1.955 → 1.904.
 
 **Interpretation (Inference):**
-- N's value head and death probability are good enough to try as a leaf and as a risk rule.
+- N's value head is good enough to try as a leaf. A risk rule needs a recalibrated death probability, or its own
+  check, first.
 - N's policy improves the shape of the distribution but not the pick.
 - The value loss still costs policy quality in a shared trunk. The aux heads stabilize the value head.
 - Single seed. The Gumbel pick is random, so top-1 is a lower bound.
@@ -26669,5 +26671,5 @@ On D0 validation, lowering w from 1 to 0.25 improved both heads: top-1 0.518 →
 - Seeds: 111900000–111901023 USED, smoke block 111909990–999 unused.
 - Cost: D1 103 unit-hours, about 45 min of GPU.
 
-**Knowledge impact:** the combat plan (stage 3 design). A shared-trunk policy+value net needs a small value weight
-(0.25 here) and the aux heads.
+**Knowledge impact:** the combat plan (stage 3 design). Single seed: a shared-trunk policy+value net needed a small
+value weight (0.25 here) and the aux heads.
