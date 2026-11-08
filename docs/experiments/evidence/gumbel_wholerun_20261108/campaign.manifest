@@ -1,6 +1,6 @@
 name          gumbel-wholerun
-code_commit   8c105933f716e8ead5acbc1b3aff7b2229d0eb61
-binary_sha256 66d65f875c7277d264969ac97f24a858f7718aeead9e6c451a4b361721e4383b
+code_commit   5665d5aefa92c9971dbf8d1005d5e72e21eec795
+binary_sha256 0eabb014b6cba006f1d43057becdc73fe8a032bf217d9de16961b949721ea9e2
 workers       40
 share         /mnt/project-files/gumbel-wholerun
 configure_preset linux-gcc-release-x86-64-v3
