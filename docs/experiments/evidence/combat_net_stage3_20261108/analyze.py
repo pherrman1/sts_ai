@@ -1,23 +1,31 @@
 #!/usr/bin/env python3
 """Combat net stage 3a (PREREG.md): the combat net's root prior (cnp100: temperature 1, cnp55: temperature 0.55) vs
-production Silver on Baalorlord's elite and boss states.
+production Silver on Baalorlord's elite and boss states, and (amendment 1) the same two priors at a flat budget of
+4,000 simulations per root without the learned stop (flat4000+cnp100 and flat4000+cnp55 vs flat4000).
 
 usage: python3 -I analyze.py <units_dir> [out.json]
 
-Copy of ../teacher_check_20261108/analyze.py with arms cnp100 and cnp55, 97.5% CIs (two arms, Bonferroni) next to
-the 95% ones, one descriptive contrast (cnp55 - cnp100), and the arms' net-prior count per decision
-(`combatNetPriors`, a sanity check that the arms used the net). Per elite or boss fight (acts 1-3, rooms E and B,
-record key `arms`; dropped as in §711: invalid copy, no logged exit HP, two logged fights on the floor): HP lost =
-entry HP - exit HP (0 on a loss) per copy, mean over the 4 copies, for production (replicates r = 0..3) and each arm
-(same copy seeds). The final act-3 boss (floor 51) exit runs into the Act-4 transition heal; its exits are inverted
-as in §711's analyze.py for every side. CIs: run-clustered bootstrap, 10,000 resamples, seed 20261108.
+Copy of ../teacher_check_20261108/analyze.py with arms cnp100, cnp55, flat4000, flat4000+cnp100 and flat4000+cnp55.
+Primary contrasts (each arm vs production) and secondary contrasts (each flat net-prior arm vs flat4000) get 97.5%
+CIs (two arms per family, Bonferroni) next to the 95% ones; descriptive contrasts (cnp55 - cnp100, their flat
+counterparts, flat4000 - production) get 95% CIs. Net-prior counts per side (`combatNetPriors`): the net-prior arms
+must use the net, and production and flat4000 must not (leak check, sum 0). Per elite or boss fight (acts 1-3,
+rooms E and B, record key `arms`; dropped as in §711: invalid copy, no logged exit HP, two logged fights on the
+floor): HP lost = entry HP - exit HP (0 on a loss) per copy, mean over the 4 copies, for production (replicates
+r = 0..3) and each arm (same copy seeds). The final act-3 boss (floor 51) exit runs into the Act-4 transition heal;
+its exits are inverted as in §711's analyze.py for every side. CIs: run-clustered bootstrap, 10,000 resamples, seed
+20261108.
 """
 import collections, glob, json, os, random, statistics as st, sys
 
-ARMS = ('cnp100', 'cnp55')
+ARMS = ('cnp100', 'cnp55', 'flat4000', 'flat4000+cnp100', 'flat4000+cnp55')
+NET_ARMS = ('cnp100', 'cnp55', 'flat4000+cnp100', 'flat4000+cnp55')
+NO_NET = ('prod', 'flat4000')
 K = 4
 LEVEL = 0.975
-CONTRASTS = (('cnp55', 'cnp100'),)
+PRIMARY = (('cnp100', 'prod'), ('cnp55', 'prod'))
+SECONDARY = (('flat4000+cnp100', 'flat4000'), ('flat4000+cnp55', 'flat4000'))
+CONTRASTS = (('cnp55', 'cnp100'), ('flat4000+cnp55', 'flat4000+cnp100'), ('flat4000', 'prod'))
 FRUIT = {'Strawberry': 7, 'Pear': 10, 'Mango': 14}
 
 
@@ -91,18 +99,22 @@ def summary(R):
     out = dict(n=len(R), runs=len({r['run'] for r in R}), expert=round(st.mean(r['expert'] for r in R), 2))
     for k in ('prod',) + ARMS:
         out[k] = {m: round(st.mean(r[k + m] for r in R), 3) for m in ('', '_death', '_potions', '_cpu')}
-    for a in ARMS:
-        out[a + '_minus_prod'] = round(st.mean(r[a] - r['prod'] for r in R), 2)
-        out[a + '_minus_prod_ci'] = boot(R, lambda r, a=a: r[a] - r['prod'])
-        out[a + '_minus_prod_ci975'] = boot(R, lambda r, a=a: r[a] - r['prod'], level=LEVEL)
-        out[a + '_death_diff'] = round(st.mean(r[a + '_death'] - r['prod_death'] for r in R), 4)
-        out[a + '_death_diff_ci'] = boot(R, lambda r, a=a: r[a + '_death'] - r['prod_death'])
-        out[a + '_death_diff_ci975'] = boot(R, lambda r, a=a: r[a + '_death'] - r['prod_death'], level=LEVEL)
-        out[a + '_cpu_ratio'] = round(sum(r[a + '_cpu'] for r in R) / max(1e-9, sum(r['prod_cpu'] for r in R)), 2)
+    for a, b in PRIMARY + SECONDARY:
+        out[f'{a}_minus_{b}'] = round(st.mean(r[a] - r[b] for r in R), 2)
+        out[f'{a}_minus_{b}_ci'] = boot(R, lambda r, a=a, b=b: r[a] - r[b])
+        out[f'{a}_minus_{b}_ci975'] = boot(R, lambda r, a=a, b=b: r[a] - r[b], level=LEVEL)
+        out[f'{a}_minus_{b}_death_diff'] = round(st.mean(r[a + '_death'] - r[b + '_death'] for r in R), 4)
+        out[f'{a}_minus_{b}_death_diff_ci'] = boot(R, lambda r, a=a, b=b: r[a + '_death'] - r[b + '_death'])
+        out[f'{a}_minus_{b}_death_diff_ci975'] = boot(R, lambda r, a=a, b=b: r[a + '_death'] - r[b + '_death'],
+                                                      level=LEVEL)
+        out[f'{a}_over_{b}_cpu_ratio'] = round(sum(r[a + '_cpu'] for r in R) / max(1e-9, sum(r[b + '_cpu'] for r in R)), 2)
     for k in ('prod',) + ARMS:
         out[k + '_sims_per_decision'] = round(sum(r[k + '_sims'] for r in R) / max(1, sum(r[k + '_decisions'] for r in R)))
         out[k + '_netpriors_per_decision'] = round(sum(r[k + '_netpriors'] for r in R) / max(1, sum(r[k + '_decisions'] for r in R)), 3)
         out[k + '_no_netprior_copies'] = sum(r[k + '_no_netprior_copies'] for r in R)
+    out['net_arm_copies'] = K * len(R) * len(NET_ARMS)
+    out['net_arm_no_netprior_copies'] = sum(r[a + '_no_netprior_copies'] for r in R for a in NET_ARMS)
+    out['leak_netpriors'] = sum(r[k + '_netpriors'] for r in R for k in NO_NET)
     for a, b in CONTRASTS:
         out[f'{a}_minus_{b}'] = round(st.mean(r[a] - r[b] for r in R), 2)
         out[f'{a}_minus_{b}_ci'] = boot(R, lambda r, a=a, b=b: r[a] - r[b])

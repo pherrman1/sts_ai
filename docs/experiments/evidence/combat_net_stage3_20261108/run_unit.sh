@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Combat net stage 3a (PREREG.md): copy of ../teacher_check_20261108/run_unit.sh (same environment, states and copy
-# seeds); only the arms (ARMS below: the combat net's root prior at temperatures 1 and 0.55), the model input
-# (STS_SILVER_COMBATNET_PRIOR_MODEL=$RUN/polonly_d1.ctn, read only by the arms' searches) and its load check (rc 92)
-# differ.
+# seeds); only the arms (ARMS below: the combat net's root prior at temperatures 1 and 0.55 under production's
+# budget, and, amendment 1, a flat 4,000-simulation budget without the learned stop alone and with each prior), the
+# model input (STS_SILVER_COMBATNET_PRIOR_MODEL=$RUN/polonly_d1.ctn, read only by the net-prior arms' searches) and
+# its load check (rc 92) differ.
 # usage: run_unit.sh REPO RUN UNIT_OUT RUN_ID -- one expert seed (RUN_ID.json in $RUN/expert_runs.tar) of the matched
 # expert-entry fight replay: one_combat expertfights replays the expert's logged out-of-combat decisions while they
 # stay exact; at every fight in that prefix HP and max HP are set to the expert's (the bot keeps its own potions), and
@@ -12,7 +13,7 @@
 # 12 h timeout (rc 124); always exits 0 (rc in the .done line).
 set -uo pipefail
 REPO=$1 RUN=$2 OUT=$3 ID=$4
-ARMS=cnp100,cnp55
+ARMS=cnp100,cnp55,flat4000,flat4000+cnp100,flat4000+cnp55
 [ -s "$RUN/student_sel.bin" ] || { echo "missing $RUN/student_sel.bin" >&2; exit 2; }
 [ -s "$RUN/polonly_d1.ctn" ] || { echo "missing $RUN/polonly_d1.ctn" >&2; exit 2; }
 [[ "$ID" =~ ^[0-9]+$ ]] || { echo "bad run id $ID" >&2; exit 2; }

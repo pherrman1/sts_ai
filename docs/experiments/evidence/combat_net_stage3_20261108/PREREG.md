@@ -119,6 +119,58 @@ workers until it finishes, and 40 is the project cap.
   ratio is on few fights.
 - HP lost per fight (2 runs, no CIs): cnp100 4.15, cnp55 5.94.
 
+## Amendment 1 (2026-11-08, before any campaign unit ran): a flat-budget pair
+
+**Why.** At 18:03 CET Philipp asked whether the learned stop should be off for this test.
+- The stop model (`gbt-0cac7cc64364`) sees only root visit statistics: top and second share, gap, entropy, Q gap,
+  leader streak and the lock.
+- It was trained on searches that used the g7f_E prior.
+- A different or sharper prior concentrates visits differently. Under the learned stop, the primary contrast
+  therefore mixes the prior's quality with a change in where the search stops.
+- The primary question stays as it is, because it is what production would play. The pair below measures the prior
+  at equal simulations.
+
+**Added arms.** These use the same states, copy seeds and environment. Production and the two primary arms are
+unchanged.
+- `flat4000`: production with a flat 4,000 simulations at every root (one-action roots searched) and no learned stop.
+  4,000 is about production's mean simulations per decision on these states (smoke: 3,954).
+- `flat4000+cnp100` and `flat4000+cnp55`: `flat4000` with the net's root prior at T = 1 and T = 0.55.
+
+**Secondary endpoint, per flat net arm.** The mean over the same fights of (arm − `flat4000`) HP lost, with CI [lo,
+hi]. The CI is the run-clustered bootstrap above, at 97.5 % (two arms, Bonferroni, a family of its own).
+
+**Secondary decision rule (by hand):**
+- An arm with hi < 0 → **FLAT_PRIOR_BETTER.**
+- Otherwise, both arms with lo > −0.5 → **FLAT_NO_GAIN.**
+- Otherwise → **FLAT_INCONCLUSIVE.**
+- Separately, an arm with lo > 0 is reported as **FLAT_WORSE.**
+
+**Validity:**
+- The 1 % no-net-prior rule covers all four net arms.
+- A flat net arm whose CPU ratio to `flat4000` is above 1.25 is not judged.
+- Leak check: production's and `flat4000`'s net-prior counts must sum to 0. Otherwise the campaign is INVALID.
+
+**Reading, fixed now:**
+- Primary PRIOR_BETTER: as above. The secondary result does not change the primary decision.
+- Primary not PRIOR_BETTER, secondary FLAT_PRIOR_BETTER: the prior is better at equal simulations, and under the
+  learned stop that gain does not show. The next step is a stop check with the net prior (a stop trace), not a
+  whole-run A/B.
+- Both NO_GAIN: the net's root prior does not help on these states, with or without the stop.
+
+**Co-reported (95 %, descriptive):** `flat4000` − production, and `flat4000+cnp55` − `flat4000+cnp100`.
+
+**Cost.** Five arms plus production at about 1× production CPU each come to about 85-90 lane-hours. With 10
+workers × 4 lanes that is about 3 h, at 2-50 min per unit.
+
+**Smoke (2026-11-08, cloud, same two units and binary as above; not part of the analysis):**
+- Both rc 0, at 112 s and 796 s wall (2.1× the first smoke's).
+- Production's 72 copies again equal §770's. `cnp100` and `cnp55` repeat the first smoke exactly.
+- The flat arms ran 4,000 simulations per decision. The flat net arms had 0.96 and 0.95 net priors per decision with
+  0 copies lacking one. The leak check sums to 0.
+- CPU ratio to `flat4000`: 1.03 (`flat4000+cnp100`) and 1.09 (`flat4000+cnp55`). `flat4000` to production: 1.00.
+- HP lost per fight (2 runs, no CIs): `flat4000` 6.69, `flat4000+cnp100` 5.33, `flat4000+cnp55` 6.11, against
+  production's 4.89.
+
 ## Not in this gate: the leaf (stage 3b)
 
 N's value head predicts the fight's end-HP distribution and death under the teacher, not Silver's leaf formula. At

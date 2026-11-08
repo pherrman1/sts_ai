@@ -24,4 +24,4 @@ If any step is refused or prints STOP, reply with the exact output and stop. Do 
 Never kill a unit or one_combat process. A unit that times out ends with its rc in the .done line, and the run
 continues. If the container restarts, run steps 1-3 again at once (finished units are skipped).
 Keep the session alive until you are told the tar is verified.
-Expect 1 to 25 min per unit (one Baalorlord run; each elite and boss fight is played 4 times by production and by 2 net-prior arms), 4 units at a time; 329 units shared by <WORKERS> workers through the queue.
+Expect 2 to 50 min per unit (one Baalorlord run; each elite and boss fight is played 4 times by production and by 5 arms), 4 units at a time; 329 units shared by <WORKERS> workers through the queue.
