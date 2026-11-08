@@ -1,0 +1,11 @@
+name          silver-leaf-price-gate
+code_commit   ccc53a48219325f9e4e0f6dfe8d0aaf8e430369c
+binary_sha256 c201818cb248cef202e09aa3f24a13a97a597ca699e4c2c5c65d0c390b79005f
+workers       4
+share         /mnt/project-files/silver-leaf-price-gate
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 90
+claim_settle_seconds 60
+input net-0420.bin /mnt/project-files/ppo-long-c/nets/net-0420.bin 8c0bd16c31499270f192666919e0a11e1d6ca57e2d7a188b6d2a019f3ac742d2
