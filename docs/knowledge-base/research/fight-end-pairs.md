@@ -148,6 +148,17 @@ weighted by `eligible / sampled`. Every change costs Heart kill in acts 1-3. The
 0.13 HP. Right after the act-1 and act-2 bosses HP is nearly free, since the act transition heals 75% of the missing
 HP at A20. Per cell, 10-21% of the pairs disagree, and the pairing efficiency ρ is 0.47-0.77.
 
+## Stage-4 offline fit (§766)
+
+On the pilot's pairs (5 folds by unit, weighted), four global prices in HP units fit best: Fairy 47.6 on top of its
+death save, every other potion 3.7, a max-HP point 2.4 and a gold 0.12 (Silver's leaf: 11, 11, 2 and 0.25), with the
+HP value scaled per act (0.23 / 0.20 / 0.09 / 0.38 pp per HP). They explain the non-HP pairs better than Silver's
+default leaf (+14 bp of skill [8, 20]). Prices per act are not clearly better, and no state-dependent model
+(net-0420's critic, MLP heads on its trunk, LightGBM) beats the global prices: the outcome noise of one pair (about
+40 pp) is too large for per-situation prices at this size, and 2.2 times more units did not improve the HP slope. A
+whole-run gate of P1 and of PF (P1 with every non-Fairy potion at 11) is pre-registered in
+`evidence/silver_leaf_price_gate_20261108/`; §542 found similar cheap potion weights worse.
+
 ## Tests
 
 - `one_combat fightendpairselftest` (CTest `fight_end_pairs`, labels `core;smoke`): spec parsing and
