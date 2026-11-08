@@ -1,0 +1,11 @@
+name          learned-price-head-e1r
+code_commit   cf9237a5fc87225301822a2cb804277391c779ea
+binary_sha256 767a44b222780dd5ed182bd5da4e668c39cf82304a60305e89b34cd71375da28
+workers       4
+share         /mnt/project-files/learned-price-head/e1r
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 30
+claim_settle_seconds 60
+input net-0420.bin /mnt/project-files/ppo-long-c/nets/net-0420.bin 8c0bd16c31499270f192666919e0a11e1d6ca57e2d7a188b6d2a019f3ac742d2

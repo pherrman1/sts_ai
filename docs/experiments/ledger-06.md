@@ -26509,3 +26509,88 @@ prices. A full CRN factory (stage 3) is not supported by these learning curves. 
 cloud (about 5 core-h of author-container CPU for the embeddings and fits).
 **Knowledge impact:** KB `research/fight-end-pairs.md` (stage-4 paragraph).
 
+## §767 — Silver leaf price gate, whole A20 runs (net-0420 alone, combat B, flat 1,000), 2,048 seeds × 3 arms: the stage-4 prices P1 lose Heart kills, −2.49 pp [−4.39, −0.59] → NOT_SHOWN; PF (P1 with non-Fairy potions at 11) +0.15 pp [−1.32, +1.56] → NOT_SHOWN, non-regression NOT_WORSE; no candidate (cloud, 2026-11-08)
+
+**Question (Philipp, 2026-11-08 00:48 CET: "Na gut lass doch p1 messen, die 3 vorgeschlagenen arms von dir."; 4
+workers 00:50 CET):** do the global victory-leaf prices of stage 4 (§766) raise the Heart kill rate of whole runs over
+Silver's default leaf (P1)? Does the part no gate had tested, the Fairy price with max HP and gold at potions 11, do so
+on its own (PF)?
+**Data:** [PREREG](evidence/silver_leaf_price_gate_20261108/PREREG.md) (K prelaunch PASS at f07d1c90, on main with
+#1007 before the result), [RESULT](evidence/silver_leaf_price_gate_20261108/RESULT.md), `result.json`,
+`pairs_P1.csv`, `pairs_PF.csv`. Run commit b57c85c2 (main ccc53a48 + campaign files), binary c201818cb248cef2…,
+`bestbench 1000 1 20`, net-0420 as the whole OOC policy (temperature 0, no OOC MCTS), combat B. Arms on every seed
+111820000-111822047: D (defaults); P1 (`STS_SILVER_POTION_WEIGHTS=*=3.7,FAIRY_POTION=47.6`,
+`STS_SILVER_MAXHP_WEIGHT=2.4`, `STS_SILVER_GOLD_WEIGHT=0.12`); PF (P1 with `*=11`).
+**Result:** 6,144 games, all rc 0 with every check; 0 dropped seeds; 0 `.env` mismatches (check added before any outcome
+was read, review G-N1); 2 combat aborts (seed 111821505 in D and PF, counted as losses). Heart D 25.83%, P1 23.34%,
+PF 25.98%. P1 − D −2.49 pp [−4.39, −0.59]: SPRT gainer (d0 0, d1 +2 pp, α 0.025) H0 at 1,024 pairs → NOT_SHOWN;
+nonregression (d0 −1.5 pp) CAP, bootstrap lo −4.39 → not NOT_WORSE. PF − D +0.15 [−1.32, +1.56]: H0 at 704 pairs →
+NOT_SHOWN; nonregression H1 at 1,856 pairs, lo −1.32 → NOT_WORSE. P1 − PF −2.64 [−4.54, −0.73]. Act-3 clears P1
+−4.54 pp [−6.54, −2.49], PF −0.39 [−1.86, +1.03]; final floor P1 −2.14 [−2.83, −1.44], PF −0.16 [−0.53, +0.21];
+cpu vs D 0.898 / 0.997; no game over 300 s. No effect on the data: one-off upload retries on the share, and four
+claims orphaned by a W2 container reset (03:24 CET), released with the queue's `failed` marker and re-run as a2.
+**Interpretation (Inference):** §542 repeats with Heart-kill prices under another policy: pricing non-Fairy potions far
+below 11 loses whole runs, already before the Heart (act-3 clears −4.5 pp). The pilot's 3.6-HP potion price is a
+marginal value under a policy that spends potions at 11, not a leaf weight. The Fairy, max HP and gold changes are
+neutral (a gain above 1.6 pp is ruled out). P1's `*` also sets Smoke Bomb to 3.7 (§542 kept 11), so Smoke Bomb's
+share of P1 − PF is not separated. Price models from CRN forks or fight luck need a whole-run check or labels measured
+under the leaf they feed before they become leaf weights.
+**Decision:** no candidate, no default change; the three leaf flags stay research-only. Seeds used:
+111820000-111822047 (+ smokes 111829990-111829991; 111829992-111829999 unplayed, not reused). Cost ≈ 32 core-h cloud.
+**Knowledge impact:** KB `architecture/combat-search.md` (victory-leaf weights) and `research/fight-end-pairs.md`
+(stage-4 paragraph).
+
+## §768 — E1-S: does the fight-luck HP price depend on the fight-start state? Offline on E1's luck rows (8,192 A20 runs, 165,773 fights): NOT_SHOWN
+
+**Question (Philipp, 2026-11-08 00:40 CET: P1 gate dropped, prices from the luck approach; 00:46 CET yes to this
+offline test):** a context-dependent price net only pays if the HP price varies with the situation in ways Silver's
+leaf does not model. Beyond act × room, does E1's fight-end HP price change with the fight-start HP fraction, floor,
+potions held or max HP?
+**Data:** [PLAN](evidence/learned_price_head_e1s_20261108/PLAN.md) (written before any interaction was fitted),
+[RESULT](evidence/learned_price_head_e1s_20261108/RESULT.md), `e1s_result.json`, `e1_state_dep.py` (reuses E1's
+`analyze.py`). E1's per-act-room luck model (§764) plus HP-luck × feature interactions (features standardised within
+act) and survival-luck × feature controls; HC1, ×2 scale. 0 core-h.
+**Result:** joint Wald χ²(4) = 6.36, p = 0.17 (rule: p < 0.01 and some |γ| ≥ 20% of the price); placebo p = 0.71.
+Per SD of the feature, as a share of the pooled 0.155 pp per HP: HP fraction −15 ± 12%, floor −40 ± 19%, potions
++3 ± 12%, max HP −11 ± 12%. Per act joint p 0.59 / 0.21 / 0.87. By room the price is highest after normal fights,
+then elites, then bosses, in every act; the act-boss prices match Silver's 75% heal model. Start-HP-fraction
+terciles show no monotone pattern.
+**Interpretation (Inference):** at this sample size the luck HP price is about constant within act × room; effects of
+a third of the price per SD would likely have shown. No support for a context-dependent HP price net, as with the CRN
+pairs of the leaf plan's stage 4. The hint that HP is cheaper late in acts 1-2 (z about −2) would need about twice
+the data.
+**Decision:** NOT_SHOWN. The context-dependent HP head stays parked; next are potion prices from reward luck (E1-R,
+`fightendpairgen rewards=1`). Seeds: none new. Cost: 0 core-h.
+**Knowledge impact:** none beyond this entry.
+
+## §769 — E1-R: potion prices from reward luck on E1's 8,192 A20 runs, without replays: a Fairy drop is worth 9.2 ± 1.6 pp of Heart kill more than another drop; an ordinary potion at the act 1-2 boss reward +1.9 ± 1.05 pp, unresolved: PARTIAL
+
+**Question (Philipp, 2026-11-08 00:40 CET: prices from the luck approach; 00:58 CET go for this run on 4
+workers):** under E1's policy (net-0420 as the whole out-of-combat policy, combat B), what is a reward potion worth
+in pp of Heart kill, and how much more is a Fairy in a Bottle worth than any other potion?
+**Data:** [PREREG](evidence/learned_price_head_e1r_20261108/PREREG.md) (amended after the prelaunch review, before
+any row existed), [RESULT](evidence/learned_price_head_e1r_20261108/RESULT.md), `e1r_result.json`, `analyze.py`
+(c7ddbc4c), `inputs.sha256`. `fightendpairgen` with `n=0,ooc=ppo,rewards=1` (code cf9237a5, binary 767a44b2) on
+E1's 512 units (111780000-111788191, no new seeds), 4 workers, 50.2 core-h. Per logged roll u = dropped − chance/100
+(the engine's exact chance, no ×2) and f = dropped × (Fairy − q); game-level OLS of heartKill, HC1. Primary: the act
+1-2 boss rolls (`potionChance` resets at the act transition, so a boss drop moves no later chance) and the Fairy
+contrast.
+**Result:** gates pass (G1 8,192 of 8,192 seeds equal E1's source rows; G2 0 of 157,139 rolls inconsistent; G3 512
+of 512 units). V_boss +1.90 ± 1.05 pp [−0.16, +3.96]: act 1 +2.96 ± 1.26, act 2 +0.20 ± 1.88; a non-Fairy drop
++1.77 ± 1.05; without Sozu +2.07 ± 1.06. C_Fairy +9.23 ± 1.56 pp [+6.17, +12.28] (a Fairy in 1.44% of 75,306 drops).
+No other type differs from the rest (32 types, |z| ≤ 2.1, sum of z² 33.6). At E1's 0.155 pp per HP: an ordinary
+potion 11.4 ± 6.8 HP, the Fairy premium 59.5 ± 10.0 HP (Silver's leaf: 11 HP and a death save of 0.3 max HP; P1 3.7
+HP; §763's CRN pilot about 71 HP for the premium). Mid-act rolls are attenuated as predicted, since a drop lowers
+the act's later chances.
+**Interpretation (Inference):** replay-free reward luck confirms the large Fairy premium of the CRN pairs, about 2.5
+times Silver's death-save credit. The ordinary potion value is not resolved at this size; its point estimate equals
+Silver's 11 HP and lies above P1's 3.7 HP, in line with §767, where 3.7 cost 2.5 pp. Like the CRN prices these are
+marginal values under the policy that runs with 11 HP weights, not leaf weights (§542, §767); the Fairy premium was
+already gated as PF, which was neutral. Neither the HP price (§768) nor the potion types beyond the Fairy show
+structure that a learned price head could use.
+**Decision:** PARTIAL (a measurement, no default change). Seeds: none new. Cost: 50.2 core-h. Possible follow-ups,
+not started: an offline estimate from all rolls with the attenuation modelled (0 core-h), or E1-R on the 918 played
+units of the pilot's second block (7,344 seeds, about 45 core-h, needs Philipp's go; the block's 612 unplayed units
+stay reserved by §763).
+**Knowledge impact:** KB `research/fight-end-pairs.md` (point 6).
+

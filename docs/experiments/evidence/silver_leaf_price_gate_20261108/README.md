@@ -1,6 +1,6 @@
 # Silver leaf price gate (campaign)
 
-PREREG.md has the design. Files: `campaign.manifest`, `units.txt` (2,048 seeds), `run_unit.sh` (arms D, P1, PF per
+PREREG.md has the design; RESULT.md the result (`result.json`, `analyze.log`, `pairs_P1.csv`, `pairs_PF.csv`). Files: `campaign.manifest`, `units.txt` (2,048 seeds), `run_unit.sh` (arms D, P1, PF per
 seed), `analyze.py` (gate, `--self-test`). Share `/mnt/project-files/silver-leaf-price-gate`. Workers:
 `bash tools/cloud/worker.sh setup|start docs/experiments/evidence/silver_leaf_price_gate_20261108 W` at RUN_COMMIT.
 

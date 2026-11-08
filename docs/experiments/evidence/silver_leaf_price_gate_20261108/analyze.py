@@ -9,7 +9,9 @@ every seed.
 OUT_ROOT holds one directory per seed with ARM-SEED.{done,log,err} from run_unit.sh (verify_campaign.py --extract
 DIR writes DIR/out/units/<seed>/).
 1. Primary, two contrasts X - D for X in (P1, PF): d = Heart kill X - D per seed. A seed counts for a contrast if both
-   of its games finished rc 0 with all log checks (a combat abort is a counted loss, listed); dropped seeds are listed,
+   of its games finished rc 0 with all log checks and an ARM-SEED.env whose three leaf flags match the arm (review
+   G-N1, added 2026-11-08 before any game outcome of the block was read; a mismatch is listed under env_mismatch and the
+   game counts as failed) (a combat abort is a counted loss, listed); dropped seeds are listed,
    never imputed; more than 20 dropped seeds in a contrast = INCOMPLETE. The gate per contrast
    (tools/sprt_gate.py gainer, alpha 0.025 = Bonferroni over the two contrasts, beta 0.05, look 64, cap = number of
    analysed seeds, at most 2,048) gets the seeds gap-free (key = rank in ascending seed order). PASS = GO;
@@ -36,11 +38,21 @@ REPO = HERE.parents[3]
 SEEDS = range(111820000, 111822048)
 ARMS = ("D", "P1", "PF")
 MAX_DROPPED = 20
+LEAF_KEYS = ("STS_SILVER_POTION_WEIGHTS", "STS_SILVER_MAXHP_WEIGHT", "STS_SILVER_GOLD_WEIGHT")
+LEAF_ENV = {"D": (None, None, None), "P1": ("*=3.7,FAIRY_POTION=47.6", "2.4", "0.12"),
+            "PF": ("*=11,FAIRY_POTION=47.6", "2.4", "0.12")}
 WIN = re.compile(r"^BEST\s+win%=\s*([\d.]+)\s+avg_floor=\s*([\d.]+).*?cpu_sec/run=\s*([\d.]+)", re.M)
 
 
+def leaf_env(path):
+    if not path.exists():
+        return None
+    env = dict(line.split("=", 1) for line in path.read_text().splitlines() if "=" in line)
+    return tuple(env.get(k) for k in LEAF_KEYS)
+
+
 def load(root):
-    games, bad, aborts = {}, [], []
+    games, bad, aborts, mismatch = {}, [], [], []
     for done in Path(root).glob("*/*.done"):
         d = dict(kv.split("=", 1) for kv in done.read_text().split())
         arm, seed = d["tag"].rsplit("-", 1)
@@ -51,6 +63,10 @@ def load(root):
         if not m:
             bad.append(d["tag"])
             continue
+        if leaf_env(done.with_suffix(".env")) != LEAF_ENV[arm]:
+            mismatch.append(d["tag"])
+            bad.append(d["tag"])
+            continue
         key = (arm, int(seed))
         if key in games:
             raise ValueError(f"{d['tag']} twice")
@@ -58,7 +74,7 @@ def load(root):
             aborts.append(d["tag"])
         floor = float(m.group(2))
         games[key] = (int(float(m.group(1)) == 100.0), int(floor >= 52), floor, float(m.group(3)), int(d["wall"]))
-    return games, sorted(bad), sorted(aborts)
+    return games, sorted(bad), sorted(aborts), sorted(mismatch)
 
 
 def boot(x, level=95.0, seed=20261108):
@@ -117,9 +133,9 @@ def contrast(games, arm, outdir):
 
 
 def main(root, out):
-    games, bad, aborts = load(root)
+    games, bad, aborts, mismatch = load(root)
     outdir = os.path.dirname(out) or "."
-    res = {"bad": bad, "aborts": aborts, "contrasts": {arm: contrast(games, arm, outdir) for arm in ("P1", "PF")}}
+    res = {"bad": bad, "aborts": aborts, "env_mismatch": mismatch, "contrasts": {arm: contrast(games, arm, outdir) for arm in ("P1", "PF")}}
     both = [s for s in SEEDS if all((arm, s) in games for arm in ("P1", "PF"))]
     x = np.array([games[("P1", s)][0] - games[("PF", s)][0] for s in both], float)
     res["P1_minus_PF"] = {"n": len(both), "d": float(x.mean()) if len(x) else None,
@@ -141,7 +157,7 @@ def main(root, out):
     res["candidate"] = cand
     with open(out, "w") as f:
         json.dump(res, f, indent=1)
-    print(f"bad {len(bad)} aborts {len(aborts)}")
+    print(f"bad {len(bad)} (env mismatch {len(mismatch)}) aborts {len(aborts)}")
     for arm, r in res["contrasts"].items():
         if not r["n"]:
             print(f"{arm} - D: no analysable seed -> {r['verdict']}")
@@ -159,7 +175,7 @@ def main(root, out):
 
 
 def self_test():
-    """Synthetic campaign: drops and an abort -> verdicts; 21 dropped in one contrast -> INCOMPLETE there."""
+    """Synthetic campaign: drops, an abort and a wrong .env -> verdicts; 21 dropped in one contrast -> INCOMPLETE."""
     import random
     import tempfile
     t = tempfile.mkdtemp()
@@ -176,13 +192,17 @@ def self_test():
             ab = int(s == 111820700 and arm == "PF")
             k = k and not ab
             Path(dd, f"{arm}-{s}.done").write_text(f"tag={arm}-{s} rc={rc} start=x wall=20 abort={ab}")
+            env_arm = "P1" if (s == 111820600 and arm == "PF") else arm
+            Path(dd, f"{arm}-{s}.env").write_text("STS_FAIR=1\n" + "".join(
+                f"{k}={v}\n" for k, v in zip(LEAF_KEYS, LEAF_ENV[env_arm]) if v is not None))
             Path(dd, f"{arm}-{s}.log").write_text(
                 f"BEST  win%= {100.0 if k else 0.0}  avg_floor= {56 if k else 30}  x cpu_sec/run= 20.0\n")
     r = main(root, os.path.join(t, "r.json"))
     assert r["contrasts"]["P1"]["dropped"] == [111820500], r["contrasts"]["P1"]["dropped"]
-    assert r["contrasts"]["PF"]["dropped"] == [111821000], r["contrasts"]["PF"]["dropped"]
+    assert r["contrasts"]["PF"]["dropped"] == [111820600, 111821000], r["contrasts"]["PF"]["dropped"]
+    assert r["env_mismatch"] == ["PF-111820600"], r["env_mismatch"]
     assert r["aborts"] == ["PF-111820700"], r["aborts"]
-    assert r["P1_minus_PF"]["n"] == 2046
+    assert r["P1_minus_PF"]["n"] == 2045
     for arm in ("P1", "PF"):
         c = r["contrasts"][arm]
         assert c["sprt"]["pairs"]["gap_after"] is None and c["verdict"] in ("GO", "NOT_SHOWN", "STOP", "INCONCLUSIVE")
