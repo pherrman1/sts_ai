@@ -116,9 +116,9 @@ class CombatNet(nn.Module):
         h = self.norm(self.trunk(x, src_key_padding_mask=~mask))
         cls = h[:, 0]
         mon_h = h[:, 1 + ct.shape[1]:1 + ct.shape[1] + M]
-        # actions: t, s, c[8], o, p[2], x, d, k, task, sel[10][2]
+        # actions: t, s, c[8], o, p[2], x, d, k, task, sel[10][id, specialData, upgraded]
         a = b["actions"]
-        sel_ids = a[..., 17::2].clamp(0, CARD_V - 1)
+        sel_ids = a[..., 17::3].clamp(0, CARD_V - 1)
         at = (self.a_type(a[..., 0].clamp(0, 7)) + self.a_card(a[..., 2].clamp(0, CARD_V - 1))
               + self.a_pot(a[..., 11].clamp(0, POT_V - 1)) + self.a_target((a[..., 13] + 1).clamp(0, 7))
               + self.a_num(slog(a.float())) + (self.a_sel(sel_ids) * (sel_ids > 0)[..., None]).sum(2))

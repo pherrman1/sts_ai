@@ -19,9 +19,12 @@ Can a combat net learn Silver's root decision and the fight's outcome well enoug
   - Root rows add each edge's root prior and the Gumbel pick.
   - Planned size: about 1,000 runs (about 0.5M roots), on a new seed block from the coordinator.
 - Both go through `pack_states.py` → `tensorize.py`.
-- **Holdout:** runs with `(seed · 2654435761) mod 2³² mod 10 = 0`, about 10% of the runs of each data set. Rows of
-  one run never cross the split. The holdout is not read until the gate evaluation, except that the training script
-  evaluates a fixed 50,000-row sample of it for learning curves.
+- **Splits:** by run, h = `(seed · 2654435761) mod 2³² mod 10`; rows of one run never cross a split.
+  - h = 0 is the gate holdout, about 10% of the runs of each data set. Only `gate.py` reads it, once, after training
+    is fixed.
+  - h = 1 is the validation split for learning curves and the choice of epochs (`train.py`, sample of up to 50,000
+    rows).
+  - h = 2..9 trains. The G2 baseline is fitted on D1's h = 2..9 rows.
 
 ## Model and training (`tools/combat_net/model.py`, `train.py`)
 
@@ -32,19 +35,34 @@ Can a combat net learn Silver's root decision and the fight's outcome well enoug
   - Value: 21 classes (death, then end HP / max HP in 20 equal bins).
   - Two auxiliary heads: HP lost by the next and the second turn, Huber on HP / 10.
 - **Optimizer:** AdamW, lr 3e-4, one-cycle, batch 256.
-- **Main net N:** trained on D0, then fine-tuned on the D1 training runs. The policy target is the Gumbel root's
-  visit shares after sequential halving. The completed-Q policy is a descriptive alternative.
-- Epochs are chosen on the learning-curve sample, not on the gate metrics. That is the only use of the sample.
+- **Main net N:** trained on D0, then fine-tuned on the D1 training runs.
+- **Policy target: the Gumbel root's visit shares after sequential halving.** The completed-Q policy of Danihelka
+  et al. is a descriptive alternative. Reason: at 16,000 simulations the σ scale (c_visit + max visits) · c_scale is
+  in the thousands, so softmax(logit + σ(q)) is one-hot on the q-argmax almost everywhere. It then carries about one
+  bit per root, the pick. The visit shares keep the halving's ranking of the 16 sampled edges: which edges survived
+  which round. That is more signal per root, at the price of reflecting the schedule. Stage 3 tests the result in
+  play either way.
+- Epochs are chosen on the validation split (h = 1), never on the gate holdout.
 
 ## Gate (on the D1 holdout runs; fixed before training)
 
 | | check | pass when |
 |---|---|---|
-| G1 | policy top-1 agreement with the Gumbel teacher's pick (`gumbelChoice`) on multi-edge roots: N against the argmax of the g7f_E root prior on the same roots | paired difference, run-clustered bootstrap (10,000, seed 20261108), 95% CI lo > 0 |
-| G2 | value NLL of the 21-class end-HP distribution: N against the empirical distribution per encounter × current-HP decile, fitted on the D1 training runs (+1 Laplace) | per-row NLL difference, run-clustered 95% CI hi < 0 |
-| G3 | death calibration of N's death class | 10-bin ECE < 2 pp |
+| G1 | policy cross-entropy to the Gumbel teacher's target (visit shares) on multi-edge holdout roots that have a root prior on every kept edge: N minus the g7f_E root prior (renormalized over the kept edges, floored at 1e-12 as in the search) | per-row difference, run-clustered bootstrap (10,000, seed 20261108), 95% CI hi < 0 |
+| G2 | value NLL of the 21-class end-HP label: N minus the baseline. The baseline is the empirical class distribution per (encounter name, HP decile) of D1's training split, decile = min(9, ⌊10 · hp / maxHp⌋) at the root, +1 Laplace over the 21 classes. An unseen cell falls back to the encounter's distribution, an unseen encounter to the global one (same +1). Encounters are joined by name. | per-row difference, run-clustered 95% CI hi < 0 |
 
-- **STAGE3_GO:** G1, G2 and G3 all pass.
+- **G3 (sanity, not gated):** death-class reliability in 10 bins (rows, mean predicted, observed) and its ECE. At a
+  low row-level death rate an ECE threshold passes almost automatically, so it is reported, not gated.
+- Both gates are floors: the prior and the baseline are weak on purpose, because they are what Silver uses today.
+  Stage 3 (fights) decides whether the net helps.
+- **Descriptive, reported with run-clustered 95% CIs:**
+  - top-1 agreement with the Gumbel pick (`gumbelChoice`) for N, for the prior argmax and for the D0-only ablation;
+  - N minus each of the two, also by room.
+  - The D0-only comparison is the informative one: it shows how much of the Gumbel teacher's choice the D1
+    fine-tune adds beyond production's targets. The teacher's own repeat agreement is not measured, since its pick
+    depends on the Gumbel draws.
+- Code: `tools/combat_net/gate.py` (G1, G2, G3 and the descriptive table, `--ref` for the ablation).
+- **STAGE3_GO:** G1 and G2 both pass.
 - **NO_GO:** otherwise, with a ledger entry and no stage 3.
 - **Measured, not gated:** C++ inference time per root on one core. Stage 3 needs it below 1 ms, or it must pay for
   it in its equal-CPU design.

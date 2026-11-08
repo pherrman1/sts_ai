@@ -31,9 +31,10 @@ import sys
 import numpy as np
 
 C_MAX, M_MAX, M_NUM, E_MAX, S_MAX, Q_MAX, Q_LEN, SEL_MAX = 128, 5, 128, 96, 32, 8, 24, 10
-G_LEN = 59 + 38
+G_LEN = 59 + 38   # wire_encoder global + player lengths; a different length fails loudly at assignment
 CARD_LEN = 8   # the semantic `c` field
-SEL_LEN = 2   # a selected card: id, upgraded
+SEL_LEN = 3   # a selected card: id, specialData, upgraded (cardFingerprint order: id, uniqueId, specialData,
+#               cost, costForTurn, upgraded, freeToPlayOnce, retain)
 A_LEN = 1 + 1 + CARD_LEN + 1 + 2 + 1 + 1 + 1 + 1 + SEL_MAX * SEL_LEN
 
 
@@ -43,7 +44,7 @@ def slog(v):
 
 
 def action_row(a):
-    """t, s, c[8], o, p[2], x, d, k, task, sel[SEL_MAX][id, upgraded] (zeros past the end)."""
+    """t, s, c[8], o, p[2], x, d, k, task, sel[SEL_MAX][id, specialData, upgraded] (zeros past the end)."""
     row = [a["t"][0] if a["t"] else 0, a["s"][0] if a["s"] else 0]
     c = list(a["c"])[:CARD_LEN]
     if len(c) > 1:
@@ -56,7 +57,8 @@ def action_row(a):
         row += [a[k][0] if a[k] else 0]
     sel = []
     for card in a["sel"][:SEL_MAX]:
-        sel += [card[0] if card else 0, card[2] if len(card) > 2 else 0]
+        card = list(card) + [0] * (6 - len(card))
+        sel += [card[0], card[2], card[5]]
     sel += [0] * (SEL_MAX * SEL_LEN - len(sel))
     return row + sel
 
@@ -105,7 +107,20 @@ def main(argv):
     }
     cut = {"cards": 0, "monsters": 0, "mnum": 0, "edges": 0, "smap": 0, "queues": 0, "qlen": 0, "sel": 0}
     room = {"MONSTER": 0, "MONSTER_ELITE": 1, "ELITE": 1, "BOSS": 2}
+    # Chunked: each list holds numpy blocks of up to CHUNK roots, so RAM stays near the final array size.
+    CHUNK = 20000
     cards_l, actions_l, policy_l, prior_l = [], [], [], []
+    cards_c, actions_c, policy_c, prior_c = [], [], [], []
+
+    def flush():
+        if cards_c:
+            cards_l.append(np.clip(np.asarray(cards_c, np.int64).reshape(-1, 9), -32768, 32767).astype(np.int16))
+        if actions_c:
+            actions_l.append(np.clip(np.asarray(actions_c, np.int64).reshape(-1, A_LEN), -32768, 32767)
+                             .astype(np.int16))
+        policy_l.append(np.asarray(policy_c, np.float32))
+        prior_l.append(np.asarray(prior_c, np.float32))
+        cards_c.clear(); actions_c.clear(); policy_c.clear(); prior_c.clear()
     encounters = {}
     card_off, act_off = [0], [0]
     j = 0
@@ -134,7 +149,7 @@ def main(argv):
             if len(cards) > C_MAX:
                 cut["cards"] += 1
             cards = cards[:C_MAX]
-            cards_l += cards
+            cards_c.extend(cards)
             card_off.append(card_off[-1] + len(cards))
             mons = x["monsters"]
             if len(mons) > M_MAX:
@@ -166,15 +181,15 @@ def main(argv):
                 a = edges[e]["a"]
                 if len(a["sel"]) > SEL_MAX:
                     cut["sel"] += 1
-                actions_l.append(action_row(a))
+                actions_c.append(action_row(a))
             act_off.append(act_off[-1] + len(order))
             vis = np.array([edges[e]["visits"] for e in order], np.float64)
             if len(edges) > 1 and vis.sum() > 0:
-                policy_l += list(vis / vis.sum())
+                policy_c.extend(vis / vis.sum())
                 arr["multi"][j] = 1
             else:
-                policy_l += [0.0] * len(order)
-            prior_l += [edges[e].get("prior") if edges[e].get("prior") is not None else np.nan for e in order]
+                policy_c.extend([0.0] * len(order))
+            prior_c += [edges[e].get("prior") if edges[e].get("prior") is not None else np.nan for e in order]
             if r.get("gumbelChoice", -1) in order:
                 arr["gumbelChoice"][j] = order.index(r["gumbelChoice"])
             if r["chosen"] in order:
@@ -193,16 +208,18 @@ def main(argv):
             arr["act"][j] = r["act"]
             arr["elite_boss"][j] = room.get(r["room"], 3)
             j += 1
+            if j % CHUNK == 0:
+                flush()
     for k, a in arr.items():
         np.save(os.path.join(args.out, k + ".npy"), a[:j])
-    np.save(os.path.join(args.out, "cards.npy"),
-            np.clip(np.asarray(cards_l, np.int64).reshape(-1, 9), -32768, 32767).astype(np.int16))
+    flush()
+    np.save(os.path.join(args.out, "cards.npy"), np.concatenate(cards_l) if cards_l else np.zeros((0, 9), np.int16))
     np.save(os.path.join(args.out, "card_off.npy"), np.asarray(card_off, np.int64))
     np.save(os.path.join(args.out, "actions.npy"),
-            np.clip(np.asarray(actions_l, np.int64).reshape(-1, A_LEN), -32768, 32767).astype(np.int16))
+            np.concatenate(actions_l) if actions_l else np.zeros((0, A_LEN), np.int16))
     np.save(os.path.join(args.out, "act_off.npy"), np.asarray(act_off, np.int64))
-    np.save(os.path.join(args.out, "policy.npy"), np.asarray(policy_l, np.float32))
-    np.save(os.path.join(args.out, "prior.npy"), np.asarray(prior_l, np.float32))   # NaN = no root prior
+    np.save(os.path.join(args.out, "policy.npy"), np.concatenate(policy_l))
+    np.save(os.path.join(args.out, "prior.npy"), np.concatenate(prior_l))   # NaN = no root prior
     meta = {"rows": j, "encounters": sorted(encounters, key=encounters.get), "source": os.path.abspath(args.packed), "every": args.every, "cut": cut,
             "caps": {"C_MAX": C_MAX, "M_MAX": M_MAX, "M_NUM": M_NUM, "E_MAX": E_MAX, "S_MAX": S_MAX,
                      "Q_MAX": Q_MAX, "Q_LEN": Q_LEN, "SEL_MAX": SEL_MAX, "SEL_LEN": SEL_LEN, "A_LEN": A_LEN, "G_LEN": G_LEN}}

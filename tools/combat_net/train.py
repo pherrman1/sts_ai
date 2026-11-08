@@ -4,9 +4,10 @@
 usage: train.py DATA_DIR OUT_DIR [--epochs N] [--batch B] [--lr LR] [--d D] [--layers L] [--no-aux] [--no-value]
                 [--max-steps N] [--device cpu|cuda] [--seed S] [--init CKPT]
 
-Holdout: runs whose seed has (seed * 2654435761) % 2^32 % 10 == 0 (10% of runs, never split inside a run).
-Writes OUT_DIR/model.pt, OUT_DIR/log.jsonl (one line per evaluation) and OUT_DIR/eval.json (final holdout
-metrics): policy cross-entropy and top-1 agreement with the played action on multi-edge roots, value NLL and death
+Splits by run (never inside a run), h = (seed * 2654435761) % 2^32 % 10: h == 0 is the gate holdout, which this
+script never reads (gate.py does); h == 1 is the validation split for learning curves and the choice of epochs;
+the rest trains. Writes OUT_DIR/model.pt, OUT_DIR/log.jsonl (one line per evaluation) and OUT_DIR/eval.json (final
+validation metrics): policy cross-entropy and top-1 agreement with the played action on multi-edge roots, value NLL and death
 Brier score / 10-bin ECE, aux HP-loss MAE, each also by room (monster / elite / boss).
 """
 
@@ -23,12 +24,19 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import model as M  # noqa: E402
 
 
+def split_of(seeds):
+    """0 = gate holdout, 1 = validation, 2..9 = training."""
+    return (seeds.astype(np.uint64) * np.uint64(2654435761)) % np.uint64(2 ** 32) % np.uint64(10)
+
+
 def holdout_mask(seeds):
-    return ((seeds.astype(np.uint64) * np.uint64(2654435761)) % np.uint64(2 ** 32) % np.uint64(10)) == 0
+    return split_of(seeds) == 0
 
 
 @torch.no_grad()
 def evaluate(net, A, idx, batch, device):
+    if len(idx) == 0:
+        return None
     net.eval()
     sums = {"n": 0, "multi": 0, "pol_ce": 0.0, "top1": 0, "top1_n": 0, "nll": 0.0, "brier": 0.0, "aux_mae1": 0.0,
             "aux_mae2": 0.0}
@@ -104,9 +112,9 @@ def main(argv):
     rng = np.random.default_rng(args.seed)
     A = M.Arrays(args.data)
     seeds = np.asarray(A.a["seed"])
-    hold = holdout_mask(seeds)
-    train_idx, test_idx = np.nonzero(~hold)[0], np.nonzero(hold)[0]
-    eval_idx = test_idx if len(test_idx) <= args.eval_rows else rng.choice(test_idx, args.eval_rows, replace=False)
+    split = split_of(seeds)
+    train_idx, val_idx = np.nonzero(split >= 2)[0], np.nonzero(split == 1)[0]
+    eval_idx = val_idx if len(val_idx) <= args.eval_rows else rng.choice(val_idx, args.eval_rows, replace=False)
     caps = A.meta["caps"]
     net = M.CombatNet(d=args.d, layers=args.layers, g_len=caps["G_LEN"], m_num=caps["M_NUM"], q_len=caps["Q_LEN"],
                       a_len=caps["A_LEN"], aux=not args.no_aux, value=not args.no_value).to(args.device)
@@ -120,11 +128,12 @@ def main(argv):
     sched = torch.optim.lr_scheduler.OneCycleLR(opt, max_lr=args.lr, total_steps=max(1, steps), pct_start=0.05)
     log = open(os.path.join(args.out, "log.jsonl"), "w")
     cfg = {k: v for k, v in vars(args).items()}
-    cfg.update({"params": params, "trainRows": int(len(train_idx)), "holdoutRows": int(len(test_idx)),
-                "trainRuns": int(len(np.unique(seeds[~hold]))), "holdoutRuns": int(len(np.unique(seeds[hold]))),
+    cfg.update({"params": params, "trainRows": int(len(train_idx)), "valRows": int(len(val_idx)),
+                "gateRowsUntouched": int((split == 0).sum()),
+                "trainRuns": int(len(np.unique(seeds[split >= 2]))), "valRuns": int(len(np.unique(seeds[split == 1]))),
                 "steps": steps, "data_meta": A.meta})
     log.write(json.dumps({"config": cfg}) + "\n")
-    print(json.dumps({k: cfg[k] for k in ("params", "trainRows", "holdoutRows", "steps", "device")}), flush=True)
+    print(json.dumps({k: cfg[k] for k in ("params", "trainRows", "valRows", "steps", "device")}), flush=True)
     t0 = time.time()
     perm = rng.permutation(train_idx)
     pos = 0
@@ -143,16 +152,17 @@ def main(argv):
         sched.step()
         if (step + 1) % args.eval_every == 0 or step + 1 == steps:
             ev = evaluate(net, A, eval_idx, 512, args.device)
-            rec = {"step": step + 1, "sec": round(time.time() - t0, 1), "train": parts, "eval": ev}
+            rec = {"step": step + 1, "sec": round(time.time() - t0, 1), "train": parts, "val": ev}
             log.write(json.dumps(rec) + "\n")
             log.flush()
-            print(json.dumps({"step": step + 1, "sec": rec["sec"], **{k: round(ev[k], 4) for k in
-                              ("policy_ce", "top1", "value_nll", "death_ece", "aux_mae1")}}), flush=True)
+            print(json.dumps({"step": step + 1, "sec": rec["sec"], **({k: round(ev[k], 4) for k in
+                              ("policy_ce", "top1", "value_nll", "death_ece", "aux_mae1")} if ev else {})}), flush=True)
     torch.save(net.state_dict(), os.path.join(args.out, "model.pt"))
-    final = evaluate(net, A, test_idx, 512, args.device)
-    json.dump({"config": {k: cfg[k] for k in cfg if k != "data_meta"}, "holdout": final},
+    final = evaluate(net, A, val_idx, 512, args.device)
+    json.dump({"config": {k: cfg[k] for k in cfg if k != "data_meta"}, "validation": final},
               open(os.path.join(args.out, "eval.json"), "w"), indent=1)
-    print(json.dumps({"final": {k: final[k] for k in ("rows", "policy_ce", "top1", "value_nll", "death_ece")}}))
+    if final:
+        print(json.dumps({"final_val": {k: final[k] for k in ("rows", "policy_ce", "top1", "value_nll", "death_ece")}}))
     return 0
 
 
