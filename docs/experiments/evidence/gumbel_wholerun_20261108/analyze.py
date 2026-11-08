@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Whole-run Gumbel teacher test (PREREG.md): net-0420 policy alone, combat arms D (today's A20 default) and
-G16 / G32 / G64 (Gumbel root k 16 + max backup 4 at 16k / 32k / 64k simulations in acts 1-3), seeds
+G16 / G32 / G64 (Gumbel root k 16 + max backup 4 at 16k / 32k / 64k simulations in every fight), seeds
 111378256-111379279, every arm on every seed.
 
     python3 analyze.py OUT_ROOT result.json

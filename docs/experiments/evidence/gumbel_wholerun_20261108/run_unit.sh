@@ -5,9 +5,10 @@
 # LONG_C's net-0420 as the whole out-of-combat policy (temperature 0, no OOC MCTS), as §767; combat arms:
 #   D    = today's A20 combat default: learned Silver stop (gbt-0cac7cc64364), exact root budgets, g7f_E root table +
 #          prior (weight 400), tree prior K = 8, boss-only prior playouts, Act 4 strong; bestbench 10000.
-#   G16 / G32 / G64 = D, except that every fight of acts 1-3 searches each root with the Gumbel root (k 16, §770) at a
-#          flat 16,000 / 32,000 / 64,000 simulations plus max backup (min 4 visits) (STS_SILVER_GUMBEL_ROOT=16,
-#          STS_SILVER_GUMBEL_ROOT_MAX_BACKUP=4); Act 4 keeps D's setting.
+#   G16 / G32 / G64 = D, except that every fight searches each root with the Gumbel root (k 16, §770) at a flat
+#          16,000 / 32,000 / 64,000 simulations plus max backup (min 4 visits) (STS_SILVER_GUMBEL_ROOT=16,
+#          STS_SILVER_GUMBEL_ROOT_MAX_BACKUP=4); in Act 4 at the larger of that and Act 4 strong's budget (S&S 10k,
+#          Heart 40k), with Act 4 strong's prior playouts.
 # Exits 0; the game's ARM-SEED.done holds its rc.
 set -uo pipefail
 REPO=$1 RUN=$2 OUT=$3 SEED=$4 SET=$5
@@ -36,7 +37,7 @@ COMMON=("PATH=/usr/local/bin:/usr/bin:/bin" "HOME=$HOME" "STS_EXECUTABLE_GIT_SHA
   STS_SILVER_TREE_PRIOR_MIN_VISITS=8
   STS_OOC_HEART1_PPO=1 STS_OOC_HEART1_TEMPERATURE=0 STS_OOC_HEART1_SAMPLE_SALT=0
   "STS_OOC_HEART1=$RUN/net-0420.bin")
-BANNER="[silver] research search: whole-run Gumbel root k=16 max backup=4 (acts 1-3)"
+BANNER="[silver] research search: whole-run Gumbel root k=16 max backup=4 (all acts)"
 cd "$REPO" || exit 2
 for ARM in "${ARMS[@]}"; do
   case $ARM in

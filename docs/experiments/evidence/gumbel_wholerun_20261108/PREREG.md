@@ -7,7 +7,7 @@ after the max-backup budget check (#1017, `gumbel_mb_budget_20261108`) has finis
 independent prelaunch review.
 
 **Question.** Does the Gumbel teacher of §770/§772 (Gumbel root k 16, max backup with min 4 visits) raise the A20
-Heart kill rate of whole runs when it plays every fight of acts 1-3, against today's A20 default combat? At which of
+Heart kill rate of whole runs when it plays every fight, against today's A20 default combat? At which of
 16k, 32k and 64k simulations per root?
 
 **Motivation.**
@@ -28,24 +28,26 @@ Combat default (arm D, as the production arm of `../cheap_combat_proxy_20261031`
 (gbt-0cac7cc64364), exact root budgets, g7f_E root table and prior (weight 400), tree prior K = 8, boss-only prior
 playouts, Act 4 strong (Shield and Spear 10k with prior playouts, Heart 40k); SIMS = 10000.
 
-**Code change** (this branch, default off): `STS_SILVER_GUMBEL_ROOT=K` makes every whole-run fight of acts 1-3 search
-each root with `SilverSearcher::searchGumbelRoot` (§770's root: Gumbel-top-K over the g7f_E root prior, sequential
-halving, c_visit 50, c_scale 1) at a flat budget of SIMS, in place of the learned stop. `STS_SILVER_GUMBEL_ROOT_MAX_BACKUP=M`
-adds max backup (min M visits, §759/§772) in exactly those fights. Act 4, research overrides (arm threads, imagined
-OOC fights) and the stop trace keep their own settings. Everything else in the search (prior, tree prior, prior
+**Code change** (this branch, default off): `STS_SILVER_GUMBEL_ROOT=K` makes every whole-run fight search each root
+with `SilverSearcher::searchGumbelRoot` (§770's root: Gumbel-top-K over the g7f_E root prior, sequential halving,
+c_visit 50, c_scale 1) at a flat budget of SIMS, in place of the learned stop. In Act 4 strong's fights (Shield and
+Spear, Heart) the budget is the larger of SIMS and Act 4 strong's own (10k, 40k), and Act 4 strong's prior playouts
+and reuse cap stay. `STS_SILVER_GUMBEL_ROOT_MAX_BACKUP=M` adds max backup (min M visits, §759/§772) in exactly those
+fights. Research overrides (arm threads, imagined OOC fights) and the stop trace keep their own settings. Philipp
+2026-11-08 23:59 CET: Act 4 is part of the arms ("hä wieso sol akt 4 bei default bleiben?? mach das nicht"). Everything else in the search (prior, tree prior, prior
 playouts, leaf, rollouts) is the default's. The binary reports the count of Gumbel roots at exit
 (`[silver] whole-run Gumbel roots=N`). With neither variable set the code path is unchanged.
 
 **Arms** (all four on every seed; D, G16, G32 in one unit in an order rotated by seed, G64 in its own unit):
 
-| arm | added to the common environment | SIMS |
+| arm | added to the common environment | SIMS (Act 4: S&S / Heart) |
 |---|---|---|
-| D | (none) | 10000 |
-| G16 | `STS_SILVER_GUMBEL_ROOT=16 STS_SILVER_GUMBEL_ROOT_MAX_BACKUP=4` | 16000 |
-| G32 | same | 32000 |
-| G64 | same | 64000 |
+| D | (none) | 10000, learned stop (10k / 40k, plain root) |
+| G16 | `STS_SILVER_GUMBEL_ROOT=16 STS_SILVER_GUMBEL_ROOT_MAX_BACKUP=4` | 16000 (16k / 40k) |
+| G32 | same | 32000 (32k / 40k) |
+| G64 | same | 64000 (64k / 64k) |
 
-The combat setting changes every decision in acts 1-3, so no control reuse.
+The combat setting changes every decision, so no control reuse.
 
 **Seeds.** 111378256-111379279 (1,024 seeds) in ascending order; smokes 111379280-111379289. The coordinator
 reserved both blocks on 2026-11-08. The main block was pre-registered as stage B of

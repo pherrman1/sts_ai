@@ -104,10 +104,10 @@ namespace sts::search {
             // unset = on, =0 restores the learned stop there): Shield and Spear at flat 10k with prior playouts,
             // the Heart at flat 40k with tree reuse up to kAct4HeartReuseCap nodes.
             bool act4Strong = true;
-            // STS_SILVER_GUMBEL_ROOT=K (research, default off): whole-run fights of acts 1-3 search every root
-            // with the Gumbel root (K sampled edges) at a flat budget of the agent's simulation count instead of
-            // the learned stop / flat search; Act 4 keeps its own setting. STS_SILVER_GUMBEL_ROOT_MAX_BACKUP=M
-            // adds max backup (min M visits) in exactly those fights.
+            // STS_SILVER_GUMBEL_ROOT=K (research, default off): every whole-run fight searches each root with the
+            // Gumbel root (K sampled edges) at a flat budget of the agent's simulation count instead of the learned
+            // stop / flat search (Act 4 strong's fights: the larger of that and their own budget).
+            // STS_SILVER_GUMBEL_ROOT_MAX_BACKUP=M adds max backup (min M visits) in exactly those fights.
             int gumbelRootK = 0;
             int gumbelRootMaxBackup = 0;
             // STS_SILVER_LEAF_HEAD (default off): whole-run fights value undecided leaves with this value head
@@ -598,9 +598,10 @@ namespace sts::search {
                 && !g_options.rootPriorOverrideOnly && gc.act == 4
                 && (gc.curRoom == Room::ELITE || gc.curRoom == Room::BOSS);
             const bool act4Heart = act4Strong && gc.curRoom == Room::BOSS;
-            // STS_SILVER_GUMBEL_ROOT: whole-run fights of acts 1-3 only; any research override, the stop trace
-            // and Act 4 keep their own settings.
-            const bool wholeRunGumbel = g_options.gumbelRootK > 0 && !budgetOverride && !act4Strong && gc.act <= 3
+            // STS_SILVER_GUMBEL_ROOT: every whole-run fight, Act 4 included (there at the larger of the agent's
+            // simulation count and Act 4 strong's budget, with Act 4 strong's prior playouts and reuse cap); any
+            // research override and the stop trace keep their own settings.
+            const bool wholeRunGumbel = g_options.gumbelRootK > 0 && !budgetOverride
                 && g_options.stopTrace.empty() && !g_nativeSilverGumbelRootOverride && !g_nativeSilverRolloutOverride
                 && !g_nativeSilverRootPriorOverride && !g_nativeSilverPriorNetOverride;
             std::optional<SilverSearcher::GumbelRoot> gumbelRoot = g_nativeSilverGumbelRootOverride;
@@ -623,7 +624,9 @@ namespace sts::search {
                 : !g_options.exactRootBudgets && !g_options.searchSingletonRoots;
             if (learnedStop && !nativeSilverStopModelTrained())
                 fail(gc, bc, "learned stopping requires a trained stop model");
-            const std::int64_t flatBudget = act4Strong ? (act4Heart ? kAct4HeartBudget : kAct4EliteBudget)
+            const std::int64_t flatBudget = act4Strong
+                ? std::max<std::int64_t>(act4Heart ? kAct4HeartBudget : kAct4EliteBudget,
+                                         wholeRunGumbel ? agent.simulationCountBase : 0)
                 : isBossEncounter(bc.encounter) && !g_options.exactRootBudgets
                 ? static_cast<std::int64_t>(agent.bossSimulationMultiplier * agent.simulationCountBase)
                 : agent.simulationCountBase;
@@ -1193,7 +1196,7 @@ namespace sts::search {
                 throw std::runtime_error("STS_SILVER_GUMBEL_ROOT requires STS_SILVER_ADAPTIVE=0 (flat budget)");
             if (g_options.gumbelRootK > 0)
                 std::cerr << "[silver] research search: whole-run Gumbel root k=" << g_options.gumbelRootK
-                          << " max backup=" << g_options.gumbelRootMaxBackup << " (acts 1-3)\n";
+                          << " max backup=" << g_options.gumbelRootMaxBackup << " (all acts)\n";
             if (g_options.gumbelRootK > 0)
                 std::atexit([] {
                     std::cerr << "[silver] whole-run Gumbel roots=" << g_wholeRunGumbelRoots.load()
