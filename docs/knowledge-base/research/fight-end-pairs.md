@@ -1,8 +1,8 @@
 # Paired fight-end continuations (`fightendpairgen`)
 
-Last verified: 2026-11-07 (`ooc=ppo` and the source row's `heartKill` added for the stage-2 pilot;
+Last verified: 2026-11-08 (`ooc=ppo` and the source row's `heartKill` added for the stage-2 pilot;
 pilot result and inclusion weights in ledger §763; `luck=`, `luck_identity=` and `n=0` added for E1 of the learned
-price head, result in ledger §764).
+price head, result in ledger §764; `rewards=` added for reward luck, result of E1-R in ledger §769).
 
 ## Purpose
 
@@ -75,6 +75,22 @@ run end.
    (§764, `docs/experiments/evidence/learned_price_head_e1_20261107/`) replayed the leaf pilot's first block
    this way: the fight-end HP prices from luck and from the pilot's CRN pairs agree within noise (ratio 0.87,
    INCONCLUSIVE against the [0.67, 1.5] band).
+6. **Reward luck (`rewards=1`, research, default off).** The source run logs the potion roll of every won
+   fight whose reward rolls one: normal and elite fights, and act 1-2 bosses (`createCombatReward` and its
+   siblings, called by `afterBattle` inside `BattleContext::exitBattle`, before the fight-end observer).
+   The roll's chance is known: 40 + `potionChance` read at the fight's start, clamped to 0-100 (100 with White
+   Beast Statue); `potionChance` moves by +10 after a roll without a drop and by -10 after a drop, so it can be
+   negative.
+   The reward has fewer than 4 items at the roll, so `addPotionRewards`' zero-chance case cannot occur. So
+   `dropped - chance/100` is a luck draw for the potion price without any replay, and the drop's type is a
+   draw for prices per type. Each roll is checked against the engine: `potionChance` after the reward must
+   be the start value + 10 without a drop and - 10 with one. Logging only reads the state; rows are
+   otherwise unchanged.
+   A drop at an act 1-2 boss reward moves no later chance (`potionChance` resets at the act transition); a
+   mid-act drop lowers the act's later chances, so its luck coefficient is attenuated. E1-R (§769,
+   `docs/experiments/evidence/learned_price_head_e1r_20261108/`) logged E1's 8,192 runs: a Fairy drop is worth
+   9.2 ± 1.6 pp of Heart kill more than another drop (about 60 HP at 0.155 pp per HP); an ordinary potion at the
+   boss reward 1.9 ± 1.05 pp (about 11 HP, unresolved); no other potion type differs measurably from the rest.
 
 ## Output
 
@@ -107,6 +123,10 @@ threw). `fields` = `hp`, `maxHp`, `potionCount`, `potions`, `gold`, `deckSize`, 
 `relicData`. Identity seeds add `identity` (and `identityReplay` when it is false). The source row gets
 `luck`: `replicates`, `identitySeed`, `fights`, `replays`, `errors`, `healthFailures`,
 `identityChecked`, `identityMismatches`, `cpuMs`.
+
+With `rewards=1`, the source row gets `rewards`: `rolls` (per roll `fightIndex`, `act`, `floor`, `room`,
+`chance` in percent, `dropped`, `potion` when dropped, `potionCount` and `potionCapacity` before the reward is
+taken, `sozu`, `inconsistent` if the engine's potion chance moved otherwise) and `inconsistent` (the count).
 
 `OUT.manifest.json` records the arguments, `git_sha`, `executable_sha256`,
 `effectiveOocPolicySpecification()`, `effectiveSilverLeafSpecification()`, whether the learned stop is
@@ -157,8 +177,10 @@ whole runs (§767, 2,048 seeds, `evidence/silver_leaf_price_gate_20261108/`) the
   terms, simulation and decision counts; a no-op fight-end observer leaves a run's result and fight
   list unchanged (the default-off identity of the hook). With `luck=1,luck_identity=1` the same call gives
   identical source and fork rows (apart from the source row's `luck` tally), every replicate-0 replay
-  reproduces its fight, and the fresh replays differ from the real fights.
-- Fast checks also cover the `luck`, `luck_identity` and `n=0` options and the luck redraw (deterministic per
+  reproduces its fight, and the fresh replays differ from the real fights. With `rewards=1` the source and
+  fork rows are identical apart from the source row's `rewards` log, every roll agrees with the engine's
+  potion chance, and a potion type is logged exactly when one dropped.
+- Fast checks also cover the `luck`, `luck_identity`, `n=0` and `rewards` options and the luck redraw (deterministic per
   seed, fight and replicate; new seed and carried streams, counters and every other stream kept; state
   unchanged).
 - Off-path identity against main: `potionpriceprobe 1 111459992 50 20 OUT 2 3 8` with the main binary

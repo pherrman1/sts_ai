@@ -15,6 +15,10 @@
 // luck regression. luck_identity=N replays the fights of the first N source seeds once more unchanged (replicate
 // 0), which must reproduce the real fight. The replays never touch the run: own copy, own agent, the run's health
 // counters and battle-exit hooks restored, so source and fork rows equal those of the same call without luck.
+// Reward luck (rewards=1, research, default off): the source row lists the potion roll of every won source fight
+// whose reward rolls one (normal, elite, act 1-2 boss): the chance at the roll (40 + potionChance at the fight's
+// start, clamped to 0-100; 100 with White Beast Statue), whether a potion dropped and which. The roll's chance is known, so
+// dropped - chance is a luck draw without a replay. Logging only reads the state.
 // See docs/knowledge-base/research/fight-end-pairs.md.
 
 #include "one_combat/driver_shared.h"
@@ -52,6 +56,7 @@ struct FightEndOptions {
     bool oocPpo = false;             // ooc=ppo: the STS_OOC_HEART1_PPO net first, as the PPO runner's chain
     int luck = 0;                    // luck=R (0-8): R fresh replays of every source fight; 0 = off
     int luckIdentity = 0;            // luck_identity=N: the first N source seeds also replay every fight unchanged
+    bool rewards = false;            // rewards=1: the source row lists every combat reward's potion roll
 };
 
 std::vector<std::string> splitOn(const std::string &s, char sep) {
@@ -113,6 +118,7 @@ FightEndOptions parseOptions(const std::string &spec) {
             o.oocPpo = value == "ppo";
         } else if (key == "luck") o.luck = parseCount(value, "luck", 8);
         else if (key == "luck_identity") o.luckIdentity = parseCount(value, "luck_identity", 999999);
+        else if (key == "rewards") o.rewards = parseCount(value, "rewards", 1) == 1;
         else throw std::runtime_error("fightendpairgen: unknown option " + key);
     }
     return o;
@@ -123,7 +129,7 @@ nlohmann::json optionsJson(const FightEndOptions &o) {
             {"horizon", o.horizon < 0 ? nlohmann::json("end") : nlohmann::json(o.horizon)},
             {"source_fights", o.sourceFights < 0 ? nlohmann::json("end") : nlohmann::json(o.sourceFights)},
             {"ooc", o.oocPpo ? "ppo" : o.oocHeart1 ? "heart1" : "deployed"}, {"luck", o.luck},
-            {"luck_identity", o.luckIdentity}};
+            {"luck_identity", o.luckIdentity}, {"rewards", o.rewards ? 1 : 0}};
 }
 
 // ----------------------------------------------------------------- variants
@@ -560,6 +566,38 @@ void fightEndPairGen(int nSeeds, std::uint64_t seedStart, int sims, int asc, con
             double cpuMs = 0;
         } luckTally;
         const bool identitySeed = s < opt.luckIdentity;
+        // rewards=: potionChance at each source fight's start, and the rolls of the run.
+        std::optional<int> potionChanceAtStart;   // potionChance can be negative (-10 per drop)
+        nlohmann::json rewardRolls = nlohmann::json::array();
+        int rewardInconsistent = 0;
+        const auto logRewardRoll = [&](const GameContext &gc, const OocFightEnd &fe) {
+            const std::optional<int> start = potionChanceAtStart;
+            potionChanceAtStart.reset();
+            // GameContext::afterBattle rolls the reward inside BattleContext::exitBattle, before this observer.
+            // createCombatReward / createEliteCombatReward / createBossCombatReward (acts 1-2) roll one potion
+            // after the gold (and elite relics), so the reward has fewer than 4 items at the roll and
+            // addPotionRewards' zero-chance case cannot occur.
+            const bool rolls = fe.room == Room::MONSTER || fe.room == Room::ELITE || (fe.room == Room::BOSS && fe.act < 3);
+            if (!fe.won || !rolls || gc.outcome != GameOutcome::UNDECIDED || gc.screenState != ScreenState::REWARDS)
+                return;
+            const auto &rw = gc.info.rewardsContainer;
+            const bool dropped = rw.potionCount > 0;
+            const bool consistent = start && gc.potionChance == *start + (dropped ? -10 : 10);
+            // addPotionRewards: drop if potionRng.random(99) (0-99) < 40 + potionChance, or always with the statue.
+            const int chance = gc.relics.has(RelicId::WHITE_BEAST_STATUE) ? 100
+                                                                          : std::clamp(40 + start.value_or(0), 0, 100);
+            rewardInconsistent += !consistent;
+            nlohmann::json x = {{"fightIndex", fe.fightIndex}, {"act", fe.act}, {"floor", fe.floor},
+                                {"room", combatEvalRoomClass(fe.room)},
+                                {"chance", chance},
+                                {"dropped", dropped}, {"potionCount", gc.potionCount},
+                                {"potionCapacity", gc.potionCapacity}, {"sozu", gc.relics.has(RelicId::SOZU)}};
+            if (dropped) x["potion"] = potionEnumNames[static_cast<int>(rw.potions[0])];
+            if (!consistent)
+                x["inconsistent"] = {{"potionChanceAtStart", start ? nlohmann::json(*start) : nlohmann::json(nullptr)},
+                                     {"potionChanceAfter", gc.potionChance}};
+            rewardRolls.push_back(std::move(x));
+        };
         const OocFightStartObserver luckStart = [&](const GameContext &gc, const OocFightStart &fs) {
             if (pendingLuck) throw std::runtime_error("fightendpairgen: fight started before the last one ended");
             PendingLuck p;
@@ -612,10 +650,15 @@ void fightEndPairGen(int nSeeds, std::uint64_t seedStart, int sims, int asc, con
             out << row.dump() << '\n';
             pendingLuck.reset();
         };
+        const OocFightStartObserver fightStart = [&](const GameContext &gc, const OocFightStart &fs) {
+            if (opt.rewards) potionChanceAtStart = gc.potionChance;
+            if (luckOn) luckStart(gc, fs);
+        };
         const OocFightEndObserver observer = [&](const GameContext &gc, const OocFightEnd &fe) {
             sourceLastWon = fe.won;
             sourceLastEncounter = fe.encounter;
             if (luckOn) writeLuckRow(gc, fe);
+            if (opt.rewards) logRewardRoll(gc, fe);
             if (!fe.won) return;
             ++fightEnds;
             const std::string room = combatEvalRoomClass(fe.room);
@@ -640,7 +683,7 @@ void fightEndPairGen(int nSeeds, std::uint64_t seedStart, int sims, int asc, con
         const OocCounterfactualResult source = finishOocCounterfactual(
             GameContext(CharacterClass::IRONCLAD, seed, asc), sims, seed, PathHistory{}, opt.sourceFights, false,
             nullptr, 0, nullptr, false, nullptr, &sourceCost, false, nullptr, &observer,
-            luckOn ? &luckStart : nullptr);
+            luckOn || opt.rewards ? &fightStart : nullptr);
         if (pendingLuck) throw std::runtime_error("fightendpairgen: a source fight started but never ended");
         std::vector<SampledFork> sampled;
         for (auto &[stratum, r] : reservoirs)
@@ -663,6 +706,7 @@ void fightEndPairGen(int nSeeds, std::uint64_t seedStart, int sims, int asc, con
                                  {"errors", luckTally.errors}, {"healthFailures", luckTally.healthFailures},
                                  {"identityChecked", luckTally.identityChecked},
                                  {"identityMismatches", luckTally.identityMismatches}, {"cpuMs", luckTally.cpuMs}};
+        if (opt.rewards) sourceRow["rewards"] = {{"rolls", rewardRolls}, {"inconsistent", rewardInconsistent}};
         out << sourceRow.dump() << '\n';
         out.flush();
         std::cout << "[fightendpairgen] seed=" << seed << " sourceFloor=" << source.floor
@@ -798,8 +842,11 @@ void fastSelfTest() {
     check(l.forksPerRun == 0 && l.oocPpo && l.luck == 1 && l.luckIdentity == 2 && optionsJson(l).at("luck") == 1
               && optionsJson(l).at("luck_identity") == 2, "luck option parse");
     check(parseOptions("-").luck == 0 && parseOptions("-").luckIdentity == 0, "luck default off");
+    const auto rwo = parseOptions("n=0,rewards=1");
+    check(rwo.rewards && optionsJson(rwo).at("rewards") == 1 && !parseOptions("-").rewards
+              && optionsJson(parseOptions("-")).at("rewards") == 0, "rewards option parse");
     for (const char *bad : {"n=-1", "rooms=SHOP", "acts=5", "strata=floor", "x=1", "n", "ooc=student", "luck=9",
-                            "luck=x", "luck_identity=-1", "luck="}) {
+                            "luck=x", "luck_identity=-1", "luck=", "rewards=2", "rewards=x"}) {
         bool threw = false;
         try { parseOptions(bad); } catch (const std::runtime_error &) { threw = true; }
         check(threw, std::string("option accepted: ") + bad);
@@ -962,8 +1009,32 @@ void fullSelfTest(int sims, const std::string &dir) {
     }
     check(luckRows > 0 && plain == ra, "luck replays change the source or fork rows");
     check(differs > 0, "no fresh replay differs from its real fight");
+
+    // rewards=: the roll log leaves every source and fork row unchanged, and each roll's chance agrees with the
+    // potion chance the engine moved (start + 10 without a drop, start - 10 with one).
+    const std::string d = dir + "/fightendpairs-rewards.jsonl";
+    fightEndPairGen(1, seed, sims, 20, d, opts + ",rewards=1", "noop,hp:-8,pot:*", false);
+    std::vector<nlohmann::json> unlogged;
+    int rolls = 0, drops = 0;
+    for (auto row : readRows(d)) {
+        if (row.at("kind") == "source") {
+            const auto &log = row.at("rewards");
+            check(log.at("inconsistent") == 0, "reward roll disagrees with the engine's potion chance " + log.dump());
+            for (const auto &x : log.at("rolls")) {
+                const int chance = x.at("chance");
+                const bool dropped = x.at("dropped");
+                check(chance >= 0 && chance <= 100 && x.contains("potion") == dropped
+                          && !(dropped && chance == 0) && !(!dropped && chance == 100), "reward roll " + x.dump());
+                ++rolls;
+                drops += dropped;
+            }
+            row.erase("rewards");
+        }
+        unlogged.push_back(std::move(row));
+    }
+    check(rolls > 0 && unlogged == ra, "reward logging changes the source or fork rows");
     std::cout << "fightendpairselftest: full checks passed (" << pairs << " noop/base pairs, " << luckRows
-              << " luck fights, " << differs << " differ)\n";
+              << " luck fights, " << differs << " differ, " << rolls << " reward rolls, " << drops << " drops)\n";
 }
 
 } // namespace
