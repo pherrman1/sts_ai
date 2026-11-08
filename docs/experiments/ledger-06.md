@@ -26673,3 +26673,52 @@ On D0 validation, lowering w from 1 to 0.25 improved both heads: top-1 0.518 →
 
 **Knowledge impact:** the combat plan (stage 3 design). Single seed: a shared-trunk policy+value net needed a small
 value weight (0.25 here) and the aux heads.
+
+## §TBD — Combat net stage 3a: the policy-only combat net (polonly_d1) as Silver's root prior on §770's elite and boss states (1,878 fights × 4 copies) gains nothing, T = 1 −0.06 [−0.29, +0.17] and T = 0.55 −0.10 [−0.32, +0.11] HP per fight (97.5%) at 1.02× / 0.98× CPU → NO_GAIN; at a flat 4,000 simulations without the learned stop also null, −0.17 [−0.39, +0.05] and +0.07 [−0.15, +0.30] → FLAT_NO_GAIN (cloud, 2026-11-08)
+
+**Question (combat plan stage 3a; Philipp asked to prepare it on 2026-11-08 13:26 CET, chose the flat-budget pair on
+top at 18:21 CET and gave the go with his worker count):** does production play Baalorlord's A20 elite and boss states
+with fewer HP lost when stage 2's policy-only net supplies Silver's root prior instead of g7f_E, at about the same CPU?
+**Data:** [PREREG](evidence/combat_net_stage3_20261108/PREREG.md) (amendment 1, before any unit ran: `flat4000`,
+`flat4000+cnp100`, `flat4000+cnp55`), [RESULT](evidence/combat_net_stage3_20261108/RESULT.md),
+`results/analysis.json`.
+- Run commit f104e139 (code 4d2a7f80, binary 4000eb83). Native inference `CombatTokNet` (parity with PyTorch within
+  2.8e-5) and the hook `STS_SILVER_COMBATNET_PRIOR` (root prior = softmax(logits / T), weight 400 unchanged).
+- §770's states, copy seeds and environment: §711's 329 runs, 1,878 act-1-3 elite and boss fights from 309 runs, 0
+  dropped; production and five arms play copies 0-3.
+- 35 workers × 4 lanes, 18:24-22:14 CET, 74 lane-hours. 329 of 329 units OK and rc 0, 11 duplicates (first tar used).
+  The share's 50,000-entry limit held back 16 workers at the start; no unit was lost.
+- Validity: production equals §770 on all 1,878 fights (and `flat4000` equals §770's `flat4000`); 0 of 30,048
+  net-arm copies lack a net prior (0.92 net priors per decision); 0 net priors in production and `flat4000`.
+
+**Result:**
+- Primary (arm − production, 97.5%): cnp100 (T = 1) −0.06 [−0.29, +0.17], CPU 1.02; cnp55 (T = 0.55) −0.10 [−0.32,
+  +0.11], CPU 0.98. Production loses 11.60 HP per fight, Baalorlord 8.74. → **NO_GAIN**, neither WORSE.
+- Secondary (flat net arm − `flat4000`, 97.5%): T = 1 −0.17 [−0.39, +0.05], T = 0.55 +0.07 [−0.15, +0.30], CPU 1.01
+  each. → **FLAT_NO_GAIN**, neither FLAT_WORSE.
+- Deaths per fight 5.5-5.7% on every side, no difference resolved.
+- Descriptive (95%): `flat4000` − production +0.22 [+0.02, +0.42] (bosses +0.76 [+0.23, +1.30]), as §770;
+  cnp55 − cnp100 −0.04 [−0.23, +0.15]; at flat 4,000, T = 0.55 − T = 1 +0.24 [+0.03, +0.44]. No act, room or act ×
+  room cut resolves below 0 for any net arm; 2 of 72 encounter contrasts resolve, one each way (Book of Stabbing,
+  cnp100 −0.62 [−1.16, −0.08], n 139; Slavers, T = 0.55 at flat 4,000 +0.61 [+0.03, +1.23], n 129), fewer than
+  chance gives.
+
+**Interpretation (Inference):**
+- The net's root prior does not help on these states, with or without the learned stop (the reading fixed in
+  amendment 1). Its +1.77 pp top-1 agreement with the Gumbel teacher on the D1 holdout (§771) did not become play
+  strength.
+- Candidate reasons, untested: only the root prior changed, and with about 4,500 simulations per decision the final
+  choice follows visits and Q values set by g7f_E below the root; the net learned on self-play decks, not
+  Baalorlord's; §770's teacher gain came from the Gumbel root and its budget, which a prior imitating its visit
+  shares does not bring along.
+- Exploratory on states used before (§711/§716/§718/§765/§770); two temperatures, not tuned on these states; one net.
+
+**Decision:** NO_GAIN.
+- No default change; `STS_SILVER_COMBATNET_PRIOR` stays off. The native inference and the hook stay for stage 3b
+  (leaf) and a possible test of the net prior under the Gumbel root, where the prior picks the top-k candidates.
+  Neither is pre-registered.
+- No new seeds. Cost: 74 lane-hours.
+
+**Knowledge impact:** the combat plan (stage 3b and the Gumbel root). A better root prior by imitation metrics did not
+change production's fights at equal budget; the learned stop over a flat budget of equal mean size is again worth
+about 0.2 HP per fight.
