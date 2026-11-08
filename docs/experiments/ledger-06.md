@@ -26611,11 +26611,13 @@ workers, 132 lane-hours. 329 of 329 units rc 0, nothing excluded; 1,878 fights f
 differs. Secondary (95%): Gumbel root at equal budget gsh16+flat4000 − flat4000 −0.37 [−0.59, −0.15]; 4× budget under
 the Gumbel root −0.73 [−0.93, −0.52]. gsh16+flat16000 by cut: act 1 −0.43, act 2 −1.23, act 3 −1.65; elites −0.62,
 bosses −1.54 [−2.14, −0.99]; act-2 bosses −2.53 [−3.63, −1.41]; every encounter with n ≥ 20 negative (Automaton −3.73).
-**Interpretation (Inference):** the Gumbel root at 16k closes about 31% of the 2.86-HP gap to Baalorlord. More flat
-budget did not do this (§718: flat 40k on the boss states −0.25 [−1.10, +0.61] at 7.7× CPU; §716). The Gumbel root
-seems to be what turns extra simulations into better play, but flat 16k without it was not run, so the split is not
-measured directly. Exploratory: these states were used before, the main line is production's, and one Gumbel setting
-was tested, not tuned.
+**Interpretation (Inference):** the Gumbel root at 16k closes about 31% of the 2.86-HP gap to Baalorlord. More
+flat budget was not shown to gain this much before (§718 boss states: flat 40k −0.25 [−1.10, +0.61], flat 20k −0.46
+[−1.27, +0.34]; §716 act-2 bosses flat 40k −3.3 [−6.8, +0.3]). Both the root rule (−0.37 at 4k against flat 4k) and
+the 4× budget under it (−0.73) contribute; without a flat-16k arm, whether the Gumbel root makes extra simulations
+more useful than a flat root does is not measured, and §716/§718 bound flat-budget gains on bosses only loosely. At
+about production's CPU the Gumbel root alone is −0.15 [−0.45, +0.14], unresolved. Exploratory: these states were used
+before, the main line is production's, and one Gumbel setting was tested, not tuned.
 **Decision:** TEACHER_FOUND: gsh16+flat16000 is the stage-2 teacher candidate. No default change; a whole-run A/B of a
 Gumbel-root combat needs its own pre-registration and Philipp's go. Seeds: none new (§694's external run seeds).
 Cost: 132 lane-hours.

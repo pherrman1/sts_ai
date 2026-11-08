@@ -68,11 +68,15 @@ The other arms: rpl4 is null everywhere at 3.4× CPU (as §479). flat4000 is wor
 - A better teacher than production exists on these states: a Gumbel root (Gumbel-top-16 over the g7f_E prior,
   sequential halving) with 16,000 simulations. It gains 0.88 HP per elite or boss fight, 1.5 HP per boss fight, at
   3.15× production's CPU. That closes about 31% of the 2.86-HP gap to Baalorlord.
-- Budget alone did not do this before. §718 found flat 40k on Baalorlord's 499 boss states −0.25 [−1.10, +0.61] at
-  7.7× CPU, and §716 found act-2 elites not budget-limited (flat 10k / 100k +0.0 / +0.1). Here a 4× budget is
-  −0.73 under the Gumbel root, against −0.37 for the Gumbel root itself at equal budget. So the Gumbel root seems to
-  be what turns extra simulations into better play (Inference: flat 16k without the Gumbel root was not run, so the
-  split between root rule and budget is not measured directly).
+- More flat budget was not shown to gain this much before: §718 found flat 40k on Baalorlord's 499 boss states
+  −0.25 [−1.10, +0.61] and flat 20k −0.46 [−1.27, +0.34] at 7.7× / 4.0× CPU; §716 found act-2 elites not
+  budget-limited (flat 10k / 100k +0.0 / +0.1) and act-2 bosses at flat 40k −3.3 [−6.8, +0.3] at 7× CPU. Here the
+  boss effect is −1.54 [−2.14, −0.99]; the difference from §718 is suggestive, not established (other state sets
+  and copies).
+- Both the root rule (−0.37 at 4k against flat 4k) and the 4× budget under it (−0.73) contribute. Without a flat-16k
+  arm, the interaction (whether the Gumbel root makes extra simulations more useful than a flat root does) is not
+  measured, and §716/§718 bound flat-budget gains on bosses only loosely. At about production's CPU the Gumbel root
+  alone is −0.15 [−0.45, +0.14], unresolved; the gain at 16k costs 3.15× CPU.
 - For stage 2 this means the combat net can learn more than a copy of production: targets from gsh16+flat16000 are
   better than production's own. Its root policy target (visit counts after sequential halving, or the completed-Q
   policy of Danihelka et al.) needs a choice before stage-2 data generation.
