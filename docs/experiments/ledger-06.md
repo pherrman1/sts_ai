@@ -26643,7 +26643,7 @@ eval and log of all 9 training runs).
 - G1, policy CE to the teacher's visit shares minus the g7f_E prior: −0.124 [−0.131, −0.119] on 54,773 roots. PASS.
 - G2, value NLL minus the (encounter × HP decile) baseline: −0.161 [−0.229, −0.094] (net 2.110, baseline 2.271).
   PASS.
-- G3: death ECE 0.79 pp. It is not calibrated at the ends: in bin 0 (92% of the rows) N predicts 0.43% deaths
+- G3: death ECE 0.79 pp. It is not calibrated at the low end or in the middle: in bin 0 (92% of the rows) N predicts 0.43% deaths
   against 0.91% observed, and bins 4-7 over-predict by 8-12 pp.
 
 Descriptive top-1 agreement with the Gumbel pick:
