@@ -59,7 +59,7 @@ Can a combat net learn Silver's root decision and the fight's outcome well enoug
 
 - Tensorization and training on the PC GPU (RTX 3060 Ti), one GPU job at a time. That is about 1-2 days including
   ablations.
-- D1 is about 65 lane-hours (8 workers × 4 lanes ≈ 2 h).
+- D1 is about 100-150 lane-hours (see the smoke below; 8 workers × 4 lanes ≈ 3-5 h).
 
 ## Smokes (2026-11-08; not part of the gate)
 
