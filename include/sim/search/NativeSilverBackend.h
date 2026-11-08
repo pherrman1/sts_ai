@@ -55,6 +55,11 @@ namespace sts::search {
     // set on every searched root as SilverSearcher::rootPrior. Empty when off
     // or for a root with fewer than two actions.
     std::vector<double> nativeSilverRootPrior(SilverSearcher &searcher);
+    // Combat plan stage 3 (research): whether the current thread's searches take their root prior from the native
+    // combat net (g_nativeSilverCombatNetPriorOverride, else STS_SILVER_COMBATNET_PRIOR), and that prior for a
+    // searcher whose root actions are prepared (indexed like rootNode().edges).
+    bool nativeSilverCombatNetPriorOn();
+    std::vector<double> nativeSilverCombatNetRootPrior(const SilverSearcher &searcher);
     // The same model's normalized prior over `edges` of any decision state.
     std::vector<double> nativeSilverPolicyPrior(const BattleContext &state,
                                                 const std::vector<SilverSearcher::Edge> &edges);
@@ -91,6 +96,8 @@ namespace sts::search {
         std::int64_t rolloutPlayouts = 0, rolloutActions = 0;
         // Roots searched by the Gumbel root (g_nativeSilverGumbelRootOverride).
         std::int64_t gumbelRoots = 0;
+        // Roots whose root prior came from the native combat net (STS_SILVER_COMBATNET_PRIOR).
+        std::int64_t combatNetPriors = 0;
     };
     extern thread_local NativeSilverCombatStats g_nativeSilverCombatStats;
 
@@ -181,6 +188,12 @@ namespace sts::search {
     // STS_SILVER_ROOT_PRIOR bonus off (false) or requires it on (true) for the
     // current thread's combats. Unset elsewhere; unset keeps the process option.
     extern thread_local std::optional<bool> g_nativeSilverRootPriorOverride;
+    // Research-only (combat plan stage 3): when set, true makes the native combat net
+    // (STS_SILVER_COMBATNET_PRIOR_MODEL) the root prior of the current thread's searches wherever the
+    // STS_SILVER_ROOT_PRIOR root prior is on, false keeps g7f_E. Unset keeps STS_SILVER_COMBATNET_PRIOR.
+    extern thread_local std::optional<bool> g_nativeSilverCombatNetPriorOverride;
+    // ... and, when set, the softmax temperature of that prior (unset: STS_SILVER_COMBATNET_PRIOR_TEMP).
+    extern thread_local std::optional<double> g_nativeSilverCombatNetPriorTempOverride;
     // Research-only (§452 tree prior): when set to K, every search that has a
     // root prior also scores non-root decision nodes with at least K simulations
     // (SilverSearcher::nodePrior) and tries untried edges in prior order.

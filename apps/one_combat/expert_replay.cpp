@@ -611,8 +611,10 @@ public:
     // Research arm (STS_EXPERT_FIGHTS_ARMS, default none): a '+'-joined set of `pp` (prior playouts in elite
     // rooms, as STS_SILVER_PRIOR_PLAYOUT_ELITE=1), `flat<N>` (flat N simulations at every root, singletons
     // searched, no learned stop), `potw<W>` (held-potion leaf weight W instead of 11, integer), `rpl<K>` (K
-    // greedy playouts per leaf, 2..64, other rollout settings production) and `gsh<K>` (Gumbel root with K
-    // sampled root edges, 2..64, SilverSearcher::searchGumbelRoot; needs flat<N>).
+    // greedy playouts per leaf, 2..64, other rollout settings production), `gsh<K>` (Gumbel root with K
+    // sampled root edges, 2..64, SilverSearcher::searchGumbelRoot; needs flat<N>) and `cnp` / `cnp<P>` (the native
+    // combat net's root prior in place of g7f_E's, as STS_SILVER_COMBATNET_PRIOR=1, at softmax temperature P/100,
+    // P in 10..400, or STS_SILVER_COMBATNET_PRIOR_TEMP for bare `cnp`; needs STS_SILVER_COMBATNET_PRIOR_MODEL).
     struct Arm {
         std::string name;
         bool priorPlayoutElite = false;
@@ -620,6 +622,8 @@ public:
         double potionWeight = -1;   // < 0: production
         int rolloutsPerLeaf = 0;    // 0: production
         int gumbelK = 0;            // 0: plain search
+        bool combatNetPrior = false;
+        double combatNetTemp = 0;   // > 0: the arm's prior temperature
     };
     FightReplayer(const json &run, Replayer &replayer, int replicates, int maxAct, bool expertPotions,
                   std::vector<Arm> arms = {}, std::set<std::string> armRooms = {}, int armK = 0)
@@ -703,6 +707,8 @@ public:
             if (arm && arm->priorPlayoutElite) search::g_nativeSilverPriorPlayoutEliteOverride = true;
             if (arm && arm->potionWeight >= 0) search::g_nativeSilverPotionWeightOverride = arm->potionWeight;
             if (arm && arm->rolloutsPerLeaf > 0) search::g_nativeSilverRolloutsPerLeafOverride = arm->rolloutsPerLeaf;
+            if (arm && arm->combatNetPrior) search::g_nativeSilverCombatNetPriorOverride = true;
+            if (arm && arm->combatNetTemp > 0) search::g_nativeSilverCombatNetPriorTempOverride = arm->combatNetTemp;
             if (arm && arm->gumbelK > 0) {
                 search::SilverSearcher::GumbelRoot g;
                 g.k = arm->gumbelK;
@@ -712,7 +718,9 @@ public:
                                             search::g_nativeSilverPriorPlayoutEliteOverride.reset();
                                             search::g_nativeSilverPotionWeightOverride.reset();
                                             search::g_nativeSilverRolloutsPerLeafOverride.reset();
-                                            search::g_nativeSilverGumbelRootOverride.reset(); } } armReset;
+                                            search::g_nativeSilverGumbelRootOverride.reset();
+                                            search::g_nativeSilverCombatNetPriorOverride.reset();
+                                            search::g_nativeSilverCombatNetPriorTempOverride.reset(); } } armReset;
             BattleContext bc{};
             const double t0 = threadCpuSeconds();
             a.playoutBattle(copy, bc);
@@ -728,7 +736,8 @@ public:
                         {"potionsGained", minus(exitPotions, entryPotions)},
                         {"decisions", search::g_nativeSilverCombatStats.decisions},
                         {"simulations", search::g_nativeSilverCombatStats.simulations},
-                        {"gumbelRoots", search::g_nativeSilverCombatStats.gumbelRoots}};
+                        {"gumbelRoots", search::g_nativeSilverCombatStats.gumbelRoots},
+                        {"combatNetPriors", search::g_nativeSilverCombatStats.combatNetPriors}};
             if (won && winner && !*winner) {
                 copy.seed = gc.seed;
                 *winner = std::move(copy);
@@ -867,6 +876,14 @@ int expertFightsGen(const std::string &runFile, const std::string &output) {
             FightReplayer::Arm arm{name};
             for (const auto &t : split(name, '+')) {
                 if (t == "pp") arm.priorPlayoutElite = true;
+                else if (t == "cnp") arm.combatNetPrior = true;
+                else if (t.size() > 3 && t.size() <= 6 && t.rfind("cnp", 0) == 0
+                         && t.find_first_not_of("0123456789", 3) == std::string::npos) {
+                    const int p = std::stoi(t.substr(3));
+                    if (p < 10 || p > 400) throw std::runtime_error("STS_EXPERT_FIGHTS_ARMS: cnp<P> needs P in 10..400");
+                    arm.combatNetPrior = true;
+                    arm.combatNetTemp = p / 100.0;
+                }
                 else if (t.size() > 4 && t.rfind("flat", 0) == 0
                          && t.find_first_not_of("0123456789", 4) == std::string::npos) arm.flat = std::stoll(t.substr(4));
                 else if (t.size() > 4 && t.rfind("potw", 0) == 0 && t.size() <= 7

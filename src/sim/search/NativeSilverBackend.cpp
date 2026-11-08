@@ -24,6 +24,7 @@
 #include "combat/BattleContext.h"
 #include "game/GameContext.h"
 #include "sim/search/CombatKnowledge.h"
+#include "sim/search/CombatTokNet.h"
 #include "sim/search/CombatValueNet.h"
 #include "sim/search/ScumSearchAgent2.h"
 #include "sim/search/SearchRng.h"
@@ -89,6 +90,11 @@ namespace sts::search {
             std::string rootPriorPath;
             double rootPriorWeight = 0;
             bool rootPriorOverrideOnly = false;
+            // Combat plan stage 3 (research, default off): the native combat net as root prior
+            // (STS_SILVER_COMBATNET_PRIOR_MODEL, STS_SILVER_COMBATNET_PRIOR, STS_SILVER_COMBATNET_PRIOR_TEMP).
+            std::string combatNetPriorPath;
+            bool combatNetPrior = false;
+            double combatNetPriorTemp = 1.0;
             // Per-root rollout card table model (STS_SILVER_ROLLOUT_ROOT_TABLE; ADR-0046 default on).
             std::string rolloutRootTablePath;
             int treePriorMinVisits = 0;       // STS_SILVER_TREE_PRIOR_MIN_VISITS (research; 0 = off)
@@ -119,6 +125,7 @@ namespace sts::search {
         Options g_options;
         NativeSilverPriceTableBuilder g_priceTableBuilder;
         CombatValueNet g_rootPriorNet;
+        CombatTokNet g_combatNetPrior;
         SilverValueHead g_leafHead;
         CombatValueNet g_leafHeadTrunk;
         CombatValueNet g_rolloutRootTableNet;
@@ -685,6 +692,7 @@ namespace sts::search {
                 s.leafSamples = label ? nullptr : g_nativeSilverLeafSamples;
                 s.outcomes = label ? nullptr : g_nativeSilverOutcomeCapture;
                 s.rootPrior = nativeSilverRootPrior(s);
+                if (!s.rootPrior.empty() && nativeSilverCombatNetPriorOn()) s.rootPrior = nativeSilverCombatNetRootPrior(s);
                 s.rootPriorWeight = s.rootPrior.empty() ? 0 : g_options.rootPriorWeight;
                 s.rootPriorBonus = !g_nativeSilverRootPriorBonusOff;
                 s.nodePrior = nullptr;
@@ -1203,6 +1211,37 @@ namespace sts::search {
             if (g_options.rootPriorPath.empty())
                 throw std::runtime_error("STS_SILVER_ROOT_PRIOR_SCOPE requires STS_SILVER_ROOT_PRIOR");
         }
+        // Combat plan stage 3 (research, default off). STS_SILVER_COMBATNET_PRIOR_MODEL=<.ctn> loads the native
+        // combat net (tools/combat_net/export_native.py). STS_SILVER_COMBATNET_PRIOR=1 makes softmax(logits / T)
+        // the root prior of every search that has the STS_SILVER_ROOT_PRIOR root prior on, at its weight; the tree
+        // prior, the rollout card table and prior playouts keep their g7f_E model. Research arms set it per thread
+        // (g_nativeSilverCombatNetPriorOverride). STS_SILVER_COMBATNET_PRIOR_TEMP=T (default 1) is the temperature.
+        if (const char *path = std::getenv("STS_SILVER_COMBATNET_PRIOR_MODEL"); path && *path) {
+            std::string err;
+            if (!g_combatNetPrior.load(path, &err))
+                throw std::runtime_error("STS_SILVER_COMBATNET_PRIOR_MODEL: " + err);
+            g_options.combatNetPriorPath = path;
+            std::cerr << "[silver] combat net prior model " << path << " d=" << g_combatNetPrior.dim()
+                      << " layers=" << g_combatNetPrior.layerCount() << "\n";
+        }
+        if (const char *raw = std::getenv("STS_SILVER_COMBATNET_PRIOR"); raw && *raw) {
+            const std::string value = raw;
+            if (value != "0" && value != "1") throw std::runtime_error("STS_SILVER_COMBATNET_PRIOR must be 0 or 1");
+            g_options.combatNetPrior = value == "1";
+            if (g_options.combatNetPrior && g_options.combatNetPriorPath.empty())
+                throw std::runtime_error("STS_SILVER_COMBATNET_PRIOR requires STS_SILVER_COMBATNET_PRIOR_MODEL");
+            if (g_options.combatNetPrior && g_options.rootPriorPath.empty())
+                throw std::runtime_error("STS_SILVER_COMBATNET_PRIOR requires STS_SILVER_ROOT_PRIOR");
+        }
+        if (const char *raw = std::getenv("STS_SILVER_COMBATNET_PRIOR_TEMP"); raw && *raw) {
+            char *end = nullptr;
+            g_options.combatNetPriorTemp = std::strtod(raw, &end);
+            if (end == raw || *end != '\0' || !(g_options.combatNetPriorTemp > 0)
+                    || !std::isfinite(g_options.combatNetPriorTemp))
+                throw std::runtime_error("STS_SILVER_COMBATNET_PRIOR_TEMP must be a positive number");
+            if (g_options.combatNetPriorPath.empty())
+                throw std::runtime_error("STS_SILVER_COMBATNET_PRIOR_TEMP requires STS_SILVER_COMBATNET_PRIOR_MODEL");
+        }
         // ADR-0046: the per-root rollout card table is on by default with the bundled gen-7f E
         // prior (ADR-TBD); STS_SILVER_ROLLOUT_ROOT_TABLE=0 restores the fixed ADR-0040 table, a path
         // selects another combat_policy_mlp model. The model loads at the first search
@@ -1317,6 +1356,34 @@ namespace sts::search {
             }
         }
         g_externalCombatBackend = runNativeSilverCombat;
+    }
+
+    bool nativeSilverCombatNetPriorOn() {
+        const bool on = g_nativeSilverCombatNetPriorOverride.value_or(g_options.combatNetPrior);
+        if (on && !g_combatNetPrior.loaded())
+            throw std::runtime_error("the combat net prior requires STS_SILVER_COMBATNET_PRIOR_MODEL");
+        return on;
+    }
+
+    std::vector<double> nativeSilverCombatNetRootPrior(const SilverSearcher &searcher) {
+        // One forward pass per root (CombatTokNet: the root's wire and its edges' semantic actions).
+        thread_local CombatTokInputs in;
+        thread_local CombatTokOutputs out;
+        const auto &edges = searcher.rootNode().edges;
+        combatTokEncodeRoot(searcher.rootSearchState(), searcher.searchContext(), edges, in);
+        g_combatNetPrior.forward(in, out);
+        const double temp = g_nativeSilverCombatNetPriorTempOverride.value_or(g_options.combatNetPriorTemp);
+        double top = -INFINITY;
+        for (float v : out.logits) top = std::max(top, static_cast<double>(v) / temp);
+        std::vector<double> prior(out.logits.size());
+        double total = 0;
+        for (std::size_t i = 0; i < prior.size(); ++i) {
+            prior[i] = std::exp(static_cast<double>(out.logits[i]) / temp - top);
+            total += prior[i];
+        }
+        for (auto &p : prior) p /= total;
+        ++g_nativeSilverCombatStats.combatNetPriors;
+        return prior;
     }
 
     std::vector<double> nativeSilverRootPrior(SilverSearcher &searcher) {
@@ -1571,6 +1638,8 @@ namespace sts::search {
     thread_local std::optional<bool> g_nativeSilverPriorPlayoutEliteOverride;
     thread_local std::optional<double> g_nativeSilverPotionWeightOverride;
     thread_local std::optional<bool> g_nativeSilverRootPriorOverride;
+    thread_local std::optional<bool> g_nativeSilverCombatNetPriorOverride;
+    thread_local std::optional<double> g_nativeSilverCombatNetPriorTempOverride;
     thread_local std::optional<int> g_nativeSilverTreePriorOverride;
     thread_local bool g_nativeSilverRootPriorBonusOff = false;
     thread_local const CombatValueNet *g_nativeSilverPriorNetOverride = nullptr;
