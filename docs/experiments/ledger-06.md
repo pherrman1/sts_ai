@@ -26622,3 +26622,52 @@ before, the main line is production's, and one Gumbel setting was tested, not tu
 Gumbel-root combat needs its own pre-registration and Philipp's go. Seeds: none new (§694's external run seeds).
 Cost: 132 lane-hours.
 **Knowledge impact:** the combat plan (stage 2 targets come from the Gumbel root at 16k).
+
+## §TBD — Combat net stage 2: a transformer (4 layers, d 128, 1.27 M parameters) pretrained on 1.63 M production roots and fine-tuned on 1,024 A20 runs played by the Gumbel-16k teacher beats the g7f_E prior on policy cross-entropy, −0.124 [−0.131, −0.119], and the (encounter × HP decile) table on value NLL, −0.161 [−0.229, −0.094] → STAGE3_GO; top-1 to the Gumbel pick is not above the prior (+0.31 pp [−0.12, +0.74]), a policy-only net is +1.77 pp [+1.34, +2.20] (cloud + PC GPU, 2026-11-08)
+
+**Question (combat plan stage 2; Philipp chose stage 2 on 2026-11-08 09:07 CET and gave the go at 10:54 CET with 40
+workers):** can a combat net learn Silver's root decision and the fight's outcome well enough to justify a fight gate
+(stage 3)?
+**Data:** [PREREG](evidence/combat_net_stage2_20261108/PREREG.md) (amendment 1: value weight w chosen on D0
+validation from {1, 0.5, 0.25}), [RESULT](evidence/combat_net_stage2_20261108/RESULT.md), `results/` (gate JSONs,
+eval and log of all 9 training runs).
+- D0: stage 0's 1,633,473 production roots (flat 10k, 3,072 runs).
+- D1: [campaign](evidence/combat_net_d1_20261108/README.md), `silverazgen` with `STS_AZGEN_GUMBEL_ROOT=16` at flat
+  16,000. Run commit 57413a53, binary 15d8c39b. 1,024 natural runs on seeds 111900000–111901023, 24,335 fights, 569,059
+  roots. 256 of 256 units OK, every run rc 0.
+- Splits by run hash: the gate holdout is 100 runs and 58,702 roots, read once by `gate.py` after training was fixed.
+- Training on the PC GPU: 3 epochs on D0 (~5.5 min each), then 3 epochs of D1 fine-tune (~2 min). w = 0.25 was
+  selected (sum of validation policy CE and value NLL: 3.249 / 3.216 / 3.172 for w = 1 / 0.5 / 0.25).
+
+**Result (main net N = N_d1):**
+- G1, policy CE to the teacher's visit shares minus the g7f_E prior: −0.124 [−0.131, −0.119] on 54,773 roots. PASS.
+- G2, value NLL minus the (encounter × HP decile) baseline: −0.161 [−0.229, −0.094] (net 2.110, baseline 2.271).
+  PASS.
+- G3: death ECE 0.79 pp. The middle bins are too pessimistic, by about 0.1.
+
+Descriptive top-1 agreement with the Gumbel pick:
+
+| net | top-1 | vs prior argmax (0.508) | other comparison |
+|---|---|---|---|
+| N | 0.511 | +0.31 pp [−0.12, +0.74] | vs its D0-only checkpoint: −0.49 pp [−0.79, −0.19] |
+| policy-only | 0.526 | +1.77 pp [+1.34, +2.20] | vs N: +1.46 pp [+1.16, +1.77] |
+| no-aux | 0.508 | | G2 fails, +0.344 [+0.238, +0.450] |
+
+On D0 validation, lowering w from 1 to 0.25 improved both heads: top-1 0.518 → 0.536 and value NLL 1.955 → 1.904.
+
+**Interpretation (Inference):**
+- N's value head and death probability are good enough to try as a leaf and as a risk rule.
+- N's policy improves the shape of the distribution but not the pick.
+- The value loss still costs policy quality in a shared trunk. The aux heads stabilize the value head.
+- Single seed. The Gumbel pick is random, so top-1 is a lower bound.
+- C++ inference time is not measured yet, because there is no C++ path.
+
+**Decision:** STAGE3_GO.
+- Stage 3 (fight gate on §711's states at equal CPU) should test the policy-only net as the prior and N as the leaf
+  and risk rule. Stage 3 needs its own PREREG and Philipp's go.
+- No default change.
+- Seeds: 111900000–111901023 USED, smoke block 111909990–999 unused.
+- Cost: D1 103 unit-hours, about 45 min of GPU.
+
+**Knowledge impact:** the combat plan (stage 3 design). A shared-trunk policy+value net needs a small value weight
+(0.25 here) and the aux heads.

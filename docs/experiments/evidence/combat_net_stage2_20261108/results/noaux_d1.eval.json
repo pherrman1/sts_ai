@@ -1,0 +1,64 @@
+{
+ "config": {
+  "data": "/home/philippherrmann/combatnet/d1_arr",
+  "out": "/home/philippherrmann/combatnet/noaux_d1",
+  "epochs": 3.0,
+  "batch": 256,
+  "lr": 0.0003,
+  "d": 128,
+  "layers": 4,
+  "no_aux": true,
+  "no_value": false,
+  "max_steps": 0,
+  "eval_every": 2000,
+  "eval_rows": 50000,
+  "device": "cuda",
+  "seed": 20261108,
+  "init": "/home/philippherrmann/combatnet/noaux_d0_w025/model.pt",
+  "workers": 11,
+  "no_bucket": false,
+  "no_amp": false,
+  "value_weight": 0.25,
+  "params": 1268376,
+  "trainRows": 454693,
+  "valRows": 55664,
+  "gateRowsUntouched": 58702,
+  "trainRuns": 825,
+  "valRuns": 99,
+  "steps": 5328
+ },
+ "validation": {
+  "rows": 55664,
+  "multiRows": 52101,
+  "policy_ce": 1.534145288230732,
+  "top1": 0.5095502274777801,
+  "value_nll": 2.3845162606849244,
+  "death_brier": 0.027481959969342832,
+  "death_ece": 0.02005834528961125,
+  "death_rate": 0.040025871247053146,
+  "aux_mae1": 5.280219441825338,
+  "aux_mae2": 7.114798591615963,
+  "by_room": {
+   "monster": {
+    "rows": 22716,
+    "value_nll": 1.9843251787035538,
+    "top1": 0.5430094952991253
+   },
+   "elite": {
+    "rows": 16729,
+    "value_nll": 2.4265890620843487,
+    "top1": 0.5093302658486708
+   },
+   "boss": {
+    "rows": 14649,
+    "value_nll": 2.9874904214810964,
+    "top1": 0.4607503501142478
+   },
+   "other": {
+    "rows": 1570,
+    "value_nll": 2.1003994540044455,
+    "top1": 0.47631754503002
+   }
+  }
+ }
+}
