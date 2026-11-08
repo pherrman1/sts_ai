@@ -3,6 +3,7 @@
 
 usage: train.py DATA_DIR OUT_DIR [--epochs N] [--batch B] [--lr LR] [--d D] [--layers L] [--no-aux] [--no-value]
                 [--max-steps N] [--device cpu|cuda] [--seed S] [--init CKPT] [--workers N] [--no-bucket] [--no-amp]
+                [--value-weight W]
 
 Splits by run (never inside a run), h = (seed * 2654435761) % 2^32 % 10: h == 0 is the gate holdout, which this
 script never reads (gate.py does); h == 1 is the validation split for learning curves and the choice of epochs;
@@ -142,6 +143,7 @@ def main(argv):
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--no-bucket", action="store_true")
     ap.add_argument("--no-amp", action="store_true")
+    ap.add_argument("--value-weight", type=float, default=1.0, help="weight of the value loss (policy and aux: 1)")
     args = ap.parse_args(argv)
     os.makedirs(args.out, exist_ok=True)
     torch.manual_seed(args.seed)
@@ -192,7 +194,7 @@ def main(argv):
         b = {k: v.to(args.device, non_blocking=True) for k, v in next(stream).items()}
         with torch.autocast("cuda", dtype=torch.bfloat16, enabled=amp):
             logits, vlog, aux = net(b)
-        loss, parts = M.losses(net, b, logits.float(), vlog.float(), aux.float())
+        loss, parts = M.losses(net, b, logits.float(), vlog.float(), aux.float(), args.value_weight)
         opt.zero_grad()
         loss.backward()
         torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)

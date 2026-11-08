@@ -97,3 +97,27 @@ Can a combat net learn Silver's root decision and the fight's outcome well enoug
     lane-hours.
 - **Training:** 2% of D0 (32,670 rows), CPU, batch 64, 200 steps. The pipeline runs end to end. On the 3,231-row
   holdout: policy CE 1.42, top-1 0.43, value NLL 2.82, death ECE 0.4 pp (untrained-scale numbers, smoke only).
+
+## Amendment 1 (2026-11-08, before any D1 row is used for training and before the gate holdout is read)
+
+The D0 pretrains ran on the PC GPU on 2026-11-08 (code 47998bd2 plus the CUDA device fix of #1012, which is
+identical to 68e9fff3's diff). Each run used 3 epochs, seed 20261108, and 15,348 steps of batch 256, about 5.5 min each.
+Validation is D0's h = 1 split: 162,828 rows from D0 runs only. No D1 row and no h = 0 row was read.
+
+| run | policy CE | top-1 (played) | value NLL | death ECE | model.pt sha256 |
+|---|---|---|---|---|---|
+| N (full) | 1.2935 | 0.5180 | 1.9553 | 0.68 pp | `284e2090…41db` |
+| no aux | 1.3003 | 0.5125 | 2.0303 | 0.67 pp | `335e7a96…b40a` |
+| policy only | 1.2496 | 0.5514 | (head untrained) | | `085be0fc…a659` |
+
+- The policy-only net beats N's policy by 0.044 CE and 3.3 pp top-1, so with weight 1 the value loss competes with
+  the policy in the shared trunk.
+- N's validation value NLL showed a transient spike at step 6,000 (2.08 → 2.94 → 2.20, death ECE 0.7 → 3.3 → 1.4 pp,
+  gone by step 10,000) while the learning rate is still near its peak. It is reported, not acted on.
+
+**Change:** `train.py --value-weight w` scales the value loss. The policy and aux weights stay 1.
+- w is chosen from {1, 0.5, 0.25} after the D0 pretrain, by the lowest unweighted sum of validation policy CE and
+  value NLL (D0 h = 1). w = 1 is the run above. Ties within 0.005 go to the larger w.
+- The chosen w is used for N's D0 pretrain and its D1 fine-tune, and for the no-aux ablation's D1 fine-tune.
+- The D0-only reference for the descriptive table is N's D0 checkpoint at the chosen w.
+- G1, G2, the holdout and the descriptive tables are unchanged.

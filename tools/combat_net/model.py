@@ -137,7 +137,7 @@ class CombatNet(nn.Module):
         return logits, self.val(cls), self.auxh(cls)
 
 
-def losses(net, b, logits, vlog, aux):
+def losses(net, b, logits, vlog, aux, value_weight=1.0):
     multi = b["multi"].float()
     logp = F.log_softmax(logits, -1)
     pol_ce = -(b["policy"] * logp.masked_fill(~b["act_mask"], 0)).sum(-1)
@@ -146,5 +146,5 @@ def losses(net, b, logits, vlog, aux):
     val_loss = F.cross_entropy(vlog, vc)
     aux_t = torch.stack([b["hpLoss1"], b["hpLoss2"]], -1) / 10.0
     aux_loss = F.smooth_l1_loss(aux, aux_t)
-    total = pol_loss + (val_loss if net.value_on else 0) + (aux_loss if net.aux_on else 0)
+    total = pol_loss + (value_weight * val_loss if net.value_on else 0) + (aux_loss if net.aux_on else 0)
     return total, {"policy_ce": pol_loss.item(), "value_nll": val_loss.item(), "aux": aux_loss.item()}
