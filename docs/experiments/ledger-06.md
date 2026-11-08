@@ -26674,7 +26674,7 @@ On D0 validation, lowering w from 1 to 0.25 improved both heads: top-1 0.518 →
 **Knowledge impact:** the combat plan (stage 3 design). Single seed: a shared-trunk policy+value net needed a small
 value weight (0.25 here) and the aux heads.
 
-## §TBD — Gumbel budget check on §770's elite and boss states (1,878 fights × 4 copies): 64k simulations under the Gumbel root lose 0.37 HP per fight less than 16k, [−0.57, −0.16] (97.5%), 32k 0.24 less [−0.46, −0.02], at 13.5× / 6.7× production's CPU → MORE_SIMS_HELP; max backup (min 4 visits) at 16k −0.29 [−0.49, −0.09] at 3.3× → MAX_BACKUP_HELPS; flat 16k without the Gumbel root is not detectably different from production (cloud, 2026-11-08)
+## §772 — Gumbel budget check on §770's elite and boss states (1,878 fights × 4 copies): 64k simulations under the Gumbel root lose 0.37 HP per fight less than 16k, [−0.57, −0.16] (97.5%), 32k 0.24 less [−0.46, −0.02], at 13.5× / 6.7× production's CPU → MORE_SIMS_HELP; max backup (min 4 visits) at 16k −0.29 [−0.49, −0.09] at 3.3× → MAX_BACKUP_HELPS; flat 16k without the Gumbel root is not detectably different from production (cloud, 2026-11-08)
 
 **Question (Philipp, 2026-11-08 13:00 CET, go for 40 cloud workers; max-backup arm at his request 13:25 CET):** does
 §770's Gumbel root (gsh16+flat16000, g16) keep improving with 32,000 or 64,000 simulations? How much of the 16k gain
