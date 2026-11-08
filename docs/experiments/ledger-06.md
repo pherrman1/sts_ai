@@ -26509,7 +26509,7 @@ prices. A full CRN factory (stage 3) is not supported by these learning curves. 
 cloud (about 5 core-h of author-container CPU for the embeddings and fits).
 **Knowledge impact:** KB `research/fight-end-pairs.md` (stage-4 paragraph).
 
-## §TBD — Silver leaf price gate, whole A20 runs (net-0420 alone, combat B, flat 1,000), 2,048 seeds × 3 arms: the stage-4 prices P1 lose Heart kills, −2.49 pp [−4.39, −0.59] → NOT_SHOWN; PF (P1 with non-Fairy potions at 11) +0.15 pp [−1.32, +1.56] → NOT_SHOWN, non-regression NOT_WORSE; no candidate (cloud, 2026-11-08)
+## §767 — Silver leaf price gate, whole A20 runs (net-0420 alone, combat B, flat 1,000), 2,048 seeds × 3 arms: the stage-4 prices P1 lose Heart kills, −2.49 pp [−4.39, −0.59] → NOT_SHOWN; PF (P1 with non-Fairy potions at 11) +0.15 pp [−1.32, +1.56] → NOT_SHOWN, non-regression NOT_WORSE; no candidate (cloud, 2026-11-08)
 
 **Question (Philipp, 2026-11-08 00:48 CET: "Na gut lass doch p1 messen, die 3 vorgeschlagenen arms von dir."; 4
 workers 00:50 CET):** do the global victory-leaf prices of stage 4 (§766) raise the Heart kill rate of whole runs over

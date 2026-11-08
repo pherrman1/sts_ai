@@ -303,7 +303,7 @@ better: the measured weights (potion 5, max HP 1.1, gold 0.01) −1.63 floors an
 −5.9 pp wins, concave HP k = 2.7 −5.23 floors and −8.4 pp, k = 1.35 −2.10 floors
 (wins NOT_SHOWN), and the per-type combinations −6.32 and −2.41 floors; per-type
 potion weights alone −1.54 floors, NOT_SHOWN. The default weights stay.
-Ledger-06 §TBD (2,048 paired A20 whole runs, net-0420 alone, combat B) repeated this with the leaf
+Ledger-06 §767 (2,048 paired A20 whole runs, net-0420 alone, combat B) repeated this with the leaf
 pilot's Heart-kill prices (§766): non-Fairy potions 3.7, Fairy 47.6 over the death save, max HP 2.4 and
 gold 0.12 lost 2.49 pp of Heart kills [−4.39, −0.59] (NOT_SHOWN); the same prices with non-Fairy potions
 at 11 were neutral, +0.15 pp [−1.32, +1.56] (NOT_SHOWN, NOT_WORSE at −1.5 pp).
