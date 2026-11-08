@@ -115,6 +115,9 @@ net-0420 policy, combat B, `bestbench 1000 1 20`, seeds 111820000-111822047, two
 Binary c201818cb248cef2… (main ccc53a48) is in the bin cache; the smokes 111829990-111829991 passed in all three arms.
 Prices beyond this gate are to follow the E1 approach (fight-luck replays; learned price head thread).
 
+**Gate result (2026-11-08 04:10 CET, `../silver_leaf_price_gate_20261108/RESULT.md`):** no candidate. P1 lost
+2.49 pp of Heart kills [−4.39, −0.59]; PF (non-Fairy potions at 11) was neutral, +0.15 pp [−1.32, +1.56].
+
 What carries over:
 
 - P1 is the offline benchmark for any learned price model on these CRN pairs (cross-family skill 26.6 bp vs C).
