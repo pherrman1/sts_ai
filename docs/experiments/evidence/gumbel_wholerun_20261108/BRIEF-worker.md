@@ -21,7 +21,8 @@ wWW.DONE.json); write nothing else to the share.
    wait running. "FINISHED" -> reply with its last line (WORKER_OK ...). Anything else -> reply with the output and stop.
 After a container restart, run steps 1-3 at once (start skips done units). Never kill a unit or one_combat process.
 If you worked on an earlier campaign, its files are finished; leave them alone, this is a new job.
-Stay alive until the author thread says your tar is verified.
+Stay alive until the author thread says your tar is verified. If the author asks for an early stop, run
+bash tools/cloud/worker.sh stop $CAMPAIGN <n> (no new units; running ones finish), then keep the wait running.
 If any step is refused or prints STOP, reply with the exact output and stop. Do not work around it.
 Expect 1-60 min per unit (one seed: arms D, G16, G32 in one unit, G64 in another), 4 units at a time; 2,048 units
 shared by 40 workers through the queue, about 3 h in all.

@@ -11,7 +11,7 @@ OUT_ROOT holds one directory per unit (<seed>_<arm>/) with ARM-SEED.{done,log,er
 1. Primary, three contrasts X - D for X in (G16, G32, G64): d = Heart kill X - D per seed. A seed counts for a contrast
    if both games finished rc 0 with all log checks and an ARM-SEED.env whose Gumbel flags match the arm (a combat abort
    is a counted loss, listed); dropped seeds are listed, never imputed; more than 20 dropped seeds in a contrast =
-   INCOMPLETE. Seeds above the largest seed with any recorded game are not counted (early stop, PREREG). The gate per contrast (tools/sprt_gate.py gainer, alpha 0.05/3 = Bonferroni over the three contrasts,
+   INCOMPLETE. Only attempted seeds (any game with a .done file) count (early stop, PREREG). The gate per contrast (tools/sprt_gate.py gainer, alpha 0.05/3 = Bonferroni over the three contrasts,
    beta 0.05, look 64, cap = number of analysed seeds, at most 1,024) gets the seeds gap-free (key = rank in ascending
    seed order). PASS = GO; NOT_SHOWN = NOT_SHOWN; at CAP the (1 - alpha) seed bootstrap of the mean d decides (10,000
    resamples, seed 20261108): GO if lo > 0, STOP if mean <= 0, else INCONCLUSIVE. The 95% CI is reported in every case.
@@ -50,11 +50,16 @@ def env_of(path):
     return tuple(env.get(k) for k in KEYS)
 
 
+ATTEMPTED = set()
+
+
 def load(root):
     games, bad, aborts, mismatch = {}, [], [], []
+    ATTEMPTED.clear()
     for done in Path(root).glob("*/*.done"):
         d = dict(kv.split("=", 1) for kv in done.read_text().split())
         arm, seed = d["tag"].rsplit("-", 1)
+        ATTEMPTED.add(int(seed))
         if arm not in ARMS:
             raise ValueError(f"unknown arm in {d['tag']}")
         log = done.with_suffix(".log").read_text() if done.with_suffix(".log").exists() else ""
@@ -94,10 +99,10 @@ def gate(pairs, variant, cap, alpha):
 
 
 def universe(games):
-    """The pre-registered seeds up to the largest seed with any recorded game (a campaign stopped early after
-    all three gates crossed, PREREG "Stopping", is analysed on its played prefix)."""
-    top = max((s for (_, s) in games), default=SEEDS[0] - 1)
-    return [s for s in SEEDS if s <= top]
+    """The pre-registered seeds that were attempted: at least one game of the seed has a .done file (PREREG
+    "Stopping": a campaign stopped with worker.sh stop lets every claimed unit finish, and units are claimed in seed
+    order, so the unattempted seeds are the unclaimed tail). A seed with some but not all games is a drop."""
+    return [s for s in SEEDS if s in ATTEMPTED]
 
 
 def paired(games, a_arm, b_arm):
@@ -223,6 +228,22 @@ def self_test():
     r = main(root, os.path.join(t, "r2.json"))
     for arm in CONTRASTS:
         assert r["contrasts"][arm]["verdict"] == "INCOMPLETE", (arm, r["contrasts"][arm]["verdict"])
+    stop = os.path.join(t, "stopped")   # early stop: seeds above 111378700 never claimed, one straddling seed
+    for s in range(111378256, 111378701):
+        for arm in ARMS:
+            if s == 111378700 and arm != "G64":
+                continue
+            dd = os.path.join(stop, f"{s}_{arm}")
+            os.makedirs(dd)
+            Path(dd, f"{arm}-{s}.done").write_text(f"tag={arm}-{s} rc=0 start=x wall=20 abort=0")
+            Path(dd, f"{arm}-{s}.env").write_text("".join(
+                f"{k_}={v}\n" for k_, v in zip(KEYS, ENV[arm]) if v is not None))
+            Path(dd, f"{arm}-{s}.log").write_text(
+                f"BEST stack config: x  seeds {s}..{s}  asc 20  sims {SIMS[arm]}  threads 1\n"
+                f"BEST  win%= 0.0  avg_floor= 30  x cpu_sec/run= 20.0\n")
+    r = main(stop, os.path.join(t, "r4.json"))
+    assert r["contrasts"]["G64"]["n"] == 444 and r["contrasts"]["G64"]["dropped"] == [111378700], r["contrasts"]["G64"]["dropped"]
+    assert r["contrasts"]["G16"]["verdict"] != "INCOMPLETE", r["contrasts"]["G16"]["verdict"]
     empty = os.path.join(t, "empty")
     os.makedirs(empty)
     r = main(empty, os.path.join(t, "r3.json"))

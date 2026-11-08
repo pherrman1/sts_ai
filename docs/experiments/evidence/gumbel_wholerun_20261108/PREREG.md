@@ -64,12 +64,16 @@ INCONCLUSIVE. The 95% CI is reported in every case. `analyze.py` implements this
 learned stop model, root prior, Gumbel banner and a non-zero Gumbel root count in G arms and neither in D, no other
 research flag) and its `.env` holds the arm's Gumbel flags. A combat abort (stall) is a counted loss and listed.
 Seeds without both games of a contrast are dropped and listed, never imputed; more than 20 dropped seeds in a
-contrast = INCOMPLETE. Killed or timed-out units (rc 124/143, issue #1001) are re-run by the queue; whatever still
-fails is a drop.
+contrast = INCOMPLETE. A game killed by a signal (rc 137/143, issue #1001) makes `run_unit.sh` exit 3, so the queue
+re-runs the whole unit as a new attempt (at most 4); a unit lost with its container is re-claimed after the 90-min
+lease. A timeout (rc 124, 8 h per game) is final and a drop; the smoke bounds G64's wall time well below it. Units still
+failing after 4 attempts are drops and are reported.
 
-**Stopping.** Units are claimed in seed order. Once all three gates have crossed (PASS or H0) on the contiguous
-prefix, the author may stop the campaign; the analysis then covers the seeds up to the largest seed with a recorded
-game (`analyze.py` counts drops only there). No other look at outcomes changes the design.
+**Stopping.** Units are claimed in seed order (per seed G64 first, then D/G16/G32). Once all three gates have crossed
+(PASS or H0) on the contiguous prefix, the author may stop the campaign with `worker.sh stop` on every worker: no new
+claims, every claimed unit finishes. The analysis then covers the attempted seeds (any game with a `.done` file); a
+seed with only some of its games is a drop (at most the one seed whose G64 unit was claimed last). No other look at
+outcomes changes the design.
 
 **Secondary (not gates).** G32 − G16 and G64 − G32 (95% CIs); each contrast's sprt_gate nonregression. Descriptive per
 arm: Heart kill, act-4 reach (final floor ≥ 52), mean floor, CPU per run and ratio to D, aborts, games over 1 h.

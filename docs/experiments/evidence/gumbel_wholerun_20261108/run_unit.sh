@@ -9,7 +9,8 @@
 #          16,000 / 32,000 / 64,000 simulations plus max backup (min 4 visits) (STS_SILVER_GUMBEL_ROOT=16,
 #          STS_SILVER_GUMBEL_ROOT_MAX_BACKUP=4); in Act 4 at the larger of that and Act 4 strong's budget (S&S 10k,
 #          Heart 40k), with Act 4 strong's prior playouts.
-# Exits 0; the game's ARM-SEED.done holds its rc.
+# Exits 0 (each game's ARM-SEED.done holds its rc), except when a game was killed by a signal (rc 137/143, issue #1001):
+# then exit 3, so the queue re-runs the unit as a new attempt. A timeout (rc 124) is final and counts as a drop.
 set -uo pipefail
 REPO=$1 RUN=$2 OUT=$3 SEED=$4 SET=$5
 [ "$(sha256sum < "$RUN/net-0420.bin" | cut -c1-16)" = 8c0bd16c31499270 ] || { echo "bad $RUN/net-0420.bin" >&2; exit 2; }
@@ -39,6 +40,7 @@ COMMON=("PATH=/usr/local/bin:/usr/bin:/bin" "HOME=$HOME" "STS_EXECUTABLE_GIT_SHA
   "STS_OOC_HEART1=$RUN/net-0420.bin")
 BANNER="[silver] research search: whole-run Gumbel root k=16 max backup=4 (all acts)"
 cd "$REPO" || exit 2
+killed=0
 for ARM in "${ARMS[@]}"; do
   case $ARM in
     D) SIMS=10000; X=() ;;
@@ -68,5 +70,7 @@ for ARM in "${ARMS[@]}"; do
     [ "$abort" = 1 ] || grep -q "^\[heart1_ppo\] seed=$SEED " "$b.log" "$b.err" || rc=88
   fi
   echo "tag=$ARM-$SEED rc=$rc start=$start wall=$(( $(date +%s)-t0 )) abort=$abort" > "$b.done"
+  case $rc in 137|143) killed=1 ;; esac
 done
+[ "$killed" = 0 ] || exit 3
 exit 0
