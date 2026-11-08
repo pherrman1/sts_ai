@@ -116,8 +116,11 @@ Validation is D0's h = 1 split: 162,828 rows from D0 runs only. No D1 row and no
   gone by step 10,000) while the learning rate is still near its peak. It is reported, not acted on.
 
 **Change:** `train.py --value-weight w` scales the value loss. The policy and aux weights stay 1.
-- w is chosen from {1, 0.5, 0.25} after the D0 pretrain, by the lowest unweighted sum of validation policy CE and
-  value NLL (D0 h = 1). w = 1 is the run above. Ties within 0.005 go to the larger w.
+- w is chosen from {1, 0.5, 0.25} after the D0 pretrain. Each candidate trains 3 epochs as above, and the criterion
+  is `eval.json` "validation" `policy_ce + value_nll` at that final checkpoint (D0 h = 1, unweighted), not the best
+  logged step. w = 1 is the run above. The chosen w is the largest w whose sum is ≤ the minimum sum + 0.005.
+- Epochs stay at 3 for the D0 pretrain. The D1 fine-tune's epochs are chosen on D1's h = 1 split, as in the main
+  text.
 - The chosen w is used for N's D0 pretrain and its D1 fine-tune, and for the no-aux ablation's D1 fine-tune.
 - The D0-only reference for the descriptive table is N's D0 checkpoint at the chosen w.
 - G1, G2, the holdout and the descriptive tables are unchanged.
