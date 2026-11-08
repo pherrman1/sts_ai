@@ -1,7 +1,7 @@
 # E1-R: potion prices from reward luck — RESULT
 
 Pre-registration: [PREREG.md](PREREG.md) (written 2026-11-08 01:20 CET; amendment 01:33 CET after the prelaunch
-review, before any row of the run existed). Ledger §TBD-b. Philipp's go: 00:58 CET ("Jo nutz fürs Logging später 4
+review, before any row of the run existed). Ledger §769. Philipp's go: 00:58 CET ("Jo nutz fürs Logging später 4
 workers, wenn die anderen 4 workers dann sind, hast meine Erlaubnis").
 
 Run: 4 cloud workers × 4 lanes, 04:00-07:19 CET. RUN_COMMIT `32b50049`, code `cf9237a5`, binary `767a44b2…`. The

@@ -26540,7 +26540,7 @@ under the leaf they feed before they become leaf weights.
 **Knowledge impact:** KB `architecture/combat-search.md` (victory-leaf weights) and `research/fight-end-pairs.md`
 (stage-4 paragraph).
 
-## §TBD-a — E1-S: does the fight-luck HP price depend on the fight-start state? Offline on E1's luck rows (8,192 A20 runs, 165,773 fights): NOT_SHOWN
+## §768 — E1-S: does the fight-luck HP price depend on the fight-start state? Offline on E1's luck rows (8,192 A20 runs, 165,773 fights): NOT_SHOWN
 
 **Question (Philipp, 2026-11-08 00:40 CET: P1 gate dropped, prices from the luck approach; 00:46 CET yes to this
 offline test):** a context-dependent price net only pays if the HP price varies with the situation in ways Silver's
@@ -26563,7 +26563,7 @@ the data.
 `fightendpairgen rewards=1`). Seeds: none new. Cost: 0 core-h.
 **Knowledge impact:** none beyond this entry.
 
-## §TBD-b — E1-R: potion prices from reward luck on E1's 8,192 A20 runs, without replays: a Fairy drop is worth 9.2 ± 1.6 pp of Heart kill more than another drop; an ordinary potion at the act 1-2 boss reward +1.9 ± 1.05 pp, unresolved: PARTIAL
+## §769 — E1-R: potion prices from reward luck on E1's 8,192 A20 runs, without replays: a Fairy drop is worth 9.2 ± 1.6 pp of Heart kill more than another drop; an ordinary potion at the act 1-2 boss reward +1.9 ± 1.05 pp, unresolved: PARTIAL
 
 **Question (Philipp, 2026-11-08 00:40 CET: prices from the luck approach; 00:58 CET go for this run on 4
 workers):** under E1's policy (net-0420 as the whole out-of-combat policy, combat B), what is a reward potion worth
@@ -26586,7 +26586,7 @@ the act's later chances.
 times Silver's death-save credit. The ordinary potion value is not resolved at this size; its point estimate equals
 Silver's 11 HP and lies above P1's 3.7 HP, in line with §767, where 3.7 cost 2.5 pp. Like the CRN prices these are
 marginal values under the policy that runs with 11 HP weights, not leaf weights (§542, §767); the Fairy premium was
-already gated as PF, which was neutral. Neither the HP price (§TBD-a) nor the potion types beyond the Fairy show
+already gated as PF, which was neutral. Neither the HP price (§768) nor the potion types beyond the Fairy show
 structure that a learned price head could use.
 **Decision:** PARTIAL (a measurement, no default change). Seeds: none new. Cost: 50.2 core-h. Possible follow-ups,
 not started: an offline estimate from all rolls with the attenuation modelled (0 core-h), or E1-R on the 918 played

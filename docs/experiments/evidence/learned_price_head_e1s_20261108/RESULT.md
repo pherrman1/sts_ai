@@ -1,7 +1,7 @@
 # E1-S: does the fight-end HP price depend on the situation? RESULT
 
 Plan: [PLAN.md](PLAN.md) (sha256 8956c001…, written 2026-11-08 00:45 CET before any interaction was fitted).
-Ledger §TBD-a. Philipp: P1 gate dropped and luck approach wanted 00:40 CET, yes to this test 00:46 CET.
+Ledger §768. Philipp: P1 gate dropped and luck approach wanted 00:40 CET, yes to this test 00:46 CET.
 Script `e1_state_dep.py` (reuses E1's `analyze.py` at f29d1695), output `e1s_result.json`. Data: E1's 512 unit tars
 (the snapshot in E1's `inputs.sha256`), all 8,192 seeds, 165,773 acts 1-3 NORMAL/ELITE/BOSS fights. 0 core-h.
 
