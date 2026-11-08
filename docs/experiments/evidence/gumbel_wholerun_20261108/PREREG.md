@@ -89,6 +89,15 @@ teacher's value in play, not on Baalorlord's states.
 - One Gumbel setting (k 16, c_visit 50, c_scale 1) at all budgets, as in §770/§772.
 - net-0420's out-of-combat play is fixed; a stronger combat changes which states it reaches.
 
-**Cost and schedule.** (filled from the smoke below before freezing)
+**Cost and schedule.** From the smoke (one cloud core per game): D about 0.5-2 s per floor, G16 3-5 s, G32 4-9 s,
+G64 roughly 2× G32; a G16 run that kills the Heart took 1,476 s. Singleton roots cost nothing under the Gumbel root (a
+root with one edge searches nothing), although exact root budgets are on. Estimate for all 1,024 seeds: up to about
+1,000 lane-hours, 6-7 h on 40 workers × 4 lanes, with G64 games on deep runs of 2-3 h (below the 8 h timeout, but
+in reach of container resets; those units are re-run, see Validity). With an effect near the D0/D1 point estimate the
+gates should cross after a few hundred seeds and the run can stop early (Stopping). Philipp 2026-11-09 sets the
+scope on the new estimate (decision card in the planning thread).
 
-**Smoke.** (filled before freezing)
+**Smoke** (2026-11-08/09, cloud, binary 0eabb014 of code 5665d5ae, smoke seeds 111379280-111379288, not part of the
+analysis): every game rc 0 with all log checks; in G arms the Gumbel root count equals the decision count (e.g. G16
+on 111379288: 873 of 873 decisions, Heart kill, Act 4 included); D shows neither banner nor count. Per-game walls
+and floors are in the PR description.
