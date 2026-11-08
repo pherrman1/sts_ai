@@ -2,7 +2,7 @@
 
 Last verified: 2026-11-08 (`ooc=ppo` and the source row's `heartKill` added for the stage-2 pilot;
 pilot result and inclusion weights in ledger §763; `luck=`, `luck_identity=` and `n=0` added for E1 of the learned
-price head, result in ledger §764; `rewards=` added for reward luck, no run yet).
+price head, result in ledger §764; `rewards=` added for reward luck, result of E1-R in ledger §TBD-b).
 
 ## Purpose
 
@@ -86,6 +86,11 @@ run end.
    draw for prices per type. Each roll is checked against the engine: `potionChance` after the reward must
    be the start value + 10 without a drop and - 10 with one. Logging only reads the state; rows are
    otherwise unchanged.
+   A drop at an act 1-2 boss reward moves no later chance (`potionChance` resets at the act transition); a
+   mid-act drop lowers the act's later chances, so its luck coefficient is attenuated. E1-R (§TBD-b,
+   `docs/experiments/evidence/learned_price_head_e1r_20261108/`) logged E1's 8,192 runs: a Fairy drop is worth
+   9.2 ± 1.6 pp of Heart kill more than another drop (about 60 HP at 0.155 pp per HP); an ordinary potion at the
+   boss reward 1.9 ± 1.05 pp (about 11 HP, unresolved); no other potion type differs measurably from the rest.
 
 ## Output
 
