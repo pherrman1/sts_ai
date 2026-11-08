@@ -44,6 +44,13 @@
 // edge order and action bits (labelRootEdges), since the row's wire is the played root; the manifest counts the
 // roots where the two edge sets could not be matched (labelSearch.edgeFallbacks).
 //
+// STS_AZGEN_GUMBEL_ROOT=K (silverazgen only, default off; 2..64; requires STS_AZGEN_PRODUCTION_COMBAT=1, no
+// label search) is combat plan stage 2's teacher data (§770): every fight of the run plays production Silver with
+// the Gumbel root (SilverSearcher::searchGumbelRoot, Gumbel-top-K over the root prior, sequential halving) at the
+// flat budget SIMS. Root rows add each edge's root prior (`prior`, null when the root has none) and the Gumbel
+// pick's edge index (`gumbelChoice`), so a policy target (visit shares or the completed-Q policy) can be formed
+// offline. The manifest records the setting (`gumbelRoot`).
+//
 // silverazfocusgen is silverazgen for one encounter (fight-specific prior data,
 // /mnt/project-files/silver-prior-fight-specific/): the run plays every other
 // fight unrecorded at OTHER_SIMS with the same prior, and at the first fight of
@@ -107,6 +114,22 @@ bool labelSearch() {
     if (!v || !*v || std::string(v) == "0") return false;
     if (std::string(v) != "1") throw std::runtime_error("STS_AZGEN_LABEL_SEARCH must be 0 or 1");
     return true;
+}
+
+// STS_AZGEN_GUMBEL_ROOT: unset or 0 = production's root search; K in 2..64 = the Gumbel root with K sampled edges.
+int gumbelRootK() {
+    const char *v = std::getenv("STS_AZGEN_GUMBEL_ROOT");
+    if (!v || !*v || std::string(v) == "0") return 0;
+    int k = 0;
+    try {
+        std::size_t used = 0;
+        k = std::stoi(v, &used);
+        if (used != std::string(v).size()) k = 0;
+    } catch (const std::exception &) {
+        k = 0;
+    }
+    if (k < 2 || k > 64) throw std::runtime_error("STS_AZGEN_GUMBEL_ROOT must be 0 or 2..64");
+    return k;
 }
 
 // Deterministic draws for the perturbation; never touches game RNG.
@@ -284,6 +307,7 @@ struct FightRecorder {
     int fightIdx = 0;
     int sims = 0;
     bool lean = false;   // silverazgen: no second teacher or continuations
+    bool gumbel = false;  // STS_AZGEN_GUMBEL_ROOT: root rows add priors and the Gumbel pick
     std::ostringstream *out = nullptr;
     search::SilverLeafSamples leaves;
     long long roots = 0, leafRows = 0, secondTeachers = 0, continuationRoots = 0, labelRoots = 0;
@@ -322,6 +346,14 @@ struct FightRecorder {
             row["playEdges"] = rootEdges(searcher);
             row["playInheritedVisits"] = view.inheritedVisits;
             ++labelRoots;
+        }
+        if (gumbel) {
+            const auto &prior = searcher.rootPrior;
+            auto &edges = row["edges"];
+            const bool known = prior.size() == edges.size();
+            for (std::size_t i = 0; i < edges.size(); ++i)
+                edges[i]["prior"] = known ? nlohmann::json(prior[i]) : nlohmann::json(nullptr);
+            row["gumbelChoice"] = searcher.lastGumbelEdge();
         }
         try {
             row["wire"] = wireJson(state, context);
@@ -389,6 +421,7 @@ struct AzPrior {
     bool rootBonus = true;
     bool production = false;  // STS_AZGEN_PRODUCTION_COMBAT: no search override
     bool labelSearch = false;  // STS_AZGEN_LABEL_SEARCH: a production label search per root
+    int gumbelK = 0;           // STS_AZGEN_GUMBEL_ROOT: 0 = off
 };
 
 // silverazfocusgen: record only `target`, then end the run.
@@ -419,6 +452,7 @@ SeedResult runSynthSeed(std::uint64_t seed, int sims, int asc, const std::string
     recorder.variant = perturbed ? "perturbed" : "natural";
     recorder.sims = sims;
     recorder.lean = az.has_value();
+    recorder.gumbel = az && az->gumbelK > 0;
     recorder.out = &out;
     recorder.leaves.stride = kLeafStride;
     recorder.leaves.max = kLeavesPerRoot;
@@ -430,6 +464,7 @@ SeedResult runSynthSeed(std::uint64_t seed, int sims, int asc, const std::string
             search::g_nativeSilverTreePriorOverride.reset();
             search::g_nativeSilverRootPriorBonusOff = false;
             search::g_nativeSilverLabelSearch = false;
+            search::g_nativeSilverGumbelRootOverride.reset();
         }
     } hooks;
     if (az && !az->production) {
@@ -439,6 +474,12 @@ SeedResult runSynthSeed(std::uint64_t seed, int sims, int asc, const std::string
         search::g_nativeSilverRootPriorBonusOff = !az->rootBonus;
     }
     if (az && az->labelSearch) search::g_nativeSilverLabelSearch = true;
+    if (az && az->gumbelK > 0) {
+        // Every fight of the run (recorded or not) plays the Gumbel root.
+        search::SilverSearcher::GumbelRoot g;
+        g.k = az->gumbelK;
+        search::g_nativeSilverGumbelRootOverride = g;
+    }
     auto record = [&](GameContext &gc, BattleContext &bc, search::ScumSearchAgent2 &agent,
                       const nlohmann::json &perturbation) {
         const int preHp = gc.curHp, preMaxHp = gc.maxHp;
@@ -675,6 +716,10 @@ void silverAzRun(int nSeeds, int sims, int asc, const std::string &outPrefix, lo
         throw std::runtime_error("silverazgen: STS_AZGEN_LABEL_SEARCH=1 requires STS_AZGEN_PRODUCTION_COMBAT=1 and"
                                  " STS_SILVER_LEAF_HEAD");
     if (label && focus) throw std::runtime_error("silverazfocusgen: STS_AZGEN_LABEL_SEARCH is silverazgen only");
+    const int gumbelK = gumbelRootK();
+    if (gumbelK > 0 && (!prodCombat || label || focus))
+        throw std::runtime_error("silverazgen: STS_AZGEN_GUMBEL_ROOT requires STS_AZGEN_PRODUCTION_COMBAT=1, no"
+                                 " STS_AZGEN_LABEL_SEARCH and is silverazgen only");
     const std::string priorPath = search::nativeSilverRootPriorPath();
     search::CombatValueNet prior;
     if (priorPath.empty() || !prior.load(priorPath) || !prior.isPolicyMlp)
@@ -688,9 +733,9 @@ void silverAzRun(int nSeeds, int sims, int asc, const std::string &outPrefix, lo
     if (!rows) throw std::runtime_error("silverazgen: cannot open " + rowsPath);
     const std::string priorSha = fileSha256(priorPath);
     const std::string teacherId = "silver-az-" + std::to_string(sims) + "-k" + std::to_string(treeMinVisits)
-        + "-rb" + std::to_string(rootBonus) + (prodCombat ? "-prod" : "") + (label ? "-headplay" : "") + "-"
-        + priorSha.substr(0, 8);
-    const AzPrior az{treeMinVisits, rootBonus == 1, prodCombat, label};
+        + "-rb" + std::to_string(rootBonus) + (prodCombat ? "-prod" : "") + (label ? "-headplay" : "")
+        + (gumbelK > 0 ? "-gsh" + std::to_string(gumbelK) : "") + "-" + priorSha.substr(0, 8);
+    const AzPrior az{treeMinVisits, rootBonus == 1, prodCombat, label, gumbelK};
     // Under the self-play overrides Silver plays no prior playouts (NativeSilverBackend skips them).
     nlohmann::json silverLeaf = effectiveSilverLeafSpecification();
     if (!prodCombat && silverLeaf.contains("prior_playout_rooms")) silverLeaf["prior_playout_rooms"] = "none";
@@ -742,6 +787,11 @@ void silverAzRun(int nSeeds, int sims, int asc, const std::string &outPrefix, lo
         manifest["labelSearch"] = {{"rows", "edges = production Silver without the leaf head; playEdges = played"},
                                    {"play", "leaf_head"}, {"budget", sims}, {"labelRoots", labelRoots},
                                    {"edgeFallbacks", labelEdgeFallbacks}};
+    if (gumbelK > 0) {
+        const search::SilverSearcher::GumbelRoot g;
+        manifest["gumbelRoot"] = {{"k", gumbelK}, {"cVisit", g.cVisit}, {"cScale", g.cScale}, {"budget", sims},
+                                  {"rows", "edges[].prior = root prior; gumbelChoice = the Gumbel pick's edge"}};
+    }
     std::ofstream mf(manifestPath);
     if (!mf) throw std::runtime_error("silverazgen: cannot write manifest");
     mf << manifest.dump(2) << '\n';

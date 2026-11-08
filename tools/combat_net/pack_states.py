@@ -9,9 +9,11 @@ One output row per searched root (rows with "skipped": true, one-action roots, a
   x        - wire_encoder.encode(wire)
   edges    - per root edge: parsed semantic action (wire_encoder.parse_semantic), visits, q
   policy   - visit shares of the edges (Silver's root distribution; the plan's policy target)
-  chosen   - index of the edge Silver played (-1 if it is not among the edges)
+  chosen   - index of the edge Silver played (-1 if it is not among the edges); when the played card is another copy
+             of the edge's card (same fingerprint up to the unique id), that edge (counted as chosenByCopy)
   value    - the fight's real outcome: won, endHp, preHp, preMaxHp (from the fight row), and the fight's own
              Silver end score `score`
+  (Gumbel-root rows of STS_AZGEN_GUMBEL_ROOT also carry each edge's root `prior` and the row's `gumbelChoice`.)
   aux      - realized HP loss (HP now minus HP at the first root of a later turn, or the fight's end HP when the fight
              ends first) to turn+1 and turn+2: the plan's "incoming damage" heads, measured on the played line
 
@@ -24,6 +26,7 @@ import gzip
 import importlib.util
 import json
 import os
+import re
 import sys
 
 _here = os.path.dirname(os.path.abspath(__file__))
@@ -48,6 +51,16 @@ def fights_of(path):
         yield None, roots
 
 
+def no_uid(semantic):
+    """The semantic fingerprint with the played card's unique id (second field of `c`) zeroed."""
+    def strip(m):
+        parts = m.group(1).split("_")
+        if len(parts) > 1:
+            parts[1] = "0"
+        return "/c=" + "_".join(parts)
+    return re.sub(r"/c=([^/]*)", strip, semantic)
+
+
 def hp_loss_after(roots, i, turns, end_hp):
     t = roots[i]["turn"] + turns
     for r in roots[i + 1:]:
@@ -61,7 +74,7 @@ def main(argv):
         print(__doc__)
         return 2
     counts = {"files": 0, "fights": 0, "rows": 0, "multiEdgeRows": 0, "droppedNoWire": 0,
-              "droppedNoFight": 0, "droppedInvalidFight": 0}
+              "droppedNoFight": 0, "droppedInvalidFight": 0, "chosenByCopy": 0}
     with gzip.open(argv[1], "wt") as out:
         for path in argv[2:]:
             counts["files"] += 1
@@ -81,11 +94,16 @@ def main(argv):
                     edges = r["edges"]
                     total = sum(e["visits"] for e in edges)
                     chosen = next((j for j, e in enumerate(edges) if e["semantic"] == r["chosen"]), -1)
+                    if chosen < 0:   # the played copy of a card can differ from the edge's copy only by its unique id
+                        played = no_uid(r["chosen"])
+                        chosen = next((j for j, e in enumerate(edges) if no_uid(e["semantic"]) == played), -1)
+                        counts["chosenByCopy"] += chosen >= 0
                     row = {
                         "seed": r["seed"], "fight": r["fight"], "decision": r["decision"], "act": r["act"],
                         "floor": r["floor"], "room": r["room"], "encounter": r["encounter"], "turn": r["turn"],
                         "x": we.encode(r["wire"]),
-                        "edges": [{"a": we.parse_semantic(e["semantic"]), "visits": e["visits"], "q": e["q"]}
+                        "edges": [dict({"a": we.parse_semantic(e["semantic"]), "visits": e["visits"], "q": e["q"]},
+                                       **({"prior": e["prior"]} if "prior" in e else {}))
                                   for e in edges],
                         "policy": [e["visits"] / total for e in edges] if total > 0 and len(edges) > 1 else [],
                         "chosen": chosen,
@@ -94,6 +112,8 @@ def main(argv):
                         "aux": {"hpLoss1": hp_loss_after(roots, i, 1, end_hp),
                                 "hpLoss2": hp_loss_after(roots, i, 2, end_hp)},
                     }
+                    if "gumbelChoice" in r:   # STS_AZGEN_GUMBEL_ROOT rows (stage 2 teacher data)
+                        row["gumbelChoice"] = r["gumbelChoice"]
                     out.write(json.dumps(row, separators=(",", ":")) + "\n")
                     counts["rows"] += 1
                     counts["multiEdgeRows"] += len(edges) > 1
