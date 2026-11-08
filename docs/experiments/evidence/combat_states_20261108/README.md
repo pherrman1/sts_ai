@@ -49,8 +49,9 @@ need a small search per root and belong to stage 2's ablation); potions used per
 
 ## Result (2026-11-08)
 
-Run commit 75604d31 (code a51a2ed2, binary 44d6d0c9), 18 workers × 4 lanes, 01:50-05:10 CET. Two container reset
-waves (about 03:25 and 05:25 CET) killed some lanes; their stale claims were re-claimed and rerun.
+Run commit 75604d31 (code a51a2ed2, binary 44d6d0c9), 18 workers × 4 lanes, 01:50-05:10 CET. A container reset wave
+at about 03:25 CET killed some lanes; their stale claims were re-claimed and rerun (a second wave at about 05:25 CET
+came after stage 0 had finished).
 `verify_campaign.py`: 384 of 384 units OK, 0 missing, 0 bad, 0 duplicates, all tars from run 75604d31, 18/18 worker
 DONE.json. Unit tally by rc: 384 rc 0, nothing excluded.
 
