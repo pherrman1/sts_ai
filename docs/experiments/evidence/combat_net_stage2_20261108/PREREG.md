@@ -71,13 +71,18 @@ Can a combat net learn Silver's root decision and the fight's outcome well enoug
 
 - N without the auxiliary heads.
 - N policy-only (no value loss).
-- N trained on D0 only. This shows whether the Gumbel targets add anything beyond production's.
+- N trained on D0 only. This shows whether the Gumbel targets add anything beyond production's. It is N's D0 checkpoint before the D1 fine-tune.
 
 ## Cost
 
-- Tensorization and training on the PC GPU (RTX 3060 Ti), one GPU job at a time. That is about 1-2 days including
-  ablations.
-- D1 is about 100-150 lane-hours (see the smoke below; 8 workers × 4 lanes ≈ 3-5 h).
+- Tensorization and training on the PC GPU (RTX 3060 Ti), one GPU job at a time.
+  - D0 tensorizes in about 5 minutes (1,633,473 rows, 5.4 GB of arrays).
+  - `train.py` batches by length buckets, collates in DataLoader workers and runs bfloat16 autocast on CUDA. None
+    of it changes targets or splits. On CPU, bucketing alone cut forward plus backward per batch of 256 from 1.74 s
+    to 0.73 s (105 to 50 tokens).
+  - The D0-only ablation is N's D0 checkpoint before the D1 fine-tune, so it costs no extra run.
+  - Expected: well under an hour of GPU time for N and the ablations (first measured on the PC).
+- D1 is about 100-150 lane-hours (see the smoke below; Philipp's go: 40 workers × 4 lanes, about 1 h).
 
 ## Smokes (2026-11-08; not part of the gate)
 

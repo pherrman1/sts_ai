@@ -2,13 +2,18 @@
 """Train the combat net on tensorize.py arrays (combat plan stage 2, 2026-11-08).
 
 usage: train.py DATA_DIR OUT_DIR [--epochs N] [--batch B] [--lr LR] [--d D] [--layers L] [--no-aux] [--no-value]
-                [--max-steps N] [--device cpu|cuda] [--seed S] [--init CKPT]
+                [--max-steps N] [--device cpu|cuda] [--seed S] [--init CKPT] [--workers N] [--no-bucket] [--no-amp]
 
 Splits by run (never inside a run), h = (seed * 2654435761) % 2^32 % 10: h == 0 is the gate holdout, which this
 script never reads (gate.py does); h == 1 is the validation split for learning curves and the choice of epochs;
 the rest trains. Writes OUT_DIR/model.pt, OUT_DIR/log.jsonl (one line per evaluation) and OUT_DIR/eval.json (final
 validation metrics): policy cross-entropy and top-1 agreement with the played action on multi-edge roots, value NLL and death
 Brier score / 10-bin ECE, aux HP-loss MAE, each also by room (monster / elite / boss).
+
+Speed (none of it changes the targets or the splits): batches are drawn by length buckets (random pools of 64
+batches are sorted by card count before they are cut, then the batch order is shuffled), so a batch pads to similar
+rows; batches are collated by `--workers` DataLoader processes ahead of the GPU; on CUDA the forward pass runs under
+bfloat16 autocast (losses in float32). `--no-bucket` and `--no-amp` restore plain shuffled float32 batches.
 """
 
 import argparse
@@ -33,18 +38,46 @@ def holdout_mask(seeds):
     return split_of(seeds) == 0
 
 
+def bucket_batches(idx, ncards, batch, rng, pool=64):
+    """Shuffled batches of `idx` whose rows have similar card counts (each pool of `pool` batches is sorted by
+    length before it is cut)."""
+    perm = rng.permutation(idx)
+    out = []
+    for s in range(0, len(perm), batch * pool):
+        chunk = perm[s:s + batch * pool]
+        chunk = chunk[np.argsort(ncards[chunk], kind="stable")]
+        out += [chunk[k:k + batch] for k in range(0, len(chunk) - batch + 1, batch)]
+    rng.shuffle(out)
+    return out
+
+
+class BatchSet(torch.utils.data.Dataset):
+    def __init__(self, A, batches):
+        self.A, self.batches = A, batches
+
+    def __len__(self):
+        return len(self.batches)
+
+    def __getitem__(self, i):
+        return M.collate(self.A, self.batches[i])
+
+
 @torch.no_grad()
-def evaluate(net, A, idx, batch, device):
+def evaluate(net, A, idx, batch, device, amp=False):
     if len(idx) == 0:
         return None
     net.eval()
+    nc = np.diff(np.asarray(A.a["card_off"]))
+    idx = np.asarray(idx)[np.argsort(nc[idx], kind="stable")]   # sums only, so the order is free
     sums = {"n": 0, "multi": 0, "pol_ce": 0.0, "top1": 0, "top1_n": 0, "nll": 0.0, "brier": 0.0, "aux_mae1": 0.0,
             "aux_mae2": 0.0}
     room = {r: {"multi": 0, "top1": 0, "top1_n": 0, "nll": 0.0, "n": 0} for r in range(4)}
     pdeath, died = [], []
     for s in range(0, len(idx), batch):
         b = {k: v.to(device) for k, v in M.collate(A, idx[s:s + batch]).items()}
-        logits, vlog, aux = net(b)
+        with torch.autocast("cuda", dtype=torch.bfloat16, enabled=amp):
+            logits, vlog, aux = net(b)
+        logits, vlog, aux = logits.float(), vlog.float(), aux.float()
         logp = torch.log_softmax(logits, -1).masked_fill(~b["act_mask"], 0)
         multi = b["multi"] > 0
         ce = -(b["policy"] * logp).sum(-1)
@@ -106,6 +139,9 @@ def main(argv):
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     ap.add_argument("--seed", type=int, default=20261108)
     ap.add_argument("--init", default="")
+    ap.add_argument("--workers", type=int, default=4)
+    ap.add_argument("--no-bucket", action="store_true")
+    ap.add_argument("--no-amp", action="store_true")
     args = ap.parse_args(argv)
     os.makedirs(args.out, exist_ok=True)
     torch.manual_seed(args.seed)
@@ -134,31 +170,43 @@ def main(argv):
                 "steps": steps, "data_meta": A.meta})
     log.write(json.dumps({"config": cfg}) + "\n")
     print(json.dumps({k: cfg[k] for k in ("params", "trainRows", "valRows", "steps", "device")}), flush=True)
+    amp = args.device.startswith("cuda") and not args.no_amp
+    ncards = np.diff(np.asarray(A.a["card_off"]))
+
+    def epoch_batches():
+        if args.no_bucket:
+            perm = rng.permutation(train_idx)
+            return [perm[k:k + args.batch] for k in range(0, len(perm) - args.batch + 1, args.batch)]
+        return bucket_batches(train_idx, ncards, args.batch, rng)
+
+    def batch_stream():
+        while True:
+            dl = torch.utils.data.DataLoader(BatchSet(A, epoch_batches()), batch_size=None, shuffle=False,
+                                             num_workers=args.workers, pin_memory=args.device.startswith("cuda"),
+                                             prefetch_factor=4 if args.workers else None)
+            yield from dl
+
     t0 = time.time()
-    perm = rng.permutation(train_idx)
-    pos = 0
+    stream = batch_stream()
     for step in range(steps):
-        if pos + args.batch > len(perm):
-            perm, pos = rng.permutation(train_idx), 0
-        bi = perm[pos:pos + args.batch]
-        pos += args.batch
-        b = {k: v.to(args.device) for k, v in M.collate(A, bi).items()}
-        logits, vlog, aux = net(b)
-        loss, parts = M.losses(net, b, logits, vlog, aux)
+        b = {k: v.to(args.device, non_blocking=True) for k, v in next(stream).items()}
+        with torch.autocast("cuda", dtype=torch.bfloat16, enabled=amp):
+            logits, vlog, aux = net(b)
+        loss, parts = M.losses(net, b, logits.float(), vlog.float(), aux.float())
         opt.zero_grad()
         loss.backward()
         torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
         opt.step()
         sched.step()
         if (step + 1) % args.eval_every == 0 or step + 1 == steps:
-            ev = evaluate(net, A, eval_idx, 512, args.device)
+            ev = evaluate(net, A, eval_idx, 512, args.device, amp)
             rec = {"step": step + 1, "sec": round(time.time() - t0, 1), "train": parts, "val": ev}
             log.write(json.dumps(rec) + "\n")
             log.flush()
             print(json.dumps({"step": step + 1, "sec": rec["sec"], **({k: round(ev[k], 4) for k in
                               ("policy_ce", "top1", "value_nll", "death_ece", "aux_mae1")} if ev else {})}), flush=True)
     torch.save(net.state_dict(), os.path.join(args.out, "model.pt"))
-    final = evaluate(net, A, val_idx, 512, args.device)
+    final = evaluate(net, A, val_idx, 512, args.device, amp)
     json.dump({"config": {k: cfg[k] for k in cfg if k != "data_meta"}, "validation": final},
               open(os.path.join(args.out, "eval.json"), "w"), indent=1)
     if final:

@@ -58,6 +58,12 @@ def collate(A, idx):
     out["actions"] = torch.from_numpy(acts)
     out["act_mask"] = torch.arange(E)[None, :] < torch.from_numpy(na)[:, None]
     out["policy"] = torch.from_numpy(pol)
+    # Trim the fixed-size status-map and queue axes to this batch's longest row (both are front-filled, and the
+    # model masks the padding), so short batches carry fewer tokens.
+    live = (out["smap"][..., 0] > 0).any(0)
+    ns = int(torch.nonzero(live).max()) + 1 if live.any() else 1
+    out["smap"] = out["smap"][:, :ns]
+    out["queues"] = out["queues"][:, :max(1, int(out["nqueue"].max()))]
     return out
 
 
