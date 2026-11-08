@@ -26521,7 +26521,7 @@ on its own (PF)?
 `bestbench 1000 1 20`, net-0420 as the whole OOC policy (temperature 0, no OOC MCTS), combat B. Arms on every seed
 111820000-111822047: D (defaults); P1 (`STS_SILVER_POTION_WEIGHTS=*=3.7,FAIRY_POTION=47.6`,
 `STS_SILVER_MAXHP_WEIGHT=2.4`, `STS_SILVER_GOLD_WEIGHT=0.12`); PF (P1 with `*=11`).
-**Result:** 6,144 games, all rc 0 with every check; 0 dropped seeds; 0 `.env` mismatches (check added before any game
+**Result:** 6,144 games, all rc 0 with every check; 0 dropped seeds; 0 `.env` mismatches (check added before any outcome
 was read, review G-N1); 2 combat aborts (seed 111821505 in D and PF, counted as losses). Heart D 25.83%, P1 23.34%,
 PF 25.98%. P1 − D −2.49 pp [−4.39, −0.59]: SPRT gainer (d0 0, d1 +2 pp, α 0.025) H0 at 1,024 pairs → NOT_SHOWN;
 nonregression (d0 −1.5 pp) CAP, bootstrap lo −4.39 → not NOT_WORSE. PF − D +0.15 [−1.32, +1.56]: H0 at 704 pairs →

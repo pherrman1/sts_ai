@@ -17,7 +17,8 @@ Pre-registered rules: [PREREG.md](PREREG.md). The prices come from the leaf plan
   c201818cb248cef2… from the bin cache, `bestbench 1000 1 20`. 4 workers (Philipp 00:50 CET) from 00:56 to 03:55 CET.
 - **Games.** 2,048 seeds × 3 arms = 6,144 games, all rc 0 with every log check. 0 dropped seeds. 0 `.env`
   mismatches: the check that each game's three leaf flags match its arm (review G-N1) was added in 863bba94 before
-  any game of the block was read.
+  any game outcome was read. By then I had checked only the rc codes, leaf banners and `.env` files of the first
+  12 seeds.
 - **Aborts.** 2 combat aborts, both on seed 111821505 (arms D and PF), counted as losses.
 - **Verification.** `verify_campaign.py`: 2,048 units OK, 0 missing, 0 bad, 0 duplicates, one run commit, 4 of 4
   DONE.json.

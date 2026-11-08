@@ -10,7 +10,7 @@ OUT_ROOT holds one directory per seed with ARM-SEED.{done,log,err} from run_unit
 DIR writes DIR/out/units/<seed>/).
 1. Primary, two contrasts X - D for X in (P1, PF): d = Heart kill X - D per seed. A seed counts for a contrast if both
    of its games finished rc 0 with all log checks and an ARM-SEED.env whose three leaf flags match the arm (review
-   G-N1, added 2026-11-08 before any game of the block was read; a mismatch is listed under env_mismatch and the
+   G-N1, added 2026-11-08 before any game outcome of the block was read; a mismatch is listed under env_mismatch and the
    game counts as failed) (a combat abort is a counted loss, listed); dropped seeds are listed,
    never imputed; more than 20 dropped seeds in a contrast = INCOMPLETE. The gate per contrast
    (tools/sprt_gate.py gainer, alpha 0.025 = Bonferroni over the two contrasts, beta 0.05, look 64, cap = number of
