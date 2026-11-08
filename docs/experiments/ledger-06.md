@@ -26470,3 +26470,42 @@ same rate, so a playout-death veto has nothing to act on.
 value. No seeds. Cost ≈ 1 core-h.
 **Knowledge impact:** none beyond this entry.
 
+## §766 — Leaf plan stage 4, offline fit of victory-leaf prices on the §763 pilot pairs (1,938 units, 338,434 weighted pairs): four global prices (P1) beat Silver's default leaf in cross-family skill, +14.4 bp [8.3, 20.2]; per-act prices and every state-dependent model (net-0420 critic, trunk heads, LightGBM) do not beat P1; gate D / P1 / PF pre-registered (cloud, 2026-11-08)
+
+**Question (Philipp, 2026-11-08 00:06 CET, card "Offline-Fit, dann Gate"):** which victory-leaf prices do the pilot's
+CRN pairs support, and does a state-dependent leaf predict them better than fixed prices?
+**Data:** [PLAN](evidence/leaf_stage4_offline_fit_20261108/PLAN.md) (saved before the fit on all units finished),
+[RESULT](evidence/leaf_stage4_offline_fit_20261108/RESULT.md), `lp1938.json`, `heads1938.json`, `te1938w.result.json`.
+§763's 1,938 units: 61,739 forks, 338,434 pairs (156,135 non-HP), every pair weighted by eligible / sampled; 5 folds
+by unit (sha256 mod 5), unit-cluster bootstrap B = 1000. Each leaf's difference is scaled per act by one factor fitted
+on the HP pairs. Skill = 1 − SSE / SSE(C) on the non-HP pairs, C = per act × family constant. No games played.
+**Result:**
+- Skill vs C (bp): Silver default L 12.2 [7.5, 17.5]; **P1** (Fairy on top of its death save, other potions, max HP,
+  gold) **26.6 [17.7, 35.3]**; P4 (the same per act) 30.4 [20.7, 39.4]; best state-dependent model (critic plus
+  correction, H2) 22.8 [9.4, 35.3]. P1 − L +14.4 [8.3, 20.2]; P4 − P1 +3.8 [−0.2, +7.5], with act-3 and act-4
+  weights unstable across folds; H2 − P1 −3.8 [−13.5, +5.7], H1 − P1 −7.7 [−16.9, +0.7], the other models below P1
+  with the whole CI below 0.
+- P1 in HP units: Fairy +47.6 over its death save (folds 40-53), other potions 3.67 (3.1-4.2), max HP 2.41 per point
+  (2.2-2.7), gold 0.124 per gold (0.11-0.14); Silver's leaf: 11, 11, 2.0, 0.25. HP scale 0.230 / 0.199 / 0.094 /
+  0.377 pp per HP in acts 1 / 2 / 3 / 4. Relative to HP, the default leaf overprices potions in act 1 (−2.86 pp
+  predicted vs −1.69 observed) and gold in acts 1-2, and underprices max HP in acts 2-3 and potions in act 3.
+- State dependence: within-cell slope of the HP price 0.48 [0.22, 0.73] for the critic and 0.37-0.40 for the trunk
+  heads, HP skill vs the cell constant ≤ 0 for every model; on 880 units the slopes were 0.66 and 0.49-0.51, so 2.2
+  times the data did not improve them. Potions: heads and critic match P1 (H2 120, V0 116, P1 109 bp in the potion
+  family); max HP: the critic and the trunk heads are worse than the constant (−17 to −31 bp).
+- Deviation from the PLAN: it described L with gold 0, but Silver's default is 0.25 per gold; the corrected L is used
+  (with gold 0, P1 − L was +13.7 [7.4, 20.1]). Same selection.
+**Interpretation (Inference):** the pilot's labels support better global prices, not a per-situation leaf: one pair's
+outcome noise (SD about 40 pp) dwarfs effects of 1-2 pp, and telling two situations apart at a 1 pp difference (z = 2)
+needs about 14,000 pairs per situation. The measured potion price is the marginal value under a policy that spends
+potions at 11; §542's arm W (non-Fairy potions 5.0) lost 5.9 pp in whole runs, so cheap potion weights are not safe
+leaf weights without a gate.
+**Decision:** P1 is the gate candidate under the PLAN rule. Philipp 2026-11-08 00:40 CET first declined a gate
+("vermutlich verschwendetes compute"), then at 00:48 CET asked for it with the three proposed arms D / P1 / PF
+(PF = P1 with every non-Fairy potion at 11), pre-registered in
+[silver_leaf_price_gate_20261108](evidence/silver_leaf_price_gate_20261108/PREREG.md) (result in its own entry). P1
+stays the offline benchmark on CRN pairs; luck replays cannot price max HP, gold or counters, so those keep the CRN
+prices. A full CRN factory (stage 3) is not supported by these learning curves. No default change. Cost: 0 core-h
+cloud (about 5 core-h of author-container CPU for the embeddings and fits).
+**Knowledge impact:** KB `research/fight-end-pairs.md` (stage-4 paragraph).
+
