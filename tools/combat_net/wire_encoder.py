@@ -185,7 +185,7 @@ def check_paths(wire: Dict[str, Any]) -> None:
 def encode(wire: Dict[str, Any]) -> Dict[str, Any]:
     check_paths(wire)
     out: Dict[str, Any] = {}
-    g = [_num(wire[k]) for k in GLOBAL_SCALARS if k in wire]
+    g = [_num(wire[k]) for k in GLOBAL_SCALARS]   # a missing field raises KeyError
     for pile in ("drawPile", "discardPile", "exhaustPile"):
         g.append(_num(wire[pile]["fullOrderObserved"]))
     cs = wire["cardSelect"]

@@ -12,7 +12,7 @@ root at equal budget; gsh16+flat16000 - gsh16+flat4000: 4x budget under the Gumb
 fights on the floor): HP lost = entry HP - exit HP (0 on a loss) per copy, mean over the 4 copies, for production
 (replicates r = 0..3) and each arm (same copy seeds). The final act-3 boss (floor 51) exit runs into the Act-4
 transition heal; its exits are inverted as in §711's analyze.py for every side. CIs: run-clustered bootstrap,
-10,000 resamples, seed 20261029.
+10,000 resamples, seed 20261108.
 """
 import collections, glob, json, os, random, statistics as st, sys
 

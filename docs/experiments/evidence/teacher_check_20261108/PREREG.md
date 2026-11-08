@@ -35,7 +35,8 @@ equal CPU (§479), exact solves at the end of fights (§623, §654). Human moves
 ## Endpoints and analysis (fixed; `analyze.py`)
 
 HP lost per copy = entry HP − exit HP, exit 0 on a loss. Floor-51 exits inverted for the Act-4 heal as in §711/§718.
-Side value = mean over its 4 copies. Drops as in §711 (invalid copy, no logged exit HP, two logged fights on the
+Units whose `.done` line has rc != 0 are excluded (analyze.py runs on the rc-0 units only); the RESULT reports the
+unit tally by rc (0 / 124 / 9x / missing). Side value = mean over its 4 copies. Drops as in §711 (invalid copy, no logged exit HP, two logged fights on the
 floor). CIs: run-clustered bootstrap, 10,000 resamples, seed 20261108; each arm is judged on its 98.75% CI (four arms,
 Bonferroni).
 

@@ -34,6 +34,8 @@ the rows were complete. About 0.3 s per root. Expected for the campaign: 3,072 r
 ## Processing (after the run)
 
 1. `python3 tools/cloud/verify_campaign.py docs/experiments/evidence/combat_states_20261108 --extract <dir>`.
+   Units whose `.done` line has rc != 0 are excluded from the pack; the pack report gives the unit tally by rc
+   (0 / 124 / 97 / other / missing).
 2. `python3 -I tools/combat_net/pack_states.py OUT.jsonl.gz <dir>/**/natural-*.jsonl.gz`: one training row per root
    (tokens from `tools/combat_net/wire_encoder.py`, Silver's root visit shares, the fight's real outcome, realized HP
    loss to the next one and two turns). The encoder raises on any wire field it does not list
