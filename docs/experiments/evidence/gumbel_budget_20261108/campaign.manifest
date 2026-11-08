@@ -1,0 +1,11 @@
+name          gumbel-budget
+code_commit   d430d406824b52d981b8836de65f8655bc64ef87
+binary_sha256 3e801097c5e8c18d859203f56dc3e7f6f2bb09df16f0a20c9cf9b0ff5c692a5e
+workers       40
+share         /mnt/project-files/combat-plan/gumbel-budget
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 45
+input student_sel.bin /mnt/project-files/az-gen3-explore/student_sel.bin cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7
+input expert_runs.tar /mnt/project-files/expert-replay/expert_runs.tar 895eac8fa092d0fb0e56735841f8425f269cdfc3d9eacde84d4905a240fd0f24
