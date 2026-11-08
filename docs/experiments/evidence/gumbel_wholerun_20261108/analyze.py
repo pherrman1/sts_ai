@@ -3,7 +3,7 @@
 G16 / G32 / G64 (Gumbel root k 16 + max backup 4 at 16k / 32k / 64k simulations in every fight), seeds
 111378256-111379279, every arm on every seed.
 
-    python3 analyze.py OUT_ROOT result.json
+    python3 analyze.py OUT_ROOT result.json [CLAIMS_LIST]
     python3 analyze.py --self-test
 
 OUT_ROOT holds one directory per unit (<seed>_<arm>/) with ARM-SEED.{done,log,err,env} from run_unit.sh
@@ -11,7 +11,7 @@ OUT_ROOT holds one directory per unit (<seed>_<arm>/) with ARM-SEED.{done,log,er
 1. Primary, three contrasts X - D for X in (G16, G32, G64): d = Heart kill X - D per seed. A seed counts for a contrast
    if both games finished rc 0 with all log checks and an ARM-SEED.env whose Gumbel flags match the arm (a combat abort
    is a counted loss, listed); dropped seeds are listed, never imputed; more than 20 dropped seeds in a contrast =
-   INCOMPLETE. Only attempted seeds (any game with a .done file) count (early stop, PREREG). The gate per contrast (tools/sprt_gate.py gainer, alpha 0.05/3 = Bonferroni over the three contrasts,
+   INCOMPLETE. Only seeds whose units for the contrast were all claimed count (universe(); early stop, PREREG). The gate per contrast (tools/sprt_gate.py gainer, alpha 0.05/3 = Bonferroni over the three contrasts,
    beta 0.05, look 64, cap = number of analysed seeds, at most 1,024) gets the seeds gap-free (key = rank in ascending
    seed order). PASS = GO; NOT_SHOWN = NOT_SHOWN; at CAP the (1 - alpha) seed bootstrap of the mean d decides (10,000
    resamples, seed 20261108): GO if lo > 0, STOP if mean <= 0, else INCONCLUSIVE. The 95% CI is reported in every case.
@@ -50,16 +50,22 @@ def env_of(path):
     return tuple(env.get(k) for k in KEYS)
 
 
-ATTEMPTED = set()
+ATTEMPTED = set()   # unit ids (<seed>_low, <seed>_G64) that were claimed: a unit directory or a claim in CLAIMS_LIST
+UNIT_OF = {"D": "low", "G16": "low", "G32": "low", "G64": "G64"}
 
 
-def load(root):
+def load(root, claims=None):
     games, bad, aborts, mismatch = {}, [], [], []
     ATTEMPTED.clear()
+    ATTEMPTED.update(p.name for p in Path(root).iterdir() if p.is_dir()) if Path(root).is_dir() else None
+    if claims:
+        for line in Path(claims).read_text().split():
+            m = re.match(r"^(\d+_(?:low|G64))\.a\d+$", line.strip().rstrip("/"))
+            if m:
+                ATTEMPTED.add(m.group(1))
     for done in Path(root).glob("*/*.done"):
         d = dict(kv.split("=", 1) for kv in done.read_text().split())
         arm, seed = d["tag"].rsplit("-", 1)
-        ATTEMPTED.add(int(seed))
         if arm not in ARMS:
             raise ValueError(f"unknown arm in {d['tag']}")
         log = done.with_suffix(".log").read_text() if done.with_suffix(".log").exists() else ""
@@ -98,15 +104,18 @@ def gate(pairs, variant, cap, alpha):
     return json.loads(g.stdout)
 
 
-def universe(games):
-    """The pre-registered seeds that were attempted: at least one game of the seed has a .done file (PREREG
-    "Stopping": a campaign stopped with worker.sh stop lets every claimed unit finish, and units are claimed in seed
-    order, so the unattempted seeds are the unclaimed tail). A seed with some but not all games is a drop."""
-    return [s for s in SEEDS if s in ATTEMPTED]
+def universe(arms):
+    """The pre-registered seeds whose units for `arms` were all claimed (PREREG "Stopping"): a unit counts as claimed
+    if it has a unit directory in OUT_ROOT or a claim directory in CLAIMS_LIST (a snapshot of the share's claims/ after
+    every worker finished). Whether a unit is claimed is fixed before any of its games ends, so a stop that leaves a
+    seed's other unit unclaimed removes the seed without selecting on outcomes; a claimed unit without its games
+    (failed 4 times, rc != 0, bad checks) is a drop."""
+    need = {UNIT_OF[a] for a in arms}
+    return [s for s in SEEDS if all(f"{s}_{u}" in ATTEMPTED for u in need)]
 
 
 def paired(games, a_arm, b_arm):
-    seeds = [s for s in universe(games) if (a_arm, s) in games and (b_arm, s) in games]
+    seeds = [s for s in universe((a_arm, b_arm)) if (a_arm, s) in games and (b_arm, s) in games]
     a = np.array([games[(a_arm, s)] for s in seeds], float).reshape(-1, 5)
     b = np.array([games[(b_arm, s)] for s in seeds], float).reshape(-1, 5)
     return seeds, a, b
@@ -114,7 +123,7 @@ def paired(games, a_arm, b_arm):
 
 def contrast(games, arm, outdir):
     seeds, a, b = paired(games, "D", arm)
-    dropped = [s for s in universe(games) if s not in set(seeds)]
+    dropped = [s for s in universe(("D", arm)) if s not in set(seeds)]
     if not seeds:
         return {"n": 0, "dropped": dropped, "verdict": "INCOMPLETE", "nonregression": None}
     d = b[:, 0] - a[:, 0]
@@ -149,8 +158,8 @@ def contrast(games, arm, outdir):
     return r
 
 
-def main(root, out):
-    games, bad, aborts, mismatch = load(root)
+def main(root, out, claims=None):
+    games, bad, aborts, mismatch = load(root, claims)
     outdir = os.path.dirname(out) or "."
     res = {"bad": bad, "aborts": aborts, "env_mismatch": mismatch,
            "contrasts": {arm: contrast(games, arm, outdir) for arm in CONTRASTS}}
@@ -198,8 +207,8 @@ def self_test():
     rate = {"D": 0.25, "G16": 0.25, "G32": 0.29, "G64": 0.33}
     for s in SEEDS:
         for arm in ARMS:
-            dd = os.path.join(root, f"{s}_{arm}")
-            os.makedirs(dd)
+            dd = os.path.join(root, f"{s}_{UNIT_OF[arm]}")
+            os.makedirs(dd, exist_ok=True)
             k = int(rng.random() < rate[arm])
             rc = 1 if drop.get(s) == arm else 0
             ab = int(s == 111378700 and arm == "G32")
@@ -224,26 +233,45 @@ def self_test():
     assert r["contrasts"]["G64"]["verdict"] == "GO", r["contrasts"]["G64"]["verdict"]   # +8 pp synthetic gain
     assert r["contrasts"]["G16"]["verdict"] != "GO", r["contrasts"]["G16"]["verdict"]   # no synthetic gain
     for s in range(111379100, 111379120):
-        Path(root, f"{s}_D", f"D-{s}.done").write_text(f"tag=D-{s} rc=1 start=x wall=1 abort=0")
+        Path(root, f"{s}_low", f"D-{s}.done").write_text(f"tag=D-{s} rc=1 start=x wall=1 abort=0")
     r = main(root, os.path.join(t, "r2.json"))
     for arm in CONTRASTS:
         assert r["contrasts"][arm]["verdict"] == "INCOMPLETE", (arm, r["contrasts"][arm]["verdict"])
-    stop = os.path.join(t, "stopped")   # early stop: seeds above 111378700 never claimed, one straddling seed
+    stop = os.path.join(t, "stopped")   # early stop: many seeds with only one of their two units claimed
+    srng = random.Random(7)
+    partial, failed = [], 111378300
     for s in range(111378256, 111378701):
-        for arm in ARMS:
-            if s == 111378700 and arm != "G64":
-                continue
-            dd = os.path.join(stop, f"{s}_{arm}")
+        units = {"low", "G64"}
+        if s > 111378400 and srng.random() < 0.3:
+            units = {srng.choice(["low", "G64"])}
+            partial.append(s)
+        for u in units:
+            dd = os.path.join(stop, f"{s}_{u}")
             os.makedirs(dd)
-            Path(dd, f"{arm}-{s}.done").write_text(f"tag={arm}-{s} rc=0 start=x wall=20 abort=0")
-            Path(dd, f"{arm}-{s}.env").write_text("".join(
-                f"{k_}={v}\n" for k_, v in zip(KEYS, ENV[arm]) if v is not None))
-            Path(dd, f"{arm}-{s}.log").write_text(
-                f"BEST stack config: x  seeds {s}..{s}  asc 20  sims {SIMS[arm]}  threads 1\n"
-                f"BEST  win%= 0.0  avg_floor= 30  x cpu_sec/run= 20.0\n")
-    r = main(stop, os.path.join(t, "r4.json"))
-    assert r["contrasts"]["G64"]["n"] == 444 and r["contrasts"]["G64"]["dropped"] == [111378700], r["contrasts"]["G64"]["dropped"]
-    assert r["contrasts"]["G16"]["verdict"] != "INCOMPLETE", r["contrasts"]["G16"]["verdict"]
+            if s == failed and u == "G64":
+                continue   # claimed and present as a directory, but its game never finished: a drop
+            for arm in ([a_ for a_ in ARMS if UNIT_OF[a_] == u]):
+                Path(dd, f"{arm}-{s}.done").write_text(f"tag={arm}-{s} rc=0 start=x wall=20 abort=0")
+                Path(dd, f"{arm}-{s}.env").write_text("".join(
+                    f"{k_}={v}\n" for k_, v in zip(KEYS, ENV[arm]) if v is not None))
+                Path(dd, f"{arm}-{s}.log").write_text(
+                    f"BEST stack config: x  seeds {s}..{s}  asc 20  sims {SIMS[arm]}  threads 1\n"
+                    f"BEST  win%= 0.0  avg_floor= 30  x cpu_sec/run= 20.0\n")
+    # a G64 unit that failed 4 times: no directory, only claims
+    lost = next(s for s in range(111378256, 111378400) if s != failed)
+    import shutil
+    shutil.rmtree(os.path.join(stop, f"{lost}_G64"))
+    cl = os.path.join(t, "claims.txt")
+    Path(cl).write_text("\n".join(f"{lost}_G64.a{i}" for i in range(1, 5)) + "\nnot-a-claim\n")
+    assert len(partial) > 20
+    r = main(stop, os.path.join(t, "r4.json"), cl)
+    c64, c16 = r["contrasts"]["G64"], r["contrasts"]["G16"]
+    assert c64["dropped"] == sorted([failed, lost]), c64["dropped"]
+    assert c16["dropped"] == [], c16["dropped"]
+    assert c64["verdict"] != "INCOMPLETE" and c16["verdict"] != "INCOMPLETE", (c64["verdict"], c16["verdict"])
+    assert c64["n"] == 445 - len(partial) - 2, c64["n"]
+    r5 = main(stop, os.path.join(t, "r5.json"))   # without the claims snapshot the lost unit's seed is not counted
+    assert r5["contrasts"]["G64"]["dropped"] == [failed], r5["contrasts"]["G64"]["dropped"]
     empty = os.path.join(t, "empty")
     os.makedirs(empty)
     r = main(empty, os.path.join(t, "r3.json"))
@@ -255,4 +283,4 @@ if __name__ == "__main__":
     if sys.argv[1:] == ["--self-test"]:
         self_test()
     else:
-        main(*sys.argv[1:3])
+        main(*sys.argv[1:4])

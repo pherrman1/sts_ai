@@ -25,4 +25,4 @@ Stay alive until the author thread says your tar is verified. If the author asks
 bash tools/cloud/worker.sh stop $CAMPAIGN <n> (no new units; running ones finish), then keep the wait running.
 If any step is refused or prints STOP, reply with the exact output and stop. Do not work around it.
 Expect 1-60 min per unit (one seed: arms D, G16, G32 in one unit, G64 in another), 4 units at a time; 2,048 units
-shared by 40 workers through the queue, about 3 h in all.
+shared by 40 workers through the queue, about 3-7 h in all (G64 games on deep runs take 2-3 h).

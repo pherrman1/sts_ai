@@ -69,11 +69,17 @@ re-runs the whole unit as a new attempt (at most 4); a unit lost with its contai
 lease. A timeout (rc 124, 8 h per game) is final and a drop; the smoke bounds G64's wall time well below it. Units still
 failing after 4 attempts are drops and are reported.
 
-**Stopping.** Units are claimed in seed order (per seed G64 first, then D/G16/G32). Once all three gates have crossed
-(PASS or H0) on the contiguous prefix, the author may stop the campaign with `worker.sh stop` on every worker: no new
-claims, every claimed unit finishes. The analysis then covers the attempted seeds (any game with a `.done` file); a
-seed with only some of its games is a drop (at most the one seed whose G64 unit was claimed last). No other look at
-outcomes changes the design.
+**Stopping.** `worker.sh` hands each worker its static share of `units.txt` (line i to worker (i − 1) mod 40 + 1) in
+order and only then takes other workers' unclaimed units, so units are claimed roughly, not exactly, in seed order,
+and a seed's two units (G64, and D/G16/G32) usually sit on different workers. Once all three gates have crossed
+(PASS or H0) on the contiguous prefix of complete seeds, the author may stop the campaign with `worker.sh stop` on
+every worker: no new claims, every claimed unit finishes. After all workers have finished, the author lists the
+share's `claims/` directory into `claims.txt`; `analyze.py OUT_ROOT result.json claims.txt` then counts, per contrast,
+the seeds whose units for that contrast were all claimed (a unit directory in the extracted tars or a claim in the
+list). Whether a unit was claimed is fixed before any of its games ends, so a stop that leaves a seed's other unit
+unclaimed removes the seed without selecting on outcomes; a claimed unit without valid games (failed 4 times, rc ≠ 0,
+bad checks) is a drop. Without a stop every seed is claimed and the rule changes nothing. No other look at outcomes
+changes the design.
 
 **Secondary (not gates).** G32 − G16 and G64 − G32 (95% CIs); each contrast's sprt_gate nonregression. Descriptive per
 arm: Heart kill, act-4 reach (final floor ≥ 52), mean floor, CPU per run and ratio to D, aborts, games over 1 h.
