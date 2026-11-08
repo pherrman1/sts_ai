@@ -160,7 +160,9 @@ hi]. The CI is the run-clustered bootstrap above, at 97.5 % (two arms, Bonferron
 **Co-reported (95 %, descriptive):** `flat4000` − production, and `flat4000+cnp55` − `flat4000+cnp100`.
 
 **Cost.** Five arms plus production at about 1× production CPU each come to about 85-90 lane-hours. With 10
-workers × 4 lanes that is about 3 h, at 2-50 min per unit.
+workers × 4 lanes that is about 3 h, at 2-50 min per unit. Workers: 35. At 18:21 CET Philipp asked for 36 ("also
+sollten wir das ganze auf 36 workern laufen lasssen können"), but 5 Gumbel workers still ran, and 35 is what the cap of
+40 leaves.
 
 **Smoke (2026-11-08, cloud, same two units and binary as above; not part of the analysis):**
 - Both rc 0, at 112 s and 796 s wall (2.1× the first smoke's).

@@ -1,7 +1,7 @@
 name          combat-net-stage3
 code_commit   4d2a7f800549a745827bfd473f4e110bd0179787
 binary_sha256 4000eb83ca8e80833e6002ae0ab27992aa196c8798eccfadf6b2becf61091bc7
-workers       10
+workers       35
 share         /mnt/project-files/combat-plan/stage3
 configure_preset linux-gcc-release-x86-64-v3
 parallel      4
