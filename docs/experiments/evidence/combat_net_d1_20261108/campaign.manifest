@@ -1,0 +1,10 @@
+name          combat-net-d1
+code_commit   f0262fd123879090e52f1c17f28b8efd270ec3d5
+binary_sha256 15d8c39b810925b41805dea0ecd8795c9da093f91fc0630f7e25da22bcbb1d37
+workers       40
+share         /mnt/project-files/combat-plan/d1
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 45
+input student_sel.bin /mnt/project-files/az-gen3-explore/student_sel.bin cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7
