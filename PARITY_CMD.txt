@@ -1,0 +1,2 @@
+python3 -P make_parity.py /home/philippherrmann/sts-combatnet /home/philippherrmann/combatnet/d1_arr /home/philippherrmann/combatnet/N_d1 /home/philippherrmann/combatnet/polonly_d1 parity_d1_holdout32.npz
+repo HEAD 30b212ee2997cfcf62abfc5288e3a3d9e562ce09, torch 2.5.1+cu121
