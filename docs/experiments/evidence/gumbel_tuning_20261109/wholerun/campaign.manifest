@@ -1,6 +1,6 @@
 name          gumbel-tuning-wholerun
 code_commit   13bb97ec909e4cb76f800a55c293c06b5683e2e9
-binary_sha256 TBD
+binary_sha256 b5090b16c1b34f603d2b143ece7e770af9d134318f839aa1b72c0dd286be7918
 workers       40
 share         /mnt/project-files/combat-plan/gumbel-tuning-wholerun
 configure_preset linux-gcc-release-x86-64-v3
