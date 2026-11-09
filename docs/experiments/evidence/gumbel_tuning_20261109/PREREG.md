@@ -47,7 +47,7 @@ selection beat UCB below the root?
   prior (uniform below its visit threshold), q̂ the completed Q (the child's selection value, v_mix for unvisited
   edges with the node's mean value standing in for the value net), min-max normalized as at the root. Chance nodes
   are unchanged. gnr is not in the factorial because it makes F and G inactive.
-- **Code (commit TBD, binary TBD):** the new arm parts are thread-local research overrides: without them every search
+- **Code (commit 9279ce26, binary e5ba1aad; run commit = the one that fills in the manifest):** the new arm parts are thread-local research overrides: without them every search
   is unchanged, and a part at its default value searches exactly as without it (equivalence check below). New:
   `GumbelRoot::noise`, `backLoaded`, `nonRoot`, `SilverSearcher::selectGumbelNonRoot`,
   `g_nativeSilverPriorWeightOverride`, the `one_combat selffights` mode, and the shared `FightCopies` code that

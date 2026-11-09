@@ -1,6 +1,6 @@
 name          gumbel-tuning-scout
-code_commit   TBD
-binary_sha256 TBD
+code_commit   9279ce2634017f7408b14a6c5fd5b0af3099c8ab
+binary_sha256 e5ba1aad1c382884876826b69dad06b989d79b3f7a57538a6307d578c3346c25
 workers       40
 share         /mnt/project-files/combat-plan/gumbel-tuning-scout
 configure_preset linux-gcc-release-x86-64-v3
