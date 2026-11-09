@@ -611,8 +611,9 @@ double threadCpuSeconds() {
 // decision and chance children, default 25), `wet<X>` / `wch<X>` (widening C at end-turn / other chance nodes,
 // default 3.7028; exponents stay), `pw<X>` (root prior weight X, default the process's
 // STS_SILVER_ROOT_PRIOR_WEIGHT) and `tp<N>` (tree prior from N visits, default the process's
-// STS_SILVER_TREE_PRIOR_MIN_VISITS); pw and tp need STS_SILVER_ROOT_PRIOR. A token at its default value searches
-// exactly as without it.
+// STS_SILVER_TREE_PRIOR_MIN_VISITS); pw and tp need STS_SILVER_ROOT_PRIOR. `cap<N>` (node reuse cap N in
+// 1024..16777216 for this arm's searches, default 32768, the Act-4 Heart's 262144). A token at its default value
+// searches exactly as without it.
 struct FightArm {
     std::string name;
     bool priorPlayoutElite = false;
@@ -632,6 +633,7 @@ struct FightArm {
     double chanceWideningC = 0;
     double priorWeight = 0;     // 0: the process option
     int treePrior = 0;          // 0: the process option
+    std::int64_t reuseCap = 0;  // 0: production's node reuse cap
 };
 
 // `prefix`_ARMS: '+'-joined tokens per arm (FightArm), arms separated by ','.
@@ -693,6 +695,12 @@ std::vector<FightArm> fightArmsFromEnv(const std::string &prefix) {
             else if (prefixed(t, "pw")) arm.priorWeight = decimal(t, 2, 1e-6, 1e6);
             else if (t.size() > 2 && t.size() <= 9 && t.rfind("tp", 0) == 0
                      && t.find_first_not_of("0123456789", 2) == std::string::npos) arm.treePrior = std::stoi(t.substr(2));
+            else if (t.size() > 3 && t.size() <= 11 && t.rfind("cap", 0) == 0
+                     && t.find_first_not_of("0123456789", 3) == std::string::npos) {
+                arm.reuseCap = std::stoll(t.substr(3));
+                if (arm.reuseCap < 1024 || arm.reuseCap > (1 << 24))
+                    throw std::runtime_error(var + ": cap out of range (1024..16777216)");
+            }
             else throw std::runtime_error(var + ": unknown arm part " + t);
         }
         if (arm.flat < 0 || arm.flat > 1000000) throw std::runtime_error(var + ": flat out of range");
@@ -781,6 +789,8 @@ protected:
             }
             if (arm && arm->priorWeight > 0) search::g_nativeSilverPriorWeightOverride = arm->priorWeight;
             if (arm && arm->treePrior > 0) search::g_nativeSilverTreePriorOverride = arm->treePrior;
+            if (arm && arm->reuseCap > 0)
+                search::g_nativeSilverReuseCapOverride = static_cast<std::size_t>(arm->reuseCap);
             struct ArmReset { ~ArmReset() { search::g_nativeSilverBudgetOverride.reset();
                                             search::g_nativeSilverPriorPlayoutEliteOverride.reset();
                                             search::g_nativeSilverPotionWeightOverride.reset();
@@ -791,7 +801,8 @@ protected:
                                             search::g_nativeSilverCombatNetPriorTempOverride.reset();
                                             search::g_nativeSilverSearchParamOverride.reset();
                                             search::g_nativeSilverPriorWeightOverride.reset();
-                                            search::g_nativeSilverTreePriorOverride.reset(); } } armReset;
+                                            search::g_nativeSilverTreePriorOverride.reset();
+                                            search::g_nativeSilverReuseCapOverride.reset(); } } armReset;
             BattleContext bc{};
             const double t0 = threadCpuSeconds();
             a.playoutBattle(copy, bc);
@@ -808,7 +819,12 @@ protected:
                         {"decisions", search::g_nativeSilverCombatStats.decisions},
                         {"simulations", search::g_nativeSilverCombatStats.simulations},
                         {"gumbelRoots", search::g_nativeSilverCombatStats.gumbelRoots},
-                        {"combatNetPriors", search::g_nativeSilverCombatStats.combatNetPriors}};
+                        {"combatNetPriors", search::g_nativeSilverCombatStats.combatNetPriors},
+                        {"reroots", search::g_nativeSilverCombatStats.reroots},
+                        {"inheritedVisits", search::g_nativeSilverCombatStats.inheritedVisits},
+                        {"freshRoots", search::g_nativeSilverCombatStats.freshRoots},
+                        {"capResets", search::g_nativeSilverCombatStats.capResets},
+                        {"capLostVisits", search::g_nativeSilverCombatStats.capLostVisits}};
             if (won && winner && !*winner) {
                 copy.seed = gc.seed;
                 *winner = std::move(copy);

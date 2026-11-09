@@ -614,8 +614,8 @@ namespace sts::search {
                 : isBossEncounter(bc.encounter) && !g_options.exactRootBudgets
                 ? static_cast<std::int64_t>(agent.bossSimulationMultiplier * agent.simulationCountBase)
                 : agent.simulationCountBase;
-            const std::size_t reuseCap = act4Heart ? std::max(g_options.reuseCap, kAct4HeartReuseCap)
-                                                   : g_options.reuseCap;
+            const std::size_t reuseCap = g_nativeSilverReuseCapOverride.value_or(
+                act4Heart ? std::max(g_options.reuseCap, kAct4HeartReuseCap) : g_options.reuseCap);
 
             if (g_nativeSilverLabelSearch && (adaptive || learnedStop || lockOnly || stopTrace))
                 fail(gc, bc, "the label search requires a flat budget");
@@ -653,10 +653,15 @@ namespace sts::search {
                     s->rerootAt(node, overCap);
                     if (s->nodeCount() >= reuseCap) {
                         s->setRoot(root);   // compaction could not get below the cap
+                        if (count) {
+                            ++g_nativeSilverCombatStats.capResets;
+                            g_nativeSilverCombatStats.capLostVisits += inheritedVisits;
+                        }
                         inheritedVisits = 0;
                     }
                 } else if (s) {
                     s->setRoot(root);
+                    if (count) ++g_nativeSilverCombatStats.freshRoots;
                 } else {
                     s = std::make_unique<SilverSearcher>(root, context);
                     s->evalWeights.escapePenalty = g_options.escapePenalty;
@@ -683,6 +688,10 @@ namespace sts::search {
                 }
                 if (count) {
                     if (inheritedVisits > 0) ++g_reroots; else ++g_freshRoots;
+                    if (inheritedVisits > 0) {
+                        ++g_nativeSilverCombatStats.reroots;
+                        g_nativeSilverCombatStats.inheritedVisits += inheritedVisits;
+                    }
                 }
                 return inheritedVisits;
             };
@@ -1632,6 +1641,7 @@ namespace sts::search {
     thread_local NativeSilverCombatStats g_nativeSilverCombatStats;
     thread_local std::optional<SilverSearcher::RolloutConfig> g_nativeSilverRolloutOverride;
     thread_local std::optional<int> g_nativeSilverMaxBackupOverride;
+    thread_local std::optional<std::size_t> g_nativeSilverReuseCapOverride;
     thread_local std::optional<int> g_nativeSilverRolloutsPerLeafOverride;
     thread_local std::optional<SilverSearcher::GumbelRoot> g_nativeSilverGumbelRootOverride;
     thread_local std::optional<SilverSearcher::LeafHead> g_nativeSilverLeafHeadOverride;
