@@ -20,6 +20,7 @@
 #include <stdexcept>
 #include <string>
 #include <tuple>
+#include <random>
 
 #include "combat/BattleContext.h"
 #include "game/GameContext.h"
@@ -367,6 +368,34 @@ namespace sts::search {
         std::atomic<std::int64_t> g_decisions {0};
         std::atomic<std::int64_t> g_simulations {0};
         std::atomic<std::int64_t> g_wholeRunGumbelRoots {0};   // STS_SILVER_GUMBEL_ROOT searches
+        // STS_SILVER_HIDDEN_INFO_AUDIT=1 (diagnostic, default off): at every real decision the search root is
+        // rebuilt from a copy of the live state whose hidden parts are scrambled (the unobserved region of the
+        // draw pile permuted, the six live combat RNG streams reseeded). The root must not change: it is
+        // compared with BattleContext::operator== (RNG streams and card order included). Mismatches are
+        // counted and the first few printed; the totals are printed at exit.
+        std::atomic<std::int64_t> g_hiddenAuditRoots {0};
+        std::atomic<std::int64_t> g_hiddenAuditPermuted {0};   // roots whose unobserved region had >= 2 cards
+        std::atomic<std::int64_t> g_hiddenAuditMismatches {0};
+        std::atomic<std::int64_t> g_hiddenAuditSearchMismatches {0};   // equalForSearch differs too
+        bool hiddenInfoAuditOn() {
+            static const bool on = [] {
+                const char *v = std::getenv("STS_SILVER_HIDDEN_INFO_AUDIT");
+                const bool enabled = v && std::atoi(v) == 1;
+                if (enabled) {
+                    std::cerr << "[silver] diagnostic: hidden-information audit of every search root\n";
+                    std::atexit([] {
+                        std::cerr << "[silver] hidden-info audit roots=" << g_hiddenAuditRoots.load()
+                                  << " permuted=" << g_hiddenAuditPermuted.load()
+                                  << " mismatches=" << g_hiddenAuditMismatches.load()
+                                  << " search_mismatches=" << g_hiddenAuditSearchMismatches.load() << '\n';
+                    });
+                }
+                return enabled;
+            }();
+            return on;
+        }
+        void auditHiddenInfo(const BattleContext &live, const CombatKnowledgeState &knowledge,
+                             const BattleContext &root, int decision);
         std::atomic<std::int64_t> g_wholeRunGumbelSims {0};
         std::atomic<std::int64_t> g_reroots {0};
         std::atomic<std::int64_t> g_freshRoots {0};
@@ -807,6 +836,7 @@ namespace sts::search {
                 if (const auto error = nativeSilverSearchRoot(bc, knowledge, root); !error.empty()) {
                     failState(gc, bc, "conversion: " + error);
                 }
+                if (hiddenInfoAuditOn()) auditHiddenInfo(bc, knowledge, root, decision);
                 std::int64_t inheritedVisits = prepareSearcher(searcher, root, true);
                 configureSearcher(*searcher, false);
                 // STS_SILVER_TREE_PROFILE_SCOPE=real leaves out fights under a budget override
@@ -1054,6 +1084,43 @@ namespace sts::search {
             seedSearchRng(root, nativeSilverBattleSeed(live));
         }
         return {};
+    }
+
+    namespace {
+        void auditHiddenInfo(const BattleContext &live, const CombatKnowledgeState &knowledge,
+                             const BattleContext &root, int decision) {
+            const std::uint64_t salt = nativeSilverBattleSeed(live) ^ (0xD1B54A32D192ED03ULL * (decision + 1));
+            for (int variant = 0; variant < 2; ++variant) {
+                BattleContext scrambled = live;
+                std::mt19937_64 rng(salt + 0x9E37ULL * variant);
+                if (!knowledge.fullDrawPileOrderObserved) {
+                    auto &pile = scrambled.cards.drawPile.concreteCards();
+                    const std::size_t lo = std::min(knowledge.knownBottom.size(), pile.size());
+                    const std::size_t top = std::min(knowledge.knownTop.size(), pile.size() - lo);
+                    const std::size_t hi = pile.size() - top;
+                    if (variant == 0) std::reverse(pile.begin() + lo, pile.begin() + hi);
+                    else std::shuffle(pile.begin() + lo, pile.begin() + hi, rng);
+                    if (variant == 0 && hi - lo >= 2) ++g_hiddenAuditPermuted;
+                }
+                scrambled.aiRng = Random(rng()); scrambled.cardRandomRng = Random(rng());
+                scrambled.miscRng = Random(rng()); scrambled.monsterHpRng = Random(rng());
+                scrambled.potionRng = Random(rng()); scrambled.shuffleRng = Random(rng());
+                BattleContext other;
+                const auto error = nativeSilverSearchRoot(scrambled, knowledge, other);
+                const bool same = error.empty() && other == root;
+                const bool sameSearch = error.empty() && other.equalForSearch(root);
+                if (!same) {
+                    const auto n = ++g_hiddenAuditMismatches;
+                    if (!sameSearch) ++g_hiddenAuditSearchMismatches;
+                    if (n <= 20)
+                        std::cerr << "[silver] hidden-info audit MISMATCH seed=" << live.seed << " floor="
+                                  << live.floorNum << " turn=" << live.turn << " decision=" << decision
+                                  << " variant=" << variant << " equalForSearch=" << sameSearch
+                                  << (error.empty() ? "" : " error=" + error) << '\n';
+                }
+            }
+            ++g_hiddenAuditRoots;
+        }
     }
 
     void setNativeSilverPriceTableBuilder(NativeSilverPriceTableBuilder builder) {
