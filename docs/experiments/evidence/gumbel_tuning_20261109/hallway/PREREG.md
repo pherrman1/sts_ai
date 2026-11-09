@@ -37,7 +37,9 @@ mb4 setting) on production A20 states?
 Per hallway fight (room M, acts 1-3) and arm: HP lost = entry HP − exit HP, the entry HP on a loss, mean over the 4
 copies. d = c2 − ctl, mean over fights; 95% seed-clustered bootstrap (10,000 resamples, seed 20261109).
 **C2_HALLWAY_WORSE** if lo > 0, **C2_HALLWAY_BETTER** if hi < 0, else **NO_DIFFERENCE_SHOWN**. A fight without 4
-valid copies of both arms is dropped and counted; units with rc ≠ 0 are excluded and listed.
+valid copies of both arms is dropped and counted; units with rc ≠ 0 are excluded and listed. Before the analysis
+`verify_campaign.py` must show 56 of 56 units delivered; a unit missing from the share (no tar, so no .done) is listed
+by that check, since analyze.py sees only delivered units.
 
 **Reproduction gate (pairing).** Every unit's fights through act 3 equal the scout's (floor and encounter, in order),
 and the main-line copy 0 of every fight equals the scout's copy 0 (fights matched by floor and order on the floor, so a
@@ -50,8 +52,10 @@ CPU ratio; per encounter with ≥ 10 fights.
 
 ## Power and cost (smoke, below)
 
-Smoke (local, 2026-11-09 23:33 CET): seeds 111860117 and 111860140, both rc 0, 632 s and 929 s of wall time per unit
-(4 lanes per worker). The reproduction check and the cost per unit are still to be written here before freezing.
+Smoke (local, 2026-11-09 23:33 CET): seeds 111860117 and 111860140, both rc 0, 632 s and 929 s of wall time per unit,
+one unit per lane. At about 780 s per unit the 56 units cost about 12 lane-hours (10-15 with the spread); on 14 workers
+× 4 lanes one round, so about 20-30 minutes including the longest unit. The power figure follows from stage 2's paired
+SD per fight once the reproduction check of the smoke units is written here before freezing.
 
 ## Decision
 
