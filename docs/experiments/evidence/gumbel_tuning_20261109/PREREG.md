@@ -138,6 +138,12 @@ selection beat UCB below the root?
 ## Cost
 
 - **Scout:** 500 units; a run through act 3 took 828 s (111860000, 613 s of it the `prod` copies), a run that ends
-  in act 1 100 s. Estimate ~80 lane-h, under 1 h on 40 workers × 4 lanes.
+  in act 1 100 s. Estimate ~80 lane-h, under 1 h on 40 workers × 4 lanes. **Ran** 2026-11-09 12:49-13:56 CET on
+  40 workers (run commit 220db5a8): 500/500 units rc 0, `verify_campaign.py` OK (no extra tars), 104.5 lane-h.
 - **Stage 1:** projected by `make_units.py` from the scout; the projection (`units_screen_projection.tsv`) and lane-h
   are recorded here before the stage-1 launch. Plan estimate ~550 lane-h (~3.5 h on 160 lanes).
+  **Projection (recorded before the launch):** no scouted seed failed; packages (`packages.tsv`) screening 117 seeds
+  with 1,207 arm fights (design subset 33 seeds, 304 fights), combination 56 seeds (602), confirmation 115 seeds
+  (1,206). Stage 1 = 1,262 units (act 1: 192, act 2: 355, act 3: 715; 138 of them a copy selection), 97 arm sets
+  (`sets_screen.tsv`), **769 lane-h** at 1.5 per arm copy (the smoke's mean was 1.26, so the run probably costs
+  less), longest unit 0.84 h (projected); ~4.8 h on 160 lanes plus the queue's tail.
