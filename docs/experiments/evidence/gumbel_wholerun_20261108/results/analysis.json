@@ -1,29 +1,14 @@
 {
- "G32_minus_G16": {
-  "ci95": [
-   -0.0322265625,
-   0.0244140625
-  ],
-  "d": -0.00390625,
-  "n": 1024
- },
- "G64_minus_G32": {
-  "ci95": [
-   -0.0322265625,
-   0.0244140625
-  ],
-  "d": -0.00390625,
-  "n": 1024
- },
- "aborts": [],
  "bad": [],
+ "aborts": [],
+ "env_mismatch": [],
  "contrasts": {
   "G16": {
-   "act4_ci95": [
-    0.0517578125,
-    0.1103515625
-   ],
-   "act4_d": 0.0810546875,
+   "n": 1024,
+   "dropped": [],
+   "heart_D": 0.31640625,
+   "heart_X": 0.412109375,
+   "d": 0.095703125,
    "ci95": [
     0.06640625,
     0.125
@@ -32,20 +17,21 @@
     0.0595703125,
     0.130859375
    ],
-   "cpu_ratio": 2.0257187445099385,
-   "d": 0.095703125,
-   "dropped": [],
+   "act4_d": 0.0810546875,
+   "act4_ci95": [
+    0.0517578125,
+    0.1103515625
+   ],
+   "floor_d": 3.1181640625,
    "floor_ci95": [
     2.1200927734375,
     4.0908203125
    ],
-   "floor_d": 3.1181640625,
-   "heart_D": 0.31640625,
-   "heart_X": 0.412109375,
-   "n": 1024,
-   "nonregression": "NOT_WORSE",
+   "cpu_ratio": 2.0257187445099385,
    "sprt": {
+    "verdict": "PASS",
     "accept": "H1",
+    "n_stop": 576,
     "llr": 4.425395744680851,
     "looks": [
      [
@@ -94,16 +80,16 @@
       0.09722
      ]
     ],
-    "n_stop": 576,
     "pairs": {
+     "rows": 1024,
      "counted": 1024,
-     "gap_after": null,
-     "rows": 1024
-    },
-    "verdict": "PASS"
+     "gap_after": null
+    }
    },
    "sprt_nonregression": {
+    "verdict": "NOT_WORSE",
     "accept": "H1",
+    "n_stop": 512,
     "llr": 3.6062383388692765,
     "looks": [
      [
@@ -147,22 +133,21 @@
       0.0957
      ]
     ],
-    "n_stop": 512,
     "pairs": {
+     "rows": 1024,
      "counted": 1024,
-     "gap_after": null,
-     "rows": 1024
-    },
-    "verdict": "NOT_WORSE"
+     "gap_after": null
+    }
    },
-   "verdict": "GO"
+   "verdict": "GO",
+   "nonregression": "NOT_WORSE"
   },
   "G32": {
-   "act4_ci95": [
-    0.0556640625,
-    0.1171875
-   ],
-   "act4_d": 0.0869140625,
+   "n": 1024,
+   "dropped": [],
+   "heart_D": 0.31640625,
+   "heart_X": 0.408203125,
+   "d": 0.091796875,
    "ci95": [
     0.06247558593750002,
     0.1220703125
@@ -171,20 +156,21 @@
     0.0546875,
     0.1298828125
    ],
-   "cpu_ratio": 3.444053906929978,
-   "d": 0.091796875,
-   "dropped": [],
+   "act4_d": 0.0869140625,
+   "act4_ci95": [
+    0.0556640625,
+    0.1171875
+   ],
+   "floor_d": 3.4130859375,
    "floor_ci95": [
     2.3974609375,
     4.4629150390625
    ],
-   "floor_d": 3.4130859375,
-   "heart_D": 0.31640625,
-   "heart_X": 0.408203125,
-   "n": 1024,
-   "nonregression": "NOT_WORSE",
+   "cpu_ratio": 3.444053906929978,
    "sprt": {
+    "verdict": "PASS",
     "accept": "H1",
+    "n_stop": 768,
     "llr": 4.678423104693141,
     "looks": [
      [
@@ -248,16 +234,16 @@
       0.08333
      ]
     ],
-    "n_stop": 768,
     "pairs": {
+     "rows": 1024,
      "counted": 1024,
-     "gap_after": null,
-     "rows": 1024
-    },
-    "verdict": "PASS"
+     "gap_after": null
+    }
    },
    "sprt_nonregression": {
+    "verdict": "NOT_WORSE",
     "accept": "H1",
+    "n_stop": 512,
     "llr": 3.1114718123190985,
     "looks": [
      [
@@ -301,22 +287,21 @@
       0.08398
      ]
     ],
-    "n_stop": 512,
     "pairs": {
+     "rows": 1024,
      "counted": 1024,
-     "gap_after": null,
-     "rows": 1024
-    },
-    "verdict": "NOT_WORSE"
+     "gap_after": null
+    }
    },
-   "verdict": "GO"
+   "verdict": "GO",
+   "nonregression": "NOT_WORSE"
   },
   "G64": {
-   "act4_ci95": [
-    0.0556640625,
-    0.1162109375
-   ],
-   "act4_d": 0.0859375,
+   "n": 1024,
+   "dropped": [],
+   "heart_D": 0.31640625,
+   "heart_X": 0.404296875,
+   "d": 0.087890625,
    "ci95": [
     0.05859375,
     0.1181640625
@@ -325,20 +310,21 @@
     0.052734375,
     0.1240234375
    ],
-   "cpu_ratio": 6.827101221805187,
-   "d": 0.087890625,
-   "dropped": [],
+   "act4_d": 0.0859375,
+   "act4_ci95": [
+    0.0556640625,
+    0.1162109375
+   ],
+   "floor_d": 3.0263671875,
    "floor_ci95": [
     2.0283203125,
     4.0224853515625
    ],
-   "floor_d": 3.0263671875,
-   "heart_D": 0.31640625,
-   "heart_X": 0.404296875,
-   "n": 1024,
-   "nonregression": "NOT_WORSE",
+   "cpu_ratio": 6.827101221805187,
    "sprt": {
+    "verdict": "PASS",
     "accept": "H1",
+    "n_stop": 704,
     "llr": 4.23407909209952,
     "looks": [
      [
@@ -397,16 +383,16 @@
       0.08239
      ]
     ],
-    "n_stop": 704,
     "pairs": {
+     "rows": 1024,
      "counted": 1024,
-     "gap_after": null,
-     "rows": 1024
-    },
-    "verdict": "PASS"
+     "gap_after": null
+    }
    },
    "sprt_nonregression": {
+    "verdict": "NOT_WORSE",
     "accept": "H1",
+    "n_stop": 512,
     "llr": 3.0841388079470202,
     "looks": [
      [
@@ -450,52 +436,66 @@
       0.08984
      ]
     ],
-    "n_stop": 512,
     "pairs": {
+     "rows": 1024,
      "counted": 1024,
-     "gap_after": null,
-     "rows": 1024
-    },
-    "verdict": "NOT_WORSE"
+     "gap_after": null
+    }
    },
-   "verdict": "GO"
+   "verdict": "GO",
+   "nonregression": "NOT_WORSE"
   }
  },
- "env_mismatch": [],
+ "G32_minus_G16": {
+  "n": 1024,
+  "d": -0.00390625,
+  "ci95": [
+   -0.0322265625,
+   0.0244140625
+  ]
+ },
+ "G64_minus_G32": {
+  "n": 1024,
+  "d": -0.00390625,
+  "ci95": [
+   -0.0322265625,
+   0.0244140625
+  ]
+ },
  "per_arm": {
   "D": {
-   "act4": 0.4111328125,
-   "cpu_sec": 252.69826171875,
-   "floor": 38.46484375,
    "games": 1024,
    "heart": 0.31640625,
+   "act4": 0.4111328125,
+   "floor": 38.46484375,
+   "cpu_sec": 252.69826171875,
    "long_games": 0,
    "max_wall": 1709
   },
   "G16": {
-   "act4": 0.4921875,
-   "cpu_sec": 511.89560546875,
-   "floor": 41.5830078125,
    "games": 1024,
    "heart": 0.412109375,
+   "act4": 0.4921875,
+   "floor": 41.5830078125,
+   "cpu_sec": 511.89560546875,
    "long_games": 0,
    "max_wall": 3036
   },
   "G32": {
-   "act4": 0.498046875,
-   "cpu_sec": 870.306435546875,
-   "floor": 41.8779296875,
    "games": 1024,
    "heart": 0.408203125,
+   "act4": 0.498046875,
+   "floor": 41.8779296875,
+   "cpu_sec": 870.306435546875,
    "long_games": 7,
    "max_wall": 5954
   },
   "G64": {
-   "act4": 0.4970703125,
-   "cpu_sec": 1725.196611328125,
-   "floor": 41.4912109375,
    "games": 1024,
    "heart": 0.404296875,
+   "act4": 0.4970703125,
+   "floor": 41.4912109375,
+   "cpu_sec": 1725.196611328125,
    "long_games": 129,
    "max_wall": 8510
   }

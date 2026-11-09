@@ -26800,7 +26800,7 @@ target (g16mb, g32mb or g64mb) is Philipp's call. Seeds: none new. Cost: 304 lan
 Gumbel root at every budget tested; a session limit can silently cut a campaign's worker count, so worker
 threads must be checked after start.
 
-## §TBD — Gumbel teacher in whole runs: A20 default combat vs the Gumbel root with max backup (k 16, min 4 visits) at 16k / 32k / 64k in every fight, net-0420 out of combat, 1,024 paired A20 seeds: all three GO; Heart 31.64% → G16 41.21% (+9.57 pp [+6.64, +12.50]), G32 40.82% (+9.18), G64 40.43% (+8.79); more budget does not help (G32 − G16 −0.39 [−3.22, +2.44]); G16 at 2.0× D's CPU (cloud, 2026-11-09)
+## §TBD — Gumbel teacher in whole runs: A20 default combat vs the Gumbel root with max backup (k 16, min 4 visits) at 16k / 32k / 64k in every fight, net-0420 out of combat, 1,024 paired A20 seeds: all three GO; Heart 31.64% → G16 41.21% (+9.57 pp [+6.64, +12.50]), G32 40.82% (+9.18), G64 40.43% (+8.79); no gain from more budget detected (G32 − G16 −0.39 [−3.22, +2.44]); G16 at 2.0× D's CPU (cloud, 2026-11-09)
 
 **Question (Philipp, 2026-11-08 23:23 CET; Act 4 included 23:59 CET; all four arms 2026-11-09 00:52 CET):** does the
 Gumbel teacher of §770/§772/§774 (Gumbel root k 16 with max backup, min 4 visits) raise the A20 Heart kill rate of
@@ -26821,8 +26821,8 @@ whole runs when it plays every fight, against today's A20 default combat? At 16k
   gainer (d1 +2 pp, alpha 0.05/3) PASS for all three, crossing at 576, 768 and 704 seeds → **GO, GO, GO**.
   Nonregression NOT_WORSE.
 - Secondary (95%): G32 − G16 −0.39 [−3.22, +2.44]; G64 − G32 −0.39 [−3.22, +2.44].
-- Act-4 reach +8.1 / +8.7 / +8.6 pp (D 41.1%); mean floor +3.1 / +3.4 / +3.0. Act-4 conversion D 77%, G16 84%
-  (descriptive). G64 had 129 games over 1 h (longest 2.4 h).
+- Act-4 reach +8.1 / +8.7 / +8.6 pp (D 41.1%); mean floor +3.1 / +3.4 / +3.0. Act-4 conversion (kills among runs
+  reaching act 4; descriptive, conditional, not tested) D 77%, G16 84%. G64 had 129 games over 1 h (longest 2.4 h).
 **Interpretation (Inference):** the Gumbel teacher in every fight is worth about 9-10 pp of Heart kills on net-0420's
 runs, more than twice the unpaired D0/D1 estimate (+4.4 pp) and far above the HP-price extrapolation (about +1.5 pp,
 §763). HP per elite or boss fight undersells it. The budget gains on Baalorlord's states (§774) do not show at the run
