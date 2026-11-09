@@ -6,7 +6,7 @@
 #                `prod` on copies 0-3 of every elite and boss fight; its fights tell make_units.py which acts have arm
 #                fights and how long they take, and are the reference of the reproduction check.
 #   SET <id>  -> STS_SELF_FIGHTS_ARMS = the tokens of the arms listed for <id> in sets_<stage>.tsv (arm ids from
-#                arms.tsv; make_units.py writes them),
+#                arms.tsv, or arms_*.tsv for the later stages; make_units.py writes them),
 #                STS_SELF_FIGHTS_ARM_ROOMS=<ACT>E,<ACT>B, STS_SELF_FIGHTS_PROD=main (production plays only the
 #                copies the main line needs; the control arm is the comparison).
 # SEL (optional) is STS_SELF_FIGHTS_ARM_COPIES (e.g. 50:2 = floor 50 copy 2 only).
@@ -28,8 +28,9 @@ else
   ids=$(cat "$HERE"/sets_*.tsv 2>/dev/null | awk -F'\t' -v s="$SET" '$1 == s { print $2 }')
   [ -n "$ids" ] || { echo "arm set '$SET' not in sets_*.tsv" >&2; exit 2; }
   for id in ${ids//,/ }; do
-    t=$(awk -F'\t' -v a="$id" '$1 == a { print $NF }' "$HERE/arms.tsv")
-    [ -n "$t" ] || { echo "arm '$id' not in arms.tsv" >&2; exit 2; }
+    t=$(cat "$HERE"/arms*.tsv 2>/dev/null | awk -F'\t' -v a="$id" '$1 == a { print $NF }')
+    [ -n "$t" ] || { echo "arm '$id' not in arms*.tsv" >&2; exit 2; }
+    [ "$(printf '%s\n' "$t" | wc -l)" = 1 ] || { echo "arm '$id' twice in arms*.tsv" >&2; exit 2; }
     ARMS=${ARMS:+$ARMS,}$t
   done
 fi

@@ -4,7 +4,7 @@
 usage: python3 -I analyze.py <stage> <scout_dir> <units_dir> [out.json]
   stage: screen, combine or confirm. scout_dir holds the scout units (S-<seed>-a3-scout.*), units_dir the stage's
   units (S-<seed>-a<act>-<set>[-<sel>].*); tars are read in place, extracted files work too. packages.tsv,
-  arms.tsv and sets_*.tsv come from next to this script.
+  arms.tsv (with arms_*.tsv, the later stages' arms from combine.py) and sets_*.tsv come from next to this script.
 
 Definitions as ../gumbel_mb_budget_20261108/analyze.py: HP lost by a copy = entry HP - exit HP, 0 exit HP on a
 loss, the second Act-3 boss (floor 51) exit inverted for the Act-4 heal; a fight's value for an arm = mean over its
@@ -28,7 +28,7 @@ production (the scout's `prod` arm on the same copy seeds) on every screening fi
 combine and confirm: every arm - control (combine 95%; confirm 97.5%, PREREG's pairs). confirm labels each pair:
 hi < 0 TUNED_TEACHER_BETTER, lo > 0 TUNED_TEACHER_WORSE, lo > -0.3 NO_TUNING_GAIN, otherwise INCONCLUSIVE.
 """
-import collections, itertools, json, os, random, re, statistics as st, sys, tarfile
+import collections, glob, itertools, json, os, random, re, statistics as st, sys, tarfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 K = 4
@@ -131,6 +131,8 @@ def main():
     factors = header[1:-1]
     arm_level = {r[0]: dict(zip(factors, map(int, r[1:-1]))) for r in arms_rows[1:]}
     token_arm = {r[-1]: r[0] for r in arms_rows[1:]}
+    for extra in sorted(glob.glob(os.path.join(HERE, 'arms_*.tsv'))):   # later stages' arms (combine.py)
+        token_arm.update({r[-1]: r[0] for r in read_tsv(os.path.basename(extra))[1:]})
     pkg = {int(s): p for s, p, _ in read_tsv('packages.tsv')[1:]}
     design = sorted(a for a in arm_level if a.startswith('d'))
     if stage == 'screen':

@@ -3,7 +3,7 @@
 
 usage: python3 -I make_units.py <scout_units_dir> <stage> [out_dir]
   stage: screen (stage 1), combine (stage 2) or confirm (stage 3); combine and confirm also need ARMS_<stage> in
-  sets_<stage>.arms (one arm id per line, ids from arms.tsv) next to this script.
+  sets_<stage>.arms (one arm id per line, ids from arms.tsv or arms_*.tsv, e.g. combine.py's) next to this script.
 Writes packages.tsv (always), and for the stage units_<stage>.txt, sets_<stage>.tsv and units_<stage>_projection.tsv
 into out_dir (default: next to this script).
 
@@ -108,11 +108,12 @@ def packages(S):
 
 def arm_ids():
     ids = []
-    with open(os.path.join(HERE, 'arms.tsv')) as f:
-        for line in f:
-            if line.startswith('#') or line.startswith('arm\t'):
-                continue
-            ids.append(line.split('\t')[0])
+    for name in ['arms.tsv'] + sorted(n for n in os.listdir(HERE) if n.startswith('arms_') and n.endswith('.tsv')):
+        with open(os.path.join(HERE, name)) as f:
+            for line in f:
+                if line.startswith('#') or line.startswith('arm\t'):
+                    continue
+                ids.append(line.split('\t')[0])
     return ids
 
 

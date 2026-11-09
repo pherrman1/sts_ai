@@ -1,0 +1,10 @@
+# stage-2 arms from results/analysis_screen.json (combine.py); levels on the screening's coded scale (log2 steps relative to the half range; C, D: +1/-1)
+arm	A	B	C	D	E	F	G	H	J	K	token
+c1	0	0	1	-1	0	-1	-1	1	1	-1	gsh16+flat16000+mb4+ucb12.5+pw100+tp32+wet7.4+wch1.85
+c2	0	0	1	-1	0	-1	-1	1	2.0011	-1	gsh16+flat16000+mb4+ucb12.5+pw100+tp32+wet14.8+wch1.85
+c3	0	0	1	-1	0	-1	-1	1	2.0011	-1.9989	gsh16+flat16000+mb4+ucb12.5+pw100+tp32+wet14.8+wch0.925
+c4	0	0	1	-1	0	-2	-1	1	1	-1	gsh16+flat16000+mb4+ucb6.25+pw100+tp32+wet7.4+wch1.85
+c5	0	0	1	-1	0	-2	-1	1	2.0011	-1	gsh16+flat16000+mb4+ucb6.25+pw100+tp32+wet14.8+wch1.85
+c6	0	0	1	-1	0	-2	-1	1	2.0011	-1.9989	gsh16+flat16000+mb4+ucb6.25+pw100+tp32+wet14.8+wch0.925
+x1	0	0	1	-1	0	0	0	0	1	-1	gsh16+flat16000+mb4+wet7.4+wch1.85
+x2	0	0	1	-1	0	-0.5	-0.5	0.5	0.5	-0.5	gsh16+flat16000+mb4+ucb17.6777+pw200+tp16+wet5.2346+wch2.6173

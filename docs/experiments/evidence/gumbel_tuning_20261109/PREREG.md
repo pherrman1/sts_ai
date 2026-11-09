@@ -112,6 +112,34 @@ selection beat UCB below the root?
 - No default changes on any result. Each stage's campaign starts only after Philipp's go (given for the plan on
   2026-11-08 23:54 CET, with a short note to him before stages 2-4).
 
+## Stage 2 arms (recorded after stage 1, before the stage-2 launch)
+
+Stage 1 ([RESULT.md](RESULT.md)): PAIRED; GNR_HURTS; ACTIVE by |main effect| J (high better), K (low), F (low),
+G (low), H (high); A-E INACTIVE; adjusted curvature +1.08 [+0.56, +1.57]. `combine.py` builds the arms from
+`results/analysis_screen.json` (`arms_combine.tsv`, `sets_combine.arms`); "one step further" halves or doubles the
+better level once more. Reading of rule (4)-(6): they are arms (1)-(3) with gnr if GNR_HELPS, otherwise arms (1)-(3)
+with the next ACTIVE factor (the third-largest, F) one step further.
+
+| arm | from the rule | changed parts (the rest = ctl `gsh16+flat16000+mb4`) |
+|---|---|---|
+| c1 | (1) every ACTIVE factor at its better level | `ucb12.5+pw100+tp32+wet7.4+wch1.85` |
+| c2 | (2) c1, J one step further | c1 with `wet14.8` |
+| c3 | (3) c1, J and K one step further | c1 with `wet14.8+wch0.925` |
+| c4 | (4) c1, F one step further | c1 with `ucb6.25` |
+| c5 | (5) c2, F one step further | c1 with `wet14.8+ucb6.25` |
+| c6 | (6) c3, F one step further | c1 with `wet14.8+wch0.925+ucb6.25` |
+| x1 | added after stage 1 | `wet7.4+wch1.85` (only J and K at their better level) |
+| x2 | added after stage 1 | `ucb17.6777+pw200+tp16+wet5.2346+wch2.6173` (every ACTIVE factor half way: geometric mean of ctl and its better level) |
+
+x1 and x2 are a deviation from the pre-registration, added on Philipp's choice after stage 1 (decision card, 2026-11-09 18:31 CET) because the curvature
+suggests that full steps overshoot (`combine.py --extra`). Stage 2 stays a pick: the arm with the lowest mean HP lost
+over ctl, c1-c6, x1, x2 on the 602 combination fights (ties: fewer changed parameters); the pick then goes to stage 3
+unchanged, whose rules and fights are as pre-registered above.
+
+**Units (`make_units.py … combine`):** 600 units on the 56 combination seeds (602 arm fights), 19 arm sets, projected
+362 lane-h at 1.5 per arm copy (stage 1 ran at 0.74 of its projection, so about 270), longest 0.83 h projected; about
+2-2.5 h on 160 lanes. Same code and binary as stage 1 (9279ce26, e5ba1aad); campaign `combine/`.
+
 ## Smoke and equivalence (local, 4 cores, 2026-11-09 CET)
 
 - **Unit test:** `apps/test` `testSilverGumbelRoot` (extended for noise 0, back-loaded halving and gnr, including a
