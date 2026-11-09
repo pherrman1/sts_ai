@@ -26710,3 +26710,92 @@ net's teacher target, and whether mb4 with 32k/64k is tested, is Philipp's call.
 seeds, §770's copy seeds). Cost: 425 lane-hours.
 **Knowledge impact:** the combat plan (teacher target for stages 2-3). Max backup is not dead: it helps under the
 Gumbel root at high budget.
+
+## §773 — Combat net stage 3a: the policy-only combat net (polonly_d1) as Silver's root prior on §770's elite and boss states (1,878 fights × 4 copies) gains nothing, T = 1 −0.06 [−0.29, +0.17] and T = 0.55 −0.10 [−0.32, +0.11] HP per fight (97.5%) at 1.02× / 0.98× CPU → NO_GAIN; at a flat 4,000 simulations without the learned stop also null, −0.17 [−0.39, +0.05] and +0.07 [−0.15, +0.30] → FLAT_NO_GAIN (cloud, 2026-11-08)
+
+**Question (combat plan stage 3a; Philipp asked to prepare it on 2026-11-08 13:26 CET, chose the flat-budget pair on
+top at 18:21 CET and gave the go with his worker count):** does production play Baalorlord's A20 elite and boss states
+with fewer HP lost when stage 2's policy-only net supplies Silver's root prior instead of g7f_E, at about the same CPU?
+**Data:** [PREREG](evidence/combat_net_stage3_20261108/PREREG.md) (amendment 1, before any unit ran: `flat4000`,
+`flat4000+cnp100`, `flat4000+cnp55`), [RESULT](evidence/combat_net_stage3_20261108/RESULT.md),
+`results/analysis.json`.
+- Run commit f104e139 (code 4d2a7f80, binary 4000eb83). Native inference `CombatTokNet` (parity with PyTorch within
+  2.8e-5) and the hook `STS_SILVER_COMBATNET_PRIOR` (root prior = softmax(logits / T), weight 400 unchanged).
+- §770's states, copy seeds and environment: §711's 329 runs, 1,878 act-1-3 elite and boss fights from 309 runs, 0
+  dropped; production and five arms play copies 0-3.
+- 35 workers × 4 lanes, 18:24-22:14 CET, 74 lane-hours. 329 of 329 units OK and rc 0, 11 duplicates (first tar used).
+  The share's 50,000-entry limit held back 16 workers at the start; no unit was lost.
+- Validity: production equals §770 on all 1,878 fights (and `flat4000` equals §770's `flat4000`); 0 of 30,048
+  net-arm copies lack a net prior (0.92 net priors per decision); 0 net priors in production and `flat4000`.
+
+**Result:**
+- Primary (arm − production, 97.5%): cnp100 (T = 1) −0.06 [−0.29, +0.17], CPU 1.02; cnp55 (T = 0.55) −0.10 [−0.32,
+  +0.11], CPU 0.98. Production loses 11.60 HP per fight, Baalorlord 8.74. → **NO_GAIN**, neither WORSE.
+- Secondary (flat net arm − `flat4000`, 97.5%): T = 1 −0.17 [−0.39, +0.05], T = 0.55 +0.07 [−0.15, +0.30], CPU 1.01
+  each. → **FLAT_NO_GAIN**, neither FLAT_WORSE.
+- Deaths per fight 5.5-5.7% on every side, no difference resolved.
+- Descriptive (95%): `flat4000` − production +0.22 [+0.02, +0.42] (bosses +0.76 [+0.23, +1.30]), as §770;
+  cnp55 − cnp100 −0.04 [−0.23, +0.15]; at flat 4,000, T = 0.55 − T = 1 +0.24 [+0.03, +0.44]. No act, room or act ×
+  room cut resolves below 0 for any net arm; 2 of 72 encounter contrasts resolve, one each way (Book of Stabbing,
+  cnp100 −0.62 [−1.16, −0.08], n 139; Slavers, T = 0.55 at flat 4,000 +0.61 [+0.03, +1.23], n 129), fewer than
+  chance gives.
+
+**Interpretation (Inference):**
+- The net's root prior does not help on these states, with or without the learned stop (the reading fixed in
+  amendment 1). Its +1.77 pp top-1 agreement with the Gumbel teacher on the D1 holdout (§771) did not become play
+  strength.
+- Candidate reasons, untested: only the root prior changed, and with about 4,500 simulations per decision the final
+  choice follows visits and Q values set by g7f_E below the root; the net learned on self-play decks, not
+  Baalorlord's; §770's teacher gain came from the Gumbel root and its budget, which a prior imitating its visit
+  shares does not bring along.
+- Exploratory on states used before (§711/§716/§718/§765/§770); two temperatures, not tuned on these states; one net.
+
+**Decision:** NO_GAIN.
+- No default change; `STS_SILVER_COMBATNET_PRIOR` stays off. The native inference and the hook stay for stage 3b
+  (leaf) and a possible test of the net prior under the Gumbel root, where the prior picks the top-k candidates.
+  Neither is pre-registered.
+- No new seeds. Cost: 74 lane-hours.
+
+**Knowledge impact:** the combat plan (stage 3b and the Gumbel root). A better root prior by imitation metrics did not
+change production's fights at equal budget; the learned stop over a flat budget of equal mean size is again worth
+about 0.2 HP per fight.
+
+## §774 — Max backup at 32k and 64k simulations under the Gumbel root on §770's elite and boss states (1,878 fights × 4 copies): max backup (min 4 visits) still helps, 64k −0.38 [−0.62, −0.13] and 32k −0.29 [−0.57, −0.01] HP per fight (97.5%) → MB_HELPS_AT_HIGH_BUDGET; with max backup, 64k beats 16k by −0.46 [−0.70, −0.21] and 32k by −0.25 [−0.46, −0.03] → MORE_SIMS_HELP_WITH_MB; gsh16+flat64000+mb4 loses 9.97 HP per fight, 0.74 less than g16, at 12.8× production's CPU (cloud, 2026-11-09)
+
+**Question (Philipp, 2026-11-08 20:24 CET; go for 40 cloud workers 21:09 CET):** §772 found two gains over §770's
+Gumbel root at 16k (g16): more simulations, and max backup at 16k. Does max backup still help at 32k and 64k (A)? Does
+more budget still help on top of max backup (B)?
+**Data:** [PREREG](evidence/gumbel_mb_budget_20261108/PREREG.md),
+[RESULT](evidence/gumbel_mb_budget_20261108/RESULT.md), `results/analysis.json`, `analyze.py`.
+- `one_combat expertfights` (code 5a233efd = §772's search code plus `STS_EXPERT_FIGHTS_ARM_COPIES`, binary c28d71b7,
+  run commit 1a296818) on §770's states and copy seeds: arms gsh16+flat32000+mb4 (g32mb) and gsh16+flat64000+mb4
+  (g64mb), compared with §772's g32, g64 and g16mb and §770's g16. 1,187 units (long act-3 boss copies split by copy).
+- Only 14 of the 40 approved workers ran: W13-W38 hit the session limit at start. 304 lane-hours, 21:47-04:53 CET.
+  1,187 of 1,187 units rc 0 and verified (8 re-claimed after container restarts, none uploaded twice); 1,878 fights
+  from 309 runs, 0 dropped, 0 conflicts.
+
+**Result:** production reproduced §770 in 1,878 of 1,878 fights. HP lost per fight: production 11.60, g16 10.71, g32
+10.47, g16mb 10.43, g64 10.35, g32mb 10.18, g64mb 9.97, Baalorlord 8.74.
+- Primary A (97.5%): g32mb − g32 **−0.29 [−0.57, −0.01]**; g64mb − g64 **−0.38 [−0.62, −0.13]** →
+  **MB_HELPS_AT_HIGH_BUDGET** (g64mb vs g64).
+- Primary B (97.5%): g32mb − g16mb **−0.25 [−0.46, −0.03]**; g64mb − g16mb **−0.46 [−0.70, −0.21]** →
+  **MORE_SIMS_HELP_WITH_MB** (g64mb vs g16mb).
+- Deaths per fight: 4.6% for both new arms (g32 4.9%, g64 4.7%, g16mb 4.8%); no death difference resolves.
+- CPU vs this campaign's production: g32mb 6.53× (g32 6.73×), g64mb 12.80× (g64 13.54×); 29,655 and 59,339 simulations
+  per decision. Ratios of §770/§772 arms mix machines.
+- Secondary (95%): g64mb − g32mb −0.21 [−0.44, +0.02]; g64mb − g16 −0.74 [−0.96, −0.52]; g64mb − production −1.62
+  [−1.92, −1.34]. Gap to Baalorlord closed (point estimates): g32mb 50%, g64mb 57%.
+- Cuts (95%): max backup's gain sits in acts 2-3 (act 2: 32k −0.97 [−1.41, −0.51], 64k −0.75 [−1.23, −0.27]), not in
+  act 1. At 32k it is an elite gain (bosses +0.11), at 64k it reaches the bosses (−0.66 [−1.18, −0.14]). With max
+  backup the 16k → 64k gain sits in the bosses (−1.13 [−1.66, −0.60]).
+**Interpretation (Inference):** the two gains of §772 add up: max backup helps by about 0.3-0.4 HP at every budget
+tested, and more budget helps with it as much as without it, at no extra CPU for max backup. g64mb is the best arm
+measured on these states. Returns per CPU still diminish (g16mb −0.29 vs g16 at about its cost, g32mb −0.53 at 1.9×,
+g64mb −0.74 at 3.7×, all against this campaign's production; g16's pre-registered ratio vs §770's production is
+3.15), and 32k → 64k with max backup is not resolved. Exploratory: states used before (stage-3 test
+set), production's main line, one Gumbel and one max-backup setting at every budget (not re-tuned).
+**Decision:** MB_HELPS_AT_HIGH_BUDGET and MORE_SIMS_HELP_WITH_MB (gsh16+flat64000+mb4). No default change. The teacher
+target (g16mb, g32mb or g64mb) is Philipp's call. Seeds: none new. Cost: 304 lane-hours.
+**Knowledge impact:** the combat plan (teacher target) and the Gumbel tuning plan (control g16mb). Max backup helped the
+Gumbel root at every budget tested; a session limit can silently cut a campaign's worker count, so worker
+threads must be checked after start.

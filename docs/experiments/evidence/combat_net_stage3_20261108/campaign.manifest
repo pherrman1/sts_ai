@@ -1,0 +1,12 @@
+name          combat-net-stage3
+code_commit   4d2a7f800549a745827bfd473f4e110bd0179787
+binary_sha256 4000eb83ca8e80833e6002ae0ab27992aa196c8798eccfadf6b2becf61091bc7
+workers       35
+share         /mnt/project-files/combat-plan/stage3
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 45
+input student_sel.bin /mnt/project-files/az-gen3-explore/student_sel.bin cf6bf7fb7c3147dcc5b106b1a946486e40bf27fee87c57bcc3262b5869d507c7
+input expert_runs.tar /mnt/project-files/expert-replay/expert_runs.tar 895eac8fa092d0fb0e56735841f8425f269cdfc3d9eacde84d4905a240fd0f24
+input polonly_d1.ctn /mnt/project-files/combat-plan/stage3/polonly_d1.ctn 3bbf7cf8d2fde658eb8110f0124297766b9621fd342474bda271fd6737081c88
