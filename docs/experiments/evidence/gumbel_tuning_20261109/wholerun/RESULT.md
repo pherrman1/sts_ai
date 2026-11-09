@@ -37,11 +37,15 @@ worse than G16 + mb4 in whole runs, not just not better.
 - C2 − D (§775's A20 default combat) +4.88 pp [+1.95, +7.71] at 1.96× D's CPU; C2 − G32 −4.30 pp [−7.32, −1.37].
 - Act-4 reach C2 − G16 −4.39 pp [−7.42, −1.37]; final floor −1.70 [−2.74, −0.67].
 - No game over 1 h (longest 42 min).
+- `results/result.json`'s `per_arm` lists the arms `analyze.py` reads (C2, the G16 sentinel, §775's D, G16 and G32), not §775's G64.
 - Tree reuse (this binary): C2 cap resets on 4.92% of kept-or-reset reroots (24,227 of 492,103), visits lost to cap
   resets 4.50% of all simulations, visits carried 35.0%. The 32 sentinel G16 games: 4.50%, 3.90%, 34.3%. Both are
   far above PREREG's 1% skip line, so Test 2 stays recommended.
 
 ## Where c2 loses (descriptive, not pre-registered)
+
+Computed by `breakdown.py` (output `results/breakdown.json`) from this campaign's and §775's games and from the unit tars of
+tuning stages 1 and 2.
 
 The whole-run logs hold a run's final floor, outcome and CPU, not HP per fight. Deaths by section (a run's death floor;
 non-boss sections mix hallway, elite and event fights), hazard = deaths among runs reaching the section, C2 − G16 with
