@@ -3142,7 +3142,8 @@ static std::string unsupportedSilverOption() {
         {"STS_SILVER_LEAF_HEAD", ""}, {"STS_SILVER_LEAF_HEAD_TRUNK", ""}, {"STS_SILVER_LEAF_HEAD_BLEND", ""},
         {"STS_SILVER_LEAF_HEAD_TURN_PENALTY", ""}, {"STS_SILVER_LEAF_HEAD_WIN_CAP", ""},
         {"STS_SILVER_MAX_BACKUP", ""}, {"STS_SILVER_RISK_VETO", ""},
-        {"STS_SILVER_GUMBEL_ROOT", ""}, {"STS_SILVER_GUMBEL_ROOT_MAX_BACKUP", ""},
+        {"STS_SILVER_GUMBEL_ROOT", ""}, {"STS_SILVER_GUMBEL_ROOT_MAX_BACKUP", ""}, {"STS_SILVER_GUMBEL_ROOT_UCB", ""},
+        {"STS_SILVER_GUMBEL_ROOT_WIDEN_END_TURN", ""}, {"STS_SILVER_GUMBEL_ROOT_WIDEN_CHANCE", ""},
     };
     // Vendored-only diagnostics without the STS_SILVER_ prefix.
     static const char *const kRemoved[] = {
