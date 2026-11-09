@@ -1,7 +1,8 @@
 # Gumbel teacher tuning (result)
 
 Pre-registration: [PREREG.md](PREREG.md). Analysis: `analyze.py` as frozen (stage 2 only adds the reading of
-`arms_*.tsv`, which leaves the stage-1 output byte-identical), output `results/analysis_screen.json`. Follows §772 and
+`arms_*.tsv`, which leaves the stage-1 output byte-identical), outputs `results/analysis_screen.json` and
+`results/analysis_combine.json`. Follows §772 and
 §774 ([max backup at high budget](../gumbel_mb_budget_20261108/RESULT.md)).
 
 ## Stage 1: screening
@@ -68,3 +69,46 @@ opposite directions.
 ACTIVE, by |main effect|: J (high), K (low), F (low), G (low), H (high). GNR_HURTS, so stage 2's arms 4-6 take the
 next factor one step further instead of gnr. `combine.py` builds the arms from `results/analysis_screen.json`; the
 arms and their units are recorded in PREREG.md before the stage-2 launch.
+
+## Stage 2: combination
+
+### Run
+
+- Run commit ba9302d3 (code 9279ce26, binary e5ba1aad, as stage 1), 40 workers, queue schedule. The first unit
+  started at 18:43 CET, the last ended at 20:45 CET on 2026-11-09. Unit wall time sums to 270 lane-h (projected 362);
+  the median unit took 27 min, the longest 52 min (`111860153 3 cmb009`).
+- `verify_campaign.py`: 600 of 600 units OK, 0 missing, 0 bad, 0 duplicates, 0 extra tars, 40/40 worker DONE files.
+  Every unit was claimed once, no `failed` mark, all 600 rc 0.
+- `analyze.py combine`: 602 combination fights, **0 dropped**, 0 conflicts.
+
+### Reproduction
+
+Every unit's fights are the scout's (600 of 600); production copy 0 equals the scout's in 14,098 of 14,109 compared
+fights (99.92%). **PAIRED.**
+
+### Results (HP lost per fight, seed-clustered bootstrap, 10,000 resamples, 95%; arm − ctl)
+
+| arm | changed parts (the rest = ctl `gsh16+flat16000+mb4`) | mean | arm − ctl | 95% |
+|---|---|---|---|---|
+| ctl | | 13.11 | | |
+| **c2** | `ucb12.5+pw100+tp32+wet14.8+wch1.85` | **12.00** | **−1.12** | [−1.67, −0.59] |
+| c1 | `ucb12.5+pw100+tp32+wet7.4+wch1.85` | 12.40 | −0.71 | [−1.26, −0.18] |
+| c5 | `ucb6.25+pw100+tp32+wet14.8+wch1.85` | 12.47 | −0.64 | [−1.19, −0.10] |
+| x1 | `wet7.4+wch1.85` | 12.48 | −0.63 | [−1.23, −0.05] |
+| c4 | `ucb6.25+pw100+tp32+wet7.4+wch1.85` | 12.66 | −0.45 | [−0.95, +0.04] |
+| x2 | `ucb17.6777+pw200+tp16+wet5.2346+wch2.6173` | 12.67 | −0.44 | [−0.97, +0.09] |
+| c3 | `ucb12.5+pw100+tp32+wet14.8+wch0.925` | 12.70 | −0.42 | [−1.05, +0.22] |
+| c6 | `ucb6.25+pw100+tp32+wet14.8+wch0.925` | 13.31 | +0.20 | [−0.37, +0.75] |
+
+**Pick (PREREG: lowest mean HP lost): c2** = `gsh16+flat16000+mb4+ucb12.5+pw100+tp32+wet14.8+wch1.85`. It goes to the
+confirmation unchanged. Stage 2 is a pick, not a test: the pick's estimate carries the winner's curse; only the
+confirmation counts. Philipp (2026-11-09 20:53 CET, "okay ja lass und c2 in ganzen läufen prüfen. node cap danach
+ebenfalls") replaced the pre-registered stage 3 (paired fights at 16k and 64k) by a whole-run test of c2 against §775's
+G16 + mb4 and a node-cap test after it: [wholerun/PREREG.md](wholerun/PREREG.md).
+
+Descriptive (from the live view's merge, same fights): c2's CPU is 1.05× ctl's, its death rate 0.5 pp lower. ctl −
+production (the scout's `prod` copies) on the combination fights: −1.00 [−1.53, −0.48].
+
+Reading (not a test): stepping the end-turn widening further (c1 → c2, 7.4 → 14.8) gains another 0.4 HP, while the
+other further steps (K to 0.925, F to 6.25) lose what c1 or c2 had; F and K are at or past their optimum at the
+stage-1 level, J may not be yet.
