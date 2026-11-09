@@ -37,7 +37,8 @@ worse than G16 + mb4 in whole runs, not just not better.
 - C2 − D (§775's A20 default combat) +4.88 pp [+1.95, +7.71] at 1.96× D's CPU; C2 − G32 −4.30 pp [−7.32, −1.37].
 - Act-4 reach C2 − G16 −4.39 pp [−7.42, −1.37]; final floor −1.70 [−2.74, −0.67].
 - No game over 1 h (longest 42 min).
-- `results/result.json`'s `per_arm` lists the arms `analyze.py` reads (C2, the G16 sentinel, §775's D, G16 and G32), not §775's G64.
+- `results/result.json` has no `ref:G64` in `per_arm` because the REF_ROOT used here held only §775's D, G16 and G32
+  units (the G64 units were not extracted); `analyze.py` reads G64 too when its units are there (40.43%, as §775).
 - Tree reuse (this binary): C2 cap resets on 4.92% of kept-or-reset reroots (24,227 of 492,103), visits lost to cap
   resets 4.50% of all simulations, visits carried 35.0%. The 32 sentinel G16 games: 4.50%, 3.90%, 34.3%. Both are
   far above PREREG's 1% skip line, so Test 2 stays recommended.
@@ -53,28 +54,30 @@ non-boss sections mix hallway, elite and event fights), hazard = deaths among ru
 
 | section | C2 | G16 | C2 − G16 (pp) |
 |---|---|---|---|
-| act 1, floors 1-15 | 114 / 1,024 | 96 / 1,024 | +1.8 [+0.1, +3.5] |
-| act-1 boss (16) | 95 / 910 | 89 / 928 | +0.8 [−1.0, +2.8] |
-| act 2, floors 17-32 | 151 / 815 | 129 / 839 | +3.2 [+0.3, +6.0] |
-| act-2 boss (33) | 71 / 664 | 63 / 710 | +1.8 [−0.7, +4.5] |
+| act 1, floors 1-15 | 114 / 1,024 | 96 / 1,024 | +1.8 [−0.1, +3.5] |
+| act-1 boss (16) | 95 / 910 | 89 / 928 | +0.8 [−1.0, +2.7] |
+| act 2, floors 17-32 | 151 / 815 | 129 / 839 | +3.2 [+0.2, +5.9] |
+| act-2 boss (33) | 71 / 664 | 63 / 710 | +1.8 [−0.8, +4.4] |
 | act 3, floors 34-49 | 53 / 593 | 60 / 647 | −0.3 [−3.0, +2.4] |
 | act-3 boss 1 (50) | 39 / 540 | 43 / 587 | −0.1 [−2.7, +2.4] |
-| act-3 boss 2 (51) | 42 / 501 | 40 / 544 | +1.0 [−2.0, +4.0] |
-| act 4 (52-56) | 85 / 459 | 82 / 504 | +2.2 [−2.0, +6.5] |
+| act-3 boss 2 (51) | 42 / 501 | 40 / 544 | +1.0 [−1.8, +4.0] |
+| act 4 (52-56) | 85 / 459 | 82 / 504 | +2.2 [−1.9, +6.4] |
 
 On the 252 seeds with different outcomes the loser died in acts 1-2 outside the bosses on 61 seeds where only G16
 killed and on 32 where only C2 killed.
 
 On stage 2's 602 paired elite and boss fights (production runs, not net-0420's) c2 loses less HP than ctl in every act
-(act-1 elite −0.12 [−0.73, +0.48] to act-3 boss −2.25 [−4.19, −0.35]) and drinks more potions in every act and room:
-+0.068 potions per fight [+0.049, +0.087] (ctl 0.597), act-1 boss +0.165 [+0.107, +0.223]. At 3.7 HP per potion
+(act-1 elite −0.12 [−0.74, +0.51] to act-3 boss −2.25 [−4.17, −0.31]) and drinks more potions (point estimate positive in every act and room; act-3 bosses include 0):
++0.068 potions per fight [+0.049, +0.086] (ctl 0.597), act-1 boss +0.165 [+0.107, +0.223]. At 3.7 HP per potion
 (§766) that is about 0.25 HP per fight, at Silver's leaf price of 11 HP about 0.75 HP. Stage 1's main effects per act
 and room put J (end-turn widening) at −0.15 HP in act 1 and −1.4 to −2.2 HP in acts 2-3.
 
 Reading (Inference): c2 was tuned on acts 1-3 elite and boss fights only. In whole runs it plays every hallway fight
-and Act 4 with the same constants, and it loses in acts 1-2 outside the bosses, where hallway fights dominate, and not
-in act 3, where the tuning gain was largest. A hallway fight test (selffights, arm rooms `1M,2M,3M`, ctl vs c2, stage
-2's 56 seeds, about 20 lane-h) would measure it; it needs Philipp's go. The potion cost covers part of the HP gain
+and Act 4 with the same constants. Its excess deaths are resolved only in act 2 outside the bosses, where hallway
+fights dominate; act 1 outside the boss points the same way (interval includes 0), and act 3, where the tuning gain was
+largest, shows none. A hallway fight test (selffights, arm rooms `1M,2M,3M`, ctl vs c2, stage
+2's 56 seeds, about 20 lane-h) would measure it; Philipp chose it on 2026-11-09 at 23:30 CET (own
+pre-registration). The potion cost covers part of the HP gain
 but not 4.7 pp. Like §770 against §775, HP per elite or boss fight did not predict the whole-run result, here not even
 its sign.
 

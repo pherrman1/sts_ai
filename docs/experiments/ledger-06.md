@@ -26860,7 +26860,7 @@ fights at 16k and 64k) by a whole-run test (§TBD-b). gnr is dropped. No default
 Seeds: D0's 111860000-111860499 reused (no new seeds). Cost: about 940 lane-hours.
 **Knowledge impact:** Gumbel teacher constants; selffights as a cheap paired fight bench on production states.
 
-## §TBD-b — Gumbel tuning pick c2 in whole runs against §775's G16 + mb4 (net-0420 out of combat, 1,024 paired A20 seeds, §775's G16 games reused after a 32/32 sentinel): Heart 41.21% → 36.52%, −4.69 pp [−7.71, −1.66] → NOT_SHOWN; c2 dies more often in acts 1-2 outside the bosses, where the tuning never played; c2 drinks +0.068 potions per tuning fight (cloud, 2026-11-09)
+## §TBD-b — Gumbel tuning pick c2 in whole runs against §775's G16 + mb4 (net-0420 out of combat, 1,024 paired A20 seeds, §775's G16 games reused after a 32/32 sentinel): Heart 41.21% → 36.52%, −4.69 pp [−7.71, −1.66] → NOT_SHOWN; c2 dies more often in act 2 outside the boss (+3.2 pp [+0.2, +5.9]), where hallway fights dominate and the tuning never played; c2 drinks +0.068 potions per tuning fight (cloud, 2026-11-09)
 
 **Question (Philipp, 2026-11-09 20:53 CET, "lass uns c2 in ganzen läufen prüfen. node cap danach ebenfalls"):** does
 §TBD-a's pick c2 raise the A20 Heart kill rate of whole runs over §775's teacher G16 + mb4?
@@ -26878,11 +26878,13 @@ Seeds: D0's 111860000-111860499 reused (no new seeds). Cost: about 940 lane-hour
 accepts H0 at 640 seeds → **NOT_SHOWN**. Act-4 reach −4.39 pp [−7.42, −1.37], final floor −1.70; CPU 0.97× G16's.
 C2 − D +4.88 [+1.95, +7.71]; C2 − G32 −4.30 [−7.32, −1.37]. Cap resets on 4.92% of kept-or-reset reroots, 4.50% of
 simulations lost to them.
-- Descriptive: death hazard C2 − G16 act 1 before the boss +1.8 pp [+0.1, +3.5], act 2 before the boss +3.2 [+0.3,
-  +6.0], act-1/act-2 bosses +0.8 / +1.8, act 3 before the boss −0.3, act-3 bosses −0.1 / +1.0, act 4 +2.2 (n.s.).
-  On stage 2's fights c2 drinks +0.068 potions per fight [+0.049, +0.087] more than ctl, in every act and room.
-**Interpretation (Inference):** c2 was tuned on acts 1-3 elite and boss fights only and loses where hallway fights
-dominate (acts 1-2 outside the bosses), not in act 3, where its tuning gain was largest. HP per elite or boss fight did
+- Descriptive (`breakdown.py`): death hazard C2 − G16 act 1 before the boss +1.8 pp [−0.1, +3.5], act 2 before the
+  boss +3.2 [+0.2, +5.9], act-1/act-2 bosses +0.8 / +1.8, act 3 before the boss −0.3, act-3 bosses −0.1 / +1.0, act 4
+  +2.2; only act 2's interval excludes 0. On stage 2's fights c2 drinks +0.068 potions per fight [+0.049, +0.086] more
+  than ctl, point estimate positive in every act and room.
+**Interpretation (Inference):** c2 was tuned on acts 1-3 elite and boss fights only; its excess deaths are resolved
+only in act 2 outside the boss, where hallway fights dominate (act 1 points the same way, unresolved), and not in act 3,
+where its tuning gain was largest. HP per elite or boss fight did
 not predict the whole-run result's sign. Untested: a hallway fight test (selffights, arm rooms 1M-3M) would measure it.
 **Decision:** NOT_SHOWN; c2 is not used. G16 + mb4 stays the teacher candidate. No default change. Test 2 of the
 PREREG (node reuse cap 262,144) runs as G16CAP − G16 after Philipp's choice of order.
