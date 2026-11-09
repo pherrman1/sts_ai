@@ -26892,7 +26892,7 @@ Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 145 lane-hours.
 **Knowledge impact:** combat teacher choice; tuning combat search on elite and boss HP per fight is not enough;
 confirmations belong on whole-run Heart kills.
 
-## §TBD — Gumbel root at combat B's budget in whole runs: G16 + mb4 at 1,000 simulations (G1) against combat B (B1), net-0420 out of combat, §775's first 512 paired A20 seeds: Heart 21.88% → 22.27%, +0.39 pp [−3.52, +4.10] → NO_DIFFERENCE_SHOWN; both about 9 pp below D and 18 pp below G16 + mb4 (cloud, 2026-11-09)
+## §TBD-a — Gumbel root at combat B's budget in whole runs: G16 + mb4 at 1,000 simulations (G1) against combat B (B1), net-0420 out of combat, §775's first 512 paired A20 seeds: Heart 21.88% → 22.27%, +0.39 pp [−3.52, +4.10] → NO_DIFFERENCE_SHOWN; both about 9 pp below D and 18 pp below G16 + mb4 (cloud, 2026-11-09)
 
 **Question (Philipp, 2026-11-09 23:35 CET, "Kannst du mal schnell gumbel mit 1k sims anstatt 16k sims auf 512 seeds
 auf 40 workern laufen lassen?"):** does §775's Gumbel root (k 16, max backup 4) raise the Heart kill rate at the
@@ -26915,7 +26915,7 @@ Seeds: §775's 111378256-111378767 reused (no new seeds). Cost: 5.4 lane-hours.
 **Knowledge impact:** combat teacher and PPO actor combat choice; at combat B's budget the Gumbel root alone does not
 raise the Heart rate.
 
-## §TBD — Gumbel budget curve in whole runs: G16 + mb4's root at 2,000 / 4,000 / 8,000 simulations (G2, G4, G8) against combat B (B1), net-0420 out of combat, the 1k test's 512 paired A20 seeds: Heart 21.88% → 27.15 / 29.69 / 31.64%, +5.27 / +7.81 / +9.77 pp → G2_BETTER, G4_BETTER, G8_BETTER; G8 at D's level at 0.67× D's CPU (cloud, 2026-11-10)
+## §TBD-b — Gumbel budget curve in whole runs: G16 + mb4's root at 2,000 / 4,000 / 8,000 simulations (G2, G4, G8) against combat B (B1), net-0420 out of combat, the 1k test's 512 paired A20 seeds: Heart 21.88% → 27.15 / 29.69 / 31.64%, +5.27 / +7.81 / +9.77 pp → G2_BETTER, G4_BETTER, G8_BETTER; G8 at D's level at 0.67× D's CPU (cloud, 2026-11-10)
 
 **Question (Philipp, 2026-11-09 23:58 CET, "Okay dann baller doch mal gumbel 2k, 4k und 8k auf den gleichen seeds
 durch, mit dashboard pls"):** between combat B's 1,000 simulations and §775's G16 + mb4 at 16,000, where does the
