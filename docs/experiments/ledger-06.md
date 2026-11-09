@@ -26891,3 +26891,57 @@ PREREG (node reuse cap 262,144) runs as G16CAP − G16 after Philipp's choice of
 Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 145 lane-hours.
 **Knowledge impact:** combat teacher choice; tuning combat search on elite and boss HP per fight is not enough;
 confirmations belong on whole-run Heart kills.
+
+## §778 — Gumbel root at combat B's budget in whole runs: G16 + mb4 at 1,000 simulations (G1) against combat B (B1), net-0420 out of combat, §775's first 512 paired A20 seeds: Heart 21.88% → 22.27%, +0.39 pp [−3.52, +4.10] → NO_DIFFERENCE_SHOWN; both about 9 pp below D and 18 pp below G16 + mb4 (cloud, 2026-11-09)
+
+**Question (Philipp, 2026-11-09 23:35 CET, "Kannst du mal schnell gumbel mit 1k sims anstatt 16k sims auf 512 seeds
+auf 40 workern laufen lassen?"):** does §775's Gumbel root (k 16, max backup 4) raise the Heart kill rate at the
+budget of combat B, the combat net-0420 was trained with?
+**Data:** [PREREG](evidence/gumbel_1k_wholerun_20261109/PREREG.md),
+[RESULT](evidence/gumbel_1k_wholerun_20261109/RESULT.md), `results/result.json`, `analyze.py` (frozen 325c62b3).
+- B1 = combat B (`ppo_long_c_20261106/actors_frozen.env`): flat Silver 1,000, learned stop off, Act 4 strong off.
+  G1 = B1 plus `STS_SILVER_GUMBEL_ROOT=16 STS_SILVER_GUMBEL_ROOT_MAX_BACKUP=4`, Act 4 included. No code change: code
+  13bb97ec, binary b5090b16, run commit dc08a78e. J prelaunch PASS.
+- 512 units (one seed, both arms), 512 verified, 0 drops, 0 aborts. 5.4 lane-hours, 23:48-23:54 CET.
+
+**Result:** Heart B1 21.88%, G1 22.27%: G1 − B1 **+0.39 pp [−3.52, +4.10]** → **NO_DIFFERENCE_SHOWN**; CPU 0.95×.
+Act-4 reach −3.91 pp [−8.01, +0.20]. On the same seeds §775's D 30.86% and G16 + mb4 40.43%: G1 − D −8.59
+[−12.30, −4.88], G1 − G16 −18.16 [−22.27, −14.26]. G16 + mb4 costs 26.6× B1's CPU per run (509 s vs 19.1 s).
+**Interpretation (Inference):** at 1,000 simulations the Gumbel root adds nothing measurable. The test does not
+split §775's gain over B1 into budget and root shares at 16,000 (B1 → G16 + mb4 changes budget, Act 4 strong and root
+at once; §772 found a root gain at equal 16k budget on elite and boss fights).
+**Decision:** NO_DIFFERENCE_SHOWN; the Gumbel root at 1,000 is not proposed for the PPO actors. No default change.
+Seeds: §775's 111378256-111378767 reused (no new seeds). Cost: 5.4 lane-hours.
+**Knowledge impact:** combat teacher and PPO actor combat choice; at combat B's budget the Gumbel root alone does not
+raise the Heart rate.
+
+## §779 — Gumbel budget curve in whole runs: G16 + mb4's root at 2,000 / 4,000 / 8,000 simulations (G2, G4, G8) against combat B (B1), net-0420 out of combat, the 1k test's 512 paired A20 seeds: Heart 21.88% → 27.15 / 29.69 / 31.64%, +5.27 / +7.81 / +9.77 pp → G2_BETTER, G4_BETTER, G8_BETTER; G8 at D's level at 0.67× D's CPU (cloud, 2026-11-10)
+
+**Question (Philipp, 2026-11-09 23:58 CET, "Okay dann baller doch mal gumbel 2k, 4k und 8k auf den gleichen seeds
+durch, mit dashboard pls"):** between combat B's 1,000 simulations and §775's G16 + mb4 at 16,000, where does the
+Gumbel root's Heart rate rise, and does it pass the A20 default combat D?
+**Data:** [PREREG](evidence/gumbel_2k8k_wholerun_20261109/PREREG.md),
+[RESULT](evidence/gumbel_2k8k_wholerun_20261109/RESULT.md), `results/result.json`, `results/claims.txt`,
+`analyze.py` (frozen with the PREREG in run commit 391456b0).
+- G2, G4, G8 = the 1k test's G1 (combat B plus `STS_SILVER_GUMBEL_ROOT=16 STS_SILVER_GUMBEL_ROOT_MAX_BACKUP=4` in every
+  fight, Act 4 strong off) at 2,000 / 4,000 / 8,000 simulations. B1 and G1 reused from the 1k test, D and G16 + mb4
+  from §775 (no reruns). No code change: code 13bb97ec, binary b5090b16. J prelaunch review in parallel, no blocking
+  finding.
+- 512 units (one seed, three arms), 512 verified, 0 drops, 0 aborts. 41.8 lane-hours, 00:02-00:31 CET.
+
+**Result:** Heart B1 21.88%, G2 27.15%, G4 29.69%, G8 31.64%. Gk − B1 at 98.33% (Bonferroni): G2 **+5.27 pp
+[+0.39, +10.16]**, G4 **+7.81 [+2.73, +12.89]**, G8 **+9.77 [+4.88, +14.65]** → all three BETTER, at 2.1× / 4.5× /
+8.7× B1's CPU. Steps (95%): G4 − G2 +2.54 [−1.37, +6.64], G8 − G4 +1.95 [−2.15, +6.05]. G8 − D +0.78 [−3.12, +4.88]
+at 0.67× D's CPU; G4 − D −1.17 [−5.08, +2.73] at 0.35×. G8 − G16 + mb4 −8.79 [−12.89, −4.88] at 0.33×; Act-4 reach
+−5.86 [−9.96, −1.76]; kills per Act-4 arrival G8 74.0%, G16 + mb4 83.1% (descriptive).
+**Interpretation (Inference):** from 2,000 to 8,000 simulations each doubling adds about 2-2.5 pp Heart (each step
+unresolved alone). The 8k → 16k step to §775's arm (+8.8 pp) is not a clean budget step: §775 ran with the learned
+stop on, so Act 4 strong gave the Shield and Spear prior playouts and the Heart 40,000 simulations with a 262,144-node
+reuse cap, while G1-G8 played Act 4 at their own budget. About 4 pp of the gap go with the higher Act-4 conversion and
+about 5 pp with the higher Act-4 reach (which Act 4 strong cannot change; it rises about 3.9 pp per doubling from 2k to
+16k). Above 16,000 §775 found no gain. G8 is not distinguishable from D; equality was not tested.
+**Decision:** G2_BETTER, G4_BETTER, G8_BETTER against combat B; none beats D, so no candidate for a test against D.
+No default change. Seeds: §775's 111378256-111378767 reused (no new seeds). Cost: 41.8 lane-hours.
+**Knowledge impact:** prices the Gumbel root for the PPO actors' combat (about +5 / +8 / +10 pp Heart for 2× / 4.5× /
+8.7× combat B's CPU); budget comparisons with §775's arms carry Act 4 strong; a G16 + mb4 arm with Act 4 strong off
+would split the 8k → 16k step.
