@@ -1,0 +1,5023 @@
+{
+ "new_units_rc": {
+  "no_done_line": 0,
+  "0": 1187
+ },
+ "budget_units_rc": {
+  "no_done_line": 0,
+  "0": 1728
+ },
+ "stage1_units_rc": {
+  "no_done_line": 0,
+  "0": 329
+ },
+ "units_rc0": 1187,
+ "conflicts": {
+  "prod": 0,
+  "arm": 0,
+  "budget_prod": 0,
+  "budget_arm": 0,
+  "stage1_prod": 0,
+  "stage1_arm": 0
+ },
+ "reproduction": {
+  "fights_compared": 1878,
+  "identical": 1878,
+  "differ": 0,
+  "copies_compared": 7512,
+  "share": 1.0,
+  "stage1_fights_without_new_prod": 0
+ },
+ "dropped": {},
+ "fights": 1878,
+ "primary": {
+  "n": 1878,
+  "runs": 309,
+  "expert": 8.74,
+  "prod": {
+   "": 11.595,
+   "_death": 0.055,
+   "_potions": 0.555,
+   "_cpu": 6.227
+  },
+  "gsh16+flat32000+mb4": {
+   "": 10.179,
+   "_death": 0.046,
+   "_potions": 0.514,
+   "_cpu": 40.648
+  },
+  "gsh16+flat64000+mb4": {
+   "": 9.97,
+   "_death": 0.046,
+   "_potions": 0.513,
+   "_cpu": 79.712
+  },
+  "gsh16+flat32000": {
+   "": 10.469,
+   "_death": 0.049,
+   "_potions": 0.549,
+   "_cpu": 41.895
+  },
+  "gsh16+flat64000": {
+   "": 10.346,
+   "_death": 0.047,
+   "_potions": 0.541,
+   "_cpu": 84.324
+  },
+  "gsh16+flat16000+mb4": {
+   "": 10.427,
+   "_death": 0.048,
+   "_potions": 0.52,
+   "_cpu": 20.713
+  },
+  "gsh16+flat16000": {
+   "": 10.712,
+   "_death": 0.052,
+   "_potions": 0.546,
+   "_cpu": 21.576
+  },
+  "gsh16+flat32000+mb4_minus_gsh16+flat32000": -0.29,
+  "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci": [
+   -0.536,
+   -0.045
+  ],
+  "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci975": [
+   -0.572,
+   -0.009
+  ],
+  "gsh16+flat32000+mb4_minus_gsh16+flat32000_death": -0.0029,
+  "gsh16+flat32000+mb4_minus_gsh16+flat32000_death_ci": [
+   -0.007,
+   0.001
+  ],
+  "gsh16+flat64000+mb4_minus_gsh16+flat64000": -0.38,
+  "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci": [
+   -0.589,
+   -0.156
+  ],
+  "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci975": [
+   -0.617,
+   -0.125
+  ],
+  "gsh16+flat64000+mb4_minus_gsh16+flat64000_death": -0.0008,
+  "gsh16+flat64000+mb4_minus_gsh16+flat64000_death_ci": [
+   -0.004,
+   0.003
+  ],
+  "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4": -0.25,
+  "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci": [
+   -0.44,
+   -0.053
+  ],
+  "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+   -0.462,
+   -0.029
+  ],
+  "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death": -0.0024,
+  "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+   -0.006,
+   0.001
+  ],
+  "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4": -0.46,
+  "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci": [
+   -0.665,
+   -0.243
+  ],
+  "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+   -0.697,
+   -0.214
+  ],
+  "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death": -0.002,
+  "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+   -0.006,
+   0.002
+  ],
+  "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4": -0.21,
+  "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4_ci": [
+   -0.44,
+   0.023
+  ],
+  "gsh16+flat32000+mb4_minus_gsh16+flat16000": -0.53,
+  "gsh16+flat32000+mb4_minus_gsh16+flat16000_ci": [
+   -0.745,
+   -0.319
+  ],
+  "gsh16+flat64000+mb4_minus_gsh16+flat16000": -0.74,
+  "gsh16+flat64000+mb4_minus_gsh16+flat16000_ci": [
+   -0.963,
+   -0.518
+  ],
+  "gsh16+flat32000+mb4_minus_prod": -1.42,
+  "gsh16+flat32000+mb4_minus_prod_ci": [
+   -1.702,
+   -1.127
+  ],
+  "gsh16+flat64000+mb4_minus_prod": -1.62,
+  "gsh16+flat64000+mb4_minus_prod_ci": [
+   -1.915,
+   -1.344
+  ],
+  "gsh16+flat32000_minus_prod": -1.13,
+  "gsh16+flat32000_minus_prod_ci": [
+   -1.392,
+   -0.862
+  ],
+  "gsh16+flat64000_minus_prod": -1.25,
+  "gsh16+flat64000_minus_prod_ci": [
+   -1.495,
+   -1.009
+  ],
+  "gsh16+flat16000+mb4_minus_prod": -1.17,
+  "gsh16+flat16000+mb4_minus_prod_ci": [
+   -1.424,
+   -0.916
+  ],
+  "gsh16+flat16000_minus_prod": -0.88,
+  "gsh16+flat16000_minus_prod_ci": [
+   -1.132,
+   -0.64
+  ],
+  "gsh16+flat32000+mb4_cpu_ratio": 6.53,
+  "gsh16+flat64000+mb4_cpu_ratio": 12.8,
+  "gsh16+flat32000_cpu_ratio": 6.73,
+  "gsh16+flat64000_cpu_ratio": 13.54,
+  "gsh16+flat16000+mb4_cpu_ratio": 3.33,
+  "gsh16+flat16000_cpu_ratio": 3.15,
+  "prod_sims_per_decision": 4547,
+  "gsh16+flat32000+mb4_sims_per_decision": 29655,
+  "gsh16+flat64000+mb4_sims_per_decision": 59339,
+  "gsh16+flat32000_sims_per_decision": 29447,
+  "gsh16+flat64000_sims_per_decision": 59003,
+  "gsh16+flat16000+mb4_sims_per_decision": 14810,
+  "gsh16+flat16000_sims_per_decision": 14733,
+  "best_arm": "gsh16+flat64000+mb4",
+  "prod_minus_expert_ci": [
+   2.169,
+   3.555
+  ]
+ },
+ "decision_max_backup": "MB_HELPS_AT_HIGH_BUDGET (gsh16+flat64000+mb4 vs gsh16+flat64000)",
+ "decision_budget": "MORE_SIMS_HELP_WITH_MB (gsh16+flat64000+mb4 vs gsh16+flat16000+mb4)",
+ "by_act": {
+  "1": {
+   "n": 998,
+   "runs": 309,
+   "expert": 10.77,
+   "prod": {
+    "": 12.111,
+    "_death": 0.055,
+    "_potions": 0.686,
+    "_cpu": 2.376
+   },
+   "gsh16+flat32000+mb4": {
+    "": 11.337,
+    "_death": 0.046,
+    "_potions": 0.631,
+    "_cpu": 18.071
+   },
+   "gsh16+flat64000+mb4": {
+    "": 11.196,
+    "_death": 0.047,
+    "_potions": 0.628,
+    "_cpu": 35.84
+   },
+   "gsh16+flat32000": {
+    "": 11.307,
+    "_death": 0.051,
+    "_potions": 0.682,
+    "_cpu": 18.327
+   },
+   "gsh16+flat64000": {
+    "": 11.292,
+    "_death": 0.048,
+    "_potions": 0.676,
+    "_cpu": 37.212
+   },
+   "gsh16+flat16000+mb4": {
+    "": 11.464,
+    "_death": 0.049,
+    "_potions": 0.633,
+    "_cpu": 8.792
+   },
+   "gsh16+flat16000": {
+    "": 11.679,
+    "_death": 0.053,
+    "_potions": 0.678,
+    "_cpu": 9.237
+   },
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000": 0.03,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci": [
+    -0.227,
+    0.29
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci975": [
+    -0.268,
+    0.327
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death": -0.0055,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death_ci": [
+    -0.011,
+    0.0
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000": -0.1,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci": [
+    -0.342,
+    0.146
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci975": [
+    -0.375,
+    0.179
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death": -0.0008,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death_ci": [
+    -0.006,
+    0.004
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4": -0.13,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -0.352,
+    0.099
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -0.385,
+    0.134
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death": -0.0035,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.009,
+    0.001
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4": -0.27,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -0.48,
+    -0.057
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -0.52,
+    -0.025
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death": -0.0023,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.007,
+    0.003
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4": -0.14,
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4_ci": [
+    -0.372,
+    0.095
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000": -0.34,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000_ci": [
+    -0.603,
+    -0.069
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000": -0.48,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000_ci": [
+    -0.747,
+    -0.21
+   ],
+   "gsh16+flat32000+mb4_minus_prod": -0.77,
+   "gsh16+flat32000+mb4_minus_prod_ci": [
+    -1.045,
+    -0.496
+   ],
+   "gsh16+flat64000+mb4_minus_prod": -0.92,
+   "gsh16+flat64000+mb4_minus_prod_ci": [
+    -1.201,
+    -0.626
+   ],
+   "gsh16+flat32000_minus_prod": -0.8,
+   "gsh16+flat32000_minus_prod_ci": [
+    -1.058,
+    -0.551
+   ],
+   "gsh16+flat64000_minus_prod": -0.82,
+   "gsh16+flat64000_minus_prod_ci": [
+    -1.077,
+    -0.571
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -0.65,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -0.908,
+    -0.383
+   ],
+   "gsh16+flat16000_minus_prod": -0.43,
+   "gsh16+flat16000_minus_prod_ci": [
+    -0.679,
+    -0.184
+   ],
+   "gsh16+flat32000+mb4_cpu_ratio": 7.6,
+   "gsh16+flat64000+mb4_cpu_ratio": 15.08,
+   "gsh16+flat32000_cpu_ratio": 7.71,
+   "gsh16+flat64000_cpu_ratio": 15.66,
+   "gsh16+flat16000+mb4_cpu_ratio": 3.7,
+   "gsh16+flat16000_cpu_ratio": 3.64,
+   "prod_sims_per_decision": 4133,
+   "gsh16+flat32000+mb4_sims_per_decision": 29155,
+   "gsh16+flat64000+mb4_sims_per_decision": 58256,
+   "gsh16+flat32000_sims_per_decision": 28812,
+   "gsh16+flat64000_sims_per_decision": 57805,
+   "gsh16+flat16000+mb4_sims_per_decision": 14553,
+   "gsh16+flat16000_sims_per_decision": 14418,
+   "best_arm": "gsh16+flat64000+mb4",
+   "prod_minus_expert_ci": [
+    0.651,
+    2.014
+   ]
+  },
+  "2": {
+   "n": 536,
+   "runs": 184,
+   "expert": 7.63,
+   "prod": {
+    "": 12.435,
+    "_death": 0.067,
+    "_potions": 0.484,
+    "_cpu": 5.494
+   },
+   "gsh16+flat32000+mb4": {
+    "": 10.302,
+    "_death": 0.057,
+    "_potions": 0.444,
+    "_cpu": 37.633
+   },
+   "gsh16+flat64000+mb4": {
+    "": 10.346,
+    "_death": 0.055,
+    "_potions": 0.446,
+    "_cpu": 74.485
+   },
+   "gsh16+flat32000": {
+    "": 11.268,
+    "_death": 0.058,
+    "_potions": 0.484,
+    "_cpu": 39.433
+   },
+   "gsh16+flat64000": {
+    "": 11.099,
+    "_death": 0.059,
+    "_potions": 0.472,
+    "_cpu": 79.836
+   },
+   "gsh16+flat16000+mb4": {
+    "": 10.912,
+    "_death": 0.062,
+    "_potions": 0.462,
+    "_cpu": 19.548
+   },
+   "gsh16+flat16000": {
+    "": 11.208,
+    "_death": 0.063,
+    "_potions": 0.479,
+    "_cpu": 20.194
+   },
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000": -0.97,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci": [
+    -1.414,
+    -0.511
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci975": [
+    -1.489,
+    -0.452
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death": -0.0009,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death_ci": [
+    -0.009,
+    0.007
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000": -0.75,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci": [
+    -1.229,
+    -0.266
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci975": [
+    -1.287,
+    -0.208
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death": -0.0042,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death_ci": [
+    -0.012,
+    0.003
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4": -0.61,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -1.011,
+    -0.217
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -1.063,
+    -0.158
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death": -0.0042,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.012,
+    0.004
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4": -0.57,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -1.016,
+    -0.13
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -1.084,
+    -0.073
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death": -0.0065,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.014,
+    0.0
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4": 0.04,
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4_ci": [
+    -0.39,
+    0.462
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000": -0.91,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000_ci": [
+    -1.332,
+    -0.472
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000": -0.86,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000_ci": [
+    -1.308,
+    -0.415
+   ],
+   "gsh16+flat32000+mb4_minus_prod": -2.13,
+   "gsh16+flat32000+mb4_minus_prod_ci": [
+    -2.667,
+    -1.616
+   ],
+   "gsh16+flat64000+mb4_minus_prod": -2.09,
+   "gsh16+flat64000+mb4_minus_prod_ci": [
+    -2.612,
+    -1.569
+   ],
+   "gsh16+flat32000_minus_prod": -1.17,
+   "gsh16+flat32000_minus_prod_ci": [
+    -1.636,
+    -0.707
+   ],
+   "gsh16+flat64000_minus_prod": -1.34,
+   "gsh16+flat64000_minus_prod_ci": [
+    -1.858,
+    -0.835
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -1.52,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -2.038,
+    -1.017
+   ],
+   "gsh16+flat16000_minus_prod": -1.23,
+   "gsh16+flat16000_minus_prod_ci": [
+    -1.684,
+    -0.769
+   ],
+   "gsh16+flat32000+mb4_cpu_ratio": 6.85,
+   "gsh16+flat64000+mb4_cpu_ratio": 13.56,
+   "gsh16+flat32000_cpu_ratio": 7.18,
+   "gsh16+flat64000_cpu_ratio": 14.53,
+   "gsh16+flat16000+mb4_cpu_ratio": 3.56,
+   "gsh16+flat16000_cpu_ratio": 3.36,
+   "prod_sims_per_decision": 4559,
+   "gsh16+flat32000+mb4_sims_per_decision": 29758,
+   "gsh16+flat64000+mb4_sims_per_decision": 59524,
+   "gsh16+flat32000_sims_per_decision": 29598,
+   "gsh16+flat64000_sims_per_decision": 59312,
+   "gsh16+flat16000+mb4_sims_per_decision": 14856,
+   "gsh16+flat16000_sims_per_decision": 14799,
+   "best_arm": "gsh16+flat32000+mb4",
+   "prod_minus_expert_ci": [
+    3.553,
+    6.091
+   ]
+  },
+  "3": {
+   "n": 344,
+   "runs": 83,
+   "expert": 4.58,
+   "prod": {
+    "": 8.786,
+    "_death": 0.037,
+    "_potions": 0.286,
+    "_cpu": 18.541
+   },
+   "gsh16+flat32000+mb4": {
+    "": 6.626,
+    "_death": 0.03,
+    "_potions": 0.281,
+    "_cpu": 110.845
+   },
+   "gsh16+flat64000+mb4": {
+    "": 5.828,
+    "_death": 0.032,
+    "_potions": 0.285,
+    "_cpu": 215.139
+   },
+   "gsh16+flat32000": {
+    "": 6.791,
+    "_death": 0.028,
+    "_potions": 0.266,
+    "_cpu": 114.107
+   },
+   "gsh16+flat64000": {
+    "": 6.43,
+    "_death": 0.028,
+    "_potions": 0.257,
+    "_cpu": 227.998
+   },
+   "gsh16+flat16000+mb4": {
+    "": 6.662,
+    "_death": 0.026,
+    "_potions": 0.281,
+    "_cpu": 57.111
+   },
+   "gsh16+flat16000": {
+    "": 7.134,
+    "_death": 0.032,
+    "_potions": 0.27,
+    "_cpu": 59.525
+   },
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000": -0.17,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci": [
+    -0.898,
+    0.576
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci975": [
+    -1.014,
+    0.662
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death": 0.0015,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death_ci": [
+    -0.005,
+    0.008
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000": -0.6,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci": [
+    -1.303,
+    0.123
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci975": [
+    -1.41,
+    0.224
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death": 0.0044,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death_ci": [
+    -0.002,
+    0.011
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4": -0.04,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -0.697,
+    0.615
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -0.803,
+    0.718
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death": 0.0036,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.001,
+    0.009
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4": -0.83,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -1.631,
+    -0.023
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -1.745,
+    0.113
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death": 0.0058,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.002,
+    0.014
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4": -0.8,
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4_ci": [
+    -1.561,
+    -0.042
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000": -0.51,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000_ci": [
+    -1.212,
+    0.19
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000": -1.31,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000_ci": [
+    -1.945,
+    -0.665
+   ],
+   "gsh16+flat32000+mb4_minus_prod": -2.16,
+   "gsh16+flat32000+mb4_minus_prod_ci": [
+    -3.102,
+    -1.278
+   ],
+   "gsh16+flat64000+mb4_minus_prod": -2.96,
+   "gsh16+flat64000+mb4_minus_prod_ci": [
+    -3.999,
+    -2.039
+   ],
+   "gsh16+flat32000_minus_prod": -1.99,
+   "gsh16+flat32000_minus_prod_ci": [
+    -2.848,
+    -1.183
+   ],
+   "gsh16+flat64000_minus_prod": -2.36,
+   "gsh16+flat64000_minus_prod_ci": [
+    -3.225,
+    -1.549
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -2.12,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -3.006,
+    -1.291
+   ],
+   "gsh16+flat16000_minus_prod": -1.65,
+   "gsh16+flat16000_minus_prod_ci": [
+    -2.519,
+    -0.846
+   ],
+   "gsh16+flat32000+mb4_cpu_ratio": 5.98,
+   "gsh16+flat64000+mb4_cpu_ratio": 11.6,
+   "gsh16+flat32000_cpu_ratio": 6.15,
+   "gsh16+flat64000_cpu_ratio": 12.3,
+   "gsh16+flat16000+mb4_cpu_ratio": 3.08,
+   "gsh16+flat16000_cpu_ratio": 2.88,
+   "prod_sims_per_decision": 5209,
+   "gsh16+flat32000+mb4_sims_per_decision": 30349,
+   "gsh16+flat64000+mb4_sims_per_decision": 60912,
+   "gsh16+flat32000_sims_per_decision": 30345,
+   "gsh16+flat64000_sims_per_decision": 60671,
+   "gsh16+flat16000+mb4_sims_per_decision": 15173,
+   "gsh16+flat16000_sims_per_decision": 15182,
+   "best_arm": "gsh16+flat64000+mb4",
+   "prod_minus_expert_ci": [
+    2.34,
+    6.187
+   ]
+  }
+ },
+ "by_room": {
+  "E": {
+   "n": 1350,
+   "runs": 307,
+   "expert": 7.46,
+   "prod": {
+    "": 10.187,
+    "_death": 0.036,
+    "_potions": 0.501,
+    "_cpu": 0.937
+   },
+   "gsh16+flat32000+mb4": {
+    "": 8.846,
+    "_death": 0.031,
+    "_potions": 0.47,
+    "_cpu": 7.643
+   },
+   "gsh16+flat64000+mb4": {
+    "": 8.929,
+    "_death": 0.032,
+    "_potions": 0.468,
+    "_cpu": 15.613
+   },
+   "gsh16+flat32000": {
+    "": 9.292,
+    "_death": 0.034,
+    "_potions": 0.509,
+    "_cpu": 7.427
+   },
+   "gsh16+flat64000": {
+    "": 9.194,
+    "_death": 0.032,
+    "_potions": 0.5,
+    "_cpu": 15.336
+   },
+   "gsh16+flat16000+mb4": {
+    "": 9.123,
+    "_death": 0.033,
+    "_potions": 0.472,
+    "_cpu": 3.818
+   },
+   "gsh16+flat16000": {
+    "": 9.563,
+    "_death": 0.036,
+    "_potions": 0.503,
+    "_cpu": 3.551
+   },
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000": -0.45,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci": [
+    -0.701,
+    -0.196
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci975": [
+    -0.734,
+    -0.163
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death": -0.0028,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death_ci": [
+    -0.007,
+    0.001
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000": -0.27,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci": [
+    -0.501,
+    -0.031
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci975": [
+    -0.536,
+    0.008
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death": 0.0,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death_ci": [
+    -0.003,
+    0.003
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4": -0.28,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -0.481,
+    -0.073
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -0.507,
+    -0.042
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death": -0.0011,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.005,
+    0.002
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4": -0.19,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -0.4,
+    0.015
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -0.431,
+    0.044
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death": -0.0002,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.004,
+    0.003
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4": 0.08,
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4_ci": [
+    -0.121,
+    0.29
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000": -0.72,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000_ci": [
+    -0.946,
+    -0.489
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000": -0.63,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000_ci": [
+    -0.881,
+    -0.391
+   ],
+   "gsh16+flat32000+mb4_minus_prod": -1.34,
+   "gsh16+flat32000+mb4_minus_prod_ci": [
+    -1.614,
+    -1.059
+   ],
+   "gsh16+flat64000+mb4_minus_prod": -1.26,
+   "gsh16+flat64000+mb4_minus_prod_ci": [
+    -1.541,
+    -0.972
+   ],
+   "gsh16+flat32000_minus_prod": -0.9,
+   "gsh16+flat32000_minus_prod_ci": [
+    -1.142,
+    -0.643
+   ],
+   "gsh16+flat64000_minus_prod": -0.99,
+   "gsh16+flat64000_minus_prod_ci": [
+    -1.24,
+    -0.748
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -1.06,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -1.309,
+    -0.813
+   ],
+   "gsh16+flat16000_minus_prod": -0.62,
+   "gsh16+flat16000_minus_prod_ci": [
+    -0.862,
+    -0.376
+   ],
+   "gsh16+flat32000+mb4_cpu_ratio": 8.16,
+   "gsh16+flat64000+mb4_cpu_ratio": 16.66,
+   "gsh16+flat32000_cpu_ratio": 7.93,
+   "gsh16+flat64000_cpu_ratio": 16.37,
+   "gsh16+flat16000+mb4_cpu_ratio": 4.08,
+   "gsh16+flat16000_cpu_ratio": 3.66,
+   "prod_sims_per_decision": 4284,
+   "gsh16+flat32000+mb4_sims_per_decision": 29876,
+   "gsh16+flat64000+mb4_sims_per_decision": 59782,
+   "gsh16+flat32000_sims_per_decision": 29636,
+   "gsh16+flat64000_sims_per_decision": 59393,
+   "gsh16+flat16000+mb4_sims_per_decision": 14930,
+   "gsh16+flat16000_sims_per_decision": 14835,
+   "best_arm": "gsh16+flat32000+mb4",
+   "prod_minus_expert_ci": [
+    2.033,
+    3.405
+   ]
+  },
+  "B": {
+   "n": 528,
+   "runs": 254,
+   "expert": 12.01,
+   "prod": {
+    "": 15.193,
+    "_death": 0.106,
+    "_potions": 0.692,
+    "_cpu": 19.753
+   },
+   "gsh16+flat32000+mb4": {
+    "": 13.588,
+    "_death": 0.083,
+    "_potions": 0.626,
+    "_cpu": 125.034
+   },
+   "gsh16+flat64000+mb4": {
+    "": 12.633,
+    "_death": 0.082,
+    "_potions": 0.628,
+    "_cpu": 243.603
+   },
+   "gsh16+flat32000": {
+    "": 13.476,
+    "_death": 0.087,
+    "_potions": 0.652,
+    "_cpu": 130.024
+   },
+   "gsh16+flat64000": {
+    "": 13.291,
+    "_death": 0.085,
+    "_potions": 0.647,
+    "_cpu": 260.714
+   },
+   "gsh16+flat16000+mb4": {
+    "": 13.759,
+    "_death": 0.089,
+    "_potions": 0.642,
+    "_cpu": 63.91
+   },
+   "gsh16+flat16000": {
+    "": 13.649,
+    "_death": 0.094,
+    "_potions": 0.658,
+    "_cpu": 67.66
+   },
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000": 0.11,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci": [
+    -0.43,
+    0.658
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci975": [
+    -0.5,
+    0.73
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death": -0.0033,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death_ci": [
+    -0.013,
+    0.007
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000": -0.66,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci": [
+    -1.175,
+    -0.136
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci975": [
+    -1.251,
+    -0.066
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death": -0.0028,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death_ci": [
+    -0.013,
+    0.007
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4": -0.17,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -0.655,
+    0.29
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -0.737,
+    0.364
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death": -0.0057,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.016,
+    0.004
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4": -1.13,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -1.661,
+    -0.603
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -1.75,
+    -0.527
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death": -0.0066,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.017,
+    0.003
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4": -0.95,
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4_ci": [
+    -1.562,
+    -0.335
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000": -0.06,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000_ci": [
+    -0.639,
+    0.506
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000": -1.02,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000_ci": [
+    -1.584,
+    -0.44
+   ],
+   "gsh16+flat32000+mb4_minus_prod": -1.61,
+   "gsh16+flat32000+mb4_minus_prod_ci": [
+    -2.213,
+    -1.009
+   ],
+   "gsh16+flat64000+mb4_minus_prod": -2.56,
+   "gsh16+flat64000+mb4_minus_prod_ci": [
+    -3.162,
+    -1.975
+   ],
+   "gsh16+flat32000_minus_prod": -1.72,
+   "gsh16+flat32000_minus_prod_ci": [
+    -2.3,
+    -1.136
+   ],
+   "gsh16+flat64000_minus_prod": -1.9,
+   "gsh16+flat64000_minus_prod_ci": [
+    -2.498,
+    -1.333
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -1.43,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -1.985,
+    -0.866
+   ],
+   "gsh16+flat16000_minus_prod": -1.54,
+   "gsh16+flat16000_minus_prod_ci": [
+    -2.137,
+    -0.987
+   ],
+   "gsh16+flat32000+mb4_cpu_ratio": 6.33,
+   "gsh16+flat64000+mb4_cpu_ratio": 12.33,
+   "gsh16+flat32000_cpu_ratio": 6.58,
+   "gsh16+flat64000_cpu_ratio": 13.2,
+   "gsh16+flat16000+mb4_cpu_ratio": 3.24,
+   "gsh16+flat16000_cpu_ratio": 3.09,
+   "prod_sims_per_decision": 4903,
+   "gsh16+flat32000+mb4_sims_per_decision": 29352,
+   "gsh16+flat64000+mb4_sims_per_decision": 58726,
+   "gsh16+flat32000_sims_per_decision": 29189,
+   "gsh16+flat64000_sims_per_decision": 58474,
+   "gsh16+flat16000+mb4_sims_per_decision": 14646,
+   "gsh16+flat16000_sims_per_decision": 14593,
+   "best_arm": "gsh16+flat64000+mb4",
+   "prod_minus_expert_ci": [
+    1.796,
+    4.568
+   ]
+  }
+ },
+ "by_act_room": {
+  "1E": {
+   "n": 744,
+   "runs": 307,
+   "expert": 10.03,
+   "prod": {
+    "": 11.243,
+    "_death": 0.031,
+    "_potions": 0.616,
+    "_cpu": 0.6
+   },
+   "gsh16+flat32000+mb4": {
+    "": 10.625,
+    "_death": 0.028,
+    "_potions": 0.571,
+    "_cpu": 5.368
+   },
+   "gsh16+flat64000+mb4": {
+    "": 10.67,
+    "_death": 0.03,
+    "_potions": 0.566,
+    "_cpu": 10.966
+   },
+   "gsh16+flat32000": {
+    "": 10.593,
+    "_death": 0.032,
+    "_potions": 0.627,
+    "_cpu": 5.083
+   },
+   "gsh16+flat64000": {
+    "": 10.607,
+    "_death": 0.028,
+    "_potions": 0.618,
+    "_cpu": 10.647
+   },
+   "gsh16+flat16000+mb4": {
+    "": 10.762,
+    "_death": 0.029,
+    "_potions": 0.57,
+    "_cpu": 2.622
+   },
+   "gsh16+flat16000": {
+    "": 10.959,
+    "_death": 0.033,
+    "_potions": 0.618,
+    "_cpu": 2.405
+   },
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000": 0.03,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci": [
+    -0.238,
+    0.304
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci975": [
+    -0.284,
+    0.341
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death": -0.004,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death_ci": [
+    -0.009,
+    0.001
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000": 0.06,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci": [
+    -0.21,
+    0.337
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci975": [
+    -0.242,
+    0.377
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death": 0.0017,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death_ci": [
+    -0.002,
+    0.006
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4": -0.14,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -0.368,
+    0.091
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -0.402,
+    0.127
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death": -0.0013,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.006,
+    0.003
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4": -0.09,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -0.319,
+    0.132
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -0.356,
+    0.165
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death": 0.0007,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.004,
+    0.005
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4": 0.04,
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4_ci": [
+    -0.189,
+    0.281
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000": -0.33,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000_ci": [
+    -0.605,
+    -0.07
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000": -0.29,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000_ci": [
+    -0.58,
+    0.003
+   ],
+   "gsh16+flat32000+mb4_minus_prod": -0.62,
+   "gsh16+flat32000+mb4_minus_prod_ci": [
+    -0.896,
+    -0.349
+   ],
+   "gsh16+flat64000+mb4_minus_prod": -0.57,
+   "gsh16+flat64000+mb4_minus_prod_ci": [
+    -0.868,
+    -0.275
+   ],
+   "gsh16+flat32000_minus_prod": -0.65,
+   "gsh16+flat32000_minus_prod_ci": [
+    -0.894,
+    -0.404
+   ],
+   "gsh16+flat64000_minus_prod": -0.64,
+   "gsh16+flat64000_minus_prod_ci": [
+    -0.907,
+    -0.38
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -0.48,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -0.753,
+    -0.21
+   ],
+   "gsh16+flat16000_minus_prod": -0.28,
+   "gsh16+flat16000_minus_prod_ci": [
+    -0.521,
+    -0.049
+   ],
+   "gsh16+flat32000+mb4_cpu_ratio": 8.95,
+   "gsh16+flat64000+mb4_cpu_ratio": 18.29,
+   "gsh16+flat32000_cpu_ratio": 8.48,
+   "gsh16+flat64000_cpu_ratio": 17.76,
+   "gsh16+flat16000+mb4_cpu_ratio": 4.37,
+   "gsh16+flat16000_cpu_ratio": 3.93,
+   "prod_sims_per_decision": 3994,
+   "gsh16+flat32000+mb4_sims_per_decision": 29641,
+   "gsh16+flat64000+mb4_sims_per_decision": 59270,
+   "gsh16+flat32000_sims_per_decision": 29300,
+   "gsh16+flat64000_sims_per_decision": 58788,
+   "gsh16+flat16000+mb4_sims_per_decision": 14809,
+   "gsh16+flat16000_sims_per_decision": 14673,
+   "best_arm": "gsh16+flat32000",
+   "prod_minus_expert_ci": [
+    0.451,
+    1.978
+   ]
+  },
+  "1B": {
+   "n": 254,
+   "runs": 254,
+   "expert": 12.91,
+   "prod": {
+    "": 14.654,
+    "_death": 0.127,
+    "_potions": 0.89,
+    "_cpu": 7.58
+   },
+   "gsh16+flat32000+mb4": {
+    "": 13.424,
+    "_death": 0.098,
+    "_potions": 0.807,
+    "_cpu": 55.279
+   },
+   "gsh16+flat64000+mb4": {
+    "": 12.738,
+    "_death": 0.097,
+    "_potions": 0.809,
+    "_cpu": 108.7
+   },
+   "gsh16+flat32000": {
+    "": 13.398,
+    "_death": 0.108,
+    "_potions": 0.844,
+    "_cpu": 57.12
+   },
+   "gsh16+flat64000": {
+    "": 13.298,
+    "_death": 0.105,
+    "_potions": 0.846,
+    "_cpu": 115.023
+   },
+   "gsh16+flat16000+mb4": {
+    "": 13.52,
+    "_death": 0.108,
+    "_potions": 0.816,
+    "_cpu": 26.867
+   },
+   "gsh16+flat16000": {
+    "": 13.787,
+    "_death": 0.113,
+    "_potions": 0.852,
+    "_cpu": 29.248
+   },
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000": 0.03,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci": [
+    -0.574,
+    0.642
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci975": [
+    -0.664,
+    0.719
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death": -0.0098,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death_ci": [
+    -0.027,
+    0.007
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000": -0.56,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci": [
+    -1.107,
+    0.001
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci975": [
+    -1.178,
+    0.081
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death": -0.0079,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death_ci": [
+    -0.024,
+    0.009
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4": -0.1,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -0.651,
+    0.473
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -0.718,
+    0.572
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death": -0.0098,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.027,
+    0.006
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4": -0.78,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -1.294,
+    -0.263
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -1.372,
+    -0.19
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death": -0.0108,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.027,
+    0.004
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4": -0.69,
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4_ci": [
+    -1.29,
+    -0.084
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000": -0.36,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000_ci": [
+    -1.013,
+    0.309
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000": -1.05,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000_ci": [
+    -1.638,
+    -0.444
+   ],
+   "gsh16+flat32000+mb4_minus_prod": -1.23,
+   "gsh16+flat32000+mb4_minus_prod_ci": [
+    -1.899,
+    -0.546
+   ],
+   "gsh16+flat64000+mb4_minus_prod": -1.92,
+   "gsh16+flat64000+mb4_minus_prod_ci": [
+    -2.56,
+    -1.254
+   ],
+   "gsh16+flat32000_minus_prod": -1.26,
+   "gsh16+flat32000_minus_prod_ci": [
+    -1.936,
+    -0.572
+   ],
+   "gsh16+flat64000_minus_prod": -1.36,
+   "gsh16+flat64000_minus_prod_ci": [
+    -1.993,
+    -0.716
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -1.13,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -1.776,
+    -0.484
+   ],
+   "gsh16+flat16000_minus_prod": -0.87,
+   "gsh16+flat16000_minus_prod_ci": [
+    -1.556,
+    -0.181
+   ],
+   "gsh16+flat32000+mb4_cpu_ratio": 7.29,
+   "gsh16+flat64000+mb4_cpu_ratio": 14.34,
+   "gsh16+flat32000_cpu_ratio": 7.54,
+   "gsh16+flat64000_cpu_ratio": 15.17,
+   "gsh16+flat16000+mb4_cpu_ratio": 3.54,
+   "gsh16+flat16000_cpu_ratio": 3.57,
+   "prod_sims_per_decision": 4356,
+   "gsh16+flat32000+mb4_sims_per_decision": 28348,
+   "gsh16+flat64000+mb4_sims_per_decision": 56568,
+   "gsh16+flat32000_sims_per_decision": 28023,
+   "gsh16+flat64000_sims_per_decision": 56196,
+   "gsh16+flat16000+mb4_sims_per_decision": 14132,
+   "gsh16+flat16000_sims_per_decision": 14002,
+   "best_arm": "gsh16+flat64000+mb4",
+   "prod_minus_expert_ci": [
+    0.32,
+    3.135
+   ]
+  },
+  "2E": {
+   "n": 397,
+   "runs": 183,
+   "expert": 5.22,
+   "prod": {
+    "": 10.402,
+    "_death": 0.054,
+    "_potions": 0.409,
+    "_cpu": 0.887
+   },
+   "gsh16+flat32000+mb4": {
+    "": 8.57,
+    "_death": 0.051,
+    "_potions": 0.392,
+    "_cpu": 7.5
+   },
+   "gsh16+flat64000+mb4": {
+    "": 8.781,
+    "_death": 0.048,
+    "_potions": 0.394,
+    "_cpu": 15.255
+   },
+   "gsh16+flat32000": {
+    "": 9.554,
+    "_death": 0.054,
+    "_potions": 0.428,
+    "_cpu": 7.314
+   },
+   "gsh16+flat64000": {
+    "": 9.544,
+    "_death": 0.055,
+    "_potions": 0.418,
+    "_cpu": 15.247
+   },
+   "gsh16+flat16000+mb4": {
+    "": 9.128,
+    "_death": 0.052,
+    "_potions": 0.402,
+    "_cpu": 3.771
+   },
+   "gsh16+flat16000": {
+    "": 9.633,
+    "_death": 0.054,
+    "_potions": 0.423,
+    "_cpu": 3.48
+   },
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000": -0.98,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci": [
+    -1.451,
+    -0.516
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci975": [
+    -1.514,
+    -0.454
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death": -0.0025,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death_ci": [
+    -0.012,
+    0.006
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000": -0.76,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci": [
+    -1.204,
+    -0.333
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci975": [
+    -1.262,
+    -0.272
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death": -0.0069,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death_ci": [
+    -0.014,
+    0.0
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4": -0.56,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -0.968,
+    -0.139
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -1.034,
+    -0.078
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death": -0.0013,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.01,
+    0.007
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4": -0.35,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -0.781,
+    0.097
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -0.844,
+    0.174
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death": -0.0044,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.011,
+    0.003
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4": 0.21,
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4_ci": [
+    -0.172,
+    0.604
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000": -1.06,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000_ci": [
+    -1.504,
+    -0.624
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000": -0.85,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000_ci": [
+    -1.291,
+    -0.406
+   ],
+   "gsh16+flat32000+mb4_minus_prod": -1.83,
+   "gsh16+flat32000+mb4_minus_prod_ci": [
+    -2.338,
+    -1.333
+   ],
+   "gsh16+flat64000+mb4_minus_prod": -1.62,
+   "gsh16+flat64000+mb4_minus_prod_ci": [
+    -2.139,
+    -1.108
+   ],
+   "gsh16+flat32000_minus_prod": -0.85,
+   "gsh16+flat32000_minus_prod_ci": [
+    -1.288,
+    -0.412
+   ],
+   "gsh16+flat64000_minus_prod": -0.86,
+   "gsh16+flat64000_minus_prod_ci": [
+    -1.35,
+    -0.371
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -1.27,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -1.744,
+    -0.811
+   ],
+   "gsh16+flat16000_minus_prod": -0.77,
+   "gsh16+flat16000_minus_prod_ci": [
+    -1.227,
+    -0.313
+   ],
+   "gsh16+flat32000+mb4_cpu_ratio": 8.46,
+   "gsh16+flat64000+mb4_cpu_ratio": 17.21,
+   "gsh16+flat32000_cpu_ratio": 8.25,
+   "gsh16+flat64000_cpu_ratio": 17.2,
+   "gsh16+flat16000+mb4_cpu_ratio": 4.25,
+   "gsh16+flat16000_cpu_ratio": 3.79,
+   "prod_sims_per_decision": 4310,
+   "gsh16+flat32000+mb4_sims_per_decision": 29815,
+   "gsh16+flat64000+mb4_sims_per_decision": 59689,
+   "gsh16+flat32000_sims_per_decision": 29624,
+   "gsh16+flat64000_sims_per_decision": 59355,
+   "gsh16+flat16000+mb4_sims_per_decision": 14904,
+   "gsh16+flat16000_sims_per_decision": 14822,
+   "best_arm": "gsh16+flat32000+mb4",
+   "prod_minus_expert_ci": [
+    3.827,
+    6.535
+   ]
+  },
+  "2B": {
+   "n": 139,
+   "runs": 139,
+   "expert": 14.53,
+   "prod": {
+    "": 18.239,
+    "_death": 0.104,
+    "_potions": 0.696,
+    "_cpu": 18.652
+   },
+   "gsh16+flat32000+mb4": {
+    "": 15.248,
+    "_death": 0.076,
+    "_potions": 0.595,
+    "_cpu": 123.698
+   },
+   "gsh16+flat64000+mb4": {
+    "": 14.815,
+    "_death": 0.076,
+    "_potions": 0.595,
+    "_cpu": 243.651
+   },
+   "gsh16+flat32000": {
+    "": 16.162,
+    "_death": 0.072,
+    "_potions": 0.642,
+    "_cpu": 131.168
+   },
+   "gsh16+flat64000": {
+    "": 15.54,
+    "_death": 0.072,
+    "_potions": 0.628,
+    "_cpu": 264.31
+   },
+   "gsh16+flat16000+mb4": {
+    "": 16.007,
+    "_death": 0.088,
+    "_potions": 0.633,
+    "_cpu": 64.607
+   },
+   "gsh16+flat16000": {
+    "": 15.707,
+    "_death": 0.088,
+    "_potions": 0.64,
+    "_cpu": 67.93
+   },
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000": -0.91,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci": [
+    -2.112,
+    0.268
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci975": [
+    -2.275,
+    0.415
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death": 0.0036,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death_ci": [
+    -0.013,
+    0.022
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000": -0.72,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci": [
+    -2.018,
+    0.547
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci975": [
+    -2.214,
+    0.71
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death": 0.0036,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death_ci": [
+    -0.014,
+    0.022
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4": -0.76,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -1.845,
+    0.335
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -1.977,
+    0.482
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death": -0.0126,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.032,
+    0.005
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4": -1.19,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -2.468,
+    0.072
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -2.644,
+    0.281
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death": -0.0126,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.034,
+    0.009
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4": -0.43,
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4_ci": [
+    -1.712,
+    0.826
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000": -0.46,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000_ci": [
+    -1.498,
+    0.603
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000": -0.89,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000_ci": [
+    -2.131,
+    0.363
+   ],
+   "gsh16+flat32000+mb4_minus_prod": -2.99,
+   "gsh16+flat32000+mb4_minus_prod_ci": [
+    -4.299,
+    -1.626
+   ],
+   "gsh16+flat64000+mb4_minus_prod": -3.42,
+   "gsh16+flat64000+mb4_minus_prod_ci": [
+    -4.815,
+    -1.991
+   ],
+   "gsh16+flat32000_minus_prod": -2.08,
+   "gsh16+flat32000_minus_prod_ci": [
+    -3.295,
+    -0.874
+   ],
+   "gsh16+flat64000_minus_prod": -2.7,
+   "gsh16+flat64000_minus_prod_ci": [
+    -4.085,
+    -1.345
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -2.23,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -3.493,
+    -0.905
+   ],
+   "gsh16+flat16000_minus_prod": -2.53,
+   "gsh16+flat16000_minus_prod_ci": [
+    -3.628,
+    -1.414
+   ],
+   "gsh16+flat32000+mb4_cpu_ratio": 6.63,
+   "gsh16+flat64000+mb4_cpu_ratio": 13.06,
+   "gsh16+flat32000_cpu_ratio": 7.03,
+   "gsh16+flat64000_cpu_ratio": 14.17,
+   "gsh16+flat16000+mb4_cpu_ratio": 3.46,
+   "gsh16+flat16000_cpu_ratio": 3.31,
+   "prod_sims_per_decision": 4929,
+   "gsh16+flat32000+mb4_sims_per_decision": 29669,
+   "gsh16+flat64000+mb4_sims_per_decision": 59274,
+   "gsh16+flat32000_sims_per_decision": 29560,
+   "gsh16+flat64000_sims_per_decision": 59248,
+   "gsh16+flat16000+mb4_sims_per_decision": 14785,
+   "gsh16+flat16000_sims_per_decision": 14765,
+   "best_arm": "gsh16+flat64000+mb4",
+   "prod_minus_expert_ci": [
+    0.723,
+    6.561
+   ]
+  },
+  "3E": {
+   "n": 209,
+   "runs": 82,
+   "expert": 2.55,
+   "prod": {
+    "": 6.019,
+    "_death": 0.017,
+    "_potions": 0.267,
+    "_cpu": 2.234
+   },
+   "gsh16+flat32000+mb4": {
+    "": 3.035,
+    "_death": 0.008,
+    "_potions": 0.258,
+    "_cpu": 16.016
+   },
+   "gsh16+flat64000+mb4": {
+    "": 3.011,
+    "_death": 0.013,
+    "_potions": 0.262,
+    "_cpu": 32.837
+   },
+   "gsh16+flat32000": {
+    "": 4.164,
+    "_death": 0.007,
+    "_potions": 0.243,
+    "_cpu": 15.986
+   },
+   "gsh16+flat64000": {
+    "": 3.502,
+    "_death": 0.006,
+    "_potions": 0.234,
+    "_cpu": 32.199
+   },
+   "gsh16+flat16000+mb4": {
+    "": 3.281,
+    "_death": 0.008,
+    "_potions": 0.254,
+    "_cpu": 8.164
+   },
+   "gsh16+flat16000": {
+    "": 4.464,
+    "_death": 0.012,
+    "_potions": 0.244,
+    "_cpu": 7.766
+   },
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000": -1.13,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci": [
+    -1.964,
+    -0.283
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci975": [
+    -2.084,
+    -0.153
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death": 0.0012,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death_ci": [
+    -0.005,
+    0.007
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000": -0.49,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci": [
+    -1.276,
+    0.315
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci975": [
+    -1.396,
+    0.42
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death": 0.0072,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death_ci": [
+    0.0,
+    0.015
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4": -0.25,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -0.973,
+    0.499
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -1.064,
+    0.603
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death": 0.0,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.005,
+    0.005
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4": -0.27,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -1.155,
+    0.6
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -1.29,
+    0.724
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death": 0.0048,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.002,
+    0.012
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4": -0.02,
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4_ci": [
+    -0.771,
+    0.719
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000": -1.43,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000_ci": [
+    -2.225,
+    -0.655
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000": -1.45,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000_ci": [
+    -2.35,
+    -0.609
+   ],
+   "gsh16+flat32000+mb4_minus_prod": -2.98,
+   "gsh16+flat32000+mb4_minus_prod_ci": [
+    -3.989,
+    -1.968
+   ],
+   "gsh16+flat64000+mb4_minus_prod": -3.01,
+   "gsh16+flat64000+mb4_minus_prod_ci": [
+    -4.109,
+    -1.982
+   ],
+   "gsh16+flat32000_minus_prod": -1.86,
+   "gsh16+flat32000_minus_prod_ci": [
+    -2.791,
+    -0.972
+   ],
+   "gsh16+flat64000_minus_prod": -2.52,
+   "gsh16+flat64000_minus_prod_ci": [
+    -3.399,
+    -1.655
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -2.74,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -3.679,
+    -1.78
+   ],
+   "gsh16+flat16000_minus_prod": -1.56,
+   "gsh16+flat16000_minus_prod_ci": [
+    -2.459,
+    -0.672
+   ],
+   "gsh16+flat32000+mb4_cpu_ratio": 7.17,
+   "gsh16+flat64000+mb4_cpu_ratio": 14.7,
+   "gsh16+flat32000_cpu_ratio": 7.16,
+   "gsh16+flat64000_cpu_ratio": 14.42,
+   "gsh16+flat16000+mb4_cpu_ratio": 3.66,
+   "gsh16+flat16000_cpu_ratio": 3.31,
+   "prod_sims_per_decision": 4851,
+   "gsh16+flat32000+mb4_sims_per_decision": 30444,
+   "gsh16+flat64000+mb4_sims_per_decision": 60983,
+   "gsh16+flat32000_sims_per_decision": 30365,
+   "gsh16+flat64000_sims_per_decision": 60749,
+   "gsh16+flat16000+mb4_sims_per_decision": 15211,
+   "gsh16+flat16000_sims_per_decision": 15193,
+   "best_arm": "gsh16+flat64000+mb4",
+   "prod_minus_expert_ci": [
+    1.469,
+    5.51
+   ]
+  },
+  "3B": {
+   "n": 135,
+   "runs": 69,
+   "expert": 7.71,
+   "prod": {
+    "": 13.07,
+    "_death": 0.069,
+    "_potions": 0.317,
+    "_cpu": 43.788
+   },
+   "gsh16+flat32000+mb4": {
+    "": 12.185,
+    "_death": 0.063,
+    "_potions": 0.317,
+    "_cpu": 257.654
+   },
+   "gsh16+flat64000+mb4": {
+    "": 10.189,
+    "_death": 0.061,
+    "_potions": 0.32,
+    "_cpu": 497.369
+   },
+   "gsh16+flat32000": {
+    "": 10.859,
+    "_death": 0.061,
+    "_potions": 0.302,
+    "_cpu": 266.012
+   },
+   "gsh16+flat64000": {
+    "": 10.961,
+    "_death": 0.061,
+    "_potions": 0.291,
+    "_cpu": 531.125
+   },
+   "gsh16+flat16000+mb4": {
+    "": 11.896,
+    "_death": 0.054,
+    "_potions": 0.324,
+    "_cpu": 132.889
+   },
+   "gsh16+flat16000": {
+    "": 11.269,
+    "_death": 0.063,
+    "_potions": 0.311,
+    "_cpu": 139.656
+   },
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000": 1.33,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci": [
+    -0.008,
+    2.67
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci975": [
+    -0.199,
+    2.891
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death": 0.0019,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death_ci": [
+    -0.011,
+    0.015
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000": -0.77,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci": [
+    -2.086,
+    0.572
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci975": [
+    -2.294,
+    0.784
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death": 0.0,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death_ci": [
+    -0.015,
+    0.015
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4": 0.29,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -1.065,
+    1.62
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -1.259,
+    1.83
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death": 0.0093,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    0.0,
+    0.02
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4": -1.71,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -3.201,
+    -0.21
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -3.398,
+    0.004
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death": 0.0074,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.009,
+    0.024
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4": -2.0,
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4_ci": [
+    -3.629,
+    -0.435
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000": 0.92,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000_ci": [
+    -0.403,
+    2.272
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000": -1.08,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000_ci": [
+    -2.329,
+    0.202
+   ],
+   "gsh16+flat32000+mb4_minus_prod": -0.89,
+   "gsh16+flat32000+mb4_minus_prod_ci": [
+    -2.329,
+    0.52
+   ],
+   "gsh16+flat64000+mb4_minus_prod": -2.88,
+   "gsh16+flat64000+mb4_minus_prod_ci": [
+    -4.348,
+    -1.5
+   ],
+   "gsh16+flat32000_minus_prod": -2.21,
+   "gsh16+flat32000_minus_prod_ci": [
+    -3.457,
+    -0.971
+   ],
+   "gsh16+flat64000_minus_prod": -2.11,
+   "gsh16+flat64000_minus_prod_ci": [
+    -3.645,
+    -0.669
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -1.17,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -2.655,
+    0.302
+   ],
+   "gsh16+flat16000_minus_prod": -1.8,
+   "gsh16+flat16000_minus_prod_ci": [
+    -3.308,
+    -0.4
+   ],
+   "gsh16+flat32000+mb4_cpu_ratio": 5.88,
+   "gsh16+flat64000+mb4_cpu_ratio": 11.36,
+   "gsh16+flat32000_cpu_ratio": 6.07,
+   "gsh16+flat64000_cpu_ratio": 12.13,
+   "gsh16+flat16000+mb4_cpu_ratio": 3.03,
+   "gsh16+flat16000_cpu_ratio": 2.85,
+   "prod_sims_per_decision": 5547,
+   "gsh16+flat32000+mb4_sims_per_decision": 30263,
+   "gsh16+flat64000+mb4_sims_per_decision": 60845,
+   "gsh16+flat32000_sims_per_decision": 30325,
+   "gsh16+flat64000_sims_per_decision": 60600,
+   "gsh16+flat16000+mb4_sims_per_decision": 15137,
+   "gsh16+flat16000_sims_per_decision": 15171,
+   "best_arm": "gsh16+flat64000+mb4",
+   "prod_minus_expert_ci": [
+    1.962,
+    8.794
+   ]
+  }
+ },
+ "by_encounter": {
+  "3 Sentries": {
+   "n": 235,
+   "runs": 208,
+   "expert": 11.1,
+   "prod": {
+    "": 12.247,
+    "_death": 0.027,
+    "_potions": 0.577,
+    "_cpu": 1.038
+   },
+   "gsh16+flat32000+mb4": {
+    "": 11.445,
+    "_death": 0.028,
+    "_potions": 0.56,
+    "_cpu": 7.885
+   },
+   "gsh16+flat64000+mb4": {
+    "": 11.489,
+    "_death": 0.03,
+    "_potions": 0.569,
+    "_cpu": 15.961
+   },
+   "gsh16+flat32000": {
+    "": 11.37,
+    "_death": 0.028,
+    "_potions": 0.619,
+    "_cpu": 7.528
+   },
+   "gsh16+flat64000": {
+    "": 11.506,
+    "_death": 0.028,
+    "_potions": 0.603,
+    "_cpu": 15.766
+   },
+   "gsh16+flat16000+mb4": {
+    "": 11.264,
+    "_death": 0.022,
+    "_potions": 0.566,
+    "_cpu": 3.814
+   },
+   "gsh16+flat16000": {
+    "": 11.8,
+    "_death": 0.031,
+    "_potions": 0.587,
+    "_cpu": 3.554
+   },
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000": 0.07,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci": [
+    -0.346,
+    0.503
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci975": [
+    -0.409,
+    0.563
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death": 0.0,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death_ci": [
+    -0.007,
+    0.007
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000": -0.02,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci": [
+    -0.437,
+    0.423
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci975": [
+    -0.49,
+    0.492
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death": 0.0021,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death_ci": [
+    -0.005,
+    0.01
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4": 0.18,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -0.16,
+    0.529
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -0.212,
+    0.584
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death": 0.0053,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.001,
+    0.013
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4": 0.23,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -0.145,
+    0.624
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -0.201,
+    0.678
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death": 0.0074,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.001,
+    0.017
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4": 0.04,
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4_ci": [
+    -0.334,
+    0.443
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000": -0.36,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000_ci": [
+    -0.813,
+    0.115
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000": -0.31,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000_ci": [
+    -0.798,
+    0.2
+   ],
+   "gsh16+flat32000+mb4_minus_prod": -0.8,
+   "gsh16+flat32000+mb4_minus_prod_ci": [
+    -1.275,
+    -0.333
+   ],
+   "gsh16+flat64000+mb4_minus_prod": -0.76,
+   "gsh16+flat64000+mb4_minus_prod_ci": [
+    -1.244,
+    -0.281
+   ],
+   "gsh16+flat32000_minus_prod": -0.88,
+   "gsh16+flat32000_minus_prod_ci": [
+    -1.253,
+    -0.514
+   ],
+   "gsh16+flat64000_minus_prod": -0.74,
+   "gsh16+flat64000_minus_prod_ci": [
+    -1.209,
+    -0.284
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -0.98,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -1.47,
+    -0.497
+   ],
+   "gsh16+flat16000_minus_prod": -0.45,
+   "gsh16+flat16000_minus_prod_ci": [
+    -0.878,
+    -0.034
+   ],
+   "gsh16+flat32000+mb4_cpu_ratio": 7.59,
+   "gsh16+flat64000+mb4_cpu_ratio": 15.37,
+   "gsh16+flat32000_cpu_ratio": 7.25,
+   "gsh16+flat64000_cpu_ratio": 15.18,
+   "gsh16+flat16000+mb4_cpu_ratio": 3.67,
+   "gsh16+flat16000_cpu_ratio": 3.36,
+   "prod_sims_per_decision": 4553,
+   "gsh16+flat32000+mb4_sims_per_decision": 29270,
+   "gsh16+flat64000+mb4_sims_per_decision": 58510,
+   "gsh16+flat32000_sims_per_decision": 28912,
+   "gsh16+flat64000_sims_per_decision": 58030,
+   "gsh16+flat16000+mb4_sims_per_decision": 14640,
+   "gsh16+flat16000_sims_per_decision": 14508,
+   "best_arm": "gsh16+flat16000+mb4",
+   "prod_minus_expert_ci": [
+    -0.092,
+    2.38
+   ]
+  },
+  "Automaton": {
+   "n": 44,
+   "runs": 44,
+   "expert": 11.09,
+   "prod": {
+    "": 20.057,
+    "_death": 0.176,
+    "_potions": 0.716,
+    "_cpu": 18.689
+   },
+   "gsh16+flat32000+mb4": {
+    "": 15.898,
+    "_death": 0.108,
+    "_potions": 0.642,
+    "_cpu": 121.226
+   },
+   "gsh16+flat64000+mb4": {
+    "": 15.915,
+    "_death": 0.131,
+    "_potions": 0.653,
+    "_cpu": 230.071
+   },
+   "gsh16+flat32000": {
+    "": 18.176,
+    "_death": 0.114,
+    "_potions": 0.682,
+    "_cpu": 121.78
+   },
+   "gsh16+flat64000": {
+    "": 17.551,
+    "_death": 0.114,
+    "_potions": 0.676,
+    "_cpu": 243.898
+   },
+   "gsh16+flat16000+mb4": {
+    "": 16.244,
+    "_death": 0.119,
+    "_potions": 0.659,
+    "_cpu": 59.795
+   },
+   "gsh16+flat16000": {
+    "": 16.33,
+    "_death": 0.142,
+    "_potions": 0.699,
+    "_cpu": 62.295
+   },
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000": -2.28,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci": [
+    -4.284,
+    -0.239
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci975": [
+    -4.534,
+    0.091
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death": -0.0057,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death_ci": [
+    -0.04,
+    0.028
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000": -1.64,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci": [
+    -4.193,
+    1.148
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci975": [
+    -4.494,
+    1.551
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death": 0.017,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death_ci": [
+    -0.028,
+    0.057
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4": -0.35,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -2.432,
+    1.892
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -2.722,
+    2.267
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death": -0.0114,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.051,
+    0.028
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4": -0.33,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -3.006,
+    2.455
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -3.42,
+    2.818
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death": 0.0114,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.034,
+    0.062
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4": 0.02,
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4_ci": [
+    -2.784,
+    2.812
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000": -0.43,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000_ci": [
+    -2.403,
+    1.58
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000": -0.41,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000_ci": [
+    -2.79,
+    2.17
+   ],
+   "gsh16+flat32000+mb4_minus_prod": -4.16,
+   "gsh16+flat32000+mb4_minus_prod_ci": [
+    -6.364,
+    -1.898
+   ],
+   "gsh16+flat64000+mb4_minus_prod": -4.14,
+   "gsh16+flat64000+mb4_minus_prod_ci": [
+    -6.443,
+    -1.705
+   ],
+   "gsh16+flat32000_minus_prod": -1.88,
+   "gsh16+flat32000_minus_prod_ci": [
+    -3.801,
+    0.051
+   ],
+   "gsh16+flat64000_minus_prod": -2.51,
+   "gsh16+flat64000_minus_prod_ci": [
+    -4.08,
+    -0.949
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -3.81,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -6.028,
+    -1.506
+   ],
+   "gsh16+flat16000_minus_prod": -3.73,
+   "gsh16+flat16000_minus_prod_ci": [
+    -5.705,
+    -1.83
+   ],
+   "gsh16+flat32000+mb4_cpu_ratio": 6.49,
+   "gsh16+flat64000+mb4_cpu_ratio": 12.31,
+   "gsh16+flat32000_cpu_ratio": 6.52,
+   "gsh16+flat64000_cpu_ratio": 13.05,
+   "gsh16+flat16000+mb4_cpu_ratio": 3.2,
+   "gsh16+flat16000_cpu_ratio": 3.2,
+   "prod_sims_per_decision": 4994,
+   "gsh16+flat32000+mb4_sims_per_decision": 29342,
+   "gsh16+flat64000+mb4_sims_per_decision": 58246,
+   "gsh16+flat32000_sims_per_decision": 29122,
+   "gsh16+flat64000_sims_per_decision": 58620,
+   "gsh16+flat16000+mb4_sims_per_decision": 14623,
+   "gsh16+flat16000_sims_per_decision": 14494,
+   "best_arm": "gsh16+flat32000+mb4",
+   "prod_minus_expert_ci": [
+    3.847,
+    14.227
+   ]
+  },
+  "Awakened One": {
+   "n": 44,
+   "runs": 44,
+   "expert": 6.27,
+   "prod": {
+    "": 17.04,
+    "_death": 0.136,
+    "_potions": 0.568,
+    "_cpu": 65.012
+   },
+   "gsh16+flat32000+mb4": {
+    "": 14.642,
+    "_death": 0.119,
+    "_potions": 0.602,
+    "_cpu": 362.532
+   },
+   "gsh16+flat64000+mb4": {
+    "": 12.455,
+    "_death": 0.136,
+    "_potions": 0.591,
+    "_cpu": 677.727
+   },
+   "gsh16+flat32000": {
+    "": 14.807,
+    "_death": 0.131,
+    "_potions": 0.58,
+    "_cpu": 376.345
+   },
+   "gsh16+flat64000": {
+    "": 14.824,
+    "_death": 0.131,
+    "_potions": 0.545,
+    "_cpu": 781.785
+   },
+   "gsh16+flat16000+mb4": {
+    "": 14.71,
+    "_death": 0.108,
+    "_potions": 0.597,
+    "_cpu": 196.074
+   },
+   "gsh16+flat16000": {
+    "": 14.489,
+    "_death": 0.125,
+    "_potions": 0.58,
+    "_cpu": 199.272
+   },
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000": -0.16,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci": [
+    -2.858,
+    2.557
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci975": [
+    -3.33,
+    2.92
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death": -0.0114,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death_ci": [
+    -0.04,
+    0.017
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000": -2.37,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci": [
+    -5.006,
+    0.21
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci975": [
+    -5.386,
+    0.625
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death": 0.0057,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death_ci": [
+    -0.023,
+    0.034
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4": -0.07,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -2.909,
+    2.574
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -3.42,
+    2.938
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death": 0.0114,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.017,
+    0.045
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4": -2.26,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -5.108,
+    0.562
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -5.511,
+    0.949
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death": 0.0284,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.006,
+    0.068
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4": -2.19,
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4_ci": [
+    -5.619,
+    0.881
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000": 0.15,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000_ci": [
+    -2.523,
+    2.949
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000": -2.03,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000_ci": [
+    -4.239,
+    0.119
+   ],
+   "gsh16+flat32000+mb4_minus_prod": -2.4,
+   "gsh16+flat32000+mb4_minus_prod_ci": [
+    -5.551,
+    0.688
+   ],
+   "gsh16+flat64000+mb4_minus_prod": -4.59,
+   "gsh16+flat64000+mb4_minus_prod_ci": [
+    -7.778,
+    -1.585
+   ],
+   "gsh16+flat32000_minus_prod": -2.23,
+   "gsh16+flat32000_minus_prod_ci": [
+    -5.091,
+    0.449
+   ],
+   "gsh16+flat64000_minus_prod": -2.22,
+   "gsh16+flat64000_minus_prod_ci": [
+    -4.767,
+    0.165
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -2.33,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -5.5,
+    0.75
+   ],
+   "gsh16+flat16000_minus_prod": -2.55,
+   "gsh16+flat16000_minus_prod_ci": [
+    -5.511,
+    0.358
+   ],
+   "gsh16+flat32000+mb4_cpu_ratio": 5.58,
+   "gsh16+flat64000+mb4_cpu_ratio": 10.42,
+   "gsh16+flat32000_cpu_ratio": 5.79,
+   "gsh16+flat64000_cpu_ratio": 12.03,
+   "gsh16+flat16000+mb4_cpu_ratio": 3.02,
+   "gsh16+flat16000_cpu_ratio": 2.75,
+   "prod_sims_per_decision": 5596,
+   "gsh16+flat32000+mb4_sims_per_decision": 29640,
+   "gsh16+flat64000+mb4_sims_per_decision": 59913,
+   "gsh16+flat32000_sims_per_decision": 29764,
+   "gsh16+flat64000_sims_per_decision": 59553,
+   "gsh16+flat16000+mb4_sims_per_decision": 14841,
+   "gsh16+flat16000_sims_per_decision": 14940,
+   "best_arm": "gsh16+flat64000+mb4",
+   "prod_minus_expert_ci": [
+    5.432,
+    16.256
+   ]
+  },
+  "Book of Stabbing": {
+   "n": 139,
+   "runs": 127,
+   "expert": 6.73,
+   "prod": {
+    "": 11.455,
+    "_death": 0.054,
+    "_potions": 0.36,
+    "_cpu": 0.773
+   },
+   "gsh16+flat32000+mb4": {
+    "": 9.761,
+    "_death": 0.047,
+    "_potions": 0.345,
+    "_cpu": 6.729
+   },
+   "gsh16+flat64000+mb4": {
+    "": 10.342,
+    "_death": 0.049,
+    "_potions": 0.336,
+    "_cpu": 13.649
+   },
+   "gsh16+flat32000": {
+    "": 10.568,
+    "_death": 0.049,
+    "_potions": 0.381,
+    "_cpu": 6.398
+   },
+   "gsh16+flat64000": {
+    "": 10.475,
+    "_death": 0.049,
+    "_potions": 0.367,
+    "_cpu": 13.671
+   },
+   "gsh16+flat16000+mb4": {
+    "": 10.248,
+    "_death": 0.052,
+    "_potions": 0.342,
+    "_cpu": 3.34
+   },
+   "gsh16+flat16000": {
+    "": 10.705,
+    "_death": 0.054,
+    "_potions": 0.383,
+    "_cpu": 3.069
+   },
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000": -0.81,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci": [
+    -1.472,
+    -0.128
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci975": [
+    -1.586,
+    -0.031
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death": -0.0018,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death_ci": [
+    -0.018,
+    0.014
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000": -0.13,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci": [
+    -0.761,
+    0.504
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci975": [
+    -0.852,
+    0.591
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death": 0.0,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death_ci": [
+    -0.011,
+    0.011
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4": -0.49,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -1.172,
+    0.182
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -1.268,
+    0.279
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death": -0.0054,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.02,
+    0.009
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4": 0.09,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -0.518,
+    0.723
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -0.613,
+    0.81
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death": -0.0036,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.014,
+    0.006
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4": 0.58,
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4_ci": [
+    -0.005,
+    1.192
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000": -0.94,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000_ci": [
+    -1.654,
+    -0.236
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000": -0.36,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000_ci": [
+    -1.077,
+    0.371
+   ],
+   "gsh16+flat32000+mb4_minus_prod": -1.69,
+   "gsh16+flat32000+mb4_minus_prod_ci": [
+    -2.637,
+    -0.794
+   ],
+   "gsh16+flat64000+mb4_minus_prod": -1.11,
+   "gsh16+flat64000+mb4_minus_prod_ci": [
+    -1.924,
+    -0.318
+   ],
+   "gsh16+flat32000_minus_prod": -0.89,
+   "gsh16+flat32000_minus_prod_ci": [
+    -1.653,
+    -0.137
+   ],
+   "gsh16+flat64000_minus_prod": -0.98,
+   "gsh16+flat64000_minus_prod_ci": [
+    -1.849,
+    -0.154
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -1.21,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -2.01,
+    -0.427
+   ],
+   "gsh16+flat16000_minus_prod": -0.75,
+   "gsh16+flat16000_minus_prod_ci": [
+    -1.54,
+    0.065
+   ],
+   "gsh16+flat32000+mb4_cpu_ratio": 8.7,
+   "gsh16+flat64000+mb4_cpu_ratio": 17.65,
+   "gsh16+flat32000_cpu_ratio": 8.27,
+   "gsh16+flat64000_cpu_ratio": 17.68,
+   "gsh16+flat16000+mb4_cpu_ratio": 4.32,
+   "gsh16+flat16000_cpu_ratio": 3.88,
+   "prod_sims_per_decision": 4152,
+   "gsh16+flat32000+mb4_sims_per_decision": 29900,
+   "gsh16+flat64000+mb4_sims_per_decision": 59803,
+   "gsh16+flat32000_sims_per_decision": 29625,
+   "gsh16+flat64000_sims_per_decision": 59246,
+   "gsh16+flat16000+mb4_sims_per_decision": 14924,
+   "gsh16+flat16000_sims_per_decision": 14801,
+   "best_arm": "gsh16+flat32000+mb4",
+   "prod_minus_expert_ci": [
+    2.748,
+    6.736
+   ]
+  },
+  "Champ": {
+   "n": 40,
+   "runs": 40,
+   "expert": 10.53,
+   "prod": {
+    "": 14.113,
+    "_death": 0.05,
+    "_potions": 0.537,
+    "_cpu": 24.522
+   },
+   "gsh16+flat32000+mb4": {
+    "": 11.094,
+    "_death": 0.031,
+    "_potions": 0.456,
+    "_cpu": 159.757
+   },
+   "gsh16+flat64000+mb4": {
+    "": 10.694,
+    "_death": 0.044,
+    "_potions": 0.456,
+    "_cpu": 322.716
+   },
+   "gsh16+flat32000": {
+    "": 11.981,
+    "_death": 0.037,
+    "_potions": 0.475,
+    "_cpu": 180.086
+   },
+   "gsh16+flat64000": {
+    "": 12.125,
+    "_death": 0.037,
+    "_potions": 0.475,
+    "_cpu": 357.851
+   },
+   "gsh16+flat16000+mb4": {
+    "": 12.0,
+    "_death": 0.05,
+    "_potions": 0.469,
+    "_cpu": 86.716
+   },
+   "gsh16+flat16000": {
+    "": 11.556,
+    "_death": 0.031,
+    "_potions": 0.487,
+    "_cpu": 89.951
+   },
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000": -0.89,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci": [
+    -3.35,
+    1.688
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci975": [
+    -3.737,
+    2.031
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death": -0.0063,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death_ci": [
+    -0.025,
+    0.013
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000": -1.43,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci": [
+    -3.256,
+    0.45
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci975": [
+    -3.506,
+    0.744
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death": 0.0063,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death_ci": [
+    -0.019,
+    0.031
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4": -0.91,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -2.8,
+    1.025
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -3.094,
+    1.325
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death": -0.0187,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.062,
+    0.019
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4": -1.31,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -3.444,
+    0.775
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -3.788,
+    1.038
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death": -0.0063,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.05,
+    0.031
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4": -0.4,
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4_ci": [
+    -2.706,
+    1.756
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000": -0.46,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000_ci": [
+    -2.394,
+    1.494
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000": -0.86,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000_ci": [
+    -3.15,
+    1.438
+   ],
+   "gsh16+flat32000+mb4_minus_prod": -3.02,
+   "gsh16+flat32000+mb4_minus_prod_ci": [
+    -5.469,
+    -0.556
+   ],
+   "gsh16+flat64000+mb4_minus_prod": -3.42,
+   "gsh16+flat64000+mb4_minus_prod_ci": [
+    -6.069,
+    -0.525
+   ],
+   "gsh16+flat32000_minus_prod": -2.13,
+   "gsh16+flat32000_minus_prod_ci": [
+    -4.338,
+    0.081
+   ],
+   "gsh16+flat64000_minus_prod": -1.99,
+   "gsh16+flat64000_minus_prod_ci": [
+    -4.206,
+    0.206
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -2.11,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -4.6,
+    0.394
+   ],
+   "gsh16+flat16000_minus_prod": -2.56,
+   "gsh16+flat16000_minus_prod_ci": [
+    -4.45,
+    -0.669
+   ],
+   "gsh16+flat32000+mb4_cpu_ratio": 6.51,
+   "gsh16+flat64000+mb4_cpu_ratio": 13.16,
+   "gsh16+flat32000_cpu_ratio": 7.34,
+   "gsh16+flat64000_cpu_ratio": 14.59,
+   "gsh16+flat16000+mb4_cpu_ratio": 3.54,
+   "gsh16+flat16000_cpu_ratio": 3.22,
+   "prod_sims_per_decision": 5205,
+   "gsh16+flat32000+mb4_sims_per_decision": 30236,
+   "gsh16+flat64000+mb4_sims_per_decision": 60303,
+   "gsh16+flat32000_sims_per_decision": 30159,
+   "gsh16+flat64000_sims_per_decision": 60210,
+   "gsh16+flat16000+mb4_sims_per_decision": 15053,
+   "gsh16+flat16000_sims_per_decision": 15081,
+   "best_arm": "gsh16+flat64000+mb4",
+   "prod_minus_expert_ci": [
+    -1.856,
+    8.65
+   ]
+  },
+  "Collector": {
+   "n": 55,
+   "runs": 55,
+   "expert": 20.18,
+   "prod": {
+    "": 19.786,
+    "_death": 0.086,
+    "_potions": 0.795,
+    "_cpu": 14.353
+   },
+   "gsh16+flat32000+mb4": {
+    "": 17.75,
+    "_death": 0.082,
+    "_potions": 0.659,
+    "_cpu": 99.449
+   },
+   "gsh16+flat64000+mb4": {
+    "": 16.932,
+    "_death": 0.055,
+    "_potions": 0.65,
+    "_cpu": 197.012
+   },
+   "gsh16+flat32000": {
+    "": 17.591,
+    "_death": 0.064,
+    "_potions": 0.732,
+    "_cpu": 103.102
+   },
+   "gsh16+flat64000": {
+    "": 16.414,
+    "_death": 0.064,
+    "_potions": 0.7,
+    "_cpu": 212.61
+   },
+   "gsh16+flat16000+mb4": {
+    "": 18.732,
+    "_death": 0.091,
+    "_potions": 0.732,
+    "_cpu": 52.377
+   },
+   "gsh16+flat16000": {
+    "": 18.227,
+    "_death": 0.086,
+    "_potions": 0.705,
+    "_cpu": 56.422
+   },
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000": 0.16,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci": [
+    -1.65,
+    1.9
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci975": [
+    -1.932,
+    2.123
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death": 0.0182,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death_ci": [
+    -0.009,
+    0.05
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000": 0.52,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci": [
+    -1.377,
+    2.35
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci975": [
+    -1.627,
+    2.614
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death": -0.0091,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death_ci": [
+    -0.027,
+    0.009
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4": -0.98,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -2.477,
+    0.532
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -2.686,
+    0.786
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death": -0.0091,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.032,
+    0.014
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4": -1.8,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -3.45,
+    -0.118
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -3.691,
+    0.118
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death": -0.0364,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.064,
+    -0.014
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4": -0.82,
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4_ci": [
+    -2.459,
+    0.809
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000": -0.48,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000_ci": [
+    -2.2,
+    1.2
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000": -1.3,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000_ci": [
+    -2.982,
+    0.445
+   ],
+   "gsh16+flat32000+mb4_minus_prod": -2.04,
+   "gsh16+flat32000+mb4_minus_prod_ci": [
+    -4.232,
+    0.218
+   ],
+   "gsh16+flat64000+mb4_minus_prod": -2.85,
+   "gsh16+flat64000+mb4_minus_prod_ci": [
+    -5.064,
+    -0.664
+   ],
+   "gsh16+flat32000_minus_prod": -2.2,
+   "gsh16+flat32000_minus_prod_ci": [
+    -4.314,
+    -0.15
+   ],
+   "gsh16+flat64000_minus_prod": -3.37,
+   "gsh16+flat64000_minus_prod_ci": [
+    -6.045,
+    -0.641
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -1.05,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -3.055,
+    1.041
+   ],
+   "gsh16+flat16000_minus_prod": -1.56,
+   "gsh16+flat16000_minus_prod_ci": [
+    -3.323,
+    0.255
+   ],
+   "gsh16+flat32000+mb4_cpu_ratio": 6.93,
+   "gsh16+flat64000+mb4_cpu_ratio": 13.73,
+   "gsh16+flat32000_cpu_ratio": 7.18,
+   "gsh16+flat64000_cpu_ratio": 14.81,
+   "gsh16+flat16000+mb4_cpu_ratio": 3.65,
+   "gsh16+flat16000_cpu_ratio": 3.52,
+   "prod_sims_per_decision": 4617,
+   "gsh16+flat32000+mb4_sims_per_decision": 29436,
+   "gsh16+flat64000+mb4_sims_per_decision": 59206,
+   "gsh16+flat32000_sims_per_decision": 29375,
+   "gsh16+flat64000_sims_per_decision": 58890,
+   "gsh16+flat16000+mb4_sims_per_decision": 14676,
+   "gsh16+flat16000_sims_per_decision": 14713,
+   "best_arm": "gsh16+flat64000",
+   "prod_minus_expert_ci": [
+    -5.045,
+    4.173
+   ]
+  },
+  "Donu and Deca": {
+   "n": 44,
+   "runs": 44,
+   "expert": 7.09,
+   "prod": {
+    "": 10.716,
+    "_death": 0.051,
+    "_potions": 0.199,
+    "_cpu": 35.581
+   },
+   "gsh16+flat32000+mb4": {
+    "": 9.523,
+    "_death": 0.051,
+    "_potions": 0.21,
+    "_cpu": 214.59
+   },
+   "gsh16+flat64000+mb4": {
+    "": 8.909,
+    "_death": 0.045,
+    "_potions": 0.239,
+    "_cpu": 410.813
+   },
+   "gsh16+flat32000": {
+    "": 9.057,
+    "_death": 0.051,
+    "_potions": 0.199,
+    "_cpu": 221.669
+   },
+   "gsh16+flat64000": {
+    "": 8.722,
+    "_death": 0.034,
+    "_potions": 0.188,
+    "_cpu": 417.812
+   },
+   "gsh16+flat16000+mb4": {
+    "": 9.903,
+    "_death": 0.04,
+    "_potions": 0.239,
+    "_cpu": 103.719
+   },
+   "gsh16+flat16000": {
+    "": 8.818,
+    "_death": 0.051,
+    "_potions": 0.193,
+    "_cpu": 115.477
+   },
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000": 0.47,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci": [
+    -1.506,
+    2.534
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci975": [
+    -1.778,
+    2.812
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death": 0.0,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death_ci": [
+    -0.028,
+    0.028
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000": 0.19,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci": [
+    -1.676,
+    2.273
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci975": [
+    -1.915,
+    2.562
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death": 0.0114,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death_ci": [
+    0.0,
+    0.034
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4": -0.38,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -2.324,
+    1.653
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -2.58,
+    2.028
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death": 0.0114,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.011,
+    0.034
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4": -0.99,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -3.091,
+    1.312
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -3.398,
+    1.682
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death": 0.0057,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.023,
+    0.04
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4": -0.61,
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4_ci": [
+    -2.631,
+    1.284
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000": 0.7,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000_ci": [
+    -1.619,
+    3.375
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000": 0.09,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000_ci": [
+    -1.835,
+    2.284
+   ],
+   "gsh16+flat32000+mb4_minus_prod": -1.19,
+   "gsh16+flat32000+mb4_minus_prod_ci": [
+    -3.54,
+    1.233
+   ],
+   "gsh16+flat64000+mb4_minus_prod": -1.81,
+   "gsh16+flat64000+mb4_minus_prod_ci": [
+    -3.744,
+    0.193
+   ],
+   "gsh16+flat32000_minus_prod": -1.66,
+   "gsh16+flat32000_minus_prod_ci": [
+    -3.511,
+    0.148
+   ],
+   "gsh16+flat64000_minus_prod": -1.99,
+   "gsh16+flat64000_minus_prod_ci": [
+    -4.534,
+    0.358
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -0.81,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -3.091,
+    1.477
+   ],
+   "gsh16+flat16000_minus_prod": -1.9,
+   "gsh16+flat16000_minus_prod_ci": [
+    -4.432,
+    0.261
+   ],
+   "gsh16+flat32000+mb4_cpu_ratio": 6.03,
+   "gsh16+flat64000+mb4_cpu_ratio": 11.55,
+   "gsh16+flat32000_cpu_ratio": 6.23,
+   "gsh16+flat64000_cpu_ratio": 11.74,
+   "gsh16+flat16000+mb4_cpu_ratio": 2.92,
+   "gsh16+flat16000_cpu_ratio": 2.93,
+   "prod_sims_per_decision": 5784,
+   "gsh16+flat32000+mb4_sims_per_decision": 30486,
+   "gsh16+flat64000+mb4_sims_per_decision": 60975,
+   "gsh16+flat32000_sims_per_decision": 30503,
+   "gsh16+flat64000_sims_per_decision": 60978,
+   "gsh16+flat16000+mb4_sims_per_decision": 15228,
+   "gsh16+flat16000_sims_per_decision": 15241,
+   "best_arm": "gsh16+flat64000",
+   "prod_minus_expert_ci": [
+    -1.812,
+    8.932
+   ]
+  },
+  "Giant Head": {
+   "n": 71,
+   "runs": 58,
+   "expert": 2.1,
+   "prod": {
+    "": 3.363,
+    "_death": 0.014,
+    "_potions": 0.303,
+    "_cpu": 2.289
+   },
+   "gsh16+flat32000+mb4": {
+    "": 0.472,
+    "_death": 0.011,
+    "_potions": 0.303,
+    "_cpu": 16.236
+   },
+   "gsh16+flat64000+mb4": {
+    "": 0.673,
+    "_death": 0.007,
+    "_potions": 0.306,
+    "_cpu": 33.68
+   },
+   "gsh16+flat32000": {
+    "": 1.863,
+    "_death": 0.007,
+    "_potions": 0.285,
+    "_cpu": 16.275
+   },
+   "gsh16+flat64000": {
+    "": 0.894,
+    "_death": 0.011,
+    "_potions": 0.292,
+    "_cpu": 33.991
+   },
+   "gsh16+flat16000+mb4": {
+    "": 0.792,
+    "_death": 0.011,
+    "_potions": 0.299,
+    "_cpu": 8.189
+   },
+   "gsh16+flat16000": {
+    "": 2.201,
+    "_death": 0.007,
+    "_potions": 0.282,
+    "_cpu": 7.861
+   },
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000": -1.39,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci": [
+    -2.632,
+    -0.129
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci975": [
+    -2.797,
+    0.071
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death": 0.0035,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death_ci": [
+    0.0,
+    0.011
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000": -0.22,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci": [
+    -1.467,
+    1.007
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci975": [
+    -1.632,
+    1.186
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death": -0.0035,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death_ci": [
+    -0.011,
+    0.0
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4": -0.32,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -1.636,
+    1.078
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -1.818,
+    1.307
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death": 0.0,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.011,
+    0.01
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4": -0.12,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -1.186,
+    0.954
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -1.346,
+    1.109
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death": -0.0035,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.011,
+    0.0
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4": 0.2,
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4_ci": [
+    -0.687,
+    1.078
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000": -1.73,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000_ci": [
+    -2.878,
+    -0.627
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000": -1.53,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000_ci": [
+    -2.575,
+    -0.522
+   ],
+   "gsh16+flat32000+mb4_minus_prod": -2.89,
+   "gsh16+flat32000+mb4_minus_prod_ci": [
+    -4.311,
+    -1.521
+   ],
+   "gsh16+flat64000+mb4_minus_prod": -2.69,
+   "gsh16+flat64000+mb4_minus_prod_ci": [
+    -4.017,
+    -1.472
+   ],
+   "gsh16+flat32000_minus_prod": -1.5,
+   "gsh16+flat32000_minus_prod_ci": [
+    -3.034,
+    -0.125
+   ],
+   "gsh16+flat64000_minus_prod": -2.47,
+   "gsh16+flat64000_minus_prod_ci": [
+    -3.899,
+    -1.074
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -2.57,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -3.913,
+    -1.254
+   ],
+   "gsh16+flat16000_minus_prod": -1.16,
+   "gsh16+flat16000_minus_prod_ci": [
+    -2.261,
+    -0.108
+   ],
+   "gsh16+flat32000+mb4_cpu_ratio": 7.09,
+   "gsh16+flat64000+mb4_cpu_ratio": 14.71,
+   "gsh16+flat32000_cpu_ratio": 7.11,
+   "gsh16+flat64000_cpu_ratio": 14.85,
+   "gsh16+flat16000+mb4_cpu_ratio": 3.58,
+   "gsh16+flat16000_cpu_ratio": 3.32,
+   "prod_sims_per_decision": 4803,
+   "gsh16+flat32000+mb4_sims_per_decision": 30462,
+   "gsh16+flat64000+mb4_sims_per_decision": 60942,
+   "gsh16+flat32000_sims_per_decision": 30302,
+   "gsh16+flat64000_sims_per_decision": 60672,
+   "gsh16+flat16000+mb4_sims_per_decision": 15173,
+   "gsh16+flat16000_sims_per_decision": 15147,
+   "best_arm": "gsh16+flat32000+mb4",
+   "prod_minus_expert_ci": [
+    -2.693,
+    4.971
+   ]
+  },
+  "Gremlin Leader": {
+   "n": 129,
+   "runs": 120,
+   "expert": 0.8,
+   "prod": {
+    "": 5.101,
+    "_death": 0.031,
+    "_potions": 0.492,
+    "_cpu": 1.071
+   },
+   "gsh16+flat32000+mb4": {
+    "": 2.843,
+    "_death": 0.033,
+    "_potions": 0.475,
+    "_cpu": 9.28
+   },
+   "gsh16+flat64000+mb4": {
+    "": 3.283,
+    "_death": 0.027,
+    "_potions": 0.483,
+    "_cpu": 18.909
+   },
+   "gsh16+flat32000": {
+    "": 4.188,
+    "_death": 0.035,
+    "_potions": 0.504,
+    "_cpu": 9.212
+   },
+   "gsh16+flat64000": {
+    "": 4.176,
+    "_death": 0.031,
+    "_potions": 0.508,
+    "_cpu": 18.71
+   },
+   "gsh16+flat16000+mb4": {
+    "": 3.829,
+    "_death": 0.039,
+    "_potions": 0.498,
+    "_cpu": 4.733
+   },
+   "gsh16+flat16000": {
+    "": 4.072,
+    "_death": 0.033,
+    "_potions": 0.502,
+    "_cpu": 4.386
+   },
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000": -1.34,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci": [
+    -2.123,
+    -0.59
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci975": [
+    -2.223,
+    -0.473
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death": -0.0019,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death_ci": [
+    -0.013,
+    0.01
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000": -0.89,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci": [
+    -1.801,
+    0.021
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci975": [
+    -1.934,
+    0.14
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death": -0.0039,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death_ci": [
+    -0.014,
+    0.006
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4": -0.99,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -1.77,
+    -0.209
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -1.887,
+    -0.093
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death": -0.0058,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.018,
+    0.004
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4": -0.55,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -1.456,
+    0.34
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -1.586,
+    0.476
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death": -0.0116,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.023,
+    -0.002
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4": 0.44,
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4_ci": [
+    -0.39,
+    1.324
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000": -1.23,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000_ci": [
+    -2.06,
+    -0.447
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000": -0.79,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000_ci": [
+    -1.681,
+    0.056
+   ],
+   "gsh16+flat32000+mb4_minus_prod": -2.26,
+   "gsh16+flat32000+mb4_minus_prod_ci": [
+    -3.156,
+    -1.395
+   ],
+   "gsh16+flat64000+mb4_minus_prod": -1.82,
+   "gsh16+flat64000+mb4_minus_prod_ci": [
+    -2.764,
+    -0.841
+   ],
+   "gsh16+flat32000_minus_prod": -0.91,
+   "gsh16+flat32000_minus_prod_ci": [
+    -1.677,
+    -0.164
+   ],
+   "gsh16+flat64000_minus_prod": -0.92,
+   "gsh16+flat64000_minus_prod_ci": [
+    -1.818,
+    -0.037
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -1.27,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -2.131,
+    -0.43
+   ],
+   "gsh16+flat16000_minus_prod": -1.03,
+   "gsh16+flat16000_minus_prod_ci": [
+    -1.868,
+    -0.204
+   ],
+   "gsh16+flat32000+mb4_cpu_ratio": 8.66,
+   "gsh16+flat64000+mb4_cpu_ratio": 17.65,
+   "gsh16+flat32000_cpu_ratio": 8.6,
+   "gsh16+flat64000_cpu_ratio": 17.47,
+   "gsh16+flat16000+mb4_cpu_ratio": 4.42,
+   "gsh16+flat16000_cpu_ratio": 3.86,
+   "prod_sims_per_decision": 4211,
+   "gsh16+flat32000+mb4_sims_per_decision": 30067,
+   "gsh16+flat64000+mb4_sims_per_decision": 60289,
+   "gsh16+flat32000_sims_per_decision": 29931,
+   "gsh16+flat64000_sims_per_decision": 59961,
+   "gsh16+flat16000+mb4_sims_per_decision": 15050,
+   "gsh16+flat16000_sims_per_decision": 14969,
+   "best_arm": "gsh16+flat32000+mb4",
+   "prod_minus_expert_ci": [
+    2.498,
+    6.168
+   ]
+  },
+  "Gremlin Nob": {
+   "n": 242,
+   "runs": 211,
+   "expert": 8.5,
+   "prod": {
+    "": 9.665,
+    "_death": 0.032,
+    "_potions": 0.704,
+    "_cpu": 0.218
+   },
+   "gsh16+flat32000+mb4": {
+    "": 9.105,
+    "_death": 0.032,
+    "_potions": 0.643,
+    "_cpu": 2.502
+   },
+   "gsh16+flat64000+mb4": {
+    "": 9.066,
+    "_death": 0.032,
+    "_potions": 0.622,
+    "_cpu": 5.14
+   },
+   "gsh16+flat32000": {
+    "": 9.092,
+    "_death": 0.031,
+    "_potions": 0.692,
+    "_cpu": 2.399
+   },
+   "gsh16+flat64000": {
+    "": 9.042,
+    "_death": 0.029,
+    "_potions": 0.676,
+    "_cpu": 4.941
+   },
+   "gsh16+flat16000+mb4": {
+    "": 9.205,
+    "_death": 0.032,
+    "_potions": 0.643,
+    "_cpu": 1.224
+   },
+   "gsh16+flat16000": {
+    "": 9.326,
+    "_death": 0.031,
+    "_potions": 0.701,
+    "_cpu": 1.136
+   },
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000": 0.01,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci": [
+    -0.459,
+    0.48
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci975": [
+    -0.526,
+    0.546
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death": 0.001,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death_ci": [
+    -0.005,
+    0.007
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000": 0.02,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci": [
+    -0.43,
+    0.485
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci975": [
+    -0.492,
+    0.543
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death": 0.0031,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death_ci": [
+    -0.004,
+    0.011
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4": -0.1,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -0.474,
+    0.265
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -0.522,
+    0.336
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death": 0.0,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.006,
+    0.007
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4": -0.14,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -0.512,
+    0.229
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -0.569,
+    0.279
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death": 0.0,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.008,
+    0.009
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4": -0.04,
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4_ci": [
+    -0.42,
+    0.348
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000": -0.22,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000_ci": [
+    -0.713,
+    0.259
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000": -0.26,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000_ci": [
+    -0.714,
+    0.186
+   ],
+   "gsh16+flat32000+mb4_minus_prod": -0.56,
+   "gsh16+flat32000+mb4_minus_prod_ci": [
+    -1.072,
+    -0.076
+   ],
+   "gsh16+flat64000+mb4_minus_prod": -0.6,
+   "gsh16+flat64000+mb4_minus_prod_ci": [
+    -1.079,
+    -0.123
+   ],
+   "gsh16+flat32000_minus_prod": -0.57,
+   "gsh16+flat32000_minus_prod_ci": [
+    -1.025,
+    -0.13
+   ],
+   "gsh16+flat64000_minus_prod": -0.62,
+   "gsh16+flat64000_minus_prod_ci": [
+    -1.083,
+    -0.162
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -0.46,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -0.9,
+    -0.019
+   ],
+   "gsh16+flat16000_minus_prod": -0.34,
+   "gsh16+flat16000_minus_prod_ci": [
+    -0.818,
+    0.123
+   ],
+   "gsh16+flat32000+mb4_cpu_ratio": 11.49,
+   "gsh16+flat64000+mb4_cpu_ratio": 23.61,
+   "gsh16+flat32000_cpu_ratio": 11.02,
+   "gsh16+flat64000_cpu_ratio": 22.7,
+   "gsh16+flat16000+mb4_cpu_ratio": 5.62,
+   "gsh16+flat16000_cpu_ratio": 5.14,
+   "prod_sims_per_decision": 3388,
+   "gsh16+flat32000+mb4_sims_per_decision": 29876,
+   "gsh16+flat64000+mb4_sims_per_decision": 59863,
+   "gsh16+flat32000_sims_per_decision": 29545,
+   "gsh16+flat64000_sims_per_decision": 59243,
+   "gsh16+flat16000+mb4_sims_per_decision": 14925,
+   "gsh16+flat16000_sims_per_decision": 14772,
+   "best_arm": "gsh16+flat64000",
+   "prod_minus_expert_ci": [
+    -0.287,
+    2.647
+   ]
+  },
+  "Hexaghost": {
+   "n": 93,
+   "runs": 93,
+   "expert": 15.34,
+   "prod": {
+    "": 16.656,
+    "_death": 0.137,
+    "_potions": 0.895,
+    "_cpu": 7.076
+   },
+   "gsh16+flat32000+mb4": {
+    "": 15.323,
+    "_death": 0.11,
+    "_potions": 0.815,
+    "_cpu": 50.984
+   },
+   "gsh16+flat64000+mb4": {
+    "": 14.616,
+    "_death": 0.105,
+    "_potions": 0.815,
+    "_cpu": 100.009
+   },
+   "gsh16+flat32000": {
+    "": 15.444,
+    "_death": 0.129,
+    "_potions": 0.852,
+    "_cpu": 52.85
+   },
+   "gsh16+flat64000": {
+    "": 15.763,
+    "_death": 0.121,
+    "_potions": 0.866,
+    "_cpu": 106.367
+   },
+   "gsh16+flat16000+mb4": {
+    "": 15.522,
+    "_death": 0.124,
+    "_potions": 0.839,
+    "_cpu": 25.163
+   },
+   "gsh16+flat16000": {
+    "": 16.059,
+    "_death": 0.134,
+    "_potions": 0.849,
+    "_cpu": 26.643
+   },
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000": -0.12,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci": [
+    -1.099,
+    0.852
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci975": [
+    -1.25,
+    0.995
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death": -0.0188,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death_ci": [
+    -0.051,
+    0.013
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000": -1.15,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci": [
+    -2.091,
+    -0.202
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci975": [
+    -2.218,
+    -0.059
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death": -0.0161,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death_ci": [
+    -0.048,
+    0.019
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4": -0.2,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -1.118,
+    0.798
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -1.253,
+    0.927
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death": -0.0134,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.046,
+    0.016
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4": -0.91,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -1.704,
+    -0.118
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -1.823,
+    -0.008
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death": -0.0188,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.048,
+    0.008
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4": -0.71,
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4_ci": [
+    -1.728,
+    0.263
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000": -0.74,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000_ci": [
+    -1.884,
+    0.411
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000": -1.44,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000_ci": [
+    -2.422,
+    -0.473
+   ],
+   "gsh16+flat32000+mb4_minus_prod": -1.33,
+   "gsh16+flat32000+mb4_minus_prod_ci": [
+    -2.226,
+    -0.401
+   ],
+   "gsh16+flat64000+mb4_minus_prod": -2.04,
+   "gsh16+flat64000+mb4_minus_prod_ci": [
+    -2.898,
+    -1.21
+   ],
+   "gsh16+flat32000_minus_prod": -1.21,
+   "gsh16+flat32000_minus_prod_ci": [
+    -2.204,
+    -0.218
+   ],
+   "gsh16+flat64000_minus_prod": -0.89,
+   "gsh16+flat64000_minus_prod_ci": [
+    -1.761,
+    -0.027
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -1.13,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -2.013,
+    -0.218
+   ],
+   "gsh16+flat16000_minus_prod": -0.6,
+   "gsh16+flat16000_minus_prod_ci": [
+    -1.551,
+    0.382
+   ],
+   "gsh16+flat32000+mb4_cpu_ratio": 7.21,
+   "gsh16+flat64000+mb4_cpu_ratio": 14.13,
+   "gsh16+flat32000_cpu_ratio": 7.47,
+   "gsh16+flat64000_cpu_ratio": 15.03,
+   "gsh16+flat16000+mb4_cpu_ratio": 3.56,
+   "gsh16+flat16000_cpu_ratio": 3.49,
+   "prod_sims_per_decision": 4345,
+   "gsh16+flat32000+mb4_sims_per_decision": 28505,
+   "gsh16+flat64000+mb4_sims_per_decision": 56982,
+   "gsh16+flat32000_sims_per_decision": 28153,
+   "gsh16+flat64000_sims_per_decision": 56281,
+   "gsh16+flat16000+mb4_sims_per_decision": 14209,
+   "gsh16+flat16000_sims_per_decision": 14027,
+   "best_arm": "gsh16+flat64000+mb4",
+   "prod_minus_expert_ci": [
+    -0.675,
+    3.325
+   ]
+  },
+  "Lagavulin": {
+   "n": 267,
+   "runs": 233,
+   "expert": 10.48,
+   "prod": {
+    "": 11.79,
+    "_death": 0.034,
+    "_potions": 0.571,
+    "_cpu": 0.559
+   },
+   "gsh16+flat32000+mb4": {
+    "": 11.281,
+    "_death": 0.023,
+    "_potions": 0.515,
+    "_cpu": 5.75
+   },
+   "gsh16+flat64000+mb4": {
+    "": 11.402,
+    "_death": 0.027,
+    "_potions": 0.511,
+    "_cpu": 11.849
+   },
+   "gsh16+flat32000": {
+    "": 11.27,
+    "_death": 0.036,
+    "_potions": 0.576,
+    "_cpu": 5.364
+   },
+   "gsh16+flat64000": {
+    "": 11.232,
+    "_death": 0.027,
+    "_potions": 0.579,
+    "_cpu": 11.312
+   },
+   "gsh16+flat16000+mb4": {
+    "": 11.732,
+    "_death": 0.032,
+    "_potions": 0.507,
+    "_cpu": 2.84
+   },
+   "gsh16+flat16000": {
+    "": 11.698,
+    "_death": 0.037,
+    "_potions": 0.569,
+    "_cpu": 2.545
+   },
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000": 0.01,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci": [
+    -0.438,
+    0.472
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci975": [
+    -0.505,
+    0.546
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death": -0.0122,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death_ci": [
+    -0.023,
+    -0.004
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000": 0.17,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci": [
+    -0.306,
+    0.662
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci975": [
+    -0.372,
+    0.74
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death": 0.0,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death_ci": [
+    -0.005,
+    0.005
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4": -0.45,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -0.909,
+    0.003
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -0.967,
+    0.059
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death": -0.0084,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.017,
+    0.0
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4": -0.33,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -0.767,
+    0.125
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -0.827,
+    0.188
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death": -0.0047,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.012,
+    0.003
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4": 0.12,
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4_ci": [
+    -0.292,
+    0.548
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000": -0.42,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000_ci": [
+    -0.91,
+    0.086
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000": -0.3,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000_ci": [
+    -0.813,
+    0.241
+   ],
+   "gsh16+flat32000+mb4_minus_prod": -0.51,
+   "gsh16+flat32000+mb4_minus_prod_ci": [
+    -0.989,
+    -0.027
+   ],
+   "gsh16+flat64000+mb4_minus_prod": -0.39,
+   "gsh16+flat64000+mb4_minus_prod_ci": [
+    -0.927,
+    0.152
+   ],
+   "gsh16+flat32000_minus_prod": -0.52,
+   "gsh16+flat32000_minus_prod_ci": [
+    -0.944,
+    -0.101
+   ],
+   "gsh16+flat64000_minus_prod": -0.56,
+   "gsh16+flat64000_minus_prod_ci": [
+    -1.012,
+    -0.101
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -0.06,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -0.547,
+    0.442
+   ],
+   "gsh16+flat16000_minus_prod": -0.09,
+   "gsh16+flat16000_minus_prod_ci": [
+    -0.48,
+    0.289
+   ],
+   "gsh16+flat32000+mb4_cpu_ratio": 10.28,
+   "gsh16+flat64000+mb4_cpu_ratio": 21.18,
+   "gsh16+flat32000_cpu_ratio": 9.59,
+   "gsh16+flat64000_cpu_ratio": 20.22,
+   "gsh16+flat16000+mb4_cpu_ratio": 5.08,
+   "gsh16+flat16000_cpu_ratio": 4.44,
+   "prod_sims_per_decision": 3766,
+   "gsh16+flat32000+mb4_sims_per_decision": 29875,
+   "gsh16+flat64000+mb4_sims_per_decision": 59681,
+   "gsh16+flat32000_sims_per_decision": 29551,
+   "gsh16+flat64000_sims_per_decision": 59291,
+   "gsh16+flat16000+mb4_sims_per_decision": 14911,
+   "gsh16+flat16000_sims_per_decision": 14785,
+   "best_arm": "gsh16+flat64000",
+   "prod_minus_expert_ci": [
+    0.126,
+    2.489
+   ]
+  },
+  "Nemesis": {
+   "n": 69,
+   "runs": 63,
+   "expert": 1.12,
+   "prod": {
+    "": 6.355,
+    "_death": 0.011,
+    "_potions": 0.163,
+    "_cpu": 2.257
+   },
+   "gsh16+flat32000+mb4": {
+    "": 3.928,
+    "_death": 0.004,
+    "_potions": 0.174,
+    "_cpu": 16.04
+   },
+   "gsh16+flat64000+mb4": {
+    "": 4.163,
+    "_death": 0.011,
+    "_potions": 0.167,
+    "_cpu": 33.681
+   },
+   "gsh16+flat32000": {
+    "": 4.855,
+    "_death": 0.004,
+    "_potions": 0.152,
+    "_cpu": 16.442
+   },
+   "gsh16+flat64000": {
+    "": 4.322,
+    "_death": 0,
+    "_potions": 0.138,
+    "_cpu": 31.417
+   },
+   "gsh16+flat16000+mb4": {
+    "": 3.732,
+    "_death": 0,
+    "_potions": 0.167,
+    "_cpu": 8.4
+   },
+   "gsh16+flat16000": {
+    "": 4.696,
+    "_death": 0.004,
+    "_potions": 0.149,
+    "_cpu": 7.825
+   },
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000": -0.93,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci": [
+    -2.104,
+    0.291
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci975": [
+    -2.269,
+    0.475
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death": 0.0,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death_ci": [
+    -0.011,
+    0.011
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000": -0.16,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci": [
+    -1.511,
+    1.156
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci975": [
+    -1.701,
+    1.327
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death": 0.0109,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death_ci": [
+    0.0,
+    0.025
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4": 0.2,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -0.975,
+    1.36
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -1.152,
+    1.546
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death": 0.0036,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    0.0,
+    0.011
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4": 0.43,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -0.978,
+    1.982
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -1.217,
+    2.228
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death": 0.0109,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    0.0,
+    0.025
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4": 0.24,
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4_ci": [
+    -1.037,
+    1.586
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000": -0.77,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000_ci": [
+    -2.025,
+    0.5
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000": -0.53,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000_ci": [
+    -2.034,
+    0.851
+   ],
+   "gsh16+flat32000+mb4_minus_prod": -2.43,
+   "gsh16+flat32000+mb4_minus_prod_ci": [
+    -4.178,
+    -0.684
+   ],
+   "gsh16+flat64000+mb4_minus_prod": -2.19,
+   "gsh16+flat64000+mb4_minus_prod_ci": [
+    -4.208,
+    -0.288
+   ],
+   "gsh16+flat32000_minus_prod": -1.5,
+   "gsh16+flat32000_minus_prod_ci": [
+    -2.942,
+    -0.139
+   ],
+   "gsh16+flat64000_minus_prod": -2.03,
+   "gsh16+flat64000_minus_prod_ci": [
+    -3.457,
+    -0.625
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -2.62,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -3.789,
+    -1.465
+   ],
+   "gsh16+flat16000_minus_prod": -1.66,
+   "gsh16+flat16000_minus_prod_ci": [
+    -3.101,
+    -0.283
+   ],
+   "gsh16+flat32000+mb4_cpu_ratio": 7.11,
+   "gsh16+flat64000+mb4_cpu_ratio": 14.92,
+   "gsh16+flat32000_cpu_ratio": 7.29,
+   "gsh16+flat64000_cpu_ratio": 13.92,
+   "gsh16+flat16000+mb4_cpu_ratio": 3.72,
+   "gsh16+flat16000_cpu_ratio": 3.26,
+   "prod_sims_per_decision": 4901,
+   "gsh16+flat32000+mb4_sims_per_decision": 30499,
+   "gsh16+flat64000+mb4_sims_per_decision": 61291,
+   "gsh16+flat32000_sims_per_decision": 30492,
+   "gsh16+flat64000_sims_per_decision": 61032,
+   "gsh16+flat16000+mb4_sims_per_decision": 15301,
+   "gsh16+flat16000_sims_per_decision": 15289,
+   "best_arm": "gsh16+flat16000+mb4",
+   "prod_minus_expert_ci": [
+    2.582,
+    7.904
+   ]
+  },
+  "Reptomancer": {
+   "n": 69,
+   "runs": 61,
+   "expert": 4.45,
+   "prod": {
+    "": 8.417,
+    "_death": 0.025,
+    "_potions": 0.333,
+    "_cpu": 2.154
+   },
+   "gsh16+flat32000+mb4": {
+    "": 4.779,
+    "_death": 0.011,
+    "_potions": 0.297,
+    "_cpu": 15.767
+   },
+   "gsh16+flat64000+mb4": {
+    "": 4.264,
+    "_death": 0.022,
+    "_potions": 0.312,
+    "_cpu": 31.126
+   },
+   "gsh16+flat32000": {
+    "": 5.841,
+    "_death": 0.011,
+    "_potions": 0.29,
+    "_cpu": 15.234
+   },
+   "gsh16+flat64000": {
+    "": 5.366,
+    "_death": 0.007,
+    "_potions": 0.272,
+    "_cpu": 31.136
+   },
+   "gsh16+flat16000+mb4": {
+    "": 5.391,
+    "_death": 0.014,
+    "_potions": 0.293,
+    "_cpu": 7.903
+   },
+   "gsh16+flat16000": {
+    "": 6.562,
+    "_death": 0.025,
+    "_potions": 0.301,
+    "_cpu": 7.608
+   },
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000": -1.06,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci": [
+    -2.635,
+    0.395
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci975": [
+    -2.866,
+    0.598
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death": 0.0,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death_ci": [
+    -0.014,
+    0.015
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000": -1.1,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci": [
+    -2.183,
+    0.007
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci975": [
+    -2.338,
+    0.188
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death": 0.0145,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death_ci": [
+    0.0,
+    0.034
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4": -0.61,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -1.856,
+    0.64
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -2.038,
+    0.857
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death": -0.0036,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.011,
+    0.0
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4": -1.13,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -2.731,
+    0.278
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -2.992,
+    0.466
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death": 0.0072,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.007,
+    0.022
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4": -0.51,
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4_ci": [
+    -1.845,
+    0.821
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000": -1.78,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000_ci": [
+    -2.921,
+    -0.643
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000": -2.3,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000_ci": [
+    -3.713,
+    -0.869
+   ],
+   "gsh16+flat32000+mb4_minus_prod": -3.64,
+   "gsh16+flat32000+mb4_minus_prod_ci": [
+    -5.299,
+    -2.011
+   ],
+   "gsh16+flat64000+mb4_minus_prod": -4.15,
+   "gsh16+flat64000+mb4_minus_prod_ci": [
+    -5.828,
+    -2.578
+   ],
+   "gsh16+flat32000_minus_prod": -2.58,
+   "gsh16+flat32000_minus_prod_ci": [
+    -4.197,
+    -0.964
+   ],
+   "gsh16+flat64000_minus_prod": -3.05,
+   "gsh16+flat64000_minus_prod_ci": [
+    -4.827,
+    -1.395
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -3.03,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -4.822,
+    -1.07
+   ],
+   "gsh16+flat16000_minus_prod": -1.86,
+   "gsh16+flat16000_minus_prod_ci": [
+    -3.493,
+    -0.271
+   ],
+   "gsh16+flat32000+mb4_cpu_ratio": 7.32,
+   "gsh16+flat64000+mb4_cpu_ratio": 14.45,
+   "gsh16+flat32000_cpu_ratio": 7.07,
+   "gsh16+flat64000_cpu_ratio": 14.46,
+   "gsh16+flat16000+mb4_cpu_ratio": 3.67,
+   "gsh16+flat16000_cpu_ratio": 3.36,
+   "prod_sims_per_decision": 4860,
+   "gsh16+flat32000+mb4_sims_per_decision": 30365,
+   "gsh16+flat64000+mb4_sims_per_decision": 60708,
+   "gsh16+flat32000_sims_per_decision": 30308,
+   "gsh16+flat64000_sims_per_decision": 60556,
+   "gsh16+flat16000+mb4_sims_per_decision": 15166,
+   "gsh16+flat16000_sims_per_decision": 15152,
+   "best_arm": "gsh16+flat64000+mb4",
+   "prod_minus_expert_ci": [
+    -0.223,
+    7.957
+   ]
+  },
+  "Slavers": {
+   "n": 129,
+   "runs": 117,
+   "expert": 8.02,
+   "prod": {
+    "": 14.57,
+    "_death": 0.078,
+    "_potions": 0.38,
+    "_cpu": 0.824
+   },
+   "gsh16+flat32000+mb4": {
+    "": 13.014,
+    "_death": 0.074,
+    "_potions": 0.359,
+    "_cpu": 6.55
+   },
+   "gsh16+flat64000+mb4": {
+    "": 12.597,
+    "_death": 0.068,
+    "_potions": 0.366,
+    "_cpu": 13.333
+   },
+   "gsh16+flat32000": {
+    "": 13.828,
+    "_death": 0.078,
+    "_potions": 0.403,
+    "_cpu": 6.402
+   },
+   "gsh16+flat64000": {
+    "": 13.909,
+    "_death": 0.085,
+    "_potions": 0.384,
+    "_cpu": 13.483
+   },
+   "gsh16+flat16000+mb4": {
+    "": 13.219,
+    "_death": 0.066,
+    "_potions": 0.372,
+    "_cpu": 3.274
+   },
+   "gsh16+flat16000": {
+    "": 14.039,
+    "_death": 0.076,
+    "_potions": 0.388,
+    "_cpu": 3.017
+   },
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000": -0.81,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci": [
+    -1.523,
+    -0.067
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci975": [
+    -1.629,
+    0.034
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death": -0.0039,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death_ci": [
+    -0.019,
+    0.011
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000": -1.31,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci": [
+    -1.976,
+    -0.669
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci975": [
+    -2.091,
+    -0.584
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death": -0.0174,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death_ci": [
+    -0.035,
+    -0.004
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4": -0.21,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -0.737,
+    0.329
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -0.82,
+    0.409
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death": 0.0078,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.008,
+    0.024
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4": -0.62,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -1.256,
+    -0.02
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -1.344,
+    0.07
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death": 0.0019,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.013,
+    0.017
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4": -0.42,
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4_ci": [
+    -0.998,
+    0.154
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000": -1.03,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000_ci": [
+    -1.691,
+    -0.357
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000": -1.44,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000_ci": [
+    -2.113,
+    -0.789
+   ],
+   "gsh16+flat32000+mb4_minus_prod": -1.56,
+   "gsh16+flat32000+mb4_minus_prod_ci": [
+    -2.336,
+    -0.781
+   ],
+   "gsh16+flat64000+mb4_minus_prod": -1.97,
+   "gsh16+flat64000+mb4_minus_prod_ci": [
+    -2.825,
+    -1.157
+   ],
+   "gsh16+flat32000_minus_prod": -0.74,
+   "gsh16+flat32000_minus_prod_ci": [
+    -1.462,
+    -0.055
+   ],
+   "gsh16+flat64000_minus_prod": -0.66,
+   "gsh16+flat64000_minus_prod_ci": [
+    -1.482,
+    0.121
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -1.35,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -2.128,
+    -0.605
+   ],
+   "gsh16+flat16000_minus_prod": -0.53,
+   "gsh16+flat16000_minus_prod_ci": [
+    -1.208,
+    0.126
+   ],
+   "gsh16+flat32000+mb4_cpu_ratio": 7.95,
+   "gsh16+flat64000+mb4_cpu_ratio": 16.18,
+   "gsh16+flat32000_cpu_ratio": 7.77,
+   "gsh16+flat64000_cpu_ratio": 16.36,
+   "gsh16+flat16000+mb4_cpu_ratio": 3.97,
+   "gsh16+flat16000_cpu_ratio": 3.58,
+   "prod_sims_per_decision": 4606,
+   "gsh16+flat32000+mb4_sims_per_decision": 29423,
+   "gsh16+flat64000+mb4_sims_per_decision": 58858,
+   "gsh16+flat32000_sims_per_decision": 29268,
+   "gsh16+flat64000_sims_per_decision": 58780,
+   "gsh16+flat16000+mb4_sims_per_decision": 14709,
+   "gsh16+flat16000_sims_per_decision": 14675,
+   "best_arm": "gsh16+flat64000+mb4",
+   "prod_minus_expert_ci": [
+    3.776,
+    9.393
+   ]
+  },
+  "Slime Boss": {
+   "n": 80,
+   "runs": 80,
+   "expert": 10.47,
+   "prod": {
+    "": 9.878,
+    "_death": 0.119,
+    "_potions": 0.875,
+    "_cpu": 7.058
+   },
+   "gsh16+flat32000+mb4": {
+    "": 8.481,
+    "_death": 0.091,
+    "_potions": 0.744,
+    "_cpu": 56.122
+   },
+   "gsh16+flat64000+mb4": {
+    "": 8.344,
+    "_death": 0.081,
+    "_potions": 0.766,
+    "_cpu": 112.152
+   },
+   "gsh16+flat32000": {
+    "": 8.938,
+    "_death": 0.087,
+    "_potions": 0.806,
+    "_cpu": 58.884
+   },
+   "gsh16+flat64000": {
+    "": 8.509,
+    "_death": 0.078,
+    "_potions": 0.819,
+    "_cpu": 120.145
+   },
+   "gsh16+flat16000+mb4": {
+    "": 9.2,
+    "_death": 0.075,
+    "_potions": 0.769,
+    "_cpu": 27.564
+   },
+   "gsh16+flat16000": {
+    "": 9.103,
+    "_death": 0.084,
+    "_potions": 0.819,
+    "_cpu": 30.676
+   },
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000": -0.46,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci": [
+    -1.522,
+    0.637
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci975": [
+    -1.688,
+    0.772
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death": 0.0031,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death_ci": [
+    -0.022,
+    0.031
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000": -0.17,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci": [
+    -1.175,
+    0.825
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci975": [
+    -1.322,
+    0.981
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death": 0.0031,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death_ci": [
+    -0.022,
+    0.028
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4": -0.72,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -1.803,
+    0.372
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -1.947,
+    0.522
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death": 0.0156,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.009,
+    0.041
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4": -0.86,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -1.816,
+    0.116
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -1.953,
+    0.247
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death": 0.0063,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.019,
+    0.028
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4": -0.14,
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4_ci": [
+    -1.294,
+    1.019
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000": -0.62,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000_ci": [
+    -1.812,
+    0.556
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000": -0.76,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000_ci": [
+    -1.931,
+    0.422
+   ],
+   "gsh16+flat32000+mb4_minus_prod": -1.4,
+   "gsh16+flat32000+mb4_minus_prod_ci": [
+    -2.913,
+    0.034
+   ],
+   "gsh16+flat64000+mb4_minus_prod": -1.53,
+   "gsh16+flat64000+mb4_minus_prod_ci": [
+    -2.95,
+    -0.128
+   ],
+   "gsh16+flat32000_minus_prod": -0.94,
+   "gsh16+flat32000_minus_prod_ci": [
+    -2.319,
+    0.484
+   ],
+   "gsh16+flat64000_minus_prod": -1.37,
+   "gsh16+flat64000_minus_prod_ci": [
+    -2.7,
+    -0.066
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -0.68,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -2.103,
+    0.716
+   ],
+   "gsh16+flat16000_minus_prod": -0.78,
+   "gsh16+flat16000_minus_prod_ci": [
+    -2.206,
+    0.616
+   ],
+   "gsh16+flat32000+mb4_cpu_ratio": 7.95,
+   "gsh16+flat64000+mb4_cpu_ratio": 15.89,
+   "gsh16+flat32000_cpu_ratio": 8.34,
+   "gsh16+flat64000_cpu_ratio": 17.02,
+   "gsh16+flat16000+mb4_cpu_ratio": 3.91,
+   "gsh16+flat16000_cpu_ratio": 3.94,
+   "prod_sims_per_decision": 4307,
+   "gsh16+flat32000+mb4_sims_per_decision": 28795,
+   "gsh16+flat64000+mb4_sims_per_decision": 57378,
+   "gsh16+flat32000_sims_per_decision": 28441,
+   "gsh16+flat64000_sims_per_decision": 56902,
+   "gsh16+flat16000+mb4_sims_per_decision": 14310,
+   "gsh16+flat16000_sims_per_decision": 14272,
+   "best_arm": "gsh16+flat64000+mb4",
+   "prod_minus_expert_ci": [
+    -3.516,
+    2.263
+   ]
+  },
+  "The Guardian": {
+   "n": 81,
+   "runs": 81,
+   "expert": 12.53,
+   "prod": {
+    "": 17.071,
+    "_death": 0.123,
+    "_potions": 0.898,
+    "_cpu": 8.676
+   },
+   "gsh16+flat32000+mb4": {
+    "": 16.127,
+    "_death": 0.093,
+    "_potions": 0.861,
+    "_cpu": 59.376
+   },
+   "gsh16+flat64000+mb4": {
+    "": 14.923,
+    "_death": 0.105,
+    "_potions": 0.846,
+    "_cpu": 115.271
+   },
+   "gsh16+flat32000": {
+    "": 15.454,
+    "_death": 0.105,
+    "_potions": 0.87,
+    "_cpu": 60.281
+   },
+   "gsh16+flat64000": {
+    "": 15.198,
+    "_death": 0.114,
+    "_potions": 0.852,
+    "_cpu": 119.903
+   },
+   "gsh16+flat16000+mb4": {
+    "": 15.488,
+    "_death": 0.123,
+    "_potions": 0.836,
+    "_cpu": 28.134
+   },
+   "gsh16+flat16000": {
+    "": 15.806,
+    "_death": 0.117,
+    "_potions": 0.889,
+    "_cpu": 30.827
+   },
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000": 0.67,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci": [
+    -0.383,
+    1.728
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci975": [
+    -0.556,
+    1.87
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death": -0.0123,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death_ci": [
+    -0.037,
+    0.015
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000": -0.27,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci": [
+    -1.142,
+    0.583
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci975": [
+    -1.256,
+    0.694
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death": -0.0093,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death_ci": [
+    -0.028,
+    0.009
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4": 0.64,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -0.222,
+    1.546
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -0.346,
+    1.679
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death": -0.0309,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.056,
+    -0.009
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4": -0.56,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -1.457,
+    0.324
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -1.58,
+    0.451
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death": -0.0185,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.046,
+    0.006
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4": -1.2,
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4_ci": [
+    -2.16,
+    -0.272
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000": 0.32,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000_ci": [
+    -0.747,
+    1.407
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000": -0.88,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000_ci": [
+    -1.91,
+    0.164
+   ],
+   "gsh16+flat32000+mb4_minus_prod": -0.94,
+   "gsh16+flat32000+mb4_minus_prod_ci": [
+    -2.108,
+    0.201
+   ],
+   "gsh16+flat64000+mb4_minus_prod": -2.15,
+   "gsh16+flat64000+mb4_minus_prod_ci": [
+    -3.312,
+    -1.012
+   ],
+   "gsh16+flat32000_minus_prod": -1.62,
+   "gsh16+flat32000_minus_prod_ci": [
+    -2.802,
+    -0.435
+   ],
+   "gsh16+flat64000_minus_prod": -1.87,
+   "gsh16+flat64000_minus_prod_ci": [
+    -3.015,
+    -0.744
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -1.58,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -2.698,
+    -0.503
+   ],
+   "gsh16+flat16000_minus_prod": -1.27,
+   "gsh16+flat16000_minus_prod_ci": [
+    -2.509,
+    -0.114
+   ],
+   "gsh16+flat32000+mb4_cpu_ratio": 6.84,
+   "gsh16+flat64000+mb4_cpu_ratio": 13.29,
+   "gsh16+flat32000_cpu_ratio": 6.95,
+   "gsh16+flat64000_cpu_ratio": 13.82,
+   "gsh16+flat16000+mb4_cpu_ratio": 3.24,
+   "gsh16+flat16000_cpu_ratio": 3.34,
+   "prod_sims_per_decision": 4404,
+   "gsh16+flat32000+mb4_sims_per_decision": 27850,
+   "gsh16+flat64000+mb4_sims_per_decision": 55529,
+   "gsh16+flat32000_sims_per_decision": 27572,
+   "gsh16+flat64000_sims_per_decision": 55558,
+   "gsh16+flat16000+mb4_sims_per_decision": 13916,
+   "gsh16+flat16000_sims_per_decision": 13768,
+   "best_arm": "gsh16+flat64000+mb4",
+   "prod_minus_expert_ci": [
+    2.293,
+    6.827
+   ]
+  },
+  "Time Eater": {
+   "n": 47,
+   "runs": 47,
+   "expert": 9.64,
+   "prod": {
+    "": 11.559,
+    "_death": 0.021,
+    "_potions": 0.191,
+    "_cpu": 31.602
+   },
+   "gsh16+flat32000+mb4": {
+    "": 12.378,
+    "_death": 0.021,
+    "_potions": 0.149,
+    "_cpu": 199.785
+   },
+   "gsh16+flat64000+mb4": {
+    "": 9.266,
+    "_death": 0.005,
+    "_potions": 0.144,
+    "_cpu": 409.555
+   },
+   "gsh16+flat32000": {
+    "": 8.851,
+    "_death": 0.005,
+    "_potions": 0.138,
+    "_cpu": 204.234
+   },
+   "gsh16+flat64000": {
+    "": 9.441,
+    "_death": 0.021,
+    "_potions": 0.149,
+    "_cpu": 402.546
+   },
+   "gsh16+flat16000+mb4": {
+    "": 11.128,
+    "_death": 0.016,
+    "_potions": 0.149,
+    "_cpu": 101.045
+   },
+   "gsh16+flat16000": {
+    "": 10.548,
+    "_death": 0.016,
+    "_potions": 0.17,
+    "_cpu": 106.48
+   },
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000": 3.53,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci": [
+    1.069,
+    5.984
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_ci975": [
+    0.75,
+    6.33
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death": 0.016,
+   "gsh16+flat32000+mb4_minus_gsh16+flat32000_death_ci": [
+    0.0,
+    0.037
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000": -0.18,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci": [
+    -2.186,
+    1.809
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_ci975": [
+    -2.468,
+    2.074
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death": -0.016,
+   "gsh16+flat64000+mb4_minus_gsh16+flat64000_death_ci": [
+    -0.048,
+    0.005
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4": 1.25,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -0.537,
+    3.021
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -0.782,
+    3.335
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death": 0.0053,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.011,
+    0.021
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4": -1.86,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci": [
+    -4.399,
+    0.676
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_ci975": [
+    -4.734,
+    1.106
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death": -0.0106,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000+mb4_death_ci": [
+    -0.037,
+    0.011
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4": -3.11,
+   "gsh16+flat64000+mb4_minus_gsh16+flat32000+mb4_ci": [
+    -5.479,
+    -0.723
+   ],
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000": 1.83,
+   "gsh16+flat32000+mb4_minus_gsh16+flat16000_ci": [
+    -0.25,
+    3.963
+   ],
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000": -1.28,
+   "gsh16+flat64000+mb4_minus_gsh16+flat16000_ci": [
+    -3.553,
+    0.851
+   ],
+   "gsh16+flat32000+mb4_minus_prod": 0.82,
+   "gsh16+flat32000+mb4_minus_prod_ci": [
+    -1.489,
+    3.101
+   ],
+   "gsh16+flat64000+mb4_minus_prod": -2.29,
+   "gsh16+flat64000+mb4_minus_prod_ci": [
+    -4.676,
+    0.027
+   ],
+   "gsh16+flat32000_minus_prod": -2.71,
+   "gsh16+flat32000_minus_prod_ci": [
+    -4.66,
+    -0.851
+   ],
+   "gsh16+flat64000_minus_prod": -2.12,
+   "gsh16+flat64000_minus_prod_ci": [
+    -3.957,
+    -0.303
+   ],
+   "gsh16+flat16000+mb4_minus_prod": -0.43,
+   "gsh16+flat16000+mb4_minus_prod_ci": [
+    -2.489,
+    1.649
+   ],
+   "gsh16+flat16000_minus_prod": -1.01,
+   "gsh16+flat16000_minus_prod_ci": [
+    -2.723,
+    0.713
+   ],
+   "gsh16+flat32000+mb4_cpu_ratio": 6.32,
+   "gsh16+flat64000+mb4_cpu_ratio": 12.96,
+   "gsh16+flat32000_cpu_ratio": 6.46,
+   "gsh16+flat64000_cpu_ratio": 12.74,
+   "gsh16+flat16000+mb4_cpu_ratio": 3.2,
+   "gsh16+flat16000_cpu_ratio": 2.95,
+   "prod_sims_per_decision": 5243,
+   "gsh16+flat32000+mb4_sims_per_decision": 31020,
+   "gsh16+flat64000+mb4_sims_per_decision": 62120,
+   "gsh16+flat32000_sims_per_decision": 31001,
+   "gsh16+flat64000_sims_per_decision": 61894,
+   "gsh16+flat16000+mb4_sims_per_decision": 15523,
+   "gsh16+flat16000_sims_per_decision": 15459,
+   "best_arm": "gsh16+flat32000",
+   "prod_minus_expert_ci": [
+    -3.08,
+    6.957
+   ]
+  }
+ }
+}
