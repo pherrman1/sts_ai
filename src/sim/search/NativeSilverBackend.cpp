@@ -110,6 +110,12 @@ namespace sts::search {
             // unset = on, =0 restores the learned stop there): Shield and Spear at flat 10k with prior playouts,
             // the Heart at flat 40k with tree reuse up to kAct4HeartReuseCap nodes.
             bool act4Strong = true;
+            // STS_SILVER_GUMBEL_ROOT=K (research, default off): every whole-run fight searches each root with the
+            // Gumbel root (K sampled edges) at a flat budget of the agent's simulation count instead of the learned
+            // stop / flat search (Act 4 strong's fights: the larger of that and their own budget).
+            // STS_SILVER_GUMBEL_ROOT_MAX_BACKUP=M adds max backup (min M visits) in exactly those fights.
+            int gumbelRootK = 0;
+            int gumbelRootMaxBackup = 0;
             // STS_SILVER_LEAF_HEAD (default off): whole-run fights value undecided leaves with this value head
             // on the trunk of STS_SILVER_LEAF_HEAD_TRUNK, blended with the playout (SilverSearcher::LeafHead).
             std::string leafHeadPath, leafHeadTrunkPath;
@@ -360,6 +366,8 @@ namespace sts::search {
         std::atomic<std::int64_t> g_combats {0};
         std::atomic<std::int64_t> g_decisions {0};
         std::atomic<std::int64_t> g_simulations {0};
+        std::atomic<std::int64_t> g_wholeRunGumbelRoots {0};   // STS_SILVER_GUMBEL_ROOT searches
+        std::atomic<std::int64_t> g_wholeRunGumbelSims {0};
         std::atomic<std::int64_t> g_reroots {0};
         std::atomic<std::int64_t> g_freshRoots {0};
         std::atomic<std::int64_t> g_singletonSkips {0};
@@ -597,20 +605,35 @@ namespace sts::search {
                 && !g_options.rootPriorOverrideOnly && gc.act == 4
                 && (gc.curRoom == Room::ELITE || gc.curRoom == Room::BOSS);
             const bool act4Heart = act4Strong && gc.curRoom == Room::BOSS;
+            // STS_SILVER_GUMBEL_ROOT: every whole-run fight, Act 4 included (there at the larger of the agent's
+            // simulation count and Act 4 strong's budget, with Act 4 strong's prior playouts and reuse cap); any
+            // research override and the stop trace keep their own settings.
+            const bool wholeRunGumbel = g_options.gumbelRootK > 0 && !budgetOverride
+                && g_options.stopTrace.empty() && !g_nativeSilverGumbelRootOverride && !g_nativeSilverRolloutOverride
+                && !g_nativeSilverRootPriorOverride && !g_nativeSilverPriorNetOverride;
+            std::optional<SilverSearcher::GumbelRoot> gumbelRoot = g_nativeSilverGumbelRootOverride;
+            if (wholeRunGumbel) {
+                SilverSearcher::GumbelRoot g;
+                g.k = g_options.gumbelRootK;
+                gumbelRoot = g;
+            }
             // Learned stopping with the boss fallback runs boss rooms under #199.
-            const bool bossFallback = !budgetOverride && g_options.learnedStop && !act4Strong
+            const bool bossFallback = !budgetOverride && g_options.learnedStop && !act4Strong && !wholeRunGumbel
                 && g_options.learnedStopBossFallback && gc.curRoom == Room::BOSS;
             const bool adaptive = budgetOverride ? budgetOverride->policy == BudgetPolicy::Adaptive
-                                                 : (g_options.adaptive && !act4Strong) || bossFallback;
+                                                 : (g_options.adaptive && !act4Strong && !wholeRunGumbel) || bossFallback;
             const bool learnedStop = budgetOverride ? budgetOverride->policy == BudgetPolicy::LearnedStop
-                                                    : g_options.learnedStop && !bossFallback && !act4Strong;
+                                                    : g_options.learnedStop && !bossFallback && !act4Strong
+                                                        && !wholeRunGumbel;
             const bool lockOnly = budgetOverride && budgetOverride->policy == BudgetPolicy::LockOnly;
             const bool stopTrace = !budgetOverride && !g_options.stopTrace.empty();
             const bool skipSingletons = budgetOverride ? budgetOverride->skipSingletonRoots
                 : !g_options.exactRootBudgets && !g_options.searchSingletonRoots;
             if (learnedStop && !nativeSilverStopModelTrained())
                 fail(gc, bc, "learned stopping requires a trained stop model");
-            const std::int64_t flatBudget = act4Strong ? (act4Heart ? kAct4HeartBudget : kAct4EliteBudget)
+            const std::int64_t flatBudget = act4Strong
+                ? std::max<std::int64_t>(act4Heart ? kAct4HeartBudget : kAct4EliteBudget,
+                                         wholeRunGumbel ? agent.simulationCountBase : 0)
                 : isBossEncounter(bc.encounter) && !g_options.exactRootBudgets
                 ? static_cast<std::int64_t>(agent.bossSimulationMultiplier * agent.simulationCountBase)
                 : agent.simulationCountBase;
@@ -619,7 +642,7 @@ namespace sts::search {
 
             if (g_nativeSilverLabelSearch && (adaptive || learnedStop || lockOnly || stopTrace))
                 fail(gc, bc, "the label search requires a flat budget");
-            if (g_nativeSilverGumbelRootOverride && (adaptive || learnedStop || lockOnly || stopTrace))
+            if (gumbelRoot && (adaptive || learnedStop || lockOnly || stopTrace))
                 fail(gc, bc, "the Gumbel root requires a flat budget");
 
             // STS_SILVER_PRICE_TABLE_LEAF: this fight's price table, built once from the fight-start state, for
@@ -720,7 +743,8 @@ namespace sts::search {
                 if (g_nativeSilverRolloutsPerLeafOverride)
                     s.rolloutConfig.perLeaf = *g_nativeSilverRolloutsPerLeafOverride;
                 s.maxBackupMinVisits = g_nativeSilverMaxBackupOverride.value_or(
-                    SilverSearcher::envMaxBackupMinVisits());
+                    wholeRunGumbel && g_options.gumbelRootMaxBackup > 0 ? g_options.gumbelRootMaxBackup
+                                                                         : SilverSearcher::envMaxBackupMinVisits());
                 // ADR-0050: boss rooms (and elite rooms with STS_SILVER_PRIOR_PLAYOUT_ELITE=1, ADR-0056)
                 // of whole-run fights play prior playouts. A rollout, root-prior or prior-net override
                 // (research arms, source runs, imagined OOC fights) keeps its own setting, as the
@@ -897,10 +921,14 @@ namespace sts::search {
                             searcher->search(kAdaptiveTotal - kAdaptiveInitial);
                             simulations = kAdaptiveTotal;
                         }
-                    } else if (g_nativeSilverGumbelRootOverride) {
-                        simulations = searcher->searchGumbelRoot(flatBudget, *g_nativeSilverGumbelRootOverride,
+                    } else if (gumbelRoot) {
+                        simulations = searcher->searchGumbelRoot(flatBudget, *gumbelRoot,
                             nativeSilverBattleSeed(bc) ^ (0x9e3779b97f4a7c15ULL * static_cast<std::uint64_t>(decision + 1)));
                         ++g_nativeSilverCombatStats.gumbelRoots;
+                        if (wholeRunGumbel) {
+                            ++g_wholeRunGumbelRoots;
+                            g_wholeRunGumbelSims += simulations;
+                        }
                     } else {
                         searcher->search(flatBudget);
                         simulations = flatBudget;
@@ -1167,6 +1195,33 @@ namespace sts::search {
         }
         if (const int m = SilverSearcher::envMaxBackupMinVisits(); m > 0)
             std::cerr << "[silver] research search: max backup min visits=" << m << "\n";
+        {
+            const auto intEnv = [](const char *name, int lo, int hi) {
+                const char *raw = std::getenv(name);
+                if (!raw || !*raw || std::string(raw) == "0") return 0;
+                char *end = nullptr;
+                const long v = std::strtol(raw, &end, 10);
+                if (end == raw || *end != '\0' || v < lo || v > hi)
+                    throw std::runtime_error(std::string(name) + " must be 0 or an integer in [" + std::to_string(lo)
+                        + ", " + std::to_string(hi) + "]");
+                return static_cast<int>(v);
+            };
+            g_options.gumbelRootK = intEnv("STS_SILVER_GUMBEL_ROOT", 2, 64);
+            g_options.gumbelRootMaxBackup = intEnv("STS_SILVER_GUMBEL_ROOT_MAX_BACKUP", 1, 1000000);
+            if (g_options.gumbelRootMaxBackup > 0 && g_options.gumbelRootK == 0)
+                throw std::runtime_error("STS_SILVER_GUMBEL_ROOT_MAX_BACKUP requires STS_SILVER_GUMBEL_ROOT");
+            if (g_options.gumbelRootK > 0 && g_options.adaptive)
+                throw std::runtime_error("STS_SILVER_GUMBEL_ROOT requires STS_SILVER_ADAPTIVE=0 (flat budget)");
+            if (g_options.gumbelRootK > 0)
+                std::cerr << "[silver] research search: whole-run Gumbel root k=" << g_options.gumbelRootK
+                          << " max backup=" << g_options.gumbelRootMaxBackup << " (all acts)\n";
+            if (g_options.gumbelRootK > 0)
+                std::atexit([] {
+                    std::cerr << "[silver] whole-run Gumbel roots=" << g_wholeRunGumbelRoots.load()
+                              << " sims=" << g_wholeRunGumbelSims.load() << " (all decisions " << g_decisions.load()
+                              << ", sims " << g_simulations.load() << ")\n";
+                });
+        }
         if (const auto v = SilverSearcher::envRiskVeto(); v.delta > 0)
             std::cerr << "[silver] research search: risk veto delta=" << v.delta << " share=" << v.minShare
                       << " min samples=" << v.minSamples << "\n";
