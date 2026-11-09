@@ -1,0 +1,11 @@
+name          gumbel-wholerun-trace
+code_commit   5665d5aefa92c9971dbf8d1005d5e72e21eec795
+binary_sha256 0eabb014b6cba006f1d43057becdc73fe8a032bf217d9de16961b949721ea9e2
+workers       20
+share         /mnt/project-files/gumbel-wholerun-trace
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 90
+claim_settle_seconds 60
+input net-0420.bin /mnt/project-files/ppo-long-c/nets/net-0420.bin 8c0bd16c31499270f192666919e0a11e1d6ca57e2d7a188b6d2a019f3ac742d2
