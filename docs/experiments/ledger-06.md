@@ -26833,3 +26833,61 @@ production default proposal, which needs Philipp's call on 2× combat CPU and it
 Seeds: 111378256-111379279 used (smokes 111379280-111379289). Cost: 956 lane-hours.
 **Knowledge impact:** the combat plan (teacher choice: G16 + mb4, not more budget) and the Gumbel tuning scout (#1019,
 control g16 + flat16000 + mb4). Whole-run winrate, not HP per fight, should rank combat teachers.
+
+## §776 — Gumbel teacher tuning, stages 1-2 on D0's elite and boss fights (selffights, 4 copies, paired): Gumbel MuZero's non-root selection hurts, +1.58 HP per fight [+1.14, +2.02] → GNR_HURTS; of ten tree and root factors only five below the root are active, the end-turn widening most (C 1.85 → 7.4: −1.13 [−1.35, −0.91]); no screening corner beats the control; stage 2 picks c2 = ucb 12.5, prior weight 100, tree prior from 32 visits, end-turn widening 14.8, chance widening 1.85 at −1.12 HP per fight [−1.67, −0.59] vs g16 + flat16000 + mb4 (cloud, 2026-11-09)
+
+**Question (Philipp, 2026-11-08 ~23:00 CET; plan approved 23:54 CET):** which Gumbel root and tree constants make §775's
+teacher (Gumbel root k 16, flat 16,000, max backup from 4 visits) lose fewer HP per elite or boss fight, and does
+Gumbel MuZero's non-root selection (gnr) help?
+**Data:** [PREREG](evidence/gumbel_tuning_20261109/PREREG.md), [RESULT](evidence/gumbel_tuning_20261109/RESULT.md),
+`results/analysis_screen.json`, `results/analysis_combine.json`, `analyze.py`, `design.py`, `combine.py`.
+- New one_combat mode `selffights` (production main line on D0's seeds 111860000-111863071, K detached copies per arm
+  fight on the same copy seeds) and arm tokens for k, c_scale, Gumbel noise, halving budget, max backup, UCB, prior
+  weight, tree prior, end-turn and chance widening, gnr. Code 9279ce26, binary e5ba1aad.
+- Scout 500 units (104.5 lane-h); stage 1 (screen) 1,262 units, 2^(10-5) resolution IV design + ctl + gnr, 1,207 fights
+  (304 design), 567 lane-h; stage 2 (combine) 600 units, 8 arms + ctl on 602 fresh fights, 270 lane-h. All units rc 0,
+  0 dropped fights. Pairing gate: production copy 0 equals the scout's in 99.79% / 99.92% of fights → PAIRED.
+
+**Result (HP lost per fight, seed-clustered bootstrap, 95%):** gnr − ctl +1.58 [+1.14, +2.02] → GNR_HURTS. Main effects
+(high − low): F UCB 12.5 → 50 +0.25, G prior weight 100 → 1,600 +0.19, H tree prior 2 → 32 −0.16, J end-turn widening
+1.85 → 7.4 −1.13, K chance widening 1.85 → 7.4 +0.59; k, c_scale, Gumbel noise, halving and max-backup M inactive.
+Curvature (design mean − ctl, adjusted) +1.08 [+0.56, +1.57]; no design arm beats ctl. ctl − production −1.26 [−1.64,
+−0.87]. Stage 2: c2 −1.12 [−1.67, −0.59] (pick, winner's curse), c1 −0.71, c5 −0.64, x1 −0.63; c2 at 1.05× ctl's CPU.
+**Interpretation (Inference):** the root constants are flat over these ranges; what matters is below the root, mainly
+how many end-turn chance outcomes a node widens to. Stage 2 is a pick, not a test.
+**Decision:** c2 goes to a confirmation; Philipp (2026-11-09 20:53 CET) replaced the pre-registered stage 3 (paired
+fights at 16k and 64k) by a whole-run test (§777). gnr is dropped. No default change.
+Seeds: D0's 111860000-111860499 reused (no new seeds). Cost: about 940 lane-hours.
+**Knowledge impact:** Gumbel teacher constants; selffights as a cheap paired fight bench on production states.
+
+## §777 — Gumbel tuning pick c2 in whole runs against §775's G16 + mb4 (net-0420 out of combat, 1,024 paired A20 seeds, §775's G16 games reused after a 32/32 sentinel): Heart 41.21% → 36.52%, −4.69 pp [−7.71, −1.66] → NOT_SHOWN; c2 dies more often in act 2 outside the boss (+3.2 pp [+0.2, +5.9]), where hallway fights dominate and the tuning never played; c2 drinks +0.068 potions per tuning fight (cloud, 2026-11-09)
+
+**Question (Philipp, 2026-11-09 20:53 CET, "lass uns c2 in ganzen läufen prüfen. node cap danach ebenfalls"):** does
+§776's pick c2 raise the A20 Heart kill rate of whole runs over §775's teacher G16 + mb4?
+**Data:** [PREREG](evidence/gumbel_tuning_20261109/wholerun/PREREG.md),
+[RESULT](evidence/gumbel_tuning_20261109/wholerun/RESULT.md), `results/result.json`, `analyze.py`.
+- New research env `STS_SILVER_GUMBEL_ROOT_UCB`, `_WIDEN_END_TURN`, `_WIDEN_CHANCE` (default off) set c2's tree
+  constants in every whole-run Gumbel search; prior weight 100 and tree prior 32 through the existing process options;
+  exit line `[silver] whole-run tree reuse:` with cap counters. Code 13bb97ec, binary b5090b16, run commit b93ecc07.
+- §775's setting (net-0420 whole OOC policy, temperature 0, no OOC MCTS, Gumbel root k 16 at flat 16,000 + mb4 in
+  every fight, Act 4 strong's budgets). 1,056 units (32 G16 sentinel + 1,024 C2), 1,056 verified, 0 bad, 0 aborts,
+  0 dropped. 145 lane-hours, 21:34-22:57 CET.
+- Sentinel: 32 of 32 G16 games identical to §775's → REUSE_VALID.
+
+**Result:** Heart kill G16 41.21%, C2 36.52%: C2 − G16 **−4.69 pp [−7.71, −1.66]**; SPRT gainer (+2 pp, alpha 0.05)
+accepts H0 at 640 seeds → **NOT_SHOWN**. Act-4 reach −4.39 pp [−7.42, −1.37], final floor −1.70; CPU 0.97× G16's.
+C2 − D +4.88 [+1.95, +7.71]; C2 − G32 −4.30 [−7.32, −1.37]. Cap resets on 4.92% of kept-or-reset reroots, 4.50% of
+simulations lost to them.
+- Descriptive (`breakdown.py`): death hazard C2 − G16 act 1 before the boss +1.8 pp [−0.1, +3.5], act 2 before the
+  boss +3.2 [+0.2, +5.9], act-1/act-2 bosses +0.8 / +1.8, act 3 before the boss −0.3, act-3 bosses −0.1 / +1.0, act 4
+  +2.2; only act 2's interval excludes 0. On stage 2's fights c2 drinks +0.068 potions per fight [+0.049, +0.086] more
+  than ctl, point estimate positive in every act and room.
+**Interpretation (Inference):** c2 was tuned on acts 1-3 elite and boss fights only; its excess deaths are resolved
+only in act 2 outside the boss, where hallway fights dominate (act 1 points the same way, unresolved), and not in act 3,
+where its tuning gain was largest. HP per elite or boss fight did
+not predict the whole-run result's sign. Untested: a hallway fight test (selffights, arm rooms 1M-3M) would measure it.
+**Decision:** NOT_SHOWN; c2 is not used. G16 + mb4 stays the teacher candidate. No default change. Test 2 of the
+PREREG (node reuse cap 262,144) runs as G16CAP − G16 after Philipp's choice of order.
+Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 145 lane-hours.
+**Knowledge impact:** combat teacher choice; tuning combat search on elite and boss HP per fight is not enough;
+confirmations belong on whole-run Heart kills.

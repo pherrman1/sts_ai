@@ -3142,7 +3142,8 @@ static std::string unsupportedSilverOption() {
         {"STS_SILVER_LEAF_HEAD", ""}, {"STS_SILVER_LEAF_HEAD_TRUNK", ""}, {"STS_SILVER_LEAF_HEAD_BLEND", ""},
         {"STS_SILVER_LEAF_HEAD_TURN_PENALTY", ""}, {"STS_SILVER_LEAF_HEAD_WIN_CAP", ""},
         {"STS_SILVER_MAX_BACKUP", ""}, {"STS_SILVER_RISK_VETO", ""},
-        {"STS_SILVER_GUMBEL_ROOT", ""}, {"STS_SILVER_GUMBEL_ROOT_MAX_BACKUP", ""},
+        {"STS_SILVER_GUMBEL_ROOT", ""}, {"STS_SILVER_GUMBEL_ROOT_MAX_BACKUP", ""}, {"STS_SILVER_GUMBEL_ROOT_UCB", ""},
+        {"STS_SILVER_GUMBEL_ROOT_WIDEN_END_TURN", ""}, {"STS_SILVER_GUMBEL_ROOT_WIDEN_CHANCE", ""},
     };
     // Vendored-only diagnostics without the STS_SILVER_ prefix.
     static const char *const kRemoved[] = {
@@ -3214,7 +3215,7 @@ int main(int argc, char **argv) {
         const bool a20WholeRun = wholeRunMode && (argc > 4 ? std::atoi(argv[4]) : 20) == 20;
         // expertreplay plays one A20 whole run per process (no sims argument).
         const bool wholeRunDefault = (wholeRunMode && argc <= 2) || a20WholeRun || mode == "expertreplay"
-            || mode == "expertfights";
+            || mode == "expertfights" || mode == "selffights";
         const bool adaptiveConfigured = std::getenv("STS_SILVER_ADAPTIVE")
             || std::getenv("STS_SILVER_ADAPTIVE_RETAINED_ONLY")
             || std::getenv("STS_SILVER_ADAPTIVE_TOP_GAP");
@@ -3954,6 +3955,13 @@ int main(int argc, char **argv) {
         if (argc != 5 || std::string(argv[2]) != "1")
             throw std::runtime_error("usage: one_combat expertfights 1 RUN.json OUT.json");
         return one_combat::expertFightsGen(argv[3], argv[4]);
+    } else if (mode == "selffights") {
+        if (argc != 5 || std::string(argv[2]) != "1")
+            throw std::runtime_error("usage: one_combat selffights 1 SEED OUT.json");
+        const std::string seed(argv[3]);
+        if (seed.empty() || seed.size() > 19 || seed.find_first_not_of("0123456789") != std::string::npos)
+            throw std::runtime_error("selffights seed must be a nonnegative integer");
+        return one_combat::selfFightsGen(std::stoull(seed), argv[4]);
     } else if (mode == "heartoutcomegen") {
         const std::string capture = argc == 6 ? argv[5] : "";
         if (argc != 6 || std::string(argv[2]) != "1"

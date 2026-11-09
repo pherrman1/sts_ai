@@ -3705,6 +3705,77 @@ int testSilverGumbelRoot() {
     for (const auto &e : u->rootNode().edges) visitedU += e.visitCount > 0;
     check(visitedU == static_cast<int>(u->rootNode().edges.size()), "k above the edge count searches every edge");
 
+    // Tuning knobs (GumbelRoot::noise, backLoaded, nonRoot) on the prior 1 / (i + 1).
+    const auto runWith = [&](std::uint64_t seed, const search::SilverSearcher::GumbelRoot &g) {
+        auto s = std::make_unique<search::SilverSearcher>(silverSearchRoot(bc), context);
+        s->riskVeto = {};
+        const auto n = s->prepareRootActions();
+        s->rootPrior.assign(n, 0.0);
+        for (std::size_t i = 0; i < n; ++i) s->rootPrior[i] = 1.0 / static_cast<double>(i + 1);
+        const auto spent = s->searchGumbelRoot(kSims, g, seed);
+        return std::make_pair(std::move(s), spent);
+    };
+    search::SilverSearcher::GumbelRoot noNoise;
+    noNoise.k = 4;
+    noNoise.noise = 0;
+    for (const std::uint64_t seed : {7ULL, 21ULL, 33ULL}) {
+        auto [z, spentZ] = runWith(seed, noNoise);
+        bool topK = true;
+        for (std::size_t i = 0; i < z->rootNode().edges.size(); ++i)
+            topK = topK && (z->rootNode().edges[i].visitCount > 0) == (i < 4);
+        check(topK, "noise 0 searches the k highest-prior edges whatever the seed");
+    }
+    search::SilverSearcher::GumbelRoot back;
+    back.k = 4;
+    back.backLoaded = true;
+    auto [bl, spentBl] = runWith(7, back);
+    std::vector<std::int32_t> blVisits;
+    std::int64_t blTotal = 0;
+    for (const auto &e : bl->rootNode().edges) {
+        blTotal += e.visitCount;
+        if (e.visitCount > 0) blVisits.push_back(e.visitCount);
+    }
+    std::sort(blVisits.begin(), blVisits.end());
+    // 2 phases: phase 0 gives each of 4 candidates (kSims / 3) / 4, phase 1 the rest to the 2 kept.
+    const std::int32_t phase0 = static_cast<std::int32_t>(kSims / 3 / 4);
+    check(blVisits.size() == 4 && blVisits[0] == phase0 && blVisits[1] == phase0,
+          "back-loaded halving gives the first phase a third of the budget");
+    check(blTotal == spentBl && spentBl <= kSims && spentBl >= kSims - 8, "back-loaded halving spends the budget");
+    search::SilverSearcher::GumbelRoot gnr;
+    gnr.k = 4;
+    gnr.nonRoot = true;
+    auto [m1, spentM1] = runWith(7, gnr);
+    auto [m2, spentM2] = runWith(7, gnr);
+    const int pickM = m1->lastGumbelEdge();
+    check(pickM >= 0 && spentM1 > 0 && spentM1 <= kSims, "Gumbel non-root selection picks a root edge in budget");
+    bool sameM = spentM1 == spentM2 && m2->lastGumbelEdge() == pickM;
+    for (std::size_t i = 0; sameM && i < m1->rootNode().edges.size(); ++i)
+        sameM = m1->rootNode().edges[i].visitCount == m2->rootNode().edges[i].visitCount;
+    check(sameM, "Gumbel non-root selection is deterministic");
+    auto [plain, spentPlain] = runWith(7, [] { search::SilverSearcher::GumbelRoot g; g.k = 4; return g; }());
+    bool sameCandidates = true;
+    for (std::size_t i = 0; i < plain->rootNode().edges.size(); ++i)
+        sameCandidates = sameCandidates
+            && (plain->rootNode().edges[i].visitCount > 0) == (m1->rootNode().edges[i].visitCount > 0);
+    check(sameCandidates, "Gumbel non-root selection leaves the sampled candidates alone");
+    // A no-op gnr would repeat the plain search (same seed, same candidates): the visits two levels below the root
+    // and the values backed up to the root's children must differ.
+    const auto below = [](const search::SilverSearcher &s) {
+        std::vector<double> sig;
+        for (const auto &e : s.rootNode().edges) {
+            if (e.node == nullptr) continue;
+            sig.push_back(e.node->evaluationSum);
+            for (const auto &c : e.node->edges) {
+                sig.push_back(c.visitCount);
+                if (c.node != nullptr)
+                    for (const auto &g : c.node->edges) sig.push_back(g.visitCount);
+            }
+        }
+        return sig;
+    };
+    check(!below(*plain).empty() && below(*plain) != below(*m1),
+          "Gumbel non-root selection changes the search below the root");
+
     a->search(500);
     check(a->lastGumbelEdge() == -1, "a plain search forgets the pick");
     int most = 0;

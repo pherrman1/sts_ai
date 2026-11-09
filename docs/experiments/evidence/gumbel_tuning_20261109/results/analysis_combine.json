@@ -1,0 +1,113 @@
+{
+ "stage": "combine",
+ "scout_units": {
+  "0": 500
+ },
+ "units": {
+  "0": 600
+ },
+ "conflicts": {},
+ "reproduction": {
+  "units_same_fights": 600,
+  "copy0_same": 14098,
+  "copy0_differ": 11
+ },
+ "reproduction_gate": {
+  "copy0_rate": 0.9992,
+  "units_rate": 1.0,
+  "threshold": 0.99,
+  "paired": true,
+  "verdict": "PAIRED"
+ },
+ "dropped": {},
+ "fights": {
+  "combine": 602
+ },
+ "result": {
+  "vs_ctl": {
+   "c1": {
+    "control": "ctl",
+    "diff": -0.711,
+    "ci": [
+     -1.256,
+     -0.184
+    ],
+    "level": 0.95
+   },
+   "c2": {
+    "control": "ctl",
+    "diff": -1.116,
+    "ci": [
+     -1.668,
+     -0.585
+    ],
+    "level": 0.95
+   },
+   "c3": {
+    "control": "ctl",
+    "diff": -0.415,
+    "ci": [
+     -1.054,
+     0.218
+    ],
+    "level": 0.95
+   },
+   "c4": {
+    "control": "ctl",
+    "diff": -0.453,
+    "ci": [
+     -0.948,
+     0.043
+    ],
+    "level": 0.95
+   },
+   "c5": {
+    "control": "ctl",
+    "diff": -0.637,
+    "ci": [
+     -1.189,
+     -0.102
+    ],
+    "level": 0.95
+   },
+   "c6": {
+    "control": "ctl",
+    "diff": 0.201,
+    "ci": [
+     -0.373,
+     0.751
+    ],
+    "level": 0.95
+   },
+   "x1": {
+    "control": "ctl",
+    "diff": -0.628,
+    "ci": [
+     -1.233,
+     -0.05
+    ],
+    "level": 0.95
+   },
+   "x2": {
+    "control": "ctl",
+    "diff": -0.44,
+    "ci": [
+     -0.972,
+     0.086
+    ],
+    "level": 0.95
+   }
+  },
+  "means": {
+   "ctl": 13.111,
+   "c1": 12.4,
+   "c2": 11.995,
+   "c3": 12.696,
+   "c4": 12.657,
+   "c5": 12.473,
+   "c6": 13.312,
+   "x1": 12.483,
+   "x2": 12.671
+  }
+ }
+}
