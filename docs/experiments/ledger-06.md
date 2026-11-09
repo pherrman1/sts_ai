@@ -26800,7 +26800,7 @@ target (g16mb, g32mb or g64mb) is Philipp's call. Seeds: none new. Cost: 304 lan
 Gumbel root at every budget tested; a session limit can silently cut a campaign's worker count, so worker
 threads must be checked after start.
 
-## §TBD — Gumbel teacher in whole runs: A20 default combat vs the Gumbel root with max backup (k 16, min 4 visits) at 16k / 32k / 64k in every fight, net-0420 out of combat, 1,024 paired A20 seeds: all three GO; Heart 31.64% → G16 41.21% (+9.57 pp [+6.64, +12.50]), G32 40.82% (+9.18), G64 40.43% (+8.79); no gain from more budget detected (G32 − G16 −0.39 [−3.22, +2.44]); G16 at 2.0× D's CPU (cloud, 2026-11-09)
+## §775 — Gumbel teacher in whole runs: A20 default combat vs the Gumbel root with max backup (k 16, min 4 visits) at 16k / 32k / 64k in every fight, net-0420 out of combat, 1,024 paired A20 seeds: all three GO; Heart 31.64% → G16 41.21% (+9.57 pp [+6.64, +12.50]), G32 40.82% (+9.18), G64 40.43% (+8.79); no gain from more budget detected (G32 − G16 −0.39 [−3.22, +2.44]); G16 at 2.0× D's CPU (cloud, 2026-11-09)
 
 **Question (Philipp, 2026-11-08 23:23 CET; Act 4 included 23:59 CET; all four arms 2026-11-09 00:52 CET):** does the
 Gumbel teacher of §770/§772/§774 (Gumbel root k 16 with max backup, min 4 visits) raise the A20 Heart kill rate of
