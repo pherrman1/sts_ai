@@ -1702,6 +1702,16 @@ std::int64_t search::SilverSearcher::searchGumbelRoot(std::int64_t simulations, 
         ~ForcedReset() { edge = -1; nonRoot = nullptr; }
     } forcedReset{forcedRootEdge, gumbelNonRoot};
     gumbelNonRoot = gumbel.nonRoot ? &gumbel : nullptr;
+    const auto observe = [&](int boundary, const std::vector<double> &scores) {
+        if (!gumbelBoundaryObserver) return;
+        std::vector<double> q(n, std::numeric_limits<double>::quiet_NaN());
+        for (int i = 0; i < n; ++i) {
+            const auto &e = root->edges[i];
+            if (e.visitCount > 0 && e.node != nullptr && e.node->simulationCount > 0) q[i] = selectionValue(*e.node);
+        }
+        gumbelBoundaryObserver({boundary, phases, spent, candidates, scores, q});
+    };
+    if (candidates.size() > 1) observe(0, base);
     for (int phase = 0; phase < phases && candidates.size() > 1; ++phase) {
         const std::int64_t left = simulations - spent;
         const int phasesLeft = phases - phase;
@@ -1719,6 +1729,7 @@ std::int64_t search::SilverSearcher::searchGumbelRoot(std::int64_t simulations, 
         std::vector<double> scores(n);
         for (const int c : candidates) scores[c] = score(c);
         std::stable_sort(candidates.begin(), candidates.end(), [&](int a, int b) { return scores[a] > scores[b]; });
+        observe(phase + 1, scores);
         candidates.resize((candidates.size() + 1) / 2);
     }
     gumbelChoice = candidates.front();

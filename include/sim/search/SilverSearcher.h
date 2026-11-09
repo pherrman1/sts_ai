@@ -420,6 +420,22 @@ namespace sts::search {
         // Returns the simulations run (at most `simulations`).
         std::int64_t searchGumbelRoot(std::int64_t simulations, const GumbelRoot &gumbel, std::uint64_t seed);
         [[nodiscard]] int lastGumbelEdge() const { return gumbelChoice; }
+        // Research only (STS_SILVER_GUMBEL_STOP_TRACE): searchGumbelRoot calls this, when set, at every
+        // sequential-halving boundary: once before the first phase (spent 0, candidates ranked by g + logit)
+        // and after each phase's scoring, before the halving. `ranked` is the candidate list in the order
+        // the search ranks it (front = the edge searchGumbelRoot would return if it stopped here), `scores`
+        // the ranking score per root edge (g + logit at the start, g + logit + sigma(q) after a phase),
+        // `q` each edge's selection value (max backup included; NaN when unvisited). The observer only
+        // reads: the search consumes no extra randomness and takes no extra steps, so play is unchanged.
+        struct GumbelBoundary {
+            int phase;      // 0 = before the first phase, p = after phase p (1-based)
+            int phases;
+            std::int64_t spent;
+            const std::vector<int> &ranked;
+            const std::vector<double> &scores;
+            const std::vector<double> &q;
+        };
+        std::function<void(const GumbelBoundary &)> gumbelBoundaryObserver;
         // Research-only playout policy for RolloutConfig::prior (same signature as nodePrior).
         std::function<std::vector<double>(const BattleContext &, const std::vector<Edge> &)> rolloutPrior;
         // STS_SILVER_LEAF_HEAD (set by NativeSilverBackend; default off): an undecided leaf is worth
