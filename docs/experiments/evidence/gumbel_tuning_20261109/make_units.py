@@ -12,7 +12,9 @@ copies 0-3 of every elite (E) and boss (B) fight of acts 1-3, the arm fights.
 
 Packages, by seed order over the scouted D0 seeds: screening = the first seeds whose arm fights reach 1,200, its
 design subset = the first seeds of it whose arm fights reach 300, combination = the next seeds to 600, confirmation =
-the next seeds to 1,200. A seed whose scout unit is not rc 0 is skipped (listed as 'failed').
+the next seeds to 1,200. A seed whose scout unit is not rc 0 is skipped (listed as 'failed'). Every unit of
+scout/units.txt must have a .done line; a missing one stops the script (re-run it first), so a lost unit cannot shift
+the packages.
 
 Units: one per (seed, act with arm fights, arm set[, copy selection]). Projected cost of one arm on one copy of a
 fight = production's mean CPU per copy there (the scout's prod arm) x SIMS x decisions / simulations of those copies
@@ -114,8 +116,17 @@ def arm_ids():
     return ids
 
 
+def scout_seeds():
+    with open(os.path.join(HERE, 'scout', 'units.txt')) as f:
+        return [int(l.split()[0]) for l in f if l.strip() and not l.startswith('#')]
+
+
 def main():
     S = scout(sys.argv[1])
+    missing = [s for s in scout_seeds() if s not in S]
+    if missing:
+        raise SystemExit(f'{len(missing)} scout units without a .done line (re-run them first): '
+                         + ' '.join(map(str, missing[:20])) + (' ...' if len(missing) > 20 else ''))
     stage = sys.argv[2]
     out = sys.argv[3] if len(sys.argv) > 3 else HERE
     P = packages(S)

@@ -3758,6 +3758,23 @@ int testSilverGumbelRoot() {
         sameCandidates = sameCandidates
             && (plain->rootNode().edges[i].visitCount > 0) == (m1->rootNode().edges[i].visitCount > 0);
     check(sameCandidates, "Gumbel non-root selection leaves the sampled candidates alone");
+    // A no-op gnr would repeat the plain search (same seed, same candidates): the visits two levels below the root
+    // and the values backed up to the root's children must differ.
+    const auto below = [](const search::SilverSearcher &s) {
+        std::vector<double> sig;
+        for (const auto &e : s.rootNode().edges) {
+            if (e.node == nullptr) continue;
+            sig.push_back(e.node->evaluationSum);
+            for (const auto &c : e.node->edges) {
+                sig.push_back(c.visitCount);
+                if (c.node != nullptr)
+                    for (const auto &g : c.node->edges) sig.push_back(g.visitCount);
+            }
+        }
+        return sig;
+    };
+    check(!below(*plain).empty() && below(*plain) != below(*m1),
+          "Gumbel non-root selection changes the search below the root");
 
     a->search(500);
     check(a->lastGumbelEdge() == -1, "a plain search forgets the pick");

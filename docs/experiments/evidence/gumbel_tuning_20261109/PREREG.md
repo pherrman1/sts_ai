@@ -39,6 +39,9 @@ selection beat UCB below the root?
   | J widening C at end-turn chance nodes | `wet<X>` | 3.7028 | 1.85 | 7.4 |
   | K widening C at other chance nodes | `wch<X>` | 3.7028 | 1.85 | 7.4 |
 
+  The letters skip I, as `design.py` and `arms.tsv` do; the plan document calls the two widening factors I and J.
+  These letters (J, K) are the ones used in the analysis and the RESULT.
+
 - **Gumbel MuZero arm (gnr):** `gsh16+flat16000+mb4+gnr`. Below the root, decision nodes select
   argmax_a [π′(a) − N(a)/(1 + ΣN)], π′ = softmax(logit + (c_visit + max N)·c_scale·q̂), logits from the node's tree
   prior (uniform below its visit threshold), q̂ the completed Q (the child's selection value, v_mix for unvisited
@@ -56,7 +59,8 @@ selection beat UCB below the root?
   the same copy seeds (seed, floor, copy). The Baalorlord set stays untouched until stage 4.
 - **Scout:** one `SEED 3 scout` unit per seed for seeds 111860000-111860499 (production: the main line, and the arm `prod` on copies 0-3 of every elite and boss fight). It fixes the fights
   per seed, the packages and the unit plan, and is the reference for the reproduction check.
-- **Packages (`make_units.py`, by seed order over the scouted seeds with rc 0):** screening = the first seeds whose
+- **Packages (`make_units.py`, by seed order over the scouted seeds with rc 0; every scout unit must have finished,
+  otherwise the script stops, so a lost unit cannot shift the packages):** screening = the first seeds whose
   elite and boss fights reach 1,200; its design subset = the first of them whose fights reach 300; combination = the
   next seeds to 600; confirmation = the next to 1,200. `packages.tsv` is committed with the stage-1 units.
 - **Stage-1 units:** design seeds play the 32 design arms, ctl and gnr; the other screening seeds ctl and gnr.
@@ -74,8 +78,10 @@ selection beat UCB below the root?
   (`conflicts`). Units with rc != 0 are excluded. A fight missing any copy of any arm of its package
   (`missing_arm`) or with an invalid copy is dropped, so the design stays balanced on every fight it uses.
 - **Reproduction (gate for the pairing):** every unit's production copy 0 equals the scout's (won, exit HP, exit max
-  HP, turns, decisions, simulations, potions used), and its fights up to its act are the scout's. Below 99% the
-  result is NOT_PAIRED and the contrasts are reported only descriptively.
+  HP, turns, decisions, simulations, potions used), and its fights up to its act are the scout's. Two rates: the
+  share of compared copy-0 fights equal to the scout's (a fight the scout lacks counts as differing) and the share of
+  units whose fights are the scout's. Both must be ≥ 99% (`reproduction_gate`); otherwise the result is NOT_PAIRED,
+  every verdict reads NOT_PAIRED and the contrasts are reported only descriptively (`descriptive_verdict`).
 - **Main effects (primary):** for each factor, mean over the design fights of (mean of the 16 design arms at the
   high level − mean of the 16 at the low level), 95% interval. ACTIVE when the interval excludes 0 (better level =
   the sign); otherwise INACTIVE. No correction across the ten factors: screening chooses what stage 2 combines, and
@@ -83,7 +89,9 @@ selection beat UCB below the root?
 - **gnr (primary):** gnr − ctl on every screening fight, 95%: GNR_HELPS (hi < 0), GNR_HURTS (lo > 0),
   GNR_INCONCLUSIVE.
 - **Secondary:** two-factor interactions by alias group (resolution IV aliases pairs with pairs); curvature = mean of
-  the 32 design arms − ctl; each design arm − ctl; mean CPU per copy by arm.
+  the 32 design arms − ctl, reported raw and adjusted: the control sits at the +1 end of C and the −1 end of D, so
+  the raw value also holds −½·main(C) + ½·main(D), and the adjusted one adds ½·main effect × control level back for
+  C and D; each design arm − ctl; mean CPU per copy by arm.
 
 ## Later stages (rules fixed now, arms filled in from the results)
 
@@ -95,7 +103,8 @@ selection beat UCB below the root?
   parameters). Stage 2 is a pick, not a test.
 - **Stage 3, confirmation (1,200 fresh fights, `analyze.py confirm`, pre-registered here):** the pick at 16,000 vs ctl
   and the pick with flat64000 vs `gsh16+flat64000+mb4`, each 97.5% (Bonferroni over the two). Primary: pick − ctl at
-  16k, hi < 0 → TUNED_TEACHER_BETTER; lo > −0.3 → NO_TUNING_GAIN; otherwise INCONCLUSIVE. 64k is reported with the
+  16k, hi < 0 → TUNED_TEACHER_BETTER; lo > 0 → TUNED_TEACHER_WORSE; lo > −0.3 → NO_TUNING_GAIN; otherwise
+  INCONCLUSIVE. 64k is reported with the
   same rule as secondary.
 - **Stage 4, test set (once):** the pick at 16k on §711's Baalorlord runs through `one_combat expertfights` (§772's
   units and copy seeds), compared with §772's `gsh16+flat16000+mb4` arm. Reported in the ledger; nothing is tuned on
@@ -105,7 +114,11 @@ selection beat UCB below the root?
 
 ## Smoke and equivalence (local, 4 cores, 2026-11-09 CET)
 
-- **Unit test:** `apps/test` `testSilverGumbelRoot` (extended for noise 0, back-loaded halving and gnr) passes.
+- **Unit test:** `apps/test` `testSilverGumbelRoot` (extended for noise 0, back-loaded halving and gnr, including a
+  check that gnr changes the visits and values below the root against plain UCB on the same seed) passes.
+- **After the port onto main 117844bc (binary e5ba1aad):** the equivalence check below gives 71 of 71 copies equal
+  again, and the scout unit of 111860000 and the arm unit `111860000 1` (ctl, gnr, d01, d02) equal the pre-port runs
+  in every field except `producerSha` and the per-copy `combatNetPriors` from #1016 (0 everywhere).
 - **Default-valued parts change nothing, the refactor changes nothing:** `one_combat expertfights` on §772's
   Baalorlord run 1697737447 act 1 with `gsh16+flat16000+mb4` and with
   `gsh16+flat16000+mb4+gcs1+gnz1+ucb25+pw400+tp8+wet3.7028+wch3.7028` (every new part at its control value), compared
