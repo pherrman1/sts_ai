@@ -1,11 +1,11 @@
-# Worker brief: gumbel-wholerun-trace (20 workers)
+# Worker brief: gumbel-wholerun-trace (40 workers)
 
 Authorization: Philipp 2026-11-10 00:22 CET "Jo klingt gut, go" (trajectory-review thread) to the traced replay of
-D and G16 on the §775 seeds, about 218 lane-hours, workers shared with the node-cap test.
+D and G16 on the §775 seeds, about 218 lane-hours, on the 40 workers after the node-cap test.
 RUN_COMMIT=<RUN_COMMIT>   (set in the share copy of this brief after the prelaunch review)
 CODE_COMMIT=5665d5aefa92c9971dbf8d1005d5e72e21eec795
 
-YOUR WORKER NUMBER: W=<n>   (pass it unpadded, 1..20; never 03)
+YOUR WORKER NUMBER: W=<n>   (pass it unpadded, 1..40; never 03)
 CAMPAIGN=docs/experiments/evidence/gumbel_wholerun_trace_20261109
 Work in /home/user/sts_ai. Run nothing from /mnt/project-files (noexec). Do not change seeds, scripts, environments,
 binary, models or timeouts. The worker script uploads only to /mnt/project-files/gumbel-wholerun-trace (units/,
@@ -25,4 +25,4 @@ Stay alive until the author thread says your tar is verified. If the author asks
 bash tools/cloud/worker.sh stop $CAMPAIGN <n> (no new units; running ones finish), then keep the wait running.
 If any step is refused or prints STOP, reply with the exact output and stop. Do not work around it.
 Expect 10-80 min per unit (several seeds, arms D and G16 each), 4 units at a time; 271 units shared by the workers
-through the queue, about 3 h in all on 20 workers. Share footprint about 1,200 files and 15 MB.
+through the queue, about 1.5 h in all on 40 workers. Share footprint about 1,200 files and 15 MB.

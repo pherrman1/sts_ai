@@ -9,9 +9,13 @@ OUT_ROOT: one directory per unit (pNNN_<seeds>/) with ARM-SEED.{done,log,err,env
 (<seed>_low/ARM-SEED.{done,log,err}).
 1. Reproduction (validity): a game reproduces if rc 0 in both runs and the final BEST line (win, floor, hp_end), the
    [heart1_ppo] game line and, for G16, the [silver] whole-run Gumbel roots/sims line equal §775's. Only seeds whose two
-   games both reproduce are analysed; the others are listed. More than 10 non-reproducing games = REPRO_FAIL in the
-   output (the tables are still written, on the reproducing seeds).
-2. Per fight class (act x room; Act 4: Shield and Spear, Heart): fights, deaths per fight, HP lost per won fight
+   games both reproduce are analysed; the others are listed, and seeds without any unit output (a unit that failed
+   all attempts) are listed as missing_seeds. More than 10 non-reproducing games plus missing seeds = REPRO_FAIL in
+   the output (the tables are still written, on the reproducing seeds). Combat aborts (abort=1 in .done) are counted
+   per arm: the aborted fight is not in the trace (review K N2).
+   A Smoke Bomb escape (won false, escaped true) is never a death: it has its own rate, its post HP counts in the
+   first divergence, and it is never a death cause (review K F2).
+2. Per fight class (act x room; Act 4: Shield and Spear, Heart): fights, deaths and escapes per fight, HP lost per won fight
    (pre HP - post HP; post includes on-victory heals such as Burning Blood), potions used per fight (held before -
    held after, at least 0), turns. Arm means over all their fights; G16 - D with a seed-cluster bootstrap (10,000
    resamples, seed 20261110) of the ratio of sums.
@@ -55,7 +59,7 @@ def summary(d, arm, seed):
         return None
     p = PPO.findall(log + "\n" + err)
     g = GUM.findall(err)
-    return (m.groups(), p[-1] if p else None, g[-1] if g else None)
+    return (m.groups(), p[-1] if p else None, g[-1] if g else None, kv.get("abort") == "1")
 
 
 def fights(path):
@@ -66,6 +70,10 @@ def fights(path):
             if r.get("kind") == "battle":
                 out.append(r)
     return out
+
+
+def dead(r):
+    return not r["won"] and not r.get("escaped", False)
 
 
 def fclass(r):
@@ -107,23 +115,27 @@ def analyse(out_root, ref_root):
         ok = True
         for arm in ARMS:
             got, ref = summary(d, arm, seed), summary(ref_root / f"{seed}_low", arm, seed)
-            if got is None or ref is None or got[0] != ref[0] or got[1] != ref[1] or (arm == "G16" and got[2] != ref[2]):
+            if got is None or ref is None or got[:2] != ref[:2] or (arm == "G16" and got[2] != ref[2]):
                 repro_bad.append(f"{arm}-{seed}")
                 ok = False
         if ok:
-            data[seed] = {arm: dict(win=float(summary(d, arm, seed)[0][0]) > 50,
+            data[seed] = {arm: dict(win=float(summary(d, arm, seed)[0][0]) > 50, abort=summary(d, arm, seed)[3],
                                     fights=fights(d / f"{arm}-{seed}.trace.jsonl.gz")) for arm in ARMS}
     rng = np.random.default_rng(20261110)
-    res = dict(seeds_replayed=len(where), seeds_analysed=len(data),
-               non_reproducing=repro_bad, verdict="REPRO_FAIL" if len(repro_bad) > 10 else "REPRO_OK")
+    missing = [s for s in SEEDS if s not in where]
+    res = dict(seeds_replayed=len(where), seeds_analysed=len(data), missing_seeds=missing,
+               non_reproducing=repro_bad,
+               verdict="REPRO_FAIL" if len(repro_bad) + len(missing) > 10 else "REPRO_OK",
+               aborts={arm: sum(g[arm]["abort"] for g in data.values()) for arm in ARMS})
     # 2. per fight class
-    acc = defaultdict(lambda: {m: {arm: {} for arm in ARMS} for m in ("death", "hp_lost", "potions", "turns")})
+    acc = defaultdict(lambda: {m: {arm: {} for arm in ARMS} for m in ("death", "escape", "hp_lost", "potions", "turns")})
     for seed, g in data.items():
         for arm in ARMS:
             for r in g[arm]["fights"]:
                 c = acc[fclass(r)]
                 won = bool(r["won"])
-                for m, num, den in (("death", 0.0 if won else 1.0, 1.0),
+                for m, num, den in (("death", 1.0 if dead(r) else 0.0, 1.0),
+                                    ("escape", 1.0 if (not won and not dead(r)) else 0.0, 1.0),
                                     ("hp_lost", r["pre"]["hp"] - r["post"]["hp"] if won else 0.0, 1.0 if won else 0.0),
                                     ("potions", max(0, len(r["pre"]["potions"]) - len(r["post"]["potions"])), 1.0),
                                     ("turns", r["turns"], 1.0)):
@@ -157,12 +169,16 @@ def analyse(out_root, ref_root):
     disc = {arm: Counter() for arm in ARMS}
     for seed, g in data.items():
         for arm in ARMS:
-            lost = [r for r in g[arm]["fights"] if not r["won"]]
-            if not g[arm]["win"] and lost:
-                key = f"{fclass(lost[-1])} {lost[-1]['encounter']}"
-                cause[arm][key] += 1
-                if g["G16" if arm == "D" else "D"]["win"]:
-                    disc[arm][fclass(lost[-1])] += 1
+            if g[arm]["win"]:
+                continue
+            lost = [r for r in g[arm]["fights"] if dead(r)]
+            if lost:
+                key, cls = f"{fclass(lost[-1])} {lost[-1]['encounter']}", fclass(lost[-1])
+            else:
+                key = cls = "abort (fight not traced)" if g[arm]["abort"] else "no death fight (ended alive)"
+            cause[arm][key] += 1
+            if g["G16" if arm == "D" else "D"]["win"]:
+                disc[arm][cls] += 1
     res["death_cause_top"] = {arm: cause[arm].most_common(25) for arm in ARMS}
     res["death_class_discordant"] = {arm: dict(disc[arm]) for arm in ARMS}
     # 5. first divergence
@@ -173,9 +189,9 @@ def analyse(out_root, ref_root):
             if ra["pre"] != rb["pre"]:
                 break   # states already differ (should not happen before a divergent post)
             if ra["post"] != rb["post"] or ra["won"] != rb["won"]:
-                ha = ra["post"]["hp"] if ra["won"] else 0
-                hb = rb["post"]["hp"] if rb["won"] else 0
-                fd[fclass(ra)].append((hb - ha, int(not rb["won"]) - int(not ra["won"])))
+                ha = 0 if dead(ra) else ra["post"]["hp"]
+                hb = 0 if dead(rb) else rb["post"]["hp"]
+                fd[fclass(ra)].append((hb - ha, int(dead(rb)) - int(dead(ra))))
                 break
     out = {}
     for k, v in sorted(fd.items()):
@@ -192,6 +208,8 @@ def self_test():
     r = {"pre": {"act": 1, "hp": 50}, "encounter": "JAW_WORM", "room": "NORMAL"}
     assert fclass(r) == "A1 NORMAL"
     assert fclass({"pre": {"act": 4}, "encounter": "THE_HEART", "room": "BOSS"}) == "A4 Heart"
+    assert dead({"won": False, "escaped": False}) and not dead({"won": False, "escaped": True})
+    assert not dead({"won": True, "escaped": False})
     ps = {"D": {1: (10.0, 2.0), 2: (0.0, 1.0)}, "G16": {1: (3.0, 2.0), 2: (3.0, 1.0)}}
     x = ratio_boot(ps, np.random.default_rng(0))
     assert abs(x["D"] - 10 / 3) < 1e-3 and abs(x["G16"] - 2.0) < 1e-3
@@ -206,4 +224,5 @@ if __name__ == "__main__":
         sys.exit(__doc__)
     res = analyse(sys.argv[1], sys.argv[2])
     Path(sys.argv[3]).write_text(json.dumps(res, indent=1))
-    print(json.dumps({k: res[k] for k in ("seeds_replayed", "seeds_analysed", "verdict")}), len(res["non_reproducing"]))
+    print(json.dumps({k: res[k] for k in ("seeds_replayed", "seeds_analysed", "verdict", "aborts")}),
+          "non_reproducing", len(res["non_reproducing"]), "missing", len(res["missing_seeds"]))

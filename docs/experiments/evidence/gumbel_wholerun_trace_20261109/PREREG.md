@@ -1,7 +1,7 @@
 # Traced replay of the §775 whole-run Gumbel test, arms D and G16 (pre-registration)
 
 Authorization: Philipp 2026-11-10 00:22 CET ("Jo klingt gut, go", trajectory-review thread) to the plan "Spur-Replay von
-D und G16 mit etwa 218 Lane-Stunden" on up to 40 workers shared with the node-cap test (20 planned here).
+D und G16 mit etwa 218 Lane-Stunden" on 40 workers, which the coordinator assigns after the node-cap test.
 Context: rank 1 of the trajectory review (https://claude.ai/artifact/48KD6wyhCLC8GZHzbEAVSR, addendum). §775's logs
 hold one summary line per game, so HP per fight, HP and potions at boss entry and the fight that killed a run are
 missing. The end-floor analysis attributes 42% of G16's Heart-kill gain to Act 1-3 path floors, which the HP-per-fight
