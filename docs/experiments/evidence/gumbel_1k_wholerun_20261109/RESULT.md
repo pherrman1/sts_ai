@@ -49,9 +49,11 @@ G1 − B1 = **+0.39 pp [−3.52, +4.10]** (95% seed bootstrap, 10,000 resamples)
 ## Reading (Inference)
 
 At combat B's budget the Gumbel root (k 16, max backup 4) neither helps nor costs: its Heart rate is B1's within
-±4 pp. §775's +9.57 pp of G16 + mb4 over D, and its +18.6 pp over B1 here, come from the 16× larger budget and Act 4
-strong's budgets, not from the Gumbel root at equal budget. Both 1,000-simulation arms are about 9 pp below the A20
-default combat D, which uses 10,000 simulations with the learned stop at 13× B1's CPU.
+±4 pp. The test measures the root only at 1,000 simulations. B1 → §775's G16 + mb4 (+18.6 pp here) changes the
+budget, Act 4 strong's budgets and the root at once, so this test does not split that gain into a budget share and a
+root share at 16,000; at 16,000 the root did help at equal budget on elite and boss fights (§772: flat 16k 11.50 HP vs
+G16k 10.71 HP per fight). Both 1,000-simulation arms are about 9 pp below the A20 default combat D, which uses 10,000
+simulations with the learned stop at 13× B1's CPU.
 
 ## Decision
 
