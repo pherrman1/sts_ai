@@ -26760,7 +26760,7 @@ with fewer HP lost when stage 2's policy-only net supplies Silver's root prior i
 change production's fights at equal budget; the learned stop over a flat budget of equal mean size is again worth
 about 0.2 HP per fight.
 
-## §TBD — Max backup at 32k and 64k simulations under the Gumbel root on §770's elite and boss states (1,878 fights × 4 copies): max backup (min 4 visits) still helps, 64k −0.38 [−0.62, −0.13] and 32k −0.29 [−0.57, −0.01] HP per fight (97.5%) → MB_HELPS_AT_HIGH_BUDGET; with max backup, 64k beats 16k by −0.46 [−0.70, −0.21] and 32k by −0.25 [−0.46, −0.03] → MORE_SIMS_HELP_WITH_MB; gsh16+flat64000+mb4 loses 9.97 HP per fight, 0.74 less than g16, at 12.8× production's CPU (cloud, 2026-11-09)
+## §774 — Max backup at 32k and 64k simulations under the Gumbel root on §770's elite and boss states (1,878 fights × 4 copies): max backup (min 4 visits) still helps, 64k −0.38 [−0.62, −0.13] and 32k −0.29 [−0.57, −0.01] HP per fight (97.5%) → MB_HELPS_AT_HIGH_BUDGET; with max backup, 64k beats 16k by −0.46 [−0.70, −0.21] and 32k by −0.25 [−0.46, −0.03] → MORE_SIMS_HELP_WITH_MB; gsh16+flat64000+mb4 loses 9.97 HP per fight, 0.74 less than g16, at 12.8× production's CPU (cloud, 2026-11-09)
 
 **Question (Philipp, 2026-11-08 20:24 CET; go for 40 cloud workers 21:09 CET):** §772 found two gains over §770's
 Gumbel root at 16k (g16): more simulations, and max backup at 16k. Does max backup still help at 32k and 64k (A)? Does
