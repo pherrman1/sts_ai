@@ -26891,3 +26891,25 @@ PREREG (node reuse cap 262,144) runs as G16CAP − G16 after Philipp's choice of
 Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 145 lane-hours.
 **Knowledge impact:** combat teacher choice; tuning combat search on elite and boss HP per fight is not enough;
 confirmations belong on whole-run Heart kills.
+
+## §TBD — Gumbel root at combat B's budget in whole runs: G16 + mb4 at 1,000 simulations (G1) against combat B (B1), net-0420 out of combat, §775's first 512 paired A20 seeds: Heart 21.88% → 22.27%, +0.39 pp [−3.52, +4.10] → NO_DIFFERENCE_SHOWN; both about 9 pp below D and 18 pp below G16 + mb4 (cloud, 2026-11-09)
+
+**Question (Philipp, 2026-11-09 23:35 CET, "Kannst du mal schnell gumbel mit 1k sims anstatt 16k sims auf 512 seeds
+auf 40 workern laufen lassen?"):** does §775's Gumbel root (k 16, max backup 4) raise the Heart kill rate at the
+budget of combat B, the combat net-0420 was trained with?
+**Data:** [PREREG](evidence/gumbel_1k_wholerun_20261109/PREREG.md),
+[RESULT](evidence/gumbel_1k_wholerun_20261109/RESULT.md), `results/result.json`, `analyze.py` (frozen 325c62b3).
+- B1 = combat B (`ppo_long_c_20261106/actors_frozen.env`): flat Silver 1,000, learned stop off, Act 4 strong off.
+  G1 = B1 plus `STS_SILVER_GUMBEL_ROOT=16 STS_SILVER_GUMBEL_ROOT_MAX_BACKUP=4`, Act 4 included. No code change: code
+  13bb97ec, binary b5090b16, run commit dc08a78e. J prelaunch PASS.
+- 512 units (one seed, both arms), 512 verified, 0 drops, 0 aborts. 5.4 lane-hours, 23:48-23:54 CET.
+
+**Result:** Heart B1 21.88%, G1 22.27%: G1 − B1 **+0.39 pp [−3.52, +4.10]** → **NO_DIFFERENCE_SHOWN**; CPU 0.95×.
+Act-4 reach −3.91 pp [−8.01, +0.20]. On the same seeds §775's D 30.86% and G16 + mb4 40.43%: G1 − D −8.59
+[−12.30, −4.88], G1 − G16 −18.16 [−22.27, −14.26]. G16 + mb4 costs 26.6× B1's CPU per run (509 s vs 19.1 s).
+**Interpretation (Inference):** at equal budget the Gumbel root adds nothing measurable; §775's teacher gain comes
+from the budget (16,000 and Act 4 strong's), not from the Gumbel root itself.
+**Decision:** NO_DIFFERENCE_SHOWN; the Gumbel root at 1,000 is not proposed for the PPO actors. No default change.
+Seeds: §775's 111378256-111378767 reused (no new seeds). Cost: 5.4 lane-hours.
+**Knowledge impact:** combat teacher and PPO actor combat choice; a better teacher needs budget, not the Gumbel root
+at combat B's budget.
