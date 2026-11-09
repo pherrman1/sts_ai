@@ -12,11 +12,15 @@ proxy (§770, §772, §774: elite and boss fights only) never measured.
 - Replays, not new games: seeds 111378256-111379279 (the §775 block, no new seeds), arms D (A20 default combat) and
   G16 (Gumbel root k 16 + max backup 4 at 16k in every fight), net-0420 as the whole out-of-combat policy, the same
   binary (0eabb014, code 5665d5ae, from the cache), the same environment as §775's run_unit.sh, plus
-  STS_OOC_DECISION_TRACE (apps/one_combat/run_driver.cpp), which only reads state. One unit per seed (D, then G16).
+  STS_OOC_DECISION_TRACE (apps/one_combat/run_driver.cpp), which only reads state. Per seed D, then G16.
+- Units: make_units.py packs consecutive seeds into 271 units of at most 3,600 s of §775 wall (D + G16) or 12 seeds;
+  the longest unit is about 78 min, the mean about 48 min. Packing keeps the share's file count down: the share is near
+  its 50,000-file limit while the node-cap test runs.
 - Determinism check before freezing: 6 local replays (D and G16 on 111378256, 111378337, 111378451) with this binary
   and the games' own .env reproduced §775 exactly, including G16's Gumbel root and simulation counts, and this
-  run_unit.sh on 111378484 and 111379153 also reproduced them. The tuning thread re-checked 32/32 G16 games.
-- Cost: §775's walls for D and G16 add up to 218 lane-hours (D 72, G16 146), about 2.7 h on 20 workers x 4 lanes.
+  run_unit.sh on 111378484 and 111379153 (one unit) also reproduced them. The tuning thread re-checked 32/32 G16 games.
+- Cost: §775's walls for D and G16 add up to 218 lane-hours (D 72, G16 146), about 2.7 h on 20 workers x 4 lanes
+  plus the tail of the last units, or about 1.4 h on 40 workers.
 
 ## Analysis (analyze.py, frozen; descriptive, no gate, no default change)
 
@@ -38,5 +42,6 @@ Result goes to RESULT.md and a ledger entry (descriptive).
 ## Outputs
 
 Per game ARM-SEED.{done,log,err,env} and ARM-SEED.trace.jsonl.gz (a G16 Heart-kill trace is about 8 KB gzipped).
-Share /mnt/project-files/gumbel-wholerun-trace (about 1,024 unit tars plus claims). Snapshot claims/ into claims.txt
-before any cleanup of claims/.
+Share /mnt/project-files/gumbel-wholerun-trace: about 1,200 files in all (271 unit tars, about 900 claim files at 3 per
+claim, up to 20 wWW.DONE.json, the brief) and about 15 MB. Snapshot claims/ into claims.txt before any cleanup of
+claims/.

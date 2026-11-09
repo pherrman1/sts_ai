@@ -4,7 +4,7 @@
     python3 analyze.py OUT_ROOT REF_ROOT result.json
     python3 analyze.py --self-test
 
-OUT_ROOT: one directory per unit (<seed>/) with ARM-SEED.{done,log,err,env,trace.jsonl.gz} from run_unit.sh
+OUT_ROOT: one directory per unit (pNNN_<seeds>/) with ARM-SEED.{done,log,err,env,trace.jsonl.gz} from run_unit.sh
 (verify_campaign.py --extract DIR writes DIR/out/units/<unit>/). REF_ROOT: the extracted §775 units
 (<seed>_low/ARM-SEED.{done,log,err}).
 1. Reproduction (validity): a game reproduces if rc 0 in both runs and the final BEST line (win, floor, hp_end), the
@@ -95,9 +95,14 @@ def ratio_boot(per_seed, rng):
 def analyse(out_root, ref_root):
     out_root, ref_root = Path(out_root), Path(ref_root)
     repro_bad, data = [], {}
+    where = {}
+    for done in out_root.glob("*/*.done"):
+        arm, seed = done.stem.rsplit("-", 1)
+        if arm in ARMS:
+            where.setdefault(int(seed), done.parent)
     for seed in SEEDS:
-        d = out_root / str(seed)
-        if not d.is_dir():
+        d = where.get(seed)
+        if d is None:
             continue
         ok = True
         for arm in ARMS:
@@ -109,7 +114,7 @@ def analyse(out_root, ref_root):
             data[seed] = {arm: dict(win=float(summary(d, arm, seed)[0][0]) > 50,
                                     fights=fights(d / f"{arm}-{seed}.trace.jsonl.gz")) for arm in ARMS}
     rng = np.random.default_rng(20261110)
-    res = dict(seeds_replayed=sum((out_root / str(s)).is_dir() for s in SEEDS), seeds_analysed=len(data),
+    res = dict(seeds_replayed=len(where), seeds_analysed=len(data),
                non_reproducing=repro_bad, verdict="REPRO_FAIL" if len(repro_bad) > 10 else "REPRO_OK")
     # 2. per fight class
     acc = defaultdict(lambda: {m: {arm: {} for arm in ARMS} for m in ("death", "hp_lost", "potions", "turns")})

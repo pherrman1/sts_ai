@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# usage: run_unit.sh REPO RUN UNIT_OUT SEED -- traced replay of the §775 games of one seed (PREREG.md): arms D and G16
+# usage: run_unit.sh REPO RUN UNIT_OUT LABEL SEED... -- traced replay of the §775 games of the unit's seeds (PREREG.md;
+# units.txt packs consecutive seeds into units of about 1 h, make_units.py): per seed arms D and G16
 # exactly as in docs/experiments/evidence/gumbel_wholerun_20261108/run_unit.sh (same binary 0eabb014, same environment,
 # same net-0420), plus STS_OOC_DECISION_TRACE, which only reads state: one JSON line per out-of-combat step and per
 # battle (encounter, room, won, turns, HP / max HP / gold / deck / relics / potions before and after). The trace is
@@ -7,11 +8,16 @@
 # Exits 0 (each game's ARM-SEED.done holds its rc), except when a game was killed by a signal (rc 137/143, issue #1001):
 # then exit 3, so the queue re-runs the unit as a new attempt. A timeout (rc 124) is final and counts as a drop.
 set -uo pipefail
-REPO=$1 RUN=$2 OUT=$3 SEED=$4
+REPO=$1 RUN=$2 OUT=$3 LABEL=$4
+shift 4
+[[ "$LABEL" =~ ^p[0-9]{3}$ ]] || { echo "bad unit label $LABEL" >&2; exit 2; }
+[ $# -ge 1 ] || { echo "no seeds" >&2; exit 2; }
 [ "$(sha256sum < "$RUN/net-0420.bin" | cut -c1-16)" = 8c0bd16c31499270 ] || { echo "bad $RUN/net-0420.bin" >&2; exit 2; }
-if ! { [ "$SEED" -ge 111378256 ] && [ "$SEED" -le 111379279 ]; }; then
-  echo "seed $SEED outside the §775 block" >&2; exit 2
-fi
+for SEED in "$@"; do
+  if ! { [[ "$SEED" =~ ^[0-9]+$ ]] && [ "$SEED" -ge 111378256 ] && [ "$SEED" -le 111379279 ]; }; then
+    echo "seed $SEED outside the §775 block" >&2; exit 2
+  fi
+done
 mkdir -p "$OUT"
 COMMON=("PATH=/usr/local/bin:/usr/bin:/bin" "HOME=$HOME" "STS_EXECUTABLE_GIT_SHA=$(git -C "$REPO" rev-parse HEAD)"
   OMP_NUM_THREADS=1 OMP_DYNAMIC=FALSE
@@ -31,6 +37,7 @@ COMMON=("PATH=/usr/local/bin:/usr/bin:/bin" "HOME=$HOME" "STS_EXECUTABLE_GIT_SHA
 BANNER="[silver] research search: whole-run Gumbel root k=16 max backup=4 (all acts)"
 cd "$REPO" || exit 2
 killed=0
+for SEED in "$@"; do
 for ARM in D G16; do
   case $ARM in
     D) SIMS=10000; X=() ;;
@@ -63,7 +70,8 @@ for ARM in D G16; do
   fi
   [ -f "$b.trace.jsonl" ] && gzip -n -9 "$b.trace.jsonl"
   echo "tag=$ARM-$SEED rc=$rc start=$start wall=$(( $(date +%s)-t0 )) abort=$abort" > "$b.done"
-  case $rc in 137|143) killed=1 ;; esac
+  case $rc in 137|143) killed=1; break 2 ;; esac
+done
 done
 [ "$killed" = 0 ] || exit 3
 exit 0
