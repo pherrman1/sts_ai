@@ -26834,7 +26834,7 @@ Seeds: 111378256-111379279 used (smokes 111379280-111379289). Cost: 956 lane-hou
 **Knowledge impact:** the combat plan (teacher choice: G16 + mb4, not more budget) and the Gumbel tuning scout (#1019,
 control g16 + flat16000 + mb4). Whole-run winrate, not HP per fight, should rank combat teachers.
 
-## §TBD-a — Gumbel teacher tuning, stages 1-2 on D0's elite and boss fights (selffights, 4 copies, paired): Gumbel MuZero's non-root selection hurts, +1.58 HP per fight [+1.14, +2.02] → GNR_HURTS; of ten tree and root factors only five below the root are active, the end-turn widening most (C 1.85 → 7.4: −1.13 [−1.35, −0.91]); no screening corner beats the control; stage 2 picks c2 = ucb 12.5, prior weight 100, tree prior from 32 visits, end-turn widening 14.8, chance widening 1.85 at −1.12 HP per fight [−1.67, −0.59] vs g16 + flat16000 + mb4 (cloud, 2026-11-09)
+## §776 — Gumbel teacher tuning, stages 1-2 on D0's elite and boss fights (selffights, 4 copies, paired): Gumbel MuZero's non-root selection hurts, +1.58 HP per fight [+1.14, +2.02] → GNR_HURTS; of ten tree and root factors only five below the root are active, the end-turn widening most (C 1.85 → 7.4: −1.13 [−1.35, −0.91]); no screening corner beats the control; stage 2 picks c2 = ucb 12.5, prior weight 100, tree prior from 32 visits, end-turn widening 14.8, chance widening 1.85 at −1.12 HP per fight [−1.67, −0.59] vs g16 + flat16000 + mb4 (cloud, 2026-11-09)
 
 **Question (Philipp, 2026-11-08 ~23:00 CET; plan approved 23:54 CET):** which Gumbel root and tree constants make §775's
 teacher (Gumbel root k 16, flat 16,000, max backup from 4 visits) lose fewer HP per elite or boss fight, and does
@@ -26856,14 +26856,14 @@ Curvature (design mean − ctl, adjusted) +1.08 [+0.56, +1.57]; no design arm be
 **Interpretation (Inference):** the root constants are flat over these ranges; what matters is below the root, mainly
 how many end-turn chance outcomes a node widens to. Stage 2 is a pick, not a test.
 **Decision:** c2 goes to a confirmation; Philipp (2026-11-09 20:53 CET) replaced the pre-registered stage 3 (paired
-fights at 16k and 64k) by a whole-run test (§TBD-b). gnr is dropped. No default change.
+fights at 16k and 64k) by a whole-run test (§777). gnr is dropped. No default change.
 Seeds: D0's 111860000-111860499 reused (no new seeds). Cost: about 940 lane-hours.
 **Knowledge impact:** Gumbel teacher constants; selffights as a cheap paired fight bench on production states.
 
-## §TBD-b — Gumbel tuning pick c2 in whole runs against §775's G16 + mb4 (net-0420 out of combat, 1,024 paired A20 seeds, §775's G16 games reused after a 32/32 sentinel): Heart 41.21% → 36.52%, −4.69 pp [−7.71, −1.66] → NOT_SHOWN; c2 dies more often in act 2 outside the boss (+3.2 pp [+0.2, +5.9]), where hallway fights dominate and the tuning never played; c2 drinks +0.068 potions per tuning fight (cloud, 2026-11-09)
+## §777 — Gumbel tuning pick c2 in whole runs against §775's G16 + mb4 (net-0420 out of combat, 1,024 paired A20 seeds, §775's G16 games reused after a 32/32 sentinel): Heart 41.21% → 36.52%, −4.69 pp [−7.71, −1.66] → NOT_SHOWN; c2 dies more often in act 2 outside the boss (+3.2 pp [+0.2, +5.9]), where hallway fights dominate and the tuning never played; c2 drinks +0.068 potions per tuning fight (cloud, 2026-11-09)
 
 **Question (Philipp, 2026-11-09 20:53 CET, "lass uns c2 in ganzen läufen prüfen. node cap danach ebenfalls"):** does
-§TBD-a's pick c2 raise the A20 Heart kill rate of whole runs over §775's teacher G16 + mb4?
+§776's pick c2 raise the A20 Heart kill rate of whole runs over §775's teacher G16 + mb4?
 **Data:** [PREREG](evidence/gumbel_tuning_20261109/wholerun/PREREG.md),
 [RESULT](evidence/gumbel_tuning_20261109/wholerun/RESULT.md), `results/result.json`, `analyze.py`.
 - New research env `STS_SILVER_GUMBEL_ROOT_UCB`, `_WIDEN_END_TURN`, `_WIDEN_CHANCE` (default off) set c2's tree
