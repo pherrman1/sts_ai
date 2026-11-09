@@ -59,9 +59,9 @@ non-boss sections mix hallway, elite and event fights), hazard = deaths among ru
 | act 2, floors 17-32 | 151 / 815 | 129 / 839 | +3.2 [+0.2, +5.9] |
 | act-2 boss (33) | 71 / 664 | 63 / 710 | +1.8 [−0.8, +4.4] |
 | act 3, floors 34-49 | 53 / 593 | 60 / 647 | −0.3 [−3.0, +2.4] |
-| act-3 boss 1 (50) | 39 / 540 | 43 / 587 | −0.1 [−2.7, +2.4] |
+| act-3 boss 1 (50) | 39 / 540 | 43 / 587 | −0.1 [−2.6, +2.4] |
 | act-3 boss 2 (51) | 42 / 501 | 40 / 544 | +1.0 [−1.8, +4.0] |
-| act 4 (52-56) | 85 / 459 | 82 / 504 | +2.2 [−1.9, +6.4] |
+| act 4 (52-56) | 85 / 459 | 82 / 504 | +2.2 [−1.9, +6.3] |
 
 On the 252 seeds with different outcomes the loser died in acts 1-2 outside the bosses on 61 seeds where only G16
 killed and on 32 where only C2 killed.
