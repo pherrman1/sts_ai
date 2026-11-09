@@ -16,4 +16,6 @@ reroots, above the PREREG's 1% skip line, so the test runs.
   is one directory holding Test 1's extracted units (1,056, with the 32 sentinel G16 games) and this campaign's
   (1,024): `python3 -I ../wholerun/analyze.py NEW_UNITS REF_UNITS OUT [CLAIMS_LIST]`. Gate as Test 1: SPRT gainer
   (H1 +2 pp, alpha 0.05, beta 0.05, look 64), every seed runs; `verify_campaign.py` 1,024 of 1,024 before the analysis.
+- Smoke (local, 2026-11-10 00:25 CET): G16CAP-111379281 (a smoke seed) rc 0 in 42 s, log shows "research node reuse
+  cap 262144" and the tree reuse line with reuse_cap=262144, 0 cap resets.
 - Cost: about 165 lane-hours (G16's 512 s per run × 1.1 for the larger cap, PREREG).
