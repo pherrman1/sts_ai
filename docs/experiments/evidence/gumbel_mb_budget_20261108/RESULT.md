@@ -11,6 +11,8 @@ to §772 ([Gumbel budget check](../gumbel_budget_20261108/RESULT.md)).
 - The first unit started at 21:47 CET on 2026-11-08, the first tar was uploaded at 22:14 CET, and the last at 04:53
   CET on 2026-11-09. Unit wall time sums to 304 lane-hours (projected 332). The median unit took 8.7 min, the longest
   2.7 h (`1655315178 3 g64mb 50:1`, one copy of an act-3 boss at 64k).
+- `units.txt` has 76 units with a copy selection: 35 single copies and 41 with the rest of their act. The PREREG's
+  "76 of them single copies" miscounts them (prelaunch review note N1); the frozen `units.txt` is what ran.
 - 1,187 units were claimed on a first attempt and 8 on a second. The 8 first attempts were lost when the containers
   of W6 and W12 restarted; none of them uploaded a tar.
 - `verify_campaign.py`: 1,187 of 1,187 units OK, 0 extra tars, all from run 1a296818.
@@ -31,7 +33,7 @@ Production loses 11.60 HP per fight on these states, Baalorlord 8.74.
 | arm | source | HP lost | deaths | potions | sims / decision | CPU ratio |
 |---|---|---|---|---|---|---|
 | production | here | 11.60 | 5.5% | 0.555 | 4,547 | 1.00 |
-| g16 = gsh16+flat16000 | §770 | 10.71 | 5.2% | 0.546 | 14,733 | 3.46 |
+| g16 = gsh16+flat16000 | §770 | 10.71 | 5.2% | 0.546 | 14,733 | 3.46 (3.15) |
 | g16mb = gsh16+flat16000+mb4 | §772 | 10.43 | 4.8% | 0.520 | 14,810 | 3.33 |
 | g32 = gsh16+flat32000 | §772 | 10.47 | 4.9% | 0.549 | 29,447 | 6.73 |
 | g64 = gsh16+flat64000 | §772 | 10.35 | 4.7% | 0.541 | 59,003 | 13.54 |
@@ -39,7 +41,9 @@ Production loses 11.60 HP per fight on these states, Baalorlord 8.74.
 | **g64mb = gsh16+flat64000+mb4** | here | **9.97** | 4.6% | 0.513 | 59,339 | 12.80 |
 
 CPU ratios are against this campaign's production. The arms from §770 and §772 ran on other machines, so their ratios
-mix machines (PREREG caveat).
+mix machines (PREREG caveat). For g16 the PREREG names the ratio against §770's own production (same machines) as the
+reported one: 3.15 (`analysis.json`); 3.46 is the ratio against this campaign's production, used below so that every
+ratio has the same denominator.
 
 ## Primary A: max backup at high budget (97.5% run-clustered bootstrap CI)
 
@@ -111,7 +115,7 @@ All cuts are in `results/analysis.json`.
 - Max backup costs nothing extra: the max-backup arms ran at 0.97× (32k) and 0.95× (64k) of the CPU of their budget
   arms (ratios across campaigns and machines).
 - Per CPU the returns still diminish: g16mb gets −0.29 below g16 at about g16's cost, g32mb −0.53 at 1.9× g16's CPU,
-  g64mb −0.74 at 3.7×. The step from 32k to 64k with max backup (−0.21) is not resolved.
+  g64mb −0.74 at 3.7× (all against this campaign's production; with g16's pre-registered 3.15 it is 2.1× and 4.1×). The step from 32k to 64k with max backup (−0.21) is not resolved.
 - Exploratory: these states were used before (§711/§716/§718/§770/§772/§773), the main line is production's, and
   one Gumbel setting (k 16, c_visit 50, c_scale 1) and one max-backup setting (min 4 visits) were used at every
   budget, not re-tuned. These fights are the combat plan's stage-3 test set. No training data was recorded.

@@ -26791,7 +26791,8 @@ more budget still help on top of max backup (B)?
 **Interpretation (Inference):** the two gains of §772 add up: max backup helps by about 0.3-0.4 HP at every budget
 tested, and more budget helps with it as much as without it, at no extra CPU for max backup. g64mb is the best arm
 measured on these states. Returns per CPU still diminish (g16mb −0.29 vs g16 at about its cost, g32mb −0.53 at 1.9×,
-g64mb −0.74 at 3.7×), and 32k → 64k with max backup is not resolved. Exploratory: states used before (stage-3 test
+g64mb −0.74 at 3.7×, all against this campaign's production; g16's pre-registered ratio vs §770's production is
+3.15), and 32k → 64k with max backup is not resolved. Exploratory: states used before (stage-3 test
 set), production's main line, one Gumbel and one max-backup setting at every budget (not re-tuned).
 **Decision:** MB_HELPS_AT_HIGH_BUDGET and MORE_SIMS_HELP_WITH_MB (gsh16+flat64000+mb4). No default change. The teacher
 target (g16mb, g32mb or g64mb) is Philipp's call. Seeds: none new. Cost: 304 lane-hours.
