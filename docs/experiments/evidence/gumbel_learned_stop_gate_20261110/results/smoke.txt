@@ -1,0 +1,20 @@
+Smoke, local (4-core cloud container), 2026-11-10 12:20-12:25 CET, binary 57d7f83c (code 09db3101, the manifest's).
+run_unit.sh unchanged, RUN dir = scratch copy of one_combat + net-0420.bin (sha 8c0bd16c).
+
+1. Flag off (sentinel arm G16) on 4 of the 32 sentinel seeds against §775's G16 games
+   (/mnt/project-files/gumbel-wholerun/units, extracted), fingerprint as analyze.py (rc, abort, whole log without the
+   BEST timing fields, [heart1_ppo] and whole-run Gumbel roots lines):
+   111378257 (116 s), 111378271, 111378278, 111378285: rc 0, 4 of 4 identical.
+2. Flag on (arm G16STOP) on smoke seed 111379281: rc 0 with all run_unit.sh checks (banner
+   "whole-run Gumbel learned stop model=ggbt-10bc2f281224 threshold=0.08", stops line), 120 s;
+   [silver] whole-run Gumbel roots=373 sims=3878305 (all decisions 373, sims 3878305)
+   [silver] whole-run Gumbel learned stops=163 unspent_sims=1865642
+3. Flag on + STS_SILVER_GUMBEL_STOP_TRACE on smoke seed 111379282 (env of 2 plus the trace):
+   [silver] whole-run Gumbel roots=169 sims=1283899 (all decisions 169, sims 1283899)
+   [silver] whole-run Gumbel learned stops=76 unspent_sims=940094
+   python3 tools/gumbel_learned_stop.py parity TRACE --model model.json (the train output of ggbt-10bc2f281224):
+   {"asked": 285, "max_abs_diff": 0.0, "stops": 76, "stop_mismatch": 0, "threshold": 0.08}
+   (every asked boundary's C++ gstop_risk equals the Python model on the traced features; every stopped root ends at
+   its first boundary under the threshold, every other root reaches its last boundary.)
+4. Unit tests (release build): silver_gumbel_learned_stop, silver_gumbel_boundary_observer, silver_gumbel_root PASS.
+   Smoke files: /mnt/project-files/gumbel-stop/gate-smoke/ (model.json, probe.json, traced-111379282.csv.xz, smoke-out.tar).

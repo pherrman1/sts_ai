@@ -1,6 +1,6 @@
 name          gumbel-stop-gate
 code_commit   09db31016cc10e25cf79b33e83236f6b9d098b54
-binary_sha256 TBD
+binary_sha256 57d7f83c16cb451606b8ab884f70ca56fcc95f3f8f2b909edec02651023e3687
 workers       40
 share         /mnt/project-files/gumbel-stop/gate
 configure_preset linux-gcc-release-x86-64-v3
