@@ -126,17 +126,18 @@ HP, max HP, potions, deck size and gold. It serves later analyses without the sh
   −0.7 / −1.5 pp deaths), at the Act 2 boss (−4.7 pp) and at the Heart (−5.8 pp).
   - Over a run, though, the 12.6 normal fights add up to about 5.2 HP and 0.2 potions. That is as much HP as the 5.7
     elites (4.3 HP).
-  - An HP proxy measured only on elite and boss fights (§770, §772, §774) therefore misses about half of G16's HP
-    saving per run.
+  - An HP proxy measured only on elite and boss fights (§770, §772, §774) therefore misses more than half (55-59%)
+    of G16's HP saving per run in Acts 1-3.
   - Normal fights end few runs, though: they are the last fight on only 12 of the 98 net seeds.
-- **Does the Heart gain come from search or from a better entry state?** Mostly from search inside the fights.
+- **Does the Heart gain come from search or from a better entry state?** Mostly from search inside the fights
+  (Inference).
   - G16 enters each boss with about 2 HP more, with the same potions and deck size. D's own HP-death slope turns
     that into about −0.5 to −1.0 pp per boss.
   - The observed drops are −4.7 pp at the Act 2 boss and −5.8 pp at the Heart.
   - About 70% of the +98 Heart kills come from reaching the Heart more often. Elites (+38 net) and Act 1-3 bosses
     (+29) are the main places where D's runs end and G16's continue. The remaining 30% comes from winning more Heart
     fights.
-- **Where G16 does not help:** Awakened One (14.2% deaths vs 12.4%; Act 3 boss 1 overall +1.6 pp [−1.2, +4.3]) and
+- **Where G16 does not help:** Awakened One (14.2% deaths vs 12.4%; it is fought in either Act 3 boss slot) and
   Hexaghost (15.0% vs 15.4%). Both are now the largest single death causes after the Heart.
 
 ## Caveats
@@ -147,7 +148,9 @@ HP, max HP, potions, deck size and gold. It serves later analyses without the sh
   them (49.6 vs 41.1 per won Heart).
 - **Post HP includes the heals that follow a fight.** One example is Burning Blood. At the Act 3 bosses it evidently
   also includes the heals between and after the two bosses: floor 51 averages −8.2 HP "lost", and 33-43% of Act 3
-  boss wins end at full HP. The Act 3 boss HP rows are therefore not in-fight HP. Death rates are not affected.
+  boss wins end at full HP. The Act 3 boss HP rows are therefore not in-fight HP. The heals also enter every other row,
+  normal fights included: Burning Blood's +6 stops at max HP, which can hide part of an in-fight difference. Death
+  rates are not affected.
 - **The slope prediction is rough.** It is a linear, within-arm slope on observational data. It is a scale check,
   not a causal estimate.
 - Part B was written after the data were seen.

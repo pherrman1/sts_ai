@@ -27048,8 +27048,8 @@ fights only) miss normal fights?
 **Interpretation (Inference):**
 - G16's Heart gain is mostly search inside the decisive fights: Act 1-2 elites, the Act 2 boss and the Heart. The
   small HP edge it carries into bosses explains about 1 pp of the 5-6 pp drops.
-- Normal fights add HP over a run (as much as elites) but rarely end runs. The elite-and-boss HP proxy misses about
-  half of the HP gain, and above all the tail (death-rate) effects at bosses that drive the Heart gain.
+- Normal fights add HP over a run (as much as elites) but rarely end runs. The elite-and-boss HP proxy misses more
+  than half (55-59%) of the HP gain in Acts 1-3, and above all the tail (death-rate) effects at bosses that drive the Heart gain.
 - Caveats: per-class rates compare different state distributions (G16's later fights include runs D had lost); post
   HP includes post-fight heals (the Act 3 boss HP rows are not in-fight HP); part B is post hoc.
 
@@ -27057,5 +27057,5 @@ fights only) miss normal fights?
 normal-fight budget should cost HP (about 5 per run at most), not many direct deaths. Awakened One and Hexaghost are
 where the teacher does not beat D.
 Seeds: §775's 111378256-111379279 replayed (no new seeds). Cost: 224.9 lane-hours.
-**Knowledge impact:** combat teacher evaluation and budget allocation. Death rate per elite and boss fight, not HP
-per fight, carries the whole-run gain. Fixed-state HP proxies need a death or tail metric and a normal-fight term.
+**Knowledge impact:** combat teacher evaluation and budget allocation. Inference: death rate per elite and boss
+fight, not HP per fight, carries the whole-run gain. Fixed-state HP proxies need a death or tail metric and a normal-fight term.
