@@ -19,7 +19,9 @@ Floats (global, player, monster numbers) go through sign(v) * log1p(|v|). Target
 edges), chosen (index into the kept edges, -1 if cut or unknown), won, endHp / preMaxHp, preMaxHp, hpLoss1,
 hpLoss2 (in HP), the row's seed (for the run-level holdout split), the root's HP and max HP, the encounter, and for
 Gumbel-root rows the root prior per kept edge (prior.npy, aligned with actions.npy) and gumbelChoice. Rows with one edge are kept (value targets);
-their policy is empty and `multi` is 0.
+their policy is empty and `multi` is 0. Also aligned with actions.npy: each kept edge's visit count (visits.npy) and
+the search's Q (q.npy, NaN for an unvisited edge), and per row the fight's Silver score (score.npy, NaN if the row has
+none), so train.py can form a completed-Q policy target and t0_value_check.py can compare root Q with the outcome (fight.npy: the fight's index in its run).
 """
 
 import argparse
@@ -102,6 +104,8 @@ def main(argv):
         "maxHp": np.zeros(n, np.int16),
         "encounter": np.zeros(n, np.int16),   # index into meta.json "encounters"
         "gumbelChoice": np.full(n, -1, np.int16),   # index into the kept edges; -1 = none or cut
+        "score": np.full(n, np.nan, np.float32),    # the fight's Silver score (same units as the edges' q)
+        "fight": np.full(n, -1, np.int16),          # the fight's index within its run (with seed: the fight id)
         "act": np.zeros(n, np.int8),
         "elite_boss": np.zeros(n, np.int8),   # 0 monster, 1 elite, 2 boss, 3 other
     }
@@ -109,8 +113,8 @@ def main(argv):
     room = {"MONSTER": 0, "MONSTER_ELITE": 1, "ELITE": 1, "BOSS": 2}
     # Chunked: each list holds numpy blocks of up to CHUNK roots, so RAM stays near the final array size.
     CHUNK = 20000
-    cards_l, actions_l, policy_l, prior_l = [], [], [], []
-    cards_c, actions_c, policy_c, prior_c = [], [], [], []
+    cards_l, actions_l, policy_l, prior_l, visits_l, q_l = [], [], [], [], [], []
+    cards_c, actions_c, policy_c, prior_c, visits_c, q_c = [], [], [], [], [], []
 
     def flush():
         if cards_c:
@@ -120,7 +124,9 @@ def main(argv):
                              .astype(np.int16))
         policy_l.append(np.asarray(policy_c, np.float32))
         prior_l.append(np.asarray(prior_c, np.float32))
-        cards_c.clear(); actions_c.clear(); policy_c.clear(); prior_c.clear()
+        visits_l.append(np.asarray(visits_c, np.int32))
+        q_l.append(np.asarray(q_c, np.float32))
+        cards_c.clear(); actions_c.clear(); policy_c.clear(); prior_c.clear(); visits_c.clear(); q_c.clear()
     encounters = {}
     card_off, act_off = [0], [0]
     j = 0
@@ -190,6 +196,9 @@ def main(argv):
             else:
                 policy_c.extend([0.0] * len(order))
             prior_c += [edges[e].get("prior") if edges[e].get("prior") is not None else np.nan for e in order]
+            visits_c += [edges[e]["visits"] for e in order]
+            q_c += [edges[e].get("q") if edges[e].get("q") is not None and edges[e]["visits"] > 0 else np.nan
+                    for e in order]
             if r.get("gumbelChoice", -1) in order:
                 arr["gumbelChoice"][j] = order.index(r["gumbelChoice"])
             if r["chosen"] in order:
@@ -198,6 +207,9 @@ def main(argv):
             mx = max(1, v["preMaxHp"])
             arr["won"][j] = 1 if v["won"] else 0
             arr["endFrac"][j] = v["endHp"] / mx
+            arr["fight"][j] = r.get("fight", -1)
+            if v.get("score") is not None:
+                arr["score"][j] = v["score"]
             arr["preMaxHp"][j] = v["preMaxHp"]
             arr["hpLoss1"][j] = r["aux"]["hpLoss1"]
             arr["hpLoss2"][j] = r["aux"]["hpLoss2"]
@@ -220,6 +232,8 @@ def main(argv):
     np.save(os.path.join(args.out, "act_off.npy"), np.asarray(act_off, np.int64))
     np.save(os.path.join(args.out, "policy.npy"), np.concatenate(policy_l))
     np.save(os.path.join(args.out, "prior.npy"), np.concatenate(prior_l))   # NaN = no root prior
+    np.save(os.path.join(args.out, "visits.npy"), np.concatenate(visits_l))
+    np.save(os.path.join(args.out, "q.npy"), np.concatenate(q_l))   # NaN = unvisited edge
     meta = {"rows": j, "encounters": sorted(encounters, key=encounters.get), "source": os.path.abspath(args.packed), "every": args.every, "cut": cut,
             "caps": {"C_MAX": C_MAX, "M_MAX": M_MAX, "M_NUM": M_NUM, "E_MAX": E_MAX, "S_MAX": S_MAX,
                      "Q_MAX": Q_MAX, "Q_LEN": Q_LEN, "SEL_MAX": SEL_MAX, "SEL_LEN": SEL_LEN, "A_LEN": A_LEN, "G_LEN": G_LEN}}

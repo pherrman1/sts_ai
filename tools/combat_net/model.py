@@ -34,8 +34,10 @@ class Arrays:
         self.n = self.meta["rows"]
 
 
-def collate(A, idx):
-    """Padded torch tensors for rows `idx` of Arrays A."""
+def collate(A, idx, policy_key="policy"):
+    """Padded torch tensors for rows `idx` of Arrays A. `policy_key` names the per-edge policy target array (default
+    the visit shares); arrays with per-edge visits and Q (tensorize.py's visits.npy, q.npy) are padded as well, with
+    0 visits and NaN Q past each row's edges."""
     a = A.a
     idx = np.sort(np.asarray(idx))
     B = len(idx)
@@ -49,15 +51,27 @@ def collate(A, idx):
     cards = np.zeros((B, C, 9), np.int64)
     acts = np.zeros((B, E, a["actions"].shape[1]), np.int64)
     pol = np.zeros((B, E), np.float32)
+    has_q = "q" in a and "visits" in a
+    if has_q:
+        qv = np.full((B, E), np.nan, np.float32)
+        vis = np.zeros((B, E), np.float32)
     for i, r in enumerate(idx):
         cards[i, :nc[i]] = a["cards"][co[r]:co[r + 1]]
         acts[i, :na[i]] = a["actions"][ao[r]:ao[r + 1]]
-        pol[i, :na[i]] = a["policy"][ao[r]:ao[r + 1]]
+        pol[i, :na[i]] = a[policy_key][ao[r]:ao[r + 1]]
+        if has_q:
+            qv[i, :na[i]] = a["q"][ao[r]:ao[r + 1]]
+            vis[i, :na[i]] = a["visits"][ao[r]:ao[r + 1]]
     out["cards"] = torch.from_numpy(cards)
     out["card_mask"] = torch.arange(C)[None, :] < torch.from_numpy(nc)[:, None]
     out["actions"] = torch.from_numpy(acts)
     out["act_mask"] = torch.arange(E)[None, :] < torch.from_numpy(na)[:, None]
     out["policy"] = torch.from_numpy(pol)
+    if has_q:
+        out["q"] = torch.from_numpy(qv)
+        out["visits"] = torch.from_numpy(vis)
+    if "gumbelChoice" in a:
+        out["gumbelChoice"] = torch.from_numpy(np.asarray(a["gumbelChoice"][idx]).astype(np.int64))
     # Trim the fixed-size status-map and queue axes to this batch's longest row (both are front-filled, and the
     # model masks the padding), so short batches carry fewer tokens.
     live = (out["smap"][..., 0] > 0).any(0)
