@@ -21,7 +21,7 @@ Pre-registration: [PREREG.md](PREREG.md) (frozen in run commit 69cdcd53 before a
 |---|---|---|---|
 | Heart kills | 41.25% | 38.03% | **−3.23 pp [−5.87, −0.59]** |
 | Act 3 cleared (final floor ≥ 52, also counts keyless act-3 clears) | 49.2% | 46.0% | −3.23 pp [−5.87, −0.59] |
-| Mean final floor | | | −1.02 [−1.88, −0.13] |
+| Mean final floor | 41.58 (1,024 games) | 40.60 (1,023 games) | −1.02 [−1.88, −0.13] |
 
 - Discordant seeds: 82 kill only with GHARD, 115 only with G16.
 - SPRT nonregression (H0 −1.5 pp, H1 0) reaches CAP (LLR −1.98). The fixed-sample rule then decides: the one-sided 95%
@@ -35,7 +35,8 @@ Mean CPU per run: GHARD 469 s, G16 512 s, D 253 s.
 ## Secondary
 
 - GHARD − D (§775): **+6.35 pp [+3.42, +9.29]** Heart kills at 1.85× D's CPU. Act 3 cleared +4.89 pp.
-- So GHARD keeps about two thirds of G16's +9.57 pp (§775) for about 85% of its extra CPU over D.
+- So GHARD keeps about two thirds of G16's +9.57 pp (§775) for about 70% of its extra CPU over D (machine-corrected
+  GHARD CPU 0.848 × 512 ≈ 434 s, +181 s over D's 253 s, against G16's +259 s; raw 469 s would say 85%).
 
 ## Reading
 
@@ -45,9 +46,11 @@ Mean CPU per run: GHARD 469 s, G16 512 s, D 253 s.
   end of that range or a little above it. The PREREG's other expectation, a CPU ratio of 0.75-0.8, was also optimistic.
   Hard-fight turns cost more than normal ones, and the review predicted 0.80-0.85 (corrected: 0.85).
 - **Cost per point.** G16 buys +9.57 pp for +259 CPU s per run over D (about 0.037 pp per CPU s). GHARD buys +6.35 pp
-  for +216 s (about 0.029 pp per CPU s). Taking Gumbel out of normal fights is a worse trade than keeping it everywhere.
+  for +181 s at the machine-corrected CPU (about 0.035 pp per CPU s; the raw 469 s, measured on machines 1.08× slower
+  than §775's, would give +216 s and 0.029). Taking Gumbel out of normal fights is not a better trade than keeping it
+  everywhere, and it gives up 3.2 pp of Heart kills.
 - Combined with §783 (learned stop −2.34 pp at about 0.76× CPU) and §781 (8k → 16k), every cut to the G16 budget tried
-  so far gives up Heart kills roughly in proportion to the CPU saved, or worse.
+  so far gives up Heart kills roughly in proportion to the CPU saved.
 
 ## Decision (as pre-registered)
 

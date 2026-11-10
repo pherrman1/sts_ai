@@ -27159,9 +27159,9 @@ only with GHARD, 115 only with G16. SPRT nonregression CAP, one-sided upper boun
 −1.02 [−1.88, −0.13]. CPU 0.915× raw, 0.848× machine-corrected; Gumbel sims 0.56× (Gumbel fights only).
 GHARD − D +6.35 pp [+3.42, +9.29] at 1.85× D's CPU.
 **Interpretation (Inference):** normal fights matter through HP carried into the hard fights (§782: +5.2 HP per run;
-at D's entry-HP slope ≈ 1.2-2.7 pp), even though their own death rate barely moves. GHARD buys about 0.029 pp per CPU
-second over D, against G16's 0.037. With §783 and §781, every cut to G16's budget tried so far loses Heart kills at
-least in proportion to the CPU it saves.
+at D's entry-HP slope ≈ 1.2-2.7 pp), even though their own death rate barely moves. At machine-corrected CPU (0.848 × 512 ≈ 434 s)
+GHARD buys about 0.035 pp per CPU second over D, against G16's 0.037 (raw CPU would give 0.029): not a better trade.
+With §783 and §781, every cut to G16's budget tried so far loses Heart kills roughly in proportion to the CPU it saves.
 **Decision:** WORSE. GHARD is dropped, no default change, and G16 + mb4 in every fight stays the teacher. The flags stay as
 research options.
 Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: about 137 lane-hours.
