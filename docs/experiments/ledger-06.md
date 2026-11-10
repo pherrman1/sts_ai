@@ -27110,3 +27110,35 @@ whole-run gate would expect well under 1 pp, below what 1,024 paired seeds resol
 **Decision:** Philipp (2026-11-10 15:43 CET) dropped the topic. No gate, no default change.
 Seeds: none played (traces of #1025's 111430000-111431023). Cost: about 1 CPU-minute.
 **Knowledge impact:** Gumbel teacher root constants are flat; the root prior acts as a tiebreaker there.
+
+## §785 — Gumbel tuning Test 3, no tree reuse in whole runs: §775's G16 + mb4 with the smallest node reuse cap 1,024 (G16NR) against §775's G16 + mb4 (32,768), net-0420 out of combat, 1,024 paired A20 seeds, §775's G16 games reused after Test 1's 32/32 sentinel: Heart 41.21% → 38.48%, −2.73 pp [−5.47, +0.10] → NO_DIFFERENCE_SHOWN; G16NR − G16CAP +0.20 pp; carried visits 34% → 6%, same CPU (cloud, 2026-11-10)
+
+**Question (Philipp, 2026-11-10 08:38 CET, "Wie kann ein höherer Cap einfach schlechter sein? Spricht das vllt für
+falsch kalibrierter leaf value?"; go 15:22 CET "Ja let's go", 40 workers 16:58 CET):** do the visits a root inherits
+from the previous search help or hurt the Gumbel root at 16,000 simulations?
+**Data:** [PREREG](evidence/gumbel_tuning_20261109/wholerun_test3/PREREG.md),
+[RESULT](evidence/gumbel_tuning_20261109/wholerun_test3/RESULT.md), `results/result.json`, `results/breakdown.json`,
+`results/claims.txt`, `analyze.py` (frozen with the PREREG in run commit 33252bf0), `breakdown.py` (descriptive).
+- G16NR = §775's G16 + mb4 plus `STS_SILVER_NODE_REUSE_CAP=1024` in every fight except the Heart (262,144 in every
+  arm). Code 13bb97ec, binary b5090b16. Control: §775's 1,024 G16 games (REUSE_VALID, §777); third point: §780's G16CAP.
+- 1,024 units (one game each), 1,024 verified, 0 bad, 0 aborts, 0 dropped, no re-attempts. 143.8 lane-hours,
+  17:01-18:21 CET on 40 workers; longest game 47 min.
+
+**Result:** Heart kill G16 41.21%, G16NR 38.48%: G16NR − G16 **−2.73 pp [−5.47, +0.10]**, 94 seeds only G16NR kills,
+122 only G16 → **NO_DIFFERENCE_SHOWN** (two-sided 95%, no SPRT). Act-4 reach −2.93 [−5.86, 0.00], final floor −1.12
+[−2.09, −0.14]; CPU 0.99×. Secondary: G16NR − G16CAP +0.20 [−2.44, +2.83]; G16NR − D +6.84 [+3.91, +9.77] at 2.0× CPU.
+Tree reuse: G16NR keeps 24.6% of kept-or-reset reroots and carries 6.1% of its simulations (sentinel G16 34.3%,
+G16CAP 43.6%), so the reading is "no reuse".
+- Descriptive (`breakdown.py`): no section's hazard interval excludes 0; G16NR's extra deaths sit in acts 1-2, G16CAP's
+  in Act 4.
+**Interpretation (Inference):** no reuse does not beat reuse, so there is no evidence that inherited visits mislead the
+Gumbel root at 16k (the leaf-calibration question). No reuse and the large cap play alike (+0.20 pp), so Test 2's −2.93
+is not harm from large reuse. Both are about 2.8 pp below the same G16 games: either the 32,768 default is a real
+optimum, or G16's draw on these seeds is favourable (G16 replays deterministically, so every contrast against these
+games shares one draw of its seed-wise outcomes; both cap arms, which move the reuse in opposite directions, came out
+below it; G32 on these seeds 40.82%, G16 on #1025's fresh seeds 41.60%). A placebo (G16 at a slightly different
+budget on these seeds) or a cap arm on #1025's seeds against #1025's G16 games would separate the two.
+**Decision:** NO_DIFFERENCE_SHOWN. No default change. G16 + mb4 with the 32,768 cap stays the teacher candidate.
+Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 143.8 lane-hours.
+**Knowledge impact:** combat teacher configuration; the node reuse cap is not a lever at 16,000 simulations in either
+direction. Contrasts that reuse one deterministic control share its draw and are not independent evidence.

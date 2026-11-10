@@ -1,0 +1,210 @@
+{
+ "bad": [],
+ "aborts": [],
+ "env_mismatch": [],
+ "sentinel": {
+  "identical": 32,
+  "of": 32,
+  "differing": [],
+  "verdict": "REUSE_VALID"
+ },
+ "primary": {
+  "control": "ref:G16",
+  "arm": "new:G16NR",
+  "n": 1024,
+  "dropped": [],
+  "heart_control": 0.412109375,
+  "heart_arm": 0.384765625,
+  "d": -0.02734375,
+  "ci95": [
+   -0.0546875,
+   0.0009765625
+  ],
+  "act4_d": -0.029296875,
+  "act4_ci95": [
+   -0.05859375,
+   0.0
+  ],
+  "floor_d": -1.1240234375,
+  "floor_ci95": [
+   -2.0859375,
+   -0.14255371093750036
+  ],
+  "cpu_ratio": 0.9863962851931822,
+  "arm_only": 94,
+  "control_only": 122,
+  "verdict": "NO_DIFFERENCE_SHOWN"
+ },
+ "secondary": {
+  "G16NR_minus_G16CAP": {
+   "control": "new:G16CAP",
+   "arm": "new:G16NR",
+   "n": 1024,
+   "dropped": [],
+   "heart_control": 0.3828125,
+   "heart_arm": 0.384765625,
+   "d": 0.001953125,
+   "ci95": [
+    -0.0244140625,
+    0.0283203125
+   ],
+   "act4_d": -0.015625,
+   "act4_ci95": [
+    -0.0439453125,
+    0.01171875
+   ],
+   "floor_d": -0.3837890625,
+   "floor_ci95": [
+    -1.263671875,
+    0.49904785156249964
+   ],
+   "cpu_ratio": 1.0087617267396285,
+   "arm_only": 97,
+   "control_only": 95
+  },
+  "G16CAP_minus_G16": {
+   "control": "ref:G16",
+   "arm": "new:G16CAP",
+   "n": 1024,
+   "dropped": [],
+   "heart_control": 0.412109375,
+   "heart_arm": 0.3828125,
+   "d": -0.029296875,
+   "ci95": [
+    -0.056640625,
+    -0.001953125
+   ],
+   "act4_d": -0.013671875,
+   "act4_ci95": [
+    -0.0400390625,
+    0.013671875
+   ],
+   "floor_d": -0.740234375,
+   "floor_ci95": [
+    -1.60546875,
+    0.11330566406249964
+   ],
+   "cpu_ratio": 0.9778288163065697,
+   "arm_only": 85,
+   "control_only": 115
+  },
+  "G16NR_minus_D": {
+   "control": "ref:D",
+   "arm": "new:G16NR",
+   "n": 1024,
+   "dropped": [],
+   "heart_control": 0.31640625,
+   "heart_arm": 0.384765625,
+   "d": 0.068359375,
+   "ci95": [
+    0.0390625,
+    0.09765625
+   ],
+   "act4_d": 0.0517578125,
+   "act4_ci95": [
+    0.021484375,
+    0.08203125
+   ],
+   "floor_d": 1.994140625,
+   "floor_ci95": [
+    0.9911865234375,
+    2.9990478515624996
+   ],
+   "cpu_ratio": 1.998060067036796,
+   "arm_only": 155,
+   "control_only": 85
+  }
+ },
+ "per_arm": {
+  "new:G16": {
+   "games": 32,
+   "heart": 0.34375,
+   "act4": 0.40625,
+   "floor": 38.28125,
+   "cpu_sec": 434.41781249999997,
+   "cpu_ratio_to_ref_G16": 0.8483384103392191,
+   "long_games": 0,
+   "max_wall": 1280,
+   "reuse": {
+    "games": 32,
+    "reroots": 12907,
+    "inherited": 89140411,
+    "fresh": 3322,
+    "cap_resets": 608,
+    "cap_lost": 10147517,
+    "kept_share_of_kept_or_reset": 0.9550129485756567,
+    "inherited_share_of_sims": 0.34295697300661365
+   }
+  },
+  "new:G16CAP": {
+   "games": 1024,
+   "heart": 0.3828125,
+   "act4": 0.478515625,
+   "floor": 40.8427734375,
+   "cpu_sec": 500.72736328125,
+   "cpu_ratio_to_ref_G16": 0.9778288163065697,
+   "long_games": 1,
+   "max_wall": 7836,
+   "reuse": {
+    "games": 1024,
+    "reroots": 497549,
+    "inherited": 4093024858,
+    "fresh": 87692,
+    "cap_resets": 13,
+    "cap_lost": 1419700,
+    "kept_share_of_kept_or_reset": 0.9999738726028113,
+    "inherited_share_of_sims": 0.4356356833768607
+   }
+  },
+  "new:G16NR": {
+   "games": 1024,
+   "heart": 0.384765625,
+   "act4": 0.462890625,
+   "floor": 40.458984375,
+   "cpu_sec": 505.114599609375,
+   "cpu_ratio_to_ref_G16": 0.9863962851931822,
+   "long_games": 0,
+   "max_wall": 2802,
+   "reuse": {
+    "games": 1024,
+    "reroots": 114512,
+    "inherited": 567952120,
+    "fresh": 463822,
+    "cap_resets": 351029,
+    "cap_lost": 1757526214,
+    "kept_share_of_kept_or_reset": 0.24597618684498251,
+    "inherited_share_of_sims": 0.06133282371971079
+   }
+  },
+  "ref:D": {
+   "games": 1024,
+   "heart": 0.31640625,
+   "act4": 0.4111328125,
+   "floor": 38.46484375,
+   "cpu_sec": 252.802509765625,
+   "cpu_ratio_to_ref_G16": 0.49367699273227944,
+   "long_games": 0,
+   "max_wall": 1709
+  },
+  "ref:G16": {
+   "games": 1024,
+   "heart": 0.412109375,
+   "act4": 0.4921875,
+   "floor": 41.5830078125,
+   "cpu_sec": 512.08080078125,
+   "cpu_ratio_to_ref_G16": 1.0,
+   "long_games": 0,
+   "max_wall": 3036
+  },
+  "ref:G32": {
+   "games": 1024,
+   "heart": 0.408203125,
+   "act4": 0.498046875,
+   "floor": 41.8779296875,
+   "cpu_sec": 870.669140625,
+   "cpu_ratio_to_ref_G16": 1.700257340827217,
+   "long_games": 8,
+   "max_wall": 5954
+  }
+ }
+}
