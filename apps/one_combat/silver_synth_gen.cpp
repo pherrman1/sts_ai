@@ -750,9 +750,13 @@ void silverAzRun(int nSeeds, int sims, int asc, const std::string &outPrefix, lo
         const auto eq = entry.find('=');
         if (entry.rfind("STS_", 0) == 0 && eq != std::string::npos) environment[entry.substr(0, eq)] = entry.substr(eq + 1);
     }
+    // STS_AZGEN_WHOLE_RUN_GUMBEL replays bestbench's whole-run Gumbel arm, whose env has the learned stop on: the stop
+    // itself is inert under the whole-run Gumbel root, but it gates Act 4 strong (ADR-0060), which that arm plays.
+    const int wholeRunK = wholeRunGumbelK();
     if (!search::nativeSilverBackendInstalled() || !search::nativeSilverExactRootBudgets()
-            || search::nativeSilverAdaptiveEnabled() || search::nativeSilverLearnedStopEnabled())
-        throw std::runtime_error("silverazgen: requires flat exact-budget native Silver");
+            || search::nativeSilverAdaptiveEnabled() || (search::nativeSilverLearnedStopEnabled() && wholeRunK == 0))
+        throw std::runtime_error("silverazgen: requires flat exact-budget native Silver (the learned stop only with"
+                                 " STS_AZGEN_WHOLE_RUN_GUMBEL=1)");
     if (search::nativeSilverReuseCap() != 32768)
         throw std::runtime_error("silverazgen: reuse cap differs from the frozen 32k");
     const bool chainOoc = productionOoc();
@@ -769,7 +773,6 @@ void silverAzRun(int nSeeds, int sims, int asc, const std::string &outPrefix, lo
     if (gumbelK > 0 && (!prodCombat || label || focus))
         throw std::runtime_error("silverazgen: STS_AZGEN_GUMBEL_ROOT requires STS_AZGEN_PRODUCTION_COMBAT=1, no"
                                  " STS_AZGEN_LABEL_SEARCH and is silverazgen only");
-    const int wholeRunK = wholeRunGumbelK();
     if (wholeRunK > 0 && (!prodCombat || label || focus || gumbelK > 0))
         throw std::runtime_error("silverazgen: STS_AZGEN_WHOLE_RUN_GUMBEL requires STS_AZGEN_PRODUCTION_COMBAT=1, no"
                                  " STS_AZGEN_GUMBEL_ROOT, no STS_AZGEN_LABEL_SEARCH and is silverazgen only");
@@ -852,7 +855,7 @@ void silverAzRun(int nSeeds, int sims, int asc, const std::string &outPrefix, lo
         const search::SilverSearcher::GumbelRoot g;
         manifest["gumbelRoot"] = {{"k", wholeRunK}, {"cVisit", g.cVisit}, {"cScale", g.cScale}, {"budget", sims},
                                   {"source", "whole-run STS_SILVER_GUMBEL_ROOT (no override)"},
-                                  {"maxBackup", wholeRunMb},
+                                  {"maxBackup", wholeRunMb}, {"act4Strong", search::nativeSilverAct4Strong()},
                                   {"rows", "edges[].prior = root prior; gumbelChoice = the Gumbel pick's edge; "
                                            "edges[].qBacked / rootQBacked = max-backed values when maxBackup > 0"}};
     }
