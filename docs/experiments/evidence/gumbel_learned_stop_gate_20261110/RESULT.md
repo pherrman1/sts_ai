@@ -25,7 +25,10 @@ PASS). Launched about 12:44 CET on 40 workers; last tar 13:56 CET.
 - **d = −2.34 pp, 95% CI [−5.18, +0.39]**. 92 seeds kill only with G16STOP, 116 only with G16. One-sided 95% bounds
   [−4.69, 0.00].
 - SPRT nonregression (H0 −1.5 pp, H1 0): **CAP** at 1,024 (LLR −1.21). The lower one-sided bound is below −3 pp and
-  the upper one is not below 0 → **INCONCLUSIVE**.
+  the upper one is not below 0 → **INCONCLUSIVE**. This is a boundary tie: the upper bound is exactly 0.00 (d takes
+  steps of 1/1,024), so the verdict rests on the pre-registered bootstrap seed. With 6 of 20 other bootstrap seeds
+  (review J, N1) the upper bound falls below 0 and the rule would read WORSE. The pre-registered verdict stands, but
+  it is borderline WORSE, not a near-pass.
 - Secondary: SPRT gainer accepts H0 at 640 seeds (NOT_SHOWN). Act-4 reach −1.07 pp [−3.91, +1.76], final floor −0.66
   [−1.52, +0.18]. G16STOP − D (§775) +7.23 pp [+4.20, +10.25].
 

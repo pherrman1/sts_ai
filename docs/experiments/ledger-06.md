@@ -27078,7 +27078,8 @@ Gumbel root search early without losing Heart kills?
 
 **Result:** sentinel 32/32 identical → REUSE_VALID. Heart G16 41.21%, G16STOP 38.87%: **−2.34 pp [−5.18, +0.39]**;
 92 seeds kill only with G16STOP, 116 only with G16. SPRT nonregression (−1.5 pp margin) reaches CAP; the one-sided
-95% lower bound of −4.69 pp is below the −3 pp margin → **INCONCLUSIVE**. The gainer SPRT accepts H0 at 640. Act-4
+95% lower bound of −4.69 pp is below the −3 pp margin and the upper bound is exactly 0.00, a boundary tie →
+**INCONCLUSIVE** (with 6 of 20 other bootstrap seeds the upper bound is below 0, which would read WORSE; review J N1). The gainer SPRT accepts H0 at 640. Act-4
 reach −1.07 [−3.91, +1.76]. Simulations per run 0.697× [0.676, 0.719]; CPU 0.889× raw, about 0.76× corrected for
 machine speed (the sentinel ran 1.17× slower here). 38.7% of roots stopped, 28.5% of the Gumbel budget unspent, as
 offline.
