@@ -26975,7 +26975,7 @@ Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 142.5 lane-hours
 **Knowledge impact:** combat teacher configuration; the node reuse cap is not a lever at 16,000 simulations; reuse
 budgets above 16k need their own test before being assumed to help.
 
-## §TBD — Act-4-strong budget curve in whole runs: §779's G1/G2/G4/G8 with Act 4 strong (G1S-G8S), net-0420 out of combat, the budget curve's 512 paired A20 seeds: Act 4 strong +2.15 / +3.52 / +3.71 / +2.73 pp Heart → G1S NO_DIFFERENCE_SHOWN, G2S/G4S/G8S_BETTER; with Act 4 the same, 8k → 16k still +6.05 pp → G16_BETTER; REPLAY_OK (cloud, 2026-11-10)
+## §781 — Act-4-strong budget curve in whole runs: §779's G1/G2/G4/G8 with Act 4 strong (G1S-G8S), net-0420 out of combat, the budget curve's 512 paired A20 seeds: Act 4 strong +2.15 / +3.52 / +3.71 / +2.73 pp Heart → G1S NO_DIFFERENCE_SHOWN, G2S/G4S/G8S_BETTER; with Act 4 the same, 8k → 16k still +6.05 pp → G16_BETTER; REPLAY_OK (cloud, 2026-11-10)
 
 **Question (Philipp, 2026-11-10 00:41 CET, "Ja würde gerne 1-8k mit dem stärkeren act4 laufen lassen danach"):** how
 much of §779's step from G8 (31.6%) to §775's G16 + mb4 (40.4%) is Act 4 strong, and what is the budget curve from
