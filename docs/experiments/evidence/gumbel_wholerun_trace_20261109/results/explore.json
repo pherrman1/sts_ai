@@ -1,0 +1,396 @@
+{
+ "seeds": 1024,
+ "funnel": {
+  "A1 boss": {
+   "D": {
+    "reach": 898,
+    "win": 797
+   },
+   "G16": {
+    "reach": 928,
+    "win": 839
+   }
+  },
+  "A2 boss": {
+   "D": {
+    "reach": 642,
+    "win": 555
+   },
+   "G16": {
+    "reach": 710,
+    "win": 647
+   }
+  },
+  "A3 boss 1": {
+   "D": {
+    "reach": 489,
+    "win": 461
+   },
+   "G16": {
+    "reach": 587,
+    "win": 544
+   }
+  },
+  "A3 boss 2": {
+   "D": {
+    "reach": 461,
+    "win": 421
+   },
+   "G16": {
+    "reach": 544,
+    "win": 504
+   }
+  },
+  "A4 Shield and Spear": {
+   "D": {
+    "reach": 416,
+    "win": 408
+   },
+   "G16": {
+    "reach": 497,
+    "win": 495
+   }
+  },
+  "A4 Heart": {
+   "D": {
+    "reach": 408,
+    "win": 324
+   },
+   "G16": {
+    "reach": 495,
+    "win": 422
+   }
+  }
+ },
+ "heart_split": {
+  "total": 98,
+  "from_reach": 69.1,
+  "from_conversion": 28.9
+ },
+ "entry_hp_vs_death": {
+  "A1 boss": {
+   "n": {
+    "D": 898,
+    "G16": 928
+   },
+   "entry_hp": {
+    "D": 53.33,
+    "G16": 54.86
+   },
+   "death": {
+    "D": 0.1125,
+    "G16": 0.0959
+   },
+   "slope_pp_per_hp": {
+    "D": -0.354,
+    "G16": -0.355
+   },
+   "observed_death_diff_pp": -1.66,
+   "observed_ci95": [
+    -3.7,
+    0.4
+   ],
+   "predicted_from_entry_hp_pp": -0.54,
+   "predicted_ci95": [
+    -0.95,
+    -0.22
+   ]
+  },
+  "A2 boss": {
+   "n": {
+    "D": 642,
+    "G16": 710
+   },
+   "entry_hp": {
+    "D": 68.47,
+    "G16": 70.3
+   },
+   "death": {
+    "D": 0.1355,
+    "G16": 0.0887
+   },
+   "slope_pp_per_hp": {
+    "D": -0.507,
+    "G16": -0.396
+   },
+   "observed_death_diff_pp": -4.68,
+   "observed_ci95": [
+    -7.41,
+    -2.03
+   ],
+   "predicted_from_entry_hp_pp": -0.93,
+   "predicted_ci95": [
+    -1.78,
+    -0.24
+   ]
+  },
+  "A3 boss 1": {
+   "n": {
+    "D": 489,
+    "G16": 587
+   },
+   "entry_hp": {
+    "D": 85.73,
+    "G16": 87.98
+   },
+   "death": {
+    "D": 0.0573,
+    "G16": 0.0733
+   },
+   "slope_pp_per_hp": {
+    "D": -0.242,
+    "G16": -0.271
+   },
+   "observed_death_diff_pp": 1.6,
+   "observed_ci95": [
+    -1.22,
+    4.31
+   ],
+   "predicted_from_entry_hp_pp": -0.54,
+   "predicted_ci95": [
+    -1.27,
+    -0.04
+   ]
+  },
+  "A3 boss 2": {
+   "n": {
+    "D": 461,
+    "G16": 544
+   },
+   "entry_hp": {
+    "D": 78.43,
+    "G16": 80.69
+   },
+   "death": {
+    "D": 0.0868,
+    "G16": 0.0735
+   },
+   "slope_pp_per_hp": {
+    "D": -0.377,
+    "G16": -0.326
+   },
+   "observed_death_diff_pp": -1.32,
+   "observed_ci95": [
+    -4.43,
+    1.63
+   ],
+   "predicted_from_entry_hp_pp": -0.85,
+   "predicted_ci95": [
+    -2.05,
+    0.08
+   ]
+  },
+  "A4 Shield and Spear": {
+   "n": {
+    "D": 416,
+    "G16": 497
+   },
+   "entry_hp": {
+    "D": 95.42,
+    "G16": 97.47
+   },
+   "death": {
+    "D": 0.0192,
+    "G16": 0.004
+   },
+   "slope_pp_per_hp": {
+    "D": -0.042,
+    "G16": -0.018
+   },
+   "observed_death_diff_pp": -1.52,
+   "observed_ci95": [
+    -3.02,
+    -0.13
+   ],
+   "predicted_from_entry_hp_pp": -0.09,
+   "predicted_ci95": [
+    -0.29,
+    0.01
+   ]
+  },
+  "A4 Heart": {
+   "n": {
+    "D": 408,
+    "G16": 495
+   },
+   "entry_hp": {
+    "D": 84.71,
+    "G16": 87.02
+   },
+   "death": {
+    "D": 0.2059,
+    "G16": 0.1475
+   },
+   "slope_pp_per_hp": {
+    "D": -0.452,
+    "G16": -0.395
+   },
+   "observed_death_diff_pp": -5.84,
+   "observed_ci95": [
+    -10.45,
+    -1.35
+   ],
+   "predicted_from_entry_hp_pp": -1.04,
+   "predicted_ci95": [
+    -2.5,
+    0.18
+   ]
+  }
+ },
+ "boss_encounters": {
+  "AUTOMATON": {
+   "D": {
+    "fights": 210,
+    "deaths": 30,
+    "rate": 0.1429
+   },
+   "G16": {
+    "fights": 231,
+    "deaths": 19,
+    "rate": 0.0823
+   }
+  },
+  "AWAKENED_ONE": {
+   "D": {
+    "fights": 330,
+    "deaths": 41,
+    "rate": 0.1242
+   },
+   "G16": {
+    "fights": 393,
+    "deaths": 56,
+    "rate": 0.1425
+   }
+  },
+  "CHAMP": {
+   "D": {
+    "fights": 227,
+    "deaths": 26,
+    "rate": 0.1145
+   },
+   "G16": {
+    "fights": 254,
+    "deaths": 23,
+    "rate": 0.0906
+   }
+  },
+  "COLLECTOR": {
+   "D": {
+    "fights": 205,
+    "deaths": 31,
+    "rate": 0.1512
+   },
+   "G16": {
+    "fights": 225,
+    "deaths": 21,
+    "rate": 0.0933
+   }
+  },
+  "DONU_AND_DECA": {
+   "D": {
+    "fights": 317,
+    "deaths": 15,
+    "rate": 0.0473
+   },
+   "G16": {
+    "fights": 372,
+    "deaths": 15,
+    "rate": 0.0403
+   }
+  },
+  "HEXAGHOST": {
+   "D": {
+    "fights": 285,
+    "deaths": 44,
+    "rate": 0.1544
+   },
+   "G16": {
+    "fights": 294,
+    "deaths": 44,
+    "rate": 0.1497
+   }
+  },
+  "SHIELD_AND_SPEAR": {
+   "D": {
+    "fights": 416,
+    "deaths": 8,
+    "rate": 0.0192
+   },
+   "G16": {
+    "fights": 497,
+    "deaths": 2,
+    "rate": 0.004
+   }
+  },
+  "SLIME_BOSS": {
+   "D": {
+    "fights": 293,
+    "deaths": 32,
+    "rate": 0.1092
+   },
+   "G16": {
+    "fights": 305,
+    "deaths": 22,
+    "rate": 0.0721
+   }
+  },
+  "THE_GUARDIAN": {
+   "D": {
+    "fights": 320,
+    "deaths": 25,
+    "rate": 0.0781
+   },
+   "G16": {
+    "fights": 329,
+    "deaths": 23,
+    "rate": 0.0699
+   }
+  },
+  "THE_HEART": {
+   "D": {
+    "fights": 408,
+    "deaths": 84,
+    "rate": 0.2059
+   },
+   "G16": {
+    "fights": 495,
+    "deaths": 73,
+    "rate": 0.1475
+   }
+  },
+  "TIME_EATER": {
+   "D": {
+    "fights": 303,
+    "deaths": 12,
+    "rate": 0.0396
+   },
+   "G16": {
+    "fights": 366,
+    "deaths": 12,
+    "rate": 0.0328
+   }
+  }
+ },
+ "per_run_by_room_acts1to3": {
+  "BOSS": {
+   "hp_saved_per_run": -0.673,
+   "potions_saved_per_run": 0.062,
+   "d_fights_per_run": 2.432
+  },
+  "ELITE": {
+   "hp_saved_per_run": 4.265,
+   "potions_saved_per_run": -0.013,
+   "d_fights_per_run": 5.685
+  },
+  "NORMAL": {
+   "hp_saved_per_run": 5.242,
+   "potions_saved_per_run": 0.195,
+   "d_fights_per_run": 12.556
+  },
+  "OTHER": {
+   "hp_saved_per_run": -0.152,
+   "potions_saved_per_run": 0.001,
+   "d_fights_per_run": 0.548
+  }
+ }
+}
