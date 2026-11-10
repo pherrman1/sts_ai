@@ -27092,3 +27092,21 @@ stricter threshold or a stop limited to later boundaries needs Philipp's call an
 Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 133.9 lane-hours (plus 166.8 for the data run).
 **Knowledge impact:** combat teacher cost. Offline agreement with the full-budget pick is not enough to show
 no-loss in whole runs. A learned Gumbel stop buys about 25% CPU for an unresolved Heart cost of 0-5 pp.
+
+## §TBD — Gumbel root with m = 8 candidates or thirds instead of halving, offline on 574,741 traced G16 + mb4 roots (#1025's 1,024 runs): m = 8 plays identically on 80.7% of roots (at most 8 legal actions; median 6) and saves no CPU; thirds would drop G16's eventual pick after phase 1 in about 10-20% of roots with 5+ actions; the root prior is close to a tiebreaker → NOT_PURSUED, descriptive (cloud, 2026-11-10)
+
+**Question (Philipp, 2026-11-10 15:24 CET):** how much does the prior drive the Gumbel root, and would m = 8 or
+thirds be worth a gate?
+**Data:** [RESULT](evidence/gumbel_root_m8_thirds_20261110/RESULT.md), `results/result.json`, `analyze.py`; traces of
+the Gumbel stop-trace data campaign (#1025, code c718ee47).
+**Result:** candidates are min(legal, k), so k 16 already equals n below 16 legal actions; 18.1% of roots have 9-16,
+1.1% more. Estimated (pessimistic) the final pick falls outside the prior's Gumbel top 8 in 15% (9-12 actions) and 33%
+(13-16) of those roots, about 3-4% of all roots. After phase 1 the final pick is in the top 2 in 93 / 89 / 82 / 79%
+for 5 / 6 / 7 / 8 actions and 73-56% for 9-16. At the last boundary the finalists tie exactly in 13.0% of roots; a
+lower-Q finalist wins in 0.68%.
+**Interpretation (Inference):** neither change saves CPU at a flat budget; §776 already found k 8 → 32 and the halving
+budget INACTIVE. The prior's effect is below the root (§776 G/H), and a better root prior gained nothing (§773). A
+whole-run gate would expect well under 1 pp, below what 1,024 paired seeds resolve.
+**Decision:** Philipp (2026-11-10 15:43 CET) dropped the topic. No gate, no default change.
+Seeds: none played (traces of #1025's 111430000-111431023). Cost: about 1 CPU-minute.
+**Knowledge impact:** Gumbel teacher root constants are flat; the root prior acts as a tiebreaker there.

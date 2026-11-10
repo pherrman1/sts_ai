@@ -1,0 +1,149 @@
+{
+ "boundary1_by_n": {
+  "10": {
+   "final_leader": 0.4766957024315733,
+   "final_top2": 0.6979317177888783,
+   "roots": 24223
+  },
+  "11": {
+   "final_leader": 0.4475706494794249,
+   "final_top2": 0.6574119980168567,
+   "roots": 16136
+  },
+  "12": {
+   "final_leader": 0.43658113414300065,
+   "final_top2": 0.6522691991598941,
+   "roots": 10951
+  },
+  "13": {
+   "final_leader": 0.4024691358024691,
+   "final_top2": 0.6128943758573389,
+   "roots": 7290
+  },
+  "14": {
+   "final_leader": 0.3927821271720451,
+   "final_top2": 0.6035898415123162,
+   "roots": 5237
+  },
+  "15": {
+   "final_leader": 0.3845934379457917,
+   "final_top2": 0.5748930099857347,
+   "roots": 3505
+  },
+  "16": {
+   "final_leader": 0.37358954306781367,
+   "final_top2": 0.5637358954306781,
+   "roots": 8951
+  },
+  "3": {
+   "final_leader": 0.8899539653866325,
+   "final_top2": 1.0,
+   "roots": 68644
+  },
+  "4": {
+   "final_leader": 0.8078452160084814,
+   "final_top2": 1.0,
+   "roots": 79233
+  },
+  "5": {
+   "final_leader": 0.7426786070644582,
+   "final_top2": 0.9308895430053882,
+   "roots": 80176
+  },
+  "6": {
+   "final_leader": 0.6763355951483406,
+   "final_top2": 0.8945809028742245,
+   "roots": 75603
+  },
+  "7": {
+   "final_leader": 0.6035446377050532,
+   "final_top2": 0.8178221086472673,
+   "roots": 60655
+  },
+  "8": {
+   "final_leader": 0.5649762952929225,
+   "final_top2": 0.7850702675245513,
+   "roots": 47248
+  },
+  "9": {
+   "final_leader": 0.5029652558798854,
+   "final_top2": 0.7253160528828073,
+   "roots": 34567
+  }
+ },
+ "buckets": {
+  "13-16": {
+   "cpu_share": 0.035808431914470557,
+   "est_final_in_prior_top8": 0.6733187294633083,
+   "final_is_b0_leader": 0.15679706073049493,
+   "last_boundary_exact_tie": 0.06969958936676032,
+   "last_boundary_real_q_flip": 0.011940782364382969,
+   "mean_final_prior": 0.11828553963149098,
+   "root_share": 0.032202331136981704
+  },
+  "17-24": {
+   "cpu_share": 0.007921813417460118,
+   "est_final_in_prior_top8": 0.5619087136929461,
+   "final_is_b0_leader": 0.1393125889770185,
+   "last_boundary_exact_tie": 0.07646939190563351,
+   "last_boundary_real_q_flip": 0.007321537522879805,
+   "mean_final_prior": 0.0907275746830935,
+   "root_share": 0.00855515788850978
+  },
+  "2": {
+   "cpu_share": 0.07129773888991273,
+   "est_final_in_prior_top8": 1.0,
+   "final_is_b0_leader": 0.7820801957111732,
+   "last_boundary_exact_tie": 0.0,
+   "last_boundary_real_q_flip": 0.0,
+   "mean_final_prior": 0.7770412697188531,
+   "root_share": 0.09103578829420557
+  },
+  "25+": {
+   "cpu_share": 0.005564322619210033,
+   "est_final_in_prior_top8": 0.22400000000000012,
+   "final_is_b0_leader": 0.08793324775353016,
+   "last_boundary_exact_tie": 0.02374839537869063,
+   "last_boundary_real_q_flip": 0.0006418485237483953,
+   "mean_final_prior": 0.029185144000080616,
+   "root_share": 0.0027107862498064344
+  },
+  "3-4": {
+   "cpu_share": 0.20844661153888935,
+   "est_final_in_prior_top8": 1.0,
+   "final_is_b0_leader": 0.5504439500395599,
+   "last_boundary_exact_tie": 0.11642107968108631,
+   "last_boundary_real_q_flip": 0.0031377428538582742,
+   "mean_final_prior": 0.4874977156578892,
+   "root_share": 0.2572932851493107
+  },
+  "5-8": {
+   "cpu_share": 0.4855306264834663,
+   "est_final_in_prior_top8": 1.0,
+   "final_is_b0_leader": 0.3396970593366252,
+   "last_boundary_exact_tie": 0.15172821808087014,
+   "last_boundary_real_q_flip": 0.007406648918014881,
+   "mean_final_prior": 0.26277778239280214,
+   "root_share": 0.458784043595289
+  },
+  "9-12": {
+   "cpu_share": 0.1854304551366025,
+   "est_final_in_prior_top8": 0.8514605171209164,
+   "final_is_b0_leader": 0.2143181527067783,
+   "last_boundary_exact_tie": 0.10268174249216903,
+   "last_boundary_real_q_flip": 0.009991033687716153,
+   "mean_final_prior": 0.15754541370975553,
+   "root_share": 0.14941860768589676
+  }
+ },
+ "legal": {
+  "max": 1024,
+  "median": 6,
+  "p90": 10,
+  "p99": 17,
+  "share_gt16": 0.011265944138316216,
+  "share_le8": 0.8071131170388053
+ },
+ "root_cpu_hours": 161.80908141076168,
+ "roots": 574741
+}
