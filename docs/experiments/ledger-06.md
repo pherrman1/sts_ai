@@ -27142,3 +27142,27 @@ budget on these seeds) or a cap arm on #1025's seeds against #1025's G16 games w
 Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 143.8 lane-hours.
 **Knowledge impact:** combat teacher configuration; the node reuse cap is not a lever at 16,000 simulations in either
 direction. Contrasts that reuse one deterministic control share its draw and are not independent evidence.
+
+## §TBD — Gumbel only in hard fights in whole runs: §775's G16 + mb4 in elite and boss rooms (Act 4 included) and the A20 default combat D in normal and event fights (GHARD) against §775's G16 + mb4, net-0420 out of combat, 1,023 paired A20 seeds, control reused after a 32/32 sentinel: Heart 41.25% → 38.03%, −3.23 pp [−5.87, −0.59] → WORSE; 0.85× G16's CPU (machine-corrected); GHARD − D +6.35 pp at 1.85× D's CPU (cloud, 2026-11-10)
+
+**Question (Philipp, 2026-11-10 16:04 CET, "Yes let's try 1."; go 18:56 CET, "Go für hard fight test"):** §782 put
+G16 + mb4's gain in elites, bosses and Act 4, with no resolved change in normal-fight deaths. Does G16 + mb4 in elite and
+boss rooms only keep G16's Heart kills at less CPU?
+**Data:** [PREREG](evidence/gumbel_hard_fights_20261110/PREREG.md), [RESULT](evidence/gumbel_hard_fights_20261110/RESULT.md),
+`results/result.json`, `results/claims.txt`, `results/smoke.txt`, `analyze.py` (§783's copy; frozen in run commit 69cdcd53).
+- New research flags `STS_SILVER_GUMBEL_ROOT_ROOMS` / `STS_SILVER_GUMBEL_ROOT_SIMS` (default off; code b1149acd, binary
+  b9b7fc48). Smoke: flags unset and all four rooms listed both replay §775's G16 game exactly.
+- 1,056 units (32 G16 sentinel, 1,024 GHARD) on 40 workers, all verified. One seed was dropped (111378484): it ended
+  before any hard fight (rc 85).
+**Result:** sentinel 32/32 → REUSE_VALID. Heart G16 41.25%, GHARD 38.03%: **−3.23 pp [−5.87, −0.59]**. 82 seeds kill
+only with GHARD, 115 only with G16. SPRT nonregression CAP, one-sided upper bound −0.98 < 0 → **WORSE**. Final floor
+−1.02 [−1.88, −0.13]. CPU 0.915× raw, 0.848× machine-corrected; Gumbel sims 0.56× (Gumbel fights only).
+GHARD − D +6.35 pp [+3.42, +9.29] at 1.85× D's CPU.
+**Interpretation (Inference):** normal fights matter through HP carried into the hard fights (§782: +5.2 HP per run;
+at D's entry-HP slope ≈ 1.2-2.7 pp), even though their own death rate barely moves. GHARD buys about 0.029 pp per CPU
+second over D, against G16's 0.037. With §783 and §781, every cut to G16's budget tried so far loses Heart kills at
+least in proportion to the CPU it saves.
+**Decision:** WORSE. GHARD is dropped, no default change, and G16 + mb4 in every fight stays the teacher. The flags stay as
+research options.
+Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: about 137 lane-hours.
+**Knowledge impact:** none beyond this entry and the env-variable rows.
