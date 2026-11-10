@@ -27111,7 +27111,7 @@ whole-run gate would expect well under 1 pp, below what 1,024 paired seeds resol
 Seeds: none played (traces of #1025's 111430000-111431023). Cost: about 1 CPU-minute.
 **Knowledge impact:** Gumbel teacher root constants are flat; the root prior acts as a tiebreaker there.
 
-## §TBD — Gumbel tuning Test 3, no tree reuse in whole runs: §775's G16 + mb4 with the smallest node reuse cap 1,024 (G16NR) against §775's G16 + mb4 (32,768), net-0420 out of combat, 1,024 paired A20 seeds, §775's G16 games reused after Test 1's 32/32 sentinel: Heart 41.21% → 38.48%, −2.73 pp [−5.47, +0.10] → NO_DIFFERENCE_SHOWN; G16NR − G16CAP +0.20 pp; carried visits 34% → 6%, same CPU (cloud, 2026-11-10)
+## §785 — Gumbel tuning Test 3, no tree reuse in whole runs: §775's G16 + mb4 with the smallest node reuse cap 1,024 (G16NR) against §775's G16 + mb4 (32,768), net-0420 out of combat, 1,024 paired A20 seeds, §775's G16 games reused after Test 1's 32/32 sentinel: Heart 41.21% → 38.48%, −2.73 pp [−5.47, +0.10] → NO_DIFFERENCE_SHOWN; G16NR − G16CAP +0.20 pp; carried visits 34% → 6%, same CPU (cloud, 2026-11-10)
 
 **Question (Philipp, 2026-11-10 08:38 CET, "Wie kann ein höherer Cap einfach schlechter sein? Spricht das vllt für
 falsch kalibrierter leaf value?"; go 15:22 CET "Ja let's go", 40 workers 16:58 CET):** do the visits a root inherits
