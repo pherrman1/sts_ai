@@ -27060,7 +27060,7 @@ Seeds: §775's 111378256-111379279 replayed (no new seeds). Cost: 224.9 lane-hou
 **Knowledge impact:** combat teacher evaluation and budget allocation. Inference: death rate per elite and boss
 fight, not HP per fight, carries the whole-run gain. Fixed-state HP proxies need a death or tail metric and a normal-fight term.
 
-## §TBD — Learned stop for the Gumbel root in whole runs: §775's G16 + mb4 with a learned sequential-halving stop (G16STOP, ggbt-10bc2f281224, T 0.08) against §775's G16 + mb4, net-0420 out of combat, 1,024 paired A20 seeds, control reused after a 32/32 sentinel: Heart 41.21% → 38.87%, −2.34 pp [−5.18, +0.39] → INCONCLUSIVE; 0.70× the simulations, about 0.76× the CPU (cloud, 2026-11-10)
+## §783 — Learned stop for the Gumbel root in whole runs: §775's G16 + mb4 with a learned sequential-halving stop (G16STOP, ggbt-10bc2f281224, T 0.08) against §775's G16 + mb4, net-0420 out of combat, 1,024 paired A20 seeds, control reused after a 32/32 sentinel: Heart 41.21% → 38.87%, −2.34 pp [−5.18, +0.39] → INCONCLUSIVE; 0.70× the simulations, about 0.76× the CPU (cloud, 2026-11-10)
 
 **Question (Philipp, 2026-11-10, "Oke go training, dann go auf 40 worker"):** can a learned stop end G16 + mb4's
 Gumbel root search early without losing Heart kills?
