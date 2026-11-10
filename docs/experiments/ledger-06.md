@@ -27093,7 +27093,7 @@ Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 133.9 lane-hours
 **Knowledge impact:** combat teacher cost. Offline agreement with the full-budget pick is not enough to show
 no-loss in whole runs. A learned Gumbel stop buys about 25% CPU for an unresolved Heart cost of 0-5 pp.
 
-## §TBD — Gumbel root with m = 8 candidates or thirds instead of halving, offline on 574,741 traced G16 + mb4 roots (#1025's 1,024 runs): m = 8 plays identically on 80.7% of roots (at most 8 legal actions; median 6) and saves no CPU; thirds would drop G16's eventual pick after phase 1 in about 10-20% of roots with 5+ actions; the root prior is close to a tiebreaker → NOT_PURSUED, descriptive (cloud, 2026-11-10)
+## §784 — Gumbel root with m = 8 candidates or thirds instead of halving, offline on 574,741 traced G16 + mb4 roots (#1025's 1,024 runs): m = 8 plays identically on 80.7% of roots (at most 8 legal actions; median 6) and saves no CPU; thirds would drop G16's eventual pick after phase 1 in about 10-20% of roots with 5+ actions; the root prior is close to a tiebreaker → NOT_PURSUED, descriptive (cloud, 2026-11-10)
 
 **Question (Philipp, 2026-11-10 15:24 CET):** how much does the prior drive the Gumbel root, and would m = 8 or
 thirds be worth a gate?
