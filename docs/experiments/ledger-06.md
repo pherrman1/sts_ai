@@ -26946,7 +26946,7 @@ No default change. Seeds: §775's 111378256-111378767 reused (no new seeds). Cos
 8.7× combat B's CPU); budget comparisons with §775's arms carry Act 4 strong; a G16 + mb4 arm with Act 4 strong off
 would split the 8k → 16k step.
 
-## §TBD — Gumbel tuning Test 2, node reuse cap in whole runs: §775's G16 + mb4 with a 262,144-node reuse cap in every fight (G16CAP) against §775's G16 + mb4 (32,768), net-0420 out of combat, 1,024 paired A20 seeds, §775's G16 games reused after Test 1's 32/32 sentinel: Heart 41.21% → 38.28%, −2.93 pp [−5.66, −0.20] → NOT_SHOWN; cap resets 4.5% → 0% of reroots, carried visits 34% → 44%, same CPU (cloud, 2026-11-10)
+## §780 — Gumbel tuning Test 2, node reuse cap in whole runs: §775's G16 + mb4 with a 262,144-node reuse cap in every fight (G16CAP) against §775's G16 + mb4 (32,768), net-0420 out of combat, 1,024 paired A20 seeds, §775's G16 games reused after Test 1's 32/32 sentinel: Heart 41.21% → 38.28%, −2.93 pp [−5.66, −0.20] → NOT_SHOWN; cap resets 4.5% → 0% of reroots, carried visits 34% → 44%, same CPU (cloud, 2026-11-10)
 
 **Question (Philipp, 2026-11-09 20:53 CET, "node cap danach ebenfalls"; 2026-11-10 00:22 CET go for the night's
 run):** does a node reuse cap of 262,144 instead of 32,768 raise the Heart kill rate of §775's teacher G16 + mb4?
