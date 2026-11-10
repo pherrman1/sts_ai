@@ -27009,3 +27009,53 @@ Seeds: §775's 111378256-111378767 reused (no new seeds). Cost: 127.4 lane-hours
 **Knowledge impact:** combat teacher and PPO actor combat choice; Act 4 strong adds about 3 pp at any budget for
 about 350-415 s CPU per Act-4 run; budget comparisons with Act 4 strong off understate an arm by about 3 pp; the
 16k step is a real budget effect.
+
+## §TBD — Traced replay of §775 (D vs G16 + mb4, net-0420 out of combat, 1,024 A20 seeds) with per-fight traces: 2,048/2,048 games reproduce; G16's +98 Heart kills = 69 from reaching the Heart more often + 29 from winning more Heart fights; per fight the gain is largest in Act 1-2 elites, the Act 2 boss and the Heart, not in normal fights; entry HP (+2) explains about 1 pp of the 5-6 pp boss death drops → REPRO_OK, descriptive (cloud, 2026-11-10)
+
+**Question (trajectory review rank 1; Philipp, 2026-11-10 00:22 CET, "Jo klingt gut, go"):** where in the run does
+§775's G16 + mb4 gain its +9.6 pp Heart kills over the A20 default combat (D): which fight classes, through a better
+entry state or through search inside the fights, and does the HP-per-fight proxy (§770, §772, §774: elite and boss
+fights only) miss normal fights?
+**Data:** [PREREG](evidence/gumbel_wholerun_trace_20261109/PREREG.md),
+[RESULT](evidence/gumbel_wholerun_trace_20261109/RESULT.md), `results/result.json` (frozen `analyze.py`),
+`results/explore.json` (`explore.py`, written after the data), `results/battles.csv.gz` (46,932 traced fights),
+`results/claims.txt`, `results/verify.txt`.
+- Replays of §775's D and G16 games with `STS_OOC_DECISION_TRACE` (read-only), binary 0eabb014 (code 5665d5ae), run
+  commit b5464a79. 271 units on 40 workers, 2026-11-10 05:40-07:55 CET, all first attempts; verify 271/271 OK.
+- 2,048/2,048 games reproduce §775 (BEST, `[heart1_ppo]`, Gumbel roots/sims): REPRO_OK, 0 aborts, 0 missing.
+
+**Result (descriptive):**
+- **Heart kills:** D 324 (31.64%), G16 422 (41.21%).
+  - Arrivals at the Heart: 408 vs 495. Kills per arrival: 79.4% vs 85.3%.
+  - Split of the +98: 69.1 from reaching the Heart more often, 28.9 from winning more Heart fights.
+- **Deaths per fight, G16 − D:**
+  - Normal fights: −0.17 / −0.14 / −0.24 pp in Acts 1-3, all intervals include 0.
+  - Elites: −0.74 [−1.44, −0.01] / −1.52 [−2.72, −0.33] / −0.55 [−1.62, +0.50] pp.
+  - Bosses: Act 1 −1.66 [−3.73, +0.40]; Act 2 −4.68 [−7.45, −1.96]; Act 3 (both) +0.18 [−1.85, +2.22] pp.
+  - Act 4: Shield and Spear −1.52 [−3.01, −0.18] pp; Heart −5.84 [−10.31, −1.32] pp.
+- **HP saved per won fight:** normal +0.31 / +0.44 / +0.63; elite +0.72 / +1.46 / +0.08.
+  - Per run, at D's fight counts: normal fights 5.2 HP and 0.2 potions over 12.6 fights; elites 4.3 HP over 5.7
+    fights.
+- **Boss entry:** G16 has +1.5 to +2.3 HP at every boss and equal potions and deck size.
+  - D's own slope of death on entry HP (−0.24 to −0.51 pp per HP) predicts −0.5 to −1.0 pp from that.
+  - Observed: −4.7 pp at the Act 2 boss, −5.8 pp at the Heart.
+- **First divergence**, from identical states, almost all in Act 1: normal fights +1.20 HP [+0.86, +1.54] (n 735);
+  elites +1.35 HP [+0.24, +2.48] (n 272).
+- **Discordant seeds** (171 only G16 kills, 73 only D): the losing arm's last fight is an elite on net +38 seeds, an
+  Act 1-3 boss on +29, Act 4 on +15, a normal fight on +12, other fights on +4.
+- **No gain at two bosses:** Awakened One (deaths 12.4% → 14.2%) and Hexaghost (15.4% → 15.0%).
+
+**Interpretation (Inference):**
+- G16's Heart gain is mostly search inside the decisive fights: Act 1-2 elites, the Act 2 boss and the Heart. The
+  small HP edge it carries into bosses explains about 1 pp of the 5-6 pp drops.
+- Normal fights add HP over a run (as much as elites) but rarely end runs. The elite-and-boss HP proxy misses about
+  half of the HP gain, and above all the tail (death-rate) effects at bosses that drive the Heart gain.
+- Caveats: per-class rates compare different state distributions (G16's later fights include runs D had lost); post
+  HP includes post-fight heals (the Act 3 boss HP rows are not in-fight HP); part B is post hoc.
+
+**Decision:** none (descriptive). No default change. Inputs for the stop-trace and budget work: a cheaper
+normal-fight budget should cost HP (about 5 per run at most), not many direct deaths. Awakened One and Hexaghost are
+where the teacher does not beat D.
+Seeds: §775's 111378256-111379279 replayed (no new seeds). Cost: 224.9 lane-hours.
+**Knowledge impact:** combat teacher evaluation and budget allocation. Death rate per elite and boss fight, not HP
+per fight, carries the whole-run gain. Fixed-state HP proxies need a death or tail metric and a normal-fight term.

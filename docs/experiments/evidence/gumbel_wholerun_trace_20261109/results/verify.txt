@@ -1,0 +1,2 @@
+units OK 271 MISSING 0 BAD 0 of 271; duplicates 0; tars for unknown units 0; run ['b5464a79cdb9']; worker DONE.json: 40/40
+extracted 271 units to /tmp/claude-0/-home-user/d78b653b-e7c2-5a0b-86dc-bc20529124a2/scratchpad/replay
