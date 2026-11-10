@@ -3136,12 +3136,15 @@ static std::string unsupportedSilverOption() {
         {"STS_SILVER_LEARNED_STOP_BOSS_FALLBACK", ""}, {"STS_SILVER_LEARNED_STOP_BOSS_MAX", ""}, {"STS_SILVER_LEARNED_STOP_MODEL", ""}, {"STS_SILVER_STOP_TRACE", ""},
         {"STS_SILVER_FINAL_BOSS_BINARY", ""}, {"STS_SILVER_FINAL_FIGHT_LEAF", ""}, {"STS_SILVER_NO_LOSS_POTION_CREDIT", ""}, {"STS_SILVER_RELIC_HEAL_LEAF", ""}, {"STS_SILVER_A20_BOSS_HEAL_FIX", ""}, {"STS_SILVER_LOOP_GUARD", ""}, {"STS_SILVER_ESCAPE_PENALTY", ""}, {"STS_SILVER_POTION_WEIGHTS", ""}, {"STS_SILVER_CONCAVE_HP_LEAF", ""}, {"STS_SILVER_GOLD_WEIGHT", ""}, {"STS_SILVER_MAXHP_WEIGHT", ""}, {"STS_SILVER_VICTORY_TURN_PENALTY", ""}, {"STS_SILVER_LOSS_CEILING", ""}, {"STS_SILVER_INCENSE_HEART_PHASE", ""}, {"STS_SILVER_PRICE_TABLE_LEAF", ""},
         {"STS_SILVER_ROOT_PRIOR", ""}, {"STS_SILVER_ROOT_PRIOR_WEIGHT", ""}, {"STS_SILVER_ROOT_PRIOR_SCOPE", ""}, {"STS_SILVER_TREE_PRIOR_MIN_VISITS", ""},
+        {"STS_SILVER_COMBATNET_PRIOR_MODEL", ""}, {"STS_SILVER_COMBATNET_PRIOR", ""}, {"STS_SILVER_COMBATNET_PRIOR_TEMP", ""},
         {"STS_SILVER_ROLLOUT_UNIFORM", ""}, {"STS_SILVER_ROLLOUTS_PER_LEAF", ""}, {"STS_SILVER_ROLLOUT_CARD_TABLE", ""}, {"STS_SILVER_ROLLOUT_ZERO_COST_CAP", ""}, {"STS_SILVER_ROLLOUT_ACTION_CAP", ""},
         {"STS_SILVER_ROLLOUT_ROOT_TABLE", ""}, {"STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE", ""}, {"STS_SILVER_PRIOR_PLAYOUT_ELITE", ""},
         {"STS_SILVER_LEAF_HEAD", ""}, {"STS_SILVER_LEAF_HEAD_TRUNK", ""}, {"STS_SILVER_LEAF_HEAD_BLEND", ""},
         {"STS_SILVER_LEAF_HEAD_TURN_PENALTY", ""}, {"STS_SILVER_LEAF_HEAD_WIN_CAP", ""},
         {"STS_SILVER_MAX_BACKUP", ""}, {"STS_SILVER_RISK_VETO", ""},
-        {"STS_SILVER_GUMBEL_ROOT", ""}, {"STS_SILVER_GUMBEL_ROOT_MAX_BACKUP", ""},
+        {"STS_SILVER_GUMBEL_ROOT", ""}, {"STS_SILVER_GUMBEL_ROOT_MAX_BACKUP", ""}, {"STS_SILVER_GUMBEL_ROOT_UCB", ""},
+        {"STS_SILVER_GUMBEL_ROOT_WIDEN_END_TURN", ""}, {"STS_SILVER_GUMBEL_ROOT_WIDEN_CHANCE", ""},
+        {"STS_SILVER_GUMBEL_STOP_TRACE", ""},
     };
     // Vendored-only diagnostics without the STS_SILVER_ prefix.
     static const char *const kRemoved[] = {
@@ -3213,7 +3216,7 @@ int main(int argc, char **argv) {
         const bool a20WholeRun = wholeRunMode && (argc > 4 ? std::atoi(argv[4]) : 20) == 20;
         // expertreplay plays one A20 whole run per process (no sims argument).
         const bool wholeRunDefault = (wholeRunMode && argc <= 2) || a20WholeRun || mode == "expertreplay"
-            || mode == "expertfights";
+            || mode == "expertfights" || mode == "selffights";
         const bool adaptiveConfigured = std::getenv("STS_SILVER_ADAPTIVE")
             || std::getenv("STS_SILVER_ADAPTIVE_RETAINED_ONLY")
             || std::getenv("STS_SILVER_ADAPTIVE_TOP_GAP");
@@ -3953,6 +3956,13 @@ int main(int argc, char **argv) {
         if (argc != 5 || std::string(argv[2]) != "1")
             throw std::runtime_error("usage: one_combat expertfights 1 RUN.json OUT.json");
         return one_combat::expertFightsGen(argv[3], argv[4]);
+    } else if (mode == "selffights") {
+        if (argc != 5 || std::string(argv[2]) != "1")
+            throw std::runtime_error("usage: one_combat selffights 1 SEED OUT.json");
+        const std::string seed(argv[3]);
+        if (seed.empty() || seed.size() > 19 || seed.find_first_not_of("0123456789") != std::string::npos)
+            throw std::runtime_error("selffights seed must be a nonnegative integer");
+        return one_combat::selfFightsGen(std::stoull(seed), argv[4]);
     } else if (mode == "heartoutcomegen") {
         const std::string capture = argc == 6 ? argv[5] : "";
         if (argc != 6 || std::string(argv[2]) != "1"

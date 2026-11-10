@@ -17,6 +17,7 @@
 #include <chrono>
 #include <ctime>
 #include <nlohmann/json.hpp>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <tuple>
@@ -24,6 +25,7 @@
 #include "combat/BattleContext.h"
 #include "game/GameContext.h"
 #include "sim/search/CombatKnowledge.h"
+#include "sim/search/CombatTokNet.h"
 #include "sim/search/CombatValueNet.h"
 #include "sim/search/ScumSearchAgent2.h"
 #include "sim/search/SearchRng.h"
@@ -89,6 +91,11 @@ namespace sts::search {
             std::string rootPriorPath;
             double rootPriorWeight = 0;
             bool rootPriorOverrideOnly = false;
+            // Combat plan stage 3 (research, default off): the native combat net as root prior
+            // (STS_SILVER_COMBATNET_PRIOR_MODEL, STS_SILVER_COMBATNET_PRIOR, STS_SILVER_COMBATNET_PRIOR_TEMP).
+            std::string combatNetPriorPath;
+            bool combatNetPrior = false;
+            double combatNetPriorTemp = 1.0;
             // Per-root rollout card table model (STS_SILVER_ROLLOUT_ROOT_TABLE; ADR-0046 default on).
             std::string rolloutRootTablePath;
             int treePriorMinVisits = 0;       // STS_SILVER_TREE_PRIOR_MIN_VISITS (research; 0 = off)
@@ -110,6 +117,14 @@ namespace sts::search {
             // STS_SILVER_GUMBEL_ROOT_MAX_BACKUP=M adds max backup (min M visits) in exactly those fights.
             int gumbelRootK = 0;
             int gumbelRootMaxBackup = 0;
+            // STS_SILVER_GUMBEL_STOP_TRACE=<csv> (research only, default off): one row per sequential-halving
+            // boundary of every whole-run Gumbel root (SilverSearcher::gumbelBoundaryObserver); play unchanged.
+            std::string gumbelStopTrace;
+            // STS_SILVER_GUMBEL_ROOT_UCB / _WIDEN_END_TURN / _WIDEN_CHANCE (research, default off): the tree constants
+            // of exactly those fights' searchers (UCB exploration at decision and chance children, widening C at
+            // end-turn and other chance nodes; the others SilverSearcher's defaults), as the expert-fights arm
+            // tokens ucb / wet / wch set them.
+            std::optional<NativeSilverSearchParams> gumbelRootTree;
             // STS_SILVER_LEAF_HEAD (default off): whole-run fights value undecided leaves with this value head
             // on the trunk of STS_SILVER_LEAF_HEAD_TRUNK, blended with the playout (SilverSearcher::LeafHead).
             std::string leafHeadPath, leafHeadTrunkPath;
@@ -125,6 +140,7 @@ namespace sts::search {
         Options g_options;
         NativeSilverPriceTableBuilder g_priceTableBuilder;
         CombatValueNet g_rootPriorNet;
+        CombatTokNet g_combatNetPrior;
         SilverValueHead g_leafHead;
         CombatValueNet g_leafHeadTrunk;
         CombatValueNet g_rolloutRootTableNet;
@@ -148,6 +164,8 @@ namespace sts::search {
         }
         std::mutex g_stopTraceMutex;
         std::ofstream g_stopTraceFile;
+        std::mutex g_gumbelStopTraceMutex;
+        std::ofstream g_gumbelStopTraceFile;
         std::string g_uselessTrace;
         std::mutex g_uselessMutex;
         std::string g_publicTrace;
@@ -363,6 +381,9 @@ namespace sts::search {
         std::atomic<std::int64_t> g_wholeRunGumbelSims {0};
         std::atomic<std::int64_t> g_reroots {0};
         std::atomic<std::int64_t> g_freshRoots {0};
+        std::atomic<std::int64_t> g_inheritedVisits {0};   // over g_reroots
+        std::atomic<std::int64_t> g_capResets {0};   // reroots the reuse cap turned into fresh roots
+        std::atomic<std::int64_t> g_capLostVisits {0};   // the visits those roots had
         std::atomic<std::int64_t> g_singletonSkips {0};
         std::atomic<std::int64_t> g_equivalentCopyReroots {0};
         std::atomic<std::int64_t> g_learnedStops {0};
@@ -492,6 +513,63 @@ namespace sts::search {
                 << static_cast<std::int64_t>(x[kStopCheckpoint]) << ',' << leader.bits;
             for (const double v : x) g_stopTraceFile << ',' << v;
             g_stopTraceFile << '\n';
+        }
+
+        // STS_SILVER_GUMBEL_STOP_TRACE: one buffered row per sequential-halving boundary of a root.
+        struct GumbelStopRow {
+            int boundary = 0, phases = 0, candidates = 0;
+            std::int64_t spent = 0;
+            double cpuSeconds = 0;   // thread CPU since the root's search started
+            int leader = -1, runnerUp = -1;
+            double leaderScore = 0, runnerUpScore = 0, leaderQ = 0, runnerUpQ = 0;
+            bool qValid = false;
+            std::int64_t leaderVisits = 0, runnerUpVisits = 0, candidateVisits = 0;
+            double leaderPrior = -1, runnerUpPrior = -1;
+            NativeSilverStopFeatures x{};
+        };
+
+        constexpr const char *kGumbelStopTraceHeader =
+            "seed,combat,decision,floor,act,room,turn,k,max_backup,legal_actions,inherited_visits,budget,"
+            "boundary,phases,candidates,spent,cpu_seconds,root_cpu_seconds,root_sims,"
+            "leader,runner_up,final,leader_edge,runner_up_edge,final_edge,leader_is_final,"
+            "leader_score,runner_up_score,score_gap,leader_q,runner_up_q,q_gap,q_valid,"
+            "leader_visits,runner_up_visits,candidate_visits,leader_visit_share,leader_prior,runner_up_prior";
+
+        void traceGumbelStopRoot(const GameContext &gc, const BattleContext &bc, std::int64_t combatId, int decision,
+                                 const SilverSearcher &searcher, int k, int maxBackup, std::int64_t inheritedVisits,
+                                 std::int64_t budget, std::int64_t rootSims, double rootCpu,
+                                 const std::vector<GumbelStopRow> &rows) {
+            if (rows.empty()) return;
+            const auto &edges = searcher.rootNode().edges;
+            const int finalEdge = searcher.lastGumbelEdge();
+            const auto bits = [&](int edge) -> long long {
+                if (edge < 0 || edge >= static_cast<int>(edges.size())) return -1;
+                return static_cast<long long>(
+                    SilverSearcher::translateAction(edges[edge].action, searcher.rootSearchState(), bc).bits);
+            };
+            const long long finalBits = bits(finalEdge);
+            std::ostringstream out;
+            out.precision(17);
+            for (const auto &r : rows) {
+                const double total = static_cast<double>(std::max<std::int64_t>(r.candidateVisits, 1));
+                out << gc.seed << ',' << combatId << ',' << decision << ',' << gc.floorNum << ',' << gc.act << ','
+                    << stopRoomCode(gc.curRoom) << ',' << bc.turn << ',' << k << ',' << maxBackup << ','
+                    << edges.size() << ',' << inheritedVisits << ',' << budget << ','
+                    << r.boundary << ',' << r.phases << ',' << r.candidates << ',' << r.spent << ','
+                    << r.cpuSeconds << ',' << rootCpu << ',' << rootSims << ','
+                    << bits(r.leader) << ',' << bits(r.runnerUp) << ',' << finalBits << ','
+                    << r.leader << ',' << r.runnerUp << ',' << finalEdge << ',' << (r.leader == finalEdge ? 1 : 0) << ','
+                    << r.leaderScore << ',' << r.runnerUpScore << ',' << r.leaderScore - r.runnerUpScore << ','
+                    << r.leaderQ << ',' << r.runnerUpQ << ',' << (r.qValid ? r.leaderQ - r.runnerUpQ : 0.0) << ','
+                    << (r.qValid ? 1 : 0) << ',' << r.leaderVisits << ',' << r.runnerUpVisits << ','
+                    << r.candidateVisits << ',' << static_cast<double>(r.leaderVisits) / total << ','
+                    << r.leaderPrior << ',' << r.runnerUpPrior;
+                for (const double v : r.x) out << ',' << v;
+                out << '\n';
+            }
+            std::lock_guard lock(g_gumbelStopTraceMutex);
+            g_gumbelStopTraceFile << out.str();
+            g_gumbelStopTraceFile.flush();
         }
 
         class KnowledgeObserverScope {
@@ -630,8 +708,8 @@ namespace sts::search {
                 : isBossEncounter(bc.encounter) && !g_options.exactRootBudgets
                 ? static_cast<std::int64_t>(agent.bossSimulationMultiplier * agent.simulationCountBase)
                 : agent.simulationCountBase;
-            const std::size_t reuseCap = act4Heart ? std::max(g_options.reuseCap, kAct4HeartReuseCap)
-                                                   : g_options.reuseCap;
+            const std::size_t reuseCap = g_nativeSilverReuseCapOverride.value_or(
+                act4Heart ? std::max(g_options.reuseCap, kAct4HeartReuseCap) : g_options.reuseCap);
 
             if (g_nativeSilverLabelSearch && (adaptive || learnedStop || lockOnly || stopTrace))
                 fail(gc, bc, "the label search requires a flat budget");
@@ -669,10 +747,17 @@ namespace sts::search {
                     s->rerootAt(node, overCap);
                     if (s->nodeCount() >= reuseCap) {
                         s->setRoot(root);   // compaction could not get below the cap
+                        if (count) {
+                            ++g_capResets;
+                            g_capLostVisits += inheritedVisits;
+                            ++g_nativeSilverCombatStats.capResets;
+                            g_nativeSilverCombatStats.capLostVisits += inheritedVisits;
+                        }
                         inheritedVisits = 0;
                     }
                 } else if (s) {
                     s->setRoot(root);
+                    if (count) ++g_nativeSilverCombatStats.freshRoots;
                 } else {
                     s = std::make_unique<SilverSearcher>(root, context);
                     s->evalWeights.escapePenalty = g_options.escapePenalty;
@@ -688,7 +773,9 @@ namespace sts::search {
                     s->priceTable = priceTable;
                     if (g_nativeSilverPotionWeightOverride)
                         s->evalWeights.potionWeight = *g_nativeSilverPotionWeightOverride;
-                    if (const auto &params = g_nativeSilverSearchParamOverride) {
+                    const std::optional<NativeSilverSearchParams> params = g_nativeSilverSearchParamOverride
+                        ? g_nativeSilverSearchParamOverride : wholeRunGumbel ? g_options.gumbelRootTree : std::nullopt;
+                    if (params) {
                         s->explorationParameter = params->exploration;
                         s->explorationParameterChance = params->explorationChance;
                         s->chanceWideningC = params->chanceWideningC;
@@ -699,6 +786,11 @@ namespace sts::search {
                 }
                 if (count) {
                     if (inheritedVisits > 0) ++g_reroots; else ++g_freshRoots;
+                    if (inheritedVisits > 0) g_inheritedVisits += inheritedVisits;
+                    if (inheritedVisits > 0) {
+                        ++g_nativeSilverCombatStats.reroots;
+                        g_nativeSilverCombatStats.inheritedVisits += inheritedVisits;
+                    }
                 }
                 return inheritedVisits;
             };
@@ -708,7 +800,9 @@ namespace sts::search {
                 s.leafSamples = label ? nullptr : g_nativeSilverLeafSamples;
                 s.outcomes = label ? nullptr : g_nativeSilverOutcomeCapture;
                 s.rootPrior = nativeSilverRootPrior(s);
-                s.rootPriorWeight = s.rootPrior.empty() ? 0 : g_options.rootPriorWeight;
+                if (!s.rootPrior.empty() && nativeSilverCombatNetPriorOn()) s.rootPrior = nativeSilverCombatNetRootPrior(s);
+                s.rootPriorWeight = s.rootPrior.empty() ? 0
+                    : g_nativeSilverPriorWeightOverride.value_or(g_options.rootPriorWeight);
                 s.rootPriorBonus = !g_nativeSilverRootPriorBonusOff;
                 s.nodePrior = nullptr;
                 if (!s.rootPrior.empty() && g_nativeSilverTreePriorOverride) {
@@ -904,8 +998,51 @@ namespace sts::search {
                             simulations = kAdaptiveTotal;
                         }
                     } else if (gumbelRoot) {
+                        // STS_SILVER_GUMBEL_STOP_TRACE: rows at each halving boundary, written after the search
+                        // with the final choice. The observer only reads the tree.
+                        const bool gumbelTrace = wholeRunGumbel && !g_options.gumbelStopTrace.empty();
+                        std::vector<GumbelStopRow> gumbelRows;
+                        StopTrack gumbelTrack;
+                        const double gumbelCpu0 = gumbelTrace ? threadCpuSeconds() : 0;
+                        if (gumbelTrace) {
+                            searcher->gumbelBoundaryObserver = [&](const SilverSearcher::GumbelBoundary &b) {
+                                GumbelStopRow r;
+                                r.cpuSeconds = threadCpuSeconds() - gumbelCpu0;
+                                r.boundary = b.phase;
+                                r.phases = b.phases;
+                                r.candidates = static_cast<int>(b.ranked.size());
+                                r.spent = b.spent;
+                                const auto &edges = searcher->rootNode().edges;
+                                const auto &prior = searcher->rootPrior;
+                                const bool hasPrior = prior.size() == edges.size();
+                                r.leader = b.ranked[0];
+                                r.runnerUp = b.ranked.size() > 1 ? b.ranked[1] : -1;
+                                r.leaderScore = b.scores[r.leader];
+                                r.runnerUpScore = r.runnerUp >= 0 ? b.scores[r.runnerUp] : r.leaderScore;
+                                r.leaderQ = std::isnan(b.q[r.leader]) ? 0 : b.q[r.leader];
+                                r.runnerUpQ = r.runnerUp >= 0 && !std::isnan(b.q[r.runnerUp]) ? b.q[r.runnerUp] : 0;
+                                r.qValid = r.runnerUp >= 0 && !std::isnan(b.q[r.leader]) && !std::isnan(b.q[r.runnerUp]);
+                                r.leaderVisits = edges[r.leader].visitCount;
+                                r.runnerUpVisits = r.runnerUp >= 0 ? edges[r.runnerUp].visitCount : 0;
+                                for (const int c : b.ranked) r.candidateVisits += edges[c].visitCount;
+                                r.leaderPrior = hasPrior ? prior[r.leader] : -1;
+                                r.runnerUpPrior = hasPrior && r.runnerUp >= 0 ? prior[r.runnerUp] : -1;
+                                r.x = stopFeatures(*searcher, inheritedVisits, b.spent, flatBudget, bc.turn, gc.act,
+                                    stopRoomCode(gc.curRoom), gumbelTrack);
+                                gumbelRows.push_back(r);
+                            };
+                        }
+                        struct ObserverReset {
+                            SilverSearcher &s;
+                            ~ObserverReset() { s.gumbelBoundaryObserver = nullptr; }
+                        } observerReset{*searcher};
                         simulations = searcher->searchGumbelRoot(flatBudget, *gumbelRoot,
                             nativeSilverBattleSeed(bc) ^ (0x9e3779b97f4a7c15ULL * static_cast<std::uint64_t>(decision + 1)));
+                        if (gumbelTrace) {
+                            const int mb = g_options.gumbelRootMaxBackup;
+                            traceGumbelStopRoot(gc, bc, combatId, decision, *searcher, gumbelRoot->k, mb,
+                                inheritedVisits, flatBudget, simulations, threadCpuSeconds() - gumbelCpu0, gumbelRows);
+                        }
                         ++g_nativeSilverCombatStats.gumbelRoots;
                         if (wholeRunGumbel) {
                             ++g_wholeRunGumbelRoots;
@@ -1194,14 +1331,44 @@ namespace sts::search {
                 throw std::runtime_error("STS_SILVER_GUMBEL_ROOT_MAX_BACKUP requires STS_SILVER_GUMBEL_ROOT");
             if (g_options.gumbelRootK > 0 && g_options.adaptive)
                 throw std::runtime_error("STS_SILVER_GUMBEL_ROOT requires STS_SILVER_ADAPTIVE=0 (flat budget)");
+            const auto decimalEnv = [](const char *name, double hi) {
+                const char *raw = std::getenv(name);
+                if (!raw || !*raw || std::string(raw) == "0") return 0.0;
+                char *end = nullptr;
+                const double v = std::strtod(raw, &end);
+                if (end == raw || *end != '\0' || !std::isfinite(v) || v <= 0 || v > hi)
+                    throw std::runtime_error(std::string(name) + " must be 0 or a number in (0, " + std::to_string(hi)
+                        + "]");
+                return v;
+            };
+            const double ucb = decimalEnv("STS_SILVER_GUMBEL_ROOT_UCB", 1000);
+            const double widenEndTurn = decimalEnv("STS_SILVER_GUMBEL_ROOT_WIDEN_END_TURN", 100);
+            const double widenChance = decimalEnv("STS_SILVER_GUMBEL_ROOT_WIDEN_CHANCE", 100);
+            if (ucb > 0 || widenEndTurn > 0 || widenChance > 0) {
+                if (g_options.gumbelRootK == 0)
+                    throw std::runtime_error("STS_SILVER_GUMBEL_ROOT_UCB / _WIDEN_END_TURN / _WIDEN_CHANCE require"
+                                             " STS_SILVER_GUMBEL_ROOT");
+                NativeSilverSearchParams params;   // SilverSearcher's defaults
+                if (ucb > 0) params.exploration = params.explorationChance = ucb;
+                if (widenEndTurn > 0) params.endTurnWideningC = widenEndTurn;
+                if (widenChance > 0) params.chanceWideningC = widenChance;
+                g_options.gumbelRootTree = params;
+            }
             if (g_options.gumbelRootK > 0)
                 std::cerr << "[silver] research search: whole-run Gumbel root k=" << g_options.gumbelRootK
                           << " max backup=" << g_options.gumbelRootMaxBackup << " (all acts)\n";
+            if (const auto &t = g_options.gumbelRootTree)
+                std::cerr << "[silver] research search: whole-run Gumbel tree ucb=" << t->exploration
+                          << " widen end turn=" << t->endTurnWideningC << " widen chance=" << t->chanceWideningC << "\n";
             if (g_options.gumbelRootK > 0)
                 std::atexit([] {
                     std::cerr << "[silver] whole-run Gumbel roots=" << g_wholeRunGumbelRoots.load()
                               << " sims=" << g_wholeRunGumbelSims.load() << " (all decisions " << g_decisions.load()
                               << ", sims " << g_simulations.load() << ")\n";
+                    std::cerr << "[silver] whole-run tree reuse: reroots=" << g_reroots.load()
+                              << " inherited=" << g_inheritedVisits.load() << " fresh=" << g_freshRoots.load()
+                              << " cap_resets=" << g_capResets.load() << " cap_lost=" << g_capLostVisits.load()
+                              << " reuse_cap=" << g_options.reuseCap << "\n";
                 });
         }
         if (const auto v = SilverSearcher::envRiskVeto(); v.delta > 0)
@@ -1258,6 +1425,37 @@ namespace sts::search {
             if (g_options.rootPriorPath.empty())
                 throw std::runtime_error("STS_SILVER_ROOT_PRIOR_SCOPE requires STS_SILVER_ROOT_PRIOR");
         }
+        // Combat plan stage 3 (research, default off). STS_SILVER_COMBATNET_PRIOR_MODEL=<.ctn> loads the native
+        // combat net (tools/combat_net/export_native.py). STS_SILVER_COMBATNET_PRIOR=1 makes softmax(logits / T)
+        // the root prior of every search that has the STS_SILVER_ROOT_PRIOR root prior on, at its weight; the tree
+        // prior, the rollout card table and prior playouts keep their g7f_E model. Research arms set it per thread
+        // (g_nativeSilverCombatNetPriorOverride). STS_SILVER_COMBATNET_PRIOR_TEMP=T (default 1) is the temperature.
+        if (const char *path = std::getenv("STS_SILVER_COMBATNET_PRIOR_MODEL"); path && *path) {
+            std::string err;
+            if (!g_combatNetPrior.load(path, &err))
+                throw std::runtime_error("STS_SILVER_COMBATNET_PRIOR_MODEL: " + err);
+            g_options.combatNetPriorPath = path;
+            std::cerr << "[silver] combat net prior model " << path << " d=" << g_combatNetPrior.dim()
+                      << " layers=" << g_combatNetPrior.layerCount() << "\n";
+        }
+        if (const char *raw = std::getenv("STS_SILVER_COMBATNET_PRIOR"); raw && *raw) {
+            const std::string value = raw;
+            if (value != "0" && value != "1") throw std::runtime_error("STS_SILVER_COMBATNET_PRIOR must be 0 or 1");
+            g_options.combatNetPrior = value == "1";
+            if (g_options.combatNetPrior && g_options.combatNetPriorPath.empty())
+                throw std::runtime_error("STS_SILVER_COMBATNET_PRIOR requires STS_SILVER_COMBATNET_PRIOR_MODEL");
+            if (g_options.combatNetPrior && g_options.rootPriorPath.empty())
+                throw std::runtime_error("STS_SILVER_COMBATNET_PRIOR requires STS_SILVER_ROOT_PRIOR");
+        }
+        if (const char *raw = std::getenv("STS_SILVER_COMBATNET_PRIOR_TEMP"); raw && *raw) {
+            char *end = nullptr;
+            g_options.combatNetPriorTemp = std::strtod(raw, &end);
+            if (end == raw || *end != '\0' || !(g_options.combatNetPriorTemp > 0)
+                    || !std::isfinite(g_options.combatNetPriorTemp))
+                throw std::runtime_error("STS_SILVER_COMBATNET_PRIOR_TEMP must be a positive number");
+            if (g_options.combatNetPriorPath.empty())
+                throw std::runtime_error("STS_SILVER_COMBATNET_PRIOR_TEMP requires STS_SILVER_COMBATNET_PRIOR_MODEL");
+        }
         // ADR-0046: the per-root rollout card table is on by default with the bundled gen-7f E
         // prior (ADR-TBD); STS_SILVER_ROLLOUT_ROOT_TABLE=0 restores the fixed ADR-0040 table, a path
         // selects another combat_policy_mlp model. The model loads at the first search
@@ -1313,6 +1511,10 @@ namespace sts::search {
         }
         if (const char *path = std::getenv("STS_SILVER_STOP_TRACE"); path && *path) {
             g_options.stopTrace = path;
+        }
+        g_options.gumbelStopTrace.clear();
+        if (const char *path = std::getenv("STS_SILVER_GUMBEL_STOP_TRACE"); path && *path) {
+            g_options.gumbelStopTrace = path;
         }
         if (const char *raw = std::getenv("STS_SILVER_FINAL_BOSS_BINARY")) {
             const std::string value(raw);
@@ -1371,7 +1573,49 @@ namespace sts::search {
                 g_stopTraceFile << '\n';
             }
         }
+        if (g_gumbelStopTraceFile.is_open()) g_gumbelStopTraceFile.close();
+        if (!g_options.gumbelStopTrace.empty()) {
+            if (g_options.gumbelRootK == 0)
+                throw std::runtime_error("STS_SILVER_GUMBEL_STOP_TRACE requires STS_SILVER_GUMBEL_ROOT");
+            if (!g_options.stopTrace.empty())
+                throw std::runtime_error("STS_SILVER_GUMBEL_STOP_TRACE and STS_SILVER_STOP_TRACE are exclusive");
+            g_gumbelStopTraceFile.open(g_options.gumbelStopTrace, std::ios::app);
+            if (!g_gumbelStopTraceFile) throw std::runtime_error("cannot open STS_SILVER_GUMBEL_STOP_TRACE");
+            if (g_gumbelStopTraceFile.tellp() == 0) {
+                g_gumbelStopTraceFile << kGumbelStopTraceHeader;
+                for (const auto *name : kNativeSilverStopFeatureNames) g_gumbelStopTraceFile << ",stop_" << name;
+                g_gumbelStopTraceFile << '\n';
+            }
+        }
         g_externalCombatBackend = runNativeSilverCombat;
+    }
+
+    bool nativeSilverCombatNetPriorOn() {
+        const bool on = g_nativeSilverCombatNetPriorOverride.value_or(g_options.combatNetPrior);
+        if (on && !g_combatNetPrior.loaded())
+            throw std::runtime_error("the combat net prior requires STS_SILVER_COMBATNET_PRIOR_MODEL");
+        return on;
+    }
+
+    std::vector<double> nativeSilverCombatNetRootPrior(const SilverSearcher &searcher) {
+        // One forward pass per root (CombatTokNet: the root's wire and its edges' semantic actions).
+        thread_local CombatTokInputs in;
+        thread_local CombatTokOutputs out;
+        const auto &edges = searcher.rootNode().edges;
+        combatTokEncodeRoot(searcher.rootSearchState(), searcher.searchContext(), edges, in);
+        g_combatNetPrior.forward(in, out);
+        const double temp = g_nativeSilverCombatNetPriorTempOverride.value_or(g_options.combatNetPriorTemp);
+        double top = -INFINITY;
+        for (float v : out.logits) top = std::max(top, static_cast<double>(v) / temp);
+        std::vector<double> prior(out.logits.size());
+        double total = 0;
+        for (std::size_t i = 0; i < prior.size(); ++i) {
+            prior[i] = std::exp(static_cast<double>(out.logits[i]) / temp - top);
+            total += prior[i];
+        }
+        for (auto &p : prior) p /= total;
+        ++g_nativeSilverCombatStats.combatNetPriors;
+        return prior;
     }
 
     std::vector<double> nativeSilverRootPrior(SilverSearcher &searcher) {
@@ -1619,6 +1863,7 @@ namespace sts::search {
     thread_local NativeSilverCombatStats g_nativeSilverCombatStats;
     thread_local std::optional<SilverSearcher::RolloutConfig> g_nativeSilverRolloutOverride;
     thread_local std::optional<int> g_nativeSilverMaxBackupOverride;
+    thread_local std::optional<std::size_t> g_nativeSilverReuseCapOverride;
     thread_local std::optional<int> g_nativeSilverRolloutsPerLeafOverride;
     thread_local std::optional<SilverSearcher::GumbelRoot> g_nativeSilverGumbelRootOverride;
     thread_local std::optional<SilverSearcher::LeafHead> g_nativeSilverLeafHeadOverride;
@@ -1626,7 +1871,10 @@ namespace sts::search {
     thread_local std::optional<bool> g_nativeSilverPriorPlayoutEliteOverride;
     thread_local std::optional<double> g_nativeSilverPotionWeightOverride;
     thread_local std::optional<bool> g_nativeSilverRootPriorOverride;
+    thread_local std::optional<bool> g_nativeSilverCombatNetPriorOverride;
+    thread_local std::optional<double> g_nativeSilverCombatNetPriorTempOverride;
     thread_local std::optional<int> g_nativeSilverTreePriorOverride;
+    thread_local std::optional<double> g_nativeSilverPriorWeightOverride;
     thread_local bool g_nativeSilverRootPriorBonusOff = false;
     thread_local const CombatValueNet *g_nativeSilverPriorNetOverride = nullptr;
     thread_local const CombatValueNet *g_nativeSilverRolloutRootTableOverride = nullptr;

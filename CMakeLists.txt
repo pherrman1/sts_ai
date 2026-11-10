@@ -122,6 +122,14 @@ add_test(NAME policy_mlp_exact COMMAND $<TARGET_FILE:policy_mlp_exact_test>
          ${CMAKE_SOURCE_DIR}/models/combat_policy_mlp_g7f_E.txt)
 set_tests_properties(policy_mlp_exact PROPERTIES LABELS "core;smoke")
 
+# Native combat net (combat plan stage 3): the encoder matches tools/combat_net's Python encoder and the forward pass
+# matches PyTorch on a fixture (tools/combat_net/make_native_fixture.py).
+add_executable(combat-tok-net-tool apps/combat_tok_net_tool.cpp $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(combat-tok-net-tool PRIVATE include json/include)
+add_test(NAME combat_tok_net_parity COMMAND $<TARGET_FILE:combat-tok-net-tool> check
+         ${CMAKE_SOURCE_DIR}/tests/data/combat_tok_net_tiny.ctn ${CMAKE_SOURCE_DIR}/tests/data/combat_tok_net_fixture.json)
+set_tests_properties(combat_tok_net_parity PROPERTIES LABELS "core;smoke")
+
 add_executable(rest_recall_filter_test tests/rest_recall_filter_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(rest_recall_filter_test PRIVATE include json/include)
@@ -947,6 +955,8 @@ add_test(NAME silver_risk_veto COMMAND $<TARGET_FILE:unit-test> silver_risk_veto
 set_tests_properties(silver_risk_veto PROPERTIES LABELS "core")
 add_test(NAME silver_gumbel_root COMMAND $<TARGET_FILE:unit-test> silver_gumbel_root)
 set_tests_properties(silver_gumbel_root PROPERTIES LABELS "core")
+add_test(NAME silver_gumbel_boundary_observer COMMAND $<TARGET_FILE:unit-test> silver_gumbel_boundary_observer)
+set_tests_properties(silver_gumbel_boundary_observer PROPERTIES LABELS "core")
 add_test(NAME silver_hidden_info_invariance COMMAND $<TARGET_FILE:unit-test> silver_hidden_info_invariance)
 set_tests_properties(silver_hidden_info_invariance PROPERTIES LABELS "core")
 add_test(NAME silver_incense_heart_phase COMMAND $<TARGET_FILE:unit-test> silver_incense_heart_phase)

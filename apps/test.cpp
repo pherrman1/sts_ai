@@ -3638,6 +3638,81 @@ int testSilverVictoryTurnPenalty() {
 // another edge j with at least share * b's visits and minSamples resolved playouts dies at least delta less
 // often than b; then it plays the most-visited such j. The expected pick is recomputed here for a grid of
 // settings and checked against named cases.
+// Research (STS_SILVER_GUMBEL_STOP_TRACE): SilverSearcher::gumbelBoundaryObserver. On the Nob root with k = 4 and
+// k = 8 (and back-loaded halving): an observed search repeats the unobserved one exactly (same pick, same visits
+// per root edge, same spend), the observer sees boundary 0 at spent 0 and one boundary per phase with rising spend,
+// halving candidate counts, the leader ranked first by score, and the last boundary's leader is the pick.
+int testSilverGumbelBoundaryObserver() {
+    int failures = 0;
+    const auto check = [&failures](bool ok, const std::string &msg) {
+        if (!ok) { std::cout << "    " << msg << '\n'; ++failures; }
+    };
+    GameContext gc(CharacterClass::IRONCLAD, 0x415C5u, 20);
+    gc.curRoom = Room::ELITE;
+    BattleContext bc;
+    bc.init(gc, MonsterEncounter::GREMLIN_NOB);
+    search::SilverSearchContext context;
+    context.act = 1;
+    constexpr std::int64_t kSims = 2000;
+    struct Seen { int phase, phases, candidates; std::int64_t spent; int leader; bool sorted; };
+    for (const int k : {4, 8}) {
+        for (const bool backLoaded : {false, true}) {
+            const auto run = [&](std::vector<Seen> *seen) {
+                auto s = std::make_unique<search::SilverSearcher>(silverSearchRoot(bc), context);
+                s->riskVeto = {};
+                const auto n = s->prepareRootActions();
+                s->rootPrior.assign(n, 0.0);
+                for (std::size_t i = 0; i < n; ++i) s->rootPrior[i] = 1.0 / static_cast<double>(i + 1);
+                if (seen) {
+                    s->gumbelBoundaryObserver = [seen](const search::SilverSearcher::GumbelBoundary &b) {
+                        bool sorted = true;
+                        for (std::size_t i = 1; i < b.ranked.size(); ++i)
+                            sorted = sorted && b.scores[b.ranked[i - 1]] >= b.scores[b.ranked[i]];
+                        seen->push_back({b.phase, b.phases, static_cast<int>(b.ranked.size()), b.spent,
+                                         b.ranked.front(), sorted});
+                    };
+                }
+                search::SilverSearcher::GumbelRoot g;
+                g.k = k;
+                g.backLoaded = backLoaded;
+                const auto spent = s->searchGumbelRoot(kSims, g, 7);
+                return std::make_pair(std::move(s), spent);
+            };
+            const std::string tag = " (k=" + std::to_string(k) + (backLoaded ? ", back-loaded)" : ")");
+            auto [plain, spentPlain] = run(nullptr);
+            std::vector<Seen> seen;
+            auto [traced, spentTraced] = run(&seen);
+            bool same = spentPlain == spentTraced && plain->lastGumbelEdge() == traced->lastGumbelEdge()
+                && plain->rootNode().edges.size() == traced->rootNode().edges.size();
+            for (std::size_t i = 0; same && i < plain->rootNode().edges.size(); ++i)
+                same = plain->rootNode().edges[i].visitCount == traced->rootNode().edges[i].visitCount
+                    && plain->rootNode().edges[i].action.bits == traced->rootNode().edges[i].action.bits;
+            check(same, "the observer leaves the search unchanged" + tag);
+            const int n = static_cast<int>(traced->rootNode().edges.size());
+            const int cands = std::min(n, k);
+            const int phases = static_cast<int>(std::ceil(std::log2(static_cast<double>(cands))));
+            check(static_cast<int>(seen.size()) == phases + 1, "one boundary before the first phase and one per phase" + tag);
+            if (seen.empty()) continue;
+            check(seen.front().phase == 0 && seen.front().spent == 0 && seen.front().candidates == cands,
+                  "boundary 0 has spent 0 and all candidates" + tag);
+            int expect = cands;
+            bool ok = true;
+            for (std::size_t i = 0; i < seen.size(); ++i) {
+                ok = ok && seen[i].phase == static_cast<int>(i) && seen[i].phases == phases
+                    && seen[i].candidates == expect && seen[i].sorted
+                    && (i == 0 || seen[i].spent > seen[i - 1].spent);
+                if (i > 0) expect = (expect + 1) / 2;
+            }
+            check(ok, "boundaries count up, spend rises, candidates halve, ranking is by score" + tag);
+            check(seen.back().spent == spentTraced, "the last boundary has the full spend" + tag);
+            check(seen.back().leader == traced->lastGumbelEdge(), "the last boundary's leader is the pick" + tag);
+        }
+    }
+    if (failures == 0) { std::cout << "silver_gumbel_boundary_observer PASS\n"; return 0; }
+    std::cout << "silver_gumbel_boundary_observer FAIL (" << failures << " cases)\n";
+    return 1;
+}
+
 // Research (combat plan stage 1): SilverSearcher::searchGumbelRoot. On a Nob root: the pick is a root edge,
 // at most `simulations` run and every one of them is a root visit, every candidate kept to the last phase
 // has the most visits, the same seed repeats the search exactly, bestAction returns the pick, and a plain
@@ -3704,6 +3779,77 @@ int testSilverGumbelRoot() {
     int visitedU = 0;
     for (const auto &e : u->rootNode().edges) visitedU += e.visitCount > 0;
     check(visitedU == static_cast<int>(u->rootNode().edges.size()), "k above the edge count searches every edge");
+
+    // Tuning knobs (GumbelRoot::noise, backLoaded, nonRoot) on the prior 1 / (i + 1).
+    const auto runWith = [&](std::uint64_t seed, const search::SilverSearcher::GumbelRoot &g) {
+        auto s = std::make_unique<search::SilverSearcher>(silverSearchRoot(bc), context);
+        s->riskVeto = {};
+        const auto n = s->prepareRootActions();
+        s->rootPrior.assign(n, 0.0);
+        for (std::size_t i = 0; i < n; ++i) s->rootPrior[i] = 1.0 / static_cast<double>(i + 1);
+        const auto spent = s->searchGumbelRoot(kSims, g, seed);
+        return std::make_pair(std::move(s), spent);
+    };
+    search::SilverSearcher::GumbelRoot noNoise;
+    noNoise.k = 4;
+    noNoise.noise = 0;
+    for (const std::uint64_t seed : {7ULL, 21ULL, 33ULL}) {
+        auto [z, spentZ] = runWith(seed, noNoise);
+        bool topK = true;
+        for (std::size_t i = 0; i < z->rootNode().edges.size(); ++i)
+            topK = topK && (z->rootNode().edges[i].visitCount > 0) == (i < 4);
+        check(topK, "noise 0 searches the k highest-prior edges whatever the seed");
+    }
+    search::SilverSearcher::GumbelRoot back;
+    back.k = 4;
+    back.backLoaded = true;
+    auto [bl, spentBl] = runWith(7, back);
+    std::vector<std::int32_t> blVisits;
+    std::int64_t blTotal = 0;
+    for (const auto &e : bl->rootNode().edges) {
+        blTotal += e.visitCount;
+        if (e.visitCount > 0) blVisits.push_back(e.visitCount);
+    }
+    std::sort(blVisits.begin(), blVisits.end());
+    // 2 phases: phase 0 gives each of 4 candidates (kSims / 3) / 4, phase 1 the rest to the 2 kept.
+    const std::int32_t phase0 = static_cast<std::int32_t>(kSims / 3 / 4);
+    check(blVisits.size() == 4 && blVisits[0] == phase0 && blVisits[1] == phase0,
+          "back-loaded halving gives the first phase a third of the budget");
+    check(blTotal == spentBl && spentBl <= kSims && spentBl >= kSims - 8, "back-loaded halving spends the budget");
+    search::SilverSearcher::GumbelRoot gnr;
+    gnr.k = 4;
+    gnr.nonRoot = true;
+    auto [m1, spentM1] = runWith(7, gnr);
+    auto [m2, spentM2] = runWith(7, gnr);
+    const int pickM = m1->lastGumbelEdge();
+    check(pickM >= 0 && spentM1 > 0 && spentM1 <= kSims, "Gumbel non-root selection picks a root edge in budget");
+    bool sameM = spentM1 == spentM2 && m2->lastGumbelEdge() == pickM;
+    for (std::size_t i = 0; sameM && i < m1->rootNode().edges.size(); ++i)
+        sameM = m1->rootNode().edges[i].visitCount == m2->rootNode().edges[i].visitCount;
+    check(sameM, "Gumbel non-root selection is deterministic");
+    auto [plain, spentPlain] = runWith(7, [] { search::SilverSearcher::GumbelRoot g; g.k = 4; return g; }());
+    bool sameCandidates = true;
+    for (std::size_t i = 0; i < plain->rootNode().edges.size(); ++i)
+        sameCandidates = sameCandidates
+            && (plain->rootNode().edges[i].visitCount > 0) == (m1->rootNode().edges[i].visitCount > 0);
+    check(sameCandidates, "Gumbel non-root selection leaves the sampled candidates alone");
+    // A no-op gnr would repeat the plain search (same seed, same candidates): the visits two levels below the root
+    // and the values backed up to the root's children must differ.
+    const auto below = [](const search::SilverSearcher &s) {
+        std::vector<double> sig;
+        for (const auto &e : s.rootNode().edges) {
+            if (e.node == nullptr) continue;
+            sig.push_back(e.node->evaluationSum);
+            for (const auto &c : e.node->edges) {
+                sig.push_back(c.visitCount);
+                if (c.node != nullptr)
+                    for (const auto &g : c.node->edges) sig.push_back(g.visitCount);
+            }
+        }
+        return sig;
+    };
+    check(!below(*plain).empty() && below(*plain) != below(*m1),
+          "Gumbel non-root selection changes the search below the root");
 
     a->search(500);
     check(a->lastGumbelEdge() == -1, "a plain search forgets the pick");
@@ -7290,6 +7436,8 @@ int main(int argc, const char* argv[]) {
         return testSilverRiskVeto();
     } else if (command == "silver_gumbel_root") {
         return testSilverGumbelRoot();
+    } else if (command == "silver_gumbel_boundary_observer") {
+        return testSilverGumbelBoundaryObserver();
     } else if (command == "silver_hidden_info_invariance") {
         return testSilverHiddenInfoDecisionInvariance();
     } else if (command == "silver_incense_heart_phase") {

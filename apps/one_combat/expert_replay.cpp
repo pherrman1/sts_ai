@@ -596,6 +596,289 @@ double threadCpuSeconds() {
     return ts.tv_sec + ts.tv_nsec / 1e9;
 }
 
+// Research arm (STS_EXPERT_FIGHTS_ARMS and STS_SELF_FIGHTS_ARMS, default none): a '+'-joined set of `prod` (no
+// override: production's settings, a reference on the arm copy seeds), `pp` (prior
+// playouts in elite rooms, as STS_SILVER_PRIOR_PLAYOUT_ELITE=1), `flat<N>` (flat N simulations at every root,
+// singletons searched, no learned stop), `potw<W>` (held-potion leaf weight W instead of 11, integer), `rpl<K>` (K
+// greedy playouts per leaf, 2..64, other rollout settings production) and `gsh<K>` (Gumbel root with K sampled root
+// edges, 2..64, SilverSearcher::searchGumbelRoot; needs flat<N>), `mb<M>` (max backup with minimum M visits, as
+// STS_SILVER_MAX_BACKUP=M but for this arm's searches only, 1..1000000) and `cnp` / `cnp<P>` (the native combat
+// net's root prior in place of g7f_E's, as STS_SILVER_COMBATNET_PRIOR=1, at softmax temperature P/100, P in 10..400,
+// or STS_SILVER_COMBATNET_PRIOR_TEMP for bare `cnp`; needs STS_SILVER_COMBATNET_PRIOR_MODEL). Gumbel tuning (each
+// needs gsh<K>):
+// `gcs<X>` (c_scale X, default 1), `gnz<X>` (Gumbel noise scale X in [0, 10], default 1), `ghb` (back-loaded
+// halving budget), `gnr` (Gumbel MuZero selection below the root). Tree tuning: `ucb<X>` (UCB exploration X at
+// decision and chance children, default 25), `wet<X>` / `wch<X>` (widening C at end-turn / other chance nodes,
+// default 3.7028; exponents stay), `pw<X>` (root prior weight X, default the process's
+// STS_SILVER_ROOT_PRIOR_WEIGHT) and `tp<N>` (tree prior from N visits, default the process's
+// STS_SILVER_TREE_PRIOR_MIN_VISITS); pw and tp need STS_SILVER_ROOT_PRIOR. `cap<N>` (node reuse cap N in
+// 1024..16777216 for this arm's searches, default 32768, the Act-4 Heart's 262144). A token at its default value
+// searches exactly as without it.
+struct FightArm {
+    std::string name;
+    bool priorPlayoutElite = false;
+    std::int64_t flat = 0;
+    double potionWeight = -1;   // < 0: production
+    int rolloutsPerLeaf = 0;    // 0: production
+    int gumbelK = 0;            // 0: plain search
+    int maxBackup = 0;          // 0: production (STS_SILVER_MAX_BACKUP of the process)
+    bool combatNetPrior = false;
+    double combatNetTemp = 0;   // > 0: the arm's prior temperature
+    double gumbelCScale = -1;   // < 0: GumbelRoot's default
+    double gumbelNoise = -1;    // < 0: GumbelRoot's default
+    bool gumbelBackLoaded = false;
+    bool gumbelNonRoot = false;
+    double exploration = 0;     // 0: SilverSearcher's default (also for the next three)
+    double endTurnWideningC = 0;
+    double chanceWideningC = 0;
+    double priorWeight = 0;     // 0: the process option
+    int treePrior = 0;          // 0: the process option
+    std::int64_t reuseCap = 0;  // 0: production's node reuse cap
+};
+
+// `prefix`_ARMS: '+'-joined tokens per arm (FightArm), arms separated by ','.
+std::vector<FightArm> fightArmsFromEnv(const std::string &prefix) {
+    const std::string var = prefix + "_ARMS";
+    std::vector<FightArm> arms;
+    const char *v = std::getenv(var.c_str());
+    if (!v || !*v) return arms;
+    auto split = [](const std::string &text, char sep) {
+        std::vector<std::string> out;
+        std::stringstream ss(text);
+        for (std::string t; std::getline(ss, t, sep);) out.push_back(t);
+        return out;
+    };
+    // A plain decimal ("0.5", "25"; no sign or exponent) in [lo, hi].
+    auto decimal = [&](const std::string &t, std::size_t at, double lo, double hi) {
+        const std::string d = t.substr(at);
+        if (d.empty() || d.size() > 12 || d.find_first_not_of("0123456789.") != std::string::npos
+                || std::count(d.begin(), d.end(), '.') > 1 || d.front() == '.' || d.back() == '.')
+            throw std::runtime_error(var + ": bad number in " + t);
+        const double x = std::strtod(d.c_str(), nullptr);
+        if (!(x >= lo && x <= hi)) throw std::runtime_error(var + ": out of range " + t);
+        return x;
+    };
+    auto prefixed = [](const std::string &t, const char *p) {
+        const std::size_t n = std::strlen(p);
+        return t.size() > n && t.compare(0, n, p) == 0;
+    };
+    for (const auto &name : split(v, ',')) {
+        FightArm arm{name};
+        for (const auto &t : split(name, '+')) {
+            if (t == "pp") arm.priorPlayoutElite = true;
+            else if (t == "cnp") arm.combatNetPrior = true;
+            else if (t.size() > 3 && t.size() <= 6 && t.rfind("cnp", 0) == 0
+                     && t.find_first_not_of("0123456789", 3) == std::string::npos) {
+                const int p = std::stoi(t.substr(3));
+                if (p < 10 || p > 400) throw std::runtime_error(var + ": cnp<P> needs P in 10..400");
+                arm.combatNetPrior = true;
+                arm.combatNetTemp = p / 100.0;
+            }
+            else if (t == "prod") {}   // no override: production's settings (a reference arm on the copy seeds)
+            else if (t.size() > 4 && t.rfind("flat", 0) == 0
+                     && t.find_first_not_of("0123456789", 4) == std::string::npos) arm.flat = std::stoll(t.substr(4));
+            else if (t.size() > 4 && t.rfind("potw", 0) == 0 && t.size() <= 7
+                     && t.find_first_not_of("0123456789", 4) == std::string::npos) arm.potionWeight = std::stoi(t.substr(4));
+            else if (t.size() > 3 && t.size() <= 5 && t.rfind("rpl", 0) == 0
+                     && t.find_first_not_of("0123456789", 3) == std::string::npos) arm.rolloutsPerLeaf = std::stoi(t.substr(3));
+            else if (t.size() > 3 && t.size() <= 5 && t.rfind("gsh", 0) == 0
+                     && t.find_first_not_of("0123456789", 3) == std::string::npos) arm.gumbelK = std::stoi(t.substr(3));
+            else if (t.size() > 2 && t.size() <= 9 && t.rfind("mb", 0) == 0
+                     && t.find_first_not_of("0123456789", 2) == std::string::npos) arm.maxBackup = std::stoi(t.substr(2));
+            else if (t == "ghb") arm.gumbelBackLoaded = true;
+            else if (t == "gnr") arm.gumbelNonRoot = true;
+            else if (prefixed(t, "gcs")) arm.gumbelCScale = decimal(t, 3, 1e-6, 100);
+            else if (prefixed(t, "gnz")) arm.gumbelNoise = decimal(t, 3, 0, 10);
+            else if (prefixed(t, "ucb")) arm.exploration = decimal(t, 3, 1e-6, 1000);
+            else if (prefixed(t, "wet")) arm.endTurnWideningC = decimal(t, 3, 1e-6, 100);
+            else if (prefixed(t, "wch")) arm.chanceWideningC = decimal(t, 3, 1e-6, 100);
+            else if (prefixed(t, "pw")) arm.priorWeight = decimal(t, 2, 1e-6, 1e6);
+            else if (t.size() > 2 && t.size() <= 9 && t.rfind("tp", 0) == 0
+                     && t.find_first_not_of("0123456789", 2) == std::string::npos) arm.treePrior = std::stoi(t.substr(2));
+            else if (t.size() > 3 && t.size() <= 11 && t.rfind("cap", 0) == 0
+                     && t.find_first_not_of("0123456789", 3) == std::string::npos) {
+                arm.reuseCap = std::stoll(t.substr(3));
+                if (arm.reuseCap < 1024 || arm.reuseCap > (1 << 24))
+                    throw std::runtime_error(var + ": cap out of range (1024..16777216)");
+            }
+            else throw std::runtime_error(var + ": unknown arm part " + t);
+        }
+        if (arm.flat < 0 || arm.flat > 1000000) throw std::runtime_error(var + ": flat out of range");
+        if (arm.rolloutsPerLeaf != 0 && (arm.rolloutsPerLeaf < 2 || arm.rolloutsPerLeaf > 64))
+            throw std::runtime_error(var + ": rpl out of range (2..64)");
+        if (arm.gumbelK != 0 && (arm.gumbelK < 2 || arm.gumbelK > 64))
+            throw std::runtime_error(var + ": gsh out of range (2..64)");
+        if (arm.maxBackup < 0 || arm.maxBackup > 1000000)
+            throw std::runtime_error(var + ": mb out of range (1..1000000)");
+        if (arm.gumbelK > 0 && arm.flat == 0)
+            throw std::runtime_error(var + ": gsh needs flat<N>");
+        if (arm.gumbelK == 0 && (arm.gumbelCScale >= 0 || arm.gumbelNoise >= 0 || arm.gumbelBackLoaded
+                                 || arm.gumbelNonRoot))
+            throw std::runtime_error(var + ": gcs, gnz, ghb and gnr need gsh<K>");
+        if (arm.treePrior < 0 || arm.treePrior > (1 << 20))
+            throw std::runtime_error(var + ": tp out of range (1..1048576)");
+        const char *prior = std::getenv("STS_SILVER_ROOT_PRIOR");
+        if ((arm.priorWeight > 0 || arm.treePrior > 0) && (!prior || !*prior))
+            throw std::runtime_error(var + ": pw and tp need STS_SILVER_ROOT_PRIOR");
+        arms.push_back(arm);
+    }
+    return arms;
+}
+
+// The copies of one fight from its entry state, shared by expertfights and selffights. Production plays copies
+// 0..k-1 (copy 0 on the game's battle seed, copies r >= 1 on fresh battle seeds and persistent combat streams from
+// (game seed, floor, r)) until the first win; in an arm fight (act and room in armRooms, floor and copy in
+// armCopies when set) production and each arm play copies 0..armK-1 in full on the same seeds. The main line
+// continues from copy 0 if it won, else from the first copy that won (seed restored).
+class FightCopies {
+public:
+    json fights() const { return fights_; }
+
+protected:
+    FightCopies(int replicates, std::vector<FightArm> arms, std::set<std::string> armRooms, int armK,
+                std::map<int, std::set<int>> armCopies)
+        : k_(replicates), arms_(std::move(arms)), armRooms_(std::move(armRooms)), armK_(armK),
+          armCopies_(std::move(armCopies)) {}
+
+    // Plays the copies of the fight at gc and records them in rec ("replicates", "continuedFrom", "arms"), which
+    // goes to fights(). True: gc is the winning copy after the battle (won, at the rewards screen); false: no copy
+    // won and gc is unchanged for the driver's own battle.
+    bool playCopies(GameContext &gc, search::ScumSearchAgent2 &agent, json rec) {
+        const int f = gc.floorNum;
+        const auto entryPotions = potionNames(gc.potions);
+        // Copy r from this state: production settings, or arm `arm` (research, see FightArm).
+        auto playCopy = [&](int r, const FightArm *arm, std::optional<GameContext> *winner) {
+            GameContext copy = detachedCounterfactualCopy(gc);
+            if (r > 0) {
+                std::mt19937_64 rng(mix(gc.seed ^ mix(f * 1000003ULL + r)));
+                for (auto stream : {&copy.aiRng, &copy.cardRandomRng, &copy.miscRng, &copy.monsterHpRng,
+                                    &copy.potionRng, &copy.shuffleRng}) {
+                    const auto counter = stream->counter;
+                    *stream = sts::Random(rng());
+                    stream->counter = counter;
+                }
+                copy.seed = rng();
+            }
+            search::ScumSearchAgent2 a;
+            a.simulationCountBase = arm && arm->flat > 0 ? arm->flat : agent.simulationCountBase;
+            a.rng = std::default_random_engine(static_cast<unsigned>(mix(gc.seed + 7919ULL * f + r)));
+            if (arm && arm->flat > 0)
+                search::g_nativeSilverBudgetOverride = search::NativeSilverBudgetOverride{
+                    search::NativeSilverBudgetOverride::Policy::Flat, false};
+            if (arm && arm->priorPlayoutElite) search::g_nativeSilverPriorPlayoutEliteOverride = true;
+            if (arm && arm->potionWeight >= 0) search::g_nativeSilverPotionWeightOverride = arm->potionWeight;
+            if (arm && arm->rolloutsPerLeaf > 0) search::g_nativeSilverRolloutsPerLeafOverride = arm->rolloutsPerLeaf;
+            if (arm && arm->maxBackup > 0) search::g_nativeSilverMaxBackupOverride = arm->maxBackup;
+            if (arm && arm->combatNetPrior) search::g_nativeSilverCombatNetPriorOverride = true;
+            if (arm && arm->combatNetTemp > 0) search::g_nativeSilverCombatNetPriorTempOverride = arm->combatNetTemp;
+            if (arm && arm->gumbelK > 0) {
+                search::SilverSearcher::GumbelRoot g;
+                g.k = arm->gumbelK;
+                if (arm->gumbelCScale >= 0) g.cScale = arm->gumbelCScale;
+                if (arm->gumbelNoise >= 0) g.noise = arm->gumbelNoise;
+                g.backLoaded = arm->gumbelBackLoaded;
+                g.nonRoot = arm->gumbelNonRoot;
+                search::g_nativeSilverGumbelRootOverride = g;
+            }
+            if (arm && (arm->exploration > 0 || arm->endTurnWideningC > 0 || arm->chanceWideningC > 0)) {
+                search::NativeSilverSearchParams params;   // SilverSearcher's defaults
+                if (arm->exploration > 0) params.exploration = params.explorationChance = arm->exploration;
+                if (arm->endTurnWideningC > 0) params.endTurnWideningC = arm->endTurnWideningC;
+                if (arm->chanceWideningC > 0) params.chanceWideningC = arm->chanceWideningC;
+                search::g_nativeSilverSearchParamOverride = params;
+            }
+            if (arm && arm->priorWeight > 0) search::g_nativeSilverPriorWeightOverride = arm->priorWeight;
+            if (arm && arm->treePrior > 0) search::g_nativeSilverTreePriorOverride = arm->treePrior;
+            if (arm && arm->reuseCap > 0)
+                search::g_nativeSilverReuseCapOverride = static_cast<std::size_t>(arm->reuseCap);
+            struct ArmReset { ~ArmReset() { search::g_nativeSilverBudgetOverride.reset();
+                                            search::g_nativeSilverPriorPlayoutEliteOverride.reset();
+                                            search::g_nativeSilverPotionWeightOverride.reset();
+                                            search::g_nativeSilverRolloutsPerLeafOverride.reset();
+                                            search::g_nativeSilverGumbelRootOverride.reset();
+                                            search::g_nativeSilverMaxBackupOverride.reset();
+                                            search::g_nativeSilverCombatNetPriorOverride.reset();
+                                            search::g_nativeSilverCombatNetPriorTempOverride.reset();
+                                            search::g_nativeSilverSearchParamOverride.reset();
+                                            search::g_nativeSilverPriorWeightOverride.reset();
+                                            search::g_nativeSilverTreePriorOverride.reset();
+                                            search::g_nativeSilverReuseCapOverride.reset(); } } armReset;
+            BattleContext bc{};
+            const double t0 = threadCpuSeconds();
+            a.playoutBattle(copy, bc);
+            const double cpu = threadCpuSeconds() - t0;
+            const bool decided = bc.outcome != Outcome::UNDECIDED;
+            const bool won = bc.outcome == Outcome::PLAYER_VICTORY;
+            const bool valid = trainingRunValid(decided);
+            const auto exitPotions = potionNames(bc.potions);
+            if (won) bc.exitBattle(copy);
+            json rep = {{"r", r}, {"won", won}, {"valid", valid}, {"exitHp", won ? copy.curHp : 0},
+                        {"exitMaxHp", copy.maxHp}, {"turns", bc.turn}, {"cpu", cpu},
+                        {"potionsUsed", minus(entryPotions, exitPotions)},
+                        {"potionsGained", minus(exitPotions, entryPotions)},
+                        {"decisions", search::g_nativeSilverCombatStats.decisions},
+                        {"simulations", search::g_nativeSilverCombatStats.simulations},
+                        {"gumbelRoots", search::g_nativeSilverCombatStats.gumbelRoots},
+                        {"combatNetPriors", search::g_nativeSilverCombatStats.combatNetPriors},
+                        {"reroots", search::g_nativeSilverCombatStats.reroots},
+                        {"inheritedVisits", search::g_nativeSilverCombatStats.inheritedVisits},
+                        {"freshRoots", search::g_nativeSilverCombatStats.freshRoots},
+                        {"capResets", search::g_nativeSilverCombatStats.capResets},
+                        {"capLostVisits", search::g_nativeSilverCombatStats.capLostVisits}};
+            if (won && winner && !*winner) {
+                copy.seed = gc.seed;
+                *winner = std::move(copy);
+            }
+            return rep;
+        };
+        json reps = json::array();
+        std::optional<GameContext> next;
+        int continuedFrom = -1;
+        // With research arms only fights in armRooms_ play copies 0..armK_-1 in full, production and each arm on
+        // the same copy seeds; any other copy is played only until the first win (the main line continues from
+        // the first winning copy either way, so it is the same as without arms).
+        const bool armFight = !arms_.empty() && armRooms_.count(std::to_string(gc.act) + roomLetter(gc.curRoom))
+            && (armCopies_.empty() || armCopies_.count(f));
+        const int full = arms_.empty() ? k_ : armFight && prodFull_ ? armK_ : 0;
+        auto selected = [&](int r) {
+            if (armCopies_.empty()) return true;
+            const auto it = armCopies_.find(f);
+            return it != armCopies_.end() && (it->second.empty() || it->second.count(r));
+        };
+        for (int r = 0; r < k_; ++r) {
+            if (next && (r >= full || !selected(r))) continue;
+            const bool hadWinner = next.has_value();
+            reps.push_back(playCopy(r, nullptr, &next));
+            if (!hadWinner && next) continuedFrom = r;
+        }
+        if (armFight) {
+            json armReps = json::object();
+            for (const auto &arm : arms_) {
+                json ar = json::array();
+                for (int r = 0; r < armK_; ++r)
+                    if (selected(r)) ar.push_back(playCopy(r, &arm, nullptr));
+                armReps[arm.name] = ar;
+            }
+            rec["arms"] = armReps;
+        }
+        rec["replicates"] = reps;
+        rec["continuedFrom"] = continuedFrom;
+        fights_.push_back(rec);
+        if (!next) return false;
+        gc = std::move(*next);
+        return true;
+    }
+
+    int k_;
+    std::vector<FightArm> arms_;
+    std::set<std::string> armRooms_;
+    int armK_;
+    std::map<int, std::set<int>> armCopies_;
+    // false (selffights with STS_SELF_FIGHTS_PROD=main): production plays arm fights only until the first win too.
+    bool prodFull_ = true;
+    json fights_ = json::array();
+};
+
 // expertfights: at each fight inside the exact-replay prefix, set HP and max HP
 // to the expert's, and with expertPotions (STS_EXPERT_FIGHTS_POTIONS=expert)
 // also the potions where the log determines them. By default the bot keeps its
@@ -606,27 +889,90 @@ double threadCpuSeconds() {
 // 1..K-1 get a fresh battle seed and fresh persistent combat streams. The run
 // continues from copy 0 if it won, else from the first copy that won (seed
 // restored), else the driver plays the fight itself.
-class FightReplayer {
-public:
-    // Research arm (STS_EXPERT_FIGHTS_ARMS, default none): a '+'-joined set of `pp` (prior playouts in elite
-    // rooms, as STS_SILVER_PRIOR_PLAYOUT_ELITE=1), `flat<N>` (flat N simulations at every root, singletons
-    // searched, no learned stop), `potw<W>` (held-potion leaf weight W instead of 11, integer), `rpl<K>` (K
-    // greedy playouts per leaf, 2..64, other rollout settings production) and `gsh<K>` (Gumbel root with K
-    // sampled root edges, 2..64, SilverSearcher::searchGumbelRoot; needs flat<N>) and `mb<M>` (max backup with
-    // minimum M visits, as STS_SILVER_MAX_BACKUP=M but for this arm's searches only, 1..1000000).
-    struct Arm {
-        std::string name;
-        bool priorPlayoutElite = false;
-        std::int64_t flat = 0;
-        double potionWeight = -1;   // < 0: production
-        int rolloutsPerLeaf = 0;    // 0: production
-        int gumbelK = 0;            // 0: plain search
-        int maxBackup = 0;          // 0: production (STS_SILVER_MAX_BACKUP of the process)
+// The research arm settings of expertfights and selffights under `prefix` (STS_EXPERT_FIGHTS or STS_SELF_FIGHTS):
+// `prefix`_ARMS=<arm>[,<arm>...] (FightArm) plays every fight whose act and room are in `prefix`_ARM_ROOMS (e.g.
+// 2E,2B; required) `prefix`_ARM_REPLICATES (default K) times under production and each arm, on the same copy seeds.
+// `prefix`_ARM_COPIES=<floor>[:<copy>],... (default unset = every arm fight, every copy) limits the arm fights to the
+// listed floors and, for floor:copy entries, to those copies (a bare floor = all copies), so one long fight's copies
+// can run in separate processes. Copy seeds depend only on (seed, floor, copy), so a copy played alone equals the
+// same copy played with the others.
+struct FightCopyConfig {
+    std::vector<FightArm> arms;
+    std::set<std::string> armRooms;
+    int armK = 0;
+    std::map<int, std::set<int>> armCopies;
+};
+
+FightCopyConfig fightCopyConfigFromEnv(const std::string &prefix, int replicates) {
+    FightCopyConfig c;
+    auto split = [](const std::string &v, char sep) {
+        std::vector<std::string> out;
+        std::stringstream ss(v);
+        for (std::string t; std::getline(ss, t, sep);) out.push_back(t);
+        return out;
     };
+    const std::string roomsVar = prefix + "_ARM_ROOMS", armsVar = prefix + "_ARMS";
+    c.arms = fightArmsFromEnv(prefix);
+    if (!c.arms.empty()) {
+        const char *rooms = std::getenv(roomsVar.c_str());
+        if (!rooms || !*rooms) throw std::runtime_error(armsVar + " requires " + roomsVar);
+        for (const auto &t : split(rooms, ',')) {
+            if (t.size() != 2 || t[0] < '1' || t[0] > '3' || std::string("MEB?$T").find(t[1]) == std::string::npos)
+                throw std::runtime_error(roomsVar + ": bad entry " + t);
+            c.armRooms.insert(t);
+        }
+    } else if (const char *rooms = std::getenv(roomsVar.c_str()); rooms && *rooms) {
+        throw std::runtime_error(roomsVar + " requires " + armsVar);
+    }
+    const std::string kVar = prefix + "_ARM_REPLICATES";
+    const char *kv = std::getenv(kVar.c_str());
+    c.armK = kv && *kv ? std::atoi(kv) : replicates;
+    if (c.armK < 1 || c.armK > replicates) throw std::runtime_error(kVar + " out of range");
+    const std::string copiesVar = prefix + "_ARM_COPIES";
+    if (const char *v = std::getenv(copiesVar.c_str()); v && *v) {
+        if (c.arms.empty()) throw std::runtime_error(copiesVar + " requires " + armsVar);
+        auto num = [&](const std::string &t, int lo, int hi) {
+            if (t.empty() || t.size() > 3 || t.find_first_not_of("0123456789") != std::string::npos)
+                throw std::runtime_error(copiesVar + ": bad entry " + t);
+            const int x = std::stoi(t);
+            if (x < lo || x > hi) throw std::runtime_error(copiesVar + ": out of range " + t);
+            return x;
+        };
+        std::set<int> allCopies;
+        for (const auto &t : split(v, ',')) {
+            const auto colon = t.find(':');
+            const int floor = num(t.substr(0, colon), 1, 60);
+            if (colon == std::string::npos) allCopies.insert(floor);
+            else c.armCopies[floor].insert(num(t.substr(colon + 1), 0, c.armK - 1));
+        }
+        for (const int floor : allCopies) c.armCopies[floor].clear();   // empty set: every copy of that floor
+    }
+    return c;
+}
+
+json fightArmNames(const std::vector<FightArm> &arms) {
+    json a = json::array();
+    for (const auto &x : arms) a.push_back(x.name);
+    return a;
+}
+
+json fightArmCopies(const std::map<int, std::set<int>> &armCopies) {
+    json a = json::object();
+    for (const auto &[floor, copies] : armCopies) a[std::to_string(floor)] = copies;
+    return a;
+}
+
+class FightReplayer : public FightCopies {
+public:
+    using Arm = FightArm;
+    // armCopies (STS_EXPERT_FIGHTS_ARM_COPIES, default empty = all): floor -> copies to play (empty set = all
+    // copies of that floor). When set, only the listed floors are arm fights, and on them production and each arm
+    // play only the listed copies in full (production still plays the copies the main line needs).
     FightReplayer(const json &run, Replayer &replayer, int replicates, int maxAct, bool expertPotions,
-                  std::vector<Arm> arms = {}, std::set<std::string> armRooms = {}, int armK = 0)
-        : log_(run), replayer_(replayer), k_(replicates), maxAct_(maxAct), expertPotions_(expertPotions),
-          arms_(std::move(arms)), armRooms_(std::move(armRooms)), armK_(armK) {}
+                  std::vector<Arm> arms = {}, std::set<std::string> armRooms = {}, int armK = 0,
+                  std::map<int, std::set<int>> armCopies = {})
+        : FightCopies(replicates, std::move(arms), std::move(armRooms), armK, std::move(armCopies)),
+          log_(run), replayer_(replayer), maxAct_(maxAct), expertPotions_(expertPotions) {}
 
     bool onBattle(GameContext &gc, search::ScumSearchAgent2 &agent) {
         if (replayer_.stopped() || gc.act > maxAct_) return false;
@@ -682,95 +1028,9 @@ public:
                          {"potionsUsed", log_.uses.count(f) ? log_.uses.at(f) : 0},
                          {"potionNamesUsed", log_.useNames.count(f) ? json(log_.useNames.at(f)) : json()},
                          {"relicsObtained", log_.relicsAt.count(f) ? json(log_.relicsAt.at(f)) : json::array()}};
-        const auto entryPotions = potionNames(gc.potions);
-        // Copy r from this state: production settings, or arm `arm` (index into arms_; research, see Arm).
-        auto playCopy = [&](int r, const Arm *arm, std::optional<GameContext> *winner) {
-            GameContext copy = detachedCounterfactualCopy(gc);
-            if (r > 0) {
-                std::mt19937_64 rng(mix(gc.seed ^ mix(f * 1000003ULL + r)));
-                for (auto stream : {&copy.aiRng, &copy.cardRandomRng, &copy.miscRng, &copy.monsterHpRng,
-                                    &copy.potionRng, &copy.shuffleRng}) {
-                    const auto counter = stream->counter;
-                    *stream = sts::Random(rng());
-                    stream->counter = counter;
-                }
-                copy.seed = rng();
-            }
-            search::ScumSearchAgent2 a;
-            a.simulationCountBase = arm && arm->flat > 0 ? arm->flat : agent.simulationCountBase;
-            a.rng = std::default_random_engine(static_cast<unsigned>(mix(gc.seed + 7919ULL * f + r)));
-            if (arm && arm->flat > 0)
-                search::g_nativeSilverBudgetOverride = search::NativeSilverBudgetOverride{
-                    search::NativeSilverBudgetOverride::Policy::Flat, false};
-            if (arm && arm->priorPlayoutElite) search::g_nativeSilverPriorPlayoutEliteOverride = true;
-            if (arm && arm->potionWeight >= 0) search::g_nativeSilverPotionWeightOverride = arm->potionWeight;
-            if (arm && arm->rolloutsPerLeaf > 0) search::g_nativeSilverRolloutsPerLeafOverride = arm->rolloutsPerLeaf;
-            if (arm && arm->maxBackup > 0) search::g_nativeSilverMaxBackupOverride = arm->maxBackup;
-            if (arm && arm->gumbelK > 0) {
-                search::SilverSearcher::GumbelRoot g;
-                g.k = arm->gumbelK;
-                search::g_nativeSilverGumbelRootOverride = g;
-            }
-            struct ArmReset { ~ArmReset() { search::g_nativeSilverBudgetOverride.reset();
-                                            search::g_nativeSilverPriorPlayoutEliteOverride.reset();
-                                            search::g_nativeSilverPotionWeightOverride.reset();
-                                            search::g_nativeSilverRolloutsPerLeafOverride.reset();
-                                            search::g_nativeSilverGumbelRootOverride.reset();
-                                            search::g_nativeSilverMaxBackupOverride.reset(); } } armReset;
-            BattleContext bc{};
-            const double t0 = threadCpuSeconds();
-            a.playoutBattle(copy, bc);
-            const double cpu = threadCpuSeconds() - t0;
-            const bool decided = bc.outcome != Outcome::UNDECIDED;
-            const bool won = bc.outcome == Outcome::PLAYER_VICTORY;
-            const bool valid = trainingRunValid(decided);
-            const auto exitPotions = potionNames(bc.potions);
-            if (won) bc.exitBattle(copy);
-            json rep = {{"r", r}, {"won", won}, {"valid", valid}, {"exitHp", won ? copy.curHp : 0},
-                        {"exitMaxHp", copy.maxHp}, {"turns", bc.turn}, {"cpu", cpu},
-                        {"potionsUsed", minus(entryPotions, exitPotions)},
-                        {"potionsGained", minus(exitPotions, entryPotions)},
-                        {"decisions", search::g_nativeSilverCombatStats.decisions},
-                        {"simulations", search::g_nativeSilverCombatStats.simulations},
-                        {"gumbelRoots", search::g_nativeSilverCombatStats.gumbelRoots}};
-            if (won && winner && !*winner) {
-                copy.seed = gc.seed;
-                *winner = std::move(copy);
-            }
-            return rep;
-        };
-        json reps = json::array();
-        std::optional<GameContext> next;
-        int continuedFrom = -1;
-        // With research arms (STS_EXPERT_FIGHTS_ARMS) only fights in armRooms_ play copies 0..armK_-1 in full,
-        // production and each arm on the same copy seeds; any other copy is played only until the first win (the
-        // main line continues from the first winning copy either way, so it is the same as without arms).
-        const bool armFight = !arms_.empty() && armRooms_.count(std::to_string(gc.act) + roomLetter(gc.curRoom));
-        const int full = arms_.empty() ? k_ : armFight ? armK_ : 0;
-        for (int r = 0; r < k_; ++r) {
-            if (r >= full && next) break;
-            const bool hadWinner = next.has_value();
-            reps.push_back(playCopy(r, nullptr, &next));
-            if (!hadWinner && next) continuedFrom = r;
-        }
-        if (armFight) {
-            json armReps = json::object();
-            for (const auto &arm : arms_) {
-                json ar = json::array();
-                for (int r = 0; r < armK_; ++r) ar.push_back(playCopy(r, &arm, nullptr));
-                armReps[arm.name] = ar;
-            }
-            rec["arms"] = armReps;
-        }
-        rec["replicates"] = reps;
-        rec["continuedFrom"] = continuedFrom;
-        fights_.push_back(rec);
-        if (!next) return false;
-        gc = std::move(*next);
-        return true;
+        return playCopies(gc, agent, std::move(rec));
     }
 
-    json fights() const { return fights_; }
     json syncs() const { return syncs_; }
     json potionLog() const {
         return {{"knownThroughFloor", log_.potionsKnownThrough}, {"unknownWhy", log_.potionsUnknownWhy}};
@@ -779,12 +1039,36 @@ public:
 private:
     ExpertCombatLog log_;
     Replayer &replayer_;
-    int k_, maxAct_;
+    int maxAct_;
     bool expertPotions_;
-    std::vector<Arm> arms_;
-    std::set<std::string> armRooms_;
-    int armK_;
-    json fights_ = json::array(), syncs_ = json::array();
+    json syncs_ = json::array();
+};
+
+// selffights: the fights of a production run on its own seed. Every fight of acts 1..maxAct is played as
+// FightCopies (production copies until the first win; in arm fights all armK copies of production and each arm).
+class SelfFights : public FightCopies {
+public:
+    SelfFights(int replicates, int maxAct, FightCopyConfig cfg, bool prodFull)
+        : FightCopies(replicates, std::move(cfg.arms), std::move(cfg.armRooms), cfg.armK, std::move(cfg.armCopies)),
+          maxAct_(maxAct) {
+        prodFull_ = prodFull;
+    }
+
+    bool onBattle(GameContext &gc, search::ScumSearchAgent2 &agent) {
+        if (gc.act > maxAct_) return false;
+        int upgrades = 0;
+        for (const auto &c : gc.deck.cards) upgrades += c.getUpgraded() > 0;
+        std::vector<std::string> relics;
+        for (const auto &r : gc.relics.relics) relics.push_back(jname(r.id));
+        json rec = {{"floor", gc.floorNum}, {"act", gc.act}, {"room", roomLetter(gc.curRoom)},
+                    {"encounter", jname(gc.info.encounter)}, {"hp", gc.curHp}, {"maxHp", gc.maxHp},
+                    {"potions", potionNames(gc.potions)}, {"deck", gc.deck.size()}, {"upgrades", upgrades},
+                    {"relics", relics}};
+        return playCopies(gc, agent, std::move(rec));
+    }
+
+private:
+    int maxAct_;
 };
 
 }  // namespace
@@ -855,57 +1139,13 @@ int expertFightsGen(const std::string &runFile, const std::string &output) {
     const auto seed = static_cast<std::uint64_t>(std::stoll(seedPlayed));
     Replayer replayer(run, {kReplayTypes.begin(), kReplayTypes.end()});
     replayer.allowShelfDifferences();
-    // Research (default off): STS_EXPERT_FIGHTS_ARMS=<arm>[,<arm>...] (FightReplayer::Arm) plays every fight whose
-    // act and room are in STS_EXPERT_FIGHTS_ARM_ROOMS (e.g. 2E,2B; required) STS_EXPERT_FIGHTS_ARM_REPLICATES
-    // (default K) times under production and each arm, on the same copy seeds.
-    std::vector<FightReplayer::Arm> arms;
-    std::set<std::string> armRooms;
-    auto split = [](const std::string &v, char sep) {
-        std::vector<std::string> out;
-        std::stringstream ss(v);
-        for (std::string t; std::getline(ss, t, sep);) out.push_back(t);
-        return out;
-    };
-    if (const char *v = std::getenv("STS_EXPERT_FIGHTS_ARMS"); v && *v) {
-        for (const auto &name : split(v, ',')) {
-            FightReplayer::Arm arm{name};
-            for (const auto &t : split(name, '+')) {
-                if (t == "pp") arm.priorPlayoutElite = true;
-                else if (t.size() > 4 && t.rfind("flat", 0) == 0
-                         && t.find_first_not_of("0123456789", 4) == std::string::npos) arm.flat = std::stoll(t.substr(4));
-                else if (t.size() > 4 && t.rfind("potw", 0) == 0 && t.size() <= 7
-                         && t.find_first_not_of("0123456789", 4) == std::string::npos) arm.potionWeight = std::stoi(t.substr(4));
-                else if (t.size() > 3 && t.size() <= 5 && t.rfind("rpl", 0) == 0
-                         && t.find_first_not_of("0123456789", 3) == std::string::npos) arm.rolloutsPerLeaf = std::stoi(t.substr(3));
-                else if (t.size() > 3 && t.size() <= 5 && t.rfind("gsh", 0) == 0
-                         && t.find_first_not_of("0123456789", 3) == std::string::npos) arm.gumbelK = std::stoi(t.substr(3));
-                else if (t.size() > 2 && t.size() <= 9 && t.rfind("mb", 0) == 0
-                         && t.find_first_not_of("0123456789", 2) == std::string::npos) arm.maxBackup = std::stoi(t.substr(2));
-                else throw std::runtime_error("STS_EXPERT_FIGHTS_ARMS: unknown arm part " + t);
-            }
-            if (arm.flat < 0 || arm.flat > 1000000) throw std::runtime_error("STS_EXPERT_FIGHTS_ARMS: flat out of range");
-            if (arm.rolloutsPerLeaf != 0 && (arm.rolloutsPerLeaf < 2 || arm.rolloutsPerLeaf > 64))
-                throw std::runtime_error("STS_EXPERT_FIGHTS_ARMS: rpl out of range (2..64)");
-            if (arm.gumbelK != 0 && (arm.gumbelK < 2 || arm.gumbelK > 64))
-                throw std::runtime_error("STS_EXPERT_FIGHTS_ARMS: gsh out of range (2..64)");
-            if (arm.maxBackup < 0 || arm.maxBackup > 1000000)
-                throw std::runtime_error("STS_EXPERT_FIGHTS_ARMS: mb out of range (1..1000000)");
-            if (arm.gumbelK > 0 && arm.flat == 0)
-                throw std::runtime_error("STS_EXPERT_FIGHTS_ARMS: gsh needs flat<N>");
-            arms.push_back(arm);
-        }
-        const char *rooms = std::getenv("STS_EXPERT_FIGHTS_ARM_ROOMS");
-        if (!rooms || !*rooms) throw std::runtime_error("STS_EXPERT_FIGHTS_ARMS requires STS_EXPERT_FIGHTS_ARM_ROOMS");
-        for (const auto &t : split(rooms, ',')) {
-            if (t.size() != 2 || t[0] < '1' || t[0] > '3' || std::string("MEB?$T").find(t[1]) == std::string::npos)
-                throw std::runtime_error("STS_EXPERT_FIGHTS_ARM_ROOMS: bad entry " + t);
-            armRooms.insert(t);
-        }
-    } else if (const char *rooms = std::getenv("STS_EXPERT_FIGHTS_ARM_ROOMS"); rooms && *rooms) {
-        throw std::runtime_error("STS_EXPERT_FIGHTS_ARM_ROOMS requires STS_EXPERT_FIGHTS_ARMS");
-    }
-    const int armK = envInt("STS_EXPERT_FIGHTS_ARM_REPLICATES", replicates, 1, replicates);
-    FightReplayer fights(run, replayer, replicates, maxAct, potionMode == "expert", arms, armRooms, armK);
+    // Research arms (default off): fightCopyConfigFromEnv("STS_EXPERT_FIGHTS").
+    const FightCopyConfig cfg = fightCopyConfigFromEnv("STS_EXPERT_FIGHTS", replicates);
+    const auto &arms = cfg.arms;
+    const auto &armRooms = cfg.armRooms;
+    const int armK = cfg.armK;
+    const auto &armCopies = cfg.armCopies;
+    FightReplayer fights(run, replayer, replicates, maxAct, potionMode == "expert", arms, armRooms, armK, armCopies);
     // The run ends at the first decision the log does not replay exactly: the
     // measurement only covers the expert's own states.
     t_oocDecisionOverride = [&](GameContext &gc) -> const char * {
@@ -923,7 +1163,10 @@ int expertFightsGen(const std::string &runFile, const std::string &output) {
         {"playId", run.value("play_id", std::string())}, {"seedPlayed", seedPlayed}, {"engineSeed", seed},
         {"replicates", replicates}, {"maxAct", maxAct}, {"potionMode", potionMode},
         {"arms", [&] { json a = json::array(); for (const auto &x : arms) a.push_back(x.name); return a; }()},
-        {"armRooms", armRooms}, {"armReplicates", armK}, {"endFloor", result.floor}, {"endAct", result.act},
+        {"armRooms", armRooms}, {"armReplicates", armK},
+        {"armCopies", [&] { json a = json::object();
+                            for (const auto &[floor, copies] : armCopies) a[std::to_string(floor)] = copies;
+                            return a; }()}, {"endFloor", result.floor}, {"endAct", result.act},
         {"diedInMainLine", result.deathCombat >= 0}, {"sec", result.sec},
         {"expert", {{"victory", run.value("victory", false)}, {"floorReached", run["floor_reached"]}}},
         {"replay", replayer.summary()}, {"potionLog", fights.potionLog()}, {"fights", fights.fights()},
@@ -935,6 +1178,58 @@ int expertFightsGen(const std::string &runFile, const std::string &output) {
     if (!f) throw std::runtime_error("write failed: " + output);
     std::cout << "[expertfights] seed=" << seedPlayed << " fights=" << out["fights"].size()
               << " endFloor=" << result.floor << " stop=" << out["replay"]["stopReason"] << std::endl;
+    return 0;
+}
+
+
+int selfFightsGen(std::uint64_t seed, const std::string &output) {
+    if (!g_collectKeys || g_stopAfterAct != 0 || g_forceRelic != sts::RelicId::INVALID)
+        throw std::runtime_error("selffights requires the full-run Heart objective, keys on, no forced relic");
+    if (t_oocDecisionOverride || t_oocContinuation || t_oocHypotheticalStep || t_battleOverride)
+        throw std::runtime_error("selffights requires an unowned real driver context");
+    if (std::filesystem::exists(output) && std::filesystem::file_size(output) > 0)
+        throw std::runtime_error("selffights output " + output + " already exists");
+    auto envInt = [](const char *name, int def, int lo, int hi) {
+        const char *v = std::getenv(name);
+        const int x = v && *v ? std::atoi(v) : def;
+        if (x < lo || x > hi) throw std::runtime_error(std::string(name) + " out of range");
+        return x;
+    };
+    const int replicates = envInt("STS_SELF_FIGHTS_REPLICATES", 4, 1, 64);
+    const int maxAct = envInt("STS_SELF_FIGHTS_MAX_ACT", 3, 1, 3);
+    FightCopyConfig cfg = fightCopyConfigFromEnv("STS_SELF_FIGHTS", replicates);
+    // STS_SELF_FIGHTS_PROD: full (default) = production plays every arm copy too, as expertfights; main =
+    // production plays only the copies the main line needs (copy 0, then until the first win).
+    const char *pv = std::getenv("STS_SELF_FIGHTS_PROD");
+    const std::string prodMode = pv && *pv ? pv : "full";
+    if (prodMode != "full" && prodMode != "main") throw std::runtime_error("STS_SELF_FIGHTS_PROD must be full or main");
+    const json armNames = fightArmNames(cfg.arms), armCopies = fightArmCopies(cfg.armCopies);
+    const json armRooms = cfg.armRooms;
+    const int armK = cfg.armK;
+    SelfFights fights(replicates, maxAct, std::move(cfg), prodMode == "full");
+    // The run ends at the first out-of-combat decision after act maxAct: nothing later is measured.
+    t_oocDecisionOverride = [&](GameContext &gc) -> const char * {
+        if (gc.act <= maxAct) return nullptr;
+        gc.outcome = GameOutcome::PLAYER_LOSS;
+        return "selffights_end";
+    };
+    t_battleOverride = [&](GameContext &gc, search::ScumSearchAgent2 &agent) { return fights.onBattle(gc, agent); };
+    struct Reset { ~Reset() { t_oocDecisionOverride = nullptr; t_battleOverride = nullptr; } } reset;
+    trainingRunStart();
+    const auto result = runFullRunOOC(seed, 10000, 20, deployedRestV(), true);
+    if (!trainingRunValid(true)) throw std::runtime_error("self fights run failed simulator integrity");
+    const json out = {{"schema", "self-fights-v1"}, {"engineSeed", seed}, {"replicates", replicates},
+        {"maxAct", maxAct}, {"prod", prodMode}, {"arms", armNames}, {"armRooms", armRooms}, {"armReplicates", armK},
+        {"armCopies", armCopies}, {"endFloor", result.floor}, {"endAct", result.act},
+        {"diedInMainLine", result.deathCombat >= 0}, {"deathEncounter", result.deathEncounter}, {"sec", result.sec},
+        {"fights", fights.fights()}, {"producerSha", trainingExecutableGitSha()},
+        {"policy", effectiveOocPolicySpecification()}, {"provenance", heartOutcomeRunProvenance()}};
+    std::ofstream f(output);
+    if (!f) throw std::runtime_error("cannot write " + output);
+    f << out.dump() << '\n';
+    if (!f) throw std::runtime_error("write failed: " + output);
+    std::cout << "[selffights] seed=" << seed << " fights=" << out["fights"].size() << " endFloor=" << result.floor
+              << " endAct=" << result.act << std::endl;
     return 0;
 }
 

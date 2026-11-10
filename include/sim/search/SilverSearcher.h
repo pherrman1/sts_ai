@@ -404,14 +404,38 @@ namespace sts::search {
         // visits) * cScale * q01, q01 the edge's selection value min-max normalized over the visited
         // root edges (Silver's scores are not bounded). Below the root the search is unchanged.
         // `seed` fixes the Gumbel draws. A root with one edge searches nothing.
+        // Research knobs (Gumbel tuning experiment; the defaults are the search above, bit for bit):
+        // `noise` scales the Gumbel draw (g = noise * Gumbel; 0 = top-k by prior, ties by edge order; the
+        // draws are taken either way, so the seed's stream is unchanged); `backLoaded` gives phase p of P a
+        // share 2^p / (2^P - 2^p) of the budget still left instead of 1 / (P - p); `nonRoot` replaces UCB
+        // at decision nodes below the root by Gumbel MuZero's deterministic selection (selectGumbelNonRoot).
         struct GumbelRoot {
             int k = 16;
             double cVisit = 50;
             double cScale = 1.0;
+            double noise = 1.0;
+            bool backLoaded = false;
+            bool nonRoot = false;
         };
         // Returns the simulations run (at most `simulations`).
         std::int64_t searchGumbelRoot(std::int64_t simulations, const GumbelRoot &gumbel, std::uint64_t seed);
         [[nodiscard]] int lastGumbelEdge() const { return gumbelChoice; }
+        // Research only (STS_SILVER_GUMBEL_STOP_TRACE): searchGumbelRoot calls this, when set, at every
+        // sequential-halving boundary: once before the first phase (spent 0, candidates ranked by g + logit)
+        // and after each phase's scoring, before the halving. `ranked` is the candidate list in the order
+        // the search ranks it (front = the edge searchGumbelRoot would return if it stopped here), `scores`
+        // the ranking score per root edge (g + logit at the start, g + logit + sigma(q) after a phase),
+        // `q` each edge's selection value (max backup included; NaN when unvisited). The observer only
+        // reads: the search consumes no extra randomness and takes no extra steps, so play is unchanged.
+        struct GumbelBoundary {
+            int phase;      // 0 = before the first phase, p = after phase p (1-based)
+            int phases;
+            std::int64_t spent;
+            const std::vector<int> &ranked;
+            const std::vector<double> &scores;
+            const std::vector<double> &q;
+        };
+        std::function<void(const GumbelBoundary &)> gumbelBoundaryObserver;
         // Research-only playout policy for RolloutConfig::prior (same signature as nodePrior).
         std::function<std::vector<double>(const BattleContext &, const std::vector<Edge> &)> rolloutPrior;
         // STS_SILVER_LEAF_HEAD (set by NativeSilverBackend; default off): an undecided leaf is worth
@@ -509,6 +533,7 @@ namespace sts::search {
         mutable int lastRiskVeto = -1;
         int forcedRootEdge = -1;   // searchGumbelRoot: the root edge every simulation takes (-1 = free)
         int gumbelChoice = -1;     // searchGumbelRoot's pick for bestAction (-1 = most visits)
+        const GumbelRoot *gumbelNonRoot = nullptr;   // searchGumbelRoot with nonRoot: its settings (else null)
 
         std::default_random_engine randGen;
         SilverRolloutAgent rolloutAgent;
@@ -541,6 +566,12 @@ namespace sts::search {
         [[nodiscard]] double selectionValue(const Node &node) const;
         double evaluateEdge(const Node &parent, int edgeIdx, double logParentVisits) const;
         int selectBestEdgeToSearch(const Node &cur) const;
+        // Gumbel MuZero's non-root selection (Danihelka et al. 2022, eq. 14): argmax over edges of
+        // pi'(a) - N(a) / (1 + sum N), pi' = softmax(logit + sigma(completed q)). Logits are log of the
+        // node's tree prior (uniform without one); completed q is the child's selection value for a
+        // visited edge and v_mix for the others (the node's mean value standing in for the value net);
+        // q is min-max normalized over the visited edges as at the root.
+        int selectGumbelNonRoot(const Node &cur, const GumbelRoot &gumbel) const;
         int wideningCap(int category, std::int64_t visits);
         Edge *selectChanceOutcome(Node &chance);
         double rolloutToEnd(BattleContext &state, int treeDepth);

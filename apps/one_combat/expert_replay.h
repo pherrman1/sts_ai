@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include <string>
 
 namespace one_combat {
@@ -21,4 +22,12 @@ int expertReplayGen(const std::string &runFile, const std::string &output);
 // state, copy 0 on the game's battle seed. Writes one JSON object with a
 // record per measured fight and the expert's logged outcome next to it.
 int expertFightsGen(const std::string &runFile, const std::string &output);
+// one_combat selffights 1 SEED OUT.json: one A20 production run (runFullRunOOC) on SEED, ended at the first
+// out-of-combat decision after act STS_SELF_FIGHTS_MAX_ACT (default 3). Each fight up to there is played
+// STS_SELF_FIGHTS_REPLICATES (default 4) times by production Silver from its entry state until the first win (copy 0
+// on the game's battle seed; the run continues from the first winning copy, as expertfights does); research arms
+// (STS_SELF_FIGHTS_ARMS, _ARM_ROOMS, _ARM_REPLICATES, _ARM_COPIES; see FightArm) play the fights of the listed rooms
+// on the same copy seeds; STS_SELF_FIGHTS_PROD=main leaves production at the copies the main line needs. Writes
+// one JSON object with a record per fight.
+int selfFightsGen(std::uint64_t seed, const std::string &output);
 }

@@ -55,6 +55,11 @@ namespace sts::search {
     // set on every searched root as SilverSearcher::rootPrior. Empty when off
     // or for a root with fewer than two actions.
     std::vector<double> nativeSilverRootPrior(SilverSearcher &searcher);
+    // Combat plan stage 3 (research): whether the current thread's searches take their root prior from the native
+    // combat net (g_nativeSilverCombatNetPriorOverride, else STS_SILVER_COMBATNET_PRIOR), and that prior for a
+    // searcher whose root actions are prepared (indexed like rootNode().edges).
+    bool nativeSilverCombatNetPriorOn();
+    std::vector<double> nativeSilverCombatNetRootPrior(const SilverSearcher &searcher);
     // The same model's normalized prior over `edges` of any decision state.
     std::vector<double> nativeSilverPolicyPrior(const BattleContext &state,
                                                 const std::vector<SilverSearcher::Edge> &edges);
@@ -91,6 +96,14 @@ namespace sts::search {
         std::int64_t rolloutPlayouts = 0, rolloutActions = 0;
         // Roots searched by the Gumbel root (g_nativeSilverGumbelRootOverride).
         std::int64_t gumbelRoots = 0;
+        // Roots whose root prior came from the native combat net (STS_SILVER_COMBATNET_PRIOR).
+        std::int64_t combatNetPriors = 0;
+        // Tree reuse between the combat's searches (the first search of a combat counts in none): reroots that kept
+        // the retained graph (and the visits they inherited), fresh roots whose state was not in the graph, and
+        // fresh roots forced by the node reuse cap (compaction stayed at or above it; the visits they discarded).
+        std::int64_t reroots = 0, inheritedVisits = 0;
+        std::int64_t freshRoots = 0;
+        std::int64_t capResets = 0, capLostVisits = 0;
     };
     extern thread_local NativeSilverCombatStats g_nativeSilverCombatStats;
 
@@ -181,10 +194,20 @@ namespace sts::search {
     // STS_SILVER_ROOT_PRIOR bonus off (false) or requires it on (true) for the
     // current thread's combats. Unset elsewhere; unset keeps the process option.
     extern thread_local std::optional<bool> g_nativeSilverRootPriorOverride;
+    // Research-only (combat plan stage 3): when set, true makes the native combat net
+    // (STS_SILVER_COMBATNET_PRIOR_MODEL) the root prior of the current thread's searches wherever the
+    // STS_SILVER_ROOT_PRIOR root prior is on, false keeps g7f_E. Unset keeps STS_SILVER_COMBATNET_PRIOR.
+    extern thread_local std::optional<bool> g_nativeSilverCombatNetPriorOverride;
+    // ... and, when set, the softmax temperature of that prior (unset: STS_SILVER_COMBATNET_PRIOR_TEMP).
+    extern thread_local std::optional<double> g_nativeSilverCombatNetPriorTempOverride;
     // Research-only (§452 tree prior): when set to K, every search that has a
     // root prior also scores non-root decision nodes with at least K simulations
     // (SilverSearcher::nodePrior) and tries untried edges in prior order.
     extern thread_local std::optional<int> g_nativeSilverTreePriorOverride;
+    // Research-only (Gumbel tuning experiment): when set, the current thread's searches that have a
+    // root prior use this STS_SILVER_ROOT_PRIOR_WEIGHT (the prior bonus at the root and, with the tree
+    // prior, below it). Unset elsewhere; unset keeps the process option.
+    extern thread_local std::optional<double> g_nativeSilverPriorWeightOverride;
     // Research-only (Silver AZ self-play, silverazgen): true drops the root
     // prior bonus of the current thread's searches (SilverSearcher::rootPriorBonus);
     // the tree prior and prior-ordered first tries stay. False elsewhere.
@@ -209,6 +232,9 @@ namespace sts::search {
     // Research-only (maxbackup armset): when set, replaces STS_SILVER_MAX_BACKUP
     // (SilverSearcher::maxBackupMinVisits; 0 = off) for the current thread's searches. Unset elsewhere.
     extern thread_local std::optional<int> g_nativeSilverMaxBackupOverride;
+    // Research-only (Gumbel tuning arm cap<N>): when set, replaces the node reuse cap (kReuseCap, or the Act-4
+    // Heart's) of the current thread's searches. Unset elsewhere.
+    extern thread_local std::optional<std::size_t> g_nativeSilverReuseCapOverride;
     // Research-only (combat plan stage 1, expertfights arm rpl<k>): when set, replaces only the number of
     // greedy playouts per leaf (SilverSearcher::RolloutConfig::perLeaf) of the current thread's searches; every
     // other rollout setting, prior playouts included, stays production. Unset elsewhere.
