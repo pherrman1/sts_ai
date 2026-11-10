@@ -27059,3 +27059,36 @@ where the teacher does not beat D.
 Seeds: §775's 111378256-111379279 replayed (no new seeds). Cost: 224.9 lane-hours.
 **Knowledge impact:** combat teacher evaluation and budget allocation. Inference: death rate per elite and boss
 fight, not HP per fight, carries the whole-run gain. Fixed-state HP proxies need a death or tail metric and a normal-fight term.
+
+## §783 — Learned stop for the Gumbel root in whole runs: §775's G16 + mb4 with a learned sequential-halving stop (G16STOP, ggbt-10bc2f281224, T 0.08) against §775's G16 + mb4, net-0420 out of combat, 1,024 paired A20 seeds, control reused after a 32/32 sentinel: Heart 41.21% → 38.87%, −2.34 pp [−5.18, +0.39] → INCONCLUSIVE; 0.70× the simulations, about 0.76× the CPU (cloud, 2026-11-10)
+
+**Question (Philipp, 2026-11-10, "Oke go training, dann go auf 40 worker"):** can a learned stop end G16 + mb4's
+Gumbel root search early without losing Heart kills?
+**Data:** [PREREG](evidence/gumbel_learned_stop_gate_20261110/PREREG.md),
+[RESULT](evidence/gumbel_learned_stop_gate_20261110/RESULT.md), `results/result.json`, `results/offline_cv.json`,
+`results/claims.txt`, `results/smoke.txt`, `analyze.py` (frozen with the PREREG in run commit 8fe9eb7a); training data
+[gumbel_stop_data_20261110](evidence/gumbel_stop_data_20261110/RESULT.md) (1,024 traced G16 runs, fresh seeds).
+- The stop (`STS_SILVER_GUMBEL_LEARNED_STOP`, #1026, default off) works at sequential-halving boundaries. A model of
+  300 gradient-boosted trees over 23 boundary features (`tools/gumbel_learned_stop.py`, 574,741 traced roots)
+  predicts the risk that the current leader is not the 16k pick; the search stops at the first boundary with risk
+  below T. Offline, 4-fold by run, at T 0.08: 41% of roots stop, 1.05% pick differently, 29% of sims and 18.6% of
+  root CPU saved (T 0.02: 0.12% / 8%).
+- Code 09db3101, binary 57d7f83c. 1,056 units (32 G16 sentinel games, 1,024 G16STOP), all verified, 0 drops,
+  0 aborts. 133.9 lane-hours, 12:44-13:56 CET.
+
+**Result:** sentinel 32/32 identical → REUSE_VALID. Heart G16 41.21%, G16STOP 38.87%: **−2.34 pp [−5.18, +0.39]**;
+92 seeds kill only with G16STOP, 116 only with G16. SPRT nonregression (−1.5 pp margin) reaches CAP; the one-sided
+95% lower bound of −4.69 pp is below the −3 pp margin and the upper bound is exactly 0.00, a boundary tie →
+**INCONCLUSIVE** (with 6 of 20 other bootstrap seeds the upper bound is below 0, which would read WORSE; review J N1). The gainer SPRT accepts H0 at 640. Act-4
+reach −1.07 [−3.91, +1.76]. Simulations per run 0.697× [0.676, 0.719]; CPU 0.889× raw, about 0.76× corrected for
+machine speed (the sentinel ran 1.17× slower here). 38.7% of roots stopped, 28.5% of the Gumbel budget unspent, as
+offline.
+**Interpretation (Inference):** the saving is real (about 30% of the search, a quarter of the CPU). The Heart cost is
+probably small but not resolved, and could be up to about 5 pp. It sits at or slightly above §781's plain budget
+curve (8k vs 16k: −6 pp at 0.61× CPU). About 1% of picks changing is enough to change the outcome on about a fifth of
+the seeds, as with other single changes.
+**Decision:** INCONCLUSIVE. No default change; the stop stays off and G16 + mb4 stays the teacher candidate. A
+stricter threshold or a stop limited to later boundaries needs Philipp's call and its own gate.
+Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 133.9 lane-hours (plus 166.8 for the data run).
+**Knowledge impact:** combat teacher cost. Offline agreement with the full-budget pick is not enough to show
+no-loss in whole runs. A learned Gumbel stop buys about 25% CPU for an unresolved Heart cost of 0-5 pp.
