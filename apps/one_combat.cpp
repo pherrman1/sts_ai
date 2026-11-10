@@ -3145,6 +3145,7 @@ static std::string unsupportedSilverOption() {
         {"STS_SILVER_GUMBEL_ROOT", ""}, {"STS_SILVER_GUMBEL_ROOT_MAX_BACKUP", ""}, {"STS_SILVER_GUMBEL_ROOT_UCB", ""},
         {"STS_SILVER_GUMBEL_ROOT_WIDEN_END_TURN", ""}, {"STS_SILVER_GUMBEL_ROOT_WIDEN_CHANCE", ""},
         {"STS_SILVER_GUMBEL_STOP_TRACE", ""},
+        {"STS_SILVER_GUMBEL_LEARNED_STOP", ""},
     };
     // Vendored-only diagnostics without the STS_SILVER_ prefix.
     static const char *const kRemoved[] = {

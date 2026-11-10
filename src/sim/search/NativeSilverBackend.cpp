@@ -1,5 +1,6 @@
 #include "sim/search/NativeSilverBackend.h"
 #include "sim/search/NativeSilverStopModel.h"
+#include "sim/search/NativeSilverGumbelStopModel.h"
 
 #include <algorithm>
 #include <array>
@@ -120,6 +121,11 @@ namespace sts::search {
             // STS_SILVER_GUMBEL_STOP_TRACE=<csv> (research only, default off): one row per sequential-halving
             // boundary of every whole-run Gumbel root (SilverSearcher::gumbelBoundaryObserver); play unchanged.
             std::string gumbelStopTrace;
+            // STS_SILVER_GUMBEL_LEARNED_STOP=1|T (research only, default off): every whole-run Gumbel root may end at a
+            // halving boundary before the last when NativeSilverGumbelStopModel's risk is below T (1 = the model's
+            // default threshold). 0 or unset = off (search unchanged).
+            bool gumbelLearnedStop = false;
+            double gumbelLearnedStopThreshold = 0;
             // STS_SILVER_GUMBEL_ROOT_UCB / _WIDEN_END_TURN / _WIDEN_CHANCE (research, default off): the tree constants
             // of exactly those fights' searchers (UCB exploration at decision and chance children, widening C at
             // end-turn and other chance nodes; the others SilverSearcher's defaults), as the expert-fights arm
@@ -379,6 +385,8 @@ namespace sts::search {
         std::atomic<std::int64_t> g_simulations {0};
         std::atomic<std::int64_t> g_wholeRunGumbelRoots {0};   // STS_SILVER_GUMBEL_ROOT searches
         std::atomic<std::int64_t> g_wholeRunGumbelSims {0};
+        std::atomic<std::int64_t> g_wholeRunGumbelStops {0};   // STS_SILVER_GUMBEL_LEARNED_STOP stops
+        std::atomic<std::int64_t> g_wholeRunGumbelStopSims {0};   // budget left unspent by those stops
         std::atomic<std::int64_t> g_reroots {0};
         std::atomic<std::int64_t> g_freshRoots {0};
         std::atomic<std::int64_t> g_inheritedVisits {0};   // over g_reroots
@@ -525,8 +533,43 @@ namespace sts::search {
             bool qValid = false;
             std::int64_t leaderVisits = 0, runnerUpVisits = 0, candidateVisits = 0;
             double leaderPrior = -1, runnerUpPrior = -1;
+            bool leaderSame = false;
+            int leaderStreak = 1;
+            double stopRisk = -1;   // STS_SILVER_GUMBEL_LEARNED_STOP's risk at this boundary (-1 = not asked)
             NativeSilverStopFeatures x{};
         };
+
+        // NativeSilverGumbelStopModel.h's features of a boundary row (tools/gumbel_learned_stop.py: features()).
+        NativeSilverGumbelStopFeatures gumbelStopFeatures(const GumbelStopRow &r, std::int64_t budget, int legalActions,
+                                                         std::int64_t inheritedVisits, int act, int room, int turn) {
+            NativeSilverGumbelStopFeatures f{};
+            const double scoreGap = r.leaderScore - r.runnerUpScore;
+            f[kGStopBoundary] = r.boundary;
+            f[kGStopPhases] = r.phases;
+            f[kGStopPhasesLeft] = r.phases - r.boundary;
+            f[kGStopCandidates] = r.candidates;
+            f[kGStopSpentFrac] = static_cast<double>(r.spent) / std::max(static_cast<double>(budget), 1.0);
+            f[kGStopLegalActions] = legalActions;
+            f[kGStopInheritedVisits] = static_cast<double>(inheritedVisits);
+            f[kGStopAct] = act;
+            f[kGStopRoom] = room;
+            f[kGStopTurn] = turn;
+            f[kGStopScoreGap] = scoreGap;
+            f[kGStopScoreGapNorm] = scoreGap / (50.0 + static_cast<double>(r.leaderVisits));
+            f[kGStopQGap] = r.qValid ? r.leaderQ - r.runnerUpQ : 0.0;
+            f[kGStopQValid] = r.qValid ? 1 : 0;
+            f[kGStopLeaderVisitShare] = static_cast<double>(r.leaderVisits)
+                / static_cast<double>(std::max<std::int64_t>(r.candidateVisits, 1));
+            f[kGStopLeaderPrior] = r.leaderPrior;
+            f[kGStopRunnerUpPrior] = r.runnerUpPrior;
+            f[kGStopPriorGap] = r.leaderPrior >= 0 && r.runnerUpPrior >= 0 ? r.leaderPrior - r.runnerUpPrior : 0.0;
+            f[kGStopLeaderSame] = r.leaderSame ? 1 : 0;
+            f[kGStopLeaderStreak] = r.leaderStreak;
+            f[kGStopEntropy] = r.x[kStopEntropy];
+            f[kGStopVisitQGap] = r.x[kStopQGap];
+            f[kGStopRootVisits] = r.x[kStopRootVisits];
+            return f;
+        }
 
         constexpr const char *kGumbelStopTraceHeader =
             "seed,combat,decision,floor,act,room,turn,k,max_backup,legal_actions,inherited_visits,budget,"
@@ -534,6 +577,8 @@ namespace sts::search {
             "leader,runner_up,final,leader_edge,runner_up_edge,final_edge,leader_is_final,"
             "leader_score,runner_up_score,score_gap,leader_q,runner_up_q,q_gap,q_valid,"
             "leader_visits,runner_up_visits,candidate_visits,leader_visit_share,leader_prior,runner_up_prior";
+        // Written after the stop features.
+        constexpr const char *kGumbelStopTraceTail = ",gstop_risk";
 
         void traceGumbelStopRoot(const GameContext &gc, const BattleContext &bc, std::int64_t combatId, int decision,
                                  const SilverSearcher &searcher, int k, int maxBackup, std::int64_t inheritedVisits,
@@ -565,7 +610,7 @@ namespace sts::search {
                     << r.candidateVisits << ',' << static_cast<double>(r.leaderVisits) / total << ','
                     << r.leaderPrior << ',' << r.runnerUpPrior;
                 for (const double v : r.x) out << ',' << v;
-                out << '\n';
+                out << ',' << r.stopRisk << '\n';
             }
             std::lock_guard lock(g_gumbelStopTraceMutex);
             g_gumbelStopTraceFile << out.str();
@@ -1000,11 +1045,13 @@ namespace sts::search {
                     } else if (gumbelRoot) {
                         // STS_SILVER_GUMBEL_STOP_TRACE: rows at each halving boundary, written after the search
                         // with the final choice. The observer only reads the tree.
+                        // STS_SILVER_GUMBEL_LEARNED_STOP: the policy reads the row the observer just built.
                         const bool gumbelTrace = wholeRunGumbel && !g_options.gumbelStopTrace.empty();
+                        const bool gumbelStop = wholeRunGumbel && g_options.gumbelLearnedStop;
                         std::vector<GumbelStopRow> gumbelRows;
                         StopTrack gumbelTrack;
-                        const double gumbelCpu0 = gumbelTrace ? threadCpuSeconds() : 0;
-                        if (gumbelTrace) {
+                        const double gumbelCpu0 = gumbelTrace || gumbelStop ? threadCpuSeconds() : 0;
+                        if (gumbelTrace || gumbelStop) {
                             searcher->gumbelBoundaryObserver = [&](const SilverSearcher::GumbelBoundary &b) {
                                 GumbelStopRow r;
                                 r.cpuSeconds = threadCpuSeconds() - gumbelCpu0;
@@ -1029,12 +1076,26 @@ namespace sts::search {
                                 r.runnerUpPrior = hasPrior && r.runnerUp >= 0 ? prior[r.runnerUp] : -1;
                                 r.x = stopFeatures(*searcher, inheritedVisits, b.spent, flatBudget, bc.turn, gc.act,
                                     stopRoomCode(gc.curRoom), gumbelTrack);
+                                if (!gumbelRows.empty() && gumbelRows.back().leader == r.leader) {
+                                    r.leaderSame = true;
+                                    r.leaderStreak = gumbelRows.back().leaderStreak + 1;
+                                }
                                 gumbelRows.push_back(r);
+                            };
+                        }
+                        if (gumbelStop) {
+                            searcher->gumbelStopPolicy = [&](const SilverSearcher::GumbelBoundary &) {
+                                auto &r = gumbelRows.back();
+                                const auto f = gumbelStopFeatures(r, flatBudget,
+                                    static_cast<int>(searcher->rootNode().edges.size()), inheritedVisits, gc.act,
+                                    stopRoomCode(gc.curRoom), bc.turn);
+                                r.stopRisk = nativeSilverGumbelStopModelRisk(f);
+                                return r.stopRisk < g_options.gumbelLearnedStopThreshold;
                             };
                         }
                         struct ObserverReset {
                             SilverSearcher &s;
-                            ~ObserverReset() { s.gumbelBoundaryObserver = nullptr; }
+                            ~ObserverReset() { s.gumbelBoundaryObserver = nullptr; s.gumbelStopPolicy = nullptr; }
                         } observerReset{*searcher};
                         simulations = searcher->searchGumbelRoot(flatBudget, *gumbelRoot,
                             nativeSilverBattleSeed(bc) ^ (0x9e3779b97f4a7c15ULL * static_cast<std::uint64_t>(decision + 1)));
@@ -1047,6 +1108,11 @@ namespace sts::search {
                         if (wholeRunGumbel) {
                             ++g_wholeRunGumbelRoots;
                             g_wholeRunGumbelSims += simulations;
+                            if (gumbelStop && !gumbelRows.empty() && gumbelRows.back().stopRisk >= 0
+                                    && gumbelRows.back().stopRisk < g_options.gumbelLearnedStopThreshold) {
+                                ++g_wholeRunGumbelStops;
+                                g_wholeRunGumbelStopSims += flatBudget - simulations;
+                            }
                         }
                     } else {
                         searcher->search(flatBudget);
@@ -1360,6 +1426,31 @@ namespace sts::search {
             if (const auto &t = g_options.gumbelRootTree)
                 std::cerr << "[silver] research search: whole-run Gumbel tree ucb=" << t->exploration
                           << " widen end turn=" << t->endTurnWideningC << " widen chance=" << t->chanceWideningC << "\n";
+            g_options.gumbelLearnedStop = false;
+            g_options.gumbelLearnedStopThreshold = 0;
+            if (const char *raw = std::getenv("STS_SILVER_GUMBEL_LEARNED_STOP"); raw && *raw && std::string(raw) != "0") {
+                const std::string v(raw);
+                double t = 0;
+                if (v == "1") {
+                    t = nativeSilverGumbelStopModelDefaultThreshold();
+                } else {
+                    char *end = nullptr;
+                    t = std::strtod(raw, &end);
+                    if (end == raw || *end != '\0' || !(t > 0 && t < 1))
+                        throw std::runtime_error("STS_SILVER_GUMBEL_LEARNED_STOP must be 0, 1 or a threshold in (0, 1)");
+                }
+                g_options.gumbelLearnedStop = true;
+                g_options.gumbelLearnedStopThreshold = t;
+            }
+            if (g_options.gumbelRootK > 0 && g_options.gumbelLearnedStop) {
+                std::cerr << "[silver] research search: whole-run Gumbel learned stop model="
+                          << nativeSilverGumbelStopModelId() << " threshold=" << g_options.gumbelLearnedStopThreshold
+                          << "\n";
+                std::atexit([] {
+                    std::cerr << "[silver] whole-run Gumbel learned stops=" << g_wholeRunGumbelStops.load()
+                              << " unspent_sims=" << g_wholeRunGumbelStopSims.load() << "\n";
+                });
+            }
             if (g_options.gumbelRootK > 0)
                 std::atexit([] {
                     std::cerr << "[silver] whole-run Gumbel roots=" << g_wholeRunGumbelRoots.load()
@@ -1573,6 +1664,8 @@ namespace sts::search {
                 g_stopTraceFile << '\n';
             }
         }
+        if (g_options.gumbelLearnedStop && g_options.gumbelRootK == 0)
+            throw std::runtime_error("STS_SILVER_GUMBEL_LEARNED_STOP requires STS_SILVER_GUMBEL_ROOT");
         if (g_gumbelStopTraceFile.is_open()) g_gumbelStopTraceFile.close();
         if (!g_options.gumbelStopTrace.empty()) {
             if (g_options.gumbelRootK == 0)
@@ -1584,7 +1677,7 @@ namespace sts::search {
             if (g_gumbelStopTraceFile.tellp() == 0) {
                 g_gumbelStopTraceFile << kGumbelStopTraceHeader;
                 for (const auto *name : kNativeSilverStopFeatureNames) g_gumbelStopTraceFile << ",stop_" << name;
-                g_gumbelStopTraceFile << '\n';
+                g_gumbelStopTraceFile << kGumbelStopTraceTail << '\n';
             }
         }
         g_externalCombatBackend = runNativeSilverCombat;

@@ -436,6 +436,10 @@ namespace sts::search {
             const std::vector<double> &q;
         };
         std::function<void(const GumbelBoundary &)> gumbelBoundaryObserver;
+        // Research only (STS_SILVER_GUMBEL_LEARNED_STOP): searchGumbelRoot asks this, when set, at every boundary
+        // before the last (after the observer). `true` ends the search there: the pick is the boundary's leader
+        // (ranked.front()) and the return value the simulations spent so far. Unset, the search is unchanged.
+        std::function<bool(const GumbelBoundary &)> gumbelStopPolicy;
         // Research-only playout policy for RolloutConfig::prior (same signature as nodePrior).
         std::function<std::vector<double>(const BattleContext &, const std::vector<Edge> &)> rolloutPrior;
         // STS_SILVER_LEAF_HEAD (set by NativeSilverBackend; default off): an undecided leaf is worth

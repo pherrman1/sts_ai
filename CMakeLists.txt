@@ -957,6 +957,8 @@ add_test(NAME silver_gumbel_root COMMAND $<TARGET_FILE:unit-test> silver_gumbel_
 set_tests_properties(silver_gumbel_root PROPERTIES LABELS "core")
 add_test(NAME silver_gumbel_boundary_observer COMMAND $<TARGET_FILE:unit-test> silver_gumbel_boundary_observer)
 set_tests_properties(silver_gumbel_boundary_observer PROPERTIES LABELS "core")
+add_test(NAME silver_gumbel_learned_stop COMMAND $<TARGET_FILE:unit-test> silver_gumbel_learned_stop)
+set_tests_properties(silver_gumbel_learned_stop PROPERTIES LABELS "core")
 add_test(NAME silver_hidden_info_invariance COMMAND $<TARGET_FILE:unit-test> silver_hidden_info_invariance)
 set_tests_properties(silver_hidden_info_invariance PROPERTIES LABELS "core")
 add_test(NAME silver_incense_heart_phase COMMAND $<TARGET_FILE:unit-test> silver_incense_heart_phase)

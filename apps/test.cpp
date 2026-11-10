@@ -44,6 +44,7 @@
 #include "sim/search/CombatKnowledge.h"
 #include "sim/search/SilverConversion.h"
 #include "sim/search/SilverBridge.h"
+#include "sim/search/NativeSilverGumbelStopModel.h"
 #include "sim/search/SilverSemanticAction.h"
 #include "sim/search/OocSemanticAction.h"
 #include "sim/search/MatchAndKeepPolicy.h"
@@ -3710,6 +3711,99 @@ int testSilverGumbelBoundaryObserver() {
     }
     if (failures == 0) { std::cout << "silver_gumbel_boundary_observer PASS\n"; return 0; }
     std::cout << "silver_gumbel_boundary_observer FAIL (" << failures << " cases)\n";
+    return 1;
+}
+
+// Research (STS_SILVER_GUMBEL_LEARNED_STOP): SilverSearcher::gumbelStopPolicy on the Nob root with k = 8. A policy that
+// never stops repeats the plain search (pick, visits, spend) and is asked at every boundary before the last; a policy
+// that stops at boundary b returns that boundary's leader with that boundary's spend. The generated model reproduces
+// probe risks from tools/gumbel_learned_stop.py train (probe.json) to 1e-9.
+int testSilverGumbelLearnedStop() {
+    int failures = 0;
+    const auto check = [&failures](bool ok, const std::string &msg) {
+        if (!ok) { std::cout << "    " << msg << '\n'; ++failures; }
+    };
+    GameContext gc(CharacterClass::IRONCLAD, 0x415C5u, 20);
+    gc.curRoom = Room::ELITE;
+    BattleContext bc;
+    bc.init(gc, MonsterEncounter::GREMLIN_NOB);
+    search::SilverSearchContext context;
+    context.act = 1;
+    constexpr std::int64_t kSims = 2000;
+    struct Seen { int phase; std::int64_t spent; int leader; };
+    const auto run = [&](int stopAt, std::vector<Seen> *seen, std::vector<int> *asked) {
+        auto s = std::make_unique<search::SilverSearcher>(silverSearchRoot(bc), context);
+        s->riskVeto = {};
+        const auto n = s->prepareRootActions();
+        s->rootPrior.assign(n, 0.0);
+        for (std::size_t i = 0; i < n; ++i) s->rootPrior[i] = 1.0 / static_cast<double>(i + 1);
+        if (seen) {
+            s->gumbelBoundaryObserver = [seen](const search::SilverSearcher::GumbelBoundary &b) {
+                seen->push_back({b.phase, b.spent, b.ranked.front()});
+            };
+        }
+        if (asked) {
+            s->gumbelStopPolicy = [asked, stopAt](const search::SilverSearcher::GumbelBoundary &b) {
+                asked->push_back(b.phase);
+                return b.phase == stopAt;
+            };
+        }
+        search::SilverSearcher::GumbelRoot g;
+        g.k = 8;
+        const auto spent = s->searchGumbelRoot(kSims, g, 7);
+        return std::make_pair(std::move(s), spent);
+    };
+    auto [plain, spentPlain] = run(-1, nullptr, nullptr);
+    std::vector<Seen> seen;
+    std::vector<int> asked;
+    auto [never, spentNever] = run(-1, &seen, &asked);
+    bool same = spentPlain == spentNever && plain->lastGumbelEdge() == never->lastGumbelEdge()
+        && plain->rootNode().edges.size() == never->rootNode().edges.size();
+    for (std::size_t i = 0; same && i < plain->rootNode().edges.size(); ++i)
+        same = plain->rootNode().edges[i].visitCount == never->rootNode().edges[i].visitCount;
+    check(same, "a policy that never stops leaves the search unchanged");
+    const int phases = static_cast<int>(seen.size()) - 1;
+    check(phases >= 2, "the root has at least two halving phases");
+    bool askedOk = static_cast<int>(asked.size()) == phases;
+    for (int b = 0; askedOk && b < phases; ++b) askedOk = asked[b] == b;
+    check(askedOk, "the policy is asked at boundaries 0..phases-1, not after the last phase");
+    for (int b = 0; b < phases && b < static_cast<int>(seen.size()); ++b) {
+        std::vector<int> stopAsked;
+        auto [stopped, spentStopped] = run(b, nullptr, &stopAsked);
+        const std::string tag = " (stop at boundary " + std::to_string(b) + ")";
+        check(spentStopped == seen[b].spent, "the stop returns the boundary's spend" + tag);
+        check(stopped->lastGumbelEdge() == seen[b].leader, "the stop picks the boundary's leader" + tag);
+        check(static_cast<int>(stopAsked.size()) == b + 1, "no boundary after the stop is asked" + tag);
+    }
+    {
+        // After an early stop the searcher is reusable (the forced-root state was reset).
+        std::vector<int> a;
+        auto [s, spent] = run(0, nullptr, &a);
+        check(spent == 0, "a stop at boundary 0 spends nothing");
+        s->gumbelStopPolicy = nullptr;
+        const auto again = s->searchGumbelRoot(kSims, search::SilverSearcher::GumbelRoot{}, 9);
+        check(again > 0, "the searcher still searches after an early stop");
+    }
+    struct Probe { search::NativeSilverGumbelStopFeatures x; double risk; };
+    const Probe probes[] = {
+        {{1.0, 2.0, 1.0, 4.0, 0.5, 4.0, 7917.0, 1.0, 0.0, 1.0, 7021.554052490861, 0.7101804442693296, 11.269454184934162, 1.0, 0.6180573008293541, 0.718053185012205, 0.15653248898877542, 0.5615206960234296, 1.0, 2.0, 1.0846108779137895, 10.5877381090353, 15917.0}, 0.0004966861120452294},
+        {{0.0, 1.0, 1.0, 2.0, 0.0, 2.0, 17324.0, 1.0, 0.0, 2.0, 1.3846100593242965, 8.344040371967557e-05, 2.239824580394611, 1.0, 0.9550308837961092, 0.8645913656976224, 0.13540863430237754, 0.7291827313952448, 0.0, 1.0, 0.1834267741778937, 2.0543747642638834, 17324.0}, 0.004099337144016602},
+        {{1.0, 3.0, 2.0, 5.0, 0.333125, 5.0, 5580.0, 1.0, 0.0, 3.0, 0.17889811267059486, 6.052033581549217e-05, 1.6200374375330284e-12, 1.0, 0.26638555321294344, 0.3565836064196634, 0.2882379829826389, 0.0683456234370245, 1.0, 2.0, 1.5255362015860634, 0.31787368568157603, 10910.0}, 0.007072568636186421},
+        {{1.0, 2.0, 1.0, 3.0, 0.499875, 3.0, 9746.0, 1.0, 0.0, 0.0, 2593.5997457360754, 0.25286143567671593, 0.741980490549679, 1.0, 0.5752691202164234, 0.6660117380990251, 0.274801603476141, 0.3912101346228841, 1.0, 2.0, 0.9656073640598668, 1.0695920279736555, 17744.0}, 0.03401340086068087},
+        {{1.0, 3.0, 2.0, 5.0, 0.333125, 5.0, 4763.0, 1.0, 0.0, 0.0, 588.0068510830688, 0.11063158063651342, 1.0502660223381213, 1.0, 0.5217003567181926, 0.19063346982793553, 0.2600301818014968, -0.06939671197356126, 1.0, 2.0, 1.3535881260086247, 1.9522293931873662, 10093.0}, 0.11308092150099053},
+        {{1.0, 2.0, 1.0, 3.0, 0.499875, 3.0, 246.0, 1.0, 0.0, 1.0, 52.15039469808562, 0.018356351530477162, 0.04172880424931691, 1.0, 0.33859031905859516, 0.6360907531651117, 0.28682343570264757, 0.3492673174624641, 1.0, 2.0, 1.0985075011575645, 0.39407341619714487, 8244.0}, 0.388976707203102},
+        {{1.0, 3.0, 2.0, 7.0, 0.3329375, 7.0, 0.0, 1.0, 0.0, 0.0, 26.974209045491193, 0.033260430389015036, 0.37036738595176644, 1.0, 0.14285714285714285, 0.09923971010631553, 0.10959163398069983, -0.0103519238743843, 0.0, 1.0, 1.945910149055313, -2.137187910644073, 5327.0}, 0.6765218624600045},
+        {{0.0, 2.0, 2.0, 3.0, 0.0, 3.0, 9711.0, 1.0, 0.0, 0.0, 0.45569974375654476, 0.0011087585006241964, -3.586636143864723, 1.0, 0.037178166838311016, 0.3669817727241489, 0.5378955916467331, -0.17091381892258417, 0.0, 1.0, 0.22720166761517854, 3.94212134611449, 9711.0}, 0.9646831932390276},
+    };
+    for (const auto &p : probes) {
+        const double r = search::nativeSilverGumbelStopModelRisk(p.x);
+        check(std::abs(r - p.risk) < 1e-9, "model risk " + std::to_string(r) + " matches probe " + std::to_string(p.risk));
+    }
+    check(std::string(search::nativeSilverGumbelStopModelId()).rfind("ggbt-", 0) == 0, "model id has the ggbt- prefix");
+    const double t = search::nativeSilverGumbelStopModelDefaultThreshold();
+    check(t > 0 && t < 1, "default threshold is in (0, 1)");
+    if (failures == 0) { std::cout << "silver_gumbel_learned_stop PASS\n"; return 0; }
+    std::cout << "silver_gumbel_learned_stop FAIL (" << failures << " cases)\n";
     return 1;
 }
 
@@ -7438,6 +7532,8 @@ int main(int argc, const char* argv[]) {
         return testSilverGumbelRoot();
     } else if (command == "silver_gumbel_boundary_observer") {
         return testSilverGumbelBoundaryObserver();
+    } else if (command == "silver_gumbel_learned_stop") {
+        return testSilverGumbelLearnedStop();
     } else if (command == "silver_hidden_info_invariance") {
         return testSilverHiddenInfoDecisionInvariance();
     } else if (command == "silver_incense_heart_phase") {
