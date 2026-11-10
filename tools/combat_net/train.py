@@ -17,8 +17,8 @@ rows; batches are collated by `--workers` DataLoader processes ahead of the GPU;
 bfloat16 autocast (losses in float32). `--no-bucket` and `--no-amp` restore plain shuffled float32 batches.
 
 T0 options (Gumbel distillation plan, 2026-11-10); the defaults reproduce the stage-2 runs:
-- `--train-frac F` keeps the training runs with u(seed) < F, u = ((seed * 40503) mod 2^32) / 2^32, so smaller fractions
-  are nested in larger ones. The validation and gate splits do not change.
+- `--train-frac F` keeps the training runs with u(seed) < F (u: 64-bit Fibonacci hash of the seed in [0, 1)), so smaller
+  fractions are nested in larger ones. The validation and gate splits do not change.
 - `--policy-target cq:S` trains the policy on the completed-Q policy softmax(log prior + S * q01) instead of the
   visit shares (see completed_q_policy); `cq:paper` uses Gumbel MuZero's S = (c_visit + max visits) * c_scale with
   the teacher's c_visit 50 and c_scale 1. Needs tensorize.py's q.npy and visits.npy. Validation always measures
@@ -47,8 +47,11 @@ def split_of(seeds):
 
 
 def train_frac_mask(seeds, frac):
-    """Nested subset of runs: u(seed) < frac."""
-    u = ((seeds.astype(np.uint64) * np.uint64(40503)) % np.uint64(2 ** 32)).astype(np.float64) / 2 ** 32
+    """Nested subset of runs: u(seed) < frac, u = 64-bit Fibonacci hash of the seed in [0, 1) (well spread over
+    consecutive seed blocks)."""
+    with np.errstate(over="ignore"):
+        h = seeds.astype(np.uint64) * np.uint64(0x9E3779B97F4A7C15)
+    u = (h >> np.uint64(11)).astype(np.float64) / 2.0 ** 53
     return u < frac
 
 
