@@ -26945,3 +26945,32 @@ No default change. Seeds: §775's 111378256-111378767 reused (no new seeds). Cos
 **Knowledge impact:** prices the Gumbel root for the PPO actors' combat (about +5 / +8 / +10 pp Heart for 2× / 4.5× /
 8.7× combat B's CPU); budget comparisons with §775's arms carry Act 4 strong; a G16 + mb4 arm with Act 4 strong off
 would split the 8k → 16k step.
+
+## §780 — Gumbel tuning Test 2, node reuse cap in whole runs: §775's G16 + mb4 with a 262,144-node reuse cap in every fight (G16CAP) against §775's G16 + mb4 (32,768), net-0420 out of combat, 1,024 paired A20 seeds, §775's G16 games reused after Test 1's 32/32 sentinel: Heart 41.21% → 38.28%, −2.93 pp [−5.66, −0.20] → NOT_SHOWN; cap resets 4.5% → 0% of reroots, carried visits 34% → 44%, same CPU (cloud, 2026-11-10)
+
+**Question (Philipp, 2026-11-09 20:53 CET, "node cap danach ebenfalls"; 2026-11-10 00:22 CET go for the night's
+run):** does a node reuse cap of 262,144 instead of 32,768 raise the Heart kill rate of §775's teacher G16 + mb4?
+**Data:** [PREREG](evidence/gumbel_tuning_20261109/wholerun/PREREG.md) ("Test 2"),
+[README](evidence/gumbel_tuning_20261109/wholerun_test2/README.md),
+[RESULT](evidence/gumbel_tuning_20261109/wholerun_test2/RESULT.md), `results/result.json`, `results/breakdown.json`,
+`results/claims.txt`, `../wholerun/analyze.py` (frozen with the PREREG), `breakdown.py` (descriptive).
+- G16CAP = §775's G16 + mb4 plus `STS_SILVER_NODE_REUSE_CAP=262144` in every fight (the Heart already had that cap).
+  Code 13bb97ec, binary b5090b16, run commit 144b02a7. Control: §775's 1,024 G16 games (REUSE_VALID, §777).
+- 1,024 units (one game each), 1,024 verified, 0 bad, 0 aborts, 0 dropped. 142.5 lane-hours, 00:35-04:40 CET; 32
+  re-attempts after container resets; one game over 1 h (2 h 11 min).
+
+**Result:** Heart kill G16 41.21%, G16CAP 38.28%: G16CAP − G16 **−2.93 pp [−5.66, −0.20]**, 85 seeds only G16CAP
+kills, 115 only G16; SPRT gainer (+2 pp, alpha 0.05) accepts H0 at 704 seeds → **NOT_SHOWN**; the nonregression
+variant reaches CAP. Act-4 reach −1.37 [−4.00, +1.37], final floor −0.74; CPU 0.98× G16's. Tree reuse: cap resets
+0.003% of kept-or-reset reroots (sentinel G16 4.50%), visits carried 43.6% of all simulations (34.3%).
+- Descriptive (`breakdown.py`): death hazard by section, no interval excludes 0; largest Act 4 +3.7 pp [−0.1, +7.8];
+  kills per Heart arrival 82.0% vs 85.3%, although the Heart fight had the same cap in both arms.
+**Interpretation (Inference):** the larger cap removes the resets and carries more of the tree, but adds no Heart
+kills; the negative point estimate is "possibly slightly worse", not a shown loss (no harm test was pre-registered).
+A hypothesis, not measured: carried subtrees keep the previous search's visit allocation and backed-up values, which
+16,000 fresh simulations then correct less. At 16,000 the 32,768 cap does not explain §779's plateau above 16k; 32k and
+64k with the larger cap are not measured.
+**Decision:** NOT_SHOWN. No default change. G16 + mb4 with the 32,768 cap stays the teacher candidate.
+Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 142.5 lane-hours.
+**Knowledge impact:** combat teacher configuration; the node reuse cap is not a lever at 16,000 simulations; reuse
+budgets above 16k need their own test before being assumed to help.
