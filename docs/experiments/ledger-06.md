@@ -27010,7 +27010,7 @@ Seeds: §775's 111378256-111378767 reused (no new seeds). Cost: 127.4 lane-hours
 about 350-415 s CPU per Act-4 run; budget comparisons with Act 4 strong off understate an arm by about 3 pp; the
 16k step is a real budget effect.
 
-## §TBD — Traced replay of §775 (D vs G16 + mb4, net-0420 out of combat, 1,024 A20 seeds) with per-fight traces: 2,048/2,048 games reproduce; G16's +98 Heart kills = 69 from reaching the Heart more often + 29 from winning more Heart fights; per fight the gain is largest in Act 1-2 elites, the Act 2 boss and the Heart, not in normal fights; entry HP (+2) explains about 1 pp of the 5-6 pp boss death drops → REPRO_OK, descriptive (cloud, 2026-11-10)
+## §782 — Traced replay of §775 (D vs G16 + mb4, net-0420 out of combat, 1,024 A20 seeds) with per-fight traces: 2,048/2,048 games reproduce; G16's +98 Heart kills = 69 from reaching the Heart more often + 29 from winning more Heart fights; per fight the gain is largest in Act 1-2 elites, the Act 2 boss and the Heart, not in normal fights; entry HP (+2) explains about 1 pp of the 5-6 pp boss death drops → REPRO_OK, descriptive (cloud, 2026-11-10)
 
 **Question (trajectory review rank 1; Philipp, 2026-11-10 00:22 CET, "Jo klingt gut, go"):** where in the run does
 §775's G16 + mb4 gain its +9.6 pp Heart kills over the A20 default combat (D): which fight classes, through a better
