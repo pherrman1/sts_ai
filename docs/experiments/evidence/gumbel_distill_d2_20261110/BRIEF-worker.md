@@ -10,7 +10,7 @@ Philipp authorized this run on 2026-11-10 at 21:49 CET ("Let's go", on the propo
 
 1. In the FOREGROUND (timeout 10 min):
    cd /home/user/sts_ai && git fetch --depth 1 origin $RUN_COMMIT && git checkout --detach $RUN_COMMIT && git rev-parse HEAD && git status --short
-   Then also fetch the code commit the binary is built from: git fetch --depth 1 origin 439d5933e0951b3968074b37a294e53344476829
+   Then also fetch the code commit the binary is built from: git fetch --depth 1 origin 823bbad0b07b6a719c0b186541a84384860d29ef
    (HEAD must equal RUN_COMMIT; status must be clean for tracked files). If the fetch fails, retry up to 4 times
    (wait 2 s, 4 s, 8 s, 16 s).
 2. bash tools/cloud/worker.sh setup $CAMPAIGN <n>      -> must print "setup ok"

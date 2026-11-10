@@ -7,7 +7,8 @@
 # fight row carries Silver's end score. Always exits 0 (rc is in .done), except when one_combat was killed by a signal
 # (rc 137/143, issue #1001): then exit 3, so the queue re-runs the unit. rc 97 = the manifest does not say it played
 # the production out-of-combat chain, production combat with boss prior playouts and the whole-run Gumbel root with
-# max backup 4; rc 96 = net-0420 not loaded; rc 98 = seed outside the frozen block.
+# max backup 4 and Act 4 strong (manifest "act4Strong": true and the binary's Act 4 strong line); rc 96 = net-0420
+# not loaded; rc 98 = seed outside the frozen block.
 set -uo pipefail
 REPO=$1 RUN=$2 OUT=$3 VARIANT=$4 FIRST=$5 COUNT=$6
 [ "$VARIANT" = natural ] || { echo "bad variant $VARIANT" >&2; exit 2; }
@@ -31,9 +32,10 @@ fi
 [ -s "$base.jsonl" ] && gzip -f "$base.jsonl"
 if [ "$rc" = 0 ]; then
   for want in '"oocPlay": "production_chain"' '"combat": "production"' '"prior_playout_rooms": "boss"' \
-      '"source": "whole-run STS_SILVER_GUMBEL_ROOT (no override)"' '"maxBackup": 4'; do
+      '"source": "whole-run STS_SILVER_GUMBEL_ROOT (no override)"' '"maxBackup": 4' '"act4Strong": true'; do
     grep -qF "$want" "$base.manifest.json" 2>/dev/null || rc=97
   done
+  grep -qF "Act 4 strong (S&S 10k prior playouts, Heart 40k)" "$base.log" || rc=97
   grep -qF "[heart1] loaded $RUN/net-0420.bin " "$base.log" || rc=96
 fi
 echo "tag=$VARIANT-$FIRST rc=$rc roots=$(grep -o 'roots=[0-9]*' "$base.log" 2>/dev/null | tail -1) start=$start end=$(date -u +%FT%TZ)" > "$base.done"

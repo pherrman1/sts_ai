@@ -1,6 +1,6 @@
 name          gumbel-distill-d2
-code_commit   439d5933e0951b3968074b37a294e53344476829
-binary_sha256 e7e07f02710234a8e32de16a952785669eaa6fee30e3f093ed5f5505d14b839d
+code_commit   823bbad0b07b6a719c0b186541a84384860d29ef
+binary_sha256 ed373563594d97f0f5cdb73edc03b368c9065031b2194883c2b3f333373b9a3b
 workers       40
 share         /mnt/project-files/gumbel-distill/d2
 configure_preset linux-gcc-release-x86-64-v3

@@ -10,7 +10,7 @@ data for per-boss specialists and gave the go at 21:49 CET ("Let's go") on the p
 
 - `one_combat silverazgen` with `record_env.sh`: §775's G16 arm (net-0420 out of combat at temperature 0, no OOC
   MCTS; every fight under the whole-run Gumbel root k 16 at flat 16,000 with max backup min 4 visits; Act 4 at Act 4
-  strong's budget, reuse cap 262,144 at the Heart and prior playouts). `STS_AZGEN_WHOLE_RUN_GUMBEL=1` (code 439d5933)
+  strong's budget, reuse cap 262,144 at the Heart and prior playouts). `STS_AZGEN_WHOLE_RUN_GUMBEL=1` (code 823bbad0)
   installs no search override, so the fights are bestbench's; root rows add `edges[].prior`, `gumbelChoice`,
   `edges[].qBacked` (max-backed value) and `rootQBacked`. `q` stays the mean playout value.
 - 4,096 natural A20 runs on seeds 111950000-111954095, 512 units of 8 runs (`units.txt`), queue schedule, 4 lanes per
@@ -19,13 +19,18 @@ data for per-boss specialists and gave the go at 21:49 CET ("Let's go") on the p
   that net-0420 loaded (rc 97 / 96).
 - Expected per D1 rates (Inference): ~2.3M roots, ~97k fights; per boss ~42k roots (rarest) to ~95k (Heart).
 
-## Equivalence smoke (code 439d5933, binary e7e07f02, local cloud build)
+## Equivalence smoke
 
 §775's G16 games replayed with silverazgen must match §782's per-fight table (`../gumbel_wholerun_trace_20261109/
 results/battles.csv.gz`, arm G16: encounter, floor, won, turns, HP before; HP after differs by Burning Blood's +6,
-which the table records after the heal):
-- 111379018 (2 fights) and 111378289 (3 fights): identical.
-- 111378261 (a Heart kill): see RESULT section below once finished.
+which the table records after the heal) and §775's `whole-run Gumbel roots= sims=` exit line:
+- Code 439d5933 (binary e7e07f02), learned stop off: 111379018 and 111378289 identical; the Heart seed 111378261
+  identical through fight 30, then diverged at Shield and Spear (prelaunch review F1): the learned stop gates Act 4
+  strong (ADR-0060), so Act 4 ran at flat 16k with the 32k cap (946 roots / 14.0M sims against §775's 980 / 15.87M).
+- Code 823bbad0 (binary ed373563): silverazgen accepts the learned stop (with §775's model) under
+  `STS_AZGEN_WHOLE_RUN_GUMBEL=1`, where the stop itself is inert, so the env equals §775's except STS_SEARCHER3=0 and
+  the generator switches. The manifest records `act4Strong`; run_unit.sh requires it and the binary's Act 4 strong
+  banner (rc 97). 111379018: identical (53 roots / 607,997 sims). 111378261: pending.
 
 ## Processing (after the run)
 
