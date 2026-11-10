@@ -3,7 +3,7 @@
 YOUR WORKER NUMBER: W=<n>   (1..40; pass it unpadded, never 03)
 RUN_COMMIT=<RUN_COMMIT>  CAMPAIGN=docs/experiments/evidence/gumbel_distill_d2_20261110/d2b
 
-Philipp authorized this continuation on 2026-11-10 at 23:15 CET ("die Worker bis morgen um 8 Uhr laufen lassen für mehr Daten"); D2 itself was authorized at 21:49 CET. Start it only after your D2 wait printed FINISHED (WORKER_OK).
+Philipp authorized this continuation on 2026-11-10 at 23:15 CET ("Kannst du auch einfach die Worjer bis morgen um 8 uhr laufen lassen für mehr Daten?"); D2 itself was authorized at 21:49 CET. Start it only after your D2 wait printed FINISHED (WORKER_OK).
 - Do not change seeds, scripts, environments, binary, weights or timeouts.
 - Work in /home/user/sts_ai. Run nothing from /mnt/project-files (noexec).
 - The worker script uploads only to /mnt/project-files/gumbel-distill/d2b (units/, claims/, wWW.DONE.json). Write nothing else to the share.
