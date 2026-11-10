@@ -72,7 +72,7 @@ a 95% seed bootstrap (4,000 resamples), as Test 2's breakdown.
 
 No section's interval excludes 0. G16NR's extra deaths sit in acts 1-2 (each section +0.5 to +2.1), G16CAP's mostly
 in Act 4. Joint Heart kills per seed (G16, G16CAP, G16NR): all three kill on 258 seeds, none on 462; only G16 kills on
-73, only G16CAP on 46, only G16NR on 55; all but G16 on 39, all but G16CAP on 49, all but G16NR on 42.
+73, only G16CAP on 46, only G16NR on 55; all but G16 on 39, all but G16CAP on 42, all but G16NR on 49.
 
 ## Reading (Inference)
 
@@ -88,15 +88,17 @@ in Act 4. Joint Heart kills per seed (G16, G16CAP, G16NR): all three kill on 258
   - The 32,768 default is a real optimum: a moderate head start helps, and the larger cap keeps more of the old graph
     (below the cap a reroot does not compact, so nodes outside the new subtree stay findable). No measurement here
     shows that mechanism.
-  - The shared control sits above its own expectation. G16 replays deterministically, so all contrasts against these
-    1,024 games share one draw of G16's outcomes: c2 (§777, −4.69), G16CAP (§780, −2.93), G16STOP (§783, −2.34 at
-    0.70× the simulations) and G16NR (−2.73) all came out below it. Each interval is valid on its own, but the four
-    are not independent evidence. G16 + mb4 was also the best arm of §775. Against that, §775's G16 at 32,000
-    simulations (G32) reached 40.82% on these seeds, and G16 on #1025's 1,024 fresh seeds (111430000-111431023,
-    traced runs) killed the Heart in 41.60% (other seeds, so not a paired comparison).
-- Separating the two needs a control that is not these 1,024 games: one cap arm on #1025's seeds against #1025's G16
-  games, after a sentinel (about 145 lane-hours, no new seeds), would show whether the −2.8 pp holds with another draw.
-  That needs Philipp's go.
+  - G16's draw on these seeds is favourable. G16 replays deterministically, so every contrast against these 1,024
+    games shares one draw of G16's seed-wise outcomes. G16NR and G16CAP, which move the reuse in opposite directions,
+    both came out about 2.8 pp below it. Earlier contrasts against the same games did too (c2, §777, −4.69; G16STOP,
+    §783, −2.34), but those arms change more (c2's tree constants, G16STOP's 0.70× simulations) and are weak evidence
+    here. Each interval is valid on its own; contrasts that share a control are not independent evidence. Against a
+    high G16 level: §775's G32 reached 40.82% on these seeds, and G16 on #1025's 1,024 fresh seeds
+    (111430000-111431023, traced runs) 41.60% (other seeds, not paired). So if this reading holds, what is favourable
+    is G16's seed-wise pairing with the challengers, not its level in general.
+- Separating the two needs a second draw of the control: G16 + mb4 at a slightly different budget on these seeds (a
+  placebo that redraws G16's outcomes without changing the method), or a cap arm on #1025's seeds against #1025's G16
+  games after a sentinel. Each costs about 145 lane-hours and no new seeds, and needs Philipp's go.
 
 ## Decision
 

@@ -27134,9 +27134,10 @@ G16CAP 43.6%), so the reading is "no reuse".
 **Interpretation (Inference):** no reuse does not beat reuse, so there is no evidence that inherited visits mislead the
 Gumbel root at 16k (the leaf-calibration question). No reuse and the large cap play alike (+0.20 pp), so Test 2's −2.93
 is not harm from large reuse. Both are about 2.8 pp below the same G16 games: either the 32,768 default is a real
-optimum, or the shared control is high (G16 replays deterministically, so §777, §780, §783 and this test share one draw
-of G16's outcomes, and all four came out below it; G32 on these seeds 40.82%, G16 on #1025's fresh seeds 41.60%). A
-cap arm on #1025's seeds against #1025's G16 games would separate the two.
+optimum, or G16's draw on these seeds is favourable (G16 replays deterministically, so every contrast against these
+games shares one draw of its seed-wise outcomes; both cap arms, which move the reuse in opposite directions, came out
+below it; G32 on these seeds 40.82%, G16 on #1025's fresh seeds 41.60%). A placebo (G16 at a slightly different
+budget on these seeds) or a cap arm on #1025's seeds against #1025's G16 games would separate the two.
 **Decision:** NO_DIFFERENCE_SHOWN. No default change. G16 + mb4 with the 32,768 cap stays the teacher candidate.
 Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 143.8 lane-hours.
 **Knowledge impact:** combat teacher configuration; the node reuse cap is not a lever at 16,000 simulations in either
