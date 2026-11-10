@@ -36,7 +36,8 @@ Every run fine-tunes a §771 D0 checkpoint on D1 for the same number of steps as
 | LC-T | polonly_d0 | off | best TG target (lowest q_regret) | 0.125, 0.25, 0.5 |
 | S2 | as above | | LC-N F=1, LC-P F=1, the three TG runs | 1, seed 20261109 |
 
-19 runs, about 2-3 min each. `--train-frac F` keeps nested subsets of the training runs.
+19 runs, about 2-3 min each. `--train-frac F` keeps nested subsets of the training runs (64-bit Fibonacci hash of
+the seed; on D1, F = 0.5 / 0.25 / 0.125 keep 411 / 212 / 98 of the 825 training runs). Code d156e42.
 
 ## Measures (validation split, all rows, final checkpoint and best checkpoint by the listed measure)
 
