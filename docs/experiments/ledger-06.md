@@ -27143,7 +27143,7 @@ Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 143.8 lane-hours
 **Knowledge impact:** combat teacher configuration; the node reuse cap is not a lever at 16,000 simulations in either
 direction. Contrasts that reuse one deterministic control share its draw and are not independent evidence.
 
-## §TBD — Gumbel only in hard fights in whole runs: §775's G16 + mb4 in elite and boss rooms (Act 4 included) and the A20 default combat D in normal and event fights (GHARD) against §775's G16 + mb4, net-0420 out of combat, 1,023 paired A20 seeds, control reused after a 32/32 sentinel: Heart 41.25% → 38.03%, −3.23 pp [−5.87, −0.59] → WORSE; 0.85× G16's CPU (machine-corrected); GHARD − D +6.35 pp at 1.85× D's CPU (cloud, 2026-11-10)
+## §786 — Gumbel only in hard fights in whole runs: §775's G16 + mb4 in elite and boss rooms (Act 4 included) and the A20 default combat D in normal and event fights (GHARD) against §775's G16 + mb4, net-0420 out of combat, 1,023 paired A20 seeds, control reused after a 32/32 sentinel: Heart 41.25% → 38.03%, −3.23 pp [−5.87, −0.59] → WORSE; 0.85× G16's CPU (machine-corrected); GHARD − D +6.35 pp at 1.85× D's CPU (cloud, 2026-11-10)
 
 **Question (Philipp, 2026-11-10 16:04 CET, "Yes let's try 1."; go 18:56 CET, "Go für hard fight test"):** §782 put
 G16 + mb4's gain in elites, bosses and Act 4, with no resolved change in normal-fight deaths. Does G16 + mb4 in elite and
