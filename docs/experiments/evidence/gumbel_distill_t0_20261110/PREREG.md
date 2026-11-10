@@ -63,3 +63,19 @@ the seed; on D1, F = 0.5 / 0.25 / 0.125 keep 411 / 212 / 98 of the 825 training 
 ## Not in T0
 
 No gameplay, no new seeds, no change to any default or to the engine. The gate holdout stays unread.
+
+## Amendment 1 (2026-11-10 21:10 CET, before any phase-3 run): boss specialists
+
+Philipp, 21:08 CET ("Ja häng es dran"), after the SpirePilot comparison (one specialist net per encounter). Phase 3
+of `t0_grid.sh`, all policy-only, visit-share target, boss rows only (`--rooms 2`, training and validation):
+
+| id | init | epochs on boss rows | seed |
+|---|---|---|---|
+| BOSS-GEN_eval | LC-P_f1 (the generalist), `--eval-only` | – | – |
+| BOSS-P_e3 | polonly_d0 | 3 | 20261108 |
+| BOSS-P_e11 | polonly_d0 | 11 (≈ the generalist's step count) | 20261108, 20261109 |
+| BOSS-FT_e3 | LC-P_f1 | 3 | 20261108, 20261109 |
+
+**Rule:** a specialist is **SPECIALIST_BETTER** if its boss-row q_regret is below BOSS-GEN_eval's on both seeds by
+more than the S2 seed spread of the F = 1 generalist runs; otherwise **NO_SPECIALIST_GAIN**. Descriptive, single
+data set; a per-encounter split (one net per boss) is not run because D1 has ~5-10k boss roots per boss.

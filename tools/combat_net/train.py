@@ -26,6 +26,9 @@ T0 options (Gumbel distillation plan, 2026-11-10); the defaults reproduce the st
 - With q.npy and visits.npy present, evaluation adds top-1 agreement with the Gumbel pick (`top1_gumbel`) and with
   the finalists' best Q (`top1_qpick`: argmax Q over the edges with at least half the root's largest visit count),
   and `q_regret`: best finalist Q minus the Q of the net's argmax, on rows where that edge was visited.
+- `--rooms 2` (comma list of elite_boss codes: 0 monster, 1 elite, 2 boss, 3 other) keeps only those rows in the
+  training and the validation split (specialist runs). `--eval-only` evaluates `--init` on the validation split and
+  writes eval.json without training (e.g. the generalist on the boss rows).
 """
 
 import argparse
@@ -219,6 +222,8 @@ def main(argv):
     ap.add_argument("--value-weight", type=float, default=1.0, help="weight of the value loss (policy and aux: 1)")
     ap.add_argument("--train-frac", type=float, default=1.0, help="nested fraction of the training runs (T0)")
     ap.add_argument("--policy-target", default="visits", help="visits | cq:S | cq:paper (T0)")
+    ap.add_argument("--rooms", default="", help="comma list of elite_boss codes to keep (T0 specialists)")
+    ap.add_argument("--eval-only", action="store_true", help="evaluate --init on the validation split, no training")
     args = ap.parse_args(argv)
     os.makedirs(args.out, exist_ok=True)
     torch.manual_seed(args.seed)
@@ -230,6 +235,9 @@ def main(argv):
         raise SystemExit("--train-frac must be in (0, 1]")
     train_idx = np.nonzero((split >= 2) & train_frac_mask(seeds, args.train_frac))[0]
     val_idx = np.nonzero(split == 1)[0]
+    if args.rooms:
+        keep = np.isin(np.asarray(A.a["elite_boss"]), [int(x) for x in args.rooms.split(",")])
+        train_idx, val_idx = train_idx[keep[train_idx]], val_idx[keep[val_idx]]
     policy_key = "policy"
     if args.policy_target != "visits":
         if not args.policy_target.startswith("cq:") or "q" not in A.a or "visits" not in A.a:
@@ -245,8 +253,8 @@ def main(argv):
         net.load_state_dict(torch.load(args.init, map_location=args.device))
     params = sum(p.numel() for p in net.parameters())
     opt = torch.optim.AdamW(net.parameters(), lr=args.lr, weight_decay=0.01)
-    steps = int(args.epochs * len(train_idx) / args.batch)
-    if args.max_steps:
+    steps = 0 if args.eval_only else int(args.epochs * len(train_idx) / args.batch)
+    if args.max_steps and not args.eval_only:
         steps = min(steps, args.max_steps)
     sched = torch.optim.lr_scheduler.OneCycleLR(opt, max_lr=args.lr, total_steps=max(1, steps), pct_start=0.05)
     log = open(os.path.join(args.out, "log.jsonl"), "w")
@@ -294,7 +302,8 @@ def main(argv):
                               ("policy_ce", "top1", "value_nll", "death_ece", "aux_mae1")} if ev else {}),
                               **({k: round(ev[k], 4) for k in ("top1_gumbel", "top1_qpick", "q_regret")
                                   if ev and ev.get(k) is not None})}), flush=True)
-    torch.save(net.state_dict(), os.path.join(args.out, "model.pt"))
+    if not args.eval_only:
+        torch.save(net.state_dict(), os.path.join(args.out, "model.pt"))
     final = evaluate(net, A, val_idx, 512, args.device, amp)
     json.dump({"config": {k: cfg[k] for k in cfg if k != "data_meta"}, "validation": final},
               open(os.path.join(args.out, "eval.json"), "w"), indent=1)
