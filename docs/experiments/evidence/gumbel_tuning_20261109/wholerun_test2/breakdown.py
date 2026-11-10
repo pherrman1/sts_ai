@@ -6,7 +6,7 @@ usage: python3 -I breakdown.py NEW_UNITS REF_UNITS OUT.json
 
 G16CAP vs §775's G16 on seeds where both finished: deaths by section of the final floor exactly as
 ../wholerun/breakdown.py (hazard = deaths among runs reaching the section, arm - G16, seed bootstrap, 4,000
-resamples, seed 20261109, 95%), plus the tree reuse counters by outcome.
+resamples, seed 20261109, 95%).
 """
 import collections, importlib.util, json, sys
 from pathlib import Path

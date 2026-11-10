@@ -26974,3 +26974,38 @@ A hypothesis, not measured: carried subtrees keep the previous search's visit al
 Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 142.5 lane-hours.
 **Knowledge impact:** combat teacher configuration; the node reuse cap is not a lever at 16,000 simulations; reuse
 budgets above 16k need their own test before being assumed to help.
+
+## §781 — Act-4-strong budget curve in whole runs: §779's G1/G2/G4/G8 with Act 4 strong (G1S-G8S), net-0420 out of combat, the budget curve's 512 paired A20 seeds: Act 4 strong +2.15 / +3.52 / +3.71 / +2.73 pp Heart → G1S NO_DIFFERENCE_SHOWN, G2S/G4S/G8S_BETTER; with Act 4 the same, 8k → 16k still +6.05 pp → G16_BETTER; REPLAY_OK (cloud, 2026-11-10)
+
+**Question (Philipp, 2026-11-10 00:41 CET, "Ja würde gerne 1-8k mit dem stärkeren act4 laufen lassen danach"):** how
+much of §779's step from G8 (31.6%) to §775's G16 + mb4 (40.4%) is Act 4 strong, and what is the budget curve from
+1,000 to 64,000 simulations when every arm plays Act 4 the same way?
+**Data:** [PREREG](evidence/gumbel_act4strong_1k8k_20261110/PREREG.md),
+[RESULT](evidence/gumbel_act4strong_1k8k_20261110/RESULT.md), `results/result.json`, `results/claims.txt`,
+`analyze.py` (frozen with the PREREG in run commit 22903c21).
+- GkS = §779's Gk with `STS_SILVER_LEARNED_STOP=1` and Act 4 strong on (§775's environment for G16 + mb4 at k,000
+  simulations): Shield and Spear at max(10,000, k,000) with prior playouts, Heart at max(40,000, k,000) with the
+  262,144 reuse cap. Comparison arms reused: G1 and B1 (§778), G2-G8 (§779), D and G16/G32/G64 + mb4 (§775). No code
+  change: code 13bb97ec, binary b5090b16. J prelaunch PASS.
+- 512 units (one seed, four arms), 512 verified, 0 drops, 0 aborts. 127.4 lane-hours, 02:05-05:58 CET.
+
+**Result:** replay check **REPLAY_OK** (512 seeds checked per arm): acts 1-3 replay Gk exactly, Act-4 reach is
+identical within each pair. Heart G1S 24.41%, G2S 30.66%, G4S 33.40%, G8S 34.38% (Gk 22.27 / 27.15 / 29.69 /
+31.64%). At 99% (Bonferroni over five): G1S − G1 **+2.15 pp [+0.00, +4.30]** → NO_DIFFERENCE_SHOWN, G2S − G2 **+3.52
+[+1.17, +6.06]**, G4S − G4 **+3.71 [+0.98, +6.64]**, G8S − G8 **+2.73 [+0.20, +5.27]** → BETTER; **G16 − G8S +6.05
+[+0.78, +11.33]** → G16_BETTER (Act-4 reach +5.86 pp [+1.76, +9.96], 95%). Kills per Act-4 arrival 71-75% → 80-83%
+(G16 + mb4 83.1%). CPU per run 136.8 / 193.4 / 249.6 / 314.8 s (7.5× / 4.8× / 2.9× / 1.9× Gk's). Curve steps (95%):
+G2S − G1S +6.25 [+2.34, +10.35], G4S − G2S +2.73 [−1.37, +7.03], G8S − G4S +0.98 [−3.12, +5.08], G32 − G16 −1.17
+[−5.08, +2.73], G64 − G32 +0.59 [−3.32, +4.49]. Against D: G4S +2.54 [−1.56, +6.64] at 1.01× D's CPU, G8S +3.52
+[−0.59, +7.42] at 1.27×.
+**Interpretation (Inference):** Act 4 strong is worth about +2 to +4 pp Heart at every budget, all of it through
+conversion in Act 4. The 8k → 16k step is mostly budget in acts 1-3 (reach): of §779's 8.79 pp gap from G8 to G16 +
+mb4, about 2.7 pp were Act 4 strong and about 6 pp the budget. With Act 4 the same, the curve rises to 16k and is flat
+above it; between 2k and 16k a smooth rise of about 3.3 pp per doubling fits all three step intervals, so the shape
+there is not resolved. No GkS is resolved above D.
+**Decision:** G1S NO_DIFFERENCE_SHOWN, G2S/G4S/G8S_BETTER, G16_BETTER, REPLAY_OK. No default change. No GkS matches
+G16 + mb4, so no new teacher or actor candidate; G16 + mb4 stays the teacher candidate.
+Seeds: §775's 111378256-111378767 reused (no new seeds). Cost: 127.4 lane-hours.
+**Knowledge impact:** combat teacher and PPO actor combat choice; Act 4 strong adds about 3 pp at any budget for
+about 350-415 s CPU per Act-4 run; budget comparisons with Act 4 strong off understate an arm by about 3 pp; the
+16k step is a real budget effect.
