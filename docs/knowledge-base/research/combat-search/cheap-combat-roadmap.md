@@ -1,7 +1,7 @@
 # Cheap combat for the PPO loop: roadmap to about 40% Heart at a PPO-sized CPU budget
 
-Last verified: 2026-11-11 against main `21a6baf` (ledger through §788). Research and planning only: no gameplay
-seeds were run for this page and nothing here is a run authorization. Labels: **Measured** (cited ledger entry or
+Last verified: 2026-11-11 against main `21a6baf` (ledger through §788), step 0 results added the same day. Research
+and planning only: no gameplay seeds were run for this page and nothing here is a run authorization. Labels: **Measured** (cited ledger entry or
 artifact), **Inference** (reasoning here), **Unverified** (not checked in code or data).
 
 ## Purpose / research question
@@ -16,13 +16,20 @@ that 100 PPO iterations fit in about 10 hours.
   today's budget curve gives about 24-30% Heart, not 40% (§779, §781).
 - **No tested idea closes that gap.** Every cut to G16's budget so far gave up Heart kills roughly in proportion
   to the CPU saved (§781, §783, §786), and the distilled net added nothing on top of the 16k search (§773, §788).
-- **Three levers are untested and cheap to test**, in this order: (1) a narrow Gumbel root (k 2-4) whose candidates
-  come from the distilled prior, at 2k-4k simulations; (2) the Act 4 budget, which alone costs more than the whole
-  target; (3) throughput at identical play.
+- **Step 0 (offline, 2026-11-11) moved the main lever.** 86% of G16's CPU is in boss rooms and Act 4, where a
+  simulation costs 10-20× a hallway one because those rooms play prior playouts (g7f_E MLP at every playout step;
+  ADR-0050, ADR-0060, never gated in whole runs). All Act 1-3 normal and elite fights together cost about 80 s per
+  run. **Measured** ([step 0](../../../experiments/evidence/cheap_combat_step0_20261111/README.md)).
+- **New rank 1: G16 + mb4 with greedy playouts everywhere** (`STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE=0`, an existing
+  flag, no code change). **Inference:** about 130-200 s per run, if boss simulations then cost 2-4× a hallway one;
+  its Heart rate is the open question (section "Track 0").
+- **The narrow Gumbel root is demoted.** Roots have 6.3 legal actions on average, so k 16 already searches almost
+  all of them; the distilled net's top 4 holds the teacher's pick in 91.9% of roots (g7f_E 88.6%), below the
+  95% rule. **Measured.**
 - **One lever has more than 10× headroom but changes what "combat model" means**: a fight-outcome surrogate that
   the PPO actors sample instead of playing fights. It needs Philipp's call (section "Track 4").
-- **Inference:** levers 1-3 together plausibly reach about 37-39% at about 150-200 s per run (100 iterations in
-  about 13-17 h). The full target needs lever 1 to work better than a factor of 2, or Track 4.
+- **Inference:** Track 0 plus the Act 4 budget (Track 2) is the most plausible way to the target. Whether it keeps
+  about 40% is untested; ADR-0050's fight-level boss gain (+12.6 score, interval through 0) is the risk.
 
 ## The CPU target
 
@@ -88,40 +95,56 @@ Two numbers bound the net-based options:
 
 ## Roadmap, ranked
 
-### Step 0. Two offline analyses (no seeds, no workers, about half a day)
+### Step 0. Offline analyses (done 2026-11-11, no seeds, no workers)
 
-- **0a. CPU map of G16.** Simulations and CPU by act × room × halving phase from §783's stop-trace data (1,024 G16
-  runs with per-root rows) and the per-game counters. Output: where the 509 s go, and the share of roots with
-  few legal actions.
-- **0b. Top-k coverage of the distilled prior.** On T1's 330,542 validation roots (§787): for k = 1..16, how often
-  the teacher's final pick is among the net's top k, and the backed-Q regret of the best action inside the top k;
-  the same for the g7f_E prior; split by room class. One inference pass over the rows (about 15 CPU-min).
-- **Decision rule 0b:** net top-4 holds the teacher's pick at ≥ 95% of roots and top-4 oracle regret ≤ 0.10 →
-  Track 1 is live with the net. Only the g7f_E prior passes → Track 1 with the prior, the net is not needed.
-  Neither passes at k ≤ 8 → drop Track 1.
+Data, scripts and tables: [step 0 evidence](../../../experiments/evidence/cheap_combat_step0_20261111/README.md).
 
-### Track 1. Narrow Gumbel root from the prior at low budget (cheapest gameplay test)
+- **0a. CPU map of G16** (§783's 1,024 stop-trace runs, 574,741 roots, 585 s per run on those machines):
 
-- **Hypothesis:** at k 16 and 16k the last two candidates get about 3,750 simulations each. At k 4 and 4k they
-  get about 1,500, at k 2 and 4k 2,000. If the prior's top k holds the teacher's pick, a quarter of the budget
-  buys most of the final resolution. §776 found k inactive at 16k; at 2k-4k it is untested, and §788 lists
-  "lower K" and "the net prior under cheaper combat search" as untested.
-- **Experiment E1:** §779's 512 seeds, net-0420 out of combat, G2 / G4 / G16 reused as controls after a 32-seed
-  sentinel (ADR-0064). Arms: `K4@4k` with the g7f_E prior, `K4@4k` with the distilled net prior at every root
-  (`STS_SILVER_COMBATNET_PRIOR=1`, generalist net), Act 4 at own budget as G4.
-- **Cost:** 2 arms × 512 runs × about 90 s ≈ 30 lane-h, under 1 h on 40 workers. No new seeds. Flags exist
-  (`STS_SILVER_GUMBEL_ROOT=K`, K 2..64); **Unverified:** that the whole-run path samples the k candidates from the
-  net prior without a code change (smoke first).
-- **Decision rule:** an arm − G4 ≥ +3 pp with the 95% interval above 0 → budget × k grid (k 2/4/8 at 2k/4k/8k,
-  about 150 lane-h) to find the cheapest arm within 3 pp of G16's Act-4 reach. Net arm ≈ prior arm → continue
-  with the prior only. Both ≤ G4 → Track 1 is closed and recorded as negative.
+  | rooms | CPU s/run | share | µs per simulation |
+  |---|---|---|---|
+  | Act 1-3 normal, elite, other | 81 | 14% | 7-19 |
+  | Act 1 / 2 / 3 bosses | 35 / 64 / 158 | 6 / 11 / 28% | 74 / 128 / 172 |
+  | Shield and Spear (prior playouts, ADR-0060) | 40 | 7% | 130 |
+  | Heart (40k) | 191 | 34% | 171 |
+
+  Game CPU: median 457 s, p90 1,318 s, max 4,976 s (the longest-game constraint is the Act 4 tail).
+- **0b. Top-k coverage** on T1's 310,371 multi-action validation roots: hit@k (teacher's pick among the top k) and
+  regret@k (teacher Q minus the best searched Q inside the top k, score units, teacher's own Q):
+
+  | k | 1 | 2 | 3 | 4 | 6 | 8 |
+  |---|---|---|---|---|---|---|
+  | g7f_E prior hit / regret | 44.6% / 2.00 | 66.9% / 0.76 | 80.5% / 0.36 | 88.6% / 0.19 | 96.1% / 0.06 | 98.6% / 0.03 |
+  | distilled net hit / regret | 49.0% / 1.34 | 72.1% / 0.50 | 84.8% / 0.24 | 91.9% / 0.13 | 97.5% / 0.05 | 99.2% / 0.02 |
+
+  Bosses and Act 4 are hardest (net hit@4 90.5% / 87.2%). The rule "hit@4 ≥ 95% and regret@4 ≤ 0.10" fails for
+  both; k 6 passes, but barely narrows a 6.3-action root.
+
+### Track 0. Greedy playouts in G16 (cheapest gameplay test, new rank 1)
+
+- **Hypothesis:** at 16k the Gumbel root and max backup carry the teacher's gain; prior playouts add little on top
+  but cost most of the CPU. ADR-0050's evidence was fight-level at 10k with the gen-6 prior (§541: bosses +12.55
+  score [−0.87, +26.57], 7.29× CPU per fight); the run-level effect was never gated.
+- **Smoke first (needs a go; about 0.5 lane-h):** replay 4 of §775's seeds that reach the Heart with the flag at 0,
+  to measure µs per boss simulation and CPU per run. It turns the 130-200 s estimate into a number.
+- **Experiment E0:** GG16 = §775's G16 + mb4 with `STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE=0`, on §775's 1,024 seeds,
+  G16 reused after a 32-seed sentinel (ADR-0064), SPRT nonregression with a 3 pp margin, CPU co-primary.
+- **Cost:** about 1,024 × 150-200 s ≈ 45-60 lane-h, about 1.5 h on 40 workers. No new seeds, no code change.
+- **Decision rule:** GG16 within 3 pp of G16 at ≤ 0.4× CPU → GG16 is the cheap-combat candidate, then Track 2
+  on top. Worse by more than 3 pp → spend the saved CPU as boss budget instead (GG16 with bosses and Act 4 at
+  64k greedy, about equal CPU to today, as a follow-up arm), or keep prior playouts only at the Heart.
+
+### Track 1. Narrow Gumbel root (demoted by step 0)
+
+- k 16 already covers almost every root, so a narrower k saves little. With the net at k 4, 8.1% of roots lose the
+  teacher's pick (regret 0.13 on average). Only worth a test at low budgets (2k-4k), and only after Track 0.
 
 ### Track 2. Act 4 budget
 
 - **Why:** 350-415 s per Act-4 run exceeds the whole target and the 4-minute game limit. Which part carries the
   +3 pp (Heart at 40k, the 262,144 reuse cap, prior playouts at Shield and Spear) is not separated.
 - **Experiment E2:** fixed-state copies (`selffights` / `expertfights`) on the Heart and Shield-and-Spear entry
-  states of §775's G16 games (495 Heart arrivals), Heart at 4k / 8k / 16k / 40k, narrow k from Track 1 if it
+  states of §775's G16 games (495 Heart arrivals), Heart at 4k / 8k / 16k / 40k, with greedy playouts if Track 0 passed (with prior playouts otherwise)
   passed. Metric: kills per arrival and CPU per fight.
 - **Cost:** about 100-150 lane-h (the 40k arm dominates; it can reuse §775's own outcome as a descriptive
   reference to halve this). No new seeds.
@@ -163,14 +186,13 @@ Two numbers bound the net-based options:
 
 ## Sequence and totals
 
-1. Step 0 (free) → E1 (about 30 lane-h) → grid (about 150 lane-h) if E1 passes.
-2. E2 and the Track 3 profile in parallel with the grid (about 100-150 lane-h and 1 lane-h).
-3. Confirmation of the combined cheap combat against G16 + mb4 on §775's 1,024 seeds (control reused, SPRT
-   nonregression, about 50 lane-h at 150 s per run).
-4. Track 4's offline fit can start any time; its PPO pilot needs its own go.
+1. Step 0: done (offline).
+2. Track 0 smoke (about 0.5 lane-h) → E0 (about 45-60 lane-h) on §775's seeds.
+3. Track 2 (Act 4 budget, about 100-150 lane-h) on top of the E0 winner; Track 3 profile in parallel (1 lane-h).
+4. Confirmation of the combined cheap combat on fresh seeds in the PPO actors' setting.
+5. Track 4's offline fit can start any time; its PPO pilot needs its own go.
 
-Every gameplay step needs Philipp's typed go, a PREREG and a prelaunch review. Total before the confirmation:
-about 300-350 lane-h, no new seeds.
+Every gameplay step needs Philipp's typed go, a PREREG and a prelaunch review. No new seeds until step 4.
 
 ## Open questions
 
