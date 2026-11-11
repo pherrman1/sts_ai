@@ -22,7 +22,7 @@ that 100 PPO iterations fit in about 10 hours.
   run. **Measured** ([step 0](../../../experiments/evidence/cheap_combat_step0_20261111/README.md)).
 - **New rank 1: G16 + mb4 with greedy playouts everywhere** (`STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE=0`, an existing
   flag, no code change). **Inference:** about 130-200 s per run, if boss simulations then cost 2-4× a hallway one;
-  its Heart rate is the open question (section "Track 0"). **Result (§TBD, 2026-11-11):** WORSE, Heart 35.7% vs
+  its Heart rate is the open question (section "Track 0"). **Result (§790, 2026-11-11):** WORSE, Heart 35.7% vs
   41.2% (−5.5 pp [−8.1, −2.9]) at 0.27× the CPU (143 s per run); still the best Heart rate per CPU found so far.
 - **The narrow Gumbel root is demoted.** Roots have 6.3 legal actions on average, so k 16 already searches almost
   all of them; the distilled net's top 4 holds the teacher's pick in 91.9% of roots (g7f_E 88.6%), below the
@@ -134,7 +134,7 @@ Data, scripts and tables: [step 0 evidence](../../../experiments/evidence/cheap_
 - **Decision rule:** GP16 within 3 pp of G16 at ≤ 0.4× CPU → GP16 is the cheap-combat candidate, then Track 2
   on top. Worse by more than 3 pp → spend the saved CPU as boss budget instead (GP16 with bosses and Act 4 at
   64k greedy, about equal CPU to today, as a follow-up arm), or keep prior playouts only at the Heart.
-- **Result (§TBD):** WORSE, −5.47 pp [−8.11, −2.93] at 0.27× CPU; about half of the loss is the Act-4 conversion
+- **Result (§790):** WORSE, −5.47 pp [−8.11, −2.93] at 0.27× CPU; about half of the loss is the Act-4 conversion
   ([RESULT](../../../experiments/evidence/greedy_playouts_g16_20261111/RESULT.md)). Next: per-encounter budgets
   (prior playouts and simulations per encounter class; Philipp's go 2026-11-11 23:43 CET) and the narrow root on
   G16 (Philipp's choice, 23:47 CET).

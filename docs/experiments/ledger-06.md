@@ -27234,7 +27234,7 @@ Can T1's N_f1 value head (§787) start Silver's new tree nodes (Q-init) or repla
 Seeds: none new (replays of §775 seeds 111378258/261/280/283).
 **Knowledge impact:** none in code.
 
-## §TBD — Greedy playouts in G16: §775's G16 + mb4 without prior playouts in boss rooms and Act 4 (GP16, `STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE=0`) against §775's G16 + mb4, net-0420 out of combat, 1,024 paired A20 seeds, control reused after a 32/32 sentinel: Heart 41.21% → 35.74%, −5.47 pp [−8.11, −2.93] → WORSE, at 0.27× the CPU (143 s per run); +4.10 pp over A20 default combat at 0.57× its CPU (cloud, 2026-11-11)
+## §790 — Greedy playouts in G16: §775's G16 + mb4 without prior playouts in boss rooms and Act 4 (GP16, `STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE=0`) against §775's G16 + mb4, net-0420 out of combat, 1,024 paired A20 seeds, control reused after a 32/32 sentinel: Heart 41.21% → 35.74%, −5.47 pp [−8.11, −2.93] → WORSE, at 0.27× the CPU (143 s per run); +4.10 pp over A20 default combat at 0.57× its CPU (cloud, 2026-11-11)
 
 **Question (Philipp, 2026-11-11 22:59 CET, "jo lets go ... je auf 40 workern"):** the cheap-combat roadmap's step 0 put
 86% of G16 + mb4's CPU in boss rooms and Act 4, where ADR-0050/0060's prior playouts call the g7f_E MLP at every
