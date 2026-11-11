@@ -1,0 +1,6 @@
+GP16 smoke (local, binary 7f2800f0, 4 parallel games on a 4-core cloud container), against §775's G16 games on the same seeds
+seed rc GP16_heart GP16_floor GP16_cpu_s G16_heart G16_floor G16_cpu_s ratio GP16_gumbel_roots/sims G16_gumbel_roots/sims
+111378261 0 1 56.0 347.12 1 56.0 1239.27 0.28 Gumbel/roots=987 Gumbel/roots=980
+111378263 0 1 56.0 176.95 1 56.0 675.23 0.26 Gumbel/roots=678 Gumbel/roots=656
+111378267 0 1 56.0 304.35 1 56.0 995.55 0.31 Gumbel/roots=808 Gumbel/roots=770
+111378268 0 1 56.0 388.35 1 56.0 915.6 0.42 Gumbel/roots=1038 Gumbel/roots=1022
