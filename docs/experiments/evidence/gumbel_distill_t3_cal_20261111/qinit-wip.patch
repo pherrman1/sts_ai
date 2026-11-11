@@ -1,0 +1,89 @@
+diff --git a/include/sim/search/SilverSearcher.h b/include/sim/search/SilverSearcher.h
+index 4050703..38490b2 100644
+--- a/include/sim/search/SilverSearcher.h
++++ b/include/sim/search/SilverSearcher.h
+@@ -308,6 +308,8 @@ namespace sts::search {
+             bool priorNet = false;            // prior came from nodePriorNet (scored at treePriorNetMinVisits)
+             double backedValue = 0;           // max-backup value (research, maxBackupMinVisits > 0)
+             bool hasBackedValue = false;
++            double netValue = 0;              // value-net initial value (research, nodeValueNet); see valueNetWeight
++            bool hasNetValue = false;
+         };
+ 
+         double explorationParameter = 25.0;
+@@ -376,6 +378,14 @@ namespace sts::search {
+         // node priors (selectBestEdgeToSearch's untried-edge order).
+         std::function<std::vector<double>(const BattleContext &, const std::vector<Edge> &)> nodePriorNet;
+         int treePriorNetMinVisits = 256;
++        // Research (Gumbel distillation T3, value-net Q-init): a new decision node (first rollout) whose nearest
++        // decision ancestor has at least valueNetParentMinVisits simulations (0 = every new node) gets
++        // netValue = nodeValueNet(state), in Silver score units; its selection value is then the mean of its rollouts
++        // and valueNetWeight virtual samples of netValue: (evaluationSum + w netValue) / (simulationCount + w).
++        // Terminal states are never scored by the net. Off while nodeValueNet is empty.
++        std::function<double(const BattleContext &)> nodeValueNet;
++        int valueNetParentMinVisits = 0;
++        double valueNetWeight = 0;
+         // Research (STS_SILVER_MAX_BACKUP=m, default 0 = off): selection values a child by a
+         // max backup instead of its mean playout value. A decision node is worth its best
+         // child with at least m simulations (its mean while none has), a chance node the
+@@ -574,6 +584,7 @@ namespace sts::search {
+         std::int64_t wideningCreatedNodes = 0;   // profile only
+         int profileLeafTurn = 0;                 // profile only: turn of the current rollout start
+         void updateFromPlayout(const std::vector<Node *> &stack, double evaluation);
++        void netInit(Node &child, const Node &parentDecision);
+         [[nodiscard]] double selectionValue(const Node &node) const;
+         double evaluateEdge(const Node &parent, int edgeIdx, double logParentVisits) const;
+         int selectBestEdgeToSearch(const Node &cur) const;
+diff --git a/src/sim/search/SilverSearcher.cpp b/src/sim/search/SilverSearcher.cpp
+index e1196a1..57bfad3 100644
+--- a/src/sim/search/SilverSearcher.cpp
++++ b/src/sim/search/SilverSearcher.cpp
+@@ -307,6 +307,8 @@ search::SilverSearcher::Node *search::SilverSearcher::allocNode() {
+         n->priorNet = false;
+         n->backedValue = 0;
+         n->hasBackedValue = false;
++        n->netValue = 0;
++        n->hasNetValue = false;
+         return n;
+     }
+     allNodes.push_back(std::make_unique<Node>());
+@@ -516,6 +518,7 @@ search::SilverTreeProfile::Stop search::SilverSearcher::stepImpl() {
+             }
+             searchStack.push_back(child);
+             if (child->simulationCount == 0) {
++                netInit(*child, *cur->parent);
+                 const bool created = outcomeCreated;
+                 BattleContext &rollout = (rolloutScratch = *child->state);
+                 updateFromPlayout(searchStack, rolloutToEnd(rollout, actionDepth));
+@@ -620,6 +623,7 @@ search::SilverTreeProfile::Stop search::SilverSearcher::stepImpl() {
+         }
+         searchStack.push_back(child);
+         if (child->simulationCount == 0) {
++            netInit(*child, *cur);
+             BattleContext &rollout = (rolloutScratch = *child->state);
+             updateFromPlayout(searchStack, rolloutToEnd(rollout, actionDepth));
+             return created ? Stop::NEW_LEAF : Stop::UNVISITED_NODE;
+@@ -628,6 +632,14 @@ search::SilverTreeProfile::Stop search::SilverSearcher::stepImpl() {
+     }
+ }
+ 
++void search::SilverSearcher::netInit(Node &child, const Node &parentDecision) {
++    if (!nodeValueNet || child.hasNetValue || child.isRandomNode || child.state->outcome != Outcome::UNDECIDED
++            || parentDecision.simulationCount < valueNetParentMinVisits)
++        return;
++    child.netValue = nodeValueNet(*child.state);
++    child.hasNetValue = true;
++}
++
+ void search::SilverSearcher::updateFromPlayout(const std::vector<Node *> &stack, double evaluation) {
+     for (auto it = stack.rbegin(); it != stack.rend(); ++it) {
+         ++(*it)->simulationCount;
+@@ -815,6 +827,8 @@ search::SilverTreeSnapshot search::SilverSearcher::treeSnapshot() const {
+ double search::SilverSearcher::selectionValue(const Node &node) const {
+     if (maxBackupMinVisits > 0 && node.hasBackedValue && node.simulationCount >= maxBackupMinVisits)
+         return node.backedValue;
++    if (node.hasNetValue)
++        return (node.evaluationSum + valueNetWeight * node.netValue) / (node.simulationCount + valueNetWeight);
+     return node.evaluationSum / node.simulationCount;
+ }
+ 

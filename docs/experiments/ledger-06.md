@@ -27217,3 +27217,19 @@ Does T1's distilled policy (§787) help Silver as a prior where it is cheap?
 **Decision:** NOT_SHOWN. No default change; the flags stay research-only.
 Seeds: §775's block (no new seeds); smokes on §775 seeds 111378258/266/280/283 (replayed by the campaign).
 **Knowledge impact:** environment-variables.md (three new flags); SilverSearcher::nodePriorNet.
+
+## §789 — Gumbel distillation T3 calibration: the distilled net's value head is less precise than one Silver rollout, so a value Q-init is worth ≤ ~1 virtual visit; fight test parked (offline, 2026-11-11)
+
+**Question (Philipp, 2026-11-11 20:33 CET "oke lets try vlaue kopf bzw q init"):**
+Can T1's N_f1 value head (§787) start Silver's new tree nodes (Q-init) or replace rollouts?
+**Data:** [RESULT](evidence/gumbel_distill_t3_cal_20261111/RESULT.md), `results/cal.txt`, `results/rollsd.txt`.
+**Setup:**
+- Net error: N_f1 value classes on T1's validation split (330,542 D2 roots), calibrated per encounter to the 16k G16 + mb4 root Q with hp and potions (`cal.py`, seed-hash split).
+- Rollout noise: temporary instrumentation (not committed), pooled within-root-edge sd of playout returns in 4 §775 G16 games replayed with binary 7f2800f0.
+**Result:**
+- Within-encounter R² 0.48 (hp + potions alone 0.37). Residual sd 10.7 (act 1 normal) to 25.9 (act 1 boss), 31-40 (act 2-3 bosses), 49.1 (Heart).
+- One rollout: sd 13.2 / 13.4 / 21.9 / 30.1 in acts 1-4.
+**Interpretation (Inference):** the net's error is 0.8-2.3x a single rollout's (only act-1 normal fights slightly below), so its inverse-variance weight as Q-init is about 0.18-1.5 virtual visits for about 50x CPU; as leaf value it would be worse than the rollout. A useful value net needs an error well below rollout noise.
+**Decision:** fight test parked (Philipp, 21:31 CET). No code change; the searcher sketch is kept as `qinit-wip.patch`.
+Seeds: none new (replays of §775 seeds 111378258/261/280/283).
+**Knowledge impact:** none in code.

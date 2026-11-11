@@ -1,0 +1,25 @@
+{
+ "rows": 330542,
+ "value_nll": 1.6600359198455208,
+ "checkpoint": "~/Documents/sts/t1/out/N_f1/model.pt",
+ "split": "h == 1 (train.py split_of)",
+ "amp": "bf16",
+ "version": 2,
+ "npot": "count of potion slots with id >= 2 (0 INVALID = unwritten slot, 1 EMPTY_POTION_SLOT)",
+ "gold": "player.gold decoded from glob[:, 74] (float16 slog, rounding about +-0.2 %)",
+ "room": "from elite_boss code (0 MONSTER, 1 ELITE incl. MONSTER_ELITE, 2 BOSS, 3 OTHER); the raw room string is not in the tensor",
+ "code": "tools/combat_net at 2abe6aa7d",
+ "cols": {
+  "won": "uint8",
+  "endFrac": "float32",
+  "score": "float32",
+  "hp": "int16",
+  "maxHp": "int16",
+  "act": "int8",
+  "elite_boss": "int8",
+  "encounter": "int16",
+  "seed": "int64",
+  "fight": "int16",
+  "multi": "uint8"
+ }
+}
