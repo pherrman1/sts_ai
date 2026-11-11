@@ -27233,3 +27233,30 @@ Can T1's N_f1 value head (§787) start Silver's new tree nodes (Q-init) or repla
 **Decision:** fight test parked (Philipp, 21:31 CET). No code change; the searcher sketch is kept as `qinit-wip.patch`.
 Seeds: none new (replays of §775 seeds 111378258/261/280/283).
 **Knowledge impact:** none in code.
+
+## §TBD — Greedy playouts in G16: §775's G16 + mb4 without prior playouts in boss rooms and Act 4 (GP16, `STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE=0`) against §775's G16 + mb4, net-0420 out of combat, 1,024 paired A20 seeds, control reused after a 32/32 sentinel: Heart 41.21% → 35.74%, −5.47 pp [−8.11, −2.93] → WORSE, at 0.27× the CPU (143 s per run); +4.10 pp over A20 default combat at 0.57× its CPU (cloud, 2026-11-11)
+
+**Question (Philipp, 2026-11-11 22:59 CET, "jo lets go ... je auf 40 workern"):** the cheap-combat roadmap's step 0 put
+86% of G16 + mb4's CPU in boss rooms and Act 4, where ADR-0050/0060's prior playouts call the g7f_E MLP at every
+playout step. Does G16 + mb4 keep its Heart kill rate with greedy playouts everywhere?
+**Data:** [PREREG](evidence/greedy_playouts_g16_20261111/PREREG.md),
+[RESULT](evidence/greedy_playouts_g16_20261111/RESULT.md), `results/result.json`, `results/pairs_GP16.csv`,
+`results/claims.txt`, `results/verify.txt`, `results/smoke.txt`, `analyze.py` (frozen with the PREREG in run commit
+06e170db); step 0 [evidence](evidence/cheap_combat_step0_20261111/README.md).
+- Existing flag, no code change. Code 966de5f7, binary 7f2800f0 (T2's). 1,056 units (32 G16 sentinel games, 1,024
+  GP16), all verified, 0 drops, 0 aborts. 44.7 lane-hours, 23:15-23:44 CET.
+
+**Result:** sentinel 32/32 identical → REUSE_VALID. Heart G16 41.21%, GP16 35.74%: **−5.47 pp [−8.11, −2.93]**; 67
+seeds kill only with GP16, 123 only with G16. SPRT nonregression accepts H0 at 768 seeds → **WORSE**; gainer NOT_SHOWN.
+Act-4 reach −2.93 pp [−5.37, −0.49]. CPU per run **0.280×** [0.270, 0.291] raw, 0.267× corrected for machine speed
+(512 → 143 s; median 378 → 132 s, max 3,036 → 587 s); simulations per run 0.968×. GP16 − D (§775's default combat):
++4.10 pp [+1.07, +7.03] at 0.567× D's CPU. Losses by final floor (G16 → GP16): Act 1 185 → 201, Act 2 192 → 209,
+Act 3 143 → 140, Act 4 82 → 108.
+**Interpretation (Inference):** prior playouts are worth about 5 pp of Heart kills at 16k, about half of it in the
+Act-4 conversion, and cost about three quarters of G16's CPU. GP16 is still the best Heart rate per CPU found so far
+(§781: G8S 31.6% at 166 s, G1S 24.4% at 137 s) and sits at the PPO loop's per-run ceiling (about 138 s).
+**Decision:** WORSE. No default change. GP16 becomes the cheap base for per-encounter budgets (prior playouts and
+simulations per encounter class; Philipp's go 2026-11-11 23:43 CET).
+Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 44.7 lane-hours.
+**Knowledge impact:** combat cost model. Boss and Act-4 prior playouts are a large part of G16 + mb4's strength, not
+only of its cost; removing them everywhere is too coarse.
