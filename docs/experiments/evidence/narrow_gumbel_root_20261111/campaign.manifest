@@ -1,0 +1,12 @@
+name          narrow-gumbel-root
+code_commit   5fc8f890bc6e7a24d932a64c34f94439b6a4f91c
+binary_sha256 5dcf3125dd226e1bf713176f87ca4a5d221e4a08f2c0cb0120a663b2377cfe2b
+workers       40
+share         /mnt/project-files/narrow-gumbel-root
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 90
+claim_settle_seconds 60
+input net-0420.bin /mnt/project-files/ppo-long-c/nets/net-0420.bin 8c0bd16c31499270f192666919e0a11e1d6ca57e2d7a188b6d2a019f3ac742d2
+input pv_f1.ctn /mnt/project-files/gumbel-distill/t2/nets/pv_f1.ctn ac5fce0e68345b5ed7dfd3240c2334c6b4a3a92389405aba8a21d1897ed02a10
