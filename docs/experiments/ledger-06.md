@@ -27218,7 +27218,7 @@ Does T1's distilled policy (§787) help Silver as a prior where it is cheap?
 Seeds: §775's block (no new seeds); smokes on §775 seeds 111378258/266/280/283 (replayed by the campaign).
 **Knowledge impact:** environment-variables.md (three new flags); SilverSearcher::nodePriorNet.
 
-## §TBD — Gumbel distillation T3 calibration: the distilled net's value head is less precise than one Silver rollout, so a value Q-init is worth ≤ ~1 virtual visit; fight test parked (offline, 2026-11-11)
+## §789 — Gumbel distillation T3 calibration: the distilled net's value head is less precise than one Silver rollout, so a value Q-init is worth ≤ ~1 virtual visit; fight test parked (offline, 2026-11-11)
 
 **Question (Philipp, 2026-11-11 20:33 CET "oke lets try vlaue kopf bzw q init"):**
 Can T1's N_f1 value head (§787) start Silver's new tree nodes (Q-init) or replace rollouts?
