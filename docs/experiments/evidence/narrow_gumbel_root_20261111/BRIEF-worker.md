@@ -1,4 +1,4 @@
-# Narrow Gumbel root (P4, N4 against GP16): cloud worker brief
+# Narrow Gumbel root (P4, N4 against §775's G16 + mb4): cloud worker brief
 
 YOUR WORKER NUMBER: W=<n>   (1..40; pass it unpadded, never 03)
 RUN_COMMIT=<RUN_COMMIT>  CODE_COMMIT=<CODE_COMMIT>  CAMPAIGN=docs/experiments/evidence/narrow_gumbel_root_20261111
@@ -27,7 +27,7 @@ If any step is refused or prints STOP, reply with the exact output and stop. Do 
 Never kill a unit or one_combat process. A unit that times out ends with its rc in the .done line, and the run
 continues. If the container restarts, run steps 1-3 again at once (finished units are skipped).
 Keep the session alive until you are told the tar is verified.
-Expect 1 to 20 min per unit (one whole A20 run on one seed), 4 units at a time; 2,080 units shared by the workers
-through the queue (about 50-90 lane-hours, so about 30-60 min on 40 workers; the 32 control games can take up to
-1 h).
+Expect 1 to 30 min per unit (one whole A20 run on one seed), 4 units at a time; 2,080 units shared by the workers
+through the queue (about 120-180 lane-hours, so about 1-1.5 h on 40 workers; the 32 control games can take up to
+1.5 h).
 When your queue is empty and you only wait, that is normal: stay idle with the wait armed.

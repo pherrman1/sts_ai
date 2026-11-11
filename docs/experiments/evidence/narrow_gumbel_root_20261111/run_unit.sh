@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # usage: run_unit.sh REPO RUN UNIT_OUT SEED SET -- one A20 game of the narrow Gumbel root gate (PREREG.md), SET = arm:
-#   GP16 = greedy_playouts_g16_20261111's GP16 (§775's G16 + mb4 with STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE=0), the
-#          control; its 32 sentinel games here must replay that campaign's GP16 games exactly.
-#   P4   = GP16 with a narrow Gumbel root: k 4, no Gumbel noise (the k candidates are the g7f_E prior's top 4), 8,000
+#   G16  = §775's G16 + mb4 (boss-only prior playouts and Shield and Spear's, ADR-0050/0060), the control; its 32
+#          sentinel games here must replay §775's G16 games exactly.
+#   P4   = G16 with a narrow Gumbel root: k 4, no Gumbel noise (the k candidates are the g7f_E prior's top 4), 8,000
 #          simulations per root (Act 4 strong's budgets unchanged: Shield and Spear 10k, Heart 40k).
 #   N4   = P4 with T1's distilled generalist net (P-V_f1) as root prior at every root (its top 4 are the candidates).
 # LONG_C's net-0420 as the whole out-of-combat policy (temperature 0, no OOC MCTS), as §775.
@@ -17,11 +17,10 @@ if ! { [ "$SEED" -ge 111378256 ] && [ "$SEED" -le 111379279 ]; }; then
 fi
 mkdir -p "$OUT"
 ARM=$SET
-G=(STS_SILVER_GUMBEL_ROOT=16 STS_SILVER_GUMBEL_ROOT_MAX_BACKUP=4 STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE=0)
-NR=(STS_SILVER_GUMBEL_ROOT=4 STS_SILVER_GUMBEL_ROOT_MAX_BACKUP=4 STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE=0
-    STS_SILVER_GUMBEL_ROOT_NOISE=0)
+G=(STS_SILVER_GUMBEL_ROOT=16 STS_SILVER_GUMBEL_ROOT_MAX_BACKUP=4)
+NR=(STS_SILVER_GUMBEL_ROOT=4 STS_SILVER_GUMBEL_ROOT_MAX_BACKUP=4 STS_SILVER_GUMBEL_ROOT_NOISE=0)
 case $ARM in
-  GP16) X=("${G[@]}"); SIMS=16000; BAN="k=16 max backup=4 (all acts)" ;;
+  G16)  X=("${G[@]}"); SIMS=16000; BAN="k=16 max backup=4 (all acts)" ;;
   P4)   X=("${NR[@]}"); SIMS=8000; BAN="k=4 max backup=4 (all acts, noise 0)" ;;
   N4)   X=("${NR[@]}" "STS_SILVER_COMBATNET_PRIOR_MODEL=$RUN/pv_f1.ctn" STS_SILVER_COMBATNET_PRIOR=1)
         SIMS=8000; BAN="k=4 max backup=4 (all acts, noise 0)" ;;

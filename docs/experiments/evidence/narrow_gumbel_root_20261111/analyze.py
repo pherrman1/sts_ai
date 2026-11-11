@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
-"""Narrow Gumbel root (PREREG.md): GP16 (greedy_playouts_g16_20261111) with a k 4 Gumbel root without noise at 8,000
-simulations, candidates from the g7f_E prior (P4) or from T1's distilled net (N4), against that campaign's GP16 games
-on §775's seeds 111378256-111379279. Copied from greedy_playouts_g16_20261111/analyze.py; the arms, env keys, the
-control (GP16 instead of §775's G16) and the per-arm alpha (0.025, two arms) changed.
+"""Narrow Gumbel root (PREREG.md): §775's G16 + mb4 with a k 4 Gumbel root without noise at 8,000 simulations,
+candidates from the g7f_E prior (P4) or from T1's distilled net (N4), against §775's G16 games on its seeds
+111378256-111379279. Copied from greedy_playouts_g16_20261111/analyze.py; the arms, the env key and the per-arm alpha
+(0.025, two arms) changed.
 
     python3 analyze.py NEW_ROOT REF_ROOT result.json [CLAIMS_LIST]
     python3 analyze.py --self-test
 
 NEW_ROOT holds this campaign's unit directories (<seed>_<SET>/ with ARM-SEED.{done,log,err,env} from run_unit.sh),
-REF_ROOT the greedy-playout campaign's (arms G16 sentinel, GP16).
-1. Sentinel (ADR-0064): this campaign's GP16 games on seeds 111378256-111378287 against that campaign's GP16 games
-   (fingerprint as there). 32 of 32 identical = REUSE_VALID; else REUSE_INVALID and no verdict (CONTROL_INVALID).
-2. Primary, per arm A in (P4, N4): d = Heart kill A - GP16 per seed. Counting, drops (> 20 = INCOMPLETE) and the
+REF_ROOT §775's (its *_low units hold the G16 games).
+1. Sentinel (ADR-0064): this campaign's G16 games on seeds 111378256-111378287 against §775's (fingerprint as in
+   E0). 32 of 32 identical = REUSE_VALID; else REUSE_INVALID and no verdict (CONTROL_INVALID).
+2. Primary, per arm A in (P4, N4): d = Heart kill A - G16 per seed. Counting, drops (> 20 = INCOMPLETE) and the
    claimed-unit universe as there. Gate: tools/sprt_gate.py nonregression (H0 -1.5 pp, H1 0), alpha 0.025 per arm,
    beta 0.05, look 64, cap = analysed seeds. NOT_WORSE / WORSE; at CAP the one-sided 97.5% seed bootstrap bounds
    decide: NOT_WORSE_3PP if the lower bound > -3 pp, WORSE if the upper bound < 0, else INCONCLUSIVE.
-3. Cost (co-primary): CPU sec per run A / GP16 (machine-corrected by the sentinel), quantiles, Gumbel sims per run.
+3. Cost (co-primary): CPU sec per run A / G16 (machine-corrected by the sentinel), quantiles, Gumbel sims per run.
 4. Secondary (not gates): N4 - P4 (does the net's top 4 beat the prior's?), each arm's gainer SPRT; per arm summary.
 """
 import csv
@@ -32,8 +32,8 @@ HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[3]
 SEEDS = range(111378256, 111379280)
 SENTINEL = range(111378256, 111378288)
-NEW_ARMS = ("GP16", "P4", "N4")
-REF_ARMS = ("G16", "GP16")
+NEW_ARMS = ("G16", "P4", "N4")
+REF_ARMS = ("G16",)
 ALPHA = 0.025
 MARGIN = 0.03
 MAX_DROPPED = 20
@@ -46,12 +46,11 @@ KEYS = ("STS_SILVER_GUMBEL_ROOT", "STS_SILVER_GUMBEL_ROOT_MAX_BACKUP", "STS_SILV
 _G = ("16", "4", "1")
 _K4 = ("4", "4", "1")
 _T = ("400", "8", None, None, None, None, None, None, None, None, "0", None)
-_GP = ("400", "8", None, None, None, None, None, None, None, "0", "0", None)
-_P4 = ("400", "8", None, None, None, None, None, None, None, "0", "0", "0")
-_N4 = ("400", "8", None, None, None, None, "1", None, None, "0", "0", "0")
-ENV = {"new": {"GP16": _G + (None, None) + _GP, "P4": _K4 + (None, None) + _P4, "N4": _K4 + (None, None) + _N4},
-       "ref": {"G16": _G + (None, None) + _T, "GP16": _G + (None, None) + _GP}}
-SIMS = {"G16": 16000, "GP16": 16000, "P4": 8000, "N4": 8000}
+_P4 = ("400", "8", None, None, None, None, None, None, None, None, "0", "0")
+_N4 = ("400", "8", None, None, None, None, "1", None, None, None, "0", "0")
+ENV = {"new": {"G16": _G + (None, None) + _T, "P4": _K4 + (None, None) + _P4, "N4": _K4 + (None, None) + _N4},
+       "ref": {"G16": _G + (None, None) + _T}}
+SIMS = {"G16": 16000, "P4": 8000, "N4": 8000}
 WIN = re.compile(r"^BEST\s+win%=\s*([\d.]+)\s+avg_floor=\s*([\d.]+).*?cpu_sec/run=\s*([\d.]+)", re.M)
 SIMS_LINE = re.compile(r"seeds (\d+)\.\.\d+\s+asc 20\s+sims (\d+) ")
 ROOTS = re.compile(r"^\[silver\] whole-run Gumbel roots=(\d+) sims=(\d+) ", re.M)
@@ -193,15 +192,15 @@ def contrast(new, ref, attempted, a, b, outdir, name, gated=True):
 def sentinel(new, ref, new_prints, ref_prints):
     rows = []
     for s in SENTINEL:
-        a, b = new_prints.get(("GP16", s)), ref_prints.get(("GP16", s))
+        a, b = new_prints.get(("G16", s)), ref_prints.get(("G16", s))
         rows.append({"seed": s, "present": a is not None and b is not None, "identical": a is not None and a == b})
     same = sum(r["identical"] for r in rows)
     res = {"identical": same, "of": len(rows), "differing": [r["seed"] for r in rows if not r["identical"]],
            "verdict": "REUSE_VALID" if same == len(rows) else "REUSE_INVALID"}
-    both = [s for s in SENTINEL if ("GP16", s) in new and ("GP16", s) in ref]
+    both = [s for s in SENTINEL if ("G16", s) in new and ("G16", s) in ref]
     if both:
-        res["cpu_speed_new_over_ref"] = float(np.mean([new[("GP16", s)][3] for s in both])
-                                              / np.mean([ref[("GP16", s)][3] for s in both]))
+        res["cpu_speed_new_over_ref"] = float(np.mean([new[("G16", s)][3] for s in both])
+                                              / np.mean([ref[("G16", s)][3] for s in both]))
     return res
 
 
@@ -213,7 +212,7 @@ def main(new_root, ref_root, out, claims=None):
     res = {"bad": bad_n + bad_r, "aborts": ab_n + ab_r, "env_mismatch": mm_n + mm_r, "sentinel": sent}
     prim = {}
     for arm in ("P4", "N4"):
-        p = contrast(new, ref, attempted, ("ref", "GP16"), ("new", arm), outdir, arm, gated=True)
+        p = contrast(new, ref, attempted, ("ref", "G16"), ("new", arm), outdir, arm, gated=True)
         if sent["verdict"] != "REUSE_VALID":
             p["verdict"] = "CONTROL_INVALID"
         if "cpu_speed_new_over_ref" in sent and "cpu_ratio" in p:
@@ -237,7 +236,7 @@ def main(new_root, ref_root, out, claims=None):
         json.dump(res, f, indent=1)
     print(f"bad {len(res['bad'])} (env mismatch {len(res['env_mismatch'])}) aborts {len(res['aborts'])}  sentinel "
           f"{sent['identical']}/{sent['of']} {sent['verdict']}")
-    for name, r in [("P4 - GP16", prim["P4"]), ("N4 - GP16", prim["N4"]), ("N4 - P4", res["secondary"]["N4_minus_P4"])]:
+    for name, r in [("P4 - G16", prim["P4"]), ("N4 - G16", prim["N4"]), ("N4 - P4", res["secondary"]["N4_minus_P4"])]:
         if not r["n"]:
             print(f"{name}: no analysable seed -> {r.get('verdict')}")
             continue
@@ -277,16 +276,14 @@ def self_test():
     outcome = {}
     for s in SEEDS:
         outcome[s] = int(rng.random() < 0.4)
-        write(refr, "ref", f"{s}_GP16", "GP16", s, outcome[s])
+        write(refr, "ref", f"{s}_G16", "G16", s, outcome[s])
         k = outcome[s] if rng.random() < 0.85 else int(rng.random() < 0.4)
         write(newr, "new", f"{s}_P4", "P4", s, k, rc=1 if s == 111378500 else 0,
               env_arm="N4" if s == 111378600 else None, ab=int(s == 111378700), sims=500)
         write(newr, "new", f"{s}_N4", "N4", s, outcome[s] if rng.random() < 0.85 else int(rng.random() < 0.4),
               sims=500)
-    for s in SENTINEL[:16]:
-        write(refr, "ref", f"{s}_G16", "G16", s, outcome[s])
     for s in SENTINEL:
-        write(newr, "new", f"{s}_GP16", "GP16", s, outcome[s])
+        write(newr, "new", f"{s}_G16", "G16", s, outcome[s])
     r = main(newr, refr, os.path.join(t, "r.json"))
     assert r["sentinel"]["verdict"] == "REUSE_VALID", r["sentinel"]
     p = r["primary"]["P4"]
@@ -297,7 +294,7 @@ def self_test():
     assert abs(p["cpu_ratio"] - 0.5) < 1e-9, p["cpu_ratio"]
     assert r["primary"]["N4"]["verdict"] in ("NOT_WORSE", "NOT_WORSE_3PP"), r["primary"]["N4"]["verdict"]
     s0 = SENTINEL[3]
-    e = Path(newr, f"{s0}_GP16", f"GP16-{s0}.err")
+    e = Path(newr, f"{s0}_G16", f"G16-{s0}.err")
     e.write_text(e.read_text().replace("decisions=", "decisions=9"))
     r = main(newr, refr, os.path.join(t, "r2.json"))
     assert r["sentinel"]["differing"] == [s0] and r["primary"]["N4"]["verdict"] == "CONTROL_INVALID", r["sentinel"]
