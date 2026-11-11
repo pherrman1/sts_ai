@@ -21,7 +21,7 @@ hpLoss2 (in HP), the row's seed (for the run-level holdout split), the root's HP
 Gumbel-root rows the root prior per kept edge (prior.npy, aligned with actions.npy) and gumbelChoice. Rows with one edge are kept (value targets);
 their policy is empty and `multi` is 0. Also aligned with actions.npy: each kept edge's visit count (visits.npy) and
 the search's Q (q.npy, NaN for an unvisited edge), and per row the fight's Silver score (score.npy, NaN if the row has
-none), so train.py can form a completed-Q policy target and t0_value_check.py can compare root Q with the outcome (fight.npy: the fight's index in its run).
+none), so train.py can form a completed-Q policy target (with max-backup rows also the max-backed Q, qb.npy) and t0_value_check.py can compare root Q with the outcome (fight.npy: the fight's index in its run).
 """
 
 import argparse
@@ -113,8 +113,9 @@ def main(argv):
     room = {"MONSTER": 0, "MONSTER_ELITE": 1, "ELITE": 1, "BOSS": 2}
     # Chunked: each list holds numpy blocks of up to CHUNK roots, so RAM stays near the final array size.
     CHUNK = 20000
-    cards_l, actions_l, policy_l, prior_l, visits_l, q_l = [], [], [], [], [], []
-    cards_c, actions_c, policy_c, prior_c, visits_c, q_c = [], [], [], [], [], []
+    cards_l, actions_l, policy_l, prior_l, visits_l, q_l, qb_l = [], [], [], [], [], [], []
+    cards_c, actions_c, policy_c, prior_c, visits_c, q_c, qb_c = [], [], [], [], [], [], []
+    any_qb = False   # D2 max-backup rows carry each edge's qBacked (written as qb.npy only if any row has it)
 
     def flush():
         if cards_c:
@@ -126,7 +127,9 @@ def main(argv):
         prior_l.append(np.asarray(prior_c, np.float32))
         visits_l.append(np.asarray(visits_c, np.int32))
         q_l.append(np.asarray(q_c, np.float32))
+        qb_l.append(np.asarray(qb_c, np.float32))
         cards_c.clear(); actions_c.clear(); policy_c.clear(); prior_c.clear(); visits_c.clear(); q_c.clear()
+        qb_c.clear()
     encounters = {}
     card_off, act_off = [0], [0]
     j = 0
@@ -199,6 +202,10 @@ def main(argv):
             visits_c += [edges[e]["visits"] for e in order]
             q_c += [edges[e].get("q") if edges[e].get("q") is not None and edges[e]["visits"] > 0 else np.nan
                     for e in order]
+            for e in order:
+                qb = edges[e].get("qBacked")
+                any_qb = any_qb or qb is not None
+                qb_c.append(qb if qb is not None and edges[e]["visits"] > 0 else np.nan)
             if r.get("gumbelChoice", -1) in order:
                 arr["gumbelChoice"][j] = order.index(r["gumbelChoice"])
             if r["chosen"] in order:
@@ -234,6 +241,8 @@ def main(argv):
     np.save(os.path.join(args.out, "prior.npy"), np.concatenate(prior_l))   # NaN = no root prior
     np.save(os.path.join(args.out, "visits.npy"), np.concatenate(visits_l))
     np.save(os.path.join(args.out, "q.npy"), np.concatenate(q_l))   # NaN = unvisited edge
+    if any_qb:   # max-backed Q (D2); NaN = unvisited edge or no qBacked
+        np.save(os.path.join(args.out, "qb.npy"), np.concatenate(qb_l))
     meta = {"rows": j, "encounters": sorted(encounters, key=encounters.get), "source": os.path.abspath(args.packed), "every": args.every, "cut": cut,
             "caps": {"C_MAX": C_MAX, "M_MAX": M_MAX, "M_NUM": M_NUM, "E_MAX": E_MAX, "S_MAX": S_MAX,
                      "Q_MAX": Q_MAX, "Q_LEN": Q_LEN, "SEL_MAX": SEL_MAX, "SEL_LEN": SEL_LEN, "A_LEN": A_LEN, "G_LEN": G_LEN}}

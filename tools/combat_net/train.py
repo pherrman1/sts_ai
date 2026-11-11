@@ -3,7 +3,7 @@
 
 usage: train.py DATA_DIR OUT_DIR [--epochs N] [--batch B] [--lr LR] [--d D] [--layers L] [--no-aux] [--no-value]
                 [--max-steps N] [--device cpu|cuda] [--seed S] [--init CKPT] [--workers N] [--no-bucket] [--no-amp]
-                [--value-weight W] [--train-frac F] [--policy-target visits|cq:S|cq:paper]
+                [--value-weight W] [--train-frac F] [--policy-target visits|cq:S|cq:paper] [--q-source mean|backed]
 
 Splits by run (never inside a run), h = (seed * 2654435761) % 2^32 % 10: h == 0 is the gate holdout, which this
 script never reads (gate.py does); h == 1 is the validation split for learning curves and the choice of epochs;
@@ -224,11 +224,18 @@ def main(argv):
     ap.add_argument("--policy-target", default="visits", help="visits | cq:S | cq:paper (T0)")
     ap.add_argument("--rooms", default="", help="comma list of elite_boss codes to keep (T0 specialists)")
     ap.add_argument("--eval-only", action="store_true", help="evaluate --init on the validation split, no training")
+    ap.add_argument("--encounters", default="", help="comma list of encounter names to keep (T1 per-boss specialists)")
+    ap.add_argument("--q-source", default="mean", choices=("mean", "backed"),
+                    help="Q for cq targets and q_regret: mean (q.npy) or max-backed (qb.npy, D2 / T1)")
     args = ap.parse_args(argv)
     os.makedirs(args.out, exist_ok=True)
     torch.manual_seed(args.seed)
     rng = np.random.default_rng(args.seed)
     A = M.Arrays(args.data)
+    if args.q_source == "backed":
+        if "qb" not in A.a:
+            raise SystemExit("--q-source backed needs tensorize.py's qb.npy (max-backup rows)")
+        A.a["q"] = A.a["qb"]   # cq targets and q_regret / top1_qpick then use the max-backed Q
     seeds = np.asarray(A.a["seed"])
     split = split_of(seeds)
     if not 0 < args.train_frac <= 1:
@@ -237,6 +244,13 @@ def main(argv):
     val_idx = np.nonzero(split == 1)[0]
     if args.rooms:
         keep = np.isin(np.asarray(A.a["elite_boss"]), [int(x) for x in args.rooms.split(",")])
+        train_idx, val_idx = train_idx[keep[train_idx]], val_idx[keep[val_idx]]
+    if args.encounters:
+        names = A.meta["encounters"]
+        want = [x for x in args.encounters.split(",") if x]
+        if any(w not in names for w in want):
+            raise SystemExit(f"--encounters: unknown name in {want}")
+        keep = np.isin(np.asarray(A.a["encounter"]), [names.index(w) for w in want])
         train_idx, val_idx = train_idx[keep[train_idx]], val_idx[keep[val_idx]]
     policy_key = "policy"
     if args.policy_target != "visits":
