@@ -27167,7 +27167,7 @@ research options.
 Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: about 137 lane-hours.
 **Knowledge impact:** none beyond this entry and the env-variable rows.
 
-## §TBD — Gumbel distillation offline, T0 (D1) and T1 (D2): the combat net learns §775's G16 + mb4 teacher on 3.33 M roots; the policy is close to data-saturated; per-boss fine-tuning lowers q_regret on 9 of 11 bosses (descriptive learnability, no gameplay) (PC GPU, 2026-11-10/11)
+## §787 — Gumbel distillation offline, T0 (D1) and T1 (D2): the combat net learns §775's G16 + mb4 teacher on 3.33 M roots; the policy is close to data-saturated; per-boss fine-tuning lowers q_regret on 9 of 11 bosses (descriptive learnability, no gameplay) (PC GPU, 2026-11-10/11)
 
 **Question (Philipp, 2026-11-10 20:27 CET "jo go auf t0"; D2 factory 21:49 CET "Let's go"; T1 2026-11-11 09:03 CET "Go"):**
 Can the combat net distil G16 + max backup 4 (§775's teacher), which policy target to use, how much data does it need,
