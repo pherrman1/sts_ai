@@ -27197,3 +27197,23 @@ and do boss specialists help?
 **Decision:** descriptive. No default change. T2 (distilled net as Silver's root prior and/or leaf value, SPRT gate on fresh seeds) gets its own PREREG and needs Philipp's go.
 Seeds: 111950000-111955631 used (D2, D2b); 111955632-111958191 (D2c) reserved but unused. Smokes 111959990-999.
 **Knowledge impact:** tensorize.py writes qb.npy (max-backed Q). train.py gains `--q-source mean|backed` (default mean, T0 bit-identical) and `--encounters`. tools/combat_net/t1_grid.sh.
+
+## §788 — Gumbel distillation T2: the distilled combat net as Silver's tree prior (nodes ≥ 256 visits) and wide-root prior does not improve §775's G16 + mb4 teacher in whole A20 runs (NOT_SHOWN, −1.37 pp) (cloud, 2026-11-11)
+
+**Question (Philipp, 2026-11-11 17:20 CET "Ja. Wir können vllt den prior anwenden wenn wir doch mehr als 16 Aktionen haben? ... Ansonsteng go auf 40 workern"; 17:24 CET "Let's go is gut"):**
+Does T1's distilled policy (§787) help Silver as a prior where it is cheap?
+**Data:** [PREREG](evidence/gumbel_distill_t2_20261111/PREREG.md), [RESULT](evidence/gumbel_distill_t2_20261111/RESULT.md), `results/result.json`.
+**Setup:**
+- T2P = §775's G16 + mb4, plus the native combat net as tree prior at non-root nodes with ≥ 256 visits and as root prior at roots with ≥ 17 actions.
+- Per boss the better T1 net (SPEC: Hexaghost, Slime Boss, Guardian, Champ, Time Eater, Shield and Spear; BOSS-ALL: Collector, Awakened One, Donu and Deca, Heart), the generalist P-V_f1 elsewhere.
+- New flags `STS_SILVER_COMBATNET_TREE_MIN_VISITS`, `_PRIOR_MIN_ACTIONS`, `_BOSS_MODELS` (default off).
+- Code 966de5f7, RUN 9896e76c, binary 7f2800f0. §775's seeds 111378256-111379279. Control = §775's G16 games (ADR-0064 reuse, sentinel 32/32 identical).
+- 1,056 units (32 sentinel + 1,024 T2P), all verified, 0 dropped; about 160 lane-hours on 40 workers.
+**Result:**
+- Heart kill G16 41.21% → T2P 39.84%, **d −1.37 pp [−4.30, +1.46]**. Gainer SPRT **NOT_SHOWN** at 896 seeds (LLR −3.17). Nonregression SPRT CAP; one-sided 95% [−3.81, +1.07].
+- act-4 reach +0.20 pp [−2.64, +3.03]; floor −0.63 [−1.60, +0.31]; discordant 109 / 123.
+- CPU per run 1.049 [0.997, 1.103] (machine-corrected 0.99); 21.6 net tree forwards per Gumbel root, root net prior 6 times per run.
+**Interpretation (Inference):** with §773 (net root prior NO_GAIN) the distilled policy adds nothing the 16k search lacks; at ≥ 256 visits the prior bonus (weight 400 / (n + 1)) is small against the node's own statistics. Untested: value head as leaf / Q-init, lower K, the net prior under cheaper combat search.
+**Decision:** NOT_SHOWN. No default change; the flags stay research-only.
+Seeds: §775's block (no new seeds); smokes on §775 seeds 111378258/266/280/283 (replayed by the campaign).
+**Knowledge impact:** environment-variables.md (three new flags); SilverSearcher::nodePriorNet.

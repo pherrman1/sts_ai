@@ -60,6 +60,11 @@ namespace sts::search {
     // searcher whose root actions are prepared (indexed like rootNode().edges).
     bool nativeSilverCombatNetPriorOn();
     std::vector<double> nativeSilverCombatNetRootPrior(const SilverSearcher &searcher);
+    // The native combat net's policy (softmax(logits / STS_SILVER_COMBATNET_PRIOR_TEMP)) over `edges` at `state`,
+    // from the STS_SILVER_COMBATNET_BOSS_MODELS model of state.encounter if there is one, else from
+    // STS_SILVER_COMBATNET_PRIOR_MODEL.
+    std::vector<double> nativeSilverCombatNetPolicy(const BattleContext &state, const SilverSearchContext &context,
+                                                    const std::vector<SilverSearcher::Edge> &edges);
     // The same model's normalized prior over `edges` of any decision state.
     std::vector<double> nativeSilverPolicyPrior(const BattleContext &state,
                                                 const std::vector<SilverSearcher::Edge> &edges);
@@ -98,6 +103,8 @@ namespace sts::search {
         std::int64_t gumbelRoots = 0;
         // Roots whose root prior came from the native combat net (STS_SILVER_COMBATNET_PRIOR).
         std::int64_t combatNetPriors = 0;
+        // Non-root nodes scored by the native combat net tree prior (STS_SILVER_COMBATNET_TREE_MIN_VISITS).
+        std::int64_t combatNetTreePriors = 0;
         // Tree reuse between the combat's searches (the first search of a combat counts in none): reroots that kept
         // the retained graph (and the visits they inherited), fresh roots whose state was not in the graph, and
         // fresh roots forced by the node reuse cap (compaction stayed at or above it; the visits they discarded).

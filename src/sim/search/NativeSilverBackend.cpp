@@ -10,6 +10,7 @@
 #include <atomic>
 #include <charconv>
 #include <cstdlib>
+#include <map>
 #include <memory>
 #include <fstream>
 #include <mutex>
@@ -97,6 +98,13 @@ namespace sts::search {
             std::string combatNetPriorPath;
             bool combatNetPrior = false;
             double combatNetPriorTemp = 1.0;
+            // Gumbel distillation T2 (research, default off): the net's root prior only at roots with at least this
+            // many edges (STS_SILVER_COMBATNET_PRIOR_MIN_ACTIONS; 0 = every root), the net as a second tree prior at
+            // non-root nodes with at least this many simulations (STS_SILVER_COMBATNET_TREE_MIN_VISITS; 0 = off),
+            // and per-encounter models (STS_SILVER_COMBATNET_BOSS_MODELS=ENC=path,...).
+            int combatNetPriorMinActions = 0;
+            int combatNetTreeMinVisits = 0;
+            std::string combatNetBossModels;
             // Per-root rollout card table model (STS_SILVER_ROLLOUT_ROOT_TABLE; ADR-0046 default on).
             std::string rolloutRootTablePath;
             int treePriorMinVisits = 0;       // STS_SILVER_TREE_PRIOR_MIN_VISITS (research; 0 = off)
@@ -154,6 +162,8 @@ namespace sts::search {
         NativeSilverPriceTableBuilder g_priceTableBuilder;
         CombatValueNet g_rootPriorNet;
         CombatTokNet g_combatNetPrior;
+        std::map<int, std::unique_ptr<CombatTokNet>> g_combatNetBoss;   // encounter -> STS_SILVER_COMBATNET_BOSS_MODELS
+        std::atomic<std::int64_t> g_ctnRootForwards{0}, g_ctnTreeForwards{0};   // whole process (T2 exit line)
         SilverValueHead g_leafHead;
         CombatValueNet g_leafHeadTrunk;
         CombatValueNet g_rolloutRootTableNet;
@@ -858,11 +868,14 @@ namespace sts::search {
                 s.leafSamples = label ? nullptr : g_nativeSilverLeafSamples;
                 s.outcomes = label ? nullptr : g_nativeSilverOutcomeCapture;
                 s.rootPrior = nativeSilverRootPrior(s);
-                if (!s.rootPrior.empty() && nativeSilverCombatNetPriorOn()) s.rootPrior = nativeSilverCombatNetRootPrior(s);
+                if (!s.rootPrior.empty() && nativeSilverCombatNetPriorOn()
+                        && static_cast<int>(s.rootPrior.size()) >= g_options.combatNetPriorMinActions)
+                    s.rootPrior = nativeSilverCombatNetRootPrior(s);
                 s.rootPriorWeight = s.rootPrior.empty() ? 0
                     : g_nativeSilverPriorWeightOverride.value_or(g_options.rootPriorWeight);
                 s.rootPriorBonus = !g_nativeSilverRootPriorBonusOff;
                 s.nodePrior = nullptr;
+                s.nodePriorNet = nullptr;
                 if (!s.rootPrior.empty() && g_nativeSilverTreePriorOverride) {
                     s.nodePrior = nativeSilverPolicyPrior;
                     s.treePriorMinVisits = *g_nativeSilverTreePriorOverride;
@@ -871,6 +884,16 @@ namespace sts::search {
                     // Whole-run §452 tree prior; research thread overrides keep their own setting.
                     s.nodePrior = nativeSilverPolicyPrior;
                     s.treePriorMinVisits = g_options.treePriorMinVisits;
+                    if (g_options.combatNetTreeMinVisits > 0) {
+                        // Gumbel distillation T2: heavy nodes are re-scored by the native combat net.
+                        SilverSearcher *self = &s;
+                        s.nodePriorNet = [self](const BattleContext &state, const std::vector<SilverSearcher::Edge> &edges) {
+                            ++g_nativeSilverCombatStats.combatNetTreePriors;
+                            ++g_ctnTreeForwards;
+                            return nativeSilverCombatNetPolicy(state, self->searchContext(), edges);
+                        };
+                        s.treePriorNetMinVisits = g_options.combatNetTreeMinVisits;
+                    }
                 }
                 s.rolloutConfig = g_nativeSilverRolloutOverride
                     ? *g_nativeSilverRolloutOverride : SilverSearcher::envRolloutConfig();
@@ -1595,6 +1618,62 @@ namespace sts::search {
             if (g_options.combatNetPriorPath.empty())
                 throw std::runtime_error("STS_SILVER_COMBATNET_PRIOR_TEMP requires STS_SILVER_COMBATNET_PRIOR_MODEL");
         }
+        // Gumbel distillation T2 (research, default off).
+        const auto nonNegativeInt = [](const char *name) -> int {
+            const char *raw = std::getenv(name);
+            if (!raw || !*raw) return 0;
+            char *end = nullptr;
+            const long value = std::strtol(raw, &end, 10);
+            if (!std::isdigit(static_cast<unsigned char>(raw[0])) || *end != '\0' || value > (1L << 30))
+                throw std::runtime_error(std::string(name) + " must be a non-negative integer");
+            return static_cast<int>(value);
+        };
+        g_options.combatNetPriorMinActions = nonNegativeInt("STS_SILVER_COMBATNET_PRIOR_MIN_ACTIONS");
+        if (g_options.combatNetPriorMinActions > 0 && !g_options.combatNetPrior)
+            throw std::runtime_error("STS_SILVER_COMBATNET_PRIOR_MIN_ACTIONS requires STS_SILVER_COMBATNET_PRIOR=1");
+        g_options.combatNetTreeMinVisits = nonNegativeInt("STS_SILVER_COMBATNET_TREE_MIN_VISITS");
+        if (g_options.combatNetTreeMinVisits > 0 && g_options.combatNetPriorPath.empty())
+            throw std::runtime_error("STS_SILVER_COMBATNET_TREE_MIN_VISITS requires STS_SILVER_COMBATNET_PRIOR_MODEL");
+        g_combatNetBoss.clear();
+        g_options.combatNetBossModels.clear();
+        if (const char *raw = std::getenv("STS_SILVER_COMBATNET_BOSS_MODELS"); raw && *raw) {
+            if (g_options.combatNetPriorPath.empty())
+                throw std::runtime_error("STS_SILVER_COMBATNET_BOSS_MODELS requires STS_SILVER_COMBATNET_PRIOR_MODEL");
+            g_options.combatNetBossModels = raw;
+            std::stringstream list(raw);
+            std::string item;
+            while (std::getline(list, item, ',')) {
+                const auto eq = item.find('=');
+                if (eq == std::string::npos || eq == 0 || eq + 1 == item.size())
+                    throw std::runtime_error("STS_SILVER_COMBATNET_BOSS_MODELS: expected ENCOUNTER=path, got '" + item + "'");
+                const std::string name = item.substr(0, eq), path = item.substr(eq + 1);
+                int code = -1;
+                for (int i = 0; i < static_cast<int>(std::size(monsterEncounterEnumNames)); ++i)
+                    if (name == monsterEncounterEnumNames[i]) code = i;
+                if (code <= 0) throw std::runtime_error("STS_SILVER_COMBATNET_BOSS_MODELS: unknown encounter " + name);
+                if (g_combatNetBoss.count(code))
+                    throw std::runtime_error("STS_SILVER_COMBATNET_BOSS_MODELS: encounter listed twice: " + name);
+                auto net = std::make_unique<CombatTokNet>();
+                std::string err;
+                if (!net->load(path, &err)) throw std::runtime_error("STS_SILVER_COMBATNET_BOSS_MODELS: " + err);
+                std::cerr << "[silver] combat net model for " << name << ": " << path << "\n";
+                g_combatNetBoss[code] = std::move(net);
+            }
+        }
+        if (g_options.combatNetTreeMinVisits > 0 || g_options.combatNetPriorMinActions > 0 || !g_combatNetBoss.empty())
+        {
+            std::cerr << "[silver] combat net T2: root prior from " << g_options.combatNetPriorMinActions
+                      << " actions, tree prior from " << g_options.combatNetTreeMinVisits << " visits, "
+                      << g_combatNetBoss.size() << " encounter models\n";
+            static bool registered = false;
+            if (!registered) {
+                registered = true;
+                std::atexit([] {
+                    std::cerr << "[silver] combat net T2 forwards: root=" << g_ctnRootForwards.load()
+                              << " tree=" << g_ctnTreeForwards.load() << "\n";
+                });
+            }
+        }
         // ADR-0046: the per-root rollout card table is on by default with the bundled gen-7f E
         // prior (ADR-TBD); STS_SILVER_ROLLOUT_ROOT_TABLE=0 restores the fixed ADR-0040 table, a path
         // selects another combat_policy_mlp model. The model loads at the first search
@@ -1740,11 +1819,20 @@ namespace sts::search {
 
     std::vector<double> nativeSilverCombatNetRootPrior(const SilverSearcher &searcher) {
         // One forward pass per root (CombatTokNet: the root's wire and its edges' semantic actions).
+        ++g_nativeSilverCombatStats.combatNetPriors;
+        ++g_ctnRootForwards;
+        return nativeSilverCombatNetPolicy(searcher.rootSearchState(), searcher.searchContext(),
+                                           searcher.rootNode().edges);
+    }
+
+    std::vector<double> nativeSilverCombatNetPolicy(const BattleContext &state, const SilverSearchContext &context,
+                                                    const std::vector<SilverSearcher::Edge> &edges) {
         thread_local CombatTokInputs in;
         thread_local CombatTokOutputs out;
-        const auto &edges = searcher.rootNode().edges;
-        combatTokEncodeRoot(searcher.rootSearchState(), searcher.searchContext(), edges, in);
-        g_combatNetPrior.forward(in, out);
+        const auto boss = g_combatNetBoss.find(static_cast<int>(state.encounter));
+        const CombatTokNet &net = boss != g_combatNetBoss.end() ? *boss->second : g_combatNetPrior;
+        combatTokEncodeRoot(state, context, edges, in);
+        net.forward(in, out);
         const double temp = g_nativeSilverCombatNetPriorTempOverride.value_or(g_options.combatNetPriorTemp);
         double top = -INFINITY;
         for (float v : out.logits) top = std::max(top, static_cast<double>(v) / temp);
@@ -1755,7 +1843,6 @@ namespace sts::search {
             total += prior[i];
         }
         for (auto &p : prior) p /= total;
-        ++g_nativeSilverCombatStats.combatNetPriors;
         return prior;
     }
 

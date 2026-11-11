@@ -1,0 +1,21 @@
+T2 smoke, 2026-11-11 17:37-17:55 CET, cloud container (4 cores, 4 games in parallel), code 966de5f, binary sha256
+7f2800f0fcdaeea9727b78f2fc90d2b8a568f49c05c87f572a695f18b470deaa (smoke 1 with the same code before a comment-only
+edit and the env allowlist entries); nets as nets.sha256. Seeds are §775's (gated block; the campaign plays them again).
+
+1. G16 arm replays §775 (fingerprint as analyze.py: .log minus BEST timing, [heart1_ppo] and Gumbel roots lines):
+   111378258, 111378280 (smoke 1), 111378266, 111378283 (smoke 2, this binary): 4 of 4 identical to §775's games
+   (reference: the gumbel-hard-fights sentinel tars, which are §775's games).
+2. T2P is deterministic: 111378266 and 111378283 played twice (smoke 1 and 2): .log minus timing and .err identical.
+3. T2P runs with the banner "[silver] combat net T2: root prior from 17 actions, tree prior from 256 visits, 10
+   encounter models" and the 10 per-encounter nets; rc 0 on 4 of 4.
+
+| seed | G16 floor / cpu s / roots | T2P floor / cpu s / roots | tree forwards | root forwards |
+|---|---|---|---|---|
+| 111378258 | 31 / 51.7 / 323 | 31 / 73.2 / 327 | 5,567 | 0 |
+| 111378266 | 33 / 143.0 / 393 | 22 / 53.0 / 207 | 3,548 | 0 |
+| 111378280 | 33 / 111.1 / 393 | 24 / 71.4 / 270 | 5,351 | 0 |
+| 111378283 | 33 / 208.8 / 483 | 33 / 254.5 / 489 | 9,330 | 1 |
+
+(G16 cpu: this container, same load, except 111378280 from smoke 1.) CPU per Gumbel root, T2P / G16, on the two
+seeds with comparable games: 1.40 (111378258), 1.20 (111378283). About 17-20 tree forwards per Gumbel root. Two
+of four T2P games died earlier than G16 (floor 22 and 24 against 33); four games say nothing about the effect.
