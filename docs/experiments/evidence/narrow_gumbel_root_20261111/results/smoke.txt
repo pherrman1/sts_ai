@@ -1,6 +1,6 @@
 Narrow-root smoke (local, binary 5dcf3125, 4 parallel games on a 4-core cloud container), seed 111378263
 arm rc heart floor cpu_s gumbel_roots gumbel_sims identity
-G16 0 0 56.0 703.36 656 10863857 fingerprint identical to §775's G16 game (flag unset)
-GP16 0 0 56.0 171.40 678 11247862 fingerprint identical to E0's campaign GP16 game
-P4 0 0 56.0 106.15 631 6115948 -
-N4 0 0 56.0 100.21 679 6215948 -
+G16 0 1 56.0 703.36 656 10863857 fingerprint identical to §775's G16 game (flag unset)
+GP16 0 1 56.0 171.40 678 11247862 fingerprint identical to E0's campaign GP16 game
+P4 0 1 56.0 106.15 631 6115948 -
+N4 0 1 56.0 100.21 679 6215948 -
