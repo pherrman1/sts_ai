@@ -17,7 +17,7 @@ how noisy is one Silver rollout?
 
 - **Net error.** `t3cal.py` (run on the PC GPU, tools/combat_net at 2abe6aa7d) wrote `t3cal_val.npz` (330,542 rows,
   T1's validation split h = 1 of D2; sha256 in `results/SHA256SUMS`; transfer ref ppo-xfer/t3-cal c0936cb2, copy on
-  the share under `gumbel-distill/t3/`): the 21 value-class probabilities of N_f1 (death + 20 end-HP/maxHP bins, value
+  the share at `/mnt/project-files/gumbel-distill/t3/t3cal_val.npz`): the 21 value-class probabilities of N_f1 (death + 20 end-HP/maxHP bins, value
   NLL 1.66), the root's visit-weighted mean Q of the 16k G16 + mb4 search (rootQ), the fight score, hp, maxHp, potion
   count, act, room, encounter.
 - `cal.py t3cal_val.npz coefs.json` fits rootQ on [1, P(win), E[end HP], potions, hp] by least squares, per encounter
@@ -57,9 +57,10 @@ act 3 **21.9** (356), act 4 **30.1** (99).
 
 ## Reading (inference)
 
-- The net's error is about 1-2x the noise of a single rollout in every act (act 1 about 11-26 vs 13; act 3 about
-  23-40 vs 22; Heart 49 vs 30). Mixed as Q-init, its inverse-variance weight is w ≈ (σ_roll / σ_net)² ≈ 0.25-1.5
-  virtual visits, so after 2-3 real visits it no longer matters. Each Q-init costs a net forward (about 2.5 ms against
+- The net's error is about 0.8-2.3x the noise of a single rollout (act 1 normal 10.7 vs 13.2, the only cell where
+  the net is slightly better; act 1 boss 25.9 vs 13.2; act 3 22.7-39.5 vs 21.9; Heart 49.1 vs 30.1). Mixed as Q-init,
+  its inverse-variance weight is w ≈ (σ_roll / σ_net)² ≈ 0.18-1.5 virtual visits, so after 2-3 real visits it no
+  longer matters. Each Q-init costs a net forward (about 2.5 ms against
   about 50 µs per simulation), about 50x CPU if done at every new node.
 - As a replacement for the rollout (leaf value), the net would be worse than today's rollout.
 - The comparison flatters the net: the error is measured at real root states (the net's training distribution, held-out

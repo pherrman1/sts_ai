@@ -27229,7 +27229,7 @@ Can T1's N_f1 value head (§787) start Silver's new tree nodes (Q-init) or repla
 **Result:**
 - Within-encounter R² 0.48 (hp + potions alone 0.37). Residual sd 10.7 (act 1 normal) to 25.9 (act 1 boss), 31-40 (act 2-3 bosses), 49.1 (Heart).
 - One rollout: sd 13.2 / 13.4 / 21.9 / 30.1 in acts 1-4.
-**Interpretation (Inference):** the net's error is 1-2x a single rollout's, so its inverse-variance weight as Q-init is about 0.25-1.5 virtual visits for about 50x CPU; as leaf value it would be worse than the rollout. A useful value net needs an error well below rollout noise.
+**Interpretation (Inference):** the net's error is 0.8-2.3x a single rollout's (only act-1 normal fights slightly below), so its inverse-variance weight as Q-init is about 0.18-1.5 virtual visits for about 50x CPU; as leaf value it would be worse than the rollout. A useful value net needs an error well below rollout noise.
 **Decision:** fight test parked (Philipp, 21:31 CET). No code change; the searcher sketch is kept as `qinit-wip.patch`.
 Seeds: none new (replays of §775 seeds 111378258/261/280/283).
 **Knowledge impact:** none in code.
