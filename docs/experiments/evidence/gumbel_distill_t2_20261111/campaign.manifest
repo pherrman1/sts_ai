@@ -1,0 +1,19 @@
+name          gumbel-distill-t2
+code_commit   966de5f78e55c6dafcdc9be4f33a12e5fd7e3953
+binary_sha256 7f2800f0fcdaeea9727b78f2fc90d2b8a568f49c05c87f572a695f18b470deaa
+workers       40
+share         /mnt/project-files/gumbel-distill-t2
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 90
+claim_settle_seconds 60
+input net-0420.bin /mnt/project-files/ppo-long-c/nets/net-0420.bin 8c0bd16c31499270f192666919e0a11e1d6ca57e2d7a188b6d2a019f3ac742d2
+input bossall.ctn /mnt/project-files/gumbel-distill/t2/nets/bossall.ctn 56285bbd607c6ab09bce19a1cf16788582fdad2d20282a636133cba8d4cfe4ff
+input pv_f1.ctn /mnt/project-files/gumbel-distill/t2/nets/pv_f1.ctn ac5fce0e68345b5ed7dfd3240c2334c6b4a3a92389405aba8a21d1897ed02a10
+input spec_CHAMP.ctn /mnt/project-files/gumbel-distill/t2/nets/spec_CHAMP.ctn 9afb06b29c2c2d1a7f980e77a3190e4144095f7a7df17c78f00fb89f2fd33dcb
+input spec_HEXAGHOST.ctn /mnt/project-files/gumbel-distill/t2/nets/spec_HEXAGHOST.ctn 436ba93c44cc6d5be9c76bd325db288a18a5d2c1fb99e728d432b124aeb3d859
+input spec_SHIELD_AND_SPEAR.ctn /mnt/project-files/gumbel-distill/t2/nets/spec_SHIELD_AND_SPEAR.ctn 53ed5ae1904baab5db99b7a0434eec00981cc4eaf734592589d73366d00f139e
+input spec_SLIME_BOSS.ctn /mnt/project-files/gumbel-distill/t2/nets/spec_SLIME_BOSS.ctn 124058b9b46872b0396719a7e25bc1688cdd21c21181cfdac3b89f67cb033506
+input spec_THE_GUARDIAN.ctn /mnt/project-files/gumbel-distill/t2/nets/spec_THE_GUARDIAN.ctn 0c5bcc468b24befd9674b1cc71684b34f318ef0a7f2264df24838660060019c7
+input spec_TIME_EATER.ctn /mnt/project-files/gumbel-distill/t2/nets/spec_TIME_EATER.ctn b1c3ecc7b0f264d0500bc912694daa5cf365571ebc03ad24e1e6f772c8aa0bb8
