@@ -33,7 +33,7 @@ REPO = HERE.parents[3]
 SEEDS = range(111378256, 111379280)
 SENTINEL = range(111378256, 111378288)
 NEW_ARMS = ("G16", "P4", "N4")
-REF_ARMS = ("G16",)
+REF_ARMS = ("D", "G16", "G32", "G64")
 ALPHA = 0.025
 MARGIN = 0.03
 MAX_DROPPED = 20
@@ -49,8 +49,9 @@ _T = ("400", "8", None, None, None, None, None, None, None, None, "0", None)
 _P4 = ("400", "8", None, None, None, None, None, None, None, None, "0", "0")
 _N4 = ("400", "8", None, None, None, None, "1", None, None, None, "0", "0")
 ENV = {"new": {"G16": _G + (None, None) + _T, "P4": _K4 + (None, None) + _P4, "N4": _K4 + (None, None) + _N4},
-       "ref": {"G16": _G + (None, None) + _T}}
-SIMS = {"G16": 16000, "P4": 8000, "N4": 8000}
+       "ref": {"D": (None, None, "1", None, None) + _T, "G16": _G + (None, None) + _T,
+               "G32": _G + (None, None) + _T, "G64": _G + (None, None) + _T}}
+SIMS = {"G16": 16000, "P4": 8000, "N4": 8000, "D": 10000, "G32": 32000, "G64": 64000}
 WIN = re.compile(r"^BEST\s+win%=\s*([\d.]+)\s+avg_floor=\s*([\d.]+).*?cpu_sec/run=\s*([\d.]+)", re.M)
 SIMS_LINE = re.compile(r"seeds (\d+)\.\.\d+\s+asc 20\s+sims (\d+) ")
 ROOTS = re.compile(r"^\[silver\] whole-run Gumbel roots=(\d+) sims=(\d+) ", re.M)
@@ -277,6 +278,8 @@ def self_test():
     for s in SEEDS:
         outcome[s] = int(rng.random() < 0.4)
         write(refr, "ref", f"{s}_G16", "G16", s, outcome[s])
+        if s < 111378300:
+            write(refr, "ref", f"{s}_D", "D", s, int(rng.random() < 0.3))
         k = outcome[s] if rng.random() < 0.85 else int(rng.random() < 0.4)
         write(newr, "new", f"{s}_P4", "P4", s, k, rc=1 if s == 111378500 else 0,
               env_arm="N4" if s == 111378600 else None, ab=int(s == 111378700), sims=500)
