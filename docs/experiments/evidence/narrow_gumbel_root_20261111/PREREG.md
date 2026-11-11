@@ -3,14 +3,14 @@
 **Authorization.** Philipp, 2026-11-11 22:59 CET in the cheap-combat roadmap thread ("jo lets go. was du gesagt
 hast. aber lass auch schmale wurzel probieren, vllt reichen ja 92%. mach das nacheinander, je auf 40 workern. du
 hast mein go für beides"): Track 1 of
-[the cheap combat roadmap](../../../knowledge-base/research/combat-search/cheap-combat-roadmap.md), after the
-greedy-playout campaign ([greedy_playouts_g16_20261111](../greedy_playouts_g16_20261111/PREREG.md), "E0"). Reuses
+the cheap combat roadmap (`docs/knowledge-base/research/combat-search/cheap-combat-roadmap.md`, PR #1034), after the
+greedy-playout campaign (`greedy_playouts_g16_20261111`, PR #1035, "E0"). Reuses
 §775's seeds (no new seeds). 40 workers; the coordinator starts them after the independent prelaunch review and
 after E0's last game.
 
 ## Question
 
-Step 0b ([evidence](../cheap_combat_step0_20261111/README.md)) measured on T1's 310k validation roots (mean 6.3
+Step 0b (evidence `cheap_combat_step0_20261111/README.md`, PR #1034) measured on T1's 310k validation roots (mean 6.3
 legal actions) how often the Gumbel teacher's chosen action is among the prior's top k: k 4 = 88.6% for g7f_E and
 91.9% for T1's distilled net (P-V_f1), k 6 = 96.1% / 97.5%. With Gumbel noise (as the whole-run root samples its
 candidates today) the net's top-4 coverage falls to 82.4%. Can a k 4 root with the prior's deterministic top 4 and
