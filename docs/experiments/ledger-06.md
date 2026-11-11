@@ -27198,7 +27198,7 @@ and do boss specialists help?
 Seeds: 111950000-111955631 used (D2, D2b); 111955632-111958191 (D2c) reserved but unused. Smokes 111959990-999.
 **Knowledge impact:** tensorize.py writes qb.npy (max-backed Q). train.py gains `--q-source mean|backed` (default mean, T0 bit-identical) and `--encounters`. tools/combat_net/t1_grid.sh.
 
-## §TBD — Gumbel distillation T2: the distilled combat net as Silver's tree prior (nodes ≥ 256 visits) and wide-root prior does not improve §775's G16 + mb4 teacher in whole A20 runs (NOT_SHOWN, −1.37 pp) (cloud, 2026-11-11)
+## §788 — Gumbel distillation T2: the distilled combat net as Silver's tree prior (nodes ≥ 256 visits) and wide-root prior does not improve §775's G16 + mb4 teacher in whole A20 runs (NOT_SHOWN, −1.37 pp) (cloud, 2026-11-11)
 
 **Question (Philipp, 2026-11-11 17:20 CET "Ja. Wir können vllt den prior anwenden wenn wir doch mehr als 16 Aktionen haben? ... Ansonsteng go auf 40 workern"; 17:24 CET "Let's go is gut"):**
 Does T1's distilled policy (§787) help Silver as a prior where it is cheap?
