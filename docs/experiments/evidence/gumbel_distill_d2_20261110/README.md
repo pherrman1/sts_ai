@@ -30,7 +30,8 @@ which the table records after the heal) and §775's `whole-run Gumbel roots= sim
 - Code 823bbad0 (binary ed373563): silverazgen accepts the learned stop (with §775's model) under
   `STS_AZGEN_WHOLE_RUN_GUMBEL=1`, where the stop itself is inert, so the env equals §775's except STS_SEARCHER3=0 and
   the generator switches. The manifest records `act4Strong`; run_unit.sh requires it and the binary's Act 4 strong
-  banner (rc 97). 111379018: identical (53 roots / 607,997 sims). 111378261: pending.
+  banner (rc 97). 111379018: identical (53 roots / 607,997 sims). 111378261 (Heart kill): all 32 fights identical
+  to §782 (encounter, floor, won, turns, HP before) and the exit line equals §775 (roots=980 sims=15,871,840).
 
 ## Processing (after the run)
 
