@@ -118,6 +118,13 @@ namespace sts::search {
             // STS_SILVER_GUMBEL_ROOT_MAX_BACKUP=M adds max backup (min M visits) in exactly those fights.
             int gumbelRootK = 0;
             int gumbelRootMaxBackup = 0;
+            // STS_SILVER_GUMBEL_ROOT_ROOMS=<list> (research, default all): the Gumbel root (and its max backup and tree
+            // constants) only in whole-run fights whose room is in the comma list of normal, elite, boss, event (Act 4's
+            // Shield and Spear is elite, the Heart boss); other fights search as without STS_SILVER_GUMBEL_ROOT.
+            // STS_SILVER_GUMBEL_ROOT_SIMS=N (research, default 0 = the agent's simulation count): those fights' flat
+            // budget (Act 4 strong's fights: the larger of N and their own budget).
+            unsigned gumbelRootRooms = 0;   // bit per Room value; 0 = every room
+            std::int64_t gumbelRootSims = 0;
             // STS_SILVER_GUMBEL_STOP_TRACE=<csv> (research only, default off): one row per sequential-halving
             // boundary of every whole-run Gumbel root (SilverSearcher::gumbelBoundaryObserver); play unchanged.
             std::string gumbelStopTrace;
@@ -726,7 +733,11 @@ namespace sts::search {
             // research override and the stop trace keep their own settings.
             const bool wholeRunGumbel = g_options.gumbelRootK > 0 && !budgetOverride
                 && g_options.stopTrace.empty() && !g_nativeSilverGumbelRootOverride && !g_nativeSilverRolloutOverride
-                && !g_nativeSilverRootPriorOverride && !g_nativeSilverPriorNetOverride;
+                && !g_nativeSilverRootPriorOverride && !g_nativeSilverPriorNetOverride
+                && (g_options.gumbelRootRooms == 0
+                    || (g_options.gumbelRootRooms >> static_cast<unsigned>(gc.curRoom) & 1u) != 0);
+            const std::int64_t gumbelSims = g_options.gumbelRootSims > 0 ? g_options.gumbelRootSims
+                                                                         : agent.simulationCountBase;
             std::optional<SilverSearcher::GumbelRoot> gumbelRoot = g_nativeSilverGumbelRootOverride;
             if (wholeRunGumbel) {
                 SilverSearcher::GumbelRoot g;
@@ -734,6 +745,7 @@ namespace sts::search {
                 gumbelRoot = g;
             }
             // Learned stopping with the boss fallback runs boss rooms under #199.
+            // (A room outside STS_SILVER_GUMBEL_ROOT_ROOMS keeps every setting below as without the Gumbel root.)
             const bool bossFallback = !budgetOverride && g_options.learnedStop && !act4Strong && !wholeRunGumbel
                 && g_options.learnedStopBossFallback && gc.curRoom == Room::BOSS;
             const bool adaptive = budgetOverride ? budgetOverride->policy == BudgetPolicy::Adaptive
@@ -749,7 +761,8 @@ namespace sts::search {
                 fail(gc, bc, "learned stopping requires a trained stop model");
             const std::int64_t flatBudget = act4Strong
                 ? std::max<std::int64_t>(act4Heart ? kAct4HeartBudget : kAct4EliteBudget,
-                                         wholeRunGumbel ? agent.simulationCountBase : 0)
+                                         wholeRunGumbel ? gumbelSims : 0)
+                : wholeRunGumbel && g_options.gumbelRootSims > 0 ? g_options.gumbelRootSims
                 : isBossEncounter(bc.encounter) && !g_options.exactRootBudgets
                 ? static_cast<std::int64_t>(agent.bossSimulationMultiplier * agent.simulationCountBase)
                 : agent.simulationCountBase;
@@ -1397,6 +1410,41 @@ namespace sts::search {
                 throw std::runtime_error("STS_SILVER_GUMBEL_ROOT_MAX_BACKUP requires STS_SILVER_GUMBEL_ROOT");
             if (g_options.gumbelRootK > 0 && g_options.adaptive)
                 throw std::runtime_error("STS_SILVER_GUMBEL_ROOT requires STS_SILVER_ADAPTIVE=0 (flat budget)");
+            std::string gumbelRoomsText = "all acts";
+            if (const char *raw = std::getenv("STS_SILVER_GUMBEL_ROOT_ROOMS"); raw && *raw && std::string(raw) != "all") {
+                if (g_options.gumbelRootK == 0)
+                    throw std::runtime_error("STS_SILVER_GUMBEL_ROOT_ROOMS requires STS_SILVER_GUMBEL_ROOT");
+                std::string text(raw), names;
+                std::size_t pos = 0;
+                while (pos <= text.size()) {
+                    const std::size_t comma = std::min(text.find(',', pos), text.size());
+                    const std::string token = text.substr(pos, comma - pos);
+                    Room room;
+                    if (token == "normal") room = Room::MONSTER;
+                    else if (token == "elite") room = Room::ELITE;
+                    else if (token == "boss") room = Room::BOSS;
+                    else if (token == "event") room = Room::EVENT;
+                    else throw std::runtime_error("STS_SILVER_GUMBEL_ROOT_ROOMS must be all or a comma list of normal,"
+                                                  " elite, boss, event (got '" + token + "')");
+                    const unsigned bit = 1u << static_cast<unsigned>(room);
+                    if (g_options.gumbelRootRooms & bit)
+                        throw std::runtime_error("STS_SILVER_GUMBEL_ROOT_ROOMS lists '" + token + "' twice");
+                    g_options.gumbelRootRooms |= bit;
+                    names += (names.empty() ? "" : ",") + token;
+                    pos = comma + 1;
+                }
+                gumbelRoomsText = "rooms " + names;
+            }
+            if (const char *raw = std::getenv("STS_SILVER_GUMBEL_ROOT_SIMS"); raw && *raw && std::string(raw) != "0") {
+                if (g_options.gumbelRootK == 0)
+                    throw std::runtime_error("STS_SILVER_GUMBEL_ROOT_SIMS requires STS_SILVER_GUMBEL_ROOT");
+                char *end = nullptr;
+                const long long v = std::strtoll(raw, &end, 10);
+                if (end == raw || *end != '\0' || v < 1 || v > 10000000)
+                    throw std::runtime_error("STS_SILVER_GUMBEL_ROOT_SIMS must be 0 or an integer in [1, 10000000]");
+                g_options.gumbelRootSims = v;
+                gumbelRoomsText += ", sims " + std::to_string(v);
+            }
             const auto decimalEnv = [](const char *name, double hi) {
                 const char *raw = std::getenv(name);
                 if (!raw || !*raw || std::string(raw) == "0") return 0.0;
@@ -1422,7 +1470,7 @@ namespace sts::search {
             }
             if (g_options.gumbelRootK > 0)
                 std::cerr << "[silver] research search: whole-run Gumbel root k=" << g_options.gumbelRootK
-                          << " max backup=" << g_options.gumbelRootMaxBackup << " (all acts)\n";
+                          << " max backup=" << g_options.gumbelRootMaxBackup << " (" << gumbelRoomsText << ")\n";
             if (const auto &t = g_options.gumbelRootTree)
                 std::cerr << "[silver] research search: whole-run Gumbel tree ucb=" << t->exploration
                           << " widen end turn=" << t->endTurnWideningC << " widen chance=" << t->chanceWideningC << "\n";

@@ -1,0 +1,10 @@
+Smoke 2026-11-10 (local 4-CPU cloud container; code b1149acd, binary b9b7fc480133192ccafbbd91435183ceabad07fa4b2a173d06ffa953598bb6c6, net-0420 8c0bd16c)
+Fingerprint = .log without the BEST timing fields and the "asc 20  sims" header line + .err lines [heart1_ppo] seed= and [silver] whole-run Gumbel roots=.
+
+1. Sentinel path: run_unit.sh 111378256 G16 vs §775's G16-111378256 (share gumbel-wholerun/units/111378256_low.w02.tar): IDENTICAL
+   (both floor 50, Gumbel roots=889 sims=12927896; cpu 523.45 vs 504.30 s).
+2. Equivalence: GHARD with STS_SILVER_GUMBEL_ROOT_ROOMS=normal,elite,boss,event + STS_SILVER_GUMBEL_ROOT_SIMS=16000 at bestbench 10000
+   on 111378256 vs §775's G16 game: IDENTICAL (roots=889 sims=12927896), banner "(rooms normal,elite,boss,event, sims 16000)".
+3. GHARD on smoke seed 111379280 (§775 smoke block, used): rc 0, Heart kill (floor 56), banner "(rooms elite,boss, sims 16000)",
+   Gumbel roots=802 of 1425 decisions (sims 13559899 of 16914149: the other 623 decisions ran D's learned stop), cpu 1722 s.
+4. Parse errors: unknown room token, duplicate token, non-integer SIMS and ROOMS without STS_SILVER_GUMBEL_ROOT all refuse to start.
