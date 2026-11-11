@@ -133,6 +133,9 @@ namespace sts::search {
             // budget (Act 4 strong's fights: the larger of N and their own budget).
             unsigned gumbelRootRooms = 0;   // bit per Room value; 0 = every room
             std::int64_t gumbelRootSims = 0;
+            // STS_SILVER_GUMBEL_ROOT_NOISE (research, default 1 = unchanged): scale of the Gumbel draw at the
+            // whole-run Gumbel root (GumbelRoot::noise; 0 = the k candidates are the prior's top k).
+            double gumbelRootNoise = 1.0;
             // STS_SILVER_GUMBEL_STOP_TRACE=<csv> (research only, default off): one row per sequential-halving
             // boundary of every whole-run Gumbel root (SilverSearcher::gumbelBoundaryObserver); play unchanged.
             std::string gumbelStopTrace;
@@ -752,6 +755,7 @@ namespace sts::search {
             if (wholeRunGumbel) {
                 SilverSearcher::GumbelRoot g;
                 g.k = g_options.gumbelRootK;
+                g.noise = g_options.gumbelRootNoise;
                 gumbelRoot = g;
             }
             // Learned stopping with the boss fallback runs boss rooms under #199.
@@ -1467,6 +1471,20 @@ namespace sts::search {
                     throw std::runtime_error("STS_SILVER_GUMBEL_ROOT_SIMS must be 0 or an integer in [1, 10000000]");
                 g_options.gumbelRootSims = v;
                 gumbelRoomsText += ", sims " + std::to_string(v);
+            }
+            if (const char *raw = std::getenv("STS_SILVER_GUMBEL_ROOT_NOISE"); raw && *raw) {
+                if (g_options.gumbelRootK == 0)
+                    throw std::runtime_error("STS_SILVER_GUMBEL_ROOT_NOISE requires STS_SILVER_GUMBEL_ROOT");
+                char *end = nullptr;
+                const double v = std::strtod(raw, &end);
+                if (end == raw || *end != '\0' || !(v >= 0.0 && v <= 10.0))
+                    throw std::runtime_error("STS_SILVER_GUMBEL_ROOT_NOISE must be a number in [0, 10]");
+                g_options.gumbelRootNoise = v;
+                if (v != 1.0) {
+                    std::ostringstream text;
+                    text << ", noise " << v;
+                    gumbelRoomsText += text.str();
+                }
             }
             const auto decimalEnv = [](const char *name, double hi) {
                 const char *raw = std::getenv(name);
