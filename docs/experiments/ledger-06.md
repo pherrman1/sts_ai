@@ -27166,3 +27166,34 @@ With §783 and §781, every cut to G16's budget tried so far loses Heart kills r
 research options.
 Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: about 137 lane-hours.
 **Knowledge impact:** none beyond this entry and the env-variable rows.
+
+## §787 — Gumbel distillation offline, T0 (D1) and T1 (D2): the combat net learns §775's G16 + mb4 teacher on 3.33 M roots; the policy is close to data-saturated; per-boss fine-tuning lowers q_regret on 9 of 11 bosses (descriptive learnability, no gameplay) (PC GPU, 2026-11-10/11)
+
+**Question (Philipp, 2026-11-10 20:27 CET "jo go auf t0"; D2 factory 21:49 CET "Let's go"; T1 2026-11-11 09:03 CET "Go"):**
+Can the combat net distil G16 + max backup 4 (§775's teacher), which policy target to use, how much data does it need,
+and do boss specialists help?
+**Data:**
+- [T0 PREREG](evidence/gumbel_distill_t0_20261110/PREREG.md) and [RESULT](evidence/gumbel_distill_t0_20261110/RESULT.md): D1, §771.
+- [D2 campaign](evidence/gumbel_distill_d2_20261110/README.md) (+ d2b/).
+- [T1 PREREG](evidence/gumbel_distill_t1_20261111/PREREG.md) and [RESULT](evidence/gumbel_distill_t1_20261111/RESULT.md).
+- `results/eval_summary.json` in both.
+**D2:**
+- silverazgen whole-run Gumbel root (§775's G16 + mb4, Act 4 strong, learned stop as in §775).
+- RUN 242c054e / 6ef822e6, code 823bbad0, binary ed373563.
+- Heart-seed smoke reproduces §775 exactly.
+- 702 of 704 units used (D2 509 + 1 local re-run, D2b 192). Freeze sha 3089cacf. 2 exhausted units are left out, and D2c never ran.
+- 5,616 runs, 134,858 fights, 3,328,345 roots (52k Collector to 158k Heart per boss).
+- About 650 lane-hours on 40 workers.
+**Result T0 (D1, 569k roots, mean Q):**
+- Policy DATA_SATURATING (LC-P Δ₁ 0.022 < 0.037).
+- cq:20 BETTER_TARGET (q_regret 1.159 / 1.163 vs visits 1.176 / 1.188).
+- Root V is biased low against the fight score (−14.9 overall, −20.9 bosses).
+- Shared boss fine-tune: NO_SPECIALIST_GAIN (−0.02 to −0.04).
+**Result T1 (D2, validation 330,542 rows):**
+- **Target:** visits 1.286 / 1.288 backed q_regret, against cq:20 (backed) 1.297 / 1.293, so not BETTER_TARGET. Under mean Q the order flips: cq:20 mean 1.111, cq:20 backed 1.13, visits 1.19. The measure picks the winner, so the target is open for T2.
+- **Data:** MIXED, leaning saturating. P-V Δ₁ 0.033 vs 0.032 (DATA_LIMITED, only just). P-CQb 0.027 vs 0.038 (saturating). Value NLL 4.68 → 2.18 → 1.66 (T0's D1: 1.97), death ECE 0.004.
+- **Bosses:** per-boss SPEC (P-V_f1 fine-tuned on one boss) is SPECIALIST_BETTER on 9 of 11 by the PREREG rule (Δ −0.03 to −0.14). AUTOMATON (+0.045) and THE_HEART (+0.003) are not. Amendment 1 (BOSS-ALL, one net fine-tuned on all boss rows, added during the run on Philipp's ask) wins for COLLECTOR, AWAKENED_ONE, DONU_AND_DECA and THE_HEART (−0.03 to −0.13). The specialist seed spread is up to 0.046, so gains under ~0.03 are not secured.
+**Interpretation (Inference):** distillation is learnable at D2's size. Further teacher data mainly helps the value head. Boss-specific fine-tuning is the cheapest gain offline. None of this is play strength: q_regret is learnability against the teacher's Q.
+**Decision:** descriptive. No default change. T2 (distilled net as Silver's root prior and/or leaf value, SPRT gate on fresh seeds) gets its own PREREG and needs Philipp's go.
+Seeds: 111950000-111955631 used (D2, D2b); 111955632-111958191 (D2c) reserved but unused. Smokes 111959990-999.
+**Knowledge impact:** tensorize.py writes qb.npy (max-backed Q). train.py gains `--q-source mean|backed` (default mean, T0 bit-identical) and `--encounters`. tools/combat_net/t1_grid.sh.

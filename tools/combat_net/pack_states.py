@@ -13,7 +13,8 @@ One output row per searched root (rows with "skipped": true, one-action roots, a
              of the edge's card (same fingerprint up to the unique id), that edge (counted as chosenByCopy)
   value    - the fight's real outcome: won, endHp, preHp, preMaxHp (from the fight row), and the fight's own
              Silver end score `score`
-  (Gumbel-root rows of STS_AZGEN_GUMBEL_ROOT also carry each edge's root `prior` and the row's `gumbelChoice`.)
+  (Gumbel-root rows of STS_AZGEN_GUMBEL_ROOT also carry each edge's root `prior` and the row's `gumbelChoice`;
+  max-backup rows add each edge's `qBacked` and the row's `rootQBacked`.)
   aux      - realized HP loss (HP now minus HP at the first root of a later turn, or the fight's end HP when the fight
              ends first) to turn+1 and turn+2: the plan's "incoming damage" heads, measured on the played line
 
@@ -103,7 +104,8 @@ def main(argv):
                         "floor": r["floor"], "room": r["room"], "encounter": r["encounter"], "turn": r["turn"],
                         "x": we.encode(r["wire"]),
                         "edges": [dict({"a": we.parse_semantic(e["semantic"]), "visits": e["visits"], "q": e["q"]},
-                                       **({"prior": e["prior"]} if "prior" in e else {}))
+                                       **({"prior": e["prior"]} if "prior" in e else {}),
+                                       **({"qBacked": e["qBacked"]} if "qBacked" in e else {}))
                                   for e in edges],
                         "policy": [e["visits"] / total for e in edges] if total > 0 and len(edges) > 1 else [],
                         "chosen": chosen,
@@ -114,6 +116,8 @@ def main(argv):
                     }
                     if "gumbelChoice" in r:   # STS_AZGEN_GUMBEL_ROOT rows (stage 2 teacher data)
                         row["gumbelChoice"] = r["gumbelChoice"]
+                    if "rootQBacked" in r:   # max-backup rows (D2, STS_AZGEN_WHOLE_RUN_GUMBEL)
+                        row["rootQBacked"] = r["rootQBacked"]
                     out.write(json.dumps(row, separators=(",", ":")) + "\n")
                     counts["rows"] += 1
                     counts["multiEdgeRows"] += len(edges) > 1

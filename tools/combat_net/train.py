@@ -3,7 +3,7 @@
 
 usage: train.py DATA_DIR OUT_DIR [--epochs N] [--batch B] [--lr LR] [--d D] [--layers L] [--no-aux] [--no-value]
                 [--max-steps N] [--device cpu|cuda] [--seed S] [--init CKPT] [--workers N] [--no-bucket] [--no-amp]
-                [--value-weight W]
+                [--value-weight W] [--train-frac F] [--policy-target visits|cq:S|cq:paper] [--q-source mean|backed]
 
 Splits by run (never inside a run), h = (seed * 2654435761) % 2^32 % 10: h == 0 is the gate holdout, which this
 script never reads (gate.py does); h == 1 is the validation split for learning curves and the choice of epochs;
@@ -15,6 +15,20 @@ Speed (none of it changes the targets or the splits): batches are drawn by lengt
 batches are sorted by card count before they are cut, then the batch order is shuffled), so a batch pads to similar
 rows; batches are collated by `--workers` DataLoader processes ahead of the GPU; on CUDA the forward pass runs under
 bfloat16 autocast (losses in float32). `--no-bucket` and `--no-amp` restore plain shuffled float32 batches.
+
+T0 options (Gumbel distillation plan, 2026-11-10); the defaults reproduce the stage-2 runs:
+- `--train-frac F` keeps the training runs with u(seed) < F (u: 64-bit Fibonacci hash of the seed in [0, 1)), so smaller
+  fractions are nested in larger ones. The validation and gate splits do not change.
+- `--policy-target cq:S` trains the policy on the completed-Q policy softmax(log prior + S * q01) instead of the
+  visit shares (see completed_q_policy); `cq:paper` uses Gumbel MuZero's S = (c_visit + max visits) * c_scale with
+  the teacher's c_visit 50 and c_scale 1. Needs tensorize.py's q.npy and visits.npy. Validation always measures
+  the policy CE to the visit shares, so runs with different targets stay comparable.
+- With q.npy and visits.npy present, evaluation adds top-1 agreement with the Gumbel pick (`top1_gumbel`) and with
+  the finalists' best Q (`top1_qpick`: argmax Q over the edges with at least half the root's largest visit count),
+  and `q_regret`: best finalist Q minus the Q of the net's argmax, on rows where that edge was visited.
+- `--rooms 2` (comma list of elite_boss codes: 0 monster, 1 elite, 2 boss, 3 other) keeps only those rows in the
+  training and the validation split (specialist runs). `--eval-only` evaluates `--init` on the validation split and
+  writes eval.json without training (e.g. the generalist on the boss rows).
 """
 
 import argparse
@@ -35,6 +49,49 @@ def split_of(seeds):
     return (seeds.astype(np.uint64) * np.uint64(2654435761)) % np.uint64(2 ** 32) % np.uint64(10)
 
 
+def train_frac_mask(seeds, frac):
+    """Nested subset of runs: u(seed) < frac, u = 64-bit Fibonacci hash of the seed in [0, 1) (well spread over
+    consecutive seed blocks)."""
+    with np.errstate(over="ignore"):
+        h = seeds.astype(np.uint64) * np.uint64(0x9E3779B97F4A7C15)
+    u = (h >> np.uint64(11)).astype(np.float64) / 2.0 ** 53
+    return u < frac
+
+
+def completed_q_policy(A, scale):
+    """Per-edge completed-Q policy for every multi-edge row with Q (Gumbel MuZero's improved policy, as
+    SilverSearcher::selectGumbelNonRoot forms it): visited edges keep their Q, unvisited ones get v_mix; Q is
+    min-max normalized over the visited edges to q01; target = softmax(log prior + sigma * q01), sigma = scale, or
+    (50 + max visits) * 1 when scale is None. Rows without a root prior use a uniform prior; rows without any visited
+    edge keep their visit shares."""
+    a = A.a
+    off = np.asarray(a["act_off"])
+    prior_all, q_all, vis_all = np.asarray(a["prior"]), np.asarray(a["q"]), np.asarray(a["visits"])
+    out = np.array(a["policy"], dtype=np.float32, copy=True)
+    multi = np.asarray(a["multi"])
+    for r in np.nonzero(multi)[0]:
+        s, e = off[r], off[r + 1]
+        q, vis = q_all[s:e].astype(np.float64), vis_all[s:e].astype(np.float64)
+        visited = ~np.isnan(q) & (vis > 0)
+        if not visited.any():
+            continue
+        p = prior_all[s:e].astype(np.float64)
+        if np.isnan(p).any() or p.sum() <= 0:
+            p = np.full(e - s, 1.0 / (e - s))
+        total = vis.sum()
+        v_hat = (vis[visited] * q[visited]).sum() / vis[visited].sum()
+        pv = p[visited].sum()
+        v_mix = (v_hat + total / pv * (p[visited] * q[visited]).sum()) / (1 + total) if pv > 0 else v_hat
+        qc = np.where(visited, q, v_mix)
+        lo, hi = q[visited].min(), q[visited].max()
+        q01 = np.clip((qc - lo) / (hi - lo), 0, 1) if hi > lo else np.full(e - s, 0.5)
+        sigma = (50.0 + vis.max()) * 1.0 if scale is None else scale
+        z = np.log(np.maximum(p, 1e-12)) + sigma * q01
+        z = np.exp(z - z.max())
+        out[s:e] = z / z.sum()
+    return out
+
+
 def holdout_mask(seeds):
     return split_of(seeds) == 0
 
@@ -53,14 +110,14 @@ def bucket_batches(idx, ncards, batch, rng, pool=64):
 
 
 class BatchSet(torch.utils.data.Dataset):
-    def __init__(self, A, batches):
-        self.A, self.batches = A, batches
+    def __init__(self, A, batches, policy_key="policy"):
+        self.A, self.batches, self.policy_key = A, batches, policy_key
 
     def __len__(self):
         return len(self.batches)
 
     def __getitem__(self, i):
-        return M.collate(self.A, self.batches[i])
+        return M.collate(self.A, self.batches[i], self.policy_key)
 
 
 @torch.no_grad()
@@ -71,7 +128,7 @@ def evaluate(net, A, idx, batch, device, amp=False):
     nc = np.diff(np.asarray(A.a["card_off"]))
     idx = np.asarray(idx)[np.argsort(nc[idx], kind="stable")]   # sums only, so the order is free
     sums = {"n": 0, "multi": 0, "pol_ce": 0.0, "top1": 0, "top1_n": 0, "nll": 0.0, "brier": 0.0, "aux_mae1": 0.0,
-            "aux_mae2": 0.0}
+            "aux_mae2": 0.0, "g_hit": 0, "g_n": 0, "qp_hit": 0, "qp_n": 0, "regret": 0.0, "regret_n": 0}
     room = {r: {"multi": 0, "top1": 0, "top1_n": 0, "nll": 0.0, "n": 0} for r in range(4)}
     pdeath, died = [], []
     for s in range(0, len(idx), batch):
@@ -85,6 +142,22 @@ def evaluate(net, A, idx, batch, device, amp=False):
         pick = logits.argmax(-1)
         has = multi & (b["chosen"] >= 0)
         hit = (pick == b["chosen"]) & has
+        if "gumbelChoice" in b:
+            gh = multi & (b["gumbelChoice"] >= 0)
+            sums["g_hit"] += int(((pick == b["gumbelChoice"]) & gh).sum())
+            sums["g_n"] += int(gh.sum())
+        if "q" in b:
+            qv, vis = b["q"], b["visits"]
+            fin = (vis * 2 >= vis.max(-1, keepdim=True).values) & (vis > 0) & ~torch.isnan(qv)
+            qfin = torch.where(fin, qv, torch.full_like(qv, -float("inf")))
+            best, qpick = qfin.max(-1)
+            ok = multi & fin.any(-1)
+            sums["qp_hit"] += int(((pick == qpick) & ok).sum())
+            sums["qp_n"] += int(ok.sum())
+            qn = torch.gather(qv, 1, pick[:, None]).squeeze(1)
+            rk = ok & ~torch.isnan(qn)
+            sums["regret"] += float(torch.where(rk, best - qn, torch.zeros_like(qn)).sum())
+            sums["regret_n"] += int(rk.sum())
         vc = M.value_class(b["won"], b["endFrac"])
         nll = torch.nn.functional.cross_entropy(vlog, vc, reduction="none")
         pd = torch.softmax(vlog, -1)[:, 0]
@@ -116,6 +189,9 @@ def evaluate(net, A, idx, batch, device, amp=False):
            "top1": sums["top1"] / max(1, sums["top1_n"]), "value_nll": sums["nll"] / n, "death_brier": sums["brier"] / n,
            "death_ece": float(ece), "death_rate": float(died.mean()), "aux_mae1": sums["aux_mae1"] / n,
            "aux_mae2": sums["aux_mae2"] / n,
+           "top1_gumbel": sums["g_hit"] / sums["g_n"] if sums["g_n"] else None, "top1_gumbel_n": sums["g_n"],
+           "top1_qpick": sums["qp_hit"] / sums["qp_n"] if sums["qp_n"] else None, "top1_qpick_n": sums["qp_n"],
+           "q_regret": sums["regret"] / sums["regret_n"] if sums["regret_n"] else None, "q_regret_n": sums["regret_n"],
            "by_room": {name: {"rows": room[r]["n"], "value_nll": room[r]["nll"] / max(1, room[r]["n"]),
                               "top1": room[r]["top1"] / max(1, room[r]["top1_n"])}
                        for r, name in enumerate(("monster", "elite", "boss", "other"))}}
@@ -144,14 +220,45 @@ def main(argv):
     ap.add_argument("--no-bucket", action="store_true")
     ap.add_argument("--no-amp", action="store_true")
     ap.add_argument("--value-weight", type=float, default=1.0, help="weight of the value loss (policy and aux: 1)")
+    ap.add_argument("--train-frac", type=float, default=1.0, help="nested fraction of the training runs (T0)")
+    ap.add_argument("--policy-target", default="visits", help="visits | cq:S | cq:paper (T0)")
+    ap.add_argument("--rooms", default="", help="comma list of elite_boss codes to keep (T0 specialists)")
+    ap.add_argument("--eval-only", action="store_true", help="evaluate --init on the validation split, no training")
+    ap.add_argument("--encounters", default="", help="comma list of encounter names to keep (T1 per-boss specialists)")
+    ap.add_argument("--q-source", default="mean", choices=("mean", "backed"),
+                    help="Q for cq targets and q_regret: mean (q.npy) or max-backed (qb.npy, D2 / T1)")
     args = ap.parse_args(argv)
     os.makedirs(args.out, exist_ok=True)
     torch.manual_seed(args.seed)
     rng = np.random.default_rng(args.seed)
     A = M.Arrays(args.data)
+    if args.q_source == "backed":
+        if "qb" not in A.a:
+            raise SystemExit("--q-source backed needs tensorize.py's qb.npy (max-backup rows)")
+        A.a["q"] = A.a["qb"]   # cq targets and q_regret / top1_qpick then use the max-backed Q
     seeds = np.asarray(A.a["seed"])
     split = split_of(seeds)
-    train_idx, val_idx = np.nonzero(split >= 2)[0], np.nonzero(split == 1)[0]
+    if not 0 < args.train_frac <= 1:
+        raise SystemExit("--train-frac must be in (0, 1]")
+    train_idx = np.nonzero((split >= 2) & train_frac_mask(seeds, args.train_frac))[0]
+    val_idx = np.nonzero(split == 1)[0]
+    if args.rooms:
+        keep = np.isin(np.asarray(A.a["elite_boss"]), [int(x) for x in args.rooms.split(",")])
+        train_idx, val_idx = train_idx[keep[train_idx]], val_idx[keep[val_idx]]
+    if args.encounters:
+        names = A.meta["encounters"]
+        want = [x for x in args.encounters.split(",") if x]
+        if any(w not in names for w in want):
+            raise SystemExit(f"--encounters: unknown name in {want}")
+        keep = np.isin(np.asarray(A.a["encounter"]), [names.index(w) for w in want])
+        train_idx, val_idx = train_idx[keep[train_idx]], val_idx[keep[val_idx]]
+    policy_key = "policy"
+    if args.policy_target != "visits":
+        if not args.policy_target.startswith("cq:") or "q" not in A.a or "visits" not in A.a:
+            raise SystemExit("--policy-target must be visits or cq:S / cq:paper, and cq needs q.npy and visits.npy")
+        arg = args.policy_target[3:]
+        A.a["policy_train"] = completed_q_policy(A, None if arg == "paper" else float(arg))
+        policy_key = "policy_train"
     eval_idx = val_idx if len(val_idx) <= args.eval_rows else rng.choice(val_idx, args.eval_rows, replace=False)
     caps = A.meta["caps"]
     net = M.CombatNet(d=args.d, layers=args.layers, g_len=caps["G_LEN"], m_num=caps["M_NUM"], q_len=caps["Q_LEN"],
@@ -160,8 +267,8 @@ def main(argv):
         net.load_state_dict(torch.load(args.init, map_location=args.device))
     params = sum(p.numel() for p in net.parameters())
     opt = torch.optim.AdamW(net.parameters(), lr=args.lr, weight_decay=0.01)
-    steps = int(args.epochs * len(train_idx) / args.batch)
-    if args.max_steps:
+    steps = 0 if args.eval_only else int(args.epochs * len(train_idx) / args.batch)
+    if args.max_steps and not args.eval_only:
         steps = min(steps, args.max_steps)
     sched = torch.optim.lr_scheduler.OneCycleLR(opt, max_lr=args.lr, total_steps=max(1, steps), pct_start=0.05)
     log = open(os.path.join(args.out, "log.jsonl"), "w")
@@ -183,7 +290,7 @@ def main(argv):
 
     def batch_stream():
         while True:
-            dl = torch.utils.data.DataLoader(BatchSet(A, epoch_batches()), batch_size=None, shuffle=False,
+            dl = torch.utils.data.DataLoader(BatchSet(A, epoch_batches(), policy_key), batch_size=None, shuffle=False,
                                              num_workers=args.workers, pin_memory=args.device.startswith("cuda"),
                                              prefetch_factor=4 if args.workers else None)
             yield from dl
@@ -206,13 +313,17 @@ def main(argv):
             log.write(json.dumps(rec) + "\n")
             log.flush()
             print(json.dumps({"step": step + 1, "sec": rec["sec"], **({k: round(ev[k], 4) for k in
-                              ("policy_ce", "top1", "value_nll", "death_ece", "aux_mae1")} if ev else {})}), flush=True)
-    torch.save(net.state_dict(), os.path.join(args.out, "model.pt"))
+                              ("policy_ce", "top1", "value_nll", "death_ece", "aux_mae1")} if ev else {}),
+                              **({k: round(ev[k], 4) for k in ("top1_gumbel", "top1_qpick", "q_regret")
+                                  if ev and ev.get(k) is not None})}), flush=True)
+    if not args.eval_only:
+        torch.save(net.state_dict(), os.path.join(args.out, "model.pt"))
     final = evaluate(net, A, val_idx, 512, args.device, amp)
     json.dump({"config": {k: cfg[k] for k in cfg if k != "data_meta"}, "validation": final},
               open(os.path.join(args.out, "eval.json"), "w"), indent=1)
     if final:
-        print(json.dumps({"final_val": {k: final[k] for k in ("rows", "policy_ce", "top1", "value_nll", "death_ece")}}))
+        print(json.dumps({"final_val": {k: final[k] for k in ("rows", "policy_ce", "top1", "value_nll", "death_ece",
+                                                               "top1_gumbel", "top1_qpick", "q_regret")}}))
     return 0
 
 
