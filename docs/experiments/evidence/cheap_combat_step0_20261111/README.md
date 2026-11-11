@@ -21,7 +21,7 @@ when hit), in Silver score units, measured with the teacher's own Q (favours the
 ## Result 0a (CPU per run on these machines 585 s; §775 measured 509 s on others)
 | act | room | roots/run | CPU s/run | share | µs/sim |
 |---|---|---|---|---|---|
-| 1-3 | normal + elite + other | 397 | 81 | 13.8% | 7-19 |
+| 1-3 | normal + elite + other | 396 | 81 | 13.8% | 7-19 |
 | 1 | boss | 30 | 35 | 6.2% | 74 |
 | 2 | boss | 31 | 64 | 11.3% | 128 |
 | 3 | boss (both) | 57 | 158 | 27.8% | 172 |
