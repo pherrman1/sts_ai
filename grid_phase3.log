@@ -1,0 +1,49 @@
+== BOSS-ALL --no-value --rooms 2 --q-source backed --epochs 3
+{"final_val": {"rows": 85566, "policy_ce": 1.5784059373308739, "top1": 0.43506322609752734, "value_nll": 3.052981381173015, "death_ece": 0.04436054080724716, "top1_gumbel": 0.43504304565220114, "top1_qpick": 0.4366972017193198, "q_regret": 1.7072883860534869}}
+== S2_BOSS-ALL --no-value --rooms 2 --q-source backed --epochs 3 --seed 20261109
+{"final_val": {"rows": 85566, "policy_ce": 1.578400726714175, "top1": 0.43548932863785045, "value_nll": 3.0536874602999715, "death_ece": 0.04451870545744896, "top1_gumbel": 0.43546911615433775, "top1_qpick": 0.4373989648993095, "q_regret": 1.6982335898173784}}
+== EVB_BOSS-ALL_HEXAGHOST --no-value --eval-only --q-source backed --encounters HEXAGHOST
+{"final_val": {"rows": 7145, "policy_ce": 1.3474395607275815, "top1": 0.5787058283616338, "value_nll": 3.057677957843116, "death_ece": 0.11347139626741409, "top1_gumbel": 0.5785288270377733, "top1_qpick": 0.5786817556201254, "q_regret": 0.7591725344318603}}
+== EVB_S2_BOSS-ALL_HEXAGHOST --no-value --eval-only --q-source backed --encounters HEXAGHOST
+{"final_val": {"rows": 7145, "policy_ce": 1.3473000824679329, "top1": 0.5794707052164602, "value_nll": 3.057713118193448, "death_ece": 0.11315520107746124, "top1_gumbel": 0.5792934699495336, "top1_qpick": 0.577305398378957, "q_regret": 0.7496947903570357}}
+== EVB_BOSS-ALL_SLIME_BOSS --no-value --eval-only --q-source backed --encounters SLIME_BOSS
+{"final_val": {"rows": 6421, "policy_ce": 1.4700118270703462, "top1": 0.5196078431372549, "value_nll": 3.0490136163625703, "death_ece": 0.03176864981651306, "top1_gumbel": 0.5196904557179708, "top1_qpick": 0.5255374032674118, "q_regret": 1.4948720443195438}}
+== EVB_S2_BOSS-ALL_SLIME_BOSS --no-value --eval-only --q-source backed --encounters SLIME_BOSS
+{"final_val": {"rows": 6421, "policy_ce": 1.4700157106486458, "top1": 0.52218782249742, "value_nll": 3.0474500669495113, "death_ece": 0.031453751027584076, "top1_gumbel": 0.5222699914015477, "top1_qpick": 0.528804815133276, "q_regret": 1.4685789193915106}}
+== EVB_BOSS-ALL_THE_GUARDIAN --no-value --eval-only --q-source backed --encounters THE_GUARDIAN
+{"final_val": {"rows": 7913, "policy_ce": 1.3761209085122608, "top1": 0.5289503707929264, "value_nll": 3.05736455455767, "death_ece": 0.0033977366983890533, "top1_gumbel": 0.5288749465278768, "top1_qpick": 0.536004562954513, "q_regret": 1.2584543900210916}}
+== EVB_S2_BOSS-ALL_THE_GUARDIAN --no-value --eval-only --q-source backed --encounters THE_GUARDIAN
+{"final_val": {"rows": 7913, "policy_ce": 1.376157666245388, "top1": 0.5309469480889903, "value_nll": 3.0580498868801733, "death_ece": 0.0034627504646778107, "top1_gumbel": 0.5308712391273349, "top1_qpick": 0.5362897476115785, "q_regret": 1.2354654418248763}}
+== EVB_BOSS-ALL_AUTOMATON --no-value --eval-only --q-source backed --encounters AUTOMATON
+{"final_val": {"rows": 5542, "policy_ce": 1.6316870776768673, "top1": 0.44557556773688334, "value_nll": 3.073158156781453, "death_ece": 0.04344072565436363, "top1_gumbel": 0.44557556773688334, "top1_qpick": 0.44537979639780734, "q_regret": 1.8747803690851494}}
+== EVB_S2_BOSS-ALL_AUTOMATON --no-value --eval-only --q-source backed --encounters AUTOMATON
+{"final_val": {"rows": 5542, "policy_ce": 1.6316771122656861, "top1": 0.45066562255285825, "value_nll": 3.0772291202056454, "death_ece": 0.043604377657175064, "top1_gumbel": 0.45066562255285825, "top1_qpick": 0.4494909945184025, "q_regret": 1.8628669701407168}}
+== EVB_BOSS-ALL_CHAMP --no-value --eval-only --q-source backed --encounters CHAMP
+{"final_val": {"rows": 7337, "policy_ce": 1.4840342421748005, "top1": 0.4660854145116004, "value_nll": 3.096920251033929, "death_ece": 0.11936360597610474, "top1_gumbel": 0.4660854145116004, "top1_qpick": 0.45869661593024974, "q_regret": 1.4410785674484607}}
+== EVB_S2_BOSS-ALL_CHAMP --no-value --eval-only --q-source backed --encounters CHAMP
+{"final_val": {"rows": 7337, "policy_ce": 1.4843187902920423, "top1": 0.4681542781143786, "value_nll": 3.097063634154159, "death_ece": 0.11968155205249786, "top1_gumbel": 0.4681542781143786, "top1_qpick": 0.4623910152209251, "q_regret": 1.432616358095329}}
+== EVB_BOSS-ALL_COLLECTOR --no-value --eval-only --q-source backed --encounters COLLECTOR
+{"final_val": {"rows": 5513, "policy_ce": 1.6602922780106708, "top1": 0.4554146341463415, "value_nll": 3.0871052166824438, "death_ece": 0.03337688371539116, "top1_gumbel": 0.4554146341463415, "top1_qpick": 0.45014634146341465, "q_regret": 1.990159008087975}}
+== EVB_S2_BOSS-ALL_COLLECTOR --no-value --eval-only --q-source backed --encounters COLLECTOR
+{"final_val": {"rows": 5513, "policy_ce": 1.6603333531821647, "top1": 0.45365853658536587, "value_nll": 3.0885002901522536, "death_ece": 0.03340805694460869, "top1_gumbel": 0.45365853658536587, "top1_qpick": 0.44682926829268294, "q_regret": 1.9945356186816272}}
+== EVB_BOSS-ALL_AWAKENED_ONE --no-value --eval-only --q-source backed --encounters AWAKENED_ONE
+{"final_val": {"rows": 12388, "policy_ce": 1.6919665901878846, "top1": 0.38047281727404625, "value_nll": 3.050055090288674, "death_ece": 0.038704995065927505, "top1_gumbel": 0.38047281727404625, "top1_qpick": 0.37876589570709224, "q_regret": 2.2724841521270696}}
+== EVB_S2_BOSS-ALL_AWAKENED_ONE --no-value --eval-only --q-source backed --encounters AWAKENED_ONE
+{"final_val": {"rows": 12388, "policy_ce": 1.6920630446959246, "top1": 0.37774174276691985, "value_nll": 3.0504475914742972, "death_ece": 0.039104167371988297, "top1_gumbel": 0.37774174276691985, "top1_qpick": 0.37594947512161814, "q_regret": 2.262833435298397}}
+== EVB_BOSS-ALL_DONU_AND_DECA --no-value --eval-only --q-source backed --encounters DONU_AND_DECA
+{"final_val": {"rows": 10109, "policy_ce": 1.7601440894454075, "top1": 0.39683029741689824, "value_nll": 3.0323301695116975, "death_ece": 0.017500219866633415, "top1_gumbel": 0.39678946285243877, "top1_qpick": 0.392055978596419, "q_regret": 1.5009856445513625}}
+== EVB_S2_BOSS-ALL_DONU_AND_DECA --no-value --eval-only --q-source backed --encounters DONU_AND_DECA
+{"final_val": {"rows": 10109, "policy_ce": 1.7600001562620589, "top1": 0.39662447257383965, "value_nll": 3.0320466630524163, "death_ece": 0.01729678548872471, "top1_gumbel": 0.3965836591891336, "top1_qpick": 0.391026960279893, "q_regret": 1.4873680607345245}}
+== EVB_BOSS-ALL_TIME_EATER --no-value --eval-only --q-source backed --encounters TIME_EATER
+{"final_val": {"rows": 10081, "policy_ce": 1.6436764350393764, "top1": 0.3930024410089504, "value_nll": 3.026926269773429, "death_ece": 0.02399798482656479, "top1_gumbel": 0.3929624733041798, "top1_qpick": 0.39336926675480527, "q_regret": 1.6904569909035692}}
+== EVB_S2_BOSS-ALL_TIME_EATER --no-value --eval-only --q-source backed --encounters TIME_EATER
+{"final_val": {"rows": 10081, "policy_ce": 1.643700338872054, "top1": 0.39351098454027666, "value_nll": 3.0329672911138528, "death_ece": 0.02336449921131134, "top1_gumbel": 0.3934709651174616, "top1_qpick": 0.3955049323705888, "q_regret": 1.689334340288157}}
+== EVB_BOSS-ALL_SHIELD_AND_SPEAR --no-value --eval-only --q-source backed --encounters SHIELD_AND_SPEAR
+{"final_val": {"rows": 11036, "policy_ce": 1.749691380389872, "top1": 0.39272012725741556, "value_nll": 3.0385127632719056, "death_ece": 0.024173371493816376, "top1_gumbel": 0.39272012725741556, "top1_qpick": 0.3887901188359689, "q_regret": 2.0729508596951844}}
+== EVB_S2_BOSS-ALL_SHIELD_AND_SPEAR --no-value --eval-only --q-source backed --encounters SHIELD_AND_SPEAR
+{"final_val": {"rows": 11036, "policy_ce": 1.7497502909949734, "top1": 0.39066155141761016, "value_nll": 3.040178205622154, "death_ece": 0.024229373782873154, "top1_gumbel": 0.39066155141761016, "top1_qpick": 0.3854215401890147, "q_regret": 2.0870771125802032}}
+== EVB_BOSS-ALL_THE_HEART --no-value --eval-only --q-source backed --encounters THE_HEART
+{"final_val": {"rows": 16435, "policy_ce": 1.5698944311575709, "top1": 0.3617725296827354, "value_nll": 3.038776182540833, "death_ece": 0.08101145923137665, "top1_gumbel": 0.3617725296827354, "top1_qpick": 0.37422954648673196, "q_regret": 1.883129092381072}}
+== EVB_S2_BOSS-ALL_THE_HEART --no-value --eval-only --q-source backed --encounters THE_HEART
+{"final_val": {"rows": 16435, "policy_ce": 1.5697970181492806, "top1": 0.36190229027444365, "value_nll": 3.0377802473671136, "death_ece": 0.08107738196849823, "top1_gumbel": 0.36190229027444365, "top1_qpick": 0.37643547654577303, "q_regret": 1.8693407955548622}}
+T1 phase 3 done

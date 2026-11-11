@@ -1,0 +1,45 @@
+== P-V_f1 --no-value --train-frac 1 --epochs 3.0 --q-source backed
+{"final_val": {"rows": 330542, "policy_ce": 1.5539070802264794, "top1": 0.4903720984185495, "value_nll": 3.0697448750041834, "death_ece": 0.00871499627828598, "top1_gumbel": 0.49034542531357633, "top1_qpick": 0.4893691743107442, "q_regret": 1.2863256964403353}}
+== P-CQb_f1 --no-value --policy-target cq:20 --q-source backed --train-frac 1 --epochs 3.0
+{"final_val": {"rows": 330542, "policy_ce": 2.054520186493732, "top1": 0.5054326111333084, "value_nll": 3.06948729450211, "death_ece": 0.00969349592924118, "top1_gumbel": 0.5054016000206205, "top1_qpick": 0.5007491034922722, "q_regret": 1.29663952011456}}
+== N_f1 --value-weight 0.25 --train-frac 1 --epochs 3.0 --q-source backed
+{"final_val": {"rows": 330542, "policy_ce": 1.560489732968392, "top1": 0.478131001327542, "value_nll": 1.6606294114113738, "death_ece": 0.003747907027872186, "top1_gumbel": 0.4781052353473746, "top1_qpick": 0.477238530661692, "q_regret": 1.3825984845359698}}
+== P-V_f0.5 --no-value --train-frac 0.5 --epochs 6.0 --q-source backed
+{"final_val": {"rows": 330542, "policy_ce": 1.5563334343197712, "top1": 0.485129596453014, "value_nll": 3.067337980903453, "death_ece": 0.007684405893087387, "top1_gumbel": 0.4851033118429235, "top1_qpick": 0.48403362427546387, "q_regret": 1.3192489072130258}}
+== P-CQb_f0.5 --no-value --policy-target cq:20 --q-source backed --train-frac 0.5 --epochs 6.0
+{"final_val": {"rows": 330542, "policy_ce": 2.0815094267585583, "top1": 0.5024198641524997, "value_nll": 3.0686453700815037, "death_ece": 0.008139189332723618, "top1_gumbel": 0.5023922982495143, "top1_qpick": 0.49757870419594613, "q_regret": 1.3238937060253526}}
+== N_f0.5 --value-weight 0.25 --train-frac 0.5 --epochs 6.0 --q-source backed
+{"final_val": {"rows": 330542, "policy_ce": 1.563814795918194, "top1": 0.470661966566564, "value_nll": 2.1829715866348396, "death_ece": 0.00999036977529777, "top1_gumbel": 0.47063353212767944, "top1_qpick": 0.4693286421733989, "q_regret": 1.4376457214798335}}
+== P-V_f0.25 --no-value --train-frac 0.25 --epochs 12.0 --q-source backed
+{"final_val": {"rows": 330542, "policy_ce": 1.5602341720588084, "top1": 0.47883021640223233, "value_nll": 3.069483880476044, "death_ece": 0.006945159286260605, "top1_gumbel": 0.4788043986068286, "top1_qpick": 0.47796991342618994, "q_regret": 1.3834283454300125}}
+== P-CQb_f0.25 --no-value --policy-target cq:20 --q-source backed --train-frac 0.25 --epochs 12.0
+{"final_val": {"rows": 330542, "policy_ce": 2.2020049651295595, "top1": 0.4942870583989586, "value_nll": 3.0692405523187105, "death_ece": 0.00741211324930191, "top1_gumbel": 0.4942665390774267, "top1_qpick": 0.49016821803583455, "q_regret": 1.4001866519975514}}
+== N_f0.25 --value-weight 0.25 --train-frac 0.25 --epochs 12.0 --q-source backed
+{"final_val": {"rows": 330542, "policy_ce": 1.5689938961075893, "top1": 0.46061195818887185, "value_nll": 4.683534871022147, "death_ece": 0.019816133426103662, "top1_gumbel": 0.4605810465539628, "top1_qpick": 0.45886052498461516, "q_regret": 1.5313408386888374}}
+== P-CQm_f1 --no-value --policy-target cq:20 --q-source mean --epochs 3
+{"final_val": {"rows": 330542, "policy_ce": 2.090993077600011, "top1": 0.4890671117584131, "value_nll": 3.0664584767141805, "death_ece": 0.010987717658281326, "top1_gumbel": 0.4890373134087914, "top1_qpick": 0.5361712273376057, "q_regret": 1.1108865666815082}}
+== S2_P-V_f1 --no-value --epochs 3 --q-source backed --seed 20261109
+{"final_val": {"rows": 330542, "policy_ce": 1.5539506222799375, "top1": 0.48965032801886915, "value_nll": 3.0691484620631133, "death_ece": 0.008696835488080978, "top1_gumbel": 0.48962048645008716, "top1_qpick": 0.48846380621900887, "q_regret": 1.2877249558150083}}
+== S2_P-CQb_f1 --no-value --policy-target cq:20 --q-source backed --epochs 3 --seed 20261109
+{"final_val": {"rows": 330542, "policy_ce": 2.051089044402644, "top1": 0.5054003892404656, "value_nll": 3.0699243254763435, "death_ece": 0.009416773915290833, "top1_gumbel": 0.505372602466081, "top1_qpick": 0.5008135425023601, "q_regret": 1.2928588652358834}}
+== S2_N_f1 --value-weight 0.25 --epochs 3 --q-source backed --seed 20261109
+{"final_val": {"rows": 330542, "policy_ce": 1.5604959874932818, "top1": 0.47781200458839757, "value_nll": 1.6619781697811498, "death_ece": 0.003328000493783127, "top1_gumbel": 0.47778626224743936, "top1_qpick": 0.4767874575910765, "q_regret": 1.3868154041015959}}
+== EV-mean_P-V_f1 --no-value --eval-only --q-source mean
+{"final_val": {"rows": 330542, "policy_ce": 1.5539070802264794, "top1": 0.4903720984185495, "value_nll": 3.0697448750041834, "death_ece": 0.00871499627828598, "top1_gumbel": 0.49034542531357633, "top1_qpick": 0.49703097261019874, "q_regret": 1.1935818069230728}}
+== EV-mean_P-V_f0.5 --no-value --eval-only --q-source mean
+{"final_val": {"rows": 330542, "policy_ce": 1.5563334343197712, "top1": 0.485129596453014, "value_nll": 3.067337980903453, "death_ece": 0.007684405893087387, "top1_gumbel": 0.4851033118429235, "top1_qpick": 0.4926620077262373, "q_regret": 1.2235463544348382}}
+== EV-mean_P-V_f0.25 --no-value --eval-only --q-source mean
+{"final_val": {"rows": 330542, "policy_ce": 1.5602341720588084, "top1": 0.47883021640223233, "value_nll": 3.069483880476044, "death_ece": 0.006945159286260605, "top1_gumbel": 0.4788043986068286, "top1_qpick": 0.48574125804279394, "q_regret": 1.2811456496783256}}
+== EV-mean_P-CQb_f1 --no-value --eval-only --q-source mean
+{"final_val": {"rows": 330542, "policy_ce": 2.054520186493732, "top1": 0.5054326111333084, "value_nll": 3.06948729450211, "death_ece": 0.00969349592924118, "top1_gumbel": 0.5054016000206205, "top1_qpick": 0.5269242293899881, "q_regret": 1.1323734709615172}}
+== EV-mean_P-CQb_f0.5 --no-value --eval-only --q-source mean
+{"final_val": {"rows": 330542, "policy_ce": 2.0815094267585583, "top1": 0.5024198641524997, "value_nll": 3.0686453700815037, "death_ece": 0.008139189332723618, "top1_gumbel": 0.5023922982495143, "top1_qpick": 0.5233317545775862, "q_regret": 1.1589365222370127}}
+== EV-mean_P-CQb_f0.25 --no-value --eval-only --q-source mean
+{"final_val": {"rows": 330542, "policy_ce": 2.2020049651295595, "top1": 0.4942870583989586, "value_nll": 3.0692405523187105, "death_ece": 0.00741211324930191, "top1_gumbel": 0.4942665390774267, "top1_qpick": 0.5144907223935226, "q_regret": 1.2326206438700293}}
+== EV-mean_S2_P-V_f1 --no-value --eval-only --q-source mean
+{"final_val": {"rows": 330542, "policy_ce": 1.5539506222799375, "top1": 0.48965032801886915, "value_nll": 3.0691484620631133, "death_ece": 0.008696835488080978, "top1_gumbel": 0.48962048645008716, "top1_qpick": 0.49651223857899096, "q_regret": 1.1960472223032594}}
+== EV-mean_S2_P-CQb_f1 --no-value --eval-only --q-source mean
+{"final_val": {"rows": 330542, "policy_ce": 2.051089044402644, "top1": 0.5054003892404656, "value_nll": 3.0699243254763435, "death_ece": 0.009416773915290833, "top1_gumbel": 0.505372602466081, "top1_qpick": 0.5275557316888498, "q_regret": 1.12968710518467}}
+== EV-backed_P-CQm_f1 --no-value --eval-only --q-source backed
+{"final_val": {"rows": 330542, "policy_ce": 2.090993077600011, "top1": 0.4890671117584131, "value_nll": 3.0664584767141805, "death_ece": 0.010987717658281326, "top1_gumbel": 0.4890373134087914, "top1_qpick": 0.48503242893182674, "q_regret": 1.4036475340164478}}
+T1 phase 1 done

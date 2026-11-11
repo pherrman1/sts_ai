@@ -1,0 +1,76 @@
+{
+ "config": {
+  "data": "/home/philippherrmann/Documents/sts/t1/tensor",
+  "out": "/home/philippherrmann/Documents/sts/t1/out/SPEC_DONU_AND_DECA",
+  "epochs": 3.0,
+  "batch": 256,
+  "lr": 0.0003,
+  "d": 128,
+  "layers": 4,
+  "no_aux": false,
+  "no_value": true,
+  "max_steps": 0,
+  "eval_every": 2000,
+  "eval_rows": 50000,
+  "device": "cuda",
+  "seed": 20261108,
+  "init": "/home/philippherrmann/Documents/sts/t1/out/P-V_f1/model.pt",
+  "workers": 11,
+  "no_bucket": false,
+  "no_amp": false,
+  "value_weight": 1.0,
+  "train_frac": 1.0,
+  "policy_target": "visits",
+  "rooms": "",
+  "eval_only": false,
+  "encounters": "DONU_AND_DECA",
+  "q_source": "backed",
+  "params": 1268376,
+  "trainRows": 86667,
+  "valRows": 10109,
+  "gateRowsUntouched": 325876,
+  "trainRuns": 4490,
+  "valRuns": 562,
+  "steps": 1015
+ },
+ "validation": {
+  "rows": 10109,
+  "multiRows": 9718,
+  "policy_ce": 1.7607771957281269,
+  "top1": 0.39189050118349283,
+  "value_nll": 3.045791171639288,
+  "death_brier": 0.024402002279311993,
+  "death_ece": 0.016144393011927605,
+  "death_rate": 0.02492828108370304,
+  "aux_mae1": 3.4360697221090892,
+  "aux_mae2": 6.3195965852094975,
+  "top1_gumbel": 0.3918501749331138,
+  "top1_gumbel_n": 9718,
+  "top1_qpick": 0.38742539617205185,
+  "top1_qpick_n": 9718,
+  "q_regret": 1.5254888997094145,
+  "q_regret_n": 9711,
+  "by_room": {
+   "monster": {
+    "rows": 0,
+    "value_nll": 0.0,
+    "top1": 0.0
+   },
+   "elite": {
+    "rows": 0,
+    "value_nll": 0.0,
+    "top1": 0.0
+   },
+   "boss": {
+    "rows": 10109,
+    "value_nll": 3.045791171639288,
+    "top1": 0.39189050118349283
+   },
+   "other": {
+    "rows": 0,
+    "value_nll": 0.0,
+    "top1": 0.0
+   }
+  }
+ }
+}

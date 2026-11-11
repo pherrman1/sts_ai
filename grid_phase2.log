@@ -1,0 +1,67 @@
+== GEN-P-V_f1_HEXAGHOST --no-value --eval-only --q-source backed --encounters HEXAGHOST
+{"final_val": {"rows": 7145, "policy_ce": 1.3471603895258257, "top1": 0.5822242618938351, "value_nll": 3.050952114268063, "death_ece": 0.11164261400699615, "top1_gumbel": 0.5820461844318703, "top1_qpick": 0.5828108273436305, "q_regret": 0.764606990256573}}
+== SPEC_HEXAGHOST --no-value --policy-target visits --q-source backed --encounters HEXAGHOST --epochs 3
+{"final_val": {"rows": 7145, "policy_ce": 1.3454585643441037, "top1": 0.5808474835551476, "value_nll": 3.050634441015352, "death_ece": 0.1115836575627327, "top1_gumbel": 0.5806698271907019, "top1_qpick": 0.5814344701024622, "q_regret": 0.724567725091379}}
+== S2_SPEC_HEXAGHOST --no-value --policy-target visits --q-source backed --encounters HEXAGHOST --epochs 3 --seed 20261109
+{"final_val": {"rows": 7145, "policy_ce": 1.3456638941142807, "top1": 0.5800826067003213, "value_nll": 3.0492761375688855, "death_ece": 0.11145393550395966, "top1_gumbel": 0.5799051842789418, "top1_qpick": 0.5805168986083499, "q_regret": 0.7141356235365763}}
+== GEN-P-V_f1_SLIME_BOSS --no-value --eval-only --q-source backed --encounters SLIME_BOSS
+{"final_val": {"rows": 6421, "policy_ce": 1.4702441175334533, "top1": 0.5161678706570347, "value_nll": 3.0555402146490764, "death_ece": 0.03098881244659424, "top1_gumbel": 0.5162510748065349, "top1_qpick": 0.5231298366294067, "q_regret": 1.585262186367705}}
+== SPEC_SLIME_BOSS --no-value --policy-target visits --q-source backed --encounters SLIME_BOSS --epochs 3
+{"final_val": {"rows": 6421, "policy_ce": 1.4672243992419256, "top1": 0.5239078087375301, "value_nll": 3.058130325771273, "death_ece": 0.03176731616258621, "top1_gumbel": 0.5239896818572657, "top1_qpick": 0.5301805674978504, "q_regret": 1.442932727496048}}
+== S2_SPEC_SLIME_BOSS --no-value --policy-target visits --q-source backed --encounters SLIME_BOSS --epochs 3 --seed 20261109
+{"final_val": {"rows": 6421, "policy_ce": 1.467471966862371, "top1": 0.5242518059855521, "value_nll": 3.0565419763702595, "death_ece": 0.03147434443235397, "top1_gumbel": 0.5243336199484093, "top1_qpick": 0.5301805674978504, "q_regret": 1.4563837408978462}}
+== GEN-P-V_f1_THE_GUARDIAN --no-value --eval-only --q-source backed --encounters THE_GUARDIAN
+{"final_val": {"rows": 7913, "policy_ce": 1.3773032568770163, "top1": 0.5216771249286937, "value_nll": 3.0608351047129725, "death_ece": 0.0038839727640151978, "top1_gumbel": 0.5216027377727078, "top1_qpick": 0.5257379153001569, "q_regret": 1.2987647041614658}}
+== SPEC_THE_GUARDIAN --no-value --policy-target visits --q-source backed --encounters THE_GUARDIAN --epochs 3
+{"final_val": {"rows": 7913, "policy_ce": 1.3738294879125152, "top1": 0.5419281232173417, "value_nll": 3.057190219084201, "death_ece": 0.003755483776330948, "top1_gumbel": 0.5418508484243548, "top1_qpick": 0.5482675032083274, "q_regret": 1.1715521590100806}}
+== S2_SPEC_THE_GUARDIAN --no-value --policy-target visits --q-source backed --encounters THE_GUARDIAN --epochs 3 --seed 20261109
+{"final_val": {"rows": 7913, "policy_ce": 1.3739632900645453, "top1": 0.5429264118653736, "value_nll": 3.0574892550974266, "death_ece": 0.0039337798953056335, "top1_gumbel": 0.5428489947240839, "top1_qpick": 0.5462712106088693, "q_regret": 1.2172564494424498}}
+== GEN-P-V_f1_AUTOMATON --no-value --eval-only --q-source backed --encounters AUTOMATON
+{"final_val": {"rows": 5542, "policy_ce": 1.6336440860805048, "top1": 0.4428347689898199, "value_nll": 3.080089402517142, "death_ece": 0.04225682467222214, "top1_gumbel": 0.4428347689898199, "top1_qpick": 0.4442051683633516, "q_regret": 1.8524355920118487}}
+== SPEC_AUTOMATON --no-value --policy-target visits --q-source backed --encounters AUTOMATON --epochs 3
+{"final_val": {"rows": 5542, "policy_ce": 1.6331586128300581, "top1": 0.4430305403288958, "value_nll": 3.0766872266964205, "death_ece": 0.04346572235226631, "top1_gumbel": 0.4430305403288958, "top1_qpick": 0.44322631166797183, "q_regret": 1.9153023169547774}}
+== S2_SPEC_AUTOMATON --no-value --policy-target visits --q-source backed --encounters AUTOMATON --epochs 3 --seed 20261109
+{"final_val": {"rows": 5542, "policy_ce": 1.6328992492627985, "top1": 0.442443226311668, "value_nll": 3.0757085496619565, "death_ece": 0.043815311044454575, "top1_gumbel": 0.442443226311668, "top1_qpick": 0.44107282693813626, "q_regret": 1.8794339423174022}}
+== GEN-P-V_f1_CHAMP --no-value --eval-only --q-source backed --encounters CHAMP
+{"final_val": {"rows": 7337, "policy_ce": 1.4854694252019798, "top1": 0.4598788237032658, "value_nll": 3.098895029913133, "death_ece": 0.119038425385952, "top1_gumbel": 0.4598788237032658, "top1_qpick": 0.45647997635584453, "q_regret": 1.4677807487210237}}
+== SPEC_CHAMP --no-value --policy-target visits --q-source backed --encounters CHAMP --epochs 3
+{"final_val": {"rows": 7337, "policy_ce": 1.4836201014574406, "top1": 0.46445987882370326, "value_nll": 3.0968243184426965, "death_ece": 0.1203022375702858, "top1_gumbel": 0.46445987882370326, "top1_qpick": 0.46106103147628197, "q_regret": 1.3715259115859224}}
+== S2_SPEC_CHAMP --no-value --policy-target visits --q-source backed --encounters CHAMP --epochs 3 --seed 20261109
+{"final_val": {"rows": 7337, "policy_ce": 1.4834549786756674, "top1": 0.4626865671641791, "value_nll": 3.091313784691461, "death_ece": 0.11930550634860992, "top1_gumbel": 0.4626865671641791, "top1_qpick": 0.4591399438451308, "q_regret": 1.3691995751043284}}
+== GEN-P-V_f1_COLLECTOR --no-value --eval-only --q-source backed --encounters COLLECTOR
+{"final_val": {"rows": 5513, "policy_ce": 1.6616781988376523, "top1": 0.44878048780487806, "value_nll": 3.088648820472633, "death_ece": 0.03200496733188629, "top1_gumbel": 0.44878048780487806, "top1_qpick": 0.4448780487804878, "q_regret": 2.1171040713787077}}
+== SPEC_COLLECTOR --no-value --policy-target visits --q-source backed --encounters COLLECTOR --epochs 3
+{"final_val": {"rows": 5513, "policy_ce": 1.6607833817644817, "top1": 0.448, "value_nll": 3.0874621942950187, "death_ece": 0.03587106242775917, "top1_gumbel": 0.448, "top1_qpick": 0.4433170731707317, "q_regret": 2.084723229472538}}
+== S2_SPEC_COLLECTOR --no-value --policy-target visits --q-source backed --encounters COLLECTOR --epochs 3 --seed 20261109
+{"final_val": {"rows": 5513, "policy_ce": 1.6608358779535062, "top1": 0.4466341463414634, "value_nll": 3.087936393063838, "death_ece": 0.0356794036924839, "top1_gumbel": 0.4466341463414634, "top1_qpick": 0.4427317073170732, "q_regret": 2.0912161646561827}}
+== GEN-P-V_f1_AWAKENED_ONE --no-value --eval-only --q-source backed --encounters AWAKENED_ONE
+{"final_val": {"rows": 12388, "policy_ce": 1.6927378681258067, "top1": 0.37629085943500895, "value_nll": 3.0600318699295688, "death_ece": 0.038178250193595886, "top1_gumbel": 0.37629085943500895, "top1_qpick": 0.37381582316292566, "q_regret": 2.37942383797863}}
+== SPEC_AWAKENED_ONE --no-value --policy-target visits --q-source backed --encounters AWAKENED_ONE --epochs 3
+{"final_val": {"rows": 12388, "policy_ce": 1.692073761139997, "top1": 0.37919262609883075, "value_nll": 3.056885783041836, "death_ece": 0.038131218403577805, "top1_gumbel": 0.37919262609883075, "top1_qpick": 0.3772296662968337, "q_regret": 2.288397345322127}}
+== S2_SPEC_AWAKENED_ONE --no-value --policy-target visits --q-source backed --encounters AWAKENED_ONE --epochs 3 --seed 20261109
+{"final_val": {"rows": 12388, "policy_ce": 1.6924265052226966, "top1": 0.377144320218486, "value_nll": 3.0593213385291587, "death_ece": 0.038420211523771286, "top1_gumbel": 0.377144320218486, "top1_qpick": 0.37475463002475035, "q_regret": 2.309428007933048}}
+== GEN-P-V_f1_DONU_AND_DECA --no-value --eval-only --q-source backed --encounters DONU_AND_DECA
+{"final_val": {"rows": 10109, "policy_ce": 1.7607699730043476, "top1": 0.39044972728208294, "value_nll": 3.0490606007796273, "death_ece": 0.01817917264997959, "top1_gumbel": 0.39040954928997734, "top1_qpick": 0.38773410166700967, "q_regret": 1.5783622283762742}}
+== SPEC_DONU_AND_DECA --no-value --policy-target visits --q-source backed --encounters DONU_AND_DECA --epochs 3
+{"final_val": {"rows": 10109, "policy_ce": 1.7607771957281269, "top1": 0.39189050118349283, "value_nll": 3.045791171639288, "death_ece": 0.016144393011927605, "top1_gumbel": 0.3918501749331138, "top1_qpick": 0.38742539617205185, "q_regret": 1.5254888997094145}}
+== S2_SPEC_DONU_AND_DECA --no-value --policy-target visits --q-source backed --encounters DONU_AND_DECA --epochs 3 --seed 20261109
+{"final_val": {"rows": 10109, "policy_ce": 1.7609617206191153, "top1": 0.3931254502418442, "value_nll": 3.048339759222135, "death_ece": 0.01619129441678524, "top1_gumbel": 0.3930849969129451, "top1_qpick": 0.38896892364684094, "q_regret": 1.5338208899047714}}
+== GEN-P-V_f1_TIME_EATER --no-value --eval-only --q-source backed --encounters TIME_EATER
+{"final_val": {"rows": 10081, "policy_ce": 1.6447154106885773, "top1": 0.3867982099267697, "value_nll": 3.0414276561996267, "death_ece": 0.024378478527069092, "top1_gumbel": 0.38675887318214175, "top1_qpick": 0.38696226990745447, "q_regret": 1.7413209852656935}}
+== SPEC_TIME_EATER --no-value --policy-target visits --q-source backed --encounters TIME_EATER --epochs 3
+{"final_val": {"rows": 10081, "policy_ce": 1.6444080003241635, "top1": 0.3876118795768918, "value_nll": 3.0468342654963547, "death_ece": 0.023040972650051117, "top1_gumbel": 0.38757246008339263, "top1_qpick": 0.38919963388589446, "q_regret": 1.672907958065152}}
+== S2_SPEC_TIME_EATER --no-value --policy-target visits --q-source backed --encounters TIME_EATER --epochs 3 --seed 20261109
+{"final_val": {"rows": 10081, "policy_ce": 1.6444079320452336, "top1": 0.38934092758340116, "value_nll": 3.0429521970670383, "death_ece": 0.02303888276219368, "top1_gumbel": 0.3893013322485508, "top1_qpick": 0.3898098240618326, "q_regret": 1.6909469801690336}}
+== GEN-P-V_f1_SHIELD_AND_SPEAR --no-value --eval-only --q-source backed --encounters SHIELD_AND_SPEAR
+{"final_val": {"rows": 11036, "policy_ce": 1.7445861582248732, "top1": 0.39627584916253394, "value_nll": 3.048742191305019, "death_ece": 0.024444367736577988, "top1_gumbel": 0.39627584916253394, "top1_qpick": 0.39047440815944606, "q_regret": 2.037258948561918}}
+== SPEC_SHIELD_AND_SPEAR --no-value --policy-target visits --q-source backed --encounters SHIELD_AND_SPEAR --epochs 3
+{"final_val": {"rows": 11036, "policy_ce": 1.7439422650255567, "top1": 0.39337512866099, "value_nll": 3.050509025239132, "death_ece": 0.02377084642648697, "top1_gumbel": 0.39337512866099, "top1_qpick": 0.3902872649012819, "q_regret": 2.0111264260967125}}
+== S2_SPEC_SHIELD_AND_SPEAR --no-value --policy-target visits --q-source backed --encounters SHIELD_AND_SPEAR --epochs 3 --seed 20261109
+{"final_val": {"rows": 11036, "policy_ce": 1.7439605464455208, "top1": 0.3945915598390568, "value_nll": 3.049712017594407, "death_ece": 0.023487534373998642, "top1_gumbel": 0.3945915598390568, "top1_qpick": 0.3914101244502667, "q_regret": 1.9940678111043229}}
+== GEN-P-V_f1_THE_HEART --no-value --eval-only --q-source backed --encounters THE_HEART
+{"final_val": {"rows": 16435, "policy_ce": 1.5708636761113854, "top1": 0.35820411341075714, "value_nll": 3.037082998231076, "death_ece": 0.080325648188591, "top1_gumbel": 0.35820411341075714, "top1_qpick": 0.37442418737429445, "q_regret": 1.9031971835811508}}
+== SPEC_THE_HEART --no-value --policy-target visits --q-source backed --encounters THE_HEART --epochs 3
+{"final_val": {"rows": 16435, "policy_ce": 1.570178689834772, "top1": 0.36371893855835985, "value_nll": 3.0414652082526215, "death_ece": 0.08053003251552582, "top1_gumbel": 0.36371893855835985, "top1_qpick": 0.37734380068773116, "q_regret": 1.9077095992223672}}
+== S2_SPEC_THE_HEART --no-value --policy-target visits --q-source backed --encounters THE_HEART --epochs 3 --seed 20261109
+{"final_val": {"rows": 16435, "policy_ce": 1.5700333581106578, "top1": 0.36371893855835985, "value_nll": 3.0404217995370018, "death_ece": 0.08045226335525513, "top1_gumbel": 0.36371893855835985, "top1_qpick": 0.3801985337053137, "q_regret": 1.9051357651202652}}
+T1 phase 2 done

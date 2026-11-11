@@ -1,0 +1,76 @@
+{
+ "config": {
+  "data": "/home/philippherrmann/Documents/sts/t1/tensor",
+  "out": "/home/philippherrmann/Documents/sts/t1/out/SPEC_TIME_EATER",
+  "epochs": 3.0,
+  "batch": 256,
+  "lr": 0.0003,
+  "d": 128,
+  "layers": 4,
+  "no_aux": false,
+  "no_value": true,
+  "max_steps": 0,
+  "eval_every": 2000,
+  "eval_rows": 50000,
+  "device": "cuda",
+  "seed": 20261108,
+  "init": "/home/philippherrmann/Documents/sts/t1/out/P-V_f1/model.pt",
+  "workers": 11,
+  "no_bucket": false,
+  "no_amp": false,
+  "value_weight": 1.0,
+  "train_frac": 1.0,
+  "policy_target": "visits",
+  "rooms": "",
+  "eval_only": false,
+  "encounters": "TIME_EATER",
+  "q_source": "backed",
+  "params": 1268376,
+  "trainRows": 78460,
+  "valRows": 10081,
+  "gateRowsUntouched": 325876,
+  "trainRuns": 4490,
+  "valRuns": 562,
+  "steps": 919
+ },
+ "validation": {
+  "rows": 10081,
+  "multiRows": 9833,
+  "policy_ce": 1.6444080003241635,
+  "top1": 0.3876118795768918,
+  "value_nll": 3.0468342654963547,
+  "death_brier": 0.017877836618119793,
+  "death_ece": 0.023040972650051117,
+  "death_rate": 0.017756175249814987,
+  "aux_mae1": 2.985778760157955,
+  "aux_mae2": 5.759746868238363,
+  "top1_gumbel": 0.38757246008339263,
+  "top1_gumbel_n": 9833,
+  "top1_qpick": 0.38919963388589446,
+  "top1_qpick_n": 9833,
+  "q_regret": 1.672907958065152,
+  "q_regret_n": 9827,
+  "by_room": {
+   "monster": {
+    "rows": 0,
+    "value_nll": 0.0,
+    "top1": 0.0
+   },
+   "elite": {
+    "rows": 0,
+    "value_nll": 0.0,
+    "top1": 0.0
+   },
+   "boss": {
+    "rows": 10081,
+    "value_nll": 3.0468342654963547,
+    "top1": 0.3876118795768918
+   },
+   "other": {
+    "rows": 0,
+    "value_nll": 0.0,
+    "top1": 0.0
+   }
+  }
+ }
+}
