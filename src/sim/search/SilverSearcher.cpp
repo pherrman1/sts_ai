@@ -304,6 +304,7 @@ search::SilverSearcher::Node *search::SilverSearcher::allocNode() {
         n->randomnessBase = 0;
         n->stochasticAction = Action{};
         n->prior.clear();
+        n->priorNet = false;
         n->backedValue = 0;
         n->hasBackedValue = false;
         return n;
@@ -546,6 +547,13 @@ search::SilverTreeProfile::Stop search::SilverSearcher::stepImpl() {
             cur->prior = nodePrior(*cur->state, cur->edges);
             if (cur->prior.size() != cur->edges.size())
                 throw std::runtime_error("SilverSearcher: tree prior size differs from the node's edges");
+        }
+        if (nodePriorNet && cur != root && !cur->priorNet && cur->edges.size() >= 2
+                && cur->simulationCount >= treePriorNetMinVisits) {
+            cur->prior = nodePriorNet(*cur->state, cur->edges);
+            cur->priorNet = true;
+            if (cur->prior.size() != cur->edges.size())
+                throw std::runtime_error("SilverSearcher: tree prior net size differs from the node's edges");
         }
         const int selectIdx = selectBestEdgeToSearch(*cur);
         if (cur == root) currentRootEdge = selectIdx;

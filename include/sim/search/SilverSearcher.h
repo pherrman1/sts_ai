@@ -305,6 +305,7 @@ namespace sts::search {
             int outcomesGenerated = 0;
             std::uint64_t randomnessBase = 0;
             std::vector<double> prior;        // tree prior (research), indexed like edges; empty = none
+            bool priorNet = false;            // prior came from nodePriorNet (scored at treePriorNetMinVisits)
             double backedValue = 0;           // max-backup value (research, maxBackupMinVisits > 0)
             bool hasBackedValue = false;
         };
@@ -369,6 +370,12 @@ namespace sts::search {
         // prior order instead of enumeration order.
         std::function<std::vector<double>(const BattleContext &, const std::vector<Edge> &)> nodePrior;
         int treePriorMinVisits = 1;
+        // Research (Gumbel distillation T2): a second, costlier tree prior. A non-root decision node with at least
+        // treePriorNetMinVisits simulations and two or more edges is scored once more by nodePriorNet, which replaces
+        // its prior (cached; Node::priorNet). Off while nodePriorNet is empty. Needs nodePrior for selection to read
+        // node priors (selectBestEdgeToSearch's untried-edge order).
+        std::function<std::vector<double>(const BattleContext &, const std::vector<Edge> &)> nodePriorNet;
+        int treePriorNetMinVisits = 256;
         // Research (STS_SILVER_MAX_BACKUP=m, default 0 = off): selection values a child by a
         // max backup instead of its mean playout value. A decision node is worth its best
         // child with at least m simulations (its mean while none has), a chance node the
