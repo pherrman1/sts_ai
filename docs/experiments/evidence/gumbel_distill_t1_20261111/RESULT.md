@@ -1,7 +1,7 @@
 # Gumbel distillation T1: result
 
 [PREREG](PREREG.md) · data: D2 + D2b (702 units, freeze `results/FREEZE-T1.txt`, sha256 3089cacf…) · code 2abe6aa ·
-PC RTX 3060 Ti, 2026-11-11 10:20-12:56 CET · all numbers: validation split (h = 1), final checkpoint
+phase 3 = `t1_grid.sh ... 3` (added after the run, same commands as the run's grid_phase3.log) · PC RTX 3060 Ti, 2026-11-11 10:20-12:56 CET · all numbers: validation split (h = 1), final checkpoint
 (`results/eval_summary.json`, from the eval.json of each run; transfer ref ppo-xfer/t1-results 62d93426).
 
 ## Data
@@ -38,8 +38,8 @@ T0's LC-N reached 1.969.
   - P-CQb: Δ₁ 0.027 against 0.038, so DATA_SATURATING.
   - N (value NLL): Δ₁ 0.52 against 1.25, so DATA_SATURATING by the rule, with a large absolute gain from F = 0.5 to 1.
   - Overall MIXED, leaning saturating. D2c (2,560 more runs) would buy little offline.
-- The value head costs policy quality in the shared trunk again: N's backed q_regret is 1.383, against P-V's 1.286
-  (as in §771).
+- N's backed q_regret is 1.383, against P-V's 1.286. This fits §771's finding that the value head costs policy quality
+  in the shared trunk, but the two runs start from different checkpoints (N_d0_w025 vs polonly_d0), so it is confounded.
 
 ## Phase 2 and amendment 1: boss nets (backed q_regret on each boss's validation rows)
 
@@ -67,13 +67,15 @@ BOSS-ALL on all 85,566 boss validation rows scores 1.707 / 1.698.
 **Specialist rule (PREREG):** SPEC is below the generalist on both seeds by more than the generalist's S2 spread
 (0.0014). That gives **SPECIALIST_BETTER for 9 of 11 bosses**. AUTOMATON and THE_HEART get NO_SPECIALIST_GAIN.
 
-**Caveat:** the rule's threshold is too small for these sets. The specialist seed spread reaches 0.046 (THE_GUARDIAN),
+**Caveat:** SPEC and BOSS-ALL get 3 more epochs on boss rows than the generalist, so part of each gain may be extra
+training on those rows. BOSS-ALL is only a partial control for that. The rule's threshold is too small for these sets. The specialist seed spread reaches 0.046 (THE_GUARDIAN),
 and the boss validation sets have 5.5-16k rows. Gains under about 0.03 are not secured. That covers COLLECTOR SPEC,
-SHIELD_AND_SPEAR SPEC, HEXAGHOST BOSS-ALL and THE_HEART BOSS-ALL. On T0's D1 data (5-10k roots per boss), the shared
-boss net gained only 0.02-0.04, so D2's 52-158k roots per boss make the boss nets learnable.
+HEXAGHOST BOSS-ALL and THE_HEART BOSS-ALL. SHIELD_AND_SPEAR SPEC (−0.026 / −0.043) is borderline. On T0's D1 data (5-10k roots per boss), the shared
+boss net gained only 0.01-0.04, so D2's 52-158k roots per boss make the boss nets learnable.
 
 **Pattern (descriptive):**
-- Per-boss specialists win in Act 1 (HEXAGHOST, SLIME_BOSS, THE_GUARDIAN), for CHAMP and for SHIELD_AND_SPEAR.
+- Per-boss specialists win in Act 1 (HEXAGHOST, SLIME_BOSS, THE_GUARDIAN) and for CHAMP. For SHIELD_AND_SPEAR the
+  specialist is ahead (BOSS-ALL is worse than the generalist there), but the gain is borderline.
 - The shared boss net wins for COLLECTOR, AWAKENED_ONE, DONU_AND_DECA and THE_HEART.
 - TIME_EATER is a tie between the two.
 - Nothing beats the generalist on AUTOMATON.

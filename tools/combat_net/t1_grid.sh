@@ -5,6 +5,8 @@
 #     policy run's final checkpoint re-scored under the other q source.
 #   PHASE 2 GEN_ID: per-boss specialists fine-tuned from OUT/GEN_ID (P-V_f1 or P-CQb_f1, the better generalist),
 #     each next to GEN_ID evaluated on the same boss rows.
+#   PHASE 3 (PREREG amendment 1): BOSS-ALL = P-V_f1 fine-tuned on all boss rows (--rooms 2), 2 seeds, each scored per
+#     boss (EVB_*).
 # F < 1 runs train 3 / F epochs, so every run takes about as many steps as F = 1. Skips runs whose eval.json exists.
 set -euo pipefail
 DATA=$1; NCK=$2; PCK=$3; OUT=$4; PHASE=${5:-1}; GEN=${6:-}
@@ -45,6 +47,15 @@ elif [ "$PHASE" = 2 ]; then
         run "SPEC_$e" "$OUT/$GEN/model.pt" --no-value --policy-target "$T" --q-source backed --encounters "$e" --epochs 3
         run "S2_SPEC_$e" "$OUT/$GEN/model.pt" --no-value --policy-target "$T" --q-source backed --encounters "$e" \
             --epochs 3 --seed 20261109
+    done
+elif [ "$PHASE" = 3 ]; then
+    G="$OUT/P-V_f1/model.pt"
+    [ -f "$G" ] || { echo "phase 3 needs $G"; exit 2; }
+    run "BOSS-ALL" "$G" --no-value --rooms 2 --q-source backed --epochs 3
+    run "S2_BOSS-ALL" "$G" --no-value --rooms 2 --q-source backed --epochs 3 --seed 20261109
+    for e in $BOSSES; do
+        run "EVB_BOSS-ALL_$e" "$OUT/BOSS-ALL/model.pt" --no-value --eval-only --q-source backed --encounters "$e"
+        run "EVB_S2_BOSS-ALL_$e" "$OUT/S2_BOSS-ALL/model.pt" --no-value --eval-only --q-source backed --encounters "$e"
     done
 else
     echo "unknown phase $PHASE"; exit 2

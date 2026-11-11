@@ -2,7 +2,8 @@
 
 [PREREG](PREREG.md) · D1 (1,024 runs, 569,059 roots) · code d156e42 · PC RTX 3060 Ti, 2026-11-10 evening · validation
 split h = 1 (55,664 rows; boss rows 14,649), final checkpoints (`results/eval_summary.json`; value check
-`results/t0_value.json`).
+`results/t0_value.json`, the output of `t0_value_check.py` run in the cloud on D1, not on the PC, so it is not part of
+the ppo-xfer/t0-results tar).
 
 ## Data (learning curves, q_regret in Silver score units)
 
@@ -53,5 +54,5 @@ targets (mean max probability) is 0.41 for visits, 0.59 for cq:5, 0.73 for cq:20
 | BOSS-P_e11 | 1.475 / 1.481 |
 | BOSS-FT_e3 | 1.477 / 1.461 |
 
-The gains are only 0.02-0.04, about the size of the seed spread, so this is NO_SPECIALIST_GAIN. D1 is too small per
+The gains are only 0.01-0.04, about the size of the seed spread, so this is NO_SPECIALIST_GAIN. D1 is too small per
 boss. D2 and T1 then gave 52-158k roots per boss.
