@@ -1,0 +1,4 @@
+act 1 roots 690 pooled within-edge sd 13.2
+act 2 roots 691 pooled within-edge sd 13.4
+act 3 roots 356 pooled within-edge sd 21.9
+act 4 roots 99 pooled within-edge sd 30.1

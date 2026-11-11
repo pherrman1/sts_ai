@@ -1,0 +1,20 @@
+rows 330542 train 200353 test 128315
+Q ~ hp+npot                              R2 0.430 resid sd 31.85 bias +0.30  coef [53.629  0.788 16.58 ]
+Q ~ pwin,ehp,npot,hp                     R2 0.517 resid sd 29.34 bias +0.14  coef [18.564 37.29   0.53  14.228  0.332]
+score ~ pwin,ehp,npot,hp                 R2 0.585 resid sd 25.50 bias +1.33  coef [34.91  29.793  0.357 13.509  0.586]
+Q vs score corr 0.8858984074069712 mean Q-S -15.160217566118785
+per-encounter R2 0.5742497782776017 resid sd 27.539383196781653
+within-encounter R2 0.48245643935588034
+within-encounter R2 baseline hp+npot 0.3722593731535071
+within-encounter R2 rich 0.4990542465502036 resid sd 27.094220161032183
+1 0 15119 resid sd 10.7  Q sd 19.0
+1 1 12241 resid sd 15.7  Q sd 23.2
+1 2 6866 resid sd 25.9  Q sd 35.7
+2 0 17795 resid sd 17.7  Q sd 30.1
+2 1 10415 resid sd 26.4  Q sd 39.5
+2 2 6852 resid sd 31.4  Q sd 44.0
+3 0 18910 resid sd 22.7  Q sd 33.6
+3 1 12561 resid sd 32.3  Q sd 45.4
+3 2 13123 resid sd 39.5  Q sd 53.4
+4 1 4300 resid sd 35.3  Q sd 49.0
+4 2 6701 resid sd 49.1  Q sd 56.6
