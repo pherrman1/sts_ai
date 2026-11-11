@@ -144,8 +144,8 @@ Data, scripts and tables: [step 0 evidence](../../../experiments/evidence/cheap_
 - **Why:** 350-415 s per Act-4 run exceeds the whole target and the 4-minute game limit. Which part carries the
   +3 pp (Heart at 40k, the 262,144 reuse cap, prior playouts at Shield and Spear) is not separated.
 - **Experiment E2:** fixed-state copies (`selffights` / `expertfights`) on the Heart and Shield-and-Spear entry
-  states of §775's G16 games (495 Heart arrivals), Heart at 4k / 8k / 16k / 40k, with greedy playouts if Track 0 passed (with prior playouts otherwise)
-  passed. Metric: kills per arrival and CPU per fight.
+  states of §775's G16 games (495 Heart arrivals), Heart at 4k / 8k / 16k / 40k, with greedy playouts if Track 0
+  passed (prior playouts otherwise). Metric: kills per arrival and CPU per fight.
 - **Cost:** about 100-150 lane-h (the 40k arm dominates; it can reuse §775's own outcome as a descriptive
   reference to halve this). No new seeds.
 - **Decision rule:** the cheapest setting within 2 pp kills per arrival of the 40k arm becomes the Act 4 setting
