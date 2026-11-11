@@ -75,6 +75,7 @@ graph TD
 - [Variance reduction](ooc/variance-reduction.md) — rollout noise sources, CRN coupling, unbiased estimators (#883)
 - [Root quality](ooc/root-quality.md) — definitions of action gap Δ, relative bias B_rel, search variance σ, coverage q; identifiable pooled estimands
 - [One-year roadmap](one-year-roadmap.md) — 2026-11 to 2027-10 plan on 200 cores + one 8 GB GPU: phases ranked by Heart-kill gain per compute, first experiments X1-X7
+- [Cheap combat roadmap](combat-search/cheap-combat-roadmap.md) — keeping the Gumbel teacher's about 40% Heart at a PPO-sized CPU budget (about 100-140 s per run): what the evidence prices, ranked tracks, cheapest first experiment
 - [A20 PPO plan](a20-ppo-plan.md) — our own heart1-style A20 PPO in this engine: what the original did, what is missing, improvements, staged plan with a cheap first gate
 - [PPO and combat-leaf literature](ppo-and-combat-leaf-literature.md) — evidence on the PPO plan's choices and on a run-aware Silver leaf; ranked A/B-gated experiments
 - [A20 loss mining](a20-loss-mining.md) — where production A20 runs die, exchange rates (HP, potions) at bosses, ranked structural gaps with gates
