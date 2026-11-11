@@ -22,7 +22,8 @@ that 100 PPO iterations fit in about 10 hours.
   run. **Measured** ([step 0](../../../experiments/evidence/cheap_combat_step0_20261111/README.md)).
 - **New rank 1: G16 + mb4 with greedy playouts everywhere** (`STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE=0`, an existing
   flag, no code change). **Inference:** about 130-200 s per run, if boss simulations then cost 2-4× a hallway one;
-  its Heart rate is the open question (section "Track 0").
+  its Heart rate is the open question (section "Track 0"). **Result (§TBD, 2026-11-11):** WORSE, Heart 35.7% vs
+  41.2% (−5.5 pp [−8.1, −2.9]) at 0.27× the CPU (143 s per run); still the best Heart rate per CPU found so far.
 - **The narrow Gumbel root is demoted.** Roots have 6.3 legal actions on average, so k 16 already searches almost
   all of them; the distilled net's top 4 holds the teacher's pick in 91.9% of roots (g7f_E 88.6%), below the
   95% rule. **Measured.**
@@ -80,7 +81,7 @@ What did not work as a cheaper substitute (**Measured**):
 | net root prior at 4k-10k (§773) | NO_GAIN |
 | distilled net as tree and wide-root prior at 16k (§788) | −1.4 pp, NOT_SHOWN |
 | tuned tree constants c2 (§777), reuse cap up or down (§780, §785) | −4.7, −2.9, −2.7 pp |
-| value head as Q-init or leaf (distillation thread, calibration 2026-11-11, ledger entry pending) | not run: net error 11-49 HP vs rollout noise 13-30 HP per rollout |
+| value head as Q-init or leaf (distillation thread, calibration 2026-11-11, §789) | not run: net error 11-49 HP vs rollout noise 13-30 HP per rollout |
 
 Two numbers bound the net-based options:
 
@@ -127,12 +128,16 @@ Data, scripts and tables: [step 0 evidence](../../../experiments/evidence/cheap_
   score [−0.87, +26.57], 7.29× CPU per fight); the run-level effect was never gated.
 - **Smoke first (needs a go; about 0.5 lane-h):** replay 4 of §775's seeds that reach the Heart with the flag at 0,
   to measure µs per boss simulation and CPU per run. It turns the 130-200 s estimate into a number.
-- **Experiment E0:** GG16 = §775's G16 + mb4 with `STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE=0`, on §775's 1,024 seeds,
+- **Experiment E0:** GP16 = §775's G16 + mb4 with `STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE=0`, on §775's 1,024 seeds,
   G16 reused after a 32-seed sentinel (ADR-0064), SPRT nonregression with a 3 pp margin, CPU co-primary.
 - **Cost:** about 1,024 × 150-200 s ≈ 45-60 lane-h, about 1.5 h on 40 workers. No new seeds, no code change.
-- **Decision rule:** GG16 within 3 pp of G16 at ≤ 0.4× CPU → GG16 is the cheap-combat candidate, then Track 2
-  on top. Worse by more than 3 pp → spend the saved CPU as boss budget instead (GG16 with bosses and Act 4 at
+- **Decision rule:** GP16 within 3 pp of G16 at ≤ 0.4× CPU → GP16 is the cheap-combat candidate, then Track 2
+  on top. Worse by more than 3 pp → spend the saved CPU as boss budget instead (GP16 with bosses and Act 4 at
   64k greedy, about equal CPU to today, as a follow-up arm), or keep prior playouts only at the Heart.
+- **Result (§TBD):** WORSE, −5.47 pp [−8.11, −2.93] at 0.27× CPU; about half of the loss is the Act-4 conversion
+  ([RESULT](../../../experiments/evidence/greedy_playouts_g16_20261111/RESULT.md)). Next: per-encounter budgets
+  (prior playouts and simulations per encounter class; Philipp's go 2026-11-11 23:43 CET) and the narrow root on
+  G16 (Philipp's choice, 23:47 CET).
 
 ### Track 1. Narrow Gumbel root (demoted by step 0)
 

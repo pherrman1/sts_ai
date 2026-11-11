@@ -27254,7 +27254,7 @@ Act-4 reach −2.93 pp [−5.37, −0.49]. CPU per run **0.280×** [0.270, 0.291
 Act 3 143 → 140, Act 4 82 → 108.
 **Interpretation (Inference):** prior playouts are worth about 5 pp of Heart kills at 16k, about half of it in the
 Act-4 conversion, and cost about three quarters of G16's CPU. GP16 is still the best Heart rate per CPU found so far
-(§781: G8S 31.6% at 166 s, G1S 24.4% at 137 s) and sits at the PPO loop's per-run ceiling (about 138 s).
+(§779/§781: G8 31.6% at 166 s, G8S 34.4% at 315 s, G1S 24.4% at 137 s) and sits at the PPO loop's per-run ceiling (about 138 s).
 **Decision:** WORSE. No default change. GP16 becomes the cheap base for per-encounter budgets (prior playouts and
 simulations per encounter class; Philipp's go 2026-11-11 23:43 CET).
 Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 44.7 lane-hours.

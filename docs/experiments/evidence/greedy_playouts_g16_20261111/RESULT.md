@@ -44,7 +44,7 @@ PASS). Launched about 23:15 CET on 40 workers; last unit started 23:37 CET, all 
 
 Prior playouts in boss rooms and Act 4 are worth about 5 pp of Heart kills at 16k, more than §541's fight-level
 evidence implied, and they cost about 3/4 of G16's CPU. GP16 is still the best point found so far for its cost: 35.7%
-at 143 s per run, against §781's budget curve (G8S 31.6% at 166 s, G1S 24.4% at 137 s) and +4.1 pp over D at 0.57× its
+at 143 s per run, against the budget curves of §779/§781 (G8 31.6% at 166 s, G8S 34.4% at 315 s, G1S 24.4% at 137 s) and +4.1 pp over D at 0.57× its
 CPU. Its longest game (587 s) is 5× shorter than G16's (3,036 s), which matters for the PPO loop's
 slowest-game constraint. The prior playouts' value is concentrated where few simulations are spent per run: a
 per-encounter budget (prior playouts and simulation count per encounter class) is the natural next step.
