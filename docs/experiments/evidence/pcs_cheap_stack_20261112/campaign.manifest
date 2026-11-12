@@ -1,0 +1,11 @@
+name          pcs-cheap
+code_commit   3c85fb26c82f32ee9763ba512ab5b173facd6eac
+binary_sha256 ca8d9d0bdf6f690de19d0e6e6e4b693a3b90f58ca46a9cd82ad53e6a2335b689
+workers       40
+share         /mnt/project-files/pcs-cheap
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 90
+claim_settle_seconds 60
+input net-0420.bin /mnt/project-files/ppo-long-c/nets/net-0420.bin 8c0bd16c31499270f192666919e0a11e1d6ca57e2d7a188b6d2a019f3ac742d2
