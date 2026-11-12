@@ -54,8 +54,11 @@ so that the value lost to a strong reference search is smaller than with a unifo
   - M1: gradient-boosted trees on the root statistics of search_gain.py's B0 (+ encounter);
   - M2: the CombatNet trunk (init T1 N_f1) with a 6 × 2 head on [CLS, the same statistics] (search_gain.py
     extended), trained on the PC GPU.
-- **Policy.** b*(x) = argmin_b loss_hat_b(x) + λ · cpu_hat_b(x), λ by bisection on the training folds so that the
-  mean predicted CPU equals the target.
+- **Predictions.** Predicted losses are made non-increasing in the budget (cumulative minimum over b); predicted
+  CPU is exp(the log-CPU prediction) times Duan's smearing factor from the training rows, so it estimates mean CPU.
+- **Policy.** b*(x) = argmin_b loss_hat_b(x) + λ · cpu_hat_b(x), λ by bisection so that the mean predicted CPU of the
+  out-of-fold predictions equals the target (predictions only, no realized outcome). If no λ reaches the target, the
+  policy at the smallest λ is scored at its realized CPU.
 - **Targets.** The mean CPU of uniform 2k, 4k and 8k.
 - **Primary contrast.** Per root, the policy's realized loss minus the uniform frontier's loss at the policy's
   realized mean CPU (the lower convex hull of the 6 uniform budgets, linearly interpolated), in Q units. Run-clustered
