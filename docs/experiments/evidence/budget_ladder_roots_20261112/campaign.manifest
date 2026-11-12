@@ -1,0 +1,11 @@
+name          budget-ladder-roots
+code_commit   a352f45dd9e29643d3346af5970ff423b099f76e
+binary_sha256 854b4c437ea417eb20974785ebff20dd28ca071350e87423dab5afbffc55f58c
+workers       40
+share         /mnt/project-files/budget-ladder-roots
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 90
+claim_settle_seconds 60
+input net-0420.bin /mnt/project-files/ppo-long-c/nets/net-0420.bin 8c0bd16c31499270f192666919e0a11e1d6ca57e2d7a188b6d2a019f3ac742d2

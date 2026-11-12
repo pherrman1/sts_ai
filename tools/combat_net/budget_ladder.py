@@ -13,6 +13,8 @@ Per usable root (multi-edge, root prior, every ladder pick matched, every scored
 Models, cross-fitted over 5 folds by run (fold = train.split_of(seed) % 5): M0 uniform (per-budget constants); M1
 gradient-boosted trees on search_gain.py's root statistics; M2 the CombatNet trunk (init --init) with a head on
 [CLS, statistics] predicting loss_b (Huber, scaled) and log cpu_b (MSE) for every b > 0 (loss only for b = 0).
+Predicted losses are made non-increasing in the budget (cumulative minimum); predicted CPU is exp(log-CPU prediction)
+times Duan's smearing factor from the training rows, so it estimates mean CPU.
 Policy: b*(x) = argmin_b loss_hat_b + lam * cpu_hat_b, lam by bisection so that the mean predicted CPU equals the
 target (predictions only, no realized outcome). Targets: the mean CPU of uniform 2k / 4k / 8k.
 Contrast per root: the policy's realized loss minus the uniform frontier at the policy's realized mean CPU, i.e. the
@@ -142,10 +144,21 @@ def fit_m1(X, loss, cpu, tr, te):
         lh[:, b] = HistGradientBoostingRegressor(max_iter=200, learning_rate=0.05, categorical_features=cat,
                                                  random_state=0).fit(X[tr], loss[tr, b]).predict(X[te])
         if b > 0:
+            y = np.log(cpu[tr, b] + 1e-4)
             m = HistGradientBoostingRegressor(max_iter=200, learning_rate=0.05, categorical_features=cat,
-                                              random_state=0).fit(X[tr], np.log(cpu[tr, b] + 1e-4))
-            ch[:, b] = np.exp(m.predict(X[te]))
-    return lh, ch
+                                              random_state=0).fit(X[tr], y)
+            ch[:, b] = np.exp(m.predict(X[te])) * smear(y, m.predict(X[tr]))
+    return monotone(lh), ch
+
+
+def smear(y, yhat):
+    """Duan's smearing factor: E[cpu] = exp(log-cpu prediction) * mean(exp(training residual))."""
+    return float(np.mean(np.exp(y - yhat)))
+
+
+def monotone(lh):
+    """More simulations never lose in expectation: the predicted loss is made non-increasing in the budget."""
+    return np.minimum.accumulate(lh, axis=1)
 
 
 def fit_m2(A, rows, X, loss, cpu, tr, te, args):
@@ -206,15 +219,23 @@ def fit_m2(A, rows, X, loss, cpu, tr, te, args):
             step += 1
     base.eval()
     head.eval()
-    lh, ch = np.zeros((len(te), B)), np.zeros((len(te), B))
-    order = np.argsort(rows[te], kind="stable")
-    with torch.no_grad():
-        for s in range(0, len(te), 512):
-            idx = order[s:s + 512]
-            out = fwd(te[idx]).cpu().numpy()
-            lh[idx] = out[:, :B] * lscale
-            ch[idx, 1:] = np.exp(out[:, B + 1:])
-    return lh, ch
+
+    def predict(idx_rows):
+        out_all = np.zeros((len(idx_rows), 2 * B))
+        order = np.argsort(rows[idx_rows], kind="stable")
+        with torch.no_grad():
+            for s in range(0, len(idx_rows), 512):
+                idx = order[s:s + 512]
+                out_all[idx] = fwd(idx_rows[idx]).cpu().numpy()
+        return out_all
+
+    sm = tr if len(tr) <= 20000 else np.sort(rng.choice(tr, 20000, replace=False))
+    o_tr = predict(sm)
+    out = predict(te)
+    lh, ch = out[:, :B] * lscale, np.zeros((len(te), B))
+    for b in range(1, B):
+        ch[:, b] = np.exp(out[:, B + b]) * smear(np.log(cpu[sm, b] + 1e-4), o_tr[:, B + b])
+    return monotone(lh), ch
 
 
 def analyze(A, args):
@@ -222,6 +243,8 @@ def analyze(A, args):
     rows, loss, cpu, X, dropped, budgets = ladder_labels(A)
     seeds = np.asarray(A.a["seed"])[rows]
     fold = (split_of(seeds) % FOLDS).astype(int)
+    if args.smoke_folds:   # pipeline smoke on one run only: folds by root (never for the PREREG analysis)
+        fold = np.arange(len(rows)) % FOLDS
     rng = np.random.default_rng(20261112)
     ucpu, uloss = cpu.mean(0), loss.mean(0)
     res = {"roots": int(len(rows)), "runs": int(len(np.unique(seeds))), "dropped": dropped, "budgets": budgets,
@@ -283,6 +306,7 @@ def main(argv):
     ap.add_argument("--device", default="cuda")
     ap.add_argument("--seed", type=int, default=20261112)
     ap.add_argument("--selftest", action="store_true")
+    ap.add_argument("--smoke-folds", action="store_true", help="folds by root, for a one-run pipeline smoke only")
     args = ap.parse_args(argv)
     if args.selftest:
         return selftest()
