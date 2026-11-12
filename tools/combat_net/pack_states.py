@@ -14,7 +14,8 @@ One output row per searched root (rows with "skipped": true, one-action roots, a
   value    - the fight's real outcome: won, endHp, preHp, preMaxHp (from the fight row), and the fight's own
              Silver end score `score`
   (Gumbel-root rows of STS_AZGEN_GUMBEL_ROOT also carry each edge's root `prior` and the row's `gumbelChoice`;
-  max-backup rows add each edge's `qBacked` and the row's `rootQBacked`.)
+  max-backup rows add each edge's `qBacked` and the row's `rootQBacked`; STS_AZGEN_BUDGET_LADDER rows add `ladder`
+  and `mainCpu`.)
   aux      - realized HP loss (HP now minus HP at the first root of a later turn, or the fight's end HP when the fight
              ends first) to turn+1 and turn+2: the plan's "incoming damage" heads, measured on the played line
 
@@ -118,6 +119,9 @@ def main(argv):
                         row["gumbelChoice"] = r["gumbelChoice"]
                     if "rootQBacked" in r:   # max-backup rows (D2, STS_AZGEN_WHOLE_RUN_GUMBEL)
                         row["rootQBacked"] = r["rootQBacked"]
+                    if "ladder" in r:   # STS_AZGEN_BUDGET_LADDER rows (learned budget per decision)
+                        row["ladder"] = r["ladder"]
+                        row["mainCpu"] = r.get("mainCpu")
                     out.write(json.dumps(row, separators=(",", ":")) + "\n")
                     counts["rows"] += 1
                     counts["multiEdgeRows"] += len(edges) > 1

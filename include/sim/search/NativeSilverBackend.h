@@ -292,6 +292,12 @@ namespace sts::search {
         // value; -1 visits-free edges carry no value). Filled only while an observer is set (research).
         struct PreEdge { std::uint64_t bits; std::int64_t visits; double q; };
         const std::vector<PreEdge> *preEdges = nullptr;
+        // Research only (g_nativeSilverBudgetLadder): one fresh Gumbel root search of this root per ladder budget,
+        // after the played search; `edge` indexes the played searcher's root edges (-1 = no match). `mainCpu` is the
+        // played search's thread CPU seconds. Empty when the ladder is off or the root was not searched.
+        struct LadderPick { std::int64_t budget; int edge; std::int64_t sims; double cpu; };
+        const std::vector<LadderPick> *ladder = nullptr;
+        double mainCpu = -1;
     };
     extern thread_local std::function<void(const NativeSilverRootView &)> g_nativeSilverRootObserver;
     extern thread_local SilverLeafSamples *g_nativeSilverLeafSamples;
@@ -300,6 +306,12 @@ namespace sts::search {
     // retained graph, rerooted along the played path, the same flat budget); the root view carries it.
     // The played action still comes from the head's search. Requires a flat budget. Default off.
     extern thread_local bool g_nativeSilverLabelSearch;
+    // Research-only (silverazgen STS_AZGEN_BUDGET_LADDER, learned budget per decision): when non-empty, every searched
+    // multi-edge root of a whole-run Gumbel fight (STS_SILVER_GUMBEL_ROOT) is searched again once per budget here,
+    // each time by a fresh searcher configured as the played one (no leaf samples, no outcome capture) with its own
+    // Gumbel seed; the root view carries the picks. The played search, its tree and every RNG it reads are unchanged,
+    // so play is bit-identical with the ladder on or off. Default empty (off).
+    extern thread_local std::vector<std::int64_t> g_nativeSilverBudgetLadder;
     // Research-only (ctmsilvergen rootdist): when set, every search records its
     // simulation endpoints here (SilverSearcher::outcomes). Default off.
     extern thread_local SilverOutcomeCapture *g_nativeSilverOutcomeCapture;

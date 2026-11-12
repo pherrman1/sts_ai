@@ -60,6 +60,13 @@
 // the node's backed value once it has M simulations, else its mean) and the row `rootQBacked`, the root's; `q`
 // stays the mean playout value.
 //
+// STS_AZGEN_BUDGET_LADDER=b1,b2,... (silverazgen only, default off; requires STS_AZGEN_WHOLE_RUN_GUMBEL=1; budgets
+// 1..1,000,000 in strictly increasing order) is the learned-budget-per-decision data (2026-11-12): after the played
+// search of every searched multi-edge root, the root is searched once more per budget by a fresh searcher configured
+// as the played one, with its own Gumbel seed (g_nativeSilverBudgetLadder). The root row adds `ladder`, one entry per
+// budget: {budget, edge (the pick as an index into the row's edges, -1 if unmatched), sims, cpu (thread seconds)},
+// and `mainCpu`, the played search's thread seconds. Play is bit-identical with the ladder on or off.
+//
 // silverazfocusgen is silverazgen for one encounter (fight-specific prior data,
 // /mnt/project-files/silver-prior-fight-specific/): the run plays every other
 // fight unrecorded at OTHER_SIMS with the same prior, and at the first fight of
@@ -166,6 +173,28 @@ int wholeRunGumbelK() {
     const int k = positiveEnvInt("STS_SILVER_GUMBEL_ROOT");
     if (k == 0) throw std::runtime_error("STS_AZGEN_WHOLE_RUN_GUMBEL=1 requires STS_SILVER_GUMBEL_ROOT > 0");
     return k;
+}
+
+// STS_AZGEN_BUDGET_LADDER: unset or empty = off; else a comma list of strictly increasing budgets.
+std::vector<std::int64_t> budgetLadder() {
+    const char *v = std::getenv("STS_AZGEN_BUDGET_LADDER");
+    std::vector<std::int64_t> out;
+    if (!v || !*v) return out;
+    std::stringstream ss(v);
+    std::string item;
+    while (std::getline(ss, item, ',')) {
+        std::size_t used = 0;
+        long long b = 0;
+        try {
+            b = std::stoll(item, &used);
+        } catch (const std::exception &) {
+            used = 0;
+        }
+        if (used != item.size() || b < 1 || b > 1000000 || (!out.empty() && b <= out.back()))
+            throw std::runtime_error("STS_AZGEN_BUDGET_LADDER must be strictly increasing budgets in 1..1000000");
+        out.push_back(b);
+    }
+    return out;
 }
 
 // Deterministic draws for the perturbation; never touches game RNG.
@@ -403,6 +432,13 @@ struct FightRecorder {
                 edges[i]["prior"] = known ? nlohmann::json(prior[i]) : nlohmann::json(nullptr);
             row["gumbelChoice"] = searcher.lastGumbelEdge();
         }
+        if (view.ladder) {
+            nlohmann::json lad = nlohmann::json::array();
+            for (const auto &p : *view.ladder)
+                lad.push_back({{"budget", p.budget}, {"edge", p.edge}, {"sims", p.sims}, {"cpu", p.cpu}});
+            row["ladder"] = lad;
+            row["mainCpu"] = view.mainCpu;
+        }
         try {
             row["wire"] = wireJson(state, context);
         } catch (const std::exception &e) {
@@ -471,6 +507,7 @@ struct AzPrior {
     bool labelSearch = false;  // STS_AZGEN_LABEL_SEARCH: a production label search per root
     int gumbelK = 0;           // STS_AZGEN_GUMBEL_ROOT: 0 = off
     int wholeRunGumbelK = 0;   // STS_AZGEN_WHOLE_RUN_GUMBEL: STS_SILVER_GUMBEL_ROOT's K (0 = off), no override
+    std::vector<std::int64_t> ladder;   // STS_AZGEN_BUDGET_LADDER: empty = off
 };
 
 // silverazfocusgen: record only `target`, then end the run.
@@ -514,6 +551,7 @@ SeedResult runSynthSeed(std::uint64_t seed, int sims, int asc, const std::string
             search::g_nativeSilverRootPriorBonusOff = false;
             search::g_nativeSilverLabelSearch = false;
             search::g_nativeSilverGumbelRootOverride.reset();
+            search::g_nativeSilverBudgetLadder.clear();
         }
     } hooks;
     if (az && !az->production) {
@@ -523,6 +561,7 @@ SeedResult runSynthSeed(std::uint64_t seed, int sims, int asc, const std::string
         search::g_nativeSilverRootPriorBonusOff = !az->rootBonus;
     }
     if (az && az->labelSearch) search::g_nativeSilverLabelSearch = true;
+    if (az) search::g_nativeSilverBudgetLadder = az->ladder;
     if (az && az->gumbelK > 0) {
         // Every fight of the run (recorded or not) plays the Gumbel root.
         search::SilverSearcher::GumbelRoot g;
@@ -777,6 +816,10 @@ void silverAzRun(int nSeeds, int sims, int asc, const std::string &outPrefix, lo
         throw std::runtime_error("silverazgen: STS_AZGEN_WHOLE_RUN_GUMBEL requires STS_AZGEN_PRODUCTION_COMBAT=1, no"
                                  " STS_AZGEN_GUMBEL_ROOT, no STS_AZGEN_LABEL_SEARCH and is silverazgen only");
     const int wholeRunMb = wholeRunK > 0 ? positiveEnvInt("STS_SILVER_GUMBEL_ROOT_MAX_BACKUP") : 0;
+    const std::vector<std::int64_t> ladder = budgetLadder();
+    if (!ladder.empty() && (wholeRunK == 0 || focus))
+        throw std::runtime_error("silverazgen: STS_AZGEN_BUDGET_LADDER requires STS_AZGEN_WHOLE_RUN_GUMBEL=1 and is"
+                                 " silverazgen only");
     const std::string priorPath = search::nativeSilverRootPriorPath();
     search::CombatValueNet prior;
     if (priorPath.empty() || !prior.load(priorPath) || !prior.isPolicyMlp)
@@ -793,8 +836,9 @@ void silverAzRun(int nSeeds, int sims, int asc, const std::string &outPrefix, lo
         + "-rb" + std::to_string(rootBonus) + (prodCombat ? "-prod" : "") + (label ? "-headplay" : "")
         + (gumbelK > 0 ? "-gsh" + std::to_string(gumbelK) : "")
         + (wholeRunK > 0 ? "-wrg" + std::to_string(wholeRunK) + "mb" + std::to_string(wholeRunMb) : "")
+        + (ladder.empty() ? "" : "-lad" + std::to_string(ladder.size()))
         + "-" + priorSha.substr(0, 8);
-    const AzPrior az{treeMinVisits, rootBonus == 1, prodCombat, label, gumbelK, wholeRunK};
+    const AzPrior az{treeMinVisits, rootBonus == 1, prodCombat, label, gumbelK, wholeRunK, ladder};
     // Under the self-play overrides Silver plays no prior playouts (NativeSilverBackend skips them).
     nlohmann::json silverLeaf = effectiveSilverLeafSpecification();
     if (!prodCombat && silverLeaf.contains("prior_playout_rooms")) silverLeaf["prior_playout_rooms"] = "none";
@@ -859,6 +903,11 @@ void silverAzRun(int nSeeds, int sims, int asc, const std::string &outPrefix, lo
                                   {"rows", "edges[].prior = root prior; gumbelChoice = the Gumbel pick's edge; "
                                            "edges[].qBacked / rootQBacked = max-backed values when maxBackup > 0"}};
     }
+    if (!ladder.empty())
+        manifest["budgetLadder"] = {{"budgets", ladder},
+                                    {"rows", "ladder[] = {budget, edge, sims, cpu}: a fresh Gumbel root search of the"
+                                             " root per budget after the played one; mainCpu = the played search's"
+                                             " thread seconds"}};
     std::ofstream mf(manifestPath);
     if (!mf) throw std::runtime_error("silverazgen: cannot write manifest");
     mf << manifest.dump(2) << '\n';
