@@ -43,8 +43,16 @@ so that the value lost to a strong reference search is smaller than with a unifo
 
 ## Analysis (frozen with this file, run after the data; PC GPU)
 
+- **Units that count (review K, F2).** Only units whose `.done` line has rc 0 and that `verify_campaign.py` lists as
+  OK are packed (pack_states.py → tensorize.py). Every other unit is listed as a drop with its seed and rc and is not
+  packed, even when it left a partial jsonl. If more than 20 of the 256 runs are dropped, the result is INCOMPLETE:
+  the analysis is still run and reported, but no GAIN can be declared from it, and a re-run of the dropped seeds
+  needs a new go.
+
 - **Rows.** Searched multi-edge Gumbel roots with a root prior whose ladder has all 5 picks matched (pick edge ≥ 0)
-  and whose picked edges all have a finite max-backed Q in the played tree. Dropped rows are counted by reason.
+  and whose picked edges all have a finite max-backed Q in the played tree. Dropped rows are counted by reason, and the
+  unmatched and unvisited-pick drops are reported per budget, per room class and per rerooted / fresh root (review K,
+  R4).
 - **Loss per root and budget.** loss_b = Q_ref(best) − Q_ref(pick_b), with Q_ref the played tree's max-backed Q and
   best its maximum over visited edges; loss_0 uses the prior's top action. CPU_b = the ladder search's CPU
   (CPU_0 = 0).

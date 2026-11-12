@@ -38,6 +38,6 @@ if [ "$rc" = 0 ]; then
   grep -qF "Act 4 strong (S&S 10k prior playouts, Heart 40k)" "$base.log" || rc=97
   grep -qF "[heart1] loaded $RUN/net-0420.bin " "$base.log" || rc=96
 fi
-echo "tag=$VARIANT-$FIRST rc=$rc roots=$(grep -o 'roots=[0-9]*' "$base.log" 2>/dev/null | tail -1) start=$start end=$(date -u +%FT%TZ)" > "$base.done"
+echo "tag=$VARIANT-$FIRST rc=$rc roots=$(grep -o ' roots=[0-9]*' "$base.log" 2>/dev/null | tail -1 | cut -d= -f2) start=$start end=$(date -u +%FT%TZ)" > "$base.done"
 case $rc in 137|143) exit 3 ;; esac
 exit 0

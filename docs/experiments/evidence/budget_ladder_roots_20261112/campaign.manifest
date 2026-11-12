@@ -1,6 +1,6 @@
 name          budget-ladder-roots
-code_commit   a352f45dd9e29643d3346af5970ff423b099f76e
-binary_sha256 854b4c437ea417eb20974785ebff20dd28ca071350e87423dab5afbffc55f58c
+code_commit   96f49f3cb7de1170a00867c02bdb1c30864f299b
+binary_sha256 331bb7dbb00cf336ab0c38379aa2e999c081788219e073746becfc8f2dc33487
 workers       40
 share         /mnt/project-files/budget-ladder-roots
 configure_preset linux-gcc-release-x86-64-v3

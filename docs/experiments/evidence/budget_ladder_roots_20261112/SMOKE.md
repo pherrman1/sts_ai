@@ -1,6 +1,9 @@
-# Budget ladder per root: smoke (2026-11-12, cloud container, binary 854b4c43 = code a352f45d)
+# Budget ladder per root: smoke (2026-11-12, cloud container)
 
-Seeds 111959990 and 111959991 (D2's smoke block; smoke data only, not used in any analysis). Environment
+First round: binary 854b4c43 = code a352f45d. Second round after review K's F1: binary 331bb7db = code 96f49f3c.
+
+First round on seeds 111959990 and 111959991 (D2's smoke block), second round on this campaign's smoke seeds
+111989990 and 111989991 (review K's seeds). Smoke data only, not used in any analysis. Environment
 [record_env.sh](record_env.sh) apart from the ladder list where stated.
 
 ## Main line bit-identical with the ladder on or off
@@ -15,9 +18,21 @@ Seeds 111959990 and 111959991 (D2's smoke block; smoke data only, not used in an
 
 - First build: 305 of 2,868 picks (10.6 %) did not match a root edge by action bits, since the played root is a
   rerooted tree whose hand can name an equivalent card copy differently.
-- Fixed in a352f45d: both the pick and the played root's edges are translated to the live state
-  (`SilverSearcher::translateAction`) before matching. Now 86 of 3,585 picks (2.4 %) stay unmatched; their roots are
-  dropped and counted (`ladder_unmatched`, 28 of 717 roots on this seed).
+- a352f45d translated both the pick and the played root's edges to the live state (`SilverSearcher::translateAction`)
+  before matching: 86 of 3,585 picks (2.4 %) stayed unmatched on 111959990, but review K found 10.9 % and 12.1 % on
+  111989990 / 111989991, all on rerooted roots (about 20 % of them): the rerooted tree and the fresh search can
+  expand different copies of the same card, so translated bits still differ.
+- Fixed in 96f49f3c (review K, F1): after an exact-bits pass, a pick matches the first played-root edge that is the
+  same choice up to search-equivalent copies on the live state (`SilverSearcher::actionsEquivalentOn`: same card
+  play and target, or the same single-card selection from the same pile, of two cards equivalent for search).
+
+| seed | ladder roots (rerooted / fresh) | picks unmatched | roots with any unmatched pick |
+|---|---|---|---|
+| 111989990 | 152 (126 / 26) | 0 / 760 | 0 |
+| 111989991 | 89 (79 / 10) | 0 / 445 | 0 |
+
+  With 96f49f3c, seed 111989990 with the ladder on vs off: 192 / 192 rows identical (after removing `ladder`,
+  `mainCpu` and the `-lad5` teacherId suffix).
 
 ## Cost
 
