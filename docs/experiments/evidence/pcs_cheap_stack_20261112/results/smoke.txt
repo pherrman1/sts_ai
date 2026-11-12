@@ -1,0 +1,12 @@
+Smoke, 2026-11-12 ~17:34 CET, local cloud container, binary ca8d9d0b (sha256 ca8d9d0bdf6f690d...), run_unit.sh of this
+campaign (repo at origin/main 18b67085; same build inputs as code 3c85fb26). Games not used in the gate.
+
+1. Identity: H4 on 111378263 (flag unset) vs encounter_budget_wholerun_20261112's H4 unit on that seed:
+   .log identical apart from the BEST timing fields; .err [heart1_ppo] seed= and whole-run Gumbel roots= lines identical.
+   BEST win%=100.0 avg_floor=56 hp_end=95; roots=686 sims=8,227,862; CPU 135.5 s here vs 140.5 s in §792.
+2. HPS on 111378263: rc 0, banner "plan commit min share 0.9" and hallway banner present.
+   BEST win%=100.0 avg_floor=56 hp_end=68; roots=491 sims=5,619,888; plan commit eligible=351 commits=148;
+   CPU 83.9 s = 0.62x H4 on this seed.
+3. HPS on 111378259: rc 0. BEST win%=0.0 avg_floor=56 (died in Act 4); roots=577 sims=6,515,877; eligible=367
+   commits=139; CPU 133.2 s. §792's H4 died on floor 42 on this seed (92.3 s, roots=473), so the runs diverge and the
+   CPU is not comparable.
