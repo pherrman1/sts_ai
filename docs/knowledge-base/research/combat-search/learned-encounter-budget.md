@@ -57,7 +57,8 @@ The policy is b\*(x) = argmax_b u(x, b) − λ·c(x, b). λ is set offline so th
 the target (a control's CPU for the gainer test). The models are small, either shrunken encounter tables or
 gradient-boosted trees, monotone in b. The simplest model that is not worse in cross-fit is chosen.
 
-**Currency (step B0, offline, before any data campaign).** The post-fight run value V(act, floor, HP, max HP,
+**Currency (step B0, offline, done 2026-11-12; `currency.py`, see step A's RESULT).** Measured, associational: +1 HP
+after a fight ≈ 0.27-0.67 pp Heart; a death ≈ 100-180 HP. Step A's conclusion holds in this currency. Original plan: The post-fight run value V(act, floor, HP, max HP,
 deck size, death) is fitted as the probability of a Heart kill. It uses the existing whole-run battle traces, for
 example `gumbel_wholerun_trace_20261109/results/battles.csv.gz` (46,932 battles with HP before and after and the
 seed's outcome), and the per-battle data of §790 / §792 / §793. A death is V = 0. It is frozen before step B's

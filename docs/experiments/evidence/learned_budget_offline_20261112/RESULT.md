@@ -55,6 +55,40 @@ that 64k everywhere would bring. It does that by giving the high budget to 75-80
 about 10-30 s extra each) and leaving the expensive bosses low. The q = 10% and 50% points, and the plain and max-backup
 ladders, are in `results/analysis.json`.
 
+## Step B0: run-value currency (offline, added 2026-11-12)
+
+`currency.py` fits V = P(Heart kill | state after a won fight) on §775's 2,048 traced games
+(`../gumbel_wholerun_trace_20261109/results/battles.csv.gz`, 43,996 won Act 1-3 fights, arms D and G16). It uses
+5 folds by seed. Output: `results/currency.json`.
+
+- Fit:
+  - Monotone gradient boosting (HP increasing) has a cross-fitted log loss of 0.626, against 0.642 for the logistic
+    model and 0.661 for the act × room base rate (pooled arms).
+  - It is calibrated within about 3 pp per decile, except the top decile (0.89 predicted vs 0.85 observed).
+- Exchange rates (pooled):
+  - +1 HP after a fight is worth 0.27-0.67 pp Heart: about 0.3 in Acts 1-2 and 0.46-0.67 in Act 3.
+  - A death costs V(alive) = 37-77%, so one death is worth about 100-180 HP.
+- Caveat (Inference): V is associational. HP after a fight also proxies deck strength, so dV/dHP is probably
+  overstated. A causal check is the Heart-entry HP perturbations (`heart_entry_perturb*`). `hp_post` includes the
+  heals after a fight; `to_heart.py` therefore counts Act 1-2 boss HP at 25% (A20 heals 75% of missing HP at the next act).
+
+**Step A in this currency** (`to_heart.py` → `analyze.py`, `results/analysis_heart.json`; units = pp Heart-equivalent per fight):
+
+- **Gains:**
+  - g16 → g64: +0.36 [+0.14, +0.59].
+  - g16mb → g64mb: +0.27 [+0.05, +0.49].
+  - prod → g64mb: +0.95 [+0.72, +1.19].
+  - Split-half r is still about 0 (0.00-0.05).
+- **Policy at 25% of the extra CPU, against the matched-CPU random mix (prod → g64mb):**
+  - cost-only −0.37 [−0.53, −0.21];
+  - encounter −0.24 [−0.39, −0.09];
+  - ridge −0.41 [−0.57, −0.24];
+  - boosting −0.24;
+  - split-copy oracle −0.16.
+- **16k → 64k ladders:** only cost-only and encounter reach CI < 0, for g16 → g64 at −0.12 to −0.17.
+- **Conclusion:** the conclusion holds when deaths are valued. The allocation gain comes from cost, and a state model
+  adds nothing measurable over cost plus encounter.
+
 ## Interpretation (Inference)
 
 - **A learned budget pays mostly through cost, not through gain.** Encounters differ about 100× in the price of more

@@ -1,0 +1,349 @@
+{
+ "n_won_fights": 43996,
+ "heart_rate": {
+  "D": 0.31640625,
+  "G16": 0.412109375
+ },
+ "G16": {
+  "n": 22868,
+  "runs": 1024,
+  "act_room_base": {
+   "logloss": 0.6605,
+   "brier": 0.2342
+  },
+  "logistic": {
+   "logloss": 0.643,
+   "brier": 0.2261
+  },
+  "gbm_monotone": {
+   "logloss": 0.6305,
+   "brier": 0.2206
+  },
+  "gbm_calibration": [
+   [
+    0.309,
+    0.366
+   ],
+   [
+    0.38,
+    0.396
+   ],
+   [
+    0.413,
+    0.416
+   ],
+   [
+    0.445,
+    0.426
+   ],
+   [
+    0.482,
+    0.477
+   ],
+   [
+    0.529,
+    0.521
+   ],
+   [
+    0.595,
+    0.599
+   ],
+   [
+    0.682,
+    0.676
+   ],
+   [
+    0.787,
+    0.783
+   ],
+   [
+    0.898,
+    0.864
+   ]
+  ],
+  "exchange": {
+   "A1 NORMAL": {
+    "n": 6051,
+    "V_mean": 0.4202,
+    "dV_per_HP_pp": 0.402,
+    "death_in_HP": 104.5
+   },
+   "A1 ELITE": {
+    "n": 2635,
+    "V_mean": 0.4492,
+    "dV_per_HP_pp": 0.326,
+    "death_in_HP": 137.7
+   },
+   "A1 BOSS": {
+    "n": 839,
+    "V_mean": 0.4997,
+    "dV_per_HP_pp": 0.258,
+    "death_in_HP": 193.5
+   },
+   "A2 NORMAL": {
+    "n": 4395,
+    "V_mean": 0.5383,
+    "dV_per_HP_pp": 0.418,
+    "death_in_HP": 128.8
+   },
+   "A2 ELITE": {
+    "n": 1821,
+    "V_mean": 0.5811,
+    "dV_per_HP_pp": 0.352,
+    "death_in_HP": 164.9
+   },
+   "A2 BOSS": {
+    "n": 647,
+    "V_mean": 0.651,
+    "dV_per_HP_pp": 0.334,
+    "death_in_HP": 194.9
+   },
+   "A3 NORMAL": {
+    "n": 3777,
+    "V_mean": 0.6855,
+    "dV_per_HP_pp": 0.64,
+    "death_in_HP": 107.0
+   },
+   "A3 ELITE": {
+    "n": 1655,
+    "V_mean": 0.7269,
+    "dV_per_HP_pp": 0.486,
+    "death_in_HP": 149.6
+   },
+   "A3 BOSS": {
+    "n": 1048,
+    "V_mean": 0.8086,
+    "dV_per_HP_pp": 0.43,
+    "death_in_HP": 188.1
+   }
+  }
+ },
+ "D": {
+  "n": 21128,
+  "runs": 1024,
+  "act_room_base": {
+   "logloss": 0.6556,
+   "brier": 0.2315
+  },
+  "logistic": {
+   "logloss": 0.6352,
+   "brier": 0.222
+  },
+  "gbm_monotone": {
+   "logloss": 0.626,
+   "brier": 0.2172
+  },
+  "gbm_calibration": [
+   [
+    0.203,
+    0.244
+   ],
+   [
+    0.279,
+    0.297
+   ],
+   [
+    0.318,
+    0.335
+   ],
+   [
+    0.345,
+    0.336
+   ],
+   [
+    0.377,
+    0.398
+   ],
+   [
+    0.417,
+    0.412
+   ],
+   [
+    0.48,
+    0.46
+   ],
+   [
+    0.575,
+    0.563
+   ],
+   [
+    0.711,
+    0.693
+   ],
+   [
+    0.869,
+    0.828
+   ]
+  ],
+  "exchange": {
+   "A1 NORMAL": {
+    "n": 6022,
+    "V_mean": 0.3237,
+    "dV_per_HP_pp": 0.243,
+    "death_in_HP": 133.3
+   },
+   "A1 ELITE": {
+    "n": 2559,
+    "V_mean": 0.3514,
+    "dV_per_HP_pp": 0.325,
+    "death_in_HP": 108.1
+   },
+   "A1 BOSS": {
+    "n": 797,
+    "V_mean": 0.4059,
+    "dV_per_HP_pp": 0.339,
+    "death_in_HP": 119.8
+   },
+   "A2 NORMAL": {
+    "n": 4143,
+    "V_mean": 0.4365,
+    "dV_per_HP_pp": 0.459,
+    "death_in_HP": 95.0
+   },
+   "A2 ELITE": {
+    "n": 1659,
+    "V_mean": 0.4999,
+    "dV_per_HP_pp": 0.431,
+    "death_in_HP": 115.9
+   },
+   "A2 BOSS": {
+    "n": 555,
+    "V_mean": 0.5625,
+    "dV_per_HP_pp": 0.392,
+    "death_in_HP": 143.4
+   },
+   "A3 NORMAL": {
+    "n": 3136,
+    "V_mean": 0.6227,
+    "dV_per_HP_pp": 0.712,
+    "death_in_HP": 87.4
+   },
+   "A3 ELITE": {
+    "n": 1375,
+    "V_mean": 0.6669,
+    "dV_per_HP_pp": 0.445,
+    "death_in_HP": 149.7
+   },
+   "A3 BOSS": {
+    "n": 882,
+    "V_mean": 0.7305,
+    "dV_per_HP_pp": 0.466,
+    "death_in_HP": 156.8
+   }
+  }
+ },
+ "pooled": {
+  "n": 43996,
+  "runs": 1024,
+  "act_room_base": {
+   "logloss": 0.6613,
+   "brier": 0.2344
+  },
+  "logistic": {
+   "logloss": 0.6417,
+   "brier": 0.2253
+  },
+  "gbm_monotone": {
+   "logloss": 0.6264,
+   "brier": 0.2183
+  },
+  "gbm_calibration": [
+   [
+    0.24,
+    0.271
+   ],
+   [
+    0.317,
+    0.335
+   ],
+   [
+    0.359,
+    0.378
+   ],
+   [
+    0.398,
+    0.404
+   ],
+   [
+    0.436,
+    0.43
+   ],
+   [
+    0.484,
+    0.472
+   ],
+   [
+    0.547,
+    0.544
+   ],
+   [
+    0.639,
+    0.621
+   ],
+   [
+    0.758,
+    0.756
+   ],
+   [
+    0.889,
+    0.853
+   ]
+  ],
+  "exchange": {
+   "A1 NORMAL": {
+    "n": 12073,
+    "V_mean": 0.3693,
+    "dV_per_HP_pp": 0.31,
+    "death_in_HP": 119.3
+   },
+   "A1 ELITE": {
+    "n": 5194,
+    "V_mean": 0.4017,
+    "dV_per_HP_pp": 0.315,
+    "death_in_HP": 127.7
+   },
+   "A1 BOSS": {
+    "n": 1636,
+    "V_mean": 0.4524,
+    "dV_per_HP_pp": 0.269,
+    "death_in_HP": 168.3
+   },
+   "A2 NORMAL": {
+    "n": 8538,
+    "V_mean": 0.4943,
+    "dV_per_HP_pp": 0.414,
+    "death_in_HP": 119.5
+   },
+   "A2 ELITE": {
+    "n": 3480,
+    "V_mean": 0.5432,
+    "dV_per_HP_pp": 0.371,
+    "death_in_HP": 146.3
+   },
+   "A2 BOSS": {
+    "n": 1202,
+    "V_mean": 0.6099,
+    "dV_per_HP_pp": 0.337,
+    "death_in_HP": 181.1
+   },
+   "A3 NORMAL": {
+    "n": 6913,
+    "V_mean": 0.6546,
+    "dV_per_HP_pp": 0.672,
+    "death_in_HP": 97.4
+   },
+   "A3 ELITE": {
+    "n": 3030,
+    "V_mean": 0.7008,
+    "dV_per_HP_pp": 0.462,
+    "death_in_HP": 151.6
+   },
+   "A3 BOSS": {
+    "n": 1930,
+    "V_mean": 0.7749,
+    "dV_per_HP_pp": 0.513,
+    "death_in_HP": 151.1
+   }
+  }
+ }
+}

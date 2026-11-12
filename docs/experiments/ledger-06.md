@@ -27398,8 +27398,9 @@ share archives of §770 / §772 / §774, with reproduction 1,878 / 1,878 and 0 d
 - HP lost undervalues bosses: their HP is healed after Acts 1-2, and deaths matter. Above 16k about 1-3 pp of boss
   deaths are avoidable, and a cost-only HP policy starves exactly those fights. So a run-value currency is needed.
 - Baalorlord's states, Act 1-3 elites and bosses only.
-**Decision:** no default change. Next is step B0, offline: fit a currency V(post-fight state) = P(Heart) from whole-run battle
-traces. Then step B: a per-fight ladder at 1k-16k on our own states via `selffights`, with a draft PREREG in the
+**B0 (same day, offline):** `currency.py` fits V = P(Heart | post-fight state) on §775's traced battles (monotone GBM, log loss 0.626 vs base 0.661): +1 HP ≈ 0.27-0.67 pp Heart, a death ≈ 100-180 HP (associational). Re-scored in pp Heart, step A holds: prod → g64mb policy at 25% extra CPU −0.24 to −0.41 pp per fight, cost-only −0.37; split-half r ≈ 0.
+**Decision:** no default change. B0 is done (the currency above).
+Next is step B: a per-fight ladder at 1k-16k on our own states via `selffights`, with a draft PREREG in the
 design doc; it needs Philipp's typed go for seeds and workers and must wait for the roadmap campaign of PR #1039.
 Seeds: none. Cost: about 1 CPU-minute.
 **Knowledge impact:** combat budget allocation. The budget is a cost-allocation problem at the cheap end with a
