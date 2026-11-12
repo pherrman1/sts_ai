@@ -27328,3 +27328,45 @@ prior playouts at a lower budget, Act-4 budgets on top of A4P.
 Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 118.7 lane-hours.
 **Knowledge impact:** combat cost model. Per-encounter CPU, not per-encounter simulations, is the lever. Prior
 playouts' value is mostly in Act 1-3 bosses, not in Act 4.
+
+## §TBD — Plan commitment in whole runs: §792's A4P playing the inherited plan edge without a search at chance-free continuation roots, always (PCH, `STS_SILVER_PLAN_COMMIT=hard`) or when it holds at least 90% of the inherited visits (PCS, `=0.9`), against §792's A4P, net-0420 out of combat, 1,024 paired A20 seeds, control reused after a 32/32 sentinel: PCH −3.91 pp [−6.74, −1.07] → WORSE at 0.54× CPU; PCS −0.20 pp [−2.83, +2.54] → NOT_WORSE_3PP at 0.81× CPU (cloud, 2026-11-12)
+
+**Question (Philipp, 2026-11-12 08:33 CET, "play out cards until the next chance nodes"; decision card "Ja, hart +
+weich (0,9)" 10:39 CET; "go mit 40 workern" 11:56 CET):** a whole-run Gumbel search re-searches every root with
+16,000 simulations, even when no chance event happened since the previous root and the reused tree already holds a
+plan. Does A4P keep its Heart rate when it plays that plan without a search, and how much CPU does it save?
+**Data:** [PREREG](evidence/plan_commit_wholerun_20261112/PREREG.md),
+[RESULT](evidence/plan_commit_wholerun_20261112/RESULT.md), `results/result.json`, `results/pairs_PCH.csv`,
+`results/pairs_PCS.csv`, `results/gp16.json`, `results/claims.txt`, `results/verify.txt`, `results/smoke.txt`,
+`results/offline.txt`, `analyze.py` (frozen in run commit e7d36f17), `gp16_contrast.py`.
+- New flag (#1038; unset = today, bit for bit): `STS_SILVER_PLAN_COMMIT=hard|S` (needs `STS_SILVER_GUMBEL_ROOT`). A root
+  is eligible when `findNode` returns the previous chosen edge's decision child; it plays the edge with the most
+  inherited visits, at every eligible root (`hard`) or only when that edge holds at least S of the visits.
+- Code 3c85fb26, binary ca8d9d0b. The same commit adds observer-only `preEdges` to `endgamerootgen` rows.
+- Offline check (32 Heart runs): plan = searched choice at 61% (Heart) to 74% (elite) of continuation roots, near-tied
+  values where they differ; 88-92% agreement at a 90% share.
+- 2,080 units (32 A4P sentinel games, 1,024 each PCH and PCS): 2,079 verified, 0 bad, 0 aborts. 111378919 PCS was
+  stopped after about 4 h (a very slow search, by backtrace; Philipp: drop it) and is a listed drop.
+- 116.2 lane-hours, 11:58-13:37 CET. Share file limit stall from about 12:20 CET, cleared by deleting merged campaigns' claims.
+
+**Results (alpha 0.025 per arm, nonregression SPRT, CAP at 1,024 / 1,023):**
+- **PCH − A4P −3.91 pp [−6.74, −1.07]** (91 / 131 discordant), LLR −2.25 at CAP, upper bound < 0 → **WORSE**.
+  - CPU 0.54× [0.51, 0.58] (160.9 s per run), simulations 0.46×; 301 commits per run of 302 eligible roots.
+  - Act-4 reach −2.25 pp [−5.18, +0.59]; Act-4 conversion 80.6% → 75.8%; Act 1-2 losses 410 → 442.
+- **PCS − A4P −0.20 pp [−2.83, +2.54]** (98 / 100 discordant), LLR +0.44 at CAP, lower bound > −3 pp → **NOT_WORSE_3PP**.
+  - CPU 0.81× [0.76, 0.86] (239.8 s per run), simulations 0.78×; 141 commits per run of 298 eligible roots.
+  - Act-4 reach −0.59 pp [−3.32, +2.15]; Act-4 conversion 81.2%.
+- Secondary: PCS − PCH +3.71 pp [+0.98, +6.45]. Against E0's GP16 (§790, not gated, machines not corrected): PCH −2.34
+  pp [−5.18, +0.49] at 1.12× CPU, PCS +1.37 pp [−1.37, +4.20] at 1.67× CPU.
+
+**Interpretation (Inference):**
+- Near-tied disagreements between plan and search still cost about 4 pp when the plan is always played; a confident
+  plan (≥ 90% of the visits) is as good as a fresh search to this precision.
+- PCS saves about 57 s per run at no measurable Heart cost, but skipped roots are cheap ones (26% of roots, 19% of CPU).
+
+**Decision:** PCS NOT_WORSE_3PP, PCH WORSE. No default change; the flag stays unset by default. PCS joins the
+cheap-combat stack as a research candidate; PCH is closed at this budget. Next per the PREREG: PCS on GP16 + H4 or PCS on
+G16 (needs Philipp's go).
+Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 116.2 lane-hours.
+**Knowledge impact:** combat cost model. Within a chance-free stretch the reused tree's plan is trustworthy only where
+it is confident; the visit share is the gate.
