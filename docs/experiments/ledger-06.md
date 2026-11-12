@@ -27371,7 +27371,7 @@ Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 116.2 lane-hours
 **Knowledge impact:** combat cost model. Within a chance-free stretch the reused tree's plan is trustworthy only where
 it is confident; the visit share is the gate.
 
-## §TBD — Learned budget step A (offline): does a learned per-fight simulation budget beat a uniform one? §770 / §772 / §774's 1,878 Act 1-3 elite and boss fights at 16k / 32k / 64k (4 copies each): at 16k → 64k no state-level signal within an encounter above copy noise (split-half r ≈ 0); gains differ by encounter, costs about 100×; no learned allocation beats the uniform middle budget at equal CPU (in HP or in Heart pp) → NOT_SHOWN (offline, 2026-11-12)
+## §794 — Learned budget step A (offline): does a learned per-fight simulation budget beat a uniform one? §770 / §772 / §774's 1,878 Act 1-3 elite and boss fights at 16k / 32k / 64k (4 copies each): at 16k → 64k no state-level signal within an encounter above copy noise (split-half r ≈ 0); gains differ by encounter, costs about 100×; no learned allocation beats the uniform middle budget at equal CPU (in HP or in Heart pp) → NOT_SHOWN (offline, 2026-11-12)
 
 **Question (Philipp, 2026-11-12 17:31 CET, "und ein gelerntes sim budget nach encoutner?"; go 17:34 CET):** can a
 model choose the combat simulation budget per fight from encounter and entry state? Step A asks the existing data
