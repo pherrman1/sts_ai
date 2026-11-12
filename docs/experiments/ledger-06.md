@@ -27440,7 +27440,7 @@ Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 25.3 lane-hours.
 **Knowledge impact:** combat cost model. Whether an inherited plan can be trusted depends on the strength of the
 search that built it, not only on its visit share.
 
-## §TBD — Learned budget step B: per-fight budget ladder 1k / 2k / 4k / 8k / 16k (Gumbel k 16 + mb4, 4 copies) on every Act 1-3 fight of 256 own H4-stack runs (selffights): cross-fitted act × room, encounter and state policies against the uniform-budget frontier at equal CPU, in §794's Heart-pp currency: best −1.77 pp per run [−4.15, +0.62] (room @ 4k), one worse → NOT_SHOWN (cloud, 2026-11-12)
+## §796 — Learned budget step B: per-fight budget ladder 1k / 2k / 4k / 8k / 16k (Gumbel k 16 + mb4, 4 copies) on every Act 1-3 fight of 256 own H4-stack runs (selffights): cross-fitted act × room, encounter and state policies against the uniform-budget frontier at equal CPU, in §794's Heart-pp currency: best −1.77 pp per run [−4.15, +0.62] (room @ 4k), one worse → NOT_SHOWN (cloud, 2026-11-12)
 
 **Question (Philipp, 2026-11-12 18:13 CET, decision card "Schritt B nach dem PCS-Lauf"; "go mit 40 worker"):**
 after §794 (16k-64k, Baalorlord states), does a learned per-fight budget beat uniform budgets at the cheap end, on
