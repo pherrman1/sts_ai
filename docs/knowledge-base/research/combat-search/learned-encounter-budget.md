@@ -74,7 +74,15 @@ class. A flag such as `STS_SILVER_GUMBEL_ROOT_BUDGET_MODEL=<file>:<λ>` would re
 the flat budget per fight at fight start. The default is off, so the flag has no effect when unset. It is written
 only after step B passes.
 
-## Step B: per-fight budget ladder on our own states (PREREG draft, not frozen)
+## Step B result (2026-11-12): NOT_SHOWN
+
+The step was run as [budget_ladder_selffights_20261112](../../../experiments/evidence/budget_ladder_selffights_20261112/RESULT.md):
+768 units and 6,817 Act 1-3 fights of 256 own H4 runs, at 1k-16k with 4 copies. No cross-fitted policy (act × room,
+encounter or state) beats the uniform frontier at equal CPU. The best is −1.77 pp per run [−4.15, +0.62], and one
+policy is worse. With §794, a learned per-fight budget is parked over 1k-64k. The by-room uniform curves are in the
+RESULT.
+
+## Step B: per-fight budget ladder on our own states (original draft; the frozen version is the [PREREG](../../../experiments/evidence/budget_ladder_selffights_20261112/PREREG.md))
 
 - **Tool.** `one_combat selffights`. The main line is a production run of the cheap stack's combat; at every arm fight
   each arm plays copies 0-3 on the same copy seeds, and the main line continues from production's copy. Arm rooms are
