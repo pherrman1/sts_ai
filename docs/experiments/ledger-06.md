@@ -27287,3 +27287,44 @@ candidates are not shown to be better than the prior's. GP16 (§790: 35.74% at 0
 Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 181.4 lane-hours.
 **Knowledge impact:** combat cost model. Root width and root budget are not the lever for cheap 40% combat;
 offline top-k coverage of the teacher's pick overstates what a narrow root keeps.
+
+## §TBD — Per-encounter budget in whole runs: E0's GP16 with 4,000 simulations in Act 1-3 hallway fights (H4) and §775's G16 + mb4 with prior playouts only in Act 4 (A4P), against E0's GP16, net-0420 out of combat, 1,024 paired A20 seeds, control reused after a 32/32 sentinel: H4 +0.39 pp [−2.54, +3.22] → NOT_WORSE_3PP at 0.82× CPU; A4P +1.56 pp [+0.10, +3.12] → PASS at 2.07× CPU (cloud, 2026-11-12)
+
+**Question (Philipp, 2026-11-11 23:43 CET, "Ja, für Bosse, elites, eigentlich alle encounter. Dafür hast du mein
+go"; 40 workers 23:48 CET):** after §790 (GP16, prior playouts off: 35.74% at 143 s per run) and §791 (halving the
+root budget costs 7-8 pp), can the budget move by encounter class? Does GP16 keep its Heart rate with 4,000
+simulations in Act 1-3 hallway fights (H4)? Do prior playouts in Act 4 only (A4P) gain Heart kills, and at what CPU?
+**Data:** [PREREG](evidence/encounter_budget_wholerun_20261112/PREREG.md),
+[RESULT](evidence/encounter_budget_wholerun_20261112/RESULT.md), `results/result.json`, `results/pairs_H4.csv`,
+`results/pairs_A4P.csv`, `results/claims.txt`, `results/verify.txt`, `results/smoke.txt`, `analyze.py` (frozen in run
+commit 0658e598).
+- New flags (#1037; unset = today, bit for bit):
+  - `STS_SILVER_GUMBEL_ROOT_SIMS_HALLWAY=N`: Act 1-3 non-elite, non-boss whole-run Gumbel roots get N simulations.
+  - `STS_SILVER_PRIOR_PLAYOUT_ACTS=LIST`: ADR-0050/0060 prior playouts only in the listed acts.
+- Code 4c4e42eb, binary e60e2614.
+- 2,080 units (32 GP16 sentinel games, 1,024 each H4 and A4P), all verified, 0 drops, 0 aborts.
+- 118.7 lane-hours, 03:55-06:33 CET. 15 A4P units were re-run after a heartbeat loss on 4 workers.
+
+**Result:**
+- Sentinel 32/32 identical → REUSE_VALID.
+- Heart kill: GP16 35.74%, H4 36.13%, A4P 37.30%.
+- **H4 − GP16 +0.39 pp [−2.54, +3.22]**: nonregression SPRT at CAP, lower bound > −3 pp → **NOT_WORSE_3PP**.
+  - CPU 0.815× [0.764, 0.883] (116.8 s per run), simulations 0.678×.
+  - Act-4 reach −2.44 pp [−5.27, +0.49]. Losses shift from Act 4 (108 → 79) to Act 3 (140 → 160).
+- **A4P − GP16 +1.56 pp [+0.10, +3.12]** (39 / 23 discordant): gainer SPRT at CAP, one-sided 97.5% lower bound > 0 → **PASS**.
+  - CPU 2.07× [2.00, 2.15] (296.7 s per run).
+  - Act 1-3 are identical to GP16 (Act-4 reach CI [0, 0]). Act-4 conversion is 77.2% → 80.6% of 474 Act-4 runs, at about 330 s more CPU per Act-4 run.
+- Secondary: A4P − H4 +1.17 pp [−1.66, +4.00]. A4P − §775's G16 −3.91 pp [−6.35, −1.46] at 0.58× CPU.
+
+**Interpretation (Inference):**
+- Hallway simulations are cheap, so H4 saves only about 27 s per run, but it costs no Heart kills at this precision.
+- Act-4 prior playouts are worth about 1.6 pp for about 150 s per run.
+- G16's 5.5 pp lead over GP16 lies mostly (about 3.9 pp) in Act 1-3 prior playouts, through reach and the state carried into Act 4.
+- 40% at about 140 s is still far away.
+
+**Decision:** H4 NOT_WORSE_3PP, A4P PASS. No default change; both flags stay unset by default. Both join the
+cheap-combat stack as research candidates. Next per the roadmap: the proven-win stop (offline first), Act 1-3 boss
+prior playouts at a lower budget, Act-4 budgets on top of A4P.
+Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 118.7 lane-hours.
+**Knowledge impact:** combat cost model. Per-encounter CPU, not per-encounter simulations, is the lever. Prior
+playouts' value is mostly in Act 1-3 bosses, not in Act 4.

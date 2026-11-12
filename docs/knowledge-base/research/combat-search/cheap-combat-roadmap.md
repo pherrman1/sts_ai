@@ -139,6 +139,17 @@ Data, scripts and tables: [step 0 evidence](../../../experiments/evidence/cheap_
   (prior playouts and simulations per encounter class; Philipp's go 2026-11-11 23:43 CET) and the narrow root on
   G16 (Philipp's choice, 23:47 CET).
 
+### Per-encounter budget (after E0; Philipp's go 2026-11-11 23:43 CET)
+
+- **Result (§TBD, 2026-11-12):** whole runs against E0's GP16 on §775's seeds
+  ([RESULT](../../../experiments/evidence/encounter_budget_wholerun_20261112/RESULT.md)).
+  - H4 (4,000 simulations in Act 1-3 hallway fights): +0.39 pp [−2.54, +3.22], NOT_WORSE_3PP, at 0.82× CPU (117 s per run).
+  - A4P (prior playouts only in Act 4): +1.56 pp [+0.10, +3.12], PASS, at 2.07× CPU (297 s).
+  - A4P − G16: −3.91 pp. G16's lead over GP16 is about 1.6 pp from Act-4 and 3.9 pp from Act 1-3 prior playouts.
+  - Hallway simulations are cheap, so H4 saves only about 27 s per run.
+- **Next:** the proven-win stop (Heart CPU), then Act 1-3 boss prior playouts at a lower budget and Act-4 budgets on
+  top of A4P.
+
 ### Track 1. Narrow Gumbel root (demoted by step 0)
 
 - **Result (§791, 2026-11-12):** k 4 without noise at 8k on G16 + mb4: P4 (g7f_E top 4) −8.40 pp [−11.43, −5.37],
@@ -188,7 +199,7 @@ Data, scripts and tables: [step 0 evidence](../../../experiments/evidence/cheap_
 
 ### Parked
 
-- **Proven-win stop (candidate, after the per-encounter budget; Philipp OK'd as a candidate 2026-11-12 00:58 CET):**
+- **Proven-win stop (next candidate; Philipp OK'd as a candidate 2026-11-12 00:58 CET):**
   at the Heart every win scores the same, so Silver could stop once `exact_combat_solver` proves a win this turn
   (draws enumerated). CPU only, no win-rate gain expected. First step offline on recorded Heart roots (§783/§775
   traces): how often a proven win exists and what share of Heart simulations is spent after it. Needs a go.
