@@ -51,23 +51,41 @@ def ladder_labels(A):
     L = len(budgets) - 1
     keep, loss, cpu = [], [], []
     dropped.update({"ladder_unmatched": 0, "ladder_pick_unvisited": 0})
+    # review K R4: per-budget and per-kind detail of the two ladder drops
+    inh = np.asarray(a["inherited"]) if "inherited" in a else np.zeros(A.n, np.int64)
+    room = np.asarray(a["elite_boss"])
+    detail = {"unmatched_by_budget": [0] * L, "unvisited_by_budget": [0] * (L + 1),
+              "unmatched_roots_by_kind": {"rerooted": 0, "fresh": 0}, "roots_by_kind": {"rerooted": 0, "fresh": 0},
+              "dropped_roots_by_room": {}}
     for i, r in enumerate(rows):
         s, e = off[r], off[r + 1]
         q = Q[s:e]
         picks = le[r, :L]
+        kind = "rerooted" if inh[r] > 0 else "fresh"
+        detail["roots_by_kind"][kind] += 1
         if (picks < 0).any():
             dropped["ladder_unmatched"] += 1
+            detail["unmatched_roots_by_kind"][kind] += 1
+            for li in np.nonzero(picks < 0)[0]:
+                detail["unmatched_by_budget"][int(li)] += 1
+            rk = str(int(room[r]))
+            detail["dropped_roots_by_room"][rk] = detail["dropped_roots_by_room"].get(rk, 0) + 1
             continue
         pt = int(np.nanargmax(prior[s:e]))
         sel = np.r_[pt, picks]
         if np.isnan(q[sel]).any():
             dropped["ladder_pick_unvisited"] += 1
+            for li in np.nonzero(np.isnan(q[sel]))[0]:
+                detail["unvisited_by_budget"][int(li)] += 1
+            rk = str(int(room[r]))
+            detail["dropped_roots_by_room"][rk] = detail["dropped_roots_by_room"].get(rk, 0) + 1
             continue
         best = np.nanmax(q)
         keep.append(i)
         loss.append(best - q[sel])
         cpu.append(np.r_[0.0, lc[r, :L]])
     keep = np.asarray(keep, np.int64)
+    dropped["detail"] = detail
     return (rows[keep], np.asarray(loss, np.float64), np.asarray(cpu, np.float64), X[keep], dropped, budgets)
 
 

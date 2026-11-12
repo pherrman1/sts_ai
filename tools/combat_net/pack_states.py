@@ -122,6 +122,7 @@ def main(argv):
                     if "ladder" in r:   # STS_AZGEN_BUDGET_LADDER rows (learned budget per decision)
                         row["ladder"] = r["ladder"]
                         row["mainCpu"] = r.get("mainCpu")
+                        row["inheritedVisits"] = r.get("inheritedVisits", 0)
                     out.write(json.dumps(row, separators=(",", ":")) + "\n")
                     counts["rows"] += 1
                     counts["multiEdgeRows"] += len(edges) > 1

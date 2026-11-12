@@ -1271,15 +1271,20 @@ namespace sts::search {
                             nativeSilverBattleSeed(bc) ^ (0x9e3779b97f4a7c15ULL * static_cast<std::uint64_t>(decision + 1))
                             ^ salt);
                         const double cpu = threadCpuSeconds() - c0;
-                        // Match on the live state: the two roots may name an equivalent card copy differently.
+                        // Match on the live state up to search-equivalent card copies: the rerooted played tree and the
+                        // fresh search can expand different copies of the same card. Exact bits are tried first.
                         const auto pick = SilverSearcher::translateAction(
                             shadow->bestAction(), shadow->rootSearchState(), bc);
                         int edge = -1;
-                        for (std::size_t e = 0; e < mainEdges.size(); ++e)
-                            if (SilverSearcher::translateAction(mainEdges[e].action, searcher->rootSearchState(), bc).bits
-                                    == pick.bits) {
-                                edge = static_cast<int>(e);
-                                break;
+                        for (int pass = 0; pass < 2 && edge < 0; ++pass)
+                            for (std::size_t e = 0; e < mainEdges.size(); ++e) {
+                                const auto mine = SilverSearcher::translateAction(
+                                    mainEdges[e].action, searcher->rootSearchState(), bc);
+                                if (pass == 0 ? mine.bits == pick.bits
+                                              : SilverSearcher::actionsEquivalentOn(mine, pick, bc)) {
+                                    edge = static_cast<int>(e);
+                                    break;
+                                }
                             }
                         ladder.push_back({b, edge, sims, cpu});
                     }

@@ -114,6 +114,7 @@ def main(argv):
         "ladder_edge": np.full((n, L_MAX), -1, np.int16),
         "ladder_cpu": np.full((n, L_MAX), np.nan, np.float32),
         "main_cpu": np.full(n, np.nan, np.float32),
+        "inherited": np.zeros(n, np.int64),   # ladder rows: the played root's inherited visits (0 = fresh root)
     }
     ladder_budgets = None
     cut = {"cards": 0, "monsters": 0, "mnum": 0, "edges": 0, "smap": 0, "queues": 0, "qlen": 0, "sel": 0}
@@ -232,6 +233,7 @@ def main(argv):
                     arr["ladder_cpu"][j, li] = p["cpu"]
                 if r.get("mainCpu") is not None:
                     arr["main_cpu"][j] = r["mainCpu"]
+                arr["inherited"][j] = r.get("inheritedVisits", 0)
             v = r["value"]
             mx = max(1, v["preMaxHp"])
             arr["won"][j] = 1 if v["won"] else 0
@@ -252,7 +254,7 @@ def main(argv):
             if j % CHUNK == 0:
                 flush()
     if ladder_budgets is None:   # no ladder rows: keep the array set of earlier data
-        for k in ("ladder_edge", "ladder_cpu", "main_cpu"):
+        for k in ("ladder_edge", "ladder_cpu", "main_cpu", "inherited"):
             arr.pop(k)
     for k, a in arr.items():
         np.save(os.path.join(args.out, k + ".npy"), a[:j])
