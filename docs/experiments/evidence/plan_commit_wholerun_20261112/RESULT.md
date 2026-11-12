@@ -11,8 +11,8 @@ This is the run of [PREREG.md](PREREG.md), frozen in run commit e7d36f17 with co
     `BattleContext::equalForSearch` → `sameMultiset` sorting card vectors. That is a very slow fight, not a plan-commit
     loop (inference: some state with very many cards).
   - Per the PREREG the seed is a listed drop, not imputed (1 of 20 allowed).
-  - One seed moves the PCS mean by at most 0.1 pp. Imputing the worst case (an A4P kill that PCS loses) gives a
-    one-sided lower bound of about −2.93 pp, so the verdict below holds whatever that game does.
+  - A4P lost this seed (floor 50), so the worst case is a PCS loss (d = 0): one-sided lower bound about −2.93 pp; the
+    verdict holds whatever that game does.
 - `verify_campaign.py --extract` refuses while a unit is missing, so the units were taken from the dashboard's
   extraction of every verified tar (one tar per unit; where duplicates exist, CPU in the third digit can differ by
   which duplicate is unpacked, for example PCS 239.8 vs 240.3 s, against GP16 1.67× vs 1.68×; outcomes are identical).
