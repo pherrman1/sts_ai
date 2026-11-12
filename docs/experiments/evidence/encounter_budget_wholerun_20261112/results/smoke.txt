@@ -1,0 +1,12 @@
+Smoke, seed 111378263 (part of the gated block; not used), binary e60e2614, 3 games in parallel on one 4-core cloud container, 2026-11-12.
+
+arm   rc  Heart  final HP  CPU s/run  Gumbel roots  sims
+GP16  0   kill   51        167.7      678           11,247,862
+H4    0   kill   95        137.9      686            8,227,862
+A4P   0   kill   74        389.7      688           11,455,852
+
+Identity: GP16 with both flags unset reproduces E0's campaign game on this seed (whole .log except BEST timing,
+[heart1_ppo] seed= and whole-run Gumbel roots= lines identical; E0's game took 150.5 s on its machine).
+§775's G16 game on this seed took 675 s.
+Cost on this seed: H4 0.82x GP16 (3.0M fewer simulations; hallway sims are cheap), A4P 2.32x GP16 (0.58x G16).
+A4P printed "[silver] research search: prior playouts only in acts 4"; GP16 and H4 did not.
