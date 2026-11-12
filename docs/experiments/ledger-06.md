@@ -27261,7 +27261,7 @@ Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 44.7 lane-hours.
 **Knowledge impact:** combat cost model. Boss and Act-4 prior playouts are a large part of G16 + mb4's strength, not
 only of its cost; removing them everywhere is too coarse.
 
-## §TBD — Narrow Gumbel root in whole runs: §775's G16 + mb4 with a k 4 root without Gumbel noise at 8,000 simulations, candidates from the g7f_E prior (P4) or T1's distilled net (N4), against §775's G16 + mb4, net-0420 out of combat, 1,024 paired A20 seeds, control reused after a 32/32 sentinel: P4 −8.40 pp [−11.43, −5.37], N4 −7.32 pp [−10.16, −4.39] → both WORSE at about 0.6× the CPU; N4 − P4 +1.07 pp [−1.86, +4.10] (cloud, 2026-11-12)
+## §791 — Narrow Gumbel root in whole runs: §775's G16 + mb4 with a k 4 root without Gumbel noise at 8,000 simulations, candidates from the g7f_E prior (P4) or T1's distilled net (N4), against §775's G16 + mb4, net-0420 out of combat, 1,024 paired A20 seeds, control reused after a 32/32 sentinel: P4 −8.40 pp [−11.43, −5.37], N4 −7.32 pp [−10.16, −4.39] → both WORSE at about 0.6× the CPU; N4 − P4 +1.07 pp [−1.86, +4.10] (cloud, 2026-11-12)
 
 **Question (Philipp, 2026-11-11 22:59 CET, "aber lass auch schmale wurzel probieren, vllt reichen ja 92%"; base
 chosen 23:47 CET, "G16 mit Prior-Playouts"):** step 0 found the teacher's pick in the prior's top 4 at 88.6% (g7f_E)

@@ -141,7 +141,7 @@ Data, scripts and tables: [step 0 evidence](../../../experiments/evidence/cheap_
 
 ### Track 1. Narrow Gumbel root (demoted by step 0)
 
-- **Result (§TBD, 2026-11-12):** k 4 without noise at 8k on G16 + mb4: P4 (g7f_E top 4) −8.40 pp [−11.43, −5.37],
+- **Result (§791, 2026-11-12):** k 4 without noise at 8k on G16 + mb4: P4 (g7f_E top 4) −8.40 pp [−11.43, −5.37],
   N4 (net top 4) −7.32 pp [−10.16, −4.39], both WORSE at about 0.6× CPU; N4 − P4 +1.07 [−1.86, +4.10]
   ([RESULT](../../../experiments/evidence/narrow_gumbel_root_20261111/RESULT.md)). Track closed.
 
