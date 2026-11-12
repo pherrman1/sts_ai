@@ -27260,3 +27260,30 @@ simulations per encounter class; Philipp's go 2026-11-11 23:43 CET).
 Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 44.7 lane-hours.
 **Knowledge impact:** combat cost model. Boss and Act-4 prior playouts are a large part of G16 + mb4's strength, not
 only of its cost; removing them everywhere is too coarse.
+
+## §TBD — Narrow Gumbel root in whole runs: §775's G16 + mb4 with a k 4 root without Gumbel noise at 8,000 simulations, candidates from the g7f_E prior (P4) or T1's distilled net (N4), against §775's G16 + mb4, net-0420 out of combat, 1,024 paired A20 seeds, control reused after a 32/32 sentinel: P4 −8.40 pp [−11.43, −5.37], N4 −7.32 pp [−10.16, −4.39] → both WORSE at about 0.6× the CPU; N4 − P4 +1.07 pp [−1.86, +4.10] (cloud, 2026-11-12)
+
+**Question (Philipp, 2026-11-11 22:59 CET, "aber lass auch schmale wurzel probieren, vllt reichen ja 92%"; base
+chosen 23:47 CET, "G16 mit Prior-Playouts"):** step 0 found the teacher's pick in the prior's top 4 at 88.6% (g7f_E)
+and 91.9% (net) of roots. Does a deterministic k 4 root with half the simulations keep G16 + mb4's Heart kill rate?
+**Data:** [PREREG](evidence/narrow_gumbel_root_20261111/PREREG.md) (amended before launch from a GP16 base after
+§790), [RESULT](evidence/narrow_gumbel_root_20261111/RESULT.md), `results/result.json`, `results/pairs_P4.csv`,
+`results/pairs_N4.csv`, `results/claims.txt`, `results/verify.txt`, `results/smoke.txt`, `analyze.py` (frozen in run
+commit 187cbad7).
+- New flag `STS_SILVER_GUMBEL_ROOT_NOISE` (#1036; default 1 = today, bit for bit; 0 = no Gumbel noise in candidate
+  selection and halving). Code 5fc8f890, binary 5dcf3125. 2,080 units (32 G16 sentinel games, 1,024 each P4 and
+  N4), all verified, 0 drops, 2 combat aborts (N4). 181.4 lane-hours, 00:04-03:10 CET; 34 units re-run after a
+  share-write outage on 8 workers.
+
+**Result:** sentinel 32/32 identical → REUSE_VALID. Heart G16 41.21%, P4 32.81%, N4 33.89%. **P4 − G16 −8.40 pp
+[−11.43, −5.37]**, SPRT WORSE at 512 seeds; **N4 − G16 −7.32 pp [−10.16, −4.39]**, WORSE at 576 (alpha 0.025 per
+arm). Act-4 reach −6.05 / −4.79 pp. CPU per run 0.598× / 0.619× raw (0.569× / 0.590× machine-corrected), Gumbel
+simulations 0.507× / 0.535×. **N4 − P4 +1.07 pp [−1.86, +4.10]**. Losses by final floor (G16 → P4 / N4): Act 1 185 →
+209 / 202, Act 2 192 → 224 / 230, Act 3 143 → 149 / 137, Act 4 82 → 106 / 108.
+**Interpretation (Inference):** about the loss of halving the budget on §781's plain curve (16k → 8k about −6 pp at
+0.61× CPU); the narrow root buys nothing over it, and 88-92% offline top-4 coverage is not enough. The net's
+candidates are not shown to be better than the prior's. GP16 (§790: 35.74% at 0.27× CPU) is a much better trade.
+**Decision:** both WORSE. No default change; the flag stays at 1. Per-encounter budgets start from G16 + mb4 and GP16.
+Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 181.4 lane-hours.
+**Knowledge impact:** combat cost model. Root width and root budget are not the lever for cheap 40% combat;
+offline top-k coverage of the teacher's pick overstates what a narrow root keeps.
