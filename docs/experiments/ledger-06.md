@@ -27399,3 +27399,42 @@ commitment stays an A4P-only result (§793).
 Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 25.3 lane-hours.
 **Knowledge impact:** combat cost model. Whether an inherited plan can be trusted depends on the strength of the
 search that built it, not only on its visit share.
+## §794 — Learned budget step A (offline): does a learned per-fight simulation budget beat a uniform one? §770 / §772 / §774's 1,878 Act 1-3 elite and boss fights at 16k / 32k / 64k (4 copies each): at 16k → 64k no state-level signal within an encounter above copy noise (split-half r ≈ 0); gains differ by encounter, costs about 100×; no learned allocation beats the uniform middle budget at equal CPU (in HP or in Heart pp) → NOT_SHOWN (offline, 2026-11-12)
+
+**Question (Philipp, 2026-11-12 17:31 CET, "und ein gelerntes sim budget nach encoutner?"; go 17:34 CET):** can a
+model choose the combat simulation budget per fight from encounter and entry state? Step A asks the existing data
+whether the value of more simulations varies predictably at all.
+**Data:** [RESULT](evidence/learned_budget_offline_20261112/RESULT.md), `results/analysis.json`, `results/rows.json.gz`,
+`extract_rows.py`, `analyze.py`; design in
+[learned-encounter-budget.md](../knowledge-base/research/combat-search/learned-encounter-budget.md). The input is the
+share archives of §770 / §772 / §774, with reproduction 1,878 / 1,878 and 0 dropped.
+**Result (HP lost per fight, gain = low − high budget, copies 1-3, folds by run):**
+- g16 → g64 +0.41 HP [+0.18, +0.63]: signal variance ≈ 0 of 28.3, split-half r −0.09, encounters Q 18.4 / 17 df
+  (p 0.37).
+- g16mb → g64mb +0.51 [+0.28, +0.76]: signal 1%, r +0.02, Q 40.2 (p 0.001).
+- prod (about 4.5k) → g64mb +1.65 [+1.35, +1.97]: signal 13%, r +0.07, Q 62.4 (p < 0.001).
+- Cross-fitted prediction of the gain: corr 0.06-0.10 at 16k → 64k (encounter table ≥ state models) and 0.12-0.19 at prod → g64mb.
+- Extra CPU is predictable (log corr 0.87-0.91) and spans 4 s (Gremlin Nob) to 480 s (Awakened One).
+- Against the real uniform middle budget at its own CPU (32k; 32k mb; 16k mb on the prod ladder), policy − uniform
+  in HP per fight:
+  - two-level policies −0.10 to +0.35 (prod ladder: cost-only +0.25 [−0.03, +0.51], boosting +0.35 [+0.08, +0.63],
+    worse);
+  - 3-level policies (low / middle / high per fight, one price λ) −0.07 to +0.07, every CI covering 0.
+- Against a random mix of the low and high budget, the policies look better (−0.2 to −0.6 HP at 25% of the extra CPU).
+  That is the chord under a concave budget curve (review J, R1), not an allocation gain.
+**Interpretation (Inference):**
+- The apparent allocation gain is the concavity of the budget curve. A uniform middle budget captures it, and learned
+  allocation by cost, encounter, state or a cheap probe adds nothing measurable on top.
+- Prod (about 4.5k) → g64mb has a 10-13% variance-signal share, but it is not reproducible split-half. The cheap end
+  (1k-8k), hallway fights and Act 4 have no per-fight paired data under the Gumbel root.
+- HP lost undervalues bosses: their HP is healed after Acts 1-2, and deaths matter. Above 16k about 1-3 pp of boss
+  deaths are avoidable, and a cost-only HP policy starves exactly those fights. So a run-value currency is needed.
+- Baalorlord's states, Act 1-3 elites and bosses only.
+**B0 (same day, offline):** `currency.py` fits V = P(Heart | post-fight state) on §775's traced battles (monotone GBM, log loss 0.626 vs base 0.661): +1 HP ≈ 0.27-0.67 pp Heart, a death ≈ 100-180 HP (associational). Re-scored in Heart pp: the signal share is 10-11% on all three ladders, split-half r 0.00-0.05. Against the uniform middle budget, two-level policies are −0.04 to +0.25 pp per fight and 3-level −0.13 to +0.12, all CIs covering 0 except one that is worse.
+**Decision:** NOT_SHOWN, no default change. B0 is done (the currency above). Step B is optional with a weak prior: a
+per-fight ladder at 1k-16k on our own states via `selffights`, judged against the uniform frontier (draft PREREG in
+the design doc). It needs Philipp's typed go for seeds and workers and must wait for the roadmap campaign of PR #1039.
+Seeds: none. Cost: about 1 CPU-minute.
+**Knowledge impact:** combat budget allocation. At 16k-64k a uniform budget is as good as any learned per-fight
+allocation. A learned budget is open only at the cheap end (1k-16k), with a weak prior; it must be compared with the
+uniform frontier, not with a random mix.

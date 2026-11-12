@@ -1,0 +1,1597 @@
+{
+ "n": 1878,
+ "runs": 309,
+ "plain": {
+  "lo": "16",
+  "hi": "64",
+  "mean_gain": 0.411,
+  "gain_ci": [
+   0.183,
+   0.632
+  ],
+  "var_total": 28.34,
+  "var_noise": 30.4,
+  "var_signal": -2.06,
+  "signal_share": -0.073,
+  "cpu_lo": 21.58,
+  "cpu_hi": 84.32,
+  "split_half_corr": -0.09,
+  "pred_enc": {
+   "corr": -0.004,
+   "cov": -0.01
+  },
+  "pred_ridge": {
+   "corr": -0.05,
+   "cov": -0.077
+  },
+  "pred_gbm": {
+   "corr": -0.056,
+   "cov": -0.34
+  },
+  "pred_ridge+probe": {
+   "corr": -0.041,
+   "cov": -0.08
+  },
+  "pred_gbm+probe": {
+   "corr": -0.059,
+   "cov": -0.354
+  },
+  "extra_cpu_pred_corr": 0.873,
+  "policy_matched_cpu": {
+   "const_gain_cost_only": [
+    {
+     "q_cpu": 0.1,
+     "share_hi": 0.63,
+     "policy": 10.602,
+     "uniform_mix": 10.737,
+     "policy_minus_uniform": -0.135,
+     "ci": [
+      -0.268,
+      0.004
+     ]
+    },
+    {
+     "q_cpu": 0.25,
+     "share_hi": 0.814,
+     "policy": 10.444,
+     "uniform_mix": 10.676,
+     "policy_minus_uniform": -0.232,
+     "ci": [
+      -0.374,
+      -0.08
+     ]
+    },
+    {
+     "q_cpu": 0.5,
+     "share_hi": 0.914,
+     "policy": 10.397,
+     "uniform_mix": 10.573,
+     "policy_minus_uniform": -0.176,
+     "ci": [
+      -0.285,
+      -0.056
+     ]
+    },
+    {
+     "q_cpu": 0.324,
+     "share_hi": 0.857,
+     "policy": 10.394,
+     "uniform_mix": 10.646,
+     "policy_minus_uniform": -0.252,
+     "ci": [
+      -0.382,
+      -0.115
+     ],
+     "vs_uniform_middle": "32",
+     "uniform_middle": 10.489,
+     "policy_minus_uniform_middle": -0.095,
+     "ci_middle": [
+      -0.338,
+      0.14
+     ]
+    }
+   ],
+   "enc": [
+    {
+     "q_cpu": 0.1,
+     "share_hi": 0.554,
+     "policy": 10.504,
+     "uniform_mix": 10.737,
+     "policy_minus_uniform": -0.234,
+     "ci": [
+      -0.367,
+      -0.093
+     ]
+    },
+    {
+     "q_cpu": 0.25,
+     "share_hi": 0.715,
+     "policy": 10.487,
+     "uniform_mix": 10.676,
+     "policy_minus_uniform": -0.189,
+     "ci": [
+      -0.335,
+      -0.035
+     ]
+    },
+    {
+     "q_cpu": 0.5,
+     "share_hi": 0.808,
+     "policy": 10.394,
+     "uniform_mix": 10.573,
+     "policy_minus_uniform": -0.179,
+     "ci": [
+      -0.31,
+      -0.051
+     ]
+    },
+    {
+     "q_cpu": 0.324,
+     "share_hi": 0.759,
+     "policy": 10.422,
+     "uniform_mix": 10.646,
+     "policy_minus_uniform": -0.224,
+     "ci": [
+      -0.366,
+      -0.078
+     ],
+     "vs_uniform_middle": "32",
+     "uniform_middle": 10.489,
+     "policy_minus_uniform_middle": -0.067,
+     "ci_middle": [
+      -0.322,
+      0.181
+     ]
+    }
+   ],
+   "ridge": [
+    {
+     "q_cpu": 0.1,
+     "share_hi": 0.569,
+     "policy": 10.601,
+     "uniform_mix": 10.737,
+     "policy_minus_uniform": -0.136,
+     "ci": [
+      -0.266,
+      0.002
+     ]
+    },
+    {
+     "q_cpu": 0.25,
+     "share_hi": 0.757,
+     "policy": 10.48,
+     "uniform_mix": 10.676,
+     "policy_minus_uniform": -0.196,
+     "ci": [
+      -0.341,
+      -0.05
+     ]
+    },
+    {
+     "q_cpu": 0.5,
+     "share_hi": 0.855,
+     "policy": 10.481,
+     "uniform_mix": 10.573,
+     "policy_minus_uniform": -0.092,
+     "ci": [
+      -0.204,
+      0.025
+     ]
+    },
+    {
+     "q_cpu": 0.324,
+     "share_hi": 0.792,
+     "policy": 10.511,
+     "uniform_mix": 10.646,
+     "policy_minus_uniform": -0.134,
+     "ci": [
+      -0.27,
+      0.001
+     ],
+     "vs_uniform_middle": "32",
+     "uniform_middle": 10.489,
+     "policy_minus_uniform_middle": 0.022,
+     "ci_middle": [
+      -0.235,
+      0.267
+     ]
+    }
+   ],
+   "gbm": [
+    {
+     "q_cpu": 0.1,
+     "share_hi": 0.438,
+     "policy": 10.606,
+     "uniform_mix": 10.737,
+     "policy_minus_uniform": -0.131,
+     "ci": [
+      -0.251,
+      -0.011
+     ]
+    },
+    {
+     "q_cpu": 0.25,
+     "share_hi": 0.529,
+     "policy": 10.628,
+     "uniform_mix": 10.676,
+     "policy_minus_uniform": -0.048,
+     "ci": [
+      -0.172,
+      0.072
+     ]
+    },
+    {
+     "q_cpu": 0.5,
+     "share_hi": 0.635,
+     "policy": 10.581,
+     "uniform_mix": 10.573,
+     "policy_minus_uniform": 0.008,
+     "ci": [
+      -0.108,
+      0.124
+     ]
+    },
+    {
+     "q_cpu": 0.324,
+     "share_hi": 0.564,
+     "policy": 10.661,
+     "uniform_mix": 10.646,
+     "policy_minus_uniform": 0.016,
+     "ci": [
+      -0.102,
+      0.128
+     ],
+     "vs_uniform_middle": "32",
+     "uniform_middle": 10.489,
+     "policy_minus_uniform_middle": 0.172,
+     "ci_middle": [
+      -0.073,
+      0.414
+     ]
+    }
+   ],
+   "gbm+probe": [
+    {
+     "q_cpu": 0.1,
+     "share_hi": 0.456,
+     "policy": 10.599,
+     "uniform_mix": 10.737,
+     "policy_minus_uniform": -0.139,
+     "ci": [
+      -0.262,
+      -0.017
+     ]
+    },
+    {
+     "q_cpu": 0.25,
+     "share_hi": 0.567,
+     "policy": 10.589,
+     "uniform_mix": 10.676,
+     "policy_minus_uniform": -0.087,
+     "ci": [
+      -0.228,
+      0.047
+     ]
+    },
+    {
+     "q_cpu": 0.5,
+     "share_hi": 0.656,
+     "policy": 10.6,
+     "uniform_mix": 10.573,
+     "policy_minus_uniform": 0.027,
+     "ci": [
+      -0.085,
+      0.141
+     ]
+    },
+    {
+     "q_cpu": 0.324,
+     "share_hi": 0.595,
+     "policy": 10.557,
+     "uniform_mix": 10.646,
+     "policy_minus_uniform": -0.089,
+     "ci": [
+      -0.219,
+      0.038
+     ],
+     "vs_uniform_middle": "32",
+     "uniform_middle": 10.489,
+     "policy_minus_uniform_middle": 0.068,
+     "ci_middle": [
+      -0.196,
+      0.309
+     ]
+    }
+   ],
+   "oracle_split": [
+    {
+     "q_cpu": 0.1,
+     "share_hi": 0.269,
+     "policy": 10.549,
+     "uniform_mix": 10.688,
+     "policy_minus_uniform": -0.139,
+     "ci": [
+      -0.277,
+      0.014
+     ]
+    },
+    {
+     "q_cpu": 0.25,
+     "share_hi": 0.36,
+     "policy": 10.543,
+     "uniform_mix": 10.627,
+     "policy_minus_uniform": -0.084,
+     "ci": [
+      -0.227,
+      0.063
+     ]
+    },
+    {
+     "q_cpu": 0.5,
+     "share_hi": 0.465,
+     "policy": 10.593,
+     "uniform_mix": 10.525,
+     "policy_minus_uniform": 0.068,
+     "ci": [
+      -0.061,
+      0.204
+     ]
+    },
+    {
+     "q_cpu": 0.324,
+     "share_hi": 0.374,
+     "policy": 10.564,
+     "uniform_mix": 10.597,
+     "policy_minus_uniform": -0.033,
+     "ci": [
+      -0.175,
+      0.114
+     ],
+     "vs_uniform_middle": "32",
+     "uniform_middle": 10.542,
+     "policy_minus_uniform_middle": 0.022,
+     "ci_middle": [
+      -0.287,
+      0.326
+     ]
+    }
+   ]
+  },
+  "three_level_vs_uniform_middle": {
+   "const": {
+    "share_lo_mid_hi": [
+     0.052,
+     0.216,
+     0.732
+    ],
+    "cpu_ratio_vs_mid": 0.998,
+    "policy": 10.44,
+    "uniform_middle": 10.489,
+    "policy_minus_uniform_middle": -0.049,
+    "ci": [
+     -0.25,
+     0.145
+    ]
+   },
+   "enc": {
+    "share_lo_mid_hi": [
+     0.151,
+     0.445,
+     0.405
+    ],
+    "cpu_ratio_vs_mid": 0.958,
+    "policy": 10.458,
+    "uniform_middle": 10.489,
+    "policy_minus_uniform_middle": -0.031,
+    "ci": [
+     -0.231,
+     0.18
+    ]
+   },
+   "ridge": {
+    "share_lo_mid_hi": [
+     0.08,
+     0.504,
+     0.416
+    ],
+    "cpu_ratio_vs_mid": 0.97,
+    "policy": 10.561,
+    "uniform_middle": 10.489,
+    "policy_minus_uniform_middle": 0.072,
+    "ci": [
+     -0.124,
+     0.268
+    ]
+   },
+   "ridge+probe": {
+    "share_lo_mid_hi": [
+     0.097,
+     0.468,
+     0.435
+    ],
+    "cpu_ratio_vs_mid": 0.959,
+    "policy": 10.559,
+    "uniform_middle": 10.489,
+    "policy_minus_uniform_middle": 0.07,
+    "ci": [
+     -0.124,
+     0.259
+    ]
+   }
+  },
+  "by_encounter": {
+   "3 Sentries": {
+    "n": 235,
+    "gain": 0.16,
+    "se": 0.25,
+    "extra_cpu": 12.21
+   },
+   "Automaton": {
+    "n": 44,
+    "gain": -1.25,
+    "se": 1.19,
+    "extra_cpu": 181.6
+   },
+   "Awakened One": {
+    "n": 44,
+    "gain": -0.58,
+    "se": 1.05,
+    "extra_cpu": 582.51
+   },
+   "Book of Stabbing": {
+    "n": 139,
+    "gain": 0.25,
+    "se": 0.34,
+    "extra_cpu": 10.6
+   },
+   "Champ": {
+    "n": 40,
+    "gain": -0.61,
+    "se": 1.42,
+    "extra_cpu": 267.9
+   },
+   "Collector": {
+    "n": 55,
+    "gain": 1.51,
+    "se": 1.04,
+    "extra_cpu": 156.19
+   },
+   "Donu and Deca": {
+    "n": 44,
+    "gain": 0.07,
+    "se": 1.3,
+    "extra_cpu": 302.33
+   },
+   "Giant Head": {
+    "n": 71,
+    "gain": 1.52,
+    "se": 0.79,
+    "extra_cpu": 26.13
+   },
+   "Gremlin Leader": {
+    "n": 129,
+    "gain": -0.54,
+    "se": 0.45,
+    "extra_cpu": 14.32
+   },
+   "Gremlin Nob": {
+    "n": 242,
+    "gain": 0.3,
+    "se": 0.26,
+    "extra_cpu": 3.81
+   },
+   "Hexaghost": {
+    "n": 93,
+    "gain": 0.29,
+    "se": 0.52,
+    "extra_cpu": 79.72
+   },
+   "Lagavulin": {
+    "n": 267,
+    "gain": 0.57,
+    "se": 0.24,
+    "extra_cpu": 8.77
+   },
+   "Nemesis": {
+    "n": 69,
+    "gain": 0.71,
+    "se": 0.63,
+    "extra_cpu": 23.59
+   },
+   "Reptomancer": {
+    "n": 69,
+    "gain": 2.07,
+    "se": 0.81,
+    "extra_cpu": 23.53
+   },
+   "Slavers": {
+    "n": 129,
+    "gain": 0.43,
+    "se": 0.36,
+    "extra_cpu": 10.47
+   },
+   "Slime Boss": {
+    "n": 80,
+    "gain": 0.85,
+    "se": 0.75,
+    "extra_cpu": 89.47
+   },
+   "The Guardian": {
+    "n": 81,
+    "gain": 0.69,
+    "se": 0.64,
+    "extra_cpu": 89.08
+   },
+   "Time Eater": {
+    "n": 47,
+    "gain": 1.26,
+    "se": 1.03,
+    "extra_cpu": 296.07
+   }
+  },
+  "enc_Q": 18.36,
+  "enc_df": 17
+ },
+ "mb": {
+  "lo": "16mb",
+  "hi": "64mb",
+  "mean_gain": 0.51,
+  "gain_ci": [
+   0.275,
+   0.757
+  ],
+  "var_total": 31.85,
+  "var_noise": 31.46,
+  "var_signal": 0.39,
+  "signal_share": 0.012,
+  "cpu_lo": 20.71,
+  "cpu_hi": 79.71,
+  "split_half_corr": 0.019,
+  "pred_enc": {
+   "corr": 0.101,
+   "cov": 0.381
+  },
+  "pred_ridge": {
+   "corr": 0.08,
+   "cov": 0.296
+  },
+  "pred_gbm": {
+   "corr": 0.063,
+   "cov": 0.473
+  },
+  "pred_ridge+probe": {
+   "corr": 0.093,
+   "cov": 0.443
+  },
+  "pred_gbm+probe": {
+   "corr": 0.045,
+   "cov": 0.364
+  },
+  "extra_cpu_pred_corr": 0.905,
+  "policy_matched_cpu": {
+   "const_gain_cost_only": [
+    {
+     "q_cpu": 0.1,
+     "share_hi": 0.616,
+     "policy": 10.409,
+     "uniform_mix": 10.435,
+     "policy_minus_uniform": -0.027,
+     "ci": [
+      -0.158,
+      0.106
+     ]
+    },
+    {
+     "q_cpu": 0.25,
+     "share_hi": 0.805,
+     "policy": 10.32,
+     "uniform_mix": 10.359,
+     "policy_minus_uniform": -0.039,
+     "ci": [
+      -0.184,
+      0.109
+     ]
+    },
+    {
+     "q_cpu": 0.5,
+     "share_hi": 0.909,
+     "policy": 10.171,
+     "uniform_mix": 10.231,
+     "policy_minus_uniform": -0.061,
+     "ci": [
+      -0.194,
+      0.073
+     ]
+    },
+    {
+     "q_cpu": 0.338,
+     "share_hi": 0.856,
+     "policy": 10.231,
+     "uniform_mix": 10.314,
+     "policy_minus_uniform": -0.083,
+     "ci": [
+      -0.223,
+      0.056
+     ],
+     "vs_uniform_middle": "32mb",
+     "uniform_middle": 10.23,
+     "policy_minus_uniform_middle": 0.001,
+     "ci_middle": [
+      -0.23,
+      0.237
+     ]
+    }
+   ],
+   "enc": [
+    {
+     "q_cpu": 0.1,
+     "share_hi": 0.409,
+     "policy": 10.339,
+     "uniform_mix": 10.435,
+     "policy_minus_uniform": -0.096,
+     "ci": [
+      -0.211,
+      0.024
+     ]
+    },
+    {
+     "q_cpu": 0.25,
+     "share_hi": 0.551,
+     "policy": 10.224,
+     "uniform_mix": 10.359,
+     "policy_minus_uniform": -0.135,
+     "ci": [
+      -0.258,
+      -0.017
+     ]
+    },
+    {
+     "q_cpu": 0.5,
+     "share_hi": 0.67,
+     "policy": 10.095,
+     "uniform_mix": 10.231,
+     "policy_minus_uniform": -0.137,
+     "ci": [
+      -0.263,
+      -0.012
+     ]
+    },
+    {
+     "q_cpu": 0.338,
+     "share_hi": 0.604,
+     "policy": 10.162,
+     "uniform_mix": 10.314,
+     "policy_minus_uniform": -0.152,
+     "ci": [
+      -0.269,
+      -0.035
+     ],
+     "vs_uniform_middle": "32mb",
+     "uniform_middle": 10.23,
+     "policy_minus_uniform_middle": -0.069,
+     "ci_middle": [
+      -0.284,
+      0.17
+     ]
+    }
+   ],
+   "ridge": [
+    {
+     "q_cpu": 0.1,
+     "share_hi": 0.45,
+     "policy": 10.404,
+     "uniform_mix": 10.435,
+     "policy_minus_uniform": -0.032,
+     "ci": [
+      -0.159,
+      0.104
+     ]
+    },
+    {
+     "q_cpu": 0.25,
+     "share_hi": 0.589,
+     "policy": 10.312,
+     "uniform_mix": 10.359,
+     "policy_minus_uniform": -0.047,
+     "ci": [
+      -0.181,
+      0.096
+     ]
+    },
+    {
+     "q_cpu": 0.5,
+     "share_hi": 0.702,
+     "policy": 10.149,
+     "uniform_mix": 10.231,
+     "policy_minus_uniform": -0.082,
+     "ci": [
+      -0.206,
+      0.053
+     ]
+    },
+    {
+     "q_cpu": 0.338,
+     "share_hi": 0.638,
+     "policy": 10.258,
+     "uniform_mix": 10.314,
+     "policy_minus_uniform": -0.056,
+     "ci": [
+      -0.188,
+      0.079
+     ],
+     "vs_uniform_middle": "32mb",
+     "uniform_middle": 10.23,
+     "policy_minus_uniform_middle": 0.027,
+     "ci_middle": [
+      -0.199,
+      0.265
+     ]
+    }
+   ],
+   "gbm": [
+    {
+     "q_cpu": 0.1,
+     "share_hi": 0.355,
+     "policy": 10.474,
+     "uniform_mix": 10.435,
+     "policy_minus_uniform": 0.039,
+     "ci": [
+      -0.077,
+      0.151
+     ]
+    },
+    {
+     "q_cpu": 0.25,
+     "share_hi": 0.459,
+     "policy": 10.374,
+     "uniform_mix": 10.359,
+     "policy_minus_uniform": 0.015,
+     "ci": [
+      -0.108,
+      0.132
+     ]
+    },
+    {
+     "q_cpu": 0.5,
+     "share_hi": 0.57,
+     "policy": 10.236,
+     "uniform_mix": 10.231,
+     "policy_minus_uniform": 0.005,
+     "ci": [
+      -0.13,
+      0.145
+     ]
+    },
+    {
+     "q_cpu": 0.338,
+     "share_hi": 0.502,
+     "policy": 10.335,
+     "uniform_mix": 10.314,
+     "policy_minus_uniform": 0.021,
+     "ci": [
+      -0.107,
+      0.149
+     ],
+     "vs_uniform_middle": "32mb",
+     "uniform_middle": 10.23,
+     "policy_minus_uniform_middle": 0.105,
+     "ci_middle": [
+      -0.117,
+      0.34
+     ]
+    }
+   ],
+   "gbm+probe": [
+    {
+     "q_cpu": 0.1,
+     "share_hi": 0.323,
+     "policy": 10.471,
+     "uniform_mix": 10.435,
+     "policy_minus_uniform": 0.036,
+     "ci": [
+      -0.068,
+      0.147
+     ]
+    },
+    {
+     "q_cpu": 0.25,
+     "share_hi": 0.426,
+     "policy": 10.374,
+     "uniform_mix": 10.359,
+     "policy_minus_uniform": 0.015,
+     "ci": [
+      -0.11,
+      0.141
+     ]
+    },
+    {
+     "q_cpu": 0.5,
+     "share_hi": 0.527,
+     "policy": 10.284,
+     "uniform_mix": 10.231,
+     "policy_minus_uniform": 0.052,
+     "ci": [
+      -0.08,
+      0.187
+     ]
+    },
+    {
+     "q_cpu": 0.338,
+     "share_hi": 0.468,
+     "policy": 10.38,
+     "uniform_mix": 10.314,
+     "policy_minus_uniform": 0.066,
+     "ci": [
+      -0.056,
+      0.193
+     ],
+     "vs_uniform_middle": "32mb",
+     "uniform_middle": 10.23,
+     "policy_minus_uniform_middle": 0.15,
+     "ci_middle": [
+      -0.048,
+      0.363
+     ]
+    }
+   ],
+   "oracle_split": [
+    {
+     "q_cpu": 0.1,
+     "share_hi": 0.271,
+     "policy": 10.421,
+     "uniform_mix": 10.552,
+     "policy_minus_uniform": -0.131,
+     "ci": [
+      -0.272,
+      0.009
+     ]
+    },
+    {
+     "q_cpu": 0.25,
+     "share_hi": 0.367,
+     "policy": 10.325,
+     "uniform_mix": 10.457,
+     "policy_minus_uniform": -0.131,
+     "ci": [
+      -0.274,
+      0.01
+     ]
+    },
+    {
+     "q_cpu": 0.5,
+     "share_hi": 0.483,
+     "policy": 10.261,
+     "uniform_mix": 10.297,
+     "policy_minus_uniform": -0.036,
+     "ci": [
+      -0.194,
+      0.112
+     ]
+    },
+    {
+     "q_cpu": 0.338,
+     "share_hi": 0.392,
+     "policy": 10.304,
+     "uniform_mix": 10.4,
+     "policy_minus_uniform": -0.097,
+     "ci": [
+      -0.247,
+      0.043
+     ],
+     "vs_uniform_middle": "32mb",
+     "uniform_middle": 10.223,
+     "policy_minus_uniform_middle": 0.08,
+     "ci_middle": [
+      -0.242,
+      0.4
+     ]
+    }
+   ]
+  },
+  "three_level_vs_uniform_middle": {
+   "const": {
+    "share_lo_mid_hi": [
+     0.11,
+     0.094,
+     0.797
+    ],
+    "cpu_ratio_vs_mid": 0.964,
+    "policy": 10.248,
+    "uniform_middle": 10.23,
+    "policy_minus_uniform_middle": 0.018,
+    "ci": [
+     -0.196,
+     0.246
+    ]
+   },
+   "enc": {
+    "share_lo_mid_hi": [
+     0.288,
+     0.398,
+     0.314
+    ],
+    "cpu_ratio_vs_mid": 0.97,
+    "policy": 10.226,
+    "uniform_middle": 10.23,
+    "policy_minus_uniform_middle": -0.004,
+    "ci": [
+     -0.174,
+     0.182
+    ]
+   },
+   "ridge": {
+    "share_lo_mid_hi": [
+     0.144,
+     0.449,
+     0.407
+    ],
+    "cpu_ratio_vs_mid": 0.945,
+    "policy": 10.299,
+    "uniform_middle": 10.23,
+    "policy_minus_uniform_middle": 0.069,
+    "ci": [
+     -0.112,
+     0.257
+    ]
+   },
+   "ridge+probe": {
+    "share_lo_mid_hi": [
+     0.164,
+     0.453,
+     0.383
+    ],
+    "cpu_ratio_vs_mid": 1.036,
+    "policy": 10.163,
+    "uniform_middle": 10.23,
+    "policy_minus_uniform_middle": -0.067,
+    "ci": [
+     -0.292,
+     0.159
+    ]
+   }
+  },
+  "by_encounter": {
+   "3 Sentries": {
+    "n": 235,
+    "gain": -0.44,
+    "se": 0.23,
+    "extra_cpu": 12.15
+   },
+   "Automaton": {
+    "n": 44,
+    "gain": -0.33,
+    "se": 1.63,
+    "extra_cpu": 170.28
+   },
+   "Awakened One": {
+    "n": 44,
+    "gain": 3.11,
+    "se": 1.29,
+    "extra_cpu": 481.65
+   },
+   "Book of Stabbing": {
+    "n": 139,
+    "gain": 0.01,
+    "se": 0.38,
+    "extra_cpu": 10.31
+   },
+   "Champ": {
+    "n": 40,
+    "gain": 1.98,
+    "se": 1.39,
+    "extra_cpu": 236.0
+   },
+   "Collector": {
+    "n": 55,
+    "gain": 2.84,
+    "se": 1.06,
+    "extra_cpu": 144.64
+   },
+   "Donu and Deca": {
+    "n": 44,
+    "gain": 1.48,
+    "se": 1.62,
+    "extra_cpu": 307.09
+   },
+   "Giant Head": {
+    "n": 71,
+    "gain": -0.6,
+    "se": 0.61,
+    "extra_cpu": 25.49
+   },
+   "Gremlin Leader": {
+    "n": 129,
+    "gain": 0.59,
+    "se": 0.53,
+    "extra_cpu": 14.18
+   },
+   "Gremlin Nob": {
+    "n": 242,
+    "gain": 0.19,
+    "se": 0.23,
+    "extra_cpu": 3.92
+   },
+   "Hexaghost": {
+    "n": 93,
+    "gain": 0.85,
+    "se": 0.42,
+    "extra_cpu": 74.85
+   },
+   "Lagavulin": {
+    "n": 267,
+    "gain": 0.16,
+    "se": 0.27,
+    "extra_cpu": 9.01
+   },
+   "Nemesis": {
+    "n": 69,
+    "gain": -0.24,
+    "se": 0.72,
+    "extra_cpu": 25.28
+   },
+   "Reptomancer": {
+    "n": 69,
+    "gain": 0.98,
+    "se": 0.83,
+    "extra_cpu": 23.22
+   },
+   "Slavers": {
+    "n": 129,
+    "gain": 0.56,
+    "se": 0.35,
+    "extra_cpu": 10.06
+   },
+   "Slime Boss": {
+    "n": 80,
+    "gain": 2.05,
+    "se": 0.6,
+    "extra_cpu": 84.59
+   },
+   "The Guardian": {
+    "n": 81,
+    "gain": 0.9,
+    "se": 0.56,
+    "extra_cpu": 87.14
+   },
+   "Time Eater": {
+    "n": 47,
+    "gain": 1.55,
+    "se": 1.53,
+    "extra_cpu": 308.51
+   }
+  },
+  "enc_Q": 40.19,
+  "enc_df": 17
+ },
+ "prod_g16mb_g64mb": {
+  "lo": "prod",
+  "hi": "64mb",
+  "mean_gain": 1.652,
+  "gain_ci": [
+   1.346,
+   1.974
+  ],
+  "var_total": 42.98,
+  "var_noise": 37.57,
+  "var_signal": 5.41,
+  "signal_share": 0.126,
+  "cpu_lo": 6.23,
+  "cpu_hi": 79.71,
+  "split_half_corr": 0.067,
+  "pred_enc": {
+   "corr": 0.134,
+   "cov": 0.885
+  },
+  "pred_ridge": {
+   "corr": 0.168,
+   "cov": 1.463
+  },
+  "pred_gbm": {
+   "corr": 0.119,
+   "cov": 1.437
+  },
+  "pred_ridge+probe": {
+   "corr": 0.191,
+   "cov": 1.802
+  },
+  "pred_gbm+probe": {
+   "corr": 0.132,
+   "cov": 1.632
+  },
+  "extra_cpu_pred_corr": 0.908,
+  "policy_matched_cpu": {
+   "const_gain_cost_only": [
+    {
+     "q_cpu": 0.1,
+     "share_hi": 0.617,
+     "policy": 11.091,
+     "uniform_mix": 11.463,
+     "policy_minus_uniform": -0.372,
+     "ci": [
+      -0.526,
+      -0.212
+     ]
+    },
+    {
+     "q_cpu": 0.25,
+     "share_hi": 0.806,
+     "policy": 10.63,
+     "uniform_mix": 11.215,
+     "policy_minus_uniform": -0.585,
+     "ci": [
+      -0.746,
+      -0.412
+     ]
+    },
+    {
+     "q_cpu": 0.5,
+     "share_hi": 0.907,
+     "policy": 10.288,
+     "uniform_mix": 10.803,
+     "policy_minus_uniform": -0.515,
+     "ci": [
+      -0.654,
+      -0.37
+     ]
+    },
+    {
+     "q_cpu": 0.197,
+     "share_hi": 0.768,
+     "policy": 10.732,
+     "uniform_mix": 11.303,
+     "policy_minus_uniform": -0.571,
+     "ci": [
+      -0.739,
+      -0.397
+     ],
+     "vs_uniform_middle": "16mb",
+     "uniform_middle": 10.486,
+     "policy_minus_uniform_middle": 0.245,
+     "ci_middle": [
+      -0.028,
+      0.514
+     ]
+    }
+   ],
+   "enc": [
+    {
+     "q_cpu": 0.1,
+     "share_hi": 0.473,
+     "policy": 11.07,
+     "uniform_mix": 11.463,
+     "policy_minus_uniform": -0.393,
+     "ci": [
+      -0.569,
+      -0.234
+     ]
+    },
+    {
+     "q_cpu": 0.25,
+     "share_hi": 0.795,
+     "policy": 10.663,
+     "uniform_mix": 11.215,
+     "policy_minus_uniform": -0.553,
+     "ci": [
+      -0.718,
+      -0.388
+     ]
+    },
+    {
+     "q_cpu": 0.5,
+     "share_hi": 0.905,
+     "policy": 10.401,
+     "uniform_mix": 10.803,
+     "policy_minus_uniform": -0.402,
+     "ci": [
+      -0.541,
+      -0.258
+     ]
+    },
+    {
+     "q_cpu": 0.197,
+     "share_hi": 0.758,
+     "policy": 10.751,
+     "uniform_mix": 11.303,
+     "policy_minus_uniform": -0.552,
+     "ci": [
+      -0.721,
+      -0.378
+     ],
+     "vs_uniform_middle": "16mb",
+     "uniform_middle": 10.486,
+     "policy_minus_uniform_middle": 0.265,
+     "ci_middle": [
+      -0.001,
+      0.529
+     ]
+    }
+   ],
+   "ridge": [
+    {
+     "q_cpu": 0.1,
+     "share_hi": 0.498,
+     "policy": 10.984,
+     "uniform_mix": 11.463,
+     "policy_minus_uniform": -0.479,
+     "ci": [
+      -0.655,
+      -0.294
+     ]
+    },
+    {
+     "q_cpu": 0.25,
+     "share_hi": 0.748,
+     "policy": 10.633,
+     "uniform_mix": 11.215,
+     "policy_minus_uniform": -0.582,
+     "ci": [
+      -0.752,
+      -0.401
+     ]
+    },
+    {
+     "q_cpu": 0.5,
+     "share_hi": 0.854,
+     "policy": 10.286,
+     "uniform_mix": 10.802,
+     "policy_minus_uniform": -0.517,
+     "ci": [
+      -0.679,
+      -0.355
+     ]
+    },
+    {
+     "q_cpu": 0.197,
+     "share_hi": 0.722,
+     "policy": 10.691,
+     "uniform_mix": 11.303,
+     "policy_minus_uniform": -0.612,
+     "ci": [
+      -0.795,
+      -0.421
+     ],
+     "vs_uniform_middle": "16mb",
+     "uniform_middle": 10.486,
+     "policy_minus_uniform_middle": 0.204,
+     "ci_middle": [
+      -0.054,
+      0.474
+     ]
+    }
+   ],
+   "gbm": [
+    {
+     "q_cpu": 0.1,
+     "share_hi": 0.455,
+     "policy": 11.098,
+     "uniform_mix": 11.463,
+     "policy_minus_uniform": -0.365,
+     "ci": [
+      -0.533,
+      -0.198
+     ]
+    },
+    {
+     "q_cpu": 0.25,
+     "share_hi": 0.608,
+     "policy": 10.701,
+     "uniform_mix": 11.215,
+     "policy_minus_uniform": -0.515,
+     "ci": [
+      -0.683,
+      -0.357
+     ]
+    },
+    {
+     "q_cpu": 0.5,
+     "share_hi": 0.732,
+     "policy": 10.462,
+     "uniform_mix": 10.802,
+     "policy_minus_uniform": -0.34,
+     "ci": [
+      -0.489,
+      -0.201
+     ]
+    },
+    {
+     "q_cpu": 0.197,
+     "share_hi": 0.57,
+     "policy": 10.838,
+     "uniform_mix": 11.303,
+     "policy_minus_uniform": -0.464,
+     "ci": [
+      -0.637,
+      -0.298
+     ],
+     "vs_uniform_middle": "16mb",
+     "uniform_middle": 10.486,
+     "policy_minus_uniform_middle": 0.352,
+     "ci_middle": [
+      0.082,
+      0.628
+     ]
+    }
+   ],
+   "gbm+probe": [
+    {
+     "q_cpu": 0.1,
+     "share_hi": 0.46,
+     "policy": 10.987,
+     "uniform_mix": 11.463,
+     "policy_minus_uniform": -0.476,
+     "ci": [
+      -0.665,
+      -0.303
+     ]
+    },
+    {
+     "q_cpu": 0.25,
+     "share_hi": 0.615,
+     "policy": 10.668,
+     "uniform_mix": 11.215,
+     "policy_minus_uniform": -0.548,
+     "ci": [
+      -0.734,
+      -0.373
+     ]
+    },
+    {
+     "q_cpu": 0.5,
+     "share_hi": 0.731,
+     "policy": 10.374,
+     "uniform_mix": 10.802,
+     "policy_minus_uniform": -0.428,
+     "ci": [
+      -0.581,
+      -0.276
+     ]
+    },
+    {
+     "q_cpu": 0.197,
+     "share_hi": 0.575,
+     "policy": 10.774,
+     "uniform_mix": 11.303,
+     "policy_minus_uniform": -0.529,
+     "ci": [
+      -0.7,
+      -0.362
+     ],
+     "vs_uniform_middle": "16mb",
+     "uniform_middle": 10.486,
+     "policy_minus_uniform_middle": 0.288,
+     "ci_middle": [
+      0.034,
+      0.553
+     ]
+    }
+   ],
+   "oracle_split": [
+    {
+     "q_cpu": 0.1,
+     "share_hi": 0.334,
+     "policy": 11.091,
+     "uniform_mix": 11.455,
+     "policy_minus_uniform": -0.364,
+     "ci": [
+      -0.537,
+      -0.186
+     ]
+    },
+    {
+     "q_cpu": 0.25,
+     "share_hi": 0.439,
+     "policy": 10.763,
+     "uniform_mix": 11.209,
+     "policy_minus_uniform": -0.446,
+     "ci": [
+      -0.661,
+      -0.246
+     ]
+    },
+    {
+     "q_cpu": 0.5,
+     "share_hi": 0.508,
+     "policy": 10.528,
+     "uniform_mix": 10.798,
+     "policy_minus_uniform": -0.27,
+     "ci": [
+      -0.472,
+      -0.075
+     ]
+    },
+    {
+     "q_cpu": 0.197,
+     "share_hi": 0.411,
+     "policy": 10.864,
+     "uniform_mix": 11.296,
+     "policy_minus_uniform": -0.432,
+     "ci": [
+      -0.624,
+      -0.248
+     ],
+     "vs_uniform_middle": "16mb",
+     "uniform_middle": 10.616,
+     "policy_minus_uniform_middle": 0.247,
+     "ci_middle": [
+      -0.079,
+      0.58
+     ]
+    }
+   ]
+  },
+  "three_level_vs_uniform_middle": {
+   "const": {
+    "share_lo_mid_hi": [
+     0.088,
+     0.273,
+     0.639
+    ],
+    "cpu_ratio_vs_mid": 0.965,
+    "policy": 10.559,
+    "uniform_middle": 10.486,
+    "policy_minus_uniform_middle": 0.073,
+    "ci": [
+     -0.134,
+     0.288
+    ]
+   },
+   "enc": {
+    "share_lo_mid_hi": [
+     0.077,
+     0.547,
+     0.376
+    ],
+    "cpu_ratio_vs_mid": 1.006,
+    "policy": 10.524,
+    "uniform_middle": 10.486,
+    "policy_minus_uniform_middle": 0.038,
+    "ci": [
+     -0.153,
+     0.23
+    ]
+   },
+   "ridge": {
+    "share_lo_mid_hi": [
+     0.117,
+     0.548,
+     0.335
+    ],
+    "cpu_ratio_vs_mid": 0.951,
+    "policy": 10.521,
+    "uniform_middle": 10.486,
+    "policy_minus_uniform_middle": 0.035,
+    "ci": [
+     -0.134,
+     0.202
+    ]
+   },
+   "ridge+probe": {
+    "share_lo_mid_hi": [
+     0.119,
+     0.563,
+     0.317
+    ],
+    "cpu_ratio_vs_mid": 0.965,
+    "policy": 10.479,
+    "uniform_middle": 10.486,
+    "policy_minus_uniform_middle": -0.007,
+    "ci": [
+     -0.159,
+     0.159
+    ]
+   }
+  },
+  "by_encounter": {
+   "3 Sentries": {
+    "n": 235,
+    "gain": 0.58,
+    "se": 0.28,
+    "extra_cpu": 14.92
+   },
+   "Automaton": {
+    "n": 44,
+    "gain": 3.48,
+    "se": 1.61,
+    "extra_cpu": 211.38
+   },
+   "Awakened One": {
+    "n": 44,
+    "gain": 5.45,
+    "se": 1.62,
+    "extra_cpu": 612.72
+   },
+   "Book of Stabbing": {
+    "n": 139,
+    "gain": 0.75,
+    "se": 0.45,
+    "extra_cpu": 12.88
+   },
+   "Champ": {
+    "n": 40,
+    "gain": 4.16,
+    "se": 1.58,
+    "extra_cpu": 298.19
+   },
+   "Collector": {
+    "n": 55,
+    "gain": 3.56,
+    "se": 1.25,
+    "extra_cpu": 182.66
+   },
+   "Donu and Deca": {
+    "n": 44,
+    "gain": 2.27,
+    "se": 1.54,
+    "extra_cpu": 375.23
+   },
+   "Giant Head": {
+    "n": 71,
+    "gain": 2.24,
+    "se": 0.87,
+    "extra_cpu": 31.39
+   },
+   "Gremlin Leader": {
+    "n": 129,
+    "gain": 1.83,
+    "se": 0.54,
+    "extra_cpu": 17.84
+   },
+   "Gremlin Nob": {
+    "n": 242,
+    "gain": 0.24,
+    "se": 0.26,
+    "extra_cpu": 4.92
+   },
+   "Hexaghost": {
+    "n": 93,
+    "gain": 1.96,
+    "se": 0.54,
+    "extra_cpu": 92.93
+   },
+   "Lagavulin": {
+    "n": 267,
+    "gain": 0.59,
+    "se": 0.34,
+    "extra_cpu": 11.29
+   },
+   "Nemesis": {
+    "n": 69,
+    "gain": 2.95,
+    "se": 0.97,
+    "extra_cpu": 31.42
+   },
+   "Reptomancer": {
+    "n": 69,
+    "gain": 3.8,
+    "se": 0.98,
+    "extra_cpu": 28.97
+   },
+   "Slavers": {
+    "n": 129,
+    "gain": 1.97,
+    "se": 0.44,
+    "extra_cpu": 12.51
+   },
+   "Slime Boss": {
+    "n": 80,
+    "gain": 2.01,
+    "se": 0.75,
+    "extra_cpu": 105.09
+   },
+   "The Guardian": {
+    "n": 81,
+    "gain": 2.24,
+    "se": 0.67,
+    "extra_cpu": 106.59
+   },
+   "Time Eater": {
+    "n": 47,
+    "gain": 3.22,
+    "se": 1.5,
+    "extra_cpu": 377.95
+   }
+  },
+  "enc_Q": 62.38,
+  "enc_df": 17
+ }
+}
