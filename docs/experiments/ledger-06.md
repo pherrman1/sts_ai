@@ -27370,3 +27370,37 @@ G16 (needs Philipp's go).
 Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 116.2 lane-hours.
 **Knowledge impact:** combat cost model. Within a chance-free stretch the reused tree's plan is trustworthy only where
 it is confident; the visit share is the gate.
+
+## §TBD — Learned budget step A (offline): is the gain from more combat simulations predictable per fight? §770 / §772 / §774's 1,878 Act 1-3 elite and boss fights at 16k / 32k / 64k (4 copies each): within an encounter no state-level signal above copy noise (split-half r ≈ 0); gains differ by encounter, costs about 100× and predictably; a cost-aware allocation beats a uniform budget at equal CPU by 0.2-0.6 HP per fight → HETEROGENEITY_IN_COST_NOT_IN_STATE (offline, 2026-11-12)
+
+**Question (Philipp, 2026-11-12 17:31 CET, "und ein gelerntes sim budget nach encoutner?"; go 17:34 CET):** can a
+model choose the combat simulation budget per fight from encounter and entry state? Step A asks the existing data
+whether the value of more simulations varies predictably at all.
+**Data:** [RESULT](evidence/learned_budget_offline_20261112/RESULT.md), `results/analysis.json`, `results/rows.json.gz`,
+`extract_rows.py`, `analyze.py`; design in
+[learned-encounter-budget.md](../knowledge-base/research/combat-search/learned-encounter-budget.md). The input is the
+share archives of §770 / §772 / §774, with reproduction 1,878 / 1,878 and 0 dropped.
+**Result (HP lost per fight, gain = low − high budget, copies 1-3, folds by run):**
+- g16 → g64 +0.41 HP [+0.18, +0.63]: signal variance ≈ 0 of 28.3, split-half r −0.09, encounters Q 18.4 / 17 df
+  (p 0.37).
+- g16mb → g64mb +0.51 [+0.28, +0.76]: signal 1%, r +0.02, Q 40.2 (p 0.001).
+- prod (about 4.5k) → g64mb +1.65 [+1.35, +1.97]: signal 13%, r +0.07, Q 62.4 (p < 0.001).
+- Cross-fitted prediction of the gain: corr 0.06-0.10 at 16k → 64k (encounter table ≥ state models) and 0.12-0.19 at prod → g64mb.
+- Extra CPU is predictable (log corr 0.87-0.91) and spans 4 s (Gremlin Nob) to 480 s (Awakened One).
+- Policy at 25% of the extra CPU against the same CPU spent at random, by ladder:
+  - g16 → g64: cost-only −0.23 HP [−0.37, −0.08], encounter −0.19.
+  - g16mb → g64mb: encounter −0.14 [−0.26, −0.02], others not shown.
+  - prod → g64mb: −0.52 to −0.59 for every model, including cost-only.
+**Interpretation (Inference):**
+- A learned budget pays through cost (encounters differ about 100× in the price of simulations, at most a few times
+  in their value), not through state-level gain prediction above 16k.
+- The heterogeneity grows toward the cheap end, which has no per-fight paired data under the Gumbel root.
+- HP lost undervalues bosses: their HP is healed after Acts 1-2, and deaths matter. Above 16k about 1-3 pp of boss
+  deaths are avoidable, and a cost-only HP policy starves exactly those fights. So a run-value currency is needed.
+- Baalorlord's states, Act 1-3 elites and bosses only.
+**Decision:** no default change. Next is step B0, offline: fit a currency V(post-fight state) = P(Heart) from whole-run battle
+traces. Then step B: a per-fight ladder at 1k-16k on our own states via `selffights`, with a draft PREREG in the
+design doc; it needs Philipp's typed go for seeds and workers and must wait for the roadmap campaign of PR #1039.
+Seeds: none. Cost: about 1 CPU-minute.
+**Knowledge impact:** combat budget allocation. The budget is a cost-allocation problem at the cheap end with a
+run-value currency, not a fight-difficulty predictor.
