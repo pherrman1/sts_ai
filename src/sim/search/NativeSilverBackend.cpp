@@ -142,6 +142,13 @@ namespace sts::search {
             // STS_SILVER_GUMBEL_ROOT_SIMS_HALLWAY=N (research, default 0 = as the other fights): the flat budget of
             // those fights in Acts 1-3 outside elite and boss rooms (per-encounter budget work, cheap-combat roadmap).
             std::int64_t gumbelRootSimsHallway = 0;
+            // STS_SILVER_PLAN_COMMIT=hard|S (research, default off): in a whole-run Gumbel fight, a root reached from
+            // the previous root by the chosen edge without a chance node (no draw or other randomness in between;
+            // the tree's child of that edge is this root) plays its inherited plan, the root edge with the most
+            // inherited visits (ties: higher mean value, then the first), without a search. `hard` commits whenever
+            // the root inherited visits; S in (0, 1] only when that edge holds at least the share S of them.
+            bool planCommit = false;
+            double planCommitMinShare = 0;
             // STS_SILVER_GUMBEL_STOP_TRACE=<csv> (research only, default off): one row per sequential-halving
             // boundary of every whole-run Gumbel root (SilverSearcher::gumbelBoundaryObserver); play unchanged.
             std::string gumbelStopTrace;
@@ -413,6 +420,9 @@ namespace sts::search {
         std::atomic<std::int64_t> g_wholeRunGumbelSims {0};
         std::atomic<std::int64_t> g_wholeRunGumbelStops {0};   // STS_SILVER_GUMBEL_LEARNED_STOP stops
         std::atomic<std::int64_t> g_wholeRunGumbelStopSims {0};   // budget left unspent by those stops
+        std::atomic<std::int64_t> g_planCommitEligible {0};   // STS_SILVER_PLAN_COMMIT: chance-free continuation roots
+        std::atomic<std::int64_t> g_planCommits {0};          // of those, roots that played the inherited plan
+        std::atomic<std::int64_t> g_planCommitUnspent {0};    // budget those commits did not search
         std::atomic<std::int64_t> g_reroots {0};
         std::atomic<std::int64_t> g_freshRoots {0};
         std::atomic<std::int64_t> g_inheritedVisits {0};   // over g_reroots
@@ -959,6 +969,9 @@ namespace sts::search {
             int decision = 0;
             NoProgressFingerprint previous;
             int noProgressRun = 0;
+            // STS_SILVER_PLAN_COMMIT: the tree's child of the edge chosen at the previous root, when that child is a
+            // decision node (no chance node after the action); null otherwise.
+            SilverSearcher::Node *planNext = nullptr;
             while (bc.outcome == Outcome::UNDECIDED) {
                 if (++decision > 1000) failState(gc, bc, "stall: exceeded 1000 decisions");
                 if (g_onCombatDecision) g_onCombatDecision(bc);
@@ -988,6 +1001,8 @@ namespace sts::search {
                 if (const auto error = nativeSilverSearchRoot(bc, knowledge, root); !error.empty()) {
                     failState(gc, bc, "conversion: " + error);
                 }
+                const bool planContinuation = planNext != nullptr && searcher && searcher->findNode(root) == planNext;
+                planNext = nullptr;
                 std::int64_t inheritedVisits = prepareSearcher(searcher, root, true);
                 configureSearcher(*searcher, false);
                 // STS_SILVER_TREE_PROFILE_SCOPE=real leaves out fights under a budget override
@@ -1003,6 +1018,15 @@ namespace sts::search {
                 // the retained graph for the next reroot. Exact-root-budget
                 // contracts search every root.
                 const bool skipSearch = skipSingletons && searcher->prepareRootActions() == 1;
+                // Research observer only: the inherited root edges before the search (plan-commitment study).
+                std::vector<NativeSilverRootView::PreEdge> preEdges;
+                if (g_nativeSilverRootObserver) {
+                    for (const auto &e : searcher->rootNode().edges) {
+                        const bool hasQ = e.node && e.node->simulationCount > 0;
+                        preEdges.push_back({e.action.bits, static_cast<std::int64_t>(e.visitCount),
+                                            hasQ ? e.node->evaluationSum / e.node->simulationCount : 0.0});
+                    }
+                }
                 const auto stepsBefore = searcher->stats.steps;
                 // Tree profile only (#888): cost, starting graph and checkpoint reads of this search.
                 const bool shape = searcher->profile != nullptr;
@@ -1020,9 +1044,36 @@ namespace sts::search {
                 }
                 const auto playoutsBefore = searcher->stats.rolloutPlayouts;
                 const auto rolloutActionsBefore = searcher->stats.rolloutActions;
+                // STS_SILVER_PLAN_COMMIT: the inherited plan at a chance-free continuation root.
+                int planEdge = -1;
+                if (g_options.planCommit && wholeRunGumbel && planContinuation && !skipSearch && inheritedVisits > 0) {
+                    ++g_planCommitEligible;
+                    const auto &edges = searcher->rootNode().edges;
+                    std::int64_t total = 0;
+                    double bestQ = 0;
+                    for (int i = 0; i < static_cast<int>(edges.size()); ++i) {
+                        const auto &e = edges[i];
+                        total += e.visitCount;
+                        if (e.visitCount <= 0) continue;
+                        const double q = e.node && e.node->simulationCount > 0
+                            ? e.node->evaluationSum / e.node->simulationCount : -1e300;
+                        if (planEdge < 0 || e.visitCount > edges[planEdge].visitCount
+                                || (e.visitCount == edges[planEdge].visitCount && q > bestQ)) {
+                            planEdge = i;
+                            bestQ = q;
+                        }
+                    }
+                    if (planEdge >= 0 && static_cast<double>(edges[planEdge].visitCount)
+                            < g_options.planCommitMinShare * static_cast<double>(total))
+                        planEdge = -1;
+                }
                 try {
                     if (skipSearch) {
                         ++g_singletonSkips;
+                    } else if (planEdge >= 0) {
+                        searcher->commitRootEdge(planEdge);
+                        ++g_planCommits;
+                        g_planCommitUnspent += flatBudget;
                     } else if (learnedStop || lockOnly || stopTrace) {
                         // Checkpointed search. The trace runs every checkpoint
                         // (the full-budget leader is the label); the learned
@@ -1203,6 +1254,14 @@ namespace sts::search {
                 if (!action.isValidAction(bc)) {
                     failState(gc, bc, "selected action is not valid on the live state");
                 }
+                if (g_options.planCommit && wholeRunGumbel) {
+                    const auto chosen = searcher->bestAction();
+                    for (const auto &e : searcher->rootNode().edges)
+                        if (e.action.bits == chosen.bits) {
+                            if (e.node && !e.node->isRandomNode) planNext = e.node;
+                            break;
+                        }
+                }
                 traceUselessAction(gc, bc, decision, *searcher, action, configured, simulations);
                 tracePublicAction(gc, bc, knowledge, decision, *searcher, action,
                                   inheritedVisits, configured, simulations);
@@ -1210,7 +1269,7 @@ namespace sts::search {
                     KnowledgeObserverSuspension observing;
                     g_nativeSilverRootObserver({gc, bc, *searcher, decision, inheritedVisits, simulations,
                                                 skipSearch, action, labelSearch ? labelSearcher.get() : nullptr,
-                                                labelInheritedVisits});
+                                                labelInheritedVisits, &preEdges});
                 }
                 if (searcher->profile) {
                     shapeRow["cpu_seconds"] = threadCpuSeconds() - cpuBefore;
@@ -1507,6 +1566,26 @@ namespace sts::search {
                         "STS_SILVER_GUMBEL_ROOT_SIMS_HALLWAY must be 0 or an integer in [1, 10000000]");
                 g_options.gumbelRootSimsHallway = v;
                 gumbelRoomsText += ", hallway sims " + std::to_string(v);
+            }
+            if (const char *raw = std::getenv("STS_SILVER_PLAN_COMMIT"); raw && *raw && std::string(raw) != "0") {
+                if (g_options.gumbelRootK == 0)
+                    throw std::runtime_error("STS_SILVER_PLAN_COMMIT requires STS_SILVER_GUMBEL_ROOT");
+                double share = 0;
+                if (std::string(raw) != "hard") {
+                    char *end = nullptr;
+                    share = std::strtod(raw, &end);
+                    if (end == raw || *end != '\0' || !std::isfinite(share) || share <= 0 || share > 1)
+                        throw std::runtime_error("STS_SILVER_PLAN_COMMIT must be 0, hard or a share in (0, 1]");
+                }
+                g_options.planCommit = true;
+                g_options.planCommitMinShare = share;
+                std::cerr << "[silver] research search: plan commit " << (share > 0 ? "min share " : "hard")
+                          << (share > 0 ? std::string(raw) : std::string()) << "\n";
+                std::atexit([] {
+                    std::cerr << "[silver] plan commit: eligible=" << g_planCommitEligible.load()
+                              << " commits=" << g_planCommits.load() << " unspent_sims=" << g_planCommitUnspent.load()
+                              << "\n";
+                });
             }
             const auto decimalEnv = [](const char *name, double hi) {
                 const char *raw = std::getenv(name);

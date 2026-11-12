@@ -1,0 +1,16 @@
+Smoke, seeds 111378263 and 111378259 (part of the gated block; the smoke games are not used), binary ca8d9d0b
+(code 3c85fb26), 4 games in parallel on one 4-core cloud container, 2026-11-12.
+
+arm  seed       rc  Heart  final HP  CPU s/run  Gumbel roots  sims        plan eligible / commits
+A4P  111378263  0   kill   74        394.8      688           11,455,852  -
+PCH  111378263  0   kill   78        197.1      308            5,231,932  379 / 379
+PCS  111378263  0   kill   48        246.3      505            8,727,882  407 / 187
+PCH  111378259  0   loss   0 (fl 56) 186.1      353            5,999,906  431 / 431
+
+Identity: A4P with STS_SILVER_PLAN_COMMIT unset reproduces §792's campaign game on 111378263 (whole .log except
+BEST timing, [heart1_ppo] seed= and whole-run Gumbel roots= lines identical; .env identical except the net path;
+§792's game took 294.4 s on its machine, here 394.8 s with 4 games sharing the container).
+Cost on 111378263: PCH 0.50x A4P (0.46x the simulations), PCS 0.62x (0.76x). On 111378259 §792's A4P game took
+487.6 s (also a Heart loss); PCH took 186.1 s here.
+Eligible roots (chance-free continuation roots with inherited visits) are 55% of all roots of the run (all fights,
+hallway included). PCH and PCS printed their "[silver] research search: plan commit" lines; A4P did not.

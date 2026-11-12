@@ -150,6 +150,16 @@ Data, scripts and tables: [step 0 evidence](../../../experiments/evidence/cheap_
 - **Next:** the proven-win stop (Heart CPU), then Act 1-3 boss prior playouts at a lower budget and Act-4 budgets on
   top of A4P.
 
+### Plan commitment (Philipp's idea, 2026-11-12 08:33 CET)
+
+- **Idea:** at a root reached without a chance event since the previous root, play the reused tree's plan edge
+  without a new search (`STS_SILVER_PLAN_COMMIT`).
+- **Result (§793, 2026-11-12):** whole runs against §792's A4P on §775's seeds
+  ([RESULT](../../../experiments/evidence/plan_commit_wholerun_20261112/RESULT.md)).
+  - PCH (always): −3.91 pp [−6.74, −1.07], WORSE, at 0.54× CPU (161 s per run).
+  - PCS (plan edge ≥ 90% of the inherited visits): −0.20 pp [−2.83, +2.54], NOT_WORSE_3PP, at 0.81× CPU (240 s).
+- **Next:** PCS on GP16 + H4 (the cheap stack), or PCS on G16 paid by the savings.
+
 ### Track 1. Narrow Gumbel root (demoted by step 0)
 
 - **Result (§791, 2026-11-12):** k 4 without noise at 8k on G16 + mb4: P4 (g7f_E top 4) −8.40 pp [−11.43, −5.37],

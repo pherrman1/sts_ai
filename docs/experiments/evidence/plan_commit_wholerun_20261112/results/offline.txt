@@ -1,0 +1,30 @@
+Offline plan-commitment check, 2026-11-12. 32 A4P runs (§792 environment, seeds offline/seeds32.txt = the first 32 §775 seeds
+whose A4P game reached the Heart), re-recorded with one_combat endgamerootgen 1 16000 20 SEED OUT 99 (code 3c85fb26's
+recorder with preEdges; rows otherwise identical to the code-4c4e42eb recorder). Continuation proxy: same turn,
+decision = previous + 1, hand size = previous - 1. plan = edge with most inherited visits (ties: higher Q).
+
+$ python3 offline/plan_agreement.py OUT2
+act4-elite   cont  roots   692 sims    10.5M  with plan   645  plan==choice 0.710  inh median    5541  Q-gap when differ median 0.00 mean -0.07 n 187
+act4-elite   other roots   678 sims    10.7M  with plan   467  plan==choice 0.373  inh median     459  Q-gap when differ median -0.00 mean 0.72 n 293
+boss         cont  roots  3461 sims    50.5M  with plan  3115  plan==choice 0.704  inh median    5890  Q-gap when differ median 0.00 mean 0.34 n 922
+boss         other roots  2770 sims    43.3M  with plan  1901  plan==choice 0.431  inh median     460  Q-gap when differ median 0.08 mean 1.13 n 1082
+elite        cont  roots  4033 sims    59.2M  with plan  3676  plan==choice 0.742  inh median    5965  Q-gap when differ median -0.01 mean 0.13 n 948
+elite        other roots  3296 sims    51.8M  with plan  2199  plan==choice 0.471  inh median     462  Q-gap when differ median 0.07 mean 0.91 n 1164
+heart        cont  roots   898 sims    32.3M  with plan   870  plan==choice 0.614  inh median   15614  Q-gap when differ median 0.00 mean 0.12 n 336
+heart        other roots   894 sims    34.6M  with plan   646  plan==choice 0.393  inh median    1410  Q-gap when differ median 0.00 mean 0.86 n 392
+
+$ python3 offline/plan_share.py   (continuation roots, by minimum plan share of inherited visits; 'other' = elites, bosses, act-4 elites)
+other cont roots 7436
+  share>=0.00: roots 1.00 sims saved 1.00 agree 0.723 gap mean 0.215 median 0.000 p90 1.89
+  share>=0.50: roots 0.69 sims saved 0.66 agree 0.837 gap mean 0.319 median -0.000 p90 3.06
+  share>=0.70: roots 0.55 sims saved 0.51 agree 0.880 gap mean 0.276 median 0.052 p90 3.83
+  share>=0.80: roots 0.50 sims saved 0.45 agree 0.895 gap mean 0.290 median 0.014 p90 4.26
+  share>=0.90: roots 0.41 sims saved 0.36 agree 0.916 gap mean 0.219 median -0.045 p90 4.59
+  share>=0.95: roots 0.34 sims saved 0.29 agree 0.937 gap mean 0.968 median 0.481 p90 5.55
+heart cont roots 870
+  share>=0.00: roots 1.00 sims saved 1.00 agree 0.611 gap mean 0.125 median 0.000 p90 1.18
+  share>=0.50: roots 0.57 sims saved 0.52 agree 0.818 gap mean 0.283 median -0.000 p90 2.89
+  share>=0.70: roots 0.46 sims saved 0.40 agree 0.847 gap mean 0.484 median 0.213 p90 4.17
+  share>=0.80: roots 0.42 sims saved 0.36 agree 0.856 gap mean 0.879 median 0.289 p90 5.64
+  share>=0.90: roots 0.37 sims saved 0.30 agree 0.877 gap mean 0.542 median 0.256 p90 5.64
+  share>=0.95: roots 0.34 sims saved 0.26 agree 0.881 gap mean 0.680 median 0.313 p90 5.64
