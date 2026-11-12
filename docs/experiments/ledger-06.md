@@ -27288,7 +27288,7 @@ Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 181.4 lane-hours
 **Knowledge impact:** combat cost model. Root width and root budget are not the lever for cheap 40% combat;
 offline top-k coverage of the teacher's pick overstates what a narrow root keeps.
 
-## §TBD — Per-encounter budget in whole runs: E0's GP16 with 4,000 simulations in Act 1-3 hallway fights (H4) and §775's G16 + mb4 with prior playouts only in Act 4 (A4P), against E0's GP16, net-0420 out of combat, 1,024 paired A20 seeds, control reused after a 32/32 sentinel: H4 +0.39 pp [−2.54, +3.22] → NOT_WORSE_3PP at 0.82× CPU; A4P +1.56 pp [+0.10, +3.12] → PASS at 2.07× CPU (cloud, 2026-11-12)
+## §792 — Per-encounter budget in whole runs: E0's GP16 with 4,000 simulations in Act 1-3 hallway fights (H4) and §775's G16 + mb4 with prior playouts only in Act 4 (A4P), against E0's GP16, net-0420 out of combat, 1,024 paired A20 seeds, control reused after a 32/32 sentinel: H4 +0.39 pp [−2.54, +3.22] → NOT_WORSE_3PP at 0.82× CPU; A4P +1.56 pp [+0.10, +3.12] → PASS at 2.07× CPU (cloud, 2026-11-12)
 
 **Question (Philipp, 2026-11-11 23:43 CET, "Ja, für Bosse, elites, eigentlich alle encounter. Dafür hast du mein
 go"; 40 workers 23:48 CET):** after §790 (GP16, prior playouts off: 35.74% at 143 s per run) and §791 (halving the

@@ -141,7 +141,7 @@ Data, scripts and tables: [step 0 evidence](../../../experiments/evidence/cheap_
 
 ### Per-encounter budget (after E0; Philipp's go 2026-11-11 23:43 CET)
 
-- **Result (§TBD, 2026-11-12):** whole runs against E0's GP16 on §775's seeds
+- **Result (§792, 2026-11-12):** whole runs against E0's GP16 on §775's seeds
   ([RESULT](../../../experiments/evidence/encounter_budget_wholerun_20261112/RESULT.md)).
   - H4 (4,000 simulations in Act 1-3 hallway fights): +0.39 pp [−2.54, +3.22], NOT_WORSE_3PP, at 0.82× CPU (117 s per run).
   - A4P (prior playouts only in Act 4): +1.56 pp [+0.10, +3.12], PASS, at 2.07× CPU (297 s).
