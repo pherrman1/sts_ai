@@ -37,14 +37,6 @@
    "cov": -0.486
   },
   "extra_cpu_pred_corr": 0.873,
-  "cpu_share_to_reach_hi_loss": {
-   "const_gain_cost_only": 0.923234699284116,
-   "enc": 0.8583959735979747,
-   "ridge": 0.9992519300396703,
-   "gbm": 0.9894016023032368,
-   "gbm+probe": 0.9408741632043903,
-   "oracle_split": 0.930144413288895
-  },
   "policy_matched_cpu": {
    "const_gain_cost_only": [
     {
@@ -78,6 +70,24 @@
      "ci": [
       -0.237,
       -0.009
+     ]
+    },
+    {
+     "q_cpu": 0.324,
+     "share_hi": 0.857,
+     "policy": 4.971,
+     "uniform_mix": 5.1,
+     "policy_minus_uniform": -0.129,
+     "ci": [
+      -0.261,
+      0.003
+     ],
+     "vs_uniform_middle": "32",
+     "uniform_middle": 4.898,
+     "policy_minus_uniform_middle": 0.072,
+     "ci_middle": [
+      -0.15,
+      0.305
      ]
     }
    ],
@@ -114,6 +124,24 @@
       -0.189,
       0.023
      ]
+    },
+    {
+     "q_cpu": 0.324,
+     "share_hi": 0.693,
+     "policy": 5.002,
+     "uniform_mix": 5.1,
+     "policy_minus_uniform": -0.098,
+     "ci": [
+      -0.214,
+      0.014
+     ],
+     "vs_uniform_middle": "32",
+     "uniform_middle": 4.898,
+     "policy_minus_uniform_middle": 0.104,
+     "ci_middle": [
+      -0.106,
+      0.31
+     ]
     }
    ],
    "ridge": [
@@ -148,6 +176,24 @@
      "ci": [
       -0.188,
       0.071
+     ]
+    },
+    {
+     "q_cpu": 0.324,
+     "share_hi": 0.758,
+     "policy": 4.998,
+     "uniform_mix": 5.1,
+     "policy_minus_uniform": -0.102,
+     "ci": [
+      -0.248,
+      0.043
+     ],
+     "vs_uniform_middle": "32",
+     "uniform_middle": 4.898,
+     "policy_minus_uniform_middle": 0.1,
+     "ci_middle": [
+      -0.121,
+      0.317
      ]
     }
    ],
@@ -184,6 +230,24 @@
       -0.11,
       0.133
      ]
+    },
+    {
+     "q_cpu": 0.324,
+     "share_hi": 0.548,
+     "policy": 5.052,
+     "uniform_mix": 5.1,
+     "policy_minus_uniform": -0.048,
+     "ci": [
+      -0.162,
+      0.073
+     ],
+     "vs_uniform_middle": "32",
+     "uniform_middle": 4.898,
+     "policy_minus_uniform_middle": 0.154,
+     "ci_middle": [
+      -0.051,
+      0.361
+     ]
     }
    ],
    "gbm+probe": [
@@ -218,6 +282,24 @@
      "ci": [
       -0.121,
       0.105
+     ]
+    },
+    {
+     "q_cpu": 0.324,
+     "share_hi": 0.504,
+     "policy": 5.077,
+     "uniform_mix": 5.1,
+     "policy_minus_uniform": -0.023,
+     "ci": [
+      -0.154,
+      0.101
+     ],
+     "vs_uniform_middle": "32",
+     "uniform_middle": 4.898,
+     "policy_minus_uniform_middle": 0.179,
+     "ci_middle": [
+      -0.036,
+      0.385
      ]
     }
    ],
@@ -254,8 +336,88 @@
       -0.105,
       0.173
      ]
+    },
+    {
+     "q_cpu": 0.324,
+     "share_hi": 0.346,
+     "policy": 5.111,
+     "uniform_mix": 5.083,
+     "policy_minus_uniform": 0.028,
+     "ci": [
+      -0.103,
+      0.158
+     ],
+     "vs_uniform_middle": "32",
+     "uniform_middle": 5.007,
+     "policy_minus_uniform_middle": 0.104,
+     "ci_middle": [
+      -0.175,
+      0.388
+     ]
     }
    ]
+  },
+  "three_level_vs_uniform_middle": {
+   "const": {
+    "share_lo_mid_hi": [
+     0.031,
+     0.341,
+     0.628
+    ],
+    "cpu_ratio_vs_mid": 1.022,
+    "policy": 4.94,
+    "uniform_middle": 4.898,
+    "policy_minus_uniform_middle": 0.042,
+    "ci": [
+     -0.087,
+     0.172
+    ]
+   },
+   "enc": {
+    "share_lo_mid_hi": [
+     0.13,
+     0.491,
+     0.378
+    ],
+    "cpu_ratio_vs_mid": 0.962,
+    "policy": 4.978,
+    "uniform_middle": 4.898,
+    "policy_minus_uniform_middle": 0.08,
+    "ci": [
+     -0.05,
+     0.215
+    ]
+   },
+   "ridge": {
+    "share_lo_mid_hi": [
+     0.095,
+     0.543,
+     0.363
+    ],
+    "cpu_ratio_vs_mid": 1.018,
+    "policy": 4.932,
+    "uniform_middle": 4.898,
+    "policy_minus_uniform_middle": 0.034,
+    "ci": [
+     -0.074,
+     0.135
+    ]
+   },
+   "ridge+probe": {
+    "share_lo_mid_hi": [
+     0.12,
+     0.503,
+     0.377
+    ],
+    "cpu_ratio_vs_mid": 1.008,
+    "policy": 5.014,
+    "uniform_middle": 4.898,
+    "policy_minus_uniform_middle": 0.116,
+    "ci": [
+     -0.006,
+     0.24
+    ]
+   }
   },
   "by_encounter": {
    "3 Sentries": {
@@ -406,14 +568,6 @@
    "cov": 0.169
   },
   "extra_cpu_pred_corr": 0.905,
-  "cpu_share_to_reach_hi_loss": {
-   "const_gain_cost_only": 0.9525268583524372,
-   "enc": 0.811794720168436,
-   "ridge": 0.4876585396373751,
-   "gbm": null,
-   "gbm+probe": null,
-   "oracle_split": 0.9158078791162547
-  },
   "policy_matched_cpu": {
    "const_gain_cost_only": [
     {
@@ -447,6 +601,24 @@
      "ci": [
       -0.215,
       0.043
+     ]
+    },
+    {
+     "q_cpu": 0.338,
+     "share_hi": 0.856,
+     "policy": 4.789,
+     "uniform_mix": 4.843,
+     "policy_minus_uniform": -0.053,
+     "ci": [
+      -0.177,
+      0.078
+     ],
+     "vs_uniform_middle": "32mb",
+     "uniform_middle": 4.781,
+     "policy_minus_uniform_middle": 0.008,
+     "ci_middle": [
+      -0.204,
+      0.243
      ]
     }
    ],
@@ -483,6 +655,24 @@
       -0.157,
       0.09
      ]
+    },
+    {
+     "q_cpu": 0.338,
+     "share_hi": 0.583,
+     "policy": 4.773,
+     "uniform_mix": 4.842,
+     "policy_minus_uniform": -0.07,
+     "ci": [
+      -0.209,
+      0.055
+     ],
+     "vs_uniform_middle": "32mb",
+     "uniform_middle": 4.781,
+     "policy_minus_uniform_middle": -0.008,
+     "ci_middle": [
+      -0.228,
+      0.222
+     ]
     }
    ],
    "ridge": [
@@ -517,6 +707,24 @@
      "ci": [
       -0.262,
       -0.042
+     ]
+    },
+    {
+     "q_cpu": 0.338,
+     "share_hi": 0.589,
+     "policy": 4.745,
+     "uniform_mix": 4.842,
+     "policy_minus_uniform": -0.098,
+     "ci": [
+      -0.218,
+      0.026
+     ],
+     "vs_uniform_middle": "32mb",
+     "uniform_middle": 4.781,
+     "policy_minus_uniform_middle": -0.036,
+     "ci_middle": [
+      -0.255,
+      0.203
      ]
     }
    ],
@@ -553,6 +761,24 @@
       -0.119,
       0.135
      ]
+    },
+    {
+     "q_cpu": 0.338,
+     "share_hi": 0.49,
+     "policy": 4.806,
+     "uniform_mix": 4.842,
+     "policy_minus_uniform": -0.037,
+     "ci": [
+      -0.164,
+      0.084
+     ],
+     "vs_uniform_middle": "32mb",
+     "uniform_middle": 4.781,
+     "policy_minus_uniform_middle": 0.025,
+     "ci_middle": [
+      -0.199,
+      0.255
+     ]
     }
    ],
    "gbm+probe": [
@@ -587,6 +813,24 @@
      "ci": [
       -0.168,
       0.073
+     ]
+    },
+    {
+     "q_cpu": 0.338,
+     "share_hi": 0.455,
+     "policy": 4.782,
+     "uniform_mix": 4.842,
+     "policy_minus_uniform": -0.06,
+     "ci": [
+      -0.185,
+      0.066
+     ],
+     "vs_uniform_middle": "32mb",
+     "uniform_middle": 4.781,
+     "policy_minus_uniform_middle": 0.001,
+     "ci_middle": [
+      -0.22,
+      0.233
      ]
     }
    ],
@@ -623,8 +867,88 @@
       -0.182,
       0.077
      ]
+    },
+    {
+     "q_cpu": 0.338,
+     "share_hi": 0.378,
+     "policy": 4.852,
+     "uniform_mix": 4.937,
+     "policy_minus_uniform": -0.085,
+     "ci": [
+      -0.208,
+      0.039
+     ],
+     "vs_uniform_middle": "32mb",
+     "uniform_middle": 4.849,
+     "policy_minus_uniform_middle": 0.003,
+     "ci_middle": [
+      -0.268,
+      0.26
+     ]
     }
    ]
+  },
+  "three_level_vs_uniform_middle": {
+   "const": {
+    "share_lo_mid_hi": [
+     0.084,
+     0.149,
+     0.767
+    ],
+    "cpu_ratio_vs_mid": 0.967,
+    "policy": 4.653,
+    "uniform_middle": 4.781,
+    "policy_minus_uniform_middle": -0.128,
+    "ci": [
+     -0.305,
+     0.064
+    ]
+   },
+   "enc": {
+    "share_lo_mid_hi": [
+     0.298,
+     0.481,
+     0.221
+    ],
+    "cpu_ratio_vs_mid": 0.958,
+    "policy": 4.761,
+    "uniform_middle": 4.781,
+    "policy_minus_uniform_middle": -0.02,
+    "ci": [
+     -0.17,
+     0.138
+    ]
+   },
+   "ridge": {
+    "share_lo_mid_hi": [
+     0.211,
+     0.38,
+     0.409
+    ],
+    "cpu_ratio_vs_mid": 0.945,
+    "policy": 4.784,
+    "uniform_middle": 4.781,
+    "policy_minus_uniform_middle": 0.003,
+    "ci": [
+     -0.196,
+     0.211
+    ]
+   },
+   "ridge+probe": {
+    "share_lo_mid_hi": [
+     0.276,
+     0.378,
+     0.346
+    ],
+    "cpu_ratio_vs_mid": 1.005,
+    "policy": 4.87,
+    "uniform_middle": 4.781,
+    "policy_minus_uniform_middle": 0.089,
+    "ci": [
+     -0.12,
+     0.286
+    ]
+   }
   },
   "by_encounter": {
    "3 Sentries": {
@@ -775,14 +1099,6 @@
    "cov": 1.285
   },
   "extra_cpu_pred_corr": 0.908,
-  "cpu_share_to_reach_hi_loss": {
-   "const_gain_cost_only": 0.9999999999999998,
-   "enc": 0.9999273145961305,
-   "ridge": 0.9953041581883757,
-   "gbm": 0.9994289919529655,
-   "gbm+probe": 0.9995151971502606,
-   "oracle_split": 0.994928913129877
-  },
   "policy_matched_cpu": {
    "const_gain_cost_only": [
     {
@@ -816,6 +1132,24 @@
      "ci": [
       -0.443,
       -0.163
+     ]
+    },
+    {
+     "q_cpu": 0.197,
+     "share_hi": 0.768,
+     "policy": 5.067,
+     "uniform_mix": 5.426,
+     "policy_minus_uniform": -0.359,
+     "ci": [
+      -0.515,
+      -0.199
+     ],
+     "vs_uniform_middle": "16mb",
+     "uniform_middle": 4.933,
+     "policy_minus_uniform_middle": 0.133,
+     "ci_middle": [
+      -0.117,
+      0.389
      ]
     }
    ],
@@ -852,6 +1186,24 @@
       -0.372,
       -0.084
      ]
+    },
+    {
+     "q_cpu": 0.197,
+     "share_hi": 0.651,
+     "policy": 5.15,
+     "uniform_mix": 5.426,
+     "policy_minus_uniform": -0.275,
+     "ci": [
+      -0.431,
+      -0.123
+     ],
+     "vs_uniform_middle": "16mb",
+     "uniform_middle": 4.933,
+     "policy_minus_uniform_middle": 0.217,
+     "ci_middle": [
+      -0.025,
+      0.468
+     ]
     }
    ],
    "ridge": [
@@ -886,6 +1238,24 @@
      "ci": [
       -0.503,
       -0.258
+     ]
+    },
+    {
+     "q_cpu": 0.197,
+     "share_hi": 0.608,
+     "policy": 5.036,
+     "uniform_mix": 5.426,
+     "policy_minus_uniform": -0.39,
+     "ci": [
+      -0.535,
+      -0.232
+     ],
+     "vs_uniform_middle": "16mb",
+     "uniform_middle": 4.933,
+     "policy_minus_uniform_middle": 0.103,
+     "ci_middle": [
+      -0.137,
+      0.351
      ]
     }
    ],
@@ -922,6 +1292,24 @@
       -0.316,
       -0.053
      ]
+    },
+    {
+     "q_cpu": 0.197,
+     "share_hi": 0.51,
+     "policy": 5.185,
+     "uniform_mix": 5.426,
+     "policy_minus_uniform": -0.241,
+     "ci": [
+      -0.374,
+      -0.102
+     ],
+     "vs_uniform_middle": "16mb",
+     "uniform_middle": 4.933,
+     "policy_minus_uniform_middle": 0.252,
+     "ci_middle": [
+      0.017,
+      0.497
+     ]
     }
    ],
    "gbm+probe": [
@@ -956,6 +1344,24 @@
      "ci": [
       -0.32,
       -0.071
+     ]
+    },
+    {
+     "q_cpu": 0.197,
+     "share_hi": 0.499,
+     "policy": 5.1,
+     "uniform_mix": 5.426,
+     "policy_minus_uniform": -0.326,
+     "ci": [
+      -0.463,
+      -0.187
+     ],
+     "vs_uniform_middle": "16mb",
+     "uniform_middle": 4.933,
+     "policy_minus_uniform_middle": 0.166,
+     "ci_middle": [
+      -0.059,
+      0.401
      ]
     }
    ],
@@ -992,8 +1398,88 @@
       -0.164,
       0.136
      ]
+    },
+    {
+     "q_cpu": 0.197,
+     "share_hi": 0.395,
+     "policy": 5.246,
+     "uniform_mix": 5.447,
+     "policy_minus_uniform": -0.201,
+     "ci": [
+      -0.354,
+      -0.047
+     ],
+     "vs_uniform_middle": "16mb",
+     "uniform_middle": 5.029,
+     "policy_minus_uniform_middle": 0.217,
+     "ci_middle": [
+      -0.072,
+      0.53
+     ]
     }
    ]
+  },
+  "three_level_vs_uniform_middle": {
+   "const": {
+    "share_lo_mid_hi": [
+     0.083,
+     0.29,
+     0.627
+    ],
+    "cpu_ratio_vs_mid": 0.967,
+    "policy": 4.988,
+    "uniform_middle": 4.933,
+    "policy_minus_uniform_middle": 0.054,
+    "ci": [
+     -0.108,
+     0.211
+    ]
+   },
+   "enc": {
+    "share_lo_mid_hi": [
+     0.114,
+     0.507,
+     0.379
+    ],
+    "cpu_ratio_vs_mid": 0.998,
+    "policy": 4.99,
+    "uniform_middle": 4.933,
+    "policy_minus_uniform_middle": 0.057,
+    "ci": [
+     -0.073,
+     0.2
+    ]
+   },
+   "ridge": {
+    "share_lo_mid_hi": [
+     0.202,
+     0.452,
+     0.346
+    ],
+    "cpu_ratio_vs_mid": 0.967,
+    "policy": 4.979,
+    "uniform_middle": 4.933,
+    "policy_minus_uniform_middle": 0.046,
+    "ci": [
+     -0.086,
+     0.183
+    ]
+   },
+   "ridge+probe": {
+    "share_lo_mid_hi": [
+     0.227,
+     0.467,
+     0.306
+    ],
+    "cpu_ratio_vs_mid": 0.98,
+    "policy": 4.941,
+    "uniform_middle": 4.933,
+    "policy_minus_uniform_middle": 0.007,
+    "ci": [
+     -0.14,
+     0.163
+    ]
+   }
   },
   "by_encounter": {
    "3 Sentries": {

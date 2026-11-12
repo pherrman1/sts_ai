@@ -29,7 +29,7 @@ room = lambda r: r['room'] if r['room'] in ROOMS else 'NORMAL'
 def X_of(rs, hp_delta=0):
     X = []
     for r in rs:
-        hp = min(int(r['hp_post']) + hp_delta, int(r['maxhp_post']))
+        hp = max(1, min(int(r['hp_post']) + hp_delta, int(r['maxhp_post'])))
         mx = int(r['maxhp_post'])
         a = int(r['act'])
         X.append([a, int(r['floor']), ROOMS.index(room(r)), hp, mx, hp / mx, int(r['deck_pre']),

@@ -32,14 +32,19 @@ per run. There are no hand rules. The encounter is a feature, and one price knob
   - Between 16k and 64k the per-fight gain shows no state-level signal above copy noise (split-half r ≈ 0).
   - Gains differ by encounter (p 0.001 with max backup).
   - Cost differs about 100× by encounter and is predictable (r ≈ 0.9).
-  - A cost-aware allocation beats a uniform budget at equal CPU by 0.2-0.6 HP per fight. Most of this comes from
-    the cost side.
-  - From about 4.5k to 64k, 13% of the gain variance is real signal.
+  - **No learned allocation beats the uniform middle budget at equal CPU** (32k, or 16k mb on the prod ladder), in HP
+    or in Heart pp, whether two-level or 3-level and whether by cost, encounter, state or probe. The earlier
+    "+0.2-0.6 HP" was measured against a random mix of the low and high budget, which is below a concave budget curve
+    (review J, R1).
+  - From about 4.5k to 64k, the variance decomposition gives 10-13% signal (and 10-11% on all ladders in Heart pp),
+    but split-half r ≈ 0, so it is not reproducible per fight.
   - HP lost undervalues bosses, whose HP is mostly healed after Acts 1-2. There the deaths matter: about 1-3 pp per
     boss fight are avoidable.
 
-**Inference.** A learned budget is worth testing as a **cost-aware allocation at the cheap end (1k-16k)** with a
-**run-value currency**. Above 16k no state-level gain predictor can be learned from the data that exists.
+**Inference.** At 16k-64k a learned allocation is NOT_SHOWN, and a uniform budget is as good. The open question is
+only the cheap end (1k-16k), hallway fights and Act 4, where the budget curve is steeper and costs differ by room
+class (§792's H4 worked as a uniform per-room budget). The prior for step B is weak, and it is worth running only as
+a cheap check against the uniform frontier.
 
 ## Design
 
@@ -58,7 +63,7 @@ the target (a control's CPU for the gainer test). The models are small, either s
 gradient-boosted trees, monotone in b. The simplest model that is not worse in cross-fit is chosen.
 
 **Currency (step B0, offline, done 2026-11-12; `currency.py`, see step A's RESULT).** Measured, associational: +1 HP
-after a fight ≈ 0.27-0.67 pp Heart; a death ≈ 100-180 HP. Step A's conclusion holds in this currency. Original plan: The post-fight run value V(act, floor, HP, max HP,
+after a fight ≈ 0.27-0.67 pp Heart; a death ≈ 100-180 HP. Step A's corrected conclusion (no gain over the uniform middle budget) holds in this currency. Original plan: The post-fight run value V(act, floor, HP, max HP,
 deck size, death) is fitted as the probability of a Heart kill. It uses the existing whole-run battle traces, for
 example `gumbel_wholerun_trace_20261109/results/battles.csv.gz` (46,932 battles with HP before and after and the
 seed's outcome), and the per-battle data of §790 / §792 / §793. A death is V = 0. It is frozen before step B's

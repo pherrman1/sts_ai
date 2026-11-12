@@ -138,7 +138,13 @@ for lname, lad in LADDERS.items():
             score = g / xc
             Llo_e, Lhi_e = Llo, Lhi
         rows = []
-        for q in (0.1, 0.25, 0.5):
+        mid = lad[1]
+        q_mid = float((cpu(mid) - clo).sum() / (chi - clo).sum())
+        if name == 'oracle_split':
+            Lmid_e = np.array([np.mean([r[G[mid] + '_copies'][c] for c in (2, 3)]) for r in R])
+        else:
+            Lmid_e = loss(mid)
+        for q in (0.1, 0.25, 0.5, q_mid):
             # spend the CPU of sending a q share (by CPU) of the fights to hi, chosen by score
             budget = clo.sum() + q * (chi - clo).sum()
             order = np.argsort(-score)
@@ -153,11 +159,51 @@ for lname, lad in LADDERS.items():
             uni_mean = Llo_e.mean() + qq * (Lhi_e - Llo_e).mean()
             # per-fight paired contrast for a CI: policy - uniform-mix expectation (negative = policy loses less HP)
             gain_i = np.where(take, Lhi_e - Llo_e, 0.0) - qq * (Lhi_e - Llo_e)
-            rows.append(dict(q_cpu=round(float(qq), 3), share_hi=round(float(take.mean()), 3),
-                             policy=round(float(pol_loss.mean()), 3), uniform_mix=round(float(uni_mean), 3),
-                             policy_minus_uniform=round(float(gain_i.mean()), 3), ci=cluster_boot(gain_i)))
+            row = dict(q_cpu=round(float(qq), 3), share_hi=round(float(take.mean()), 3),
+                       policy=round(float(pol_loss.mean()), 3), uniform_mix=round(float(uni_mean), 3),
+                       policy_minus_uniform=round(float(gain_i.mean()), 3), ci=cluster_boot(gain_i))
+            if q == q_mid:
+                # against the real uniform middle budget at its own CPU (the concave-curve comparison)
+                row['vs_uniform_middle'] = mid
+                row['uniform_middle'] = round(float(Lmid_e.mean()), 3)
+                row['policy_minus_uniform_middle'] = round(float((pol_loss - Lmid_e).mean()), 3)
+                row['ci_middle'] = cluster_boot(pol_loss - Lmid_e)
+            rows.append(row)
         pol[name] = rows
     res['policy_matched_cpu'] = pol
+    # three-level policy (lo / mid / hi per fight): predicted increments by model, predicted costs, one price lambda
+    # chosen so the predicted spend equals the uniform middle budget's; compared with that uniform middle arm.
+    mid = lad[1]
+    cmid = cpu(mid)
+    xm = np.exp(crossfit(Xb, np.log(np.maximum(1e-3, cmid - clo)), 'gbm'))
+    xh = np.exp(crossfit(Xb, np.log(np.maximum(1e-3, chi - clo)), 'gbm'))
+    d1 = np.array([np.mean([r[G[lo] + '_copies'][c] - r[G[mid] + '_copies'][c] for c in EVAL]) for r in R])
+    d2 = np.array([np.mean([r[G[mid] + '_copies'][c] - r[G[hi] + '_copies'][c] for c in EVAL]) for r in R])
+    Lmid = loss(mid)
+    three = {}
+    for name, X, kind in (('const', None, None), ('enc', Xb, 'enc'), ('ridge', Xb, 'ridge'), ('ridge+probe', Xp, 'ridge')):
+        if name == 'const':
+            p1 = np.full(N, d1.mean()); p2 = np.full(N, d2.mean())   # in-sample means: only the cost varies
+        else:
+            p1, p2 = crossfit(X, d1, kind), crossfit(X, d2, kind)
+        U = np.c_[np.zeros(N), p1, p1 + p2]; Cc = np.c_[np.zeros(N), xm, xh]
+        target = xm.sum()
+        lo_l, hi_l = 0.0, 10.0
+        for _ in range(60):
+            lam = (lo_l + hi_l) / 2
+            ch = np.argmax(U - lam * Cc, 1)
+            if Cc[np.arange(N), ch].sum() > target:
+                lo_l = lam
+            else:
+                hi_l = lam
+        ch = np.argmax(U - hi_l * Cc, 1)
+        Lpol = np.choose(ch, [Llo, Lmid, Lhi]); Cpol = np.choose(ch, [clo, cmid, chi])
+        three[name] = dict(share_lo_mid_hi=[round(float((ch == k).mean()), 3) for k in range(3)],
+                           cpu_ratio_vs_mid=round(float(Cpol.sum() / cmid.sum()), 3),
+                           policy=round(float(Lpol.mean()), 3), uniform_middle=round(float(Lmid.mean()), 3),
+                           policy_minus_uniform_middle=round(float((Lpol - Lmid).mean()), 3),
+                           ci=cluster_boot(Lpol - Lmid))
+    res['three_level_vs_uniform_middle'] = three
     # by encounter gain
     byenc = {}
     for e in encs:
