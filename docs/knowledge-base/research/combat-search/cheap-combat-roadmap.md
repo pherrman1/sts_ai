@@ -141,6 +141,10 @@ Data, scripts and tables: [step 0 evidence](../../../experiments/evidence/cheap_
 
 ### Track 1. Narrow Gumbel root (demoted by step 0)
 
+- **Result (§791, 2026-11-12):** k 4 without noise at 8k on G16 + mb4: P4 (g7f_E top 4) −8.40 pp [−11.43, −5.37],
+  N4 (net top 4) −7.32 pp [−10.16, −4.39], both WORSE at about 0.6× CPU; N4 − P4 +1.07 [−1.86, +4.10]
+  ([RESULT](../../../experiments/evidence/narrow_gumbel_root_20261111/RESULT.md)). Track closed.
+
 - k 16 already covers almost every root, so a narrower k saves little. With the net at k 4, 8.1% of roots lose the
   teacher's pick (regret 0.13 on average). Only worth a test at low budgets (2k-4k), and only after Track 0.
 
@@ -184,8 +188,13 @@ Data, scripts and tables: [step 0 evidence](../../../experiments/evidence/cheap_
 
 ### Parked
 
+- **Proven-win stop (candidate, after the per-encounter budget; Philipp OK'd as a candidate 2026-11-12 00:58 CET):**
+  at the Heart every win scores the same, so Silver could stop once `exact_combat_solver` proves a win this turn
+  (draws enumerated). CPU only, no win-rate gain expected. First step offline on recorded Heart roots (§783/§775
+  traces): how often a proven win exists and what share of Heart simulations is spent after it. Needs a go.
 - **Value net as leaf or Q-init:** revisit only with a forward ≤ 50 µs and an error ≤ about 5 HP (see the bound
-  above).
+  above). §789 measured the boss case: net error 26-49 HP against one prior-playout rollout's 13-30 HP, so a boss
+  value net in place of prior playouts (AlphaStS-style, suggested 2026-11-12) stays parked.
 - **Learned stop:** at best about 1.3×; combine after Tracks 1-2 if still needed (§783).
 - **Fight-class budgets, more budget, reuse-cap and tree-constant changes:** closed by §775-§786.
 
