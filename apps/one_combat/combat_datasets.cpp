@@ -8517,6 +8517,9 @@ namespace {
                              hasQ ? nlohmann::json(e.node->evaluationSum / e.node->simulationCount) : nlohmann::json(nullptr),
                              endgameActionLabel(e.action, root)});
         }
+        nlohmann::json preEdges = nlohmann::json::array();
+        if (view.preEdges)
+            for (const auto &e : *view.preEdges) preEdges.push_back({e.bits, e.visits, e.visits > 0 ? nlohmann::json(e.q) : nlohmann::json(nullptr)});
         const auto best = s.bestAction();
         const auto &c = s.searchContext();
         const auto &w = s.evalWeights;
@@ -8525,7 +8528,7 @@ namespace {
             {"block", root.player.block}, {"energy", root.player.energy}, {"handSize", root.cards.cardsInHand},
             {"monstersAlive", root.monsters.monstersAlive}, {"inputState", static_cast<int>(root.inputState)},
             {"skipped", view.skipped}, {"simulations", view.simulations}, {"inheritedVisits", view.inheritedVisits},
-            {"chosen", best.bits}, {"chosenLabel", endgameActionLabel(best, root)}, {"edges", edges},
+            {"chosen", best.bits}, {"chosenLabel", endgameActionLabel(best, root)}, {"edges", edges}, {"preEdges", preEdges},
             {"context", {{"act", c.act}, {"actBossRoom", c.actBossRoom}, {"omamoriCharged", c.omamoriCharged},
                          {"eliteRewards", c.eliteRewards}, {"finalBossBinary", c.finalBossBinary},
                          {"finalFightLeaf", c.finalFightLeaf}, {"actHealFollows", c.actHealFollows},

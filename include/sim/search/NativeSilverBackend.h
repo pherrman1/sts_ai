@@ -288,6 +288,10 @@ namespace sts::search {
         // The label search of this root (g_nativeSilverLabelSearch), or nullptr.
         const SilverSearcher *label = nullptr;
         std::int64_t labelInheritedVisits = 0;
+        // The root edges as the reroot left them, before this root's search (action bits, visits, mean
+        // value; -1 visits-free edges carry no value). Filled only while an observer is set (research).
+        struct PreEdge { std::uint64_t bits; std::int64_t visits; double q; };
+        const std::vector<PreEdge> *preEdges = nullptr;
     };
     extern thread_local std::function<void(const NativeSilverRootView &)> g_nativeSilverRootObserver;
     extern thread_local SilverLeafSamples *g_nativeSilverLeafSamples;

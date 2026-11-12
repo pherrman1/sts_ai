@@ -497,6 +497,9 @@ namespace sts::search {
         // Best root action, expressed against the root node's state. Use
         // translateAction to apply it to the real (concrete) state.
         [[nodiscard]] Action bestAction() const;
+        // Makes bestAction() return root edge `edge` until the next search, setRoot or reroot (plan commitment:
+        // the caller plays an inherited plan without searching).
+        void commitRootEdge(int edge) { gumbelChoice = edge; }
         [[nodiscard]] const BattleContext &rootSearchState() const { return *root->state; }
 
         // Re-express an action chosen in `from` against `to`, where the two are
