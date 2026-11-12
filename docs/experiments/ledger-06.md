@@ -27370,3 +27370,32 @@ G16 (needs Philipp's go).
 Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 116.2 lane-hours.
 **Knowledge impact:** combat cost model. Within a chance-free stretch the reused tree's plan is trustworthy only where
 it is confident; the visit share is the gate.
+
+## §TBD — Plan commitment on the cheap stack: §792's H4 with §793's PCS rule (`STS_SILVER_PLAN_COMMIT=0.9`, HPS) against §792's H4, net-0420 out of combat, 1,024 paired A20 seeds, control reused after a 32/32 sentinel: HPS −3.71 pp [−6.54, −0.88] → WORSE at 0.73× CPU (cloud, 2026-11-12)
+
+**Question (Philipp, 2026-11-12 17:29 CET "okay lets try"; "go 40" 17:35 CET):** §793's PCS kept A4P's Heart rate at
+0.81× CPU. Does the same rule keep the Heart rate of the cheapest stack, H4 (§792: 36.13% at 116.8 s per run), and how
+much CPU does it save there?
+**Data:** [PREREG](evidence/pcs_cheap_stack_20261112/PREREG.md), [RESULT](evidence/pcs_cheap_stack_20261112/RESULT.md),
+`results/result.json`, `results/pairs_HPS.csv`, `results/gp16.json`, `results/claims.txt`, `results/verify.txt`,
+`results/smoke.txt`, `analyze.py` (frozen in run commit b293a1ba), `gp16_contrast.py`.
+- No code change: code 3c85fb26, binary ca8d9d0b (§793's flag, default off).
+- 1,056 units (32 H4 sentinel games, 1,024 HPS), all verified, 0 drops, 0 aborts. 25.3 lane-hours, 17:45-18:02 CET.
+
+**Results (alpha 0.05, nonregression SPRT, CAP at 1,024):**
+- **HPS − H4 −3.71 pp [−6.54, −0.88]** (93 / 131 discordant), LLR −2.09 at CAP, one-sided upper bound < 0 → **WORSE**.
+  - CPU 0.73× [0.68, 0.78] (85.4 s per run; 0.76× machine-corrected), simulations 0.78×; 124 commits per run of 296
+    eligible roots.
+  - Act-4 reach −2.15 pp [−4.88, +0.59]; Act-4 conversion 82.4% → 77.8%; losses rise in every act.
+- Secondary: HPS − GP16 (§790) −3.32 pp [−6.15, −0.49] at 0.60× CPU; HPS − A4P −4.88 pp at 0.29× CPU. Per seed,
+  (HPS − H4) − (PCS − A4P) = −3.52 pp [−7.23, +0.20] (ad hoc).
+
+**Interpretation (Inference):** a 90% visit share in a weaker tree (greedy playouts everywhere, 4,000 hallway
+simulations) is a less reliable plan than in A4P's tree. The saving (about 31 s per run) costs more Heart kills than the
+per-encounter budget did. Plan commitment helps only where the inherited tree is strong.
+
+**Decision:** HPS WORSE. No default change; the flag stays unset by default. H4 stays the cheap-combat candidate; plan
+commitment stays an A4P-only result (§793).
+Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 25.3 lane-hours.
+**Knowledge impact:** combat cost model. Whether an inherited plan can be trusted depends on the strength of the
+search that built it, not only on its visit share.
