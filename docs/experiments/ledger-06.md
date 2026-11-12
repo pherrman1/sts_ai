@@ -27461,8 +27461,8 @@ our own states and in every room?
   - state @ 4k −0.48; state @ 8k +1.19.
 - The policies spend 1.12-1.26× their target; the frontier is taken at the realized CPU. In HP every CI covers 0.
 **Interpretation (Inference):**
-- Together with §794, a learned per-fight budget is NOT_SHOWN over 1k-64k. The budget curve is concave but similar
-  across rooms, so reallocating at equal CPU buys nothing measurable.
+- Together with §794, a learned per-fight budget is NOT_SHOWN over 1k-64k. Returns per CPU-second diminish but are
+  similar across rooms, so reallocating at equal CPU buys nothing measurable.
 - Descriptive: Act 1 hallway fights barely gain from more simulations (0.24 → 0.11 pp from 1k to 16k), while Act 3
   fights gain at every step.
 - Caveats: the currency is associational and per-fight values do not add up to a run's Heart rate; the arms use a

@@ -8,7 +8,7 @@ review K PASS). Launch was about 18:42 CET on W1-W40; the first tar arrived at 1
 - `verify_campaign.py`: **768 / 768 units OK, 0 missing, 0 bad, 0 duplicates**, run 72e997a48f1a
   (`results/verify.txt`).
   - Per act (review K, R2): acts 1, 2 and 3 have 256 / 256 OK each, with no unit missing and no unit at rc ≠ 0.
-  - 22 of 40 `DONE.json` files were written; the other workers were released idle after their last upload.
+  - At verification time 22 of 40 `DONE.json` files had been written; all 40 were on the share afterwards.
 - Claims snapshot: `results/claims.txt`. All 768 units were claimed once, as attempt a1; nothing was re-run.
 - `analyze.py` (frozen) with §794's `currency.json` gives `results/result.json`:
   - all 768 units at rc 0;
@@ -26,8 +26,8 @@ review K PASS). Launch was about 18:42 CET on W1-W40; the first tar arrived at 1
 | 8k | 3.31 | 5.82 | 2.51 |
 | 16k | 3.12 | 5.55 | 5.22 |
 
-- All five uniform budgets lie on the lower convex hull. Each doubling buys a little less: −0.46 / −0.27 / −0.36 /
-  −0.19 Heart-pp per fight.
+- All five uniform budgets lie on the lower convex hull. The doublings gain −0.46 / −0.27 / −0.36 / −0.19 Heart-pp per
+  fight. Per CPU-second the returns diminish: about 1.5 / 0.44 / 0.28 / 0.07 pp per s.
 - The split-half r of the 1k → 16k gain is 0.13 in Heart-pp and 0.11 in HP. That is the first visible per-fight
   signal (§794: ≈ 0 at 16k-64k), but it is weak.
 
@@ -68,7 +68,7 @@ The `?` rooms are in `results/result.json`. Cells are single means with no CI, s
 
 - **A uniform budget is again as good as a learned per-fight one.** This now holds at the cheap end (1k-16k), on our
   own states and in every Act 1-3 room, with the run-value currency. Together with §794 (16k-64k), a learned
-  per-fight budget is NOT_SHOWN over the whole range that was tested. The budget curve is concave everywhere, but
+  per-fight budget is NOT_SHOWN over the whole range that was tested. Returns per CPU-second diminish everywhere, but the curves are
   similar enough across rooms that reallocating at equal CPU buys nothing measurable.
 - **The cells suggest where the hand-set H4 sits.** Act 1 hallway fights gain almost nothing from more simulations
   (0.24 → 0.11 pp from 1k to 16k). Act 3 hallway, elite and boss fights still gain at every step. This is descriptive

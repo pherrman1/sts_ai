@@ -82,7 +82,7 @@ encounter or state) beats the uniform frontier at equal CPU. The best is −1.77
 policy is worse. With §794, a learned per-fight budget is parked over 1k-64k. The by-room uniform curves are in the
 RESULT.
 
-## Step B: per-fight budget ladder on our own states (original draft; the frozen version is the PREREG above)
+## Step B: per-fight budget ladder on our own states (original draft; the frozen version is the [PREREG](../../../experiments/evidence/budget_ladder_selffights_20261112/PREREG.md))
 
 - **Tool.** `one_combat selffights`. The main line is a production run of the cheap stack's combat; at every arm fight
   each arm plays copies 0-3 on the same copy seeds, and the main line continues from production's copy. Arm rooms are
