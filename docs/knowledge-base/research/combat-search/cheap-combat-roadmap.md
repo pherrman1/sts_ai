@@ -158,7 +158,7 @@ Data, scripts and tables: [step 0 evidence](../../../experiments/evidence/cheap_
   ([RESULT](../../../experiments/evidence/plan_commit_wholerun_20261112/RESULT.md)).
   - PCH (always): −3.91 pp [−6.74, −1.07], WORSE, at 0.54× CPU (161 s per run).
   - PCS (plan edge ≥ 90% of the inherited visits): −0.20 pp [−2.83, +2.54], NOT_WORSE_3PP, at 0.81× CPU (240 s).
-- **Result on the cheap stack (§TBD, 2026-11-12):** HPS = H4 + PCS against §792's H4: −3.71 pp [−6.54, −0.88], WORSE,
+- **Result on the cheap stack (§795, 2026-11-12):** HPS = H4 + PCS against §792's H4: −3.71 pp [−6.54, −0.88], WORSE,
   at 0.73× CPU (85 s per run) ([RESULT](../../../experiments/evidence/pcs_cheap_stack_20261112/RESULT.md)). H4 stays
   the cheap candidate; plan commitment helps only on a strong tree (A4P and up).
 

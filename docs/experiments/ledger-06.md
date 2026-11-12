@@ -27371,7 +27371,7 @@ Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 116.2 lane-hours
 **Knowledge impact:** combat cost model. Within a chance-free stretch the reused tree's plan is trustworthy only where
 it is confident; the visit share is the gate.
 
-## §TBD — Plan commitment on the cheap stack: §792's H4 with §793's PCS rule (`STS_SILVER_PLAN_COMMIT=0.9`, HPS) against §792's H4, net-0420 out of combat, 1,024 paired A20 seeds, control reused after a 32/32 sentinel: HPS −3.71 pp [−6.54, −0.88] → WORSE at 0.73× CPU (cloud, 2026-11-12)
+## §795 — Plan commitment on the cheap stack: §792's H4 with §793's PCS rule (`STS_SILVER_PLAN_COMMIT=0.9`, HPS) against §792's H4, net-0420 out of combat, 1,024 paired A20 seeds, control reused after a 32/32 sentinel: HPS −3.71 pp [−6.54, −0.88] → WORSE at 0.73× CPU (cloud, 2026-11-12)
 
 **Question (Philipp, 2026-11-12 17:29 CET "okay lets try"; "go 40" 17:35 CET):** §793's PCS kept A4P's Heart rate at
 0.81× CPU. Does the same rule keep the Heart rate of the cheapest stack, H4 (§792: 36.13% at 116.8 s per run), and how
