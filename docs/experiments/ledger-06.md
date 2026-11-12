@@ -27329,7 +27329,7 @@ Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 118.7 lane-hours
 **Knowledge impact:** combat cost model. Per-encounter CPU, not per-encounter simulations, is the lever. Prior
 playouts' value is mostly in Act 1-3 bosses, not in Act 4.
 
-## §TBD — Plan commitment in whole runs: §792's A4P playing the inherited plan edge without a search at chance-free continuation roots, always (PCH, `STS_SILVER_PLAN_COMMIT=hard`) or when it holds at least 90% of the inherited visits (PCS, `=0.9`), against §792's A4P, net-0420 out of combat, 1,024 paired A20 seeds, control reused after a 32/32 sentinel: PCH −3.91 pp [−6.74, −1.07] → WORSE at 0.54× CPU; PCS −0.20 pp [−2.83, +2.54] → NOT_WORSE_3PP at 0.81× CPU (cloud, 2026-11-12)
+## §793 — Plan commitment in whole runs: §792's A4P playing the inherited plan edge without a search at chance-free continuation roots, always (PCH, `STS_SILVER_PLAN_COMMIT=hard`) or when it holds at least 90% of the inherited visits (PCS, `=0.9`), against §792's A4P, net-0420 out of combat, 1,024 paired A20 seeds, control reused after a 32/32 sentinel: PCH −3.91 pp [−6.74, −1.07] → WORSE at 0.54× CPU; PCS −0.20 pp [−2.83, +2.54] → NOT_WORSE_3PP at 0.81× CPU (cloud, 2026-11-12)
 
 **Question (Philipp, 2026-11-12 08:33 CET, "play out cards until the next chance nodes"; decision card "Ja, hart +
 weich (0,9)" 10:39 CET; "go mit 40 workern" 11:56 CET):** a whole-run Gumbel search re-searches every root with

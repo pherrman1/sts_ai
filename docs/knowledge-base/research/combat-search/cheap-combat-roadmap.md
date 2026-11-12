@@ -154,7 +154,7 @@ Data, scripts and tables: [step 0 evidence](../../../experiments/evidence/cheap_
 
 - **Idea:** at a root reached without a chance event since the previous root, play the reused tree's plan edge
   without a new search (`STS_SILVER_PLAN_COMMIT`).
-- **Result (§TBD, 2026-11-12):** whole runs against §792's A4P on §775's seeds
+- **Result (§793, 2026-11-12):** whole runs against §792's A4P on §775's seeds
   ([RESULT](../../../experiments/evidence/plan_commit_wholerun_20261112/RESULT.md)).
   - PCH (always): −3.91 pp [−6.74, −1.07], WORSE, at 0.54× CPU (161 s per run).
   - PCS (plan edge ≥ 90% of the inherited visits): −0.20 pp [−2.83, +2.54], NOT_WORSE_3PP, at 0.81× CPU (240 s).
