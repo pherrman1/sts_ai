@@ -1,0 +1,11 @@
+name          encounter-budget
+code_commit   4c4e42eb2bc3492806e4f20228ea456c0d04ecdd
+binary_sha256 e60e2614bb1cc15a3a9c6fc43cbe90c6146b173a6ab60b869d527b45691978c8
+workers       40
+share         /mnt/project-files/encounter-budget
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 90
+claim_settle_seconds 60
+input net-0420.bin /mnt/project-files/ppo-long-c/nets/net-0420.bin 8c0bd16c31499270f192666919e0a11e1d6ca57e2d7a188b6d2a019f3ac742d2

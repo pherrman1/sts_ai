@@ -113,6 +113,9 @@ namespace sts::search {
             bool priorPlayoutBossElite = true;
             // ADR-0056: elite rooms are left out unless STS_SILVER_PRIOR_PLAYOUT_ELITE=1 (ADR-0050's rooms).
             bool priorPlayoutElite = false;
+            // STS_SILVER_PRIOR_PLAYOUT_ACTS=<list of 1-4> (research, default all): ADR-0050/0056/0060's prior
+            // playouts only in fights of these acts; other acts play greedy playouts. Bit per act; 0 = every act.
+            unsigned priorPlayoutActs = 0;
             // STS_SILVER_NODE_REUSE_CAP (research, default kReuseCap): node count above which a reroot compacts or
             // drops the reused tree. Production and data-generator modes refuse any other value.
             std::size_t reuseCap = kReuseCap;
@@ -136,6 +139,9 @@ namespace sts::search {
             // STS_SILVER_GUMBEL_ROOT_NOISE (research, default 1 = unchanged): scale of the Gumbel draw at the
             // whole-run Gumbel root (GumbelRoot::noise; 0 = the k candidates are the prior's top k).
             double gumbelRootNoise = 1.0;
+            // STS_SILVER_GUMBEL_ROOT_SIMS_HALLWAY=N (research, default 0 = as the other fights): the flat budget of
+            // those fights in Acts 1-3 outside elite and boss rooms (per-encounter budget work, cheap-combat roadmap).
+            std::int64_t gumbelRootSimsHallway = 0;
             // STS_SILVER_GUMBEL_STOP_TRACE=<csv> (research only, default off): one row per sequential-halving
             // boundary of every whole-run Gumbel root (SilverSearcher::gumbelBoundaryObserver); play unchanged.
             std::string gumbelStopTrace;
@@ -776,6 +782,8 @@ namespace sts::search {
             const std::int64_t flatBudget = act4Strong
                 ? std::max<std::int64_t>(act4Heart ? kAct4HeartBudget : kAct4EliteBudget,
                                          wholeRunGumbel ? gumbelSims : 0)
+                : wholeRunGumbel && g_options.gumbelRootSimsHallway > 0 && gc.act <= 3
+                        && gc.curRoom != Room::ELITE && gc.curRoom != Room::BOSS ? g_options.gumbelRootSimsHallway
                 : wholeRunGumbel && g_options.gumbelRootSims > 0 ? g_options.gumbelRootSims
                 : isBossEncounter(bc.encounter) && !g_options.exactRootBudgets
                 ? static_cast<std::int64_t>(agent.bossSimulationMultiplier * agent.simulationCountBase)
@@ -913,12 +921,14 @@ namespace sts::search {
                 if (!g_nativeSilverRolloutOverride && !g_nativeSilverRootPriorOverride
                         && !g_nativeSilverPriorNetOverride && g_options.priorPlayoutBossElite
                         && !g_options.rootPriorPath.empty() && !g_options.rootPriorOverrideOnly
+                        && (g_options.priorPlayoutActs == 0 || (g_options.priorPlayoutActs >> gc.act & 1u) != 0)
                         && (gc.curRoom == Room::BOSS || (gc.curRoom == Room::ELITE
                             && g_nativeSilverPriorPlayoutEliteOverride.value_or(g_options.priorPlayoutElite))))
                     s.rolloutConfig.prior = true;
                 // ADR-0060: Act 4's elite (Shield and Spear) plays prior playouts too, unless
                 // STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE=0 turns them off everywhere.
-                if (act4Strong && gc.curRoom == Room::ELITE && g_options.priorPlayoutBossElite)
+                if (act4Strong && gc.curRoom == Room::ELITE && g_options.priorPlayoutBossElite
+                        && (g_options.priorPlayoutActs == 0 || (g_options.priorPlayoutActs >> 4 & 1u) != 0))
                     s.rolloutConfig.prior = true;
                 // STS_SILVER_LEAF_HEAD: whole-run fights, as the prior playouts above; a research
                 // override (leafhead armset) sets its own.
@@ -1486,6 +1496,18 @@ namespace sts::search {
                     gumbelRoomsText += text.str();
                 }
             }
+            if (const char *raw = std::getenv("STS_SILVER_GUMBEL_ROOT_SIMS_HALLWAY");
+                    raw && *raw && std::string(raw) != "0") {
+                if (g_options.gumbelRootK == 0)
+                    throw std::runtime_error("STS_SILVER_GUMBEL_ROOT_SIMS_HALLWAY requires STS_SILVER_GUMBEL_ROOT");
+                char *end = nullptr;
+                const long long v = std::strtoll(raw, &end, 10);
+                if (end == raw || *end != '\0' || v < 1 || v > 10000000)
+                    throw std::runtime_error(
+                        "STS_SILVER_GUMBEL_ROOT_SIMS_HALLWAY must be 0 or an integer in [1, 10000000]");
+                g_options.gumbelRootSimsHallway = v;
+                gumbelRoomsText += ", hallway sims " + std::to_string(v);
+            }
             const auto decimalEnv = [](const char *name, double hi) {
                 const char *raw = std::getenv(name);
                 if (!raw || !*raw || std::string(raw) == "0") return 0.0;
@@ -1725,6 +1747,23 @@ namespace sts::search {
             if (value != "0" && value != "1")
                 throw std::runtime_error("STS_SILVER_PRIOR_PLAYOUT_ELITE must be 0 or 1");
             g_options.priorPlayoutElite = value == "1";
+        }
+        if (const char *raw = std::getenv("STS_SILVER_PRIOR_PLAYOUT_ACTS"); raw && *raw) {
+            const std::string value(raw);
+            unsigned mask = 0;
+            std::size_t pos = 0;
+            while (pos <= value.size()) {
+                const std::size_t comma = std::min(value.find(',', pos), value.size());
+                const std::string token = value.substr(pos, comma - pos);
+                if (token.size() != 1 || token[0] < '1' || token[0] > '4' || (mask >> (token[0] - '0') & 1u))
+                    throw std::runtime_error("STS_SILVER_PRIOR_PLAYOUT_ACTS must be a comma list of distinct acts 1-4");
+                mask |= 1u << (token[0] - '0');
+                pos = comma + 1;
+            }
+            if (!g_options.priorPlayoutBossElite)
+                throw std::runtime_error("STS_SILVER_PRIOR_PLAYOUT_ACTS needs STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE on");
+            g_options.priorPlayoutActs = mask == 0b11110u ? 0u : mask;
+            std::cerr << "[silver] research search: prior playouts only in acts " << value << "\n";
         }
         // STS_SILVER_LEAF_HEAD (default off; nativeSilverLeafHeadFromEnv).
         if (const auto leaf = nativeSilverLeafHeadFromEnv("STS_SILVER_LEAF_HEAD", g_leafHead, g_leafHeadTrunk)) {
