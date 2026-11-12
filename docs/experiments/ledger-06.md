@@ -27439,3 +27439,35 @@ commitment stays an A4P-only result (§793).
 Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 25.3 lane-hours.
 **Knowledge impact:** combat cost model. Whether an inherited plan can be trusted depends on the strength of the
 search that built it, not only on its visit share.
+
+## §TBD — Learned budget step B: per-fight budget ladder 1k / 2k / 4k / 8k / 16k (Gumbel k 16 + mb4, 4 copies) on every Act 1-3 fight of 256 own H4-stack runs (selffights): cross-fitted act × room, encounter and state policies against the uniform-budget frontier at equal CPU, in §794's Heart-pp currency: best −1.77 pp per run [−4.15, +0.62] (room @ 4k), one worse → NOT_SHOWN (cloud, 2026-11-12)
+
+**Question (Philipp, 2026-11-12 18:13 CET, decision card "Schritt B nach dem PCS-Lauf"; "go mit 40 worker"):**
+after §794 (16k-64k, Baalorlord states), does a learned per-fight budget beat uniform budgets at the cheap end, on
+our own states and in every room?
+**Data:** [PREREG](evidence/budget_ladder_selffights_20261112/PREREG.md),
+[SMOKE](evidence/budget_ladder_selffights_20261112/SMOKE.md),
+[RESULT](evidence/budget_ladder_selffights_20261112/RESULT.md), `results/result.json`, `results/verify.txt`,
+`results/claims.txt`, `analyze.py` (frozen in run commit 72e997a4; code 3c85fb26, binary ca8d9d0b; K prelaunch PASS).
+- 768 units = seeds 111970000-111970255 × acts 1-3. The main line is §792's H4 stack, and every fight of the unit's
+  act plays under the 5 arms. 768 / 768 verified, 0 missing or rc ≠ 0, 6,817 arm fights, 0 dropped. 88.6 lane-hours
+  on W1-W40, 18:42-19:27 CET.
+**Result:**
+- Uniform Heart-pp loss per fight: 1k 4.40, 2k 3.94, 4k 3.67, 8k 3.31, 16k 3.12, at 0.29 / 0.59 / 1.20 / 2.51 / 5.22 CPU-s per copy. All five lie on the hull.
+- The split-half r of the 1k → 16k gain is 0.13.
+- Policy − frontier per run (99.17%):
+  - room @ 4k −1.77 [−4.15, +0.62]; room @ 8k +0.23;
+  - encounter @ 4k −0.06; encounter @ 8k **+2.05 [+0.23, +3.91]** (worse);
+  - state @ 4k −0.48; state @ 8k +1.19.
+- The policies spend 1.12-1.26× their target; the frontier is taken at the realized CPU. In HP every CI covers 0.
+**Interpretation (Inference):**
+- Together with §794, a learned per-fight budget is NOT_SHOWN over 1k-64k. The budget curve is concave but similar
+  across rooms, so reallocating at equal CPU buys nothing measurable.
+- Descriptive: Act 1 hallway fights barely gain from more simulations (0.24 → 0.11 pp from 1k to 16k), while Act 3
+  fights gain at every step.
+- Caveats: the currency is associational and per-fight values do not add up to a run's Heart rate; the arms use a
+  fresh tree per fight; Act 4 is not covered.
+**Decision:** NOT_SHOWN. The learned per-fight budget is parked, with no default change and no gate. The by-room
+curves stay as data for hand-free per-room budgets.
+Seeds: 111970000-111970255 (new, data only). Cost: 88.6 lane-hours.
+**Knowledge impact:** combat budget allocation: uniform budgets are as good as learned per-fight allocation from 1k to 64k.
