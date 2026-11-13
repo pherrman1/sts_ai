@@ -37,6 +37,7 @@ G_LEN = 59 + 38   # wire_encoder global + player lengths; a different length fai
 CARD_LEN = 8   # the semantic `c` field
 SEL_LEN = 3   # a selected card: id, specialData, upgraded (cardFingerprint order: id, uniqueId, specialData,
 #               cost, costForTurn, upgraded, freeToPlayOnce, retain)
+L_MAX = 8   # STS_AZGEN_BUDGET_LADDER: at most this many ladder budgets per row
 A_LEN = 1 + 1 + CARD_LEN + 1 + 2 + 1 + 1 + 1 + 1 + SEL_MAX * SEL_LEN
 
 
@@ -108,7 +109,14 @@ def main(argv):
         "fight": np.full(n, -1, np.int16),          # the fight's index within its run (with seed: the fight id)
         "act": np.zeros(n, np.int8),
         "elite_boss": np.zeros(n, np.int8),   # 0 monster, 1 elite, 2 boss, 3 other
+        # STS_AZGEN_BUDGET_LADDER rows: per ladder budget the fresh search's pick (index into the kept edges, -1 =
+        # none, cut or no ladder) and its thread CPU seconds; main_cpu = the played search's (NaN = no ladder).
+        "ladder_edge": np.full((n, L_MAX), -1, np.int16),
+        "ladder_cpu": np.full((n, L_MAX), np.nan, np.float32),
+        "main_cpu": np.full(n, np.nan, np.float32),
+        "inherited": np.zeros(n, np.int64),   # ladder rows: the played root's inherited visits (0 = fresh root)
     }
+    ladder_budgets = None
     cut = {"cards": 0, "monsters": 0, "mnum": 0, "edges": 0, "smap": 0, "queues": 0, "qlen": 0, "sel": 0}
     room = {"MONSTER": 0, "MONSTER_ELITE": 1, "ELITE": 1, "BOSS": 2}
     # Chunked: each list holds numpy blocks of up to CHUNK roots, so RAM stays near the final array size.
@@ -210,6 +218,22 @@ def main(argv):
                 arr["gumbelChoice"][j] = order.index(r["gumbelChoice"])
             if r["chosen"] in order:
                 arr["chosen"][j] = order.index(r["chosen"])
+            if r.get("ladder"):
+                lad = r["ladder"]
+                bud = [int(p["budget"]) for p in lad]
+                if ladder_budgets is None:
+                    if len(bud) > L_MAX:
+                        raise SystemExit(f"ladder has {len(bud)} budgets > L_MAX {L_MAX}")
+                    ladder_budgets = bud
+                elif bud != ladder_budgets:
+                    raise SystemExit(f"ladder budgets differ between rows: {bud} vs {ladder_budgets}")
+                for li, p in enumerate(lad):
+                    if p["edge"] in order:
+                        arr["ladder_edge"][j, li] = order.index(p["edge"])
+                    arr["ladder_cpu"][j, li] = p["cpu"]
+                if r.get("mainCpu") is not None:
+                    arr["main_cpu"][j] = r["mainCpu"]
+                arr["inherited"][j] = r.get("inheritedVisits", 0)
             v = r["value"]
             mx = max(1, v["preMaxHp"])
             arr["won"][j] = 1 if v["won"] else 0
@@ -229,6 +253,9 @@ def main(argv):
             j += 1
             if j % CHUNK == 0:
                 flush()
+    if ladder_budgets is None:   # no ladder rows: keep the array set of earlier data
+        for k in ("ladder_edge", "ladder_cpu", "main_cpu", "inherited"):
+            arr.pop(k)
     for k, a in arr.items():
         np.save(os.path.join(args.out, k + ".npy"), a[:j])
     flush()
@@ -244,6 +271,7 @@ def main(argv):
     if any_qb:   # max-backed Q (D2); NaN = unvisited edge or no qBacked
         np.save(os.path.join(args.out, "qb.npy"), np.concatenate(qb_l))
     meta = {"rows": j, "encounters": sorted(encounters, key=encounters.get), "source": os.path.abspath(args.packed), "every": args.every, "cut": cut,
+            **({"ladderBudgets": ladder_budgets} if ladder_budgets else {}),
             "caps": {"C_MAX": C_MAX, "M_MAX": M_MAX, "M_NUM": M_NUM, "E_MAX": E_MAX, "S_MAX": S_MAX,
                      "Q_MAX": Q_MAX, "Q_LEN": Q_LEN, "SEL_MAX": SEL_MAX, "SEL_LEN": SEL_LEN, "A_LEN": A_LEN, "G_LEN": G_LEN}}
     with open(os.path.join(args.out, "meta.json"), "w") as f:

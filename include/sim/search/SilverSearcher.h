@@ -507,6 +507,10 @@ namespace sts::search {
         // by card identity (search states may order these differently).
         static Action translateAction(const Action &action, const BattleContext &from,
                                       const BattleContext &to);
+        // Research (budget-ladder recorder): whether two actions on the same state `bc` are the same choice up to
+        // search-equivalent card copies: equal bits, or the same card play (same target) or the same single-card
+        // selection from the same pile, of two cards that are equivalent for search.
+        static bool actionsEquivalentOn(const Action &a, const Action &b, const BattleContext &bc);
         // Top-two root visit share gap in [0, 1]; 1 with a single root edge.
         [[nodiscard]] double topTwoVisitShareGap() const;
 

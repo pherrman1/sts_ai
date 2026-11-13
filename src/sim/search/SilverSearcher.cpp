@@ -1556,6 +1556,40 @@ namespace {
 
 }
 
+bool search::SilverSearcher::actionsEquivalentOn(const Action &a, const Action &b, const BattleContext &bc) {
+    if (a.bits == b.bits) return true;
+    if (a.getActionType() != b.getActionType()) return false;
+    switch (a.getActionType()) {
+        case ActionType::CARD: {
+            const int x = a.getSourceIdx(), y = b.getSourceIdx();
+            return a.getTargetIdx() == b.getTargetIdx() && x >= 0 && y >= 0 && x < bc.cards.cardsInHand
+                && y < bc.cards.cardsInHand && cardsEquivalentForSearch(bc.cards.hand[x], bc.cards.hand[y]);
+        }
+        case ActionType::SINGLE_CARD_SELECT: {
+            if (bc.cardSelectInfo.cardSelectTask == CardSelectTask::LIQUID_MEMORIES_POTION
+                    && bc.cardSelectInfo.pickCount == 2) return false;
+            const int x = a.getSelectIdx(), y = b.getSelectIdx();
+            if (x < 0 || y < 0) return false;
+            switch (selectionPile(bc.cardSelectInfo.cardSelectTask)) {
+                case 0: return x < bc.cards.cardsInHand && y < bc.cards.cardsInHand
+                    && cardsEquivalentForSearch(bc.cards.hand[x], bc.cards.hand[y]);
+                case 1: return x < static_cast<int>(bc.cards.discardPile.size())
+                    && y < static_cast<int>(bc.cards.discardPile.size())
+                    && cardsEquivalentForSearch(bc.cards.discardPile[x], bc.cards.discardPile[y]);
+                case 2: return x < static_cast<int>(bc.cards.exhaustPile.size())
+                    && y < static_cast<int>(bc.cards.exhaustPile.size())
+                    && cardsEquivalentForSearch(bc.cards.exhaustPile[x], bc.cards.exhaustPile[y]);
+                case 3: return x < static_cast<int>(bc.cards.drawPile.size())
+                    && y < static_cast<int>(bc.cards.drawPile.size())
+                    && cardsEquivalentForSearch(bc.cards.drawPile[x], bc.cards.drawPile[y]);
+                default: return false;
+            }
+        }
+        default:
+            return false;
+    }
+}
+
 search::Action search::SilverSearcher::translateAction(const Action &action, const BattleContext &from,
                                                        const BattleContext &to) {
     switch (action.getActionType()) {

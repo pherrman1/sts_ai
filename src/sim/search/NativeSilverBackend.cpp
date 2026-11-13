@@ -1028,6 +1028,10 @@ namespace sts::search {
                     }
                 }
                 const auto stepsBefore = searcher->stats.steps;
+                // g_nativeSilverBudgetLadder: the played search's CPU (research only; reads the clock, nothing else).
+                const bool ladderOn = !g_nativeSilverBudgetLadder.empty() && wholeRunGumbel && gumbelRoot
+                    && g_nativeSilverRootObserver;
+                const double ladderCpu0 = ladderOn ? threadCpuSeconds() : 0;
                 // Tree profile only (#888): cost, starting graph and checkpoint reads of this search.
                 const bool shape = searcher->profile != nullptr;
                 nlohmann::json shapeRow = nullptr;
@@ -1247,6 +1251,44 @@ namespace sts::search {
                     configureSearcher(*labelSearcher, true);
                     labelSearcher->search(flatBudget);
                 }
+                // g_nativeSilverBudgetLadder: fresh searches of this root at each ladder budget; they read copies of
+                // the root only, and the played searcher is not touched.
+                std::vector<NativeSilverRootView::LadderPick> ladder;
+                double mainCpu = -1;
+                if (ladderOn && !skipSearch && searcher->rootNode().edges.size() > 1) {
+                    mainCpu = threadCpuSeconds() - ladderCpu0;
+                    const auto &mainEdges = searcher->rootNode().edges;
+                    for (std::size_t li = 0; li < g_nativeSilverBudgetLadder.size(); ++li) {
+                        const std::int64_t b = g_nativeSilverBudgetLadder[li];
+                        std::unique_ptr<SilverSearcher> shadow;
+                        prepareSearcher(shadow, root, false);
+                        configureSearcher(*shadow, false);
+                        shadow->leafSamples = nullptr;
+                        shadow->outcomes = nullptr;
+                        const double c0 = threadCpuSeconds();
+                        const std::uint64_t salt = 0xb5ad4eceda1ce2a9ULL * static_cast<std::uint64_t>(li + 1);
+                        const std::int64_t sims = shadow->searchGumbelRoot(b, *gumbelRoot,
+                            nativeSilverBattleSeed(bc) ^ (0x9e3779b97f4a7c15ULL * static_cast<std::uint64_t>(decision + 1))
+                            ^ salt);
+                        const double cpu = threadCpuSeconds() - c0;
+                        // Match on the live state up to search-equivalent card copies: the rerooted played tree and the
+                        // fresh search can expand different copies of the same card. Exact bits are tried first.
+                        const auto pick = SilverSearcher::translateAction(
+                            shadow->bestAction(), shadow->rootSearchState(), bc);
+                        int edge = -1;
+                        for (int pass = 0; pass < 2 && edge < 0; ++pass)
+                            for (std::size_t e = 0; e < mainEdges.size(); ++e) {
+                                const auto mine = SilverSearcher::translateAction(
+                                    mainEdges[e].action, searcher->rootSearchState(), bc);
+                                if (pass == 0 ? mine.bits == pick.bits
+                                              : SilverSearcher::actionsEquivalentOn(mine, pick, bc)) {
+                                    edge = static_cast<int>(e);
+                                    break;
+                                }
+                            }
+                        ladder.push_back({b, edge, sims, cpu});
+                    }
+                }
                 searching.resume();
 
                 const auto action = SilverSearcher::translateAction(
@@ -1269,7 +1311,8 @@ namespace sts::search {
                     KnowledgeObserverSuspension observing;
                     g_nativeSilverRootObserver({gc, bc, *searcher, decision, inheritedVisits, simulations,
                                                 skipSearch, action, labelSearch ? labelSearcher.get() : nullptr,
-                                                labelInheritedVisits, &preEdges});
+                                                labelInheritedVisits, &preEdges,
+                                                ladder.empty() ? nullptr : &ladder, mainCpu});
                 }
                 if (searcher->profile) {
                     shapeRow["cpu_seconds"] = threadCpuSeconds() - cpuBefore;
@@ -2249,6 +2292,7 @@ namespace sts::search {
     thread_local std::function<void(const NativeSilverRootView &)> g_nativeSilverRootObserver;
     thread_local SilverLeafSamples *g_nativeSilverLeafSamples = nullptr;
     thread_local bool g_nativeSilverLabelSearch = false;
+    thread_local std::vector<std::int64_t> g_nativeSilverBudgetLadder;
     thread_local SilverOutcomeCapture *g_nativeSilverOutcomeCapture = nullptr;
 
     NativeSilverTotals nativeSilverTotals() {

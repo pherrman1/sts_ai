@@ -27471,3 +27471,40 @@ our own states and in every room?
 curves stay as data for hand-free per-room budgets.
 Seeds: 111970000-111970255 (new, data only). Cost: 88.6 lane-hours.
 **Knowledge impact:** combat budget allocation: uniform budgets are as good as learned per-fight allocation from 1k to 64k.
+
+## §797 — Budget ladder per root: learned per-decision sim budget from the full combat state (CombatNet trunk, init T1) on 145k G16 roots of 256 fresh runs, each also searched fresh at 1k / 2k / 4k / 8k / 16k: M2 at equal CPU −0.049 Q [−0.071, −0.025] @ 2k and −0.041 [−0.056, −0.025] @ 4k → GAIN in Silver Q only; a post-hoc act × room table lies within M2's run-to-run spread (−0.051 / −0.044) (cloud + PC GPU, 2026-11-13)
+
+**Question (Philipp, 2026-11-12 20:15 CET, "Ich will ein fucking model haben das den context sieht und sims vorschlägt"; decision card "Datenlauf mit Budgets pro Zug"; 21:02 CET "go für 40 worker"):**
+can a model on the full combat state choose each decision's sim budget better than uniform budgets at the same CPU?
+**Data:** [PREREG](evidence/budget_ladder_roots_20261112/PREREG.md),
+[SMOKE](evidence/budget_ladder_roots_20261112/SMOKE.md),
+[RESULT](evidence/budget_ladder_roots_20261112/RESULT.md), `results/m1/result.json`, `results/m2/result.json`,
+`results/table_baseline.json`, `results/verify.txt` (run commit 885ebaa8; code 96f49f3c, binary 331bb7db; K prelaunch
+FAIL → delta PASS). Precursor: offline gain net [search_gain_net_20261112](evidence/search_gain_net_20261112/results/result.json).
+- 256 units = seeds 111980000-111980255, 1 run each, under the G16 + mb4 whole-run Gumbel stack. At every Gumbel root the
+  recorder also ran fresh 1k-16k searches. Their picks are scored by the played 16k tree's max-backed Q.
+- 256 / 256 verified at rc 0, 0 dropped units; 145,407 roots used, 320 dropped by rule. 95.3 lane-hours on W1-W40,
+  23:13-03:10 CET.
+**Result:**
+- Uniform loss per decision: prior 2.04, 1k 0.88, 2k 0.77, 4k 0.67, 8k 0.57, 16k 0.51 (Silver Q), at 45 / 90 / 179 / 359 / 719 ms.
+- M2 − frontier at the realized CPU (98.33%):
+  - 2k **−0.0485 [−0.0713, −0.0251]**; 4k **−0.0406 [−0.0558, −0.0249]**; 8k −0.0069 [−0.0215, +0.0088].
+  - M1 (trees on the root statistics): −0.051 / −0.030 / −0.009.
+  - The M2 GPU fit is not deterministic (torch unseeded). Over 6 runs: 2k −0.045 to −0.064, 4k −0.041 to −0.052, 8k
+    −0.003 to −0.013. All 6 runs are GAIN at 2k and 4k; only run 2 is GAIN at 8k. Run 1 is the primary.
+- The gain is ≈ 6% of the loss, which uniform budgets reach only at ≈ 1.3-1.4× the CPU.
+- Post-hoc act × room cell-mean table: −0.051 / −0.044 / −0.013, within M2's spread (no paired test).
+- The policies move budget from boss decisions (a sim costs ≈ 15× a hallway sim; 58% get 1k) to hallway and elite
+  decisions (mostly 4k-8k).
+**Interpretation (Inference):**
+- A per-decision budget gains at equal CPU in Q. Most of it is reallocation between act × room cells: the state net
+  shows no clear extra gain over a fixed table.
+- The GAIN is in Silver Q per decision only. Equal weight per decision with ≈ 15× costlier boss sims favours starving
+  bosses almost by construction.
+- The policy's main move (less boss and Act-4 search) runs against the whole-run Heart evidence: §790 E0 −5.5 pp;
+  §792 A4P (Act-4 strength buys kills) and H4; §796's per-fight room policy NOT_SHOWN.
+- The ladder searches have no tree reuse.
+**Decision:** GAIN by the PREREG rule, in Q only. No default change. A whole-run gate needs Philipp's go. A table gate
+is risky and must include a variant that keeps the boss and Act-4 budgets.
+Seeds: 111980000-111980255 (new, data only). Cost: 95.3 lane-hours + 3 min GPU.
+**Knowledge impact:** combat budget allocation: in Silver Q per decision, budget moved from bosses to hallways gains at equal CPU (a currency effect that contradicts Heart evidence, unproven in Heart %); a full-state net shows no clear gain over act × room.
