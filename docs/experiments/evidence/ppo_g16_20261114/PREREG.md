@@ -2,8 +2,10 @@
 
 Philipp, 2026-11-14 00:02 CET: "started ppo auf dem gumbel 16k mit Max backup 4 stack mit 16k s und s und 40k heart.
 Das sollte etwa 40% winrate haben. Go on GPU mit 40 worker sobald g12 fertig ist" (40 cloud workers, learner on the
-PC's RTX 3060 Ti). 00:16 CET, after the G12H24 result (`../gumbel_g12_heart24_20261113`: Heart 24k cost nothing in
-conversion among runs reaching Act 4, 84.2 vs 84.5%): "Let's go g16 mit heart auf 24k. S und s auch auf 16k".
+PC's RTX 3060 Ti). 00:16 CET, after the G12H24 result (§799, `../gumbel_g12_heart24_20261113`: on the 393 seeds where both arms reach
+Act 4, Heart conversion 84.2 vs 84.5%, −0.3 pp [−4.1, +3.6]; no conversion loss visible, but this is not an isolated
+Heart contrast: outcome-selected seeds, different arrival states, S&S at 12k vs 16k; a loss of a few pp is not
+excluded): "Let's go g16 mit heart auf 24k. S und s auch auf 16k".
 
 **Question.** Does PPO of the whole out-of-combat policy (one net, no OOC MCTS), trained on games whose fights are
 played by §775's Gumbel teacher G16 + mb4 (Heart at 24k), raise the A20 Heart kill rate of that stack above net-0420's 41.21% (§775)?
