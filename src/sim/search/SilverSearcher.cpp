@@ -1121,13 +1121,17 @@ double search::SilverSearcher::playoutToEnd(BattleContext &bc, int treeDepth, bo
     // STS_SILVER_ROLLOUT_ACTION_CAP=0 restores uncapped playouts.
     const int maxActions = rolloutConfig.actionCap > 0 ? rolloutConfig.actionCap
                                                       : std::numeric_limits<int>::max();
+    // Research (RolloutConfig::priorTurns / priorTurnTable): the playout's first turn and a fresh turn table.
+    const int playoutStartTurn = bc.turn;
+    turnTableTurn = -1;
     while (bc.outcome == Outcome::UNDECIDED && rolloutDepth < maxActions) {
         Action action;
         if (uniformPolicy && (bc.inputState == InputState::PLAYER_NORMAL
                 || bc.inputState == InputState::CARD_SELECT)) {
             action = chooseUniformRolloutAction(bc);
-        } else if (rolloutConfig.prior && bc.inputState == InputState::PLAYER_NORMAL) {
-            action = choosePriorRolloutAction(bc);
+        } else if (rolloutConfig.prior && bc.inputState == InputState::PLAYER_NORMAL
+                && (rolloutConfig.priorTurns <= 0 || bc.turn < playoutStartTurn + rolloutConfig.priorTurns)) {
+            action = rolloutConfig.priorTurnTable ? chooseTurnTableRolloutAction(bc) : choosePriorRolloutAction(bc);
         } else if (bc.inputState == InputState::PLAYER_NORMAL) {
             // Resolve hidden (Runic Dome) intents with a sampled roll so the
             // rollout policy blocks against a real move; the tree still models
@@ -1179,7 +1183,57 @@ search::Action search::SilverSearcher::choosePriorRolloutAction(BattleContext &b
     if (prior.size() != scratch.edges.size())
         throw std::runtime_error("SilverSearcher: rollout prior size differs from the playout edges");
     ++stats.rolloutPriorPicks;
+    ++stats.rolloutPriorCalls;
     return scratch.edges[std::max_element(prior.begin(), prior.end()) - prior.begin()].action;
+}
+
+namespace {
+    // Turn-table key of a playout edge: END_TURN, or a card play by (card id, upgraded, target slot).
+    std::uint32_t turnTableKey(const sts::BattleContext &bc, const sts::search::Action &a) {
+        if (a.getActionType() != sts::search::ActionType::CARD) return 0xffffffffu;
+        const auto &c = bc.cards.hand[a.getSourceIdx()];
+        const auto id = static_cast<std::uint32_t>(c.getId()) * 2u + (c.isUpgraded() ? 1u : 0u);
+        return id * 16u + static_cast<std::uint32_t>(a.getTargetIdx() + 1);
+    }
+}
+
+search::Action search::SilverSearcher::chooseTurnTableRolloutAction(BattleContext &bc) {
+    if (!rolloutPrior) throw std::runtime_error("SilverSearcher: prior playouts need rolloutPrior");
+    rolloutAgent.materializeHiddenIntents(bc);
+    thread_local Node scratch;   // reused across playout steps, as above
+    thread_local std::vector<std::uint32_t> keys;
+    scratch.edges.clear();
+    enumerateCardActions(scratch, bc);
+    scratch.edges.push_back({Action(ActionType::END_TURN)});
+    if (scratch.edges.size() == 1) return scratch.edges[0].action;
+    const int n = static_cast<int>(scratch.edges.size());
+    keys.resize(n);
+    for (int i = 0; i < n; ++i) keys[i] = turnTableKey(bc, scratch.edges[i].action);
+    // Look every legal edge up in this turn's table; one missing (or a new turn) rebuilds it here.
+    auto lookup = [&](std::uint32_t key) -> const double * {
+        for (std::size_t j = 0; j < turnTableKeys.size(); ++j)
+            if (turnTableKeys[j] == key) return &turnTableScores[j];
+        return nullptr;
+    };
+    bool complete = turnTableTurn == bc.turn;
+    for (int i = 0; complete && i < n; ++i) complete = lookup(keys[i]) != nullptr;
+    if (!complete) {
+        const auto prior = rolloutPrior(bc, scratch.edges);
+        if (prior.size() != scratch.edges.size())
+            throw std::runtime_error("SilverSearcher: rollout prior size differs from the playout edges");
+        ++stats.rolloutPriorCalls;
+        turnTableTurn = bc.turn;
+        turnTableKeys.assign(keys.begin(), keys.end());
+        turnTableScores.assign(prior.begin(), prior.end());
+    }
+    int best = 0;
+    double bestScore = -1;
+    for (int i = 0; i < n; ++i) {
+        const double v = *lookup(keys[i]);
+        if (v > bestScore) { bestScore = v; best = i; }
+    }
+    ++stats.rolloutPriorPicks;
+    return scratch.edges[best].action;
 }
 
 void search::SilverSearcher::enumerateActionsForNode(Node &node, const BattleContext &bc) {

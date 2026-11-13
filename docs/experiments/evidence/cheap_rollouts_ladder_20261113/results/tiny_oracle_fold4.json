@@ -1,0 +1,122 @@
+{
+ "table|ALL": {
+  "n": 119568,
+  "top1": 0.5634868861233775,
+  "unseenKeyRows": 0
+ },
+ "table|AUTOMATON": {
+  "n": 4574,
+  "top1": 0.5297332750327941,
+  "unseenKeyRows": 90
+ },
+ "table|AWAKENED_ONE": {
+  "n": 22321,
+  "top1": 0.5728237982169258,
+  "unseenKeyRows": 479
+ },
+ "table|CHAMP": {
+  "n": 6456,
+  "top1": 0.5703221809169765,
+  "unseenKeyRows": 229
+ },
+ "table|COLLECTOR": {
+  "n": 5054,
+  "top1": 0.5308666402849228,
+  "unseenKeyRows": 180
+ },
+ "table|DONU_AND_DECA": {
+  "n": 16462,
+  "top1": 0.4774025027335682,
+  "unseenKeyRows": 625
+ },
+ "table|HEXAGHOST": {
+  "n": 3247,
+  "top1": 0.7822605481983369,
+  "unseenKeyRows": 9
+ },
+ "table|SHIELD_AND_SPEAR": {
+  "n": 8937,
+  "top1": 0.5172876804296744,
+  "unseenKeyRows": 595
+ },
+ "table|SLIME_BOSS": {
+  "n": 2981,
+  "top1": 0.5947668567594767,
+  "unseenKeyRows": 105
+ },
+ "table|THE_GUARDIAN": {
+  "n": 8430,
+  "top1": 0.6785290628706999,
+  "unseenKeyRows": 101
+ },
+ "table|THE_HEART": {
+  "n": 23867,
+  "top1": 0.5711652071898438,
+  "unseenKeyRows": 348
+ },
+ "table|TIME_EATER": {
+  "n": 17239,
+  "top1": 0.5600092812808167,
+  "unseenKeyRows": 253
+ },
+ "tiny|ALL": {
+  "n": 119568,
+  "top1": 0.62894754449351,
+  "unseenKeyRows": 0
+ },
+ "tiny|AUTOMATON": {
+  "n": 4574,
+  "top1": 0.6093135111499781,
+  "unseenKeyRows": 90
+ },
+ "tiny|AWAKENED_ONE": {
+  "n": 22321,
+  "top1": 0.6374714394516374,
+  "unseenKeyRows": 479
+ },
+ "tiny|CHAMP": {
+  "n": 6456,
+  "top1": 0.6324349442379182,
+  "unseenKeyRows": 229
+ },
+ "tiny|COLLECTOR": {
+  "n": 5054,
+  "top1": 0.6034823901859913,
+  "unseenKeyRows": 180
+ },
+ "tiny|DONU_AND_DECA": {
+  "n": 16462,
+  "top1": 0.5616571497995383,
+  "unseenKeyRows": 625
+ },
+ "tiny|HEXAGHOST": {
+  "n": 3247,
+  "top1": 0.8078226054819834,
+  "unseenKeyRows": 9
+ },
+ "tiny|SHIELD_AND_SPEAR": {
+  "n": 8937,
+  "top1": 0.5742419156316437,
+  "unseenKeyRows": 595
+ },
+ "tiny|SLIME_BOSS": {
+  "n": 2981,
+  "top1": 0.6762831264676283,
+  "unseenKeyRows": 105
+ },
+ "tiny|THE_GUARDIAN": {
+  "n": 8430,
+  "top1": 0.7244365361803085,
+  "unseenKeyRows": 101
+ },
+ "tiny|THE_HEART": {
+  "n": 23867,
+  "top1": 0.6300749989525286,
+  "unseenKeyRows": 348
+ },
+ "tiny|TIME_EATER": {
+  "n": 17239,
+  "top1": 0.6317651835953362,
+  "unseenKeyRows": 253
+ }
+}

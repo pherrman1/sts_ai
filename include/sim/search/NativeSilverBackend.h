@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <map>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -295,7 +296,10 @@ namespace sts::search {
         // Research only (g_nativeSilverBudgetLadder): one fresh Gumbel root search of this root per ladder budget,
         // after the played search; `edge` indexes the played searcher's root edges (-1 = no match). `mainCpu` is the
         // played search's thread CPU seconds. Empty when the ladder is off or the root was not searched.
-        struct LadderPick { std::int64_t budget; int edge; std::int64_t sims; double cpu; };
+        // `arm` indexes g_nativeSilverRolloutLadder (-1 = a g_nativeSilverBudgetLadder pick); `priorCalls` and
+        // `playoutActions` are the shadow search's rolloutPrior evaluations and playout actions.
+        struct LadderPick { std::int64_t budget; int edge; std::int64_t sims; double cpu; int arm = -1;
+                            std::int64_t priorCalls = 0; std::int64_t playoutActions = 0; };
         const std::vector<LadderPick> *ladder = nullptr;
         double mainCpu = -1;
     };
@@ -312,6 +316,30 @@ namespace sts::search {
     // Gumbel seed; the root view carries the picks. The played search, its tree and every RNG it reads are unchanged,
     // so play is bit-identical with the ladder on or off. Default empty (off).
     extern thread_local std::vector<std::int64_t> g_nativeSilverBudgetLadder;
+    // Research-only (silverazgen STS_AZGEN_ROLLOUT_LADDER, cheap rollouts 2026-11-13): when non-empty, every searched
+    // multi-edge root of a whole-run Gumbel fight whose played search uses prior playouts (boss rooms, Act 4) is
+    // searched again once per arm by a fresh searcher configured as the played one except for its playout policy
+    // (NativeSilverRolloutArm), with its own Gumbel seed; the picks join the root view's ladder (LadderPick::arm).
+    // Play is bit-identical with the arms on or off. Default empty (off).
+    struct NativeSilverRolloutArm {
+        enum Policy { AS_PLAYED, GREEDY, TURN_TABLE, FIRST_TURNS, STUDENT, STUDENT_TURN_TABLE, STUDENT_ENCOUNTER };
+        std::string name;
+        Policy policy = AS_PLAYED;
+        int turns = 0;              // FIRST_TURNS: prior playouts in the playout's first `turns` player turns
+        std::int64_t budget = 0;
+    };
+    extern thread_local std::vector<NativeSilverRolloutArm> g_nativeSilverRolloutLadder;
+    // Students of the rollout ladder (research): the generalist model and per-encounter models
+    // (encounter enum value -> model; an encounter without one uses the generalist). Loaded by the caller.
+    extern const CombatValueNet *g_nativeSilverRolloutStudent;
+    extern std::map<int, const CombatValueNet *> g_nativeSilverRolloutStudentByEncounter;
+    // nativeSilverPolicyPrior with an explicit model (same features and normalization).
+    std::vector<double> nativeSilverPolicyPriorWith(const CombatValueNet &net, const BattleContext &state,
+                                                    const std::vector<SilverSearcher::Edge> &edges);
+    // Research-only (cheap rollouts stage 0): when set, nativeSilverPolicyPriorWith adds its thread CPU time spent in
+    // feature extraction (state + action blocks) and in the MLP, and its calls and edges, here. Default off.
+    struct NativeSilverPriorTiming { double featureSeconds = 0, mlpSeconds = 0; std::int64_t calls = 0, edges = 0; };
+    extern thread_local NativeSilverPriorTiming *g_nativeSilverPriorTiming;
     // Research-only (ctmsilvergen rootdist): when set, every search records its
     // simulation endpoints here (SilverSearcher::outcomes). Default off.
     extern thread_local SilverOutcomeCapture *g_nativeSilverOutcomeCapture;
