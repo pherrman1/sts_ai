@@ -27566,17 +27566,19 @@ CPU per run 352 s vs 512 s, **0.688× [0.655, 0.722]** (0.666× machine-correcte
 512 −0.20 [−4.11, +3.72]. Act-4 conversion: G16 422/504 (83.7%), G12H24 399/499 (80.0%); on the 393 seeds where both
 reach Act 4, 84.5% vs 84.2%, −0.3 [−4.1, +3.6].
 - Descriptive (`breakdown.py`): no section's hazard interval excludes 0; Act 4 +3.8 [−0.2, +7.7]. Heart deaths
-  (final floor 56) 87 vs 73. Seeds only G12H24 brings to Act 4 convert 68/106 (64%), seeds only G16 brings 90/111 (81%).
+  (final floor 56, inferred from the floor) 87 vs 73. Seeds only G12H24 brings to Act 4 convert 68/106 (64%), seeds only G16 brings 90/111 (81%).
 **Interpretation (Inference):**
-- The Heart at 24,000 shows no loss where it meets the same seeds (84.2% vs 84.5%, ±4 pp).
+- No conversion loss is visible where both arms reach Act 4 (84.2% vs 84.5%, −0.3 [−4.1, +3.6]); not an isolated Heart
+  contrast (outcome-selected seeds, different arrival states, Shield and Spear also at 12k vs 16k).
 - The gap sits in Act 4 on the seeds that only one arm reaches, so it is either weaker arrival states from 12,000 in
   acts 1-3 or the cheaper Heart on harder states; the breakdown cannot separate the two.
-- On the curve's 512 seeds, G12H24 lies on the CPU curve between 8k and 16k (linear in CPU predicts 35.3%), not below
-  it: no free saving.
+- On the curve's 512 seeds, G12H24 is consistent with the CPU curve between 8k and 16k (linear in CPU predicts 35.3%;
+  ±4 pp, G8S unpaired): no sign of a saving beyond the curve.
 - Like §777, §780, §783 and §785, the arm is 2-5 pp below the same G16 games (§785's control caveat).
 **Decision:** INCONCLUSIVE. No default change. G16 + mb4 stays the teacher candidate; G12H24 is not taken as a cheaper
 teacher. Follow-ups are Philipp's call: 16k with the Heart at 24k, 12k with the Heart at 40k, or more seeds.
 `STS_SILVER_ACT4_HEART_BUDGET` stays a research option.
 Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 104.1 lane-hours.
 **Knowledge impact:** combat budget: 12,000 simulations with the Heart at 24,000 costs 0.69× G16 + mb4's CPU at
-−2.25 pp [−5.08, +0.59] Heart; the Heart at 24,000 converts like 40,000 on the seeds where both arms arrive.
+−2.25 pp [−5.08, +0.59] Heart; no conversion loss visible on the seeds where both arms reach Act 4 (not an isolated
+Heart contrast).

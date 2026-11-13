@@ -94,7 +94,7 @@ with a 95% seed bootstrap (4,000 resamples), as Test 3's breakdown.
 
 The Act-4 runs that did not kill the Heart, by final floor:
 
-| final floor | G12H24 | G16 | Inference from the floor |
+| final floor | G12H24 | G16 | Inference from the floor (the logs carry no key status; no run died on floors 53-54, runs ending on 52 kept HP, e.g. G12H24-111378516 with 42; 55 and 56 match the smoke's per-root budget trace) |
 |---|---|---|---|
 | 52 | 8 | 7 | run ended after Act 3 without all three keys |
 | 55 | 5 | 2 | Shield and Spear |
@@ -108,23 +108,26 @@ Heart kills grouped by which arm reached Act 4:
 | only G16 reaches it | 111 | 90 (81%) | — |
 | only G12H24 reaches it | 106 | — | 68 (64%) |
 
-Acts 1-3 lose about as often in both arms: the act-4 reach differs by −0.49 pp. The Heart-kill gap sits in Act 4, but
-not on the seeds where both arms arrive. There, the Heart at 24,000 kills as often as at 40,000. The gap comes from the
-seeds that only one arm brings to Act 4: G12H24 converts 64% of those and G16 81%.
+Acts 1-3 lose about as often in both arms: Act-4 reach differs by −0.49 pp [−3.32, +2.25]. The Heart-kill gap sits in
+Act 4, but not on the seeds where both arms arrive. There, G12H24 kills the Heart as often as G16. The gap comes from the
+seeds that only one arm brings to Act 4: G12H24 converts 64% of those and G16 81% (different seeds, unpaired).
 
 ## Reading (Inference)
 
 - G12H24 costs 0.69× G16's CPU and plays 2.25 pp below it. The interval reaches −5.1 pp, so the test cannot show that
   G12H24 is at most 3 pp worse. It does not show that it is worse either.
-- The Heart at 24,000 instead of 40,000 shows no loss where it can be compared directly: 84.2% against 84.5% on the 393
-  seeds where both arms reach the Heart, with an interval of about ±4 pp. The Heart's share of the CPU saving is small
-  (the simulations ratio is 0.725, against 0.75 for 12,000/16,000 alone).
-- The 12,000 simulations in acts 1-3 are not visibly worse by section: every section's interval contains 0, and
-  Act-4 reach is nearly equal. G12H24's extra Act-4 arrivals convert worse (64% against 81%). That fits weaker arrival
+- No conversion loss is visible on the 393 seeds where both arms reach Act 4: 84.2% against 84.5%, −0.3 pp [−4.1, +3.6].
+  This is not an isolated Heart contrast. The seeds are selected by an outcome, the arrival states differ (12,000 against
+  16,000 simulations from the first root), Shield and Spear differ too (12,000 against 16,000), and the interval does not
+  exclude a loss of a few pp. The Heart's share of the CPU saving is small (the simulations ratio is 0.725, against 0.75
+  for 12,000/16,000 alone).
+- The 12,000 simulations in acts 1-3 are not visibly worse: Act-4 reach differs by −0.49 pp [−3.32, +2.25] (each
+  section's interval spans about ±2-3 pp and contains 0). G12H24's extra Act-4 arrivals convert worse (64% against 81%). That fits weaker arrival
   states (HP, deck), but these are different seeds in each group. The breakdown cannot tell whether the arrival state
   or the 24,000-simulation Heart on harder states is the cause.
-- On the budget curve's 512 seeds, G12H24 lies on the CPU curve between G8S and G16. Linear in CPU between them predicts
-  35.3% at 345 s, and G12H24 has 36.1%, so there is no sign of a free saving beyond the curve. On the other 512 seeds
+- On the budget curve's 512 seeds, G12H24 is consistent with the CPU curve between G8S and G16. Linear in CPU between
+  them predicts 35.3% at 345 s, and G12H24 has 36.1% (±4 pp on 512 seeds; G8S's games are not paired with these), so
+  there is no sign of a saving beyond the curve. On the other 512 seeds
   the two arms are nearly equal (−0.20 pp). The difference between the halves (4.1 pp) is within what chance gives at
   this size (about 1.5 standard errors).
 - §785's caveat applies here too. Every whole-run arm compared with these 1,024 G16 games came out 2.3-4.7 pp below
@@ -137,8 +140,8 @@ seeds that only one arm brings to Act 4: G12H24 converts 64% of those and G16 81
 G16 + mb4 stays the teacher candidate. G12H24 is not taken as a cheaper teacher. Following the PREREG, the follow-ups
 are Philipp's call:
 
-- 16,000 in acts 1-3 with the Heart at 24,000. This saves little CPU, and the Heart showed no loss where both arms
-  arrive.
+- 16,000 in acts 1-3 with the Heart at 24,000. This saves little CPU; no conversion loss was visible where both arms
+  arrive, but that was not an isolated Heart contrast.
 - 12,000 with the Heart at 40,000. This would separate the Heart from the acts-1-3 budget.
 - More seeds for G12H24 against G16. This would narrow the interval.
 
