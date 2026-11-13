@@ -21,13 +21,19 @@ prelaunch FAIL → fix → delta PASS). Launch was 23:13 CET on 2026-11-12 on W1
   `out.log`, ref `ppo-xfer/blr-results` 38f2675c). M2's fit took 118 s.
   - After the data, commit 2d05b31e added the PREREG's co-reported splits (`by`, `uniform_by`) to the result. It does
     not change the primary numbers: the re-run M1 deltas and CIs are bit-identical.
+  - **The M2 fit is not deterministic.** `fit_m2` seeds numpy but not torch, so the head starts from a different
+    random init in each run, and CUDA adds its own nondeterminism. M2 was therefore run 5 more times on the same data
+    and init at code 2d05b31e:
+    - `results/m2-rerun` (ref `ppo-xfer/blr-results2` c2560be6);
+    - `results/m2-seed3` … `m2-seed6` (ref `ppo-xfer/blr-results3` ce3b41f4).
+    - Run 1 (`results/m2`) stays the pre-declared primary, because it was the first run of the frozen code.
 
 ## Rows
 
 - **145,407 roots from 256 runs** were used. Dropped roots:
   - 83 because the prior's top action is unvisited in the played tree;
   - 30 with an unmatched ladder pick (per budget 1k-16k: 12 / 14 / 16 / 18 / 15; 16 rerooted, 14 fresh, out of
-    114,175 rerooted and 28,871 fresh roots);
+    116,257 rerooted and 29,387 fresh roots);
   - 207 with an unvisited ladder pick (per budget 0 / 1k / 2k / 4k / 8k / 16k: 0 / 80 / 91 / 91 / 91 / 81).
 - Tensorize truncation: cards 4, monsters' numbers 3, edges 67 (of about 155k rows).
 
@@ -58,9 +64,23 @@ A boss decision costs about 15× a hallway decision at the same budget.
 | M1 @ 8k | 375.7 | 2 / 2 / 8 / 9 / 31 / 48 % | 0.553 | −0.0089 [−0.0204, +0.0045] |
 
 - Δ is the policy's realized loss minus the uniform frontier's loss at the policy's realized CPU.
-- **Decision (PREREG rule on M2): GAIN at 2k and 4k.** Measured on the uniform curve, M2's loss at 2k equals uniform at
-  about 1.4× the CPU, and at 4k about 1.3×.
-- M2 beats M1 only at 4k (−0.041 vs −0.030), and is about equal at 2k and 8k.
+- **Decision (PREREG rule on M2, run 1): GAIN at 2k and 4k.** Measured on the uniform curve, M2's loss at 2k and at 4k
+  equals uniform at about 1.4× the CPU.
+- **M2 across all 6 runs** (Δ, each with its own 98.33% CI):
+
+  | run | 2k | 4k | 8k |
+  |---|---|---|---|
+  | 1 (primary) | −0.0485 [−0.0713, −0.0251] | −0.0406 [−0.0558, −0.0249] | −0.0069 [−0.0215, +0.0088] |
+  | 2 | −0.0561 [−0.0748, −0.0365] | −0.0515 [−0.0693, −0.0352] | −0.0133 [−0.0247, **−0.0022**] |
+  | 3 | −0.0589 [−0.0768, −0.0405] | −0.0450 [−0.0593, −0.0306] | −0.0032 [−0.0179, +0.0136] |
+  | 4 | −0.0450 [−0.0664, −0.0229] | −0.0423 [−0.0565, −0.0278] | −0.0063 [−0.0210, +0.0095] |
+  | 5 | −0.0495 [−0.0681, −0.0303] | −0.0437 [−0.0622, −0.0270] | −0.0029 [−0.0161, +0.0111] |
+  | 6 | −0.0640 [−0.0810, −0.0464] | −0.0476 [−0.0656, −0.0313] | −0.0092 [−0.0198, +0.0013] |
+  | mean (sd) | −0.054 (0.007) | −0.045 (0.004) | −0.007 (0.004) |
+
+  All 6 runs are GAIN at 2k and 4k. Only run 2 is also GAIN at 8k, so the 8k result depends on the run. The
+  run-to-run spread of M2 is about 0.01 Q.
+- M2 vs M1: at 4k M2 is ahead in every run (−0.041 to −0.052 vs −0.030); at 2k and 8k M1 lies within M2's spread.
 - The oracle (per-root argmin of realized loss + λ · CPU) reaches about 0.09 at 2k-8k (Δ ≈ −0.67). It uses the noisy
   label itself, so it is not a reachable bound.
 
@@ -84,26 +104,37 @@ of (act, room class) on the training folds:
 | 4k | 177.9 | 0.626 | −0.0437 [−0.0560, −0.0315] |
 | 8k | 358.1 | 0.552 | −0.0131 [−0.0266, +0.0023] |
 
-The table matches M2 at every target (`results/table_baseline.json`). **The whole gain comes from moving budget between
-act × room cells.** Most of the move is from bosses, where a simulation costs about 15× more, to hallways and elites.
-Neither the full combat state (M2) nor the root statistics (M1) add anything measurable on top of that.
+The table lies within M2's run-to-run variation at every target (`results/table_baseline.json`; M2 mean −0.054 /
+−0.045 / −0.007). No paired test of M2 against the table was made. **Most of the gain can be had by moving budget
+between act × room cells.** The main move is away from bosses, where a simulation costs about 15× more, toward hallways
+and elites. These data show no clear extra gain from the full combat state (M2) or from the root statistics (M1) on top
+of that.
 
 ## Interpretation (Inference)
 
 - At equal CPU, a per-decision budget beats uniform budgets by about 6% of the Q loss at the 2k-4k CPU levels (≈ 25-30%
-  CPU). The data cannot separate it from a fixed act × room table, so a learned model of the state is not needed for
-  this gain.
-- The currency is Silver Q per decision, with every decision weighted equally. A boss decision's Q error and a hallway
-  decision's Q error need not cost the same Heart probability. §796 measured per-fight room budgets in Heart pp:
-  room @ 4k −1.77 pp per run [−4.15, +0.62], NOT_SHOWN. Only a whole-run gate can show whether this Q gain reaches
-  Heart %.
+  CPU). Within M2's run-to-run variation, the data cannot separate it from a fixed act × room table.
+- **The GAIN holds only in Silver Q per decision.** Every decision is weighted equally, so a boss decision counts like
+  a hallway decision. Boss simulations cost about 15× more, so this currency favours starving bosses almost by
+  construction.
+- **The policy's main move runs against the whole-run Heart evidence.** The move is less boss and Act-4 search (58% of
+  boss decisions at 1k under the 2k target, 89% of Act-4 decisions at 1k-2k) and more hallway search.
+  - §792's H4 cut hallway sims to 4k without a Heart loss (NOT_WORSE).
+  - §790's E0, with cheaper boss and elite search (no prior playouts), lost −5.5 pp.
+  - §792's A4P showed that Act-4 search strength buys Heart kills.
+  - §796's per-fight room policy in Heart pp was NOT_SHOWN (room @ 4k −1.77 pp per run [−4.15, +0.62]).
+- Only a whole-run gate can show whether any of this Q gain reaches Heart %, and the prior evidence makes a negative
+  result likely for the full table.
 - The fresh ladder searches have no tree reuse. The stack reuses trees, so a deployed policy would see cheaper
   rerooted decisions than the ladder.
 
 ## Decision
 
-GAIN by the PREREG rule (M2, 2k and 4k). Under the PREREG, a whole-run gate of a budget policy needs its own go.
-Because of the post-hoc table result, the natural candidate for that gate is a fixed act × room budget table, not the
-net. No default changes.
+GAIN by the PREREG rule (M2 run 1, 2k and 4k; all 6 M2 runs agree at 2k and 4k), **in Silver Q per decision only**.
+There is no default change.
 
-Seeds: 111980000-111980255 (data only). Cost: 95.3 lane-hours plus about 3 min on the PC GPU.
+Under the PREREG, a whole-run gate needs its own go. A gate of an act × room table is a risky candidate, because its
+main move contradicts §790/§792. Such a gate must include a variant that keeps the boss and Act-4 budgets and applies
+the table only to the Act 1-3 hallway and elite decisions.
+
+Seeds: 111980000-111980255 (data only). Cost: 95.3 lane-hours, plus about 3 min on the PC GPU per M2 run (6 runs).
