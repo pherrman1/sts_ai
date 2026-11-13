@@ -298,6 +298,8 @@ WholeCombatTeacher loadWholeCombatTeacher(const std::string &path, int sims,
     }
     if (search::nativeSilverReuseCap() != 32768)
         throw std::runtime_error("wholecombatgen: production reuse cap mismatch with frozen 32k teacher");
+    if (search::nativeSilverAct4HeartBudget() != 40000)
+        throw std::runtime_error("wholecombatgen: Act-4 Heart budget mismatch with the frozen teacher (40000)");
     if (!t.contains("environment") || !t["environment"].is_object()) throw std::runtime_error("wholecombatgen: missing environment");
     for (const auto &[name, expected] : t["environment"].items()) {
         if (allowStaleProvenance && name == "STS_EXECUTABLE_GIT_SHA") continue;

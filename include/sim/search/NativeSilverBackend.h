@@ -87,6 +87,8 @@ namespace sts::search {
     // and Spear at flat 10k with prior playouts and the Heart at flat 40k with a 262,144-node reuse cap. True when
     // the option is on and the process options let it apply (learned stop, root prior on for every fight).
     bool nativeSilverAct4Strong();
+    // The Heart's flat budget under Act 4 strong (STS_SILVER_ACT4_HEART_BUDGET, research; default 40,000).
+    std::int64_t nativeSilverAct4HeartBudget();
 
     // Decisions and simulations of the current thread's latest combat.
     struct NativeSilverCombatStats {

@@ -123,6 +123,10 @@ namespace sts::search {
             // unset = on, =0 restores the learned stop there): Shield and Spear at flat 10k with prior playouts,
             // the Heart at flat 40k with tree reuse up to kAct4HeartReuseCap nodes.
             bool act4Strong = true;
+            // STS_SILVER_ACT4_HEART_BUDGET=N (research, default kAct4HeartBudget = 40,000): the Heart's flat budget
+            // under Act 4 strong (whole-run Gumbel fights: the larger of N and the Gumbel budget). Production and
+            // data-generator modes refuse any other value.
+            std::int64_t act4HeartBudget = kAct4HeartBudget;
             // STS_SILVER_GUMBEL_ROOT=K (research, default off): every whole-run fight searches each root with the
             // Gumbel root (K sampled edges) at a flat budget of the agent's simulation count instead of the learned
             // stop / flat search (Act 4 strong's fights: the larger of that and their own budget).
@@ -790,7 +794,7 @@ namespace sts::search {
             if (learnedStop && !nativeSilverStopModelTrained())
                 fail(gc, bc, "learned stopping requires a trained stop model");
             const std::int64_t flatBudget = act4Strong
-                ? std::max<std::int64_t>(act4Heart ? kAct4HeartBudget : kAct4EliteBudget,
+                ? std::max<std::int64_t>(act4Heart ? g_options.act4HeartBudget : kAct4EliteBudget,
                                          wholeRunGumbel ? gumbelSims : 0)
                 : wholeRunGumbel && g_options.gumbelRootSimsHallway > 0 && gc.act <= 3
                         && gc.curRoom != Room::ELITE && gc.curRoom != Room::BOSS ? g_options.gumbelRootSimsHallway
@@ -1913,6 +1917,14 @@ namespace sts::search {
             if (value != "0" && value != "1") throw std::runtime_error("STS_SILVER_ACT4_STRONG must be 0 or 1");
             g_options.act4Strong = value == "1";
         }
+        if (const char *raw = std::getenv("STS_SILVER_ACT4_HEART_BUDGET"); raw && *raw) {
+            char *end = nullptr;
+            const long long value = std::strtoll(raw, &end, 10);
+            if (!std::isdigit(static_cast<unsigned char>(raw[0])) || *end != '\0' || value < 1000 || value > 10000000)
+                throw std::runtime_error("STS_SILVER_ACT4_HEART_BUDGET must be an integer in [1000, 10000000]");
+            g_options.act4HeartBudget = value;
+            std::cerr << "[silver] research act4 heart budget " << g_options.act4HeartBudget << "\n";
+        }
         if (const char *raw = std::getenv("STS_SILVER_NODE_REUSE_CAP"); raw && *raw) {
             char *end = nullptr;
             const long long value = std::strtoll(raw, &end, 10);
@@ -2253,6 +2265,10 @@ namespace sts::search {
 
     std::int64_t nativeSilverReuseCap() {
         return static_cast<std::int64_t>(g_options.reuseCap);
+    }
+
+    std::int64_t nativeSilverAct4HeartBudget() {
+        return g_options.act4HeartBudget;
     }
 
     bool nativeSilverAct4Strong() {
