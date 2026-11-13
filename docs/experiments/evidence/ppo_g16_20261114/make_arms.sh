@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # usage (on the learner PC, author only, once per store): make_arms.sh run|smoke STORE NET0420
-#   run    freezes PG16   (arms.txt,       seeds 112100000 + 520*i, sims 16000) in STORE (screen.manifest)
+#   run    freezes PG16H24  (arms.txt,       seeds 112100000 + 520*i, sims 16000) in STORE (screen.manifest)
 #   smoke  freezes SMOKE  (smoke/arms.txt, seeds 112199990-112199998, sims 1000) in STORE (smoke/screen.manifest)
 #   NET0420 LONG_C's net-0420.bin (sha256 8c0bd16c...), checked before init
 # DRY=1 prints only.

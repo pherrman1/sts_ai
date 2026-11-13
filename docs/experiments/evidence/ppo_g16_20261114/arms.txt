@@ -1,5 +1,5 @@
 # name  games iters warmup parts init      learner hyperparameters (= LONG_B/LONG_C's, ppo_train.py defaults otherwise)
-# PG16 starts from net-0420 (LONG_C's final net, sha 8c0bd16c, the PPO baseline) with fresh Adam moments; the value
-# warm-up (4 value-only updates, Monte Carlo targets) recalibrates its value head to the G16 combat. iters = cap; the run
+# PG16H24 starts from net-0420 (LONG_C's final net, sha 8c0bd16c, the PPO baseline) with fresh Adam moments; the value
+# warm-up (4 value-only updates, Monte Carlo targets) recalibrates its value head to the G16H24 combat. iters = cap; the run
 # stops earlier at the PREREG's wall-time limit.
-PG16    520   100   4      40    net-0420  --seed 0 --warmup-lam 1.0
+PG16H24 520   100   4      40    net-0420  --seed 0 --warmup-lam 1.0
