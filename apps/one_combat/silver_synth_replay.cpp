@@ -362,3 +362,127 @@ void silverPolicyMlpCheck(const std::string &modelPath, const std::string &prefi
     }
     std::cout << report.dump() << '\n';
 }
+
+// ---- rolloutpolicybench (research, cheap rollouts 2026-11-13) ----
+// one_combat rolloutpolicybench OUT_PREFIX BUDGET ARMS CAPTURE_STRIDE < rows.jsonl
+// Rows: silverazgen root rows with `wire` (the §797 budget-ladder corpus, prior-playout roots). For every row and arm
+// (comma list of asplayed, greedy, tt, ftN), a fresh Gumbel K16 root search with max backup 4 at BUDGET simulations,
+// configured as a whole-run boss-room search (root prior STS_SILVER_ROOT_PRIOR at its weight, tree prior K=8, rollout
+// root table from the same model, prior playouts unless greedy). Writes OUT_PREFIX.jsonl (one line per row and arm:
+// thread CPU seconds, simulations, rolloutPrior calls, playout actions, the pick's index in the row's edges and the
+// prior-step timing split of the asplayed arm) and, when CAPTURE_STRIDE > 0, every CAPTURE_STRIDE-th rolloutPrior call
+// of the asplayed arm as silversynthfeatures-style sparse rows (OUT_PREFIX.nnz/.idx/.val/.meta.jsonl; a state row,
+// then one act row per edge with `visits` = round(1e6 * prior), the teacher's distribution) for student training.
+// Plays no game seed.
+void rolloutPolicyBench(const std::string &prefix, std::int64_t budget, const std::string &armList, int captureStride) {
+    const auto &priorPath = search::nativeSilverRootPriorPath();
+    if (priorPath.empty()) throw std::runtime_error("rolloutpolicybench: needs STS_SILVER_ROOT_PRIOR");
+    search::CombatValueNet tableNet;
+    if (!tableNet.load(priorPath) || !tableNet.isPolicyMlp)
+        throw std::runtime_error("rolloutpolicybench: STS_SILVER_ROOT_PRIOR must be a policy MLP");
+    std::vector<std::string> arms;
+    {
+        std::stringstream ss(armList);
+        std::string a;
+        while (std::getline(ss, a, ',')) arms.push_back(a);
+    }
+    std::ofstream out(prefix + ".jsonl");
+    if (!out) throw std::runtime_error("rolloutpolicybench: cannot open " + prefix + ".jsonl");
+    std::unique_ptr<SparseRows> capture;
+    if (captureStride > 0) capture = std::make_unique<SparseRows>(prefix);
+    auto cpuNow = [] {
+        timespec ts{};
+        clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts);
+        return ts.tv_sec + ts.tv_nsec * 1e-9;
+    };
+    std::map<std::string, std::unique_ptr<search::CombatValueNet>> students;
+    std::string line;
+    long long calls = 0, captured = 0;
+    while (std::getline(std::cin, line)) {
+        if (line.empty()) continue;
+        const auto row = nlohmann::json::parse(line);
+        if (!row.contains("wire") || row.at("wire").is_null()) continue;
+        const auto state = fromWire(row.at("wire"));
+        const auto &rowEdges = row.at("edges");
+        const std::uint64_t base = key(row.at("seed").get<std::uint64_t>(), row.at("fight").get<std::uint64_t>(),
+                                       row.at("decision").get<std::uint64_t>(), 0x5eedb0a7ULL);
+        for (const auto &arm : arms) {
+            nlohmann::json res = {{"seed", row.at("seed")}, {"fight", row.at("fight")}, {"decision", row.at("decision")},
+                                  {"encounter", row.at("encounter")}, {"act", row.at("act")}, {"room", row.at("room")},
+                                  {"arm", arm}, {"budget", budget}};
+            try {
+                search::SilverSearcher s(plannerRoot(state.bc, base), state.context);
+                s.prepareRootActions();
+                if (s.rootNode().edges.size() < 2) { res["error"] = "single_edge"; out << res.dump() << '\n'; continue; }
+                s.maxBackupMinVisits = 4;
+                s.rootPrior = search::nativeSilverRootPrior(s);
+                s.rootPriorWeight = search::nativeSilverRootPriorWeight();
+                s.nodePrior = search::nativeSilverPolicyPrior;
+                s.treePriorMinVisits = 8;
+                search::nativeSilverRolloutRootTable(s.rootSearchState(), tableNet, s.rootCardTable);
+                s.rolloutConfig.cardTable = s.rootCardTable.data();
+                auto &rc = s.rolloutConfig;
+                rc.prior = arm != "greedy";
+                // st=PATH / sttt=PATH: a student policy MLP every playout step / once per playout turn.
+                const search::CombatValueNet *student = nullptr;
+                std::string policy = arm;
+                if (const auto eq = arm.find('='); eq != std::string::npos) {
+                    policy = arm.substr(0, eq);
+                    auto &slot = students[arm.substr(eq + 1)];
+                    if (!slot) {
+                        slot = std::make_unique<search::CombatValueNet>();
+                        if (!slot->load(arm.substr(eq + 1)) || !slot->isPolicyMlp)
+                            throw std::runtime_error("cannot load student " + arm.substr(eq + 1));
+                    }
+                    student = slot.get();
+                    if (policy != "st" && policy != "sttt") throw std::runtime_error("unknown arm " + arm);
+                    rc.priorTurnTable = policy == "sttt";
+                } else if (arm == "tt") rc.priorTurnTable = true;
+                else if (arm.size() == 3 && arm.rfind("ft", 0) == 0) rc.priorTurns = arm[2] - '0';
+                else if (arm != "asplayed" && arm != "greedy") throw std::runtime_error("unknown arm " + arm);
+                const bool teacher = arm == "asplayed";
+                s.rolloutPrior = [&, teacher, student](const BattleContext &bc, const std::vector<search::SilverSearcher::Edge> &edges) {
+                    auto p = student ? search::nativeSilverPolicyPriorWith(*student, bc, edges)
+                                     : search::nativeSilverPolicyPrior(bc, edges);
+                    if (teacher && capture && ++calls % captureStride == 0) {
+                        nlohmann::json m = {{"k", "state"}, {"variant", "natural"}, {"seed", row.at("seed")},
+                                            {"fight", row.at("fight")}, {"decision", row.at("decision")},
+                                            {"enc", row.at("encounter")}, {"turn", bc.turn}};
+                        capture->writeState(bc, m);
+                        for (std::size_t i = 0; i < edges.size(); ++i)
+                            capture->writeAction(bc, edges[i].action,
+                                {{"k", "act"}, {"tgt", search::combatActionTargetSlot(bc, edges[i].action)},
+                                 {"visits", std::llround(1e6 * p[i])}});
+                        ++captured;
+                    }
+                    return p;
+                };
+                search::NativeSilverPriorTiming timing;
+                search::g_nativeSilverPriorTiming = rc.prior ? &timing : nullptr;
+                search::SilverSearcher::GumbelRoot g;
+                g.k = 16;
+                const double c0 = cpuNow();
+                const auto sims = s.searchGumbelRoot(budget, g, base ^ 0x9e3779b97f4a7c15ULL);
+                const double cpu = cpuNow() - c0;
+                search::g_nativeSilverPriorTiming = nullptr;
+                const auto pick = s.bestAction().bits;
+                int edge = -1;
+                for (std::size_t e = 0; e < rowEdges.size(); ++e)
+                    if (rowEdges[e].at("bits").get<std::uint64_t>() == pick) edge = static_cast<int>(e);
+                res["cpu"] = cpu;
+                res["sims"] = sims;
+                res["priorCalls"] = s.stats.rolloutPriorCalls;
+                res["playoutActions"] = s.stats.rolloutActions;
+                res["playouts"] = s.stats.rolloutPlayouts;
+                res["edge"] = edge;
+                if (rc.prior)
+                    res["timing"] = {{"featureSeconds", timing.featureSeconds}, {"mlpSeconds", timing.mlpSeconds},
+                                     {"calls", timing.calls}, {"edges", timing.edges}};
+            } catch (const std::exception &e) {
+                res["error"] = e.what();
+            }
+            out << res.dump() << '\n';
+        }
+    }
+    std::cout << "rolloutpolicybench: captured " << captured << " prior calls of " << calls << '\n';
+}

@@ -379,6 +379,7 @@ void silverFocusEvalGen(int nSeeds, int asc, const std::string &outPrefix, long 
 // sparse combat features of its rows and child states, and root search replay.
 void silverSynthFeatures(const std::string &outPrefix);
 void silverSynthReplay(const std::string &namesPath = "");
+void rolloutPolicyBench(const std::string &prefix, std::int64_t budget, const std::string &arms, int captureStride);
 // combat_policy_mlp_v1 logits of every root in a silversynthfeatures file
 // (Python parity check) plus per-root timing, optionally against a GBM prior.
 void silverPolicyMlpCheck(const std::string &modelPath, const std::string &prefix, const std::string &outPath,

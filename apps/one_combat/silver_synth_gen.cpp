@@ -197,6 +197,82 @@ std::vector<std::int64_t> budgetLadder() {
     return out;
 }
 
+// STS_AZGEN_ROLLOUT_LADDER=policy:budget,... (silverazgen only, default off; requires STS_AZGEN_WHOLE_RUN_GUMBEL=1),
+// cheap rollouts 2026-11-13: every searched multi-edge root whose played search uses prior playouts (boss rooms, Act 4)
+// is searched once more per arm by a fresh searcher configured as the played one except for its playout policy
+// (g_nativeSilverRolloutLadder). Policies: asplayed (prior every step), greedy, tt (prior once per playout turn),
+// ftN (prior in the playout's first N turns, then greedy), st (STS_AZGEN_ROLLOUT_STUDENT every step), sttt (the
+// student once per playout turn), ste (per-encounter students STS_AZGEN_ROLLOUT_STUDENT_ENC=ENCOUNTER=path,...,
+// else the generalist). Rows' ladder entries add {policy, priorCalls, playoutActions}. Play is bit-identical.
+std::vector<search::NativeSilverRolloutArm> rolloutLadder() {
+    const char *v = std::getenv("STS_AZGEN_ROLLOUT_LADDER");
+    std::vector<search::NativeSilverRolloutArm> out;
+    if (!v || !*v) return out;
+    std::stringstream ss(v);
+    std::string item;
+    using P = search::NativeSilverRolloutArm;
+    while (std::getline(ss, item, ',')) {
+        const auto colon = item.find(':');
+        if (colon == std::string::npos) throw std::runtime_error("STS_AZGEN_ROLLOUT_LADDER: want policy:budget, got " + item);
+        P arm;
+        const std::string pol = item.substr(0, colon);
+        arm.name = item;
+        if (pol == "asplayed") arm.policy = P::AS_PLAYED;
+        else if (pol == "greedy") arm.policy = P::GREEDY;
+        else if (pol == "tt") arm.policy = P::TURN_TABLE;
+        else if (pol.size() == 3 && pol.rfind("ft", 0) == 0 && pol[2] >= '1' && pol[2] <= '9') {
+            arm.policy = P::FIRST_TURNS;
+            arm.turns = pol[2] - '0';
+        } else if (pol == "st") arm.policy = P::STUDENT;
+        else if (pol == "sttt") arm.policy = P::STUDENT_TURN_TABLE;
+        else if (pol == "ste") arm.policy = P::STUDENT_ENCOUNTER;
+        else throw std::runtime_error("STS_AZGEN_ROLLOUT_LADDER: unknown policy " + pol);
+        std::size_t used = 0;
+        long long b = 0;
+        try { b = std::stoll(item.substr(colon + 1), &used); } catch (const std::exception &) { used = 0; }
+        if (used != item.size() - colon - 1 || b < 1 || b > 1000000)
+            throw std::runtime_error("STS_AZGEN_ROLLOUT_LADDER: budget must be in 1..1000000 in " + item);
+        arm.budget = b;
+        out.push_back(arm);
+    }
+    return out;
+}
+
+// The rollout ladder's student models (process lifetime); their sha256 go to the manifest.
+nlohmann::json loadRolloutStudents(const std::vector<search::NativeSilverRolloutArm> &arms) {
+    static search::CombatValueNet generalist;
+    static std::map<int, std::unique_ptr<search::CombatValueNet>> byEncounter;
+    nlohmann::json info = nlohmann::json::object();
+    bool wantStudent = false;
+    for (const auto &a : arms) wantStudent |= a.policy >= search::NativeSilverRolloutArm::STUDENT;
+    if (!wantStudent) return info;
+    const char *path = std::getenv("STS_AZGEN_ROLLOUT_STUDENT");
+    if (!path || !*path || !generalist.load(path) || !generalist.isPolicyMlp)
+        throw std::runtime_error("STS_AZGEN_ROLLOUT_LADDER: student arms need STS_AZGEN_ROLLOUT_STUDENT (a policy MLP)");
+    search::g_nativeSilverRolloutStudent = &generalist;
+    info["generalist"] = {{"path", path}, {"sha256", fileSha256(path)}};
+    if (const char *enc = std::getenv("STS_AZGEN_ROLLOUT_STUDENT_ENC"); enc && *enc) {
+        std::stringstream ss(enc);
+        std::string item;
+        while (std::getline(ss, item, ',')) {
+            const auto eq = item.find('=');
+            if (eq == std::string::npos) throw std::runtime_error("STS_AZGEN_ROLLOUT_STUDENT_ENC: want ENCOUNTER=path");
+            const std::string name = item.substr(0, eq), file = item.substr(eq + 1);
+            int code = -1;
+            for (int i = 0; i < static_cast<int>(std::size(monsterEncounterEnumNames)); ++i)
+                if (name == monsterEncounterEnumNames[i]) code = i;
+            if (code < 0) throw std::runtime_error("STS_AZGEN_ROLLOUT_STUDENT_ENC: unknown encounter " + name);
+            auto net = std::make_unique<search::CombatValueNet>();
+            if (!net->load(file) || !net->isPolicyMlp)
+                throw std::runtime_error("STS_AZGEN_ROLLOUT_STUDENT_ENC: cannot load " + file);
+            search::g_nativeSilverRolloutStudentByEncounter[code] = net.get();
+            byEncounter[code] = std::move(net);
+            info["encounters"][name] = {{"path", file}, {"sha256", fileSha256(file)}};
+        }
+    }
+    return info;
+}
+
 // Deterministic draws for the perturbation; never touches game RNG.
 struct Draws {
     std::uint64_t state;
@@ -435,7 +511,13 @@ struct FightRecorder {
         if (view.ladder) {
             nlohmann::json lad = nlohmann::json::array();
             for (const auto &p : *view.ladder)
-                lad.push_back({{"budget", p.budget}, {"edge", p.edge}, {"sims", p.sims}, {"cpu", p.cpu}});
+                if (p.arm < 0) {
+                    lad.push_back({{"budget", p.budget}, {"edge", p.edge}, {"sims", p.sims}, {"cpu", p.cpu}});
+                } else {
+                    lad.push_back({{"budget", p.budget}, {"edge", p.edge}, {"sims", p.sims}, {"cpu", p.cpu},
+                                   {"policy", search::g_nativeSilverRolloutLadder.at(p.arm).name},
+                                   {"priorCalls", p.priorCalls}, {"playoutActions", p.playoutActions}});
+                }
             row["ladder"] = lad;
             row["mainCpu"] = view.mainCpu;
         }
@@ -508,6 +590,7 @@ struct AzPrior {
     int gumbelK = 0;           // STS_AZGEN_GUMBEL_ROOT: 0 = off
     int wholeRunGumbelK = 0;   // STS_AZGEN_WHOLE_RUN_GUMBEL: STS_SILVER_GUMBEL_ROOT's K (0 = off), no override
     std::vector<std::int64_t> ladder;   // STS_AZGEN_BUDGET_LADDER: empty = off
+    std::vector<search::NativeSilverRolloutArm> rolloutArms;   // STS_AZGEN_ROLLOUT_LADDER: empty = off
 };
 
 // silverazfocusgen: record only `target`, then end the run.
@@ -562,6 +645,7 @@ SeedResult runSynthSeed(std::uint64_t seed, int sims, int asc, const std::string
     }
     if (az && az->labelSearch) search::g_nativeSilverLabelSearch = true;
     if (az) search::g_nativeSilverBudgetLadder = az->ladder;
+    if (az) search::g_nativeSilverRolloutLadder = az->rolloutArms;
     if (az && az->gumbelK > 0) {
         // Every fight of the run (recorded or not) plays the Gumbel root.
         search::SilverSearcher::GumbelRoot g;
@@ -820,6 +904,11 @@ void silverAzRun(int nSeeds, int sims, int asc, const std::string &outPrefix, lo
     if (!ladder.empty() && (wholeRunK == 0 || focus))
         throw std::runtime_error("silverazgen: STS_AZGEN_BUDGET_LADDER requires STS_AZGEN_WHOLE_RUN_GUMBEL=1 and is"
                                  " silverazgen only");
+    const auto rolloutArms = rolloutLadder();
+    if (!rolloutArms.empty() && (wholeRunK == 0 || focus))
+        throw std::runtime_error("silverazgen: STS_AZGEN_ROLLOUT_LADDER requires STS_AZGEN_WHOLE_RUN_GUMBEL=1 and is"
+                                 " silverazgen only");
+    const nlohmann::json studentInfo = loadRolloutStudents(rolloutArms);
     const std::string priorPath = search::nativeSilverRootPriorPath();
     search::CombatValueNet prior;
     if (priorPath.empty() || !prior.load(priorPath) || !prior.isPolicyMlp)
@@ -837,8 +926,9 @@ void silverAzRun(int nSeeds, int sims, int asc, const std::string &outPrefix, lo
         + (gumbelK > 0 ? "-gsh" + std::to_string(gumbelK) : "")
         + (wholeRunK > 0 ? "-wrg" + std::to_string(wholeRunK) + "mb" + std::to_string(wholeRunMb) : "")
         + (ladder.empty() ? "" : "-lad" + std::to_string(ladder.size()))
+        + (rolloutArms.empty() ? "" : "-rl" + std::to_string(rolloutArms.size()))
         + "-" + priorSha.substr(0, 8);
-    const AzPrior az{treeMinVisits, rootBonus == 1, prodCombat, label, gumbelK, wholeRunK, ladder};
+    const AzPrior az{treeMinVisits, rootBonus == 1, prodCombat, label, gumbelK, wholeRunK, ladder, rolloutArms};
     // Under the self-play overrides Silver plays no prior playouts (NativeSilverBackend skips them).
     nlohmann::json silverLeaf = effectiveSilverLeafSpecification();
     if (!prodCombat && silverLeaf.contains("prior_playout_rooms")) silverLeaf["prior_playout_rooms"] = "none";
@@ -908,6 +998,14 @@ void silverAzRun(int nSeeds, int sims, int asc, const std::string &outPrefix, lo
                                     {"rows", "ladder[] = {budget, edge, sims, cpu}: a fresh Gumbel root search of the"
                                              " root per budget after the played one; mainCpu = the played search's"
                                              " thread seconds"}};
+    if (!rolloutArms.empty()) {
+        nlohmann::json arms = nlohmann::json::array();
+        for (const auto &a : rolloutArms) arms.push_back(a.name);
+        manifest["rolloutLadder"] = {{"arms", arms}, {"students", studentInfo},
+                                     {"rows", "ladder[] entries with `policy`: a fresh Gumbel root search of a"
+                                              " prior-playout root with that playout policy and budget; priorCalls ="
+                                              " rolloutPrior evaluations, playoutActions = playout actions"}};
+    }
     std::ofstream mf(manifestPath);
     if (!mf) throw std::runtime_error("silverazgen: cannot write manifest");
     mf << manifest.dump(2) << '\n';

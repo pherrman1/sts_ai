@@ -162,6 +162,7 @@ namespace sts::search {
         std::int64_t rolloutActionLimitHits = 0; // nonterminal playouts stopped at the action cap
         std::int64_t descentBoundRollouts = 0;   // descents cut at the depth backstop (#544)
         std::int64_t rolloutPriorPicks = 0;      // playout card plays chosen by rolloutPrior (research)
+        std::int64_t rolloutPriorCalls = 0;      // rolloutPrior evaluations inside playouts (research)
     };
 
     // Diagnostic counts for newly executed simulations only. Reset by the
@@ -340,6 +341,15 @@ namespace sts::search {
             // PLAYER_NORMAL step plays the rolloutPrior argmax over card plays and END_TURN
             // (no potions); card selects stay greedy. Needs rolloutPrior.
             bool prior = false;
+            // Research (cheap rollouts, 2026-11-13; default 0 / false = the per-step prior playout above).
+            // priorTurns = T > 0: only the playout's first T player turns follow the prior (the leaf's own
+            // turn counts as the first); later turns play the greedy SilverRolloutAgent policy.
+            // priorTurnTable: the prior is evaluated once per playout turn over the hand's card plays and
+            // END_TURN, and the turn's later steps play the best-scored legal edge of that table (keyed by
+            // card id, upgrade and target slot); a legal card play missing from the table (a card drawn or
+            // created during the turn) re-evaluates the prior on the current edges.
+            int priorTurns = 0;
+            bool priorTurnTable = false;
             // Research (STS_SILVER_ROLLOUT_BLOCK_FIRST / _BLOCK_OFFSET / _BLOCK_LETHAL):
             // SilverRolloutAgent::blockRule; the default is the production rule.
             SilverRolloutAgent::BlockRule blockRule;
@@ -599,6 +609,12 @@ namespace sts::search {
         Action chooseUniformRolloutAction(BattleContext &bc);
         // Research (RolloutConfig::prior): the rolloutPrior argmax over card plays and END_TURN.
         Action choosePriorRolloutAction(BattleContext &bc);
+        // Research (RolloutConfig::priorTurnTable): the turn table's best legal edge.
+        Action chooseTurnTableRolloutAction(BattleContext &bc);
+        // Turn table of the current playout: the turn it was built at (-1 = none), keys and scores.
+        int turnTableTurn = -1;
+        std::vector<std::uint32_t> turnTableKeys;
+        std::vector<double> turnTableScores;
         void recordEndpoint(const BattleContext &end, int treeDepth, int rolloutDepth);
 
         void enumerateActionsForNode(Node &node, const BattleContext &bc);

@@ -1029,8 +1029,8 @@ namespace sts::search {
                 }
                 const auto stepsBefore = searcher->stats.steps;
                 // g_nativeSilverBudgetLadder: the played search's CPU (research only; reads the clock, nothing else).
-                const bool ladderOn = !g_nativeSilverBudgetLadder.empty() && wholeRunGumbel && gumbelRoot
-                    && g_nativeSilverRootObserver;
+                const bool ladderOn = (!g_nativeSilverBudgetLadder.empty() || (!g_nativeSilverRolloutLadder.empty()
+                        && searcher->rolloutConfig.prior)) && wholeRunGumbel && gumbelRoot && g_nativeSilverRootObserver;
                 const double ladderCpu0 = ladderOn ? threadCpuSeconds() : 0;
                 // Tree profile only (#888): cost, starting graph and checkpoint reads of this search.
                 const bool shape = searcher->profile != nullptr;
@@ -1287,6 +1287,63 @@ namespace sts::search {
                                 }
                             }
                         ladder.push_back({b, edge, sims, cpu});
+                    }
+                    // g_nativeSilverRolloutLadder: the same, once per playout-policy arm (prior-playout roots only).
+                    for (std::size_t ai = 0; searcher->rolloutConfig.prior && ai < g_nativeSilverRolloutLadder.size(); ++ai) {
+                        const auto &arm = g_nativeSilverRolloutLadder[ai];
+                        std::unique_ptr<SilverSearcher> shadow;
+                        prepareSearcher(shadow, root, false);
+                        configureSearcher(*shadow, false);
+                        shadow->leafSamples = nullptr;
+                        shadow->outcomes = nullptr;
+                        auto &rc = shadow->rolloutConfig;
+                        using P = NativeSilverRolloutArm;
+                        const CombatValueNet *student = nullptr;
+                        switch (arm.policy) {
+                            case P::AS_PLAYED: break;
+                            case P::GREEDY: rc.prior = false; break;
+                            case P::TURN_TABLE: rc.priorTurnTable = true; break;
+                            case P::FIRST_TURNS: rc.priorTurns = arm.turns; break;
+                            case P::STUDENT: case P::STUDENT_TURN_TABLE:
+                                student = g_nativeSilverRolloutStudent;
+                                rc.priorTurnTable = arm.policy == P::STUDENT_TURN_TABLE;
+                                break;
+                            case P::STUDENT_ENCOUNTER: {
+                                const auto it = g_nativeSilverRolloutStudentByEncounter.find(int(bc.encounter));
+                                student = it != g_nativeSilverRolloutStudentByEncounter.end() ? it->second
+                                                                                               : g_nativeSilverRolloutStudent;
+                                break;
+                            }
+                        }
+                        if (arm.policy >= P::STUDENT) {
+                            if (!student) throw std::runtime_error("rollout ladder: student arm without a student model");
+                            shadow->rolloutPrior = [student](const BattleContext &state, const std::vector<SilverSearcher::Edge> &edges) {
+                                return nativeSilverPolicyPriorWith(*student, state, edges);
+                            };
+                        }
+                        const auto calls0 = shadow->stats.rolloutPriorCalls;
+                        const auto acts0 = shadow->stats.rolloutActions;
+                        const double c0 = threadCpuSeconds();
+                        const std::uint64_t salt = 0x7f4a7c15b5ad4eceULL * static_cast<std::uint64_t>(ai + 101);
+                        const std::int64_t sims = shadow->searchGumbelRoot(arm.budget, *gumbelRoot,
+                            nativeSilverBattleSeed(bc) ^ (0x9e3779b97f4a7c15ULL * static_cast<std::uint64_t>(decision + 1))
+                            ^ salt);
+                        const double cpu = threadCpuSeconds() - c0;
+                        const auto pick = SilverSearcher::translateAction(
+                            shadow->bestAction(), shadow->rootSearchState(), bc);
+                        int edge = -1;
+                        for (int pass = 0; pass < 2 && edge < 0; ++pass)
+                            for (std::size_t e = 0; e < mainEdges.size(); ++e) {
+                                const auto mine = SilverSearcher::translateAction(
+                                    mainEdges[e].action, searcher->rootSearchState(), bc);
+                                if (pass == 0 ? mine.bits == pick.bits
+                                              : SilverSearcher::actionsEquivalentOn(mine, pick, bc)) {
+                                    edge = static_cast<int>(e);
+                                    break;
+                                }
+                            }
+                        ladder.push_back({arm.budget, edge, sims, cpu, static_cast<int>(ai),
+                                          shadow->stats.rolloutPriorCalls - calls0, shadow->stats.rolloutActions - acts0});
                     }
                 }
                 searching.resume();
@@ -2036,12 +2093,19 @@ namespace sts::search {
 
     std::vector<double> nativeSilverPolicyPrior(const BattleContext &state,
                                                 const std::vector<SilverSearcher::Edge> &edges) {
+        return nativeSilverPolicyPriorWith(
+            g_nativeSilverPriorNetOverride ? *g_nativeSilverPriorNetOverride : g_rootPriorNet, state, edges);
+    }
+
+    std::vector<double> nativeSilverPolicyPriorWith(const CombatValueNet &net, const BattleContext &state,
+                                                    const std::vector<SilverSearcher::Edge> &edges) {
         // The state block is extracted once; edges with bit-identical action
         // blocks (e.g. two copies of a card) are scored once. Same values as
         // predictVec per edge (CombatValueNet::predictPolicyActions).
         // A combat_policy_mlp_v1 model (or a per-thread override) also keys
         // edges by target slot and normalizes logits with a softmax.
-        const CombatValueNet &net = g_nativeSilverPriorNetOverride ? *g_nativeSilverPriorNetOverride : g_rootPriorNet;
+        NativeSilverPriorTiming *timing = g_nativeSilverPriorTiming;
+        const double t0 = timing ? threadCpuSeconds() : 0;
         const bool mlp = net.isPolicyMlp;
         const int stateCount = combatFeatureCount();
         const int actionCount = combatPolicyFeatureCount() - stateCount;
@@ -2067,8 +2131,15 @@ namespace sts::search {
             if (match == distinct) targets[distinct++] = target;
         }
         scores.resize(distinct);
+        const double t1 = timing ? threadCpuSeconds() : 0;
         if (mlp) {
             net.predictPolicyMlp(features.data(), actions.data(), targets.data(), distinct, scores.data());
+            if (timing) {
+                timing->featureSeconds += t1 - t0;
+                timing->mlpSeconds += threadCpuSeconds() - t1;
+                ++timing->calls;
+                timing->edges += distinct;
+            }
             double top = scores[0];
             for (int d = 1; d < distinct; ++d) top = std::max(top, scores[d]);
             std::vector<double> prior;
@@ -2293,6 +2364,10 @@ namespace sts::search {
     thread_local SilverLeafSamples *g_nativeSilverLeafSamples = nullptr;
     thread_local bool g_nativeSilverLabelSearch = false;
     thread_local std::vector<std::int64_t> g_nativeSilverBudgetLadder;
+    thread_local std::vector<NativeSilverRolloutArm> g_nativeSilverRolloutLadder;
+    const CombatValueNet *g_nativeSilverRolloutStudent = nullptr;
+    std::map<int, const CombatValueNet *> g_nativeSilverRolloutStudentByEncounter;
+    thread_local NativeSilverPriorTiming *g_nativeSilverPriorTiming = nullptr;
     thread_local SilverOutcomeCapture *g_nativeSilverOutcomeCapture = nullptr;
 
     NativeSilverTotals nativeSilverTotals() {

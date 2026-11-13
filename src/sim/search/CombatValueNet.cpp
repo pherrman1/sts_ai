@@ -1447,6 +1447,15 @@ void CombatValueNet::predictPolicyMlp(const float *stateFeatures, const float *a
         policyMlpEdges<64>(*this, base.data(), stateFeatures, actionBlocks, targetSlots, n, out);
         return;
     }
+    // Small student widths (cheap rollouts research, 2026-11-13): the same per-edge code at H2 = 16 / 32.
+    if (H2 == 32 && H1 <= kPolicyMlpMaxH1) {
+        policyMlpEdges<32>(*this, base.data(), stateFeatures, actionBlocks, targetSlots, n, out);
+        return;
+    }
+    if (H2 == 16 && H1 <= kPolicyMlpMaxH1) {
+        policyMlpEdges<16>(*this, base.data(), stateFeatures, actionBlocks, targetSlots, n, out);
+        return;
+    }
     for (int e = 0; e < n; ++e) {
         const float *a = actionBlocks + (std::size_t)e * kNumAction;
         for (int j = 0; j < H1; ++j) h[j] = base[j];
