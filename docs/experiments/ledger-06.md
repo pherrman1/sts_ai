@@ -27542,3 +27542,41 @@ code f9601609, binary 5a659bd8; K prelaunch FAIL F1/F2 → delta PASS). Plan `/m
 **Decision:** NOT_SHOWN; no whole-run gate; cheap-playout line parked. Research options stay default off.
 Seeds: 111980000-111980255 (reused, data only). Cost: 137 lane-hours + ≈3 CPU-h.
 **Knowledge impact:** combat playouts: at boss / Act-4 roots, g7f_E prior playouts with fewer sims dominate turn-table, first-turn, distilled-student and per-encounter-student playouts at equal CPU; a tiny per-root θ[key]·φ model family shows no headroom over the distilled student.
+
+## §TBD — G12 / Heart 24k in whole runs: §775's G16 + mb4 at 12,000 simulations in every fight and at Shield and Spear, the Heart at 24,000 instead of 40,000 (G12H24, new research option `STS_SILVER_ACT4_HEART_BUDGET`), net-0420 out of combat, 1,024 paired A20 seeds against §775's G16 games after a 32/32 sentinel: Heart 41.21% → 38.96%, −2.25 pp [−5.08, +0.59] at 0.69× CPU → INCONCLUSIVE; Heart kills where both reach Act 4 84.5% vs 84.2% (cloud, 2026-11-13)
+
+**Question (Philipp, 2026-11-13 22:02 CET, "Können wir mal 12k überall probieren außer heart mit 24k? 40 worker go"):**
+does 12,000 simulations in every fight, with the Heart at 24,000, keep G16 + mb4's Heart kill rate at less CPU?
+**Data:** [PREREG](evidence/gumbel_g12_heart24_20261113/PREREG.md),
+[RESULT](evidence/gumbel_g12_heart24_20261113/RESULT.md), `results/result.json`, `results/breakdown.json`,
+`results/claims.txt`, `results/smoke.txt`, `analyze.py` (frozen with the PREREG in run commit 495d4d66),
+`breakdown.py` (descriptive).
+- G12H24 = §775's G16 + mb4 with `bestbench 12000` and `STS_SILVER_ACT4_HEART_BUDGET=24000`: 12,000 in acts 1-3 and at
+  Shield and Spear (max(10,000, 12,000)), the Heart at max(24,000, 12,000). The option (code bf8b4cfa, ba705ab4) is
+  research only, default 40,000; the A20 real-learned-stop path and `wholecombatgen` refuse other values. Binary
+  97aec5b5. Control: §775's 1,024 G16 games (REUSE_VALID, 32/32 sentinel games identical).
+- 1,056 units (32 sentinel + 1,024), all verified, 0 bad, 0 aborts, 0 dropped; one unit re-ran after a worker dropped
+  out. 104.1 lane-hours, 22:48-00:04 CET on 40 workers; longest game 40 min.
+
+**Result:** Heart kill G16 41.21%, G12H24 38.96%: G12H24 − G16 **−2.25 pp [−5.08, +0.59]**, 97 seeds only G12H24 kills,
+120 only G16; one-sided 95% [−4.69, +0.10]; nonregression SPRT CAP at 1,024 → **INCONCLUSIVE**; gainer NOT_SHOWN.
+CPU per run 352 s vs 512 s, **0.688× [0.655, 0.722]** (0.666× machine-corrected); simulations 0.725×. Act-4 reach
+−0.49 pp [−3.32, +2.25]. Secondary: G12H24 − D +7.32 [+4.30, +10.35] at 1.39× CPU; on the budget curve's 512 seeds
+−4.30 [−8.20, −0.39] (G12H24 36.13% at 345 s, between §781's G8S 34.38% at 315 s and G16 40.43% at 509 s), on the other
+512 −0.20 [−4.11, +3.72]. Act-4 conversion: G16 422/504 (83.7%), G12H24 399/499 (80.0%); on the 393 seeds where both
+reach Act 4, 84.5% vs 84.2%, −0.3 [−4.1, +3.6].
+- Descriptive (`breakdown.py`): no section's hazard interval excludes 0; Act 4 +3.8 [−0.2, +7.7]. Heart deaths
+  (final floor 56) 87 vs 73. Seeds only G12H24 brings to Act 4 convert 68/106 (64%), seeds only G16 brings 90/111 (81%).
+**Interpretation (Inference):**
+- The Heart at 24,000 shows no loss where it meets the same seeds (84.2% vs 84.5%, ±4 pp).
+- The gap sits in Act 4 on the seeds that only one arm reaches, so it is either weaker arrival states from 12,000 in
+  acts 1-3 or the cheaper Heart on harder states; the breakdown cannot separate the two.
+- On the curve's 512 seeds, G12H24 lies on the CPU curve between 8k and 16k (linear in CPU predicts 35.3%), not below
+  it: no free saving.
+- Like §777, §780, §783 and §785, the arm is 2-5 pp below the same G16 games (§785's control caveat).
+**Decision:** INCONCLUSIVE. No default change. G16 + mb4 stays the teacher candidate; G12H24 is not taken as a cheaper
+teacher. Follow-ups are Philipp's call: 16k with the Heart at 24k, 12k with the Heart at 40k, or more seeds.
+`STS_SILVER_ACT4_HEART_BUDGET` stays a research option.
+Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 104.1 lane-hours.
+**Knowledge impact:** combat budget: 12,000 simulations with the Heart at 24,000 costs 0.69× G16 + mb4's CPU at
+−2.25 pp [−5.08, +0.59] Heart; the Heart at 24,000 converts like 40,000 on the seeds where both arms arrive.
