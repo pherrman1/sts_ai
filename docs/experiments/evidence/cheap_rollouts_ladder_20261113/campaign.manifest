@@ -1,0 +1,11 @@
+name          cheap-rollouts-ladder
+code_commit   f9601609fd68d5e70d1cddb7162b706a9d44d629
+binary_sha256 TBD
+workers       40
+share         /mnt/project-files/cheap-rollouts-ladder
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 90
+claim_settle_seconds 60
+input net-0420.bin /mnt/project-files/ppo-long-c/nets/net-0420.bin 8c0bd16c31499270f192666919e0a11e1d6ca57e2d7a188b6d2a019f3ac742d2
