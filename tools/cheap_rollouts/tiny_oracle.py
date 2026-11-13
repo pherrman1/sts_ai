@@ -26,7 +26,7 @@ def main():
     ap.add_argument("pack"); ap.add_argument("out")
     ap.add_argument("--fold", type=int, default=4); ap.add_argument("--l2", type=float, default=1e-2)
     a = ap.parse_args()
-    z = np.load(a.pack)
+    z = dict(np.load(a.pack))  # materialize once: NpzFile re-reads an array on every access
     meta = json.load(open(a.pack + ".meta.json"))
     n = len(z["r_seed"])
     e_ptr = np.concatenate([[0], np.cumsum(z["r_nedge"])])
@@ -43,7 +43,9 @@ def main():
         if m[2] % 5 == a.fold:
             groups[(m[2], m[3], m[4])].append(r)
     res = collections.defaultdict(lambda: collections.Counter())
-    for gk, rows in groups.items():
+    for gi, (gk, rows) in enumerate(groups.items()):
+        if gi % 50 == 0:
+            print(f"root {gi}/{len(groups)}", flush=True)
         if len(rows) < 20: continue
         enc = meta[rows[0]][0]
         fit, held = rows[0::2], rows[1::2]
