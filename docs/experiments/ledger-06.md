@@ -27509,7 +27509,7 @@ is risky and must include a variant that keeps the boss and Act-4 budgets.
 Seeds: 111980000-111980255 (new, data only). Cost: 95.3 lane-hours + 3 min GPU.
 **Knowledge impact:** combat budget allocation: in Silver Q per decision, budget moved from bosses to hallways gains at equal CPU (a currency effect that contradicts Heart evidence, unproven in Heart %); a full-state net shows no clear gain over act × room.
 
-## §TBD — Cheap rollouts stage 2: five cheaper playout policies (g7f_E turn table, prior in the first playout turn, 32/16 distilled student every step / per turn, per-encounter students) at 42,814 G16 prior-playout roots of §797's 256 games vs g7f_E prior playouts with fewer sims at equal CPU: all five NOT_SHOWN, every one above the P1 frontier (tt +0.079 [+0.021, +0.140] Q at 0.60×; sttt +0.110 at 0.37×); per-root tiny-model bound 62.9 % top-1 vs student 64.2 % (different sample sets) (cloud, 2026-11-13)
+## §798 — Cheap rollouts stage 2: five cheaper playout policies (g7f_E turn table, prior in the first playout turn, 32/16 distilled student every step / per turn, per-encounter students) at 42,814 G16 prior-playout roots of §797's 256 games vs g7f_E prior playouts with fewer sims at equal CPU: all five NOT_SHOWN, every one above the P1 frontier (tt +0.079 [+0.021, +0.140] Q at 0.60×; sttt +0.110 at 0.37×); per-root tiny-model bound 62.9 % top-1 vs student 64.2 % (different sample sets) (cloud, 2026-11-13)
 
 **Question (Philipp, 2026-11-13 14:01 CET, "pro Kampf ein Kartranking ... Oder pro encounter ein billigeres Netz vom aktuellen prior"; 14:23 CET "Let's go all auf 40 worker"; 14:34 CET hypernetwork idea):**
 does a cheaper playout policy choose boss / Act-4 root actions as well as G16's g7f_E prior playouts at the same CPU?
