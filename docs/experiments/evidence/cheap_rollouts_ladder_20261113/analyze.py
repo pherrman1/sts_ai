@@ -10,6 +10,7 @@ import argparse
 import collections
 import glob
 import gzip
+import hashlib
 import json
 import os
 import re
@@ -20,6 +21,29 @@ CANDIDATES = ["tt:16000", "ft1:16000", "st:16000", "sttt:16000", "ste:16000"]
 NEW_ARMS = ["asplayed:4000", "greedy:16000", "greedy:64000"] + CANDIDATES
 P1 = [1000, 2000, 4000, 8000, 16000]
 FOLD4 = lambda seed: seed % 5 == 4  # noqa: E731
+SEEDS = range(111980000, 111980256)
+HERE = os.path.dirname(os.path.abspath(__file__))
+
+
+def student_shas():
+    """sha256 of every frozen student file (students/), by file name."""
+    out = {}
+    for f in glob.glob(os.path.join(HERE, "students", "*.txt")):
+        out[os.path.basename(f)] = hashlib.sha256(open(f, "rb").read()).hexdigest()
+    return out
+
+
+def manifest_students_ok(jsonl_path, want):
+    """The run's manifest names exactly the frozen students (by file name and sha256)."""
+    mf = jsonl_path[: -len(".jsonl.gz")] + ".manifest.json"
+    try:
+        st = json.load(open(mf))["rolloutLadder"]["students"]
+    except (OSError, KeyError, ValueError):
+        return False
+    got = {os.path.basename(st["generalist"]["path"]): st["generalist"]["sha256"]}
+    for v in st.get("encounters", {}).values():
+        got[os.path.basename(v["path"])] = v["sha256"]
+    return got == want
 
 
 def units(d):
@@ -29,6 +53,8 @@ def units(d):
         if not re.search(r"\brc=0\b", line):
             continue
         seed = int(re.search(r"natural-(\d+)\.done", done).group(1))
+        if seed not in SEEDS:
+            continue
         path = done[: -len(".done")] + ".jsonl.gz"
         if os.path.exists(path):
             out[seed] = path
@@ -82,18 +108,26 @@ def main():
     new_u, ref_u = units(a.new), units(a.ref)
     drops = collections.Counter()
     sentinel_bad = []
+    student_bad = []
+    want_students = student_shas()
     recs = []   # per root: seed, group, loss[arm], cpu[arm]
     cpu_scale = {}
     for seed in sorted(new_u):
         if seed not in ref_u:
             drops["no_ref_unit"] += 1
             continue
+        if not manifest_students_ok(new_u[seed], want_students):
+            student_bad.append(seed)
+            continue
         nr, rr = roots(new_u[seed]), roots(ref_u[seed])
         if set(nr) != set(rr) or any(nr[k]["chosen"] != rr[k]["chosen"] for k in nr):
             sentinel_bad.append(seed)
             continue
-        main_new = sum(r["mainCpu"] for r in nr.values() if r.get("mainCpu", -1) > 0)
-        main_ref = sum(r["mainCpu"] for r in rr.values() if r.get("mainCpu", -1) > 0)
+        # Machine speed: the same played searches in both runs, over the roots that carry mainCpu in this run (the
+        # prior-playout roots; review K F1: §797 has mainCpu at every searched root).
+        keys = [k for k, r in nr.items() if r.get("mainCpu", -1) > 0 and rr[k].get("mainCpu", -1) > 0]
+        main_new = sum(nr[k]["mainCpu"] for k in keys)
+        main_ref = sum(rr[k]["mainCpu"] for k in keys)
         scale = main_new / main_ref if main_ref > 0 else 1.0
         cpu_scale[seed] = scale
         for k, r in nr.items():
@@ -176,16 +210,28 @@ def main():
         return out
 
     everything = np.ones(len(recs), bool)
-    result = {"runsNew": len(new_u), "runsRef": len(ref_u), "sentinelBad": sentinel_bad, "drops": dict(drops),
-              "rows": len(recs), "cpuScaleMedian": float(np.median(list(cpu_scale.values()))) if cpu_scale else None}
-    n_drop = 256 - len(set(seeds))
+    # Dropped runs (review K F2): missing or rc != 0, no §797 unit, sentinel or student mismatch. A run without any
+    # boss / Act-4 root (19 of §797's 256) is not a drop.
+    missing = [s for s in SEEDS if s not in new_u or s not in ref_u]
+    n_drop = len(missing) + len(sentinel_bad) + len(student_bad)
+    result = {"runsNew": len(new_u), "runsRef": len(ref_u), "missingOrFailed": missing, "sentinelBad": sentinel_bad,
+              "studentManifestBad": student_bad, "droppedRuns": n_drop, "drops": dict(drops), "rows": len(recs),
+              "runsWithRows": len(set(seeds)),
+              "cpuScaleMedian": float(np.median(list(cpu_scale.values()))) if cpu_scale else None}
     result["status"] = ("INVALID" if len(sentinel_bad) > 8 else "INCOMPLETE" if n_drop > 20 else "OK")
     result["all"] = stats(everything)
     result["calibration"] = "OK" if result["all"]["gapCI95"][0] > 0 else "INVALID_METRIC"
     result["byGroup"] = {g: stats(groups == g) for g in sorted(set(groups))}
     result["fold4"] = stats(np.array([FOLD4(s) for s in seeds]))
+    # Labels only count with status OK and a valid metric (review K); otherwise they are withheld.
+    if result["status"] != "OK" or result["calibration"] != "OK":
+        for block in [result["all"], result["fold4"]] + list(result["byGroup"].values()):
+            for c in CANDIDATES + ["greedy:64000", "asplayed:4000"]:
+                if c in block:
+                    block[c]["label"] = None
     json.dump(result, open(a.out, "w"), indent=1)
-    print(json.dumps({k: result[k] for k in ("status", "calibration", "rows", "drops", "sentinelBad")}))
+    print(json.dumps({k: result[k] for k in ("status", "calibration", "rows", "droppedRuns", "drops", "sentinelBad",
+                                             "studentManifestBad")}))
     for c in CANDIDATES + ["greedy:64000", "asplayed:4000"]:
         print(c, json.dumps(result["all"][c]))
 

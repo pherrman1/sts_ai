@@ -64,8 +64,11 @@ the same CPU, and nearly as well as G16's own 16k search at a fraction of its CP
 
 ## Analysis (frozen with this file)
 
-- **Units that count.** Units with rc 0 that `verify_campaign.py` lists as OK and that pass the sentinel. More than 20
-  of 256 runs dropped → INCOMPLETE (reported, no candidate declared).
+- **Units that count.** Units with rc 0 that `verify_campaign.py` lists as OK, that pass the sentinel and whose run
+  manifest names exactly the frozen students (file names and sha256 of `students/`). A dropped run is one that is
+  missing, has rc ≠ 0, has no §797 unit, or fails the sentinel or the student check; a run without any boss / Act-4
+  root (19 of §797's 256) is not a drop. More than 20 dropped runs → INCOMPLETE; INCOMPLETE, INVALID or
+  INVALID_METRIC withhold every label (reported, no candidate declared). Review K F1/F2 (pre-launch, 2026-11-13).
 - **Rows.** Searched multi-edge prior-playout roots where every new arm and all five §797 ladder picks are matched
   (edge ≥ 0) and every picked edge has a finite max-backed Q. Drops counted by reason.
 - **Loss per root and arm.** loss = Q_ref(best) − Q_ref(pick), Q_ref the played tree's max-backed Q, best its maximum
