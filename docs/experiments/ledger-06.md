@@ -27508,3 +27508,35 @@ FAIL → delta PASS). Precursor: offline gain net [search_gain_net_20261112](evi
 is risky and must include a variant that keeps the boss and Act-4 budgets.
 Seeds: 111980000-111980255 (new, data only). Cost: 95.3 lane-hours + 3 min GPU.
 **Knowledge impact:** combat budget allocation: in Silver Q per decision, budget moved from bosses to hallways gains at equal CPU (a currency effect that contradicts Heart evidence, unproven in Heart %); a full-state net shows no clear gain over act × room.
+
+## §TBD — Cheap rollouts stage 2: five cheaper playout policies (g7f_E turn table, prior in the first playout turn, 32/16 distilled student every step / per turn, per-encounter students) at 42,814 G16 prior-playout roots of §797's 256 games vs g7f_E prior playouts with fewer sims at equal CPU: all five NOT_SHOWN, every one above the P1 frontier (tt +0.079 [+0.021, +0.140] Q at 0.60×; sttt +0.110 at 0.37×); per-root tiny-model hypernetwork bound 62.9 % top-1 vs student 64.2 % (cloud, 2026-11-13)
+
+**Question (Philipp, 2026-11-13 14:01 CET, "pro Kampf ein Kartranking ... Oder pro encounter ein billigeres Netz vom aktuellen prior"; 14:23 CET "Let's go all auf 40 worker"; 14:34 CET hypernetwork idea):**
+does a cheaper playout policy choose boss / Act-4 root actions as well as G16's g7f_E prior playouts at the same CPU?
+**Data:** [PREREG](evidence/cheap_rollouts_ladder_20261113/PREREG.md),
+[SMOKE](evidence/cheap_rollouts_ladder_20261113/SMOKE.md),
+[RESULT](evidence/cheap_rollouts_ladder_20261113/RESULT.md), `results/result.json`, `results/verify.txt`,
+`results/tiny_oracle_fold4.json`, stage-1 `results/train_*.json`, `results/fidelity_s32.json` (run commit 855ec92e;
+code f9601609, binary 5a659bd8; K prelaunch FAIL F1/F2 → delta PASS). Plan `/mnt/project-files/cheap-rollouts/PLAN.md`.
+- Stage 0 (20 roots at 2k): a prior playout makes ≈25 g7f_E calls per sim at 6 µs (MLP 85 %); 182 vs 17 µs/sim for greedy.
+- Stage 1 (3,000 roots, 1.14 M captured playout calls): 32/16 student KL 0.023, top-1 64 % (teacher flat: top prob 0.36
+  over 5.1 edges), 2.2 µs/call.
+- Stage 2: 256 / 256 units at rc 0, 0 dropped, sentinel bit-identical to §797. After each played search at a
+  prior-playout root, one fresh G16 search per arm; picks scored by the played 16k tree's max-backed Q. P1 frontier =
+  §797's 1k-16k ladder picks of the same roots, CPU-scaled (asplayed:4000 check Δ +0.001 [−0.031, +0.033]).
+**Result:**
+- Loss / r (CPU vs P1 16k): P1 1k-16k 1.308 / 1.148 / 0.984 / 0.853 / 0.766 at 0.06-1.0; greedy 16k 1.244 at 0.15
+  (calibration gap 0.477 [0.417, 0.542]); greedy 64k 1.315 at 0.64.
+- Δ vs P1 frontier [99 %]: tt +0.079 [+0.021, +0.140] (0.60×); ft1 +0.166 [+0.100, +0.239] (0.34×); st +0.162
+  [+0.095, +0.235] (0.54×); sttt +0.110 [+0.043, +0.183] (0.37×); ste +0.138 [+0.079, +0.199] (0.54×). All NOT_SHOWN.
+- No group (Act 1-2 bosses, Act 3 bosses, Shield and Spear, Heart, fold 4) has a candidate below the frontier.
+- Hypernetwork bound (tiny θ[key]·φ fitted per root, 10 context features, fold 4): top-1 62.9 % vs key-only table
+  56.3 % vs generalist student 64.2 %.
+**Interpretation (Inference):**
+- Cheaper playout policies lose more decision quality than simply running fewer prior-playout sims at the same CPU.
+- High-fidelity variants still cost 54-60 % (the student call is cheap, the rest of a prior-playout sim is not).
+- More greedy sims make picks worse (playout bias).
+- A per-context tiny model is no better than the distilled student, so a hypernetwork over these features has no headroom.
+**Decision:** NOT_SHOWN; no whole-run gate; cheap-playout line parked. Research options stay default off.
+Seeds: 111980000-111980255 (reused, data only). Cost: 137 lane-hours + ≈3 CPU-h.
+**Knowledge impact:** combat playouts: at boss / Act-4 roots, g7f_E prior playouts with fewer sims dominate turn-table, first-turn, distilled-student and per-encounter-student playouts at equal CPU; per-context tiny models give no headroom over the student.
