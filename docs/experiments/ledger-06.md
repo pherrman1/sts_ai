@@ -27472,7 +27472,7 @@ curves stay as data for hand-free per-room budgets.
 Seeds: 111970000-111970255 (new, data only). Cost: 88.6 lane-hours.
 **Knowledge impact:** combat budget allocation: uniform budgets are as good as learned per-fight allocation from 1k to 64k.
 
-## §TBD — Budget ladder per root: learned per-decision sim budget from the full combat state (CombatNet trunk, init T1) on 145k G16 roots of 256 fresh runs, each also searched fresh at 1k / 2k / 4k / 8k / 16k: M2 at equal CPU −0.049 Q [−0.071, −0.025] @ 2k and −0.041 [−0.056, −0.025] @ 4k → GAIN in Silver Q only; a post-hoc act × room table lies within M2's run-to-run spread (−0.051 / −0.044) (cloud + PC GPU, 2026-11-13)
+## §797 — Budget ladder per root: learned per-decision sim budget from the full combat state (CombatNet trunk, init T1) on 145k G16 roots of 256 fresh runs, each also searched fresh at 1k / 2k / 4k / 8k / 16k: M2 at equal CPU −0.049 Q [−0.071, −0.025] @ 2k and −0.041 [−0.056, −0.025] @ 4k → GAIN in Silver Q only; a post-hoc act × room table lies within M2's run-to-run spread (−0.051 / −0.044) (cloud + PC GPU, 2026-11-13)
 
 **Question (Philipp, 2026-11-12 20:15 CET, "Ich will ein fucking model haben das den context sieht und sims vorschlägt"; decision card "Datenlauf mit Budgets pro Zug"; 21:02 CET "go für 40 worker"):**
 can a model on the full combat state choose each decision's sim budget better than uniform budgets at the same CPU?
