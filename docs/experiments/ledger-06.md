@@ -27509,7 +27509,7 @@ is risky and must include a variant that keeps the boss and Act-4 budgets.
 Seeds: 111980000-111980255 (new, data only). Cost: 95.3 lane-hours + 3 min GPU.
 **Knowledge impact:** combat budget allocation: in Silver Q per decision, budget moved from bosses to hallways gains at equal CPU (a currency effect that contradicts Heart evidence, unproven in Heart %); a full-state net shows no clear gain over act × room.
 
-## §TBD — Cheap rollouts stage 2: five cheaper playout policies (g7f_E turn table, prior in the first playout turn, 32/16 distilled student every step / per turn, per-encounter students) at 42,814 G16 prior-playout roots of §797's 256 games vs g7f_E prior playouts with fewer sims at equal CPU: all five NOT_SHOWN, every one above the P1 frontier (tt +0.079 [+0.021, +0.140] Q at 0.60×; sttt +0.110 at 0.37×); per-root tiny-model hypernetwork bound 62.9 % top-1 vs student 64.2 % (cloud, 2026-11-13)
+## §TBD — Cheap rollouts stage 2: five cheaper playout policies (g7f_E turn table, prior in the first playout turn, 32/16 distilled student every step / per turn, per-encounter students) at 42,814 G16 prior-playout roots of §797's 256 games vs g7f_E prior playouts with fewer sims at equal CPU: all five NOT_SHOWN, every one above the P1 frontier (tt +0.079 [+0.021, +0.140] Q at 0.60×; sttt +0.110 at 0.37×); per-root tiny-model bound 62.9 % top-1 vs student 64.2 % (different sample sets) (cloud, 2026-11-13)
 
 **Question (Philipp, 2026-11-13 14:01 CET, "pro Kampf ein Kartranking ... Oder pro encounter ein billigeres Netz vom aktuellen prior"; 14:23 CET "Let's go all auf 40 worker"; 14:34 CET hypernetwork idea):**
 does a cheaper playout policy choose boss / Act-4 root actions as well as G16's g7f_E prior playouts at the same CPU?
@@ -27529,14 +27529,16 @@ code f9601609, binary 5a659bd8; K prelaunch FAIL F1/F2 → delta PASS). Plan `/m
   (calibration gap 0.477 [0.417, 0.542]); greedy 64k 1.315 at 0.64.
 - Δ vs P1 frontier [99 %]: tt +0.079 [+0.021, +0.140] (0.60×); ft1 +0.166 [+0.100, +0.239] (0.34×); st +0.162
   [+0.095, +0.235] (0.54×); sttt +0.110 [+0.043, +0.183] (0.37×); ste +0.138 [+0.079, +0.199] (0.54×). All NOT_SHOWN.
-- No group (Act 1-2 bosses, Act 3 bosses, Shield and Spear, Heart, fold 4) has a candidate below the frontier.
+- No group (Act 1-2 bosses, Act 3 bosses, Shield and Spear, Heart, fold 4) has a candidate below the frontier in its point
+  estimate; the 99 % CI contains 0 at the Heart (all five) and in Act 1-2 bosses for tt / sttt.
 - Hypernetwork bound (tiny θ[key]·φ fitted per root, 10 context features, fold 4): top-1 62.9 % vs key-only table
-  56.3 % vs generalist student 64.2 %.
+  56.3 % vs generalist student 64.2 % (all fold-4 captures, a different sample set; no CIs).
 **Interpretation (Inference):**
 - Cheaper playout policies lose more decision quality than simply running fewer prior-playout sims at the same CPU.
 - High-fidelity variants still cost 54-60 % (the student call is cheap, the rest of a prior-playout sim is not).
-- More greedy sims make picks worse (playout bias).
-- A per-context tiny model is no better than the distilled student, so a hypernetwork over these features has no headroom.
+- More greedy sims did not help (point estimates 1.315 at 64k vs 1.244 at 16k).
+- This tiny per-root model family (θ[key]·φ, 10 scalar features) shows no headroom over the student; richer per-context
+  models are not excluded.
 **Decision:** NOT_SHOWN; no whole-run gate; cheap-playout line parked. Research options stay default off.
 Seeds: 111980000-111980255 (reused, data only). Cost: 137 lane-hours + ≈3 CPU-h.
-**Knowledge impact:** combat playouts: at boss / Act-4 roots, g7f_E prior playouts with fewer sims dominate turn-table, first-turn, distilled-student and per-encounter-student playouts at equal CPU; per-context tiny models give no headroom over the student.
+**Knowledge impact:** combat playouts: at boss / Act-4 roots, g7f_E prior playouts with fewer sims dominate turn-table, first-turn, distilled-student and per-encounter-student playouts at equal CPU; a tiny per-root θ[key]·φ model family shows no headroom over the distilled student.

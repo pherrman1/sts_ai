@@ -15,7 +15,7 @@ Delivery: [results/verify.txt](results/verify.txt).
 - 42,814 roots in 237 runs (19 runs have no boss / Act-4 root); 154 roots dropped by rule (an unmatched or unvisited
   pick). Status OK, calibration OK.
 - CPU check: the new asplayed:4000 arm lies on §797's frontier after scaling (Δ +0.001 [−0.031, +0.033]); median
-  machine scale 1.085.
+  machine scale 1.085 over all runs (1.099 over the 237 runs with prior-playout roots; the 19 without carry 1.0).
 
 ## All roots (Silver-Q loss vs the played 16k tree; CPU per root; r = CPU / P1 16k)
 
@@ -43,16 +43,17 @@ r ≤ 0.35 together with g ≤ 25 %.
 | Heart | 7,288 | +0.062 [−0.023, +0.160] | +0.077 [−0.063, +0.241] | +0.077 [−0.054, +0.232] | +0.075 [−0.077, +0.259] | +0.122 [−0.018, +0.304] |
 | fold 4 (held out from student training) | 9,194 | +0.145 | +0.238 | +0.307 | +0.193 | +0.211 |
 
-No group has any candidate below the frontier. The closest are sttt in Act 1-2 bosses and tt in Act 1-2 / Heart, all
-with point estimates above 0.
+No group has a candidate below the frontier in its point estimate. The 99 % CI contains 0 at the Heart (all five) and
+in Act 1-2 bosses for tt and sttt, so there those groups show neither better nor worse.
 
 ## Hypernetwork upper bound (Philipp's idea, offline, not in the PREREG decision)
 
 `tools/cheap_rollouts/tiny_oracle.py` on fold 4 of the stage-1 captures ([results/tiny_oracle_fold4.json](results/tiny_oracle_fold4.json)):
 a tiny model θ[key]·φ (key = card, upgrade, target; φ = 10 scalar context features) fitted per root on half of that
 root's own playout states, scored on the other half. Top-1 agreement with g7f_E: tiny 62.9 %, key-only table 56.3 %,
-32/16 generalist student 64.2 % (stage 1). A perfect hypernetwork that writes this kind of tiny model per context would
-not beat the distilled student, which already lost here.
+32/16 generalist student 64.2 % (stage 1, all fold-4 captures: a different sample set; no CIs). This tiny per-root model
+family (θ[key]·φ, 10 scalar features) shows no headroom over the distilled student, which already lost here; richer
+per-context models are not excluded.
 
 ## Interpretation (inference)
 
@@ -62,7 +63,8 @@ not beat the distilled student, which already lost here.
 - Measured CPU ratios match stage 0 (st 0.54×, sttt 0.37×, ft1 0.34×). The 2.2 µs student call is not cheap enough
   against the rest of a prior-playout simulation (state copies, game steps), and student or turn-table play is
   measurably worse per sim.
-- More greedy sims hurt (greedy 64k 1.315 vs 16k 1.244): with a biased playout, extra search converges on its bias.
+- More greedy sims did not help (point estimates greedy 64k 1.315 vs 16k 1.244; no CI on the difference): with a biased
+  playout, extra search may converge on its bias.
 - The cheapest lever within boss rooms remains fewer prior-playout sims; that conflicts with §790/§792 whole-run
   evidence (bosses and Act 4 buy Heart kills), so no default change follows from Q alone.
 - Caveat: the reference is the played prior-playout 16k tree, which favours P1-like picks (conservative for cheap arms,
