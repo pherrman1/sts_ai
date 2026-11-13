@@ -256,6 +256,26 @@ def fit_m2(A, rows, X, loss, cpu, tr, te, args):
     return monotone(lh), ch
 
 
+def coreport(choice, loss, cpu, groups):
+    """PREREG co-reported splits (descriptive, no CI): per group value n, the policy's mean loss and CPU and its budget
+    mix; with choice None the uniform losses and CPUs per budget instead."""
+    out = {}
+    for gname, g in groups.items():
+        out[gname] = {}
+        for v in np.unique(g):
+            m = g == v
+            if choice is None:
+                out[gname][str(int(v))] = {"n": int(m.sum()), "loss": [float(x) for x in loss[m].mean(0)],
+                                           "cpu": [float(x) for x in cpu[m].mean(0)]}
+            else:
+                c = choice[m]
+                out[gname][str(int(v))] = {"n": int(m.sum()),
+                                           "loss": float(loss[m, :][np.arange(m.sum()), c].mean()),
+                                           "cpu": float(cpu[m, :][np.arange(m.sum()), c].mean()),
+                                           "mix": [float(x) for x in np.bincount(c, minlength=loss.shape[1]) / m.sum()]}
+    return out
+
+
 def analyze(A, args):
     from train import split_of
     rows, loss, cpu, X, dropped, budgets = ladder_labels(A)
@@ -268,6 +288,10 @@ def analyze(A, args):
     res = {"roots": int(len(rows)), "runs": int(len(np.unique(seeds))), "dropped": dropped, "budgets": budgets,
            "uniform": {str(b): {"loss": float(uloss[i]), "cpu": float(ucpu[i])} for i, b in enumerate(budgets)},
            "hull": [budgets[i] for i in lower_hull(ucpu, uloss)], "level": LEVEL}
+    a = A.a
+    inh = (np.asarray(a["inherited"])[rows] > 0) if "inherited" in a else np.zeros(len(rows), bool)
+    groups = {"room": np.asarray(a["elite_boss"])[rows], "act": np.asarray(a["act"])[rows], "inherited": inh}
+    res["uniform_by"] = coreport(None, loss, cpu, groups)
     models = {"M1": fit_m1} if args.no_net else {"M1": fit_m1, "M2": None}
     for name in models:
         lh, ch = np.zeros_like(loss), np.zeros_like(cpu)
@@ -283,6 +307,7 @@ def analyze(A, args):
             target = ucpu[budgets.index(tb)]
             choice = choose(lh, ch, target)
             res[name]["targets"][str(tb)] = contrast(choice, loss, cpu, seeds, ucpu, uloss, rng)
+            res[name]["targets"][str(tb)]["by"] = coreport(choice, loss, cpu, groups)
         # oracle: realized loss and cpu, same lambda search (upper bound)
     res["oracle"] = {str(tb): contrast(choose(loss, cpu, ucpu[budgets.index(tb)]), loss, cpu, seeds, ucpu, uloss, rng,
                                        reps=1000) for tb in TARGET_BUDGETS}
