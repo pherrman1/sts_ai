@@ -738,9 +738,11 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
         if (sims != 10000 || !search::nativeSilverBackendInstalled()
             || !search::nativeSilverExactRootBudgets() || search::nativeSilverAdaptiveEnabled()
             || !search::nativeSilverLearnedStopEnabled() || search::nativeSilverLearnedStopBossFallback()
-            || search::nativeSilverLearnedStopBossMax() != 0 || search::nativeSilverReuseCap() != 32768)
+            || search::nativeSilverLearnedStopBossMax() != 0 || search::nativeSilverReuseCap() != 32768
+            || search::nativeSilverAct4HeartBudget() != 40000)
             throw std::runtime_error("STS_OOC_MCTS_REAL_LEARNED_STOP (default on at A20) requires learned-stop Silver real"
-                                     " combat with exact root budgets, no adaptive or boss fallback/max, reuse cap 32768;"
+                                     " combat with exact root budgets, no adaptive or boss fallback/max, reuse cap 32768,"
+                                     " Act-4 Heart budget 40000;"
                                      " STS_OOC_MCTS_REAL_LEARNED_STOP=0 restores flat exact 10k");
     } else if (one_combat::liveOocMctsEnabled()) {
         if (sims != 10000 || !search::nativeSilverBackendInstalled()

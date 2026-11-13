@@ -3744,7 +3744,10 @@ int main(int argc, char **argv) {
                       ? std::string(" ") + search::nativeSilverStopModelId() : std::string{})
               << (search::nativeSilverExactRootBudgets() ? "; exact root budgets" : "")
               << (search::nativeSilverSearchesSingletonRoots() ? "" : "; one-action roots unsearched")
-              << (search::nativeSilverAct4Strong() ? "; Act 4 strong (S&S 10k prior playouts, Heart 40k)" : "")
+              << (search::nativeSilverAct4Strong()
+                      ? "; Act 4 strong (S&S 10k prior playouts, Heart "
+                          + std::to_string(search::nativeSilverAct4HeartBudget() / 1000) + "k)"
+                      : std::string{})
               << "]\n";
     if (const char *d = std::getenv("STS_FORCE_RELIC"); d && *d) { // force a relic at run start (paired A/B)
         const std::string name(d);
