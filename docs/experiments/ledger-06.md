@@ -27543,7 +27543,7 @@ code f9601609, binary 5a659bd8; K prelaunch FAIL F1/F2 → delta PASS). Plan `/m
 Seeds: 111980000-111980255 (reused, data only). Cost: 137 lane-hours + ≈3 CPU-h.
 **Knowledge impact:** combat playouts: at boss / Act-4 roots, g7f_E prior playouts with fewer sims dominate turn-table, first-turn, distilled-student and per-encounter-student playouts at equal CPU; a tiny per-root θ[key]·φ model family shows no headroom over the distilled student.
 
-## §TBD — G12 / Heart 24k in whole runs: §775's G16 + mb4 at 12,000 simulations in every fight and at Shield and Spear, the Heart at 24,000 instead of 40,000 (G12H24, new research option `STS_SILVER_ACT4_HEART_BUDGET`), net-0420 out of combat, 1,024 paired A20 seeds against §775's G16 games after a 32/32 sentinel: Heart 41.21% → 38.96%, −2.25 pp [−5.08, +0.59] at 0.69× CPU → INCONCLUSIVE; Heart kills where both reach Act 4 84.5% vs 84.2% (cloud, 2026-11-13)
+## §799 — G12 / Heart 24k in whole runs: §775's G16 + mb4 at 12,000 simulations in every fight and at Shield and Spear, the Heart at 24,000 instead of 40,000 (G12H24, new research option `STS_SILVER_ACT4_HEART_BUDGET`), net-0420 out of combat, 1,024 paired A20 seeds against §775's G16 games after a 32/32 sentinel: Heart 41.21% → 38.96%, −2.25 pp [−5.08, +0.59] at 0.69× CPU → INCONCLUSIVE; Heart kills where both reach Act 4 84.5% vs 84.2% (cloud, 2026-11-13)
 
 **Question (Philipp, 2026-11-13 22:02 CET, "Können wir mal 12k überall probieren außer heart mit 24k? 40 worker go"):**
 does 12,000 simulations in every fight, with the Heart at 24,000, keep G16 + mb4's Heart kill rate at less CPU?
