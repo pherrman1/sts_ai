@@ -1,0 +1,16 @@
+Smoke, local, 2026-11-13 22:13-22:27 CET (not part of the data; the campaign plays these seeds again).
+Binary 97aec5b5 (code ba705ab4) for G12H24; the G16 sentinel check ran on bf8b4cfa's binary b520b916, which differs
+from ba705ab4 only in one_combat's list of accepted Silver options (ba705ab4 adds STS_SILVER_ACT4_HEART_BUDGET there).
+A first G12H24 attempt on bf8b4cfa ended with rc 2 at startup ("STS_SILVER_ACT4_HEART_BUDGET=24000 is not supported
+by the native Silver backend"), which ba705ab4 fixes.
+
+G16 111378256 (sentinel seed): rc 0, 536 s; fingerprint (analyze.py) identical to §775's G16 game.
+G12H24 111378263: rc 0, Heart kill, 466.7 s CPU, 673 Gumbel roots, 8,087,783 sims
+                  (§775's G16: Heart kill, 675.2 s, 656 roots, 10,863,857 sims) -> CPU 0.69x
+G12H24 111378261: rc 0, died on floor 40, 312.3 s, 581 roots, 6,659,809 sims
+                  (§775's G16: Heart kill, 1,239.3 s, 980 roots)
+Both G12H24 logs: "[silver] research act4 heart budget 24000", the banner "Act 4 strong (S&S 10k prior playouts,
+Heart 24k)", "sims 12000"; run_unit.sh accepted both games (rc 0 in .done).
+Budget check: G12H24 111378263 again with STS_SILVER_GUMBEL_STOP_TRACE (not a campaign option; same game: 673 roots,
+8,087,783 sims, Heart kill): trace column `budget` = 24000 on every root of floor 56 (the Heart), 12000 on every root
+of the other 32 floors with fights, floor 55 (Shield and Spear) included.
