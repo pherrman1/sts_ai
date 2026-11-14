@@ -4342,6 +4342,9 @@ int main(int argc, char **argv) {
     } else if (mode == "rolloutpolicybench") {
         if (argc < 6) { std::cerr << "usage: one_combat rolloutpolicybench OUT_PREFIX BUDGET ARMS CAPTURE_STRIDE < rows.jsonl\n"; return 2; }
         rolloutPolicyBench(argv[2], std::stoll(argv[3]), argv[4], std::stoi(argv[5]));
+    } else if (mode == "leafbench") {
+        if (argc < 5) { std::cerr << "usage: one_combat leafbench OUT.jsonl MIN_VISITS ROLLOUTS [NET.ctn] < rows.jsonl\n"; return 2; }
+        leafValueBench(argv[2], std::stoi(argv[3]), std::stoi(argv[4]), argc >= 6 ? argv[5] : "");
     } else if (mode == "silversynthreplay") {
         silverSynthReplay(argc >= 4 && std::string(argv[2]) == "names" ? argv[3] : "");
     } else if (mode == "combattransitionlizardtargetcandidategen") {
