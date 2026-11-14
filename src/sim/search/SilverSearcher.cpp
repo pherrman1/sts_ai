@@ -1179,6 +1179,15 @@ search::Action search::SilverSearcher::choosePriorRolloutAction(BattleContext &b
     enumerateCardActions(scratch, bc);
     scratch.edges.push_back({Action(ActionType::END_TURN)});
     if (scratch.edges.size() == 1) return scratch.edges[0].action;
+    if (rolloutPriorArgmax) {
+        const PriorFunction *held = rolloutPrior.target<PriorFunction>();
+        if (held && *held == rolloutPriorArgmaxOf) {
+            const int best = rolloutPriorArgmax(bc, scratch.edges);
+            ++stats.rolloutPriorPicks;
+            ++stats.rolloutPriorCalls;
+            return scratch.edges[best].action;
+        }
+    }
     const auto prior = rolloutPrior(bc, scratch.edges);
     if (prior.size() != scratch.edges.size())
         throw std::runtime_error("SilverSearcher: rollout prior size differs from the playout edges");

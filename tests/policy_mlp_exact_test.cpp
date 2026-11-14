@@ -2,7 +2,8 @@
 // (the pre-2026-10-21 implementation): Silver's prior playouts take its argmax,
 // so any rounding change can change play. Uses the deployed g7f_E model and
 // random sparse inputs shaped like real calls (~60 nonzero state features,
-// signed zeros, empty monster slots, 1-12 edges, with and without targets).
+// signed zeros, empty monster slots, 1-40 edges, with and without targets), plus
+// special values (subnormals, huge and infinite inputs) in every fifth call.
 #include "sim/search/CombatValueNet.h"
 
 #include <cmath>
@@ -117,7 +118,8 @@ int main(int argc, char **argv) {
             state[b + 1] = (float)small(rng) * 10.f;
             state[b + 4] = (float)small(rng);
         }
-        const int n = edgeCount(rng);
+        // Every fourth call has 13-40 edges (several interleaved output-sum groups of 8).
+        const int n = c % 4 == 1 ? 13 + (int)(unit(rng) * 28) : edgeCount(rng);
         actions.assign((std::size_t)n * A, 0.f);
         targets.resize(n);
         for (int e = 0; e < n; ++e) {
@@ -126,6 +128,13 @@ int main(int argc, char **argv) {
             a[4] = e + 1 == n ? -1.f : (float)((unsigned)rng() % 371);
             targets[e] = slot(rng);
         }
+        // Every fifth call carries special values: signed zeros, subnormals, huge and infinite inputs.
+        if (c % 5 == 2) {
+            const float special[] = {-0.f, 1e-40f, -1e-40f, 1e30f, -1e30f, INFINITY, -INFINITY, 3e-39f};
+            for (int i = 0; i < 6; ++i) state[feat(rng)] = special[(unsigned)rng() % 8];
+            for (int i = 0; i < 2; ++i) actions[(unsigned)rng() % actions.size()] = special[(unsigned)rng() % 8];
+            for (int e = 0; e < n; ++e) actions[(std::size_t)e * A + 4] = e + 1 == n ? -1.f : (float)((unsigned)rng() % 371);
+        }
         const int *t = c % 3 == 0 ? nullptr : targets.data();
         got.assign(n, 0.0);
         want.assign(n, 0.0);
@@ -133,7 +142,11 @@ int main(int argc, char **argv) {
         referencePolicyMlp(net, state.data(), actions.data(), t, n, want.data());
         ++cases;
         edges += n;
-        if (std::memcmp(got.data(), want.data(), sizeof(double) * n) != 0) ++mismatches;
+        // Bit for bit; a NaN output (inf - inf from the special values) only has to be NaN on both sides.
+        for (int e = 0; e < n; ++e) {
+            if (std::isnan(got[e]) && std::isnan(want[e])) continue;
+            if (std::memcmp(&got[e], &want[e], sizeof(double)) != 0) { ++mismatches; break; }
+        }
     }
     std::printf("policy_mlp_exact_test: %ld calls, %ld edges, %ld mismatches\n", cases, edges, mismatches);
     return mismatches == 0 ? 0 : 1;

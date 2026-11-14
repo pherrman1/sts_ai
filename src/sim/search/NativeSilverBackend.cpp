@@ -957,11 +957,15 @@ namespace sts::search {
                                   g_options.leafHeadTurnPenalty, g_options.leafHeadWinCap};
                 }
                 s.rolloutPrior = nullptr;
+                s.rolloutPriorArgmax = nullptr;
+                s.rolloutPriorArgmaxOf = nullptr;
                 if (s.rolloutConfig.prior) {
                     // Research: prior playouts score with the root-prior model (or the arm's override).
                     if (g_options.rootPriorPath.empty() && !g_nativeSilverPriorNetOverride)
                         throw std::runtime_error("STS_SILVER_ROLLOUT_PRIOR requires STS_SILVER_ROOT_PRIOR");
                     s.rolloutPrior = nativeSilverPolicyPrior;
+                    s.rolloutPriorArgmax = nativeSilverPolicyArgmax;
+                    s.rolloutPriorArgmaxOf = nativeSilverPolicyPrior;
                 }
                 if (const CombatValueNet *tableNet = g_nativeSilverRolloutRootTableOverride
                         ? g_nativeSilverRolloutRootTableOverride
@@ -2109,6 +2113,62 @@ namespace sts::search {
             g_nativeSilverPriorNetOverride ? *g_nativeSilverPriorNetOverride : g_rootPriorNet, state, edges);
     }
 
+    namespace {
+        // Scores of the distinct edges of `state` (edges with bit-identical action blocks and target are
+        // scored once): scores[distinctOf[i]] is edge i's logit (MLP) or margin (tree ensemble).
+        struct PriorScores {
+            std::vector<int> distinctOf;
+            std::vector<double> scores;
+            bool mlp = false;
+        };
+        const PriorScores &scorePolicyEdges(const CombatValueNet &net, const BattleContext &state,
+                                            const std::vector<SilverSearcher::Edge> &edges) {
+            NativeSilverPriorTiming *timing = g_nativeSilverPriorTiming;
+            const double t0 = timing ? threadCpuSeconds() : 0;
+            const bool mlp = net.isPolicyMlp;
+            const int stateCount = combatFeatureCount();
+            const int actionCount = combatPolicyFeatureCount() - stateCount;
+            const int n = static_cast<int>(edges.size());
+            // `features` is written only by combatExtractFeaturesReuse (`touched` tracks it).
+            thread_local std::vector<float> features, actions;
+            thread_local std::vector<std::uint16_t> touched;
+            thread_local std::vector<int> targets;
+            thread_local PriorScores out;
+            features.resize(stateCount);
+            combatExtractFeaturesReuse(state, features.data(), touched);
+            actions.resize(static_cast<std::size_t>(n) * actionCount);
+            out.distinctOf.resize(n);
+            targets.resize(n);
+            int distinct = 0;
+            for (int i = 0; i < n; ++i) {
+                float *block = actions.data() + static_cast<std::size_t>(distinct) * actionCount;
+                combatFillActionFeatures(state, edges[i].action, block);
+                const int target = mlp ? combatActionTargetSlot(state, edges[i].action) : -1;
+                int match = 0;
+                while (match < distinct && (targets[match] != target
+                           || std::memcmp(actions.data() + static_cast<std::size_t>(match) * actionCount,
+                                          block, sizeof(float) * actionCount) != 0)) ++match;
+                out.distinctOf[i] = match;
+                if (match == distinct) targets[distinct++] = target;
+            }
+            out.scores.resize(distinct);
+            out.mlp = mlp;
+            const double t1 = timing ? threadCpuSeconds() : 0;
+            if (mlp) {
+                net.predictPolicyMlp(features.data(), actions.data(), targets.data(), distinct, out.scores.data());
+                if (timing) {
+                    timing->featureSeconds += t1 - t0;
+                    timing->mlpSeconds += threadCpuSeconds() - t1;
+                    ++timing->calls;
+                    timing->edges += distinct;
+                }
+            } else {
+                net.predictPolicyActions(features.data(), actions.data(), distinct, out.scores.data());
+            }
+            return out;
+        }
+    }
+
     std::vector<double> nativeSilverPolicyPriorWith(const CombatValueNet &net, const BattleContext &state,
                                                     const std::vector<SilverSearcher::Edge> &edges) {
         // The state block is extracted once; edges with bit-identical action
@@ -2116,42 +2176,12 @@ namespace sts::search {
         // predictVec per edge (CombatValueNet::predictPolicyActions).
         // A combat_policy_mlp_v1 model (or a per-thread override) also keys
         // edges by target slot and normalizes logits with a softmax.
-        NativeSilverPriorTiming *timing = g_nativeSilverPriorTiming;
-        const double t0 = timing ? threadCpuSeconds() : 0;
-        const bool mlp = net.isPolicyMlp;
-        const int stateCount = combatFeatureCount();
-        const int actionCount = combatPolicyFeatureCount() - stateCount;
+        const PriorScores &ps = scorePolicyEdges(net, state, edges);
+        const auto &scores = ps.scores;
+        const auto &distinctOf = ps.distinctOf;
         const int n = static_cast<int>(edges.size());
-        thread_local std::vector<float> features, actions;
-        thread_local std::vector<int> distinctOf, targets;
-        thread_local std::vector<double> scores;
-        features.resize(stateCount);
-        combatExtractFeatures(state, features.data());
-        actions.resize(static_cast<std::size_t>(n) * actionCount);
-        distinctOf.resize(n);
-        targets.resize(n);
-        int distinct = 0;
-        for (int i = 0; i < n; ++i) {
-            float *block = actions.data() + static_cast<std::size_t>(distinct) * actionCount;
-            combatFillActionFeatures(state, edges[i].action, block);
-            const int target = mlp ? combatActionTargetSlot(state, edges[i].action) : -1;
-            int match = 0;
-            while (match < distinct && (targets[match] != target
-                       || std::memcmp(actions.data() + static_cast<std::size_t>(match) * actionCount,
-                                      block, sizeof(float) * actionCount) != 0)) ++match;
-            distinctOf[i] = match;
-            if (match == distinct) targets[distinct++] = target;
-        }
-        scores.resize(distinct);
-        const double t1 = timing ? threadCpuSeconds() : 0;
-        if (mlp) {
-            net.predictPolicyMlp(features.data(), actions.data(), targets.data(), distinct, scores.data());
-            if (timing) {
-                timing->featureSeconds += t1 - t0;
-                timing->mlpSeconds += threadCpuSeconds() - t1;
-                ++timing->calls;
-                timing->edges += distinct;
-            }
+        const int distinct = static_cast<int>(scores.size());
+        if (ps.mlp) {
             double top = scores[0];
             for (int d = 1; d < distinct; ++d) top = std::max(top, scores[d]);
             std::vector<double> prior;
@@ -2165,7 +2195,6 @@ namespace sts::search {
             for (auto &p : prior) p /= total;
             return prior;
         }
-        net.predictPolicyActions(features.data(), actions.data(), distinct, scores.data());
         std::vector<double> prior;
         prior.reserve(edges.size());
         double total = 0;
@@ -2177,6 +2206,25 @@ namespace sts::search {
         }
         for (auto &p : prior) p /= total;
         return prior;
+    }
+
+    int nativeSilverPolicyArgmax(const BattleContext &state, const std::vector<SilverSearcher::Edge> &edges) {
+        const CombatValueNet &net = g_nativeSilverPriorNetOverride ? *g_nativeSilverPriorNetOverride : g_rootPriorNet;
+        if (!net.isPolicyMlp) {
+            const auto prior = nativeSilverPolicyPriorWith(net, state, edges);
+            return static_cast<int>(std::max_element(prior.begin(), prior.end()) - prior.begin());
+        }
+        // The first edge with the largest logit. The softmax nativeSilverPolicyPrior normalizes with is
+        // strictly increasing in the logit (exp of logit - top over a total >= 1; float logits that differ
+        // stay apart in double), so this is std::max_element of that prior without the exp and division.
+        const PriorScores &ps = scorePolicyEdges(net, state, edges);
+        int best = 0;
+        double bestScore = ps.scores[ps.distinctOf[0]];
+        for (int i = 1; i < static_cast<int>(edges.size()); ++i) {
+            const double v = ps.scores[ps.distinctOf[i]];
+            if (v > bestScore) { bestScore = v; best = i; }
+        }
+        return best;
     }
 
     void nativeSilverRolloutRootTable(const BattleContext &state, const CombatValueNet &net, std::vector<int> &table) {

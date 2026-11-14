@@ -69,6 +69,9 @@ namespace sts::search {
     // The same model's normalized prior over `edges` of any decision state.
     std::vector<double> nativeSilverPolicyPrior(const BattleContext &state,
                                                 const std::vector<SilverSearcher::Edge> &edges);
+    // std::max_element of nativeSilverPolicyPrior(state, edges) (the first edge with the largest prior),
+    // without building the prior for a policy MLP (prior playouts only need the argmax).
+    int nativeSilverPolicyArgmax(const BattleContext &state, const std::vector<SilverSearcher::Edge> &edges);
     const std::string &nativeSilverRootPriorPath();
     double nativeSilverRootPriorWeight();
     int nativeSilverTreePriorMinVisits();

@@ -300,7 +300,10 @@ void combatExtractPolicyFeatures(const BattleContext &bc, const Action &action, 
     combatFillActionFeatures(bc, action, out + combatFeatureCount());  // action block
 }
 
-void combatExtractFeatures(const BattleContext &bc, float *out) {
+namespace {
+// combatExtractFeatures; with `touched`, the wide block is reset entry by entry
+// from the list and every entry it may leave nonzero is listed again.
+void extractFeatures(const BattleContext &bc, float *out, std::vector<std::uint16_t> *touched) {
     const auto &p = bc.player;
     int monAlive = 0, sumHp = 0, maxHp = 0, sumBlk = 0, sumStr = 0, sumArt = 0;
     for (int i = 0; i < bc.monsters.monsterCount; ++i) {
@@ -355,12 +358,31 @@ void combatExtractFeatures(const BattleContext &bc, float *out) {
     // ---- rich context: relics + per-pile card-id counts (only when read) ----
     if (!g_richCombatFeatures) return;   // narrow fast path: legacy nets don't read these
     // zero the relic+card region, then fill (piles are small, ids are sparse).
-    for (int i = kRelicOff; i < kStateCount; ++i) out[i] = 0.f;
-    for (int r = 0; r < kNumRelics; ++r)
-        if (p.hasRelicRuntime((RelicId)r)) out[kRelicOff + r] = 1.f;
+    if (touched) {
+        for (const auto i : *touched) out[i] = 0.f;
+        touched->clear();
+    } else {
+        for (int i = kRelicOff; i < kStateCount; ++i) out[i] = 0.f;
+    }
+    auto mark = [&](int i) { if (touched) touched->push_back(static_cast<std::uint16_t>(i)); };
+    // Relic ids 0..127 in ascending order: the set bits of relicBits0 / relicBits1
+    // (hasRelicRuntime's bits).
+    static_assert(kNumRelics == 128, "relic features read relicBits0 and relicBits1");
+    for (int w = 0; w < 2; ++w) {
+        std::uint64_t bits = w == 0 ? p.relicBits0 : p.relicBits1;
+        while (bits) {
+            const int r = 64 * w + __builtin_ctzll(bits);
+            bits &= bits - 1;
+            out[kRelicOff + r] = 1.f;
+            mark(kRelicOff + r);
+        }
+    }
     auto bump = [&](int base, const CardInstance &c) {
         const int id = (int)c.getId();
-        if (id >= 0 && id < kNumCards) out[base + id] += 1.f;
+        if (id >= 0 && id < kNumCards) {
+            if (out[base + id] == 0.f) mark(base + id);
+            out[base + id] += 1.f;
+        }
     };
     for (int i = 0; i < bc.cards.cardsInHand; ++i) bump(kHandOff, bc.cards.hand[i]);
     for (const auto &c : bc.cards.drawPile)    bump(kDrawOff, c);
@@ -371,7 +393,8 @@ void combatExtractFeatures(const BattleContext &bc, float *out) {
     int incoming = 0, nAttacking = 0;
     for (int i = 0; i < kNumMonSlots; ++i) {
         const int b = kMonOff + i * kMonFeats;
-        if (i >= bc.monsters.monsterCount || bc.monsters.arr[i].curHp <= 0) { out[b] = -1.f; continue; }
+        if (i >= bc.monsters.monsterCount || bc.monsters.arr[i].curHp <= 0) { out[b] = -1.f; mark(b); continue; }
+        for (int f = 0; f < kMonFeats; ++f) mark(b + f);
         const auto &mm = bc.monsters.arr[i];
         int idmg = 0;
         const bool atk = mm.isAttacking();
@@ -393,7 +416,10 @@ void combatExtractFeatures(const BattleContext &bc, float *out) {
     // potions held, by id (slots hold Potion::EMPTY_POTION_SLOT when empty; real ids >= 2)
     for (int i = 0; i < bc.potionCapacity && i < (int)bc.potions.size(); ++i) {
         const int pid = (int)bc.potions[i];
-        if (pid >= 2 && pid < kNumPotions) out[kPotOff + pid] += 1.f;
+        if (pid >= 2 && pid < kNumPotions) {
+            if (out[kPotOff + pid] == 0.f) mark(kPotOff + pid);
+            out[kPotOff + pid] += 1.f;
+        }
     }
 
     // misc player context
@@ -410,6 +436,13 @@ void combatExtractFeatures(const BattleContext &bc, float *out) {
     out[kRelicCtrOff+5] = (float)p.penNibCounter;
     out[kRelicCtrOff+6] = (float)p.sundialCounter;
     out[kRelicCtrOff+7] = (float)p.panacheCounter;
+}
+}
+
+void combatExtractFeatures(const BattleContext &bc, float *out) { extractFeatures(bc, out, nullptr); }
+
+void combatExtractFeaturesReuse(const BattleContext &bc, float *out, std::vector<std::uint16_t> &touched) {
+    extractFeatures(bc, out, &touched);
 }
 
 bool CombatValueNet::load(const std::string &path) {
