@@ -1,8 +1,9 @@
 """Prior recall dump (offline, 2026-11-14): per validation root (T1 split h == 1) the g7f_E root prior, the T2
 distilled net's policy logits (T2's routing: SPEC / BOSS-ALL per boss, P-V_f1 elsewhere), visits, Q, max-backed Q,
-gumbelChoice and chosen, per kept edge. Run on the PC (GPU). Writes ~/Documents/sts/t1/t4recall/t4recall.npz."""
+gumbelChoice and chosen, per kept edge. Run on the PC on CPU (the GPU belongs to the PPO learner); T4_DEVICE=cuda only if the GPU is free. Writes ~/Documents/sts/t1/t4recall/t4recall.npz."""
 import hashlib, json, os, subprocess, sys, tempfile
 import numpy as np, torch
+DEV = os.environ.get("T4_DEVICE", "cpu"); torch.set_num_threads(int(os.environ.get("T4_THREADS", "8")))
 CN = os.path.expanduser("~/Documents/sts/t1wt/tools/combat_net")
 sys.path.insert(0, CN)
 import model as M
@@ -37,8 +38,8 @@ logit = np.full(o[-1], np.nan, np.float32)   # per edge of the whole tensor, fil
 def load(d):
     cfg = json.load(open(f"{T1}/out/{d}/eval.json"))["config"]
     net = M.CombatNet(d=cfg["d"], layers=cfg["layers"], g_len=caps["G_LEN"], m_num=caps["M_NUM"], q_len=caps["Q_LEN"],
-                      a_len=caps["A_LEN"], aux=not cfg["no_aux"], value=not cfg["no_value"]).cuda().eval()
-    net.load_state_dict(torch.load(f"{T1}/out/{d}/model.pt", map_location="cuda")); return net
+                      a_len=caps["A_LEN"], aux=not cfg["no_aux"], value=not cfg["no_value"]).to(DEV).eval()
+    net.load_state_dict(torch.load(f"{T1}/out/{d}/model.pt", map_location=DEV)); return net
 netof = np.array([ROUTE.get(encs[e], "pv_f1") for e in enc])
 for k in NETS:
     rows = val[netof == k]
@@ -46,13 +47,14 @@ for k in NETS:
     net = load(NETS[k][0]); order = rows[np.argsort(nc[rows], kind="stable")]
     with torch.no_grad():
         for s in range(0, len(order), 1024):
-            idx = np.sort(order[s:s + 1024]); b = {kk: v.cuda() for kk, v in M.collate(A, idx).items()}
-            with torch.autocast("cuda", dtype=torch.bfloat16):
+            if s % (1024 * 20) == 0: print(k, s, "/", len(order), flush=True)
+            idx = np.sort(order[s:s + 1024]); b = {kk: v.to(DEV) for kk, v in M.collate(A, idx).items()}
+            with torch.autocast(DEV, dtype=torch.bfloat16, enabled=(DEV == "cuda")):
                 lg, _, _ = net(b)
             lg = lg.float().cpu().numpy()
             for i, r in enumerate(idx):
                 logit[o[r]:o[r + 1]] = lg[i, :o[r + 1] - o[r]]
-    print(k, len(rows), "rows", flush=True); del net; torch.cuda.empty_cache()
+    print(k, len(rows), "rows", flush=True); del net
 ed = np.concatenate([np.arange(o[r], o[r + 1]) for r in val])
 off = np.concatenate([[0], np.cumsum(o[val + 1] - o[val])])
 g = lambda n: np.asarray(A.a[n])
@@ -62,5 +64,5 @@ np.savez_compressed(f"{OUT}/t4recall.npz", row=val, off=off, logit=logit[ed], pr
                     act=g("act")[val], elite_boss=g("elite_boss")[val], encounter=enc, seed=seeds[val],
                     net=netof, encounters=np.array(encs))
 json.dump({"rows": int(len(val)), "edges": int(len(ed)), "nets": prov, "split": "h == 1, multi == 1",
-           "amp": "bf16", "code": "t1wt tools/combat_net"}, open(f"{OUT}/INFO.json", "w"), indent=1)
+           "amp": "bf16" if DEV == "cuda" else "fp32", "device": DEV, "code": "t1wt tools/combat_net"}, open(f"{OUT}/INFO.json", "w"), indent=1)
 print("done", len(val), len(ed))
