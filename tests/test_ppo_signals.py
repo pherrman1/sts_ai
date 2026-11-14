@@ -67,6 +67,20 @@ def game_c(seed):
                                "death_encounter": TIME_EATER})
 
 
+def game_d(seed):
+    """Dies to the first Act 3 boss (Awakened One) on floor 50: no HP loss (wins of it are never measurable)."""
+    d = [decision(seed, 0, 3, 49, 5, 70, [], 8, logits=(0.0, 0.0))]
+    return d, game_line(seed, {"act": 3, "floor": 50, "heart_kill": False, "hp": 0, "fights": 1,
+                               "death_encounter": AWAKENED_ONE})
+
+
+def game_e(seed):
+    """Wins both A20 Act 3 bosses without all keys: the game ends in the Act 3 victory room (floor 52)."""
+    d = [decision(seed, 0, 3, 49, 5, 70, [], 8, logits=(0.0, 0.0))]
+    return d, game_line(seed, {"act": 3, "floor": 52, "heart_kill": False, "hp": 40, "fights": 2,
+                               "death_encounter": -1, "won": True})
+
+
 def write_part(path, games):
     with gzip.open(path, "wt") as f:
         for steps, g in games:
@@ -85,7 +99,7 @@ class PpoSignalsTest(unittest.TestCase):
                                                                                   "THE_HEART"))
         with tempfile.TemporaryDirectory() as d:
             p = os.path.join(d, "t.jsonl.gz")
-            write_part(p, [game_a("1"), game_b("2"), game_c("3")])
+            write_part(p, [game_a("1"), game_b("2"), game_c("3"), game_d("4"), game_e("5")])
             games = {g["seed"]: g for g in ppo_train.load_games([p])}
         got = [(names[e], died, loss, act) for e, died, loss, _, act in S.game_fights(games["1"], names)]
         self.assertEqual(got, [("JAW_WORM", False, 10, 1), ("CULTIST", False, None, 1),
@@ -96,6 +110,10 @@ class PpoSignalsTest(unittest.TestCase):
                                ("THE_HEART", False, 15, 4)])
         got = [(names[e], died) for e, died, *_ in S.game_fights(games["3"], names)]
         self.assertEqual(got, [("AWAKENED_ONE", False), (S.SECOND_BOSS, True)])
+        got = [(names[e], died, loss) for e, died, loss, *_ in S.game_fights(games["4"], names)]
+        self.assertEqual(got, [("AWAKENED_ONE", True, None)])
+        got = [(names[e], died, loss) for e, died, loss, *_ in S.game_fights(games["5"], names)]
+        self.assertEqual(got, [("AWAKENED_ONE", False, None), (S.SECOND_BOSS, False, None)])
 
     def test_extract_and_report(self):
         with tempfile.TemporaryDirectory() as d:
@@ -156,6 +174,21 @@ class PpoSignalsTest(unittest.TestCase):
             self.assertEqual(rp["tipping"], {})
             jaw = [e for e in w["cmp"]["encounters"] if e["encounter"] == "JAW_WORM"]
             self.assertEqual((jaw[0]["fights"], jaw[0]["z_death"], "hp_loss" in jaw[0]), (1, 0.0, False))   # hp_n 1
+
+    def test_tipping_direction(self):
+        import ppo_signals as S
+
+        def win(i, hz, dz):
+            return {"first": i, "last": i, "rollback_net": f"net-{i - 1:04d}",
+                    "cmp": {"outcome": {"heart": {"z": hz}, "act4": {"z": 0.0}}, "act_death": {"3": {"z": dz}}}}
+        # Heart down twice in a row (worse, rollback); act-3 deaths down (better, no rollback); a sign flip resets.
+        ws = [win(5, -3.5, 0.0), win(6, 3.2, -3.1), win(7, -3.4, -3.3), win(8, -3.6, 0.0)]
+        t = S.tipping(ws, 3.0, 2)
+        self.assertEqual((t["heart"]["window_first"], t["heart"]["direction"], t["heart"]["rollback_net"]),
+                         (7, "worse", "net-0006"))
+        self.assertEqual((t["death_act3"]["window_first"], t["death_act3"]["direction"],
+                          t["death_act3"]["rollback_net"]), (6, "better", None))
+        self.assertNotIn("act4", t)
 
     def test_z2(self):
         import ppo_signals as S

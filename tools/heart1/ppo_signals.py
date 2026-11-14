@@ -19,7 +19,9 @@ Per iteration ("extract"):
               n, entropy (nats, of softmax(logits / temp)), entropy_norm (entropy / log n_choices), p_chosen,
               explore (share where the sampled choice is not the argmax), value (behaviour critic), and the
               advantage the learner's GAE gives with the run's --reward/--gamma/--lam but the BEHAVIOUR critic's
-              recorded values (the learner uses its own critic at update start, one update later): adv_mean,
+              recorded values (the learner uses its own critic at update start, one update later), and --lam
+              also for value-only iterations (the learner used --warmup-lam there), so all iterations compare
+              on one definition: adv_mean,
               adv_abs (mean |A|), adv_sd, adv_abs_share (the screen's share of sum |A| = its share of the policy
               gradient's weight before normalisation).
   encounters  per encounter (include/constants/MonsterEncounters.h): fights, deaths, and HP loss over the fights
@@ -34,14 +36,18 @@ How a fight is found (the trajectory has no combat lines): between two consecuti
     when the act changes instead (no decision on the boss floor), the boss counts as won without HP loss
     (the act transition heals);
   - the game's last fight: a death at the outcome's death_encounter (loss = HP at the last decision), or the Heart
-    when heart_kill (loss = HP at the last decision - the outcome's final HP).
-  - A20's second Act 3 boss (floor 51, right after the first) is pooled as ACT3_SECOND_BOSS, without HP loss.
+    when heart_kill (loss = HP at the last decision - the outcome's final HP). An Act 3 boss never has HP loss: a
+    win is seen only through the act change, so a death's loss would describe HP at death, not loss per fight;
+  - A20's second Act 3 boss (floor 51, right after the first) is pooled as ACT3_SECOND_BOSS, without HP loss;
+  - a won game that ends in Act 3 (floor > 51: the victory room without all three keys) won its Act 3 boss(es).
   - Event fights (Mind Bloom, Colosseum, Masked Bandits, Dead Adventurer, ...) are not in the queues: only a lost
-    one is seen (its death_encounter), so per-event death rates are not rates, and event fights stay out of the
-    per-act rates. (An event followed by a card reward is not a reliable sign of a fight: Scrap Ooze also costs
-    HP and gives a reward.) coverage.fights_seen < fights_reported by about the number of won event fights. Several fights between two
-  decisions count, without HP loss. HP loss is net of end-of-combat heals (Burning Blood, Meat on the Bone), so a
-  cheap hallway fight can show a negative loss.
+    one is seen (its death_encounter), so per-event death rates are not rates. Those with *_EVENT ids stay out of
+    the per-act rates; Dead Adventurer (elite ids) and Mind Bloom (Act 1 boss ids, in Act 3) deaths carry queue
+    ids and do count there and in that encounter's row (rare). An event followed by a card reward is not a
+    reliable sign of a fight (Scrap Ooze also costs HP and gives a reward). coverage.fights_seen <
+    fights_reported by about the number of won event fights.
+  Several fights between two decisions count, without HP loss. HP loss is net of end-of-combat heals (Burning
+  Blood, Meat on the Bone), so a cheap hallway fight can show a negative loss.
 
 Report ("report"): the reference iterations (e.g. a value-only warm-up whose policy is still the start net) give
 the baseline; each iteration and each rolling window of --window iterations is compared with it:
@@ -51,7 +57,8 @@ the baseline; each iteration and each rolling window of --window iterations is c
   - per encounter (pooled over the last --window iterations): death-rate and mean-HP-loss differences with z,
     only encounters with >= --min-fights fights on both sides; sorted by |z|.
   - tipping: the first window whose |z| reaches --z for the Heart rate, the Act 4 rate, or a per-act death rate,
-    for --persist consecutive windows; the rollback candidate is the behaviour net of the iteration before that
+    for --persist consecutive windows with the same sign. "direction" says worse (Heart/Act 4 down, a death rate
+    up) or better; only a worse one names a rollback candidate, the behaviour net of the iteration before that
     window. Windows overlap and many signals are tested: a flag is a pointer to look, not a verdict.
 Conditioning caveat: per-encounter rates are conditional on reaching the encounter; a policy that reaches Act 3
 more often brings weaker decks there, so a worse Act 3 death rate can come with a better Heart rate.
@@ -75,6 +82,7 @@ BOSS_FLOOR = {1: 16, 2: 33, 3: 50}
 # apps/one_combat/heart1_policy.cpp bossEncoding: fixed_observation[4] -> encounter name
 BOSS_CODE = ["SLIME_BOSS", "HEXAGHOST", "THE_GUARDIAN", "CHAMP", "AUTOMATON", "COLLECTOR", "TIME_EATER",
              "DONU_AND_DECA", "AWAKENED_ONE", "THE_HEART"]
+ACT3_BOSSES = {"AWAKENED_ONE", "TIME_EATER", "DONU_AND_DECA"}
 ELITES = {"GREMLIN_NOB", "LAGAVULIN", "THREE_SENTRIES", "GREMLIN_LEADER", "SLAVERS", "BOOK_OF_STABBING",
           "GIANT_HEAD", "NEMESIS", "REPTOMANCER", "SHIELD_AND_SPEAR"}
 SECOND_BOSS = "ACT3_SECOND_BOSS"   # A20's second Act 3 boss: fought on floor 51 without a decision in between, so
@@ -151,7 +159,14 @@ def game_fights(game, names):
             out.append((ids[BOSS_CODE[prev["boss"]]], False, None, None, 3))   # the first boss was won
             out.append((ids[SECOND_BOSS], True, None, None, 3))
         else:
-            out.append((e, True, prev["hp"], prev["max_hp"], prev["act"]))
+            act3_boss = prev["act"] == 3 and names[e] in ACT3_BOSSES
+            out.append((e, True, None if act3_boss else prev["hp"], None if act3_boss else prev["max_hp"],
+                        prev["act"]))
+    elif (prev["act"] == 3 and int(o.get("act", 0) or 0) == 3 and int(o.get("floor", 0)) > BOSS_FLOOR[3] + 1
+          and 3 not in boss_done):   # won in the Act 3 victory room (no keys): its boss(es) were won
+        out.append((ids[BOSS_CODE[prev["boss"]]], False, None, None, 3))
+        if prev["asc"] >= 20:
+            out.append((ids[SECOND_BOSS], False, None, None, 3))
     return out
 
 
@@ -284,6 +299,8 @@ def cmd_extract(argv):
     its = complete_iterations(a.run, int(cfg["parts"]), a.partial)
     lo, hi = (int(x) for x in a.iterations.split("-")) if a.iterations else (0, 10 ** 9)
     todo = sorted(i for i in its if lo <= i <= hi and i not in done)
+    if os.path.dirname(a.out):
+        os.makedirs(os.path.dirname(a.out), exist_ok=True)
     for it in todo:
         sig = iteration_signals(it, its[it], hp, names, int(cfg.get("pipeline", 0)))
         sig["value_only"] = it < int(cfg.get("value_warmup", 0))
@@ -396,23 +413,29 @@ TIP_SIGNALS = ("heart", "act4")
 
 
 def tipping(windows, z, persist):
-    """First window (by end iteration) whose |z| >= z for persist consecutive windows, per signal."""
+    """Per signal, the first window whose |z| >= z for persist consecutive windows of the same sign.
+
+    direction: "worse" (Heart or Act 4 rate down, a per-act death rate up) or "better"; only a worse one names a
+    rollback net."""
     out = {}
     names = list(TIP_SIGNALS) + sorted({f"death_act{a}" for w in windows for a in w["cmp"]["act_death"]})
     for sig in names:
-        run = 0
+        run, sign = 0, 0
         for k, w in enumerate(windows):
             if sig.startswith("death_act"):
                 v = w["cmp"]["act_death"].get(sig[len("death_act"):], {}).get("z")
             else:
                 v = w["cmp"]["outcome"][sig]["z"]
-            run = run + 1 if v is not None and abs(v) >= z else 0
+            s = 0 if v is None or abs(v) < z else (1 if v > 0 else -1)
+            run, sign = (run + 1, s) if s and s == sign else ((1, s) if s else (0, 0))
             if run >= persist:
                 first = windows[k - persist + 1]
+                worse = (sign > 0) == sig.startswith("death_act")
                 out[sig] = {"window_first": first["first"], "window_last": first["last"],
                             "z": first["cmp"]["outcome"][sig]["z"] if sig in TIP_SIGNALS else
                             first["cmp"]["act_death"][sig[len("death_act"):]]["z"],
-                            "rollback_net": first["rollback_net"]}
+                            "direction": "worse" if worse else "better",
+                            "rollback_net": first["rollback_net"] if worse else None}
                 break
     return out
 
@@ -455,6 +478,9 @@ def cmd_report(argv):
               "window": a.window, "min_fights": a.min_fights, "z": a.z, "persist": a.persist,
               "iterations": per_it, "windows": windows, "tipping": tipping(windows, a.z, a.persist),
               "latest": windows[-1] if windows else None}
+    for path in (a.out, a.md):
+        if path and os.path.dirname(path):
+            os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(a.out, "w") as f:
         json.dump(report, f, indent=1)
     if a.md:
@@ -488,7 +514,8 @@ def markdown(rep):
         L.append(f"| {name} | {v['n']} | {v['entropy']:.3f} | {v['d_entropy']:+.3f} | {100 * v['explore']:.1f}% | "
                  f"{_pp(v['d_explore'])} | {100 * v['adv_abs_share']:.1f}% |")
     L += ["", "Encounters with the largest |z| (death rate or HP loss):", "",
-          "| encounter | kind | fights | death | ref | z | HP loss | ref | z |", "|---|---|---|---|---|---|---|---|---|"]
+          "| encounter | kind | fights | death | ref | z | HP loss | ref | z |",
+          "|---|---|---|---|---|---|---|---|---|"]
     for e in c["encounters"][:12]:
         L.append(f"| {e['encounter']} | {e['kind']} | {e['fights']} | {100 * e['death']:.1f}% | "
                  f"{100 * e['ref_death']:.1f}% | {e['z_death']} | {e.get('hp_loss', '')} | {e.get('ref_hp_loss', '')} "
@@ -496,8 +523,8 @@ def markdown(rep):
     L += ["", f"Tipping (|z| >= {rep['z']} in {rep['persist']} consecutive windows of {rep['window']}):"]
     if rep["tipping"]:
         for sig, t in rep["tipping"].items():
-            L.append(f"- {sig}: from window {t['window_first']}-{t['window_last']} (z {t['z']}); "
-                     f"rollback candidate {t['rollback_net']}")
+            L.append(f"- {sig}: {t['direction']} from window {t['window_first']}-{t['window_last']} (z {t['z']})"
+                     + (f"; rollback candidate {t['rollback_net']}" if t["rollback_net"] else ""))
     else:
         L.append("- none")
     return "\n".join(L) + "\n"
