@@ -84,14 +84,14 @@ def start_actors(args, env_base, net, it, out_dir, new_session=False):
             "out_dir": out_dir, "net": net}
 
 
-def finish_actors(args, job, trim_map):
+def finish_actors(args, job, trim_map, keep_logits=False):
     rc = job["proc"].wait()
     for f in job["files"]:
         f.close()
     it, out_dir, traj, seed = job["it"], job["out_dir"], job["traj"], job["seed"]
     if rc != 0:
         sys.exit(f"iteration {it}: actors exited {rc} (see {out_dir}/actors.err)")
-    games = ppo_train.load_games([traj], trim_map)
+    games = ppo_train.load_games([traj], trim_map, keep_logits=keep_logits)
     if len(games) != args.games:
         sys.exit(f"iteration {it}: {len(games)} games in {traj}, expected {args.games}")
     return traj, games, seed, time.time() - job["t0"]
@@ -159,7 +159,7 @@ def main():
             # Behaviour net: the current net, or (pipelined, after the first iteration of this call) the previous one.
             job = pending or launch(it, os.path.join(args.run, f"net_{it:04d}.bin"))
             pending = None
-            traj, games, seed, actor_s = finish_actors(args, job, learner.net.trim_map)
+            traj, games, seed, actor_s = finish_actors(args, job, learner.net.trim_map, bool(hparams.diag))
             net = job["net"]
             if args.pipeline and it + 1 < args.iterations:
                 # net_it is the newest net (iteration it's update is about to run): one update stale.

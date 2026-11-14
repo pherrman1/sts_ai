@@ -15,6 +15,9 @@ Names in the store, per arm:
   ARM/traj-NNNN-pK      part K of iteration NNNN's games, gzipped jsonl; meta: games, sha256,
                         behaviour net, actor seconds, first seed                             (actor of part K)
   ARM/stats-NNNN        the learner's loop.json after NNNN updates; only the newest stays      (learner)
+  ARM/kept-NNNN-cJ      optional (serve --retain-every N): an uncompressed tar of iteration NNNN's consumed parts
+                        (chunk J, each under MAX_PUT_MB), kept when the learner deletes the parts; meta: iteration,
+                        parts, sha256 per part. Never deleted by the learner; cleanup keeps them without --with-kept (learner)
   ARM/rebin             optional, written once: a replacement one_combat sha256 the actors may also use, for an
                         engine change that plays the same games (cmd_rebin)
 Every name is written once (no ref is ever overwritten, so no force-push is needed).
@@ -37,7 +40,8 @@ ahead. The learner keeps its checkpoint (state.pt) and every net per arm in a lo
     python3 tools/heart1/ppo_cloud.py actor STORE ARM --part K --one-combat one_combat [--threads 4]
     python3 tools/heart1/ppo_cloud.py serve STORE LOCAL_DIR ARM [ARM ...] [--device cuda]
     python3 tools/heart1/ppo_cloud.py status STORE ARM [ARM ...]
-    python3 tools/heart1/ppo_cloud.py cleanup STORE ARM [ARM ...]     (end of a screen: delete every ref of the arms)
+    python3 tools/heart1/ppo_cloud.py cleanup STORE ARM [ARM ...] [--with-kept]   (end of a screen: delete the arms' refs)
+    python3 tools/heart1/ppo_cloud.py kept STORE ARM [--fetch OUT_DIR]   (list / fetch retained iterations' parts)
     python3 tools/heart1/ppo_cloud.py rebin STORE ARM --new SHA --reason TEXT
 """
 import argparse
@@ -50,6 +54,7 @@ import shutil
 import signal
 import subprocess
 import sys
+import tarfile
 import tempfile
 import time
 
@@ -626,6 +631,7 @@ class ArmLearner:
         import ppo_train
         self.store, self.arm, self.device = store, arm, device
         self.keep_state = set()   # update counts after which state.pt is also kept as state-NNNN.pt (serve --keep-state)
+        self.retain_every = 0   # serve --retain-every N: iterations with it % N == 0 keep their parts in the store
         self.dir = os.path.join(local, arm)
         os.makedirs(self.dir, exist_ok=True)
         cfg_path = os.path.join(self.dir, "config.json")
@@ -697,6 +703,56 @@ class ArmLearner:
         self.store.update(puts=puts)
         self.store.update(deletes=deletes)
 
+    def retain(self, it, paths):
+        """serve --retain-every: iteration it's consumed parts as ARM/kept-NNNN-cJ tars (written once, never deleted
+        by the learner), so later analyses (critic, advantages, per-screen KL) have raw games beyond the newest
+        iteration. Chunks stay under MAX_PUT_MB. Idempotent: chunks already in the store are not written again."""
+        names = self.store.names(f"{self.arm}/kept-{it:04d}-")
+        chunks, cur, size = [], [], 0
+        cap = (MAX_PUT_MB - 1) * 2**20   # tar headers and padding
+        for p in sorted(paths, key=lambda p: int(p.rsplit("-p", 1)[1].split(".")[0])):
+            sz = os.path.getsize(p) + 1024
+            if cur and size + sz > cap:
+                chunks.append(cur); cur, size = [], 0
+            cur.append(p); size += sz
+        if cur:
+            chunks.append(cur)
+        puts = []
+        for j, group in enumerate(chunks):
+            name = f"{self.arm}/kept-{it:04d}-c{j}"
+            if name in names:
+                continue
+            tar = os.path.join(self.dir, f"kept-{it:04d}-c{j}.tar")
+            with tarfile.open(tar + ".tmp", "w", format=tarfile.PAX_FORMAT) as tf:
+                for p in group:
+                    tf.add(p, arcname=os.path.basename(p))
+            os.replace(tar + ".tmp", tar)
+            puts.append((name, tar, {"iteration": it, "chunk": j, "chunks": len(chunks), "sha256": sha256(tar),
+                                     "parts": {os.path.basename(p): sha256(p) for p in group}}))
+        try:
+            self.store.update(puts=puts)
+        finally:
+            for _, tar, _ in puts:
+                os.remove(tar)
+        if puts:
+            log(f"{self.arm} iteration {it}: parts retained in the store as {len(puts)} kept chunk(s)")
+
+    def retain_missing(self):
+        """serve --retain-every at start: write the kept chunks of trained retained iterations the store lacks (a
+        failed push in retain() exits the learner after loop.json, so a resume would otherwise skip them)."""
+        if self.retain_every <= 0:
+            return
+        have = self.store.names(f"{self.arm}/kept-")
+        keep = os.path.join(self.dir, "parts")
+        for it in range(0, self.next_it, self.retain_every):
+            if any(n.startswith(f"{self.arm}/kept-{it:04d}-") for n in have):
+                continue
+            paths = [os.path.join(keep, f"traj-{it:04d}-p{k}.jsonl.gz") for k in range(self.cfg["parts"])]
+            if all(os.path.exists(p) for p in paths):
+                self.retain(it, paths)
+            else:
+                log(f"{self.arm} iteration {it}: not retained and its parts are not all in {keep}")
+
     @property
     def next_it(self):
         return len(self.meta["iterations"])
@@ -722,7 +778,8 @@ class ArmLearner:
             if m["net"] != f"net-{want:04d}" or m["net_sha256"] != sha256(local_net):
                 sys.exit(f"{p}: played by {m['net']} {m['net_sha256'][:12]}, expected net-{want:04d} "
                          f"{sha256(local_net)[:12]}")
-        games = ppo_train.load_games(files, self.trim_map, phi_model=self.phi_model)
+        games = ppo_train.load_games(files, self.trim_map, phi_model=self.phi_model,
+                                     keep_logits=bool(getattr(self.hparams, "diag", 0)))
         if len(games) != self.cfg["games"]:
             sys.exit(f"{self.arm} iteration {it}: {len(games)} games, expected {self.cfg['games']}")
         # Per-game outcomes for the paired analysis (a rerun of this iteration after a crash rewrites its rows).
@@ -762,6 +819,8 @@ class ArmLearner:
         os.makedirs(keep, exist_ok=True)
         for f in files:
             os.replace(f, os.path.join(keep, os.path.basename(f)))
+        if self.retain_every > 0 and it % self.retain_every == 0:
+            self.retain(it, [os.path.join(keep, os.path.basename(f)) for f in files])
         # Publish the net and the stats (actors read them to skip consumed iterations), delete the consumed parts
         # and every net but the newest two (the learner's disk keeps all of them).
         self.republish()
@@ -782,6 +841,9 @@ def cmd_serve(argv):
     ap.add_argument("--keep-state", type=int, nargs="*", default=[],
                     help="also keep each arm's checkpoint and loop.json after these update counts as ARM/state-NNNN.pt and "
                          "ARM/loop-NNNN.json (fork points; net-NNNN.bin is kept anyway)")
+    ap.add_argument("--retain-every", type=int, default=0,
+                    help="> 0: keep the consumed parts of every iteration with it %% N == 0 in the store as ARM/kept-NNNN-cJ "
+                         "(about 6.5 MB per LONG_B iteration); 0 = off (consumed parts are deleted from the store)")
     a = ap.parse_args(argv)
     import torch
     device = a.device or ("cuda" if torch.cuda.is_available() else "cpu")
@@ -789,6 +851,8 @@ def cmd_serve(argv):
     learners = [ArmLearner(store, a.local, arm, device) for arm in a.arms]
     for x in learners:
         x.keep_state = set(a.keep_state)
+        x.retain_every = a.retain_every
+        x.retain_missing()
     if a.micro_batch > 0:
         for x in learners:
             x.hparams.micro_batch = a.micro_batch
@@ -845,12 +909,57 @@ def cmd_rebin(argv):
 
 
 def cmd_cleanup(argv):
-    """Delete every ref of the given arms from the store (end of a screen; run where deletes are allowed)."""
-    store = open_store(argv[0])
-    for arm in argv[1:]:
+    """Delete every ref of the given arms from the store (end of a screen; run where deletes are allowed). Retained
+    parts (ARM/kept-*, serve --retain-every) stay unless --with-kept."""
+    ap = argparse.ArgumentParser(prog="ppo_cloud.py cleanup")
+    ap.add_argument("store")
+    ap.add_argument("arms", nargs="+")
+    ap.add_argument("--with-kept", action="store_true", help="also delete the retained parts ARM/kept-*")
+    a = ap.parse_args(argv)
+    store = open_store(a.store)
+    for arm in a.arms:
         for n in sorted(store.names(f"{arm}/")):
+            if n.startswith(f"{arm}/kept-") and not a.with_kept:
+                print(f"kept {n}")
+                continue
             store.delete(n)
             print(f"deleted {n}")
+
+
+def cmd_kept(argv):
+    """List an arm's retained iterations (serve --retain-every), or fetch them: --fetch OUT_DIR unpacks each into
+    OUT_DIR/ARM/parts/traj-NNNN-pK.jsonl.gz (the learner's local layout) and checks every part's sha256."""
+    ap = argparse.ArgumentParser(prog="ppo_cloud.py kept")
+    ap.add_argument("store")
+    ap.add_argument("arm")
+    ap.add_argument("--fetch", metavar="OUT_DIR")
+    ap.add_argument("--iterations", type=int, nargs="*", help="only these iterations")
+    a = ap.parse_args(argv)
+    store = open_store(a.store)
+    names = sorted(store.names(f"{a.arm}/kept-"))
+    if a.iterations:
+        names = [n for n in names if int(n.rsplit("/kept-", 1)[1][:4]) in set(a.iterations)]
+    if not a.fetch:
+        for n in names:
+            print(n)
+        return
+    out = os.path.join(a.fetch, a.arm, "parts")
+    os.makedirs(out, exist_ok=True)
+    with tempfile.TemporaryDirectory() as tmp:
+        items = [(n, os.path.join(tmp, n.rsplit("/", 1)[1] + ".tar")) for n in names]
+        for (n, tar), m in zip(items, store.get_many(items)):
+            if sha256(tar) != m["sha256"]:
+                sys.exit(f"{n}: sha256 mismatch")
+            with tarfile.open(tar) as tf:
+                for member in tf.getmembers():
+                    base = os.path.basename(member.name)
+                    if member.name != base or not member.isfile() or base not in m["parts"]:
+                        sys.exit(f"{n}: unexpected member {member.name!r}")
+                    with tf.extractfile(member) as src, open(os.path.join(out, base), "wb") as dst:
+                        shutil.copyfileobj(src, dst)
+                    if sha256(os.path.join(out, base)) != m["parts"][base]:
+                        sys.exit(f"{n}: {base} sha256 mismatch")
+            print(f"{n}: {len(m['parts'])} parts -> {out}")
 
 
 def cmd_status(argv):
@@ -870,7 +979,7 @@ def cmd_status(argv):
 
 if __name__ == "__main__":
     cmds = {"init": cmd_init, "actor": cmd_actor, "serve": cmd_serve, "status": cmd_status, "cleanup": cmd_cleanup,
-            "rebin": cmd_rebin}
+            "rebin": cmd_rebin, "kept": cmd_kept}
     if len(sys.argv) < 2 or sys.argv[1] not in cmds:
-        sys.exit("usage: ppo_cloud.py {init|actor|serve|status|cleanup|rebin} ...")
+        sys.exit("usage: ppo_cloud.py {init|actor|serve|status|cleanup|rebin|kept} ...")
     cmds[sys.argv[1]](sys.argv[2:])
