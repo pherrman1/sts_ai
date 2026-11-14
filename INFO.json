@@ -1,0 +1,58 @@
+{
+ "rows": 310371,
+ "edges": 1923301,
+ "nets": {
+  "pv_f1": {
+   "dir": "P-V_f1",
+   "sha_expected": "ac5fce0e68345b5ed7dfd3240c2334c6b4a3a92389405aba8a21d1897ed02a10",
+   "sha_reexport": "ac5fce0e68345b5ed7dfd3240c2334c6b4a3a92389405aba8a21d1897ed02a10",
+   "match": true
+  },
+  "bossall": {
+   "dir": "BOSS-ALL",
+   "sha_expected": "56285bbd607c6ab09bce19a1cf16788582fdad2d20282a636133cba8d4cfe4ff",
+   "sha_reexport": "56285bbd607c6ab09bce19a1cf16788582fdad2d20282a636133cba8d4cfe4ff",
+   "match": true
+  },
+  "spec_CHAMP": {
+   "dir": "SPEC_CHAMP",
+   "sha_expected": "9afb06b29c2c2d1a7f980e77a3190e4144095f7a7df17c78f00fb89f2fd33dcb",
+   "sha_reexport": "9afb06b29c2c2d1a7f980e77a3190e4144095f7a7df17c78f00fb89f2fd33dcb",
+   "match": true
+  },
+  "spec_HEXAGHOST": {
+   "dir": "SPEC_HEXAGHOST",
+   "sha_expected": "436ba93c44cc6d5be9c76bd325db288a18a5d2c1fb99e728d432b124aeb3d859",
+   "sha_reexport": "436ba93c44cc6d5be9c76bd325db288a18a5d2c1fb99e728d432b124aeb3d859",
+   "match": true
+  },
+  "spec_SHIELD_AND_SPEAR": {
+   "dir": "SPEC_SHIELD_AND_SPEAR",
+   "sha_expected": "53ed5ae1904baab5db99b7a0434eec00981cc4eaf734592589d73366d00f139e",
+   "sha_reexport": "53ed5ae1904baab5db99b7a0434eec00981cc4eaf734592589d73366d00f139e",
+   "match": true
+  },
+  "spec_SLIME_BOSS": {
+   "dir": "SPEC_SLIME_BOSS",
+   "sha_expected": "124058b9b46872b0396719a7e25bc1688cdd21c21181cfdac3b89f67cb033506",
+   "sha_reexport": "124058b9b46872b0396719a7e25bc1688cdd21c21181cfdac3b89f67cb033506",
+   "match": true
+  },
+  "spec_THE_GUARDIAN": {
+   "dir": "SPEC_THE_GUARDIAN",
+   "sha_expected": "0c5bcc468b24befd9674b1cc71684b34f318ef0a7f2264df24838660060019c7",
+   "sha_reexport": "0c5bcc468b24befd9674b1cc71684b34f318ef0a7f2264df24838660060019c7",
+   "match": true
+  },
+  "spec_TIME_EATER": {
+   "dir": "SPEC_TIME_EATER",
+   "sha_expected": "b1c3ecc7b0f264d0500bc912694daa5cf365571ebc03ad24e1e6f772c8aa0bb8",
+   "sha_reexport": "b1c3ecc7b0f264d0500bc912694daa5cf365571ebc03ad24e1e6f772c8aa0bb8",
+   "match": true
+  }
+ },
+ "split": "h == 1, multi == 1",
+ "amp": "fp32",
+ "device": "cpu",
+ "code": "t1wt tools/combat_net"
+}
