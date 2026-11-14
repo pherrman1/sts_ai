@@ -14,6 +14,7 @@
 
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <emmintrin.h>
 #include <fstream>
 #include <stdexcept>
@@ -1320,18 +1321,18 @@ namespace {
 
 // Ascending indices of the features that are not +-0 (`v == 0.f` skips both
 // signed zeros; the SSE2 not-equal test treats them the same way and keeps NaN).
-int nonzeroFeatureIndices(const float *x, int n, std::uint16_t *out) {
+int nonzeroFeatureIndices(const float *x, int n, std::uint16_t *out, int offset = 0) {
     int c = 0, i = 0;
     const __m128 zero = _mm_setzero_ps();
     for (; i + 4 <= n; i += 4) {
         int m = _mm_movemask_ps(_mm_cmpneq_ps(_mm_loadu_ps(x + i), zero));
         while (m) {
-            out[c++] = static_cast<std::uint16_t>(i + __builtin_ctz(m));
+            out[c++] = static_cast<std::uint16_t>(offset + i + __builtin_ctz(m));
             m &= m - 1;
         }
     }
     for (; i < n; ++i)
-        if (x[i] != 0.f) out[c++] = static_cast<std::uint16_t>(i);
+        if (x[i] != 0.f) out[c++] = static_cast<std::uint16_t>(offset + i);
     return c;
 }
 
@@ -1388,11 +1389,182 @@ void policyMlpEdges(const CombatValueNet &net, const float *__restrict base, con
     }
 }
 
+// nonzeroFeatureIndices for long, mostly-zero vectors (the ~1,766 state
+// features, ~60 nonzero): 32 features per test, so the all-zero blocks cost one
+// branch instead of eight.
+int sparseNonzeroFeatureIndices(const float *x, int n, std::uint16_t *out) {
+    int c = 0, i = 0;
+    const __m128 zero = _mm_setzero_ps();
+    for (; i + 32 <= n; i += 32) {
+        std::uint32_t m = 0;
+        for (int k = 0; k < 8; ++k)
+            m |= static_cast<std::uint32_t>(_mm_movemask_ps(_mm_cmpneq_ps(_mm_loadu_ps(x + i + 4 * k), zero))) << (4 * k);
+        while (m) {
+            out[c++] = static_cast<std::uint16_t>(i + __builtin_ctz(m));
+            m &= m - 1;
+        }
+    }
+    return c + nonzeroFeatureIndices(x + i, n - i, out + c, i);
+}
+
+// Ascending indices j < n with !(x[j] <= 0) (relu-active: positive or NaN, as
+// the scalar `if (v <= 0.f) continue;` keeps them), branch-free per element.
+int activeIndices(const float *x, int n, std::uint16_t *out) {
+    int c = 0, i = 0;
+    const __m128 zero = _mm_setzero_ps();
+    for (; i + 32 <= n; i += 32) {
+        std::uint32_t m = 0;
+        for (int k = 0; k < 8; ++k)
+            m |= static_cast<std::uint32_t>(_mm_movemask_ps(_mm_cmpnle_ps(_mm_loadu_ps(x + i + 4 * k), zero))) << (4 * k);
+        while (m) {
+            out[c++] = static_cast<std::uint16_t>(i + __builtin_ctz(m));
+            m &= m - 1;
+        }
+    }
+    for (; i + 4 <= n; i += 4) {
+        int m = _mm_movemask_ps(_mm_cmpnle_ps(_mm_loadu_ps(x + i), zero));
+        while (m) {
+            out[c++] = static_cast<std::uint16_t>(i + __builtin_ctz(m));
+            m &= m - 1;
+        }
+    }
+    for (; i < n; ++i)
+        if (!(x[i] <= 0.f)) out[c++] = static_cast<std::uint16_t>(i);
+    return c;
+}
+
+// 8 floats; element-wise + and * (no contraction: the build has no FMA, as the
+// scalar code relies on), so every lane does the scalar code's operations.
+typedef float V8 __attribute__((vector_size(32), aligned(4)));
+inline V8 load8(const float *p) { V8 v; std::memcpy(&v, p, sizeof v); return v; }
+inline void store8(float *p, V8 v) { std::memcpy(p, &v, sizeof v); }
+inline V8 splat8(float x) { return V8{x, x, x, x, x, x, x, x}; }
+
+// policyMlpEdges for the deployed widths (H1 128, H2 64), bit-identical to the
+// generic loop (tests/policy_mlp_exact_test.cpp): every unit's terms are added
+// in the same order with the same float operations. Only the control flow
+// differs: the nonzero action / target features and the relu-active units are
+// gathered into index lists first (the same terms the scalar `continue`s skip),
+// the layers run as 8-wide vector code, each edge's output term w3[i] * z[i]
+// (or -0.0f when z[i] <= 0; adding -0.0f leaves every float unchanged, so the
+// sum equals skipping) is a vector select, and the edges' output sums run
+// interleaved, term i of every edge before term i + 1 (each edge keeps its own
+// order; the dependent add chains overlap).
+void policyMlpEdges128x64(const CombatValueNet &net, const float *__restrict base, const float *stateFeatures,
+                          const float *actionBlocks, const int *targetSlots, int n, double *out) {
+    constexpr int H1 = 128, H2 = 64, Q1 = H1 / 8, Q2 = H2 / 8;
+    const float *__restrict actionW = net.pmActionW.data();
+    const float *__restrict cardW = net.pmCard.data();
+    const float *__restrict targetW = net.pmTargetW.data();
+    const float *__restrict w2t = net.pmW2T.data();
+    const float *__restrict b2 = net.pmB2.data();
+    const float *__restrict w3 = net.pmW3.data();
+    alignas(64) float h[H1];
+    std::uint16_t active[H1];
+    std::uint16_t nz[kNumAction > kMonFeats ? kNumAction : kMonFeats];
+    // terms[i * stride + e] = output term i of edge e (stride: n rounded up to 8).
+    const int stride = (n + 7) & ~7;
+    thread_local std::vector<float> termBuf;
+    if (termBuf.size() < static_cast<std::size_t>(stride) * H2) termBuf.resize(static_cast<std::size_t>(stride) * H2);
+    float *__restrict terms = termBuf.data();
+    const V8 negZero = splat8(-0.0f), zero = splat8(0.f);
+    for (int e = 0; e < n; ++e) {
+        const float *a = actionBlocks + (std::size_t)e * kNumAction;
+        V8 acc[Q1];
+        for (int q = 0; q < Q1; ++q) acc[q] = load8(base + 8 * q);
+        const int na = nonzeroFeatureIndices(a, kNumAction, nz);
+        for (int t = 0; t < na; ++t) {
+            const V8 v = splat8(a[nz[t]]);
+            const float *__restrict w = actionW + (std::size_t)nz[t] * H1;
+            for (int q = 0; q < Q1; ++q) acc[q] = acc[q] + v * load8(w + 8 * q);
+        }
+        int card = (int)a[4] + 1;   // aCardId; -1 (no card) -> row 0
+        if (card < 0 || card > kNumCards) card = 0;
+        const float *__restrict c = cardW + (std::size_t)card * H1;
+        for (int q = 0; q < Q1; ++q) acc[q] = acc[q] + load8(c + 8 * q);
+        const int slot = targetSlots ? targetSlots[e] : -1;
+        if (slot >= 0 && slot < kNumMonSlots) {
+            const float *tf = stateFeatures + kMonOff + slot * kMonFeats;
+            const int nt = nonzeroFeatureIndices(tf, kMonFeats, nz);
+            for (int t = 0; t < nt; ++t) {
+                const V8 v = splat8(tf[nz[t]]);
+                const float *__restrict w = targetW + (std::size_t)nz[t] * H1;
+                for (int q = 0; q < Q1; ++q) acc[q] = acc[q] + v * load8(w + 8 * q);
+            }
+        }
+        for (int q = 0; q < Q1; ++q) store8(h + 8 * q, acc[q]);
+        const int m = activeIndices(h, H1, active);   // ReLU
+        V8 z[Q2];
+        for (int q = 0; q < Q2; ++q) z[q] = load8(b2 + 8 * q);
+        for (int t = 0; t < m; ++t) {
+            const V8 v = splat8(h[active[t]]);
+            const float *__restrict w = w2t + (std::size_t)active[t] * H2;
+            for (int q = 0; q < Q2; ++q) z[q] = z[q] + v * load8(w + 8 * q);
+        }
+        alignas(64) float term[H2];
+        for (int q = 0; q < Q2; ++q) store8(term + 8 * q, z[q] > zero ? load8(w3 + 8 * q) * z[q] : negZero);
+        for (int i = 0; i < H2; ++i) terms[(std::size_t)i * stride + e] = term[i];
+    }
+    for (int i = 0; i < H2; ++i)
+        for (int e = n; e < stride; ++e) terms[(std::size_t)i * stride + e] = 0.f;   // unused lanes
+    for (int e0 = 0; e0 < n; e0 += 8) {
+        V8 o = splat8(net.pmB3);
+        for (int i = 0; i < H2; ++i) o = o + load8(terms + (std::size_t)i * stride + e0);
+        alignas(32) float ov[8];
+        store8(ov, o);
+        for (int e = e0; e < std::min(n, e0 + 8); ++e) out[e] = ov[e - e0];
+    }
+}
+
+// policyMlpBase at H1 = 128 (the deployed width), bit-identical to the plain
+// loops: per unit, b1, the encounter row, each occupied monster slot's id and
+// damage rows, then the nonzero state features in ascending order. Each half of
+// 64 units is summed in eight 8-wide registers.
+void policyMlpBase128(const CombatValueNet &net, const float *stateFeatures, const std::uint16_t *nonzero,
+                      int count, float *out) {
+    constexpr int H1 = 128;
+    auto row = [](float v) {
+        const int r = (int)std::lround(v);
+        return r < 0 ? 0 : (r >= kPolicyMlpEmbRows ? kPolicyMlpEmbRows - 1 : r);
+    };
+    const float *emb[1 + 2 * kNumMonSlots];
+    int ne = 0;
+    if (!net.pmEnc.empty()) emb[ne++] = &net.pmEnc[(std::size_t)row(stateFeatures[kEncounterIdx]) * H1];
+    if (!net.pmMonId.empty() || !net.pmMonDmg.empty()) {
+        for (int k = 0; k < kNumMonSlots; ++k) {
+            const float id = stateFeatures[kMonOff + k * kMonFeats];
+            if (id == 0.f || std::lround(id) + 1 <= 0) continue;    // id 0 or empty slot (-1)
+            if (!net.pmMonId.empty()) emb[ne++] = &net.pmMonId[(std::size_t)row(id + 1.f) * H1];
+            if (!net.pmMonDmg.empty())
+                emb[ne++] = &net.pmMonDmg[(std::size_t)row(stateFeatures[kMonOff + k * kMonFeats + kMonDmgOff]) * H1];
+        }
+    }
+    const float *__restrict stateW = net.pmStateW.data();
+    for (int j0 = 0; j0 < H1; j0 += 64) {
+        V8 blk[8];
+        for (int q = 0; q < 8; ++q) blk[q] = load8(net.pmB1.data() + j0 + 8 * q);
+        for (int r = 0; r < ne; ++r)
+            for (int q = 0; q < 8; ++q) blk[q] = blk[q] + load8(emb[r] + j0 + 8 * q);
+        for (int t = 0; t < count; ++t) {
+            const V8 v = splat8(stateFeatures[nonzero[t]]);
+            const float *__restrict w = stateW + (std::size_t)nonzero[t] * H1 + j0;
+            for (int q = 0; q < 8; ++q) blk[q] = blk[q] + v * load8(w + 8 * q);
+        }
+        for (int q = 0; q < 8; ++q) store8(out + j0 + 8 * q, blk[q]);
+    }
+}
+
 }
 
 void CombatValueNet::policyMlpBase(const float *stateFeatures, std::vector<float> &base) const {
     const int H1 = pmH1;
     base.assign(pmB1.begin(), pmB1.end());
+    std::uint16_t nonzero[kStateCount];
+    const int count = sparseNonzeroFeatureIndices(stateFeatures, kStateCount, nonzero);
+    if (H1 == 128) {
+        policyMlpBase128(*this, stateFeatures, nonzero, count, base.data());
+        return;
+    }
     // v2 embedding tables (raw ids otherwise enter the state layer as plain
     // numbers). Row = rounded value clipped to the table. A monster slot counts
     // only when its id is nonzero and not -1 (empty or dead slots are -1; id 0
@@ -1423,8 +1595,6 @@ void CombatValueNet::policyMlpBase(const float *stateFeatures, std::vector<float
     // Sparse state layer, once per node (about 60 nonzeros of 1,766), in
     // ascending feature order.
     {
-        std::uint16_t nonzero[kStateCount];
-        const int count = nonzeroFeatureIndices(stateFeatures, kStateCount, nonzero);
         float *__restrict acc = base.data();
         const float *__restrict stateW = pmStateW.data();
         for (int t = 0; t < count; ++t) {
@@ -1443,6 +1613,10 @@ void CombatValueNet::predictPolicyMlp(const float *stateFeatures, const float *a
     policyMlpBase(stateFeatures, base);
     h.resize(H1);
     z.resize(H2);
+    if (H2 == 64 && H1 == 128) {
+        policyMlpEdges128x64(*this, base.data(), stateFeatures, actionBlocks, targetSlots, n, out);
+        return;
+    }
     if (H2 == 64 && H1 <= kPolicyMlpMaxH1) {
         policyMlpEdges<64>(*this, base.data(), stateFeatures, actionBlocks, targetSlots, n, out);
         return;

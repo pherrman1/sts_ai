@@ -536,11 +536,19 @@ tables, and a v1 file with tables does not load; v1 files score as before
 Prior playouts take the argmax of these logits, so any rounding change in
 `predictPolicyMlp` can change play. Its float operations and their order are
 fixed; ctest `policy_mlp_exact` compares it bit for bit with the plain
-reference loops on the deployed g7f_E model. For h2 = 64 the edge layers run in
-`policyMlpEdges<64>` (local accumulators and restrict pointers), and the state
-scan finds nonzero features with SSE2. Together they are 1.27x faster than the
-plain loops with identical decisions (2026-10-21; real-combat profile in
-`/mnt/project-files/combat-sim-speed/REPORT.md`).
+reference loops on the deployed g7f_E model. For the deployed widths (h1 = 128,
+h2 = 64) the state layer runs in `policyMlpBase128` and the edge layers in
+`policyMlpEdges128x64`: 8-wide vector code (GCC vector extensions, no FMA) over
+index lists of the nonzero state / action / target features and of the
+ReLU-active units, a vector select for the output terms, and the edges' output
+sums interleaved; each unit keeps the plain loops' operations and order. Other
+widths use `policyMlpEdges<H2>` (local accumulators and restrict pointers) or the
+plain loops. On calls captured from a G16 + mb4 Heart-kill game the kernel is
+1.67x faster than the 2026-10-21 one (0 of 32,294 calls differ), and whole A20
+G16 + mb4 games replay with identical Gumbel stop traces at 0.72-0.76x the CPU
+(2026-11-14; `/mnt/project-files/combat-speed-20261114/REPORT.md`). In those
+games the prior MLP was 42-60% of all CPU, almost all of it prior playouts in
+boss fights (64 M calls, 5.7 edges each, in one Heart-kill game).
 `tools/silver_az_mlp.py` featurizes the synthetic corpus (`silversynthfeatures`
 action rows carry `tgt`), trains
 from random initialization, and exports the model with input scales and the
