@@ -1,0 +1,45 @@
+# PPO signals vs reference iterations 0-4 (2600 games)
+
+Latest window: iterations 17-21 (2600 games).
+
+| signal | window | reference | diff | z |
+|---|---|---|---|---|
+| heart | 36.7% | 38.5% | -1.7 pp | -1.288 |
+| act2 | 85.0% | 84.2% | +0.8 pp | 0.768 |
+| act3 | 62.4% | 62.3% | +0.2 pp | 0.114 |
+| act4 | 47.7% | 48.1% | -0.5 pp | -0.333 |
+| death rate per fight, act 1 | 1.57% | 1.64% | -0.1 pp | -0.555 |
+| death rate per fight, act 2 | 3.14% | 3.06% | +0.1 pp | 0.404 |
+| death rate per fight, act 3 | 2.16% | 2.14% | +0.0 pp | 0.117 |
+| death rate per fight, act 4 | 11.55% | 10.08% | +1.5 pp | 1.659 |
+
+| decision type | n | entropy | Δ entropy | explore | Δ explore | share of sum abs(A) |
+|---|---|---|---|---|---|---|
+| rewards | 122498 | 0.233 | -0.001 | 9.4% | -0.0 pp | 49.5% |
+| map | 40096 | 0.266 | +0.005 | 12.0% | +0.4 pp | 16.1% |
+| shop | 20390 | 0.611 | -0.021 | 22.5% | -0.9 pp | 9.3% |
+| event | 18293 | 0.388 | +0.036 | 14.8% | +1.1 pp | 7.0% |
+| card_select | 15525 | 0.914 | -0.007 | 40.6% | -0.4 pp | 6.7% |
+| rest | 15222 | 0.160 | +0.006 | 6.6% | -0.1 pp | 7.0% |
+| treasure | 6949 | 0.002 | +0.001 | 0.0% | -0.0 pp | 2.8% |
+| boss_relic | 3832 | 0.170 | -0.007 | 6.9% | -0.4 pp | 1.5% |
+
+Encounters with the largest |z| (death rate or HP loss):
+
+| encounter | kind | fights | death | ref | z | HP loss | ref | z |
+|---|---|---|---|---|---|---|---|---|
+| RED_SLAVER | hallway | 448 | 0.4% | 0.0% | 1.462 | 1.29 | 0.418 | 2.233 |
+| AUTOMATON | boss | 647 | 12.2% | 9.3% | 1.695 | 25.243 | 22.338 | 2.022 |
+| LAGAVULIN | elite | 2283 | 2.1% | 1.9% | 0.648 | 14.596 | 13.805 | 1.998 |
+| SENTRY_AND_SPHERE | hallway | 498 | 2.8% | 3.5% | -0.649 | 2.576 | 1.272 | 1.778 |
+| EXORDIUM_WILDLIFE | hallway | 714 | 0.7% | 0.9% | -0.499 | 1.707 | 0.933 | 1.745 |
+| JAW_WORM_HORDE | hallway | 734 | 0.1% | 0.7% | -1.602 | -0.125 | -0.025 | -0.179 |
+| THE_HEART | boss | 1220 | 21.7% | 19.2% | 1.534 | 52.592 | 52.721 | -0.106 |
+| THREE_SHAPES | hallway | 1039 | 0.2% | 0.0% | 1.443 | -2.337 | -2.78 | 1.17 |
+| ORB_WALKER | hallway | 1075 | 0.1% | 0.0% | 1.0 | -2.568 | -2.175 | -1.432 |
+| SLIME_BOSS | boss | 788 | 6.2% | 7.3% | -0.871 | 15.602 | 16.877 | -1.414 |
+| LOOTER | hallway | 899 | 0.0% | 0.2% | -1.413 | -1.23 | -1.364 | 0.584 |
+| SHIELD_AND_SPEAR | elite | 1239 | 1.5% | 1.0% | 1.095 | 13.348 | 12.144 | 1.408 |
+
+Tipping (|z| >= 3.0 in 2 consecutive windows of 5):
+- none
