@@ -27582,3 +27582,30 @@ Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 104.1 lane-hours
 **Knowledge impact:** combat budget: 12,000 simulations with the Heart at 24,000 costs 0.69× G16 + mb4's CPU at
 −2.25 pp [−5.08, +0.59] Heart; no conversion loss visible on the seeds where both arms reach Act 4 (not an isolated
 Heart contrast).
+
+## §TBD — PPO policy-gradient noise per game, offline: G16H24 (PG16H24 iterations 22/23, 1,014 games) vs combat B (LONG_B iteration 35, LONG_C iteration 419, 1,040 games): no signal detectable in any set; noise batch size > 7,700 games (G16) / > 6,000 (combat B) → one 520-game update has SNR ≤ ~0.07; per-game noise the same under both combats → data volume is the bottleneck (cloud, 2026-11-14)
+
+**Question (Philipp, 2026-11-14 23:23 CET, "Ja starte die Messung"):** does PPO of the out-of-combat net learn more per
+CPU with G8 or with G16 combat in the actors; measurable part: how noisy is one update's policy gradient per game?
+**Data:** [README](evidence/ppo_gradnoise_20261114/README.md), `analysis-*.json`, `jackknife.json`, scripts
+`gradnoise.py`, `analyze.py`, `jack.py`. Existing trajectories only (no gameplay, no seeds, no workers; the running
+PG16H24 learner and actors untouched). Per game, the gradient of the PPO surrogate (learner's advantages, reward
+1{Heart}, λ 0.97, own value head) over all 6.1M parameters, on-policy; Gram matrix, unbiased |μ|², per-game noise
+tr Σ, jackknife SE; raw and Adam-like diagonal metric.
+**Result:**
+- |μ|² ≤ 0 within noise in all four sets (raw z −1.14 / −0.93 / −0.43 / −1.76); half-split cosines −0.03 to −0.06.
+- One-sided 95% lower bounds on B_noise = tr Σ / |μ|²: G16 > 7,700 games (raw), > 9,100 (Adam); combat B > 6,000 / >
+  8,000. Per 520-game update SNR ≤ ~0.07; cosine of an update's gradient to the true gradient ≤ ~0.25.
+- Per-game noise tr Σ: G16 31.8k (Heart 36% at T 1), combat B 36.1k (14.5%); Adam metric 5.94M vs 5.97M.
+- Per-game advantage sum vs Heart outcome: correlation 0.97 (G16), 0.96 (combat B). Value EV 0.68-0.71 / 0.62-0.70.
+**Interpretation (Inference):** PPO here is deeply noise-dominated, so progress scales with the number of games, not
+per-update quality. Per-game noise does not depend on combat strength between combat B and G16, so G8's ~1.6× games per
+CPU (§781 G8S 315 s vs G16 509 s) would give ~1.6× learning speed if its useful signal per game is about as large and
+transfers to G16 play; that transfer is not measurable from gradients at this size (the signal needs ≳10k games).
+LONG_B's ~3.4 pp per 100 PPO updates (§756) predicts ~0.6 pp after PG16H24's 18 PPO updates, below one iteration's
+in-sample SE (~2.1 pp): no visible effect by iteration 22 is expected. Four negative point estimates (Stouffer ≈ −2.1)
+are unexplained (batch-mean advantage ≤ 0.005 sd).
+**Decision:** none (analysis). Which combat to train under is Philipp's call; no run, no default change.
+Seeds: none. Cost: ~1.3 CPU-h.
+**Knowledge impact:** PPO with 1{Heart} and 520 games per update is noise-limited (≥ ~93% of each update's gradient is
+sampling noise); per-game gradient noise is about equal under combat B and G16.
