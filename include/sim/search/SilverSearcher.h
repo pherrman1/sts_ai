@@ -459,6 +459,12 @@ namespace sts::search {
         std::function<bool(const GumbelBoundary &)> gumbelStopPolicy;
         // Research-only playout policy for RolloutConfig::prior (same signature as nodePrior).
         std::function<std::vector<double>(const BattleContext &, const std::vector<Edge> &)> rolloutPrior;
+        // Optional shortcut for prior playouts: std::max_element of rolloutPriorArgmaxOf's prior. Used only
+        // while rolloutPrior holds exactly the function rolloutPriorArgmaxOf (a replaced rolloutPrior, e.g. a
+        // research student, falls back to rolloutPrior).
+        using PriorFunction = std::vector<double> (*)(const BattleContext &, const std::vector<Edge> &);
+        int (*rolloutPriorArgmax)(const BattleContext &, const std::vector<Edge> &) = nullptr;
+        PriorFunction rolloutPriorArgmaxOf = nullptr;
         // STS_SILVER_LEAF_HEAD (set by NativeSilverBackend; default off): an undecided leaf is worth
         // blend * (head - turnPenalty * turns beyond the root) + (1 - blend) * its playout. The turn
         // penalty keeps a head that runs high on unfinished fights from preferring a stall to a win.

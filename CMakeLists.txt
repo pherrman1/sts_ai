@@ -29,6 +29,12 @@ add_link_options(
     -fopenmp
     $<$<CONFIG:Release>:-flto>)
 
+# The policy MLP (Silver prior playouts take its argmax) and its exactness test
+# must not fuse a*b+c into an FMA, or play changes on a build with FMA enabled
+# (e.g. -march=native); the presets already pass -mno-fma or have no FMA.
+set_source_files_properties(src/sim/search/CombatValueNet.cpp tests/policy_mlp_exact_test.cpp
+    PROPERTIES COMPILE_OPTIONS -ffp-contract=off)
+
 include(cmake/GccPgo.cmake)
 
 add_subdirectory(json)

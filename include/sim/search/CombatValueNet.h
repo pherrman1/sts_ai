@@ -36,6 +36,13 @@ namespace sts::search {
     const std::vector<std::string>& combatFeatureNames();
     int  combatFeatureCount();
     void combatExtractFeatures(const BattleContext &bc, float *out);
+    // The same values as combatExtractFeatures, for a buffer that only this
+    // function writes: `touched` lists the entries of the wide relic / card /
+    // monster / potion block the previous call on this buffer set, so only those
+    // are reset instead of the whole block (start with an all-zero buffer and an
+    // empty list, or with a buffer combatExtractFeatures filled and every index of
+    // that block in the list).
+    void combatExtractFeaturesReuse(const BattleContext &bc, float *out, std::vector<std::uint16_t> &touched);
 
     // POLICY feature layout = the combat state features above ++ per-ACTION features
     // (a comparator net scores each candidate action; softmax over a node's legal
