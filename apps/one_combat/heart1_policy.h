@@ -256,7 +256,13 @@ double sampleUniform(std::uint64_t runSeed, std::uint64_t salt, std::uint64_t in
 // ("heart1_ppo", "heart1_ppo_single", "auto_gold") or nullptr when the net has no
 // choice here: a "fallback" line with the reason is logged and the caller falls back
 // to the chain (STS_OOC_HEART1_PPO_STRICT=1 throws instead).
-const char *ppoStep(sts::GameContext &, std::uint64_t decisionIndex);
+const char *ppoStep(sts::GameContext &, std::uint64_t decisionIndex, const std::string *forcedKey = nullptr);
+// STS_OOC_FORCE_DECISION=INDEX:SALT:ppo:KIND=VALUES (research, #1056 paired probes, default off): the token the
+// forced PPO decision takes, or -1 with `error`. KIND i = token index; fa = the best (highest-logit, first maximum)
+// fixed-action token among the listed FA ids; card_not / relic_not = the best offered card / relic token whose id is
+// not listed; path_not = the best path token whose next room (Room enum) is not listed. VALUES: comma-separated ints.
+int ppoForcedChoice(const sts::GameContext &, const Choice &, const std::vector<float> &logits,
+                    const std::string &key, std::string &error);
 // Per game: clear this thread's buffer; append the outcome line and flush the
 // game's lines to STS_OOC_HEART1_PPO_TRAJ under a process-wide lock.
 void ppoBeginGame(std::uint64_t seed);

@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <functional>
 #include <immintrin.h>
 #include <limits>
 #include <map>
@@ -1826,7 +1827,62 @@ const char *ppoFallback(const GameContext &gc, std::uint64_t index, const std::s
 }
 }  // namespace
 
-const char *ppoStep(GameContext &gc, std::uint64_t index) {
+int ppoForcedChoice(const GameContext &gc, const Choice &choice, const std::vector<float> &logits,
+                    const std::string &key, std::string &error) {
+    const Record &r = choice.record;
+    const int nCards = int(r.offeredCards.size()), nRelics = int(r.offeredRelics.size());
+    const int nPotions = int(r.offeredPotions.size()), nFixed = int(r.fixedActions.size());
+    const int fixedStart = nCards + nRelics + nPotions, pathStart = fixedStart + nFixed;
+    const int n = r.choiceCount();
+    if (int(logits.size()) != n) { error = "logit_count_mismatch"; return -1; }
+    const auto numbers = [](const std::string &text, std::vector<int> &out) {
+        std::size_t at = 0;
+        while (at <= text.size()) {
+            const auto comma = text.find(',', at);
+            const std::string item = text.substr(at, comma == std::string::npos ? std::string::npos : comma - at);
+            if (item.empty() || item.size() > 6 || item.find_first_not_of("0123456789") != std::string::npos) return false;
+            out.push_back(std::stoi(item));
+            if (comma == std::string::npos) return true;
+            at = comma + 1;
+        }
+        return false;
+    };
+    const auto best = [&](const std::function<bool(int)> &allowed) {
+        int pick = -1;
+        for (int i = 0; i < n; ++i)
+            if (allowed(i) && (pick < 0 || logits[i] > logits[pick])) pick = i;   // first maximum, as temperature 0
+        return pick;
+    };
+    const auto eq = key.find('=');
+    if (key.rfind("ppo:", 0) != 0 || eq == std::string::npos) { error = "bad_ppo_key"; return -1; }
+    const std::string kind = key.substr(4, eq - 4);
+    std::vector<int> v;
+    if (!numbers(key.substr(eq + 1), v)) { error = "bad_ppo_key_value"; return -1; }
+    const auto in = [&](int x) { return std::find(v.begin(), v.end(), x) != v.end(); };
+    int pick = -1;
+    if (kind == "i") {
+        pick = v.size() == 1 && v[0] < n ? v[0] : -1;
+    } else if (kind == "fa") {
+        pick = best([&](int i) { return i >= fixedStart && i < pathStart && in(r.fixedActions[i - fixedStart].action); });
+    } else if (kind == "card_not") {
+        pick = best([&](int i) { return i < nCards && !in(r.offeredCards[i]); });
+    } else if (kind == "relic_not") {
+        pick = best([&](int i) { return i >= nCards && i < nCards + nRelics && !in(r.offeredRelics[i - nCards]); });
+    } else if (kind == "path_not") {
+        if (gc.screenState != ScreenState::MAP_SCREEN || gc.curMapNodeY >= 14) { error = "path_not_outside_act_map"; return -1; }
+        const int y = gc.curMapNodeY + 1;
+        pick = best([&](int i) {
+            return i >= pathStart && !in(static_cast<int>(gc.map->getNode(r.paths[i - pathStart], y).room));
+        });
+    } else {
+        error = "unknown_ppo_key_kind";
+        return -1;
+    }
+    if (pick < 0) error = "no_token_matches_" + kind;
+    return pick;
+}
+
+const char *ppoStep(GameContext &gc, std::uint64_t index, const std::string *forcedKey) {
     if (!enabled()) throw std::runtime_error("STS_OOC_HEART1_PPO needs STS_OOC_HEART1");
     const Net &model = net();
     const int gold = takeFreeRewards(gc, /*relics=*/false);
@@ -1847,14 +1903,25 @@ const char *ppoStep(GameContext &gc, std::uint64_t index) {
     const Output scored = model.forward(choice.record, /*logitsOnly=*/false);
     const double temperature = ppoTemperature();
     double logp = 0;
-    const int chosen = nChoice == 1 ? 0
+    int chosen = nChoice == 1 ? 0
         : sampleChoice(scored.logits, temperature, sampleUniform(gc.seed, ppoSalt(), index), &logp);
     const char *source = nChoice == 1 ? "heart1_ppo_single" : "heart1_ppo";
+    // STS_OOC_FORCE_DECISION with a ppo: key (research, #1056 probes): this decision takes the named token.
+    // sampleUniform is counter-based, so forcing consumes no randomness that later decisions would see.
+    if (forcedKey) {
+        std::string error;
+        const int forced = ppoForcedChoice(gc, choice, scored.logits, *forcedKey, error);
+        if (forced < 0) throw std::runtime_error("STS_OOC_FORCE_DECISION " + *forcedKey + ": " + error);
+        chosen = forced;
+        logp = 0;
+        source = "forced_ppo";
+    }
     (nChoice == 1 ? t_ppo.single : t_ppo.decisions)++;
     ppoLine({{"type", "decision"}, {"seed", std::to_string(gc.seed)}, {"idx", index}, {"act", gc.act},
              {"floor", gc.floorNum}, {"screen", int(gc.screenState)}, {"source", source}, {"n", nChoice},
              {"record", recordToJson(choice.record)}, {"logits", scored.logits}, {"value", scored.value},
              {"chosen", chosen}, {"logp", logp}, {"temp", temperature},
+             {"forced", forcedKey ? *forcedKey : std::string()},
              {"bits", choice.actions[chosen].bits}, {"auto_gold", std::exchange(t_ppo.pendingGold, 0)}});
     choice.actions[chosen].execute(gc);
     return source;
@@ -1912,6 +1979,35 @@ void ppoSelfTest() {
     check(sampleUniform(1, 2, 3) == sampleUniform(1, 2, 3), "uniform is deterministic");
     check(sampleUniform(1, 2, 3) != sampleUniform(1, 3, 3) && sampleUniform(1, 2, 3) != sampleUniform(1, 2, 4),
           "uniform depends on salt and index");
+    // Forced PPO tokens (STS_OOC_FORCE_DECISION ppo: keys): cards 10, 11; relics 20, 21; fixed REST, SMITH.
+    {
+        Choice c;
+        c.record.offeredCards = {10, 11};
+        c.record.offeredUpgrades = {0, 0};
+        c.record.offeredRelics = {20, 21};
+        FixedChoice rest, smith;
+        rest.action = FA_REST;
+        smith.action = FA_SMITH;
+        c.record.fixedActions = {rest, smith};
+        const std::vector<float> l{3.f, 1.f, 0.5f, 2.f, -1.f, 4.f};
+        GameContext gc;
+        std::string error;
+        const auto pick = [&](const std::string &key) { error.clear(); return ppoForcedChoice(gc, c, l, key, error); };
+        check(pick("ppo:i=2") == 2, "ppo:i");
+        check(pick("ppo:i=6") == -1, "ppo:i out of range");
+        check(pick("ppo:fa=" + std::to_string(FA_REST)) == 4, "ppo:fa");
+        check(pick("ppo:fa=" + std::to_string(FA_REST) + "," + std::to_string(FA_SMITH)) == 5, "ppo:fa best of list");
+        check(pick("ppo:card_not=10") == 1, "ppo:card_not");
+        check(pick("ppo:card_not=10,11") == -1 && error == "no_token_matches_card_not", "ppo:card_not none left");
+        check(pick("ppo:relic_not=20") == 3, "ppo:relic_not");
+        check(pick("ppo:relic_not=21") == 2, "ppo:relic_not keeps the other relic");
+        check(pick("ppo:path_not=3") == -1 && error == "path_not_outside_act_map", "ppo:path_not off the map");
+        for (const char *bad : {"ppo:fa", "ppo:fa=", "ppo:fa=x", "ppo:bogus=1", "ppo:fa=1,,2"})
+            check(pick(bad) == -1, std::string("refused ") + bad);
+        const std::vector<float> tie{1.f, 1.f, 0.f, 0.f, 0.f, 0.f};
+        error.clear();
+        check(ppoForcedChoice(gc, c, tie, "ppo:card_not=99", error) == 0, "ppo key ties take the first maximum");
+    }
     std::cout << "heart1 ppo selftest passed\n";
 }
 
