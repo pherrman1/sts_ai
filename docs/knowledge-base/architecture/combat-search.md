@@ -549,6 +549,24 @@ G16 + mb4 games replay with identical Gumbel stop traces at 0.72-0.76x the CPU
 (2026-11-14; `/mnt/project-files/combat-speed-20261114/REPORT.md`). In those
 games the prior MLP was 42-60% of all CPU, almost all of it prior playouts in
 boss fights (64 M calls, 5.7 edges each, in one Heart-kill game).
+Since 2026-11-15 (#1052) `scorePolicyEdges` passes the state's ascending
+nonzero feature list to `predictPolicyMlp` instead of letting it scan all 1,766
+features: `combatNonzeroStateFeatures` reads it off the always-written blocks
+and the indices `combatExtractFeaturesReuse` touched (the same list, so the same
+logits; ctest `policy_mlp_exact` checks it against a full scan on states of
+random legal play). Measured and not adopted (#1052): 16-wide AVX-512 kernels
+(bit-identical but slower on the cloud Xeon VMs), an exact-double incremental
+state layer kept across a playout's calls (consecutive calls change a median of
+13 of ~80 nonzero features, but the state rows are cache-warm in real playouts,
+so no gain), and int16 layer 2 (1-7% argmax changes). Since the same PR the
+per-edge layers run with fused multiply-adds (`policyMlpEdges128x64Fma`) on any
+CPU with FMA, by Philipp's decision (2026-11-15) without a whole-run gate. It is
+not bit-identical to the kernel above (logits within ~3e-6 on recorded playout
+calls, no argmax change seen, but whole-game search traces change), so play
+differs from earlier binaries and from machines without FMA (which warn and use
+the exact kernel). `STS_SILVER_PRIOR_MLP_FMA=0` restores the exact kernel
+everywhere (reproducing pre-#1052 runs needs it); `=1` makes FMA mandatory.
+`one_combat` prints the kernel in use at startup when a root prior is set.
 Prior playouts also keep an exact pick cache (issue #1051,
 `STS_SILVER_PRIOR_PICK_CACHE`, default 2^20 slots, `0` turns it off):
 `nativeSilverPolicyArgmax` keys the MLP's argmax edge by a 128-bit additive

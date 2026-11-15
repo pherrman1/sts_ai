@@ -2177,8 +2177,12 @@ namespace sts::search {
             out.scores.resize(distinct);
             const double t1 = timing ? threadCpuSeconds() : 0;
             if (out.mlp) {
-                net.predictPolicyMlp(in.features.data(), in.actions.data(), in.targets.data(), distinct,
-                                     out.scores.data());
+                // The state's nonzero features from the extractor's touched list (no scan of all features).
+                thread_local std::vector<std::uint16_t> nonzero;
+                nonzero.resize(in.features.size());
+                const int count = combatNonzeroStateFeatures(in.features.data(), in.touched, nonzero.data());
+                net.predictPolicyMlp(in.features.data(), nonzero.data(), count, in.actions.data(), in.targets.data(),
+                                     distinct, out.scores.data());
                 if (timing) {
                     timing->featureSeconds += t1 - in.t0;
                     timing->mlpSeconds += threadCpuSeconds() - t1;
@@ -2258,6 +2262,9 @@ namespace sts::search {
                 add((std::uint64_t{3} << 48) | (static_cast<std::uint64_t>(i) << 32)
                     | static_cast<std::uint32_t>(ps.distinctOf[i]));
             add((std::uint64_t{4} << 48) | static_cast<std::uint32_t>(n));
+            // The edge kernel (#1052): FMA and exact logits can pick different edges, and setPolicyMlpFma can switch
+            // kernels within a process.
+            add((std::uint64_t{5} << 48) | (policyMlpFmaActive() ? 1u : 0u));
             const std::uint64_t netWord = net.policyMlpLoadId;   // deterministic, unlike the net's address
             a = combatFingerprintMixA(a ^ netWord);
             b = combatFingerprintMixB(b + netWord);
