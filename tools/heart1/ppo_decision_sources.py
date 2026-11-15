@@ -13,10 +13,10 @@ takes a potion and then leaves is two decisions):
                        net sees the screen), each also per game.
   screens              decisions per ScreenState, split multi/single choice.
   discarded_potions    the potion each chosen discard token threw away (Blood Potion, Fruit Juice and Entropic Brew
-                       could be drunk out of combat instead, but no drink token exists).
+                       could be drunk out of combat instead; drink tokens exist since #1055).
   tokens               PPO-only fixed tokens: decisions that offer the token and decisions that choose it
-                       (discard_potion, match_and_keep, event_generic = an event option without a silverbot
-                       mapping, take_key, recall, open_chest).
+                       (discard_potion, drink_potion = an out-of-combat drink, match_and_keep, event_generic = an
+                       event option without a silverbot mapping, take_key, recall, open_chest).
   relics_left          rewards decisions where the net chose leave (FA_SKIP) while a relic was still offered,
                        one row per relic left: `reviewed_exception` (apps/one_combat/ooc_tree_rules.cpp
                        reviewedRewardRelic, which the old relic rule also leaves to the policy), `key_on_screen`
@@ -45,7 +45,7 @@ SCREENS = {0: "invalid", 1: "event", 2: "rewards", 3: "boss_relic", 4: "card_sel
            7: "rest", 8: "shop", 9: "battle"}
 # apps/one_combat/heart1_policy.{h,cpp}: fixed-action ids.
 FA_SKIP, FA_RECALL, FA_TAKE_KEY, FA_OPEN_CHEST = 1, 6, 164, 165
-FA_DISCARD, FA_MATCH_FIRST, FA_MATCH_LAST, FA_EVENT_FIRST, FA_COUNT = 166, 167, 169, 170, 178
+FA_DISCARD, FA_MATCH_FIRST, FA_MATCH_LAST, FA_EVENT_FIRST, FA_DRINK = 166, 167, 169, 170, 178
 # apps/one_combat/ooc_tree_rules.cpp reviewedRewardRelic (Philipp's list, 2026-10-07).
 REVIEWED_RELICS = ("BOTTLED_FLAME", "BOTTLED_LIGHTNING", "BOTTLED_TORNADO", "DEAD_BRANCH", "TUNGSTEN_ROD",
                    "UNCEASING_TOP", "JUZU_BRACELET")
@@ -72,8 +72,10 @@ def token_class(action):
         return "discard_potion"
     if FA_MATCH_FIRST <= action <= FA_MATCH_LAST:
         return "match_and_keep"
-    if FA_EVENT_FIRST <= action < FA_COUNT:
+    if FA_EVENT_FIRST <= action < FA_DRINK:
         return "event_generic"
+    if action == FA_DRINK:
+        return "drink_potion"
     return {FA_TAKE_KEY: "take_key", FA_RECALL: "recall", FA_OPEN_CHEST: "open_chest"}.get(action)
 
 
@@ -177,7 +179,8 @@ def tally(paths, names, potions=None):
         "auto_gold": auto_gold, "auto_gold_per_game": round(auto_gold / games, 3) if games else None,
         "screens": {k: dict(v) for k, v in sorted(screens.items())},
         "tokens": {k: {"offered": offered[k], "chosen": chosen[k]} for k in
-                   ("discard_potion", "match_and_keep", "event_generic", "take_key", "recall", "open_chest")},
+                   ("discard_potion", "drink_potion", "match_and_keep", "event_generic", "take_key", "recall",
+                    "open_chest")},
         "discarded_potions": dict(discarded.most_common()),
         "relics_left": dict(relics_left), "relics_left_rule_would_take_by_act": dict(sorted(relics_left_acts.items())),
         "relics_left_rule_would_take_by_relic": dict(relics_left_names.most_common()),
