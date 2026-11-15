@@ -14,6 +14,7 @@
 
 #include <cstdint>
 #include <cstdlib>
+#include <atomic>
 #include <cstring>
 #include <emmintrin.h>
 #include <fstream>
@@ -507,6 +508,7 @@ bool CombatValueNet::load(const std::string &path) {
     dsMonW1.clear(); dsMonB1.clear(); dsMonW2.clear(); dsMonB2.clear();
 
     isPolicyMlp = false;
+    policyMlpLoadId = 0;
     pmH1 = pmH2 = 0; pmB3 = 0.f;
     pmStateW.clear(); pmActionW.clear(); pmCard.clear(); pmTargetW.clear();
     pmB1.clear(); pmW2.clear(); pmW2T.clear(); pmB2.clear(); pmW3.clear();
@@ -564,6 +566,8 @@ bool CombatValueNet::load(const std::string &path) {
         isPolicyMlp = true;
         isPolicy = true;
         g_richCombatFeatures = true;
+        static std::atomic<std::uint64_t> policyMlpLoads{0};
+        policyMlpLoadId = ++policyMlpLoads;
         isLoaded = true;
         this->path = path;
         return true;

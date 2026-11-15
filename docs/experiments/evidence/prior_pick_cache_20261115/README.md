@@ -59,14 +59,18 @@ equal:
 | r4 | v2 2^20; v3 (multiply-fold mix) 2^20 twice | 30.3% | 0.976; 0.975 / 0.950 | 0.969; 0.974 / 0.943 | 52/52 each |
 | r5 | v2, hits ignored, 2^10 / 2^20 table; v2 on 2^20 | 0 / 0 / 30.3% | 1.075 / 1.096 / 0.938 | 1.061 / 1.089 / 0.927 | 52/52 each |
 | r6 | v3 2^20; v4 (branch-free) 2^20 twice | 30.3% | 0.948; 0.993 / 0.995 | 0.962; 1.004 / 1.014 | 52/52 each |
+| r7 | final (v3, net keyed by load id), 2^20 twice | 30.3% | 0.970 / 0.965 | 0.951 / 0.945 | 52/52 each |
 
 Hits pooled over all 52 searches (the never-cleared table also hits across searches).
 
-- **The cache is exact:** 52/52 roots identical in every one of the 18 cache-on (or hits-ignored) vs off pairs.
-- **CPU:** v2 / v3 at 2^20 (the PR is v3) average about **0.95x** a prior-playout search (seven runs, 0.938-0.976;
+- **The cache is exact:** 52/52 roots identical in every one of the 20 cache-on (or hits-ignored) vs off pairs.
+- **CPU:** v2 / v3 / final at 2^20 average about **0.95x** a prior-playout search (nine runs, 0.938-0.976;
   run-to-run noise of identical configurations is about ±2.5%). The hits save about 17% (r3: 0.94 with hits vs
   1.11 with hits ignored); the key costs about 7.5% (r5, table in L1) and the 16 MB table's misses about 2% more.
 - Chained hashing (v1) cost all of the saving; branch-free zero masking (v4) was slower than v3.
+- v1-v3 keyed the net by its address, so hit counts could vary between processes (ASLR moves the buckets); the
+  final version keys it by `CombatValueNet::policyMlpLoadId` (deterministic, and safe against a later net at a
+  reused address). Same picks either way.
 - **Inference:** a faster MLP (#1052) shrinks what a hit saves; at half the MLP time the cache would be about
   break-even.
 
@@ -74,8 +78,9 @@ Hits pooled over all 52 searches (the never-cleared table also hits across searc
 
 Two of §775's G16 + mb4 A20 games replayed (recorded seeds 111378257 and 111378263, no new seeds; environment
 [games/g16.sh](games/g16.sh), a copy of the 2026-11-14 speed report's script with `STS_SILVER_GUMBEL_STOP_TRACE`), main
-6126315 (v3 preset, binary sha256 bdd6a2e0...) against this branch (cache on by default, 4d1b4c67...), all four
-games at once on the 4-vCPU container:
+6126315 (v3 preset, binary sha256 bdd6a2e0...) against this branch (cache on by default; v3 binary 4d1b4c67...,
+all four games at once on the 4-vCPU container; the final binary 246a49e9... replayed both games again, also
+identical, while other benchmarks ran, so its CPU is not comparable):
 
 | seed | result | Gumbel stop-trace rows | rows differing (CPU columns dropped) | game log | CPU main → cache |
 |---|---|---|---|---|---|

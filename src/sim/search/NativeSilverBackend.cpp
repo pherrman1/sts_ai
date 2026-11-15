@@ -2234,7 +2234,7 @@ namespace sts::search {
 
         // The fingerprint of the MLP input preparePolicyInput left in `in` for `n` edges: the state block's words
         // (combatStateFingerprint, indices < 2^16) plus one tagged word per nonzero action-block entry, per
-        // distinct target and per edge's distinct index, and the edge count; then the net's address. Tags (bits
+        // distinct target and per edge's distinct index, and the edge count; then the net's load id. Tags (bits
         // 48-63) keep the word kinds apart. False when the state block has no fingerprint.
         bool priorInputFingerprint(const CombatValueNet &net, const PriorInput &in, const PriorScores &ps, int n,
                                    std::uint64_t &a, std::uint64_t &b) {
@@ -2257,7 +2257,7 @@ namespace sts::search {
                 add((std::uint64_t{3} << 48) | (static_cast<std::uint64_t>(i) << 32)
                     | static_cast<std::uint32_t>(ps.distinctOf[i]));
             add((std::uint64_t{4} << 48) | static_cast<std::uint32_t>(n));
-            const auto netWord = static_cast<std::uint64_t>(reinterpret_cast<std::uintptr_t>(&net));
+            const std::uint64_t netWord = net.policyMlpLoadId;   // deterministic, unlike the net's address
             a = combatFingerprintMixA(a ^ netWord);
             b = combatFingerprintMixB(b + netWord);
             return true;

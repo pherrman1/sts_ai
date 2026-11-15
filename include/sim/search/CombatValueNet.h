@@ -197,6 +197,9 @@ namespace sts::search {
         // Input scaling and the card embedding's projection are folded into the
         // exported weights. Callers normalize logits with a softmax over edges.
         bool isPolicyMlp = false;
+        // Process-wide sequence number of the policy-MLP load (1, 2, ...; copies keep it): the exact prior pick
+        // cache (#1051) keys a net by it, so a later net at a reused address never matches stale entries.
+        std::uint64_t policyMlpLoadId = 0;
         int pmH1 = 0, pmH2 = 0;
         std::vector<float> pmStateW, pmActionW, pmCard, pmTargetW, pmB1, pmW2, pmB2, pmW3;
         std::vector<float> pmW2T;   // pmW2 transposed (h1 x h2), built by load
