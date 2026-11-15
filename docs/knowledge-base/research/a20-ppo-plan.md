@@ -43,6 +43,10 @@ public input must be covered.** This replaces the first draft's start from stude
   (old chain), reward relics and gold (auto-taken), chest/relic rules after a declined step. Plan: tokens for all of
   them; gold stays automatic (no choice). **Keys: the net learns them (Philipp, 2026-11-01)**; `heartKeyAction` is off
   in training and stays only as a comparison arm in gates.
+- **Out-of-combat drinks (#1055, Philipp 2026-11-15):** Blood Potion, Fruit Juice and Entropic Brew get a drink token
+  on every encoded screen except card selects and We Meet Again (Java allows them outside combat); default on with
+  no gate, `STS_OOC_HEART1_PPO_DRINK=0` restores the earlier space. Before, the net could only discard them (51 of
+  2,108 discards in 871 PG16H24 games).
 - **Shared trunk (CTM thread, 2026-11-01):** CTM and value heads go on this d256 trunk as auxiliary heads; a separately
   trained fast CTM (DeepSets retrain on 378k real fights) stays for simulator use where speed matters (rollout3 calls it
   thousands of times per decision). The #941 x2_* embeddings are zero-initialised at any width.

@@ -54,7 +54,7 @@ deciding rules, plus the combat pruning in section C. The old default chain is n
 |---|---|---|---|---|---|
 | A1 | `ppoStep` → `takeFreeRewards(gc, false)` | takes every gold reward before the net sees the screen | 22.9 / game | **No**: Java `RewardItem.claimReward` GOLD / STOLEN_GOLD only calls `gainGold` (Ectoplasm voids the gain, D2) | keep (no choice) |
 | A2 | `buildChoice` `discardTokens` | a potion discard token exists only when an offered potion is blocked by full slots, without Sozu (rewards; shop when affordable) | offered in 5,539 decisions, chosen 2,108 (2.4 / game) | Little: discarding elsewhere gains nothing out of combat | keep |
-| A3 | `getAllActionsInState` (no potion actions) | the three potions the engine lets you drink out of combat (`isValidPotionAction`: Blood Potion, Fruit Juice, Entropic Brew) have **no drink token**; the net can only carry them into combat or discard them | 51 of the 2,108 discards threw one away (Blood Potion 41, Entropic Brew 8, Fruit Juice 2) | **Yes**: Java lets all three be drunk on the map, in shops, rest sites, events and reward screens (D1); drinking dominates discarding (heal / +5 max HP / refill) | add drink tokens (net decides) |
+| A3 | `getAllActionsInState` (no potion actions) | the three potions the engine lets you drink out of combat (`isValidPotionAction`: Blood Potion, Fruit Juice, Entropic Brew) have **no drink token**; the net can only carry them into combat or discard them | 51 of the 2,108 discards threw one away (Blood Potion 41, Entropic Brew 8, Fruit Juice 2) | **Yes**: Java lets all three be drunk on the map, in shops, rest sites, events and reward screens (D1); drinking dominates discarding (heal / +5 max HP / refill) | **fixed**: drink token `kFaDrinkPotion` (178), default on (Philipp 2026-11-15, no gate), `STS_OOC_HEART1_PPO_DRINK=0` restores |
 | A4 | `buildChoice` REWARDS | Singing Bowl token added (our engine executes it but does not enumerate it) | per Singing Bowl card reward | no (adds a choice) | keep |
 | A5 | `realOocChainStepBody` | `heartKeyAction` runs only with `STS_OOC_HEART1_PPO_KEY_RULE=1` (comparison arm) | 0 (off) | – | keep off |
 | A6 | `buildChoice` EVENT | Match and Keep as tokens (unseen / seen / pair) | 790 decisions | – | – |
@@ -132,8 +132,8 @@ and quoted bytecode in `~/Documents/sts/javap-1055/` on the PC.
 
 ## Next checks
 
-1. A3: drink tokens for the three out-of-combat potions (new zero-initialised tokens; the net decides; Java confirms
-   the rule, D1). A behaviour change, so a paired A20 gate (typed go).
+1. A3 done: drink tokens, default on without a gate (Philipp, 2026-11-15). **Unverified:** Java's Toy Ornithopter
+   heals on an out-of-combat potion too (`onUsePotion`); the engine heals only in combat.
 2. Step 3 for the combat rules C1/C3/C4: count how often the pruned edge would have been legal (logging only).
 3. Hand the relic-left and Cursed Key chest cases (section A, D5) to #1056.
 

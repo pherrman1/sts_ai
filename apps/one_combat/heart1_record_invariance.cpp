@@ -289,13 +289,15 @@ void publicRecordInvarianceSelfTest() {
 
 
 // PPO full-coverage tokens (ChoiceOptions::fullCoverage): potion discards, Match and
-// Keep slots and unmapped event options; the default options keep the trained space.
+// Keep slots, unmapped event options and out-of-combat drinks (drinkTokens); the
+// default options keep the trained space.
 void ppoCoverageSelfTest() {
     const auto require = [](bool ok, const std::string &what) {
         if (!ok) throw std::runtime_error("heart1 ppo coverage selftest: " + what);
     };
     ChoiceOptions full;
     full.fullCoverage = true;
+    full.drinkTokens = true;
     full.keyMask = false;
     {
         // Full potion slots and a potion reward: one discard token per held potion.
@@ -380,6 +382,54 @@ void ppoCoverageSelfTest() {
             require(std::any_of(c.record.fixedActions.begin(), c.record.fixedActions.end(), [](const FixedChoice &f) {
                 return f.action >= kFaEventOption0 && f.gold == static_cast<int>(Event::FALLING); }), "event token");
         }
+    }
+    {
+        // Out-of-combat drinks: one token per held Blood Potion / Fruit Juice / Entropic Brew, none for other
+        // potions, none on card selects or in We Meet Again, none without drinkTokens.
+        auto gc = baseState();
+        gc.screenState = ScreenState::REWARDS;
+        gc.potions[0] = Potion::FRUIT_JUICE;
+        gc.potions[1] = Potion::FIRE_POTION;
+        gc.potionCount = 2;
+        CardReward cards;
+        cards.push_back(Card(CardId::POMMEL_STRIKE));
+        gc.info.rewardsContainer.addCardReward(cards);
+        Choice plain, ppo, noDrink;
+        ChoiceOptions withoutDrink = full;
+        withoutDrink.drinkTokens = false;
+        require(buildChoice(gc, plain) && buildChoice(gc, ppo, nullptr, full)
+                && buildChoice(gc, noDrink, nullptr, withoutDrink), "rewards choices");
+        require(noDrink.record.choiceCount() == plain.record.choiceCount(), "no drink token without drinkTokens");
+        require(ppo.record.choiceCount() == plain.record.choiceCount() + 1, "one drink token (Fruit Juice only)");
+        int drinks = 0;
+        for (std::size_t i = 0; i < ppo.record.fixedActions.size(); ++i) {
+            const auto &f = ppo.record.fixedActions[i];
+            if (f.action != kFaDrinkPotion) continue;
+            const auto &a = ppo.actions[ppo.record.offeredCards.size() + ppo.record.offeredRelics.size()
+                                        + ppo.record.offeredPotions.size() + i];
+            require(a.isPotionAction() && !a.isPotionDiscard() && a.getIdx1() == 0, "drink token drinks slot 0");
+            require(f.potion == static_cast<int>(Potion::FRUIT_JUICE), "drink token names its potion");
+            auto copy = gc;
+            const int maxHp = copy.maxHp;
+            a.execute(copy);
+            require(copy.potions[0] == Potion::EMPTY_POTION_SLOT && copy.maxHp == maxHp + 5
+                    && copy.screenState == ScreenState::REWARDS, "Fruit Juice drunk on the reward screen");
+            ++drinks;
+        }
+        require(drinks == 1, "drink count");
+        require(recordFromJson(recordToJson(ppo.record)) == ppo.record, "JSON round trip with a drink token");
+        // A map screen: the drink is offered there too.
+        gc.screenState = ScreenState::MAP_SCREEN;
+        Choice map, mapPlain;
+        require(buildChoice(gc, mapPlain) && buildChoice(gc, map, nullptr, full)
+                && map.record.choiceCount() == mapPlain.record.choiceCount() + 1, "map drink token");
+        // Card select: none.
+        gc.screenState = ScreenState::CARD_SELECT;
+        gc.info.toSelectCards.clear();
+        gc.info.toSelectCards.push_back(SelectScreenCard(Card(CardId::BASH), 0));
+        Choice select;
+        require(buildChoice(gc, select, nullptr, full), "card select choice");
+        for (const auto &f : select.record.fixedActions) require(f.action != kFaDrinkPotion, "no drink on card select");
     }
     std::cout << "heart1 ppo coverage selftest passed\n";
 }
