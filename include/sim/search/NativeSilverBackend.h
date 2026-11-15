@@ -345,6 +345,9 @@ namespace sts::search {
     // feature extraction (state + action blocks) and in the MLP, and its calls and edges, here. Default off.
     struct NativeSilverPriorTiming { double featureSeconds = 0, mlpSeconds = 0; std::int64_t calls = 0, edges = 0; };
     extern thread_local NativeSilverPriorTiming *g_nativeSilverPriorTiming;
+    // The calling thread's exact prior-playout pick cache (#1051, nativeSilverPolicyArgmax): lookups and hits.
+    struct NativeSilverPriorPickCacheStats { std::int64_t lookups = 0, hits = 0; };
+    NativeSilverPriorPickCacheStats nativeSilverPriorPickCacheStats();
     // Research-only (ctmsilvergen rootdist): when set, every search records its
     // simulation endpoints here (SilverSearcher::outcomes). Default off.
     extern thread_local SilverOutcomeCapture *g_nativeSilverOutcomeCapture;

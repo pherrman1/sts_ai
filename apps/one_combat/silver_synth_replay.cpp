@@ -366,7 +366,7 @@ void silverPolicyMlpCheck(const std::string &modelPath, const std::string &prefi
 // ---- rolloutpolicybench (research, cheap rollouts 2026-11-13) ----
 // one_combat rolloutpolicybench OUT_PREFIX BUDGET ARMS CAPTURE_STRIDE < rows.jsonl
 // Rows: silverazgen root rows with `wire` (the §797 budget-ladder corpus, prior-playout roots). For every row and arm
-// (comma list of asplayed, greedy, tt, ftN), a fresh Gumbel K16 root search with max backup 4 at BUDGET simulations,
+// (comma list of asplayed, greedy, tt, ftN, argmax), a fresh Gumbel K16 root search with max backup 4 at BUDGET simulations,
 // configured as a whole-run boss-room search (root prior STS_SILVER_ROOT_PRIOR at its weight, tree prior K=8, rollout
 // root table from the same model, prior playouts unless greedy). Writes OUT_PREFIX.jsonl (one line per row and arm:
 // thread CPU seconds, simulations, rolloutPrior calls, playout actions, the pick's index in the row's edges and the
@@ -439,7 +439,7 @@ void rolloutPolicyBench(const std::string &prefix, std::int64_t budget, const st
                     rc.priorTurnTable = policy == "sttt";
                 } else if (arm == "tt") rc.priorTurnTable = true;
                 else if (arm.size() == 3 && arm.rfind("ft", 0) == 0) rc.priorTurns = arm[2] - '0';
-                else if (arm != "asplayed" && arm != "greedy") throw std::runtime_error("unknown arm " + arm);
+                else if (arm != "asplayed" && arm != "greedy" && arm != "argmax") throw std::runtime_error("unknown arm " + arm);
                 const bool teacher = arm == "asplayed";
                 s.rolloutPrior = [&, teacher, student](const BattleContext &bc, const std::vector<search::SilverSearcher::Edge> &edges) {
                     auto p = student ? search::nativeSilverPolicyPriorWith(*student, bc, edges)
@@ -457,8 +457,18 @@ void rolloutPolicyBench(const std::string &prefix, std::int64_t budget, const st
                     }
                     return p;
                 };
+                // argmax (#1051): the production prior playout (nativeSilverPolicyArgmax, with its exact pick cache
+                // STS_SILVER_PRIOR_PICK_CACHE), no timing hooks; records the cache's lookups and hits and the root
+                // edges' visit counts (bit-identity check against STS_SILVER_PRIOR_PICK_CACHE=0).
+                const bool production = arm == "argmax";
+                if (production) {
+                    s.rolloutPrior = search::nativeSilverPolicyPrior;
+                    s.rolloutPriorArgmax = search::nativeSilverPolicyArgmax;
+                    s.rolloutPriorArgmaxOf = search::nativeSilverPolicyPrior;
+                }
+                const auto cache0 = search::nativeSilverPriorPickCacheStats();
                 search::NativeSilverPriorTiming timing;
-                search::g_nativeSilverPriorTiming = rc.prior ? &timing : nullptr;
+                search::g_nativeSilverPriorTiming = rc.prior && !production ? &timing : nullptr;
                 search::SilverSearcher::GumbelRoot g;
                 g.k = 16;
                 const double c0 = cpuNow();
@@ -475,10 +485,18 @@ void rolloutPolicyBench(const std::string &prefix, std::int64_t budget, const st
                 res["playoutActions"] = s.stats.rolloutActions;
                 res["playouts"] = s.stats.rolloutPlayouts;
                 res["edge"] = edge;
-                if (rc.prior)
+                if (production) {
+                    const auto cache1 = search::nativeSilverPriorPickCacheStats();
+                    res["cacheLookups"] = cache1.lookups - cache0.lookups;
+                    res["cacheHits"] = cache1.hits - cache0.hits;
+                    std::vector<std::int32_t> visits;
+                    for (const auto &e : s.rootNode().edges) visits.push_back(e.visitCount);
+                    res["rootVisits"] = visits;
+                } else if (rc.prior)
                     res["timing"] = {{"featureSeconds", timing.featureSeconds}, {"mlpSeconds", timing.mlpSeconds},
                                      {"calls", timing.calls}, {"edges", timing.edges}};
             } catch (const std::exception &e) {
+                search::g_nativeSilverPriorTiming = nullptr;
                 res["error"] = e.what();
             }
             out << res.dump() << '\n';
