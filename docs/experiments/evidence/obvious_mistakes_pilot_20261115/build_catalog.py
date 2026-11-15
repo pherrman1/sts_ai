@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Issue #1056 pilot: pick the top 50 flagged decisions from analyze.py's output and render the first catalogue.
+"""Issue #1056 pilot: pick the top flagged decisions (50 planned, 58 with all 20 games) from analyze.py's output and render the first catalogue.
 
     python3 -I build_catalog.py REP LAD SRC OUT_DIR NOTES_JSON
 
@@ -9,7 +9,7 @@ hand while reading the cases. Cases without a note keep the rule category below 
 
 Selection (fixed before reading the cases, so the catalogue is not cherry-picked):
   D  every fight that ended the run (14)
-  R  every combat root where the played 16k tree's own max-backed Q prefers the fresh 64k pick by >= 1 (11)
+  R  every combat root where the played 16k tree's own max-backed Q prefers the fresh 64k pick by >= 1 (11 in the first 16 games, 19 in all 20)
   F  the 6 won fights with the highest HP-loss z against the §782 G16 norm for the encounter (z >= 2.5)
   O  the 19 out-of-combat decisions with the largest critic drop after the decision, net of the mean drop of the same
      screen transition (dv_adj), at most 2 per game

@@ -27638,7 +27638,7 @@ critic. No default change. The binding and `critic_ceiling.py encounters` / `che
 as tools. Seeds: none. Cost ≈ 70 min PC CPU, no GPU, no cloud core-hours.
 **Knowledge impact:** KB `research/a20-ppo-plan.md` (V6 row and critic ceiling paragraph).
 
-## §TBD — Obvious-mistakes pilot (issue #1056): 20 of §782's G16 + mb4 games (6 Heart kills, 14 deaths) replayed bit-identically with PPO logits and critic at every out-of-combat decision and a fresh 64k Gumbel + mb4 search at every combat root (16 of 20 games so far), automatic flags, top 50 read by hand: Bug 2, misconception 20, defensible 17, open 11; mistakes are mostly actor-critic disagreements out of combat (Corruption, runic boss relics, smith before the Act-1 boss, elites at <= 50 % HP), one search-design bug (Gumbel candidates ignore inherited visits) → DESCRIPTIVE (cloud, 2026-11-15)
+## §TBD — Obvious-mistakes pilot (issue #1056): 20 of §782's G16 + mb4 games (6 Heart kills, 14 deaths) replayed bit-identically with PPO logits and critic at every out-of-combat decision and a fresh 64k Gumbel + mb4 search at every combat root, automatic flags, top 58 read by hand: Bug 2, misconception 20, defensible 25, open 11; mistakes are mostly actor-critic disagreements out of combat (Corruption, runic boss relics, smith before the Act-1 boss, elites at <= 50 % HP), one search-design bug (Gumbel candidates ignore inherited visits) → DESCRIPTIVE (cloud, 2026-11-15)
 
 **Question (issue #1056, Philipp 2026-11-15 17:08 CET "Öffne ein Thread pro Issue ... und arbeite das jeweils ab"):**
 which decisions in today's strongest games look like obvious mistakes, and are they bugs, misconceptions or
@@ -27650,14 +27650,14 @@ defensible? Pilot on about 20 games, first catalogue of the top 50.
 the project share (`obvious-mistakes-1056/`).
 **Result:**
 - Reproduction: 20/20 pass-1 traces identical to §782's. No abort, no 20-turn fight.
-- Flags: 292 out-of-combat critic drops >= 0.02, 43 costly or fatal fights, 65 death-chain decisions. Of 6,897 combat
-  roots with a 64k search the 64k pick differs at 2,618 (38 %), but the played 16k tree's own max-backed Q prefers the
-  64k pick by >= 1 point at only 11.
-- Top 50 (14 run-ending fights, 11 such roots, 6 costly won fights, 19 largest transition-adjusted critic drops):
-  Bug 2, Fehlvorstellung 20, vertretbar 17, offen 11.
+- Flags: 292 out-of-combat critic drops >= 0.02, 43 costly or fatal fights, 65 death-chain decisions. Of 11,106 combat
+  roots with a 64k search the 64k pick differs at 4,501 (41 %), but the played 16k tree's own max-backed Q prefers the
+  64k pick by >= 1 point at only 19.
+- Top 58 (14 run-ending fights, 19 such roots, 6 costly won fights, 19 largest transition-adjusted critic drops):
+  Bug 2, Fehlvorstellung 20, vertretbar 25, offen 11.
 - Bugs: (1) at an Exhume choice with 19 legal options (k 16) the inherited best edge (Feed, 8,234 visits, max-backed
   Q 158 vs 149) is not among the Gumbel candidates, which are drawn from noise and prior only; the only such case with
-  a gap >= 1 in 7,447 roots. (2) Match and Keep: all 12 options get identical PPO logits.
+  a gap >= 1 in 11,837 roots. (2) Match and Keep: all 12 options get identical PPO logits.
 - Patterns: the net smiths at the F15 campfire at 59-81 % HP (8 cases, 2 boss deaths, the rest lose 14-33 HP) and
   rests at <= 60 %; 8 elites entered at <= 50 % HP; Corruption takes lower the critic by 0.039 on average (n 15; all
   card takes +0.000, n 386); runic boss relics lower it by about 0.05 (others +0.01), taken in 9 of 30 boss-relic
@@ -27665,10 +27665,10 @@ the project share (`obvious-mistakes-1056/`).
   screen-invariant (same state, REWARDS -> CARD_SELECT -0.038) and not bounded to [0, 1].
 **Interpretation (Inference):** the flagged mistakes are mostly out of combat and are disagreements between the PPO
 actor and its own critic, not engine bugs; which head is right needs paired probes. Combat search rarely leaves a
-better move by its own values; 10 of 11 such roots are sequential-halving noise (the higher Q sits on an edge
+better move by its own values; 18 of 19 such roots are sequential-halving noise (the higher Q sits on an edge
 eliminated early with fewer visits). With 20 games all frequencies are hints.
 **Decision:** DESCRIPTIVE. No default change. Follow-ups for Philipp: paired REST vs. SMITH probe at the Act-1 boss
 campfire; issues for the Gumbel candidate set with inherited visits and for the Match and Keep encoding; paired probes
 for Runic Dome and Corruption; more games once the probes show which flags carry signal.
-Seeds: none new (§775's block reused). Cost: about 15.5 core-hours in the thread's container.
+Seeds: none new (§775's block reused). Cost: about 14 core-hours in the thread's container.
 **Knowledge impact:** KB `research/a20-loss-mining.md` (section "Obvious-mistakes pilot").

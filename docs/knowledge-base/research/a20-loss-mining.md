@@ -229,13 +229,13 @@ pairs ≈ 470 core-h, MDE ≈ 3.5 pp; 4,096 pairs ≈ 1,880 core-h).
 ## Obvious-mistakes pilot (2026-11-15, issue #1056, §TBD)
 
 20 of §782's G16 + mb4 games replayed with PPO logits and critic at every out-of-combat decision and a fresh 64k search
-at every combat root ([evidence](../../experiments/evidence/obvious_mistakes_pilot_20261115/RESULT.md)). Top 50 flags
-read by hand: Bug 2, misconception 20, defensible 17, open 11. The flagged mistakes are mostly out of combat and are
+at every combat root ([evidence](../../experiments/evidence/obvious_mistakes_pilot_20261115/RESULT.md)). Top 58 flags
+read by hand: Bug 2, misconception 20, defensible 25, open 11. The flagged mistakes are mostly out of combat and are
 disagreements between the PPO actor and its own critic: Corruption takes (critic -0.039 on average), runic boss relics
 (-0.05), smith instead of rest before the Act-1 boss at 59-81 % HP, elites at <= 50 % HP. Combat search leaves a move
-its own tree rates >= 1 point better at 11 of 6,897 roots, 10 of them sequential-halving noise; the eleventh is a
+its own tree rates >= 1 point better at 19 of 11,106 roots, 18 of them sequential-halving noise; the last is a
 design gap (Gumbel candidates ignore inherited visits when legal actions > k). "Differs from a 64k search" alone is no
-mistake signal (38 % of roots, almost all order-equivalent). The critic is not screen-invariant and not bounded, so
+mistake signal (41 % of roots, almost all order-equivalent). The critic is not screen-invariant and not bounded, so
 critic drops need a transition baseline. Open: paired probes for each pattern.
 
 ## Open questions

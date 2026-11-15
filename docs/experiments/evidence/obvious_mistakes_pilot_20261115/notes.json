@@ -1,52 +1,234 @@
 {
-"D-111378476-F56-THE_HEART": {"cat": "misconception", "note": "Runic Dome (Absichten verborgen). Im Echo-Zug T2 stehen bei 66 HP, Frail und Vulnerable alle Linien des 16k-Baums bei qBacked um 7, die Stellung ist also schon schlecht; der Zug selbst (Shrug, 2 Defend, Second Wind+) ist der defensivste. Hypothese: der Fehler liegt außerhalb des Kampfes in der Wahl von Runic Dome (Dome auf F17 bei 29/75 HP mit p 1,00, dazu Runic Pyramid auf F34). Beide Herz-Tode der Stichprobe haben Runic Dome, die 4 Herz-Kämpfe ohne Dome wurden alle gewonnen (n = 8, nur ein Hinweis). Gepaarte Probe: dieselben Herz-Zustände mit und ohne Dome."},
-"D-111378633-F56-THE_HEART": {"cat": "open", "note": "Runic Dome und Snecko Eye. Critic schon vor dem Kampf bei -0,02. Im Echo-Zug T2 (88 HP) spielt die Suche Power Through und zwei Anger und lässt zwei Defend zu Kosten 0 liegen; wegen Beat of Death (2 Schaden je Karte) und Frail bringt ein Defend netto nur etwa 2 HP, also kein klarer Fehler. 61 HP verloren gegen verborgenes Echo. Wie D-111378476: Dome-Hypothese, keine Einzelzug-Erklärung."},
-"D-111378699-F16-SLIME_BOSS": {"cat": "misconception", "note": "Hypothese außerhalb des Kampfes: auf F15 bei 59/80 HP Smith (Armaments) statt Rest. Im Kampf sind alle Kandidaten fast gleich (qBacked 19,4 bis 20,2), Slam kostet 33 HP, das Deck mit 18 Karten hat kaum Block. Teil des Musters Smith vor dem Akt-1-Boss bei mittleren HP (siehe RESULT)."},
-"D-111378773-F13-GREMLIN_NOB": {"cat": "misconception", "note": "T2 gegen Rush (27 Schaden auf Vulnerable): die Suche trinkt Speed Potion (+5 Dex in diesem Zug) und spielt danach Bash und Strike, aber kein Defend; der Trank verpufft. Im 16k-Baum liegt Trinken (44,9) praktisch gleich mit Bash (44,7), die 64k-Suche wählt Strike. Nob stirbt nicht, der Lauf endet einen Zug später mit Nob bei etwa 6 HP. Fehlvorstellung der Suche über den Trankwert (Trank ohne Wirkung getrunken), vor einer gepaarten Probe nur Hypothese."},
-"D-111378882-F50-TIME_EATER": {"cat": "misconception", "note": "80/80 in vier Zügen tot, Time Eater nur von 480 auf 367. Kein einzelner Zug: im 16k-Baum liegen die Linien nah beieinander (10,1 / 10,2 / 8,1). Hypothese: das Deck (36 Karten, Corruption+ und zwei Reaper spät genommen, Critic fiel bei Corruption+ um 0,175, siehe O-111378882-104) hat zu wenig Schaden pro Zug für Time Eater. Fehlvorstellung im Deckbau des Actors."},
-"D-111378911-F45-REPTOMANCER": {"cat": "open", "note": "93/96 HP, nach zwei Zügen tot. T1 kommen etwa 100 Schaden (zwei explodierende Dolche, Snake Strike, zwei Stiche); Snecko Eye macht Defend+ teuer (3), maximal 8 Block. Alle Linien des 16k-Baums bei qBacked unter 2: die Stellung war vor T1 verloren. In T0 hätte man die beiden alten Dolche (22 und 20 HP) nicht töten können. Hebel liegt im Deck (Snecko Eye, zweites Corruption auf F44 mit p 1,00) oder im Elite-Pfad, nicht in einem Zug."},
-"D-111378951-F55-SHIELD_AND_SPEAR": {"cat": "open", "note": "75/80, zwei Züge. T0 alle vier Tränke (Entropic Brew, Power Potion für Demon Form, Energy, Fire) in einem Zug; T1 Hand Burn, Burn, Strike, Demon Form, Corruption: kein Block möglich, 38 HP verloren. Zieh-Pech plus Alles-auf-T0. 64k hätte in T0 Demon Form statt Shrug gespielt (R-111378951-F55-T0-d9, kleine Lücke 1,9). Nicht ohne Probe entscheidbar."},
-"D-111379064-F40-GIANT_HEAD": {"cat": "open", "note": "89/89, sieben Züge, Giant Head bei 82/520. Schadensrennen gegen It Is Time verloren. Lizard Tail war schon auf F25 (Slavers) verbraucht, also kein Engine-Fehler. Viele 64k-Abweichungen (21 von 52 Wurzeln), aber die 16k-Bäume bevorzugen fast immer die gespielte Linie. Offen; Kandidat für eine gepaarte Probe mit mehr Suche."},
-"D-111379098-F24-SLAVERS": {"cat": "open", "note": "62/68, vier Züge. T0 beide Tränke (Dex, Liquid Bronze), trotzdem 24 HP verloren; danach Wunden vom Taskmaster und kaum Block. Der 16k-Baum bevorzugt Dex zuerst (21,4) vor Liquid Bronze (13,2). Kein klarer Einzelfehler."},
-"D-111379099-F16-HEXAGHOST": {"cat": "misconception", "note": "Hypothese außerhalb des Kampfes: bei 44/75 HP vor dem Boss Smith (Blood for Blood) statt Rest; dazu Orrery mit 4 von 5 Karten (Deck 20). Im Kampf verliert Inferno die letzten HP (19 auf 6 auf 0). Teil des Musters Smith vor dem Akt-1-Boss."},
-"D-111379130-F27-COLOSSEUM_EVENT_SLAVERS": {"cat": "misconception", "note": "Mit 8/89 HP in den Colosseum-Kampf: tot im ersten Zug. Der Fehler liegt davor: Gremlin-Leader-Elite bei 18/89 (p 0,59, danach 8 HP) und dann der ?-Raum. Fehlvorstellung des Actors über Risiko bei niedrigen HP (Muster Elite bei <= 50 % HP, siehe RESULT)."},
-"D-111379193-F51-AWAKENED_ONE": {"cat": "open", "note": "Knapp verloren: Awakened One stand bei 2/320, als der Spieler starb. Kein auffälliger Zug; Grenzfall der Kampfsuche. Kandidat für eine gepaarte Probe mit 64k im ganzen Kampf."},
-"D-111379236-F31-SNAKE_PLANT": {"cat": "misconception", "note": "Normaler Kampf mit 17/86 HP: tot. Davor Elite-Route in Akt 2 bei 56/84, Gremlin Leader, dann Raum für Raum ohne Rast. Deck voller Powers (Demon Form x2, Dark Embrace x3). Fehlvorstellung des Actors über Risiko und Deckbau."},
-"D-111379246-F20-SHELLED_PARASITE_AND_FUNGI": {"cat": "open", "note": "30/75 HP auf F20. T0 Power Through, Fear Potion, Perfected Strike, 12 HP verloren; T1 (18 HP) Bash statt Shockwave+ (16k-Baum: Bash 39,9 gegen Shockwave+ 26,9), 17 HP verloren; T2 Elixir. Mit 30 HP war der Kampf eng; kein eindeutiger Einzelfehler."},
-"R-111378476-F55-T5-d63": {"cat": "bug", "note": "Exhume-Wahl mit 19 legalen Optionen bei k = 16. Feed hat aus dem wiederverwendeten Baum 8.234 Besuche und das höchste qBacked (158 gegen 149), wird aber nicht gespielt: Gumbel zieht die 16 Kandidaten nur aus Rauschen und Prior (fast gleich verteilt) und lässt hier Feed draußen, obwohl der geerbte Baum es klar vorzieht. Einziger solcher Fall mit Lücke >= 1 in 7.447 Wurzeln (19 Wurzeln mit geerbtem, nicht gespieltem Besuchsmaximum, alle anderen mit Lücke unter 0). Such-Design-Fehler: die Kandidatenwahl ignoriert geerbte Evidenz. Kosten hier: Feed-Max-HP vor dem Herz (Tod auf F56)."},
-"R-111378633-F51-T3-d16": {"cat": "defensible", "note": "21 legale Optionen; die 64k-Wahl Anger -> m1 hat nur 258 Besuche, ihr hohes qBacked (125 gegen 118) ist ein Max-Backup-Wert einer dünnen Kante und damit optimistisch. Kein belastbarer Fehler."},
-"R-111378951-F55-T0-d9": {"cat": "defensible", "note": "Sequential Halving hat Demon Form mit 2.000 Besuchen in einer frühen Runde aussortiert; sein höheres qBacked (46,0 gegen 44,0) ruht auf halb so vielen Besuchen. Normales Rauschen der Endauswahl."},
-"R-111378911-F42-T4-d21": {"cat": "defensible", "note": "Battle Trance+ mit 666 Besuchen früh ausgeschieden, qBacked 141 gegen 138 auf dünner Basis. Kampf gewonnen mit HP-Gewinn."},
-"R-111378882-F40-T1-d11": {"cat": "defensible", "note": "Reaper mit 888 Besuchen früh ausgeschieden (122,5 gegen 119,5). Kampf ohne HP-Verlust gewonnen."},
-"R-111378335-F12-T0-d2": {"cat": "defensible", "note": "Lagavulin schläft, 1 Energie übrig: Zug beenden oder Energy Potion trinken. Der Trank hat 2.449 Besuche gegen 8.942; beide Wege sind vertretbar."},
-"R-111378911-F27-T1-d5": {"cat": "defensible", "note": "Reihenfolge Reckless Charge vs. Bludgeon in einem Zug, in dem beide gespielt werden; Lücke 2 auf 1.857 Besuchen."},
-"R-111378335-F44-T3-d13": {"cat": "defensible", "note": "Metallicize vs. Clothesline+ gegen It Is Time bei 101/101; Clothesline+ mit 1.030 Besuchen früh ausgeschieden, Lücke 1,4."},
-"R-111378476-F51-T3-d25": {"cat": "defensible", "note": "Dark Shackles vs. Inflame+ zuerst; beide werden im Zug gespielt, Lücke 2 auf 2.095 Besuchen."},
-"R-111378476-F35-T2-d16": {"cat": "defensible", "note": "Reihenfolge von Angriffen gegen Darklings, Lücke 1,3."},
-"R-111378911-F42-T3-d10": {"cat": "defensible", "note": "Power Through+ vs. Infernal Blade zuerst, beide werden gespielt; Lücke 1,1."},
-"F-111378773-F7-EXORDIUM_WILDLIFE": {"cat": "open", "note": "73 -> 43 HP gegen Jaw Worm und Acid Slime (Norm 1,7 +- 7,9) mit ungenutzter Essence of Steel; der 16k-Baum bewertet Trinken niedriger (102,5 gegen 106,7). Hypothese: die Suche hortet Tränke; 30 HP fehlen sechs Etagen später beim tödlichen Nob."},
-"F-111378699-F7-LAGAVULIN": {"cat": "defensible", "note": "Lagavulin auf F7 mit Startdeck (13 Karten) kostet viel; Fairy Potion kann man nicht trinken. Die Wahl der Elite bei 75/80 ist vertretbar, der Kampf selbst ohne auffälligen Zug."},
-"F-111379035-F24-SLAVERS": {"cat": "open", "note": "67 -> 8 HP, keine Tränke; Lauf trotzdem mit Herz-Sieg beendet. Pass 2 (64k) für dieses Spiel lief bei Redaktionsschluss noch."},
-"F-111378476-F22-SNECKO": {"cat": "defensible", "note": "Snecko (Confuse) auf F22, 25 HP verloren; Strike vs. Bash zuerst ist ein Gleichstand (126,6 / 126,6)."},
-"F-111378486-F2-CULTIST": {"cat": "defensible", "note": "Nur 7 HP verloren; z ist hoch, weil die Norm wegen Burning Blood negativ ist (-3 +- 3,4). Kein Fehler."},
-"F-111378335-F44-GIANT_HEAD": {"cat": "defensible", "note": "101 -> 58 gegen Giant Head, gewonnen, Lauf endet mit Herz-Sieg. Fairy Potion nicht trinkbar."},
-"O-111378882-104": {"cat": "misconception", "note": "Actor nimmt Corruption+ (p 0,79) gegen Reaper (0,19); Critic fällt um 0,175. Muster: über 20 Spiele fällt der Critic nach jeder der 15 Corruption-Wahlen im Mittel um 0,039, bei allen anderen Karten um 0,000 (n 386). Actor und Critic sind sich über Corruption uneinig; welcher Kopf recht hat, zeigt nur eine gepaarte Probe."},
-"O-111378882-52": {"cat": "defensible", "note": "Reaper genommen, Critic -0,15. Reaper ist im Mittel kein Muster (+0,006 über 10 Wahlen); Einzelausreißer vor dem Boss-Relikt-Bildschirm."},
-"O-111378303-116": {"cat": "misconception", "note": "Runic Cube (p 1,00) statt Astrolabe; Critic -0,149. Muster: Runic-Relikte (Dome, Pyramid, Cube) senken den Critic im Mittel um 0,05, andere Boss-Relikte heben ihn um etwa 0,01; der Actor nimmt Runic in 9 von 30 Boss-Relikt-Wahlen."},
-"O-111379170-100": {"cat": "misconception", "note": "Corruption (p 1,00), Critic -0,127; Corruption-Muster wie O-111378882-104."},
-"O-111379064-123": {"cat": "misconception", "note": "Falling: Shockwave verlieren (p 0,62) statt Barricade (0,31); Critic -0,13. Actor und Critic uneinig; Lauf stirbt auf F40."},
-"O-111378335-110": {"cat": "misconception", "note": "Duplicator: Duplizieren (p 1,00) senkt den Critic um 0,12, bevor überhaupt eine Karte gewählt ist. Duplizieren ist fast nie schlecht; vermutlich ein Critic-Artefakt auf diesem seltenen Bildschirm (Fehlvorstellung des Critic)."},
-"O-111378633-110": {"cat": "open", "note": "Shop: Entfernen (p 0,48) knapp vor Red Skull (0,42), Critic -0,11 (bereinigt). Entfernen ist meist gut; Critic oder Actor, nicht entscheidbar."},
-"O-111378335-50": {"cat": "misconception", "note": "Runic Pyramid (p 0,71) statt Coffee Dripper bei 46/89 HP; Critic -0,117. Runic-Muster wie O-111378303-116."},
-"O-111378303-57": {"cat": "misconception", "note": "Runic Dome (p 0,53) gegen Runic Pyramid (0,47); Critic -0,115. Runic-Muster."},
-"O-111379193-74": {"cat": "misconception", "note": "Dark Embrace (p 0,71) statt Battle Trance; Critic -0,10. Dark Embrace ist im Mittel -0,013 über 13 Wahlen; das Deck sammelt Powers."},
-"O-111378486-101": {"cat": "misconception", "note": "Shop-Entfernung: Combust (p 0,39) statt Cleave; Critic -0,12. Hypothese: der Actor entfernt eine gute Karte."},
-"O-111378486-98": {"cat": "defensible", "note": "Pfad zum Shop mit 641 Gold (p 1,00); der Critic fällt erst, als er das zufällige Shop-Angebot sieht. Zufall, kein Fehler."},
-"O-111379170-106": {"cat": "open", "note": "Shop: Entfernen (p 0,36) vor Blessing of the Forge (0,35); Critic -0,09 bereinigt. Wie O-111378633-110."},
-"O-111378633-148": {"cat": "misconception", "note": "Snecko Oil auf F54 gekauft; Critic von 0,06 auf -0,04, also außerhalb von [0, 1]. Der Critic ist auf dieser Skala nicht beschränkt (auch Werte über 1,1 kommen vor); Fehlvorstellung des Critic, nicht unbedingt des Kaufs."},
-"O-111379064-51": {"cat": "misconception", "note": "Corruption (p 0,99), Critic -0,09; Corruption-Muster."},
-"O-111378951-150": {"cat": "misconception", "note": "Sentinel (p 0,49) statt Blood for Blood+ (0,28); Critic -0,087; Sentinel im Mittel -0,035 (n 3)."},
-"O-111378911-105": {"cat": "bug", "note": "Match and Keep: alle 12 Optionen haben exakt gleiche Logits (p 0,083 je). Die Policy kann die Karten offenbar nicht unterscheiden; Kandidat für einen Beobachtungs-Fehler (Karteninhalt nicht kodiert). Die Optionsnamen in dieser Zeile stammen aus dem Pilot-Renderer und sind für dieses Event falsch. Vor einer Prüfung der Kodierung nur Hypothese."},
-"O-111378951-115": {"cat": "misconception", "note": "Clockwork Souvenir gekauft (p 0,91); Critic -0,08 bereinigt. Actor und Critic uneinig."},
-"O-111379098-49": {"cat": "defensible", "note": "Reaper bei 34/68 vor dem Boss-Relikt; Critic -0,08. Reaper ist im Mittel kein Muster."}
+ "D-111378476-F56-THE_HEART": {
+  "cat": "misconception",
+  "note": "Runic Dome (Absichten verborgen). Im Echo-Zug T2 stehen bei 66 HP, Frail und Vulnerable alle Linien des 16k-Baums bei qBacked um 7, die Stellung ist also schon schlecht; der Zug selbst (Shrug, 2 Defend, Second Wind+) ist der defensivste. Hypothese: der Fehler liegt außerhalb des Kampfes in der Wahl von Runic Dome (Dome auf F17 bei 29/75 HP mit p 1,00, dazu Runic Pyramid auf F34). Beide Herz-Tode der Stichprobe haben Runic Dome, die 4 Herz-Kämpfe ohne Dome wurden alle gewonnen (n = 8, nur ein Hinweis). Gepaarte Probe: dieselben Herz-Zustände mit und ohne Dome."
+ },
+ "D-111378633-F56-THE_HEART": {
+  "cat": "open",
+  "note": "Runic Dome und Snecko Eye. Critic schon vor dem Kampf bei -0,02. Im Echo-Zug T2 (88 HP) spielt die Suche Power Through und zwei Anger und lässt zwei Defend zu Kosten 0 liegen; wegen Beat of Death (2 Schaden je Karte) und Frail bringt ein Defend netto nur etwa 2 HP, also kein klarer Fehler. 61 HP verloren gegen verborgenes Echo. Wie D-111378476: Dome-Hypothese, keine Einzelzug-Erklärung."
+ },
+ "D-111378699-F16-SLIME_BOSS": {
+  "cat": "misconception",
+  "note": "Hypothese außerhalb des Kampfes: auf F15 bei 59/80 HP Smith (Armaments) statt Rest. Im Kampf sind alle Kandidaten fast gleich (qBacked 19,4 bis 20,2), Slam kostet 33 HP, das Deck mit 18 Karten hat kaum Block. Teil des Musters Smith vor dem Akt-1-Boss bei mittleren HP (siehe RESULT)."
+ },
+ "D-111378773-F13-GREMLIN_NOB": {
+  "cat": "misconception",
+  "note": "T2 gegen Rush (27 Schaden auf Vulnerable): die Suche trinkt Speed Potion (+5 Dex in diesem Zug) und spielt danach Bash und Strike, aber kein Defend; der Trank verpufft. Im 16k-Baum liegt Trinken (44,9) praktisch gleich mit Bash (44,7), die 64k-Suche wählt Strike. Nob stirbt nicht, der Lauf endet einen Zug später mit Nob bei etwa 6 HP. Fehlvorstellung der Suche über den Trankwert (Trank ohne Wirkung getrunken), vor einer gepaarten Probe nur Hypothese."
+ },
+ "D-111378882-F50-TIME_EATER": {
+  "cat": "misconception",
+  "note": "80/80 in vier Zügen tot, Time Eater nur von 480 auf 367. Kein einzelner Zug: im 16k-Baum liegen die Linien nah beieinander (10,1 / 10,2 / 8,1). Hypothese: das Deck (36 Karten, Corruption+ und zwei Reaper spät genommen, Critic fiel bei Corruption+ um 0,175, siehe O-111378882-104) hat zu wenig Schaden pro Zug für Time Eater. Fehlvorstellung im Deckbau des Actors."
+ },
+ "D-111378911-F45-REPTOMANCER": {
+  "cat": "open",
+  "note": "93/96 HP, nach zwei Zügen tot. T1 kommen etwa 100 Schaden (zwei explodierende Dolche, Snake Strike, zwei Stiche); Snecko Eye macht Defend+ teuer (3), maximal 8 Block. Alle Linien des 16k-Baums bei qBacked unter 2: die Stellung war vor T1 verloren. In T0 hätte man die beiden alten Dolche (22 und 20 HP) nicht töten können. Hebel liegt im Deck (Snecko Eye, zweites Corruption auf F44 mit p 1,00) oder im Elite-Pfad, nicht in einem Zug."
+ },
+ "D-111378951-F55-SHIELD_AND_SPEAR": {
+  "cat": "open",
+  "note": "75/80, zwei Züge. T0 alle vier Tränke (Entropic Brew, Power Potion für Demon Form, Energy, Fire) in einem Zug; T1 Hand Burn, Burn, Strike, Demon Form, Corruption: kein Block möglich, 38 HP verloren. Zieh-Pech plus Alles-auf-T0. 64k hätte in T0 Demon Form statt Shrug gespielt (R-111378951-F55-T0-d9, kleine Lücke 1,9). Nicht ohne Probe entscheidbar."
+ },
+ "D-111379064-F40-GIANT_HEAD": {
+  "cat": "open",
+  "note": "89/89, sieben Züge, Giant Head bei 82/520. Schadensrennen gegen It Is Time verloren. Lizard Tail war schon auf F25 (Slavers) verbraucht, also kein Engine-Fehler. Viele 64k-Abweichungen (21 von 52 Wurzeln), aber die 16k-Bäume bevorzugen fast immer die gespielte Linie. Offen; Kandidat für eine gepaarte Probe mit mehr Suche."
+ },
+ "D-111379098-F24-SLAVERS": {
+  "cat": "open",
+  "note": "62/68, vier Züge. T0 beide Tränke (Dex, Liquid Bronze), trotzdem 24 HP verloren; danach Wunden vom Taskmaster und kaum Block. Der 16k-Baum bevorzugt Dex zuerst (21,4) vor Liquid Bronze (13,2). Kein klarer Einzelfehler."
+ },
+ "D-111379099-F16-HEXAGHOST": {
+  "cat": "misconception",
+  "note": "Hypothese außerhalb des Kampfes: bei 44/75 HP vor dem Boss Smith (Blood for Blood) statt Rest; dazu Orrery mit 4 von 5 Karten (Deck 20). Im Kampf verliert Inferno die letzten HP (19 auf 6 auf 0). Teil des Musters Smith vor dem Akt-1-Boss."
+ },
+ "D-111379130-F27-COLOSSEUM_EVENT_SLAVERS": {
+  "cat": "misconception",
+  "note": "Mit 8/89 HP in den Colosseum-Kampf: tot im ersten Zug. Der Fehler liegt davor: Gremlin-Leader-Elite bei 18/89 (p 0,59, danach 8 HP) und dann der ?-Raum. Fehlvorstellung des Actors über Risiko bei niedrigen HP (Muster Elite bei <= 50 % HP, siehe RESULT)."
+ },
+ "D-111379193-F51-AWAKENED_ONE": {
+  "cat": "open",
+  "note": "Knapp verloren: Awakened One stand bei 2/320, als der Spieler starb. Kein auffälliger Zug; Grenzfall der Kampfsuche. Kandidat für eine gepaarte Probe mit 64k im ganzen Kampf."
+ },
+ "D-111379236-F31-SNAKE_PLANT": {
+  "cat": "misconception",
+  "note": "Normaler Kampf mit 17/86 HP: tot. Davor Elite-Route in Akt 2 bei 56/84, Gremlin Leader, dann Raum für Raum ohne Rast. Deck voller Powers (Demon Form x2, Dark Embrace x3). Fehlvorstellung des Actors über Risiko und Deckbau."
+ },
+ "D-111379246-F20-SHELLED_PARASITE_AND_FUNGI": {
+  "cat": "open",
+  "note": "30/75 HP auf F20. T0 Power Through, Fear Potion, Perfected Strike, 12 HP verloren; T1 (18 HP) Bash statt Shockwave+ (16k-Baum: Bash 39,9 gegen Shockwave+ 26,9), 17 HP verloren; T2 Elixir. Mit 30 HP war der Kampf eng; kein eindeutiger Einzelfehler."
+ },
+ "R-111378476-F55-T5-d63": {
+  "cat": "bug",
+  "note": "Exhume-Wahl mit 19 legalen Optionen bei k = 16. Feed hat aus dem wiederverwendeten Baum 8.234 Besuche und das höchste qBacked (158 gegen 149), wird aber nicht gespielt: Gumbel zieht die 16 Kandidaten nur aus Rauschen und Prior (fast gleich verteilt) und lässt hier Feed draußen, obwohl der geerbte Baum es klar vorzieht. Einziger solcher Fall mit Lücke >= 1 in 7.447 Wurzeln (19 Wurzeln mit geerbtem, nicht gespieltem Besuchsmaximum, alle anderen mit Lücke unter 0). Such-Design-Fehler: die Kandidatenwahl ignoriert geerbte Evidenz. Kosten hier: Feed-Max-HP vor dem Herz (Tod auf F56)."
+ },
+ "R-111378633-F51-T3-d16": {
+  "cat": "defensible",
+  "note": "21 legale Optionen; die 64k-Wahl Anger -> m1 hat nur 258 Besuche, ihr hohes qBacked (125 gegen 118) ist ein Max-Backup-Wert einer dünnen Kante und damit optimistisch. Kein belastbarer Fehler."
+ },
+ "R-111378951-F55-T0-d9": {
+  "cat": "defensible",
+  "note": "Sequential Halving hat Demon Form mit 2.000 Besuchen in einer frühen Runde aussortiert; sein höheres qBacked (46,0 gegen 44,0) ruht auf halb so vielen Besuchen. Normales Rauschen der Endauswahl."
+ },
+ "R-111378911-F42-T4-d21": {
+  "cat": "defensible",
+  "note": "Battle Trance+ mit 666 Besuchen früh ausgeschieden, qBacked 141 gegen 138 auf dünner Basis. Kampf gewonnen mit HP-Gewinn."
+ },
+ "R-111378882-F40-T1-d11": {
+  "cat": "defensible",
+  "note": "Reaper mit 888 Besuchen früh ausgeschieden (122,5 gegen 119,5). Kampf ohne HP-Verlust gewonnen."
+ },
+ "R-111378335-F12-T0-d2": {
+  "cat": "defensible",
+  "note": "Lagavulin schläft, 1 Energie übrig: Zug beenden oder Energy Potion trinken. Der Trank hat 2.449 Besuche gegen 8.942; beide Wege sind vertretbar."
+ },
+ "R-111378911-F27-T1-d5": {
+  "cat": "defensible",
+  "note": "Reihenfolge Reckless Charge vs. Bludgeon in einem Zug, in dem beide gespielt werden; Lücke 2 auf 1.857 Besuchen."
+ },
+ "R-111378335-F44-T3-d13": {
+  "cat": "defensible",
+  "note": "Metallicize vs. Clothesline+ gegen It Is Time bei 101/101; Clothesline+ mit 1.030 Besuchen früh ausgeschieden, Lücke 1,4."
+ },
+ "R-111378476-F51-T3-d25": {
+  "cat": "defensible",
+  "note": "Dark Shackles vs. Inflame+ zuerst; beide werden im Zug gespielt, Lücke 2 auf 2.095 Besuchen."
+ },
+ "R-111378476-F35-T2-d16": {
+  "cat": "defensible",
+  "note": "Reihenfolge von Angriffen gegen Darklings, Lücke 1,3."
+ },
+ "R-111378911-F42-T3-d10": {
+  "cat": "defensible",
+  "note": "Power Through+ vs. Infernal Blade zuerst, beide werden gespielt; Lücke 1,1."
+ },
+ "F-111378773-F7-EXORDIUM_WILDLIFE": {
+  "cat": "open",
+  "note": "73 -> 43 HP gegen Jaw Worm und Acid Slime (Norm 1,7 +- 7,9) mit ungenutzter Essence of Steel; der 16k-Baum bewertet Trinken niedriger (102,5 gegen 106,7). Hypothese: die Suche hortet Tränke; 30 HP fehlen sechs Etagen später beim tödlichen Nob."
+ },
+ "F-111378699-F7-LAGAVULIN": {
+  "cat": "defensible",
+  "note": "Lagavulin auf F7 mit Startdeck (13 Karten) kostet viel; Fairy Potion kann man nicht trinken. Die Wahl der Elite bei 75/80 ist vertretbar, der Kampf selbst ohne auffälligen Zug."
+ },
+ "F-111379035-F24-SLAVERS": {
+  "cat": "open",
+  "note": "67 -> 8 HP ohne Tränke, Lauf endet trotzdem mit Herz-Sieg. Teuerster Zug T1 (21 HP): Inflame, Headbutt, zwei Strikes gegen drei Slavers; alle Linien des 16k-Baums liegen bei qBacked 11-14, die Stellung war schon eng. Kein eindeutiger Einzelfehler."
+ },
+ "F-111378476-F22-SNECKO": {
+  "cat": "defensible",
+  "note": "Snecko (Confuse) auf F22, 25 HP verloren; Strike vs. Bash zuerst ist ein Gleichstand (126,6 / 126,6)."
+ },
+ "F-111378486-F2-CULTIST": {
+  "cat": "defensible",
+  "note": "Nur 7 HP verloren; z ist hoch, weil die Norm wegen Burning Blood negativ ist (-3 +- 3,4). Kein Fehler."
+ },
+ "F-111378335-F44-GIANT_HEAD": {
+  "cat": "defensible",
+  "note": "101 -> 58 gegen Giant Head, gewonnen, Lauf endet mit Herz-Sieg. Fairy Potion nicht trinkbar."
+ },
+ "O-111378882-104": {
+  "cat": "misconception",
+  "note": "Actor nimmt Corruption+ (p 0,79) gegen Reaper (0,19); Critic fällt um 0,175. Muster: über 20 Spiele fällt der Critic nach jeder der 15 Corruption-Wahlen im Mittel um 0,039, bei allen anderen Karten um 0,000 (n 386). Actor und Critic sind sich über Corruption uneinig; welcher Kopf recht hat, zeigt nur eine gepaarte Probe."
+ },
+ "O-111378882-52": {
+  "cat": "defensible",
+  "note": "Reaper genommen, Critic -0,15. Reaper ist im Mittel kein Muster (+0,006 über 10 Wahlen); Einzelausreißer vor dem Boss-Relikt-Bildschirm."
+ },
+ "O-111378303-116": {
+  "cat": "misconception",
+  "note": "Runic Cube (p 1,00) statt Astrolabe; Critic -0,149. Muster: Runic-Relikte (Dome, Pyramid, Cube) senken den Critic im Mittel um 0,05, andere Boss-Relikte heben ihn um etwa 0,01; der Actor nimmt Runic in 9 von 30 Boss-Relikt-Wahlen."
+ },
+ "O-111379170-100": {
+  "cat": "misconception",
+  "note": "Corruption (p 1,00), Critic -0,127; Corruption-Muster wie O-111378882-104."
+ },
+ "O-111379064-123": {
+  "cat": "misconception",
+  "note": "Falling: Shockwave verlieren (p 0,62) statt Barricade (0,31); Critic -0,13. Actor und Critic uneinig; Lauf stirbt auf F40."
+ },
+ "O-111378335-110": {
+  "cat": "misconception",
+  "note": "Duplicator: Duplizieren (p 1,00) senkt den Critic um 0,12, bevor überhaupt eine Karte gewählt ist. Duplizieren ist fast nie schlecht; vermutlich ein Critic-Artefakt auf diesem seltenen Bildschirm (Fehlvorstellung des Critic)."
+ },
+ "O-111378633-110": {
+  "cat": "open",
+  "note": "Shop: Entfernen (p 0,48) knapp vor Red Skull (0,42), Critic -0,11 (bereinigt). Entfernen ist meist gut; Critic oder Actor, nicht entscheidbar."
+ },
+ "O-111378335-50": {
+  "cat": "misconception",
+  "note": "Runic Pyramid (p 0,71) statt Coffee Dripper bei 46/89 HP; Critic -0,117. Runic-Muster wie O-111378303-116."
+ },
+ "O-111378303-57": {
+  "cat": "misconception",
+  "note": "Runic Dome (p 0,53) gegen Runic Pyramid (0,47); Critic -0,115. Runic-Muster."
+ },
+ "O-111379193-74": {
+  "cat": "misconception",
+  "note": "Dark Embrace (p 0,71) statt Battle Trance; Critic -0,10. Dark Embrace ist im Mittel -0,013 über 13 Wahlen; das Deck sammelt Powers."
+ },
+ "O-111378486-101": {
+  "cat": "misconception",
+  "note": "Shop-Entfernung: Combust (p 0,39) statt Cleave; Critic -0,12. Hypothese: der Actor entfernt eine gute Karte."
+ },
+ "O-111378486-98": {
+  "cat": "defensible",
+  "note": "Pfad zum Shop mit 641 Gold (p 1,00); der Critic fällt erst, als er das zufällige Shop-Angebot sieht. Zufall, kein Fehler."
+ },
+ "O-111379170-106": {
+  "cat": "open",
+  "note": "Shop: Entfernen (p 0,36) vor Blessing of the Forge (0,35); Critic -0,09 bereinigt. Wie O-111378633-110."
+ },
+ "O-111378633-148": {
+  "cat": "misconception",
+  "note": "Snecko Oil auf F54 gekauft; Critic von 0,06 auf -0,04, also außerhalb von [0, 1]. Der Critic ist auf dieser Skala nicht beschränkt (auch Werte über 1,1 kommen vor); Fehlvorstellung des Critic, nicht unbedingt des Kaufs."
+ },
+ "O-111379064-51": {
+  "cat": "misconception",
+  "note": "Corruption (p 0,99), Critic -0,09; Corruption-Muster."
+ },
+ "O-111378951-150": {
+  "cat": "misconception",
+  "note": "Sentinel (p 0,49) statt Blood for Blood+ (0,28); Critic -0,087; Sentinel im Mittel -0,035 (n 3)."
+ },
+ "O-111378911-105": {
+  "cat": "bug",
+  "note": "Match and Keep: alle 12 Optionen haben exakt gleiche Logits (p 0,083 je). Die Policy kann die Karten offenbar nicht unterscheiden; Kandidat für einen Beobachtungs-Fehler (Karteninhalt nicht kodiert). Die Optionsnamen in dieser Zeile stammen aus dem Pilot-Renderer und sind für dieses Event falsch. Vor einer Prüfung der Kodierung nur Hypothese."
+ },
+ "O-111378951-115": {
+  "cat": "misconception",
+  "note": "Clockwork Souvenir gekauft (p 0,91); Critic -0,08 bereinigt. Actor und Critic uneinig."
+ },
+ "O-111379098-49": {
+  "cat": "defensible",
+  "note": "Reaper bei 34/68 vor dem Boss-Relikt; Critic -0,08. Reaper ist im Mittel kein Muster."
+ },
+ "R-111379035-F39-T2-d17": {
+  "cat": "defensible",
+  "note": "Transient, Reckless Charge vs. Inflame+ zuerst (beide gespielt). Sequential Halving hat die 64k-Wahl früh mit weniger Besuchen aussortiert; ihr höheres qBacked ruht auf dünnerer Basis. Normales Rauschen der Endauswahl."
+ },
+ "R-111379035-F39-T4-d27": {
+  "cat": "defensible",
+  "note": "Transient, Headbutt vs. Spot Weakness zuerst (beide gespielt). Sequential Halving hat die 64k-Wahl früh mit weniger Besuchen aussortiert; ihr höheres qBacked ruht auf dünnerer Basis. Normales Rauschen der Endauswahl."
+ },
+ "R-111379067-F45-T1-d9": {
+  "cat": "defensible",
+  "note": "Reptomancer, Shockwave vs. Disarm zuerst (beide gespielt), 750 Besuche. Sequential Halving hat die 64k-Wahl früh mit weniger Besuchen aussortiert; ihr höheres qBacked ruht auf dünnerer Basis. Normales Rauschen der Endauswahl."
+ },
+ "R-111378486-F44-T1-d7": {
+  "cat": "defensible",
+  "note": "Nemesis, Secret Weapon+ vs. Entrench+ zuerst (beide gespielt). Sequential Halving hat die 64k-Wahl früh mit weniger Besuchen aussortiert; ihr höheres qBacked ruht auf dünnerer Basis. Normales Rauschen der Endauswahl."
+ },
+ "R-111379035-F45-T0-d2": {
+  "cat": "defensible",
+  "note": "Writhing Mass, Defend+ vs. Feel No Pain zuerst (beide gespielt). Sequential Halving hat die 64k-Wahl früh mit weniger Besuchen aussortiert; ihr höheres qBacked ruht auf dünnerer Basis. Normales Rauschen der Endauswahl."
+ },
+ "R-111379035-F39-T3-d22": {
+  "cat": "defensible",
+  "note": "Transient, Havoc+ vs. Defend+ zuerst. Sequential Halving hat die 64k-Wahl früh mit weniger Besuchen aussortiert; ihr höheres qBacked ruht auf dünnerer Basis. Normales Rauschen der Endauswahl."
+ },
+ "R-111379170-F42-T1-d24": {
+  "cat": "defensible",
+  "note": "Reptomancer, Madness vs. Dark Embrace zuerst (beide gespielt), 412 Besuche. Sequential Halving hat die 64k-Wahl früh mit weniger Besuchen aussortiert; ihr höheres qBacked ruht auf dünnerer Basis. Normales Rauschen der Endauswahl."
+ },
+ "R-111379035-F33-T1-d4": {
+  "cat": "defensible",
+  "note": "Collector, Reckless Charge vs. Swift Potion zuerst (beide gespielt), 444 Besuche. Sequential Halving hat die 64k-Wahl früh mit weniger Besuchen aussortiert; ihr höheres qBacked ruht auf dünnerer Basis. Normales Rauschen der Endauswahl."
+ }
 }

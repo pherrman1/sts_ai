@@ -29,8 +29,7 @@ and in the per-game sheets.
   bit-identical with the ladder on), and at every searched combat root with two or more edges one extra fresh Gumbel
   k 16 + max backup 4 search at 64,000 simulations of the same root. Rows carry the wire state, every root edge (visits,
   max-backed Q, mean q, prior, semantic action), the played pick and the 64k pick. The 64k search's own Q values are
-  not recorded, only its pick. About 4.3x a G16 game's CPU. Deaths first; at the time of writing 16 of 20 games are
-  done (all 14 deaths, 2 Heart kills); the remaining 4 wins only add R candidates and are appended in a later commit.
+  not recorded, only its pick. About 4.3x a G16 game's CPU. All 20 games done.
 - **Flags** (`analyze.py`, thresholds fixed before reading cases):
   - `ooc_drop`: an out-of-combat decision after which the critic falls by >= 0.02 before any fight. Ranked by
     `dv_adj` = drop minus the mean drop of the same screen transition over all 20 games, because the critic is not
@@ -42,38 +41,40 @@ and in the per-game sheets.
     prefers the 64k pick by >= 1 Silver point, both edges with >= 256 visits. Smaller gaps are counted as
     order-equivalent.
   - `cap`: a fight of 20 or more turns or an abort.
-- **Top 50** (`build_catalog.py`, selection fixed before reading): every fight that ended a run (D, 14), every
-  root_64k (R, 11), the 6 won fights with the highest z >= 2.5 (F), and the 19 largest `dv_adj` drops with at most 2 per
+- **Top 50 + 8** (`build_catalog.py`, selection fixed before reading): every fight that ended a run (D, 14), every
+  root_64k (R; 11 when the first 16 games were read, 19 with all 20, hence 58 entries), the 6 won fights with the highest z >= 2.5 (F), and the 19 largest `dv_adj` drops with at most 2 per
   game (O). Each was then read by hand in its game sheet and given a category and a note (`notes.json`).
 
 Categories: **Bug**, the engine or the search implementation does something the game or the design does not intend;
 **Fehlvorstellung (misconception)**, rules are right but the net or the search values something wrong; **vertretbar
 (defensible)**, no error on a closer look or not decidable from the trace; **offen (open)**, needs a paired probe.
 
-## Flag counts (20 games, 16 with pass 2)
+## Flag counts (20 games)
 
 | flag | count |
 |---|---:|
 | ooc_drop | 292 |
 | fight_cost | 43 (14 deaths) |
 | death_chain | 65 |
-| combat roots with a 64k pick | 7,447 searched roots in pass 2, 6,897 with a ladder search |
-| 64k pick differs | 2,618 (38 % of ladder roots) |
-| of those, 16k tree prefers the 64k pick by >= 1 | 11 |
+| combat roots with a 64k pick | 11,837 searched roots in pass 2, 11,106 with a ladder search |
+| 64k pick differs | 4,501 (41 % of ladder roots) |
+| of those, 16k tree prefers the 64k pick by >= 1 | 19 |
 | cap (>= 20 turns or abort) | 0 |
 
-38 % of combat roots get a different pick from a 4x larger search, but in 2,607 of 2,618 the played tree's own
+41 % of combat roots get a different pick from a 4x larger search, but in 4,482 of 4,501 the played tree's own
 max-backed Q does not prefer the 64k pick by a point or more: order-equivalent moves (two Strikes in either order) or
 search noise. "Disagrees with 64k" alone is not a mistake signal.
 
 ## Catalogue result
 
-50 entries ([CATALOG.md](results/CATALOG.md)): **Bug 2, Fehlvorstellung 20, vertretbar 17, offen 11.**
+58 entries ([CATALOG.md](results/CATALOG.md)): **Bug 2, Fehlvorstellung 20, vertretbar 25, offen 11.** (When the
+first 16 games were read: 50 entries, vertretbar 17; the 8 new R roots from the last 4 games are all
+sequential-halving noise.)
 
 | group | n | Bug | Fehlvorstellung | vertretbar | offen |
 |---|---:|---:|---:|---:|---:|
 | D (run-ending fights) | 14 | 0 | 7 | 0 | 7 |
-| R (16k tree prefers the 64k pick) | 11 | 1 | 0 | 10 | 0 |
+| R (16k tree prefers the 64k pick) | 19 | 1 | 0 | 18 | 0 |
 | F (costly won fights) | 6 | 0 | 0 | 4 | 2 |
 | O (critic drop after an OOC decision) | 19 | 1 | 13 | 3 | 2 |
 
@@ -82,8 +83,8 @@ search noise. "Disagrees with 64k" alone is not a mistake signal.
 1. **Gumbel candidate set ignores inherited visits** (R-111378476-F55-T5-d63). An Exhume choice with 19 legal options
    at k = 16: the reused tree already holds Feed with 8,234 visits and the highest max-backed Q (158 vs 149), but the 16
    candidates are drawn from Gumbel noise plus an almost uniform prior and Feed is not among them, so the search can
-   never pick it. `SilverSearcher::searchGumbelRoot` ranks candidates by `noise * g + logit` only. Over 7,447 roots
-   this is the only case with a gap >= 1 (19 roots had an inherited most-visited edge that was not played; all others
+   never pick it. `SilverSearcher::searchGumbelRoot` ranks candidates by `noise * g + logit` only. Over 11,837 roots
+   this is the only case with a gap >= 1 (23 roots had an inherited most-visited edge that was not played; all others
    have gaps <= 0), so the cost is small; the fix would be cheap (always admit the inherited best edge
    when n > k). Needs its own issue and an equal-CPU check before any change.
 2. **Match and Keep: all 12 options have identical logits** (O-111378911-105, logit -0.572 for every option). The policy
@@ -131,8 +132,8 @@ search noise. "Disagrees with 64k" alone is not a mistake signal.
 - The "obvious mistakes" are mostly out of combat and are disagreements between the PPO actor and its own critic
   (Corruption, runic relics, smith before the boss, elites at low HP), not engine bugs. Which head is right is not
   decidable from the trace; each pattern is a candidate for a paired probe.
-- Combat search rarely leaves a clearly better move on the table by its own values (11 of 6,897 roots), and 10 of
-  those 11 are the expected noise of sequential halving (the higher Q sits on an edge eliminated early with fewer
+- Combat search rarely leaves a clearly better move on the table by its own values (19 of 11,106 roots), and 18 of
+  those 19 are the expected noise of sequential halving (the higher Q sits on an edge eliminated early with fewer
   visits and an optimistic max backup). The one structural case is the candidate set ignoring inherited visits.
 - With 20 games every frequency here has wide uncertainty; the patterns are hypotheses for targeted tests, not
   estimates.
@@ -149,9 +150,9 @@ search noise. "Disagrees with 64k" alone is not a mistake signal.
 
 ## Files
 
-- `replay.sh`, `ladder.sh` (passes 1 and 2), `analyze.py` (flags, sheets), `build_catalog.py` (top 50), `notes.json`
+- `replay.sh`, `ladder.sh` (passes 1 and 2), `analyze.py` (flags, sheets), `build_catalog.py` (top 58), `notes.json`
   (hand categories and notes).
-- `results/CATALOG.md` (top 50 rendered), `results/catalog.json`, `results/candidates.json.gz` (all flags),
+- `results/CATALOG.md` (top 58 rendered), `results/catalog.json`, `results/candidates.json.gz` (all flags),
   `results/sheets/SEED.md` (each game in order: every out-of-combat decision with options, p and critic value; every
   fight with its played line and, where pass 2 exists, the 64k pick and both edges' 16k max-backed Q).
 - Commands:
@@ -161,4 +162,4 @@ search noise. "Disagrees with 64k" alone is not a mistake signal.
 - Raw traces (12 MB gzipped) are not committed; they are on the project share under
   `obvious-mistakes-1056/` (`rep/` pass 1, `lad/` pass 2) and reproducible from the commands.
 
-Cost: pass 1 about 2.5 core-hours (17:18-17:55 CET), pass 2 about 13 core-hours so far (from 17:56 CET, 4 cores).
+Cost: pass 1 about 2.5 core-hours (17:18-17:55 CET), pass 2 about 11.7 core-hours (17:56-20:51 CET, 4 cores).
