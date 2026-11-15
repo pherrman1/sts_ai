@@ -3913,6 +3913,104 @@ int testSilverOrderDominance() {
         on->search(1);
         for (const auto &e : on->rootNode().edges) check(!e.pruned, "the new root's flags are cleared");
     }
+    // Round 2 (#1057): relaxed comparison, end states and the rule masks.
+    {
+        using search::DominanceCompare;
+        BattleContext blocked = p;
+        blocked.player.block += 5;
+        check(!search::dominatesState(blocked, p, DominanceCompare{false, false}), "strict: more block is not compared");
+        check(search::dominatesState(blocked, p, DominanceCompare{true, false})
+              && !search::dominatesState(p, blocked, DominanceCompare{true, false}), "relax: more player block dominates");
+        BattleContext monsterBlock = p;
+        monsterBlock.monsters.arr[0].block += 3;
+        check(search::dominatesState(p, monsterBlock, DominanceCompare{true, false}),
+              "relax: less monster block dominates");
+        BattleContext richer = p;
+        richer.player.energy += 1;
+        check(search::dominatesState(richer, p, DominanceCompare{true, false}), "relax: more energy dominates");
+        BattleContext ePlain, eDefend, eStrike, afterDefend = p, afterStrike = p;
+        check(search::endOfTurnState(p, ePlain), "End Turn at the root reaches an end state");
+        check(ePlain.turnHasEnded && ePlain.turn == p.turn && ePlain.cards.cardsInHand == 0,
+              "the end state stops before the monsters act, hand discarded");
+        check(search::playDeterministicCard(afterDefend, defend) && search::endOfTurnState(afterDefend, eDefend),
+              "Defend then End Turn reaches an end state");
+        check(search::dominatesState(eDefend, ePlain, DominanceCompare{true, true}),
+              "relax: Defend then End Turn dominates End Turn");
+        check(!search::dominatesState(eDefend, ePlain, DominanceCompare{false, true}),
+              "strict: the block difference is not compared");
+        check(search::playDeterministicCard(afterStrike, strike) && search::endOfTurnState(afterStrike, eStrike)
+              && search::dominatesState(eStrike, ePlain, DominanceCompare{false, true}),
+              "Strike then End Turn dominates End Turn (energy is ignored at the end of the turn)");
+        BattleContext keyScratch;
+        check(search::dominanceKey(eDefend, DominanceCompare{true, true}, keyScratch)
+              == search::dominanceKey(ePlain, DominanceCompare{true, true}, keyScratch),
+              "dominated end states share a bucket key");
+        check(!search::relaxGuarded(p), "the starter deck is not relax-guarded");
+        BattleContext skull = p;
+        skull.player.setHasRelic<RelicId::RED_SKULL>(true);
+        check(search::relaxGuarded(skull), "Red Skull guards the relaxed comparison");
+
+        auto plain = run(false, 3000);
+        auto observed = std::make_unique<search::SilverSearcher>(p, search::SilverSearchContext{});
+        observed->riskVeto = {};
+        observed->orderDominance = 0;
+        observed->dominanceObserve = search::DOM_ALL;
+        observed->search(3000);
+        bool sameVisits = observed->rootNode().edges.size() == plain->rootNode().edges.size();
+        for (std::size_t i = 0; sameVisits && i < plain->rootNode().edges.size(); ++i)
+            sameVisits = observed->rootNode().edges[i].visitCount == plain->rootNode().edges[i].visitCount;
+        check(sameVisits, "observe only: the search is unchanged");
+        const auto &os = observed->orderDominanceStats;
+        check(os.endAdjFlagged > 0 && os.segStateFlagged > 0 && os.segEndFlagged > 0,
+              "observe: every round-2 rule flags something on this hand");
+        const auto w = observed->dominanceWaste();
+        check(w.rootSims == observed->rootNode().simulationCount && w.endAdj > 0 && w.any >= w.endAdj
+              && w.any >= w.swap && w.any <= w.rootSims, "dominanceWaste counts flagged simulations");
+        bool rootEndFlagged = false;
+        for (const auto &e : observed->rootNode().edges)
+            if (e.action.getActionType() == search::ActionType::END_TURN)
+                rootEndFlagged = (e.domMask & search::DOM_END_ADJ) && !e.pruned;
+        check(rootEndFlagged, "the root's End Turn is flagged, never pruned");
+
+        auto all = std::make_unique<search::SilverSearcher>(p, search::SilverSearchContext{});
+        all->riskVeto = {};
+        all->orderDominance = search::DOM_ALL;
+        all->search(3000);
+        std::int64_t endAdjVisits = 0, endAdjEdges = 0;
+        const std::function<void(const search::SilverSearcher::Node &, int)> walk2 =
+            [&](const search::SilverSearcher::Node &n, int depth) {
+                if (depth > 6) return;
+                for (const auto &e : n.edges) {
+                    if (&n != &all->rootNode() && (e.domMask & search::DOM_END_ADJ)) {
+                        ++endAdjEdges;
+                        endAdjVisits += e.visitCount;
+                    }
+                    if (e.node) walk2(*e.node, depth + 1);
+                }
+            };
+        walk2(all->rootNode(), 0);
+        check(endAdjEdges > 0 && endAdjVisits == 0, "honored: End Turn edges flagged at first visit are never searched");
+        bool differs = false;
+        for (std::size_t i = 0; i < plain->rootNode().edges.size() && i < all->rootNode().edges.size(); ++i)
+            differs = differs || all->rootNode().edges[i].visitCount != plain->rootNode().edges[i].visitCount;
+        check(differs, "honored rules change the search");
+
+        // DOM_ROOT: the Gumbel root drops its dominated End Turn (Defend, then End Turn, is better).
+        const auto gumbelRun = [&](unsigned rules) {
+            auto g = std::make_unique<search::SilverSearcher>(p, search::SilverSearchContext{});
+            g->riskVeto = {};
+            g->orderDominance = rules;
+            search::SilverSearcher::GumbelRoot gr;
+            gr.k = 16;
+            g->searchGumbelRoot(2000, gr, 5);
+            std::int32_t endVisits = -1;
+            for (const auto &e : g->rootNode().edges)
+                if (e.action.getActionType() == search::ActionType::END_TURN) endVisits = e.visitCount;
+            return endVisits;
+        };
+        check(gumbelRun(0) > 0, "without DOM_ROOT the root's End Turn is a candidate");
+        check(gumbelRun(search::DOM_ROOT | search::DOM_RELAX) == 0, "DOM_ROOT drops the dominated root End Turn");
+    }
     if (failures == 0) { std::cout << "silver_order_dominance PASS\n"; return 0; }
     std::cout << "silver_order_dominance FAIL (" << failures << " cases)\n";
     return 1;

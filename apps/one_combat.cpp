@@ -3149,6 +3149,8 @@ static std::string unsupportedSilverOption() {
         {"STS_SILVER_GUMBEL_ROOT_ROOMS", ""}, {"STS_SILVER_GUMBEL_ROOT_SIMS", ""}, {"STS_SILVER_GUMBEL_ROOT_NOISE", ""}, {"STS_SILVER_GUMBEL_ROOT_SIMS_HALLWAY", ""}, {"STS_SILVER_PLAN_COMMIT", ""},
         {"STS_SILVER_GUMBEL_STOP_TRACE", ""},
         {"STS_SILVER_GUMBEL_LEARNED_STOP", ""},
+        {"STS_SILVER_ORDER_DOMINANCE", ""}, {"STS_SILVER_DOMINANCE_OBSERVE", ""},
+        {"STS_SILVER_DOMINANCE_MIN_VISITS", ""},
     };
     // Vendored-only diagnostics without the STS_SILVER_ prefix.
     static const char *const kRemoved[] = {

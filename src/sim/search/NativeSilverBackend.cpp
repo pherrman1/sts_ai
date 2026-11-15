@@ -1304,7 +1304,8 @@ namespace sts::search {
                         configureSearcher(*shadow, false);
                         shadow->leafSamples = nullptr;
                         shadow->outcomes = nullptr;
-                        shadow->orderDominance = true;
+                        shadow->orderDominance = arm.rules;
+                        shadow->dominanceObserve = 0;
                         const double c0 = threadCpuSeconds();
                         const std::uint64_t salt = 0xb5ad4eceda1ce2a9ULL * static_cast<std::uint64_t>(arm.slot);
                         const std::int64_t sims = shadow->searchGumbelRoot(arm.budget, *gumbelRoot,
@@ -1328,6 +1329,7 @@ namespace sts::search {
                         lp.dominance = true;
                         lp.domStats = shadow->orderDominanceStats;
                         lp.slot = arm.slot;
+                        lp.rules = arm.rules;
                         ladder.push_back(lp);
                     }
                     // g_nativeSilverRolloutLadder: the same, once per playout-policy arm (prior-playout roots only).

@@ -46,7 +46,46 @@ namespace sts::search {
     // P --b--> X with b a deterministic card play; `xa` = X + a (the caller's copy). Plays a then b from P and
     // compares with `xa`. `scratch` is a work copy.
     OrderDominanceResult testOrderDominance(const BattleContext &p, const Action &b, const BattleContext &x,
-                                            const Action &a, const BattleContext &xa, BattleContext &scratch);
+                                            const Action &a, const BattleContext &xa, BattleContext &scratch,
+                                            bool relax = false);
+
+    // Round 2 (#1057): STS_SILVER_ORDER_DOMINANCE is a bit mask of these rules (1 = the round-1 order test).
+    enum : unsigned {
+        DOM_SWAP = 1u,       // a at X (reached by b from P) dominated by a-then-b from P
+        DOM_RELAX = 2u,      // comparison mode for every rule: more player block, less monster block, more energy
+        DOM_END_ADJ = 4u,    // End Turn at X dominated by "card c, then End Turn" (end states compared)
+        DOM_SEG_STATE = 8u,  // decision node dominated by another decision node of the same deterministic segment
+        DOM_SEG_END = 16u,   // End Turn at X dominated by End Turn at another node of the same segment
+        DOM_ROOT = 32u,      // searchGumbelRoot drops the root's End Turn from the candidates when DOM_END_ADJ flags it
+        DOM_ALL = 63u,
+    };
+
+    // Comparison mode. relax: player block may be higher, monster block lower and (at a decision) energy higher in
+    // `better`. endState: both states are end-of-turn states (endOfTurnState); energy and the per-turn card counters
+    // are reset before the player acts again, so they are ignored (not with Ice Cream, Pocketwatch or Art of War).
+    struct DominanceCompare {
+        bool relax = false;
+        bool endState = false;
+    };
+
+    // Player-side payoffs for taking damage or for low HP, which break "more block is better": Red Skull,
+    // Centennial Puzzle, Runic Cube, Self-Forming Clay, Emotion Chip, Meat on the Bone, Static Discharge and
+    // Blood for Blood in any pile. With one of them, DOM_RELAX compares block as equal.
+    bool relaxGuarded(const BattleContext &bc);
+
+    // `better` dominates `worse` under `mode`: the same monsters alive (and half dead), no monster HP higher, under
+    // relax no monster block higher, no player block or energy lower; at least one of these strictly better; and the
+    // states equalForSearch once those fields are copied from `worse`.
+    bool dominatesState(const BattleContext &better, const BattleContext &worse, DominanceCompare mode);
+
+    // The state after End Turn at the decision `x`, stopped before the first monster acts (end-of-turn relics and
+    // powers, hand discard and the monsters' pre-turn block loss have run; no draw, no move roll). False when `x`
+    // is not a quiet decision or the end of turn consumed search randomness.
+    bool endOfTurnState(const BattleContext &x, BattleContext &out);
+
+    // Bucket key for the segment tables: hashBattleState with the fields dominatesState may compare unequally
+    // zeroed (monster HP and block, player block, energy; end-state per-turn counters).
+    std::size_t dominanceKey(const BattleContext &bc, DominanceCompare mode, BattleContext &scratch);
 
 }
 
