@@ -213,6 +213,14 @@ Data, scripts and tables: [step 0 evidence](../../../experiments/evidence/cheap_
   trained under combat B (22%) and still reaches 41% under G16, so whether stronger actor combat improves the
   out-of-combat policy at all is itself open.
 
+- **Playout prior retrained on G16 targets (issue #1053, Measured offline, ledger §TBD on PR #1060, 2026-11-15):**
+  g7f_E is still G16's playout policy (T2 / §788 replaced only the root and tree prior). A net of g7f_E's size and
+  roughly its cost per call, trained on D2/D2b G16 + mb4 visit shares, lowers the argmax's root regret in playout
+  rooms from 2.449 to 1.884 max-backed Q, and it is lower in every boss. Completed-Q targets and aux heads do worse.
+  Whether that carries to playout states is open. The next step is §798's harness (arms at 4k against asplayed),
+  which needs a go. With §798's finding that a near-copy of g7f_E (KL 0.023) already costs +0.24 Q at equal sims,
+  the playout policy's quality is a steep lever (**Inference**).
+
 ### Parked
 
 - **Proven-win stop (next candidate; Philipp OK'd as a candidate 2026-11-12 00:58 CET):**
