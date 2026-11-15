@@ -1,0 +1,11 @@
+name          obvious-mistakes-probes
+code_commit   6de313e5b55c218dbda28e7d31d732e4a595de18
+binary_sha256 32c21093fd81f69e77fd9017f430cabd36218af86588d6812474a2a3f480b7c7
+workers       8
+share         /mnt/project-files/obvious-mistakes-probes
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 90
+claim_settle_seconds 60
+input net-0420.bin /mnt/project-files/ppo-long-c/nets/net-0420.bin 8c0bd16c31499270f192666919e0a11e1d6ca57e2d7a188b6d2a019f3ac742d2
