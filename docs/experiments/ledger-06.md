@@ -27583,7 +27583,7 @@ Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 104.1 lane-hours
 −2.25 pp [−5.08, +0.59] Heart; no conversion loss visible on the seeds where both arms reach Act 4 (not an isolated
 Heart contrast).
 
-## §TBD — Rollout prior on G16 targets, stage 2 (issue #1053): §798's playout harness on §797's 256 G16 + mb4 games, playout policy swapped at equal simulations: V (stage 1's best, G16 visit shares) loses +0.289 max-backed Q [99 % +0.214, +0.379] against g7f_E at 4k, X-B +0.300 [+0.232, +0.375], V at 16k +0.339 [+0.261, +0.431] against g7f_E at 16k (V 16k ≈ g7f_E 2-4k), worse in every group, boss and fold 4 → WORSE, root-regret gains do not transfer to playouts (cloud, 32 workers, stopped early at 254/256, 2026-11-15)
+## §807 — Rollout prior on G16 targets, stage 2 (issue #1053): §798's playout harness on §797's 256 G16 + mb4 games, playout policy swapped at equal simulations: V (stage 1's best, G16 visit shares) loses +0.289 max-backed Q [99 % +0.214, +0.379] against g7f_E at 4k, X-B +0.300 [+0.232, +0.375], V at 16k +0.339 [+0.261, +0.431] against g7f_E at 16k (V 16k ≈ g7f_E 2-4k), worse in every group, boss and fold 4 → WORSE, root-regret gains do not transfer to playouts (cloud, 32 workers, stopped early at 254/256, 2026-11-15)
 
 **Question (Philipp 2026-11-15 21:29 CET "go auf 32 workers"):** do §804's candidates, trained only on G16 roots, make
 better playouts than g7f_E? Measured with §798's harness: fresh searches at each multi-edge boss / Act-4 root of the
