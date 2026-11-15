@@ -128,6 +128,13 @@ add_test(NAME policy_mlp_exact COMMAND $<TARGET_FILE:policy_mlp_exact_test>
          ${CMAKE_SOURCE_DIR}/models/combat_policy_mlp_g7f_E.txt)
 set_tests_properties(policy_mlp_exact PROPERTIES LABELS "core;smoke")
 
+# The exact prior-playout pick cache (#1051) returns the uncached prior's argmax on real playout states.
+add_executable(prior_pick_cache_test tests/prior_pick_cache_test.cpp $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(prior_pick_cache_test PRIVATE include json/include)
+add_test(NAME prior_pick_cache COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:prior_pick_cache_test> ${CMAKE_SOURCE_DIR}/models/combat_policy_mlp_g7f_E.txt)
+set_tests_properties(prior_pick_cache PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
+
 # Native combat net (combat plan stage 3): the encoder matches tools/combat_net's Python encoder and the forward pass
 # matches PyTorch on a fixture (tools/combat_net/make_native_fixture.py).
 add_executable(combat-tok-net-tool apps/combat_tok_net_tool.cpp $<TARGET_OBJECTS:sts_core_objects>)

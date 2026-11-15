@@ -16,6 +16,7 @@
 #include <mutex>
 #include <cmath>
 #include <cstring>
+#include <sys/mman.h>
 #include <chrono>
 #include <ctime>
 #include <nlohmann/json.hpp>
@@ -177,6 +178,8 @@ namespace sts::search {
             // decisions in one turn that change nothing tracked by
             // NoProgressFingerprint, End Turn is forced (0 = off).
             int loopGuardCap = 50;
+            // STS_SILVER_PRIOR_PICK_CACHE: log2 entries of the exact prior-playout pick cache (#1051), 0 = off.
+            int priorPickCacheLog2 = 20;
         };
         Options g_options;
         NativeSilverPriceTableBuilder g_priceTableBuilder;
@@ -1910,6 +1913,15 @@ namespace sts::search {
             const std::string path = raw && *raw ? raw : kDefaultRolloutRootTableModel;
             g_options.rolloutRootTablePath = path == "0" ? "" : path;
         }
+        if (const char *raw = std::getenv("STS_SILVER_PRIOR_PICK_CACHE"); raw && *raw) {
+            const std::string value = raw;
+            int log2 = -1;
+            const auto [end, ec] = std::from_chars(value.data(), value.data() + value.size(), log2);
+            if (ec != std::errc{} || end != value.data() + value.size() || (log2 != 0 && (log2 < 4 || log2 > 24)))
+                // 16 bytes per slot per thread: 2^24 = 256 MB per search thread is the cap (review N2).
+                throw std::runtime_error("STS_SILVER_PRIOR_PICK_CACHE must be 0 (off) or a log2 size in 4..24");
+            g_options.priorPickCacheLog2 = log2;
+        }
         if (const char *raw = std::getenv("STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE"); raw && *raw) {
             const std::string value = raw;
             if (value != "0" && value != "1")
@@ -2121,53 +2133,139 @@ namespace sts::search {
             std::vector<double> scores;
             bool mlp = false;
         };
-        const PriorScores &scorePolicyEdges(const CombatValueNet &net, const BattleContext &state,
-                                            const std::vector<SilverSearcher::Edge> &edges) {
-            NativeSilverPriorTiming *timing = g_nativeSilverPriorTiming;
-            const double t0 = timing ? threadCpuSeconds() : 0;
+        // The net's input for `state` and `edges`: the state block, the distinct action blocks with their target
+        // slots and every edge's distinct index (PriorScores::distinctOf), in per-thread buffers.
+        struct PriorInput {
+            std::vector<float> features, actions;
+            std::vector<std::uint16_t> touched;   // `features` is written only by combatExtractFeaturesReuse
+            std::vector<int> targets;
+            int distinct = 0;
+            double t0 = 0;   // NativeSilverPriorTiming start
+        };
+        PriorInput &preparePolicyInput(const CombatValueNet &net, const BattleContext &state,
+                                       const std::vector<SilverSearcher::Edge> &edges, PriorScores &out) {
+            thread_local PriorInput in;
+            in.t0 = g_nativeSilverPriorTiming ? threadCpuSeconds() : 0;
             const bool mlp = net.isPolicyMlp;
             const int stateCount = combatFeatureCount();
             const int actionCount = combatPolicyFeatureCount() - stateCount;
             const int n = static_cast<int>(edges.size());
-            // `features` is written only by combatExtractFeaturesReuse (`touched` tracks it).
-            thread_local std::vector<float> features, actions;
-            thread_local std::vector<std::uint16_t> touched;
-            thread_local std::vector<int> targets;
-            thread_local PriorScores out;
-            features.resize(stateCount);
-            combatExtractFeaturesReuse(state, features.data(), touched);
-            actions.resize(static_cast<std::size_t>(n) * actionCount);
+            in.features.resize(stateCount);
+            combatExtractFeaturesReuse(state, in.features.data(), in.touched);
+            in.actions.resize(static_cast<std::size_t>(n) * actionCount);
             out.distinctOf.resize(n);
-            targets.resize(n);
+            in.targets.resize(n);
             int distinct = 0;
             for (int i = 0; i < n; ++i) {
-                float *block = actions.data() + static_cast<std::size_t>(distinct) * actionCount;
+                float *block = in.actions.data() + static_cast<std::size_t>(distinct) * actionCount;
                 combatFillActionFeatures(state, edges[i].action, block);
                 const int target = mlp ? combatActionTargetSlot(state, edges[i].action) : -1;
                 int match = 0;
-                while (match < distinct && (targets[match] != target
-                           || std::memcmp(actions.data() + static_cast<std::size_t>(match) * actionCount,
+                while (match < distinct && (in.targets[match] != target
+                           || std::memcmp(in.actions.data() + static_cast<std::size_t>(match) * actionCount,
                                           block, sizeof(float) * actionCount) != 0)) ++match;
                 out.distinctOf[i] = match;
-                if (match == distinct) targets[distinct++] = target;
+                if (match == distinct) in.targets[distinct++] = target;
             }
-            out.scores.resize(distinct);
+            in.distinct = distinct;
             out.mlp = mlp;
+            return in;
+        }
+        void evaluatePolicyInput(const CombatValueNet &net, PriorInput &in, PriorScores &out) {
+            NativeSilverPriorTiming *timing = g_nativeSilverPriorTiming;
+            const int distinct = in.distinct;
+            out.scores.resize(distinct);
             const double t1 = timing ? threadCpuSeconds() : 0;
-            if (mlp) {
-                net.predictPolicyMlp(features.data(), actions.data(), targets.data(), distinct, out.scores.data());
+            if (out.mlp) {
+                net.predictPolicyMlp(in.features.data(), in.actions.data(), in.targets.data(), distinct,
+                                     out.scores.data());
                 if (timing) {
-                    timing->featureSeconds += t1 - t0;
+                    timing->featureSeconds += t1 - in.t0;
                     timing->mlpSeconds += threadCpuSeconds() - t1;
                     ++timing->calls;
                     timing->edges += distinct;
                 }
             } else {
-                net.predictPolicyActions(features.data(), actions.data(), distinct, out.scores.data());
+                net.predictPolicyActions(in.features.data(), in.actions.data(), distinct, out.scores.data());
             }
+        }
+        const PriorScores &scorePolicyEdges(const CombatValueNet &net, const BattleContext &state,
+                                            const std::vector<SilverSearcher::Edge> &edges) {
+            thread_local PriorScores out;
+            evaluatePolicyInput(net, preparePolicyInput(net, state, edges, out), out);
             return out;
         }
+        // The first edge with the largest score.
+        int policyArgmax(const PriorScores &ps, int n) {
+            int best = 0;
+            double bestScore = ps.scores[ps.distinctOf[0]];
+            for (int i = 1; i < n; ++i) {
+                const double v = ps.scores[ps.distinctOf[i]];
+                if (v > bestScore) { bestScore = v; best = i; }
+            }
+            return best;
+        }
+
+        // Exact prior-playout pick cache (issue #1051, STS_SILVER_PRIOR_PICK_CACHE): the policy MLP's argmax edge
+        // keyed by a 128-bit fingerprint of the MLP's whole input (net, state block, distinct action blocks,
+        // targets and each edge's distinct index), so a hit returns the edge the MLP would pick, and play is
+        // unchanged up to a fingerprint collision (120 of the 128 bits are compared: ~2^-120 per pair of inputs).
+        // 4-way buckets of 16-byte slots (16 MB per thread at the default 2^20), allocated at first use, per thread,
+        // never cleared: every entry stays valid, so lifetime and eviction affect only the hit rate.
+        struct PriorPickCache {
+            struct Slot { std::uint64_t a = 0, b = 0; };   // b's low 8 bits hold the pick + 1 (0 = empty)
+            struct Free { void operator()(Slot *p) const { std::free(p); } };
+            std::unique_ptr<Slot[], Free> slots;
+            int log2 = 0;
+            NativeSilverPriorPickCacheStats stats;
+            // 2^log2 empty slots, 2 MB aligned and advised as huge pages (a lookup is one random access).
+            void allocate(int lg) {
+                const std::size_t bytes = std::max<std::size_t>(sizeof(Slot) << lg, std::size_t{1} << 21);
+                void *p = std::aligned_alloc(std::size_t{1} << 21, bytes);
+                if (!p) throw std::bad_alloc();
+#ifdef MADV_HUGEPAGE
+                madvise(p, bytes, MADV_HUGEPAGE);
+#endif
+                std::memset(p, 0, bytes);
+                slots.reset(static_cast<Slot *>(p));
+                log2 = lg;
+            }
+        };
+        thread_local PriorPickCache t_priorPickCache;
+
+        // The fingerprint of the MLP input preparePolicyInput left in `in` for `n` edges: the state block's words
+        // (combatStateFingerprint, indices < 2^16) plus one tagged word per nonzero action-block entry, per
+        // distinct target and per edge's distinct index, and the edge count; then the net's load id. Tags (bits
+        // 48-63) keep the word kinds apart. False when the state block has no fingerprint.
+        bool priorInputFingerprint(const CombatValueNet &net, const PriorInput &in, const PriorScores &ps, int n,
+                                   std::uint64_t &a, std::uint64_t &b) {
+            a = 0;
+            b = 0;
+            if (!combatStateFingerprint(in.features.data(), in.touched, a, b)) return false;
+            auto add = [&](std::uint64_t w) { a += combatFingerprintMixA(w); b += combatFingerprintMixB(w); };
+            const int actionCount = combatPolicyFeatureCount() - combatFeatureCount();
+            const auto *words = reinterpret_cast<const std::uint32_t *>(in.actions.data());
+            for (int d = 0; d < in.distinct; ++d) {
+                for (int k = 0; k < actionCount; ++k) {
+                    const std::uint32_t bits = words[static_cast<std::size_t>(d) * actionCount + k];
+                    if (bits) add((std::uint64_t{1} << 48) | (static_cast<std::uint64_t>(d) << 40)
+                                  | (static_cast<std::uint64_t>(k) << 32) | bits);
+                }
+                add((std::uint64_t{2} << 48) | (static_cast<std::uint64_t>(d) << 32)
+                    | static_cast<std::uint32_t>(in.targets[d]));
+            }
+            for (int i = 0; i < n; ++i)
+                add((std::uint64_t{3} << 48) | (static_cast<std::uint64_t>(i) << 32)
+                    | static_cast<std::uint32_t>(ps.distinctOf[i]));
+            add((std::uint64_t{4} << 48) | static_cast<std::uint32_t>(n));
+            const std::uint64_t netWord = net.policyMlpLoadId;   // deterministic, unlike the net's address
+            a = combatFingerprintMixA(a ^ netWord);
+            b = combatFingerprintMixB(b + netWord);
+            return true;
+        }
     }
+
+    NativeSilverPriorPickCacheStats nativeSilverPriorPickCacheStats() { return t_priorPickCache.stats; }
 
     std::vector<double> nativeSilverPolicyPriorWith(const CombatValueNet &net, const BattleContext &state,
                                                     const std::vector<SilverSearcher::Edge> &edges) {
@@ -2217,13 +2315,31 @@ namespace sts::search {
         // The first edge with the largest logit. The softmax nativeSilverPolicyPrior normalizes with is
         // strictly increasing in the logit (exp of logit - top over a total >= 1; float logits that differ
         // stay apart in double), so this is std::max_element of that prior without the exp and division.
-        const PriorScores &ps = scorePolicyEdges(net, state, edges);
-        int best = 0;
-        double bestScore = ps.scores[ps.distinctOf[0]];
-        for (int i = 1; i < static_cast<int>(edges.size()); ++i) {
-            const double v = ps.scores[ps.distinctOf[i]];
-            if (v > bestScore) { bestScore = v; best = i; }
+        const int n = static_cast<int>(edges.size());
+        thread_local PriorScores ps;
+        PriorInput &in = preparePolicyInput(net, state, edges, ps);
+        PriorPickCache &cache = t_priorPickCache;
+        const int log2 = g_options.priorPickCacheLog2;
+        std::uint64_t a = 0, b = 0;
+        if (log2 <= 0 || n > 255 || !priorInputFingerprint(net, in, ps, n, a, b)) {
+            evaluatePolicyInput(net, in, ps);
+            return policyArgmax(ps, n);
         }
+        if (cache.log2 != log2) cache.allocate(log2);
+        ++cache.stats.lookups;
+        b &= ~std::uint64_t{0xff};
+        auto *bucket = cache.slots.get() + (a & ((std::size_t{1} << log2) - 4));
+        for (int w = 0; w < 4; ++w) {
+            if (bucket[w].a == a && (bucket[w].b & ~std::uint64_t{0xff}) == b && (bucket[w].b & 0xff)) {
+                ++cache.stats.hits;
+                return static_cast<int>(bucket[w].b & 0xff) - 1;
+            }
+        }
+        evaluatePolicyInput(net, in, ps);
+        const int best = policyArgmax(ps, n);
+        int way = static_cast<int>(a >> 62);   // replaced when the bucket is full
+        for (int w = 0; w < 4; ++w) if (!(bucket[w].b & 0xff)) { way = w; break; }
+        bucket[way] = {a, b | static_cast<std::uint64_t>(best + 1)};
         return best;
     }
 
