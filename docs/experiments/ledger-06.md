@@ -27613,7 +27613,7 @@ Seeds: none played (§797's seeds reused as data). Cost: ≈ 35 CPU-minutes.
 lowest-ranked action, ≈ 0.025 Q for half the actions at 16k); neither the g7f_E prior nor a plan scorer with
 end-state features comes within a factor of 7 of that, so root narrowing is not a lever (with §791).
 
-## §TBD — Faster g7f_E prior evaluation (#1052): the state's nonzero list from the feature extractor is exact and saves 2-4% of G16 search CPU; FMA in the edge layers saves ~5-8% but changes search trajectories (research option, gate needed); AVX-512, an incremental state layer and int16 layer 2 rejected (cloud, 2026-11-15)
+## §TBD — Faster g7f_E prior evaluation (#1052): the state's nonzero list from the feature extractor is exact and saves 2-4% of G16 search CPU; FMA in the edge layers saves ~5-8% and changes search trajectories, made default by Philipp without a gate; AVX-512, an incremental state layer and int16 layer 2 rejected (cloud, 2026-11-15)
 
 **Question (issue #1052, from Philipp's 2026-11-15 request to work today's issues):** can the same g7f_E prior be
 evaluated faster, and which speedups keep play bit-identical?
@@ -27631,8 +27631,10 @@ prior calls, and replays of §775's seeds 111378257 / 111378263 in G16 + mb4. Ba
   the rows are cache-warm), int16 layer 2 (1.3-7.2% argmax changes).
 **Interpretation (Inference):** after #1046 the per-call kernel is near this VM's vector throughput; no exact lever
 beyond a few percent remains in the MLP itself. FMA is the one larger lever and it is play-changing.
-**Decision:** the exact nonzero list goes in as default (bit-identical). FMA stays a research option, default off; a
-whole-run non-regression gate needs Philipp's go. Seeds: §797's 111980000-111980255 (data only), §775's 111378257 and
+**Decision:** the exact nonzero list goes in as default (bit-identical). FMA: Philipp, 2026-11-15 19:15 CET, after
+the explanation that it changes play and would normally need a gate: "ok lets make it still default". So
+`STS_SILVER_PRIOR_MLP_FMA` is on by default on FMA CPUs without a whole-run gate; `=0` restores the exact kernel
+(needed to reproduce pre-#1052 runs). Its effect on Heart kills is unmeasured. Seeds: §797's 111980000-111980255 (data only), §775's 111378257 and
 111378263 (replays); no new seeds.
 **Knowledge impact:** combat search: `predictPolicyMlp` takes the state's nonzero list from the feature extractor;
-rejected prior-kernel variants and the FMA research option recorded in `knowledge-base/architecture/combat-search.md`.
+rejected prior-kernel variants and the FMA default recorded in `knowledge-base/architecture/combat-search.md`.

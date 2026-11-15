@@ -5,8 +5,8 @@
 // signed zeros, empty monster slots, 1-40 edges, with and without targets), plus
 // special values (subnormals, huge and infinite inputs) in every fifth call.
 // Also (2026-11-15, #1052): combatNonzeroStateFeatures equals a full scan on
-// real combats played with random legal actions, and the research
-// STS_SILVER_PRIOR_MLP_FMA kernel stays within a small tolerance.
+// real combats played with random legal actions, and the
+// STS_SILVER_PRIOR_MLP_FMA kernel (default on FMA CPUs) stays within a small tolerance.
 #include "combat/BattleContext.h"
 #include "game/GameContext.h"
 #include "sim/search/CombatValueNet.h"
@@ -201,7 +201,7 @@ int main(int argc, char **argv) {
     long fmaBad = 0;
     __builtin_cpu_init();
     if (__builtin_cpu_supports("fma")) {
-        // STS_SILVER_PRIOR_MLP_FMA (research): finite random calls stay within 1e-4 (relative) of the reference.
+        // STS_SILVER_PRIOR_MLP_FMA: finite random calls stay within 1e-4 (relative) of the reference.
         std::mt19937 frng(20261115);
         for (int c = 0; c < 1000; ++c) {
             std::fill(state.begin(), state.end(), 0.f);
@@ -226,7 +226,7 @@ int main(int argc, char **argv) {
             for (int e = 0; e < n; ++e)
                 if (!(std::fabs(got[e] - want[e]) <= 1e-4 * (1.0 + std::fabs(want[e])))) { ++fmaBad; break; }
         }
-        std::printf("policy_mlp_exact_test: FMA research kernel: 1000 calls, %ld outside tolerance\n", fmaBad);
+        std::printf("policy_mlp_exact_test: FMA kernel (default on FMA CPUs): 1000 calls, %ld outside tolerance\n", fmaBad);
     }
     return mismatches == 0 && nonzeroBad == 0 && fmaBad == 0 ? 0 : 1;
 }

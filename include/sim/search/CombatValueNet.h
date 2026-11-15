@@ -221,10 +221,12 @@ namespace sts::search {
         std::vector<int> flatRoots;
     };
 
-    // STS_SILVER_PRIOR_MLP_FMA=1 (research, 2026-11-15, #1052; default off, not bit-identical): predictPolicyMlp's
-    // per-edge layers at the deployed widths use fused multiply-adds. setPolicyMlpFma overrides the environment for
-    // tests and benches (0 off, 1 on (throws without FMA), -1 back to the environment).
+    // STS_SILVER_PRIOR_MLP_FMA (2026-11-15, #1052; default on when the CPU has FMA, not bit-identical to the
+    // earlier kernel; =0 restores it): predictPolicyMlp's per-edge layers at the deployed widths use fused
+    // multiply-adds. setPolicyMlpFma overrides the environment for tests and benches (0 off, 1 on (throws without
+    // FMA), -1 back to the environment); policyMlpFmaActive reports the choice.
     void setPolicyMlpFma(int mode);
+    bool policyMlpFmaActive();
 
     extern CombatValueNet g_combatVNet;   // loaded value model (if any)
     extern bool   g_richCombatFeatures;   // fill the wide relic/card-location block (else narrow fast path)

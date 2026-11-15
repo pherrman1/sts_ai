@@ -13,6 +13,7 @@
 #include "sim/search/ExpertKnowledge.h"
 
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <emmintrin.h>
@@ -82,23 +83,23 @@ namespace {
     constexpr int kMonDmgOff    = 4;                        // "mKIntent" = incoming damage (0 if not attacking)
     constexpr int kPolicyMlpEmbRows = 128;                  // policy-MLP embedding table rows
     constexpr int kPolicyMlpMaxH1 = 512;                    // policyMlpEdges stack buffer
-    // STS_SILVER_PRIOR_MLP_FMA (research; see policyMlpEdges128x64Fma). setPolicyMlpFma overrides it.
+    // STS_SILVER_PRIOR_MLP_FMA (see policyMlpEdges128x64Fma): unset = on when the CPU has FMA (default since
+    // 2026-11-15), 1 = on (fatal without FMA), 0 = the bit-exact pre-#1052 kernel. setPolicyMlpFma overrides it.
     int g_policyMlpFmaOverride = -1;
-
-    bool policyMlpEnvSwitch(const char *name) {
-        const char *v = std::getenv(name);
-        if (!v || std::strcmp(v, "0") == 0) return false;
-        if (std::strcmp(v, "1") != 0) throw std::runtime_error(std::string(name) + " must be 0 or 1");
-        return true;
-    }
 
     bool policyMlpFmaOn() {
         if (g_policyMlpFmaOverride >= 0) return g_policyMlpFmaOverride == 1;
         static const bool on = [] {
-            const bool v = policyMlpEnvSwitch("STS_SILVER_PRIOR_MLP_FMA");
             __builtin_cpu_init();
-            if (v && !__builtin_cpu_supports("fma")) throw std::runtime_error("STS_SILVER_PRIOR_MLP_FMA=1 needs an FMA CPU");
-            return v;
+            const bool cpu = __builtin_cpu_supports("fma") != 0;
+            const char *v = std::getenv("STS_SILVER_PRIOR_MLP_FMA");
+            if (v && std::strcmp(v, "0") == 0) return false;
+            if (v && std::strcmp(v, "1") != 0) throw std::runtime_error("STS_SILVER_PRIOR_MLP_FMA must be 0 or 1");
+            if (v && !cpu) throw std::runtime_error("STS_SILVER_PRIOR_MLP_FMA=1 needs an FMA CPU");
+            if (!cpu)
+                std::fprintf(stderr, "[prior MLP] no FMA on this CPU: exact non-FMA kernel (play differs from FMA "
+                                     "machines; STS_SILVER_PRIOR_MLP_FMA=0 matches it everywhere)\n");
+            return cpu;
         }();
         return on;
     }
@@ -1638,11 +1639,10 @@ void policyMlpBase128(const CombatValueNet &net, const float *stateFeatures, con
 }
 
 
-// ---- STS_SILVER_PRIOR_MLP_FMA (research, 2026-11-15, #1052; default off) ----
+// ---- STS_SILVER_PRIOR_MLP_FMA (2026-11-15, #1052; default on with an FMA CPU, Philipp's decision without a gate) ----
 // The per-edge layers with fused multiply-adds (one rounding per multiply-add instead of two) and an 8-way output
-// sum. Not bit-identical to policyMlpEdges128x64, so it can change play: whole-run gate before any default change.
-// Needs a CPU with FMA (fatal otherwise). On 80,919 recorded prior-playout calls: 0 argmax changes, logits within
-// 3.2e-6.
+// sum. Not bit-identical to policyMlpEdges128x64 (=0 restores it): play differs from pre-#1052 binaries. On 80,919
+// recorded prior-playout calls: 0 argmax changes, logits within 3.2e-6.
 __attribute__((target("avx2,fma"))) void policyMlpEdges128x64Fma(const CombatValueNet &net,
                                                                  const float *__restrict base,
                                                                  const float *stateFeatures,
@@ -1704,6 +1704,8 @@ __attribute__((target("avx2,fma"))) void policyMlpEdges128x64Fma(const CombatVal
 }
 
 }
+
+bool policyMlpFmaActive() { return policyMlpFmaOn(); }
 
 void setPolicyMlpFma(int mode) {
     if (mode == 1) {

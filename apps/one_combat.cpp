@@ -3735,6 +3735,8 @@ int main(int argc, char **argv) {
                   << (search::nativeSilverTreePriorMinVisits() > 0
                       ? "; tree prior K=" + std::to_string(search::nativeSilverTreePriorMinVisits()) : std::string{})
                   << "]\n";
+    if (!search::nativeSilverRootPriorPath().empty())
+        std::cout << "[prior MLP edge kernel: " << (search::policyMlpFmaActive() ? "FMA" : "exact non-FMA (STS_SILVER_PRIOR_MLP_FMA=0 or no FMA CPU)") << "]\n";
     std::cout << "[Native Silver combat backend: Silver search on the main engine"
               << (search::nativeSilverAdaptiveEnabled() ? "; adaptive"
                   : search::nativeSilverLearnedStopEnabled()

@@ -558,10 +558,15 @@ random legal play). Measured and not adopted (#1052): 16-wide AVX-512 kernels
 (bit-identical but slower on the cloud Xeon VMs), an exact-double incremental
 state layer kept across a playout's calls (consecutive calls change a median of
 13 of ~80 nonzero features, but the state rows are cache-warm in real playouts,
-so no gain), and int16 layer 2 (1-7% argmax changes). `STS_SILVER_PRIOR_MLP_FMA=1`
-(research, default off) runs the per-edge layers with fused multiply-adds: not
-bit-identical (logits within ~3e-6 on recorded playout calls, no argmax change
-seen), so it needs a whole-run gate before any default change.
+so no gain), and int16 layer 2 (1-7% argmax changes). Since the same PR the
+per-edge layers run with fused multiply-adds (`policyMlpEdges128x64Fma`) on any
+CPU with FMA, by Philipp's decision (2026-11-15) without a whole-run gate. It is
+not bit-identical to the kernel above (logits within ~3e-6 on recorded playout
+calls, no argmax change seen, but whole-game search traces change), so play
+differs from earlier binaries and from machines without FMA (which warn and use
+the exact kernel). `STS_SILVER_PRIOR_MLP_FMA=0` restores the exact kernel
+everywhere (reproducing pre-#1052 runs needs it); `=1` makes FMA mandatory.
+`one_combat` prints the kernel in use at startup when a root prior is set.
 `tools/silver_az_mlp.py` featurizes the synthetic corpus (`silversynthfeatures`
 action rows carry `tgt`), trains
 from random initialization, and exports the model with input scales and the

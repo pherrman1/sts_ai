@@ -41,7 +41,7 @@ playouts) change more than 48. In real searches (perf, 72 roots): state layer 15
 | variant | exact? | per call (replay) | real searches / games | decision |
 |---|---|---|---|---|
 | nonzero list from the extractor's touched list (`combatNonzeroStateFeatures`) | yes, same list | - | roots 0.96-0.98x CPU, 72/72 searches identical to main (picks, sims, prior calls, playout actions); games 0.97x (95.3 vs 98.7 s) and 0.98x (418.0 vs 428.1 s) with 1,083/1,083 and 2,418/2,418 identical stop-trace rows | **adopted** (default) |
-| FMA in the per-edge layers (`STS_SILVER_PRIOR_MLP_FMA=1`) | no | 1.16-1.22x; logits within 3.2e-6; 0 argmax changes on 80,919 calls | roots 0.92-0.95x CPU, all 72 picks equal at 2k; both games' search traces change (1,070 / 2,413 rows differ, 263 has 2,427 rows) | research option, default off; needs a whole-run gate |
+| FMA in the per-edge layers (`STS_SILVER_PRIOR_MLP_FMA=1`) | no | 1.16-1.22x; logits within 3.2e-6; 0 argmax changes on 80,919 calls | roots 0.92-0.95x CPU, all 72 picks equal at 2k; both games' search traces change (1,070 / 2,413 rows differ, 263 has 2,427 rows) | default on FMA CPUs by Philipp's decision (2026-11-15 19:15 CET) without a whole-run gate; `=0` restores the exact kernel |
 | 16-wide AVX-512 kernels (runtime dispatch) | yes (0 of 40,552 calls differ) | 0.84-0.98x (slower) | - | rejected |
 | software prefetch of the state rows | yes | no gain | - | rejected |
 | skip all-zero state rows (1,003 of 1,766 rows are zero) | yes | - | never hit: no nonzero feature has a zero row | rejected |
@@ -54,7 +54,7 @@ playouts) change more than 48. In real searches (perf, 72 roots): state layer 15
   the main lever in a random-order replay (58% of a call), but in real playouts consecutive calls touch the same rows,
   which are then in L1/L2; an incremental sum saves rows but adds bookkeeping of the same size.
 - FMA is the only measured lever above ~5% and it is not exact: it changes search trajectories within a game, so its
-  effect on Heart kills is unknown until a whole-run gate.
+  effect on Heart kills is unknown (no whole-run gate; made default by Philipp's decision).
 - Not tried: batching playouts in lockstep (a search change with its own gate), int8 / quantization-aware training.
 
 Seeds: §797's 111980000-111980255 (root rows, data only); §775's 111378257 and 111378263 (replays). No new seeds.
