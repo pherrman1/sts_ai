@@ -27669,7 +27669,7 @@ critic. No default change. The binding and `critic_ceiling.py encounters` / `che
 as tools. Seeds: none. Cost ≈ 70 min PC CPU, no GPU, no cloud core-hours.
 **Knowledge impact:** KB `research/a20-ppo-plan.md` (V6 row and critic ceiling paragraph).
 
-## §TBD — §801 follow-up: the act's encounter lists against act-1 survival instead of the Heart (same LONG_C split, act-1 decisions, game-frac 0.5 after a RAM-guard kill) add +0.0053 EV [+0.0024, +0.0080] to the public GBM (0.145 → 0.150; bar +0.03) → NONE; the GBM uses the features (13.9% of gain on this target, 2.2% on the Heart) → encounter-list direction of #1050 closed (PC CPU, offline, no seeds, 2026-11-15)
+## §803 — §801 follow-up: the act's encounter lists against act-1 survival instead of the Heart (same LONG_C split, act-1 decisions, game-frac 0.5 after a RAM-guard kill) add +0.0053 EV [+0.0024, +0.0080] to the public GBM (0.145 → 0.150; bar +0.03) → NONE; the GBM uses the features (13.9% of gain on this target, 2.2% on the Heart) → encounter-list direction of #1050 closed (PC CPU, offline, no seeds, 2026-11-15)
 
 **Question (Philipp, 2026-11-15 19:35 CET "wieso nur gbm, sollten wir nicht ein besseres model trainieren?"; go
 19:36 CET):** after §801's null on the Heart, is the encounter information there at all (feature importance), and
