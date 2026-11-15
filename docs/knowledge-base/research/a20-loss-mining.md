@@ -226,6 +226,18 @@ cheap item with a > 2 pp ceiling.
 Gate costs use 826 s per production game (§727): a paired whole-run A/B costs ≈ 0.46 core-h per seed pair (1,024
 pairs ≈ 470 core-h, MDE ≈ 3.5 pp; 4,096 pairs ≈ 1,880 core-h).
 
+## Obvious-mistakes pilot (2026-11-15, issue #1056, §TBD)
+
+20 of §782's G16 + mb4 games replayed with PPO logits and critic at every out-of-combat decision and a fresh 64k search
+at every combat root ([evidence](../../experiments/evidence/obvious_mistakes_pilot_20261115/RESULT.md)). Top 50 flags
+read by hand: Bug 2, misconception 20, defensible 17, open 11. The flagged mistakes are mostly out of combat and are
+disagreements between the PPO actor and its own critic: Corruption takes (critic -0.039 on average), runic boss relics
+(-0.05), smith instead of rest before the Act-1 boss at 59-81 % HP, elites at <= 50 % HP. Combat search leaves a move
+its own tree rates >= 1 point better at 11 of 6,897 roots, 10 of them sequential-halving noise; the eleventh is a
+design gap (Gumbel candidates ignore inherited visits when legal actions > k). "Differs from a 64k search" alone is no
+mistake signal (38 % of roots, almost all order-equivalent). The critic is not screen-invariant and not bounded, so
+critic drops need a transition baseline. Open: paired probes for each pattern.
+
 ## Open questions
 
 - ~~Is Awakened One planning-limited or deck-limited?~~ Deck/state-limited (§743: 40k −1.2 pp [−2.9, +0.3] per fight).
