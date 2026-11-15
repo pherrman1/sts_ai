@@ -67,7 +67,7 @@ search noise. "Disagrees with 64k" alone is not a mistake signal.
 
 ## Catalogue result
 
-58 entries ([CATALOG.md](results/CATALOG.md)): **Bug 2, Fehlvorstellung 20, vertretbar 25, offen 11.** (When the
+58 entries ([CATALOG.md](results/CATALOG.md)): **Bug 1, Fehlvorstellung 20, vertretbar 26, offen 11.** (When the
 first 16 games were read: 50 entries, vertretbar 17; the 8 new R roots from the last 4 games are all
 sequential-halving noise.)
 
@@ -76,9 +76,9 @@ sequential-halving noise.)
 | D (run-ending fights) | 14 | 0 | 7 | 0 | 7 |
 | R (16k tree prefers the 64k pick) | 19 | 1 | 0 | 18 | 0 |
 | F (costly won fights) | 6 | 0 | 0 | 4 | 2 |
-| O (critic drop after an OOC decision) | 19 | 1 | 13 | 3 | 2 |
+| O (critic drop after an OOC decision) | 19 | 0 | 13 | 4 | 2 |
 
-### Bug candidates (2)
+### Bug candidates (1, and one that turned out to be by design)
 
 1. **Gumbel candidate set ignores inherited visits** (R-111378476-F55-T5-d63). An Exhume choice with 19 legal options
    at k = 16: the reused tree already holds Feed with 8,234 visits and the highest max-backed Q (158 vs 149), but the 16
@@ -87,10 +87,11 @@ sequential-halving noise.)
    this is the only case with a gap >= 1 (23 roots had an inherited most-visited edge that was not played; all others
    have gaps <= 0), so the cost is small; the fix would be cheap (always admit the inherited best edge
    when n > k). Needs its own issue and an equal-CPU check before any change.
-2. **Match and Keep: all 12 options have identical logits** (O-111378911-105, logit -0.572 for every option). The policy
-   cannot tell the cards apart; likely the option encoding does not carry the card under each position. The option
-   names in that row come from this pilot's renderer and are wrong for this event. Needs a look at the PPO option
-   encoding for this event.
+2. **Match and Keep: all 12 options have identical logits** (O-111378911-105, logit -0.572 for every option).
+   Checked after the first draft: this is by design. `buildChoice` encodes face-down cards as `kFaMatchUnseen`
+   ("public information only"), so the options are identical to the net while the cards are hidden. Reclassified as
+   vertretbar; no issue needed. The option names in that row come from this pilot's renderer and are wrong for this
+   event.
 
 ### Patterns behind the misconceptions
 
@@ -143,7 +144,7 @@ sequential-halving noise.)
 1. Paired probe REST vs. SMITH at the Act-1 boss campfire on the 8 smith states (and the §782 games with the same
    situation), with several continuations per state.
 2. Issue: admit the inherited best edge into the Gumbel candidate set when legal actions > k; equal-CPU check.
-3. Issue: Match and Keep option encoding in the PPO observation.
+3. (dropped: the Match and Keep encoding is by design, see above.)
 4. Paired probe Runic Dome vs. the alternative relic at the boss-relic screens (§782 has about 1,000 such screens).
 5. Corruption: forced skip vs. take on the 15 states.
 6. Run the same pipeline on more games once the probes say which flags carry signal.

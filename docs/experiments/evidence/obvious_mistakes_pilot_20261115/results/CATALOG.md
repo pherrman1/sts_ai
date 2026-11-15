@@ -2,7 +2,7 @@
 
 Jeder Eintrag ist eine Hypothese, keine Wahrheit. Kategorien: Bug (Engine oder Such-Implementierung macht etwas anderes als das Spiel), Fehlvorstellung (Netz oder Suche bewertet falsch, die Regeln stimmen), vertretbar (bei genauem Hinsehen kein Fehler oder nicht entscheidbar), offen (nicht ohne gepaarte Probe entscheidbar).
 
-58 Einträge: vertretbar 25, Fehlvorstellung 20, offen 11, Bug 2.
+58 Einträge: vertretbar 26, Fehlvorstellung 20, offen 11, Bug 1.
 
 Gruppen: D = Kampf, der den Lauf beendet hat; R = Kampfwurzel, an der der 16k-Baum selbst die 64k-Wahl höher bewertet; F = gewonnener Kampf mit hohem HP-Verlust gegen die §782-Norm; O = Entscheidung außerhalb des Kampfes, nach der der Critic fällt (bereinigt um den mittleren Sprung desselben Bildschirmwechsels).
 
@@ -1028,7 +1028,7 @@ Werte: p und Logit sind die PPO-Policy (net-0420, Temperatur 0, also wird immer 
 
 **Einschätzung:** Sentinel (p 0,49) statt Blood for Blood+ (0,28); Critic -0,087; Sentinel im Mittel -0,035 (n 3).
 
-## O-111378911-105 · Bug · Tod F45
+## O-111378911-105 · vertretbar · Tod F45
 
 - A3 F37: EVENT Match and Keep: Critic 0.300 -> 0.217 (dv -0.084, bereinigt -0.082; Übergang EVENT->EVENT, Mittel -0.002 über 47)
 - Zustand: `A3 F37 EVENT HP 57/84 gold 388 deck 27 pots [ANCIENT_POTION] relics 12`
@@ -1044,7 +1044,7 @@ Werte: p und Logit sind die PPO-Policy (net-0420, Temperatur 0, also wird immer 
 | OPEN_CHEST+2 5g |  | 0.083 | -0.57 |
 | OPEN_CHEST+2 5g |  | 0.083 | -0.57 |
 
-**Einschätzung:** Match and Keep: alle 12 Optionen haben exakt gleiche Logits (p 0,083 je). Die Policy kann die Karten offenbar nicht unterscheiden; Kandidat für einen Beobachtungs-Fehler (Karteninhalt nicht kodiert). Die Optionsnamen in dieser Zeile stammen aus dem Pilot-Renderer und sind für dieses Event falsch. Vor einer Prüfung der Kodierung nur Hypothese.
+**Einschätzung:** Match and Keep: alle 12 Optionen haben exakt gleiche Logits (p 0,083 je). Nachgeprüft: so gewollt. buildChoice kodiert verdeckte Karten als kFaMatchUnseen (nur öffentliche Information), also sind die Optionen für das Netz gleich, solange die Karten verdeckt sind. Kein Kodierungsfehler. Die Optionsnamen in dieser Zeile stammen aus dem Pilot-Renderer und sind für dieses Event falsch.
 
 ## O-111378951-115 · Fehlvorstellung · Tod F55
 

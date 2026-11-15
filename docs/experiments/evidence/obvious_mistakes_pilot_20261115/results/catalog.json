@@ -1703,8 +1703,8 @@
   ],
   "deck": "Ascender's Bane, Strike+, Strike+, Strike+, Strike+, Defend+, Defend+, Bash+, Pummel+, Reckless Charge+, Shrug It Off, Iron Wave+, Power Through, Pommel Strike+, Infernal Blade, Disarm+, Bludgeon+, Corruption, Battle Trance+, Feel No Pain+, Havoc, Battle Trance, Feed, Writhe, Uppercut, Second Wind, Feed",
   "relics": "BURNING_BLOOD, ANCIENT_TEA_SET, CENTENNIAL_PUZZLE, VAJRA, DREAM_CATCHER, MATRYOSHKA, RUNIC_PYRAMID, STRIKE_DUMMY, PAPER_PHROG, WHETSTONE, MAGIC_FLOWER, SNECKO_EYE",
-  "cat": "bug",
-  "note": "Match and Keep: alle 12 Optionen haben exakt gleiche Logits (p 0,083 je). Die Policy kann die Karten offenbar nicht unterscheiden; Kandidat f\u00fcr einen Beobachtungs-Fehler (Karteninhalt nicht kodiert). Die Optionsnamen in dieser Zeile stammen aus dem Pilot-Renderer und sind f\u00fcr dieses Event falsch. Vor einer Pr\u00fcfung der Kodierung nur Hypothese.",
+  "cat": "vertretbar",
+  "note": "Match and Keep: alle 12 Optionen haben exakt gleiche Logits (p 0,083 je). Nachgepr\u00fcft: so gewollt. buildChoice kodiert verdeckte Karten als kFaMatchUnseen (nur \u00f6ffentliche Information), also sind die Optionen f\u00fcr das Netz gleich, solange die Karten verdeckt sind. Kein Kodierungsfehler. Die Optionsnamen in dieser Zeile stammen aus dem Pilot-Renderer und sind f\u00fcr dieses Event falsch.",
   "auto": false,
   "game": "Tod F45"
  },
