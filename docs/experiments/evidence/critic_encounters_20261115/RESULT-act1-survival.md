@@ -38,7 +38,7 @@ EV (§801), so gain share here is fitting effort, not predictive value.
 | --- | --- | --- | --- |
 | online_cal | 0.501 / −0.002 | 0.660 / 0.047 | 0.4597 |
 | gbm | 0.542 / 0.004 | 0.768 / 0.145 | 0.4062 |
-| gbm_enc | 0.557 / 0.009 | 0.772 / 0.150 | 0.4038 |
+| gbm_enc | 0.557 / 0.0085 | 0.772 / 0.150 | 0.4038 |
 
 | Contrast (95% CI) | First decision Δ EV | Act-1 Δ EV | Act-1 Δ log loss |
 | --- | --- | --- | --- |
@@ -58,6 +58,9 @@ Rule checks: gain over gbm ≥ +0.03: **no**; its CI above 0: yes; gain over onl
   (13.9% of gain, rank 21) and finds a small effect with a tight CI, so the information content, not the model,
   limits the gain. A net could exploit encounter × deck interactions better, but would have to find ~6× more signal
   than the GBM on the near target to reach the bar there, and more than that for the Heart.
+  Caveat (review K W2): these act-1 fits used half the training games (RAM fallback), §801's Heart fits all of
+  them, so the importance shares and the +0.005 come from different data sizes; more data could raise the act-1
+  gain somewhat, but not by the factor needed.
 - The online PPO critic ranks act-1 survival far worse than the public GBM (AUC 0.660 vs 0.768). It is trained on
   the Heart outcome, not on survival, so this is a different target and not a defect by itself (**descriptive**).
 
