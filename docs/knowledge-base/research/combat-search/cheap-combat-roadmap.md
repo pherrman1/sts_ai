@@ -167,6 +167,10 @@ Data, scripts and tables: [step 0 evidence](../../../experiments/evidence/cheap_
 - **Result (§791, 2026-11-12):** k 4 without noise at 8k on G16 + mb4: P4 (g7f_E top 4) −8.40 pp [−11.43, −5.37],
   N4 (net top 4) −7.32 pp [−10.16, −4.39], both WORSE at about 0.6× CPU; N4 − P4 +1.07 [−1.86, +4.10]
   ([RESULT](../../../experiments/evidence/narrow_gumbel_root_20261111/RESULT.md)). Track closed.
+- **Turn-plan root filter (#1058, offline, 2026-11-15, Measured):** a cross-fitted plan scorer on deterministic
+  turn plans keeps G16's pick slightly more often than the prior at equal width but loses more Q than the freed root
+  budget is worth under every rule (best net −0.033 Q at recall 97.8 %); NOT_PURSUED
+  ([RESULT](../../../experiments/evidence/turn_plan_root_filter_20261115/RESULT.md)).
 
 - k 16 already covers almost every root, so a narrower k saves little. With the net at k 4, 8.1% of roots lose the
   teacher's pick (regret 0.13 on average). Only worth a test at low budgets (2k-4k), and only after Track 0.

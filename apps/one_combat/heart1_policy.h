@@ -48,7 +48,8 @@ inline constexpr int kFaMatchSeen = 168;      // flip a seen slot (card = its ca
 inline constexpr int kFaMatchPair = 169;      // flip the seen twin of the face-up card (card = that card)
 inline constexpr int kFaEventOption0 = 170;   // event option without a silverbot mapping: + min(option, 7),
                                               // gold = the event id
-inline constexpr int kFaCount = 178;          // fixed-action ids 0..177
+inline constexpr int kFaDrinkPotion = 178;    // drink a held potion out of combat (potion = it; #1055)
+inline constexpr int kFaCount = 179;          // fixed-action ids 0..178
 
 // Choice construction options. The defaults are the trained heart1 choice space.
 struct ChoiceOptions {
@@ -56,6 +57,10 @@ struct ChoiceOptions {
     // lacks: potion discards on reward and shop screens whose potion offer is blocked
     // by full slots, Match and Keep slots, and unmapped event options.
     bool fullCoverage = false;
+    // With fullCoverage: one drink token per held potion that Java lets the player use out of
+    // combat (Blood Potion, Fruit Juice, Entropic Brew; javap 2026-11-15, #1055) on every
+    // encoded screen except card selects and We Meet Again.
+    bool drinkTokens = false;
     // Drop actions the heart key rules mask (heartKeyActionAllowed). False lets the
     // net see every legal action, as when it learns the keys itself.
     bool keyMask = true;
@@ -234,6 +239,9 @@ bool policyStep(sts::GameContext &);
 bool ppoEnabled();
 // STS_OOC_HEART1_PPO_KEY_RULE=1: heartKeyAction and the key mask stay on (comparison arm).
 bool ppoKeyRule();
+// Out-of-combat drink tokens in PPO choices (ChoiceOptions::drinkTokens). On by default
+// (#1055, Philipp 2026-11-15); STS_OOC_HEART1_PPO_DRINK=0 restores the earlier choice space.
+bool ppoDrinkTokens();
 double ppoTemperature();
 
 // Index sampled from softmax(logits / temperature) at uniform u in [0, 1);
