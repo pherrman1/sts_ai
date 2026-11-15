@@ -27583,7 +27583,7 @@ Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 104.1 lane-hours
 −2.25 pp [−5.08, +0.59] Heart; no conversion loss visible on the seeds where both arms reach Act 4 (not an isolated
 Heart contrast).
 
-## §TBD — PG16H24: PPO from net-0420 on §775's G16 + mb4 stack (S&S 16k, Heart 24k, 40 cloud actors, PC GPU learner), stopped after 46 updates (23,920 games); net-0046 vs net-0420 at temperature 0 on §775's G16 + mb4, 1,024 paired A20 seeds after a 32/32 sentinel on the exact-kernel binary dae7894a: Heart 41.21% → 38.18%, −3.03 pp [−6.15, +0.10], gainer SPRT NOT_SHOWN → STOP (cloud + PC GPU, 2026-11-14/15)
+## §806 — PG16H24: PPO from net-0420 on §775's G16 + mb4 stack (S&S 16k, Heart 24k, 40 cloud actors, PC GPU learner), stopped after 46 updates (23,920 games); net-0046 vs net-0420 at temperature 0 on §775's G16 + mb4, 1,024 paired A20 seeds after a 32/32 sentinel on the exact-kernel binary dae7894a: Heart 41.21% → 38.18%, −3.03 pp [−6.15, +0.10], gainer SPRT NOT_SHOWN → STOP (cloud + PC GPU, 2026-11-14/15)
 
 **Question (Philipp, 2026-11-14 00:02-00:18 CET; stop and eval 2026-11-15 19:18 CET, "lets stop the ppo here. do a
 comparison with gumbel g16 and max backup 4 as usual on 32 workers against the starting net"):** does PPO on the
