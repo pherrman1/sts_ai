@@ -27606,3 +27606,32 @@ whole-run non-regression gate needs Philipp's go. Seeds: §797's 111980000-11198
 111378263 (replays); no new seeds.
 **Knowledge impact:** combat search: `predictPolicyMlp` takes the state's nonzero list from the feature extractor;
 rejected prior-kernel variants and the FMA research option recorded in `knowledge-base/architecture/combat-search.md`.
+## §800 — Turn-plan root filter, offline (#1058, port of spire-mentor): deterministic turn plans of §797's 145,727 G16 + mb4 roots (median 14-16 plans, 7-8 % capped, 0.5 ms per root), scored by g7f_E line priors or a cross-fitted plan MLP, keeping the first actions of the best plans: every rule loses more Q than the root budget it frees (best net: top 6 by plan MLP + prior −0.029 Q at recall 98.3 %; spire-mentor's top-6 plans ∪ anchors −0.033 at 97.8 %; ceil(n/2) plan MLP + prior 0.193 vs prior 0.259 vs ≈ 0.025 credit) → NOT_PURSUED (cloud, 2026-11-15)
+
+**Question (Philipp, 2026-11-15 17:08 CET, "Öffne ein Thread pro Issue ... und arbeite das jeweils ab"):** can a
+learned plan scorer restrict the Gumbel root to the first actions of the best deterministic turn plans while keeping
+G16 + mb4's decisions, so the freed root simulations pay for what it drops?
+**Data:** [RESULT](evidence/turn_plan_root_filter_20261115/RESULT.md), `results/result.json`, `results/eval.log`;
+`tools/turn_plan/extract_roots.py`, `tools/turn_plan/filter_eval.py`; enumerator `search::enumerateTurnPlans`
+(`src/sim/search/SilverTurnPlan.cpp`, Silver's chance test and canonical edges, hash-merged states, caps 512 plans /
+20,000 states) via `one_combat turnplanenum`; §797's corpus (seeds 111980000-111980255), 145,727 of 155,598 root rows
+used. Scorers: g7f_E root prior (baseline), best-line plan prior, a 2 × 64 plan MLP on 32 end-state and context
+features with and without prior inputs (logsumexp over an action's plans, CE to G16's pick, 5 run folds). Regret =
+Q_ref(best) − Q_ref(best kept) in the played tree's max-backed Q; credit = 0.06 Q per budget doubling (§797's uniform
+curve near 16k) times log2(1 / (1 − share of root visits on removed edges)).
+**Result:** enumeration median 14-16 plans (p90 ≈ 145), cap rate 7.0-8.4 % by room group, 0.5 ms mean / 4 ms p99 per
+root. Net Q (credit − regret), all roots: n − 1 prior −0.088, plan MLP + prior −0.065 (recall 96.9 / 97.3 %);
+ceil(n/2) prior −0.232, plan prior −0.302, plan MLP −0.220, plan MLP + prior −0.169 (recall 85.7 / 83.2 / 87.1 /
+88.9 %); top 4 prior −0.131, plan MLP + prior −0.097; top 6 prior −0.038, plan MLP + prior −0.029 (recall 98.3 %); top-6 plans ∪ anchors (spire-mentor's rule) −0.033 at recall
+97.8 % vs prior top 6 97.5 %. Negative in every room group, worst at bosses and Act 4.
+**Interpretation (Inference):** the learned scorer cuts the prior's regret by about 25 % at equal width; break-even
+would need about 10×. spire-mentor's recall ≥ 95 % kill rule passes here and still loses Q: high recall is reached
+only by removing almost nothing, and the few G16 picks a filter drops carry most of the regret (G16 picks the
+scorer's last-ranked action at 2.7 % of roots). Consistent with §791 (E1 WORSE) and §784 (root constants flat).
+**Decision:** NOT_PURSUED at the offline gate; no online filter, no equal-CPU or whole-run test, no default change.
+The enumerator stays as a research tool (ctest `turn_plan_enum`) for #1058's step 5 (plans as macro actions), which
+needs its own question.
+Seeds: none played (§797's seeds reused as data). Cost: ≈ 35 CPU-minutes.
+**Knowledge impact:** Gumbel root width: a root filter must keep regret below the budget it frees (≈ 0.01 Q for the
+lowest-ranked action, ≈ 0.025 Q for half the actions at 16k); neither the g7f_E prior nor a plan scorer with
+end-state features comes within a factor of 7 of that, so root narrowing is not a lever (with §791).

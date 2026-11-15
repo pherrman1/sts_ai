@@ -4343,6 +4343,14 @@ int main(int argc, char **argv) {
     } else if (mode == "rolloutpolicybench") {
         if (argc < 6) { std::cerr << "usage: one_combat rolloutpolicybench OUT_PREFIX BUDGET ARMS CAPTURE_STRIDE < rows.jsonl\n"; return 2; }
         rolloutPolicyBench(argv[2], std::stoll(argv[3]), argv[4], std::stoi(argv[5]));
+    } else if (mode == "turnplanenum") {
+        if (argc < 3) { std::cerr << "usage: one_combat turnplanenum OUT.jsonl [MAX_PLANS=512] [MAX_NODES=20000] < rows.jsonl | turnplanenum names OUT.json\n"; return 2; }
+        if (std::string(argv[2]) == "names") {
+            if (argc < 4) { std::cerr << "usage: one_combat turnplanenum names OUT.json\n"; return 2; }
+            turnPlanNames(argv[3]);
+        } else {
+            turnPlanEnum(argv[2], argc > 3 ? std::stoi(argv[3]) : 512, argc > 4 ? std::stoi(argv[4]) : 20000);
+        }
     } else if (mode == "silversynthreplay") {
         silverSynthReplay(argc >= 4 && std::string(argv[2]) == "names" ? argv[3] : "");
     } else if (mode == "combattransitionlizardtargetcandidategen") {
