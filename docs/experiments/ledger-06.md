@@ -27583,6 +27583,42 @@ Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 104.1 lane-hours
 −2.25 pp [−5.08, +0.59] Heart; no conversion loss visible on the seeds where both arms reach Act 4 (not an isolated
 Heart contrast).
 
+## §806 — PG16H24: PPO from net-0420 on §775's G16 + mb4 stack (S&S 16k, Heart 24k, 40 cloud actors, PC GPU learner), stopped after 46 updates (23,920 games); net-0046 vs net-0420 at temperature 0 on §775's G16 + mb4, 1,024 paired A20 seeds after a 32/32 sentinel on the exact-kernel binary dae7894a: Heart 41.21% → 38.18%, −3.03 pp [−6.15, +0.10], gainer SPRT NOT_SHOWN → STOP (cloud + PC GPU, 2026-11-14/15)
+
+**Question (Philipp, 2026-11-14 00:02-00:18 CET; stop and eval 2026-11-15 19:18 CET, "lets stop the ppo here. do a
+comparison with gumbel g16 and max backup 4 as usual on 32 workers against the starting net"):** does PPO on the
+strong G16 combat stack improve net-0420's out-of-combat play?
+**Data:** [PREREG](evidence/ppo_g16_20261114/PREREG.md), [EVAL](evidence/ppo_g16_20261114/eval/EVAL.md),
+[RESULT](evidence/ppo_g16_20261114/RESULT.md), `eval/results/result.json`, `eval/results/claims.txt`,
+`eval/results/train_stats-0046.json`, `eval/results/stuck_games.md`, `rebin_sentinel.txt`.
+- Training: LONG_C recipe, 520 games/update, 4 value-only warm-up updates, 46 updates; seeds 112100000-112123919.
+  In-sample Heart (training stack, sampled): warm-up 39.66%, PPO updates 5-46 36.41%, last 10 36.23%.
+  Deviations:
+  - 5 hour-long games force-stalled as losses. From 11-15 a 1 h rule applied (Philipp).
+  - A 10-min pause on 11-14 caused by a wrong diagnosis.
+  - Mid-run rebin from 97aec5b5 to the play-identical dae7894a (#1046/#1047), 38 of 40 workers.
+  - The run stopped before the 48 h boundary.
+- Eval: P46 = net-0046 (c42c8725…) vs §775's G16 games of net-0420 (REUSE_VALID, 32/32 sentinel identical). Binary
+  dae7894a, RUN 68142dfc, 1,056 units verified. 0 bad, 0 aborts, 0 dropped. About 113 lane-hours on 32 workers.
+
+**Result:** Heart kill **41.21% → 38.18%**, d **−3.03 pp [−6.15, +0.10]**, one-sided 95% [−5.66, −0.39].
+- 119 seeds only P46 kills, 150 only G16.
+- Gainer SPRT NOT_SHOWN (H0 at 896 seeds) → **STOP**.
+- First 512 seeds −2.54 [−6.84, +1.95].
+- Act-4 reach −1.86 [−4.98, +1.27].
+- Act-4 conversion 83.7% vs 80.6%. On the 360 seeds both reach, 87.2% vs 82.5%, −4.7 [−9.2, −0.3].
+- CPU 0.754× raw, 0.929× after the sentinel correction.
+- P46 − D +6.54 [+3.32, +9.77] (the stack's gain).
+
+**Interpretation (Inference):**
+- 46 updates did not improve net-0420. The in-sample drop after the warm-up and the eval point the same way.
+- This fits PR #1049's gradient-noise reading: there is no measurable policy gradient at this batch size.
+- A further PPO run needs variance reduction (critic) or far larger batches before it can show a gain.
+
+**Decision:** STOP. net-0046 is not adopted, and net-0420 stays. No default change. Seeds 112100000-112123919 used
+(training) and §775's 1,024 reused (eval). Cost: about 40 actors × 43 h plus PC GPU, and 113 lane-hours of eval.
+**Knowledge impact:** KB `research/a20-ppo-plan.md`: PPO on the G16 stack at 520 games/update shows no gain after
+46 updates (−3.03 pp [−6.15, +0.10]).
 ## §802 — Exact prior-playout pick cache (#1051): 31.4 % of g7f_E prior-playout MLP calls repeat an input the same search already scored (52 G16 + mb4 boss / Act-4 roots of §797, 0 of 5.55 M repeats with a different pick); a per-thread 128-bit-fingerprint table of the MLP's argmax (`STS_SILVER_PRIOR_PICK_CACHE`, default on, 2^20 slots) plays bit-identically at about 0.95× a prior-playout search's CPU and 0.96-0.97× a whole G16 game → default on (cloud, 2026-11-15)
 
 **Question (Philipp, 2026-11-15 17:08 CET, "Öffne ein Thread pro Issue ... und arbeite das jeweils ab"; issue
