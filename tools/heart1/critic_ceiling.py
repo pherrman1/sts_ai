@@ -67,6 +67,7 @@ ENC_SCOPES = ("act", "run")
 # Outcome targets (PREREG critic_encounters_20261115 addendum): "heart" = 1{Heart kill} (§761, §801);
 # "act1_survive" = 1{the game leaves act 1 alive}, scored on act-1 decisions only (later decisions are dropped).
 TARGETS = ("heart", "act1_survive")
+ACT1_CLEARED_FLOOR = 17   # = ppo_train.ACT_FLOORS[0]: the first floor after act 1's boss
 _TARGET = {"name": "heart"}   # set by the subcommands before any read_part (and before the worker pool forks)
 
 
@@ -80,6 +81,10 @@ def outcome_y(outcome, target):
     if target == "heart":
         return 1.0 if outcome.get("heart_kill") else 0.0
     if target == "act1_survive":
+        if "act" not in outcome:
+            # A stalled game's line (ppo_cloud.stalled_game_lines) has only floor/heart_kill/stalled and no
+            # decisions: act 1 counts as survived iff the stall floor is past act 1's boss (ppo_train.ACT_FLOORS).
+            return 1.0 if int(outcome.get("floor", 0)) >= ACT1_CLEARED_FLOOR else 0.0
         return 1.0 if outcome.get("won") or int(outcome["act"]) >= 2 else 0.0
     raise ValueError(f"target {target}")
 BOSS_ENCODING = (18, 20, 19, 39, 37, 38, 54, 55, 53, 57)   # heart1 bossEncoding index -> MonsterEncounter id

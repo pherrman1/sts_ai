@@ -170,6 +170,10 @@ class EncounterFeatures(unittest.TestCase):
         self.assertEqual(cc.outcome_y({"heart_kill": False, "act": 2, "won": False}, "heart"), 0.0)
         self.assertEqual(cc.outcome_y({"heart_kill": False, "act": 2, "won": False}, "act1_survive"), 1.0)
         self.assertEqual(cc.outcome_y({"heart_kill": False, "act": 1, "won": False}, "act1_survive"), 0.0)
+        # stalled games (ppo_cloud.stalled_game_lines) carry floor/heart_kill/stalled only
+        self.assertEqual(cc.outcome_y({"heart_kill": False, "stalled": True, "floor": 12}, "act1_survive"), 0.0)
+        self.assertEqual(cc.outcome_y({"heart_kill": False, "stalled": True, "floor": 17}, "act1_survive"), 1.0)
+        self.assertEqual(cc.outcome_y({"heart_kill": False, "stalled": True, "floor": 40}, "heart"), 0.0)
         with self.assertRaises(ValueError):
             cc.set_target("act2_survive")
         try:

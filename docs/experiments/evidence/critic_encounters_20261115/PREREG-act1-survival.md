@@ -23,6 +23,14 @@ rank, top features. No data is read; no decision rule.
 - Target `--target act1_survive`: y = 1 if the game leaves act 1 alive (outcome act ≥ 2, or won). Only act-1 net
   decisions are kept, in training (first act-1 decision + 8 more act-1 decisions per game, seeded as before) and in
   the test.
+- Amendment 2026-11-15 ≈ 20:15 CET, before any fit completed (review K N3; the first launch at 9b12a846 stopped
+  while loading the training data with `KeyError: 'act'`): a stalled game's line (`ppo_cloud.stalled_game_lines`)
+  has only `floor`, `heart_kill`, `stalled`. Its y is 1 iff the stall floor is ≥ 17 (past act 1's boss, as
+  `ppo_train.ACT_FLOORS`), so an act-1 stall counts as y = 0. Such games carry no decisions, so they enter no
+  training or test row; one exists in the training parts (`traj-0361-p37`). Act-1 decisions after the act-1 boss
+  are almost surely y = 1 (review K N2); they stay in, as for the Heart target.
+- Importance (review K N1): `importance` sums xgboost's total gain over all trees of the saved model, including the
+  ≤ 100 early-stopping rounds after the best iteration; the RESULT states this.
 - Data, split, table and settings as §801 (LONG_C 0220-0399 train, 0400-0419 test, `--game-frac 1.0`, table sha256
   `21e81001…c7ad63`, GBM depth 6, eta 0.05, ≤ 3,000 rounds, min-count 20). RAM fallback as §801 (both fits at 0.5).
 - Estimators: online, online_cal (the logged Heart value Platt-recalibrated to act-1 survival on the training parts),
