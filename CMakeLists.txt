@@ -564,6 +564,7 @@ add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/ritual_writhing_setup.cpp
     apps/one_combat/silver_synth_gen.cpp
     apps/one_combat/silver_synth_replay.cpp
+    apps/one_combat/turn_plan.cpp
     apps/one_combat/ctm_offline_score.cpp
     apps/one_combat/fight_replay.cpp
     apps/one_combat/ooc_factor_eval.cpp
@@ -929,6 +930,8 @@ set_tests_properties(semantic_confirmation_analysis PROPERTIES
 add_test(NAME py_compile_analyze_ooc_factor COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_ooc_factor.py)
 add_test(NAME py_compile_silver_az_mlp COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/silver_az_mlp.py)
 add_test(NAME check_replay_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/verify/check_replay.py --self-test)
+add_test(NAME turn_plan_enum COMMAND python3 ${CMAKE_SOURCE_DIR}/tests/turn_plan_enum_check.py $<TARGET_FILE:one_combat>)
+set_tests_properties(turn_plan_enum PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
 add_test(NAME vnettest_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/verify/vnettest_selftest.py --self-test $<TARGET_FILE:one_combat>)
 add_test(NAME winnettest_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/verify/winnettest_selftest.py --self-test $<TARGET_FILE:one_combat>)
 add_test(NAME one_combat_feature_regression COMMAND $<TARGET_FILE:one_combat_feature_test>)
