@@ -423,6 +423,23 @@ void ppoCoverageSelfTest() {
         Choice map, mapPlain;
         require(buildChoice(gc, mapPlain) && buildChoice(gc, map, nullptr, full)
                 && map.record.choiceCount() == mapPlain.record.choiceCount() + 1, "map drink token");
+        // Event screens get it, except We Meet Again (its potion option takes a slot itself).
+        gc.screenState = ScreenState::EVENT_SCREEN;
+        gc.curEvent = Event::FACE_TRADER;
+        gc.info.hpAmount0 = 8;
+        Choice event;
+        require(buildChoice(gc, event, nullptr, full), "event choice");
+        require(std::count_if(event.record.fixedActions.begin(), event.record.fixedActions.end(),
+                              [](const FixedChoice &f) { return f.action == kFaDrinkPotion; }) == 1,
+                "event drink token");
+        gc.curEvent = Event::WE_MEET_AGAIN;
+        gc.info.potionIdx = 0;
+        gc.info.gold = 50;
+        gc.info.cardIdx = 1;
+        Choice wma;
+        require(buildChoice(gc, wma, nullptr, full), "we meet again choice");
+        for (const auto &f : wma.record.fixedActions) require(f.action != kFaDrinkPotion, "no drink in We Meet Again");
+        gc.curEvent = Event::INVALID;
         // Card select: none.
         gc.screenState = ScreenState::CARD_SELECT;
         gc.info.toSelectCards.clear();
