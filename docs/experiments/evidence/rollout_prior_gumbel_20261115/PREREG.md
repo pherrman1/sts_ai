@@ -27,8 +27,11 @@ from a 512/256 teacher). This stage targets **role 3 only**; roles 1, 2 and 4 st
 - §798: the playout policy is a steep lever. At G16's prior-playout roots, a 32/16 student that copies g7f_E's
   playout distribution almost exactly (KL 0.023 nats) loses +0.24 Silver Q at equal simulations (1.009 vs 0.766 at
   16k), more than halving the simulations costs (P1 8k: 0.853). Greedy playouts lose +0.48.
-- Same architecture and size as g7f_E means the same CPU per prior call (6 µs, §798 stage 0; prior playouts are
-  57 % of G16's CPU, combat speed report 2026-11-14), so any quality gain is free.
+- Same architecture and size as g7f_E means about the same CPU per prior call (6 µs, §798 stage 0; prior playouts
+  are 57 % of G16's CPU, combat speed report 2026-11-14), so a quality gain is close to free. Not exactly: the
+  native kernel skips inactive ReLU units, so the cost depends on the trained weights. Every candidate's native
+  µs per root is measured against g7f_E on the same feature prefix (idle machine, `silverpolicymlpcheck`), and
+  stage 2 measures CPU per search directly.
 - On roots, the T1 transformer (validation, max-backed Q) has q_regret 1.286 and top-1 to the Gumbel pick 0.490;
   T1's earlier D1 numbers had g7f_E at 1.38. Stage 1 measures g7f_E on exactly the same rows.
 
@@ -56,7 +59,8 @@ measures exactly this.
 g7f_E's recipe (gen-6 E, `silver_az_mlp_gen6_20261014/train-g6_E.json`) except the distillation teacher: h1 128 /
 h2 64, card, encounter and monster embeddings 16, dropout 0.15, AdamW lr 1e-3 cosine to 0, wd 1e-2, batch 1,024,
 25 epochs, value head weight 0.1, final checkpoint, from scratch, seed 0. Export to `combat_policy_mlp_v2` (same
-layout and cost as g7f_E), native parity with `one_combat silverpolicymlpcheck` before any stage-2 use.
+layout as g7f_E); `tools/rollout_prior/export_parity.py` checks checkpoint vs artifact and artifact vs native
+(`one_combat silverpolicymlpcheck`) before any stage-2 use (smoke model: 1.3e-7 and 3.0e-7, 0 argmax mismatches).
 
 | id | target | q source | aux heads |
 |---|---|---|---|
