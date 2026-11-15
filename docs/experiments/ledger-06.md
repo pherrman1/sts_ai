@@ -27669,7 +27669,7 @@ critic. No default change. The binding and `critic_ceiling.py encounters` / `che
 as tools. Seeds: none. Cost ≈ 70 min PC CPU, no GPU, no cloud core-hours.
 **Knowledge impact:** KB `research/a20-ppo-plan.md` (V6 row and critic ceiling paragraph).
 
-## §803 — Rollout prior on G16 targets, stage 1 (issue #1053): a g7f_E-shaped MLP trained on D2/D2b G16 + mb4 visit shares cuts the argmax's root regret in playout rooms from 2.449 (g7f_E) to 1.884 max-backed Q, lower in all 11 playout encounters; completed-Q targets (cq:10/30/paper) and auxiliary heads (Q, short-horizon / fight-end) do not beat visits → two candidates (V, boss fine-tune X-B) for the §798 playout harness, which needs a go (offline, no seeds, 2026-11-15)
+## §TBD — Rollout prior on G16 targets, stage 1 (issue #1053): a g7f_E-shaped MLP trained on D2/D2b G16 + mb4 visit shares cuts the argmax's root regret in playout rooms from 2.449 (g7f_E) to 1.884 max-backed Q, lower in all 11 playout encounters; completed-Q targets (cq:10/30/paper) and auxiliary heads (Q, short-horizon / fight-end) do not beat visits → two candidates (V, boss fine-tune X-B) for the §798 playout harness, which needs a go (offline, no seeds, 2026-11-15)
 
 **Question (Philipp 2026-11-15 14:05 CET: "sollten wir das prior netz mal auf gumbel anpassen?"; 17:08 CET "arbeite das
 jeweils ab"):** g7f_E is G16's root prior, tree prior, playout policy (boss rooms, Act 4) and root table. T2 (§788)
