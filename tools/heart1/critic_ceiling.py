@@ -345,8 +345,8 @@ def cmd_importance(argv):
         meta = json.load(open(path))
         bst = xgb.Booster()
         bst.load_model(os.path.join(os.path.dirname(os.path.abspath(path)), meta["model"]))
-        out[os.path.basename(path)] = importance_summary(bst.get_score(importance_type="total_gain"), meta["vocab"],
-                                                         a.top)
+        # keyed by the path as given: two directories may hold models with the same file name
+        out[path] = importance_summary(bst.get_score(importance_type="total_gain"), meta["vocab"], a.top)
     json.dump(out, open(a.out, "w"), indent=1)
     for name, d in out.items():
         print(name, f"enc share {d['enc_gain_share']:.4f}, enc features used {d['enc_features_used']}"

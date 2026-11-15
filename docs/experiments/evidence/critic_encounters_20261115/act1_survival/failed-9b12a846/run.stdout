@@ -1,0 +1,78 @@
+multiprocessing.pool.RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 125, in worker
+    result = (True, func(*args, **kwds))
+                    ^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 48, in mapstar
+    return list(map(*args))
+           ^^^^^^^^^^^^^^^^
+  File "/home/philippherrmann/sts-critic-enc2/tools/heart1/critic_ceiling.py", line 185, in _train_part
+    for g in read_part(path):
+             ^^^^^^^^^^^^^^^
+  File "/home/philippherrmann/sts-critic-enc2/tools/heart1/critic_ceiling.py", line 146, in read_part
+    y = outcome_y(row["outcome"], _TARGET["name"])
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/philippherrmann/sts-critic-enc2/tools/heart1/critic_ceiling.py", line 83, in outcome_y
+    return 1.0 if outcome.get("won") or int(outcome["act"]) >= 2 else 0.0
+                                            ~~~~~~~^^^^^^^
+KeyError: 'act'
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/philippherrmann/sts-critic-enc2/tools/heart1/critic_ceiling.py", line 997, in <module>
+    main()
+  File "/home/philippherrmann/sts-critic-enc2/tools/heart1/critic_ceiling.py", line 993, in main
+    cmds[sys.argv[1]](sys.argv[2:])
+  File "/home/philippherrmann/sts-critic-enc2/tools/heart1/critic_ceiling.py", line 528, in cmd_fit_gbm
+    rows, files, excl = load_training(a.train, a.exclude_from, a.per_game, want_feat=False, workers=a.workers,
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/philippherrmann/sts-critic-enc2/tools/heart1/critic_ceiling.py", line 211, in load_training
+    for part in pool.imap(fn, files, chunksize=4):
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 423, in <genexpr>
+    return (item for chunk in result for item in chunk)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 873, in next
+    raise value
+KeyError: 'act'
+multiprocessing.pool.RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 125, in worker
+    result = (True, func(*args, **kwds))
+                    ^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 48, in mapstar
+    return list(map(*args))
+           ^^^^^^^^^^^^^^^^
+  File "/home/philippherrmann/sts-critic-enc2/tools/heart1/critic_ceiling.py", line 185, in _train_part
+    for g in read_part(path):
+             ^^^^^^^^^^^^^^^
+  File "/home/philippherrmann/sts-critic-enc2/tools/heart1/critic_ceiling.py", line 146, in read_part
+    y = outcome_y(row["outcome"], _TARGET["name"])
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/philippherrmann/sts-critic-enc2/tools/heart1/critic_ceiling.py", line 83, in outcome_y
+    return 1.0 if outcome.get("won") or int(outcome["act"]) >= 2 else 0.0
+                                            ~~~~~~~^^^^^^^
+KeyError: 'act'
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/philippherrmann/sts-critic-enc2/tools/heart1/critic_ceiling.py", line 997, in <module>
+    main()
+  File "/home/philippherrmann/sts-critic-enc2/tools/heart1/critic_ceiling.py", line 993, in main
+    cmds[sys.argv[1]](sys.argv[2:])
+  File "/home/philippherrmann/sts-critic-enc2/tools/heart1/critic_ceiling.py", line 528, in cmd_fit_gbm
+    rows, files, excl = load_training(a.train, a.exclude_from, a.per_game, want_feat=False, workers=a.workers,
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/philippherrmann/sts-critic-enc2/tools/heart1/critic_ceiling.py", line 211, in load_training
+    for part in pool.imap(fn, files, chunksize=4):
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 423, in <genexpr>
+    return (item for chunk in result for item in chunk)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 873, in next
+    raise value
+KeyError: 'act'

@@ -360,11 +360,12 @@ class EncounterRoundTrip(unittest.TestCase):
                 with self.assertRaises(subprocess.CalledProcessError):
                     run(*bad, "--encounters", enc)
             imp = os.path.join(d, "imp.json")
-            run("importance", "--gbm", os.path.join(d, "gbm.json"), os.path.join(d, "gbm_enc.json"), "--out", imp)
+            g, ge = os.path.join(d, "gbm.json"), os.path.join(d, "gbm_enc.json")
+            run("importance", "--gbm", g, ge, "--out", imp)
             with open(imp) as f:
                 imp = json.load(f)
-            self.assertEqual(imp["gbm.json"]["enc_gain_share"], 0.0)
-            self.assertGreater(imp["gbm_enc.json"]["enc_gain_share"], 0.2)   # the planted marker carries the signal
+            self.assertEqual(imp[g]["enc_gain_share"], 0.0)
+            self.assertGreater(imp[ge]["enc_gain_share"], 0.2)   # the planted marker carries the signal
             self.assertGreater(rep["contrasts"]["gbm_enc-gbm"]["act1"]["ev_diff"], 0.2)
             self.assertEqual(rep["verdict"]["decision"], "GO")
             self.assertEqual(rep["meta"]["gbm_enc"]["encounters"]["scope"], "act")
