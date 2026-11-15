@@ -1,0 +1,47 @@
+[0]	val-logloss:0.51263
+[200]	val-logloss:0.40232
+[400]	val-logloss:0.39344
+[600]	val-logloss:0.38931
+[800]	val-logloss:0.38704
+[1000]	val-logloss:0.38550
+[1200]	val-logloss:0.38442
+[1400]	val-logloss:0.38358
+[1600]	val-logloss:0.38314
+[1800]	val-logloss:0.38248
+[1971]	val-logloss:0.38248
+gbm: 941186 train / 49129 val rows, 1399 features, best iteration 1871
+[0]	val-logloss:0.51265
+[200]	val-logloss:0.40261
+[400]	val-logloss:0.39430
+[600]	val-logloss:0.39016
+[800]	val-logloss:0.38777
+[1000]	val-logloss:0.38592
+[1200]	val-logloss:0.38483
+[1400]	val-logloss:0.38438
+[1600]	val-logloss:0.38404
+[1800]	val-logloss:0.38390
+[1842]	val-logloss:0.38385
+gbm: 941186 train / 49129 val rows, 1718 features, best iteration 1742
+[0]	val-logloss:0.51256
+[200]	val-logloss:0.40239
+[400]	val-logloss:0.39414
+[600]	val-logloss:0.39002
+[800]	val-logloss:0.38753
+[1000]	val-logloss:0.38644
+[1200]	val-logloss:0.38563
+[1400]	val-logloss:0.38508
+[1600]	val-logloss:0.38473
+[1800]	val-logloss:0.38434
+[2000]	val-logloss:0.38404
+[2166]	val-logloss:0.38413
+gbm: 941186 train / 49129 val rows, 1892 features, best iteration 2066
+online act1: auc 0.671 ev 0.073 act2: auc 0.782 ev 0.221 act3: auc 0.825 ev 0.312 act4: auc 0.817 ev 0.279 all: auc 0.784 ev 0.244
+online_cal act1: auc 0.671 ev 0.072 act2: auc 0.782 ev 0.219 act3: auc 0.825 ev 0.315 act4: auc 0.817 ev 0.282 all: auc 0.784 ev 0.243
+gbm act1: auc 0.662 ev 0.063 act2: auc 0.785 ev 0.224 act3: auc 0.833 ev 0.331 act4: auc 0.839 ev 0.318 all: auc 0.782 ev 0.242
+gbm_enc act1: auc 0.661 ev 0.061 act2: auc 0.785 ev 0.223 act3: auc 0.832 ev 0.329 act4: auc 0.839 ev 0.319 all: auc 0.781 ev 0.241
+gbm_run act1: auc 0.659 ev 0.061 act2: auc 0.785 ev 0.223 act3: auc 0.833 ev 0.332 act4: auc 0.839 ev 0.318 all: auc 0.781 ev 0.242
+gbm_enc-gbm first_decision: dEV +0.0005 [-0.0007, +0.0018] act1: dEV -0.0012 [-0.0022, -0.0002] act2: dEV -0.0016 [-0.0042, +0.0010] act3: dEV -0.0021 [-0.0072, +0.0029] act4: dEV +0.0006 [-0.0074, +0.0084] all: dEV -0.0015 [-0.0032, +0.0004]
+gbm_enc-online_cal first_decision: dEV -0.0008 [-0.0029, +0.0014] act1: dEV -0.0107 [-0.0150, -0.0065] act2: dEV +0.0035 [-0.0042, +0.0113] act3: dEV +0.0140 [+0.0023, +0.0253] act4: dEV +0.0364 [+0.0179, +0.0564] all: dEV -0.0025 [-0.0077, +0.0029]
+gbm_run-gbm first_decision: dEV -0.0005 [-0.0029, +0.0020] act1: dEV -0.0014 [-0.0037, +0.0011] act2: dEV -0.0011 [-0.0049, +0.0028] act3: dEV +0.0003 [-0.0046, +0.0050] act4: dEV +0.0001 [-0.0075, +0.0082] all: dEV -0.0006 [-0.0030, +0.0017]
+gbm_run-gbm_enc first_decision: dEV -0.0010 [-0.0032, +0.0013] act1: dEV -0.0002 [-0.0024, +0.0022] act2: dEV +0.0005 [-0.0032, +0.0041] act3: dEV +0.0024 [-0.0020, +0.0069] act4: dEV -0.0004 [-0.0077, +0.0073] all: dEV +0.0008 [-0.0013, +0.0029]
+verdict NO_GO {'gain_over_gbm_at_margin': False, 'gain_over_gbm_ci95_above_0': False, 'gain_over_online_cal_ci95_above_0': False}

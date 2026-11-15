@@ -29,6 +29,15 @@ Differences net - online_cal and gbm - online_cal (and, descriptive, against raw
 log loss and EV get a game-cluster bootstrap CI.
 The decision rule (PREREG critic_ceiling_20261106) is applied in "verdict".
 
+Encounter features (issue #1050 stage 0, PREREG critic_encounters_20261115): `encounters` writes a table of each
+seed's pre-generated encounter lists (acts 1-3: normal monsters, elites, boss, second boss) through the slaythespire
+module's act_encounter_lists, and `check-encounters` verifies that every recorded obs.v2.fought is the consumed
+prefix monsterList[:k] + eliteMonsterList[:j] of that table (and the recorded boss matches); no outcome is read.
+fit-gbm --encounters TABLE --enc-scope act|run adds privileged features (enc_*, encounter_features): the remaining
+normals and elites of the current act by position and count (scope act, plus the act-3 second boss), and with scope
+run also the lists and bosses of the later acts. evaluate --extra-gbm NAME=PATH scores more GBMs on the same
+decisions, --contrast B:A bootstraps B - A per act, and --rule encounters applies that PREREG's decision rule.
+
 Bound worth keeping in mind (no code): with a 0/1 outcome, a critic's MSE against the outcome is Var(y) (1 - EV), so an
 EV gain of d removes only d * Var(y) of the lambda-1 advantage variance.
 """
@@ -52,6 +61,10 @@ NET_SOURCES = ("heart1_ppo", "heart1_ppo_single")
 EPS = 1e-4
 ACTS = (1, 2, 3, 4)
 FIXED_ACTION_KEYS = {"action", "gold", "card", "relic", "potion", "info"}
+ENC_NORMALS = 8    # remaining normal encounters of the act encoded by position (an act has 15-16; <= 9 are fought)
+ENC_ELITES = 4     # remaining elites by position (10 per act; <= 5 are fought)
+ENC_SCOPES = ("act", "run")
+BOSS_ENCODING = (18, 20, 19, 39, 37, 38, 54, 55, 53, 57)   # heart1 bossEncoding index -> MonsterEncounter id
 
 # Every record field and how flat_features() uses it (an unlisted field raises: the GBM must see all inputs).
 RECORD_FIELDS = {
@@ -156,7 +169,7 @@ def _train_part(path, per_game, want_feat, trim_map, exclude, game_frac=1.0):
             rec = s["record"]
             rows.append({"seed": g["seed"], "y": g["y"], "act": act_of(s),
                          "feat": ppo_model.featurize(rec, trim_map) if want_feat else None,
-                         "flat": None if want_feat else flat_features(rec)})
+                         "flat": None if want_feat else flat_with_encounters(rec, g["seed"], _ENC or None)})
     return rows
 
 
@@ -181,6 +194,152 @@ def load_training(patterns, exclude_patterns, per_game, want_feat, trim_map=Fals
             rows.extend(fn(f))
     rows.sort(key=lambda r: (r["seed"],))
     return rows, files, exclude
+
+
+# ---------------------------------------------------------------- privileged encounter lists (issue #1050)
+
+def load_encounters(path):
+    """{seed (str): [{act, monsters, elites, boss, second_boss} for acts 1-3]} and the file's sha256."""
+    raw = open(path, "rb").read()
+    tab = json.loads(gzip.decompress(raw) if path.endswith(".gz") else raw)
+    if tab.get("schema") != "critic-encounters-v1":
+        raise ValueError(f"{path}: schema {tab.get('schema')} is not critic-encounters-v1")
+    return tab["seeds"], hashlib.sha256(raw).hexdigest()
+
+
+def consumed_prefix(rec, acts):
+    """(k, j) with obs.v2.fought == monsters[:k] + elites[:j] of the record's act; ValueError when it is not."""
+    act = int(rec["obs.act"])
+    L = acts[act - 1]
+    f = list(rec.get("obs.v2.fought") or [])
+    m, e = L["monsters"], L["elites"]
+    k = 0
+    while k < len(f) and k < len(m) and f[k] == m[k]:
+        k += 1
+    j = len(f) - k
+    if f[k:] != e[:j]:
+        raise ValueError(f"fought {f} is not a prefix of the act-{act} lists {m} / {e}")
+    return k, j
+
+
+def encounter_features(rec, acts, scope):
+    """Privileged features of one decision (the policy never sees them): the current act's remaining normal
+    encounters (first ENC_NORMALS by position, and their counts) and elites (first ENC_ELITES, and counts), the act-3
+    second boss (A20); scope "run" adds the lists and bosses of the later acts from their start. Act 4: none."""
+    if scope not in ENC_SCOPES:
+        raise ValueError(f"encounter scope {scope}")
+    act = int(rec["obs.act"])
+    x = {}
+    if act > 3:
+        return x
+
+    def add(k, v=1.0):
+        x[k] = x.get(k, 0.0) + float(v)
+
+    def lists(prefix, L, k, j):
+        for i, enc in enumerate(L["monsters"][k:k + ENC_NORMALS]):
+            add(f"{prefix}n{i}_{enc}"); add(f"{prefix}ncnt_{enc}")
+        for i, enc in enumerate(L["elites"][j:j + ENC_ELITES]):
+            add(f"{prefix}e{i}_{enc}"); add(f"{prefix}ecnt_{enc}")
+        if L["second_boss"]:
+            add(f"{prefix}boss2_{L['second_boss']}")
+
+    k, j = consumed_prefix(rec, acts)
+    lists("enc_", acts[act - 1], k, j)
+    if scope == "run":
+        for later in range(act + 1, 4):
+            L = acts[later - 1]
+            lists(f"enc_a{later}_", L, 0, 0)
+            add(f"enc_a{later}_boss_{L['boss']}")
+    return x
+
+
+def cmd_encounters(argv):
+    ap = argparse.ArgumentParser(prog="critic_ceiling.py encounters")
+    ap.add_argument("--seed-range", nargs=2, type=int, required=True, metavar=("FIRST", "LAST"), help="inclusive")
+    ap.add_argument("--ascension", type=int, default=20)
+    ap.add_argument("--module-dir", default="", help="directory holding the built slaythespire module")
+    ap.add_argument("--out", required=True, help=".json.gz")
+    a = ap.parse_args(argv)
+    if a.module_dir:
+        sys.path.insert(0, a.module_dir)
+    import slaythespire
+    seeds = {str(sd): slaythespire.act_encounter_lists(sd, a.ascension) for sd in range(a.seed_range[0],
+                                                                                         a.seed_range[1] + 1)}
+    tab = {"schema": "critic-encounters-v1", "ascension": a.ascension, "seed_range": a.seed_range, "seeds": seeds}
+    # No file name and mtime 0 in the gzip header: the file (and its sha256) depends on the content only.
+    with open(a.out, "wb") as raw, gzip.GzipFile(filename="", fileobj=raw, mode="wb", mtime=0) as f:
+        f.write(json.dumps(tab, sort_keys=True, separators=(",", ":")).encode())
+    print(f"{len(seeds)} seeds, sha256 {hashlib.sha256(open(a.out, 'rb').read()).hexdigest()}")
+
+
+def _check_part(path, seeds):
+    out = {"decisions": 0, "act4": 0, "checked": 0, "games": 0, "max_normals": [0, 0, 0], "max_elites": [0, 0, 0]}
+    with (gzip.open(path, "rt") if path.endswith(".gz") else open(path)) as f:
+        for line in f:
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            if row["type"] == "game":
+                out["games"] += 1
+            if row["type"] != "decision" or row.get("source") not in NET_SOURCES:
+                continue
+            out["decisions"] += 1
+            rec = row["record"]
+            act = int(rec["obs.act"])
+            if act > 3:
+                out["act4"] += 1
+                continue
+            acts = seeds.get(str(row["seed"]))
+            if acts is None:
+                raise ValueError(f"{path}: seed {row['seed']} is not in the encounter table")
+            k, j = consumed_prefix(rec, acts)   # raises on a mismatch
+            boss = BOSS_ENCODING[rec["obs.fixed_observation"][4]]
+            if boss != acts[act - 1]["boss"]:
+                raise ValueError(f"{path}: seed {row['seed']} act {act} boss {boss} vs table {acts[act - 1]['boss']}")
+            if k >= len(acts[act - 1]["monsters"]):
+                raise ValueError(f"{path}: seed {row['seed']} act {act} used up its normal list (regeneration)")
+            out["checked"] += 1
+            out["max_normals"][act - 1] = max(out["max_normals"][act - 1], k)
+            out["max_elites"][act - 1] = max(out["max_elites"][act - 1], j)
+    return out
+
+
+def cmd_check_encounters(argv):
+    """Every net decision of acts 1-3: fought == consumed prefix of the table's lists, recorded boss == table boss.
+    Reads no outcome. Exits non-zero on the first mismatch."""
+    ap = argparse.ArgumentParser(prog="critic_ceiling.py check-encounters")
+    ap.add_argument("--parts", nargs="+", required=True)
+    ap.add_argument("--encounters", required=True)
+    ap.add_argument("--out", default="")
+    a = ap.parse_args(argv)
+    seeds, sha = load_encounters(a.encounters)
+    tot = {"decisions": 0, "act4": 0, "checked": 0, "games": 0, "max_normals": [0, 0, 0], "max_elites": [0, 0, 0]}
+    files = expand(a.parts)
+    for p in files:
+        o = _check_part(p, seeds)
+        for key in ("decisions", "act4", "checked", "games"):
+            tot[key] += o[key]
+        for key in ("max_normals", "max_elites"):
+            tot[key] = [max(x, y) for x, y in zip(tot[key], o[key])]
+    tot.update(files=len(files), encounters_sha256=sha, ok=True)
+    print(json.dumps(tot))
+    if a.out:
+        json.dump(tot, open(a.out, "w"), indent=1)
+
+
+_ENC = {}   # loaded once before the worker pool forks: {"seeds": ..., "sha256": ..., "scope": ...}
+
+
+def flat_with_encounters(rec, seed, enc=None):
+    """flat_features plus, when enc (see _ENC) is given, encounter_features for that seed."""
+    x = flat_features(rec)
+    if enc:
+        acts = enc["seeds"].get(str(seed))
+        if acts is None:
+            raise ValueError(f"seed {seed} is not in the encounter table")
+        x.update(encounter_features(rec, acts, enc["scope"]))
+    return x
 
 
 # ---------------------------------------------------------------- flat features for the GBM
@@ -299,9 +458,15 @@ def cmd_fit_gbm(argv):
     ap.add_argument("--min-count", type=int, default=20, help="drop flat features seen in fewer training rows")
     ap.add_argument("--threads", type=int, default=4, help="xgboost threads (keep the PC usable while LONG_C trains)")
     ap.add_argument("--workers", type=int, default=0)
+    ap.add_argument("--encounters", default="", help="encounter table (`encounters`): add privileged enc_* features")
+    ap.add_argument("--enc-scope", default="act", choices=ENC_SCOPES)
     ap.add_argument("--out", required=True)
     a = ap.parse_args(argv)
     import xgboost as xgb
+    _ENC.clear()
+    if a.encounters:
+        seeds, sha = load_encounters(a.encounters)
+        _ENC.update(seeds=seeds, sha256=sha, scope=a.enc_scope)
     rows, files, excl = load_training(a.train, a.exclude_from, a.per_game, want_feat=False, workers=a.workers,
                                       game_frac=a.game_frac)
     tr, va = split_val(rows)
@@ -321,22 +486,38 @@ def cmd_fit_gbm(argv):
     meta = {"kind": "critic_ceiling_gbm", "model": os.path.basename(model_path), "vocab": sorted(vocab, key=vocab.get),
             "best_iteration": int(bst.best_iteration), "train_rows": len(tr), "val_rows": len(va),
             "train_files": len(files), "excluded_seeds": len(excl), "per_game": a.per_game,
-            "params": params, "rounds": a.rounds, "game_frac": a.game_frac}
+            "params": params, "rounds": a.rounds, "game_frac": a.game_frac,
+            "encounters": {"sha256": _ENC["sha256"], "scope": _ENC["scope"]} if _ENC else None}
     json.dump(meta, open(a.out, "w"), indent=1)
     print(f"gbm: {len(tr)} train / {len(va)} val rows, {len(vocab)} features, best iteration {bst.best_iteration}")
 
 
 class Gbm:
-    def __init__(self, path):
+    def __init__(self, path, encounters=None):
+        """encounters: (seeds, sha256) of the table; required when the model was fitted with one (same sha)."""
         import xgboost as xgb
         self.meta = json.load(open(path))
         self.vocab = {k: i for i, k in enumerate(self.meta["vocab"])}
         self.bst = xgb.Booster()
         self.bst.load_model(os.path.join(os.path.dirname(os.path.abspath(path)), self.meta["model"]))
         self.xgb = xgb
+        self.enc = None
+        want = self.meta.get("encounters")
+        if want:
+            if encounters is None or encounters[1] != want["sha256"]:
+                raise ValueError(f"{path} was fitted with encounter table {want['sha256'][:12]}; pass the same "
+                                 "table to evaluate --encounters")
+            self.enc = {"seeds": encounters[0], "sha256": want["sha256"], "scope": want["scope"]}
 
-    def predict(self, recs):
-        m = self.xgb.DMatrix(to_csr([flat_features(r) for r in recs], self.vocab))
+    def predict(self, recs, seed=None, flats=None):
+        """flats: flat_features of recs computed once by the caller (encounter features are added per model)."""
+        flats = flats if flats is not None else [flat_features(r) for r in recs]
+        if self.enc:
+            acts = self.enc["seeds"].get(str(seed))
+            if acts is None:
+                raise ValueError(f"seed {seed} is not in the encounter table")
+            flats = [dict(f, **encounter_features(r, acts, self.enc["scope"])) for f, r in zip(flats, recs)]
+        m = self.xgb.DMatrix(to_csr(flats, self.vocab))
         return self.bst.predict(m, iteration_range=(0, self.meta["best_iteration"] + 1)).astype(np.float64)
 
 
@@ -559,6 +740,24 @@ def verdict(boot, ev_margin):
     return {"by_estimator": out, "ev_margin": ev_margin, "decision": "GO" if go else "NO_GO"}
 
 
+CONTRAST_SCOPES = ("first_decision", "act1", "act2", "act3", "act4", "all")
+
+
+def verdict_encounters(contrasts, ev_margin):
+    """PREREG critic_encounters_20261115 (issue #1050 stage 0): GO for step 1 (a privileged critic in PPO) when, on
+    act-1 decisions, gbm_enc gains at least ev_margin EV over gbm (same rows, settings and public features) with its
+    95% CI above 0, and gbm_enc's EV gain over online_cal (the critic PPO has) also has its 95% CI above 0. Otherwise
+    NO_GO. Log loss and the other scopes are descriptive."""
+    a, b = contrasts.get("gbm_enc-gbm"), contrasts.get("gbm_enc-online_cal")
+    if a is None or b is None:
+        raise ValueError("--rule encounters needs --contrast gbm_enc:gbm and --contrast gbm_enc:online_cal")
+    a1, b1 = a["act1"], b["act1"]
+    checks = {"gain_over_gbm_at_margin": a1["ev_diff"] >= ev_margin, "gain_over_gbm_ci95_above_0": a1["ev_ci95"][0] > 0,
+              "gain_over_online_cal_ci95_above_0": b1["ev_ci95"][0] > 0}
+    return {"rule": "encounters", "ev_margin": ev_margin, "checks": checks,
+            "decision": "GO" if all(checks.values()) else "NO_GO"}
+
+
 def fit_platt(acts, v, y, iters=50, ridge=1e-6):
     """Per act (1-4): logistic regression y ~ a + b v on the raw logged online value (Newton steps)."""
     acts, v, y = np.asarray(acts), np.asarray(v, dtype=np.float64), np.asarray(y, dtype=np.float64)
@@ -593,6 +792,13 @@ def cmd_evaluate(argv):
     ap.add_argument("--test", nargs="+", required=True)
     ap.add_argument("--net", default="")
     ap.add_argument("--gbm", default="")
+    ap.add_argument("--extra-gbm", action="append", default=[], metavar="NAME=PATH",
+                    help="more GBMs scored on the same decisions (e.g. gbm_enc=gbm_enc.json)")
+    ap.add_argument("--encounters", default="", help="encounter table for GBMs fitted with one")
+    ap.add_argument("--contrast", action="append", default=[], metavar="B:A",
+                    help="bootstrap B - A on act 1-4, first decision and all (95%% CIs)")
+    ap.add_argument("--rule", default="critic_ceiling", choices=("critic_ceiling", "encounters"))
+    ap.add_argument("--enc-ev-margin", type=float, default=0.03)
     ap.add_argument("--lam", type=float, default=0.97)
     ap.add_argument("--boot", type=int, default=2000)
     ap.add_argument("--boot-seed", type=int, default=20261106)
@@ -614,8 +820,20 @@ def cmd_evaluate(argv):
         ests["online_cal"] = None
     if a.net:
         ests["net"] = Net(a.net)
+    enc_tab = load_encounters(a.encounters) if a.encounters else None
     if a.gbm:
-        ests["gbm"] = Gbm(a.gbm)
+        ests["gbm"] = Gbm(a.gbm, enc_tab)
+    for spec in a.extra_gbm:
+        name, _, path = spec.partition("=")
+        if not name or not path or name in ests or name == "net":
+            raise ValueError(f"--extra-gbm {spec}: need a new NAME=PATH")
+        ests[name] = Gbm(path, enc_tab)
+    contrasts = []
+    for spec in a.contrast:
+        b, _, base = spec.partition(":")
+        if b not in ests or base not in ests:
+            raise ValueError(f"--contrast {spec}: both estimators must be scored")
+        contrasts.append((b, base))
     cols = {k: [] for k in ("gid", "y", "act", "first") + tuple(ests)}
     advs = {k: {"lam": [], "one": []} for k in ests}
     seeds, gid = set(), 0
@@ -633,8 +851,11 @@ def cmd_evaluate(argv):
             vals = {"online": np.clip(raw, EPS, 1 - EPS)}
             if cal is not None:
                 vals["online_cal"] = np.clip(apply_platt(cal, [act_of(s) for s in g["steps"]], raw), EPS, 1 - EPS)
+            flats = [flat_features(r) for r in recs] if any(isinstance(m, Gbm) for m in ests.values()) else None
             for k, m in ests.items():
-                if m is not None:
+                if isinstance(m, Gbm):
+                    vals[k] = np.clip(m.predict(recs, g["seed"], flats), EPS, 1 - EPS)
+                elif m is not None:
                     vals[k] = np.clip(m.predict(recs), EPS, 1 - EPS)
             n = len(recs)
             cols["gid"].extend([gid] * n); cols["y"].extend([g["y"]] * n)
@@ -656,7 +877,8 @@ def cmd_evaluate(argv):
         A_l, A_1 = np.asarray(advs[k]["lam"]), np.asarray(advs[k]["one"])
         report["estimators"][k] = {sc: summarize(C["y"][m], C[k][m], A_l[m], A_1[m]) for sc, m in scopes.items()}
         if ests[k] is not None:
-            report["meta"][k] = ests[k].meta if k == "gbm" else {x: y for x, y in ests[k].meta.items() if x != "log"}
+            report["meta"][k] = ests[k].meta if isinstance(ests[k], Gbm) else \
+                {x: y for x, y in ests[k].meta.items() if x != "log"}
     for k in ests:
         if k in ("online", "online_cal"):
             continue
@@ -668,18 +890,30 @@ def cmd_evaluate(argv):
         if "online_cal" in both:
             report["bootstrap"][k] = both["online_cal"]
         report["bootstrap_vs_raw_online"][k] = both["online"]
+    report["contrasts"] = {f"{b}-{base}": {sc: bootstrap_diff(gids[scopes[sc]], C["y"][scopes[sc]], C[base][scopes[sc]],
+                                                            C[b][scopes[sc]], gid, a.boot, a.boot_seed)
+                                         for sc in CONTRAST_SCOPES}
+                           for b, base in contrasts}
     # The rule needs the recalibrated comparator; without --train-seeds-from there is no verdict.
-    report["verdict"] = verdict(report["bootstrap"], a.ev_margin) if report["bootstrap"] else None
+    if a.rule == "encounters":
+        report["verdict"] = verdict_encounters(report["contrasts"], a.enc_ev_margin)
+    else:
+        report["verdict"] = verdict(report["bootstrap"], a.ev_margin) if report["bootstrap"] else None
     json.dump(report, open(a.out, "w"), indent=1, default=str)
     for k, d in report["estimators"].items():
         print(k, " ".join(f"{sc}: auc {d[sc]['auc'] and round(d[sc]['auc'], 3)} ev {d[sc]['ev'] and round(d[sc]['ev'], 3)}"
                           for sc in ("act1", "act2", "act3", "act4", "all")))
+    for name, d in report["contrasts"].items():
+        print(name, " ".join(f"{sc}: dEV {d[sc]['ev_diff']:+.4f} [{d[sc]['ev_ci95'][0]:+.4f}, {d[sc]['ev_ci95'][1]:+.4f}]"
+                             for sc in CONTRAST_SCOPES))
     if report["verdict"]:
-        print("verdict", report["verdict"]["decision"], report["verdict"]["by_estimator"])
+        print("verdict", report["verdict"]["decision"],
+              report["verdict"].get("by_estimator", report["verdict"].get("checks")))
 
 
 def main():
-    cmds = {"fit-net": cmd_fit_net, "fit-gbm": cmd_fit_gbm, "evaluate": cmd_evaluate}
+    cmds = {"fit-net": cmd_fit_net, "fit-gbm": cmd_fit_gbm, "evaluate": cmd_evaluate, "encounters": cmd_encounters,
+            "check-encounters": cmd_check_encounters}
     if len(sys.argv) < 2 or sys.argv[1] not in cmds:
         sys.exit(f"usage: critic_ceiling.py {{{','.join(cmds)}}} ...")
     cmds[sys.argv[1]](sys.argv[2:])
