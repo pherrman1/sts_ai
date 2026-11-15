@@ -44,7 +44,7 @@ namespace sts::search {
         TurnPlanMask firstMask;     // root actions (indices into TurnPlanSet::rootActions) with a line to this plan
         TurnPlanEnd end = TurnPlanEnd::END_TURN;
         Action last;                // END_TURN or the stochastic action; the action that ended the fight
-        int length = 0;             // actions on the shortest line, `last` included
+        int length = 0;             // actions on the line by which the depth-first search first reached it, `last` included
         double logPrior = -std::numeric_limits<double>::infinity();   // best line: sum of log policy prior
         int bestFirst = -1;         // root action of the best-prior line
         std::vector<float> features;   // turnPlanFeatureNames() order

@@ -27583,7 +27583,7 @@ Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 104.1 lane-hours
 −2.25 pp [−5.08, +0.59] Heart; no conversion loss visible on the seeds where both arms reach Act 4 (not an isolated
 Heart contrast).
 
-## §TBD — Turn-plan root filter, offline (#1058, port of spire-mentor): deterministic turn plans of §797's 145,727 G16 + mb4 roots (median 14-16 plans, 7-8 % capped, 0.5 ms per root), scored by g7f_E line priors or a cross-fitted plan MLP, keeping the first actions of the best plans: every rule loses more Q than the root budget it frees (best: top-6 plans ∪ anchors recall 97.8 %, regret 0.038 Q vs ≈ 0.005 Q of budget; ceil(n/2) plan MLP + prior 0.193 vs prior 0.259 vs ≈ 0.025 credit) → NOT_PURSUED (cloud, 2026-11-15)
+## §TBD — Turn-plan root filter, offline (#1058, port of spire-mentor): deterministic turn plans of §797's 145,727 G16 + mb4 roots (median 14-16 plans, 7-8 % capped, 0.5 ms per root), scored by g7f_E line priors or a cross-fitted plan MLP, keeping the first actions of the best plans: every rule loses more Q than the root budget it frees (best net: top 6 by plan MLP + prior −0.029 Q at recall 98.3 %; spire-mentor's top-6 plans ∪ anchors −0.033 at 97.8 %; ceil(n/2) plan MLP + prior 0.193 vs prior 0.259 vs ≈ 0.025 credit) → NOT_PURSUED (cloud, 2026-11-15)
 
 **Question (Philipp, 2026-11-15 17:08 CET, "Öffne ein Thread pro Issue ... und arbeite das jeweils ab"):** can a
 learned plan scorer restrict the Gumbel root to the first actions of the best deterministic turn plans while keeping
@@ -27599,7 +27599,7 @@ curve near 16k) times log2(1 / (1 − share of root visits on removed edges)).
 **Result:** enumeration median 14-16 plans (p90 ≈ 145), cap rate 7.0-8.4 % by room group, 0.5 ms mean / 4 ms p99 per
 root. Net Q (credit − regret), all roots: n − 1 prior −0.088, plan MLP + prior −0.065 (recall 96.9 / 97.3 %);
 ceil(n/2) prior −0.232, plan prior −0.302, plan MLP −0.220, plan MLP + prior −0.169 (recall 85.7 / 83.2 / 87.1 /
-88.9 %); top 4 prior −0.131, plan MLP + prior −0.097; top-6 plans ∪ anchors (spire-mentor's rule) −0.033 at recall
+88.9 %); top 4 prior −0.131, plan MLP + prior −0.097; top 6 prior −0.038, plan MLP + prior −0.029 (recall 98.3 %); top-6 plans ∪ anchors (spire-mentor's rule) −0.033 at recall
 97.8 % vs prior top 6 97.5 %. Negative in every room group, worst at bosses and Act 4.
 **Interpretation (Inference):** the learned scorer cuts the prior's regret by about 25 % at equal width; break-even
 would need about 10×. spire-mentor's recall ≥ 95 % kill rule passes here and still loses Q: high recall is reached

@@ -17,7 +17,10 @@ Offline only. No game seed is played; the data are §797's recorded roots.
   `one_combat turnplanenum` (`apps/one_combat/turn_plan.cpp`) on main 6126315b plus this change. A plan ends at
   END_TURN, at the first action that advances a combat RNG stream (Silver's own chance test from the expansion), or
   when the fight ends. Silver's canonical root edges are used. States are merged by `hashBattleState`. A plan's
-  first-action set is every root action from which a line reaches it. Caps: 512 plans or 20,000 states; on a cap
+  first-action set is every root action from which a line reaches it. A plan's `length` is the depth at which the
+  depth-first search first reached its state, not necessarily the shortest line. A CHANCE plan's features come from
+  the state after its stochastic action under one fixed search-RNG realisation (the `plannerRoot` key): deterministic,
+  but a single sample. Caps: 512 plans or 20,000 states; on a cap
   the root stays unfiltered. The g7f_E policy (`STS_SILVER_ROOT_PRIOR=models/combat_policy_mlp_g7f_E.txt`) gives each
   plan the summed log prior of its best line. Every root action of every row mapped to a recorded edge (0 mismatches).
 - **Scorers** (`tools/turn_plan/filter_eval.py`):
@@ -67,10 +70,12 @@ Filter quality, all 145,727 roots (`results/result.json`, `results/eval.log`):
 | top 4 / prior | 91.27 % | 0.145 | 14.6 % | 0.014 | −0.131 |
 | top 4 / plan_mlp+prior | 93.53 % | 0.109 | 13.2 % | 0.012 | −0.097 |
 | top 6 / prior | 97.49 % | 0.042 | 4.9 % | 0.004 | −0.038 |
+| top 6 / plan_mlp+prior | 98.27 % | 0.033 | 4.3 % | 0.004 | −0.029 |
 | top-6 plans + anchors / plan_mlp+prior | 97.79 % | 0.038 | 5.8 % | 0.005 | −0.033 |
 | top-3 plans + anchors / plan_mlp+prior | 92.76 % | 0.123 | 13.7 % | 0.013 | −0.111 |
 
-- Every scorer and rule has a negative net, in every room group. The boss and Act-4 groups are the worst: at ceil(n/2),
+- Every scorer and rule has a negative net, in every room group. The best net is top 6 by plan_mlp+prior (−0.029 Q,
+  recall 98.3 %); spire-mentor's rule follows at −0.033 (recall 97.8 %). The boss and Act-4 groups are the worst: at ceil(n/2),
   plan_mlp+prior's regret is 0.29 (boss) and 0.36 (Act 4), against 0.10 in hallways.
 - The best learned scorer (plan_mlp+prior) cuts the prior's regret by about 25 % at equal width (ceil(n/2): 0.193 vs
   0.259; n − 1: 0.074 vs 0.097). Plan features alone (plan_mlp) are about as good as the prior. The untrained plan
@@ -93,6 +98,25 @@ Filter quality, all 145,727 roots (`results/result.json`, `results/eval.log`):
 - Bigger scorers (a card embedding, end-state CombatNet features, plan-level Q labels from 500-sim pricing as in
   spire-mentor) could narrow the gap. They would have to close a further factor of about 8 (0.193 → 0.025 Q), which a 25 % gain does not
   approach. T1's distilled net moved hit@4 from 88.6 % to 91.9 % (cheap-combat step 0) and still lost in §791.
+
+## Reproduce
+
+From the repository root, with the release build of this commit and the §797 tars from the share:
+
+```bash
+python3 tools/turn_plan/extract_roots.py /mnt/project-files/budget-ladder-roots/units DATA
+zcat DATA/roots_wire.jsonl.gz | split -n r/4 -d - DATA/chunk_
+one_combat turnplanenum names DATA/names.json
+for i in 0 1 2 3; do   # any positive weight gives the same normalized prior
+  STS_SILVER_ROOT_PRIOR=models/combat_policy_mlp_g7f_E.txt STS_SILVER_ROOT_PRIOR_WEIGHT=400 \
+    build/linux-gcc-release/one_combat turnplanenum DATA/plans_$i.jsonl < DATA/chunk_0$i &
+done; wait
+python3 tools/turn_plan/filter_eval.py --roots DATA/roots_compact.jsonl.gz \
+  --plans DATA/plans_0.jsonl DATA/plans_1.jsonl DATA/plans_2.jsonl DATA/plans_3.jsonl \
+  --names DATA/names.json --out results/result.json --epochs 6   # hidden 64, seed 20261115 (defaults)
+```
+
+Run the binary from the repository root (`models/` paths are relative).
 
 ## Decision
 
