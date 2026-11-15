@@ -303,8 +303,10 @@ namespace sts::search {
         // played search's thread CPU seconds. Empty when the ladder is off or the root was not searched.
         // `arm` indexes g_nativeSilverRolloutLadder (-1 = a g_nativeSilverBudgetLadder pick); `priorCalls` and
         // `playoutActions` are the shadow search's rolloutPrior evaluations and playout actions.
+        // `dominance`: a g_nativeSilverDominanceLadder pick (order dominance on); `domStats` its pruning counts.
         struct LadderPick { std::int64_t budget; int edge; std::int64_t sims; double cpu; int arm = -1;
-                            std::int64_t priorCalls = 0; std::int64_t playoutActions = 0; };
+                            std::int64_t priorCalls = 0; std::int64_t playoutActions = 0; bool dominance = false;
+                            SilverSearcher::OrderDominanceStats domStats{}; int slot = 0; };
         const std::vector<LadderPick> *ladder = nullptr;
         double mainCpu = -1;
     };
@@ -321,6 +323,12 @@ namespace sts::search {
     // Gumbel seed; the root view carries the picks. The played search, its tree and every RNG it reads are unchanged,
     // so play is bit-identical with the ladder on or off. Default empty (off).
     extern thread_local std::vector<std::int64_t> g_nativeSilverBudgetLadder;
+    // Research-only (silverazgen STS_AZGEN_DOMINANCE_LADDER, #1057): like g_nativeSilverBudgetLadder, one fresh Gumbel
+    // root search per entry with SilverSearcher::orderDominance on. Each entry {budget, slot} uses the Gumbel seed of
+    // budget-ladder slot `slot` (1-based), so it is paired with that budget-ladder pick of an earlier run of the same
+    // seeds (same root, same Gumbel draws; only the pruning differs). Play is bit-identical. Default empty (off).
+    struct NativeSilverDominanceArm { std::int64_t budget = 0; int slot = 1; };
+    extern thread_local std::vector<NativeSilverDominanceArm> g_nativeSilverDominanceLadder;
     // Research-only (silverazgen STS_AZGEN_ROLLOUT_LADDER, cheap rollouts 2026-11-13): when non-empty, every searched
     // multi-edge root of a whole-run Gumbel fight whose played search uses prior playouts (boss rooms, Act 4) is
     // searched again once per arm by a fresh searcher configured as the played one except for its playout policy

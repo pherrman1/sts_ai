@@ -1037,8 +1037,9 @@ namespace sts::search {
                 }
                 const auto stepsBefore = searcher->stats.steps;
                 // g_nativeSilverBudgetLadder: the played search's CPU (research only; reads the clock, nothing else).
-                const bool ladderOn = (!g_nativeSilverBudgetLadder.empty() || (!g_nativeSilverRolloutLadder.empty()
-                        && searcher->rolloutConfig.prior)) && wholeRunGumbel && gumbelRoot && g_nativeSilverRootObserver;
+                const bool ladderOn = (!g_nativeSilverBudgetLadder.empty() || !g_nativeSilverDominanceLadder.empty()
+                        || (!g_nativeSilverRolloutLadder.empty() && searcher->rolloutConfig.prior))
+                    && wholeRunGumbel && gumbelRoot && g_nativeSilverRootObserver;
                 const double ladderCpu0 = ladderOn ? threadCpuSeconds() : 0;
                 // Tree profile only (#888): cost, starting graph and checkpoint reads of this search.
                 const bool shape = searcher->profile != nullptr;
@@ -1295,6 +1296,39 @@ namespace sts::search {
                                 }
                             }
                         ladder.push_back({b, edge, sims, cpu});
+                    }
+                    // g_nativeSilverDominanceLadder: the same with order dominance on, seeded like budget-ladder slot.
+                    for (const auto &arm : g_nativeSilverDominanceLadder) {
+                        std::unique_ptr<SilverSearcher> shadow;
+                        prepareSearcher(shadow, root, false);
+                        configureSearcher(*shadow, false);
+                        shadow->leafSamples = nullptr;
+                        shadow->outcomes = nullptr;
+                        shadow->orderDominance = true;
+                        const double c0 = threadCpuSeconds();
+                        const std::uint64_t salt = 0xb5ad4eceda1ce2a9ULL * static_cast<std::uint64_t>(arm.slot);
+                        const std::int64_t sims = shadow->searchGumbelRoot(arm.budget, *gumbelRoot,
+                            nativeSilverBattleSeed(bc) ^ (0x9e3779b97f4a7c15ULL * static_cast<std::uint64_t>(decision + 1))
+                            ^ salt);
+                        const double cpu = threadCpuSeconds() - c0;
+                        const auto pick = SilverSearcher::translateAction(
+                            shadow->bestAction(), shadow->rootSearchState(), bc);
+                        int edge = -1;
+                        for (int pass = 0; pass < 2 && edge < 0; ++pass)
+                            for (std::size_t e = 0; e < mainEdges.size(); ++e) {
+                                const auto mine = SilverSearcher::translateAction(
+                                    mainEdges[e].action, searcher->rootSearchState(), bc);
+                                if (pass == 0 ? mine.bits == pick.bits
+                                              : SilverSearcher::actionsEquivalentOn(mine, pick, bc)) {
+                                    edge = static_cast<int>(e);
+                                    break;
+                                }
+                            }
+                        NativeSilverRootView::LadderPick lp{arm.budget, edge, sims, cpu};
+                        lp.dominance = true;
+                        lp.domStats = shadow->orderDominanceStats;
+                        lp.slot = arm.slot;
+                        ladder.push_back(lp);
                     }
                     // g_nativeSilverRolloutLadder: the same, once per playout-policy arm (prior-playout roots only).
                     for (std::size_t ai = 0; searcher->rolloutConfig.prior && ai < g_nativeSilverRolloutLadder.size(); ++ai) {
@@ -2428,6 +2462,7 @@ namespace sts::search {
     thread_local SilverLeafSamples *g_nativeSilverLeafSamples = nullptr;
     thread_local bool g_nativeSilverLabelSearch = false;
     thread_local std::vector<std::int64_t> g_nativeSilverBudgetLadder;
+    thread_local std::vector<NativeSilverDominanceArm> g_nativeSilverDominanceLadder;
     thread_local std::vector<NativeSilverRolloutArm> g_nativeSilverRolloutLadder;
     const CombatValueNet *g_nativeSilverRolloutStudent = nullptr;
     std::map<int, const CombatValueNet *> g_nativeSilverRolloutStudentByEncounter;

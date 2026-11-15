@@ -52,6 +52,7 @@
 #include "combat/PublicDamageBelief.h"
 #include "sim/search/SearchStateHash.h"
 #include "sim/search/SilverSearcher.h"
+#include "sim/search/SilverDominance.h"
 #include "sim/search/SilverUselessAction.h"
 #include "sim/search/SilverWireState.h"
 #include "sim/search/SilverWireJson.h"
@@ -3807,6 +3808,116 @@ int testSilverGumbelLearnedStop() {
     return 1;
 }
 
+// Research (#1057): order dominance of card plays (SilverDominance.h) and its use in SilverSearcher. On a Jaw Worm
+// root with Strike, Defend and Bash in hand: Bash after Strike is dominated by Bash before it (Vulnerable before
+// the hit), the reverse is not, a commuting pair (Defend, Strike) is equal and not strict; the Champ guards the test.
+// In the search the pruned edge is never visited, the root is never pruned, a reroot clears the new root's flags,
+// and the same seed repeats the search.
+int testSilverOrderDominance() {
+    int failures = 0;
+    const auto check = [&failures](bool ok, const std::string &msg) {
+        if (!ok) { std::cout << "    " << msg << '\n'; ++failures; }
+    };
+    const GameContext gc(CharacterClass::IRONCLAD, 0xD0A1u, 20);
+    BattleContext bc;
+    bc.init(gc, MonsterEncounter::JAW_WORM);
+    bc.cards.cardsInHand = 3;
+    bc.cards.hand[0] = CardInstance(CardId::STRIKE_RED);
+    bc.cards.hand[0].uniqueId = 90;
+    bc.cards.hand[1] = CardInstance(CardId::DEFEND_RED);
+    bc.cards.hand[1].uniqueId = 91;
+    bc.cards.hand[2] = CardInstance(CardId::BASH);
+    bc.cards.hand[2].uniqueId = 92;
+    bc.player.energy = 3;
+    bc.monsters.arr[0].block = 0;
+    const BattleContext p = silverSearchRoot(bc);
+    const search::Action strike(search::ActionType::CARD, 0, 0), defend(search::ActionType::CARD, 1, 0),
+        bash(search::ActionType::CARD, 2, 0);
+    check(!search::orderDominanceGuarded(p), "Jaw Worm is not guarded");
+    BattleContext scratch;
+    const auto pair = [&](const search::Action &b, const search::Action &aAtP) {
+        BattleContext x = p;
+        if (!search::playDeterministicCard(x, b)) return search::OrderDominanceResult::SKIPPED;
+        const auto a = search::sameCardPlayOn(aAtP, p, x);
+        BattleContext xa = x;
+        if (a.bits == search::Action().bits || !search::playDeterministicCard(xa, a))
+            return search::OrderDominanceResult::SKIPPED;
+        return search::testOrderDominance(p, b, x, a, xa, scratch);
+    };
+    using R = search::OrderDominanceResult;
+    check(pair(strike, bash) == R::DOMINATED, "Strike then Bash is dominated by Bash then Strike");
+    check(pair(bash, strike) == R::NOT_DOMINATED, "Bash then Strike is not dominated");
+    check(pair(defend, strike) == R::NOT_DOMINATED, "a commuting pair is equal, not dominated");
+    check(pair(strike, strike) == R::SKIPPED, "a card cannot be swapped with itself");
+    check(!search::dominatesByMonsterHp(p, p), "a state does not dominate itself");
+    {
+        BattleContext lower = p;
+        lower.monsters.arr[0].curHp -= 1;
+        check(search::dominatesByMonsterHp(lower, p) && !search::dominatesByMonsterHp(p, lower),
+              "lower monster HP dominates, higher does not");
+        lower.player.block += 1;
+        check(!search::dominatesByMonsterHp(lower, p), "player block must be equal");
+    }
+    {
+        BattleContext champ;
+        champ.init(gc, MonsterEncounter::CHAMP);
+        check(search::orderDominanceGuarded(champ), "the Champ guards the test");
+    }
+
+    const auto run = [&](bool on, std::int64_t sims) {
+        auto s = std::make_unique<search::SilverSearcher>(p, search::SilverSearchContext{});
+        s->riskVeto = {};
+        s->orderDominance = on;
+        s->search(sims);
+        return s;
+    };
+    auto off = run(false, 3000);
+    check(off->orderDominanceStats.nodes == 0 && off->orderDominanceStats.pruned == 0, "off tests nothing");
+    auto on = run(true, 3000);
+    const auto &st = on->orderDominanceStats;
+    check(st.nodes > 0 && st.tests > 0 && st.pruned > 0, "on prunes at least one edge");
+    for (const auto &e : on->rootNode().edges) check(!e.pruned, "the root is never pruned");
+    // Below the root edge Strike: the Bash edge is pruned and was never visited.
+    const search::SilverSearcher::Node *afterStrike = nullptr;
+    for (const auto &e : on->rootNode().edges)
+        if (e.action.bits == strike.bits) afterStrike = e.node;
+    check(afterStrike != nullptr && !afterStrike->isRandomNode, "Strike leads to a decision node");
+    bool sawBash = false;
+    std::int64_t prunedVisits = 0, allPruned = 0;
+    const std::function<void(const search::SilverSearcher::Node &, int)> walk =
+        [&](const search::SilverSearcher::Node &n, int depth) {
+            if (depth > 6) return;
+            for (const auto &e : n.edges) {
+                if (e.pruned) { ++allPruned; prunedVisits += e.visitCount; }
+                if (e.node) walk(*e.node, depth + 1);
+            }
+        };
+    walk(on->rootNode(), 0);
+    check(allPruned > 0 && prunedVisits == 0, "pruned edges are never visited in a fresh search");
+    if (afterStrike != nullptr) {
+        for (const auto &e : afterStrike->edges)
+            if (e.action.getActionType() == search::ActionType::CARD
+                    && afterStrike->state->cards.hand[e.action.getSourceIdx()].getId() == CardId::BASH)
+                sawBash = sawBash || e.pruned;
+    }
+    check(sawBash, "Bash after Strike is pruned");
+    auto again = run(true, 3000);
+    bool same = again->rootNode().edges.size() == on->rootNode().edges.size()
+        && again->orderDominanceStats.pruned == st.pruned;
+    for (std::size_t i = 0; same && i < on->rootNode().edges.size(); ++i)
+        same = again->rootNode().edges[i].visitCount == on->rootNode().edges[i].visitCount;
+    check(same, "the same search repeats with pruning on");
+    // Reroot to Strike's child: its Bash edge was pruned against the old root, which is gone.
+    if (afterStrike != nullptr) {
+        on->rerootAt(const_cast<search::SilverSearcher::Node *>(afterStrike), true);
+        on->search(1);
+        for (const auto &e : on->rootNode().edges) check(!e.pruned, "the new root's flags are cleared");
+    }
+    if (failures == 0) { std::cout << "silver_order_dominance PASS\n"; return 0; }
+    std::cout << "silver_order_dominance FAIL (" << failures << " cases)\n";
+    return 1;
+}
+
 // Research (combat plan stage 1): SilverSearcher::searchGumbelRoot. On a Nob root: the pick is a root edge,
 // at most `simulations` run and every one of them is a root visit, every candidate kept to the last phase
 // has the most visits, the same seed repeats the search exactly, bestAction returns the pick, and a plain
@@ -7528,6 +7639,8 @@ int main(int argc, const char* argv[]) {
         return testSilverLossCeiling();
     } else if (command == "silver_risk_veto") {
         return testSilverRiskVeto();
+    } else if (command == "silver_order_dominance") {
+        return testSilverOrderDominance();
     } else if (command == "silver_gumbel_root") {
         return testSilverGumbelRoot();
     } else if (command == "silver_gumbel_boundary_observer") {

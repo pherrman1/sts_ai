@@ -67,6 +67,19 @@
 // budget: {budget, edge (the pick as an index into the row's edges, -1 if unmatched), sims, cpu (thread seconds)},
 // and `mainCpu`, the played search's thread seconds. Play is bit-identical with the ladder on or off.
 //
+// STS_AZGEN_DOMINANCE_LADDER=budget:slot,... (silverazgen only, default off; requires STS_AZGEN_WHOLE_RUN_GUMBEL=1;
+// #1057 order dominance): after the played search of every searched multi-edge root, one fresh searcher per entry
+// configured as the played one with SilverSearcher::orderDominance on, seeded like budget-ladder slot `slot`
+// (1-based: §797's 1k / 2k / 4k / 8k / 16k are slots 1-5), so each pick is paired with that slot's pick of a budget-
+// ladder run of the same seeds (g_nativeSilverDominanceLadder). Ladder entries add {dominance: true, slot, domNodes,
+// domGuarded, domTests, domSkipped, domPruned, domSeconds}. STS_AZGEN_DOMINANCE_AUDIT=M (M >= 1, default off) adds
+// `domAudit` to every searched multi-edge root row: the played (unpruned) tree is walked from the root, and at every
+// decision node with at least M simulations reached by a deterministic card play, each card edge with a decision
+// child is tested (testOrderDominance; the first parent found counts). It reports nodes, guarded nodes, tests,
+// dominated edges, their visits (`domVisits`: simulations that entered a dominated edge first on their path, whose
+// subtree the walk then skips) and the root's simulations, plus up to 16 dominated pairs with the most visits as
+// [visits, Q, dominator visits (-1 = not in the tree), dominator Q] (Q = max-backed value). Play is bit-identical.
+//
 // silverazfocusgen is silverazgen for one encounter (fight-specific prior data,
 // /mnt/project-files/silver-prior-fight-specific/): the run plays every other
 // fight unrecorded at OTHER_SIMS with the same prior, and at the first fight of
@@ -84,6 +97,7 @@
 #include "sim/search/KnownRngSearcher.h"
 #include "sim/search/NativeSilverBackend.h"
 #include "sim/search/SearchRng.h"
+#include "sim/search/SilverDominance.h"
 #include "sim/search/SilverSearcher.h"
 #include "sim/search/SilverWireJson.h"
 #include "sim/search/SilverWireState.h"
@@ -238,6 +252,46 @@ std::vector<search::NativeSilverRolloutArm> rolloutLadder() {
     return out;
 }
 
+// STS_AZGEN_DOMINANCE_LADDER: unset or empty = off; else budget:slot,... (budget 1..1000000, slot 1..64).
+std::vector<search::NativeSilverDominanceArm> dominanceLadder() {
+    const char *v = std::getenv("STS_AZGEN_DOMINANCE_LADDER");
+    std::vector<search::NativeSilverDominanceArm> out;
+    if (!v || !*v) return out;
+    std::stringstream ss(v);
+    std::string item;
+    while (std::getline(ss, item, ',')) {
+        const auto colon = item.find(':');
+        search::NativeSilverDominanceArm arm;
+        bool ok = colon != std::string::npos;
+        if (ok) {
+            try {
+                std::size_t u1 = 0, u2 = 0;
+                arm.budget = std::stoll(item.substr(0, colon), &u1);
+                arm.slot = std::stoi(item.substr(colon + 1), &u2);
+                ok = u1 == colon && u2 == item.size() - colon - 1;
+            } catch (const std::exception &) {
+                ok = false;
+            }
+        }
+        if (!ok || arm.budget < 1 || arm.budget > 1000000 || arm.slot < 1 || arm.slot > 64)
+            throw std::runtime_error("STS_AZGEN_DOMINANCE_LADDER: want budget:slot with budget in 1..1000000 and slot"
+                                     " in 1..64, got " + item);
+        out.push_back(arm);
+    }
+    return out;
+}
+
+// STS_AZGEN_DOMINANCE_AUDIT: unset or empty = 0 (off); else the minimum simulations of an audited node (>= 1).
+int dominanceAuditMinVisits() {
+    const char *v = std::getenv("STS_AZGEN_DOMINANCE_AUDIT");
+    if (!v || !*v) return 0;
+    std::size_t used = 0;
+    int m = 0;
+    try { m = std::stoi(v, &used); } catch (const std::exception &) { used = 0; }
+    if (used != std::strlen(v) || m < 1) throw std::runtime_error("STS_AZGEN_DOMINANCE_AUDIT must be an integer >= 1");
+    return m;
+}
+
 // The rollout ladder's student models (process lifetime); their sha256 go to the manifest.
 nlohmann::json loadRolloutStudents(const std::vector<search::NativeSilverRolloutArm> &arms) {
     static search::CombatValueNet generalist;
@@ -343,6 +397,75 @@ std::string fingerprint(const BattleContext &state, const search::Action &action
 double backedValue(const search::SilverSearcher::Node &node, int minVisits) {
     if (minVisits > 0 && node.hasBackedValue && node.simulationCount >= minVisits) return node.backedValue;
     return node.evaluationSum / node.simulationCount;
+}
+
+// STS_AZGEN_DOMINANCE_AUDIT (#1057): order dominance in the played tree (see the header comment). Reads the tree only.
+nlohmann::json dominanceAudit(const search::SilverSearcher &searcher, int minVisits) {
+    using Node = search::SilverSearcher::Node;
+    const int mb = searcher.maxBackupMinVisits;
+    struct Item { const Node *node; const Node *parent; int parentEdge; };
+    std::vector<Item> stack{{&searcher.rootNode(), nullptr, -1}};
+    std::unordered_set<const Node *> seen;
+    std::int64_t nodes = 0, guarded = 0, tests = 0, dominated = 0, domVisits = 0, depth1Nodes = 0, depth1Dominated = 0;
+    struct Pair { std::int64_t visits; double q; std::int64_t dVisits; double dq; };
+    std::vector<Pair> pairs;
+    thread_local BattleContext scratch;
+    const auto t0 = std::chrono::steady_clock::now();
+    while (!stack.empty()) {
+        const Item it = stack.back();
+        stack.pop_back();
+        const Node &x = *it.node;
+        if (!seen.insert(&x).second) continue;
+        std::vector<bool> skip(x.edges.size(), false);
+        const bool testable = it.parent != nullptr && !x.isRandomNode && x.state != nullptr
+            && x.simulationCount >= minVisits && x.state->inputState == InputState::PLAYER_NORMAL
+            && it.parent->edges[it.parentEdge].action.getActionType() == search::ActionType::CARD;
+        if (testable) {
+            ++nodes;
+            const bool depth1 = it.parent == &searcher.rootNode();
+            depth1Nodes += depth1;
+            if (search::orderDominanceGuarded(*x.state)) {
+                ++guarded;
+            } else {
+                const auto &b = it.parent->edges[it.parentEdge].action;
+                for (std::size_t i = 0; i < x.edges.size(); ++i) {
+                    const auto &e = x.edges[i];
+                    if (e.action.getActionType() != search::ActionType::CARD || e.node == nullptr
+                            || e.node->isRandomNode || e.node->state == nullptr) continue;
+                    ++tests;
+                    const auto r = search::testOrderDominance(*it.parent->state, b, *x.state, e.action,
+                                                              *e.node->state, scratch);
+                    if (r != search::OrderDominanceResult::DOMINATED) continue;
+                    ++dominated;
+                    depth1Dominated += depth1;
+                    domVisits += e.visitCount;
+                    skip[i] = true;
+                    const Node *d = searcher.findNode(scratch);
+                    const bool dq = d != nullptr && d->simulationCount > 0;
+                    pairs.push_back({e.visitCount, e.node->simulationCount > 0 ? backedValue(*e.node, mb) : 0.0,
+                                     d ? d->simulationCount : -1, dq ? backedValue(*d, mb) : 0.0});
+                }
+            }
+        }
+        for (std::size_t i = 0; i < x.edges.size(); ++i) {
+            const auto &e = x.edges[i];
+            if (e.node == nullptr || skip[i]) continue;
+            if (x.isRandomNode) stack.push_back({e.node, nullptr, -1});
+            else if (e.node->isRandomNode) stack.push_back({e.node, nullptr, -1});
+            else stack.push_back({e.node, &x, static_cast<int>(i)});
+        }
+    }
+    std::sort(pairs.begin(), pairs.end(), [](const Pair &a, const Pair &b) {
+        return std::min(a.visits, a.dVisits) > std::min(b.visits, b.dVisits);
+    });
+    nlohmann::json top = nlohmann::json::array();
+    for (std::size_t i = 0; i < pairs.size() && i < 16; ++i)
+        top.push_back({pairs[i].visits, pairs[i].q, pairs[i].dVisits, pairs[i].dq});
+    return {{"minVisits", minVisits}, {"nodes", nodes}, {"guarded", guarded}, {"tests", tests},
+            {"dominated", dominated}, {"domVisits", domVisits}, {"rootSims", searcher.rootNode().simulationCount},
+            {"depth1Nodes", depth1Nodes}, {"depth1Dominated", depth1Dominated},
+            {"seconds", std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count()},
+            {"pairs", top}};
 }
 
 nlohmann::json rootEdges(const search::SilverSearcher &searcher) {
@@ -459,6 +582,7 @@ struct FightRecorder {
     int sims = 0;
     bool lean = false;   // silverazgen: no second teacher or continuations
     bool gumbel = false;  // STS_AZGEN_GUMBEL_ROOT / _WHOLE_RUN_GUMBEL: root rows add priors and the Gumbel pick
+    int domAuditMinVisits = 0;   // STS_AZGEN_DOMINANCE_AUDIT: 0 = off
     std::ostringstream *out = nullptr;
     search::SilverLeafSamples leaves;
     long long roots = 0, leafRows = 0, secondTeachers = 0, continuationRoots = 0, labelRoots = 0;
@@ -511,7 +635,13 @@ struct FightRecorder {
         if (view.ladder) {
             nlohmann::json lad = nlohmann::json::array();
             for (const auto &p : *view.ladder)
-                if (p.arm < 0) {
+                if (p.dominance) {
+                    const auto &d = p.domStats;
+                    lad.push_back({{"budget", p.budget}, {"edge", p.edge}, {"sims", p.sims}, {"cpu", p.cpu},
+                                   {"dominance", true}, {"slot", p.slot}, {"domNodes", d.nodes},
+                                   {"domGuarded", d.guardedNodes}, {"domTests", d.tests}, {"domSkipped", d.skipped},
+                                   {"domPruned", d.pruned}, {"domSeconds", d.seconds}});
+                } else if (p.arm < 0) {
                     lad.push_back({{"budget", p.budget}, {"edge", p.edge}, {"sims", p.sims}, {"cpu", p.cpu}});
                 } else {
                     lad.push_back({{"budget", p.budget}, {"edge", p.edge}, {"sims", p.sims}, {"cpu", p.cpu},
@@ -521,6 +651,8 @@ struct FightRecorder {
             row["ladder"] = lad;
             row["mainCpu"] = view.mainCpu;
         }
+        if (domAuditMinVisits > 0 && !view.skipped && searcher.rootNode().edges.size() > 1)
+            row["domAudit"] = dominanceAudit(searcher, domAuditMinVisits);
         try {
             row["wire"] = wireJson(state, context);
         } catch (const std::exception &e) {
@@ -591,6 +723,7 @@ struct AzPrior {
     int wholeRunGumbelK = 0;   // STS_AZGEN_WHOLE_RUN_GUMBEL: STS_SILVER_GUMBEL_ROOT's K (0 = off), no override
     std::vector<std::int64_t> ladder;   // STS_AZGEN_BUDGET_LADDER: empty = off
     std::vector<search::NativeSilverRolloutArm> rolloutArms;   // STS_AZGEN_ROLLOUT_LADDER: empty = off
+    std::vector<search::NativeSilverDominanceArm> dominanceArms;   // STS_AZGEN_DOMINANCE_LADDER: empty = off
 };
 
 // silverazfocusgen: record only `target`, then end the run.
@@ -622,6 +755,7 @@ SeedResult runSynthSeed(std::uint64_t seed, int sims, int asc, const std::string
     recorder.sims = sims;
     recorder.lean = az.has_value();
     recorder.gumbel = az && (az->gumbelK > 0 || az->wholeRunGumbelK > 0);
+    recorder.domAuditMinVisits = az ? dominanceAuditMinVisits() : 0;
     recorder.out = &out;
     recorder.leaves.stride = kLeafStride;
     recorder.leaves.max = kLeavesPerRoot;
@@ -646,6 +780,7 @@ SeedResult runSynthSeed(std::uint64_t seed, int sims, int asc, const std::string
     if (az && az->labelSearch) search::g_nativeSilverLabelSearch = true;
     if (az) search::g_nativeSilverBudgetLadder = az->ladder;
     if (az) search::g_nativeSilverRolloutLadder = az->rolloutArms;
+    if (az) search::g_nativeSilverDominanceLadder = az->dominanceArms;
     if (az && az->gumbelK > 0) {
         // Every fight of the run (recorded or not) plays the Gumbel root.
         search::SilverSearcher::GumbelRoot g;
@@ -908,6 +1043,10 @@ void silverAzRun(int nSeeds, int sims, int asc, const std::string &outPrefix, lo
     if (!rolloutArms.empty() && (wholeRunK == 0 || focus))
         throw std::runtime_error("silverazgen: STS_AZGEN_ROLLOUT_LADDER requires STS_AZGEN_WHOLE_RUN_GUMBEL=1 and is"
                                  " silverazgen only");
+    const auto dominanceArms = dominanceLadder();
+    if (!dominanceArms.empty() && (wholeRunK == 0 || focus))
+        throw std::runtime_error("silverazgen: STS_AZGEN_DOMINANCE_LADDER requires STS_AZGEN_WHOLE_RUN_GUMBEL=1 and is"
+                                 " silverazgen only");
     const nlohmann::json studentInfo = loadRolloutStudents(rolloutArms);
     const std::string priorPath = search::nativeSilverRootPriorPath();
     search::CombatValueNet prior;
@@ -927,8 +1066,10 @@ void silverAzRun(int nSeeds, int sims, int asc, const std::string &outPrefix, lo
         + (wholeRunK > 0 ? "-wrg" + std::to_string(wholeRunK) + "mb" + std::to_string(wholeRunMb) : "")
         + (ladder.empty() ? "" : "-lad" + std::to_string(ladder.size()))
         + (rolloutArms.empty() ? "" : "-rl" + std::to_string(rolloutArms.size()))
+        + (dominanceArms.empty() ? "" : "-dl" + std::to_string(dominanceArms.size()))
         + "-" + priorSha.substr(0, 8);
-    const AzPrior az{treeMinVisits, rootBonus == 1, prodCombat, label, gumbelK, wholeRunK, ladder, rolloutArms};
+    const AzPrior az{treeMinVisits, rootBonus == 1, prodCombat, label, gumbelK, wholeRunK, ladder, rolloutArms,
+                     dominanceArms};
     // Under the self-play overrides Silver plays no prior playouts (NativeSilverBackend skips them).
     nlohmann::json silverLeaf = effectiveSilverLeafSpecification();
     if (!prodCombat && silverLeaf.contains("prior_playout_rooms")) silverLeaf["prior_playout_rooms"] = "none";
@@ -1006,6 +1147,14 @@ void silverAzRun(int nSeeds, int sims, int asc, const std::string &outPrefix, lo
                                               " prior-playout root with that playout policy and budget; priorCalls ="
                                               " rolloutPrior evaluations, playoutActions = playout actions"}};
     }
+    if (!dominanceArms.empty()) {
+        nlohmann::json arms = nlohmann::json::array();
+        for (const auto &a : dominanceArms) arms.push_back({{"budget", a.budget}, {"slot", a.slot}});
+        manifest["dominanceLadder"] = {{"arms", arms},
+                                       {"rows", "ladder[] entries with `dominance`: a fresh Gumbel root search with"
+                                                " order dominance on, seeded like budget-ladder slot `slot`"}};
+    }
+    if (dominanceAuditMinVisits() > 0) manifest["dominanceAudit"] = {{"minVisits", dominanceAuditMinVisits()}};
     std::ofstream mf(manifestPath);
     if (!mf) throw std::runtime_error("silverazgen: cannot write manifest");
     mf << manifest.dump(2) << '\n';

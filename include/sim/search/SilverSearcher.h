@@ -290,6 +290,7 @@ namespace sts::search {
 
         struct Edge {
             Action action;
+            bool pruned = false;       // order dominance (#1057): selection skips it; never set at the root
             Node *node = nullptr;
             int rngAdvanceSteps = 0;   // chance outcome edge: N in seed base + N
             std::int32_t visitCount = 0;
@@ -309,6 +310,7 @@ namespace sts::search {
             bool priorNet = false;            // prior came from nodePriorNet (scored at treePriorNetMinVisits)
             double backedValue = 0;           // max-backup value (research, maxBackupMinVisits > 0)
             bool hasBackedValue = false;
+            std::uint32_t pruneEpoch = 0;     // order dominance (#1057): epoch its edges' pruned flags belong to
         };
 
         double explorationParameter = 25.0;
@@ -457,6 +459,24 @@ namespace sts::search {
         // before the last (after the observer). `true` ends the search there: the pick is the boundary's leader
         // (ranked.front()) and the return value the simulations spent so far. Unset, the search is unchanged.
         std::function<bool(const GumbelBoundary &)> gumbelStopPolicy;
+        // Research (#1057, STS_SILVER_ORDER_DOMINANCE=1, default off; SilverDominance.h): dominance pruning of
+        // card-play orders below the root. When a simulation reaches a decision node X from decision node P by a
+        // deterministic card play b, every card play a at X is tested once per epoch: if playing a before b at P
+        // reaches a state equal for search to X + a except for lower monster HP (testOrderDominance), the edge is
+        // pruned and selection (UCB, tree-prior order, Gumbel non-root) and the max backup skip it. The root is
+        // never pruned (its parent is not in the graph); setRoot and rerootAt start a new epoch, so a node's flags
+        // are recomputed against the parent it is next reached from. Off, the search is unchanged bit for bit.
+        bool orderDominance = envOrderDominance();
+        static bool envOrderDominance();
+        struct OrderDominanceStats {
+            std::int64_t nodes = 0;          // decision nodes tested (below the root, deterministic card-play parent)
+            std::int64_t guardedNodes = 0;   // skipped: orderDominanceGuarded
+            std::int64_t tests = 0;          // card edges tested
+            std::int64_t skipped = 0;        // tests that were not testable (OrderDominanceResult::SKIPPED)
+            std::int64_t pruned = 0;         // edges pruned
+            double seconds = 0;              // wall time inside the tests
+        };
+        OrderDominanceStats orderDominanceStats;
         // Research-only playout policy for RolloutConfig::prior (same signature as nodePrior).
         std::function<std::vector<double>(const BattleContext &, const std::vector<Edge> &)> rolloutPrior;
         // Optional shortcut for prior playouts: std::max_element of rolloutPriorArgmaxOf's prior. Used only
@@ -568,6 +588,9 @@ namespace sts::search {
         int forcedRootEdge = -1;   // searchGumbelRoot: the root edge every simulation takes (-1 = free)
         int gumbelChoice = -1;     // searchGumbelRoot's pick for bestAction (-1 = most visits)
         const GumbelRoot *gumbelNonRoot = nullptr;   // searchGumbelRoot with nonRoot: its settings (else null)
+        std::uint32_t pruneEpochNow = 1;   // order dominance: current epoch (Node::pruneEpoch 0 = never tested)
+        BattleContext dominanceScratch, dominanceChild;
+        void applyOrderDominance(Node &node, const Node *parent, int parentEdge);
 
         std::default_random_engine randGen;
         SilverRolloutAgent rolloutAgent;
