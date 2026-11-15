@@ -655,7 +655,13 @@ const char *realOocChainStep(GameContext &gc, search::ScumSearchAgent2 &agent, b
     t_forcedDecisionTaken = true;
     const char *by = "forced_decision";
     if (forced->key == "-") by = realOocChainStepBody(gc, agent, restV, shopV, path, seed, index, mctsMetrics);
-    else {
+    else if (forced->key.rfind("ppo:", 0) == 0) {
+        // PPO stack (#1056 probes): the net's own token named by the key; the rule chain is not consulted.
+        if (!one_combat::heart1::ppoEnabled())
+            throw std::runtime_error("STS_OOC_FORCE_DECISION: a ppo: key needs STS_OOC_HEART1_PPO");
+        by = one_combat::heart1::ppoStep(gc, index, &forced->key);
+        if (!by) throw std::runtime_error("STS_OOC_FORCE_DECISION: no PPO decision at index " + std::to_string(index));
+    } else {
         std::string error;
         if (!one_combat::executeOocRootKey(gc, path, forced->key, error))
             throw std::runtime_error("STS_OOC_FORCE_DECISION: " + error);
