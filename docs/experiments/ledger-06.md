@@ -27582,3 +27582,27 @@ Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 104.1 lane-hours
 **Knowledge impact:** combat budget: 12,000 simulations with the Heart at 24,000 costs 0.69× G16 + mb4's CPU at
 −2.25 pp [−5.08, +0.59] Heart; no conversion loss visible on the seeds where both arms reach Act 4 (not an isolated
 Heart contrast).
+
+## §TBD — Faster g7f_E prior evaluation (#1052): the state's nonzero list from the feature extractor is exact and saves 2-4% of G16 search CPU; FMA in the edge layers saves ~5-8% but changes search trajectories (research option, gate needed); AVX-512, an incremental state layer and int16 layer 2 rejected (cloud, 2026-11-15)
+
+**Question (issue #1052, from Philipp's 2026-11-15 request to work today's issues):** can the same g7f_E prior be
+evaluated faster, and which speedups keep play bit-identical?
+**Data:** [REPORT](evidence/prior_mlp_speed_20261115/REPORT.md); raw `/mnt/project-files/prior-mlp-speed-1052/`.
+72 boss / Act-4 roots of §797's root rows searched by `rolloutpolicybench` at 2k (no game seed), 80,919 recorded
+prior calls, and replays of §775's seeds 111378257 / 111378263 in G16 + mb4. Baseline main 6126315.
+**Result:**
+- Exact: `combatNonzeroStateFeatures` (the nonzero list from the always-written blocks and the extractor's touched
+  indices) replaces the 1,766-feature scan: 72/72 root searches identical to main, both games' Gumbel stop traces
+  identical (1,083 and 2,418 rows), CPU 0.96-0.98x at the roots and 0.97x / 0.98x in the games.
+- `STS_SILVER_PRIOR_MLP_FMA=1`: 1.16-1.22x per call, logits within 3.2e-6, 0 argmax changes on 80,919 calls, roots
+  0.92-0.95x CPU with all 72 picks equal; but both games' search traces change.
+- Rejected: AVX-512 kernels (bit-identical, 0.84-0.98x slower here), prefetch, skipping zero rows (never hit),
+  an exact-double incremental state layer (median 13 of ~80 features change per playout step, yet no real-search gain:
+  the rows are cache-warm), int16 layer 2 (1.3-7.2% argmax changes).
+**Interpretation (Inference):** after #1046 the per-call kernel is near this VM's vector throughput; no exact lever
+beyond a few percent remains in the MLP itself. FMA is the one larger lever and it is play-changing.
+**Decision:** the exact nonzero list goes in as default (bit-identical). FMA stays a research option, default off; a
+whole-run non-regression gate needs Philipp's go. Seeds: §797's 111980000-111980255 (data only), §775's 111378257 and
+111378263 (replays); no new seeds.
+**Knowledge impact:** combat search: `predictPolicyMlp` takes the state's nonzero list from the feature extractor;
+rejected prior-kernel variants and the FMA research option recorded in `knowledge-base/architecture/combat-search.md`.
