@@ -14,6 +14,7 @@
 
 #include <cstdint>
 #include <cstdlib>
+#include <atomic>
 #include <cstring>
 #include <emmintrin.h>
 #include <fstream>
@@ -445,6 +446,30 @@ void combatExtractFeaturesReuse(const BattleContext &bc, float *out, std::vector
     extractFeatures(bc, out, &touched);
 }
 
+bool combatStateFingerprint(const float *features, const std::vector<std::uint16_t> &touched,
+                            std::uint64_t &a, std::uint64_t &b) {
+    if (!g_richCombatFeatures) return false;
+    std::uint64_t sa = a, sb = b;
+    auto add = [&](int i) {
+        std::uint32_t bits;
+        std::memcpy(&bits, features + i, sizeof bits);
+        if (!bits) return;
+        const std::uint64_t w = (static_cast<std::uint64_t>(i) << 32) | bits;
+        sa += combatFingerprintMixA(w);
+        sb += combatFingerprintMixB(w);
+    };
+    // The entries extractFeatures writes on every call (not listed in `touched`) ...
+    for (int i = 0; i < kRelicOff; ++i) add(i);
+    for (int i = kEnemyAggOff; i < kMonOff; ++i) add(i);
+    for (int i = kMiscOff; i < kStateCount; ++i) add(i);
+    // ... and the relic / card / monster / potion block, where only listed entries can be nonzero. Each entry is
+    // listed at most once (relics once, a pile count on its first bump, monster slots once, potions once).
+    for (const auto i : touched) add(i);
+    a = sa;
+    b = sb;
+    return true;
+}
+
 bool CombatValueNet::load(const std::string &path) {
     std::ifstream f(path);
     if (!f) return false;
@@ -483,6 +508,7 @@ bool CombatValueNet::load(const std::string &path) {
     dsMonW1.clear(); dsMonB1.clear(); dsMonW2.clear(); dsMonB2.clear();
 
     isPolicyMlp = false;
+    policyMlpLoadId = 0;
     pmH1 = pmH2 = 0; pmB3 = 0.f;
     pmStateW.clear(); pmActionW.clear(); pmCard.clear(); pmTargetW.clear();
     pmB1.clear(); pmW2.clear(); pmW2T.clear(); pmB2.clear(); pmW3.clear();
@@ -540,6 +566,8 @@ bool CombatValueNet::load(const std::string &path) {
         isPolicyMlp = true;
         isPolicy = true;
         g_richCombatFeatures = true;
+        static std::atomic<std::uint64_t> policyMlpLoads{0};
+        policyMlpLoadId = ++policyMlpLoads;
         isLoaded = true;
         this->path = path;
         return true;
