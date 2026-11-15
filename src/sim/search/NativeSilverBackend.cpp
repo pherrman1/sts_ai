@@ -2155,7 +2155,12 @@ namespace sts::search {
             out.mlp = mlp;
             const double t1 = timing ? threadCpuSeconds() : 0;
             if (mlp) {
-                net.predictPolicyMlp(features.data(), actions.data(), targets.data(), distinct, out.scores.data());
+                // The state's nonzero features from the extractor's touched list (no scan of all features).
+                thread_local std::vector<std::uint16_t> nonzero;
+                nonzero.resize(stateCount);
+                const int count = combatNonzeroStateFeatures(features.data(), touched, nonzero.data());
+                net.predictPolicyMlp(features.data(), nonzero.data(), count, actions.data(), targets.data(), distinct,
+                                     out.scores.data());
                 if (timing) {
                     timing->featureSeconds += t1 - t0;
                     timing->mlpSeconds += threadCpuSeconds() - t1;

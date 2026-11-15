@@ -43,6 +43,11 @@ namespace sts::search {
     // empty list, or with a buffer combatExtractFeatures filled and every index of
     // that block in the list).
     void combatExtractFeaturesReuse(const BattleContext &bc, float *out, std::vector<std::uint16_t> &touched);
+    // Ascending indices of the nonzero state features (as `features[i] != 0`) of a vector last written by
+    // combatExtractFeaturesReuse with `touched`: the same list as a scan of all combatFeatureCount values, from the
+    // always-written blocks and the touched indices only.
+    int combatNonzeroStateFeatures(const float *features, const std::vector<std::uint16_t> &touched,
+                                   std::uint16_t *out);
 
     // POLICY feature layout = the combat state features above ++ per-ACTION features
     // (a comparator net scores each candidate action; softmax over a node's legal
@@ -190,11 +195,17 @@ namespace sts::search {
         // blocks, `targetSlots[i]` combatActionTargetSlot of edge i (or -1).
         void predictPolicyMlp(const float *stateFeatures, const float *actionBlocks,
                               const int *targetSlots, int n, double *out) const;
+        // The same with the state's nonzero feature indices given (ascending, exactly the i with
+        // stateFeatures[i] != 0), e.g. from combatNonzeroStateFeatures.
+        void predictPolicyMlp(const float *stateFeatures, const std::uint16_t *stateNonzero, int stateNonzeroCount,
+                              const float *actionBlocks, const int *targetSlots, int n, double *out) const;
         // The node's base (pmH1 values, before any edge's terms and the relu):
         // b1, the v2 embedding rows and the state layer. predictPolicyMlp builds
         // its edges on it; relu(base) is the state embedding a value head on
         // the frozen trunk reads (research, exact_combat_solver --leaf-heads).
         void policyMlpBase(const float *stateFeatures, std::vector<float> &base) const;
+        void policyMlpBase(const float *stateFeatures, const std::uint16_t *stateNonzero, int stateNonzeroCount,
+                           std::vector<float> &base) const;
 
         // Compact copy of `trees` for predictPolicyActions, built by load for
         // policy tree ensembles whose children follow their parents (empty
@@ -209,6 +220,11 @@ namespace sts::search {
         std::vector<FlatNode> flatNodes;
         std::vector<int> flatRoots;
     };
+
+    // STS_SILVER_PRIOR_MLP_FMA=1 (research, 2026-11-15, #1052; default off, not bit-identical): predictPolicyMlp's
+    // per-edge layers at the deployed widths use fused multiply-adds. setPolicyMlpFma overrides the environment for
+    // tests and benches (0 off, 1 on (throws without FMA), -1 back to the environment).
+    void setPolicyMlpFma(int mode);
 
     extern CombatValueNet g_combatVNet;   // loaded value model (if any)
     extern bool   g_richCombatFeatures;   // fill the wide relic/card-location block (else narrow fast path)

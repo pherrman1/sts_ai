@@ -4,7 +4,13 @@
 // random sparse inputs shaped like real calls (~60 nonzero state features,
 // signed zeros, empty monster slots, 1-40 edges, with and without targets), plus
 // special values (subnormals, huge and infinite inputs) in every fifth call.
+// Also (2026-11-15, #1052): combatNonzeroStateFeatures equals a full scan on
+// real combats played with random legal actions, and the research
+// STS_SILVER_PRIOR_MLP_FMA kernel stays within a small tolerance.
+#include "combat/BattleContext.h"
+#include "game/GameContext.h"
 #include "sim/search/CombatValueNet.h"
+#include "sim/search/SilverSearcher.h"
 
 #include <cmath>
 #include <cstdio>
@@ -15,6 +21,44 @@
 using namespace sts::search;
 
 namespace {
+
+// Random legal play through a few fights (no game seed is driven: fixed seed of the engine parity block, as
+// active_power_features_test). After every action the reused feature buffer's nonzero list from the touched list
+// must equal a scan of all state features. Returns the number of mismatching states.
+long nonzeroListMismatches(long &states) {
+    using namespace sts;
+    constexpr std::uint64_t kSeed = 111194452;
+    const MonsterEncounter fights[] = {MonsterEncounter::JAW_WORM, MonsterEncounter::GREMLIN_NOB,
+                                       MonsterEncounter::THREE_SENTRIES, MonsterEncounter::SLIME_BOSS,
+                                       MonsterEncounter::GREMLIN_LEADER, MonsterEncounter::REPTOMANCER,
+                                       MonsterEncounter::THE_HEART};
+    const int S = combatFeatureCount();
+    std::vector<float> features(S), full(S);
+    std::vector<std::uint16_t> touched, got(S), want(S);
+    std::mt19937 rng(1052);
+    long bad = 0;
+    for (int run = 0; run < 12; ++run) for (const auto fight : fights) {
+        GameContext gc(CharacterClass::IRONCLAD, kSeed, 20);
+        BattleContext bc;
+        bc.init(gc, fight);
+        SilverSearcher enumerator(bc, SilverSearchContext{});
+        for (int step = 0; step < 300 && bc.outcome == Outcome::UNDECIDED; ++step) {
+            combatExtractFeaturesReuse(bc, features.data(), touched);
+            combatExtractFeatures(bc, full.data());
+            const int n = combatNonzeroStateFeatures(features.data(), touched, got.data());
+            int m = 0;
+            for (int i = 0; i < S; ++i)
+                if (full[i] != 0.f) want[m++] = static_cast<std::uint16_t>(i);
+            ++states;
+            if (n != m || std::memcmp(got.data(), want.data(), sizeof(std::uint16_t) * n) != 0
+                    || std::memcmp(features.data(), full.data(), sizeof(float) * S) != 0) ++bad;
+            const auto acts = enumerator.enumerateActions(bc);
+            if (acts.empty()) break;
+            acts[(unsigned)rng() % acts.size()].execute(bc);
+        }
+    }
+    return bad;
+}
 
 void referencePolicyMlp(const CombatValueNet &net, const float *stateFeatures, const float *actionBlocks,
                         const int *targetSlots, int n, double *out) {
@@ -104,6 +148,7 @@ int main(int argc, char **argv) {
     std::vector<float> state(S), actions;
     std::vector<int> targets;
     std::vector<double> got, want;
+    setPolicyMlpFma(0);   // the exactness checks below need the default kernels
     long cases = 0, edges = 0, mismatches = 0;
     for (int c = 0; c < 4000; ++c) {
         std::fill(state.begin(), state.end(), 0.f);
@@ -149,5 +194,39 @@ int main(int argc, char **argv) {
         }
     }
     std::printf("policy_mlp_exact_test: %ld calls, %ld edges, %ld mismatches\n", cases, edges, mismatches);
-    return mismatches == 0 ? 0 : 1;
+    long states = 0;
+    const long nonzeroBad = nonzeroListMismatches(states);
+    std::printf("policy_mlp_exact_test: nonzero list from touched features: %ld states, %ld mismatches\n", states,
+                nonzeroBad);
+    long fmaBad = 0;
+    __builtin_cpu_init();
+    if (__builtin_cpu_supports("fma")) {
+        // STS_SILVER_PRIOR_MLP_FMA (research): finite random calls stay within 1e-4 (relative) of the reference.
+        std::mt19937 frng(20261115);
+        for (int c = 0; c < 1000; ++c) {
+            std::fill(state.begin(), state.end(), 0.f);
+            for (int i = 0; i < 60; ++i) state[feat(frng)] = (float)small(frng);
+            state[1] = (float)(c % 60);
+            for (int k = 0; k < 5; ++k) state[monOff + k * kCombatMonsterSlotFeatures] = k < 1 + c % 5 ? (float)(c % 50) : -1.f;
+            const int n = edgeCount(frng);
+            actions.assign((std::size_t)n * A, 0.f);
+            targets.resize(n);
+            for (int e = 0; e < n; ++e) {
+                float *a = actions.data() + (std::size_t)e * A;
+                for (int k = 0; k < 4; ++k) a[(unsigned)frng() % A] = (float)small(frng);
+                a[4] = (float)((unsigned)frng() % 371);
+                targets[e] = slot(frng);
+            }
+            got.assign(n, 0.0);
+            want.assign(n, 0.0);
+            setPolicyMlpFma(1);
+            net.predictPolicyMlp(state.data(), actions.data(), targets.data(), n, got.data());
+            setPolicyMlpFma(0);
+            referencePolicyMlp(net, state.data(), actions.data(), targets.data(), n, want.data());
+            for (int e = 0; e < n; ++e)
+                if (!(std::fabs(got[e] - want[e]) <= 1e-4 * (1.0 + std::fabs(want[e])))) { ++fmaBad; break; }
+        }
+        std::printf("policy_mlp_exact_test: FMA research kernel: 1000 calls, %ld outside tolerance\n", fmaBad);
+    }
+    return mismatches == 0 && nonzeroBad == 0 && fmaBad == 0 ? 0 : 1;
 }
