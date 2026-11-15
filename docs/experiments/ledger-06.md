@@ -27583,6 +27583,31 @@ Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 104.1 lane-hours
 −2.25 pp [−5.08, +0.59] Heart; no conversion loss visible on the seeds where both arms reach Act 4 (not an isolated
 Heart contrast).
 
+## §TBD — Rollout prior on G16 targets, stage 2 (issue #1053): §798's playout harness on §797's 256 G16 + mb4 games, playout policy swapped at equal simulations: V (stage 1's best, G16 visit shares) loses +0.289 max-backed Q [99 % +0.214, +0.379] against g7f_E at 4k, X-B +0.300 [+0.232, +0.375], V at 16k +0.339 [+0.261, +0.431] against g7f_E at 16k (V 16k ≈ g7f_E 2-4k), worse in every group, boss and fold 4 → WORSE, root-regret gains do not transfer to playouts (cloud, 32 workers, stopped early at 254/256, 2026-11-15)
+
+**Question (Philipp 2026-11-15 21:29 CET "go auf 32 workers"):** do §804's candidates, trained only on G16 roots, make
+better playouts than g7f_E? Measured with §798's harness: fresh searches at each multi-edge boss / Act-4 root of the
+played game that differ only in the playout policy; loss = best max-backed Q of the played G16 tree minus Q of the
+arm's pick.
+**Data:** [PREREG](evidence/rollout_prior_stage2_20261115/PREREG-stage2.md), [RESULT](evidence/rollout_prior_stage2_20261115/RESULT.md),
+`results/result.json`. Run commit 2c2d064e (code f9601609, binary 5a659bd8), §797 seeds 111980000-111980255, arms
+asplayed:4000 (g7f_E), st:4000 (V), ste:4000 (X-B for all 11 playout encounters), st:16000 (V); p1:1000-16000 from §797.
+Deviation: Philipp stopped the run at 22:57 CET ("its pretty clear its worse"); 254 runs rc 0, 2 long games dropped
+(bound 20) → status OK. Checks: sentinel 0 bad, student manifests 0 bad, asplayed:4000 = §798 on 42,220 / 42,220
+picks, control vs §797 p1:4000 +0.003 [−0.028, +0.035], calibration gap p1:1k − p1:16k 0.547 [0.504, 0.592].
+**Result (42,138 rows, 235 runs; loss):** g7f_E 4k 0.994, V 4k 1.283, X-B 4k 1.294, V 16k 1.111; P1 1k / 2k / 4k / 8k
+/ 16k 1.319 / 1.156 / 0.991 / 0.860 / 0.772. V@4k by group: Act 1-2 bosses +0.160, Act 3 bosses +0.379, Act-4 elite
++0.334, Heart +0.344, all WORSE; fold 4 +0.263. Every boss is worse (Hexaghost +0.02 … Awakened One +0.46).
+**Interpretation (Inference):** V saw only start-of-turn states on G16's own path. Playouts visit deeper and worse
+states, many after their own weak moves, where g7f_E's broader Silver data (half perturbed A0 runs, A20 Act 4) still
+generalises. Sequential halving's flat finalist visits also give a softer argmax than a playout needs. Root regret
+does not rank playout policies. The PC follow-up agrees: adding g7f_E's Silver data to V's mix worsens G16-root
+regret (+0.13), so the two data sources conflict rather than add. The reference tree favours g7f_E (caveat), but
+not by 0.3 Q in every encounter at both budgets.
+**Decision:** WORSE. V and X-B are not playout candidates; no default change. A further playout-prior step would
+need playout-state data labelled by short searches (DAgger-style). Stage 3 (V in all four prior roles, whole-run
+gate vs §775's G16, Philipp's go 21:59 CET) runs separately. Seeds: none new (§797's). Cost ≈ 86 lane-hours.
+**Knowledge impact:** KB `research/combat-search/cheap-combat-roadmap.md` (playout prior retrain line).
 ## §806 — PG16H24: PPO from net-0420 on §775's G16 + mb4 stack (S&S 16k, Heart 24k, 40 cloud actors, PC GPU learner), stopped after 46 updates (23,920 games); net-0046 vs net-0420 at temperature 0 on §775's G16 + mb4, 1,024 paired A20 seeds after a 32/32 sentinel on the exact-kernel binary dae7894a: Heart 41.21% → 38.18%, −3.03 pp [−6.15, +0.10], gainer SPRT NOT_SHOWN → STOP (cloud + PC GPU, 2026-11-14/15)
 
 **Question (Philipp, 2026-11-14 00:02-00:18 CET; stop and eval 2026-11-15 19:18 CET, "lets stop the ppo here. do a

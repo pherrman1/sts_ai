@@ -220,6 +220,11 @@ Data, scripts and tables: [step 0 evidence](../../../experiments/evidence/cheap_
   Whether that carries to playout states is open. The next step is §798's harness (arms at 4k against asplayed),
   which needs a go. With §798's finding that a near-copy of g7f_E (KL 0.023) already costs +0.24 Q at equal sims,
   the playout policy's quality is a steep lever (**Inference**).
+  **Stage 2 (Measured, ledger §TBD, 2026-11-15): WORSE.** In §798's harness V loses +0.29 Q against g7f_E at 4k and
+  +0.34 at 16k (V at 16k ≈ g7f_E at 2-4k), in every boss; the boss fine-tune X-B too. Root regret on G16's own
+  path does not carry to playout states, and mixing in g7f_E's Silver data hurts G16-root regret. Next step, if
+  any: label captured playout states with short searches (DAgger-style). Stage 3 (V in all four roles, whole-run
+  gate) runs on its own go.
 
 ### Parked
 
