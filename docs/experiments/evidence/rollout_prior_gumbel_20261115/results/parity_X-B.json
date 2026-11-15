@@ -1,0 +1,20 @@
+{
+ "model": "/tmp/claude-0/rp/cand/rp_X-B.txt",
+ "ckpt_vs_artifact": {
+  "roots": 20000,
+  "edges": 121040,
+  "max_abs": 7.152557373046875e-07
+ },
+ "native_report": {
+  "edges": 17026,
+  "mlp": "policy mlp 128/64",
+  "mlpUsPerRoot": 8.173135699373695,
+  "roots": 2874
+ },
+ "artifact_vs_native": {
+  "roots": 2874,
+  "edges": 17026,
+  "max_abs": 1.069196166936237e-06,
+  "argmax_mismatch_roots": 0
+ }
+}
