@@ -27612,3 +27612,28 @@ Seeds: none played (§797's seeds reused as data). Cost: ≈ 35 CPU-minutes.
 **Knowledge impact:** Gumbel root width: a root filter must keep regret below the budget it frees (≈ 0.01 Q for the
 lowest-ranked action, ≈ 0.025 Q for half the actions at 16k); neither the g7f_E prior nor a plan scorer with
 end-state features comes within a factor of 7 of that, so root narrowing is not a lever (with §791).
+
+## §TBD — Asymmetric critic stage 0 (issue #1050): the act's pre-generated encounter lists (remaining normals and elites by position and count, act-3 second boss; variant: also later acts) as extra GBM features in §761's critic ceiling check, same LONG_C split: act-1 EV −0.0012 [−0.0022, −0.0002] vs the public GBM (bar +0.03) and −0.0107 vs the recalibrated online critic → NO_GO, no privileged critic (PC CPU, offline, no seeds, 2026-11-15)
+
+**Question (issue #1050, Philipp 2026-11-15 17:08 CET "arbeite das jeweils ab"; run go 18:14 CET):** would a PPO
+value head that also sees the act's pre-generated encounters (training only) be a better critic? Offline first:
+how much act-1 outcome variance do those lists explain beyond the public state?
+**Data:** [PREREG](evidence/critic_encounters_20261115/PREREG.md) (K PASS on 75cdc2d1),
+[RESULT](evidence/critic_encounters_20261115/RESULT.md), `report.json`, `gbm*.json`, `check_encounters.json`,
+`commands.log`. New binding `slaythespire.act_encounter_lists(seed, ascension)`; `monsterRng` is used only by
+`generateMonsters`, and `obs.v2.fought` is the consumed prefix of the lists, so each decision's remaining lists follow
+from seed and record. Gate: all 11,338,165 act 1-3 decisions of the 8,000 LONG_C parts match the table (fought prefix
+and boss). Test LONG_C 0400-0419 (10,400 games), train 0220-0399, game-frac 1.0; gbm reproduces §761's GBM exactly.
+**Result:**
+- Act 1 AUC / EV: online_cal 0.671 / 0.072; gbm 0.662 / 0.063; gbm_enc 0.661 / 0.061; gbm_run 0.659 / 0.061.
+  All decisions: 0.784 / 0.243; 0.782 / 0.242; 0.781 / 0.241; 0.781 / 0.242.
+- Δ EV gbm_enc − gbm: act 1 −0.0012 [−0.0022, −0.0002], first decision +0.0005 [−0.0007, +0.0018], all −0.0015
+  [−0.0032, +0.0004]; gbm_run − gbm act 1 −0.0014 [−0.0037, +0.0011]; gbm_enc − online_cal act 1 −0.0107
+  [−0.0150, −0.0065]. All three rule checks fail → **NO_GO**.
+**Interpretation (Inference):** given the public state, the identity of the encounters still ahead (this act or
+later acts) explains no measurable share of the Heart outcome in this model class; the act-1 gain is bounded above
+by +0.0002 against a +0.03 bar. The privileged information an asymmetric critic would add is worth nothing here.
+**Decision:** NO_GO for #1050 step 1 (no asymmetric critic with encounter lists) and for step 2 via a privileged
+critic. No default change. The binding and `critic_ceiling.py encounters` / `check-encounters` / `--encounters` stay
+as tools. Seeds: none. Cost ≈ 70 min PC CPU, no GPU, no cloud core-hours.
+**Knowledge impact:** KB `research/a20-ppo-plan.md` (V6 row and critic ceiling paragraph).
