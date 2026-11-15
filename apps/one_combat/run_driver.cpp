@@ -14,6 +14,7 @@
 #include <sstream>
 
 #include "combat/BattleContext.h"
+#include "combat/BattleContextBinary.h"
 #include "sim/search/GameAction.h"
 #include "sim/search/MatchAndKeepPolicy.h"
 #include "sim/search/ScumSearchAgent2.h"
@@ -114,6 +115,75 @@ void oocTraceEmit(const nlohmann::json &row) {
     std::ofstream f(path, std::ios::app);
     f << row.dump() << '\n';
 }
+
+// Research-only (#1054 infinite-combo frequency): STS_COMBAT_STATE_CAPTURE=<path> appends one JSON line
+// per player turn of every real fight (the concrete BattleContext at the turn's first PLAYER_NORMAL
+// decision, as a BattleContextBinary hex snapshot) and one line per fight end. It installs the existing
+// g_onCombatDecision hook around the real fight only and only reads state, so the run is unchanged;
+// unset, nothing is installed.
+class CombatStateCapture {
+    const char *path;
+    nlohmann::json rows = nlohmann::json::array();
+    std::vector<int> cardsPerTurn;
+    int lastTurn = -1, decisions = 0;
+    std::function<void(const BattleContext &)> saved;
+    static std::string hex(const std::vector<std::uint8_t> &bytes) {
+        static const char *digits = "0123456789abcdef";
+        std::string out(bytes.size() * 2, '0');
+        for (std::size_t i = 0; i < bytes.size(); ++i) {
+            out[2 * i] = digits[bytes[i] >> 4];
+            out[2 * i + 1] = digits[bytes[i] & 15];
+        }
+        return out;
+    }
+public:
+    static const char *configuredPath() { return std::getenv("STS_COMBAT_STATE_CAPTURE"); }
+    nlohmann::json context;
+    explicit CombatStateCapture(const char *p, nlohmann::json ctx) : path(p), context(std::move(ctx)) {
+        saved = search::g_onCombatDecision;
+        search::g_onCombatDecision = [this](const BattleContext &s) {
+            if (saved) saved(s);
+            ++decisions;
+            if (s.turn >= 0) {
+                if (static_cast<int>(cardsPerTurn.size()) <= s.turn) cardsPerTurn.resize(s.turn + 1, 0);
+                cardsPerTurn[s.turn] = std::max<int>(cardsPerTurn[s.turn], s.player.cardsPlayedThisTurn);
+            }
+            if (s.turn == lastTurn || s.inputState != InputState::PLAYER_NORMAL) return;
+            lastTurn = s.turn;
+            auto row = context;
+            row.update({{"kind", "turn"}, {"encounter", monsterEncounterEnumNames[static_cast<int>(s.encounter)]},
+                        {"turn", s.turn}, {"decision", decisions}, {"hp", s.player.curHp},
+                        {"block", s.player.block}, {"energy", s.player.energy},
+                        {"hand", s.cards.cardsInHand}, {"draw", s.cards.drawPile.size()},
+                        {"discard", s.cards.discardPile.size()}, {"exhaust", s.cards.exhaustPile.size()},
+                        {"draw_concrete", s.cards.drawPile.isConcrete()}});
+            try {
+                if (s.cards.drawPile.isConcrete()) row["state"] = hex(serializeBattleContext(s));
+            } catch (const std::exception &e) {
+                row["state_error"] = e.what();   // never let the observer change the run
+            }
+            rows.push_back(std::move(row));
+        };
+    }
+    ~CombatStateCapture() { search::g_onCombatDecision = saved; }
+    void finish(const BattleContext &bc, int hpPre, int hpPost, bool aborted) {
+        search::g_onCombatDecision = saved;
+        if (bc.turn >= 0) {
+            if (static_cast<int>(cardsPerTurn.size()) <= bc.turn) cardsPerTurn.resize(bc.turn + 1, 0);
+            cardsPerTurn[bc.turn] = std::max<int>(cardsPerTurn[bc.turn], bc.player.cardsPlayedThisTurn);
+        }
+        auto row = context;
+        row.update({{"kind", "fight"}, {"encounter", monsterEncounterEnumNames[static_cast<int>(bc.encounter)]},
+                    {"won", bc.outcome == Outcome::PLAYER_VICTORY},
+                    {"outcome", static_cast<int>(bc.outcome)}, {"turns", bc.turn}, {"escaped", bc.smokeBombUsed},
+                    {"aborted", aborted}, {"hp_pre", hpPre}, {"hp_post", hpPost}, {"hp_end_battle", bc.player.curHp},
+                    {"decisions", decisions}, {"cards_per_turn", cardsPerTurn}});
+        rows.push_back(std::move(row));
+        std::ofstream f(path, std::ios::app);
+        for (const auto &r : rows) f << r.dump() << '\n';
+        rows = nlohmann::json::array();
+    }
+};
 
 // A floor spans first observation by the real driver to first observation of
 // the next floor (map-choice/entry work belongs to the floor being left).
@@ -821,10 +891,18 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
             // Runic-Dome hooks see the initial hidden intent lifecycle.
             const double combatWall = floorProfile.on() ? one_combat::runProfileWall() : 0;
             const double combatCpu = floorProfile.on() ? one_combat::oocProfileCpu() : 0;
+            std::optional<CombatStateCapture> stateCapture;
+            const int captureHpPre = gc.curHp;
+            if (const char *capturePath = CombatStateCapture::configuredPath())
+                stateCapture.emplace(capturePath, nlohmann::json{{"seed", seed}, {"fight", fightsTotal + 1},
+                    {"act", gc.act}, {"floor", gc.floorNum}, {"room", roomStrings[static_cast<int>(battleRoom)]},
+                    {"prismatic_shard", gc.relics.has(RelicId::PRISMATIC_SHARD)},
+                    {"deck_size", static_cast<int>(gc.deck.cards.size())}});
             try {
                 one_combat::OocProfileScope combatProfile(one_combat::OocProfileBucket::RealCombat);
                 agent.playoutBattle(gc, bc);
             } catch (const search::CombatStateFailure &e) {
+                if (stateCapture) stateCapture->finish(bc, captureHpPre, gc.curHp, true);
                 // The backend gave up on this fight for a game-state reason (stall, knowledge inconsistency,
                 // root conversion, invalid action). The run cannot continue; hand the caller the run as it stood
                 // so the seed can be recorded as a loss. Every other exception (configuration, I/O, a planner's
@@ -851,6 +929,7 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
                 }
                 t_realCombatObserver(*combatPre, bc, rawCaptureCount, record);
             } else one_combat::exitBattleWithE2cRawCapture(bc, gc);
+            if (stateCapture) stateCapture->finish(bc, captureHpPre, gc.curHp, false);
             // The death is the game's verdict, not the battle's: exitBattle maps a battle left UNDECIDED (the
             // loop exited without a resolution) to a run loss as well, and that row must not look like a
             // healthy non-win (issue 87, accounting half).
