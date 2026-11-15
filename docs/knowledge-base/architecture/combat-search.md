@@ -549,6 +549,19 @@ G16 + mb4 games replay with identical Gumbel stop traces at 0.72-0.76x the CPU
 (2026-11-14; `/mnt/project-files/combat-speed-20261114/REPORT.md`). In those
 games the prior MLP was 42-60% of all CPU, almost all of it prior playouts in
 boss fights (64 M calls, 5.7 edges each, in one Heart-kill game).
+Since 2026-11-15 (#1052) `scorePolicyEdges` passes the state's ascending
+nonzero feature list to `predictPolicyMlp` instead of letting it scan all 1,766
+features: `combatNonzeroStateFeatures` reads it off the always-written blocks
+and the indices `combatExtractFeaturesReuse` touched (the same list, so the same
+logits; ctest `policy_mlp_exact` checks it against a full scan on states of
+random legal play). Measured and not adopted (#1052): 16-wide AVX-512 kernels
+(bit-identical but slower on the cloud Xeon VMs), an exact-double incremental
+state layer kept across a playout's calls (consecutive calls change a median of
+13 of ~80 nonzero features, but the state rows are cache-warm in real playouts,
+so no gain), and int16 layer 2 (1-7% argmax changes). `STS_SILVER_PRIOR_MLP_FMA=1`
+(research, default off) runs the per-edge layers with fused multiply-adds: not
+bit-identical (logits within ~3e-6 on recorded playout calls, no argmax change
+seen), so it needs a whole-run gate before any default change.
 `tools/silver_az_mlp.py` featurizes the synthetic corpus (`silversynthfeatures`
 action rows carry `tgt`), trains
 from random initialization, and exports the model with input scales and the
