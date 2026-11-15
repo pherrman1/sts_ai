@@ -380,6 +380,10 @@ void silverFocusEvalGen(int nSeeds, int asc, const std::string &outPrefix, long 
 void silverSynthFeatures(const std::string &outPrefix);
 void silverSynthReplay(const std::string &namesPath = "");
 void rolloutPolicyBench(const std::string &prefix, std::int64_t budget, const std::string &arms, int captureStride);
+// Research-only (#1058, apps/one_combat/turn_plan.cpp): deterministic turn plans of silverazgen root rows read on
+// stdin (search::enumerateTurnPlans), and the plan feature names.
+void turnPlanEnum(const std::string &outPath, int maxPlans, int maxNodes);
+void turnPlanNames(const std::string &outPath);
 // combat_policy_mlp_v1 logits of every root in a silversynthfeatures file
 // (Python parity check) plus per-root timing, optionally against a GBM prior.
 void silverPolicyMlpCheck(const std::string &modelPath, const std::string &prefix, const std::string &outPath,
