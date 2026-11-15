@@ -39,6 +39,8 @@ class DecisionSourcesTest(unittest.TestCase):
             decision("1", 7, 3, 1, fixed=[4, pds.FA_RECALL]),
             # rewards: a full belt, Blood Potion discarded for the offered potion (fixed index 0)
             decision("1", 2, 2, 1, potions=[9], fixed=[pds.FA_DISCARD, pds.FA_SKIP]),
+            # map with a held Fruit Juice: drink token chosen (fixed index 0)
+            decision("1", 5, 2, 0, paths=[3], fixed=[pds.FA_DRINK]),
             # single-choice map
             decision("1", 5, 1, 0, paths=[3]),
             # boss relic skipped
@@ -52,11 +54,12 @@ class DecisionSourcesTest(unittest.TestCase):
                 f.write("".join(json.dumps(r) + "\n" for r in rows))
             rep = pds.tally([tmp], NAMES)
         self.assertEqual(rep["games"], 1)
-        self.assertEqual(rep["sources"], {"heart1_ppo": 7, "heart1_ppo_single": 1})
+        self.assertEqual(rep["sources"], {"heart1_ppo": 8, "heart1_ppo_single": 1})
         self.assertEqual(rep["fallbacks"], {"unmapped_event": 1})
         self.assertEqual(rep["auto_gold"], 3)
         self.assertEqual(rep["tokens"]["discard_potion"], {"offered": 2, "chosen": 1})
         self.assertEqual(rep["discarded_potions"], {"BLOOD_POTION": 1})
+        self.assertEqual(rep["tokens"]["drink_potion"], {"offered": 1, "chosen": 1})
         self.assertEqual(rep["tokens"]["take_key"], {"offered": 1, "chosen": 1})
         self.assertEqual(rep["tokens"]["recall"], {"offered": 2, "chosen": 1})
         self.assertEqual(rep["relics_left"], {"rule_would_take": 1, "reviewed_exception": 1})
@@ -65,7 +68,7 @@ class DecisionSourcesTest(unittest.TestCase):
         self.assertEqual(rep["treasure"], {"cursed_key:open": 1})
         self.assertEqual(rep["boss_relic"], {"skip": 1})
         self.assertEqual(rep["ruby_first_act3_rest"], {"other": 1})
-        self.assertEqual(rep["screens"]["map"], {"single": 1})
+        self.assertEqual(rep["screens"]["map"], {"multi": 1, "single": 1})
 
 
 if __name__ == "__main__":

@@ -567,6 +567,23 @@ differs from earlier binaries and from machines without FMA (which warn and use
 the exact kernel). `STS_SILVER_PRIOR_MLP_FMA=0` restores the exact kernel
 everywhere (reproducing pre-#1052 runs needs it); `=1` makes FMA mandatory.
 `one_combat` prints the kernel in use at startup when a root prior is set.
+Prior playouts also keep an exact pick cache (issue #1051,
+`STS_SILVER_PRIOR_PICK_CACHE`, default 2^20 slots, `0` turns it off):
+`nativeSilverPolicyArgmax` keys the MLP's argmax edge by a 128-bit additive
+fingerprint of the MLP's whole input (net, state block via
+`combatStateFingerprint`, distinct action blocks, targets, each edge's distinct
+index) in a per-thread 4-way table that is never cleared, so a hit returns the
+edge the MLP would pick (play changes only on a fingerprint collision, about
+2^-120 per pair of inputs; 16 MB per thread). The fingerprint has to cover the state entries
+`combatExtractFeaturesReuse` writes on every call (scalar head, enemy aggregate,
+misc and relic counters), which `touched` does not list. About 31% of
+prior-playout calls repeat an input within one search (52 G16 boss and Act 4
+roots), but a hit saves only the MLP (the features are needed for the key) and
+the key and lookup cost about 9% of the search, so searches use about 0.95x the
+CPU (0.94-0.98 over repeated runs) with identical root visits, and two G16 +
+mb4 games replay with identical Gumbel stop traces at 0.96-0.97x; ctest
+`prior_pick_cache` checks the picks on real playout states
+(`docs/experiments/evidence/prior_pick_cache_20261115/`).
 `tools/silver_az_mlp.py` featurizes the synthetic corpus (`silversynthfeatures`
 action rows carry `tgt`), trains
 from random initialization, and exports the model with input scales and the
