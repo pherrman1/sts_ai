@@ -64,6 +64,29 @@ FIXED_ACTION_KEYS = {"action", "gold", "card", "relic", "potion", "info"}
 ENC_NORMALS = 8    # remaining normal encounters of the act encoded by position (an act has 15-16; <= 9 are fought)
 ENC_ELITES = 4     # remaining elites by position (10 per act; <= 5 are fought)
 ENC_SCOPES = ("act", "run")
+# Outcome targets (PREREG critic_encounters_20261115 addendum): "heart" = 1{Heart kill} (§761, §801);
+# "act1_survive" = 1{the game leaves act 1 alive}, scored on act-1 decisions only (later decisions are dropped).
+TARGETS = ("heart", "act1_survive")
+ACT1_CLEARED_FLOOR = 17   # = ppo_train.ACT_FLOORS[0]: the first floor after act 1's boss
+_TARGET = {"name": "heart"}   # set by the subcommands before any read_part (and before the worker pool forks)
+
+
+def set_target(name):
+    if name not in TARGETS:
+        raise ValueError(f"target {name} is not one of {TARGETS}")
+    _TARGET["name"] = name
+
+
+def outcome_y(outcome, target):
+    if target == "heart":
+        return 1.0 if outcome.get("heart_kill") else 0.0
+    if target == "act1_survive":
+        if "act" not in outcome:
+            # A stalled game's line (ppo_cloud.stalled_game_lines) has only floor/heart_kill/stalled and no
+            # decisions: act 1 counts as survived iff the stall floor is past act 1's boss (ppo_train.ACT_FLOORS).
+            return 1.0 if int(outcome.get("floor", 0)) >= ACT1_CLEARED_FLOOR else 0.0
+        return 1.0 if outcome.get("won") or int(outcome["act"]) >= 2 else 0.0
+    raise ValueError(f"target {target}")
 BOSS_ENCODING = (18, 20, 19, 39, 37, 38, 54, 55, 53, 57)   # heart1 bossEncoding index -> MonsterEncounter id
 
 # Every record field and how flat_features() uses it (an unlisted field raises: the GBM must see all inputs).
@@ -107,7 +130,8 @@ def _unit(seed, salt):
 
 def read_part(path):
     """Games of one part: [{"seed", "y", "outcome", "steps": [decision rows in idx order]}] (net decisions only).
-    A decision without its game line (a part cut mid-game) is dropped; a game line with another schema raises."""
+    A decision without its game line (a part cut mid-game) is dropped; a game line with another schema raises.
+    y follows _TARGET; with "act1_survive" only act-1 decisions are kept."""
     pending, games = {}, []
     with (gzip.open(path, "rt") if path.endswith(".gz") else open(path)) as f:
         for line in f:
@@ -122,7 +146,9 @@ def read_part(path):
                 if row.get("schema") != SCHEMA:
                     raise ValueError(f"{path}: schema {row.get('schema')} is not {SCHEMA}")
                 steps = sorted(pending.pop(row["seed"], []), key=lambda r: r["idx"])
-                y = 1.0 if row["outcome"].get("heart_kill") else 0.0
+                if _TARGET["name"] == "act1_survive":
+                    steps = [st for st in steps if act_of(st) == 1]
+                y = outcome_y(row["outcome"], _TARGET["name"])
                 games.append({"seed": str(row["seed"]), "y": y, "outcome": row["outcome"], "steps": steps})
     return games
 
@@ -200,7 +226,8 @@ def load_training(patterns, exclude_patterns, per_game, want_feat, trim_map=Fals
 
 def load_encounters(path):
     """{seed (str): [{act, monsters, elites, boss, second_boss} for acts 1-3]} and the file's sha256."""
-    raw = open(path, "rb").read()
+    with open(path, "rb") as f:
+        raw = f.read()
     tab = json.loads(gzip.decompress(raw) if path.endswith(".gz") else raw)
     if tab.get("schema") != "critic-encounters-v1":
         raise ValueError(f"{path}: schema {tab.get('schema')} is not critic-encounters-v1")
@@ -303,6 +330,40 @@ def _check_part(path, seeds):
             out["max_normals"][act - 1] = max(out["max_normals"][act - 1], k)
             out["max_elites"][act - 1] = max(out["max_elites"][act - 1], j)
     return out
+
+
+def cmd_importance(argv):
+    """Total-gain importance of a fitted GBM: the enc_* features' share and the top features (no data read)."""
+    ap = argparse.ArgumentParser(prog="critic_ceiling.py importance")
+    ap.add_argument("--gbm", nargs="+", required=True)
+    ap.add_argument("--top", type=int, default=30)
+    ap.add_argument("--out", required=True)
+    a = ap.parse_args(argv)
+    import xgboost as xgb
+    out = {}
+    for path in a.gbm:
+        meta = json.load(open(path))
+        bst = xgb.Booster()
+        bst.load_model(os.path.join(os.path.dirname(os.path.abspath(path)), meta["model"]))
+        # keyed by the path as given: two directories may hold models with the same file name
+        out[path] = importance_summary(bst.get_score(importance_type="total_gain"), meta["vocab"], a.top)
+    json.dump(out, open(a.out, "w"), indent=1)
+    for name, d in out.items():
+        print(name, f"enc share {d['enc_gain_share']:.4f}, enc features used {d['enc_features_used']}"
+                    f"/{d['enc_features']}, top enc {d['top_enc'][:5]}")
+
+
+def importance_summary(score, vocab, top):
+    """score: xgboost get_score (f<index> -> total gain); vocab: feature names in index order."""
+    gain = {vocab[int(k[1:])]: float(v) for k, v in score.items()}
+    tot = sum(gain.values()) or 1.0
+    enc = {k: v for k, v in gain.items() if k.startswith("enc_")}
+    rank = sorted(gain.items(), key=lambda kv: -kv[1])
+    return {"total_gain": tot, "enc_gain_share": sum(enc.values()) / tot,
+            "enc_features": sum(1 for k in vocab if k.startswith("enc_")), "enc_features_used": len(enc),
+            "top": [[k, v / tot] for k, v in rank[:top]],
+            "top_enc": [[k, v / tot] for k, v in sorted(enc.items(), key=lambda kv: -kv[1])[:top]],
+            "enc_rank_of_best": next((i + 1 for i, (k, _) in enumerate(rank) if k.startswith("enc_")), None)}
 
 
 def cmd_check_encounters(argv):
@@ -460,9 +521,11 @@ def cmd_fit_gbm(argv):
     ap.add_argument("--workers", type=int, default=0)
     ap.add_argument("--encounters", default="", help="encounter table (`encounters`): add privileged enc_* features")
     ap.add_argument("--enc-scope", default="act", choices=ENC_SCOPES)
+    ap.add_argument("--target", default="heart", choices=TARGETS)
     ap.add_argument("--out", required=True)
     a = ap.parse_args(argv)
     import xgboost as xgb
+    set_target(a.target)
     _ENC.clear()
     if a.encounters:
         seeds, sha = load_encounters(a.encounters)
@@ -487,7 +550,7 @@ def cmd_fit_gbm(argv):
             "best_iteration": int(bst.best_iteration), "train_rows": len(tr), "val_rows": len(va),
             "train_files": len(files), "excluded_seeds": len(excl), "per_game": a.per_game,
             "params": params, "rounds": a.rounds, "game_frac": a.game_frac,
-            "encounters": {"sha256": _ENC["sha256"], "scope": _ENC["scope"]} if _ENC else None}
+            "encounters": {"sha256": _ENC["sha256"], "scope": _ENC["scope"]} if _ENC else None, "target": a.target}
     json.dump(meta, open(a.out, "w"), indent=1)
     print(f"gbm: {len(tr)} train / {len(va)} val rows, {len(vocab)} features, best iteration {bst.best_iteration}")
 
@@ -546,8 +609,10 @@ def cmd_fit_net(argv):
     ap.add_argument("--workers", type=int, default=0)
     ap.add_argument("--device", default="cuda" if _cuda() else "cpu")
     ap.add_argument("--threads", type=int, default=4, help="torch CPU threads")
+    ap.add_argument("--target", default="heart", choices=TARGETS)
     ap.add_argument("--out", required=True)
     a = ap.parse_args(argv)
+    set_target(a.target)
     import torch
     import torch.nn.functional as F
     import ppo_model
@@ -743,6 +808,11 @@ def verdict(boot, ev_margin):
 CONTRAST_SCOPES = ("first_decision", "act1", "act2", "act3", "act4", "all")
 
 
+def _scorable(y):
+    """A scope gets a contrast only with decisions of both outcomes (act1_survive leaves acts 2-4 empty)."""
+    return len(y) > 0 and 0 < float(np.mean(y)) < 1
+
+
 def verdict_encounters(contrasts, ev_margin):
     """PREREG critic_encounters_20261115 (issue #1050 stage 0): GO for step 1 (a privileged critic in PPO) when, on
     act-1 decisions, gbm_enc gains at least ev_margin EV over gbm (same rows, settings and public features) with its
@@ -799,6 +869,8 @@ def cmd_evaluate(argv):
                     help="bootstrap B - A on act 1-4, first decision and all (95%% CIs)")
     ap.add_argument("--rule", default="critic_ceiling", choices=("critic_ceiling", "encounters"))
     ap.add_argument("--enc-ev-margin", type=float, default=0.03)
+    ap.add_argument("--target", default="heart", choices=TARGETS,
+                    help="outcome scored; every GBM/net must have been fitted on the same target")
     ap.add_argument("--lam", type=float, default=0.97)
     ap.add_argument("--boot", type=int, default=2000)
     ap.add_argument("--boot-seed", type=int, default=20261106)
@@ -807,6 +879,7 @@ def cmd_evaluate(argv):
                     help="parts used in training: test must not share seeds; their logged values fit online_cal")
     ap.add_argument("--out", required=True)
     a = ap.parse_args(argv)
+    set_target(a.target)
     files = expand(a.test)
     train_seeds, ca, cv, cy = set(), [], [], []
     for p in (expand(a.train_seeds_from) if a.train_seeds_from else []):
@@ -828,6 +901,11 @@ def cmd_evaluate(argv):
         if not name or not path or name in ests or name == "net":
             raise ValueError(f"--extra-gbm {spec}: need a new NAME=PATH")
         ests[name] = Gbm(path, enc_tab)
+    for k, m in ests.items():
+        if m is not None:
+            fitted = (m.meta.get("target") or (m.meta.get("args") or {}).get("target") or "heart")
+            if fitted != a.target:
+                raise ValueError(f"{k} was fitted on target {fitted}, evaluate scores {a.target}")
     contrasts = []
     for spec in a.contrast:
         b, _, base = spec.partition(":")
@@ -871,6 +949,7 @@ def cmd_evaluate(argv):
     for act in ACTS:
         scopes[f"act{act}"] = C["act"] == act
     report = {"schema": "critic-ceiling-report-v1", "test_files": len(files), "games": gid, "lam": a.lam,
+              "target": a.target,
               "estimators": {}, "bootstrap": {}, "bootstrap_vs_raw_online": {},
               "meta": {"online_cal": {"platt_by_act": cal, "rows": len(cv)}} if cal is not None else {}}
     for k in ests:
@@ -892,7 +971,7 @@ def cmd_evaluate(argv):
         report["bootstrap_vs_raw_online"][k] = both["online"]
     report["contrasts"] = {f"{b}-{base}": {sc: bootstrap_diff(gids[scopes[sc]], C["y"][scopes[sc]], C[base][scopes[sc]],
                                                             C[b][scopes[sc]], gid, a.boot, a.boot_seed)
-                                         for sc in CONTRAST_SCOPES}
+                                         for sc in CONTRAST_SCOPES if _scorable(C["y"][scopes[sc]])}
                            for b, base in contrasts}
     # The rule needs the recalibrated comparator; without --train-seeds-from there is no verdict.
     if a.rule == "encounters":
@@ -905,7 +984,7 @@ def cmd_evaluate(argv):
                           for sc in ("act1", "act2", "act3", "act4", "all")))
     for name, d in report["contrasts"].items():
         print(name, " ".join(f"{sc}: dEV {d[sc]['ev_diff']:+.4f} [{d[sc]['ev_ci95'][0]:+.4f}, {d[sc]['ev_ci95'][1]:+.4f}]"
-                             for sc in CONTRAST_SCOPES))
+                             for sc in CONTRAST_SCOPES if sc in d))
     if report["verdict"]:
         print("verdict", report["verdict"]["decision"],
               report["verdict"].get("by_estimator", report["verdict"].get("checks")))
@@ -913,7 +992,7 @@ def cmd_evaluate(argv):
 
 def main():
     cmds = {"fit-net": cmd_fit_net, "fit-gbm": cmd_fit_gbm, "evaluate": cmd_evaluate, "encounters": cmd_encounters,
-            "check-encounters": cmd_check_encounters}
+            "check-encounters": cmd_check_encounters, "importance": cmd_importance}
     if len(sys.argv) < 2 or sys.argv[1] not in cmds:
         sys.exit(f"usage: critic_ceiling.py {{{','.join(cmds)}}} ...")
     cmds[sys.argv[1]](sys.argv[2:])

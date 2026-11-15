@@ -27693,3 +27693,52 @@ by −0.0002 (95% CI upper bound) against a +0.03 bar. The privileged informatio
 critic. No default change. The binding and `critic_ceiling.py encounters` / `check-encounters` / `--encounters` stay
 as tools. Seeds: none. Cost ≈ 70 min PC CPU, no GPU, no cloud core-hours.
 **Knowledge impact:** KB `research/a20-ppo-plan.md` (V6 row and critic ceiling paragraph).
+
+## §804 — Rollout prior on G16 targets, stage 1 (issue #1053): a g7f_E-shaped MLP trained on D2/D2b G16 + mb4 visit shares cuts the argmax's root regret in playout rooms from 2.449 (g7f_E) to 1.884 max-backed Q, lower in all 11 playout encounters; completed-Q targets (cq:10/30/paper) and auxiliary heads (Q, short-horizon / fight-end) do not beat visits → two candidates (V, boss fine-tune X-B) for the §798 playout harness, which needs a go (offline, no seeds, 2026-11-15)
+
+**Question (Philipp 2026-11-15 14:05 CET: "sollten wir das prior netz mal auf gumbel anpassen?"; 17:08 CET "arbeite das
+jeweils ab"):** g7f_E is G16's root prior, tree prior, playout policy (boss rooms, Act 4) and root table. T2 (§788)
+and §773 replaced only the root/tree prior. Can a net of g7f_E's size and cost, trained on G16's own roots, be a
+better playout policy? Stage 1 is the offline filter: the argmax's regret on held-out G16 roots.
+**Data:** [PREREG](evidence/rollout_prior_gumbel_20261115/PREREG.md), [RESULT](evidence/rollout_prior_gumbel_20261115/RESULT.md),
+`results/`. The T1 freeze (702 units) was re-featurized for the MLP (`tools/rollout_prior/pack_d2.py`; 3,120,098
+multi-edge roots), and g7f_E's recorded prior is reproduced from the packed features (3.8e-7, 0 argmax mismatches on
+50,000 roots). Splits are T1's (gate holdout unread). Recipe: g7f_E's (`tools/rollout_prior/train.py`, 128/64,
+encounter and monster embeddings, 25 epochs cosine, no teacher). 10 runs: V and CQP on cloud CPU, the rest on the PC GPU.
+**Result (validation, playout rooms = boss rooms + Act-4 elites, 90,486 roots; backed / mean q_regret):** g7f_E
+2.449 / 1.992; V (visits) 1.884 / 1.673; CQP 2.081 / 1.869; CQ30 1.995 / 1.712; CQ10 1.988 / 1.665; CQ30m 2.150 /
+1.715; V + Q head 1.889; V + short-horizon head 1.965 (both 1.965); V seed 1 1.893 (spread 0.009); X-B (V + 3 epochs
+on playout rows) 1.876. All rows: g7f_E 1.952 → V 1.364. Native export parity 1e-6 with 0 argmax mismatches; active
+ReLU units h1 22.3 / h2 18.0 vs g7f_E 20.3 / 22.1, and the timed cost per root is roughly equal (best of 5: 8.4 / 8.1 vs
+8.0 µs, noisy).
+**Interpretation (Inference):** the root-level headroom over g7f_E is large and present in every boss. Visit shares
+mark sequential halving's finalists, and sharper completed-Q targets fit a noisy Q winner and do worse. Aux heads do
+not help a 128-wide trunk at this data size (with §771). Root regret says nothing yet about playout states (the main
+risk).
+**Decision:** candidates V and X-B (`candidates/rp_V.txt` b366f6af…, `rp_X-B.txt` 34c1acf4…). No default change.
+Stage 2 (§798 harness on §797's games, arms asplayed / V / X-B at 4k and V at 16k, ~70-100 lane-hours) needs Philipp's
+go. Seeds: none. Cost ≈ 1 cloud CPU-hour packing + 70 min cloud CPU + 55 min PC GPU.
+**Knowledge impact:** KB `research/combat-search/cheap-combat-roadmap.md` (playout prior retrain line).
+## §803 — §801 follow-up: the act's encounter lists against act-1 survival instead of the Heart (same LONG_C split, act-1 decisions, game-frac 0.5 after a RAM-guard kill) add +0.0053 EV [+0.0024, +0.0080] to the public GBM (0.145 → 0.150; bar +0.03) → NONE; the GBM uses the features (13.9% of gain on this target, 2.2% on the Heart) → encounter-list direction of #1050 closed (PC CPU, offline, no seeds, 2026-11-15)
+
+**Question (Philipp, 2026-11-15 19:35 CET "wieso nur gbm, sollten wir nicht ein besseres model trainieren?"; go
+19:36 CET):** after §801's null on the Heart, is the encounter information there at all (feature importance), and
+does it predict a near target, act-1 survival?
+**Data:** [PREREG](evidence/critic_encounters_20261115/PREREG-act1-survival.md) (K PASS + delta),
+[RESULT](evidence/critic_encounters_20261115/RESULT-act1-survival.md), raw records in
+`evidence/critic_encounters_20261115/act1_survival/`. Code 923a22fe: `--target act1_survive` (y = leaves act 1
+alive; act-1 decisions only), `importance`. Deviations: first launch stopped on a stalled-game line (KeyError, fixed
+before any fit); the 1.0 fit hit the RAM guard beside #1053's PC fit, so both fits ran at the pre-registered 0.5.
+**Result:**
+- Act-1 survival AUC / EV: online_cal 0.660 / 0.047; gbm 0.768 / 0.145; gbm_enc 0.772 / 0.150. gbm_enc − gbm
+  +0.0053 [+0.0024, +0.0080] (first decision +0.0048), log loss −0.0024 [−0.0036, −0.0012]. Rule: margin not met
+  → **NONE**.
+- Importance (total gain, all trees): enc_* share 2.2% (§801 gbm_enc, best rank 91), 9.8% (§801 gbm_run), 13.9%
+  (act-1 gbm_enc, best rank 21).
+**Interpretation (Inference):** the remaining encounter lists carry a real but small amount of act-1 information
+(≈ 4% of what the public state explains), which washes out to §801's zero on the Heart. The GBM uses the features,
+so the limit is the information, not the model class; a net is unlikely to find the ~6× more signal needed.
+Descriptive: the Heart-trained online critic ranks act-1 survival much worse than the public GBM (different target).
+**Decision:** NONE. #1050's encounter-list direction is closed (privileged critic, step 2 via it, net variant). No
+default change. Seeds: none. Cost ≈ 1 h PC CPU, no GPU, no cloud core-hours.
+**Knowledge impact:** KB `research/a20-ppo-plan.md` (critic ceiling paragraph).

@@ -1,0 +1,172 @@
+Process ForkPoolWorker-2:
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 131, in worker
+    put((job, i, result))
+  File "/usr/lib/python3.12/multiprocessing/queues.py", line 399, in put
+    self._writer.send_bytes(obj)
+  File "/usr/lib/python3.12/multiprocessing/connection.py", line 200, in send_bytes
+    self._send_bytes(m[offset:offset + size])
+  File "/usr/lib/python3.12/multiprocessing/connection.py", line 421, in _send_bytes
+    self._send(buf)
+  File "/usr/lib/python3.12/multiprocessing/connection.py", line 384, in _send
+    n = write(self._handle, buf)
+        ^^^^^^^^^^^^^^^^^^^^^^^^
+BrokenPipeError: [Errno 32] Broken pipe
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/usr/lib/python3.12/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 136, in worker
+    put((job, i, (False, wrapped)))
+  File "/usr/lib/python3.12/multiprocessing/queues.py", line 399, in put
+    self._writer.send_bytes(obj)
+  File "/usr/lib/python3.12/multiprocessing/connection.py", line 200, in send_bytes
+    self._send_bytes(m[offset:offset + size])
+  File "/usr/lib/python3.12/multiprocessing/connection.py", line 420, in _send_bytes
+    self._send(header)
+  File "/usr/lib/python3.12/multiprocessing/connection.py", line 384, in _send
+    n = write(self._handle, buf)
+        ^^^^^^^^^^^^^^^^^^^^^^^^
+BrokenPipeError: [Errno 32] Broken pipe
+Process ForkPoolWorker-1:
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 131, in worker
+    put((job, i, result))
+  File "/usr/lib/python3.12/multiprocessing/queues.py", line 399, in put
+    self._writer.send_bytes(obj)
+  File "/usr/lib/python3.12/multiprocessing/connection.py", line 200, in send_bytes
+    self._send_bytes(m[offset:offset + size])
+  File "/usr/lib/python3.12/multiprocessing/connection.py", line 420, in _send_bytes
+    self._send(header)
+  File "/usr/lib/python3.12/multiprocessing/connection.py", line 384, in _send
+    n = write(self._handle, buf)
+        ^^^^^^^^^^^^^^^^^^^^^^^^
+BrokenPipeError: [Errno 32] Broken pipe
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/usr/lib/python3.12/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 136, in worker
+    put((job, i, (False, wrapped)))
+  File "/usr/lib/python3.12/multiprocessing/queues.py", line 399, in put
+    self._writer.send_bytes(obj)
+  File "/usr/lib/python3.12/multiprocessing/connection.py", line 200, in send_bytes
+    self._send_bytes(m[offset:offset + size])
+  File "/usr/lib/python3.12/multiprocessing/connection.py", line 420, in _send_bytes
+    self._send(header)
+  File "/usr/lib/python3.12/multiprocessing/connection.py", line 384, in _send
+    n = write(self._handle, buf)
+        ^^^^^^^^^^^^^^^^^^^^^^^^
+BrokenPipeError: [Errno 32] Broken pipe
+Process ForkPoolWorker-3:
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 131, in worker
+    put((job, i, result))
+  File "/usr/lib/python3.12/multiprocessing/queues.py", line 399, in put
+    self._writer.send_bytes(obj)
+  File "/usr/lib/python3.12/multiprocessing/connection.py", line 200, in send_bytes
+    self._send_bytes(m[offset:offset + size])
+  File "/usr/lib/python3.12/multiprocessing/connection.py", line 420, in _send_bytes
+    self._send(header)
+  File "/usr/lib/python3.12/multiprocessing/connection.py", line 384, in _send
+    n = write(self._handle, buf)
+        ^^^^^^^^^^^^^^^^^^^^^^^^
+BrokenPipeError: [Errno 32] Broken pipe
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/usr/lib/python3.12/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 136, in worker
+    put((job, i, (False, wrapped)))
+  File "/usr/lib/python3.12/multiprocessing/queues.py", line 399, in put
+    self._writer.send_bytes(obj)
+  File "/usr/lib/python3.12/multiprocessing/connection.py", line 200, in send_bytes
+    self._send_bytes(m[offset:offset + size])
+  File "/usr/lib/python3.12/multiprocessing/connection.py", line 420, in _send_bytes
+    self._send(header)
+  File "/usr/lib/python3.12/multiprocessing/connection.py", line 384, in _send
+    n = write(self._handle, buf)
+        ^^^^^^^^^^^^^^^^^^^^^^^^
+BrokenPipeError: [Errno 32] Broken pipe
+Process ForkPoolWorker-4:
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 131, in worker
+    put((job, i, result))
+  File "/usr/lib/python3.12/multiprocessing/queues.py", line 399, in put
+    self._writer.send_bytes(obj)
+  File "/usr/lib/python3.12/multiprocessing/connection.py", line 200, in send_bytes
+    self._send_bytes(m[offset:offset + size])
+  File "/usr/lib/python3.12/multiprocessing/connection.py", line 420, in _send_bytes
+    self._send(header)
+  File "/usr/lib/python3.12/multiprocessing/connection.py", line 384, in _send
+    n = write(self._handle, buf)
+        ^^^^^^^^^^^^^^^^^^^^^^^^
+BrokenPipeError: [Errno 32] Broken pipe
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/usr/lib/python3.12/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/usr/lib/python3.12/multiprocessing/pool.py", line 136, in worker
+    put((job, i, (False, wrapped)))
+  File "/usr/lib/python3.12/multiprocessing/queues.py", line 399, in put
+    self._writer.send_bytes(obj)
+  File "/usr/lib/python3.12/multiprocessing/connection.py", line 200, in send_bytes
+    self._send_bytes(m[offset:offset + size])
+  File "/usr/lib/python3.12/multiprocessing/connection.py", line 420, in _send_bytes
+    self._send(header)
+  File "/usr/lib/python3.12/multiprocessing/connection.py", line 384, in _send
+    n = write(self._handle, buf)
+        ^^^^^^^^^^^^^^^^^^^^^^^^
+BrokenPipeError: [Errno 32] Broken pipe
+/home/philippherrmann/critic-enc-out/act1/run2.sh: line 12: 358459 Killed                  nice -n 10 "$@"
+[0]	val-logloss:0.53279
+[200]	val-logloss:0.45758
+[400]	val-logloss:0.44718
+[600]	val-logloss:0.44262
+[800]	val-logloss:0.44025
+[1000]	val-logloss:0.43904
+[1200]	val-logloss:0.43775
+[1400]	val-logloss:0.43676
+[1600]	val-logloss:0.43621
+[1800]	val-logloss:0.43549
+[1962]	val-logloss:0.43571
+gbm: 400491 train / 21024 val rows, 1144 features, best iteration 1862
+[0]	val-logloss:0.53272
+[200]	val-logloss:0.45675
+[400]	val-logloss:0.44713
+[600]	val-logloss:0.44209
+[800]	val-logloss:0.43978
+[1000]	val-logloss:0.43815
+[1200]	val-logloss:0.43671
+[1400]	val-logloss:0.43578
+[1600]	val-logloss:0.43516
+[1800]	val-logloss:0.43485
+[2000]	val-logloss:0.43423
+[2031]	val-logloss:0.43418
+gbm: 400491 train / 21024 val rows, 1265 features, best iteration 1931
+gbm.json enc share 0.0000, enc features used 0/0, top enc []
+gbm_enc.json enc share 0.1385, enc features used 121/121, top enc [['enc_ncnt_10', 0.008441382803154995], ['enc_ncnt_14', 0.0073450882199736865], ['enc_ncnt_6', 0.006985084119753255], ['enc_ncnt_5', 0.006728723697091842], ['enc_ncnt_8', 0.00665894634166995]]
+gbm_run.json enc share 0.0979, enc features used 466/493, top enc [['enc_a3_ncnt_40', 0.0025179070026446404], ['enc_a3_ecnt_51', 0.0019094345599888003], ['enc_a3_ncnt_43', 0.001794361112268804], ['enc_a3_ncnt_44', 0.0016845611217971576], ['enc_a3_ncnt_48', 0.0016315417098061332]]
+online act1: auc 0.66 ev 0.037 act2: auc None ev None act3: auc None ev None act4: auc None ev None all: auc 0.66 ev 0.037
+online_cal act1: auc 0.66 ev 0.047 act2: auc None ev None act3: auc None ev None act4: auc None ev None all: auc 0.66 ev 0.047
+gbm act1: auc 0.768 ev 0.145 act2: auc None ev None act3: auc None ev None act4: auc None ev None all: auc 0.768 ev 0.145
+gbm_enc act1: auc 0.772 ev 0.15 act2: auc None ev None act3: auc None ev None act4: auc None ev None all: auc 0.772 ev 0.15
+gbm_enc-gbm first_decision: dEV +0.0048 [+0.0021, +0.0075] act1: dEV +0.0053 [+0.0024, +0.0080] all: dEV +0.0053 [+0.0024, +0.0080]
+gbm_enc-online_cal first_decision: dEV +0.0102 [+0.0060, +0.0147] act1: dEV +0.1029 [+0.0933, +0.1123] all: dEV +0.1029 [+0.0933, +0.1123]
+verdict NO_GO {'gain_over_gbm_at_margin': False, 'gain_over_gbm_ci95_above_0': True, 'gain_over_online_cal_ci95_above_0': True}
