@@ -27668,3 +27668,27 @@ by −0.0002 (95% CI upper bound) against a +0.03 bar. The privileged informatio
 critic. No default change. The binding and `critic_ceiling.py encounters` / `check-encounters` / `--encounters` stay
 as tools. Seeds: none. Cost ≈ 70 min PC CPU, no GPU, no cloud core-hours.
 **Knowledge impact:** KB `research/a20-ppo-plan.md` (V6 row and critic ceiling paragraph).
+
+## §803 — §801 follow-up: the act's encounter lists against act-1 survival instead of the Heart (same LONG_C split, act-1 decisions, game-frac 0.5 after a RAM-guard kill) add +0.0053 EV [+0.0024, +0.0080] to the public GBM (0.145 → 0.150; bar +0.03) → NONE; the GBM uses the features (13.9% of gain on this target, 2.2% on the Heart) → encounter-list direction of #1050 closed (PC CPU, offline, no seeds, 2026-11-15)
+
+**Question (Philipp, 2026-11-15 19:35 CET "wieso nur gbm, sollten wir nicht ein besseres model trainieren?"; go
+19:36 CET):** after §801's null on the Heart, is the encounter information there at all (feature importance), and
+does it predict a near target, act-1 survival?
+**Data:** [PREREG](evidence/critic_encounters_20261115/PREREG-act1-survival.md) (K PASS + delta),
+[RESULT](evidence/critic_encounters_20261115/RESULT-act1-survival.md), raw records in
+`evidence/critic_encounters_20261115/act1_survival/`. Code 923a22fe: `--target act1_survive` (y = leaves act 1
+alive; act-1 decisions only), `importance`. Deviations: first launch stopped on a stalled-game line (KeyError, fixed
+before any fit); the 1.0 fit hit the RAM guard beside #1053's PC fit, so both fits ran at the pre-registered 0.5.
+**Result:**
+- Act-1 survival AUC / EV: online_cal 0.660 / 0.047; gbm 0.768 / 0.145; gbm_enc 0.772 / 0.150. gbm_enc − gbm
+  +0.0053 [+0.0024, +0.0080] (first decision +0.0048), log loss −0.0024 [−0.0036, −0.0012]. Rule: margin not met
+  → **NONE**.
+- Importance (total gain, all trees): enc_* share 2.2% (§801 gbm_enc, best rank 91), 9.8% (§801 gbm_run), 13.9%
+  (act-1 gbm_enc, best rank 21).
+**Interpretation (Inference):** the remaining encounter lists carry a real but small amount of act-1 information
+(≈ 4% of what the public state explains), which washes out to §801's zero on the Heart. The GBM uses the features,
+so the limit is the information, not the model class; a net is unlikely to find the ~6× more signal needed.
+Descriptive: the Heart-trained online critic ranks act-1 survival much worse than the public GBM (different target).
+**Decision:** NONE. #1050's encounter-list direction is closed (privileged critic, step 2 via it, net variant). No
+default change. Seeds: none. Cost ≈ 1 h PC CPU, no GPU, no cloud core-hours.
+**Knowledge impact:** KB `research/a20-ppo-plan.md` (critic ceiling paragraph).

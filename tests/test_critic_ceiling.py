@@ -164,6 +164,37 @@ class EncounterFeatures(unittest.TestCase):
             self.assertFalse(any(k.startswith("enc_") for k in pub))
             self.assertEqual(cc.flat_with_encounters(row["record"], row["seed"], None), pub)
 
+    def test_targets(self):
+        import critic_ceiling as cc
+        self.assertEqual(cc.outcome_y({"heart_kill": True, "act": 4, "won": True}, "heart"), 1.0)
+        self.assertEqual(cc.outcome_y({"heart_kill": False, "act": 2, "won": False}, "heart"), 0.0)
+        self.assertEqual(cc.outcome_y({"heart_kill": False, "act": 2, "won": False}, "act1_survive"), 1.0)
+        self.assertEqual(cc.outcome_y({"heart_kill": False, "act": 1, "won": False}, "act1_survive"), 0.0)
+        # stalled games (ppo_cloud.stalled_game_lines) carry floor/heart_kill/stalled only
+        self.assertEqual(cc.outcome_y({"heart_kill": False, "stalled": True, "floor": 12}, "act1_survive"), 0.0)
+        self.assertEqual(cc.outcome_y({"heart_kill": False, "stalled": True, "floor": 17}, "act1_survive"), 1.0)
+        self.assertEqual(cc.outcome_y({"heart_kill": False, "stalled": True, "floor": 40}, "heart"), 0.0)
+        with self.assertRaises(ValueError):
+            cc.set_target("act2_survive")
+        try:
+            cc.set_target("act1_survive")
+            games = cc.read_part(COV8)
+            self.assertTrue(all(cc.act_of(st) == 1 for g in games for st in g["steps"]))
+            self.assertTrue(all(g["y"] == (1.0 if g["outcome"]["act"] >= 2 or g["outcome"]["won"] else 0.0)
+                                for g in games))
+        finally:
+            cc.set_target("heart")
+        self.assertTrue(any(cc.act_of(st) > 1 for g in cc.read_part(COV8) for st in g["steps"]))
+        self.assertFalse(cc._scorable(np.ones(5)))
+        self.assertTrue(cc._scorable(np.array([0, 1.0])))
+
+    def test_importance_summary(self):
+        import critic_ceiling as cc
+        d = cc.importance_summary({"f0": 3.0, "f2": 1.0}, ["hp", "card7", "enc_n0_3", "enc_e0_16"], 5)
+        self.assertAlmostEqual(d["enc_gain_share"], 0.25)
+        self.assertEqual((d["enc_features"], d["enc_features_used"], d["enc_rank_of_best"]), (2, 1, 2))
+        self.assertEqual(d["top"][0], ["hp", 0.75])
+
     def test_verdict_encounters(self):
         import critic_ceiling as cc
 
@@ -254,6 +285,12 @@ class CriticCeilingRoundTrip(unittest.TestCase):
 @unittest.skipIf(torch is None, "torch or xgboost not installed")
 class EncounterRoundTrip(unittest.TestCase):
     def test_fit_and_evaluate_with_encounters(self):
+        self._round_trip("heart")
+
+    def test_act1_survive_target(self):
+        self._round_trip("act1_survive")
+
+    def _round_trip(self, target):
         """cov8's games under 48 new seeds; the outcome is planted in a not-yet-fought act-1 normal encounter of the
         table (marker id 98/99), which no public field shows: gbm_enc must find it, gbm must not."""
         import subprocess
@@ -281,8 +318,10 @@ class EncounterRoundTrip(unittest.TestCase):
                         table[new] = acts
                         for r in lines:
                             r = dict(r, seed=new)
-                            if r["type"] == "game":
+                            if r["type"] == "game" and target == "heart":
                                 r["outcome"] = dict(r["outcome"], heart_kill=win)
+                            elif r["type"] == "game":   # act1_survive: the game ends in act 1 or later
+                                r["outcome"] = dict(r["outcome"], won=False, heart_kill=False, act=2 if win else 1)
                             f.write(json.dumps(r) + "\n")
                 parts.append(p)
             enc = os.path.join(d, "enc.json.gz")
@@ -292,11 +331,12 @@ class EncounterRoundTrip(unittest.TestCase):
 
             def run(*args):
                 return subprocess.run([sys.executable, tool, *args], check=True, capture_output=True, text=True)
-            common = ("--train", *train, "--per-game", "8", "--rounds", "300", "--eta", "0.3", "--min-count", "1", "--workers", "1")
+            common = ("--train", *train, "--per-game", "8", "--rounds", "300", "--eta", "0.3", "--min-count", "1",
+                      "--workers", "1", "--target", target)
             run("fit-gbm", *common, "--out", os.path.join(d, "gbm.json"))
             run("fit-gbm", *common, "--encounters", enc, "--enc-scope", "act", "--out", os.path.join(d, "gbm_enc.json"))
             out = os.path.join(d, "report.json")
-            ev_args = ("evaluate", "--test", *test, "--gbm", os.path.join(d, "gbm.json"),
+            ev_args = ("evaluate", "--target", target, "--test", *test, "--gbm", os.path.join(d, "gbm.json"),
                        "--extra-gbm", "gbm_enc=" + os.path.join(d, "gbm_enc.json"), "--boot", "100",
                        "--train-seeds-from", *train, "--out", out)
             with self.assertRaises(subprocess.CalledProcessError):   # a model fitted with a table needs it
@@ -309,7 +349,23 @@ class EncounterRoundTrip(unittest.TestCase):
             self.assertGreater(e["gbm_enc"]["act1"]["auc"], 0.9)
             self.assertLess(e["gbm"]["act1"]["auc"], 0.75)
             self.assertEqual(set(rep["contrasts"]), {"gbm_enc-gbm", "gbm_enc-online_cal"})
-            self.assertEqual(set(rep["contrasts"]["gbm_enc-gbm"]), set(cc.CONTRAST_SCOPES))
+            want = set(cc.CONTRAST_SCOPES) if target == "heart" else {"first_decision", "act1", "all"}
+            self.assertEqual(set(rep["contrasts"]["gbm_enc-gbm"]), want)
+            self.assertEqual(rep["target"], target)
+            if target != "heart":   # only act-1 decisions are scored, and a heart-fitted model is refused
+                self.assertEqual(e["gbm"]["all"]["n"], e["gbm"]["act1"]["n"])
+                self.assertEqual(e["gbm"]["act2"]["n"], 0)
+                bad = list(ev_args)
+                bad[2] = "heart"
+                with self.assertRaises(subprocess.CalledProcessError):
+                    run(*bad, "--encounters", enc)
+            imp = os.path.join(d, "imp.json")
+            g, ge = os.path.join(d, "gbm.json"), os.path.join(d, "gbm_enc.json")
+            run("importance", "--gbm", g, ge, "--out", imp)
+            with open(imp) as f:
+                imp = json.load(f)
+            self.assertEqual(imp[g]["enc_gain_share"], 0.0)
+            self.assertGreater(imp[ge]["enc_gain_share"], 0.2)   # the planted marker carries the signal
             self.assertGreater(rep["contrasts"]["gbm_enc-gbm"]["act1"]["ev_diff"], 0.2)
             self.assertEqual(rep["verdict"]["decision"], "GO")
             self.assertEqual(rep["meta"]["gbm_enc"]["encounters"]["scope"], "act")
