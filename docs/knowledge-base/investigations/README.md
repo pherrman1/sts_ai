@@ -7,6 +7,8 @@ investigation is evidence collection, not a decision or a speculative design.
 
 ## Current investigations
 
+- [Hardcoded decision rules (2026-11-15)](2026-11-15-hardcoded-decision-rules.md) — #1055 step 1: every rule, chain, fallback and choice-set restriction in the PPO stack, the old default chain and combat, with firing rates from 1,927 recorded games (0 PPO fallbacks); open: Java check, out-of-combat drink tokens, combat pruning counts.
+
 - [Situational Silver leaf evaluation (2026-10-14)](2026-10-14-silver-situational-leaf.md) — which run circumstances Silver's terminal score ignores; post-boss heal already modeled; final-fight potion credit tested in §466 (NOT_SHOWN); open: A20 first act-3 boss heal mis-credit, loss-branch potion credit, Burning Blood heal.
 
 - [Silver retained-search queue-item audit (2026-09-21)](2026-09-21-silver-retained-search-audit.md) — bounded opportunity and native boundary audit for `curCardQueueItem`-only retained-state merging; narrow candidate remains unqualified and no search behavior changed.
