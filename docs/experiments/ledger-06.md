@@ -27583,7 +27583,7 @@ Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 104.1 lane-hours
 −2.25 pp [−5.08, +0.59] Heart; no conversion loss visible on the seeds where both arms reach Act 4 (not an isolated
 Heart contrast).
 
-## §TBD — Exact prior-playout pick cache (#1051): 31.4 % of g7f_E prior-playout MLP calls repeat an input the same search already scored (52 G16 + mb4 boss / Act-4 roots of §797, 0 of 5.55 M repeats with a different pick); a per-thread 128-bit-fingerprint table of the MLP's argmax (`STS_SILVER_PRIOR_PICK_CACHE`, default on, 2^20 slots) plays bit-identically at about 0.95× a prior-playout search's CPU and 0.96-0.97× a whole G16 game → default on (cloud, 2026-11-15)
+## §802 — Exact prior-playout pick cache (#1051): 31.4 % of g7f_E prior-playout MLP calls repeat an input the same search already scored (52 G16 + mb4 boss / Act-4 roots of §797, 0 of 5.55 M repeats with a different pick); a per-thread 128-bit-fingerprint table of the MLP's argmax (`STS_SILVER_PRIOR_PICK_CACHE`, default on, 2^20 slots) plays bit-identically at about 0.95× a prior-playout search's CPU and 0.96-0.97× a whole G16 game → default on (cloud, 2026-11-15)
 
 **Question (Philipp, 2026-11-15 17:08 CET, "Öffne ein Thread pro Issue ... und arbeite das jeweils ab"; issue
 #1051):** how often does a prior playout ask the g7f_E policy MLP about an input the same search has already scored,
