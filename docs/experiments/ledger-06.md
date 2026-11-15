@@ -27583,7 +27583,7 @@ Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 104.1 lane-hours
 −2.25 pp [−5.08, +0.59] Heart; no conversion loss visible on the seeds where both arms reach Act 4 (not an isolated
 Heart contrast).
 
-## §TBD — Turn-plan root filter, offline (#1058, port of spire-mentor): deterministic turn plans of §797's 145,727 G16 + mb4 roots (median 14-16 plans, 7-8 % capped, 0.5 ms per root), scored by g7f_E line priors or a cross-fitted plan MLP, keeping the first actions of the best plans: every rule loses more Q than the root budget it frees (best net: top 6 by plan MLP + prior −0.029 Q at recall 98.3 %; spire-mentor's top-6 plans ∪ anchors −0.033 at 97.8 %; ceil(n/2) plan MLP + prior 0.193 vs prior 0.259 vs ≈ 0.025 credit) → NOT_PURSUED (cloud, 2026-11-15)
+## §800 — Turn-plan root filter, offline (#1058, port of spire-mentor): deterministic turn plans of §797's 145,727 G16 + mb4 roots (median 14-16 plans, 7-8 % capped, 0.5 ms per root), scored by g7f_E line priors or a cross-fitted plan MLP, keeping the first actions of the best plans: every rule loses more Q than the root budget it frees (best net: top 6 by plan MLP + prior −0.029 Q at recall 98.3 %; spire-mentor's top-6 plans ∪ anchors −0.033 at 97.8 %; ceil(n/2) plan MLP + prior 0.193 vs prior 0.259 vs ≈ 0.025 credit) → NOT_PURSUED (cloud, 2026-11-15)
 
 **Question (Philipp, 2026-11-15 17:08 CET, "Öffne ein Thread pro Issue ... und arbeite das jeweils ab"):** can a
 learned plan scorer restrict the Gumbel root to the first actions of the best deterministic turn plans while keeping
