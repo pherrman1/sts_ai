@@ -27582,3 +27582,35 @@ Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 104.1 lane-hours
 **Knowledge impact:** combat budget: 12,000 simulations with the Heart at 24,000 costs 0.69× G16 + mb4's CPU at
 −2.25 pp [−5.08, +0.59] Heart; no conversion loss visible on the seeds where both arms reach Act 4 (not an isolated
 Heart contrast).
+
+## §TBD — Exact prior-playout pick cache (#1051): 31.4 % of g7f_E prior-playout MLP calls repeat an input the same search already scored (52 G16 + mb4 boss / Act-4 roots of §797, 0 of 5.55 M repeats with a different pick); a per-thread 128-bit-fingerprint table of the MLP's argmax (`STS_SILVER_PRIOR_PICK_CACHE`, default on, 2^20 slots) plays bit-identically at about 0.95× a prior-playout search's CPU and 0.96-0.97× a whole G16 game → default on (cloud, 2026-11-15)
+
+**Question (Philipp, 2026-11-15 17:08 CET, "Öffne ein Thread pro Issue ... und arbeite das jeweils ab"; issue
+#1051):** how often does a prior playout ask the g7f_E policy MLP about an input the same search has already scored,
+and does an exact cache of the MLP's pick pay for itself after #1046 / #1047 (3.32 µs per call)?
+**Data:** [README](evidence/prior_pick_cache_20261115/README.md), `results/memostat/`, `results/r1_v1` … `results/r7_final`,
+`games/traces.sha256`; `select_roots.py`, `run_bench.sh`, `analyze_memostat.py`, `analyze_cache.py`, `memostat.patch`
+(research hack on main 6126315, not merged); `one_combat rolloutpolicybench` over 52 recorded roots of §797 (seeds
+111980000-111980255, 13 each Act 1-2 bosses and Act 3 bosses at 16,000 simulations, Shield and Spear at 10,000,
+the Heart at 40,000), §775's G16 + mb4 environment; ctest `prior_pick_cache`; reviewer K's report
+`/mnt/project-files/reviews/pr1065-review.md`.
+**Result:** exact repeats per search (unbounded table, whole MLP input as key) 31.4 % of 17.7 M calls (Act 1-2 bosses
+30.1 %, Act 3 bosses 35.1 %, Shield and Spear 32.4 %, Heart 30.0 %), 0 pick mismatches; per call MLP 2.91 µs,
+features 0.96 µs, 16.6 prior calls per simulation. The cache (2^20 slots, 30.3 % hits pooled): 52/52 roots with
+identical visit counts, picks and playout actions in all 20 on / off (or hits-ignored) pairs; CPU on / off 0.938-0.976
+per prior-playout search over nine runs (mean about 0.95; noise of identical configurations ±2.5 %); the hits save
+about 17 %, the key costs about 7.5 % and the 16 MB table's misses about 2 %. Whole games (recorded seeds 111378257
+died floor 28 and 111378263 Heart kill, no new seeds): 0 differing Gumbel stop-trace rows (1,083 and 2,418) and
+identical logs, CPU 0.964× and 0.971× (reviewer K: 0.971× on 111378263, both games identical with the cache on and
+off against §775's reference unit).
+**Interpretation (Inference):** a hit saves only the MLP (the features are needed for the key), so the gain is a
+third of the issue's estimate. A faster MLP (#1052) shrinks it; at about half the MLP time the cache is break-even.
+**Decision:** default on (Philipp, 2026-11-15 19:15 CET, "ok make it default"); `STS_SILVER_PRIOR_PICK_CACHE=0`
+restores the uncached path; 4..24 sets log2 slots (16 bytes each, per search thread, at most 256 MB). No SPRT gate:
+play is bit-identical up to a ~2^-120 fingerprint collision per pair of inputs. Repeat the 52-root on / off
+measurement after any speed-up of the policy MLP or its features and turn the cache off if it no longer pays.
+Seeds: none new (§797's roots and two §775 seeds replayed). Cost: about 6 CPU-hours (estimate: 20 bench passes over 52 roots plus 8 whole games).
+**Knowledge impact:** combat-search architecture page (prior pick cache paragraph) and the environment-variable
+table (`STS_SILVER_PRIOR_PICK_CACHE`). A cache key over g7f_E features must cover the entries
+`combatExtractFeaturesReuse` writes on every call (scalar head, enemy aggregate, misc and relic counters), which its
+`touched` list omits; `hashBattleState` does not determine the features.

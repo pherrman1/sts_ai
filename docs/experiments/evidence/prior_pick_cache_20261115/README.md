@@ -42,9 +42,11 @@ The issue's go rule (≥ 20% of calls) holds, so the cache was built.
 
 `nativeSilverPolicyArgmax` fingerprints the MLP input (128-bit additive fingerprint: one word per nonzero state
 entry via `combatStateFingerprint`, per nonzero action-block entry, per target and per edge's distinct index, then the
-net's address) and looks it up in a per-thread 4-way table of 2^`STS_SILVER_PRIOR_PICK_CACHE` 16-byte slots (default
-2^20 = 16 MB, huge-page advised), never cleared: every entry stays valid, so lifetime and eviction affect only the
-hit rate. A miss runs the MLP and stores the pick.
+net's load sequence id `CombatValueNet::policyMlpLoadId`) and looks it up in a per-thread 4-way table of
+2^`STS_SILVER_PRIOR_PICK_CACHE` 16-byte slots (default 2^20 = 16 MB per search thread, at most 2^24 = 256 MB,
+huge-page advised). Unlike step 1's per-search measurement table, the PR's table is not tied to a search: it lives
+per thread across searches and is never cleared, because every entry stays valid (the key holds the whole input and
+the net), so lifetime and eviction affect only the hit rate. A miss runs the MLP and stores the pick.
 
 Results by [analyze_cache.py](analyze_cache.py), cache on vs off (`pc0`) on the same 52 roots, four processes at a
 time on a 4-vCPU container; `identical` = root visit counts, pick, simulations, prior calls and playout actions all
@@ -72,7 +74,9 @@ Hits pooled over all 52 searches (the never-cleared table also hits across searc
   final version keys it by `CombatValueNet::policyMlpLoadId` (deterministic, and safe against a later net at a
   reused address). Same picks either way.
 - **Inference:** a faster MLP (#1052) shrinks what a hit saves; at half the MLP time the cache would be about
-  break-even.
+  break-even. Any later change that speeds up the policy MLP or the features should repeat this measurement
+  (`STS_SILVER_PRIOR_PICK_CACHE=0` against the default on these 52 roots, `run_bench.sh` and `analyze_cache.py`) and
+  turn the cache off by default if it no longer pays.
 
 ## Step 3: whole games
 

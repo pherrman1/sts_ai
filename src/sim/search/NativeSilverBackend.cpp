@@ -1917,8 +1917,9 @@ namespace sts::search {
             const std::string value = raw;
             int log2 = -1;
             const auto [end, ec] = std::from_chars(value.data(), value.data() + value.size(), log2);
-            if (ec != std::errc{} || end != value.data() + value.size() || (log2 != 0 && (log2 < 4 || log2 > 26)))
-                throw std::runtime_error("STS_SILVER_PRIOR_PICK_CACHE must be 0 (off) or a log2 size in 4..26");
+            if (ec != std::errc{} || end != value.data() + value.size() || (log2 != 0 && (log2 < 4 || log2 > 24)))
+                // 16 bytes per slot per thread: 2^24 = 256 MB per search thread is the cap (review N2).
+                throw std::runtime_error("STS_SILVER_PRIOR_PICK_CACHE must be 0 (off) or a log2 size in 4..24");
             g_options.priorPickCacheLog2 = log2;
         }
         if (const char *raw = std::getenv("STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE"); raw && *raw) {
