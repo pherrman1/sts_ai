@@ -73,7 +73,8 @@ layout as g7f_E); `tools/rollout_prior/export_parity.py` checks checkpoint vs ar
 | X-Q | best of the five above | as it | + Q head (w 1) |
 | X-SH | best | as it | + short-horizon / fight-end heads (w 0.5) |
 | X-QSH | best | as it | both |
-| X-B | best of the eight (with its heads) | as it | + 3 epochs on playout-room rows (lr 3e-4 cosine) |
+| S1 | best target, seed 1 (spread) | as it | |
+| X-B | best target net, fine-tuned | as it | + 3 epochs on playout-room rows only (lr 3e-4 cosine) |
 
 σ choice ("fitted on held-out roots", issue): the cq scale is picked from {10, 30, paper} by the validation metric
 below, not by CE (CE is not comparable across targets).
@@ -120,5 +121,5 @@ captured playout states labelled by short searches (DAgger-style).
 
 ## Cost
 
-Packing: ~1 cloud CPU-hour. Training: about 25 epochs × ~7 min on 4 cloud CPU threads per run (~3 h), or ~5 min per
-run on the PC GPU. No game seeds in stage 1.
+Packing: ~1 cloud CPU-hour. Training: 25 epochs × ~85 s on 4 cloud CPU threads per run (~35 min; V and CQP ran there), the rest on the PC GPU
+(Philipp, 19:39 CET: "switch das training auf den pc, gpu ist frei"), `pc_grid.sh` (exact commands). No game seeds in stage 1.
