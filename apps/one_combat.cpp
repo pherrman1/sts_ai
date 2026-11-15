@@ -3137,10 +3137,11 @@ static std::string unsupportedSilverOption() {
         {"STS_SILVER_LEARNED_STOP_BOSS_FALLBACK", ""}, {"STS_SILVER_LEARNED_STOP_BOSS_MAX", ""}, {"STS_SILVER_LEARNED_STOP_MODEL", ""}, {"STS_SILVER_STOP_TRACE", ""},
         {"STS_SILVER_FINAL_BOSS_BINARY", ""}, {"STS_SILVER_FINAL_FIGHT_LEAF", ""}, {"STS_SILVER_NO_LOSS_POTION_CREDIT", ""}, {"STS_SILVER_RELIC_HEAL_LEAF", ""}, {"STS_SILVER_A20_BOSS_HEAL_FIX", ""}, {"STS_SILVER_LOOP_GUARD", ""}, {"STS_SILVER_ESCAPE_PENALTY", ""}, {"STS_SILVER_POTION_WEIGHTS", ""}, {"STS_SILVER_CONCAVE_HP_LEAF", ""}, {"STS_SILVER_GOLD_WEIGHT", ""}, {"STS_SILVER_MAXHP_WEIGHT", ""}, {"STS_SILVER_VICTORY_TURN_PENALTY", ""}, {"STS_SILVER_LOSS_CEILING", ""}, {"STS_SILVER_INCENSE_HEART_PHASE", ""}, {"STS_SILVER_PRICE_TABLE_LEAF", ""},
         {"STS_SILVER_ROOT_PRIOR", ""}, {"STS_SILVER_ROOT_PRIOR_WEIGHT", ""}, {"STS_SILVER_ROOT_PRIOR_SCOPE", ""}, {"STS_SILVER_TREE_PRIOR_MIN_VISITS", ""},
+        {"STS_SILVER_PRIOR_MLP_FMA", ""},
         {"STS_SILVER_COMBATNET_PRIOR_MODEL", ""}, {"STS_SILVER_COMBATNET_PRIOR", ""}, {"STS_SILVER_COMBATNET_PRIOR_TEMP", ""}, {"STS_SILVER_COMBATNET_PRIOR_MIN_ACTIONS", ""},
         {"STS_SILVER_COMBATNET_TREE_MIN_VISITS", ""}, {"STS_SILVER_COMBATNET_BOSS_MODELS", ""},
         {"STS_SILVER_ROLLOUT_UNIFORM", ""}, {"STS_SILVER_ROLLOUTS_PER_LEAF", ""}, {"STS_SILVER_ROLLOUT_CARD_TABLE", ""}, {"STS_SILVER_ROLLOUT_ZERO_COST_CAP", ""}, {"STS_SILVER_ROLLOUT_ACTION_CAP", ""},
-        {"STS_SILVER_ROLLOUT_ROOT_TABLE", ""}, {"STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE", ""}, {"STS_SILVER_PRIOR_PLAYOUT_ELITE", ""}, {"STS_SILVER_PRIOR_PLAYOUT_ACTS", ""},
+        {"STS_SILVER_ROLLOUT_ROOT_TABLE", ""}, {"STS_SILVER_PRIOR_PICK_CACHE", ""}, {"STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE", ""}, {"STS_SILVER_PRIOR_PLAYOUT_ELITE", ""}, {"STS_SILVER_PRIOR_PLAYOUT_ACTS", ""},
         {"STS_SILVER_LEAF_HEAD", ""}, {"STS_SILVER_LEAF_HEAD_TRUNK", ""}, {"STS_SILVER_LEAF_HEAD_BLEND", ""},
         {"STS_SILVER_LEAF_HEAD_TURN_PENALTY", ""}, {"STS_SILVER_LEAF_HEAD_WIN_CAP", ""},
         {"STS_SILVER_MAX_BACKUP", ""}, {"STS_SILVER_RISK_VETO", ""},
@@ -3734,6 +3735,8 @@ int main(int argc, char **argv) {
                   << (search::nativeSilverTreePriorMinVisits() > 0
                       ? "; tree prior K=" + std::to_string(search::nativeSilverTreePriorMinVisits()) : std::string{})
                   << "]\n";
+    if (!search::nativeSilverRootPriorPath().empty())
+        std::cout << "[prior MLP edge kernel: " << (search::policyMlpFmaActive() ? "FMA" : "exact non-FMA (STS_SILVER_PRIOR_MLP_FMA=0 or no FMA CPU)") << "]\n";
     std::cout << "[Native Silver combat backend: Silver search on the main engine"
               << (search::nativeSilverAdaptiveEnabled() ? "; adaptive"
                   : search::nativeSilverLearnedStopEnabled()
@@ -4342,6 +4345,14 @@ int main(int argc, char **argv) {
     } else if (mode == "rolloutpolicybench") {
         if (argc < 6) { std::cerr << "usage: one_combat rolloutpolicybench OUT_PREFIX BUDGET ARMS CAPTURE_STRIDE < rows.jsonl\n"; return 2; }
         rolloutPolicyBench(argv[2], std::stoll(argv[3]), argv[4], std::stoi(argv[5]));
+    } else if (mode == "turnplanenum") {
+        if (argc < 3) { std::cerr << "usage: one_combat turnplanenum OUT.jsonl [MAX_PLANS=512] [MAX_NODES=20000] < rows.jsonl | turnplanenum names OUT.json\n"; return 2; }
+        if (std::string(argv[2]) == "names") {
+            if (argc < 4) { std::cerr << "usage: one_combat turnplanenum names OUT.json\n"; return 2; }
+            turnPlanNames(argv[3]);
+        } else {
+            turnPlanEnum(argv[2], argc > 3 ? std::stoi(argv[3]) : 512, argc > 4 ? std::stoi(argv[4]) : 20000);
+        }
     } else if (mode == "silversynthreplay") {
         silverSynthReplay(argc >= 4 && std::string(argv[2]) == "names" ? argv[3] : "");
     } else if (mode == "combattransitionlizardtargetcandidategen") {

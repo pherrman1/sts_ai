@@ -27619,3 +27619,162 @@ strong G16 combat stack improve net-0420's out-of-combat play?
 (training) and §775's 1,024 reused (eval). Cost: about 40 actors × 43 h plus PC GPU, and 113 lane-hours of eval.
 **Knowledge impact:** KB `research/a20-ppo-plan.md`: PPO on the G16 stack at 520 games/update shows no gain after
 46 updates (−3.03 pp [−6.15, +0.10]).
+## §802 — Exact prior-playout pick cache (#1051): 31.4 % of g7f_E prior-playout MLP calls repeat an input the same search already scored (52 G16 + mb4 boss / Act-4 roots of §797, 0 of 5.55 M repeats with a different pick); a per-thread 128-bit-fingerprint table of the MLP's argmax (`STS_SILVER_PRIOR_PICK_CACHE`, default on, 2^20 slots) plays bit-identically at about 0.95× a prior-playout search's CPU and 0.96-0.97× a whole G16 game → default on (cloud, 2026-11-15)
+
+**Question (Philipp, 2026-11-15 17:08 CET, "Öffne ein Thread pro Issue ... und arbeite das jeweils ab"; issue
+#1051):** how often does a prior playout ask the g7f_E policy MLP about an input the same search has already scored,
+and does an exact cache of the MLP's pick pay for itself after #1046 / #1047 (3.32 µs per call)?
+**Data:** [README](evidence/prior_pick_cache_20261115/README.md), `results/memostat/`, `results/r1_v1` … `results/r7_final`,
+`games/traces.sha256`; `select_roots.py`, `run_bench.sh`, `analyze_memostat.py`, `analyze_cache.py`, `memostat.patch`
+(research hack on main 6126315, not merged); `one_combat rolloutpolicybench` over 52 recorded roots of §797 (seeds
+111980000-111980255, 13 each Act 1-2 bosses and Act 3 bosses at 16,000 simulations, Shield and Spear at 10,000,
+the Heart at 40,000), §775's G16 + mb4 environment; ctest `prior_pick_cache`; reviewer K's report
+`/mnt/project-files/reviews/pr1065-review.md`.
+**Result:** exact repeats per search (unbounded table, whole MLP input as key) 31.4 % of 17.7 M calls (Act 1-2 bosses
+30.1 %, Act 3 bosses 35.1 %, Shield and Spear 32.4 %, Heart 30.0 %), 0 pick mismatches; per call MLP 2.91 µs,
+features 0.96 µs, 16.6 prior calls per simulation. The cache (2^20 slots, 30.3 % hits pooled): 52/52 roots with
+identical visit counts, picks and playout actions in all 20 on / off (or hits-ignored) pairs; CPU on / off 0.938-0.976
+per prior-playout search over nine runs (mean about 0.95; noise of identical configurations ±2.5 %); the hits save
+about 17 %, the key costs about 7.5 % and the 16 MB table's misses about 2 %. Whole games (recorded seeds 111378257
+died floor 28 and 111378263 Heart kill, no new seeds): 0 differing Gumbel stop-trace rows (1,083 and 2,418) and
+identical logs, CPU 0.964× and 0.971× (reviewer K: 0.971× on 111378263, both games identical with the cache on and
+off against §775's reference unit).
+**Interpretation (Inference):** a hit saves only the MLP (the features are needed for the key), so the gain is a
+third of the issue's estimate. A faster MLP (#1052) shrinks it; at about half the MLP time the cache is break-even.
+**Decision:** default on (Philipp, 2026-11-15 19:15 CET, "ok make it default"); `STS_SILVER_PRIOR_PICK_CACHE=0`
+restores the uncached path; 4..24 sets log2 slots (16 bytes each, per search thread, at most 256 MB). No SPRT gate:
+play is bit-identical up to a ~2^-120 fingerprint collision per pair of inputs. Repeat the 52-root on / off
+measurement after any speed-up of the policy MLP or its features and turn the cache off if it no longer pays.
+Seeds: none new (§797's roots and two §775 seeds replayed). Cost: about 6 CPU-hours (estimate: 20 bench passes over 52 roots plus 8 whole games).
+**Knowledge impact:** combat-search architecture page (prior pick cache paragraph) and the environment-variable
+table (`STS_SILVER_PRIOR_PICK_CACHE`). A cache key over g7f_E features must cover the entries
+`combatExtractFeaturesReuse` writes on every call (scalar head, enemy aggregate, misc and relic counters), which its
+`touched` list omits; `hashBattleState` does not determine the features.
+## §800 — Turn-plan root filter, offline (#1058, port of spire-mentor): deterministic turn plans of §797's 145,727 G16 + mb4 roots (median 14-16 plans, 7-8 % capped, 0.5 ms per root), scored by g7f_E line priors or a cross-fitted plan MLP, keeping the first actions of the best plans: every rule loses more Q than the root budget it frees (best net: top 6 by plan MLP + prior −0.029 Q at recall 98.3 %; spire-mentor's top-6 plans ∪ anchors −0.033 at 97.8 %; ceil(n/2) plan MLP + prior 0.193 vs prior 0.259 vs ≈ 0.025 credit) → NOT_PURSUED (cloud, 2026-11-15)
+
+**Question (Philipp, 2026-11-15 17:08 CET, "Öffne ein Thread pro Issue ... und arbeite das jeweils ab"):** can a
+learned plan scorer restrict the Gumbel root to the first actions of the best deterministic turn plans while keeping
+G16 + mb4's decisions, so the freed root simulations pay for what it drops?
+**Data:** [RESULT](evidence/turn_plan_root_filter_20261115/RESULT.md), `results/result.json`, `results/eval.log`;
+`tools/turn_plan/extract_roots.py`, `tools/turn_plan/filter_eval.py`; enumerator `search::enumerateTurnPlans`
+(`src/sim/search/SilverTurnPlan.cpp`, Silver's chance test and canonical edges, hash-merged states, caps 512 plans /
+20,000 states) via `one_combat turnplanenum`; §797's corpus (seeds 111980000-111980255), 145,727 of 155,598 root rows
+used. Scorers: g7f_E root prior (baseline), best-line plan prior, a 2 × 64 plan MLP on 32 end-state and context
+features with and without prior inputs (logsumexp over an action's plans, CE to G16's pick, 5 run folds). Regret =
+Q_ref(best) − Q_ref(best kept) in the played tree's max-backed Q; credit = 0.06 Q per budget doubling (§797's uniform
+curve near 16k) times log2(1 / (1 − share of root visits on removed edges)).
+**Result:** enumeration median 14-16 plans (p90 ≈ 145), cap rate 7.0-8.4 % by room group, 0.5 ms mean / 4 ms p99 per
+root. Net Q (credit − regret), all roots: n − 1 prior −0.088, plan MLP + prior −0.065 (recall 96.9 / 97.3 %);
+ceil(n/2) prior −0.232, plan prior −0.302, plan MLP −0.220, plan MLP + prior −0.169 (recall 85.7 / 83.2 / 87.1 /
+88.9 %); top 4 prior −0.131, plan MLP + prior −0.097; top 6 prior −0.038, plan MLP + prior −0.029 (recall 98.3 %); top-6 plans ∪ anchors (spire-mentor's rule) −0.033 at recall
+97.8 % vs prior top 6 97.5 %. Negative in every room group, worst at bosses and Act 4.
+**Interpretation (Inference):** the learned scorer cuts the prior's regret by about 25 % at equal width; break-even
+would need about 10×. spire-mentor's recall ≥ 95 % kill rule passes here and still loses Q: high recall is reached
+only by removing almost nothing, and the few G16 picks a filter drops carry most of the regret (G16 picks the
+scorer's last-ranked action at 2.7 % of roots). Consistent with §791 (E1 WORSE) and §784 (root constants flat).
+**Decision:** NOT_PURSUED at the offline gate; no online filter, no equal-CPU or whole-run test, no default change.
+The enumerator stays as a research tool (ctest `turn_plan_enum`) for #1058's step 5 (plans as macro actions), which
+needs its own question.
+Seeds: none played (§797's seeds reused as data). Cost: ≈ 35 CPU-minutes.
+**Knowledge impact:** Gumbel root width: a root filter must keep regret below the budget it frees (≈ 0.01 Q for the
+lowest-ranked action, ≈ 0.025 Q for half the actions at 16k); neither the g7f_E prior nor a plan scorer with
+end-state features comes within a factor of 7 of that, so root narrowing is not a lever (with §791).
+
+## §805 — Faster g7f_E prior evaluation (#1052): the state's nonzero list from the feature extractor is exact and saves 2-4% of G16 search CPU; FMA in the edge layers saves ~5-8% and changes search trajectories, made default by Philipp without a gate; AVX-512, an incremental state layer and int16 layer 2 rejected (cloud, 2026-11-15)
+
+**Question (issue #1052, from Philipp's 2026-11-15 request to work today's issues):** can the same g7f_E prior be
+evaluated faster, and which speedups keep play bit-identical?
+**Data:** [REPORT](evidence/prior_mlp_speed_20261115/REPORT.md); raw `/mnt/project-files/prior-mlp-speed-1052/`.
+72 boss / Act-4 roots of §797's root rows searched by `rolloutpolicybench` at 2k (no game seed), 80,919 recorded
+prior calls, and replays of §775's seeds 111378257 / 111378263 in G16 + mb4. Baseline main 6126315.
+**Result:**
+- Exact: `combatNonzeroStateFeatures` (the nonzero list from the always-written blocks and the extractor's touched
+  indices) replaces the 1,766-feature scan: 72/72 root searches identical to main, both games' Gumbel stop traces
+  identical (1,083 and 2,418 rows), CPU 0.96-0.98x at the roots and 0.97x / 0.98x in the games.
+- `STS_SILVER_PRIOR_MLP_FMA=1`: 1.16-1.22x per call, logits within 3.2e-6, 0 argmax changes on 80,919 calls, roots
+  0.92-0.95x CPU with all 72 picks equal; but both games' search traces change.
+- Rejected: AVX-512 kernels (bit-identical, 0.84-0.98x slower here), prefetch, skipping zero rows (never hit),
+  an exact-double incremental state layer (median 13 of ~80 features change per playout step, yet no real-search gain:
+  the rows are cache-warm), int16 layer 2 (1.3-7.2% argmax changes).
+**Interpretation (Inference):** after #1046 the per-call kernel is near this VM's vector throughput; no exact lever
+beyond a few percent remains in the MLP itself. FMA is the one larger lever and it is play-changing.
+**Decision:** the exact nonzero list goes in as default (bit-identical). FMA: Philipp, 2026-11-15 19:15 CET, after
+the explanation that it changes play and would normally need a gate: "ok lets make it still default". So
+`STS_SILVER_PRIOR_MLP_FMA` is on by default on FMA CPUs without a whole-run gate; `=0` restores the exact kernel
+(needed to reproduce pre-#1052 runs). Its effect on Heart kills is unmeasured. Seeds: §797's 111980000-111980255 (data only), §775's 111378257 and
+111378263 (replays); no new seeds.
+**Knowledge impact:** combat search: `predictPolicyMlp` takes the state's nonzero list from the feature extractor;
+rejected prior-kernel variants and the FMA default recorded in `knowledge-base/architecture/combat-search.md`.
+## §801 — Asymmetric critic stage 0 (issue #1050): the act's pre-generated encounter lists (remaining normals and elites by position and count, act-3 second boss; variant: also later acts) as extra GBM features in §761's critic ceiling check, same LONG_C split: act-1 EV −0.0012 [−0.0022, −0.0002] vs the public GBM (bar +0.03) and −0.0107 vs the recalibrated online critic → NO_GO, no privileged critic (PC CPU, offline, no seeds, 2026-11-15)
+
+**Question (issue #1050, Philipp 2026-11-15 17:08 CET "arbeite das jeweils ab"; run go 18:14 CET):** would a PPO
+value head that also sees the act's pre-generated encounters (training only) be a better critic? Offline first:
+how much act-1 outcome variance do those lists explain beyond the public state?
+**Data:** [PREREG](evidence/critic_encounters_20261115/PREREG.md) (K PASS on 75cdc2d1),
+[RESULT](evidence/critic_encounters_20261115/RESULT.md), `report.json`, `gbm*.json`, `check_encounters.json`,
+`commands.log`. New binding `slaythespire.act_encounter_lists(seed, ascension)`; `monsterRng` is used only by
+`generateMonsters`, and `obs.v2.fought` is the consumed prefix of the lists, so each decision's remaining lists follow
+from seed and record. Gate: all 11,338,165 act 1-3 decisions of the 8,000 LONG_C parts match the table (fought prefix
+and boss). Test LONG_C 0400-0419 (10,400 games), train 0220-0399, game-frac 1.0; gbm reproduces §761's GBM exactly.
+**Result:**
+- Act 1 AUC / EV: online_cal 0.671 / 0.072; gbm 0.662 / 0.063; gbm_enc 0.661 / 0.061; gbm_run 0.659 / 0.061.
+  All decisions: 0.784 / 0.243; 0.782 / 0.242; 0.781 / 0.241; 0.781 / 0.242.
+- Δ EV gbm_enc − gbm: act 1 −0.0012 [−0.0022, −0.0002], first decision +0.0005 [−0.0007, +0.0018], all −0.0015
+  [−0.0032, +0.0004]; gbm_run − gbm act 1 −0.0014 [−0.0037, +0.0011]; gbm_enc − online_cal act 1 −0.0107
+  [−0.0150, −0.0065]. All three rule checks fail → **NO_GO**.
+**Interpretation (Inference):** given the public state, the identity of the encounters still ahead (this act or
+later acts) explains no measurable share of the Heart outcome in this model class; the act-1 gain is bounded above
+by −0.0002 (95% CI upper bound) against a +0.03 bar. The privileged information an asymmetric critic would add is worth nothing here.
+**Decision:** NO_GO for #1050 step 1 (no asymmetric critic with encounter lists) and for step 2 via a privileged
+critic. No default change. The binding and `critic_ceiling.py encounters` / `check-encounters` / `--encounters` stay
+as tools. Seeds: none. Cost ≈ 70 min PC CPU, no GPU, no cloud core-hours.
+**Knowledge impact:** KB `research/a20-ppo-plan.md` (V6 row and critic ceiling paragraph).
+
+## §804 — Rollout prior on G16 targets, stage 1 (issue #1053): a g7f_E-shaped MLP trained on D2/D2b G16 + mb4 visit shares cuts the argmax's root regret in playout rooms from 2.449 (g7f_E) to 1.884 max-backed Q, lower in all 11 playout encounters; completed-Q targets (cq:10/30/paper) and auxiliary heads (Q, short-horizon / fight-end) do not beat visits → two candidates (V, boss fine-tune X-B) for the §798 playout harness, which needs a go (offline, no seeds, 2026-11-15)
+
+**Question (Philipp 2026-11-15 14:05 CET: "sollten wir das prior netz mal auf gumbel anpassen?"; 17:08 CET "arbeite das
+jeweils ab"):** g7f_E is G16's root prior, tree prior, playout policy (boss rooms, Act 4) and root table. T2 (§788)
+and §773 replaced only the root/tree prior. Can a net of g7f_E's size and cost, trained on G16's own roots, be a
+better playout policy? Stage 1 is the offline filter: the argmax's regret on held-out G16 roots.
+**Data:** [PREREG](evidence/rollout_prior_gumbel_20261115/PREREG.md), [RESULT](evidence/rollout_prior_gumbel_20261115/RESULT.md),
+`results/`. The T1 freeze (702 units) was re-featurized for the MLP (`tools/rollout_prior/pack_d2.py`; 3,120,098
+multi-edge roots), and g7f_E's recorded prior is reproduced from the packed features (3.8e-7, 0 argmax mismatches on
+50,000 roots). Splits are T1's (gate holdout unread). Recipe: g7f_E's (`tools/rollout_prior/train.py`, 128/64,
+encounter and monster embeddings, 25 epochs cosine, no teacher). 10 runs: V and CQP on cloud CPU, the rest on the PC GPU.
+**Result (validation, playout rooms = boss rooms + Act-4 elites, 90,486 roots; backed / mean q_regret):** g7f_E
+2.449 / 1.992; V (visits) 1.884 / 1.673; CQP 2.081 / 1.869; CQ30 1.995 / 1.712; CQ10 1.988 / 1.665; CQ30m 2.150 /
+1.715; V + Q head 1.889; V + short-horizon head 1.965 (both 1.965); V seed 1 1.893 (spread 0.009); X-B (V + 3 epochs
+on playout rows) 1.876. All rows: g7f_E 1.952 → V 1.364. Native export parity 1e-6 with 0 argmax mismatches; active
+ReLU units h1 22.3 / h2 18.0 vs g7f_E 20.3 / 22.1, and the timed cost per root is roughly equal (best of 5: 8.4 / 8.1 vs
+8.0 µs, noisy).
+**Interpretation (Inference):** the root-level headroom over g7f_E is large and present in every boss. Visit shares
+mark sequential halving's finalists, and sharper completed-Q targets fit a noisy Q winner and do worse. Aux heads do
+not help a 128-wide trunk at this data size (with §771). Root regret says nothing yet about playout states (the main
+risk).
+**Decision:** candidates V and X-B (`candidates/rp_V.txt` b366f6af…, `rp_X-B.txt` 34c1acf4…). No default change.
+Stage 2 (§798 harness on §797's games, arms asplayed / V / X-B at 4k and V at 16k, ~70-100 lane-hours) needs Philipp's
+go. Seeds: none. Cost ≈ 1 cloud CPU-hour packing + 70 min cloud CPU + 55 min PC GPU.
+**Knowledge impact:** KB `research/combat-search/cheap-combat-roadmap.md` (playout prior retrain line).
+## §803 — §801 follow-up: the act's encounter lists against act-1 survival instead of the Heart (same LONG_C split, act-1 decisions, game-frac 0.5 after a RAM-guard kill) add +0.0053 EV [+0.0024, +0.0080] to the public GBM (0.145 → 0.150; bar +0.03) → NONE; the GBM uses the features (13.9% of gain on this target, 2.2% on the Heart) → encounter-list direction of #1050 closed (PC CPU, offline, no seeds, 2026-11-15)
+
+**Question (Philipp, 2026-11-15 19:35 CET "wieso nur gbm, sollten wir nicht ein besseres model trainieren?"; go
+19:36 CET):** after §801's null on the Heart, is the encounter information there at all (feature importance), and
+does it predict a near target, act-1 survival?
+**Data:** [PREREG](evidence/critic_encounters_20261115/PREREG-act1-survival.md) (K PASS + delta),
+[RESULT](evidence/critic_encounters_20261115/RESULT-act1-survival.md), raw records in
+`evidence/critic_encounters_20261115/act1_survival/`. Code 923a22fe: `--target act1_survive` (y = leaves act 1
+alive; act-1 decisions only), `importance`. Deviations: first launch stopped on a stalled-game line (KeyError, fixed
+before any fit); the 1.0 fit hit the RAM guard beside #1053's PC fit, so both fits ran at the pre-registered 0.5.
+**Result:**
+- Act-1 survival AUC / EV: online_cal 0.660 / 0.047; gbm 0.768 / 0.145; gbm_enc 0.772 / 0.150. gbm_enc − gbm
+  +0.0053 [+0.0024, +0.0080] (first decision +0.0048), log loss −0.0024 [−0.0036, −0.0012]. Rule: margin not met
+  → **NONE**.
+- Importance (total gain, all trees): enc_* share 2.2% (§801 gbm_enc, best rank 91), 9.8% (§801 gbm_run), 13.9%
+  (act-1 gbm_enc, best rank 21).
+**Interpretation (Inference):** the remaining encounter lists carry a real but small amount of act-1 information
+(≈ 4% of what the public state explains), which washes out to §801's zero on the Heart. The GBM uses the features,
+so the limit is the information, not the model class; a net is unlikely to find the ~6× more signal needed.
+Descriptive: the Heart-trained online critic ranks act-1 survival much worse than the public GBM (different target).
+**Decision:** NONE. #1050's encounter-list direction is closed (privileged critic, step 2 via it, net variant). No
+default change. Seeds: none. Cost ≈ 1 h PC CPU, no GPU, no cloud core-hours.
+**Knowledge impact:** KB `research/a20-ppo-plan.md` (critic ceiling paragraph).

@@ -1,4 +1,4 @@
-// Three default-on out-of-combat fixes (=0 restores the legacy rule each):
+// Four default-on out-of-combat fixes (=0 restores the legacy rule each):
 // STS_NLOTHS_FACE_COUNTER_FIX: N'loth's Hungry Face starts at 1; the next
 //   non-boss chest still draws its relic from the pool, then the first relic
 //   reward (Matryoshka's, if any) is removed, with the sapphire key linked to
@@ -8,6 +8,8 @@
 // Java rules checked with javap against the pinned V2.3.4 jar (2026-11-03).
 // STS_ASTROLABE_COLORLESS_UPGRADE_FIX: Astrolabe upgrades a transformed
 //   colorless card too.
+// STS_OOC_TOY_ORNITHOPTER_FIX: Toy Ornithopter heals 5 after an
+//   out-of-combat drink (javap 2026-11-15, #1055).
 // Direct public fixtures: no game seed, map or fight.
 #include "game/GameContext.h"
 #include "game/Game.h"
@@ -197,6 +199,46 @@ static void astrolabe(bool fixed) {
     require(colorless == 1, "Astrolabe transformed card colors");
 }
 
+static void toyOrnithopter(bool fixed) {
+    // Blood Potion: 20% of 80 = 16, then the relic's 5.
+    auto gc = fixture();
+    gc.potionCapacity = 2;
+    gc.potions = {Potion::BLOOD_POTION, Potion::FRUIT_JUICE, Potion::EMPTY_POTION_SLOT,
+                  Potion::EMPTY_POTION_SLOT, Potion::EMPTY_POTION_SLOT};
+    gc.potionCount = 2;
+    gc.relics.add({RelicId::TOY_ORNITHOPTER, 0});
+    gc.drinkPotionAtIdx(0);
+    require(gc.curHp == (fixed ? 61 : 56) && gc.potionCount == 1, "Toy Ornithopter Blood Potion heal");
+    // Fruit Juice: +5 max HP (heals 5), then the relic's 5.
+    gc.drinkPotionAtIdx(1);
+    require(gc.maxHp == 85 && gc.curHp == (fixed ? 71 : 61) && gc.potionCount == 0,
+            "Toy Ornithopter Fruit Juice heal");
+    // The heal is capped by max HP and blocked by Mark of the Bloom.
+    auto full = fixture();
+    full.curHp = 79;
+    full.potionCapacity = 1;
+    full.potions[0] = Potion::FRUIT_JUICE;
+    full.potionCount = 1;
+    full.relics.add({RelicId::TOY_ORNITHOPTER, 0});
+    full.drinkPotionAtIdx(0);
+    require(full.maxHp == 85 && full.curHp == (fixed ? 85 : 84), "Toy Ornithopter heal cap");
+    auto bloom = fixture();
+    bloom.potionCapacity = 1;
+    bloom.potions[0] = Potion::BLOOD_POTION;
+    bloom.potionCount = 1;
+    bloom.relics.add({RelicId::TOY_ORNITHOPTER, 0});
+    bloom.relics.add({RelicId::MARK_OF_THE_BLOOM, 0});
+    bloom.drinkPotionAtIdx(0);
+    require(bloom.curHp == 40, "Mark of the Bloom blocks every heal");
+    // Without the relic nothing extra.
+    auto plain = fixture();
+    plain.potionCapacity = 1;
+    plain.potions[0] = Potion::BLOOD_POTION;
+    plain.potionCount = 1;
+    plain.drinkPotionAtIdx(0);
+    require(plain.curHp == 56, "Blood Potion without Toy Ornithopter");
+}
+
 int main() {
     try {
         for (const char *value : {static_cast<const char *>(nullptr), "1", "0"}) {
@@ -207,9 +249,11 @@ int main() {
             entropicBrew(fixed);
             setFlag("STS_ASTROLABE_COLORLESS_UPGRADE_FIX", value);
             astrolabe(fixed);
+            setFlag("STS_OOC_TOY_ORNITHOPTER_FIX", value);
+            toyOrnithopter(fixed);
         }
         for (const char *name : {"STS_NLOTHS_FACE_COUNTER_FIX", "STS_OOC_ENTROPIC_BREW_FIX",
-                                 "STS_ASTROLABE_COLORLESS_UPGRADE_FIX"}) {
+                                 "STS_ASTROLABE_COLORLESS_UPGRADE_FIX", "STS_OOC_TOY_ORNITHOPTER_FIX"}) {
             setFlag(name, "2");
             bool rejected = false;
             try {
@@ -217,6 +261,7 @@ int main() {
                 gc.potionCapacity = 1;
                 gc.potions[0] = Potion::ENTROPIC_BREW;
                 gc.potionCount = 1;
+                gc.relics.add({RelicId::TOY_ORNITHOPTER, 0});
                 gc.obtainRelic(RelicId::NLOTHS_HUNGRY_FACE);
                 gc.drinkPotionAtIdx(0);
                 Random rng(1);

@@ -1,0 +1,178 @@
+stats {'used': 145727, 'no_pick': 9871}
+{
+ "act4": {
+  "roots": 13057,
+  "cap_rate": 0.08432258558627556,
+  "plans_median": 15.0,
+  "plans_p90": 150.0,
+  "nodes_median": 8.0,
+  "cpu_ms_mean": 0.5203960397487907,
+  "cpu_ms_p99": 3.980621280000593,
+  "merges_mean": 31.791988971432946
+ },
+ "boss": {
+  "roots": 32864,
+  "cap_rate": 0.07783592989289191,
+  "plans_median": 15.0,
+  "plans_p90": 144.0,
+  "nodes_median": 10.0,
+  "cpu_ms_mean": 0.507819748417719,
+  "cpu_ms_p99": 3.871598969998562,
+  "merges_mean": 36.563595423563775
+ },
+ "elite": {
+  "roots": 42679,
+  "cap_rate": 0.0706436420722135,
+  "plans_median": 14.0,
+  "plans_p90": 143.0,
+  "nodes_median": 10.0,
+  "cpu_ms_mean": 0.4897227929660847,
+  "cpu_ms_p99": 3.7629079999982924,
+  "merges_mean": 37.702992103844984
+ },
+ "hallway": {
+  "roots": 66998,
+  "cap_rate": 0.07033045762560076,
+  "plans_median": 16.0,
+  "plans_p90": 144.0,
+  "nodes_median": 10.0,
+  "cpu_ms_mean": 0.4918391306009169,
+  "cpu_ms_p99": 3.8271376299994566,
+  "merges_mean": 37.89926564972089
+ }
+}
+trained plan_mlp fold 0
+trained plan_mlp fold 1
+trained plan_mlp fold 2
+trained plan_mlp fold 3
+trained plan_mlp fold 4
+trained plan_mlp+prior fold 0
+trained plan_mlp+prior fold 1
+trained plan_mlp+prior fold 2
+trained plan_mlp+prior fold 3
+trained plan_mlp+prior fold 4
+== all
+  half/prior                       recall 0.8565 regret 0.2593 saved 0.268 kept 0.584 gain_est 0.0270 net -0.2323
+  half/planprior                   recall 0.8321 regret 0.3317 saved 0.289 kept 0.584 gain_est 0.0295 net -0.3021
+  half/plan_mlp                    recall 0.8710 regret 0.2457 saved 0.256 kept 0.584 gain_est 0.0256 net -0.2201
+  half/plan_mlp+prior              recall 0.8886 regret 0.1932 saved 0.248 kept 0.584 gain_est 0.0246 net -0.1686
+  n-1/prior                        recall 0.9685 regret 0.0974 saved 0.105 kept 0.796 gain_est 0.0096 net -0.0878
+  n-1/planprior                    recall 0.9534 regret 0.1243 saved 0.115 kept 0.796 gain_est 0.0106 net -0.1137
+  n-1/plan_mlp                     recall 0.9685 regret 0.0881 saved 0.105 kept 0.796 gain_est 0.0096 net -0.0785
+  n-1/plan_mlp+prior               recall 0.9726 regret 0.0740 saved 0.102 kept 0.796 gain_est 0.0093 net -0.0647
+  n-2/prior                        recall 0.8876 regret 0.2707 saved 0.228 kept 0.635 gain_est 0.0224 net -0.2483
+  n-2/planprior                    recall 0.8647 regret 0.3389 saved 0.244 kept 0.635 gain_est 0.0243 net -0.3146
+  n-2/plan_mlp                     recall 0.8946 regret 0.2479 saved 0.222 kept 0.635 gain_est 0.0217 net -0.2261
+  n-2/plan_mlp+prior               recall 0.9064 regret 0.2068 saved 0.216 kept 0.635 gain_est 0.0211 net -0.1858
+  top4/prior                       recall 0.9127 regret 0.1445 saved 0.146 kept 0.768 gain_est 0.0137 net -0.1308
+  top4/planprior                   recall 0.8968 regret 0.2144 saved 0.162 kept 0.768 gain_est 0.0153 net -0.1991
+  top4/plan_mlp                    recall 0.9232 regret 0.1478 saved 0.137 kept 0.768 gain_est 0.0127 net -0.1351
+  top4/plan_mlp+prior              recall 0.9353 regret 0.1091 saved 0.132 kept 0.768 gain_est 0.0122 net -0.0969
+  top6/prior                       recall 0.9749 regret 0.0422 saved 0.049 kept 0.912 gain_est 0.0043 net -0.0379
+  top6/planprior                   recall 0.9665 regret 0.0646 saved 0.057 kept 0.912 gain_est 0.0051 net -0.0595
+  top6/plan_mlp                    recall 0.9776 regret 0.0511 saved 0.045 kept 0.912 gain_est 0.0040 net -0.0471
+  top6/plan_mlp+prior              recall 0.9827 regret 0.0331 saved 0.043 kept 0.912 gain_est 0.0038 net -0.0294
+  plantop3+anchors/plan_mlp        recall 0.9203 regret 0.1296 saved 0.144 kept 0.777 gain_est 0.0134 net -0.1162
+  plantop3+anchors/plan_mlp+prior  recall 0.9276 regret 0.1233 saved 0.137 kept 0.782 gain_est 0.0127 net -0.1106
+  plantop6+anchors/plan_mlp        recall 0.9729 regret 0.0443 saved 0.064 kept 0.876 gain_est 0.0058 net -0.0386
+  plantop6+anchors/plan_mlp+prior  recall 0.9779 regret 0.0380 saved 0.058 kept 0.886 gain_est 0.0051 net -0.0328
+== hallway
+  half/prior                       recall 0.8785 regret 0.1600 saved 0.254 kept 0.583 gain_est 0.0253 net -0.1347
+  half/planprior                   recall 0.8594 regret 0.2000 saved 0.271 kept 0.583 gain_est 0.0274 net -0.1726
+  half/plan_mlp                    recall 0.8989 regret 0.1323 saved 0.238 kept 0.583 gain_est 0.0235 net -0.1088
+  half/plan_mlp+prior              recall 0.9125 regret 0.1036 saved 0.231 kept 0.583 gain_est 0.0228 net -0.0808
+  n-1/prior                        recall 0.9774 regret 0.0535 saved 0.100 kept 0.794 gain_est 0.0091 net -0.0444
+  n-1/planprior                    recall 0.9680 regret 0.0656 saved 0.107 kept 0.794 gain_est 0.0098 net -0.0558
+  n-1/plan_mlp                     recall 0.9779 regret 0.0457 saved 0.099 kept 0.794 gain_est 0.0091 net -0.0367
+  n-1/plan_mlp+prior               recall 0.9811 regret 0.0386 saved 0.097 kept 0.794 gain_est 0.0089 net -0.0297
+  n-2/prior                        recall 0.9068 regret 0.1702 saved 0.217 kept 0.632 gain_est 0.0212 net -0.1491
+  n-2/planprior                    recall 0.8904 regret 0.2002 saved 0.230 kept 0.632 gain_est 0.0227 net -0.1775
+  n-2/plan_mlp                     recall 0.9184 regret 0.1400 saved 0.209 kept 0.632 gain_est 0.0203 net -0.1196
+  n-2/plan_mlp+prior               recall 0.9268 regret 0.1160 saved 0.205 kept 0.632 gain_est 0.0199 net -0.0962
+  top4/prior                       recall 0.9223 regret 0.0998 saved 0.139 kept 0.768 gain_est 0.0129 net -0.0869
+  top4/planprior                   recall 0.9081 regret 0.1480 saved 0.153 kept 0.768 gain_est 0.0144 net -0.1336
+  top4/plan_mlp                    recall 0.9366 regret 0.0873 saved 0.127 kept 0.768 gain_est 0.0118 net -0.0755
+  top4/plan_mlp+prior              recall 0.9461 regret 0.0655 saved 0.123 kept 0.768 gain_est 0.0114 net -0.0542
+  top6/prior                       recall 0.9777 regret 0.0304 saved 0.046 kept 0.912 gain_est 0.0041 net -0.0263
+  top6/planprior                   recall 0.9706 regret 0.0455 saved 0.054 kept 0.912 gain_est 0.0048 net -0.0407
+  top6/plan_mlp                    recall 0.9821 regret 0.0293 saved 0.041 kept 0.912 gain_est 0.0037 net -0.0257
+  top6/plan_mlp+prior              recall 0.9863 regret 0.0212 saved 0.040 kept 0.912 gain_est 0.0035 net -0.0177
+  plantop3+anchors/plan_mlp        recall 0.9279 regret 0.0854 saved 0.139 kept 0.776 gain_est 0.0130 net -0.0724
+  plantop3+anchors/plan_mlp+prior  recall 0.9365 regret 0.0770 saved 0.132 kept 0.782 gain_est 0.0122 net -0.0648
+  plantop6+anchors/plan_mlp        recall 0.9765 regret 0.0287 saved 0.062 kept 0.875 gain_est 0.0056 net -0.0232
+  plantop6+anchors/plan_mlp+prior  recall 0.9817 regret 0.0233 saved 0.054 kept 0.887 gain_est 0.0048 net -0.0184
+== elite
+  half/prior                       recall 0.8649 regret 0.2753 saved 0.266 kept 0.583 gain_est 0.0268 net -0.2485
+  half/planprior                   recall 0.8486 regret 0.3315 saved 0.281 kept 0.583 gain_est 0.0285 net -0.3030
+  half/plan_mlp                    recall 0.8790 regret 0.2667 saved 0.253 kept 0.583 gain_est 0.0253 net -0.2414
+  half/plan_mlp+prior              recall 0.8980 regret 0.2065 saved 0.245 kept 0.583 gain_est 0.0243 net -0.1822
+  n-1/prior                        recall 0.9698 regret 0.1000 saved 0.109 kept 0.790 gain_est 0.0100 net -0.0900
+  n-1/planprior                    recall 0.9591 regret 0.1240 saved 0.116 kept 0.790 gain_est 0.0107 net -0.1134
+  n-1/plan_mlp                     recall 0.9693 regret 0.0937 saved 0.109 kept 0.790 gain_est 0.0100 net -0.0837
+  n-1/plan_mlp+prior               recall 0.9738 regret 0.0800 saved 0.106 kept 0.790 gain_est 0.0097 net -0.0703
+  n-2/prior                        recall 0.8910 regret 0.2844 saved 0.231 kept 0.630 gain_est 0.0228 net -0.2616
+  n-2/planprior                    recall 0.8759 regret 0.3281 saved 0.243 kept 0.630 gain_est 0.0240 net -0.3040
+  n-2/plan_mlp                     recall 0.8976 regret 0.2640 saved 0.226 kept 0.630 gain_est 0.0221 net -0.2419
+  n-2/plan_mlp+prior               recall 0.9109 regret 0.2212 saved 0.219 kept 0.630 gain_est 0.0214 net -0.1998
+  top4/prior                       recall 0.9183 regret 0.1616 saved 0.139 kept 0.776 gain_est 0.0130 net -0.1486
+  top4/planprior                   recall 0.9096 regret 0.2216 saved 0.149 kept 0.776 gain_est 0.0140 net -0.2075
+  top4/plan_mlp                    recall 0.9298 regret 0.1579 saved 0.130 kept 0.776 gain_est 0.0120 net -0.1459
+  top4/plan_mlp+prior              recall 0.9439 regret 0.1166 saved 0.124 kept 0.776 gain_est 0.0114 net -0.1052
+  top6/prior                       recall 0.9762 regret 0.0475 saved 0.047 kept 0.916 gain_est 0.0041 net -0.0433
+  top6/planprior                   recall 0.9710 regret 0.0726 saved 0.053 kept 0.916 gain_est 0.0047 net -0.0679
+  top6/plan_mlp                    recall 0.9792 regret 0.0545 saved 0.043 kept 0.916 gain_est 0.0038 net -0.0507
+  top6/plan_mlp+prior              recall 0.9844 regret 0.0354 saved 0.040 kept 0.916 gain_est 0.0035 net -0.0318
+  plantop3+anchors/plan_mlp        recall 0.9318 regret 0.1302 saved 0.132 kept 0.785 gain_est 0.0122 net -0.1180
+  plantop3+anchors/plan_mlp+prior  recall 0.9384 regret 0.1273 saved 0.125 kept 0.790 gain_est 0.0116 net -0.1157
+  plantop6+anchors/plan_mlp        recall 0.9767 regret 0.0469 saved 0.060 kept 0.880 gain_est 0.0053 net -0.0416
+  plantop6+anchors/plan_mlp+prior  recall 0.9819 regret 0.0364 saved 0.053 kept 0.888 gain_est 0.0047 net -0.0317
+== boss
+  half/prior                       recall 0.8304 regret 0.3663 saved 0.286 kept 0.586 gain_est 0.0291 net -0.3372
+  half/planprior                   recall 0.7895 regret 0.5023 saved 0.318 kept 0.586 gain_est 0.0331 net -0.4692
+  half/plan_mlp                    recall 0.8403 regret 0.3505 saved 0.275 kept 0.586 gain_est 0.0279 net -0.3226
+  half/plan_mlp+prior              recall 0.8615 regret 0.2919 saved 0.267 kept 0.586 gain_est 0.0269 net -0.2650
+  n-1/prior                        recall 0.9603 regret 0.1525 saved 0.106 kept 0.800 gain_est 0.0097 net -0.1428
+  n-1/planprior                    recall 0.9342 regret 0.2005 saved 0.125 kept 0.800 gain_est 0.0115 net -0.1890
+  n-1/plan_mlp                     recall 0.9610 regret 0.1345 saved 0.107 kept 0.800 gain_est 0.0098 net -0.1248
+  n-1/plan_mlp+prior               recall 0.9658 regret 0.1121 saved 0.104 kept 0.800 gain_est 0.0095 net -0.1026
+  n-2/prior                        recall 0.8673 regret 0.3936 saved 0.236 kept 0.642 gain_est 0.0234 net -0.3702
+  n-2/planprior                    recall 0.8270 regret 0.5268 saved 0.264 kept 0.642 gain_est 0.0266 net -0.5003
+  n-2/plan_mlp                     recall 0.8729 regret 0.3634 saved 0.232 kept 0.642 gain_est 0.0228 net -0.3405
+  n-2/plan_mlp+prior               recall 0.8855 regret 0.3092 saved 0.226 kept 0.642 gain_est 0.0221 net -0.2871
+  top4/prior                       recall 0.9014 regret 0.1875 saved 0.157 kept 0.764 gain_est 0.0148 net -0.1727
+  top4/planprior                   recall 0.8752 regret 0.2940 saved 0.181 kept 0.764 gain_est 0.0173 net -0.2767
+  top4/plan_mlp                    recall 0.9066 regret 0.2008 saved 0.150 kept 0.764 gain_est 0.0140 net -0.1867
+  top4/plan_mlp+prior              recall 0.9207 regret 0.1524 saved 0.145 kept 0.764 gain_est 0.0135 net -0.1389
+  top6/prior                       recall 0.9717 regret 0.0515 saved 0.053 kept 0.911 gain_est 0.0047 net -0.0468
+  top6/planprior                   recall 0.9577 regret 0.0927 saved 0.066 kept 0.911 gain_est 0.0059 net -0.0868
+  top6/plan_mlp                    recall 0.9726 regret 0.0667 saved 0.049 kept 0.911 gain_est 0.0044 net -0.0623
+  top6/plan_mlp+prior              recall 0.9786 regret 0.0460 saved 0.047 kept 0.911 gain_est 0.0042 net -0.0418
+  plantop3+anchors/plan_mlp        recall 0.9069 regret 0.1791 saved 0.154 kept 0.775 gain_est 0.0145 net -0.1646
+  plantop3+anchors/plan_mlp+prior  recall 0.9145 regret 0.1714 saved 0.148 kept 0.781 gain_est 0.0138 net -0.1575
+  plantop6+anchors/plan_mlp        recall 0.9658 regret 0.0612 saved 0.071 kept 0.875 gain_est 0.0063 net -0.0549
+  plantop6+anchors/plan_mlp+prior  recall 0.9718 regret 0.0539 saved 0.063 kept 0.885 gain_est 0.0057 net -0.0482
+== act4
+  half/prior                       recall 0.7822 regret 0.4514 saved 0.306 kept 0.587 gain_est 0.0317 net -0.4198
+  half/planprior                   recall 0.7455 regret 0.5837 saved 0.336 kept 0.587 gain_est 0.0355 net -0.5482
+  half/plan_mlp                    recall 0.7790 regret 0.4984 saved 0.305 kept 0.587 gain_est 0.0315 net -0.4670
+  half/plan_mlp+prior              recall 0.8035 regret 0.3646 saved 0.294 kept 0.587 gain_est 0.0301 net -0.3345
+  n-1/prior                        recall 0.9395 regret 0.1772 saved 0.112 kept 0.807 gain_est 0.0103 net -0.1669
+  n-1/planprior                    recall 0.9086 regret 0.2373 saved 0.134 kept 0.807 gain_est 0.0124 net -0.2249
+  n-1/plan_mlp                     recall 0.9359 regret 0.1718 saved 0.115 kept 0.807 gain_est 0.0106 net -0.1612
+  n-1/plan_mlp+prior               recall 0.9424 regret 0.1416 saved 0.111 kept 0.807 gain_est 0.0102 net -0.1315
+  n-2/prior                        recall 0.8286 regret 0.4361 saved 0.248 kept 0.654 gain_est 0.0247 net -0.4114
+  n-2/planprior                    recall 0.7904 regret 0.6176 saved 0.273 kept 0.654 gain_est 0.0276 net -0.5900
+  n-2/plan_mlp                     recall 0.8173 regret 0.4621 saved 0.251 kept 0.654 gain_est 0.0250 net -0.4371
+  n-2/plan_mlp+prior               recall 0.8400 regret 0.3719 saved 0.240 kept 0.654 gain_est 0.0237 net -0.3482
+  top4/prior                       recall 0.8739 regret 0.2119 saved 0.178 kept 0.748 gain_est 0.0170 net -0.1949
+  top4/planprior                   recall 0.8507 regret 0.3342 saved 0.200 kept 0.748 gain_est 0.0193 net -0.3149
+  top4/plan_mlp                    recall 0.8744 regret 0.2942 saved 0.176 kept 0.748 gain_est 0.0167 net -0.2775
+  top4/plan_mlp+prior              recall 0.8889 regret 0.2009 saved 0.168 kept 0.748 gain_est 0.0159 net -0.1850
+  top6/prior                       recall 0.9642 regret 0.0632 saved 0.060 kept 0.901 gain_est 0.0053 net -0.0579
+  top6/planprior                   recall 0.9530 regret 0.0674 saved 0.071 kept 0.901 gain_est 0.0064 net -0.0610
+  top6/plan_mlp                    recall 0.9621 regret 0.1128 saved 0.059 kept 0.901 gain_est 0.0053 net -0.1075
+  top6/plan_mlp+prior              recall 0.9692 regret 0.0551 saved 0.056 kept 0.901 gain_est 0.0050 net -0.0501
+  plantop3+anchors/plan_mlp        recall 0.8776 regret 0.2312 saved 0.177 kept 0.755 gain_est 0.0169 net -0.2143
+  plantop3+anchors/plan_mlp+prior  recall 0.8798 regret 0.2282 saved 0.176 kept 0.754 gain_est 0.0168 net -0.2115
+  plantop6+anchors/plan_mlp        recall 0.9596 regret 0.0741 saved 0.074 kept 0.873 gain_est 0.0067 net -0.0675
+  plantop6+anchors/plan_mlp+prior  recall 0.9614 regret 0.0786 saved 0.072 kept 0.875 gain_est 0.0065 net -0.0721
