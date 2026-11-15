@@ -132,8 +132,10 @@ and quoted bytecode in `~/Documents/sts/javap-1055/` on the PC.
 
 ## Next checks
 
-1. A3 done: drink tokens, default on without a gate (Philipp, 2026-11-15). **Unverified:** Java's Toy Ornithopter
-   heals on an out-of-combat potion too (`onUsePotion`); the engine heals only in combat.
+1. A3 done: drink tokens, default on without a gate (Philipp, 2026-11-15). Toy Ornithopter checked with javap the
+   same day: `PotionPopUp` calls `potion.use`, then every relic's `onUsePotion`, and `ToyOrnithopter.onUsePotion`
+   outside `COMBAT` calls `player.heal(5)` at once. The engine healed only in combat; fixed in
+   `GameContext::drinkPotionAtIdx` (`STS_OOC_TOY_ORNITHOPTER_FIX`, on by default, `0` restores).
 2. Step 3 for the combat rules C1/C3/C4: count how often the pruned edge would have been legal (logging only).
 3. Hand the relic-left and Cursed Key chest cases (section A, D5) to #1056.
 

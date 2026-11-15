@@ -1249,6 +1249,11 @@ static bool goldRewardIdolFix() { return defaultOnFix("STS_GOLD_REWARD_IDOL_FIX"
 // (returnRandomPotion(false)) and obtains each into the first empty slot.
 // Legacy also ignored Sozu and put each draw into its own slot index.
 static bool oocEntropicBrewFix() { return defaultOnFix("STS_OOC_ENTROPIC_BREW_FIX"); }
+// Toy Ornithopter heals 5 on an out-of-combat drink too: PotionPopUp calls
+// potion.use, then every relic's onUsePotion, and ToyOrnithopter.onUsePotion
+// outside COMBAT calls player.heal(5) at once (javap 2026-11-15, #1055).
+// Legacy healed only in combat.
+static bool oocToyOrnithopterFix() { return defaultOnFix("STS_OOC_TOY_ORNITHOPTER_FIX"); }
 // Astrolabe upgrades a transformed colorless card too (Java transformCard
 // autoUpgrade); legacy returned it unupgraded.
 static bool astrolabeColorlessUpgradeFix() { return defaultOnFix("STS_ASTROLABE_COLORLESS_UPGRADE_FIX"); }
@@ -2502,6 +2507,9 @@ void GameContext::drinkPotionAtIdx(int idx) {
     const Potion p = potions[idx];
     discardPotionAtIdx(idx);
     drinkPotion(p);
+    if (hasRelic(RelicId::TOY_ORNITHOPTER) && oocToyOrnithopterFix()) {
+        playerHeal(5);
+    }
 }
 
 void GameContext::discardPotionAtIdx(int idx) {
