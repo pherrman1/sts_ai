@@ -27644,7 +27644,7 @@ Seeds: none played (§797's seeds reused as data). Cost: ≈ 35 CPU-minutes.
 lowest-ranked action, ≈ 0.025 Q for half the actions at 16k); neither the g7f_E prior nor a plan scorer with
 end-state features comes within a factor of 7 of that, so root narrowing is not a lever (with §791).
 
-## §TBD — Faster g7f_E prior evaluation (#1052): the state's nonzero list from the feature extractor is exact and saves 2-4% of G16 search CPU; FMA in the edge layers saves ~5-8% and changes search trajectories, made default by Philipp without a gate; AVX-512, an incremental state layer and int16 layer 2 rejected (cloud, 2026-11-15)
+## §805 — Faster g7f_E prior evaluation (#1052): the state's nonzero list from the feature extractor is exact and saves 2-4% of G16 search CPU; FMA in the edge layers saves ~5-8% and changes search trajectories, made default by Philipp without a gate; AVX-512, an incremental state layer and int16 layer 2 rejected (cloud, 2026-11-15)
 
 **Question (issue #1052, from Philipp's 2026-11-15 request to work today's issues):** can the same g7f_E prior be
 evaluated faster, and which speedups keep play bit-identical?
