@@ -200,7 +200,7 @@ int main(int argc, char **argv) {
                 nonzeroBad);
     long fmaBad = 0;
     __builtin_cpu_init();
-    if (__builtin_cpu_supports("fma")) {
+    if (__builtin_cpu_supports("fma") && __builtin_cpu_supports("avx2")) {
         // STS_SILVER_PRIOR_MLP_FMA: finite random calls stay within 1e-4 (relative) of the reference.
         std::mt19937 frng(20261115);
         for (int c = 0; c < 1000; ++c) {

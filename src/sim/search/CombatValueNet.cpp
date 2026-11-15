@@ -91,13 +91,13 @@ namespace {
         if (g_policyMlpFmaOverride >= 0) return g_policyMlpFmaOverride == 1;
         static const bool on = [] {
             __builtin_cpu_init();
-            const bool cpu = __builtin_cpu_supports("fma") != 0;
+            const bool cpu = __builtin_cpu_supports("fma") && __builtin_cpu_supports("avx2");   // the kernel needs both
             const char *v = std::getenv("STS_SILVER_PRIOR_MLP_FMA");
             if (v && std::strcmp(v, "0") == 0) return false;
             if (v && std::strcmp(v, "1") != 0) throw std::runtime_error("STS_SILVER_PRIOR_MLP_FMA must be 0 or 1");
-            if (v && !cpu) throw std::runtime_error("STS_SILVER_PRIOR_MLP_FMA=1 needs an FMA CPU");
+            if (v && !cpu) throw std::runtime_error("STS_SILVER_PRIOR_MLP_FMA=1 needs a CPU with FMA and AVX2");
             if (!cpu)
-                std::fprintf(stderr, "[prior MLP] no FMA on this CPU: exact non-FMA kernel (play differs from FMA "
+                std::fprintf(stderr, "[prior MLP] no FMA/AVX2 on this CPU: exact non-FMA kernel (play differs from FMA "
                                      "machines; STS_SILVER_PRIOR_MLP_FMA=0 matches it everywhere)\n");
             return cpu;
         }();
@@ -1710,7 +1710,8 @@ bool policyMlpFmaActive() { return policyMlpFmaOn(); }
 void setPolicyMlpFma(int mode) {
     if (mode == 1) {
         __builtin_cpu_init();
-        if (!__builtin_cpu_supports("fma")) throw std::runtime_error("setPolicyMlpFma(1): no FMA");
+        if (!__builtin_cpu_supports("fma") || !__builtin_cpu_supports("avx2"))
+            throw std::runtime_error("setPolicyMlpFma(1): no FMA/AVX2");
     }
     g_policyMlpFmaOverride = mode < 0 ? -1 : mode;
 }
