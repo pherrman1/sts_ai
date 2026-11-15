@@ -24,7 +24,7 @@ game). Data: `eval/results/result.json` (analyze.py output), `eval/results/claim
    - iteration 39, W26, seed 112120607
 
    From 2026-11-15 10:52 CET a 1 h rule applied with Philipp's OK. Seeds, nets and config for a later replay fix are
-   in `eval/results/stuck_games.md`. A duration histogram of 17,680 games shows a 1 h cut affects 0.06% of games.
+   in `eval/results/stuck_games.md`. The exact seeds of the iteration 7 and 31 stalls were not recorded at the time, and the learner deleted those parts after consuming them. A duration histogram of 17,680 games shows a 1 h cut affects 0.06% of games.
 2. **Pause** on 2026-11-14 from 12:25 to 12:35 CET. It came from a wrong diagnosis: the value-only warm-up does not
    move the policy. The policy did not change during the pause.
 3. **Rebin** from 2026-11-14 at about 21:00 CET. Actors moved at part boundaries from one_combat 97aec5b5 (code ba705ab4)
@@ -46,7 +46,7 @@ game). Data: `eval/results/result.json` (analyze.py output), `eval/results/claim
 - d = **−3.03 pp [−6.15, +0.10]**, one-sided 95% [−5.66, −0.39].
 - 119 seeds only P46 kills, 150 only G16.
 - **Gainer SPRT NOT_SHOWN** (accept H0 at 896 seeds, LLR −3.56) → **STOP**. The nonregression SPRT is at CAP
-  (descriptive).
+  (descriptive). Its one-sided upper bound −0.39 pp < 0 would read as WORSE under #1044's nonregression criterion.
 - First 512 seeds: −2.54 [−6.84, +1.95].
 - Act-4 reach −1.86 pp [−4.98, +1.27].
 - Act-4 conversion: G16 422/504 (83.7%), P46 391/485 (80.6%). On the 360 seeds both reach, 87.2% vs 82.5%,
