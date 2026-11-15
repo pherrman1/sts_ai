@@ -27632,7 +27632,7 @@ and boss). Test LONG_C 0400-0419 (10,400 games), train 0220-0399, game-frac 1.0;
   [−0.0150, −0.0065]. All three rule checks fail → **NO_GO**.
 **Interpretation (Inference):** given the public state, the identity of the encounters still ahead (this act or
 later acts) explains no measurable share of the Heart outcome in this model class; the act-1 gain is bounded above
-by +0.0002 against a +0.03 bar. The privileged information an asymmetric critic would add is worth nothing here.
+by −0.0002 (95% CI upper bound) against a +0.03 bar. The privileged information an asymmetric critic would add is worth nothing here.
 **Decision:** NO_GO for #1050 step 1 (no asymmetric critic with encounter lists) and for step 2 via a privileged
 critic. No default change. The binding and `critic_ceiling.py encounters` / `check-encounters` / `--encounters` stay
 as tools. Seeds: none. Cost ≈ 70 min PC CPU, no GPU, no cloud core-hours.

@@ -73,7 +73,7 @@ Rule checks (act 1): gain over gbm ≥ 0.03: **no** (−0.0012); its CI above 0:
 ## Interpretation
 
 - **Inference:** given the public state, which normal encounters and elites still lie ahead in the act explains no
-  measurable share of the Heart outcome in this model class. The act-1 EV gain is bounded above by +0.0002 (95%
+  measurable share of the Heart outcome in this model class. The act-1 EV gain is bounded above by −0.0002 (95%
   CI), two orders of magnitude below the +0.03 bar; even at the run's first decision, where the whole act-1 list
   is unknown to the public critic, the gain is +0.0005 [−0.0007, +0.0018]. Adding the later acts' lists and bosses
   (gbm_run) does not help either.
