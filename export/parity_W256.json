@@ -1,0 +1,20 @@
+{
+ "model": "/home/philippherrmann/rolloutprior/export/combat_policy_mlp_rp_W256.txt",
+ "ckpt_vs_artifact": {
+  "roots": 20000,
+  "edges": 121040,
+  "max_abs": 9.5367431640625e-07
+ },
+ "native_report": {
+  "edges": 23685,
+  "mlp": "policy mlp 256/128",
+  "mlpUsPerRoot": 10.467589250000001,
+  "roots": 4000
+ },
+ "artifact_vs_native": {
+  "roots": 4000,
+  "edges": 23685,
+  "max_abs": 1.3073162841159558e-06,
+  "argmax_mismatch_roots": 0
+ }
+}
