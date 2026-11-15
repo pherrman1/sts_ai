@@ -47,6 +47,10 @@ alternative here (the key forbids only the named ids among card or relic tokens)
 - Prelaunch checks (local, before the campaign): the selftest of the key (`one_combat heart1pposelftest`); one pair per
   pattern, where both games must replay §782's trace exactly up to the decision, B's decision must equal §782's and A's
   forced token must differ; one unforced game of this binary must equal §782's trace.
+  Done 2026-11-15 21:45-22:25 CET in the author's container: selftest passed; u072 (smith), u202 (elite, A only),
+  u269 (corruption) and u510 (runic) pass every check of analyze.py (the smith pair failed run_unit's PPO-line check
+  only because a fork prints the redrawn seed; the check now accepts any seed); the unforced game of 111378715 equals
+  §782's trace (70 of 70 records). Prelaunch review (J): PASS, /mnt/project-files/reviews/pr1069-prelaunch-review.md.
 
 ## Analysis (analyze.py, frozen before the first campaign result)
 
@@ -83,7 +87,7 @@ as shown. Smaller effects will read NOT_SHOWN; that is not evidence of no effect
 ## Cost and outputs
 
 Each unit plays two games, each about one §782 G16 game (prefix replay plus the rest): about 1,060 s per unit, about
-150 core-hours for 512 units, about 1 h on 40 workers x 4 lanes plus the tail. Share
+150 core-hours for 512 units, about 5 h on 8 workers x 4 lanes plus the tail. Share
 `/mnt/project-files/obvious-mistakes-probes`: 512 unit tars (about 100 MB), about 1,600 claim files, up to 8
 wWW.DONE.json, the brief: about 2,200 files (share at about 38,400 of 50,000 files and 6.9 of 10 GB before the run).
 Per game TAG-SEED-IDX.{done,env,log,err,trace.jsonl.gz,ppo.jsonl.gz}.
