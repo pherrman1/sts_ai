@@ -27613,7 +27613,7 @@ Seeds: none played (§797's seeds reused as data). Cost: ≈ 35 CPU-minutes.
 lowest-ranked action, ≈ 0.025 Q for half the actions at 16k); neither the g7f_E prior nor a plan scorer with
 end-state features comes within a factor of 7 of that, so root narrowing is not a lever (with §791).
 
-## §TBD — Asymmetric critic stage 0 (issue #1050): the act's pre-generated encounter lists (remaining normals and elites by position and count, act-3 second boss; variant: also later acts) as extra GBM features in §761's critic ceiling check, same LONG_C split: act-1 EV −0.0012 [−0.0022, −0.0002] vs the public GBM (bar +0.03) and −0.0107 vs the recalibrated online critic → NO_GO, no privileged critic (PC CPU, offline, no seeds, 2026-11-15)
+## §801 — Asymmetric critic stage 0 (issue #1050): the act's pre-generated encounter lists (remaining normals and elites by position and count, act-3 second boss; variant: also later acts) as extra GBM features in §761's critic ceiling check, same LONG_C split: act-1 EV −0.0012 [−0.0022, −0.0002] vs the public GBM (bar +0.03) and −0.0107 vs the recalibrated online critic → NO_GO, no privileged critic (PC CPU, offline, no seeds, 2026-11-15)
 
 **Question (issue #1050, Philipp 2026-11-15 17:08 CET "arbeite das jeweils ab"; run go 18:14 CET):** would a PPO
 value head that also sees the act's pre-generated encounters (training only) be a better critic? Offline first:
