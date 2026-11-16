@@ -1,0 +1,9 @@
+Smoke, local cloud container, 2026-11-16 21:05-21:25 CET (not part of the data; the campaign plays these seeds again).
+Binary 85a6cf3e (code 432bfae4, linux-gcc-release-x86-64-v3), run_unit.sh of this campaign, both games in parallel
+on 4 vCPU next to three playoutvaluebench jobs (CPU times are inflated).
+
+GP 111378256 (sentinel seed): rc 0, 68 s wall, floor 16 death; fingerprint (analyze.py fingerprint()) identical to
+               §815's GP game (§815: 67 s wall).
+GS 111378263: rc 0 (all run_unit.sh log checks incl. "[silver] playout policy model (research): <students/rp_SBC.txt>"),
+               Heart kill, end HP 35, 1,172.5 s CPU, 660 Gumbel roots, 10,967,873 sims
+               (§815's GP on this seed: Heart kill, end HP 54, 685.5 s, 665 roots, 10,775,869 sims).
