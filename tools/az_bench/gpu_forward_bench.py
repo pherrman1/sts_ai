@@ -2,6 +2,10 @@
 """Stage 0 throughput bench, part 1 (Amber-Eye-style loop assessment, 2026-11-16): how many positions per second the
 token combat net (tools/combat_net/model.py CombatNet) evaluates on one GPU, as a function of net size and batch size.
 
+Two nets: --arch amber (default) is tools/az_bench/amber_net.py, a token transformer shaped after Amber Eye's
+network (https://8e9f.github.io/amber_eye/; ~40 tokens per state, policy over a legal-action list, sizes 0.44M /
+1.2M / 5.4M); --arch combat is our trained combat net's architecture (tools/combat_net/model.py CombatNet).
+
 One position = one row of a forward pass = one net leaf evaluation of a search. The net is randomly initialized (a
 throughput bench needs no trained weights). Inputs are either synthetic rows with fixed token counts (--cards,
 --mons, --statuses, --queues, --actions) or rows sampled from tensorize.py arrays (--arrays DIR), which also brings
@@ -11,11 +15,11 @@ Two timings per (net, batch): `gpu` = forward only, inputs already on the device
 batch from pinned host memory, as an inference server fed by CPU search threads would. Each is the median over
 --iters timed passes after --warmup passes, synchronized on the device.
 
-usage: gpu_forward_bench.py [--nets 64x4,96x4,128x4] [--batches 256,1024,4096,8192] [--dtype fp16]
-                            [--arrays DIR] [--compile] [--out bench.json]
+usage: gpu_forward_bench.py [--arch amber|combat] [--nets ...] [--batches 256,1024,4096,8192] [--dtype bf16]
+                            [--arrays DIR] [--compile [--compile-mode M]] [--live-frac F] [--out bench.json]
 
-The default 64x4 net has 0.41M parameters (0.26M outside the embeddings), the size of Amber Eye's smallest net
-(0.44M); 128x4 is the shape of the trained combat nets (combat plan stage 3).
+Combat 64x4 has 0.41M parameters (0.26M outside the embeddings); 128x4 is the shape of the trained combat nets
+(combat plan stage 3). --arrays (combat only) samples real tensorize.py rows, padded to the longest row of the batch.
 
 Prints one line per measurement and, with --out, writes all of them as JSON together with the device, torch
 version and arguments.
@@ -37,6 +41,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 _spec = importlib.util.spec_from_file_location("combat_net_model", os.path.join(ROOT, "tools", "combat_net", "model.py"))
 model = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(model)
+_spec = importlib.util.spec_from_file_location("amber_net", os.path.join(ROOT, "tools", "az_bench", "amber_net.py"))
+amber_net = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(amber_net)
 
 A_LEN = 47      # tensorize.py A_LEN (the native CombatTokNet's kCtnActionLen)
 G_LEN, M_NUM, Q_LEN, M_MAX = 97, 128, 24, 5
@@ -116,9 +123,15 @@ def time_passes(fn, sync, warmup, iters):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--nets", default="64x4,96x4,128x4", help="comma list of DxL[xH] (default %(default)s)")
+    ap.add_argument("--arch", default="amber", choices=["amber", "combat"],
+                    help="amber: tools/az_bench/amber_net.py (Amber Eye's shape, default); combat: tools/combat_net "
+                         "CombatNet")
+    ap.add_argument("--nets", help="comma list of DxL[xH]; amber also takes the size names 0.44M, 1.2M, 5.4M "
+                                   "(default: amber 0.44M,1.2M,5.4M; combat 64x4,96x4,128x4)")
+    ap.add_argument("--live-frac", type=float, default=1.0,
+                    help="amber synthetic: share of each token segment that is live (1.0 = no padding)")
     ap.add_argument("--batches", default="256,1024,4096,8192", help="comma list of batch sizes")
-    ap.add_argument("--dtype", default="fp16", choices=["fp16", "bf16", "fp32"], help="autocast dtype")
+    ap.add_argument("--dtype", default="bf16", choices=["fp16", "bf16", "fp32"], help="autocast dtype (combat: fp16 overflows CombatNet's -1e9 action mask; use bf16)")
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     ap.add_argument("--cards", type=int, default=30, help="synthetic: card tokens per row (deck in all zones)")
     ap.add_argument("--mons", type=int, default=2, help="synthetic: live monsters per row (of 5 slots)")
@@ -130,9 +143,15 @@ def main(argv=None):
     ap.add_argument("--iters", type=int, default=20)
     ap.add_argument("--no-h2d", action="store_true", help="skip the host-to-device timing")
     ap.add_argument("--compile", action="store_true", help="torch.compile the net (dynamic=False) before timing")
+    ap.add_argument("--compile-mode", default="default",
+                    help="torch.compile mode (default, reduce-overhead = CUDA graphs, max-autotune)")
     ap.add_argument("--seed", type=int, default=0, help="RNG seed for weights and synthetic inputs (not a game seed)")
     ap.add_argument("--out", help="write all measurements as JSON here")
     args = ap.parse_args(argv)
+    if args.nets is None:
+        args.nets = "0.44M,1.2M,5.4M" if args.arch == "amber" else "64x4,96x4,128x4"
+    if args.arch == "amber" and args.arrays:
+        ap.error("--arrays holds CombatNet rows; use it with --arch combat")
 
     dev = torch.device(args.device)
     cuda = dev.type == "cuda"
@@ -150,23 +169,36 @@ def main(argv=None):
 
     info = {"device": torch.cuda.get_device_name(dev) if cuda else platform.processor() or "cpu",
             "torch": torch.__version__, "cuda": torch.version.cuda, "args": vars(args),
-            "input": "arrays" if A else "synthetic", "results": []}
-    print(f"# device {info['device']}  torch {info['torch']}  dtype {args.dtype}  input {info['input']}")
+            "arch": args.arch, "input": "arrays" if A else "synthetic", "results": []}
+    print(f"# device {info['device']}  torch {info['torch']}  arch {args.arch}  dtype {args.dtype}  "
+          f"input {info['input']}")
 
     batches = [int(x) for x in args.batches.split(",")]
-    host = {B: (arrays_batch(A, B, rng) if A else
-                synthetic_batch(B, args.cards, args.mons, args.statuses, args.queues, args.actions, rng))
-            for B in batches}
+    if args.arch == "amber":
+        host = {B: amber_net.synthetic_batch(B, actions=args.actions, rng=rng, live_frac=args.live_frac)
+                for B in batches}
+        count = amber_net.live_tokens
+    else:
+        host = {B: (arrays_batch(A, B, rng) if A else
+                    synthetic_batch(B, args.cards, args.mons, args.statuses, args.queues, args.actions, rng))
+                for B in batches}
+        count = tokens_per_row
 
     for spec in args.nets.split(","):
-        d, layers, heads = parse_net(spec)
-        net = model.CombatNet(d=d, layers=layers, heads=heads, a_len=A_LEN).to(dev).eval()
+        if args.arch == "amber":
+            d, layers = amber_net.SIZES[spec] if spec in amber_net.SIZES else parse_net(spec)[:2]
+            heads = parse_net(spec)[2] if spec not in amber_net.SIZES and spec.count("x") == 2 else None
+            net = amber_net.AmberNet(d=d, layers=layers, heads=heads).to(dev).eval()
+            heads = net.trunk.layers[0].self_attn.num_heads
+        else:
+            d, layers, heads = parse_net(spec)
+            net = model.CombatNet(d=d, layers=layers, heads=heads, a_len=A_LEN).to(dev).eval()
         params = sum(p.numel() for p in net.parameters())
-        run = torch.compile(net, dynamic=False) if args.compile else net
+        run = torch.compile(net, dynamic=False, mode=args.compile_mode) if args.compile else net
         emb = sum(m.weight.numel() for m in net.modules() if isinstance(m, torch.nn.Embedding))
         for B in batches:
             hb = host[B]
-            live, padded = tokens_per_row(hb)
+            live, padded = count(hb)
             if cuda:
                 hb = {k: v.pin_memory() for k, v in hb.items()}
             db = {k: v.to(dev) for k, v in hb.items()}
@@ -176,7 +208,7 @@ def main(argv=None):
                     out = run(b)
                 return out
 
-            row = {"net": f"{d}x{layers}x{heads}", "params": params, "params_non_embedding": params - emb,
+            row = {"arch": args.arch, "net": f"{d}x{layers}x{heads}", "params": params, "params_non_embedding": params - emb,
                    "batch": B, "tokens_live": round(live, 2), "tokens_padded": padded}
             try:
                 if cuda:
