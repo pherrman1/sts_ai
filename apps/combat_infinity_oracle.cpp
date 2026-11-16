@@ -1,5 +1,7 @@
 // Research executable only: no production caller, reward, or search shortcut.
 #include <algorithm>
+#include <string_view>
+#include <unordered_set>
 #include <ctime>
 #include <fstream>
 #include <iostream>
@@ -65,6 +67,21 @@ bool quiet(const BattleContext &b, bool noPrismaticShard) {
         && b.player.skillsPlayedThisTurn >= 0 && b.player.skillsPlayedThisTurn < 20000;
 }
 
+// Natural-root mode (#1054, --snapshots): the same domain gate, but a quiet
+// decision may also be a card selection (Headbutt, True Grit+, Burning Pact),
+// whose choices the DFS enumerates. Only the caller's concrete live state is
+// accepted: no information-set draw pile, no hidden intents.
+bool quietNatural(const BattleContext &b, bool noPrismaticShard) {
+    return noPrismaticShard && auditedDomain(b) && b.outcome == Outcome::UNDECIDED
+        && (b.inputState == InputState::PLAYER_NORMAL || b.inputState == InputState::CARD_SELECT)
+        && !b.endTurnQueued && !b.turnHasEnded && !b.skipMonsterTurn
+        && !b.actionQueue.size && !b.cardQueue.size && !b.intentsHidden
+        && b.cards.drawPile.isConcrete() && !b.undefinedBehaviorEvoked && b.loopCount < 900000
+        && b.player.cardsPlayedThisTurn >= 0 && b.player.cardsPlayedThisTurn < 20000
+        && b.player.attacksPlayedThisTurn >= 0 && b.player.attacksPlayedThisTurn < 20000
+        && b.player.skillsPlayedThisTurn >= 0 && b.player.skillsPlayedThisTurn < 20000;
+}
+
 // The only RNG quotient in v0: two physical Dropkick/Flash of Steel cards,
 // with no player powers or card hooks except Burning Blood/Sundial. At draw
 // time the played card is out of the piles, so a shuffle has <=1 card. Its
@@ -110,12 +127,84 @@ BattleContext controlState(BattleContext b) {
     return b;
 }
 
+// Natural-root candidate key. It only proposes witnesses: a candidate is
+// certified solely by replaying its actions on the untouched start state with
+// the real RNG (below), so coarsening here cannot create a false certificate.
+// On top of the v0 normalization it treats as progress (not identity) the
+// player's HP, block, HP-loss counters, periodic relic counters, Strength and
+// Dexterity, every monster's block and a positive Invincible cap (the Heart), and compares with equalForSearch: no RNG streams, the hand as a
+// multiset. Ordered draw/discard piles, energy, powers, intents stay exact.
+BattleContext controlStateNatural(BattleContext b) {
+    b = controlState(b);
+    if (b.player.curHp > 0) b.player.curHp = 1;
+    b.player.block = 0;
+    // HP-loss bookkeeping (Blood for Blood keeps its own per-card cost, which stays exact).
+    b.player.timesDamagedThisCombat = 0; b.player.lastAttackUnblockedDamage = 0;
+    // Periodic per-card relic/power counters (Pen Nib, Nunchaku, Ink Bottle, Panache; Kunai, Shuriken,
+    // Ornamental Fan via the attack count, Letter Opener via the skill count) and the Strength and
+    // Dexterity they feed: as exact identity they multiply a loop's period beyond the depth cap.
+    // Art of War keeps its zero/nonzero attack test; Velvet Choker, Normality and Echo Form keep
+    // the exact card count (v0 rule above).
+    b.player.penNibCounter = 0; b.player.nunchakuCounter = 0; b.player.inkBottleCounter = 0;
+    b.player.panacheCounter = 0;
+    b.player.attacksPlayedThisTurn = std::min<int>(1, b.player.attacksPlayedThisTurn);
+    b.player.skillsPlayedThisTurn = 0;
+    b.player.strength = 0; b.player.dexterity = 0;
+    for (auto &m:b.monsters.arr) {
+        m.block = 0;
+        if (m.hasStatus<MS::INVINCIBLE>() && m.getStatus<MS::INVINCIBLE>() > 0) m.setStatus<MS::INVINCIBLE>(1);
+    }
+    return b;
+}
+
+// Some monster died, entered a half-dead phase, or lost HP+block since `a`.
+bool progressed(const BattleContext &a,const BattleContext &b) {
+    int before=0, after=0;
+    for(int i=0;i<a.monsters.monsterCount;++i) {
+        const auto &x=a.monsters.arr[i], &y=b.monsters.arr[i];
+        if(!x.isDeadOrEscaped() && (y.isDeadOrEscaped() || (y.halfDead && !x.halfDead))) return true;
+        if(!x.isDeadOrEscaped()) before+=x.curHp+x.block;
+        if(!y.isDeadOrEscaped()) after+=y.curHp+y.block;
+    }
+    return after<before;
+}
+
+// Every living monster is capped for this turn: Invincible exhausted.
+bool invincibleCapReached(const BattleContext &b) {
+    bool any=false;
+    for (int i=0;i<b.monsters.monsterCount;++i) {
+        const auto &m=b.monsters.arr[i];
+        if (m.isDeadOrEscaped() || m.halfDead) continue;
+        if (!m.hasStatus<MS::INVINCIBLE>() || m.getStatus<MS::INVINCIBLE>() > 0) return false;
+        any=true;
+    }
+    return any;
+}
+
 // No Silver policy/prior/model initialization or pruning: enumerate legal
 // physical card plays directly, through the existing Action legality API.
 // Selections and potions are outside this first quiet-boundary oracle.
 std::vector<SAction> actions(const BattleContext &b, bool noPrismaticShard) {
     std::vector<SAction> out;
     if (!quiet(b,noPrismaticShard)) return out;
+    for (int i=0;i<b.cards.cardsInHand;++i) {
+        const int targets=b.cards.hand[i].requiresTarget()?b.monsters.monsterCount:1;
+        for(int t=0;t<targets;++t) {
+            SAction a(ActionType::CARD,i,t);
+            if(a.isValidAction(b)) out.push_back(a);
+        }
+    }
+    return out;
+}
+
+std::vector<SAction> actionsNatural(const BattleContext &b, bool noPrismaticShard) {
+    if (!quietNatural(b,noPrismaticShard)) return {};
+    if (b.inputState == InputState::CARD_SELECT) {
+        std::vector<SAction> out;
+        for (const auto &a:SAction::enumerateCardSelectActions(b)) if (a.isValidAction(b)) out.push_back(a);
+        return out;
+    }
+    std::vector<SAction> out;
     for (int i=0;i<b.cards.cardsInHand;++i) {
         const int targets=b.cards.hand[i].requiresTarget()?b.monsters.monsterCount:1;
         for(int t=0;t<targets;++t) {
@@ -133,33 +222,52 @@ json describe(const BattleContext &b,const SAction &a) {
 }
 
 struct Oracle {
-    int nodes=0,maxDepth=0,repeats=0,replayActions=0,rejections=0;
+    int nodes=0,maxDepth=0,repeats=0,replayActions=0,rejections=0,directVictoryDepth=-1;
     bool stopped=false, noPrismaticShard=false;
+    // v0 (fixtures, --roots): exact control states. natural (--snapshots): see controlStateNatural.
+    bool natural=false; int nodeLimit=nodeCap, depthLimit=depthCap;
+    std::unordered_set<std::size_t> expanded;   // natural: transposition pruning by hash (recall only)
+    bool isQuiet(const BattleContext &b) const { return natural ? quietNatural(b,noPrismaticShard) : quiet(b,noPrismaticShard); }
+    BattleContext key(const BattleContext &b) const { return natural ? controlStateNatural(b) : controlState(b); }
+    bool sameKey(const BattleContext &a,const BattleContext &b) const { return natural ? a.equalForSearch(b) : a==b; }
+    std::vector<SAction> legal(const BattleContext &b) const { return natural ? actionsNatural(b,noPrismaticShard) : actions(b,noPrismaticShard); }
     json candidates=json::array(), best={{"classification","NONE"}};
     std::vector<std::unique_ptr<BattleContext>> path, controls;
     std::vector<std::size_t> hashes;
     std::vector<json> steps;
 
+    std::unique_ptr<BattleContext> lastRun;   // the replay's state where certify stopped
+    int restarts=0;                            // natural: fresh searches after a broken period
+
     json certify(const BattleContext &start,const std::vector<json> &w) {
-        auto run=std::make_unique<BattleContext>(start);
-        const auto expected=std::make_unique<BattleContext>(controlState(start));
+        lastRun=std::make_unique<BattleContext>(start);
+        auto &run=lastRun;
+        const auto expected=std::make_unique<BattleContext>(key(start));
         int used=0;
         for(int rep=1;rep<=repetitionCap;++rep) {
             for(const auto &step:w) {
                 if(used>=replayCap || replayActions>=totalReplayCap)
                     return {{"reason","action_cap"},{"repetitions",rep-1},{"actions",used}};
-                if(!quiet(*run,noPrismaticShard) || run->turn!=start.turn)
+                if(!isQuiet(*run) || run->turn!=start.turn)
                     return {{"reason","control_boundary_changed"},{"repetitions",rep-1},{"actions",used}};
-                const SAction a(step.at("bits").get<std::uint32_t>());
-                if(!a.isValidAction(*run) || describe(*run,a).at("semantic")!=step.at("semantic"))
+                SAction a(step.at("bits").get<std::uint32_t>());
+                if(natural) {
+                    // Hand positions may move between periods: the same physical card and target.
+                    bool found=false;
+                    for(const auto &c:legal(*run)) if(describe(*run,c).at("semantic")==step.at("semantic")) { a=c; found=true; break; }
+                    if(!found)
+                        return {{"reason","witness_illegal_or_identity_changed"},{"repetitions",rep-1},{"actions",used}};
+                } else if(!a.isValidAction(*run) || describe(*run,a).at("semantic")!=step.at("semantic"))
                     return {{"reason","witness_illegal_or_identity_changed"},{"repetitions",rep-1},{"actions",used}};
                 a.execute(*run); ++used; ++replayActions;
                 if(run->player.curHp<=0 || run->outcome==Outcome::PLAYER_LOSS)
                     return {{"reason","player_death"},{"repetitions",rep},{"actions",used}};
                 if(run->outcome==Outcome::PLAYER_VICTORY && !run->smokeBombUsed && run->turn==start.turn)
-                    return {{"reason","VICTORY"},{"repetitions",rep},{"actions",used}};
+                    return {{"reason","VICTORY"},{"repetitions",rep},{"actions",used},{"player_hp_lost",start.player.curHp-run->player.curHp}};
+                if(natural && run->outcome==Outcome::UNDECIDED && run->turn==start.turn && invincibleCapReached(*run))
+                    return {{"reason","INVINCIBLE_CAP"},{"repetitions",rep},{"actions",used},{"player_hp_lost",start.player.curHp-run->player.curHp}};
             }
-            if(!quiet(*run,noPrismaticShard) || run->turn!=start.turn || !(controlState(*run)==*expected))
+            if(!isQuiet(*run) || run->turn!=start.turn || !sameKey(key(*run),*expected))
                 return {{"reason","control_state_changed"},{"repetitions",rep},{"actions",used}};
         }
         return {{"reason","repetition_cap"},{"repetitions",repetitionCap},{"actions",used}};
@@ -174,6 +282,10 @@ struct Oracle {
         for(int i=0;i<start.monsters.monsterCount;++i) {
             int d=end.monsters.arr[i].curHp-start.monsters.arr[i].curHp;
             damage |= !start.monsters.arr[i].isDeadOrEscaped() && d<0;
+            // Natural key: monster block is progress too (a loop first breaks Guardian's or a Spheric
+            // Guardian's block); v0 keeps block exact, so this never fires there.
+            damage |= natural && !start.monsters.arr[i].isDeadOrEscaped()
+                && end.monsters.arr[i].block<start.monsters.arr[i].block;
             total+=d; deltas.push_back(d);
         }
         json reach=json::array(); for(int i=0;i<at;++i) reach.push_back(steps[i]);
@@ -187,37 +299,72 @@ struct Oracle {
                 {"gold",start.player.gold-end.player.gold},{"new_exhausted_cards",end.cards.exhaustPile.size()-start.cards.exhaustPile.size()}}}};
         if(damage) {
             row["replay"]=certify(start,witness);
+            const auto why=row["replay"]["reason"].get<std::string>();
+            if(natural && restarts>0 && (why=="control_state_changed" || why=="witness_illegal_or_identity_changed")
+                    && lastRun->turn==start.turn && lastRun->player.curHp>0 && progressed(start,*lastRun)) {
+                // The loop killed one monster or changed a phase (Darklings, Slavers, Awakened One):
+                // search afresh from the replay's real state, same turn, same caps. Every action stays
+                // a real simulator step from the untouched start, so a certificate stays sound.
+                Oracle next; next.natural=true; next.nodeLimit=nodeLimit; next.depthLimit=depthLimit;
+                next.restarts=restarts-1;
+                auto tail=next.run(*lastRun,noPrismaticShard);
+                nodes+=tail.at("nodes").get<int>(); replayActions+=tail.at("replay_actions").get<int>();
+                const auto c=tail.at("classification").get<std::string>();
+                row["replay"]["continuation"]={{"classification",c},{"nodes",tail.at("nodes")},
+                    {"restarts_left",restarts-1}};
+                if(c=="CERTIFIED_KILL" || c=="CERTIFIED_TURN_CAP") {
+                    row["replay"]["reason"]=c=="CERTIFIED_KILL"?"VICTORY":"INVINCIBLE_CAP";
+                    row["replay"]["continued"]=true;
+                }
+            }
             if(row["replay"]["reason"]=="VICTORY") {
                 row["classification"]="CERTIFIED_KILL";
                 row["terminal"]="VICTORY";
+                row["repetitions_to_terminal"]=row["replay"]["repetitions"];
+            } else if(row["replay"]["reason"]=="INVINCIBLE_CAP") {
+                // Natural mode only: the loop exhausts this turn's damage cap (the Heart's Invincible).
+                row["classification"]="CERTIFIED_TURN_CAP";
+                row["terminal"]="INVINCIBLE_CAP";
                 row["repetitions_to_terminal"]=row["replay"]["repetitions"];
             } else ++rejections;
         }
         auto rank=[](const json &r) {
             auto c=r.at("classification").get<std::string>();
-            return c=="CERTIFIED_KILL"?3:c=="PRODUCTIVE_CYCLE_CANDIDATE"?2:c=="STALL_LOOP"?1:0;
+            return c=="CERTIFIED_KILL"?4:c=="CERTIFIED_TURN_CAP"?3:c=="PRODUCTIVE_CYCLE_CANDIDATE"?2:c=="STALL_LOOP"?1:0;
         };
         if(rank(row)>rank(best)) best=row;
         candidates.push_back(row);
-        if(rank(best)==3 || candidates.size()>=candidateCap || replayActions>=totalReplayCap) stopped=true;
+        if(rank(best)==4 || candidates.size()>=candidateCap || replayActions>=totalReplayCap) stopped=true;
     }
 
     void visit(std::unique_ptr<BattleContext> b) {
-        if(stopped || nodes>=nodeCap) return;
+        if(stopped || nodes>=nodeLimit) return;
         ++nodes;
         const int depth=steps.size(); maxDepth=std::max(maxDepth,depth);
-        if(!quiet(*b,noPrismaticShard) || (!path.empty() && b->turn!=path.front()->turn)) return;
-        auto control=std::make_unique<BattleContext>(controlState(*b));
+        if(b->outcome==Outcome::PLAYER_VICTORY && !b->smokeBombUsed && b->player.curHp>0
+                && (path.empty() || b->turn==path.front()->turn)
+                && (directVictoryDepth<0 || depth<directVictoryDepth))
+            directVictoryDepth=depth;   // an ordinary same-turn lethal found by the DFS itself (no cycle)
+        if(!isQuiet(*b) || (!path.empty() && b->turn!=path.front()->turn)) return;
+        auto control=std::make_unique<BattleContext>(key(*b));
         auto hash=hashBattleState(*control);
         for(int i=static_cast<int>(controls.size())-1;i>=0;--i)
-            if(hash==hashes[i] && *control==*controls[i]) {
+            if(hash==hashes[i] && sameKey(*control,*controls[i])) {
                 candidate(i,*b); return; // never expand a repeated state
             }
-        if(depth>=depthCap) return;
-        auto legal=actions(*b,noPrismaticShard);
+        if(depth>=depthLimit) return;
+        if(natural) {
+            // Exact (v0 key) state already expanded off this path: same subtree. Keyed by a 64-bit
+            // hash of its full binary snapshot, so a collision can lose recall but never certifies.
+            const auto bytes=serializeBattleContext(controlState(*b));
+            const auto exact=std::hash<std::string_view>{}(std::string_view(
+                reinterpret_cast<const char*>(bytes.data()),bytes.size()));
+            if(!expanded.insert(exact).second) return;
+        }
+        auto legal=this->legal(*b);
         path.push_back(std::move(b)); controls.push_back(std::move(control)); hashes.push_back(hash);
         for(const auto &a:legal) {
-            if(stopped || nodes>=nodeCap) break;
+            if(stopped || nodes>=nodeLimit) break;
             auto child=std::make_unique<BattleContext>(*path.back());
             steps.push_back(describe(*child,a));
             a.execute(*child);
@@ -231,16 +378,17 @@ struct Oracle {
         noPrismaticShard=shardAbsenceProven;
         ObserverScope scope;
         const auto begin=std::clock();
-        if(quiet(root,noPrismaticShard)) visit(std::make_unique<BattleContext>(root));
-        best["supported"]=quiet(root,noPrismaticShard);
+        if(isQuiet(root)) visit(std::make_unique<BattleContext>(root));
+        best["supported"]=isQuiet(root);
         best["prismatic_shard_absence_proven"]=noPrismaticShard;
-        best["reason"]=quiet(root,noPrismaticShard)?"bounded_search":"requires_audited_ironclad_concrete_quiet_player_root";
-        best["nodes"]=nodes; best["max_depth"]=maxDepth;
-        best["node_cap_hit"]=nodes>=nodeCap; best["depth_cap_hit"]=maxDepth>=depthCap; best["repeated_control_states"]=repeats;
+        best["reason"]=isQuiet(root)?"bounded_search":"requires_audited_ironclad_concrete_quiet_player_root";
+        best["nodes"]=nodes; best["max_depth"]=maxDepth; best["dfs_victory_depth"]=directVictoryDepth;
+        best["node_cap_hit"]=nodes>=nodeLimit; best["depth_cap_hit"]=maxDepth>=depthLimit; best["repeated_control_states"]=repeats;
         best["replay_actions"]=replayActions; best["replay_rejections"]=rejections;
         best["cpu_ms"]=1000.0*(std::clock()-begin)/CLOCKS_PER_SEC;
         best["candidates"]=candidates;
-        best["caps"]={{"depth",depthCap},{"cycle_length",depthCap},{"nodes",nodeCap},
+        best["mode"]=natural?"natural":"v0";
+        best["caps"]={{"depth",depthLimit},{"cycle_length",depthLimit},{"nodes",nodeLimit},
             {"candidates",candidateCap},{"repetitions",repetitionCap},{"actions_per_replay",replayCap},
             {"total_replay_actions",totalReplayCap}};
         return best;
@@ -269,7 +417,7 @@ void require(bool ok,const std::string &why) { if(!ok) throw std::runtime_error(
 
 json summary(const std::vector<json> &rows) {
     json r={{"states",rows.size()},{"supported_states",0},{"NONE",0},{"repeated_states",0},{"STALL_LOOP",0},{"PRODUCTIVE_CYCLE_CANDIDATE",0},
-        {"CERTIFIED_KILL",0},{"productive_candidates",0},{"replay_rejections",0},
+        {"CERTIFIED_KILL",0},{"CERTIFIED_TURN_CAP",0},{"productive_candidates",0},{"replay_rejections",0},
         {"max_nodes",0},{"max_cpu_ms",0.0},{"max_depth",0}};
     double nodes=0,cpu=0;
     for(const auto &row:rows) {
@@ -375,6 +523,48 @@ void fixtures() {
     counted=positive; counted.player.setHasRelic<RelicId::LETTER_OPENER>(true);
     countedMore=counted; ++countedMore.player.skillsPlayedThisTurn;
     require(!(controlState(counted)==controlState(countedMore)),"Letter Opener count collapsed");
+    // Natural-root mode (#1054): the same Dropkick loop with an unrelated relic and an
+    // exhausted card is outside v0's shuffle quotient (RNG stays exact there).
+    auto checkNatural=[&](const std::string &name,const BattleContext &b,const std::string &expected) {
+        const BattleContext before=b;
+        Oracle o; o.natural=true; o.restarts=4;
+        auto row=o.run(b,true); row["fixture"]=name;
+        std::cout<<row.dump()<<'\n'; rows.push_back(row);
+        require(row.at("classification")==expected,name+": unexpected classification");
+        require(b==before,name+": root mutated");
+        return row;
+    };
+    auto natural=positive;
+    natural.player.setHasRelic<RelicId::ANCHOR>(true);
+    CardInstance gone(CardId::STRIKE_RED); gone.uniqueId=2; natural.cards.nextUniqueCardId=3;
+    natural.cards.moveToExhaustPile(gone);
+    check("natural_dropkick_v0",natural,"NONE");
+    auto nk=checkNatural("natural_dropkick",natural,"CERTIFIED_KILL");
+    require(nk.at("replay").at("reason")=="VICTORY","natural kill must be a replayed victory");
+    // Two monsters: the first target's death breaks the period; a fresh search continues on the second.
+    auto two=natural; two.monsters.arr[0].curHp=60; two.monsters.arr[0].maxHp=60;
+    two.monsters.arr[1]=two.monsters.arr[0]; two.monsters.arr[1].idx=1;
+    two.monsters.monsterCount=2; two.monsters.monstersAlive=2;
+    auto both=checkNatural("natural_two_cultists",two,"CERTIFIED_KILL");
+    require(both.at("replay").value("continued",false),"second monster must come from a continuation");
+    // Kunai (+1 Dexterity per 3 attacks) and Pen Nib (every 10th attack doubled): period 30 in v0's key.
+    auto periodic=natural; periodic.player.setHasRelic<RelicId::KUNAI>(true);
+    periodic.player.setHasRelic<RelicId::PEN_NIB>(true); periodic.player.penNibCounter=3;
+    check("natural_kunai_pen_nib_v0",periodic,"NONE");
+    checkNatural("natural_kunai_pen_nib",periodic,"CERTIFIED_KILL");
+    auto naturalBroken=natural; naturalBroken.monsters.arr[0].removeStatus<MS::VULNERABLE>();
+    checkNatural("natural_dropkick_no_vulnerable",naturalBroken,"NONE");
+    // A Heart-like per-turn damage cap: the loop reaches it, no same-turn kill.
+    auto capped4=natural; capped4.monsters.arr[0].buff<MS::INVINCIBLE>(200);
+    capped4.monsters.arr[0].curHp=800; capped4.monsters.arr[0].maxHp=800;
+    auto turnCap=checkNatural("natural_invincible_cap",capped4,"CERTIFIED_TURN_CAP");
+    require(turnCap.at("replay").at("reason")=="INVINCIBLE_CAP","cap must be reached in replay");
+    // Beat of Death drains 1 HP per card: with 8 HP the loop recurs but dies before the kill.
+    auto beat=natural; beat.monsters.arr[0].buff<MS::BEAT_OF_DEATH>(1); beat.player.curHp=8; beat.player.maxHp=80;
+    auto death=checkNatural("natural_beat_of_death_low_hp",beat,"PRODUCTIVE_CYCLE_CANDIDATE");
+    require(death.at("replay").at("reason")=="player_death","death must reject the candidate");
+    auto beatOk=beat; beatOk.player.curHp=80;
+    checkNatural("natural_beat_of_death",beatOk,"CERTIFIED_KILL");
     std::cout<<json({{"summary",summary(rows)},{"fixture_assertions","PASS"}}).dump()<<'\n';
 }
 
@@ -397,11 +587,99 @@ void roots(const char *file) {
 }
 }
 
+std::vector<std::uint8_t> unhex(const std::string &h) {
+    if(h.size()%2) throw std::runtime_error("odd hex snapshot");
+    std::vector<std::uint8_t> out(h.size()/2);
+    auto nib=[](char c)->int { return c<='9'?c-'0':c-'a'+10; };
+    for(std::size_t i=0;i<out.size();++i) out[i]=std::uint8_t(nib(h[2*i])<<4 | nib(h[2*i+1]));
+    return out;
+}
+
+// Recall check on real contexts ("plant"): the real turn-start state with its relics, powers,
+// monsters and exhaust pile, but the card zones replaced by the 1-energy Dropkick loop of the
+// fixtures (two Dropkicks in hand, empty draw and discard, every living monster Vulnerable 3).
+// What the natural key misses here it would also miss in a real thinned deck of that run.
+BattleContext plant(BattleContext b) {
+    b.cards.cardsInHand=0;
+    b.cards.drawPile.clear(); b.cards.discardPile.clear();
+    b.cards.handNormalityCount=0; b.cards.handPainCount=0; b.cards.handBloodCardCount=0;
+    b.cards.drawPileBloodCardCount=0; b.cards.discardPileBloodCardCount=0;
+    for(int i=0;i<2;++i) { CardInstance c(CardId::DROPKICK); c.uniqueId=b.cards.nextUniqueCardId++; b.cards.moveToHand(c); }
+    b.player.energy=std::max(1,b.player.energy);
+    for(int i=0;i<b.monsters.monsterCount;++i) {
+        auto &m=b.monsters.arr[i];
+        if(m.isDeadOrEscaped()) continue;
+        m.setHasStatus<MS::VULNERABLE>(true); m.setStatus<MS::VULNERABLE>(3);
+    }
+    return b;
+}
+
+// #1054 Stage 0: turn-start snapshots of real whole-run fights (one_combat
+// STS_COMBAT_STATE_CAPTURE rows of kind "turn"; "-" reads stdin). One output row
+// per snapshot, without the candidate list; the run's own Prismatic Shard flag
+// is the provenance (the capture reads it from the run's RelicContainer).
+void snapshots(const char *file,const std::string &mode,int nodeLimit,int depthLimit) {
+    std::ifstream f; std::istream *in=&std::cin;
+    if(std::string(file)!="-") { f.open(file); if(!f) throw std::runtime_error("cannot open snapshots"); in=&f; }
+    std::vector<json> rows; std::string line;
+    while(std::getline(*in,line)) {
+        if(line.empty()) continue;
+        auto source=json::parse(line);
+        if(source.value("kind","")!="turn") continue;
+        json row;
+        if(!source.contains("state")) {
+            row={{"classification","NONE"},{"supported",false},{"reason","no_concrete_snapshot"},{"nodes",0},
+                 {"max_depth",0},{"cpu_ms",0.0},{"repeated_control_states",0},{"replay_rejections",0},{"candidates",json::array()}};
+        } else {
+            const auto bytes=unhex(source.at("state").get<std::string>());
+            const auto real=deserializeBattleContext(bytes.data(),bytes.size());
+            const auto b=mode=="plant"?plant(real):real;
+            Oracle o; o.natural=mode!="v0"; o.nodeLimit=nodeLimit; o.depthLimit=depthLimit;
+            o.restarts=o.natural?4:0;
+            const bool noShard=source.at("prismatic_shard").is_boolean() && !source.at("prismatic_shard").get<bool>();
+            const BattleContext before=b;
+            row=o.run(b,noShard);
+            require(b==before,"snapshot root mutated");
+        }
+        if(source.contains("state") && source.value("turn",-1)==0) {
+            // Fight start: the combat deck and enabler relics, for the analysis's cheap proxies.
+            const auto bytes=unhex(source.at("state").get<std::string>());
+            const auto b=deserializeBattleContext(bytes.data(),bytes.size());
+            json cards=json::object();
+            eachCard(b,[&](const CardInstance &c) {
+                if(c.id==CardId::INVALID) return;
+                const std::string n=std::string(cardEnumStrings[static_cast<int>(c.id)])+(c.upgraded?"+":"");
+                cards[n]=cards.value(n,0)+1;
+            });
+            json relics=json::array();
+#define ORACLE_RELIC(R) if(b.player.hasRelic<RelicId::R>()) relics.push_back(#R);
+            ORACLE_RELIC(DEAD_BRANCH) ORACLE_RELIC(UNCEASING_TOP) ORACLE_RELIC(SUNDIAL) ORACLE_RELIC(CHARONS_ASHES)
+            ORACLE_RELIC(SNECKO_EYE) ORACLE_RELIC(RUNIC_PYRAMID) ORACLE_RELIC(ICE_CREAM) ORACLE_RELIC(ART_OF_WAR)
+            ORACLE_RELIC(CHAMPION_BELT) ORACLE_RELIC(BIRD_FACED_URN) ORACLE_RELIC(MUMMIFIED_HAND) ORACLE_RELIC(NECRONOMICON)
+#undef ORACLE_RELIC
+            row["fight_start_cards"]=cards; row["enabler_relics"]=relics;
+        }
+        for(const char *k:{"seed","fight","act","floor","room","encounter","turn","hp","deck_size"})
+            if(source.contains(k)) row[k]=source[k];
+        json slim=row; slim.erase("candidates");
+        slim["candidate_count"]=row["candidates"].size();
+        std::cout<<slim.dump()<<'\n';
+        rows.push_back(row);
+    }
+    std::cout<<json({{"summary",summary(rows)},{"mode",mode},{"node_cap",nodeLimit},{"depth_cap",depthLimit}}).dump()<<'\n';
+}
+
 int main(int argc,char **argv) {
     try {
         if(argc==2 && std::string(argv[1])=="--fixtures") fixtures();
         else if(argc==3 && std::string(argv[1])=="--roots") roots(argv[2]);
-        else { std::cerr<<"usage: combat_infinity_oracle --fixtures | --roots ROOTS.jsonl\n"; return 2; }
+        else if(argc>=3 && argc<=6 && std::string(argv[1])=="--snapshots") {
+            const std::string mode=argc>=4?argv[3]:"natural";
+            if(mode!="natural" && mode!="v0" && mode!="plant") throw std::runtime_error("mode must be natural, v0 or plant");
+            snapshots(argv[2],mode,argc>=5?std::stoi(argv[4]):nodeCap,argc>=6?std::stoi(argv[5]):depthCap);
+        }
+        else { std::cerr<<"usage: combat_infinity_oracle --fixtures | --roots ROOTS.jsonl"
+                          " | --snapshots FILE|- [natural|v0|plant [NODE_CAP [DEPTH_CAP]]]\n"; return 2; }
         return 0;
     } catch(const std::exception &e) { std::cerr<<"combat_infinity_oracle FAIL: "<<e.what()<<'\n'; return 1; }
 }

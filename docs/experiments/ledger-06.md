@@ -27890,3 +27890,37 @@ Descriptive: the Heart-trained online critic ranks act-1 survival much worse tha
 **Decision:** NONE. #1050's encounter-list direction is closed (privileged critic, step 2 via it, net variant). No
 default change. Seeds: none. Cost ≈ 1 h PC CPU, no GPU, no cloud core-hours.
 **Knowledge impact:** KB `research/a20-ppo-plan.md` (critic ceiling paragraph).
+## §811 — Same-turn infinites in G16 + mb4 whole runs (#1054 stage 0): §671's oracle in a new natural-root mode on every turn start of 128 replayed §775 games (exact reproduction, 15,261 states): 1 run of 128 has a certified infinite (0.8%, Wilson 95% [0.1%, 4.3%]; Sundial + Pommel Strike vs The Champ, played by the search too), 2 of 128 a certified infinite or candidate (1.6%, [0.4%, 5.5%]); no Heart fight and no lost fight shows a damaging loop → stages 1-2 not justified (cloud CPU, §775 seeds, 2026-11-16)
+
+**Question (Philipp, issue #1054, 2026-11-15):** how often do same-turn infinites occur in our runs, by act and room;
+do they change Heart kills; does the search miss them; what does the oracle cost? Stages 1-2 (Silver proven win, PPO
+auxiliary head) only if they occur in at least about 5% of runs or explain a share of Heart losses.
+**Data:** [README](evidence/infinite_combo_freq_20261115/README.md), `main128/analysis.json`, `main128/deep_caps.json`,
+raw data `/mnt/project-files/infinite-combo-freq/main128/`. Replays of §775's G16 + mb4 games, seeds 111378256-111378383
+(§775 block, no new seeds; Philipp's card choice "128 seeds local" 2026-11-16 00:33 CET), run commit 647dba50 = §775's
+code 5665d5ae + the read-only observer `STS_COMBAT_STATE_CAPTURE` (turn-start BattleContext snapshots of real fights),
+preset linux-gcc-release-x86-64-v3. 128 of 128 games equal §775's BEST and Gumbel roots/sims lines. Oracle:
+`combat_infinity_oracle --snapshots F natural 20000` (natural mode: coarse candidate key without RNG, HP, block, periodic
+relic counters, Strength/Dexterity, monster block and the Invincible cap; certification only by an exact replay with
+real legality to a same-turn victory or the Heart's exhausted cap; card-select enumeration; continuation after a kill
+or phase change). Recall on planted Dropkick loops in the pilot's real contexts: 511 / 576 (88.7%).
+**Result:**
+- Runs with a certified infinite 1 / 128 (0.8%, [0.14%, 4.29%]); certified or candidate 2 / 128 (1.6%, [0.43%, 5.52%]).
+  By room class (runs reaching / certified / candidate): hallway 128 / 0 / 1, elite 128 / 0 / 0, act 1-3 boss 114 / 1
+  / 0, Shield and Spear 60 / 0 / 0, Heart 60 / 0 / 0.
+- The certificate: seed 111378328, act-2 boss The Champ, turn 2: Sundial + Pommel Strike / Pommel Strike+ two-card
+  cycle in a 19-card deck, kill after 10 cycles. The game played 21 cards that turn and won the fight (13 HP spent;
+  the oracle's line spends none). The candidate: seed 111378341, act-3 Maw, Sundial deck, won the next turn.
+- Heart: 48 / 60 killed, no Heart fight with a certified or candidate turn (one STALL_LOOP, seed 111378381 turn 6,
+  a repeat without damage; that fight was won). Lost fights: 80, none with a non-NONE
+  verdict, largest turn 20 cards.
+- Proxies: 18 fights in 11 runs have a turn with ≥ 25 cards (max 41), all won; no fight at the turn or action cap.
+  All 18 such turns are node-capped; at 2,000,000 nodes and depth 64 all stay NONE (17 still capped).
+- Oracle: 33 ms mean, 1.7 ms median, 265 ms p99 per state, 4.0 CPU-s per run; node cap 11.3% of states, depth cap 0.7%.
+**Interpretation (Inference):** same-turn infinites are rare under the current policy and the search already finds
+the one it meets; capped big turns could hide a few, but every one of those fights was won, so a proven-win shortcut
+or an infinite head could save HP or CPU there, not fights or Heart kills.
+**Decision:** NO_GO for stages 1-2 of #1054. The oracle's natural mode and the capture stay as research tools (no
+gameplay caller). No default change. Seeds: §775 block only. Cost ≈ 22 lane-hours game replay + 0.15 CPU-h oracle.
+**Knowledge impact:** KB `architecture/combat-search.md` (infinity oracle section), `evaluation/current-research.md`
+(§671 section).
