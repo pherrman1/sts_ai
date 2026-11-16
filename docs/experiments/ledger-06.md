@@ -27989,3 +27989,59 @@ Untested: a value trained on tree states (including bad actions), a much cheaper
 **Decision:** NOT_SHOWN; fight gate not run; value-net leaf line closed. Code stays default off. Seeds: none new
 (§770's external Baalorlord seeds). Cost ≈ 6 core-hours.
 **Knowledge impact:** KB `research/combat-search/leaf-evaluation.md` (value-net leaf section).
+
+## §TBD-a — Prior data factory batches 1-2 and an offline playout value-error test (issue #1053): 3,574 units of short-Gumbel-labelled root, tree and playout states (18.8 M states, 5.44 M in boss / Act-4 rooms); search-imitation regret calls V better than g7f_E in every role, while playout value error against the played fight's score calls V's playouts better (MSE 1,019 vs 1,217, −199 [−252, −146]) and is the metric the whole-run gate (§TBD-b) confirmed (cloud, 32 workers, 2026-11-16)
+
+**Question:** after §807 and §808 (V worse as playout policy offline and as all-role prior in games), collect prior
+training data off G16's own roots (tree nodes and playout states, each labelled by a fresh Gumbel root search) and find
+an offline metric that ranks priors / playout policies the way whole runs do.
+**Data:** [batch 1 PREREG](evidence/prior_factory_20261116/PREREG.md), [batch 2 PREREG](evidence/prior_factory_b2_20261116/PREREG.md);
+offline scripts and results in [rollout_prior_playout_20261116/offline/](evidence/rollout_prior_playout_20261116/offline/)
+(`calib.py`/`calib1.json` regret, `pv_rows.py`/`run_pv.sh`/`pv_analyze.py`/`pv_result.json` value error). Code a002b841,
+binary 7779af6e, `STS_AZGEN_EXTRA_LABELS`; packs `tools/rollout_prior/pack_factory.py`. Seeds 113200000-113223999
+(batch 1 scattered in 113200000-113263999, batch 2 113204096-113223999). Packed data
+`/mnt/project-files/prior-factory/packed/batch1-packed.tar`, `/mnt/project-files/prior-factory-b2/packed/bundle-*.tar`;
+raw tars kept only for validation-split seeds.
+**Result:**
+- Batch 1 (01:45-03:39 CET, storage stop 9.0 GB): 1,021 units OK, 5.31 M labelled states. Batch 2 (09:22-14:55 CET,
+  storage stop 9.45 GB on the projected packed size): 2,553 units OK, 0 bad, 13.5 M states; 8 units lost on two dead
+  lanes, 1 unit (natural_113207382) uploaded without its data file. On the way the share hit its 50k-file limit
+  (10:06 CET, uploads stalled silently); fixed by deleting finished campaigns and bundling packs per round.
+- Engine anomaly (one unit, natural_113204564): Strength −1.9e9 after Limit Break overflow, 77k invalid-action dumps,
+  227 MB log. Not yet an issue.
+- Argmax Q-regret against the 2k-simulation Gumbel labels, 495,827 held-out batch-1 states: V beats g7f_E in every role
+  (root −0.58, tree −0.41, playout −0.34 Q). Since V loses in games as all-role prior (§808), this metric does not rank
+  priors for play.
+- Playout value error (`one_combat playoutvaluebench`): 30,118 held-out boss / Act-4 roots of batch 1 (178 seeds), 64
+  playouts per arm with common random numbers, reference = score of the fight G16 actually played. MSE g7f_E 1,217,
+  V 1,019 (−199 [−252, −146]), X-B 997 (−220 [−273, −168]), greedy 2,973; Brier and correlation agree.
+**Interpretation (Inference):** labels from short searches say which move the search would make; a playout policy is
+judged by how well its playouts estimate the value, which is a different question (simulation balancing). §807's
+harness scored playouts against a tree built with g7f_E playouts and was biased toward g7f_E.
+**Decision:** use the value-error test to rank playout policies; it predicted §TBD-b's direction (one calibration
+point). Batch-1 and batch-2 data are kept for training playout policies on playout-room states. Seeds: 113200000-
+113223999 used. Cost ≈ 2 × 32 workers × ~2-5.5 h.
+**Knowledge impact:** KB `research/combat-search/cheap-combat-roadmap.md` (playout prior retrain line).
+
+## §TBD-b — Rollout prior, playout role (issue #1053): §775's G16 + mb4 with V (§804's candidate) only as prior-playout policy (boss rooms, Shield and Spear; root prior, tree prior and root table stay g7f_E) against §775's G16 + mb4 on 1,024 paired A20 seeds after a 32/32 sentinel: Heart 41.21% → 43.55%, +2.34 pp [−0.10, +4.79], one-sided lower bound +0.29 → GAIN at CAP (borderline) at 1.10× machine-corrected CPU (cloud, 32 workers, 2026-11-16)
+
+**Question (Philipp 2026-11-16 10:51 CET card "Nach der Fabrik", typed go 11:18 CET):** §808 lost with V in all four
+roles, and §TBD-a's value-error test calls V the better playout policy. Does V in the playout role alone help whole
+runs?
+**Data:** [PREREG](evidence/rollout_prior_playout_20261116/PREREG.md), [RESULT](evidence/rollout_prior_playout_20261116/RESULT.md),
+`results/` (result.json, pairs_GP.csv, breakdown.json, claims.txt, verify.txt). Run commit e6650f1f (code 432bfae4 =
+ba705ab4 + research option `STS_SILVER_PLAYOUT_POLICY`, binary 85a6cf3e), §775's seeds 111378256-111379279, control =
+§775's 1,024 G16 games (sentinel 32/32 REUSE_VALID). 1,056 of 1,056 units OK, 0 bad, 0 env mismatches, 0 aborts, 0
+dropped seeds. Prelaunch review K PASS (W1: the PREREG's sentinel sentence was copied from §808; analysis code unaffected).
+**Result:** GP 43.55% vs G16 41.21% Heart, +2.34 pp [−0.10, +4.79]; 95 seeds only GP, 71 only G16. Both SPRTs CAP at
+1,024 (nonregression LLR +2.94, gainer +1.70); one-sided bounds [+0.29, +4.39] → GAIN by the PREREG's CAP rule.
+Act-4 reach +1.76 pp (50.98% vs 49.22%); conversion 85.4% vs 83.7%. CPU 1.128× [1.078, 1.183], 1.096× machine-corrected;
+sims 1.027×. GP − D +11.91 pp [+8.79, +14.84] at 2.29× CPU. Budget-curve seeds (first 512) +3.52 [−0.20, +7.23], other
+512 +1.17 [−2.15, +4.49]. Breakdown (descriptive): act 1 identical by construction; gains spread over the bosses and
+Act 4 (each within noise).
+**Interpretation (Inference):** V is a better playout policy and a worse root / tree prior than g7f_E; §808's loss came
+from the root / tree roles in act 2's hallway. The gain is small and the two-sided CI touches 0.
+**Decision:** GAIN, borderline. No default change yet: a confirmation block on fresh seeds is needed before a default
+proposal (Philipp's decision). Next: better playout policies trained on §TBD-a's playout-room states, ranked by the
+value-error test. Seeds: none new (§775's). Cost: 168.2 lane-hours.
+**Knowledge impact:** KB `research/combat-search/cheap-combat-roadmap.md` (playout prior retrain line).

@@ -1,0 +1,2 @@
+units OK 1056 MISSING 0 BAD 0 of 1056; duplicates 0; tars for unknown units 0; run ['e6650f1f02ca']; worker DONE.json: 19/32
+extracted 1056 units to /tmp/claude-0/xl/gate_final
