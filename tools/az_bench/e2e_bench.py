@@ -102,6 +102,8 @@ def main(argv=None):
     ap.add_argument("--report", type=float, default=5)
     ap.add_argument("--dtype", default="fp16", choices=["fp16", "bf16", "fp32"])
     ap.add_argument("--compile", action="store_true", help="torch.compile the net (bucketed shapes)")
+    ap.add_argument("--encoder", default="amber", choices=["amber", "stub"],
+                    help="native Amber encoder (AmberEncoder.h) or the driver's placeholder")
     ap.add_argument("--fake-net", action="store_true", help="no GPU forward: random outputs (CPU-side ceiling)")
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     ap.add_argument("--seed", type=int, default=0, help="search / weight RNG seed (not a game seed)")
@@ -125,7 +127,8 @@ def main(argv=None):
         run = net
 
     drv = az_bench_native.Driver(args.wires, workers=args.workers, games=args.games, full_sims=args.full_sims,
-                                 fast_sims=args.fast_sims, full_prob=args.full_prob, seed=args.seed)
+                                 fast_sims=args.fast_sims, full_prob=args.full_prob, seed=args.seed,
+                                 encoder=args.encoder)
     # In flight at most one request per game: waiting for more than half of them would only add latency.
     min_rows = args.min_batch or max(1, min(args.batch, args.workers * args.games) // 2)
     stop = threading.Event()
@@ -205,6 +208,7 @@ def main(argv=None):
     nb = max(1, w1["batches"] - w0["batches"])
     res = {
         "net": args.net, "params": params, "dtype": args.dtype, "compile": args.compile, "fake_net": args.fake_net,
+        "encoder": args.encoder,
         "workers": args.workers, "games_per_worker": args.games, "batchers": args.batchers, "max_batch": args.batch,
         "full_sims": args.full_sims, "fast_sims": args.fast_sims, "full_prob": args.full_prob,
         "device": torch.cuda.get_device_name(dev) if dev.type == "cuda" else "cpu", "torch": torch.__version__,

@@ -56,7 +56,8 @@ PYBIND11_MODULE(az_bench_native, m) {
 
     py::class_<azbench::Driver>(m, "Driver")
         .def(py::init([](const std::string &wires, int workers, int games, int fullSims, int fastSims,
-                         double fullProb, int fullCandidates, int fastCandidates, std::uint64_t seed) {
+                         double fullProb, int fullCandidates, int fastCandidates, std::uint64_t seed,
+                         const std::string &encoder) {
                  azbench::DriverConfig c;
                  c.workers = workers;
                  c.gamesPerWorker = games;
@@ -66,11 +67,13 @@ PYBIND11_MODULE(az_bench_native, m) {
                  c.fullCandidates = fullCandidates;
                  c.fastCandidates = fastCandidates;
                  c.seed = seed;
+                 if (encoder == "stub") c.encode = azbench::stubEncode;
+                 else if (encoder != "amber") throw std::invalid_argument("encoder: amber or stub");
                  return std::make_unique<azbench::Driver>(loadRoots(wires), c);
              }),
              py::arg("wires"), py::arg("workers") = 10, py::arg("games") = 256, py::arg("full_sims") = 64,
              py::arg("fast_sims") = 16, py::arg("full_prob") = 0.25, py::arg("full_candidates") = 16,
-             py::arg("fast_candidates") = 4, py::arg("seed") = 0)
+             py::arg("fast_candidates") = 4, py::arg("seed") = 0, py::arg("encoder") = "amber")
         .def("start", &azbench::Driver::start, py::call_guard<py::gil_scoped_release>())
         .def("stop", &azbench::Driver::stop, py::call_guard<py::gil_scoped_release>())
         .def("next_batch",

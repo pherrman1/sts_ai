@@ -26,6 +26,7 @@
 
 #include "combat/BattleContext.h"
 #include "sim/search/Action.h"
+#include "sim/search/AmberEncoder.h"
 #include "sim/search/AmberTokens.h"
 #include "sim/search/SilverSearcher.h"
 
@@ -49,7 +50,7 @@ namespace sts::azbench {
         double wideningC = 3.7028, wideningAlpha = 0.52389;   // Silver's DPW constants
         int maxMovesPerFight = 400;
         std::uint64_t seed = 0;             // search / Gumbel RNG only, not a game seed
-        EncodeFn encode = stubEncode;
+        EncodeFn encode = search::amberEncodeCombat;   // native Amber encoder; stubEncode = placeholder
     };
 
     struct Root {

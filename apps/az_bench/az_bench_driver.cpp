@@ -3,7 +3,7 @@
 // Python module (bindings/az_bench_module.cpp, tools/az_bench/e2e_bench.py) with the same driver.
 //
 //   az-bench-driver WIRES.jsonl [--workers W] [--games G] [--batchers B] [--batch N] [--seconds S]
-//                   [--full-sims 64] [--fast-sims 16] [--full-prob 0.25]
+//                   [--full-sims 64] [--fast-sims 16] [--full-prob 0.25] [--encoder amber|stub]
 //
 // Prints one JSON object: positions (net evaluations) per second, moves, fights, mean batch rows, and the workers'
 // thread-CPU microseconds per position for step+enumerate, encode, and the whole search loop.
@@ -28,7 +28,7 @@ using namespace sts;
 int main(int argc, char **argv) {
     if (argc < 2) {
         std::cerr << "usage: az-bench-driver WIRES.jsonl [--workers W] [--games G] [--batchers B] [--batch N] "
-                     "[--seconds S] [--full-sims N] [--fast-sims N] [--full-prob P]\n";
+                     "[--seconds S] [--full-sims N] [--fast-sims N] [--full-prob P] [--encoder amber|stub]\n";
         return 2;
     }
     azbench::DriverConfig cfg;
@@ -46,6 +46,11 @@ int main(int argc, char **argv) {
         else if (a == "--full-sims") cfg.fullSims = std::stoi(v);
         else if (a == "--fast-sims") cfg.fastSims = std::stoi(v);
         else if (a == "--full-prob") cfg.fullProb = std::stod(v);
+        else if (a == "--encoder") {
+            if (v == "amber") cfg.encode = search::amberEncodeCombat;
+            else if (v == "stub") cfg.encode = azbench::stubEncode;
+            else { std::cerr << "--encoder amber|stub\n"; return 2; }
+        }
         else { std::cerr << "unknown option " << a << "\n"; return 2; }
     }
     std::vector<azbench::Root> roots;
@@ -92,7 +97,7 @@ int main(int argc, char **argv) {
     json out = {
         {"workers", cfg.workers}, {"games_per_worker", cfg.gamesPerWorker}, {"batchers", batchers},
         {"max_batch", batch}, {"full_sims", cfg.fullSims}, {"fast_sims", cfg.fastSims}, {"full_prob", cfg.fullProb},
-        {"net", "fake"}, {"seconds", wall},
+        {"net", "fake"}, {"encoder", cfg.encode == azbench::stubEncode ? "stub" : "amber"}, {"seconds", wall},
         {"positions_per_s", evals / wall},
         {"moves_per_s", static_cast<double>(s1.moves - s0.moves) / wall},
         {"fights", s1.fights - s0.fights},
