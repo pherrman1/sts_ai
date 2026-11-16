@@ -1,0 +1,98 @@
+{
+ "config": {
+  "data": "/home/philippherrmann/Documents/sts/t1/tensor",
+  "out": "/home/philippherrmann/Documents/sts/v1/V1_d128",
+  "epochs": 1.0,
+  "batch": 256,
+  "lr": 0.0003,
+  "d": 128,
+  "layers": 4,
+  "no_aux": false,
+  "no_value": false,
+  "max_steps": 0,
+  "eval_every": 2000,
+  "eval_rows": 50000,
+  "device": "cuda",
+  "seed": 20261108,
+  "init": "/home/philippherrmann/Documents/sts/t1/out/N_f1/model.pt",
+  "workers": 11,
+  "no_bucket": false,
+  "no_amp": false,
+  "value_weight": 0.25,
+  "train_frac": 1.0,
+  "policy_target": "visits",
+  "rooms": "",
+  "eval_only": false,
+  "encounters": "",
+  "q_head": true,
+  "q_weight": 1.0,
+  "q_pair_weight": 4.0,
+  "q_min_visits": 64,
+  "q_source": "backed",
+  "params": 1317785,
+  "trainRows": 2671927,
+  "valRows": 330542,
+  "gateRowsUntouched": 325876,
+  "trainRuns": 4490,
+  "valRuns": 562,
+  "steps": 10437
+ },
+ "validation": {
+  "rows": 330542,
+  "multiRows": 310371,
+  "policy_ce": 1.5594668377228194,
+  "top1": 0.479129880005671,
+  "value_nll": 1.6596855718775845,
+  "death_brier": 0.015490466417558323,
+  "death_ece": 0.004390297059538816,
+  "death_rate": 0.03229544311761856,
+  "aux_mae1": 2.3280321795390875,
+  "aux_mae2": 4.358408397984291,
+  "top1_gumbel": 0.47910404000373746,
+  "top1_gumbel_n": 310371,
+  "top1_qpick": 0.47833399383318675,
+  "top1_qpick_n": 310371,
+  "q_regret": 1.368657874877738,
+  "q_regret_n": 310092,
+  "by_room": {
+   "monster": {
+    "rows": 133048,
+    "value_nll": 1.3752645088843434,
+    "top1": 0.5108721624850657
+   },
+   "elite": {
+    "rows": 103386,
+    "value_nll": 1.7063078279386206,
+    "top1": 0.4877353521374054
+   },
+   "boss": {
+    "rows": 85566,
+    "value_nll": 2.0655089050376048,
+    "top1": 0.42150313937312794
+   },
+   "other": {
+    "rows": 8542,
+    "value_nll": 1.4603043325486116,
+    "top1": 0.4522121730628208
+   }
+  },
+  "q": {
+   "level_mse": 321.4765927268219,
+   "edges": 1878247,
+   "diff_mse": 88.91022740193138,
+   "zero_diff_mse": 220.93396200258118,
+   "roots": 310371,
+   "order_acc": 0.8256647233335189,
+   "pairs": 3897599
+  },
+  "q_boss": {
+   "level_mse": 688.2179098696965,
+   "edges": 478019,
+   "diff_mse": 163.12056974377745,
+   "zero_diff_mse": 329.41662863034395,
+   "roots": 79799,
+   "order_acc": 0.7917820397551497,
+   "pairs": 893117
+  }
+ }
+}
