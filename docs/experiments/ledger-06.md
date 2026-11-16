@@ -27947,10 +27947,11 @@ Silver's new tree leaves better than one playout per unit of CPU?
   +0.008]), k_ord 1.1 at c = 26 → NOT_SHOWN; all rooms 0.748 vs R1 0.728 and R8 0.802.
 - V1, boss + Act-4 elite (32 playouts): R1 0.687, R8 0.753, R32 0.797; **V1_d64 0.787, k_ord 23.4 [20.2, 26.9] at
   c = 6.0** (1.06 ms per root forward vs 0.18 ms per boss playout; 6.1 edges per root); V1_d128 0.790, k_ord 26.0
-  [22.6, 30.0] at about 4× d64's cost. By room (d64): act-1 boss 10.4 [7.9, 13.7], act-2 boss 26.2 [19.4, >32],
-  act-3 boss 27.2 [22.6, >32], Act-4 boss 27.5 [18.1, >32], Act-4 elite 18.8 [13.4, 27.2] → **LEAF_PAYS**.
+  [22.6, 30.0] (its forward was not timed; N_f1's, the same d 128 / 4 layers, took 4.2 ms in V0, about 4× d64's).
+  By room (d64): act-1 boss 10.4 [7.9, 13.7], act-2 boss 26.2 [19.4, >32], act-3 boss 27.2 [22.6, >32], Act-4 boss
+  27.5 [18.1, >32], Act-4 elite 18.8 [13.4, 27.2] → **LEAF_PAYS**.
 - All rooms (8 playouts): Q head 0.821 [0.817, 0.824] vs R8 0.803 [0.799, 0.806]; behind R8 only in act-1 hallway and
-  elite roots. Level MSE worse than R8 (314 vs 109).
+  elite roots. Level MSE worse than R8 (312 vs 109).
 **Interpretation (Inference):** a head trained on sibling differences of the teacher's backed values ranks a boss
 root's actions like about 23 playouts for the price of one; a value head trained on outcomes does not (as §789).
 Untested: tree leaves deeper than played roots, the level error against exact terminal values, and play strength.

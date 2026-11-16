@@ -73,7 +73,7 @@ Boss rooms + Act-4 elites, 32 rollouts per edge (17,455 roots, 105,821 edges, 51
 | R32 | 0.797 | 32 | 195 |
 | N_f1 value (V0's 8-rollout set) | 0.691 | 1.1 | 26 |
 | **V1_d64 Q head** | **0.787** | **23.4 [20.2, 26.9]** | **6** |
-| V1_d128 Q head | 0.790 | 26.0 [22.6, 30.0] | ≈ 24 |
+| V1_d128 Q head | 0.790 | 26.0 [22.6, 30.0] | ≈ 24 (not timed; same d 128 / 4 layers as N_f1, whose forward V0 timed at 4.2 ms) |
 
 - By room (d64, k_ord [95%], c): act-1 boss 10.4 [7.9, 13.7] at c 8; act-2 boss 26.2 [19.4, >32]; act-3 boss 27.2
   [22.6, >32]; Act-4 boss 27.5 [18.1, >32]; Act-4 elite 18.8 [13.4, 27.2], all at c 5-7. No boss act is worse than R1.
@@ -82,7 +82,8 @@ Boss rooms + Act-4 elites, 32 rollouts per edge (17,455 roots, 105,821 edges, 51
 - All rooms against 8 rollouts (60,822 roots): Q head 0.821 [0.817, 0.824], R8 0.803 [0.799, 0.806]. Act-1 hallway
   and elite roots are the only cells where the Q head is not ahead of R8 (k_ord 3.8 and 7.9); hallway playouts are
   much cheaper than boss playouts (0.07 ms on average over all rooms), so c is far higher there.
-- Level MSE is worse than R8's (all rooms 314 vs 109): the head ranks siblings well but its absolute level is off.
+- Level MSE is worse than R8's (all rooms 312 [290, 336] vs 109 [102, 115]): the head ranks siblings well but its
+  absolute level is off.
 
 → **LEAF_PAYS** for `V1_d64` (lo95 20.2 ≥ c 6; act-1 boss lo 7.9 ≥ 1).
 
