@@ -1,6 +1,6 @@
 name          prior-factory
 code_commit   a002b841a4f58d65ed1eb045f57435083e0f8257
-binary_sha256 TBD
+binary_sha256 7779af6e52271c5e25e4aa5476d5442a1346e5a7151e5e10bb12ba30b58611b8
 workers       32
 share         /mnt/project-files/prior-factory
 configure_preset linux-gcc-release-x86-64-v3
