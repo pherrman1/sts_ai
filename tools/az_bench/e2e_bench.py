@@ -102,6 +102,7 @@ def main(argv=None):
     ap.add_argument("--report", type=float, default=5)
     ap.add_argument("--dtype", default="fp16", choices=["fp16", "bf16", "fp32"])
     ap.add_argument("--compile", action="store_true", help="torch.compile the net (bucketed shapes)")
+    ap.add_argument("--backend", default="inductor", help="torch.compile backend (inductor, emmy, ...)")
     ap.add_argument("--encoder", default="amber", choices=["amber", "stub"],
                     help="native Amber encoder (AmberEncoder.h) or the driver's placeholder")
     ap.add_argument("--fake-net", action="store_true", help="no GPU forward: random outputs (CPU-side ceiling)")
@@ -122,7 +123,7 @@ def main(argv=None):
     if args.compile:
         import torch._dynamo as dynamo
         dynamo.config.cache_size_limit = 64
-        run = torch.compile(net, dynamic=False)
+        run = torch.compile(net, dynamic=False, backend=args.backend)
     else:
         run = net
 
@@ -207,7 +208,7 @@ def main(argv=None):
     ev = max(1, s1["evals"] - s0["evals"])
     nb = max(1, w1["batches"] - w0["batches"])
     res = {
-        "net": args.net, "params": params, "dtype": args.dtype, "compile": args.compile, "fake_net": args.fake_net,
+        "net": args.net, "params": params, "dtype": args.dtype, "compile": args.compile, "backend": args.backend if args.compile else None, "fake_net": args.fake_net,
         "encoder": args.encoder,
         "workers": args.workers, "games_per_worker": args.games, "batchers": args.batchers, "max_batch": args.batch,
         "full_sims": args.full_sims, "fast_sims": args.fast_sims, "full_prob": args.full_prob,

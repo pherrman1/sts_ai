@@ -16,7 +16,7 @@ batch from pinned host memory, as an inference server fed by CPU search threads 
 --iters timed passes after --warmup passes, synchronized on the device.
 
 usage: gpu_forward_bench.py [--arch amber|combat] [--nets ...] [--batches 256,1024,4096,8192] [--dtype bf16]
-                            [--arrays DIR] [--compile [--compile-mode M]] [--live-frac F] [--out bench.json]
+                            [--arrays DIR] [--compile [--compile-mode M] [--backend B]] [--live-frac F] [--out bench.json]
 
 Combat 64x4 has 0.41M parameters (0.26M outside the embeddings); 128x4 is the shape of the trained combat nets
 (combat plan stage 3). --arrays (combat only) samples real tensorize.py rows, padded to the longest row of the batch.
@@ -145,6 +145,8 @@ def main(argv=None):
     ap.add_argument("--compile", action="store_true", help="torch.compile the net (dynamic=False) before timing")
     ap.add_argument("--compile-mode", default="default",
                     help="torch.compile mode (default, reduce-overhead = CUDA graphs, max-autotune)")
+    ap.add_argument("--backend", default="inductor",
+                    help="torch.compile backend (inductor; emmy = cloudrift-ai/emmy, pip install 'emmy-ml[compile]')")
     ap.add_argument("--seed", type=int, default=0, help="RNG seed for weights and synthetic inputs (not a game seed)")
     ap.add_argument("--out", help="write all measurements as JSON here")
     args = ap.parse_args(argv)
@@ -194,7 +196,12 @@ def main(argv=None):
             d, layers, heads = parse_net(spec)
             net = model.CombatNet(d=d, layers=layers, heads=heads, a_len=A_LEN).to(dev).eval()
         params = sum(p.numel() for p in net.parameters())
-        run = torch.compile(net, dynamic=False, mode=args.compile_mode) if args.compile else net
+        if not args.compile:
+            run = net
+        elif args.backend == "inductor":
+            run = torch.compile(net, dynamic=False, mode=args.compile_mode)
+        else:
+            run = torch.compile(net, dynamic=False, backend=args.backend)
         emb = sum(m.weight.numel() for m in net.modules() if isinstance(m, torch.nn.Embedding))
         for B in batches:
             hb = host[B]
