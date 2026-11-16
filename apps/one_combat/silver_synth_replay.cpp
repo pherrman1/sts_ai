@@ -44,6 +44,8 @@
 #include "sim/search/SilverSearcher.h"
 #include "sim/search/SilverWireJson.h"
 #include "sim/search/SilverWireState.h"
+#include <cmath>
+#include <random>
 
 namespace {
 
@@ -380,6 +382,13 @@ void silverPolicyMlpCheck(const std::string &modelPath, const std::string &prefi
 // seed in every arm (common random numbers), so arms differ only by their policy. Writes one line per row and arm: the
 // playout scores (Silver's leaf value, SilverSearcher::scoreEndState scale), wins, end HP, actions and CPU seconds.
 // Plays no game seed.
+// Sampling arms (#1053 simulation balancing): ARM@T (g7f_E@T, st=PATH@T) samples every multi-edge playout step from the
+// policy's softmax at temperature T (q_i proportional to p_i^(1/T)) instead of taking the argmax; the sampling RNG is
+// reseeded per playout from the same key in every arm. The line adds `steps` (multi-edge steps per playout).
+// STS_PVB_TRACE=PREFIX (with STS_PVB_TRACE_RATE=r, default 1) writes, for sampling arms, a random fraction r of those
+// steps as silversynthfeatures-style sparse rows (PREFIX.nnz/.idx/.val/.meta.jsonl: a state row with row index, arm,
+// playout, step, pick and the pick's sampling probability, then one act row per edge) for the policy-gradient trainer
+// tools/rollout_prior/sim_balance.py.
 void playoutValueBench(const std::string &outPath, int playouts, const std::string &armList) {
     const auto &priorPath = search::nativeSilverRootPriorPath();
     if (priorPath.empty()) throw std::runtime_error("playoutvaluebench: needs STS_SILVER_ROOT_PRIOR");
@@ -401,6 +410,13 @@ void playoutValueBench(const std::string &outPath, int playouts, const std::stri
         return ts.tv_sec + ts.tv_nsec * 1e-9;
     };
     std::map<std::string, std::unique_ptr<search::CombatValueNet>> students;
+    std::unique_ptr<SparseRows> trace;
+    double traceRate = 1.0;
+    if (const char *t = std::getenv("STS_PVB_TRACE"); t && *t) {
+        trace = std::make_unique<SparseRows>(t);
+        if (const char *r = std::getenv("STS_PVB_TRACE_RATE"); r && *r) traceRate = std::stod(r);
+        if (!(traceRate > 0 && traceRate <= 1)) throw std::runtime_error("playoutvaluebench: STS_PVB_TRACE_RATE in (0, 1]");
+    }
     std::string line;
     long long rows = 0;
     while (std::getline(std::cin, line)) {
@@ -411,9 +427,17 @@ void playoutValueBench(const std::string &outPath, int playouts, const std::stri
         const std::uint64_t base = key(row.at("seed").get<std::uint64_t>(), row.at("fight").get<std::uint64_t>(),
                                        row.at("decision").get<std::uint64_t>(), 0x9a7e0babULL);
         ++rows;
-        for (const auto &arm : arms) {
+        for (const auto &armSpec : arms) {
+            // ARM@T: sample from the softmax at temperature T (simulation balancing); plain ARM: argmax.
+            std::string arm = armSpec;
+            double temp = 0;
+            if (const auto at = armSpec.rfind('@'); at != std::string::npos) {
+                arm = armSpec.substr(0, at);
+                temp = std::stod(armSpec.substr(at + 1));
+                if (!(temp > 0)) throw std::runtime_error("playoutvaluebench: temperature must be > 0 in " + armSpec);
+            }
             nlohmann::json res = {{"seed", row.at("seed")}, {"fight", row.at("fight")}, {"decision", row.at("decision")},
-                                  {"arm", arm}, {"playouts", playouts}};
+                                  {"arm", armSpec}, {"playouts", playouts}};
             if (row.contains("k")) res["k"] = row.at("k");
             try {
                 search::SilverSearcher s(plannerRoot(state.bc, base), state.context);
@@ -437,11 +461,38 @@ void playoutValueBench(const std::string &outPath, int playouts, const std::stri
                     }
                     student = slot.get();
                 } else if (arm != "g7f_E" && arm != "greedy") throw std::runtime_error("unknown arm " + arm);
-                s.rolloutPrior = [student](const BattleContext &bc, const std::vector<search::SilverSearcher::Edge> &edges) {
-                    return student ? search::nativeSilverPolicyPriorWith(*student, bc, edges)
-                                   : search::nativeSilverPolicyPrior(bc, edges);
+                std::mt19937_64 sampler;
+                int playoutIdx = 0, step = 0;
+                const long long rowIdx = rows - 1;
+                s.rolloutPrior = [&, student, temp](const BattleContext &bc,
+                                                    const std::vector<search::SilverSearcher::Edge> &edges) {
+                    auto p = student ? search::nativeSilverPolicyPriorWith(*student, bc, edges)
+                                     : search::nativeSilverPolicyPrior(bc, edges);
+                    if (temp <= 0) return p;
+                    // Sample q_i ~ p_i^(1/T) (p is the policy's softmax; for an MLP this is softmax(logit / T)).
+                    double top = 0;
+                    for (double x : p) top = std::max(top, x);
+                    std::vector<double> q(p.size());
+                    double total = 0;
+                    for (std::size_t i = 0; i < p.size(); ++i) total += (q[i] = std::pow(p[i] / top, 1.0 / temp));
+                    double u = std::uniform_real_distribution<double>(0.0, total)(sampler);
+                    std::size_t pick = 0;
+                    while (pick + 1 < q.size() && u >= q[pick]) u -= q[pick++];
+                    if (trace && std::uniform_real_distribution<double>(0.0, 1.0)(sampler) < traceRate) {
+                        nlohmann::json m = {{"k", "state"}, {"row", rowIdx}, {"arm", armSpec}, {"p", playoutIdx},
+                                            {"t", step}, {"pick", pick}, {"prob", q[pick] / total}};
+                        trace->writeState(bc, m);
+                        for (std::size_t i = 0; i < edges.size(); ++i)
+                            trace->writeAction(bc, edges[i].action,
+                                {{"k", "act"}, {"tgt", search::combatActionTargetSlot(bc, edges[i].action)}});
+                    }
+                    ++step;
+                    std::vector<double> oneHot(p.size(), 0.0);
+                    oneHot[pick] = 1.0;
+                    return oneHot;
                 };
                 std::vector<double> scores;
+                std::vector<int> steps;
                 int wins = 0;
                 double winHp = 0;
                 long long actions0 = s.stats.rolloutActions;
@@ -449,9 +500,14 @@ void playoutValueBench(const std::string &outPath, int playouts, const std::stri
                 for (int i = 0; i < playouts; ++i) {
                     BattleContext bc = s.rootSearchState();
                     search::seedSearchRng(bc, base ^ (0x9e3779b97f4a7c15ULL * static_cast<std::uint64_t>(i + 1)));
+                    sampler.seed(base ^ 0x51b0a1a2ce5ULL ^ (0xbf58476d1ce4e5b9ULL * static_cast<std::uint64_t>(i + 1)));
+                    playoutIdx = i;
+                    step = 0;
                     scores.push_back(s.benchPlayout(bc));
+                    steps.push_back(step);
                     if (bc.outcome == Outcome::PLAYER_VICTORY) { ++wins; winHp += bc.player.curHp; }
                 }
+                if (temp > 0) res["steps"] = steps;
                 res["cpu"] = cpuNow() - c0;
                 res["scores"] = scores;
                 res["wins"] = wins;
