@@ -147,6 +147,16 @@ add_test(NAME combat_tok_net_q_parity COMMAND $<TARGET_FILE:combat-tok-net-tool>
          ${CMAKE_SOURCE_DIR}/tests/data/combat_tok_net_tiny_q.ctn ${CMAKE_SOURCE_DIR}/tests/data/combat_tok_net_q_fixture.json)
 set_tests_properties(combat_tok_net_q_parity PROPERTIES LABELS "core;smoke")
 
+# Stage 0 throughput bench, part 2 (tools/az_bench/README.md): CPU positions per second of copy + step + enumerate +
+# encode over threads. Smoke: one short run on the wire sample.
+add_executable(az-bench-producer apps/az_bench_producer.cpp $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(az-bench-producer PRIVATE include json/include)
+find_package(Threads REQUIRED)
+target_link_libraries(az-bench-producer PRIVATE Threads::Threads)
+add_test(NAME az_bench_producer_smoke COMMAND $<TARGET_FILE:az-bench-producer>
+         ${CMAKE_SOURCE_DIR}/tests/data/combat_net_wire_sample.jsonl --threads 2 --seconds 0.3 --games 4)
+set_tests_properties(az_bench_producer_smoke PROPERTIES LABELS "core;smoke")
+
 add_executable(rest_recall_filter_test tests/rest_recall_filter_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(rest_recall_filter_test PRIVATE include json/include)
