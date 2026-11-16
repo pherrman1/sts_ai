@@ -4,8 +4,10 @@ Question (Philipp, issue #1054, 2026-11-15): how often do same-turn infinites oc
 room, and does the played search miss them? Stages 1-2 (Silver proven win, PPO auxiliary head) only if certified
 infinites or candidates occur in at least about 5% of runs or explain a measurable share of Heart losses.
 
-Status: **pilot done (8 seeds)**; the sample size of the main replay is Philipp's call. Descriptive, no gate,
-no default change.
+Status: **done (128 seeds, 2026-11-16).** Result: 1 of 128 runs has a certified same-turn infinite (0.8%,
+Wilson 95% [0.1%, 4.3%]), 2 of 128 a certified infinite or a candidate (1.6%, [0.4%, 5.5%]); the played search
+won every fight with a certificate, a candidate or a turn of 25+ cards; no lost fight and no Heart fight shows a
+loop. **No go for stages 1-2.** Descriptive, no gate, no default change.
 
 ## Design
 
@@ -80,6 +82,56 @@ Unceasing Top). Run-share intervals are Wilson 95%.
 **Reading (Inference):** 8 runs cannot bound the share below 5% (Wilson upper limit 32%). The pilot only shows
 that the pipeline reproduces §775, that the oracle can see natural loops in these runs' contexts, and that it
 is cheap.
+
+## Main run (seeds 111378256-111378383, 2026-11-15/16)
+
+Philipp's choice on the sample-size card (2026-11-16 00:33 CET): 128 seeds, local container, no workers. 4 lanes,
+21.5 lane-hours of game time plus reruns of games cut by two container restarts (`run_seed.sh` skips finished
+seeds and reruns unfinished ones). Raw data `/mnt/project-files/infinite-combo-freq/main128/` (`out.tar.gz`, `deep.tar.gz`);
+here `main128/analysis.json`, `main128/deep_caps.json` and the `.done` files.
+
+- **Reproduction:** 128 of 128 games equal §775's BEST line and Gumbel roots/sims line; none dropped. 2,973 real
+  fights, 15,261 turn-start states, all inside the oracle's domain.
+- **Runs with a certified infinite: 1 / 128 = 0.8%** (Wilson 95% [0.14%, 4.29%]). **Certified or candidate:
+  2 / 128 = 1.6%** ([0.43%, 5.52%]).
+
+| room class | fights | runs reaching | runs certified | runs candidate |
+|---|---:|---:|---:|---:|
+| hallway (acts 1-3) | 1,664 | 128 | 0 | 1 |
+| elite (acts 1-3) | 770 | 128 | 0 | 0 |
+| boss (acts 1-3) | 336 | 114 | 1 | 0 |
+| Shield and Spear | 60 | 60 | 0 | 0 |
+| Heart | 60 | 60 | 0 | 0 |
+| event fights | 83 | 64 | 0 | 0 |
+
+- **The certificate:** seed 111378328, act 2 boss The Champ, turn 2 (third turn), 49 HP: Sundial + Pommel Strike /
+  Pommel Strike+ in a 19-card deck. After 16 setup actions a two-card cycle (−29 Champ HP per cycle, energy ±0) kills
+  after 10 repetitions, 19 replayed actions, CERTIFIED_KILL. **The search played it as well:** the real game played
+  21 cards in that turn and won the fight on it (13 HP lost in that turn; the oracle's line loses none, so
+  `missed_certified_kills` lists it as `hp_cost_only`, not as a miss of the kill). The run then died on floor 41.
+- **The candidate:** seed 111378341, act 3 hallway Maw, turn 1: Shrug It Off+ / Pommel Strike+ cycle (−15 HP per
+  cycle) in a 34-card Sundial deck with Dark Embrace ×2; the replay ends with `control_state_changed`, the continuation search stays a candidate. The game won that fight in its next turn with 25
+  cards. Both hits are Sundial decks: 14 runs have Sundial, 9 Sundial + Pommel Strike.
+- **Heart:** 60 runs reached it, 48 killed (80%); no Heart fight has a certified or candidate turn, so infinites
+  explain none of the 12 Heart losses. Killed with vs without a certificate: 0/0 vs 48/60.
+- **Missed infinites:** none in the sense of a fight not won on that turn. Of the 80 lost fights (one per lost run:
+  act 1-3 bosses 33, Heart 12, elites 26, hallway 8, event 1), none has a non-NONE verdict; their largest turn has 20
+  cards; 27 of them have at least one node-capped state.
+- **Proxies:** 18 fights in 11 runs (8.6%) have a turn with ≥ 25 cards played (max 41, Shield and Spear); all 18
+  were won. No fight reached the turn or action cap. Enabler decks (runs): Dropkick + Vulnerable source 11,
+  Corruption + Feel No Pain + Dark Embrace 24, Corruption + Dead Branch 3, Unceasing Top 13.
+- **Oracle cost and bounds (20,000 nodes, depth 24):** 33 ms mean, 1.7 ms median, 265 ms p99, 419 ms max per state;
+  4.0 CPU-s per run (G16 run ≈ 500 CPU-s). Node cap hit in 1,728 states (11.3%), depth cap in 101 (0.7%). On all 18
+  ≥ 25-card turns the oracle is node-capped; re-run at 2,000,000 nodes and depth 64 (`main128/deep_caps.json`,
+  5-28 s each) all 18 stay NONE and 17 stay node-capped: these turns are long finite draw/exhaust chains (DFS
+  lethal depth up to 39) that a bounded DFS cannot exhaust, so for them NONE means "not found", not "absent".
+
+**Reading (Inference):** same-turn infinites are rare in G16 + mb4 runs (point estimate under 1% of runs, upper 95%
+limit 4.3% for certified ones) and the search already plays the one it meets. The capped big turns could hide a few
+more, but all of them were won, so a proven-win shortcut (stage 1) or an infinite head (stage 2) could only save CPU
+or HP there, not fights. The losses (bosses, elites, Heart) show no loop at all. Measured against the issue's
+threshold (≥ 5% of runs, or a share of Heart losses) stages 1-2 are **not justified**; the cheap oracle could be
+re-run on a later, stronger policy whose decks lean more on Sundial / draw engines.
 
 ## Limits
 

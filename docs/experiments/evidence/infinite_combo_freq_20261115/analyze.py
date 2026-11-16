@@ -92,6 +92,8 @@ def main():
     proxy_rows = []
     unsupported = collections.Counter()
     enabler_runs = collections.Counter()
+    lost_fights = collections.Counter(max_cards_turn=0)
+    fights_won = {}
     for run in runs:
         fights = {f["fight"]: f for f in run["fights"]}
         flags = {"seed": run["seed"], "won": run["won"], "certified": False, "candidate": False,
@@ -118,6 +120,7 @@ def main():
                 if "UNCEASING_TOP" in rel:
                     enabler_runs[("unceasing_top", run["seed"])] = 1
         for fid, f in fights.items():
+            fights_won[(run["seed"], fid)] = bool(f["won"])
             cls = room_class(f["act"], f["room"], f["encounter"])
             by_class[cls]["fights"] += 1
             if cls == "heart":
@@ -149,7 +152,15 @@ def main():
                     if not ended_this_turn or hp_lost_after > 0:
                         missed.append({"seed": run["seed"], "fight": fid, "turn": t["turn"],
                                        "encounter": f["encounter"], "fight_won": f["won"],
-                                       "fight_end_turn": f["turns"], "hp_lost_after": hp_lost_after})
+                                       "fight_end_turn": f["turns"], "hp_lost_after": hp_lost_after,
+                                       "oracle_replay_hp_lost": (t.get("replay") or {}).get("player_hp_lost"),
+                                       "kind": "hp_cost_only" if ended_this_turn else "not_won_that_turn"})
+            if not f["won"] and not f.get("escaped"):
+                lost_fights["fights"] += 1
+                lost_fights["with_non_none_verdict"] += any(t["classification"] != "NONE" for t in ts)
+                lost_fights["with_node_cap_turn"] += any(t.get("node_cap_hit") for t in ts)
+                lost_fights["max_cards_turn"] = max(lost_fights["max_cards_turn"],
+                                                    max(f.get("cards_per_turn") or [0]))
         for cls in set(room_class(f["act"], f["room"], f["encounter"]) for f in fights.values()):
             by_class[cls]["runs_reaching"] += 1
         for cls in flags["certified_classes"]:
@@ -187,6 +198,9 @@ def main():
                    "nodes_mean": round(sum(nodes) / len(nodes), 1) if nodes else None,
                    "unsupported": dict(unsupported)},
         "proxies": dict(proxies), "proxy_fights": proxy_rows,
+        "proxy_runs": len({p["seed"] for p in proxy_rows}),
+        "proxy_fights_won": sum(fights_won[(p["seed"], p["fight"])] for p in proxy_rows),
+        "lost_fights": dict(lost_fights),
         "enabler_runs": dict(enablers),
     }, indent=1, sort_keys=True))
 
