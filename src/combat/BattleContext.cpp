@@ -19,6 +19,7 @@ thread_local std::function<void(const BattleContext &, GameContext &)> sts::g_on
 
 namespace sts {
     thread_local BattleContext *g_debug_bc;
+    thread_local bool g_stopBeforeMonsterTurn = false;
 
     namespace {
         // Engine fix flags are read on hot paths (every card play, every
@@ -1166,6 +1167,10 @@ void BattleContext::executeActions() {
         }
 
         if (outcome != Outcome::UNDECIDED) {
+            break;
+        }
+
+        if (turnHasEnded && g_stopBeforeMonsterTurn) {
             break;
         }
 

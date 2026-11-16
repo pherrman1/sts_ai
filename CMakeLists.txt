@@ -975,6 +975,8 @@ add_test(NAME silver_loss_ceiling COMMAND $<TARGET_FILE:unit-test> silver_loss_c
 set_tests_properties(silver_loss_ceiling PROPERTIES LABELS "core")
 add_test(NAME silver_risk_veto COMMAND $<TARGET_FILE:unit-test> silver_risk_veto)
 set_tests_properties(silver_risk_veto PROPERTIES LABELS "core")
+add_test(NAME silver_order_dominance COMMAND $<TARGET_FILE:unit-test> silver_order_dominance)
+set_tests_properties(silver_order_dominance PROPERTIES LABELS "core")
 add_test(NAME silver_gumbel_root COMMAND $<TARGET_FILE:unit-test> silver_gumbel_root)
 set_tests_properties(silver_gumbel_root PROPERTIES LABELS "core")
 add_test(NAME silver_gumbel_boundary_observer COMMAND $<TARGET_FILE:unit-test> silver_gumbel_boundary_observer)
