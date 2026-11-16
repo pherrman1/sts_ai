@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """Fixture for the native combat net check (combat plan stage 3, 2026-11-08).
 
-usage: make_native_fixture.py OUT_DIR ROWS.jsonl.gz [ROWS.jsonl.gz ...] [--rows N] [--seed S]
+usage: make_native_fixture.py OUT_DIR ROWS.jsonl.gz [ROWS.jsonl.gz ...] [--rows N] [--seed S] [--q-head]
        make_native_fixture.py --npz TOOL MODEL.ctn PARITY.npz TAG
 
 First form: picks N silverazgen root rows (wire + edges' semantics), runs them through the training path (wire_encoder
 -> tensorize.py -> model.collate, one row at a time) and an untrained net (export_native.py --random 16 2 2 SEED), and
 writes OUT_DIR/combat_tok_net_tiny.ctn and OUT_DIR/combat_tok_net_fixture.json for
-`combat-tok-net-tool check` (ctest combat_tok_net_parity). The rows cover the rarer groups first (queues, a card
+`combat-tok-net-tool check` (ctest combat_tok_net_parity; with --q-head the files are combat_tok_net_tiny_q.ctn
+and combat_tok_net_q_fixture.json, a net with the per-edge Q head, for ctest combat_tok_net_q_parity). The rows cover the rarer groups first (queues, a card
 select screen, status pairs, several monsters, potions, a card being played), then a seeded sample.
 
 Second form: forwards the 32 collated rows of a PC parity file (`in_*` tensors and TAG's PyTorch outputs) through
@@ -84,7 +85,8 @@ def expect_arrays(rows, tiny_net):
         for i in range(len(rows)):
             b = M.collate(A, [i])
             with torch.no_grad():
-                lg, vl, ax = tiny_net(b)
+                outs = tiny_net(b, want_q=True) if tiny_net.q_on else tiny_net(b)
+                lg, vl, ax = outs[:3]
             nc, na = int(b["card_mask"].sum()), int(b["act_mask"].sum())
             sm = b["smap"][0].tolist()
             while sm and sm[-1][0] <= 0:
@@ -95,7 +97,7 @@ def expect_arrays(rows, tiny_net):
                 "nmon": int(b["nmon"][0]), "potions": b["potions"][0].tolist(),
                 "queues": b["queues"][0, :int(b["nqueue"][0])].tolist(), "cards": b["cards"][0, :nc].tolist(),
                 "actions": b["actions"][0, :na].tolist(), "logits": lg[0, :na].tolist(), "value": vl[0].tolist(),
-                "aux": ax[0].tolist()})
+                "aux": ax[0].tolist(), **({"q": outs[3][0, :na].tolist()} if tiny_net.q_on else {})})
         return out
 
 
@@ -122,13 +124,15 @@ def make_fixture(args):
             pick.append(i)
     chosen = [rows[i] for i in sorted(pick)]
     os.makedirs(args.out, exist_ok=True)
-    net = ex.random_net(16, 2, 2, args.seed)
-    ex.write(net, 16, 2, 2, os.path.join(args.out, "combat_tok_net_tiny.ctn"))
+    net = ex.random_net(16, 2, 2, args.seed, args.q_head)
+    tag = "_q" if args.q_head else ""
+    ex.write(net, 16, 2, 2, os.path.join(args.out, f"combat_tok_net_tiny{tag}.ctn"))
     exp = expect_arrays(chosen, net)
     covered = {k: sum(features(r)[k] for r in chosen) for k in features(chosen[0])}
     fixture = {"source": "tools/combat_net/make_native_fixture.py", "seed": args.seed,
                "covered": covered, "rows": [dict(r, expect=e) for r, e in zip(chosen, exp)]}
-    with open(os.path.join(args.out, "combat_tok_net_fixture.json"), "w") as f:
+    with open(os.path.join(args.out, "combat_tok_net_q_fixture.json" if args.q_head else "combat_tok_net_fixture.json"),
+              "w") as f:
         json.dump(fixture, f, separators=(",", ":"))
     print(json.dumps({"rows": len(chosen), "candidates": len(rows), "covered": covered}))
 
@@ -169,6 +173,7 @@ def main(argv):
     ap.add_argument("rows_files", nargs="+")
     ap.add_argument("--rows", type=int, default=16)
     ap.add_argument("--seed", type=int, default=20261108)
+    ap.add_argument("--q-head", action="store_true", help="a tiny net with the per-edge Q head (Q parity fixture)")
     make_fixture(ap.parse_args(argv))
     return 0
 

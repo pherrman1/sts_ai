@@ -107,6 +107,11 @@ namespace sts::search {
             int combatNetPriorMinActions = 0;
             int combatNetTreeMinVisits = 0;
             std::string combatNetBossModels;
+            // Value-net-as-leaf V2 (research, default off): STS_SILVER_LEAF_QNET=boss values new tree leaves of
+            // whole-run boss rooms and Act-4 elite rooms with the Q head of STS_SILVER_LEAF_QNET_MODEL (a CombatTokNet
+            // file with qh.* tensors) instead of a playout; =all in every room; =0 or unset = off.
+            int leafQNetScope = 0;   // 0 off, 1 boss rooms + Act-4 elites, 2 all rooms
+            std::string leafQNetPath;
             // Per-root rollout card table model (STS_SILVER_ROLLOUT_ROOT_TABLE; ADR-0046 default on).
             std::string rolloutRootTablePath;
             int treePriorMinVisits = 0;       // STS_SILVER_TREE_PRIOR_MIN_VISITS (research; 0 = off)
@@ -186,6 +191,17 @@ namespace sts::search {
         NativeSilverPriceTableBuilder g_priceTableBuilder;
         CombatValueNet g_rootPriorNet;
         CombatTokNet g_combatNetPrior;
+        CombatTokNet g_leafQNet;   // STS_SILVER_LEAF_QNET_MODEL
+        std::atomic<std::int64_t> g_leafQValues{0}, g_leafQForwards{0};   // whole process (exit line)
+        // STS_SILVER_LEAF_QNET_SHADOW=PATH[:N] (research diagnostic): net-scope leaves keep their playout, and every
+        // such leaf of one in N decision nodes (default 16) is logged with the net's values as a JSON line to PATH.
+        std::mutex g_leafQShadowMutex;
+        std::unique_ptr<std::ofstream> g_leafQShadowOut;
+        std::uint64_t g_leafQShadowEvery = 0;
+        std::atomic<std::int64_t> g_leafQShadowSearches{0};
+        int g_leafQCalibrate = 0;   // STS_SILVER_LEAF_QNET_CALIBRATE (research)
+        int g_leafQInitVisits = 0;  // STS_SILVER_LEAF_QNET_QINIT=K:M (research)
+        double g_leafQInitWeight = 0;
         std::map<int, std::unique_ptr<CombatTokNet>> g_combatNetBoss;   // encounter -> STS_SILVER_COMBATNET_BOSS_MODELS
         std::atomic<std::int64_t> g_ctnRootForwards{0}, g_ctnTreeForwards{0};   // whole process (T2 exit line)
         SilverValueHead g_leafHead;
@@ -925,6 +941,53 @@ namespace sts::search {
                         s.treePriorNetMinVisits = g_options.combatNetTreeMinVisits;
                     }
                 }
+                // Value-net-as-leaf V2 (STS_SILVER_LEAF_QNET, research): the Q head values new leaves; the label
+                // search keeps playouts.
+                s.leafQNet = nullptr;
+                const int leafQScope = g_nativeSilverLeafQNetOverride.value_or(g_options.leafQNetScope);
+                if (leafQScope > 0 && !g_leafQNet.loaded())
+                    throw std::runtime_error("the value-net leaf requires STS_SILVER_LEAF_QNET_MODEL");
+                if (!label && leafQScope > 0
+                        && (leafQScope == 2 || gc.curRoom == Room::BOSS
+                            || (gc.act == 4 && gc.curRoom == Room::ELITE))) {
+                    SilverSearcher *self = &s;
+                    s.leafQNet = [self](const BattleContext &state, const std::vector<SilverSearcher::Edge> &edges) {
+                        thread_local CombatTokInputs in;
+                        thread_local CombatTokOutputs out;
+                        combatTokEncodeRoot(state, self->searchContext(), edges, in);
+                        g_leafQNet.forward(in, out);
+                        return std::vector<double>(out.q.begin(), out.q.end());
+                    };
+                }
+                s.leafQCalibrate = s.leafQNet ? g_leafQCalibrate : 0;
+                s.leafQInitVisits = s.leafQNet ? g_leafQInitVisits : 0;
+                s.leafQInitWeight = s.leafQNet ? g_leafQInitWeight : 0;
+                s.resetLeafQCalibration();
+                s.leafQShadow = nullptr;
+                if (s.leafQNet && g_leafQShadowOut) {
+                    const std::int64_t searchId = ++g_leafQShadowSearches;
+                    s.leafQShadow = [searchId](const BattleContext &parent, const std::vector<SilverSearcher::Edge> &edges,
+                                               const std::vector<double> &q, int e, double playout) {
+                        const auto id = reinterpret_cast<std::uintptr_t>(&parent);
+                        if (((id >> 4) * 0x9E3779B97F4A7C15ull + static_cast<std::uint64_t>(searchId)) % g_leafQShadowEvery
+                                != 0)
+                            return;
+                        double mean = 0;
+                        for (double v : q) mean += v;
+                        mean /= std::max<std::size_t>(1, q.size());
+                        int monsterHp = 0;
+                        for (int i = 0; i < parent.monsters.monsterCount; ++i)
+                            if (parent.monsters.arr[i].isAlive()) monsterHp += parent.monsters.arr[i].curHp;
+                        const nlohmann::json row = {
+                            {"s", searchId}, {"p", static_cast<std::uint64_t>(id)}, {"e", e}, {"n", edges.size()},
+                            {"q", q[e]}, {"qm", mean}, {"qmax", *std::max_element(q.begin(), q.end())}, {"v", playout},
+                            {"t", static_cast<int>(edges[e].action.getActionType())}, {"turn", parent.turn},
+                            {"hp", parent.player.curHp}, {"mhp", monsterHp},
+                            {"enc", monsterEncounterEnumNames[static_cast<int>(parent.encounter)]}};
+                        std::lock_guard<std::mutex> lock(g_leafQShadowMutex);
+                        *g_leafQShadowOut << row.dump() << '\n';
+                    };
+                }
                 s.rolloutConfig = g_nativeSilverRolloutOverride
                     ? *g_nativeSilverRolloutOverride : SilverSearcher::envRolloutConfig();
                 if (g_nativeSilverRolloutsPerLeafOverride)
@@ -1061,6 +1124,8 @@ namespace sts::search {
                 }
                 const auto playoutsBefore = searcher->stats.rolloutPlayouts;
                 const auto rolloutActionsBefore = searcher->stats.rolloutActions;
+                const auto leafQValuesBefore = searcher->stats.leafQValues;
+                const auto leafQForwardsBefore = searcher->stats.leafQForwards;
                 // g_nativeSilverExtraLabels: a reservoir of this search's playout states (research; reads only).
                 const auto &extraCfg = g_nativeSilverExtraLabels;
                 const bool extrasOn = (extraCfg.nodes > 0 || extraCfg.playouts > 0) && extraCfg.sims > 0
@@ -1270,6 +1335,10 @@ namespace sts::search {
                     stats.maxRootSteps = std::max(stats.maxRootSteps, steps);
                     stats.rolloutPlayouts += searcher->stats.rolloutPlayouts - playoutsBefore;
                     stats.rolloutActions += searcher->stats.rolloutActions - rolloutActionsBefore;
+                    stats.leafQValues += searcher->stats.leafQValues - leafQValuesBefore;
+                    stats.leafQForwards += searcher->stats.leafQForwards - leafQForwardsBefore;
+                    g_leafQValues += searcher->stats.leafQValues - leafQValuesBefore;
+                    g_leafQForwards += searcher->stats.leafQForwards - leafQForwardsBefore;
                 }
                 agent.simulationCountTotal += simulations;
                 // g_nativeSilverLabelSearch: the root again, without the leaf head; it labels the root and
@@ -2016,6 +2085,69 @@ namespace sts::search {
         g_options.combatNetTreeMinVisits = nonNegativeInt("STS_SILVER_COMBATNET_TREE_MIN_VISITS");
         if (g_options.combatNetTreeMinVisits > 0 && g_options.combatNetPriorPath.empty())
             throw std::runtime_error("STS_SILVER_COMBATNET_TREE_MIN_VISITS requires STS_SILVER_COMBATNET_PRIOR_MODEL");
+        // Value-net-as-leaf V2 (research, default off).
+        g_options.leafQNetScope = 0;
+        g_options.leafQNetPath.clear();
+        if (const char *raw = std::getenv("STS_SILVER_LEAF_QNET"); raw && *raw && std::string(raw) != "0") {
+            const std::string v = raw;
+            if (v != "boss" && v != "all") throw std::runtime_error("STS_SILVER_LEAF_QNET must be 0, boss or all");
+            g_options.leafQNetScope = v == "boss" ? 1 : 2;
+            const char *path = std::getenv("STS_SILVER_LEAF_QNET_MODEL");
+            if (!path || !*path) throw std::runtime_error("STS_SILVER_LEAF_QNET requires STS_SILVER_LEAF_QNET_MODEL");
+        }
+        g_leafQShadowOut.reset();
+        g_leafQCalibrate = 0;
+        g_leafQInitVisits = 0;
+        g_leafQInitWeight = 0;
+        if (const char *raw = std::getenv("STS_SILVER_LEAF_QNET_QINIT"); raw && *raw && std::string(raw) != "0") {
+            const std::string v = raw;
+            const auto colon = v.find(':');
+            if (colon == std::string::npos) throw std::runtime_error("STS_SILVER_LEAF_QNET_QINIT must be K:M");
+            g_leafQInitVisits = std::stoi(v.substr(0, colon));
+            g_leafQInitWeight = std::stod(v.substr(colon + 1));
+            if (g_leafQInitVisits < 1 || g_leafQInitWeight <= 0)
+                throw std::runtime_error("STS_SILVER_LEAF_QNET_QINIT needs K >= 1 and M > 0");
+            std::cerr << "[silver] value-net Q-init: nodes from " << g_leafQInitVisits << " visits, weight "
+                      << g_leafQInitWeight << " virtual visits; leaves keep playouts\n";
+        }
+        if (const char *raw = std::getenv("STS_SILVER_LEAF_QNET_CALIBRATE"); raw && *raw) {
+            g_leafQCalibrate = std::stoi(raw);
+            if (g_leafQCalibrate < 0) throw std::runtime_error("STS_SILVER_LEAF_QNET_CALIBRATE must be >= 0");
+            if (g_leafQCalibrate > 0)
+                std::cerr << "[silver] value-net leaf calibration: first " << g_leafQCalibrate
+                          << " net leaves of each search played out, then net + their mean offset\n";
+        }
+        if (const char *raw = std::getenv("STS_SILVER_LEAF_QNET_SHADOW"); raw && *raw) {
+            std::string spec = raw;
+            g_leafQShadowEvery = 16;
+            if (const auto colon = spec.rfind(':'); colon != std::string::npos) {
+                g_leafQShadowEvery = std::stoull(spec.substr(colon + 1));
+                spec = spec.substr(0, colon);
+                if (g_leafQShadowEvery == 0) throw std::runtime_error("STS_SILVER_LEAF_QNET_SHADOW: N must be >= 1");
+            }
+            g_leafQShadowOut = std::make_unique<std::ofstream>(spec, std::ios::app);
+            if (!*g_leafQShadowOut) throw std::runtime_error("STS_SILVER_LEAF_QNET_SHADOW: cannot open " + spec);
+            std::cerr << "[silver] value-net leaf SHADOW: playouts kept, 1 in " << g_leafQShadowEvery
+                      << " nodes logged to " << spec << "\n";
+        }
+        if (const char *path = std::getenv("STS_SILVER_LEAF_QNET_MODEL"); path && *path) {
+            // Loaded whenever set, so a research arm (g_nativeSilverLeafQNetOverride) can switch the leaf on.
+            g_options.leafQNetPath = path;
+            std::string err;
+            if (!g_leafQNet.load(path, &err)) throw std::runtime_error("STS_SILVER_LEAF_QNET_MODEL: " + err);
+            if (!g_leafQNet.qTrained())
+                throw std::runtime_error(std::string("STS_SILVER_LEAF_QNET_MODEL has no Q head: ") + path);
+            std::cerr << "[silver] value-net leaf model (scope " << g_options.leafQNetScope << "): Q head of " << path
+                      << " (d=" << g_leafQNet.dim() << " layers=" << g_leafQNet.layerCount() << ")\n";
+            static bool registered = false;
+            if (!registered) {
+                registered = true;
+                std::atexit([] {
+                    std::cerr << "[silver] value-net leaf: values=" << g_leafQValues.load()
+                              << " forwards=" << g_leafQForwards.load() << "\n";
+                });
+            }
+        }
         g_combatNetBoss.clear();
         g_options.combatNetBossModels.clear();
         if (const char *raw = std::getenv("STS_SILVER_COMBATNET_BOSS_MODELS"); raw && *raw) {
@@ -2689,6 +2821,7 @@ namespace sts::search {
     thread_local std::optional<double> g_nativeSilverPotionWeightOverride;
     thread_local std::optional<bool> g_nativeSilverRootPriorOverride;
     thread_local std::optional<bool> g_nativeSilverCombatNetPriorOverride;
+    thread_local std::optional<int> g_nativeSilverLeafQNetOverride;
     thread_local std::optional<double> g_nativeSilverCombatNetPriorTempOverride;
     thread_local std::optional<int> g_nativeSilverTreePriorOverride;
     thread_local std::optional<double> g_nativeSilverPriorWeightOverride;

@@ -24,6 +24,12 @@
 // normalized prior is echoed). `silversynthreplay names OUT.json` instead
 // writes the policy feature names (for the model exporter) and exits.
 //
+// leafbench OUT.jsonl MIN_VISITS ROLLOUTS [NET.ctn]: for every searched multi-edge silverazgen root row (whole-run
+// Gumbel corpus, e.g. D2) and every edge with at least MIN_VISITS visits, ROLLOUTS independent playouts from that
+// edge's child (fresh outcome per playout) with the played search's playout policy (root card table; prior playouts
+// in boss rooms and Act 4's elite, as ADR-0050 / ADR-0060 under D2's env), plus the native combat net's value
+// classes of one sampled child; the same for the root state itself. One output line per root. Research only (value net as leaf, 2026-11-14).
+//
 // silverpolicymlpcheck MODEL FEATURE_PREFIX OUT.txt [GBM_MODEL]: scores every
 // root of a silversynthfeatures file with a combat_policy_mlp_v1 model (one
 // logit per action row, in file order, for the Python parity check) and times
@@ -32,6 +38,7 @@
 #include "one_combat/driver_shared.h"
 #include "one_combat/silver_synth_keys.h"
 
+#include "sim/search/CombatTokNet.h"
 #include "sim/search/CombatValueNet.h"
 #include "sim/search/SilverSearcher.h"
 #include "sim/search/SilverWireJson.h"
@@ -503,4 +510,140 @@ void rolloutPolicyBench(const std::string &prefix, std::int64_t budget, const st
         }
     }
     std::cout << "rolloutpolicybench: captured " << captured << " prior calls of " << calls << '\n';
+}
+
+// ---- leafbench (research, value net as leaf 2026-11-14) ----
+// one_combat leafbench OUT.jsonl MIN_VISITS ROLLOUTS [NET.ctn] < rows.jsonl
+// Rows: silverazgen root rows with `wire` and recorded edges (bits, visits, q, qBacked). Plays no game seed.
+void leafValueBench(const std::string &outPath, int minVisits, int rollouts, const std::string &netPath) {
+    const auto &priorPath = search::nativeSilverRootPriorPath();
+    if (priorPath.empty()) throw std::runtime_error("leafbench: needs STS_SILVER_ROOT_PRIOR (prior playouts)");
+    const char *tablePath = std::getenv("STS_SILVER_ROLLOUT_ROOT_TABLE");
+    if (tablePath == nullptr || *tablePath == 0) throw std::runtime_error("leafbench: needs STS_SILVER_ROLLOUT_ROOT_TABLE");
+    search::CombatValueNet tableNet;
+    if (!tableNet.load(tablePath)) throw std::runtime_error(std::string("leafbench: cannot load ") + tablePath);
+    search::CombatTokNet net;
+    if (!netPath.empty()) {
+        std::string err;
+        if (!net.load(netPath, &err)) throw std::runtime_error("leafbench: cannot load " + netPath + ": " + err);
+        if (!net.valueTrained()) throw std::runtime_error("leafbench: " + netPath + " has no value head");
+        std::cout << "leafbench: net " << netPath << " d=" << net.dim() << " layers=" << net.layerCount() << '\n';
+    }
+    if (std::filesystem::exists(outPath)) throw std::runtime_error("leafbench: refusing to overwrite " + outPath);
+    std::ofstream out(outPath);
+    if (!out) throw std::runtime_error("leafbench: cannot open " + outPath);
+    auto cpuNow = [] {
+        timespec ts{};
+        clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts);
+        return ts.tv_sec + ts.tv_nsec * 1e-9;
+    };
+    std::map<std::string, long long> counts;
+    std::string line;
+    while (std::getline(std::cin, line)) {
+        if (line.empty()) continue;
+        const auto row = nlohmann::json::parse(line);
+        if (row.value("kind", "") != "root") continue;
+        if (!row.contains("wire") || row.at("wire").is_null()) { ++counts["noWire"]; continue; }
+        const auto &rowEdges = row.at("edges");
+        if (rowEdges.size() < 2 || row.value("simulations", 0) <= 0) { ++counts["notSearched"]; continue; }
+        int eligible = 0;
+        for (const auto &e : rowEdges) eligible += e.at("visits").get<long long>() >= minVisits;
+        if (eligible == 0) { ++counts["noEligibleEdge"]; continue; }
+        nlohmann::json res = rowId(row);
+        for (const char *k : {"act", "floor", "room", "encounter", "turn", "hp", "maxHp", "rootQBacked", "chosen",
+                              "simulations", "inheritedVisits"})
+            if (row.contains(k)) res[k] = row.at(k);
+        try {
+            const auto state = fromWire(row.at("wire"));
+            const std::uint64_t rootKey = key(row.at("seed").get<std::uint64_t>(), row.at("fight").get<int>(),
+                                              row.at("decision").get<int>(), 0x1eafULL);
+            search::SilverSearcher s(plannerRoot(state.bc, key(rootKey, 9)), state.context);
+            s.prepareRootActions();
+            const auto bits = edgeBits(s);
+            bool same = bits.size() == rowEdges.size();
+            for (std::size_t i = 0; same && i < bits.size(); ++i)
+                same = bits[i] == rowEdges[i].at("bits").get<std::uint64_t>();
+            if (!same) { ++counts["rootEdgeMismatch"]; continue; }
+            // The played search's playouts (D2 env): root card table; prior playouts in boss rooms and Act 4's elite.
+            const std::string room = row.at("room").get<std::string>();
+            const int act = row.at("act").get<int>();
+            search::nativeSilverRolloutRootTable(s.rootSearchState(), tableNet, s.rootCardTable);
+            s.rolloutConfig.cardTable = s.rootCardTable.data();
+            s.rolloutConfig.prior = room == "BOSS" || (act == 4 && room == "ELITE");
+            if (s.rolloutConfig.prior) s.rolloutPrior = search::nativeSilverPolicyPrior;
+            res["priorPlayouts"] = s.rolloutConfig.prior;
+            res["rootPotions"] = state.bc.potionCount;
+            const auto &edges = s.rootNode().edges;
+            const auto netValue = [&](const BattleContext &bc, const std::vector<search::SilverSearcher::Edge> &es) {
+                search::CombatTokInputs in;
+                search::combatTokEncodeRoot(bc, state.context, es, in);
+                search::CombatTokOutputs o;
+                net.forward(in, o);
+                double mx = o.value[0];
+                for (float v : o.value) mx = std::max(mx, static_cast<double>(v));
+                double z = 0;
+                std::vector<double> p(o.value.size());
+                for (std::size_t i = 0; i < p.size(); ++i) z += p[i] = std::exp(o.value[i] - mx);
+                for (auto &v : p) v /= z;
+                return p;
+            };
+            {
+                // The root itself: ROLLOUTS playouts from the root state (no action) and the net's value classes.
+                std::vector<double> values;
+                const double c0 = cpuNow();
+                for (int r = 0; r < rollouts; ++r) {
+                    BattleContext world = state.bc;
+                    search::seedSearchRng(world, key(rootKey, 5, r));
+                    values.push_back(s.rolloutValue(world));
+                }
+                res["rootRollouts"] = values;
+                res["rootRolloutCpu"] = cpuNow() - c0;
+                if (net.loaded()) res["rootNet"] = netValue(state.bc, edges);
+            }
+            nlohmann::json edgesOut = nlohmann::json::array();
+            for (std::size_t e = 0; e < edges.size(); ++e) {
+                const auto &re = rowEdges[e];
+                nlohmann::json eo = {{"e", e}, {"visits", re.at("visits")}, {"q", re.at("q")},
+                                     {"qBacked", re.contains("qBacked") ? re.at("qBacked") : nlohmann::json(nullptr)},
+                                     {"semantic", re.value("semantic", "")}};
+                if (re.at("visits").get<long long>() < minVisits) { edgesOut.push_back(eo); continue; }
+                std::vector<double> values;
+                BattleContext probe;
+                const double c0 = cpuNow();
+                for (int r = 0; r < rollouts; ++r) {
+                    BattleContext world = state.bc;
+                    search::seedSearchRng(world, key(rootKey, 7, e, r));
+                    edges[e].action.execute(world);
+                    if (r == 0) probe = world;
+                    values.push_back(s.rolloutValue(world));
+                }
+                eo["rollouts"] = values;
+                eo["rolloutCpu"] = cpuNow() - c0;
+                const bool terminal = probe.outcome != Outcome::UNDECIDED;
+                eo["terminal"] = terminal;
+                eo["childHp"] = probe.player.curHp;
+                eo["childMaxHp"] = probe.player.maxHp;
+                eo["childPotions"] = probe.potionCount;
+                eo["childTurn"] = probe.turn;
+                if (terminal) eo["exact"] = s.scoreEndState(probe);
+                if (net.loaded() && !terminal) {
+                    const double n0 = cpuNow();
+                    search::SilverSearcher cs(probe, state.context);
+                    cs.prepareRootActions();
+                    eo["net"] = netValue(probe, cs.rootNode().edges);
+                    eo["childEdges"] = cs.rootNode().edges.size();
+                    eo["netCpu"] = cpuNow() - n0;
+                }
+                edgesOut.push_back(eo);
+                ++counts["edges"];
+            }
+            res["edges"] = edgesOut;
+            ++counts["roots"];
+        } catch (const std::exception &e) {
+            ++counts[std::string("error:") + e.what()];
+            continue;
+        }
+        out << res.dump() << '\n';
+    }
+    std::cout << "leafbench: " << nlohmann::json(counts).dump() << '\n';
 }

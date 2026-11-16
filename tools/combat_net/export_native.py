@@ -4,6 +4,7 @@
 
 usage: export_native.py MODEL_DIR OUT.ctn
        export_native.py --random D LAYERS HEADS SEED OUT.ctn   (an untrained net, for tests and timing)
+       export_native.py --random --q-head ...                 (the same with the per-edge Q head)
 
 MODEL_DIR holds model.pt (a state_dict) and eval.json (its training config). File layout, little-endian:
 
@@ -53,10 +54,11 @@ def write(net, d, layers, heads, out):
             "a_len": a_len, "tensors": len(sd)}
 
 
-def random_net(d, layers, heads, seed):
+def random_net(d, layers, heads, seed, qhead=False):
     """An untrained net in eval mode; embeddings and biases get N(0, 0.5) noise so a test sees every input."""
     torch.manual_seed(seed)
-    net = M.CombatNet(d=d, layers=layers, heads=heads, g_len=T.G_LEN, m_num=T.M_NUM, q_len=T.Q_LEN, a_len=T.A_LEN)
+    net = M.CombatNet(d=d, layers=layers, heads=heads, g_len=T.G_LEN, m_num=T.M_NUM, q_len=T.Q_LEN, a_len=T.A_LEN,
+                      qhead=qhead)
     with torch.no_grad():
         for mod in net.modules():
             if isinstance(mod, torch.nn.Embedding):
@@ -71,15 +73,17 @@ def main(argv):
     ap = argparse.ArgumentParser()
     ap.add_argument("args", nargs="+")
     ap.add_argument("--random", action="store_true")
+    ap.add_argument("--q-head", action="store_true", help="with --random: add the per-edge Q head")
     a = ap.parse_args(argv)
     if a.random:
         d, layers, heads, seed, out = int(a.args[0]), int(a.args[1]), int(a.args[2]), int(a.args[3]), a.args[4]
-        info = write(random_net(d, layers, heads, seed), d, layers, heads, out)
+        info = write(random_net(d, layers, heads, seed, a.q_head), d, layers, heads, out)
     else:
         model_dir, out = a.args
         cfg = json.load(open(os.path.join(model_dir, "eval.json")))["config"]
         net = M.CombatNet(d=cfg["d"], layers=cfg["layers"], g_len=T.G_LEN, m_num=T.M_NUM, q_len=T.Q_LEN,
-                          a_len=T.A_LEN, aux=not cfg["no_aux"], value=not cfg["no_value"])
+                          a_len=T.A_LEN, aux=not cfg["no_aux"], value=not cfg["no_value"],
+                          qhead=cfg.get("q_head", False))
         net.load_state_dict(torch.load(os.path.join(model_dir, "model.pt"), map_location="cpu"))
         info = write(net.eval(), cfg["d"], cfg["layers"], 4, out)
     print(json.dumps(info))

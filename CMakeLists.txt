@@ -142,6 +142,10 @@ target_include_directories(combat-tok-net-tool PRIVATE include json/include)
 add_test(NAME combat_tok_net_parity COMMAND $<TARGET_FILE:combat-tok-net-tool> check
          ${CMAKE_SOURCE_DIR}/tests/data/combat_tok_net_tiny.ctn ${CMAKE_SOURCE_DIR}/tests/data/combat_tok_net_fixture.json)
 set_tests_properties(combat_tok_net_parity PROPERTIES LABELS "core;smoke")
+# The same with the per-edge Q head (value-net-as-leaf V1; make_native_fixture.py --q-head).
+add_test(NAME combat_tok_net_q_parity COMMAND $<TARGET_FILE:combat-tok-net-tool> check
+         ${CMAKE_SOURCE_DIR}/tests/data/combat_tok_net_tiny_q.ctn ${CMAKE_SOURCE_DIR}/tests/data/combat_tok_net_q_fixture.json)
+set_tests_properties(combat_tok_net_q_parity PROPERTIES LABELS "core;smoke")
 
 add_executable(rest_recall_filter_test tests/rest_recall_filter_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)

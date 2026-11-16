@@ -1,6 +1,6 @@
 # Leaf evaluation in combat search
 
-Last verified: 2026-10-23 for the native Silver learned leaf head (§655, §656) and the exact endgame study (§654); 2026-10-18 for the native Silver prior-playout headroom pilot (§540); 2026-10-17 for the native Silver blended-leaf gate (§525); 2026-08-11 otherwise.
+Last verified: 2026-11-16 for the value-net Q head leaf (V0 / V1 §812, V2 §813); 2026-10-23 for the native Silver learned leaf head (§655, §656) and the exact endgame study (§654); 2026-10-18 for the native Silver prior-playout headroom pilot (§540); 2026-10-17 for the native Silver blended-leaf gate (§525); 2026-08-11 otherwise.
 
 ## Purpose / research question
 
@@ -79,6 +79,23 @@ simulations end (§142).
   solves finish (certified loss 0.02–0.04 points per fight); a lost fight is usually lost before its last turn starts.
 - **Budget:** production Silver gains nothing measurable from 12k or 15k simulations over 10k at fight level (§638,
   §656).
+
+## Value-net Q head as Silver's leaf (V0 / V1, 2026-11-16)
+
+- **Offline, played roots (§812):** on D2's gate split (G16 + mb4 self-play roots; truth = the played 16k search's
+  max-backed edge values), a per-edge Q head (`V1_d64`, d 64, 2 layers) trained on the teacher's sibling differences
+  orders boss and Act-4-elite root actions like the mean of 23.4 [20.2, 26.9] playouts, for one 1.06 ms forward per
+  root (about one boss playout per edge) → LEAF_PAYS. N_f1's outcome-trained value head is worth about one playout at
+  26× its cost (V0), in line with §789. The head's absolute level is worse than eight playouts'.
+- **In fights it fails (§813, smoke on five Baalorlord bosses):** as the leaf value under g16mb it loses +11.0 HP
+  per boss fight on average (4 of 5 bosses worse, longer fights) at 5.9× CPU per simulation; within a parent its
+  values follow the playouts, but each leaf carries its parent's level error, and removing a per-search offset does
+  not repair it. As a Q-init (nodes ≥ 64 visits, 16 virtual visits) +2.4 HP at 1.18× CPU. Line closed; switches
+  `STS_SILVER_LEAF_QNET`, `_SHADOW`, `_CALIBRATE`, `_QINIT` stay default off
+  ([V2 RESULT](../../../experiments/evidence/value_leaf_v2_20261116/RESULT.md)).
+- **Lesson:** sibling order on played roots is not a sufficient leaf test. A leaf candidate needs tree-state checks
+  (shadow logging) and a small fight smoke before a gate; a per-leaf net at about 0.8 ms per forward also costs
+  more than doubling Silver's budget.
 
 ## Relationships
 
