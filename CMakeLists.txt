@@ -97,6 +97,12 @@ if(Python_Development.Module_FOUND)
     target_include_directories(slaythespire PUBLIC include)
     target_include_directories(slaythespire PUBLIC json/single_include)
     target_include_directories(slaythespire PUBLIC bindings)
+    # Stage 0 bench, part 3: the end-to-end producer for a Python / GPU net (tools/az_bench/e2e_bench.py).
+    pybind11_add_module(az_bench_native
+        apps/az_bench/az_bench_module.cpp
+        apps/az_bench/az_driver.cpp
+        $<TARGET_OBJECTS:sts_core_pic_objects>)
+    target_include_directories(az_bench_native PRIVATE include json/include apps/az_bench)
 else()
     message(WARNING "Python development headers not found; skipping the slaythespire pybind11 module")
 endif()
@@ -156,6 +162,15 @@ target_link_libraries(az-bench-producer PRIVATE Threads::Threads)
 add_test(NAME az_bench_producer_smoke COMMAND $<TARGET_FILE:az-bench-producer>
          ${CMAKE_SOURCE_DIR}/tests/data/combat_net_wire_sample.jsonl --threads 2 --seconds 0.3 --games 4)
 set_tests_properties(az_bench_producer_smoke PROPERTIES LABELS "core;smoke")
+
+# Stage 0 bench, part 3: end-to-end producer (worker threads, request queue, batching) with a fake net (C++ only).
+add_executable(az-bench-driver apps/az_bench/az_bench_driver.cpp apps/az_bench/az_driver.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(az-bench-driver PRIVATE include json/include apps/az_bench)
+target_link_libraries(az-bench-driver PRIVATE Threads::Threads)
+add_test(NAME az_bench_driver_smoke COMMAND $<TARGET_FILE:az-bench-driver>
+         ${CMAKE_SOURCE_DIR}/tests/data/combat_net_wire_sample.jsonl --workers 2 --games 8 --batch 16 --seconds 0.5)
+set_tests_properties(az_bench_driver_smoke PROPERTIES LABELS "core;smoke")
 
 add_executable(rest_recall_filter_test tests/rest_recall_filter_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
