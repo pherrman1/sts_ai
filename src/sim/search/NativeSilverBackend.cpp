@@ -16,6 +16,7 @@
 #include <mutex>
 #include <cmath>
 #include <cstring>
+#include <sys/mman.h>
 #include <chrono>
 #include <ctime>
 #include <nlohmann/json.hpp>
@@ -23,6 +24,7 @@
 #include <stdexcept>
 #include <string>
 #include <tuple>
+#include <unordered_set>
 
 #include "combat/BattleContext.h"
 #include "game/GameContext.h"
@@ -177,6 +179,8 @@ namespace sts::search {
             // decisions in one turn that change nothing tracked by
             // NoProgressFingerprint, End Turn is forced (0 = off).
             int loopGuardCap = 50;
+            // STS_SILVER_PRIOR_PICK_CACHE: log2 entries of the exact prior-playout pick cache (#1051), 0 = off.
+            int priorPickCacheLog2 = 20;
         };
         Options g_options;
         NativeSilverPriceTableBuilder g_priceTableBuilder;
@@ -957,11 +961,15 @@ namespace sts::search {
                                   g_options.leafHeadTurnPenalty, g_options.leafHeadWinCap};
                 }
                 s.rolloutPrior = nullptr;
+                s.rolloutPriorArgmax = nullptr;
+                s.rolloutPriorArgmaxOf = nullptr;
                 if (s.rolloutConfig.prior) {
                     // Research: prior playouts score with the root-prior model (or the arm's override).
                     if (g_options.rootPriorPath.empty() && !g_nativeSilverPriorNetOverride)
                         throw std::runtime_error("STS_SILVER_ROLLOUT_PRIOR requires STS_SILVER_ROOT_PRIOR");
                     s.rolloutPrior = nativeSilverPolicyPrior;
+                    s.rolloutPriorArgmax = nativeSilverPolicyArgmax;
+                    s.rolloutPriorArgmaxOf = nativeSilverPolicyPrior;
                 }
                 if (const CombatValueNet *tableNet = g_nativeSilverRolloutRootTableOverride
                         ? g_nativeSilverRolloutRootTableOverride
@@ -1033,8 +1041,9 @@ namespace sts::search {
                 }
                 const auto stepsBefore = searcher->stats.steps;
                 // g_nativeSilverBudgetLadder: the played search's CPU (research only; reads the clock, nothing else).
-                const bool ladderOn = (!g_nativeSilverBudgetLadder.empty() || (!g_nativeSilverRolloutLadder.empty()
-                        && searcher->rolloutConfig.prior)) && wholeRunGumbel && gumbelRoot && g_nativeSilverRootObserver;
+                const bool ladderOn = (!g_nativeSilverBudgetLadder.empty() || !g_nativeSilverDominanceLadder.empty()
+                        || (!g_nativeSilverRolloutLadder.empty() && searcher->rolloutConfig.prior))
+                    && wholeRunGumbel && gumbelRoot && g_nativeSilverRootObserver;
                 const double ladderCpu0 = ladderOn ? threadCpuSeconds() : 0;
                 // Tree profile only (#888): cost, starting graph and checkpoint reads of this search.
                 const bool shape = searcher->profile != nullptr;
@@ -1052,6 +1061,23 @@ namespace sts::search {
                 }
                 const auto playoutsBefore = searcher->stats.rolloutPlayouts;
                 const auto rolloutActionsBefore = searcher->stats.rolloutActions;
+                // g_nativeSilverExtraLabels: a reservoir of this search's playout states (research; reads only).
+                const auto &extraCfg = g_nativeSilverExtraLabels;
+                const bool extrasOn = (extraCfg.nodes > 0 || extraCfg.playouts > 0) && extraCfg.sims > 0
+                    && wholeRunGumbel && gumbelRoot && g_nativeSilverRootObserver && !skipSearch;
+                SilverPlayoutSamples playoutReservoir;
+                struct ReservoirScope {
+                    SilverSearcher *s = nullptr;
+                    ~ReservoirScope() { if (s) s->playoutSamples = nullptr; }
+                } reservoirScope;
+                const std::uint64_t extraSeed = nativeSilverBattleSeed(bc)
+                    ^ (0xd1b54a32d192ed03ULL * static_cast<std::uint64_t>(decision + 1));
+                if (extrasOn && extraCfg.playouts > 0) {
+                    playoutReservoir.rng = extraSeed ^ 0x2545f4914f6cdd1dULL;
+                    playoutReservoir.max = static_cast<std::size_t>(extraCfg.playouts);
+                    searcher->playoutSamples = &playoutReservoir;
+                    reservoirScope.s = searcher.get();
+                }
                 // STS_SILVER_PLAN_COMMIT: the inherited plan at a chance-free continuation root.
                 int planEdge = -1;
                 if (g_options.planCommit && wholeRunGumbel && planContinuation && !skipSearch && inheritedVisits > 0) {
@@ -1292,6 +1318,41 @@ namespace sts::search {
                             }
                         ladder.push_back({b, edge, sims, cpu});
                     }
+                    // g_nativeSilverDominanceLadder: the same with order dominance on, seeded like budget-ladder slot.
+                    for (const auto &arm : g_nativeSilverDominanceLadder) {
+                        std::unique_ptr<SilverSearcher> shadow;
+                        prepareSearcher(shadow, root, false);
+                        configureSearcher(*shadow, false);
+                        shadow->leafSamples = nullptr;
+                        shadow->outcomes = nullptr;
+                        shadow->orderDominance = arm.rules;
+                        shadow->dominanceObserve = 0;
+                        const double c0 = threadCpuSeconds();
+                        const std::uint64_t salt = 0xb5ad4eceda1ce2a9ULL * static_cast<std::uint64_t>(arm.slot);
+                        const std::int64_t sims = shadow->searchGumbelRoot(arm.budget, *gumbelRoot,
+                            nativeSilverBattleSeed(bc) ^ (0x9e3779b97f4a7c15ULL * static_cast<std::uint64_t>(decision + 1))
+                            ^ salt);
+                        const double cpu = threadCpuSeconds() - c0;
+                        const auto pick = SilverSearcher::translateAction(
+                            shadow->bestAction(), shadow->rootSearchState(), bc);
+                        int edge = -1;
+                        for (int pass = 0; pass < 2 && edge < 0; ++pass)
+                            for (std::size_t e = 0; e < mainEdges.size(); ++e) {
+                                const auto mine = SilverSearcher::translateAction(
+                                    mainEdges[e].action, searcher->rootSearchState(), bc);
+                                if (pass == 0 ? mine.bits == pick.bits
+                                              : SilverSearcher::actionsEquivalentOn(mine, pick, bc)) {
+                                    edge = static_cast<int>(e);
+                                    break;
+                                }
+                            }
+                        NativeSilverRootView::LadderPick lp{arm.budget, edge, sims, cpu};
+                        lp.dominance = true;
+                        lp.domStats = shadow->orderDominanceStats;
+                        lp.slot = arm.slot;
+                        lp.rules = arm.rules;
+                        ladder.push_back(lp);
+                    }
                     // g_nativeSilverRolloutLadder: the same, once per playout-policy arm (prior-playout roots only).
                     for (std::size_t ai = 0; searcher->rolloutConfig.prior && ai < g_nativeSilverRolloutLadder.size(); ++ai) {
                         const auto &arm = g_nativeSilverRolloutLadder[ai];
@@ -1350,6 +1411,103 @@ namespace sts::search {
                                           shadow->stats.rolloutPriorCalls - calls0, shadow->stats.rolloutActions - acts0});
                     }
                 }
+                // g_nativeSilverExtraLabels: label interior tree nodes and sampled playout states by fresh searches.
+                searcher->playoutSamples = nullptr;
+                reservoirScope.s = nullptr;
+                std::vector<NativeSilverRootView::ExtraLabel> extras;
+                if (extrasOn && searcher->rootNode().edges.size() > 1) {
+                    std::uint64_t pick = extraSeed;
+                    const auto next = [&pick]() {
+                        std::uint64_t z = (pick += 0x9e3779b97f4a7c15ULL);
+                        z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ULL;
+                        z = (z ^ (z >> 27)) * 0x94d049bb133111ebULL;
+                        return z ^ (z >> 31);
+                    };
+                    struct Candidate { BattleContext state; int source; int depth; int step; std::int64_t visits;
+                                       std::vector<NativeSilverRootView::ExtraLabel::TreeEdge> edges; };
+                    std::vector<Candidate> chosen;
+                    if (extraCfg.nodes > 0) {
+                        // Interior decision nodes in breadth-first order from the root (a transposition graph:
+                        // each node once), then a uniform draw without replacement.
+                        std::vector<std::pair<const SilverSearcher::Node *, int>> frontier{{&searcher->rootNode(), 0}};
+                        std::vector<std::pair<const SilverSearcher::Node *, int>> found;
+                        std::unordered_set<const SilverSearcher::Node *> seen{&searcher->rootNode()};
+                        const auto visit = [&seen](const SilverSearcher::Node *n) { return seen.insert(n).second; };
+                        for (std::size_t f = 0; f < frontier.size() && seen.size() < 200000; ++f) {
+                            const auto [node, depth] = frontier[f];
+                            for (const auto &e : node->edges) {
+                                if (!e.node) continue;
+                                std::vector<const SilverSearcher::Node *> children;
+                                if (e.node->isRandomNode) {
+                                    if (!visit(e.node)) continue;
+                                    for (const auto &o : e.node->edges)
+                                        if (o.node && !o.node->isRandomNode) children.push_back(o.node);
+                                } else {
+                                    children.push_back(e.node);
+                                }
+                                for (const auto *c : children) {
+                                    if (!visit(c)) continue;
+                                    frontier.push_back({c, depth + 1});
+                                    if (c->state && c->simulationCount >= extraCfg.minVisits && c->edges.size() > 1
+                                            && c->state->outcome == Outcome::UNDECIDED
+                                            && c->state->inputState == InputState::PLAYER_NORMAL)
+                                        found.push_back({c, depth + 1});
+                                }
+                            }
+                        }
+                        const int mb = searcher->maxBackupMinVisits;
+                        for (int k = 0; k < extraCfg.nodes && !found.empty(); ++k) {
+                            const std::size_t j = next() % found.size();
+                            const auto [node, depth] = found[j];
+                            found[j] = found.back();
+                            found.pop_back();
+                            std::vector<NativeSilverRootView::ExtraLabel::TreeEdge> te;
+                            for (std::size_t i = 0; i < node->edges.size(); ++i) {
+                                const auto &e = node->edges[i];
+                                NativeSilverRootView::ExtraLabel::TreeEdge t;
+                                t.bits = e.action.bits;
+                                t.visits = e.visitCount;
+                                t.childSims = e.node ? e.node->simulationCount : 0;
+                                t.hasQ = e.node && e.node->simulationCount > 0;
+                                if (t.hasQ) {
+                                    t.q = e.node->evaluationSum / e.node->simulationCount;
+                                    t.hasBacked = mb > 0;
+                                    t.qBacked = mb > 0 && e.node->hasBackedValue && e.node->simulationCount >= mb
+                                        ? e.node->backedValue : t.q;
+                                }
+                                t.hasPrior = node->prior.size() == node->edges.size();
+                                if (t.hasPrior) t.prior = node->prior[i];
+                                te.push_back(t);
+                            }
+                            chosen.push_back({*node->state, 0, depth, 0, node->simulationCount, std::move(te)});
+                        }
+                    }
+                    for (const auto &p : playoutReservoir.samples)
+                        chosen.push_back({p.state, 1, p.treeDepth, p.playoutStep, 0, {}});
+                    for (std::size_t ci = 0; ci < chosen.size(); ++ci) {
+                        auto &c = chosen[ci];
+                        std::unique_ptr<SilverSearcher> shadow;
+                        prepareSearcher(shadow, c.state, false);
+                        configureSearcher(*shadow, false);
+                        shadow->leafSamples = nullptr;
+                        shadow->outcomes = nullptr;
+                        if (shadow->prepareRootActions() <= 1) continue;
+                        const double c0 = threadCpuSeconds();
+                        const std::uint64_t salt = 0x6a09e667f3bcc909ULL * static_cast<std::uint64_t>(ci + 1);
+                        const std::int64_t sims = shadow->searchGumbelRoot(extraCfg.sims, *gumbelRoot,
+                                                                           extraSeed ^ salt);
+                        NativeSilverRootView::ExtraLabel x;
+                        x.source = c.source;
+                        x.depth = c.depth;
+                        x.playoutStep = c.step;
+                        x.nodeVisits = c.visits;
+                        x.treeEdges = std::move(c.edges);
+                        x.sims = sims;
+                        x.cpu = threadCpuSeconds() - c0;
+                        x.label = std::shared_ptr<const SilverSearcher>(std::move(shadow));
+                        extras.push_back(std::move(x));
+                    }
+                }
                 searching.resume();
 
                 const auto action = SilverSearcher::translateAction(
@@ -1373,7 +1531,8 @@ namespace sts::search {
                     g_nativeSilverRootObserver({gc, bc, *searcher, decision, inheritedVisits, simulations,
                                                 skipSearch, action, labelSearch ? labelSearcher.get() : nullptr,
                                                 labelInheritedVisits, &preEdges,
-                                                ladder.empty() ? nullptr : &ladder, mainCpu});
+                                                ladder.empty() ? nullptr : &ladder, mainCpu,
+                                                extras.empty() ? nullptr : &extras});
                 }
                 if (searcher->profile) {
                     shapeRow["cpu_seconds"] = threadCpuSeconds() - cpuBefore;
@@ -1906,6 +2065,15 @@ namespace sts::search {
             const std::string path = raw && *raw ? raw : kDefaultRolloutRootTableModel;
             g_options.rolloutRootTablePath = path == "0" ? "" : path;
         }
+        if (const char *raw = std::getenv("STS_SILVER_PRIOR_PICK_CACHE"); raw && *raw) {
+            const std::string value = raw;
+            int log2 = -1;
+            const auto [end, ec] = std::from_chars(value.data(), value.data() + value.size(), log2);
+            if (ec != std::errc{} || end != value.data() + value.size() || (log2 != 0 && (log2 < 4 || log2 > 24)))
+                // 16 bytes per slot per thread: 2^24 = 256 MB per search thread is the cap (review N2).
+                throw std::runtime_error("STS_SILVER_PRIOR_PICK_CACHE must be 0 (off) or a log2 size in 4..24");
+            g_options.priorPickCacheLog2 = log2;
+        }
         if (const char *raw = std::getenv("STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE"); raw && *raw) {
             const std::string value = raw;
             if (value != "0" && value != "1")
@@ -2109,6 +2277,155 @@ namespace sts::search {
             g_nativeSilverPriorNetOverride ? *g_nativeSilverPriorNetOverride : g_rootPriorNet, state, edges);
     }
 
+    namespace {
+        // Scores of the distinct edges of `state` (edges with bit-identical action blocks and target are
+        // scored once): scores[distinctOf[i]] is edge i's logit (MLP) or margin (tree ensemble).
+        struct PriorScores {
+            std::vector<int> distinctOf;
+            std::vector<double> scores;
+            bool mlp = false;
+        };
+        // The net's input for `state` and `edges`: the state block, the distinct action blocks with their target
+        // slots and every edge's distinct index (PriorScores::distinctOf), in per-thread buffers.
+        struct PriorInput {
+            std::vector<float> features, actions;
+            std::vector<std::uint16_t> touched;   // `features` is written only by combatExtractFeaturesReuse
+            std::vector<int> targets;
+            int distinct = 0;
+            double t0 = 0;   // NativeSilverPriorTiming start
+        };
+        PriorInput &preparePolicyInput(const CombatValueNet &net, const BattleContext &state,
+                                       const std::vector<SilverSearcher::Edge> &edges, PriorScores &out) {
+            thread_local PriorInput in;
+            in.t0 = g_nativeSilverPriorTiming ? threadCpuSeconds() : 0;
+            const bool mlp = net.isPolicyMlp;
+            const int stateCount = combatFeatureCount();
+            const int actionCount = combatPolicyFeatureCount() - stateCount;
+            const int n = static_cast<int>(edges.size());
+            in.features.resize(stateCount);
+            combatExtractFeaturesReuse(state, in.features.data(), in.touched);
+            in.actions.resize(static_cast<std::size_t>(n) * actionCount);
+            out.distinctOf.resize(n);
+            in.targets.resize(n);
+            int distinct = 0;
+            for (int i = 0; i < n; ++i) {
+                float *block = in.actions.data() + static_cast<std::size_t>(distinct) * actionCount;
+                combatFillActionFeatures(state, edges[i].action, block);
+                const int target = mlp ? combatActionTargetSlot(state, edges[i].action) : -1;
+                int match = 0;
+                while (match < distinct && (in.targets[match] != target
+                           || std::memcmp(in.actions.data() + static_cast<std::size_t>(match) * actionCount,
+                                          block, sizeof(float) * actionCount) != 0)) ++match;
+                out.distinctOf[i] = match;
+                if (match == distinct) in.targets[distinct++] = target;
+            }
+            in.distinct = distinct;
+            out.mlp = mlp;
+            return in;
+        }
+        void evaluatePolicyInput(const CombatValueNet &net, PriorInput &in, PriorScores &out) {
+            NativeSilverPriorTiming *timing = g_nativeSilverPriorTiming;
+            const int distinct = in.distinct;
+            out.scores.resize(distinct);
+            const double t1 = timing ? threadCpuSeconds() : 0;
+            if (out.mlp) {
+                // The state's nonzero features from the extractor's touched list (no scan of all features).
+                thread_local std::vector<std::uint16_t> nonzero;
+                nonzero.resize(in.features.size());
+                const int count = combatNonzeroStateFeatures(in.features.data(), in.touched, nonzero.data());
+                net.predictPolicyMlp(in.features.data(), nonzero.data(), count, in.actions.data(), in.targets.data(),
+                                     distinct, out.scores.data());
+                if (timing) {
+                    timing->featureSeconds += t1 - in.t0;
+                    timing->mlpSeconds += threadCpuSeconds() - t1;
+                    ++timing->calls;
+                    timing->edges += distinct;
+                }
+            } else {
+                net.predictPolicyActions(in.features.data(), in.actions.data(), distinct, out.scores.data());
+            }
+        }
+        const PriorScores &scorePolicyEdges(const CombatValueNet &net, const BattleContext &state,
+                                            const std::vector<SilverSearcher::Edge> &edges) {
+            thread_local PriorScores out;
+            evaluatePolicyInput(net, preparePolicyInput(net, state, edges, out), out);
+            return out;
+        }
+        // The first edge with the largest score.
+        int policyArgmax(const PriorScores &ps, int n) {
+            int best = 0;
+            double bestScore = ps.scores[ps.distinctOf[0]];
+            for (int i = 1; i < n; ++i) {
+                const double v = ps.scores[ps.distinctOf[i]];
+                if (v > bestScore) { bestScore = v; best = i; }
+            }
+            return best;
+        }
+
+        // Exact prior-playout pick cache (issue #1051, STS_SILVER_PRIOR_PICK_CACHE): the policy MLP's argmax edge
+        // keyed by a 128-bit fingerprint of the MLP's whole input (net, state block, distinct action blocks,
+        // targets and each edge's distinct index), so a hit returns the edge the MLP would pick, and play is
+        // unchanged up to a fingerprint collision (120 of the 128 bits are compared: ~2^-120 per pair of inputs).
+        // 4-way buckets of 16-byte slots (16 MB per thread at the default 2^20), allocated at first use, per thread,
+        // never cleared: every entry stays valid, so lifetime and eviction affect only the hit rate.
+        struct PriorPickCache {
+            struct Slot { std::uint64_t a = 0, b = 0; };   // b's low 8 bits hold the pick + 1 (0 = empty)
+            struct Free { void operator()(Slot *p) const { std::free(p); } };
+            std::unique_ptr<Slot[], Free> slots;
+            int log2 = 0;
+            NativeSilverPriorPickCacheStats stats;
+            // 2^log2 empty slots, 2 MB aligned and advised as huge pages (a lookup is one random access).
+            void allocate(int lg) {
+                const std::size_t bytes = std::max<std::size_t>(sizeof(Slot) << lg, std::size_t{1} << 21);
+                void *p = std::aligned_alloc(std::size_t{1} << 21, bytes);
+                if (!p) throw std::bad_alloc();
+#ifdef MADV_HUGEPAGE
+                madvise(p, bytes, MADV_HUGEPAGE);
+#endif
+                std::memset(p, 0, bytes);
+                slots.reset(static_cast<Slot *>(p));
+                log2 = lg;
+            }
+        };
+        thread_local PriorPickCache t_priorPickCache;
+
+        // The fingerprint of the MLP input preparePolicyInput left in `in` for `n` edges: the state block's words
+        // (combatStateFingerprint, indices < 2^16) plus one tagged word per nonzero action-block entry, per
+        // distinct target and per edge's distinct index, and the edge count; then the net's load id. Tags (bits
+        // 48-63) keep the word kinds apart. False when the state block has no fingerprint.
+        bool priorInputFingerprint(const CombatValueNet &net, const PriorInput &in, const PriorScores &ps, int n,
+                                   std::uint64_t &a, std::uint64_t &b) {
+            a = 0;
+            b = 0;
+            if (!combatStateFingerprint(in.features.data(), in.touched, a, b)) return false;
+            auto add = [&](std::uint64_t w) { a += combatFingerprintMixA(w); b += combatFingerprintMixB(w); };
+            const int actionCount = combatPolicyFeatureCount() - combatFeatureCount();
+            const auto *words = reinterpret_cast<const std::uint32_t *>(in.actions.data());
+            for (int d = 0; d < in.distinct; ++d) {
+                for (int k = 0; k < actionCount; ++k) {
+                    const std::uint32_t bits = words[static_cast<std::size_t>(d) * actionCount + k];
+                    if (bits) add((std::uint64_t{1} << 48) | (static_cast<std::uint64_t>(d) << 40)
+                                  | (static_cast<std::uint64_t>(k) << 32) | bits);
+                }
+                add((std::uint64_t{2} << 48) | (static_cast<std::uint64_t>(d) << 32)
+                    | static_cast<std::uint32_t>(in.targets[d]));
+            }
+            for (int i = 0; i < n; ++i)
+                add((std::uint64_t{3} << 48) | (static_cast<std::uint64_t>(i) << 32)
+                    | static_cast<std::uint32_t>(ps.distinctOf[i]));
+            add((std::uint64_t{4} << 48) | static_cast<std::uint32_t>(n));
+            // The edge kernel (#1052): FMA and exact logits can pick different edges, and setPolicyMlpFma can switch
+            // kernels within a process.
+            add((std::uint64_t{5} << 48) | (policyMlpFmaActive() ? 1u : 0u));
+            const std::uint64_t netWord = net.policyMlpLoadId;   // deterministic, unlike the net's address
+            a = combatFingerprintMixA(a ^ netWord);
+            b = combatFingerprintMixB(b + netWord);
+            return true;
+        }
+    }
+
+    NativeSilverPriorPickCacheStats nativeSilverPriorPickCacheStats() { return t_priorPickCache.stats; }
+
     std::vector<double> nativeSilverPolicyPriorWith(const CombatValueNet &net, const BattleContext &state,
                                                     const std::vector<SilverSearcher::Edge> &edges) {
         // The state block is extracted once; edges with bit-identical action
@@ -2116,42 +2433,12 @@ namespace sts::search {
         // predictVec per edge (CombatValueNet::predictPolicyActions).
         // A combat_policy_mlp_v1 model (or a per-thread override) also keys
         // edges by target slot and normalizes logits with a softmax.
-        NativeSilverPriorTiming *timing = g_nativeSilverPriorTiming;
-        const double t0 = timing ? threadCpuSeconds() : 0;
-        const bool mlp = net.isPolicyMlp;
-        const int stateCount = combatFeatureCount();
-        const int actionCount = combatPolicyFeatureCount() - stateCount;
+        const PriorScores &ps = scorePolicyEdges(net, state, edges);
+        const auto &scores = ps.scores;
+        const auto &distinctOf = ps.distinctOf;
         const int n = static_cast<int>(edges.size());
-        thread_local std::vector<float> features, actions;
-        thread_local std::vector<int> distinctOf, targets;
-        thread_local std::vector<double> scores;
-        features.resize(stateCount);
-        combatExtractFeatures(state, features.data());
-        actions.resize(static_cast<std::size_t>(n) * actionCount);
-        distinctOf.resize(n);
-        targets.resize(n);
-        int distinct = 0;
-        for (int i = 0; i < n; ++i) {
-            float *block = actions.data() + static_cast<std::size_t>(distinct) * actionCount;
-            combatFillActionFeatures(state, edges[i].action, block);
-            const int target = mlp ? combatActionTargetSlot(state, edges[i].action) : -1;
-            int match = 0;
-            while (match < distinct && (targets[match] != target
-                       || std::memcmp(actions.data() + static_cast<std::size_t>(match) * actionCount,
-                                      block, sizeof(float) * actionCount) != 0)) ++match;
-            distinctOf[i] = match;
-            if (match == distinct) targets[distinct++] = target;
-        }
-        scores.resize(distinct);
-        const double t1 = timing ? threadCpuSeconds() : 0;
-        if (mlp) {
-            net.predictPolicyMlp(features.data(), actions.data(), targets.data(), distinct, scores.data());
-            if (timing) {
-                timing->featureSeconds += t1 - t0;
-                timing->mlpSeconds += threadCpuSeconds() - t1;
-                ++timing->calls;
-                timing->edges += distinct;
-            }
+        const int distinct = static_cast<int>(scores.size());
+        if (ps.mlp) {
             double top = scores[0];
             for (int d = 1; d < distinct; ++d) top = std::max(top, scores[d]);
             std::vector<double> prior;
@@ -2165,7 +2452,6 @@ namespace sts::search {
             for (auto &p : prior) p /= total;
             return prior;
         }
-        net.predictPolicyActions(features.data(), actions.data(), distinct, scores.data());
         std::vector<double> prior;
         prior.reserve(edges.size());
         double total = 0;
@@ -2177,6 +2463,43 @@ namespace sts::search {
         }
         for (auto &p : prior) p /= total;
         return prior;
+    }
+
+    int nativeSilverPolicyArgmax(const BattleContext &state, const std::vector<SilverSearcher::Edge> &edges) {
+        const CombatValueNet &net = g_nativeSilverPriorNetOverride ? *g_nativeSilverPriorNetOverride : g_rootPriorNet;
+        if (!net.isPolicyMlp) {
+            const auto prior = nativeSilverPolicyPriorWith(net, state, edges);
+            return static_cast<int>(std::max_element(prior.begin(), prior.end()) - prior.begin());
+        }
+        // The first edge with the largest logit. The softmax nativeSilverPolicyPrior normalizes with is
+        // strictly increasing in the logit (exp of logit - top over a total >= 1; float logits that differ
+        // stay apart in double), so this is std::max_element of that prior without the exp and division.
+        const int n = static_cast<int>(edges.size());
+        thread_local PriorScores ps;
+        PriorInput &in = preparePolicyInput(net, state, edges, ps);
+        PriorPickCache &cache = t_priorPickCache;
+        const int log2 = g_options.priorPickCacheLog2;
+        std::uint64_t a = 0, b = 0;
+        if (log2 <= 0 || n > 255 || !priorInputFingerprint(net, in, ps, n, a, b)) {
+            evaluatePolicyInput(net, in, ps);
+            return policyArgmax(ps, n);
+        }
+        if (cache.log2 != log2) cache.allocate(log2);
+        ++cache.stats.lookups;
+        b &= ~std::uint64_t{0xff};
+        auto *bucket = cache.slots.get() + (a & ((std::size_t{1} << log2) - 4));
+        for (int w = 0; w < 4; ++w) {
+            if (bucket[w].a == a && (bucket[w].b & ~std::uint64_t{0xff}) == b && (bucket[w].b & 0xff)) {
+                ++cache.stats.hits;
+                return static_cast<int>(bucket[w].b & 0xff) - 1;
+            }
+        }
+        evaluatePolicyInput(net, in, ps);
+        const int best = policyArgmax(ps, n);
+        int way = static_cast<int>(a >> 62);   // replaced when the bucket is full
+        for (int w = 0; w < 4; ++w) if (!(bucket[w].b & 0xff)) { way = w; break; }
+        bucket[way] = {a, b | static_cast<std::uint64_t>(best + 1)};
+        return best;
     }
 
     void nativeSilverRolloutRootTable(const BattleContext &state, const CombatValueNet &net, std::vector<int> &table) {
@@ -2380,7 +2703,9 @@ namespace sts::search {
     thread_local SilverLeafSamples *g_nativeSilverLeafSamples = nullptr;
     thread_local bool g_nativeSilverLabelSearch = false;
     thread_local std::vector<std::int64_t> g_nativeSilverBudgetLadder;
+    thread_local std::vector<NativeSilverDominanceArm> g_nativeSilverDominanceLadder;
     thread_local std::vector<NativeSilverRolloutArm> g_nativeSilverRolloutLadder;
+    thread_local NativeSilverExtraLabels g_nativeSilverExtraLabels;
     const CombatValueNet *g_nativeSilverRolloutStudent = nullptr;
     std::map<int, const CombatValueNet *> g_nativeSilverRolloutStudentByEncounter;
     thread_local NativeSilverPriorTiming *g_nativeSilverPriorTiming = nullptr;

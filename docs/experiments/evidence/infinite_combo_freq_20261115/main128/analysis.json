@@ -1,0 +1,224 @@
+{
+ "bad_or_dropped": [],
+ "by_room_class": {
+  "boss": {
+   "fights": 336,
+   "fights_certified": 1,
+   "runs_certified": 1,
+   "runs_reaching": 114
+  },
+  "elite": {
+   "fights": 770,
+   "runs_reaching": 128
+  },
+  "hallway": {
+   "fights": 1664,
+   "fights_candidate": 1,
+   "runs_candidate": 1,
+   "runs_reaching": 128
+  },
+  "heart": {
+   "fights": 60,
+   "runs_reaching": 60
+  },
+  "other": {
+   "fights": 83,
+   "runs_reaching": 64
+  },
+  "shield_spear": {
+   "fights": 60,
+   "runs_reaching": 60
+  }
+ },
+ "certified_turns": [
+  {
+   "act": 2,
+   "classification": "CERTIFIED_KILL",
+   "cycle_length": 2,
+   "encounter": "CHAMP",
+   "fight": 17,
+   "hp": 49,
+   "player_hp_delta_per_cycle": 0,
+   "repetitions_to_terminal": 10,
+   "room": "BOSS",
+   "seed": 111378328,
+   "turn": 2
+  }
+ ],
+ "enabler_runs": {
+  "corruption+dead_branch": 3,
+  "corruption+fnp+dark_embrace": 24,
+  "dropkick+vulnerable_source": 11,
+  "unceasing_top": 13
+ },
+ "go_threshold_share": 0.05,
+ "heart": {
+  "kill_rate_with_certified": [
+   0,
+   0
+  ],
+  "kill_rate_without": [
+   48,
+   60
+  ],
+  "runs_reaching": 60
+ },
+ "lost_fights": {
+  "fights": 80,
+  "max_cards_turn": 20,
+  "with_node_cap_turn": 27,
+  "with_non_none_verdict": 0
+ },
+ "missed_certified_kills": [
+  {
+   "encounter": "CHAMP",
+   "fight": 17,
+   "fight_end_turn": 2,
+   "fight_won": true,
+   "hp_lost_after": 13,
+   "kind": "hp_cost_only",
+   "oracle_replay_hp_lost": 0,
+   "seed": 111378328,
+   "turn": 2
+  }
+ ],
+ "oracle": {
+  "cpu_ms_max": 419.197,
+  "cpu_ms_mean": 33.341,
+  "cpu_ms_p50": 1.7,
+  "cpu_ms_p99": 265.096,
+  "cpu_s_per_run": 3.98,
+  "depth_cap_hits": 101,
+  "node_cap_hits": 1728,
+  "nodes_mean": 3096.5,
+  "turn_states": 15261,
+  "unsupported": {}
+ },
+ "proxies": {
+  "fights_with_turn_ge_25_cards": 18
+ },
+ "proxy_fights": [
+  {
+   "encounter": "GIANT_HEAD",
+   "fight": 29,
+   "max_cards_turn": 30,
+   "seed": 111378268
+  },
+  {
+   "encounter": "SHIELD_AND_SPEAR",
+   "fight": 34,
+   "max_cards_turn": 32,
+   "seed": 111378268
+  },
+  {
+   "encounter": "DONU_AND_DECA",
+   "fight": 31,
+   "max_cards_turn": 26,
+   "seed": 111378279
+  },
+  {
+   "encounter": "DONU_AND_DECA",
+   "fight": 28,
+   "max_cards_turn": 33,
+   "seed": 111378311
+  },
+  {
+   "encounter": "AWAKENED_ONE",
+   "fight": 29,
+   "max_cards_turn": 29,
+   "seed": 111378311
+  },
+  {
+   "encounter": "SHIELD_AND_SPEAR",
+   "fight": 30,
+   "max_cards_turn": 41,
+   "seed": 111378311
+  },
+  {
+   "encounter": "REPTOMANCER",
+   "fight": 20,
+   "max_cards_turn": 25,
+   "seed": 111378315
+  },
+  {
+   "encounter": "THREE_DARKLINGS",
+   "fight": 27,
+   "max_cards_turn": 25,
+   "seed": 111378326
+  },
+  {
+   "encounter": "SHIELD_AND_SPEAR",
+   "fight": 34,
+   "max_cards_turn": 32,
+   "seed": 111378326
+  },
+  {
+   "encounter": "DONU_AND_DECA",
+   "fight": 30,
+   "max_cards_turn": 27,
+   "seed": 111378327
+  },
+  {
+   "encounter": "GIANT_HEAD",
+   "fight": 24,
+   "max_cards_turn": 27,
+   "seed": 111378329
+  },
+  {
+   "encounter": "REPTOMANCER",
+   "fight": 26,
+   "max_cards_turn": 26,
+   "seed": 111378329
+  },
+  {
+   "encounter": "GIANT_HEAD",
+   "fight": 27,
+   "max_cards_turn": 33,
+   "seed": 111378329
+  },
+  {
+   "encounter": "THE_HEART",
+   "fight": 34,
+   "max_cards_turn": 26,
+   "seed": 111378340
+  },
+  {
+   "encounter": "MAW",
+   "fight": 30,
+   "max_cards_turn": 25,
+   "seed": 111378341
+  },
+  {
+   "encounter": "AWAKENED_ONE",
+   "fight": 32,
+   "max_cards_turn": 25,
+   "seed": 111378341
+  },
+  {
+   "encounter": "GIANT_HEAD",
+   "fight": 23,
+   "max_cards_turn": 26,
+   "seed": 111378352
+  },
+  {
+   "encounter": "DONU_AND_DECA",
+   "fight": 33,
+   "max_cards_turn": 27,
+   "seed": 111378360
+  }
+ ],
+ "proxy_fights_won": 18,
+ "proxy_runs": 11,
+ "runs": 128,
+ "runs_with_certified": 1,
+ "runs_with_certified_or_candidate": 2,
+ "share_any_wilson95": [
+  0.0043,
+  0.0552
+ ],
+ "share_certified": 0.0078,
+ "share_certified_wilson95": [
+  0.0014,
+  0.0429
+ ]
+}

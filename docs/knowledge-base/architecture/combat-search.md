@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-10-23 for the standalone same-turn infinity oracle; 2026-10-18 for the A20 learned-stop default and stop model (ADR-0051); 2026-10-18 for the learned-stopping A20 result with the gen-7f table (§538); 2026-10-18 for §523 random playouts per leaf; 2026-10-17 for the live advisor rollout root table (ADR-0046); 2026-10-17 for the per-playout action cap (#544) and its `STS_SILVER_ROLLOUT_ACTION_CAP` switch; 2026-10-17 for the zero-cost rollout cap and depth-backstop rollout (#544); 2026-10-17 for the root-prior override used by the OOC Silver fallback and the burning-elite escape rule; 2026-10-15 for the default rollout card table (ADR-0040) and the §479 rollout research options; 2026-10-14 for default canonical multi-select masks (ADR-0034) and the §473 escape-penalty gate and defaults (ADR-0036, ADR-0037); 2026-10-08 for targeted public capture and the bounded public pair probe;
+Last verified: 2026-11-16 for the infinity oracle's natural-root mode and its G16 frequency (§811); 2026-10-23 for the standalone same-turn infinity oracle; 2026-10-18 for the A20 learned-stop default and stop model (ADR-0051); 2026-10-18 for the learned-stopping A20 result with the gen-7f table (§538); 2026-10-18 for §523 random playouts per leaf; 2026-10-17 for the live advisor rollout root table (ADR-0046); 2026-10-17 for the per-playout action cap (#544) and its `STS_SILVER_ROLLOUT_ACTION_CAP` switch; 2026-10-17 for the zero-cost rollout cap and depth-backstop rollout (#544); 2026-10-17 for the root-prior override used by the OOC Silver fallback and the burning-elite escape rule; 2026-10-15 for the default rollout card table (ADR-0040) and the §479 rollout research options; 2026-10-14 for default canonical multi-select masks (ADR-0034) and the §473 escape-penalty gate and defaults (ADR-0036, ADR-0037); 2026-10-08 for targeted public capture and the bounded public pair probe;
 2026-09-25 for native-only Silver (ADR-0022), the native default
 (ADR-0021) and Silver-only dispatch (ADR-0020).
 
@@ -536,11 +536,54 @@ tables, and a v1 file with tables does not load; v1 files score as before
 Prior playouts take the argmax of these logits, so any rounding change in
 `predictPolicyMlp` can change play. Its float operations and their order are
 fixed; ctest `policy_mlp_exact` compares it bit for bit with the plain
-reference loops on the deployed g7f_E model. For h2 = 64 the edge layers run in
-`policyMlpEdges<64>` (local accumulators and restrict pointers), and the state
-scan finds nonzero features with SSE2. Together they are 1.27x faster than the
-plain loops with identical decisions (2026-10-21; real-combat profile in
-`/mnt/project-files/combat-sim-speed/REPORT.md`).
+reference loops on the deployed g7f_E model. For the deployed widths (h1 = 128,
+h2 = 64) the state layer runs in `policyMlpBase128` and the edge layers in
+`policyMlpEdges128x64`: 8-wide vector code (GCC vector extensions, no FMA) over
+index lists of the nonzero state / action / target features and of the
+ReLU-active units, a vector select for the output terms, and the edges' output
+sums interleaved; each unit keeps the plain loops' operations and order. Other
+widths use `policyMlpEdges<H2>` (local accumulators and restrict pointers) or the
+plain loops. On calls captured from a G16 + mb4 Heart-kill game the kernel is
+1.67x faster than the 2026-10-21 one (0 of 32,294 calls differ), and whole A20
+G16 + mb4 games replay with identical Gumbel stop traces at 0.72-0.76x the CPU
+(2026-11-14; `/mnt/project-files/combat-speed-20261114/REPORT.md`). In those
+games the prior MLP was 42-60% of all CPU, almost all of it prior playouts in
+boss fights (64 M calls, 5.7 edges each, in one Heart-kill game).
+Since 2026-11-15 (#1052) `scorePolicyEdges` passes the state's ascending
+nonzero feature list to `predictPolicyMlp` instead of letting it scan all 1,766
+features: `combatNonzeroStateFeatures` reads it off the always-written blocks
+and the indices `combatExtractFeaturesReuse` touched (the same list, so the same
+logits; ctest `policy_mlp_exact` checks it against a full scan on states of
+random legal play). Measured and not adopted (#1052): 16-wide AVX-512 kernels
+(bit-identical but slower on the cloud Xeon VMs), an exact-double incremental
+state layer kept across a playout's calls (consecutive calls change a median of
+13 of ~80 nonzero features, but the state rows are cache-warm in real playouts,
+so no gain), and int16 layer 2 (1-7% argmax changes). Since the same PR the
+per-edge layers run with fused multiply-adds (`policyMlpEdges128x64Fma`) on any
+CPU with FMA, by Philipp's decision (2026-11-15) without a whole-run gate. It is
+not bit-identical to the kernel above (logits within ~3e-6 on recorded playout
+calls, no argmax change seen, but whole-game search traces change), so play
+differs from earlier binaries and from machines without FMA (which warn and use
+the exact kernel). `STS_SILVER_PRIOR_MLP_FMA=0` restores the exact kernel
+everywhere (reproducing pre-#1052 runs needs it); `=1` makes FMA mandatory.
+`one_combat` prints the kernel in use at startup when a root prior is set.
+Prior playouts also keep an exact pick cache (issue #1051,
+`STS_SILVER_PRIOR_PICK_CACHE`, default 2^20 slots, `0` turns it off):
+`nativeSilverPolicyArgmax` keys the MLP's argmax edge by a 128-bit additive
+fingerprint of the MLP's whole input (net, state block via
+`combatStateFingerprint`, distinct action blocks, targets, each edge's distinct
+index) in a per-thread 4-way table that is never cleared, so a hit returns the
+edge the MLP would pick (play changes only on a fingerprint collision, about
+2^-120 per pair of inputs; 16 MB per thread). The fingerprint has to cover the state entries
+`combatExtractFeaturesReuse` writes on every call (scalar head, enemy aggregate,
+misc and relic counters), which `touched` does not list. About 31% of
+prior-playout calls repeat an input within one search (52 G16 boss and Act 4
+roots), but a hit saves only the MLP (the features are needed for the key) and
+the key and lookup cost about 9% of the search, so searches use about 0.95x the
+CPU (0.94-0.98 over repeated runs) with identical root visits, and two G16 +
+mb4 games replay with identical Gumbel stop traces at 0.96-0.97x; ctest
+`prior_pick_cache` checks the picks on real playout states
+(`docs/experiments/evidence/prior_pick_cache_20261115/`).
 `tools/silver_az_mlp.py` featurizes the synthetic corpus (`silversynthfeatures`
 action rows carry `tgt`), trains
 from random initialization, and exports the model with input scales and the
@@ -876,3 +919,15 @@ within the support/budget, not proof that a combat lacks an infinite. See the
 same evidence for raw fixtures, timing and the archived-root support check.
 Realistic recall/public-state handling must be qualified before natural-root
 annotation; this v0 cannot yet supply that evidence.
+
+**Natural-root mode (§811, #1054).** `--snapshots FILE|- [natural|v0|plant [NODES [DEPTH]]]` reads the
+turn-start BattleContextBinary snapshots that `one_combat` writes under the research observer
+`STS_COMBAT_STATE_CAPTURE=PATH` (`apps/one_combat/run_driver.cpp`, around the real fight only, play unchanged).
+The v0 key cannot fire on natural states (exact shuffle RNG, HP, block, relic counters), so `natural` coarsens only
+the candidate key (no RNG streams, hand as a multiset, HP/block/HP-loss counters, periodic relic counters,
+Strength/Dexterity, monster block and a positive Invincible as progress), enumerates card selections and searches on
+after a kill or phase change; certification stays an exact replay with real legality to a same-turn victory
+(CERTIFIED_KILL) or the Heart's exhausted Invincible cap (CERTIFIED_TURN_CAP, rank below a kill). `plant` replaces
+the card zones with a Dropkick loop as a recall check (88.7% on the pilot's states). Cost about 4 CPU-s per G16
+run at 20,000 nodes; the node cap binds on long finite draw/exhaust turns, where NONE means not found. Result on 128
+§775 games: 1 certified run, the search played it ([evidence](../../experiments/evidence/infinite_combo_freq_20261115/README.md)).

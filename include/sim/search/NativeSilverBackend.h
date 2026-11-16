@@ -69,6 +69,9 @@ namespace sts::search {
     // The same model's normalized prior over `edges` of any decision state.
     std::vector<double> nativeSilverPolicyPrior(const BattleContext &state,
                                                 const std::vector<SilverSearcher::Edge> &edges);
+    // std::max_element of nativeSilverPolicyPrior(state, edges) (the first edge with the largest prior),
+    // without building the prior for a policy MLP (prior playouts only need the argmax).
+    int nativeSilverPolicyArgmax(const BattleContext &state, const std::vector<SilverSearcher::Edge> &edges);
     const std::string &nativeSilverRootPriorPath();
     double nativeSilverRootPriorWeight();
     int nativeSilverTreePriorMinVisits();
@@ -300,10 +303,31 @@ namespace sts::search {
         // played search's thread CPU seconds. Empty when the ladder is off or the root was not searched.
         // `arm` indexes g_nativeSilverRolloutLadder (-1 = a g_nativeSilverBudgetLadder pick); `priorCalls` and
         // `playoutActions` are the shadow search's rolloutPrior evaluations and playout actions.
+        // `dominance`: a g_nativeSilverDominanceLadder pick (order dominance on); `domStats` its pruning counts.
         struct LadderPick { std::int64_t budget; int edge; std::int64_t sims; double cpu; int arm = -1;
-                            std::int64_t priorCalls = 0; std::int64_t playoutActions = 0; };
+                            std::int64_t priorCalls = 0; std::int64_t playoutActions = 0; bool dominance = false;
+                            SilverSearcher::OrderDominanceStats domStats{}; int slot = 0; unsigned rules = 0; };
         const std::vector<LadderPick> *ladder = nullptr;
         double mainCpu = -1;
+        // Research only (g_nativeSilverExtraLabels): states other than the root, each labelled by a fresh Gumbel
+        // root search of its own after the played search. Empty pointer when off or the root was not searched.
+        struct ExtraLabel {
+            int source = 0;               // 0 = an interior decision node of the played tree, 1 = a playout state
+            int depth = 0;                // tree: decision actions below the root; playout: its leaf's tree depth
+            int playoutStep = 0;          // playout: actions the playout had taken before the state
+            std::int64_t nodeVisits = 0;  // tree: the node's simulations in the played tree
+            struct TreeEdge {
+                std::uint64_t bits = 0;
+                std::int64_t visits = 0, childSims = 0;
+                bool hasQ = false, hasBacked = false, hasPrior = false;
+                double q = 0, qBacked = 0, prior = 0;
+            };
+            std::vector<TreeEdge> treeEdges;   // tree: the played tree's edges at the node, in its edge order
+            std::shared_ptr<const SilverSearcher> label;   // the label search, rooted at the state
+            std::int64_t sims = 0;
+            double cpu = 0;
+        };
+        const std::vector<ExtraLabel> *extras = nullptr;
     };
     extern thread_local std::function<void(const NativeSilverRootView &)> g_nativeSilverRootObserver;
     extern thread_local SilverLeafSamples *g_nativeSilverLeafSamples;
@@ -318,6 +342,13 @@ namespace sts::search {
     // Gumbel seed; the root view carries the picks. The played search, its tree and every RNG it reads are unchanged,
     // so play is bit-identical with the ladder on or off. Default empty (off).
     extern thread_local std::vector<std::int64_t> g_nativeSilverBudgetLadder;
+    // Research-only (silverazgen STS_AZGEN_DOMINANCE_LADDER, #1057): like g_nativeSilverBudgetLadder, one fresh Gumbel
+    // root search per entry with SilverSearcher::orderDominance on. Each entry {budget, slot} uses the Gumbel seed of
+    // budget-ladder slot `slot` (1-based), so it is paired with that budget-ladder pick of an earlier run of the same
+    // seeds (same root, same Gumbel draws; only the pruning differs). Play is bit-identical. Default empty (off).
+    // `rules`: SilverSearcher::orderDominance of the shadow (SilverDominance.h DOM_* mask; 1 = the round-1 order test).
+    struct NativeSilverDominanceArm { std::int64_t budget = 0; int slot = 1; unsigned rules = 1; };
+    extern thread_local std::vector<NativeSilverDominanceArm> g_nativeSilverDominanceLadder;
     // Research-only (silverazgen STS_AZGEN_ROLLOUT_LADDER, cheap rollouts 2026-11-13): when non-empty, every searched
     // multi-edge root of a whole-run Gumbel fight whose played search uses prior playouts (boss rooms, Act 4) is
     // searched again once per arm by a fresh searcher configured as the played one except for its playout policy
@@ -331,6 +362,21 @@ namespace sts::search {
         std::int64_t budget = 0;
     };
     extern thread_local std::vector<NativeSilverRolloutArm> g_nativeSilverRolloutLadder;
+    // Research-only (silverazgen STS_AZGEN_EXTRA_LABELS, next playout / tree prior data, 2026-11-16): when nodes or
+    // playouts is positive, every searched multi-edge root of a whole-run Gumbel fight also yields up to `nodes`
+    // interior decision nodes of the played tree (PLAYER_NORMAL, more than one edge, at least `minVisits`
+    // simulations; drawn uniformly from all such nodes) and up to `playouts` playout states of the played search
+    // (a uniform reservoir over its PLAYER_NORMAL playout steps). Each is searched by a fresh searcher configured as
+    // the played one (no leaf samples, no outcome capture) with the Gumbel root at `sims` simulations and its own
+    // seed; the root view carries them (NativeSilverRootView::extras). The played search, its tree and every RNG it
+    // reads are unchanged, so play is bit-identical with the labels on or off. Default off.
+    struct NativeSilverExtraLabels {
+        int nodes = 0;
+        int playouts = 0;
+        std::int64_t sims = 0;
+        int minVisits = 256;
+    };
+    extern thread_local NativeSilverExtraLabels g_nativeSilverExtraLabels;
     // Students of the rollout ladder (research): the generalist model and per-encounter models
     // (encounter enum value -> model; an encounter without one uses the generalist). Loaded by the caller.
     extern const CombatValueNet *g_nativeSilverRolloutStudent;
@@ -342,6 +388,9 @@ namespace sts::search {
     // feature extraction (state + action blocks) and in the MLP, and its calls and edges, here. Default off.
     struct NativeSilverPriorTiming { double featureSeconds = 0, mlpSeconds = 0; std::int64_t calls = 0, edges = 0; };
     extern thread_local NativeSilverPriorTiming *g_nativeSilverPriorTiming;
+    // The calling thread's exact prior-playout pick cache (#1051, nativeSilverPolicyArgmax): lookups and hits.
+    struct NativeSilverPriorPickCacheStats { std::int64_t lookups = 0, hits = 0; };
+    NativeSilverPriorPickCacheStats nativeSilverPriorPickCacheStats();
     // Research-only (ctmsilvergen rootdist): when set, every search records its
     // simulation endpoints here (SilverSearcher::outcomes). Default off.
     extern thread_local SilverOutcomeCapture *g_nativeSilverOutcomeCapture;

@@ -56,6 +56,10 @@ namespace sts {
 
     extern thread_local BattleContext *g_debug_bc;
 
+    // Research (#1057 order dominance, Silver only): while true, executeActions stops once the turn has ended and the
+    // end-of-turn queues are empty, before the first monster acts. Off (false) everywhere else.
+    extern thread_local bool g_stopBeforeMonsterTurn;
+
     // Engine fix flags (the *Fix() switches below and STS_ACTIVE_POWER_FEATURES)
     // are read from the environment once per epoch per thread. BattleContext::init
     // and search::battleContextFromWire call refreshEngineFlags(), so a flag set

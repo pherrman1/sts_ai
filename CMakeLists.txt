@@ -29,6 +29,12 @@ add_link_options(
     -fopenmp
     $<$<CONFIG:Release>:-flto>)
 
+# The policy MLP (Silver prior playouts take its argmax) and its exactness test
+# must not fuse a*b+c into an FMA, or play changes on a build with FMA enabled
+# (e.g. -march=native); the presets already pass -mno-fma or have no FMA.
+set_source_files_properties(src/sim/search/CombatValueNet.cpp tests/policy_mlp_exact_test.cpp
+    PROPERTIES COMPILE_OPTIONS -ffp-contract=off)
+
 include(cmake/GccPgo.cmake)
 
 add_subdirectory(json)
@@ -121,6 +127,13 @@ target_include_directories(policy_mlp_exact_test PRIVATE include json/include)
 add_test(NAME policy_mlp_exact COMMAND $<TARGET_FILE:policy_mlp_exact_test>
          ${CMAKE_SOURCE_DIR}/models/combat_policy_mlp_g7f_E.txt)
 set_tests_properties(policy_mlp_exact PROPERTIES LABELS "core;smoke")
+
+# The exact prior-playout pick cache (#1051) returns the uncached prior's argmax on real playout states.
+add_executable(prior_pick_cache_test tests/prior_pick_cache_test.cpp $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(prior_pick_cache_test PRIVATE include json/include)
+add_test(NAME prior_pick_cache COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:prior_pick_cache_test> ${CMAKE_SOURCE_DIR}/models/combat_policy_mlp_g7f_E.txt)
+set_tests_properties(prior_pick_cache PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
 
 # Native combat net (combat plan stage 3): the encoder matches tools/combat_net's Python encoder and the forward pass
 # matches PyTorch on a fixture (tools/combat_net/make_native_fixture.py).
@@ -558,6 +571,7 @@ add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/ritual_writhing_setup.cpp
     apps/one_combat/silver_synth_gen.cpp
     apps/one_combat/silver_synth_replay.cpp
+    apps/one_combat/turn_plan.cpp
     apps/one_combat/ctm_offline_score.cpp
     apps/one_combat/fight_replay.cpp
     apps/one_combat/ooc_factor_eval.cpp
@@ -597,6 +611,12 @@ set_tests_properties(heart1_ppo PROPERTIES
 add_test(NAME heart1_ppo_python COMMAND python3 -m unittest discover
     -s ${CMAKE_CURRENT_SOURCE_DIR}/tests -p test_heart1_ppo.py)
 set_tests_properties(heart1_ppo_python PROPERTIES LABELS "core;smoke")
+add_test(NAME ppo_signals_python COMMAND python3 -m unittest discover
+    -s ${CMAKE_CURRENT_SOURCE_DIR}/tests -p test_ppo_signals.py)
+set_tests_properties(ppo_signals_python PROPERTIES LABELS "core;smoke")
+add_test(NAME ppo_decision_sources_python COMMAND python3 -m unittest discover
+    -s ${CMAKE_CURRENT_SOURCE_DIR}/tests -p test_ppo_decision_sources.py)
+set_tests_properties(ppo_decision_sources_python PROPERTIES LABELS "core;smoke")
 add_test(NAME critic_ceiling_python COMMAND python3 -m unittest discover
     -s ${CMAKE_CURRENT_SOURCE_DIR}/tests -p test_critic_ceiling.py)
 set_tests_properties(critic_ceiling_python PROPERTIES LABELS "core;smoke")
@@ -920,6 +940,8 @@ set_tests_properties(semantic_confirmation_analysis PROPERTIES
 add_test(NAME py_compile_analyze_ooc_factor COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_ooc_factor.py)
 add_test(NAME py_compile_silver_az_mlp COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/silver_az_mlp.py)
 add_test(NAME check_replay_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/verify/check_replay.py --self-test)
+add_test(NAME turn_plan_enum COMMAND python3 ${CMAKE_SOURCE_DIR}/tests/turn_plan_enum_check.py $<TARGET_FILE:one_combat>)
+set_tests_properties(turn_plan_enum PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
 add_test(NAME vnettest_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/verify/vnettest_selftest.py --self-test $<TARGET_FILE:one_combat>)
 add_test(NAME winnettest_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/verify/winnettest_selftest.py --self-test $<TARGET_FILE:one_combat>)
 add_test(NAME one_combat_feature_regression COMMAND $<TARGET_FILE:one_combat_feature_test>)
@@ -953,6 +975,8 @@ add_test(NAME silver_loss_ceiling COMMAND $<TARGET_FILE:unit-test> silver_loss_c
 set_tests_properties(silver_loss_ceiling PROPERTIES LABELS "core")
 add_test(NAME silver_risk_veto COMMAND $<TARGET_FILE:unit-test> silver_risk_veto)
 set_tests_properties(silver_risk_veto PROPERTIES LABELS "core")
+add_test(NAME silver_order_dominance COMMAND $<TARGET_FILE:unit-test> silver_order_dominance)
+set_tests_properties(silver_order_dominance PROPERTIES LABELS "core")
 add_test(NAME silver_gumbel_root COMMAND $<TARGET_FILE:unit-test> silver_gumbel_root)
 set_tests_properties(silver_gumbel_root PROPERTIES LABELS "core")
 add_test(NAME silver_gumbel_boundary_observer COMMAND $<TARGET_FILE:unit-test> silver_gumbel_boundary_observer)

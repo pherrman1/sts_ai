@@ -1,0 +1,7 @@
+PG16H24 rebin sentinel, 2026-11-14 ~20:55 CET (author thread, cloud container, 4 cores).
+Old one_combat 97aec5b5449672cb18c8064c6f9394d2773cbb8b10b1f2863dd8d6789c1026e3 (code ba705ab4, bin-cache).
+New one_combat dae7894a411977a9276d3a7aa8de1b669ccdba2655d787ceb4c02ed10bc225d4 (code 950b53fc, linux-gcc-release-x86-64-v3).
+Setup: ppo_loop.start_actors with the store's PG16H24/config env plus STS_STOP_AFTER_ACT=1, net-0019, iteration 20
+(salt 20), seeds 112110400-112110401 (iteration 20 part 0), 2 games, 2 threads, both binaries run at the same time.
+results.csv: identical except the sec column (old 70.67 / 118.64 s, new 52.87 / 93.05 s; 0.75x / 0.78x).
+traj.jsonl: 101 lines each (99 decisions + 2 games), field-by-field identical except outcome.wall_s on the 2 game lines.

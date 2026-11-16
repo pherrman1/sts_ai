@@ -9,6 +9,7 @@
 #include <map>
 #include <random>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "combat/BattleContext.h"
@@ -274,6 +275,23 @@ namespace sts::search {
         std::vector<Sample> samples;
     };
 
+    // Research only (silverazgen STS_AZGEN_EXTRA_LABELS): a uniform reservoir sample of up to `max` PLAYER_NORMAL
+    // states visited inside playouts (before the playout policy acts on them), with the playout action index at
+    // which each was seen. The reservoir draws from its own splitmix stream `rng`, never from the search's RNGs, and
+    // only reads the playout state, so a search plays identically with or without it.
+    struct SilverPlayoutSamples {
+        struct Sample {
+            BattleContext state;
+            int playoutStep = 0;   // actions the playout had taken before this state
+            int treeDepth = 0;     // actions on the search path above the playout's leaf
+        };
+        std::uint64_t rng = 0;
+        std::uint64_t seen = 0;
+        std::size_t max = 0;
+        std::vector<Sample> samples;
+        void offer(const BattleContext &state, int playoutStep, int treeDepth);
+    };
+
     // Silver's combat search (MCTS over a transposition graph with chance nodes
     // and double progressive widening), ported from the Silver fork's
     // BattleSearcher to run directly on the main engine. Only the production
@@ -290,6 +308,8 @@ namespace sts::search {
 
         struct Edge {
             Action action;
+            bool pruned = false;       // order dominance (#1057): selection skips it; never set at the root
+            std::uint8_t domMask = 0;  // rules (DOM_*) that flagged this edge in its node's epoch, honored or observed
             Node *node = nullptr;
             int rngAdvanceSteps = 0;   // chance outcome edge: N in seed base + N
             std::int32_t visitCount = 0;
@@ -309,6 +329,10 @@ namespace sts::search {
             bool priorNet = false;            // prior came from nodePriorNet (scored at treePriorNetMinVisits)
             double backedValue = 0;           // max-backup value (research, maxBackupMinVisits > 0)
             bool hasBackedValue = false;
+            std::uint32_t pruneEpoch = 0;     // order dominance (#1057): epoch its edges' pruned flags belong to
+            std::uint32_t domNodeEpoch = 0;   // epoch of domNodeMask
+            std::uint8_t domNodeMask = 0;     // DOM_SEG_STATE: this node is dominated within segRoot's segment
+            const Node *segRoot = nullptr;    // segment root it was first reached from in pruneEpoch
         };
 
         double explorationParameter = 25.0;
@@ -360,6 +384,7 @@ namespace sts::search {
         // that rolloutConfig.cardTable points at while that option is on.
         std::vector<int> rootCardTable;
         SilverLeafSamples *leafSamples = nullptr; // optional caller-owned samples; default off
+        SilverPlayoutSamples *playoutSamples = nullptr; // research (STS_AZGEN_EXTRA_LABELS); default off
         // Research-only root prior bonus (off by default): a visited root edge i
         // scores rootPriorWeight * rootPrior[i] / (visits_i + 1) on top of UCB.
         // rootPrior is indexed like rootNode().edges after prepareRootActions;
@@ -457,8 +482,64 @@ namespace sts::search {
         // before the last (after the observer). `true` ends the search there: the pick is the boundary's leader
         // (ranked.front()) and the return value the simulations spent so far. Unset, the search is unchanged.
         std::function<bool(const GumbelBoundary &)> gumbelStopPolicy;
+        // Research (#1057, STS_SILVER_ORDER_DOMINANCE=1, default off; SilverDominance.h): dominance pruning of
+        // card-play orders below the root. When a simulation reaches a decision node X from decision node P by a
+        // deterministic card play b, every card play a at X is tested once per epoch: if playing a before b at P
+        // reaches a state equal for search to X + a except for lower monster HP (testOrderDominance), the edge is
+        // pruned and selection (UCB, tree-prior order, Gumbel non-root) and the max backup skip it. The root is
+        // never pruned (its parent is not in the graph); setRoot and rerootAt start a new epoch, so a node's flags
+        // are recomputed against the parent it is next reached from. Off, the search is unchanged bit for bit.
+        //
+        // Round 2: the value is a bit mask of rules (SilverDominance.h DOM_*; 1 = the order test above, 31 = all).
+        // DOM_RELAX lets every rule count more player block, less monster block and more energy as better (not
+        // with relaxGuarded payoffs). DOM_END_ADJ prunes End Turn at X when "card c, then End Turn" reaches an end
+        // state (endOfTurnState) that dominates End Turn's. DOM_SEG_STATE and DOM_SEG_END compare every decision
+        // node and every end state with the others of the same deterministic segment (the nodes reached from the
+        // root or from one chance outcome with no chance node between): a dominated node's in-edges, and a
+        // dominated End Turn edge, are skipped, whichever order of card plays led there. dominanceObserve
+        // (STS_SILVER_DOMINANCE_OBSERVE, same mask) computes the flags without skipping (dominanceWaste).
+        unsigned orderDominance = envOrderDominance();
+        unsigned dominanceObserve = envDominanceObserve();
+        // A node is processed (its flags computed) once per epoch, when a simulation reaches it with at least this
+        // many simulations (STS_SILVER_DOMINANCE_MIN_VISITS, default 0 = at its first visit); before that nothing
+        // at it is skipped. Most nodes see few simulations, so this bounds the tests' cost.
+        int dominanceMinVisits = envDominanceMinVisits();
+        static unsigned envOrderDominance();
+        static unsigned envDominanceObserve();
+        static int envDominanceMinVisits();
+        struct OrderDominanceStats {
+            std::int64_t nodes = 0;          // decision nodes tested (below the root, deterministic card-play parent)
+            std::int64_t guardedNodes = 0;   // skipped: orderDominanceGuarded
+            std::int64_t tests = 0;          // card edges tested
+            std::int64_t skipped = 0;        // tests that were not testable (OrderDominanceResult::SKIPPED)
+            std::int64_t pruned = 0;         // edges pruned
+            double seconds = 0;              // wall time inside the tests
+            // Round 2 (counted once per node and epoch).
+            std::int64_t ruleNodes = 0;      // quiet PLAYER_NORMAL decision nodes processed by any round-2 rule
+            std::int64_t relaxGuarded = 0;   // of those, DOM_RELAX off by relaxGuarded
+            std::int64_t endStates = 0;      // end states computed (endOfTurnState true)
+            std::int64_t endAdjTests = 0;    // "card, then End Turn" end states compared
+            std::int64_t endAdjFlagged = 0;  // End Turn edges flagged by DOM_END_ADJ
+            std::int64_t segStateFlagged = 0;// nodes flagged by DOM_SEG_STATE
+            std::int64_t segEndFlagged = 0;  // End Turn edges flagged by DOM_SEG_END
+        };
+        OrderDominanceStats orderDominanceStats;
+        // Simulations of the current root that entered an edge flagged by each rule (DOM_SWAP, DOM_END_ADJ,
+        // DOM_SEG_STATE, DOM_SEG_END, any), counting each path at its first flagged edge in a walk from the root
+        // that visits each node once. Flags of the current epoch only, observed or honored.
+        struct DominanceWaste {
+            std::int64_t rootSims = 0;
+            std::int64_t swap = 0, endAdj = 0, segState = 0, segEnd = 0, any = 0;
+        };
+        [[nodiscard]] DominanceWaste dominanceWaste() const;
         // Research-only playout policy for RolloutConfig::prior (same signature as nodePrior).
         std::function<std::vector<double>(const BattleContext &, const std::vector<Edge> &)> rolloutPrior;
+        // Optional shortcut for prior playouts: std::max_element of rolloutPriorArgmaxOf's prior. Used only
+        // while rolloutPrior holds exactly the function rolloutPriorArgmaxOf (a replaced rolloutPrior, e.g. a
+        // research student, falls back to rolloutPrior).
+        using PriorFunction = std::vector<double> (*)(const BattleContext &, const std::vector<Edge> &);
+        int (*rolloutPriorArgmax)(const BattleContext &, const std::vector<Edge> &) = nullptr;
+        PriorFunction rolloutPriorArgmaxOf = nullptr;
         // STS_SILVER_LEAF_HEAD (set by NativeSilverBackend; default off): an undecided leaf is worth
         // blend * (head - turnPenalty * turns beyond the root) + (1 - blend) * its playout. The turn
         // penalty keeps a head that runs high on unfinished fights from preferring a stall to a win.
@@ -562,6 +643,16 @@ namespace sts::search {
         int forcedRootEdge = -1;   // searchGumbelRoot: the root edge every simulation takes (-1 = free)
         int gumbelChoice = -1;     // searchGumbelRoot's pick for bestAction (-1 = most visits)
         const GumbelRoot *gumbelNonRoot = nullptr;   // searchGumbelRoot with nonRoot: its settings (else null)
+        std::uint32_t pruneEpochNow = 1;   // order dominance: current epoch (Node::pruneEpoch 0 = never tested)
+        BattleContext dominanceScratch, dominanceChild, dominanceEndX, dominanceEndY, dominanceKeyScratch;
+        // Segment tables (DOM_SEG_*): bucket key (dominanceKey mixed with the segment root) -> nodes of this epoch.
+        std::unordered_map<std::size_t, std::vector<Node *>> dominanceSegStates, dominanceSegEnds;
+        std::uint32_t dominanceTableEpoch = 0;
+        const Node *descentSegRoot = nullptr;   // segment root of the node selection is called for (stepImpl)
+        void applyOrderDominance(Node &node, const Node *parent, int parentEdge, const Node *segRoot);
+        // Selection and max backup skip edge i of `parent` (honored rules only; never when it would skip all).
+        [[nodiscard]] bool dominanceSkips(const Node &parent, const Edge &e) const;
+        [[nodiscard]] bool dominanceSkipsAny(const Node &parent) const;
 
         std::default_random_engine randGen;
         SilverRolloutAgent rolloutAgent;

@@ -6,8 +6,8 @@ checkpoint in the native .bin format loads here, trains, and exports back to .bi
 The decision net (S0, Philipp 2026-11-01) is heart1-size (d256, 4 layers, 8 heads) with every optional input:
 - student inputs x_deck_misc, x_relic_counter, x_act (tools/heart1/student_inputs.py);
 - v2 inputs x2_run, x2_fought, x2_price (#941);
-- PPO coverage tokens: fixed-action ids 166..177 (potion discard, Match and Keep, unmapped event options) and the
-  potion table on discard tokens (FixedChoice::potion).
+- PPO coverage tokens: fixed-action ids 166..178 (potion discard, Match and Keep, unmapped event options, out-of-combat
+  drink) and the potion table on discard and drink tokens (FixedChoice::potion).
 Inputs a checkpoint lacks are added zero-initialised (the fixed-action table is padded with zero rows), so the
 extended net reproduces the source checkpoint exactly until trained. Export always writes the full set.
 
@@ -36,7 +36,7 @@ MAGIC = b"HEART1W\x01"
 NORM_EPS = 1e-5
 MAP_AGG_CAP = 15
 LIMIT = 999
-FA_COUNT = 178            # heart1_policy.h kFaCount
+FA_COUNT = 179            # heart1_policy.h kFaCount
 FA_PPO_FIRST = 166        # kFaDiscardPotion
 ROOM_ELITE, ROOM_REST = None, None   # set from the engine enum below
 FOUGHT_ROWS = 80
