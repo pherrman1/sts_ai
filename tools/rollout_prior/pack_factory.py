@@ -18,7 +18,7 @@ they describe the played fight, not the extra state. Extras get r_decision = 1,0
 
 usage:
   pack_factory.py units ONE_COMBAT UNITS_DIR OUT_DIR [--jobs 4]   # one .npz per unit tar in UNITS_DIR
-  pack_factory.py merge OUT_DIR PACK.npz
+  pack_factory.py merge OUT_DIR PACK.npz [--more DIR ...] [--splits 1] [--rooms playout] [--compress]
 """
 import argparse
 import concurrent.futures
@@ -218,17 +218,44 @@ def split_of(seeds):
     return (seeds.astype(np.uint64) * np.uint64(2654435761)) % np.uint64(2 ** 32) % np.uint64(10)
 
 
+def unit_packs(dirs):
+    """(name, loader) for every per-unit pack in DIRS: loose .tar.npz / .tar.npz.xz files and the members of
+    bundle-*.tar files (the batch-2 packer's bundles); a unit packed twice (duplicate lanes) is read once."""
+    seen = set()
+    for d in dirs:
+        for f in sorted(os.listdir(d)):
+            path = os.path.join(d, f)
+            if f.endswith((".tar.npz", ".tar.npz.xz")):
+                items = [(f, lambda path=path: open(path, "rb").read())]
+            elif f.startswith("bundle-") and f.endswith(".tar"):
+                tf = tarfile.open(path)
+                items = [(m.name, lambda m=m, tf=tf: tf.extractfile(m).read())
+                         for m in tf.getmembers() if m.name.endswith(".tar.npz.xz")]
+            else:
+                continue
+            for name, read in items:
+                uid = name.split(".w")[0]
+                if uid in seen:
+                    continue
+                seen.add(uid)
+                yield name, read
+
+
 def cmd_merge(a):
-    files = sorted(f for f in os.listdir(a.out) if f.endswith((".tar.npz", ".tar.npz.xz")))
     encounters, parts, sources = [], {}, []
     st_ptr, off = [np.zeros(1, np.int64)], 0
-    for f in files:
-        path = os.path.join(a.out, f)
-        z = np.load(io.BytesIO(lzma.decompress(open(path, "rb").read()))) if f.endswith(".xz") else np.load(path)
+    for f, read in unit_packs([a.out] + (a.more or [])):
+        raw = read()
+        z = np.load(io.BytesIO(lzma.decompress(raw) if f.endswith(".xz") else raw))
         z = {k: z[k] for k in z.files}
-        if a.splits:
-            # keep only rows whose run seed falls in the given T1 splits (train.py::split_of)
-            keep = np.isin(split_of(z["r_seed"]), a.splits)
+        if a.splits or a.rooms == "playout":
+            keep = np.ones(len(z["r_seed"]), bool)
+            if a.splits:
+                # keep only rows whose run seed falls in the given T1 splits (train.py::split_of)
+                keep &= np.isin(split_of(z["r_seed"]), a.splits)
+            if a.rooms == "playout":
+                # prior-playout rooms (train.py Pack.playout): boss rooms and Act-4 elites
+                keep &= (z["r_room"] == 2) | ((z["r_act"] == 4) & (z["r_room"] == 1))
             ekeep, skeep = np.repeat(keep, z["r_nedge"]), np.repeat(keep, z["st_nnz"])
             for k in list(z):
                 if k.startswith("r_") or k == "st_nnz":
@@ -249,14 +276,14 @@ def cmd_merge(a):
         st_ptr.append(off + np.cumsum(z["st_nnz"]))
         off += int(z["st_nnz"].sum())
         sources.append({"unit": f, "tar_sha256": str(z["tar_sha256"]), "counts": json.loads(str(z["counts"]))})
-    out = {k: np.concatenate(v) for k, v in parts.items()}
+    out = {k: np.concatenate(parts.pop(k)) for k in list(parts)}  # pop: one key's parts at a time in memory
     n = len(out["r_seed"])
     out["st_ptr"] = np.concatenate(st_ptr)
     out["r_src"] = out["r_kind"].astype(np.int8)
     out["tags"] = np.array(["factory-root", "factory-tree", "factory-playout"])
     out["encounters"] = np.array(encounters)
-    np.savez(a.pack, **out)
-    info = {"pack": os.path.abspath(a.pack), "units": len(files), "states": n,
+    (np.savez_compressed if a.compress else np.savez)(a.pack, **out)
+    info = {"pack": os.path.abspath(a.pack), "units": len(sources), "rooms": a.rooms, "states": n,
             "by_kind": {k: int((out["r_kind"] == v).sum()) for k, v in KIND.items()},
             "edges": int(len(out["e_tgt"])), "encounters": len(encounters), "sha256": sha256(a.pack)}
     json.dump({**info, "sources": sources}, open(a.pack + ".json", "w"), indent=1)
@@ -271,6 +298,9 @@ def main():
     m = sub.add_parser("merge"); m.add_argument("out"); m.add_argument("pack")  # noqa: E702
     m.add_argument("--splits", type=lambda x: [int(v) for v in x.split(",")], default=None,
                    help="keep only these T1 splits, e.g. 1 (validation) or 2,3,4,5,6,7,8,9 (training)")
+    m.add_argument("--more", nargs="*", help="further directories with unit packs or bundle-*.tar files")
+    m.add_argument("--rooms", default="all", choices=["all", "playout"], help="playout = boss rooms + Act-4 elites only")
+    m.add_argument("--compress", action="store_true", help="np.savez_compressed (train.py loads it the same way)")
     a = p.parse_args()
     {"units": cmd_units, "merge": cmd_merge}[a.cmd](a)
 
