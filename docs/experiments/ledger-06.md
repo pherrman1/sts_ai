@@ -27583,6 +27583,71 @@ Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 104.1 lane-hours
 −2.25 pp [−5.08, +0.59] Heart; no conversion loss visible on the seeds where both arms reach Act 4 (not an isolated
 Heart contrast).
 
+## §809 — Order dominance pruning of card plays below the Silver root (#1057, port of spire-mentor `dominance.rs`): pilot on 32 of §797's G16 games, pruned fresh searches paired with §797's ladder at the same Gumbel seeds: 16k Δ +0.000 Q [−0.015, +0.016], 8k +0.016 [+0.006, +0.027] at 1.00× CPU; 2.2 % of simulations enter dominated orders → DROP (cloud, 2026-11-15)
+
+**Question (Philipp, 2026-11-15 17:08 CET, one thread per issue; 17:43 CET "Yes go" for the 32-run pilot):** does
+pruning provably dominated card-play orders let G16 + mb4 pick better at equal CPU?
+**Option:** `STS_SILVER_ORDER_DOMINANCE=1` (research, default off; `SilverDominance.h`). At a decision node X reached
+from P by a deterministic card play b, card play a is pruned when a-then-b from P reaches a state equal for search to
+X + a except lower monster HP (same monsters alive; player HP and block equal; no search randomness). Guard: Mystic,
+Centurion, the Champ, Time Eater. The real (Gumbel) root cannot be pruned (the order test needs a common ancestor in
+the graph), so pruning acts at depth ≥ 1 and changes the candidates' values, not the candidate list. Off is
+bit-identical (unit test; whole-run sentinel below).
+**Data:** [PREREG](evidence/order_dominance_pilot_20261115/PREREG.md),
+[RESULT](evidence/order_dominance_pilot_20261115/RESULT.md), `results/result.json` (code faebbc9, binary 4672e092).
+`one_combat silverazgen` with §797's environment plus `STS_AZGEN_DOMINANCE_LADDER=16000:5,8000:4,4000:3` (pruned fresh
+searches seeded like §797's ladder slots) and `STS_AZGEN_DOMINANCE_AUDIT=16`. Seeds 111980000-111980031 (§797's,
+reused); 32 / 32 rc 0, 0 runs differing from §797's played choices; 16,946 roots. Thread container, 4 lanes, 3.0 h.
+**Result:**
+- Paired with §797 at the same budget (loss = Q_ref(best) − Q_ref(pick), played 16k tree): 16k +0.000
+  [−0.015, +0.016], 8k +0.016 [+0.006, +0.027] (hallway +0.020), 4k +0.005 [−0.014, +0.023]; CPU ratio 1.003-1.005.
+  Frontier deltas equal within 0.001.
+- Frequency: 45 % of roots' played trees hold a dominated edge; 2.2 % of simulations enter one (elite 3.8 %); pruned
+  searches cut 7.2 % of card edges per tested node; the test costs 0.46 % of CPU; 5.5 % of nodes guarded. Never at the
+  Heart (Invincible makes differing-damage orders unequal).
+- Soundness: of 2,807 pairs with ≥ 256 simulations each, the dominated child's Q is higher in 34 % (median −0.07),
+  consistent with search noise.
+**Interpretation (Inference):** Silver already spends little on dominated orders; freeing 2 % of the budget is worth
+≈ 0.002 Q by §797's 0.06 Q per doubling, below any feasible resolution. Together with §658 (dominated *choices* 0.65 %),
+order dominance has no target in G16. Sibling-state dominance (the issue's idea 4) was not tested.
+**Decision:** DROP by the PREREG rule. No full 256-run block, no whole-run gate. The option stays research-only.
+Seeds: 111980000-111980031 (reused, data only). Cost: 12 lane-hours.
+**Knowledge impact:** combat search: dominated card-play orders take ≈ 2 % of G16's simulations; pruning them does not
+improve picks at equal CPU.
+
+## §810 — Order dominance round 2 (#1057): five more rules (relaxed block/energy comparison, dominated End Turn, whole-turn state and end-state tables, Gumbel-root filter) take 11.4 % of G16's simulations; picks at equal CPU unchanged: 16k Δ +0.016 Q [−0.006, +0.042], 8k −0.000 [−0.020, +0.017] at 0.99× CPU → INCONCLUSIVE (cloud, 2026-11-16)
+
+**Question (Philipp, 2026-11-15 21:34 CET, after round 1's DROP):** do more dominance checks matter in mass? Go for the
+run 2026-11-16 00:33 CET ("8 besuche. lets go hier im thread").
+**Option:** `STS_SILVER_ORDER_DOMINANCE` is now a rule mask (SilverDominance.h, default 0): 1 round 1's order test;
+2 relaxed comparison (more player block, less monster block, more energy count as better; off with a damage payoff:
+Red Skull, Centennial Puzzle, Runic Cube, Self-Forming Clay, Emotion Chip, Meat on the Bone, Static Discharge, Blood for
+Blood); 4 End Turn dominated by "card, then End Turn" (end states stop before the first monster acts; engine hook
+`g_stopBeforeMonsterTurn`, research only); 8 / 16 decision states and end states compared across every order of the
+same deterministic segment; 32 the Gumbel root drops a dominated End Turn candidate. `STS_SILVER_DOMINANCE_OBSERVE`
+computes flags without honoring them, `STS_SILVER_DOMINANCE_MIN_VISITS` defers the tests (8 here). Off is unchanged
+(unit test; sentinel below).
+**Data:** [PREREG](evidence/order_dominance_round2_20261115/PREREG.md),
+[RESULT](evidence/order_dominance_round2_20261115/RESULT.md), `results/result.json`, `results/waste.json` (code 12d04dc,
+binary 8608be73). §797's environment plus observed rules 31 in the played search and fresh searches with all rules
+(63) at 16k and 8k seeded like §797's ladder slots 5 and 4. Seeds 111980000-111980031 (reused); 32 / 32 rc 0, 0 runs
+differing from §797's played choices; 16,946 roots.
+**Result:**
+- Waste in the played tree: any rule 11.4 % of simulations (hallway 13.3 %, elite 15.6 %, boss 8.7 %, Shield and Spear
+  4.0 %, Heart 1.9 %); dominated End Turn rules 6.7 % / 8.6 %, order test 2.6 %, whole-turn states 2.9 %; root End Turn
+  2.2 % of root visits, dominated at 26 % of roots. Tests 0.8 % of CPU; relaxed comparison guarded at 42 % of nodes.
+- Paired with §797 at the same budget and Gumbel seed: 16k +0.016 [−0.006, +0.042], 8k −0.0003 [−0.020, +0.017]; CPU
+  ratio 0.99; frontier equal within 0.001. No group interval excludes 0.
+**Interpretation (Inference):** the mass is five times round 1's, but freeing 11 % of the budget is worth ≈ 0.010 Q by
+§797's slope, below this run's resolution, and the 16k estimate leans the other way. Q_ref from the unpruned tree is a
+biased judge where pruning avoids a dominated End Turn; only a whole-run gate is unbiased.
+**Decision:** INCONCLUSIVE by the PREREG rule (8k point estimates −0.0003 / −0.0012, just below 0), practically null.
+Option stays research-only, default off. A larger block or a whole-run gate is Philipp's call.
+Seeds: 111980000-111980031 (reused, data only). Cost: 10.5 lane-hours.
+**Knowledge impact:** combat search: with relaxed comparisons and End Turn dominance, ≈ 11 % of G16's simulations
+enter provably dominated lines (mostly ending the turn before a free block card); pruning them does not show better
+picks at equal CPU in 32 runs.
+
 ## §808 — Rollout prior on G16 targets, stage 3 (issue #1053): §775's G16 + mb4 with V (§804's candidate) in all four prior roles (root prior, tree prior, prior playouts, rollout root table) against §775's G16 + mb4 on 1,023 paired A20 seeds after a 32/32 sentinel: Heart 41.25% → 37.83%, −3.42 pp [−6.26, −0.59] at 1.00× machine-corrected CPU, upper one-sided bound −0.98 → WORSE; the loss sits in act 2's hallway (+4.0 pp deaths) (cloud, 32 workers, 2026-11-15/16)
 
 **Question (Philipp 2026-11-15 21:59 CET, go for 32 workers):** does V, the MLP trained on G16 + mb4 visit shares that
