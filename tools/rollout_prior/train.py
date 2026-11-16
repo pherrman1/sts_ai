@@ -31,6 +31,8 @@ usage:
                [--rooms playout] [--init CKPT] [--epochs 25] [--device cuda] ...
   train.py baseline PACK.npz OUT.json         # g7f_E (recorded prior) on the same validation rows
   train.py export CKPT.pt OUT.txt NAMES.json  # combat_policy_mlp_v2 text (names: one_combat silversynthreplay names)
+  train.py eval PACK.npz OUT.json --model V=runs/V/model.pt --model g7f_E=prior [--rows val|all] [--device cuda]
+                                              # offline test; per kind (root / tree / playout_state) on factory packs
 """
 import argparse
 import json
@@ -54,9 +56,20 @@ def split_of(seeds):
 
 
 class Pack(M.Data):
-    def __init__(self, path):
+    def __init__(self, path, extra=False):
         super().__init__(path)
-        self.split = split_of(self.r_seed).astype(np.int8)
+        if extra:
+            # --extra-pack: a silver_az_mlp.py pack (e.g. g7f_E's pack-g7f.npz). Every root is a training root (split 2);
+            # it has no room / encounter / Q / auxiliary columns, so it never enters validation or the aux heads.
+            nan = np.full(self.n, np.nan, np.float32)
+            self.r_room = np.zeros(self.n, np.int8); self.r_act = np.zeros(self.n, np.int8)
+            self.r_enc = np.zeros(self.n, np.int64); self.r_gpick = np.full(self.n, -1, np.int64)
+            self.encounters = []
+            for k in ("r_hp", "r_hp_next", "r_turns_left", "r_pot_used", "r_won", "r_endhp"):
+                setattr(self, k, nan)
+            self.e_q = self.e_qb = np.full(len(self.e_vis), np.nan, np.float32)
+            self.e_prior = np.ones(len(self.e_vis), np.float32)
+        self.split = np.full(self.n, 2, np.int8) if extra else split_of(self.r_seed).astype(np.int8)
         self.playout = (self.r_room == 2) | ((self.r_act == 4) & (self.r_room == 1))
         self.encounters = [str(e) for e in self.encounters]
         st_root = np.repeat(np.arange(self.n), np.diff(self.st_ptr))
@@ -231,6 +244,12 @@ def summarize(P, roots, sums):
     enc = P.r_enc[roots]
     for e in np.unique(enc[P.playout[roots]]):
         groups["enc:" + P.encounters[e]] = P.playout[roots] & (enc == e)
+    if hasattr(P, "r_kind"):
+        # prior-factory packs (pack_factory.py): roots, tree nodes and playout states, each labelled by a Gumbel search
+        for k, name in enumerate(("root", "tree", "playout_state")):
+            mk = P.r_kind[roots] == k
+            groups["kind:" + name] = mk
+            groups["kind:" + name + "|playout_room"] = mk & P.playout[roots]
     res = {}
     for g, m in groups.items():
         n = int(m.sum())
@@ -289,6 +308,20 @@ def cmd_fit(a):
         target, q01 = completed_q_targets(P, q, None if s == "paper" else float(s))
     else:
         raise SystemExit("--target must be visits, cq:S or cq:paper")
+    # packs[0] = the main pack (validation, metrics, scales); packs[1] = --extra-pack (training rows only).
+    packs, targets, q01s, rows = [P], [target], [q01], [train]
+    if a.extra_pack:
+        X = Pack(a.extra_pack, extra=True)
+        _, xq01 = completed_q_targets(X, X.e_qb, 1.0)
+        packs.append(X); targets.append(X.share); q01s.append(xq01); rows.append(X.rows("train"))
+    if a.teacher:
+        # gen-6 D/E distillation (arch_dev.py --teacher --alpha): target = (1 - alpha) * target + alpha * softmax(T)
+        for i, Q in enumerate(packs):
+            tl = np.load(os.path.join(a.teacher, f"logp_{i}.npy"))
+            if len(tl) != len(Q.e_vis):
+                raise SystemExit(f"teacher logp_{i}.npy has {len(tl)} edges, pack has {len(Q.e_vis)}")
+            tp = np.exp(tl.astype(np.float64))
+            targets[i] = np.where(np.isnan(tp), targets[i], (1 - a.alpha) * targets[i] + a.alpha * tp).astype(np.float32)
     init = torch.load(a.init, map_location="cpu", weights_only=False) if a.init else None
     scales = tuple(np.array(x, np.float32) for x in init["scales"]) if init else P.fit_scales(train)
     net = make_net(torch, a).to(dev)
@@ -297,43 +330,57 @@ def cmd_fit(a):
         if unexpected or any(not k.startswith(("qhead", "sh1", "sh2")) for k in missing):
             raise SystemExit(f"--init mismatch: missing {missing} unexpected {unexpected}")
     opt = torch.optim.AdamW(net.parameters(), lr=a.lr, weight_decay=a.wd)
-    steps_per_ep = (len(train) + a.batch - 1) // a.batch
+    pid_all = np.concatenate([np.full(len(r), i, np.int8) for i, r in enumerate(rows)])
+    root_all = np.concatenate(rows)
+    steps_per_ep = (len(root_all) + a.batch - 1) // a.batch
     rep = {"args": vars(a), "pack": os.path.abspath(a.pack), "rows": {"train": len(train), "val": len(val)},
            "params": int(sum(x.numel() for x in net.parameters())), "epochs": []}
-    print(f"loaded in {time.time() - t0:.0f}s: train {len(train)} val {len(val)} params {rep['params']}", flush=True)
+    if a.extra_pack:
+        rep["rows"]["train_extra"] = len(rows[1])
+    print(f"loaded in {time.time() - t0:.0f}s: train {len(root_all)} val {len(val)} params {rep['params']}", flush=True)
     step = 0
     for ep in range(a.epochs):
-        te = time.time(); perm = rng.permutation(train); tot = {"ce": 0.0, "q": 0.0, "sh": 0.0}
+        te = time.time(); perm = rng.permutation(len(root_all)); tot = {"ce": 0.0, "q": 0.0, "sh": 0.0}
         for i in range(0, len(perm), a.batch):
             lr = a.lr * 0.5 * (1 + np.cos(np.pi * min(step / (a.epochs * steps_per_ep), 1.0)))
             for g in opt.param_groups:
                 g["lr"] = lr
-            b, _ = batch(torch, P, perm[i:i + a.batch], scales, dev, target, q01)
-            o = net(b)
-            logp = group_log_softmax(torch, o["logit"], b["eroot"], b["nroot"])
-            ce = -(b["target"] * logp).sum() / b["nroot"]
-            hv = b["has_val"]
-            loss = ce + (a.value_weight * ((o["value"][hv] - b["val"][hv]) ** 2).mean() if hv.any() else 0.0)
-            if a.aux_q > 0:
-                mq = ~torch.isnan(b["q01"])
-                lq = ((o["q01"][mq] - b["q01"][mq]) ** 2).mean()
-                loss = loss + a.aux_q * lq
-                tot["q"] += float(lq.detach()) * b["nroot"]
-            if a.aux_sh > 0:
-                y, pr = b["sh"], o["sh"]
-                ls = 0.0
-                for j in range(5):
-                    mj = ~torch.isnan(y[:, j])
-                    if not mj.any():
-                        continue
-                    if j == 3:
-                        ls = ls + torch.nn.functional.binary_cross_entropy_with_logits(pr[mj, j], y[mj, j])
-                    else:
-                        ls = ls + ((pr[mj, j] - y[mj, j]) ** 2).mean()
-                loss = loss + a.aux_sh * ls
-                tot["sh"] += float(ls.detach()) * b["nroot"]
+            chunk = perm[i:i + a.batch]
+            nb = len(chunk); ce_sum = 0.0; v_sum = 0.0; v_n = 0; loss = 0.0
+            for pi, Q in enumerate(packs):
+                sub = np.sort(root_all[chunk[pid_all[chunk] == pi]])
+                if not len(sub):
+                    continue
+                b, _ = batch(torch, Q, sub, scales, dev, targets[pi], q01s[pi])
+                o = net(b)
+                logp = group_log_softmax(torch, o["logit"], b["eroot"], b["nroot"])
+                ce_sum = ce_sum - (b["target"] * logp).sum()
+                hv = b["has_val"]
+                v_sum = v_sum + ((o["value"][hv] - b["val"][hv]) ** 2).sum(); v_n += int(hv.sum())
+                w = b["nroot"] / nb
+                if a.aux_q > 0:
+                    mq = ~torch.isnan(b["q01"])
+                    if mq.any():
+                        lq = ((o["q01"][mq] - b["q01"][mq]) ** 2).mean()
+                        loss = loss + a.aux_q * w * lq
+                        tot["q"] += float(lq.detach()) * b["nroot"]
+                if a.aux_sh > 0:
+                    y, pr = b["sh"], o["sh"]
+                    ls = 0.0
+                    for j in range(5):
+                        mj = ~torch.isnan(y[:, j])
+                        if not mj.any():
+                            continue
+                        if j == 3:
+                            ls = ls + torch.nn.functional.binary_cross_entropy_with_logits(pr[mj, j], y[mj, j])
+                        else:
+                            ls = ls + ((pr[mj, j] - y[mj, j]) ** 2).mean()
+                    loss = loss + a.aux_sh * w * ls
+                    tot["sh"] += float(ls.detach()) * b["nroot"]
+            ce = ce_sum / nb
+            loss = loss + ce + (a.value_weight * v_sum / v_n if v_n else 0.0)
             opt.zero_grad(); loss.backward(); opt.step(); step += 1
-            tot["ce"] += float(ce.detach()) * b["nroot"]
+            tot["ce"] += float(ce.detach()) * nb
         lp = predict_logp(torch, net, P, val, scales, dev, target, q01)
         vm = summarize(P, val, root_logp_metrics(P, val, lp))
         row = {"epoch": ep, "train": {k: v / len(perm) for k, v in tot.items()}, "val_all": vm["all"],
@@ -346,8 +393,46 @@ def cmd_fit(a):
     rep["seconds"] = round(time.time() - t0)
     state = {k: x.detach().cpu().clone() for k, x in net.state_dict().items()}
     torch.save({"state": state, "args": vars(a), "scales": [x.tolist() for x in scales]}, f"{a.out}/model.pt")
+    if a.dump_logp:
+        # Teacher output for --teacher: per-edge log-probs of every root, in pack edge order (logp_<pack index>.npy).
+        for pi, Q in enumerate(packs):
+            np.save(f"{a.out}/logp_{pi}.npy",
+                    predict_logp(torch, net, Q, np.arange(Q.n), scales, dev, targets[pi], q01s[pi]).astype(np.float32))
     json.dump(rep, open(f"{a.out}/train.json", "w"), indent=1)
     print("RESULT", json.dumps({"all": rep["val_final"]["all"], "playout": rep["val_final"]["playout"]}), flush=True)
+
+
+def cmd_eval(a):
+    """Offline test: score trained nets (and the recorded root prior, g7f_E) on one pack's rows, per group.
+    On a prior-factory pack the groups include kind:root / kind:tree / kind:playout_state (root prior, tree prior and
+    playout policy states), each against its own Gumbel label search."""
+    import torch
+    dev = torch.device(a.device)
+    P = Pack(a.pack)
+    rows = P.rows("val") if a.rows == "val" else np.arange(P.n)
+    if a.max_rows and len(rows) > a.max_rows:
+        rows = np.sort(np.random.default_rng(0).choice(rows, a.max_rows, replace=False))
+    res = {"pack": os.path.abspath(a.pack), "rows": a.rows, "n": int(len(rows)), "models": {}}
+    if hasattr(P, "r_kind"):
+        res["n_by_kind"] = {k: int((P.r_kind[rows] == i).sum()) for i, k in enumerate(("root", "tree", "playout_state"))}
+    for spec in a.model:
+        name, path = spec.split("=", 1)
+        if path == "prior":
+            epos = np.concatenate([np.arange(P.e_ptr[r], P.e_ptr[r + 1]) for r in rows])
+            logp = np.log(np.maximum(P.e_prior[epos].astype(np.float64), 1e-30))
+            src = "recorded root prior (g7f_E)"
+        else:
+            ck = torch.load(path, map_location="cpu", weights_only=False)
+            net = make_net(torch, argparse.Namespace(**ck["args"])).to(dev)
+            net.load_state_dict(ck["state"])
+            scales = tuple(np.array(x, np.float32) for x in ck["scales"])
+            logp = predict_logp(torch, net, P, rows, scales, dev, P.share, None).astype(np.float64)
+            src = os.path.abspath(path)
+        res["models"][name] = {"source": src, "groups": summarize(P, rows, root_logp_metrics(P, rows, logp))}
+        g = res["models"][name]["groups"]
+        print(name, json.dumps({k: {m: g[k].get(m) for m in ("rows", "q_regret_backed", "q_regret_mean", "top1_gpick")}
+                                for k in g if not k.startswith("enc:")}), flush=True)
+    json.dump(res, open(a.out, "w"), indent=1)
 
 
 def cmd_export(a):
@@ -390,10 +475,18 @@ def main():
     f.add_argument("--dropout", type=float, default=0.15); f.add_argument("--value-weight", type=float, default=0.1)
     f.add_argument("--seed", type=int, default=0); f.add_argument("--threads", type=int, default=4)
     f.add_argument("--device", default="cpu"); f.add_argument("--max-train-roots", type=int, default=0)
+    f.add_argument("--extra-pack", help="silver_az_mlp.py pack whose every root is added to training (V-prime)")
+    f.add_argument("--teacher", help="dir with a --dump-logp teacher's logp_<i>.npy per pack (gen-6 D/E distillation)")
+    f.add_argument("--alpha", type=float, default=0.5, help="teacher weight in the target (with --teacher)")
+    f.add_argument("--dump-logp", action="store_true", help="save per-edge log-probs of every root of every pack")
     b = sub.add_parser("baseline"); b.add_argument("pack"); b.add_argument("out")
     e = sub.add_parser("export"); e.add_argument("ckpt"); e.add_argument("out"); e.add_argument("names")
+    v = sub.add_parser("eval"); v.add_argument("pack"); v.add_argument("out")
+    v.add_argument("--model", action="append", required=True, help="NAME=CKPT.pt, or NAME=prior (recorded g7f_E)")
+    v.add_argument("--rows", default="val", choices=["val", "all"], help="T1 validation split, or every row")
+    v.add_argument("--max-rows", type=int, default=0); v.add_argument("--device", default="cpu")
     a = p.parse_args()
-    {"fit": cmd_fit, "baseline": cmd_baseline, "export": cmd_export}[a.cmd](a)
+    {"fit": cmd_fit, "baseline": cmd_baseline, "export": cmd_export, "eval": cmd_eval}[a.cmd](a)
 
 
 if __name__ == "__main__":
