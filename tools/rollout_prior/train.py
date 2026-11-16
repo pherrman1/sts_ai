@@ -31,6 +31,8 @@ usage:
                [--rooms playout] [--init CKPT] [--epochs 25] [--device cuda] ...
   train.py baseline PACK.npz OUT.json         # g7f_E (recorded prior) on the same validation rows
   train.py export CKPT.pt OUT.txt NAMES.json  # combat_policy_mlp_v2 text (names: one_combat silversynthreplay names)
+  train.py eval PACK.npz OUT.json --model V=runs/V/model.pt --model g7f_E=prior [--rows val|all] [--device cuda]
+                                              # offline test; per kind (root / tree / playout_state) on factory packs
 """
 import argparse
 import json
@@ -242,6 +244,12 @@ def summarize(P, roots, sums):
     enc = P.r_enc[roots]
     for e in np.unique(enc[P.playout[roots]]):
         groups["enc:" + P.encounters[e]] = P.playout[roots] & (enc == e)
+    if hasattr(P, "r_kind"):
+        # prior-factory packs (pack_factory.py): roots, tree nodes and playout states, each labelled by a Gumbel search
+        for k, name in enumerate(("root", "tree", "playout_state")):
+            mk = P.r_kind[roots] == k
+            groups["kind:" + name] = mk
+            groups["kind:" + name + "|playout_room"] = mk & P.playout[roots]
     res = {}
     for g, m in groups.items():
         n = int(m.sum())
@@ -394,6 +402,39 @@ def cmd_fit(a):
     print("RESULT", json.dumps({"all": rep["val_final"]["all"], "playout": rep["val_final"]["playout"]}), flush=True)
 
 
+def cmd_eval(a):
+    """Offline test: score trained nets (and the recorded root prior, g7f_E) on one pack's rows, per group.
+    On a prior-factory pack the groups include kind:root / kind:tree / kind:playout_state (root prior, tree prior and
+    playout policy states), each against its own Gumbel label search."""
+    import torch
+    dev = torch.device(a.device)
+    P = Pack(a.pack)
+    rows = P.rows("val") if a.rows == "val" else np.arange(P.n)
+    if a.max_rows and len(rows) > a.max_rows:
+        rows = np.sort(np.random.default_rng(0).choice(rows, a.max_rows, replace=False))
+    res = {"pack": os.path.abspath(a.pack), "rows": a.rows, "n": int(len(rows)), "models": {}}
+    if hasattr(P, "r_kind"):
+        res["n_by_kind"] = {k: int((P.r_kind[rows] == i).sum()) for i, k in enumerate(("root", "tree", "playout_state"))}
+    for spec in a.model:
+        name, path = spec.split("=", 1)
+        if path == "prior":
+            epos = np.concatenate([np.arange(P.e_ptr[r], P.e_ptr[r + 1]) for r in rows])
+            logp = np.log(np.maximum(P.e_prior[epos].astype(np.float64), 1e-30))
+            src = "recorded root prior (g7f_E)"
+        else:
+            ck = torch.load(path, map_location="cpu", weights_only=False)
+            net = make_net(torch, argparse.Namespace(**ck["args"])).to(dev)
+            net.load_state_dict(ck["state"])
+            scales = tuple(np.array(x, np.float32) for x in ck["scales"])
+            logp = predict_logp(torch, net, P, rows, scales, dev, P.share, None).astype(np.float64)
+            src = os.path.abspath(path)
+        res["models"][name] = {"source": src, "groups": summarize(P, rows, root_logp_metrics(P, rows, logp))}
+        g = res["models"][name]["groups"]
+        print(name, json.dumps({k: {m: g[k].get(m) for m in ("rows", "q_regret_backed", "q_regret_mean", "top1_gpick")}
+                                for k in g if not k.startswith("enc:")}), flush=True)
+    json.dump(res, open(a.out, "w"), indent=1)
+
+
 def cmd_export(a):
     import torch
     ck = torch.load(a.ckpt, map_location="cpu", weights_only=False)
@@ -440,8 +481,12 @@ def main():
     f.add_argument("--dump-logp", action="store_true", help="save per-edge log-probs of every root of every pack")
     b = sub.add_parser("baseline"); b.add_argument("pack"); b.add_argument("out")
     e = sub.add_parser("export"); e.add_argument("ckpt"); e.add_argument("out"); e.add_argument("names")
+    v = sub.add_parser("eval"); v.add_argument("pack"); v.add_argument("out")
+    v.add_argument("--model", action="append", required=True, help="NAME=CKPT.pt, or NAME=prior (recorded g7f_E)")
+    v.add_argument("--rows", default="val", choices=["val", "all"], help="T1 validation split, or every row")
+    v.add_argument("--max-rows", type=int, default=0); v.add_argument("--device", default="cpu")
     a = p.parse_args()
-    {"fit": cmd_fit, "baseline": cmd_baseline, "export": cmd_export}[a.cmd](a)
+    {"fit": cmd_fit, "baseline": cmd_baseline, "export": cmd_export, "eval": cmd_eval}[a.cmd](a)
 
 
 if __name__ == "__main__":
