@@ -389,6 +389,9 @@ void silverPolicyMlpCheck(const std::string &modelPath, const std::string &prefi
 // steps as silversynthfeatures-style sparse rows (PREFIX.nnz/.idx/.val/.meta.jsonl: a state row with row index, arm,
 // playout, step, pick and the pick's sampling probability, then one act row per edge) for the policy-gradient trainer
 // tools/rollout_prior/sim_balance.py.
+// STS_PVB_CHILDREN=K (sibling-ordering measure, #1053): after the root playouts, K playouts from each root edge's
+// child (the edge's action executed on the root state, then the arm's playout); the line adds `children` (per root
+// edge in rootNode() order: action bits and the K scores). Playout i uses the same RNG seed under every edge and arm.
 void playoutValueBench(const std::string &outPath, int playouts, const std::string &armList) {
     const auto &priorPath = search::nativeSilverRootPriorPath();
     if (priorPath.empty()) throw std::runtime_error("playoutvaluebench: needs STS_SILVER_ROOT_PRIOR");
@@ -417,6 +420,9 @@ void playoutValueBench(const std::string &outPath, int playouts, const std::stri
         if (const char *r = std::getenv("STS_PVB_TRACE_RATE"); r && *r) traceRate = std::stod(r);
         if (!(traceRate > 0 && traceRate <= 1)) throw std::runtime_error("playoutvaluebench: STS_PVB_TRACE_RATE in (0, 1]");
     }
+    int childPlayouts = 0;
+    if (const char *c = std::getenv("STS_PVB_CHILDREN"); c && *c) childPlayouts = std::stoi(c);
+    if (childPlayouts < 0) throw std::runtime_error("playoutvaluebench: STS_PVB_CHILDREN must be >= 0");
     std::string line;
     long long rows = 0;
     while (std::getline(std::cin, line)) {
@@ -508,6 +514,25 @@ void playoutValueBench(const std::string &outPath, int playouts, const std::stri
                     if (bc.outcome == Outcome::PLAYER_VICTORY) { ++wins; winHp += bc.player.curHp; }
                 }
                 if (temp > 0) res["steps"] = steps;
+                // STS_PVB_CHILDREN=K: also K playouts after each root edge's action (the same RNG seed for playout i
+                // under every edge and arm), for the sibling-ordering measure against the row's recorded edge Q.
+                if (childPlayouts > 0) {
+                    nlohmann::json kids = nlohmann::json::array();
+                    for (const auto &edge : s.rootNode().edges) {
+                        std::vector<double> cs;
+                        for (int i = 0; i < childPlayouts; ++i) {
+                            BattleContext bc = s.rootSearchState();
+                            search::seedSearchRng(bc, base ^ (0xc2b2ae3d27d4eb4fULL * static_cast<std::uint64_t>(i + 1)));
+                            sampler.seed(base ^ 0x7f4a7c15ULL ^ (0xbf58476d1ce4e5b9ULL * static_cast<std::uint64_t>(i + 1)));
+                            playoutIdx = -1 - i;
+                            step = 0;
+                            edge.action.execute(bc);
+                            cs.push_back(s.benchPlayout(bc));
+                        }
+                        kids.push_back({{"bits", edge.action.bits}, {"scores", cs}});
+                    }
+                    res["children"] = kids;
+                }
                 res["cpu"] = cpuNow() - c0;
                 res["scores"] = scores;
                 res["wins"] = wins;
