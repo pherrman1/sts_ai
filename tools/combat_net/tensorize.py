@@ -107,6 +107,7 @@ def main(argv):
         "gumbelChoice": np.full(n, -1, np.int16),   # index into the kept edges; -1 = none or cut
         "score": np.full(n, np.nan, np.float32),    # the fight's Silver score (same units as the edges' q)
         "fight": np.full(n, -1, np.int16),          # the fight's index within its run (with seed: the fight id)
+        "decision": np.full(n, -1, np.int32),       # the root's decision index in its fight (seed, fight, decision = row id)
         "act": np.zeros(n, np.int8),
         "elite_boss": np.zeros(n, np.int8),   # 0 monster, 1 elite, 2 boss, 3 other
         # STS_AZGEN_BUDGET_LADDER rows: per ladder budget the fresh search's pick (index into the kept edges, -1 =
@@ -239,6 +240,7 @@ def main(argv):
             arr["won"][j] = 1 if v["won"] else 0
             arr["endFrac"][j] = v["endHp"] / mx
             arr["fight"][j] = r.get("fight", -1)
+            arr["decision"][j] = r.get("decision", -1)
             if v.get("score") is not None:
                 arr["score"][j] = v["score"]
             arr["preMaxHp"][j] = v["preMaxHp"]

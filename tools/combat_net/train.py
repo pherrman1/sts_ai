@@ -130,12 +130,36 @@ def evaluate(net, A, idx, batch, device, amp=False):
     sums = {"n": 0, "multi": 0, "pol_ce": 0.0, "top1": 0, "top1_n": 0, "nll": 0.0, "brier": 0.0, "aux_mae1": 0.0,
             "aux_mae2": 0.0, "g_hit": 0, "g_n": 0, "qp_hit": 0, "qp_n": 0, "regret": 0.0, "regret_n": 0}
     room = {r: {"multi": 0, "top1": 0, "top1_n": 0, "nll": 0.0, "n": 0} for r in range(4)}
+    # Q head (value-net-as-leaf V1), on edges with >= 256 visits (V0's truth set): level and sibling-difference MSE,
+    # order accuracy on sibling pairs with |dQ| >= 2, and the zero-difference baseline; overall and per room.
+    qs = {r: {"lvl": 0.0, "lvl_n": 0, "dif": 0.0, "zero": 0.0, "dif_n": 0, "ord": 0.0, "ord_n": 0} for r in range(5)}
     pdeath, died = [], []
     for s in range(0, len(idx), batch):
         b = {k: v.to(device) for k, v in M.collate(A, idx[s:s + batch]).items()}
         with torch.autocast("cuda", dtype=torch.bfloat16, enabled=amp):
-            logits, vlog, aux = net(b)
-        logits, vlog, aux = logits.float(), vlog.float(), aux.float()
+            outs = net(b, want_q=True) if net.q_on else net(b)
+        logits, vlog, aux = outs[0].float(), outs[1].float(), outs[2].float()
+        if net.q_on and "q" in b:
+            qhat, qv = outs[3].float(), b["q"]
+            ok = b["act_mask"] & (b["visits"] >= 256) & ~torch.isnan(qv)
+            qv0, qh0 = torch.nan_to_num(qv), qhat
+            for r in (2, 4):   # 4 = all rows
+                sel = ok & ((b["elite_boss"] == r)[:, None] if r < 4 else torch.ones_like(ok))
+                qs[r]["lvl"] += float((((qh0 - qv0) ** 2) * sel).sum())
+                qs[r]["lvl_n"] += int(sel.sum())
+                E_ = sel.shape[1]
+                pm = sel[:, :, None] & sel[:, None, :] & torch.triu(torch.ones(E_, E_, dtype=torch.bool, device=sel.device), 1)
+                dT = qv0[:, :, None] - qv0[:, None, :]
+                dH = qh0[:, :, None] - qh0[:, None, :]
+                npair = pm.sum((1, 2)).float()
+                rows = npair > 0
+                qs[r]["dif"] += float(((((dH - dT) ** 2) * pm).sum((1, 2))[rows] / npair[rows]).sum())
+                qs[r]["zero"] += float((((dT ** 2) * pm).sum((1, 2))[rows] / npair[rows]).sum())
+                qs[r]["dif_n"] += int(rows.sum())
+                big = pm & (dT.abs() >= 2)
+                agree = (torch.sign(dH) == torch.sign(dT)).float() + 0.5 * (dH == 0).float()
+                qs[r]["ord"] += float((agree * big).sum())
+                qs[r]["ord_n"] += int(big.sum())
         logp = torch.log_softmax(logits, -1).masked_fill(~b["act_mask"], 0)
         multi = b["multi"] > 0
         ce = -(b["policy"] * logp).sum(-1)
@@ -195,6 +219,12 @@ def evaluate(net, A, idx, batch, device, amp=False):
            "by_room": {name: {"rows": room[r]["n"], "value_nll": room[r]["nll"] / max(1, room[r]["n"]),
                               "top1": room[r]["top1"] / max(1, room[r]["top1_n"])}
                        for r, name in enumerate(("monster", "elite", "boss", "other"))}}
+    if net.q_on:
+        for r, name in ((4, "q"), (2, "q_boss")):
+            v = qs[r]
+            out[name] = {"level_mse": v["lvl"] / max(1, v["lvl_n"]), "edges": v["lvl_n"],
+                         "diff_mse": v["dif"] / max(1, v["dif_n"]), "zero_diff_mse": v["zero"] / max(1, v["dif_n"]),
+                         "roots": v["dif_n"], "order_acc": v["ord"] / max(1, v["ord_n"]), "pairs": v["ord_n"]}
     net.train()
     return out
 
@@ -225,9 +255,16 @@ def main(argv):
     ap.add_argument("--rooms", default="", help="comma list of elite_boss codes to keep (T0 specialists)")
     ap.add_argument("--eval-only", action="store_true", help="evaluate --init on the validation split, no training")
     ap.add_argument("--encounters", default="", help="comma list of encounter names to keep (T1 per-boss specialists)")
+    ap.add_argument("--q-head", action="store_true",
+                    help="value-net-as-leaf V1: add the per-edge Q head (needs --q-source backed); default off")
+    ap.add_argument("--q-weight", type=float, default=1.0, help="weight of the Q head loss (with --q-head)")
+    ap.add_argument("--q-pair-weight", type=float, default=4.0, help="weight of the sibling-contrast term in it")
+    ap.add_argument("--q-min-visits", type=int, default=64, help="edges with fewer visits carry no Q target")
     ap.add_argument("--q-source", default="mean", choices=("mean", "backed"),
                     help="Q for cq targets and q_regret: mean (q.npy) or max-backed (qb.npy, D2 / T1)")
     args = ap.parse_args(argv)
+    if args.q_head and args.q_source != "backed":
+        raise SystemExit("--q-head trains on the max-backed Q: pass --q-source backed")
     os.makedirs(args.out, exist_ok=True)
     torch.manual_seed(args.seed)
     rng = np.random.default_rng(args.seed)
@@ -262,9 +299,14 @@ def main(argv):
     eval_idx = val_idx if len(val_idx) <= args.eval_rows else rng.choice(val_idx, args.eval_rows, replace=False)
     caps = A.meta["caps"]
     net = M.CombatNet(d=args.d, layers=args.layers, g_len=caps["G_LEN"], m_num=caps["M_NUM"], q_len=caps["Q_LEN"],
-                      a_len=caps["A_LEN"], aux=not args.no_aux, value=not args.no_value).to(args.device)
+                      a_len=caps["A_LEN"], aux=not args.no_aux, value=not args.no_value,
+                      qhead=args.q_head).to(args.device)
     if args.init:
-        net.load_state_dict(torch.load(args.init, map_location=args.device))
+        sd = torch.load(args.init, map_location=args.device)
+        missing, unexpected = net.load_state_dict(sd, strict=False)
+        # a Q-head run may start from a checkpoint without one; anything else must match exactly
+        if unexpected or any(not k.startswith("qh.") for k in missing) or (missing and not args.q_head):
+            raise SystemExit(f"--init mismatch: missing {missing}, unexpected {unexpected}")
     params = sum(p.numel() for p in net.parameters())
     opt = torch.optim.AdamW(net.parameters(), lr=args.lr, weight_decay=0.01)
     steps = 0 if args.eval_only else int(args.epochs * len(train_idx) / args.batch)
@@ -300,8 +342,13 @@ def main(argv):
     for step in range(steps):
         b = {k: v.to(args.device, non_blocking=True) for k, v in next(stream).items()}
         with torch.autocast("cuda", dtype=torch.bfloat16, enabled=amp):
-            logits, vlog, aux = net(b)
+            outs = net(b, want_q=True) if args.q_head else net(b)
+        logits, vlog, aux = outs[:3]
         loss, parts = M.losses(net, b, logits.float(), vlog.float(), aux.float(), args.value_weight)
+        if args.q_head:
+            ql, qlev, qpair = M.q_losses(outs[3].float(), b, args.q_min_visits, args.q_pair_weight)
+            loss = loss + args.q_weight * ql
+            parts.update({"q_level": qlev.item(), "q_pair": qpair.item()})
         opt.zero_grad()
         loss.backward()
         torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
@@ -315,7 +362,9 @@ def main(argv):
             print(json.dumps({"step": step + 1, "sec": rec["sec"], **({k: round(ev[k], 4) for k in
                               ("policy_ce", "top1", "value_nll", "death_ece", "aux_mae1")} if ev else {}),
                               **({k: round(ev[k], 4) for k in ("top1_gumbel", "top1_qpick", "q_regret")
-                                  if ev and ev.get(k) is not None})}), flush=True)
+                                  if ev and ev.get(k) is not None}),
+                              **({k: {m: round(x, 4) for m, x in ev[k].items()} for k in ("q", "q_boss")
+                                  if ev and k in ev})}), flush=True)
     if not args.eval_only:
         torch.save(net.state_dict(), os.path.join(args.out, "model.pt"))
     final = evaluate(net, A, val_idx, 512, args.device, amp)
@@ -323,7 +372,8 @@ def main(argv):
               open(os.path.join(args.out, "eval.json"), "w"), indent=1)
     if final:
         print(json.dumps({"final_val": {k: final[k] for k in ("rows", "policy_ce", "top1", "value_nll", "death_ece",
-                                                               "top1_gumbel", "top1_qpick", "q_regret")}}))
+                                                               "top1_gumbel", "top1_qpick", "q_regret", "q", "q_boss")
+                                        if k in final}}))
     return 0
 
 
