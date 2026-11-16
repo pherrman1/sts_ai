@@ -27583,7 +27583,7 @@ Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 104.1 lane-hours
 −2.25 pp [−5.08, +0.59] Heart; no conversion loss visible on the seeds where both arms reach Act 4 (not an isolated
 Heart contrast).
 
-## §TBD — Rollout prior on G16 targets, stage 3 (issue #1053): §775's G16 + mb4 with V (§804's candidate) in all four prior roles (root prior, tree prior, prior playouts, rollout root table) against §775's G16 + mb4 on 1,023 paired A20 seeds after a 32/32 sentinel: Heart 41.25% → 37.83%, −3.42 pp [−6.26, −0.59] at 1.00× machine-corrected CPU, upper one-sided bound −0.98 → WORSE; the loss sits in act 2's hallway (+4.0 pp deaths) (cloud, 32 workers, 2026-11-15/16)
+## §808 — Rollout prior on G16 targets, stage 3 (issue #1053): §775's G16 + mb4 with V (§804's candidate) in all four prior roles (root prior, tree prior, prior playouts, rollout root table) against §775's G16 + mb4 on 1,023 paired A20 seeds after a 32/32 sentinel: Heart 41.25% → 37.83%, −3.42 pp [−6.26, −0.59] at 1.00× machine-corrected CPU, upper one-sided bound −0.98 → WORSE; the loss sits in act 2's hallway (+4.0 pp deaths) (cloud, 32 workers, 2026-11-15/16)
 
 **Question (Philipp 2026-11-15 21:59 CET, go for 32 workers):** does V, the MLP trained on G16 + mb4 visit shares that
 beat g7f_E on root regret (§804), help the whole run when it replaces g7f_E everywhere?
