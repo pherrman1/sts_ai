@@ -2,7 +2,8 @@
 
 **Authorization.** Philipp 2026-11-16 20:33 CET in the thread for issue #1053 ("ja bau das offline maß. und ja zu
 spiel test"), answering the proposal: the run-3 winner as playout policy against V, the same 1,024 seeds as the GP
-gate (§815), about 6 h on 32 workers. No new seeds.
+gate (§815), about 6 h on 32 workers. No new seeds. Worker count raised to 40 by Philipp at 21:30 CET ("nimm 40
+worker"), before launch.
 
 ## Question
 
@@ -99,8 +100,8 @@ No default change on this result alone (a default change is Philipp's call).
 
 ## Cost and schedule
 
-About 1,024 × ~850 s + 32 × 580 s ≈ 250 lane-hours (SBC's playouts cost more per step than V's); 32 workers × 4
-lanes, queue, about 2-2.5 h plus the slowest game.
+About 1,024 × ~850 s + 32 × 580 s ≈ 250 lane-hours (SBC's playouts cost more per step than V's); 40 workers × 4
+lanes, queue, about 1.5-2 h plus the slowest game.
 Share: about 4,300 new files (unit tars and claim dirs), about 60 MB.
 
 ## Smoke (local, this binary)

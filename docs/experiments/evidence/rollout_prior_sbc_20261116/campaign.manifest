@@ -1,7 +1,7 @@
 name          rollout-prior-sbc
 code_commit   432bfae4e82ccd28e02f63135cbe343b9876f9bf
 binary_sha256 85a6cf3ebad0f7194bce185ae85e3516a6fb2af3c99e10146ac43b68981a8739
-workers       32
+workers       40
 share         /mnt/project-files/rollout-prior-sbc
 configure_preset linux-gcc-release-x86-64-v3
 parallel      4
