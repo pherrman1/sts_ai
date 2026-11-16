@@ -147,6 +147,14 @@ add_test(NAME combat_tok_net_q_parity COMMAND $<TARGET_FILE:combat-tok-net-tool>
          ${CMAKE_SOURCE_DIR}/tests/data/combat_tok_net_tiny_q.ctn ${CMAKE_SOURCE_DIR}/tests/data/combat_tok_net_q_fixture.json)
 set_tests_properties(combat_tok_net_q_parity PROPERTIES LABELS "core;smoke")
 
+# Native Amber-token combat encoder (stage 0 of the self-play loop assessment): every wire-encoded field reaches the
+# tokens, determinism, capacity cut counting and live action src / tgt, on the wire sample.
+add_executable(amber_encoder_test tests/amber_encoder_test.cpp $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(amber_encoder_test PRIVATE include json/include)
+add_test(NAME amber_encoder COMMAND $<TARGET_FILE:amber_encoder_test>
+         ${CMAKE_SOURCE_DIR}/tests/data/combat_net_wire_sample.jsonl)
+set_tests_properties(amber_encoder PROPERTIES LABELS "core;smoke")
+
 add_executable(rest_recall_filter_test tests/rest_recall_filter_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(rest_recall_filter_test PRIVATE include json/include)
