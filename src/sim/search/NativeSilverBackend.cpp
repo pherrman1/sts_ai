@@ -24,6 +24,7 @@
 #include <stdexcept>
 #include <string>
 #include <tuple>
+#include <unordered_set>
 
 #include "combat/BattleContext.h"
 #include "game/GameContext.h"
@@ -1059,6 +1060,23 @@ namespace sts::search {
                 }
                 const auto playoutsBefore = searcher->stats.rolloutPlayouts;
                 const auto rolloutActionsBefore = searcher->stats.rolloutActions;
+                // g_nativeSilverExtraLabels: a reservoir of this search's playout states (research; reads only).
+                const auto &extraCfg = g_nativeSilverExtraLabels;
+                const bool extrasOn = (extraCfg.nodes > 0 || extraCfg.playouts > 0) && extraCfg.sims > 0
+                    && wholeRunGumbel && gumbelRoot && g_nativeSilverRootObserver && !skipSearch;
+                SilverPlayoutSamples playoutReservoir;
+                struct ReservoirScope {
+                    SilverSearcher *s = nullptr;
+                    ~ReservoirScope() { if (s) s->playoutSamples = nullptr; }
+                } reservoirScope;
+                const std::uint64_t extraSeed = nativeSilverBattleSeed(bc)
+                    ^ (0xd1b54a32d192ed03ULL * static_cast<std::uint64_t>(decision + 1));
+                if (extrasOn && extraCfg.playouts > 0) {
+                    playoutReservoir.rng = extraSeed ^ 0x2545f4914f6cdd1dULL;
+                    playoutReservoir.max = static_cast<std::size_t>(extraCfg.playouts);
+                    searcher->playoutSamples = &playoutReservoir;
+                    reservoirScope.s = searcher.get();
+                }
                 // STS_SILVER_PLAN_COMMIT: the inherited plan at a chance-free continuation root.
                 int planEdge = -1;
                 if (g_options.planCommit && wholeRunGumbel && planContinuation && !skipSearch && inheritedVisits > 0) {
@@ -1357,6 +1375,103 @@ namespace sts::search {
                                           shadow->stats.rolloutPriorCalls - calls0, shadow->stats.rolloutActions - acts0});
                     }
                 }
+                // g_nativeSilverExtraLabels: label interior tree nodes and sampled playout states by fresh searches.
+                searcher->playoutSamples = nullptr;
+                reservoirScope.s = nullptr;
+                std::vector<NativeSilverRootView::ExtraLabel> extras;
+                if (extrasOn && searcher->rootNode().edges.size() > 1) {
+                    std::uint64_t pick = extraSeed;
+                    const auto next = [&pick]() {
+                        std::uint64_t z = (pick += 0x9e3779b97f4a7c15ULL);
+                        z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ULL;
+                        z = (z ^ (z >> 27)) * 0x94d049bb133111ebULL;
+                        return z ^ (z >> 31);
+                    };
+                    struct Candidate { BattleContext state; int source; int depth; int step; std::int64_t visits;
+                                       std::vector<NativeSilverRootView::ExtraLabel::TreeEdge> edges; };
+                    std::vector<Candidate> chosen;
+                    if (extraCfg.nodes > 0) {
+                        // Interior decision nodes in breadth-first order from the root (a transposition graph:
+                        // each node once), then a uniform draw without replacement.
+                        std::vector<std::pair<const SilverSearcher::Node *, int>> frontier{{&searcher->rootNode(), 0}};
+                        std::vector<std::pair<const SilverSearcher::Node *, int>> found;
+                        std::unordered_set<const SilverSearcher::Node *> seen{&searcher->rootNode()};
+                        const auto visit = [&seen](const SilverSearcher::Node *n) { return seen.insert(n).second; };
+                        for (std::size_t f = 0; f < frontier.size() && seen.size() < 200000; ++f) {
+                            const auto [node, depth] = frontier[f];
+                            for (const auto &e : node->edges) {
+                                if (!e.node) continue;
+                                std::vector<const SilverSearcher::Node *> children;
+                                if (e.node->isRandomNode) {
+                                    if (!visit(e.node)) continue;
+                                    for (const auto &o : e.node->edges)
+                                        if (o.node && !o.node->isRandomNode) children.push_back(o.node);
+                                } else {
+                                    children.push_back(e.node);
+                                }
+                                for (const auto *c : children) {
+                                    if (!visit(c)) continue;
+                                    frontier.push_back({c, depth + 1});
+                                    if (c->state && c->simulationCount >= extraCfg.minVisits && c->edges.size() > 1
+                                            && c->state->outcome == Outcome::UNDECIDED
+                                            && c->state->inputState == InputState::PLAYER_NORMAL)
+                                        found.push_back({c, depth + 1});
+                                }
+                            }
+                        }
+                        const int mb = searcher->maxBackupMinVisits;
+                        for (int k = 0; k < extraCfg.nodes && !found.empty(); ++k) {
+                            const std::size_t j = next() % found.size();
+                            const auto [node, depth] = found[j];
+                            found[j] = found.back();
+                            found.pop_back();
+                            std::vector<NativeSilverRootView::ExtraLabel::TreeEdge> te;
+                            for (std::size_t i = 0; i < node->edges.size(); ++i) {
+                                const auto &e = node->edges[i];
+                                NativeSilverRootView::ExtraLabel::TreeEdge t;
+                                t.bits = e.action.bits;
+                                t.visits = e.visitCount;
+                                t.childSims = e.node ? e.node->simulationCount : 0;
+                                t.hasQ = e.node && e.node->simulationCount > 0;
+                                if (t.hasQ) {
+                                    t.q = e.node->evaluationSum / e.node->simulationCount;
+                                    t.hasBacked = mb > 0;
+                                    t.qBacked = mb > 0 && e.node->hasBackedValue && e.node->simulationCount >= mb
+                                        ? e.node->backedValue : t.q;
+                                }
+                                t.hasPrior = node->prior.size() == node->edges.size();
+                                if (t.hasPrior) t.prior = node->prior[i];
+                                te.push_back(t);
+                            }
+                            chosen.push_back({*node->state, 0, depth, 0, node->simulationCount, std::move(te)});
+                        }
+                    }
+                    for (const auto &p : playoutReservoir.samples)
+                        chosen.push_back({p.state, 1, p.treeDepth, p.playoutStep, 0, {}});
+                    for (std::size_t ci = 0; ci < chosen.size(); ++ci) {
+                        auto &c = chosen[ci];
+                        std::unique_ptr<SilverSearcher> shadow;
+                        prepareSearcher(shadow, c.state, false);
+                        configureSearcher(*shadow, false);
+                        shadow->leafSamples = nullptr;
+                        shadow->outcomes = nullptr;
+                        if (shadow->prepareRootActions() <= 1) continue;
+                        const double c0 = threadCpuSeconds();
+                        const std::uint64_t salt = 0x6a09e667f3bcc909ULL * static_cast<std::uint64_t>(ci + 1);
+                        const std::int64_t sims = shadow->searchGumbelRoot(extraCfg.sims, *gumbelRoot,
+                                                                           extraSeed ^ salt);
+                        NativeSilverRootView::ExtraLabel x;
+                        x.source = c.source;
+                        x.depth = c.depth;
+                        x.playoutStep = c.step;
+                        x.nodeVisits = c.visits;
+                        x.treeEdges = std::move(c.edges);
+                        x.sims = sims;
+                        x.cpu = threadCpuSeconds() - c0;
+                        x.label = std::shared_ptr<const SilverSearcher>(std::move(shadow));
+                        extras.push_back(std::move(x));
+                    }
+                }
                 searching.resume();
 
                 const auto action = SilverSearcher::translateAction(
@@ -1380,7 +1495,8 @@ namespace sts::search {
                     g_nativeSilverRootObserver({gc, bc, *searcher, decision, inheritedVisits, simulations,
                                                 skipSearch, action, labelSearch ? labelSearcher.get() : nullptr,
                                                 labelInheritedVisits, &preEdges,
-                                                ladder.empty() ? nullptr : &ladder, mainCpu});
+                                                ladder.empty() ? nullptr : &ladder, mainCpu,
+                                                extras.empty() ? nullptr : &extras});
                 }
                 if (searcher->profile) {
                     shapeRow["cpu_seconds"] = threadCpuSeconds() - cpuBefore;
@@ -2552,6 +2668,7 @@ namespace sts::search {
     thread_local bool g_nativeSilverLabelSearch = false;
     thread_local std::vector<std::int64_t> g_nativeSilverBudgetLadder;
     thread_local std::vector<NativeSilverRolloutArm> g_nativeSilverRolloutLadder;
+    thread_local NativeSilverExtraLabels g_nativeSilverExtraLabels;
     const CombatValueNet *g_nativeSilverRolloutStudent = nullptr;
     std::map<int, const CombatValueNet *> g_nativeSilverRolloutStudentByEncounter;
     thread_local NativeSilverPriorTiming *g_nativeSilverPriorTiming = nullptr;

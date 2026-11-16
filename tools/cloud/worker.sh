@@ -178,6 +178,14 @@ try_claim() {  # try_claim ID MINE -> prints the claim dir; 1 = claimed by anoth
   echo "$TAG $(date +%s)" > "$c/hb"
   echo "$c"
 }
+# Central stop (queue only): the lead ends an open-ended campaign for all workers at once by creating SHARE/STOP,
+# or SHARE/STOP_AT holding an epoch (no lane claims a new unit at or after it). Running units finish and upload;
+# `run` then writes DONE.json and FINISHED as for a complete queue. A missing or unreadable file means "go on".
+central_stop() {
+  [ -e "$SHARE/STOP" ] && return 0
+  local t; t=$(head -c 32 "$SHARE/STOP_AT" 2>/dev/null | tr -dc 0-9)
+  [ -n "$t" ] && [ "$(date +%s)" -ge "$t" ]
+}
 upload_unit() {  # upload_unit ID -> $UDIR/<id>.<TAG>.tar (unit dir, markers, FROZEN.txt, SETUP.txt)
   local id=$1 t="$RUN/q/$1.$TAG.tar"
   mkdir -p "$RUN/q" "$UDIR" || return 1
@@ -232,22 +240,23 @@ run)
     for l in $(seq 0 $((PAR - 1))); do bash "$SELF" _qlane "$C" "$W" "$l" & done
     wait
     [ -e "$RUN/STOP" ] && { echo "stopped by request; no upload"; exit 0; }
+    cstop=0; central_stop && cstop=1
     left=$(pending_units | wc -l)
-    [ "$left" = 0 ] || { echo "STOP: $left units failed $QMAX times (claims/<id>.a*/failed); report them, do not rerun"; exit 3; }
+    [ "$left" = 0 ] || [ "$cstop" = 1 ] || { echo "STOP: $left units failed $QMAX times (claims/<id>.a*/failed); report them, do not rerun"; exit 3; }
     ls "$UDIR" | sed -n "s/\.$TAG\.tar\$//p" > "$OUT/uploaded.txt"
-    python3 - "$RUN/$TAG.DONE.json" "$NAME" "$W" "$OUT/uploaded.txt" "$RUN/FROZEN.txt" <<'PY' || stop "DONE.json"
+    python3 - "$RUN/$TAG.DONE.json" "$NAME" "$W" "$OUT/uploaded.txt" "$RUN/FROZEN.txt" "$cstop" <<'PY' || stop "DONE.json"
 import json, sys, datetime
-out, name, w, units, frozen = sys.argv[1:]
+out, name, w, units, frozen, cstop = sys.argv[1:]
 ids = [l.strip() for l in open(units) if l.strip()]
 json.dump({"campaign": name, "worker": int(w), "schedule": "queue", "uploaded_unit_ids": ids, "unit_count": len(ids),
-           "frozen": open(frozen).readline().strip(),
+           "frozen": open(frozen).readline().strip(), "central_stop": cstop == "1",
            "finished_utc": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")},
           open(out, "w"), indent=1)
 PY
     cp "$RUN/$TAG.DONE.json" "$SHARE/$TAG.DONE.json.part" && mv "$SHARE/$TAG.DONE.json.part" "$SHARE/$TAG.DONE.json" \
       || stop "DONE upload failed"
     touch "$RUN/FINISHED"
-    echo "WORKER_OK $TAG queue units_uploaded=$(wc -l < "$OUT/uploaded.txt")"
+    echo "WORKER_OK $TAG queue units_uploaded=$(wc -l < "$OUT/uploaded.txt")$([ "$cstop" = 1 ] && echo " central_stop")"
     exit 0
   fi
   my_units > "$OUT/units.txt"; mkdir -p "$OUT/units"
@@ -293,6 +302,7 @@ _qlane)  # one queue lane: claim the first claimable pending unit, run it, uploa
   sleep $(( ${4:-0} * 3 ))   # stagger the lanes' first scans
   while :; do
     [ -e "$RUN/STOP" ] && exit 0
+    central_stop && exit 0
     mapfile -t todo < <(pending_units)
     [ "${#todo[@]}" -eq 0 ] && exit 0
     ran=0 exhausted=0
