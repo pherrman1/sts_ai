@@ -88,6 +88,25 @@ namespace sts::azbench {
         // Takes up to maxRows requests (waits until at least minRows are queued or timeoutMs passes; 0 rows after
         // a stop). Thread-safe; several batching threads may call it.
         bool nextBatch(int maxRows, int minRows, int timeoutMs, PackedBatch &out);
+        // Flat layout (one token axis per row, padded to a bucketed length; amber_net.AmberNetFlat): takes up to
+        // maxRows requests like nextBatch, then picks the smallest row / token / action counts from the bucket lists
+        // that hold the batch and writes it into caller buffers sized for the largest buckets. Token order per row is
+        // the AmberTokenType segment order; action src / tgt index that token axis (-1 = none). Padding rows hold
+        // only a live run token and one live action. Returns the tickets (empty after a stop or timeout).
+        struct FlatBuffers {
+            std::int8_t *tokType;      // [R][T]
+            std::int16_t *ids;         // [R][T][4]
+            std::uint16_t *f;          // [R][T][64] float16 bits
+            std::uint8_t *mask;        // [R][T]
+            std::int16_t *aType, *aSrc, *aTgt;   // [R][A]
+            std::uint16_t *aF;         // [R][A][8]
+            std::uint8_t *aMask;       // [R][A]
+        };
+        struct FlatShape { int rows = 0, rowsPadded = 0, tokens = 0, actions = 0; };
+        std::vector<std::uint32_t> nextBatchFlat(int maxRows, int minRows, int timeoutMs,
+                                                 const std::vector<int> &rowBuckets, const std::vector<int> &tokBuckets,
+                                                 const std::vector<int> &actBuckets, const FlatBuffers &buf,
+                                                 FlatShape &shape);
         // Results for rows of a batch from nextBatch: tickets[row] as PackedBatch::ticket, logits[row][action]
         // (row-major, `actions` per row) and value[row].
         void submit(const std::uint32_t *tickets, int rows, int actions, const float *logits, const float *value);
@@ -102,6 +121,7 @@ namespace sts::azbench {
 
     private:
         void workerLoop(int w);
+        std::vector<std::uint32_t> takeRequests(int maxRows, int minRows, int timeoutMs);
         std::vector<Root> roots_;
         DriverConfig cfg_;
         std::vector<std::unique_ptr<Worker>> workers_;

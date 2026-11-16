@@ -554,16 +554,94 @@ namespace sts::azbench {
         wk.published = wk.st;
     }
 
-    bool Driver::nextBatch(int maxRows, int minRows, int timeoutMs, PackedBatch &out) {
+    std::vector<std::uint32_t> Driver::takeRequests(int maxRows, int minRows, int timeoutMs) {
         std::vector<std::uint32_t> take;
-        {
-            std::unique_lock<std::mutex> l(qm_);
-            qcv_.wait_for(l, std::chrono::milliseconds(timeoutMs),
-                          [&] { return stop_.load() || static_cast<int>(queue_.size()) >= minRows; });
-            const int n = std::min<int>(maxRows, static_cast<int>(queue_.size()));
-            take.assign(queue_.begin(), queue_.begin() + n);
-            queue_.erase(queue_.begin(), queue_.begin() + n);
+        std::unique_lock<std::mutex> l(qm_);
+        qcv_.wait_for(l, std::chrono::milliseconds(timeoutMs),
+                      [&] { return stop_.load() || static_cast<int>(queue_.size()) >= minRows; });
+        const int n = std::min<int>(maxRows, static_cast<int>(queue_.size()));
+        take.assign(queue_.begin(), queue_.begin() + n);
+        queue_.erase(queue_.begin(), queue_.begin() + n);
+        return take;
+    }
+
+    namespace {
+        int bucketFor(const std::vector<int> &buckets, int n) {
+            for (int b : buckets)
+                if (b >= n) return b;
+            return buckets.empty() ? n : buckets.back();
         }
+    }
+
+    std::vector<std::uint32_t> Driver::nextBatchFlat(int maxRows, int minRows, int timeoutMs,
+                                                     const std::vector<int> &rowBuckets,
+                                                     const std::vector<int> &tokBuckets,
+                                                     const std::vector<int> &actBuckets, const FlatBuffers &buf,
+                                                     FlatShape &shape) {
+        std::vector<std::uint32_t> take = takeRequests(maxRows, minRows, timeoutMs);
+        shape = {};
+        if (take.empty()) return take;
+        auto tokensOf = [&](std::uint32_t t) -> const AmberTokens & {
+            return workers_[t >> 16]->games[t & 0xffff].tokens;
+        };
+        int maxT = 1, maxA = 1;
+        for (auto t : take) {
+            const auto &tk = tokensOf(t);
+            int n = 0;
+            for (int s = 0; s < search::kAmberTokenTypes; ++s) n += tk.n[s];
+            maxT = std::max(maxT, n);
+            maxA = std::max(maxA, tk.nAct);
+        }
+        const int B = static_cast<int>(take.size());
+        const int R = std::max(B, bucketFor(rowBuckets, B));
+        const int T = std::max(maxT, bucketFor(tokBuckets, maxT));
+        const int A = std::max(maxA, bucketFor(actBuckets, maxA));
+        shape = {B, R, T, A};
+        std::memset(buf.tokType, 0, static_cast<std::size_t>(R) * T);
+        std::memset(buf.ids, 0, sizeof(std::int16_t) * R * T * search::kAmberCat);
+        std::memset(buf.f, 0, sizeof(std::uint16_t) * R * T * search::kAmberFloat);
+        std::memset(buf.mask, 0, static_cast<std::size_t>(R) * T);
+        std::memset(buf.aType, 0, sizeof(std::int16_t) * R * A);
+        std::fill(buf.aSrc, buf.aSrc + static_cast<std::size_t>(R) * A, std::int16_t(-1));
+        std::fill(buf.aTgt, buf.aTgt + static_cast<std::size_t>(R) * A, std::int16_t(-1));
+        std::memset(buf.aF, 0, sizeof(std::uint16_t) * R * A * search::kAmberActFeat);
+        std::memset(buf.aMask, 0, static_cast<std::size_t>(R) * A);
+        for (int r = 0; r < B; ++r) {
+            const auto &tk = tokensOf(take[r]);
+            std::array<int, search::kAmberTokenTypes> off{};
+            int pos = 0;
+            for (int s = 0; s < search::kAmberTokenTypes; ++s) {
+                off[s] = pos;
+                for (int i = 0; i < tk.n[s]; ++i, ++pos) {
+                    const auto &k = tk.tok[search::kAmberOff[s] + i];
+                    const std::size_t j = static_cast<std::size_t>(r) * T + pos;
+                    buf.tokType[j] = static_cast<std::int8_t>(s);
+                    std::memcpy(buf.ids + j * search::kAmberCat, k.ids.data(), sizeof(k.ids));
+                    std::memcpy(buf.f + j * search::kAmberFloat, k.f.data(), sizeof(k.f));
+                    buf.mask[j] = 1;
+                }
+            }
+            for (int a = 0; a < tk.nAct; ++a) {
+                const auto &x = tk.act[a];
+                const std::size_t j = static_cast<std::size_t>(r) * A + a;
+                buf.aType[j] = x.type;
+                buf.aSrc[j] = x.srcSeg == search::kAmberNoSeg ? -1 : static_cast<std::int16_t>(off[x.srcSeg] + x.srcIdx);
+                buf.aTgt[j] = x.tgtSeg == search::kAmberNoSeg ? -1 : static_cast<std::int16_t>(off[x.tgtSeg] + x.tgtIdx);
+                std::memcpy(buf.aF + j * search::kAmberActFeat, x.f.data(), sizeof(x.f));
+                buf.aMask[j] = 1;
+            }
+        }
+        for (int r = B; r < R; ++r) {   // padding rows: one live run token and one live action
+            buf.mask[static_cast<std::size_t>(r) * T] = 1;
+            buf.aMask[static_cast<std::size_t>(r) * A] = 1;
+        }
+        batches_ += 1;
+        batchRows_ += B;
+        return take;
+    }
+
+    bool Driver::nextBatch(int maxRows, int minRows, int timeoutMs, PackedBatch &out) {
+        std::vector<std::uint32_t> take = takeRequests(maxRows, minRows, timeoutMs);
         out.rows = static_cast<int>(take.size());
         out.ticket = take;
         if (take.empty()) return false;

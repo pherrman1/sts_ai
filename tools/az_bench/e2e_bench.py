@@ -101,6 +101,14 @@ def main(argv=None):
     ap.add_argument("--warmup", type=float, default=10, help="seconds before the timed window")
     ap.add_argument("--report", type=float, default=5)
     ap.add_argument("--dtype", default="fp16", choices=["fp16", "bf16", "fp32"])
+    ap.add_argument("--layout", default="flat", choices=["flat", "segments"],
+                    help="flat: one token axis per row, rows / tokens / actions padded to bucket sizes, packed by C++ "
+                         "into pinned buffers (default); segments: per-type segments padded to the batch's longest")
+    ap.add_argument("--row-buckets", default="256,512,1024,2048,4096")
+    ap.add_argument("--tok-buckets", default="32,48,64,96,128,212")
+    ap.add_argument("--act-buckets", default="16,32,64,96")
+    ap.add_argument("--cuda-graphs", action="store_true",
+                    help="with --compile: mode reduce-overhead (CUDA graphs per shape)")
     ap.add_argument("--compile", action="store_true", help="torch.compile the net (bucketed shapes)")
     ap.add_argument("--backend", default="inductor", help="torch.compile backend (inductor, emmy, ...)")
     ap.add_argument("--encoder", default="amber", choices=["amber", "stub"],
@@ -123,9 +131,31 @@ def main(argv=None):
     if args.compile:
         import torch._dynamo as dynamo
         dynamo.config.cache_size_limit = 64
-        run = torch.compile(net, dynamic=False, backend=args.backend)
+        if args.backend == "inductor":
+            run = torch.compile(net, dynamic=False, mode="reduce-overhead" if args.cuda_graphs else "default")
+        else:
+            run = torch.compile(net, dynamic=False, backend=args.backend)
     else:
         run = net
+    # torch.compile from several threads at once can deadlock (seen on the 3060 Ti): the first call of every new
+    # shape runs under this lock, later calls of a known shape run freely.
+    compile_lock = threading.Lock()
+    seen_shapes = set()
+
+    def forward(x, key):
+        if not args.compile or key in seen_shapes:
+            return run(x)
+        with compile_lock:
+            out = run(x)
+            torch.cuda.synchronize() if dev.type == "cuda" else None
+            seen_shapes.add(key)
+            return out
+
+    row_b = [int(v) for v in args.row_buckets.split(",") if int(v) <= args.batch] or [args.batch]
+    if row_b[-1] < args.batch:
+        row_b.append(args.batch)
+    tok_b = [int(v) for v in args.tok_buckets.split(",")]
+    act_b = [int(v) for v in args.act_buckets.split(",")]
 
     drv = az_bench_native.Driver(args.wires, workers=args.workers, games=args.games, full_sims=args.full_sims,
                                  fast_sims=args.fast_sims, full_prob=args.full_prob, seed=args.seed,
@@ -146,7 +176,69 @@ def main(argv=None):
             stop.set()
             raise
 
+    def flat_loop(i):
+        import numpy as np
+        rng = np.random.default_rng(i)
+        stream = torch.cuda.Stream(dev) if dev.type == "cuda" else None
+        R, T, A = row_b[-1], tok_b[-1], act_b[-1]
+        pin = dev.type == "cuda"
+        host = {
+            "tok_type": torch.zeros(R * T, dtype=torch.int8, pin_memory=pin),
+            "ids": torch.zeros(R * T * 4, dtype=torch.int16, pin_memory=pin),
+            "f": torch.zeros(R * T * 64, dtype=torch.float16, pin_memory=pin),
+            "mask": torch.zeros(R * T, dtype=torch.bool, pin_memory=pin),
+            "a_type": torch.zeros(R * A, dtype=torch.int16, pin_memory=pin),
+            "a_src": torch.zeros(R * A, dtype=torch.int16, pin_memory=pin),
+            "a_tgt": torch.zeros(R * A, dtype=torch.int16, pin_memory=pin),
+            "a_f": torch.zeros(R * A * 8, dtype=torch.float16, pin_memory=pin),
+            "a_mask": torch.zeros(R * A, dtype=torch.bool, pin_memory=pin),
+        }
+        views = {k: v.numpy() for k, v in host.items()}
+        while not stop.is_set():
+            t0 = time.perf_counter()
+            got = drv.next_flat(args.batch, min_rows, 5, row_b, tok_b, act_b, views)
+            t1 = time.perf_counter()
+            if got is None:
+                with tlock:
+                    timing["wait"] += t1 - t0
+                continue
+            ticket, rows, Rp, Tp, Ap = got
+            if args.fake_net:
+                logits = rng.random((rows, Ap), dtype=np.float32)
+                value = rng.random(rows, dtype=np.float32)
+            else:
+                shapes = {"tok_type": (Rp, Tp), "ids": (Rp, Tp, 4), "f": (Rp, Tp, 64), "mask": (Rp, Tp),
+                          "a_type": (Rp, Ap), "a_src": (Rp, Ap), "a_tgt": (Rp, Ap), "a_f": (Rp, Ap, 8),
+                          "a_mask": (Rp, Ap)}
+                ctx = torch.cuda.stream(stream) if stream is not None else torch.no_grad()
+                with ctx, torch.inference_mode(), torch.autocast(dev.type, dtype=dtype, enabled=dtype != torch.float32):
+                    x = {}
+                    for k, shp in shapes.items():
+                        n = int(np.prod(shp))
+                        t = host[k][:n].to(dev, non_blocking=True).view(shp)
+                        if k in ("tok_type", "ids", "a_type", "a_src", "a_tgt"):
+                            t = t.long()
+                        elif t.dtype == torch.float16:
+                            t = t.float()
+                        x[k] = t
+                    lg, outcome, _, _ = forward(x, (Rp, Tp, Ap))
+                    logits = lg[:rows].float().cpu().numpy()
+                    value = torch.softmax(outcome[:rows].float(), -1)[:, 0].cpu().numpy()
+            t2 = time.perf_counter()
+            drv.submit(ticket, logits, value)
+            t3 = time.perf_counter()
+            with tlock:
+                timing["wait"] += t1 - t0
+                timing["h2d_forward"] += t2 - t1
+                timing["submit"] += t3 - t2
+                timing["batches"] += 1
+                timing["rows"] += rows
+                timing["padded_rows"] = timing.get("padded_rows", 0) + Rp
+                timing["tok_slots"] = timing.get("tok_slots", 0) + Rp * Tp
+
     def batcher_loop(i):
+        if args.layout == "flat":
+            return flat_loop(i)
         stream = torch.cuda.Stream(dev) if dev.type == "cuda" else None
         import numpy as np
         rng = np.random.default_rng(i)
@@ -166,7 +258,7 @@ def main(argv=None):
                 ctx = torch.cuda.stream(stream) if stream is not None else torch.no_grad()
                 with ctx, torch.inference_mode(), torch.autocast(dev.type, dtype=dtype, enabled=dtype != torch.float32):
                     x, rows = to_device(b, dev, bucket=args.compile)
-                    lg, outcome, _, _ = run(x)
+                    lg, outcome, _, _ = forward(x, tuple(v.shape for v in x.values()))
                     lg = lg[:rows, :b["a_mask"].shape[1]].float()
                     v = torch.softmax(outcome[:rows].float(), -1)[:, 0]
                     logits = lg.cpu().numpy()
@@ -217,7 +309,11 @@ def main(argv=None):
         "positions_per_s": round((s1["evals"] - s0["evals"]) / wall),
         "moves_per_s": round((s1["moves"] - s0["moves"]) / wall),
         "fights": s1["fights"] - s0["fights"],
+        "layout": args.layout,
         "mean_batch_rows": round((w1["rows"] - w0["rows"]) / nb, 1),
+        "mean_padded_rows": round((w1.get("padded_rows", 0) - w0.get("padded_rows", 0)) / nb, 1),
+        "mean_token_slots_per_row": round((w1.get("tok_slots", 0) - w0.get("tok_slots", 0))
+                                          / max(1, w1.get("padded_rows", 0) - w0.get("padded_rows", 0)), 1),
         "batcher_ms_per_batch": {k: round(1e3 * (w1[k] - w0[k]) / nb, 3) for k in ("wait", "h2d_forward", "submit")},
         "worker_us_per_position": {
             "step_enumerate": round(1e6 * (s1["step_cpu"] - s0["step_cpu"]) / ev, 3),

@@ -64,6 +64,45 @@ class AmberNet(nn.Module):
         self.hp_floor = mlp(d, d, 1)
 
     def forward(self, b):
+        if "tok_type" in b:
+            return self.forward_flat(b)
+        return self.forward_segments(b)
+
+    def _heads(self, h, mask, b):
+        live = mask[:, 1:, None].to(h.dtype)
+        rest = (h[:, 1:] * live).sum(1) / live.sum(1).clamp(min=1)
+        c = h[:, 0] + self.summary_mlp(rest)
+        d = h.shape[-1]
+
+        def pick(idx, none):
+            g = torch.gather(h, 1, idx.clamp(min=0)[..., None].expand(-1, -1, d))
+            return torch.where((idx >= 0)[..., None], g, none.to(g.dtype))
+
+        e = (self.a_type(b["a_type"]) + self.w_s(pick(b["a_src"], self.a_none[0]))
+             + self.w_t(pick(b["a_tgt"], self.a_none[1])) + self.w_f(b["a_f"]) + self.w_c(c)[:, None])
+        logits = self.pol(e).squeeze(-1).masked_fill(~b["a_mask"], -1e4)
+        return logits, self.outcome(c), self.hp(c), self.hp_floor(c).squeeze(-1)
+
+    def forward_flat(self, b):
+        """Flat layout (az_driver nextBatchFlat): one token axis per row, the run token first, the other tokens in
+        TOKEN_TYPES order, then padding. b["tok_type"] [B, T] long (index into TOKEN_TYPES), b["ids"] [B, T, 4]
+        long, b["f"] [B, T, 64] float, b["mask"] [B, T] bool; actions as in forward_segments, with src / tgt
+        indexing this token axis. Same math as forward_segments on the same live tokens: the per-type float
+        projection is computed for all types and the token's own type is picked."""
+        tt = b["tok_type"]
+        d = self.type_emb.weight.shape[1]
+        W = torch.stack([self.proj[t].weight for t in TOKEN_TYPES])          # [K, d, 64]
+        bias = torch.stack([self.proj[t].bias for t in TOKEN_TYPES])         # [K, d]
+        K = W.shape[0]
+        P = torch.nn.functional.linear(b["f"], W.reshape(K * d, -1), bias.reshape(-1))
+        P = P.view(*tt.shape, K, d)
+        proj = torch.gather(P, 2, tt[..., None, None].expand(-1, -1, 1, d)).squeeze(2)
+        x = self.in_norm(self.type_emb(tt) + self.ids(b["ids"]).sum(2) + proj)
+        mask = b["mask"]
+        h = self.out_norm(self.trunk(x, src_key_padding_mask=~mask))
+        return self._heads(h, mask, b)
+
+    def forward_segments(self, b):
         """b: per token type t in TOKEN_TYPES, b[t + "_ids"] [B, n_t, 4] long, b[t + "_f"] [B, n_t, 64] float,
         b[t + "_mask"] [B, n_t] bool (the run segment has n = 1 and is always live); b["a_type"] [B, A] long,
         b["a_src"], b["a_tgt"] [B, A] long token index into the concatenated segments (-1 = none),
@@ -78,19 +117,7 @@ class AmberNet(nn.Module):
         x = self.in_norm(torch.cat(toks, 1))
         mask = torch.cat(masks, 1)
         h = self.out_norm(self.trunk(x, src_key_padding_mask=~mask))
-        live = mask[:, 1:, None].to(h.dtype)
-        rest = (h[:, 1:] * live).sum(1) / live.sum(1).clamp(min=1)
-        c = h[:, 0] + self.summary_mlp(rest)
-        d = h.shape[-1]
-
-        def pick(idx, none):
-            g = torch.gather(h, 1, idx.clamp(min=0)[..., None].expand(-1, -1, d))
-            return torch.where((idx >= 0)[..., None], g, none.to(g.dtype))
-
-        e = (self.a_type(b["a_type"]) + self.w_s(pick(b["a_src"], self.a_none[0]))
-             + self.w_t(pick(b["a_tgt"], self.a_none[1])) + self.w_f(b["a_f"]) + self.w_c(c)[:, None])
-        logits = self.pol(e).squeeze(-1).masked_fill(~b["a_mask"], -1e4)
-        return logits, self.outcome(c), self.hp(c), self.hp_floor(c).squeeze(-1)
+        return self._heads(h, mask, b)
 
 
 # Synthetic token counts per type, ~40 in all (the page's average; mostly cards and relics): a mid-run combat.
@@ -119,8 +146,9 @@ def synthetic_batch(B, counts=None, actions=10, rng=None, live_frac=1.0):
         b[t + "_mask"] = m
         off += n_slot
     b["a_type"] = torch.from_numpy(rng.integers(0, ACTION_TYPES, (B, actions)))
-    card0, ncard = offs["card"], max(counts["card"], 1)
-    mon0, nmon = offs["monster"], max(counts["monster"], 1)
+    live = lambda t: max(1, round(counts[t] * live_frac)) if counts[t] else 1   # noqa: E731
+    card0, ncard = offs["card"], live("card")       # sources / targets point at live tokens
+    mon0, nmon = offs["monster"], live("monster")
     b["a_src"] = torch.from_numpy(card0 + rng.integers(0, ncard, (B, actions)))
     b["a_tgt"] = torch.from_numpy(np.where(rng.random((B, actions)) < 0.5, mon0 + rng.integers(0, nmon, (B, actions)),
                                            -1))
@@ -133,3 +161,42 @@ def live_tokens(b):
     live = sum(b[t + "_mask"].sum(1) for t in TOKEN_TYPES).float().mean()
     padded = sum(b[t + "_mask"].shape[1] for t in TOKEN_TYPES)
     return float(live), int(padded)
+
+
+def to_flat(b):
+    """The flat layout of a segmented batch (same live tokens, src / tgt remapped), padded to the longest row."""
+    B = b["run_ids"].shape[0]
+    rows = []
+    T = 0
+    for r in range(B):
+        types, ids, fs, remap, pos, off = [], [], [], {}, 0, 0
+        for k, t in enumerate(TOKEN_TYPES):
+            m = b[t + "_mask"][r]
+            for i in range(m.shape[0]):
+                if m[i]:
+                    remap[off + i] = pos
+                    types.append(k)
+                    ids.append(b[t + "_ids"][r, i])
+                    fs.append(b[t + "_f"][r, i])
+                    pos += 1
+            off += m.shape[0]
+        rows.append((types, ids, fs, remap))
+        T = max(T, pos)
+    out = {"tok_type": torch.zeros(B, T, dtype=torch.long), "ids": torch.zeros(B, T, N_CAT, dtype=torch.long),
+           "f": torch.zeros(B, T, N_FLOAT), "mask": torch.zeros(B, T, dtype=torch.bool)}
+    for r, (types, ids, fs, remap) in enumerate(rows):
+        n = len(types)
+        out["tok_type"][r, :n] = torch.tensor(types)
+        out["ids"][r, :n] = torch.stack(ids)
+        out["f"][r, :n] = torch.stack(fs)
+        out["mask"][r, :n] = True
+    for k in ("a_src", "a_tgt"):
+        x = b[k].clone()
+        for r, (_, _, _, remap) in enumerate(rows):
+            for a in range(x.shape[1]):
+                v = int(x[r, a])
+                x[r, a] = remap[v] if v >= 0 else -1
+        out[k] = x
+    for k in ("a_type", "a_f", "a_mask"):
+        out[k] = b[k]
+    return out
