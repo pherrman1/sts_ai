@@ -27990,7 +27990,7 @@ Untested: a value trained on tree states (including bad actions), a much cheaper
 (§770's external Baalorlord seeds). Cost ≈ 6 core-hours.
 **Knowledge impact:** KB `research/combat-search/leaf-evaluation.md` (value-net leaf section).
 
-## §TBD-a — Prior data factory batches 1-2 and an offline playout value-error test (issue #1053): 3,574 units of short-Gumbel-labelled root, tree and playout states (18.8 M states, 5.44 M in boss / Act-4 rooms); search-imitation regret calls V better than g7f_E in every role, while playout value error against the played fight's score calls V's playouts better (MSE 1,019 vs 1,217, −199 [−252, −146]) and is the metric the whole-run gate (§TBD-b) confirmed (cloud, 32 workers, 2026-11-16)
+## §814 — Prior data factory batches 1-2 and an offline playout value-error test (issue #1053): 3,574 units of short-Gumbel-labelled root, tree and playout states (18.8 M states, 5.44 M in boss / Act-4 rooms); search-imitation regret calls V better than g7f_E in every role, while playout value error against the played fight's score calls V's playouts better (MSE 1,019 vs 1,217, −199 [−252, −146]) and is the metric the whole-run gate (§815) confirmed (cloud, 32 workers, 2026-11-16)
 
 **Question:** after §807 and §808 (V worse as playout policy offline and as all-role prior in games), collect prior
 training data off G16's own roots (tree nodes and playout states, each labelled by a fresh Gumbel root search) and find
@@ -28018,15 +28018,15 @@ raw tars kept only for validation-split seeds.
 **Interpretation (Inference):** labels from short searches say which move the search would make; a playout policy is
 judged by how well its playouts estimate the value, which is a different question (simulation balancing). §807's
 harness scored playouts against a tree built with g7f_E playouts and was biased toward g7f_E.
-**Decision:** use the value-error test to rank playout policies; it predicted §TBD-b's direction (one calibration
+**Decision:** use the value-error test to rank playout policies; it predicted §815's direction (one calibration
 point). Batch-1 and batch-2 data are kept for training playout policies on playout-room states. Seeds: 113200000-
 113223999 used. Cost ≈ 2 × 32 workers × ~2-5.5 h.
 **Knowledge impact:** KB `research/combat-search/cheap-combat-roadmap.md` (playout prior retrain line).
 
-## §TBD-b — Rollout prior, playout role (issue #1053): §775's G16 + mb4 with V (§804's candidate) only as prior-playout policy (boss rooms, Shield and Spear; root prior, tree prior and root table stay g7f_E) against §775's G16 + mb4 on 1,024 paired A20 seeds after a 32/32 sentinel: Heart 41.21% → 43.55%, +2.34 pp [−0.10, +4.79], one-sided lower bound +0.29 → GAIN at CAP (borderline) at 1.10× machine-corrected CPU (cloud, 32 workers, 2026-11-16)
+## §815 — Rollout prior, playout role (issue #1053): §775's G16 + mb4 with V (§804's candidate) only as prior-playout policy (boss rooms, Shield and Spear; root prior, tree prior and root table stay g7f_E) against §775's G16 + mb4 on 1,024 paired A20 seeds after a 32/32 sentinel: Heart 41.21% → 43.55%, +2.34 pp [−0.10, +4.79], one-sided lower bound +0.29 → GAIN at CAP (borderline) at 1.10× machine-corrected CPU (cloud, 32 workers, 2026-11-16)
 
 **Question (Philipp 2026-11-16 10:51 CET card "Nach der Fabrik", typed go 11:18 CET):** §808 lost with V in all four
-roles, and §TBD-a's value-error test calls V the better playout policy. Does V in the playout role alone help whole
+roles, and §814's value-error test calls V the better playout policy. Does V in the playout role alone help whole
 runs?
 **Data:** [PREREG](evidence/rollout_prior_playout_20261116/PREREG.md), [RESULT](evidence/rollout_prior_playout_20261116/RESULT.md),
 `results/` (result.json, pairs_GP.csv, breakdown.json, claims.txt, verify.txt). Run commit e6650f1f (code 432bfae4 =
@@ -28042,6 +28042,6 @@ Act 4 (each within noise).
 **Interpretation (Inference):** V is a better playout policy and a worse root / tree prior than g7f_E; §808's loss came
 from the root / tree roles in act 2's hallway. The gain is small and the two-sided CI touches 0.
 **Decision:** GAIN, borderline. No default change yet: a confirmation block on fresh seeds is needed before a default
-proposal (Philipp's decision). Next: better playout policies trained on §TBD-a's playout-room states, ranked by the
+proposal (Philipp's decision). Next: better playout policies trained on §814's playout-room states, ranked by the
 value-error test. Seeds: none new (§775's). Cost: 168.2 lane-hours.
 **Knowledge impact:** KB `research/combat-search/cheap-combat-roadmap.md` (playout prior retrain line).

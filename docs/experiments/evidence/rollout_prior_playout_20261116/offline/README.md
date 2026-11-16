@@ -1,4 +1,4 @@
-# Offline tests for the playout role (issue #1053, ledger §TBD-a)
+# Offline tests for the playout role (issue #1053, ledger §814)
 
 Copied from the author's run directory (`/mnt/project-files/rollout-prior-next/calib/`); paths inside the scripts
 point at the author's scratch directory and are kept as run.
