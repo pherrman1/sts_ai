@@ -1,0 +1,19 @@
+{
+ "decisions": 11738069,
+ "act4": 399904,
+ "checked": 11338165,
+ "games": 104000,
+ "max_normals": [
+  11,
+  10,
+  10
+ ],
+ "max_elites": [
+  6,
+  6,
+  6
+ ],
+ "files": 8000,
+ "encounters_sha256": "21e81001bcddaf5ed8d9cdcf15eaff40126d5ecd55447becb74fe26791c7ad63",
+ "ok": true
+}

@@ -8,7 +8,7 @@
 3. Without --perturb, NET.bin must be the net that played the trajectory: the recorded behaviour log-prob of each
    sampled decision is compared with log-softmax(torch logits / temperature) (median, p99, max, count > 1e-5).
 4. --perturb SEED first writes NET.bin with random values in every optional input (x_*, x2_*) and the PPO
-   fixed-action rows 166-177 (ppo_model.py perturb) and scores that net instead (no log-prob step); it also reports how
+   fixed-action rows 166-178 (ppo_model.py perturb) and scores that net instead (no log-prob step); it also reports how
    far the perturbation moved the native logits, so a zero-effect perturbation cannot pass silently.
 
 Reference run (#945, cov8.jsonl.gz of docs/experiments/evidence/ppo_s0_smoke_20261101, heart1.bin):

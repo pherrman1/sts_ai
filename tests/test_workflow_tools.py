@@ -372,6 +372,30 @@ class CloudQueueTest(unittest.TestCase):
         verify = [sys.executable, str(ROOT / "tools/cloud/verify_campaign.py"), self.c, "--json"]
         run(verify, self.r.path)
 
+    def test_central_stop_finishes_open_ended_queue(self):
+        # The lead's SHARE/STOP ends the run: running units finish and upload, no new unit starts, DONE.json is written.
+        (self.r.path / self.c / "run_unit.sh").write_text(
+            'repo=$1 run=$2 out=$3; shift 3\necho "$*" >> "$CW_TEST_LOG"\n'
+            '[ "$1" = 203 ] && touch "$CW_TEST_STOP"\nsleep 1\n"$run/one_combat" "$@" > "$out/result.txt"\n')
+        self.r.commit("stop campaign")
+        env = {**self.env, "CW_TEST_STOP": str(self.share / "STOP")}
+        run(self.w + ["setup", self.c, "1"], self.r.path, env)
+        p = run(self.w + ["run", self.c, "1"], self.r.path, env)
+        self.assertIn("central_stop", p.stdout)
+        ran = self.log.read_text().splitlines()
+        self.assertLess(len(ran), 8, ran)
+        done = json.loads((self.share / "w01.DONE.json").read_text())
+        self.assertTrue(done["central_stop"])
+        self.assertEqual(done["unit_count"], len(ran))
+        self.assertTrue((self.home / "cw-fake-w01/FINISHED").exists())
+        # STOP_AT in the past also stops before any claim.
+        (self.share / "STOP").unlink()
+        (self.share / "STOP_AT").write_text("1\n")
+        run(self.w + ["setup", self.c, "2"], self.r.path, env)
+        p = run(self.w + ["run", self.c, "2"], self.r.path, env)
+        self.assertIn("units_uploaded=0 central_stop", p.stdout)
+        self.assertEqual(len(self.log.read_text().splitlines()), len(ran))
+
 
 if __name__ == "__main__":
     unittest.main()

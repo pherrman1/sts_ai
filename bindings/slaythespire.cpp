@@ -21,12 +21,43 @@
 
 using namespace sts;
 
+template <typename List>
+static std::vector<int> encounterIds(const List &list) {
+    std::vector<int> ids;
+    for (int i = 0; i < static_cast<int>(list.size()); ++i) {
+        ids.push_back(static_cast<int>(list[i]));
+    }
+    return ids;
+}
+
 PYBIND11_MODULE(slaythespire, m) {
     m.doc() = "pybind11 example plugin"; // optional module docstring
     m.def("play", &sts::py::play, "play Slay the Spire Console");
     m.def("get_seed_str", &SeedHelper::getString, "gets the integral representation of seed string used in the game ui");
     m.def("get_seed_long", &SeedHelper::getLong, "gets the seed string representation of an integral seed");
     m.def("getNNInterface", &sts::NNInterface::getInstance, "gets the NNInterface object");
+    m.def("act_encounter_lists", [](std::uint64_t seed, int ascension) {
+            // monsterRng is consumed only by GameContext::generateMonsters (and by the
+            // regeneration when an act's list runs out), so the lists of acts 1-3 are a
+            // function of (seed, ascension) as long as no list runs out. Read-only: no
+            // game is played.
+            GameContext gc(CharacterClass::IRONCLAD, seed, ascension);
+            std::vector<pybind11::dict> acts;
+            for (int act = 1; act <= 3; ++act) {
+                if (act > 1) {
+                    gc.transitionToAct(act);
+                }
+                pybind11::dict d;
+                d["act"] = act;
+                d["monsters"] = encounterIds(gc.monsterList);
+                d["elites"] = encounterIds(gc.eliteMonsterList);
+                d["boss"] = static_cast<int>(gc.boss);
+                d["second_boss"] = static_cast<int>(gc.secondBoss);
+                acts.push_back(d);
+            }
+            return acts;
+        }, pybind11::arg("seed"), pybind11::arg("ascension"),
+        "pre-generated encounters of acts 1-3 for a seed: [{act, monsters, elites, boss, second_boss}] as MonsterEncounter ids");
 
     pybind11::class_<NNInterface> nnInterface(m, "NNInterface");
     nnInterface.def("getObservation", &NNInterface::getObservation, "get observation array given a GameContext")
@@ -86,6 +117,15 @@ PYBIND11_MODULE(slaythespire, m) {
         .def_readwrite("cur_room", &GameContext::curRoom)
 //        .def_readwrite("cur_event", &GameContext::curEvent) // todo standardize event names
         .def_readwrite("boss", &GameContext::boss)
+        .def_readwrite("second_boss", &GameContext::secondBoss)
+        .def_property_readonly("monster_list",
+               [] (const GameContext &gc) { return encounterIds(gc.monsterList); },
+               "the act's pre-generated normal encounters (MonsterEncounter ids), in order")
+        .def_readwrite("monster_list_offset", &GameContext::monsterListOffset)
+        .def_property_readonly("elite_monster_list",
+               [] (const GameContext &gc) { return encounterIds(gc.eliteMonsterList); },
+               "the act's pre-generated elites (MonsterEncounter ids), in order")
+        .def_readwrite("elite_monster_list_offset", &GameContext::eliteMonsterListOffset)
 
         .def_readwrite("cur_hp", &GameContext::curHp)
         .def_readwrite("max_hp", &GameContext::maxHp)

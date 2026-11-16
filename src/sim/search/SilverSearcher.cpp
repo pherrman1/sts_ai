@@ -1365,6 +1365,22 @@ double search::SilverSearcher::rolloutToEnd(BattleContext &bc, int treeDepth) {
     return value;
 }
 
+void search::SilverPlayoutSamples::offer(const BattleContext &state, int playoutStep, int treeDepth) {
+    if (max == 0) return;
+    ++seen;
+    if (samples.size() < max) {
+        samples.push_back({state, playoutStep, treeDepth});
+        return;
+    }
+    // splitmix64 on the reservoir's own stream (Algorithm R: keep the new state with probability max / seen).
+    std::uint64_t z = (rng += 0x9e3779b97f4a7c15ULL);
+    z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ULL;
+    z = (z ^ (z >> 27)) * 0x94d049bb133111ebULL;
+    z ^= z >> 31;
+    const std::uint64_t j = z % seen;
+    if (j < max) samples[static_cast<std::size_t>(j)] = {state, playoutStep, treeDepth};
+}
+
 double search::SilverSearcher::playoutToEnd(BattleContext &bc, int treeDepth, bool uniformPolicy) {
     int rolloutDepth = 0;
     // Bound the entire playout, independently of card-play counters, turn
@@ -1378,6 +1394,8 @@ double search::SilverSearcher::playoutToEnd(BattleContext &bc, int treeDepth, bo
     const int playoutStartTurn = bc.turn;
     turnTableTurn = -1;
     while (bc.outcome == Outcome::UNDECIDED && rolloutDepth < maxActions) {
+        if (playoutSamples && bc.inputState == InputState::PLAYER_NORMAL)
+            playoutSamples->offer(bc, rolloutDepth, treeDepth);
         Action action;
         if (uniformPolicy && (bc.inputState == InputState::PLAYER_NORMAL
                 || bc.inputState == InputState::CARD_SELECT)) {

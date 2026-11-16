@@ -1,0 +1,186 @@
+{
+ "seeds": 1023,
+ "sections": [
+  {
+   "section": "a1",
+   "label": "act 1, floors 1-15",
+   "arm_deaths": 106,
+   "arm_reached": 1023,
+   "g16_deaths": 96,
+   "g16_reached": 1023,
+   "hazard_d_pp": 0.9775171065493651,
+   "ci95_pp": [
+    -0.5865102639296196,
+    2.541544477028347
+   ],
+   "only_g16_kills_arm_died_here": 13,
+   "only_arm_kills_g16_died_here": 10
+  },
+  {
+   "section": "b16",
+   "label": "act-1 boss (16)",
+   "arm_deaths": 90,
+   "arm_reached": 917,
+   "g16_deaths": 89,
+   "g16_reached": 927,
+   "hazard_d_pp": 0.21374986912673088,
+   "ci95_pp": [
+    -1.6511618406956439,
+    2.1008209826295983
+   ],
+   "only_g16_kills_arm_died_here": 8,
+   "only_arm_kills_g16_died_here": 13
+  },
+  {
+   "section": "a2",
+   "label": "act 2, floors 17-32",
+   "arm_deaths": 160,
+   "arm_reached": 827,
+   "g16_deaths": 129,
+   "g16_reached": 838,
+   "hazard_d_pp": 3.953242735481785,
+   "ci95_pp": [
+    1.152536843643202,
+    6.76336554605462
+   ],
+   "only_g16_kills_arm_died_here": 40,
+   "only_arm_kills_g16_died_here": 16
+  },
+  {
+   "section": "b33",
+   "label": "act-2 boss (33)",
+   "arm_deaths": 68,
+   "arm_reached": 667,
+   "g16_deaths": 63,
+   "g16_reached": 709,
+   "hazard_d_pp": 1.3091479648046218,
+   "ci95_pp": [
+    -1.0906284274017457,
+    3.749667027706412
+   ],
+   "only_g16_kills_arm_died_here": 10,
+   "only_arm_kills_g16_died_here": 10
+  },
+  {
+   "section": "a3",
+   "label": "act 3, floors 34-49",
+   "arm_deaths": 56,
+   "arm_reached": 599,
+   "g16_deaths": 60,
+   "g16_reached": 646,
+   "hazard_d_pp": 0.060989161502400524,
+   "ci95_pp": [
+    -2.739791550175162,
+    2.83849249214278
+   ],
+   "only_g16_kills_arm_died_here": 9,
+   "only_arm_kills_g16_died_here": 7
+  },
+  {
+   "section": "b50",
+   "label": "act-3 boss 1 (50)",
+   "arm_deaths": 34,
+   "arm_reached": 543,
+   "g16_deaths": 42,
+   "g16_reached": 586,
+   "hazard_d_pp": -0.9057253659671014,
+   "ci95_pp": [
+    -3.413726569994734,
+    1.5881288819129635
+   ],
+   "only_g16_kills_arm_died_here": 8,
+   "only_arm_kills_g16_died_here": 3
+  },
+  {
+   "section": "b51",
+   "label": "act-3 boss 2 (51)",
+   "arm_deaths": 36,
+   "arm_reached": 509,
+   "g16_deaths": 40,
+   "g16_reached": 544,
+   "hazard_d_pp": -0.28024962440772044,
+   "ci95_pp": [
+    -3.223156479026976,
+    2.623643533116253
+   ],
+   "only_g16_kills_arm_died_here": 6,
+   "only_arm_kills_g16_died_here": 9
+  },
+  {
+   "section": "a4",
+   "label": "act 4 (52-56)",
+   "arm_deaths": 86,
+   "arm_reached": 473,
+   "g16_deaths": 82,
+   "g16_reached": 504,
+   "hazard_d_pp": 1.9119769119769119,
+   "ci95_pp": [
+    -2.2931451185388747,
+    6.119481976885715
+   ],
+   "only_g16_kills_arm_died_here": 33,
+   "only_arm_kills_g16_died_here": 24
+  }
+ ],
+ "act4_deaths_by_final_floor": {
+  "GV": {
+   "52": 8,
+   "53": 0,
+   "54": 0,
+   "55": 6,
+   "56": 72,
+   "57": 0
+  },
+  "G16": {
+   "52": 7,
+   "53": 0,
+   "54": 0,
+   "55": 2,
+   "56": 73,
+   "57": 0
+  }
+ },
+ "act4_groups": {
+  "both": {
+   "seeds": 371,
+   "G16_kills": 328,
+   "GV_kills": 319
+  },
+  "only_G16": {
+   "seeds": 133,
+   "G16_kills": 94,
+   "GV_kills": 0
+  },
+  "only_GV": {
+   "seeds": 102,
+   "G16_kills": 0,
+   "GV_kills": 68
+  }
+ },
+ "halves": {
+  "first512": {
+   "seeds": 512,
+   "G16": 0.404296875,
+   "GV": 0.37890625,
+   "d_pp": -2.5390625,
+   "ci95_pp": [
+    -6.4453125,
+    1.3671875
+   ]
+  },
+  "second512": {
+   "seeds": 511,
+   "G16": 0.4207436399217221,
+   "GV": 0.3776908023483366,
+   "d_pp": -4.305283757338552,
+   "ci95_pp": [
+    -8.414872798434441,
+    -0.19569471624266144
+   ]
+  }
+ },
+ "both_kill": 295,
+ "neither": 509,
+ "only_arm": 92,
+ "only_g16": 127
+}

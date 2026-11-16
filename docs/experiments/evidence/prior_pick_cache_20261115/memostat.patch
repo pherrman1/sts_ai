@@ -1,0 +1,219 @@
+diff --git a/apps/one_combat/silver_synth_replay.cpp b/apps/one_combat/silver_synth_replay.cpp
+index b826942..33887e4 100644
+--- a/apps/one_combat/silver_synth_replay.cpp
++++ b/apps/one_combat/silver_synth_replay.cpp
+@@ -439,11 +439,25 @@ void rolloutPolicyBench(const std::string &prefix, std::int64_t budget, const st
+                     rc.priorTurnTable = policy == "sttt";
+                 } else if (arm == "tt") rc.priorTurnTable = true;
+                 else if (arm.size() == 3 && arm.rfind("ft", 0) == 0) rc.priorTurns = arm[2] - '0';
+-                else if (arm != "asplayed" && arm != "greedy") throw std::runtime_error("unknown arm " + arm);
++                else if (arm != "asplayed" && arm != "greedy" && arm != "memostat") throw std::runtime_error("unknown arm " + arm);
+                 const bool teacher = arm == "asplayed";
++                // memostat (#1051): as asplayed, plus exact-repeat statistics of the playout prior calls of this search.
++                search::NativeSilverPriorMemoStats memoStats;
++                long long memoPlayouts = -1;
++                if (arm == "memostat") search::g_nativeSilverPriorMemoStats = &memoStats;
+                 s.rolloutPrior = [&, teacher, student](const BattleContext &bc, const std::vector<search::SilverSearcher::Edge> &edges) {
++                    search::NativeSilverPriorMemoStats *ms = search::g_nativeSilverPriorMemoStats;
++                    if (ms) {
++                        if (static_cast<long long>(s.stats.rolloutPlayouts) != memoPlayouts) {
++                            memoPlayouts = static_cast<long long>(s.stats.rolloutPlayouts);
++                            ms->playoutCall = 0;
++                        }
++                        ms->playoutStart = s.playoutStartTurn;
++                        ms->active = true;
++                    }
+                     auto p = student ? search::nativeSilverPolicyPriorWith(*student, bc, edges)
+                                      : search::nativeSilverPolicyPrior(bc, edges);
++                    if (ms) ms->active = false;
+                     if (teacher && capture && ++calls % captureStride == 0) {
+                         nlohmann::json m = {{"k", "state"}, {"variant", "natural"}, {"seed", row.at("seed")},
+                                             {"fight", row.at("fight")}, {"decision", row.at("decision")},
+@@ -465,6 +479,19 @@ void rolloutPolicyBench(const std::string &prefix, std::int64_t budget, const st
+                 const auto sims = s.searchGumbelRoot(budget, g, base ^ 0x9e3779b97f4a7c15ULL);
+                 const double cpu = cpuNow() - c0;
+                 search::g_nativeSilverPriorTiming = nullptr;
++                search::g_nativeSilverPriorMemoStats = nullptr;
++                if (arm == "memostat") {
++                    const auto &m = memoStats;
++                    res["memo"] = {{"calls", m.calls}, {"hits", m.hits}, {"mismatches", m.mismatches},
++                                   {"bcHits", m.bcHits}, {"bcInconsistent", m.bcInconsistent},
++                                   {"keys", m.picks.size()}, {"featureNnz", m.featureNnz}, {"edges", m.edges},
++                                   {"callsByTurn", {m.callsByTurn[0], m.callsByTurn[1], m.callsByTurn[2]}},
++                                   {"hitsByTurn", {m.hitsByTurn[0], m.hitsByTurn[1], m.hitsByTurn[2]}},
++                                   {"callsFirst", m.callsFirst}, {"hitsFirst", m.hitsFirst},
++                                   {"featureSeconds", m.featureSeconds}, {"mlpSeconds", m.mlpSeconds},
++                                   {"keySeconds", m.keySeconds}, {"bcHashSeconds", m.bcHashSeconds},
++                                   {"lookupSeconds", m.lookupSeconds}};
++                }
+                 const auto pick = s.bestAction().bits;
+                 int edge = -1;
+                 for (std::size_t e = 0; e < rowEdges.size(); ++e)
+@@ -479,6 +506,8 @@ void rolloutPolicyBench(const std::string &prefix, std::int64_t budget, const st
+                     res["timing"] = {{"featureSeconds", timing.featureSeconds}, {"mlpSeconds", timing.mlpSeconds},
+                                      {"calls", timing.calls}, {"edges", timing.edges}};
+             } catch (const std::exception &e) {
++                search::g_nativeSilverPriorTiming = nullptr;
++                search::g_nativeSilverPriorMemoStats = nullptr;
+                 res["error"] = e.what();
+             }
+             out << res.dump() << '\n';
+diff --git a/include/sim/search/NativeSilverBackend.h b/include/sim/search/NativeSilverBackend.h
+index ac068c5..44acec2 100644
+--- a/include/sim/search/NativeSilverBackend.h
++++ b/include/sim/search/NativeSilverBackend.h
+@@ -8,6 +8,7 @@
+ #include <optional>
+ #include <stdexcept>
+ #include <string>
++#include <unordered_map>
+ #include <vector>
+ 
+ #include "sim/search/SilverSearcher.h"
+@@ -345,6 +346,22 @@ namespace sts::search {
+     // feature extraction (state + action blocks) and in the MLP, and its calls and edges, here. Default off.
+     struct NativeSilverPriorTiming { double featureSeconds = 0, mlpSeconds = 0; std::int64_t calls = 0, edges = 0; };
+     extern thread_local NativeSilverPriorTiming *g_nativeSilverPriorTiming;
++    // Research-only (issue #1051, one_combat rolloutpolicybench memostat): exact-repeat statistics of
++    // prior-playout calls within one search. `active` is set by the caller around rollout-prior calls only.
++    struct NativeSilverPriorMemoStats {
++        bool active = false;
++        int playoutStart = 0, playoutCall = 0;   // the playout's start turn; prior call index in the playout
++        std::int64_t calls = 0, hits = 0, mismatches = 0, bcHits = 0, bcInconsistent = 0, featureNnz = 0, edges = 0;
++        std::int64_t callsByTurn[3] = {0, 0, 0}, hitsByTurn[3] = {0, 0, 0};
++        std::int64_t callsFirst = 0, hitsFirst = 0;   // first prior call of a playout (the leaf's turn)
++        double keySeconds = 0, bcHashSeconds = 0, lookupSeconds = 0, featureSeconds = 0, mlpSeconds = 0;
++        struct K { std::uint64_t a, b; bool operator==(const K &o) const { return a == o.a && b == o.b; } };
++        struct KH { std::size_t operator()(const K &k) const { return k.a; } };
++        std::unordered_map<K, int, KH> picks;           // full-input key -> argmax edge
++        std::unordered_map<std::size_t, K> byState;     // hashBattleState -> full-input key
++        void clearSearch() { picks.clear(); byState.clear(); }
++    };
++    extern thread_local NativeSilverPriorMemoStats *g_nativeSilverPriorMemoStats;
+     // Research-only (ctmsilvergen rootdist): when set, every search records its
+     // simulation endpoints here (SilverSearcher::outcomes). Default off.
+     extern thread_local SilverOutcomeCapture *g_nativeSilverOutcomeCapture;
+diff --git a/include/sim/search/SilverSearcher.h b/include/sim/search/SilverSearcher.h
+index d75ae62..ab32270 100644
+--- a/include/sim/search/SilverSearcher.h
++++ b/include/sim/search/SilverSearcher.h
+@@ -356,6 +356,7 @@ namespace sts::search {
+         };
+         static const RolloutConfig &envRolloutConfig();
+         RolloutConfig rolloutConfig = envRolloutConfig();
++        int playoutStartTurn = 0;   // research (#1051 memostat): turn of the current playout's start
+         // Storage of the per-root card-play table (STS_SILVER_ROLLOUT_ROOT_TABLE, ADR-0046)
+         // that rolloutConfig.cardTable points at while that option is on.
+         std::vector<int> rootCardTable;
+diff --git a/src/sim/search/NativeSilverBackend.cpp b/src/sim/search/NativeSilverBackend.cpp
+index 74e2fe0..4792209 100644
+--- a/src/sim/search/NativeSilverBackend.cpp
++++ b/src/sim/search/NativeSilverBackend.cpp
+@@ -30,6 +30,7 @@
+ #include "sim/search/CombatTokNet.h"
+ #include "sim/search/CombatValueNet.h"
+ #include "sim/search/ScumSearchAgent2.h"
++#include "sim/search/SearchStateHash.h"
+ #include "sim/search/SearchRng.h"
+ #include "sim/search/SilverConversion.h"
+ #include "sim/search/SilverRolloutCardTable.h"
+@@ -2125,6 +2126,9 @@ namespace sts::search {
+                                             const std::vector<SilverSearcher::Edge> &edges) {
+             NativeSilverPriorTiming *timing = g_nativeSilverPriorTiming;
+             const double t0 = timing ? threadCpuSeconds() : 0;
++            NativeSilverPriorMemoStats *memo = g_nativeSilverPriorMemoStats;
++            if (memo && !memo->active) memo = nullptr;
++            const auto m0 = memo ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};
+             const bool mlp = net.isPolicyMlp;
+             const int stateCount = combatFeatureCount();
+             const int actionCount = combatPolicyFeatureCount() - stateCount;
+@@ -2154,8 +2158,69 @@ namespace sts::search {
+             out.scores.resize(distinct);
+             out.mlp = mlp;
+             const double t1 = timing ? threadCpuSeconds() : 0;
++            using MClock = std::chrono::steady_clock;
++            const auto m1 = memo ? MClock::now() : MClock::time_point{};
++            if (memo) memo->featureSeconds += std::chrono::duration<double>(m1 - m0).count();
+             if (mlp) {
+                 net.predictPolicyMlp(features.data(), actions.data(), targets.data(), distinct, out.scores.data());
++                if (memo) {
++                    const auto m2 = MClock::now();
++                    memo->mlpSeconds += std::chrono::duration<double>(m2 - m1).count();
++                    // Full-input key: the nonzero state features (index, bits) in index order, the edge count,
++                    // distinctOf, targets and every distinct action block. Two independent 64-bit mixes.
++                    thread_local std::vector<std::uint64_t> words;
++                    words.clear();
++                    thread_local std::vector<std::uint16_t> nz;
++                    nz.clear();
++                    // Every nonzero entry of the whole state block (the scalar head, enemy aggregate and misc
++                    // counters are written on every call and are not in `touched`).
++                    for (int i = 0; i < stateCount; ++i) if (features[i] != 0.f) nz.push_back(static_cast<std::uint16_t>(i));
++                    for (const auto i : nz) {
++                        std::uint32_t bits;
++                        std::memcpy(&bits, &features[i], 4);
++                        words.push_back((static_cast<std::uint64_t>(i) << 32) | bits);
++                    }
++                    words.push_back(0xfeedULL << 32 | static_cast<std::uint64_t>(n));
++                    for (int i = 0; i < n; ++i) words.push_back(static_cast<std::uint64_t>(out.distinctOf[i]));
++                    for (int d = 0; d < distinct; ++d) words.push_back(static_cast<std::uint64_t>(targets[d] + 7));
++                    const auto *ab = reinterpret_cast<const std::uint32_t *>(actions.data());
++                    for (std::size_t j = 0; j < static_cast<std::size_t>(distinct) * actionCount; ++j)
++                        if (ab[j]) words.push_back((j << 32) | ab[j]);
++                    std::uint64_t ha = 0x9e3779b97f4a7c15ULL, hb = 0xc2b2ae3d27d4eb4fULL;
++                    for (const auto w : words) {
++                        ha = (ha ^ w) * 0xff51afd7ed558ccdULL; ha ^= ha >> 32;
++                        hb = (hb + w) * 0x94d049bb133111ebULL; hb ^= hb >> 29;
++                    }
++                    const NativeSilverPriorMemoStats::K key{ha, hb};
++                    const auto m3 = MClock::now();
++                    const std::size_t bch = hashBattleState(state);
++                    const auto m4 = MClock::now();
++                    int best = 0;
++                    double bestScore = out.scores[out.distinctOf[0]];
++                    for (int i = 1; i < n; ++i) {
++                        const double v = out.scores[out.distinctOf[i]];
++                        if (v > bestScore) { bestScore = v; best = i; }
++                    }
++                    const int turn = std::min(std::max(state.turn - memo->playoutStart, 0), 2);
++                    const bool first = memo->playoutCall++ == 0;
++                    ++memo->calls; ++memo->callsByTurn[turn]; if (first) ++memo->callsFirst;
++                    memo->featureNnz += static_cast<std::int64_t>(nz.size());
++                    memo->edges += distinct;
++                    const auto [it, fresh] = memo->picks.emplace(key, best);
++                    if (!fresh) {
++                        ++memo->hits; ++memo->hitsByTurn[turn]; if (first) ++memo->hitsFirst;
++                        if (it->second != best) ++memo->mismatches;
++                    }
++                    const auto [bit, bfresh] = memo->byState.emplace(bch, key);
++                    if (!bfresh) {
++                        ++memo->bcHits;
++                        if (!(bit->second == key)) ++memo->bcInconsistent;
++                    }
++                    const auto m5 = MClock::now();
++                    memo->keySeconds += std::chrono::duration<double>(m3 - m2).count();
++                    memo->bcHashSeconds += std::chrono::duration<double>(m4 - m3).count();
++                    memo->lookupSeconds += std::chrono::duration<double>(m5 - m4).count();
++                }
+                 if (timing) {
+                     timing->featureSeconds += t1 - t0;
+                     timing->mlpSeconds += threadCpuSeconds() - t1;
+@@ -2432,6 +2497,7 @@ namespace sts::search {
+     const CombatValueNet *g_nativeSilverRolloutStudent = nullptr;
+     std::map<int, const CombatValueNet *> g_nativeSilverRolloutStudentByEncounter;
+     thread_local NativeSilverPriorTiming *g_nativeSilverPriorTiming = nullptr;
++    thread_local NativeSilverPriorMemoStats *g_nativeSilverPriorMemoStats = nullptr;
+     thread_local SilverOutcomeCapture *g_nativeSilverOutcomeCapture = nullptr;
+ 
+     NativeSilverTotals nativeSilverTotals() {
+diff --git a/src/sim/search/SilverSearcher.cpp b/src/sim/search/SilverSearcher.cpp
+index b0d75b2..11c5734 100644
+--- a/src/sim/search/SilverSearcher.cpp
++++ b/src/sim/search/SilverSearcher.cpp
+@@ -1123,6 +1123,7 @@ double search::SilverSearcher::playoutToEnd(BattleContext &bc, int treeDepth, bo
+                                                       : std::numeric_limits<int>::max();
+     // Research (RolloutConfig::priorTurns / priorTurnTable): the playout's first turn and a fresh turn table.
+     const int playoutStartTurn = bc.turn;
++    this->playoutStartTurn = bc.turn;
+     turnTableTurn = -1;
+     while (bc.outcome == Outcome::UNDECIDED && rolloutDepth < maxActions) {
+         Action action;

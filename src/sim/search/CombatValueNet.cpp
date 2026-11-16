@@ -13,9 +13,12 @@
 #include "sim/search/ExpertKnowledge.h"
 
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
+#include <atomic>
 #include <cstring>
 #include <emmintrin.h>
+#include <immintrin.h>
 #include <fstream>
 #include <stdexcept>
 #include <string>
@@ -81,6 +84,26 @@ namespace {
     constexpr int kMonDmgOff    = 4;                        // "mKIntent" = incoming damage (0 if not attacking)
     constexpr int kPolicyMlpEmbRows = 128;                  // policy-MLP embedding table rows
     constexpr int kPolicyMlpMaxH1 = 512;                    // policyMlpEdges stack buffer
+    // STS_SILVER_PRIOR_MLP_FMA (see policyMlpEdges128x64Fma): unset = on when the CPU has FMA (default since
+    // 2026-11-15), 1 = on (fatal without FMA), 0 = the bit-exact pre-#1052 kernel. setPolicyMlpFma overrides it.
+    int g_policyMlpFmaOverride = -1;
+
+    bool policyMlpFmaOn() {
+        if (g_policyMlpFmaOverride >= 0) return g_policyMlpFmaOverride == 1;
+        static const bool on = [] {
+            __builtin_cpu_init();
+            const bool cpu = __builtin_cpu_supports("fma") && __builtin_cpu_supports("avx2");   // the kernel needs both
+            const char *v = std::getenv("STS_SILVER_PRIOR_MLP_FMA");
+            if (v && std::strcmp(v, "0") == 0) return false;
+            if (v && std::strcmp(v, "1") != 0) throw std::runtime_error("STS_SILVER_PRIOR_MLP_FMA must be 0 or 1");
+            if (v && !cpu) throw std::runtime_error("STS_SILVER_PRIOR_MLP_FMA=1 needs a CPU with FMA and AVX2");
+            if (!cpu)
+                std::fprintf(stderr, "[prior MLP] no FMA/AVX2 on this CPU: exact non-FMA kernel (play differs from FMA "
+                                     "machines; STS_SILVER_PRIOR_MLP_FMA=0 matches it everywhere)\n");
+            return cpu;
+        }();
+        return on;
+    }
 
     // STS_ACTIVE_POWER_FEATURES: unset or 1 = a power whose flag is off reads
     // 0. The engine clears some powers (Vigor, Flame Barrier, removed debuffs)
@@ -445,6 +468,59 @@ void combatExtractFeaturesReuse(const BattleContext &bc, float *out, std::vector
     extractFeatures(bc, out, &touched);
 }
 
+int combatNonzeroStateFeatures(const float *features, const std::vector<std::uint16_t> &touched,
+                               std::uint16_t *out) {
+    int c = 0;
+    if (!g_richCombatFeatures) {   // the rich block is not written (nor tracked): scan everything
+        for (int i = 0; i < kStateCount; ++i)
+            if (features[i] != 0.f) out[c++] = static_cast<std::uint16_t>(i);
+        return c;
+    }
+    // Candidates: the always-written blocks (base, powers, enemy aggregate, misc, relic counters) and every
+    // index extractFeatures marked in the rich block (anything else there is zero).
+    constexpr int kWords = (kStateCount + 63) / 64;
+    std::uint64_t bits[kWords] = {};
+    auto set = [&](int i) { bits[i >> 6] |= std::uint64_t{1} << (i & 63); };
+    for (int i = 0; i < kRelicOff; ++i) set(i);
+    for (const auto i : touched) set(i);
+    set(kEnemyAggOff);
+    set(kEnemyAggOff + 1);
+    for (int i = kMiscOff; i < kStateCount; ++i) set(i);
+    for (int w = 0; w < kWords; ++w) {
+        std::uint64_t b = bits[w];
+        while (b) {
+            const int i = 64 * w + __builtin_ctzll(b);
+            b &= b - 1;
+            if (features[i] != 0.f) out[c++] = static_cast<std::uint16_t>(i);
+        }
+    }
+    return c;
+}
+
+bool combatStateFingerprint(const float *features, const std::vector<std::uint16_t> &touched,
+                            std::uint64_t &a, std::uint64_t &b) {
+    if (!g_richCombatFeatures) return false;
+    std::uint64_t sa = a, sb = b;
+    auto add = [&](int i) {
+        std::uint32_t bits;
+        std::memcpy(&bits, features + i, sizeof bits);
+        if (!bits) return;
+        const std::uint64_t w = (static_cast<std::uint64_t>(i) << 32) | bits;
+        sa += combatFingerprintMixA(w);
+        sb += combatFingerprintMixB(w);
+    };
+    // The entries extractFeatures writes on every call (not listed in `touched`) ...
+    for (int i = 0; i < kRelicOff; ++i) add(i);
+    for (int i = kEnemyAggOff; i < kMonOff; ++i) add(i);
+    for (int i = kMiscOff; i < kStateCount; ++i) add(i);
+    // ... and the relic / card / monster / potion block, where only listed entries can be nonzero. Each entry is
+    // listed at most once (relics once, a pile count on its first bump, monster slots once, potions once).
+    for (const auto i : touched) add(i);
+    a = sa;
+    b = sb;
+    return true;
+}
+
 bool CombatValueNet::load(const std::string &path) {
     std::ifstream f(path);
     if (!f) return false;
@@ -483,6 +559,7 @@ bool CombatValueNet::load(const std::string &path) {
     dsMonW1.clear(); dsMonB1.clear(); dsMonW2.clear(); dsMonB2.clear();
 
     isPolicyMlp = false;
+    policyMlpLoadId = 0;
     pmH1 = pmH2 = 0; pmB3 = 0.f;
     pmStateW.clear(); pmActionW.clear(); pmCard.clear(); pmTargetW.clear();
     pmB1.clear(); pmW2.clear(); pmW2T.clear(); pmB2.clear(); pmW3.clear();
@@ -540,6 +617,8 @@ bool CombatValueNet::load(const std::string &path) {
         isPolicyMlp = true;
         isPolicy = true;
         g_richCombatFeatures = true;
+        static std::atomic<std::uint64_t> policyMlpLoads{0};
+        policyMlpLoadId = ++policyMlpLoads;
         isLoaded = true;
         this->path = path;
         return true;
@@ -1587,13 +1666,94 @@ void policyMlpBase128(const CombatValueNet &net, const float *stateFeatures, con
     }
 }
 
+
+// ---- STS_SILVER_PRIOR_MLP_FMA (2026-11-15, #1052; default on with an FMA CPU, Philipp's decision without a gate) ----
+// The per-edge layers with fused multiply-adds (one rounding per multiply-add instead of two) and an 8-way output
+// sum. Not bit-identical to policyMlpEdges128x64 (=0 restores it): play differs from pre-#1052 binaries. On 80,919
+// recorded prior-playout calls: 0 argmax changes, logits within 3.2e-6.
+__attribute__((target("avx2,fma"))) void policyMlpEdges128x64Fma(const CombatValueNet &net,
+                                                                 const float *__restrict base,
+                                                                 const float *stateFeatures,
+                                                                 const float *actionBlocks, const int *targetSlots,
+                                                                 int n, double *out) {
+    constexpr int H1 = 128, H2 = 64, Q1 = H1 / 8, Q2 = H2 / 8;
+    const float *__restrict actionW = net.pmActionW.data();
+    const float *__restrict cardW = net.pmCard.data();
+    const float *__restrict targetW = net.pmTargetW.data();
+    const float *__restrict w2t = net.pmW2T.data();
+    const float *__restrict b2 = net.pmB2.data();
+    const float *__restrict w3 = net.pmW3.data();
+    alignas(64) float h[H1];
+    std::uint16_t active[H1];
+    std::uint16_t nz[kNumAction > kMonFeats ? kNumAction : kMonFeats];
+    for (int e = 0; e < n; ++e) {
+        const float *a = actionBlocks + (std::size_t)e * kNumAction;
+        __m256 acc[Q1];
+        for (int q = 0; q < Q1; ++q) acc[q] = _mm256_loadu_ps(base + 8 * q);
+        const int na = nonzeroFeatureIndices(a, kNumAction, nz);
+        for (int t = 0; t < na; ++t) {
+            const __m256 v = _mm256_set1_ps(a[nz[t]]);
+            const float *__restrict w = actionW + (std::size_t)nz[t] * H1;
+            for (int q = 0; q < Q1; ++q) acc[q] = _mm256_fmadd_ps(v, _mm256_loadu_ps(w + 8 * q), acc[q]);
+        }
+        int card = (int)a[4] + 1;
+        if (card < 0 || card > kNumCards) card = 0;
+        const float *__restrict c = cardW + (std::size_t)card * H1;
+        for (int q = 0; q < Q1; ++q) acc[q] = _mm256_add_ps(acc[q], _mm256_loadu_ps(c + 8 * q));
+        const int slot = targetSlots ? targetSlots[e] : -1;
+        if (slot >= 0 && slot < kNumMonSlots) {
+            const float *tf = stateFeatures + kMonOff + slot * kMonFeats;
+            const int nt = nonzeroFeatureIndices(tf, kMonFeats, nz);
+            for (int t = 0; t < nt; ++t) {
+                const __m256 v = _mm256_set1_ps(tf[nz[t]]);
+                const float *__restrict w = targetW + (std::size_t)nz[t] * H1;
+                for (int q = 0; q < Q1; ++q) acc[q] = _mm256_fmadd_ps(v, _mm256_loadu_ps(w + 8 * q), acc[q]);
+            }
+        }
+        for (int q = 0; q < Q1; ++q) _mm256_store_ps(h + 8 * q, acc[q]);
+        const int m = activeIndices(h, H1, active);
+        __m256 z[Q2];
+        for (int q = 0; q < Q2; ++q) z[q] = _mm256_loadu_ps(b2 + 8 * q);
+        for (int t = 0; t < m; ++t) {
+            const __m256 v = _mm256_set1_ps(h[active[t]]);
+            const float *__restrict w = w2t + (std::size_t)active[t] * H2;
+            for (int q = 0; q < Q2; ++q) z[q] = _mm256_fmadd_ps(v, _mm256_loadu_ps(w + 8 * q), z[q]);
+        }
+        __m256 o8 = _mm256_setzero_ps();
+        const __m256 zero = _mm256_setzero_ps();
+        for (int q = 0; q < Q2; ++q)
+            o8 = _mm256_fmadd_ps(_mm256_loadu_ps(w3 + 8 * q), _mm256_max_ps(z[q], zero), o8);
+        alignas(32) float ov[8];
+        _mm256_store_ps(ov, o8);
+        float o = net.pmB3;
+        for (int i = 0; i < 8; ++i) o += ov[i];
+        out[e] = o;
+    }
+}
+
+}
+
+bool policyMlpFmaActive() { return policyMlpFmaOn(); }
+
+void setPolicyMlpFma(int mode) {
+    if (mode == 1) {
+        __builtin_cpu_init();
+        if (!__builtin_cpu_supports("fma") || !__builtin_cpu_supports("avx2"))
+            throw std::runtime_error("setPolicyMlpFma(1): no FMA/AVX2");
+    }
+    g_policyMlpFmaOverride = mode < 0 ? -1 : mode;
 }
 
 void CombatValueNet::policyMlpBase(const float *stateFeatures, std::vector<float> &base) const {
-    const int H1 = pmH1;
-    base.assign(pmB1.begin(), pmB1.end());
     std::uint16_t nonzero[kStateCount];
     const int count = sparseNonzeroFeatureIndices(stateFeatures, kStateCount, nonzero);
+    policyMlpBase(stateFeatures, nonzero, count, base);
+}
+
+void CombatValueNet::policyMlpBase(const float *stateFeatures, const std::uint16_t *nonzero, int count,
+                                   std::vector<float> &base) const {
+    const int H1 = pmH1;
+    base.assign(pmB1.begin(), pmB1.end());
     if (H1 == 128) {
         policyMlpBase128(*this, stateFeatures, nonzero, count, base.data());
         return;
@@ -1641,13 +1801,25 @@ void CombatValueNet::policyMlpBase(const float *stateFeatures, std::vector<float
 void CombatValueNet::predictPolicyMlp(const float *stateFeatures, const float *actionBlocks,
                                       const int *targetSlots, int n, double *out) const {
     if (n <= 0) return;
+    std::uint16_t nonzero[kStateCount];
+    const int count = sparseNonzeroFeatureIndices(stateFeatures, kStateCount, nonzero);
+    predictPolicyMlp(stateFeatures, nonzero, count, actionBlocks, targetSlots, n, out);
+}
+
+void CombatValueNet::predictPolicyMlp(const float *stateFeatures, const std::uint16_t *stateNonzero,
+                                      int stateNonzeroCount, const float *actionBlocks, const int *targetSlots,
+                                      int n, double *out) const {
+    if (n <= 0) return;
     const int H1 = pmH1, H2 = pmH2;
     thread_local std::vector<float> base, h, z;
-    policyMlpBase(stateFeatures, base);
+    policyMlpBase(stateFeatures, stateNonzero, stateNonzeroCount, base);
     h.resize(H1);
     z.resize(H2);
     if (H2 == 64 && H1 == 128) {
-        policyMlpEdges128x64(*this, base.data(), stateFeatures, actionBlocks, targetSlots, n, out);
+        if (policyMlpFmaOn())
+            policyMlpEdges128x64Fma(*this, base.data(), stateFeatures, actionBlocks, targetSlots, n, out);
+        else
+            policyMlpEdges128x64(*this, base.data(), stateFeatures, actionBlocks, targetSlots, n, out);
         return;
     }
     if (H2 == 64 && H1 <= kPolicyMlpMaxH1) {

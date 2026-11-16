@@ -1,0 +1,8 @@
+2026-11-15T19:50:59+01:00 # commit 9b12a84620cc27c6ace0b3ffd1c36473b1e96a1e; xgboost 3.4.0 numpy 2.5.1 scipy 1.18.0
+2026-11-15T19:50:59+01:00 # table sha256 21e81001bcddaf5ed8d9cdcf15eaff40126d5ecd55447becb74fe26791c7ad63
+2026-11-15T19:50:59+01:00 START fit_gbm_1.0: /usr/bin/python3 tools/heart1/critic_ceiling.py fit-gbm --target act1_survive --train /home/philippherrmann/ppo-longb/LONG_C/parts/traj-02[2-9]?-p*.jsonl.gz /home/philippherrmann/ppo-longb/LONG_C/parts/traj-03??-p*.jsonl.gz --exclude-from /home/philippherrmann/ppo-longb/LONG_C/parts/traj-04[01]?-p*.jsonl.gz --per-game 8 --game-frac 1.0 --threads 4 --workers 4 --out /home/philippherrmann/critic-enc-out/act1/gbm.json
+2026-11-15T19:58:00+01:00 END fit_gbm_1.0 rc=1 wall=421s
+2026-11-15T19:58:00+01:00 NOTE a fit failed at 1.0; PREREG fallback: both fits at 0.5
+2026-11-15T19:58:00+01:00 START fit_gbm_0.5: /usr/bin/python3 tools/heart1/critic_ceiling.py fit-gbm --target act1_survive --train /home/philippherrmann/ppo-longb/LONG_C/parts/traj-02[2-9]?-p*.jsonl.gz /home/philippherrmann/ppo-longb/LONG_C/parts/traj-03??-p*.jsonl.gz --exclude-from /home/philippherrmann/ppo-longb/LONG_C/parts/traj-04[01]?-p*.jsonl.gz --per-game 8 --game-frac 0.5 --threads 4 --workers 4 --out /home/philippherrmann/critic-enc-out/act1/gbm.json
+2026-11-15T20:04:50+01:00 END fit_gbm_0.5 rc=1 wall=410s
+2026-11-15T20:04:50+01:00 ABORT

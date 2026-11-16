@@ -167,6 +167,10 @@ Data, scripts and tables: [step 0 evidence](../../../experiments/evidence/cheap_
 - **Result (§791, 2026-11-12):** k 4 without noise at 8k on G16 + mb4: P4 (g7f_E top 4) −8.40 pp [−11.43, −5.37],
   N4 (net top 4) −7.32 pp [−10.16, −4.39], both WORSE at about 0.6× CPU; N4 − P4 +1.07 [−1.86, +4.10]
   ([RESULT](../../../experiments/evidence/narrow_gumbel_root_20261111/RESULT.md)). Track closed.
+- **Turn-plan root filter (#1058, offline, 2026-11-15, Measured):** a cross-fitted plan scorer on deterministic
+  turn plans keeps G16's pick slightly more often than the prior at equal width but loses more Q than the freed root
+  budget is worth under every rule (best net −0.033 Q at recall 97.8 %); NOT_PURSUED
+  ([RESULT](../../../experiments/evidence/turn_plan_root_filter_20261115/RESULT.md)).
 
 - k 16 already covers almost every root, so a narrower k saves little. With the net at k 4, 8.1% of roots lose the
   teacher's pick (regret 0.13 on average). Only worth a test at low budgets (2k-4k), and only after Track 0.
@@ -208,6 +212,23 @@ Data, scripts and tables: [step 0 evidence](../../../experiments/evidence/cheap_
 - **Note:** this delivers G16-strength training signal at near-zero CPU, not a cheap combat player. net-0420 was
   trained under combat B (22%) and still reaches 41% under G16, so whether stronger actor combat improves the
   out-of-combat policy at all is itself open.
+
+- **Playout prior retrained on G16 targets (issue #1053, Measured offline, ledger §804 on PR #1060, 2026-11-15):**
+  g7f_E is still G16's playout policy (T2 / §788 replaced only the root and tree prior). A net of g7f_E's size and
+  roughly its cost per call, trained on D2/D2b G16 + mb4 visit shares, lowers the argmax's root regret in playout
+  rooms from 2.449 to 1.884 max-backed Q, and it is lower in every boss. Completed-Q targets and aux heads do worse.
+  Whether that carries to playout states is open. The next step is §798's harness (arms at 4k against asplayed),
+  which needs a go. With §798's finding that a near-copy of g7f_E (KL 0.023) already costs +0.24 Q at equal sims,
+  the playout policy's quality is a steep lever (**Inference**).
+  **Stage 2 (Measured, ledger §807, 2026-11-15): WORSE.** In §798's harness V loses +0.29 Q against g7f_E at 4k and
+  +0.34 at 16k (V at 16k ≈ g7f_E at 2-4k), in every boss; the boss fine-tune X-B too. Root regret on G16's own
+  path does not carry to playout states, and mixing in g7f_E's Silver data hurts G16-root regret. Next step, if
+  any: label captured playout states with short searches (DAgger-style). Stage 3 (V in all four roles, whole-run
+  gate) runs on its own go.
+  **Stage 3 (Measured, ledger §808, 2026-11-16): WORSE.** V in all four prior roles against §775's G16 + mb4 on 1,023
+  paired seeds: Heart −3.42 pp [−6.26, −0.59] at equal CPU; the extra deaths are in act 2's hallway. Root-trained
+  priors are closed in every role. The next prior trains on tree and playout states labelled by short Gumbel searches
+  (prior data factory, `prior_factory_20261116`).
 
 ### Parked
 
