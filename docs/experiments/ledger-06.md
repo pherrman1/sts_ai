@@ -27583,7 +27583,7 @@ Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 104.1 lane-hours
 −2.25 pp [−5.08, +0.59] Heart; no conversion loss visible on the seeds where both arms reach Act 4 (not an isolated
 Heart contrast).
 
-## §TBD-a — Order dominance pruning of card plays below the Silver root (#1057, port of spire-mentor `dominance.rs`): pilot on 32 of §797's G16 games, pruned fresh searches paired with §797's ladder at the same Gumbel seeds: 16k Δ +0.000 Q [−0.015, +0.016], 8k +0.016 [+0.006, +0.027] at 1.00× CPU; 2.2 % of simulations enter dominated orders → DROP (cloud, 2026-11-15)
+## §809 — Order dominance pruning of card plays below the Silver root (#1057, port of spire-mentor `dominance.rs`): pilot on 32 of §797's G16 games, pruned fresh searches paired with §797's ladder at the same Gumbel seeds: 16k Δ +0.000 Q [−0.015, +0.016], 8k +0.016 [+0.006, +0.027] at 1.00× CPU; 2.2 % of simulations enter dominated orders → DROP (cloud, 2026-11-15)
 
 **Question (Philipp, 2026-11-15 17:08 CET, one thread per issue; 17:43 CET "Yes go" for the 32-run pilot):** does
 pruning provably dominated card-play orders let G16 + mb4 pick better at equal CPU?
@@ -27615,7 +27615,7 @@ Seeds: 111980000-111980031 (reused, data only). Cost: 12 lane-hours.
 **Knowledge impact:** combat search: dominated card-play orders take ≈ 2 % of G16's simulations; pruning them does not
 improve picks at equal CPU.
 
-## §TBD-b — Order dominance round 2 (#1057): five more rules (relaxed block/energy comparison, dominated End Turn, whole-turn state and end-state tables, Gumbel-root filter) take 11.4 % of G16's simulations; picks at equal CPU unchanged: 16k Δ +0.016 Q [−0.006, +0.042], 8k −0.000 [−0.020, +0.017] at 0.99× CPU → INCONCLUSIVE (cloud, 2026-11-16)
+## §810 — Order dominance round 2 (#1057): five more rules (relaxed block/energy comparison, dominated End Turn, whole-turn state and end-state tables, Gumbel-root filter) take 11.4 % of G16's simulations; picks at equal CPU unchanged: 16k Δ +0.016 Q [−0.006, +0.042], 8k −0.000 [−0.020, +0.017] at 0.99× CPU → INCONCLUSIVE (cloud, 2026-11-16)
 
 **Question (Philipp, 2026-11-15 21:34 CET, after round 1's DROP):** do more dominance checks matter in mass? Go for the
 run 2026-11-16 00:33 CET ("8 besuche. lets go hier im thread").
