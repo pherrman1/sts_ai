@@ -225,6 +225,10 @@ Data, scripts and tables: [step 0 evidence](../../../experiments/evidence/cheap_
   path does not carry to playout states, and mixing in g7f_E's Silver data hurts G16-root regret. Next step, if
   any: label captured playout states with short searches (DAgger-style). Stage 3 (V in all four roles, whole-run
   gate) runs on its own go.
+  **Stage 3 (Measured, ledger §TBD, 2026-11-16): WORSE.** V in all four prior roles against §775's G16 + mb4 on 1,023
+  paired seeds: Heart −3.42 pp [−6.26, −0.59] at equal CPU; the extra deaths are in act 2's hallway. Root-trained
+  priors are closed in every role. The next prior trains on tree and playout states labelled by short Gumbel searches
+  (prior data factory, `prior_factory_20261116`).
 
 ### Parked
 

@@ -27583,6 +27583,28 @@ Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 104.1 lane-hours
 −2.25 pp [−5.08, +0.59] Heart; no conversion loss visible on the seeds where both arms reach Act 4 (not an isolated
 Heart contrast).
 
+## §TBD — Rollout prior on G16 targets, stage 3 (issue #1053): §775's G16 + mb4 with V (§804's candidate) in all four prior roles (root prior, tree prior, prior playouts, rollout root table) against §775's G16 + mb4 on 1,023 paired A20 seeds after a 32/32 sentinel: Heart 41.25% → 37.83%, −3.42 pp [−6.26, −0.59] at 1.00× machine-corrected CPU, upper one-sided bound −0.98 → WORSE; the loss sits in act 2's hallway (+4.0 pp deaths) (cloud, 32 workers, 2026-11-15/16)
+
+**Question (Philipp 2026-11-15 21:59 CET, go for 32 workers):** does V, the MLP trained on G16 + mb4 visit shares that
+beat g7f_E on root regret (§804), help the whole run when it replaces g7f_E everywhere?
+**Data:** [PREREG](evidence/rollout_prior_wholerun_20261115/PREREG.md), [RESULT](evidence/rollout_prior_wholerun_20261115/RESULT.md),
+`results/` (result.json, pairs_GV.csv, breakdown.json, claims.txt, verify.txt). Run commit 44a25e76 (code ba705ab4,
+binary 97aec5b5), §775's seeds 111378256-111379279, control = §775's 1,024 G16 games (sentinel 32/32 REUSE_VALID).
+1,055 of 1,056 units; 111378919_GV ran ≥ 4.5 h (longest finished game 52.5 min) until its heartbeat stopped → 1
+dropped seed (bound 20; G16 lost there, so the verdict holds either way). 0 bad, 0 env mismatches, 0 aborts.
+**Result:** GV 37.83% vs G16 41.25% Heart, −3.42 pp [−6.26, −0.59]; 92 seeds only GV, 127 only G16. Nonregression SPRT
+CAP at 1,023 (LLR −1.92), one-sided bounds [−5.77, −0.98] → WORSE; gainer NOT_SHOWN at 640. Act-4 reach −3.03 pp
+[−5.96, −0.10]; conversion 81.8% vs 83.7% (both-reach 86.0% vs 88.4%, −2.4 [−6.2, +1.6]). CPU 1.060× [1.005, 1.118],
+0.999× machine-corrected; sims 0.978×. GV − D +6.16 pp [+3.23, +9.09] at 2.15× CPU. Breakdown (descriptive): death
+hazard act 2 hallway +4.0 pp [+1.2, +6.8]; other sections within noise.
+**Interpretation (Inference):** root regret on G16's own roots does not rank priors for the game, as in §807 for
+playouts. The hallway loss fits V being asked, as tree prior and in playouts, about states unlike its training roots;
+GV swaps all four roles at once, so the role is not attributed.
+**Decision:** WORSE. No default change; g7f_E stays in all four roles. Single-role arms are not run. Next: train on
+tree and playout states labelled by short Gumbel searches (prior data factory `prior_factory_20261116`). Seeds: none
+new (§775's). Cost: 158.2 lane-hours plus the dropped game.
+**Knowledge impact:** KB `research/combat-search/cheap-combat-roadmap.md` (playout prior retrain line).
+
 ## §807 — Rollout prior on G16 targets, stage 2 (issue #1053): §798's playout harness on §797's 256 G16 + mb4 games, playout policy swapped at equal simulations: V (stage 1's best, G16 visit shares) loses +0.289 max-backed Q [99 % +0.214, +0.379] against g7f_E at 4k, X-B +0.300 [+0.232, +0.375], V at 16k +0.339 [+0.261, +0.431] against g7f_E at 16k (V 16k ≈ g7f_E 2-4k), worse in every group, boss and fold 4 → WORSE, root-regret gains do not transfer to playouts (cloud, 32 workers, stopped early at 254/256, 2026-11-15)
 
 **Question (Philipp 2026-11-15 21:29 CET "go auf 32 workers"):** do §804's candidates, trained only on G16 roots, make
