@@ -1,0 +1,72 @@
+{
+ "bad_or_dropped": [],
+ "by_room_class": {
+  "boss": {
+   "fights": 20,
+   "runs_reaching": 8
+  },
+  "elite": {
+   "fights": 47,
+   "runs_reaching": 8
+  },
+  "hallway": {
+   "fights": 119,
+   "runs_reaching": 8
+  },
+  "heart": {
+   "fights": 3,
+   "runs_reaching": 3
+  },
+  "other": {
+   "fights": 8,
+   "runs_reaching": 5
+  },
+  "shield_spear": {
+   "fights": 3,
+   "runs_reaching": 3
+  }
+ },
+ "certified_turns": [],
+ "enabler_runs": {
+  "dropkick+vulnerable_source": 1
+ },
+ "go_threshold_share": 0.05,
+ "heart": {
+  "kill_rate_with_certified": [
+   0,
+   0
+  ],
+  "kill_rate_without": [
+   2,
+   3
+  ],
+  "runs_reaching": 3
+ },
+ "missed_certified_kills": [],
+ "oracle": {
+  "cpu_ms_max": 313.22,
+  "cpu_ms_mean": 25.45,
+  "cpu_ms_p50": 1.346,
+  "cpu_ms_p99": 255.344,
+  "cpu_s_per_run": 3.22,
+  "depth_cap_hits": 0,
+  "node_cap_hits": 77,
+  "nodes_mean": 2343.4,
+  "turn_states": 1012,
+  "unsupported": {}
+ },
+ "proxies": {},
+ "proxy_fights": [],
+ "runs": 8,
+ "runs_with_certified": 0,
+ "runs_with_certified_or_candidate": 0,
+ "share_any_wilson95": [
+  0.0,
+  0.3244
+ ],
+ "share_certified": 0.0,
+ "share_certified_wilson95": [
+  0.0,
+  0.3244
+ ]
+}

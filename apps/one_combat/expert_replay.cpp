@@ -604,7 +604,9 @@ double threadCpuSeconds() {
 // edges, 2..64, SilverSearcher::searchGumbelRoot; needs flat<N>), `mb<M>` (max backup with minimum M visits, as
 // STS_SILVER_MAX_BACKUP=M but for this arm's searches only, 1..1000000) and `cnp` / `cnp<P>` (the native combat
 // net's root prior in place of g7f_E's, as STS_SILVER_COMBATNET_PRIOR=1, at softmax temperature P/100, P in 10..400,
-// or STS_SILVER_COMBATNET_PRIOR_TEMP for bare `cnp`; needs STS_SILVER_COMBATNET_PRIOR_MODEL). Gumbel tuning (each
+// or STS_SILVER_COMBATNET_PRIOR_TEMP for bare `cnp`; needs STS_SILVER_COMBATNET_PRIOR_MODEL), `lq` (value-net leaf:
+// the combat net's Q head values new tree leaves in boss rooms and Act-4 elites, as STS_SILVER_LEAF_QNET=boss; needs
+// STS_SILVER_LEAF_QNET_MODEL). Gumbel tuning (each
 // needs gsh<K>):
 // `gcs<X>` (c_scale X, default 1), `gnz<X>` (Gumbel noise scale X in [0, 10], default 1), `ghb` (back-loaded
 // halving budget), `gnr` (Gumbel MuZero selection below the root). Tree tuning: `ucb<X>` (UCB exploration X at
@@ -624,6 +626,7 @@ struct FightArm {
     int maxBackup = 0;          // 0: production (STS_SILVER_MAX_BACKUP of the process)
     bool combatNetPrior = false;
     double combatNetTemp = 0;   // > 0: the arm's prior temperature
+    bool leafQNet = false;      // lq: value-net leaf in boss rooms and Act-4 elites
     double gumbelCScale = -1;   // < 0: GumbelRoot's default
     double gumbelNoise = -1;    // < 0: GumbelRoot's default
     bool gumbelBackLoaded = false;
@@ -667,6 +670,7 @@ std::vector<FightArm> fightArmsFromEnv(const std::string &prefix) {
         for (const auto &t : split(name, '+')) {
             if (t == "pp") arm.priorPlayoutElite = true;
             else if (t == "cnp") arm.combatNetPrior = true;
+            else if (t == "lq") arm.leafQNet = true;
             else if (t.size() > 3 && t.size() <= 6 && t.rfind("cnp", 0) == 0
                      && t.find_first_not_of("0123456789", 3) == std::string::npos) {
                 const int p = std::stoi(t.substr(3));
@@ -771,6 +775,7 @@ protected:
             if (arm && arm->maxBackup > 0) search::g_nativeSilverMaxBackupOverride = arm->maxBackup;
             if (arm && arm->combatNetPrior) search::g_nativeSilverCombatNetPriorOverride = true;
             if (arm && arm->combatNetTemp > 0) search::g_nativeSilverCombatNetPriorTempOverride = arm->combatNetTemp;
+            if (arm && arm->leafQNet) search::g_nativeSilverLeafQNetOverride = 1;
             if (arm && arm->gumbelK > 0) {
                 search::SilverSearcher::GumbelRoot g;
                 g.k = arm->gumbelK;
@@ -799,6 +804,7 @@ protected:
                                             search::g_nativeSilverMaxBackupOverride.reset();
                                             search::g_nativeSilverCombatNetPriorOverride.reset();
                                             search::g_nativeSilverCombatNetPriorTempOverride.reset();
+                                            search::g_nativeSilverLeafQNetOverride.reset();
                                             search::g_nativeSilverSearchParamOverride.reset();
                                             search::g_nativeSilverPriorWeightOverride.reset();
                                             search::g_nativeSilverTreePriorOverride.reset();
@@ -820,6 +826,9 @@ protected:
                         {"simulations", search::g_nativeSilverCombatStats.simulations},
                         {"gumbelRoots", search::g_nativeSilverCombatStats.gumbelRoots},
                         {"combatNetPriors", search::g_nativeSilverCombatStats.combatNetPriors},
+                        {"rolloutPlayouts", search::g_nativeSilverCombatStats.rolloutPlayouts},
+                        {"leafQValues", search::g_nativeSilverCombatStats.leafQValues},
+                        {"leafQForwards", search::g_nativeSilverCombatStats.leafQForwards},
                         {"reroots", search::g_nativeSilverCombatStats.reroots},
                         {"inheritedVisits", search::g_nativeSilverCombatStats.inheritedVisits},
                         {"freshRoots", search::g_nativeSilverCombatStats.freshRoots},

@@ -4,6 +4,7 @@
 #include "sim/search/SilverSearcher.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
@@ -16,6 +17,7 @@
 #include "sim/search/SilverRolloutCardTable.h"
 #include "sim/search/ExpertKnowledge.h"
 #include "sim/search/SearchRng.h"
+#include "sim/search/SilverDominance.h"
 #include "sim/search/SearchStateHash.h"
 #include "sim/search/SilverValueHead.h"
 
@@ -190,6 +192,7 @@ void search::SilverSearcher::resetForSearch() {
     std::memset(static_cast<void *>(stateToNode.data()), 0, stateToNode.size() * sizeof(DedupSlot));
     riskOutcomes.reset();
     gumbelChoice = -1;
+    ++pruneEpochNow;
     root = allocNode();
     root->state = allocDecisionState();
     *root->state = *rootState;
@@ -284,6 +287,7 @@ void search::SilverSearcher::rerootAt(Node *newRoot, bool compact) {
         }
     }
     root = newRoot;
+    ++pruneEpochNow;        // order dominance: flags were tested against parents that may now be gone
     riskOutcomes.reset();   // its edges are indexed like the old root's
     *rootState = *newRoot->state;
     retainPublicDamageBeliefs(*rootState);
@@ -305,8 +309,11 @@ search::SilverSearcher::Node *search::SilverSearcher::allocNode() {
         n->stochasticAction = Action{};
         n->prior.clear();
         n->priorNet = false;
+        n->leafQ.clear();
+        n->leafQOffset = 0;
         n->backedValue = 0;
         n->hasBackedValue = false;
+        n->pruneEpoch = 0;
         return n;
     }
     allNodes.push_back(std::make_unique<Node>());
@@ -478,8 +485,44 @@ search::SilverTreeProfile::Stop search::SilverSearcher::stepImpl() {
     Node *cur = root;
     Edge *stagedOutcomeEdge = nullptr;  // outcome 0 of a chance node created this iteration
     bool stagedOutcomeCreated = false;
+    // Order dominance: the decision node and edge that reached `cur` directly (no chance node between).
+    const Node *dominanceParent = nullptr;
+    int dominanceParentEdge = -1;
+    const Node *segRoot = root;   // first node of the current deterministic segment (DOM_SEG_*)
     int depth = 0;
     int actionDepth = 0;
+    // leafQNet: the decision node and edge last taken (a chance node's outcomes take its parent's edge value).
+    Node *qParent = nullptr;
+    int qEdge = -1;
+    // A new or unvisited leaf's value: leafQNet's value of the edge that reached it, else a playout.
+    const auto leafValue = [&](Node *leaf) -> double {
+        if (leafQNet && leafQInitVisits == 0 && qParent != nullptr && leaf->state->outcome == Outcome::UNDECIDED) {
+            if (qParent->leafQ.size() != qParent->edges.size()) {
+                qParent->leafQ = leafQNet(*qParent->state, qParent->edges);
+                ++stats.leafQForwards;
+                if (qParent->leafQ.size() != qParent->edges.size())
+                    throw std::runtime_error("SilverSearcher: leafQNet size differs from the node's edges");
+            }
+            ++stats.leafQValues;
+            if (leafQCalibrate > 0) {
+                if (leafQCalibCount < leafQCalibrate) {
+                    BattleContext &rollout = (rolloutScratch = *leaf->state);
+                    const double playout = rolloutToEnd(rollout, actionDepth);
+                    leafQCalibSum += playout - qParent->leafQ[qEdge];
+                    ++leafQCalibCount;
+                    return playout;
+                }
+                return qParent->leafQ[qEdge] + leafQCalibSum / leafQCalibCount;
+            }
+            if (!leafQShadow) return qParent->leafQ[qEdge];
+            BattleContext &rollout = (rolloutScratch = *leaf->state);
+            const double playout = rolloutToEnd(rollout, actionDepth);
+            leafQShadow(*qParent->state, qParent->edges, qParent->leafQ, qEdge, playout);
+            return playout;
+        }
+        BattleContext &rollout = (rolloutScratch = *leaf->state);
+        return rolloutToEnd(rollout, actionDepth);
+    };
     while (true) {
         // The transposition graph can cycle (e.g. Entropic Brew re-rolling itself);
         // on-path checks below roll out instead, and this bound is a backstop.
@@ -515,10 +558,11 @@ search::SilverTreeProfile::Stop search::SilverSearcher::stepImpl() {
                 return Stop::CYCLE;
             }
             searchStack.push_back(child);
+            dominanceParent = nullptr;
+            segRoot = child;
             if (child->simulationCount == 0) {
                 const bool created = outcomeCreated;
-                BattleContext &rollout = (rolloutScratch = *child->state);
-                updateFromPlayout(searchStack, rolloutToEnd(rollout, actionDepth));
+                updateFromPlayout(searchStack, leafValue(child));
                 return created ? Stop::NEW_LEAF : Stop::UNVISITED_NODE;
             }
             cur = child;
@@ -548,6 +592,21 @@ search::SilverTreeProfile::Stop search::SilverSearcher::stepImpl() {
             if (cur->prior.size() != cur->edges.size())
                 throw std::runtime_error("SilverSearcher: tree prior size differs from the node's edges");
         }
+        if (leafQNet && leafQInitVisits > 0 && cur != root && cur->edges.size() >= 2 && cur->leafQ.empty()
+                && cur->simulationCount >= leafQInitVisits) {
+            cur->leafQ = leafQNet(*cur->state, cur->edges);
+            ++stats.leafQForwards;
+            if (cur->leafQ.size() != cur->edges.size())
+                throw std::runtime_error("SilverSearcher: leafQNet size differs from the node's edges");
+            double num = 0, den = 0;
+            for (std::size_t i = 0; i < cur->edges.size(); ++i) {
+                const auto &e = cur->edges[i];
+                if (e.visitCount == 0 || e.node == nullptr || e.node->simulationCount == 0) continue;
+                num += e.visitCount * (selectionValue(*e.node) - cur->leafQ[i]);
+                den += e.visitCount;
+            }
+            cur->leafQOffset = den > 0 ? num / den : 0.0;
+        }
         if (nodePriorNet && cur != root && !cur->priorNet && cur->edges.size() >= 2
                 && cur->simulationCount >= treePriorNetMinVisits) {
             cur->prior = nodePriorNet(*cur->state, cur->edges);
@@ -555,10 +614,16 @@ search::SilverTreeProfile::Stop search::SilverSearcher::stepImpl() {
             if (cur->prior.size() != cur->edges.size())
                 throw std::runtime_error("SilverSearcher: tree prior net size differs from the node's edges");
         }
+        if ((orderDominance | dominanceObserve) && cur->pruneEpoch != pruneEpochNow
+                && cur->simulationCount >= dominanceMinVisits)
+            applyOrderDominance(*cur, cur == root ? nullptr : dominanceParent, dominanceParentEdge, segRoot);
+        descentSegRoot = segRoot;
         const int selectIdx = selectBestEdgeToSearch(*cur);
         if (cur == root) currentRootEdge = selectIdx;
         Edge &edge = cur->edges[selectIdx];
         ++edge.visitCount;
+        qParent = cur;
+        qEdge = selectIdx;
         if (profile) ++actionDepth;
 
         if (edge.node != nullptr) {
@@ -568,6 +633,8 @@ search::SilverTreeProfile::Stop search::SilverSearcher::stepImpl() {
                 updateFromPlayout(searchStack, rolloutToEnd(rollout, actionDepth));
                 return Stop::CYCLE;
             }
+            dominanceParent = cur;
+            dominanceParentEdge = selectIdx;
             cur = edge.node;
             searchStack.push_back(cur);
             continue;
@@ -602,6 +669,7 @@ search::SilverTreeProfile::Stop search::SilverSearcher::stepImpl() {
 
             cur = chance;
             searchStack.push_back(cur);
+            dominanceParent = nullptr;
             continue;
         }
 
@@ -620,10 +688,11 @@ search::SilverTreeProfile::Stop search::SilverSearcher::stepImpl() {
         }
         searchStack.push_back(child);
         if (child->simulationCount == 0) {
-            BattleContext &rollout = (rolloutScratch = *child->state);
-            updateFromPlayout(searchStack, rolloutToEnd(rollout, actionDepth));
+            updateFromPlayout(searchStack, leafValue(child));
             return created ? Stop::NEW_LEAF : Stop::UNVISITED_NODE;
         }
+        dominanceParent = cur;
+        dominanceParentEdge = selectIdx;
         cur = child;
     }
 }
@@ -647,9 +716,15 @@ void search::SilverSearcher::updateFromPlayout(const std::vector<Node *> &stack,
             if (n.hasBackedValue) n.backedValue = sum / weight;
         } else {
             double best = -std::numeric_limits<double>::infinity();
+            const bool honor = orderDominance && n.pruneEpoch == pruneEpochNow;
             for (const auto &e : n.edges) {
-                if (e.node != nullptr && e.node->simulationCount >= maxBackupMinVisits)
+                if (e.node != nullptr && !(honor && dominanceSkips(n, e)) && e.node->simulationCount >= maxBackupMinVisits)
                     best = std::max(best, selectionValue(*e.node));
+            }
+            if (honor && best == -std::numeric_limits<double>::infinity()) {
+                for (const auto &e : n.edges)
+                    if (e.node != nullptr && e.node->simulationCount >= maxBackupMinVisits)
+                        best = std::max(best, selectionValue(*e.node));
             }
             n.hasBackedValue = best > -std::numeric_limits<double>::infinity();
             if (n.hasBackedValue) n.backedValue = best;
@@ -856,13 +931,234 @@ int search::SilverSearcher::envMaxBackupMinVisits() {
     return value;
 }
 
+namespace {
+
+    unsigned parseDominanceMask(const char *name) {
+        const char *raw = std::getenv(name);
+        if (!raw || !*raw) return 0;
+        char *end = nullptr;
+        const unsigned long value = std::strtoul(raw, &end, 10);
+        if (raw[0] < '0' || raw[0] > '9' || *end != '\0' || value > search::DOM_ALL)
+            throw std::runtime_error(std::string(name) + " must be a rule mask 0..63 (SilverDominance.h DOM_*)");
+        return static_cast<unsigned>(value);
+    }
+
+    int endTurnEdge(const std::vector<search::SilverSearcher::Edge> &edges) {
+        for (int i = 0; i < static_cast<int>(edges.size()); ++i)
+            if (edges[i].action.getActionType() == search::ActionType::END_TURN) return i;
+        return -1;
+    }
+
+}
+
+unsigned search::SilverSearcher::envOrderDominance() {
+    static const unsigned value = parseDominanceMask("STS_SILVER_ORDER_DOMINANCE");
+    return value;
+}
+
+int search::SilverSearcher::envDominanceMinVisits() {
+    static const int value = [] {
+        const char *raw = std::getenv("STS_SILVER_DOMINANCE_MIN_VISITS");
+        if (!raw || !*raw) return 0;
+        char *end = nullptr;
+        const long v = std::strtol(raw, &end, 10);
+        if (raw[0] < '0' || raw[0] > '9' || *end != '\0' || v > 1000000)
+            throw std::runtime_error("STS_SILVER_DOMINANCE_MIN_VISITS must be an integer 0..1000000");
+        return static_cast<int>(v);
+    }();
+    return value;
+}
+
+unsigned search::SilverSearcher::envDominanceObserve() {
+    static const unsigned value = parseDominanceMask("STS_SILVER_DOMINANCE_OBSERVE");
+    return value;
+}
+
+bool search::SilverSearcher::dominanceSkips(const Node &parent, const Edge &e) const {
+    if (parent.pruneEpoch != pruneEpochNow) return false;   // flags of an older epoch (not yet reprocessed)
+    if (e.pruned) return true;
+    if (&parent == root) return false;   // the root is never pruned (its edges are flagged for the record only)
+    const Node *c = e.node;
+    return c != nullptr && (c->domNodeMask & orderDominance) && c->domNodeEpoch == pruneEpochNow
+        && parent.pruneEpoch == pruneEpochNow && c->segRoot == parent.segRoot;
+}
+
+bool search::SilverSearcher::dominanceSkipsAny(const Node &parent) const {
+    if (!orderDominance || parent.pruneEpoch != pruneEpochNow) return false;
+    bool any = false, all = true;
+    for (const auto &e : parent.edges) {
+        const bool skip = dominanceSkips(parent, e);
+        any = any || skip;
+        all = all && skip;
+    }
+    return any && !all;
+}
+
+void search::SilverSearcher::applyOrderDominance(Node &node, const Node *parent, int parentEdge,
+                                                 const Node *segRoot) {
+    const bool wasTested = node.pruneEpoch != 0;
+    node.pruneEpoch = pruneEpochNow;
+    node.segRoot = segRoot;
+    node.domNodeMask = 0;
+    node.domNodeEpoch = pruneEpochNow;
+    if (wasTested) for (auto &e : node.edges) { e.pruned = false; e.domMask = 0; }
+    if (node.isRandomNode || node.state == nullptr) return;
+    const unsigned rules = orderDominance | dominanceObserve;
+    const BattleContext &x = *node.state;
+    if (x.inputState != InputState::PLAYER_NORMAL) return;
+    const bool swapCtx = (rules & DOM_SWAP) && parent != nullptr && parent->state != nullptr
+        && parent->edges[parentEdge].action.getActionType() == ActionType::CARD;
+    const bool round2 = (rules & (DOM_END_ADJ | DOM_SEG_STATE | DOM_SEG_END)) != 0;
+    if (!swapCtx && !round2) return;
+    if (swapCtx) ++orderDominanceStats.nodes;
+    if (round2) ++orderDominanceStats.ruleNodes;
+    if (orderDominanceGuarded(x)) {
+        ++orderDominanceStats.guardedNodes;
+        return;
+    }
+    const auto t0 = std::chrono::steady_clock::now();
+    bool relax = (rules & DOM_RELAX) != 0;
+    if (relax && relaxGuarded(x)) {
+        relax = false;
+        ++orderDominanceStats.relaxGuarded;
+    }
+    const DominanceCompare decisionCmp{relax, false}, endCmp{relax, true};
+    // Honored flags skip the edge; the root's edges are flagged for the record but never skipped.
+    const auto flagEdge = [&](Node &n, Edge &e, unsigned rule) {
+        e.domMask |= rule;
+        if ((rule & orderDominance) && &n != root) e.pruned = true;
+    };
+    // X + c for a card edge: the child's state, or a deterministic play into dominanceChild.
+    const auto childState = [&](const Edge &e) -> const BattleContext * {
+        if (e.node != nullptr && !e.node->isRandomNode && e.node->state != nullptr) return e.node->state;
+        dominanceChild = x;
+        return playDeterministicCard(dominanceChild, e.action) ? &dominanceChild : nullptr;
+    };
+    if (swapCtx) {
+        const Action &b = parent->edges[parentEdge].action;
+        for (auto &e : node.edges) {
+            if (e.action.getActionType() != ActionType::CARD) continue;
+            ++orderDominanceStats.tests;
+            const BattleContext *xa = childState(e);
+            if (xa == nullptr) { ++orderDominanceStats.skipped; continue; }
+            const auto r = testOrderDominance(*parent->state, b, x, e.action, *xa, dominanceScratch, relax);
+            if (r == OrderDominanceResult::SKIPPED) ++orderDominanceStats.skipped;
+            if (r == OrderDominanceResult::DOMINATED) {
+                flagEdge(node, e, DOM_SWAP);
+                ++orderDominanceStats.pruned;
+            }
+        }
+    }
+    const int endIdx = endTurnEdge(node.edges);
+    bool haveEnd = false;
+    if (endIdx >= 0 && (rules & (DOM_END_ADJ | DOM_SEG_END))) {
+        haveEnd = endOfTurnState(x, dominanceEndX);
+        if (haveEnd) ++orderDominanceStats.endStates;
+    }
+    if (haveEnd && (rules & DOM_END_ADJ)) {
+        for (const auto &e : node.edges) {
+            if (e.action.getActionType() != ActionType::CARD) continue;
+            const BattleContext *xc = childState(e);
+            if (xc == nullptr || !endOfTurnState(*xc, dominanceEndY)) continue;
+            ++orderDominanceStats.endAdjTests;
+            if (dominatesState(dominanceEndY, dominanceEndX, endCmp)) {
+                flagEdge(node, node.edges[endIdx], DOM_END_ADJ);
+                ++orderDominanceStats.endAdjFlagged;
+                break;
+            }
+        }
+    }
+    if (rules & (DOM_SEG_STATE | DOM_SEG_END)) {
+        if (dominanceTableEpoch != pruneEpochNow) {
+            dominanceSegStates.clear();
+            dominanceSegEnds.clear();
+            dominanceTableEpoch = pruneEpochNow;
+        }
+        const std::size_t segMix = std::hash<const void *>{}(segRoot) * 0x9e3779b97f4a7c15ULL;
+        const auto sameSegment = [&](const Node *y) {
+            return y != &node && y->pruneEpoch == pruneEpochNow && y->segRoot == segRoot && y->state != nullptr;
+        };
+        if (rules & DOM_SEG_STATE) {
+            auto &bucket = dominanceSegStates[dominanceKey(x, decisionCmp, dominanceKeyScratch) ^ segMix];
+            for (Node *y : bucket) {
+                if (!sameSegment(y)) continue;
+                if (!(node.domNodeMask & DOM_SEG_STATE) && dominatesState(*y->state, x, decisionCmp)) {
+                    node.domNodeMask |= DOM_SEG_STATE;
+                    ++orderDominanceStats.segStateFlagged;
+                } else if (!(y->domNodeMask & DOM_SEG_STATE) && dominatesState(x, *y->state, decisionCmp)) {
+                    y->domNodeMask |= DOM_SEG_STATE;
+                    y->domNodeEpoch = pruneEpochNow;
+                    ++orderDominanceStats.segStateFlagged;
+                }
+            }
+            bucket.push_back(&node);
+        }
+        if (haveEnd && (rules & DOM_SEG_END)) {
+            auto &bucket = dominanceSegEnds[dominanceKey(dominanceEndX, endCmp, dominanceKeyScratch) ^ segMix];
+            for (Node *y : bucket) {
+                if (!sameSegment(y)) continue;
+                const int yEnd = endTurnEdge(y->edges);
+                if (yEnd < 0 || !endOfTurnState(*y->state, dominanceEndY)) continue;
+                Edge &mine = node.edges[endIdx], &theirs = y->edges[yEnd];
+                if (!(mine.domMask & DOM_SEG_END) && dominatesState(dominanceEndY, dominanceEndX, endCmp)) {
+                    flagEdge(node, mine, DOM_SEG_END);
+                    ++orderDominanceStats.segEndFlagged;
+                } else if (!(theirs.domMask & DOM_SEG_END) && dominatesState(dominanceEndX, dominanceEndY, endCmp)) {
+                    flagEdge(*y, theirs, DOM_SEG_END);
+                    ++orderDominanceStats.segEndFlagged;
+                    if (std::all_of(y->edges.begin(), y->edges.end(), [](const Edge &e) { return e.pruned; }))
+                        theirs.pruned = false;
+                }
+            }
+            bucket.push_back(&node);
+        }
+    }
+    // Selection needs one edge left; dominanceSkipsAny also falls back when in-edge flags skip them all.
+    if (std::all_of(node.edges.begin(), node.edges.end(), [](const Edge &e) { return e.pruned; })) {
+        for (auto &e : node.edges) e.pruned = false;
+    }
+    orderDominanceStats.seconds += std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+}
+
+search::SilverSearcher::DominanceWaste search::SilverSearcher::dominanceWaste() const {
+    DominanceWaste w;
+    if (root == nullptr) return w;
+    w.rootSims = root->simulationCount;
+    const auto maskOf = [&](const Node &n, const Edge &e) -> unsigned {
+        if (n.isRandomNode || n.pruneEpoch != pruneEpochNow) return 0;
+        unsigned m = e.domMask;
+        const Node *c = e.node;
+        if (c != nullptr && c->domNodeEpoch == pruneEpochNow && c->segRoot == n.segRoot) m |= c->domNodeMask;
+        return m;
+    };
+    const unsigned rulesOf[5] = {DOM_SWAP, DOM_END_ADJ, DOM_SEG_STATE, DOM_SEG_END, DOM_ALL};
+    std::int64_t *out[5] = {&w.swap, &w.endAdj, &w.segState, &w.segEnd, &w.any};
+    for (int r = 0; r < 5; ++r) {
+        std::unordered_set<const Node *> seen {root};
+        std::vector<const Node *> pending {root};
+        while (!pending.empty()) {
+            const Node *n = pending.back();
+            pending.pop_back();
+            for (const auto &e : n->edges) {
+                if (maskOf(*n, e) & rulesOf[r]) { *out[r] += e.visitCount; continue; }
+                if (e.node != nullptr && seen.insert(e.node).second) pending.push_back(e.node);
+            }
+        }
+    }
+    return w;
+}
+
 double search::SilverSearcher::evaluateEdge(const Node &parent, int edgeIdx, double logParentVisits) const {
     const auto &edge = parent.edges[edgeIdx];
     if (edge.visitCount == 0 || edge.node == nullptr) {
         return std::numeric_limits<double>::infinity();
     }
     // Value from the (possibly shared) child; exploration from this edge's own visits.
-    const double quality = selectionValue(*edge.node);
+    double quality = selectionValue(*edge.node);
+    if (leafQInitWeight > 0 && &parent != root && parent.leafQ.size() == parent.edges.size()) {
+        quality = (leafQInitWeight * (parent.leafQ[edgeIdx] + parent.leafQOffset) + edge.visitCount * quality)
+            / (leafQInitWeight + edge.visitCount);
+    }
     const double exploration = edge.node->isRandomNode ? explorationParameterChance : explorationParameter;
     const double value = quality + exploration * std::sqrt(logParentVisits / (edge.visitCount + 1));
     if (rootPriorWeight != 0 && rootPriorBonus && &parent == root && edgeIdx < static_cast<int>(rootPrior.size())) {
@@ -880,6 +1176,8 @@ int search::SilverSearcher::selectBestEdgeToSearch(const Node &cur) const {
     }
     if (&cur == root && forcedRootEdge >= 0) return forcedRootEdge;
     if (gumbelNonRoot && &cur != root) return selectGumbelNonRoot(cur, *gumbelNonRoot);
+    const bool honor = cur.segRoot == descentSegRoot && dominanceSkipsAny(cur);
+    const auto skip = [&](int i) { return honor && dominanceSkips(cur, cur.edges[i]); };
     if (nodePrior) {
         // Tree prior: the first untried edge is the one with the highest prior.
         const auto &prior = &cur == root ? rootPrior : cur.prior;
@@ -887,6 +1185,7 @@ int search::SilverSearcher::selectBestEdgeToSearch(const Node &cur) const {
             int best = -1;
             for (int i = 0; i < static_cast<int>(cur.edges.size()); ++i) {
                 const auto &e = cur.edges[i];
+                if (skip(i)) continue;
                 if ((e.visitCount == 0 || e.node == nullptr) && (best < 0 || prior[i] > prior[best])) best = i;
             }
             if (best >= 0) return best;
@@ -894,9 +1193,11 @@ int search::SilverSearcher::selectBestEdgeToSearch(const Node &cur) const {
     }
     const double logParentVisits = std::log(cur.simulationCount + 1);
     int bestEdge = 0;
-    double bestEdgeValue = evaluateEdge(cur, 0, logParentVisits);
-    for (int i = 1; i < static_cast<int>(cur.edges.size()); ++i) {
+    while (skip(bestEdge)) ++bestEdge;   // never all: dominanceSkipsAny is false when every edge would be skipped
+    double bestEdgeValue = evaluateEdge(cur, bestEdge, logParentVisits);
+    for (int i = bestEdge + 1; i < static_cast<int>(cur.edges.size()); ++i) {
         if (bestEdgeValue == std::numeric_limits<double>::infinity()) break;
+        if (skip(i)) continue;
         const double value = evaluateEdge(cur, i, logParentVisits);
         if (value > bestEdgeValue) {
             bestEdge = i;
@@ -918,8 +1219,11 @@ int search::SilverSearcher::selectGumbelNonRoot(const Node &cur, const GumbelRoo
     q.assign(n, 0.0);
     z.assign(n, 0.0);
     visited.assign(n, 0);
+    const bool honor = cur.segRoot == descentSegRoot && dominanceSkipsAny(cur);
+    const auto skip = [&](int i) { return honor && dominanceSkips(cur, cur.edges[i]); };
     for (int i = 0; i < n; ++i) {
         const auto &e = cur.edges[i];
+        if (skip(i)) continue;
         sumN += e.visitCount;
         maxN = std::max(maxN, e.visitCount);
         if (e.visitCount == 0 || e.node == nullptr || e.node->simulationCount == 0) continue;
@@ -938,6 +1242,7 @@ int search::SilverSearcher::selectGumbelNonRoot(const Node &cur, const GumbelRoo
     const double sigma = (gumbel.cVisit + maxN) * gumbel.cScale;
     double zMax = -std::numeric_limits<double>::infinity();
     for (int i = 0; i < n; ++i) {
+        if (skip(i)) { z[i] = -std::numeric_limits<double>::infinity(); continue; }
         const double qi = visited[i] ? q[i] : vMix;
         const double q01 = hi > lo ? std::clamp((qi - lo) / (hi - lo), 0.0, 1.0) : 0.5;
         const double logit = usePrior ? std::log(std::max(cur.prior[i], 1e-12)) : 0.0;
@@ -949,6 +1254,7 @@ int search::SilverSearcher::selectGumbelNonRoot(const Node &cur, const GumbelRoo
     int best = 0;
     double bestScore = -std::numeric_limits<double>::infinity();
     for (int i = 0; i < n; ++i) {
+        if (skip(i)) continue;
         const double score = z[i] / zSum - static_cast<double>(cur.edges[i].visitCount) / (1.0 + total);
         if (score > bestScore) {
             best = i;
@@ -1799,8 +2105,22 @@ std::int64_t search::SilverSearcher::searchGumbelRoot(std::int64_t simulations, 
     }
     std::vector<int> candidates(n);
     for (int i = 0; i < n; ++i) candidates[i] = i;
+    // DOM_ROOT (#1057): a root End Turn that "card c, then End Turn" dominates (DOM_END_ADJ) is no candidate. The
+    // other edges keep their Gumbel draws, so the remaining candidates are those of the same seed without it.
+    if (orderDominance & DOM_ROOT) {
+        if (root->pruneEpoch != pruneEpochNow) {
+            const unsigned saved = dominanceObserve;
+            dominanceObserve |= DOM_END_ADJ | (orderDominance & DOM_RELAX);
+            applyOrderDominance(*root, nullptr, -1, root);
+            dominanceObserve = saved;
+        }
+        candidates.erase(std::remove_if(candidates.begin(), candidates.end(), [&](int i) {
+            return (root->edges[i].domMask & DOM_END_ADJ) != 0;
+        }), candidates.end());
+        if (candidates.empty()) for (int i = 0; i < n; ++i) candidates.push_back(i);
+    }
     std::stable_sort(candidates.begin(), candidates.end(), [&](int a, int b) { return base[a] > base[b]; });
-    candidates.resize(std::min(n, std::max(1, gumbel.k)));
+    candidates.resize(std::min(static_cast<int>(candidates.size()), std::max(1, gumbel.k)));
     const auto score = [&](int i) {
         double lo = std::numeric_limits<double>::infinity(), hi = -lo;
         std::int32_t maxVisits = 0;

@@ -499,6 +499,12 @@ namespace sts::search {
         val2_ = linear("val.2", d, kCtnValueClasses);
         aux0_ = linear("auxh.0", d, d);
         aux2_ = linear("auxh.2", d, kCtnAux);
+        // Optional per-edge Q head: present iff the file has qh.* tensors (no header field).
+        qOn_ = t.count("qh.0.weight") != 0;
+        if (qOn_) {
+            qh0_ = linear("qh.0", 3 * d, d);
+            qh2_ = linear("qh.2", d, 1);
+        }
         if (!missing.empty()) return fail("missing or misshapen tensor " + missing);
         return true;
     }
@@ -661,6 +667,7 @@ namespace sts::search {
         // policy: one logit per action from (global token, action embedding, target monster slot)
         const int E = static_cast<int>(in.actions.size());
         out.logits.assign(E, 0.0f);
+        out.q.assign(qOn_ ? E : 0, 0.0f);
         if (E == 0) return;
         std::vector<float> an(static_cast<std::size_t>(E) * kCtnActionLen), at(static_cast<std::size_t>(E) * d);
         for (int e = 0; e < E; ++e)
@@ -693,6 +700,12 @@ namespace sts::search {
         applyLinear(pol0_, z.data(), E, ph.data());
         for (auto &v : ph) v = gelu(v);
         applyLinear(pol2_, ph.data(), E, out.logits.data());
+        if (qOn_) {   // the Q head reads the policy head's inputs
+            applyLinear(qh0_, z.data(), E, ph.data());
+            for (auto &v : ph) v = gelu(v);
+            applyLinear(qh2_, ph.data(), E, out.q.data());
+            for (auto &v : out.q) v *= kCtnQScale;
+        }
     }
 
 }

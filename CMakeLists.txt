@@ -142,6 +142,10 @@ target_include_directories(combat-tok-net-tool PRIVATE include json/include)
 add_test(NAME combat_tok_net_parity COMMAND $<TARGET_FILE:combat-tok-net-tool> check
          ${CMAKE_SOURCE_DIR}/tests/data/combat_tok_net_tiny.ctn ${CMAKE_SOURCE_DIR}/tests/data/combat_tok_net_fixture.json)
 set_tests_properties(combat_tok_net_parity PROPERTIES LABELS "core;smoke")
+# The same with the per-edge Q head (value-net-as-leaf V1; make_native_fixture.py --q-head).
+add_test(NAME combat_tok_net_q_parity COMMAND $<TARGET_FILE:combat-tok-net-tool> check
+         ${CMAKE_SOURCE_DIR}/tests/data/combat_tok_net_tiny_q.ctn ${CMAKE_SOURCE_DIR}/tests/data/combat_tok_net_q_fixture.json)
+set_tests_properties(combat_tok_net_q_parity PROPERTIES LABELS "core;smoke")
 
 add_executable(rest_recall_filter_test tests/rest_recall_filter_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
@@ -975,6 +979,8 @@ add_test(NAME silver_loss_ceiling COMMAND $<TARGET_FILE:unit-test> silver_loss_c
 set_tests_properties(silver_loss_ceiling PROPERTIES LABELS "core")
 add_test(NAME silver_risk_veto COMMAND $<TARGET_FILE:unit-test> silver_risk_veto)
 set_tests_properties(silver_risk_veto PROPERTIES LABELS "core")
+add_test(NAME silver_order_dominance COMMAND $<TARGET_FILE:unit-test> silver_order_dominance)
+set_tests_properties(silver_order_dominance PROPERTIES LABELS "core")
 add_test(NAME silver_gumbel_root COMMAND $<TARGET_FILE:unit-test> silver_gumbel_root)
 set_tests_properties(silver_gumbel_root PROPERTIES LABELS "core")
 add_test(NAME silver_gumbel_boundary_observer COMMAND $<TARGET_FILE:unit-test> silver_gumbel_boundary_observer)

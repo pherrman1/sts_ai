@@ -3140,6 +3140,7 @@ static std::string unsupportedSilverOption() {
         {"STS_SILVER_PRIOR_MLP_FMA", ""},
         {"STS_SILVER_COMBATNET_PRIOR_MODEL", ""}, {"STS_SILVER_COMBATNET_PRIOR", ""}, {"STS_SILVER_COMBATNET_PRIOR_TEMP", ""}, {"STS_SILVER_COMBATNET_PRIOR_MIN_ACTIONS", ""},
         {"STS_SILVER_COMBATNET_TREE_MIN_VISITS", ""}, {"STS_SILVER_COMBATNET_BOSS_MODELS", ""},
+        {"STS_SILVER_LEAF_QNET", ""}, {"STS_SILVER_LEAF_QNET_MODEL", ""}, {"STS_SILVER_LEAF_QNET_SHADOW", ""}, {"STS_SILVER_LEAF_QNET_CALIBRATE", ""}, {"STS_SILVER_LEAF_QNET_QINIT", ""},
         {"STS_SILVER_ROLLOUT_UNIFORM", ""}, {"STS_SILVER_ROLLOUTS_PER_LEAF", ""}, {"STS_SILVER_ROLLOUT_CARD_TABLE", ""}, {"STS_SILVER_ROLLOUT_ZERO_COST_CAP", ""}, {"STS_SILVER_ROLLOUT_ACTION_CAP", ""},
         {"STS_SILVER_ROLLOUT_ROOT_TABLE", ""}, {"STS_SILVER_PRIOR_PICK_CACHE", ""}, {"STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE", ""}, {"STS_SILVER_PRIOR_PLAYOUT_ELITE", ""}, {"STS_SILVER_PRIOR_PLAYOUT_ACTS", ""}, {"STS_SILVER_PLAYOUT_POLICY", ""},
         {"STS_SILVER_LEAF_HEAD", ""}, {"STS_SILVER_LEAF_HEAD_TRUNK", ""}, {"STS_SILVER_LEAF_HEAD_BLEND", ""},
@@ -3150,6 +3151,8 @@ static std::string unsupportedSilverOption() {
         {"STS_SILVER_GUMBEL_ROOT_ROOMS", ""}, {"STS_SILVER_GUMBEL_ROOT_SIMS", ""}, {"STS_SILVER_GUMBEL_ROOT_NOISE", ""}, {"STS_SILVER_GUMBEL_ROOT_SIMS_HALLWAY", ""}, {"STS_SILVER_PLAN_COMMIT", ""},
         {"STS_SILVER_GUMBEL_STOP_TRACE", ""},
         {"STS_SILVER_GUMBEL_LEARNED_STOP", ""},
+        {"STS_SILVER_ORDER_DOMINANCE", ""}, {"STS_SILVER_DOMINANCE_OBSERVE", ""},
+        {"STS_SILVER_DOMINANCE_MIN_VISITS", ""},
     };
     // Vendored-only diagnostics without the STS_SILVER_ prefix.
     static const char *const kRemoved[] = {
@@ -4348,6 +4351,9 @@ int main(int argc, char **argv) {
     } else if (mode == "playoutvaluebench") {
         if (argc < 5) { std::cerr << "usage: one_combat playoutvaluebench OUT.jsonl PLAYOUTS ARMS < rows.jsonl\n"; return 2; }
         playoutValueBench(argv[2], std::stoi(argv[3]), argv[4]);
+    } else if (mode == "leafbench") {
+        if (argc < 5) { std::cerr << "usage: one_combat leafbench OUT.jsonl MIN_VISITS ROLLOUTS [NET.ctn] < rows.jsonl\n"; return 2; }
+        leafValueBench(argv[2], std::stoi(argv[3]), std::stoi(argv[4]), argc >= 6 ? argv[5] : "");
     } else if (mode == "turnplanenum") {
         if (argc < 3) { std::cerr << "usage: one_combat turnplanenum OUT.jsonl [MAX_PLANS=512] [MAX_NODES=20000] < rows.jsonl | turnplanenum names OUT.json\n"; return 2; }
         if (std::string(argv[2]) == "names") {

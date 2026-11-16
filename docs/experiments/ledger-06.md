@@ -27583,6 +27583,71 @@ Seeds: §775's 111378256-111379279 reused (no new seeds). Cost: 104.1 lane-hours
 −2.25 pp [−5.08, +0.59] Heart; no conversion loss visible on the seeds where both arms reach Act 4 (not an isolated
 Heart contrast).
 
+## §809 — Order dominance pruning of card plays below the Silver root (#1057, port of spire-mentor `dominance.rs`): pilot on 32 of §797's G16 games, pruned fresh searches paired with §797's ladder at the same Gumbel seeds: 16k Δ +0.000 Q [−0.015, +0.016], 8k +0.016 [+0.006, +0.027] at 1.00× CPU; 2.2 % of simulations enter dominated orders → DROP (cloud, 2026-11-15)
+
+**Question (Philipp, 2026-11-15 17:08 CET, one thread per issue; 17:43 CET "Yes go" for the 32-run pilot):** does
+pruning provably dominated card-play orders let G16 + mb4 pick better at equal CPU?
+**Option:** `STS_SILVER_ORDER_DOMINANCE=1` (research, default off; `SilverDominance.h`). At a decision node X reached
+from P by a deterministic card play b, card play a is pruned when a-then-b from P reaches a state equal for search to
+X + a except lower monster HP (same monsters alive; player HP and block equal; no search randomness). Guard: Mystic,
+Centurion, the Champ, Time Eater. The real (Gumbel) root cannot be pruned (the order test needs a common ancestor in
+the graph), so pruning acts at depth ≥ 1 and changes the candidates' values, not the candidate list. Off is
+bit-identical (unit test; whole-run sentinel below).
+**Data:** [PREREG](evidence/order_dominance_pilot_20261115/PREREG.md),
+[RESULT](evidence/order_dominance_pilot_20261115/RESULT.md), `results/result.json` (code faebbc9, binary 4672e092).
+`one_combat silverazgen` with §797's environment plus `STS_AZGEN_DOMINANCE_LADDER=16000:5,8000:4,4000:3` (pruned fresh
+searches seeded like §797's ladder slots) and `STS_AZGEN_DOMINANCE_AUDIT=16`. Seeds 111980000-111980031 (§797's,
+reused); 32 / 32 rc 0, 0 runs differing from §797's played choices; 16,946 roots. Thread container, 4 lanes, 3.0 h.
+**Result:**
+- Paired with §797 at the same budget (loss = Q_ref(best) − Q_ref(pick), played 16k tree): 16k +0.000
+  [−0.015, +0.016], 8k +0.016 [+0.006, +0.027] (hallway +0.020), 4k +0.005 [−0.014, +0.023]; CPU ratio 1.003-1.005.
+  Frontier deltas equal within 0.001.
+- Frequency: 45 % of roots' played trees hold a dominated edge; 2.2 % of simulations enter one (elite 3.8 %); pruned
+  searches cut 7.2 % of card edges per tested node; the test costs 0.46 % of CPU; 5.5 % of nodes guarded. Never at the
+  Heart (Invincible makes differing-damage orders unequal).
+- Soundness: of 2,807 pairs with ≥ 256 simulations each, the dominated child's Q is higher in 34 % (median −0.07),
+  consistent with search noise.
+**Interpretation (Inference):** Silver already spends little on dominated orders; freeing 2 % of the budget is worth
+≈ 0.002 Q by §797's 0.06 Q per doubling, below any feasible resolution. Together with §658 (dominated *choices* 0.65 %),
+order dominance has no target in G16. Sibling-state dominance (the issue's idea 4) was not tested.
+**Decision:** DROP by the PREREG rule. No full 256-run block, no whole-run gate. The option stays research-only.
+Seeds: 111980000-111980031 (reused, data only). Cost: 12 lane-hours.
+**Knowledge impact:** combat search: dominated card-play orders take ≈ 2 % of G16's simulations; pruning them does not
+improve picks at equal CPU.
+
+## §810 — Order dominance round 2 (#1057): five more rules (relaxed block/energy comparison, dominated End Turn, whole-turn state and end-state tables, Gumbel-root filter) take 11.4 % of G16's simulations; picks at equal CPU unchanged: 16k Δ +0.016 Q [−0.006, +0.042], 8k −0.000 [−0.020, +0.017] at 0.99× CPU → INCONCLUSIVE (cloud, 2026-11-16)
+
+**Question (Philipp, 2026-11-15 21:34 CET, after round 1's DROP):** do more dominance checks matter in mass? Go for the
+run 2026-11-16 00:33 CET ("8 besuche. lets go hier im thread").
+**Option:** `STS_SILVER_ORDER_DOMINANCE` is now a rule mask (SilverDominance.h, default 0): 1 round 1's order test;
+2 relaxed comparison (more player block, less monster block, more energy count as better; off with a damage payoff:
+Red Skull, Centennial Puzzle, Runic Cube, Self-Forming Clay, Emotion Chip, Meat on the Bone, Static Discharge, Blood for
+Blood); 4 End Turn dominated by "card, then End Turn" (end states stop before the first monster acts; engine hook
+`g_stopBeforeMonsterTurn`, research only); 8 / 16 decision states and end states compared across every order of the
+same deterministic segment; 32 the Gumbel root drops a dominated End Turn candidate. `STS_SILVER_DOMINANCE_OBSERVE`
+computes flags without honoring them, `STS_SILVER_DOMINANCE_MIN_VISITS` defers the tests (8 here). Off is unchanged
+(unit test; sentinel below).
+**Data:** [PREREG](evidence/order_dominance_round2_20261115/PREREG.md),
+[RESULT](evidence/order_dominance_round2_20261115/RESULT.md), `results/result.json`, `results/waste.json` (code 12d04dc,
+binary 8608be73). §797's environment plus observed rules 31 in the played search and fresh searches with all rules
+(63) at 16k and 8k seeded like §797's ladder slots 5 and 4. Seeds 111980000-111980031 (reused); 32 / 32 rc 0, 0 runs
+differing from §797's played choices; 16,946 roots.
+**Result:**
+- Waste in the played tree: any rule 11.4 % of simulations (hallway 13.3 %, elite 15.6 %, boss 8.7 %, Shield and Spear
+  4.0 %, Heart 1.9 %); dominated End Turn rules 6.7 % / 8.6 %, order test 2.6 %, whole-turn states 2.9 %; root End Turn
+  2.2 % of root visits, dominated at 26 % of roots. Tests 0.8 % of CPU; relaxed comparison guarded at 42 % of nodes.
+- Paired with §797 at the same budget and Gumbel seed: 16k +0.016 [−0.006, +0.042], 8k −0.0003 [−0.020, +0.017]; CPU
+  ratio 0.99; frontier equal within 0.001. No group interval excludes 0.
+**Interpretation (Inference):** the mass is five times round 1's, but freeing 11 % of the budget is worth ≈ 0.010 Q by
+§797's slope, below this run's resolution, and the 16k estimate leans the other way. Q_ref from the unpruned tree is a
+biased judge where pruning avoids a dominated End Turn; only a whole-run gate is unbiased.
+**Decision:** INCONCLUSIVE by the PREREG rule (8k point estimates −0.0003 / −0.0012, just below 0), practically null.
+Option stays research-only, default off. A larger block or a whole-run gate is Philipp's call.
+Seeds: 111980000-111980031 (reused, data only). Cost: 10.5 lane-hours.
+**Knowledge impact:** combat search: with relaxed comparisons and End Turn dominance, ≈ 11 % of G16's simulations
+enter provably dominated lines (mostly ending the turn before a free block card); pruning them does not show better
+picks at equal CPU in 32 runs.
+
 ## §808 — Rollout prior on G16 targets, stage 3 (issue #1053): §775's G16 + mb4 with V (§804's candidate) in all four prior roles (root prior, tree prior, prior playouts, rollout root table) against §775's G16 + mb4 on 1,023 paired A20 seeds after a 32/32 sentinel: Heart 41.25% → 37.83%, −3.42 pp [−6.26, −0.59] at 1.00× machine-corrected CPU, upper one-sided bound −0.98 → WORSE; the loss sits in act 2's hallway (+4.0 pp deaths) (cloud, 32 workers, 2026-11-15/16)
 
 **Question (Philipp 2026-11-15 21:59 CET, go for 32 workers):** does V, the MLP trained on G16 + mb4 visit shares that
@@ -27825,3 +27890,102 @@ Descriptive: the Heart-trained online critic ranks act-1 survival much worse tha
 **Decision:** NONE. #1050's encounter-list direction is closed (privileged critic, step 2 via it, net variant). No
 default change. Seeds: none. Cost ≈ 1 h PC CPU, no GPU, no cloud core-hours.
 **Knowledge impact:** KB `research/a20-ppo-plan.md` (critic ceiling paragraph).
+## §811 — Same-turn infinites in G16 + mb4 whole runs (#1054 stage 0): §671's oracle in a new natural-root mode on every turn start of 128 replayed §775 games (exact reproduction, 15,261 states): 1 run of 128 has a certified infinite (0.8%, Wilson 95% [0.1%, 4.3%]; Sundial + Pommel Strike vs The Champ, played by the search too), 2 of 128 a certified infinite or candidate (1.6%, [0.4%, 5.5%]); no Heart fight and no lost fight shows a damaging loop → stages 1-2 not justified (cloud CPU, §775 seeds, 2026-11-16)
+
+**Question (Philipp, issue #1054, 2026-11-15):** how often do same-turn infinites occur in our runs, by act and room;
+do they change Heart kills; does the search miss them; what does the oracle cost? Stages 1-2 (Silver proven win, PPO
+auxiliary head) only if they occur in at least about 5% of runs or explain a share of Heart losses.
+**Data:** [README](evidence/infinite_combo_freq_20261115/README.md), `main128/analysis.json`, `main128/deep_caps.json`,
+raw data `/mnt/project-files/infinite-combo-freq/main128/`. Replays of §775's G16 + mb4 games, seeds 111378256-111378383
+(§775 block, no new seeds; Philipp's card choice "128 seeds local" 2026-11-16 00:33 CET), run commit 647dba50 = §775's
+code 5665d5ae + the read-only observer `STS_COMBAT_STATE_CAPTURE` (turn-start BattleContext snapshots of real fights),
+preset linux-gcc-release-x86-64-v3. 128 of 128 games equal §775's BEST and Gumbel roots/sims lines. Oracle:
+`combat_infinity_oracle --snapshots F natural 20000` (natural mode: coarse candidate key without RNG, HP, block, periodic
+relic counters, Strength/Dexterity, monster block and the Invincible cap; certification only by an exact replay with
+real legality to a same-turn victory or the Heart's exhausted cap; card-select enumeration; continuation after a kill
+or phase change). Recall on planted Dropkick loops in the pilot's real contexts: 511 / 576 (88.7%).
+**Result:**
+- Runs with a certified infinite 1 / 128 (0.8%, [0.14%, 4.29%]); certified or candidate 2 / 128 (1.6%, [0.43%, 5.52%]).
+  By room class (runs reaching / certified / candidate): hallway 128 / 0 / 1, elite 128 / 0 / 0, act 1-3 boss 114 / 1
+  / 0, Shield and Spear 60 / 0 / 0, Heart 60 / 0 / 0.
+- The certificate: seed 111378328, act-2 boss The Champ, turn 2: Sundial + Pommel Strike / Pommel Strike+ two-card
+  cycle in a 19-card deck, kill after 10 cycles. The game played 21 cards that turn and won the fight (13 HP spent;
+  the oracle's line spends none). The candidate: seed 111378341, act-3 Maw, Sundial deck, won the next turn.
+- Heart: 48 / 60 killed, no Heart fight with a certified or candidate turn (one STALL_LOOP, seed 111378381 turn 6,
+  a repeat without damage; that fight was won). Lost fights: 80, none with a non-NONE
+  verdict, largest turn 20 cards.
+- Proxies: 18 fights in 11 runs have a turn with ≥ 25 cards (max 41), all won; no fight at the turn or action cap.
+  All 18 such turns are node-capped; at 2,000,000 nodes and depth 64 all stay NONE (17 still capped).
+- Oracle: 33 ms mean, 1.7 ms median, 265 ms p99 per state, 4.0 CPU-s per run; node cap 11.3% of states, depth cap 0.7%.
+**Interpretation (Inference):** same-turn infinites are rare under the current policy and the search already finds
+the one it meets; capped big turns could hide a few, but every one of those fights was won, so a proven-win shortcut
+or an infinite head could save HP or CPU there, not fights or Heart kills.
+**Decision:** NO_GO for stages 1-2 of #1054. The oracle's natural mode and the capture stay as research tools (no
+gameplay caller). No default change. Seeds: §775 block only. Cost ≈ 22 lane-hours game replay + 0.15 CPU-h oracle.
+**Knowledge impact:** KB `architecture/combat-search.md` (infinity oracle section), `evaluation/current-research.md`
+(§671 section).
+
+## §812 — Value-net leaf V0 / V1 (offline): on the played boss and Act-4-elite roots of D2's gate split, a per-edge Q head (d 64, 2 layers) trained on the teacher's sibling differences orders root actions like the mean of 23.4 Silver playouts [20.2, 26.9] at the cost of about one per edge → LEAF_PAYS; N_f1's value head is worth about one playout at 26× its cost (V0, NOT_SHOWN) (cloud + PC GPU, 2026-11-16)
+
+**Question (Philipp, 2026-11-14: "Ja dann versuch das value Netz", "Kann auch etwas teurer sein"):** can a net value
+Silver's new tree leaves better than one playout per unit of CPU?
+**Data:** [RESULT](evidence/value_leaf_v0v1_20261114/RESULT.md), `results/*.json`, `analyze.py`; raw data
+`/mnt/project-files/combat-plan/value-leaf/v0/`, `v1/`. Code: `one_combat leafbench` (f2852b16), the Q head
+(`tools/combat_net/model.py --q-head`, b403c2fb), `leaf_v1_predict.py`.
+- Roots: D2's played decision roots (§787) of runs with T1's split_of(seed) = 0, a split no net trained or
+  validated on: 564 runs, 60,869 multi-edge roots; truth T = the edge's max-backed value `qBacked` in the played
+  16k G16 + mb4 search, edges with ≥ 256 visits. Per edge 8 playouts (all rooms) or 32 (boss + Act-4 elite rerun,
+  17,479 roots); roots with a playout more than 500 from T dropped (8 and 24).
+- Metric: order accuracy on edge pairs with |ΔT| ≥ 2; k_ord = playouts whose mean orders as well (log-linear on
+  R1..R32), run-clustered bootstrap (1,000, seed 20261114). Rule revised after V0 and fixed before V1: LEAF_PAYS if
+  lo95(k_ord) ≥ the cost ratio c on boss + Act-4 elite and no boss act is worse than R1.
+- V1 nets: `V1_d64` (325k parameters, from scratch, 3 epochs) and `V1_d128` (1.32 M, from N_f1, 1 epoch) on T1's
+  D2 tensors (training splits 2-9). Loss: Huber level + 4 × within-root residual variance on edges ≥ 64 visits.
+
+**Result:**
+- V0: N_f1's calibrated value head orders 0.691 of boss / Act-4-elite pairs against R1's 0.688 (+0.003 [−0.003,
+  +0.008]), k_ord 1.1 at c = 26 → NOT_SHOWN; all rooms 0.748 vs R1 0.728 and R8 0.802.
+- V1, boss + Act-4 elite (32 playouts): R1 0.687, R8 0.753, R32 0.797; **V1_d64 0.787, k_ord 23.4 [20.2, 26.9] at
+  c = 6.0** (1.06 ms per root forward vs 0.18 ms per boss playout; 6.1 edges per root); V1_d128 0.790, k_ord 26.0
+  [22.6, 30.0] (its forward was not timed; N_f1's, the same d 128 / 4 layers, took 4.2 ms in V0, about 4× d64's).
+  By room (d64): act-1 boss 10.4 [7.9, 13.7], act-2 boss 26.2 [19.4, >32], act-3 boss 27.2 [22.6, >32], Act-4 boss
+  27.5 [18.1, >32], Act-4 elite 18.8 [13.4, 27.2] → **LEAF_PAYS**.
+- All rooms (8 playouts): Q head 0.821 [0.817, 0.824] vs R8 0.803 [0.799, 0.806]; behind R8 only in act-1 hallway and
+  elite roots. Level MSE worse than R8 (312 vs 109).
+**Interpretation (Inference):** a head trained on sibling differences of the teacher's backed values ranks a boss
+root's actions like about 23 playouts for the price of one; a value head trained on outcomes does not (as §789).
+Untested: tree leaves deeper than played roots, the level error against exact terminal values, and play strength.
+**Decision:** LEAF_PAYS offline; the fight smoke (§813) did not carry it over. No default change. Seeds: none new.
+Cost: leafbench on one 4-core cloud container, < 0.5 GPU-h.
+**Knowledge impact:** KB `research/combat-search/leaf-evaluation.md` (value-net leaf section).
+
+## §813 — Value-net leaf V2 (smoke): §812's Q head as Silver's leaf value plays five Baalorlord bosses worse, +11.0 HP lost per fight on average under g16mb (4 of 5 bosses worse, fights longer) at 5.9× CPU per simulation; per-search level calibration does not repair it; as a Q-init (nodes ≥ 64 visits, 16 virtual visits) +2.4 HP at 1.18× CPU → NOT_SHOWN, line closed (cloud, 2026-11-16)
+
+**Question (follow-up to §812; Philipp chose the Q-init test on the decision card at 15:10 CET):** does `V1_d64`'s
+Q head help Silver in boss fights, (a) as the value of new tree leaves instead of a playout, (b) as a Q-init with the
+playouts kept?
+**Data:** [RESULT](evidence/value_leaf_v2_20261116/RESULT.md), `results/smoke.json`, `results/shadow.json`; fight
+records `/mnt/project-files/combat-plan/value-leaf/v2/smoke_fights.tar.gz`. Code on this branch (all default off):
+native Q head in `CombatTokNet` (PyTorch parity 1.1e-4, ctest `combat_tok_net_q_parity`), `SilverSearcher::leafQNet`
+behind `STS_SILVER_LEAF_QNET` / arm part `lq`, diagnostics `_SHADOW`, `_CALIBRATE`, `_QINIT`.
+- `one_combat expertfights` on §770's environment and copy seeds, §770's two smoke runs: five act-1-3 bosses × 4
+  copies, production, g16mb (`gsh16+flat16000+mb4`), g16mb + leaf, production + leaf; one 4-core cloud container.
+  A pre-registered gate on all 528 boss fights was drafted and not run.
+**Result:**
+- Switch off: production and g16mb equal §772's units in 20 / 20 copies each.
+- Leaf: g16mb + leaf − g16mb +25.0 (Hexaghost), +7.3 (Guardian), +9.7 (Automaton), +13.6 (Time Eater), −0.5 (Donu
+  and Deca) HP per fight, mean +11.0; production + leaf − production mean +9.5; leaf fights 1-4 turns longer. CPU per
+  simulation 5.9× (3.0-3.9 leaf values per 0.8 ms forward against 30-64 µs per simulation).
+- Shadow on 403,782 tree leaves: within a parent the net follows the playouts (slope 1.10, 74.5% of sibling pairs
+  ordered alike), but its level is off per fight (net − playout +4.3 Hexaghost, +4.4 Guardian, −8.6 Automaton, +4.7
+  potion edges). Calibrating that offset per search (first 64 leaves played out): +16.0 / +11.8 / +21.0 on three
+  bosses, no repair.
+- Q-init (K 64, M 16): +1.2 / +5.2 / +3.0 / +3.2 / −0.8, mean +2.4, at 1.18× CPU.
+**Interpretation (Inference):** good sibling order at played roots did not make a good leaf: each net leaf carries
+its parent's level error at every visit and across a correlated subtree, where playout noise averages out, and the
+search misjudges which lines end a fight well. Even a repaired leaf would cost more per simulation than §774's 64k
+budget (3.8×, −1.13 HP on these bosses). Smoke only: 4 copies per boss, no CIs; the leaf's direction is consistent.
+Untested: a value trained on tree states (including bad actions), a much cheaper forward, playout mixing at equal CPU.
+**Decision:** NOT_SHOWN; fight gate not run; value-net leaf line closed. Code stays default off. Seeds: none new
+(§770's external Baalorlord seeds). Cost ≈ 6 core-hours.
+**Knowledge impact:** KB `research/combat-search/leaf-evaluation.md` (value-net leaf section).

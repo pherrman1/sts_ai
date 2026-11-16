@@ -9,6 +9,7 @@
 #include <map>
 #include <random>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "combat/BattleContext.h"
@@ -163,6 +164,8 @@ namespace sts::search {
         std::int64_t descentBoundRollouts = 0;   // descents cut at the depth backstop (#544)
         std::int64_t rolloutPriorPicks = 0;      // playout card plays chosen by rolloutPrior (research)
         std::int64_t rolloutPriorCalls = 0;      // rolloutPrior evaluations inside playouts (research)
+        std::int64_t leafQValues = 0;            // leaves valued by leafQNet instead of a playout (research)
+        std::int64_t leafQForwards = 0;          // leafQNet calls (one per decision node, cached in Node::leafQ)
     };
 
     // Diagnostic counts for newly executed simulations only. Reset by the
@@ -307,6 +310,8 @@ namespace sts::search {
 
         struct Edge {
             Action action;
+            bool pruned = false;       // order dominance (#1057): selection skips it; never set at the root
+            std::uint8_t domMask = 0;  // rules (DOM_*) that flagged this edge in its node's epoch, honored or observed
             Node *node = nullptr;
             int rngAdvanceSteps = 0;   // chance outcome edge: N in seed base + N
             std::int32_t visitCount = 0;
@@ -324,8 +329,14 @@ namespace sts::search {
             std::uint64_t randomnessBase = 0;
             std::vector<double> prior;        // tree prior (research), indexed like edges; empty = none
             bool priorNet = false;            // prior came from nodePriorNet (scored at treePriorNetMinVisits)
+            std::vector<double> leafQ;        // leafQNet's per-edge values (research), indexed like edges; empty = none
+            double leafQOffset = 0;           // Q-init: visit-weighted mean (child value - leafQ) when leafQ was set
             double backedValue = 0;           // max-backup value (research, maxBackupMinVisits > 0)
             bool hasBackedValue = false;
+            std::uint32_t pruneEpoch = 0;     // order dominance (#1057): epoch its edges' pruned flags belong to
+            std::uint32_t domNodeEpoch = 0;   // epoch of domNodeMask
+            std::uint8_t domNodeMask = 0;     // DOM_SEG_STATE: this node is dominated within segRoot's segment
+            const Node *segRoot = nullptr;    // segment root it was first reached from in pruneEpoch
         };
 
         double explorationParameter = 25.0;
@@ -404,6 +415,30 @@ namespace sts::search {
         // node priors (selectBestEdgeToSearch's untried-edge order).
         std::function<std::vector<double>(const BattleContext &, const std::vector<Edge> &)> nodePriorNet;
         int treePriorNetMinVisits = 256;
+        // Research (value-net-as-leaf V2, STS_SILVER_LEAF_QNET; off while empty): per-edge values of a decision
+        // node in Silver score units (the combat net's Q head). A new or unvisited child reached through edge e of
+        // decision node P (directly, or as a chance outcome of e) is valued at leafQNet(P)[e] instead of a playout;
+        // terminal children keep evaluateEndState, and cycle / depth-bound leaves keep their playout. One call per
+        // decision node, cached in Node::leafQ.
+        std::function<std::vector<double>(const BattleContext &, const std::vector<Edge> &)> leafQNet;
+        // Research diagnostic (STS_SILVER_LEAF_QNET_SHADOW): when set with leafQNet, such leaves are still valued by
+        // a playout, and this is called with the parent's state and edges, leafQNet's values, the edge index and the
+        // playout's value, so the net can be compared with playouts on real tree leaves.
+        std::function<void(const BattleContext &, const std::vector<Edge> &, const std::vector<double> &, int, double)>
+            leafQShadow;
+        // Research (STS_SILVER_LEAF_QNET_CALIBRATE=K, 0 = off): the first K net-scope leaves after
+        // resetLeafQCalibration() are valued by a playout, and later ones by leafQNet + the mean (playout - net) of
+        // those K, which removes the net's per-fight level offset against exact terminal values.
+        int leafQCalibrate = 0;
+        // Research (STS_SILVER_LEAF_QNET_QINIT=K:M, 0 = off): leafQNet is not a leaf value; instead a non-root
+        // decision node with >= 2 edges calls it once when its simulation count reaches K, and selection there values
+        // edge e at (M * (Q_e + offset) + n_e * value_e) / (M + n_e), offset = the node's visit-weighted mean
+        // (value - Q) at that moment (removes the net's level offset). Leaves keep their playouts.
+        int leafQInitVisits = 0;
+        double leafQInitWeight = 0;
+        int leafQCalibCount = 0;
+        double leafQCalibSum = 0;
+        void resetLeafQCalibration() { leafQCalibCount = 0; leafQCalibSum = 0; }
         // Research (STS_SILVER_MAX_BACKUP=m, default 0 = off): selection values a child by a
         // max backup instead of its mean playout value. A decision node is worth its best
         // child with at least m simulations (its mean while none has), a chance node the
@@ -475,6 +510,56 @@ namespace sts::search {
         // before the last (after the observer). `true` ends the search there: the pick is the boundary's leader
         // (ranked.front()) and the return value the simulations spent so far. Unset, the search is unchanged.
         std::function<bool(const GumbelBoundary &)> gumbelStopPolicy;
+        // Research (#1057, STS_SILVER_ORDER_DOMINANCE=1, default off; SilverDominance.h): dominance pruning of
+        // card-play orders below the root. When a simulation reaches a decision node X from decision node P by a
+        // deterministic card play b, every card play a at X is tested once per epoch: if playing a before b at P
+        // reaches a state equal for search to X + a except for lower monster HP (testOrderDominance), the edge is
+        // pruned and selection (UCB, tree-prior order, Gumbel non-root) and the max backup skip it. The root is
+        // never pruned (its parent is not in the graph); setRoot and rerootAt start a new epoch, so a node's flags
+        // are recomputed against the parent it is next reached from. Off, the search is unchanged bit for bit.
+        //
+        // Round 2: the value is a bit mask of rules (SilverDominance.h DOM_*; 1 = the order test above, 31 = all).
+        // DOM_RELAX lets every rule count more player block, less monster block and more energy as better (not
+        // with relaxGuarded payoffs). DOM_END_ADJ prunes End Turn at X when "card c, then End Turn" reaches an end
+        // state (endOfTurnState) that dominates End Turn's. DOM_SEG_STATE and DOM_SEG_END compare every decision
+        // node and every end state with the others of the same deterministic segment (the nodes reached from the
+        // root or from one chance outcome with no chance node between): a dominated node's in-edges, and a
+        // dominated End Turn edge, are skipped, whichever order of card plays led there. dominanceObserve
+        // (STS_SILVER_DOMINANCE_OBSERVE, same mask) computes the flags without skipping (dominanceWaste).
+        unsigned orderDominance = envOrderDominance();
+        unsigned dominanceObserve = envDominanceObserve();
+        // A node is processed (its flags computed) once per epoch, when a simulation reaches it with at least this
+        // many simulations (STS_SILVER_DOMINANCE_MIN_VISITS, default 0 = at its first visit); before that nothing
+        // at it is skipped. Most nodes see few simulations, so this bounds the tests' cost.
+        int dominanceMinVisits = envDominanceMinVisits();
+        static unsigned envOrderDominance();
+        static unsigned envDominanceObserve();
+        static int envDominanceMinVisits();
+        struct OrderDominanceStats {
+            std::int64_t nodes = 0;          // decision nodes tested (below the root, deterministic card-play parent)
+            std::int64_t guardedNodes = 0;   // skipped: orderDominanceGuarded
+            std::int64_t tests = 0;          // card edges tested
+            std::int64_t skipped = 0;        // tests that were not testable (OrderDominanceResult::SKIPPED)
+            std::int64_t pruned = 0;         // edges pruned
+            double seconds = 0;              // wall time inside the tests
+            // Round 2 (counted once per node and epoch).
+            std::int64_t ruleNodes = 0;      // quiet PLAYER_NORMAL decision nodes processed by any round-2 rule
+            std::int64_t relaxGuarded = 0;   // of those, DOM_RELAX off by relaxGuarded
+            std::int64_t endStates = 0;      // end states computed (endOfTurnState true)
+            std::int64_t endAdjTests = 0;    // "card, then End Turn" end states compared
+            std::int64_t endAdjFlagged = 0;  // End Turn edges flagged by DOM_END_ADJ
+            std::int64_t segStateFlagged = 0;// nodes flagged by DOM_SEG_STATE
+            std::int64_t segEndFlagged = 0;  // End Turn edges flagged by DOM_SEG_END
+        };
+        OrderDominanceStats orderDominanceStats;
+        // Simulations of the current root that entered an edge flagged by each rule (DOM_SWAP, DOM_END_ADJ,
+        // DOM_SEG_STATE, DOM_SEG_END, any), counting each path at its first flagged edge in a walk from the root
+        // that visits each node once. Flags of the current epoch only, observed or honored.
+        struct DominanceWaste {
+            std::int64_t rootSims = 0;
+            std::int64_t swap = 0, endAdj = 0, segState = 0, segEnd = 0, any = 0;
+        };
+        [[nodiscard]] DominanceWaste dominanceWaste() const;
         // Research-only playout policy for RolloutConfig::prior (same signature as nodePrior).
         std::function<std::vector<double>(const BattleContext &, const std::vector<Edge> &)> rolloutPrior;
         // Optional shortcut for prior playouts: std::max_element of rolloutPriorArgmaxOf's prior. Used only
@@ -589,6 +674,16 @@ namespace sts::search {
         int forcedRootEdge = -1;   // searchGumbelRoot: the root edge every simulation takes (-1 = free)
         int gumbelChoice = -1;     // searchGumbelRoot's pick for bestAction (-1 = most visits)
         const GumbelRoot *gumbelNonRoot = nullptr;   // searchGumbelRoot with nonRoot: its settings (else null)
+        std::uint32_t pruneEpochNow = 1;   // order dominance: current epoch (Node::pruneEpoch 0 = never tested)
+        BattleContext dominanceScratch, dominanceChild, dominanceEndX, dominanceEndY, dominanceKeyScratch;
+        // Segment tables (DOM_SEG_*): bucket key (dominanceKey mixed with the segment root) -> nodes of this epoch.
+        std::unordered_map<std::size_t, std::vector<Node *>> dominanceSegStates, dominanceSegEnds;
+        std::uint32_t dominanceTableEpoch = 0;
+        const Node *descentSegRoot = nullptr;   // segment root of the node selection is called for (stepImpl)
+        void applyOrderDominance(Node &node, const Node *parent, int parentEdge, const Node *segRoot);
+        // Selection and max backup skip edge i of `parent` (honored rules only; never when it would skip all).
+        [[nodiscard]] bool dominanceSkips(const Node &parent, const Edge &e) const;
+        [[nodiscard]] bool dominanceSkipsAny(const Node &parent) const;
 
         std::default_random_engine randGen;
         SilverRolloutAgent rolloutAgent;

@@ -9,6 +9,7 @@ import torch.nn.functional as F
 
 CARD_V, MON_V, MOVE_V, POT_V, STAT_V, ZONE_V = 512, 256, 256, 64, 128, 16
 VALUE_BINS = 20   # class 0 = death, classes 1..VALUE_BINS = end HP / max HP in equal bins
+Q_SCALE = 100.0   # the per-edge Q head (value-net-as-leaf V1) outputs Silver score units / Q_SCALE
 
 
 def slog(x):
@@ -82,9 +83,10 @@ def collate(A, idx, policy_key="policy"):
 
 
 class CombatNet(nn.Module):
-    def __init__(self, d=128, layers=4, heads=4, g_len=97, m_num=128, q_len=24, a_len=37, aux=True, value=True):
+    def __init__(self, d=128, layers=4, heads=4, g_len=97, m_num=128, q_len=24, a_len=37, aux=True, value=True,
+                 qhead=False):
         super().__init__()
-        self.aux_on, self.value_on = aux, value
+        self.aux_on, self.value_on, self.q_on = aux, value, qhead
         self.card = nn.Embedding(CARD_V, d)
         self.zone = nn.Embedding(ZONE_V, d)
         self.card_num = nn.Linear(7, d)              # pos, upgraded, cost, costForTurn, free, retain, special
@@ -111,8 +113,11 @@ class CombatNet(nn.Module):
         self.pol = nn.Sequential(nn.Linear(3 * d, d), nn.GELU(), nn.Linear(d, 1))
         self.val = nn.Sequential(nn.Linear(d, d), nn.GELU(), nn.Linear(d, VALUE_BINS + 1))
         self.auxh = nn.Sequential(nn.Linear(d, d), nn.GELU(), nn.Linear(d, 2))
+        if qhead:   # per-edge Q on the Silver score scale: the child's value from one forward at the parent
+            self.qh = nn.Sequential(nn.Linear(3 * d, d), nn.GELU(), nn.Linear(d, 1))
 
-    def forward(self, b):
+    def forward(self, b, want_q=False):
+        """(policy logits, value logits, aux); with want_q (needs qhead) also the per-edge Q in Silver score units."""
         B = b["glob"].shape[0]
         g = self.glob(torch.cat([slog(b["glob"]), b["relics"].float(), b["sbits"].float()], -1))
         g = g + self.pot(b["potions"].clamp(0, POT_V - 1)).sum(1) + self.tok_type.weight[0]
@@ -146,8 +151,11 @@ class CombatNet(nn.Module):
         tgt_h = torch.gather(mon_h, 1, tgt[..., None].expand(-1, -1, mon_h.shape[-1]))
         tgt_h = tgt_h * (a[..., 13] >= 0)[..., None]
         E = a.shape[1]
-        logits = self.pol(torch.cat([cls[:, None].expand(-1, E, -1), at, tgt_h], -1)).squeeze(-1)
+        feat = torch.cat([cls[:, None].expand(-1, E, -1), at, tgt_h], -1)
+        logits = self.pol(feat).squeeze(-1)
         logits = logits.masked_fill(~b["act_mask"], -1e9)
+        if want_q:
+            return logits, self.val(cls), self.auxh(cls), self.qh(feat).squeeze(-1) * Q_SCALE
         return logits, self.val(cls), self.auxh(cls)
 
 
@@ -162,3 +170,21 @@ def losses(net, b, logits, vlog, aux, value_weight=1.0):
     aux_loss = F.smooth_l1_loss(aux, aux_t)
     total = pol_loss + (value_weight * val_loss if net.value_on else 0) + (aux_loss if net.aux_on else 0)
     return total, {"policy_ce": pol_loss.item(), "value_nll": val_loss.item(), "aux": aux_loss.item()}
+
+
+def q_losses(qhat, b, min_visits=64, pair_weight=4.0):
+    """Per-edge Q loss (value-net-as-leaf V1) against the batch's "q" (train.py --q-source backed: the max-backed Q)
+    on edges with at least `min_visits` visits: a Huber level term in Q_SCALE units, plus `pair_weight` times the
+    sibling-contrast term, the within-root variance of the residuals (= mean squared error of all sibling differences
+    / 2), each root with 2+ such edges weighing 1. Returns (loss, level, pair)."""
+    qv, vis = b["q"], b["visits"]
+    ok = b["act_mask"] & (vis >= min_visits) & ~torch.isnan(qv)
+    r = torch.where(ok, (qhat - torch.nan_to_num(qv)) / Q_SCALE, torch.zeros_like(qhat))
+    okf = ok.float()
+    level = (F.smooth_l1_loss(r, torch.zeros_like(r), reduction="none") * okf).sum() / okf.sum().clamp(min=1)
+    n = okf.sum(-1)
+    mean = r.sum(-1) / n.clamp(min=1)
+    var = (((r - mean[:, None]) ** 2) * okf).sum(-1) / n.clamp(min=1)
+    multi = (n >= 2).float()
+    pair = (var * multi).sum() / multi.sum().clamp(min=1)
+    return level + pair_weight * pair, level, pair

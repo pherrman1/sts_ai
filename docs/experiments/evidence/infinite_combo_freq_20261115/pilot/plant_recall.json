@@ -1,0 +1,49 @@
+{
+ "certified": 511,
+ "eligible": 576,
+ "excluded_dfs_lethal_before_recurrence": 436,
+ "heart": {
+  "CERTIFIED_KILL": 1,
+  "CERTIFIED_TURN_CAP": 14,
+  "NONE": 3,
+  "PRODUCTIVE_CYCLE_CANDIDATE": 1,
+  "STALL_LOOP": 2
+ },
+ "misses_by_encounter": {
+  "AWAKENED_ONE": 24,
+  "GIANT_HEAD": 2,
+  "GREMLIN_LEADER": 3,
+  "SNAKE_PLANT": 4,
+  "SNECKO": 4,
+  "THE_GUARDIAN": 9,
+  "THE_HEART": 6,
+  "TIME_EATER": 5,
+  "TRANSIENT": 5,
+  "WRITHING_MASS": 3
+ },
+ "misses_by_reason": {
+  "NONE|None": 29,
+  "PRODUCTIVE_CYCLE_CANDIDATE|control_state_changed": 25,
+  "PRODUCTIVE_CYCLE_CANDIDATE|player_death": 2,
+  "PRODUCTIVE_CYCLE_CANDIDATE|witness_illegal_or_identity_changed": 7,
+  "STALL_LOOP|None": 2
+ },
+ "oracle_summary": {
+  "CERTIFIED_KILL": 497,
+  "CERTIFIED_TURN_CAP": 14,
+  "NONE": 455,
+  "PRODUCTIVE_CYCLE_CANDIDATE": 44,
+  "STALL_LOOP": 2,
+  "max_cpu_ms": 23.212,
+  "max_depth": 24,
+  "max_nodes": 2163,
+  "mean_cpu_ms": 0.46415019762845905,
+  "mean_nodes": 34.12549407114624,
+  "productive_candidates": 799,
+  "repeated_states": 557,
+  "replay_rejections": 274,
+  "states": 1012,
+  "supported_states": 1012
+ },
+ "plant_states": 1012
+}
