@@ -236,7 +236,12 @@ disagreements between the PPO actor and its own critic: Corruption takes (critic
 its own tree rates >= 1 point better at 19 of 11,106 roots, 18 of them sequential-halving noise; the last is a
 design gap (Gumbel candidates ignore inherited visits when legal actions > k). "Differs from a 64k search" alone is no
 mistake signal (41 % of roots, almost all order-equivalent). The critic is not screen-invariant and not bounded, so
-critic drops need a transition baseline. Open: paired probes for each pattern.
+critic drops need a transition baseline. Paired probes (§TBD, 512 forks from §782 states, 128 per pattern, one
+shared redrawn future per pair): alternative minus production in Heart kills smith→rest +0.8 pp, elite→non-elite
+path −8.6 pp, Corruption→next card −8.6 pp, runic→next relic −3.9 pp, all NOT_SHOWN after Holm. In pairs the critic
+prefers the production choice too (Corruption −0.063, runic −0.049), so the apparent actor-critic disagreement was a
+screen artefact. None of the four patterns is a confirmed mistake; paired forks, not critic drops, are the measurement
+that counts.
 
 ## Open questions
 

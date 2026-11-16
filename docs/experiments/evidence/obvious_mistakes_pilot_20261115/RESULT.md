@@ -128,6 +128,13 @@ sequential-halving noise.)
   lines below 2 points; Awakened One left at 2/320). The levers there are out of combat (deck, relics, route) or
   need paired probes with more search.
 
+**Addendum 2026-11-16 (paired probes, `../obvious_mistakes_probes_20261115/RESULT.md`):** 128 paired forks per
+pattern from §782 states. Alternative minus production in Heart kills: smith→rest +0.8 pp, elite→non-elite path
+−8.6 pp, Corruption→next card −8.6 pp, runic→next relic −3.9 pp, all NOT_SHOWN after Holm. In pairs the critic
+prefers the production choice as well (Corruption −0.063, runic −0.049 at the next decision), so the "actor and critic
+disagree" reading below was a screen artefact. None of the four patterns is a confirmed mistake; the catalogue keeps
+its first-reading labels.
+
 ## Interpretation (inference)
 
 - The "obvious mistakes" are mostly out of combat and are disagreements between the PPO actor and its own critic

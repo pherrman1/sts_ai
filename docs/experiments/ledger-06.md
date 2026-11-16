@@ -27673,3 +27673,36 @@ campfire; an issue for the Gumbel candidate set with inherited visits; paired pr
 for Runic Dome and Corruption; more games once the probes show which flags carry signal.
 Seeds: none new (§775's block reused). Cost: about 14 core-hours in the thread's container.
 **Knowledge impact:** KB `research/a20-loss-mining.md` (section "Obvious-mistakes pilot").
+
+## §TBD — Paired probes for the four obvious-mistakes patterns (issue #1056): 512 forks from §782 G16 states (128 each: smith vs. rest before the Act-1 boss, elite vs. non-elite path at <= 50 % HP, Corruption vs. the next card, runic vs. the next boss relic), production vs. the actor's best allowed alternative with one shared redrawn future; 512/512 valid; Heart A − B +0.8, −8.6, −8.6, −3.9 pp, all NOT_SHOWN after Holm; the critic prefers the production choice in pairs → DESCRIPTIVE (cloud, 2026-11-16)
+
+**Question (Philipp 2026-11-15 21:31 CET "oke für jedes muster jetzt eine gepaarte probe", 8 workers):** for the four
+out-of-combat patterns of the obvious-mistakes pilot (§TBD above), does the alternative decision give more Heart kills
+than net-0420's production decision from the same states?
+**Design:** [PREREG](evidence/obvious_mistakes_probes_20261115/PREREG.md) (run commit 3c123c6, prelaunch review J
+PASS). States from all 1,024 §782 G16 traces by fixed rules, 128 per pattern by sha256("issue1056-probe-" + pattern +
+"-" + seed + "-" + idx). Each unit replays §782's game to the decision (`STS_OOC_FORCE_DECISION=INDEX:1:KEY`, new
+research key `ppo:KIND=...` that forces the PPO actor's best token among the allowed ones, code 6de313e = ebd446b3 +
+key, binary 32c21093) and plays A (alternative) and B (production, key `-`) to the end with the hidden future redrawn by
+salt 1 after the decision. §775's G16 arm. Primary: Heart kill A − B per pattern, exact sign test, Holm over 4.
+**Data:** [RESULT](evidence/obvious_mistakes_probes_20261115/RESULT.md), `results/summary.json`; tars on the share
+(`obvious-mistakes-probes/`).
+**Result:**
+- Validity: 512/512 pairs valid (prefix identical to §782 in both games, B's decision = §782's, A's token differs); no
+  drop, abort, timeout or ineligible state.
+- Heart kills B vs. A: smith 71 vs. 72 (+0.8 pp [−8.3, +9.9], Holm 1.00); elite 51 vs. 40 (−8.6 pp [−17.0, −0.2],
+  sign p 0.071, Holm 0.28); Corruption 87 vs. 76 (−8.6 pp [−17.8, +0.6], p 0.099, Holm 0.30); runic 75 vs. 70
+  (−3.9 pp [−12.7, +4.9], Holm 0.97). All NOT_SHOWN.
+- Secondary: resting gains +2.1 floors [−0.2, +4.4] and +3.9 pp act-1 survival (not shown); avoiding the elite +3.1 pp
+  act survival, 13 production games died in the elite fight itself. Critic at the next decision, A − B: Corruption
+  −0.063 [−0.076, −0.049], runic −0.049, smith −0.005, elite −0.006; on Corruption its sign matches the outcome in 31 of
+  37 discordant pairs.
+**Interpretation (Inference):** none of the four patterns is a confirmed mistake; the point estimates lean towards the
+production choice. The pilot's "actor-critic disagreement" on Corruption and runic relics was an artefact of reading
+critic drops against the pre-decision screen: in pairs the critic agrees with the actor. With 128 pairs only effects of
+about 10 pp are visible; large gains from flipping these decisions are unlikely, small effects are open.
+**Decision:** DESCRIPTIVE. No default change; the four pilot patterns are not confirmed as misconceptions (pilot
+RESULT has an addendum; the catalogue keeps its hand labels as a record of the first reading). The
+`ppo:` force key stays a research option (default off).
+Seeds: none new (§775's block, futures redrawn by salt 1). Cost: about 150 core-hours on 8 workers (23:10-06:50 CET).
+**Knowledge impact:** KB `research/a20-loss-mining.md` (section "Obvious-mistakes pilot").
