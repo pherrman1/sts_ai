@@ -1,0 +1,11 @@
+name          prior-factory
+code_commit   a002b841a4f58d65ed1eb045f57435083e0f8257
+binary_sha256 TBD
+workers       32
+share         /mnt/project-files/prior-factory
+configure_preset linux-gcc-release-x86-64-v3
+parallel      4
+schedule      queue
+lease_minutes 90
+claim_settle_seconds 60
+input net-0420.bin /mnt/project-files/ppo-long-c/nets/net-0420.bin 8c0bd16c31499270f192666919e0a11e1d6ca57e2d7a188b6d2a019f3ac742d2
