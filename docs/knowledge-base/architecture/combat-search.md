@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-11-16 for the infinity oracle's natural-root mode and its G16 frequency (§TBD); 2026-10-23 for the standalone same-turn infinity oracle; 2026-10-18 for the A20 learned-stop default and stop model (ADR-0051); 2026-10-18 for the learned-stopping A20 result with the gen-7f table (§538); 2026-10-18 for §523 random playouts per leaf; 2026-10-17 for the live advisor rollout root table (ADR-0046); 2026-10-17 for the per-playout action cap (#544) and its `STS_SILVER_ROLLOUT_ACTION_CAP` switch; 2026-10-17 for the zero-cost rollout cap and depth-backstop rollout (#544); 2026-10-17 for the root-prior override used by the OOC Silver fallback and the burning-elite escape rule; 2026-10-15 for the default rollout card table (ADR-0040) and the §479 rollout research options; 2026-10-14 for default canonical multi-select masks (ADR-0034) and the §473 escape-penalty gate and defaults (ADR-0036, ADR-0037); 2026-10-08 for targeted public capture and the bounded public pair probe;
+Last verified: 2026-11-16 for the infinity oracle's natural-root mode and its G16 frequency (§811); 2026-10-23 for the standalone same-turn infinity oracle; 2026-10-18 for the A20 learned-stop default and stop model (ADR-0051); 2026-10-18 for the learned-stopping A20 result with the gen-7f table (§538); 2026-10-18 for §523 random playouts per leaf; 2026-10-17 for the live advisor rollout root table (ADR-0046); 2026-10-17 for the per-playout action cap (#544) and its `STS_SILVER_ROLLOUT_ACTION_CAP` switch; 2026-10-17 for the zero-cost rollout cap and depth-backstop rollout (#544); 2026-10-17 for the root-prior override used by the OOC Silver fallback and the burning-elite escape rule; 2026-10-15 for the default rollout card table (ADR-0040) and the §479 rollout research options; 2026-10-14 for default canonical multi-select masks (ADR-0034) and the §473 escape-penalty gate and defaults (ADR-0036, ADR-0037); 2026-10-08 for targeted public capture and the bounded public pair probe;
 2026-09-25 for native-only Silver (ADR-0022), the native default
 (ADR-0021) and Silver-only dispatch (ADR-0020).
 
@@ -920,7 +920,7 @@ same evidence for raw fixtures, timing and the archived-root support check.
 Realistic recall/public-state handling must be qualified before natural-root
 annotation; this v0 cannot yet supply that evidence.
 
-**Natural-root mode (§TBD, #1054).** `--snapshots FILE|- [natural|v0|plant [NODES [DEPTH]]]` reads the
+**Natural-root mode (§811, #1054).** `--snapshots FILE|- [natural|v0|plant [NODES [DEPTH]]]` reads the
 turn-start BattleContextBinary snapshots that `one_combat` writes under the research observer
 `STS_COMBAT_STATE_CAPTURE=PATH` (`apps/one_combat/run_driver.cpp`, around the real fight only, play unchanged).
 The v0 key cannot fire on natural states (exact shuffle RNG, HP, block, relic counters), so `natural` coarsens only
