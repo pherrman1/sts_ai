@@ -380,6 +380,9 @@ void silverFocusEvalGen(int nSeeds, int asc, const std::string &outPrefix, long 
 void silverSynthFeatures(const std::string &outPrefix);
 void silverSynthReplay(const std::string &namesPath = "");
 void rolloutPolicyBench(const std::string &prefix, std::int64_t budget, const std::string &arms, int captureStride);
+// Research (#1053 offline playout test): N playouts per row and arm from silverazgen rows' wire states, scored as
+// Silver's leaf value; see silver_synth_replay.cpp.
+void playoutValueBench(const std::string &outPath, int playouts, const std::string &arms);
 // Research-only (#1058, apps/one_combat/turn_plan.cpp): deterministic turn plans of silverazgen root rows read on
 // stdin (search::enumerateTurnPlans), and the plan feature names.
 void turnPlanEnum(const std::string &outPath, int maxPlans, int maxNodes);
