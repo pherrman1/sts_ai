@@ -67,6 +67,19 @@
 // budget: {budget, edge (the pick as an index into the row's edges, -1 if unmatched), sims, cpu (thread seconds)},
 // and `mainCpu`, the played search's thread seconds. Play is bit-identical with the ladder on or off.
 //
+// STS_AZGEN_EXTRA_LABELS=nodes:N,playouts:M,sims:L[,minvisits:V] (silverazgen only, default off; requires
+// STS_AZGEN_WHOLE_RUN_GUMBEL=1; N, M in 0..16 with N + M > 0, L in 1..100,000, V >= 1, default 256) is the next
+// prior's broad data (2026-11-16, issue #1053 follow-up): after the played search of every searched multi-edge root,
+// up to N interior decision nodes of the played tree (PLAYER_NORMAL, more than one edge, at least V simulations,
+// drawn uniformly) and up to M states visited inside the played search's playouts (a uniform reservoir over its
+// PLAYER_NORMAL playout steps) are each searched by a fresh searcher configured as the played one, with the Gumbel
+// root at L simulations and its own seed (g_nativeSilverExtraLabels). Each writes one row of kind `extra` after its
+// root row: `source` (tree / playout), `depth` (tree: decision actions below the root; playout: its leaf's tree
+// depth), `playoutStep`, `nodeVisits` (tree), `treeEdges` (tree: the played tree's edges at the node, with visits,
+// q, qBacked and the node's tree prior), and, as root rows do, `edges` (the label search's, with prior and qBacked),
+// `rootQBacked`, `gumbelChoice`, `labelSims`, `cpu`, `turn`, `hp` and `wire`. Play is bit-identical with the labels
+// on or off.
+//
 // silverazfocusgen is silverazgen for one encounter (fight-specific prior data,
 // /mnt/project-files/silver-prior-fight-specific/): the run plays every other
 // fight unrecorded at OTHER_SIMS with the same prior, and at the first fight of
@@ -239,6 +252,42 @@ std::vector<search::NativeSilverRolloutArm> rolloutLadder() {
 }
 
 // The rollout ladder's student models (process lifetime); their sha256 go to the manifest.
+// STS_AZGEN_EXTRA_LABELS: unset or empty = off.
+search::NativeSilverExtraLabels extraLabels() {
+    search::NativeSilverExtraLabels x;
+    const char *v = std::getenv("STS_AZGEN_EXTRA_LABELS");
+    if (!v || !*v) return x;
+    const auto bad = [](const std::string &why) {
+        return std::runtime_error("STS_AZGEN_EXTRA_LABELS: " + why
+                                  + " (want nodes:N,playouts:M,sims:L[,minvisits:V])");
+    };
+    std::stringstream ss(v);
+    std::string item;
+    bool haveSims = false;
+    while (std::getline(ss, item, ',')) {
+        const auto colon = item.find(':');
+        if (colon == std::string::npos) throw bad("no ':' in " + item);
+        const std::string k = item.substr(0, colon), val = item.substr(colon + 1);
+        long long n = 0;
+        try {
+            std::size_t used = 0;
+            n = std::stoll(val, &used);
+            if (used != val.size()) throw bad("not an integer: " + item);
+        } catch (const std::invalid_argument &) {
+            throw bad("not an integer: " + item);
+        } catch (const std::out_of_range &) {
+            throw bad("out of range: " + item);
+        }
+        if (k == "nodes" && n >= 0 && n <= 16) x.nodes = static_cast<int>(n);
+        else if (k == "playouts" && n >= 0 && n <= 16) x.playouts = static_cast<int>(n);
+        else if (k == "sims" && n >= 1 && n <= 100000) { x.sims = n; haveSims = true; }
+        else if (k == "minvisits" && n >= 1 && n <= 1000000) x.minVisits = static_cast<int>(n);
+        else throw bad("unknown key or value out of range: " + item);
+    }
+    if (!haveSims || x.nodes + x.playouts == 0) throw bad("needs sims and nodes + playouts > 0");
+    return x;
+}
+
 nlohmann::json loadRolloutStudents(const std::vector<search::NativeSilverRolloutArm> &arms) {
     static search::CombatValueNet generalist;
     static std::map<int, std::unique_ptr<search::CombatValueNet>> byEncounter;
@@ -463,6 +512,7 @@ struct FightRecorder {
     search::SilverLeafSamples leaves;
     long long roots = 0, leafRows = 0, secondTeachers = 0, continuationRoots = 0, labelRoots = 0;
     long long labelEdgeFallbacks = 0;
+    long long extraRows = 0, extraTree = 0, extraPlayout = 0;   // STS_AZGEN_EXTRA_LABELS rows
     // Scores the fight's end with Silver's own terminal evaluation, referenced to the fight's first
     // searched root (its gold and max-HP terms): the label a leaf value must share with the tree.
     std::unique_ptr<search::SilverSearcher> scorer;
@@ -554,6 +604,50 @@ struct FightRecorder {
         }
         *out << row.dump() << '\n';
         ++roots;
+        if (view.extras) {
+            for (const auto &x : *view.extras) {
+                const auto &label = *x.label;
+                const auto &st = label.rootSearchState();
+                nlohmann::json ex = {
+                    {"kind", "extra"}, {"seed", seed}, {"variant", variant}, {"fight", fightIdx},
+                    {"decision", view.decision}, {"act", view.gc.act}, {"floor", view.gc.floorNum},
+                    {"room", roomStrings[static_cast<int>(view.gc.curRoom)]},
+                    {"encounter", monsterEncounterEnumNames[static_cast<int>(view.live.encounter)]},
+                    {"source", x.source == 0 ? "tree" : "playout"}, {"depth", x.depth},
+                    {"playoutStep", x.playoutStep}, {"turn", st.turn}, {"hp", st.player.curHp},
+                    {"maxHp", st.player.maxHp}, {"labelSims", x.sims}, {"cpu", x.cpu},
+                    {"edges", rootEdges(label)}};
+                if (x.source == 0) {
+                    ex["nodeVisits"] = x.nodeVisits;
+                    nlohmann::json te = nlohmann::json::array();
+                    for (const auto &t : x.treeEdges) {
+                        nlohmann::json e = {{"bits", t.bits}, {"visits", t.visits}, {"childSims", t.childSims},
+                                            {"q", t.hasQ ? nlohmann::json(t.q) : nlohmann::json(nullptr)}};
+                        if (t.hasBacked) e["qBacked"] = t.qBacked;
+                        e["prior"] = t.hasPrior ? nlohmann::json(t.prior) : nlohmann::json(nullptr);
+                        te.push_back(e);
+                    }
+                    ex["treeEdges"] = te;
+                }
+                if (label.maxBackupMinVisits > 0 && label.rootNode().simulationCount > 0)
+                    ex["rootQBacked"] = backedValue(label.rootNode(), label.maxBackupMinVisits);
+                const auto &prior = label.rootPrior;
+                auto &edges = ex["edges"];
+                const bool known = prior.size() == edges.size();
+                for (std::size_t i = 0; i < edges.size(); ++i)
+                    edges[i]["prior"] = known ? nlohmann::json(prior[i]) : nlohmann::json(nullptr);
+                ex["gumbelChoice"] = label.lastGumbelEdge();
+                try {
+                    ex["wire"] = wireJson(st, label.searchContext());
+                } catch (const std::exception &e) {
+                    ex["wire"] = nullptr;
+                    ex["wireError"] = e.what();
+                }
+                *out << ex.dump() << '\n';
+                ++extraRows;
+                if (x.source == 0) ++extraTree; else ++extraPlayout;
+            }
+        }
         for (std::size_t i = 0; i < leaves.samples.size(); ++i) {
             const auto &leaf = leaves.samples[i];
             nlohmann::json leafRow = {
@@ -578,6 +672,7 @@ struct SeedResult {
     bool complete = false;
     long long roots = 0, leaves = 0, secondTeachers = 0, continuationRoots = 0, fights = 0, invalidFights = 0;
     long long labelRoots = 0, labelEdgeFallbacks = 0;
+    long long extraTree = 0, extraPlayout = 0;
     std::string error;
 };
 
@@ -591,6 +686,7 @@ struct AzPrior {
     int wholeRunGumbelK = 0;   // STS_AZGEN_WHOLE_RUN_GUMBEL: STS_SILVER_GUMBEL_ROOT's K (0 = off), no override
     std::vector<std::int64_t> ladder;   // STS_AZGEN_BUDGET_LADDER: empty = off
     std::vector<search::NativeSilverRolloutArm> rolloutArms;   // STS_AZGEN_ROLLOUT_LADDER: empty = off
+    search::NativeSilverExtraLabels extraLabels;   // STS_AZGEN_EXTRA_LABELS: nodes = playouts = 0 = off
 };
 
 // silverazfocusgen: record only `target`, then end the run.
@@ -635,6 +731,8 @@ SeedResult runSynthSeed(std::uint64_t seed, int sims, int asc, const std::string
             search::g_nativeSilverLabelSearch = false;
             search::g_nativeSilverGumbelRootOverride.reset();
             search::g_nativeSilverBudgetLadder.clear();
+            search::g_nativeSilverRolloutLadder.clear();
+            search::g_nativeSilverExtraLabels = {};
         }
     } hooks;
     if (az && !az->production) {
@@ -646,6 +744,7 @@ SeedResult runSynthSeed(std::uint64_t seed, int sims, int asc, const std::string
     if (az && az->labelSearch) search::g_nativeSilverLabelSearch = true;
     if (az) search::g_nativeSilverBudgetLadder = az->ladder;
     if (az) search::g_nativeSilverRolloutLadder = az->rolloutArms;
+    if (az) search::g_nativeSilverExtraLabels = az->extraLabels;
     if (az && az->gumbelK > 0) {
         // Every fight of the run (recorded or not) plays the Gumbel root.
         search::SilverSearcher::GumbelRoot g;
@@ -772,6 +871,8 @@ SeedResult runSynthSeed(std::uint64_t seed, int sims, int asc, const std::string
     result.continuationRoots = recorder.continuationRoots;
     result.labelRoots = recorder.labelRoots;
     result.labelEdgeFallbacks = recorder.labelEdgeFallbacks;
+    result.extraTree = recorder.extraTree;
+    result.extraPlayout = recorder.extraPlayout;
     return result;
 }
 
@@ -909,6 +1010,11 @@ void silverAzRun(int nSeeds, int sims, int asc, const std::string &outPrefix, lo
         throw std::runtime_error("silverazgen: STS_AZGEN_ROLLOUT_LADDER requires STS_AZGEN_WHOLE_RUN_GUMBEL=1 and is"
                                  " silverazgen only");
     const nlohmann::json studentInfo = loadRolloutStudents(rolloutArms);
+    const auto extras = extraLabels();
+    const bool extrasOn = extras.nodes + extras.playouts > 0;
+    if (extrasOn && (wholeRunK == 0 || focus))
+        throw std::runtime_error("silverazgen: STS_AZGEN_EXTRA_LABELS requires STS_AZGEN_WHOLE_RUN_GUMBEL=1 and is"
+                                 " silverazgen only");
     const std::string priorPath = search::nativeSilverRootPriorPath();
     search::CombatValueNet prior;
     if (priorPath.empty() || !prior.load(priorPath) || !prior.isPolicyMlp)
@@ -927,12 +1033,16 @@ void silverAzRun(int nSeeds, int sims, int asc, const std::string &outPrefix, lo
         + (wholeRunK > 0 ? "-wrg" + std::to_string(wholeRunK) + "mb" + std::to_string(wholeRunMb) : "")
         + (ladder.empty() ? "" : "-lad" + std::to_string(ladder.size()))
         + (rolloutArms.empty() ? "" : "-rl" + std::to_string(rolloutArms.size()))
+        + (extrasOn ? "-xl" + std::to_string(extras.nodes) + "n" + std::to_string(extras.playouts) + "p"
+                      + std::to_string(extras.sims) : "")
         + "-" + priorSha.substr(0, 8);
-    const AzPrior az{treeMinVisits, rootBonus == 1, prodCombat, label, gumbelK, wholeRunK, ladder, rolloutArms};
+    const AzPrior az{treeMinVisits, rootBonus == 1, prodCombat, label, gumbelK, wholeRunK, ladder, rolloutArms,
+                     extras};
     // Under the self-play overrides Silver plays no prior playouts (NativeSilverBackend skips them).
     nlohmann::json silverLeaf = effectiveSilverLeafSpecification();
     if (!prodCombat && silverLeaf.contains("prior_playout_rooms")) silverLeaf["prior_playout_rooms"] = "none";
     long long roots = 0, fights = 0, invalidFights = 0, labelRoots = 0, labelEdgeFallbacks = 0;
+    long long extraTree = 0, extraPlayout = 0;
     int completed = 0;
     nlohmann::json seeds = nlohmann::json::array();
     #pragma omp parallel for schedule(dynamic)
@@ -948,6 +1058,8 @@ void silverAzRun(int nSeeds, int sims, int asc, const std::string &outPrefix, lo
             invalidFights += result.invalidFights;
             labelRoots += result.labelRoots;
             labelEdgeFallbacks += result.labelEdgeFallbacks;
+            extraTree += result.extraTree;
+            extraPlayout += result.extraPlayout;
             if (result.complete) ++completed;
             seeds.push_back({{"seed", seed}, {"complete", result.complete}, {"error", result.error},
                              {"fights", result.fights}, {"roots", result.roots}});
@@ -1006,6 +1118,13 @@ void silverAzRun(int nSeeds, int sims, int asc, const std::string &outPrefix, lo
                                               " prior-playout root with that playout policy and budget; priorCalls ="
                                               " rolloutPrior evaluations, playoutActions = playout actions"}};
     }
+    if (extrasOn)
+        manifest["extraLabels"] = {{"nodes", extras.nodes}, {"playouts", extras.playouts}, {"sims", extras.sims},
+                                   {"minVisits", extras.minVisits}, {"treeRows", extraTree},
+                                   {"playoutRows", extraPlayout},
+                                   {"rows", "kind extra: a fresh Gumbel root search (labelSims) of an interior tree"
+                                            " node (source tree, treeEdges = the played tree's edges there) or a"
+                                            " playout state (source playout) of the root above it"}};
     std::ofstream mf(manifestPath);
     if (!mf) throw std::runtime_error("silverazgen: cannot write manifest");
     mf << manifest.dump(2) << '\n';

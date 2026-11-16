@@ -1,0 +1,4 @@
+$ python3 tools/cloud/verify_campaign.py docs/experiments/evidence/rollout_prior_wholerun_20261115 --share /mnt/project-files/rollout-prior-wholerun --extract DEST   (2026-11-16 05:17 CET)
+111378919_GV MISSING no tar
+units OK 1055 MISSING 1 BAD 0 of 1056; duplicates 0; tars for unknown units 0; run ['44a25e76b6b7']; worker DONE.json: 0/32
+(extract refused because of the missing unit; analyze.py read the same 1,055 tars, newest per unit, extracted by the dashboard)

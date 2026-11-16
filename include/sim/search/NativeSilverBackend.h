@@ -307,6 +307,25 @@ namespace sts::search {
                             std::int64_t priorCalls = 0; std::int64_t playoutActions = 0; };
         const std::vector<LadderPick> *ladder = nullptr;
         double mainCpu = -1;
+        // Research only (g_nativeSilverExtraLabels): states other than the root, each labelled by a fresh Gumbel
+        // root search of its own after the played search. Empty pointer when off or the root was not searched.
+        struct ExtraLabel {
+            int source = 0;               // 0 = an interior decision node of the played tree, 1 = a playout state
+            int depth = 0;                // tree: decision actions below the root; playout: its leaf's tree depth
+            int playoutStep = 0;          // playout: actions the playout had taken before the state
+            std::int64_t nodeVisits = 0;  // tree: the node's simulations in the played tree
+            struct TreeEdge {
+                std::uint64_t bits = 0;
+                std::int64_t visits = 0, childSims = 0;
+                bool hasQ = false, hasBacked = false, hasPrior = false;
+                double q = 0, qBacked = 0, prior = 0;
+            };
+            std::vector<TreeEdge> treeEdges;   // tree: the played tree's edges at the node, in its edge order
+            std::shared_ptr<const SilverSearcher> label;   // the label search, rooted at the state
+            std::int64_t sims = 0;
+            double cpu = 0;
+        };
+        const std::vector<ExtraLabel> *extras = nullptr;
     };
     extern thread_local std::function<void(const NativeSilverRootView &)> g_nativeSilverRootObserver;
     extern thread_local SilverLeafSamples *g_nativeSilverLeafSamples;
@@ -334,6 +353,21 @@ namespace sts::search {
         std::int64_t budget = 0;
     };
     extern thread_local std::vector<NativeSilverRolloutArm> g_nativeSilverRolloutLadder;
+    // Research-only (silverazgen STS_AZGEN_EXTRA_LABELS, next playout / tree prior data, 2026-11-16): when nodes or
+    // playouts is positive, every searched multi-edge root of a whole-run Gumbel fight also yields up to `nodes`
+    // interior decision nodes of the played tree (PLAYER_NORMAL, more than one edge, at least `minVisits`
+    // simulations; drawn uniformly from all such nodes) and up to `playouts` playout states of the played search
+    // (a uniform reservoir over its PLAYER_NORMAL playout steps). Each is searched by a fresh searcher configured as
+    // the played one (no leaf samples, no outcome capture) with the Gumbel root at `sims` simulations and its own
+    // seed; the root view carries them (NativeSilverRootView::extras). The played search, its tree and every RNG it
+    // reads are unchanged, so play is bit-identical with the labels on or off. Default off.
+    struct NativeSilverExtraLabels {
+        int nodes = 0;
+        int playouts = 0;
+        std::int64_t sims = 0;
+        int minVisits = 256;
+    };
+    extern thread_local NativeSilverExtraLabels g_nativeSilverExtraLabels;
     // Students of the rollout ladder (research): the generalist model and per-encounter models
     // (encounter enum value -> model; an encounter without one uses the generalist). Loaded by the caller.
     extern const CombatValueNet *g_nativeSilverRolloutStudent;
