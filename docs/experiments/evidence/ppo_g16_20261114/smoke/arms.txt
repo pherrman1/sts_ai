@@ -1,0 +1,2 @@
+# Plumbing smoke (PREREG "Smoke"): the frozen G16 env at sims 1,000, 3 iterations x 3 games in 1 part, warm-up 1.
+SMOKE   3     3     1      1     net-0420  --seed 0 --warmup-lam 1.0

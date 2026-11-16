@@ -481,7 +481,7 @@ bool buildChoice(const GameContext &gc, Choice &out, std::string *reason, const 
                 if (fa < 0 && !options.fullCoverage) return fail("unmapped_event");
                 if (fa < 0) {
                     FixedChoice c;
-                    c.action = kFaEventOption0 + std::min(a.getIdx1(), kFaCount - 1 - kFaEventOption0);
+                    c.action = kFaEventOption0 + std::min(a.getIdx1(), kFaDrinkPotion - 1 - kFaEventOption0);
                     c.gold = static_cast<int>(gc.curEvent);
                     fixed(c, a);
                     continue;
@@ -491,6 +491,21 @@ bool buildChoice(const GameContext &gc, Choice &out, std::string *reason, const 
             break;
         default:
             return fail("unsupported_screen");
+    }
+    // Out-of-combat drinks (Java BloodPotion/FruitJuice/EntropicBrew.canUse: true outside combat except in
+    // We Meet Again). Card selects are a modal grid; they get none.
+    if (options.fullCoverage && options.drinkTokens && gc.screenState != ScreenState::CARD_SELECT
+            && !(gc.screenState == ScreenState::EVENT_SCREEN && gc.curEvent == Event::WE_MEET_AGAIN)) {
+        for (int slot = 0; slot < gc.potionCapacity; ++slot) {
+            const Potion p = gc.potions[slot];
+            if (p != Potion::BLOOD_POTION && p != Potion::FRUIT_JUICE && p != Potion::ENTROPIC_BREW) continue;
+            const GA drink(0x80000000u | static_cast<unsigned>(slot));
+            if (!drink.isValidAction(gc)) continue;
+            FixedChoice c;
+            c.action = kFaDrinkPotion;
+            c.potion = static_cast<int>(p);
+            fixed(c, drink);
+        }
     }
 
     encodeObservation(gc, r);
@@ -1725,6 +1740,16 @@ bool ppoKeyRule() {
     return on;
 }
 
+bool ppoDrinkTokens() {
+    static const bool on = [] {
+        const char *v = std::getenv("STS_OOC_HEART1_PPO_DRINK");
+        if (!v || !*v || std::string(v) == "1") return true;
+        if (std::string(v) == "0") return false;
+        throw std::runtime_error("STS_OOC_HEART1_PPO_DRINK must be 0 or 1");
+    }();
+    return on;
+}
+
 double ppoTemperature() {
     static const double t = [] {
         const char *v = std::getenv("STS_OOC_HEART1_TEMPERATURE");
@@ -1811,6 +1836,7 @@ const char *ppoStep(GameContext &gc, std::uint64_t index) {
         return gold > 0 ? "auto_gold" : ppoFallback(gc, index, "not_a_decision");
     ChoiceOptions options;
     options.fullCoverage = true;
+    options.drinkTokens = ppoDrinkTokens();
     options.keyMask = ppoKeyRule();
     Choice choice;
     std::string reason;
@@ -1840,7 +1866,8 @@ void ppoEndGame(const GameContext &gc, const nlohmann::json &outcome) {
     for (const auto &[k, v] : t_ppo.fallbackReasons) reasons[k] = v;
     nlohmann::json game = {{"type", "game"}, {"schema", "heart1-ppo-traj-v1"}, {"seed", std::to_string(gc.seed)},
         {"net", enabled() ? net().path() : ""}, {"temp", ppoTemperature()}, {"salt", std::to_string(ppoSalt())},
-        {"key_rule", ppoKeyRule()}, {"decisions", t_ppo.decisions}, {"single", t_ppo.single},
+        {"key_rule", ppoKeyRule()}, {"drink_tokens", ppoDrinkTokens()}, {"decisions", t_ppo.decisions},
+        {"single", t_ppo.single},
         {"fallbacks", t_ppo.fallbacks}, {"fallback_reasons", reasons}, {"auto_gold", t_ppo.autoGold},
         {"outcome", outcome}};
     ppoLine(game);

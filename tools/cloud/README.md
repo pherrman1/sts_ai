@@ -115,6 +115,11 @@ its static units (line i -> worker i % workers + 1) in order, then other workers
   take over expired claims, so they also cover a worker that stalls near the end. It then writes
   `wWW.DONE.json` (the unit ids it uploaded) and prints `WORKER_OK wWW queue units_uploaded=N`. A unit that
   failed 4 times makes `run` stop with the unit count; report it, do not rerun.
+- **Central stop:** an open-ended campaign ends when the lead creates `SHARE/STOP`, or `SHARE/STOP_AT` holding an
+  epoch (written at launch for a time cap). Lanes claim no new unit from then on; running units finish and upload.
+  `run` then writes `wWW.DONE.json` with `"central_stop": true` and prints `WORKER_OK wWW queue units_uploaded=N
+  central_stop`. The units never claimed stay pending, so `verify_campaign.py` lists them as missing: that is
+  expected for such a campaign.
 - **Timeouts:** `run_unit.sh` keeps its own per-unit timeouts (e.g. `timeout 7h` per arm, rc 124 in the unit's
   record). The heartbeat runs for the whole unit, so a long unit on a live worker is never taken over; the lease
   only matters once a worker or its container is gone. Pick `lease_minutes` well above the heartbeat interval

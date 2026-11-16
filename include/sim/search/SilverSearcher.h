@@ -274,6 +274,23 @@ namespace sts::search {
         std::vector<Sample> samples;
     };
 
+    // Research only (silverazgen STS_AZGEN_EXTRA_LABELS): a uniform reservoir sample of up to `max` PLAYER_NORMAL
+    // states visited inside playouts (before the playout policy acts on them), with the playout action index at
+    // which each was seen. The reservoir draws from its own splitmix stream `rng`, never from the search's RNGs, and
+    // only reads the playout state, so a search plays identically with or without it.
+    struct SilverPlayoutSamples {
+        struct Sample {
+            BattleContext state;
+            int playoutStep = 0;   // actions the playout had taken before this state
+            int treeDepth = 0;     // actions on the search path above the playout's leaf
+        };
+        std::uint64_t rng = 0;
+        std::uint64_t seen = 0;
+        std::size_t max = 0;
+        std::vector<Sample> samples;
+        void offer(const BattleContext &state, int playoutStep, int treeDepth);
+    };
+
     // Silver's combat search (MCTS over a transposition graph with chance nodes
     // and double progressive widening), ported from the Silver fork's
     // BattleSearcher to run directly on the main engine. Only the production
@@ -360,6 +377,7 @@ namespace sts::search {
         // that rolloutConfig.cardTable points at while that option is on.
         std::vector<int> rootCardTable;
         SilverLeafSamples *leafSamples = nullptr; // optional caller-owned samples; default off
+        SilverPlayoutSamples *playoutSamples = nullptr; // research (STS_AZGEN_EXTRA_LABELS); default off
         // Research-only root prior bonus (off by default): a visited root edge i
         // scores rootPriorWeight * rootPrior[i] / (visits_i + 1) on top of UCB.
         // rootPrior is indexed like rootNode().edges after prepareRootActions;

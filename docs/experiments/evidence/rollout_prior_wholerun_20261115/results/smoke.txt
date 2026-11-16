@@ -1,0 +1,10 @@
+Smoke, local cloud container, 2026-11-15 21:58-22:09 CET (not part of the data; the campaign plays these seeds again).
+Binary 97aec5b5 (code ba705ab4, bin-cache), run_unit.sh of this campaign, both games in parallel on 4 vCPU.
+
+G16 111378256 (sentinel seed): rc 0, 557 s wall; fingerprint (analyze.py fingerprint()) identical to §775's G16 game.
+GV  111378263: rc 0 (all run_unit.sh log checks incl. root prior and root table = students/rp_V.txt), Heart kill,
+               end HP 23, 638.4 s CPU, 739 Gumbel roots, 11,943,850 sims
+               (§775's G16 on this seed: Heart kill, end HP 49, 675.2 s, 656 roots, 10,863,857 sims).
+GV log/err: "[research Silver root prior ON: docs/experiments/evidence/rollout_prior_wholerun_20261115/students/rp_V.txt
+weight 400; tree prior K=8]", "[silver] rollout root table model loaded: .../students/rp_V.txt", "sims 16000",
+"Act 4 strong (S&S 10k prior playouts, Heart 40k)".

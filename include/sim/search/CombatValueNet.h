@@ -43,6 +43,31 @@ namespace sts::search {
     // empty list, or with a buffer combatExtractFeatures filled and every index of
     // that block in the list).
     void combatExtractFeaturesReuse(const BattleContext &bc, float *out, std::vector<std::uint16_t> &touched);
+    // Ascending indices of the nonzero state features (as `features[i] != 0`) of a vector last written by
+    // combatExtractFeaturesReuse with `touched`: the same list as a scan of all combatFeatureCount values, from the
+    // always-written blocks and the touched indices only.
+    int combatNonzeroStateFeatures(const float *features, const std::vector<std::uint16_t> &touched,
+                                   std::uint16_t *out);
+    // Additive 128-bit fingerprint (issue #1051's exact prior-playout pick cache): a word w adds
+    // combatFingerprintMixA(w) to one 64-bit sum and combatFingerprintMixB(w) to the other, so a multiset of words
+    // gives the same pair in any order, and two different multisets give the same pair with probability ~2^-128
+    // (two independently keyed 64x64->128-bit multiply-folds of w with its halves swapped, as in wyhash).
+    inline std::uint64_t combatFingerprintMum(std::uint64_t x, std::uint64_t y) {
+        const unsigned __int128 r = static_cast<unsigned __int128>(x) * y;
+        return static_cast<std::uint64_t>(r) ^ static_cast<std::uint64_t>(r >> 64);
+    }
+    inline std::uint64_t combatFingerprintMixA(std::uint64_t w) {
+        return combatFingerprintMum(w ^ 0xa0761d6478bd642fULL, ((w >> 32) | (w << 32)) ^ 0xe7037ed1a0b428dbULL);
+    }
+    inline std::uint64_t combatFingerprintMixB(std::uint64_t w) {
+        return combatFingerprintMum(w ^ 0x8ebc6af09c88c6e3ULL, ((w >> 32) | (w << 32)) ^ 0x589965cc75374cc3ULL);
+    }
+    // Adds the state block that combatExtractFeaturesReuse just wrote into `features` with this `touched` list to
+    // the fingerprint (a, b): one word (index << 32 | float bits) per nonzero entry (index < 2^16), so equal blocks
+    // add equal amounts whatever order `touched` lists them in. Returns false (nothing added) when the rich block
+    // is off (g_richCombatFeatures): the narrow path leaves that block unmanaged.
+    bool combatStateFingerprint(const float *features, const std::vector<std::uint16_t> &touched,
+                                std::uint64_t &a, std::uint64_t &b);
 
     // POLICY feature layout = the combat state features above ++ per-ACTION features
     // (a comparator net scores each candidate action; softmax over a node's legal
@@ -177,6 +202,9 @@ namespace sts::search {
         // Input scaling and the card embedding's projection are folded into the
         // exported weights. Callers normalize logits with a softmax over edges.
         bool isPolicyMlp = false;
+        // Process-wide sequence number of the policy-MLP load (1, 2, ...; copies keep it): the exact prior pick
+        // cache (#1051) keys a net by it, so a later net at a reused address never matches stale entries.
+        std::uint64_t policyMlpLoadId = 0;
         int pmH1 = 0, pmH2 = 0;
         std::vector<float> pmStateW, pmActionW, pmCard, pmTargetW, pmB1, pmW2, pmB2, pmW3;
         std::vector<float> pmW2T;   // pmW2 transposed (h1 x h2), built by load
@@ -190,11 +218,17 @@ namespace sts::search {
         // blocks, `targetSlots[i]` combatActionTargetSlot of edge i (or -1).
         void predictPolicyMlp(const float *stateFeatures, const float *actionBlocks,
                               const int *targetSlots, int n, double *out) const;
+        // The same with the state's nonzero feature indices given (ascending, exactly the i with
+        // stateFeatures[i] != 0), e.g. from combatNonzeroStateFeatures.
+        void predictPolicyMlp(const float *stateFeatures, const std::uint16_t *stateNonzero, int stateNonzeroCount,
+                              const float *actionBlocks, const int *targetSlots, int n, double *out) const;
         // The node's base (pmH1 values, before any edge's terms and the relu):
         // b1, the v2 embedding rows and the state layer. predictPolicyMlp builds
         // its edges on it; relu(base) is the state embedding a value head on
         // the frozen trunk reads (research, exact_combat_solver --leaf-heads).
         void policyMlpBase(const float *stateFeatures, std::vector<float> &base) const;
+        void policyMlpBase(const float *stateFeatures, const std::uint16_t *stateNonzero, int stateNonzeroCount,
+                           std::vector<float> &base) const;
 
         // Compact copy of `trees` for predictPolicyActions, built by load for
         // policy tree ensembles whose children follow their parents (empty
@@ -209,6 +243,13 @@ namespace sts::search {
         std::vector<FlatNode> flatNodes;
         std::vector<int> flatRoots;
     };
+
+    // STS_SILVER_PRIOR_MLP_FMA (2026-11-15, #1052; default on when the CPU has FMA, not bit-identical to the
+    // earlier kernel; =0 restores it): predictPolicyMlp's per-edge layers at the deployed widths use fused
+    // multiply-adds. setPolicyMlpFma overrides the environment for tests and benches (0 off, 1 on (throws without
+    // FMA), -1 back to the environment); policyMlpFmaActive reports the choice.
+    void setPolicyMlpFma(int mode);
+    bool policyMlpFmaActive();
 
     extern CombatValueNet g_combatVNet;   // loaded value model (if any)
     extern bool   g_richCombatFeatures;   // fill the wide relic/card-location block (else narrow fast path)
