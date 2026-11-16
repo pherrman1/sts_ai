@@ -27925,7 +27925,7 @@ gameplay caller). No default change. Seeds: §775 block only. Cost ≈ 22 lane-h
 **Knowledge impact:** KB `architecture/combat-search.md` (infinity oracle section), `evaluation/current-research.md`
 (§671 section).
 
-## §TBD-a — Value-net leaf V0 / V1 (offline): on the played boss and Act-4-elite roots of D2's gate split, a per-edge Q head (d 64, 2 layers) trained on the teacher's sibling differences orders root actions like the mean of 23.4 Silver playouts [20.2, 26.9] at the cost of about one per edge → LEAF_PAYS; N_f1's value head is worth about one playout at 26× its cost (V0, NOT_SHOWN) (cloud + PC GPU, 2026-11-16)
+## §812 — Value-net leaf V0 / V1 (offline): on the played boss and Act-4-elite roots of D2's gate split, a per-edge Q head (d 64, 2 layers) trained on the teacher's sibling differences orders root actions like the mean of 23.4 Silver playouts [20.2, 26.9] at the cost of about one per edge → LEAF_PAYS; N_f1's value head is worth about one playout at 26× its cost (V0, NOT_SHOWN) (cloud + PC GPU, 2026-11-16)
 
 **Question (Philipp, 2026-11-14: "Ja dann versuch das value Netz", "Kann auch etwas teurer sein"):** can a net value
 Silver's new tree leaves better than one playout per unit of CPU?
@@ -27955,13 +27955,13 @@ Silver's new tree leaves better than one playout per unit of CPU?
 **Interpretation (Inference):** a head trained on sibling differences of the teacher's backed values ranks a boss
 root's actions like about 23 playouts for the price of one; a value head trained on outcomes does not (as §789).
 Untested: tree leaves deeper than played roots, the level error against exact terminal values, and play strength.
-**Decision:** LEAF_PAYS offline; the fight smoke (§TBD-b) did not carry it over. No default change. Seeds: none new.
+**Decision:** LEAF_PAYS offline; the fight smoke (§813) did not carry it over. No default change. Seeds: none new.
 Cost: leafbench on one 4-core cloud container, < 0.5 GPU-h.
 **Knowledge impact:** KB `research/combat-search/leaf-evaluation.md` (value-net leaf section).
 
-## §TBD-b — Value-net leaf V2 (smoke): §TBD-a's Q head as Silver's leaf value plays five Baalorlord bosses worse, +11.0 HP lost per fight on average under g16mb (4 of 5 bosses worse, fights longer) at 5.9× CPU per simulation; per-search level calibration does not repair it; as a Q-init (nodes ≥ 64 visits, 16 virtual visits) +2.4 HP at 1.18× CPU → NOT_SHOWN, line closed (cloud, 2026-11-16)
+## §813 — Value-net leaf V2 (smoke): §812's Q head as Silver's leaf value plays five Baalorlord bosses worse, +11.0 HP lost per fight on average under g16mb (4 of 5 bosses worse, fights longer) at 5.9× CPU per simulation; per-search level calibration does not repair it; as a Q-init (nodes ≥ 64 visits, 16 virtual visits) +2.4 HP at 1.18× CPU → NOT_SHOWN, line closed (cloud, 2026-11-16)
 
-**Question (follow-up to §TBD-a; Philipp chose the Q-init test on the decision card at 15:10 CET):** does `V1_d64`'s
+**Question (follow-up to §812; Philipp chose the Q-init test on the decision card at 15:10 CET):** does `V1_d64`'s
 Q head help Silver in boss fights, (a) as the value of new tree leaves instead of a playout, (b) as a Q-init with the
 playouts kept?
 **Data:** [RESULT](evidence/value_leaf_v2_20261116/RESULT.md), `results/smoke.json`, `results/shadow.json`; fight
