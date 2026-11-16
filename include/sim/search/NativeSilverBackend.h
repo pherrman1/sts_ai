@@ -105,6 +105,8 @@ namespace sts::search {
         std::int64_t minRootSteps = -1, maxRootSteps = -1;
         // Leaf playouts and the actions inside them (SilverSearchStats).
         std::int64_t rolloutPlayouts = 0, rolloutActions = 0;
+        // Leaves valued by the combat net's Q head instead of a playout, and its forwards (STS_SILVER_LEAF_QNET).
+        std::int64_t leafQValues = 0, leafQForwards = 0;
         // Roots searched by the Gumbel root (g_nativeSilverGumbelRootOverride).
         std::int64_t gumbelRoots = 0;
         // Roots whose root prior came from the native combat net (STS_SILVER_COMBATNET_PRIOR).
@@ -211,6 +213,9 @@ namespace sts::search {
     // (STS_SILVER_COMBATNET_PRIOR_MODEL) the root prior of the current thread's searches wherever the
     // STS_SILVER_ROOT_PRIOR root prior is on, false keeps g7f_E. Unset keeps STS_SILVER_COMBATNET_PRIOR.
     extern thread_local std::optional<bool> g_nativeSilverCombatNetPriorOverride;
+    // Research arm override of STS_SILVER_LEAF_QNET's scope (0 off, 1 boss rooms + Act-4 elites, 2 all rooms); the
+    // Q head is STS_SILVER_LEAF_QNET_MODEL's either way.
+    extern thread_local std::optional<int> g_nativeSilverLeafQNetOverride;
     // ... and, when set, the softmax temperature of that prior (unset: STS_SILVER_COMBATNET_PRIOR_TEMP).
     extern thread_local std::optional<double> g_nativeSilverCombatNetPriorTempOverride;
     // Research-only (§452 tree prior): when set to K, every search that has a

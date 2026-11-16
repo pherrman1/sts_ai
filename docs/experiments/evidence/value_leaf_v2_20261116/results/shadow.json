@@ -1,0 +1,87 @@
+{
+ "all": {
+  "n": 403782,
+  "v_minus_q": -0.7,
+  "sd": 25.0,
+  "v_mean": 114.1,
+  "q_mean": 114.8
+ },
+ "type_CARD": {
+  "n": 207770,
+  "v_minus_q": 0.74,
+  "sd": 26.7,
+  "v_mean": 112.9,
+  "q_mean": 112.1
+ },
+ "type_POTION": {
+  "n": 48945,
+  "v_minus_q": -4.65,
+  "sd": 11.4,
+  "v_mean": 124.0,
+  "q_mean": 128.6
+ },
+ "type_SELECT1": {
+  "n": 9730,
+  "v_minus_q": 2.57,
+  "sd": 25.1,
+  "v_mean": 117.3,
+  "q_mean": 114.8
+ },
+ "type_END_TURN": {
+  "n": 137337,
+  "v_minus_q": -1.68,
+  "sd": 25.5,
+  "v_mean": 112.3,
+  "q_mean": 114.0
+ },
+ "enc_AUTOMATON": {
+  "n": 113417,
+  "v_minus_q": 8.58,
+  "sd": 34.3,
+  "v_mean": 108.2,
+  "q_mean": 99.6
+ },
+ "enc_HEXAGHOST": {
+  "n": 155808,
+  "v_minus_q": -4.28,
+  "sd": 10.3,
+  "v_mean": 133.9,
+  "q_mean": 138.2
+ },
+ "enc_THE_GUARDIAN": {
+  "n": 134557,
+  "v_minus_q": -4.36,
+  "sd": 25.6,
+  "v_mean": 96.2,
+  "q_mean": 100.6
+ },
+ "within_parent": {
+  "leaves": 275349,
+  "slope_v_on_q": 1.103,
+  "corr": 0.412,
+  "sd_q": 6.55,
+  "sd_v": 17.51,
+  "pair_order_agree": 0.745,
+  "pairs": 631798
+ },
+ "within_parent_CARD": {
+  "n": 149550,
+  "mean_qd": 2.46,
+  "mean_vd": 2.9
+ },
+ "within_parent_POTION": {
+  "n": 40247,
+  "mean_qd": -3.56,
+  "mean_vd": -3.67
+ },
+ "within_parent_SELECT1": {
+  "n": 7457,
+  "mean_qd": 0.0,
+  "mean_vd": 0.0
+ },
+ "within_parent_END_TURN": {
+  "n": 78095,
+  "mean_qd": -2.87,
+  "mean_vd": -3.66
+ }
+}

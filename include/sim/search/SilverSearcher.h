@@ -164,6 +164,8 @@ namespace sts::search {
         std::int64_t descentBoundRollouts = 0;   // descents cut at the depth backstop (#544)
         std::int64_t rolloutPriorPicks = 0;      // playout card plays chosen by rolloutPrior (research)
         std::int64_t rolloutPriorCalls = 0;      // rolloutPrior evaluations inside playouts (research)
+        std::int64_t leafQValues = 0;            // leaves valued by leafQNet instead of a playout (research)
+        std::int64_t leafQForwards = 0;          // leafQNet calls (one per decision node, cached in Node::leafQ)
     };
 
     // Diagnostic counts for newly executed simulations only. Reset by the
@@ -327,6 +329,8 @@ namespace sts::search {
             std::uint64_t randomnessBase = 0;
             std::vector<double> prior;        // tree prior (research), indexed like edges; empty = none
             bool priorNet = false;            // prior came from nodePriorNet (scored at treePriorNetMinVisits)
+            std::vector<double> leafQ;        // leafQNet's per-edge values (research), indexed like edges; empty = none
+            double leafQOffset = 0;           // Q-init: visit-weighted mean (child value - leafQ) when leafQ was set
             double backedValue = 0;           // max-backup value (research, maxBackupMinVisits > 0)
             bool hasBackedValue = false;
             std::uint32_t pruneEpoch = 0;     // order dominance (#1057): epoch its edges' pruned flags belong to
@@ -411,6 +415,30 @@ namespace sts::search {
         // node priors (selectBestEdgeToSearch's untried-edge order).
         std::function<std::vector<double>(const BattleContext &, const std::vector<Edge> &)> nodePriorNet;
         int treePriorNetMinVisits = 256;
+        // Research (value-net-as-leaf V2, STS_SILVER_LEAF_QNET; off while empty): per-edge values of a decision
+        // node in Silver score units (the combat net's Q head). A new or unvisited child reached through edge e of
+        // decision node P (directly, or as a chance outcome of e) is valued at leafQNet(P)[e] instead of a playout;
+        // terminal children keep evaluateEndState, and cycle / depth-bound leaves keep their playout. One call per
+        // decision node, cached in Node::leafQ.
+        std::function<std::vector<double>(const BattleContext &, const std::vector<Edge> &)> leafQNet;
+        // Research diagnostic (STS_SILVER_LEAF_QNET_SHADOW): when set with leafQNet, such leaves are still valued by
+        // a playout, and this is called with the parent's state and edges, leafQNet's values, the edge index and the
+        // playout's value, so the net can be compared with playouts on real tree leaves.
+        std::function<void(const BattleContext &, const std::vector<Edge> &, const std::vector<double> &, int, double)>
+            leafQShadow;
+        // Research (STS_SILVER_LEAF_QNET_CALIBRATE=K, 0 = off): the first K net-scope leaves after
+        // resetLeafQCalibration() are valued by a playout, and later ones by leafQNet + the mean (playout - net) of
+        // those K, which removes the net's per-fight level offset against exact terminal values.
+        int leafQCalibrate = 0;
+        // Research (STS_SILVER_LEAF_QNET_QINIT=K:M, 0 = off): leafQNet is not a leaf value; instead a non-root
+        // decision node with >= 2 edges calls it once when its simulation count reaches K, and selection there values
+        // edge e at (M * (Q_e + offset) + n_e * value_e) / (M + n_e), offset = the node's visit-weighted mean
+        // (value - Q) at that moment (removes the net's level offset). Leaves keep their playouts.
+        int leafQInitVisits = 0;
+        double leafQInitWeight = 0;
+        int leafQCalibCount = 0;
+        double leafQCalibSum = 0;
+        void resetLeafQCalibration() { leafQCalibCount = 0; leafQCalibSum = 0; }
         // Research (STS_SILVER_MAX_BACKUP=m, default 0 = off): selection values a child by a
         // max backup instead of its mean playout value. A decision node is worth its best
         // child with at least m simulations (its mean while none has), a chance node the

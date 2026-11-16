@@ -86,7 +86,11 @@ namespace {
         return in;
     }
 
-    json outJson(const CombatTokOutputs &o) { return {{"logits", o.logits}, {"value", o.value}, {"aux", o.aux}}; }
+    json outJson(const CombatTokOutputs &o) {
+        json j = {{"logits", o.logits}, {"value", o.value}, {"aux", o.aux}};
+        if (!o.q.empty()) j["q"] = o.q;
+        return j;
+    }
 
     CombatTokNet loadNet(const std::string &path) {
         CombatTokNet net;
@@ -163,6 +167,13 @@ namespace {
             const json o = outJson(out);
             for (const char *k : {"logits", "value", "aux"})
                 bad += compare(o.at(k), want.at(k), k, 2e-4, 2e-4, log, reported);
+            // Q-head fixtures: the head's output is in Silver points (x kCtnQScale), so the tolerance scales with it
+            if (want.contains("q") != o.contains("q")) {
+                ++bad;
+                log << "  q: fixture and net disagree on the Q head\n";
+            } else if (want.contains("q")) {
+                bad += compare(o.at("q"), want.at("q"), "q", 2e-2, 2e-4, log, reported);
+            }
             for (std::size_t e = 0; e < out.logits.size() && e < want.at("logits").size(); ++e)
                 maxLogitErr = std::max(maxLogitErr, std::fabs(out.logits[e] - want.at("logits")[e].get<double>()));
             if (bad) {

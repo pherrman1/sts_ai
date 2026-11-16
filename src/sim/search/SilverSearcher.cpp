@@ -309,6 +309,8 @@ search::SilverSearcher::Node *search::SilverSearcher::allocNode() {
         n->stochasticAction = Action{};
         n->prior.clear();
         n->priorNet = false;
+        n->leafQ.clear();
+        n->leafQOffset = 0;
         n->backedValue = 0;
         n->hasBackedValue = false;
         n->pruneEpoch = 0;
@@ -489,6 +491,38 @@ search::SilverTreeProfile::Stop search::SilverSearcher::stepImpl() {
     const Node *segRoot = root;   // first node of the current deterministic segment (DOM_SEG_*)
     int depth = 0;
     int actionDepth = 0;
+    // leafQNet: the decision node and edge last taken (a chance node's outcomes take its parent's edge value).
+    Node *qParent = nullptr;
+    int qEdge = -1;
+    // A new or unvisited leaf's value: leafQNet's value of the edge that reached it, else a playout.
+    const auto leafValue = [&](Node *leaf) -> double {
+        if (leafQNet && leafQInitVisits == 0 && qParent != nullptr && leaf->state->outcome == Outcome::UNDECIDED) {
+            if (qParent->leafQ.size() != qParent->edges.size()) {
+                qParent->leafQ = leafQNet(*qParent->state, qParent->edges);
+                ++stats.leafQForwards;
+                if (qParent->leafQ.size() != qParent->edges.size())
+                    throw std::runtime_error("SilverSearcher: leafQNet size differs from the node's edges");
+            }
+            ++stats.leafQValues;
+            if (leafQCalibrate > 0) {
+                if (leafQCalibCount < leafQCalibrate) {
+                    BattleContext &rollout = (rolloutScratch = *leaf->state);
+                    const double playout = rolloutToEnd(rollout, actionDepth);
+                    leafQCalibSum += playout - qParent->leafQ[qEdge];
+                    ++leafQCalibCount;
+                    return playout;
+                }
+                return qParent->leafQ[qEdge] + leafQCalibSum / leafQCalibCount;
+            }
+            if (!leafQShadow) return qParent->leafQ[qEdge];
+            BattleContext &rollout = (rolloutScratch = *leaf->state);
+            const double playout = rolloutToEnd(rollout, actionDepth);
+            leafQShadow(*qParent->state, qParent->edges, qParent->leafQ, qEdge, playout);
+            return playout;
+        }
+        BattleContext &rollout = (rolloutScratch = *leaf->state);
+        return rolloutToEnd(rollout, actionDepth);
+    };
     while (true) {
         // The transposition graph can cycle (e.g. Entropic Brew re-rolling itself);
         // on-path checks below roll out instead, and this bound is a backstop.
@@ -528,8 +562,7 @@ search::SilverTreeProfile::Stop search::SilverSearcher::stepImpl() {
             segRoot = child;
             if (child->simulationCount == 0) {
                 const bool created = outcomeCreated;
-                BattleContext &rollout = (rolloutScratch = *child->state);
-                updateFromPlayout(searchStack, rolloutToEnd(rollout, actionDepth));
+                updateFromPlayout(searchStack, leafValue(child));
                 return created ? Stop::NEW_LEAF : Stop::UNVISITED_NODE;
             }
             cur = child;
@@ -559,6 +592,21 @@ search::SilverTreeProfile::Stop search::SilverSearcher::stepImpl() {
             if (cur->prior.size() != cur->edges.size())
                 throw std::runtime_error("SilverSearcher: tree prior size differs from the node's edges");
         }
+        if (leafQNet && leafQInitVisits > 0 && cur != root && cur->edges.size() >= 2 && cur->leafQ.empty()
+                && cur->simulationCount >= leafQInitVisits) {
+            cur->leafQ = leafQNet(*cur->state, cur->edges);
+            ++stats.leafQForwards;
+            if (cur->leafQ.size() != cur->edges.size())
+                throw std::runtime_error("SilverSearcher: leafQNet size differs from the node's edges");
+            double num = 0, den = 0;
+            for (std::size_t i = 0; i < cur->edges.size(); ++i) {
+                const auto &e = cur->edges[i];
+                if (e.visitCount == 0 || e.node == nullptr || e.node->simulationCount == 0) continue;
+                num += e.visitCount * (selectionValue(*e.node) - cur->leafQ[i]);
+                den += e.visitCount;
+            }
+            cur->leafQOffset = den > 0 ? num / den : 0.0;
+        }
         if (nodePriorNet && cur != root && !cur->priorNet && cur->edges.size() >= 2
                 && cur->simulationCount >= treePriorNetMinVisits) {
             cur->prior = nodePriorNet(*cur->state, cur->edges);
@@ -574,6 +622,8 @@ search::SilverTreeProfile::Stop search::SilverSearcher::stepImpl() {
         if (cur == root) currentRootEdge = selectIdx;
         Edge &edge = cur->edges[selectIdx];
         ++edge.visitCount;
+        qParent = cur;
+        qEdge = selectIdx;
         if (profile) ++actionDepth;
 
         if (edge.node != nullptr) {
@@ -638,8 +688,7 @@ search::SilverTreeProfile::Stop search::SilverSearcher::stepImpl() {
         }
         searchStack.push_back(child);
         if (child->simulationCount == 0) {
-            BattleContext &rollout = (rolloutScratch = *child->state);
-            updateFromPlayout(searchStack, rolloutToEnd(rollout, actionDepth));
+            updateFromPlayout(searchStack, leafValue(child));
             return created ? Stop::NEW_LEAF : Stop::UNVISITED_NODE;
         }
         dominanceParent = cur;
@@ -1105,7 +1154,11 @@ double search::SilverSearcher::evaluateEdge(const Node &parent, int edgeIdx, dou
         return std::numeric_limits<double>::infinity();
     }
     // Value from the (possibly shared) child; exploration from this edge's own visits.
-    const double quality = selectionValue(*edge.node);
+    double quality = selectionValue(*edge.node);
+    if (leafQInitWeight > 0 && &parent != root && parent.leafQ.size() == parent.edges.size()) {
+        quality = (leafQInitWeight * (parent.leafQ[edgeIdx] + parent.leafQOffset) + edge.visitCount * quality)
+            / (leafQInitWeight + edge.visitCount);
+    }
     const double exploration = edge.node->isRandomNode ? explorationParameterChance : explorationParameter;
     const double value = quality + exploration * std::sqrt(logParentVisits / (edge.visitCount + 1));
     if (rootPriorWeight != 0 && rootPriorBonus && &parent == root && edgeIdx < static_cast<int>(rootPrior.size())) {

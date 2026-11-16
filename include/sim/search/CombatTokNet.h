@@ -22,6 +22,7 @@ namespace sts::search {
     constexpr int kCtnCardMax = 128, kCtnMonMax = 5, kCtnMonNum = 128, kCtnStatusMax = 32;
     constexpr int kCtnQueueMax = 8, kCtnQueueLen = 24, kCtnSelMax = 10, kCtnActionLen = 47;
     constexpr int kCtnPotionSlots = 5, kCtnValueClasses = 21, kCtnAux = 2;
+    constexpr float kCtnQScale = 100.0f;   // model.py Q_SCALE: the Q head's output unit in Silver score points
 
     // One root as tensorize.py stores it (one row of each array).
     struct CombatTokInputs {
@@ -41,6 +42,7 @@ namespace sts::search {
         std::vector<float> logits;                          // policy logit per action
         std::array<float, kCtnValueClasses> value{};        // class 0 = death, 1..20 = end HP / max HP bins
         std::array<float, kCtnAux> aux{};                   // HP lost over the next 1 and 2 turns, / 10
+        std::vector<float> q;                               // Q head (qTrained nets): per action, Silver score units
     };
 
     class CombatTokNet {
@@ -52,6 +54,8 @@ namespace sts::search {
         int dim() const { return d_; }
         int layerCount() const { return static_cast<int>(layers_.size()); }
         bool valueTrained() const { return valueOn_; }
+        // The file carries the per-edge Q head (model.py CombatNet(qhead=True); value-net-as-leaf V1).
+        bool qTrained() const { return qOn_; }
 
         struct Linear {
             int in = 0, out = 0;
@@ -65,10 +69,10 @@ namespace sts::search {
 
     private:
         int d_ = 0, heads_ = 0;
-        bool valueOn_ = false, auxOn_ = false;
+        bool valueOn_ = false, auxOn_ = false, qOn_ = false;
         std::vector<float> card_, zone_, mon_, monIdx_, move_, stat_, pot_, tokType_;
         std::vector<float> aType_, aCard_, aPot_, aTarget_, aSel_;
-        Linear cardNum_, monNum_, statNum_, queue_, glob0_, glob2_, aNum_, pol0_, pol2_, val0_, val2_, aux0_, aux2_;
+        Linear cardNum_, monNum_, statNum_, queue_, glob0_, glob2_, aNum_, pol0_, pol2_, val0_, val2_, aux0_, aux2_, qh0_, qh2_;
         std::vector<Layer> layers_;
         std::vector<float> normW_, normB_;
     };

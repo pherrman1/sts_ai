@@ -27924,3 +27924,67 @@ or an infinite head could save HP or CPU there, not fights or Heart kills.
 gameplay caller). No default change. Seeds: §775 block only. Cost ≈ 22 lane-hours game replay + 0.15 CPU-h oracle.
 **Knowledge impact:** KB `architecture/combat-search.md` (infinity oracle section), `evaluation/current-research.md`
 (§671 section).
+
+## §TBD-a — Value-net leaf V0 / V1 (offline): on the played boss and Act-4-elite roots of D2's gate split, a per-edge Q head (d 64, 2 layers) trained on the teacher's sibling differences orders root actions like the mean of 23.4 Silver playouts [20.2, 26.9] at the cost of about one per edge → LEAF_PAYS; N_f1's value head is worth about one playout at 26× its cost (V0, NOT_SHOWN) (cloud + PC GPU, 2026-11-16)
+
+**Question (Philipp, 2026-11-14: "Ja dann versuch das value Netz", "Kann auch etwas teurer sein"):** can a net value
+Silver's new tree leaves better than one playout per unit of CPU?
+**Data:** [RESULT](evidence/value_leaf_v0v1_20261114/RESULT.md), `results/*.json`, `analyze.py`; raw data
+`/mnt/project-files/combat-plan/value-leaf/v0/`, `v1/`. Code: `one_combat leafbench` (f2852b16), the Q head
+(`tools/combat_net/model.py --q-head`, b403c2fb), `leaf_v1_predict.py`.
+- Roots: D2's played decision roots (§787) of runs with T1's split_of(seed) = 0, a split no net trained or
+  validated on: 564 runs, 60,869 multi-edge roots; truth T = the edge's max-backed value `qBacked` in the played
+  16k G16 + mb4 search, edges with ≥ 256 visits. Per edge 8 playouts (all rooms) or 32 (boss + Act-4 elite rerun,
+  17,479 roots); roots with a playout more than 500 from T dropped (8 and 24).
+- Metric: order accuracy on edge pairs with |ΔT| ≥ 2; k_ord = playouts whose mean orders as well (log-linear on
+  R1..R32), run-clustered bootstrap (1,000, seed 20261114). Rule revised after V0 and fixed before V1: LEAF_PAYS if
+  lo95(k_ord) ≥ the cost ratio c on boss + Act-4 elite and no boss act is worse than R1.
+- V1 nets: `V1_d64` (325k parameters, from scratch, 3 epochs) and `V1_d128` (1.32 M, from N_f1, 1 epoch) on T1's
+  D2 tensors (training splits 2-9). Loss: Huber level + 4 × within-root residual variance on edges ≥ 64 visits.
+
+**Result:**
+- V0: N_f1's calibrated value head orders 0.691 of boss / Act-4-elite pairs against R1's 0.688 (+0.003 [−0.003,
+  +0.008]), k_ord 1.1 at c = 26 → NOT_SHOWN; all rooms 0.748 vs R1 0.728 and R8 0.802.
+- V1, boss + Act-4 elite (32 playouts): R1 0.687, R8 0.753, R32 0.797; **V1_d64 0.787, k_ord 23.4 [20.2, 26.9] at
+  c = 6.0** (1.06 ms per root forward vs 0.18 ms per boss playout; 6.1 edges per root); V1_d128 0.790, k_ord 26.0
+  [22.6, 30.0] at about 4× d64's cost. By room (d64): act-1 boss 10.4 [7.9, 13.7], act-2 boss 26.2 [19.4, >32],
+  act-3 boss 27.2 [22.6, >32], Act-4 boss 27.5 [18.1, >32], Act-4 elite 18.8 [13.4, 27.2] → **LEAF_PAYS**.
+- All rooms (8 playouts): Q head 0.821 [0.817, 0.824] vs R8 0.803 [0.799, 0.806]; behind R8 only in act-1 hallway and
+  elite roots. Level MSE worse than R8 (314 vs 109).
+**Interpretation (Inference):** a head trained on sibling differences of the teacher's backed values ranks a boss
+root's actions like about 23 playouts for the price of one; a value head trained on outcomes does not (as §789).
+Untested: tree leaves deeper than played roots, the level error against exact terminal values, and play strength.
+**Decision:** LEAF_PAYS offline; the fight smoke (§TBD-b) did not carry it over. No default change. Seeds: none new.
+Cost: leafbench on one 4-core cloud container, < 0.5 GPU-h.
+**Knowledge impact:** KB `research/combat-search/leaf-evaluation.md` (value-net leaf section).
+
+## §TBD-b — Value-net leaf V2 (smoke): §TBD-a's Q head as Silver's leaf value plays five Baalorlord bosses worse, +11.0 HP lost per fight on average under g16mb (4 of 5 bosses worse, fights longer) at 5.9× CPU per simulation; per-search level calibration does not repair it; as a Q-init (nodes ≥ 64 visits, 16 virtual visits) +2.4 HP at 1.18× CPU → NOT_SHOWN, line closed (cloud, 2026-11-16)
+
+**Question (follow-up to §TBD-a; Philipp chose the Q-init test on the decision card at 15:10 CET):** does `V1_d64`'s
+Q head help Silver in boss fights, (a) as the value of new tree leaves instead of a playout, (b) as a Q-init with the
+playouts kept?
+**Data:** [RESULT](evidence/value_leaf_v2_20261116/RESULT.md), `results/smoke.json`, `results/shadow.json`; fight
+records `/mnt/project-files/combat-plan/value-leaf/v2/smoke_fights.tar.gz`. Code on this branch (all default off):
+native Q head in `CombatTokNet` (PyTorch parity 1.1e-4, ctest `combat_tok_net_q_parity`), `SilverSearcher::leafQNet`
+behind `STS_SILVER_LEAF_QNET` / arm part `lq`, diagnostics `_SHADOW`, `_CALIBRATE`, `_QINIT`.
+- `one_combat expertfights` on §770's environment and copy seeds, §770's two smoke runs: five act-1-3 bosses × 4
+  copies, production, g16mb (`gsh16+flat16000+mb4`), g16mb + leaf, production + leaf; one 4-core cloud container.
+  A pre-registered gate on all 528 boss fights was drafted and not run.
+**Result:**
+- Switch off: production and g16mb equal §772's units in 20 / 20 copies each.
+- Leaf: g16mb + leaf − g16mb +25.0 (Hexaghost), +7.3 (Guardian), +9.7 (Automaton), +13.6 (Time Eater), −0.5 (Donu
+  and Deca) HP per fight, mean +11.0; production + leaf − production mean +9.5; leaf fights 1-4 turns longer. CPU per
+  simulation 5.9× (3.0-3.9 leaf values per 0.8 ms forward against 30-64 µs per simulation).
+- Shadow on 403,782 tree leaves: within a parent the net follows the playouts (slope 1.10, 74.5% of sibling pairs
+  ordered alike), but its level is off per fight (net − playout +4.3 Hexaghost, +4.4 Guardian, −8.6 Automaton, +4.7
+  potion edges). Calibrating that offset per search (first 64 leaves played out): +16.0 / +11.8 / +21.0 on three
+  bosses, no repair.
+- Q-init (K 64, M 16): +1.2 / +5.2 / +3.0 / +3.2 / −0.8, mean +2.4, at 1.18× CPU.
+**Interpretation (Inference):** good sibling order at played roots did not make a good leaf: each net leaf carries
+its parent's level error at every visit and across a correlated subtree, where playout noise averages out, and the
+search misjudges which lines end a fight well. Even a repaired leaf would cost more per simulation than §774's 64k
+budget (3.8×, −1.13 HP on these bosses). Smoke only: 4 copies per boss, no CIs; the leaf's direction is consistent.
+Untested: a value trained on tree states (including bad actions), a much cheaper forward, playout mixing at equal CPU.
+**Decision:** NOT_SHOWN; fight gate not run; value-net leaf line closed. Code stays default off. Seeds: none new
+(§770's external Baalorlord seeds). Cost ≈ 6 core-hours.
+**Knowledge impact:** KB `research/combat-search/leaf-evaluation.md` (value-net leaf section).
