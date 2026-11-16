@@ -94,7 +94,7 @@ outside Ironclad/red-color-domain roots with proven no-Shard provenance.
 **Natural frequency (§TBD, #1054 stage 0, 2026-11-16).** On every turn start of 128 replayed §775 G16 + mb4 games
 (natural-root mode): 1 run with a certified infinite (0.8%, Wilson 95% [0.1%, 4.3%]; Sundial + Pommel Strike vs The
 Champ, which the search played too), 2 with a certified infinite or candidate (1.6%, [0.4%, 5.5%]); no Heart fight
-and none of the 80 lost fights shows a loop; all 18 fights with a 25+ card turn were won. Stages 1-2 (Silver proven
+and none of the 80 lost fights shows a damaging loop (one won Heart fight has a STALL_LOOP turn); all 18 fights with a 25+ card turn were won. Stages 1-2 (Silver proven
 win, PPO infinite head) are not justified under the current policy. [Evidence](../../experiments/evidence/infinite_combo_freq_20261115/README.md).
 Qualify realistic recall and public-state handling before any natural-root
 annotation; the current shuffle quotient also excludes exhausted-down decks.

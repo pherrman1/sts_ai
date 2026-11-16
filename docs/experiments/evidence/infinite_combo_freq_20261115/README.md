@@ -7,7 +7,7 @@ infinites or candidates occur in at least about 5% of runs or explain a measurab
 Status: **done (128 seeds, 2026-11-16).** Result: 1 of 128 runs has a certified same-turn infinite (0.8%,
 Wilson 95% [0.1%, 4.3%]), 2 of 128 a certified infinite or a candidate (1.6%, [0.4%, 5.5%]); the played search
 won every fight with a certificate, a candidate or a turn of 25+ cards; no lost fight and no Heart fight shows a
-loop. **No go for stages 1-2.** Descriptive, no gate, no default change.
+damaging loop (one Heart turn is a STALL_LOOP, a repeat without damage; that fight was won). **No go for stages 1-2.** Descriptive, no gate, no default change.
 
 ## Design
 
@@ -113,7 +113,8 @@ here `main128/analysis.json`, `main128/deep_caps.json` and the `.done` files.
   cycle) in a 34-card Sundial deck with Dark Embrace ×2; the replay ends with `control_state_changed`, the continuation search stays a candidate. The game won that fight in its next turn with 25
   cards. Both hits are Sundial decks: 14 runs have Sundial, 9 Sundial + Pommel Strike.
 - **Heart:** 60 runs reached it, 48 killed (80%); no Heart fight has a certified or candidate turn, so infinites
-  explain none of the 12 Heart losses. Killed with vs without a certificate: 0/0 vs 48/60.
+  explain none of the 12 Heart losses. One Heart turn is a STALL_LOOP (seed 111378381, turn 6, 17 HP: a repeated
+  state without damage, not an infinite); that fight was won. It is the only non-NONE verdict besides the two hits. Killed with vs without a certificate: 0/0 vs 48/60.
 - **Missed infinites:** none in the sense of a fight not won on that turn. Of the 80 lost fights (one per lost run:
   act 1-3 bosses 33, Heart 12, elites 26, hallway 8, event 1), none has a non-NONE verdict; their largest turn has 20
   cards; 27 of them have at least one node-capped state.

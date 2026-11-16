@@ -27825,7 +27825,7 @@ Descriptive: the Heart-trained online critic ranks act-1 survival much worse tha
 **Decision:** NONE. #1050's encounter-list direction is closed (privileged critic, step 2 via it, net variant). No
 default change. Seeds: none. Cost ≈ 1 h PC CPU, no GPU, no cloud core-hours.
 **Knowledge impact:** KB `research/a20-ppo-plan.md` (critic ceiling paragraph).
-## §TBD — Same-turn infinites in G16 + mb4 whole runs (#1054 stage 0): §671's oracle in a new natural-root mode on every turn start of 128 replayed §775 games (exact reproduction, 15,261 states): 1 run of 128 has a certified infinite (0.8%, Wilson 95% [0.1%, 4.3%]; Sundial + Pommel Strike vs The Champ, played by the search too), 2 of 128 a certified infinite or candidate (1.6%, [0.4%, 5.5%]); no Heart fight and no lost fight shows a loop → stages 1-2 not justified (cloud CPU, §775 seeds, 2026-11-16)
+## §TBD — Same-turn infinites in G16 + mb4 whole runs (#1054 stage 0): §671's oracle in a new natural-root mode on every turn start of 128 replayed §775 games (exact reproduction, 15,261 states): 1 run of 128 has a certified infinite (0.8%, Wilson 95% [0.1%, 4.3%]; Sundial + Pommel Strike vs The Champ, played by the search too), 2 of 128 a certified infinite or candidate (1.6%, [0.4%, 5.5%]); no Heart fight and no lost fight shows a damaging loop → stages 1-2 not justified (cloud CPU, §775 seeds, 2026-11-16)
 
 **Question (Philipp, issue #1054, 2026-11-15):** how often do same-turn infinites occur in our runs, by act and room;
 do they change Heart kills; does the search miss them; what does the oracle cost? Stages 1-2 (Silver proven win, PPO
@@ -27846,7 +27846,8 @@ or phase change). Recall on planted Dropkick loops in the pilot's real contexts:
 - The certificate: seed 111378328, act-2 boss The Champ, turn 2: Sundial + Pommel Strike / Pommel Strike+ two-card
   cycle in a 19-card deck, kill after 10 cycles. The game played 21 cards that turn and won the fight (13 HP spent;
   the oracle's line spends none). The candidate: seed 111378341, act-3 Maw, Sundial deck, won the next turn.
-- Heart: 48 / 60 killed, no Heart fight with a certified or candidate turn. Lost fights: 80, none with a non-NONE
+- Heart: 48 / 60 killed, no Heart fight with a certified or candidate turn (one STALL_LOOP, seed 111378381 turn 6,
+  a repeat without damage; that fight was won). Lost fights: 80, none with a non-NONE
   verdict, largest turn 20 cards.
 - Proxies: 18 fights in 11 runs have a turn with ≥ 25 cards (max 41), all won; no fight at the turn or action cap.
   All 18 such turns are node-capped; at 2,000,000 nodes and depth 64 all stay NONE (17 still capped).
