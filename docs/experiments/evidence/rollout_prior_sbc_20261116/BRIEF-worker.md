@@ -1,9 +1,9 @@
 # Simulation-balanced playout policy (GS: candidate SBC instead of V as G16 + mb4's prior-playout policy, against §815's GP): cloud worker brief
 
-YOUR WORKER NUMBER: W=<n>   (1..32; pass it unpadded, never 03)
+YOUR WORKER NUMBER: W=<n>   (1..40; pass it unpadded, never 03)
 RUN_COMMIT=<RUN_COMMIT>  CODE_COMMIT=<CODE_COMMIT>  CAMPAIGN=docs/experiments/evidence/rollout_prior_sbc_20261116
 
-Philipp authorized this test on 2026-11-16 20:33 CET in the thread for issue #1053 ("ja zu spiel test"), 32 workers.
+Philipp authorized this test on 2026-11-16 20:33 CET in the thread for issue #1053 ("ja zu spiel test"); 40 workers (Philipp 21:30 CET: "nimm 40 worker").
 - Do not change seeds, scripts, environments, binary, weights or timeouts.
 - Work in /home/user/sts_ai. Run nothing from /mnt/project-files (noexec).
 - The worker script uploads only to /mnt/project-files/rollout-prior-sbc (units/, claims/, wWW.DONE.json). Write
@@ -27,5 +27,5 @@ Never kill a unit or one_combat process. A unit that times out ends with its rc 
 continues. If the container restarts, run steps 1-3 again at once (finished units are skipped).
 Keep the session alive until you are told the tar is verified.
 Expect 3 to 60 min per unit (one whole A20 run on one seed), 4 units at a time; 1,056 units shared by the workers
-through the queue (about 250 lane-hours, so about 2-2.5 h on 32 workers plus the slowest game).
+through the queue (about 250 lane-hours, so about 1.5-2 h on 40 workers plus the slowest game).
 When your queue is empty and you only wait, that is normal: stay idle with the wait armed.
