@@ -40,6 +40,7 @@
 
 #include "sim/search/CombatTokNet.h"
 #include "sim/search/CombatValueNet.h"
+#include "sim/search/SearchRng.h"
 #include "sim/search/SilverSearcher.h"
 #include "sim/search/SilverWireJson.h"
 #include "sim/search/SilverWireState.h"
@@ -368,6 +369,102 @@ void silverPolicyMlpCheck(const std::string &modelPath, const std::string &prefi
         report["gbmTrees"] = gbm.trees.size();
     }
     std::cout << report.dump() << '\n';
+}
+
+// ---- playoutvaluebench (research, #1053 offline playout test 2026-11-16) ----
+// one_combat playoutvaluebench OUT.jsonl PLAYOUTS ARMS < rows.jsonl
+// Rows: silverazgen rows with `wire` (root or extra). For every row and arm (comma list: g7f_E = STS_SILVER_ROOT_PRIOR's
+// policy, st=PATH = a student policy MLP, greedy = Silver's heuristic rollout agent), PLAYOUTS playouts from the row's
+// state with the searcher configured as rolloutpolicybench's (whole-run boss-room search: rollout root table from
+// STS_SILVER_ROOT_PRIOR, prior playouts unless greedy). Playout i reseeds the state's search RNG streams with the same
+// seed in every arm (common random numbers), so arms differ only by their policy. Writes one line per row and arm: the
+// playout scores (Silver's leaf value, SilverSearcher::scoreEndState scale), wins, end HP, actions and CPU seconds.
+// Plays no game seed.
+void playoutValueBench(const std::string &outPath, int playouts, const std::string &armList) {
+    const auto &priorPath = search::nativeSilverRootPriorPath();
+    if (priorPath.empty()) throw std::runtime_error("playoutvaluebench: needs STS_SILVER_ROOT_PRIOR");
+    search::CombatValueNet tableNet;
+    if (!tableNet.load(priorPath) || !tableNet.isPolicyMlp)
+        throw std::runtime_error("playoutvaluebench: STS_SILVER_ROOT_PRIOR must be a policy MLP");
+    if (playouts < 1) throw std::runtime_error("playoutvaluebench: PLAYOUTS must be >= 1");
+    std::vector<std::string> arms;
+    {
+        std::stringstream ss(armList);
+        std::string a;
+        while (std::getline(ss, a, ',')) arms.push_back(a);
+    }
+    std::ofstream out(outPath);
+    if (!out) throw std::runtime_error("playoutvaluebench: cannot open " + outPath);
+    auto cpuNow = [] {
+        timespec ts{};
+        clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts);
+        return ts.tv_sec + ts.tv_nsec * 1e-9;
+    };
+    std::map<std::string, std::unique_ptr<search::CombatValueNet>> students;
+    std::string line;
+    long long rows = 0;
+    while (std::getline(std::cin, line)) {
+        if (line.empty()) continue;
+        const auto row = nlohmann::json::parse(line);
+        if (!row.contains("wire") || row.at("wire").is_null()) continue;
+        const auto state = fromWire(row.at("wire"));
+        const std::uint64_t base = key(row.at("seed").get<std::uint64_t>(), row.at("fight").get<std::uint64_t>(),
+                                       row.at("decision").get<std::uint64_t>(), 0x9a7e0babULL);
+        ++rows;
+        for (const auto &arm : arms) {
+            nlohmann::json res = {{"seed", row.at("seed")}, {"fight", row.at("fight")}, {"decision", row.at("decision")},
+                                  {"arm", arm}, {"playouts", playouts}};
+            if (row.contains("k")) res["k"] = row.at("k");
+            try {
+                search::SilverSearcher s(plannerRoot(state.bc, base), state.context);
+                s.prepareRootActions();
+                s.maxBackupMinVisits = 4;
+                s.rootPrior = search::nativeSilverRootPrior(s);
+                s.rootPriorWeight = search::nativeSilverRootPriorWeight();
+                s.nodePrior = search::nativeSilverPolicyPrior;
+                s.treePriorMinVisits = 8;
+                search::nativeSilverRolloutRootTable(s.rootSearchState(), tableNet, s.rootCardTable);
+                s.rolloutConfig.cardTable = s.rootCardTable.data();
+                s.rolloutConfig.prior = arm != "greedy";
+                const search::CombatValueNet *student = nullptr;
+                if (const auto eq = arm.find('='); eq != std::string::npos) {
+                    if (arm.substr(0, eq) != "st") throw std::runtime_error("unknown arm " + arm);
+                    auto &slot = students[arm.substr(eq + 1)];
+                    if (!slot) {
+                        slot = std::make_unique<search::CombatValueNet>();
+                        if (!slot->load(arm.substr(eq + 1)) || !slot->isPolicyMlp)
+                            throw std::runtime_error("cannot load student " + arm.substr(eq + 1));
+                    }
+                    student = slot.get();
+                } else if (arm != "g7f_E" && arm != "greedy") throw std::runtime_error("unknown arm " + arm);
+                s.rolloutPrior = [student](const BattleContext &bc, const std::vector<search::SilverSearcher::Edge> &edges) {
+                    return student ? search::nativeSilverPolicyPriorWith(*student, bc, edges)
+                                   : search::nativeSilverPolicyPrior(bc, edges);
+                };
+                std::vector<double> scores;
+                int wins = 0;
+                double winHp = 0;
+                long long actions0 = s.stats.rolloutActions;
+                const double c0 = cpuNow();
+                for (int i = 0; i < playouts; ++i) {
+                    BattleContext bc = s.rootSearchState();
+                    search::seedSearchRng(bc, base ^ (0x9e3779b97f4a7c15ULL * static_cast<std::uint64_t>(i + 1)));
+                    scores.push_back(s.benchPlayout(bc));
+                    if (bc.outcome == Outcome::PLAYER_VICTORY) { ++wins; winHp += bc.player.curHp; }
+                }
+                res["cpu"] = cpuNow() - c0;
+                res["scores"] = scores;
+                res["wins"] = wins;
+                res["winHp"] = wins ? winHp / wins : 0.0;
+                res["actions"] = s.stats.rolloutActions - actions0;
+                res["capHits"] = s.stats.rolloutActionLimitHits;
+            } catch (const std::exception &e) {
+                res["error"] = e.what();
+            }
+            out << res.dump() << '\n';
+        }
+    }
+    std::cout << "playoutvaluebench: " << rows << " rows x " << arms.size() << " arms x " << playouts << " playouts\n";
 }
 
 // ---- rolloutpolicybench (research, cheap rollouts 2026-11-13) ----

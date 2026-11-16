@@ -93,6 +93,10 @@ namespace sts::search {
             std::string stopTrace;
             // Research-only root prior bonus (SilverSearcher::rootPrior).
             std::string rootPriorPath;
+            // Research (#1053, default off): STS_SILVER_PLAYOUT_POLICY=<combat_policy_mlp> scores prior playouts
+            // with this model instead of the root-prior model; root prior, tree prior and rollout root table keep
+            // theirs.
+            std::string playoutPolicyPath;
             double rootPriorWeight = 0;
             bool rootPriorOverrideOnly = false;
             // Combat plan stage 3 (research, default off): the native combat net as root prior
@@ -209,6 +213,7 @@ namespace sts::search {
         CombatValueNet g_rolloutRootTableNet;
         std::mutex g_rolloutRootTableMutex;
         std::string g_rolloutRootTableLoadedPath;
+        CombatValueNet g_playoutPolicyNet;   // STS_SILVER_PLAYOUT_POLICY (research, default off)
 
         // The rollout root table model, loaded at first use (and again if a later install names
         // another path). A model that does not load is fatal.
@@ -1033,6 +1038,14 @@ namespace sts::search {
                     s.rolloutPrior = nativeSilverPolicyPrior;
                     s.rolloutPriorArgmax = nativeSilverPolicyArgmax;
                     s.rolloutPriorArgmaxOf = nativeSilverPolicyPrior;
+                    if (!g_options.playoutPolicyPath.empty()) {
+                        // STS_SILVER_PLAYOUT_POLICY: the playout model's argmax every playout step (no pick cache).
+                        s.rolloutPrior = [](const BattleContext &state, const std::vector<SilverSearcher::Edge> &edges) {
+                            return nativeSilverPolicyPriorWith(g_playoutPolicyNet, state, edges);
+                        };
+                        s.rolloutPriorArgmax = nullptr;
+                        s.rolloutPriorArgmaxOf = nullptr;
+                    }
                 }
                 if (const CombatValueNet *tableNet = g_nativeSilverRolloutRootTableOverride
                         ? g_nativeSilverRolloutRootTableOverride
@@ -2028,6 +2041,17 @@ namespace sts::search {
                     || (g_rootPriorNet.trees.empty() && !g_rootPriorNet.isPolicyMlp))
                 throw std::runtime_error(std::string("STS_SILVER_ROOT_PRIOR: cannot load a policy model from ") + path);
             g_options.rootPriorPath = path;
+        }
+        // STS_SILVER_PLAYOUT_POLICY=<combat_policy_mlp> (research, #1053, default off): prior playouts use this model;
+        // root prior, tree prior and rollout root table keep STS_SILVER_ROOT_PRIOR's / STS_SILVER_ROLLOUT_ROOT_TABLE's.
+        if (const char *path = std::getenv("STS_SILVER_PLAYOUT_POLICY"); path && *path && std::string(path) != "0") {
+            if (g_options.rootPriorPath.empty())
+                throw std::runtime_error("STS_SILVER_PLAYOUT_POLICY requires STS_SILVER_ROOT_PRIOR");
+            g_playoutPolicyNet = CombatValueNet{};
+            if (!g_playoutPolicyNet.load(path) || !g_playoutPolicyNet.isPolicyMlp)
+                throw std::runtime_error(std::string("STS_SILVER_PLAYOUT_POLICY: cannot load a combat_policy_mlp from ") + path);
+            g_options.playoutPolicyPath = path;
+            std::cerr << "[silver] playout policy model (research): " << path << "\n";
         }
         // STS_SILVER_ROOT_PRIOR_SCOPE=override keeps the prior off unless a thread
         // override turns it on (live combats stay plain; research only).

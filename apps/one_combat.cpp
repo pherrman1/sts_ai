@@ -3142,7 +3142,7 @@ static std::string unsupportedSilverOption() {
         {"STS_SILVER_COMBATNET_TREE_MIN_VISITS", ""}, {"STS_SILVER_COMBATNET_BOSS_MODELS", ""},
         {"STS_SILVER_LEAF_QNET", ""}, {"STS_SILVER_LEAF_QNET_MODEL", ""}, {"STS_SILVER_LEAF_QNET_SHADOW", ""}, {"STS_SILVER_LEAF_QNET_CALIBRATE", ""}, {"STS_SILVER_LEAF_QNET_QINIT", ""},
         {"STS_SILVER_ROLLOUT_UNIFORM", ""}, {"STS_SILVER_ROLLOUTS_PER_LEAF", ""}, {"STS_SILVER_ROLLOUT_CARD_TABLE", ""}, {"STS_SILVER_ROLLOUT_ZERO_COST_CAP", ""}, {"STS_SILVER_ROLLOUT_ACTION_CAP", ""},
-        {"STS_SILVER_ROLLOUT_ROOT_TABLE", ""}, {"STS_SILVER_PRIOR_PICK_CACHE", ""}, {"STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE", ""}, {"STS_SILVER_PRIOR_PLAYOUT_ELITE", ""}, {"STS_SILVER_PRIOR_PLAYOUT_ACTS", ""},
+        {"STS_SILVER_ROLLOUT_ROOT_TABLE", ""}, {"STS_SILVER_PRIOR_PICK_CACHE", ""}, {"STS_SILVER_PRIOR_PLAYOUT_BOSS_ELITE", ""}, {"STS_SILVER_PRIOR_PLAYOUT_ELITE", ""}, {"STS_SILVER_PRIOR_PLAYOUT_ACTS", ""}, {"STS_SILVER_PLAYOUT_POLICY", ""},
         {"STS_SILVER_LEAF_HEAD", ""}, {"STS_SILVER_LEAF_HEAD_TRUNK", ""}, {"STS_SILVER_LEAF_HEAD_BLEND", ""},
         {"STS_SILVER_LEAF_HEAD_TURN_PENALTY", ""}, {"STS_SILVER_LEAF_HEAD_WIN_CAP", ""},
         {"STS_SILVER_MAX_BACKUP", ""}, {"STS_SILVER_RISK_VETO", ""},
@@ -4348,6 +4348,9 @@ int main(int argc, char **argv) {
     } else if (mode == "rolloutpolicybench") {
         if (argc < 6) { std::cerr << "usage: one_combat rolloutpolicybench OUT_PREFIX BUDGET ARMS CAPTURE_STRIDE < rows.jsonl\n"; return 2; }
         rolloutPolicyBench(argv[2], std::stoll(argv[3]), argv[4], std::stoi(argv[5]));
+    } else if (mode == "playoutvaluebench") {
+        if (argc < 5) { std::cerr << "usage: one_combat playoutvaluebench OUT.jsonl PLAYOUTS ARMS < rows.jsonl\n"; return 2; }
+        playoutValueBench(argv[2], std::stoi(argv[3]), argv[4]);
     } else if (mode == "leafbench") {
         if (argc < 5) { std::cerr << "usage: one_combat leafbench OUT.jsonl MIN_VISITS ROLLOUTS [NET.ctn] < rows.jsonl\n"; return 2; }
         leafValueBench(argv[2], std::stoi(argv[3]), std::stoi(argv[4]), argc >= 6 ? argv[5] : "");

@@ -636,6 +636,9 @@ namespace sts::search {
         // Silver's terminal evaluation of `end`, relative to this searcher's
         // root (gold and max HP deltas) and run context.
         [[nodiscard]] double scoreEndState(const BattleContext &end) const { return evaluateEndState(end); }
+        // Research (one_combat playoutvaluebench): one playout of this searcher's configured rollout policy from
+        // `bc` to the fight's end, as a leaf playout at tree depth 0; `bc` is left at the end state. Returns its score.
+        double benchPlayout(BattleContext &bc) { return playoutToEnd(bc, 0, false); }
         // Silver's score for winning the fight at `bc` right now, with its HP, potions and turn: an upper
         // bound on how the fight can still end, short of healing or gold and max HP gained in it.
         // `bc` is left as it was.
