@@ -1,0 +1,87 @@
+{
+ "runs": 32,
+ "rows": 16970,
+ "stats": {
+  "endAdjFlagged": 4684699,
+  "endAdjTests": 28412503,
+  "endStates": 13681944,
+  "guarded": 887566,
+  "nodes": 8539746,
+  "relaxGuarded": 7076240,
+  "ruleNodes": 17032159,
+  "seconds": 128.95329213600027,
+  "segEndFlagged": 2368107,
+  "segStateFlagged": 232450,
+  "skipped": 7443003,
+  "swapFlagged": 522518,
+  "tests": 21591619
+ },
+ "groups": {
+  "all": {
+   "roots": 16970,
+   "swapShare": 0.026449047605569834,
+   "endAdjShare": 0.06723361637823147,
+   "segStateShare": 0.029410369011543994,
+   "segEndShare": 0.08596057457218358,
+   "anyShare": 0.11357483377191212,
+   "rootEndAdjVisitShare": 0.02154009481078124,
+   "rootsWithEndAdjShare": 0.26004714201532114,
+   "testSecondsShareOfCpu": 0.0077834775135392775
+  },
+  "hallway": {
+   "roots": 7631,
+   "swapShare": 0.023852481882450018,
+   "endAdjShare": 0.09015796906801585,
+   "segStateShare": 0.027731119094188142,
+   "segEndShare": 0.10497182419382407,
+   "anyShare": 0.13253201464944678,
+   "rootEndAdjVisitShare": 0.028619059628428093,
+   "rootsWithEndAdjShare": 0.3185689948892675,
+   "testSecondsShareOfCpu": 0.04399044035984583
+  },
+  "elite": {
+   "roots": 4523,
+   "swapShare": 0.043432951805576415,
+   "endAdjShare": 0.08683220573328149,
+   "segStateShare": 0.04805403707290897,
+   "segEndShare": 0.11485277981169302,
+   "anyShare": 0.15545405481917912,
+   "rootEndAdjVisitShare": 0.029154418340651182,
+   "rootsWithEndAdjShare": 0.32544771169577713,
+   "testSecondsShareOfCpu": 0.04161469423630099
+  },
+  "boss": {
+   "roots": 3388,
+   "swapShare": 0.026409233016265816,
+   "endAdjShare": 0.04180319068129588,
+   "segStateShare": 0.027121216921820852,
+   "segEndShare": 0.05917354326397929,
+   "anyShare": 0.0869740096953094,
+   "rootEndAdjVisitShare": 0.012075846232597689,
+   "rootsWithEndAdjShare": 0.14639905548996457,
+   "testSecondsShareOfCpu": 0.0031919907892843102
+  },
+  "act4_elite": {
+   "roots": 568,
+   "swapShare": 0.022569606326064678,
+   "endAdjShare": 0.0027406279361533526,
+   "segStateShare": 0.02532648197411144,
+   "segEndShare": 0.017832315128343837,
+   "anyShare": 0.04041130902128026,
+   "rootEndAdjVisitShare": 0.0014148714781444152,
+   "rootsWithEndAdjShare": 0.014084507042253521,
+   "testSecondsShareOfCpu": 0.0026095054730821965
+  },
+  "heart": {
+   "roots": 860,
+   "swapShare": 0.001514231355008606,
+   "endAdjShare": 0.0011561950554332102,
+   "segStateShare": 0.0013287408161579313,
+   "segEndShare": 0.017365562710054575,
+   "anyShare": 0.01932824601355228,
+   "rootEndAdjVisitShare": 0.0004265690472848789,
+   "rootsWithEndAdjShare": 0.0069767441860465115,
+   "testSecondsShareOfCpu": 0.0028251372194270353
+  }
+ }
+}
