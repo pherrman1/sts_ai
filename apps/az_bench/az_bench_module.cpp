@@ -202,7 +202,7 @@ PYBIND11_MODULE(az_bench_native, m) {
                          std::uint64_t searchSeed, int maxFightMoves, int testMaxHp, std::int64_t maxPending,
                          double exploreC, double pickTarget, double cVisit, double cScale, bool fastNoise,
                          bool qRescale, int utility, bool keylessHp, bool evalCache, int evalCacheCap, bool mergeCards,
-                         double searchEmaLambda, bool searchEmaFullOnly) {
+                         bool exploreAmber, double exploreT, double searchEmaLambda, bool searchEmaFullOnly) {
                  azbench::RunConfig c;
                  c.utility = static_cast<azbench::Utility>(utility);
                  c.keylessHp = keylessHp;
@@ -233,6 +233,8 @@ PYBIND11_MODULE(az_bench_native, m) {
                  c.fastNoise = fastNoise;
                  c.qRescale = qRescale;
                  c.mergeCards = mergeCards;
+                 c.exploreAmber = exploreAmber;
+                 c.exploreT = exploreT;
                  c.searchEmaLambda = searchEmaLambda;
                  c.searchEmaFullOnly = searchEmaFullOnly;
                  return std::make_unique<azbench::RunDriver>(c);
@@ -247,6 +249,7 @@ PYBIND11_MODULE(az_bench_native, m) {
              py::arg("c_scale") = 1.0, py::arg("fast_noise") = true, py::arg("q_rescale") = false,
              py::arg("utility") = 0, py::arg("keyless_hp") = false,
              py::arg("eval_cache") = false, py::arg("eval_cache_cap") = 1024, py::arg("merge_cards") = false,
+             py::arg("explore_amber") = false, py::arg("explore_temp") = 4.0,
              py::arg("search_ema_lambda") = 0.0, py::arg("search_ema_full_only") = true)
         .def("set_weights_version", &azbench::RunDriver::setWeightsVersion)
         .def("set_ascension", &azbench::RunDriver::setAscension)
@@ -427,6 +430,9 @@ PYBIND11_MODULE(az_bench_native, m) {
                 o["progress_asc"] = pr;
             }
             o["ooc_roots"] = s.oocRoots; o["explore_roots"] = s.exploreRoots; o["forced_picks"] = s.forcedPicks;
+            o["explore_attempts"] = s.exploreAttempts; o["explore_c_zero"] = s.exploreCZero;
+            o["explore_c_inf"] = s.exploreCInf; o["explore_natural"] = s.exploreNatural;
+            o["explore_natural_unplayed"] = s.exploreNaturalUnplayed;
             o["cache_hits"] = s.cacheHits;
             o["ooc_searched"] = py::make_tuple(s.oocSearched[0], s.oocSearched[1]);
             o["ooc_not_best_q"] = py::make_tuple(s.oocNotBestQ[0], s.oocNotBestQ[1]);
