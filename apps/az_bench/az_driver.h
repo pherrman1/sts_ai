@@ -77,6 +77,7 @@ namespace sts::azbench {
         std::int64_t evals = 0, moves = 0, fights = 0, wins = 0, terminalLeaves = 0, encodeCut = 0;
         std::int64_t batches = 0, batchRows = 0;
         double stepCpu = 0, encodeCpu = 0, searchCpu = 0;   // worker thread-CPU seconds
+        double packSeconds = 0;   // wall seconds nextBatchFlat spent packing (after taking the requests)
     };
 
     class Driver {
@@ -90,7 +91,8 @@ namespace sts::azbench {
         bool nextBatch(int maxRows, int minRows, int timeoutMs, PackedBatch &out);
         // Flat layout (one token axis per row, padded to a bucketed length; amber_net.AmberNetFlat): takes up to
         // maxRows requests like nextBatch, then picks the smallest row / token / action counts from the bucket lists
-        // that hold the batch and writes it into caller buffers sized for the largest buckets. Token order per row is
+        // that hold the batch and writes it into caller buffers sized for the largest buckets (zeroed once by the caller;
+        // dead token slots are not cleared again, see nextBatchFlat). Token order per row is
         // the AmberTokenType segment order; action src / tgt index that token axis (-1 = none). Padding rows hold
         // only a live run token and one live action. Returns the tickets (empty after a stop or timeout).
         struct FlatBuffers {
@@ -136,7 +138,7 @@ namespace sts::azbench {
         mutable std::mutex qm_;
         std::condition_variable qcv_;
         std::deque<std::uint32_t> queue_;   // ticket = worker << 16 | game
-        std::atomic<std::int64_t> batches_{0}, batchRows_{0};
+        std::atomic<std::int64_t> batches_{0}, batchRows_{0}, packNs_{0};
     };
 
     // The C++ fake net: random logits and values, for measuring the CPU side without a GPU.

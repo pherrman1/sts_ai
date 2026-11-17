@@ -171,6 +171,7 @@ PYBIND11_MODULE(az_bench_native, m) {
             o["terminal_leaves"] = s.terminalLeaves; o["encode_cut"] = s.encodeCut;
             o["batches"] = s.batches; o["batch_rows"] = s.batchRows;
             o["step_cpu"] = s.stepCpu; o["encode_cpu"] = s.encodeCpu; o["search_cpu"] = s.searchCpu;
+            o["pack_s"] = s.packSeconds;
             return o;
         });
 }

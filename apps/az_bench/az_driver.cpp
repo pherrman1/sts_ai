@@ -303,6 +303,7 @@ namespace sts::azbench {
         }
         s.batches = batches_.load();
         s.batchRows = batchRows_.load();
+        s.packSeconds = 1e-9 * static_cast<double>(packNs_.load());
         return s;
     }
 
@@ -608,6 +609,7 @@ namespace sts::azbench {
                                                          : takeRequests(maxRows, minRows, timeoutMs);
         shape = {};
         if (take.empty()) return take;
+        const auto tPack = std::chrono::steady_clock::now();
         auto tokensOf = [&](std::uint32_t t) -> const AmberTokens & {
             return workers_[t >> 16]->games[t & 0xffff].tokens;
         };
@@ -624,9 +626,9 @@ namespace sts::azbench {
         const int T = std::max(maxT, bucketFor(tokBuckets, maxT));
         const int A = std::max(maxA, bucketFor(actBuckets, maxA));
         shape = {B, R, T, A};
-        std::memset(buf.tokType, 0, static_cast<std::size_t>(R) * T);
-        std::memset(buf.ids, 0, sizeof(std::int16_t) * R * T * search::kAmberCat);
-        std::memset(buf.f, 0, sizeof(std::uint16_t) * R * T * search::kAmberFloat);
+        // Dead token slots keep whatever an earlier batch left in tokType / ids / f (the caller's buffers start
+        // zeroed, so it is always a finite value and a valid id / type): only the mask says what is live, a dead
+        // slot is a masked key, and no output of a live row reads it. Zeroing them cost ~15 MB of stores per batch.
         std::memset(buf.mask, 0, static_cast<std::size_t>(R) * T);
         std::memset(buf.aType, 0, sizeof(std::int16_t) * R * A);
         std::fill(buf.aSrc, buf.aSrc + static_cast<std::size_t>(R) * A, std::int16_t(-1));
@@ -664,6 +666,8 @@ namespace sts::azbench {
         }
         batches_ += 1;
         batchRows_ += B;
+        packNs_ += std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - tPack)
+                       .count();
         return take;
     }
 

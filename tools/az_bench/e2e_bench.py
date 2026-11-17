@@ -520,6 +520,7 @@ def main(argv=None):
         "mean_live_actions_per_row": round((w1.get("live_acts", 0) - w0.get("live_acts", 0))
                                            / max(1, w1.get("launched_rows", w1["rows"]) - w0.get("launched_rows", w0["rows"])), 1),
         "batcher_ms_per_batch": {k: round(1e3 * (w1[k] - w0[k]) / nb, 3) for k in ("wait", "h2d_forward", "submit")},
+        "pack_ms_per_batch": round(1e3 * (s1.get("pack_s", 0) - s0.get("pack_s", 0)) / max(1, s1["batches"] - s0["batches"]), 3),
         "worker_us_per_position": {
             "step_enumerate": round(1e6 * (s1["step_cpu"] - s0["step_cpu"]) / ev, 3),
             "encode": round(1e6 * (s1["encode_cpu"] - s0["encode_cpu"]) / ev, 3),
