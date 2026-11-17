@@ -61,8 +61,11 @@ class AmberFlatEquivalence(unittest.TestCase):
                 net.sdpa = False
                 o1 = net(f)
                 o2 = net(dict(f, pack_idx=A.pack_index(f["mask"], step)))
-            for x, y in zip(o1, o2):
+                pk, inv = A.pack_index(f["mask"], step, inverse=True)
+                o3 = net(dict(f, pack_idx=pk, unpack_idx=inv))
+            for x, y, z in zip(o1, o2, o3):
                 self.assertLess(float((x - y).abs().max()), 1e-4, (live_frac, step))
+                self.assertLess(float((x - z).abs().max()), 1e-4, (live_frac, step))
 
 
 if __name__ == "__main__":

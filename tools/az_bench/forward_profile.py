@@ -11,6 +11,8 @@ Variants (comma list, --variants):
   sdpa_half  both
   packed     forward_packed (per-token work on live tokens only; pack_idx padded to --pack-step)
   packed_half  packed with half weights
+  gpacked, gpacked_half  packed with unpack_idx (padded layout by one gather instead of zero fill + scatter)
+A suffix "@MODE" compiles that variant with torch.compile mode MODE (e.g. sdpa_half@max-autotune-no-cudagraphs).
 
 The batch is synthetic: each row has a random number of live tokens (--min-tokens..T, run token first, the rest
 grouped by type as nextBatchFlat writes them) and a random number of live actions whose sources / targets point at
@@ -100,15 +102,18 @@ def main():
 
     results = []
     for name in args.variants.split(","):
+        vname, _, mode = name.partition("@")
         net = copy.deepcopy(base)
-        net.sdpa = "sdpa" in name or "packed" in name
-        half = "half" in name
+        net.sdpa = "sdpa" in vname or "packed" in vname
+        half = "half" in vname
         if half:
             net = net.to(dtype)
         xin = {k: (v.to(dtype) if half and v.is_floating_point() else v) for k, v in x.items()}
-        if "packed" in name:
+        if "gpacked" in vname:
+            xin["pack_idx"], xin["unpack_idx"] = amber_net.pack_index(x["mask"], args.pack_step, inverse=True)
+        elif "packed" in vname:
             xin["pack_idx"] = amber_net.pack_index(x["mask"], args.pack_step)
-        run = net if args.no_compile else torch.compile(net, dynamic=False)
+        run = net if args.no_compile else torch.compile(net, dynamic=False, mode=mode or "default")
         ac = torch.autocast(dev.type, dtype=dtype, enabled=not half)
 
         def step():

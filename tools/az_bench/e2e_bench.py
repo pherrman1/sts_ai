@@ -123,6 +123,10 @@ def main(argv=None):
                     help="flat + compile: compile every (rows >= batch/2, token, action) bucket in the main thread "
                          "before the batchers start; batchers then never compile (an unseen shape runs eager), "
                          "which allows several batchers")
+    ap.add_argument("--compile-mode", default=None,
+                    help="torch.compile mode (e.g. max-autotune-no-cudagraphs); overrides --cuda-graphs")
+    ap.add_argument("--pack-gather", action="store_true",
+                    help="with --pack-step: also send unpack_idx (packed -> padded by one gather)")
     ap.add_argument("--cuda-graphs", action="store_true",
                     help="with --compile: mode reduce-overhead (CUDA graphs per shape)")
     ap.add_argument("--compile", action="store_true", help="torch.compile the net (bucketed shapes)")
@@ -155,7 +159,7 @@ def main(argv=None):
         import torch._dynamo as dynamo
         dynamo.config.cache_size_limit = 64
         if args.backend == "inductor":
-            run = torch.compile(net, dynamic=False, mode="reduce-overhead" if args.cuda_graphs else "default")
+            run = torch.compile(net, dynamic=False, mode=args.compile_mode or ("reduce-overhead" if args.cuda_graphs else "default"))
         else:
             run = torch.compile(net, dynamic=False, backend=args.backend)
     else:
@@ -233,7 +237,13 @@ def main(argv=None):
         pv = views["pack_idx"]
         pv[:n] = live
         pv[n:npad] = M
-        return host["pack_idx"][:npad].to(dev, non_blocking=True).long(), npad
+        out = {"pack_idx": host["pack_idx"][:npad].to(dev, non_blocking=True).long()}
+        if args.pack_gather:
+            uv = views["unpack_idx"]
+            uv[:M] = npad
+            uv[live] = np.arange(n, dtype=np.int32)
+            out["unpack_idx"] = host["unpack_idx"][:M].to(dev, non_blocking=True).long()
+        return out, npad
 
     def flat_loop(i):
         import numpy as np
@@ -252,6 +262,7 @@ def main(argv=None):
             "a_f": torch.zeros(R * A * 8, dtype=torch.float16, pin_memory=pin),
             "a_mask": torch.zeros(R * A, dtype=torch.bool, pin_memory=pin),
             "pack_idx": torch.zeros(R * T, dtype=torch.int32, pin_memory=pin),
+            "unpack_idx": torch.zeros(R * T, dtype=torch.int32, pin_memory=pin),
         }
         views = {k: v.numpy() for k, v in host.items()}
         while not stop.is_set():
@@ -285,7 +296,8 @@ def main(argv=None):
                         x[k] = t
                     key = (Rp, Tp, Ap)
                     if args.pack_step:
-                        x["pack_idx"], npad = pack_idx(host, views, Rp * Tp)
+                        pk, npad = pack_idx(host, views, Rp * Tp)
+                        x.update(pk)
                         key = (Rp, Tp, Ap, npad)
                     lg, outcome, _, _ = forward(x, key)
                     logits = lg[:rows].float().cpu().numpy()
@@ -323,7 +335,8 @@ def main(argv=None):
                  "a_tgt": torch.zeros(R * A, dtype=torch.int16, pin_memory=pin),
                  "a_f": torch.zeros(R * A * 8, dtype=torch.float16, pin_memory=pin),
                  "a_mask": torch.zeros(R * A, dtype=torch.bool, pin_memory=pin),
-                 "pack_idx": torch.zeros(R * T, dtype=torch.int32, pin_memory=pin)}
+                 "pack_idx": torch.zeros(R * T, dtype=torch.int32, pin_memory=pin),
+                 "unpack_idx": torch.zeros(R * T, dtype=torch.int32, pin_memory=pin)}
             out = {"logits": torch.zeros(R * A, dtype=torch.float32, pin_memory=pin),
                    "value": torch.zeros(R, dtype=torch.float32, pin_memory=pin)}
             return h, {k: v.numpy() for k, v in h.items()}, out
@@ -367,7 +380,8 @@ def main(argv=None):
                         x[k] = t
                     key = (Rp, Tp, Ap)
                     if args.pack_step:
-                        x["pack_idx"], npad = pack_idx(host, views, Rp * Tp)
+                        pk, npad = pack_idx(host, views, Rp * Tp)
+                        x.update(pk)
                         key = (Rp, Tp, Ap, npad)
                     lg, outcome, _, _ = forward(x, key)
                     out["logits"][:rows * Ap].view(rows, Ap).copy_(lg[:rows].float(), non_blocking=True)
@@ -469,7 +483,7 @@ def main(argv=None):
     ev = max(1, s1["evals"] - s0["evals"])
     nb = max(1, w1["batches"] - w0["batches"])
     res = {
-        "net": args.net, "params": params, "dtype": args.dtype, "sdpa": args.sdpa, "half": args.half, "pipeline": args.pipeline, "pack_step": args.pack_step, "compile": args.compile, "backend": args.backend if args.compile else None, "fake_net": args.fake_net,
+        "net": args.net, "params": params, "dtype": args.dtype, "sdpa": args.sdpa, "half": args.half, "pipeline": args.pipeline, "pack_step": args.pack_step, "pack_gather": args.pack_gather, "compile_mode": args.compile_mode, "compile": args.compile, "backend": args.backend if args.compile else None, "fake_net": args.fake_net,
         "encoder": args.encoder,
         "workers": args.workers, "games_per_worker": args.games, "batchers": args.batchers, "max_batch": args.batch,
         "full_sims": args.full_sims, "fast_sims": args.fast_sims, "full_prob": args.full_prob,

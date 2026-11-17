@@ -127,7 +127,9 @@ class AmberNet(nn.Module):
         """forward_flat with the per-token work (input embedding, LayerNorms, QKV / output projections, FFN) done
         only on the live tokens. b["pack_idx"] [N] long lists the live slots of the flattened [B * T] token axis,
         padded up to a bucketed N with the value B * T (a trash slot); only attention runs on the padded [B, T]
-        layout. Same math as forward_flat with sdpa = True on the live tokens (tests/test_amber_net_flat.py)."""
+        layout. Optional b["unpack_idx"] [B * T] long (pack_index(..., inverse=True)): for each slot its row in the
+        packed axis, N for a dead slot; then packed -> padded is one gather instead of zero fill + scatter.
+        Same math as forward_flat with sdpa = True on the live tokens (tests/test_amber_net_flat.py)."""
         F = torch.nn.functional
         tt, idx, mask = b["tok_type"], b["pack_idx"], b["mask"]
         B, T = tt.shape
@@ -142,20 +144,24 @@ class AmberNet(nn.Module):
         proj = torch.gather(P, 1, tt_p[:, None, None].expand(-1, 1, d)).squeeze(1)
         x = self.in_norm(self.type_emb(tt_p) + self.ids(b["ids"].reshape(M, -1)[ip]).sum(1) + proj)
         keep = mask[:, None, None, :]
+        inv = b.get("unpack_idx")
+
+        def unpack(v):   # packed [N, c] -> padded [M, c], dead slots 0
+            if inv is not None:     # one gather from v plus a zero row
+                return torch.cat([v, v.new_zeros(1, v.shape[1])])[inv]
+            full = v.new_zeros(M + 1, v.shape[1])
+            full[idx] = v
+            return full[:M]
+
         for layer in self.trunk.layers:
             a = layer.self_attn
             H = a.num_heads
             qkv_p = F.linear(layer.norm1(x), a.in_proj_weight, a.in_proj_bias)
-            full = qkv_p.new_zeros(M + 1, 3 * d)
-            full[idx] = qkv_p
-            qkv = full[:M].view(B, T, 3, H, d // H).permute(2, 0, 3, 1, 4)
+            qkv = unpack(qkv_p).view(B, T, 3, H, d // H).permute(2, 0, 3, 1, 4)
             o = F.scaled_dot_product_attention(qkv[0], qkv[1], qkv[2], attn_mask=keep)
             x = x + a.out_proj(o.transpose(1, 2).reshape(M, d)[ip])
             x = x + layer.linear2(F.gelu(layer.linear1(layer.norm2(x))))
-        h_p = self.out_norm(x)
-        h = h_p.new_zeros(M + 1, d)
-        h[idx] = h_p
-        return self._heads(h[:M].view(B, T, d), mask, b)
+        return self._heads(unpack(self.out_norm(x)).view(B, T, d), mask, b)
 
     def forward_segments(self, b):
         """b: per token type t in TOKEN_TYPES, b[t + "_ids"] [B, n_t, 4] long, b[t + "_f"] [B, n_t, 64] float,
@@ -212,14 +218,19 @@ def synthetic_batch(B, counts=None, actions=10, rng=None, live_frac=1.0):
     return b
 
 
-def pack_index(mask, step=1):
+def pack_index(mask, step=1, inverse=False):
     """pack_idx for forward_packed: the live slots of mask [B, T] in row-major order, padded with B * T up to a
-    multiple of `step`."""
+    multiple of `step`. inverse=True also returns unpack_idx: per slot its packed row, npad for a dead slot."""
     m = mask.reshape(-1)
     idx = torch.nonzero(m).squeeze(1)
     n = idx.numel()
     npad = -(-n // step) * step
-    return torch.cat([idx, idx.new_full((npad - n,), m.numel())])
+    pk = torch.cat([idx, idx.new_full((npad - n,), m.numel())])
+    if not inverse:
+        return pk
+    inv = torch.full((m.numel(),), npad, dtype=torch.long, device=m.device)
+    inv[idx] = torch.arange(n, device=m.device)
+    return pk, inv
 
 
 def live_tokens(b):
