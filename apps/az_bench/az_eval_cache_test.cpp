@@ -8,7 +8,9 @@
 //
 // --utility amber: the net also gives per-floor HP (hpf), which the cache must return too.
 //
-// usage: az-eval-cache-test [--runs 3] [--seed-base 1] [--fast] [--utility amber]
+// --amber-search: Amber Eye's search rules (chanceOnReveal, crossCombat, simHelp) on; the cache stays exact.
+//
+// usage: az-eval-cache-test [--runs 3] [--seed-base 1] [--fast] [--utility amber] [--amber-search]
 #include <cstdio>
 #include <cstring>
 #include <string>
@@ -131,6 +133,7 @@ int main(int argc, char **argv) {
         if (a == "--runs") cfg.maxRuns = std::stoll(next());
         else if (a == "--seed-base") cfg.seedBase = std::stoull(next());
         else if (a == "--utility") { const std::string u = next(); if (u != "amber") { std::fprintf(stderr, "unknown utility %s\n", u.c_str()); return 2; } cfg.utility = azbench::Utility::AMBER; }
+        else if (a == "--amber-search") cfg.chanceOnReveal = cfg.crossCombat = cfg.simHelp = true;
         else if (a == "--fast") { cfg.fullSims = 8; cfg.fastSims = 4; cfg.fullCandidates = 4; cfg.fastCandidates = 2; }
         else { std::fprintf(stderr, "unknown argument %s\n", a.c_str()); return 2; }
     }

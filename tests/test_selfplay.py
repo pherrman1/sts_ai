@@ -416,6 +416,32 @@ class SelfplaySmoke(unittest.TestCase):
             self.assertTrue(a["no_fast_noise"] and a["q_rescale"])
             self.assertEqual(a["c_scale"], 0.1)
 
+    def test_amber_search_flags(self):
+        """--chance-on-reveal / --cross-combat / --sim-help / --max-pending 0 reach the driver, play and train; the
+        driver's counters show each rule acting (deterministic and chance OOC edges, fights inside the search,
+        reward gold taken automatically)."""
+        sp = load()
+        args = ["--module-dir", os.path.dirname(MODULES[0]), "--device", "cpu", "--workers", "2", "--games", "4",
+                "--full-sims", "8", "--fast-sims", "4", "--batch", "32", "--row-buckets", "32", "--pack-step", "32",
+                "--pack-threads", "1", "--min-replay", "50", "--train-batch", "32", "--window", "5000",
+                "--report", "1", "--sync-steps", "2", "--seed-base", "1700", "--max-runs", "8", "--test-max-hp", "900",
+                "--chance-on-reveal", "--cross-combat", "--sim-help", "--max-pending", "0"]
+        with tempfile.TemporaryDirectory() as d:
+            self.assertEqual(sp.main(args + ["--out-dir", d]), 0)
+            with open(os.path.join(d, "metrics.jsonl")) as f:
+                last = [json.loads(l) for l in f][-1]
+            self.assertGreaterEqual(last["runs_done"], 8)
+            self.assertGreater(last["train_steps"], 0)
+            det, chance = last["ooc_edges_det_chance"]
+            self.assertGreater(det, 0)
+            self.assertGreater(chance, 0)
+            self.assertGreater(last["tree_fight_starts"], 0)
+            self.assertGreater(last["tree_fight_exits"], 0)
+            self.assertGreater(last["auto_gold"], 0)
+            a = torch.load(sorted(glob.glob(os.path.join(d, "ckpt_*.pt")), key=os.path.getmtime)[-1])["args"]
+            self.assertTrue(a["chance_on_reveal"] and a["cross_combat"] and a["sim_help"])
+            self.assertEqual(a["max_pending"], 0)
+
     def test_value_ema_run(self):
         """--value-ema-halflife trains on EMA targets; take_samples in 1-sample chunks never splits a run."""
         sp = load()

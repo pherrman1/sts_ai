@@ -10,7 +10,7 @@
 // a step that reveals hidden information is resampled in the search; utility U = F + H at first (F = expected final
 // floor, H = HP), later P(win) + 0.25 H out of combat and F + 0.5 H in combat.
 //
-// Our choices: the search tree ends at combat boundaries: an out-of-combat action that starts a fight leads to a
+// Our choices (defaults; RunConfig::chanceOnReveal / crossCombat / simHelp switch to Amber's rules): the search tree ends at combat boundaries: an out-of-combat action that starts a fight leads to a
 // leaf (the fight's first decision, valued by the net) and a combat action that wins the fight leads to a leaf (the
 // state after the fight, valued by the net); a lost fight is terminal. Out-of-combat edges are all chance edges: each
 // new outcome is a detached copy of the parent with its hidden future resampled (sampleNoncombatFuture) before the
@@ -147,6 +147,7 @@ namespace sts::azbench {
         double keepFast = 0.0;          // ... of a fast-search move (value only)
         // Samples of unfinished runs wait in memory for their labels (~5.5 KB each). Above this many, the keep
         // probabilities are scaled by maxPendingSamples / pending, so memory stays bounded as runs get longer.
+        // <= 0 (2026-11-17): no cap, every kept move becomes a sample (Amber Eye trains on all full moves).
         std::int64_t maxPendingSamples = 300000;
         std::uint64_t searchSeed = 0;   // search / Gumbel / resampling RNG
         int testMaxHp = 0;              // tests only: > 0 sets max / current HP at the run's start (reach late floors)
@@ -167,6 +168,20 @@ namespace sts::azbench {
         // Card stacks (2026-11-17, default off; changes the net input, needs its own run): identical cards become one
         // CARD token with a copy count (search::amberMergeCards), ~25-35 % fewer tokens late in a run.
         bool mergeCards = false;
+        // Amber Eye search fidelity (2026-11-17, all default off; https://8e9f.github.io/amber_eye/):
+        // chanceOnReveal: an out-of-combat edge is a chance edge only when its step reveals hidden information
+        //   (search::oocStepRevealsHidden: an RNG stream drew, a pre-shuffled pool or encounter queue was read, a fight
+        //   started, a new act); other edges are deterministic with one child. Off: every out-of-combat edge is a
+        //   chance edge. A won fight's exit (rewards) is tested the same way and makes its combat edge a chance edge.
+        // crossCombat: one search over combat and out-of-combat states. A fight's first state and the state after a
+        //   won fight are expanded like any node (combat nodes keep the game state of their fight's start, `outer`).
+        //   Off: both are leaves valued by the net.
+        // simHelp: the simulator help Amber lists: "in positions with one legal action, it is automatically taken;
+        //   gold from rewards is automatically taken; [...] buying Prismatic Shard is banned", in the real run and
+        //   inside the search (a step there runs on through forced positions and gold; it is one edge).
+        bool chanceOnReveal = false;
+        bool crossCombat = false;
+        bool simHelp = false;
         CombatEncodeFn encodeCombat = nullptr;   // default: search::amberEncodeCombat
         GameEncodeFn encodeGame = nullptr;       // default: search::amberEncodeGame (stubEncodeGame = placeholder)
     };
@@ -231,6 +246,11 @@ namespace sts::azbench {
         // raw visited-Q spread (max - min mean Q, roots with >= 2 visited edges) and its count.
         std::array<std::int64_t, 2> oocSearched{}, oocNotBestQ{}, oocSpreadN{};
         std::array<double, 2> oocSpreadSum{};
+        // Amber search rules (RunConfig::chanceOnReveal / crossCombat): first expansions of out-of-combat edges that
+        // were deterministic / chance edges, and fights started / won inside the search (crossCombat).
+        std::array<std::int64_t, 2> oocEdgeKinds{};
+        std::int64_t treeFightStarts = 0, treeFightExits = 0;
+        std::int64_t autoGold = 0;   // simHelp: reward gold taken automatically in the real runs
         double stepCpu = 0, encodeCpu = 0, searchCpu = 0, packSeconds = 0;
     };
 

@@ -201,7 +201,8 @@ PYBIND11_MODULE(az_bench_native, m) {
                          double hpWeightCombat, double hpWeightOoc, double keepFull, double keepFast,
                          std::uint64_t searchSeed, int maxFightMoves, int testMaxHp, std::int64_t maxPending,
                          double exploreC, double pickTarget, double cVisit, double cScale, bool fastNoise,
-                         bool qRescale, int utility, bool keylessHp, bool evalCache, int evalCacheCap, bool mergeCards) {
+                         bool qRescale, int utility, bool keylessHp, bool evalCache, int evalCacheCap, bool mergeCards,
+                         bool chanceOnReveal, bool crossCombat, bool simHelp) {
                  azbench::RunConfig c;
                  c.utility = static_cast<azbench::Utility>(utility);
                  c.keylessHp = keylessHp;
@@ -232,6 +233,9 @@ PYBIND11_MODULE(az_bench_native, m) {
                  c.fastNoise = fastNoise;
                  c.qRescale = qRescale;
                  c.mergeCards = mergeCards;
+                 c.chanceOnReveal = chanceOnReveal;
+                 c.crossCombat = crossCombat;
+                 c.simHelp = simHelp;
                  return std::make_unique<azbench::RunDriver>(c);
              }),
              py::arg("workers") = 11, py::arg("games") = 700, py::arg("seed_base") = 0, py::arg("max_runs") = -1,
@@ -243,7 +247,8 @@ PYBIND11_MODULE(az_bench_native, m) {
              py::arg("explore_c") = 0.0, py::arg("pick_target") = 0.01, py::arg("c_visit") = 50.0,
              py::arg("c_scale") = 1.0, py::arg("fast_noise") = true, py::arg("q_rescale") = false,
              py::arg("utility") = 0, py::arg("keyless_hp") = false,
-             py::arg("eval_cache") = false, py::arg("eval_cache_cap") = 1024, py::arg("merge_cards") = false)
+             py::arg("eval_cache") = false, py::arg("eval_cache_cap") = 1024, py::arg("merge_cards") = false,
+             py::arg("chance_on_reveal") = false, py::arg("cross_combat") = false, py::arg("sim_help") = false)
         .def("set_weights_version", &azbench::RunDriver::setWeightsVersion)
         .def("set_ascension", &azbench::RunDriver::setAscension)
         .def("ascension", &azbench::RunDriver::ascension)
@@ -403,6 +408,10 @@ PYBIND11_MODULE(az_bench_native, m) {
             o["ooc_not_best_q"] = py::make_tuple(s.oocNotBestQ[0], s.oocNotBestQ[1]);
             o["ooc_q_spread_n"] = py::make_tuple(s.oocSpreadN[0], s.oocSpreadN[1]);
             o["ooc_q_spread_sum"] = py::make_tuple(s.oocSpreadSum[0], s.oocSpreadSum[1]);
+            o["ooc_edges_det_chance"] = py::make_tuple(s.oocEdgeKinds[0], s.oocEdgeKinds[1]);
+            o["tree_fight_starts"] = s.treeFightStarts;
+            o["tree_fight_exits"] = s.treeFightExits;
+            o["auto_gold"] = s.autoGold;
             o["step_cpu"] = s.stepCpu; o["encode_cpu"] = s.encodeCpu; o["search_cpu"] = s.searchCpu;
             o["pack_s"] = s.packSeconds;
             return o;
