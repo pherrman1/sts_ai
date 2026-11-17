@@ -195,6 +195,48 @@ namespace {
         }
     }
 
+    // The fullest reward screen: five card rewards of four cards (the container's limit; review of #1080 found five
+    // card rewards on seed 1117 floor 44), two gold, three relics with the sapphire key, five potions, Singing
+    // Bowl. Every action must resolve to its token with no capacity cut outside MAP.
+    void fullRewardScreen(const GameContext &from) {
+        GameContext gc = from;
+        gc.screenState = ScreenState::REWARDS;
+        gc.potionCapacity = 5;
+        gc.potionCount = 0;
+        for (auto &p : gc.potions) p = Potion::EMPTY_POTION_SLOT;
+        if (!gc.hasRelic(RelicId::SINGING_BOWL)) gc.relics.add({RelicId::SINGING_BOWL, 0});
+        Rewards r;
+        const CardId ids[] = {CardId::ANGER, CardId::CLOTHESLINE, CardId::SHRUG_IT_OFF, CardId::POMMEL_STRIKE,
+                              CardId::INFLAME};
+        for (int g = 0; g < 5; ++g) {
+            CardReward cr;
+            for (int x = 0; x < 4; ++x) cr.push_back(Card(ids[(g + x) % 5], x % 2));
+            r.addCardReward(cr);
+        }
+        r.addGold(25);
+        r.addGold(40);
+        r.addRelic(RelicId::ANCHOR);
+        r.addRelic(RelicId::KUNAI);
+        r.addRelic(RelicId::GIRYA);
+        for (int i = 0; i < 5; ++i) r.addPotion(i % 2 ? Potion::FIRE_POTION : Potion::BLOCK_POTION);
+        r.sapphireKey = true;
+        gc.info.rewardsContainer = r;
+        const auto actions = actionsFor(gc);
+        AmberTokens t;
+        amberEncodeGame(gc, actions, t);
+        std::map<std::string, int> cutBy;
+        verify(gc, actions, t, cutBy);
+        int cards = 0;
+        for (const auto &a : actions)
+            if (a.getRewardsActionType() == GameAction::RewardsActionType::CARD && a.getIdx2() != 5) ++cards;
+        check(cards == 20, "fixture offers 20 reward cards", gc);
+        check(t.cut == 0 || t.n[static_cast<int>(AmberTokenType::MAP)] == kAmberCap[static_cast<int>(AmberTokenType::MAP)],
+              "full reward screen: no cut outside MAP", gc);
+        for (int i = 0; i < t.nAct; ++i)
+            check(t.act[i].srcSeg != kAmberNoSeg || t.act[i].type == static_cast<int>(AmberActionType::SKIP_OR_LEAVE),
+                  "full reward screen: every choice has its token", gc);
+    }
+
 }
 
 int main(int argc, char **argv) {
@@ -204,6 +246,7 @@ int main(int argc, char **argv) {
     std::map<int, int> types;
     std::map<std::string, int> cutBy;
     long states = 0, scrambled = 0, victories = 0, act4 = 0, deadAdventurerChecks = 0;
+    bool fullRewardDone = false;
     double encodeNs = 0;
     AmberTokens a, b;
     for (int run = 0; run < runs; ++run) {
@@ -214,6 +257,10 @@ int main(int argc, char **argv) {
         for (int step = 0; step < 3000 && gc.outcome == GameOutcome::UNDECIDED; ++step) {
             const auto actions = actionsFor(gc);
             if (actions.empty()) break;
+            if (run == 0 && gc.screenState == ScreenState::REWARDS && !fullRewardDone) {
+                fullRewardScreen(gc);
+                fullRewardDone = true;
+            }
             ++states;
             ++screens[static_cast<int>(gc.screenState)];
             if (gc.screenState == ScreenState::EVENT_SCREEN) events.insert(static_cast<int>(gc.curEvent));
@@ -384,6 +431,10 @@ int main(int argc, char **argv) {
             std::cerr << "FAIL: screen " << static_cast<int>(s) << " never visited\n";
             ++g_fail;
         }
+    if (!fullRewardDone) {
+        std::cerr << "FAIL: full reward screen fixture never ran\n";
+        ++g_fail;
+    }
     if (deadAdventurerChecks == 0) {
         std::cerr << "FAIL: no Dead Adventurer elite visibility check ran\n";
         ++g_fail;

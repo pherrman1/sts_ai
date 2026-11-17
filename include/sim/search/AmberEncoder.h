@@ -72,8 +72,9 @@ namespace sts::search {
         CHOOSE_OPTION,      // src = the chosen OPTION token (reward item, shop item, boss relic, rest option, Neow
                             // option, event option, chest, Match and Keep slot); tgt = the deck CARD / RELIC /
                             // POTION an event option names (Falling, We Meet Again, N'loth)
-        CHOOSE_CARD,        // card-select screen: src = the chosen CARD token, a deck card (remove / upgrade /
-                            // transform / duplicate / bottle) or a card the screen offers (The Library, Neow choices)
+        CHOOSE_CARD,        // src = the chosen CARD token: on a card-select screen a deck card (remove / upgrade /
+                            // transform / duplicate / bottle) or a card the screen offers (The Library, Neow
+                            // choices); on a reward screen the card reward (the Singing Bowl stays an OPTION)
         SKIP_OR_LEAVE,      // reward skip, shop leave, chest skip, boss relic skip, campfire proceed
     };
 
