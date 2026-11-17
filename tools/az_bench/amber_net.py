@@ -99,8 +99,27 @@ class AmberNet(nn.Module):
         proj = torch.gather(P, 2, tt[..., None, None].expand(-1, -1, 1, d)).squeeze(2)
         x = self.in_norm(self.type_emb(tt) + self.ids(b["ids"]).sum(2) + proj)
         mask = b["mask"]
-        h = self.out_norm(self.trunk(x, src_key_padding_mask=~mask))
+        h = self.out_norm(self.sdpa_trunk(x, mask) if self.sdpa else self.trunk(x, src_key_padding_mask=~mask))
         return self._heads(h, mask, b)
+
+    sdpa = False   # True: run the trunk through sdpa_trunk (same weights and math, fused attention kernel)
+
+    def sdpa_trunk(self, x, mask):
+        """self.trunk's math (pre-norm encoder layers, key padding mask, exact GELU) written with one QKV matmul and
+        F.scaled_dot_product_attention per layer instead of nn.MultiheadAttention, so the attention runs as one
+        fused kernel. Equal to self.trunk up to float rounding (tests/test_amber_net_flat.py)."""
+        F = torch.nn.functional
+        B, T, d = x.shape
+        keep = mask[:, None, None, :]                      # [B, 1, 1, T], True = attend
+        for layer in self.trunk.layers:
+            a = layer.self_attn
+            H = a.num_heads
+            y = layer.norm1(x)
+            qkv = F.linear(y, a.in_proj_weight, a.in_proj_bias).view(B, T, 3, H, d // H).permute(2, 0, 3, 1, 4)
+            o = F.scaled_dot_product_attention(qkv[0], qkv[1], qkv[2], attn_mask=keep)
+            x = x + a.out_proj(o.transpose(1, 2).reshape(B, T, d))
+            x = x + layer.linear2(F.gelu(layer.linear1(layer.norm2(x))))
+        return x
 
     def forward_segments(self, b):
         """b: per token type t in TOKEN_TYPES, b[t + "_ids"] [B, n_t, 4] long, b[t + "_f"] [B, n_t, 64] float,

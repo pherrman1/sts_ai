@@ -101,6 +101,9 @@ def main(argv=None):
     ap.add_argument("--warmup", type=float, default=10, help="seconds before the timed window")
     ap.add_argument("--report", type=float, default=5)
     ap.add_argument("--dtype", default="fp16", choices=["fp16", "bf16", "fp32"])
+    ap.add_argument("--sdpa", action="store_true", help="AmberNet.sdpa: fused-attention trunk (same weights and math)")
+    ap.add_argument("--half", action="store_true",
+                    help="flat layout: weights and float inputs in --dtype, autocast off (default: fp32 weights + autocast)")
     ap.add_argument("--layout", default="flat", choices=["flat", "segments"],
                     help="flat: one token axis per row, rows / tokens / actions padded to bucket sizes, packed by C++ "
                          "into pinned buffers (default); segments: per-type segments padded to the batch's longest")
@@ -134,6 +137,13 @@ def main(argv=None):
     torch.manual_seed(args.seed)
     d, layers = amber_net.SIZES.get(args.net) or tuple(int(x) for x in args.net.split("x")[:2])
     net = amber_net.AmberNet(d=d, layers=layers).to(dev).eval()
+    net.sdpa = args.sdpa
+    if args.half:
+        if args.layout != "flat" or dtype == torch.float32:
+            raise SystemExit("--half needs --layout flat and --dtype fp16 / bf16")
+        net = net.to(dtype)
+    use_autocast = dtype != torch.float32 and not args.half
+    in_float = dtype if args.half else torch.float32
     params = sum(p.numel() for p in net.parameters())
     if args.compile:
         import torch._dynamo as dynamo
@@ -175,14 +185,14 @@ def main(argv=None):
                 for A in act_b:
                     x = {"tok_type": torch.zeros(R, T, dtype=torch.long, device=dev),
                          "ids": torch.zeros(R, T, 4, dtype=torch.long, device=dev),
-                         "f": torch.zeros(R, T, 64, device=dev), "mask": torch.zeros(R, T, dtype=torch.bool, device=dev),
+                         "f": torch.zeros(R, T, 64, device=dev, dtype=in_float), "mask": torch.zeros(R, T, dtype=torch.bool, device=dev),
                          "a_type": torch.zeros(R, A, dtype=torch.long, device=dev),
                          "a_src": torch.full((R, A), -1, dtype=torch.long, device=dev),
                          "a_tgt": torch.full((R, A), -1, dtype=torch.long, device=dev),
-                         "a_f": torch.zeros(R, A, 8, device=dev), "a_mask": torch.zeros(R, A, dtype=torch.bool, device=dev)}
+                         "a_f": torch.zeros(R, A, 8, device=dev, dtype=in_float), "a_mask": torch.zeros(R, A, dtype=torch.bool, device=dev)}
                     x["mask"][:, 0] = True
                     x["a_mask"][:, 0] = True
-                    with torch.inference_mode(), torch.autocast(dev.type, dtype=dtype, enabled=dtype != torch.float32):
+                    with torch.inference_mode(), torch.autocast(dev.type, dtype=dtype, enabled=use_autocast):
                         run(x)
                     seen_shapes.add((R, T, A))
         if dev.type == "cuda":
@@ -243,7 +253,7 @@ def main(argv=None):
                           "a_type": (Rp, Ap), "a_src": (Rp, Ap), "a_tgt": (Rp, Ap), "a_f": (Rp, Ap, 8),
                           "a_mask": (Rp, Ap)}
                 ctx = torch.cuda.stream(stream) if stream is not None else torch.no_grad()
-                with ctx, torch.inference_mode(), torch.autocast(dev.type, dtype=dtype, enabled=dtype != torch.float32):
+                with ctx, torch.inference_mode(), torch.autocast(dev.type, dtype=dtype, enabled=use_autocast):
                     x = {}
                     for k, shp in shapes.items():
                         n = int(np.prod(shp))
@@ -251,7 +261,7 @@ def main(argv=None):
                         if k in ("tok_type", "ids", "a_type", "a_src", "a_tgt"):
                             t = t.long()
                         elif t.dtype == torch.float16:
-                            t = t.float()
+                            t = t.to(in_float)
                         x[k] = t
                     lg, outcome, _, _ = forward(x, (Rp, Tp, Ap))
                     logits = lg[:rows].float().cpu().numpy()
@@ -288,7 +298,7 @@ def main(argv=None):
                 value = rng.random(rows, dtype=np.float32)
             else:
                 ctx = torch.cuda.stream(stream) if stream is not None else torch.no_grad()
-                with ctx, torch.inference_mode(), torch.autocast(dev.type, dtype=dtype, enabled=dtype != torch.float32):
+                with ctx, torch.inference_mode(), torch.autocast(dev.type, dtype=dtype, enabled=use_autocast):
                     x, rows = to_device(b, dev, bucket=args.compile)
                     lg, outcome, _, _ = forward(x, tuple(v.shape for v in x.values()))
                     lg = lg[:rows, :b["a_mask"].shape[1]].float()
@@ -332,7 +342,7 @@ def main(argv=None):
     ev = max(1, s1["evals"] - s0["evals"])
     nb = max(1, w1["batches"] - w0["batches"])
     res = {
-        "net": args.net, "params": params, "dtype": args.dtype, "compile": args.compile, "backend": args.backend if args.compile else None, "fake_net": args.fake_net,
+        "net": args.net, "params": params, "dtype": args.dtype, "sdpa": args.sdpa, "half": args.half, "compile": args.compile, "backend": args.backend if args.compile else None, "fake_net": args.fake_net,
         "encoder": args.encoder,
         "workers": args.workers, "games_per_worker": args.games, "batchers": args.batchers, "max_batch": args.batch,
         "full_sims": args.full_sims, "fast_sims": args.fast_sims, "full_prob": args.full_prob,
