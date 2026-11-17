@@ -28072,7 +28072,7 @@ same validation roots (N1), so the offline gap is slightly optimistic.
 default change; SBC at 1.87× CPU is no equal-CPU candidate. Seeds: none new. Cost: about 311 lane-hours plus lost attempts.
 **Knowledge impact:** KB `research/combat-search/cheap-combat-roadmap.md` (playout prior retrain line).
 
-## §TBD — Stage 0 throughput benchmark (Amber-Eye-style batched Gumbel combat search with a GPU token net): 470.7k net positions/s end to end on the RTX 3060 Ti with the 0.44M AmberNet (3 repeats 471.3k / 468.8k / 472.0k, ±0.3 %), above the preregistered 300k GO line; 1.2M net 212.8k, 5.4M net 68.6k (PC, 2026-11-17)
+## §817 — Stage 0 throughput benchmark (Amber-Eye-style batched Gumbel combat search with a GPU token net): 470.7k net positions/s end to end on the RTX 3060 Ti with the 0.44M AmberNet (3 repeats 471.3k / 468.8k / 472.0k, ±0.3 %), above the preregistered 300k GO line; 1.2M net 212.8k, 5.4M net 68.6k (PC, 2026-11-17)
 
 **Question (Philipp 2026-11-16 23:23 CET, "bau Stufe 0", local, stay close to https://8e9f.github.io/amber_eye/):** how
 many net leaf evaluations per second can our engine plus a batched GPU token transformer reach on the PC? Decision rule
