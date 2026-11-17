@@ -13,6 +13,8 @@ Variants (comma list, --variants):
   packed_half  packed with half weights
   gpacked, gpacked_half  packed with unpack_idx (padded layout by one gather instead of zero fill + scatter)
   any name containing "ffn" (e.g. gpacked_half_ffn): LayerNorm + FFN + residual as one Triton kernel (fused_ffn.py)
+  any name containing "varlen" (with gpacked, e.g. gpacked_half_ffn_varlen): attention on the packed tokens as one
+                Triton kernel (varlen_attn.py)
   any name containing "math" (e.g. gpacked_half_math): attention as plain matmuls + fp32 softmax (AmberNet.attn_math)
 A suffix "#BACKEND" compiles that variant with another torch.compile backend: torch_tensorrt (needs the
 torch-tensorrt package; fp16 kernels enabled) or emmy (cloudrift-ai/emmy, `pip install "emmy-ml[compile]"`).
@@ -127,10 +129,13 @@ def main():
         net.sdpa = "sdpa" in vname or "packed" in vname
         net.attn_math = "math" in vname
         net.fused_ffn = amber_net.load_fused_ffn() if "ffn" in vname else None
+        net.varlen_attn = amber_net.load_kernel("varlen_attn") if "varlen" in vname else None
         half = "half" in vname
         if half:
             net = net.to(dtype)
         xin = {k: (v.to(dtype) if half and v.is_floating_point() else v) for k, v in x.items()}
+        if "varlen" in vname:
+            xin["seq_off"] = amber_net.seq_offsets(x["mask"])
         if "gpacked" in vname:
             xin["pack_idx"], xin["unpack_idx"] = amber_net.pack_index(x["mask"], args.pack_step, inverse=True)
         elif "packed" in vname:

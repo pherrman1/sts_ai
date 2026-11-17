@@ -102,6 +102,8 @@ def main(argv=None):
     ap.add_argument("--report", type=float, default=5)
     ap.add_argument("--dtype", default="fp16", choices=["fp16", "bf16", "fp32"])
     ap.add_argument("--sdpa", action="store_true", help="AmberNet.sdpa: fused-attention trunk (same weights and math)")
+    ap.add_argument("--varlen-attn", action="store_true",
+                    help="with --pack-step: attention on the packed tokens as one Triton kernel (varlen_attn.py)")
     ap.add_argument("--fused-ffn", action="store_true",
                     help="with --pack-step: LayerNorm + FFN + residual per layer as one Triton kernel (fused_ffn.py)")
     ap.add_argument("--attn-math", action="store_true",
@@ -154,6 +156,7 @@ def main(argv=None):
     net.sdpa = args.sdpa
     net.attn_math = args.attn_math
     net.fused_ffn = amber_net.load_fused_ffn() if args.fused_ffn else None
+    net.varlen_attn = amber_net.load_kernel("varlen_attn") if args.varlen_attn else None
     if args.half:
         if args.layout != "flat" or dtype == torch.float32:
             raise SystemExit("--half needs --layout flat and --dtype fp16 / bf16")
@@ -234,9 +237,10 @@ def main(argv=None):
             stop.set()
             raise
 
-    def pack_idx(host, views, M):
+    def pack_idx(host, views, Rp, Tp):
         """forward_packed's index of the live token slots, padded with M up to a multiple of --pack-step."""
         import numpy as np
+        M = Rp * Tp
         live = np.flatnonzero(views["mask"][:M])
         n = live.size
         npad = -(-n // args.pack_step) * args.pack_step
@@ -244,6 +248,11 @@ def main(argv=None):
         pv[:n] = live
         pv[n:npad] = M
         out = {"pack_idx": host["pack_idx"][:npad].to(dev, non_blocking=True).long()}
+        if args.varlen_attn:
+            so = views["seq_off"]
+            so[0] = 0
+            np.cumsum(views["mask"][:M].reshape(Rp, Tp).sum(1), out=so[1:Rp + 1])
+            out["seq_off"] = host["seq_off"][:Rp + 1].to(dev, non_blocking=True)
         if args.pack_gather:
             uv = views["unpack_idx"]
             uv[:M] = npad
@@ -269,6 +278,7 @@ def main(argv=None):
             "a_mask": torch.zeros(R * A, dtype=torch.bool, pin_memory=pin),
             "pack_idx": torch.zeros(R * T, dtype=torch.int32, pin_memory=pin),
             "unpack_idx": torch.zeros(R * T, dtype=torch.int32, pin_memory=pin),
+            "seq_off": torch.zeros(R + 1, dtype=torch.int32, pin_memory=pin),
         }
         views = {k: v.numpy() for k, v in host.items()}
         while not stop.is_set():
@@ -302,7 +312,7 @@ def main(argv=None):
                         x[k] = t
                     key = (Rp, Tp, Ap)
                     if args.pack_step:
-                        pk, npad = pack_idx(host, views, Rp * Tp)
+                        pk, npad = pack_idx(host, views, Rp, Tp)
                         x.update(pk)
                         key = (Rp, Tp, Ap, npad)
                     lg, outcome, _, _ = forward(x, key)
@@ -342,7 +352,8 @@ def main(argv=None):
                  "a_f": torch.zeros(R * A * 8, dtype=torch.float16, pin_memory=pin),
                  "a_mask": torch.zeros(R * A, dtype=torch.bool, pin_memory=pin),
                  "pack_idx": torch.zeros(R * T, dtype=torch.int32, pin_memory=pin),
-                 "unpack_idx": torch.zeros(R * T, dtype=torch.int32, pin_memory=pin)}
+                 "unpack_idx": torch.zeros(R * T, dtype=torch.int32, pin_memory=pin),
+                 "seq_off": torch.zeros(R + 1, dtype=torch.int32, pin_memory=pin)}
             out = {"logits": torch.zeros(R * A, dtype=torch.float32, pin_memory=pin),
                    "value": torch.zeros(R, dtype=torch.float32, pin_memory=pin)}
             return h, {k: v.numpy() for k, v in h.items()}, out
@@ -386,7 +397,7 @@ def main(argv=None):
                         x[k] = t
                     key = (Rp, Tp, Ap)
                     if args.pack_step:
-                        pk, npad = pack_idx(host, views, Rp * Tp)
+                        pk, npad = pack_idx(host, views, Rp, Tp)
                         x.update(pk)
                         key = (Rp, Tp, Ap, npad)
                     lg, outcome, _, _ = forward(x, key)
@@ -489,7 +500,7 @@ def main(argv=None):
     ev = max(1, s1["evals"] - s0["evals"])
     nb = max(1, w1["batches"] - w0["batches"])
     res = {
-        "net": args.net, "params": params, "dtype": args.dtype, "sdpa": args.sdpa, "attn_math": args.attn_math, "fused_ffn": args.fused_ffn, "half": args.half, "pipeline": args.pipeline, "pack_step": args.pack_step, "pack_gather": args.pack_gather, "compile_mode": args.compile_mode, "compile": args.compile, "backend": args.backend if args.compile else None, "fake_net": args.fake_net,
+        "net": args.net, "params": params, "dtype": args.dtype, "sdpa": args.sdpa, "attn_math": args.attn_math, "fused_ffn": args.fused_ffn, "varlen_attn": args.varlen_attn, "half": args.half, "pipeline": args.pipeline, "pack_step": args.pack_step, "pack_gather": args.pack_gather, "compile_mode": args.compile_mode, "compile": args.compile, "backend": args.backend if args.compile else None, "fake_net": args.fake_net,
         "encoder": args.encoder,
         "workers": args.workers, "games_per_worker": args.games, "batchers": args.batchers, "max_batch": args.batch,
         "full_sims": args.full_sims, "fast_sims": args.fast_sims, "full_prob": args.full_prob,

@@ -39,19 +39,25 @@ def mlp(i, h, o):
     return nn.Sequential(nn.Linear(i, h), nn.GELU(), nn.Linear(h, o))
 
 
-def load_fused_ffn():
-    """fused_ffn.fused_ffn (imports triton); set it as AmberNet.fused_ffn outside the traced forward."""
+def load_kernel(name):
+    """A Triton kernel module of tools/az_bench (fused_ffn, varlen_attn; imports triton) -> its function of the same
+    name. Set it as AmberNet.<name> outside the traced forward."""
     import importlib.util
     import os
     import sys
-    mod = sys.modules.get("az_bench_fused_ffn")
+    key = "az_bench_" + name
+    mod = sys.modules.get(key)
     if mod is None:
         spec = importlib.util.spec_from_file_location(
-            "az_bench_fused_ffn", os.path.join(os.path.dirname(os.path.abspath(__file__)), "fused_ffn.py"))
+            key, os.path.join(os.path.dirname(os.path.abspath(__file__)), name + ".py"))
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
-        sys.modules["az_bench_fused_ffn"] = mod
-    return mod.fused_ffn
+        sys.modules[key] = mod
+    return getattr(mod, name)
+
+
+def load_fused_ffn():
+    return load_kernel("fused_ffn")
 
 
 class AmberNet(nn.Module):
@@ -120,6 +126,7 @@ class AmberNet(nn.Module):
         return self._heads(h, mask, b)
 
     sdpa = False   # True: run the trunk through sdpa_trunk (same weights and math, fused attention kernel)
+    varlen_attn = None   # load_kernel("varlen_attn"): with b["seq_off"], attention on the packed tokens (no padding)
     fused_ffn = None   # load_fused_ffn(): forward_packed runs each layer's LayerNorm + FFN + residual as one Triton kernel
     attn_math = False   # True: sdpa_trunk / forward_packed attend with plain matmuls + softmax (fp32) instead of SDPA
 
@@ -181,9 +188,12 @@ class AmberNet(nn.Module):
             a = layer.self_attn
             H = a.num_heads
             qkv_p = F.linear(layer.norm1(x), a.in_proj_weight, a.in_proj_bias)
-            qkv = unpack(qkv_p).view(B, T, 3, H, d // H).permute(2, 0, 3, 1, 4)
-            o = self._attend(qkv[0], qkv[1], qkv[2], keep)
-            x = x + a.out_proj(o.transpose(1, 2).reshape(M, d)[ip])
+            if self.varlen_attn is not None and "seq_off" in b:
+                x = x + a.out_proj(self.varlen_attn(qkv_p.contiguous(), b["seq_off"], H, T))
+            else:
+                qkv = unpack(qkv_p).view(B, T, 3, H, d // H).permute(2, 0, 3, 1, 4)
+                o = self._attend(qkv[0], qkv[1], qkv[2], keep)
+                x = x + a.out_proj(o.transpose(1, 2).reshape(M, d)[ip])
             if self.fused_ffn is not None:
                 x = self.fused_ffn(x.contiguous(), layer)
             else:
@@ -258,6 +268,13 @@ def pack_index(mask, step=1, inverse=False):
     inv = torch.full((m.numel(),), npad, dtype=torch.long, device=m.device)
     inv[idx] = torch.arange(n, device=m.device)
     return pk, inv
+
+
+def seq_offsets(mask):
+    """seq_off for varlen attention: row r's live tokens are packed rows seq_off[r] .. seq_off[r + 1] (pack_index
+    order), as int32 [B + 1]."""
+    c = mask.sum(1).to(torch.int32)
+    return torch.cat([c.new_zeros(1), torch.cumsum(c, 0, dtype=torch.int32)])
 
 
 def live_tokens(b):
