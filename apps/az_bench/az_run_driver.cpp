@@ -321,7 +321,8 @@ namespace sts::azbench {
         std::vector<float> resLogits;
         float resF = 0, resEhp = 0;
         std::uint32_t resVersion = 0;        // weights version of the result (submit)
-        // Evaluation cache (RunConfig::evalCache): input hash -> result, all of weights version cacheVersion.
+        // Evaluation cache (RunConfig::evalCache): input hash -> result, all of weights version cacheVersion; emptied
+        // at the start of each run, on a weights change and when full.
         struct CacheEntry { float F = 0, ehp = 0; int nAct = 0; std::vector<float> logits; };
         std::unordered_map<std::uint64_t, CacheEntry> cache;
         std::uint32_t cacheVersion = 0;
@@ -628,6 +629,7 @@ namespace sts::azbench {
             g.gc = GameContext(CharacterClass::IRONCLAD, seed, g.asc);
             if (cfg.testMaxHp > 0) g.gc.curHp = g.gc.maxHp = cfg.testMaxHp;
             g.inBattle = false;
+            g.cache.clear();
             g.moves = g.fightMoves = 0;
             g.floor = g.gc.floorNum;
             g.pending.clear();

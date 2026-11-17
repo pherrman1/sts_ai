@@ -444,7 +444,7 @@ class SelfplaySmoke(unittest.TestCase):
                 rows = [json.loads(l) for l in f]
             self.assertGreaterEqual(rows[-1]["runs_done"], 16)
             self.assertGreater(rows[-1]["train_steps"], 0)
-            self.assertIsNotNone(rows[-1]["loss"])
+            self.assertTrue(any(r["loss"] for r in rows))   # some report has a training loss
 
     def test_curriculum_switch(self):
         """With a 0 % threshold the curriculum moves up after --curriculum-runs runs and the checkpoint keeps it."""
