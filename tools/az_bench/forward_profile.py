@@ -12,6 +12,8 @@ Variants (comma list, --variants):
   packed     forward_packed (per-token work on live tokens only; pack_idx padded to --pack-step)
   packed_half  packed with half weights
   gpacked, gpacked_half  packed with unpack_idx (padded layout by one gather instead of zero fill + scatter)
+A suffix "#BACKEND" compiles that variant with another torch.compile backend: torch_tensorrt (needs the
+torch-tensorrt package; fp16 kernels enabled) or emmy (cloudrift-ai/emmy, `pip install "emmy-ml[compile]"`).
 A suffix "@MODE" compiles that variant with torch.compile mode MODE (e.g. sdpa_half@max-autotune-no-cudagraphs).
 
 The batch is synthetic: each row has a random number of live tokens (--min-tokens..T, run token first, the rest
@@ -72,6 +74,21 @@ def flat_batch(R, T, A, rng, min_tokens=20, min_actions=4):
             "a_f": torch.from_numpy(rng.normal(0, 1, (R, A, 8)).astype(np.float32)), "a_mask": torch.from_numpy(a_mask)}
 
 
+def compile_backend(net, backend, dtype):
+    if backend == "torch_tensorrt":
+        import torch_tensorrt  # noqa: F401  (registers the backend)
+        return torch.compile(net, backend="torch_tensorrt", dynamic=False,
+                             options={"enabled_precisions": {dtype, torch.float32}, "min_block_size": 1,
+                                      "truncate_double": True})
+    if backend == "emmy":
+        try:
+            import emmy  # noqa: F401  (registers the backend if the package does so on import)
+        except ImportError:
+            pass
+        return torch.compile(net, backend="emmy", dynamic=False)
+    return torch.compile(net, backend=backend, dynamic=False)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--net", default="0.44M")
@@ -103,6 +120,7 @@ def main():
     results = []
     for name in args.variants.split(","):
         vname, _, mode = name.partition("@")
+        vname, _, backend = vname.partition("#")
         net = copy.deepcopy(base)
         net.sdpa = "sdpa" in vname or "packed" in vname
         half = "half" in vname
@@ -113,7 +131,12 @@ def main():
             xin["pack_idx"], xin["unpack_idx"] = amber_net.pack_index(x["mask"], args.pack_step, inverse=True)
         elif "packed" in vname:
             xin["pack_idx"] = amber_net.pack_index(x["mask"], args.pack_step)
-        run = net if args.no_compile else torch.compile(net, dynamic=False, mode=mode or "default")
+        if args.no_compile:
+            run = net
+        elif backend:
+            run = compile_backend(net, backend, dtype)
+        else:
+            run = torch.compile(net, dynamic=False, mode=mode or "default")
         ac = torch.autocast(dev.type, dtype=dtype, enabled=not half)
 
         def step():
