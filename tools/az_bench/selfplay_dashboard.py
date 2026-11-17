@@ -46,6 +46,8 @@ def chart(xs, series, w=520, h=230, ymin=None, ymax=None, xlabel="runs", fmt="{:
     if not xs:
         return '<p class="empty">No data yet.</p>'
     allv = [v for _, ys, _ in series for v in ys if v is not None]
+    if not allv:
+        return '<p class="empty">No data yet.</p>'
     lo = min(allv) if ymin is None else ymin
     hi = max(allv) if ymax is None else ymax
     if hi <= lo:
@@ -179,6 +181,81 @@ def ascension_panel(rows, last, target=0.10, need=10000):
 </section>"""
 
 
+PROGRESS_KEYS = ("runs", "ruby", "emerald", "sapphire", "all_keys", "campfires", "recall_offered", "rest", "smith",
+                 "recall", "other_campfire", "elites", "burning_elites", "act4", "heart", "keyless_victories")
+
+
+def progress_sum(rows):
+    """Run progress counters (selfplay.py progress_window) summed per ascension over the given report windows."""
+    out = {}
+    for r in rows:
+        for a, e in (r.get("progress_window") or {}).items():
+            t = out.setdefault(int(a), dict.fromkeys(PROGRESS_KEYS, 0))
+            for k in PROGRESS_KEYS:
+                t[k] += e.get(k, 0)
+    return out
+
+
+def pct(a, b):
+    return f"{100 * a / b:.1f}" if b else "-"
+
+
+def progress_panel(rows, cur, recent=20):
+    """Keys, Recall, elites, Act 4 and Heart per ascension (finished runs). Empty before the counters existed."""
+    if not any(r.get("progress_window") for r in rows):
+        return ""
+    tot = progress_sum(rows)
+    now = progress_sum(rows[-recent:]).get(cur)
+
+    def tile(kname, v, note=""):
+        return f'<div class="tile"><div class="k">{kname}</div><div class="v">{v}</div><div class="n">{note}</div></div>'
+
+    tiles = ""
+    if now and now["runs"]:
+        n = now["runs"]
+        tiles = '<div class="tiles">' + "".join([
+            tile(f"All 3 keys (A{cur})", f'{pct(now["all_keys"], n)} %',
+                 f'Ruby {pct(now["ruby"], n)} / Emerald {pct(now["emerald"], n)} / Sapphire {pct(now["sapphire"], n)} %'),
+            tile("Recall when offered", f'{pct(now["recall"], now["recall_offered"])} %',
+                 f'{now["recall"]:,} of {now["recall_offered"]:,} campfires; rest {pct(now["rest"], now["campfires"])} %, '
+                 f'smith {pct(now["smith"], now["campfires"])} %'),
+            tile("Elites per run", f'{now["elites"] / n:.2f}',
+                 f'burning elite fought in {pct(now["burning_elites"], n)} % of runs'),
+            tile("Act 4 reached", f'{pct(now["act4"], n)} %',
+                 f'Heart fought {pct(now["heart"], n)} %; keyless Act 3 end {pct(now["keyless_victories"], n)} %'),
+        ]) + "</div>"
+    trs = []
+    for a in sorted(tot):
+        x = tot[a]
+        n = x["runs"]
+        trs.append(f'<tr class="{"current" if a == cur else ""}"><td>A{a}</td><td>{n:,}</td><td>{pct(x["ruby"], n)}</td>'
+                   f'<td>{pct(x["emerald"], n)}</td><td>{pct(x["sapphire"], n)}</td><td>{pct(x["all_keys"], n)}</td>'
+                   f'<td>{pct(x["recall"], x["recall_offered"])}</td><td>{pct(x["rest"], x["campfires"])}</td>'
+                   f'<td>{pct(x["smith"], x["campfires"])}</td><td>{x["elites"] / max(1, n):.2f}</td>'
+                   f'<td>{pct(x["burning_elites"], n)}</td><td>{pct(x["act4"], n)}</td><td>{pct(x["heart"], n)}</td>'
+                   f'<td>{pct(x["keyless_victories"], n)}</td></tr>')
+    xs, keys_s, act4_s = [], [], []
+    for r in rows:
+        e = (r.get("progress_window") or {}).get(str(r.get("ascension", cur)))
+        if not e or not e.get("runs"):
+            continue
+        xs.append(r["runs_done"])
+        keys_s.append(100 * e["all_keys"] / e["runs"])
+        act4_s.append(100 * e["act4"] / e["runs"])
+    ch = chart(xs, [("all 3 keys % (smoothed)", smooth(keys_s, 10), "--good"),
+                    ("Act 4 reached % (smoothed)", smooth(act4_s, 10), "--boss")], ymin=0, yfmt="{:.1f}") if xs else ""
+    return f"""<section class="ascbox"><h2>Keys, Recall, elites, Act 4 (finished runs)</h2>
+{tiles}
+<p class="rule">Tiles: current ascension, last ~{recent} windows. Keys count when held at the run's end. Recall % is over
+campfires where Recall was legal; rest / smith % over all campfire choices. Elites: elite-room fights started (the
+burning elite gives the Emerald key). A run without all three keys ends after the Act 3 boss (floor 51).</p>
+{ch}
+<div class="scroll"><table><tr><th>asc</th><th>runs</th><th>Ruby %</th><th>Emerald %</th><th>Sapphire %</th><th>all 3 %</th>
+<th>Recall % offered</th><th>rest %</th><th>smith %</th><th>elites/run</th><th>burning elite %</th><th>Act 4 %</th>
+<th>Heart %</th><th>keyless end %</th></tr>{"".join(trs)}</table></div>
+</section>"""
+
+
 CSS = """
 :root { --bg:#f6f7f9; --panel:#ffffff; --fg:#17202b; --muted:#5d6b7a; --line:#dde3ea; --accent:#2f6fdb;
   --accent2:#d9822b; --good:#1f8a4c; --boss:#9b59b6;
@@ -309,6 +386,7 @@ def page(rows, title, started):
 </header>
 {ascension_panel(rows, last) if curriculum else ""}
 <div class="tiles">{tiles}</div>
+{progress_panel(rows, last.get("ascension", 20))}
 <div class="grid2">
 <section><h2>Mean final floor per window</h2>{chart(runs, [("mean floor (smoothed)", floor_s, "--accent")], ymin=0)}</section>
 <section><h2>{"Heart-kill rate, all ascensions (%)" if curriculum else "Self-play win rate (%)"}</h2>{chart(runs, [("win rate (smoothed)", win_s, "--good")], ymin=0, yfmt="{:.2f}")}</section>
