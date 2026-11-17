@@ -28045,3 +28045,29 @@ from the root / tree roles in act 2's hallway. The gain is small and the two-sid
 proposal (Philipp's decision). Next: better playout policies trained on §814's playout-room states, ranked by the
 value-error test. Seeds: none new (§775's). Cost: 168.2 lane-hours.
 **Knowledge impact:** KB `research/combat-search/cheap-combat-roadmap.md` (playout prior retrain line).
+
+## §TBD — Simulation-balanced playout policy (issue #1053): G16 + mb4 with SBC (net C fine-tuned by simulation balancing on the playout value error; debiased offline MSE 617 vs V's 688) instead of V as prior-playout policy, against §815's GP on 1,021 paired A20 seeds (3 dropped) after a 32/32 sentinel: Heart 43.58% → 44.37%, +0.78 pp [−1.67, +3.23] → NOT_WORSE_3PP at 1.87× CPU (equal simulations) (cloud, 40 workers, 2026-11-16/17)
+
+**Question (Philipp 2026-11-16 20:33 CET, typed go "ja zu spiel test"; 40 workers 21:30 CET):** does a playout policy
+trained directly on the playout value error (Silver & Tesauro 2009) beat V in whole runs, i.e. is the offline value
+error a selection measure beyond §815's one calibration point?
+**Data:** [PREREG](evidence/rollout_prior_sbc_20261116/PREREG.md), [RESULT](evidence/rollout_prior_sbc_20261116/RESULT.md),
+`results/` (result.json, pairs_GS.csv, claims.txt, verify.txt, smoke.txt). Run commit 88a379be (code 432bfae4,
+binary 85a6cf3e), §775's seeds 111378256-111379279, control = §815's 1,024 GP games (sentinel 32/32 REUSE_VALID).
+1,053 of 1,056 units OK, 0 bad, 0 env mismatches, 0 aborts; 3 GS units (111379027, 111379246, 111379259) died in all
+four attempts on worker container restarts and are dropped seeds (PREREG allows 20). Trainer
+`tools/rollout_prior/sim_balance.py`, playoutvaluebench sampling arms and STS_PVB_CHILDREN (65435661, 129ade2d).
+**Result:** GS 44.37% vs GP 43.58% Heart, +0.78 pp [−1.67, +3.23]; 86 seeds only GS, 78 only GP. Both SPRTs CAP
+(nonregression LLR +1.46, gainer −0.28); one-sided bounds [−1.27, +2.84] → NOT_WORSE_3PP (no GAIN at CAP). Over all
+1,024 seeds the drops could move d only within [+0.68, +0.98]. CPU 1.87× [1.78, 1.96] (1.81× machine-corrected),
+sims 1.00×: the cost is SBC's 256/128 network per playout step. GS − G16 (§775) +3.13 pp [+0.59, +5.68] at 2.11×;
+first 512 seeds GS − GP −0.39 [−4.10, +3.12]. Act-4 conversion 88.0% vs 87.5% on common arrivals.
+Offline sibling-ordering measure (STS_PVB_CHILDREN, 8,959 roots vs the recorded 16k search's edge Q): regret g7f_E
+2.19, SBC 2.34, V 2.36, X-B 2.39, C 2.48, greedy 2.69; it detects greedy but is biased toward g7f_E (the reference
+search used g7f_E playouts) and does not calibrate.
+**Interpretation (Inference):** a ~10% lower debiased playout value error (SBC vs V, with a heavy tail) gives at most
+a small game effect that this size cannot resolve; the sign agrees with the offline measure. Model selection used the
+same validation roots (N1), so the offline gap is slightly optimistic.
+**Decision:** NOT_WORSE_3PP. The playout value error stays a pre-filter, not a selector between close policies. No
+default change; SBC at 1.87× CPU is no equal-CPU candidate. Seeds: none new. Cost: about 311 lane-hours plus lost attempts.
+**Knowledge impact:** KB `research/combat-search/cheap-combat-roadmap.md` (playout prior retrain line).

@@ -1,0 +1,6 @@
+111379008_GS OK      111379008_GS.w07.tar (+1 duplicate)
+111379027_GS MISSING no tar
+111379036_GS OK      111379036_GS.w13.tar (+1 duplicate)
+111379246_GS MISSING no tar
+111379259_GS MISSING no tar
+units OK 1053 MISSING 3 BAD 0 of 1056; duplicates 2; tars for unknown units 0; run ['88a379be9c0c']; worker DONE.json: 0/40
