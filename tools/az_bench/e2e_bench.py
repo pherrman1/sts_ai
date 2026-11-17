@@ -102,6 +102,8 @@ def main(argv=None):
     ap.add_argument("--report", type=float, default=5)
     ap.add_argument("--dtype", default="fp16", choices=["fp16", "bf16", "fp32"])
     ap.add_argument("--sdpa", action="store_true", help="AmberNet.sdpa: fused-attention trunk (same weights and math)")
+    ap.add_argument("--fused-ffn", action="store_true",
+                    help="with --pack-step: LayerNorm + FFN + residual per layer as one Triton kernel (fused_ffn.py)")
     ap.add_argument("--attn-math", action="store_true",
                     help="with --sdpa / --pack-step: attention as plain matmuls + fp32 softmax instead of SDPA")
     ap.add_argument("--half", action="store_true",
@@ -151,6 +153,7 @@ def main(argv=None):
     net = amber_net.AmberNet(d=d, layers=layers).to(dev).eval()
     net.sdpa = args.sdpa
     net.attn_math = args.attn_math
+    net.fused_ffn = args.fused_ffn
     if args.half:
         if args.layout != "flat" or dtype == torch.float32:
             raise SystemExit("--half needs --layout flat and --dtype fp16 / bf16")
@@ -486,7 +489,7 @@ def main(argv=None):
     ev = max(1, s1["evals"] - s0["evals"])
     nb = max(1, w1["batches"] - w0["batches"])
     res = {
-        "net": args.net, "params": params, "dtype": args.dtype, "sdpa": args.sdpa, "attn_math": args.attn_math, "half": args.half, "pipeline": args.pipeline, "pack_step": args.pack_step, "pack_gather": args.pack_gather, "compile_mode": args.compile_mode, "compile": args.compile, "backend": args.backend if args.compile else None, "fake_net": args.fake_net,
+        "net": args.net, "params": params, "dtype": args.dtype, "sdpa": args.sdpa, "attn_math": args.attn_math, "fused_ffn": args.fused_ffn, "half": args.half, "pipeline": args.pipeline, "pack_step": args.pack_step, "pack_gather": args.pack_gather, "compile_mode": args.compile_mode, "compile": args.compile, "backend": args.backend if args.compile else None, "fake_net": args.fake_net,
         "encoder": args.encoder,
         "workers": args.workers, "games_per_worker": args.games, "batchers": args.batchers, "max_batch": args.batch,
         "full_sims": args.full_sims, "fast_sims": args.fast_sims, "full_prob": args.full_prob,

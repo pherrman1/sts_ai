@@ -12,6 +12,7 @@ Variants (comma list, --variants):
   packed     forward_packed (per-token work on live tokens only; pack_idx padded to --pack-step)
   packed_half  packed with half weights
   gpacked, gpacked_half  packed with unpack_idx (padded layout by one gather instead of zero fill + scatter)
+  any name containing "ffn" (e.g. gpacked_half_ffn): LayerNorm + FFN + residual as one Triton kernel (fused_ffn.py)
   any name containing "math" (e.g. gpacked_half_math): attention as plain matmuls + fp32 softmax (AmberNet.attn_math)
 A suffix "#BACKEND" compiles that variant with another torch.compile backend: torch_tensorrt (needs the
 torch-tensorrt package; fp16 kernels enabled) or emmy (cloudrift-ai/emmy, `pip install "emmy-ml[compile]"`).
@@ -125,6 +126,7 @@ def main():
         net = copy.deepcopy(base)
         net.sdpa = "sdpa" in vname or "packed" in vname
         net.attn_math = "math" in vname
+        net.fused_ffn = "ffn" in vname
         half = "half" in vname
         if half:
             net = net.to(dtype)

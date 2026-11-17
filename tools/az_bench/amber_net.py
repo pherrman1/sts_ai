@@ -39,6 +39,20 @@ def mlp(i, h, o):
     return nn.Sequential(nn.Linear(i, h), nn.GELU(), nn.Linear(h, o))
 
 
+def _fused_ffn():
+    import importlib.util
+    import os
+    import sys
+    mod = sys.modules.get("az_bench_fused_ffn")
+    if mod is None:
+        spec = importlib.util.spec_from_file_location(
+            "az_bench_fused_ffn", os.path.join(os.path.dirname(os.path.abspath(__file__)), "fused_ffn.py"))
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        sys.modules["az_bench_fused_ffn"] = mod
+    return mod.fused_ffn
+
+
 class AmberNet(nn.Module):
     def __init__(self, d=96, layers=3, heads=None):
         super().__init__()
@@ -105,6 +119,7 @@ class AmberNet(nn.Module):
         return self._heads(h, mask, b)
 
     sdpa = False   # True: run the trunk through sdpa_trunk (same weights and math, fused attention kernel)
+    fused_ffn = False   # True: forward_packed runs each layer's LayerNorm + FFN + residual as one Triton kernel
     attn_math = False   # True: sdpa_trunk / forward_packed attend with plain matmuls + softmax (fp32) instead of SDPA
 
     def _attend(self, q, k, v, keep):
@@ -168,7 +183,10 @@ class AmberNet(nn.Module):
             qkv = unpack(qkv_p).view(B, T, 3, H, d // H).permute(2, 0, 3, 1, 4)
             o = self._attend(qkv[0], qkv[1], qkv[2], keep)
             x = x + a.out_proj(o.transpose(1, 2).reshape(M, d)[ip])
-            x = x + layer.linear2(F.gelu(layer.linear1(layer.norm2(x))))
+            if self.fused_ffn:
+                x = _fused_ffn()(x.contiguous(), layer)
+            else:
+                x = x + layer.linear2(F.gelu(layer.linear1(layer.norm2(x))))
         return self._heads(unpack(self.out_norm(x)).view(B, T, d), mask, b)
 
     def forward_segments(self, b):
