@@ -26,21 +26,22 @@
 //   shop: 62 removeCost/100 (while offered)  63 removal offered
 // PLAYER (1 token, ids none; the combat PLAYER indices where they apply)
 //   0 curHp/100  1 maxHp/100  2 curHp/maxHp  7 gold/100  39 characterClass (raw)
-// CARD (the master deck in deck order, then on a card-select screen the offered cards that are not deck cards
-//   (The Library, Neow / colorless choices) in screen order; ids[0] = card id; combat CARD indices where they apply)
-//   10 master deck (combat zones are 0-9)  11 deck index (offered: screen index)/10  12 upgraded  13 cost/3
+// CARD (the master deck in deck order, then the cards the screen offers: on a card-select screen the ones that are
+//   not deck cards (The Library, Neow / colorless choices) in screen order, on a reward screen every card reward
+//   (group-major); ids[0] = card id; combat CARD indices where they apply)
+//   10 master deck (combat zones are 0-9)  11 deck index (offered: screen index, rewards group * 4 + position)/10  12 upgraded  13 cost/3
 //   14 cost/3 (costForTurn)  17 specialData/10 (CardInstance: misc, Searing Blow upgrade count)  32 bottled
 //   33 canUpgrade  34 canTransform  35 selectable on the current card-select screen  36 already picked on it
-//   37 offered by the screen (not a deck card)
+//   37 offered by the screen (not a deck card)  38 card reward  39 reward group/5  40 position in the group/4
 // RELIC (gc.relics order; ids[0] = relic id)  0 counter (relic data; Wing Boots: charges)/10  1 1  2 order/20
 // POTION (one per filled slot; ids[0] = potion id)  0 slot/5  1 needs a target  2 1  3 drinkable out of combat
 // OPTION (the screen's choices; ids[0] = the item (card / relic / potion / event id), ids[1] = the deck card,
 //   relic or potion an event option names, the Note For Yourself card, or the Dead Adventurer elite's monster id)
-//   3 1 (out-of-combat option)  12-28 kind one-hot (REWARD_GOLD, REWARD_CARD, REWARD_RELIC, REWARD_POTION,
-//   REWARD_EMERALD_KEY, REWARD_SAPPHIRE_KEY, SINGING_BOWL, SHOP_CARD, SHOP_RELIC, SHOP_POTION, SHOP_REMOVE,
+//   3 1 (out-of-combat option)  12-28 kind one-hot (REWARD_GOLD, REWARD_CARD (unused: card rewards are CARD
+//   tokens), REWARD_RELIC, REWARD_POTION, REWARD_EMERALD_KEY, REWARD_SAPPHIRE_KEY, SINGING_BOWL, SHOP_CARD, SHOP_RELIC, SHOP_POTION, SHOP_REMOVE,
 //   BOSS_RELIC, REST, NEOW, EVENT, MATCH_SLOT, CHEST)  30 index within its group/16
 //   31 legal now  32 price/100  33 affordable  34 gold amount/100 (gold reward, We Meet Again gold)
-//   35 card upgraded  36 card reward group/5  37 card position in its group/4  38 card specialData/10
+//   35 card upgraded  38 card specialData/10
 //   39 relic paired with the sapphire key
 //   kind-specific block 40-63:
 //     MATCH_SLOT 40 face down unseen  41 seen  42 face up (pending pair)  43 matched
@@ -300,6 +301,24 @@ namespace sts::search {
             return gc.deck.cards[d] == s.card ? d : -1;
         }
 
+        // A CARD token for a card the screen offers (not a deck card): card-select choices, card rewards.
+        AmberToken *offeredCard(Enc &e, const Card &c, int screenIdx, std::uint8_t *idx) {
+            AmberToken *t = e.push(T::CARD, idx);
+            if (!t) return nullptr;
+            const CardInstance ci(c);
+            t->ids[0] = cardId(c.id);
+            put(*t, 11, screenIdx / 10.0f);
+            flag(*t, 12, c.upgraded);
+            put(*t, 13, ci.cost / 3.0f);
+            put(*t, 14, ci.cost / 3.0f);
+            put(*t, 17, ci.specialData / 10.0f);
+            flag(*t, 33, c.canUpgrade());
+            flag(*t, 34, c.canTransform());
+            flag(*t, 35, true);
+            flag(*t, 37, true);
+            return t;
+        }
+
         void deck(Enc &e, const GameContext &gc) {
             const auto &d = gc.deck;
             const int n = d.size();
@@ -328,20 +347,7 @@ namespace sts::search {
                     continue;
                 }
                 // A card offered by the screen, not in the deck (The Library, Neow / colorless choices, ...).
-                AmberToken *t = e.push(T::CARD, &e.selectTok[i]);
-                if (!t) continue;
-                const Card &c = info.toSelectCards[i].card;
-                const CardInstance ci(c);
-                t->ids[0] = cardId(c.id);
-                put(*t, 11, i / 10.0f);
-                flag(*t, 12, c.upgraded);
-                put(*t, 13, ci.cost / 3.0f);
-                put(*t, 14, ci.cost / 3.0f);
-                put(*t, 17, ci.specialData / 10.0f);
-                flag(*t, 33, c.canUpgrade());
-                flag(*t, 34, c.canTransform());
-                flag(*t, 35, true);
-                flag(*t, 37, true);
+                offeredCard(e, info.toSelectCards[i].card, i, &e.selectTok[i]);
             }
             for (int i = 0; i < static_cast<int>(info.haveSelectedCards.size()); ++i) {
                 const int di = info.haveSelectedCards[i].deckIdx;
@@ -390,11 +396,12 @@ namespace sts::search {
             for (int g = 0; g < r.cardRewardCount && g < 5; ++g) {
                 const auto &cr = r.cardRewards[g];
                 for (int x = 0; x < static_cast<int>(cr.size()) && x < 4; ++x) {
-                    AmberToken *t = option(e, OptKind::REWARD_CARD, g * 4 + x, true, &e.cardTok[g][x]);
+                    // Card rewards are CARD tokens: five groups of up to four cards overflow OPTION's 16 slots.
+                    AmberToken *t = offeredCard(e, cr[x], g * 4 + x, &e.cardTok[g][x]);
                     if (!t) continue;
-                    optionCard(*t, cr[x]);
-                    put(*t, 36, g / 5.0f);
-                    put(*t, 37, x / 4.0f);
+                    flag(*t, 38, true);
+                    put(*t, 39, g / 5.0f);
+                    put(*t, 40, x / 4.0f);
                 }
             }
             if (r.cardRewardCount > 0 && gc.hasRelic(RelicId::SINGING_BOWL))
@@ -711,9 +718,15 @@ namespace sts::search {
                     switch (rt) {
                         case RT::GOLD: tok = i1 < 2 ? e.goldTok[i1] : kNone; break;
                         case RT::CARD:
-                            if (i2 == 5) tok = e.bowlTok;
-                            else tok = i1 < 5 && i2 < 4 ? e.cardTok[i1][i2] : kNone;
-                            break;
+                            if (i2 == 5) {
+                                tok = e.bowlTok;
+                                break;
+                            }
+                            tok = i1 < 5 && i2 < 4 ? e.cardTok[i1][i2] : kNone;
+                            if (tok == kNone) return unknown();
+                            type(AT::CHOOSE_CARD);
+                            setSrc(a, T::CARD, tok);
+                            return;
                         case RT::RELIC: tok = i1 < 3 ? e.rRelicTok[i1] : kNone; break;
                         case RT::POTION: tok = i1 < 5 ? e.rPotTok[i1] : kNone; break;
                         case RT::KEY: tok = e.keyTok; break;
