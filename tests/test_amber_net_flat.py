@@ -80,8 +80,13 @@ class AmberFlatEquivalence(unittest.TestCase):
         torch.manual_seed(0)
         net = A.jitter_1d_params(A.AmberNet(64, 2).eval())
         f = A.to_flat(A.synthetic_batch(16, live_frac=0.5, rng=np.random.default_rng(6)))
+        # to_flat pads only to the longest row (equal counts here): append 9 dead slots to every row
+        f = dict(f, tok_type=torch.nn.functional.pad(f["tok_type"], (0, 9)),
+                 ids=torch.nn.functional.pad(f["ids"], (0, 0, 0, 9)), f=torch.nn.functional.pad(f["f"], (0, 0, 0, 9)),
+                 mask=torch.nn.functional.pad(f["mask"], (0, 9)))
         g = dict(f)
         dead = ~f["mask"]
+        self.assertGreater(int(dead.sum()), 0)
         rng = torch.Generator().manual_seed(1)
         g["tok_type"] = torch.where(dead, torch.randint(0, len(A.TOKEN_TYPES), dead.shape, generator=rng), f["tok_type"])
         g["ids"] = torch.where(dead[..., None], torch.randint(0, A.ID_VOCAB, f["ids"].shape, generator=rng), f["ids"])
