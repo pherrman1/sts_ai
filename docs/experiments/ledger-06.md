@@ -28078,7 +28078,7 @@ default change; SBC at 1.87× CPU is no equal-CPU candidate. Seeds: none new. Co
 many net leaf evaluations per second can our engine plus a batched GPU token transformer reach on the PC? Decision rule
 set before the build: ≥ 300k pos/s GO, 100k-300k stage 1 with 500k games, < 100k STOP. Overnight mandate: alternate
 GPU and CPU optimizations until a step gains < ~10 %.
-**Data:** [RESULTS](evidence/stage0_throughput_20261117/RESULTS.md) (running table, rows 0-26),
+**Data:** [RESULTS](evidence/stage0_throughput_20261117/RESULTS.md) (running table, rows 0-27b),
 [final/](evidence/stage0_throughput_20261117/final/) (exact command, three result JSONs). Code: PR #1075 (merge
 88478f22; run commit 7b002281), encoder PR #1077. Bench only: `apps/az_bench`, `tools/az_bench`; no main-agent default
 changes. Machine: Ryzen 5 7500F 6c/12t, RTX 3060 Ti 8 GB, torch 2.5.1+cu121. No game seeds: fights restart from
