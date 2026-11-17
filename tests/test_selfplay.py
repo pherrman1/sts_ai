@@ -98,6 +98,35 @@ class ReplayTest(unittest.TestCase):
             for k in ("outcome", "hp_end", "has_policy", "floor", "combat"):
                 self.assertEqual(b[k][r], c[k][i], k)
 
+    def test_packed_batch_same_loss_and_grads(self):
+        """sample(packed=True) holds the same rows as the padded batch, and forward_packed gives the same losses and
+        gradients (fp32, float rounding only), with and without trash entries (pack_step)."""
+        sp = load()
+        rng = np.random.default_rng(4)
+        rep = sp.Replay(2000)
+        rep.add(chunk(rng, 400))
+        torch.manual_seed(0)
+        net = sp.amber_net.jitter_1d_params(sp.amber_net.AmberNet(64, 2))
+        net.sdpa = True
+        for step in (1, 64):
+            b = rep.sample(np.random.default_rng(5), 48)
+            p = rep.sample(np.random.default_rng(5), 48, packed=True, pack_step=step)
+            B, T = b["mask"].shape
+            n = int(b["mask"].sum())
+            np.testing.assert_array_equal(p["mask"], b["mask"])
+            np.testing.assert_array_equal(p["pack_idx"][:n], np.flatnonzero(b["mask"]))
+            self.assertTrue((p["pack_idx"][n:] == B * T).all())
+            np.testing.assert_array_equal(p["f"][:n], b["f"].reshape(B * T, -1)[np.flatnonzero(b["mask"])])
+            res = []
+            for x in (b, p):
+                net.zero_grad()
+                loss, parts = sp.losses(net, sp.to_torch(x, torch.device("cpu")), 1.0, 1.0, 1.0)
+                loss.backward()
+                res.append((float(loss), [torch.zeros_like(q) if q.grad is None else q.grad.clone() for q in net.parameters()]))
+            self.assertAlmostEqual(res[0][0], res[1][0], places=5)
+            for g0, g1 in zip(res[0][1], res[1][1]):
+                self.assertLess(float((g0 - g1).abs().max()), 1e-5 + 1e-4 * float(g0.abs().max()))
+
     def test_policy_frac(self):
         sp = load()
         rng = np.random.default_rng(2)
@@ -192,6 +221,21 @@ class SelfplaySmoke(unittest.TestCase):
             self.assertGreaterEqual(rows[-1]["runs_done"], 16)
             self.assertGreater(rows[-1]["train_steps"], 0)
             self.assertEqual(rows[-1]["invalid_actions"], 0)
+
+    def test_train_packed_run(self):
+        """--train-packed trains on packed batches (same loss: ReplayTest.test_packed_batch_same_loss_and_grads)."""
+        sp = load()
+        args = ["--module-dir", os.path.dirname(MODULES[0]), "--device", "cpu", "--workers", "2", "--games", "4",
+                "--full-sims", "8", "--fast-sims", "4", "--batch", "32", "--row-buckets", "32", "--pack-step", "32",
+                "--pack-threads", "1", "--min-replay", "50", "--train-batch", "32", "--window", "5000",
+                "--report", "1", "--sync-steps", "2", "--seed-base", "1500", "--max-runs", "16", "--train-packed"]
+        with tempfile.TemporaryDirectory() as d:
+            self.assertEqual(sp.main(args + ["--out-dir", d]), 0)
+            with open(os.path.join(d, "metrics.jsonl")) as f:
+                rows = [json.loads(l) for l in f]
+            self.assertGreaterEqual(rows[-1]["runs_done"], 16)
+            self.assertGreater(rows[-1]["train_steps"], 0)
+            self.assertIsNotNone(rows[-1]["loss"])
 
     def test_curriculum_switch(self):
         """With a 0 % threshold the curriculum moves up after --curriculum-runs runs and the checkpoint keeps it."""

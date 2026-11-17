@@ -119,9 +119,12 @@ class Replay:
                                                    or self.act_start[self.s_tail % self.cs] < self.a_head - self.ca)):
                 self.s_tail += 1
 
-    def sample(self, rng, B, policy_frac=0.0):
+    def sample(self, rng, B, policy_frac=0.0, packed=False, pack_step=1):
         """A training batch in forward_flat's layout (numpy), B rows drawn uniformly from the window. policy_frac > 0
-        draws at least that share of rows among samples with a policy target (rejection on the uniform draw)."""
+        draws at least that share of rows among samples with a policy target (rejection on the uniform draw).
+        packed=True: tok_type / ids / f hold only the live tokens ([N], row after row, as forward_packed takes them)
+        with pack_idx [N] (their slots in the [B, T] layout); N is padded to a multiple of pack_step with trash
+        entries (pack_idx = B * T, zero inputs)."""
         with self.lock:
             n = len(self)
             j = (self.s_tail + rng.integers(0, n, B)) % self.cs
@@ -147,14 +150,28 @@ class Replay:
             rows_a = np.repeat(np.arange(B), na)
             cols_a = np.arange(int(na.sum())) - np.repeat(np.cumsum(na) - na, na)
             src_a = (np.repeat(self.act_start[j], na) + cols_a) % self.ca
-            b = {"tok_type": np.zeros((B, T), np.int64), "ids": np.zeros((B, T, N_CAT), np.int64),
-                 "f": np.zeros((B, T, N_FLOAT), np.float16), "mask": np.zeros((B, T), bool),
+            b = {"mask": np.zeros((B, T), bool),
                  "a_type": np.zeros((B, A), np.int64), "a_src": np.full((B, A), -1, np.int64),
                  "a_tgt": np.full((B, A), -1, np.int64), "a_f": np.zeros((B, A, N_ACT_FEAT), np.float16),
                  "a_mask": np.zeros((B, A), bool), "policy": np.zeros((B, A), np.float32)}
-            b["tok_type"][rows_t, cols_t] = self.tok_type[src_t]
-            b["ids"][rows_t, cols_t] = self.ids[src_t]
-            b["f"][rows_t, cols_t] = self.f[src_t]
+            if packed:
+                n = int(nt.sum())
+                npad = -(-n // pack_step) * pack_step
+                b["tok_type"] = np.zeros(npad, np.int64)
+                b["ids"] = np.zeros((npad, N_CAT), np.int64)
+                b["f"] = np.zeros((npad, N_FLOAT), np.float16)
+                b["pack_idx"] = np.full(npad, B * T, np.int64)
+                b["tok_type"][:n] = self.tok_type[src_t]
+                b["ids"][:n] = self.ids[src_t]
+                b["f"][:n] = self.f[src_t]
+                b["pack_idx"][:n] = rows_t * T + cols_t
+            else:
+                b["tok_type"] = np.zeros((B, T), np.int64)
+                b["ids"] = np.zeros((B, T, N_CAT), np.int64)
+                b["f"] = np.zeros((B, T, N_FLOAT), np.float16)
+                b["tok_type"][rows_t, cols_t] = self.tok_type[src_t]
+                b["ids"][rows_t, cols_t] = self.ids[src_t]
+                b["f"][rows_t, cols_t] = self.f[src_t]
             b["mask"][rows_t, cols_t] = True
             b["a_type"][rows_a, cols_a] = self.a_type[src_a]
             b["a_src"][rows_a, cols_a] = self.a_src[src_a]
@@ -253,6 +270,9 @@ def main(argv=None):
     ap.add_argument("--window", type=int, default=500000, help="replay window (samples)")
     ap.add_argument("--min-replay", type=int, default=20000, help="samples before training starts")
     ap.add_argument("--train-batch", type=int, default=1024)
+    ap.add_argument("--train-packed", action="store_true",
+                    help="training: batches with only the live tokens (forward_packed: per-token work without the "
+                         "padding to the longest sample; same loss up to float rounding)")
     ap.add_argument("--replay-ratio", type=float, default=2.0, help="max trained / generated samples")
     ap.add_argument("--policy-frac", type=float, default=0.0, help="min share of policy rows per train batch")
     ap.add_argument("--lr", type=float, default=1e-3)
@@ -491,7 +511,7 @@ def main(argv=None):
             if len(replay) < args.min_replay or counters["trained"] - trained0 >= args.replay_ratio * replay.added:
                 time.sleep(0.02)
                 continue
-            b = replay.sample(rng, args.train_batch, args.policy_frac)
+            b = replay.sample(rng, args.train_batch, args.policy_frac, packed=args.train_packed)
             ctx = torch.cuda.stream(stream) if stream is not None else torch.no_grad()
             with ctx:
                 bt = to_torch(b, dev)
