@@ -26,6 +26,7 @@
 
 #include "combat/BattleContext.h"
 #include "sim/search/Action.h"
+#include "az_pack.h"
 #include "sim/search/AmberEncoder.h"
 #include "sim/search/AmberTokens.h"
 #include "sim/search/SilverSearcher.h"
@@ -97,16 +98,8 @@ namespace sts::azbench {
         // and every consumer masks by count (tests/test_amber_net_flat.py checks that their contents never reach an
         // output). Padding rows hold one live token (stale contents) and one live action; their outputs are discarded.
         // packThreads > 1 packs disjoint row ranges in parallel. Returns the tickets (empty after a stop or timeout).
-        struct FlatBuffers {
-            std::int8_t *tokType;      // [R][T]
-            std::int16_t *ids;         // [R][T][4]
-            std::uint16_t *f;          // [R][T][64] float16 bits
-            std::uint8_t *mask;        // [R][T]
-            std::int16_t *aType, *aSrc, *aTgt;   // [R][A]
-            std::uint16_t *aF;         // [R][A][8]
-            std::uint8_t *aMask;       // [R][A]
-        };
-        struct FlatShape { int rows = 0, rowsPadded = 0, tokens = 0, actions = 0; };
+        using FlatBuffers = azbench::FlatBuffers;   // az_pack.h
+        using FlatShape = azbench::FlatShape;
         std::vector<std::uint32_t> nextBatchFlat(int maxRows, int minRows, int timeoutMs,
                                                  const std::vector<int> &rowBuckets, const std::vector<int> &tokBuckets,
                                                  const std::vector<int> &actBuckets, const FlatBuffers &buf,
