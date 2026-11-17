@@ -257,7 +257,7 @@ namespace sts::azbench {
 
     RunDriver::RunDriver(RunConfig cfg) : cfg_(cfg) {
         if (!cfg_.encodeCombat) cfg_.encodeCombat = search::amberEncodeCombat;
-        if (!cfg_.encodeGame) cfg_.encodeGame = stubEncodeGame;
+        if (!cfg_.encodeGame) cfg_.encodeGame = search::amberEncodeGame;
         if (cfg_.gamesPerWorker > 0xffff) throw std::invalid_argument("run driver: at most 65535 runs per worker");
         for (int w = 0; w < cfg_.workers; ++w) {
             auto wk = std::make_unique<Worker>();
@@ -299,7 +299,7 @@ namespace sts::azbench {
             const RunStats &p = w->published;
             s.evals += p.evals; s.moves += p.moves; s.searchedMoves += p.searchedMoves;
             s.runsStarted += p.runsStarted; s.runsDone += p.runsDone; s.wins += p.wins; s.floorsSum += p.floorsSum;
-            s.stalls += p.stalls; s.terminalLeaves += p.terminalLeaves; s.encodeCut += p.encodeCut;
+            s.stalls += p.stalls; s.terminalLeaves += p.terminalLeaves; s.encodeCut += p.encodeCut; s.encodeCutOoc += p.encodeCutOoc;
             s.unsupported += p.unsupported; s.samplesDone += p.samplesDone; s.samplesPending += p.samplesPending;
             for (int k = 0; k < kOutcomeClasses; ++k) s.outcomes[k] += p.outcomes[k];
             s.stepCpu += p.stepCpu; s.encodeCpu += p.encodeCpu; s.searchCpu += p.searchCpu;
@@ -380,7 +380,7 @@ namespace sts::azbench {
                 g.pendingCombat = false;
                 g.pendingMaxHp = static_cast<float>(std::max(1, node.gc->maxHp));
             }
-            wk.st.encodeCut += g.tokens.cut;
+            (node.combat ? wk.st.encodeCut : wk.st.encodeCutOoc) += g.tokens.cut;
             g.pendingNode = ni;
             outbox.push_back(static_cast<std::uint32_t>(wi) << 16 | static_cast<std::uint32_t>(gi));
         };

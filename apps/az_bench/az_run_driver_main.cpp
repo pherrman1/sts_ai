@@ -103,13 +103,13 @@ int main(int argc, char **argv) {
     }
     std::printf("{\"runs_done\": %lld, \"wins\": %lld, \"mean_floor\": %.2f, \"moves\": %lld, \"searched_moves\": %lld, "
                 "\"evals\": %lld, \"evals_per_s\": %.0f, \"samples\": %zu, \"samples_policy\": %d, \"samples_combat\": %d, "
-                "\"bad_samples\": %d, \"stalls\": %lld, \"unsupported\": %lld, \"encode_cut\": %lld, "
+                "\"bad_samples\": %d, \"stalls\": %lld, \"unsupported\": %lld, \"encode_cut\": %lld, \"encode_cut_ooc\": %lld, "
                 "\"terminal_leaves\": %lld, \"seconds\": %.1f}\n",
                 static_cast<long long>(s.runsDone), static_cast<long long>(s.wins),
                 s.runsDone ? static_cast<double>(s.floorsSum) / s.runsDone : 0.0, static_cast<long long>(s.moves),
                 static_cast<long long>(s.searchedMoves), static_cast<long long>(s.evals), s.evals / secs,
                 samples.size(), withPolicy, combat, bad, static_cast<long long>(s.stalls),
-                static_cast<long long>(s.unsupported), static_cast<long long>(s.encodeCut),
+                static_cast<long long>(s.unsupported), static_cast<long long>(s.encodeCut), static_cast<long long>(s.encodeCutOoc),
                 static_cast<long long>(s.terminalLeaves), secs);
     std::printf("outcomes (class: runs):");
     for (int k = 0; k < azbench::kOutcomeClasses; ++k)

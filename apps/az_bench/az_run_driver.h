@@ -46,7 +46,7 @@ namespace sts::azbench {
     using GameEncodeFn = void (*)(const GameContext &, const std::vector<search::GameAction> &,
                                   search::AmberTokens &);
 
-    // Placeholder out-of-combat encoder until the native one (amberEncodeGame) lands: run / deck / relic / potion
+    // Placeholder out-of-combat encoder (the default is the native search::amberEncodeGame): run / deck / relic / potion
     // tokens and one OPTION token per legal action (type = screen, action bits as features).
     void stubEncodeGame(const GameContext &gc, const std::vector<search::GameAction> &actions,
                         search::AmberTokens &out);
@@ -72,7 +72,7 @@ namespace sts::azbench {
         std::uint64_t searchSeed = 0;   // search / Gumbel / resampling RNG
         int testMaxHp = 0;              // tests only: > 0 sets max / current HP at the run's start (reach late floors)
         CombatEncodeFn encodeCombat = nullptr;   // default: search::amberEncodeCombat
-        GameEncodeFn encodeGame = nullptr;       // default: stubEncodeGame
+        GameEncodeFn encodeGame = nullptr;       // default: search::amberEncodeGame (stubEncodeGame = placeholder)
     };
 
     // One training sample: the searched position's live tokens and legal actions (flat layout of one row, as
@@ -94,7 +94,8 @@ namespace sts::azbench {
 
     struct RunStats {
         std::int64_t evals = 0, moves = 0, searchedMoves = 0, runsStarted = 0, runsDone = 0, wins = 0;
-        std::int64_t floorsSum = 0, stalls = 0, terminalLeaves = 0, encodeCut = 0, unsupported = 0;
+        std::int64_t floorsSum = 0, stalls = 0, terminalLeaves = 0, unsupported = 0;
+        std::int64_t encodeCut = 0, encodeCutOoc = 0;   // tokens / actions past capacity (combat, out of combat; MAP keeps the nearest 32 nodes)
         std::int64_t samplesDone = 0, samplesPending = 0;
         std::int64_t batches = 0, batchRows = 0;
         std::array<std::int64_t, kOutcomeClasses> outcomes{};   // finished runs per outcome class

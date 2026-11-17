@@ -510,7 +510,7 @@ def main(argv=None):
                 "death_floors_window": {int(k): int(v) for k, v in enumerate(d_oc) if v and k},
                 "samples_added": replay.added, "replay": len(replay), "train_steps": counters["step"],
                 "trained_samples": counters["trained"], "loss": lavg, "syncs": infer_stats["syncs"],
-                "stalls": s["stalls"], "unsupported": s["unsupported"], "encode_cut": s["encode_cut"],
+                "stalls": s["stalls"], "unsupported": s["unsupported"], "encode_cut": s["encode_cut"], "encode_cut_ooc": s["encode_cut_ooc"],
                 "samples_pending": s["samples_pending"],
             }
             print(json.dumps(row), flush=True)
