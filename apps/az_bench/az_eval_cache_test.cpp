@@ -8,7 +8,18 @@
 //
 // --utility amber: the net also gives per-floor HP (hpf), which the cache must return too.
 //
-// usage: az-eval-cache-test [--runs 3] [--seed-base 1] [--fast] [--utility amber]
+// --ema LAM (RunConfig::searchEmaLambda): the net also gives an outcome distribution (dist) and F is that
+// distribution's E[final floor] / 57; the HP weights are 0, so the utility is F alone. Then also: (1) the search with
+// the search-backed distributions makes the same moves and the same samples (all other fields) as without them;
+// (2) every sample's searchValue equals F of its search-backed distribution (the distribution is backed up exactly
+// as the scalar); (3) distributions and targets sum to 1; (4) the cache returns the distributions too (the digest
+// includes them).
+//
+// --ema-all: the EMA chain over all searched moves (default with --ema: full moves only).
+//
+// usage: az-eval-cache-test [--runs 3] [--seed-base 1] [--fast] [--utility amber] [--ema LAM] [--ema-all]
+#include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <cstring>
 #include <string>
@@ -31,6 +42,9 @@ namespace {
 
     struct Result {
         std::uint64_t digest = 0;
+        std::uint64_t baseDigest = 0;   // without the search EMA fields
+        double maxValueGap = 0;         // --ema: max |searchValue - F(searchDist)|
+        double maxSumGap = 0;           // --ema: max |sum - 1| of searchDist and outcomeTarget
         azbench::RunStats stats;
         std::size_t samples = 0;
         int batches = 0;
@@ -38,7 +52,7 @@ namespace {
 
     // Plays cfg.maxRuns runs with a fake net that is a hash of each row's live input (and of the weights version
     // when versionPerBatch: the version is bumped before every batch).
-    Result play(azbench::RunConfig cfg, bool versionPerBatch) {
+    Result play(azbench::RunConfig cfg, bool versionPerBatch, bool distNet = false) {
         const int T = search::kAmberMaxTokens, A = search::kAmberMaxActions, R = 8;
         std::vector<std::int8_t> tokType(static_cast<std::size_t>(R) * T);
         std::vector<std::int16_t> ids(static_cast<std::size_t>(R) * T * search::kAmberCat);
@@ -52,7 +66,10 @@ namespace {
         Result res;
         std::uint32_t version = 0;
         d.start();
-        std::vector<float> logits, F, ehp, hpf;
+        std::vector<float> logits, F, ehp, hpf, dist;
+        const bool ema = cfg.searchEmaLambda > 0;
+        distNet = distNet || ema;   // the fake net's F comes from its outcome distribution
+        auto floorValue = [](int k) { return (k == 0 ? 57.0 : k) / 57.0; };
         const bool amber = cfg.utility == azbench::Utility::AMBER;
         std::vector<azbench::Sample> samples;
         while (d.stats().runsDone < cfg.maxRuns) {
@@ -66,6 +83,7 @@ namespace {
             F.resize(B);
             ehp.resize(B);
             hpf.resize(static_cast<std::size_t>(B) * azbench::kFloors);
+            dist.resize(static_cast<std::size_t>(B) * azbench::kOutcomeClasses);
             for (int r = 0; r < B; ++r) {
                 std::uint64_t h = version;
                 for (int t = 0; t < Tn; ++t) {
@@ -87,8 +105,16 @@ namespace {
                 F[r] = unit(mix(h, 1));
                 ehp[r] = 80.f * unit(mix(h, 2));
                 for (int k = 0; k < azbench::kFloors; ++k) hpf[static_cast<std::size_t>(r) * azbench::kFloors + k] = unit(mix(h, 3 + k));
+                if (distNet) {
+                    float *p = dist.data() + static_cast<std::size_t>(r) * azbench::kOutcomeClasses;
+                    double z = 0, Fr = 0;
+                    for (int k = 0; k < azbench::kOutcomeClasses; ++k) { p[k] = unit(mix(h, 100 + k)) + 1e-3f; z += p[k]; }
+                    for (int k = 0; k < azbench::kOutcomeClasses; ++k) { p[k] = static_cast<float>(p[k] / z); Fr += p[k] * floorValue(k); }
+                    F[r] = static_cast<float>(Fr);
+                }
             }
-            d.submit(tickets.data(), B, An, logits.data(), F.data(), ehp.data(), amber ? hpf.data() : nullptr, version);
+            d.submit(tickets.data(), B, An, logits.data(), F.data(), ehp.data(), amber ? hpf.data() : nullptr, version,
+                     ema ? dist.data() : nullptr);
             d.takeSamples(1 << 20, samples);
         }
         d.stop();
@@ -112,6 +138,22 @@ namespace {
         h = mix(h, static_cast<std::uint64_t>(st.moves));
         h = mix(h, static_cast<std::uint64_t>(st.floorsSum));
         for (auto x : st.outcomes) h = mix(h, static_cast<std::uint64_t>(x));
+        res.baseDigest = h;
+        for (const auto &s : samples) {
+            if (!ema) break;
+            double sd = 0, st2 = 0, Fs = 0;
+            for (std::size_t k = 0; k < s.searchDist.size(); ++k) { sd += s.searchDist[k]; Fs += s.searchDist[k] * floorValue(static_cast<int>(k)); }
+            for (auto x : s.outcomeTarget) st2 += x;
+            if (s.searchDist.size() != static_cast<std::size_t>(azbench::kOutcomeClasses) ||
+                s.outcomeTarget.size() != static_cast<std::size_t>(azbench::kOutcomeClasses)) res.maxSumGap = 1e9;
+            res.maxSumGap = std::max({res.maxSumGap, std::abs(sd - 1), std::abs(st2 - 1)});
+            res.maxValueGap = std::max(res.maxValueGap, std::abs(Fs - s.searchValue));
+            for (auto x : s.searchDist) { std::uint32_t u; std::memcpy(&u, &x, 4); h = mix(h, u); }
+            for (auto x : s.outcomeTarget) { std::uint32_t u; std::memcpy(&u, &x, 4); h = mix(h, u); }
+            std::uint32_t u;
+            std::memcpy(&u, &s.emaRealWeight, 4);
+            h = mix(h, u);
+        }
         res.digest = h;
         return res;
     }
@@ -131,6 +173,8 @@ int main(int argc, char **argv) {
         if (a == "--runs") cfg.maxRuns = std::stoll(next());
         else if (a == "--seed-base") cfg.seedBase = std::stoull(next());
         else if (a == "--utility") { const std::string u = next(); if (u != "amber") { std::fprintf(stderr, "unknown utility %s\n", u.c_str()); return 2; } cfg.utility = azbench::Utility::AMBER; }
+        else if (a == "--ema") { cfg.searchEmaLambda = std::stod(next()); cfg.hpWeightCombat = cfg.hpWeightOoc = 0; }
+        else if (a == "--ema-all") cfg.searchEmaFullOnly = false;
         else if (a == "--fast") { cfg.fullSims = 8; cfg.fastSims = 4; cfg.fullCandidates = 4; cfg.fastCandidates = 2; }
         else { std::fprintf(stderr, "unknown argument %s\n", a.c_str()); return 2; }
     }
@@ -161,5 +205,20 @@ int main(int argc, char **argv) {
         fail = 1;
     }
     if (a.samples == 0 || a.stats.runsDone < cfg.maxRuns) { std::fprintf(stderr, "FAIL: no runs / samples\n"); fail = 1; }
+    if (cfg.searchEmaLambda > 0) {
+        azbench::RunConfig plain = cfg;
+        plain.searchEmaLambda = 0;
+        const Result p = play(plain, false, true);   // the same fake net, distributions not submitted
+        std::printf("{\"ema\": {\"lambda\": %g, \"max_value_gap\": %.3g, \"max_sum_gap\": %.3g, \"full_only\": %d, \"base_digest\": \"%016llx\", "
+                    "\"plain_digest\": \"%016llx\"}}\n", cfg.searchEmaLambda, a.maxValueGap, a.maxSumGap, cfg.searchEmaFullOnly ? 1 : 0,
+                    static_cast<unsigned long long>(a.baseDigest), static_cast<unsigned long long>(p.baseDigest));
+        if (p.baseDigest != a.baseDigest || p.samples != a.samples) {
+            std::fprintf(stderr, "FAIL: the search-backed distributions changed the moves or samples\n");
+            fail = 1;
+        }
+        if (a.maxValueGap > 1e-5) { std::fprintf(stderr, "FAIL: searchValue != F(searchDist)\n"); fail = 1; }
+        // Targets come from float16 chain distributions (~1e-3 relative per term).
+        if (a.maxSumGap > 5e-3) { std::fprintf(stderr, "FAIL: distributions do not sum to 1\n"); fail = 1; }
+    }
     return fail;
 }

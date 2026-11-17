@@ -167,6 +167,21 @@ namespace sts::azbench {
         // Card stacks (2026-11-17, default off; changes the net input, needs its own run): identical cards become one
         // CARD token with a copy count (search::amberMergeCards), ~25-35 % fewer tokens late in a run.
         bool mergeCards = false;
+        // Search-backed EMA outcome targets (2026-11-17, default 0 = off), Amber Eye's value labels: "a combination
+        // of the search result and an exponential weighted average of future moves' search outcomes". With
+        // searchEmaLambda = lam in (0, 1): every node carries the net's outcome distribution (57 classes; submit needs
+        // `dist`), a terminal leaf the one-hot of its outcome. The search result of a searched move is the root's
+        // backed-up distribution: the mean over the root evaluation and every simulation's leaf distribution (the
+        // same mean as the scalar Sample::searchValue: a mean over the tree's leaves, not the value of the move
+        // played). When the run ends, along the chain's moves m = 0 .. M-1: target_M = one_hot(final outcome),
+        // target_m = (1 - lam) D_m + lam target_{m+1}; a kept sample gets its move's target (Sample::outcomeTarget).
+        // The chain's moves: searchEmaFullOnly true = the run's full-search moves only (Amber Eye trains on and
+        // stores targets / value distributions for full moves only), false = all searched moves (full and fast).
+        // A kept move outside the chain (a fast move with searchEmaFullOnly) gets the target of the next chain move
+        // (one_hot(final outcome) if none). Either way kept or not does not matter. The selection is unchanged.
+        // Chain distributions are held as float16 until the run ends (~114 B per chain move).
+        double searchEmaLambda = 0;
+        bool searchEmaFullOnly = true;
         CombatEncodeFn encodeCombat = nullptr;   // default: search::amberEncodeCombat
         GameEncodeFn encodeGame = nullptr;       // default: search::amberEncodeGame (stubEncodeGame = placeholder)
     };
@@ -187,6 +202,11 @@ namespace sts::azbench {
         std::int16_t maxHp = 0, floor = 0;
         std::uint8_t combat = 0;
         std::uint64_t run = 0;               // run seed
+        // searchEmaLambda > 0 only: the root's search-backed outcome distribution [57], the EMA target [57] and the
+        // final outcome's weight lam^(M - m) in it; emaMove = the sample's index among the run's searched moves.
+        std::vector<float> searchDist, outcomeTarget;
+        float emaRealWeight = 0;
+        std::int32_t emaMove = -1;
     };
 
     // Run progress counters of finished runs (2026-11-17; why A0 runs rarely reach Act 4): keys held at the run's
@@ -247,10 +267,12 @@ namespace sts::azbench {
                                                  const std::vector<int> &actBuckets, const FlatBuffers &buf,
                                                  FlatShape &shape, int packThreads = 1);
         // Results: logits[row][action] (`actions` per row), F[row] in [0, 1] and expected HP at the end of the
-        // floor ehp[row] (absolute) for each ticket; utility AMBER also needs hpf[row][56] = E[HP_f] / 255.
+        // floor ehp[row] (absolute) for each ticket; utility AMBER also needs hpf[row][56] = E[HP_f] / 255;
+        // searchEmaLambda > 0 needs dist[row][57], the outcome head's softmax (class 0 = win, f = death on floor f).
         // version: the weights version (setWeightsVersion) the batch was evaluated with (evaluation cache).
         void submit(const std::uint32_t *tickets, int rows, int actions, const float *logits, const float *F,
-                    const float *ehp, const float *hpf = nullptr, std::uint32_t version = 0);
+                    const float *ehp, const float *hpf = nullptr, std::uint32_t version = 0,
+                    const float *dist = nullptr);
         // The weights version of evaluations from now on (evaluation cache): set it when the net's weights change,
         // before evaluating the next batch with them. Cached results of other versions are not used.
         void setWeightsVersion(std::uint32_t v) { weightsVersion_.store(v, std::memory_order_release); }
