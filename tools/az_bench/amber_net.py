@@ -60,6 +60,13 @@ def load_fused_ffn():
     return load_kernel("fused_ffn")
 
 
+def load_fused_layer():
+    load_kernel("fused_ffn")
+    import sys
+    m = sys.modules["az_bench_fused_ffn"]
+    return (m.ln_qkv, m.fused_out_ffn)
+
+
 class AmberNet(nn.Module):
     def __init__(self, d=96, layers=3, heads=None):
         super().__init__()
@@ -126,6 +133,7 @@ class AmberNet(nn.Module):
         return self._heads(h, mask, b)
 
     sdpa = False   # True: run the trunk through sdpa_trunk (same weights and math, fused attention kernel)
+    fused_layer = None   # load_fused_layer(): with varlen_attn, each layer as norm1+QKV / attention / out+FFN kernels
     varlen_attn = None   # load_kernel("varlen_attn"): with b["seq_off"], attention on the packed tokens (no padding)
     fused_ffn = None   # load_fused_ffn(): forward_packed runs each layer's LayerNorm + FFN + residual as one Triton kernel
     attn_math = False   # True: sdpa_trunk / forward_packed attend with plain matmuls + softmax (fp32) instead of SDPA
@@ -187,6 +195,13 @@ class AmberNet(nn.Module):
         for layer in self.trunk.layers:
             a = layer.self_attn
             H = a.num_heads
+            if self.fused_layer is not None and self.varlen_attn is not None and "seq_off" in b:
+                # whole layer in three kernels: norm1 + QKV, varlen attention, out_proj + residual + norm2 + FFN
+                ln_qkv, out_ffn = self.fused_layer
+                x = x.contiguous()
+                o = self.varlen_attn(ln_qkv(x, layer), b["seq_off"], H, T)
+                x = out_ffn(x, o, layer)
+                continue
             qkv_p = F.linear(layer.norm1(x), a.in_proj_weight, a.in_proj_bias)
             if self.varlen_attn is not None and "seq_off" in b:
                 x = x + a.out_proj(self.varlen_attn(qkv_p.contiguous(), b["seq_off"], H, T))

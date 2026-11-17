@@ -15,6 +15,8 @@ Variants (comma list, --variants):
   any name containing "ffn" (e.g. gpacked_half_ffn): LayerNorm + FFN + residual as one Triton kernel (fused_ffn.py)
   any name containing "varlen" (with gpacked, e.g. gpacked_half_ffn_varlen): attention on the packed tokens as one
                 Triton kernel (varlen_attn.py)
+  any name containing "layer" (with varlen, e.g. gpacked_half_varlen_layer): each layer as three kernels
+                (norm1 + QKV, varlen attention, out_proj + residual + norm2 + FFN)
   any name containing "math" (e.g. gpacked_half_math): attention as plain matmuls + fp32 softmax (AmberNet.attn_math)
 A suffix "#BACKEND" compiles that variant with another torch.compile backend: torch_tensorrt (needs the
 torch-tensorrt package; fp16 kernels enabled) or emmy (cloudrift-ai/emmy, `pip install "emmy-ml[compile]"`).
@@ -130,6 +132,7 @@ def main():
         net.attn_math = "math" in vname
         net.fused_ffn = amber_net.load_fused_ffn() if "ffn" in vname else None
         net.varlen_attn = amber_net.load_kernel("varlen_attn") if "varlen" in vname else None
+        net.fused_layer = amber_net.load_fused_layer() if "layer" in vname else None
         half = "half" in vname
         if half:
             net = net.to(dtype)

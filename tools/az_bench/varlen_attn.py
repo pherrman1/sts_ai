@@ -55,7 +55,7 @@ def _attn_kernel(QKV, O, OFF, scale, D: tl.constexpr, DH: tl.constexpr, BM: tl.c
 def _varlen_attn_op(qkv: torch.Tensor, seq_off: torch.Tensor, heads: int, max_len: int) -> torch.Tensor:
     N, D3 = qkv.shape
     D = D3 // 3
-    out = torch.zeros(N, D, dtype=qkv.dtype, device=qkv.device)
+    out = qkv.new_empty(N, D)   # bucket-padding rows past seq_off[-1] stay unwritten; nothing reads them
     R = seq_off.shape[0] - 1
     BM = BN = 32 if max_len <= 32 else 64
     _attn_kernel[(R, heads, triton.cdiv(max_len, BM))](qkv, out, seq_off, (D // heads) ** -0.5, D=D, DH=D // heads,

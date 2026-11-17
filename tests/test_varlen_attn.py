@@ -1,6 +1,6 @@
 """tools/az_bench/varlen_attn.py: attention on packed tokens (one Triton program per row, head and query block)
 equals scaled_dot_product_attention with a key padding mask on the padded layout, and AmberNet.forward_packed with
-varlen_attn equals it without (fp32 within 1e-4 in the interpreter; TF32 on a GPU within 5e-3). Runs on a CUDA GPU
+varlen_attn (and with the fused layer kernels) equals it without (fp32 within 1e-4 in the interpreter; TF32 on a GPU within 5e-3). Runs on a CUDA GPU
 or on a CPU through Triton's interpreter (TRITON_INTERPRET=1); skipped without triton."""
 
 import importlib.util
@@ -50,18 +50,22 @@ class VarlenAttn(unittest.TestCase):
 
     def test_packed_forward_with_varlen(self):
         A = load("amber_net")
-        torch.manual_seed(0)
-        net = A.AmberNet(64, 2).eval().to(self.dev)
         f = A.to_flat(A.synthetic_batch(8, live_frac=0.5, rng=np.random.default_rng(5)))
         f = {k: v.to(self.dev) for k, v in f.items()}
         pk, inv = A.pack_index(f["mask"], 16, inverse=True)
         b = dict(f, pack_idx=pk, unpack_idx=inv, seq_off=A.seq_offsets(f["mask"]))
-        with torch.no_grad():
-            o1 = net(b)
-            net.varlen_attn = A.load_kernel("varlen_attn")
-            o2 = net(b)
-        for x, y in zip(o1, o2):
-            self.assertLess(float((x - y).abs().max()), self.tol)
+        for d, layers in ((64, 2), (32, 1)):   # 32: 3 d = 96 is not a multiple of the 64-column output block
+            torch.manual_seed(0)
+            net = A.AmberNet(d, layers).eval().to(self.dev)
+            with torch.no_grad():
+                o1 = net(b)
+                net.varlen_attn = A.load_kernel("varlen_attn")
+                o2 = net(b)
+                net.fused_layer = A.load_fused_layer()
+                o3 = net(b)
+            for x, y, z in zip(o1, o2, o3):
+                self.assertLess(float((x - y).abs().max()), self.tol, d)
+                self.assertLess(float((x - z).abs().max()), self.tol, d)
 
 
 if __name__ == "__main__":

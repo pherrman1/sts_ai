@@ -102,6 +102,8 @@ def main(argv=None):
     ap.add_argument("--report", type=float, default=5)
     ap.add_argument("--dtype", default="fp16", choices=["fp16", "bf16", "fp32"])
     ap.add_argument("--sdpa", action="store_true", help="AmberNet.sdpa: fused-attention trunk (same weights and math)")
+    ap.add_argument("--fused-layer", action="store_true",
+                    help="with --varlen-attn: each layer as norm1+QKV, attention and out_proj+FFN kernels")
     ap.add_argument("--varlen-attn", action="store_true",
                     help="with --pack-step: attention on the packed tokens as one Triton kernel (varlen_attn.py)")
     ap.add_argument("--fused-ffn", action="store_true",
@@ -157,6 +159,7 @@ def main(argv=None):
     net.attn_math = args.attn_math
     net.fused_ffn = amber_net.load_fused_ffn() if args.fused_ffn else None
     net.varlen_attn = amber_net.load_kernel("varlen_attn") if args.varlen_attn else None
+    net.fused_layer = amber_net.load_fused_layer() if args.fused_layer else None
     if args.half:
         if args.layout != "flat" or dtype == torch.float32:
             raise SystemExit("--half needs --layout flat and --dtype fp16 / bf16")
@@ -500,7 +503,7 @@ def main(argv=None):
     ev = max(1, s1["evals"] - s0["evals"])
     nb = max(1, w1["batches"] - w0["batches"])
     res = {
-        "net": args.net, "params": params, "dtype": args.dtype, "sdpa": args.sdpa, "attn_math": args.attn_math, "fused_ffn": args.fused_ffn, "varlen_attn": args.varlen_attn, "half": args.half, "pipeline": args.pipeline, "pack_step": args.pack_step, "pack_gather": args.pack_gather, "compile_mode": args.compile_mode, "compile": args.compile, "backend": args.backend if args.compile else None, "fake_net": args.fake_net,
+        "net": args.net, "params": params, "dtype": args.dtype, "sdpa": args.sdpa, "attn_math": args.attn_math, "fused_ffn": args.fused_ffn, "varlen_attn": args.varlen_attn, "fused_layer": args.fused_layer, "half": args.half, "pipeline": args.pipeline, "pack_step": args.pack_step, "pack_gather": args.pack_gather, "compile_mode": args.compile_mode, "compile": args.compile, "backend": args.backend if args.compile else None, "fake_net": args.fake_net,
         "encoder": args.encoder,
         "workers": args.workers, "games_per_worker": args.games, "batchers": args.batchers, "max_batch": args.batch,
         "full_sims": args.full_sims, "fast_sims": args.fast_sims, "full_prob": args.full_prob,
