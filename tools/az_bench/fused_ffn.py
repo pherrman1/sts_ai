@@ -15,6 +15,18 @@ import torch
 import triton
 import triton.language as tl
 
+# Launch tuning knobs (read once at import; bench sweeps set them per process).
+FFN_BH = int(os.environ.get("AZ_FFN_BH", "64"))
+FFN_WARPS = int(os.environ.get("AZ_FFN_WARPS", "4"))
+FFN_STAGES = int(os.environ.get("AZ_FFN_STAGES", "0")) or None
+LNQ_BM = int(os.environ.get("AZ_LNQ_BM", "0")) or None
+LNQ_BO = int(os.environ.get("AZ_LNQ_BO", "64"))
+LNQ_WARPS = int(os.environ.get("AZ_LNQ_WARPS", "4"))
+
+
+def _launch(**kw):
+    return {k: v for k, v in kw.items() if v is not None}
+
 
 @triton.jit
 def _ffn_kernel(X, OUT, LNW, LNB, W1, B1, W2, B2, N, eps, O, WO, BO,
@@ -53,7 +65,8 @@ def _fused_ffn_op(x: torch.Tensor, lnw: torch.Tensor, lnb: torch.Tensor, w1: tor
     assert D & (D - 1) == 0 and w1.shape[0] % bh == 0, "fused_ffn: d a power of two, 4 d a multiple of bh"
     out = torch.empty_like(x)
     _ffn_kernel[(triton.cdiv(N, bm),)](x, out, lnw, lnb, w1, b1, w2, b2, N, eps, x, w1, b1, D=D, HID=w1.shape[0],
-                                       BM=bm, BH=bh, HAS_ATT=False)
+                                       BM=bm, BH=bh, HAS_ATT=False,
+                                       **_launch(num_warps=FFN_WARPS, num_stages=FFN_STAGES))
     return out
 
 
@@ -62,11 +75,12 @@ def _(x, lnw, lnb, w1, b1, w2, b2, eps, bm, bh):
     return torch.empty_like(x)
 
 
-def fused_ffn(x, layer, bm=None, bh=64):
+def fused_ffn(x, layer, bm=None, bh=None):
     """x [N, d] contiguous (fp16 / bf16 with the layer's weights in the same dtype); layer an
     nn.TransformerEncoderLayer (norm2, linear1, linear2, exact GELU). Returns x + FFN(norm2(x)). Registered as a
     custom op so torch.compile keeps one graph around it (a bare Triton call broke the graph into eager pieces)."""
     bm = bm or int(os.environ.get("AZ_FUSED_FFN_BM", "64"))
+    bh = bh or FFN_BH
     return _fused_ffn_op(x, layer.norm2.weight, layer.norm2.bias, layer.linear1.weight, layer.linear1.bias,
                          layer.linear2.weight, layer.linear2.bias, float(layer.norm2.eps), bm, bh)
 
@@ -79,7 +93,8 @@ def _fused_out_ffn_op(x: torch.Tensor, o: torch.Tensor, wo: torch.Tensor, bo: to
     assert D & (D - 1) == 0 and w1.shape[0] % bh == 0, "fused_out_ffn: d a power of two, 4 d a multiple of bh"
     out = torch.empty_like(x)
     _ffn_kernel[(triton.cdiv(N, bm),)](x, out, lnw, lnb, w1, b1, w2, b2, N, eps, o, wo, bo, D=D, HID=w1.shape[0],
-                                       BM=bm, BH=bh, HAS_ATT=True)
+                                       BM=bm, BH=bh, HAS_ATT=True,
+                                       **_launch(num_warps=FFN_WARPS, num_stages=FFN_STAGES))
     return out
 
 
@@ -88,10 +103,11 @@ def _(x, o, wo, bo, lnw, lnb, w1, b1, w2, b2, eps, bm, bh):
     return torch.empty_like(x)
 
 
-def fused_out_ffn(x, o, layer, bm=None, bh=64):
+def fused_out_ffn(x, o, layer, bm=None, bh=None):
     """The rest of a pre-norm encoder layer after attention, in one kernel: x1 = x + out_proj(o), returns
     x1 + FFN(norm2(x1)). x, o [N, d] contiguous in the layer's dtype; d <= 128 (out_proj's weight is one tile)."""
     bm = bm or int(os.environ.get("AZ_FUSED_FFN_BM", "64"))
+    bh = bh or FFN_BH
     a = layer.self_attn.out_proj
     return _fused_out_ffn_op(x, o, a.weight, a.bias, layer.norm2.weight, layer.norm2.bias, layer.linear1.weight,
                              layer.linear1.bias, layer.linear2.weight, layer.linear2.bias, float(layer.norm2.eps), bm,
@@ -126,7 +142,8 @@ def _ln_linear_op(x: torch.Tensor, lnw: torch.Tensor, lnb: torch.Tensor, w: torc
                   bm: int) -> torch.Tensor:
     N, D = x.shape
     out = x.new_empty(N, w.shape[0])
-    _ln_linear_kernel[(triton.cdiv(N, bm),)](x, out, lnw, lnb, w, b, N, eps, D=D, NOUT=w.shape[0], BM=bm, BO=64)
+    _ln_linear_kernel[(triton.cdiv(N, bm),)](x, out, lnw, lnb, w, b, N, eps, D=D, NOUT=w.shape[0], BM=bm, BO=LNQ_BO,
+                                             num_warps=LNQ_WARPS)
     return out
 
 
@@ -137,7 +154,7 @@ def _(x, lnw, lnb, w, b, eps, bm):
 
 def ln_qkv(x, layer, bm=None):
     """norm1 + the attention's QKV projection in one kernel: x [N, d] -> qkv [N, 3 d] (in_proj layout)."""
-    bm = bm or int(os.environ.get("AZ_FUSED_FFN_BM", "64"))
+    bm = bm or LNQ_BM or int(os.environ.get("AZ_FUSED_FFN_BM", "64"))
     a = layer.self_attn
     return _ln_linear_op(x, layer.norm1.weight, layer.norm1.bias, a.in_proj_weight, a.in_proj_bias,
                          float(layer.norm1.eps), bm)

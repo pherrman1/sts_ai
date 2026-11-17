@@ -11,6 +11,8 @@ Same math as scaled_dot_product_attention with a key padding mask up to float ro
 TRITON_INTERPRET=1 on a CPU).
 """
 
+import os
+
 import torch
 import triton
 import triton.language as tl
@@ -57,9 +59,10 @@ def _varlen_attn_op(qkv: torch.Tensor, seq_off: torch.Tensor, heads: int, max_le
     D = D3 // 3
     out = qkv.new_empty(N, D)   # bucket-padding rows past seq_off[-1] stay unwritten; nothing reads them
     R = seq_off.shape[0] - 1
-    BM = BN = 32 if max_len <= 32 else 64
+    BM = BN = 32 if max_len <= 32 else int(os.environ.get("AZ_ATTN_BLOCK", "64"))
     _attn_kernel[(R, heads, triton.cdiv(max_len, BM))](qkv, out, seq_off, (D // heads) ** -0.5, D=D, DH=D // heads,
-                                                       BM=BM, BN=BN, MAXLEN=triton.cdiv(max_len, BN) * BN)
+                                                       BM=BM, BN=BN, MAXLEN=triton.cdiv(max_len, BN) * BN,
+                                                       num_warps=int(os.environ.get("AZ_ATTN_WARPS", "4")))
     return out
 
 
