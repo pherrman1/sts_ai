@@ -436,6 +436,84 @@ class SelfplaySmoke(unittest.TestCase):
             self.assertLess(last["value_ema"]["real_weight_mean"], 1)
             self.assertTrue(any(r["loss"] and "outcome_ema" in r["loss"] for r in rows))
 
+    def test_value_ema_search_run(self):
+        """--value-ema-search: the driver hands out search-backed distributions and EMA targets; the replay trains
+        on them (no net forward for D_t)."""
+        sp = load()
+        sp.TAKE_CHUNK = 1
+        args = ["--module-dir", os.path.dirname(MODULES[0]), "--device", "cpu", "--workers", "2", "--games", "4",
+                "--full-sims", "8", "--fast-sims", "4", "--batch", "32", "--row-buckets", "32", "--pack-step", "32",
+                "--pack-threads", "1", "--min-replay", "50", "--train-batch", "32", "--window", "5000",
+                "--report", "1", "--sync-steps", "2", "--seed-base", "750", "--max-runs", "16",
+                "--value-ema-halflife", "8", "--value-ema-search", "--eval-cache", "--merge-cards", "--packed-h2d",
+                "--utility", "amber"]
+        with tempfile.TemporaryDirectory() as d:
+            self.assertEqual(sp.main(args + ["--out-dir", d]), 0)
+            with open(os.path.join(d, "metrics.jsonl")) as f:
+                rows = [json.loads(l) for l in f]
+            last = rows[-1]
+            self.assertGreater(last["train_steps"], 0)
+            self.assertTrue(last["value_ema"]["search"])
+            self.assertEqual(last["value_ema"]["labelled"], last["samples_added"])
+            self.assertGreater(last["value_ema"]["real_weight_mean"], 0)
+            self.assertLess(last["value_ema"]["real_weight_mean"], 1)
+            self.assertTrue(any(r["loss"] and "outcome_ema" in r["loss"] for r in rows))
+        with self.assertRaises(SystemExit):   # needs a half-life
+            sp.main(args[:args.index("--value-ema-halflife")] + ["--value-ema-search", "--out-dir", "/nonexistent"])
+
+    def test_value_ema_search_driver(self):
+        """Driver level (every searched move kept): the EMA targets are the recursion of ema_outcome_targets over
+        the moves' search-backed distributions, the final outcome's weight is lam ** (moves after + 1), and with
+        hp weights 0 each search value is F of its search-backed distribution."""
+        sp = load()
+        import importlib
+        sys_path = os.path.dirname(MODULES[0])
+        import sys
+        sys.path.insert(0, sys_path)
+        nat = importlib.import_module("az_bench_native")
+        lam = 0.8
+        drv = nat.RunDriver(workers=1, games=2, seed_base=760, max_runs=3, ascension=20, full_sims=8, fast_sims=4,
+                            full_candidates=4, fast_candidates=2, keep_full=1.0, keep_fast=1.0,
+                            hp_weight_combat=0.0, hp_weight_ooc=0.0, search_ema_lambda=lam)
+        R, T, A = 8, 212, 96
+        views = {"tok_type": np.zeros(R * T, np.int8), "ids": np.zeros(R * T * 4, np.int16),
+                 "f": np.zeros(R * T * 64, np.float16), "mask": np.zeros(R * T, np.bool_),
+                 "a_type": np.zeros(R * A, np.int16), "a_src": np.zeros(R * A, np.int16),
+                 "a_tgt": np.zeros(R * A, np.int16), "a_f": np.zeros(R * A * 8, np.float16),
+                 "a_mask": np.zeros(R * A, np.bool_)}
+        rng = np.random.default_rng(0)
+        fv = np.arange(57, dtype=np.float64)
+        fv[0] = 57.0
+        fv /= 57.0
+        chunks = []
+        drv.start()
+        try:
+            while drv.stats()["runs_done"] < 3:
+                got = drv.next_flat(R, 1, 5, [R], [T], [A], views)
+                if got is None:
+                    continue
+                ticket, rows, _, _, Ap = got
+                p = rng.random((rows, 57)) + 1e-3
+                p /= p.sum(1, keepdims=True)
+                drv.submit(ticket, rng.normal(0, 1, (rows, Ap)).astype(np.float32), (p @ fv).astype(np.float32),
+                           np.full(rows, 40, np.float32), None, 0, p.astype(np.float32))
+                c = drv.take_samples()
+                if c is not None:
+                    chunks.append(c)
+        finally:
+            drv.stop()
+        c = drv.take_samples()
+        if c is not None:
+            chunks.append(c)
+        cat = {k: np.concatenate([x[k] for x in chunks]) for k in ("search_dist", "outcome_target", "outcome",
+                                                                     "run", "search_value", "ema_real_weight")}
+        self.assertGreater(len(cat["run"]), 10)
+        np.testing.assert_allclose(cat["search_dist"].sum(1), 1, atol=1e-5)
+        np.testing.assert_allclose(cat["search_dist"].astype(np.float64) @ fv, cat["search_value"], atol=1e-5)
+        tgt, real_w = sp.ema_outcome_targets(cat["search_dist"], cat["outcome"], cat["run"], lam)
+        np.testing.assert_allclose(cat["outcome_target"], tgt, atol=1e-5)
+        np.testing.assert_allclose(cat["ema_real_weight"], real_w, rtol=1e-4)
+
     def test_progress_counters_late_floors(self):
         """With a huge max HP, A0 runs reach campfires and elites: the driver counts them per ascension and the
         counters are consistent (Recall gives the Ruby key, Act 4 needs all keys, the Heart needs Act 4)."""

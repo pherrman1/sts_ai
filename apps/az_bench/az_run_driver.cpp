@@ -291,6 +291,7 @@ namespace sts::azbench {
         float value = 0;
         std::int32_t n = 0;
         double w = 0;
+        std::vector<float> dist;             // searchEmaLambda > 0: outcome distribution of the node's value [57]
     };
 
     struct PathStep { int node; int edge; int outcome; };
@@ -328,12 +329,15 @@ namespace sts::azbench {
         std::uint32_t resVersion = 0;        // weights version of the result (submit)
         // Evaluation cache (RunConfig::evalCache): input hash -> result, all of weights version cacheVersion; emptied
         // at the start of each run, on a weights change and when full.
-        struct CacheEntry { float F = 0, ehp = 0; int nAct = 0; std::vector<float> logits, hpf; };   // hpf: utility AMBER
+        struct CacheEntry { float F = 0, ehp = 0; int nAct = 0; std::vector<float> logits, hpf, dist; };   // hpf: utility AMBER; dist: searchEmaLambda > 0
         std::unordered_map<std::uint64_t, CacheEntry> cache;
         std::uint32_t cacheVersion = 0;
         std::uint64_t pendingHash = 0;
         bool pendingHit = false;             // the pending leaf was answered by the cache
         std::array<float, kFloors> resHpf{};   // utility AMBER: E[HP_f] / 255 of the pending leaf
+        std::array<float, kOutcomeClasses> resDist{};   // searchEmaLambda > 0: outcome softmax of the pending leaf
+        std::vector<double> rootDist;          // searchEmaLambda > 0: sum of the backed-up distributions at the root
+        std::vector<float> moveDist;           // ... search result of each searched move of the run [M][57]
         int pendingFloor = 0;                  // floor of the pending leaf
         std::array<std::int16_t, kFloors + 1> floorHp{};   // utility AMBER: HP at the end of floor f (-1 = not yet)
         std::vector<Sample> pending;
@@ -425,6 +429,12 @@ namespace sts::azbench {
                                    w, cfg);
         }
 
+        // searchEmaLambda > 0: a terminal node's distribution is the one-hot of its outcome class.
+        void setOneHot(RunDriver::Node &n, int cls) {
+            n.dist.assign(kOutcomeClasses, 0.f);
+            n.dist[std::clamp(cls, 0, kOutcomeClasses - 1)] = 1.f;
+        }
+
     }
 
     RunDriver::RunDriver(RunConfig cfg) : cfg_(cfg) {
@@ -436,6 +446,8 @@ namespace sts::azbench {
         if (!cfg_.encodeGame) cfg_.encodeGame = search::amberEncodeGame;
         if (cfg_.utility != Utility::FLOOR_HP && cfg_.utility != Utility::AMBER)
             throw std::invalid_argument("run driver: utility 0 (floor HP) or 1 (Amber)");
+        if (!(cfg_.searchEmaLambda >= 0 && cfg_.searchEmaLambda < 1))
+            throw std::invalid_argument("run driver: searchEmaLambda in [0, 1)");
         if (cfg_.gamesPerWorker > 0xffff) throw std::invalid_argument("run driver: at most 65535 runs per worker");
         for (int w = 0; w < cfg_.workers; ++w) {
             auto wk = std::make_unique<Worker>();
@@ -541,6 +553,7 @@ namespace sts::azbench {
             n.value = 0;
             n.n = 0;
             n.w = 0;
+            n.dist.clear();
             return g.poolUsed++;
         };
         auto setGc = [](Node &n, GameContext &&gc) {
@@ -610,6 +623,7 @@ namespace sts::azbench {
                     g.resF = it->second.F;
                     g.resEhp = it->second.ehp;
                     if (!it->second.hpf.empty()) std::copy(it->second.hpf.begin(), it->second.hpf.end(), g.resHpf.begin());
+                    if (!it->second.dist.empty()) std::copy(it->second.dist.begin(), it->second.dist.end(), g.resDist.begin());
                     g.pendingHit = true;
                     ++wk.st.cacheHits;
                     wk.hits.push_back(gi);
@@ -619,7 +633,14 @@ namespace sts::azbench {
             outbox.push_back(static_cast<std::uint32_t>(wi) << 16 | static_cast<std::uint32_t>(gi));
         };
 
+        const bool emaOn = cfg.searchEmaLambda > 0;
         auto backup = [&](Run &g, float v) {
+            if (emaOn) {   // the leaf (last path entry) adds its distribution to the root's sum
+                const Node &leaf = g.pool[g.path.back().node];
+                if (leaf.dist.size() != static_cast<std::size_t>(kOutcomeClasses))
+                    throw std::logic_error("run driver: leaf without an outcome distribution");
+                for (int k = 0; k < kOutcomeClasses; ++k) g.rootDist[k] += leaf.dist[k];
+            }
             for (const auto &p : g.path) {
                 Node &n = g.pool[p.node];
                 n.n += 1;
@@ -659,6 +680,7 @@ namespace sts::azbench {
             g.pending.clear();
             g.floorStart = 0;
             g.floorHp.fill(-1);
+            g.moveDist.clear();
             g.progress = RunProgress{};
             ++wk.st.runsStarted;
             startMove(g, gi);
@@ -671,6 +693,27 @@ namespace sts::azbench {
             closeFloor(g, alive ? g.gc.curHp : 0);
             const int oc = outcomeClass(g.gc);
             for (auto &s : g.pending) s.outcome = static_cast<std::int16_t>(oc);
+            if (emaOn) {
+                // EMA along the run's searched moves, last move first; a kept sample takes its move's target.
+                const double lam = cfg.searchEmaLambda;
+                std::array<double, kOutcomeClasses> t{};
+                t[oc] = 1.0;
+                double realW = 1.0;
+                const int M = static_cast<int>(g.moveDist.size() / kOutcomeClasses);
+                int si = static_cast<int>(g.pending.size()) - 1;
+                for (int m = M - 1; m >= 0; --m) {
+                    const float *d = g.moveDist.data() + static_cast<std::size_t>(m) * kOutcomeClasses;
+                    for (int k = 0; k < kOutcomeClasses; ++k) t[k] = (1.0 - lam) * d[k] + lam * t[k];
+                    realW *= lam;
+                    for (; si >= 0 && g.pending[si].emaMove == m; --si) {
+                        Sample &s = g.pending[si];
+                        s.outcomeTarget.resize(kOutcomeClasses);
+                        for (int k = 0; k < kOutcomeClasses; ++k) s.outcomeTarget[k] = static_cast<float>(t[k]);
+                        s.emaRealWeight = static_cast<float>(realW);
+                    }
+                }
+                if (si >= 0) throw std::logic_error("run driver: kept sample without a searched move");
+            }
             if (cfg.utility == Utility::AMBER) {
                 // Floors skipped without a record (a floor counter jump) take the HP of the next recorded floor.
                 for (int f = std::min(kFloors, std::max(1, g.floor)) - 1; f >= 1; --f)
@@ -894,6 +937,11 @@ namespace sts::azbench {
                 }
             }
             ++wk.st.searchedMoves;
+            if (emaOn) {   // the search result of this move: the root's mean backed-up distribution
+                const double inv = 1.0 / std::max(1, root.n);
+                for (int k = 0; k < kOutcomeClasses; ++k)
+                    g.moveDist.push_back(static_cast<float>(g.rootDist[k] * inv));
+            }
             if (!root.combat) {
                 const int kind = g.full ? 0 : 1;
                 int bestQ = -1, visited = 0;
@@ -933,6 +981,12 @@ namespace sts::azbench {
                     s.policy.clear();
                 }
                 s.searchValue = static_cast<float>(root.n ? root.w / root.n : root.value);
+                if (emaOn) {
+                    const int m = static_cast<int>(g.moveDist.size() / kOutcomeClasses) - 1;
+                    s.emaMove = m;
+                    s.searchDist.assign(g.moveDist.begin() + static_cast<std::ptrdiff_t>(m) * kOutcomeClasses,
+                                        g.moveDist.begin() + static_cast<std::ptrdiff_t>(m + 1) * kOutcomeClasses);
+                }
                 g.pending.push_back(std::move(s));
                 ++wk.st.samplesPending;
                 pending_.fetch_add(1, std::memory_order_relaxed);
@@ -1001,6 +1055,7 @@ namespace sts::azbench {
                     cn.bc = next;
                     cn.evaluated = cn.terminal = true;
                     cn.value = terminalUtility(false, false, g.gc.floorNum, 0, 1, cfg.hpWeightCombat, cfg);
+                    if (emaOn) setOneHot(cn, std::clamp(g.gc.floorNum, 1, kOutcomeClasses - 1));   // death on this floor
                 } else if (next.outcome == Outcome::PLAYER_VICTORY) {
                     // Fight won: the leaf is the state after the fight, valued by the net (out of combat).
                     // The real run's hidden future (reward rolls, later encounters) is resampled first, so the
@@ -1015,6 +1070,7 @@ namespace sts::azbench {
                     if (cn.gc->outcome != GameOutcome::UNDECIDED) {
                         cn.evaluated = cn.terminal = true;
                         cn.value = terminalUtility(*cn.gc, cfg.hpWeightOoc, cfg);
+                        if (emaOn) setOneHot(cn, outcomeClass(*cn.gc));
                     }
                 } else {
                     cn.combat = true;
@@ -1034,6 +1090,7 @@ namespace sts::azbench {
                         setGc(cn, std::move(next));
                         cn.evaluated = cn.terminal = true;
                         cn.value = terminalUtility(*cn.gc, cfg.hpWeightOoc, cfg);
+                        if (emaOn) setOneHot(cn, outcomeClass(*cn.gc));
                     } else if (next.screenState == ScreenState::BATTLE) {
                         // A fight starts: the leaf is its first state, valued by the net (in combat).
                         cn.combat = true;
@@ -1052,6 +1109,7 @@ namespace sts::azbench {
                     cn.combat = false;
                     cn.evaluated = cn.terminal = true;
                     cn.value = parent.value;
+                    if (emaOn) cn.dist = parent.dist;
                 }
             }
             if (edge.chance) {
@@ -1128,6 +1186,7 @@ namespace sts::azbench {
                 n.evaluated = true;
                 n.value = static_cast<float>((std::clamp<double>(g.resF, 0.0, 1.0) + w * H) / (1.0 + w));
                 for (std::size_t k = 0; k < n.edges.size() && k < g.resLogits.size(); ++k) n.edges[k].logit = g.resLogits[k];
+                if (emaOn) n.dist.assign(g.resDist.begin(), g.resDist.end());
                 if (g.pendingHit) {
                     g.pendingHit = false;
                 } else {
@@ -1142,6 +1201,7 @@ namespace sts::azbench {
                         e.nAct = g.tokens.nAct;
                         e.logits = g.resLogits;
                         if (cfg.utility == Utility::AMBER) e.hpf.assign(g.resHpf.begin(), g.resHpf.end());
+                        if (emaOn) e.dist.assign(g.resDist.begin(), g.resDist.end());
                     }
                 }
                 const bool rootEval = g.pendingNode == 0;
@@ -1158,6 +1218,7 @@ namespace sts::azbench {
                     g.path.clear();
                     g.pool[0].n = 1;
                     g.pool[0].w = n.value;
+                    if (emaOn) g.rootDist.assign(n.dist.begin(), n.dist.end());
                     initRoot(g);
                 } else {
                     backup(g, n.value);
@@ -1207,9 +1268,11 @@ namespace sts::azbench {
     }
 
     void RunDriver::submit(const std::uint32_t *tickets, int rows, int actions, const float *logits, const float *F,
-                           const float *ehp, const float *hpf, std::uint32_t version) {
+                           const float *ehp, const float *hpf, std::uint32_t version, const float *dist) {
         if (cfg_.utility == Utility::AMBER && !hpf)
             throw std::invalid_argument("run driver: utility AMBER needs per-floor HP results (hpf)");
+        if (cfg_.searchEmaLambda > 0 && !dist)
+            throw std::invalid_argument("run driver: searchEmaLambda > 0 needs outcome distributions (dist)");
         thread_local std::vector<std::vector<int>> per;
         per.assign(workers_.size(), {});
         for (int r = 0; r < rows; ++r) {
@@ -1223,6 +1286,8 @@ namespace sts::azbench {
             g.resVersion = version;
             if (hpf) std::copy(hpf + static_cast<std::size_t>(r) * kFloors, hpf + static_cast<std::size_t>(r + 1) * kFloors,
                                g.resHpf.begin());
+            if (dist) std::copy(dist + static_cast<std::size_t>(r) * kOutcomeClasses,
+                                dist + static_cast<std::size_t>(r + 1) * kOutcomeClasses, g.resDist.begin());
             per[t >> 16].push_back(static_cast<int>(t & 0xffff));
         }
         for (std::size_t w = 0; w < per.size(); ++w) {

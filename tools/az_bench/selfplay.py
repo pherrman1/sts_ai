@@ -31,6 +31,14 @@ search-backed distribution (the search backs up a scalar utility only), and the 
 The logged "outcome" loss is always the cross-entropy to the final outcome (comparable across settings);
 "outcome_ema" is the trained loss against the EMA target.
 
+--value-ema-search (2026-11-17, default off; needs --value-ema-halflife H) makes D_t search-backed, as Amber Eye: the
+search backs up the outcome distribution alongside the scalar utility (RunConfig::searchEmaLambda in
+apps/az_bench/az_run_driver.h). A searched move's search result is the root's mean distribution over the root
+evaluation and every simulation's leaf (the net's outcome softmax; one-hot at a run-ending leaf), the same mean as the
+scalar search value. The driver runs the EMA when the run ends, along ALL searched moves of the run (full and fast,
+kept or not: Amber's "future moves' search outcomes"), so H counts searched moves; kept samples carry their move's
+target. No extra forward pass of the training net. The HP heads keep their labels. Selection is unchanged.
+
 From https://8e9f.github.io/amber_eye/: one net, Gumbel AlphaZero 64 / 16 positions per full / fast move with playout
 cap randomization 0.25, utility F + H first, the 0.44M net first, no teacher. Our choices: the loss weights, the
 optimizer (AdamW), the window, the replay ratio, the sync interval (all flags).
@@ -417,7 +425,11 @@ def main(argv=None):
     ap.add_argument("--w-outcome", type=float, default=1.0)
     ap.add_argument("--w-hp", type=float, default=1.0)
     ap.add_argument("--value-ema-halflife", type=float, default=0.0,
-                    help="EMA outcome labels: half-life in kept samples of a run (0 = off: final outcome)")
+                    help="EMA outcome labels: half-life in kept samples of a run (0 = off: final outcome); with "
+                         "--value-ema-search in searched moves")
+    ap.add_argument("--value-ema-search", action="store_true",
+                    help="EMA outcome labels from the search-backed root outcome distributions (Amber Eye), computed "
+                         "by the driver along all searched moves (needs --value-ema-halflife)")
     ap.add_argument("--sync-steps", type=int, default=50, help="copy trained weights to the inference net every N steps")
     ap.add_argument("--report", type=float, default=30.0)
     ap.add_argument("--ckpt-minutes", type=float, default=30.0)
@@ -430,6 +442,8 @@ def main(argv=None):
         ap.error("--packed-h2d needs --pack-step")
     if args.init_net and args.resume:
         ap.error("--init-net and --resume exclude each other")
+    if args.value_ema_search and not args.value_ema_halflife > 0:
+        ap.error("--value-ema-search needs --value-ema-halflife > 0")
     amber = args.utility == "amber"
     hp_floors = 56 if amber else 1
 
@@ -488,6 +502,8 @@ def main(argv=None):
     if args.q_rescale and args.c_scale == 1.0:
         print("warning: --q-rescale with --c-scale 1.0: sigma ~50+ on [0, 1] Q makes the improved policy nearly "
               "argmax (Gumbel MuZero / mctx use --c-scale 0.1)", file=sys.stderr, flush=True)
+    ema_lam = 0.5 ** (1.0 / args.value_ema_halflife) if args.value_ema_halflife > 0 else 0.0
+    ema_search = bool(args.value_ema_search)
     drv = az_bench_native.RunDriver(
         workers=args.workers, games=args.games, seed_base=seed_base, max_runs=max_runs, ascension=ascension,
         full_sims=args.full_sims, fast_sims=args.fast_sims, full_prob=args.full_prob,
@@ -497,8 +513,8 @@ def main(argv=None):
         explore_c=args.explore_c, pick_target=args.pick_target, c_visit=args.c_visit, c_scale=args.c_scale,
         fast_noise=not args.no_fast_noise, q_rescale=args.q_rescale, utility=1 if amber else 0,
         keyless_hp=args.keyless_hp,
-        eval_cache=args.eval_cache, eval_cache_cap=args.eval_cache_cap, merge_cards=args.merge_cards)
-    ema_lam = 0.5 ** (1.0 / args.value_ema_halflife) if args.value_ema_halflife > 0 else 0.0
+        eval_cache=args.eval_cache, eval_cache_cap=args.eval_cache_cap, merge_cards=args.merge_cards,
+        **({"search_ema_lambda": ema_lam} if ema_search else {}))
     replay = Replay(args.window, hp_floors=56 if amber else 0, soft_outcome=ema_lam > 0)
     ema_stats = {"samples": 0, "real_weight": 0.0}   # mean weight of the final outcome in the EMA targets
     stop = threading.Event()
@@ -551,6 +567,8 @@ def main(argv=None):
                    "ehp": torch.zeros(R, dtype=torch.float32, pin_memory=cuda)}
             if amber:
                 out["hpf"] = torch.zeros(R * 56, dtype=torch.float32, pin_memory=cuda)
+            if ema_search:
+                out["dist"] = torch.zeros(R * OUTCOME_CLASSES, dtype=torch.float32, pin_memory=cuda)
             return h, {k: v.numpy() for k, v in h.items()}, out
 
         sets = [buffers(), buffers()]
@@ -562,7 +580,8 @@ def main(argv=None):
                 ev.synchronize()
             drv.submit(ticket, out["logits"][:rows * Ap].numpy().reshape(rows, Ap), out["F"][:rows].numpy(),
                        out["ehp"][:rows].numpy(), out["hpf"][:rows * 56].numpy().reshape(rows, 56) if amber else None,
-                       version)
+                       version, out["dist"][:rows * OUTCOME_CLASSES].numpy().reshape(rows, OUTCOME_CLASSES)
+                       if ema_search else None)
 
         while not stop.is_set():
             host, views, out = sets[cur]
@@ -645,6 +664,9 @@ def main(argv=None):
                     out["ehp"][:rows].copy_(ehp, non_blocking=True)
                     if amber:
                         out["hpf"][:rows * 56].view(rows, 56).copy_(hpf[:rows].float().clamp(0, 1), non_blocking=True)
+                    if ema_search:
+                        out["dist"][:rows * OUTCOME_CLASSES].view(rows, OUTCOME_CLASSES).copy_(
+                            torch.softmax(outcome[:rows].float(), -1), non_blocking=True)
                     ev = None
                     if stream is not None:
                         ev = torch.cuda.Event()
@@ -671,7 +693,11 @@ def main(argv=None):
             ch = drv.take_samples(TAKE_CHUNK)   # whole runs only
             if ch is not None:
                 first = replay.add(ch)
-                if ema_lam > 0:
+                if ema_search:   # search-backed EMA targets from the driver (whole runs)
+                    replay.set_soft_outcome(first, ch["outcome_target"])
+                    ema_stats["samples"] += len(ch["outcome"])
+                    ema_stats["real_weight"] += float(ch["ema_real_weight"].sum())
+                elif ema_lam > 0:
                     if len(ch["run"]) and int(ch["run"][0]) == last_run[0]:
                         raise RuntimeError("take_samples split a run across chunks")
                     last_run[0] = int(ch["run"][-1]) if len(ch["run"]) else last_run[0]
@@ -811,7 +837,8 @@ def main(argv=None):
                 "progress_window": progress_window(s, last_s),
             }
             if ema_lam > 0:
-                row["value_ema"] = {"halflife": args.value_ema_halflife, "labelled": ema_stats["samples"],
+                row["value_ema"] = {"halflife": args.value_ema_halflife, "search": ema_search,
+                                    "labelled": ema_stats["samples"],
                                     "real_weight_mean": round(ema_stats["real_weight"] / max(1, ema_stats["samples"]), 4)}
             print(json.dumps(row), flush=True)
             metrics.write(json.dumps(row) + "\n")
