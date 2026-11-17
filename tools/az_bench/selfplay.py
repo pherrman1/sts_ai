@@ -13,6 +13,17 @@ training thread samples minibatches from the window and trains the fp32 copy (bf
 keeping trained samples <= --replay-ratio x generated samples, and copies its weights into the inference net every
 --sync-steps steps.
 
+--value-ema-halflife H > 0 (2026-11-17, default 0 = off: the outcome label is the final outcome) replaces the outcome
+target by an exponentially weighted average along the run, as Amber Eye's "combination of the search result and an
+exponential weighted average of future moves' search outcomes": with lam = 0.5 ** (1 / H) and the run's kept samples
+t = 0 .. n-1 in move order, target_n = one_hot(final outcome) and target_t = (1 - lam) * D_t + lam * target_{t+1},
+where D_t is the net's outcome distribution at sample t, evaluated once by the training net when the finished run
+enters the replay window. The final outcome keeps weight lam ** (n - t); H counts kept samples (full moves with the
+default --keep-*). Differences from Amber Eye: D_t is the net's prediction at the searched position, not a
+search-backed distribution (the search backs up a scalar utility only), and the HP head keeps its end-of-floor label.
+The logged "outcome" loss is always the cross-entropy to the final outcome (comparable across settings);
+"outcome_ema" is the trained loss against the EMA target.
+
 From https://8e9f.github.io/amber_eye/: one net, Gumbel AlphaZero 64 / 16 positions per full / fast move with playout
 cap randomization 0.25, utility F + H first, the 0.44M net first, no teacher. Our choices: the loss weights, the
 optimizer (AdamW), the window, the replay ratio, the sync interval (all flags).
@@ -45,6 +56,7 @@ _spec.loader.exec_module(amber_net)
 
 N_CAT, N_FLOAT, N_ACT_FEAT = amber_net.N_CAT, amber_net.N_FLOAT, amber_net.N_ACT_FEAT
 OUTCOME_CLASSES, HP_CLASSES = amber_net.OUTCOME_CLASSES, amber_net.HP_CLASSES
+TAKE_CHUNK = 1 << 16   # samples per take_samples call (the driver completes the last run; tests lower it)
 
 
 # --- replay window -------------------------------------------------------------------------------------------------
@@ -53,7 +65,7 @@ class Replay:
     """FIFO window of ragged samples: token / action rings plus per-sample metadata. Old samples are evicted when
     the sample, token or action capacity would overflow. Thread-safe (one lock)."""
 
-    def __init__(self, samples, tokens_per_sample=48, actions_per_sample=12):
+    def __init__(self, samples, tokens_per_sample=48, actions_per_sample=12, soft_outcome=False):
         self.cs = samples
         self.ct = samples * tokens_per_sample
         self.ca = samples * actions_per_sample
@@ -72,6 +84,8 @@ class Replay:
         self.meta = {k: np.zeros(self.cs, dt) for k, dt in
                      (("outcome", np.int16), ("hp_end", np.int16), ("max_hp", np.int16), ("floor", np.int16),
                       ("combat", np.uint8), ("has_policy", np.uint8), ("search_value", np.float32))}
+        # EMA outcome targets (--value-ema-halflife): one distribution per sample, written by set_soft_outcome.
+        self.soft_outcome = np.zeros((self.cs, OUTCOME_CLASSES), np.float16) if soft_outcome else None
         self.s_head = self.s_tail = 0     # absolute sample counters
         self.t_head = self.a_head = 0     # absolute token / action counters
         self.added = 0
@@ -110,6 +124,11 @@ class Replay:
             self._put(self.nact, self.s_head, na)
             for k, ring in self.meta.items():
                 self._put(ring, self.s_head, s[k])
+            first = self.s_head
+            if self.soft_outcome is not None:   # until set_soft_outcome: the final outcome
+                oh = np.zeros((S, OUTCOME_CLASSES), np.float16)
+                oh[np.arange(S), np.asarray(s["outcome"]).astype(np.int64).clip(0, OUTCOME_CLASSES - 1)] = 1
+                self._put(self.soft_outcome, first, oh)
             self.s_head += S
             self.added += S
             # Evict the oldest samples whose rows were overwritten (or that exceed the sample capacity).
@@ -117,6 +136,22 @@ class Replay:
                     self.s_tail < self.s_head and (self.tok_start[self.s_tail % self.cs] < self.t_head - self.ct
                                                    or self.act_start[self.s_tail % self.cs] < self.a_head - self.ca)):
                 self.s_tail += 1
+        return first
+
+    def set_soft_outcome(self, first, targets):
+        """Stores the EMA outcome targets of the samples first .. first + len(targets) - 1 (absolute counters, as
+        add returned); samples already evicted are skipped."""
+        with self.lock:
+            lo = max(first, self.s_tail)
+            if lo < first + len(targets):
+                self._put(self.soft_outcome, lo, np.asarray(targets[lo - first:], np.float16))
+
+    def rows(self, first, n):
+        """The samples first .. first + n - 1 (absolute counters, all live) as one batch in forward_flat's layout."""
+        with self.lock:
+            if first < self.s_tail or first + n > self.s_head:
+                raise ValueError("replay.rows: samples not in the window")
+            return self._gather((first + np.arange(n)) % self.cs)
 
     def sample(self, rng, B, policy_frac=0.0):
         """A training batch in forward_flat's layout (numpy), B rows drawn uniformly from the window. policy_frac > 0
@@ -136,34 +171,70 @@ class Replay:
                     j[repl] = cand
                     hp[repl] = True
                     need -= len(cand)
-            nt, na = self.ntok[j], self.nact[j]
-            T, A = int(nt.max()), int(na.max())
-            T = -(-T // 8) * 8
-            A = -(-A // 8) * 8
-            rows_t = np.repeat(np.arange(B), nt)
-            cols_t = np.arange(int(nt.sum())) - np.repeat(np.cumsum(nt) - nt, nt)
-            src_t = (np.repeat(self.tok_start[j], nt) + cols_t) % self.ct
-            rows_a = np.repeat(np.arange(B), na)
-            cols_a = np.arange(int(na.sum())) - np.repeat(np.cumsum(na) - na, na)
-            src_a = (np.repeat(self.act_start[j], na) + cols_a) % self.ca
-            b = {"tok_type": np.zeros((B, T), np.int64), "ids": np.zeros((B, T, N_CAT), np.int64),
-                 "f": np.zeros((B, T, N_FLOAT), np.float16), "mask": np.zeros((B, T), bool),
-                 "a_type": np.zeros((B, A), np.int64), "a_src": np.full((B, A), -1, np.int64),
-                 "a_tgt": np.full((B, A), -1, np.int64), "a_f": np.zeros((B, A, N_ACT_FEAT), np.float16),
-                 "a_mask": np.zeros((B, A), bool), "policy": np.zeros((B, A), np.float32)}
-            b["tok_type"][rows_t, cols_t] = self.tok_type[src_t]
-            b["ids"][rows_t, cols_t] = self.ids[src_t]
-            b["f"][rows_t, cols_t] = self.f[src_t]
-            b["mask"][rows_t, cols_t] = True
-            b["a_type"][rows_a, cols_a] = self.a_type[src_a]
-            b["a_src"][rows_a, cols_a] = self.a_src[src_a]
-            b["a_tgt"][rows_a, cols_a] = self.a_tgt[src_a]
-            b["a_f"][rows_a, cols_a] = self.a_f[src_a]
-            b["a_mask"][rows_a, cols_a] = True
-            b["policy"][rows_a, cols_a] = self.policy[src_a]
-            for k, ring in self.meta.items():
-                b[k] = ring[j].copy()
+            return self._gather(j)
+
+    def _gather(self, j):
+        """Rows j (ring positions) in forward_flat's layout; the caller holds the lock."""
+        B = len(j)
+        nt, na = self.ntok[j], self.nact[j]
+        T, A = int(nt.max()), int(na.max())
+        T = -(-T // 8) * 8
+        A = -(-A // 8) * 8
+        rows_t = np.repeat(np.arange(B), nt)
+        cols_t = np.arange(int(nt.sum())) - np.repeat(np.cumsum(nt) - nt, nt)
+        src_t = (np.repeat(self.tok_start[j], nt) + cols_t) % self.ct
+        rows_a = np.repeat(np.arange(B), na)
+        cols_a = np.arange(int(na.sum())) - np.repeat(np.cumsum(na) - na, na)
+        src_a = (np.repeat(self.act_start[j], na) + cols_a) % self.ca
+        b = {"tok_type": np.zeros((B, T), np.int64), "ids": np.zeros((B, T, N_CAT), np.int64),
+             "f": np.zeros((B, T, N_FLOAT), np.float16), "mask": np.zeros((B, T), bool),
+             "a_type": np.zeros((B, A), np.int64), "a_src": np.full((B, A), -1, np.int64),
+             "a_tgt": np.full((B, A), -1, np.int64), "a_f": np.zeros((B, A, N_ACT_FEAT), np.float16),
+             "a_mask": np.zeros((B, A), bool), "policy": np.zeros((B, A), np.float32)}
+        b["tok_type"][rows_t, cols_t] = self.tok_type[src_t]
+        b["ids"][rows_t, cols_t] = self.ids[src_t]
+        b["f"][rows_t, cols_t] = self.f[src_t]
+        b["mask"][rows_t, cols_t] = True
+        b["a_type"][rows_a, cols_a] = self.a_type[src_a]
+        b["a_src"][rows_a, cols_a] = self.a_src[src_a]
+        b["a_tgt"][rows_a, cols_a] = self.a_tgt[src_a]
+        b["a_f"][rows_a, cols_a] = self.a_f[src_a]
+        b["a_mask"][rows_a, cols_a] = True
+        b["policy"][rows_a, cols_a] = self.policy[src_a]
+        for k, ring in self.meta.items():
+            b[k] = ring[j].copy()
+        if self.soft_outcome is not None:
+            b["soft_outcome"] = self.soft_outcome[j].astype(np.float32)
         return b
+
+
+def ema_outcome_targets(dist, outcome, run, lam):
+    """EMA outcome targets of whole runs (see --value-ema-halflife): dist [S, C] the net's outcome distributions,
+    outcome [S] the final outcome class, run [S] the run id; each run's samples are contiguous and in move order.
+    target_t = (1 - lam) * dist_t + lam * target_{t+1}, with one_hot(outcome) after a run's last sample. Returns
+    (targets [S, C] float32, weight of the final outcome per sample [S])."""
+    dist = np.asarray(dist, np.float32)
+    S, C = dist.shape
+    run = np.asarray(run)
+    outcome = np.asarray(outcome).astype(np.int64).clip(0, C - 1)
+    if S == 0:
+        return dist.copy(), np.zeros(0, np.float32)
+    starts = np.flatnonzero(np.concatenate([[True], run[1:] != run[:-1]]))
+    if len(np.unique(run[starts])) != len(starts):
+        raise ValueError("ema_outcome_targets: a run's samples are not contiguous")
+    ends = np.append(starts[1:], S)                      # exclusive end of each sample's run
+    end_of = np.repeat(ends, np.diff(np.append(starts, S)))
+    back = end_of - 1 - np.arange(S)                     # samples after this one in its run
+    out = np.empty_like(dist)
+    nxt = np.zeros((S, C), np.float32)
+    nxt[np.arange(S), outcome] = 1.0                     # target after the last sample: the final outcome
+    order = np.argsort(back, kind="stable")
+    bounds = np.searchsorted(back[order], np.arange(back.max() + 2))
+    for r in range(back.max() + 1):                      # last samples first, then one step earlier each round
+        idx = order[bounds[r]:bounds[r + 1]]
+        tail = nxt[idx] if r == 0 else out[idx + 1]
+        out[idx] = (1.0 - lam) * dist[idx] + lam * tail
+    return out, (lam ** (back + 1)).astype(np.float32)
 
 
 # --- heads -> search values ----------------------------------------------------------------------------------------
@@ -187,8 +258,13 @@ def losses(net, b, w_policy, w_outcome, w_hp):
     l_pol = (pol * has).sum() / has.sum().clamp(min=1)
     l_out = F.cross_entropy(outcome.float(), b["outcome"].long())
     l_hp = F.cross_entropy(hp.float(), b["hp_end"].long().clamp(0, HP_CLASSES - 1))
+    parts = {"policy": l_pol.detach(), "outcome": l_out.detach(), "hp": l_hp.detach()}
+    if "soft_outcome" in b:   # --value-ema-halflife: train on the EMA target; "outcome" stays the final-outcome CE
+        l_ema = -(b["soft_outcome"] * torch.log_softmax(outcome.float(), -1)).sum(-1).mean()
+        parts["outcome_ema"] = l_ema.detach()
+        l_out = l_ema
     total = w_policy * l_pol + w_outcome * l_out + w_hp * l_hp
-    return total, {"policy": l_pol.detach(), "outcome": l_out.detach(), "hp": l_hp.detach()}
+    return total, parts
 
 
 def to_torch(b, dev):
@@ -250,6 +326,8 @@ def main(argv=None):
     ap.add_argument("--w-policy", type=float, default=1.0)
     ap.add_argument("--w-outcome", type=float, default=1.0)
     ap.add_argument("--w-hp", type=float, default=1.0)
+    ap.add_argument("--value-ema-halflife", type=float, default=0.0,
+                    help="EMA outcome labels: half-life in kept samples of a run (0 = off: final outcome)")
     ap.add_argument("--sync-steps", type=int, default=50, help="copy trained weights to the inference net every N steps")
     ap.add_argument("--report", type=float, default=30.0)
     ap.add_argument("--ckpt-minutes", type=float, default=30.0)
@@ -311,12 +389,15 @@ def main(argv=None):
         keep_fast=args.keep_fast, search_seed=args.seed + counters["step"], max_fight_moves=args.max_fight_moves,
         test_max_hp=args.test_max_hp, max_pending=args.max_pending,
         explore_c=args.explore_c, pick_target=args.pick_target)
-    replay = Replay(args.window)
+    ema_lam = 0.5 ** (1.0 / args.value_ema_halflife) if args.value_ema_halflife > 0 else 0.0
+    replay = Replay(args.window, soft_outcome=ema_lam > 0)
+    ema_stats = {"samples": 0, "real_weight": 0.0}   # mean weight of the final outcome in the EMA targets
     stop = threading.Event()
     errors = []
     weights_lock = threading.Lock()
     new_weights = [None]          # (state tensors on the GPU, event) published by the trainer
-    lossbox = {"n": 0, "policy": 0.0, "outcome": 0.0, "hp": 0.0}
+    loss_keys = ("policy", "outcome", "hp") + (("outcome_ema",) if ema_lam > 0 else ())
+    lossbox = dict({"n": 0}, **{k: 0.0 for k in loss_keys})
     lossbox_lock = threading.Lock()
     infer_stats = {"batches": 0, "rows": 0, "syncs": 0}
 
@@ -442,10 +523,29 @@ def main(argv=None):
         stream = torch.cuda.Stream(dev) if cuda else None
         amp = torch.autocast(dev.type, dtype=torch.bfloat16, enabled=cuda)
         train_net.train()
+        last_run = [-1]
         while not stop.is_set():
-            ch = drv.take_samples(1 << 16)
+            ch = drv.take_samples(TAKE_CHUNK)   # whole runs only
             if ch is not None:
-                replay.add(ch)
+                first = replay.add(ch)
+                if ema_lam > 0:
+                    if len(ch["run"]) and int(ch["run"][0]) == last_run[0]:
+                        raise RuntimeError("take_samples split a run across chunks")
+                    last_run[0] = int(ch["run"][-1]) if len(ch["run"]) else last_run[0]
+                    S = len(ch["outcome"])
+                    dist = np.empty((S, OUTCOME_CLASSES), np.float32)
+                    train_net.eval()
+                    ctx = torch.cuda.stream(stream) if stream is not None else torch.no_grad()
+                    with ctx, torch.no_grad(), amp:
+                        for i in range(0, S, args.train_batch):
+                            k = min(args.train_batch, S - i)
+                            _, o, _, _ = train_net(to_torch(replay.rows(first + i, k), dev))
+                            dist[i:i + k] = torch.softmax(o.float(), -1).cpu().numpy()
+                    train_net.train()
+                    tgt, real_w = ema_outcome_targets(dist, ch["outcome"], ch["run"], ema_lam)
+                    replay.set_soft_outcome(first, tgt)
+                    ema_stats["samples"] += S
+                    ema_stats["real_weight"] += float(real_w.sum())
             if len(replay) < args.min_replay or counters["trained"] - trained0 >= args.replay_ratio * replay.added:
                 time.sleep(0.02)
                 continue
@@ -523,8 +623,8 @@ def main(argv=None):
             d_runs = s["runs_done"] - last_runs
             with lossbox_lock:
                 n = max(1, lossbox["n"])
-                lavg = {k: round(lossbox[k] / n, 4) for k in ("policy", "outcome", "hp")} if lossbox["n"] else None
-                lossbox.update({"n": 0, "policy": 0.0, "outcome": 0.0, "hp": 0.0})
+                lavg = {k: round(lossbox[k] / n, 4) for k in loss_keys} if lossbox["n"] else None
+                lossbox.update(dict({"n": 0}, **{k: 0.0 for k in loss_keys}))
             asc = drv.ascension()
             a_runs = s["runs_done_asc"][asc] - last_s["runs_done_asc"][asc]
             a_wins = s["wins_asc"][asc] - last_s["wins_asc"][asc]
@@ -562,6 +662,9 @@ def main(argv=None):
                 "asc_win_rate_rolling": round(rolling, 4), "asc_rolling_runs": tot,
                 "ooc_roots": s["ooc_roots"], "explore_roots": s["explore_roots"], "forced_picks": s["forced_picks"],
             }
+            if ema_lam > 0:
+                row["value_ema"] = {"halflife": args.value_ema_halflife, "labelled": ema_stats["samples"],
+                                    "real_weight_mean": round(ema_stats["real_weight"] / max(1, ema_stats["samples"]), 4)}
             print(json.dumps(row), flush=True)
             metrics.write(json.dumps(row) + "\n")
             metrics.flush()
