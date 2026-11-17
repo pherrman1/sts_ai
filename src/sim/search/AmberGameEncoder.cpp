@@ -4,7 +4,7 @@
 //
 // Information content: what the game shows on screen. Never read: seed, RNG streams, event / relic / card pools,
 // the unconsumed encounter queues, the second boss, pity counters (potion / rarity / room chances), unopened chest
-// tier / gold, the Dead Adventurer reward order and fight, the burning elite's buff, face-down Match and Keep cards,
+// tier / gold, the Dead Adventurer reward order, the burning elite's buff, face-down Match and Keep cards,
 // the transform RNG reference. Event numbers are read only for the events that show them (whitelist below).
 //
 // Float layout per token (index: value; "/k" = divided by k; flags are 0/1; one-hots list their first value).
@@ -35,7 +35,7 @@
 // RELIC (gc.relics order; ids[0] = relic id)  0 counter (relic data; Wing Boots: charges)/10  1 1  2 order/20
 // POTION (one per filled slot; ids[0] = potion id)  0 slot/5  1 needs a target  2 1  3 drinkable out of combat
 // OPTION (the screen's choices; ids[0] = the item (card / relic / potion / event id), ids[1] = the deck card,
-//   relic or potion an event option names, or the Note For Yourself card)
+//   relic or potion an event option names, the Note For Yourself card, or the Dead Adventurer elite's monster id)
 //   3 1 (out-of-combat option)  12-28 kind one-hot (REWARD_GOLD, REWARD_CARD, REWARD_RELIC, REWARD_POTION,
 //   REWARD_EMERALD_KEY, REWARD_SAPPHIRE_KEY, SINGING_BOWL, SHOP_CARD, SHOP_RELIC, SHOP_POTION, SHOP_REMOVE,
 //   BOSS_RELIC, REST, NEOW, EVENT, MATCH_SLOT, CHEST)  30 index within its group/16
@@ -49,6 +49,7 @@
 //     NEOW       40-58 bonus one-hot (Neow::Bonus order)  59-63 drawback one-hot (TEN_PERCENT_HP_LOSS ..
 //                LOSE_STARTER_RELIC; NONE = all 0)
 //     EVENT      40-51 option index one-hot  52 names a deck card  53 a relic  54 a potion  55 a gold amount
+//                56 names a monster (Dead Adventurer search: ids[1] = the elite, which the event text reveals)
 // MAP (the act's nodes still reachable: current node, the boss, then by row (nearest first) and column; the rest
 //   counted in out.cut; ids[0] = boss monster id on a boss token; with a Wing Boots charge every later node with an
 //   exit counts as reachable)
@@ -162,6 +163,18 @@ namespace sts::search {
                 case MonsterEncounter::TIME_EATER: m = MonsterId::TIME_EATER; break;
                 case MonsterEncounter::DONU_AND_DECA: m = MonsterId::DONU; break;
                 case MonsterEncounter::THE_HEART: m = MonsterId::CORRUPT_HEART; break;
+                default: return 0;
+            }
+            return static_cast<std::int16_t>(kAmberMonsterBase + static_cast<int>(m) - 1);
+        }
+
+        // Dead Adventurer's elite as its main monster id (0 if unset).
+        std::int16_t deadAdventurerElite(MonsterEncounter enc) {
+            MonsterId m;
+            switch (enc) {
+                case MonsterEncounter::THREE_SENTRIES: m = MonsterId::SENTRY; break;
+                case MonsterEncounter::GREMLIN_NOB: m = MonsterId::GREMLIN_NOB; break;
+                case MonsterEncounter::LAGAVULIN_EVENT: m = MonsterId::LAGAVULIN; break;
                 default: return 0;
             }
             return static_cast<std::int16_t>(kAmberMonsterBase + static_cast<int>(m) - 1);
@@ -510,6 +523,13 @@ namespace sts::search {
                         if (i == 0) {
                             t->ids[1] = cardId(gc.noteForYourselfCard.id);
                             flag(*t, 35, gc.noteForYourselfCard.upgraded);
+                        }
+                        break;
+                    case Event::DEAD_ADVENTURER:
+                        // The event text names the killer (it matches one elite unambiguously): public.
+                        if (i == 0) {
+                            t->ids[1] = deadAdventurerElite(info.encounter);
+                            flag(*t, 56, t->ids[1] != 0);
                         }
                         break;
                     default: break;

@@ -87,7 +87,8 @@ namespace sts::search {
     // its RUN / PLAYER / CARD / RELIC / POTION / MAP tokens and UNKNOWN actions): RUN, PLAYER, CARD = the master
     // deck, RELIC, POTION, OPTION = the screen's choices, MAP = the current act's nodes still reachable (current node,
     // boss, then nearest rows first; the rest counted in out.cut). Only what the player sees: no RNG, pools, encounter
-    // queues, unopened chest contents, Dead Adventurer rewards / fight or burning-elite buff. `actions` =
+    // queues, unopened chest contents, Dead Adventurer reward order or burning-elite buff (its elite is public: the
+    // event text names it). `actions` =
     // GameAction::getAllActionsInState(gc) or a subset, plus optionally out-of-combat potion drinks / discards
     // (bits 0x80000000 | slot, 0xC0000000 | slot) and the Singing Bowl reward (RewardsActionType::CARD, group, 5).
     // No heap allocation. Feature layout: AmberGameEncoder.cpp.
