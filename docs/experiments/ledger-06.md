@@ -28090,7 +28090,9 @@ batches 116.5k → SDPA + fp16 weights 123k → pipeline 174k → packed live to
 Triton kernels 440.7k → 4 packing threads 471.9k. Larger nets: 1.2M (128 × 4) 212.8k; 5.4M (256 × 5, fused kernels
 need d ≤ 128) 68.6k. Dead ends (no gain or wrong): token sort windows, CUDA graphs, max-autotune (too few SMs),
 torch_tensorrt (slower, logits off by ~0.5), 2 batchers with compile (hangs), attention as plain matmuls, Triton
-launch-parameter sweep. Kernels match the eager fp32 net within 5e-3 (tests under TRITON_INTERPRET=1); review K PASS.
+launch-parameter sweep, Emmy 0.3.25 (cloudrift-ai/emmy, torch 2.11 venv: the compiler stays > 20 min in its loop-IR
+assembler and never generates code). Inductor on torch 2.11 is 7-8 % faster than on 2.5.1 for the plain packed forward
+(224k vs 207k), still far below the custom kernels (533k). Kernels match the eager fp32 net within 5e-3 (tests under TRITON_INTERPRET=1); review K PASS.
 **Interpretation (Inference):** the 0.44M net clears the GO line with 57 % margin; at 470k the GPU and the workers
 (~540k ceiling at 20 µs CPU per position on 11 threads) are close to balanced, so further gains need both. Amber Eye
 reports ~800k on an 8c/16t CPU with a hand-written kernel. Larger nets fall below 300k on this GPU.

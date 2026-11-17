@@ -50,3 +50,5 @@ Decision rule: >= 300k GO, 100k-300k stage 1 with 500k games, < 100k STOP.
 | 25 | 1.2M net (128x4), --fused-layer, 11 x 700, 120 s (f2244f44) | PC | 19.7 | 208k | **212.8k** (210-215k, GPU 99 %) | GPU |
 | 25b | 5.4M net (256x5), --varlen-attn only (fused kernels need d <= 128), same | PC | 20.8 | 62k | **68.6k** (67-69k, GPU 100 %) | GPU |
 | 26 | **3 repeat runs of row 23** (7b002281 = merged #1075), exact command in final/commands.txt | PC | 20.3 | - | **471.3k / 468.8k / 472.0k** (mean 470.7k, +-0.3 %) | GPU 94-96 % |
+| 27 | Inductor on torch 2.11.0+cu128 (venv-torchnew, 7b002281) | PC | - | gpacked_half **224.4k** (+8 % vs 207k on 2.5.1), sdpa_half 201.2k (+7 %); err ~1e-3 | - | - |
+| 27b | Emmy 0.3.25 on torch 2.11, nvcc 13.2 (pip) | PC | - | **no result**: compiler stuck > 20 min in its loop-IR assembler (deep recursion assembly.py subroutine/resolve), never reaches codegen; watchdog stop | - | - |
