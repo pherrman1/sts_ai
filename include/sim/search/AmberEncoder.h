@@ -95,6 +95,13 @@ namespace sts::search {
     // No heap allocation. Feature layout: AmberGameEncoder.cpp.
     void amberEncodeGame(const GameContext &gc, const std::vector<GameAction> &actions, AmberTokens &out);
 
+    // Card stacks (2026-11-17, optional; RunConfig::mergeCards): merges CARD tokens that are identical in every id
+    // and float (out of combat ignoring the master-deck index, slot 11 of deck cards) into one token, the first
+    // occurrence, with CARD slot 41 = (copies - 1) / 10 (0 for a single card, so a card without copies encodes as
+    // before). Typical: Strikes / Defends in the unknown draw pile, discard, exhaust and the master deck. Actions
+    // that named a merged card name its stack. Deterministic, no allocation.
+    void amberMergeCards(AmberTokens &tokens);
+
     // IEEE float16 bits of `x`, round to nearest even (as numpy's float32 -> float16 cast); and back.
     std::uint16_t amberHalf(float x);
     float amberHalfToFloat(std::uint16_t h);

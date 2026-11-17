@@ -164,6 +164,9 @@ namespace sts::azbench {
         // At most evalCacheCap entries per run (the cache is emptied when full).
         bool evalCache = false;
         int evalCacheCap = 1024;
+        // Card stacks (2026-11-17, default off; changes the net input, needs its own run): identical cards become one
+        // CARD token with a copy count (search::amberMergeCards), ~25-35 % fewer tokens late in a run.
+        bool mergeCards = false;
         CombatEncodeFn encodeCombat = nullptr;   // default: search::amberEncodeCombat
         GameEncodeFn encodeGame = nullptr;       // default: search::amberEncodeGame (stubEncodeGame = placeholder)
     };

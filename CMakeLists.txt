@@ -219,6 +219,13 @@ set_tests_properties(az_run_driver_qtransform PROPERTIES LABELS "core;smoke")
 add_test(NAME az_run_driver_search_flags COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 6 --fast
          --seed-base 1 --seconds 300 --no-fast-noise --q-rescale --c-scale 0.1)
 set_tests_properties(az_run_driver_search_flags PROPERTIES LABELS "core;smoke")
+# Card stacks (search::amberMergeCards) over whole-run driver states: same cards and counts, references follow.
+add_executable(az-merge-cards-test apps/az_bench/az_merge_cards_test.cpp apps/az_bench/az_run_driver.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(az-merge-cards-test PRIVATE include json/include apps/az_bench)
+target_link_libraries(az-merge-cards-test PRIVATE Threads::Threads)
+add_test(NAME az_merge_cards COMMAND $<TARGET_FILE:az-merge-cards-test> --runs 6 --seed-base 1 --test-hp 300)
+set_tests_properties(az_merge_cards PROPERTIES LABELS "core;smoke")
 # Fair play of the stage 1 driver's combat view (ADR-0002): fights differing only in hidden draw order (and, under
 # Runic Dome, rolled intents) give identical net inputs and identical search paths.
 add_executable(az-fair-view-test apps/az_bench/az_fair_view_test.cpp apps/az_bench/az_run_driver.cpp

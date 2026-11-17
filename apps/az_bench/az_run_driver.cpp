@@ -559,6 +559,7 @@ namespace sts::azbench {
                 for (std::size_t k = 0; k < acts.size(); ++k) node.edges[k] = Edge{acts[k].bits};
                 const double t1 = cpuSeconds();
                 cfg.encodeCombat(node.bc, node.ctx, acts, g.tokens);
+                if (cfg.mergeCards) search::amberMergeCards(g.tokens);
                 wk.st.stepCpu += t1 - t0;
                 wk.st.encodeCpu += cpuSeconds() - t1;
                 g.pendingCombat = true;
@@ -570,6 +571,7 @@ namespace sts::azbench {
                 for (std::size_t k = 0; k < gacts.size(); ++k) node.edges[k] = Edge{gacts[k].bits};
                 const double t1 = cpuSeconds();
                 cfg.encodeGame(*node.gc, gacts, g.tokens);
+                if (cfg.mergeCards) search::amberMergeCards(g.tokens);
                 if (ni == 0 && cfg.exploreC > 0) {
                     // Pick-rate items of the root's actions: hash of the source token's ids.
                     g.rootKeys.assign(gacts.size(), -1);
