@@ -124,6 +124,8 @@ def main(argv=None):
     ap.add_argument("--pipeline", action="store_true",
                     help="flat layout, one batcher: pack the next batch on the CPU while the GPU runs the current one "
                          "(two pinned buffer sets; results come back through pinned memory)")
+    ap.add_argument("--pack-threads", type=int, default=1,
+                    help="flat layout: threads that pack one batch in C++ (rows split between them)")
     ap.add_argument("--sort-window", type=int, default=1,
                     help="flat: sort this many batches' worth of requests by token count and serve them in order, so "
                          "each batch pads to a tight token bucket")
@@ -286,7 +288,7 @@ def main(argv=None):
         views = {k: v.numpy() for k, v in host.items()}
         while not stop.is_set():
             t0 = time.perf_counter()
-            got = drv.next_flat(args.batch, min_rows, 5, row_b, tok_b, act_b, views, args.sort_window)
+            got = drv.next_flat(args.batch, min_rows, 5, row_b, tok_b, act_b, views, args.sort_window, args.pack_threads)
             t1 = time.perf_counter()
             if got is None:
                 with tlock:
@@ -377,7 +379,7 @@ def main(argv=None):
         while not stop.is_set():
             host, views, out = sets[cur]
             t0 = time.perf_counter()
-            got = drv.next_flat(args.batch, min_rows, 5, row_b, tok_b, act_b, views, args.sort_window)
+            got = drv.next_flat(args.batch, min_rows, 5, row_b, tok_b, act_b, views, args.sort_window, args.pack_threads)
             t1 = time.perf_counter()
             launched = None
             if got is not None:
@@ -503,7 +505,7 @@ def main(argv=None):
     ev = max(1, s1["evals"] - s0["evals"])
     nb = max(1, w1["batches"] - w0["batches"])
     res = {
-        "net": args.net, "params": params, "dtype": args.dtype, "sdpa": args.sdpa, "attn_math": args.attn_math, "fused_ffn": args.fused_ffn, "varlen_attn": args.varlen_attn, "fused_layer": args.fused_layer, "half": args.half, "pipeline": args.pipeline, "pack_step": args.pack_step, "pack_gather": args.pack_gather, "compile_mode": args.compile_mode, "compile": args.compile, "backend": args.backend if args.compile else None, "fake_net": args.fake_net,
+        "net": args.net, "params": params, "dtype": args.dtype, "sdpa": args.sdpa, "attn_math": args.attn_math, "fused_ffn": args.fused_ffn, "varlen_attn": args.varlen_attn, "fused_layer": args.fused_layer, "half": args.half, "pipeline": args.pipeline, "pack_step": args.pack_step, "pack_threads": args.pack_threads, "pack_gather": args.pack_gather, "compile_mode": args.compile_mode, "compile": args.compile, "backend": args.backend if args.compile else None, "fake_net": args.fake_net,
         "encoder": args.encoder,
         "workers": args.workers, "games_per_worker": args.games, "batchers": args.batchers, "max_batch": args.batch,
         "full_sims": args.full_sims, "fast_sims": args.fast_sims, "full_prob": args.full_prob,

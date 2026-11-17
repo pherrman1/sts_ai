@@ -49,7 +49,8 @@ class E2EBenchSmoke(unittest.TestCase):
         self.assertTrue(r["pipeline"] and r["sdpa"])
 
     def test_amber_net_cpu_packed(self):
-        r = self.run_bench("--net", "32x1", "--pack-step", "64", "--pack-gather", "--pipeline")
+        r = self.run_bench("--net", "32x1", "--pack-step", "64", "--pack-gather", "--pipeline", "--pack-threads", "3",
+                           "--batch", "256", "--games", "160")
         self.assertNotIn("errors", r)
         self.assertGreater(r["positions_per_s"], 0)
         self.assertGreater(r["mean_live_tokens_per_row"], 1)

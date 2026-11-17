@@ -108,7 +108,7 @@ namespace sts::azbench {
         std::vector<std::uint32_t> nextBatchFlat(int maxRows, int minRows, int timeoutMs,
                                                  const std::vector<int> &rowBuckets, const std::vector<int> &tokBuckets,
                                                  const std::vector<int> &actBuckets, const FlatBuffers &buf,
-                                                 FlatShape &shape, int sortWindow = 1);
+                                                 FlatShape &shape, int sortWindow = 1, int packThreads = 1);
         // Results for rows of a batch from nextBatch: tickets[row] as PackedBatch::ticket, logits[row][action]
         // (row-major, `actions` per row) and value[row].
         void submit(const std::uint32_t *tickets, int rows, int actions, const float *logits, const float *value);
