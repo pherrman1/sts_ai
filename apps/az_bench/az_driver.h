@@ -106,7 +106,7 @@ namespace sts::azbench {
         std::vector<std::uint32_t> nextBatchFlat(int maxRows, int minRows, int timeoutMs,
                                                  const std::vector<int> &rowBuckets, const std::vector<int> &tokBuckets,
                                                  const std::vector<int> &actBuckets, const FlatBuffers &buf,
-                                                 FlatShape &shape);
+                                                 FlatShape &shape, int sortWindow = 1);
         // Results for rows of a batch from nextBatch: tickets[row] as PackedBatch::ticket, logits[row][action]
         // (row-major, `actions` per row) and value[row].
         void submit(const std::uint32_t *tickets, int rows, int actions, const float *logits, const float *value);
@@ -122,6 +122,12 @@ namespace sts::azbench {
     private:
         void workerLoop(int w);
         std::vector<std::uint32_t> takeRequests(int maxRows, int minRows, int timeoutMs);
+        // sortWindow > 1: takes up to sortWindow * maxRows requests at once, sorts them by token count and hands
+        // them out as consecutive batches of maxRows (every request of a window is served before the next window,
+        // so none waits longer than one window).
+        std::vector<std::uint32_t> takeSorted(int maxRows, int minRows, int timeoutMs, int sortWindow);
+        std::mutex cm_;
+        std::deque<std::vector<std::uint32_t>> chunks_;
         std::vector<Root> roots_;
         DriverConfig cfg_;
         std::vector<std::unique_ptr<Worker>> workers_;

@@ -565,6 +565,32 @@ namespace sts::azbench {
         return take;
     }
 
+    std::vector<std::uint32_t> Driver::takeSorted(int maxRows, int minRows, int timeoutMs, int sortWindow) {
+        std::lock_guard<std::mutex> l(cm_);
+        if (chunks_.empty()) {
+            std::vector<std::uint32_t> all = takeRequests(maxRows * sortWindow, minRows, timeoutMs);
+            if (all.empty()) return all;
+            std::vector<std::pair<int, std::uint32_t>> keyed;
+            keyed.reserve(all.size());
+            for (auto t : all) {
+                const auto &tk = workers_[t >> 16]->games[t & 0xffff].tokens;
+                int n = 0;
+                for (int s = 0; s < search::kAmberTokenTypes; ++s) n += tk.n[s];
+                keyed.emplace_back(n, t);
+            }
+            std::stable_sort(keyed.begin(), keyed.end(),
+                             [](const auto &a, const auto &b) { return a.first < b.first; });
+            for (std::size_t i = 0; i < keyed.size(); i += maxRows) {
+                std::vector<std::uint32_t> c;
+                for (std::size_t j = i; j < std::min(keyed.size(), i + maxRows); ++j) c.push_back(keyed[j].second);
+                chunks_.push_back(std::move(c));
+            }
+        }
+        std::vector<std::uint32_t> out = std::move(chunks_.front());
+        chunks_.pop_front();
+        return out;
+    }
+
     namespace {
         int bucketFor(const std::vector<int> &buckets, int n) {
             for (int b : buckets)
@@ -577,8 +603,9 @@ namespace sts::azbench {
                                                      const std::vector<int> &rowBuckets,
                                                      const std::vector<int> &tokBuckets,
                                                      const std::vector<int> &actBuckets, const FlatBuffers &buf,
-                                                     FlatShape &shape) {
-        std::vector<std::uint32_t> take = takeRequests(maxRows, minRows, timeoutMs);
+                                                     FlatShape &shape, int sortWindow) {
+        std::vector<std::uint32_t> take = sortWindow > 1 ? takeSorted(maxRows, minRows, timeoutMs, sortWindow)
+                                                         : takeRequests(maxRows, minRows, timeoutMs);
         shape = {};
         if (take.empty()) return take;
         auto tokensOf = [&](std::uint32_t t) -> const AmberTokens & {

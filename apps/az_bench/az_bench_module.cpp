@@ -108,7 +108,8 @@ PYBIND11_MODULE(az_bench_native, m) {
              py::arg("max_rows"), py::arg("min_rows"), py::arg("timeout_ms") = 5)
         .def("next_flat",
              [](azbench::Driver &d, int maxRows, int minRows, int timeoutMs, std::vector<int> rowBuckets,
-                std::vector<int> tokBuckets, std::vector<int> actBuckets, py::dict bufs) -> py::object {
+                std::vector<int> tokBuckets, std::vector<int> actBuckets, py::dict bufs,
+                int sortWindow) -> py::object {
                  // bufs: writeable C-contiguous arrays sized for the largest buckets (e.g. numpy views of pinned
                  // torch tensors): tok_type int8, ids int16, f float16, mask bool/uint8, a_type / a_src / a_tgt
                  // int16, a_f float16, a_mask bool/uint8.
@@ -139,7 +140,7 @@ PYBIND11_MODULE(az_bench_native, m) {
                  {
                      py::gil_scoped_release r;
                      tickets = d.nextBatchFlat(maxRows, minRows, timeoutMs, rowBuckets, tokBuckets, actBuckets, fb,
-                                               shape);
+                                               shape, sortWindow);
                  }
                  if (tickets.empty()) return py::none();
                  py::array_t<std::uint32_t> t(static_cast<py::ssize_t>(tickets.size()));
@@ -147,7 +148,7 @@ PYBIND11_MODULE(az_bench_native, m) {
                  return py::make_tuple(t, shape.rows, shape.rowsPadded, shape.tokens, shape.actions);
              },
              py::arg("max_rows"), py::arg("min_rows"), py::arg("timeout_ms"), py::arg("row_buckets"),
-             py::arg("tok_buckets"), py::arg("act_buckets"), py::arg("bufs"))
+             py::arg("tok_buckets"), py::arg("act_buckets"), py::arg("bufs"), py::arg("sort_window") = 1)
         .def("submit",
              [](azbench::Driver &d, py::array_t<std::uint32_t, py::array::c_style | py::array::forcecast> ticket,
                 py::array_t<float, py::array::c_style | py::array::forcecast> logits,

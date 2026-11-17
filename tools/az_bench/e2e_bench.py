@@ -107,6 +107,13 @@ def main(argv=None):
     ap.add_argument("--row-buckets", default="256,512,1024,2048,4096")
     ap.add_argument("--tok-buckets", default="32,48,64,96,128,212")
     ap.add_argument("--act-buckets", default="16,32,64,96")
+    ap.add_argument("--sort-window", type=int, default=1,
+                    help="flat: sort this many batches' worth of requests by token count and serve them in order, so "
+                         "each batch pads to a tight token bucket")
+    ap.add_argument("--precompile", action="store_true",
+                    help="flat + compile: compile every (rows >= batch/2, token, action) bucket in the main thread "
+                         "before the batchers start; batchers then never compile (an unseen shape runs eager), "
+                         "which allows several batchers")
     ap.add_argument("--cuda-graphs", action="store_true",
                     help="with --compile: mode reduce-overhead (CUDA graphs per shape)")
     ap.add_argument("--compile", action="store_true", help="torch.compile the net (bucketed shapes)")
@@ -142,9 +149,14 @@ def main(argv=None):
     compile_lock = threading.Lock()
     seen_shapes = set()
 
+    fallbacks = [0]
+
     def forward(x, key):
         if not args.compile or key in seen_shapes:
             return run(x)
+        if args.precompile:
+            fallbacks[0] += 1
+            return net(x)
         with compile_lock:
             out = run(x)
             torch.cuda.synchronize() if dev.type == "cuda" else None
@@ -156,6 +168,26 @@ def main(argv=None):
         row_b.append(args.batch)
     tok_b = [int(v) for v in args.tok_buckets.split(",")]
     act_b = [int(v) for v in args.act_buckets.split(",")]
+    if args.compile and args.precompile and args.layout == "flat" and not args.fake_net:
+        tp = time.perf_counter()
+        for R in [r for r in row_b if r >= args.batch // 2]:
+            for T in tok_b:
+                for A in act_b:
+                    x = {"tok_type": torch.zeros(R, T, dtype=torch.long, device=dev),
+                         "ids": torch.zeros(R, T, 4, dtype=torch.long, device=dev),
+                         "f": torch.zeros(R, T, 64, device=dev), "mask": torch.zeros(R, T, dtype=torch.bool, device=dev),
+                         "a_type": torch.zeros(R, A, dtype=torch.long, device=dev),
+                         "a_src": torch.full((R, A), -1, dtype=torch.long, device=dev),
+                         "a_tgt": torch.full((R, A), -1, dtype=torch.long, device=dev),
+                         "a_f": torch.zeros(R, A, 8, device=dev), "a_mask": torch.zeros(R, A, dtype=torch.bool, device=dev)}
+                    x["mask"][:, 0] = True
+                    x["a_mask"][:, 0] = True
+                    with torch.inference_mode(), torch.autocast(dev.type, dtype=dtype, enabled=dtype != torch.float32):
+                        run(x)
+                    seen_shapes.add((R, T, A))
+        if dev.type == "cuda":
+            torch.cuda.synchronize()
+        print(f"# precompiled {len(seen_shapes)} shapes in {time.perf_counter() - tp:.0f} s", flush=True)
 
     drv = az_bench_native.Driver(args.wires, workers=args.workers, games=args.games, full_sims=args.full_sims,
                                  fast_sims=args.fast_sims, full_prob=args.full_prob, seed=args.seed,
@@ -196,7 +228,7 @@ def main(argv=None):
         views = {k: v.numpy() for k, v in host.items()}
         while not stop.is_set():
             t0 = time.perf_counter()
-            got = drv.next_flat(args.batch, min_rows, 5, row_b, tok_b, act_b, views)
+            got = drv.next_flat(args.batch, min_rows, 5, row_b, tok_b, act_b, views, args.sort_window)
             t1 = time.perf_counter()
             if got is None:
                 with tlock:
@@ -309,7 +341,8 @@ def main(argv=None):
         "positions_per_s": round((s1["evals"] - s0["evals"]) / wall),
         "moves_per_s": round((s1["moves"] - s0["moves"]) / wall),
         "fights": s1["fights"] - s0["fights"],
-        "layout": args.layout,
+        "layout": args.layout, "sort_window": args.sort_window, "min_batch": min_rows,
+        "row_buckets": row_b, "tok_buckets": tok_b, "act_buckets": act_b,
         "mean_batch_rows": round((w1["rows"] - w0["rows"]) / nb, 1),
         "mean_padded_rows": round((w1.get("padded_rows", 0) - w0.get("padded_rows", 0)) / nb, 1),
         "mean_token_slots_per_row": round((w1.get("tok_slots", 0) - w0.get("tok_slots", 0))
@@ -321,6 +354,7 @@ def main(argv=None):
             "search_loop": round(1e6 * (s1["search_cpu"] - s0["search_cpu"]) / ev, 3)},
         "encode_cut": s1["encode_cut"],
     }
+    res["eager_fallback_batches"] = fallbacks[0]
     if errors:
         res["errors"] = errors
     print(json.dumps(res), flush=True)
