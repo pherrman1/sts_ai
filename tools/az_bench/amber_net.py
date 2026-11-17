@@ -68,7 +68,7 @@ def load_fused_layer():
 
 
 class AmberNet(nn.Module):
-    def __init__(self, d=96, layers=3, heads=None, hp_floors=1):
+    def __init__(self, d=96, layers=3, heads=None, hp_floors=1, soft_policy=False):
         super().__init__()
         heads = heads or max(1, d // 32)
         self.type_emb = nn.Embedding(len(TOKEN_TYPES), d)
@@ -92,6 +92,10 @@ class AmberNet(nn.Module):
         # Per-floor HP head: 1 scalar by default (unused); hp_floors = 56 for the self-play utility "amber" (E[HP at
         # the end of floor f] / 255, f = 1..56; tools/az_bench/selfplay.py --utility amber).
         self.hp_floor = mlp(d, d, hp_floors)
+        # Soft policy head (Amber Eye "Labels", adapted from KataGo; tools/az_bench/selfplay.py --w-soft-policy): a
+        # second action MLP on the same e_a, trained on the flattened policy target p^(1/4). Training only: it is
+        # computed (as a 5th output) only in training mode, so inference and eval calls are unchanged.
+        self.pol_soft = mlp(d, d, 1) if soft_policy else None
 
     def forward(self, b):
         if "tok_type" in b:
@@ -111,7 +115,10 @@ class AmberNet(nn.Module):
         e = (self.a_type(b["a_type"]) + self.w_s(pick(b["a_src"], self.a_none[0]))
              + self.w_t(pick(b["a_tgt"], self.a_none[1])) + self.w_f(b["a_f"]) + self.w_c(c)[:, None])
         logits = self.pol(e).squeeze(-1).masked_fill(~b["a_mask"], -1e4)
-        return logits, self.outcome(c), self.hp(c), self.hp_floor(c).squeeze(-1)
+        out = (logits, self.outcome(c), self.hp(c), self.hp_floor(c).squeeze(-1))
+        if self.pol_soft is not None and self.training:
+            out = out + (self.pol_soft(e).squeeze(-1).masked_fill(~b["a_mask"], -1e4),)
+        return out
 
     def forward_flat(self, b):
         """Flat layout (az_driver nextBatchFlat): one token axis per row, the run token first, the other tokens in

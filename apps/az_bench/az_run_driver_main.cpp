@@ -2,7 +2,7 @@
 // training samples (labels filled, policy a distribution over the sample's actions, action sources / targets inside
 // the row). Smoke test and CPU-side throughput probe.
 //
-// usage: az-run-driver [--workers 2] [--games 4] [--runs 8] [--batch 64] [--seed 0] [--seed-base 1] [--fast] [--asc 20] [--sims N] [--const-value] [--test-hp HP] [--max-fight-moves 400] [--explore-c C] [--pick-target T] [--no-fast-noise] [--q-rescale] [--c-scale S] [--utility floor-hp|amber] [--keyless-hp] [--chance-on-reveal] [--cross-combat] [--sim-help] [--max-pending N]
+// usage: az-run-driver [--workers 2] [--games 4] [--runs 8] [--batch 64] [--seed 0] [--seed-base 1] [--fast] [--asc 20] [--sims N] [--const-value] [--test-hp HP] [--max-fight-moves 400] [--explore-c C] [--explore-amber] [--pick-target T] [--no-fast-noise] [--q-rescale] [--c-scale S] [--utility floor-hp|amber] [--keyless-hp] [--chance-on-reveal] [--cross-combat] [--sim-help] [--max-pending N]
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -72,6 +72,7 @@ int main(int argc, char **argv) {
         else if (a == "--max-fight-moves") cfg.maxMovesPerFight = std::stoi(next());
         else if (a == "--explore-c") cfg.exploreC = std::stod(next());
         else if (a == "--pick-target") cfg.pickTarget = std::stod(next());
+        else if (a == "--explore-amber") cfg.exploreAmber = true;
         else if (a == "--no-fast-noise") cfg.fastNoise = false;
         else if (a == "--q-rescale") cfg.qRescale = true;
         else if (a == "--c-scale") cfg.cScale = std::stod(next());
@@ -200,7 +201,14 @@ int main(int argc, char **argv) {
     if (cfg.chanceOnReveal && (s.oocEdgeKinds[0] == 0 || s.oocEdgeKinds[1] == 0)) return 1;
     if (cfg.crossCombat != (s.treeFightStarts > 0 && s.treeFightExits > 0)) return 1;
     if (cfg.simHelp != (s.autoGold > 0)) return 1;
-    if (cfg.exploreC > 0 && (s.forcedPicks == 0 || s.exploreRoots == 0)) return 1;   // exploration must act
-    if (cfg.exploreC == 0 && (s.forcedPicks != 0 || s.exploreRoots != 0)) return 1;  // ... and be inert when off
+    const bool explore = cfg.exploreC > 0 || cfg.exploreAmber;
+    if (cfg.exploreAmber)
+        std::printf("amber exploration: attempts %lld c0 %lld cinf %lld natural %lld natural_unplayed %lld moves %lld\n",
+                    static_cast<long long>(s.exploreAttempts), static_cast<long long>(s.exploreCZero),
+                    static_cast<long long>(s.exploreCInf), static_cast<long long>(s.exploreNatural),
+                    static_cast<long long>(s.exploreNaturalUnplayed), static_cast<long long>(s.moves));
+    if (s.exploreNaturalUnplayed != 0) return 1;   // an item logged as picked by the search must have been played
+    if (explore && (s.forcedPicks == 0 || s.exploreRoots == 0)) return 1;   // exploration must act
+    if (!explore && (s.forcedPicks != 0 || s.exploreRoots != 0)) return 1;  // ... and be inert when off
     return 0;
 }
