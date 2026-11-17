@@ -21,10 +21,16 @@ RUNNABLE = HAVE and (torch.cuda.is_available() or os.environ.get("TRITON_INTERPR
 
 
 def load(name):
-    spec = importlib.util.spec_from_file_location(name, os.path.join(ROOT, "tools", "az_bench", name + ".py"))
-    m = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(m)
-    return m
+    """amber_net, or a kernel module through amber_net.load_kernel (one instance per process: the kernel modules
+    register torch custom ops, which must not be registered twice)."""
+    import sys
+    spec = importlib.util.spec_from_file_location("amber_net", os.path.join(ROOT, "tools", "az_bench", "amber_net.py"))
+    A = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(A)
+    if name == "amber_net":
+        return A
+    A.load_kernel(name)
+    return sys.modules["az_bench_" + name]
 
 
 @unittest.skipUnless(RUNNABLE, "needs triton and a CUDA GPU or TRITON_INTERPRET=1")
