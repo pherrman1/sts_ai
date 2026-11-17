@@ -126,6 +126,62 @@ class HeadsTest(unittest.TestCase):
         self.assertAlmostEqual(float(ehp[2]), 50.0, places=3)
 
 
+def check_progress(tc, e):
+    """Invariants of one ascension's run progress counters (driver progress_asc / selfplay progress_window)."""
+    n = e["runs"]
+    for k in ("ruby", "emerald", "sapphire", "act4", "heart", "keyless_victories"):
+        tc.assertLessEqual(0, e[k], k)
+        tc.assertLessEqual(e[k], n, k)
+    tc.assertLessEqual(e["all_keys"], min(e["ruby"], e["emerald"], e["sapphire"]))
+    tc.assertEqual(e["campfires"], e["rest"] + e["smith"] + e["recall"] + e["other_campfire"])
+    tc.assertLessEqual(e["recall"], e["recall_offered"])
+    tc.assertLessEqual(e["recall_offered"], e["campfires"])
+    tc.assertLessEqual(e["recall"], e["ruby"])          # Recall gives the Ruby key (one per run at most)
+    tc.assertLessEqual(e["burning_elites"], e["elites"])
+    tc.assertLessEqual(e["emerald"], e["burning_elites"])
+    tc.assertLessEqual(e["heart"], e["act4"])
+    tc.assertLessEqual(e["act4"], e["all_keys"])        # Act 4 needs all three keys
+    tc.assertLessEqual(e["keyless_victories"] + e["act4"], n)
+
+
+@unittest.skipUnless(HAVE_TORCH, "torch missing")
+class ProgressWindowTest(unittest.TestCase):
+    def test_deltas_per_ascension(self):
+        sp = load()
+        z = [0] * 21
+        a = {"runs_done_asc": z[:], "progress_asc": {"ruby": z[:], "recall": z[:]}}
+        b = {"runs_done_asc": z[:], "progress_asc": {"ruby": z[:], "recall": z[:]}}
+        a["runs_done_asc"][0] = 10; a["progress_asc"]["ruby"][0] = 3
+        b["runs_done_asc"][0] = 15; b["progress_asc"]["ruby"][0] = 5; b["progress_asc"]["recall"][0] = 2
+        b["runs_done_asc"][1] = 4; b["progress_asc"]["ruby"][1] = 1
+        self.assertEqual(sp.progress_window(b, a), {"0": {"runs": 5, "ruby": 2, "recall": 2},
+                                                    "1": {"runs": 4, "ruby": 1, "recall": 0}})
+        self.assertEqual(sp.progress_window(a, a), {})
+
+
+class DashboardProgressTest(unittest.TestCase):
+    def test_panel(self):
+        spec = importlib.util.spec_from_file_location(
+            "selfplay_dashboard", os.path.join(ROOT, "tools", "az_bench", "selfplay_dashboard.py"))
+        dash = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(dash)
+        e = dict.fromkeys(dash.PROGRESS_KEYS, 0)
+        e.update(runs=100, ruby=40, emerald=10, sapphire=20, all_keys=5, campfires=200, recall_offered=150,
+                 rest=120, smith=50, recall=30, elites=150, burning_elites=30, act4=5, heart=4, keyless_victories=20)
+        base = {"time": "2026-11-17 18:00:00", "hours": 1, "positions_per_s": 1, "moves_per_s": 1, "runs_window": 100,
+                "win_rate_window": 0, "mean_floor_window": 20, "wins_total": 0, "train_steps": 1, "samples_added": 1,
+                "stalls": 0, "ascension": 0, "asc_runs_window": 100, "asc_win_rate_window": 0,
+                "asc_mean_floor_window": 20, "asc_win_rate_rolling": 0, "asc_rolling_runs": 100}
+        old = dict(base, runs_done=100)                                  # a row from before the counters
+        rows = [old, dict(base, runs_done=200, progress_window={"0": e}),
+                dict(base, runs_done=300, progress_window={"0": e})]
+        self.assertEqual(dash.progress_sum(rows)[0]["runs"], 200)
+        page = dash.page(rows, "t", "")
+        self.assertIn("Keys, Recall, elites, Act 4", page)
+        self.assertIn("<td>A0</td><td>200</td><td>40.0</td><td>10.0</td><td>20.0</td><td>5.0</td><td>20.0</td>", page)
+        self.assertNotIn("Keys, Recall, elites", dash.page([old], "t", ""))
+
+
 @unittest.skipUnless(HAVE_TORCH and MODULES, "torch or the az_bench_native module (cmake target) missing")
 class SelfplaySmoke(unittest.TestCase):
     def test_run_train_resume(self):
@@ -143,6 +199,15 @@ class SelfplaySmoke(unittest.TestCase):
             self.assertGreater(rows[-1]["samples_added"], 0)
             self.assertGreater(rows[-1]["train_steps"], 0)
             self.assertGreater(rows[-1]["syncs"], 0)
+            prog = {}
+            for r in rows:
+                for a, e in r["progress_window"].items():
+                    t = prog.setdefault(a, dict.fromkeys(e, 0))
+                    for k, v in e.items():
+                        t[k] += v
+            self.assertEqual(sum(e["runs"] for e in prog.values()), rows[-1]["runs_done"])
+            for e in prog.values():
+                check_progress(self, e)
             ck = sorted(glob.glob(os.path.join(d, "ckpt_*.pt")), key=os.path.getmtime)[-1]
             c = torch.load(ck)["counters"]
             self.assertGreaterEqual(c["seeds_used"], 24)
@@ -160,6 +225,28 @@ class SelfplaySmoke(unittest.TestCase):
             self.assertGreaterEqual(c2["seeds_used"], 32)
             self.assertGreater(c2["step"], c["step"])   # training resumes (the replay-ratio cap counts from the resume)
             self.assertGreaterEqual(c2["runs_done"], 32)
+
+    def test_progress_counters_late_floors(self):
+        """With a huge max HP, A0 runs reach campfires and elites: the driver counts them per ascension and the
+        counters are consistent (Recall gives the Ruby key, Act 4 needs all keys, the Heart needs Act 4)."""
+        sp = load()
+        args = ["--module-dir", os.path.dirname(MODULES[0]), "--device", "cpu", "--workers", "2", "--games", "3",
+                "--full-sims", "4", "--fast-sims", "2", "--batch", "32", "--row-buckets", "32", "--pack-step", "32",
+                "--pack-threads", "1", "--min-replay", "1000000", "--train-batch", "32", "--window", "5000",
+                "--report", "1", "--sync-steps", "2", "--seed-base", "1300", "--max-runs", "6",
+                "--ascension", "0", "--test-max-hp", "3000"]
+        with tempfile.TemporaryDirectory() as d:
+            self.assertEqual(sp.main(args + ["--out-dir", d]), 0)
+            with open(os.path.join(d, "metrics.jsonl")) as f:
+                rows = [json.loads(l) for l in f]
+        e = {}
+        for r in rows:
+            for k, v in r["progress_window"].get("0", {}).items():
+                e[k] = e.get(k, 0) + v
+        self.assertGreaterEqual(e["runs"], 6)
+        check_progress(self, e)
+        self.assertGreater(e["campfires"], 0)
+        self.assertGreater(e["elites"], 0)
 
     def test_curriculum_switch(self):
         """With a 0 % threshold the curriculum moves up after --curriculum-runs runs and the checkpoint keeps it."""
