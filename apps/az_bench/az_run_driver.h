@@ -196,7 +196,8 @@ namespace sts::azbench {
         // floor ehp[row] (absolute) for each ticket.
         void submit(const std::uint32_t *tickets, int rows, int actions, const float *logits, const float *F,
                     const float *ehp);
-        // Moves up to maxSamples finished samples (labels filled) into out.
+        // Moves up to maxSamples finished samples (labels filled) into out, then the rest of the last run taken (a
+        // run is never split across calls).
         void takeSamples(int maxSamples, std::vector<Sample> &out);
         RunStats stats() const;
         const RunConfig &config() const { return cfg_; }
