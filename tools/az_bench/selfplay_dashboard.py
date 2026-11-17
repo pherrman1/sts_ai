@@ -109,8 +109,9 @@ def bars(hist, w=1000, h=230):
 
 
 def asc_summary(rows):
-    """Per-ascension totals of the curriculum phase from the report windows (a window counts at the ascension it
-    reports; the few runs still in flight at a step-up finish in the next window and count there)."""
+    """Per-ascension totals of the curriculum phase from the report windows. A window reports only the ascension
+    current at report time, so the few runs still in flight at a step-up (finishing at the old ascension) are missing
+    here; they are only in the driver's totals (runs_done_asc)."""
     out = {}
     for r in rows:
         a = r.get("ascension")
