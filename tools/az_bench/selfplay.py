@@ -279,6 +279,22 @@ def to_torch(b, dev):
 
 # --- main ----------------------------------------------------------------------------------------------------------
 
+
+def progress_window(s, last_s):
+    """Run progress counters (keys, campfire choices, elites, Act 4, Heart) of the runs finished since last_s, per
+    ascension that finished runs: {"A": {"runs": n, "ruby": .., ...}} (driver stats() progress_asc deltas)."""
+    out = {}
+    cur, prev = s.get("progress_asc") or {}, last_s.get("progress_asc") or {}
+    for a, (n1, n0) in enumerate(zip(s["runs_done_asc"], last_s["runs_done_asc"])):
+        if n1 - n0 <= 0:
+            continue
+        e = {"runs": n1 - n0}
+        for k, v in cur.items():
+            e[k] = v[a] - (prev.get(k) or [0] * len(v))[a]
+        out[str(a)] = e
+    return out
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--module-dir", required=True)
@@ -661,6 +677,7 @@ def main(argv=None):
                 "asc_mean_floor_window": round(a_floors / max(1, a_runs), 2),
                 "asc_win_rate_rolling": round(rolling, 4), "asc_rolling_runs": tot,
                 "ooc_roots": s["ooc_roots"], "explore_roots": s["explore_roots"], "forced_picks": s["forced_picks"],
+                "progress_window": progress_window(s, last_s),
             }
             if ema_lam > 0:
                 row["value_ema"] = {"halflife": args.value_ema_halflife, "labelled": ema_stats["samples"],
