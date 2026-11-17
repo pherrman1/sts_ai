@@ -36,7 +36,8 @@ spiele aber auf dem endnetz der ersten 1 Mio spiele." The main run is stopped at
 from that checkpoint (net, optimizer, counters; seeds continue after the ones used, same --seed-base 130200000) with
 `--explore-c 0.05 --pick-target 0.01 --max-runs 2000000`, same out-dir (one metrics curve).
 
-**Pick-rate exploration** (simplified from Amber Eye, whose exact boost rule is not published): an out-of-combat item
+**Pick-rate exploration** (simplified from Amber Eye, whose exact boost rule is not published; rates over runs finished
+since the resume, after a warm-up of 100 runs; OPTION items also keyed by kind and option index): an out-of-combat item
 (the source token of a CHOOSE_CARD / CHOOSE_OPTION action: card reward, event / Neow option, relic, shop item; hashed
 by type and token ids) picked in fewer than 1 % of the continuation's runs is under target. A root offering one gets a
 full search (policy target recorded), and with probability min(1, 0.05 * (1 - rate / 0.01)) the most under-target

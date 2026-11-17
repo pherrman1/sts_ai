@@ -434,6 +434,9 @@ namespace sts::azbench {
                         const auto &tok = g.tokens.at(static_cast<AmberTokenType>(a.srcSeg), a.srcIdx);
                         std::uint64_t h = 0x9e3779b97f4a7c15ull * (a.type + 1);
                         for (int c = 0; c < 2; ++c) h = (h ^ static_cast<std::uint16_t>(tok.ids[c])) * 0x100000001b3ull;
+                        // The OPTION kind one-hot and option index (f 12-51): event / rest options are separate items.
+                        if (static_cast<AmberTokenType>(a.srcSeg) == AmberTokenType::OPTION)
+                            for (int c = 12; c < 52; ++c) h = (h ^ tok.f[c]) * 0x100000001b3ull;
                         h ^= h >> 29;
                         g.rootKeys[k] = static_cast<int>(h & (kPickBuckets - 1));
                     }
@@ -494,6 +497,7 @@ namespace sts::azbench {
             const int oc = outcomeClass(g.gc);
             for (auto &s : g.pending) s.outcome = static_cast<std::int16_t>(oc);
             ++wk.st.runsDone;
+            runsDone_.fetch_add(1, std::memory_order_relaxed);
             if (win) ++wk.st.wins;
             wk.st.floorsSum += g.gc.floorNum;
             ++wk.st.outcomes[oc];
@@ -606,10 +610,12 @@ namespace sts::azbench {
             request(g, gi, r);
             if (!g.inBattle && cfg.exploreC > 0) {
                 ++wk.st.oocRoots;
-                const double games = std::max<double>(1.0, static_cast<double>(seedsUsed_.load(std::memory_order_relaxed)));
+                const double games = static_cast<double>(runsDone_.load(std::memory_order_relaxed));
                 bool under = false;
-                for (int key : g.rootKeys)
-                    if (key >= 0 && picks_[key].load(std::memory_order_relaxed) < cfg.pickTarget * games) under = true;
+                // Rates are over finished runs, after a warm-up of 1 / pickTarget runs (no item is under target before).
+                if (games * cfg.pickTarget >= 1.0)
+                    for (int key : g.rootKeys)
+                        if (key >= 0 && picks_[key].load(std::memory_order_relaxed) < cfg.pickTarget * games) under = true;
                 if (under) {
                     ++wk.st.exploreRoots;
                     if (!g.full) {   // a root with an under-target item gets a full search (policy target recorded)
@@ -698,7 +704,8 @@ namespace sts::azbench {
                 pending_.fetch_add(1, std::memory_order_relaxed);
             }
             if (!root.combat && cfg.exploreC > 0 && !g.rootKeys.empty()) {
-                const double games = std::max<double>(1.0, static_cast<double>(seedsUsed_.load(std::memory_order_relaxed)));
+                const bool warm = runsDone_.load(std::memory_order_relaxed) * cfg.pickTarget >= 1.0;
+                const double games = static_cast<double>(runsDone_.load(std::memory_order_relaxed));
                 int worst = -1;
                 double worstRate = cfg.pickTarget;
                 for (int k = 0; k < static_cast<int>(g.rootKeys.size()) && k < static_cast<int>(root.edges.size()); ++k) {
@@ -707,7 +714,7 @@ namespace sts::azbench {
                     const double rate = picks_[key].load(std::memory_order_relaxed) / games;
                     if (rate < worstRate) { worstRate = rate; worst = k; }
                 }
-                if (worst >= 0 && worst != pick
+                if (warm && worst >= 0 && worst != pick
                     && U(wk.rng) < std::min(1.0, cfg.exploreC * (1.0 - worstRate / cfg.pickTarget))) {
                     pick = worst;
                     ++wk.st.forcedPicks;

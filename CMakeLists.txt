@@ -181,8 +181,8 @@ target_link_libraries(az-run-driver PRIVATE Threads::Threads)
 add_test(NAME az_run_driver_smoke COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 6 --fast
          --seed-base 1 --seconds 300)
 set_tests_properties(az_run_driver_smoke PROPERTIES LABELS "core;smoke")
-add_test(NAME az_run_driver_explore COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 12 --fast
-         --seed-base 1 --seconds 300 --explore-c 0.5 --test-hp 300)
+add_test(NAME az_run_driver_explore COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 24 --fast
+         --seed-base 1 --seconds 300 --explore-c 0.5 --pick-target 0.2 --test-hp 300)
 set_tests_properties(az_run_driver_explore PROPERTIES LABELS "core;smoke")
 # Fair play of the stage 1 driver's combat view (ADR-0002): fights differing only in hidden draw order (and, under
 # Runic Dome, rolled intents) give identical net inputs and identical search paths.

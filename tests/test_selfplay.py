@@ -150,7 +150,7 @@ class SelfplaySmoke(unittest.TestCase):
             # Resume: 8 more runs with the seeds after the first 24.
             # Resume as the continuation does: pick-rate exploration on.
             rc = sp.main(common + ["--out-dir", d, "--seed-base", "500", "--max-runs", "32", "--resume", ck,
-                                   "--explore-c", "0.5"])
+                                   "--explore-c", "0.5", "--pick-target", "0.2"])
             self.assertEqual(rc, 0)
             with open(os.path.join(d, "metrics.jsonl")) as f:
                 last = [json.loads(l) for l in f][-1]

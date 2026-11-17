@@ -93,7 +93,8 @@ namespace sts::azbench {
         // Pick-rate exploration (from Amber Eye; 2026-11-17, default off): an out-of-combat item (CHOOSE_CARD / CHOOSE_OPTION source token: card reward, event /
         // Neow option, relic, shop item) picked in fewer than pickTarget of all runs so far is under target. A root
         // offering one gets a full search, and with probability min(1, exploreC * (1 - rate / pickTarget)) the most
-        // under-target item is played instead of the search's choice (the sample keeps the search policy).
+        // under-target item is played instead of the search's choice (the sample keeps the search policy). Rates are over
+        // the runs finished in this process, after a warm-up of 1 / pickTarget runs.
         double exploreC = 0;
         double pickTarget = 0.01;
         CombatEncodeFn encodeCombat = nullptr;   // default: search::amberEncodeCombat
@@ -166,7 +167,8 @@ namespace sts::azbench {
         std::atomic<std::int64_t> seedsUsed_{0};
         std::atomic<std::int64_t> pending_{0};   // samples of unfinished runs, all workers
         static constexpr int kPickBuckets = 1 << 16;
-        std::unique_ptr<std::atomic<std::uint32_t>[]> picks_;   // real picks per item hash (pick-rate exploration)
+        std::unique_ptr<std::atomic<std::uint32_t>[]> picks_;
+        std::atomic<std::int64_t> runsDone_{0};   // finished runs, all workers (pick-rate denominator)   // real picks per item hash (pick-rate exploration)
         mutable std::mutex qm_;
         std::condition_variable qcv_;
         std::deque<std::uint32_t> queue_;   // ticket = worker << 16 | run
