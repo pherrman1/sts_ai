@@ -190,6 +190,15 @@ add_test(NAME amber_encoder COMMAND $<TARGET_FILE:amber_encoder_test>
          ${CMAKE_SOURCE_DIR}/tests/data/combat_net_wire_sample.jsonl)
 set_tests_properties(amber_encoder PROPERTIES LABELS "core;smoke")
 
+# Out-of-combat Amber encoder (stage 1 self-play loop): random-legal whole A20 runs with battles skipped (fixed test
+# seeds 1..200, no evaluation), every screen and action type, live src / tgt, distinct tuples, determinism, and
+# byte-identical tokens after scrambling private state.
+add_executable(amber_game_encoder_test tests/amber_game_encoder_test.cpp $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(amber_game_encoder_test PRIVATE include json/include)
+add_test(NAME amber_game_encoder COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:amber_game_encoder_test> 200)
+set_tests_properties(amber_game_encoder PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
+
 add_executable(rest_recall_filter_test tests/rest_recall_filter_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(rest_recall_filter_test PRIVATE include json/include)
