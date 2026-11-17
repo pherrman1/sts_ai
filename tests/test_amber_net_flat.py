@@ -71,6 +71,29 @@ class AmberFlatEquivalence(unittest.TestCase):
                 self.assertLess(float((x - z).abs().max()), 1e-4, (live_frac, step))
                 self.assertLess(float((x - w).abs().max()), 1e-4, (live_frac, step))
 
+    def test_packed_tokens_match_padded(self):
+        """tok_type / ids / f sent packed (live tokens in pack_idx order, trash rows after them) give bit-identical
+        outputs to the same batch in the [B, T] layout (RunDriver.next_flat(packed_tokens=True))."""
+        spec = importlib.util.spec_from_file_location("amber_net", os.path.join(ROOT, "tools", "az_bench", "amber_net.py"))
+        A = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(A)
+        torch.manual_seed(0)
+        net = A.jitter_1d_params(A.AmberNet(64, 2).eval())
+        for live_frac, step in ((1.0, 1), (0.4, 1), (0.4, 64)):
+            f = A.to_flat(A.synthetic_batch(16, live_frac=live_frac, rng=np.random.default_rng(7)))
+            pk = A.pack_index(f["mask"], step)
+            M = f["mask"].numel()
+            ip = pk.clamp(max=M - 1)
+            n = int(f["mask"].sum())
+            g = dict(f, pack_idx=pk, tok_type=f["tok_type"].reshape(M)[ip].clone(),
+                     ids=f["ids"].reshape(M, -1)[ip].clone(), f=f["f"].reshape(M, -1)[ip].clone())
+            # trash entries may hold anything
+            g["f"][n:] = 123.0
+            g["ids"][n:] = 5
+            with torch.no_grad():
+                for x, y in zip(net(dict(f, pack_idx=pk)), net(g)):
+                    self.assertTrue(torch.equal(x, y), (live_frac, step))
+
     def test_dead_slot_contents_do_not_matter(self):
         """nextBatchFlat leaves old data in dead token slots (az_driver.cpp): any type / id / floats there must give
         exactly the same outputs as zeros, for the flat (trunk, SDPA) and packed (scatter, gather) forwards."""

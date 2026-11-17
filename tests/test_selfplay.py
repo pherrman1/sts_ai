@@ -177,6 +177,22 @@ class SelfplaySmoke(unittest.TestCase):
             self.assertGreater(rows[-1]["train_steps"], 0)
             self.assertGreater(sum(r["cache_hits_per_s"] for r in rows), 0)
 
+    def test_packed_h2d_run(self):
+        """--packed-h2d (live tokens packed by the driver) plays and trains as usual (bit-identical forward:
+        tests/test_amber_net_flat.py, packing: ctest az_pack_packed_tokens)."""
+        sp = load()
+        args = ["--module-dir", os.path.dirname(MODULES[0]), "--device", "cpu", "--workers", "2", "--games", "4",
+                "--full-sims", "8", "--fast-sims", "4", "--batch", "32", "--row-buckets", "32", "--pack-step", "32",
+                "--pack-threads", "1", "--min-replay", "50", "--train-batch", "32", "--window", "5000",
+                "--report", "1", "--sync-steps", "2", "--seed-base", "1400", "--max-runs", "16", "--packed-h2d"]
+        with tempfile.TemporaryDirectory() as d:
+            self.assertEqual(sp.main(args + ["--out-dir", d]), 0)
+            with open(os.path.join(d, "metrics.jsonl")) as f:
+                rows = [json.loads(l) for l in f]
+            self.assertGreaterEqual(rows[-1]["runs_done"], 16)
+            self.assertGreater(rows[-1]["train_steps"], 0)
+            self.assertEqual(rows[-1]["invalid_actions"], 0)
+
     def test_curriculum_switch(self):
         """With a 0 % threshold the curriculum moves up after --curriculum-runs runs and the checkpoint keeps it."""
         sp = load()

@@ -191,6 +191,12 @@ target_include_directories(az-eval-cache-test PRIVATE include json/include apps/
 target_link_libraries(az-eval-cache-test PRIVATE Threads::Threads)
 add_test(NAME az_eval_cache COMMAND $<TARGET_FILE:az-eval-cache-test> --runs 3 --seed-base 1 --fast)
 set_tests_properties(az_eval_cache PROPERTIES LABELS "core;smoke")
+# Packed tokens (only live tokens to the GPU) carry the same rows as the [R][T] layout.
+add_executable(az-pack-test apps/az_bench/az_pack_test.cpp)
+target_include_directories(az-pack-test PRIVATE include apps/az_bench)
+target_link_libraries(az-pack-test PRIVATE Threads::Threads)
+add_test(NAME az_pack_packed_tokens COMMAND $<TARGET_FILE:az-pack-test>)
+set_tests_properties(az_pack_packed_tokens PROPERTIES LABELS "core;smoke")
 # Fair play of the stage 1 driver's combat view (ADR-0002): fights differing only in hidden draw order (and, under
 # Runic Dome, rolled intents) give identical net inputs and identical search paths.
 add_executable(az-fair-view-test apps/az_bench/az_fair_view_test.cpp apps/az_bench/az_run_driver.cpp

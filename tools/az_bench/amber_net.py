@@ -168,20 +168,28 @@ class AmberNet(nn.Module):
         padded up to a bucketed N with the value B * T (a trash slot); only attention runs on the padded [B, T]
         layout. Optional b["unpack_idx"] [B * T] long (pack_index(..., inverse=True)): for each slot its row in the
         packed axis, N for a dead slot; then packed -> padded is one gather instead of zero fill + scatter.
-        Same math as forward_flat with sdpa = True on the live tokens (tests/test_amber_net_flat.py)."""
+        Same math as forward_flat with sdpa = True on the live tokens (tests/test_amber_net_flat.py). tok_type / ids
+        / f may instead come packed ([N], [N, 4], [N, 64], rows in pack_idx order; B, T are then mask's shape): the
+        same values without the dead slots, so the same outputs."""
         F = torch.nn.functional
         tt, idx, mask = b["tok_type"], b["pack_idx"], b["mask"]
-        B, T = tt.shape
+        B, T = mask.shape
         M = B * T
         d = self.type_emb.weight.shape[1]
         ip = idx.clamp(max=M - 1)                 # trash entries read some token; their results go to the trash slot
-        tt_p = tt.reshape(M)[ip]
+        if tt.dim() == 1:
+            # Tokens already packed (RunDriver.next_flat(packed_tokens=True)): tok_type [N], ids [N, 4], f [N, 64]
+            # are the live tokens in pack_idx order (entries past the live ones are trash), i.e. exactly the rows
+            # the gathers below would pick from the [B, T] layout.
+            tt_p, f_p, ids_p = tt, b["f"], b["ids"]
+        else:
+            tt_p, f_p, ids_p = tt.reshape(M)[ip], b["f"].reshape(M, -1)[ip], b["ids"].reshape(M, -1)[ip]
         W = torch.stack([self.proj[t].weight for t in TOKEN_TYPES])
         bias = torch.stack([self.proj[t].bias for t in TOKEN_TYPES])
         K = W.shape[0]
-        P = F.linear(b["f"].reshape(M, -1)[ip], W.reshape(K * d, -1), bias.reshape(-1)).view(-1, K, d)
+        P = F.linear(f_p, W.reshape(K * d, -1), bias.reshape(-1)).view(-1, K, d)
         proj = torch.gather(P, 1, tt_p[:, None, None].expand(-1, 1, d)).squeeze(1)
-        x = self.in_norm(self.type_emb(tt_p) + self.ids(b["ids"].reshape(M, -1)[ip]).sum(1) + proj)
+        x = self.in_norm(self.type_emb(tt_p) + self.ids(ids_p).sum(1) + proj)
         keep = mask[:, None, None, :]
         inv = b.get("unpack_idx")
 

@@ -57,7 +57,7 @@ namespace {
     // Caller buffers for next_flat: writeable C-contiguous arrays sized for the largest buckets (e.g. numpy views of
     // pinned torch tensors): tok_type int8, ids int16, f float16, mask bool/uint8, a_type / a_src / a_tgt int16,
     // a_f float16, a_mask bool/uint8.
-    azbench::FlatBuffers flatBuffersFrom(py::dict bufs, int R, int T, int A) {
+    azbench::FlatBuffers flatBuffersFrom(py::dict bufs, int R, int T, int A, bool packedTokens = false) {
         auto ptr = [&](const char *k, std::size_t bytes) -> void * {
             py::array a = bufs[k].cast<py::array>();
             if (!(a.flags() & py::array::c_style) || !a.writeable())
@@ -67,7 +67,7 @@ namespace {
             return a.mutable_data();
         };
         const std::size_t rt = static_cast<std::size_t>(R) * T, ra = static_cast<std::size_t>(R) * A;
-        return azbench::FlatBuffers{
+        azbench::FlatBuffers fb{
             static_cast<std::int8_t *>(ptr("tok_type", rt)),
             static_cast<std::int16_t *>(ptr("ids", rt * search::kAmberCat * 2)),
             static_cast<std::uint16_t *>(ptr("f", rt * search::kAmberFloat * 2)),
@@ -77,6 +77,13 @@ namespace {
             static_cast<std::int16_t *>(ptr("a_tgt", ra * 2)),
             static_cast<std::uint16_t *>(ptr("a_f", ra * search::kAmberActFeat * 2)),
             static_cast<std::uint8_t *>(ptr("a_mask", ra))};
+        if (packedTokens) {   // also int32 pack_idx [R * T] and seq_off [R + 1]
+            fb.packIdx = static_cast<std::int32_t *>(ptr("pack_idx", rt * 4));
+            fb.seqOff = static_cast<std::int32_t *>(ptr("seq_off", (static_cast<std::size_t>(R) + 1) * 4));
+            for (const char *k : {"pack_idx", "seq_off"})
+                if (bufs[k].cast<py::array>().itemsize() != 4) throw std::invalid_argument(std::string("next_flat: buffer ") + k + " must be int32");
+        }
+        return fb;
     }
 
     template <class T>
@@ -234,11 +241,12 @@ PYBIND11_MODULE(az_bench_native, m) {
         .def("stop", &azbench::RunDriver::stop, py::call_guard<py::gil_scoped_release>())
         .def("next_flat",
              [](azbench::RunDriver &d, int maxRows, int minRows, int timeoutMs, std::vector<int> rowBuckets,
-                std::vector<int> tokBuckets, std::vector<int> actBuckets, py::dict bufs, int packThreads) -> py::object {
+                std::vector<int> tokBuckets, std::vector<int> actBuckets, py::dict bufs, int packThreads,
+                bool packedTokens) -> py::object {
                  const int R = std::max(maxRows, rowBuckets.empty() ? 0 : rowBuckets.back());
                  const int T = tokBuckets.empty() ? search::kAmberMaxTokens : tokBuckets.back();
                  const int A = actBuckets.empty() ? search::kAmberMaxActions : actBuckets.back();
-                 const azbench::FlatBuffers fb = flatBuffersFrom(bufs, R, T, A);
+                 const azbench::FlatBuffers fb = flatBuffersFrom(bufs, R, T, A, packedTokens);
                  azbench::FlatShape shape;
                  std::vector<std::uint32_t> tickets;
                  {
@@ -247,10 +255,14 @@ PYBIND11_MODULE(az_bench_native, m) {
                                                shape, packThreads);
                  }
                  if (tickets.empty()) return py::none();
+                 if (packedTokens)   // + N: packed tokens (tok_type / ids / f / pack_idx [N], seq_off [rows_padded + 1])
+                     return py::make_tuple(toArray(tickets), shape.rows, shape.rowsPadded, shape.tokens,
+                                           shape.actions, shape.packed);
                  return py::make_tuple(toArray(tickets), shape.rows, shape.rowsPadded, shape.tokens, shape.actions);
              },
              py::arg("max_rows"), py::arg("min_rows"), py::arg("timeout_ms"), py::arg("row_buckets"),
-             py::arg("tok_buckets"), py::arg("act_buckets"), py::arg("bufs"), py::arg("pack_threads") = 1)
+             py::arg("tok_buckets"), py::arg("act_buckets"), py::arg("bufs"), py::arg("pack_threads") = 1,
+             py::arg("packed_tokens") = false)
         .def("submit",
              [](azbench::RunDriver &d, py::array_t<std::uint32_t, py::array::c_style | py::array::forcecast> ticket,
                 py::array_t<float, py::array::c_style | py::array::forcecast> logits,

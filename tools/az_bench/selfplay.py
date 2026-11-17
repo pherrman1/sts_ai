@@ -25,6 +25,7 @@ usage: selfplay.py --module-dir BUILD_DIR --out-dir DIR --seed-base N [--hours 2
 """
 
 import argparse
+import contextlib
 import copy
 import importlib.util
 import json
@@ -243,6 +244,12 @@ def main(argv=None):
     ap.add_argument("--pack-threads", type=int, default=4)
     ap.add_argument("--fused-layer", action="store_true", help="inference: stage 0's three-kernel layers (d <= 128)")
     ap.add_argument("--compile", action="store_true", help="inference: torch.compile")
+    ap.add_argument("--packed-h2d", action="store_true",
+                    help="inference: the driver packs only the live tokens (tok_type / ids / f [N], pack_idx, seq_off "
+                         "from C++), so the host-to-GPU copy has no dead slots (needs --pack-step; same outputs)")
+    ap.add_argument("--copy-stream", action="store_true",
+                    help="inference: host-to-GPU copies on their own CUDA stream, overlapping the previous batch's "
+                         "forward (same outputs)")
     ap.add_argument("--window", type=int, default=500000, help="replay window (samples)")
     ap.add_argument("--min-replay", type=int, default=20000, help="samples before training starts")
     ap.add_argument("--train-batch", type=int, default=1024)
@@ -262,6 +269,8 @@ def main(argv=None):
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     ap.add_argument("--test-max-hp", type=int, default=0, help="tests only")
     args = ap.parse_args(argv)
+    if args.packed_h2d and not args.pack_step:
+        ap.error("--packed-h2d needs --pack-step")
 
     sys.path.insert(0, args.module_dir)
     import az_bench_native  # noqa: E402
@@ -345,6 +354,7 @@ def main(argv=None):
     # ---- inference: two-deep pipeline as stage 0's flat_pipe_loop ----
     def inference_loop():
         stream = torch.cuda.Stream(dev) if cuda else None
+        copy_stream = torch.cuda.Stream(dev) if cuda and args.copy_stream else None
         R, T, A = row_b[-1], tok_b[-1], act_b[-1]
 
         def buffers():
@@ -376,10 +386,14 @@ def main(argv=None):
 
         while not stop.is_set():
             host, views, out = sets[cur]
-            got = drv.next_flat(args.batch, min_rows, 5, row_b, tok_b, act_b, views, args.pack_threads)
+            if args.packed_h2d:
+                got = drv.next_flat(args.batch, min_rows, 5, row_b, tok_b, act_b, views, args.pack_threads,
+                                    packed_tokens=True)
+            else:
+                got = drv.next_flat(args.batch, min_rows, 5, row_b, tok_b, act_b, views, args.pack_threads)
             launched = None
             if got is not None:
-                ticket, rows, Rp, Tp, Ap = got
+                ticket, rows, Rp, Tp, Ap = got[:5]
                 ctx = torch.cuda.stream(stream) if stream is not None else torch.no_grad()
                 with ctx, torch.inference_mode():
                     with weights_lock:
@@ -396,33 +410,54 @@ def main(argv=None):
                         infer_stats["syncs"] += 1
                         # Evaluation cache: results of the old weights are not reused from now on.
                         drv.set_weights_version(infer_stats["syncs"])
-                    x = {}
-                    shapes = {"tok_type": (Rp, Tp), "ids": (Rp, Tp, 4), "f": (Rp, Tp, 64), "mask": (Rp, Tp),
-                              "a_type": (Rp, Ap), "a_src": (Rp, Ap), "a_tgt": (Rp, Ap), "a_f": (Rp, Ap, 8),
-                              "a_mask": (Rp, Ap)}
-                    for k, shp in shapes.items():
-                        n = int(np.prod(shp))
-                        t = host[k][:n].to(dev, non_blocking=True).view(shp)
-                        if k in ("tok_type", "ids", "a_type", "a_src", "a_tgt"):
-                            t = t.long()
-                        elif t.dtype == torch.float16:
-                            t = t.to(infer_dtype)
-                        x[k] = t
-                    if args.pack_step:
-                        M = Rp * Tp
+                    M = Rp * Tp
+                    if args.packed_h2d:
+                        # The driver wrote the N live tokens packed, pack_idx [N] and seq_off; entries N..npad of
+                        # the packed arrays are trash (stale but valid values), their pack_idx the trash slot M.
+                        nl = got[5]
+                        npad = -(-nl // args.pack_step) * args.pack_step
+                        views["pack_idx"][nl:npad] = M
+                        shapes = {"tok_type": (npad,), "ids": (npad, 4), "f": (npad, 64), "pack_idx": (npad,)}
+                    else:
+                        shapes = {"tok_type": (Rp, Tp), "ids": (Rp, Tp, 4), "f": (Rp, Tp, 64)}
+                    shapes.update({"mask": (Rp, Tp), "a_type": (Rp, Ap), "a_src": (Rp, Ap), "a_tgt": (Rp, Ap),
+                                   "a_f": (Rp, Ap, 8), "a_mask": (Rp, Ap)})
+                    if args.pack_step and not args.packed_h2d:
                         live = np.flatnonzero(views["mask"][:M])
                         nl = live.size
                         npad = -(-nl // args.pack_step) * args.pack_step
                         views["pack_idx"][:nl] = live
                         views["pack_idx"][nl:npad] = M
-                        x["pack_idx"] = host["pack_idx"][:npad].to(dev, non_blocking=True).long()
-                        if args.compile:
-                            torch._dynamo.mark_dynamic(x["pack_idx"], 0)
+                        shapes["pack_idx"] = (npad,)
                         if infer.varlen_attn is not None:
                             so = views["seq_off"]
                             so[0] = 0
                             np.cumsum(views["mask"][:M].reshape(Rp, Tp).sum(1), out=so[1:Rp + 1])
-                            x["seq_off"] = host["seq_off"][:Rp + 1].to(dev, non_blocking=True)
+                    if args.pack_step and infer.varlen_attn is not None:
+                        shapes["seq_off"] = (Rp + 1,)
+                    # Host-to-GPU copies (on copy_stream when --copy-stream: the forward waits for them).
+                    raw = {}
+                    with (torch.cuda.stream(copy_stream) if copy_stream is not None else contextlib.nullcontext()):
+                        for k, shp in shapes.items():
+                            raw[k] = host[k][:int(np.prod(shp))].to(dev, non_blocking=True).view(shp)
+                    if copy_stream is not None:
+                        ev_c = torch.cuda.Event()
+                        ev_c.record(copy_stream)
+                        stream.wait_event(ev_c)
+                        for t in raw.values():
+                            t.record_stream(stream)
+                    x = {}
+                    for k, t in raw.items():
+                        if k in ("tok_type", "ids", "a_type", "a_src", "a_tgt", "pack_idx"):
+                            t = t.long()
+                        elif t.dtype == torch.float16:
+                            t = t.to(infer_dtype)
+                        x[k] = t
+                    if args.compile and "pack_idx" in x:
+                        torch._dynamo.mark_dynamic(x["pack_idx"], 0)
+                        if args.packed_h2d:
+                            for k in ("tok_type", "ids", "f"):
+                                torch._dynamo.mark_dynamic(x[k], 0)
                     lg, outcome, hp, _ = run(x)
                     Fv, ehp = search_values(outcome[:rows], hp[:rows])
                     out["logits"][:rows * Ap].view(rows, Ap).copy_(lg[:rows].float(), non_blocking=True)
