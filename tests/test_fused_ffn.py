@@ -41,6 +41,7 @@ class FusedFFN(unittest.TestCase):
         torch.manual_seed(0)
         base = torch.nn.TransformerEncoderLayer(64, 2, 256, dropout=0.0, activation="gelu", batch_first=True,
                                                 norm_first=True).eval()
+        load("amber_net").jitter_1d_params(base)
         x32 = torch.randn(100, 64)
         with torch.no_grad():
             ref = x32 + base.linear2(torch.nn.functional.gelu(base.linear1(base.norm2(x32))))
@@ -56,7 +57,7 @@ class FusedFFN(unittest.TestCase):
         A = load("amber_net")
         dev = "cuda" if torch.cuda.is_available() else "cpu"
         torch.manual_seed(0)
-        net = A.AmberNet(64, 2).eval().to(dev)
+        net = A.jitter_1d_params(A.AmberNet(64, 2).eval()).to(dev)
         tol = 2e-3 if dev == "cuda" else 1e-4   # TF32 on a GPU
         f = A.to_flat(A.synthetic_batch(8, live_frac=0.5, rng=np.random.default_rng(4)))
         f = {k: v.to(dev) for k, v in f.items()}

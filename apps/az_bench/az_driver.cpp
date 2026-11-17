@@ -679,7 +679,7 @@ namespace sts::azbench {
             packRows(0, R / K);
             for (auto &t : th) t.join();
         }
-        for (int r = B; r < R; ++r) {   // padding rows: one live run token and one live action
+        for (int r = B; r < R; ++r) {   // padding rows: one live (stale) token and one live action; outputs discarded
             buf.mask[static_cast<std::size_t>(r) * T] = 1;
             buf.aMask[static_cast<std::size_t>(r) * A] = 1;
         }

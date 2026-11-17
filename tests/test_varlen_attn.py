@@ -62,7 +62,7 @@ class VarlenAttn(unittest.TestCase):
         b = dict(f, pack_idx=pk, unpack_idx=inv, seq_off=A.seq_offsets(f["mask"]))
         for d, layers in ((64, 2), (32, 1)):   # 32: 3 d = 96 is not a multiple of the 64-column output block
             torch.manual_seed(0)
-            net = A.AmberNet(d, layers).eval().to(self.dev)
+            net = A.jitter_1d_params(A.AmberNet(d, layers).eval()).to(self.dev)
             with torch.no_grad():
                 o1 = net(b)
                 net.varlen_attn = A.load_kernel("varlen_attn")
@@ -72,6 +72,29 @@ class VarlenAttn(unittest.TestCase):
             for x, y, z in zip(o1, o2, o3):
                 self.assertLess(float((x - y).abs().max()), self.tol, d)
                 self.assertLess(float((x - z).abs().max()), self.tol, d)
+
+    def test_fused_layer_fp16_matches_fp32(self):
+        """The --half path of the 471.9k run: fp16 weights through the fused layer kernels stay within 5e-3 of the
+        fp32 reference forward (logits, outcome logits)."""
+        A = load("amber_net")
+        torch.manual_seed(0)
+        ref_net = A.jitter_1d_params(A.AmberNet(64, 2).eval())
+        f = A.to_flat(A.synthetic_batch(8, live_frac=0.5, rng=np.random.default_rng(7)))
+        with torch.no_grad():
+            ref = ref_net(f)
+        half = A.jitter_1d_params(A.AmberNet(64, 2).eval())
+        half.load_state_dict(ref_net.state_dict())
+        half = half.to(self.dev, torch.float16)
+        half.varlen_attn = A.load_kernel("varlen_attn")
+        half.fused_layer = A.load_fused_layer()
+        g = {k: (v.to(self.dev, torch.float16) if v.is_floating_point() else v.to(self.dev)) for k, v in f.items()}
+        pk, inv = A.pack_index(g["mask"], 16, inverse=True)
+        g.update(pack_idx=pk, unpack_idx=inv, seq_off=A.seq_offsets(g["mask"]))
+        with torch.no_grad():
+            out = half(g)
+        live = f["a_mask"]
+        self.assertLess(float((out[0].float().cpu() - ref[0]).abs()[live].max()), 5e-3)
+        self.assertLess(float((out[1].float().cpu() - ref[1]).abs().max()), 5e-3)
 
 
 if __name__ == "__main__":

@@ -23,7 +23,7 @@ class AmberFlatEquivalence(unittest.TestCase):
         A = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(A)
         torch.manual_seed(0)
-        net = A.AmberNet(64, 2).eval()
+        net = A.jitter_1d_params(A.AmberNet(64, 2).eval())
         for live_frac in (1.0, 0.6, 0.3):
             b = A.synthetic_batch(16, live_frac=live_frac, rng=np.random.default_rng(1))
             f = A.to_flat(b)
@@ -38,7 +38,7 @@ class AmberFlatEquivalence(unittest.TestCase):
         spec.loader.exec_module(A)
         torch.manual_seed(0)
         for d, layers in ((64, 2), (128, 2)):
-            net = A.AmberNet(d, layers).eval()
+            net = A.jitter_1d_params(A.AmberNet(d, layers).eval())
             for live_frac in (1.0, 0.4):
                 f = A.to_flat(A.synthetic_batch(16, live_frac=live_frac, rng=np.random.default_rng(2)))
                 with torch.no_grad():
@@ -54,7 +54,7 @@ class AmberFlatEquivalence(unittest.TestCase):
         A = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(A)
         torch.manual_seed(0)
-        net = A.AmberNet(64, 2).eval()
+        net = A.jitter_1d_params(A.AmberNet(64, 2).eval())
         for live_frac, step in ((1.0, 1), (0.4, 1), (0.4, 64)):
             f = A.to_flat(A.synthetic_batch(16, live_frac=live_frac, rng=np.random.default_rng(3)))
             with torch.no_grad():
@@ -70,6 +70,33 @@ class AmberFlatEquivalence(unittest.TestCase):
                 self.assertLess(float((x - y).abs().max()), 1e-4, (live_frac, step))
                 self.assertLess(float((x - z).abs().max()), 1e-4, (live_frac, step))
                 self.assertLess(float((x - w).abs().max()), 1e-4, (live_frac, step))
+
+    def test_dead_slot_contents_do_not_matter(self):
+        """nextBatchFlat leaves old data in dead token slots (az_driver.cpp): any type / id / floats there must give
+        exactly the same outputs as zeros, for the flat (trunk, SDPA) and packed (scatter, gather) forwards."""
+        spec = importlib.util.spec_from_file_location("amber_net", os.path.join(ROOT, "tools", "az_bench", "amber_net.py"))
+        A = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(A)
+        torch.manual_seed(0)
+        net = A.jitter_1d_params(A.AmberNet(64, 2).eval())
+        f = A.to_flat(A.synthetic_batch(16, live_frac=0.5, rng=np.random.default_rng(6)))
+        g = dict(f)
+        dead = ~f["mask"]
+        rng = torch.Generator().manual_seed(1)
+        g["tok_type"] = torch.where(dead, torch.randint(0, len(A.TOKEN_TYPES), dead.shape, generator=rng), f["tok_type"])
+        g["ids"] = torch.where(dead[..., None], torch.randint(0, A.ID_VOCAB, f["ids"].shape, generator=rng), f["ids"])
+        g["f"] = torch.where(dead[..., None], 300 * torch.randn(f["f"].shape, generator=rng), f["f"])
+        with torch.no_grad():
+            for sdpa in (False, True):
+                net.sdpa = sdpa
+                for x, y in zip(net(f), net(g)):
+                    self.assertEqual(float((x - y).abs().max()), 0.0, ("flat", sdpa))
+            net.sdpa = False
+            for step in (1, 64):
+                pk, inv = A.pack_index(f["mask"], step, inverse=True)
+                for extra in ({"pack_idx": pk}, {"pack_idx": pk, "unpack_idx": inv}):
+                    for x, y in zip(net(dict(f, **extra)), net(dict(g, **extra))):
+                        self.assertEqual(float((x - y).abs().max()), 0.0, ("packed", step, len(extra)))
 
 
 if __name__ == "__main__":

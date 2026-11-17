@@ -285,6 +285,17 @@ def pack_index(mask, step=1, inverse=False):
     return pk, inv
 
 
+def jitter_1d_params(module, scale=0.3, seed=0):
+    """Tests: add noise to every 1-D parameter (biases, LayerNorm weight / bias). Default init leaves attention biases
+    at 0 and LayerNorms at (1, 0), so a kernel that drops a bias or swaps two LayerNorms would still match."""
+    g = torch.Generator().manual_seed(seed)
+    with torch.no_grad():
+        for p in module.parameters():
+            if p.dim() == 1:
+                p.add_(torch.randn(p.shape, generator=g).to(p) * scale)
+    return module
+
+
 def seq_offsets(mask):
     """seq_off for varlen attention: row r's live tokens are packed rows seq_off[r] .. seq_off[r + 1] (pack_index
     order), as int32 [B + 1]."""

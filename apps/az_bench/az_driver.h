@@ -89,12 +89,14 @@ namespace sts::azbench {
         // Takes up to maxRows requests (waits until at least minRows are queued or timeoutMs passes; 0 rows after
         // a stop). Thread-safe; several batching threads may call it.
         bool nextBatch(int maxRows, int minRows, int timeoutMs, PackedBatch &out);
-        // Flat layout (one token axis per row, padded to a bucketed length; amber_net.AmberNetFlat): takes up to
-        // maxRows requests like nextBatch, then picks the smallest row / token / action counts from the bucket lists
-        // that hold the batch and writes it into caller buffers sized for the largest buckets (zeroed once by the caller;
-        // dead token slots are not cleared again, see nextBatchFlat). Token order per row is
-        // the AmberTokenType segment order; action src / tgt index that token axis (-1 = none). Padding rows hold
-        // only a live run token and one live action. Returns the tickets (empty after a stop or timeout).
+        // Flat layout (one token axis per row, padded to a bucketed length; amber_net.AmberNet.forward_flat): takes up
+        // to maxRows requests like nextBatch, then picks the smallest row / token / action counts from the bucket lists
+        // that hold the batch and writes it into caller buffers sized for the largest buckets. Token order per row is
+        // the AmberTokenType segment order; action src / tgt index that token axis (-1 = none). The buffers must start
+        // zeroed: dead token slots are not cleared again, so they hold stale but finite values with valid types / ids,
+        // and every consumer masks by count (tests/test_amber_net_flat.py checks that their contents never reach an
+        // output). Padding rows hold one live token (stale contents) and one live action; their outputs are discarded.
+        // packThreads > 1 packs disjoint row ranges in parallel. Returns the tickets (empty after a stop or timeout).
         struct FlatBuffers {
             std::int8_t *tokType;      // [R][T]
             std::int16_t *ids;         // [R][T][4]
