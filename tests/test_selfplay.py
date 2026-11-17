@@ -148,8 +148,14 @@ class SelfplaySmoke(unittest.TestCase):
             self.assertGreaterEqual(c["seeds_used"], 24)
             self.assertEqual(c["runs_done"], rows[-1]["runs_done"])
             # Resume: 8 more runs with the seeds after the first 24.
-            rc = sp.main(common + ["--out-dir", d, "--seed-base", "500", "--max-runs", "32", "--resume", ck])
+            # Resume as the continuation does: pick-rate exploration on.
+            rc = sp.main(common + ["--out-dir", d, "--seed-base", "500", "--max-runs", "32", "--resume", ck,
+                                   "--explore-c", "0.5", "--pick-target", "0.2"])
             self.assertEqual(rc, 0)
+            with open(os.path.join(d, "metrics.jsonl")) as f:
+                last = [json.loads(l) for l in f][-1]
+            self.assertGreater(last["ooc_roots"], 0)
+            self.assertGreater(last["explore_roots"], 0)
             c2 = torch.load(sorted(glob.glob(os.path.join(d, "ckpt_*.pt")), key=os.path.getmtime)[-1])["counters"]
             self.assertGreaterEqual(c2["seeds_used"], 32)
             self.assertGreaterEqual(c2["step"], c["step"])

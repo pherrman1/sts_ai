@@ -148,9 +148,20 @@ th:first-child, td:first-child { text-align:left; }
 """
 
 
+RULE_MAIN = ("GO if the self-play win rate reaches 10 % by 1M runs, or the first wins appear by 500k runs while the mean "
+             "floor still rises. STOP if there is no win by 1M runs and the mean floor gained less than 2 floors over the "
+             "last 500k runs. Otherwise inconclusive.")
+RULE_VARIANT = ("Continuation (runs 1M-2M, pick-rate exploration on, same net and seeds onward): GO if the self-play win rate "
+                "reaches 10 % by 2M runs or the first wins appear while the mean floor still rises; STOP if there is no "
+                "win by 2M runs and the mean floor gained less than 2 floors over runs 1M-2M; otherwise inconclusive. "
+                "Forced exploration picks lower the self-play win rate a little (Amber Eye: ~3 pp on 0.2 % of moves).")
+
+
 def page(rows, title, started):
     last = rows[-1] if rows else {}
     runs = [r["runs_done"] for r in rows]
+    # Continuation with pick-rate exploration (rows carry its counters).
+    variant = any("forced_picks" in r for r in rows)
     floor = [r["mean_floor_window"] if r.get("runs_window") else None for r in rows]
     win = [100 * r["win_rate_window"] if r.get("runs_window") else None for r in rows]
     k = 10
@@ -179,13 +190,16 @@ def page(rows, title, started):
         return f'<div class="tile"><div class="k">{kname}</div><div class="v">{v}</div><div class="n">{note}</div></div>'
 
     tiles = "".join([
-        tile("Runs played", f'{last.get("runs_done", 0):,}', "goal: 1M (decision)"),
+        tile("Runs played", f'{last.get("runs_done", 0):,}', "goal: 2M (continuation)" if variant else "goal: 1M (decision)"),
         tile("Mean floor", f"{recent_floor:.1f}", "last ~5 min, of 55"),
         tile("Win rate", f"{recent_win:.2f} %", f'{last.get("wins_total", 0):,} wins total'),
         tile("Positions/s", f'{last.get("positions_per_s", 0) / 1000:.0f}k', f'{last.get("moves_per_s", 0):,} moves/s'),
         tile("Train steps", f'{last.get("train_steps", 0):,}', f'{last.get("samples_added", 0):,} samples'),
         tile("Hours", f'{last.get("hours", 0):.1f}', f"started {html.escape(started)}" if started else ""),
-    ])
+    ] + ([
+        tile("Forced picks", f'{last.get("forced_picks", 0):,}',
+             f'{last.get("explore_roots", 0):,} of {last.get("ooc_roots", 0):,} OOC roots under target'),
+    ] if variant else []))
     table_rows = "".join(
         f'<tr><td>{html.escape(r["time"])}</td><td>{r["runs_done"]:,}</td><td>{r["mean_floor_window"]:.1f}</td>'
         f'<td>{100 * r["win_rate_window"]:.2f}</td><td>{r["positions_per_s"]:,}</td><td>{r["train_steps"]:,}</td>'
@@ -205,7 +219,7 @@ def page(rows, title, started):
 </div>
 <section><h2>Where runs end (death floor, last ~10 min)</h2>{bars(hist)}
 <p class="rule">Purple: boss floors (16, 33, 50) and the Heart (55).</p></section>
-<section><h2>Decision rule</h2><p class="rule">GO if the self-play win rate reaches 10 % by 1M runs, or the first wins appear by 500k runs while the mean floor still rises. STOP if there is no win by 1M runs and the mean floor gained less than 2 floors over the last 500k runs. Otherwise inconclusive.</p></section>
+<section><h2>Decision rule</h2><p class="rule">{RULE_VARIANT if variant else RULE_MAIN}</p></section>
 <section><h2>Latest windows</h2><div class="scroll"><table><tr><th>time</th><th>runs</th><th>mean floor</th><th>win %</th><th>pos/s</th><th>train steps</th><th>stalls</th></tr>{table_rows}</table></div></section>
 </main>"""
     head = (f'<title>{html.escape(title)}</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n'
