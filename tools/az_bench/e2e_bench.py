@@ -153,7 +153,7 @@ def main(argv=None):
     net = amber_net.AmberNet(d=d, layers=layers).to(dev).eval()
     net.sdpa = args.sdpa
     net.attn_math = args.attn_math
-    net.fused_ffn = args.fused_ffn
+    net.fused_ffn = amber_net.load_fused_ffn() if args.fused_ffn else None
     if args.half:
         if args.layout != "flat" or dtype == torch.float32:
             raise SystemExit("--half needs --layout flat and --dtype fp16 / bf16")

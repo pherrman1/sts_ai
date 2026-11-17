@@ -126,7 +126,7 @@ def main():
         net = copy.deepcopy(base)
         net.sdpa = "sdpa" in vname or "packed" in vname
         net.attn_math = "math" in vname
-        net.fused_ffn = "ffn" in vname
+        net.fused_ffn = amber_net.load_fused_ffn() if "ffn" in vname else None
         half = "half" in vname
         if half:
             net = net.to(dtype)

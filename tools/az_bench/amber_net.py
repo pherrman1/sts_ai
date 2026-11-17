@@ -39,7 +39,8 @@ def mlp(i, h, o):
     return nn.Sequential(nn.Linear(i, h), nn.GELU(), nn.Linear(h, o))
 
 
-def _fused_ffn():
+def load_fused_ffn():
+    """fused_ffn.fused_ffn (imports triton); set it as AmberNet.fused_ffn outside the traced forward."""
     import importlib.util
     import os
     import sys
@@ -119,7 +120,7 @@ class AmberNet(nn.Module):
         return self._heads(h, mask, b)
 
     sdpa = False   # True: run the trunk through sdpa_trunk (same weights and math, fused attention kernel)
-    fused_ffn = False   # True: forward_packed runs each layer's LayerNorm + FFN + residual as one Triton kernel
+    fused_ffn = None   # load_fused_ffn(): forward_packed runs each layer's LayerNorm + FFN + residual as one Triton kernel
     attn_math = False   # True: sdpa_trunk / forward_packed attend with plain matmuls + softmax (fp32) instead of SDPA
 
     def _attend(self, q, k, v, keep):
@@ -183,8 +184,8 @@ class AmberNet(nn.Module):
             qkv = unpack(qkv_p).view(B, T, 3, H, d // H).permute(2, 0, 3, 1, 4)
             o = self._attend(qkv[0], qkv[1], qkv[2], keep)
             x = x + a.out_proj(o.transpose(1, 2).reshape(M, d)[ip])
-            if self.fused_ffn:
-                x = _fused_ffn()(x.contiguous(), layer)
+            if self.fused_ffn is not None:
+                x = self.fused_ffn(x.contiguous(), layer)
             else:
                 x = x + layer.linear2(F.gelu(layer.linear1(layer.norm2(x))))
         return self._heads(unpack(self.out_norm(x)).view(B, T, d), mask, b)

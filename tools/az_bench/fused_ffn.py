@@ -5,7 +5,7 @@
 on packed tokens x [N, d] (AmberNet.forward_packed). One program handles BM tokens: it loads their rows, does the
 LayerNorm in registers, and walks the hidden dimension in chunks of BH, so the [N, 4d] hidden activation never
 reaches memory (inductor writes it twice and reads it twice: GEMM, GELU, GEMM). Accumulation is fp32; GEMM inputs are
-fp16 like cuBLAS's. Same math as the PyTorch layer up to float rounding (tests/test_fused_ffn.py, run with
+fp16 like cuBLAS's (fp32 inputs run as TF32 on the GPU). Same math as the PyTorch layer up to float rounding (tests/test_fused_ffn.py, run with
 TRITON_INTERPRET=1 on a CPU).
 """
 
@@ -42,14 +42,24 @@ def _ffn_kernel(X, OUT, LNW, LNB, W1, B1, W2, B2, N, eps,
     tl.store(OUT + rows[:, None] * D + cols[None, :], out.to(OUT.dtype.element_ty), mask=rmask[:, None])
 
 
+@torch.library.custom_op("azbench::fused_ffn", mutates_args=())
+def _fused_ffn_op(x: torch.Tensor, lnw: torch.Tensor, lnb: torch.Tensor, w1: torch.Tensor, b1: torch.Tensor,
+                  w2: torch.Tensor, b2: torch.Tensor, eps: float, bm: int, bh: int) -> torch.Tensor:
+    N, D = x.shape
+    out = torch.empty_like(x)
+    _ffn_kernel[(triton.cdiv(N, bm),)](x, out, lnw, lnb, w1, b1, w2, b2, N, eps, D=D, HID=w1.shape[0], BM=bm, BH=bh)
+    return out
+
+
+@_fused_ffn_op.register_fake
+def _(x, lnw, lnb, w1, b1, w2, b2, eps, bm, bh):
+    return torch.empty_like(x)
+
+
 def fused_ffn(x, layer, bm=None, bh=64):
     """x [N, d] contiguous (fp16 / bf16 with the layer's weights in the same dtype); layer an
-    nn.TransformerEncoderLayer (norm2, linear1, linear2, exact GELU). Returns x + FFN(norm2(x))."""
-    N, D = x.shape
+    nn.TransformerEncoderLayer (norm2, linear1, linear2, exact GELU). Returns x + FFN(norm2(x)). Registered as a
+    custom op so torch.compile keeps one graph around it (a bare Triton call broke the graph into eager pieces)."""
     bm = bm or int(os.environ.get("AZ_FUSED_FFN_BM", "64"))
-    HID = layer.linear1.weight.shape[0]
-    out = torch.empty_like(x)
-    _ffn_kernel[(triton.cdiv(N, bm),)](x, out, layer.norm2.weight, layer.norm2.bias, layer.linear1.weight,
-                                       layer.linear1.bias, layer.linear2.weight, layer.linear2.bias, N,
-                                       layer.norm2.eps, D=D, HID=HID, BM=bm, BH=bh)
-    return out
+    return _fused_ffn_op(x, layer.norm2.weight, layer.norm2.bias, layer.linear1.weight, layer.linear1.bias,
+                         layer.linear2.weight, layer.linear2.bias, float(layer.norm2.eps), bm, bh)
