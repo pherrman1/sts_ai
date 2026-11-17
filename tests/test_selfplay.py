@@ -307,6 +307,27 @@ class SelfplaySmoke(unittest.TestCase):
             self.assertGreater(c2["step"], c["step"])   # training resumes (the replay-ratio cap counts from the resume)
             self.assertGreaterEqual(c2["runs_done"], 32)
 
+    def test_search_flags(self):
+        """--no-fast-noise / --q-rescale / --c-scale reach the driver; the OOC search diagnostics are logged."""
+        sp = load()
+        args = ["--module-dir", os.path.dirname(MODULES[0]), "--device", "cpu", "--workers", "2", "--games", "4",
+                "--full-sims", "8", "--fast-sims", "4", "--batch", "32", "--row-buckets", "32", "--pack-step", "32",
+                "--pack-threads", "1", "--min-replay", "50", "--train-batch", "32", "--window", "5000",
+                "--report", "1", "--sync-steps", "2", "--seed-base", "700", "--max-runs", "8",
+                "--no-fast-noise", "--q-rescale", "--c-scale", "0.1"]
+        with tempfile.TemporaryDirectory() as d:
+            self.assertEqual(sp.main(args + ["--out-dir", d]), 0)
+            with open(os.path.join(d, "metrics.jsonl")) as f:
+                last = [json.loads(l) for l in f][-1]
+            self.assertEqual(len(last["ooc_searched"]), 2)
+            self.assertGreater(sum(last["ooc_searched"]), 0)
+            self.assertTrue(all(0 <= b <= a for a, b in zip(last["ooc_searched"], last["ooc_not_best_q"])))
+            self.assertTrue(all(0 <= x <= 1 for x in last["ooc_q_spread_mean"]))
+            ck = sorted(glob.glob(os.path.join(d, "ckpt_*.pt")), key=os.path.getmtime)[-1]
+            a = torch.load(ck)["args"]
+            self.assertTrue(a["no_fast_noise"] and a["q_rescale"])
+            self.assertEqual(a["c_scale"], 0.1)
+
     def test_value_ema_run(self):
         """--value-ema-halflife trains on EMA targets; take_samples in 1-sample chunks never splits a run."""
         sp = load()

@@ -2,7 +2,7 @@
 // training samples (labels filled, policy a distribution over the sample's actions, action sources / targets inside
 // the row). Smoke test and CPU-side throughput probe.
 //
-// usage: az-run-driver [--workers 2] [--games 4] [--runs 8] [--batch 64] [--seed 0] [--seed-base 1] [--fast] [--asc 20] [--sims N] [--const-value] [--test-hp HP] [--max-fight-moves 400] [--explore-c C] [--pick-target T]
+// usage: az-run-driver [--workers 2] [--games 4] [--runs 8] [--batch 64] [--seed 0] [--seed-base 1] [--fast] [--asc 20] [--sims N] [--const-value] [--test-hp HP] [--max-fight-moves 400] [--explore-c C] [--pick-target T] [--no-fast-noise] [--q-rescale] [--c-scale S]
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -16,7 +16,39 @@
 
 using namespace sts;
 
+// --self-test-q: completedQValues against hand-computed Gumbel MuZero completed Q (mctx qtransform_completed_by_mix_value).
+static int selfTestQ() {
+    int fails = 0;
+    auto near = [&](double a, double b, const char *what) {
+        if (std::fabs(a - b) > 1e-9) { std::fprintf(stderr, "%s: %.12f != %.12f\n", what, a, b); ++fails; }
+    };
+    // Three edges, logits ln 1, ln 2, ln 1 (pi = .25 .5 .25); edge 0: n 2, q .6; edge 1: n 1, q .2; edge 2 unvisited.
+    const float logit[3] = {0.f, static_cast<float>(std::log(2.0)), 0.f};
+    const std::int32_t n[3] = {2, 1, 0};
+    const double w[3] = {1.2, 0.2, 0};
+    double q[3];
+    azbench::completedQValues(3, logit, n, w, 0.5, false, q);   // raw: means, unvisited = node value
+    near(q[0], 0.6, "raw q0"); near(q[1], 0.2, "raw q1"); near(q[2], 0.5, "raw q2");
+    azbench::completedQValues(3, logit, n, w, 0.5, true, q);
+    // v_mix = (0.5 + 3 * (.25 * .6 + .5 * .2) / .75) / 4 = (0.5 + 1) / 4 = 0.375; rescale over {.6, .2, .375}.
+    near(q[0], 1.0, "mix q0"); near(q[1], 0.0, "mix q1"); near(q[2], (0.375 - 0.2) / 0.4, "mix q2");
+    // Scale invariance: the same Q gaps at 1/100 the size (an out-of-combat root) give the same rescaled values.
+    const double w2[3] = {2 * (0.5 + 0.006), 1 * (0.5 + 0.002), 0};
+    azbench::completedQValues(3, logit, n, w2, 0.5 + 0.005, true, q);
+    // Q = .5 + .01 x (first case's Q) for every value: v_mix = .50375 and the rescaled values equal the first case's.
+    near(q[0], 1.0, "small q0"); near(q[1], 0.0, "small q1"); near(q[2], (0.375 - 0.2) / 0.4, "small q2");
+    // No visits: every edge = node value, range floored -> all 0. Equal visited values -> all 0.
+    const std::int32_t n0[3] = {0, 0, 0};
+    azbench::completedQValues(3, logit, n0, w, 0.7, true, q);
+    near(q[0], 0.0, "novisit q0"); near(q[2], 0.0, "novisit q2");
+    azbench::completedQValues(3, logit, n0, w, 0.7, false, q);
+    near(q[1], 0.7, "novisit raw q1");
+    std::printf("completed-Q self test: %s\n", fails ? "FAIL" : "ok");
+    return fails ? 1 : 0;
+}
+
 int main(int argc, char **argv) {
+    if (argc == 2 && std::strcmp(argv[1], "--self-test-q") == 0) return selfTestQ();
     azbench::RunConfig cfg;
     cfg.workers = 2;
     cfg.gamesPerWorker = 4;
@@ -40,6 +72,9 @@ int main(int argc, char **argv) {
         else if (a == "--max-fight-moves") cfg.maxMovesPerFight = std::stoi(next());
         else if (a == "--explore-c") cfg.exploreC = std::stod(next());
         else if (a == "--pick-target") cfg.pickTarget = std::stod(next());
+        else if (a == "--no-fast-noise") cfg.fastNoise = false;
+        else if (a == "--q-rescale") cfg.qRescale = true;
+        else if (a == "--c-scale") cfg.cScale = std::stod(next());
         else if (a == "--asc") cfg.ascension = std::stoi(next());
         else if (a == "--sims") { cfg.fullSims = std::stoi(next()); cfg.fastSims = cfg.fullSims; cfg.fullProb = 1.0; }
         else if (a == "--fast") { cfg.fullSims = 8; cfg.fastSims = 4; cfg.fullCandidates = 4; cfg.fastCandidates = 2; }
@@ -121,6 +156,11 @@ int main(int argc, char **argv) {
     std::printf("pick-rate exploration: ooc_roots %lld explore_roots %lld forced_picks %lld\n",
                 static_cast<long long>(s.oocRoots), static_cast<long long>(s.exploreRoots),
                 static_cast<long long>(s.forcedPicks));
+    std::printf("ooc search [full, fast]: searched %lld %lld not_best_q %lld %lld q_spread_mean %.5f %.5f\n",
+                static_cast<long long>(s.oocSearched[0]), static_cast<long long>(s.oocSearched[1]),
+                static_cast<long long>(s.oocNotBestQ[0]), static_cast<long long>(s.oocNotBestQ[1]),
+                s.oocSpreadSum[0] / std::max<std::int64_t>(1, s.oocSpreadN[0]),
+                s.oocSpreadSum[1] / std::max<std::int64_t>(1, s.oocSpreadN[1]));
     if (bad || s.invalidActions || samples.empty() || s.runsDone < cfg.maxRuns) return 1;
     if (cfg.exploreC > 0 && (s.forcedPicks == 0 || s.exploreRoots == 0)) return 1;   // exploration must act
     if (cfg.exploreC == 0 && (s.forcedPicks != 0 || s.exploreRoots != 0)) return 1;  // ... and be inert when off

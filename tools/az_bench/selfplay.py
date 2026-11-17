@@ -323,6 +323,11 @@ def main(argv=None):
                     help="samples of unfinished runs held for their labels; above it keep probabilities shrink")
     ap.add_argument("--explore-c", type=float, default=0.0, help="pick-rate exploration strength (0 = off)")
     ap.add_argument("--pick-target", type=float, default=0.01, help="pick-rate target per item and run")
+    ap.add_argument("--c-visit", type=float, default=50.0, help="Gumbel sigma: (c_visit + max N) * c_scale")
+    ap.add_argument("--c-scale", type=float, default=1.0, help="Gumbel sigma scale (mctx uses 0.1 with --q-rescale)")
+    ap.add_argument("--no-fast-noise", action="store_true", help="no Gumbel noise on fast moves (Amber Eye)")
+    ap.add_argument("--q-rescale", action="store_true",
+                    help="completed Q as in Gumbel MuZero: mixed value for unvisited edges, min-max rescale per node")
     ap.add_argument("--batch", type=int, default=2048)
     ap.add_argument("--row-buckets", default="2048", help="batch rows padded to these (one size keeps compiled shapes few)")
     ap.add_argument("--tok-buckets", default="32,40,48,56,64,80,96,128,212")
@@ -398,13 +403,17 @@ def main(argv=None):
     else:
         run = infer
 
+    if args.q_rescale and args.c_scale == 1.0:
+        print("warning: --q-rescale with --c-scale 1.0: sigma ~50+ on [0, 1] Q makes the improved policy nearly "
+              "argmax (Gumbel MuZero / mctx use --c-scale 0.1)", file=sys.stderr, flush=True)
     drv = az_bench_native.RunDriver(
         workers=args.workers, games=args.games, seed_base=seed_base, max_runs=max_runs, ascension=ascension,
         full_sims=args.full_sims, fast_sims=args.fast_sims, full_prob=args.full_prob,
         hp_weight_combat=args.hp_weight_combat, hp_weight_ooc=args.hp_weight_ooc, keep_full=args.keep_full,
         keep_fast=args.keep_fast, search_seed=args.seed + counters["step"], max_fight_moves=args.max_fight_moves,
         test_max_hp=args.test_max_hp, max_pending=args.max_pending,
-        explore_c=args.explore_c, pick_target=args.pick_target)
+        explore_c=args.explore_c, pick_target=args.pick_target, c_visit=args.c_visit, c_scale=args.c_scale,
+        fast_noise=not args.no_fast_noise, q_rescale=args.q_rescale)
     ema_lam = 0.5 ** (1.0 / args.value_ema_halflife) if args.value_ema_halflife > 0 else 0.0
     replay = Replay(args.window, soft_outcome=ema_lam > 0)
     ema_stats = {"samples": 0, "real_weight": 0.0}   # mean weight of the final outcome in the EMA targets
@@ -677,6 +686,9 @@ def main(argv=None):
                 "asc_mean_floor_window": round(a_floors / max(1, a_runs), 2),
                 "asc_win_rate_rolling": round(rolling, 4), "asc_rolling_runs": tot,
                 "ooc_roots": s["ooc_roots"], "explore_roots": s["explore_roots"], "forced_picks": s["forced_picks"],
+                # [full, fast] cumulative: searched OOC roots, picks off the best visited mean Q, mean visited-Q spread
+                "ooc_searched": list(s["ooc_searched"]), "ooc_not_best_q": list(s["ooc_not_best_q"]),
+                "ooc_q_spread_mean": [round(s["ooc_q_spread_sum"][k] / max(1, s["ooc_q_spread_n"][k]), 5) for k in (0, 1)],
                 "progress_window": progress_window(s, last_s),
             }
             if ema_lam > 0:
