@@ -184,6 +184,19 @@ set_tests_properties(az_run_driver_smoke PROPERTIES LABELS "core;smoke")
 add_test(NAME az_run_driver_explore COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 24 --fast
          --seed-base 1 --seconds 300 --explore-c 0.5 --pick-target 0.2 --test-hp 300)
 set_tests_properties(az_run_driver_explore PROPERTIES LABELS "core;smoke")
+# Utility AMBER (Amber Eye's H from a per-floor HP head) and the keyless act 3 victory fix (2026-11-17, default off):
+# the formula / terminal / label unit test, and driver runs whose per-floor labels are checked (--test-hp 300 reaches
+# late floors).
+add_executable(az-utility-test apps/az_bench/az_utility_test.cpp)
+target_include_directories(az-utility-test PRIVATE include json/include apps/az_bench)
+add_test(NAME az_utility_test COMMAND $<TARGET_FILE:az-utility-test>)
+set_tests_properties(az_utility_test PROPERTIES LABELS "core;smoke")
+add_test(NAME az_run_driver_amber COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 12 --fast
+         --seed-base 1 --seconds 300 --utility amber --test-hp 300)
+set_tests_properties(az_run_driver_amber PROPERTIES LABELS "core;smoke")
+add_test(NAME az_run_driver_keyless COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 6 --fast
+         --seed-base 1 --seconds 300 --keyless-hp)
+set_tests_properties(az_run_driver_keyless PROPERTIES LABELS "core;smoke")
 # Search flags (no Gumbel noise on fast moves, Gumbel MuZero completed-Q rescale): the transform's arithmetic, and
 # full runs with both flags on give valid samples.
 add_test(NAME az_run_driver_qtransform COMMAND $<TARGET_FILE:az-run-driver> --self-test-q)
