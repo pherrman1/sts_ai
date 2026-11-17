@@ -224,6 +224,7 @@ namespace sts::azbench {
         BattleContext bc;
         std::unique_ptr<search::CombatKnowledgeState> knowledge = std::make_unique<search::CombatKnowledgeState>();
         bool inBattle = false;
+        std::vector<int> rootKeys;           // pick-rate item bucket per root action (-1 = none), OOC roots
         search::SilverSearchContext ctx;
         int fightMoves = 0, moves = 0, floor = 0;
         std::vector<Node> pool;
@@ -300,6 +301,8 @@ namespace sts::azbench {
     }
 
     RunDriver::RunDriver(RunConfig cfg) : cfg_(cfg) {
+        picks_.reset(new std::atomic<std::uint32_t>[kPickBuckets]);
+        for (int i = 0; i < kPickBuckets; ++i) picks_[i].store(0);
         if (!cfg_.encodeCombat) cfg_.encodeCombat = search::amberEncodeCombat;
         if (!cfg_.encodeGame) cfg_.encodeGame = search::amberEncodeGame;
         if (cfg_.gamesPerWorker > 0xffff) throw std::invalid_argument("run driver: at most 65535 runs per worker");
@@ -346,6 +349,7 @@ namespace sts::azbench {
             s.stalls += p.stalls; s.terminalLeaves += p.terminalLeaves; s.encodeCut += p.encodeCut; s.encodeCutOoc += p.encodeCutOoc;
             s.unsupported += p.unsupported; s.knowledgeFailures += p.knowledgeFailures; s.invalidActions += p.invalidActions; s.samplesDone += p.samplesDone; s.samplesPending += p.samplesPending;
             for (int k = 0; k < kOutcomeClasses; ++k) s.outcomes[k] += p.outcomes[k];
+            s.oocRoots += p.oocRoots; s.exploreRoots += p.exploreRoots; s.forcedPicks += p.forcedPicks;
             s.stepCpu += p.stepCpu; s.encodeCpu += p.encodeCpu; s.searchCpu += p.searchCpu;
         }
         s.batches = batches_.load();
@@ -419,6 +423,21 @@ namespace sts::azbench {
                 for (std::size_t k = 0; k < gacts.size(); ++k) node.edges[k] = Edge{gacts[k].bits};
                 const double t1 = cpuSeconds();
                 cfg.encodeGame(*node.gc, gacts, g.tokens);
+                if (ni == 0 && cfg.exploreC > 0) {
+                    // Pick-rate items of the root's actions: hash of the source token's ids.
+                    g.rootKeys.assign(gacts.size(), -1);
+                    for (int k = 0; k < g.tokens.nAct; ++k) {
+                        const auto &a = g.tokens.act[k];
+                        const auto t = static_cast<search::AmberActionType>(a.type);
+                        if ((t != search::AmberActionType::CHOOSE_CARD && t != search::AmberActionType::CHOOSE_OPTION)
+                            || a.srcSeg == search::kAmberNoSeg) continue;
+                        const auto &tok = g.tokens.at(static_cast<AmberTokenType>(a.srcSeg), a.srcIdx);
+                        std::uint64_t h = 0x9e3779b97f4a7c15ull * (a.type + 1);
+                        for (int c = 0; c < 2; ++c) h = (h ^ static_cast<std::uint16_t>(tok.ids[c])) * 0x100000001b3ull;
+                        h ^= h >> 29;
+                        g.rootKeys[k] = static_cast<int>(h & (kPickBuckets - 1));
+                    }
+                }
                 wk.st.stepCpu += t1 - t0;
                 wk.st.encodeCpu += cpuSeconds() - t1;
                 g.pendingCombat = false;
@@ -478,6 +497,7 @@ namespace sts::azbench {
             if (win) ++wk.st.wins;
             wk.st.floorsSum += g.gc.floorNum;
             ++wk.st.outcomes[oc];
+
             wk.st.samplesDone += static_cast<std::int64_t>(g.pending.size());
             wk.st.samplesPending -= static_cast<std::int64_t>(g.pending.size());
             pending_.fetch_sub(static_cast<std::int64_t>(g.pending.size()), std::memory_order_relaxed);
@@ -578,9 +598,30 @@ namespace sts::azbench {
                     endRun(g, gi);
                     return;
                 }
-            } else setGc(root, search::detachedGameCopy(g.gc));
+            } else {
+                setGc(root, search::detachedGameCopy(g.gc));
+            }
             g.path.push_back({r, -1, -1});
+            g.rootKeys.clear();
             request(g, gi, r);
+            if (!g.inBattle && cfg.exploreC > 0) {
+                ++wk.st.oocRoots;
+                const double games = std::max<double>(1.0, static_cast<double>(seedsUsed_.load(std::memory_order_relaxed)));
+                bool under = false;
+                for (int key : g.rootKeys)
+                    if (key >= 0 && picks_[key].load(std::memory_order_relaxed) < cfg.pickTarget * games) under = true;
+                if (under) {
+                    ++wk.st.exploreRoots;
+                    if (!g.full) {   // a root with an under-target item gets a full search (policy target recorded)
+                        g.full = true;
+                        const double pend = static_cast<double>(pending_.load(std::memory_order_relaxed));
+                        const double scale = pend > cfg.maxPendingSamples ? cfg.maxPendingSamples / pend : 1.0;
+                        g.keep = U(wk.rng) < cfg.keepFull * scale;
+                        g.budget = cfg.fullSims;
+                        g.candidates = cfg.fullCandidates;
+                    }
+                }
+            }
         };
 
         auto initRoot = [&](Run &g) {
@@ -655,6 +696,24 @@ namespace sts::azbench {
                 g.pending.push_back(std::move(s));
                 ++wk.st.samplesPending;
                 pending_.fetch_add(1, std::memory_order_relaxed);
+            }
+            if (!root.combat && cfg.exploreC > 0 && !g.rootKeys.empty()) {
+                const double games = std::max<double>(1.0, static_cast<double>(seedsUsed_.load(std::memory_order_relaxed)));
+                int worst = -1;
+                double worstRate = cfg.pickTarget;
+                for (int k = 0; k < static_cast<int>(g.rootKeys.size()) && k < static_cast<int>(root.edges.size()); ++k) {
+                    const int key = g.rootKeys[k];
+                    if (key < 0) continue;
+                    const double rate = picks_[key].load(std::memory_order_relaxed) / games;
+                    if (rate < worstRate) { worstRate = rate; worst = k; }
+                }
+                if (worst >= 0 && worst != pick
+                    && U(wk.rng) < std::min(1.0, cfg.exploreC * (1.0 - worstRate / cfg.pickTarget))) {
+                    pick = worst;
+                    ++wk.st.forcedPicks;
+                }
+                if (pick < static_cast<int>(g.rootKeys.size()) && g.rootKeys[pick] >= 0)
+                    picks_[g.rootKeys[pick]].fetch_add(1, std::memory_order_relaxed);
             }
             std::uint32_t bits = root.edges[pick].bits;
             if (root.combat) {

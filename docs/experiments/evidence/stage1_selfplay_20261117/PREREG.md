@@ -28,3 +28,23 @@ Not a gate against the main agent; a whole-run comparison with the G16 agent is 
 (`nativeSilverSearchRoot` with a per-run `CombatKnowledgeState`: draw pile as information set, Runic Dome intents
 hidden), checked by ctest `az_fair_view`. Any run started before this fix is void and is not resumed. Later
 evaluations of stage 1 nets use seeds outside 130000000 + (runs used).
+
+## Continuation 1M-2M with pick-rate exploration (Philipp, 2026-11-17 15:16 CET)
+
+Philipp: "Mach mal nur erzielte Erkundung an, kein save scum. Der Lauf soll quasi weitergehen, also nochmal 1 Mio
+spiele aber auf dem endnetz der ersten 1 Mio spiele." The main run is stopped at ~1M runs (final checkpoint) and resumed
+from that checkpoint (net, optimizer, counters; seeds continue after the ones used, same --seed-base 130200000) with
+`--explore-c 0.05 --pick-target 0.01 --max-runs 2000000`, same out-dir (one metrics curve).
+
+**Pick-rate exploration** (simplified from Amber Eye, whose exact boost rule is not published): an out-of-combat item
+(the source token of a CHOOSE_CARD / CHOOSE_OPTION action: card reward, event / Neow option, relic, shop item; hashed
+by type and token ids) picked in fewer than 1 % of the continuation's runs is under target. A root offering one gets a
+full search (policy target recorded), and with probability min(1, 0.05 * (1 - rate / 0.01)) the most under-target
+item is played instead of the search's choice; the training sample keeps the search's improved policy. Pick counts
+start at 0 at the resume. Combat, skips and map moves are never forced. Metrics: ooc_roots, explore_roots,
+forced_picks.
+
+**Decision rule (continuation):** GO if the self-play win rate reaches 10 % by 2M runs or the first wins appear while
+the mean floor still rises; STOP if there is no win by 2M runs and the mean floor gained < 2 floors over runs 1M-2M;
+otherwise INCONCLUSIVE. Forced picks cost some self-play strength (Amber Eye: ~3 pp at 0.2 % forced moves), so the
+self-play win rate of the continuation is slightly pessimistic.

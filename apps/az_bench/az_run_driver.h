@@ -90,6 +90,12 @@ namespace sts::azbench {
         std::int64_t maxPendingSamples = 300000;
         std::uint64_t searchSeed = 0;   // search / Gumbel / resampling RNG
         int testMaxHp = 0;              // tests only: > 0 sets max / current HP at the run's start (reach late floors)
+        // Pick-rate exploration (from Amber Eye; 2026-11-17, default off): an out-of-combat item (CHOOSE_CARD / CHOOSE_OPTION source token: card reward, event /
+        // Neow option, relic, shop item) picked in fewer than pickTarget of all runs so far is under target. A root
+        // offering one gets a full search, and with probability min(1, exploreC * (1 - rate / pickTarget)) the most
+        // under-target item is played instead of the search's choice (the sample keeps the search policy).
+        double exploreC = 0;
+        double pickTarget = 0.01;
         CombatEncodeFn encodeCombat = nullptr;   // default: search::amberEncodeCombat
         GameEncodeFn encodeGame = nullptr;       // default: search::amberEncodeGame (stubEncodeGame = placeholder)
     };
@@ -120,6 +126,7 @@ namespace sts::azbench {
         std::int64_t samplesDone = 0, samplesPending = 0;
         std::int64_t batches = 0, batchRows = 0;
         std::array<std::int64_t, kOutcomeClasses> outcomes{};   // finished runs per outcome class
+        std::int64_t oocRoots = 0, exploreRoots = 0, forcedPicks = 0;   // searched OOC decisions; with an under-target item; forced
         double stepCpu = 0, encodeCpu = 0, searchCpu = 0, packSeconds = 0;
     };
 
@@ -158,6 +165,8 @@ namespace sts::azbench {
         std::atomic<bool> stop_{false};
         std::atomic<std::int64_t> seedsUsed_{0};
         std::atomic<std::int64_t> pending_{0};   // samples of unfinished runs, all workers
+        static constexpr int kPickBuckets = 1 << 16;
+        std::unique_ptr<std::atomic<std::uint32_t>[]> picks_;   // real picks per item hash (pick-rate exploration)
         mutable std::mutex qm_;
         std::condition_variable qcv_;
         std::deque<std::uint32_t> queue_;   // ticket = worker << 16 | run

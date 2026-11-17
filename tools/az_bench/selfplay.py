@@ -224,6 +224,8 @@ def main(argv=None):
     ap.add_argument("--max-fight-moves", type=int, default=400)
     ap.add_argument("--max-pending", type=int, default=300000,
                     help="samples of unfinished runs held for their labels; above it keep probabilities shrink")
+    ap.add_argument("--explore-c", type=float, default=0.0, help="pick-rate exploration strength (0 = off)")
+    ap.add_argument("--pick-target", type=float, default=0.01, help="pick-rate target per item and run")
     ap.add_argument("--batch", type=int, default=2048)
     ap.add_argument("--row-buckets", default="2048", help="batch rows padded to these (one size keeps compiled shapes few)")
     ap.add_argument("--tok-buckets", default="32,40,48,56,64,80,96,128,212")
@@ -298,7 +300,8 @@ def main(argv=None):
         full_sims=args.full_sims, fast_sims=args.fast_sims, full_prob=args.full_prob,
         hp_weight_combat=args.hp_weight_combat, hp_weight_ooc=args.hp_weight_ooc, keep_full=args.keep_full,
         keep_fast=args.keep_fast, search_seed=args.seed + counters["step"], max_fight_moves=args.max_fight_moves,
-        test_max_hp=args.test_max_hp, max_pending=args.max_pending)
+        test_max_hp=args.test_max_hp, max_pending=args.max_pending,
+        explore_c=args.explore_c, pick_target=args.pick_target)
     replay = Replay(args.window)
     stop = threading.Event()
     errors = []
@@ -524,6 +527,7 @@ def main(argv=None):
                 "trained_samples": counters["trained"], "loss": lavg, "syncs": infer_stats["syncs"],
                 "stalls": s["stalls"], "unsupported": s["unsupported"], "knowledge_failures": s["knowledge_failures"], "invalid_actions": s["invalid_actions"], "encode_cut": s["encode_cut"], "encode_cut_ooc": s["encode_cut_ooc"],
                 "samples_pending": s["samples_pending"],
+                "ooc_roots": s["ooc_roots"], "explore_roots": s["explore_roots"], "forced_picks": s["forced_picks"],
             }
             print(json.dumps(row), flush=True)
             metrics.write(json.dumps(row) + "\n")
