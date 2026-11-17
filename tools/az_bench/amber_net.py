@@ -105,6 +105,14 @@ class AmberNet(nn.Module):
         return self._heads(h, mask, b)
 
     sdpa = False   # True: run the trunk through sdpa_trunk (same weights and math, fused attention kernel)
+    attn_math = False   # True: sdpa_trunk / forward_packed attend with plain matmuls + softmax (fp32) instead of SDPA
+
+    def _attend(self, q, k, v, keep):
+        if not self.attn_math:
+            return torch.nn.functional.scaled_dot_product_attention(q, k, v, attn_mask=keep)
+        s = (q @ k.transpose(-1, -2)).float() * q.shape[-1] ** -0.5
+        p = torch.softmax(s.masked_fill(~keep, float("-inf")), -1)
+        return p.to(v.dtype) @ v
 
     def sdpa_trunk(self, x, mask):
         """self.trunk's math (pre-norm encoder layers, key padding mask, exact GELU) written with one QKV matmul and
@@ -118,7 +126,7 @@ class AmberNet(nn.Module):
             H = a.num_heads
             y = layer.norm1(x)
             qkv = F.linear(y, a.in_proj_weight, a.in_proj_bias).view(B, T, 3, H, d // H).permute(2, 0, 3, 1, 4)
-            o = F.scaled_dot_product_attention(qkv[0], qkv[1], qkv[2], attn_mask=keep)
+            o = self._attend(qkv[0], qkv[1], qkv[2], keep)
             x = x + a.out_proj(o.transpose(1, 2).reshape(B, T, d))
             x = x + layer.linear2(F.gelu(layer.linear1(layer.norm2(x))))
         return x
@@ -158,7 +166,7 @@ class AmberNet(nn.Module):
             H = a.num_heads
             qkv_p = F.linear(layer.norm1(x), a.in_proj_weight, a.in_proj_bias)
             qkv = unpack(qkv_p).view(B, T, 3, H, d // H).permute(2, 0, 3, 1, 4)
-            o = F.scaled_dot_product_attention(qkv[0], qkv[1], qkv[2], attn_mask=keep)
+            o = self._attend(qkv[0], qkv[1], qkv[2], keep)
             x = x + a.out_proj(o.transpose(1, 2).reshape(M, d)[ip])
             x = x + layer.linear2(F.gelu(layer.linear1(layer.norm2(x))))
         return self._heads(unpack(self.out_norm(x)).view(B, T, d), mask, b)
