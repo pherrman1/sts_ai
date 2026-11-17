@@ -193,6 +193,12 @@ add_test(NAME az_eval_cache COMMAND $<TARGET_FILE:az-eval-cache-test> --runs 3 -
 set_tests_properties(az_eval_cache PROPERTIES LABELS "core;smoke")
 add_test(NAME az_eval_cache_amber COMMAND $<TARGET_FILE:az-eval-cache-test> --runs 3 --seed-base 1 --fast --utility amber)
 set_tests_properties(az_eval_cache_amber PROPERTIES LABELS "core;smoke")
+add_test(NAME az_eval_cache_ema COMMAND $<TARGET_FILE:az-eval-cache-test> --runs 3 --seed-base 1 --fast --ema 0.9)
+set_tests_properties(az_eval_cache_ema PROPERTIES LABELS "core;smoke")
+add_test(NAME az_eval_cache_ema_amber COMMAND $<TARGET_FILE:az-eval-cache-test> --runs 3 --seed-base 1 --fast --utility amber --ema 0.9)
+set_tests_properties(az_eval_cache_ema_amber PROPERTIES LABELS "core;smoke")
+add_test(NAME az_eval_cache_ema_all COMMAND $<TARGET_FILE:az-eval-cache-test> --runs 3 --seed-base 1 --fast --ema 0.9 --ema-all)
+set_tests_properties(az_eval_cache_ema_all PROPERTIES LABELS "core;smoke")
 # Packed tokens (only live tokens to the GPU) carry the same rows as the [R][T] layout.
 add_executable(az-pack-test apps/az_bench/az_pack_test.cpp)
 target_include_directories(az-pack-test PRIVATE include apps/az_bench)
@@ -227,6 +233,9 @@ set_tests_properties(az_run_driver_amber_search PROPERTIES LABELS "core;smoke")
 add_test(NAME az_eval_cache_amber_search COMMAND $<TARGET_FILE:az-eval-cache-test> --runs 3 --seed-base 1 --fast
     --amber-search)
 set_tests_properties(az_eval_cache_amber_search PROPERTIES LABELS "core;smoke")
+add_test(NAME az_eval_cache_amber_search_ema COMMAND $<TARGET_FILE:az-eval-cache-test> --runs 3 --seed-base 1 --fast
+    --amber-search --ema 0.9)
+set_tests_properties(az_eval_cache_amber_search_ema PROPERTIES LABELS "core;smoke")
 add_test(NAME az_run_driver_qtransform COMMAND $<TARGET_FILE:az-run-driver> --self-test-q)
 set_tests_properties(az_run_driver_qtransform PROPERTIES LABELS "core;smoke")
 add_test(NAME az_run_driver_search_flags COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 6 --fast
