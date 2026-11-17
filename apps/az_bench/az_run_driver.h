@@ -72,6 +72,14 @@ namespace sts::azbench {
     constexpr int kHpClasses = 256;
     constexpr int kAscensions = 21;
 
+    // Completed Q of k edges (prior logits, visits n, value sums w) of a node with net value `value`. rescale false:
+    // a visited edge's mean w / n, an unvisited one `value`. rescale true (Gumbel MuZero, mctx
+    // qtransform_completed_by_mix_value): an unvisited edge gets v_mix = (value + N sum_visited(pi q) /
+    // sum_visited(pi)) / (1 + N) with pi = softmax(logit), N = sum n; then all k values are min-max rescaled to
+    // [0, 1] (range floored at 1e-8, so equal values all map to 0).
+    void completedQValues(int k, const float *logit, const std::int32_t *n, const double *w, double value,
+                          bool rescale, double *q);
+
     struct RunConfig {
         int workers = 11;
         int gamesPerWorker = 700;
@@ -82,6 +90,14 @@ namespace sts::azbench {
         int fullCandidates = 16, fastCandidates = 4;
         double fullProb = 0.25;
         double cVisit = 50, cScale = 1.0;
+        // Search-noise / Q-transform flags (2026-11-17, both default = previous behaviour):
+        // fastNoise false: fast (low-budget) moves get no Gumbel noise (Amber Eye: "not applying exploration noise to
+        // them"); they pick the top logits as candidates and play the best logit + sigma(Q).
+        // qRescale true: completed Q as in Gumbel MuZero / mctx (unvisited edges = mixed value, then min-max rescale of
+        // each node's completed Q to [0, 1]), at the root (halving, final pick, improved policy) and inside the tree.
+        // With it, mctx's value scale cScale = 0.1 is the paper setting (cScale 1 then makes the policy nearly argmax).
+        bool fastNoise = true;
+        bool qRescale = false;
         double wideningC = 3.7028, wideningAlpha = 0.52389;
         double hpWeightCombat = 1.0, hpWeightOoc = 1.0;   // U = F + w H (Amber's first utility: both 1)
         int maxMovesPerFight = 400;     // a fight past this many decisions counts as lost (stall guard)
@@ -127,6 +143,29 @@ namespace sts::azbench {
         std::uint64_t run = 0;               // run seed
     };
 
+    // Run progress counters of finished runs (2026-11-17; why A0 runs rarely reach Act 4): keys held at the run's
+    // end, campfire choices, elite fights, Act 4 and the Heart. Counted per run while it plays, added to the run's
+    // ascension when it ends.
+    struct RunProgress {
+        std::int64_t ruby = 0, emerald = 0, sapphire = 0, allKeys = 0;   // runs ending with the key / all three
+        std::int64_t campfires = 0;        // campfire choices (rest, smith, recall, lift, toke, dig)
+        std::int64_t recallOffered = 0;    // ... of which with Recall legal (keys on, no Ruby key yet)
+        std::int64_t rest = 0, smith = 0, recall = 0, otherCampfire = 0;
+        std::int64_t elites = 0;           // elite fights started (Room::ELITE; not event elites)
+        std::int64_t burningElites = 0;    // ... of which the burning (Emerald key) elite
+        std::int64_t act4 = 0;             // runs that entered Act 4
+        std::int64_t heart = 0;            // runs that started the Heart fight
+        std::int64_t keylessVictories = 0; // runs ended by the Act 3 boss without the three keys (floor 51)
+        RunProgress &operator+=(const RunProgress &o) {
+            ruby += o.ruby; emerald += o.emerald; sapphire += o.sapphire; allKeys += o.allKeys;
+            campfires += o.campfires; recallOffered += o.recallOffered;
+            rest += o.rest; smith += o.smith; recall += o.recall; otherCampfire += o.otherCampfire;
+            elites += o.elites; burningElites += o.burningElites; act4 += o.act4; heart += o.heart;
+            keylessVictories += o.keylessVictories;
+            return *this;
+        }
+    };
+
     struct RunStats {
         std::int64_t evals = 0, moves = 0, searchedMoves = 0, runsStarted = 0, runsDone = 0, wins = 0;
         std::int64_t floorsSum = 0, stalls = 0, terminalLeaves = 0, unsupported = 0;
@@ -138,8 +177,14 @@ namespace sts::azbench {
         std::array<std::int64_t, kOutcomeClasses> outcomes{};   // finished runs per outcome class
         // Per ascension (curriculum): finished runs, Heart kills, final floors.
         std::array<std::int64_t, kAscensions> runsDoneAsc{}, winsAsc{}, floorsSumAsc{};
-        std::int64_t oocRoots = 0, exploreRoots = 0, forcedPicks = 0;
-        std::int64_t cacheHits = 0;           // leaves answered by the evaluation cache (not counted in evals)   // searched OOC decisions; with an under-target item; forced
+        std::array<RunProgress, kAscensions> progressAsc{};   // finished runs' progress counters per ascension
+        std::int64_t oocRoots = 0, exploreRoots = 0, forcedPicks = 0;   // searched OOC decisions; with an under-target item; forced
+        std::int64_t cacheHits = 0;           // leaves answered by the evaluation cache (not counted in evals)
+        // Search diagnostics of searched out-of-combat roots (always on): per full / fast move, roots, roots whose
+        // search pick is not the visited edge of highest mean Q (before a forced pick), and the sum of that root's
+        // raw visited-Q spread (max - min mean Q, roots with >= 2 visited edges) and its count.
+        std::array<std::int64_t, 2> oocSearched{}, oocNotBestQ{}, oocSpreadN{};
+        std::array<double, 2> oocSpreadSum{};
         double stepCpu = 0, encodeCpu = 0, searchCpu = 0, packSeconds = 0;
     };
 
@@ -163,7 +208,8 @@ namespace sts::azbench {
         // The weights version of evaluations from now on (evaluation cache): set it when the net's weights change,
         // before evaluating the next batch with them. Cached results of other versions are not used.
         void setWeightsVersion(std::uint32_t v) { weightsVersion_.store(v, std::memory_order_release); }
-        // Moves up to maxSamples finished samples (labels filled) into out.
+        // Moves up to maxSamples finished samples (labels filled) into out, then the rest of the last run taken (a
+        // run is never split across calls).
         void takeSamples(int maxSamples, std::vector<Sample> &out);
         RunStats stats() const;
         const RunConfig &config() const { return cfg_; }

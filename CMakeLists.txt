@@ -197,6 +197,13 @@ target_include_directories(az-pack-test PRIVATE include apps/az_bench)
 target_link_libraries(az-pack-test PRIVATE Threads::Threads)
 add_test(NAME az_pack_packed_tokens COMMAND $<TARGET_FILE:az-pack-test>)
 set_tests_properties(az_pack_packed_tokens PROPERTIES LABELS "core;smoke")
+# Search flags (no Gumbel noise on fast moves, Gumbel MuZero completed-Q rescale): the transform's arithmetic, and
+# full runs with both flags on give valid samples.
+add_test(NAME az_run_driver_qtransform COMMAND $<TARGET_FILE:az-run-driver> --self-test-q)
+set_tests_properties(az_run_driver_qtransform PROPERTIES LABELS "core;smoke")
+add_test(NAME az_run_driver_search_flags COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 6 --fast
+         --seed-base 1 --seconds 300 --no-fast-noise --q-rescale --c-scale 0.1)
+set_tests_properties(az_run_driver_search_flags PROPERTIES LABELS "core;smoke")
 # Fair play of the stage 1 driver's combat view (ADR-0002): fights differing only in hidden draw order (and, under
 # Runic Dome, rolled intents) give identical net inputs and identical search paths.
 add_executable(az-fair-view-test apps/az_bench/az_fair_view_test.cpp apps/az_bench/az_run_driver.cpp
