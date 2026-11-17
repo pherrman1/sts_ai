@@ -42,6 +42,12 @@ class E2EBenchSmoke(unittest.TestCase):
         self.assertNotIn("errors", r)
         self.assertGreater(r["positions_per_s"], 0)
 
+    def test_amber_net_cpu_pipeline_sdpa(self):
+        r = self.run_bench("--net", "32x1", "--pipeline", "--sdpa")
+        self.assertNotIn("errors", r)
+        self.assertGreater(r["positions_per_s"], 0)
+        self.assertTrue(r["pipeline"] and r["sdpa"])
+
 
 if __name__ == "__main__":
     unittest.main()

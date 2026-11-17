@@ -110,6 +110,9 @@ def main(argv=None):
     ap.add_argument("--row-buckets", default="256,512,1024,2048,4096")
     ap.add_argument("--tok-buckets", default="32,48,64,96,128,212")
     ap.add_argument("--act-buckets", default="16,32,64,96")
+    ap.add_argument("--pipeline", action="store_true",
+                    help="flat layout, one batcher: pack the next batch on the CPU while the GPU runs the current one "
+                         "(two pinned buffer sets; results come back through pinned memory)")
     ap.add_argument("--sort-window", type=int, default=1,
                     help="flat: sort this many batches' worth of requests by token count and serve them in order, so "
                          "each batch pads to a tight token bucket")
@@ -278,7 +281,98 @@ def main(argv=None):
                 timing["padded_rows"] = timing.get("padded_rows", 0) + Rp
                 timing["tok_slots"] = timing.get("tok_slots", 0) + Rp * Tp
 
+    def flat_pipe_loop(i):
+        """Two-deep pipeline: while the GPU evaluates batch k (launched asynchronously on a side stream, results
+        copied into pinned memory), the CPU packs batch k + 1 into the other host buffer set; then it waits for k,
+        posts k's results and launches k + 1. Same inputs and net per batch as flat_loop, so the same outputs."""
+        import numpy as np
+        stream = torch.cuda.Stream(dev) if dev.type == "cuda" else None
+        R, T, A = row_b[-1], tok_b[-1], act_b[-1]
+        pin = dev.type == "cuda"
+
+        def buffers():
+            h = {"tok_type": torch.zeros(R * T, dtype=torch.int8, pin_memory=pin),
+                 "ids": torch.zeros(R * T * 4, dtype=torch.int16, pin_memory=pin),
+                 "f": torch.zeros(R * T * 64, dtype=torch.float16, pin_memory=pin),
+                 "mask": torch.zeros(R * T, dtype=torch.bool, pin_memory=pin),
+                 "a_type": torch.zeros(R * A, dtype=torch.int16, pin_memory=pin),
+                 "a_src": torch.zeros(R * A, dtype=torch.int16, pin_memory=pin),
+                 "a_tgt": torch.zeros(R * A, dtype=torch.int16, pin_memory=pin),
+                 "a_f": torch.zeros(R * A * 8, dtype=torch.float16, pin_memory=pin),
+                 "a_mask": torch.zeros(R * A, dtype=torch.bool, pin_memory=pin)}
+            out = {"logits": torch.zeros(R * A, dtype=torch.float32, pin_memory=pin),
+                   "value": torch.zeros(R, dtype=torch.float32, pin_memory=pin)}
+            return h, {k: v.numpy() for k, v in h.items()}, out
+
+        sets = [buffers(), buffers()]
+        cur, pending = 0, None   # pending: (ticket, rows, Ap, out, event, t_launch)
+
+        def finish(p):
+            ticket, rows, Ap, out, ev, _ = p
+            if ev is not None:
+                ev.synchronize()
+            logits = out["logits"][:rows * Ap].numpy().reshape(rows, Ap)
+            value = out["value"][:rows].numpy()
+            t2 = time.perf_counter()
+            drv.submit(ticket, logits, value)
+            return time.perf_counter() - t2
+
+        while not stop.is_set():
+            host, views, out = sets[cur]
+            t0 = time.perf_counter()
+            got = drv.next_flat(args.batch, min_rows, 5, row_b, tok_b, act_b, views, args.sort_window)
+            t1 = time.perf_counter()
+            launched = None
+            if got is not None:
+                ticket, rows, Rp, Tp, Ap = got
+                shapes = {"tok_type": (Rp, Tp), "ids": (Rp, Tp, 4), "f": (Rp, Tp, 64), "mask": (Rp, Tp),
+                          "a_type": (Rp, Ap), "a_src": (Rp, Ap), "a_tgt": (Rp, Ap), "a_f": (Rp, Ap, 8),
+                          "a_mask": (Rp, Ap)}
+                ctx = torch.cuda.stream(stream) if stream is not None else torch.no_grad()
+                with ctx, torch.inference_mode(), torch.autocast(dev.type, dtype=dtype, enabled=use_autocast):
+                    x = {}
+                    for k, shp in shapes.items():
+                        n = int(np.prod(shp))
+                        t = host[k][:n].to(dev, non_blocking=True).view(shp)
+                        if k in ("tok_type", "ids", "a_type", "a_src", "a_tgt"):
+                            t = t.long()
+                        elif t.dtype == torch.float16:
+                            t = t.to(in_float)
+                        x[k] = t
+                    lg, outcome, _, _ = forward(x, (Rp, Tp, Ap))
+                    out["logits"][:rows * Ap].view(rows, Ap).copy_(lg[:rows].float(), non_blocking=True)
+                    out["value"][:rows].copy_(torch.softmax(outcome[:rows].float(), -1)[:, 0], non_blocking=True)
+                    ev = None
+                    if stream is not None:
+                        ev = torch.cuda.Event()
+                        ev.record(stream)
+                launched = (ticket, rows, Ap, out, ev, time.perf_counter())
+            t2 = time.perf_counter()
+            sub = 0.0
+            if pending is not None:
+                sub = finish(pending)
+            t3 = time.perf_counter()
+            with tlock:
+                timing["wait"] += t1 - t0
+                timing["h2d_forward"] += (t3 - t2) - sub + (t2 - t1)   # launch + wait for the previous batch
+                timing["submit"] += sub
+                if pending is not None:
+                    timing["batches"] += 1
+                    timing["rows"] += pending[1]
+                if launched is not None:
+                    timing["padded_rows"] = timing.get("padded_rows", 0) + Rp
+                    timing["tok_slots"] = timing.get("tok_slots", 0) + Rp * Tp
+            pending = launched
+            if launched is not None:
+                cur ^= 1
+        if pending is not None:
+            finish(pending)
+
     def batcher_loop(i):
+        if args.layout == "flat" and args.pipeline:
+            if args.fake_net or args.batchers != 1:
+                raise SystemExit("--pipeline needs a real net and --batchers 1")
+            return flat_pipe_loop(i)
         if args.layout == "flat":
             return flat_loop(i)
         stream = torch.cuda.Stream(dev) if dev.type == "cuda" else None
@@ -342,7 +436,7 @@ def main(argv=None):
     ev = max(1, s1["evals"] - s0["evals"])
     nb = max(1, w1["batches"] - w0["batches"])
     res = {
-        "net": args.net, "params": params, "dtype": args.dtype, "sdpa": args.sdpa, "half": args.half, "compile": args.compile, "backend": args.backend if args.compile else None, "fake_net": args.fake_net,
+        "net": args.net, "params": params, "dtype": args.dtype, "sdpa": args.sdpa, "half": args.half, "pipeline": args.pipeline, "compile": args.compile, "backend": args.backend if args.compile else None, "fake_net": args.fake_net,
         "encoder": args.encoder,
         "workers": args.workers, "games_per_worker": args.games, "batchers": args.batchers, "max_batch": args.batch,
         "full_sims": args.full_sims, "fast_sims": args.fast_sims, "full_prob": args.full_prob,
