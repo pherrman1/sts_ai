@@ -341,6 +341,22 @@ PYBIND11_MODULE(az_bench_native, m) {
             o["runs_done_asc"] = std::vector<std::int64_t>(s.runsDoneAsc.begin(), s.runsDoneAsc.end());
             o["wins_asc"] = std::vector<std::int64_t>(s.winsAsc.begin(), s.winsAsc.end());
             o["floors_sum_asc"] = std::vector<std::int64_t>(s.floorsSumAsc.begin(), s.floorsSumAsc.end());
+            {   // run progress counters per ascension: name -> list of 21
+                py::dict pr;
+                auto field = [&](const char *name, std::int64_t azbench::RunProgress::*m) {
+                    std::vector<std::int64_t> v;
+                    for (const auto &p : s.progressAsc) v.push_back(p.*m);
+                    pr[name] = v;
+                };
+                using P = azbench::RunProgress;
+                field("ruby", &P::ruby); field("emerald", &P::emerald); field("sapphire", &P::sapphire);
+                field("all_keys", &P::allKeys); field("campfires", &P::campfires);
+                field("recall_offered", &P::recallOffered); field("rest", &P::rest); field("smith", &P::smith);
+                field("recall", &P::recall); field("other_campfire", &P::otherCampfire);
+                field("elites", &P::elites); field("burning_elites", &P::burningElites); field("act4", &P::act4);
+                field("heart", &P::heart); field("keyless_victories", &P::keylessVictories);
+                o["progress_asc"] = pr;
+            }
             o["ooc_roots"] = s.oocRoots; o["explore_roots"] = s.exploreRoots; o["forced_picks"] = s.forcedPicks;
             o["ooc_searched"] = py::make_tuple(s.oocSearched[0], s.oocSearched[1]);
             o["ooc_not_best_q"] = py::make_tuple(s.oocNotBestQ[0], s.oocNotBestQ[1]);

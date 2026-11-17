@@ -136,6 +136,29 @@ namespace sts::azbench {
         std::uint64_t run = 0;               // run seed
     };
 
+    // Run progress counters of finished runs (2026-11-17; why A0 runs rarely reach Act 4): keys held at the run's
+    // end, campfire choices, elite fights, Act 4 and the Heart. Counted per run while it plays, added to the run's
+    // ascension when it ends.
+    struct RunProgress {
+        std::int64_t ruby = 0, emerald = 0, sapphire = 0, allKeys = 0;   // runs ending with the key / all three
+        std::int64_t campfires = 0;        // campfire choices (rest, smith, recall, lift, toke, dig)
+        std::int64_t recallOffered = 0;    // ... of which with Recall legal (keys on, no Ruby key yet)
+        std::int64_t rest = 0, smith = 0, recall = 0, otherCampfire = 0;
+        std::int64_t elites = 0;           // elite fights started (Room::ELITE; not event elites)
+        std::int64_t burningElites = 0;    // ... of which the burning (Emerald key) elite
+        std::int64_t act4 = 0;             // runs that entered Act 4
+        std::int64_t heart = 0;            // runs that started the Heart fight
+        std::int64_t keylessVictories = 0; // runs ended by the Act 3 boss without the three keys (floor 51)
+        RunProgress &operator+=(const RunProgress &o) {
+            ruby += o.ruby; emerald += o.emerald; sapphire += o.sapphire; allKeys += o.allKeys;
+            campfires += o.campfires; recallOffered += o.recallOffered;
+            rest += o.rest; smith += o.smith; recall += o.recall; otherCampfire += o.otherCampfire;
+            elites += o.elites; burningElites += o.burningElites; act4 += o.act4; heart += o.heart;
+            keylessVictories += o.keylessVictories;
+            return *this;
+        }
+    };
+
     struct RunStats {
         std::int64_t evals = 0, moves = 0, searchedMoves = 0, runsStarted = 0, runsDone = 0, wins = 0;
         std::int64_t floorsSum = 0, stalls = 0, terminalLeaves = 0, unsupported = 0;
@@ -147,6 +170,7 @@ namespace sts::azbench {
         std::array<std::int64_t, kOutcomeClasses> outcomes{};   // finished runs per outcome class
         // Per ascension (curriculum): finished runs, Heart kills, final floors.
         std::array<std::int64_t, kAscensions> runsDoneAsc{}, winsAsc{}, floorsSumAsc{};
+        std::array<RunProgress, kAscensions> progressAsc{};   // finished runs' progress counters per ascension
         std::int64_t oocRoots = 0, exploreRoots = 0, forcedPicks = 0;   // searched OOC decisions; with an under-target item; forced
         // Search diagnostics of searched out-of-combat roots (always on): per full / fast move, roots, roots whose
         // search pick is not the visited edge of highest mean Q (before a forced pick), and the sum of that root's

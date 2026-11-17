@@ -261,6 +261,7 @@ namespace sts::azbench {
         bool inBattle = false;
         std::vector<int> rootKeys;           // pick-rate item bucket per root action (-1 = none), OOC roots
         int asc = 20;                        // this run's ascension
+        RunProgress progress;                // this run's progress counters (added to its ascension at the end)
         search::SilverSearchContext ctx;
         int fightMoves = 0, moves = 0, floor = 0;
         std::vector<Node> pool;
@@ -413,6 +414,7 @@ namespace sts::azbench {
             for (int k = 0; k < kOutcomeClasses; ++k) s.outcomes[k] += p.outcomes[k];
             for (int k = 0; k < kAscensions; ++k) {
                 s.runsDoneAsc[k] += p.runsDoneAsc[k]; s.winsAsc[k] += p.winsAsc[k]; s.floorsSumAsc[k] += p.floorsSumAsc[k];
+                s.progressAsc[k] += p.progressAsc[k];
             }
             s.oocRoots += p.oocRoots; s.exploreRoots += p.exploreRoots; s.forcedPicks += p.forcedPicks;
             for (int k = 0; k < 2; ++k) {
@@ -557,6 +559,7 @@ namespace sts::azbench {
             g.floor = g.gc.floorNum;
             g.pending.clear();
             g.floorStart = 0;
+            g.progress = RunProgress{};
             ++wk.st.runsStarted;
             startMove(g, gi);
         };
@@ -574,6 +577,15 @@ namespace sts::azbench {
             ++wk.st.runsDoneAsc[g.asc];
             if (win) ++wk.st.winsAsc[g.asc];
             wk.st.floorsSumAsc[g.asc] += g.gc.floorNum;
+            {
+                RunProgress &p = g.progress;
+                const bool r = g.gc.hasKey(Key::RUBY_KEY), e = g.gc.hasKey(Key::EMERALD_KEY),
+                           sa = g.gc.hasKey(Key::SAPPHIRE_KEY);
+                p.ruby = r; p.emerald = e; p.sapphire = sa; p.allKeys = r && e && sa;
+                p.act4 = g.gc.act == 4;
+                p.keylessVictories = g.gc.outcome == GameOutcome::PLAYER_VICTORY && g.gc.act != 4;
+                wk.st.progressAsc[g.asc] += p;
+            }
 
             wk.st.samplesDone += static_cast<std::int64_t>(g.pending.size());
             wk.st.samplesPending -= static_cast<std::int64_t>(g.pending.size());
@@ -601,9 +613,23 @@ namespace sts::azbench {
                     g.inBattle = false;
                 }
             } else {
+                if (g.gc.screenState == ScreenState::REST_ROOM && !g.gc.restRoomResolved) {
+                    RunProgress &p = g.progress;
+                    ++p.campfires;
+                    if (g.gc.keysEnabled && !g.gc.hasKey(Key::RUBY_KEY)) ++p.recallOffered;
+                    const int o = GameAction(bits).getIdx1();
+                    ++(o == 0 ? p.rest : o == 1 ? p.smith : o == 2 ? p.recall : p.otherCampfire);
+                }
                 GameAction(bits).execute(g.gc);
             }
             if (!g.inBattle && g.gc.outcome == GameOutcome::UNDECIDED && g.gc.screenState == ScreenState::BATTLE) {
+                if (g.gc.curRoom == Room::ELITE) {
+                    ++g.progress.elites;
+                    if (g.gc.map && g.gc.map->burningEliteX == g.gc.curMapNodeX &&
+                        g.gc.map->burningEliteY == g.gc.curMapNodeY)
+                        ++g.progress.burningElites;
+                }
+                if (g.gc.info.encounter == MonsterEncounter::THE_HEART) g.progress.heart = 1;
                 initObservedBattle(g.gc, g.bc, *g.knowledge);
                 g.ctx = combatContext(g.gc);
                 g.inBattle = true;

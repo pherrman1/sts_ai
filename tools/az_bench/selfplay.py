@@ -203,6 +203,22 @@ def to_torch(b, dev):
 
 # --- main ----------------------------------------------------------------------------------------------------------
 
+
+def progress_window(s, last_s):
+    """Run progress counters (keys, campfire choices, elites, Act 4, Heart) of the runs finished since last_s, per
+    ascension that finished runs: {"A": {"runs": n, "ruby": .., ...}} (driver stats() progress_asc deltas)."""
+    out = {}
+    cur, prev = s.get("progress_asc") or {}, last_s.get("progress_asc") or {}
+    for a, (n1, n0) in enumerate(zip(s["runs_done_asc"], last_s["runs_done_asc"])):
+        if n1 - n0 <= 0:
+            continue
+        e = {"runs": n1 - n0}
+        for k, v in cur.items():
+            e[k] = v[a] - (prev.get(k) or [0] * len(v))[a]
+        out[str(a)] = e
+    return out
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--module-dir", required=True)
@@ -309,6 +325,9 @@ def main(argv=None):
     else:
         run = infer
 
+    if args.q_rescale and args.c_scale == 1.0:
+        print("warning: --q-rescale with --c-scale 1.0: sigma ~50+ on [0, 1] Q makes the improved policy nearly "
+              "argmax (Gumbel MuZero / mctx use --c-scale 0.1)", file=sys.stderr, flush=True)
     drv = az_bench_native.RunDriver(
         workers=args.workers, games=args.games, seed_base=seed_base, max_runs=max_runs, ascension=ascension,
         full_sims=args.full_sims, fast_sims=args.fast_sims, full_prob=args.full_prob,
@@ -570,6 +589,7 @@ def main(argv=None):
                 # [full, fast] cumulative: searched OOC roots, picks off the best visited mean Q, mean visited-Q spread
                 "ooc_searched": list(s["ooc_searched"]), "ooc_not_best_q": list(s["ooc_not_best_q"]),
                 "ooc_q_spread_mean": [round(s["ooc_q_spread_sum"][k] / max(1, s["ooc_q_spread_n"][k]), 5) for k in (0, 1)],
+                "progress_window": progress_window(s, last_s),
             }
             print(json.dumps(row), flush=True)
             metrics.write(json.dumps(row) + "\n")
