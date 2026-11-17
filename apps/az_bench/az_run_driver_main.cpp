@@ -188,6 +188,12 @@ int main(int argc, char **argv) {
                 s.oocSpreadSum[1] / std::max<std::int64_t>(1, s.oocSpreadN[1]));
     if (bad || s.invalidActions || samples.empty() || s.runsDone < cfg.maxRuns) return 1;
     const bool explore = cfg.exploreC > 0 || cfg.exploreAmber;
+    if (cfg.exploreAmber)
+        std::printf("amber exploration: attempts %lld c0 %lld cinf %lld natural %lld natural_unplayed %lld moves %lld\n",
+                    static_cast<long long>(s.exploreAttempts), static_cast<long long>(s.exploreCZero),
+                    static_cast<long long>(s.exploreCInf), static_cast<long long>(s.exploreNatural),
+                    static_cast<long long>(s.exploreNaturalUnplayed), static_cast<long long>(s.moves));
+    if (s.exploreNaturalUnplayed != 0) return 1;   // an item logged as picked by the search must have been played
     if (explore && (s.forcedPicks == 0 || s.exploreRoots == 0)) return 1;   // exploration must act
     if (!explore && (s.forcedPicks != 0 || s.exploreRoots != 0)) return 1;  // ... and be inert when off
     return 0;

@@ -523,6 +523,8 @@ namespace sts::azbench {
                 s.progressAsc[k] += p.progressAsc[k];
             }
             s.oocRoots += p.oocRoots; s.exploreRoots += p.exploreRoots; s.forcedPicks += p.forcedPicks;
+            s.exploreAttempts += p.exploreAttempts; s.exploreCZero += p.exploreCZero; s.exploreCInf += p.exploreCInf;
+            s.exploreNatural += p.exploreNatural; s.exploreNaturalUnplayed += p.exploreNaturalUnplayed;
             s.cacheHits += p.cacheHits;
             for (int k = 0; k < 2; ++k) {
                 s.oocSearched[k] += p.oocSearched[k]; s.oocNotBestQ[k] += p.oocNotBestQ[k];
@@ -721,6 +723,12 @@ namespace sts::azbench {
             }
             if (cfg.exploreAmber) {   // the run's items: once per run in the rate, smallest gap into the item's log
                 for (int key : g.pickedKeys) picks_[key].fetch_add(1, std::memory_order_relaxed);
+                for (const auto &[key, m] : g.gapMin)
+                    if (m <= 0) {
+                        ++wk.st.exploreNatural;
+                        if (std::find(g.pickedKeys.begin(), g.pickedKeys.end(), key) == g.pickedKeys.end())
+                            ++wk.st.exploreNaturalUnplayed;
+                    }
                 {
                     std::lock_guard<std::mutex> l(exploreM_);
                     for (const auto &[key, m] : g.gapMin) exploreItems_[key].hist.add(m);
@@ -1026,24 +1034,34 @@ namespace sts::azbench {
             }
             if (!root.combat && cfg.exploreAmber && !g.rootKeys.empty()) {
                 const int k = std::min(static_cast<int>(g.rootKeys.size()), static_cast<int>(root.edges.size()));
-                const double top = rootScore(g, root, pick, sigma, q);
+                // Gap in policy logits (the net's prior logits) below the search's pick, at least 1e-9.
+                const int searchPick = pick;
+                const double top = root.edges[searchPick].logit;
+                auto gap = [&](int i) { return std::max(1e-9, top - static_cast<double>(root.edges[i].logit)); };
                 std::vector<int> under;
-                for (int i = 0; i < k; ++i) {
-                    const int key = g.rootKeys[i];
-                    if (key < 0) continue;
-                    const double m = i == pick ? 0.0 : std::max(0.0, top - rootScore(g, root, i, sigma, q));
-                    auto it = g.gapMin.find(key);
-                    if (it == g.gapMin.end()) g.gapMin.emplace(key, m);
-                    else it->second = std::min(it->second, m);
-                    if (i != pick && i < static_cast<int>(g.rootUnder.size()) && g.rootUnder[i]) under.push_back(i);
-                }
+                for (int i = 0; i < k; ++i)
+                    if (g.rootKeys[i] >= 0 && i != searchPick && i < static_cast<int>(g.rootUnder.size())
+                        && g.rootUnder[i]) under.push_back(i);
                 std::shuffle(under.begin(), under.end(), wk.rng);
                 const std::int64_t games = runsDone_.load(std::memory_order_relaxed);
                 for (int i : under) {
-                    const double m = std::max(0.0, top - rootScore(g, root, i, sigma, q));
+                    const double m = gap(i);
                     const double c = exploreItemC(g.rootKeys[i], games);
+                    ++wk.st.exploreAttempts;
+                    if (c == 0) ++wk.st.exploreCZero;
+                    if (std::isinf(c)) ++wk.st.exploreCInf;
                     const double p = std::isinf(c) ? 1.0 : std::min(1.0, c * std::exp(-m / cfg.exploreT));
                     if (U(wk.rng) < p) { pick = i; ++wk.st.forcedPicks; break; }
+                }
+                // Log: m = 0 ("natural") only for the search's pick when it is played; a forced item logs its gap, an
+                // overridden search pick 1e-9 (bin 0), every other item its gap.
+                for (int i = 0; i < k; ++i) {
+                    const int key = g.rootKeys[i];
+                    if (key < 0) continue;
+                    const double m = (i == searchPick && pick == searchPick) ? 0.0 : gap(i);
+                    auto it = g.gapMin.find(key);
+                    if (it == g.gapMin.end()) g.gapMin.emplace(key, m);
+                    else it->second = std::min(it->second, m);
                 }
                 if (pick < k && g.rootKeys[pick] >= 0
                     && std::find(g.pickedKeys.begin(), g.pickedKeys.end(), g.rootKeys[pick]) == g.pickedKeys.end())

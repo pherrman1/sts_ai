@@ -402,6 +402,9 @@ PYBIND11_MODULE(az_bench_native, m) {
                 o["progress_asc"] = pr;
             }
             o["ooc_roots"] = s.oocRoots; o["explore_roots"] = s.exploreRoots; o["forced_picks"] = s.forcedPicks;
+            o["explore_attempts"] = s.exploreAttempts; o["explore_c_zero"] = s.exploreCZero;
+            o["explore_c_inf"] = s.exploreCInf; o["explore_natural"] = s.exploreNatural;
+            o["explore_natural_unplayed"] = s.exploreNaturalUnplayed;
             o["cache_hits"] = s.cacheHits;
             o["ooc_searched"] = py::make_tuple(s.oocSearched[0], s.oocSearched[1]);
             o["ooc_not_best_q"] = py::make_tuple(s.oocNotBestQ[0], s.oocNotBestQ[1]);

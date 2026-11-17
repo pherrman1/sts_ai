@@ -40,7 +40,8 @@ never computes it. --init-net from a checkpoint without the head starts the head
 (card / option / relic / shop choice) played in fewer than --pick-target of the finished runs is under target; a root
 offering one gets a full search in which every under-target item stays a candidate through every halving; after the
 search each under-target item (random order) is played instead with probability min(1, c exp(-m / T)), T =
---explore-temp (4), m its gap to the pick in the search's final score, c per item by bisection over all finished runs
+--explore-temp (4), m its gap below the search's pick in policy logits (the net's prior logits; the page: "in terms
+of policy logits"), c per item by bisection over all finished runs
 so that it would have been played in --pick-target of them (az_run_driver.h RunConfig::exploreAmber, amberExploreC).
 Choices where the page is silent (Philipp 2026-11-17): no separate bias, rate counted once per run, all item classes,
 samples keep the search policy. Like --explore-c, the counts live in the process (not restored on --resume).
@@ -850,6 +851,9 @@ def main(argv=None):
                 "ooc_q_spread_mean": [round(s["ooc_q_spread_sum"][k] / max(1, s["ooc_q_spread_n"][k]), 5) for k in (0, 1)],
                 "progress_window": progress_window(s, last_s),
             }
+            if args.explore_amber:   # forcing attempts, of which c = 0 / infinity; logged natural items, unplayed (0)
+                row["explore_amber"] = {k: s["explore_" + k] for k in
+                                        ("attempts", "c_zero", "c_inf", "natural", "natural_unplayed")}
             if ema_lam > 0:
                 row["value_ema"] = {"halflife": args.value_ema_halflife, "labelled": ema_stats["samples"],
                                     "real_weight_mean": round(ema_stats["real_weight"] / max(1, ema_stats["samples"]), 4)}

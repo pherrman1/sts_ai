@@ -458,6 +458,11 @@ class SelfplaySmoke(unittest.TestCase):
             self.assertIn("pol_soft.2.weight", torch.load(ck)["net"])
             self.assertGreater(rows[-1]["explore_roots"], 0)
             self.assertGreater(rows[-1]["forced_picks"], 0)
+            ex = rows[-1]["explore_amber"]
+            self.assertGreater(ex["attempts"], 0)
+            self.assertEqual(ex["natural_unplayed"], 0)   # only items the search played count as natural
+            # c = 0 needs natural >= need while the item counts as under target: only a cross-thread read race
+            self.assertLessEqual(ex["c_zero"], max(1, ex["attempts"] // 20))
         with tempfile.TemporaryDirectory() as d, self.assertRaises(Exception):
             sp.main(common + ["--out-dir", d, "--seed-base", "950", "--explore-amber", "--explore-c", "0.5"])
 

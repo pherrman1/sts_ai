@@ -182,8 +182,9 @@ namespace sts::azbench {
         // offering an under-target item gets a full search in which every under-target item is a candidate on top of
         // the usual ones and survives every halving. After the search, the under-target items other than the pick are
         // tried in random order: item i is played instead with probability min(1, c_i exp(-m_i / exploreT)), m_i the
-        // gap of its root score (Gumbel + logit + sigma(Q), the score the search picks by) to the pick's; the first hit
-        // is played. c_i is amberExploreC over the runs finished so far (each run logs every item's smallest gap). The
+        // gap of its policy logit (the net's prior logit; Amber Eye: "how far they are below the choice actually taken
+        // (in terms of policy logits)") below the pick's, 0 if above; the first hit is played. Only the item the search
+        // itself played counts as m = 0 ("natural") in the log; any other item logs at least 1e-9 (bin 0). c_i is amberExploreC over the runs finished so far (each run logs every item's smallest gap). The
         // sample keeps the search policy; the run's labels follow the move played.
         bool exploreAmber = false;
         double exploreT = 4.0;
@@ -255,6 +256,9 @@ namespace sts::azbench {
         std::array<std::int64_t, kAscensions> runsDoneAsc{}, winsAsc{}, floorsSumAsc{};
         std::array<RunProgress, kAscensions> progressAsc{};   // finished runs' progress counters per ascension
         std::int64_t oocRoots = 0, exploreRoots = 0, forcedPicks = 0;   // searched OOC decisions; with an under-target item; forced
+        // exploreAmber diagnostics: forcing attempts (under-target item tried after a search) and of those with c = 0 /
+        // c = infinity; items logged with m = 0 at a run's end, and of those not played in that run (must stay 0).
+        std::int64_t exploreAttempts = 0, exploreCZero = 0, exploreCInf = 0, exploreNatural = 0, exploreNaturalUnplayed = 0;
         std::int64_t cacheHits = 0;           // leaves answered by the evaluation cache (not counted in evals)
         // Search diagnostics of searched out-of-combat roots (always on): per full / fast move, roots, roots whose
         // search pick is not the visited edge of highest mean Q (before a forced pick), and the sum of that root's
