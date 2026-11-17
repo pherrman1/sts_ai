@@ -379,6 +379,12 @@ namespace sts::azbench {
             out.push_back(std::move(done_.front()));
             done_.pop_front();
         }
+        // A finished run's samples enter done_ together (endRun): finish the last run, so a chunk never splits one
+        // (the EMA value labels of selfplay.py --value-ema-halflife need whole runs).
+        while (!out.empty() && !done_.empty() && done_.front().run == out.back().run) {
+            out.push_back(std::move(done_.front()));
+            done_.pop_front();
+        }
     }
 
     void RunDriver::workerLoop(int wi) {

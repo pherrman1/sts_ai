@@ -1,5 +1,6 @@
 """Tests for tools/az_bench/selfplay.py (stage 1 self-play loop): the replay window returns exactly the stored
-samples in forward_flat's layout and evicts FIFO; the heads -> (F, E[HP]) conversion; and, with a built
+samples in forward_flat's layout and evicts FIFO; the heads -> (F, E[HP]) conversion; the EMA outcome labels
+(--value-ema-halflife: recursion, soft-target ring, loss); and, with a built
 az_bench_native module, a short CPU run plays runs, trains, writes metrics and a checkpoint, and resumes with the
 next seeds. Skipped when torch (or, for the run, the module) is missing."""
 
@@ -126,6 +127,86 @@ class HeadsTest(unittest.TestCase):
         self.assertAlmostEqual(float(ehp[2]), 50.0, places=3)
 
 
+@unittest.skipUnless(HAVE_TORCH, "torch missing")
+class ValueEmaTest(unittest.TestCase):
+    def test_targets_by_hand(self):
+        sp = load()
+        C, lam = 4, 0.5
+        dist = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [.25, .25, .25, .25], [0, 0, 0, 1]], np.float32)
+        outcome = np.array([3, 3, 3, 1, 1])
+        run = np.array([7, 7, 7, 9, 9])
+        tgt, w = sp.ema_outcome_targets(dist, outcome, run, lam)
+        oh = np.eye(C, dtype=np.float32)
+        t2 = (1 - lam) * dist[2] + lam * oh[3]
+        t1 = (1 - lam) * dist[1] + lam * t2
+        t0 = (1 - lam) * dist[0] + lam * t1
+        t4 = (1 - lam) * dist[4] + lam * oh[1]
+        t3 = (1 - lam) * dist[3] + lam * t4
+        np.testing.assert_allclose(tgt, np.stack([t0, t1, t2, t3, t4]), atol=1e-6)
+        np.testing.assert_allclose(w, [lam ** 3, lam ** 2, lam, lam ** 2, lam], atol=1e-7)
+        np.testing.assert_allclose(tgt.sum(1), 1.0, atol=1e-6)
+        # The final outcome's share of each target is its weight (dist rows with no mass on it).
+        self.assertAlmostEqual(float(tgt[0, 3]), lam ** 3, places=6)
+
+    def test_limits_and_contiguity(self):
+        sp = load()
+        rng = np.random.default_rng(4)
+        S, C = 50, 57
+        dist = rng.dirichlet(np.ones(C), S).astype(np.float32)
+        run = np.repeat([1, 2, 3], [20, 1, 29])
+        outcome = np.repeat([0, 5, 33], [20, 1, 29])
+        # lam -> 1: every target is the final outcome (the label without EMA).
+        tgt, w = sp.ema_outcome_targets(dist, outcome, run, 1.0)
+        np.testing.assert_allclose(tgt, np.eye(C)[outcome], atol=1e-6)
+        np.testing.assert_allclose(w, 1.0)
+        # lam = 0: the net's own distribution.
+        tgt, _ = sp.ema_outcome_targets(dist, outcome, run, 0.0)
+        np.testing.assert_allclose(tgt, dist, atol=1e-6)
+        with self.assertRaises(ValueError):
+            sp.ema_outcome_targets(dist[:3], outcome[:3], np.array([1, 2, 1]), 0.5)
+
+    def test_replay_soft_ring_and_loss(self):
+        sp = load()
+        rng = np.random.default_rng(5)
+        rep = sp.Replay(120, tokens_per_sample=12, actions_per_sample=6, soft_outcome=True)
+        first_id, firsts = 0, []
+        for _ in range(5):   # 5 x 40 samples into 120: wraps and evicts
+            c = chunk(rng, 40, first_id)
+            first = rep.add(c)
+            self.assertEqual(first, first_id)
+            # Until set: the final outcome.
+            b = rep.rows(first, 40)
+            np.testing.assert_array_equal(b["soft_outcome"].argmax(1), c["outcome"])
+            np.testing.assert_array_equal(b["ids"][:, 0, 0], np.arange(first_id, first_id + 40) % 30000)
+            tgt = rng.dirichlet(np.ones(57), 40).astype(np.float32)
+            rep.set_soft_outcome(first, tgt)
+            np.testing.assert_allclose(rep.rows(first, 40)["soft_outcome"], tgt, atol=2e-3)   # float16 storage
+            firsts.append((first, tgt))
+            first_id += 40
+        with self.assertRaises(ValueError):
+            rep.rows(0, 10)   # evicted
+        # A random batch carries each sample's own target.
+        b = rep.sample(np.random.default_rng(6), 64)
+        by_id = {f + i: t[i] for f, t in firsts for i in range(40)}
+        for r in range(64):
+            np.testing.assert_allclose(b["soft_outcome"][r], by_id[int(b["ids"][r, 0, 0])], atol=2e-3)
+        # Setting targets of partly evicted samples writes only the live ones.
+        rep.set_soft_outcome(first_id - 160, np.full((80, 57), 1 / 57, np.float32))
+        self.assertTrue(np.allclose(rep.rows(first_id - 120, 40)["soft_outcome"], 1 / 57, atol=1e-3))
+        # Loss: a one-hot soft target gives the plain cross-entropy; "outcome" is always the final-outcome CE.
+        net = sp.amber_net.AmberNet(d=32, layers=1)
+        bt = sp.to_torch(rep.sample(np.random.default_rng(7), 16), "cpu")
+        _, parts0 = sp.losses(net, {k: v for k, v in bt.items() if k != "soft_outcome"}, 1, 1, 1)
+        bt["soft_outcome"] = torch.nn.functional.one_hot(bt["outcome"].long(), 57).float()
+        total1, parts1 = sp.losses(net, bt, 1, 1, 1)
+        self.assertAlmostEqual(float(parts1["outcome_ema"]), float(parts1["outcome"]), places=4)
+        self.assertAlmostEqual(float(parts0["outcome"]), float(parts1["outcome"]), places=5)
+        bt["soft_outcome"] = torch.full_like(bt["soft_outcome"], 1 / 57)
+        total2, parts2 = sp.losses(net, bt, 1, 1, 1)
+        self.assertNotAlmostEqual(float(total1.detach()), float(total2.detach()), places=3)
+        self.assertAlmostEqual(float(parts2["outcome"]), float(parts1["outcome"]), places=5)
+
+
 def check_progress(tc, e):
     """Invariants of one ascension's run progress counters (driver progress_asc / selfplay progress_window)."""
     n = e["runs"]
@@ -225,6 +306,26 @@ class SelfplaySmoke(unittest.TestCase):
             self.assertGreaterEqual(c2["seeds_used"], 32)
             self.assertGreater(c2["step"], c["step"])   # training resumes (the replay-ratio cap counts from the resume)
             self.assertGreaterEqual(c2["runs_done"], 32)
+
+    def test_value_ema_run(self):
+        """--value-ema-halflife trains on EMA targets; take_samples in 1-sample chunks never splits a run."""
+        sp = load()
+        sp.TAKE_CHUNK = 1
+        args = ["--module-dir", os.path.dirname(MODULES[0]), "--device", "cpu", "--workers", "2", "--games", "4",
+                "--full-sims", "8", "--fast-sims", "4", "--batch", "32", "--row-buckets", "32", "--pack-step", "32",
+                "--pack-threads", "1", "--min-replay", "50", "--train-batch", "32", "--window", "5000",
+                "--report", "1", "--sync-steps", "2", "--seed-base", "700", "--max-runs", "16",
+                "--value-ema-halflife", "8"]
+        with tempfile.TemporaryDirectory() as d:
+            self.assertEqual(sp.main(args + ["--out-dir", d]), 0)
+            with open(os.path.join(d, "metrics.jsonl")) as f:
+                rows = [json.loads(l) for l in f]
+            last = rows[-1]
+            self.assertGreater(last["train_steps"], 0)
+            self.assertEqual(last["value_ema"]["labelled"], last["samples_added"])
+            self.assertGreater(last["value_ema"]["real_weight_mean"], 0)
+            self.assertLess(last["value_ema"]["real_weight_mean"], 1)
+            self.assertTrue(any(r["loss"] and "outcome_ema" in r["loss"] for r in rows))
 
     def test_progress_counters_late_floors(self):
         """With a huge max HP, A0 runs reach campfires and elites: the driver counts them per ascension and the
