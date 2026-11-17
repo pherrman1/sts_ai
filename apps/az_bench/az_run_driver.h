@@ -1,0 +1,148 @@
+// Stage 1 of the Amber-Eye-style self-play loop (2026-11-17): the whole-run self-play producer. Worker threads each
+// play hundreds of A20 Ironclad runs from Neow to the end; every decision with more than one legal action runs a
+// Gumbel AlphaZero search whose leaves are net evaluations, as in the stage 0 combat driver (az_driver.h): requests
+// go on one queue, batching threads (Python with the GPU net) pack them into flat batches (az_pack.h) and post the
+// results back. Positions of searched moves are kept as training samples whose labels (final outcome, HP at the end
+// of the floor) are filled in when the run ends.
+//
+// From https://8e9f.github.io/amber_eye/: one net for combat and out-of-combat states; Gumbel AlphaZero with 64 / 16
+// positions per full / fast move, playout cap randomization p = 0.25; double progressive widening at chance nodes;
+// a step that reveals hidden information is resampled in the search; utility U = F + H at first (F = expected final
+// floor, H = HP), later P(win) + 0.25 H out of combat and F + 0.5 H in combat.
+//
+// Our choices: the search tree ends at combat boundaries: an out-of-combat action that starts a fight leads to a
+// leaf (the fight's first decision, valued by the net) and a combat action that wins the fight leads to a leaf (the
+// state after the fight, valued by the net); a lost fight is terminal. Out-of-combat edges are all chance edges: each
+// new outcome is a detached copy of the parent with its hidden future resampled (sampleNoncombatFuture) before the
+// action executes; combat edges reseed the search RNG as in stage 0. F = E[final floor] / 57 (a win counts 57), H =
+// E[HP at the end of the floor] / max HP; the net's heads are turned into F and E[HP] by the caller, the driver
+// mixes U = F + w H with w = hpWeightCombat or hpWeightOoc and scales by 1 / (1 + w) into [0, 1]. One leaf in flight
+// per run, no tree reuse between moves.
+#ifndef STS_AZ_RUN_DRIVER_H
+#define STS_AZ_RUN_DRIVER_H
+
+#include <atomic>
+#include <condition_variable>
+#include <cstdint>
+#include <deque>
+#include <memory>
+#include <mutex>
+#include <random>
+#include <thread>
+#include <vector>
+
+#include "az_pack.h"
+#include "combat/BattleContext.h"
+#include "game/GameContext.h"
+#include "sim/search/Action.h"
+#include "sim/search/AmberTokens.h"
+#include "sim/search/GameAction.h"
+#include "sim/search/SilverSearcher.h"
+
+namespace sts::azbench {
+
+    using CombatEncodeFn = void (*)(const BattleContext &, const search::SilverSearchContext &,
+                                    const std::vector<search::Action> &, search::AmberTokens &);
+    using GameEncodeFn = void (*)(const GameContext &, const std::vector<search::GameAction> &,
+                                  search::AmberTokens &);
+
+    // Placeholder out-of-combat encoder until the native one (amberEncodeGame) lands: run / deck / relic / potion
+    // tokens and one OPTION token per legal action (type = screen, action bits as features).
+    void stubEncodeGame(const GameContext &gc, const std::vector<search::GameAction> &actions,
+                        search::AmberTokens &out);
+
+    constexpr int kOutcomeClasses = 57;   // 0 = win, f = death on floor f (1..56)
+    constexpr int kHpClasses = 256;
+
+    struct RunConfig {
+        int workers = 11;
+        int gamesPerWorker = 700;
+        int ascension = 20;
+        std::uint64_t seedBase = 0;     // run seeds seedBase, seedBase + 1, ... (one per started run)
+        std::int64_t maxRuns = -1;      // stop starting runs after this many (-1 = unlimited)
+        int fullSims = 64, fastSims = 16;
+        int fullCandidates = 16, fastCandidates = 4;
+        double fullProb = 0.25;
+        double cVisit = 50, cScale = 1.0;
+        double wideningC = 3.7028, wideningAlpha = 0.52389;
+        double hpWeightCombat = 1.0, hpWeightOoc = 1.0;   // U = F + w H (Amber's first utility: both 1)
+        int maxMovesPerFight = 400;     // a fight past this many decisions counts as lost (stall guard)
+        double keepFull = 1.0;          // keep probability of a full-search move as a sample (policy + value)
+        double keepFast = 0.0;          // ... of a fast-search move (value only)
+        std::uint64_t searchSeed = 0;   // search / Gumbel / resampling RNG
+        int testMaxHp = 0;              // tests only: > 0 sets max / current HP at the run's start (reach late floors)
+        CombatEncodeFn encodeCombat = nullptr;   // default: search::amberEncodeCombat
+        GameEncodeFn encodeGame = nullptr;       // default: stubEncodeGame
+    };
+
+    // One training sample: the searched position's live tokens and legal actions (flat layout of one row, as
+    // packFlat writes it), the improved policy over its actions (full moves), and its labels.
+    struct Sample {
+        std::vector<std::int8_t> tokType;
+        std::vector<std::int16_t> ids;       // [n][4]
+        std::vector<std::uint16_t> f;        // [n][64] float16 bits
+        std::vector<std::int16_t> aType, aSrc, aTgt;
+        std::vector<std::uint16_t> aF;       // [a][8]
+        std::vector<float> policy;           // [a] improved policy (empty for a fast move)
+        float searchValue = 0;               // root value after the search (scaled utility)
+        std::int16_t outcome = -1;           // label: 0 win, f death floor
+        std::int16_t hpEnd = -1;             // label: HP at the end of this floor (0 on death)
+        std::int16_t maxHp = 0, floor = 0;
+        std::uint8_t combat = 0;
+        std::uint64_t run = 0;               // run seed
+    };
+
+    struct RunStats {
+        std::int64_t evals = 0, moves = 0, searchedMoves = 0, runsStarted = 0, runsDone = 0, wins = 0;
+        std::int64_t floorsSum = 0, stalls = 0, terminalLeaves = 0, encodeCut = 0, unsupported = 0;
+        std::int64_t samplesDone = 0, samplesPending = 0;
+        std::int64_t batches = 0, batchRows = 0;
+        std::array<std::int64_t, kOutcomeClasses> outcomes{};   // finished runs per outcome class
+        double stepCpu = 0, encodeCpu = 0, searchCpu = 0, packSeconds = 0;
+    };
+
+    class RunDriver {
+    public:
+        explicit RunDriver(RunConfig cfg);
+        ~RunDriver();
+        void start();
+        void stop();
+        // As Driver::nextBatchFlat (az_driver.h): takes up to maxRows requests, packs them into buf.
+        std::vector<std::uint32_t> nextBatchFlat(int maxRows, int minRows, int timeoutMs,
+                                                 const std::vector<int> &rowBuckets,
+                                                 const std::vector<int> &tokBuckets,
+                                                 const std::vector<int> &actBuckets, const FlatBuffers &buf,
+                                                 FlatShape &shape, int packThreads = 1);
+        // Results: logits[row][action] (`actions` per row), F[row] in [0, 1] and expected HP at the end of the
+        // floor ehp[row] (absolute) for each ticket.
+        void submit(const std::uint32_t *tickets, int rows, int actions, const float *logits, const float *F,
+                    const float *ehp);
+        // Moves up to maxSamples finished samples (labels filled) into out.
+        void takeSamples(int maxSamples, std::vector<Sample> &out);
+        RunStats stats() const;
+        const RunConfig &config() const { return cfg_; }
+        std::uint64_t nextSeed();   // the next run seed (thread-safe); runsStarted counts these
+
+        struct Node;
+        struct Run;
+        struct Worker;
+
+    private:
+        void workerLoop(int w);
+        std::vector<std::uint32_t> takeRequests(int maxRows, int minRows, int timeoutMs);
+        RunConfig cfg_;
+        std::vector<std::unique_ptr<Worker>> workers_;
+        std::vector<std::thread> threads_;
+        std::atomic<bool> stop_{false};
+        std::atomic<std::int64_t> seedsUsed_{0};
+        mutable std::mutex qm_;
+        std::condition_variable qcv_;
+        std::deque<std::uint32_t> queue_;   // ticket = worker << 16 | run
+        std::mutex sampleM_;
+        std::deque<Sample> done_;
+        std::atomic<std::int64_t> batches_{0}, batchRows_{0}, packNs_{0};
+    };
+
+}
+
+#endif

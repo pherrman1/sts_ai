@@ -101,6 +101,7 @@ if(Python_Development.Module_FOUND)
     pybind11_add_module(az_bench_native
         apps/az_bench/az_bench_module.cpp
         apps/az_bench/az_driver.cpp
+        apps/az_bench/az_run_driver.cpp
         $<TARGET_OBJECTS:sts_core_pic_objects>)
     target_include_directories(az_bench_native PRIVATE include json/include apps/az_bench)
 else()
@@ -171,6 +172,15 @@ target_link_libraries(az-bench-driver PRIVATE Threads::Threads)
 add_test(NAME az_bench_driver_smoke COMMAND $<TARGET_FILE:az-bench-driver>
          ${CMAKE_SOURCE_DIR}/tests/data/combat_net_wire_sample.jsonl --workers 2 --games 8 --batch 16 --seconds 0.5)
 set_tests_properties(az_bench_driver_smoke PROPERTIES LABELS "core;smoke")
+
+# Stage 1 self-play: whole-run driver (combat + out-of-combat Gumbel search, training samples) with a fake net.
+add_executable(az-run-driver apps/az_bench/az_run_driver_main.cpp apps/az_bench/az_run_driver.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(az-run-driver PRIVATE include json/include apps/az_bench)
+target_link_libraries(az-run-driver PRIVATE Threads::Threads)
+add_test(NAME az_run_driver_smoke COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 6 --fast
+         --seed-base 1 --seconds 300)
+set_tests_properties(az_run_driver_smoke PROPERTIES LABELS "core;smoke")
 
 # Native Amber-token combat encoder (stage 0 of the self-play loop assessment): every wire-encoded field reaches the
 # tokens, determinism, capacity cut counting and live action src / tgt, on the wire sample.
