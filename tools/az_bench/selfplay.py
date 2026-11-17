@@ -634,6 +634,9 @@ def main(argv=None):
                             np.cumsum(views["mask"][:M].reshape(Rp, Tp).sum(1), out=so[1:Rp + 1])
                     if args.pack_step and (infer.varlen_attn is not None or fused is not None):
                         shapes["seq_off"] = (Rp + 1,)
+                    if fused is not None:   # the kernel tiles rows by seq_off; it reads neither mask nor pack_idx
+                        shapes.pop("mask")
+                        shapes.pop("pack_idx", None)
                     # Host-to-GPU copies (on copy_stream when --copy-stream: the forward waits for them).
                     raw = {}
                     with (torch.cuda.stream(copy_stream) if copy_stream is not None else contextlib.nullcontext()):

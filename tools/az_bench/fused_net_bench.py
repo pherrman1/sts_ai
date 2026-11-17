@@ -107,15 +107,15 @@ def main(argv=None):
     ap.add_argument("--json", action="store_true", help="one JSON line (used by --sweep)")
     args = ap.parse_args(argv)
     if args.sweep:
-        for tile, warps, rows in ((64, 4, 16), (64, 8, 16), (128, 4, 16), (128, 8, 16), (128, 8, 32), (256, 8, 16),
-                                  (256, 16, 16)):
+        for tile, warps, stages in ((64, 8, 1), (64, 4, 1), (64, 8, 2), (64, 16, 1), (128, 8, 1), (128, 16, 1),
+                                    (32, 4, 1)):
             env = dict(os.environ, AZ_FUSED_NET_TILE=str(tile), AZ_FUSED_NET_WARPS=str(warps),
-                       AZ_FUSED_NET_ROWS=str(rows))
+                       AZ_FUSED_NET_STAGES=str(stages))
             cmd = [sys.executable, __file__, "--json", "--no-baseline", "--rows", str(args.rows), "--mean-tokens",
                    str(args.mean_tokens), "--net", args.net, "--iters", str(args.iters)]
             r = subprocess.run(cmd, env=env, capture_output=True, text=True)
             line = r.stdout.strip().splitlines()[-1] if r.returncode == 0 else r.stderr.strip()[-300:]
-            print(f"tile {tile} warps {warps} rows/tile {rows}: {line}", flush=True)
+            print(f"tile {tile} warps {warps} stages {stages}: {line}", flush=True)
         return 0
 
     A = _load("amber_net")
@@ -145,7 +145,7 @@ def main(argv=None):
     bd["f"], bd["a_f"] = bd["f"].half(), bd["a_f"].half()
     so_host = b["seq_off"].numpy()
     res = {"rows": args.rows, "mean_tokens": float(np.mean(tokens)), "tile": K.TILE, "warps": K.WARPS,
-           "rows_per_tile": K.SM_ROWS}
+           "stages": K.STAGES, "big_tile": K.BIG_TILE}
     with torch.inference_mode():
         got = fused(bd, K.make_tiles(so_host, args.rows), args.rows)
         res["max_err_vs_fp32"] = {k: round(float((w.float() - g.float()).abs().max()), 5)
@@ -154,9 +154,9 @@ def main(argv=None):
         for _ in range(20):
             tiles = K.make_tiles(so_host, args.rows)
         res["make_tiles_ms"] = round((time.perf_counter() - t_tiles) / 20 * 1e3, 3)
-        res["tiles"] = [len(tiles["small"][0]), len(tiles["big"][0])]
-        res["tile_fill"] = round(sum(tokens) / (len(tiles["small"][0]) * K.TILE + len(tiles["big"][0]) * K.BIG_TILE),
-                                 3)
+        res["tiles_small_big_long"] = [len(tiles["small"][0]), len(tiles["big"][0]), len(tiles["long"][0])]
+        res["tile_fill"] = round(sum(tokens) / (len(tiles["small"][0]) * K.TILE + len(tiles["big"][0]) * K.BIG_TILE
+                                                + int(tiles["long"][2].sum())), 3)
         sec = timeit(lambda: fused(bd, tiles, args.rows), args.iters)
         res["fused_pos_per_s"] = round(args.rows / sec)
         res["fused_tflops"] = round(flops / sec / 1e12, 2)

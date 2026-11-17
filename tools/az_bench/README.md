@@ -38,8 +38,9 @@ No game seeds are driven, so the seed guard does not apply.
 
 `fused_net.py` runs the whole AmberNet forward (input embedding, all encoder layers, summary, value heads, policy over
 the legal actions) as one Triton kernel per batch, as Amber Eye describes its GPU side (FP16 weights in L2, one
-kernel, MFU counted after discounting padded attention). Consecutive rows are grouped into tiles of at most 128 tokens
-(rows longer than that go to a 256-token launch); attention runs padded within a tile. Same math as
+kernel, MFU counted after discounting padded attention). Consecutive rows are grouped into tiles of at most 64 tokens
+(longer rows: a 128-token launch; above that, rare, forward_packed on a sub-batch); attention runs padded within a
+tile. Same math as
 `AmberNet.forward_packed`, fp32 residual stream. `selfplay.py --packed-h2d --fused-net` uses it (default off);
 `--gpu-timing` logs GPU ms per second of the inference and training streams.
 
