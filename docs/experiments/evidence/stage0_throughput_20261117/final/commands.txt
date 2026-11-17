@@ -1,0 +1,10 @@
+# All runs: cwd = ~/Documents/sts/stage0-bench/repo on Philipp's PC (scratch clone), /usr/bin/python3 3.12.3, torch 2.5.1+cu121,
+# RTX 3060 Ti 8 GB, Ryzen 5 7500F (6C/12T). Each wrapped in `timeout 1800` plus a 10-min no-output watchdog.
+# No game seeds driven (fights restart from tests/data/combat_net_wire_sample.jsonl).
+
+# z2 (commit 907367a9, az_bench_native built at that commit), 471.9k pos/s:
+AZ_FUSED_FFN_BM=64 python3 tools/az_bench/e2e_bench.py --module-dir build/linux-gcc-release --net 0.44M --workers 10 --batch 2048 --min-batch 2048 --row-buckets 2048 --sort-window 1 --compile --seconds 120 --tok-buckets 32,40,48,56,64,80,96,128,212 --act-buckets 16,32,64,96 --warmup 300 --sdpa --half --pack-step 2048 --games 700 --workers 11 --batchers 1 --pipeline --pack-gather --fused-ffn --varlen-attn --fused-layer --pack-threads 4 --out e2e_z2.json
+
+# final_1..3 (commit 7b002281 = merged PR head; az_bench_native rebuilt there). Same command, --out e2e_final_N.json.
+# Note: --workers is passed twice (10, then 11); argparse keeps the last, so workers = 11.
+# Results: 471,298 / 468,776 / 471,964 pos/s (mean 470.7k, +-0.3 %); GPU utilization mid-run 94 / 96 / 95 %.
