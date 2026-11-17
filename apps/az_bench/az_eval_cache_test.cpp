@@ -15,7 +15,9 @@
 // as the scalar); (3) distributions and targets sum to 1; (4) the cache returns the distributions too (the digest
 // includes them).
 //
-// usage: az-eval-cache-test [--runs 3] [--seed-base 1] [--fast] [--utility amber] [--ema LAM]
+// --ema-all: the EMA chain over all searched moves (default with --ema: full moves only).
+//
+// usage: az-eval-cache-test [--runs 3] [--seed-base 1] [--fast] [--utility amber] [--ema LAM] [--ema-all]
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -172,6 +174,7 @@ int main(int argc, char **argv) {
         else if (a == "--seed-base") cfg.seedBase = std::stoull(next());
         else if (a == "--utility") { const std::string u = next(); if (u != "amber") { std::fprintf(stderr, "unknown utility %s\n", u.c_str()); return 2; } cfg.utility = azbench::Utility::AMBER; }
         else if (a == "--ema") { cfg.searchEmaLambda = std::stod(next()); cfg.hpWeightCombat = cfg.hpWeightOoc = 0; }
+        else if (a == "--ema-all") cfg.searchEmaFullOnly = false;
         else if (a == "--fast") { cfg.fullSims = 8; cfg.fastSims = 4; cfg.fullCandidates = 4; cfg.fastCandidates = 2; }
         else { std::fprintf(stderr, "unknown argument %s\n", a.c_str()); return 2; }
     }
@@ -206,15 +209,16 @@ int main(int argc, char **argv) {
         azbench::RunConfig plain = cfg;
         plain.searchEmaLambda = 0;
         const Result p = play(plain, false, true);   // the same fake net, distributions not submitted
-        std::printf("{\"ema\": {\"lambda\": %g, \"max_value_gap\": %.3g, \"max_sum_gap\": %.3g, \"base_digest\": \"%016llx\", "
-                    "\"plain_digest\": \"%016llx\"}}\n", cfg.searchEmaLambda, a.maxValueGap, a.maxSumGap,
+        std::printf("{\"ema\": {\"lambda\": %g, \"max_value_gap\": %.3g, \"max_sum_gap\": %.3g, \"full_only\": %d, \"base_digest\": \"%016llx\", "
+                    "\"plain_digest\": \"%016llx\"}}\n", cfg.searchEmaLambda, a.maxValueGap, a.maxSumGap, cfg.searchEmaFullOnly ? 1 : 0,
                     static_cast<unsigned long long>(a.baseDigest), static_cast<unsigned long long>(p.baseDigest));
         if (p.baseDigest != a.baseDigest || p.samples != a.samples) {
             std::fprintf(stderr, "FAIL: the search-backed distributions changed the moves or samples\n");
             fail = 1;
         }
         if (a.maxValueGap > 1e-5) { std::fprintf(stderr, "FAIL: searchValue != F(searchDist)\n"); fail = 1; }
-        if (a.maxSumGap > 1e-4) { std::fprintf(stderr, "FAIL: distributions do not sum to 1\n"); fail = 1; }
+        // Targets come from float16 chain distributions (~1e-3 relative per term).
+        if (a.maxSumGap > 5e-3) { std::fprintf(stderr, "FAIL: distributions do not sum to 1\n"); fail = 1; }
     }
     return fail;
 }

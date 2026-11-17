@@ -172,10 +172,16 @@ namespace sts::azbench {
         // searchEmaLambda = lam in (0, 1): every node carries the net's outcome distribution (57 classes; submit needs
         // `dist`), a terminal leaf the one-hot of its outcome. The search result of a searched move is the root's
         // backed-up distribution: the mean over the root evaluation and every simulation's leaf distribution (the
-        // same mean as the scalar Sample::searchValue). When the run ends, along all its searched moves m = 0 .. M-1
-        // (full and fast, kept or not): target_M = one_hot(final outcome), target_m = (1 - lam) D_m + lam target_{m+1};
-        // a kept sample gets its move's target (Sample::outcomeTarget). The selection is unchanged (scalar utility).
+        // same mean as the scalar Sample::searchValue: a mean over the tree's leaves, not the value of the move
+        // played). When the run ends, along the chain's moves m = 0 .. M-1: target_M = one_hot(final outcome),
+        // target_m = (1 - lam) D_m + lam target_{m+1}; a kept sample gets its move's target (Sample::outcomeTarget).
+        // The chain's moves: searchEmaFullOnly true = the run's full-search moves only (Amber Eye trains on and
+        // stores targets / value distributions for full moves only), false = all searched moves (full and fast).
+        // A kept move outside the chain (a fast move with searchEmaFullOnly) gets the target of the next chain move
+        // (one_hot(final outcome) if none). Either way kept or not does not matter. The selection is unchanged.
+        // Chain distributions are held as float16 until the run ends (~114 B per chain move).
         double searchEmaLambda = 0;
+        bool searchEmaFullOnly = true;
         CombatEncodeFn encodeCombat = nullptr;   // default: search::amberEncodeCombat
         GameEncodeFn encodeGame = nullptr;       // default: search::amberEncodeGame (stubEncodeGame = placeholder)
     };

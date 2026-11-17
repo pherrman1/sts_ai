@@ -35,9 +35,12 @@ The logged "outcome" loss is always the cross-entropy to the final outcome (comp
 search backs up the outcome distribution alongside the scalar utility (RunConfig::searchEmaLambda in
 apps/az_bench/az_run_driver.h). A searched move's search result is the root's mean distribution over the root
 evaluation and every simulation's leaf (the net's outcome softmax; one-hot at a run-ending leaf), the same mean as the
-scalar search value. The driver runs the EMA when the run ends, along ALL searched moves of the run (full and fast,
-kept or not: Amber's "future moves' search outcomes"), so H counts searched moves; kept samples carry their move's
-target. No extra forward pass of the training net. The HP heads keep their labels. Selection is unchanged.
+scalar search value: a mean over the tree's leaves, not the value of the move played. The driver runs the EMA when
+the run ends along the chain's moves: --value-ema-moves full (default) = the run's full-search moves only (Amber Eye
+trains on and stores targets / value distributions for full moves only; H counts full moves), all = every searched
+move, full and fast (H counts searched moves, ~4x as many at --full-prob 0.25). Kept or not does not matter; a kept
+fast move under "full" takes the next full move's target. No extra forward pass of the training net. The HP heads keep
+their labels. Selection is unchanged.
 
 From https://8e9f.github.io/amber_eye/: one net, Gumbel AlphaZero 64 / 16 positions per full / fast move with playout
 cap randomization 0.25, utility F + H first, the 0.44M net first, no teacher. Our choices: the loss weights, the
@@ -429,7 +432,10 @@ def main(argv=None):
                          "--value-ema-search in searched moves")
     ap.add_argument("--value-ema-search", action="store_true",
                     help="EMA outcome labels from the search-backed root outcome distributions (Amber Eye), computed "
-                         "by the driver along all searched moves (needs --value-ema-halflife)")
+                         "by the driver (needs --value-ema-halflife)")
+    ap.add_argument("--value-ema-moves", choices=("full", "all"), default="full",
+                    help="--value-ema-search: the EMA chain over full-search moves only (Amber Eye; half-life in full "
+                         "moves) or over all searched moves (half-life in searched moves)")
     ap.add_argument("--sync-steps", type=int, default=50, help="copy trained weights to the inference net every N steps")
     ap.add_argument("--report", type=float, default=30.0)
     ap.add_argument("--ckpt-minutes", type=float, default=30.0)
@@ -514,7 +520,8 @@ def main(argv=None):
         fast_noise=not args.no_fast_noise, q_rescale=args.q_rescale, utility=1 if amber else 0,
         keyless_hp=args.keyless_hp,
         eval_cache=args.eval_cache, eval_cache_cap=args.eval_cache_cap, merge_cards=args.merge_cards,
-        **({"search_ema_lambda": ema_lam} if ema_search else {}))
+        **({"search_ema_lambda": ema_lam, "search_ema_full_only": args.value_ema_moves == "full"}
+           if ema_search else {}))
     replay = Replay(args.window, hp_floors=56 if amber else 0, soft_outcome=ema_lam > 0)
     ema_stats = {"samples": 0, "real_weight": 0.0}   # mean weight of the final outcome in the EMA targets
     stop = threading.Event()
@@ -838,6 +845,7 @@ def main(argv=None):
             }
             if ema_lam > 0:
                 row["value_ema"] = {"halflife": args.value_ema_halflife, "search": ema_search,
+                                    "moves": args.value_ema_moves if ema_search else None,
                                     "labelled": ema_stats["samples"],
                                     "real_weight_mean": round(ema_stats["real_weight"] / max(1, ema_stats["samples"]), 4)}
             print(json.dumps(row), flush=True)

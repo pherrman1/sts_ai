@@ -454,6 +454,7 @@ class SelfplaySmoke(unittest.TestCase):
             last = rows[-1]
             self.assertGreater(last["train_steps"], 0)
             self.assertTrue(last["value_ema"]["search"])
+            self.assertEqual(last["value_ema"]["moves"], "full")
             self.assertEqual(last["value_ema"]["labelled"], last["samples_added"])
             self.assertGreater(last["value_ema"]["real_weight_mean"], 0)
             self.assertLess(last["value_ema"]["real_weight_mean"], 1)
@@ -463,8 +464,14 @@ class SelfplaySmoke(unittest.TestCase):
 
     def test_value_ema_search_driver(self):
         """Driver level (every searched move kept): the EMA targets are the recursion of ema_outcome_targets over
-        the moves' search-backed distributions, the final outcome's weight is lam ** (moves after + 1), and with
-        hp weights 0 each search value is F of its search-backed distribution."""
+        the chain moves' search-backed distributions (full moves only, or all searched moves), a fast move outside
+        the full-only chain takes the next full move's target, the final outcome's weight is lam ** (chain moves
+        after + 1), and with hp weights 0 each search value is F of its search-backed distribution."""
+        for full_only in (True, False):
+            with self.subTest(full_only=full_only):
+                self._ema_search_driver(full_only)
+
+    def _ema_search_driver(self, full_only):
         sp = load()
         import importlib
         sys_path = os.path.dirname(MODULES[0])
@@ -474,7 +481,8 @@ class SelfplaySmoke(unittest.TestCase):
         lam = 0.8
         drv = nat.RunDriver(workers=1, games=2, seed_base=760, max_runs=3, ascension=20, full_sims=8, fast_sims=4,
                             full_candidates=4, fast_candidates=2, keep_full=1.0, keep_fast=1.0,
-                            hp_weight_combat=0.0, hp_weight_ooc=0.0, search_ema_lambda=lam)
+                            hp_weight_combat=0.0, hp_weight_ooc=0.0, search_ema_lambda=lam,
+                            search_ema_full_only=full_only)
         R, T, A = 8, 212, 96
         views = {"tok_type": np.zeros(R * T, np.int8), "ids": np.zeros(R * T * 4, np.int16),
                  "f": np.zeros(R * T * 64, np.float16), "mask": np.zeros(R * T, np.bool_),
@@ -506,12 +514,30 @@ class SelfplaySmoke(unittest.TestCase):
         if c is not None:
             chunks.append(c)
         cat = {k: np.concatenate([x[k] for x in chunks]) for k in ("search_dist", "outcome_target", "outcome",
-                                                                     "run", "search_value", "ema_real_weight")}
+                                                                     "run", "search_value", "ema_real_weight",
+                                                                     "has_policy")}
         self.assertGreater(len(cat["run"]), 10)
         np.testing.assert_allclose(cat["search_dist"].sum(1), 1, atol=1e-5)
         np.testing.assert_allclose(cat["search_dist"].astype(np.float64) @ fv, cat["search_value"], atol=1e-5)
-        tgt, real_w = sp.ema_outcome_targets(cat["search_dist"], cat["outcome"], cat["run"], lam)
-        np.testing.assert_allclose(cat["outcome_target"], tgt, atol=1e-5)
+        # Reference: the chain moves (full = has a policy target), then off-chain moves take the next chain target.
+        chain = cat["has_policy"].astype(bool) if full_only else np.ones(len(cat["run"]), bool)
+        self.assertTrue(chain.any() and (not full_only or not chain.all()))
+        ct, cw = sp.ema_outcome_targets(cat["search_dist"][chain], cat["outcome"][chain], cat["run"][chain], lam)
+        tgt = np.zeros_like(cat["outcome_target"])
+        real_w = np.zeros(len(tgt), np.float32)
+        nxt_t, nxt_w, nxt_run = None, None, None
+        ci = int(chain.sum())
+        for i in range(len(tgt) - 1, -1, -1):
+            if nxt_run != cat["run"][i]:   # a new run (from its end): the final outcome
+                nxt_run = cat["run"][i]
+                nxt_t = np.eye(57, dtype=np.float32)[int(cat["outcome"][i])]
+                nxt_w = 1.0
+            if chain[i]:
+                ci -= 1
+                nxt_t, nxt_w = ct[ci], cw[ci]
+            tgt[i], real_w[i] = nxt_t, nxt_w
+        # float16 chain distributions: ~1e-3 relative error per term.
+        np.testing.assert_allclose(cat["outcome_target"], tgt, atol=2e-3)
         np.testing.assert_allclose(cat["ema_real_weight"], real_w, rtol=1e-4)
 
     def test_progress_counters_late_floors(self):

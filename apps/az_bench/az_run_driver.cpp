@@ -337,7 +337,7 @@ namespace sts::azbench {
         std::array<float, kFloors> resHpf{};   // utility AMBER: E[HP_f] / 255 of the pending leaf
         std::array<float, kOutcomeClasses> resDist{};   // searchEmaLambda > 0: outcome softmax of the pending leaf
         std::vector<double> rootDist;          // searchEmaLambda > 0: sum of the backed-up distributions at the root
-        std::vector<float> moveDist;           // ... search result of each searched move of the run [M][57]
+        std::vector<std::uint16_t> moveDist;   // ... search result of each chain move of the run [M][57], float16
         int pendingFloor = 0;                  // floor of the pending leaf
         std::array<std::int16_t, kFloors + 1> floorHp{};   // utility AMBER: HP at the end of floor f (-1 = not yet)
         std::vector<Sample> pending;
@@ -430,6 +430,16 @@ namespace sts::azbench {
         }
 
         // searchEmaLambda > 0: a terminal node's distribution is the one-hot of its outcome class.
+        float halfToFloat(std::uint16_t h) {
+            const std::uint32_t sign = static_cast<std::uint32_t>(h & 0x8000u) << 16;
+            const std::uint32_t exp = (h >> 10) & 0x1fu, man = h & 0x3ffu;
+            float f;
+            if (exp == 0) f = std::ldexp(static_cast<float>(man), -24);             // zero / subnormal
+            else if (exp == 31) f = man ? std::numeric_limits<float>::quiet_NaN() : std::numeric_limits<float>::infinity();
+            else f = std::ldexp(static_cast<float>(man | 0x400u), static_cast<int>(exp) - 25);
+            return sign ? -f : f;
+        }
+
         void setOneHot(RunDriver::Node &n, int cls) {
             n.dist.assign(kOutcomeClasses, 0.f);
             n.dist[std::clamp(cls, 0, kOutcomeClasses - 1)] = 1.f;
@@ -701,16 +711,20 @@ namespace sts::azbench {
                 double realW = 1.0;
                 const int M = static_cast<int>(g.moveDist.size() / kOutcomeClasses);
                 int si = static_cast<int>(g.pending.size()) - 1;
-                for (int m = M - 1; m >= 0; --m) {
-                    const float *d = g.moveDist.data() + static_cast<std::size_t>(m) * kOutcomeClasses;
-                    for (int k = 0; k < kOutcomeClasses; ++k) t[k] = (1.0 - lam) * d[k] + lam * t[k];
-                    realW *= lam;
+                auto give = [&](int m) {   // samples whose chain move is m take the current target
                     for (; si >= 0 && g.pending[si].emaMove == m; --si) {
                         Sample &s = g.pending[si];
                         s.outcomeTarget.resize(kOutcomeClasses);
                         for (int k = 0; k < kOutcomeClasses; ++k) s.outcomeTarget[k] = static_cast<float>(t[k]);
                         s.emaRealWeight = static_cast<float>(realW);
                     }
+                };
+                give(M);   // kept moves after the last chain move: the final outcome
+                for (int m = M - 1; m >= 0; --m) {
+                    const std::uint16_t *d = g.moveDist.data() + static_cast<std::size_t>(m) * kOutcomeClasses;
+                    for (int k = 0; k < kOutcomeClasses; ++k) t[k] = (1.0 - lam) * halfToFloat(d[k]) + lam * t[k];
+                    realW *= lam;
+                    give(m);
                 }
                 if (si >= 0) throw std::logic_error("run driver: kept sample without a searched move");
             }
@@ -937,10 +951,14 @@ namespace sts::azbench {
                 }
             }
             ++wk.st.searchedMoves;
-            if (emaOn) {   // the search result of this move: the root's mean backed-up distribution
+            // The search result of this move: the root's mean backed-up distribution (a chain move: kept as float16).
+            thread_local std::array<float, kOutcomeClasses> moveResult;
+            const bool inChain = emaOn && (g.full || !cfg.searchEmaFullOnly);
+            if (emaOn) {
                 const double inv = 1.0 / std::max(1, root.n);
-                for (int k = 0; k < kOutcomeClasses; ++k)
-                    g.moveDist.push_back(static_cast<float>(g.rootDist[k] * inv));
+                for (int k = 0; k < kOutcomeClasses; ++k) moveResult[k] = static_cast<float>(g.rootDist[k] * inv);
+                if (inChain)
+                    for (int k = 0; k < kOutcomeClasses; ++k) g.moveDist.push_back(search::amberHalf(moveResult[k]));
             }
             if (!root.combat) {
                 const int kind = g.full ? 0 : 1;
@@ -982,10 +1000,10 @@ namespace sts::azbench {
                 }
                 s.searchValue = static_cast<float>(root.n ? root.w / root.n : root.value);
                 if (emaOn) {
-                    const int m = static_cast<int>(g.moveDist.size() / kOutcomeClasses) - 1;
-                    s.emaMove = m;
-                    s.searchDist.assign(g.moveDist.begin() + static_cast<std::ptrdiff_t>(m) * kOutcomeClasses,
-                                        g.moveDist.begin() + static_cast<std::ptrdiff_t>(m + 1) * kOutcomeClasses);
+                    // A chain move's own index; a move outside the chain: the next chain move's (not recorded yet).
+                    const int chainMoves = static_cast<int>(g.moveDist.size() / kOutcomeClasses);
+                    s.emaMove = inChain ? chainMoves - 1 : chainMoves;
+                    s.searchDist.assign(moveResult.begin(), moveResult.end());   // float32 (exact mean)
                 }
                 g.pending.push_back(std::move(s));
                 ++wk.st.samplesPending;
