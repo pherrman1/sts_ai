@@ -108,6 +108,77 @@ def bars(hist, w=1000, h=230):
     return "".join(g)
 
 
+def asc_summary(rows):
+    """Per-ascension totals of the curriculum phase from the report windows. A window reports only the ascension
+    current at report time, so the few runs still in flight at a step-up (finishing at the old ascension) are missing
+    here; they are only in the driver's totals (runs_done_asc)."""
+    out = {}
+    for r in rows:
+        a = r.get("ascension")
+        if a is None or "asc_runs_window" not in r:
+            continue
+        e = out.setdefault(a, {"runs": 0, "wins": 0, "floors": 0.0, "first": r["time"], "last": r["time"],
+                               "first_runs": r["runs_done"], "rolling": 0.0, "rolling_runs": 0})
+        n = r["asc_runs_window"]
+        e["runs"] += n
+        e["wins"] += round(r.get("asc_win_rate_window", 0) * n)
+        e["floors"] += r.get("asc_mean_floor_window", 0) * n
+        e["last"] = r["time"]
+        e["rolling"] = r.get("asc_win_rate_rolling", 0)
+        e["rolling_runs"] = r.get("asc_rolling_runs", 0)
+    return out
+
+
+def hours_between(a, b):
+    try:
+        f = "%Y-%m-%d %H:%M:%S"
+        return (time.mktime(time.strptime(b, f)) - time.mktime(time.strptime(a, f))) / 3600
+    except ValueError:
+        return 0.0
+
+
+def ascension_panel(rows, last, target=0.10, need=10000):
+    summ = asc_summary(rows)
+    cur = last.get("ascension", 20)
+    e = summ.get(cur, {})
+    rate = e.get("rolling", 0.0)
+    rr = e.get("rolling_runs", 0)
+    pct = min(100.0, 100 * rate / target)
+    fill = min(100.0, 100 * rr / need)
+    cur_floor = None
+    for r in reversed(rows):
+        if r.get("ascension") == cur and r.get("asc_runs_window"):
+            cur_floor = r["asc_mean_floor_window"]
+            break
+    steps = []
+    for a in range(21):
+        cls = "done" if a < cur else "cur" if a == cur else "todo"
+        steps.append(f'<span class="step {cls}" title="A{a}">{a}</span>')
+    trs = []
+    for a in sorted(summ):
+        x = summ[a]
+        end = summ[a + 1]["first"] if a + 1 in summ else last.get("time", x["last"])
+        state = "current" if a == cur else "passed" if a < cur else ""
+        trs.append(f'<tr class="{state}"><td>A{a}{" (now)" if a == cur else ""}</td><td>{x["first"][5:16]}</td>'
+                   f'<td>{hours_between(x["first"], end):.1f}</td><td>{x["runs"]:,}</td><td>{x["wins"]:,}</td>'
+                   f'<td>{100 * x["wins"] / max(1, x["runs"]):.2f}</td><td>{100 * x["rolling"]:.2f}</td>'
+                   f'<td>{x["floors"] / max(1, x["runs"]):.1f}</td></tr>')
+    floor_txt = f"{cur_floor:.1f}" if cur_floor is not None else "-"
+    return f"""<section class="ascbox"><h2>Ascension now: A{cur}</h2>
+<div class="ladder">{"".join(steps)}</div>
+<div class="tiles">
+<div class="tile"><div class="k">Heart kills at A{cur} (last {rr:,} runs)</div><div class="v">{100 * rate:.2f} %</div>
+<div class="bar"><i style="width:{pct:.1f}%"></i></div><div class="n">step up at 10 % ({pct:.0f} % of the way)</div></div>
+<div class="tile"><div class="k">Runs at A{cur}</div><div class="v">{e.get("runs", 0):,}</div>
+<div class="bar"><i style="width:{fill:.1f}%"></i></div><div class="n">window fills at {need:,} runs</div></div>
+<div class="tile"><div class="k">Mean floor at A{cur}</div><div class="v">{floor_txt}</div><div class="n">last window, Heart = 55</div></div>
+<div class="tile"><div class="k">Time at A{cur}</div><div class="v">{hours_between(e.get("first", last.get("time", "")), last.get("time", "")):.1f} h</div>
+<div class="n">since {html.escape(e.get("first", "-"))}</div></div>
+</div>
+<div class="scroll"><table><tr><th>ascension</th><th>reached</th><th>hours</th><th>runs</th><th>Heart kills</th><th>kill %</th><th>last 10k %</th><th>mean floor</th></tr>{"".join(trs)}</table></div>
+</section>"""
+
+
 CSS = """
 :root { --bg:#f6f7f9; --panel:#ffffff; --fg:#17202b; --muted:#5d6b7a; --line:#dde3ea; --accent:#2f6fdb;
   --accent2:#d9822b; --good:#1f8a4c; --boss:#9b59b6;
@@ -145,6 +216,15 @@ table { border-collapse:collapse; font-size:.85rem; font-variant-numeric:tabular
 td, th { padding:4px 8px; border-bottom:1px solid var(--line); text-align:right; }
 th:first-child, td:first-child { text-align:left; }
 .scroll { overflow-x:auto; }
+.ascbox { display:grid; gap:12px; }
+.ladder { display:flex; flex-wrap:wrap; gap:4px; }
+.step { min-width:26px; text-align:center; padding:3px 0; border-radius:4px; font-family:var(--mono); font-size:.78rem;
+  border:1px solid var(--line); color:var(--muted); }
+.step.done { background:var(--good); border-color:var(--good); color:var(--panel); }
+.step.cur { background:var(--boss); border-color:var(--boss); color:var(--panel); font-weight:700; }
+.bar { position:relative; height:8px; border-radius:4px; background:var(--line); margin:6px 0 4px; overflow:hidden; }
+.bar i { position:absolute; inset:0 auto 0 0; background:var(--good); border-radius:4px; }
+tr.current td { font-weight:600; }
 """
 
 
@@ -168,6 +248,11 @@ def page(rows, title, started):
     # Continuation with pick-rate exploration (rows carry its counters).
     variant = any("forced_picks" in r for r in rows)
     curriculum = any(r.get("ascension", 20) < 20 for r in rows)
+    if curriculum:
+        # Floors and win rates at A0.. are not comparable with the earlier A20 phases: show the curriculum phase only.
+        start = next(i for i, r in enumerate(rows) if r.get("ascension", 20) < 20)
+        rows = rows[start:]
+        last = rows[-1]
     asc_line = [r.get("ascension") for r in rows]
     asc_roll = [100 * r["asc_win_rate_rolling"] if "asc_win_rate_rolling" in r else None for r in rows]
     floor = [r["mean_floor_window"] if r.get("runs_window") else None for r in rows]
@@ -198,34 +283,35 @@ def page(rows, title, started):
         return f'<div class="tile"><div class="k">{kname}</div><div class="v">{v}</div><div class="n">{note}</div></div>'
 
     tiles = "".join([
-        tile("Runs played", f'{last.get("runs_done", 0):,}', "goal: 2M (continuation)" if variant else "goal: 1M (decision)"),
+        tile("Runs played", f'{last.get("runs_done", 0):,}', "in total, all phases" if curriculum else "goal: 2M (continuation)" if variant else "goal: 1M (decision)"),
         tile("Mean floor", f"{recent_floor:.1f}", "last ~5 min, of 55"),
-        tile("Win rate", f"{recent_win:.2f} %", f'{last.get("wins_total", 0):,} wins total'),
+        tile("Heart kills" if curriculum else "Win rate", f"{recent_win:.2f} %", f'{last.get("wins_total", 0):,} wins total'),
         tile("Positions/s", f'{last.get("positions_per_s", 0) / 1000:.0f}k', f'{last.get("moves_per_s", 0):,} moves/s'),
         tile("Train steps", f'{last.get("train_steps", 0):,}', f'{last.get("samples_added", 0):,} samples'),
         tile("Hours", f'{last.get("hours", 0):.1f}', f"started {html.escape(started)}" if started else ""),
     ] + ([
         tile("Forced picks", f'{last.get("forced_picks", 0):,}',
              f'{last.get("explore_roots", 0):,} of {last.get("ooc_roots", 0):,} OOC roots under target'),
-    ] if variant else []) + ([
-        tile("Ascension", f'A{last.get("ascension", 20)}',
-             f'Heart kills {100 * last.get("asc_win_rate_rolling", 0):.1f} % over last '
-             f'{last.get("asc_rolling_runs", 0):,} runs (next at 10 %)'),
-    ] if curriculum else []))
+    ] if variant else []))
+    sub = ("0.44M AmberNet warm-started from the 1M-run A20 net, Ironclad ascension curriculum from A0, self-play on the PC "
+           "(RTX 3060 Ti). Charts show the curriculum phase only." if curriculum else
+           "0.44M AmberNet from scratch, A20 Ironclad, self-play on the PC (RTX 3060 Ti).")
     table_rows = "".join(
         f'<tr><td>{html.escape(r["time"])}</td><td>{r["runs_done"]:,}</td><td>{r["mean_floor_window"]:.1f}</td>'
         f'<td>{100 * r["win_rate_window"]:.2f}</td><td>{r["positions_per_s"]:,}</td><td>{r["train_steps"]:,}</td>'
-        f'<td>{r.get("stalls", 0)}</td></tr>' for r in rows[-12:][::-1])
+        f'<td>{r.get("stalls", 0)}</td>' + (f'<td>A{r.get("ascension", 20)}</td>' if curriculum else "") + '</tr>'
+        for r in rows[-12:][::-1])
     body = f"""
 <main>
 <header>
 <h1>{html.escape(title)} {status}</h1>
-<p class="sub">0.44M AmberNet from scratch, A20 Ironclad, self-play on the PC (RTX 3060 Ti). Updated {html.escape(last.get("time", "-"))} (PC time).</p>
+<p class="sub">{sub} Updated {html.escape(last.get("time", "-"))} (PC time).</p>
 </header>
+{ascension_panel(rows, last) if curriculum else ""}
 <div class="tiles">{tiles}</div>
 <div class="grid2">
 <section><h2>Mean final floor per window</h2>{chart(runs, [("mean floor (smoothed)", floor_s, "--accent")], ymin=0)}</section>
-<section><h2>Self-play win rate (%)</h2>{chart(runs, [("win rate (smoothed)", win_s, "--good")], ymin=0, yfmt="{:.2f}")}</section>
+<section><h2>{"Heart-kill rate, all ascensions (%)" if curriculum else "Self-play win rate (%)"}</h2>{chart(runs, [("win rate (smoothed)", win_s, "--good")], ymin=0, yfmt="{:.2f}")}</section>
 <section><h2>Training losses</h2>{chart(runs, [("policy", lp, "--accent"), ("outcome", lo, "--accent2"), ("HP", lh, "--boss")], yfmt="{:.2f}")}</section>
 {f'<section><h2>Curriculum: ascension and Heart-kill rate (%, last 10k runs at it)</h2>{chart(runs, [("ascension", asc_line, "--boss"), ("Heart kills % (rolling)", asc_roll, "--good")], ymin=0, yfmt="{:.0f}")}</section>' if curriculum else ""}
 <section><h2>Positions per second (thousands)</h2>{chart(runs, [("positions/s", pos, "--accent2")], ymin=0, yfmt="{:.0f}")}</section>
@@ -233,7 +319,7 @@ def page(rows, title, started):
 <section><h2>Where runs end (death floor, last ~10 min)</h2>{bars(hist)}
 <p class="rule">Purple: boss floors (16, 33, 50) and the Heart (55).</p></section>
 <section><h2>Decision rule</h2><p class="rule">{RULE_CURRICULUM if curriculum else RULE_VARIANT if variant else RULE_MAIN}</p></section>
-<section><h2>Latest windows</h2><div class="scroll"><table><tr><th>time</th><th>runs</th><th>mean floor</th><th>win %</th><th>pos/s</th><th>train steps</th><th>stalls</th></tr>{table_rows}</table></div></section>
+<section><h2>Latest windows</h2><div class="scroll"><table><tr><th>time</th><th>runs</th><th>mean floor</th><th>win %</th><th>pos/s</th><th>train steps</th><th>stalls</th>{"<th>asc</th>" if curriculum else ""}</tr>{table_rows}</table></div></section>
 </main>"""
     head = (f'<title>{html.escape(title)}</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n'
             '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Space+Grotesk:wght@500;600&family=JetBrains+Mono&display=swap">\n'
