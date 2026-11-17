@@ -292,12 +292,24 @@ def hp_floor_loss(pred, label):
     return (((pred.float() - t) ** 2) * m).sum() / m.sum().clamp(min=1)
 
 
-def losses(net, b, w_policy, w_outcome, w_hp, w_hp_floor=0.0):
-    logits, outcome, hp, hpf = net(b)
+def soft_policy_target(policy, a_mask):
+    """Amber Eye / KataGo soft policy target: the policy target p raised to the power 1/4 and renormalised over the
+    legal actions (rows without a policy target stay 0)."""
+    t = policy.float().clamp(min=0).pow(0.25) * a_mask
+    return t / t.sum(-1, keepdim=True).clamp(min=1e-12)
+
+
+def losses(net, b, w_policy, w_outcome, w_hp, w_hp_floor=0.0, w_soft_policy=0.0):
+    logits, outcome, hp, hpf, *soft = net(b)
     logp = torch.log_softmax(logits.float().masked_fill(~b["a_mask"], -1e4), -1)
     has = b["has_policy"].bool()
     pol = -(b["policy"] * logp).sum(-1)
     l_pol = (pol * has).sum() / has.sum().clamp(min=1)
+    l_soft = None
+    if w_soft_policy > 0:   # --w-soft-policy: soft head (AmberNet(soft_policy=True), training mode) on p^(1/4)
+        slogp = torch.log_softmax(soft[0].float().masked_fill(~b["a_mask"], -1e4), -1)
+        spol = -(soft_policy_target(b["policy"], b["a_mask"]) * slogp).sum(-1)
+        l_soft = (spol * has).sum() / has.sum().clamp(min=1)
     l_out = F.cross_entropy(outcome.float(), b["outcome"].long())
     l_hp = F.cross_entropy(hp.float(), b["hp_end"].long().clamp(0, HP_CLASSES - 1))
     parts = {"policy": l_pol.detach(), "outcome": l_out.detach(), "hp": l_hp.detach()}
@@ -306,6 +318,9 @@ def losses(net, b, w_policy, w_outcome, w_hp, w_hp_floor=0.0):
         parts["outcome_ema"] = l_ema.detach()
         l_out = l_ema
     total = w_policy * l_pol + w_outcome * l_out + w_hp * l_hp
+    if l_soft is not None:
+        total = total + w_soft_policy * l_soft
+        parts["soft_policy"] = l_soft.detach()
     if "hp_floor" in b:
         l_hpf = hp_floor_loss(hpf, b["hp_floor"])
         total = total + w_hp_floor * l_hpf
@@ -414,6 +429,9 @@ def main(argv=None):
     ap.add_argument("--weight-decay", type=float, default=1e-4)
     ap.add_argument("--warmup-steps", type=int, default=500)
     ap.add_argument("--w-policy", type=float, default=1.0)
+    ap.add_argument("--w-soft-policy", type=float, default=0.0,
+                    help="loss weight of the soft policy head (Amber Eye / KataGo: target p^(1/4); 0 = no head; "
+                         "KataGo uses 8)")
     ap.add_argument("--w-outcome", type=float, default=1.0)
     ap.add_argument("--w-hp", type=float, default=1.0)
     ap.add_argument("--value-ema-halflife", type=float, default=0.0,
@@ -441,7 +459,8 @@ def main(argv=None):
     cuda = dev.type == "cuda"
     torch.manual_seed(args.seed)
     d, layers = amber_net.SIZES.get(args.net) or tuple(int(x) for x in args.net.split("x")[:2])
-    train_net = amber_net.AmberNet(d=d, layers=layers, hp_floors=hp_floors).to(dev)
+    train_net = amber_net.AmberNet(d=d, layers=layers, hp_floors=hp_floors,
+                                   soft_policy=args.w_soft_policy > 0).to(dev)
     train_net.sdpa = True
     opt = torch.optim.AdamW(train_net.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     counters = {"step": 0, "trained": 0, "seeds_used": 0, "runs_done": 0, "wall": 0.0}
@@ -506,7 +525,7 @@ def main(argv=None):
     weights_lock = threading.Lock()
     new_weights = [None]          # (state tensors on the GPU, event) published by the trainer
     loss_keys = (("policy", "outcome", "hp") + (("hp_floor",) if amber else ())
-                 + (("outcome_ema",) if ema_lam > 0 else ()))
+                 + (("outcome_ema",) if ema_lam > 0 else ()) + (("soft_policy",) if args.w_soft_policy > 0 else ()))
     lossbox = dict({"n": 0}, **{k: 0.0 for k in loss_keys})
     lossbox_lock = threading.Lock()
     infer_stats = {"batches": 0, "rows": 0, "syncs": 0}
@@ -701,7 +720,8 @@ def main(argv=None):
                 for g in opt.param_groups:
                     g["lr"] = lr
                 with torch.enable_grad(), amp:
-                    loss, parts = losses(train_net, bt, args.w_policy, args.w_outcome, args.w_hp, args.w_hp_floor)
+                    loss, parts = losses(train_net, bt, args.w_policy, args.w_outcome, args.w_hp, args.w_hp_floor,
+                                         args.w_soft_policy)
                 opt.zero_grad(set_to_none=True)
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(train_net.parameters(), 1.0)

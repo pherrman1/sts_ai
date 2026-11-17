@@ -128,6 +128,48 @@ class ReplayTest(unittest.TestCase):
             for g0, g1 in zip(res[0][1], res[1][1]):
                 self.assertLess(float((g0 - g1).abs().max()), 1e-5 + 1e-4 * float(g0.abs().max()))
 
+    def test_soft_policy_head(self):
+        """--w-soft-policy (Amber Eye / KataGo): target p^(1/4) renormalised over the legal actions; the soft head is a
+        5th output in training mode only; its loss is the masked cross-entropy on policy rows, weighted into the total;
+        w = 0 builds no head and gives the old loss."""
+        sp = load()
+        pol = torch.tensor([[0.81, 0.16, 0.03, 0.0], [0.0, 0.0, 0.0, 0.0]])
+        mask = torch.tensor([[True, True, True, False], [True, True, False, False]])
+        t = sp.soft_policy_target(pol, mask)
+        r = np.array([0.81, 0.16, 0.03]) ** 0.25
+        np.testing.assert_allclose(t[0, :3].numpy(), r / r.sum(), rtol=1e-6)
+        self.assertEqual(float(t[0, 3]), 0.0)
+        self.assertEqual(float(t[1].sum()), 0.0)
+        rng = np.random.default_rng(9)
+        rep = sp.Replay(2000)
+        rep.add(chunk(rng, 300))
+        bt = sp.to_torch(rep.sample(np.random.default_rng(1), 40), torch.device("cpu"))
+        torch.manual_seed(0)
+        plain = sp.amber_net.AmberNet(64, 2)
+        torch.manual_seed(0)
+        soft = sp.amber_net.AmberNet(64, 2, soft_policy=True)
+        self.assertFalse(any(k.startswith("pol_soft") for k in plain.state_dict()))
+        self.assertEqual(len(soft.eval()(bt)), 4)
+        soft.train()
+        out = soft(bt)
+        self.assertEqual(len(out), 5)
+        soft.load_state_dict({**soft.state_dict(), **plain.state_dict()})
+        l0, p0 = sp.losses(plain, bt, 1.0, 1.0, 1.0)
+        l1, p1 = sp.losses(soft, bt, 1.0, 1.0, 1.0)   # weight 0: soft output ignored
+        self.assertAlmostEqual(float(l0), float(l1), places=6)
+        self.assertNotIn("soft_policy", p1)
+        l8, p8 = sp.losses(soft, bt, 1.0, 1.0, 1.0, 0.0, 8.0)
+        slogit = soft(bt)[4]
+        slogp = torch.log_softmax(slogit.float().masked_fill(~bt["a_mask"], -1e4), -1)
+        has = bt["has_policy"].bool()
+        ce = -(sp.soft_policy_target(bt["policy"], bt["a_mask"]) * slogp).sum(-1)
+        want = float(ce[has].mean())
+        self.assertAlmostEqual(float(p8["soft_policy"]), want, places=5)
+        self.assertAlmostEqual(float(l8), float(l1) + 8.0 * want, places=4)
+        gs, gp = torch.autograd.grad(ce[has].mean(), [soft.pol_soft[2].weight, soft.pol[2].weight], allow_unused=True)
+        self.assertGreater(float(gs.abs().sum()), 0)   # the soft term moves the soft head, not the normal policy head
+        self.assertIsNone(gp)
+
     def test_policy_frac(self):
         sp = load()
         rng = np.random.default_rng(2)
@@ -394,6 +436,24 @@ class SelfplaySmoke(unittest.TestCase):
             ck1 = sorted(glob.glob(os.path.join(d1, "ckpt_*.pt")), key=os.path.getmtime)[-1]
             net1 = torch.load(ck1)["net"]
             self.assertEqual(tuple(net1["hp_floor.2.weight"].shape)[0], 56)
+
+    def test_soft_policy_run(self):
+        """--w-soft-policy trains the soft head in a real run (loss logged, head in the checkpoint); the inference copy
+        and the EMA / eval calls take the 4 usual outputs."""
+        sp = load()
+        common = ["--module-dir", os.path.dirname(MODULES[0]), "--device", "cpu", "--workers", "2", "--games", "4",
+                  "--full-sims", "8", "--fast-sims", "4", "--batch", "32", "--row-buckets", "32", "--pack-step", "32",
+                  "--pack-threads", "1", "--min-replay", "50", "--train-batch", "32", "--window", "5000",
+                  "--report", "1", "--sync-steps", "2", "--max-runs", "16"]
+        with tempfile.TemporaryDirectory() as d:
+            self.assertEqual(sp.main(common + ["--out-dir", d, "--seed-base", "900", "--w-soft-policy", "8",
+                                               "--value-ema-halflife", "20"]), 0)
+            with open(os.path.join(d, "metrics.jsonl")) as f:
+                rows = [json.loads(l) for l in f]
+            self.assertGreater(rows[-1]["train_steps"], 0)
+            self.assertTrue(any(r["loss"] and r["loss"].get("soft_policy", 0) > 0 for r in rows))
+            ck = sorted(glob.glob(os.path.join(d, "ckpt_*.pt")), key=os.path.getmtime)[-1]
+            self.assertIn("pol_soft.2.weight", torch.load(ck)["net"])
 
     def test_search_flags(self):
         """--no-fast-noise / --q-rescale / --c-scale reach the driver; the OOC search diagnostics are logged."""
