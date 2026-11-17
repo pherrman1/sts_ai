@@ -224,6 +224,8 @@ PYBIND11_MODULE(az_bench_native, m) {
              py::arg("keep_fast") = 0.0, py::arg("search_seed") = 0, py::arg("max_fight_moves") = 400,
              py::arg("test_max_hp") = 0, py::arg("max_pending") = 300000,
              py::arg("explore_c") = 0.0, py::arg("pick_target") = 0.01)
+        .def("set_ascension", &azbench::RunDriver::setAscension)
+        .def("ascension", &azbench::RunDriver::ascension)
         .def("start", &azbench::RunDriver::start, py::call_guard<py::gil_scoped_release>())
         .def("stop", &azbench::RunDriver::stop, py::call_guard<py::gil_scoped_release>())
         .def("next_flat",
@@ -330,6 +332,9 @@ PYBIND11_MODULE(az_bench_native, m) {
             o["samples_done"] = s.samplesDone; o["samples_pending"] = s.samplesPending;
             o["batches"] = s.batches; o["batch_rows"] = s.batchRows;
             o["outcomes"] = std::vector<std::int64_t>(s.outcomes.begin(), s.outcomes.end());
+            o["runs_done_asc"] = std::vector<std::int64_t>(s.runsDoneAsc.begin(), s.runsDoneAsc.end());
+            o["wins_asc"] = std::vector<std::int64_t>(s.winsAsc.begin(), s.winsAsc.end());
+            o["floors_sum_asc"] = std::vector<std::int64_t>(s.floorsSumAsc.begin(), s.floorsSumAsc.end());
             o["ooc_roots"] = s.oocRoots; o["explore_roots"] = s.exploreRoots; o["forced_picks"] = s.forcedPicks;
             o["step_cpu"] = s.stepCpu; o["encode_cpu"] = s.encodeCpu; o["search_cpu"] = s.searchCpu;
             o["pack_s"] = s.packSeconds;

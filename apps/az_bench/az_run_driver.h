@@ -29,6 +29,7 @@
 #include <memory>
 #include <mutex>
 #include <random>
+#include <stdexcept>
 #include <thread>
 #include <vector>
 
@@ -69,11 +70,12 @@ namespace sts::azbench {
 
     constexpr int kOutcomeClasses = 57;   // 0 = win, f = death on floor f (1..56)
     constexpr int kHpClasses = 256;
+    constexpr int kAscensions = 21;
 
     struct RunConfig {
         int workers = 11;
         int gamesPerWorker = 700;
-        int ascension = 20;
+        int ascension = 20;             // of the first runs; setAscension changes it while running
         std::uint64_t seedBase = 0;     // run seeds seedBase, seedBase + 1, ... (one per started run)
         std::int64_t maxRuns = -1;      // stop starting runs after this many (-1 = unlimited)
         int fullSims = 64, fastSims = 16;
@@ -127,6 +129,8 @@ namespace sts::azbench {
         std::int64_t samplesDone = 0, samplesPending = 0;
         std::int64_t batches = 0, batchRows = 0;
         std::array<std::int64_t, kOutcomeClasses> outcomes{};   // finished runs per outcome class
+        // Per ascension (curriculum): finished runs, Heart kills, final floors.
+        std::array<std::int64_t, kAscensions> runsDoneAsc{}, winsAsc{}, floorsSumAsc{};
         std::int64_t oocRoots = 0, exploreRoots = 0, forcedPicks = 0;   // searched OOC decisions; with an under-target item; forced
         double stepCpu = 0, encodeCpu = 0, searchCpu = 0, packSeconds = 0;
     };
@@ -152,6 +156,12 @@ namespace sts::azbench {
         RunStats stats() const;
         const RunConfig &config() const { return cfg_; }
         std::uint64_t nextSeed();   // the next run seed (thread-safe); runsStarted counts these
+        // Ascension of runs started from now on (curriculum; runs in progress keep theirs). 0..20.
+        void setAscension(int a) {
+            if (a < 0 || a >= kAscensions) throw std::invalid_argument("run driver: ascension 0..20");
+            ascension_.store(a);
+        }
+        int ascension() const { return ascension_.load(); }
 
         struct Node;
         struct Run;
@@ -168,6 +178,7 @@ namespace sts::azbench {
         std::atomic<std::int64_t> pending_{0};   // samples of unfinished runs, all workers
         static constexpr int kPickBuckets = 1 << 16;
         std::unique_ptr<std::atomic<std::uint32_t>[]> picks_;
+        std::atomic<int> ascension_{20};
         std::atomic<std::int64_t> runsDone_{0};   // finished runs, all workers (pick-rate denominator)   // real picks per item hash (pick-rate exploration)
         mutable std::mutex qm_;
         std::condition_variable qcv_;
