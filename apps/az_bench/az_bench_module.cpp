@@ -192,7 +192,7 @@ PYBIND11_MODULE(az_bench_native, m) {
         .def(py::init([](int workers, int games, std::uint64_t seedBase, std::int64_t maxRuns, int ascension,
                          int fullSims, int fastSims, double fullProb, int fullCandidates, int fastCandidates,
                          double hpWeightCombat, double hpWeightOoc, double keepFull, double keepFast,
-                         std::uint64_t searchSeed, int maxFightMoves, int testMaxHp) {
+                         std::uint64_t searchSeed, int maxFightMoves, int testMaxHp, std::int64_t maxPending) {
                  azbench::RunConfig c;
                  c.workers = workers;
                  c.gamesPerWorker = games;
@@ -211,6 +211,7 @@ PYBIND11_MODULE(az_bench_native, m) {
                  c.searchSeed = searchSeed;
                  c.maxMovesPerFight = maxFightMoves;
                  c.testMaxHp = testMaxHp;
+                 c.maxPendingSamples = maxPending;
                  return std::make_unique<azbench::RunDriver>(c);
              }),
              py::arg("workers") = 11, py::arg("games") = 700, py::arg("seed_base") = 0, py::arg("max_runs") = -1,
@@ -218,7 +219,7 @@ PYBIND11_MODULE(az_bench_native, m) {
              py::arg("full_prob") = 0.25, py::arg("full_candidates") = 16, py::arg("fast_candidates") = 4,
              py::arg("hp_weight_combat") = 1.0, py::arg("hp_weight_ooc") = 1.0, py::arg("keep_full") = 1.0,
              py::arg("keep_fast") = 0.0, py::arg("search_seed") = 0, py::arg("max_fight_moves") = 400,
-             py::arg("test_max_hp") = 0)
+             py::arg("test_max_hp") = 0, py::arg("max_pending") = 300000)
         .def("start", &azbench::RunDriver::start, py::call_guard<py::gil_scoped_release>())
         .def("stop", &azbench::RunDriver::stop, py::call_guard<py::gil_scoped_release>())
         .def("next_flat",

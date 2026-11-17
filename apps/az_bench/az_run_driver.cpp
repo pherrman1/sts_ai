@@ -436,6 +436,7 @@ namespace sts::azbench {
             ++wk.st.outcomes[oc];
             wk.st.samplesDone += static_cast<std::int64_t>(g.pending.size());
             wk.st.samplesPending -= static_cast<std::int64_t>(g.pending.size());
+            pending_.fetch_sub(static_cast<std::int64_t>(g.pending.size()), std::memory_order_relaxed);
             {
                 std::lock_guard<std::mutex> l(sampleM_);
                 for (auto &s : g.pending) done_.push_back(std::move(s));
@@ -509,7 +510,11 @@ namespace sts::azbench {
             g.poolUsed = 0;
             g.spent = 0;
             g.full = U(wk.rng) < cfg.fullProb;
-            g.keep = U(wk.rng) < (g.full ? cfg.keepFull : cfg.keepFast);
+            {
+                const double pend = static_cast<double>(pending_.load(std::memory_order_relaxed));
+                const double scale = pend > cfg.maxPendingSamples ? cfg.maxPendingSamples / pend : 1.0;
+                g.keep = U(wk.rng) < (g.full ? cfg.keepFull : cfg.keepFast) * scale;
+            }
             g.budget = g.full ? cfg.fullSims : cfg.fastSims;
             g.candidates = g.full ? cfg.fullCandidates : cfg.fastCandidates;
             g.cand.clear();
@@ -590,6 +595,7 @@ namespace sts::azbench {
                 s.searchValue = static_cast<float>(root.n ? root.w / root.n : root.value);
                 g.pending.push_back(std::move(s));
                 ++wk.st.samplesPending;
+                pending_.fetch_add(1, std::memory_order_relaxed);
             }
             applyReal(g, root.edges[pick].bits);
             startMove(g, gi);

@@ -69,6 +69,9 @@ namespace sts::azbench {
         int maxMovesPerFight = 400;     // a fight past this many decisions counts as lost (stall guard)
         double keepFull = 1.0;          // keep probability of a full-search move as a sample (policy + value)
         double keepFast = 0.0;          // ... of a fast-search move (value only)
+        // Samples of unfinished runs wait in memory for their labels (~5.5 KB each). Above this many, the keep
+        // probabilities are scaled by maxPendingSamples / pending, so memory stays bounded as runs get longer.
+        std::int64_t maxPendingSamples = 300000;
         std::uint64_t searchSeed = 0;   // search / Gumbel / resampling RNG
         int testMaxHp = 0;              // tests only: > 0 sets max / current HP at the run's start (reach late floors)
         CombatEncodeFn encodeCombat = nullptr;   // default: search::amberEncodeCombat
@@ -136,6 +139,7 @@ namespace sts::azbench {
         std::vector<std::thread> threads_;
         std::atomic<bool> stop_{false};
         std::atomic<std::int64_t> seedsUsed_{0};
+        std::atomic<std::int64_t> pending_{0};   // samples of unfinished runs, all workers
         mutable std::mutex qm_;
         std::condition_variable qcv_;
         std::deque<std::uint32_t> queue_;   // ticket = worker << 16 | run

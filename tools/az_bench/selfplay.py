@@ -222,8 +222,10 @@ def main(argv=None):
     ap.add_argument("--keep-full", type=float, default=1.0, help="keep probability of a full-search position")
     ap.add_argument("--keep-fast", type=float, default=0.0, help="keep probability of a fast-search position")
     ap.add_argument("--max-fight-moves", type=int, default=400)
+    ap.add_argument("--max-pending", type=int, default=300000,
+                    help="samples of unfinished runs held for their labels; above it keep probabilities shrink")
     ap.add_argument("--batch", type=int, default=2048)
-    ap.add_argument("--row-buckets", default="256,512,1024,2048")
+    ap.add_argument("--row-buckets", default="2048", help="batch rows padded to these (one size keeps compiled shapes few)")
     ap.add_argument("--tok-buckets", default="32,40,48,56,64,80,96,128,212")
     ap.add_argument("--act-buckets", default="16,32,64,96")
     ap.add_argument("--pack-step", type=int, default=2048)
@@ -280,17 +282,23 @@ def main(argv=None):
             infer.fused_layer = amber_net.load_fused_layer()
         infer = infer.half()
     infer_dtype = torch.float16 if cuda else torch.float32
-    run = torch.compile(infer, dynamic=False) if args.compile else infer
     if args.compile:
+        # Static shapes except the packed-token count N (pack_idx), marked dynamic per batch: otherwise every
+        # (rows, tokens, actions, N) combination is its own graph and the cache limit is hit within minutes.
         import torch._dynamo as dynamo
-        dynamo.config.cache_size_limit = 256
+        dynamo.config.cache_size_limit = 1024
+        dynamo.config.accumulated_cache_size_limit = 4096
+        dynamo.config.automatic_dynamic_shapes = False
+        run = torch.compile(infer)
+    else:
+        run = infer
 
     drv = az_bench_native.RunDriver(
         workers=args.workers, games=args.games, seed_base=seed_base, max_runs=max_runs, ascension=args.ascension,
         full_sims=args.full_sims, fast_sims=args.fast_sims, full_prob=args.full_prob,
         hp_weight_combat=args.hp_weight_combat, hp_weight_ooc=args.hp_weight_ooc, keep_full=args.keep_full,
         keep_fast=args.keep_fast, search_seed=args.seed + counters["step"], max_fight_moves=args.max_fight_moves,
-        test_max_hp=args.test_max_hp)
+        test_max_hp=args.test_max_hp, max_pending=args.max_pending)
     replay = Replay(args.window)
     stop = threading.Event()
     errors = []
@@ -387,6 +395,8 @@ def main(argv=None):
                         views["pack_idx"][:nl] = live
                         views["pack_idx"][nl:npad] = M
                         x["pack_idx"] = host["pack_idx"][:npad].to(dev, non_blocking=True).long()
+                        if args.compile:
+                            torch._dynamo.mark_dynamic(x["pack_idx"], 0)
                         if infer.varlen_attn is not None:
                             so = views["seq_off"]
                             so[0] = 0
