@@ -25,8 +25,10 @@
 #include <vector>
 
 #include "combat/BattleContext.h"
+#include "game/GameContext.h"
 #include "sim/search/Action.h"
 #include "sim/search/AmberTokens.h"
+#include "sim/search/GameAction.h"
 #include "sim/search/SilverSearcher.h"
 
 namespace sts::search {
@@ -42,6 +44,17 @@ namespace sts::search {
                                 - static_cast<int>(MonsterStatus::ANGRY) + 1;
     static_assert(kAmberIdEnd <= kAmberIdVocab, "Amber id ranges overflow the shared vocabulary");
 
+    // Out-of-combat ranges (amberEncodeGame), after the combat ones. Bosses reuse the monster range (their main
+    // monster), cards / relics / potions the combat ranges; room types, rest options, reward kinds, Neow bonuses
+    // and drawbacks are float one-hots (AmberGameEncoder.cpp), since the vocabulary has no room for them.
+    //   event      kAmberEventBase + (Event - NEOW)     Event NEOW..WORLD_OF_GOOP
+    //   screen     kAmberScreenBase + (ScreenState - 1) ScreenState EVENT_SCREEN..BATTLE
+    constexpr int kAmberEventBase = kAmberIdEnd;
+    constexpr int kAmberScreenBase = kAmberEventBase + static_cast<int>(Event::WORLD_OF_GOOP)
+                                     - static_cast<int>(Event::NEOW) + 1;
+    constexpr int kAmberGameIdEnd = kAmberScreenBase + static_cast<int>(ScreenState::BATTLE);
+    static_assert(kAmberGameIdEnd <= kAmberIdVocab, "Amber out-of-combat id ranges overflow the shared vocabulary");
+
     // AmberAction::type values.
     enum class AmberActionType : std::uint8_t {
         END_TURN = 0,
@@ -54,6 +67,14 @@ namespace sts::search {
         SELECT_MANY,        // hand multi-select: src / tgt = first / last chosen card, f[1] = hand-index mask
         SELECT_TWO,         // Liquid Memories (2 picks): src / tgt = first / second discard card
         UNKNOWN,            // an action this encoder cannot resolve against the state (no src / tgt)
+        // Out-of-combat (amberEncodeGame); out-of-combat potion drinks / discards use USE_POTION / DISCARD_POTION.
+        MAP_MOVE = 10,      // tgt = the destination MAP token (row 14 -> the boss token)
+        CHOOSE_OPTION,      // src = the chosen OPTION token (reward item, shop item, boss relic, rest option, Neow
+                            // option, event option, chest, Match and Keep slot); tgt = the deck CARD / RELIC /
+                            // POTION an event option names (Falling, We Meet Again, N'loth)
+        CHOOSE_CARD,        // card-select screen: src = the chosen CARD token, a deck card (remove / upgrade /
+                            // transform / duplicate / bottle) or a card the screen offers (The Library, Neow choices)
+        SKIP_OR_LEAVE,      // reward skip, shop leave, chest skip, boss relic skip, campfire proceed
     };
 
     // Fills `out` (out.clear() first) for `state` under `context`, with one AmberAction per entry of `actions` in
@@ -61,6 +82,16 @@ namespace sts::search {
     // Deterministic: the same state, context and actions give bit-identical live slots.
     void amberEncodeCombat(const BattleContext &state, const SilverSearchContext &context,
                            const std::vector<search::Action> &actions, AmberTokens &out);
+
+    // Out-of-combat counterpart for a GameContext decision screen (ScreenState other than BATTLE; a BATTLE state gets
+    // its RUN / PLAYER / CARD / RELIC / POTION / MAP tokens and UNKNOWN actions): RUN, PLAYER, CARD = the master
+    // deck, RELIC, POTION, OPTION = the screen's choices, MAP = the current act's nodes still reachable (current node,
+    // boss, then nearest rows first; the rest counted in out.cut). Only what the player sees: no RNG, pools, encounter
+    // queues, unopened chest contents, Dead Adventurer rewards / fight or burning-elite buff. `actions` =
+    // GameAction::getAllActionsInState(gc) or a subset, plus optionally out-of-combat potion drinks / discards
+    // (bits 0x80000000 | slot, 0xC0000000 | slot) and the Singing Bowl reward (RewardsActionType::CARD, group, 5).
+    // No heap allocation. Feature layout: AmberGameEncoder.cpp.
+    void amberEncodeGame(const GameContext &gc, const std::vector<GameAction> &actions, AmberTokens &out);
 
     // IEEE float16 bits of `x`, round to nearest even (as numpy's float32 -> float16 cast); and back.
     std::uint16_t amberHalf(float x);

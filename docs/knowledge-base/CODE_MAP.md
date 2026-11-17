@@ -22,6 +22,7 @@ before broad repository search.
 | Combat value nets | `include/sim/search/CombatValueNet.h`, `src/sim/search/CombatValueNet.cpp` | `CombatValueNet` — compact tree; library and `vnettest` parity only since ADR-0020 | [training-and-inference.md](architecture/training-and-inference.md) |
 | DistVNet | `include/sim/search/CombatDistValueNet.h`, `src/sim/search/CombatDistValueNet.cpp` | `CombatDistValueNet` — `STS_DIST_VNET`; loads but no searcher consumes it after ADR-0019 | [training-and-inference.md](architecture/training-and-inference.md) |
 | CPSI net | `include/sim/search/CombatCpsiNet.h`, `src/sim/search/CombatCpsiNet.cpp` | `CombatCpsiNet` — card-pair synergy inference, experimental | [training-and-inference.md](architecture/training-and-inference.md) |
+| Amber token encoders (self-play loop, stages 0-1) | `include/sim/search/AmberTokens.h`, `include/sim/search/AmberEncoder.h`, `src/sim/search/AmberEncoder.cpp`, `src/sim/search/AmberGameEncoder.cpp` | `amberEncodeCombat` (BattleContext) and `amberEncodeGame` (out-of-combat GameContext screens) write the Amber-Eye-shaped token net input (`tools/az_bench/amber_net.py`) with no per-call heap allocation; public information only; id ranges and float layouts in the sources; CTest `amber_encoder`, `amber_game_encoder` | [training-and-inference.md](architecture/training-and-inference.md) |
 
 ## Out-of-combat policy
 
