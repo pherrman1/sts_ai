@@ -68,7 +68,7 @@ def load_fused_layer():
 
 
 class AmberNet(nn.Module):
-    def __init__(self, d=96, layers=3, heads=None):
+    def __init__(self, d=96, layers=3, heads=None, hp_floors=1):
         super().__init__()
         heads = heads or max(1, d // 32)
         self.type_emb = nn.Embedding(len(TOKEN_TYPES), d)
@@ -89,7 +89,9 @@ class AmberNet(nn.Module):
         self.pol = mlp(d, d, 1)
         self.outcome = mlp(d, d, OUTCOME_CLASSES)
         self.hp = mlp(d, d, HP_CLASSES)
-        self.hp_floor = mlp(d, d, 1)
+        # Per-floor HP head: 1 scalar by default (unused); hp_floors = 56 for the self-play utility "amber" (E[HP at
+        # the end of floor f] / 255, f = 1..56; tools/az_bench/selfplay.py --utility amber).
+        self.hp_floor = mlp(d, d, hp_floors)
 
     def forward(self, b):
         if "tok_type" in b:

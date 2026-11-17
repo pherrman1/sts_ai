@@ -22,6 +22,8 @@
 #ifndef STS_AZ_RUN_DRIVER_H
 #define STS_AZ_RUN_DRIVER_H
 
+#include <algorithm>
+#include <array>
 #include <atomic>
 #include <condition_variable>
 #include <cstdint>
@@ -71,6 +73,41 @@ namespace sts::azbench {
     constexpr int kOutcomeClasses = 57;   // 0 = win, f = death on floor f (1..56)
     constexpr int kHpClasses = 256;
     constexpr int kAscensions = 21;
+    constexpr int kFloors = 56;           // floors 1..56 of the per-floor HP head (utility AMBER)
+
+    // Utility H of the search (U = (F + w H) / (1 + w), F = E[final floor] / 57, a win counts 57).
+    //   FLOOR_HP (stage 1 default): H = E[HP at the end of the current floor] / max HP, from the 256-class HP head.
+    //   AMBER (2026-11-17, default off): Amber Eye's early utility, H = 1/56 [(floor - 1) + sum_{f >= floor} E[HP_f] / 255]
+    //     with E[HP_f] (f = 1..56) from a per-floor HP head (0 after death); past floors count 1 each. A run that
+    //     ends alive (Heart kill, or the act 3 boss without the keys) keeps its last HP on its last floor; a Heart
+    //     kill also keeps it on the floors after (our choice), a keyless victory has 0 there (the run is over).
+    enum class Utility : int { FLOOR_HP = 0, AMBER = 1 };
+
+    // Amber H of a state on `floor` from per-floor HP predictions hpf[f - 1] = E[HP_f] / 255 (clamped to [0, 1]).
+    inline double amberH(int floor, const float *hpf) {
+        const int fl = std::clamp(floor, 1, kFloors);
+        double s = fl - 1;
+        for (int f = fl; f <= kFloors; ++f) s += std::clamp(static_cast<double>(hpf[f - 1]), 0.0, 1.0);
+        return s / kFloors;
+    }
+
+    // Amber H of a finished run that ended on `floor` with `hp`: death (alive = false) has HP 0 from its floor on;
+    // a keyless act 3 victory has hp on its floor and 0 after; a Heart kill has hp on its floor and all later ones.
+    inline double amberTerminalH(bool heartKill, bool alive, int floor, int hp) {
+        const int fl = std::clamp(floor, 1, kFloors);
+        const double h = alive ? std::clamp(hp, 0, 255) / 255.0 : 0.0;
+        return ((fl - 1) + h * (heartKill ? kFloors - fl + 1 : 1)) / kFloors;
+    }
+
+    // Per-floor HP labels of a sample on `sampleFloor` (Amber utility): out[f - 1] = HP at the end of floor f for
+    // f >= max(1, sampleFloor), -1 (masked) before. floorHp[f] (f = 1..56) is the run's recorded HP at the end of floor
+    // f (-1 = not reached); unreached floors get `tailHp` (0 after a death or a keyless victory, the final HP after a
+    // Heart kill).
+    inline void amberFloorLabels(int sampleFloor, const std::int16_t *floorHp, int tailHp, std::int16_t *out) {
+        const int fl = std::clamp(sampleFloor, 1, kFloors);
+        for (int f = 1; f <= kFloors; ++f)
+            out[f - 1] = f < fl ? std::int16_t(-1) : (floorHp[f] >= 0 ? floorHp[f] : static_cast<std::int16_t>(tailHp));
+    }
 
     struct RunConfig {
         int workers = 11;
@@ -84,6 +121,11 @@ namespace sts::azbench {
         double cVisit = 50, cScale = 1.0;
         double wideningC = 3.7028, wideningAlpha = 0.52389;
         double hpWeightCombat = 1.0, hpWeightOoc = 1.0;   // U = F + w H (Amber's first utility: both 1)
+        Utility utility = Utility::FLOOR_HP;   // H (see Utility); AMBER needs per-floor HP results in submit
+        // FLOOR_HP only (2026-11-17, default off): a keyless act 3 victory (the run ends after the act 3 boss without
+        // the three keys, no win) keeps H = HP / max HP as a terminal and HP as its floor's hp_end label, instead of
+        // H = 0 like a death (which made beating the boss worth about as much as dying to it). AMBER always does.
+        bool keylessHp = false;
         int maxMovesPerFight = 400;     // a fight past this many decisions counts as lost (stall guard)
         double keepFull = 1.0;          // keep probability of a full-search move as a sample (policy + value)
         double keepFast = 0.0;          // ... of a fast-search move (value only)
@@ -115,6 +157,7 @@ namespace sts::azbench {
         float searchValue = 0;               // root value after the search (scaled utility)
         std::int16_t outcome = -1;           // label: 0 win, f death floor
         std::int16_t hpEnd = -1;             // label: HP at the end of this floor (0 on death)
+        std::vector<std::int16_t> hpFloor;   // utility AMBER only: [56] HP at the end of floor f (-1 before this floor)
         std::int16_t maxHp = 0, floor = 0;
         std::uint8_t combat = 0;
         std::uint64_t run = 0;               // run seed
@@ -148,9 +191,9 @@ namespace sts::azbench {
                                                  const std::vector<int> &actBuckets, const FlatBuffers &buf,
                                                  FlatShape &shape, int packThreads = 1);
         // Results: logits[row][action] (`actions` per row), F[row] in [0, 1] and expected HP at the end of the
-        // floor ehp[row] (absolute) for each ticket.
+        // floor ehp[row] (absolute) for each ticket; utility AMBER also needs hpf[row][56] = E[HP_f] / 255.
         void submit(const std::uint32_t *tickets, int rows, int actions, const float *logits, const float *F,
-                    const float *ehp);
+                    const float *ehp, const float *hpf = nullptr);
         // Moves up to maxSamples finished samples (labels filled) into out.
         void takeSamples(int maxSamples, std::vector<Sample> &out);
         RunStats stats() const;

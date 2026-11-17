@@ -13,6 +13,13 @@ training thread samples minibatches from the window and trains the fp32 copy (bf
 keeping trained samples <= --replay-ratio x generated samples, and copies its weights into the inference net every
 --sync-steps steps.
 
+--utility amber (2026-11-17, default floor-hp): Amber Eye's early H = 1/56 [(floor - 1) + sum_{f >= floor} E[HP_f] / 255]
+instead of H = E[HP at the end of the floor] / max HP (apps/az_bench/az_run_driver.h, Utility). The net gets a 56-scalar
+per-floor HP head (E[HP_f] / 255), trained by masked MSE (--w-hp-floor) on the HP at the end of every floor from the
+sample's floor on (0 after a death); a keyless act 3 victory keeps its HP. --keyless-hp fixes only that last point for
+the default utility. --init-net CKPT starts a new run from a checkpoint's weights (heads of another shape, e.g. the
+1-scalar per-floor head, start fresh; new optimizer and counters).
+
 From https://8e9f.github.io/amber_eye/: one net, Gumbel AlphaZero 64 / 16 positions per full / fast move with playout
 cap randomization 0.25, utility F + H first, the 0.44M net first, no teacher. Our choices: the loss weights, the
 optimizer (AdamW), the window, the replay ratio, the sync interval (all flags).
@@ -53,7 +60,7 @@ class Replay:
     """FIFO window of ragged samples: token / action rings plus per-sample metadata. Old samples are evicted when
     the sample, token or action capacity would overflow. Thread-safe (one lock)."""
 
-    def __init__(self, samples, tokens_per_sample=48, actions_per_sample=12):
+    def __init__(self, samples, tokens_per_sample=48, actions_per_sample=12, hp_floors=0):
         self.cs = samples
         self.ct = samples * tokens_per_sample
         self.ca = samples * actions_per_sample
@@ -72,6 +79,8 @@ class Replay:
         self.meta = {k: np.zeros(self.cs, dt) for k, dt in
                      (("outcome", np.int16), ("hp_end", np.int16), ("max_hp", np.int16), ("floor", np.int16),
                       ("combat", np.uint8), ("has_policy", np.uint8), ("search_value", np.float32))}
+        if hp_floors:   # utility amber: per-floor HP labels [S, 56] (-1 = masked)
+            self.meta["hp_floor"] = np.zeros((self.cs, hp_floors), np.int16)
         self.s_head = self.s_tail = 0     # absolute sample counters
         self.t_head = self.a_head = 0     # absolute token / action counters
         self.added = 0
@@ -179,8 +188,23 @@ def search_values(outcome_logits, hp_logits):
     return Fv, ehp
 
 
-def losses(net, b, w_policy, w_outcome, w_hp):
-    logits, outcome, hp, _ = net(b)
+def amber_h(floor, hpf):
+    """Amber H (az_run_driver.h amberH) from per-floor predictions hpf [B, 56] = E[HP_f] / 255; reference for tests."""
+    fl = floor.clamp(1, 56)
+    f = torch.arange(1, 57, device=hpf.device)
+    keep = (f[None, :] >= fl[:, None]).to(hpf.dtype)
+    return ((fl - 1).to(hpf.dtype) + (hpf.clamp(0, 1) * keep).sum(-1)) / 56.0
+
+
+def hp_floor_loss(pred, label):
+    """Masked MSE of the per-floor HP head (pred [B, 56] ~ HP / 255) against labels [B, 56] (HP, -1 = masked)."""
+    m = (label >= 0).float()
+    t = label.float().clamp(0, 255) / 255.0
+    return (((pred.float() - t) ** 2) * m).sum() / m.sum().clamp(min=1)
+
+
+def losses(net, b, w_policy, w_outcome, w_hp, w_hp_floor=0.0):
+    logits, outcome, hp, hpf = net(b)
     logp = torch.log_softmax(logits.float().masked_fill(~b["a_mask"], -1e4), -1)
     has = b["has_policy"].bool()
     pol = -(b["policy"] * logp).sum(-1)
@@ -188,7 +212,12 @@ def losses(net, b, w_policy, w_outcome, w_hp):
     l_out = F.cross_entropy(outcome.float(), b["outcome"].long())
     l_hp = F.cross_entropy(hp.float(), b["hp_end"].long().clamp(0, HP_CLASSES - 1))
     total = w_policy * l_pol + w_outcome * l_out + w_hp * l_hp
-    return total, {"policy": l_pol.detach(), "outcome": l_out.detach(), "hp": l_hp.detach()}
+    parts = {"policy": l_pol.detach(), "outcome": l_out.detach(), "hp": l_hp.detach()}
+    if "hp_floor" in b:
+        l_hpf = hp_floor_loss(hpf, b["hp_floor"])
+        total = total + w_hp_floor * l_hpf
+        parts["hp_floor"] = l_hpf.detach()
+    return total, parts
 
 
 def to_torch(b, dev):
@@ -224,6 +253,12 @@ def main(argv=None):
     ap.add_argument("--full-prob", type=float, default=0.25)
     ap.add_argument("--hp-weight-combat", type=float, default=1.0)
     ap.add_argument("--hp-weight-ooc", type=float, default=1.0)
+    ap.add_argument("--utility", choices=("floor-hp", "amber"), default="floor-hp",
+                    help="H of the search: floor-hp = E[HP end of floor] / max HP; amber = Amber Eye's per-floor H")
+    ap.add_argument("--keyless-hp", action="store_true",
+                    help="floor-hp: a keyless act 3 victory keeps H = HP / max HP (amber always does)")
+    ap.add_argument("--w-hp-floor", type=float, default=1.0, help="loss weight of the per-floor HP head (amber)")
+    ap.add_argument("--init-net", help="start from this checkpoint's weights (mismatched heads fresh; new counters)")
     ap.add_argument("--keep-full", type=float, default=1.0, help="keep probability of a full-search position")
     ap.add_argument("--keep-fast", type=float, default=0.0, help="keep probability of a fast-search position")
     ap.add_argument("--max-fight-moves", type=int, default=400)
@@ -258,6 +293,10 @@ def main(argv=None):
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     ap.add_argument("--test-max-hp", type=int, default=0, help="tests only")
     args = ap.parse_args(argv)
+    if args.init_net and args.resume:
+        ap.error("--init-net and --resume exclude each other")
+    amber = args.utility == "amber"
+    hp_floors = 56 if amber else 1
 
     sys.path.insert(0, args.module_dir)
     import az_bench_native  # noqa: E402
@@ -267,7 +306,7 @@ def main(argv=None):
     cuda = dev.type == "cuda"
     torch.manual_seed(args.seed)
     d, layers = amber_net.SIZES.get(args.net) or tuple(int(x) for x in args.net.split("x")[:2])
-    train_net = amber_net.AmberNet(d=d, layers=layers).to(dev)
+    train_net = amber_net.AmberNet(d=d, layers=layers, hp_floors=hp_floors).to(dev)
     train_net.sdpa = True
     opt = torch.optim.AdamW(train_net.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     counters = {"step": 0, "trained": 0, "seeds_used": 0, "runs_done": 0, "wall": 0.0}
@@ -276,6 +315,13 @@ def main(argv=None):
         train_net.load_state_dict(ck["net"])
         opt.load_state_dict(ck["opt"])
         counters.update(ck["counters"])
+    if args.init_net:
+        src = torch.load(args.init_net, map_location=dev)["net"]
+        own = train_net.state_dict()
+        fresh = [k for k in own if k not in src or src[k].shape != own[k].shape]
+        own.update({k: v for k, v in src.items() if k in own and v.shape == own[k].shape})
+        train_net.load_state_dict(own)
+        print(f"# init-net {args.init_net}: fresh {fresh}", flush=True)
     # A curriculum checkpoint carries its current ascension; otherwise --ascension.
     ascension = counters.get("ascension", args.ascension) if args.curriculum else args.ascension
     counters["ascension"] = ascension
@@ -310,13 +356,15 @@ def main(argv=None):
         hp_weight_combat=args.hp_weight_combat, hp_weight_ooc=args.hp_weight_ooc, keep_full=args.keep_full,
         keep_fast=args.keep_fast, search_seed=args.seed + counters["step"], max_fight_moves=args.max_fight_moves,
         test_max_hp=args.test_max_hp, max_pending=args.max_pending,
-        explore_c=args.explore_c, pick_target=args.pick_target)
-    replay = Replay(args.window)
+        explore_c=args.explore_c, pick_target=args.pick_target, utility=1 if amber else 0,
+        keyless_hp=args.keyless_hp)
+    replay = Replay(args.window, hp_floors=56 if amber else 0)
     stop = threading.Event()
     errors = []
     weights_lock = threading.Lock()
     new_weights = [None]          # (state tensors on the GPU, event) published by the trainer
-    lossbox = {"n": 0, "policy": 0.0, "outcome": 0.0, "hp": 0.0}
+    loss_keys = ("policy", "outcome", "hp") + (("hp_floor",) if amber else ())
+    lossbox = dict({"n": 0}, **{k: 0.0 for k in loss_keys})
     lossbox_lock = threading.Lock()
     infer_stats = {"batches": 0, "rows": 0, "syncs": 0}
 
@@ -357,6 +405,8 @@ def main(argv=None):
             out = {"logits": torch.zeros(R * A, dtype=torch.float32, pin_memory=cuda),
                    "F": torch.zeros(R, dtype=torch.float32, pin_memory=cuda),
                    "ehp": torch.zeros(R, dtype=torch.float32, pin_memory=cuda)}
+            if amber:
+                out["hpf"] = torch.zeros(R * 56, dtype=torch.float32, pin_memory=cuda)
             return h, {k: v.numpy() for k, v in h.items()}, out
 
         sets = [buffers(), buffers()]
@@ -367,7 +417,7 @@ def main(argv=None):
             if ev is not None:
                 ev.synchronize()
             drv.submit(ticket, out["logits"][:rows * Ap].numpy().reshape(rows, Ap), out["F"][:rows].numpy(),
-                       out["ehp"][:rows].numpy())
+                       out["ehp"][:rows].numpy(), out["hpf"][:rows * 56].numpy().reshape(rows, 56) if amber else None)
 
         while not stop.is_set():
             host, views, out = sets[cur]
@@ -416,11 +466,13 @@ def main(argv=None):
                             so[0] = 0
                             np.cumsum(views["mask"][:M].reshape(Rp, Tp).sum(1), out=so[1:Rp + 1])
                             x["seq_off"] = host["seq_off"][:Rp + 1].to(dev, non_blocking=True)
-                    lg, outcome, hp, _ = run(x)
+                    lg, outcome, hp, hpf = run(x)
                     Fv, ehp = search_values(outcome[:rows], hp[:rows])
                     out["logits"][:rows * Ap].view(rows, Ap).copy_(lg[:rows].float(), non_blocking=True)
                     out["F"][:rows].copy_(Fv, non_blocking=True)
                     out["ehp"][:rows].copy_(ehp, non_blocking=True)
+                    if amber:
+                        out["hpf"][:rows * 56].view(rows, 56).copy_(hpf[:rows].float().clamp(0, 1), non_blocking=True)
                     ev = None
                     if stream is not None:
                         ev = torch.cuda.Event()
@@ -458,7 +510,7 @@ def main(argv=None):
                 for g in opt.param_groups:
                     g["lr"] = lr
                 with torch.enable_grad(), amp:
-                    loss, parts = losses(train_net, bt, args.w_policy, args.w_outcome, args.w_hp)
+                    loss, parts = losses(train_net, bt, args.w_policy, args.w_outcome, args.w_hp, args.w_hp_floor)
                 opt.zero_grad(set_to_none=True)
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(train_net.parameters(), 1.0)
@@ -523,8 +575,8 @@ def main(argv=None):
             d_runs = s["runs_done"] - last_runs
             with lossbox_lock:
                 n = max(1, lossbox["n"])
-                lavg = {k: round(lossbox[k] / n, 4) for k in ("policy", "outcome", "hp")} if lossbox["n"] else None
-                lossbox.update({"n": 0, "policy": 0.0, "outcome": 0.0, "hp": 0.0})
+                lavg = {k: round(lossbox[k] / n, 4) for k in loss_keys} if lossbox["n"] else None
+                lossbox.update(dict({"n": 0}, **{k: 0.0 for k in loss_keys}))
             asc = drv.ascension()
             a_runs = s["runs_done_asc"][asc] - last_s["runs_done_asc"][asc]
             a_wins = s["wins_asc"][asc] - last_s["wins_asc"][asc]

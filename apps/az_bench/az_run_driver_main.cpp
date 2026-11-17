@@ -2,7 +2,7 @@
 // training samples (labels filled, policy a distribution over the sample's actions, action sources / targets inside
 // the row). Smoke test and CPU-side throughput probe.
 //
-// usage: az-run-driver [--workers 2] [--games 4] [--runs 8] [--batch 64] [--seed 0] [--seed-base 1] [--fast] [--asc 20] [--sims N] [--const-value] [--test-hp HP] [--max-fight-moves 400] [--explore-c C] [--pick-target T]
+// usage: az-run-driver [--workers 2] [--games 4] [--runs 8] [--batch 64] [--seed 0] [--seed-base 1] [--fast] [--asc 20] [--sims N] [--const-value] [--test-hp HP] [--max-fight-moves 400] [--explore-c C] [--pick-target T] [--utility floor-hp|amber] [--keyless-hp]
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -41,6 +41,13 @@ int main(int argc, char **argv) {
         else if (a == "--explore-c") cfg.exploreC = std::stod(next());
         else if (a == "--pick-target") cfg.pickTarget = std::stod(next());
         else if (a == "--asc") cfg.ascension = std::stoi(next());
+        else if (a == "--utility") {
+            const std::string u = next();
+            if (u == "amber") cfg.utility = azbench::Utility::AMBER;
+            else if (u == "floor-hp") cfg.utility = azbench::Utility::FLOOR_HP;
+            else { std::fprintf(stderr, "--utility floor-hp|amber\n"); return 2; }
+        }
+        else if (a == "--keyless-hp") cfg.keylessHp = true;
         else if (a == "--sims") { cfg.fullSims = std::stoi(next()); cfg.fastSims = cfg.fullSims; cfg.fullProb = 1.0; }
         else if (a == "--fast") { cfg.fullSims = 8; cfg.fastSims = 4; cfg.fullCandidates = 4; cfg.fastCandidates = 2; }
         else { std::fprintf(stderr, "unknown argument %s\n", a.c_str()); return 2; }
@@ -61,7 +68,8 @@ int main(int argc, char **argv) {
     d.start();
     std::mt19937_64 rng(7);
     std::uniform_real_distribution<float> U(0.f, 1.f);
-    std::vector<float> logits, F, ehp;
+    std::vector<float> logits, F, ehp, hpf;
+    const bool amber = cfg.utility == azbench::Utility::AMBER;
     std::vector<azbench::Sample> samples;
     const auto t0 = std::chrono::steady_clock::now();
     bool timedOut = false;
@@ -79,7 +87,11 @@ int main(int argc, char **argv) {
         ehp.resize(B);
         for (auto &x : logits) x = U(rng);
         for (int r = 0; r < B; ++r) { F[r] = constValue ? 0.5f : U(rng); ehp[r] = constValue ? 0.f : 80.f * U(rng); }
-        d.submit(tickets.data(), B, shape.actions, logits.data(), F.data(), ehp.data());
+        if (amber) {
+            hpf.resize(static_cast<std::size_t>(B) * azbench::kFloors);
+            for (auto &x : hpf) x = constValue ? 0.f : 0.3f * U(rng);
+        }
+        d.submit(tickets.data(), B, shape.actions, logits.data(), F.data(), ehp.data(), amber ? hpf.data() : nullptr);
         d.takeSamples(1 << 20, samples);
     }
     d.stop();
@@ -94,6 +106,18 @@ int main(int argc, char **argv) {
                   x.ids.size() == static_cast<std::size_t>(n) * search::kAmberCat &&
                   x.f.size() == static_cast<std::size_t>(n) * search::kAmberFloat;
         for (int j = 0; j < na; ++j) ok = ok && x.aSrc[j] >= -1 && x.aSrc[j] < n && x.aTgt[j] >= -1 && x.aTgt[j] < n;
+        // Per-floor HP labels (utility AMBER only): masked (-1) exactly before the sample's floor, >= 0 from it on,
+        // the sample's own floor equal to its hp_end label, and 0 after a death's floor.
+        if (amber) {
+            const int fl = std::clamp<int>(x.floor, 1, azbench::kFloors);
+            ok = ok && x.hpFloor.size() == static_cast<std::size_t>(azbench::kFloors);
+            for (int f = 1; ok && f <= azbench::kFloors; ++f) ok = (f < fl) == (x.hpFloor[f - 1] < 0);
+            if (ok && x.floor >= 1) ok = x.hpFloor[fl - 1] == x.hpEnd;
+            if (ok && x.outcome > 0)
+                for (int f = std::max(fl, static_cast<int>(x.outcome)) + 1; f <= azbench::kFloors; ++f) ok = ok && x.hpFloor[f - 1] == 0;
+        } else {
+            ok = ok && x.hpFloor.empty();
+        }
         if (!x.policy.empty()) {
             ++withPolicy;
             double sum = 0;
