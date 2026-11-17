@@ -28046,7 +28046,7 @@ proposal (Philipp's decision). Next: better playout policies trained on §814's 
 value-error test. Seeds: none new (§775's). Cost: 168.2 lane-hours.
 **Knowledge impact:** KB `research/combat-search/cheap-combat-roadmap.md` (playout prior retrain line).
 
-## §TBD — Simulation-balanced playout policy (issue #1053): G16 + mb4 with SBC (net C fine-tuned by simulation balancing on the playout value error; debiased offline MSE 617 vs V's 688) instead of V as prior-playout policy, against §815's GP on 1,021 paired A20 seeds (3 dropped) after a 32/32 sentinel: Heart 43.58% → 44.37%, +0.78 pp [−1.67, +3.23] → NOT_WORSE_3PP at 1.87× CPU (equal simulations) (cloud, 40 workers, 2026-11-16/17)
+## §816 — Simulation-balanced playout policy (issue #1053): G16 + mb4 with SBC (net C fine-tuned by simulation balancing on the playout value error; debiased offline MSE 617 vs V's 688) instead of V as prior-playout policy, against §815's GP on 1,021 paired A20 seeds (3 dropped) after a 32/32 sentinel: Heart 43.58% → 44.37%, +0.78 pp [−1.67, +3.23] → NOT_WORSE_3PP at 1.87× CPU (equal simulations) (cloud, 40 workers, 2026-11-16/17)
 
 **Question (Philipp 2026-11-16 20:33 CET, typed go "ja zu spiel test"; 40 workers 21:30 CET):** does a playout policy
 trained directly on the playout value error (Silver & Tesauro 2009) beat V in whole runs, i.e. is the offline value
