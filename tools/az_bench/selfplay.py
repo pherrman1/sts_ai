@@ -231,6 +231,10 @@ def main(argv=None):
                     help="samples of unfinished runs held for their labels; above it keep probabilities shrink")
     ap.add_argument("--explore-c", type=float, default=0.0, help="pick-rate exploration strength (0 = off)")
     ap.add_argument("--pick-target", type=float, default=0.01, help="pick-rate target per item and run")
+    ap.add_argument("--eval-cache", action="store_true",
+                    help="per-run evaluation cache: a leaf whose net input this run already had evaluated with the "
+                         "current inference weights reuses that result (exact; RunConfig::evalCache)")
+    ap.add_argument("--eval-cache-cap", type=int, default=1024, help="cache entries per run (emptied when full)")
     ap.add_argument("--batch", type=int, default=2048)
     ap.add_argument("--row-buckets", default="2048", help="batch rows padded to these (one size keeps compiled shapes few)")
     ap.add_argument("--tok-buckets", default="32,40,48,56,64,80,96,128,212")
@@ -310,7 +314,8 @@ def main(argv=None):
         hp_weight_combat=args.hp_weight_combat, hp_weight_ooc=args.hp_weight_ooc, keep_full=args.keep_full,
         keep_fast=args.keep_fast, search_seed=args.seed + counters["step"], max_fight_moves=args.max_fight_moves,
         test_max_hp=args.test_max_hp, max_pending=args.max_pending,
-        explore_c=args.explore_c, pick_target=args.pick_target)
+        explore_c=args.explore_c, pick_target=args.pick_target, eval_cache=args.eval_cache,
+        eval_cache_cap=args.eval_cache_cap)
     replay = Replay(args.window)
     stop = threading.Event()
     errors = []
@@ -363,11 +368,11 @@ def main(argv=None):
         cur, pending = 0, None
 
         def finish(p):
-            ticket, rows, Ap, out, ev = p
+            ticket, rows, Ap, out, ev, version = p
             if ev is not None:
                 ev.synchronize()
             drv.submit(ticket, out["logits"][:rows * Ap].numpy().reshape(rows, Ap), out["F"][:rows].numpy(),
-                       out["ehp"][:rows].numpy())
+                       out["ehp"][:rows].numpy(), version)
 
         while not stop.is_set():
             host, views, out = sets[cur]
@@ -389,6 +394,8 @@ def main(argv=None):
                             if stream is not None:   # p_s came from the trainer's stream: keep it alive for this copy
                                 p_s.record_stream(stream)
                         infer_stats["syncs"] += 1
+                        # Evaluation cache: results of the old weights are not reused from now on.
+                        drv.set_weights_version(infer_stats["syncs"])
                     x = {}
                     shapes = {"tok_type": (Rp, Tp), "ids": (Rp, Tp, 4), "f": (Rp, Tp, 64), "mask": (Rp, Tp),
                               "a_type": (Rp, Ap), "a_src": (Rp, Ap), "a_tgt": (Rp, Ap), "a_f": (Rp, Ap, 8),
@@ -425,7 +432,7 @@ def main(argv=None):
                     if stream is not None:
                         ev = torch.cuda.Event()
                         ev.record(stream)
-                launched = (ticket, rows, Ap, out, ev)
+                launched = (ticket, rows, Ap, out, ev, infer_stats["syncs"])
                 infer_stats["batches"] += 1
                 infer_stats["rows"] += rows
             if pending is not None:
@@ -545,6 +552,7 @@ def main(argv=None):
             row = {
                 "time": time.strftime("%Y-%m-%d %H:%M:%S"), "hours": round((wall0 + now - t_start) / 3600, 3),
                 "positions_per_s": round((s["evals"] - last_s["evals"]) / dt),
+                "cache_hits_per_s": round((s["cache_hits"] - last_s["cache_hits"]) / dt),
                 "moves_per_s": round((s["moves"] - last_s["moves"]) / dt),
                 "runs_done": counters["runs_done"] + s["runs_done"],
                 "runs_window": d_runs,

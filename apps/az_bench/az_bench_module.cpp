@@ -193,7 +193,7 @@ PYBIND11_MODULE(az_bench_native, m) {
                          int fullSims, int fastSims, double fullProb, int fullCandidates, int fastCandidates,
                          double hpWeightCombat, double hpWeightOoc, double keepFull, double keepFast,
                          std::uint64_t searchSeed, int maxFightMoves, int testMaxHp, std::int64_t maxPending,
-                         double exploreC, double pickTarget) {
+                         double exploreC, double pickTarget, bool evalCache, int evalCacheCap) {
                  azbench::RunConfig c;
                  c.workers = workers;
                  c.gamesPerWorker = games;
@@ -215,6 +215,8 @@ PYBIND11_MODULE(az_bench_native, m) {
                  c.maxPendingSamples = maxPending;
                  c.exploreC = exploreC;
                  c.pickTarget = pickTarget;
+                 c.evalCache = evalCache;
+                 c.evalCacheCap = evalCacheCap;
                  return std::make_unique<azbench::RunDriver>(c);
              }),
              py::arg("workers") = 11, py::arg("games") = 700, py::arg("seed_base") = 0, py::arg("max_runs") = -1,
@@ -223,7 +225,9 @@ PYBIND11_MODULE(az_bench_native, m) {
              py::arg("hp_weight_combat") = 1.0, py::arg("hp_weight_ooc") = 1.0, py::arg("keep_full") = 1.0,
              py::arg("keep_fast") = 0.0, py::arg("search_seed") = 0, py::arg("max_fight_moves") = 400,
              py::arg("test_max_hp") = 0, py::arg("max_pending") = 300000,
-             py::arg("explore_c") = 0.0, py::arg("pick_target") = 0.01)
+             py::arg("explore_c") = 0.0, py::arg("pick_target") = 0.01, py::arg("eval_cache") = false,
+             py::arg("eval_cache_cap") = 1024)
+        .def("set_weights_version", &azbench::RunDriver::setWeightsVersion)
         .def("set_ascension", &azbench::RunDriver::setAscension)
         .def("ascension", &azbench::RunDriver::ascension)
         .def("start", &azbench::RunDriver::start, py::call_guard<py::gil_scoped_release>())
@@ -251,7 +255,7 @@ PYBIND11_MODULE(az_bench_native, m) {
              [](azbench::RunDriver &d, py::array_t<std::uint32_t, py::array::c_style | py::array::forcecast> ticket,
                 py::array_t<float, py::array::c_style | py::array::forcecast> logits,
                 py::array_t<float, py::array::c_style | py::array::forcecast> F,
-                py::array_t<float, py::array::c_style | py::array::forcecast> ehp) {
+                py::array_t<float, py::array::c_style | py::array::forcecast> ehp, std::uint32_t version) {
                  if (logits.ndim() != 2 || F.ndim() != 1 || ehp.ndim() != 1 || ticket.ndim() != 1 ||
                      logits.shape(0) != ticket.shape(0) || F.shape(0) != ticket.shape(0) ||
                      ehp.shape(0) != ticket.shape(0))
@@ -262,9 +266,9 @@ PYBIND11_MODULE(az_bench_native, m) {
                  const auto *f = F.data();
                  const auto *h = ehp.data();
                  py::gil_scoped_release r;
-                 d.submit(t, rows, actions, l, f, h);
+                 d.submit(t, rows, actions, l, f, h, version);
              },
-             py::arg("ticket"), py::arg("logits"), py::arg("F"), py::arg("ehp"))
+             py::arg("ticket"), py::arg("logits"), py::arg("F"), py::arg("ehp"), py::arg("version") = 0)
         .def("take_samples",
              [](azbench::RunDriver &d, int maxSamples) -> py::object {
                  // Ragged arrays: sample i owns tokens tok_off[i] .. tok_off[i + 1] and actions act_off[i] ..
@@ -336,6 +340,7 @@ PYBIND11_MODULE(az_bench_native, m) {
             o["wins_asc"] = std::vector<std::int64_t>(s.winsAsc.begin(), s.winsAsc.end());
             o["floors_sum_asc"] = std::vector<std::int64_t>(s.floorsSumAsc.begin(), s.floorsSumAsc.end());
             o["ooc_roots"] = s.oocRoots; o["explore_roots"] = s.exploreRoots; o["forced_picks"] = s.forcedPicks;
+            o["cache_hits"] = s.cacheHits;
             o["step_cpu"] = s.stepCpu; o["encode_cpu"] = s.encodeCpu; o["search_cpu"] = s.searchCpu;
             o["pack_s"] = s.packSeconds;
             return o;
