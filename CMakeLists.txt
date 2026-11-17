@@ -191,12 +191,27 @@ target_include_directories(az-eval-cache-test PRIVATE include json/include apps/
 target_link_libraries(az-eval-cache-test PRIVATE Threads::Threads)
 add_test(NAME az_eval_cache COMMAND $<TARGET_FILE:az-eval-cache-test> --runs 3 --seed-base 1 --fast)
 set_tests_properties(az_eval_cache PROPERTIES LABELS "core;smoke")
+add_test(NAME az_eval_cache_amber COMMAND $<TARGET_FILE:az-eval-cache-test> --runs 3 --seed-base 1 --fast --utility amber)
+set_tests_properties(az_eval_cache_amber PROPERTIES LABELS "core;smoke")
 # Packed tokens (only live tokens to the GPU) carry the same rows as the [R][T] layout.
 add_executable(az-pack-test apps/az_bench/az_pack_test.cpp)
 target_include_directories(az-pack-test PRIVATE include apps/az_bench)
 target_link_libraries(az-pack-test PRIVATE Threads::Threads)
 add_test(NAME az_pack_packed_tokens COMMAND $<TARGET_FILE:az-pack-test>)
 set_tests_properties(az_pack_packed_tokens PROPERTIES LABELS "core;smoke")
+# Utility AMBER (Amber Eye's H from a per-floor HP head) and the keyless act 3 victory fix (2026-11-17, default off):
+# the formula / terminal / label unit test, and driver runs whose per-floor labels are checked (--test-hp 300 reaches
+# late floors).
+add_executable(az-utility-test apps/az_bench/az_utility_test.cpp)
+target_include_directories(az-utility-test PRIVATE include json/include apps/az_bench)
+add_test(NAME az_utility_test COMMAND $<TARGET_FILE:az-utility-test>)
+set_tests_properties(az_utility_test PROPERTIES LABELS "core;smoke")
+add_test(NAME az_run_driver_amber COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 12 --fast
+         --seed-base 1 --seconds 300 --utility amber --test-hp 300)
+set_tests_properties(az_run_driver_amber PROPERTIES LABELS "core;smoke")
+add_test(NAME az_run_driver_keyless COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 6 --fast
+         --seed-base 1 --seconds 300 --keyless-hp)
+set_tests_properties(az_run_driver_keyless PROPERTIES LABELS "core;smoke")
 # Search flags (no Gumbel noise on fast moves, Gumbel MuZero completed-Q rescale): the transform's arithmetic, and
 # full runs with both flags on give valid samples.
 add_test(NAME az_run_driver_qtransform COMMAND $<TARGET_FILE:az-run-driver> --self-test-q)

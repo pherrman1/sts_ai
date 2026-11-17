@@ -201,8 +201,10 @@ PYBIND11_MODULE(az_bench_native, m) {
                          double hpWeightCombat, double hpWeightOoc, double keepFull, double keepFast,
                          std::uint64_t searchSeed, int maxFightMoves, int testMaxHp, std::int64_t maxPending,
                          double exploreC, double pickTarget, double cVisit, double cScale, bool fastNoise,
-                         bool qRescale, bool evalCache, int evalCacheCap) {
+                         bool qRescale, int utility, bool keylessHp, bool evalCache, int evalCacheCap) {
                  azbench::RunConfig c;
+                 c.utility = static_cast<azbench::Utility>(utility);
+                 c.keylessHp = keylessHp;
                  c.workers = workers;
                  c.gamesPerWorker = games;
                  c.seedBase = seedBase;
@@ -239,6 +241,7 @@ PYBIND11_MODULE(az_bench_native, m) {
              py::arg("test_max_hp") = 0, py::arg("max_pending") = 300000,
              py::arg("explore_c") = 0.0, py::arg("pick_target") = 0.01, py::arg("c_visit") = 50.0,
              py::arg("c_scale") = 1.0, py::arg("fast_noise") = true, py::arg("q_rescale") = false,
+             py::arg("utility") = 0, py::arg("keyless_hp") = false,
              py::arg("eval_cache") = false, py::arg("eval_cache_cap") = 1024)
         .def("set_weights_version", &azbench::RunDriver::setWeightsVersion)
         .def("set_ascension", &azbench::RunDriver::setAscension)
@@ -273,20 +276,30 @@ PYBIND11_MODULE(az_bench_native, m) {
              [](azbench::RunDriver &d, py::array_t<std::uint32_t, py::array::c_style | py::array::forcecast> ticket,
                 py::array_t<float, py::array::c_style | py::array::forcecast> logits,
                 py::array_t<float, py::array::c_style | py::array::forcecast> F,
-                py::array_t<float, py::array::c_style | py::array::forcecast> ehp, std::uint32_t version) {
+                py::array_t<float, py::array::c_style | py::array::forcecast> ehp, py::object hpfObj,
+                std::uint32_t version) {
                  if (logits.ndim() != 2 || F.ndim() != 1 || ehp.ndim() != 1 || ticket.ndim() != 1 ||
                      logits.shape(0) != ticket.shape(0) || F.shape(0) != ticket.shape(0) ||
                      ehp.shape(0) != ticket.shape(0))
                      throw std::invalid_argument("submit: want ticket [B], logits [B, A], F [B], ehp [B]");
+                 py::array_t<float, py::array::c_style | py::array::forcecast> hpf;
+                 const float *hp = nullptr;
+                 if (!hpfObj.is_none()) {
+                     hpf = py::array_t<float, py::array::c_style | py::array::forcecast>::ensure(hpfObj);
+                     if (!hpf || hpf.ndim() != 2 || hpf.shape(0) != ticket.shape(0) || hpf.shape(1) != azbench::kFloors)
+                         throw std::invalid_argument("submit: want hpf [B, 56] (E[HP_f] / 255)");
+                     hp = hpf.data();
+                 }
                  const int rows = static_cast<int>(ticket.shape(0)), actions = static_cast<int>(logits.shape(1));
                  const auto *t = ticket.data();
                  const auto *l = logits.data();
                  const auto *f = F.data();
                  const auto *h = ehp.data();
                  py::gil_scoped_release r;
-                 d.submit(t, rows, actions, l, f, h, version);
+                 d.submit(t, rows, actions, l, f, h, hp, version);
              },
-             py::arg("ticket"), py::arg("logits"), py::arg("F"), py::arg("ehp"), py::arg("version") = 0)
+             py::arg("ticket"), py::arg("logits"), py::arg("F"), py::arg("ehp"), py::arg("hpf") = py::none(),
+             py::arg("version") = 0)
         .def("take_samples",
              [](azbench::RunDriver &d, int maxSamples) -> py::object {
                  // Ragged arrays: sample i owns tokens tok_off[i] .. tok_off[i + 1] and actions act_off[i] ..
@@ -312,6 +325,8 @@ PYBIND11_MODULE(az_bench_native, m) {
                  std::vector<std::int16_t> outcome(S), hpEnd(S), maxHp(S), floor(S);
                  std::vector<std::uint8_t> combat(S), hasPolicy(S);
                  std::vector<std::uint64_t> run(S);
+                 const bool perFloor = !v[0].hpFloor.empty();   // utility AMBER: every sample has [56] labels
+                 std::vector<std::int16_t> hpFloor(perFloor ? S * azbench::kFloors : 0);
                  for (std::size_t i = 0; i < S; ++i) {
                      const auto &x = v[i];
                      tokType.insert(tokType.end(), x.tokType.begin(), x.tokType.end());
@@ -328,6 +343,11 @@ PYBIND11_MODULE(az_bench_native, m) {
                      searchValue[i] = x.searchValue;
                      outcome[i] = x.outcome; hpEnd[i] = x.hpEnd; maxHp[i] = x.maxHp; floor[i] = x.floor;
                      combat[i] = x.combat; hasPolicy[i] = x.policy.empty() ? 0 : 1; run[i] = x.run;
+                     if (perFloor) {
+                         if (x.hpFloor.size() != static_cast<std::size_t>(azbench::kFloors))
+                             throw std::runtime_error("take_samples: sample without per-floor HP labels");
+                         std::copy(x.hpFloor.begin(), x.hpFloor.end(), hpFloor.begin() + i * azbench::kFloors);
+                     }
                  }
                  const auto nT = static_cast<py::ssize_t>(tokType.size()), nA = static_cast<py::ssize_t>(aType.size());
                  py::dict o;
@@ -341,6 +361,9 @@ PYBIND11_MODULE(az_bench_native, m) {
                  o["outcome"] = toArray(outcome); o["hp_end"] = toArray(hpEnd); o["max_hp"] = toArray(maxHp);
                  o["floor"] = toArray(floor); o["combat"] = toArray(combat); o["has_policy"] = toArray(hasPolicy);
                  o["run"] = toArray(run);
+                 if (perFloor)
+                     o["hp_floor"] = toArray(hpFloor).reshape({static_cast<py::ssize_t>(S),
+                                                               static_cast<py::ssize_t>(azbench::kFloors)});
                  return o;
              },
              py::arg("max_samples") = 1 << 20)

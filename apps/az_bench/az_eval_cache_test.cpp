@@ -6,7 +6,9 @@
 //
 // One worker with one run in flight, so the search's RNG sequence does not depend on batch timing.
 //
-// usage: az-eval-cache-test [--runs 3] [--seed-base 1] [--fast]
+// --utility amber: the net also gives per-floor HP (hpf), which the cache must return too.
+//
+// usage: az-eval-cache-test [--runs 3] [--seed-base 1] [--fast] [--utility amber]
 #include <cstdio>
 #include <cstring>
 #include <string>
@@ -50,7 +52,8 @@ namespace {
         Result res;
         std::uint32_t version = 0;
         d.start();
-        std::vector<float> logits, F, ehp;
+        std::vector<float> logits, F, ehp, hpf;
+        const bool amber = cfg.utility == azbench::Utility::AMBER;
         std::vector<azbench::Sample> samples;
         while (d.stats().runsDone < cfg.maxRuns) {
             if (versionPerBatch) d.setWeightsVersion(++version);
@@ -62,6 +65,7 @@ namespace {
             logits.assign(static_cast<std::size_t>(B) * An, 0.f);
             F.resize(B);
             ehp.resize(B);
+            hpf.resize(static_cast<std::size_t>(B) * azbench::kFloors);
             for (int r = 0; r < B; ++r) {
                 std::uint64_t h = version;
                 for (int t = 0; t < Tn; ++t) {
@@ -82,8 +86,9 @@ namespace {
                 for (int a = 0; a < An; ++a) logits[static_cast<std::size_t>(r) * An + a] = 4.f * unit(mix(h, 1000 + a)) - 2.f;
                 F[r] = unit(mix(h, 1));
                 ehp[r] = 80.f * unit(mix(h, 2));
+                for (int k = 0; k < azbench::kFloors; ++k) hpf[static_cast<std::size_t>(r) * azbench::kFloors + k] = unit(mix(h, 3 + k));
             }
-            d.submit(tickets.data(), B, An, logits.data(), F.data(), ehp.data(), version);
+            d.submit(tickets.data(), B, An, logits.data(), F.data(), ehp.data(), amber ? hpf.data() : nullptr, version);
             d.takeSamples(1 << 20, samples);
         }
         d.stop();
@@ -125,6 +130,7 @@ int main(int argc, char **argv) {
         auto next = [&]() { if (i + 1 >= argc) { std::fprintf(stderr, "missing value for %s\n", a.c_str()); std::exit(2); } return std::string(argv[++i]); };
         if (a == "--runs") cfg.maxRuns = std::stoll(next());
         else if (a == "--seed-base") cfg.seedBase = std::stoull(next());
+        else if (a == "--utility") { const std::string u = next(); if (u != "amber") { std::fprintf(stderr, "unknown utility %s\n", u.c_str()); return 2; } cfg.utility = azbench::Utility::AMBER; }
         else if (a == "--fast") { cfg.fullSims = 8; cfg.fastSims = 4; cfg.fullCandidates = 4; cfg.fastCandidates = 2; }
         else { std::fprintf(stderr, "unknown argument %s\n", a.c_str()); return 2; }
     }

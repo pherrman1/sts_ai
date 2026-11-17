@@ -84,6 +84,11 @@ namespace sts::azbench {
             return gc.outcome == GameOutcome::PLAYER_VICTORY && gc.act == 4;
         }
 
+        // The act 3 boss beaten without the three keys: the engine's victory, not a win here.
+        bool keylessVictory(const GameContext &gc) {
+            return gc.outcome == GameOutcome::PLAYER_VICTORY && gc.act != 4;
+        }
+
         int outcomeClass(const GameContext &gc) {
             return heartWin(gc) ? 0 : std::clamp(gc.floorNum, 1, kOutcomeClasses - 1);
         }
@@ -323,11 +328,14 @@ namespace sts::azbench {
         std::uint32_t resVersion = 0;        // weights version of the result (submit)
         // Evaluation cache (RunConfig::evalCache): input hash -> result, all of weights version cacheVersion; emptied
         // at the start of each run, on a weights change and when full.
-        struct CacheEntry { float F = 0, ehp = 0; int nAct = 0; std::vector<float> logits; };
+        struct CacheEntry { float F = 0, ehp = 0; int nAct = 0; std::vector<float> logits, hpf; };   // hpf: utility AMBER
         std::unordered_map<std::uint64_t, CacheEntry> cache;
         std::uint32_t cacheVersion = 0;
         std::uint64_t pendingHash = 0;
         bool pendingHit = false;             // the pending leaf was answered by the cache
+        std::array<float, kFloors> resHpf{};   // utility AMBER: E[HP_f] / 255 of the pending leaf
+        int pendingFloor = 0;                  // floor of the pending leaf
+        std::array<std::int16_t, kFloors + 1> floorHp{};   // utility AMBER: HP at the end of floor f (-1 = not yet)
         std::vector<Sample> pending;
         std::size_t floorStart = 0;          // first pending sample of the current floor
         Sample cur;                          // the current move's sample (root tokens), if kept
@@ -402,11 +410,19 @@ namespace sts::azbench {
             return g.gumbel[e] + root.edges[e].logit + sigma * q[e];
         }
 
-        // Scaled utility (F + w H) / (1 + w) of a state the run cannot continue from.
-        float terminalUtility(bool win, int floor, int hp, int maxHp, double w) {
+        // Scaled utility (F + w H) / (1 + w) of a state the run cannot continue from. alive: the run ended without
+        // a death (a Heart kill, or a keyless act 3 victory).
+        float terminalUtility(bool win, bool alive, int floor, int hp, int maxHp, double w, const RunConfig &cfg) {
             const double F = win ? 1.0 : std::clamp(floor, 1, kOutcomeClasses - 1) / 57.0;
-            const double H = win ? std::clamp(static_cast<double>(hp) / std::max(1, maxHp), 0.0, 1.0) : 0.0;
+            double H;
+            if (cfg.utility == Utility::AMBER) H = amberTerminalH(win, alive, floor, hp);
+            else H = (win || (alive && cfg.keylessHp)) ? std::clamp(static_cast<double>(hp) / std::max(1, maxHp), 0.0, 1.0) : 0.0;
             return static_cast<float>((F + w * H) / (1.0 + w));
+        }
+
+        float terminalUtility(const GameContext &gc, double w, const RunConfig &cfg) {
+            return terminalUtility(heartWin(gc), heartWin(gc) || keylessVictory(gc), gc.floorNum, gc.curHp, gc.maxHp,
+                                   w, cfg);
         }
 
     }
@@ -418,6 +434,8 @@ namespace sts::azbench {
         for (int i = 0; i < kPickBuckets; ++i) picks_[i].store(0);
         if (!cfg_.encodeCombat) cfg_.encodeCombat = search::amberEncodeCombat;
         if (!cfg_.encodeGame) cfg_.encodeGame = search::amberEncodeGame;
+        if (cfg_.utility != Utility::FLOOR_HP && cfg_.utility != Utility::AMBER)
+            throw std::invalid_argument("run driver: utility 0 (floor HP) or 1 (Amber)");
         if (cfg_.gamesPerWorker > 0xffff) throw std::invalid_argument("run driver: at most 65535 runs per worker");
         for (int w = 0; w < cfg_.workers; ++w) {
             auto wk = std::make_unique<Worker>();
@@ -545,6 +563,7 @@ namespace sts::azbench {
                 wk.st.encodeCpu += cpuSeconds() - t1;
                 g.pendingCombat = true;
                 g.pendingMaxHp = static_cast<float>(std::max<int>(1, node.bc.player.maxHp));
+                g.pendingFloor = node.bc.floorNum;
             } else {
                 gacts = GameAction::getAllActionsInState(*node.gc);
                 node.edges.resize(gacts.size());
@@ -573,6 +592,7 @@ namespace sts::azbench {
                 wk.st.encodeCpu += cpuSeconds() - t1;
                 g.pendingCombat = false;
                 g.pendingMaxHp = static_cast<float>(std::max(1, node.gc->maxHp));
+                g.pendingFloor = node.gc->floorNum;
             }
             (node.combat ? wk.st.encodeCut : wk.st.encodeCutOoc) += g.tokens.cut;
             g.pendingNode = ni;
@@ -587,6 +607,7 @@ namespace sts::azbench {
                     g.resLogits = it->second.logits;
                     g.resF = it->second.F;
                     g.resEhp = it->second.ehp;
+                    if (!it->second.hpf.empty()) std::copy(it->second.hpf.begin(), it->second.hpf.end(), g.resHpf.begin());
                     g.pendingHit = true;
                     ++wk.st.cacheHits;
                     wk.hits.push_back(gi);
@@ -616,6 +637,7 @@ namespace sts::azbench {
         auto closeFloor = [&](Run &g, int hpEnd) {
             for (std::size_t i = g.floorStart; i < g.pending.size(); ++i) g.pending[i].hpEnd = static_cast<std::int16_t>(hpEnd);
             g.floorStart = g.pending.size();
+            if (g.floor >= 1 && g.floor <= kFloors) g.floorHp[g.floor] = static_cast<std::int16_t>(hpEnd);
         };
 
         std::function<void(Run &, int)> startMove;
@@ -634,6 +656,7 @@ namespace sts::azbench {
             g.floor = g.gc.floorNum;
             g.pending.clear();
             g.floorStart = 0;
+            g.floorHp.fill(-1);
             g.progress = RunProgress{};
             ++wk.st.runsStarted;
             startMove(g, gi);
@@ -641,9 +664,21 @@ namespace sts::azbench {
 
         auto endRun = [&](Run &g, int gi) {
             const bool win = heartWin(g.gc);
-            closeFloor(g, win ? g.gc.curHp : 0);
+            // A keyless act 3 victory is no death: with keylessHp / AMBER its floor keeps the HP (otherwise 0).
+            const bool alive = win || (keylessVictory(g.gc) && (cfg.keylessHp || cfg.utility == Utility::AMBER));
+            closeFloor(g, alive ? g.gc.curHp : 0);
             const int oc = outcomeClass(g.gc);
             for (auto &s : g.pending) s.outcome = static_cast<std::int16_t>(oc);
+            if (cfg.utility == Utility::AMBER) {
+                // Floors skipped without a record (a floor counter jump) take the HP of the next recorded floor.
+                for (int f = std::min(kFloors, std::max(1, g.floor)) - 1; f >= 1; --f)
+                    if (g.floorHp[f] < 0) g.floorHp[f] = g.floorHp[f + 1];
+                const int tail = win ? g.gc.curHp : 0;
+                for (auto &s : g.pending) {
+                    s.hpFloor.resize(kFloors);
+                    amberFloorLabels(s.floor, g.floorHp.data(), tail, s.hpFloor.data());
+                }
+            }
             ++wk.st.runsDone;
             runsDone_.fetch_add(1, std::memory_order_relaxed);
             if (win) ++wk.st.wins;
@@ -963,7 +998,7 @@ namespace sts::azbench {
                     cn.combat = true;
                     cn.bc = next;
                     cn.evaluated = cn.terminal = true;
-                    cn.value = terminalUtility(false, g.gc.floorNum, 0, 1, cfg.hpWeightCombat);
+                    cn.value = terminalUtility(false, false, g.gc.floorNum, 0, 1, cfg.hpWeightCombat, cfg);
                 } else if (next.outcome == Outcome::PLAYER_VICTORY) {
                     // Fight won: the leaf is the state after the fight, valued by the net (out of combat).
                     // The real run's hidden future (reward rolls, later encounters) is resampled first, so the
@@ -977,8 +1012,7 @@ namespace sts::azbench {
                     cn.boundary = true;
                     if (cn.gc->outcome != GameOutcome::UNDECIDED) {
                         cn.evaluated = cn.terminal = true;
-                        cn.value = terminalUtility(heartWin(*cn.gc), cn.gc->floorNum,
-                                                   cn.gc->curHp, cn.gc->maxHp, cfg.hpWeightOoc);
+                        cn.value = terminalUtility(*cn.gc, cfg.hpWeightOoc, cfg);
                     }
                 } else {
                     cn.combat = true;
@@ -997,8 +1031,7 @@ namespace sts::azbench {
                     if (next.outcome != GameOutcome::UNDECIDED) {
                         setGc(cn, std::move(next));
                         cn.evaluated = cn.terminal = true;
-                        cn.value = terminalUtility(heartWin(*cn.gc), cn.gc->floorNum,
-                                                   cn.gc->curHp, cn.gc->maxHp, cfg.hpWeightOoc);
+                        cn.value = terminalUtility(*cn.gc, cfg.hpWeightOoc, cfg);
                     } else if (next.screenState == ScreenState::BATTLE) {
                         // A fight starts: the leaf is its first state, valued by the net (in combat).
                         cn.combat = true;
@@ -1087,7 +1120,9 @@ namespace sts::azbench {
                 Run &g = wk.runs[gi];
                 Node &n = g.pool[g.pendingNode];
                 const double w = g.pendingCombat ? cfg.hpWeightCombat : cfg.hpWeightOoc;
-                const double H = std::clamp(static_cast<double>(g.resEhp) / g.pendingMaxHp, 0.0, 1.0);
+                const double H = cfg.utility == Utility::AMBER
+                                     ? amberH(g.pendingFloor, g.resHpf.data())
+                                     : std::clamp(static_cast<double>(g.resEhp) / g.pendingMaxHp, 0.0, 1.0);
                 n.evaluated = true;
                 n.value = static_cast<float>((std::clamp<double>(g.resF, 0.0, 1.0) + w * H) / (1.0 + w));
                 for (std::size_t k = 0; k < n.edges.size() && k < g.resLogits.size(); ++k) n.edges[k].logit = g.resLogits[k];
@@ -1104,6 +1139,7 @@ namespace sts::azbench {
                         e.ehp = g.resEhp;
                         e.nAct = g.tokens.nAct;
                         e.logits = g.resLogits;
+                        if (cfg.utility == Utility::AMBER) e.hpf.assign(g.resHpf.begin(), g.resHpf.end());
                     }
                 }
                 const bool rootEval = g.pendingNode == 0;
@@ -1169,7 +1205,9 @@ namespace sts::azbench {
     }
 
     void RunDriver::submit(const std::uint32_t *tickets, int rows, int actions, const float *logits, const float *F,
-                           const float *ehp, std::uint32_t version) {
+                           const float *ehp, const float *hpf, std::uint32_t version) {
+        if (cfg_.utility == Utility::AMBER && !hpf)
+            throw std::invalid_argument("run driver: utility AMBER needs per-floor HP results (hpf)");
         thread_local std::vector<std::vector<int>> per;
         per.assign(workers_.size(), {});
         for (int r = 0; r < rows; ++r) {
@@ -1181,6 +1219,8 @@ namespace sts::azbench {
             g.resF = F[r];
             g.resEhp = ehp[r];
             g.resVersion = version;
+            if (hpf) std::copy(hpf + static_cast<std::size_t>(r) * kFloors, hpf + static_cast<std::size_t>(r + 1) * kFloors,
+                               g.resHpf.begin());
             per[t >> 16].push_back(static_cast<int>(t & 0xffff));
         }
         for (std::size_t w = 0; w < per.size(); ++w) {
