@@ -28071,3 +28071,31 @@ same validation roots (N1), so the offline gap is slightly optimistic.
 **Decision:** NOT_WORSE_3PP. The playout value error stays a pre-filter, not a selector between close policies. No
 default change; SBC at 1.87× CPU is no equal-CPU candidate. Seeds: none new. Cost: about 311 lane-hours plus lost attempts.
 **Knowledge impact:** KB `research/combat-search/cheap-combat-roadmap.md` (playout prior retrain line).
+
+## §817 — Stage 0 throughput benchmark (Amber-Eye-style batched Gumbel combat search with a GPU token net): 470.7k net positions/s end to end on the RTX 3060 Ti with the 0.44M AmberNet (3 repeats 471.3k / 468.8k / 472.0k, ±0.3 %), above the preregistered 300k GO line; 1.2M net 212.8k, 5.4M net 68.6k (PC, 2026-11-17)
+
+**Question (Philipp 2026-11-16 23:23 CET, "bau Stufe 0", local, stay close to https://8e9f.github.io/amber_eye/):** how
+many net leaf evaluations per second can our engine plus a batched GPU token transformer reach on the PC? Decision rule
+set before the build: ≥ 300k pos/s GO, 100k-300k stage 1 with 500k games, < 100k STOP. Overnight mandate: alternate
+GPU and CPU optimizations until a step gains < ~10 %.
+**Data:** [RESULTS](evidence/stage0_throughput_20261117/RESULTS.md) (running table, rows 0-27b),
+[final/](evidence/stage0_throughput_20261117/final/) (exact command, three result JSONs). Code: PR #1075 (merge
+88478f22; run commit 7b002281), encoder PR #1077. Bench only: `apps/az_bench`, `tools/az_bench`; no main-agent default
+changes. Machine: Ryzen 5 7500F 6c/12t, RTX 3060 Ti 8 GB, torch 2.5.1+cu121. No game seeds: fights restart from
+`tests/data/combat_net_wire_sample.jsonl`; the net has random weights (throughput only, no play strength).
+**Result:** 0.44M net (64 × 6), 11 workers × 700 games, batch 2048, 1 batcher with a double-buffered pipeline, fp16:
+**470.7k pos/s** (20.3k moves/s), GPU 94-96 %; GPU-only forward 533k. Steps (pos/s): flat + compile 69k → full
+batches 116.5k → SDPA + fp16 weights 123k → pipeline 174k → packed live tokens 190k → fused LN + FFN Triton kernel
+233.5k → varlen Triton attention 342k → packer without dead-slot zeroing, 11 workers 386k → whole layer in three
+Triton kernels 440.7k → 4 packing threads 471.9k. Larger nets: 1.2M (128 × 4) 212.8k; 5.4M (256 × 5, fused kernels
+need d ≤ 128) 68.6k. Dead ends (no gain or wrong): token sort windows, CUDA graphs, max-autotune (too few SMs),
+torch_tensorrt (slower, logits off by ~0.5), 2 batchers with compile (hangs), attention as plain matmuls, Triton
+launch-parameter sweep, Emmy 0.3.25 (cloudrift-ai/emmy, torch 2.11 venv: the compiler stays > 20 min in its loop-IR
+assembler and never generates code). Inductor on torch 2.11 is 7-8 % faster than on 2.5.1 for the plain packed forward
+(224k vs 207k), still far below the custom kernels (533k). Kernels match the eager fp32 net within 5e-3 (tests under TRITON_INTERPRET=1); review K PASS.
+**Interpretation (Inference):** the 0.44M net clears the GO line with 57 % margin; at 470k the GPU and the workers
+(~540k ceiling at 20 µs CPU per position on 11 threads) are close to balanced, so further gains need both. Amber Eye
+reports ~800k on an 8c/16t CPU with a hand-written kernel. Larger nets fall below 300k on this GPU.
+**Decision:** GO for stage 1 by the preregistered rule (Philipp's call: which net size, local or rented GPU). The
+bench stays research-only.
+**Knowledge impact:** none yet (KB page when stage 1 starts).
