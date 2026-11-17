@@ -384,6 +384,10 @@ def main(argv=None):
     ap.add_argument("--no-fast-noise", action="store_true", help="no Gumbel noise on fast moves (Amber Eye)")
     ap.add_argument("--q-rescale", action="store_true",
                     help="completed Q as in Gumbel MuZero: mixed value for unvisited edges, min-max rescale per node")
+    ap.add_argument("--merge-cards", action="store_true",
+                    help="net input: identical cards as one CARD token with a copy count (search::amberMergeCards); "
+                         "changes what the net sees, so a run uses it from its start (a warm start sees count 0 = the "
+                         "old single-card encoding)")
     ap.add_argument("--batch", type=int, default=2048)
     ap.add_argument("--row-buckets", default="2048", help="batch rows padded to these (one size keeps compiled shapes few)")
     ap.add_argument("--tok-buckets", default="32,40,48,56,64,80,96,128,212")
@@ -493,7 +497,7 @@ def main(argv=None):
         explore_c=args.explore_c, pick_target=args.pick_target, c_visit=args.c_visit, c_scale=args.c_scale,
         fast_noise=not args.no_fast_noise, q_rescale=args.q_rescale, utility=1 if amber else 0,
         keyless_hp=args.keyless_hp,
-        eval_cache=args.eval_cache, eval_cache_cap=args.eval_cache_cap)
+        eval_cache=args.eval_cache, eval_cache_cap=args.eval_cache_cap, merge_cards=args.merge_cards)
     ema_lam = 0.5 ** (1.0 / args.value_ema_halflife) if args.value_ema_halflife > 0 else 0.0
     replay = Replay(args.window, hp_floors=56 if amber else 0, soft_outcome=ema_lam > 0)
     ema_stats = {"samples": 0, "real_weight": 0.0}   # mean weight of the final outcome in the EMA targets
