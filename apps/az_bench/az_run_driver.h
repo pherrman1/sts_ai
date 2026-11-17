@@ -72,6 +72,14 @@ namespace sts::azbench {
     constexpr int kHpClasses = 256;
     constexpr int kAscensions = 21;
 
+    // Completed Q of k edges (prior logits, visits n, value sums w) of a node with net value `value`. rescale false:
+    // a visited edge's mean w / n, an unvisited one `value`. rescale true (Gumbel MuZero, mctx
+    // qtransform_completed_by_mix_value): an unvisited edge gets v_mix = (value + N sum_visited(pi q) /
+    // sum_visited(pi)) / (1 + N) with pi = softmax(logit), N = sum n; then all k values are min-max rescaled to
+    // [0, 1] (range floored at 1e-8, so equal values all map to 0).
+    void completedQValues(int k, const float *logit, const std::int32_t *n, const double *w, double value,
+                          bool rescale, double *q);
+
     struct RunConfig {
         int workers = 11;
         int gamesPerWorker = 700;
@@ -82,6 +90,14 @@ namespace sts::azbench {
         int fullCandidates = 16, fastCandidates = 4;
         double fullProb = 0.25;
         double cVisit = 50, cScale = 1.0;
+        // Search-noise / Q-transform flags (2026-11-17, both default = previous behaviour):
+        // fastNoise false: fast (low-budget) moves get no Gumbel noise (Amber Eye: "not applying exploration noise to
+        // them"); they pick the top logits as candidates and play the best logit + sigma(Q).
+        // qRescale true: completed Q as in Gumbel MuZero / mctx (unvisited edges = mixed value, then min-max rescale of
+        // each node's completed Q to [0, 1]), at the root (halving, final pick, improved policy) and inside the tree.
+        // With it, mctx's value scale cScale = 0.1 is the paper setting (cScale 1 then makes the policy nearly argmax).
+        bool fastNoise = true;
+        bool qRescale = false;
         double wideningC = 3.7028, wideningAlpha = 0.52389;
         double hpWeightCombat = 1.0, hpWeightOoc = 1.0;   // U = F + w H (Amber's first utility: both 1)
         int maxMovesPerFight = 400;     // a fight past this many decisions counts as lost (stall guard)
@@ -132,6 +148,11 @@ namespace sts::azbench {
         // Per ascension (curriculum): finished runs, Heart kills, final floors.
         std::array<std::int64_t, kAscensions> runsDoneAsc{}, winsAsc{}, floorsSumAsc{};
         std::int64_t oocRoots = 0, exploreRoots = 0, forcedPicks = 0;   // searched OOC decisions; with an under-target item; forced
+        // Search diagnostics of searched out-of-combat roots (always on): per full / fast move, roots, roots whose
+        // search pick is not the visited edge of highest mean Q (before a forced pick), and the sum of that root's
+        // raw visited-Q spread (max - min mean Q, roots with >= 2 visited edges) and its count.
+        std::array<std::int64_t, 2> oocSearched{}, oocNotBestQ{}, oocSpreadN{};
+        std::array<double, 2> oocSpreadSum{};
         double stepCpu = 0, encodeCpu = 0, searchCpu = 0, packSeconds = 0;
     };
 

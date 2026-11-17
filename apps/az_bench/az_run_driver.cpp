@@ -189,6 +189,35 @@ namespace sts::azbench {
         out.n[static_cast<int>(AmberTokenType::OPTION)] = static_cast<std::uint8_t>(no);
     }
 
+    void completedQValues(int k, const float *logit, const std::int32_t *n, const double *w, double value,
+                          bool rescale, double *q) {
+        if (!rescale) {
+            for (int i = 0; i < k; ++i) q[i] = n[i] ? w[i] / n[i] : value;
+            return;
+        }
+        double mxLogit = -1e300;
+        for (int i = 0; i < k; ++i) mxLogit = std::max(mxLogit, static_cast<double>(logit[i]));
+        double z = 0;
+        for (int i = 0; i < k; ++i) z += std::exp(logit[i] - mxLogit);
+        double sumN = 0, piQ = 0, piVisited = 0;
+        for (int i = 0; i < k; ++i) {
+            if (!n[i]) continue;
+            const double pi = std::exp(logit[i] - mxLogit) / z;
+            sumN += n[i];
+            piQ += pi * (w[i] / n[i]);
+            piVisited += pi;
+        }
+        const double vMix = sumN > 0 ? (value + sumN * piQ / std::max(piVisited, 1e-30)) / (1.0 + sumN) : value;
+        double lo = 1e300, hi = -1e300;
+        for (int i = 0; i < k; ++i) {
+            q[i] = n[i] ? w[i] / n[i] : vMix;
+            lo = std::min(lo, q[i]);
+            hi = std::max(hi, q[i]);
+        }
+        const double range = std::max(hi - lo, 1e-8);
+        for (int i = 0; i < k; ++i) q[i] = (q[i] - lo) / range;
+    }
+
     // --- search state ---------------------------------------------------------------------------------------------
 
     struct Edge {
@@ -268,17 +297,41 @@ namespace sts::azbench {
 
         double q01(const Edge &e, double fallback) { return e.n ? e.w / e.n : fallback; }
 
+        // Completed Q of every edge of node into q (completedQValues in az_run_driver.h).
+        void completedQ(const RunDriver::Node &node, const RunConfig &cfg, std::vector<double> &q) {
+            const int k = static_cast<int>(node.edges.size());
+            q.resize(k);
+            if (!cfg.qRescale) {
+                for (int i = 0; i < k; ++i) q[i] = q01(node.edges[i], node.value);
+                return;
+            }
+            thread_local std::vector<float> logit;
+            thread_local std::vector<std::int32_t> n;
+            thread_local std::vector<double> w;
+            logit.resize(k);
+            n.resize(k);
+            w.resize(k);
+            for (int i = 0; i < k; ++i) { logit[i] = node.edges[i].logit; n[i] = node.edges[i].n; w[i] = node.edges[i].w; }
+            completedQValues(k, logit.data(), n.data(), w.data(), node.value, true, q.data());
+        }
+
+        int maxVisits(const RunDriver::Node &node) {
+            int maxN = 0;
+            for (const auto &e : node.edges) maxN = std::max(maxN, static_cast<int>(e.n));
+            return maxN;
+        }
+
         int selectNonRoot(const RunDriver::Node &node, const RunConfig &cfg) {
             const int k = static_cast<int>(node.edges.size());
-            int maxN = 0;
             double sumN = 0;
-            for (const auto &e : node.edges) { maxN = std::max(maxN, static_cast<int>(e.n)); sumN += e.n; }
-            const double sigma = (cfg.cVisit + maxN) * cfg.cScale;
-            thread_local std::vector<double> s;
+            for (const auto &e : node.edges) sumN += e.n;
+            const double sigma = (cfg.cVisit + maxVisits(node)) * cfg.cScale;
+            thread_local std::vector<double> s, q;
+            completedQ(node, cfg, q);
             s.resize(k);
             double mx = -1e300;
             for (int i = 0; i < k; ++i) {
-                s[i] = node.edges[i].logit + sigma * q01(node.edges[i], node.value);
+                s[i] = node.edges[i].logit + sigma * q[i];
                 mx = std::max(mx, s[i]);
             }
             double z = 0;
@@ -292,10 +345,10 @@ namespace sts::azbench {
             return best;
         }
 
-        double rootScore(const RunDriver::Run &g, const RunDriver::Node &root, int e, const RunConfig &cfg) {
-            int maxN = 0;
-            for (const auto &x : root.edges) maxN = std::max(maxN, static_cast<int>(x.n));
-            return g.gumbel[e] + root.edges[e].logit + (cfg.cVisit + maxN) * cfg.cScale * q01(root.edges[e], root.value);
+        // Root score g + logit + sigma(completed Q) of edge e; q from completedQ(root), sigma from the root's visits.
+        double rootScore(const RunDriver::Run &g, const RunDriver::Node &root, int e, double sigma,
+                         const std::vector<double> &q) {
+            return g.gumbel[e] + root.edges[e].logit + sigma * q[e];
         }
 
         // Scaled utility (F + w H) / (1 + w) of a state the run cannot continue from.
@@ -362,6 +415,10 @@ namespace sts::azbench {
                 s.runsDoneAsc[k] += p.runsDoneAsc[k]; s.winsAsc[k] += p.winsAsc[k]; s.floorsSumAsc[k] += p.floorsSumAsc[k];
             }
             s.oocRoots += p.oocRoots; s.exploreRoots += p.exploreRoots; s.forcedPicks += p.forcedPicks;
+            for (int k = 0; k < 2; ++k) {
+                s.oocSearched[k] += p.oocSearched[k]; s.oocNotBestQ[k] += p.oocNotBestQ[k];
+                s.oocSpreadN[k] += p.oocSpreadN[k]; s.oocSpreadSum[k] += p.oocSpreadSum[k];
+            }
             s.stepCpu += p.stepCpu; s.encodeCpu += p.encodeCpu; s.searchCpu += p.searchCpu;
         }
         s.batches = batches_.load();
@@ -652,7 +709,11 @@ namespace sts::azbench {
             g.gumbel.assign(k, 0);
             std::extreme_value_distribution<double> G(0.0, 1.0);
             std::vector<int> order(k);
-            for (int i = 0; i < k; ++i) { g.gumbel[i] = G(wk.rng); order[i] = i; }
+            // cfg.fastNoise false (Amber Eye: no exploration noise on fast moves): a fast move's Gumbel draws stay 0,
+            // so it takes the top logits as candidates and plays the best logit + sigma(Q). The draws are still made,
+            // so the worker RNG stream (resampling, keep decisions) is the same with and without the flag.
+            const bool noisy = g.full || cfg.fastNoise;
+            for (int i = 0; i < k; ++i) { const double x = G(wk.rng); g.gumbel[i] = noisy ? x : 0.0; order[i] = i; }
             std::sort(order.begin(), order.end(), [&](int a, int b) {
                 return g.gumbel[a] + root.edges[a].logit > g.gumbel[b] + root.edges[b].logit;
             });
@@ -671,8 +732,11 @@ namespace sts::azbench {
 
         auto halve = [&](Run &g) {
             const Node &root = g.pool[0];
+            std::vector<double> q;
+            completedQ(root, cfg, q);
+            const double sigma = (cfg.cVisit + maxVisits(root)) * cfg.cScale;
             std::sort(g.cand.begin(), g.cand.end(), [&](int a, int b) {
-                return rootScore(g, root, a, cfg) > rootScore(g, root, b, cfg);
+                return rootScore(g, root, a, sigma, q) > rootScore(g, root, b, sigma, q);
             });
             g.cand.resize(std::max<std::size_t>(1, (g.cand.size() + 1) / 2));
             --g.phasesLeft;
@@ -680,26 +744,42 @@ namespace sts::azbench {
 
         auto finishMove = [&](Run &g, int gi) {
             const Node &root = g.pool[0];
+            std::vector<double> q;
+            completedQ(root, cfg, q);
+            const double sigma = (cfg.cVisit + maxVisits(root)) * cfg.cScale;
             int pick = g.cand.empty() ? 0 : g.cand.front();
             if (g.cand.size() > 1) {
                 double best = -1e300;
                 for (int e : g.cand) {
-                    const double s = rootScore(g, root, e, cfg);
+                    const double s = rootScore(g, root, e, sigma, q);
                     if (s > best) { best = s; pick = e; }
                 }
             }
             ++wk.st.searchedMoves;
+            if (!root.combat) {
+                const int kind = g.full ? 0 : 1;
+                int bestQ = -1, visited = 0;
+                double lo = 1e300, hi = -1e300;
+                for (int i = 0; i < static_cast<int>(root.edges.size()); ++i) {
+                    const Edge &x = root.edges[i];
+                    if (!x.n) continue;
+                    ++visited;
+                    const double m = x.w / x.n;
+                    if (m > hi) { hi = m; bestQ = i; }
+                    lo = std::min(lo, m);
+                }
+                ++wk.st.oocSearched[kind];
+                if (bestQ >= 0 && pick != bestQ) ++wk.st.oocNotBestQ[kind];
+                if (visited >= 2) { ++wk.st.oocSpreadN[kind]; wk.st.oocSpreadSum[kind] += hi - lo; }
+            }
             if (g.keep) {
                 Sample &s = g.cur;
                 if (g.full) {   // Gumbel AlphaZero's improved policy: softmax(logits + sigma(completed Q))
                     const int k = static_cast<int>(root.edges.size());
-                    int maxN = 0;
-                    for (const auto &x : root.edges) maxN = std::max(maxN, static_cast<int>(x.n));
-                    const double sigma = (cfg.cVisit + maxN) * cfg.cScale;
                     std::vector<double> z(k);
                     double mx = -1e300;
                     for (int i = 0; i < k; ++i) {
-                        z[i] = root.edges[i].logit + sigma * q01(root.edges[i], root.value);
+                        z[i] = root.edges[i].logit + sigma * q[i];
                         mx = std::max(mx, z[i]);
                     }
                     double sum = 0;

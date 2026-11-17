@@ -193,7 +193,8 @@ PYBIND11_MODULE(az_bench_native, m) {
                          int fullSims, int fastSims, double fullProb, int fullCandidates, int fastCandidates,
                          double hpWeightCombat, double hpWeightOoc, double keepFull, double keepFast,
                          std::uint64_t searchSeed, int maxFightMoves, int testMaxHp, std::int64_t maxPending,
-                         double exploreC, double pickTarget) {
+                         double exploreC, double pickTarget, double cVisit, double cScale, bool fastNoise,
+                         bool qRescale) {
                  azbench::RunConfig c;
                  c.workers = workers;
                  c.gamesPerWorker = games;
@@ -215,6 +216,10 @@ PYBIND11_MODULE(az_bench_native, m) {
                  c.maxPendingSamples = maxPending;
                  c.exploreC = exploreC;
                  c.pickTarget = pickTarget;
+                 c.cVisit = cVisit;
+                 c.cScale = cScale;
+                 c.fastNoise = fastNoise;
+                 c.qRescale = qRescale;
                  return std::make_unique<azbench::RunDriver>(c);
              }),
              py::arg("workers") = 11, py::arg("games") = 700, py::arg("seed_base") = 0, py::arg("max_runs") = -1,
@@ -223,7 +228,8 @@ PYBIND11_MODULE(az_bench_native, m) {
              py::arg("hp_weight_combat") = 1.0, py::arg("hp_weight_ooc") = 1.0, py::arg("keep_full") = 1.0,
              py::arg("keep_fast") = 0.0, py::arg("search_seed") = 0, py::arg("max_fight_moves") = 400,
              py::arg("test_max_hp") = 0, py::arg("max_pending") = 300000,
-             py::arg("explore_c") = 0.0, py::arg("pick_target") = 0.01)
+             py::arg("explore_c") = 0.0, py::arg("pick_target") = 0.01, py::arg("c_visit") = 50.0,
+             py::arg("c_scale") = 1.0, py::arg("fast_noise") = true, py::arg("q_rescale") = false)
         .def("set_ascension", &azbench::RunDriver::setAscension)
         .def("ascension", &azbench::RunDriver::ascension)
         .def("start", &azbench::RunDriver::start, py::call_guard<py::gil_scoped_release>())
@@ -336,6 +342,10 @@ PYBIND11_MODULE(az_bench_native, m) {
             o["wins_asc"] = std::vector<std::int64_t>(s.winsAsc.begin(), s.winsAsc.end());
             o["floors_sum_asc"] = std::vector<std::int64_t>(s.floorsSumAsc.begin(), s.floorsSumAsc.end());
             o["ooc_roots"] = s.oocRoots; o["explore_roots"] = s.exploreRoots; o["forced_picks"] = s.forcedPicks;
+            o["ooc_searched"] = py::make_tuple(s.oocSearched[0], s.oocSearched[1]);
+            o["ooc_not_best_q"] = py::make_tuple(s.oocNotBestQ[0], s.oocNotBestQ[1]);
+            o["ooc_q_spread_n"] = py::make_tuple(s.oocSpreadN[0], s.oocSpreadN[1]);
+            o["ooc_q_spread_sum"] = py::make_tuple(s.oocSpreadSum[0], s.oocSpreadSum[1]);
             o["step_cpu"] = s.stepCpu; o["encode_cpu"] = s.encodeCpu; o["search_cpu"] = s.searchCpu;
             o["pack_s"] = s.packSeconds;
             return o;
