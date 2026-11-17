@@ -22,8 +22,15 @@ namespace sts::azbench {
         std::int16_t *aType, *aSrc, *aTgt;   // [R][A]
         std::uint16_t *aF;         // [R][A][8]
         std::uint8_t *aMask;       // [R][A]
+        // Packed tokens (2026-11-17, optional): when packIdx is set, tokType / ids / f hold only the live tokens,
+        // row after row in slot order ([N], [N][4], [N][64]; N = FlatShape::packed), so the host-to-GPU copy carries
+        // no dead slots. packIdx [N] gives each packed token's slot r * T + pos in the [R][T] layout (forward_packed's
+        // pack_idx), seqOff [R + 1] the packed offset of each row (varlen attention). mask and the actions keep the
+        // [R][T] / [R][A] layout.
+        std::int32_t *packIdx = nullptr;   // [N]
+        std::int32_t *seqOff = nullptr;    // [R + 1]
     };
-    struct FlatShape { int rows = 0, rowsPadded = 0, tokens = 0, actions = 0; };
+    struct FlatShape { int rows = 0, rowsPadded = 0, tokens = 0, actions = 0, packed = 0; };
 
     inline int bucketFor(const std::vector<int> &buckets, int n) {
         for (int b : buckets)
@@ -50,7 +57,16 @@ namespace sts::azbench {
         const int R = std::max(B, bucketFor(rowBuckets, B));
         const int T = std::max(maxT, bucketFor(tokBuckets, maxT));
         const int A = std::max(maxA, bucketFor(actBuckets, maxA));
-        shape = {B, R, T, A};
+        shape = {B, R, T, A, 0};
+        const bool packed = buf.packIdx != nullptr;
+        // Packed: each row's first packed token (a padding row has one token).
+        std::vector<int> base;
+        if (packed) {
+            base.resize(static_cast<std::size_t>(R) + 1, 0);
+            for (int r = 0; r < R; ++r) base[r + 1] = base[r] + (r < B ? liveTokens(tokensOf(r)) : 1);
+            shape.packed = base[R];
+            for (int r = 0; r <= R; ++r) buf.seqOff[r] = base[r];
+        }
         // Dead token slots keep whatever an earlier batch left in tokType / ids / f (the caller's buffers start
         // zeroed, so it is always a finite value and a valid id / type): only the mask says what is live, a dead
         // slot is a masked key, and no output of a live row reads it. Zeroing them cost ~15 MB of stores per batch.
@@ -75,9 +91,11 @@ namespace sts::azbench {
                     for (int i = 0; i < tk.n[s]; ++i, ++pos) {
                         const auto &k = tk.tok[search::kAmberOff[s] + i];
                         const std::size_t j = static_cast<std::size_t>(r) * T + pos;
-                        buf.tokType[j] = static_cast<std::int8_t>(s);
-                        std::memcpy(buf.ids + j * search::kAmberCat, k.ids.data(), sizeof(k.ids));
-                        std::memcpy(buf.f + j * search::kAmberFloat, k.f.data(), sizeof(k.f));
+                        const std::size_t p = packed ? static_cast<std::size_t>(base[r] + pos) : j;
+                        buf.tokType[p] = static_cast<std::int8_t>(s);
+                        std::memcpy(buf.ids + p * search::kAmberCat, k.ids.data(), sizeof(k.ids));
+                        std::memcpy(buf.f + p * search::kAmberFloat, k.f.data(), sizeof(k.f));
+                        if (packed) buf.packIdx[p] = static_cast<std::int32_t>(j);
                         buf.mask[j] = 1;
                     }
                 }
@@ -107,6 +125,13 @@ namespace sts::azbench {
         for (int r = B; r < R; ++r) {   // padding rows: one live (stale) token and one live action; outputs discarded
             buf.mask[static_cast<std::size_t>(r) * T] = 1;
             buf.aMask[static_cast<std::size_t>(r) * A] = 1;
+            if (packed) {   // its packed token: type 0, ids 0, floats 0
+                const std::size_t p = static_cast<std::size_t>(base[r]);
+                buf.tokType[p] = 0;
+                std::memset(buf.ids + p * search::kAmberCat, 0, sizeof(std::int16_t) * search::kAmberCat);
+                std::memset(buf.f + p * search::kAmberFloat, 0, sizeof(std::uint16_t) * search::kAmberFloat);
+                buf.packIdx[p] = static_cast<std::int32_t>(static_cast<std::size_t>(r) * T);
+            }
         }
     }
 

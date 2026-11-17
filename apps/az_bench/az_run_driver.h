@@ -157,6 +157,13 @@ namespace sts::azbench {
         // the runs finished in this process, after a warm-up of 1 / pickTarget runs.
         double exploreC = 0;
         double pickTarget = 0.01;
+        // Per-run evaluation cache (2026-11-17, default off): a leaf whose encoded net input (live tokens and legal
+        // actions) equals one this run already had evaluated with the current weights (setWeightsVersion) takes
+        // that result instead of a new net evaluation. Exact: the net sees only its input, so the cached result is
+        // what a new evaluation with the same weights returns. Results of other weights versions are never used.
+        // At most evalCacheCap entries per run (the cache is emptied when full).
+        bool evalCache = false;
+        int evalCacheCap = 1024;
         CombatEncodeFn encodeCombat = nullptr;   // default: search::amberEncodeCombat
         GameEncodeFn encodeGame = nullptr;       // default: search::amberEncodeGame (stubEncodeGame = placeholder)
     };
@@ -215,6 +222,7 @@ namespace sts::azbench {
         std::array<std::int64_t, kAscensions> runsDoneAsc{}, winsAsc{}, floorsSumAsc{};
         std::array<RunProgress, kAscensions> progressAsc{};   // finished runs' progress counters per ascension
         std::int64_t oocRoots = 0, exploreRoots = 0, forcedPicks = 0;   // searched OOC decisions; with an under-target item; forced
+        std::int64_t cacheHits = 0;           // leaves answered by the evaluation cache (not counted in evals)
         // Search diagnostics of searched out-of-combat roots (always on): per full / fast move, roots, roots whose
         // search pick is not the visited edge of highest mean Q (before a forced pick), and the sum of that root's
         // raw visited-Q spread (max - min mean Q, roots with >= 2 visited edges) and its count.
@@ -237,8 +245,12 @@ namespace sts::azbench {
                                                  FlatShape &shape, int packThreads = 1);
         // Results: logits[row][action] (`actions` per row), F[row] in [0, 1] and expected HP at the end of the
         // floor ehp[row] (absolute) for each ticket; utility AMBER also needs hpf[row][56] = E[HP_f] / 255.
+        // version: the weights version (setWeightsVersion) the batch was evaluated with (evaluation cache).
         void submit(const std::uint32_t *tickets, int rows, int actions, const float *logits, const float *F,
-                    const float *ehp, const float *hpf = nullptr);
+                    const float *ehp, const float *hpf = nullptr, std::uint32_t version = 0);
+        // The weights version of evaluations from now on (evaluation cache): set it when the net's weights change,
+        // before evaluating the next batch with them. Cached results of other versions are not used.
+        void setWeightsVersion(std::uint32_t v) { weightsVersion_.store(v, std::memory_order_release); }
         // Moves up to maxSamples finished samples (labels filled) into out, then the rest of the last run taken (a
         // run is never split across calls).
         void takeSamples(int maxSamples, std::vector<Sample> &out);
@@ -268,6 +280,7 @@ namespace sts::azbench {
         static constexpr int kPickBuckets = 1 << 16;
         std::unique_ptr<std::atomic<std::uint32_t>[]> picks_;
         std::atomic<int> ascension_{20};
+        std::atomic<std::uint32_t> weightsVersion_{0};
         std::atomic<std::int64_t> runsDone_{0};   // finished runs, all workers (pick-rate denominator)   // real picks per item hash (pick-rate exploration)
         mutable std::mutex qm_;
         std::condition_variable qcv_;

@@ -43,6 +43,7 @@ usage: selfplay.py --module-dir BUILD_DIR --out-dir DIR --seed-base N [--hours 2
 """
 
 import argparse
+import contextlib
 import copy
 import importlib.util
 import json
@@ -162,9 +163,12 @@ class Replay:
                 raise ValueError("replay.rows: samples not in the window")
             return self._gather((first + np.arange(n)) % self.cs)
 
-    def sample(self, rng, B, policy_frac=0.0):
+    def sample(self, rng, B, policy_frac=0.0, packed=False, pack_step=1):
         """A training batch in forward_flat's layout (numpy), B rows drawn uniformly from the window. policy_frac > 0
-        draws at least that share of rows among samples with a policy target (rejection on the uniform draw)."""
+        draws at least that share of rows among samples with a policy target (rejection on the uniform draw).
+        packed=True: tok_type / ids / f hold only the live tokens ([N], row after row, as forward_packed takes them)
+        with pack_idx [N] (their slots in the [B, T] layout); N is padded to a multiple of pack_step with trash
+        entries (pack_idx = B * T, zero inputs)."""
         with self.lock:
             n = len(self)
             j = (self.s_tail + rng.integers(0, n, B)) % self.cs
@@ -180,10 +184,10 @@ class Replay:
                     j[repl] = cand
                     hp[repl] = True
                     need -= len(cand)
-            return self._gather(j)
+            return self._gather(j, packed, pack_step)
 
-    def _gather(self, j):
-        """Rows j (ring positions) in forward_flat's layout; the caller holds the lock."""
+    def _gather(self, j, packed=False, pack_step=1):
+        """Rows j (ring positions) in forward_flat's layout (packed: see sample); the caller holds the lock."""
         B = len(j)
         nt, na = self.ntok[j], self.nact[j]
         T, A = int(nt.max()), int(na.max())
@@ -195,14 +199,28 @@ class Replay:
         rows_a = np.repeat(np.arange(B), na)
         cols_a = np.arange(int(na.sum())) - np.repeat(np.cumsum(na) - na, na)
         src_a = (np.repeat(self.act_start[j], na) + cols_a) % self.ca
-        b = {"tok_type": np.zeros((B, T), np.int64), "ids": np.zeros((B, T, N_CAT), np.int64),
-             "f": np.zeros((B, T, N_FLOAT), np.float16), "mask": np.zeros((B, T), bool),
+        b = {"mask": np.zeros((B, T), bool),
              "a_type": np.zeros((B, A), np.int64), "a_src": np.full((B, A), -1, np.int64),
              "a_tgt": np.full((B, A), -1, np.int64), "a_f": np.zeros((B, A, N_ACT_FEAT), np.float16),
              "a_mask": np.zeros((B, A), bool), "policy": np.zeros((B, A), np.float32)}
-        b["tok_type"][rows_t, cols_t] = self.tok_type[src_t]
-        b["ids"][rows_t, cols_t] = self.ids[src_t]
-        b["f"][rows_t, cols_t] = self.f[src_t]
+        if packed:
+            n = int(nt.sum())
+            npad = -(-n // pack_step) * pack_step
+            b["tok_type"] = np.zeros(npad, np.int64)
+            b["ids"] = np.zeros((npad, N_CAT), np.int64)
+            b["f"] = np.zeros((npad, N_FLOAT), np.float16)
+            b["pack_idx"] = np.full(npad, B * T, np.int64)
+            b["tok_type"][:n] = self.tok_type[src_t]
+            b["ids"][:n] = self.ids[src_t]
+            b["f"][:n] = self.f[src_t]
+            b["pack_idx"][:n] = rows_t * T + cols_t
+        else:
+            b["tok_type"] = np.zeros((B, T), np.int64)
+            b["ids"] = np.zeros((B, T, N_CAT), np.int64)
+            b["f"] = np.zeros((B, T, N_FLOAT), np.float16)
+            b["tok_type"][rows_t, cols_t] = self.tok_type[src_t]
+            b["ids"][rows_t, cols_t] = self.ids[src_t]
+            b["f"][rows_t, cols_t] = self.f[src_t]
         b["mask"][rows_t, cols_t] = True
         b["a_type"][rows_a, cols_a] = self.a_type[src_a]
         b["a_src"][rows_a, cols_a] = self.a_src[src_a]
@@ -357,6 +375,10 @@ def main(argv=None):
                     help="samples of unfinished runs held for their labels; above it keep probabilities shrink")
     ap.add_argument("--explore-c", type=float, default=0.0, help="pick-rate exploration strength (0 = off)")
     ap.add_argument("--pick-target", type=float, default=0.01, help="pick-rate target per item and run")
+    ap.add_argument("--eval-cache", action="store_true",
+                    help="per-run evaluation cache: a leaf whose net input this run already had evaluated with the "
+                         "current inference weights reuses that result (exact; RunConfig::evalCache)")
+    ap.add_argument("--eval-cache-cap", type=int, default=1024, help="cache entries per run (emptied when full)")
     ap.add_argument("--c-visit", type=float, default=50.0, help="Gumbel sigma: (c_visit + max N) * c_scale")
     ap.add_argument("--c-scale", type=float, default=1.0, help="Gumbel sigma scale (mctx uses 0.1 with --q-rescale)")
     ap.add_argument("--no-fast-noise", action="store_true", help="no Gumbel noise on fast moves (Amber Eye)")
@@ -370,9 +392,18 @@ def main(argv=None):
     ap.add_argument("--pack-threads", type=int, default=4)
     ap.add_argument("--fused-layer", action="store_true", help="inference: stage 0's three-kernel layers (d <= 128)")
     ap.add_argument("--compile", action="store_true", help="inference: torch.compile")
+    ap.add_argument("--packed-h2d", action="store_true",
+                    help="inference: the driver packs only the live tokens (tok_type / ids / f [N], pack_idx, seq_off "
+                         "from C++), so the host-to-GPU copy has no dead slots (needs --pack-step; same outputs)")
+    ap.add_argument("--copy-stream", action="store_true",
+                    help="inference: host-to-GPU copies on their own CUDA stream, overlapping the previous batch's "
+                         "forward (same outputs)")
     ap.add_argument("--window", type=int, default=500000, help="replay window (samples)")
     ap.add_argument("--min-replay", type=int, default=20000, help="samples before training starts")
     ap.add_argument("--train-batch", type=int, default=1024)
+    ap.add_argument("--train-packed", action="store_true",
+                    help="training: batches with only the live tokens (forward_packed: per-token work without the "
+                         "padding to the longest sample; same loss up to float rounding)")
     ap.add_argument("--replay-ratio", type=float, default=2.0, help="max trained / generated samples")
     ap.add_argument("--policy-frac", type=float, default=0.0, help="min share of policy rows per train batch")
     ap.add_argument("--lr", type=float, default=1e-3)
@@ -391,6 +422,8 @@ def main(argv=None):
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     ap.add_argument("--test-max-hp", type=int, default=0, help="tests only")
     args = ap.parse_args(argv)
+    if args.packed_h2d and not args.pack_step:
+        ap.error("--packed-h2d needs --pack-step")
     if args.init_net and args.resume:
         ap.error("--init-net and --resume exclude each other")
     amber = args.utility == "amber"
@@ -459,7 +492,8 @@ def main(argv=None):
         test_max_hp=args.test_max_hp, max_pending=args.max_pending,
         explore_c=args.explore_c, pick_target=args.pick_target, c_visit=args.c_visit, c_scale=args.c_scale,
         fast_noise=not args.no_fast_noise, q_rescale=args.q_rescale, utility=1 if amber else 0,
-        keyless_hp=args.keyless_hp)
+        keyless_hp=args.keyless_hp,
+        eval_cache=args.eval_cache, eval_cache_cap=args.eval_cache_cap)
     ema_lam = 0.5 ** (1.0 / args.value_ema_halflife) if args.value_ema_halflife > 0 else 0.0
     replay = Replay(args.window, hp_floors=56 if amber else 0, soft_outcome=ema_lam > 0)
     ema_stats = {"samples": 0, "real_weight": 0.0}   # mean weight of the final outcome in the EMA targets
@@ -493,6 +527,7 @@ def main(argv=None):
     # ---- inference: two-deep pipeline as stage 0's flat_pipe_loop ----
     def inference_loop():
         stream = torch.cuda.Stream(dev) if cuda else None
+        copy_stream = torch.cuda.Stream(dev) if cuda and args.copy_stream else None
         R, T, A = row_b[-1], tok_b[-1], act_b[-1]
 
         def buffers():
@@ -518,18 +553,23 @@ def main(argv=None):
         cur, pending = 0, None
 
         def finish(p):
-            ticket, rows, Ap, out, ev = p
+            ticket, rows, Ap, out, ev, version = p
             if ev is not None:
                 ev.synchronize()
             drv.submit(ticket, out["logits"][:rows * Ap].numpy().reshape(rows, Ap), out["F"][:rows].numpy(),
-                       out["ehp"][:rows].numpy(), out["hpf"][:rows * 56].numpy().reshape(rows, 56) if amber else None)
+                       out["ehp"][:rows].numpy(), out["hpf"][:rows * 56].numpy().reshape(rows, 56) if amber else None,
+                       version)
 
         while not stop.is_set():
             host, views, out = sets[cur]
-            got = drv.next_flat(args.batch, min_rows, 5, row_b, tok_b, act_b, views, args.pack_threads)
+            if args.packed_h2d:
+                got = drv.next_flat(args.batch, min_rows, 5, row_b, tok_b, act_b, views, args.pack_threads,
+                                    packed_tokens=True)
+            else:
+                got = drv.next_flat(args.batch, min_rows, 5, row_b, tok_b, act_b, views, args.pack_threads)
             launched = None
             if got is not None:
-                ticket, rows, Rp, Tp, Ap = got
+                ticket, rows, Rp, Tp, Ap = got[:5]
                 ctx = torch.cuda.stream(stream) if stream is not None else torch.no_grad()
                 with ctx, torch.inference_mode():
                     with weights_lock:
@@ -544,33 +584,56 @@ def main(argv=None):
                             if stream is not None:   # p_s came from the trainer's stream: keep it alive for this copy
                                 p_s.record_stream(stream)
                         infer_stats["syncs"] += 1
-                    x = {}
-                    shapes = {"tok_type": (Rp, Tp), "ids": (Rp, Tp, 4), "f": (Rp, Tp, 64), "mask": (Rp, Tp),
-                              "a_type": (Rp, Ap), "a_src": (Rp, Ap), "a_tgt": (Rp, Ap), "a_f": (Rp, Ap, 8),
-                              "a_mask": (Rp, Ap)}
-                    for k, shp in shapes.items():
-                        n = int(np.prod(shp))
-                        t = host[k][:n].to(dev, non_blocking=True).view(shp)
-                        if k in ("tok_type", "ids", "a_type", "a_src", "a_tgt"):
-                            t = t.long()
-                        elif t.dtype == torch.float16:
-                            t = t.to(infer_dtype)
-                        x[k] = t
-                    if args.pack_step:
-                        M = Rp * Tp
+                        # Evaluation cache: results of the old weights are not reused from now on.
+                        drv.set_weights_version(infer_stats["syncs"])
+                    M = Rp * Tp
+                    if args.packed_h2d:
+                        # The driver wrote the N live tokens packed, pack_idx [N] and seq_off; entries N..npad of
+                        # the packed arrays are trash (stale but valid values), their pack_idx the trash slot M.
+                        nl = got[5]
+                        npad = -(-nl // args.pack_step) * args.pack_step
+                        views["pack_idx"][nl:npad] = M
+                        shapes = {"tok_type": (npad,), "ids": (npad, 4), "f": (npad, 64), "pack_idx": (npad,)}
+                    else:
+                        shapes = {"tok_type": (Rp, Tp), "ids": (Rp, Tp, 4), "f": (Rp, Tp, 64)}
+                    shapes.update({"mask": (Rp, Tp), "a_type": (Rp, Ap), "a_src": (Rp, Ap), "a_tgt": (Rp, Ap),
+                                   "a_f": (Rp, Ap, 8), "a_mask": (Rp, Ap)})
+                    if args.pack_step and not args.packed_h2d:
                         live = np.flatnonzero(views["mask"][:M])
                         nl = live.size
                         npad = -(-nl // args.pack_step) * args.pack_step
                         views["pack_idx"][:nl] = live
                         views["pack_idx"][nl:npad] = M
-                        x["pack_idx"] = host["pack_idx"][:npad].to(dev, non_blocking=True).long()
-                        if args.compile:
-                            torch._dynamo.mark_dynamic(x["pack_idx"], 0)
+                        shapes["pack_idx"] = (npad,)
                         if infer.varlen_attn is not None:
                             so = views["seq_off"]
                             so[0] = 0
                             np.cumsum(views["mask"][:M].reshape(Rp, Tp).sum(1), out=so[1:Rp + 1])
-                            x["seq_off"] = host["seq_off"][:Rp + 1].to(dev, non_blocking=True)
+                    if args.pack_step and infer.varlen_attn is not None:
+                        shapes["seq_off"] = (Rp + 1,)
+                    # Host-to-GPU copies (on copy_stream when --copy-stream: the forward waits for them).
+                    raw = {}
+                    with (torch.cuda.stream(copy_stream) if copy_stream is not None else contextlib.nullcontext()):
+                        for k, shp in shapes.items():
+                            raw[k] = host[k][:int(np.prod(shp))].to(dev, non_blocking=True).view(shp)
+                    if copy_stream is not None:
+                        ev_c = torch.cuda.Event()
+                        ev_c.record(copy_stream)
+                        stream.wait_event(ev_c)
+                        for t in raw.values():
+                            t.record_stream(stream)
+                    x = {}
+                    for k, t in raw.items():
+                        if k in ("tok_type", "ids", "a_type", "a_src", "a_tgt", "pack_idx"):
+                            t = t.long()
+                        elif t.dtype == torch.float16:
+                            t = t.to(infer_dtype)
+                        x[k] = t
+                    if args.compile and "pack_idx" in x:
+                        torch._dynamo.mark_dynamic(x["pack_idx"], 0)
+                        if args.packed_h2d:
+                            for k in ("tok_type", "ids", "f"):
+                                torch._dynamo.mark_dynamic(x[k], 0)
                     lg, outcome, hp, hpf = run(x)
                     Fv, ehp = search_values(outcome[:rows], hp[:rows])
                     out["logits"][:rows * Ap].view(rows, Ap).copy_(lg[:rows].float(), non_blocking=True)
@@ -582,7 +645,7 @@ def main(argv=None):
                     if stream is not None:
                         ev = torch.cuda.Event()
                         ev.record(stream)
-                launched = (ticket, rows, Ap, out, ev)
+                launched = (ticket, rows, Ap, out, ev, infer_stats["syncs"])
                 infer_stats["batches"] += 1
                 infer_stats["rows"] += rows
             if pending is not None:
@@ -625,7 +688,7 @@ def main(argv=None):
             if len(replay) < args.min_replay or counters["trained"] - trained0 >= args.replay_ratio * replay.added:
                 time.sleep(0.02)
                 continue
-            b = replay.sample(rng, args.train_batch, args.policy_frac)
+            b = replay.sample(rng, args.train_batch, args.policy_frac, packed=args.train_packed)
             ctx = torch.cuda.stream(stream) if stream is not None else torch.no_grad()
             with ctx:
                 bt = to_torch(b, dev)
@@ -721,6 +784,7 @@ def main(argv=None):
             row = {
                 "time": time.strftime("%Y-%m-%d %H:%M:%S"), "hours": round((wall0 + now - t_start) / 3600, 3),
                 "positions_per_s": round((s["evals"] - last_s["evals"]) / dt),
+                "cache_hits_per_s": round((s["cache_hits"] - last_s["cache_hits"]) / dt),
                 "moves_per_s": round((s["moves"] - last_s["moves"]) / dt),
                 "runs_done": counters["runs_done"] + s["runs_done"],
                 "runs_window": d_runs,

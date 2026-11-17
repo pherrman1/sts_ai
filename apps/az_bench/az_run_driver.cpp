@@ -8,6 +8,7 @@
 #include <functional>
 #include <limits>
 #include <stdexcept>
+#include <unordered_map>
 
 #include "constants/Rooms.h"
 #include "sim/search/AmberEncoder.h"
@@ -32,6 +33,46 @@ namespace sts::azbench {
         }
 
         float slog(float x) { return std::copysign(std::log1p(std::fabs(x)), x); }
+
+        std::uint64_t mix64(std::uint64_t x) {   // splitmix64 finaliser
+            x ^= x >> 30; x *= 0xbf58476d1ce4e5b9ull;
+            x ^= x >> 27; x *= 0x94d049bb133111ebull;
+            return x ^ (x >> 31);
+        }
+
+        // Hash of one state's net input: its live tokens (segment, ids, floats) and its legal actions, i.e.
+        // everything packFlat sends for the row.
+        std::uint64_t inputHash(const AmberTokens &tk) {
+            std::uint64_t h = 0x243f6a8885a308d3ull;
+            auto add = [&](std::uint64_t w) { h = mix64(h ^ w) + 0x9e3779b97f4a7c15ull; };
+            static_assert(search::kAmberCat == 4 && search::kAmberFloat % 4 == 0 && search::kAmberActFeat == 8);
+            for (int s = 0; s < search::kAmberTokenTypes; ++s) {
+                add(static_cast<std::uint64_t>(s) << 32 | tk.n[s]);
+                for (int i = 0; i < tk.n[s]; ++i) {
+                    const auto &t = tk.tok[search::kAmberOff[s] + i];
+                    std::uint64_t w;
+                    std::memcpy(&w, t.ids.data(), sizeof w);
+                    add(w);
+                    for (int j = 0; j < search::kAmberFloat; j += 4) {
+                        std::memcpy(&w, t.f.data() + j, sizeof w);
+                        add(w);
+                    }
+                }
+            }
+            add(static_cast<std::uint64_t>(tk.nAct));
+            for (int i = 0; i < tk.nAct; ++i) {
+                const auto &a = tk.act[i];
+                add(static_cast<std::uint64_t>(a.type) | static_cast<std::uint64_t>(a.srcSeg) << 8 |
+                    static_cast<std::uint64_t>(a.tgtSeg) << 16 | static_cast<std::uint64_t>(a.srcIdx) << 24 |
+                    static_cast<std::uint64_t>(a.tgtIdx) << 32);
+                std::uint64_t w;
+                std::memcpy(&w, a.f.data(), sizeof w);
+                add(w);
+                std::memcpy(&w, a.f.data() + 4, sizeof w);
+                add(w);
+            }
+            return h;
+        }
 
         std::int16_t clampId(int v) { return static_cast<std::int16_t>(std::clamp(v, 1, search::kAmberIdVocab - 1)); }
 
@@ -284,6 +325,14 @@ namespace sts::azbench {
         AmberTokens tokens;
         std::vector<float> resLogits;
         float resF = 0, resEhp = 0;
+        std::uint32_t resVersion = 0;        // weights version of the result (submit)
+        // Evaluation cache (RunConfig::evalCache): input hash -> result, all of weights version cacheVersion; emptied
+        // at the start of each run, on a weights change and when full.
+        struct CacheEntry { float F = 0, ehp = 0; int nAct = 0; std::vector<float> logits, hpf; };   // hpf: utility AMBER
+        std::unordered_map<std::uint64_t, CacheEntry> cache;
+        std::uint32_t cacheVersion = 0;
+        std::uint64_t pendingHash = 0;
+        bool pendingHit = false;             // the pending leaf was answered by the cache
         std::array<float, kFloors> resHpf{};   // utility AMBER: E[HP_f] / 255 of the pending leaf
         int pendingFloor = 0;                  // floor of the pending leaf
         std::array<std::int16_t, kFloors + 1> floorHp{};   // utility AMBER: HP at the end of floor f (-1 = not yet)
@@ -296,6 +345,7 @@ namespace sts::azbench {
         std::vector<Run> runs;
         std::mutex im;
         std::vector<int> inbox;
+        std::vector<int> hits;               // runs whose pending leaf the cache answered (handled like results)
         std::mt19937_64 rng;
         RunStats st;
         mutable std::mutex sm;
@@ -435,6 +485,7 @@ namespace sts::azbench {
                 s.progressAsc[k] += p.progressAsc[k];
             }
             s.oocRoots += p.oocRoots; s.exploreRoots += p.exploreRoots; s.forcedPicks += p.forcedPicks;
+            s.cacheHits += p.cacheHits;
             for (int k = 0; k < 2; ++k) {
                 s.oocSearched[k] += p.oocSearched[k]; s.oocNotBestQ[k] += p.oocNotBestQ[k];
                 s.oocSpreadN[k] += p.oocSpreadN[k]; s.oocSpreadSum[k] += p.oocSpreadSum[k];
@@ -545,6 +596,24 @@ namespace sts::azbench {
             }
             (node.combat ? wk.st.encodeCut : wk.st.encodeCutOoc) += g.tokens.cut;
             g.pendingNode = ni;
+            g.pendingHit = false;
+            if (cfg.evalCache) {
+                const std::uint32_t v = weightsVersion_.load(std::memory_order_acquire);
+                if (g.cacheVersion != v) { g.cache.clear(); g.cacheVersion = v; }
+                g.pendingHash = inputHash(g.tokens);
+                const auto it = g.cache.find(g.pendingHash);
+                if (it != g.cache.end() && it->second.nAct == g.tokens.nAct) {
+                    // Answered as a result would be, in the worker loop's next round (no recursion into advance).
+                    g.resLogits = it->second.logits;
+                    g.resF = it->second.F;
+                    g.resEhp = it->second.ehp;
+                    if (!it->second.hpf.empty()) std::copy(it->second.hpf.begin(), it->second.hpf.end(), g.resHpf.begin());
+                    g.pendingHit = true;
+                    ++wk.st.cacheHits;
+                    wk.hits.push_back(gi);
+                    return;
+                }
+            }
             outbox.push_back(static_cast<std::uint32_t>(wi) << 16 | static_cast<std::uint32_t>(gi));
         };
 
@@ -582,6 +651,7 @@ namespace sts::azbench {
             g.gc = GameContext(CharacterClass::IRONCLAD, seed, g.asc);
             if (cfg.testMaxHp > 0) g.gc.curHp = g.gc.maxHp = cfg.testMaxHp;
             g.inBattle = false;
+            g.cache.clear();
             g.moves = g.fightMoves = 0;
             g.floor = g.gc.floorNum;
             g.pending.clear();
@@ -1042,6 +1112,8 @@ namespace sts::azbench {
                 std::lock_guard<std::mutex> l(wk.im);
                 ready.swap(wk.inbox);
             }
+            ready.insert(ready.end(), wk.hits.begin(), wk.hits.end());   // cache answers of the last round
+            wk.hits.clear();
             if (ready.empty()) std::this_thread::sleep_for(std::chrono::microseconds(50));
             const double t0 = cpuSeconds();
             for (int gi : ready) {
@@ -1054,7 +1126,22 @@ namespace sts::azbench {
                 n.evaluated = true;
                 n.value = static_cast<float>((std::clamp<double>(g.resF, 0.0, 1.0) + w * H) / (1.0 + w));
                 for (std::size_t k = 0; k < n.edges.size() && k < g.resLogits.size(); ++k) n.edges[k].logit = g.resLogits[k];
-                ++wk.st.evals;
+                if (g.pendingHit) {
+                    g.pendingHit = false;
+                } else {
+                    ++wk.st.evals;
+                    // Only results of the cache's weights version go in (a batch evaluated before the last
+                    // weights change carries the old version).
+                    if (cfg.evalCache && g.resVersion == g.cacheVersion) {
+                        if (static_cast<int>(g.cache.size()) >= cfg.evalCacheCap) g.cache.clear();
+                        auto &e = g.cache[g.pendingHash];
+                        e.F = g.resF;
+                        e.ehp = g.resEhp;
+                        e.nAct = g.tokens.nAct;
+                        e.logits = g.resLogits;
+                        if (cfg.utility == Utility::AMBER) e.hpf.assign(g.resHpf.begin(), g.resHpf.end());
+                    }
+                }
                 const bool rootEval = g.pendingNode == 0;
                 g.pendingNode = -1;
                 if (rootEval) {
@@ -1118,7 +1205,7 @@ namespace sts::azbench {
     }
 
     void RunDriver::submit(const std::uint32_t *tickets, int rows, int actions, const float *logits, const float *F,
-                           const float *ehp, const float *hpf) {
+                           const float *ehp, const float *hpf, std::uint32_t version) {
         if (cfg_.utility == Utility::AMBER && !hpf)
             throw std::invalid_argument("run driver: utility AMBER needs per-floor HP results (hpf)");
         thread_local std::vector<std::vector<int>> per;
@@ -1131,6 +1218,7 @@ namespace sts::azbench {
                                logits + static_cast<std::size_t>(r) * actions + na);
             g.resF = F[r];
             g.resEhp = ehp[r];
+            g.resVersion = version;
             if (hpf) std::copy(hpf + static_cast<std::size_t>(r) * kFloors, hpf + static_cast<std::size_t>(r + 1) * kFloors,
                                g.resHpf.begin());
             per[t >> 16].push_back(static_cast<int>(t & 0xffff));
