@@ -89,6 +89,8 @@ class AmberNet(nn.Module):
         long, b["f"] [B, T, 64] float, b["mask"] [B, T] bool; actions as in forward_segments, with src / tgt
         indexing this token axis. Same math as forward_segments on the same live tokens: the per-type float
         projection is computed for all types and the token's own type is picked."""
+        if "pack_idx" in b:
+            return self.forward_packed(b)
         tt = b["tok_type"]
         d = self.type_emb.weight.shape[1]
         W = torch.stack([self.proj[t].weight for t in TOKEN_TYPES])          # [K, d, 64]
@@ -120,6 +122,40 @@ class AmberNet(nn.Module):
             x = x + a.out_proj(o.transpose(1, 2).reshape(B, T, d))
             x = x + layer.linear2(F.gelu(layer.linear1(layer.norm2(x))))
         return x
+
+    def forward_packed(self, b):
+        """forward_flat with the per-token work (input embedding, LayerNorms, QKV / output projections, FFN) done
+        only on the live tokens. b["pack_idx"] [N] long lists the live slots of the flattened [B * T] token axis,
+        padded up to a bucketed N with the value B * T (a trash slot); only attention runs on the padded [B, T]
+        layout. Same math as forward_flat with sdpa = True on the live tokens (tests/test_amber_net_flat.py)."""
+        F = torch.nn.functional
+        tt, idx, mask = b["tok_type"], b["pack_idx"], b["mask"]
+        B, T = tt.shape
+        M = B * T
+        d = self.type_emb.weight.shape[1]
+        ip = idx.clamp(max=M - 1)                 # trash entries read some token; their results go to the trash slot
+        tt_p = tt.reshape(M)[ip]
+        W = torch.stack([self.proj[t].weight for t in TOKEN_TYPES])
+        bias = torch.stack([self.proj[t].bias for t in TOKEN_TYPES])
+        K = W.shape[0]
+        P = F.linear(b["f"].reshape(M, -1)[ip], W.reshape(K * d, -1), bias.reshape(-1)).view(-1, K, d)
+        proj = torch.gather(P, 1, tt_p[:, None, None].expand(-1, 1, d)).squeeze(1)
+        x = self.in_norm(self.type_emb(tt_p) + self.ids(b["ids"].reshape(M, -1)[ip]).sum(1) + proj)
+        keep = mask[:, None, None, :]
+        for layer in self.trunk.layers:
+            a = layer.self_attn
+            H = a.num_heads
+            qkv_p = F.linear(layer.norm1(x), a.in_proj_weight, a.in_proj_bias)
+            full = qkv_p.new_zeros(M + 1, 3 * d)
+            full[idx] = qkv_p
+            qkv = full[:M].view(B, T, 3, H, d // H).permute(2, 0, 3, 1, 4)
+            o = F.scaled_dot_product_attention(qkv[0], qkv[1], qkv[2], attn_mask=keep)
+            x = x + a.out_proj(o.transpose(1, 2).reshape(M, d)[ip])
+            x = x + layer.linear2(F.gelu(layer.linear1(layer.norm2(x))))
+        h_p = self.out_norm(x)
+        h = h_p.new_zeros(M + 1, d)
+        h[idx] = h_p
+        return self._heads(h[:M].view(B, T, d), mask, b)
 
     def forward_segments(self, b):
         """b: per token type t in TOKEN_TYPES, b[t + "_ids"] [B, n_t, 4] long, b[t + "_f"] [B, n_t, 64] float,
@@ -174,6 +210,16 @@ def synthetic_batch(B, counts=None, actions=10, rng=None, live_frac=1.0):
     b["a_f"] = torch.from_numpy(rng.normal(0, 1, (B, actions, N_ACT_FEAT)).astype(np.float32))
     b["a_mask"] = torch.ones(B, actions, dtype=torch.bool)
     return b
+
+
+def pack_index(mask, step=1):
+    """pack_idx for forward_packed: the live slots of mask [B, T] in row-major order, padded with B * T up to a
+    multiple of `step`."""
+    m = mask.reshape(-1)
+    idx = torch.nonzero(m).squeeze(1)
+    n = idx.numel()
+    npad = -(-n // step) * step
+    return torch.cat([idx, idx.new_full((npad - n,), m.numel())])
 
 
 def live_tokens(b):

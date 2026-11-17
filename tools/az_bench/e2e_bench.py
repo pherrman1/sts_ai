@@ -110,6 +110,9 @@ def main(argv=None):
     ap.add_argument("--row-buckets", default="256,512,1024,2048,4096")
     ap.add_argument("--tok-buckets", default="32,48,64,96,128,212")
     ap.add_argument("--act-buckets", default="16,32,64,96")
+    ap.add_argument("--pack-step", type=int, default=0,
+                    help="flat layout: AmberNet.forward_packed (per-token work on live tokens only), the live-token "
+                         "count padded to a multiple of this (e.g. 2048); 0 = off")
     ap.add_argument("--pipeline", action="store_true",
                     help="flat layout, one batcher: pack the next batch on the CPU while the GPU runs the current one "
                          "(two pinned buffer sets; results come back through pinned memory)")
@@ -221,6 +224,17 @@ def main(argv=None):
             stop.set()
             raise
 
+    def pack_idx(host, views, M):
+        """forward_packed's index of the live token slots, padded with M up to a multiple of --pack-step."""
+        import numpy as np
+        live = np.flatnonzero(views["mask"][:M])
+        n = live.size
+        npad = -(-n // args.pack_step) * args.pack_step
+        pv = views["pack_idx"]
+        pv[:n] = live
+        pv[n:npad] = M
+        return host["pack_idx"][:npad].to(dev, non_blocking=True).long(), npad
+
     def flat_loop(i):
         import numpy as np
         rng = np.random.default_rng(i)
@@ -237,6 +251,7 @@ def main(argv=None):
             "a_tgt": torch.zeros(R * A, dtype=torch.int16, pin_memory=pin),
             "a_f": torch.zeros(R * A * 8, dtype=torch.float16, pin_memory=pin),
             "a_mask": torch.zeros(R * A, dtype=torch.bool, pin_memory=pin),
+            "pack_idx": torch.zeros(R * T, dtype=torch.int32, pin_memory=pin),
         }
         views = {k: v.numpy() for k, v in host.items()}
         while not stop.is_set():
@@ -248,6 +263,8 @@ def main(argv=None):
                     timing["wait"] += t1 - t0
                 continue
             ticket, rows, Rp, Tp, Ap = got
+            live_t = int(views["mask"][:rows * Tp].sum())
+            live_a = int(views["a_mask"][:rows * Ap].sum())
             if args.fake_net:
                 logits = rng.random((rows, Ap), dtype=np.float32)
                 value = rng.random(rows, dtype=np.float32)
@@ -266,7 +283,11 @@ def main(argv=None):
                         elif t.dtype == torch.float16:
                             t = t.to(in_float)
                         x[k] = t
-                    lg, outcome, _, _ = forward(x, (Rp, Tp, Ap))
+                    key = (Rp, Tp, Ap)
+                    if args.pack_step:
+                        x["pack_idx"], npad = pack_idx(host, views, Rp * Tp)
+                        key = (Rp, Tp, Ap, npad)
+                    lg, outcome, _, _ = forward(x, key)
                     logits = lg[:rows].float().cpu().numpy()
                     value = torch.softmax(outcome[:rows].float(), -1)[:, 0].cpu().numpy()
             t2 = time.perf_counter()
@@ -280,6 +301,8 @@ def main(argv=None):
                 timing["rows"] += rows
                 timing["padded_rows"] = timing.get("padded_rows", 0) + Rp
                 timing["tok_slots"] = timing.get("tok_slots", 0) + Rp * Tp
+                timing["live_toks"] = timing.get("live_toks", 0) + live_t
+                timing["live_acts"] = timing.get("live_acts", 0) + live_a
 
     def flat_pipe_loop(i):
         """Two-deep pipeline: while the GPU evaluates batch k (launched asynchronously on a side stream, results
@@ -299,7 +322,8 @@ def main(argv=None):
                  "a_src": torch.zeros(R * A, dtype=torch.int16, pin_memory=pin),
                  "a_tgt": torch.zeros(R * A, dtype=torch.int16, pin_memory=pin),
                  "a_f": torch.zeros(R * A * 8, dtype=torch.float16, pin_memory=pin),
-                 "a_mask": torch.zeros(R * A, dtype=torch.bool, pin_memory=pin)}
+                 "a_mask": torch.zeros(R * A, dtype=torch.bool, pin_memory=pin),
+                 "pack_idx": torch.zeros(R * T, dtype=torch.int32, pin_memory=pin)}
             out = {"logits": torch.zeros(R * A, dtype=torch.float32, pin_memory=pin),
                    "value": torch.zeros(R, dtype=torch.float32, pin_memory=pin)}
             return h, {k: v.numpy() for k, v in h.items()}, out
@@ -325,6 +349,8 @@ def main(argv=None):
             launched = None
             if got is not None:
                 ticket, rows, Rp, Tp, Ap = got
+                live_t = int(views["mask"][:rows * Tp].sum())
+                live_a = int(views["a_mask"][:rows * Ap].sum())
                 shapes = {"tok_type": (Rp, Tp), "ids": (Rp, Tp, 4), "f": (Rp, Tp, 64), "mask": (Rp, Tp),
                           "a_type": (Rp, Ap), "a_src": (Rp, Ap), "a_tgt": (Rp, Ap), "a_f": (Rp, Ap, 8),
                           "a_mask": (Rp, Ap)}
@@ -339,7 +365,11 @@ def main(argv=None):
                         elif t.dtype == torch.float16:
                             t = t.to(in_float)
                         x[k] = t
-                    lg, outcome, _, _ = forward(x, (Rp, Tp, Ap))
+                    key = (Rp, Tp, Ap)
+                    if args.pack_step:
+                        x["pack_idx"], npad = pack_idx(host, views, Rp * Tp)
+                        key = (Rp, Tp, Ap, npad)
+                    lg, outcome, _, _ = forward(x, key)
                     out["logits"][:rows * Ap].view(rows, Ap).copy_(lg[:rows].float(), non_blocking=True)
                     out["value"][:rows].copy_(torch.softmax(outcome[:rows].float(), -1)[:, 0], non_blocking=True)
                     ev = None
@@ -362,6 +392,9 @@ def main(argv=None):
                 if launched is not None:
                     timing["padded_rows"] = timing.get("padded_rows", 0) + Rp
                     timing["tok_slots"] = timing.get("tok_slots", 0) + Rp * Tp
+                    timing["live_toks"] = timing.get("live_toks", 0) + live_t
+                    timing["live_acts"] = timing.get("live_acts", 0) + live_a
+                    timing["launched_rows"] = timing.get("launched_rows", 0) + rows
             pending = launched
             if launched is not None:
                 cur ^= 1
@@ -436,7 +469,7 @@ def main(argv=None):
     ev = max(1, s1["evals"] - s0["evals"])
     nb = max(1, w1["batches"] - w0["batches"])
     res = {
-        "net": args.net, "params": params, "dtype": args.dtype, "sdpa": args.sdpa, "half": args.half, "pipeline": args.pipeline, "compile": args.compile, "backend": args.backend if args.compile else None, "fake_net": args.fake_net,
+        "net": args.net, "params": params, "dtype": args.dtype, "sdpa": args.sdpa, "half": args.half, "pipeline": args.pipeline, "pack_step": args.pack_step, "compile": args.compile, "backend": args.backend if args.compile else None, "fake_net": args.fake_net,
         "encoder": args.encoder,
         "workers": args.workers, "games_per_worker": args.games, "batchers": args.batchers, "max_batch": args.batch,
         "full_sims": args.full_sims, "fast_sims": args.fast_sims, "full_prob": args.full_prob,
@@ -451,6 +484,10 @@ def main(argv=None):
         "mean_padded_rows": round((w1.get("padded_rows", 0) - w0.get("padded_rows", 0)) / nb, 1),
         "mean_token_slots_per_row": round((w1.get("tok_slots", 0) - w0.get("tok_slots", 0))
                                           / max(1, w1.get("padded_rows", 0) - w0.get("padded_rows", 0)), 1),
+        "mean_live_tokens_per_row": round((w1.get("live_toks", 0) - w0.get("live_toks", 0))
+                                          / max(1, w1.get("launched_rows", w1["rows"]) - w0.get("launched_rows", w0["rows"])), 1),
+        "mean_live_actions_per_row": round((w1.get("live_acts", 0) - w0.get("live_acts", 0))
+                                           / max(1, w1.get("launched_rows", w1["rows"]) - w0.get("launched_rows", w0["rows"])), 1),
         "batcher_ms_per_batch": {k: round(1e3 * (w1[k] - w0[k]) / nb, 3) for k in ("wait", "h2d_forward", "submit")},
         "worker_us_per_position": {
             "step_enumerate": round(1e6 * (s1["step_cpu"] - s0["step_cpu"]) / ev, 3),

@@ -1,6 +1,6 @@
 """tools/az_bench/amber_net.py: the flat layout (one token axis, az_driver nextBatchFlat) gives the same outputs as
-the segmented layout on the same live tokens (fp32, within 1e-5), with and without padding; the SDPA trunk gives the
-same outputs as nn.TransformerEncoder (fp32, within 1e-4)."""
+the segmented layout on the same live tokens (fp32, within 1e-5), with and without padding; the SDPA trunk and the packed
+forward (per-token work on live tokens only) give the same outputs as nn.TransformerEncoder (fp32, within 1e-4)."""
 
 import importlib.util
 import os
@@ -48,6 +48,21 @@ class AmberFlatEquivalence(unittest.TestCase):
                     o2 = net(f)
                 for x, y in zip(o1, o2):
                     self.assertLess(float((x - y).abs().max()), 1e-4, (d, live_frac))
+
+    def test_packed_matches_flat(self):
+        spec = importlib.util.spec_from_file_location("amber_net", os.path.join(ROOT, "tools", "az_bench", "amber_net.py"))
+        A = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(A)
+        torch.manual_seed(0)
+        net = A.AmberNet(64, 2).eval()
+        for live_frac, step in ((1.0, 1), (0.4, 1), (0.4, 64)):
+            f = A.to_flat(A.synthetic_batch(16, live_frac=live_frac, rng=np.random.default_rng(3)))
+            with torch.no_grad():
+                net.sdpa = False
+                o1 = net(f)
+                o2 = net(dict(f, pack_idx=A.pack_index(f["mask"], step)))
+            for x, y in zip(o1, o2):
+                self.assertLess(float((x - y).abs().max()), 1e-4, (live_frac, step))
 
 
 if __name__ == "__main__":

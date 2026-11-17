@@ -9,6 +9,8 @@ Variants (comma list, --variants):
   sdpa       ref with AmberNet.sdpa = True (one QKV matmul + F.scaled_dot_product_attention per layer)
   half       ref with the weights cast to the autocast dtype and autocast off
   sdpa_half  both
+  packed     forward_packed (per-token work on live tokens only; pack_idx padded to --pack-step)
+  packed_half  packed with half weights
 
 The batch is synthetic: each row has a random number of live tokens (--min-tokens..T, run token first, the rest
 grouped by type as nextBatchFlat writes them) and a random number of live actions whose sources / targets point at
@@ -26,7 +28,16 @@ import os
 import time
 
 import numpy as np
-import torch
+
+# Name each inductor kernel after the ops it fuses (otherwise every Triton kernel shows up as "triton_").
+os.environ.setdefault("TORCHINDUCTOR_UNIQUE_KERNEL_NAMES", "1")
+import torch  # noqa: E402
+
+try:
+    import torch._inductor.config as _ic
+    _ic.triton.unique_kernel_names = True
+except (ImportError, AttributeError):
+    pass
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 _spec = importlib.util.spec_from_file_location("amber_net", os.path.join(ROOT, "tools", "az_bench", "amber_net.py"))
@@ -70,6 +81,7 @@ def main():
     ap.add_argument("--variants", default="ref,sdpa,half,sdpa_half")
     ap.add_argument("--profile", default="ref,sdpa", help="variants whose top kernels are printed")
     ap.add_argument("--no-compile", action="store_true")
+    ap.add_argument("--pack-step", type=int, default=2048)
     ap.add_argument("--warmup", type=int, default=20)
     ap.add_argument("--iters", type=int, default=50)
     ap.add_argument("--seed", type=int, default=0)
@@ -89,11 +101,13 @@ def main():
     results = []
     for name in args.variants.split(","):
         net = copy.deepcopy(base)
-        net.sdpa = "sdpa" in name
+        net.sdpa = "sdpa" in name or "packed" in name
         half = "half" in name
         if half:
             net = net.to(dtype)
         xin = {k: (v.to(dtype) if half and v.is_floating_point() else v) for k, v in x.items()}
+        if "packed" in name:
+            xin["pack_idx"] = amber_net.pack_index(x["mask"], args.pack_step)
         run = net if args.no_compile else torch.compile(net, dynamic=False)
         ac = torch.autocast(dev.type, dtype=dtype, enabled=not half)
 
@@ -126,7 +140,7 @@ def main():
             for _ in range(args.iters):
                 step()
             ms = (time.perf_counter() - t0) * 1e3 / args.iters
-        r = {"variant": name, "ms_per_batch": round(ms, 3), "positions_per_s": round(args.rows / ms * 1e3),
+        r = {"variant": name, "live_tokens_per_row": round(float(x["mask"].float().sum(1).mean()), 1), "ms_per_batch": round(ms, 3), "positions_per_s": round(args.rows / ms * 1e3),
              "compile_s": round(compile_s, 1), "max_abs_err_vs_fp32": err}
         print(json.dumps(r), flush=True)
         if name in args.profile.split(",") and dev.type == "cuda":
@@ -135,7 +149,7 @@ def main():
                 for _ in range(10):
                     step()
                 torch.cuda.synchronize()
-            table = prof.key_averages().table(sort_by="cuda_time_total", row_limit=20, max_name_column_width=70)
+            table = prof.key_averages().table(sort_by="cuda_time_total", row_limit=40, max_name_column_width=160)
             print(f"# top kernels, {name} (10 batches)\n{table}", flush=True)
             r["profile"] = table
         results.append(r)
