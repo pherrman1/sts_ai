@@ -158,7 +158,7 @@ class SelfplaySmoke(unittest.TestCase):
             self.assertGreater(last["explore_roots"], 0)
             c2 = torch.load(sorted(glob.glob(os.path.join(d, "ckpt_*.pt")), key=os.path.getmtime)[-1])["counters"]
             self.assertGreaterEqual(c2["seeds_used"], 32)
-            self.assertGreaterEqual(c2["step"], c["step"])
+            self.assertGreater(c2["step"], c["step"])   # training resumes (the replay-ratio cap counts from the resume)
             self.assertGreaterEqual(c2["runs_done"], 32)
 
 

@@ -272,6 +272,7 @@ def main(argv=None):
         opt.load_state_dict(ck["opt"])
         counters.update(ck["counters"])
     seeds_used0 = counters["seeds_used"]
+    trained0 = counters["trained"]   # the replay window starts empty on resume: the ratio cap counts from here
     seed_base = args.seed_base + seeds_used0
     max_runs = -1 if args.max_runs < 0 else max(0, args.max_runs - counters["seeds_used"])
 
@@ -437,7 +438,7 @@ def main(argv=None):
             ch = drv.take_samples(1 << 16)
             if ch is not None:
                 replay.add(ch)
-            if len(replay) < args.min_replay or counters["trained"] >= args.replay_ratio * replay.added:
+            if len(replay) < args.min_replay or counters["trained"] - trained0 >= args.replay_ratio * replay.added:
                 time.sleep(0.02)
                 continue
             b = replay.sample(rng, args.train_batch, args.policy_frac)
@@ -475,6 +476,8 @@ def main(argv=None):
         c = dict(counters, seeds_used=seeds_used0 + s["runs_started"], runs_done=counters["runs_done"] + s["runs_done"],
                  wall=wall0 + now - t_start)
         path = os.path.join(args.out_dir, f"ckpt_{tag}.pt")
+        if args.resume and os.path.abspath(path) == os.path.abspath(args.resume):
+            path = os.path.join(args.out_dir, f"ckpt_{tag}_r{c['runs_done']}.pt")   # never overwrite the resume source
         tmp = path + ".tmp"
         torch.save({"net": train_net.state_dict(), "opt": opt.state_dict(), "counters": c,
                     "args": vars(args), "net_size": [d, layers]}, tmp)
