@@ -181,6 +181,14 @@ target_link_libraries(az-run-driver PRIVATE Threads::Threads)
 add_test(NAME az_run_driver_smoke COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 6 --fast
          --seed-base 1 --seconds 300)
 set_tests_properties(az_run_driver_smoke PROPERTIES LABELS "core;smoke")
+# Fair play of the stage 1 driver's combat view (ADR-0002): fights differing only in hidden draw order (and, under
+# Runic Dome, rolled intents) give identical net inputs and identical search paths.
+add_executable(az-fair-view-test apps/az_bench/az_fair_view_test.cpp apps/az_bench/az_run_driver.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(az-fair-view-test PRIVATE include json/include apps/az_bench)
+target_link_libraries(az-fair-view-test PRIVATE Threads::Threads)
+add_test(NAME az_fair_view COMMAND $<TARGET_FILE:az-fair-view-test> --fights 40)
+set_tests_properties(az_fair_view PROPERTIES LABELS "core;smoke")
 
 # Native Amber-token combat encoder (stage 0 of the self-play loop assessment): every wire-encoded field reaches the
 # tokens, determinism, capacity cut counting and live action src / tgt, on the wire sample.

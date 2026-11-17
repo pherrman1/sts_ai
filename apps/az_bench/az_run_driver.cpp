@@ -11,6 +11,7 @@
 
 #include "constants/Rooms.h"
 #include "sim/search/AmberEncoder.h"
+#include "sim/search/NativeSilverBackend.h"
 #include "sim/search/OocHiddenFuture.h"
 #include "sim/search/OocMctsPlanner.h"
 #include "sim/search/SearchRng.h"
@@ -79,6 +80,48 @@ namespace sts::azbench {
             }
         }
 
+    }
+
+    namespace {
+        // Points the thread's combat knowledge observer at one tracker for a scope (null outside: search steps
+        // never reach a tracker).
+        class ObserverScope {
+        public:
+            explicit ObserverScope(search::CombatKnowledgeObserver *o) : prev_(search::g_combatKnowledgeObserver) {
+                search::g_combatKnowledgeObserver = o;
+            }
+            ~ObserverScope() { search::g_combatKnowledgeObserver = prev_; }
+            ObserverScope(const ObserverScope &) = delete;
+            ObserverScope &operator=(const ObserverScope &) = delete;
+        private:
+            search::CombatKnowledgeObserver *prev_;
+        };
+    }
+
+    void initObservedBattle(const GameContext &gc, BattleContext &bc, search::CombatKnowledgeState &knowledge) {
+        knowledge = search::CombatKnowledgeState();
+        bc = BattleContext();
+        knowledge.configureHiddenMonsterIntents(gc.relics.has(RelicId::RUNIC_DOME));
+        knowledge.initializeFromLiveBattle(bc);
+        knowledge.beginCombatInitialization();
+        {
+            ObserverScope o(&knowledge);
+            bc.init(gc);
+        }
+        knowledge.synchronizeAfterCombatInitialization(bc);
+    }
+
+    void executeObserved(BattleContext &bc, std::uint32_t bits, search::CombatKnowledgeState &knowledge) {
+        ObserverScope o(&knowledge);
+        Action(bits).execute(bc);
+    }
+
+    std::string publicCombatRoot(const BattleContext &live, search::CombatKnowledgeState &knowledge,
+                                 BattleContext &root) {
+        knowledge.reconcilePublicDrawPileCardinality(live);
+        if (knowledge.consistencyFailureCount != 0) return "knowledge tracker lost consistency";
+        ObserverScope o(nullptr);
+        return search::nativeSilverSearchRoot(live, knowledge, root);
     }
 
     void stubEncodeGame(const GameContext &gc, const std::vector<GameAction> &actions, AmberTokens &out) {
@@ -179,6 +222,7 @@ namespace sts::azbench {
         std::uint64_t seed = 0;
         GameContext gc;
         BattleContext bc;
+        std::unique_ptr<search::CombatKnowledgeState> knowledge = std::make_unique<search::CombatKnowledgeState>();
         bool inBattle = false;
         search::SilverSearchContext ctx;
         int fightMoves = 0, moves = 0, floor = 0;
@@ -300,7 +344,7 @@ namespace sts::azbench {
             s.evals += p.evals; s.moves += p.moves; s.searchedMoves += p.searchedMoves;
             s.runsStarted += p.runsStarted; s.runsDone += p.runsDone; s.wins += p.wins; s.floorsSum += p.floorsSum;
             s.stalls += p.stalls; s.terminalLeaves += p.terminalLeaves; s.encodeCut += p.encodeCut; s.encodeCutOoc += p.encodeCutOoc;
-            s.unsupported += p.unsupported; s.samplesDone += p.samplesDone; s.samplesPending += p.samplesPending;
+            s.unsupported += p.unsupported; s.knowledgeFailures += p.knowledgeFailures; s.invalidActions += p.invalidActions; s.samplesDone += p.samplesDone; s.samplesPending += p.samplesPending;
             for (int k = 0; k < kOutcomeClasses; ++k) s.outcomes[k] += p.outcomes[k];
             s.stepCpu += p.stepCpu; s.encodeCpu += p.encodeCpu; s.searchCpu += p.searchCpu;
         }
@@ -449,7 +493,7 @@ namespace sts::azbench {
         auto applyReal = [&](Run &g, std::uint32_t bits) {
             const double t0 = cpuSeconds();
             if (g.inBattle) {
-                Action(bits).execute(g.bc);
+                executeObserved(g.bc, bits, *g.knowledge);
                 ++g.fightMoves;
                 if (g.bc.outcome == Outcome::UNDECIDED && g.fightMoves >= cfg.maxMovesPerFight) {
                     ++wk.st.stalls;
@@ -463,8 +507,7 @@ namespace sts::azbench {
                 GameAction(bits).execute(g.gc);
             }
             if (!g.inBattle && g.gc.outcome == GameOutcome::UNDECIDED && g.gc.screenState == ScreenState::BATTLE) {
-                g.bc = BattleContext();
-                g.bc.init(g.gc);
+                initObservedBattle(g.gc, g.bc, *g.knowledge);
                 g.ctx = combatContext(g.gc);
                 g.inBattle = true;
                 g.fightMoves = 0;
@@ -522,8 +565,20 @@ namespace sts::azbench {
             g.path.clear();
             const int r = newNode(g);
             Node &root = g.pool[r];
-            if (g.inBattle) { root.combat = true; root.bc = g.bc; root.ctx = g.ctx; }
-            else setGc(root, search::detachedGameCopy(g.gc));
+            if (g.inBattle) {
+                root.combat = true;
+                root.ctx = g.ctx;
+                if (!publicCombatRoot(g.bc, *g.knowledge, root.bc).empty()) {
+                    // No fair view of this fight (an intent pattern the tracker cannot represent): abandon the run.
+                    ++wk.st.knowledgeFailures;
+                    g.poolUsed = 0;
+                    g.path.clear();
+                    g.gc.outcome = GameOutcome::PLAYER_LOSS;
+                    g.inBattle = false;
+                    endRun(g, gi);
+                    return;
+                }
+            } else setGc(root, search::detachedGameCopy(g.gc));
             g.path.push_back({r, -1, -1});
             request(g, gi, r);
         };
@@ -588,7 +643,11 @@ namespace sts::azbench {
                     for (auto &x : z) { x = std::exp(x - mx); sum += x; }
                     const int na = static_cast<int>(s.aType.size());
                     s.policy.assign(na, 0.f);
-                    for (int i = 0; i < std::min(k, na); ++i) s.policy[i] = static_cast<float>(z[i] / sum);
+                    // The target covers the encoded actions only (a cut tail is rare): renormalise over them.
+                    double kept = 0;
+                    for (int i = 0; i < std::min(k, na); ++i) kept += z[i];
+                    if (kept <= 0) kept = sum;
+                    for (int i = 0; i < std::min(k, na); ++i) s.policy[i] = static_cast<float>(z[i] / kept);
                 } else {
                     s.policy.clear();
                 }
@@ -597,7 +656,20 @@ namespace sts::azbench {
                 ++wk.st.samplesPending;
                 pending_.fetch_add(1, std::memory_order_relaxed);
             }
-            applyReal(g, root.edges[pick].bits);
+            std::uint32_t bits = root.edges[pick].bits;
+            if (root.combat) {
+                // The search chose against the public view, whose pile orders differ from the real fight's: map card
+                // indices by identity (as production does).
+                bits = search::SilverSearcher::translateAction(Action(bits), root.bc, g.bc).bits;
+                if (!Action(bits).isValidAction(g.bc)) {
+                    ++wk.st.invalidActions;
+                    g.gc.outcome = GameOutcome::PLAYER_LOSS;
+                    g.inBattle = false;
+                    startMove(g, gi);
+                    return;
+                }
+            }
+            applyReal(g, bits);
             startMove(g, gi);
         };
 
@@ -667,8 +739,12 @@ namespace sts::azbench {
                     } else if (next.screenState == ScreenState::BATTLE) {
                         // A fight starts: the leaf is its first state, valued by the net (in combat).
                         cn.combat = true;
-                        cn.bc = BattleContext();
-                        cn.bc.init(next);
+                        // Its public view, as at a real fight start (the shuffle is a sample anyway; this keeps the
+                        // net's input distribution the same as at real roots).
+                        search::CombatKnowledgeState k;
+                        BattleContext live;
+                        initObservedBattle(next, live, k);
+                        if (!publicCombatRoot(live, k, cn.bc).empty()) cn.bc = live;
                         cn.ctx = combatContext(next);
                         cn.boundary = true;
                     } else {

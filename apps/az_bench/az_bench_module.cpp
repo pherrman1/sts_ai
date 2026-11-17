@@ -322,7 +322,7 @@ PYBIND11_MODULE(az_bench_native, m) {
             o["evals"] = s.evals; o["moves"] = s.moves; o["searched_moves"] = s.searchedMoves;
             o["runs_started"] = s.runsStarted; o["runs_done"] = s.runsDone; o["wins"] = s.wins;
             o["floors_sum"] = s.floorsSum; o["stalls"] = s.stalls; o["terminal_leaves"] = s.terminalLeaves;
-            o["encode_cut"] = s.encodeCut; o["encode_cut_ooc"] = s.encodeCutOoc; o["unsupported"] = s.unsupported;
+            o["encode_cut"] = s.encodeCut; o["encode_cut_ooc"] = s.encodeCutOoc; o["unsupported"] = s.unsupported; o["knowledge_failures"] = s.knowledgeFailures; o["invalid_actions"] = s.invalidActions;
             o["samples_done"] = s.samplesDone; o["samples_pending"] = s.samplesPending;
             o["batches"] = s.batches; o["batch_rows"] = s.batchRows;
             o["outcomes"] = std::vector<std::int64_t>(s.outcomes.begin(), s.outcomes.end());

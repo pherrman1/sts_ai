@@ -17,7 +17,8 @@
 // action executes; combat edges reseed the search RNG as in stage 0. F = E[final floor] / 57 (a win counts 57), H =
 // E[HP at the end of the floor] / max HP; the net's heads are turned into F and E[HP] by the caller, the driver
 // mixes U = F + w H with w = hpWeightCombat or hpWeightOoc and scales by 1 / (1 + w) into [0, 1]. One leaf in flight
-// per run, no tree reuse between moves.
+// per run, no tree reuse between moves. The improved policy completes unvisited edges' Q with the net's root value
+// (not the paper's v_mix; a stage-1 simplification).
 #ifndef STS_AZ_RUN_DRIVER_H
 #define STS_AZ_RUN_DRIVER_H
 
@@ -36,6 +37,7 @@
 #include "game/GameContext.h"
 #include "sim/search/Action.h"
 #include "sim/search/AmberTokens.h"
+#include "sim/search/CombatKnowledge.h"
 #include "sim/search/GameAction.h"
 #include "sim/search/SilverSearcher.h"
 
@@ -50,6 +52,20 @@ namespace sts::azbench {
     // tokens and one OPTION token per legal action (type = screen, action bits as features).
     void stubEncodeGame(const GameContext &gc, const std::vector<search::GameAction> &actions,
                         search::AmberTokens &out);
+
+    // Fair play (ADR-0002): the search and the net see a fight only through the player's public view, as the
+    // production Silver search does (nativeSilverSearchRoot): the draw pile is the player's information set (known
+    // top / bottom, unknown multiset; concrete only under Frozen Eye) and under Runic Dome the rolled intents are
+    // hidden. A per-run CombatKnowledgeState follows the real fight; it observes bc.init and every real action.
+    //
+    // Starts the fight of gc in bc with knowledge tracking (knowledge is reset).
+    void initObservedBattle(const GameContext &gc, BattleContext &bc, search::CombatKnowledgeState &knowledge);
+    // Executes a real combat action with the knowledge tracker observing it.
+    void executeObserved(BattleContext &bc, std::uint32_t bits, search::CombatKnowledgeState &knowledge);
+    // The public view of a live fight (search root and net input). Returns an empty string, or why the view cannot
+    // be built (the run is then abandoned as a loss).
+    std::string publicCombatRoot(const BattleContext &live, search::CombatKnowledgeState &knowledge,
+                                 BattleContext &root);
 
     constexpr int kOutcomeClasses = 57;   // 0 = win, f = death on floor f (1..56)
     constexpr int kHpClasses = 256;
@@ -98,6 +114,8 @@ namespace sts::azbench {
     struct RunStats {
         std::int64_t evals = 0, moves = 0, searchedMoves = 0, runsStarted = 0, runsDone = 0, wins = 0;
         std::int64_t floorsSum = 0, stalls = 0, terminalLeaves = 0, unsupported = 0;
+        std::int64_t invalidActions = 0;      // chosen actions not valid in the real fight after translation (bug; run lost)
+        std::int64_t knowledgeFailures = 0;   // fights whose public view could not be built (run abandoned as a loss)
         std::int64_t encodeCut = 0, encodeCutOoc = 0;   // tokens / actions past capacity (combat, out of combat; MAP keeps the nearest 32 nodes)
         std::int64_t samplesDone = 0, samplesPending = 0;
         std::int64_t batches = 0, batchRows = 0;

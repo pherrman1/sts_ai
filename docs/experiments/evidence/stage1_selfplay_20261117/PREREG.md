@@ -23,3 +23,8 @@ floor per 30 s window and per 10k runs, death-floor histogram, losses, positions
 Not a gate against the main agent; a whole-run comparison with the G16 agent is a later, separate PREREG.
 
 **Cost.** The PC's GPU, exclusively, until a decision (estimate: 1M runs in ~2-5 days at the smoke's rates).
+
+**Fair play (review of PR #1082, 2026-11-17).** The combat search root and the net input are the player's public view
+(`nativeSilverSearchRoot` with a per-run `CombatKnowledgeState`: draw pile as information set, Runic Dome intents
+hidden), checked by ctest `az_fair_view`. Any run started before this fix is void and is not resumed. Later
+evaluations of stage 1 nets use seeds outside 130000000 + (runs used).

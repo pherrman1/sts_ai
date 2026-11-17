@@ -374,6 +374,8 @@ def main(argv=None):
                             stream.wait_event(ev_w)
                         for p_i, p_s in zip(infer.parameters(), state):
                             p_i.copy_(p_s)
+                            if stream is not None:   # p_s came from the trainer's stream: keep it alive for this copy
+                                p_s.record_stream(stream)
                         infer_stats["syncs"] += 1
                     x = {}
                     shapes = {"tok_type": (Rp, Tp), "ids": (Rp, Tp, 4), "f": (Rp, Tp, 64), "mask": (Rp, Tp),
@@ -520,7 +522,7 @@ def main(argv=None):
                 "death_floors_window": {int(k): int(v) for k, v in enumerate(d_oc) if v and k},
                 "samples_added": replay.added, "replay": len(replay), "train_steps": counters["step"],
                 "trained_samples": counters["trained"], "loss": lavg, "syncs": infer_stats["syncs"],
-                "stalls": s["stalls"], "unsupported": s["unsupported"], "encode_cut": s["encode_cut"], "encode_cut_ooc": s["encode_cut_ooc"],
+                "stalls": s["stalls"], "unsupported": s["unsupported"], "knowledge_failures": s["knowledge_failures"], "invalid_actions": s["invalid_actions"], "encode_cut": s["encode_cut"], "encode_cut_ooc": s["encode_cut_ooc"],
                 "samples_pending": s["samples_pending"],
             }
             print(json.dumps(row), flush=True)
