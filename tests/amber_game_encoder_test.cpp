@@ -5,7 +5,7 @@
 // token, distinct GameAction bits give distinct (type, src, tgt, f) tuples, ids inside the vocabulary, finite floats,
 // out.cut only from MAP / deck / relic overflow, the same state encodes to the same bytes, and a copy whose private
 // fields (seed, RNG streams, pools, unconsumed encounter queues, second boss, pity counters, unopened chest roll,
-// Dead Adventurer rewards / fight, burning-elite buff, transform RNG) are scrambled encodes to the same bytes.
+// Dead Adventurer reward order, burning-elite buff, transform RNG) are scrambled encodes to the same bytes.
 // Every out-of-combat ScreenState must be visited. Fixed seeds 1..N (no gameplay evaluation, outcomes unused).
 #include "sim/search/AmberEncoder.h"
 
@@ -112,7 +112,9 @@ namespace {
         gc.info.haveGold = k % 2;
         gc.info.rewards = {k % 3, (k + 1) % 3, (k + 2) % 3};
         gc.info.transformRng = k % 2 ? MISC_RNG : NEOW_RNG;
-        if (gc.screenState != ScreenState::BATTLE)
+        // The Dead Adventurer elite is public (event text); elsewhere a non-battle encounter field is stale.
+        if (gc.screenState != ScreenState::BATTLE
+                && !(gc.screenState == ScreenState::EVENT_SCREEN && gc.curEvent == Event::DEAD_ADVENTURER))
             gc.info.encounter = k % 2 ? MonsterEncounter::GREMLIN_NOB : MonsterEncounter::THREE_SENTRIES;
         if (gc.map) {
             gc.map = std::make_shared<Map>(*gc.map);   // never mutate the shared map of the original
@@ -201,7 +203,7 @@ int main(int argc, char **argv) {
     std::set<int> events;
     std::map<int, int> types;
     std::map<std::string, int> cutBy;
-    long states = 0, scrambled = 0, victories = 0, act4 = 0;
+    long states = 0, scrambled = 0, victories = 0, act4 = 0, deadAdventurerChecks = 0;
     double encodeNs = 0;
     AmberTokens a, b;
     for (int run = 0; run < runs; ++run) {
@@ -347,6 +349,14 @@ int main(int argc, char **argv) {
                         g.info.chestSize = g.info.chestSize == ChestSize::SMALL ? ChestSize::LARGE : ChestSize::SMALL;
                         return true;
                     });
+                if (gc.screenState == ScreenState::EVENT_SCREEN && gc.curEvent == Event::DEAD_ADVENTURER
+                        && (GameAction::getValidEventSelectBits(gc) & 1))
+                    visible("dead adventurer elite", [&](GameContext &g) {
+                        ++deadAdventurerChecks;
+                        g.info.encounter = g.info.encounter == MonsterEncounter::GREMLIN_NOB
+                            ? MonsterEncounter::LAGAVULIN_EVENT : MonsterEncounter::GREMLIN_NOB;
+                        return true;
+                    });
                 if (gc.screenState == ScreenState::EVENT_SCREEN && gc.curEvent == Event::NEOW)
                     visible("neow drawback", [](GameContext &g) {
                         for (auto &o : g.info.neowRewards)
@@ -374,6 +384,10 @@ int main(int argc, char **argv) {
             std::cerr << "FAIL: screen " << static_cast<int>(s) << " never visited\n";
             ++g_fail;
         }
+    if (deadAdventurerChecks == 0) {
+        std::cerr << "FAIL: no Dead Adventurer elite visibility check ran\n";
+        ++g_fail;
+    }
     for (const int ty : {2, 3, 10, 11, 12, 13})
         if (!types.count(ty)) {
             std::cerr << "FAIL: action type " << ty << " never produced\n";
@@ -381,7 +395,7 @@ int main(int argc, char **argv) {
         }
     std::cout << "amber_game_encoder: " << runs << " runs, " << states << " states (" << scrambled
               << " scrambled), victories " << victories << ", act-4 states " << act4 << ", events seen "
-              << events.size() << ", mean encode " << encodeNs / std::max(1L, states) / 1000.0 << " us\n  screens:";
+              << events.size() << ", Dead Adventurer checks " << deadAdventurerChecks << ", mean encode " << encodeNs / std::max(1L, states) / 1000.0 << " us\n  screens:";
     for (const auto &[s, c] : screens) std::cout << ' ' << s << '=' << c;
     std::cout << "\n  action types:";
     for (const auto &[ty, c] : types) std::cout << ' ' << ty << '=' << c;
