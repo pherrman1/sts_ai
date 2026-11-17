@@ -31,6 +31,20 @@ search-backed distribution (the search backs up a scalar utility only), and the 
 The logged "outcome" loss is always the cross-entropy to the final outcome (comparable across settings);
 "outcome_ema" is the trained loss against the EMA target.
 
+--w-soft-policy W > 0 (2026-11-17, default 0 = no head) adds Amber Eye's soft policy head ("Labels", adapted from
+KataGo): a second action MLP on the same action vectors e_a, trained in training mode only on the policy target p
+raised to 1/4 and renormalised over the legal actions (full-move samples), with loss weight W (KataGo: 8). Inference
+never computes it. --init-net from a checkpoint without the head starts the head fresh.
+
+--explore-amber (2026-11-17, default off; not with --explore-c) is Amber Eye's exploration ("Exploration"): an item
+(card / option / relic / shop choice) played in fewer than --pick-target of the finished runs is under target; a root
+offering one gets a full search in which every under-target item stays a candidate through every halving; after the
+search each under-target item (random order) is played instead with probability min(1, c exp(-m / T)), T =
+--explore-temp (4), m its gap to the pick in the search's final score, c per item by bisection over all finished runs
+so that it would have been played in --pick-target of them (az_run_driver.h RunConfig::exploreAmber, amberExploreC).
+Choices where the page is silent (Philipp 2026-11-17): no separate bias, rate counted once per run, all item classes,
+samples keep the search policy. Like --explore-c, the counts live in the process (not restored on --resume).
+
 From https://8e9f.github.io/amber_eye/: one net, Gumbel AlphaZero 64 / 16 positions per full / fast move with playout
 cap randomization 0.25, utility F + H first, the 0.44M net first, no teacher. Our choices: the loss weights, the
 optimizer (AdamW), the window, the replay ratio, the sync interval (all flags).
@@ -390,6 +404,11 @@ def main(argv=None):
                     help="samples of unfinished runs held for their labels; above it keep probabilities shrink")
     ap.add_argument("--explore-c", type=float, default=0.0, help="pick-rate exploration strength (0 = off)")
     ap.add_argument("--pick-target", type=float, default=0.01, help="pick-rate target per item and run")
+    ap.add_argument("--explore-amber", action="store_true",
+                    help="Amber Eye exploration (RunConfig::exploreAmber): under-target items stay search candidates "
+                         "and are played with probability min(1, c exp(-m / T)), c per item by bisection to hit "
+                         "--pick-target of runs; not with --explore-c")
+    ap.add_argument("--explore-temp", type=float, default=4.0, help="T of --explore-amber (Amber Eye: 4)")
     ap.add_argument("--eval-cache", action="store_true",
                     help="per-run evaluation cache: a leaf whose net input this run already had evaluated with the "
                          "current inference weights reuses that result (exact; RunConfig::evalCache)")
@@ -516,7 +535,8 @@ def main(argv=None):
         explore_c=args.explore_c, pick_target=args.pick_target, c_visit=args.c_visit, c_scale=args.c_scale,
         fast_noise=not args.no_fast_noise, q_rescale=args.q_rescale, utility=1 if amber else 0,
         keyless_hp=args.keyless_hp,
-        eval_cache=args.eval_cache, eval_cache_cap=args.eval_cache_cap, merge_cards=args.merge_cards)
+        eval_cache=args.eval_cache, eval_cache_cap=args.eval_cache_cap, merge_cards=args.merge_cards,
+        explore_amber=args.explore_amber, explore_temp=args.explore_temp)
     ema_lam = 0.5 ** (1.0 / args.value_ema_halflife) if args.value_ema_halflife > 0 else 0.0
     replay = Replay(args.window, hp_floors=56 if amber else 0, soft_outcome=ema_lam > 0)
     ema_stats = {"samples": 0, "real_weight": 0.0}   # mean weight of the final outcome in the EMA targets

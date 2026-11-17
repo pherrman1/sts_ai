@@ -306,6 +306,9 @@ namespace sts::azbench {
         std::unique_ptr<search::CombatKnowledgeState> knowledge = std::make_unique<search::CombatKnowledgeState>();
         bool inBattle = false;
         std::vector<int> rootKeys;           // pick-rate item bucket per root action (-1 = none), OOC roots
+        std::vector<char> rootUnder;         // exploreAmber: root action is an under-target item (after warm-up)
+        std::unordered_map<int, double> gapMin;   // exploreAmber: this run's smallest gap per item
+        std::vector<int> pickedKeys;         // exploreAmber: items played in this run (each once)
         int asc = 20;                        // this run's ascension
         RunProgress progress;                // this run's progress counters (added to its ascension at the end)
         search::SilverSearchContext ctx;
@@ -427,6 +430,35 @@ namespace sts::azbench {
 
     }
 
+    double amberExploreC(const AmberGapHist &h, double need, double T) {
+        if (static_cast<double>(h.natural) >= need) return 0.0;
+        std::vector<std::pair<double, double>> bins;   // (exp(-m_b / T), runs) of the non-empty bins
+        for (int b = 0; b < AmberGapHist::kBins; ++b)
+            if (h.n[b]) bins.emplace_back(std::exp(-(b + 0.5) * AmberGapHist::kBin / T), h.n[b]);
+        auto picked = [&](double c) {
+            double x = static_cast<double>(h.natural);
+            for (const auto &[e, n] : bins) x += n * std::min(1.0, c * e);
+            return x;
+        };
+        double lo = -60.0, hi = 60.0;   // log c; at e^60 every logged gap (< 40) is picked with probability 1
+        if (picked(std::exp(hi)) < need) return std::numeric_limits<double>::infinity();
+        for (int it = 0; it < 100; ++it) {
+            const double mid = 0.5 * (lo + hi);
+            (picked(std::exp(mid)) < need ? lo : hi) = mid;
+        }
+        return std::exp(hi);
+    }
+
+    double RunDriver::exploreItemC(int key, std::int64_t games) {
+        std::lock_guard<std::mutex> l(exploreM_);
+        ExploreItem &it = exploreItems_[key];
+        if (it.stamp != games) {   // recomputed once per new finished run
+            it.c = amberExploreC(it.hist, cfg_.pickTarget * static_cast<double>(games), cfg_.exploreT);
+            it.stamp = games;
+        }
+        return it.c;
+    }
+
     RunDriver::RunDriver(RunConfig cfg) : cfg_(cfg) {
         if (cfg_.ascension < 0 || cfg_.ascension >= kAscensions) throw std::invalid_argument("run driver: ascension 0..20");
         ascension_.store(cfg_.ascension);
@@ -437,15 +469,21 @@ namespace sts::azbench {
         if (cfg_.utility != Utility::FLOOR_HP && cfg_.utility != Utility::AMBER)
             throw std::invalid_argument("run driver: utility 0 (floor HP) or 1 (Amber)");
         if (cfg_.gamesPerWorker > 0xffff) throw std::invalid_argument("run driver: at most 65535 runs per worker");
+        if (cfg_.exploreAmber && cfg_.exploreC > 0)
+            throw std::invalid_argument("run driver: exploreAmber and exploreC are exclusive");
+        if (cfg_.exploreAmber && !(cfg_.exploreT > 0 && cfg_.pickTarget > 0))
+            throw std::invalid_argument("run driver: exploreAmber needs exploreT > 0 and pickTarget > 0");
         for (int w = 0; w < cfg_.workers; ++w) {
             auto wk = std::make_unique<Worker>();
             wk->rng.seed(cfg_.searchSeed * 1000003u + static_cast<std::uint64_t>(w));
             wk->runs.resize(cfg_.gamesPerWorker);
             for (auto &r : wk->runs)
                 // One node per simulation; a halving phase rounds its per-candidate count up to 1, so a search
-                // can overshoot its budget by at most one simulation per candidate.
+                // can overshoot its budget by at most one simulation per candidate (exploreAmber: under-target
+                // items are extra candidates, at most one per encoded action).
                 r.pool.reserve(static_cast<std::size_t>(std::max(cfg_.fullSims, cfg_.fastSims) +
-                                                        std::max(cfg_.fullCandidates, cfg_.fastCandidates)) + 2);
+                                                        std::max(cfg_.fullCandidates, cfg_.fastCandidates)
+                                                        + (cfg_.exploreAmber ? search::kAmberMaxActions : 0)) + 2);
             workers_.push_back(std::move(wk));
         }
     }
@@ -572,7 +610,7 @@ namespace sts::azbench {
                 const double t1 = cpuSeconds();
                 cfg.encodeGame(*node.gc, gacts, g.tokens);
                 if (cfg.mergeCards) search::amberMergeCards(g.tokens);
-                if (ni == 0 && cfg.exploreC > 0) {
+                if (ni == 0 && (cfg.exploreC > 0 || cfg.exploreAmber)) {
                     // Pick-rate items of the root's actions: hash of the source token's ids.
                     g.rootKeys.assign(gacts.size(), -1);
                     for (int k = 0; k < g.tokens.nAct; ++k) {
@@ -680,6 +718,15 @@ namespace sts::azbench {
                     s.hpFloor.resize(kFloors);
                     amberFloorLabels(s.floor, g.floorHp.data(), tail, s.hpFloor.data());
                 }
+            }
+            if (cfg.exploreAmber) {   // the run's items: once per run in the rate, smallest gap into the item's log
+                for (int key : g.pickedKeys) picks_[key].fetch_add(1, std::memory_order_relaxed);
+                {
+                    std::lock_guard<std::mutex> l(exploreM_);
+                    for (const auto &[key, m] : g.gapMin) exploreItems_[key].hist.add(m);
+                }
+                g.pickedKeys.clear();
+                g.gapMin.clear();
             }
             ++wk.st.runsDone;
             runsDone_.fetch_add(1, std::memory_order_relaxed);
@@ -818,15 +865,23 @@ namespace sts::azbench {
             }
             g.path.push_back({r, -1, -1});
             g.rootKeys.clear();
+            g.rootUnder.clear();
             request(g, gi, r);
-            if (!g.inBattle && cfg.exploreC > 0) {
+            if (!g.inBattle && (cfg.exploreC > 0 || cfg.exploreAmber)) {
                 ++wk.st.oocRoots;
                 const double games = static_cast<double>(runsDone_.load(std::memory_order_relaxed));
                 bool under = false;
                 // Rates are over finished runs, after a warm-up of 1 / pickTarget runs (no item is under target before).
-                if (games * cfg.pickTarget >= 1.0)
-                    for (int key : g.rootKeys)
-                        if (key >= 0 && picks_[key].load(std::memory_order_relaxed) < cfg.pickTarget * games) under = true;
+                if (games * cfg.pickTarget >= 1.0) {
+                    if (cfg.exploreAmber) g.rootUnder.assign(g.rootKeys.size(), 0);
+                    for (std::size_t k = 0; k < g.rootKeys.size(); ++k) {
+                        const int key = g.rootKeys[k];
+                        if (key >= 0 && picks_[key].load(std::memory_order_relaxed) < cfg.pickTarget * games) {
+                            under = true;
+                            if (cfg.exploreAmber) g.rootUnder[k] = 1;
+                        }
+                    }
+                }
                 if (under) {
                     ++wk.st.exploreRoots;
                     if (!g.full) {   // a root with an under-target item gets a full search (policy target recorded)
@@ -857,7 +912,11 @@ namespace sts::azbench {
             });
             const int m = std::min(k, g.candidates);
             g.cand.assign(order.begin(), order.begin() + m);
-            g.phasesLeft = m > 1 ? static_cast<int>(std::ceil(std::log2(m))) : 1;
+            if (!g.rootUnder.empty())   // exploreAmber: every under-target item is a candidate on top of the usual ones
+                for (int i = m; i < k; ++i)
+                    if (order[i] < static_cast<int>(g.rootUnder.size()) && g.rootUnder[order[i]]) g.cand.push_back(order[i]);
+            const int mc = static_cast<int>(g.cand.size());
+            g.phasesLeft = mc > 1 ? static_cast<int>(std::ceil(std::log2(mc))) : 1;
         };
 
         auto fillPhase = [&](Run &g) {
@@ -876,7 +935,16 @@ namespace sts::azbench {
             std::sort(g.cand.begin(), g.cand.end(), [&](int a, int b) {
                 return rootScore(g, root, a, sigma, q) > rootScore(g, root, b, sigma, q);
             });
-            g.cand.resize(std::max<std::size_t>(1, (g.cand.size() + 1) / 2));
+            if (g.rootUnder.empty()) {
+                g.cand.resize(std::max<std::size_t>(1, (g.cand.size() + 1) / 2));
+            } else {   // exploreAmber: under-target items survive; the others are halved as usual
+                auto isUnder = [&](int e) { return e < static_cast<int>(g.rootUnder.size()) && g.rootUnder[e] != 0; };
+                std::vector<int> kept, forced;
+                for (int e : g.cand) (isUnder(e) ? forced : kept).push_back(e);
+                if (!kept.empty()) kept.resize(std::max<std::size_t>(1, (kept.size() + 1) / 2));
+                kept.insert(kept.end(), forced.begin(), forced.end());
+                g.cand = std::move(kept);
+            }
             --g.phasesLeft;
         };
 
@@ -955,6 +1023,31 @@ namespace sts::azbench {
                 }
                 if (pick < static_cast<int>(g.rootKeys.size()) && g.rootKeys[pick] >= 0)
                     picks_[g.rootKeys[pick]].fetch_add(1, std::memory_order_relaxed);
+            }
+            if (!root.combat && cfg.exploreAmber && !g.rootKeys.empty()) {
+                const int k = std::min(static_cast<int>(g.rootKeys.size()), static_cast<int>(root.edges.size()));
+                const double top = rootScore(g, root, pick, sigma, q);
+                std::vector<int> under;
+                for (int i = 0; i < k; ++i) {
+                    const int key = g.rootKeys[i];
+                    if (key < 0) continue;
+                    const double m = i == pick ? 0.0 : std::max(0.0, top - rootScore(g, root, i, sigma, q));
+                    auto it = g.gapMin.find(key);
+                    if (it == g.gapMin.end()) g.gapMin.emplace(key, m);
+                    else it->second = std::min(it->second, m);
+                    if (i != pick && i < static_cast<int>(g.rootUnder.size()) && g.rootUnder[i]) under.push_back(i);
+                }
+                std::shuffle(under.begin(), under.end(), wk.rng);
+                const std::int64_t games = runsDone_.load(std::memory_order_relaxed);
+                for (int i : under) {
+                    const double m = std::max(0.0, top - rootScore(g, root, i, sigma, q));
+                    const double c = exploreItemC(g.rootKeys[i], games);
+                    const double p = std::isinf(c) ? 1.0 : std::min(1.0, c * std::exp(-m / cfg.exploreT));
+                    if (U(wk.rng) < p) { pick = i; ++wk.st.forcedPicks; break; }
+                }
+                if (pick < k && g.rootKeys[pick] >= 0
+                    && std::find(g.pickedKeys.begin(), g.pickedKeys.end(), g.rootKeys[pick]) == g.pickedKeys.end())
+                    g.pickedKeys.push_back(g.rootKeys[pick]);
             }
             std::uint32_t bits = root.edges[pick].bits;
             if (root.combat) {

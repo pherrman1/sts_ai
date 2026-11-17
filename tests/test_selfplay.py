@@ -437,9 +437,10 @@ class SelfplaySmoke(unittest.TestCase):
             net1 = torch.load(ck1)["net"]
             self.assertEqual(tuple(net1["hp_floor.2.weight"].shape)[0], 56)
 
-    def test_soft_policy_run(self):
-        """--w-soft-policy trains the soft head in a real run (loss logged, head in the checkpoint); the inference copy
-        and the EMA / eval calls take the 4 usual outputs."""
+    def test_soft_policy_and_explore_amber_run(self):
+        """--w-soft-policy trains the soft head in a real run (loss logged, head in the checkpoint; the inference copy
+        and the EMA / eval calls take the 4 usual outputs); --explore-amber explores and forces picks in the same run
+        and is refused together with --explore-c."""
         sp = load()
         common = ["--module-dir", os.path.dirname(MODULES[0]), "--device", "cpu", "--workers", "2", "--games", "4",
                   "--full-sims", "8", "--fast-sims", "4", "--batch", "32", "--row-buckets", "32", "--pack-step", "32",
@@ -447,13 +448,18 @@ class SelfplaySmoke(unittest.TestCase):
                   "--report", "1", "--sync-steps", "2", "--max-runs", "16"]
         with tempfile.TemporaryDirectory() as d:
             self.assertEqual(sp.main(common + ["--out-dir", d, "--seed-base", "900", "--w-soft-policy", "8",
-                                               "--value-ema-halflife", "20"]), 0)
+                                               "--value-ema-halflife", "20", "--explore-amber",
+                                               "--pick-target", "0.2"]), 0)
             with open(os.path.join(d, "metrics.jsonl")) as f:
                 rows = [json.loads(l) for l in f]
             self.assertGreater(rows[-1]["train_steps"], 0)
             self.assertTrue(any(r["loss"] and r["loss"].get("soft_policy", 0) > 0 for r in rows))
             ck = sorted(glob.glob(os.path.join(d, "ckpt_*.pt")), key=os.path.getmtime)[-1]
             self.assertIn("pol_soft.2.weight", torch.load(ck)["net"])
+            self.assertGreater(rows[-1]["explore_roots"], 0)
+            self.assertGreater(rows[-1]["forced_picks"], 0)
+        with tempfile.TemporaryDirectory() as d, self.assertRaises(Exception):
+            sp.main(common + ["--out-dir", d, "--seed-base", "950", "--explore-amber", "--explore-c", "0.5"])
 
     def test_search_flags(self):
         """--no-fast-noise / --q-rescale / --c-scale reach the driver; the OOC search diagnostics are logged."""

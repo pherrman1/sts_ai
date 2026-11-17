@@ -2,7 +2,7 @@
 // training samples (labels filled, policy a distribution over the sample's actions, action sources / targets inside
 // the row). Smoke test and CPU-side throughput probe.
 //
-// usage: az-run-driver [--workers 2] [--games 4] [--runs 8] [--batch 64] [--seed 0] [--seed-base 1] [--fast] [--asc 20] [--sims N] [--const-value] [--test-hp HP] [--max-fight-moves 400] [--explore-c C] [--pick-target T] [--no-fast-noise] [--q-rescale] [--c-scale S] [--utility floor-hp|amber] [--keyless-hp]
+// usage: az-run-driver [--workers 2] [--games 4] [--runs 8] [--batch 64] [--seed 0] [--seed-base 1] [--fast] [--asc 20] [--sims N] [--const-value] [--test-hp HP] [--max-fight-moves 400] [--explore-c C] [--explore-amber] [--pick-target T] [--no-fast-noise] [--q-rescale] [--c-scale S] [--utility floor-hp|amber] [--keyless-hp]
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -72,6 +72,7 @@ int main(int argc, char **argv) {
         else if (a == "--max-fight-moves") cfg.maxMovesPerFight = std::stoi(next());
         else if (a == "--explore-c") cfg.exploreC = std::stod(next());
         else if (a == "--pick-target") cfg.pickTarget = std::stod(next());
+        else if (a == "--explore-amber") cfg.exploreAmber = true;
         else if (a == "--no-fast-noise") cfg.fastNoise = false;
         else if (a == "--q-rescale") cfg.qRescale = true;
         else if (a == "--c-scale") cfg.cScale = std::stod(next());
@@ -186,7 +187,8 @@ int main(int argc, char **argv) {
                 s.oocSpreadSum[0] / std::max<std::int64_t>(1, s.oocSpreadN[0]),
                 s.oocSpreadSum[1] / std::max<std::int64_t>(1, s.oocSpreadN[1]));
     if (bad || s.invalidActions || samples.empty() || s.runsDone < cfg.maxRuns) return 1;
-    if (cfg.exploreC > 0 && (s.forcedPicks == 0 || s.exploreRoots == 0)) return 1;   // exploration must act
-    if (cfg.exploreC == 0 && (s.forcedPicks != 0 || s.exploreRoots != 0)) return 1;  // ... and be inert when off
+    const bool explore = cfg.exploreC > 0 || cfg.exploreAmber;
+    if (explore && (s.forcedPicks == 0 || s.exploreRoots == 0)) return 1;   // exploration must act
+    if (!explore && (s.forcedPicks != 0 || s.exploreRoots != 0)) return 1;  // ... and be inert when off
     return 0;
 }

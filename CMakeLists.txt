@@ -184,6 +184,9 @@ set_tests_properties(az_run_driver_smoke PROPERTIES LABELS "core;smoke")
 add_test(NAME az_run_driver_explore COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 24 --fast
          --seed-base 1 --seconds 300 --explore-c 0.5 --pick-target 0.2 --test-hp 300)
 set_tests_properties(az_run_driver_explore PROPERTIES LABELS "core;smoke")
+add_test(NAME az_run_driver_explore_amber COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 24 --fast
+         --seed-base 1 --seconds 300 --explore-amber --pick-target 0.2 --test-hp 300)
+set_tests_properties(az_run_driver_explore_amber PROPERTIES LABELS "core;smoke")
 # Evaluation cache of the stage 1 driver is exact: same moves and samples with and without it (hash fake net).
 add_executable(az-eval-cache-test apps/az_bench/az_eval_cache_test.cpp apps/az_bench/az_run_driver.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
@@ -206,6 +209,13 @@ add_executable(az-utility-test apps/az_bench/az_utility_test.cpp)
 target_include_directories(az-utility-test PRIVATE include json/include apps/az_bench)
 add_test(NAME az_utility_test COMMAND $<TARGET_FILE:az-utility-test>)
 set_tests_properties(az_utility_test PROPERTIES LABELS "core;smoke")
+# Amber Eye exploration (2026-11-17, default off): the per-item c bisection (amberExploreC).
+add_executable(az-explore-amber-test apps/az_bench/az_explore_amber_test.cpp apps/az_bench/az_run_driver.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(az-explore-amber-test PRIVATE include json/include apps/az_bench)
+target_link_libraries(az-explore-amber-test PRIVATE Threads::Threads)
+add_test(NAME az_explore_amber_test COMMAND $<TARGET_FILE:az-explore-amber-test>)
+set_tests_properties(az_explore_amber_test PROPERTIES LABELS "core;smoke")
 add_test(NAME az_run_driver_amber COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 12 --fast
          --seed-base 1 --seconds 300 --utility amber --test-hp 300)
 set_tests_properties(az_run_driver_amber PROPERTIES LABELS "core;smoke")
