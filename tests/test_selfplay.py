@@ -161,6 +161,24 @@ class SelfplaySmoke(unittest.TestCase):
             self.assertGreater(c2["step"], c["step"])   # training resumes (the replay-ratio cap counts from the resume)
             self.assertGreaterEqual(c2["runs_done"], 32)
 
+    def test_curriculum_switch(self):
+        """With a 0 % threshold the curriculum moves up after --curriculum-runs runs and the checkpoint keeps it."""
+        sp = load()
+        args = ["--module-dir", os.path.dirname(MODULES[0]), "--device", "cpu", "--workers", "2", "--games", "4",
+                "--full-sims", "8", "--fast-sims", "4", "--batch", "32", "--row-buckets", "32", "--pack-step", "32",
+                "--pack-threads", "1", "--min-replay", "50", "--train-batch", "32", "--window", "5000",
+                "--report", "1", "--sync-steps", "2", "--seed-base", "900", "--max-runs", "24",
+                "--ascension", "0", "--curriculum", "--curriculum-runs", "4", "--curriculum-winrate", "0"]
+        with tempfile.TemporaryDirectory() as d:
+            self.assertEqual(sp.main(args + ["--out-dir", d]), 0)
+            with open(os.path.join(d, "metrics.jsonl")) as f:
+                rows = [json.loads(l) for l in f]
+            self.assertEqual(rows[0]["ascension"], 0)
+            self.assertGreaterEqual(rows[-1]["ascension"], 1)
+            ck = sorted(glob.glob(os.path.join(d, "ckpt_*.pt")), key=os.path.getmtime)[-1]
+            # The last report may have raised it once more.
+            self.assertIn(torch.load(ck)["counters"]["ascension"], (rows[-1]["ascension"], rows[-1]["ascension"] + 1))
+
 
 if __name__ == "__main__":
     unittest.main()

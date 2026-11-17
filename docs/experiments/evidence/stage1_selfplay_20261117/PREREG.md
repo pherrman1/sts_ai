@@ -49,3 +49,25 @@ forced_picks.
 the mean floor still rises; STOP if there is no win by 2M runs and the mean floor gained < 2 floors over runs 1M-2M;
 otherwise INCONCLUSIVE. Forced picks cost some self-play strength (Amber Eye: ~3 pp at 0.2 % forced moves), so the
 self-play win rate of the continuation is slightly pessimistic.
+
+**Continuation, first attempt void.** The first start of the continuation (15:46-15:52 CET) did not train (bug fixed in
+#1085: the replay-ratio cap compared the checkpoint's lifetime count with the new, empty window). It is not counted;
+its seeds 131208089-131227280 are burned. The continuation restarted at 16:11 CET from `ckpt_86288_resume.pt`.
+
+## Ascension curriculum (Philipp, 2026-11-17 17:15 CET)
+
+Philipp: "okay maybe stop and restart on ascension 0. if we have 10% winrate in any ascension in the last window, then
+we go an ascension higher. but always with heart kill." The exploration continuation is stopped and the run resumes
+from its last checkpoint (warm start: net and optimizer kept; the ascension is already a net input, RUN token f1 =
+ascension / 20) with `--ascension 0 --curriculum` and pick-rate exploration on.
+
+- **Win = Heart kill** (game outcome victory in Act 4). The engine also ends a run as a victory after the act 3 boss
+  without the three keys; such a run now counts as ending on its floor (outcome class = floor), in the labels, the
+  search's terminal values and the statistics. Before this change it counted as a win (no run of this stage reached it
+  as a win: 0 wins).
+- **Step up:** once the Heart-kill rate at the current ascension reaches 10 % over its last 10,000 finished runs
+  (`--curriculum-runs`; one 30-s report window holds ~1,000 runs, too few for a 10 % call), runs started afterwards
+  are one ascension higher, up to A20. Runs in flight keep their ascension and do not count toward the new one.
+- **Measured:** ascension over time, Heart-kill rate per ascension, mean floor, the usual losses and rates.
+- **Decision:** reaching A20 with >= 10 % Heart kills is the stage 1 GO; no step up from A0 within 1M runs is a STOP
+  for this setup; otherwise report and ask Philipp.

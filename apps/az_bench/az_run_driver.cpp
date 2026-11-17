@@ -37,8 +37,14 @@ namespace sts::azbench {
 
         constexpr int kMaxMovesPerRun = 50000;   // whole-run stall guard (a normal A20 run takes a few thousand)
 
+        // A win is a Heart kill. The engine also ends a run as a victory after the act 3 boss without the three keys;
+        // that run counts as ending on its floor (no Act 4, no win).
+        bool heartWin(const GameContext &gc) {
+            return gc.outcome == GameOutcome::PLAYER_VICTORY && gc.act == 4;
+        }
+
         int outcomeClass(const GameContext &gc) {
-            return gc.outcome == GameOutcome::PLAYER_VICTORY ? 0 : std::clamp(gc.floorNum, 1, kOutcomeClasses - 1);
+            return heartWin(gc) ? 0 : std::clamp(gc.floorNum, 1, kOutcomeClasses - 1);
         }
 
         search::SilverSearchContext combatContext(const GameContext &gc) {
@@ -225,6 +231,7 @@ namespace sts::azbench {
         std::unique_ptr<search::CombatKnowledgeState> knowledge = std::make_unique<search::CombatKnowledgeState>();
         bool inBattle = false;
         std::vector<int> rootKeys;           // pick-rate item bucket per root action (-1 = none), OOC roots
+        int asc = 20;                        // this run's ascension
         search::SilverSearchContext ctx;
         int fightMoves = 0, moves = 0, floor = 0;
         std::vector<Node> pool;
@@ -301,6 +308,8 @@ namespace sts::azbench {
     }
 
     RunDriver::RunDriver(RunConfig cfg) : cfg_(cfg) {
+        if (cfg_.ascension < 0 || cfg_.ascension >= kAscensions) throw std::invalid_argument("run driver: ascension 0..20");
+        ascension_.store(cfg_.ascension);
         picks_.reset(new std::atomic<std::uint32_t>[kPickBuckets]);
         for (int i = 0; i < kPickBuckets; ++i) picks_[i].store(0);
         if (!cfg_.encodeCombat) cfg_.encodeCombat = search::amberEncodeCombat;
@@ -349,6 +358,9 @@ namespace sts::azbench {
             s.stalls += p.stalls; s.terminalLeaves += p.terminalLeaves; s.encodeCut += p.encodeCut; s.encodeCutOoc += p.encodeCutOoc;
             s.unsupported += p.unsupported; s.knowledgeFailures += p.knowledgeFailures; s.invalidActions += p.invalidActions; s.samplesDone += p.samplesDone; s.samplesPending += p.samplesPending;
             for (int k = 0; k < kOutcomeClasses; ++k) s.outcomes[k] += p.outcomes[k];
+            for (int k = 0; k < kAscensions; ++k) {
+                s.runsDoneAsc[k] += p.runsDoneAsc[k]; s.winsAsc[k] += p.winsAsc[k]; s.floorsSumAsc[k] += p.floorsSumAsc[k];
+            }
             s.oocRoots += p.oocRoots; s.exploreRoots += p.exploreRoots; s.forcedPicks += p.forcedPicks;
             s.stepCpu += p.stepCpu; s.encodeCpu += p.encodeCpu; s.searchCpu += p.searchCpu;
         }
@@ -480,7 +492,8 @@ namespace sts::azbench {
             if (seed == std::numeric_limits<std::uint64_t>::max()) { g.active = false; return; }
             g.active = true;
             g.seed = seed;
-            g.gc = GameContext(CharacterClass::IRONCLAD, seed, cfg.ascension);
+            g.asc = ascension_.load(std::memory_order_relaxed);
+            g.gc = GameContext(CharacterClass::IRONCLAD, seed, g.asc);
             if (cfg.testMaxHp > 0) g.gc.curHp = g.gc.maxHp = cfg.testMaxHp;
             g.inBattle = false;
             g.moves = g.fightMoves = 0;
@@ -492,7 +505,7 @@ namespace sts::azbench {
         };
 
         auto endRun = [&](Run &g, int gi) {
-            const bool win = g.gc.outcome == GameOutcome::PLAYER_VICTORY;
+            const bool win = heartWin(g.gc);
             closeFloor(g, win ? g.gc.curHp : 0);
             const int oc = outcomeClass(g.gc);
             for (auto &s : g.pending) s.outcome = static_cast<std::int16_t>(oc);
@@ -501,6 +514,9 @@ namespace sts::azbench {
             if (win) ++wk.st.wins;
             wk.st.floorsSum += g.gc.floorNum;
             ++wk.st.outcomes[oc];
+            ++wk.st.runsDoneAsc[g.asc];
+            if (win) ++wk.st.winsAsc[g.asc];
+            wk.st.floorsSumAsc[g.asc] += g.gc.floorNum;
 
             wk.st.samplesDone += static_cast<std::int64_t>(g.pending.size());
             wk.st.samplesPending -= static_cast<std::int64_t>(g.pending.size());
@@ -780,7 +796,7 @@ namespace sts::azbench {
                     cn.boundary = true;
                     if (cn.gc->outcome != GameOutcome::UNDECIDED) {
                         cn.evaluated = cn.terminal = true;
-                        cn.value = terminalUtility(cn.gc->outcome == GameOutcome::PLAYER_VICTORY, cn.gc->floorNum,
+                        cn.value = terminalUtility(heartWin(*cn.gc), cn.gc->floorNum,
                                                    cn.gc->curHp, cn.gc->maxHp, cfg.hpWeightOoc);
                     }
                 } else {
@@ -800,7 +816,7 @@ namespace sts::azbench {
                     if (next.outcome != GameOutcome::UNDECIDED) {
                         setGc(cn, std::move(next));
                         cn.evaluated = cn.terminal = true;
-                        cn.value = terminalUtility(cn.gc->outcome == GameOutcome::PLAYER_VICTORY, cn.gc->floorNum,
+                        cn.value = terminalUtility(heartWin(*cn.gc), cn.gc->floorNum,
                                                    cn.gc->curHp, cn.gc->maxHp, cfg.hpWeightOoc);
                     } else if (next.screenState == ScreenState::BATTLE) {
                         // A fight starts: the leaf is its first state, valued by the net (in combat).

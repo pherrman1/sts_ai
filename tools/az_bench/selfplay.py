@@ -211,7 +211,12 @@ def main(argv=None):
     ap.add_argument("--max-runs", type=int, default=-1)
     ap.add_argument("--hours", type=float, default=24.0)
     ap.add_argument("--net", default="0.44M")
-    ap.add_argument("--ascension", type=int, default=20)
+    ap.add_argument("--ascension", type=int, default=20, help="ascension of the runs (curriculum: the starting one)")
+    ap.add_argument("--curriculum", action="store_true",
+                    help="raise the ascension by one once the Heart-kill rate at the current one reaches "
+                         "--curriculum-winrate over its last --curriculum-runs finished runs (up to 20)")
+    ap.add_argument("--curriculum-winrate", type=float, default=0.10)
+    ap.add_argument("--curriculum-runs", type=int, default=10000)
     ap.add_argument("--workers", type=int, default=11)
     ap.add_argument("--games", type=int, default=700, help="runs in flight per worker")
     ap.add_argument("--full-sims", type=int, default=64)
@@ -271,6 +276,9 @@ def main(argv=None):
         train_net.load_state_dict(ck["net"])
         opt.load_state_dict(ck["opt"])
         counters.update(ck["counters"])
+    # A curriculum checkpoint carries its current ascension; otherwise --ascension.
+    ascension = counters.get("ascension", args.ascension) if args.curriculum else args.ascension
+    counters["ascension"] = ascension
     seeds_used0 = counters["seeds_used"]
     trained0 = counters["trained"]   # the replay window starts empty on resume: the ratio cap counts from here
     seed_base = args.seed_base + seeds_used0
@@ -297,7 +305,7 @@ def main(argv=None):
         run = infer
 
     drv = az_bench_native.RunDriver(
-        workers=args.workers, games=args.games, seed_base=seed_base, max_runs=max_runs, ascension=args.ascension,
+        workers=args.workers, games=args.games, seed_base=seed_base, max_runs=max_runs, ascension=ascension,
         full_sims=args.full_sims, fast_sims=args.fast_sims, full_prob=args.full_prob,
         hp_weight_combat=args.hp_weight_combat, hp_weight_ooc=args.hp_weight_ooc, keep_full=args.keep_full,
         keep_fast=args.keep_fast, search_seed=args.seed + counters["step"], max_fight_moves=args.max_fight_moves,
@@ -496,6 +504,7 @@ def main(argv=None):
     last_runs = last_s["runs_done"]
     last_outcomes = np.array(last_s["outcomes"])
     last_floors = last_s["floors_sum"]
+    asc_hist = []   # (runs, wins) per report window at the current ascension (curriculum)
     print(f"# selfplay net {args.net} ({sum(p.numel() for p in train_net.parameters())} params) workers {args.workers} "
           f"games {args.games} seed_base {seed_base} out {args.out_dir}", flush=True)
     metrics = open(os.path.join(args.out_dir, "metrics.jsonl"), "a")
@@ -516,6 +525,23 @@ def main(argv=None):
                 n = max(1, lossbox["n"])
                 lavg = {k: round(lossbox[k] / n, 4) for k in ("policy", "outcome", "hp")} if lossbox["n"] else None
                 lossbox.update({"n": 0, "policy": 0.0, "outcome": 0.0, "hp": 0.0})
+            asc = drv.ascension()
+            a_runs = s["runs_done_asc"][asc] - last_s["runs_done_asc"][asc]
+            a_wins = s["wins_asc"][asc] - last_s["wins_asc"][asc]
+            a_floors = s["floors_sum_asc"][asc] - last_s["floors_sum_asc"][asc]
+            asc_hist.append((a_runs, a_wins))
+            tot = wins = 0
+            for r_, w_ in reversed(asc_hist):
+                tot += r_
+                wins += w_
+                if tot >= args.curriculum_runs:
+                    break
+            rolling = wins / tot if tot else 0.0
+            if args.curriculum and asc < 20 and tot >= args.curriculum_runs and rolling >= args.curriculum_winrate:
+                drv.set_ascension(asc + 1)
+                counters["ascension"] = asc + 1
+                asc_hist = []
+                print(f"# curriculum: A{asc} Heart kills {wins}/{tot} -> A{asc + 1}", flush=True)
             row = {
                 "time": time.strftime("%Y-%m-%d %H:%M:%S"), "hours": round((wall0 + now - t_start) / 3600, 3),
                 "positions_per_s": round((s["evals"] - last_s["evals"]) / dt),
@@ -530,6 +556,10 @@ def main(argv=None):
                 "trained_samples": counters["trained"], "loss": lavg, "syncs": infer_stats["syncs"],
                 "stalls": s["stalls"], "unsupported": s["unsupported"], "knowledge_failures": s["knowledge_failures"], "invalid_actions": s["invalid_actions"], "encode_cut": s["encode_cut"], "encode_cut_ooc": s["encode_cut_ooc"],
                 "samples_pending": s["samples_pending"],
+                "ascension": asc, "asc_runs_window": a_runs,
+                "asc_win_rate_window": round(a_wins / max(1, a_runs), 4),
+                "asc_mean_floor_window": round(a_floors / max(1, a_runs), 2),
+                "asc_win_rate_rolling": round(rolling, 4), "asc_rolling_runs": tot,
                 "ooc_roots": s["ooc_roots"], "explore_roots": s["explore_roots"], "forced_picks": s["forced_picks"],
             }
             print(json.dumps(row), flush=True)

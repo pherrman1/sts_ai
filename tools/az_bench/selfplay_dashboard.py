@@ -157,11 +157,19 @@ RULE_VARIANT = ("Continuation (runs 1M-2M, pick-rate exploration on, same net an
                 "Forced exploration picks lower the self-play win rate a little (Amber Eye: ~3 pp on 0.2 % of moves).")
 
 
+RULE_CURRICULUM = ("Curriculum (Philipp, 2026-11-17): from the 1M-run net, restart at A0; a win is always a Heart kill. "
+                   "Once the Heart-kill rate at the current ascension reaches 10 % over its last 10,000 finished runs, "
+                   "the next runs start one ascension higher, up to A20. Pick-rate exploration stays on.")
+
+
 def page(rows, title, started):
     last = rows[-1] if rows else {}
     runs = [r["runs_done"] for r in rows]
     # Continuation with pick-rate exploration (rows carry its counters).
     variant = any("forced_picks" in r for r in rows)
+    curriculum = any(r.get("ascension", 20) < 20 for r in rows)
+    asc_line = [r.get("ascension") for r in rows]
+    asc_roll = [100 * r["asc_win_rate_rolling"] if "asc_win_rate_rolling" in r else None for r in rows]
     floor = [r["mean_floor_window"] if r.get("runs_window") else None for r in rows]
     win = [100 * r["win_rate_window"] if r.get("runs_window") else None for r in rows]
     k = 10
@@ -199,7 +207,11 @@ def page(rows, title, started):
     ] + ([
         tile("Forced picks", f'{last.get("forced_picks", 0):,}',
              f'{last.get("explore_roots", 0):,} of {last.get("ooc_roots", 0):,} OOC roots under target'),
-    ] if variant else []))
+    ] if variant else []) + ([
+        tile("Ascension", f'A{last.get("ascension", 20)}',
+             f'Heart kills {100 * last.get("asc_win_rate_rolling", 0):.1f} % over last '
+             f'{last.get("asc_rolling_runs", 0):,} runs (next at 10 %)'),
+    ] if curriculum else []))
     table_rows = "".join(
         f'<tr><td>{html.escape(r["time"])}</td><td>{r["runs_done"]:,}</td><td>{r["mean_floor_window"]:.1f}</td>'
         f'<td>{100 * r["win_rate_window"]:.2f}</td><td>{r["positions_per_s"]:,}</td><td>{r["train_steps"]:,}</td>'
@@ -215,11 +227,12 @@ def page(rows, title, started):
 <section><h2>Mean final floor per window</h2>{chart(runs, [("mean floor (smoothed)", floor_s, "--accent")], ymin=0)}</section>
 <section><h2>Self-play win rate (%)</h2>{chart(runs, [("win rate (smoothed)", win_s, "--good")], ymin=0, yfmt="{:.2f}")}</section>
 <section><h2>Training losses</h2>{chart(runs, [("policy", lp, "--accent"), ("outcome", lo, "--accent2"), ("HP", lh, "--boss")], yfmt="{:.2f}")}</section>
+{f'<section><h2>Curriculum: ascension and Heart-kill rate (%, last 10k runs at it)</h2>{chart(runs, [("ascension", asc_line, "--boss"), ("Heart kills % (rolling)", asc_roll, "--good")], ymin=0, yfmt="{:.0f}")}</section>' if curriculum else ""}
 <section><h2>Positions per second (thousands)</h2>{chart(runs, [("positions/s", pos, "--accent2")], ymin=0, yfmt="{:.0f}")}</section>
 </div>
 <section><h2>Where runs end (death floor, last ~10 min)</h2>{bars(hist)}
 <p class="rule">Purple: boss floors (16, 33, 50) and the Heart (55).</p></section>
-<section><h2>Decision rule</h2><p class="rule">{RULE_VARIANT if variant else RULE_MAIN}</p></section>
+<section><h2>Decision rule</h2><p class="rule">{RULE_CURRICULUM if curriculum else RULE_VARIANT if variant else RULE_MAIN}</p></section>
 <section><h2>Latest windows</h2><div class="scroll"><table><tr><th>time</th><th>runs</th><th>mean floor</th><th>win %</th><th>pos/s</th><th>train steps</th><th>stalls</th></tr>{table_rows}</table></div></section>
 </main>"""
     head = (f'<title>{html.escape(title)}</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n'
