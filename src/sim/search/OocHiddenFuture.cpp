@@ -99,4 +99,51 @@ void sampleNoncombatFuture(GameContext &gc, std::mt19937_64 &rng) {
     }
 }
 
+namespace {
+    template <class F> void forStreams(F &&f, const GameContext &gc) {
+        int i = 0;
+        for (auto stream : {&gc.aiRng, &gc.cardRandomRng, &gc.cardRng, &gc.eventRng,
+                &gc.mathUtilRng, &gc.merchantRng, &gc.miscRng, &gc.monsterHpRng,
+                &gc.monsterRng, &gc.neowRng, &gc.potionRng, &gc.relicRng,
+                &gc.shuffleRng, &gc.treasureRng}) f(i++, *stream);
+    }
 }
+
+OocHiddenSnapshot captureOocHidden(const GameContext &gc) {
+    OocHiddenSnapshot s;
+    forStreams([&](int i, const sts::Random &r) { s.streams[i] = r; }, gc);
+    s.relicPoolSizes = {static_cast<int>(gc.commonRelicPool.size()), static_cast<int>(gc.uncommonRelicPool.size()),
+                        static_cast<int>(gc.rareRelicPool.size()), static_cast<int>(gc.shopRelicPool.size()),
+                        static_cast<int>(gc.bossRelicPool.size())};
+    s.colorless = gc.colorlessCardPool;
+    s.monsterListSize = gc.monsterList.size();
+    s.monsterListOffset = gc.monsterListOffset;
+    s.eliteListSize = gc.eliteMonsterList.size();
+    s.eliteListOffset = gc.eliteMonsterListOffset;
+    s.secondBoss = gc.secondBoss;
+    s.act = gc.act;
+    return s;
+}
+
+bool oocStepRevealsHidden(const OocHiddenSnapshot &before, const GameContext &after) {
+    if (after.screenState == sts::ScreenState::BATTLE && after.outcome == sts::GameOutcome::UNDECIDED) return true;
+    if (after.act != before.act || after.secondBoss != before.secondBoss) return true;
+    if (after.monsterList.size() != before.monsterListSize || after.monsterListOffset != before.monsterListOffset
+        || after.eliteMonsterList.size() != before.eliteListSize
+        || after.eliteMonsterListOffset != before.eliteListOffset) return true;
+    const std::array<int, 5> pools = {static_cast<int>(after.commonRelicPool.size()),
+        static_cast<int>(after.uncommonRelicPool.size()), static_cast<int>(after.rareRelicPool.size()),
+        static_cast<int>(after.shopRelicPool.size()), static_cast<int>(after.bossRelicPool.size())};
+    if (pools != before.relicPoolSizes || after.colorlessCardPool != before.colorless) return true;
+    const sts::Random reseeded(after.seed + after.floorNum);
+    bool used = false;
+    forStreams([&](int i, const sts::Random &r) {
+        if (r == before.streams[i]) return;
+        if (r == reseeded) return;   // a new floor's reseed of misc / shuffle / card-random, nothing drawn
+        used = true;
+    }, after);
+    return used;
+}
+
+}
+

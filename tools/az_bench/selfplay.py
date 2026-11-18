@@ -31,6 +31,21 @@ search-backed distribution (the search backs up a scalar utility only), and the 
 The logged "outcome" loss is always the cross-entropy to the final outcome (comparable across settings);
 "outcome_ema" is the trained loss against the EMA target.
 
+--w-soft-policy W > 0 (2026-11-17, default 0 = no head) adds Amber Eye's soft policy head ("Labels", adapted from
+KataGo): a second action MLP on the same action vectors e_a, trained in training mode only on the policy target p
+raised to 1/4 and renormalised over the legal actions (full-move samples), with loss weight W (KataGo: 8). Inference
+never computes it. --init-net from a checkpoint without the head starts the head fresh.
+
+--explore-amber (2026-11-17, default off; not with --explore-c) is Amber Eye's exploration ("Exploration"): an item
+(card / option / relic / shop choice) played in fewer than --pick-target of the finished runs is under target; a root
+offering one gets a full search in which every under-target item stays a candidate through every halving; after the
+search each under-target item (random order) is played instead with probability min(1, c exp(-m / T)), T =
+--explore-temp (4), m its gap below the search's pick in policy logits (the net's prior logits; the page: "in terms
+of policy logits"), c per item by bisection over all finished runs
+so that it would have been played in --pick-target of them (az_run_driver.h RunConfig::exploreAmber, amberExploreC).
+Choices where the page is silent (Philipp 2026-11-17): no separate bias, rate counted once per run, all item classes,
+samples keep the search policy. Like --explore-c, the counts live in the process (not restored on --resume).
+
 --value-ema-search (2026-11-17, default off; needs --value-ema-halflife H) makes D_t search-backed, as Amber Eye: the
 search backs up the outcome distribution alongside the scalar utility (RunConfig::searchEmaLambda in
 apps/az_bench/az_run_driver.h). A searched move's search result is the root's mean distribution over the root
@@ -304,12 +319,24 @@ def hp_floor_loss(pred, label):
     return (((pred.float() - t) ** 2) * m).sum() / m.sum().clamp(min=1)
 
 
-def losses(net, b, w_policy, w_outcome, w_hp, w_hp_floor=0.0):
-    logits, outcome, hp, hpf = net(b)
+def soft_policy_target(policy, a_mask):
+    """Amber Eye / KataGo soft policy target: the policy target p raised to the power 1/4 and renormalised over the
+    legal actions (rows without a policy target stay 0)."""
+    t = policy.float().clamp(min=0).pow(0.25) * a_mask
+    return t / t.sum(-1, keepdim=True).clamp(min=1e-12)
+
+
+def losses(net, b, w_policy, w_outcome, w_hp, w_hp_floor=0.0, w_soft_policy=0.0):
+    logits, outcome, hp, hpf, *soft = net(b)
     logp = torch.log_softmax(logits.float().masked_fill(~b["a_mask"], -1e4), -1)
     has = b["has_policy"].bool()
     pol = -(b["policy"] * logp).sum(-1)
     l_pol = (pol * has).sum() / has.sum().clamp(min=1)
+    l_soft = None
+    if w_soft_policy > 0:   # --w-soft-policy: soft head (AmberNet(soft_policy=True), training mode) on p^(1/4)
+        slogp = torch.log_softmax(soft[0].float().masked_fill(~b["a_mask"], -1e4), -1)
+        spol = -(soft_policy_target(b["policy"], b["a_mask"]) * slogp).sum(-1)
+        l_soft = (spol * has).sum() / has.sum().clamp(min=1)
     l_out = F.cross_entropy(outcome.float(), b["outcome"].long())
     l_hp = F.cross_entropy(hp.float(), b["hp_end"].long().clamp(0, HP_CLASSES - 1))
     parts = {"policy": l_pol.detach(), "outcome": l_out.detach(), "hp": l_hp.detach()}
@@ -318,6 +345,9 @@ def losses(net, b, w_policy, w_outcome, w_hp, w_hp_floor=0.0):
         parts["outcome_ema"] = l_ema.detach()
         l_out = l_ema
     total = w_policy * l_pol + w_outcome * l_out + w_hp * l_hp
+    if l_soft is not None:
+        total = total + w_soft_policy * l_soft
+        parts["soft_policy"] = l_soft.detach()
     if "hp_floor" in b:
         l_hpf = hp_floor_loss(hpf, b["hp_floor"])
         total = total + w_hp_floor * l_hpf
@@ -353,6 +383,18 @@ def progress_window(s, last_s):
     return out
 
 
+def rss_gb():
+    """Resident set size of this process in GB (Linux /proc; None elsewhere)."""
+    try:
+        with open("/proc/self/status") as f:
+            for line in f:
+                if line.startswith("VmRSS:"):
+                    return round(int(line.split()[1]) / 1048576, 2)
+    except OSError:
+        pass
+    return None
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--module-dir", required=True)
@@ -384,9 +426,15 @@ def main(argv=None):
     ap.add_argument("--keep-fast", type=float, default=0.0, help="keep probability of a fast-search position")
     ap.add_argument("--max-fight-moves", type=int, default=400)
     ap.add_argument("--max-pending", type=int, default=300000,
-                    help="samples of unfinished runs held for their labels; above it keep probabilities shrink")
+                    help="samples of unfinished runs held for their labels; above it keep probabilities shrink "
+                         "(<= 0: no cap, every full move is trained on, as Amber Eye; memory ~5.5 KB per held sample)")
     ap.add_argument("--explore-c", type=float, default=0.0, help="pick-rate exploration strength (0 = off)")
     ap.add_argument("--pick-target", type=float, default=0.01, help="pick-rate target per item and run")
+    ap.add_argument("--explore-amber", action="store_true",
+                    help="Amber Eye exploration (RunConfig::exploreAmber): under-target items stay search candidates "
+                         "and are played with probability min(1, c exp(-m / T)), c per item by bisection to hit "
+                         "--pick-target of runs; not with --explore-c")
+    ap.add_argument("--explore-temp", type=float, default=4.0, help="T of --explore-amber (Amber Eye: 4)")
     ap.add_argument("--eval-cache", action="store_true",
                     help="per-run evaluation cache: a leaf whose net input this run already had evaluated with the "
                          "current inference weights reuses that result (exact; RunConfig::evalCache)")
@@ -400,6 +448,15 @@ def main(argv=None):
                     help="net input: identical cards as one CARD token with a copy count (search::amberMergeCards); "
                          "changes what the net sees, so a run uses it from its start (a warm start sees count 0 = the "
                          "old single-card encoding)")
+    ap.add_argument("--chance-on-reveal", action="store_true",
+                    help="Amber Eye: an out-of-combat search edge is a chance edge only when its step reveals hidden "
+                         "information (an RNG draw, a pre-shuffled pool / encounter queue, a fight start, a new act)")
+    ap.add_argument("--cross-combat", action="store_true",
+                    help="Amber Eye: one search over combat and out-of-combat states (fight starts and won fights are "
+                         "expanded instead of being net-valued leaves)")
+    ap.add_argument("--sim-help", action="store_true",
+                    help="Amber Eye's simulator help: reward gold taken automatically, forced positions skipped also "
+                         "inside the search, buying Prismatic Shard banned")
     ap.add_argument("--batch", type=int, default=2048)
     ap.add_argument("--row-buckets", default="2048", help="batch rows padded to these (one size keeps compiled shapes few)")
     ap.add_argument("--tok-buckets", default="32,40,48,56,64,80,96,128,212")
@@ -433,6 +490,9 @@ def main(argv=None):
     ap.add_argument("--weight-decay", type=float, default=1e-4)
     ap.add_argument("--warmup-steps", type=int, default=500)
     ap.add_argument("--w-policy", type=float, default=1.0)
+    ap.add_argument("--w-soft-policy", type=float, default=0.0,
+                    help="loss weight of the soft policy head (Amber Eye / KataGo: target p^(1/4); 0 = no head; "
+                         "KataGo uses 8)")
     ap.add_argument("--w-outcome", type=float, default=1.0)
     ap.add_argument("--w-hp", type=float, default=1.0)
     ap.add_argument("--value-ema-halflife", type=float, default=0.0,
@@ -469,7 +529,8 @@ def main(argv=None):
     cuda = dev.type == "cuda"
     torch.manual_seed(args.seed)
     d, layers = amber_net.SIZES.get(args.net) or tuple(int(x) for x in args.net.split("x")[:2])
-    train_net = amber_net.AmberNet(d=d, layers=layers, hp_floors=hp_floors).to(dev)
+    train_net = amber_net.AmberNet(d=d, layers=layers, hp_floors=hp_floors,
+                                   soft_policy=args.w_soft_policy > 0).to(dev)
     train_net.sdpa = True
     opt = torch.optim.AdamW(train_net.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     counters = {"step": 0, "trained": 0, "seeds_used": 0, "runs_done": 0, "wall": 0.0}
@@ -534,6 +595,8 @@ def main(argv=None):
         fast_noise=not args.no_fast_noise, q_rescale=args.q_rescale, utility=1 if amber else 0,
         keyless_hp=args.keyless_hp,
         eval_cache=args.eval_cache, eval_cache_cap=args.eval_cache_cap, merge_cards=args.merge_cards,
+        chance_on_reveal=args.chance_on_reveal, cross_combat=args.cross_combat, sim_help=args.sim_help,
+        explore_amber=args.explore_amber, explore_temp=args.explore_temp,
         **({"search_ema_lambda": ema_lam, "search_ema_full_only": args.value_ema_moves == "full"}
            if ema_search else {}))
     replay = Replay(args.window, hp_floors=56 if amber else 0, soft_outcome=ema_lam > 0)
@@ -543,7 +606,7 @@ def main(argv=None):
     weights_lock = threading.Lock()
     new_weights = [None]          # (state tensors on the GPU, event) published by the trainer
     loss_keys = (("policy", "outcome", "hp") + (("hp_floor",) if amber else ())
-                 + (("outcome_ema",) if ema_lam > 0 else ()))
+                 + (("outcome_ema",) if ema_lam > 0 else ()) + (("soft_policy",) if args.w_soft_policy > 0 else ()))
     lossbox = dict({"n": 0}, **{k: 0.0 for k in loss_keys})
     lossbox_lock = threading.Lock()
     infer_stats = {"batches": 0, "rows": 0, "syncs": 0}
@@ -773,7 +836,8 @@ def main(argv=None):
                 for g in opt.param_groups:
                     g["lr"] = lr
                 with torch.enable_grad(), amp:
-                    loss, parts = losses(train_net, bt, args.w_policy, args.w_outcome, args.w_hp, args.w_hp_floor)
+                    loss, parts = losses(train_net, bt, args.w_policy, args.w_outcome, args.w_hp, args.w_hp_floor,
+                                         args.w_soft_policy)
                 opt.zero_grad(set_to_none=True)
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(train_net.parameters(), 1.0)
@@ -876,7 +940,7 @@ def main(argv=None):
                 "samples_added": replay.added, "replay": len(replay), "train_steps": counters["step"],
                 "trained_samples": counters["trained"], "loss": lavg, "syncs": infer_stats["syncs"],
                 "stalls": s["stalls"], "unsupported": s["unsupported"], "knowledge_failures": s["knowledge_failures"], "invalid_actions": s["invalid_actions"], "encode_cut": s["encode_cut"], "encode_cut_ooc": s["encode_cut_ooc"],
-                "samples_pending": s["samples_pending"],
+                "samples_pending": s["samples_pending"], "rss_gb": rss_gb(),
                 "ascension": asc, "asc_runs_window": a_runs,
                 "asc_win_rate_window": round(a_wins / max(1, a_runs), 4),
                 "asc_mean_floor_window": round(a_floors / max(1, a_runs), 2),
@@ -886,6 +950,11 @@ def main(argv=None):
                 "ooc_searched": list(s["ooc_searched"]), "ooc_not_best_q": list(s["ooc_not_best_q"]),
                 "ooc_q_spread_mean": [round(s["ooc_q_spread_sum"][k] / max(1, s["ooc_q_spread_n"][k]), 5) for k in (0, 1)],
                 "progress_window": progress_window(s, last_s),
+                # Amber search rules (cumulative): first expansions of OOC edges [deterministic, chance]
+                # (--chance-on-reveal), fights started / won inside the search (--cross-combat)
+                "ooc_edges_det_chance": list(s["ooc_edges_det_chance"]),
+                "tree_fight_starts": s["tree_fight_starts"], "tree_fight_exits": s["tree_fight_exits"],
+                "auto_gold": s["auto_gold"],   # --sim-help: reward gold taken automatically (real runs)
             }
             if fused is not None:   # rows above the big tile that went through forward_packed (cumulative)
                 row["fused_long_rows"] = fused.long_rows
@@ -893,6 +962,9 @@ def main(argv=None):
                 # ms of GPU time per s of wall clock (1000 = that stream busy all the time)
                 row["gpu_ms_per_s"] = {k: round((v - last_gpu[k]) / dt, 1) for k, v in gpu_ms.items()}
                 last_gpu.update(gpu_ms)
+            if args.explore_amber:   # forcing attempts, of which c = 0 / infinity; logged natural items, unplayed (0)
+                row["explore_amber"] = {k: s["explore_" + k] for k in
+                                        ("attempts", "c_zero", "c_inf", "natural", "natural_unplayed")}
             if ema_lam > 0:
                 row["value_ema"] = {"halflife": args.value_ema_halflife, "search": ema_search,
                                     "moves": args.value_ema_moves if ema_search else None,

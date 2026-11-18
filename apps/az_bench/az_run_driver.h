@@ -10,7 +10,7 @@
 // a step that reveals hidden information is resampled in the search; utility U = F + H at first (F = expected final
 // floor, H = HP), later P(win) + 0.25 H out of combat and F + 0.5 H in combat.
 //
-// Our choices: the search tree ends at combat boundaries: an out-of-combat action that starts a fight leads to a
+// Our choices (defaults; RunConfig::chanceOnReveal / crossCombat / simHelp switch to Amber's rules): the search tree ends at combat boundaries: an out-of-combat action that starts a fight leads to a
 // leaf (the fight's first decision, valued by the net) and a combat action that wins the fight leads to a leaf (the
 // state after the fight, valued by the net); a lost fight is terminal. Out-of-combat edges are all chance edges: each
 // new outcome is a detached copy of the parent with its hidden future resampled (sampleNoncombatFuture) before the
@@ -33,6 +33,7 @@
 #include <random>
 #include <stdexcept>
 #include <thread>
+#include <unordered_map>
 #include <vector>
 
 #include "az_pack.h"
@@ -117,6 +118,25 @@ namespace sts::azbench {
     void completedQValues(int k, const float *logit, const std::int32_t *n, const double *w, double value,
                           bool rescale, double *q);
 
+    // Amber Eye exploration (RunConfig::exploreAmber): the finished runs in which an item appeared, by the item's
+    // smallest gap m to the top pick in that run (m = 0: the search picked it itself). Gaps m > 0 go into bins of
+    // kBin (the last bin takes m >= (kBins - 1) kBin, where exp(-m / 4) < 5e-5).
+    struct AmberGapHist {
+        static constexpr double kBin = 0.05;
+        static constexpr int kBins = 800;
+        std::int64_t natural = 0;              // runs with m = 0
+        std::array<std::uint32_t, kBins> n{};  // runs with m > 0, by bin
+        void add(double m) {
+            if (m <= 0) { ++natural; return; }
+            ++n[std::min(kBins - 1, static_cast<int>(m / kBin))];
+        }
+    };
+
+    // Amber Eye's per-item c: the c with natural + sum_b n_b min(1, c exp(-m_b / T)) = need (m_b = bin centre), i.e.
+    // the c at which the item, boosted with probability min(1, c exp(-m / T)), would have been picked in `need` of the
+    // logged runs. 0 when natural >= need; +infinity when even always picking it falls short. Bisection on log c.
+    double amberExploreC(const AmberGapHist &h, double need, double T);
+
     struct RunConfig {
         int workers = 11;
         int gamesPerWorker = 700;
@@ -147,6 +167,7 @@ namespace sts::azbench {
         double keepFast = 0.0;          // ... of a fast-search move (value only)
         // Samples of unfinished runs wait in memory for their labels (~5.5 KB each). Above this many, the keep
         // probabilities are scaled by maxPendingSamples / pending, so memory stays bounded as runs get longer.
+        // <= 0 (2026-11-17): no cap, every kept move becomes a sample (Amber Eye trains on all full moves).
         std::int64_t maxPendingSamples = 300000;
         std::uint64_t searchSeed = 0;   // search / Gumbel / resampling RNG
         int testMaxHp = 0;              // tests only: > 0 sets max / current HP at the run's start (reach late floors)
@@ -157,6 +178,17 @@ namespace sts::azbench {
         // the runs finished in this process, after a warm-up of 1 / pickTarget runs.
         double exploreC = 0;
         double pickTarget = 0.01;
+        // Amber Eye exploration (2026-11-17, default off; not with exploreC): the same items, rate = share of finished
+        // runs in which the item was played (once per run), under target below pickTarget (same warm-up). A root
+        // offering an under-target item gets a full search in which every under-target item is a candidate on top of
+        // the usual ones and survives every halving. After the search, the under-target items other than the pick are
+        // tried in random order: item i is played instead with probability min(1, c_i exp(-m_i / exploreT)), m_i the
+        // gap of its policy logit (the net's prior logit; Amber Eye: "how far they are below the choice actually taken
+        // (in terms of policy logits)") below the pick's, 0 if above; the first hit is played. Only the item the search
+        // itself played counts as m = 0 ("natural") in the log; any other item logs at least 1e-9 (bin 0). c_i is amberExploreC over the runs finished so far (each run logs every item's smallest gap). The
+        // sample keeps the search policy; the run's labels follow the move played.
+        bool exploreAmber = false;
+        double exploreT = 4.0;
         // Per-run evaluation cache (2026-11-17, default off): a leaf whose encoded net input (live tokens and legal
         // actions) equals one this run already had evaluated with the current weights (setWeightsVersion) takes
         // that result instead of a new net evaluation. Exact: the net sees only its input, so the cached result is
@@ -167,6 +199,20 @@ namespace sts::azbench {
         // Card stacks (2026-11-17, default off; changes the net input, needs its own run): identical cards become one
         // CARD token with a copy count (search::amberMergeCards), ~25-35 % fewer tokens late in a run.
         bool mergeCards = false;
+        // Amber Eye search fidelity (2026-11-17, all default off; https://8e9f.github.io/amber_eye/):
+        // chanceOnReveal: an out-of-combat edge is a chance edge only when its step reveals hidden information
+        //   (search::oocStepRevealsHidden: an RNG stream drew, a pre-shuffled pool or encounter queue was read, a fight
+        //   started, a new act); other edges are deterministic with one child. Off: every out-of-combat edge is a
+        //   chance edge. A won fight's exit (rewards) is tested the same way and makes its combat edge a chance edge.
+        // crossCombat: one search over combat and out-of-combat states. A fight's first state and the state after a
+        //   won fight are expanded like any node (combat nodes keep the game state of their fight's start, `outer`).
+        //   Off: both are leaves valued by the net.
+        // simHelp: the simulator help Amber lists: "in positions with one legal action, it is automatically taken;
+        //   gold from rewards is automatically taken; [...] buying Prismatic Shard is banned", in the real run and
+        //   inside the search (a step there runs on through forced positions and gold; it is one edge).
+        bool chanceOnReveal = false;
+        bool crossCombat = false;
+        bool simHelp = false;
         // Search-backed EMA outcome targets (2026-11-17, default 0 = off), Amber Eye's value labels: "a combination
         // of the search result and an exponential weighted average of future moves' search outcomes". With
         // searchEmaLambda = lam in (0, 1): every node carries the net's outcome distribution (57 classes; submit needs
@@ -245,12 +291,20 @@ namespace sts::azbench {
         std::array<std::int64_t, kAscensions> runsDoneAsc{}, winsAsc{}, floorsSumAsc{};
         std::array<RunProgress, kAscensions> progressAsc{};   // finished runs' progress counters per ascension
         std::int64_t oocRoots = 0, exploreRoots = 0, forcedPicks = 0;   // searched OOC decisions; with an under-target item; forced
+        // exploreAmber diagnostics: forcing attempts (under-target item tried after a search) and of those with c = 0 /
+        // c = infinity; items logged with m = 0 at a run's end, and of those not played in that run (must stay 0).
+        std::int64_t exploreAttempts = 0, exploreCZero = 0, exploreCInf = 0, exploreNatural = 0, exploreNaturalUnplayed = 0;
         std::int64_t cacheHits = 0;           // leaves answered by the evaluation cache (not counted in evals)
         // Search diagnostics of searched out-of-combat roots (always on): per full / fast move, roots, roots whose
         // search pick is not the visited edge of highest mean Q (before a forced pick), and the sum of that root's
         // raw visited-Q spread (max - min mean Q, roots with >= 2 visited edges) and its count.
         std::array<std::int64_t, 2> oocSearched{}, oocNotBestQ{}, oocSpreadN{};
         std::array<double, 2> oocSpreadSum{};
+        // Amber search rules (RunConfig::chanceOnReveal / crossCombat): first expansions of out-of-combat edges that
+        // were deterministic / chance edges, and fights started / won inside the search (crossCombat).
+        std::array<std::int64_t, 2> oocEdgeKinds{};
+        std::int64_t treeFightStarts = 0, treeFightExits = 0;
+        std::int64_t autoGold = 0;   // simHelp: reward gold taken automatically in the real runs
         double stepCpu = 0, encodeCpu = 0, searchCpu = 0, packSeconds = 0;
     };
 
@@ -304,6 +358,10 @@ namespace sts::azbench {
         std::atomic<std::int64_t> pending_{0};   // samples of unfinished runs, all workers
         static constexpr int kPickBuckets = 1 << 16;
         std::unique_ptr<std::atomic<std::uint32_t>[]> picks_;
+        struct ExploreItem { AmberGapHist hist; double c = 0; std::int64_t stamp = -1; };
+        std::mutex exploreM_;                              // exploreItems_ (exploreAmber)
+        std::unordered_map<int, ExploreItem> exploreItems_;   // item bucket -> gap log and its c (exploreAmber)
+        double exploreItemC(int key, std::int64_t games);
         std::atomic<int> ascension_{20};
         std::atomic<std::uint32_t> weightsVersion_{0};
         std::atomic<std::int64_t> runsDone_{0};   // finished runs, all workers (pick-rate denominator)   // real picks per item hash (pick-rate exploration)

@@ -15,6 +15,7 @@
 #include "sim/search/NativeSilverBackend.h"
 #include "sim/search/OocHiddenFuture.h"
 #include "sim/search/OocMctsPlanner.h"
+#include "sim/search/OocSemanticAction.h"
 #include "sim/search/SearchRng.h"
 
 namespace sts::azbench {
@@ -286,6 +287,7 @@ namespace sts::azbench {
         BattleContext bc;                    // combat node
         search::SilverSearchContext ctx;     // combat node: its fight
         std::unique_ptr<GameContext> gc;     // out-of-combat node (kept allocated across pool reuse)
+        std::shared_ptr<const GameContext> outer;   // combat node, crossCombat: the game state at its fight's start
         std::vector<Edge> edges;
         bool evaluated = false, terminal = false, boundary = false;
         float value = 0;
@@ -306,7 +308,11 @@ namespace sts::azbench {
         BattleContext bc;
         std::unique_ptr<search::CombatKnowledgeState> knowledge = std::make_unique<search::CombatKnowledgeState>();
         bool inBattle = false;
+        std::shared_ptr<const GameContext> fightOuter;   // crossCombat: g.gc at the real fight's start
         std::vector<int> rootKeys;           // pick-rate item bucket per root action (-1 = none), OOC roots
+        std::vector<char> rootUnder;         // exploreAmber: root action is an under-target item (after warm-up)
+        std::unordered_map<int, double> gapMin;   // exploreAmber: this run's smallest gap per item
+        std::vector<int> pickedKeys;         // exploreAmber: items played in this run (each once)
         int asc = 20;                        // this run's ascension
         RunProgress progress;                // this run's progress counters (added to its ascension at the end)
         search::SilverSearchContext ctx;
@@ -447,6 +453,35 @@ namespace sts::azbench {
 
     }
 
+    double amberExploreC(const AmberGapHist &h, double need, double T) {
+        if (static_cast<double>(h.natural) >= need) return 0.0;
+        std::vector<std::pair<double, double>> bins;   // (exp(-m_b / T), runs) of the non-empty bins
+        for (int b = 0; b < AmberGapHist::kBins; ++b)
+            if (h.n[b]) bins.emplace_back(std::exp(-(b + 0.5) * AmberGapHist::kBin / T), h.n[b]);
+        auto picked = [&](double c) {
+            double x = static_cast<double>(h.natural);
+            for (const auto &[e, n] : bins) x += n * std::min(1.0, c * e);
+            return x;
+        };
+        double lo = -60.0, hi = 60.0;   // log c; at e^60 every logged gap (< 40) is picked with probability 1
+        if (picked(std::exp(hi)) < need) return std::numeric_limits<double>::infinity();
+        for (int it = 0; it < 100; ++it) {
+            const double mid = 0.5 * (lo + hi);
+            (picked(std::exp(mid)) < need ? lo : hi) = mid;
+        }
+        return std::exp(hi);
+    }
+
+    double RunDriver::exploreItemC(int key, std::int64_t games) {
+        std::lock_guard<std::mutex> l(exploreM_);
+        ExploreItem &it = exploreItems_[key];
+        if (it.stamp != games) {   // recomputed once per new finished run
+            it.c = amberExploreC(it.hist, cfg_.pickTarget * static_cast<double>(games), cfg_.exploreT);
+            it.stamp = games;
+        }
+        return it.c;
+    }
+
     RunDriver::RunDriver(RunConfig cfg) : cfg_(cfg) {
         if (cfg_.ascension < 0 || cfg_.ascension >= kAscensions) throw std::invalid_argument("run driver: ascension 0..20");
         ascension_.store(cfg_.ascension);
@@ -459,15 +494,21 @@ namespace sts::azbench {
         if (!(cfg_.searchEmaLambda >= 0 && cfg_.searchEmaLambda < 1))
             throw std::invalid_argument("run driver: searchEmaLambda in [0, 1)");
         if (cfg_.gamesPerWorker > 0xffff) throw std::invalid_argument("run driver: at most 65535 runs per worker");
+        if (cfg_.exploreAmber && cfg_.exploreC > 0)
+            throw std::invalid_argument("run driver: exploreAmber and exploreC are exclusive");
+        if (cfg_.exploreAmber && !(cfg_.exploreT > 0 && cfg_.pickTarget > 0))
+            throw std::invalid_argument("run driver: exploreAmber needs exploreT > 0 and pickTarget > 0");
         for (int w = 0; w < cfg_.workers; ++w) {
             auto wk = std::make_unique<Worker>();
             wk->rng.seed(cfg_.searchSeed * 1000003u + static_cast<std::uint64_t>(w));
             wk->runs.resize(cfg_.gamesPerWorker);
             for (auto &r : wk->runs)
                 // One node per simulation; a halving phase rounds its per-candidate count up to 1, so a search
-                // can overshoot its budget by at most one simulation per candidate.
+                // can overshoot its budget by at most one simulation per candidate (exploreAmber: under-target
+                // items are extra candidates, at most one per encoded action).
                 r.pool.reserve(static_cast<std::size_t>(std::max(cfg_.fullSims, cfg_.fastSims) +
-                                                        std::max(cfg_.fullCandidates, cfg_.fastCandidates)) + 2);
+                                                        std::max(cfg_.fullCandidates, cfg_.fastCandidates)
+                                                        + (cfg_.exploreAmber ? search::kAmberMaxActions : 0)) + 2);
             workers_.push_back(std::move(wk));
         }
     }
@@ -507,11 +548,15 @@ namespace sts::azbench {
                 s.progressAsc[k] += p.progressAsc[k];
             }
             s.oocRoots += p.oocRoots; s.exploreRoots += p.exploreRoots; s.forcedPicks += p.forcedPicks;
+            s.exploreAttempts += p.exploreAttempts; s.exploreCZero += p.exploreCZero; s.exploreCInf += p.exploreCInf;
+            s.exploreNatural += p.exploreNatural; s.exploreNaturalUnplayed += p.exploreNaturalUnplayed;
             s.cacheHits += p.cacheHits;
             for (int k = 0; k < 2; ++k) {
                 s.oocSearched[k] += p.oocSearched[k]; s.oocNotBestQ[k] += p.oocNotBestQ[k];
                 s.oocSpreadN[k] += p.oocSpreadN[k]; s.oocSpreadSum[k] += p.oocSpreadSum[k];
             }
+            s.oocEdgeKinds[0] += p.oocEdgeKinds[0]; s.oocEdgeKinds[1] += p.oocEdgeKinds[1];
+            s.treeFightStarts += p.treeFightStarts; s.treeFightExits += p.treeFightExits; s.autoGold += p.autoGold;
             s.stepCpu += p.stepCpu; s.encodeCpu += p.encodeCpu; s.searchCpu += p.searchCpu;
         }
         s.batches = batches_.load();
@@ -552,6 +597,22 @@ namespace sts::azbench {
             return cacts;
         };
 
+        // Legal out-of-combat actions; simHelp bans buying Prismatic Shard (Amber Eye's simulator).
+        auto oocActions = [&](const GameContext &gc) -> std::vector<GameAction> {
+            auto v = GameAction::getAllActionsInState(gc);
+            if (cfg.simHelp)
+                v.erase(std::remove_if(v.begin(), v.end(), [&](const GameAction &a) {
+                    return !search::isSupportedAutonomousOocAction(gc, a);
+                }), v.end());
+            return v;
+        };
+        // simHelp: Amber Eye's simulator takes gold from rewards automatically.
+        auto goldToTake = [&](const GameContext &gc) {
+            return cfg.simHelp && gc.outcome == GameOutcome::UNDECIDED && gc.screenState == ScreenState::REWARDS &&
+                   gc.info.rewardsContainer.goldRewardCount > 0;
+        };
+        const std::uint32_t takeGoldBits = GameAction(GameAction::RewardsActionType::GOLD, 0).bits;
+
         auto newNode = [&](Run &g) -> int {
             if (g.poolUsed == static_cast<int>(g.pool.size())) {
                 if (g.pool.size() == g.pool.capacity()) throw std::logic_error("run driver: node pool overflow");
@@ -559,6 +620,7 @@ namespace sts::azbench {
             }
             Node &n = g.pool[g.poolUsed];
             n.edges.clear();
+            n.outer.reset();
             n.evaluated = n.terminal = n.boundary = false;
             n.value = 0;
             n.n = 0;
@@ -589,13 +651,13 @@ namespace sts::azbench {
                 g.pendingMaxHp = static_cast<float>(std::max<int>(1, node.bc.player.maxHp));
                 g.pendingFloor = node.bc.floorNum;
             } else {
-                gacts = GameAction::getAllActionsInState(*node.gc);
+                gacts = oocActions(*node.gc);
                 node.edges.resize(gacts.size());
                 for (std::size_t k = 0; k < gacts.size(); ++k) node.edges[k] = Edge{gacts[k].bits};
                 const double t1 = cpuSeconds();
                 cfg.encodeGame(*node.gc, gacts, g.tokens);
                 if (cfg.mergeCards) search::amberMergeCards(g.tokens);
-                if (ni == 0 && cfg.exploreC > 0) {
+                if (ni == 0 && (cfg.exploreC > 0 || cfg.exploreAmber)) {
                     // Pick-rate items of the root's actions: hash of the source token's ids.
                     g.rootKeys.assign(gacts.size(), -1);
                     for (int k = 0; k < g.tokens.nAct; ++k) {
@@ -738,6 +800,21 @@ namespace sts::azbench {
                     amberFloorLabels(s.floor, g.floorHp.data(), tail, s.hpFloor.data());
                 }
             }
+            if (cfg.exploreAmber) {   // the run's items: once per run in the rate, smallest gap into the item's log
+                for (int key : g.pickedKeys) picks_[key].fetch_add(1, std::memory_order_relaxed);
+                for (const auto &[key, m] : g.gapMin)
+                    if (m <= 0) {
+                        ++wk.st.exploreNatural;
+                        if (std::find(g.pickedKeys.begin(), g.pickedKeys.end(), key) == g.pickedKeys.end())
+                            ++wk.st.exploreNaturalUnplayed;
+                    }
+                {
+                    std::lock_guard<std::mutex> l(exploreM_);
+                    for (const auto &[key, m] : g.gapMin) exploreItems_[key].hist.add(m);
+                }
+                g.pickedKeys.clear();
+                g.gapMin.clear();
+            }
             ++wk.st.runsDone;
             runsDone_.fetch_add(1, std::memory_order_relaxed);
             if (win) ++wk.st.wins;
@@ -801,6 +878,7 @@ namespace sts::azbench {
                 if (g.gc.info.encounter == MonsterEncounter::THE_HEART) g.progress.heart = 1;
                 initObservedBattle(g.gc, g.bc, *g.knowledge);
                 g.ctx = combatContext(g.gc);
+                if (cfg.crossCombat) g.fightOuter = std::make_shared<const GameContext>(search::detachedGameCopy(g.gc));
                 g.inBattle = true;
                 g.fightMoves = 0;
             }
@@ -829,7 +907,8 @@ namespace sts::azbench {
                     legal = a.size();
                     if (legal == 1) only = a[0].bits;
                 } else {
-                    gacts = GameAction::getAllActionsInState(g.gc);
+                    if (goldToTake(g.gc)) { ++wk.st.autoGold; applyReal(g, takeGoldBits); continue; }
+                    gacts = oocActions(g.gc);
                     legal = gacts.size();
                     if (legal == 1) only = gacts[0].bits;
                 }
@@ -847,7 +926,7 @@ namespace sts::azbench {
             g.full = U(wk.rng) < cfg.fullProb;
             {
                 const double pend = static_cast<double>(pending_.load(std::memory_order_relaxed));
-                const double scale = pend > cfg.maxPendingSamples ? cfg.maxPendingSamples / pend : 1.0;
+                const double scale = cfg.maxPendingSamples > 0 && pend > cfg.maxPendingSamples ? cfg.maxPendingSamples / pend : 1.0;
                 g.keep = U(wk.rng) < (g.full ? cfg.keepFull : cfg.keepFast) * scale;
             }
             g.budget = g.full ? cfg.fullSims : cfg.fastSims;
@@ -860,6 +939,7 @@ namespace sts::azbench {
             if (g.inBattle) {
                 root.combat = true;
                 root.ctx = g.ctx;
+                root.outer = g.fightOuter;   // crossCombat only (null otherwise)
                 if (!publicCombatRoot(g.bc, *g.knowledge, root.bc).empty()) {
                     // No fair view of this fight (an intent pattern the tracker cannot represent): abandon the run.
                     ++wk.st.knowledgeFailures;
@@ -875,21 +955,29 @@ namespace sts::azbench {
             }
             g.path.push_back({r, -1, -1});
             g.rootKeys.clear();
+            g.rootUnder.clear();
             request(g, gi, r);
-            if (!g.inBattle && cfg.exploreC > 0) {
+            if (!g.inBattle && (cfg.exploreC > 0 || cfg.exploreAmber)) {
                 ++wk.st.oocRoots;
                 const double games = static_cast<double>(runsDone_.load(std::memory_order_relaxed));
                 bool under = false;
                 // Rates are over finished runs, after a warm-up of 1 / pickTarget runs (no item is under target before).
-                if (games * cfg.pickTarget >= 1.0)
-                    for (int key : g.rootKeys)
-                        if (key >= 0 && picks_[key].load(std::memory_order_relaxed) < cfg.pickTarget * games) under = true;
+                if (games * cfg.pickTarget >= 1.0) {
+                    if (cfg.exploreAmber) g.rootUnder.assign(g.rootKeys.size(), 0);
+                    for (std::size_t k = 0; k < g.rootKeys.size(); ++k) {
+                        const int key = g.rootKeys[k];
+                        if (key >= 0 && picks_[key].load(std::memory_order_relaxed) < cfg.pickTarget * games) {
+                            under = true;
+                            if (cfg.exploreAmber) g.rootUnder[k] = 1;
+                        }
+                    }
+                }
                 if (under) {
                     ++wk.st.exploreRoots;
                     if (!g.full) {   // a root with an under-target item gets a full search (policy target recorded)
                         g.full = true;
                         const double pend = static_cast<double>(pending_.load(std::memory_order_relaxed));
-                        const double scale = pend > cfg.maxPendingSamples ? cfg.maxPendingSamples / pend : 1.0;
+                        const double scale = cfg.maxPendingSamples > 0 && pend > cfg.maxPendingSamples ? cfg.maxPendingSamples / pend : 1.0;
                         g.keep = U(wk.rng) < cfg.keepFull * scale;
                         g.budget = cfg.fullSims;
                         g.candidates = cfg.fullCandidates;
@@ -914,7 +1002,11 @@ namespace sts::azbench {
             });
             const int m = std::min(k, g.candidates);
             g.cand.assign(order.begin(), order.begin() + m);
-            g.phasesLeft = m > 1 ? static_cast<int>(std::ceil(std::log2(m))) : 1;
+            if (!g.rootUnder.empty())   // exploreAmber: every under-target item is a candidate on top of the usual ones
+                for (int i = m; i < k; ++i)
+                    if (order[i] < static_cast<int>(g.rootUnder.size()) && g.rootUnder[order[i]]) g.cand.push_back(order[i]);
+            const int mc = static_cast<int>(g.cand.size());
+            g.phasesLeft = mc > 1 ? static_cast<int>(std::ceil(std::log2(mc))) : 1;
         };
 
         auto fillPhase = [&](Run &g) {
@@ -933,7 +1025,16 @@ namespace sts::azbench {
             std::sort(g.cand.begin(), g.cand.end(), [&](int a, int b) {
                 return rootScore(g, root, a, sigma, q) > rootScore(g, root, b, sigma, q);
             });
-            g.cand.resize(std::max<std::size_t>(1, (g.cand.size() + 1) / 2));
+            if (g.rootUnder.empty()) {
+                g.cand.resize(std::max<std::size_t>(1, (g.cand.size() + 1) / 2));
+            } else {   // exploreAmber: under-target items survive; the others are halved as usual
+                auto isUnder = [&](int e) { return e < static_cast<int>(g.rootUnder.size()) && g.rootUnder[e] != 0; };
+                std::vector<int> kept, forced;
+                for (int e : g.cand) (isUnder(e) ? forced : kept).push_back(e);
+                if (!kept.empty()) kept.resize(std::max<std::size_t>(1, (kept.size() + 1) / 2));
+                kept.insert(kept.end(), forced.begin(), forced.end());
+                g.cand = std::move(kept);
+            }
             --g.phasesLeft;
         };
 
@@ -1027,6 +1128,41 @@ namespace sts::azbench {
                 }
                 if (pick < static_cast<int>(g.rootKeys.size()) && g.rootKeys[pick] >= 0)
                     picks_[g.rootKeys[pick]].fetch_add(1, std::memory_order_relaxed);
+            }
+            if (!root.combat && cfg.exploreAmber && !g.rootKeys.empty()) {
+                const int k = std::min(static_cast<int>(g.rootKeys.size()), static_cast<int>(root.edges.size()));
+                // Gap in policy logits (the net's prior logits) below the search's pick, at least 1e-9.
+                const int searchPick = pick;
+                const double top = root.edges[searchPick].logit;
+                auto gap = [&](int i) { return std::max(1e-9, top - static_cast<double>(root.edges[i].logit)); };
+                std::vector<int> under;
+                for (int i = 0; i < k; ++i)
+                    if (g.rootKeys[i] >= 0 && i != searchPick && i < static_cast<int>(g.rootUnder.size())
+                        && g.rootUnder[i]) under.push_back(i);
+                std::shuffle(under.begin(), under.end(), wk.rng);
+                const std::int64_t games = runsDone_.load(std::memory_order_relaxed);
+                for (int i : under) {
+                    const double m = gap(i);
+                    const double c = exploreItemC(g.rootKeys[i], games);
+                    ++wk.st.exploreAttempts;
+                    if (c == 0) ++wk.st.exploreCZero;
+                    if (std::isinf(c)) ++wk.st.exploreCInf;
+                    const double p = std::isinf(c) ? 1.0 : std::min(1.0, c * std::exp(-m / cfg.exploreT));
+                    if (U(wk.rng) < p) { pick = i; ++wk.st.forcedPicks; break; }
+                }
+                // Log: m = 0 ("natural") only for the search's pick when it is played; a forced item logs its gap, an
+                // overridden search pick 1e-9 (bin 0), every other item its gap.
+                for (int i = 0; i < k; ++i) {
+                    const int key = g.rootKeys[i];
+                    if (key < 0) continue;
+                    const double m = (i == searchPick && pick == searchPick) ? 0.0 : gap(i);
+                    auto it = g.gapMin.find(key);
+                    if (it == g.gapMin.end()) g.gapMin.emplace(key, m);
+                    else it->second = std::min(it->second, m);
+                }
+                if (pick < k && g.rootKeys[pick] >= 0
+                    && std::find(g.pickedKeys.begin(), g.pickedKeys.end(), g.rootKeys[pick]) == g.pickedKeys.end())
+                    g.pickedKeys.push_back(g.rootKeys[pick]);
             }
             std::uint32_t bits = root.edges[pick].bits;
             if (root.combat) {
@@ -1141,6 +1277,201 @@ namespace sts::azbench {
             return child;
         };
 
+
+        // --- Amber Eye's search rules (RunConfig::chanceOnReveal / crossCombat / simHelp) ---------------------------
+        //
+        // One step from node `parent` along action `bits` into node `ci`: the action, then (simHelp) every forced
+        // position and reward gold, a won fight's exit into its game state and a fight's start, until a decision, a
+        // leaf or the run's end. k: outcome index (randomness base + k); resample false: the hidden state is kept and
+        // `revealed` says whether the step used it (out-of-combat parts; the combat part is always a search sample,
+        // combatRng says whether it drew). resample true: hidden out-of-combat state is resampled before it is used.
+        constexpr std::uint64_t kExitSalt = 0x9e3779b97f4a7c15ull;
+        auto stepAmber = [&](Run &g, int pi, std::uint32_t bits, std::uint64_t base, int k, bool resample, int ci,
+                             bool &combatRng, bool &revealed) {
+            combatRng = revealed = false;
+            const Node &parent = g.pool[pi];
+            Node &cn = g.pool[ci];
+            const bool detect = cfg.chanceOnReveal && !resample;
+            bool inCombat = parent.combat, fromCombat = false;
+            BattleContext bc;
+            std::shared_ptr<const GameContext> outer;
+            search::SilverSearchContext ctx;
+            GameContext gc;
+            int exits = 0;
+            auto unsupportedLeaf = [&] {   // hidden history the resampler cannot handle: the parent's value
+                ++wk.st.unsupported;
+                cn.combat = false;
+                cn.evaluated = cn.terminal = true;
+                cn.value = parent.value;
+                if (emaOn) cn.dist = parent.dist;
+            };
+            // One out-of-combat step on gc, tested for hidden information on its own (a later step's new-floor reseed
+            // must not hide an earlier draw).
+            auto oocExec = [&](std::uint32_t b) {
+                if (!detect) { GameAction(b).execute(gc); return; }
+                const auto snap = search::captureOocHidden(gc);
+                GameAction(b).execute(gc);
+                revealed = revealed || search::oocStepRevealsHidden(snap, gc);
+            };
+            if (inCombat) {
+                bc = parent.bc;
+                outer = parent.outer;
+                ctx = parent.ctx;
+                search::seedSearchRng(bc, base + k);
+                Action(bits).execute(bc);
+            } else {
+                gc = search::detachedGameCopy(*parent.gc);
+                if (!detect) {
+                    std::mt19937_64 r(base + k);
+                    try { search::sampleNoncombatFuture(gc, r); }
+                    catch (const search::OocSearchUnsupported &) { unsupportedLeaf(); return; }
+                }
+                oocExec(bits);
+            }
+            for (int guard = 0;; ++guard) {
+                if (guard > 4000) {   // a forced loop (stall guard): a loss on this floor
+                    cn.combat = false;
+                    cn.evaluated = cn.terminal = true;
+                    const int fl = inCombat ? bc.floorNum : gc.floorNum;
+                    cn.value = terminalUtility(false, false, fl, 0, 1, cfg.hpWeightOoc, cfg);
+                    if (emaOn) setOneHot(cn, std::clamp(fl, 1, kOutcomeClasses - 1));
+                    return;
+                }
+                if (inCombat) {
+                    if (bc.outcome == Outcome::PLAYER_LOSS) {
+                        combatRng = combatRng || search::searchRngCounter(bc) != 0;
+                        cn.combat = true;
+                        cn.bc = std::move(bc);
+                        cn.evaluated = cn.terminal = true;
+                        const int fl = outer ? outer->floorNum : g.gc.floorNum;
+                        cn.value = terminalUtility(false, false, fl, 0, 1, cfg.hpWeightCombat, cfg);
+                        if (emaOn) setOneHot(cn, std::clamp(fl, 1, kOutcomeClasses - 1));   // death on this floor
+                        return;
+                    }
+                    if (bc.outcome == Outcome::PLAYER_VICTORY) {
+                        // The fight's exit (rewards) reads the hidden future of the game state of the fight's start.
+                        combatRng = combatRng || search::searchRngCounter(bc) != 0;
+                        gc = search::detachedGameCopy(outer ? *outer : g.gc);
+                        const auto snap = search::captureOocHidden(gc);
+                        if (!detect) {
+                            std::mt19937_64 r(base ^ kExitSalt ^ (static_cast<std::uint64_t>(k) + 1 +
+                                                                 7919ull * static_cast<std::uint64_t>(exits)));
+                            try { search::sampleNoncombatFuture(gc, r); }
+                            catch (const search::OocSearchUnsupported &) { ++wk.st.unsupported; }
+                        }
+                        ++exits;
+                        if (cfg.crossCombat) ++wk.st.treeFightExits;
+                        bc.exitBattle(gc);
+                        if (detect) revealed = revealed || search::oocStepRevealsHidden(snap, gc);
+                        inCombat = false;
+                        fromCombat = true;
+                        outer.reset();
+                        continue;
+                    }
+                    if (cfg.simHelp) {
+                        const auto &a = combatActions(bc);
+                        if (a.size() == 1) { Action(a[0].bits).execute(bc); continue; }
+                    }
+                    combatRng = combatRng || search::searchRngCounter(bc) != 0;
+                    cn.combat = true;
+                    cn.bc = std::move(bc);
+                    cn.ctx = ctx;
+                    cn.outer = std::move(outer);
+                    return;
+                }
+                if (gc.outcome != GameOutcome::UNDECIDED) {
+                    setGc(cn, std::move(gc));
+                    cn.evaluated = cn.terminal = true;
+                    cn.value = terminalUtility(*cn.gc, cfg.hpWeightOoc, cfg);
+                    if (emaOn) setOneHot(cn, outcomeClass(*cn.gc));
+                    return;
+                }
+                if (goldToTake(gc)) { oocExec(takeGoldBits); continue; }
+                if (gc.screenState == ScreenState::BATTLE) {
+                    // A fight starts (always a reveal: oocStepRevealsHidden): its public view, as at a real fight start.
+                    search::CombatKnowledgeState kn;
+                    BattleContext live;
+                    initObservedBattle(gc, live, kn);
+                    if (!publicCombatRoot(live, kn, bc).empty()) bc = live;
+                    ctx = combatContext(gc);
+                    if (!cfg.crossCombat) {   // the fight's first state is a leaf valued by the net
+                        cn.combat = true;
+                        cn.bc = std::move(bc);
+                        cn.ctx = ctx;
+                        cn.boundary = true;
+                        return;
+                    }
+                    outer = std::make_shared<const GameContext>(std::move(gc));
+                    ++wk.st.treeFightStarts;
+                    inCombat = true;
+                    continue;
+                }
+                if (cfg.simHelp) {
+                    const auto a = oocActions(gc);
+                    if (a.size() == 1) { oocExec(a[0].bits); continue; }
+                }
+                setGc(cn, std::move(gc));
+                cn.boundary = fromCombat && !cfg.crossCombat;   // the state after a won fight: a leaf unless crossCombat
+                return;
+            }
+        };
+
+        auto resetNode = [&](Node &n) {
+            n.edges.clear();
+            n.dist.clear();
+            n.outer.reset();
+            n.evaluated = n.terminal = n.boundary = false;
+            n.combat = false;
+            n.value = 0;
+            n.n = 0;
+            n.w = 0;
+        };
+
+        // expand() under Amber's rules. chanceOnReveal: the first visit steps with the real hidden state; if the step
+        // revealed hidden information it is redone as a resampled outcome and the edge becomes a chance edge (DPW).
+        auto expandAmber = [&](Run &g, int cur, int e, int &outcome) -> int {
+            outcome = -1;
+            Edge &edge0 = g.pool[cur].edges[e];
+            const bool first = !edge0.tried;
+            if (!first && !edge0.chance) return edge0.child;
+            if (!first) {
+                const int cap = static_cast<int>(std::ceil(cfg.wideningC * std::pow(edge0.n + 1.0, cfg.wideningAlpha)));
+                if (static_cast<int>(edge0.outcomes.size()) >= cap) {
+                    outcome = static_cast<int>(edge0.n % edge0.outcomes.size());
+                    return edge0.outcomes[outcome];
+                }
+            }
+            const int child = newNode(g);   // pool may not move (capacity reserved), references stay valid
+            Node &parent = g.pool[cur];
+            Edge &edge = parent.edges[e];
+            const int k = static_cast<int>(edge.outcomes.size());
+            if (first) edge.base = parent.combat ? search::searchRandomnessBase(parent.bc) : wk.rng();
+            bool combatRng = false, revealed = false;
+            if (first && cfg.chanceOnReveal) {
+                stepAmber(g, cur, edge.bits, edge.base, k, false, child, combatRng, revealed);
+                if (revealed) {
+                    resetNode(g.pool[child]);
+                    bool c2 = false, r2 = false;
+                    stepAmber(g, cur, edge.bits, edge.base, k, true, child, c2, r2);
+                }
+                edge.chance = revealed || combatRng;
+                if (!parent.combat) ++wk.st.oocEdgeKinds[edge.chance ? 1 : 0];
+            } else {
+                stepAmber(g, cur, edge.bits, edge.base, k, true, child, combatRng, revealed);
+                if (first) edge.chance = parent.combat ? combatRng : true;
+            }
+            if (edge.chance) {
+                edge.outcomes.push_back(child);
+                edge.outcomeN.push_back(0);
+                outcome = static_cast<int>(edge.outcomes.size()) - 1;
+            } else {
+                edge.child = child;
+            }
+            edge.tried = true;
+            return child;
+        };
+        const bool amberRules = cfg.chanceOnReveal || cfg.crossCombat || cfg.simHelp;
+
         auto advance = [&](Run &g, int gi) {
             while (true) {
                 if (g.phaseQueue.empty()) {
@@ -1155,7 +1486,7 @@ namespace sts::azbench {
                 while (true) {
                     int outcome;
                     const double t0 = cpuSeconds();
-                    const int child = expand(g, cur, e, outcome);
+                    const int child = amberRules ? expandAmber(g, cur, e, outcome) : expand(g, cur, e, outcome);
                     wk.st.stepCpu += cpuSeconds() - t0;
                     g.path.push_back({cur, e, outcome});
                     Node &cn = g.pool[child];

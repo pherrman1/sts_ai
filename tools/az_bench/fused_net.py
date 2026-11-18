@@ -30,13 +30,13 @@ import torch
 import triton
 import triton.language as tl
 
-# Defaults from offline sm_86 compiles with Triton 3.1 (ptxas -v): tile 64 / 8 warps / 1 stage spills least; a
+# Defaults: tile 64 / 4 warps / 1 stage, the fastest of the PC sweep (RTX 3060 Ti, Triton 3.1, 2026-11-18); a
 # 256-token tile needs ~147 KB shared memory (sm_86: 99 KB), so rows above BIG_TILE run through the net's own
 # forward_packed instead.
 TILE = int(os.environ.get("AZ_FUSED_NET_TILE", "64"))       # tokens per tile (power of two)
 BIG_TILE = int(os.environ.get("AZ_FUSED_NET_BIG_TILE", "128"))
 SM_ROWS = int(os.environ.get("AZ_FUSED_NET_ROWS", "16"))     # rows per tile (power of two, >= 16 for tl.dot)
-WARPS = int(os.environ.get("AZ_FUSED_NET_WARPS", "8"))
+WARPS = int(os.environ.get("AZ_FUSED_NET_WARPS", "4"))   # PC sweep 2026-11-18: 4 warps 272k pos/s, 8 warps 228k
 BIG_WARPS = int(os.environ.get("AZ_FUSED_NET_BIG_WARPS", "8"))
 STAGES = int(os.environ.get("AZ_FUSED_NET_STAGES", "1"))
 FFN_BH = int(os.environ.get("AZ_FUSED_NET_BH", "64"))
