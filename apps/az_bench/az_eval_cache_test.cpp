@@ -19,7 +19,12 @@
 //
 // --ema-all: the EMA chain over all searched moves (default with --ema: full moves only).
 //
-// usage: az-eval-cache-test [--runs 3] [--seed-base 1] [--fast] [--utility amber] [--ema LAM] [--ema-all] [--amber-search]
+// --compact (RunConfig::compactSamples): also plays the runs with compact samples (tokens in the run's dictionary)
+// and checks that they are the same runs and the same samples, token for token (the digest reads the tokens through
+// Sample::expandToken), that every compact sample refers to a dictionary and that the dictionaries hold fewer tokens
+// than the samples do (the point of it).
+//
+// usage: az-eval-cache-test [--runs 3] [--seed-base 1] [--fast] [--utility amber] [--ema LAM] [--ema-all] [--amber-search] [--compact]
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -50,6 +55,9 @@ namespace {
         azbench::RunStats stats;
         std::size_t samples = 0;
         int batches = 0;
+        std::size_t tokens = 0;        // tokens of all samples
+        std::size_t dictTokens = 0;    // compact: tokens in the distinct dictionaries
+        bool compactOk = true;         // compact: every sample refers to a dictionary (and has no copied tokens)
     };
 
     // Plays cfg.maxRuns runs with a fake net that is a hash of each row's live input (and of the weights version
@@ -124,10 +132,30 @@ namespace {
         res.stats = d.stats();
         res.samples = samples.size();
         std::uint64_t h = 0;
+        std::vector<const azbench::TokenDict *> seen;
         for (const auto &s : samples) {
-            for (auto x : s.tokType) h = mix(h, static_cast<std::uint8_t>(x));
-            for (auto x : s.ids) h = mix(h, static_cast<std::uint16_t>(x));
-            for (auto x : s.f) h = mix(h, x);
+            if (cfg.compactSamples) {
+                res.compactOk = res.compactOk && s.dict && s.tokType.empty() && s.ids.empty() && s.f.empty();
+                if (s.dict && std::find(seen.begin(), seen.end(), s.dict.get()) == seen.end()) {
+                    seen.push_back(s.dict.get());
+                    res.dictTokens += s.dict->size();
+                }
+            }
+            res.tokens += s.numTokens();
+            for (std::size_t t = 0; t < s.numTokens(); ++t) {
+                std::int8_t type;
+                const std::int16_t *id;
+                const std::uint16_t *fv;
+                s.expandToken(t, type, id, fv);
+                h = mix(h, static_cast<std::uint8_t>(type));
+                for (int c = 0; c < search::kAmberCat; ++c) h = mix(h, static_cast<std::uint16_t>(id[c]));
+                for (int c = 0; c < search::kAmberFloat; ++c) h = mix(h, fv[c]);
+            }
+            for (std::size_t j = 0; j < s.aType.size(); ++j)
+                h = mix(h, static_cast<std::uint64_t>(static_cast<std::uint16_t>(s.aSrc[j])) << 16 |
+                               static_cast<std::uint16_t>(s.aTgt[j]));
+            for (auto x : s.aF) h = mix(h, x);
+            for (auto x : s.hpFloor) h = mix(h, static_cast<std::uint16_t>(x));
             for (auto x : s.aType) h = mix(h, static_cast<std::uint16_t>(x));
             for (auto x : s.policy) { std::uint32_t u; std::memcpy(&u, &x, 4); h = mix(h, u); }
             std::uint32_t u;
@@ -169,6 +197,7 @@ int main(int argc, char **argv) {
     cfg.maxRuns = 3;
     cfg.seedBase = 1;
     cfg.keepFast = 0.2;
+    bool compact = false;
     for (int i = 1; i < argc; ++i) {
         const std::string a = argv[i];
         auto next = [&]() { if (i + 1 >= argc) { std::fprintf(stderr, "missing value for %s\n", a.c_str()); std::exit(2); } return std::string(argv[++i]); };
@@ -178,6 +207,7 @@ int main(int argc, char **argv) {
         else if (a == "--amber-search") cfg.chanceOnReveal = cfg.crossCombat = cfg.simHelp = true;
         else if (a == "--ema") { cfg.searchEmaLambda = std::stod(next()); cfg.hpWeightCombat = cfg.hpWeightOoc = 0; }
         else if (a == "--ema-all") cfg.searchEmaFullOnly = false;
+        else if (a == "--compact") compact = true;
         else if (a == "--fast") { cfg.fullSims = 8; cfg.fastSims = 4; cfg.fullCandidates = 4; cfg.fastCandidates = 2; }
         else { std::fprintf(stderr, "unknown argument %s\n", a.c_str()); return 2; }
     }
@@ -208,6 +238,21 @@ int main(int argc, char **argv) {
         fail = 1;
     }
     if (a.samples == 0 || a.stats.runsDone < cfg.maxRuns) { std::fprintf(stderr, "FAIL: no runs / samples\n"); fail = 1; }
+    if (compact) {
+        azbench::RunConfig cc = cfg;
+        cc.compactSamples = true;
+        const Result k = play(cc, false);
+        std::printf("{\"compact\": {\"samples\": %zu, \"tokens\": %zu, \"dict_tokens\": %zu, \"digest\": \"%016llx\"}}\n",
+                    k.samples, k.tokens, k.dictTokens, static_cast<unsigned long long>(k.digest));
+        if (k.digest != a.digest || k.samples != a.samples || k.tokens != a.tokens || k.stats.moves != a.stats.moves) {
+            std::fprintf(stderr, "FAIL: compact samples differ from copied ones\n");
+            fail = 1;
+        }
+        if (!k.compactOk || k.dictTokens == 0 || k.dictTokens >= k.tokens) {
+            std::fprintf(stderr, "FAIL: compact samples without a dictionary, or nothing shared\n");
+            fail = 1;
+        }
+    }
     if (cfg.searchEmaLambda > 0) {
         azbench::RunConfig plain = cfg;
         plain.searchEmaLambda = 0;

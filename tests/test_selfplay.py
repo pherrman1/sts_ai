@@ -171,6 +171,91 @@ class ReplayTest(unittest.TestCase):
         self.assertGreater(float(gs.abs().sum()), 0)   # the soft term moves the soft head, not the normal policy head
         self.assertIsNone(gp)
 
+    @staticmethod
+    def compactify(c):
+        """The compact form of a chunk (as take_samples gives it with --compact-samples): each run's distinct tokens
+        once (order of first use), samples refer to them by index."""
+        nt = np.diff(c["tok_off"])
+        S = len(nt)
+        rows = np.concatenate([c["tok_type"].astype(np.int16)[:, None].view(np.uint16), c["ids"].view(np.uint16),
+                               c["f"].view(np.uint16)], 1)
+        tt, ids, f, idx, base = [], [], [], [], np.zeros(S, np.int64)
+        n_dict, i = 0, 0
+        while i < S:
+            j = i
+            while j < S and c["run"][j] == c["run"][i]:
+                j += 1
+            lo, hi = c["tok_off"][i], c["tok_off"][j]
+            seen = {}
+            for t in range(lo, hi):
+                seen.setdefault(rows[t].tobytes(), len(seen))
+            order = sorted(seen, key=seen.get)
+            first = [lo + next(t - lo for t in range(lo, hi) if rows[t].tobytes() == k) for k in order]
+            tt.append(c["tok_type"][first]); ids.append(c["ids"][first]); f.append(c["f"][first])
+            idx.append(np.array([seen[rows[t].tobytes()] for t in range(lo, hi)], np.uint16))
+            base[i:j] = n_dict
+            n_dict += len(order)
+            i = j
+        out = dict(c, tok_type=np.concatenate(tt), ids=np.concatenate(ids), f=np.concatenate(f),
+                   tok_idx=np.concatenate(idx), tok_base=base)
+        return out
+
+    def test_compact_same_batches(self):
+        """--compact-samples: a compact Replay fed compact chunks (run dictionaries + indices) returns exactly the
+        batches of a plain one fed the copied chunks; Replay.expand_chunk undoes compactify; a plain Replay takes
+        compact chunks (expanded) and a compact one copied chunks; with a small dictionary ring every live sample
+        still reads its own tokens; the compact window takes less memory."""
+        sp = load()
+        rng = np.random.default_rng(6)
+        plain = sp.Replay(300, tokens_per_sample=48, actions_per_sample=12)
+        comp = sp.Replay(300, tokens_per_sample=48, actions_per_sample=12, compact=True, dict_tokens_per_sample=48)
+        tight = sp.Replay(300, tokens_per_sample=24, actions_per_sample=12, compact=True, dict_tokens_per_sample=4)
+        mixed = sp.Replay(300, tokens_per_sample=48, actions_per_sample=12)   # gets compact chunks
+        mixed2 = sp.Replay(300, tokens_per_sample=48, actions_per_sample=12, compact=True, dict_tokens_per_sample=48)
+        flat, first = [], 0
+        for _ in range(10):
+            S = int(rng.integers(20, 60))
+            c = chunk(rng, S, first)
+            c["run"] = (np.arange(S) // 5 + first).astype(np.uint64)
+            # Runs share tokens: every sample of a run repeats some of the run's first sample's tokens.
+            for i in range(S):
+                r0 = c["tok_off"][i - i % 5]
+                lo, hi = c["tok_off"][i], c["tok_off"][i + 1]
+                k = min(hi - lo, c["tok_off"][i - i % 5 + 1] - r0) // 2
+                for key in ("tok_type", "ids", "f"):
+                    c[key][lo:lo + k] = c[key][r0:r0 + k]
+            cc = self.compactify(c)
+            self.assertLess(len(cc["tok_type"]), len(c["tok_type"]))
+            back = sp.Replay.expand_chunk(cc)
+            for key in ("tok_type", "ids", "f"):
+                np.testing.assert_array_equal(back[key], c[key])
+            plain.add(c); comp.add(cc); tight.add(cc); mixed.add(cc); mixed2.add(c)
+            flat.append(c)
+            first += S
+        self.assertEqual(len(plain), len(comp))
+        self.assertEqual(len(plain), len(mixed))
+        self.assertEqual(len(plain), len(mixed2))
+        lo = plain.s_tail
+        a, b, m, m2 = (r.rows(lo, len(plain)) for r in (plain, comp, mixed, mixed2))
+        for key in a:
+            np.testing.assert_array_equal(a[key], b[key], key)
+            np.testing.assert_array_equal(a[key], m[key], key)
+            np.testing.assert_array_equal(a[key], m2[key], key)
+        # The tight window keeps fewer samples (dictionary ring full), each read exactly.
+        self.assertLess(len(tight), len(plain))
+        t = tight.rows(tight.s_tail, len(tight))
+        p = plain.rows(tight.s_tail, len(tight))
+        for key in t:
+            if key in p and p[key].shape == t[key].shape:
+                np.testing.assert_array_equal(p[key], t[key], key)
+        b1 = comp.sample(np.random.default_rng(9), 64, packed=True)
+        b0 = plain.sample(np.random.default_rng(9), 64, packed=True)
+        for key in b0:
+            np.testing.assert_array_equal(b0[key], b1[key], key)
+        big_p = sp.Replay(10000)
+        big_c = sp.Replay(10000, compact=True)
+        self.assertLess(big_c.nbytes(), 0.5 * big_p.nbytes())
+
     def test_policy_frac(self):
         sp = load()
         rng = np.random.default_rng(2)
@@ -561,6 +646,65 @@ class SelfplaySmoke(unittest.TestCase):
             a = torch.load(sorted(glob.glob(os.path.join(d, "ckpt_*.pt")), key=os.path.getmtime)[-1])["args"]
             self.assertTrue(a["chance_on_reveal"] and a["cross_combat"] and a["sim_help"])
             self.assertEqual(a["max_pending"], 0)
+
+    def test_compact_samples_run(self):
+        """--compact-samples with --max-pending 0: the driver hands out compact chunks (indices inside their run
+        dictionaries, a dictionary shared by many samples), the run plays, trains and reports the window's memory."""
+        sp = load()
+        import importlib
+        sys.path.insert(0, os.path.dirname(MODULES[0]))
+        nat = importlib.import_module("az_bench_native")
+        drv = nat.RunDriver(workers=1, games=2, seed_base=1950, max_runs=2, ascension=20, full_sims=8, fast_sims=4,
+                            full_candidates=4, fast_candidates=2, max_pending=0, sim_help=True,
+                            compact_samples=True)
+        R, T, A = 8, 212, 96
+        views = {"tok_type": np.zeros(R * T, np.int8), "ids": np.zeros(R * T * 4, np.int16),
+                 "f": np.zeros(R * T * 64, np.float16), "mask": np.zeros(R * T, np.bool_),
+                 "a_type": np.zeros(R * A, np.int16), "a_src": np.zeros(R * A, np.int16),
+                 "a_tgt": np.zeros(R * A, np.int16), "a_f": np.zeros(R * A * 8, np.float16),
+                 "a_mask": np.zeros(R * A, np.bool_)}
+        rng = np.random.default_rng(0)
+        chunks = []
+        drv.start()
+        try:
+            while drv.stats()["runs_done"] < 2:
+                got = drv.next_flat(R, 1, 5, [R], [T], [A], views)
+                if got is None:
+                    continue
+                ticket, rows, _, _, Ap = got
+                drv.submit(ticket, rng.normal(0, 1, (rows, Ap)).astype(np.float32), rng.random(rows).astype(np.float32),
+                           np.full(rows, 40, np.float32))
+                c = drv.take_samples()
+                if c is not None:
+                    chunks.append(c)
+        finally:
+            drv.stop()
+        c = drv.take_samples()
+        if c is not None:
+            chunks.append(c)
+        self.assertTrue(chunks)
+        for c in chunks:
+            self.assertIn("tok_idx", c)
+            nt = np.diff(c["tok_off"])
+            src = np.repeat(c["tok_base"], nt) + c["tok_idx"].astype(np.int64)
+            self.assertTrue((src < len(c["tok_type"])).all())
+            self.assertLess(len(c["tok_type"]), int(nt.sum()))   # tokens shared across a run's samples
+            self.assertEqual(len(c["ids"]), len(c["tok_type"]))
+            e = sp.Replay.expand_chunk(c)
+            self.assertEqual(len(e["tok_type"]), int(nt.sum()))
+        args = ["--module-dir", os.path.dirname(MODULES[0]), "--device", "cpu", "--workers", "2", "--games", "4",
+                "--full-sims", "8", "--fast-sims", "4", "--batch", "32", "--row-buckets", "32", "--pack-step", "32",
+                "--pack-threads", "1", "--min-replay", "50", "--train-batch", "32", "--window", "5000",
+                "--report", "1", "--sync-steps", "2", "--seed-base", "1960", "--max-runs", "8", "--test-max-hp", "900",
+                "--sim-help", "--max-pending", "0", "--compact-samples"]
+        with tempfile.TemporaryDirectory() as d:
+            self.assertEqual(sp.main(args + ["--out-dir", d]), 0)
+            with open(os.path.join(d, "metrics.jsonl")) as f:
+                last = [json.loads(l) for l in f][-1]
+            self.assertGreaterEqual(last["runs_done"], 8)
+            self.assertGreater(last["train_steps"], 0)
+            self.assertGreater(last["replay"], 0)
+            self.assertLess(last["replay_gb"], sp.Replay(5000, hp_floors=0).nbytes() / 2 ** 30)
 
     def test_savescum(self):
         """--savescum reaches the driver: runs play it and every checked search child equals the real next state; a

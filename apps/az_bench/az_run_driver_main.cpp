@@ -2,7 +2,7 @@
 // training samples (labels filled, policy a distribution over the sample's actions, action sources / targets inside
 // the row). Smoke test and CPU-side throughput probe.
 //
-// usage: az-run-driver [--workers 2] [--games 4] [--runs 8] [--batch 64] [--seed 0] [--seed-base 1] [--fast] [--asc 20] [--sims N] [--const-value] [--test-hp HP] [--max-fight-moves 400] [--explore-c C] [--explore-amber] [--pick-target T] [--no-fast-noise] [--q-rescale] [--c-scale S] [--utility floor-hp|amber] [--keyless-hp] [--chance-on-reveal] [--cross-combat] [--sim-help] [--max-pending N] [--force-keys] [--savescum]
+// usage: az-run-driver [--workers 2] [--games 4] [--runs 8] [--batch 64] [--seed 0] [--seed-base 1] [--fast] [--asc 20] [--sims N] [--const-value] [--test-hp HP] [--max-fight-moves 400] [--explore-c C] [--explore-amber] [--pick-target T] [--no-fast-noise] [--q-rescale] [--c-scale S] [--utility floor-hp|amber] [--keyless-hp] [--chance-on-reveal] [--cross-combat] [--sim-help] [--max-pending N] [--force-keys] [--savescum] [--compact-samples]
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -87,6 +87,7 @@ int main(int argc, char **argv) {
         else if (a == "--chance-on-reveal") cfg.chanceOnReveal = true;
         else if (a == "--cross-combat") cfg.crossCombat = true;
         else if (a == "--sim-help") cfg.simHelp = true;
+        else if (a == "--compact-samples") cfg.compactSamples = true;
         else if (a == "--max-pending") cfg.maxPendingSamples = std::stoll(next());
         else if (a == "--force-keys") cfg.forceKeys = true;
         else if (a == "--savescum") cfg.savescum = true;
@@ -143,10 +144,17 @@ int main(int argc, char **argv) {
 
     int bad = 0, withPolicy = 0, combat = 0;
     for (const auto &x : samples) {
-        const int n = static_cast<int>(x.tokType.size()), na = static_cast<int>(x.aType.size());
-        bool ok = x.outcome >= 0 && x.outcome < azbench::kOutcomeClasses && x.hpEnd >= 0 && n >= 1 && na >= 2 &&
-                  x.ids.size() == static_cast<std::size_t>(n) * search::kAmberCat &&
-                  x.f.size() == static_cast<std::size_t>(n) * search::kAmberFloat;
+        const int n = static_cast<int>(x.numTokens()), na = static_cast<int>(x.aType.size());
+        bool ok = x.outcome >= 0 && x.outcome < azbench::kOutcomeClasses && x.hpEnd >= 0 && n >= 1 && na >= 2;
+        if (cfg.compactSamples) {   // tokens only in the run's dictionary, every index inside it
+            ok = ok && x.dict && x.tokType.empty() && x.ids.empty() && x.f.empty();
+            for (int t = 0; ok && t < n; ++t) ok = x.tokIdx[t] < x.dict->size();
+            ok = ok && x.dict->ids.size() == x.dict->size() * search::kAmberCat &&
+                 x.dict->f.size() == x.dict->size() * search::kAmberFloat;
+        } else {
+            ok = ok && !x.dict && x.ids.size() == static_cast<std::size_t>(n) * search::kAmberCat &&
+                 x.f.size() == static_cast<std::size_t>(n) * search::kAmberFloat;
+        }
         for (int j = 0; j < na; ++j) ok = ok && x.aSrc[j] >= -1 && x.aSrc[j] < n && x.aTgt[j] >= -1 && x.aTgt[j] < n;
         // Per-floor HP labels (utility AMBER only): masked (-1) exactly before the sample's floor, >= 0 from it on,
         // the sample's own floor equal to its hp_end label, and 0 after a death's floor.

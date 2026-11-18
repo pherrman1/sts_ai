@@ -221,6 +221,13 @@ namespace sts::azbench {
         // At most evalCacheCap entries per run (the cache is emptied when full).
         bool evalCache = false;
         int evalCacheCap = 1024;
+        // Compact sample storage (2026-11-18, default off; Amber Eye: "we can still store the data efficiently by
+        // keeping a common dictionary of tokens which are referenced by index in replay buffer states. Most tokens,
+        // especially cards and relics, are shared between many different states"): a kept sample does not copy its
+        // tokens but refers by index (Sample::tokIdx) to its run's dictionary of distinct tokens (TokenDict), so
+        // samples that wait for their labels take a fraction of the memory and maxPendingSamples <= 0 (every full
+        // move trained on) fits. Lossless: Sample::expandToken gives back exactly the tokens of the copied layout.
+        bool compactSamples = false;
         // Heart-key backstops (2026-11-18, default off; Philipp-approved deviation from Amber Eye for the curriculum
         // phase): the ADR-0063 rules of search::heartKeyAction / heartKeyActionAllowed (RunGoal.h) restrict the
         // out-of-combat action lists, in the real runs and in the search tree. Sapphire: the Act-3 chest (row >= 8)
@@ -286,12 +293,37 @@ namespace sts::azbench {
         GameEncodeFn encodeGame = nullptr;       // default: search::amberEncodeGame (stubEncodeGame = placeholder)
     };
 
-    // One training sample: the searched position's live tokens and legal actions (flat layout of one row, as
-    // packFlat writes it), the improved policy over its actions (full moves), and its labels.
-    struct Sample {
+    // RunConfig::compactSamples: the distinct tokens of one run (flat layout, as Sample's copied tokens), in order
+    // of first use. Written only by the run's worker while the run plays; read once the run's samples are done.
+    struct TokenDict {
+        static constexpr std::size_t kMax = 65535;   // tokIdx is 16 bit: a run past this starts a new dictionary
         std::vector<std::int8_t> tokType;
         std::vector<std::int16_t> ids;       // [n][4]
         std::vector<std::uint16_t> f;        // [n][64] float16 bits
+        std::size_t size() const { return tokType.size(); }
+    };
+
+    // One training sample: the searched position's live tokens and legal actions (flat layout of one row, as
+    // packFlat writes it), the improved policy over its actions (full moves), and its labels.
+    struct Sample {
+        // Tokens, copied (tokType / ids / f) or, RunConfig::compactSamples, as indices into the run's dictionary
+        // (dict / tokIdx; tokType / ids / f then empty). numTokens / expandToken read either form.
+        std::vector<std::int8_t> tokType;
+        std::vector<std::int16_t> ids;       // [n][4]
+        std::vector<std::uint16_t> f;        // [n][64] float16 bits
+        std::shared_ptr<const TokenDict> dict;
+        std::vector<std::uint16_t> tokIdx;   // [n] position in *dict
+        std::size_t numTokens() const { return dict ? tokIdx.size() : tokType.size(); }
+        // Token t in the copied layout: type, ids [4], f [64].
+        void expandToken(std::size_t t, std::int8_t &type, const std::int16_t *&id, const std::uint16_t *&fv) const {
+            const std::size_t k = dict ? tokIdx[t] : t;
+            const auto &tt = dict ? dict->tokType : tokType;
+            const auto &ii = dict ? dict->ids : ids;
+            const auto &ff = dict ? dict->f : f;
+            type = tt[k];
+            id = ii.data() + k * search::kAmberCat;
+            fv = ff.data() + k * search::kAmberFloat;
+        }
         std::vector<std::int16_t> aType, aSrc, aTgt;
         std::vector<std::uint16_t> aF;       // [a][8]
         std::vector<float> policy;           // [a] improved policy (empty for a fast move)
