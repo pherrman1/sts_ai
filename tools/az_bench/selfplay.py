@@ -102,24 +102,34 @@ class Replay:
     the sample, token or action capacity would overflow. Thread-safe (one lock).
 
     compact=True (--compact-samples; Amber Eye: "keeping a common dictionary of tokens which are referenced by index
-    in replay buffer states"): the token ring holds each run's dictionary of distinct tokens (dict_tokens_per_sample
-    slots per sample of capacity) and an index ring (tokens_per_sample uint16 per sample) holds each sample's tokens
-    as positions in its run's dictionary; a sample is evicted once its dictionary's first token is overwritten.
-    Batches are the same as without it (the indices are resolved in _gather)."""
+    in replay buffer states. Most tokens, especially cards and relics, are shared between many different states"):
+    one dictionary of distinct tokens for the whole window (token_store, the native TokenStore class: slots with
+    reference counts, dict_tokens_per_sample slots per window sample) and an index ring (tokens_per_sample int32 per
+    sample) holding each sample's tokens as dictionary slots. An evicted sample releases its references; a token no
+    live sample uses frees its slot. When a chunk needs more free slots than there are, the oldest samples are
+    evicted first. Batches are the same as without it (the slots are resolved in _gather)."""
 
     def __init__(self, samples, tokens_per_sample=48, actions_per_sample=12, hp_floors=0, soft_outcome=False,
-                 compact=False, dict_tokens_per_sample=8):
+                 compact=False, dict_tokens_per_sample=8, token_store=None):
         self.cs = samples
         self.compact = compact
-        self.ct = samples * (dict_tokens_per_sample if compact else tokens_per_sample)
         self.ci = samples * tokens_per_sample if compact else 0
-        self.tok_idx = np.zeros(self.ci, np.uint16)   # compact: index ring
+        self.tok_idx = np.zeros(self.ci, np.int32)   # compact: index ring (dictionary slots)
         self.idx_start = np.zeros(self.cs if compact else 0, np.int64)
         self.i_head = 0
         self.ca = samples * actions_per_sample
-        self.tok_type = np.zeros(self.ct, np.int8)
-        self.ids = np.zeros((self.ct, N_CAT), np.int16)
-        self.f = np.zeros((self.ct, N_FLOAT), np.float16)
+        if compact:
+            if token_store is None:
+                raise ValueError("replay: compact needs token_store (az_bench_native.TokenStore)")
+            self.store = token_store(samples * dict_tokens_per_sample)
+            self.tok_type, self.ids, self.f = self.store.views()
+            self.ct = self.store.capacity
+        else:
+            self.store = None
+            self.ct = samples * tokens_per_sample
+            self.tok_type = np.zeros(self.ct, np.int8)
+            self.ids = np.zeros((self.ct, N_CAT), np.int16)
+            self.f = np.zeros((self.ct, N_FLOAT), np.float16)
         self.a_type = np.zeros(self.ca, np.int16)
         self.a_src = np.zeros(self.ca, np.int16)
         self.a_tgt = np.zeros(self.ca, np.int16)
@@ -146,12 +156,13 @@ class Replay:
 
     def nbytes(self):
         """Memory of the window's arrays (allocated up front, so the same however full it is)."""
-        arrs = [self.tok_type, self.ids, self.f, self.a_type, self.a_src, self.a_tgt, self.a_f, self.policy,
+        arrs = [self.a_type, self.a_src, self.a_tgt, self.a_f, self.policy,
                 self.tok_start, self.ntok, self.act_start, self.nact, self.tok_idx, self.idx_start,
                 *self.meta.values()]
+        arrs += [] if self.compact else [self.tok_type, self.ids, self.f]
         if self.soft_outcome is not None:
             arrs.append(self.soft_outcome)
-        return sum(a.nbytes for a in arrs)
+        return sum(a.nbytes for a in arrs) + (self.store.nbytes if self.compact else 0)
 
     @staticmethod
     def _put(ring, start, values):
@@ -175,17 +186,65 @@ class Replay:
             out[key] = np.asarray(s[key])[src]
         return out
 
-    def add(self, s):
+    def _evict(self, m):
+        """Compact: evicts the m oldest samples, releasing their dictionary references (caller holds the lock)."""
+        if m <= 0:
+            return
+        j = (self.s_tail + np.arange(m)) % self.cs
+        nt = self.ntok[j].astype(np.int64)
+        cols = np.arange(int(nt.sum())) - np.repeat(np.cumsum(nt) - nt, nt)
+        self.store.release(self.tok_idx[(np.repeat(self.idx_start[j], nt) + cols) % self.ci])
+        self.s_tail += m
+
+    def _add_compact(self, s):
         S = len(s["outcome"])
-        if self.compact and "tok_idx" not in s:   # copied chunk: every sample its own dictionary
+        if "tok_idx" not in s:   # copied chunk: each sample's tokens as its own rows
             s = dict(s, tok_idx=np.arange(int(s["tok_off"][-1])) - np.repeat(s["tok_off"][:-1], np.diff(s["tok_off"])),
                      tok_base=np.asarray(s["tok_off"][:-1], np.int64))
-        elif not self.compact:
-            s = self.expand_chunk(s)
         nt = np.diff(s["tok_off"]).astype(np.int32)
         na = np.diff(s["act_off"]).astype(np.int32)
-        ntok = len(s["tok_type"])   # tokens written to the token ring (compact: the dictionaries)
-        if ntok > self.ct or na.sum() > self.ca or S > self.cs or (self.compact and nt.sum() > self.ci):
+        n_ref, n_act = int(nt.sum()), int(na.sum())
+        if n_ref > self.ci or n_act > self.ca or S > self.cs:
+            raise ValueError("replay: one take_samples chunk larger than the window")
+        rows = np.repeat(np.asarray(s["tok_base"], np.int64), nt) + np.asarray(s["tok_idx"], np.int64)
+        tt = np.ascontiguousarray(s["tok_type"], np.int8)
+        ids = np.ascontiguousarray(s["ids"], np.int16)
+        f16 = np.ascontiguousarray(s["f"], np.float16).view(np.uint16)
+        counts = np.bincount(rows, minlength=len(tt)).astype(np.int64)
+        with self.lock:
+            # Room in the sample, index and action rings: the oldest samples whose rows the chunk overwrites go.
+            live = self.s_head - self.s_tail
+            if live:
+                j = (self.s_tail + np.arange(live)) % self.cs
+                ok = ((self.idx_start[j] >= self.i_head + n_ref - self.ci)
+                      & (self.act_start[j] >= self.a_head + n_act - self.ca))
+                k = int(np.argmax(ok)) if ok.any() else live
+                self._evict(max(k, live + S - self.cs))
+            # Room in the dictionary: the oldest samples go until the chunk's new tokens fit.
+            new = self.store.count_new(tt, ids, f16, counts) + 16   # margin: count_new may undercount by a collision
+            while self.store.free < new and len(self):
+                self._evict(min(len(self), max(S, len(self) // 32)))
+            if self.store.free < new - 16:
+                raise ValueError("replay: one take_samples chunk has more distinct tokens than the dictionary")
+            slots = self.store.intern(tt, ids, f16, counts)
+            for ring, key in ((self.a_type, "a_type"), (self.a_src, "a_src"), (self.a_tgt, "a_tgt"),
+                              (self.a_f, "a_f"), (self.policy, "policy")):
+                self._put(ring, self.a_head, s[key])
+            a0, i0 = self.a_head, self.i_head
+            self.a_head += n_act
+            self._put(self.tok_idx, i0, slots[rows])
+            self.i_head += n_ref
+            self._put(self.idx_start, self.s_head, i0 + s["tok_off"][:-1])
+            return self._add_meta(s, S, nt, na, a0)
+
+    def add(self, s):
+        if self.compact:
+            return self._add_compact(s)
+        S = len(s["outcome"])
+        s = self.expand_chunk(s)
+        nt = np.diff(s["tok_off"]).astype(np.int32)
+        na = np.diff(s["act_off"]).astype(np.int32)
+        if nt.sum() > self.ct or na.sum() > self.ca or S > self.cs:
             raise ValueError("replay: one take_samples chunk larger than the window")
         with self.lock:
             t0, a0 = self.t_head, self.a_head
@@ -194,16 +253,14 @@ class Replay:
             for ring, key in ((self.a_type, "a_type"), (self.a_src, "a_src"), (self.a_tgt, "a_tgt"),
                               (self.a_f, "a_f"), (self.policy, "policy")):
                 self._put(ring, a0, s[key])
-            self.t_head += ntok
+            self.t_head += int(nt.sum())
             self.a_head += int(na.sum())
-            if self.compact:
-                i0 = self.i_head
-                self._put(self.tok_idx, i0, np.asarray(s["tok_idx"], np.uint16))
-                self.i_head += int(nt.sum())
-                self._put(self.tok_start, self.s_head, t0 + np.asarray(s["tok_base"], np.int64))
-                self._put(self.idx_start, self.s_head, i0 + s["tok_off"][:-1])
-            else:
-                self._put(self.tok_start, self.s_head, t0 + s["tok_off"][:-1])
+            self._put(self.tok_start, self.s_head, t0 + s["tok_off"][:-1])
+            return self._add_meta(s, S, nt, na, a0)
+
+    def _add_meta(self, s, S, nt, na, a0):
+        """The per-sample rows of a chunk and the eviction of overwritten samples (caller holds the lock)."""
+        if True:
             self._put(self.ntok, self.s_head, nt)
             self._put(self.act_start, self.s_head, a0 + s["act_off"][:-1])
             self._put(self.nact, self.s_head, na)
@@ -216,12 +273,11 @@ class Replay:
                 self._put(self.soft_outcome, first, oh)
             self.s_head += S
             self.added += S
-            # Evict the oldest samples whose rows were overwritten (or that exceed the sample capacity).
-            while self.s_head - self.s_tail > self.cs or (
+            # Evict the oldest samples whose rows were overwritten (or that exceed the sample capacity); compact
+            # evicted before writing (references released).
+            while not self.compact and (self.s_head - self.s_tail > self.cs or (
                     self.s_tail < self.s_head and (self.tok_start[self.s_tail % self.cs] < self.t_head - self.ct
-                                                   or self.act_start[self.s_tail % self.cs] < self.a_head - self.ca
-                                                   or (self.compact and self.idx_start[self.s_tail % self.cs]
-                                                       < self.i_head - self.ci))):
+                                                   or self.act_start[self.s_tail % self.cs] < self.a_head - self.ca))):
                 self.s_tail += 1
         return first
 
@@ -273,8 +329,7 @@ class Replay:
         rows_t = np.repeat(np.arange(B), nt)
         cols_t = np.arange(int(nt.sum())) - np.repeat(np.cumsum(nt) - nt, nt)
         if self.compact:
-            pos = self.tok_idx[(np.repeat(self.idx_start[j], nt) + cols_t) % self.ci].astype(np.int64)
-            src_t = (np.repeat(self.tok_start[j], nt) + pos) % self.ct
+            src_t = self.tok_idx[(np.repeat(self.idx_start[j], nt) + cols_t) % self.ci].astype(np.int64)
         else:
             src_t = (np.repeat(self.tok_start[j], nt) + cols_t) % self.ct
         rows_a = np.repeat(np.arange(B), na)
@@ -514,8 +569,8 @@ def main(argv=None):
                          "run's distinct tokens once and refer to them by index (same training data, a fraction of "
                          "the memory; lets --max-pending 0 fit)")
     ap.add_argument("--replay-dict-tokens", type=int, default=8,
-                    help="--compact-samples: dictionary token slots per window sample (too few evicts early: "
-                         "the metric replay then stays below --window)")
+                    help="--compact-samples: slots of the window's token dictionary per window sample (too few "
+                         "evicts early: the metric replay then stays below --window; replay_dict_used shows the use)")
     ap.add_argument("--explore-c", type=float, default=0.0, help="pick-rate exploration strength (0 = off)")
     ap.add_argument("--pick-target", type=float, default=0.01, help="pick-rate target per item and run")
     ap.add_argument("--explore-amber", action="store_true",
@@ -727,7 +782,8 @@ def main(argv=None):
         print(f"# force-keys {args.force_keys}: {'on until the first curriculum step-up' if force_keys else 'off (the curriculum already stepped up)'}",
               flush=True)
     replay = Replay(args.window, hp_floors=56 if amber else 0, soft_outcome=ema_lam > 0,
-                    compact=args.compact_samples, dict_tokens_per_sample=args.replay_dict_tokens)
+                    compact=args.compact_samples, dict_tokens_per_sample=args.replay_dict_tokens,
+                    token_store=az_bench_native.TokenStore if args.compact_samples else None)
     ema_stats = {"samples": 0, "real_weight": 0.0}   # mean weight of the final outcome in the EMA targets
     stop = threading.Event()
     errors = []
@@ -1078,7 +1134,8 @@ def main(argv=None):
                 "mean_floor_window": round((s["floors_sum"] - last_floors) / max(1, d_runs), 2),
                 "wins_total": s["wins"],
                 "death_floors_window": {int(k): int(v) for k, v in enumerate(d_oc) if v and k},
-                "samples_added": replay.added, "replay": len(replay), "replay_gb": round(replay.nbytes() / 2 ** 30, 3), "train_steps": counters["step"],
+                "samples_added": replay.added, "replay": len(replay), "replay_gb": round(replay.nbytes() / 2 ** 30, 3),
+                **({"replay_dict_used": replay.store.used} if replay.compact else {}), "train_steps": counters["step"],
                 "trained_samples": counters["trained"], "loss": lavg, "syncs": infer_stats["syncs"],
                 "stalls": s["stalls"], "unsupported": s["unsupported"], "knowledge_failures": s["knowledge_failures"], "invalid_actions": s["invalid_actions"], "encode_cut": s["encode_cut"], "encode_cut_ooc": s["encode_cut_ooc"],
                 "samples_pending": s["samples_pending"], "rss_gb": rss_gb(),

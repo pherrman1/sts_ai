@@ -17,6 +17,7 @@
 
 #include "az_driver.h"
 #include "az_run_driver.h"
+#include "az_token_store.h"
 #include "sim/search/SilverWireJson.h"
 #include "sim/search/SilverWireState.h"
 
@@ -195,6 +196,66 @@ PYBIND11_MODULE(az_bench_native, m) {
             o["pack_s"] = s.packSeconds;
             return o;
         });
+
+    // Global token dictionary of the replay window (selfplay.py --compact-samples, az_token_store.h). Rows are
+    // tok_type [n] int8, ids [n, 4] int16, f [n, 64] float16, counts [n] int64 (references to add).
+    py::class_<azbench::TokenStore>(m, "TokenStore")
+        .def(py::init<std::int64_t>(), py::arg("capacity"))
+        .def_property_readonly("capacity", &azbench::TokenStore::capacity)
+        .def_property_readonly("free", &azbench::TokenStore::freeSlots)
+        .def_property_readonly("used", &azbench::TokenStore::used)
+        .def_property_readonly("nbytes", &azbench::TokenStore::bytes)
+        .def("count_new",
+             [](const azbench::TokenStore &st, py::array_t<std::int8_t, py::array::c_style | py::array::forcecast> t,
+                py::array_t<std::int16_t, py::array::c_style | py::array::forcecast> ids,
+                py::array_t<std::uint16_t, py::array::c_style> f,
+                py::array_t<std::int64_t, py::array::c_style | py::array::forcecast> counts) {
+                 const auto n = static_cast<std::size_t>(t.shape(0));
+                 if (ids.size() != static_cast<py::ssize_t>(n * 4) || f.size() != static_cast<py::ssize_t>(n * 64) ||
+                     counts.size() != static_cast<py::ssize_t>(n))
+                     throw std::invalid_argument("TokenStore.count_new: shapes");
+                 py::gil_scoped_release r;
+                 return st.countNew(n, t.data(), ids.data(), f.data(), counts.data());
+             })
+        .def("intern",
+             [](azbench::TokenStore &st, py::array_t<std::int8_t, py::array::c_style | py::array::forcecast> t,
+                py::array_t<std::int16_t, py::array::c_style | py::array::forcecast> ids,
+                py::array_t<std::uint16_t, py::array::c_style> f,
+                py::array_t<std::int64_t, py::array::c_style | py::array::forcecast> counts) {
+                 const auto n = static_cast<std::size_t>(t.shape(0));
+                 if (ids.size() != static_cast<py::ssize_t>(n * 4) || f.size() != static_cast<py::ssize_t>(n * 64) ||
+                     counts.size() != static_cast<py::ssize_t>(n))
+                     throw std::invalid_argument("TokenStore.intern: shapes");
+                 py::array_t<std::int32_t> slots(static_cast<py::ssize_t>(n));
+                 {
+                     py::gil_scoped_release r;
+                     st.intern(n, t.data(), ids.data(), f.data(), counts.data(), slots.mutable_data());
+                 }
+                 return slots;
+             })
+        .def("release",
+             [](azbench::TokenStore &st, py::array_t<std::int32_t, py::array::c_style | py::array::forcecast> slots) {
+                 py::gil_scoped_release r;
+                 st.release(static_cast<std::size_t>(slots.size()), slots.data());
+             })
+        .def("refs",
+             [](py::object self) {
+                 auto &st = self.cast<azbench::TokenStore &>();
+                 return py::array_t<std::int64_t>({static_cast<py::ssize_t>(st.capacity())}, {sizeof(std::int64_t)},
+                                                  st.refs(), self);
+             })
+        .def("views",
+             [](py::object self) {
+                 // tok_type [cap], ids [cap, 4], f [cap, 64] float16: views into the store (valid while it lives).
+                 auto &st = self.cast<azbench::TokenStore &>();
+                 const auto cap = static_cast<py::ssize_t>(st.capacity());
+                 py::array_t<std::int8_t> t({cap}, {static_cast<py::ssize_t>(1)}, st.tokType(), self);
+                 py::array_t<std::int16_t> ids({cap, static_cast<py::ssize_t>(4)},
+                                               {static_cast<py::ssize_t>(8), static_cast<py::ssize_t>(2)}, st.ids(), self);
+                 py::array_t<std::uint16_t> f({cap, static_cast<py::ssize_t>(64)},
+                                              {static_cast<py::ssize_t>(128), static_cast<py::ssize_t>(2)}, st.f(), self);
+                 return py::make_tuple(t, ids, f.attr("view")("float16"));
+             });
 
     py::class_<azbench::RunDriver>(m, "RunDriver")
         .def(py::init([](int workers, int games, std::uint64_t seedBase, std::int64_t maxRuns, int ascension,
