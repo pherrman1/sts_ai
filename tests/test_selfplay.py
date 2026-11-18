@@ -287,6 +287,50 @@ class ReplayTest(unittest.TestCase):
         self.assertLess(big_c.nbytes(), 0.5 * big_p.nbytes())
 
     @unittest.skipUnless(MODULES, "az_bench_native not built")
+    def test_compact_eviction_fuzz(self):
+        """Compact Replay with a small dictionary and tokens drawn from a small pool (heavy sharing across chunks,
+        so evicting old samples frees tokens the incoming chunk uses): every add either fits or, only for a chunk
+        with more distinct tokens than the whole dictionary, raises ValueError; reference counts stay equal to the
+        live samples' references and every live sample reads its own tokens."""
+        sp = load()
+        TS = native().TokenStore
+        for seed in range(12):   # seeds 1, 6, 7, 9, 11 hit the stale count_new of the first global version
+            rng = np.random.default_rng(seed)
+            cs, per = int(rng.integers(40, 200)), int(rng.integers(1, 4))
+            pool = int(rng.integers(cs * per // 2, cs * per * 2))   # about the dictionary's size
+            ptt = rng.integers(0, 9, pool).astype(np.int8)
+            pids = rng.integers(0, 50, (pool, 4)).astype(np.int16)
+            pf = rng.normal(0, 1, (pool, 64)).astype(np.float16)
+            rep = sp.Replay(cs, tokens_per_sample=24, actions_per_sample=12, compact=True,
+                            dict_tokens_per_sample=per, token_store=TS)
+            plain = sp.Replay(4000, tokens_per_sample=24, actions_per_sample=12)   # every sample, for the check
+            first = 0
+            for _ in range(40):
+                S = int(rng.integers(5, 40))
+                c = chunk(rng, S, first)
+                k = rng.integers(0, pool, len(c["tok_type"]))
+                c["tok_type"], c["ids"], c["f"] = ptt[k], pids[k], pf[k]
+                c["run"] = (np.arange(S) // 4 + first).astype(np.uint64)
+                cc = self.compactify(c)
+                try:
+                    rep.add(cc)
+                except ValueError:
+                    self.assertGreater(len(np.unique(k)), rep.store.capacity - 16)
+                    break
+                plain.add(c)
+                first += S
+                live = (rep.s_tail + np.arange(len(rep))) % rep.cs
+                nt = rep.ntok[live].astype(np.int64)
+                cols = np.arange(int(nt.sum())) - np.repeat(np.cumsum(nt) - nt, nt)
+                refs = rep.tok_idx[(np.repeat(rep.idx_start[live], nt) + cols) % rep.ci]
+                np.testing.assert_array_equal(rep.store.refs(), np.bincount(refs, minlength=rep.store.capacity))
+                if len(rep):
+                    got = rep.rows(rep.s_tail, len(rep))
+                    want = plain.rows(rep.s_tail, len(rep))
+                    for key in ("tok_type", "ids", "f", "mask", "a_type", "outcome"):
+                        np.testing.assert_array_equal(got[key], want[key], key)
+
+    @unittest.skipUnless(MODULES, "az_bench_native not built")
     def test_token_store(self):
         """TokenStore (the global dictionary): random intern / release against a model. Equal tokens share a slot
         while referenced, reference counts and used slots match, released slots are reused, a full store throws and

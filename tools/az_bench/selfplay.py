@@ -221,9 +221,12 @@ class Replay:
                 k = int(np.argmax(ok)) if ok.any() else live
                 self._evict(max(k, live + S - self.cs))
             # Room in the dictionary: the oldest samples go until the chunk's new tokens fit.
-            new = self.store.count_new(tt, ids, f16, counts) + 16   # margin: count_new may undercount by a collision
+            # count_new is recomputed after each eviction: an evicted sample can free a token this chunk uses, which
+            # it then needs a slot for. Margin 16: count_new may undercount by a hash collision inside the chunk.
+            new = self.store.count_new(tt, ids, f16, counts) + 16
             while self.store.free < new and len(self):
                 self._evict(min(len(self), max(S, len(self) // 32)))
+                new = self.store.count_new(tt, ids, f16, counts) + 16
             if self.store.free < new - 16:
                 raise ValueError("replay: one take_samples chunk has more distinct tokens than the dictionary")
             slots = self.store.intern(tt, ids, f16, counts)
