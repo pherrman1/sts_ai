@@ -8,6 +8,7 @@ import glob
 import importlib.util
 import json
 import os
+import sys
 import tempfile
 import unittest
 
@@ -491,6 +492,30 @@ class SelfplaySmoke(unittest.TestCase):
             a = torch.load(ck)["args"]
             self.assertTrue(a["no_fast_noise"] and a["q_rescale"])
             self.assertEqual(a["c_scale"], 0.1)
+
+    def test_candidate_flags(self):
+        """--full-candidates / --fast-candidates reach RunDriver (defaults 16 / 4 when not given)."""
+        sp = load()
+        args = ["--module-dir", os.path.dirname(MODULES[0]), "--device", "cpu", "--workers", "1", "--games", "2",
+                "--full-sims", "8", "--fast-sims", "4", "--batch", "32", "--row-buckets", "32", "--pack-step", "32",
+                "--pack-threads", "1", "--min-replay", "50", "--train-batch", "32", "--window", "5000",
+                "--report", "1", "--sync-steps", "2", "--seed-base", "710", "--max-runs", "2"]
+        sys.path.insert(0, os.path.dirname(MODULES[0]))
+        import az_bench_native
+        real, seen = az_bench_native.RunDriver, []
+
+        def spy(*a, **kw):
+            seen.append(kw)
+            return real(*a, **kw)
+        az_bench_native.RunDriver = spy
+        try:
+            for extra, want in (([], (16, 4)), (["--full-candidates", "8", "--fast-candidates", "2"], (8, 2))):
+                seen.clear()
+                with tempfile.TemporaryDirectory() as d:
+                    self.assertEqual(sp.main(args + extra + ["--out-dir", d]), 0)
+                self.assertEqual((seen[0]["full_candidates"], seen[0]["fast_candidates"]), want)
+        finally:
+            az_bench_native.RunDriver = real
 
     def test_amber_search_flags(self):
         """--chance-on-reveal / --cross-combat / --sim-help / --max-pending 0 reach the driver, play and train; the
