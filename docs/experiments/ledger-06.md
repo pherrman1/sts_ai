@@ -28099,3 +28099,24 @@ reports ~800k on an 8c/16t CPU with a hand-written kernel. Larger nets fall belo
 **Decision:** GO for stage 1 by the preregistered rule (Philipp's call: which net size, local or rented GPU). The
 bench stays research-only.
 **Knowledge impact:** none yet (KB page when stage 1 starts).
+
+## §818 — Whole-net Triton kernel for Stage 1 inference (`--fused-net`, PR #1094): correct on the GPU but slower than the compiled three-kernel path, best 272k vs 331k pos/s (0.82×), MFU 14.5 % vs 17.6 % (PC, 2026-11-18)
+
+**Question (Philipp 2026-11-17 22:36 CET, "Können wir unseren eigenen Kernel schreiben?", replicate Amber Eye):** does
+one kernel per batch for the whole 0.44M AmberNet (input embedding, 6 layers, summary, value heads, policy), as Amber
+Eye describes its GPU side (FP16 weights in L2, ~75 % MFU after discounting padded attention), beat the current
+inference path?
+**Data:** [RESULTS](evidence/fused_net_20261118/RESULTS.md). Code: `tools/az_bench/fused_net.py`, bench
+`tools/az_bench/fused_net_bench.py`, tests `tests/test_fused_net.py`; synthetic batches, random weights, no game seeds.
+**Result:** GPU correctness 8/8 tests; outputs within 1.2e-3 of the fp32 net and of the baseline. Speed at 2048 rows,
+26 tokens per row: default tile 64 / 8 warps 228k pos/s (0.69×), best sweep setting tile 64 / 4 warps 272k (0.82×)
+against 330.7k for the compiled `forward_packed` with the stage 0 kernels. Tiles fill 76 % (whole rows per 64-token
+tile); every configuration spills registers (255 per thread, one CTA per SM).
+**Interpretation (Inference):** a Triton program that keeps a whole 64-token tile through six layers is register
+bound on sm_86 (residual, scores, Q/K/V and GEMM operands live at once), so occupancy and spills cost more than the
+saved launches and activation traffic; Amber Eye's kernel is likely hand-written CUDA with explicit shared-memory
+staging. Tile fill (76 %) and the host tiling (1.2 ms per batch) also count against it.
+**Decision:** NOT_FASTER. `--fused-net` stays default off and is not used in the Stage 1 run; default warps set to 4.
+Next options (not started): per-layer persistent CTAs with smaller register tiles, or a CUDA kernel with explicit
+shared-memory staging.
+**Knowledge impact:** this entry; `tools/az_bench/README.md`.

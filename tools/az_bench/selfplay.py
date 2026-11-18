@@ -69,6 +69,7 @@ usage: selfplay.py --module-dir BUILD_DIR --out-dir DIR --seed-base N [--hours 2
 """
 
 import argparse
+import collections
 import contextlib
 import copy
 import importlib.util
@@ -464,6 +465,13 @@ def main(argv=None):
     ap.add_argument("--pack-threads", type=int, default=4)
     ap.add_argument("--fused-layer", action="store_true", help="inference: stage 0's three-kernel layers (d <= 128)")
     ap.add_argument("--compile", action="store_true", help="inference: torch.compile")
+    ap.add_argument("--fused-net", action="store_true",
+                    help="inference: the whole net as one Triton kernel per batch (tools/az_bench/fused_net.py; same "
+                         "math, fp32 residual stream); needs --packed-h2d, not with --compile")
+    ap.add_argument("--gpu-timing", action="store_true",
+                    help="log GPU time per second of the inference forward and of the training steps (CUDA events on "
+                         "each thread's stream; the two streams run concurrently, so each figure is the busy time of "
+                         "its stream including time the other stream's kernels hold the GPU)")
     ap.add_argument("--packed-h2d", action="store_true",
                     help="inference: the driver packs only the live tokens (tok_type / ids / f [N], pack_idx, seq_off "
                          "from C++), so the host-to-GPU copy has no dead slots (needs --pack-step; same outputs)")
@@ -555,6 +563,12 @@ def main(argv=None):
             infer.fused_layer = amber_net.load_fused_layer()
         infer = infer.half()
     infer_dtype = torch.float16 if cuda else torch.float32
+    fused = None
+    if args.fused_net:
+        if not args.packed_h2d or args.compile:
+            ap.error("--fused-net needs --packed-h2d and excludes --compile")
+        fused = amber_net.load_kernel("fused_net")(infer)
+        fused_mod = sys.modules["az_bench_fused_net"]
     if args.compile:
         # Static shapes except the packed-token count N (pack_idx), marked dynamic per batch: otherwise every
         # (rows, tokens, actions, N) combination is its own graph and the cache limit is hit within minutes.
@@ -596,6 +610,7 @@ def main(argv=None):
     lossbox = dict({"n": 0}, **{k: 0.0 for k in loss_keys})
     lossbox_lock = threading.Lock()
     infer_stats = {"batches": 0, "rows": 0, "syncs": 0}
+    gpu_ms = {"infer": 0.0, "train": 0.0}   # --gpu-timing: cumulative stream busy time
 
     row_b = [int(v) for v in args.row_buckets.split(",") if int(v) <= args.batch] or [args.batch]
     if row_b[-1] < args.batch:
@@ -645,9 +660,11 @@ def main(argv=None):
         cur, pending = 0, None
 
         def finish(p):
-            ticket, rows, Ap, out, ev, version = p
+            ticket, rows, Ap, out, ev, version, ev0 = p
             if ev is not None:
                 ev.synchronize()
+                if ev0 is not None:
+                    gpu_ms["infer"] += ev0.elapsed_time(ev)
             drv.submit(ticket, out["logits"][:rows * Ap].numpy().reshape(rows, Ap), out["F"][:rows].numpy(),
                        out["ehp"][:rows].numpy(), out["hpf"][:rows * 56].numpy().reshape(rows, 56) if amber else None,
                        version, out["dist"][:rows * OUTCOME_CLASSES].numpy().reshape(rows, OUTCOME_CLASSES)
@@ -677,6 +694,8 @@ def main(argv=None):
                             if stream is not None:   # p_s came from the trainer's stream: keep it alive for this copy
                                 p_s.record_stream(stream)
                         infer_stats["syncs"] += 1
+                        if fused is not None:
+                            fused.refresh()   # the kernel's stacked weight copy, on this stream after the copy
                         # Evaluation cache: results of the old weights are not reused from now on.
                         drv.set_weights_version(infer_stats["syncs"])
                     M = Rp * Tp
@@ -702,8 +721,11 @@ def main(argv=None):
                             so = views["seq_off"]
                             so[0] = 0
                             np.cumsum(views["mask"][:M].reshape(Rp, Tp).sum(1), out=so[1:Rp + 1])
-                    if args.pack_step and infer.varlen_attn is not None:
+                    if args.pack_step and (infer.varlen_attn is not None or fused is not None):
                         shapes["seq_off"] = (Rp + 1,)
+                    if fused is not None:   # the kernel tiles rows by seq_off; it reads neither mask nor pack_idx
+                        shapes.pop("mask")
+                        shapes.pop("pack_idx", None)
                     # Host-to-GPU copies (on copy_stream when --copy-stream: the forward waits for them).
                     raw = {}
                     with (torch.cuda.stream(copy_stream) if copy_stream is not None else contextlib.nullcontext()):
@@ -715,8 +737,15 @@ def main(argv=None):
                         stream.wait_event(ev_c)
                         for t in raw.values():
                             t.record_stream(stream)
+                    ev0 = None
+                    if args.gpu_timing and stream is not None:
+                        ev0 = torch.cuda.Event(enable_timing=True)
+                        ev0.record(stream)
                     x = {}
                     for k, t in raw.items():
+                        if fused is not None:
+                            x[k] = t   # the kernel reads the driver's int8 / int16 / fp16 arrays as they are
+                            continue
                         if k in ("tok_type", "ids", "a_type", "a_src", "a_tgt", "pack_idx"):
                             t = t.long()
                         elif t.dtype == torch.float16:
@@ -727,7 +756,10 @@ def main(argv=None):
                         if args.packed_h2d:
                             for k in ("tok_type", "ids", "f"):
                                 torch._dynamo.mark_dynamic(x[k], 0)
-                    lg, outcome, hp, hpf = run(x)
+                    if fused is not None:
+                        lg, outcome, hp, hpf = fused(x, fused_mod.make_tiles(views["seq_off"], rows), rows)
+                    else:
+                        lg, outcome, hp, hpf = run(x)
                     Fv, ehp = search_values(outcome[:rows], hp[:rows])
                     out["logits"][:rows * Ap].view(rows, Ap).copy_(lg[:rows].float(), non_blocking=True)
                     out["F"][:rows].copy_(Fv, non_blocking=True)
@@ -739,9 +771,9 @@ def main(argv=None):
                             torch.softmax(outcome[:rows].float(), -1), non_blocking=True)
                     ev = None
                     if stream is not None:
-                        ev = torch.cuda.Event()
+                        ev = torch.cuda.Event(enable_timing=ev0 is not None)
                         ev.record(stream)
-                launched = (ticket, rows, Ap, out, ev, infer_stats["syncs"])
+                launched = (ticket, rows, Ap, out, ev, infer_stats["syncs"], ev0)
                 infer_stats["batches"] += 1
                 infer_stats["rows"] += rows
             if pending is not None:
@@ -759,6 +791,7 @@ def main(argv=None):
         amp = torch.autocast(dev.type, dtype=torch.bfloat16, enabled=cuda)
         train_net.train()
         last_run = [-1]
+        timing = collections.deque()   # --gpu-timing: (start, end) events of steps not yet finished on the GPU
         while not stop.is_set():
             ch = drv.take_samples(TAKE_CHUNK)   # whole runs only
             if ch is not None:
@@ -791,6 +824,12 @@ def main(argv=None):
             b = replay.sample(rng, args.train_batch, args.policy_frac, packed=args.train_packed)
             ctx = torch.cuda.stream(stream) if stream is not None else torch.no_grad()
             with ctx:
+                if args.gpu_timing and stream is not None:
+                    while timing and timing[0][1].query():
+                        e0, e1 = timing.popleft()
+                        gpu_ms["train"] += e0.elapsed_time(e1)
+                    e0 = torch.cuda.Event(enable_timing=True)
+                    e0.record(stream)
                 bt = to_torch(b, dev)
                 step = counters["step"]
                 lr = args.lr * min(1.0, (step + 1) / max(1, args.warmup_steps))
@@ -803,6 +842,10 @@ def main(argv=None):
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(train_net.parameters(), 1.0)
                 opt.step()
+                if args.gpu_timing and stream is not None:
+                    e1 = torch.cuda.Event(enable_timing=True)
+                    e1.record(stream)
+                    timing.append((e0, e1))
                 counters["step"] += 1
                 counters["trained"] += args.train_batch
                 with lossbox_lock:
@@ -844,6 +887,7 @@ def main(argv=None):
     last_runs = last_s["runs_done"]
     last_outcomes = np.array(last_s["outcomes"])
     last_floors = last_s["floors_sum"]
+    last_gpu = dict(gpu_ms)
     asc_hist = []   # (runs, wins) per report window at the current ascension (curriculum)
     print(f"# selfplay net {args.net} ({sum(p.numel() for p in train_net.parameters())} params) workers {args.workers} "
           f"games {args.games} seed_base {seed_base} out {args.out_dir}", flush=True)
@@ -912,6 +956,12 @@ def main(argv=None):
                 "tree_fight_starts": s["tree_fight_starts"], "tree_fight_exits": s["tree_fight_exits"],
                 "auto_gold": s["auto_gold"],   # --sim-help: reward gold taken automatically (real runs)
             }
+            if fused is not None:   # rows above the big tile that went through forward_packed (cumulative)
+                row["fused_long_rows"] = fused.long_rows
+            if args.gpu_timing:
+                # ms of GPU time per s of wall clock (1000 = that stream busy all the time)
+                row["gpu_ms_per_s"] = {k: round((v - last_gpu[k]) / dt, 1) for k, v in gpu_ms.items()}
+                last_gpu.update(gpu_ms)
             if args.explore_amber:   # forcing attempts, of which c = 0 / infinity; logged natural items, unplayed (0)
                 row["explore_amber"] = {k: s["explore_" + k] for k in
                                         ("attempts", "c_zero", "c_inf", "natural", "natural_unplayed")}

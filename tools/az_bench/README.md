@@ -33,3 +33,20 @@ python3 tools/az_bench/gpu_forward_bench.py --arch combat --arrays DIR        # 
 ```
 
 No game seeds are driven, so the seed guard does not apply.
+
+## Whole-net kernel (2026-11-17)
+
+`fused_net.py` runs the whole AmberNet forward (input embedding, all encoder layers, summary, value heads, policy over
+the legal actions) as one Triton kernel per batch, as Amber Eye describes its GPU side (FP16 weights in L2, one
+kernel, MFU counted after discounting padded attention). Consecutive rows are grouped into tiles of at most 64 tokens
+(longer rows: a 128-token launch; above that, rare, forward_packed on a sub-batch); attention runs padded within a
+tile. Same math as
+`AmberNet.forward_packed`, fp32 residual stream. `selfplay.py --packed-h2d --fused-net` uses it (default off);
+`--gpu-timing` logs GPU ms per second of the inference and training streams. PC check 2026-11-18 (ledger
+§818): correct, but 0.82× the compiled path at best (272k vs 331k pos/s), so it is not used.
+
+```
+TRITON_INTERPRET=1 python3 -m pytest tests/test_fused_net.py        # correctness on a CPU
+python3 tools/az_bench/fused_net_bench.py                            # GPU: fused vs. compiled forward_packed, MFU
+python3 tools/az_bench/fused_net_bench.py --sweep                    # tile / warp settings
+```
