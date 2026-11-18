@@ -929,6 +929,8 @@ namespace sts::azbench {
                 p.ruby = r; p.emerald = e; p.sapphire = sa; p.allKeys = r && e && sa;
                 p.act4 = g.gc.act == 4;
                 p.keylessVictories = g.gc.outcome == GameOutcome::PLAYER_VICTORY && g.gc.act != 4;
+                p.relicsSum = g.gc.relics.size();
+                p.deckSizeSum = g.gc.deck.size();
                 if (p.heart) {   // the Heart is the run's last fight, so g.bc still holds it
                     int hp = 0;
                     for (int m = 0; m < g.bc.monsters.monsterCount; ++m)

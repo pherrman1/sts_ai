@@ -316,6 +316,9 @@ namespace sts::azbench {
         static constexpr int kHeartHpBins = 16;
         std::array<std::int64_t, kHeartHpBins> heartHpHist{};
         std::int64_t heartHpSum = 0, heartEntryHpSum = 0, heartTurnsSum = 0;
+        // Relics held and cards in the deck at the run's end (2026-11-18, logging only), summed over finished runs
+        // (divide by runs).
+        std::int64_t relicsSum = 0, deckSizeSum = 0;
         RunProgress &operator+=(const RunProgress &o) {
             ruby += o.ruby; emerald += o.emerald; sapphire += o.sapphire; allKeys += o.allKeys;
             campfires += o.campfires; recallOffered += o.recallOffered;
@@ -324,6 +327,7 @@ namespace sts::azbench {
             keylessVictories += o.keylessVictories;
             for (int k = 0; k < kHeartHpBins; ++k) heartHpHist[k] += o.heartHpHist[k];
             heartHpSum += o.heartHpSum; heartEntryHpSum += o.heartEntryHpSum; heartTurnsSum += o.heartTurnsSum;
+            relicsSum += o.relicsSum; deckSizeSum += o.deckSizeSum;
             return *this;
         }
     };
