@@ -592,6 +592,7 @@ namespace sts::azbench {
             s.treeFightStarts += p.treeFightStarts; s.treeFightExits += p.treeFightExits; s.autoGold += p.autoGold;
             for (int k = 0; k < 3; ++k) s.forcedKeys[k] += p.forcedKeys[k];
             s.keyRouteMasked += p.keyRouteMasked;
+            if (p.heartHpMin >= 0 && (s.heartHpMin < 0 || p.heartHpMin < s.heartHpMin)) s.heartHpMin = p.heartHpMin;
             s.stepCpu += p.stepCpu; s.encodeCpu += p.encodeCpu; s.searchCpu += p.searchCpu;
         }
         s.batches = batches_.load();
@@ -869,6 +870,15 @@ namespace sts::azbench {
                 p.ruby = r; p.emerald = e; p.sapphire = sa; p.allKeys = r && e && sa;
                 p.act4 = g.gc.act == 4;
                 p.keylessVictories = g.gc.outcome == GameOutcome::PLAYER_VICTORY && g.gc.act != 4;
+                if (p.heart) {   // the Heart is the run's last fight, so g.bc still holds it
+                    int hp = 0;
+                    for (int m = 0; m < g.bc.monsters.monsterCount; ++m)
+                        if (g.bc.monsters.arr[m].id == MonsterId::CORRUPT_HEART) hp = std::max(0, g.bc.monsters.arr[m].curHp);
+                    ++p.heartHpHist[std::min(RunProgress::kHeartHpBins - 1, hp / 50)];
+                    p.heartHpSum = hp;
+                    p.heartTurnsSum = g.bc.turn;
+                    if (wk.st.heartHpMin < 0 || hp < wk.st.heartHpMin) wk.st.heartHpMin = hp;
+                }
                 wk.st.progressAsc[g.asc] += p;
             }
 
@@ -914,7 +924,10 @@ namespace sts::azbench {
                         g.gc.map->burningEliteY == g.gc.curMapNodeY)
                         ++g.progress.burningElites;
                 }
-                if (g.gc.info.encounter == MonsterEncounter::THE_HEART) g.progress.heart = 1;
+                if (g.gc.info.encounter == MonsterEncounter::THE_HEART) {
+                    g.progress.heart = 1;
+                    g.progress.heartEntryHpSum = g.gc.curHp;
+                }
                 initObservedBattle(g.gc, g.bc, *g.knowledge);
                 g.ctx = combatContext(g.gc);
                 if (cfg.crossCombat) g.fightOuter = std::make_shared<const GameContext>(search::detachedGameCopy(g.gc));

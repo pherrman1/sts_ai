@@ -283,12 +283,20 @@ namespace sts::azbench {
         std::int64_t act4 = 0;             // runs that entered Act 4
         std::int64_t heart = 0;            // runs that started the Heart fight
         std::int64_t keylessVictories = 0; // runs ended by the Act 3 boss without the three keys (floor 51)
+        // Heart fights (2026-11-18, logging only): the Heart's HP left when the fight ended (0 = killed) as a histogram
+        // of 50-HP bins (bin 15 = 750, A0 max HP), its sum, the player's HP entering the fight and the fight's turn
+        // count at its end; summed over runs that fought the Heart (divide by `heart`).
+        static constexpr int kHeartHpBins = 16;
+        std::array<std::int64_t, kHeartHpBins> heartHpHist{};
+        std::int64_t heartHpSum = 0, heartEntryHpSum = 0, heartTurnsSum = 0;
         RunProgress &operator+=(const RunProgress &o) {
             ruby += o.ruby; emerald += o.emerald; sapphire += o.sapphire; allKeys += o.allKeys;
             campfires += o.campfires; recallOffered += o.recallOffered;
             rest += o.rest; smith += o.smith; recall += o.recall; otherCampfire += o.otherCampfire;
             elites += o.elites; burningElites += o.burningElites; act4 += o.act4; heart += o.heart;
             keylessVictories += o.keylessVictories;
+            for (int k = 0; k < kHeartHpBins; ++k) heartHpHist[k] += o.heartHpHist[k];
+            heartHpSum += o.heartHpSum; heartEntryHpSum += o.heartEntryHpSum; heartTurnsSum += o.heartTurnsSum;
             return *this;
         }
     };
@@ -324,6 +332,7 @@ namespace sts::azbench {
         // (route edge / key taken)], and real Act-3 map decisions whose route the Emerald rule narrowed (still a choice).
         std::array<std::int64_t, 3> forcedKeys{};
         std::int64_t keyRouteMasked = 0;
+        std::int64_t heartHpMin = -1;   // lowest Heart HP left at the end of any Heart fight so far (-1 = none yet)
         double stepCpu = 0, encodeCpu = 0, searchCpu = 0, packSeconds = 0;
     };
 

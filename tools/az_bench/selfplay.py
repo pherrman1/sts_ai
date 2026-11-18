@@ -972,6 +972,9 @@ def main(argv=None):
                 "ooc_edges_det_chance": list(s["ooc_edges_det_chance"]),
                 "tree_fight_starts": s["tree_fight_starts"], "tree_fight_exits": s["tree_fight_exits"],
                 "auto_gold": s["auto_gold"],   # --sim-help: reward gold taken automatically (real runs)
+                # lowest Heart HP left at the end of any Heart fight so far (None before the first Heart fight);
+                # the per-window histogram is in progress_window (heart_hp_00 .. heart_hp_15, 50-HP bins)
+                "heart_hp_min": None if s.get("heart_hp_min", -1) < 0 else s["heart_hp_min"],
             }
             if fused is not None:   # rows above the big tile that went through forward_packed (cumulative)
                 row["fused_long_rows"] = fused.long_rows
