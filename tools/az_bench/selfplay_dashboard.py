@@ -110,6 +110,35 @@ def bars(hist, w=1000, h=230):
     return "".join(g)
 
 
+def heart_panel(last, w=1000, h=230):
+    """Real Heart fights since the process started: the Heart's HP left at the end (50-HP buckets), lowest value."""
+    hd = last.get("heart")
+    if not hd or not hd.get("fights"):
+        return ""
+    vals = hd.get("hp_hist50") or []
+    pl, pr, pt, pb = 46, 12, 10, 28
+    mx = max(vals) or 1
+    bw = (w - pl - pr) / max(1, len(vals))
+    g = [f'<svg viewBox="0 0 {w} {h}" role="img" class="chart">']
+    for i in range(5):
+        v = mx * i / 4
+        y = pt + (1 - v / mx) * (h - pt - pb)
+        g.append(f'<line x1="{pl}" x2="{w - pr}" y1="{y:.1f}" y2="{y:.1f}" class="grid"/>')
+        g.append(f'<text x="{pl - 6}" y="{y + 4:.1f}" text-anchor="end" class="tick">{v:.0f}</text>')
+    for k, v in enumerate(vals):
+        bh = v / mx * (h - pt - pb)
+        g.append(f'<rect x="{pl + k * bw + 1:.1f}" y="{h - pb - bh:.1f}" width="{max(1, bw - 2):.1f}" height="{bh:.1f}" '
+                 f'fill="var({"--good" if k == 0 else "--boss"})"/>')
+        if k % 2 == 0:
+            g.append(f'<text x="{pl + (k + 0.5) * bw:.1f}" y="{h - 8}" text-anchor="middle" class="tick">{50 * k}</text>')
+    g.append("</svg>")
+    note = (f'{hd["fights"]:,} Heart fights ended since the last (re)start; lowest Heart HP left <b>{hd["hp_min"]}</b>, '
+            f'mean {hd["hp_mean"]:.0f}; player HP at entry {hd["entry_hp_mean"]:.0f}, fight ended on turn '
+            f'{hd["turn_mean"]:.1f} on average. Green bucket 0-49 includes kills (0 HP).')
+    return (f'<section><h2>Heart HP left at the end of the fight (50-HP buckets)</h2>{"".join(g)}'
+            f'<p class="rule">{note}</p></section>')
+
+
 def asc_summary(rows):
     """Per-ascension totals of the curriculum phase from the report windows. A window reports only the ascension
     current at report time, so the few runs still in flight at a step-up (finishing at the old ascension) are missing
@@ -405,6 +434,7 @@ def page(rows, title, started, subtitle=""):
 <section><h2>Positions per second (thousands)</h2>{chart(runs, [("positions/s", pos, "--accent2")], ymin=0, yfmt="{:.0f}")}</section>
 {f'<section><h2>Memory: process RSS (GB) and samples pending (millions)</h2>{chart(runs, [("RSS GB", [r.get("rss_gb") for r in rows], "--boss"), ("pending (M)", [r["samples_pending"] / 1e6 if "samples_pending" in r else None for r in rows], "--accent")], ymin=0, yfmt="{:.1f}")}</section>' if any(r.get("rss_gb") is not None for r in rows) else ""}
 </div>
+{heart_panel(last)}
 <section><h2>Where runs end (death floor, last ~10 min)</h2>{bars(hist)}
 <p class="rule">Purple: boss floors (16, 33, 50) and the Heart (55).</p></section>
 <section><h2>Decision rule</h2><p class="rule">{RULE_CURRICULUM if curriculum else RULE_VARIANT if variant else RULE_MAIN}</p></section>

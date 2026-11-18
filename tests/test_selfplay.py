@@ -374,6 +374,14 @@ class DashboardProgressTest(unittest.TestCase):
         page = dash.page(rows[:-1] + [fk], "t", "")
         self.assertIn("Forced key moves", page)
         self.assertIn("Sapphire 3 / Ruby 2 / Emerald 4; routes narrowed 5; on (until the first step-up)", page)
+        self.assertNotIn("Heart HP left", page)
+        hist = [0] * 17
+        hist[2], hist[14] = 3, 7
+        ht = dict(rows[-1], heart={"fights": 10, "hp_min": 112, "hp_mean": 560.0, "entry_hp_mean": 61.0,
+                                   "turn_mean": 9.4, "hp_hist50": hist})
+        page = dash.page(rows[:-1] + [ht], "t", "")
+        self.assertIn("Heart HP left at the end of the fight", page)
+        self.assertIn("lowest Heart HP left <b>112</b>", page)
 
 
 @unittest.skipUnless(HAVE_TORCH and MODULES, "torch or the az_bench_native module (cmake target) missing")

@@ -983,6 +983,11 @@ def main(argv=None):
                 row["force_keys"] = {"active": drv.force_keys(), "sapphire": s["forced_keys"][0],
                                      "ruby": s["forced_keys"][1], "emerald": s["forced_keys"][2],
                                      "route_masked": s["key_route_masked"]}
+            if s["heart_fights"]:   # real Heart fights ended since this process started (cumulative)
+                n = s["heart_fights"]
+                row["heart"] = {"fights": n, "hp_min": s["heart_hp_min"], "hp_mean": round(s["heart_hp_sum"] / n, 1),
+                                "entry_hp_mean": round(s["heart_entry_hp_sum"] / n, 1),
+                                "turn_mean": round(s["heart_turn_sum"] / n, 2), "hp_hist50": list(s["heart_hp_hist"])}
             if args.explore_amber:   # forcing attempts, of which c = 0 / infinity; logged natural items, unplayed (0)
                 row["explore_amber"] = {k: s["explore_" + k] for k in
                                         ("attempts", "c_zero", "c_inf", "natural", "natural_unplayed")}

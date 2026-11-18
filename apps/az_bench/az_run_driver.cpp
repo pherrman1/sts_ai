@@ -310,6 +310,7 @@ namespace sts::azbench {
         std::unique_ptr<search::CombatKnowledgeState> knowledge = std::make_unique<search::CombatKnowledgeState>();
         bool inBattle = false;
         bool forceKeys = false;              // RunConfig::forceKeys state this run started with
+        int heartEntryHp = 0;                // player HP when the real Heart fight started
         std::shared_ptr<const GameContext> fightOuter;   // crossCombat: g.gc at the real fight's start
         std::vector<int> rootKeys;           // pick-rate item bucket per root action (-1 = none), OOC roots
         std::vector<char> rootUnder;         // exploreAmber: root action is an under-target item (after warm-up)
@@ -592,6 +593,10 @@ namespace sts::azbench {
             s.treeFightStarts += p.treeFightStarts; s.treeFightExits += p.treeFightExits; s.autoGold += p.autoGold;
             for (int k = 0; k < 3; ++k) s.forcedKeys[k] += p.forcedKeys[k];
             s.keyRouteMasked += p.keyRouteMasked;
+            s.heartFights += p.heartFights; s.heartHpSum += p.heartHpSum;
+            s.heartEntryHpSum += p.heartEntryHpSum; s.heartTurnSum += p.heartTurnSum;
+            if (p.heartHpMin >= 0 && (s.heartHpMin < 0 || p.heartHpMin < s.heartHpMin)) s.heartHpMin = p.heartHpMin;
+            for (int k = 0; k < RunStats::kHeartHpBuckets; ++k) s.heartHpHist[k] += p.heartHpHist[k];
             s.stepCpu += p.stepCpu; s.encodeCpu += p.encodeCpu; s.searchCpu += p.searchCpu;
         }
         s.batches = batches_.load();
@@ -883,13 +888,28 @@ namespace sts::azbench {
             startRun(g, gi);
         };
 
+        // A real Heart fight ended (won, lost or stalled): the Heart's HP left, the entry HP and the turn.
+        auto recordHeartEnd = [&](Run &g) {
+            const int hp = std::max(0, g.bc.monsters.arr[0].curHp);
+            RunStats &st = wk.st;
+            ++st.heartFights;
+            st.heartHpSum += hp;
+            st.heartEntryHpSum += g.heartEntryHp;
+            st.heartTurnSum += g.bc.turn;
+            if (st.heartHpMin < 0 || hp < st.heartHpMin) st.heartHpMin = hp;
+            ++st.heartHpHist[std::min(hp / 50, RunStats::kHeartHpBuckets - 1)];
+        };
+
         // Applies a chosen action to the real run; handles fight entry / exit, floor labels and the run's end.
         auto applyReal = [&](Run &g, std::uint32_t bits) {
             const double t0 = cpuSeconds();
             if (g.inBattle) {
                 executeObserved(g.bc, bits, *g.knowledge);
                 ++g.fightMoves;
-                if (g.bc.outcome == Outcome::UNDECIDED && g.fightMoves >= cfg.maxMovesPerFight) {
+                const bool stalled = g.bc.outcome == Outcome::UNDECIDED && g.fightMoves >= cfg.maxMovesPerFight;
+                if ((stalled || g.bc.outcome != Outcome::UNDECIDED) && g.gc.info.encounter == MonsterEncounter::THE_HEART)
+                    recordHeartEnd(g);
+                if (stalled) {
                     ++wk.st.stalls;
                     g.gc.outcome = GameOutcome::PLAYER_LOSS;
                     g.inBattle = false;
@@ -914,7 +934,10 @@ namespace sts::azbench {
                         g.gc.map->burningEliteY == g.gc.curMapNodeY)
                         ++g.progress.burningElites;
                 }
-                if (g.gc.info.encounter == MonsterEncounter::THE_HEART) g.progress.heart = 1;
+                if (g.gc.info.encounter == MonsterEncounter::THE_HEART) {
+                    g.progress.heart = 1;
+                    g.heartEntryHp = g.gc.curHp;
+                }
                 initObservedBattle(g.gc, g.bc, *g.knowledge);
                 g.ctx = combatContext(g.gc);
                 if (cfg.crossCombat) g.fightOuter = std::make_shared<const GameContext>(search::detachedGameCopy(g.gc));

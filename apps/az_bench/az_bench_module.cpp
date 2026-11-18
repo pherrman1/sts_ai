@@ -454,6 +454,9 @@ PYBIND11_MODULE(az_bench_native, m) {
             o["auto_gold"] = s.autoGold;
             o["forced_keys"] = py::make_tuple(s.forcedKeys[0], s.forcedKeys[1], s.forcedKeys[2]);
             o["key_route_masked"] = s.keyRouteMasked;
+            o["heart_fights"] = s.heartFights; o["heart_hp_min"] = s.heartHpMin; o["heart_hp_sum"] = s.heartHpSum;
+            o["heart_entry_hp_sum"] = s.heartEntryHpSum; o["heart_turn_sum"] = s.heartTurnSum;
+            o["heart_hp_hist"] = std::vector<std::int64_t>(s.heartHpHist.begin(), s.heartHpHist.end());
             o["step_cpu"] = s.stepCpu; o["encode_cpu"] = s.encodeCpu; o["search_cpu"] = s.searchCpu;
             o["pack_s"] = s.packSeconds;
             return o;

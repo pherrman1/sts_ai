@@ -324,6 +324,12 @@ namespace sts::azbench {
         // (route edge / key taken)], and real Act-3 map decisions whose route the Emerald rule narrowed (still a choice).
         std::array<std::int64_t, 3> forcedKeys{};
         std::int64_t keyRouteMasked = 0;
+        // Real Heart fights that ended (won, lost or stalled): the Heart's HP left at the end in 50-HP buckets
+        // (bucket k = [50k, 50k + 49], the last bucket open), its lowest value (-1 before the first), and the sums of
+        // HP left, the player's HP at fight start and the turn the fight ended on (means = sum / heartFights).
+        static constexpr int kHeartHpBuckets = 17;
+        std::int64_t heartFights = 0, heartHpMin = -1, heartHpSum = 0, heartEntryHpSum = 0, heartTurnSum = 0;
+        std::array<std::int64_t, kHeartHpBuckets> heartHpHist{};
         double stepCpu = 0, encodeCpu = 0, searchCpu = 0, packSeconds = 0;
     };
 
