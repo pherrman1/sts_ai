@@ -28120,3 +28120,21 @@ staging. Tile fill (76 %) and the host tiling (1.2 ms per batch) also count agai
 Next options (not started): per-layer persistent CTAs with smaller register tiles, or a CUDA kernel with explicit
 shared-memory staging.
 **Knowledge impact:** this entry; `tools/az_bench/README.md`.
+
+## §TBD — Heart search probe with the Stage 1 self-play net (`selfplay.py --heart-arms`): on 795 Heart starts from 2,000 frozen-net A0 runs, more search deals slightly more damage, 49.8 → 57.3 / 63.6 / 65.3 of 750 HP for 64/16 p 0.25 → 64 / 256 / 1024 full sims (+15.5 [+12.6, +18.6] at 1024), 0 kills in every arm (PC, 2026-11-18)
+
+**Question (Philipp 2026-11-18 18:50 CET, "Im Herz mehr Suche geben?"):** the amber_scratch run reaches the Heart in
+~30 % of runs but deals only ~50-65 of 750 HP; is the search budget the bottleneck?
+**Data:** [RESULTS](evidence/heart_search_probe_20261118/RESULTS.md). Net ckpt_218026 (step 218,026), frozen; commit
+312afd72; seeds 150100000-150101999; each Heart start played once per arm from the same state (same game RNG at the
+fight's start). Diagnostic, not a gate.
+**Result:** paired per-start damage difference vs the self-play budget (64/16, p 0.25): 64 full +7.5 [+5.0, +10.2],
+256 full +13.8 [+10.7, +16.8], 1024 full +15.5 [+12.6, +18.6]; 0/795 kills in every arm, no stalls. The player enters
+the Heart at 51 of 94 HP (54 %) and dies within the Heart's first attack turns in nearly every play (mean fight end
+turn 2.3-2.4) under every budget. The gain grows with entry HP (>= 57 HP: +27.6 at 1024 full; < 41 HP: +3.1).
+**Interpretation (Inference):** about half of the gain comes from searching every move fully instead of mostly
+16-sim fast moves; beyond 256 sims the curve is flat. Even 16x the search adds ~2 % of the Heart's HP, so the Heart
+is lost before search can matter: entry HP and the deck (what the run brings) and the net's combat values are the
+bottleneck, not the Heart's search budget.
+**Decision:** no change to the self-play budget from this probe. `--heart-arms` stays a default-off diagnostic.
+**Knowledge impact:** this entry; `tools/az_bench/README.md`.
