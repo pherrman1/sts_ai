@@ -260,25 +260,24 @@ class Replay:
 
     def _add_meta(self, s, S, nt, na, a0):
         """The per-sample rows of a chunk and the eviction of overwritten samples (caller holds the lock)."""
-        if True:
-            self._put(self.ntok, self.s_head, nt)
-            self._put(self.act_start, self.s_head, a0 + s["act_off"][:-1])
-            self._put(self.nact, self.s_head, na)
-            for k, ring in self.meta.items():
-                self._put(ring, self.s_head, s[k])
-            first = self.s_head
-            if self.soft_outcome is not None:   # until set_soft_outcome: the final outcome
-                oh = np.zeros((S, OUTCOME_CLASSES), np.float16)
-                oh[np.arange(S), np.asarray(s["outcome"]).astype(np.int64).clip(0, OUTCOME_CLASSES - 1)] = 1
-                self._put(self.soft_outcome, first, oh)
-            self.s_head += S
-            self.added += S
-            # Evict the oldest samples whose rows were overwritten (or that exceed the sample capacity); compact
-            # evicted before writing (references released).
-            while not self.compact and (self.s_head - self.s_tail > self.cs or (
-                    self.s_tail < self.s_head and (self.tok_start[self.s_tail % self.cs] < self.t_head - self.ct
-                                                   or self.act_start[self.s_tail % self.cs] < self.a_head - self.ca))):
-                self.s_tail += 1
+        self._put(self.ntok, self.s_head, nt)
+        self._put(self.act_start, self.s_head, a0 + s["act_off"][:-1])
+        self._put(self.nact, self.s_head, na)
+        for k, ring in self.meta.items():
+            self._put(ring, self.s_head, s[k])
+        first = self.s_head
+        if self.soft_outcome is not None:   # until set_soft_outcome: the final outcome
+            oh = np.zeros((S, OUTCOME_CLASSES), np.float16)
+            oh[np.arange(S), np.asarray(s["outcome"]).astype(np.int64).clip(0, OUTCOME_CLASSES - 1)] = 1
+            self._put(self.soft_outcome, first, oh)
+        self.s_head += S
+        self.added += S
+        # Evict the oldest samples whose rows were overwritten (or that exceed the sample capacity); compact
+        # evicted before writing (references released).
+        while not self.compact and (self.s_head - self.s_tail > self.cs or (
+                self.s_tail < self.s_head and (self.tok_start[self.s_tail % self.cs] < self.t_head - self.ct
+                                               or self.act_start[self.s_tail % self.cs] < self.a_head - self.ca))):
+            self.s_tail += 1
         return first
 
     def set_soft_outcome(self, first, targets):
