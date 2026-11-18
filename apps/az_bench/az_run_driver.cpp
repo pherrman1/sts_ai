@@ -16,6 +16,7 @@
 #include "sim/search/OocHiddenFuture.h"
 #include "sim/search/OocMctsPlanner.h"
 #include "sim/search/OocSemanticAction.h"
+#include "sim/search/RunGoal.h"
 #include "sim/search/SearchRng.h"
 
 namespace sts::azbench {
@@ -308,6 +309,7 @@ namespace sts::azbench {
         BattleContext bc;
         std::unique_ptr<search::CombatKnowledgeState> knowledge = std::make_unique<search::CombatKnowledgeState>();
         bool inBattle = false;
+        bool forceKeys = false;              // RunConfig::forceKeys state this run started with
         std::shared_ptr<const GameContext> fightOuter;   // crossCombat: g.gc at the real fight's start
         std::vector<int> rootKeys;           // pick-rate item bucket per root action (-1 = none), OOC roots
         std::vector<char> rootUnder;         // exploreAmber: root action is an under-target item (after warm-up)
@@ -453,6 +455,26 @@ namespace sts::azbench {
 
     }
 
+    int keyBackstopActions(const GameContext &gc, std::vector<GameAction> &v) {
+        const std::size_t before = v.size();
+        if (const auto key = search::heartKeyAction(gc, true)) {
+            if (std::any_of(v.begin(), v.end(), [&](const GameAction &a) { return a.bits == key->bits; })) {
+                v.assign(1, *key);
+                if (before <= 1) return -1;
+                if (gc.screenState == ScreenState::REST_ROOM) return 1;
+                if (gc.screenState == ScreenState::MAP_SCREEN) return 2;
+                return gc.screenState == ScreenState::REWARDS && gc.info.rewardsContainer.emeraldKey ? 2 : 0;
+            }
+        }
+        std::vector<GameAction> kept;
+        kept.reserve(before);
+        for (const auto &a : v)
+            if (search::heartKeyActionAllowed(gc, true, a)) kept.push_back(a);
+        if (kept.empty() || kept.size() == before) return -1;
+        v.swap(kept);
+        return 3;
+    }
+
     double amberExploreC(const AmberGapHist &h, double need, double T) {
         if (static_cast<double>(h.natural) >= need) return 0.0;
         std::vector<std::pair<double, double>> bins;   // (exp(-m_b / T), runs) of the non-empty bins
@@ -485,6 +507,7 @@ namespace sts::azbench {
     RunDriver::RunDriver(RunConfig cfg) : cfg_(cfg) {
         if (cfg_.ascension < 0 || cfg_.ascension >= kAscensions) throw std::invalid_argument("run driver: ascension 0..20");
         ascension_.store(cfg_.ascension);
+        setForceKeys(cfg_.forceKeys);
         picks_.reset(new std::atomic<std::uint32_t>[kPickBuckets]);
         for (int i = 0; i < kPickBuckets; ++i) picks_[i].store(0);
         if (!cfg_.encodeCombat) cfg_.encodeCombat = search::amberEncodeCombat;
@@ -514,6 +537,16 @@ namespace sts::azbench {
     }
 
     RunDriver::~RunDriver() { stop(); }
+
+    void RunDriver::setForceKeys(bool on) {
+        if (on) {   // the backstops of the spec are the ADR-0063 defaults; STS_KEY_* variants would change them
+            const auto &r = search::heartKeyRules();
+            if (r.sapphire != search::HeartKeyRules::Sapphire::POLICY || r.ruby != search::HeartKeyRules::Ruby::POLICY ||
+                r.emerald != search::HeartKeyRules::Emerald::MASK)
+                throw std::invalid_argument("run driver: forceKeys needs the ADR-0063 key rules (unset STS_KEY_*)");
+        }
+        forceKeys_.store(on);
+    }
 
     void RunDriver::start() {
         stop_ = false;
@@ -557,6 +590,8 @@ namespace sts::azbench {
             }
             s.oocEdgeKinds[0] += p.oocEdgeKinds[0]; s.oocEdgeKinds[1] += p.oocEdgeKinds[1];
             s.treeFightStarts += p.treeFightStarts; s.treeFightExits += p.treeFightExits; s.autoGold += p.autoGold;
+            for (int k = 0; k < 3; ++k) s.forcedKeys[k] += p.forcedKeys[k];
+            s.keyRouteMasked += p.keyRouteMasked;
             s.stepCpu += p.stepCpu; s.encodeCpu += p.encodeCpu; s.searchCpu += p.searchCpu;
         }
         s.batches = batches_.load();
@@ -597,13 +632,16 @@ namespace sts::azbench {
             return cacts;
         };
 
-        // Legal out-of-combat actions; simHelp bans buying Prismatic Shard (Amber Eye's simulator).
-        auto oocActions = [&](const GameContext &gc) -> std::vector<GameAction> {
+        // Legal out-of-combat actions; simHelp bans buying Prismatic Shard (Amber Eye's simulator); forceKeys (the
+        // run's state) applies the key backstops (keyBackstopActions; its result in *keyRule when given).
+        auto oocActions = [&](const GameContext &gc, bool forceKeys, int *keyRule = nullptr) -> std::vector<GameAction> {
             auto v = GameAction::getAllActionsInState(gc);
             if (cfg.simHelp)
                 v.erase(std::remove_if(v.begin(), v.end(), [&](const GameAction &a) {
                     return !search::isSupportedAutonomousOocAction(gc, a);
                 }), v.end());
+            const int rule = forceKeys ? keyBackstopActions(gc, v) : -1;
+            if (keyRule) *keyRule = rule;
             return v;
         };
         // simHelp: Amber Eye's simulator takes gold from rewards automatically.
@@ -651,7 +689,7 @@ namespace sts::azbench {
                 g.pendingMaxHp = static_cast<float>(std::max<int>(1, node.bc.player.maxHp));
                 g.pendingFloor = node.bc.floorNum;
             } else {
-                gacts = oocActions(*node.gc);
+                gacts = oocActions(*node.gc, g.forceKeys);
                 node.edges.resize(gacts.size());
                 for (std::size_t k = 0; k < gacts.size(); ++k) node.edges[k] = Edge{gacts[k].bits};
                 const double t1 = cpuSeconds();
@@ -743,6 +781,7 @@ namespace sts::azbench {
             g.active = true;
             g.seed = seed;
             g.asc = ascension_.load(std::memory_order_relaxed);
+            g.forceKeys = forceKeys_.load(std::memory_order_relaxed);
             g.gc = GameContext(CharacterClass::IRONCLAD, seed, g.asc);
             if (cfg.testMaxHp > 0) g.gc.curHp = g.gc.maxHp = cfg.testMaxHp;
             g.inBattle = false;
@@ -908,7 +947,10 @@ namespace sts::azbench {
                     if (legal == 1) only = a[0].bits;
                 } else {
                     if (goldToTake(g.gc)) { ++wk.st.autoGold; applyReal(g, takeGoldBits); continue; }
-                    gacts = oocActions(g.gc);
+                    int keyRule = -1;
+                    gacts = oocActions(g.gc, g.forceKeys, &keyRule);
+                    if (keyRule >= 0 && keyRule < 3) ++wk.st.forcedKeys[keyRule];
+                    else if (keyRule == 3) ++wk.st.keyRouteMasked;
                     legal = gacts.size();
                     if (legal == 1) only = gacts[0].bits;
                 }
@@ -1407,7 +1449,7 @@ namespace sts::azbench {
                     continue;
                 }
                 if (cfg.simHelp) {
-                    const auto a = oocActions(gc);
+                    const auto a = oocActions(gc, g.forceKeys);
                     if (a.size() == 1) { oocExec(a[0].bits); continue; }
                 }
                 setGc(cn, std::move(gc));

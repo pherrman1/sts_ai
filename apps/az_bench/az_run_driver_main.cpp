@@ -2,7 +2,7 @@
 // training samples (labels filled, policy a distribution over the sample's actions, action sources / targets inside
 // the row). Smoke test and CPU-side throughput probe.
 //
-// usage: az-run-driver [--workers 2] [--games 4] [--runs 8] [--batch 64] [--seed 0] [--seed-base 1] [--fast] [--asc 20] [--sims N] [--const-value] [--test-hp HP] [--max-fight-moves 400] [--explore-c C] [--explore-amber] [--pick-target T] [--no-fast-noise] [--q-rescale] [--c-scale S] [--utility floor-hp|amber] [--keyless-hp] [--chance-on-reveal] [--cross-combat] [--sim-help] [--max-pending N]
+// usage: az-run-driver [--workers 2] [--games 4] [--runs 8] [--batch 64] [--seed 0] [--seed-base 1] [--fast] [--asc 20] [--sims N] [--const-value] [--test-hp HP] [--max-fight-moves 400] [--explore-c C] [--explore-amber] [--pick-target T] [--no-fast-noise] [--q-rescale] [--c-scale S] [--utility floor-hp|amber] [--keyless-hp] [--chance-on-reveal] [--cross-combat] [--sim-help] [--max-pending N] [--force-keys]
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -88,6 +88,7 @@ int main(int argc, char **argv) {
         else if (a == "--cross-combat") cfg.crossCombat = true;
         else if (a == "--sim-help") cfg.simHelp = true;
         else if (a == "--max-pending") cfg.maxPendingSamples = std::stoll(next());
+        else if (a == "--force-keys") cfg.forceKeys = true;
         else if (a == "--sims") { cfg.fullSims = std::stoi(next()); cfg.fastSims = cfg.fullSims; cfg.fullProb = 1.0; }
         else if (a == "--fast") { cfg.fullSims = 8; cfg.fastSims = 4; cfg.fullCandidates = 4; cfg.fastCandidates = 2; }
         else { std::fprintf(stderr, "unknown argument %s\n", a.c_str()); return 2; }
@@ -195,7 +196,20 @@ int main(int argc, char **argv) {
                 static_cast<long long>(s.oocEdgeKinds[0]), static_cast<long long>(s.oocEdgeKinds[1]),
                 static_cast<long long>(s.treeFightStarts), static_cast<long long>(s.treeFightExits),
                 static_cast<long long>(s.autoGold));
+    azbench::RunProgress prog;
+    for (const auto &p : s.progressAsc) prog += p;
+    const std::int64_t forced = s.forcedKeys[0] + s.forcedKeys[1] + s.forcedKeys[2];
+    std::printf("key backstops: forced sapphire %lld ruby %lld emerald %lld route_masked %lld; runs with all keys %lld "
+                "act4 %lld keyless_victories %lld\n",
+                static_cast<long long>(s.forcedKeys[0]), static_cast<long long>(s.forcedKeys[1]),
+                static_cast<long long>(s.forcedKeys[2]), static_cast<long long>(s.keyRouteMasked),
+                static_cast<long long>(prog.allKeys), static_cast<long long>(prog.act4),
+                static_cast<long long>(prog.keylessVictories));
     if (bad || s.invalidActions || samples.empty() || s.runsDone < cfg.maxRuns) return 1;
+    // The key backstops must be inert when off; when on they must act, and a run past the Act-3 boss holds all keys
+    // (the treasure row and the last campfire are on every route, the route keeps the burning elite reachable).
+    if (!cfg.forceKeys && (forced != 0 || s.keyRouteMasked != 0)) return 1;
+    if (cfg.forceKeys && (forced == 0 || prog.keylessVictories != 0)) return 1;
     // The Amber rules must act when on and be inert when off.
     if (cfg.chanceOnReveal != (s.oocEdgeKinds[0] + s.oocEdgeKinds[1] > 0)) return 1;
     if (cfg.chanceOnReveal && (s.oocEdgeKinds[0] == 0 || s.oocEdgeKinds[1] == 0)) return 1;

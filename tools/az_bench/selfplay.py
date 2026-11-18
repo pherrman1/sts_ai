@@ -457,6 +457,10 @@ def main(argv=None):
     ap.add_argument("--sim-help", action="store_true",
                     help="Amber Eye's simulator help: reward gold taken automatically, forced positions skipped also "
                          "inside the search, buying Prismatic Shard banned")
+    ap.add_argument("--force-keys", choices=("off", "curriculum"), default="off",
+                    help="curriculum: the ADR-0063 Heart-key backstops (Act-3 treasure-row Sapphire, Recall at the last "
+                         "Act-3 campfire, Act-3 route kept on the burning elite) are forced moves until the first "
+                         "curriculum step-up (needs --curriculum; a deviation from Amber Eye, Philipp 2026-11-18)")
     ap.add_argument("--batch", type=int, default=2048)
     ap.add_argument("--row-buckets", default="2048", help="batch rows padded to these (one size keeps compiled shapes few)")
     ap.add_argument("--tok-buckets", default="32,40,48,56,64,80,96,128,212")
@@ -516,6 +520,8 @@ def main(argv=None):
         ap.error("--packed-h2d needs --pack-step")
     if args.init_net and args.resume:
         ap.error("--init-net and --resume exclude each other")
+    if args.force_keys == "curriculum" and not args.curriculum:
+        ap.error("--force-keys curriculum needs --curriculum")
     if args.value_ema_search and not args.value_ema_halflife > 0:
         ap.error("--value-ema-search needs --value-ema-halflife > 0")
     amber = args.utility == "amber"
@@ -549,6 +555,9 @@ def main(argv=None):
     # A curriculum checkpoint carries its current ascension; otherwise --ascension.
     ascension = counters.get("ascension", args.ascension) if args.curriculum else args.ascension
     counters["ascension"] = ascension
+    # The curriculum has stepped up once (recorded at the step-up; older checkpoints: ascension above --ascension).
+    counters["curriculum_stepped"] = bool(counters.get("curriculum_stepped", ascension > args.ascension))
+    force_keys = args.force_keys == "curriculum" and not counters["curriculum_stepped"]
     seeds_used0 = counters["seeds_used"]
     trained0 = counters["trained"]   # the replay window starts empty on resume: the ratio cap counts from here
     seed_base = args.seed_base + seeds_used0
@@ -598,7 +607,11 @@ def main(argv=None):
         chance_on_reveal=args.chance_on_reveal, cross_combat=args.cross_combat, sim_help=args.sim_help,
         explore_amber=args.explore_amber, explore_temp=args.explore_temp,
         **({"search_ema_lambda": ema_lam, "search_ema_full_only": args.value_ema_moves == "full"}
-           if ema_search else {}))
+           if ema_search else {}),
+        **({"force_keys": True} if force_keys else {}))
+    if args.force_keys != "off":
+        print(f"# force-keys {args.force_keys}: {'on until the first curriculum step-up' if force_keys else 'off (the curriculum already stepped up)'}",
+              flush=True)
     replay = Replay(args.window, hp_floors=56 if amber else 0, soft_outcome=ema_lam > 0)
     ema_stats = {"samples": 0, "real_weight": 0.0}   # mean weight of the final outcome in the EMA targets
     stop = threading.Event()
@@ -924,6 +937,10 @@ def main(argv=None):
             if args.curriculum and asc < 20 and tot >= args.curriculum_runs and rolling >= args.curriculum_winrate:
                 drv.set_ascension(asc + 1)
                 counters["ascension"] = asc + 1
+                counters["curriculum_stepped"] = True
+                if drv.force_keys():
+                    drv.set_force_keys(False)   # runs started from now on play without the key backstops
+                    print("# force-keys: off from the first curriculum step-up", flush=True)
                 asc_hist = []
                 print(f"# curriculum: A{asc} Heart kills {wins}/{tot} -> A{asc + 1}", flush=True)
             row = {
@@ -962,6 +979,10 @@ def main(argv=None):
                 # ms of GPU time per s of wall clock (1000 = that stream busy all the time)
                 row["gpu_ms_per_s"] = {k: round((v - last_gpu[k]) / dt, 1) for k, v in gpu_ms.items()}
                 last_gpu.update(gpu_ms)
+            if args.force_keys != "off":   # key backstops: state for new runs; real forced moves, narrowed routes (cumulative)
+                row["force_keys"] = {"active": drv.force_keys(), "sapphire": s["forced_keys"][0],
+                                     "ruby": s["forced_keys"][1], "emerald": s["forced_keys"][2],
+                                     "route_masked": s["key_route_masked"]}
             if args.explore_amber:   # forcing attempts, of which c = 0 / infinity; logged natural items, unplayed (0)
                 row["explore_amber"] = {k: s["explore_" + k] for k in
                                         ("attempts", "c_zero", "c_inf", "natural", "natural_unplayed")}

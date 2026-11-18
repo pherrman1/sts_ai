@@ -251,6 +251,18 @@ set_tests_properties(az_run_driver_qtransform PROPERTIES LABELS "core;smoke")
 add_test(NAME az_run_driver_search_flags COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 6 --fast
          --seed-base 1 --seconds 300 --no-fast-noise --q-rescale --c-scale 0.1)
 set_tests_properties(az_run_driver_search_flags PROPERTIES LABELS "core;smoke")
+# Heart-key backstops during the curriculum (--force-keys; 2026-11-18, default off): the ADR-0063 restriction of the
+# out-of-combat actions on synthetic states, and whole runs (one worker: deterministic) in which the backstops act and
+# no run passes the Act-3 boss without the three keys (the same runs without the flag have a keyless Act-3 end).
+add_executable(az-force-keys-test apps/az_bench/az_force_keys_test.cpp apps/az_bench/az_run_driver.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(az-force-keys-test PRIVATE include json/include apps/az_bench)
+target_link_libraries(az-force-keys-test PRIVATE Threads::Threads)
+add_test(NAME az_force_keys_test COMMAND $<TARGET_FILE:az-force-keys-test>)
+set_tests_properties(az_force_keys_test PROPERTIES LABELS "core;smoke")
+add_test(NAME az_run_driver_force_keys COMMAND $<TARGET_FILE:az-run-driver> --workers 1 --games 4 --runs 12 --fast
+    --seed-base 1 --seconds 300 --test-hp 5000 --max-fight-moves 2000 --force-keys)
+set_tests_properties(az_run_driver_force_keys PROPERTIES LABELS "core;smoke")
 # Card stacks (search::amberMergeCards) over whole-run driver states: same cards and counts, references follow.
 add_executable(az-merge-cards-test apps/az_bench/az_merge_cards_test.cpp apps/az_bench/az_run_driver.cpp
     $<TARGET_OBJECTS:sts_core_objects>)

@@ -137,6 +137,12 @@ namespace sts::azbench {
     // logged runs. 0 when natural >= need; +infinity when even always picking it falls short. Bisection on log c.
     double amberExploreC(const AmberGapHist &h, double need, double T);
 
+    // RunConfig::forceKeys: restricts v (the legal out-of-combat actions of gc) by the ADR-0063 key backstops
+    // (search::heartKeyAction / heartKeyActionAllowed, keys collected). Returns -1 when nothing was removed, 0 / 1 / 2
+    // when a Sapphire / Ruby / Emerald backstop left a single action, 3 when the Emerald rule narrowed the Act-3 route
+    // to the edges that still reach the burning elite.
+    int keyBackstopActions(const GameContext &gc, std::vector<search::GameAction> &v);
+
     struct RunConfig {
         int workers = 11;
         int gamesPerWorker = 700;
@@ -196,6 +202,15 @@ namespace sts::azbench {
         // At most evalCacheCap entries per run (the cache is emptied when full).
         bool evalCache = false;
         int evalCacheCap = 1024;
+        // Heart-key backstops (2026-11-18, default off; Philipp-approved deviation from Amber Eye for the curriculum
+        // phase): the ADR-0063 rules of search::heartKeyAction / heartKeyActionAllowed (RunGoal.h) restrict the
+        // out-of-combat action lists, in the real runs and in the search tree. Sapphire: the Act-3 chest (row >= 8)
+        // is opened and its key taken; Ruby: the last campfire before the Act-3 boss allows only Recall; Emerald: on
+        // the Act-3 map only edges that still reach the burning elite (its key reward is taken). A forced move is the
+        // only legal action: played without a search, so it gives no sample (no policy target); the run's value
+        // labels are unchanged. Initial state of setForceKeys; a run keeps the state it started with. Needs the
+        // ADR-0063 default rules (STS_KEY_* unset, or policy / policy / mask).
+        bool forceKeys = false;
         // Card stacks (2026-11-17, default off; changes the net input, needs its own run): identical cards become one
         // CARD token with a copy count (search::amberMergeCards), ~25-35 % fewer tokens late in a run.
         bool mergeCards = false;
@@ -305,6 +320,10 @@ namespace sts::azbench {
         std::array<std::int64_t, 2> oocEdgeKinds{};
         std::int64_t treeFightStarts = 0, treeFightExits = 0;
         std::int64_t autoGold = 0;   // simHelp: reward gold taken automatically in the real runs
+        // forceKeys: real moves forced by a key backstop [Sapphire (chest opened / key taken), Ruby (Recall), Emerald
+        // (route edge / key taken)], and real Act-3 map decisions whose route the Emerald rule narrowed (still a choice).
+        std::array<std::int64_t, 3> forcedKeys{};
+        std::int64_t keyRouteMasked = 0;
         double stepCpu = 0, encodeCpu = 0, searchCpu = 0, packSeconds = 0;
     };
 
@@ -342,6 +361,10 @@ namespace sts::azbench {
             ascension_.store(a);
         }
         int ascension() const { return ascension_.load(); }
+        // Heart-key backstops (RunConfig::forceKeys) for runs started from now on (curriculum: off from the first
+        // step-up; runs in progress keep theirs).
+        void setForceKeys(bool on);   // throws unless the ADR-0063 default key rules hold (on only)
+        bool forceKeys() const { return forceKeys_.load(); }
 
         struct Node;
         struct Run;
@@ -363,6 +386,7 @@ namespace sts::azbench {
         std::unordered_map<int, ExploreItem> exploreItems_;   // item bucket -> gap log and its c (exploreAmber)
         double exploreItemC(int key, std::int64_t games);
         std::atomic<int> ascension_{20};
+        std::atomic<bool> forceKeys_{false};
         std::atomic<std::uint32_t> weightsVersion_{0};
         std::atomic<std::int64_t> runsDone_{0};   // finished runs, all workers (pick-rate denominator)   // real picks per item hash (pick-rate exploration)
         mutable std::mutex qm_;
