@@ -414,6 +414,10 @@ def main(argv=None):
     ap.add_argument("--full-sims", type=int, default=64)
     ap.add_argument("--fast-sims", type=int, default=16)
     ap.add_argument("--full-prob", type=float, default=0.25)
+    ap.add_argument("--full-candidates", type=int, default=16,
+                    help="Gumbel root candidates m of a full move (sequential halving over ceil(log2 m) rounds; our "
+                         "choice, the Amber Eye page names no m)")
+    ap.add_argument("--fast-candidates", type=int, default=4, help="Gumbel root candidates m of a fast move")
     ap.add_argument("--hp-weight-combat", type=float, default=1.0)
     ap.add_argument("--hp-weight-ooc", type=float, default=1.0)
     ap.add_argument("--utility", choices=("floor-hp", "amber"), default="floor-hp",
@@ -597,6 +601,7 @@ def main(argv=None):
     drv = az_bench_native.RunDriver(
         workers=args.workers, games=args.games, seed_base=seed_base, max_runs=max_runs, ascension=ascension,
         full_sims=args.full_sims, fast_sims=args.fast_sims, full_prob=args.full_prob,
+        full_candidates=args.full_candidates, fast_candidates=args.fast_candidates,
         hp_weight_combat=args.hp_weight_combat, hp_weight_ooc=args.hp_weight_ooc, keep_full=args.keep_full,
         keep_fast=args.keep_fast, search_seed=args.seed + counters["step"], max_fight_moves=args.max_fight_moves,
         test_max_hp=args.test_max_hp, max_pending=args.max_pending,
