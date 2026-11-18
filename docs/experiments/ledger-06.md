@@ -28121,7 +28121,7 @@ Next options (not started): per-layer persistent CTAs with smaller register tile
 shared-memory staging.
 **Knowledge impact:** this entry; `tools/az_bench/README.md`.
 
-## §TBD — Heart search probe with the Stage 1 self-play net (`selfplay.py --heart-arms`): on 795 Heart starts from 2,000 frozen-net A0 runs, more search deals slightly more damage, 49.8 → 57.3 / 63.6 / 65.3 of 750 HP for 64/16 p 0.25 → 64 / 256 / 1024 full sims (+15.5 [+12.6, +18.6] at 1024), 0 kills in every arm (PC, 2026-11-18)
+## §819 — Heart search probe with the Stage 1 self-play net (`selfplay.py --heart-arms`): on 795 Heart starts from 2,000 frozen-net A0 runs, more search deals slightly more damage, 49.8 → 57.3 / 63.6 / 65.3 of 750 HP for 64/16 p 0.25 → 64 / 256 / 1024 full sims (+15.5 [+12.6, +18.6] at 1024), 0 kills in every arm (PC, 2026-11-18)
 
 **Question (Philipp 2026-11-18 18:50 CET, "Im Herz mehr Suche geben?"):** the amber_scratch run reaches the Heart in
 ~30 % of runs but deals only ~50-65 of 750 HP; is the search budget the bottleneck?
