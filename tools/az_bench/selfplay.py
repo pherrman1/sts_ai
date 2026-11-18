@@ -382,6 +382,18 @@ def progress_window(s, last_s):
     return out
 
 
+def rss_gb():
+    """Resident set size of this process in GB (Linux /proc; None elsewhere)."""
+    try:
+        with open("/proc/self/status") as f:
+            for line in f:
+                if line.startswith("VmRSS:"):
+                    return round(int(line.split()[1]) / 1048576, 2)
+    except OSError:
+        pass
+    return None
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--module-dir", required=True)
@@ -873,7 +885,7 @@ def main(argv=None):
                 "samples_added": replay.added, "replay": len(replay), "train_steps": counters["step"],
                 "trained_samples": counters["trained"], "loss": lavg, "syncs": infer_stats["syncs"],
                 "stalls": s["stalls"], "unsupported": s["unsupported"], "knowledge_failures": s["knowledge_failures"], "invalid_actions": s["invalid_actions"], "encode_cut": s["encode_cut"], "encode_cut_ooc": s["encode_cut_ooc"],
-                "samples_pending": s["samples_pending"],
+                "samples_pending": s["samples_pending"], "rss_gb": rss_gb(),
                 "ascension": asc, "asc_runs_window": a_runs,
                 "asc_win_rate_window": round(a_wins / max(1, a_runs), 4),
                 "asc_mean_floor_window": round(a_floors / max(1, a_runs), 2),

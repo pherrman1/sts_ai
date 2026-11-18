@@ -319,7 +319,7 @@ RULE_CURRICULUM = ("Curriculum (Philipp, 2026-11-17): from the 1M-run net, resta
                    "the next runs start one ascension higher, up to A20. Pick-rate exploration stays on.")
 
 
-def page(rows, title, started):
+def page(rows, title, started, subtitle=""):
     last = rows[-1] if rows else {}
     runs = [r["runs_done"] for r in rows]
     # Continuation with pick-rate exploration (rows carry its counters).
@@ -367,12 +367,17 @@ def page(rows, title, started):
         tile("Train steps", f'{last.get("train_steps", 0):,}', f'{last.get("samples_added", 0):,} samples'),
         tile("Hours", f'{last.get("hours", 0):.1f}', f"started {html.escape(started)}" if started else ""),
     ] + ([
+        tile("Memory", f'{last["rss_gb"]:.1f} GB' if last.get("rss_gb") is not None else "-",
+             f'{last.get("samples_pending", 0):,} samples pending' if "samples_pending" in last else "process RSS"),
+    ] if "rss_gb" in last or "samples_pending" in last else []) + ([
         tile("Forced picks", f'{last.get("forced_picks", 0):,}',
              f'{last.get("explore_roots", 0):,} of {last.get("ooc_roots", 0):,} OOC roots under target'),
     ] if variant else []))
-    sub = ("0.44M AmberNet warm-started from the 1M-run A20 net, Ironclad ascension curriculum from A0, self-play on the PC "
+    sub = subtitle or ("0.44M AmberNet warm-started from the 1M-run A20 net, Ironclad ascension curriculum from A0, self-play on the PC "
            "(RTX 3060 Ti). Charts show the curriculum phase only." if curriculum else
            "0.44M AmberNet from scratch, A20 Ironclad, self-play on the PC (RTX 3060 Ti).")
+    if subtitle and curriculum:
+        sub += " Charts show the curriculum phase only."
     table_rows = "".join(
         f'<tr><td>{html.escape(r["time"])}</td><td>{r["runs_done"]:,}</td><td>{r["mean_floor_window"]:.1f}</td>'
         f'<td>{100 * r["win_rate_window"]:.2f}</td><td>{r["positions_per_s"]:,}</td><td>{r["train_steps"]:,}</td>'
@@ -393,6 +398,7 @@ def page(rows, title, started):
 <section><h2>Training losses</h2>{chart(runs, [("policy", lp, "--accent"), ("outcome", lo, "--accent2"), ("HP", lh, "--boss")], yfmt="{:.2f}")}</section>
 {f'<section><h2>Curriculum: ascension and Heart-kill rate (%, last 10k runs at it)</h2>{chart(runs, [("ascension", asc_line, "--boss"), ("Heart kills % (rolling)", asc_roll, "--good")], ymin=0, yfmt="{:.0f}")}</section>' if curriculum else ""}
 <section><h2>Positions per second (thousands)</h2>{chart(runs, [("positions/s", pos, "--accent2")], ymin=0, yfmt="{:.0f}")}</section>
+{f'<section><h2>Memory: process RSS (GB) and samples pending (millions)</h2>{chart(runs, [("RSS GB", [r.get("rss_gb") for r in rows], "--boss"), ("pending (M)", [r["samples_pending"] / 1e6 if "samples_pending" in r else None for r in rows], "--accent")], ymin=0, yfmt="{:.1f}")}</section>' if any(r.get("rss_gb") is not None for r in rows) else ""}
 </div>
 <section><h2>Where runs end (death floor, last ~10 min)</h2>{bars(hist)}
 <p class="rule">Purple: boss floors (16, 33, 50) and the Heart (55).</p></section>
@@ -411,11 +417,12 @@ def main():
     ap.add_argument("page")
     ap.add_argument("--title", default="Stage 1 self-play")
     ap.add_argument("--started", default="")
+    ap.add_argument("--subtitle", default="", help="replaces the description line under the title")
     a = ap.parse_args()
     rows = load(os.path.join(a.out_dir, "metrics.jsonl"))
     tmp = a.page + ".tmp"
     with open(tmp, "w") as f:
-        f.write(page(rows, a.title, a.started))
+        f.write(page(rows, a.title, a.started, a.subtitle))
     os.replace(tmp, a.page)
 
 
