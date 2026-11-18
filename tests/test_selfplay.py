@@ -349,6 +349,15 @@ class ProgressWindowTest(unittest.TestCase):
         self.assertEqual(sp.progress_window(a, a), {})
 
 
+class MallocTrimTest(unittest.TestCase):
+    def test_trim_and_rss(self):
+        sp = load()
+        if not sys.platform.startswith("linux"):
+            self.skipTest("glibc only")
+        self.assertTrue(sp.malloc_trim())
+        self.assertGreater(sp.rss_gb(), 0)
+
+
 class DashboardProgressTest(unittest.TestCase):
     def test_panel(self):
         spec = importlib.util.spec_from_file_location(

@@ -383,6 +383,17 @@ def progress_window(s, last_s):
     return out
 
 
+def malloc_trim():
+    """glibc malloc_trim(0): hand freed heap memory of all arenas back to the OS (2026-11-18: the C++ workers'
+    malloc arenas grew ~0.9 GB/h by fragmentation with all data structures flat). Returns True if it ran."""
+    try:
+        import ctypes
+        ctypes.CDLL("libc.so.6").malloc_trim(0)
+        return True
+    except (OSError, AttributeError):
+        return False
+
+
 def rss_gb():
     """Resident set size of this process in GB (Linux /proc; None elsewhere)."""
     try:
@@ -514,6 +525,8 @@ def main(argv=None):
                          "moves) or over all searched moves (half-life in searched moves)")
     ap.add_argument("--sync-steps", type=int, default=50, help="copy trained weights to the inference net every N steps")
     ap.add_argument("--report", type=float, default=30.0)
+    ap.add_argument("--malloc-trim", action="store_true",
+                    help="call glibc malloc_trim(0) at every report and log RSS before / after (rss_gb_pre_trim)")
     ap.add_argument("--ckpt-minutes", type=float, default=30.0)
     ap.add_argument("--resume")
     ap.add_argument("--seed", type=int, default=0, help="weight init / search / sampling seed (not a run seed)")
@@ -948,6 +961,10 @@ def main(argv=None):
                     print("# force-keys: off from the first curriculum step-up", flush=True)
                 asc_hist = []
                 print(f"# curriculum: A{asc} Heart kills {wins}/{tot} -> A{asc + 1}", flush=True)
+            pre_trim = None
+            if args.malloc_trim:   # RSS before the trim; "rss_gb" below is after it
+                pre_trim = rss_gb()
+                malloc_trim()
             row = {
                 "time": time.strftime("%Y-%m-%d %H:%M:%S"), "hours": round((wall0 + now - t_start) / 3600, 3),
                 "positions_per_s": round((s["evals"] - last_s["evals"]) / dt),
@@ -991,6 +1008,8 @@ def main(argv=None):
                 row["force_keys"] = {"active": drv.force_keys(), "sapphire": s["forced_keys"][0],
                                      "ruby": s["forced_keys"][1], "emerald": s["forced_keys"][2],
                                      "route_masked": s["key_route_masked"]}
+            if pre_trim is not None:
+                row["rss_gb_pre_trim"] = pre_trim
             if args.explore_amber:   # forcing attempts, of which c = 0 / infinity; logged natural items, unplayed (0)
                 row["explore_amber"] = {k: s["explore_" + k] for k in
                                         ("attempts", "c_zero", "c_inf", "natural", "natural_unplayed")}
