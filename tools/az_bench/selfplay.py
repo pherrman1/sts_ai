@@ -425,7 +425,8 @@ def main(argv=None):
     ap.add_argument("--keep-fast", type=float, default=0.0, help="keep probability of a fast-search position")
     ap.add_argument("--max-fight-moves", type=int, default=400)
     ap.add_argument("--max-pending", type=int, default=300000,
-                    help="samples of unfinished runs held for their labels; above it keep probabilities shrink")
+                    help="samples of unfinished runs held for their labels; above it keep probabilities shrink "
+                         "(<= 0: no cap, every full move is trained on, as Amber Eye; memory ~5.5 KB per held sample)")
     ap.add_argument("--explore-c", type=float, default=0.0, help="pick-rate exploration strength (0 = off)")
     ap.add_argument("--pick-target", type=float, default=0.01, help="pick-rate target per item and run")
     ap.add_argument("--explore-amber", action="store_true",
@@ -446,6 +447,15 @@ def main(argv=None):
                     help="net input: identical cards as one CARD token with a copy count (search::amberMergeCards); "
                          "changes what the net sees, so a run uses it from its start (a warm start sees count 0 = the "
                          "old single-card encoding)")
+    ap.add_argument("--chance-on-reveal", action="store_true",
+                    help="Amber Eye: an out-of-combat search edge is a chance edge only when its step reveals hidden "
+                         "information (an RNG draw, a pre-shuffled pool / encounter queue, a fight start, a new act)")
+    ap.add_argument("--cross-combat", action="store_true",
+                    help="Amber Eye: one search over combat and out-of-combat states (fight starts and won fights are "
+                         "expanded instead of being net-valued leaves)")
+    ap.add_argument("--sim-help", action="store_true",
+                    help="Amber Eye's simulator help: reward gold taken automatically, forced positions skipped also "
+                         "inside the search, buying Prismatic Shard banned")
     ap.add_argument("--batch", type=int, default=2048)
     ap.add_argument("--row-buckets", default="2048", help="batch rows padded to these (one size keeps compiled shapes few)")
     ap.add_argument("--tok-buckets", default="32,40,48,56,64,80,96,128,212")
@@ -571,6 +581,7 @@ def main(argv=None):
         fast_noise=not args.no_fast_noise, q_rescale=args.q_rescale, utility=1 if amber else 0,
         keyless_hp=args.keyless_hp,
         eval_cache=args.eval_cache, eval_cache_cap=args.eval_cache_cap, merge_cards=args.merge_cards,
+        chance_on_reveal=args.chance_on_reveal, cross_combat=args.cross_combat, sim_help=args.sim_help,
         explore_amber=args.explore_amber, explore_temp=args.explore_temp,
         **({"search_ema_lambda": ema_lam, "search_ema_full_only": args.value_ema_moves == "full"}
            if ema_search else {}))
@@ -895,6 +906,11 @@ def main(argv=None):
                 "ooc_searched": list(s["ooc_searched"]), "ooc_not_best_q": list(s["ooc_not_best_q"]),
                 "ooc_q_spread_mean": [round(s["ooc_q_spread_sum"][k] / max(1, s["ooc_q_spread_n"][k]), 5) for k in (0, 1)],
                 "progress_window": progress_window(s, last_s),
+                # Amber search rules (cumulative): first expansions of OOC edges [deterministic, chance]
+                # (--chance-on-reveal), fights started / won inside the search (--cross-combat)
+                "ooc_edges_det_chance": list(s["ooc_edges_det_chance"]),
+                "tree_fight_starts": s["tree_fight_starts"], "tree_fight_exits": s["tree_fight_exits"],
+                "auto_gold": s["auto_gold"],   # --sim-help: reward gold taken automatically (real runs)
             }
             if args.explore_amber:   # forcing attempts, of which c = 0 / infinity; logged natural items, unplayed (0)
                 row["explore_amber"] = {k: s["explore_" + k] for k in

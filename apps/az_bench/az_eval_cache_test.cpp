@@ -8,6 +8,8 @@
 //
 // --utility amber: the net also gives per-floor HP (hpf), which the cache must return too.
 //
+// --amber-search: Amber Eye's search rules (chanceOnReveal, crossCombat, simHelp) on; the cache stays exact.
+//
 // --ema LAM (RunConfig::searchEmaLambda): the net also gives an outcome distribution (dist) and F is that
 // distribution's E[final floor] / 57; the HP weights are 0, so the utility is F alone. Then also: (1) the search with
 // the search-backed distributions makes the same moves and the same samples (all other fields) as without them;
@@ -17,7 +19,7 @@
 //
 // --ema-all: the EMA chain over all searched moves (default with --ema: full moves only).
 //
-// usage: az-eval-cache-test [--runs 3] [--seed-base 1] [--fast] [--utility amber] [--ema LAM] [--ema-all]
+// usage: az-eval-cache-test [--runs 3] [--seed-base 1] [--fast] [--utility amber] [--ema LAM] [--ema-all] [--amber-search]
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -173,6 +175,7 @@ int main(int argc, char **argv) {
         if (a == "--runs") cfg.maxRuns = std::stoll(next());
         else if (a == "--seed-base") cfg.seedBase = std::stoull(next());
         else if (a == "--utility") { const std::string u = next(); if (u != "amber") { std::fprintf(stderr, "unknown utility %s\n", u.c_str()); return 2; } cfg.utility = azbench::Utility::AMBER; }
+        else if (a == "--amber-search") cfg.chanceOnReveal = cfg.crossCombat = cfg.simHelp = true;
         else if (a == "--ema") { cfg.searchEmaLambda = std::stod(next()); cfg.hpWeightCombat = cfg.hpWeightOoc = 0; }
         else if (a == "--ema-all") cfg.searchEmaFullOnly = false;
         else if (a == "--fast") { cfg.fullSims = 8; cfg.fastSims = 4; cfg.fullCandidates = 4; cfg.fastCandidates = 2; }

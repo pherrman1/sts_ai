@@ -230,6 +230,22 @@ add_test(NAME az_run_driver_keyless COMMAND $<TARGET_FILE:az-run-driver> --worke
 set_tests_properties(az_run_driver_keyless PROPERTIES LABELS "core;smoke")
 # Search flags (no Gumbel noise on fast moves, Gumbel MuZero completed-Q rescale): the transform's arithmetic, and
 # full runs with both flags on give valid samples.
+# Amber Eye search rules (--chance-on-reveal, --cross-combat, --sim-help; 2026-11-17): each alone and together, with
+# high test HP so runs reach fights won inside the search; the main checks each rule acts when on and is inert off.
+foreach(rule chance-on-reveal cross-combat sim-help)
+    add_test(NAME az_run_driver_${rule} COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 6 --fast
+        --test-hp 900 --${rule})
+    set_tests_properties(az_run_driver_${rule} PROPERTIES LABELS "core;smoke")
+endforeach()
+add_test(NAME az_run_driver_amber_search COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 6 --fast
+    --test-hp 900 --chance-on-reveal --cross-combat --sim-help --max-pending 0)
+set_tests_properties(az_run_driver_amber_search PROPERTIES LABELS "core;smoke")
+add_test(NAME az_eval_cache_amber_search COMMAND $<TARGET_FILE:az-eval-cache-test> --runs 3 --seed-base 1 --fast
+    --amber-search)
+set_tests_properties(az_eval_cache_amber_search PROPERTIES LABELS "core;smoke")
+add_test(NAME az_eval_cache_amber_search_ema COMMAND $<TARGET_FILE:az-eval-cache-test> --runs 3 --seed-base 1 --fast
+    --amber-search --ema 0.9)
+set_tests_properties(az_eval_cache_amber_search_ema PROPERTIES LABELS "core;smoke")
 add_test(NAME az_run_driver_qtransform COMMAND $<TARGET_FILE:az-run-driver> --self-test-q)
 set_tests_properties(az_run_driver_qtransform PROPERTIES LABELS "core;smoke")
 add_test(NAME az_run_driver_search_flags COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 6 --fast
@@ -267,6 +283,14 @@ target_include_directories(amber_game_encoder_test PRIVATE include json/include)
 add_test(NAME amber_game_encoder COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
     $<TARGET_FILE:amber_game_encoder_test> 200)
 set_tests_properties(amber_game_encoder PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
+
+# Amber Eye's out-of-combat chance rule (stage 1 --chance-on-reveal): a step the detector calls deterministic has the
+# same public result under resampled hidden state (random-legal A20 runs, battles skipped, fixed test seeds 1..60).
+add_executable(amber_chance_rule_test tests/amber_chance_rule_test.cpp $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(amber_chance_rule_test PRIVATE include json/include)
+add_test(NAME amber_chance_rule COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:amber_chance_rule_test> 60)
+set_tests_properties(amber_chance_rule PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
 
 add_executable(rest_recall_filter_test tests/rest_recall_filter_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)

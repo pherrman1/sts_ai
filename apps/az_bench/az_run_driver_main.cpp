@@ -2,7 +2,7 @@
 // training samples (labels filled, policy a distribution over the sample's actions, action sources / targets inside
 // the row). Smoke test and CPU-side throughput probe.
 //
-// usage: az-run-driver [--workers 2] [--games 4] [--runs 8] [--batch 64] [--seed 0] [--seed-base 1] [--fast] [--asc 20] [--sims N] [--const-value] [--test-hp HP] [--max-fight-moves 400] [--explore-c C] [--explore-amber] [--pick-target T] [--no-fast-noise] [--q-rescale] [--c-scale S] [--utility floor-hp|amber] [--keyless-hp]
+// usage: az-run-driver [--workers 2] [--games 4] [--runs 8] [--batch 64] [--seed 0] [--seed-base 1] [--fast] [--asc 20] [--sims N] [--const-value] [--test-hp HP] [--max-fight-moves 400] [--explore-c C] [--explore-amber] [--pick-target T] [--no-fast-noise] [--q-rescale] [--c-scale S] [--utility floor-hp|amber] [--keyless-hp] [--chance-on-reveal] [--cross-combat] [--sim-help] [--max-pending N]
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -84,6 +84,10 @@ int main(int argc, char **argv) {
             else { std::fprintf(stderr, "--utility floor-hp|amber\n"); return 2; }
         }
         else if (a == "--keyless-hp") cfg.keylessHp = true;
+        else if (a == "--chance-on-reveal") cfg.chanceOnReveal = true;
+        else if (a == "--cross-combat") cfg.crossCombat = true;
+        else if (a == "--sim-help") cfg.simHelp = true;
+        else if (a == "--max-pending") cfg.maxPendingSamples = std::stoll(next());
         else if (a == "--sims") { cfg.fullSims = std::stoi(next()); cfg.fastSims = cfg.fullSims; cfg.fullProb = 1.0; }
         else if (a == "--fast") { cfg.fullSims = 8; cfg.fastSims = 4; cfg.fullCandidates = 4; cfg.fastCandidates = 2; }
         else { std::fprintf(stderr, "unknown argument %s\n", a.c_str()); return 2; }
@@ -186,7 +190,17 @@ int main(int argc, char **argv) {
                 static_cast<long long>(s.oocNotBestQ[0]), static_cast<long long>(s.oocNotBestQ[1]),
                 s.oocSpreadSum[0] / std::max<std::int64_t>(1, s.oocSpreadN[0]),
                 s.oocSpreadSum[1] / std::max<std::int64_t>(1, s.oocSpreadN[1]));
+    std::printf("amber search: ooc_edges deterministic %lld chance %lld tree_fight_starts %lld tree_fight_exits %lld "
+                "auto_gold %lld\n",
+                static_cast<long long>(s.oocEdgeKinds[0]), static_cast<long long>(s.oocEdgeKinds[1]),
+                static_cast<long long>(s.treeFightStarts), static_cast<long long>(s.treeFightExits),
+                static_cast<long long>(s.autoGold));
     if (bad || s.invalidActions || samples.empty() || s.runsDone < cfg.maxRuns) return 1;
+    // The Amber rules must act when on and be inert when off.
+    if (cfg.chanceOnReveal != (s.oocEdgeKinds[0] + s.oocEdgeKinds[1] > 0)) return 1;
+    if (cfg.chanceOnReveal && (s.oocEdgeKinds[0] == 0 || s.oocEdgeKinds[1] == 0)) return 1;
+    if (cfg.crossCombat != (s.treeFightStarts > 0 && s.treeFightExits > 0)) return 1;
+    if (cfg.simHelp != (s.autoGold > 0)) return 1;
     const bool explore = cfg.exploreC > 0 || cfg.exploreAmber;
     if (cfg.exploreAmber)
         std::printf("amber exploration: attempts %lld c0 %lld cinf %lld natural %lld natural_unplayed %lld moves %lld\n",
