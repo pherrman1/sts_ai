@@ -43,7 +43,7 @@ kernel, MFU counted after discounting padded attention). Consecutive rows are gr
 tile. Same math as
 `AmberNet.forward_packed`, fp32 residual stream. `selfplay.py --packed-h2d --fused-net` uses it (default off);
 `--gpu-timing` logs GPU ms per second of the inference and training streams. PC check 2026-11-18 (ledger
-§TBD): correct, but 0.82× the compiled path at best (272k vs 331k pos/s), so it is not used.
+§818): correct, but 0.82× the compiled path at best (272k vs 331k pos/s), so it is not used.
 
 ```
 TRITON_INTERPRET=1 python3 -m pytest tests/test_fused_net.py        # correctness on a CPU

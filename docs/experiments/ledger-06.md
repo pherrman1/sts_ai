@@ -28100,7 +28100,7 @@ reports ~800k on an 8c/16t CPU with a hand-written kernel. Larger nets fall belo
 bench stays research-only.
 **Knowledge impact:** none yet (KB page when stage 1 starts).
 
-## §TBD — Whole-net Triton kernel for Stage 1 inference (`--fused-net`, PR #1094): correct on the GPU but slower than the compiled three-kernel path, best 272k vs 331k pos/s (0.82×), MFU 14.5 % vs 17.6 % (PC, 2026-11-18)
+## §818 — Whole-net Triton kernel for Stage 1 inference (`--fused-net`, PR #1094): correct on the GPU but slower than the compiled three-kernel path, best 272k vs 331k pos/s (0.82×), MFU 14.5 % vs 17.6 % (PC, 2026-11-18)
 
 **Question (Philipp 2026-11-17 22:36 CET, "Können wir unseren eigenen Kernel schreiben?", replicate Amber Eye):** does
 one kernel per batch for the whole 0.44M AmberNet (input embedding, 6 layers, summary, value heads, policy), as Amber
