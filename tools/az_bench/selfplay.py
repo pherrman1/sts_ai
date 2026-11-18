@@ -476,6 +476,12 @@ def main(argv=None):
                     help="curriculum: the ADR-0063 Heart-key backstops (Act-3 treasure-row Sapphire, Recall at the last "
                          "Act-3 campfire, Act-3 route kept on the burning elite) are forced moves until the first "
                          "curriculum step-up (needs --curriculum; a deviation from Amber Eye, Philipp 2026-11-18)")
+    ap.add_argument("--heart-arms", default="",
+                    help="Heart search probe (diagnostic, default off): FULL:FAST:PROB:MFULL:MFAST,... search budgets; "
+                         "each run reaching the Heart plays the fight from the same start once per arm and rep "
+                         "(results in heart_probe.jsonl); use with --min-replay above any sample count (frozen net) "
+                         "and --keep-full 0")
+    ap.add_argument("--heart-reps", type=int, default=1, help="plays per arm and Heart start (--heart-arms)")
     ap.add_argument("--batch", type=int, default=2048)
     ap.add_argument("--row-buckets", default="2048", help="batch rows padded to these (one size keeps compiled shapes few)")
     ap.add_argument("--tok-buckets", default="32,40,48,56,64,80,96,128,212")
@@ -543,6 +549,9 @@ def main(argv=None):
         ap.error("--value-ema-search needs --value-ema-halflife > 0")
     amber = args.utility == "amber"
     hp_floors = 56 if amber else 1
+    heart_arms = [[float(x) for x in a.split(":")] for a in args.heart_arms.split(",") if a]
+    if any(len(a) != 5 for a in heart_arms):
+        ap.error("--heart-arms: FULL:FAST:PROB:MFULL:MFAST per arm")
 
     sys.path.insert(0, args.module_dir)
     import az_bench_native  # noqa: E402
@@ -626,7 +635,8 @@ def main(argv=None):
         explore_amber=args.explore_amber, explore_temp=args.explore_temp,
         **({"search_ema_lambda": ema_lam, "search_ema_full_only": args.value_ema_moves == "full"}
            if ema_search else {}),
-        **({"force_keys": True} if force_keys else {}))
+        **({"force_keys": True} if force_keys else {}),
+        **({"heart_arms": heart_arms, "heart_reps": args.heart_reps} if heart_arms else {}))
     if args.force_keys != "off":
         print(f"# force-keys {args.force_keys}: {'on until the first curriculum step-up' if force_keys else 'off (the curriculum already stepped up)'}",
               flush=True)
@@ -1018,6 +1028,14 @@ def main(argv=None):
                                     "moves": args.value_ema_moves if ema_search else None,
                                     "labelled": ema_stats["samples"],
                                     "real_weight_mean": round(ema_stats["real_weight"] / max(1, ema_stats["samples"]), 4)}
+            if heart_arms:   # Heart probe: all plays so far (rewritten each report)
+                hr = drv.heart_results()
+                row["heart_probe_plays"] = len(hr)
+                with open(os.path.join(args.out_dir, "heart_probe.jsonl.tmp"), "w") as f:
+                    for r in hr:
+                        f.write(json.dumps(r) + "\n")
+                os.replace(os.path.join(args.out_dir, "heart_probe.jsonl.tmp"),
+                           os.path.join(args.out_dir, "heart_probe.jsonl"))
             print(json.dumps(row), flush=True)
             metrics.write(json.dumps(row) + "\n")
             metrics.flush()

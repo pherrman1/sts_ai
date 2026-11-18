@@ -311,6 +311,9 @@ namespace sts::azbench {
         bool inBattle = false;
         bool forceKeys = false;              // RunConfig::forceKeys state this run started with
         std::shared_ptr<const GameContext> fightOuter;   // crossCombat: g.gc at the real fight's start
+        std::shared_ptr<const GameContext> heartStart;   // heartArms: the game state at the Heart fight's start
+        int heartJob = -1;                   // heartArms: the current play of the Heart fight (-1 = not there yet)
+        int heartSearched = 0;               // heartArms: searched moves of the current play
         std::vector<int> rootKeys;           // pick-rate item bucket per root action (-1 = none), OOC roots
         std::vector<char> rootUnder;         // exploreAmber: root action is an under-target item (after warm-up)
         std::unordered_map<int, double> gapMin;   // exploreAmber: this run's smallest gap per item
@@ -521,6 +524,16 @@ namespace sts::azbench {
             throw std::invalid_argument("run driver: exploreAmber and exploreC are exclusive");
         if (cfg_.exploreAmber && !(cfg_.exploreT > 0 && cfg_.pickTarget > 0))
             throw std::invalid_argument("run driver: exploreAmber needs exploreT > 0 and pickTarget > 0");
+        int maxSims = std::max(cfg_.fullSims, cfg_.fastSims);
+        int maxCand = std::max(cfg_.fullCandidates, cfg_.fastCandidates);
+        if (cfg_.heartReps < 1) throw std::invalid_argument("run driver: heartReps >= 1");
+        for (const auto &a : cfg_.heartArms) {
+            if (a.fullSims < 1 || a.fastSims < 1 || a.fullCandidates < 1 || a.fastCandidates < 1 ||
+                !(a.fullProb >= 0 && a.fullProb <= 1))
+                throw std::invalid_argument("run driver: heart arm needs sims, candidates >= 1 and fullProb in [0, 1]");
+            maxSims = std::max({maxSims, a.fullSims, a.fastSims});
+            maxCand = std::max({maxCand, a.fullCandidates, a.fastCandidates});
+        }
         for (int w = 0; w < cfg_.workers; ++w) {
             auto wk = std::make_unique<Worker>();
             wk->rng.seed(cfg_.searchSeed * 1000003u + static_cast<std::uint64_t>(w));
@@ -529,8 +542,7 @@ namespace sts::azbench {
                 // One node per simulation; a halving phase rounds its per-candidate count up to 1, so a search
                 // can overshoot its budget by at most one simulation per candidate (exploreAmber: under-target
                 // items are extra candidates, at most one per encoded action).
-                r.pool.reserve(static_cast<std::size_t>(std::max(cfg_.fullSims, cfg_.fastSims) +
-                                                        std::max(cfg_.fullCandidates, cfg_.fastCandidates)
+                r.pool.reserve(static_cast<std::size_t>(maxSims + maxCand
                                                         + (cfg_.exploreAmber ? search::kAmberMaxActions : 0)) + 2);
             workers_.push_back(std::move(wk));
         }
@@ -776,6 +788,15 @@ namespace sts::azbench {
 
         std::function<void(Run &, int)> startMove;
 
+        auto enterBattle = [&](Run &g) {
+            initObservedBattle(g.gc, g.bc, *g.knowledge);
+            g.ctx = combatContext(g.gc);
+            if (cfg.crossCombat) g.fightOuter = std::make_shared<const GameContext>(search::detachedGameCopy(g.gc));
+            g.inBattle = true;
+            g.fightMoves = 0;
+        };
+
+
         auto startRun = [&](Run &g, int gi) {
             const std::uint64_t seed = nextSeed();
             if (seed == std::numeric_limits<std::uint64_t>::max()) { g.active = false; return; }
@@ -794,11 +815,49 @@ namespace sts::azbench {
             g.floorHp.fill(-1);
             g.moveDist.clear();
             g.progress = RunProgress{};
+            g.heartStart.reset();
+            g.heartJob = -1;
             ++wk.st.runsStarted;
             startMove(g, gi);
         };
 
         auto endRun = [&](Run &g, int gi) {
+            if (g.heartJob >= 0) {   // Heart probe: record this play; play the next job from the same start
+                const int arms = static_cast<int>(cfg.heartArms.size());
+                const GameContext &st = *g.heartStart;
+                HeartResult r;
+                r.seed = g.seed;
+                r.arm = g.heartJob % arms;
+                r.rep = g.heartJob / arms;
+                r.win = heartWin(g.gc) ? 1 : 0;
+                for (int m = 0; m < g.bc.monsters.monsterCount; ++m)
+                    if (g.bc.monsters.arr[m].id == MonsterId::CORRUPT_HEART) {
+                        r.heartHp = std::max(0, g.bc.monsters.arr[m].curHp);
+                        r.heartMaxHp = g.bc.monsters.arr[m].maxHp;
+                    }
+                if (r.win) r.heartHp = 0;
+                r.playerHpStart = st.curHp;
+                r.playerMaxHp = st.maxHp;
+                r.playerHpEnd = r.win ? g.gc.curHp : 0;
+                r.turns = g.bc.turn;
+                r.moves = g.fightMoves;
+                r.searched = g.heartSearched;
+                r.stall = g.bc.outcome == Outcome::UNDECIDED ? 1 : 0;   // stall guard, invalid action or no fair view
+                r.deckSize = st.deck.size();
+                r.relics = st.relics.size();
+                r.asc = g.asc;
+                {
+                    std::lock_guard<std::mutex> l(heartM_);
+                    heartResults_.push_back(r);
+                }
+                if (++g.heartJob < arms * cfg.heartReps) {
+                    g.gc = search::detachedGameCopy(st);
+                    g.heartSearched = 0;
+                    enterBattle(g);
+                    startMove(g, gi);
+                    return;
+                }
+            }
             const bool win = heartWin(g.gc);
             // A keyless act 3 victory is no death: with keylessHp / AMBER its floor keeps the HP (otherwise 0).
             const bool alive = win || (keylessVictory(g.gc) && (cfg.keylessHp || cfg.utility == Utility::AMBER));
@@ -927,12 +986,13 @@ namespace sts::azbench {
                 if (g.gc.info.encounter == MonsterEncounter::THE_HEART) {
                     g.progress.heart = 1;
                     g.progress.heartEntryHpSum = g.gc.curHp;
+                    if (!cfg.heartArms.empty() && g.heartJob < 0) {   // Heart probe: keep the start, play job 0
+                        g.heartStart = std::make_shared<const GameContext>(search::detachedGameCopy(g.gc));
+                        g.heartJob = 0;
+                        g.heartSearched = 0;
+                    }
                 }
-                initObservedBattle(g.gc, g.bc, *g.knowledge);
-                g.ctx = combatContext(g.gc);
-                if (cfg.crossCombat) g.fightOuter = std::make_shared<const GameContext>(search::detachedGameCopy(g.gc));
-                g.inBattle = true;
-                g.fightMoves = 0;
+                enterBattle(g);
             }
             wk.st.stepCpu += cpuSeconds() - t0;
             ++wk.st.moves;
@@ -978,14 +1038,18 @@ namespace sts::azbench {
             }
             g.poolUsed = 0;
             g.spent = 0;
-            g.full = U(wk.rng) < cfg.fullProb;
+            const HeartArm *arm = g.heartJob >= 0 && g.inBattle
+                                      ? &cfg.heartArms[g.heartJob % static_cast<int>(cfg.heartArms.size())] : nullptr;
+            if (arm) ++g.heartSearched;
+            g.full = U(wk.rng) < (arm ? arm->fullProb : cfg.fullProb);
             {
                 const double pend = static_cast<double>(pending_.load(std::memory_order_relaxed));
                 const double scale = cfg.maxPendingSamples > 0 && pend > cfg.maxPendingSamples ? cfg.maxPendingSamples / pend : 1.0;
                 g.keep = U(wk.rng) < (g.full ? cfg.keepFull : cfg.keepFast) * scale;
             }
-            g.budget = g.full ? cfg.fullSims : cfg.fastSims;
-            g.candidates = g.full ? cfg.fullCandidates : cfg.fastCandidates;
+            g.budget = arm ? (g.full ? arm->fullSims : arm->fastSims) : g.full ? cfg.fullSims : cfg.fastSims;
+            g.candidates = arm ? (g.full ? arm->fullCandidates : arm->fastCandidates)
+                               : g.full ? cfg.fullCandidates : cfg.fastCandidates;
             g.cand.clear();
             g.phaseQueue.clear();
             g.path.clear();
