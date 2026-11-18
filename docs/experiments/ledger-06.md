@@ -28127,7 +28127,9 @@ shared-memory staging.
 ~30 % of runs but deals only ~50-65 of 750 HP; is the search budget the bottleneck?
 **Data:** [RESULTS](evidence/heart_search_probe_20261118/RESULTS.md). Net ckpt_218026 (step 218,026), frozen; commit
 312afd72; seeds 150100000-150101999; each Heart start played once per arm from the same state (same game RNG at the
-fight's start). Diagnostic, not a gate.
+fight's start). Diagnostic, not a gate. Seed block 150100000-150101999 (+ cloud smokes 150000000-150000099) lies
+in amber_scratch's future range (consecutive from 140000000, reached after ~10.1M runs): that run must stop before
+seed 150000000; future probes use 160000000+.
 **Result:** paired per-start damage difference vs the self-play budget (64/16, p 0.25): 64 full +7.5 [+5.0, +10.2],
 256 full +13.8 [+10.7, +16.8], 1024 full +15.5 [+12.6, +18.6]; 0/795 kills in every arm, no stalls. The player enters
 the Heart at 51 of 94 HP (54 %) and dies within the Heart's first attack turns in nearly every play (mean fight end

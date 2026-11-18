@@ -24,6 +24,10 @@ larger search budget in the Heart fight deal more damage or kill the Heart?
 | 1024 full | 65.3 | 54 | +15.5 [+12.6, +18.6] | 0/795 | 2.34 |
 
 No stalls. Heart entry: player HP 51.0 of 93.8 max (54 %), deck 36.4 cards, 10.2 relics. Fight length (bc.turn at the
-end, arm 0): 1 = 236, 2 = 323, 4 = 164, 5 = 47; the player dies in the Heart's first big attacks in nearly every play.
+end, 0-based, arm 0): 0 = 1, 1 = 236, 2 = 323, 3 = 13, 4 = 164, 5 = 47, 6 = 1, 7 = 8, 8 = 1, 10 = 1; the player dies in the Heart's first big attacks in nearly every play.
 Damage by entry-HP tercile (arms 0 / 1 / 2 / 3): < 41 HP 39.9 / 40.7 / 44.5 / 43.0; 41-57 HP 47.2 / 53.5 / 59.5 / 61.9;
 >= 57 HP 61.5 / 76.3 / 85.1 / 89.1.
+
+Seed block (review F1): 150100000-150101999 used here, smokes 150000000-150000099 (cloud CPU, not evidence).
+amber_scratch draws consecutive seeds from 140000000 and would reach 150100000 after ~10.1M runs (~146 h at ~69k
+runs/h); stop it before seed 150000000 or move it, and put future probes at 160000000+.
