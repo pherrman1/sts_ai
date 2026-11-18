@@ -1,0 +1,81 @@
+{
+  "plays": 3180,
+  "starts_complete": 795,
+  "reps": 1,
+  "arms": [
+    {
+      "arm": 0,
+      "name": "64/16 p0.25",
+      "plays": 795,
+      "kills": 0,
+      "stalls": 0,
+      "damage_mean": 49.78867924528302,
+      "damage_median": 40.0,
+      "turns_mean": 2.379874213836478,
+      "searched_moves_mean": 8.818867924528302
+    },
+    {
+      "arm": 1,
+      "name": "64 full",
+      "plays": 795,
+      "kills": 0,
+      "stalls": 0,
+      "damage_mean": 57.31572327044025,
+      "damage_median": 48.0,
+      "turns_mean": 2.4,
+      "searched_moves_mean": 9.171069182389937,
+      "diff_vs_arm0": {
+        "mean": 7.527044025157233,
+        "se": 1.3264907086621711,
+        "ci95": [
+          4.955880503144654,
+          10.173679245283017
+        ],
+        "share_starts_better": 0.5018867924528302,
+        "share_starts_worse": 0.3572327044025157
+      }
+    },
+    {
+      "arm": 2,
+      "name": "256 full",
+      "plays": 795,
+      "kills": 0,
+      "stalls": 0,
+      "damage_mean": 63.57861635220126,
+      "damage_median": 51.0,
+      "turns_mean": 2.3559748427672957,
+      "searched_moves_mean": 9.322012578616352,
+      "diff_vs_arm0": {
+        "mean": 13.78993710691824,
+        "se": 1.5621466446748027,
+        "ci95": [
+          10.715691823899371,
+          16.826415094339623
+        ],
+        "share_starts_better": 0.5748427672955975,
+        "share_starts_worse": 0.30943396226415093
+      }
+    },
+    {
+      "arm": 3,
+      "name": "1024 full",
+      "plays": 795,
+      "kills": 0,
+      "stalls": 0,
+      "damage_mean": 65.29811320754717,
+      "damage_median": 54.0,
+      "turns_mean": 2.3371069182389936,
+      "searched_moves_mean": 9.251572327044025,
+      "diff_vs_arm0": {
+        "mean": 15.50943396226415,
+        "se": 1.5376525592201453,
+        "ci95": [
+          12.573364779874215,
+          18.59125786163522
+        ],
+        "share_starts_better": 0.5861635220125786,
+        "share_starts_worse": 0.3081761006289308
+      }
+    }
+  ]
+}

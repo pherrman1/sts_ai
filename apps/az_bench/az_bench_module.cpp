@@ -205,8 +205,17 @@ PYBIND11_MODULE(az_bench_native, m) {
                          bool qRescale, int utility, bool keylessHp, bool evalCache, int evalCacheCap, bool mergeCards,
                          bool chanceOnReveal, bool crossCombat, bool simHelp,
                          bool exploreAmber, double exploreT, double searchEmaLambda, bool searchEmaFullOnly,
-                         bool forceKeys, bool savescum) {
+                         bool forceKeys, std::vector<std::vector<double>> heartArms, int heartReps,
+                         bool savescum) {
                  azbench::RunConfig c;
+                 for (const auto &v : heartArms) {   // [full_sims, fast_sims, full_prob, full_candidates, fast_candidates]
+                     if (v.size() != 5) throw std::invalid_argument("heart_arms: want 5 numbers per arm");
+                     azbench::HeartArm a;
+                     a.fullSims = static_cast<int>(v[0]); a.fastSims = static_cast<int>(v[1]); a.fullProb = v[2];
+                     a.fullCandidates = static_cast<int>(v[3]); a.fastCandidates = static_cast<int>(v[4]);
+                     c.heartArms.push_back(a);
+                 }
+                 c.heartReps = heartReps;
                  c.utility = static_cast<azbench::Utility>(utility);
                  c.keylessHp = keylessHp;
                  c.workers = workers;
@@ -260,7 +269,23 @@ PYBIND11_MODULE(az_bench_native, m) {
              py::arg("chance_on_reveal") = false, py::arg("cross_combat") = false, py::arg("sim_help") = false,
              py::arg("explore_amber") = false, py::arg("explore_temp") = 4.0,
              py::arg("search_ema_lambda") = 0.0, py::arg("search_ema_full_only") = true,
-             py::arg("force_keys") = false, py::arg("savescum") = false)
+             py::arg("force_keys") = false, py::arg("heart_arms") = std::vector<std::vector<double>>{},
+             py::arg("heart_reps") = 1, py::arg("savescum") = false)
+        .def("heart_results",
+             [](const azbench::RunDriver &d) {
+                 py::list out;
+                 for (const auto &r : d.heartResults()) {
+                     py::dict o;
+                     o["seed"] = r.seed; o["arm"] = r.arm; o["rep"] = r.rep; o["win"] = r.win;
+                     o["heart_hp"] = r.heartHp; o["heart_max_hp"] = r.heartMaxHp;
+                     o["player_hp_start"] = r.playerHpStart; o["player_max_hp"] = r.playerMaxHp;
+                     o["player_hp_end"] = r.playerHpEnd; o["turns"] = r.turns; o["moves"] = r.moves;
+                     o["searched"] = r.searched; o["stall"] = r.stall; o["deck_size"] = r.deckSize;
+                     o["relics"] = r.relics; o["asc"] = r.asc;
+                     out.append(o);
+                 }
+                 return out;
+             })
         .def("set_weights_version", &azbench::RunDriver::setWeightsVersion)
         .def("set_ascension", &azbench::RunDriver::setAscension)
         .def("ascension", &azbench::RunDriver::ascension)
@@ -443,6 +468,7 @@ PYBIND11_MODULE(az_bench_native, m) {
                 field("heart", &P::heart); field("keyless_victories", &P::keylessVictories);
                 field("heart_hp_sum", &P::heartHpSum); field("heart_entry_hp_sum", &P::heartEntryHpSum);
                 field("heart_turns_sum", &P::heartTurnsSum);
+                field("relics_sum", &P::relicsSum); field("deck_size_sum", &P::deckSizeSum);
                 for (int b = 0; b < P::kHeartHpBins; ++b) {   // heart_hp_00 .. heart_hp_15: Heart HP left in [50 b, 50 b + 50)
                     std::vector<std::int64_t> v;
                     for (const auto &p : s.progressAsc) v.push_back(p.heartHpHist[b]);

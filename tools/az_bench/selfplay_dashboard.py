@@ -293,6 +293,30 @@ def progress_panel(rows, cur, recent=20):
         act4_s.append(100 * e["act4"] / e["runs"])
     ch = chart(xs, [("all 3 keys % (smoothed)", smooth(keys_s, 10), "--good"),
                     ("Act 4 reached % (smoothed)", smooth(act4_s, 10), "--boss")], ymin=0, yfmt="{:.1f}") if xs else ""
+    # Elites per finished run over the whole run (all ascensions of each window summed); windows without the
+    # counters or without finished runs are gaps (None).
+    ex, el_s, bel_s = [], [], []
+    for r in rows:
+        es = (r.get("progress_window") or {}).values()
+        n = sum(e.get("runs", 0) for e in es)
+        ex.append(r["runs_done"])
+        el_s.append(sum(e.get("elites", 0) for e in es) / n if n else None)
+        bel_s.append(sum(e.get("burning_elites", 0) for e in es) / n if n else None)
+    def gap(v):   # smoothed, but missing where the window has no data
+        return [m if x is not None else None for m, x in zip(smooth(v, 10), v)]
+    if any(v is not None for v in el_s):
+        ch += ('<h3>Elites per run (all ascensions)</h3>' +
+               chart(ex, [("elite fights per run (smoothed)", gap(el_s), "--accent"),
+                          ("burning elite per run (smoothed)", gap(bel_s), "--accent2")], ymin=0, yfmt="{:.2f}"))
+    # Relics held and deck size at the run's end (selfplay.py relics_per_run / deck_per_run; rows from before the
+    # counters existed carry none and are left out).
+    rx = [r["runs_done"] for r in rows if "relics_per_run" in r]
+    if rx:
+        rr = [r["relics_per_run"] for r in rows if "relics_per_run" in r]
+        dd = [r["deck_per_run"] for r in rows if "relics_per_run" in r]
+        ch += (f'<h3>Relics and deck size at the run\'s end (per run, from run {rx[0]:,})</h3>' +
+               chart(rx, [("relics (smoothed)", gap(rr), "--good"), ("cards in deck (smoothed)", gap(dd), "--boss")],
+                     ymin=0, yfmt="{:.0f}"))
     return f"""<section class="ascbox"><h2>Keys, Recall, elites, Act 4 (finished runs)</h2>
 {tiles}
 <p class="rule">Tiles: current ascension, last ~{recent} windows. Keys count when held at the run's end. Recall % is over

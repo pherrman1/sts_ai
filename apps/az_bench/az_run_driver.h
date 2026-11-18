@@ -143,6 +143,25 @@ namespace sts::azbench {
     // to the edges that still reach the burning elite.
     int keyBackstopActions(const GameContext &gc, std::vector<search::GameAction> &v);
 
+    // Heart search probe (RunConfig::heartArms): one arm's search budget for the Heart fight.
+    struct HeartArm {
+        int fullSims = 64, fastSims = 16;
+        double fullProb = 0.25;
+        int fullCandidates = 16, fastCandidates = 4;
+    };
+
+    // Heart search probe: one Heart fight played from a stored start.
+    struct HeartResult {
+        std::uint64_t seed = 0;     // the run seed the start came from
+        int arm = 0, rep = 0;
+        int win = 0;                // the Heart was killed
+        int heartHp = 0;            // Heart HP left at the fight's end (0 on a kill)
+        int heartMaxHp = 0;
+        int playerHpStart = 0, playerMaxHp = 0, playerHpEnd = 0;
+        int turns = 0, moves = 0, searched = 0, stall = 0;
+        int deckSize = 0, relics = 0, asc = 0;
+    };
+
     struct RunConfig {
         int workers = 11;
         int gamesPerWorker = 700;
@@ -255,6 +274,14 @@ namespace sts::azbench {
         // Chain distributions are held as float16 until the run ends (~114 B per chain move).
         double searchEmaLambda = 0;
         bool searchEmaFullOnly = true;
+        // Heart search probe (2026-11-18, diagnostic, default empty = off). When a run reaches the Heart fight, its
+        // game state at the fight's start is stored and the fight is played heartArms.size() x heartReps times from
+        // that same state (same game RNG at the start; job j plays arm j % arms, rep j / arms), each with the arm's
+        // search budget instead of fullSims / fastSims / fullProb / candidates. Every play gives one HeartResult
+        // (heartResults); the run then ends with the last play's outcome. Moves before the Heart use the normal
+        // budget. Meant for a frozen net (no training) with keepFull = keepFast = 0.
+        std::vector<HeartArm> heartArms;
+        int heartReps = 1;
         CombatEncodeFn encodeCombat = nullptr;   // default: search::amberEncodeCombat
         GameEncodeFn encodeGame = nullptr;       // default: search::amberEncodeGame (stubEncodeGame = placeholder)
     };
@@ -301,6 +328,9 @@ namespace sts::azbench {
         static constexpr int kHeartHpBins = 16;
         std::array<std::int64_t, kHeartHpBins> heartHpHist{};
         std::int64_t heartHpSum = 0, heartEntryHpSum = 0, heartTurnsSum = 0;
+        // Relics held and cards in the deck at the run's end (2026-11-18, logging only), summed over finished runs
+        // (divide by runs).
+        std::int64_t relicsSum = 0, deckSizeSum = 0;
         RunProgress &operator+=(const RunProgress &o) {
             ruby += o.ruby; emerald += o.emerald; sapphire += o.sapphire; allKeys += o.allKeys;
             campfires += o.campfires; recallOffered += o.recallOffered;
@@ -309,6 +339,7 @@ namespace sts::azbench {
             keylessVictories += o.keylessVictories;
             for (int k = 0; k < kHeartHpBins; ++k) heartHpHist[k] += o.heartHpHist[k];
             heartHpSum += o.heartHpSum; heartEntryHpSum += o.heartEntryHpSum; heartTurnsSum += o.heartTurnsSum;
+            relicsSum += o.relicsSum; deckSizeSum += o.deckSizeSum;
             return *this;
         }
     };
@@ -392,6 +423,11 @@ namespace sts::azbench {
         // Savescum (RunConfig::savescum) for runs started from now on (runs in progress keep theirs).
         void setSavescum(bool on) { savescum_.store(on); }
         bool savescum() const { return savescum_.load(); }
+        // Heart search probe (RunConfig::heartArms): the finished Heart plays so far.
+        std::vector<HeartResult> heartResults() const {
+            std::lock_guard<std::mutex> l(heartM_);
+            return heartResults_;
+        }
 
         struct Node;
         struct Run;
@@ -423,6 +459,8 @@ namespace sts::azbench {
         std::mutex sampleM_;
         std::deque<Sample> done_;
         std::atomic<std::int64_t> batches_{0}, batchRows_{0}, packNs_{0};
+        mutable std::mutex heartM_;
+        std::vector<HeartResult> heartResults_;
     };
 
 }

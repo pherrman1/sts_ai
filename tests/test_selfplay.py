@@ -332,6 +332,9 @@ def check_progress(tc, e):
     tc.assertLessEqual(e["heart"], e["act4"])
     tc.assertLessEqual(e["act4"], e["all_keys"])        # Act 4 needs all three keys
     tc.assertLessEqual(e["keyless_victories"] + e["act4"], n)
+    if "relics_sum" in e:   # every run ends with its starter relic and a non-empty deck
+        tc.assertGreaterEqual(e["relics_sum"], n)
+        tc.assertGreaterEqual(e["deck_size_sum"], n)
 
 
 @unittest.skipUnless(HAVE_TORCH, "torch missing")
@@ -347,6 +350,13 @@ class ProgressWindowTest(unittest.TestCase):
         self.assertEqual(sp.progress_window(b, a), {"0": {"runs": 5, "ruby": 2, "recall": 2},
                                                     "1": {"runs": 4, "ruby": 1, "recall": 0}})
         self.assertEqual(sp.progress_window(a, a), {})
+
+    def test_per_run_means(self):
+        sp = load()
+        pw = {"0": {"runs": 3, "relics_sum": 9, "deck_size_sum": 60}, "1": {"runs": 1, "relics_sum": 7, "deck_size_sum": 20}}
+        self.assertEqual(sp.per_run_means(pw), (4.0, 20.0))
+        self.assertEqual(sp.per_run_means({}), (None, None))
+        self.assertEqual(sp.per_run_means({"0": {"runs": 2, "ruby": 1}}), (None, None))   # driver without the counters
 
 
 class MallocTrimTest(unittest.TestCase):

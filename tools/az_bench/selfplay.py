@@ -384,6 +384,18 @@ def progress_window(s, last_s):
     return out
 
 
+def per_run_means(pw):
+    """Relics held and deck size at the run's end, mean per run finished in this window over all ascensions
+    (progress_window relics_sum / deck_size_sum): (relics_per_run, deck_per_run), None where no run finished or the
+    driver has no such counter."""
+    n = sum(e["runs"] for e in pw.values())
+    def mean(k):
+        if not n or not all(k in e for e in pw.values()):
+            return None
+        return round(sum(e[k] for e in pw.values()) / n, 3)
+    return mean("relics_sum"), mean("deck_size_sum")
+
+
 def malloc_trim():
     """glibc malloc_trim(0): hand freed heap memory of all arenas back to the OS (2026-11-18: the C++ workers'
     malloc arenas grew ~0.9 GB/h by fragmentation with all data structures flat). Returns True if it ran."""
@@ -481,6 +493,12 @@ def main(argv=None):
                     help="curriculum: the ADR-0063 Heart-key backstops (Act-3 treasure-row Sapphire, Recall at the last "
                          "Act-3 campfire, Act-3 route kept on the burning elite) are forced moves until the first "
                          "curriculum step-up (needs --curriculum; a deviation from Amber Eye, Philipp 2026-11-18)")
+    ap.add_argument("--heart-arms", default="",
+                    help="Heart search probe (diagnostic, default off): FULL:FAST:PROB:MFULL:MFAST,... search budgets; "
+                         "each run reaching the Heart plays the fight from the same start once per arm and rep "
+                         "(results in heart_probe.jsonl); use with --min-replay above any sample count (frozen net) "
+                         "and --keep-full 0")
+    ap.add_argument("--heart-reps", type=int, default=1, help="plays per arm and Heart start (--heart-arms)")
     ap.add_argument("--batch", type=int, default=2048)
     ap.add_argument("--row-buckets", default="2048", help="batch rows padded to these (one size keeps compiled shapes few)")
     ap.add_argument("--tok-buckets", default="32,40,48,56,64,80,96,128,212")
@@ -548,6 +566,9 @@ def main(argv=None):
         ap.error("--value-ema-search needs --value-ema-halflife > 0")
     amber = args.utility == "amber"
     hp_floors = 56 if amber else 1
+    heart_arms = [[float(x) for x in a.split(":")] for a in args.heart_arms.split(",") if a]
+    if any(len(a) != 5 for a in heart_arms):
+        ap.error("--heart-arms: FULL:FAST:PROB:MFULL:MFAST per arm")
 
     sys.path.insert(0, args.module_dir)
     import az_bench_native  # noqa: E402
@@ -633,6 +654,7 @@ def main(argv=None):
         **({"search_ema_lambda": ema_lam, "search_ema_full_only": args.value_ema_moves == "full"}
            if ema_search else {}),
         **({"force_keys": True} if force_keys else {}),
+        **({"heart_arms": heart_arms, "heart_reps": args.heart_reps} if heart_arms else {}),
         **({"savescum": True} if savescum else {}))
     if args.savescum:
         print(f"# savescum: {'on until a file SAVESCUM_OFF appears in --out-dir' if savescum else 'off (SAVESCUM_OFF seen before this resume)'}",
@@ -975,6 +997,7 @@ def main(argv=None):
                     print("# force-keys: off from the first curriculum step-up", flush=True)
                 asc_hist = []
                 print(f"# curriculum: A{asc} Heart kills {wins}/{tot} -> A{asc + 1}", flush=True)
+            pw = progress_window(s, last_s)
             pre_trim = None
             if args.malloc_trim:   # RSS before the trim; "rss_gb" below is after it
                 pre_trim = rss_gb()
@@ -1002,7 +1025,7 @@ def main(argv=None):
                 # [full, fast] cumulative: searched OOC roots, picks off the best visited mean Q, mean visited-Q spread
                 "ooc_searched": list(s["ooc_searched"]), "ooc_not_best_q": list(s["ooc_not_best_q"]),
                 "ooc_q_spread_mean": [round(s["ooc_q_spread_sum"][k] / max(1, s["ooc_q_spread_n"][k]), 5) for k in (0, 1)],
-                "progress_window": progress_window(s, last_s),
+                "progress_window": pw,
                 # Amber search rules (cumulative): first expansions of OOC edges [deterministic, chance]
                 # (--chance-on-reveal), fights started / won inside the search (--cross-combat)
                 "ooc_edges_det_chance": list(s["ooc_edges_det_chance"]),
@@ -1027,6 +1050,7 @@ def main(argv=None):
                                      "route_masked": s["key_route_masked"]}
             if pre_trim is not None:
                 row["rss_gb_pre_trim"] = pre_trim
+            row["relics_per_run"], row["deck_per_run"] = per_run_means(pw)
             if args.explore_amber:   # forcing attempts, of which c = 0 / infinity; logged natural items, unplayed (0)
                 row["explore_amber"] = {k: s["explore_" + k] for k in
                                         ("attempts", "c_zero", "c_inf", "natural", "natural_unplayed")}
@@ -1035,6 +1059,14 @@ def main(argv=None):
                                     "moves": args.value_ema_moves if ema_search else None,
                                     "labelled": ema_stats["samples"],
                                     "real_weight_mean": round(ema_stats["real_weight"] / max(1, ema_stats["samples"]), 4)}
+            if heart_arms:   # Heart probe: all plays so far (rewritten each report)
+                hr = drv.heart_results()
+                row["heart_probe_plays"] = len(hr)
+                with open(os.path.join(args.out_dir, "heart_probe.jsonl.tmp"), "w") as f:
+                    for r in hr:
+                        f.write(json.dumps(r) + "\n")
+                os.replace(os.path.join(args.out_dir, "heart_probe.jsonl.tmp"),
+                           os.path.join(args.out_dir, "heart_probe.jsonl"))
             print(json.dumps(row), flush=True)
             metrics.write(json.dumps(row) + "\n")
             metrics.flush()

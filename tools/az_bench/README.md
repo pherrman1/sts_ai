@@ -50,3 +50,11 @@ TRITON_INTERPRET=1 python3 -m pytest tests/test_fused_net.py        # correctnes
 python3 tools/az_bench/fused_net_bench.py                            # GPU: fused vs. compiled forward_packed, MFU
 python3 tools/az_bench/fused_net_bench.py --sweep                    # tile / warp settings
 ```
+
+## Heart search probe (2026-11-18)
+
+`selfplay.py --heart-arms FULL:FAST:PROB:MFULL:MFAST,... [--heart-reps R]` (default off): every run that reaches the
+Heart keeps the fight's start state and plays the fight once per arm and rep from it, each with that arm's search
+budget (moves before the Heart use the normal flags); plays go to `heart_probe.jsonl`. Use a frozen net
+(`--init-net CKPT --min-replay 1000000000000 --keep-full 0`). `heart_probe_report.py heart_probe.jsonl` prints the
+paired per-start damage difference against arm 0. First use: ledger "Heart search probe" (2026-11-18).
