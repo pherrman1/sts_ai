@@ -369,6 +369,11 @@ class DashboardProgressTest(unittest.TestCase):
         self.assertIn("Keys, Recall, elites, Act 4", page)
         self.assertIn("<td>A0</td><td>200</td><td>40.0</td><td>10.0</td><td>20.0</td><td>5.0</td><td>20.0</td>", page)
         self.assertNotIn("Keys, Recall, elites", dash.page([old], "t", ""))
+        self.assertNotIn("Forced key moves", page)
+        fk = dict(rows[-1], force_keys={"active": True, "sapphire": 3, "ruby": 2, "emerald": 4, "route_masked": 5})
+        page = dash.page(rows[:-1] + [fk], "t", "")
+        self.assertIn("Forced key moves", page)
+        self.assertIn("Sapphire 3 / Ruby 2 / Emerald 4; routes narrowed 5; on (until the first step-up)", page)
 
 
 @unittest.skipUnless(HAVE_TORCH and MODULES, "torch or the az_bench_native module (cmake target) missing")
@@ -759,6 +764,40 @@ class SelfplaySmoke(unittest.TestCase):
             ck = sorted(glob.glob(os.path.join(d, "ckpt_*.pt")), key=os.path.getmtime)[-1]
             # The last report may have raised it once more.
             self.assertIn(torch.load(ck)["counters"]["ascension"], (rows[-1]["ascension"], rows[-1]["ascension"] + 1))
+
+    def test_force_keys_curriculum(self):
+        """--force-keys curriculum: the key backstops are on for the first runs, off from the first curriculum step-up,
+        and stay off on resume; without --curriculum the flag is refused; off by default (no metrics field)."""
+        sp = load()
+        args = ["--module-dir", os.path.dirname(MODULES[0]), "--device", "cpu", "--workers", "2", "--games", "4",
+                "--full-sims", "4", "--fast-sims", "2", "--batch", "32", "--row-buckets", "32", "--pack-step", "32",
+                "--pack-threads", "1", "--min-replay", "1000000", "--train-batch", "32", "--window", "5000",
+                "--report", "1", "--sync-steps", "2", "--seed-base", "1400", "--test-max-hp", "5000",
+                "--max-fight-moves", "2000", "--ascension", "0"]
+        with self.assertRaises(SystemExit):
+            sp.main(args + ["--out-dir", "unused", "--max-runs", "1", "--force-keys", "curriculum"])
+        cur = ["--curriculum", "--curriculum-runs", "4", "--curriculum-winrate", "0", "--force-keys", "curriculum"]
+        with tempfile.TemporaryDirectory() as d:
+            self.assertEqual(sp.main(args + cur + ["--out-dir", d, "--max-runs", "16"]), 0)
+            with open(os.path.join(d, "metrics.jsonl")) as f:
+                rows = [json.loads(l) for l in f]
+            self.assertTrue(all("force_keys" in r for r in rows))
+            self.assertTrue(rows[0]["force_keys"]["active"])
+            self.assertGreaterEqual(rows[-1]["ascension"], 1)
+            self.assertFalse(rows[-1]["force_keys"]["active"])
+            act = [r["force_keys"]["active"] for r in rows]
+            self.assertEqual(act, sorted(act, reverse=True))   # on, then off for good
+            self.assertTrue(all(r["ascension"] == 0 for r in rows if r["force_keys"]["active"]))
+            ck = sorted(glob.glob(os.path.join(d, "ckpt_*.pt")), key=os.path.getmtime)[-1]
+            self.assertTrue(torch.load(ck)["counters"]["curriculum_stepped"])
+            self.assertEqual(sp.main(args + cur + ["--out-dir", d, "--max-runs", "20", "--resume", ck]), 0)
+            with open(os.path.join(d, "metrics.jsonl")) as f:
+                rows2 = [json.loads(l) for l in f][len(rows):]
+            self.assertTrue(rows2 and not any(r["force_keys"]["active"] for r in rows2))
+        with tempfile.TemporaryDirectory() as d:
+            self.assertEqual(sp.main(args + ["--out-dir", d, "--max-runs", "4"]), 0)
+            with open(os.path.join(d, "metrics.jsonl")) as f:
+                self.assertFalse(any("force_keys" in json.loads(l) for l in f))
 
 
 if __name__ == "__main__":

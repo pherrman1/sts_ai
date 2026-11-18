@@ -372,7 +372,12 @@ def page(rows, title, started, subtitle=""):
     ] if "rss_gb" in last or "samples_pending" in last else []) + ([
         tile("Forced picks", f'{last.get("forced_picks", 0):,}',
              f'{last.get("explore_roots", 0):,} of {last.get("ooc_roots", 0):,} OOC roots under target'),
-    ] if variant else []))
+    ] if variant else []) + ([
+        tile("Forced key moves", f'{sum(last["force_keys"].get(k, 0) for k in ("sapphire", "ruby", "emerald")):,}',
+             f'Sapphire {last["force_keys"].get("sapphire", 0):,} / Ruby {last["force_keys"].get("ruby", 0):,} / '
+             f'Emerald {last["force_keys"].get("emerald", 0):,}; routes narrowed {last["force_keys"].get("route_masked", 0):,}; '
+             + ("on (until the first step-up)" if last["force_keys"].get("active") else "off since the first step-up")),
+    ] if last.get("force_keys") else []))
     sub = subtitle or ("0.44M AmberNet warm-started from the 1M-run A20 net, Ironclad ascension curriculum from A0, self-play on the PC "
            "(RTX 3060 Ti). Charts show the curriculum phase only." if curriculum else
            "0.44M AmberNet from scratch, A20 Ironclad, self-play on the PC (RTX 3060 Ti).")
