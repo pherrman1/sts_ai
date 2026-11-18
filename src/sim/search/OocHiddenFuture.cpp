@@ -37,8 +37,10 @@ namespace {
     // An event fight whose rewards were rolled when the fight was chosen (the engine keeps them in info, see
     // GameContext::chooseEventOption) and stay hidden until it ends: Colosseum's Nob fight (rare + uncommon relic),
     // Dead Adventurer (relic if one is left, gold), Mind Bloom's boss fight (rare relic), Mysterious Sphere (rare
-    // screenless relic, gold). Masked Bandits and the others give fixed rewards.
-    enum class EventFightReward { NONE, COLOSSEUM, DEAD_ADVENTURER, MINDBLOOM, MYSTERIOUS_SPHERE };
+    // screenless relic, gold), Masked Bandits (gold; the Red Mask relic is fixed) and the mushrooms (gold; Odd
+    // Mushroom is fixed). The other event fights roll their rewards when they end.
+    enum class EventFightReward { NONE, COLOSSEUM, DEAD_ADVENTURER, MINDBLOOM, MYSTERIOUS_SPHERE, MASKED_BANDITS,
+                                  MUSHROOMS };
 
     EventFightReward eventFightReward(const GameContext &gc) {
         if (gc.screenState != sts::ScreenState::BATTLE || gc.curRoom != sts::Room::EVENT) return EventFightReward::NONE;
@@ -48,6 +50,8 @@ namespace {
             case sts::Event::DEAD_ADVENTURER: return EventFightReward::DEAD_ADVENTURER;
             case sts::Event::MINDBLOOM: return EventFightReward::MINDBLOOM;
             case sts::Event::MYSTERIOUS_SPHERE: return EventFightReward::MYSTERIOUS_SPHERE;
+            case sts::Event::MASKED_BANDITS: return EventFightReward::MASKED_BANDITS;
+            case sts::Event::HYPNOTIZING_COLORED_MUSHROOMS: return EventFightReward::MUSHROOMS;
             default: return EventFightReward::NONE;
         }
     }
@@ -182,7 +186,9 @@ void sampleNoncombatFuture(GameContext &gc, std::mt19937_64 &rng) {
     if (fightReward == EventFightReward::COLOSSEUM) {
         returnToPool(gc, gc.info.bossRelics[1]);
         returnToPool(gc, gc.info.bossRelics[0]);
-    } else if (fightReward != EventFightReward::NONE && gc.info.bossRelics[0] != sts::RelicId::INVALID) {
+    } else if ((fightReward == EventFightReward::DEAD_ADVENTURER || fightReward == EventFightReward::MINDBLOOM
+                || fightReward == EventFightReward::MYSTERIOUS_SPHERE)
+               && gc.info.bossRelics[0] != sts::RelicId::INVALID) {
         returnToPool(gc, gc.info.bossRelics[0]);
     }
     const auto shuffleUnknown = [&](auto &pool) {
@@ -279,6 +285,12 @@ void sampleNoncombatFuture(GameContext &gc, std::mt19937_64 &rng) {
         case EventFightReward::MYSTERIOUS_SPHERE:
             gc.info.gold = gc.miscRng.random(45, 55);
             gc.info.bossRelics[0] = gc.returnRandomScreenlessRelic(sts::RelicTier::RARE);
+            break;
+        case EventFightReward::MASKED_BANDITS:
+            gc.info.gold = gc.miscRng.random(25, 35);
+            break;
+        case EventFightReward::MUSHROOMS:
+            gc.info.gold = gc.miscRng.random(20, 30);
             break;
         case EventFightReward::NONE: break;
     }

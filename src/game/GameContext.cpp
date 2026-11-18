@@ -3436,8 +3436,10 @@ void GameContext::chooseEventOption(int idx) {
                 regainControl();
 
             } else if (idx == 1) {
-                const int goldAmt = miscRng.random(25, 35);
-                regainControlAction = [goldAmt](auto &gc) {
+                // Kept in info (not captured) so a search can resample the hidden gold before the fight ends
+                // (search::sampleNoncombatFuture); the roll is unchanged.
+                info.gold = miscRng.random(25, 35);
+                regainControlAction = [](auto &gc) {
                     if (gc.smokeBombUsed) {
                         // An escape forfeits the event's combat rewards;
                         // afterBattle() clears the marker and returns to the map.
@@ -3446,7 +3448,7 @@ void GameContext::chooseEventOption(int idx) {
                     }
                     gc.relicsOnCombatEnd();
                     Rewards reward;
-                    reward.addGold(goldRewardAmount(gc, goldAmt));
+                    reward.addGold(goldRewardAmount(gc, gc.info.gold));
                     reward.addRelic(gc.hasRelic(RelicId::RED_MASK)?RelicId::CIRCLET:RelicId::RED_MASK);
                     gc.addPotionRewards(reward);
                     reward.addCardReward(gc.createCardReward(Room::EVENT));
@@ -3524,8 +3526,10 @@ void GameContext::chooseEventOption(int idx) {
 
         case Event::HYPNOTIZING_COLORED_MUSHROOMS: {
             if (idx == 0) {
-                const int goldAmt = miscRng.random(20, 30);
-                regainControlAction = [=](GameContext &gc) {
+                // Kept in info (not captured) so a search can resample the hidden gold before the fight ends
+                // (search::sampleNoncombatFuture); the roll is unchanged.
+                info.gold = miscRng.random(20, 30);
+                regainControlAction = [](GameContext &gc) {
                     if (gc.smokeBombUsed) {
                         // An escape forfeits the event's combat rewards;
                         // afterBattle() clears the marker and returns to the map.
@@ -3534,7 +3538,7 @@ void GameContext::chooseEventOption(int idx) {
                     }
                     gc.relicsOnCombatEnd();
                     Rewards reward;
-                    reward.addGold(goldRewardAmount(gc, goldAmt));
+                    reward.addGold(goldRewardAmount(gc, gc.info.gold));
                     reward.addRelic(RelicId::ODD_MUSHROOM);
                     gc.addPotionRewards(reward);
                     reward.addCardReward(gc.createCardReward(Room::EVENT));

@@ -5,7 +5,8 @@
 //    view (slot states and the cards seen) but different hidden layouts must resample to the same state with the
 //    same sampler seed, so a search cannot read the real layout. Flipping a face-down card is a reveal.
 //  * Event fights whose rewards were rolled when the fight was chosen (Colosseum's Nobs, Dead Adventurer, Mind
-//    Bloom, Mysterious Sphere): two states that differ only in the hidden relic (and gold) resample to the same
+//    Bloom, Mysterious Sphere, Masked Bandits, the mushrooms): two states that differ only in the hidden relic (and
+//    gold) resample to the same
 //    rewards. The fight's end is a reveal, and the rewards shown are the ones in the state.
 //
 // usage: hidden_layout_resample_test [seeds=200]
@@ -154,7 +155,7 @@ namespace {
             gc.chooseEventOption(0);              // the slaver fight
             gc.regainControlAction(gc);           // won: the event reopens
         }
-        gc.chooseEventOption(ev == Event::COLOSSEUM ? 1 : 0);
+        gc.chooseEventOption(ev == Event::COLOSSEUM || ev == Event::MASKED_BANDITS ? 1 : 0);
         ok = gc.screenState == ScreenState::BATTLE;
         return gc;
     }
@@ -172,6 +173,8 @@ namespace {
         bool ok = false;
         GameContext gc = fightStart(ev, seed, ok);
         if (!ok) return;
+        const bool goldOnly = ev == Event::MASKED_BANDITS || ev == Event::HYPNOTIZING_COLORED_MUSHROOMS;
+        if (goldOnly) for (auto &r : gc.info.bossRelics) r = RelicId::INVALID;
         ++cases;
         // The fight's end shows the rewards kept in info.
         {
@@ -180,10 +183,19 @@ namespace {
             end.afterBattle();
             check(oocStepRevealsHidden(snap, end), "the end of an event fight is not a reveal", seed);
             const auto &rw = end.info.rewardsContainer;
-            const int want = (gc.info.bossRelics[0] != RelicId::INVALID) + (gc.info.bossRelics[1] != RelicId::INVALID);
-            check(rw.relicCount == want, "event fight reward relic count", seed);
-            for (int i = 0; i < rw.relicCount && i < 2; ++i)
-                check(rw.relics[i] == gc.info.bossRelics[i], "event fight reward is not the state's relic", seed);
+            if (goldOnly) {
+                check(rw.relicCount == 1, "event fight reward relic count", seed);
+                GameContext more = gc;
+                more.info.gold += 5;
+                more.afterBattle();
+                check(rw.goldRewardCount == 1 && more.info.rewardsContainer.goldRewardCount == 1
+                      && more.info.rewardsContainer.gold[0] > rw.gold[0], "event fight gold is not the state's gold", seed);
+            } else {
+                const int want = (gc.info.bossRelics[0] != RelicId::INVALID) + (gc.info.bossRelics[1] != RelicId::INVALID);
+                check(rw.relicCount == want, "event fight reward relic count", seed);
+                for (int i = 0; i < rw.relicCount && i < 2; ++i)
+                    check(rw.relics[i] == gc.info.bossRelics[i], "event fight reward is not the state's relic", seed);
+            }
         }
         // Another hidden roll: swap each hidden relic for another one still in its pool, and change the gold.
         GameContext alt = gc;
@@ -197,7 +209,7 @@ namespace {
             pool.push_back(r);
             alt.info.bossRelics[i] = other;
         }
-        if (ev == Event::DEAD_ADVENTURER || ev == Event::MYSTERIOUS_SPHERE) alt.info.gold += 3;
+        if (ev == Event::DEAD_ADVENTURER || ev == Event::MYSTERIOUS_SPHERE || goldOnly) alt.info.gold += 3;
         for (std::uint64_t s = 1; s <= 4; ++s)
             check(resampleEqual(gc, alt, seed * 1000 + s, false, true),
                   "event fight resample depends on the hidden rewards", seed);
@@ -212,7 +224,8 @@ int main(int argc, char **argv) {
         const std::uint64_t seed = 1 + i;
         try {
             matchAndKeep(seed, differing, flips);
-            for (const Event ev : {Event::COLOSSEUM, Event::DEAD_ADVENTURER, Event::MINDBLOOM, Event::MYSTERIOUS_SPHERE})
+            for (const Event ev : {Event::COLOSSEUM, Event::DEAD_ADVENTURER, Event::MINDBLOOM, Event::MYSTERIOUS_SPHERE,
+                                   Event::MASKED_BANDITS, Event::HYPNOTIZING_COLORED_MUSHROOMS})
                 eventFight(ev, seed, fights);
         } catch (const OocSearchUnsupported &e) {
             check(false, e.what(), seed);
