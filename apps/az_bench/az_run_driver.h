@@ -247,6 +247,18 @@ namespace sts::azbench {
         bool chanceOnReveal = false;
         bool crossCombat = false;
         bool simHelp = false;
+        // Savescum (2026-11-18, default off; Amber Eye: "At the very start of training, I allowed the search to
+        // 'savescum' by giving it knowledge of future RNG outcomes. This improves play strength not just by having
+        // the advance knowledge, but also by avoiding wasting search budget on sampling RNG. [...] turned off early").
+        // The search steps copies of the real run with the real RNG and the real hidden state: nothing is resampled,
+        // no edge is a chance edge (no double progressive widening), so the child of an action is exactly the state
+        // the real run reaches with it. The net still sees the public view (Philipp's choice, 2026-11-18): a combat
+        // node keeps the real fight and its knowledge tracker (observing every in-tree step, as the real run does)
+        // and is encoded and enumerated through publicCombatRoot; out-of-combat states never encode hidden state.
+        // Uses the Amber search path (as chanceOnReveal / crossCombat / simHelp do; with them it overrides
+        // chanceOnReveal). Labels and training are unchanged. Initial state of setSavescum; turning it off reaches runs in
+        // progress at their next searched move (samples already taken stay in the replay window).
+        bool savescum = false;
         // Search-backed EMA outcome targets (2026-11-17, default 0 = off), Amber Eye's value labels: "a combination
         // of the search result and an exponential weighted average of future moves' search outcomes". With
         // searchEmaLambda = lam in (0, 1): every node carries the net's outcome distribution (57 classes; submit needs
@@ -363,6 +375,9 @@ namespace sts::azbench {
         // (route edge / key taken)], and real Act-3 map decisions whose route the Emerald rule narrowed (still a choice).
         std::array<std::int64_t, 3> forcedKeys{};
         std::int64_t keyRouteMasked = 0;
+        // savescum: runs started with it; searched moves whose played edge's child was a decision state, and of those
+        // the ones whose real next decision state differed from it (fingerprint incl. RNG counters; must stay 0).
+        std::int64_t savescumRuns = 0, savescumChecks = 0, savescumMismatches = 0;
         std::int64_t heartHpMin = -1;   // lowest Heart HP left at the end of any Heart fight so far (-1 = none yet)
         double stepCpu = 0, encodeCpu = 0, searchCpu = 0, packSeconds = 0;
     };
@@ -405,6 +420,10 @@ namespace sts::azbench {
         // step-up; runs in progress keep theirs).
         void setForceKeys(bool on);   // throws unless the ADR-0063 default key rules hold (on only)
         bool forceKeys() const { return forceKeys_.load(); }
+        // Savescum (RunConfig::savescum): on for runs started from now on; off also for runs in progress, from their
+        // next searched move.
+        void setSavescum(bool on) { savescum_.store(on); }
+        bool savescum() const { return savescum_.load(); }
         // Heart search probe (RunConfig::heartArms): the finished Heart plays so far.
         std::vector<HeartResult> heartResults() const {
             std::lock_guard<std::mutex> l(heartM_);
@@ -432,6 +451,7 @@ namespace sts::azbench {
         double exploreItemC(int key, std::int64_t games);
         std::atomic<int> ascension_{20};
         std::atomic<bool> forceKeys_{false};
+        std::atomic<bool> savescum_{false};
         std::atomic<std::uint32_t> weightsVersion_{0};
         std::atomic<std::int64_t> runsDone_{0};   // finished runs, all workers (pick-rate denominator)   // real picks per item hash (pick-rate exploration)
         mutable std::mutex qm_;

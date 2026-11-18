@@ -562,6 +562,46 @@ class SelfplaySmoke(unittest.TestCase):
             self.assertTrue(a["chance_on_reveal"] and a["cross_combat"] and a["sim_help"])
             self.assertEqual(a["max_pending"], 0)
 
+    def test_savescum(self):
+        """--savescum reaches the driver: runs play it and every checked search child equals the real next state; a
+        file SAVESCUM_OFF turns it off for new runs and is recorded, so a resume stays off."""
+        sp = load()
+        args = ["--module-dir", os.path.dirname(MODULES[0]), "--device", "cpu", "--workers", "2", "--games", "4",
+                "--full-sims", "8", "--fast-sims", "4", "--batch", "32", "--row-buckets", "32", "--pack-step", "32",
+                "--pack-threads", "1", "--min-replay", "50", "--train-batch", "32", "--window", "5000",
+                "--report", "1", "--sync-steps", "2", "--seed-base", "1800", "--max-runs", "8",
+                "--chance-on-reveal", "--cross-combat", "--sim-help", "--savescum"]
+        with tempfile.TemporaryDirectory() as d:
+            self.assertEqual(sp.main(args + ["--out-dir", d]), 0)
+            with open(os.path.join(d, "metrics.jsonl")) as f:
+                last = [json.loads(l) for l in f][-1]
+            ss = last["savescum"]
+            self.assertTrue(ss["active"])
+            self.assertGreaterEqual(ss["runs"], 8)
+            self.assertGreater(ss["checks"], 0)
+            self.assertEqual(ss["mismatches"], 0)
+            self.assertEqual(last["ooc_edges_det_chance"], [0, 0])   # nothing tested or resampled
+            ck = sorted(glob.glob(os.path.join(d, "ckpt_*.pt")), key=os.path.getmtime)[-1]
+            self.assertFalse(torch.load(ck)["counters"].get("savescum_off", False))
+            # SAVESCUM_OFF before the resume: off from the first report, kept in the counters.
+            open(os.path.join(d, "SAVESCUM_OFF"), "w").close()
+            self.assertEqual(sp.main(args[:-5] + ["12", "--chance-on-reveal", "--cross-combat", "--sim-help",
+                                                  "--savescum", "--out-dir", d, "--resume", ck]), 0)
+            with open(os.path.join(d, "metrics.jsonl")) as f:
+                last = [json.loads(l) for l in f][-1]
+            self.assertFalse(last["savescum"]["active"])
+            self.assertEqual(last["savescum"]["runs"], 0)   # the file was there at start: no run played savescum
+            ck2 = sorted(glob.glob(os.path.join(d, "ckpt_*.pt")), key=os.path.getmtime)[-1]
+            self.assertTrue(torch.load(ck2)["counters"]["savescum_off"])
+            # A resume from that checkpoint starts with savescum off.
+            os.remove(os.path.join(d, "SAVESCUM_OFF"))
+            self.assertEqual(sp.main(args[:-5] + ["14", "--chance-on-reveal", "--cross-combat", "--sim-help",
+                                                  "--savescum", "--out-dir", d, "--resume", ck2]), 0)
+            with open(os.path.join(d, "metrics.jsonl")) as f:
+                last = [json.loads(l) for l in f][-1]
+            self.assertFalse(last["savescum"]["active"])
+            self.assertEqual(last["savescum"]["runs"], 0)
+
     def test_value_ema_run(self):
         """--value-ema-halflife trains on EMA targets; take_samples in 1-sample chunks never splits a run."""
         sp = load()

@@ -187,6 +187,14 @@ set_tests_properties(az_run_driver_explore PROPERTIES LABELS "core;smoke")
 add_test(NAME az_run_driver_explore_amber COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 24 --fast
          --seed-base 1 --seconds 300 --explore-amber --pick-target 0.2 --test-hp 300)
 set_tests_properties(az_run_driver_explore_amber PROPERTIES LABELS "core;smoke")
+# Savescum (RunConfig::savescum): the search's child of every played action is the real next decision state
+# (fingerprint incl. RNG states and draw order), with and without the Amber search rules.
+add_test(NAME az_run_driver_savescum COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 6 --fast
+         --savescum --seed-base 31 --seconds 300)
+set_tests_properties(az_run_driver_savescum PROPERTIES LABELS "core;smoke")
+add_test(NAME az_run_driver_savescum_amber COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 6 --fast
+         --savescum --chance-on-reveal --cross-combat --sim-help --seed-base 37 --seconds 300)
+set_tests_properties(az_run_driver_savescum_amber PROPERTIES LABELS "core;smoke")
 # Evaluation cache of the stage 1 driver is exact: same moves and samples with and without it (hash fake net).
 add_executable(az-eval-cache-test apps/az_bench/az_eval_cache_test.cpp apps/az_bench/az_run_driver.cpp
     $<TARGET_OBJECTS:sts_core_objects>)

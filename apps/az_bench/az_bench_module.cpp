@@ -205,7 +205,8 @@ PYBIND11_MODULE(az_bench_native, m) {
                          bool qRescale, int utility, bool keylessHp, bool evalCache, int evalCacheCap, bool mergeCards,
                          bool chanceOnReveal, bool crossCombat, bool simHelp,
                          bool exploreAmber, double exploreT, double searchEmaLambda, bool searchEmaFullOnly,
-                         bool forceKeys, std::vector<std::vector<double>> heartArms, int heartReps) {
+                         bool forceKeys, std::vector<std::vector<double>> heartArms, int heartReps,
+                         bool savescum) {
                  azbench::RunConfig c;
                  for (const auto &v : heartArms) {   // [full_sims, fast_sims, full_prob, full_candidates, fast_candidates]
                      if (v.size() != 5) throw std::invalid_argument("heart_arms: want 5 numbers per arm");
@@ -252,6 +253,7 @@ PYBIND11_MODULE(az_bench_native, m) {
                  c.searchEmaLambda = searchEmaLambda;
                  c.searchEmaFullOnly = searchEmaFullOnly;
                  c.forceKeys = forceKeys;
+                 c.savescum = savescum;
                  return std::make_unique<azbench::RunDriver>(c);
              }),
              py::arg("workers") = 11, py::arg("games") = 700, py::arg("seed_base") = 0, py::arg("max_runs") = -1,
@@ -268,7 +270,7 @@ PYBIND11_MODULE(az_bench_native, m) {
              py::arg("explore_amber") = false, py::arg("explore_temp") = 4.0,
              py::arg("search_ema_lambda") = 0.0, py::arg("search_ema_full_only") = true,
              py::arg("force_keys") = false, py::arg("heart_arms") = std::vector<std::vector<double>>{},
-             py::arg("heart_reps") = 1)
+             py::arg("heart_reps") = 1, py::arg("savescum") = false)
         .def("heart_results",
              [](const azbench::RunDriver &d) {
                  py::list out;
@@ -289,6 +291,8 @@ PYBIND11_MODULE(az_bench_native, m) {
         .def("ascension", &azbench::RunDriver::ascension)
         .def("set_force_keys", &azbench::RunDriver::setForceKeys)
         .def("force_keys", &azbench::RunDriver::forceKeys)
+        .def("set_savescum", &azbench::RunDriver::setSavescum)
+        .def("savescum", &azbench::RunDriver::savescum)
         .def("start", &azbench::RunDriver::start, py::call_guard<py::gil_scoped_release>())
         .def("stop", &azbench::RunDriver::stop, py::call_guard<py::gil_scoped_release>())
         .def("next_flat",
@@ -486,6 +490,9 @@ PYBIND11_MODULE(az_bench_native, m) {
             o["tree_fight_starts"] = s.treeFightStarts;
             o["tree_fight_exits"] = s.treeFightExits;
             o["auto_gold"] = s.autoGold;
+            o["savescum_runs"] = s.savescumRuns;
+            o["savescum_checks"] = s.savescumChecks;
+            o["savescum_mismatches"] = s.savescumMismatches;
             o["forced_keys"] = py::make_tuple(s.forcedKeys[0], s.forcedKeys[1], s.forcedKeys[2]);
             o["key_route_masked"] = s.keyRouteMasked;
             o["heart_hp_min"] = s.heartHpMin;
