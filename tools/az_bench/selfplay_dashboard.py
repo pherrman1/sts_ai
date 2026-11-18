@@ -387,7 +387,7 @@ def page(rows, title, started, subtitle=""):
 <main>
 <header>
 <h1>{html.escape(title)} {status}</h1>
-<p class="sub">{sub} Updated {html.escape(last.get("time", "-"))} (PC time).</p>
+<p class="sub">{html.escape(sub)} Updated {html.escape(last.get("time", "-"))} (PC time).</p>
 </header>
 {ascension_panel(rows, last) if curriculum else ""}
 <div class="tiles">{tiles}</div>
