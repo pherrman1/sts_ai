@@ -63,7 +63,8 @@ optimizer (AdamW), the window, the replay ratio, the sync interval (all flags).
 
 Writes to --out-dir: metrics.jsonl (one line per --report seconds), status.json (latest line), checkpoints
 ckpt_<step>.pt (net, optimizer, counters) every --ckpt-minutes and at the end. A file STOP in --out-dir stops the
-run cleanly. --resume CKPT continues from a checkpoint (seeds continue after the checkpoint's last started run).
+run cleanly; with --savescum a file SAVESCUM_OFF there turns savescum off for runs started from then on (recorded in
+the checkpoint counters, so a --resume stays off). --resume CKPT continues from a checkpoint (seeds continue after the checkpoint's last started run).
 
 usage: selfplay.py --module-dir BUILD_DIR --out-dir DIR --seed-base N [--hours 24] [--max-runs N] [...]
 """
@@ -472,6 +473,10 @@ def main(argv=None):
     ap.add_argument("--sim-help", action="store_true",
                     help="Amber Eye's simulator help: reward gold taken automatically, forced positions skipped also "
                          "inside the search, buying Prismatic Shard banned")
+    ap.add_argument("--savescum", action="store_true",
+                    help="Amber Eye's early-training savescum: the search steps the real run with its real RNG and "
+                         "hidden state (no resampling, no chance edges); the net still sees the public view. Off for "
+                         "runs started after a file SAVESCUM_OFF appears in --out-dir (and on --resume after that)")
     ap.add_argument("--force-keys", choices=("off", "curriculum"), default="off",
                     help="curriculum: the ADR-0063 Heart-key backstops (Act-3 treasure-row Sapphire, Recall at the last "
                          "Act-3 campfire, Act-3 route kept on the burning elite) are forced moves until the first "
@@ -575,6 +580,7 @@ def main(argv=None):
     # The curriculum has stepped up once (recorded at the step-up; older checkpoints: ascension above --ascension).
     counters["curriculum_stepped"] = bool(counters.get("curriculum_stepped", ascension > args.ascension))
     force_keys = args.force_keys == "curriculum" and not counters["curriculum_stepped"]
+    savescum = args.savescum and not counters.get("savescum_off", False)
     seeds_used0 = counters["seeds_used"]
     trained0 = counters["trained"]   # the replay window starts empty on resume: the ratio cap counts from here
     seed_base = args.seed_base + seeds_used0
@@ -626,7 +632,11 @@ def main(argv=None):
         explore_amber=args.explore_amber, explore_temp=args.explore_temp,
         **({"search_ema_lambda": ema_lam, "search_ema_full_only": args.value_ema_moves == "full"}
            if ema_search else {}),
-        **({"force_keys": True} if force_keys else {}))
+        **({"force_keys": True} if force_keys else {}),
+        **({"savescum": True} if savescum else {}))
+    if args.savescum:
+        print(f"# savescum: {'on until a file SAVESCUM_OFF appears in --out-dir' if savescum else 'off (SAVESCUM_OFF seen before this resume)'}",
+              flush=True)
     if args.force_keys != "off":
         print(f"# force-keys {args.force_keys}: {'on until the first curriculum step-up' if force_keys else 'off (the curriculum already stepped up)'}",
               flush=True)
@@ -930,6 +940,10 @@ def main(argv=None):
             s = drv.stats()
             done = (max_runs >= 0 and s["runs_done"] >= max_runs) or now - t_start > args.hours * 3600 \
                 or os.path.exists(os.path.join(args.out_dir, "STOP"))
+            if args.savescum and drv.savescum() and os.path.exists(os.path.join(args.out_dir, "SAVESCUM_OFF")):
+                drv.set_savescum(False)   # runs started from now on play fair; runs in progress keep savescum
+                counters["savescum_off"] = True
+                print(f"# savescum: off from run {s['runs_started']} (SAVESCUM_OFF)", flush=True)
             if now - last_t < args.report and not done:
                 continue
             dt = now - last_t
@@ -1004,6 +1018,9 @@ def main(argv=None):
                 # ms of GPU time per s of wall clock (1000 = that stream busy all the time)
                 row["gpu_ms_per_s"] = {k: round((v - last_gpu[k]) / dt, 1) for k, v in gpu_ms.items()}
                 last_gpu.update(gpu_ms)
+            if args.savescum:   # state for new runs; runs started with it; checks of the search's child vs the real next state
+                row["savescum"] = {"active": drv.savescum(), "runs": s["savescum_runs"],
+                                   "checks": s["savescum_checks"], "mismatches": s["savescum_mismatches"]}
             if args.force_keys != "off":   # key backstops: state for new runs; real forced moves, narrowed routes (cumulative)
                 row["force_keys"] = {"active": drv.force_keys(), "sapphire": s["forced_keys"][0],
                                      "ruby": s["forced_keys"][1], "emerald": s["forced_keys"][2],

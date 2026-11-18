@@ -2,7 +2,7 @@
 // training samples (labels filled, policy a distribution over the sample's actions, action sources / targets inside
 // the row). Smoke test and CPU-side throughput probe.
 //
-// usage: az-run-driver [--workers 2] [--games 4] [--runs 8] [--batch 64] [--seed 0] [--seed-base 1] [--fast] [--asc 20] [--sims N] [--const-value] [--test-hp HP] [--max-fight-moves 400] [--explore-c C] [--explore-amber] [--pick-target T] [--no-fast-noise] [--q-rescale] [--c-scale S] [--utility floor-hp|amber] [--keyless-hp] [--chance-on-reveal] [--cross-combat] [--sim-help] [--max-pending N] [--force-keys]
+// usage: az-run-driver [--workers 2] [--games 4] [--runs 8] [--batch 64] [--seed 0] [--seed-base 1] [--fast] [--asc 20] [--sims N] [--const-value] [--test-hp HP] [--max-fight-moves 400] [--explore-c C] [--explore-amber] [--pick-target T] [--no-fast-noise] [--q-rescale] [--c-scale S] [--utility floor-hp|amber] [--keyless-hp] [--chance-on-reveal] [--cross-combat] [--sim-help] [--max-pending N] [--force-keys] [--savescum]
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -89,6 +89,7 @@ int main(int argc, char **argv) {
         else if (a == "--sim-help") cfg.simHelp = true;
         else if (a == "--max-pending") cfg.maxPendingSamples = std::stoll(next());
         else if (a == "--force-keys") cfg.forceKeys = true;
+        else if (a == "--savescum") cfg.savescum = true;
         else if (a == "--sims") { cfg.fullSims = std::stoi(next()); cfg.fastSims = cfg.fullSims; cfg.fullProb = 1.0; }
         else if (a == "--fast") { cfg.fullSims = 8; cfg.fastSims = 4; cfg.fullCandidates = 4; cfg.fastCandidates = 2; }
         else { std::fprintf(stderr, "unknown argument %s\n", a.c_str()); return 2; }
@@ -211,8 +212,15 @@ int main(int argc, char **argv) {
     if (!cfg.forceKeys && (forced != 0 || s.keyRouteMasked != 0)) return 1;
     if (cfg.forceKeys && (forced == 0 || prog.keylessVictories != 0)) return 1;
     // The Amber rules must act when on and be inert when off.
-    if (cfg.chanceOnReveal != (s.oocEdgeKinds[0] + s.oocEdgeKinds[1] > 0)) return 1;
-    if (cfg.chanceOnReveal && (s.oocEdgeKinds[0] == 0 || s.oocEdgeKinds[1] == 0)) return 1;
+    // savescum replaces the chance rule (no edge is tested or resampled).
+    const bool reveal = cfg.chanceOnReveal && !cfg.savescum;
+    if (reveal != (s.oocEdgeKinds[0] + s.oocEdgeKinds[1] > 0)) return 1;
+    if (reveal && (s.oocEdgeKinds[0] == 0 || s.oocEdgeKinds[1] == 0)) return 1;
+    // savescum: every run plays it, and the search's child of each played action is the real next decision state.
+    std::printf("savescum: runs %lld checks %lld mismatches %lld\n", static_cast<long long>(s.savescumRuns),
+                static_cast<long long>(s.savescumChecks), static_cast<long long>(s.savescumMismatches));
+    if (cfg.savescum && (s.savescumRuns != s.runsStarted || s.savescumChecks == 0 || s.savescumMismatches != 0)) return 1;
+    if (!cfg.savescum && (s.savescumRuns != 0 || s.savescumChecks != 0)) return 1;
     if (cfg.crossCombat != (s.treeFightStarts > 0 && s.treeFightExits > 0)) return 1;
     if (cfg.simHelp != (s.autoGold > 0)) return 1;
     const bool explore = cfg.exploreC > 0 || cfg.exploreAmber;
