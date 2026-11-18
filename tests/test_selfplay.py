@@ -590,6 +590,7 @@ class SelfplaySmoke(unittest.TestCase):
             with open(os.path.join(d, "metrics.jsonl")) as f:
                 last = [json.loads(l) for l in f][-1]
             self.assertFalse(last["savescum"]["active"])
+            self.assertEqual(last["savescum"]["runs"], 0)   # the file was there at start: no run played savescum
             ck2 = sorted(glob.glob(os.path.join(d, "ckpt_*.pt")), key=os.path.getmtime)[-1]
             self.assertTrue(torch.load(ck2)["counters"]["savescum_off"])
             # A resume from that checkpoint starts with savescum off.

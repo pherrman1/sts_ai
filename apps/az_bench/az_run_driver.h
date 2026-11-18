@@ -256,8 +256,8 @@ namespace sts::azbench {
         // node keeps the real fight and its knowledge tracker (observing every in-tree step, as the real run does)
         // and is encoded and enumerated through publicCombatRoot; out-of-combat states never encode hidden state.
         // Uses the Amber search path (as chanceOnReveal / crossCombat / simHelp do; with them it overrides
-        // chanceOnReveal). Labels and training are unchanged. Initial state of setSavescum; a run keeps the state it
-        // started with.
+        // chanceOnReveal). Labels and training are unchanged. Initial state of setSavescum; turning it off reaches runs in
+        // progress at their next searched move (samples already taken stay in the replay window).
         bool savescum = false;
         // Search-backed EMA outcome targets (2026-11-17, default 0 = off), Amber Eye's value labels: "a combination
         // of the search result and an exponential weighted average of future moves' search outcomes". With
@@ -420,7 +420,8 @@ namespace sts::azbench {
         // step-up; runs in progress keep theirs).
         void setForceKeys(bool on);   // throws unless the ADR-0063 default key rules hold (on only)
         bool forceKeys() const { return forceKeys_.load(); }
-        // Savescum (RunConfig::savescum) for runs started from now on (runs in progress keep theirs).
+        // Savescum (RunConfig::savescum): on for runs started from now on; off also for runs in progress, from their
+        // next searched move.
         void setSavescum(bool on) { savescum_.store(on); }
         bool savescum() const { return savescum_.load(); }
         // Heart search probe (RunConfig::heartArms): the finished Heart plays so far.

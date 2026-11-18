@@ -63,8 +63,8 @@ optimizer (AdamW), the window, the replay ratio, the sync interval (all flags).
 
 Writes to --out-dir: metrics.jsonl (one line per --report seconds), status.json (latest line), checkpoints
 ckpt_<step>.pt (net, optimizer, counters) every --ckpt-minutes and at the end. A file STOP in --out-dir stops the
-run cleanly; with --savescum a file SAVESCUM_OFF there turns savescum off for runs started from then on (recorded in
-the checkpoint counters, so a --resume stays off). --resume CKPT continues from a checkpoint (seeds continue after the checkpoint's last started run).
+run cleanly; with --savescum a file SAVESCUM_OFF there turns savescum off (every run from its next searched move; recorded in
+the checkpoint counters, so a --resume stays off; savescum samples stay in the replay window until evicted). --resume CKPT continues from a checkpoint (seeds continue after the checkpoint's last started run).
 
 usage: selfplay.py --module-dir BUILD_DIR --out-dir DIR --seed-base N [--hours 24] [--max-runs N] [...]
 """
@@ -487,8 +487,9 @@ def main(argv=None):
                          "inside the search, buying Prismatic Shard banned")
     ap.add_argument("--savescum", action="store_true",
                     help="Amber Eye's early-training savescum: the search steps the real run with its real RNG and "
-                         "hidden state (no resampling, no chance edges); the net still sees the public view. Off for "
-                         "runs started after a file SAVESCUM_OFF appears in --out-dir (and on --resume after that)")
+                         "hidden state (no resampling, no chance edges); the net still sees the public view. Off "
+                         "(every run, from its next searched move) once a file SAVESCUM_OFF is in --out-dir, also "
+                         "when it is there at start or a resume")
     ap.add_argument("--force-keys", choices=("off", "curriculum"), default="off",
                     help="curriculum: the ADR-0063 Heart-key backstops (Act-3 treasure-row Sapphire, Recall at the last "
                          "Act-3 campfire, Act-3 route kept on the burning elite) are forced moves until the first "
@@ -601,6 +602,8 @@ def main(argv=None):
     # The curriculum has stepped up once (recorded at the step-up; older checkpoints: ascension above --ascension).
     counters["curriculum_stepped"] = bool(counters.get("curriculum_stepped", ascension > args.ascension))
     force_keys = args.force_keys == "curriculum" and not counters["curriculum_stepped"]
+    if args.savescum and os.path.exists(os.path.join(args.out_dir, "SAVESCUM_OFF")):
+        counters["savescum_off"] = True   # the file was there before this start: no run plays savescum
     savescum = args.savescum and not counters.get("savescum_off", False)
     seeds_used0 = counters["seeds_used"]
     trained0 = counters["trained"]   # the replay window starts empty on resume: the ratio cap counts from here
@@ -963,7 +966,7 @@ def main(argv=None):
             done = (max_runs >= 0 and s["runs_done"] >= max_runs) or now - t_start > args.hours * 3600 \
                 or os.path.exists(os.path.join(args.out_dir, "STOP"))
             if args.savescum and drv.savescum() and os.path.exists(os.path.join(args.out_dir, "SAVESCUM_OFF")):
-                drv.set_savescum(False)   # runs started from now on play fair; runs in progress keep savescum
+                drv.set_savescum(False)   # every run plays fair from its next searched move
                 counters["savescum_off"] = True
                 print(f"# savescum: off from run {s['runs_started']} (SAVESCUM_OFF)", flush=True)
             if now - last_t < args.report and not done:

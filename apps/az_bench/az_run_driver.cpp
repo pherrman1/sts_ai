@@ -1112,6 +1112,8 @@ namespace sts::azbench {
                 const std::uint64_t fp = g.inBattle ? stateFingerprint(g.bc) : stateFingerprint(g.gc);
                 if (fp != g.expectFp) ++wk.st.savescumMismatches;
             }
+            // savescum off (setSavescum(false)): a run in progress plays fair from its next searched move.
+            if (g.savescum && !savescum_.load(std::memory_order_relaxed)) g.savescum = false;
             g.poolUsed = 0;
             g.spent = 0;
             const HeartArm *arm = g.heartJob >= 0 && g.inBattle
@@ -1712,8 +1714,9 @@ namespace sts::azbench {
             edge.tried = true;
             return child;
         };
-        // savescum (a per-run state, initially cfg.savescum) also takes the Amber path.
-        const bool amberRules = cfg.chanceOnReveal || cfg.crossCombat || cfg.simHelp || cfg.savescum;
+        // savescum (a per-run state, initially cfg.savescum) also takes the Amber path (advance: || g.savescum), so a
+        // fair search after the switch-off is the same as in a process started without savescum.
+        const bool amberRules = cfg.chanceOnReveal || cfg.crossCombat || cfg.simHelp;
 
         auto advance = [&](Run &g, int gi) {
             while (true) {
