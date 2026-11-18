@@ -440,6 +440,7 @@ PYBIND11_MODULE(az_bench_native, m) {
                 field("heart", &P::heart); field("keyless_victories", &P::keylessVictories);
                 field("heart_hp_sum", &P::heartHpSum); field("heart_entry_hp_sum", &P::heartEntryHpSum);
                 field("heart_turns_sum", &P::heartTurnsSum);
+                field("relics_sum", &P::relicsSum); field("deck_size_sum", &P::deckSizeSum);
                 for (int b = 0; b < P::kHeartHpBins; ++b) {   // heart_hp_00 .. heart_hp_15: Heart HP left in [50 b, 50 b + 50)
                     std::vector<std::int64_t> v;
                     for (const auto &p : s.progressAsc) v.push_back(p.heartHpHist[b]);

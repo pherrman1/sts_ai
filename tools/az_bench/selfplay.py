@@ -383,6 +383,18 @@ def progress_window(s, last_s):
     return out
 
 
+def per_run_means(pw):
+    """Relics held and deck size at the run's end, mean per run finished in this window over all ascensions
+    (progress_window relics_sum / deck_size_sum): (relics_per_run, deck_per_run), None where no run finished or the
+    driver has no such counter."""
+    n = sum(e["runs"] for e in pw.values())
+    def mean(k):
+        if not n or not all(k in e for e in pw.values()):
+            return None
+        return round(sum(e[k] for e in pw.values()) / n, 3)
+    return mean("relics_sum"), mean("deck_size_sum")
+
+
 def malloc_trim():
     """glibc malloc_trim(0): hand freed heap memory of all arenas back to the OS (2026-11-18: the C++ workers'
     malloc arenas grew ~0.9 GB/h by fragmentation with all data structures flat). Returns True if it ran."""
@@ -961,6 +973,7 @@ def main(argv=None):
                     print("# force-keys: off from the first curriculum step-up", flush=True)
                 asc_hist = []
                 print(f"# curriculum: A{asc} Heart kills {wins}/{tot} -> A{asc + 1}", flush=True)
+            pw = progress_window(s, last_s)
             pre_trim = None
             if args.malloc_trim:   # RSS before the trim; "rss_gb" below is after it
                 pre_trim = rss_gb()
@@ -988,7 +1001,7 @@ def main(argv=None):
                 # [full, fast] cumulative: searched OOC roots, picks off the best visited mean Q, mean visited-Q spread
                 "ooc_searched": list(s["ooc_searched"]), "ooc_not_best_q": list(s["ooc_not_best_q"]),
                 "ooc_q_spread_mean": [round(s["ooc_q_spread_sum"][k] / max(1, s["ooc_q_spread_n"][k]), 5) for k in (0, 1)],
-                "progress_window": progress_window(s, last_s),
+                "progress_window": pw,
                 # Amber search rules (cumulative): first expansions of OOC edges [deterministic, chance]
                 # (--chance-on-reveal), fights started / won inside the search (--cross-combat)
                 "ooc_edges_det_chance": list(s["ooc_edges_det_chance"]),
@@ -1010,6 +1023,7 @@ def main(argv=None):
                                      "route_masked": s["key_route_masked"]}
             if pre_trim is not None:
                 row["rss_gb_pre_trim"] = pre_trim
+            row["relics_per_run"], row["deck_per_run"] = per_run_means(pw)
             if args.explore_amber:   # forcing attempts, of which c = 0 / infinity; logged natural items, unplayed (0)
                 row["explore_amber"] = {k: s["explore_" + k] for k in
                                         ("attempts", "c_zero", "c_inf", "natural", "natural_unplayed")}
