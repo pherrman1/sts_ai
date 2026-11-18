@@ -31,6 +31,9 @@ namespace sts::search {
         int monsterListSize = 0, monsterListOffset = 0, eliteListSize = 0, eliteListOffset = 0;
         MonsterEncounter secondBoss = MonsterEncounter::INVALID;
         int act = 0;
+        int matchUnseen = 0;            // face-down Match and Keep slots never flipped
+        bool matchAndKeep = false;
+        bool eventFightReward = false;  // in an event fight whose rewards were rolled when it was chosen
     };
     OocHiddenSnapshot captureOocHidden(const GameContext &gc);
 

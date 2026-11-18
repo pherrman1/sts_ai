@@ -292,6 +292,12 @@ add_test(NAME amber_chance_rule COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guar
     $<TARGET_FILE:amber_chance_rule_test> 60)
 set_tests_properties(amber_chance_rule PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
 
+add_executable(hidden_layout_resample_test tests/hidden_layout_resample_test.cpp $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(hidden_layout_resample_test PRIVATE include json/include)
+add_test(NAME hidden_layout_resample COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:hidden_layout_resample_test> 200)
+set_tests_properties(hidden_layout_resample PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
+
 add_executable(rest_recall_filter_test tests/rest_recall_filter_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(rest_recall_filter_test PRIVATE include json/include)

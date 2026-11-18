@@ -2948,6 +2948,10 @@ void GameContext::chooseEventOption(int idx) {
                     goldAmt += std::round(static_cast<float>(goldAmt) * 0.25f);
                 }
                 info.eventData = 2;
+                // Kept in info (not captured) so a search can resample the hidden relics before the fight ends
+                // (search::sampleNoncombatFuture); the rolls and their order are unchanged.
+                info.bossRelics[0] = rareRelic;
+                info.bossRelics[1] = uncommonRelic;
                 regainControlAction = [=](GameContext &gc) {
                     if (gc.smokeBombUsed) {
                         // A Smoke Bomb escape forfeits the Victory rewards
@@ -2959,8 +2963,8 @@ void GameContext::chooseEventOption(int idx) {
                     gc.relicsOnCombatEnd();
                     Rewards reward;
                     reward.addGold(goldAmt);
-                    reward.addRelic(rareRelic);
-                    reward.addRelic(uncommonRelic);
+                    reward.addRelic(gc.info.bossRelics[0]);
+                    reward.addRelic(gc.info.bossRelics[1]);
                     gc.addPotionRewards(reward);
                     reward.addCardReward(gc.createCardReward(Room::EVENT));
                     gc.openCombatRewardScreen(reward);
@@ -3035,6 +3039,10 @@ void GameContext::chooseEventOption(int idx) {
                         }
                     }
 
+                    // Kept in info (not captured) so a search can resample the hidden gold and relic before the
+                    // fight ends (search::sampleNoncombatFuture); the rolls and their order are unchanged.
+                    info.gold = goldAmt;
+                    info.bossRelics[0] = addRelic ? combatRewardRelic : RelicId::INVALID;
                     regainControlAction = [=](GameContext &gc) {
                         if (gc.smokeBombUsed) {
                             // An escape forfeits the event's combat rewards;
@@ -3044,9 +3052,9 @@ void GameContext::chooseEventOption(int idx) {
                         }
                         gc.relicsOnCombatEnd();
                         Rewards reward;
-                        reward.addGold(goldRewardAmount(gc, goldAmt));
-                        if (addRelic) {
-                            reward.addRelic(combatRewardRelic);
+                        reward.addGold(goldRewardAmount(gc, gc.info.gold));
+                        if (gc.info.bossRelics[0] != RelicId::INVALID) {
+                            reward.addRelic(gc.info.bossRelics[0]);
                         }
                         // Black Star only drops from MonsterRoomElite, not event fights.
                         if (!engineFidelityFix() && gc.hasRelic(RelicId::BLACK_STAR)) {
@@ -3468,12 +3476,14 @@ void GameContext::chooseEventOption(int idx) {
                     java::Collections::shuffle(bosses, bosses+3, java::Random(miscRng.randomLong()));
 
                     const int goldAmt = unfavorable ? 25 : 50;
-                    const RelicId rareRelic = returnRandomRelic(RelicTier::RARE);
+                    // Kept in info (not captured) so a search can resample the hidden relic before the fight ends
+                    // (search::sampleNoncombatFuture); the roll and its order are unchanged.
+                    info.bossRelics[0] = returnRandomRelic(RelicTier::RARE);
                     regainControlAction = [=](GameContext &gc) {
                         gc.relicsOnCombatEnd();
                         Rewards reward;
                         reward.addGold(goldRewardAmount(gc, goldAmt));
-                        reward.addRelic(rareRelic);
+                        reward.addRelic(gc.info.bossRelics[0]);
                         gc.addPotionRewards(reward);
                         reward.addCardReward(gc.createCardReward(Room::EVENT));
                         gc.openCombatRewardScreen(reward);
