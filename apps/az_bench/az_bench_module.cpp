@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <string>
 
+#include <cstdio>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -437,6 +438,14 @@ PYBIND11_MODULE(az_bench_native, m) {
                 field("recall", &P::recall); field("other_campfire", &P::otherCampfire);
                 field("elites", &P::elites); field("burning_elites", &P::burningElites); field("act4", &P::act4);
                 field("heart", &P::heart); field("keyless_victories", &P::keylessVictories);
+                field("heart_hp_sum", &P::heartHpSum); field("heart_entry_hp_sum", &P::heartEntryHpSum);
+                field("heart_turns_sum", &P::heartTurnsSum);
+                for (int b = 0; b < P::kHeartHpBins; ++b) {   // heart_hp_00 .. heart_hp_15: Heart HP left in [50 b, 50 b + 50)
+                    std::vector<std::int64_t> v;
+                    for (const auto &p : s.progressAsc) v.push_back(p.heartHpHist[b]);
+                    char name[16]; std::snprintf(name, sizeof name, "heart_hp_%02d", b);
+                    pr[name] = v;
+                }
                 o["progress_asc"] = pr;
             }
             o["ooc_roots"] = s.oocRoots; o["explore_roots"] = s.exploreRoots; o["forced_picks"] = s.forcedPicks;
@@ -454,6 +463,7 @@ PYBIND11_MODULE(az_bench_native, m) {
             o["auto_gold"] = s.autoGold;
             o["forced_keys"] = py::make_tuple(s.forcedKeys[0], s.forcedKeys[1], s.forcedKeys[2]);
             o["key_route_masked"] = s.keyRouteMasked;
+            o["heart_hp_min"] = s.heartHpMin;
             o["step_cpu"] = s.stepCpu; o["encode_cpu"] = s.encodeCpu; o["search_cpu"] = s.searchCpu;
             o["pack_s"] = s.packSeconds;
             return o;

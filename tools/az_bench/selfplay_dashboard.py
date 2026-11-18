@@ -181,8 +181,57 @@ def ascension_panel(rows, last, target=0.10, need=10000):
 </section>"""
 
 
+HEART_HP_KEYS = tuple(f"heart_hp_{b:02d}" for b in range(16))
 PROGRESS_KEYS = ("runs", "ruby", "emerald", "sapphire", "all_keys", "campfires", "recall_offered", "rest", "smith",
-                 "recall", "other_campfire", "elites", "burning_elites", "act4", "heart", "keyless_victories")
+                 "recall", "other_campfire", "elites", "burning_elites", "act4", "heart", "keyless_victories",
+                 "heart_hp_sum", "heart_entry_hp_sum", "heart_turns_sum") + HEART_HP_KEYS
+
+
+def heart_panel(rows, cur, recent=20):
+    """Heart fights: the Heart's HP left at the fight's end (50-HP bins, 0 = killed), lowest ever, means. Empty before
+    the counters existed (selfplay.py with heart_hp_* in progress_window)."""
+    if not any("heart_hp_00" in e for r in rows for e in (r.get("progress_window") or {}).values()):
+        return ""
+    tot = progress_sum(rows).get(cur) or {}
+    now = progress_sum(rows[-recent:]).get(cur) or {}
+    low = next((r["heart_hp_min"] for r in reversed(rows) if r.get("heart_hp_min") is not None), None)
+
+    def svg(t):
+        vals = [t.get(k, 0) for k in HEART_HP_KEYS]
+        mx = max(vals) or 1
+        w, h, pl, pr, pt, pb = 1000, 200, 46, 12, 10, 28
+        bw = (w - pl - pr) / len(vals)
+        g = [f'<svg viewBox="0 0 {w} {h}" role="img" class="chart">']
+        for i in range(5):
+            v = mx * i / 4
+            y = pt + (1 - v / mx) * (h - pt - pb)
+            g.append(f'<line x1="{pl}" x2="{w - pr}" y1="{y:.1f}" y2="{y:.1f}" class="grid"/>')
+            g.append(f'<text x="{pl - 6}" y="{y + 4:.1f}" text-anchor="end" class="tick">{v:.0f}</text>')
+        for b, v in enumerate(vals):
+            bh = v / mx * (h - pt - pb)
+            g.append(f'<rect x="{pl + b * bw + 1:.1f}" y="{h - pb - bh:.1f}" width="{max(1, bw - 2):.1f}" '
+                     f'height="{bh:.1f}" fill="var({"--good" if b == 0 else "--boss"})"/>')
+            if b % 2 == 0:
+                g.append(f'<text x="{pl + (b + 0.5) * bw:.1f}" y="{h - 8}" text-anchor="middle" class="tick">{50 * b}</text>')
+        g.append("</svg>")
+        return "".join(g)
+
+    def mean(t, k):
+        return f'{t[k] / t["heart"]:.0f}' if t.get("heart") else "-"
+
+    tiles = (f'<div class="tiles"><div class="tile"><div class="k">Heart fights (A{cur})</div>'
+             f'<div class="v">{tot.get("heart", 0):,}</div><div class="n">last ~{recent} windows: {now.get("heart", 0):,}</div></div>'
+             f'<div class="tile"><div class="k">Lowest Heart HP left</div><div class="v">{"-" if low is None else low}</div>'
+             f'<div class="n">of 750; 0 = kill</div></div>'
+             f'<div class="tile"><div class="k">Mean Heart HP left</div><div class="v">{mean(tot, "heart_hp_sum")}</div>'
+             f'<div class="n">recent {mean(now, "heart_hp_sum")}</div></div>'
+             f'<div class="tile"><div class="k">Player HP entering</div><div class="v">{mean(tot, "heart_entry_hp_sum")}</div>'
+             f'<div class="n">mean turns in the fight {mean(tot, "heart_turns_sum")}</div></div></div>')
+    return f"""<section class="ascbox"><h2>Heart fights: Heart HP left at the end</h2>
+{tiles}
+{svg(tot)}
+<p class="rule">Heart HP left when its fight ended, in 50-HP bins (x = bin start; green bin 0-49 includes kills at 0),
+all Heart fights at A{cur} since the counters exist. The Heart takes at most 300 damage per turn (Invincible).</p></section>"""
 
 
 def progress_sum(rows):
@@ -397,6 +446,7 @@ def page(rows, title, started, subtitle=""):
 {ascension_panel(rows, last) if curriculum else ""}
 <div class="tiles">{tiles}</div>
 {progress_panel(rows, last.get("ascension", 20))}
+{heart_panel(rows, last.get("ascension", 20))}
 <div class="grid2">
 <section><h2>Mean final floor per window</h2>{chart(runs, [("mean floor (smoothed)", floor_s, "--accent")], ymin=0)}</section>
 <section><h2>{"Heart-kill rate, all ascensions (%)" if curriculum else "Self-play win rate (%)"}</h2>{chart(runs, [("win rate (smoothed)", win_s, "--good")], ymin=0, yfmt="{:.2f}")}</section>
