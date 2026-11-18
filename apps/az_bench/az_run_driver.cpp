@@ -147,21 +147,68 @@ namespace sts::azbench {
             return c;
         }
 
-        // Flat layout of one row (packFlat's per-row layout without padding).
-        void flattenInto(const AmberTokens &tk, Sample &s) {
+        // Flat layout of one row (packFlat's per-row layout without padding). dict non-null (RunConfig::compactSamples):
+        // the tokens go into the run's dictionary *dict (index: content hash -> position; a new dictionary when the
+        // row would overflow it) and the sample keeps their positions.
+        void flattenInto(const AmberTokens &tk, Sample &s, std::shared_ptr<TokenDict> *dict = nullptr,
+                         std::unordered_map<std::uint64_t, std::uint32_t> *index = nullptr) {
             std::array<int, search::kAmberTokenTypes> off{};
             int n = 0;
             for (int t = 0; t < search::kAmberTokenTypes; ++t) { off[t] = n; n += tk.n[t]; }
-            s.tokType.resize(n);
-            s.ids.resize(static_cast<std::size_t>(n) * search::kAmberCat);
-            s.f.resize(static_cast<std::size_t>(n) * search::kAmberFloat);
-            int pos = 0;
-            for (int t = 0; t < search::kAmberTokenTypes; ++t) {
-                for (int i = 0; i < tk.n[t]; ++i, ++pos) {
-                    const auto &k = tk.tok[search::kAmberOff[t] + i];
-                    s.tokType[pos] = static_cast<std::int8_t>(t);
-                    std::memcpy(&s.ids[static_cast<std::size_t>(pos) * search::kAmberCat], k.ids.data(), sizeof(k.ids));
-                    std::memcpy(&s.f[static_cast<std::size_t>(pos) * search::kAmberFloat], k.f.data(), sizeof(k.f));
+            if (dict) {
+                if (!*dict || (*dict)->size() + static_cast<std::size_t>(n) > TokenDict::kMax) {
+                    *dict = std::make_shared<TokenDict>();
+                    index->clear();
+                }
+                TokenDict &d = **dict;
+                s.tokIdx.resize(n);
+                int pos = 0;
+                for (int t = 0; t < search::kAmberTokenTypes; ++t) {
+                    for (int i = 0; i < tk.n[t]; ++i, ++pos) {
+                        const auto &k = tk.tok[search::kAmberOff[t] + i];
+                        std::uint64_t h = 0x9e3779b97f4a7c15ull * static_cast<std::uint64_t>(t + 1);
+                        auto mixIn = [&h](std::uint64_t w) {
+                            h ^= w + 0x9e3779b97f4a7c15ull + (h << 6) + (h >> 2);
+                            h *= 0xbf58476d1ce4e5b9ull;
+                            h ^= h >> 31;
+                        };
+                        for (int c = 0; c < search::kAmberCat; ++c) mixIn(static_cast<std::uint16_t>(k.ids[c]));
+                        for (int c = 0; c < search::kAmberFloat; ++c) mixIn(k.f[c]);
+                        // Open addressing on the hash: a colliding entry with other content moves on to h + 1.
+                        for (;; ++h) {
+                            const auto it = index->find(h);
+                            if (it == index->end()) {
+                                const auto at = static_cast<std::uint32_t>(d.size());
+                                d.tokType.push_back(static_cast<std::int8_t>(t));
+                                d.ids.insert(d.ids.end(), k.ids.begin(), k.ids.end());
+                                d.f.insert(d.f.end(), k.f.begin(), k.f.end());
+                                index->emplace(h, at);
+                                s.tokIdx[pos] = static_cast<std::uint16_t>(at);
+                                break;
+                            }
+                            const std::size_t q = it->second;
+                            if (d.tokType[q] == static_cast<std::int8_t>(t) &&
+                                std::memcmp(&d.ids[q * search::kAmberCat], k.ids.data(), sizeof(k.ids)) == 0 &&
+                                std::memcmp(&d.f[q * search::kAmberFloat], k.f.data(), sizeof(k.f)) == 0) {
+                                s.tokIdx[pos] = static_cast<std::uint16_t>(q);
+                                break;
+                            }
+                        }
+                    }
+                }
+                s.dict = *dict;
+            } else {
+                s.tokType.resize(n);
+                s.ids.resize(static_cast<std::size_t>(n) * search::kAmberCat);
+                s.f.resize(static_cast<std::size_t>(n) * search::kAmberFloat);
+                int pos = 0;
+                for (int t = 0; t < search::kAmberTokenTypes; ++t) {
+                    for (int i = 0; i < tk.n[t]; ++i, ++pos) {
+                        const auto &k = tk.tok[search::kAmberOff[t] + i];
+                        s.tokType[pos] = static_cast<std::int8_t>(t);
+                        std::memcpy(&s.ids[static_cast<std::size_t>(pos) * search::kAmberCat], k.ids.data(), sizeof(k.ids));
+                        std::memcpy(&s.f[static_cast<std::size_t>(pos) * search::kAmberFloat], k.f.data(), sizeof(k.f));
+                    }
                 }
             }
             const int a = tk.nAct;
@@ -406,6 +453,9 @@ namespace sts::azbench {
         std::vector<Sample> pending;
         std::size_t floorStart = 0;          // first pending sample of the current floor
         Sample cur;                          // the current move's sample (root tokens), if kept
+        // RunConfig::compactSamples: this run's token dictionary (shared with its samples) and its content index.
+        std::shared_ptr<TokenDict> dict;
+        std::unordered_map<std::uint64_t, std::uint32_t> dictIndex;
     };
 
     struct RunDriver::Worker {
@@ -879,6 +929,8 @@ namespace sts::azbench {
             g.moves = g.fightMoves = 0;
             g.floor = g.gc.floorNum;
             g.pending.clear();
+            g.dict.reset();   // compactSamples: a new dictionary at the run's first kept sample
+            g.dictIndex = {};
             g.floorStart = 0;
             g.floorHp.fill(-1);
             g.moveDist.clear();
@@ -1804,7 +1856,8 @@ namespace sts::azbench {
                 if (rootEval) {
                     if (g.keep) {
                         g.cur = Sample{};
-                        flattenInto(g.tokens, g.cur);
+                        if (cfg.compactSamples) flattenInto(g.tokens, g.cur, &g.dict, &g.dictIndex);
+                        else flattenInto(g.tokens, g.cur);
                         g.cur.combat = g.inBattle ? 1 : 0;
                         g.cur.maxHp = static_cast<std::int16_t>(g.inBattle ? g.bc.player.maxHp : g.gc.maxHp);
                         g.cur.floor = static_cast<std::int16_t>(g.gc.floorNum);

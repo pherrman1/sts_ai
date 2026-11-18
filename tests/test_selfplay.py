@@ -24,6 +24,12 @@ except ImportError:
     HAVE_TORCH = False
 
 
+def native():
+    sys.path.insert(0, os.path.dirname(MODULES[0]))
+    import az_bench_native
+    return az_bench_native
+
+
 def load():
     spec = importlib.util.spec_from_file_location("selfplay", os.path.join(ROOT, "tools", "az_bench", "selfplay.py"))
     m = importlib.util.module_from_spec(spec)
@@ -170,6 +176,213 @@ class ReplayTest(unittest.TestCase):
         gs, gp = torch.autograd.grad(ce[has].mean(), [soft.pol_soft[2].weight, soft.pol[2].weight], allow_unused=True)
         self.assertGreater(float(gs.abs().sum()), 0)   # the soft term moves the soft head, not the normal policy head
         self.assertIsNone(gp)
+
+    @staticmethod
+    def compactify(c):
+        """The compact form of a chunk (as take_samples gives it with --compact-samples): each run's distinct tokens
+        once (order of first use), samples refer to them by index."""
+        nt = np.diff(c["tok_off"])
+        S = len(nt)
+        rows = np.concatenate([c["tok_type"].astype(np.int16)[:, None].view(np.uint16), c["ids"].view(np.uint16),
+                               c["f"].view(np.uint16)], 1)
+        tt, ids, f, idx, base = [], [], [], [], np.zeros(S, np.int64)
+        n_dict, i = 0, 0
+        while i < S:
+            j = i
+            while j < S and c["run"][j] == c["run"][i]:
+                j += 1
+            lo, hi = c["tok_off"][i], c["tok_off"][j]
+            seen = {}
+            for t in range(lo, hi):
+                seen.setdefault(rows[t].tobytes(), len(seen))
+            order = sorted(seen, key=seen.get)
+            first = [lo + next(t - lo for t in range(lo, hi) if rows[t].tobytes() == k) for k in order]
+            tt.append(c["tok_type"][first]); ids.append(c["ids"][first]); f.append(c["f"][first])
+            idx.append(np.array([seen[rows[t].tobytes()] for t in range(lo, hi)], np.uint16))
+            base[i:j] = n_dict
+            n_dict += len(order)
+            i = j
+        out = dict(c, tok_type=np.concatenate(tt), ids=np.concatenate(ids), f=np.concatenate(f),
+                   tok_idx=np.concatenate(idx), tok_base=base)
+        return out
+
+    @unittest.skipUnless(MODULES, "az_bench_native not built")
+    def test_compact_same_batches(self):
+        """--compact-samples: a compact Replay (one global token dictionary) fed compact chunks (run dictionaries +
+        indices) returns exactly the batches of a plain one fed the copied chunks; Replay.expand_chunk undoes
+        compactify; a plain Replay takes compact chunks (expanded) and a compact one copied chunks; with a small
+        dictionary every live sample still reads its own tokens; tokens shared across runs are stored once; the
+        dictionary's reference counts equal the live samples' references, and freed slots are reused; the compact
+        window takes less memory."""
+        sp = load()
+        TS = native().TokenStore
+        rng = np.random.default_rng(6)
+        plain = sp.Replay(300, tokens_per_sample=48, actions_per_sample=12)
+        comp = sp.Replay(300, tokens_per_sample=48, actions_per_sample=12, compact=True, dict_tokens_per_sample=48,
+                         token_store=TS)
+        tight = sp.Replay(300, tokens_per_sample=24, actions_per_sample=12, compact=True, dict_tokens_per_sample=3,
+                          token_store=TS)
+        mixed = sp.Replay(300, tokens_per_sample=48, actions_per_sample=12)   # gets compact chunks
+        mixed2 = sp.Replay(300, tokens_per_sample=48, actions_per_sample=12, compact=True, dict_tokens_per_sample=48,
+                           token_store=TS)
+        shared = c0 = None
+        flat, first = [], 0
+        for _ in range(10):
+            S = int(rng.integers(20, 60))
+            c = chunk(rng, S, first)
+            c["run"] = (np.arange(S) // 5 + first).astype(np.uint64)
+            if c0 is None:
+                c0 = c
+            # Tokens shared across runs (a card in every deck): each sample's last token is the same one.
+            last = c["tok_off"][1:] - 1
+            for key in ("tok_type", "ids", "f"):
+                c[key][last] = c0[key][0]
+            # Runs share tokens: every sample of a run repeats some of the run's first sample's tokens.
+            for i in range(S):
+                r0 = c["tok_off"][i - i % 5]
+                lo, hi = c["tok_off"][i], c["tok_off"][i + 1]
+                k = min(hi - lo, c["tok_off"][i - i % 5 + 1] - r0) // 2
+                for key in ("tok_type", "ids", "f"):
+                    c[key][lo:lo + k] = c[key][r0:r0 + k]
+            cc = self.compactify(c)
+            self.assertLess(len(cc["tok_type"]), len(c["tok_type"]))
+            back = sp.Replay.expand_chunk(cc)
+            for key in ("tok_type", "ids", "f"):
+                np.testing.assert_array_equal(back[key], c[key])
+            plain.add(c); comp.add(cc); tight.add(cc); mixed.add(cc); mixed2.add(c)
+            flat.append(c)
+            first += S
+            for r in (comp, tight, mixed2):   # reference counts = the live samples' token references
+                live = (r.s_tail + np.arange(len(r))) % r.cs
+                nt = r.ntok[live].astype(np.int64)
+                cols = np.arange(int(nt.sum())) - np.repeat(np.cumsum(nt) - nt, nt)
+                refs = r.tok_idx[(np.repeat(r.idx_start[live], nt) + cols) % r.ci]
+                want = np.bincount(refs, minlength=r.store.capacity)
+                np.testing.assert_array_equal(r.store.refs(), want)
+                self.assertEqual(r.store.used, int((want > 0).sum()))
+                self.assertEqual(len(set(refs[np.cumsum(nt) - 1].tolist())), 1)   # the shared token: one slot
+        self.assertEqual(len(plain), len(comp))
+        self.assertEqual(len(plain), len(mixed))
+        self.assertEqual(len(plain), len(mixed2))
+        lo = plain.s_tail
+        a, b, m, m2 = (r.rows(lo, len(plain)) for r in (plain, comp, mixed, mixed2))
+        for key in a:
+            np.testing.assert_array_equal(a[key], b[key], key)
+            np.testing.assert_array_equal(a[key], m[key], key)
+            np.testing.assert_array_equal(a[key], m2[key], key)
+        # The tight window keeps fewer samples (dictionary ring full), each read exactly.
+        self.assertLess(len(tight), len(plain))
+        t = tight.rows(tight.s_tail, len(tight))
+        p = plain.rows(tight.s_tail, len(tight))
+        for key in t:
+            if key in p and p[key].shape == t[key].shape:
+                np.testing.assert_array_equal(p[key], t[key], key)
+        b1 = comp.sample(np.random.default_rng(9), 64, packed=True)
+        b0 = plain.sample(np.random.default_rng(9), 64, packed=True)
+        for key in b0:
+            np.testing.assert_array_equal(b0[key], b1[key], key)
+        self.assertGreater(tight.store.used, 0)
+        big_p = sp.Replay(10000)
+        big_c = sp.Replay(10000, compact=True, token_store=TS)
+        self.assertLess(big_c.nbytes(), 0.5 * big_p.nbytes())
+
+    @unittest.skipUnless(MODULES, "az_bench_native not built")
+    def test_compact_eviction_fuzz(self):
+        """Compact Replay with a small dictionary and tokens drawn from a small pool (heavy sharing across chunks,
+        so evicting old samples frees tokens the incoming chunk uses): every add either fits or, only for a chunk
+        with more distinct tokens than the whole dictionary, raises ValueError; reference counts stay equal to the
+        live samples' references and every live sample reads its own tokens."""
+        sp = load()
+        TS = native().TokenStore
+        for seed in range(12):   # seeds 1, 6, 7, 9, 11 hit the stale count_new of the first global version
+            rng = np.random.default_rng(seed)
+            cs, per = int(rng.integers(40, 200)), int(rng.integers(1, 4))
+            pool = int(rng.integers(cs * per // 2, cs * per * 2))   # about the dictionary's size
+            ptt = rng.integers(0, 9, pool).astype(np.int8)
+            pids = rng.integers(0, 50, (pool, 4)).astype(np.int16)
+            pf = rng.normal(0, 1, (pool, 64)).astype(np.float16)
+            rep = sp.Replay(cs, tokens_per_sample=24, actions_per_sample=12, compact=True,
+                            dict_tokens_per_sample=per, token_store=TS)
+            plain = sp.Replay(4000, tokens_per_sample=24, actions_per_sample=12)   # every sample, for the check
+            first = 0
+            for _ in range(40):
+                S = int(rng.integers(5, 40))
+                c = chunk(rng, S, first)
+                k = rng.integers(0, pool, len(c["tok_type"]))
+                c["tok_type"], c["ids"], c["f"] = ptt[k], pids[k], pf[k]
+                c["run"] = (np.arange(S) // 4 + first).astype(np.uint64)
+                cc = self.compactify(c)
+                try:
+                    rep.add(cc)
+                except ValueError:
+                    self.assertGreater(len(np.unique(k)), rep.store.capacity - 16)
+                    break
+                plain.add(c)
+                first += S
+                live = (rep.s_tail + np.arange(len(rep))) % rep.cs
+                nt = rep.ntok[live].astype(np.int64)
+                cols = np.arange(int(nt.sum())) - np.repeat(np.cumsum(nt) - nt, nt)
+                refs = rep.tok_idx[(np.repeat(rep.idx_start[live], nt) + cols) % rep.ci]
+                np.testing.assert_array_equal(rep.store.refs(), np.bincount(refs, minlength=rep.store.capacity))
+                if len(rep):
+                    got = rep.rows(rep.s_tail, len(rep))
+                    want = plain.rows(rep.s_tail, len(rep))
+                    for key in ("tok_type", "ids", "f", "mask", "a_type", "outcome"):
+                        np.testing.assert_array_equal(got[key], want[key], key)
+
+    @unittest.skipUnless(MODULES, "az_bench_native not built")
+    def test_token_store(self):
+        """TokenStore (the global dictionary): random intern / release against a model. Equal tokens share a slot
+        while referenced, reference counts and used slots match, released slots are reused, a full store throws and
+        the slots' contents are the tokens (many deletions exercise the table's backward-shift deletion)."""
+        TS = native().TokenStore
+        rng = np.random.default_rng(11)
+        pool = 300
+        tt = rng.integers(0, 9, pool).astype(np.int8)
+        ids = rng.integers(0, 50, (pool, 4)).astype(np.int16)
+        f = rng.normal(0, 1, (pool, 64)).astype(np.float16)
+        st = TS(120)
+        vt, vi, vf = st.views()
+        slot_of, refs = {}, {}
+        held = []   # slots referenced, one entry per reference
+        for step in range(400):
+            if rng.random() < 0.55 or not held:
+                k = rng.choice(pool, int(rng.integers(1, 12)), replace=True)
+                uk, cnt = np.unique(k, return_counts=True)
+                new = sum(1 for x in uk if x not in slot_of)
+                if new > st.free:
+                    with self.assertRaises(RuntimeError):
+                        st.intern(tt[uk], ids[uk], f[uk].view(np.uint16), cnt.astype(np.int64))
+                    break
+                self.assertGreaterEqual(st.count_new(tt[uk], ids[uk], f[uk].view(np.uint16), cnt.astype(np.int64)), new)
+                sl = st.intern(tt[uk], ids[uk], f[uk].view(np.uint16), cnt.astype(np.int64))
+                for x, s_, c in zip(uk, sl, cnt):
+                    if x in slot_of:
+                        self.assertEqual(s_, slot_of[x])
+                    slot_of[x] = int(s_)
+                    refs[x] = refs.get(x, 0) + int(c)
+                    held += [int(x)] * int(c)
+            else:
+                drop = rng.choice(len(held), int(rng.integers(1, min(len(held), 20) + 1)), replace=False)
+                xs = [held[i] for i in drop]
+                st.release(np.array([slot_of[x] for x in xs], np.int32))
+                for i in sorted(drop, reverse=True):
+                    held.pop(i)
+                for x in xs:
+                    refs[x] -= 1
+                    if refs[x] == 0:
+                        del refs[x], slot_of[x]
+            self.assertEqual(st.used, len(slot_of))
+            r = st.refs()
+            for x, s_ in slot_of.items():
+                self.assertEqual(r[s_], refs[x])
+                self.assertEqual(vt[s_], tt[x])
+                np.testing.assert_array_equal(vi[s_], ids[x])
+                np.testing.assert_array_equal(vf[s_], f[x])
+            self.assertEqual(int(r.sum()), len(held))
+        self.assertGreater(len(slot_of), 0)
+        with self.assertRaises(RuntimeError):   # a slot without references cannot be released
+            st.release(np.array([-1], np.int32))
 
     def test_policy_frac(self):
         sp = load()
@@ -561,6 +774,66 @@ class SelfplaySmoke(unittest.TestCase):
             a = torch.load(sorted(glob.glob(os.path.join(d, "ckpt_*.pt")), key=os.path.getmtime)[-1])["args"]
             self.assertTrue(a["chance_on_reveal"] and a["cross_combat"] and a["sim_help"])
             self.assertEqual(a["max_pending"], 0)
+
+    def test_compact_samples_run(self):
+        """--compact-samples with --max-pending 0: the driver hands out compact chunks (indices inside their run
+        dictionaries, a dictionary shared by many samples), the run plays, trains and reports the window's memory."""
+        sp = load()
+        import importlib
+        sys.path.insert(0, os.path.dirname(MODULES[0]))
+        nat = importlib.import_module("az_bench_native")
+        drv = nat.RunDriver(workers=1, games=2, seed_base=1950, max_runs=2, ascension=20, full_sims=8, fast_sims=4,
+                            full_candidates=4, fast_candidates=2, max_pending=0, sim_help=True,
+                            compact_samples=True)
+        R, T, A = 8, 212, 96
+        views = {"tok_type": np.zeros(R * T, np.int8), "ids": np.zeros(R * T * 4, np.int16),
+                 "f": np.zeros(R * T * 64, np.float16), "mask": np.zeros(R * T, np.bool_),
+                 "a_type": np.zeros(R * A, np.int16), "a_src": np.zeros(R * A, np.int16),
+                 "a_tgt": np.zeros(R * A, np.int16), "a_f": np.zeros(R * A * 8, np.float16),
+                 "a_mask": np.zeros(R * A, np.bool_)}
+        rng = np.random.default_rng(0)
+        chunks = []
+        drv.start()
+        try:
+            while drv.stats()["runs_done"] < 2:
+                got = drv.next_flat(R, 1, 5, [R], [T], [A], views)
+                if got is None:
+                    continue
+                ticket, rows, _, _, Ap = got
+                drv.submit(ticket, rng.normal(0, 1, (rows, Ap)).astype(np.float32), rng.random(rows).astype(np.float32),
+                           np.full(rows, 40, np.float32))
+                c = drv.take_samples()
+                if c is not None:
+                    chunks.append(c)
+        finally:
+            drv.stop()
+        c = drv.take_samples()
+        if c is not None:
+            chunks.append(c)
+        self.assertTrue(chunks)
+        for c in chunks:
+            self.assertIn("tok_idx", c)
+            nt = np.diff(c["tok_off"])
+            src = np.repeat(c["tok_base"], nt) + c["tok_idx"].astype(np.int64)
+            self.assertTrue((src < len(c["tok_type"])).all())
+            self.assertLess(len(c["tok_type"]), int(nt.sum()))   # tokens shared across a run's samples
+            self.assertEqual(len(c["ids"]), len(c["tok_type"]))
+            e = sp.Replay.expand_chunk(c)
+            self.assertEqual(len(e["tok_type"]), int(nt.sum()))
+        args = ["--module-dir", os.path.dirname(MODULES[0]), "--device", "cpu", "--workers", "2", "--games", "4",
+                "--full-sims", "8", "--fast-sims", "4", "--batch", "32", "--row-buckets", "32", "--pack-step", "32",
+                "--pack-threads", "1", "--min-replay", "50", "--train-batch", "32", "--window", "5000",
+                "--report", "1", "--sync-steps", "2", "--seed-base", "1960", "--max-runs", "8", "--test-max-hp", "900",
+                "--sim-help", "--max-pending", "0", "--compact-samples"]
+        with tempfile.TemporaryDirectory() as d:
+            self.assertEqual(sp.main(args + ["--out-dir", d]), 0)
+            with open(os.path.join(d, "metrics.jsonl")) as f:
+                last = [json.loads(l) for l in f][-1]
+            self.assertGreaterEqual(last["runs_done"], 8)
+            self.assertGreater(last["train_steps"], 0)
+            self.assertGreater(last["replay"], 0)
+            self.assertLess(last["replay_gb"], sp.Replay(5000, hp_floors=0).nbytes() / 2 ** 30)
+            self.assertGreater(last["replay_dict_used"], 0)
 
     def test_savescum(self):
         """--savescum reaches the driver: runs play it and every checked search child equals the real next state; a

@@ -17,6 +17,7 @@
 
 #include "az_driver.h"
 #include "az_run_driver.h"
+#include "az_token_store.h"
 #include "sim/search/SilverWireJson.h"
 #include "sim/search/SilverWireState.h"
 
@@ -196,6 +197,66 @@ PYBIND11_MODULE(az_bench_native, m) {
             return o;
         });
 
+    // Global token dictionary of the replay window (selfplay.py --compact-samples, az_token_store.h). Rows are
+    // tok_type [n] int8, ids [n, 4] int16, f [n, 64] float16, counts [n] int64 (references to add).
+    py::class_<azbench::TokenStore>(m, "TokenStore")
+        .def(py::init<std::int64_t>(), py::arg("capacity"))
+        .def_property_readonly("capacity", &azbench::TokenStore::capacity)
+        .def_property_readonly("free", &azbench::TokenStore::freeSlots)
+        .def_property_readonly("used", &azbench::TokenStore::used)
+        .def_property_readonly("nbytes", &azbench::TokenStore::bytes)
+        .def("count_new",
+             [](const azbench::TokenStore &st, py::array_t<std::int8_t, py::array::c_style | py::array::forcecast> t,
+                py::array_t<std::int16_t, py::array::c_style | py::array::forcecast> ids,
+                py::array_t<std::uint16_t, py::array::c_style> f,
+                py::array_t<std::int64_t, py::array::c_style | py::array::forcecast> counts) {
+                 const auto n = static_cast<std::size_t>(t.shape(0));
+                 if (ids.size() != static_cast<py::ssize_t>(n * 4) || f.size() != static_cast<py::ssize_t>(n * 64) ||
+                     counts.size() != static_cast<py::ssize_t>(n))
+                     throw std::invalid_argument("TokenStore.count_new: shapes");
+                 py::gil_scoped_release r;
+                 return st.countNew(n, t.data(), ids.data(), f.data(), counts.data());
+             })
+        .def("intern",
+             [](azbench::TokenStore &st, py::array_t<std::int8_t, py::array::c_style | py::array::forcecast> t,
+                py::array_t<std::int16_t, py::array::c_style | py::array::forcecast> ids,
+                py::array_t<std::uint16_t, py::array::c_style> f,
+                py::array_t<std::int64_t, py::array::c_style | py::array::forcecast> counts) {
+                 const auto n = static_cast<std::size_t>(t.shape(0));
+                 if (ids.size() != static_cast<py::ssize_t>(n * 4) || f.size() != static_cast<py::ssize_t>(n * 64) ||
+                     counts.size() != static_cast<py::ssize_t>(n))
+                     throw std::invalid_argument("TokenStore.intern: shapes");
+                 py::array_t<std::int32_t> slots(static_cast<py::ssize_t>(n));
+                 {
+                     py::gil_scoped_release r;
+                     st.intern(n, t.data(), ids.data(), f.data(), counts.data(), slots.mutable_data());
+                 }
+                 return slots;
+             })
+        .def("release",
+             [](azbench::TokenStore &st, py::array_t<std::int32_t, py::array::c_style | py::array::forcecast> slots) {
+                 py::gil_scoped_release r;
+                 st.release(static_cast<std::size_t>(slots.size()), slots.data());
+             })
+        .def("refs",
+             [](py::object self) {
+                 auto &st = self.cast<azbench::TokenStore &>();
+                 return py::array_t<std::int64_t>({static_cast<py::ssize_t>(st.capacity())}, {sizeof(std::int64_t)},
+                                                  st.refs(), self);
+             })
+        .def("views",
+             [](py::object self) {
+                 // tok_type [cap], ids [cap, 4], f [cap, 64] float16: views into the store (valid while it lives).
+                 auto &st = self.cast<azbench::TokenStore &>();
+                 const auto cap = static_cast<py::ssize_t>(st.capacity());
+                 py::array_t<std::int8_t> t({cap}, {static_cast<py::ssize_t>(1)}, st.tokType(), self);
+                 py::array_t<std::int16_t> ids({cap, static_cast<py::ssize_t>(4)},
+                                               {static_cast<py::ssize_t>(8), static_cast<py::ssize_t>(2)}, st.ids(), self);
+                 py::array_t<std::uint16_t> f({cap, static_cast<py::ssize_t>(64)},
+                                              {static_cast<py::ssize_t>(128), static_cast<py::ssize_t>(2)}, st.f(), self);
+                 return py::make_tuple(t, ids, f.attr("view")("float16"));
+             });
+
     py::class_<azbench::RunDriver>(m, "RunDriver")
         .def(py::init([](int workers, int games, std::uint64_t seedBase, std::int64_t maxRuns, int ascension,
                          int fullSims, int fastSims, double fullProb, int fullCandidates, int fastCandidates,
@@ -206,7 +267,7 @@ PYBIND11_MODULE(az_bench_native, m) {
                          bool chanceOnReveal, bool crossCombat, bool simHelp,
                          bool exploreAmber, double exploreT, double searchEmaLambda, bool searchEmaFullOnly,
                          bool forceKeys, std::vector<std::vector<double>> heartArms, int heartReps,
-                         bool savescum) {
+                         bool savescum, bool compactSamples) {
                  azbench::RunConfig c;
                  for (const auto &v : heartArms) {   // [full_sims, fast_sims, full_prob, full_candidates, fast_candidates]
                      if (v.size() != 5) throw std::invalid_argument("heart_arms: want 5 numbers per arm");
@@ -254,6 +315,7 @@ PYBIND11_MODULE(az_bench_native, m) {
                  c.searchEmaFullOnly = searchEmaFullOnly;
                  c.forceKeys = forceKeys;
                  c.savescum = savescum;
+                 c.compactSamples = compactSamples;
                  return std::make_unique<azbench::RunDriver>(c);
              }),
              py::arg("workers") = 11, py::arg("games") = 700, py::arg("seed_base") = 0, py::arg("max_runs") = -1,
@@ -270,7 +332,8 @@ PYBIND11_MODULE(az_bench_native, m) {
              py::arg("explore_amber") = false, py::arg("explore_temp") = 4.0,
              py::arg("search_ema_lambda") = 0.0, py::arg("search_ema_full_only") = true,
              py::arg("force_keys") = false, py::arg("heart_arms") = std::vector<std::vector<double>>{},
-             py::arg("heart_reps") = 1, py::arg("savescum") = false)
+             py::arg("heart_reps") = 1, py::arg("savescum") = false,
+             py::arg("compact_samples") = false)
         .def("heart_results",
              [](const azbench::RunDriver &d) {
                  py::list out;
@@ -361,6 +424,9 @@ PYBIND11_MODULE(az_bench_native, m) {
                  // Ragged arrays: sample i owns tokens tok_off[i] .. tok_off[i + 1] and actions act_off[i] ..
                  // act_off[i + 1]; a_src / a_tgt index the sample's own tokens (-1 = none); policy is NaN-free and
                  // all zero for samples without one (has_policy = 0).
+                 // Compact samples (RunConfig::compactSamples; "tok_idx" present): tok_type / ids / f hold the chunk's
+                 // token dictionaries (each distinct run dictionary once, back to back) and sample i's tokens are
+                 // tok_base[i] + tok_idx[tok_off[i] .. tok_off[i + 1]] in them.
                  std::vector<azbench::Sample> v;
                  {
                      py::gil_scoped_release r;
@@ -368,8 +434,22 @@ PYBIND11_MODULE(az_bench_native, m) {
                  }
                  if (v.empty()) return py::none();
                  const std::size_t S = v.size();
+                 const bool compact = static_cast<bool>(v[0].dict);
                  std::size_t nt = 0, na = 0;
-                 for (const auto &x : v) { nt += x.tokType.size(); na += x.aType.size(); }
+                 for (const auto &x : v) {
+                     if (static_cast<bool>(x.dict) != compact) throw std::runtime_error("take_samples: mixed compact samples");
+                     nt += x.numTokens(); na += x.aType.size();
+                 }
+                 std::vector<std::uint16_t> tokIdx;
+                 std::vector<std::int64_t> tokBase;
+                 std::unordered_map<const azbench::TokenDict *, std::int64_t> dictAt;   // dictionary -> its first token
+                 if (compact) {
+                     tokIdx.reserve(nt);
+                     tokBase.resize(S);
+                     nt = 0;
+                     for (const auto &x : v)
+                         if (dictAt.emplace(x.dict.get(), static_cast<std::int64_t>(nt)).second) nt += x.dict->size();
+                 }
                  std::vector<std::int64_t> tokOff(S + 1, 0), actOff(S + 1, 0);
                  std::vector<std::int8_t> tokType; tokType.reserve(nt);
                  std::vector<std::int16_t> ids; ids.reserve(nt * search::kAmberCat);
@@ -388,16 +468,27 @@ PYBIND11_MODULE(az_bench_native, m) {
                  std::vector<float> searchDist(ema ? S * C : 0), outcomeTarget(ema ? S * C : 0), emaRealW(ema ? S : 0);
                  for (std::size_t i = 0; i < S; ++i) {
                      const auto &x = v[i];
-                     tokType.insert(tokType.end(), x.tokType.begin(), x.tokType.end());
-                     ids.insert(ids.end(), x.ids.begin(), x.ids.end());
-                     f.insert(f.end(), x.f.begin(), x.f.end());
+                     if (compact) {
+                         const std::int64_t at = dictAt.at(x.dict.get());
+                         if (at == static_cast<std::int64_t>(tokType.size())) {   // the dictionary's first sample here
+                             tokType.insert(tokType.end(), x.dict->tokType.begin(), x.dict->tokType.end());
+                             ids.insert(ids.end(), x.dict->ids.begin(), x.dict->ids.end());
+                             f.insert(f.end(), x.dict->f.begin(), x.dict->f.end());
+                         }
+                         tokBase[i] = at;
+                         tokIdx.insert(tokIdx.end(), x.tokIdx.begin(), x.tokIdx.end());
+                     } else {
+                         tokType.insert(tokType.end(), x.tokType.begin(), x.tokType.end());
+                         ids.insert(ids.end(), x.ids.begin(), x.ids.end());
+                         f.insert(f.end(), x.f.begin(), x.f.end());
+                     }
                      aType.insert(aType.end(), x.aType.begin(), x.aType.end());
                      aSrc.insert(aSrc.end(), x.aSrc.begin(), x.aSrc.end());
                      aTgt.insert(aTgt.end(), x.aTgt.begin(), x.aTgt.end());
                      aF.insert(aF.end(), x.aF.begin(), x.aF.end());
                      if (x.policy.empty()) policy.insert(policy.end(), x.aType.size(), 0.f);
                      else policy.insert(policy.end(), x.policy.begin(), x.policy.end());
-                     tokOff[i + 1] = tokOff[i] + static_cast<std::int64_t>(x.tokType.size());
+                     tokOff[i + 1] = tokOff[i] + static_cast<std::int64_t>(x.numTokens());
                      actOff[i + 1] = actOff[i] + static_cast<std::int64_t>(x.aType.size());
                      searchValue[i] = x.searchValue;
                      outcome[i] = x.outcome; hpEnd[i] = x.hpEnd; maxHp[i] = x.maxHp; floor[i] = x.floor;
@@ -418,6 +509,7 @@ PYBIND11_MODULE(az_bench_native, m) {
                  const auto nT = static_cast<py::ssize_t>(tokType.size()), nA = static_cast<py::ssize_t>(aType.size());
                  py::dict o;
                  o["tok_off"] = toArray(tokOff); o["act_off"] = toArray(actOff);
+                 if (compact) { o["tok_idx"] = toArray(tokIdx); o["tok_base"] = toArray(tokBase); }
                  o["tok_type"] = toArray(tokType);
                  o["ids"] = toArray(ids).reshape({nT, static_cast<py::ssize_t>(search::kAmberCat)});
                  o["f"] = toArray(f).view("float16").reshape({nT, static_cast<py::ssize_t>(search::kAmberFloat)});

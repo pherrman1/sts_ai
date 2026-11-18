@@ -254,6 +254,13 @@ set_tests_properties(az_eval_cache_amber_search PROPERTIES LABELS "core;smoke")
 add_test(NAME az_eval_cache_amber_search_ema COMMAND $<TARGET_FILE:az-eval-cache-test> --runs 3 --seed-base 1 --fast
     --amber-search --ema 0.9)
 set_tests_properties(az_eval_cache_amber_search_ema PROPERTIES LABELS "core;smoke")
+# Compact sample storage (RunConfig::compactSamples): the same runs and samples, token for token, as copied samples.
+add_test(NAME az_eval_cache_compact COMMAND $<TARGET_FILE:az-eval-cache-test> --runs 6 --seed-base 1 --fast
+    --utility amber --amber-search --ema 0.9 --compact)
+set_tests_properties(az_eval_cache_compact PROPERTIES LABELS "core;smoke")
+add_test(NAME az_run_driver_compact COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 6 --fast
+    --test-hp 900 --utility amber --chance-on-reveal --cross-combat --sim-help --max-pending 0 --compact-samples)
+set_tests_properties(az_run_driver_compact PROPERTIES LABELS "core;smoke")
 add_test(NAME az_run_driver_qtransform COMMAND $<TARGET_FILE:az-run-driver> --self-test-q)
 set_tests_properties(az_run_driver_qtransform PROPERTIES LABELS "core;smoke")
 add_test(NAME az_run_driver_search_flags COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 6 --fast
