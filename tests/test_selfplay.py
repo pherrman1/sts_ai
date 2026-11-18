@@ -613,6 +613,7 @@ class SelfplaySmoke(unittest.TestCase):
             # refresh() after a sync: tests/test_fused_net.py test_refresh_after_weight_change
             self.assertEqual(rows[-1]["invalid_actions"], 0)
             self.assertIn("gpu_ms_per_s", rows[-1])
+            self.assertIn("fused_long_rows", rows[-1])
 
     def test_train_packed_run(self):
         """--train-packed trains on packed batches (same loss: ReplayTest.test_packed_batch_same_loss_and_grads)."""

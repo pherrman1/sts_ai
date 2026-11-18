@@ -887,6 +887,8 @@ def main(argv=None):
                 "ooc_q_spread_mean": [round(s["ooc_q_spread_sum"][k] / max(1, s["ooc_q_spread_n"][k]), 5) for k in (0, 1)],
                 "progress_window": progress_window(s, last_s),
             }
+            if fused is not None:   # rows above the big tile that went through forward_packed (cumulative)
+                row["fused_long_rows"] = fused.long_rows
             if args.gpu_timing:
                 # ms of GPU time per s of wall clock (1000 = that stream busy all the time)
                 row["gpu_ms_per_s"] = {k: round((v - last_gpu[k]) / dt, 1) for k, v in gpu_ms.items()}
