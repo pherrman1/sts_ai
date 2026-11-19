@@ -40,6 +40,29 @@ def smooth(xs, k):
     return out
 
 
+SETTLE_MINUTES = 15
+
+
+def settling(rows, minutes=SETTLE_MINUTES):
+    """True for report windows in the first `minutes` after a (re)start of selfplay.py. A restart drops the runs in
+    flight and starts every slot at once; metrics count runs when they finish, so the early deaths come first, then
+    the cohort that went the distance, then the early deaths of the refilled slots: the windows swing (e.g. 0 % ->
+    32 % -> 5 %) though the net is the checkpoint's. A new process shows as samples_added (per process) going down."""
+    out, start, prev = [], None, None
+    for r in rows:
+        try:
+            t = time.mktime(time.strptime(r["time"], "%Y-%m-%d %H:%M:%S"))
+        except (KeyError, ValueError):
+            out.append(False)
+            continue
+        added = r.get("samples_added", 0)
+        if start is None or (prev is not None and added < prev):
+            start = t - r.get("report_s", 30)   # the process started about one report before its first row
+        prev = added
+        out.append(t - start < minutes * 60)
+    return out
+
+
 def chart(xs, series, w=520, h=230, ymin=None, ymax=None, xlabel="runs", fmt="{:.0f}", yfmt="{:.1f}"):
     """Line chart in SVG: series = [(label, ys, css var)]."""
     pl, pr, pt, pb = 46, 12, 10, 28
@@ -420,6 +443,12 @@ def page(rows, title, started, subtitle=""):
         start = next(i for i, r in enumerate(rows) if r.get("ascension", 20) < 20)
         rows = rows[start:]
         last = rows[-1]
+    # Windows right after a restart are biased by which runs finish first (settling): left out of the charts.
+    mask = settling(rows)
+    kept = [r for r, m in zip(rows, mask) if not m]
+    n_settle = sum(mask)
+    if kept:
+        rows = kept
     asc_line = [r.get("ascension") for r in rows]
     asc_roll = [100 * r["asc_win_rate_rolling"] if "asc_win_rate_rolling" in r else None for r in rows]
     floor = [r["mean_floor_window"] if r.get("runs_window") else None for r in rows]
@@ -473,6 +502,9 @@ def page(rows, title, started, subtitle=""):
            "0.44M AmberNet from scratch, A20 Ironclad, self-play on the PC (RTX 3060 Ti).")
     if subtitle and curriculum:
         sub += " Charts show the curriculum phase only."
+    if n_settle:
+        sub += (f" Report windows in the first {SETTLE_MINUTES} min after each restart ({n_settle}) are left out: "
+                "runs finishing then are not a fair sample (short runs finish first).")
     table_rows = "".join(
         f'<tr><td>{html.escape(r["time"])}</td><td>{r["runs_done"]:,}</td><td>{r["mean_floor_window"]:.1f}</td>'
         f'<td>{100 * r["win_rate_window"]:.2f}</td><td>{r["positions_per_s"]:,}</td><td>{r["train_steps"]:,}</td>'
