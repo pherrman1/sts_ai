@@ -439,6 +439,12 @@ namespace sts::azbench {
         // the ones whose real next decision state differed from it (fingerprint incl. RNG counters; must stay 0).
         std::int64_t savescumRuns = 0, savescumChecks = 0, savescumMismatches = 0;
         std::int64_t heartHpMin = -1;   // lowest Heart HP left at the end of any Heart fight so far (-1 = none yet)
+        // Memory gauges (current values, not cumulative; refreshed about once a second by each worker): node-pool
+        // slots of all runs and those holding a game state / a savescum real fight / a fight-start game state
+        // (crossCombat), and the capacities of the runs' pending-sample and move-distribution buffers and their
+        // eval-cache entries. Finished samples not yet taken: memDone (driver level).
+        std::int64_t memPoolNodes = 0, memPoolGc = 0, memPoolReal = 0, memPoolOuter = 0;
+        std::int64_t memPendingCap = 0, memMoveDistCap = 0, memCacheEntries = 0, memDone = 0;
         double stepCpu = 0, encodeCpu = 0, searchCpu = 0, packSeconds = 0;
     };
 
@@ -525,7 +531,7 @@ namespace sts::azbench {
         mutable std::mutex qm_;
         std::condition_variable qcv_;
         std::deque<std::uint32_t> queue_;   // ticket = worker << 16 | run
-        std::mutex sampleM_;
+        mutable std::mutex sampleM_;
         std::deque<Sample> done_;
         std::atomic<std::int64_t> batches_{0}, batchRows_{0}, packNs_{0};
         mutable std::mutex heartM_;

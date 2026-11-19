@@ -108,12 +108,23 @@ class Replay:
     reference counts, dict_tokens_per_sample slots per window sample) and an index ring (tokens_per_sample int32 per
     sample) holding each sample's tokens as dictionary slots. An evicted sample releases its references; a token no
     live sample uses frees its slot. When a chunk needs more free slots than there are, the oldest samples are
-    evicted first. Batches are the same as without it (the slots are resolved in _gather)."""
+    evicted first. Batches are the same as without it (the slots are resolved in _gather).
+
+    compress_targets=True (with compact; --compress-targets; Amber Eye: "The value distributions were quantized to an
+    8-bit fixed-point format [...]. Only the nonzero interval of each value distribution was stored."): the EMA
+    outcome targets are kept as round(255 p) in uint8, only from the first to the last nonzero entry, in a byte ring
+    (soft_bytes_per_sample per sample of capacity), and read back as q / 255 renormalised to sum 1; the per-floor HP
+    labels are kept once per run (they are the same for every sample of a run from its floor on, masked before; a
+    ring of hp_runs_per_sample runs per window sample) instead of once per sample (lossless)."""
 
     def __init__(self, samples, tokens_per_sample=48, actions_per_sample=12, hp_floors=0, soft_outcome=False,
-                 compact=False, dict_tokens_per_sample=8, token_store=None):
+                 compact=False, dict_tokens_per_sample=8, token_store=None, compress_targets=False,
+                 soft_bytes_per_sample=64, hp_runs_per_sample=0.125):
         self.cs = samples
         self.compact = compact
+        if compress_targets and not compact:
+            raise ValueError("replay: compress_targets needs compact")
+        self.compress = compress_targets
         self.ci = samples * tokens_per_sample if compact else 0
         self.tok_idx = np.zeros(self.ci, np.int32)   # compact: index ring (dictionary slots)
         self.idx_start = np.zeros(self.cs if compact else 0, np.int64)
@@ -143,10 +154,24 @@ class Replay:
         self.meta = {k: np.zeros(self.cs, dt) for k, dt in
                      (("outcome", np.int16), ("hp_end", np.int16), ("max_hp", np.int16), ("floor", np.int16),
                       ("combat", np.uint8), ("has_policy", np.uint8), ("search_value", np.float32))}
-        if hp_floors:   # utility amber: per-floor HP labels [S, 56] (-1 = masked)
+        self.hp_runs = bool(hp_floors) and compress_targets   # per-run HP labels
+        self.soft_q = soft_outcome and compress_targets       # quantized EMA targets
+        if hp_floors and not self.hp_runs:   # utility amber: per-floor HP labels [S, 56] (-1 = masked)
             self.meta["hp_floor"] = np.zeros((self.cs, hp_floors), np.int16)
+        self.cr = max(1, int(samples * hp_runs_per_sample)) if self.hp_runs else 0
+        self.hpr = np.zeros((self.cr, hp_floors if self.hp_runs else 0), np.int16)   # run ring: HP at the end of floor f
+        self.hp_ref = np.zeros(self.cs if self.hp_runs else 0, np.int64)            # sample -> its run (absolute)
+        self.r_head = 0
+        self.cq = samples * soft_bytes_per_sample if self.soft_q else 0
+        self.sq = np.zeros(self.cq, np.uint8)                                       # quantized targets, byte ring
+        self.sq_start = np.zeros(self.cs if self.soft_q else 0, np.int64)
+        self.sq_lo = np.zeros(self.cs if self.soft_q else 0, np.uint8)               # first stored class
+        self.sq_len = np.zeros(self.cs if self.soft_q else 0, np.uint8)              # 0: not set yet (final outcome)
+        self.q_head = 0
+        self.soft_stats = [0, 0]   # (samples, bytes) written by set_soft_outcome, compressed
         # EMA outcome targets (--value-ema-halflife): one distribution per sample, written by set_soft_outcome.
-        self.soft_outcome = np.zeros((self.cs, OUTCOME_CLASSES), np.float16) if soft_outcome else None
+        self.soft_outcome = (np.zeros((self.cs, OUTCOME_CLASSES), np.float16)
+                             if soft_outcome and not self.soft_q else None)
         self.s_head = self.s_tail = 0     # absolute sample counters
         self.t_head = self.a_head = 0     # absolute token / action counters
         self.added = 0
@@ -155,11 +180,27 @@ class Replay:
     def __len__(self):
         return self.s_head - self.s_tail
 
+    def ring_stats(self):
+        """Live window: tokens and actions per sample (mean, max) and how full the token / action rings are (share of
+        capacity between the oldest live sample and the head; 1.0 = the ring, not --window, decides eviction)."""
+        with self.lock:
+            n = len(self)
+            if n == 0:
+                return None
+            j = (self.s_tail + np.arange(n)) % self.cs
+            nt, na = self.ntok[j], self.nact[j]
+            t0 = self.idx_start[j[0]] if self.compact else self.tok_start[j[0]]
+            th, tc = (self.i_head, self.ci) if self.compact else (self.t_head, self.ct)
+            return {"tok_mean": round(float(nt.mean()), 2), "tok_max": int(nt.max()),
+                    "act_mean": round(float(na.mean()), 2), "act_max": int(na.max()),
+                    "tok_ring_fill": round(float(th - t0) / tc, 3),
+                    "act_ring_fill": round(float(self.a_head - self.act_start[j[0]]) / self.ca, 3)}
+
     def nbytes(self):
         """Memory of the window's arrays (allocated up front, so the same however full it is)."""
         arrs = [self.a_type, self.a_src, self.a_tgt, self.a_f, self.policy,
                 self.tok_start, self.ntok, self.act_start, self.nact, self.tok_idx, self.idx_start,
-                *self.meta.values()]
+                self.hpr, self.hp_ref, self.sq, self.sq_start, self.sq_lo, self.sq_len, *self.meta.values()]
         arrs += [] if self.compact else [self.tok_type, self.ids, self.f]
         if self.soft_outcome is not None:
             arrs.append(self.soft_outcome)
@@ -212,13 +253,26 @@ class Replay:
         ids = np.ascontiguousarray(s["ids"], np.int16)
         f16 = np.ascontiguousarray(s["f"], np.float16).view(np.uint16)
         counts = np.bincount(rows, minlength=len(tt)).astype(np.int64)
+        if self.hp_runs:   # one HP vector per run; each sample's labels are its run's from its floor on
+            run = np.asarray(s["run"])
+            starts = np.flatnonzero(np.concatenate([[True], run[1:] != run[:-1]])) if S else np.zeros(0, np.int64)
+            run_of = np.cumsum(np.isin(np.arange(S), starts)) - 1
+            hp = np.asarray(s["hp_floor"], np.int16)
+            vec = np.maximum.reduceat(hp, starts, axis=0) if S else hp
+            if not np.array_equal(self._hp_labels(vec[run_of], s["floor"]), hp):
+                raise ValueError("replay: per-floor HP labels differ within a run")
+            if len(starts) > self.cr:
+                raise ValueError("replay: one take_samples chunk has more runs than the HP run ring")
+        n_run = len(starts) if self.hp_runs else 0
         with self.lock:
-            # Room in the sample, index and action rings: the oldest samples whose rows the chunk overwrites go.
+            # Room in the sample, index, action and run rings: the oldest samples whose rows the chunk overwrites go.
             live = self.s_head - self.s_tail
             if live:
                 j = (self.s_tail + np.arange(live)) % self.cs
                 ok = ((self.idx_start[j] >= self.i_head + n_ref - self.ci)
                       & (self.act_start[j] >= self.a_head + n_act - self.ca))
+                if self.hp_runs:
+                    ok &= self.hp_ref[j] >= self.r_head + n_run - self.cr
                 k = int(np.argmax(ok)) if ok.any() else live
                 self._evict(max(k, live + S - self.cs))
             # Room in the dictionary: the oldest samples go until the chunk's new tokens fit.
@@ -239,7 +293,20 @@ class Replay:
             self._put(self.tok_idx, i0, slots[rows])
             self.i_head += n_ref
             self._put(self.idx_start, self.s_head, i0 + s["tok_off"][:-1])
+            if self.hp_runs:
+                self._put(self.hpr, self.r_head, vec)
+                self._put(self.hp_ref, self.s_head, self.r_head + run_of)
+                self.r_head += n_run
+            if self.soft_q:
+                self._put(self.sq_len, self.s_head, np.zeros(S, np.uint8))
             return self._add_meta(s, S, nt, na, a0)
+
+    @staticmethod
+    def _hp_labels(vec, floor):
+        """Per-floor HP labels [S, 56] from run vectors [S, 56]: masked (-1) before the sample's floor."""
+        fl = np.clip(np.asarray(floor, np.int64), 1, vec.shape[1])
+        keep = np.arange(1, vec.shape[1] + 1)[None, :] >= fl[:, None]
+        return np.where(keep, vec, -1).astype(np.int16)
 
     def add(self, s):
         if self.compact:
@@ -287,10 +354,47 @@ class Replay:
     def set_soft_outcome(self, first, targets):
         """Stores the EMA outcome targets of the samples first .. first + len(targets) - 1 (absolute counters, as
         add returned); samples already evicted are skipped."""
+        if self.soft_q:
+            return self._set_soft_q(first, targets)
         with self.lock:
             lo = max(first, self.s_tail)
             if lo < first + len(targets):
                 self._put(self.soft_outcome, lo, np.asarray(targets[lo - first:], np.float16))
+
+    def _set_soft_q(self, first, targets):
+        C = OUTCOME_CLASSES
+        q = np.rint(np.asarray(targets, np.float32) * 255.0).clip(0, 255).astype(np.uint8)
+        nz = q > 0
+        has = nz.any(1)
+        a = np.argmax(nz, 1)
+        b = C - 1 - np.argmax(nz[:, ::-1], 1)
+        ln = np.where(has, b - a + 1, 0)
+        cols = np.arange(C)
+        data = q[(cols[None, :] >= a[:, None]) & (cols[None, :] <= b[:, None]) & has[:, None]]
+        if len(data) > self.cq:
+            raise ValueError("replay: one chunk's quantized targets larger than the byte ring")
+        with self.lock:
+            lo = max(first, self.s_tail)
+            k0 = lo - first
+            if k0 >= len(targets):
+                return
+            n = int(ln[k0:].sum())
+            data = data[int(ln[:k0].sum()):]
+            # The oldest samples whose target bytes are overwritten go (samples not set yet hold no bytes).
+            live = lo - self.s_tail
+            if live:
+                j = (self.s_tail + np.arange(live)) % self.cs
+                bad = (self.sq_len[j] > 0) & (self.sq_start[j] < self.q_head + n - self.cq)
+                if bad.any():   # only samples before lo: the chunk's own samples hold no bytes yet
+                    self._evict(int(np.flatnonzero(bad)[-1]) + 1)
+            starts = self.q_head + np.concatenate([[0], np.cumsum(ln[k0:])[:-1]]).astype(np.int64)
+            self._put(self.sq, self.q_head, data)
+            self._put(self.sq_start, lo, starts)
+            self._put(self.sq_lo, lo, a[k0:].astype(np.uint8))
+            self._put(self.sq_len, lo, ln[k0:].astype(np.uint8))
+            self.q_head += n
+            self.soft_stats[0] += len(ln) - k0
+            self.soft_stats[1] += n
 
     def rows(self, first, n):
         """The samples first .. first + n - 1 (absolute counters, all live) as one batch in forward_flat's layout."""
@@ -371,6 +475,19 @@ class Replay:
             b[k] = ring[j].copy()
         if self.soft_outcome is not None:
             b["soft_outcome"] = self.soft_outcome[j].astype(np.float32)
+        if self.hp_runs:
+            b["hp_floor"] = self._hp_labels(self.hpr[self.hp_ref[j] % self.cr], b["floor"])
+        if self.soft_q:
+            C = OUTCOME_CLASSES
+            so = np.zeros((B, C), np.float32)
+            ln = self.sq_len[j].astype(np.int64)
+            unset = np.flatnonzero(ln == 0)   # before set_soft_outcome: the final outcome
+            so[unset, b["outcome"][unset].astype(np.int64).clip(0, C - 1)] = 1.0
+            r = np.repeat(np.arange(B), ln)
+            c = np.arange(int(ln.sum())) - np.repeat(np.cumsum(ln) - ln, ln)
+            so[r, np.repeat(self.sq_lo[j].astype(np.int64), ln) + c] = (
+                self.sq[(np.repeat(self.sq_start[j], ln) + c) % self.cq].astype(np.float32) / 255.0)
+            b["soft_outcome"] = so / so.sum(-1, keepdims=True)
         return b
 
 
@@ -574,6 +691,17 @@ def main(argv=None):
     ap.add_argument("--replay-dict-tokens", type=int, default=8,
                     help="--compact-samples: slots of the window's token dictionary per window sample (too few "
                          "evicts early: the metric replay then stays below --window; replay_dict_used shows the use)")
+    ap.add_argument("--compress-targets", action="store_true",
+                    help="with --compact-samples: Amber Eye's target compression in the replay window (EMA outcome "
+                         "targets 8-bit fixed point, nonzero interval only; per-floor HP labels once per run)")
+    ap.add_argument("--replay-soft-bytes", type=int, default=64,
+                    help="--compress-targets: target byte ring per window sample (64 holds a full 57-bin interval; metric replay_soft_bytes_mean)")
+    ap.add_argument("--replay-hp-runs", type=float, default=0.125,
+                    help="--compress-targets: HP run ring slots per window sample (runs with fewer samples evict early)")
+    ap.add_argument("--replay-tokens-per-sample", type=int, default=48,
+                    help="token (index) ring slots per window sample")
+    ap.add_argument("--replay-actions-per-sample", type=int, default=12,
+                    help="action ring slots per window sample")
     ap.add_argument("--explore-c", type=float, default=0.0, help="pick-rate exploration strength (0 = off)")
     ap.add_argument("--pick-target", type=float, default=0.01, help="pick-rate target per item and run")
     ap.add_argument("--explore-amber", action="store_true",
@@ -674,6 +802,12 @@ def main(argv=None):
                          "moves) or over all searched moves (half-life in searched moves)")
     ap.add_argument("--sync-steps", type=int, default=50, help="copy trained weights to the inference net every N steps")
     ap.add_argument("--report", type=float, default=30.0)
+    ap.add_argument("--no-nonfinite-skip", dest="nonfinite_skip", action="store_false",
+                    help="do not skip training steps whose loss or gradient norm is non-finite (default: skip them: no "
+                         "optimizer step, counted as nonfinite_skips; 2026-11-19 one NaN step turned all weights NaN)")
+    ap.add_argument("--nonfinite-abort-after", type=int, default=50,
+                    help="stop the run cleanly after this many consecutive skipped non-finite steps (final checkpoint "
+                         "without the skipped steps; 0 = never)")
     ap.add_argument("--malloc-trim", action="store_true",
                     help="call glibc malloc_trim(0) at every report and log RSS before / after (rss_gb_pre_trim)")
     ap.add_argument("--ckpt-minutes", type=float, default=30.0)
@@ -811,7 +945,10 @@ def main(argv=None):
               flush=True)
     replay = Replay(args.window, hp_floors=56 if amber else 0, soft_outcome=ema_lam > 0,
                     compact=args.compact_samples, dict_tokens_per_sample=args.replay_dict_tokens,
-                    token_store=az_bench_native.TokenStore if args.compact_samples else None)
+                    token_store=az_bench_native.TokenStore if args.compact_samples else None,
+                    tokens_per_sample=args.replay_tokens_per_sample, actions_per_sample=args.replay_actions_per_sample,
+                    compress_targets=args.compress_targets, soft_bytes_per_sample=args.replay_soft_bytes,
+                    hp_runs_per_sample=args.replay_hp_runs)
     ema_stats = {"samples": 0, "real_weight": 0.0}   # mean weight of the final outcome in the EMA targets
     stop = threading.Event()
     errors = []
@@ -821,6 +958,9 @@ def main(argv=None):
                  + (("outcome_ema",) if ema_lam > 0 else ()) + (("soft_policy",) if args.w_soft_policy > 0 else ()))
     lossbox = dict({"n": 0}, **{k: 0.0 for k in loss_keys})
     lossbox_lock = threading.Lock()
+    counters.setdefault("nonfinite_skips", 0)
+    nonfinite_run = [0]   # consecutive skipped steps
+    gradbox = {"n": 0, "sum": 0.0, "max": 0.0}   # gradient norm (before clipping) of the finite steps since the last report
     infer_stats = {"batches": 0, "rows": 0, "syncs": 0}
     gpu_ms = {"infer": 0.0, "train": 0.0}   # --gpu-timing: cumulative stream busy time
 
@@ -1052,8 +1192,32 @@ def main(argv=None):
                                          args.w_soft_policy)
                 opt.zero_grad(set_to_none=True)
                 loss.backward()
-                torch.nn.utils.clip_grad_norm_(train_net.parameters(), 1.0)
+                gn = torch.nn.utils.clip_grad_norm_(train_net.parameters(), 1.0)   # norm before clipping
+                gnorm = None
+                if args.nonfinite_skip:   # one host sync per step (the loss parts below sync anyway)
+                    gnorm = float(gn)
+                    lval = float(loss.detach())
+                    if not (math.isfinite(gnorm) and math.isfinite(lval)):
+                        # A non-finite loss or gradient would write NaN into the weights and Adam's moments: skip it.
+                        opt.zero_grad(set_to_none=True)
+                        counters["nonfinite_skips"] += 1
+                        nonfinite_run[0] += 1
+                        k = nonfinite_run[0]
+                        if k <= 3 or k & (k - 1) == 0:   # log the first 3 of a streak, then at powers of two
+                            print(f"# nonfinite step skipped at step {counters['step']}: loss {lval} grad norm {gnorm} "
+                                  f"parts {({n: float(v) for n, v in parts.items()})} (streak {k}, total "
+                                  f"{counters['nonfinite_skips']})", flush=True)
+                        if args.nonfinite_abort_after and k >= args.nonfinite_abort_after:
+                            raise RuntimeError(f"{k} consecutive non-finite training steps at step {counters['step']}: "
+                                               "stopping (the final checkpoint holds the weights before them)")
+                        continue
+                    nonfinite_run[0] = 0
                 opt.step()
+                if gnorm is not None:
+                    with lossbox_lock:
+                        gradbox["n"] += 1
+                        gradbox["sum"] += gnorm
+                        gradbox["max"] = max(gradbox["max"], gnorm)
                 if args.gpu_timing and stream is not None:
                     e1 = torch.cuda.Event(enable_timing=True)
                     e1.record(stream)
@@ -1125,6 +1289,9 @@ def main(argv=None):
                 n = max(1, lossbox["n"])
                 lavg = {k: round(lossbox[k] / n, 4) for k in loss_keys} if lossbox["n"] else None
                 lossbox.update(dict({"n": 0}, **{k: 0.0 for k in loss_keys}))
+                gavg = ({"mean": round(gradbox["sum"] / gradbox["n"], 4), "max": round(gradbox["max"], 4)}
+                        if gradbox["n"] else None)
+                gradbox.update({"n": 0, "sum": 0.0, "max": 0.0})
             asc = drv.ascension()
             a_runs = s["runs_done_asc"][asc] - last_s["runs_done_asc"][asc]
             a_wins = s["wins_asc"][asc] - last_s["wins_asc"][asc]
@@ -1163,8 +1330,12 @@ def main(argv=None):
                 "wins_total": s["wins"],
                 "death_floors_window": {int(k): int(v) for k, v in enumerate(d_oc) if v and k},
                 "samples_added": replay.added, "replay": len(replay), "replay_gb": round(replay.nbytes() / 2 ** 30, 3),
-                **({"replay_dict_used": replay.store.used} if replay.compact else {}), "train_steps": counters["step"],
-                "trained_samples": counters["trained"], "loss": lavg, "syncs": infer_stats["syncs"],
+                **({"replay_dict_used": replay.store.used} if replay.compact else {}),
+                "replay_rings": replay.ring_stats(),
+                **({"replay_soft_bytes_mean": round(replay.soft_stats[1] / max(1, replay.soft_stats[0]), 2)}
+                   if replay.soft_q else {}), "train_steps": counters["step"],
+                "trained_samples": counters["trained"], "loss": lavg, "grad_norm": gavg,
+                "nonfinite_skips": counters["nonfinite_skips"], "syncs": infer_stats["syncs"],
                 "stalls": s["stalls"], "unsupported": s["unsupported"], "knowledge_failures": s["knowledge_failures"], "invalid_actions": s["invalid_actions"], "encode_cut": s["encode_cut"], "encode_cut_ooc": s["encode_cut_ooc"],
                 "samples_pending": s["samples_pending"], "rss_gb": rss_gb(),
                 "ascension": asc, "asc_runs_window": a_runs,
@@ -1184,6 +1355,8 @@ def main(argv=None):
                 # lowest Heart HP left at the end of any Heart fight so far (None before the first Heart fight);
                 # the per-window histogram is in progress_window (heart_hp_00 .. heart_hp_15, 50-HP bins)
                 "heart_hp_min": None if s.get("heart_hp_min", -1) < 0 else s["heart_hp_min"],
+                # driver memory gauges (current values): node-pool slots and the states they hold, buffer capacities
+                **({"mem": dict(s["mem"])} if "mem" in s else {}),
             }
             if fused is not None:   # rows above the big tile that went through forward_packed (cumulative)
                 row["fused_long_rows"] = fused.long_rows

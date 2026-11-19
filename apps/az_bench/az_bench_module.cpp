@@ -244,7 +244,7 @@ PYBIND11_MODULE(az_bench_native, m) {
         .def("refs",
              [](py::object self) {
                  auto &st = self.cast<azbench::TokenStore &>();
-                 return py::array_t<std::int64_t>({static_cast<py::ssize_t>(st.capacity())}, {sizeof(std::int64_t)},
+                 return py::array_t<std::int32_t>({static_cast<py::ssize_t>(st.capacity())}, {sizeof(std::int32_t)},
                                                   st.refs(), self);
              })
         .def("views",
@@ -626,6 +626,13 @@ PYBIND11_MODULE(az_bench_native, m) {
             o["forced_keys"] = py::make_tuple(s.forcedKeys[0], s.forcedKeys[1], s.forcedKeys[2]);
             o["key_route_masked"] = s.keyRouteMasked;
             o["heart_hp_min"] = s.heartHpMin;
+            {   // memory gauges (current values): node-pool slots and their held states, per-run buffer capacities
+                py::dict m;
+                m["pool_nodes"] = s.memPoolNodes; m["pool_gc"] = s.memPoolGc; m["pool_real"] = s.memPoolReal;
+                m["pool_outer"] = s.memPoolOuter; m["pending_cap"] = s.memPendingCap;
+                m["move_dist_cap"] = s.memMoveDistCap; m["cache_entries"] = s.memCacheEntries; m["done"] = s.memDone;
+                o["mem"] = m;
+            }
             o["step_cpu"] = s.stepCpu; o["encode_cpu"] = s.encodeCpu; o["search_cpu"] = s.searchCpu;
             o["pack_s"] = s.packSeconds;
             return o;
