@@ -443,16 +443,14 @@ def page(rows, title, started, subtitle=""):
         start = next(i for i, r in enumerate(rows) if r.get("ascension", 20) < 20)
         rows = rows[start:]
         last = rows[-1]
-    # Windows right after a restart are biased by which runs finish first (settling): left out of the charts.
+    # Windows right after a restart are biased by which runs finish first (settling): left out of the floor and
+    # win-rate curves only (totals, histograms and the panels keep every row).
     mask = settling(rows)
-    kept = [r for r, m in zip(rows, mask) if not m]
     n_settle = sum(mask)
-    if kept:
-        rows = kept
     asc_line = [r.get("ascension") for r in rows]
     asc_roll = [100 * r["asc_win_rate_rolling"] if "asc_win_rate_rolling" in r else None for r in rows]
-    floor = [r["mean_floor_window"] if r.get("runs_window") else None for r in rows]
-    win = [100 * r["win_rate_window"] if r.get("runs_window") else None for r in rows]
+    floor = [r["mean_floor_window"] if r.get("runs_window") and not m else None for r, m in zip(rows, mask)]
+    win = [100 * r["win_rate_window"] if r.get("runs_window") and not m else None for r, m in zip(rows, mask)]
     k = 10
     floor_s = smooth(floor, k)
     win_s = smooth(win, k)
@@ -503,7 +501,8 @@ def page(rows, title, started, subtitle=""):
     if subtitle and curriculum:
         sub += " Charts show the curriculum phase only."
     if n_settle:
-        sub += (f" Report windows in the first {SETTLE_MINUTES} min after each restart ({n_settle}) are left out: "
+        sub += (f" Floor and win-rate curves leave out the report windows in the first {SETTLE_MINUTES} min after each "
+                f"restart ({n_settle}): "
                 "runs finishing then are not a fair sample (short runs finish first).")
     table_rows = "".join(
         f'<tr><td>{html.escape(r["time"])}</td><td>{r["runs_done"]:,}</td><td>{r["mean_floor_window"]:.1f}</td>'

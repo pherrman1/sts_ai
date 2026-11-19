@@ -735,6 +735,14 @@ class DashboardSettlingTest(unittest.TestCase):
         self.assertFalse(any(mask[30:40]))
         self.assertTrue(all(mask[40:60]))   # 13:20 .. 13:29:30, all within 15 min of the restart
         self.assertEqual(dash.settling([{"time": "bad"}]), [False])
+        # the mask only blanks the floor / win-rate curves: the death-floor histogram keeps settling rows
+        base = {"positions_per_s": 1, "moves_per_s": 1, "runs_window": 10, "win_rate_window": 0.5,
+                "mean_floor_window": 30, "wins_total": 0, "train_steps": 1, "stalls": 0, "runs_done": 10}
+        page = dash.page([dict(base, time="2026-11-19 13:00:00", samples_added=1, death_floors_window={"7": 3})],
+                         "t", "")
+        self.assertIn("restart (1)", page)
+        self.assertIn('height="192.0"', page)   # the death-floor bar of the settling row (full height)
+        self.assertIn("<h2>Mean final floor per window</h2><p class=\"empty\">No data yet.", page)
 
 
 @unittest.skipUnless(HAVE_TORCH and MODULES, "torch or the az_bench_native module (cmake target) missing")
