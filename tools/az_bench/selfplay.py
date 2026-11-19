@@ -794,6 +794,12 @@ def main(argv=None):
                          "moves) or over all searched moves (half-life in searched moves)")
     ap.add_argument("--sync-steps", type=int, default=50, help="copy trained weights to the inference net every N steps")
     ap.add_argument("--report", type=float, default=30.0)
+    ap.add_argument("--no-nonfinite-skip", dest="nonfinite_skip", action="store_false",
+                    help="do not skip training steps whose loss or gradient norm is non-finite (default: skip them: no "
+                         "optimizer step, counted as nonfinite_skips; 2026-11-19 one NaN step turned all weights NaN)")
+    ap.add_argument("--nonfinite-abort-after", type=int, default=50,
+                    help="stop the run cleanly after this many consecutive skipped non-finite steps (final checkpoint "
+                         "without the skipped steps; 0 = never)")
     ap.add_argument("--malloc-trim", action="store_true",
                     help="call glibc malloc_trim(0) at every report and log RSS before / after (rss_gb_pre_trim)")
     ap.add_argument("--ckpt-minutes", type=float, default=30.0)
@@ -926,6 +932,9 @@ def main(argv=None):
                  + (("outcome_ema",) if ema_lam > 0 else ()) + (("soft_policy",) if args.w_soft_policy > 0 else ()))
     lossbox = dict({"n": 0}, **{k: 0.0 for k in loss_keys})
     lossbox_lock = threading.Lock()
+    counters.setdefault("nonfinite_skips", 0)
+    nonfinite_run = [0]   # consecutive skipped steps
+    gradbox = {"n": 0, "sum": 0.0, "max": 0.0}   # gradient norm (before clipping) of the finite steps since the last report
     infer_stats = {"batches": 0, "rows": 0, "syncs": 0}
     gpu_ms = {"infer": 0.0, "train": 0.0}   # --gpu-timing: cumulative stream busy time
 
@@ -1157,8 +1166,32 @@ def main(argv=None):
                                          args.w_soft_policy)
                 opt.zero_grad(set_to_none=True)
                 loss.backward()
-                torch.nn.utils.clip_grad_norm_(train_net.parameters(), 1.0)
+                gn = torch.nn.utils.clip_grad_norm_(train_net.parameters(), 1.0)   # norm before clipping
+                gnorm = None
+                if args.nonfinite_skip:   # one host sync per step (the loss parts below sync anyway)
+                    gnorm = float(gn)
+                    lval = float(loss.detach())
+                    if not (math.isfinite(gnorm) and math.isfinite(lval)):
+                        # A non-finite loss or gradient would write NaN into the weights and Adam's moments: skip it.
+                        opt.zero_grad(set_to_none=True)
+                        counters["nonfinite_skips"] += 1
+                        nonfinite_run[0] += 1
+                        k = nonfinite_run[0]
+                        if k <= 3 or k & (k - 1) == 0:   # log the first 3 of a streak, then at powers of two
+                            print(f"# nonfinite step skipped at step {counters['step']}: loss {lval} grad norm {gnorm} "
+                                  f"parts {({n: float(v) for n, v in parts.items()})} (streak {k}, total "
+                                  f"{counters['nonfinite_skips']})", flush=True)
+                        if args.nonfinite_abort_after and k >= args.nonfinite_abort_after:
+                            raise RuntimeError(f"{k} consecutive non-finite training steps at step {counters['step']}: "
+                                               "stopping (the final checkpoint holds the weights before them)")
+                        continue
+                    nonfinite_run[0] = 0
                 opt.step()
+                if gnorm is not None:
+                    with lossbox_lock:
+                        gradbox["n"] += 1
+                        gradbox["sum"] += gnorm
+                        gradbox["max"] = max(gradbox["max"], gnorm)
                 if args.gpu_timing and stream is not None:
                     e1 = torch.cuda.Event(enable_timing=True)
                     e1.record(stream)
@@ -1230,6 +1263,9 @@ def main(argv=None):
                 n = max(1, lossbox["n"])
                 lavg = {k: round(lossbox[k] / n, 4) for k in loss_keys} if lossbox["n"] else None
                 lossbox.update(dict({"n": 0}, **{k: 0.0 for k in loss_keys}))
+                gavg = ({"mean": round(gradbox["sum"] / gradbox["n"], 4), "max": round(gradbox["max"], 4)}
+                        if gradbox["n"] else None)
+                gradbox.update({"n": 0, "sum": 0.0, "max": 0.0})
             asc = drv.ascension()
             a_runs = s["runs_done_asc"][asc] - last_s["runs_done_asc"][asc]
             a_wins = s["wins_asc"][asc] - last_s["wins_asc"][asc]
@@ -1272,7 +1308,8 @@ def main(argv=None):
                 "replay_rings": replay.ring_stats(),
                 **({"replay_soft_bytes_mean": round(replay.soft_stats[1] / max(1, replay.soft_stats[0]), 2)}
                    if replay.soft_q else {}), "train_steps": counters["step"],
-                "trained_samples": counters["trained"], "loss": lavg, "syncs": infer_stats["syncs"],
+                "trained_samples": counters["trained"], "loss": lavg, "grad_norm": gavg,
+                "nonfinite_skips": counters["nonfinite_skips"], "syncs": infer_stats["syncs"],
                 "stalls": s["stalls"], "unsupported": s["unsupported"], "knowledge_failures": s["knowledge_failures"], "invalid_actions": s["invalid_actions"], "encode_cut": s["encode_cut"], "encode_cut_ooc": s["encode_cut_ooc"],
                 "samples_pending": s["samples_pending"], "rss_gb": rss_gb(),
                 "ascension": asc, "asc_runs_window": a_runs,

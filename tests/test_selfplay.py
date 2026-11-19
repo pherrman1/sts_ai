@@ -4,8 +4,10 @@ samples in forward_flat's layout and evicts FIFO; the heads -> (F, E[HP]) conver
 az_bench_native module, a short CPU run plays runs, trains, writes metrics and a checkpoint, and resumes with the
 next seeds. Skipped when torch (or, for the run, the module) is missing."""
 
+import contextlib
 import glob
 import importlib.util
+import io
 import json
 import os
 import sys
@@ -1134,6 +1136,74 @@ class SelfplaySmoke(unittest.TestCase):
             self.assertGreaterEqual(rows[-1]["runs_done"], 16)
             self.assertGreater(rows[-1]["train_steps"], 0)
             self.assertGreater(sum(r["cache_hits_per_s"] for r in rows), 0)
+
+    def test_nonfinite_step_skipped(self):
+        """A training step with a NaN loss is skipped (no optimizer step): the weights stay finite, the skip is
+        counted in metrics and checkpoint counters, and grad_norm is logged for the finite steps."""
+        sp = load()
+        real = sp.losses
+        calls = {"n": 0}
+
+        def poisoned(*a, **k):
+            loss, parts = real(*a, **k)
+            calls["n"] += 1
+            if calls["n"] in (2, 5):
+                loss = loss * float("nan")
+            return loss, parts
+
+        args = ["--module-dir", os.path.dirname(MODULES[0]), "--device", "cpu", "--workers", "2", "--games", "4",
+                "--full-sims", "8", "--fast-sims", "4", "--batch", "32", "--row-buckets", "32", "--pack-step", "32",
+                "--pack-threads", "1", "--min-replay", "50", "--train-batch", "32", "--window", "5000",
+                "--report", "1", "--sync-steps", "2", "--seed-base", "1500", "--max-runs", "16"]
+        sp.losses = poisoned
+        try:
+            with tempfile.TemporaryDirectory() as d:
+                self.assertEqual(sp.main(args + ["--out-dir", d]), 0)
+                with open(os.path.join(d, "metrics.jsonl")) as f:
+                    rows = [json.loads(l) for l in f]
+                ck = sorted(glob.glob(os.path.join(d, "ckpt_*.pt")), key=os.path.getmtime)[-1]
+                c = torch.load(ck)
+        finally:
+            sp.losses = real
+        self.assertGreater(rows[-1]["train_steps"], 0)
+        self.assertEqual(rows[-1]["nonfinite_skips"], 2)
+        self.assertEqual(c["counters"]["nonfinite_skips"], 2)
+        for v in c["net"].values():
+            self.assertTrue(bool(torch.isfinite(v.float()).all()))
+        g = [r["grad_norm"] for r in rows if r.get("grad_norm")]
+        self.assertTrue(g and all(x["max"] >= x["mean"] > 0 for x in g))
+
+    def test_nonfinite_abort_after(self):
+        """Only non-finite steps: after --nonfinite-abort-after consecutive skips the run stops (exit 1, an error
+        naming the streak) and its final checkpoint still holds finite weights."""
+        sp = load()
+        real = sp.losses
+
+        def poisoned(*a, **k):
+            loss, parts = real(*a, **k)
+            return loss * float("nan"), parts
+
+        args = ["--module-dir", os.path.dirname(MODULES[0]), "--device", "cpu", "--workers", "2", "--games", "4",
+                "--full-sims", "8", "--fast-sims", "4", "--batch", "32", "--row-buckets", "32", "--pack-step", "32",
+                "--pack-threads", "1", "--min-replay", "50", "--train-batch", "32", "--window", "5000",
+                "--report", "1", "--sync-steps", "2", "--seed-base", "1600", "--max-runs", "40",
+                "--nonfinite-abort-after", "5"]
+        sp.losses = poisoned
+        out = io.StringIO()
+        try:
+            with tempfile.TemporaryDirectory() as d, contextlib.redirect_stdout(out):
+                rc = sp.main(args + ["--out-dir", d])
+                ck = sorted(glob.glob(os.path.join(d, "ckpt_*.pt")), key=os.path.getmtime)[-1]
+                c = torch.load(ck)
+        finally:
+            sp.losses = real
+        self.assertEqual(rc, 1)
+        final = json.loads([l for l in out.getvalue().splitlines() if l.startswith('{"final_checkpoint"')][-1])
+        self.assertTrue(any("5 consecutive non-finite" in e for e in final["errors"]))
+        self.assertEqual(c["counters"]["step"], 0)
+        self.assertEqual(c["counters"]["nonfinite_skips"], 5)
+        for v in c["net"].values():
+            self.assertTrue(bool(torch.isfinite(v.float()).all()))
 
     def test_packed_h2d_run(self):
         """--packed-h2d (live tokens packed by the driver) plays and trains as usual (bit-identical forward:
