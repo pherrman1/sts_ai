@@ -716,6 +716,35 @@ class DashboardProgressTest(unittest.TestCase):
         self.assertIn("relics not picked up (left + chests not opened)", page)
 
 
+class DashboardSettlingTest(unittest.TestCase):
+    def test_restart_windows_left_out(self):
+        spec = importlib.util.spec_from_file_location(
+            "selfplay_dashboard", os.path.join(ROOT, "tools", "az_bench", "selfplay_dashboard.py"))
+        dash = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(dash)
+        rows, added = [], 0
+        for i in range(60):   # two processes, one row per 30 s; the second starts at row 40
+            if i == 40:
+                added = 0
+            added += 1000
+            m, sec = divmod(i * 30, 60)
+            rows.append({"time": f"2026-11-19 13:{m:02d}:{sec:02d}", "samples_added": added})
+        mask = dash.settling(rows)
+        # first row at 13:00:00 counts from 12:59:30: rows up to 13:14:00 settle (29 rows), then 13:14:30 is kept
+        self.assertEqual(mask[:30], [True] * 29 + [False])
+        self.assertFalse(any(mask[30:40]))
+        self.assertTrue(all(mask[40:60]))   # 13:20 .. 13:29:30, all within 15 min of the restart
+        self.assertEqual(dash.settling([{"time": "bad"}]), [False])
+        # the mask only blanks the floor / win-rate curves: the death-floor histogram keeps settling rows
+        base = {"positions_per_s": 1, "moves_per_s": 1, "runs_window": 10, "win_rate_window": 0.5,
+                "mean_floor_window": 30, "wins_total": 0, "train_steps": 1, "stalls": 0, "runs_done": 10}
+        page = dash.page([dict(base, time="2026-11-19 13:00:00", samples_added=1, death_floors_window={"7": 3})],
+                         "t", "")
+        self.assertIn("restart (1)", page)
+        self.assertIn('height="192.0"', page)   # the death-floor bar of the settling row (full height)
+        self.assertIn("<h2>Mean final floor per window</h2><p class=\"empty\">No data yet.", page)
+
+
 @unittest.skipUnless(HAVE_TORCH and MODULES, "torch or the az_bench_native module (cmake target) missing")
 class SelfplaySmoke(unittest.TestCase):
     def test_run_train_resume(self):
