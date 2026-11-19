@@ -436,7 +436,6 @@ RULE_CURRICULUM = ("Curriculum (Philipp, 2026-11-17): from the 1M-run net, resta
 
 def page(rows, title, started, subtitle=""):
     last = rows[-1] if rows else {}
-    runs = [r["runs_done"] for r in rows]
     # Continuation with pick-rate exploration (rows carry its counters).
     variant = any("forced_picks" in r for r in rows)
     curriculum = any(r.get("ascension", 20) < 20 for r in rows)
@@ -445,6 +444,7 @@ def page(rows, title, started, subtitle=""):
         start = next(i for i, r in enumerate(rows) if r.get("ascension", 20) < 20)
         rows = rows[start:]
         last = rows[-1]
+    runs = [r["runs_done"] for r in rows]   # after the curriculum trim: the x values of the charted rows
     # Windows right after a restart are biased by which runs finish first (settling): left out of the floor and
     # win-rate curves only (totals, histograms and the panels keep every row).
     mask = settling(rows)
