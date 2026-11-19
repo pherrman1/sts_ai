@@ -729,12 +729,13 @@ class DashboardSettlingTest(unittest.TestCase):
             added += 1000
             m, sec = divmod(i * 30, 60)
             rows.append({"time": f"2026-11-19 13:{m:02d}:{sec:02d}", "samples_added": added})
-        mask = dash.settling(rows)
+        mask = dash.settling(rows, minutes=15)
         # first row at 13:00:00 counts from 12:59:30: rows up to 13:14:00 settle (29 rows), then 13:14:30 is kept
         self.assertEqual(mask[:30], [True] * 29 + [False])
         self.assertFalse(any(mask[30:40]))
         self.assertTrue(all(mask[40:60]))   # 13:20 .. 13:29:30, all within 15 min of the restart
         self.assertEqual(dash.settling([{"time": "bad"}]), [False])
+        self.assertEqual(dash.SETTLE_MINUTES, 5)
         # the mask only blanks the floor / win-rate curves: the death-floor histogram keeps settling rows
         base = {"positions_per_s": 1, "moves_per_s": 1, "runs_window": 10, "win_rate_window": 0.5,
                 "mean_floor_window": 30, "wins_total": 0, "train_steps": 1, "stalls": 0, "runs_done": 10}

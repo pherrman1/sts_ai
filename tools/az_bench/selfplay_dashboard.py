@@ -40,7 +40,7 @@ def smooth(xs, k):
     return out
 
 
-SETTLE_MINUTES = 15
+SETTLE_MINUTES = 5
 
 
 def settling(rows, minutes=SETTLE_MINUTES):
