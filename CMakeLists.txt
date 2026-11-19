@@ -191,6 +191,12 @@ set_tests_properties(az_run_driver_explore_amber PROPERTIES LABELS "core;smoke")
 add_test(NAME az_run_driver_explore_per_offer COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 24 --fast
          --seed-base 1 --seconds 300 --explore-amber --explore-per-offer --pick-target 0.5 --test-hp 300)
 set_tests_properties(az_run_driver_explore_per_offer PROPERTIES LABELS "core;smoke")
+# --explore-gap-search / --explore-deck-only (2026-11-19, default off): gap in the search's root score; cards, relics
+# and potions only (the driver checks the per-class counters partition the totals and that no option is tried)
+add_test(NAME az_run_driver_explore_variants COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 24 --fast
+         --seed-base 1 --seconds 300 --explore-amber --explore-per-offer --explore-gap-search --explore-deck-only
+         --pick-target 0.5 --test-hp 300)
+set_tests_properties(az_run_driver_explore_variants PROPERTIES LABELS "core;smoke")
 # Savescum (RunConfig::savescum): the search's child of every played action is the real next decision state
 # (fingerprint incl. RNG states and draw order), with and without the Amber search rules.
 add_test(NAME az_run_driver_savescum COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 6 --fast
