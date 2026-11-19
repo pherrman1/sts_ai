@@ -118,7 +118,7 @@ class Replay:
 
     def __init__(self, samples, tokens_per_sample=48, actions_per_sample=12, hp_floors=0, soft_outcome=False,
                  compact=False, dict_tokens_per_sample=8, token_store=None, compress_targets=False,
-                 soft_bytes_per_sample=32, hp_runs_per_sample=0.125):
+                 soft_bytes_per_sample=64, hp_runs_per_sample=0.125):
         self.cs = samples
         self.compact = compact
         if compress_targets and not compact:
@@ -693,8 +693,8 @@ def main(argv=None):
     ap.add_argument("--compress-targets", action="store_true",
                     help="with --compact-samples: Amber Eye's target compression in the replay window (EMA outcome "
                          "targets 8-bit fixed point, nonzero interval only; per-floor HP labels once per run)")
-    ap.add_argument("--replay-soft-bytes", type=int, default=32,
-                    help="--compress-targets: target byte ring per window sample (metric replay_soft_bytes_mean)")
+    ap.add_argument("--replay-soft-bytes", type=int, default=64,
+                    help="--compress-targets: target byte ring per window sample (64 holds a full 57-bin interval; metric replay_soft_bytes_mean)")
     ap.add_argument("--replay-hp-runs", type=float, default=0.125,
                     help="--compress-targets: HP run ring slots per window sample (runs with fewer samples evict early)")
     ap.add_argument("--replay-tokens-per-sample", type=int, default=48,

@@ -345,6 +345,9 @@ class ReplayTest(unittest.TestCase):
         ref = sp.Replay(400, **kw)
         cmp_ = sp.Replay(400, compress_targets=True, soft_bytes_per_sample=60, hp_runs_per_sample=1.0, **kw)
         tight = sp.Replay(400, compress_targets=True, soft_bytes_per_sample=16, hp_runs_per_sample=0.05, **kw)
+        # Only the byte ring tight (HP run ring roomy): every eviction comes from overwritten soft bytes.
+        tbyte = sp.Replay(400, compress_targets=True, soft_bytes_per_sample=12, hp_runs_per_sample=1.0, **kw)
+        tq = []   # (first, exact uint8 quantization) of each set chunk, for an independent check
         first, chunks = 0, []
         for n in range(8):
             S = int(rng.integers(20, 60))
@@ -363,11 +366,16 @@ class ReplayTest(unittest.TestCase):
             c["hp_floor"] = np.where(np.arange(1, 57)[None, :] >= fl[:, None],
                                      np.stack([vec[int(r)][0] for r in runs]), -1).astype(np.int16)
             cc = self.compactify(c)
-            fr = [r.add(cc) for r in (ref, cmp_, tight)]
+            fr = [r.add(cc) for r in (ref, cmp_, tight, tbyte)]
             if n % 3 != 2:   # some chunks keep their final-outcome targets (set_soft_outcome not called)
                 t = rng.dirichlet(np.full(57, 0.3), S).astype(np.float32)
                 for r, f0 in zip((ref, cmp_, tight), fr):
                     r.set_soft_outcome(f0, t)
+            # tbyte: every chunk set, intervals ~57 bytes > 12 per sample, so the byte ring wraps repeatedly.
+            tb = rng.dirichlet(np.full(57, 0.3), S).astype(np.float32)
+            tbyte.set_soft_outcome(fr[3], tb)
+            q = np.rint(tb.astype(np.float64) * 255.0)
+            tq.append((fr[3], q / q.sum(-1, keepdims=True)))
             first += S
         self.assertEqual(len(ref), len(cmp_))
         a = ref.rows(ref.s_tail, len(ref))
@@ -387,6 +395,12 @@ class ReplayTest(unittest.TestCase):
         u = cmp_.rows(tight.s_tail, len(tight))
         for key in t:
             np.testing.assert_array_equal(t[key], u[key], key)
+        # Tight byte ring: evicted through overwritten soft bytes only; every live sample's EMA target is exactly its
+        # own quantized target (an under-evicted sample would decode another sample's bytes).
+        self.assertLess(len(tbyte), len(ref) // 2)   # bounded by the byte ring (12 of ~57 bytes per sample)
+        v = tbyte.rows(tbyte.s_tail, len(tbyte))
+        want = np.concatenate([q for _, q in tq])[-len(tbyte):]
+        np.testing.assert_allclose(v["soft_outcome"], want, rtol=0, atol=1e-6)
         # Losses: equal but for the EMA term, which moves within quantization noise.
         torch.manual_seed(0)
         net = sp.amber_net.AmberNet(64, 2, hp_floors=56)
