@@ -162,6 +162,31 @@ namespace sts::azbench {
         int deckSize = 0, relics = 0, asc = 0;
     };
 
+    // Per-run Heart log (RunConfig::heartLogRate, 2026-11-19, diagnostic, default off): one record per finished run
+    // that fought the Heart (every kill; other Heart runs with probability heartLogRate, decided by a hash of the run
+    // seed, so the search RNG is untouched). Net / search values are -1 when the outcome distribution is not
+    // available (searchEmaLambda == 0).
+    struct HeartRunLog {
+        std::uint64_t seed = 0;
+        int asc = 0, win = 0, floor = 0;
+        int heartHp = 0, heartMaxHp = 0;        // Heart HP left at the fight's end (0 on a kill)
+        int entryHp = 0, entryMaxHp = 0;        // player HP entering the Heart fight
+        int endHp = 0;                          // player HP at the run's end (0 after a death)
+        int turns = 0, gold = 0;
+        // Root of the run's first searched move in each act (index act - 1, 1..4) and of the Heart fight's first
+        // searched move (index 4): the net's P(win), P(death on the Heart floor, outcome class 55, in every slot),
+        // E[final floor] (win = 57) and
+        // utility value at the root, and the search result's P(win) and mean utility after the move's search.
+        // floorAt = the floor of that root (-1 = never reached).
+        std::array<int, 5> floorAt{-1, -1, -1, -1, -1};
+        std::array<float, 5> netPWin{}, netPHeartDeath{}, netEFloor{}, netValue{}, searchPWin{}, searchValue{};
+        std::array<std::int16_t, kFloors + 1> floorHp{};   // utility AMBER: HP at the end of floor f (-1 = none)
+        std::vector<std::pair<int, int>> deck;   // (CardId, upgraded) at the Heart fight's start
+        std::vector<int> relics;                 // RelicId at the Heart fight's start
+        std::vector<int> potions;                // Potion at the Heart fight's start (non-empty slots)
+        std::int64_t elites = 0, rest = 0, smith = 0;
+    };
+
     struct RunConfig {
         int workers = 11;
         int gamesPerWorker = 700;
@@ -289,6 +314,9 @@ namespace sts::azbench {
         // budget. Meant for a frozen net (no training) with keepFull = keepFast = 0.
         std::vector<HeartArm> heartArms;
         int heartReps = 1;
+        // Per-run Heart log (2026-11-19, diagnostic, default 0 = off; HeartRunLog, takeHeartRunLogs): > 0 records every
+        // Heart kill and each other run that fought the Heart with this probability. Logging only: play is unchanged.
+        double heartLogRate = 0;
         CombatEncodeFn encodeCombat = nullptr;   // default: search::amberEncodeCombat
         GameEncodeFn encodeGame = nullptr;       // default: search::amberEncodeGame (stubEncodeGame = placeholder)
     };
@@ -468,6 +496,14 @@ namespace sts::azbench {
             return heartResults_;
         }
 
+        // Per-run Heart log (RunConfig::heartLogRate): the records since the last call (moved out).
+        std::vector<HeartRunLog> takeHeartRunLogs() {
+            std::lock_guard<std::mutex> l(heartLogM_);
+            std::vector<HeartRunLog> out;
+            out.swap(heartLogs_);
+            return out;
+        }
+
         struct Node;
         struct Run;
         struct Worker;
@@ -500,6 +536,8 @@ namespace sts::azbench {
         std::atomic<std::int64_t> batches_{0}, batchRows_{0}, packNs_{0};
         mutable std::mutex heartM_;
         std::vector<HeartResult> heartResults_;
+        std::mutex heartLogM_;
+        std::vector<HeartRunLog> heartLogs_;
     };
 
 }

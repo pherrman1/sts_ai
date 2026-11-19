@@ -18,6 +18,9 @@
 #include "az_driver.h"
 #include "az_run_driver.h"
 #include "az_token_store.h"
+#include "constants/Cards.h"
+#include "constants/Potions.h"
+#include "constants/Relics.h"
 #include "sim/search/SilverWireJson.h"
 #include "sim/search/SilverWireState.h"
 
@@ -267,8 +270,10 @@ PYBIND11_MODULE(az_bench_native, m) {
                          bool chanceOnReveal, bool crossCombat, bool simHelp,
                          bool exploreAmber, double exploreT, double searchEmaLambda, bool searchEmaFullOnly,
                          bool forceKeys, std::vector<std::vector<double>> heartArms, int heartReps,
-                         bool savescum, bool compactSamples) {
+                         bool savescum, bool compactSamples, double heartLogRate) {
                  azbench::RunConfig c;
+                 if (!(heartLogRate >= 0 && heartLogRate <= 1)) throw std::invalid_argument("heart_log_rate: want 0..1");
+                 c.heartLogRate = heartLogRate;
                  for (const auto &v : heartArms) {   // [full_sims, fast_sims, full_prob, full_candidates, fast_candidates]
                      if (v.size() != 5) throw std::invalid_argument("heart_arms: want 5 numbers per arm");
                      azbench::HeartArm a;
@@ -333,7 +338,7 @@ PYBIND11_MODULE(az_bench_native, m) {
              py::arg("search_ema_lambda") = 0.0, py::arg("search_ema_full_only") = true,
              py::arg("force_keys") = false, py::arg("heart_arms") = std::vector<std::vector<double>>{},
              py::arg("heart_reps") = 1, py::arg("savescum") = false,
-             py::arg("compact_samples") = false)
+             py::arg("compact_samples") = false, py::arg("heart_log_rate") = 0.0)
         .def("heart_results",
              [](const azbench::RunDriver &d) {
                  py::list out;
@@ -345,6 +350,39 @@ PYBIND11_MODULE(az_bench_native, m) {
                      o["player_hp_end"] = r.playerHpEnd; o["turns"] = r.turns; o["moves"] = r.moves;
                      o["searched"] = r.searched; o["stall"] = r.stall; o["deck_size"] = r.deckSize;
                      o["relics"] = r.relics; o["asc"] = r.asc;
+                     out.append(o);
+                 }
+                 return out;
+             })
+        .def("take_heart_run_logs",   // RunConfig::heartLogRate: the records since the last call, as dicts
+             [](azbench::RunDriver &d) {
+                 py::list out;
+                 for (const auto &r : d.takeHeartRunLogs()) {
+                     py::dict o;
+                     o["seed"] = r.seed; o["asc"] = r.asc; o["win"] = r.win; o["floor"] = r.floor;
+                     o["heart_hp"] = r.heartHp; o["heart_max_hp"] = r.heartMaxHp;
+                     o["entry_hp"] = r.entryHp; o["entry_max_hp"] = r.entryMaxHp; o["end_hp"] = r.endHp;
+                     o["turns"] = r.turns; o["gold"] = r.gold;
+                     o["elites"] = r.elites; o["rest"] = r.rest; o["smith"] = r.smith;
+                     auto arr = [](const auto &a) { py::list l; for (auto x : a) l.append(x); return l; };
+                     // index 0..3 = first searched move of act 1..4, 4 = first searched move of the Heart fight
+                     o["root_floor"] = arr(r.floorAt);
+                     o["net_p_win"] = arr(r.netPWin); o["net_p_heart_death"] = arr(r.netPHeartDeath);
+                     o["net_e_floor"] = arr(r.netEFloor); o["net_value"] = arr(r.netValue);
+                     o["search_p_win"] = arr(r.searchPWin); o["search_value"] = arr(r.searchValue);
+                     py::list fh;   // HP at the end of floor 1..56 (-1 = not reached / not recorded)
+                     for (int f = 1; f < static_cast<int>(r.floorHp.size()); ++f) fh.append(r.floorHp[f]);
+                     o["floor_hp"] = fh;
+                     py::list deck;
+                     for (const auto &[id, up] : r.deck)
+                         deck.append(std::string(getCardEnumName(static_cast<CardId>(id))) + (up ? "+" : ""));
+                     o["deck"] = deck;
+                     py::list rel;
+                     for (int id : r.relics) rel.append(getRelicName(static_cast<RelicId>(id)));
+                     o["relics"] = rel;
+                     py::list pot;
+                     for (int id : r.potions) pot.append(getPotionName(static_cast<Potion>(id)));
+                     o["potions"] = pot;
                      out.append(o);
                  }
                  return out;

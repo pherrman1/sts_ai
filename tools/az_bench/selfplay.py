@@ -73,6 +73,7 @@ import argparse
 import collections
 import contextlib
 import copy
+import gzip
 import importlib.util
 import json
 import math
@@ -730,6 +731,13 @@ def main(argv=None):
     ap.add_argument("--sim-help", action="store_true",
                     help="Amber Eye's simulator help: reward gold taken automatically, forced positions skipped also "
                          "inside the search, buying Prismatic Shard banned")
+    ap.add_argument("--heart-log", type=float, default=0.0, metavar="RATE",
+                    help="diagnostic (2026-11-19, default 0 = off; play and training unchanged): append one JSON record "
+                         "per finished run that fought the Heart to <out-dir>/heart_runs.jsonl.gz: every kill, other "
+                         "Heart runs with probability RATE (by a hash of the seed). Record: entry HP, deck, relics, "
+                         "potions, Heart HP left, turns, per-floor HP, and the net's / search's P(win), E[final floor] "
+                         "and value at the first searched move of each act and of the Heart fight (-1 without "
+                         "--value-ema-search's outcome distributions)")
     ap.add_argument("--savescum", action="store_true",
                     help="Amber Eye's early-training savescum: the search steps the real run with its real RNG and "
                          "hidden state (no resampling, no chance edges); the net still sees the public view. Off "
@@ -818,6 +826,8 @@ def main(argv=None):
         ap.error("--value-ema-search needs --value-ema-halflife > 0")
     amber = args.utility == "amber"
     hp_floors = 56 if amber else 1
+    if not 0.0 <= args.heart_log <= 1.0:
+        ap.error("--heart-log: RATE in [0, 1]")
     heart_arms = [[float(x) for x in a.split(":")] for a in args.heart_arms.split(",") if a]
     if any(len(a) != 5 for a in heart_arms):
         ap.error("--heart-arms: FULL:FAST:PROB:MFULL:MFAST per arm")
@@ -910,7 +920,23 @@ def main(argv=None):
         **({"force_keys": True} if force_keys else {}),
         **({"heart_arms": heart_arms, "heart_reps": args.heart_reps} if heart_arms else {}),
         **({"savescum": True} if savescum else {}),
-        **({"compact_samples": True} if args.compact_samples else {}))
+        **({"compact_samples": True} if args.compact_samples else {}),
+        **({"heart_log_rate": args.heart_log} if args.heart_log > 0 else {}))
+    heart_log_path = os.path.join(args.out_dir, "heart_runs.jsonl.gz")
+    heart_logged = [0, 0]   # records, of which kills (this process)
+
+    def drain_heart_log():
+        # appends a gzip member per call (gzip.open reads all members); nothing is written without records
+        if args.heart_log <= 0:
+            return
+        recs = drv.take_heart_run_logs()
+        if not recs:
+            return
+        with gzip.open(heart_log_path, "at") as f:
+            for r in recs:
+                f.write(json.dumps(r) + "\n")
+        heart_logged[0] += len(recs)
+        heart_logged[1] += sum(r["win"] for r in recs)
     if args.savescum:
         print(f"# savescum: {'on until a file SAVESCUM_OFF appears in --out-dir' if savescum else 'off (SAVESCUM_OFF seen before this resume)'}",
               flush=True)
@@ -1356,6 +1382,9 @@ def main(argv=None):
                                     "moves": args.value_ema_moves if ema_search else None,
                                     "labelled": ema_stats["samples"],
                                     "real_weight_mean": round(ema_stats["real_weight"] / max(1, ema_stats["samples"]), 4)}
+            if args.heart_log > 0:
+                drain_heart_log()
+                row["heart_log"] = {"records": heart_logged[0], "kills": heart_logged[1]}
             if heart_arms:   # Heart probe: all plays so far (rewritten each report)
                 hr = drv.heart_results()
                 row["heart_probe_plays"] = len(hr)
@@ -1381,6 +1410,7 @@ def main(argv=None):
         for t in threads:
             t.join(timeout=60)
         drv.stop()
+        drain_heart_log()
         path, c = save_ckpt(counters["step"], drv.stats(), time.time())
         print(json.dumps({"final_checkpoint": path, "errors": errors, "counters": c}), flush=True)
         metrics.close()

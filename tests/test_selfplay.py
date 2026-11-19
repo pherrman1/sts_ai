@@ -6,6 +6,7 @@ next seeds. Skipped when torch (or, for the run, the module) is missing."""
 
 import contextlib
 import glob
+import gzip
 import importlib.util
 import io
 import json
@@ -1120,6 +1121,51 @@ class SelfplaySmoke(unittest.TestCase):
         check_progress(self, e)
         self.assertGreater(e["campfires"], 0)
         self.assertGreater(e["elites"], 0)
+
+    def test_heart_log(self):
+        """--heart-log 1 (diagnostic): every run that fought the Heart leaves one record in heart_runs.jsonl.gz with
+        its entry state and the net's / search's values per act and at the Heart; the count matches the progress
+        counter `heart`. One worker, no training (--min-replay above the runs' samples) and a fixed --seed make the
+        play deterministic; in this setting seed 1301 reaches the Heart (review of PR #1111)."""
+        sp = load()
+        args = ["--module-dir", os.path.dirname(MODULES[0]), "--device", "cpu", "--workers", "1", "--games", "3",
+                "--full-sims", "4", "--fast-sims", "2", "--batch", "32", "--row-buckets", "32", "--pack-step", "32",
+                "--pack-threads", "1", "--min-replay", "1000000", "--train-batch", "32", "--window", "5000",
+                "--report", "1", "--sync-steps", "2", "--seed-base", "1300", "--max-runs", "6", "--seed", "3",
+                "--ascension", "0", "--test-max-hp", "3000", "--utility", "amber", "--value-ema-halflife", "20",
+                "--value-ema-search", "--curriculum", "--force-keys", "curriculum"]
+        with tempfile.TemporaryDirectory() as d:
+            self.assertEqual(sp.main(args + ["--heart-log", "1", "--out-dir", d]), 0)
+            with open(os.path.join(d, "metrics.jsonl")) as f:
+                rows = [json.loads(l) for l in f]
+            path = os.path.join(d, "heart_runs.jsonl.gz")
+            recs = []
+            if os.path.exists(path):
+                with gzip.open(path, "rt") as f:
+                    recs = [json.loads(l) for l in f]
+        heart = sum(r["progress_window"].get("0", {}).get("heart", 0) for r in rows)
+        self.assertGreater(heart, 0, "the test setting should reach the Heart")
+        self.assertEqual(len(recs), heart)
+        self.assertEqual(rows[-1]["heart_log"]["records"], heart)
+        self.assertEqual(len({r["seed"] for r in recs}), len(recs))
+        for r in recs:
+            self.assertEqual(r["asc"], 0)
+            self.assertIn(r["win"], (0, 1))
+            self.assertEqual(r["root_floor"][4], r["floor"])   # the Heart fight's first searched move
+            self.assertTrue(all(0 <= f <= r["floor"] for f in r["root_floor"]))
+            self.assertEqual(r["root_floor"], sorted(r["root_floor"]))
+            for k in ("net_p_win", "net_p_heart_death", "search_p_win"):
+                self.assertEqual(len(r[k]), 5)
+                self.assertTrue(all(0.0 <= x <= 1.0 for x in r[k]), k)
+            self.assertTrue(all(1.0 <= x <= 57.0 for x in r["net_e_floor"]))
+            self.assertGreater(r["entry_hp"], 0)
+            self.assertLessEqual(r["entry_hp"], r["entry_max_hp"])
+            self.assertEqual(r["floor_hp"][r["floor"] - 2], r["entry_hp"])   # HP at the end of the floor before
+            self.assertEqual(r["heart_hp"] == 0, r["win"] == 1)
+            self.assertEqual(r["end_hp"] > 0, r["win"] == 1)
+            self.assertGreater(len(r["deck"]), 0)
+            self.assertGreater(len(r["relics"]), 0)
+            self.assertEqual(len(r["floor_hp"]), 56)
 
     def test_eval_cache_run(self):
         """--eval-cache plays and trains as usual and answers some leaves from the cache (exactness: ctest

@@ -419,6 +419,8 @@ namespace sts::azbench {
         std::unordered_map<int, double> gapMin;   // exploreAmber: this run's smallest gap per item
         std::vector<int> pickedKeys;         // exploreAmber: items played in this run (each once)
         int asc = 20;                        // this run's ascension
+        bool heartLog = false;               // RunConfig::heartLogRate: this run's Heart fight is recorded (if any)
+        HeartRunLog hlog;                    // ... its record so far
         RunProgress progress;                // this run's progress counters (added to its ascension at the end)
         search::SilverSearchContext ctx;
         int fightMoves = 0, moves = 0, floor = 0;
@@ -964,6 +966,10 @@ namespace sts::azbench {
             g.floorHp.fill(-1);
             g.moveDist.clear();
             g.progress = RunProgress{};
+            g.hlog = HeartRunLog{};
+            // Heart log: a hash of the seed decides (kills are always recorded at the end), not the search RNG.
+            g.heartLog = cfg.heartLogRate > 0 &&
+                         static_cast<double>(mix64(g.seed ^ 0x6865617274ull) >> 11) * 0x1.0p-53 < cfg.heartLogRate;
             g.heartStart.reset();
             g.heartJob = -1;
             ++wk.st.runsStarted;
@@ -1081,13 +1087,33 @@ namespace sts::azbench {
                 p.relicsSum = g.gc.relics.size();
                 p.deckSizeSum = g.gc.deck.size();
                 if (p.heart) {   // the Heart is the run's last fight, so g.bc still holds it
-                    int hp = 0;
+                    int hp = 0, maxHp = 0;
                     for (int m = 0; m < g.bc.monsters.monsterCount; ++m)
-                        if (g.bc.monsters.arr[m].id == MonsterId::CORRUPT_HEART) hp = std::max(0, g.bc.monsters.arr[m].curHp);
+                        if (g.bc.monsters.arr[m].id == MonsterId::CORRUPT_HEART) {
+                            hp = std::max(0, g.bc.monsters.arr[m].curHp);
+                            maxHp = g.bc.monsters.arr[m].maxHp;
+                        }
                     ++p.heartHpHist[std::min(RunProgress::kHeartHpBins - 1, hp / 50)];
                     p.heartHpSum = hp;
                     p.heartTurnsSum = g.bc.turn;
                     if (wk.st.heartHpMin < 0 || hp < wk.st.heartHpMin) wk.st.heartHpMin = hp;
+                    if (cfg.heartLogRate > 0 && (g.heartLog || win)) {
+                        HeartRunLog &h = g.hlog;
+                        h.seed = g.seed;
+                        h.asc = g.asc;
+                        h.win = win ? 1 : 0;
+                        h.floor = g.gc.floorNum;
+                        h.heartHp = hp;
+                        h.heartMaxHp = maxHp;
+                        h.endHp = g.gc.outcome == GameOutcome::PLAYER_LOSS ? 0 : g.gc.curHp;
+                        h.turns = g.bc.turn;
+                        h.floorHp = g.floorHp;
+                        h.elites = p.elites;
+                        h.rest = p.rest;
+                        h.smith = p.smith;
+                        std::lock_guard<std::mutex> l(heartLogM_);
+                        heartLogs_.push_back(std::move(h));
+                    }
                 }
                 wk.st.progressAsc[g.asc] += p;
             }
@@ -1137,6 +1163,20 @@ namespace sts::azbench {
                 if (g.gc.info.encounter == MonsterEncounter::THE_HEART) {
                     g.progress.heart = 1;
                     g.progress.heartEntryHpSum = g.gc.curHp;
+                    if (cfg.heartLogRate > 0) {   // Heart log: the state entering the fight (kept for every run: a kill is always recorded)
+                        HeartRunLog &h = g.hlog;
+                        h.entryHp = g.gc.curHp;
+                        h.entryMaxHp = g.gc.maxHp;
+                        h.gold = g.gc.gold;
+                        h.deck.clear();
+                        for (int i = 0; i < g.gc.deck.size(); ++i)
+                            h.deck.emplace_back(static_cast<int>(g.gc.deck.cards[i].getId()), g.gc.deck.cards[i].isUpgraded() ? 1 : 0);
+                        h.relics.clear();
+                        for (const auto &r : g.gc.relics.relics) h.relics.push_back(static_cast<int>(r.id));
+                        h.potions.clear();
+                        for (int i = 0; i < std::min(g.gc.potionCapacity, 5); ++i)
+                            if (g.gc.potions[i] != Potion::EMPTY_POTION_SLOT) h.potions.push_back(static_cast<int>(g.gc.potions[i]));
+                    }
                     if (!cfg.heartArms.empty() && g.heartJob < 0) {   // Heart probe: keep the start, play job 0
                         g.heartStart = std::make_shared<const GameContext>(search::detachedGameCopy(g.gc));
                         g.heartJob = 0;
@@ -1349,6 +1389,26 @@ namespace sts::azbench {
                 for (int k = 0; k < kOutcomeClasses; ++k) moveResult[k] = static_cast<float>(g.rootDist[k] * inv);
                 if (inChain)
                     for (int k = 0; k < kOutcomeClasses; ++k) g.moveDist.push_back(search::amberHalf(moveResult[k]));
+            }
+            if (cfg.heartLogRate > 0) {   // Heart log: the first searched move of each act and of the Heart fight
+                constexpr int kHeartFloor = 55;   // Act 4: 52 rest, 53 shop, 54 elite, 55 the Heart
+                HeartRunLog &h = g.hlog;
+                const int slot = g.inBattle && g.progress.heart ? 4 : std::clamp(g.gc.act, 1, 4) - 1;
+                if (h.floorAt[slot] < 0) {
+                    h.floorAt[slot] = g.gc.floorNum;
+                    h.netValue[slot] = root.value;
+                    h.searchValue[slot] = static_cast<float>(root.w / std::max(1, root.n));
+                    if (root.dist.size() == static_cast<std::size_t>(kOutcomeClasses)) {
+                        double ef = 0;
+                        for (int k = 0; k < kOutcomeClasses; ++k) ef += (k == 0 ? 57.0 : k) * root.dist[k];
+                        h.netPWin[slot] = root.dist[0];
+                        h.netPHeartDeath[slot] = root.dist[kHeartFloor];   // death on the Heart floor, every slot
+                        h.netEFloor[slot] = static_cast<float>(ef);
+                        h.searchPWin[slot] = moveResult[0];
+                    } else {
+                        h.netPWin[slot] = h.netPHeartDeath[slot] = h.netEFloor[slot] = h.searchPWin[slot] = -1;
+                    }
+                }
             }
             if (!root.combat) {
                 const int kind = g.full ? 0 : 1;
