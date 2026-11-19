@@ -1037,6 +1037,42 @@ class SelfplaySmoke(unittest.TestCase):
             self.assertGreater(rows[-1]["train_steps"], 0)
             self.assertGreater(sum(r["cache_hits_per_s"] for r in rows), 0)
 
+    def test_nonfinite_step_skipped(self):
+        """A training step with a NaN loss is skipped (no optimizer step): the weights stay finite, the skip is
+        counted in metrics and checkpoint counters, and grad_norm is logged for the finite steps."""
+        sp = load()
+        real = sp.losses
+        calls = {"n": 0}
+
+        def poisoned(*a, **k):
+            loss, parts = real(*a, **k)
+            calls["n"] += 1
+            if calls["n"] in (2, 5):
+                loss = loss * float("nan")
+            return loss, parts
+
+        args = ["--module-dir", os.path.dirname(MODULES[0]), "--device", "cpu", "--workers", "2", "--games", "4",
+                "--full-sims", "8", "--fast-sims", "4", "--batch", "32", "--row-buckets", "32", "--pack-step", "32",
+                "--pack-threads", "1", "--min-replay", "50", "--train-batch", "32", "--window", "5000",
+                "--report", "1", "--sync-steps", "2", "--seed-base", "1500", "--max-runs", "16"]
+        sp.losses = poisoned
+        try:
+            with tempfile.TemporaryDirectory() as d:
+                self.assertEqual(sp.main(args + ["--out-dir", d]), 0)
+                with open(os.path.join(d, "metrics.jsonl")) as f:
+                    rows = [json.loads(l) for l in f]
+                ck = sorted(glob.glob(os.path.join(d, "ckpt_*.pt")), key=os.path.getmtime)[-1]
+                c = torch.load(ck)
+        finally:
+            sp.losses = real
+        self.assertGreater(rows[-1]["train_steps"], 0)
+        self.assertEqual(rows[-1]["nonfinite_skips"], 2)
+        self.assertEqual(c["counters"]["nonfinite_skips"], 2)
+        for v in c["net"].values():
+            self.assertTrue(bool(torch.isfinite(v.float()).all()))
+        g = [r["grad_norm"] for r in rows if r.get("grad_norm")]
+        self.assertTrue(g and all(x["max"] >= x["mean"] > 0 for x in g))
+
     def test_packed_h2d_run(self):
         """--packed-h2d (live tokens packed by the driver) plays and trains as usual (bit-identical forward:
         tests/test_amber_net_flat.py, packing: ctest az_pack_packed_tokens)."""
