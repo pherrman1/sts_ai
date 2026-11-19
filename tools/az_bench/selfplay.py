@@ -758,10 +758,11 @@ def main(argv=None):
                          "hidden state (no resampling, no chance edges); the net still sees the public view. Off "
                          "(every run, from its next searched move) once a file SAVESCUM_OFF is in --out-dir, also "
                          "when it is there at start or a resume")
-    ap.add_argument("--force-keys", choices=("off", "curriculum"), default="off",
+    ap.add_argument("--force-keys", choices=("off", "curriculum", "on"), default="off",
                     help="curriculum: the ADR-0063 Heart-key backstops (Act-3 treasure-row Sapphire, Recall at the last "
                          "Act-3 campfire, Act-3 route kept on the burning elite) are forced moves until the first "
-                         "curriculum step-up (needs --curriculum; a deviation from Amber Eye, Philipp 2026-11-18)")
+                         "curriculum step-up (needs --curriculum; a deviation from Amber Eye, Philipp 2026-11-18); on: forced at every "
+                         "ascension, also after curriculum step-ups (Philipp 2026-11-19)")
     ap.add_argument("--force-rewards", action="store_true",
                     help="forced reward choices (2026-11-19, default off; a deviation from Amber Eye, Philipp): chests "
                          "opened unless we hold Cursed Key, every relic on a reward screen (elites, chests, event "
@@ -883,7 +884,7 @@ def main(argv=None):
     counters["ascension"] = ascension
     # The curriculum has stepped up once (recorded at the step-up; older checkpoints: ascension above --ascension).
     counters["curriculum_stepped"] = bool(counters.get("curriculum_stepped", ascension > args.ascension))
-    force_keys = args.force_keys == "curriculum" and not counters["curriculum_stepped"]
+    force_keys = args.force_keys == "on" or (args.force_keys == "curriculum" and not counters["curriculum_stepped"])
     if args.savescum and os.path.exists(os.path.join(args.out_dir, "SAVESCUM_OFF")):
         counters["savescum_off"] = True   # the file was there before this start: no run plays savescum
     savescum = args.savescum and not counters.get("savescum_off", False)
@@ -963,7 +964,7 @@ def main(argv=None):
         print(f"# savescum: {'on until a file SAVESCUM_OFF appears in --out-dir' if savescum else 'off (SAVESCUM_OFF seen before this resume)'}",
               flush=True)
     if args.force_keys != "off":
-        print(f"# force-keys {args.force_keys}: {'on until the first curriculum step-up' if force_keys else 'off (the curriculum already stepped up)'}",
+        print(f"# force-keys {args.force_keys}: {'on at every ascension' if args.force_keys == 'on' else 'on until the first curriculum step-up' if force_keys else 'off (the curriculum already stepped up)'}",
               flush=True)
     replay = Replay(args.window, hp_floors=56 if amber else 0, soft_outcome=ema_lam > 0,
                     compact=args.compact_samples, dict_tokens_per_sample=args.replay_dict_tokens,
@@ -1330,7 +1331,7 @@ def main(argv=None):
                 drv.set_ascension(asc + 1)
                 counters["ascension"] = asc + 1
                 counters["curriculum_stepped"] = True
-                if drv.force_keys():
+                if args.force_keys == "curriculum" and drv.force_keys():
                     drv.set_force_keys(False)   # runs started from now on play without the key backstops
                     print("# force-keys: off from the first curriculum step-up", flush=True)
                 asc_hist = []

@@ -1424,6 +1424,22 @@ class SelfplaySmoke(unittest.TestCase):
             with open(os.path.join(d, "metrics.jsonl")) as f:
                 self.assertFalse(any("force_keys" in json.loads(l) for l in f))
 
+    def test_force_keys_on(self):
+        """--force-keys on: the key backstops stay on across curriculum step-ups (Philipp 2026-11-19)."""
+        sp = load()
+        args = ["--module-dir", os.path.dirname(MODULES[0]), "--device", "cpu", "--workers", "2", "--games", "4",
+                "--full-sims", "4", "--fast-sims", "2", "--batch", "32", "--row-buckets", "32", "--pack-step", "32",
+                "--pack-threads", "1", "--min-replay", "1000000", "--train-batch", "32", "--window", "5000",
+                "--report", "1", "--sync-steps", "2", "--seed-base", "1400", "--test-max-hp", "5000",
+                "--max-fight-moves", "2000", "--ascension", "0",
+                "--curriculum", "--curriculum-runs", "4", "--curriculum-winrate", "0", "--force-keys", "on"]
+        with tempfile.TemporaryDirectory() as d:
+            self.assertEqual(sp.main(args + ["--out-dir", d, "--max-runs", "16"]), 0)
+            with open(os.path.join(d, "metrics.jsonl")) as f:
+                rows = [json.loads(l) for l in f]
+            self.assertGreaterEqual(rows[-1]["ascension"], 1)
+            self.assertTrue(all(r["force_keys"]["active"] for r in rows))
+
 
 if __name__ == "__main__":
     unittest.main()
