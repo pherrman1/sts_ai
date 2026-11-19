@@ -41,6 +41,7 @@ def smooth(xs, k):
 
 
 SETTLE_MINUTES = 5
+RECENT_RUNS = 100_000   # the charts at the top cover the last this many runs
 
 
 def settling(rows, minutes=SETTLE_MINUTES):
@@ -383,6 +384,7 @@ body { background:var(--bg); color:var(--fg); font-family:var(--body); line-heig
 main { max-width:1060px; margin:0 auto; padding-block:24px 40px; display:grid; gap:20px; }
 h1 { font-family:var(--display); font-size:1.7rem; margin:0; text-wrap:balance; }
 h2 { font-family:var(--display); font-size:1.05rem; margin:0 0 8px; }
+h2.part { font-size:1.2rem; margin:18px 0 8px; }
 .sub { color:var(--muted); margin:4px 0 0; }
 .tiles { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:12px; }
 .tile { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:12px 14px; }
@@ -434,7 +436,6 @@ RULE_CURRICULUM = ("Curriculum (Philipp, 2026-11-17): from the 1M-run net, resta
 
 def page(rows, title, started, subtitle=""):
     last = rows[-1] if rows else {}
-    runs = [r["runs_done"] for r in rows]
     # Continuation with pick-rate exploration (rows carry its counters).
     variant = any("forced_picks" in r for r in rows)
     curriculum = any(r.get("ascension", 20) < 20 for r in rows)
@@ -443,6 +444,7 @@ def page(rows, title, started, subtitle=""):
         start = next(i for i, r in enumerate(rows) if r.get("ascension", 20) < 20)
         rows = rows[start:]
         last = rows[-1]
+    runs = [r["runs_done"] for r in rows]   # after the curriculum trim: the x values of the charted rows
     # Windows right after a restart are biased by which runs finish first (settling): left out of the floor and
     # win-rate curves only (totals, histograms and the panels keep every row).
     mask = settling(rows)
@@ -504,6 +506,19 @@ def page(rows, title, started, subtitle=""):
         sub += (f" Floor and win-rate curves leave out the report windows in the first {SETTLE_MINUTES} min after each "
                 f"restart ({n_settle}): "
                 "runs finishing then are not a fair sample (short runs finish first).")
+    # Charts at the top: the last RECENT_RUNS runs (Philipp 2026-11-19); the full history follows further down.
+    cut = next((i for i, x in enumerate(runs) if runs[-1] - x <= RECENT_RUNS), 0)
+
+    def grid(i0):
+        return f"""<div class="grid2">
+<section><h2>Mean final floor per window</h2>{chart(runs[i0:], [("mean floor (smoothed)", floor_s[i0:], "--accent")], ymin=0)}</section>
+<section><h2>{"Heart-kill rate, all ascensions (%)" if curriculum else "Self-play win rate (%)"}</h2>{chart(runs[i0:], [("win rate (smoothed)", win_s[i0:], "--good")], ymin=0, yfmt="{:.2f}")}</section>
+<section><h2>Training losses</h2>{chart(runs[i0:], [("policy", lp[i0:], "--accent"), ("outcome", lo[i0:], "--accent2"), ("HP", lh[i0:], "--boss")], yfmt="{:.2f}")}</section>
+{f'<section><h2>Curriculum: ascension and Heart-kill rate (%, last 10k runs at it)</h2>{chart(runs[i0:], [("ascension", asc_line[i0:], "--boss"), ("Heart kills % (rolling)", asc_roll[i0:], "--good")], ymin=0, yfmt="{:.0f}")}</section>' if curriculum else ""}
+<section><h2>Positions per second (thousands)</h2>{chart(runs[i0:], [("positions/s", pos[i0:], "--accent2")], ymin=0, yfmt="{:.0f}")}</section>
+{f'<section><h2>Memory: process RSS (GB) and samples pending (millions)</h2>{chart(runs[i0:], [("RSS GB", [r.get("rss_gb") for r in rows[i0:]], "--boss"), ("pending (M)", [r["samples_pending"] / 1e6 if "samples_pending" in r else None for r in rows[i0:]], "--accent")], ymin=0, yfmt="{:.1f}")}</section>' if any(r.get("rss_gb") is not None for r in rows[i0:]) else ""}
+</div>"""
+
     table_rows = "".join(
         f'<tr><td>{html.escape(r["time"])}</td><td>{r["runs_done"]:,}</td><td>{r["mean_floor_window"]:.1f}</td>'
         f'<td>{100 * r["win_rate_window"]:.2f}</td><td>{r["positions_per_s"]:,}</td><td>{r["train_steps"]:,}</td>'
@@ -519,17 +534,13 @@ def page(rows, title, started, subtitle=""):
 <div class="tiles">{tiles}</div>
 {progress_panel(rows, last.get("ascension", 20))}
 {heart_panel(rows, last.get("ascension", 20))}
-<div class="grid2">
-<section><h2>Mean final floor per window</h2>{chart(runs, [("mean floor (smoothed)", floor_s, "--accent")], ymin=0)}</section>
-<section><h2>{"Heart-kill rate, all ascensions (%)" if curriculum else "Self-play win rate (%)"}</h2>{chart(runs, [("win rate (smoothed)", win_s, "--good")], ymin=0, yfmt="{:.2f}")}</section>
-<section><h2>Training losses</h2>{chart(runs, [("policy", lp, "--accent"), ("outcome", lo, "--accent2"), ("HP", lh, "--boss")], yfmt="{:.2f}")}</section>
-{f'<section><h2>Curriculum: ascension and Heart-kill rate (%, last 10k runs at it)</h2>{chart(runs, [("ascension", asc_line, "--boss"), ("Heart kills % (rolling)", asc_roll, "--good")], ymin=0, yfmt="{:.0f}")}</section>' if curriculum else ""}
-<section><h2>Positions per second (thousands)</h2>{chart(runs, [("positions/s", pos, "--accent2")], ymin=0, yfmt="{:.0f}")}</section>
-{f'<section><h2>Memory: process RSS (GB) and samples pending (millions)</h2>{chart(runs, [("RSS GB", [r.get("rss_gb") for r in rows], "--boss"), ("pending (M)", [r["samples_pending"] / 1e6 if "samples_pending" in r else None for r in rows], "--accent")], ymin=0, yfmt="{:.1f}")}</section>' if any(r.get("rss_gb") is not None for r in rows) else ""}
-</div>
+<h2 class="part">Last {RECENT_RUNS:,} runs</h2>
+{grid(cut)}
 <section><h2>Where runs end (death floor, last ~10 min)</h2>{bars(hist)}
 <p class="rule">Purple: boss floors (16, 33, 50) and the Heart (55).</p></section>
 <section><h2>Decision rule</h2><p class="rule">{RULE_CURRICULUM if curriculum else RULE_VARIANT if variant else RULE_MAIN}</p></section>
+<h2 class="part">Full history</h2>
+{grid(0)}
 <section><h2>About this page</h2><p class="rule">{html.escape(sub)}</p></section>
 <section><h2>Latest windows</h2><div class="scroll"><table><tr><th>time</th><th>runs</th><th>mean floor</th><th>win %</th><th>pos/s</th><th>train steps</th><th>stalls</th>{"<th>asc</th>" if curriculum else ""}</tr>{table_rows}</table></div></section>
 </main>"""

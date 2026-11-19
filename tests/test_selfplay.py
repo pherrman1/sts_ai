@@ -716,6 +716,33 @@ class DashboardProgressTest(unittest.TestCase):
         self.assertIn("relics not picked up (left + chests not opened)", page)
 
 
+class DashboardRecentTest(unittest.TestCase):
+    def test_recent_cut_after_curriculum_trim(self):
+        """The top charts cover the last RECENT_RUNS runs of the charted (curriculum) rows, also when A20 rows precede
+        the curriculum: x values come from the trimmed rows."""
+        spec = importlib.util.spec_from_file_location(
+            "selfplay_dashboard", os.path.join(ROOT, "tools", "az_bench", "selfplay_dashboard.py"))
+        dash = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(dash)
+        rows = []
+        for i in range(300):   # 100 A20 rows, then 200 curriculum rows at A1; 1,000 runs per row
+            m, sec = divmod(i * 30, 60)
+            h, m = divmod(m, 60)
+            rows.append({"time": f"2026-11-19 {10 + h:02d}:{m:02d}:{sec:02d}", "runs_done": 1000 * (i + 1),
+                         "samples_added": 1000 * (i + 1), "mean_floor_window": 40.0, "win_rate_window": 0.05,
+                         "runs_window": 300, "positions_per_s": 140000, "train_steps": i,
+                         "ascension": 20 if i < 100 else 1})
+        page = dash.page(rows, "t", "")
+        self.assertIn("Last 100,000 runs", page)
+        self.assertIn("Full history", page)
+        # top grid: x axis starts at 200,000 (last 100k of 300,000); full grid: at the first curriculum row, 101,000
+        top, full = page.split("Full history", 1)
+        # tick labels: top grid starts at 200000 (last 100k of 300k), full grid at the first curriculum row, 101000
+        self.assertIn('class="tick">200000</text>', top)
+        self.assertNotIn('class="tick">101000</text>', top)
+        self.assertIn('class="tick">101000</text>', full)
+
+
 class DashboardSettlingTest(unittest.TestCase):
     def test_restart_windows_left_out(self):
         spec = importlib.util.spec_from_file_location(
