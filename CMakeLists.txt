@@ -187,6 +187,10 @@ set_tests_properties(az_run_driver_explore PROPERTIES LABELS "core;smoke")
 add_test(NAME az_run_driver_explore_amber COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 24 --fast
          --seed-base 1 --seconds 300 --explore-amber --pick-target 0.2 --test-hp 300)
 set_tests_properties(az_run_driver_explore_amber PROPERTIES LABELS "core;smoke")
+# --explore-per-offer (2026-11-19): the pick-rate target counts the runs that offered the item; exploration still acts
+add_test(NAME az_run_driver_explore_per_offer COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 24 --fast
+         --seed-base 1 --seconds 300 --explore-amber --explore-per-offer --pick-target 0.5 --test-hp 300)
+set_tests_properties(az_run_driver_explore_per_offer PROPERTIES LABELS "core;smoke")
 # Savescum (RunConfig::savescum): the search's child of every played action is the real next decision state
 # (fingerprint incl. RNG states and draw order), with and without the Amber search rules.
 add_test(NAME az_run_driver_savescum COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 6 --fast

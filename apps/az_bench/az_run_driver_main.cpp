@@ -73,6 +73,7 @@ int main(int argc, char **argv) {
         else if (a == "--explore-c") cfg.exploreC = std::stod(next());
         else if (a == "--pick-target") cfg.pickTarget = std::stod(next());
         else if (a == "--explore-amber") cfg.exploreAmber = true;
+        else if (a == "--explore-per-offer") cfg.explorePerOffer = true;
         else if (a == "--no-fast-noise") cfg.fastNoise = false;
         else if (a == "--q-rescale") cfg.qRescale = true;
         else if (a == "--c-scale") cfg.cScale = std::stod(next());
