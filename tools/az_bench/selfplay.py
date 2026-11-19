@@ -624,6 +624,20 @@ def per_run_means(pw):
     return mean("relics_sum"), mean("deck_size_sum")
 
 
+ECONOMY_KEYS = ("chests", "chests_skipped", "relics_taken_elite", "relics_taken_chest", "relics_taken_other",
+                "relics_left_elite", "relics_left_chest", "relics_left_other", "shops", "shop_cards", "shop_relics",
+                "shop_potions", "shop_removes", "boss_relic_skips", "gold_gained", "gold_lost")
+
+
+def economy_per_run(pw):
+    """Economy / relic-source counters (2026-11-19, logging only) per run finished in this window over all ascensions
+    (progress_window sums / runs), or None where no run finished or the driver has no such counters."""
+    n = sum(e["runs"] for e in pw.values())
+    if not n or not all(k in e for e in pw.values() for k in ECONOMY_KEYS):
+        return None
+    return {k: round(sum(e[k] for e in pw.values()) / n, 3) for k in ECONOMY_KEYS}
+
+
 def malloc_trim():
     """glibc malloc_trim(0): hand freed heap memory of all arenas back to the OS (2026-11-18: the C++ workers'
     malloc arenas grew ~0.9 GB/h by fragmentation with all data structures flat). Returns True if it ran."""
@@ -1374,6 +1388,7 @@ def main(argv=None):
             if pre_trim is not None:
                 row["rss_gb_pre_trim"] = pre_trim
             row["relics_per_run"], row["deck_per_run"] = per_run_means(pw)
+            row["economy_per_run"] = economy_per_run(pw)
             if args.explore_amber:   # forcing attempts, of which c = 0 / infinity; logged natural items, unplayed (0)
                 row["explore_amber"] = {k: s["explore_" + k] for k in
                                         ("attempts", "c_zero", "c_inf", "natural", "natural_unplayed")}

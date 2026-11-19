@@ -634,6 +634,13 @@ def check_progress(tc, e):
     if "relics_sum" in e:   # every run ends with its starter relic and a non-empty deck
         tc.assertGreaterEqual(e["relics_sum"], n)
         tc.assertGreaterEqual(e["deck_size_sum"], n)
+    if "chests" in e:   # economy counters (2026-11-19)
+        tc.assertLessEqual(e["chests_skipped"], e["chests"])
+        tc.assertGreater(e["gold_gained"], 0)   # reward gold
+        for k in ("gold_lost", "relics_taken_elite", "relics_taken_chest", "relics_taken_other", "relics_left_elite",
+                  "relics_left_other", "shops", "shop_cards", "shop_relics", "shop_potions", "shop_removes",
+                  "boss_relic_skips"):
+            tc.assertGreaterEqual(e[k], 0)
 
 
 @unittest.skipUnless(HAVE_TORCH, "torch missing")
@@ -656,6 +663,14 @@ class ProgressWindowTest(unittest.TestCase):
         self.assertEqual(sp.per_run_means(pw), (4.0, 20.0))
         self.assertEqual(sp.per_run_means({}), (None, None))
         self.assertEqual(sp.per_run_means({"0": {"runs": 2, "ruby": 1}}), (None, None))   # driver without the counters
+
+    def test_economy_per_run(self):
+        sp = load()
+        e0 = {k: 2 for k in sp.ECONOMY_KEYS}; e0["runs"] = 1
+        e1 = {k: 4 for k in sp.ECONOMY_KEYS}; e1["runs"] = 2
+        self.assertEqual(sp.economy_per_run({"0": e0, "1": e1}), {k: 2.0 for k in sp.ECONOMY_KEYS})
+        self.assertIsNone(sp.economy_per_run({}))
+        self.assertIsNone(sp.economy_per_run({"0": {"runs": 2, "ruby": 1}}))   # driver without the counters
 
 
 class MallocTrimTest(unittest.TestCase):
@@ -693,6 +708,10 @@ class DashboardProgressTest(unittest.TestCase):
         page = dash.page(rows[:-1] + [fk], "t", "")
         self.assertIn("Forced key moves", page)
         self.assertIn("Sapphire 3 / Ruby 2 / Emerald 4; routes narrowed 5; on (until the first step-up)", page)
+        self.assertNotIn("Relic sources and relics left behind", page)
+        sp = load()
+        eco = dict(rows[-1], economy_per_run={k: 1.0 for k in sp.ECONOMY_KEYS})
+        self.assertIn("Relic sources and relics left behind (per run, from run 300)", dash.page(rows[:-1] + [eco], "t", ""))
 
 
 @unittest.skipUnless(HAVE_TORCH and MODULES, "torch or the az_bench_native module (cmake target) missing")
@@ -1120,6 +1139,8 @@ class SelfplaySmoke(unittest.TestCase):
         self.assertGreaterEqual(e["runs"], 6)
         check_progress(self, e)
         self.assertGreater(e["campfires"], 0)
+        self.assertGreater(e["chests"], 0)   # economy counters: every act has a treasure row and shops are common
+        self.assertGreater(e["shops"], 0)
         self.assertGreater(e["elites"], 0)
 
     def test_heart_log(self):
