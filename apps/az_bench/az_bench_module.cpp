@@ -270,7 +270,7 @@ PYBIND11_MODULE(az_bench_native, m) {
                          bool chanceOnReveal, bool crossCombat, bool simHelp,
                          bool exploreAmber, double exploreT, double searchEmaLambda, bool searchEmaFullOnly,
                          bool forceKeys, std::vector<std::vector<double>> heartArms, int heartReps,
-                         bool savescum, bool compactSamples, double heartLogRate) {
+                         bool savescum, bool compactSamples, double heartLogRate, bool forceRewards) {
                  azbench::RunConfig c;
                  if (!(heartLogRate >= 0 && heartLogRate <= 1)) throw std::invalid_argument("heart_log_rate: want 0..1");
                  c.heartLogRate = heartLogRate;
@@ -319,6 +319,7 @@ PYBIND11_MODULE(az_bench_native, m) {
                  c.searchEmaLambda = searchEmaLambda;
                  c.searchEmaFullOnly = searchEmaFullOnly;
                  c.forceKeys = forceKeys;
+                 c.forceRewards = forceRewards;
                  c.savescum = savescum;
                  c.compactSamples = compactSamples;
                  return std::make_unique<azbench::RunDriver>(c);
@@ -338,7 +339,8 @@ PYBIND11_MODULE(az_bench_native, m) {
              py::arg("search_ema_lambda") = 0.0, py::arg("search_ema_full_only") = true,
              py::arg("force_keys") = false, py::arg("heart_arms") = std::vector<std::vector<double>>{},
              py::arg("heart_reps") = 1, py::arg("savescum") = false,
-             py::arg("compact_samples") = false, py::arg("heart_log_rate") = 0.0)
+             py::arg("compact_samples") = false, py::arg("heart_log_rate") = 0.0,
+             py::arg("force_rewards") = false)
         .def("heart_results",
              [](const azbench::RunDriver &d) {
                  py::list out;
@@ -634,6 +636,8 @@ PYBIND11_MODULE(az_bench_native, m) {
             o["savescum_mismatches"] = s.savescumMismatches;
             o["forced_keys"] = py::make_tuple(s.forcedKeys[0], s.forcedKeys[1], s.forcedKeys[2]);
             o["key_route_masked"] = s.keyRouteMasked;
+            o["forced_rewards"] = py::make_tuple(s.forcedRewards[0], s.forcedRewards[1], s.rewardRelicDeferred,
+                                                 s.rewardRelicOnLeave);
             o["heart_hp_min"] = s.heartHpMin;
             {   // memory gauges (current values): node-pool slots and their held states, per-run buffer capacities
                 py::dict m;

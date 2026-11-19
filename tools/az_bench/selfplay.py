@@ -762,6 +762,12 @@ def main(argv=None):
                     help="curriculum: the ADR-0063 Heart-key backstops (Act-3 treasure-row Sapphire, Recall at the last "
                          "Act-3 campfire, Act-3 route kept on the burning elite) are forced moves until the first "
                          "curriculum step-up (needs --curriculum; a deviation from Amber Eye, Philipp 2026-11-18)")
+    ap.add_argument("--force-rewards", action="store_true",
+                    help="forced reward choices (2026-11-19, default off; a deviation from Amber Eye, Philipp): chests "
+                         "opened unless we hold Cursed Key, every relic on a reward screen (elites, chests, event "
+                         "fights; boss relics stay learned) taken unless on the reviewed list (Bottled x3, Dead Branch, "
+                         "Tungsten Rod, Unceasing Top, Juzu Bracelet); Ceramic Fish / eggs / Potion Belt before the "
+                         "card reward, Whetstone / War Paint after it")
     ap.add_argument("--heart-arms", default="",
                     help="Heart search probe (diagnostic, default off): FULL:FAST:PROB:MFULL:MFAST,... search budgets; "
                          "each run reaching the Heart plays the fight from the same start once per arm and rep "
@@ -933,6 +939,7 @@ def main(argv=None):
         **({"search_ema_lambda": ema_lam, "search_ema_full_only": args.value_ema_moves == "full"}
            if ema_search else {}),
         **({"force_keys": True} if force_keys else {}),
+        **({"force_rewards": True} if args.force_rewards else {}),
         **({"heart_arms": heart_arms, "heart_reps": args.heart_reps} if heart_arms else {}),
         **({"savescum": True} if savescum else {}),
         **({"compact_samples": True} if args.compact_samples else {}),
@@ -1386,6 +1393,9 @@ def main(argv=None):
                 row["force_keys"] = {"active": drv.force_keys(), "sapphire": s["forced_keys"][0],
                                      "ruby": s["forced_keys"][1], "emerald": s["forced_keys"][2],
                                      "route_masked": s["key_route_masked"]}
+            if args.force_rewards:   # real forced moves (cumulative): chests opened, relics taken, card-first relics
+                fr = s["forced_rewards"]   # held back during a card decision / taken on leaving the screen
+                row["force_rewards"] = {"chests": fr[0], "relics": fr[1], "deferred": fr[2], "on_leave": fr[3]}
             if pre_trim is not None:
                 row["rss_gb_pre_trim"] = pre_trim
             row["relics_per_run"], row["deck_per_run"] = per_run_means(pw)

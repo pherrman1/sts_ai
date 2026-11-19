@@ -599,6 +599,78 @@ namespace sts::azbench {
         return 3;
     }
 
+    namespace {
+        // Philipp's reviewed reward relics (2026-10-07; ooc_tree_rules.cpp reviewedRewardRelic): left to the net.
+        bool reviewedRewardRelic(RelicId id) {
+            switch (id) {
+                case RelicId::BOTTLED_FLAME: case RelicId::BOTTLED_LIGHTNING: case RelicId::BOTTLED_TORNADO:
+                case RelicId::DEAD_BRANCH: case RelicId::TUNGSTEN_ROD: case RelicId::UNCEASING_TOP:
+                case RelicId::JUZU_BRACELET: return true;
+                default: return false;
+            }
+        }
+        // Act on the card reward or the potions of the same screen (Deck::obtain: eggs upgrade, Ceramic Fish +9 gold).
+        bool relicBeforeCard(RelicId id) {
+            return id == RelicId::CERAMIC_FISH || id == RelicId::MOLTEN_EGG || id == RelicId::TOXIC_EGG ||
+                   id == RelicId::FROZEN_EGG || id == RelicId::POTION_BELT;
+        }
+        // Upgrade random deck cards on pickup: the new card can be one of them.
+        bool relicAfterCard(RelicId id) { return id == RelicId::WHETSTONE || id == RelicId::WAR_PAINT; }
+
+        // Index of the forced relic to take next on gc's REWARDS screen (relic-first ones before the rest; card-first
+        // ones only when afterCard), -1 when none.
+        int forcedRewardRelic(const GameContext &gc, bool afterCard) {
+            using RT = GameAction::RewardsActionType;
+            const auto &r = gc.info.rewardsContainer;
+            int pick = -1;
+            for (int i = 0; i < r.relicCount; ++i) {
+                const RelicId id = r.relics[i];
+                if (reviewedRewardRelic(id) || (r.sapphireKey && i == r.relicCount - 1)) continue;
+                if (relicAfterCard(id) && !afterCard) continue;
+                if (!GameAction(RT::RELIC, i).isValidAction(gc)) continue;
+                if (relicBeforeCard(id)) return i;
+                if (pick < 0) pick = i;
+            }
+            return pick;
+        }
+    }
+
+    int forcedRewardActions(const GameContext &gc, std::vector<GameAction> &v) {
+        using RT = GameAction::RewardsActionType;
+        auto keepOnly = [&](const GameAction &a, int rule) {
+            if (std::none_of(v.begin(), v.end(), [&](const GameAction &x) { return x.bits == a.bits; })) return -1;
+            const bool removed = v.size() > 1;
+            v.assign(1, a);
+            return removed ? rule : -1;
+        };
+        if (gc.outcome != GameOutcome::UNDECIDED) return -1;
+        if (gc.screenState == ScreenState::TREASURE_ROOM)
+            return gc.relics.has(RelicId::CURSED_KEY) ? -1 : keepOnly(GameAction(0), 0);
+        if (gc.screenState != ScreenState::REWARDS) return -1;
+        const auto &r = gc.info.rewardsContainer;
+        const bool cardOpen = r.cardRewardCount > 0;
+        const int i = forcedRewardRelic(gc, !cardOpen);
+        if (i >= 0) return keepOnly(GameAction(RT::RELIC, i), 1);
+        if (!cardOpen) return -1;
+        // A card-first relic waits for the card decision (taking a card, or leaving: forcedRewardBeforeLeave).
+        const std::size_t before = v.size();
+        v.erase(std::remove_if(v.begin(), v.end(), [&](const GameAction &a) {
+            if (a.getRewardsActionType() != RT::RELIC || a.getIdx1() >= r.relicCount) return false;
+            const RelicId id = r.relics[a.getIdx1()];
+            return relicAfterCard(id) && !reviewedRewardRelic(id) &&
+                   !(r.sapphireKey && a.getIdx1() == r.relicCount - 1);
+        }), v.end());
+        return v.size() < before ? 2 : -1;
+    }
+
+    std::optional<GameAction> forcedRewardBeforeLeave(const GameContext &gc) {
+        using RT = GameAction::RewardsActionType;
+        if (gc.outcome != GameOutcome::UNDECIDED || gc.screenState != ScreenState::REWARDS) return std::nullopt;
+        const int i = forcedRewardRelic(gc, true);
+        if (i < 0) return std::nullopt;
+        return GameAction(RT::RELIC, i);
+    }
+
     double amberExploreC(const AmberGapHist &h, double need, double T) {
         if (static_cast<double>(h.natural) >= need) return 0.0;
         std::vector<std::pair<double, double>> bins;   // (exp(-m_b / T), runs) of the non-empty bins
@@ -727,6 +799,8 @@ namespace sts::azbench {
             s.savescumRuns += p.savescumRuns; s.savescumChecks += p.savescumChecks; s.savescumMismatches += p.savescumMismatches;
             for (int k = 0; k < 3; ++k) s.forcedKeys[k] += p.forcedKeys[k];
             s.keyRouteMasked += p.keyRouteMasked;
+            s.forcedRewards[0] += p.forcedRewards[0]; s.forcedRewards[1] += p.forcedRewards[1];
+            s.rewardRelicDeferred += p.rewardRelicDeferred; s.rewardRelicOnLeave += p.rewardRelicOnLeave;
             if (p.heartHpMin >= 0 && (s.heartHpMin < 0 || p.heartHpMin < s.heartHpMin)) s.heartHpMin = p.heartHpMin;
             s.memPoolNodes += p.memPoolNodes; s.memPoolGc += p.memPoolGc; s.memPoolReal += p.memPoolReal;
             s.memPoolOuter += p.memPoolOuter; s.memEdgeCap += p.memEdgeCap; s.memPoolBc += p.memPoolBc;
@@ -811,10 +885,13 @@ namespace sts::azbench {
 
         // Legal out-of-combat actions; simHelp bans buying Prismatic Shard (Amber Eye's simulator); forceKeys (the
         // run's state) applies the key backstops (keyBackstopActions; its result in *keyRule when given).
-        // Singing Bowl actions (appendSingingBowlActions); STS_AZ_SINGING_BOWL=0 restores the old action list.
+        // forceRewards: then the forced chest / relic choices (forcedRewardActions; its result in *rewardRule).
+        // Singing Bowl actions (appendSingingBowlActions) come first, so a forced relic restricts them too;
+        // STS_AZ_SINGING_BOWL=0 restores the old action list.
         const char *bowlEnv = std::getenv("STS_AZ_SINGING_BOWL");
         const bool singingBowl = !(bowlEnv && std::strcmp(bowlEnv, "0") == 0);
-        auto oocActions = [&](const GameContext &gc, bool forceKeys, int *keyRule = nullptr) -> std::vector<GameAction> {
+        auto oocActions = [&](const GameContext &gc, bool forceKeys, int *keyRule = nullptr,
+                              int *rewardRule = nullptr) -> std::vector<GameAction> {
             auto v = GameAction::getAllActionsInState(gc);
             if (singingBowl) appendSingingBowlActions(gc, v);
             if (cfg.simHelp)
@@ -823,7 +900,25 @@ namespace sts::azbench {
                 }), v.end());
             const int rule = forceKeys ? keyBackstopActions(gc, v) : -1;
             if (keyRule) *keyRule = rule;
+            const int rr = cfg.forceRewards ? forcedRewardActions(gc, v) : -1;
+            if (rewardRule) *rewardRule = rr;
             return v;
+        };
+        // forceRewards: leaving a REWARDS screen (SKIP) first takes the card-first relics held back during the card
+        // decision. Applies `bits` to gc (a search copy); false when a forced relic left the screen (its own selection
+        // screen): the leave is dropped, the rewards come back after it. `taken` counts the relics taken.
+        auto execOoc = [&](GameContext &gc, std::uint32_t bits, int *taken = nullptr) {
+            const GameAction a(bits);
+            if (cfg.forceRewards && gc.screenState == ScreenState::REWARDS &&
+                    a.getRewardsActionType() == GameAction::RewardsActionType::SKIP) {
+                while (const auto f = forcedRewardBeforeLeave(gc)) {
+                    f->execute(gc);
+                    if (taken) ++*taken;
+                    if (gc.screenState != ScreenState::REWARDS) return false;
+                }
+            }
+            a.execute(gc);
+            return true;
         };
         // simHelp: Amber Eye's simulator takes gold from rewards automatically.
         auto goldToTake = [&](const GameContext &gc) {
@@ -1203,7 +1298,7 @@ namespace sts::azbench {
         };
 
         // Applies a chosen action to the real run; handles fight entry / exit, floor labels and the run's end.
-        auto applyReal = [&](Run &g, std::uint32_t bits) {
+        auto applyRealStep = [&](Run &g, std::uint32_t bits) {
             const double t0 = cpuSeconds();
             if (g.inBattle) {
                 executeObserved(g.bc, bits, *g.knowledge);
@@ -1309,6 +1404,19 @@ namespace sts::azbench {
             }
         };
 
+        // applyRealStep, with forceRewards' card-first relics taken (as real steps) before leaving a REWARDS screen.
+        auto applyReal = [&](Run &g, std::uint32_t bits) {
+            if (cfg.forceRewards && !g.inBattle && g.gc.screenState == ScreenState::REWARDS &&
+                    GameAction(bits).getRewardsActionType() == GameAction::RewardsActionType::SKIP) {
+                while (const auto f = forcedRewardBeforeLeave(g.gc)) {
+                    ++wk.st.rewardRelicOnLeave;
+                    applyRealStep(g, f->bits);
+                    if (g.inBattle || g.gc.screenState != ScreenState::REWARDS) return;
+                }
+            }
+            applyRealStep(g, bits);
+        };
+
         startMove = [&](Run &g, int gi) {
             // Moves with one legal action (or none) are played without a search.
             while (true) {
@@ -1322,10 +1430,12 @@ namespace sts::azbench {
                     if (legal == 1) only = a[0].bits;
                 } else {
                     if (goldToTake(g.gc)) { ++wk.st.autoGold; applyReal(g, takeGoldBits); continue; }
-                    int keyRule = -1;
-                    gacts = oocActions(g.gc, g.forceKeys, &keyRule);
+                    int keyRule = -1, rewardRule = -1;
+                    gacts = oocActions(g.gc, g.forceKeys, &keyRule, &rewardRule);
                     if (keyRule >= 0 && keyRule < 3) ++wk.st.forcedKeys[keyRule];
                     else if (keyRule == 3) ++wk.st.keyRouteMasked;
+                    if (rewardRule == 0 || rewardRule == 1) ++wk.st.forcedRewards[rewardRule];
+                    else if (rewardRule == 2) ++wk.st.rewardRelicDeferred;
                     legal = gacts.size();
                     if (legal == 1) only = gacts[0].bits;
                 }
@@ -1714,7 +1824,7 @@ namespace sts::azbench {
                 try { search::sampleNoncombatFuture(next, r); }
                 catch (const search::OocSearchUnsupported &) { ok = false; ++wk.st.unsupported; }
                 if (ok) {
-                    GameAction(edge.bits).execute(next);
+                    execOoc(next, edge.bits);
                     if (next.outcome != GameOutcome::UNDECIDED) {
                         setGc(cn, std::move(next));
                         cn.evaluated = cn.terminal = true;
@@ -1787,9 +1897,9 @@ namespace sts::azbench {
             // One out-of-combat step on gc, tested for hidden information on its own (a later step's new-floor reseed
             // must not hide an earlier draw).
             auto oocExec = [&](std::uint32_t b) {
-                if (!detect) { GameAction(b).execute(gc); return; }
+                if (!detect) { execOoc(gc, b); return; }
                 const auto snap = search::captureOocHidden(gc);
-                GameAction(b).execute(gc);
+                execOoc(gc, b);
                 revealed = revealed || search::oocStepRevealsHidden(snap, gc);
             };
             // A combat step: under savescum on the real fight with its tracker observing.
