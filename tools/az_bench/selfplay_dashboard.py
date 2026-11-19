@@ -513,7 +513,7 @@ def page(rows, title, started, subtitle=""):
 <main>
 <header>
 <h1>{html.escape(title)} {status}</h1>
-<p class="sub">{html.escape(sub)} Updated {html.escape(last.get("time", "-"))} (PC time).</p>
+<p class="sub">Updated {html.escape(last.get("time", "-"))} (PC time).</p>
 </header>
 {ascension_panel(rows, last) if curriculum else ""}
 <div class="tiles">{tiles}</div>
@@ -530,6 +530,7 @@ def page(rows, title, started, subtitle=""):
 <section><h2>Where runs end (death floor, last ~10 min)</h2>{bars(hist)}
 <p class="rule">Purple: boss floors (16, 33, 50) and the Heart (55).</p></section>
 <section><h2>Decision rule</h2><p class="rule">{RULE_CURRICULUM if curriculum else RULE_VARIANT if variant else RULE_MAIN}</p></section>
+<section><h2>About this page</h2><p class="rule">{html.escape(sub)}</p></section>
 <section><h2>Latest windows</h2><div class="scroll"><table><tr><th>time</th><th>runs</th><th>mean floor</th><th>win %</th><th>pos/s</th><th>train steps</th><th>stalls</th>{"<th>asc</th>" if curriculum else ""}</tr>{table_rows}</table></div></section>
 </main>"""
     head = (f'<title>{html.escape(title)}</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n'
