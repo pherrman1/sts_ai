@@ -391,6 +391,16 @@ namespace sts::azbench {
         // Relics held and cards in the deck at the run's end (2026-11-18, logging only), summed over finished runs
         // (divide by runs).
         std::int64_t relicsSum = 0, deckSizeSum = 0;
+        // Economy and relic sources (2026-11-19, logging only; why runs end with few relics): treasure rooms reached
+        // and left without opening the chest; reward-screen relics taken and left behind when leaving the screen, by
+        // room (elite fight, treasure chest, other: monster, event, boss); shop visits (each ends with leaving) and
+        // purchases; boss relic screens skipped; gold gained and lost out of combat (rewards, events, shops).
+        std::int64_t chests = 0, chestsSkipped = 0;
+        std::int64_t relicsTakenElite = 0, relicsTakenChest = 0, relicsTakenOther = 0;
+        std::int64_t relicsLeftElite = 0, relicsLeftChest = 0, relicsLeftOther = 0;
+        std::int64_t shops = 0, shopCards = 0, shopRelics = 0, shopPotions = 0, shopRemoves = 0;
+        std::int64_t bossRelicSkips = 0, goldGained = 0, goldLost = 0;
+        std::int64_t sapphireRelicForfeits = 0;   // chest relics given up for the Sapphire key (neither taken nor left)
         RunProgress &operator+=(const RunProgress &o) {
             ruby += o.ruby; emerald += o.emerald; sapphire += o.sapphire; allKeys += o.allKeys;
             campfires += o.campfires; recallOffered += o.recallOffered;
@@ -400,6 +410,13 @@ namespace sts::azbench {
             for (int k = 0; k < kHeartHpBins; ++k) heartHpHist[k] += o.heartHpHist[k];
             heartHpSum += o.heartHpSum; heartEntryHpSum += o.heartEntryHpSum; heartTurnsSum += o.heartTurnsSum;
             relicsSum += o.relicsSum; deckSizeSum += o.deckSizeSum;
+            chests += o.chests; chestsSkipped += o.chestsSkipped;
+            relicsTakenElite += o.relicsTakenElite; relicsTakenChest += o.relicsTakenChest;
+            relicsTakenOther += o.relicsTakenOther; relicsLeftElite += o.relicsLeftElite;
+            relicsLeftChest += o.relicsLeftChest; relicsLeftOther += o.relicsLeftOther;
+            shops += o.shops; shopCards += o.shopCards; shopRelics += o.shopRelics; shopPotions += o.shopPotions;
+            shopRemoves += o.shopRemoves; bossRelicSkips += o.bossRelicSkips;
+            goldGained += o.goldGained; goldLost += o.goldLost; sapphireRelicForfeits += o.sapphireRelicForfeits;
             return *this;
         }
     };

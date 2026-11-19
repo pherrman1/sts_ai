@@ -599,6 +599,15 @@ PYBIND11_MODULE(az_bench_native, m) {
                 field("heart_hp_sum", &P::heartHpSum); field("heart_entry_hp_sum", &P::heartEntryHpSum);
                 field("heart_turns_sum", &P::heartTurnsSum);
                 field("relics_sum", &P::relicsSum); field("deck_size_sum", &P::deckSizeSum);
+                field("chests", &P::chests); field("chests_skipped", &P::chestsSkipped);
+                field("relics_taken_elite", &P::relicsTakenElite); field("relics_taken_chest", &P::relicsTakenChest);
+                field("relics_taken_other", &P::relicsTakenOther); field("relics_left_elite", &P::relicsLeftElite);
+                field("relics_left_chest", &P::relicsLeftChest); field("relics_left_other", &P::relicsLeftOther);
+                field("shops", &P::shops); field("shop_cards", &P::shopCards); field("shop_relics", &P::shopRelics);
+                field("shop_potions", &P::shopPotions); field("shop_removes", &P::shopRemoves);
+                field("boss_relic_skips", &P::bossRelicSkips);
+                field("gold_gained", &P::goldGained); field("gold_lost", &P::goldLost);
+                field("sapphire_relic_forfeits", &P::sapphireRelicForfeits);
                 for (int b = 0; b < P::kHeartHpBins; ++b) {   // heart_hp_00 .. heart_hp_15: Heart HP left in [50 b, 50 b + 50)
                     std::vector<std::int64_t> v;
                     for (const auto &p : s.progressAsc) v.push_back(p.heartHpHist[b]);

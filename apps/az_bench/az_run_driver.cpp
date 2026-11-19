@@ -1151,7 +1151,45 @@ namespace sts::azbench {
                     const int o = GameAction(bits).getIdx1();
                     ++(o == 0 ? p.rest : o == 1 ? p.smith : o == 2 ? p.recall : p.otherCampfire);
                 }
+                {   // economy / relic-source counters (logging only)
+                    using RT = GameAction::RewardsActionType;
+                    RunProgress &p = g.progress;
+                    const GameAction a(bits);
+                    const auto &r = g.gc.info.rewardsContainer;
+                    const Room room = g.gc.curRoom;
+                    switch (g.gc.screenState) {
+                        case ScreenState::TREASURE_ROOM:
+                            ++p.chests;
+                            if (a.getIdx1() != 0) ++p.chestsSkipped;
+                            break;
+                        case ScreenState::REWARDS:
+                            if (a.getRewardsActionType() == RT::RELIC)
+                                ++(room == Room::ELITE ? p.relicsTakenElite : room == Room::TREASURE ? p.relicsTakenChest
+                                                                                                     : p.relicsTakenOther);
+                            else if (a.getRewardsActionType() == RT::KEY && r.sapphireKey && r.relicCount > 0)
+                                ++p.sapphireRelicForfeits;   // the key replaces the chest's paired relic
+                            else if (a.getRewardsActionType() == RT::SKIP && r.relicCount > 0)
+                                (room == Room::ELITE ? p.relicsLeftElite : room == Room::TREASURE ? p.relicsLeftChest
+                                                                                                  : p.relicsLeftOther) += r.relicCount;
+                            break;
+                        case ScreenState::SHOP_ROOM:
+                            switch (a.getRewardsActionType()) {
+                                case RT::CARD: ++p.shopCards; break;
+                                case RT::RELIC: ++p.shopRelics; break;
+                                case RT::POTION: ++p.shopPotions; break;
+                                case RT::CARD_REMOVE: ++p.shopRemoves; break;
+                                default: ++p.shops; break;   // leaving ends the visit
+                            }
+                            break;
+                        case ScreenState::BOSS_RELIC_REWARDS:
+                            if (a.getIdx1() == 3) ++p.bossRelicSkips;
+                            break;
+                        default: break;
+                    }
+                }
+                const int gold0 = g.gc.gold;
                 GameAction(bits).execute(g.gc);
+                (g.gc.gold > gold0 ? g.progress.goldGained : g.progress.goldLost) += std::abs(g.gc.gold - gold0);
             }
             if (!g.inBattle && g.gc.outcome == GameOutcome::UNDECIDED && g.gc.screenState == ScreenState::BATTLE) {
                 if (g.gc.curRoom == Room::ELITE) {
