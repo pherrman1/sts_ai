@@ -266,6 +266,13 @@ set_tests_properties(az_run_driver_qtransform PROPERTIES LABELS "core;smoke")
 add_test(NAME az_run_driver_search_flags COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 6 --fast
          --seed-base 1 --seconds 300 --no-fast-noise --q-rescale --c-scale 0.1)
 set_tests_properties(az_run_driver_search_flags PROPERTIES LABELS "core;smoke")
+# Singing Bowl in the run driver's out-of-combat action list (azbench::appendSingingBowlActions).
+add_executable(az-singing-bowl-test apps/az_bench/az_singing_bowl_test.cpp apps/az_bench/az_run_driver.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(az-singing-bowl-test PRIVATE include json/include apps/az_bench)
+target_link_libraries(az-singing-bowl-test PRIVATE Threads::Threads)
+add_test(NAME az_singing_bowl_test COMMAND $<TARGET_FILE:az-singing-bowl-test>)
+set_tests_properties(az_singing_bowl_test PROPERTIES LABELS "core;smoke")
 # Heart-key backstops during the curriculum (--force-keys; 2026-11-18, default off): the ADR-0063 restriction of the
 # out-of-combat actions on synthetic states, and whole runs (one worker: deterministic) in which the backstops act and
 # no run passes the Act-3 boss without the three keys (the same runs without the flag have a keyless Act-3 end).
@@ -318,6 +325,11 @@ target_include_directories(amber_chance_rule_test PRIVATE include json/include)
 add_test(NAME amber_chance_rule COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
     $<TARGET_FILE:amber_chance_rule_test> 60)
 set_tests_properties(amber_chance_rule PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "core;smoke")
+
+# Action-enumeration audit (2026-11-19): engine-valid actions vs the self-play driver's enumeration, out of combat
+# (getAllActionsInState) and in combat (SilverSearcher::enumerateActions); report-only (fixed test seeds).
+add_executable(action_enumeration_audit_test tests/action_enumeration_audit_test.cpp $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(action_enumeration_audit_test PRIVATE include json/include)
 
 add_executable(hidden_layout_resample_test tests/hidden_layout_resample_test.cpp $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(hidden_layout_resample_test PRIVATE include json/include)

@@ -563,6 +563,15 @@ namespace sts::azbench {
 
     }
 
+    int appendSingingBowlActions(const GameContext &gc, std::vector<GameAction> &v) {
+        if (gc.outcome != GameOutcome::UNDECIDED || gc.screenState != ScreenState::REWARDS
+                || !gc.hasRelic(RelicId::SINGING_BOWL))
+            return 0;
+        const int n = gc.info.rewardsContainer.cardRewardCount;
+        for (int g = 0; g < n; ++g) v.emplace_back(GameAction::RewardsActionType::CARD, g, 5);
+        return n;
+    }
+
     int keyBackstopActions(const GameContext &gc, std::vector<GameAction> &v) {
         const std::size_t before = v.size();
         if (const auto key = search::heartKeyAction(gc, true)) {
@@ -782,8 +791,12 @@ namespace sts::azbench {
 
         // Legal out-of-combat actions; simHelp bans buying Prismatic Shard (Amber Eye's simulator); forceKeys (the
         // run's state) applies the key backstops (keyBackstopActions; its result in *keyRule when given).
+        // Singing Bowl actions (appendSingingBowlActions); STS_AZ_SINGING_BOWL=0 restores the old action list.
+        const char *bowlEnv = std::getenv("STS_AZ_SINGING_BOWL");
+        const bool singingBowl = !(bowlEnv && std::strcmp(bowlEnv, "0") == 0);
         auto oocActions = [&](const GameContext &gc, bool forceKeys, int *keyRule = nullptr) -> std::vector<GameAction> {
             auto v = GameAction::getAllActionsInState(gc);
+            if (singingBowl) appendSingingBowlActions(gc, v);
             if (cfg.simHelp)
                 v.erase(std::remove_if(v.begin(), v.end(), [&](const GameAction &a) {
                     return !search::isSupportedAutonomousOocAction(gc, a);
