@@ -7,7 +7,9 @@
 // enumerator collapses on purpose (identical hand cards / potions, canonical multi-select masks) count as covered.
 // Also reported: enumerated actions the engine rejects, duplicate enumerations, and undecided states with no action.
 //
-// Report-only by default (exit 0). --strict N fails when a category outside the documented allow-list appears.
+// Report-only (exit 0). The reference is the engine's own isValidAction: options the engine itself lacks are not
+// found. It checks the raw getAllActionsInState list; the driver's additions (az_run_driver.cpp oocActions: Singing
+// Bowl, potion discards) are covered by their own unit tests.
 // Usage: action_enumeration_audit_test [runs=200] [--combat] [--asc A] [--seed-base S]
 // No gameplay evaluation: fixed test seeds, outcomes unused.
 #include <algorithm>
