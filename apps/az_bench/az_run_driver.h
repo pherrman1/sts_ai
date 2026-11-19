@@ -459,8 +459,9 @@ namespace sts::azbench {
         // Memory gauges (current values, not cumulative; refreshed about once a second by each worker): node-pool
         // slots of all runs and those holding a game state / a savescum real fight / a fight-start game state
         // (crossCombat), and the capacities of the runs' pending-sample and move-distribution buffers and their
-        // eval-cache entries. Finished samples not yet taken: memDone (driver level).
-        std::int64_t memPoolNodes = 0, memPoolGc = 0, memPoolReal = 0, memPoolOuter = 0;
+        // eval-cache entries; memEdgeCap: edge-list capacity (Edge elements) of all slots. Finished samples not yet
+        // taken: memDone (driver level).
+        std::int64_t memPoolNodes = 0, memPoolGc = 0, memPoolReal = 0, memPoolOuter = 0, memEdgeCap = 0;
         std::int64_t memPendingCap = 0, memMoveDistCap = 0, memCacheEntries = 0, memDone = 0;
         double stepCpu = 0, encodeCpu = 0, searchCpu = 0, packSeconds = 0;
     };
