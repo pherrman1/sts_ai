@@ -30,6 +30,7 @@
 #include <deque>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <random>
 #include <stdexcept>
 #include <thread>
@@ -142,6 +143,17 @@ namespace sts::azbench {
     // when a Sapphire / Ruby / Emerald backstop left a single action, 3 when the Emerald rule narrowed the Act-3 route
     // to the edges that still reach the burning elite.
     int keyBackstopActions(const GameContext &gc, std::vector<search::GameAction> &v);
+
+    // RunConfig::forceRewards: restricts v (the legal out-of-combat actions of gc) on a treasure room and a REWARDS
+    // screen (elites, chests, event fights; not the boss relic screen). Returns -1 when nothing was removed, 0 when only
+    // opening the chest is left (no Cursed Key), 1 when only taking a forced relic is left, 2 when a card-first relic
+    // (Whetstone, War Paint) was removed while a card reward is still open. A forced relic is every offered relic
+    // except Philipp's reviewed list (Bottled Flame / Lightning / Tornado, Dead Branch, Tungsten Rod, Unceasing Top,
+    // Juzu Bracelet; apps/one_combat/ooc_tree_rules.cpp) and the relic paired with a Sapphire Key.
+    int forcedRewardActions(const GameContext &gc, std::vector<search::GameAction> &v);
+    // forceRewards: the forced relic still on gc's REWARDS screen that leaving it (SKIP) takes first (a card-first
+    // relic deferred while the card reward was open), or nullopt.
+    std::optional<search::GameAction> forcedRewardBeforeLeave(const GameContext &gc);
 
     // Heart search probe (RunConfig::heartArms): one arm's search budget for the Heart fight.
     struct HeartArm {
@@ -262,6 +274,15 @@ namespace sts::azbench {
         // labels are unchanged. Initial state of setForceKeys; a run keeps the state it started with. Needs the
         // ADR-0063 default rules (STS_KEY_* unset, or policy / policy / mask).
         bool forceKeys = false;
+        // Forced reward choices (2026-11-19, default off; Philipp-approved deviation from Amber Eye, who leaves them to
+        // the net): a treasure chest is opened unless we hold Cursed Key, and every relic on a REWARDS screen (elites,
+        // chests, event fights; boss relics stay learned) is taken unless it is on the reviewed list
+        // (forcedRewardActions). Order: Ceramic Fish, Molten / Toxic / Frozen Egg and Potion Belt before the card
+        // reward (they act on it / on the potions), Whetstone and War Paint after it (they can upgrade the new card;
+        // leaving the screen takes them first), every other relic at once (the order does not change its outcome).
+        // Reward gold stays with simHelp (taken first; no reward-pool relic acts on gold). Applied in the real runs
+        // and in the search tree; a forced move is the only legal action (played without a search, no sample).
+        bool forceRewards = false;
         // Card stacks (2026-11-17, default off; changes the net input, needs its own run): identical cards become one
         // CARD token with a copy count (search::amberMergeCards), ~25-35 % fewer tokens late in a run.
         bool mergeCards = false;
@@ -452,6 +473,10 @@ namespace sts::azbench {
         // (route edge / key taken)], and real Act-3 map decisions whose route the Emerald rule narrowed (still a choice).
         std::array<std::int64_t, 3> forcedKeys{};
         std::int64_t keyRouteMasked = 0;
+        // forceRewards: real moves forced [chest opened, relic taken], real card decisions with a card-first relic
+        // held back, and card-first relics taken on leaving the screen.
+        std::array<std::int64_t, 2> forcedRewards{};
+        std::int64_t rewardRelicDeferred = 0, rewardRelicOnLeave = 0;
         // savescum: runs started with it; searched moves whose played edge's child was a decision state, and of those
         // the ones whose real next decision state differed from it (fingerprint incl. RNG counters; must stay 0).
         std::int64_t savescumRuns = 0, savescumChecks = 0, savescumMismatches = 0;

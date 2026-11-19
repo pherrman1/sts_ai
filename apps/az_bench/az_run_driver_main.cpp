@@ -90,6 +90,7 @@ int main(int argc, char **argv) {
         else if (a == "--compact-samples") cfg.compactSamples = true;
         else if (a == "--max-pending") cfg.maxPendingSamples = std::stoll(next());
         else if (a == "--force-keys") cfg.forceKeys = true;
+        else if (a == "--force-rewards") cfg.forceRewards = true;
         else if (a == "--savescum") cfg.savescum = true;
         else if (a == "--sims") { cfg.fullSims = std::stoi(next()); cfg.fastSims = cfg.fullSims; cfg.fullProb = 1.0; }
         else if (a == "--fast") { cfg.fullSims = 8; cfg.fastSims = 4; cfg.fullCandidates = 4; cfg.fastCandidates = 2; }
@@ -225,6 +226,16 @@ int main(int argc, char **argv) {
     // (the treasure row and the last campfire are on every route, the route keeps the burning elite reachable).
     if (!cfg.forceKeys && (forced != 0 || s.keyRouteMasked != 0)) return 1;
     if (cfg.forceKeys && (forced == 0 || prog.keylessVictories != 0)) return 1;
+    // Forced rewards: inert when off; when on, chests are opened and no relic left outside the reviewed list.
+    std::printf("forced rewards: chests %lld relics %lld deferred %lld on_leave %lld; chests_skipped %lld "
+                "relics_left elite %lld chest %lld other %lld\n",
+                static_cast<long long>(s.forcedRewards[0]), static_cast<long long>(s.forcedRewards[1]),
+                static_cast<long long>(s.rewardRelicDeferred), static_cast<long long>(s.rewardRelicOnLeave),
+                static_cast<long long>(prog.chestsSkipped), static_cast<long long>(prog.relicsLeftElite),
+                static_cast<long long>(prog.relicsLeftChest), static_cast<long long>(prog.relicsLeftOther));
+    if (!cfg.forceRewards && (s.forcedRewards[0] + s.forcedRewards[1] + s.rewardRelicDeferred + s.rewardRelicOnLeave) != 0)
+        return 1;
+    if (cfg.forceRewards && (s.forcedRewards[1] == 0 || prog.chestsSkipped != 0)) return 1;
     // The Amber rules must act when on and be inert when off.
     // savescum replaces the chance rule (no edge is tested or resampled).
     const bool reveal = cfg.chanceOnReveal && !cfg.savescum;
