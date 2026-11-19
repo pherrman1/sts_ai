@@ -364,9 +364,11 @@ namespace sts::azbench {
         std::uint32_t bits = 0;          // search::Action (combat node) or search::GameAction (out-of-combat node)
         float logit = 0;
         std::int32_t n = 0;
+        std::uint32_t realBits = 0;      // savescum combat node: the action mapped to the real fight (request)
         double w = 0;
         int child = -1;                  // decision child (deterministic combat edge)
         bool chance = false, tried = false;
+        bool realOk = false;             // savescum combat node: realBits is a valid action of the real fight
         std::uint64_t base = 0;          // chance: randomness base
         std::vector<int> outcomes;
         std::vector<std::int32_t> outcomeN;
@@ -377,7 +379,10 @@ namespace sts::azbench {
         Node(Node &&) noexcept = default;
         Node &operator=(Node &&) noexcept = default;
         bool combat = false;
-        BattleContext bc;                    // combat node
+        // A slot holds only its current kind's state (2026-11-19 RAM): bc for a combat node (null under savescum,
+        // whose public view is rebuilt from real + kn when needed), gc for an out-of-combat node, real + kn for a
+        // savescum combat node. Each is kept allocated while the slot stays that kind and released when it changes.
+        std::unique_ptr<BattleContext> bc;   // combat node (not savescum)
         search::SilverSearchContext ctx;     // combat node: its fight
         std::unique_ptr<GameContext> gc;     // out-of-combat node (kept allocated across pool reuse)
         std::shared_ptr<const GameContext> outer;   // combat node, crossCombat: the game state at its fight's start
@@ -392,6 +397,8 @@ namespace sts::azbench {
         bool hasReal = false;
         std::unique_ptr<BattleContext> real;
         std::unique_ptr<search::CombatKnowledgeState> kn;
+        std::uint64_t realStamp = 0;         // savescum: setReal call that wrote real + kn (public-view scratch key)
+        std::uint64_t rbase = 0;             // savescum combat node: searchRandomnessBase of its public view
     };
 
     struct PathStep { int node; int edge; int outcome; };
@@ -713,7 +720,8 @@ namespace sts::azbench {
             s.keyRouteMasked += p.keyRouteMasked;
             if (p.heartHpMin >= 0 && (s.heartHpMin < 0 || p.heartHpMin < s.heartHpMin)) s.heartHpMin = p.heartHpMin;
             s.memPoolNodes += p.memPoolNodes; s.memPoolGc += p.memPoolGc; s.memPoolReal += p.memPoolReal;
-            s.memPoolOuter += p.memPoolOuter; s.memEdgeCap += p.memEdgeCap; s.memPendingCap += p.memPendingCap; s.memMoveDistCap += p.memMoveDistCap;
+            s.memPoolOuter += p.memPoolOuter; s.memEdgeCap += p.memEdgeCap; s.memPoolBc += p.memPoolBc;
+            s.memPendingCap += p.memPendingCap; s.memMoveDistCap += p.memMoveDistCap;
             s.memCacheEntries += p.memCacheEntries;
             s.stepCpu += p.stepCpu; s.encodeCpu += p.encodeCpu; s.searchCpu += p.searchCpu;
         }
@@ -769,12 +777,13 @@ namespace sts::azbench {
         };
         auto memGauges = [&] {
             RunStats &st = wk.st;
-            st.memPoolNodes = st.memPoolGc = st.memPoolReal = st.memPoolOuter = st.memEdgeCap = 0;
+            st.memPoolNodes = st.memPoolGc = st.memPoolReal = st.memPoolOuter = st.memEdgeCap = st.memPoolBc = 0;
             st.memPendingCap = st.memMoveDistCap = st.memCacheEntries = 0;
             for (const Run &g : wk.runs) {
                 st.memPoolNodes += static_cast<std::int64_t>(g.pool.size());
                 for (const Node &n : g.pool) {
                     st.memPoolGc += n.gc != nullptr;
+                    st.memPoolBc += n.bc != nullptr;
                     st.memPoolReal += n.real != nullptr;
                     st.memPoolOuter += n.outer != nullptr;
                     st.memEdgeCap += static_cast<std::int64_t>(n.edges.capacity());
@@ -828,18 +837,50 @@ namespace sts::azbench {
         };
         auto setGc = [](Node &n, GameContext &&gc) {
             n.combat = false;
+            n.bc.reset();
+            n.real.reset();
+            n.kn.reset();
+            n.hasReal = false;
             if (n.gc) *n.gc = std::move(gc);
             else n.gc = std::make_unique<GameContext>(std::move(gc));
         };
-        // savescum: a combat node holds the real fight and its tracker; n.bc is their public view (net input, action
-        // list). False when the view cannot be built.
-        auto setReal = [](Node &n, const BattleContext &real, const search::CombatKnowledgeState &kn) {
+        // A combat node's own fight (not savescum), allocated on first use; the slot's other states are released.
+        auto useBc = [](Node &n) -> BattleContext & {
+            n.gc.reset();
+            n.real.reset();
+            n.kn.reset();
+            n.hasReal = false;
+            if (!n.bc) n.bc = std::make_unique<BattleContext>();
+            return *n.bc;
+        };
+        // savescum: a combat node holds the real fight and its tracker; their public view (net input, action list) is
+        // rebuilt when needed into pubScratch, which keeps the last one built (setReal is followed by the node's
+        // request). False when the view cannot be built.
+        BattleContext pubScratch;
+        const Node *pubNode = nullptr;
+        std::uint64_t pubStamp = 0, realStamps = 0;
+        auto publicView = [&](const Node &n) -> const BattleContext & {
+            if (pubNode != &n || pubStamp != n.realStamp) {
+                publicCombatRoot(*n.real, *n.kn, pubScratch);
+                pubNode = &n;
+                pubStamp = n.realStamp;
+            }
+            return pubScratch;
+        };
+        auto setReal = [&](Node &n, const BattleContext &real, const search::CombatKnowledgeState &kn) {
+            n.bc.reset();
+            n.gc.reset();
             if (n.real) *n.real = real;
             else n.real = std::make_unique<BattleContext>(real);
             if (n.kn) *n.kn = kn;
             else n.kn = std::make_unique<search::CombatKnowledgeState>(kn);
             n.hasReal = true;
-            return publicCombatRoot(*n.real, *n.kn, n.bc).empty();
+            n.realStamp = ++realStamps;
+            const bool ok = publicCombatRoot(*n.real, *n.kn, pubScratch).empty();
+            pubNode = &n;
+            pubStamp = n.realStamp;
+            if (ok) n.rbase = search::searchRandomnessBase(pubScratch);
+            return ok;
         };
 
         // Request a net evaluation of node ni (enumerates its actions, encodes it, queues it).
@@ -847,17 +888,25 @@ namespace sts::azbench {
             Node &node = g.pool[ni];
             const double t0 = cpuSeconds();
             if (node.combat) {
-                const auto &acts = combatActions(node.bc);
+                const BattleContext &view = node.hasReal ? publicView(node) : *node.bc;
+                const auto &acts = combatActions(view);
                 sizeEdges(node.edges, acts.size());
                 for (std::size_t k = 0; k < acts.size(); ++k) node.edges[k] = Edge{acts[k].bits};
+                if (node.hasReal) {   // the edges' actions in the real fight's indexing (translated as the real run)
+                    for (std::size_t k = 0; k < acts.size(); ++k) {
+                        const Action a = search::SilverSearcher::translateAction(acts[k], view, *node.real);
+                        node.edges[k].realBits = a.bits;
+                        node.edges[k].realOk = a.isValidAction(*node.real);
+                    }
+                }
                 const double t1 = cpuSeconds();
-                cfg.encodeCombat(node.bc, node.ctx, acts, g.tokens);
+                cfg.encodeCombat(view, node.ctx, acts, g.tokens);
                 if (cfg.mergeCards) search::amberMergeCards(g.tokens);
                 wk.st.stepCpu += t1 - t0;
                 wk.st.encodeCpu += cpuSeconds() - t1;
                 g.pendingCombat = true;
-                g.pendingMaxHp = static_cast<float>(std::max<int>(1, node.bc.player.maxHp));
-                g.pendingFloor = node.bc.floorNum;
+                g.pendingMaxHp = static_cast<float>(std::max<int>(1, view.player.maxHp));
+                g.pendingFloor = view.floorNum;
             } else {
                 gacts = oocActions(*node.gc, g.forceKeys);
                 sizeEdges(node.edges, gacts.size());
@@ -1317,7 +1366,7 @@ namespace sts::azbench {
                 root.ctx = g.ctx;
                 root.outer = g.fightOuter;   // crossCombat only (null otherwise)
                 const bool view = g.savescum ? setReal(root, g.bc, *g.knowledge)
-                                             : publicCombatRoot(g.bc, *g.knowledge, root.bc).empty();
+                                             : publicCombatRoot(g.bc, *g.knowledge, useBc(root)).empty();
                 if (!view) {
                     // No fair view of this fight (an intent pattern the tracker cannot represent): abandon the run.
                     ++wk.st.knowledgeFailures;
@@ -1566,8 +1615,12 @@ namespace sts::azbench {
             if (root.combat) {
                 // The search chose against the public view, whose pile orders differ from the real fight's: map card
                 // indices by identity (as production does).
-                bits = search::SilverSearcher::translateAction(Action(bits), root.bc, g.bc).bits;
-                if (!Action(bits).isValidAction(g.bc)) {
+                // savescum: root.real is g.bc, so the request's translation is the same.
+                const Edge &pe = root.edges[pick];
+                const bool ok = root.hasReal ? pe.realOk : true;
+                if (root.hasReal) bits = pe.realBits;
+                else bits = search::SilverSearcher::translateAction(Action(bits), *root.bc, g.bc).bits;
+                if (!ok || !Action(bits).isValidAction(g.bc)) {
                     ++wk.st.invalidActions;
                     g.gc.outcome = GameOutcome::PLAYER_LOSS;
                     g.inBattle = false;
@@ -1608,14 +1661,14 @@ namespace sts::azbench {
             Edge &edge = parent.edges[e];
             Node &cn = g.pool[child];
             if (parent.combat) {
-                BattleContext next = parent.bc;
+                BattleContext next = *parent.bc;
                 if (first) edge.base = search::searchRandomnessBase(next);
                 search::seedSearchRng(next, edge.base + edge.outcomes.size());
                 Action(edge.bits).execute(next);
                 if (first) edge.chance = search::searchRngCounter(next) != 0;
                 if (next.outcome == Outcome::PLAYER_LOSS) {
                     cn.combat = true;
-                    cn.bc = next;
+                    useBc(cn) = next;
                     cn.evaluated = cn.terminal = true;
                     cn.value = terminalUtility(false, false, g.gc.floorNum, 0, 1, cfg.hpWeightCombat, cfg);
                     if (emaOn) setOneHot(cn, std::clamp(g.gc.floorNum, 1, kOutcomeClasses - 1));   // death on this floor
@@ -1637,7 +1690,7 @@ namespace sts::azbench {
                     }
                 } else {
                     cn.combat = true;
-                    cn.bc = next;
+                    useBc(cn) = next;
                     cn.ctx = parent.ctx;
                 }
             } else {
@@ -1662,7 +1715,8 @@ namespace sts::azbench {
                         search::CombatKnowledgeState k;
                         BattleContext live;
                         initObservedBattle(next, live, k);
-                        if (!publicCombatRoot(live, k, cn.bc).empty()) cn.bc = live;
+                        BattleContext &cbc = useBc(cn);
+                        if (!publicCombatRoot(live, k, cbc).empty()) cbc = live;
                         cn.ctx = combatContext(next);
                         cn.boundary = true;
                     } else {
@@ -1696,7 +1750,7 @@ namespace sts::azbench {
         // combatRng says whether it drew). resample true: hidden out-of-combat state is resampled before it is used.
         constexpr std::uint64_t kExitSalt = 0x9e3779b97f4a7c15ull;
         auto stepAmber = [&](Run &g, int pi, std::uint32_t bits, std::uint64_t base, int k, bool resample, int ci,
-                             bool &combatRng, bool &revealed) {
+                             bool &combatRng, bool &revealed, std::uint32_t realBits, bool realOk) {
             combatRng = revealed = false;
             const Node &parent = g.pool[pi];
             Node &cn = g.pool[ci];
@@ -1737,12 +1791,12 @@ namespace sts::azbench {
                     if (!parent.hasReal) throw std::logic_error("run driver: savescum combat node without its real fight");
                     bc = *parent.real;
                     sk = *parent.kn;
-                    // The edge's action is in the public view's indexing: map it to the real fight (as the real run).
-                    const Action a = search::SilverSearcher::translateAction(Action(bits), parent.bc, bc);
-                    if (!a.isValidAction(bc)) { unsupportedLeaf(); return; }
-                    combatExec(a.bits);
+                    // The edge's action is in the public view's indexing: mapped to the real fight (as the real run)
+                    // when the node was requested (realBits; bc is a copy of parent.real).
+                    if (!realOk) { unsupportedLeaf(); return; }
+                    combatExec(realBits);
                 } else {
-                    bc = parent.bc;
+                    bc = *parent.bc;
                     search::seedSearchRng(bc, base + k);
                     Action(bits).execute(bc);
                 }
@@ -1768,7 +1822,7 @@ namespace sts::azbench {
                     if (bc.outcome == Outcome::PLAYER_LOSS) {
                         combatRng = !ss && (combatRng || search::searchRngCounter(bc) != 0);
                         cn.combat = true;
-                        cn.bc = std::move(bc);
+                        useBc(cn) = std::move(bc);
                         cn.evaluated = cn.terminal = true;
                         const int fl = outer ? outer->floorNum : g.gc.floorNum;
                         cn.value = terminalUtility(false, false, fl, 0, 1, cfg.hpWeightCombat, cfg);
@@ -1806,7 +1860,7 @@ namespace sts::azbench {
                     if (ss) {
                         if (!setReal(cn, bc, sk)) { ++wk.st.knowledgeFailures; unsupportedLeaf(); }
                     } else {
-                        cn.bc = std::move(bc);
+                        useBc(cn) = std::move(bc);
                     }
                     return;
                 }
@@ -1837,7 +1891,7 @@ namespace sts::azbench {
                         if (ss) {
                             if (!setReal(cn, bc, sk)) { ++wk.st.knowledgeFailures; unsupportedLeaf(); }
                         } else {
-                            cn.bc = std::move(bc);
+                            useBc(cn) = std::move(bc);
                         }
                         return;
                     }
@@ -1885,22 +1939,23 @@ namespace sts::azbench {
             Node &parent = g.pool[cur];
             Edge &edge = parent.edges[e];
             const int k = static_cast<int>(edge.outcomes.size());
-            if (first) edge.base = parent.combat ? search::searchRandomnessBase(parent.bc) : wk.rng();
+            if (first) edge.base = !parent.combat ? wk.rng()
+                                 : parent.hasReal ? parent.rbase : search::searchRandomnessBase(*parent.bc);
             bool combatRng = false, revealed = false;
             if (g.savescum) {   // the real step: one deterministic child
-                stepAmber(g, cur, edge.bits, edge.base, k, false, child, combatRng, revealed);
+                stepAmber(g, cur, edge.bits, edge.base, k, false, child, combatRng, revealed, edge.realBits, edge.realOk);
                 edge.chance = false;
             } else if (first && cfg.chanceOnReveal) {
-                stepAmber(g, cur, edge.bits, edge.base, k, false, child, combatRng, revealed);
+                stepAmber(g, cur, edge.bits, edge.base, k, false, child, combatRng, revealed, edge.realBits, edge.realOk);
                 if (revealed) {
                     resetNode(g.pool[child]);
                     bool c2 = false, r2 = false;
-                    stepAmber(g, cur, edge.bits, edge.base, k, true, child, c2, r2);
+                    stepAmber(g, cur, edge.bits, edge.base, k, true, child, c2, r2, edge.realBits, edge.realOk);
                 }
                 edge.chance = revealed || combatRng;
                 if (!parent.combat) ++wk.st.oocEdgeKinds[edge.chance ? 1 : 0];
             } else {
-                stepAmber(g, cur, edge.bits, edge.base, k, true, child, combatRng, revealed);
+                stepAmber(g, cur, edge.bits, edge.base, k, true, child, combatRng, revealed, edge.realBits, edge.realOk);
                 if (first) edge.chance = parent.combat ? combatRng : true;
             }
             if (edge.chance) {

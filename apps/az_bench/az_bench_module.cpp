@@ -637,7 +637,8 @@ PYBIND11_MODULE(az_bench_native, m) {
             o["heart_hp_min"] = s.heartHpMin;
             {   // memory gauges (current values): node-pool slots and their held states, per-run buffer capacities
                 py::dict m;
-                m["pool_nodes"] = s.memPoolNodes; m["pool_gc"] = s.memPoolGc; m["pool_real"] = s.memPoolReal;
+                m["pool_nodes"] = s.memPoolNodes; m["pool_gc"] = s.memPoolGc; m["pool_bc"] = s.memPoolBc;
+                m["pool_real"] = s.memPoolReal;
                 m["pool_outer"] = s.memPoolOuter; m["edge_cap"] = s.memEdgeCap; m["pending_cap"] = s.memPendingCap;
                 m["move_dist_cap"] = s.memMoveDistCap; m["cache_entries"] = s.memCacheEntries; m["done"] = s.memDone;
                 o["mem"] = m;
