@@ -138,6 +138,12 @@ namespace sts::azbench {
     // logged runs. 0 when natural >= need; +infinity when even always picking it falls short. Bisection on log c.
     double amberExploreC(const AmberGapHist &h, double need, double T);
 
+    // Singing Bowl (+2 Max HP instead of a card reward): the engine accepts and executes RewardsActionType::CARD
+    // (group, 5), but GameAction::getAllActionsInState (sts_lightspeed import) never lists it, so the net could not
+    // choose it although amberEncodeGame shows the SINGING_BOWL option. On a reward screen with the relic, appends
+    // one such action per card reward (the game offers the Bowl on each) and returns how many; else 0.
+    int appendSingingBowlActions(const GameContext &gc, std::vector<search::GameAction> &v);
+
     // RunConfig::forceKeys: restricts v (the legal out-of-combat actions of gc) by the ADR-0063 key backstops
     // (search::heartKeyAction / heartKeyActionAllowed, keys collected). Returns -1 when nothing was removed, 0 / 1 / 2
     // when a Sapphire / Ruby / Emerald backstop left a single action, 3 when the Emerald rule narrowed the Act-3 route
