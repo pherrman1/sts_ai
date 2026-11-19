@@ -241,7 +241,7 @@ PYBIND11_MODULE(az_bench_native, m) {
         .def("refs",
              [](py::object self) {
                  auto &st = self.cast<azbench::TokenStore &>();
-                 return py::array_t<std::int64_t>({static_cast<py::ssize_t>(st.capacity())}, {sizeof(std::int64_t)},
+                 return py::array_t<std::int32_t>({static_cast<py::ssize_t>(st.capacity())}, {sizeof(std::int32_t)},
                                                   st.refs(), self);
              })
         .def("views",

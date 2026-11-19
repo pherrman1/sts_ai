@@ -331,6 +331,75 @@ class ReplayTest(unittest.TestCase):
                         np.testing.assert_array_equal(got[key], want[key], key)
 
     @unittest.skipUnless(MODULES, "az_bench_native not built")
+    def test_compress_targets(self):
+        """--compress-targets: a compressed compact Replay returns the batches of an uncompressed one (per-floor HP
+        labels identical: kept once per run; tokens, actions, policy identical), and EMA outcome targets within
+        8-bit quantization (|q/255 renormalised - p| < 1/255 + renorm); unset targets are the final outcome; the
+        losses agree except the EMA term, which moves only within quantization noise; tight byte / run rings evict
+        early but every live sample stays exact; less memory."""
+        sp = load()
+        TS = native().TokenStore
+        rng = np.random.default_rng(21)
+        kw = dict(tokens_per_sample=48, actions_per_sample=12, hp_floors=56, soft_outcome=True, compact=True,
+                  dict_tokens_per_sample=48, token_store=TS)
+        ref = sp.Replay(400, **kw)
+        cmp_ = sp.Replay(400, compress_targets=True, soft_bytes_per_sample=60, hp_runs_per_sample=1.0, **kw)
+        tight = sp.Replay(400, compress_targets=True, soft_bytes_per_sample=16, hp_runs_per_sample=0.05, **kw)
+        first, chunks = 0, []
+        for n in range(8):
+            S = int(rng.integers(20, 60))
+            c = chunk(rng, S, first)
+            c["run"] = (np.arange(S) // 6 + first).astype(np.uint64)
+            # Per-floor HP as the driver writes it: the run's HP per floor, masked before the sample's floor.
+            runs = np.asarray(c["run"])
+            c["floor"] = np.zeros(S, np.int16)
+            vec = {}
+            for i in range(S):
+                r = int(runs[i])
+                if r not in vec:
+                    vec[r] = (rng.integers(0, 120, 56).astype(np.int16), int(rng.integers(0, 40)))
+                c["floor"][i] = vec[r][1] + i % 6
+            fl = np.clip(c["floor"].astype(np.int64), 1, 56)
+            c["hp_floor"] = np.where(np.arange(1, 57)[None, :] >= fl[:, None],
+                                     np.stack([vec[int(r)][0] for r in runs]), -1).astype(np.int16)
+            cc = self.compactify(c)
+            fr = [r.add(cc) for r in (ref, cmp_, tight)]
+            if n % 3 != 2:   # some chunks keep their final-outcome targets (set_soft_outcome not called)
+                t = rng.dirichlet(np.full(57, 0.3), S).astype(np.float32)
+                for r, f0 in zip((ref, cmp_, tight), fr):
+                    r.set_soft_outcome(f0, t)
+            first += S
+        self.assertEqual(len(ref), len(cmp_))
+        a = ref.rows(ref.s_tail, len(ref))
+        b = cmp_.rows(ref.s_tail, len(ref))
+        for key in a:
+            if key != "soft_outcome":
+                np.testing.assert_array_equal(a[key], b[key], key)
+        np.testing.assert_allclose(b["soft_outcome"].sum(-1), 1.0, atol=1e-5)
+        self.assertLess(float(np.abs(a["soft_outcome"] - b["soft_outcome"]).max()), 0.02)
+        unset = a["soft_outcome"].max(-1) == 1.0
+        self.assertTrue(unset.any())
+        np.testing.assert_array_equal(a["soft_outcome"][unset], b["soft_outcome"][unset])
+        self.assertLess(cmp_.soft_stats[1] / cmp_.soft_stats[0], 57)   # the nonzero interval only
+        # Tight rings: fewer samples, each exact.
+        self.assertLess(len(tight), len(ref))
+        t = tight.rows(tight.s_tail, len(tight))
+        u = cmp_.rows(tight.s_tail, len(tight))
+        for key in t:
+            np.testing.assert_array_equal(t[key], u[key], key)
+        # Losses: equal but for the EMA term, which moves within quantization noise.
+        torch.manual_seed(0)
+        net = sp.amber_net.AmberNet(64, 2, hp_floors=56)
+        la = sp.losses(net, sp.to_torch(a, torch.device("cpu")), 1.0, 1.0, 1.0, 1.0)[1]
+        lb = sp.losses(net, sp.to_torch(b, torch.device("cpu")), 1.0, 1.0, 1.0, 1.0)[1]
+        for k in la:
+            if k == "outcome_ema":
+                self.assertLess(abs(float(la[k]) - float(lb[k])), 0.02 * float(la[k]) + 1e-3, k)
+            else:
+                self.assertEqual(float(la[k]), float(lb[k]), k)
+        self.assertLess(cmp_.nbytes(), ref.nbytes())
+
+    @unittest.skipUnless(MODULES, "az_bench_native not built")
     def test_token_store(self):
         """TokenStore (the global dictionary): random intern / release against a model. Equal tokens share a slot
         while referenced, reference counts and used slots match, released slots are reused, a full store throws and
@@ -834,6 +903,17 @@ class SelfplaySmoke(unittest.TestCase):
             self.assertGreater(last["replay"], 0)
             self.assertLess(last["replay_gb"], sp.Replay(5000, hp_floors=0).nbytes() / 2 ** 30)
             self.assertGreater(last["replay_dict_used"], 0)
+        # With Amber's target compression (EMA targets 8-bit, per-floor HP once per run) and a smaller ring layout.
+        with tempfile.TemporaryDirectory() as d:
+            self.assertEqual(sp.main(args + ["--out-dir", d, "--seed-base", "1970", "--utility", "amber",
+                                             "--value-ema-halflife", "20", "--value-ema-search", "--compress-targets",
+                                             "--replay-tokens-per-sample", "40", "--replay-actions-per-sample", "8"]), 0)
+            with open(os.path.join(d, "metrics.jsonl")) as f:
+                last = [json.loads(l) for l in f][-1]
+            self.assertGreater(last["train_steps"], 0)
+            self.assertGreater(last["replay_soft_bytes_mean"], 0)
+            self.assertLess(last["replay_soft_bytes_mean"], 57)
+            self.assertIn("outcome_ema", last["loss"])
 
     def test_savescum(self):
         """--savescum reaches the driver: runs play it and every checked search child equals the real next state; a
