@@ -1166,6 +1166,8 @@ namespace sts::azbench {
                             if (a.getRewardsActionType() == RT::RELIC)
                                 ++(room == Room::ELITE ? p.relicsTakenElite : room == Room::TREASURE ? p.relicsTakenChest
                                                                                                      : p.relicsTakenOther);
+                            else if (a.getRewardsActionType() == RT::KEY && r.sapphireKey && r.relicCount > 0)
+                                ++p.sapphireRelicForfeits;   // the key replaces the chest's paired relic
                             else if (a.getRewardsActionType() == RT::SKIP && r.relicCount > 0)
                                 (room == Room::ELITE ? p.relicsLeftElite : room == Room::TREASURE ? p.relicsLeftChest
                                                                                                   : p.relicsLeftOther) += r.relicCount;

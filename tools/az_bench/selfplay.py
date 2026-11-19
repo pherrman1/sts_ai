@@ -626,7 +626,8 @@ def per_run_means(pw):
 
 ECONOMY_KEYS = ("chests", "chests_skipped", "relics_taken_elite", "relics_taken_chest", "relics_taken_other",
                 "relics_left_elite", "relics_left_chest", "relics_left_other", "shops", "shop_cards", "shop_relics",
-                "shop_potions", "shop_removes", "boss_relic_skips", "gold_gained", "gold_lost")
+                "shop_potions", "shop_removes", "boss_relic_skips", "gold_gained", "gold_lost",
+                "sapphire_relic_forfeits")
 
 
 def economy_per_run(pw):

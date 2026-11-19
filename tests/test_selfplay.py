@@ -638,7 +638,7 @@ def check_progress(tc, e):
         tc.assertLessEqual(e["chests_skipped"], e["chests"])
         tc.assertGreater(e["gold_gained"], 0)   # reward gold
         for k in ("gold_lost", "relics_taken_elite", "relics_taken_chest", "relics_taken_other", "relics_left_elite",
-                  "relics_left_other", "shops", "shop_cards", "shop_relics", "shop_potions", "shop_removes",
+                  "relics_left_other", "sapphire_relic_forfeits", "shops", "shop_cards", "shop_relics", "shop_potions", "shop_removes",
                   "boss_relic_skips"):
             tc.assertGreaterEqual(e[k], 0)
 
@@ -711,7 +711,9 @@ class DashboardProgressTest(unittest.TestCase):
         self.assertNotIn("Relic sources and relics left behind", page)
         sp = load()
         eco = dict(rows[-1], economy_per_run={k: 1.0 for k in sp.ECONOMY_KEYS})
-        self.assertIn("Relic sources and relics left behind (per run, from run 300)", dash.page(rows[:-1] + [eco], "t", ""))
+        page = dash.page(rows[:-1] + [eco], "t", "")
+        self.assertIn("Relic sources and relics left behind (per run, from run 300)", page)
+        self.assertIn("relics not picked up (left + chests not opened)", page)
 
 
 @unittest.skipUnless(HAVE_TORCH and MODULES, "torch or the az_bench_native module (cmake target) missing")
@@ -1141,6 +1143,7 @@ class SelfplaySmoke(unittest.TestCase):
         self.assertGreater(e["campfires"], 0)
         self.assertGreater(e["chests"], 0)   # economy counters: every act has a treasure row and shops are common
         self.assertGreater(e["shops"], 0)
+        self.assertLessEqual(e["sapphire_relic_forfeits"], e["sapphire"])   # one Sapphire key per run
         self.assertGreater(e["elites"], 0)
 
     def test_heart_log(self):

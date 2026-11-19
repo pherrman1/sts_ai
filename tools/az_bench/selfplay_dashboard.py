@@ -324,11 +324,16 @@ def progress_panel(rows, cur, recent=20):
         def col(*ks):
             return [sum(e[k] for k in ks) for e in ec]
         ch += (f'<h3>Relic sources and relics left behind (per run, from run {ox[0]:,})</h3>' +
-               chart(ox, [("elite relics taken", gap(col("relics_taken_elite")), "--good"),
+               chart(ox, [("relics not picked up (left + chests not opened)",
+                           gap(col("relics_left_elite", "relics_left_chest", "relics_left_other", "chests_skipped")), "--fg"),
+                          ("elite relics taken", gap(col("relics_taken_elite")), "--good"),
                           ("elite relics left", gap(col("relics_left_elite")), "--accent2"),
                           ("chests not opened", gap(col("chests_skipped")), "--boss"),
                           ("chest + other relics left", gap(col("relics_left_chest", "relics_left_other")), "--muted"),
-                          ("shop relics bought", gap(col("shop_relics")), "--accent")], ymin=0, yfmt="{:.1f}"))
+                          ("shop relics bought", gap(col("shop_relics")), "--accent")], ymin=0, yfmt="{:.1f}") +
+               '<p class="rule">Not picked up: relics on a reward screen when it was left, plus treasure chests left '
+               'unopened (one relic each). The chest relic given up for the Sapphire key is not counted '
+               '(sapphire_relic_forfeits in economy_per_run).</p>')
     return f"""<section class="ascbox"><h2>Keys, Recall, elites, Act 4 (finished runs)</h2>
 {tiles}
 <p class="rule">Tiles: current ascension, last ~{recent} windows. Keys count when held at the run's end. Recall % is over
