@@ -278,6 +278,17 @@ set_tests_properties(az_force_keys_test PROPERTIES LABELS "core;smoke")
 add_test(NAME az_run_driver_force_keys COMMAND $<TARGET_FILE:az-run-driver> --workers 1 --games 4 --runs 12 --fast
     --seed-base 1 --seconds 300 --test-hp 5000 --max-fight-moves 2000 --force-keys)
 set_tests_properties(az_run_driver_force_keys PROPERTIES LABELS "core;smoke")
+# Forced reward choices (--force-rewards; 2026-11-19, default off): the chest / reward-relic restriction on synthetic
+# states, and whole runs (one worker, Amber's simulator help) in which relics are forced and no chest stays closed.
+add_executable(az-force-rewards-test apps/az_bench/az_force_rewards_test.cpp apps/az_bench/az_run_driver.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(az-force-rewards-test PRIVATE include json/include apps/az_bench)
+target_link_libraries(az-force-rewards-test PRIVATE Threads::Threads)
+add_test(NAME az_force_rewards_test COMMAND $<TARGET_FILE:az-force-rewards-test>)
+set_tests_properties(az_force_rewards_test PROPERTIES LABELS "core;smoke")
+add_test(NAME az_run_driver_force_rewards COMMAND $<TARGET_FILE:az-run-driver> --workers 1 --games 4 --runs 12 --fast
+    --seed-base 1 --seconds 300 --test-hp 5000 --max-fight-moves 2000 --sim-help --force-rewards)
+set_tests_properties(az_run_driver_force_rewards PROPERTIES LABELS "core;smoke")
 # Card stacks (search::amberMergeCards) over whole-run driver states: same cards and counts, references follow.
 add_executable(az-merge-cards-test apps/az_bench/az_merge_cards_test.cpp apps/az_bench/az_run_driver.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
