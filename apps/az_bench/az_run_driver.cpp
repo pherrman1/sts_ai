@@ -1353,6 +1353,7 @@ namespace sts::azbench {
                     for (int k = 0; k < kOutcomeClasses; ++k) g.moveDist.push_back(search::amberHalf(moveResult[k]));
             }
             if (cfg.heartLogRate > 0) {   // Heart log: the first searched move of each act and of the Heart fight
+                constexpr int kHeartFloor = 55;   // Act 4: 52 rest, 53 shop, 54 elite, 55 the Heart
                 HeartRunLog &h = g.hlog;
                 const int slot = g.inBattle && g.progress.heart ? 4 : std::clamp(g.gc.act, 1, 4) - 1;
                 if (h.floorAt[slot] < 0) {
@@ -1363,7 +1364,7 @@ namespace sts::azbench {
                         double ef = 0;
                         for (int k = 0; k < kOutcomeClasses; ++k) ef += (k == 0 ? 57.0 : k) * root.dist[k];
                         h.netPWin[slot] = root.dist[0];
-                        h.netPHeartDeath[slot] = root.dist[std::clamp(g.gc.floorNum, 1, kOutcomeClasses - 1)];
+                        h.netPHeartDeath[slot] = root.dist[kHeartFloor];   // death on the Heart floor, every slot
                         h.netEFloor[slot] = static_cast<float>(ef);
                         h.searchPWin[slot] = moveResult[0];
                     } else {

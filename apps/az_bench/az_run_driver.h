@@ -174,7 +174,8 @@ namespace sts::azbench {
         int endHp = 0;                          // player HP at the run's end (0 after a death)
         int turns = 0, gold = 0;
         // Root of the run's first searched move in each act (index act - 1, 1..4) and of the Heart fight's first
-        // searched move (index 4): the net's P(win), P(death on the Heart floor), E[final floor] (win = 57) and
+        // searched move (index 4): the net's P(win), P(death on the Heart floor, outcome class 55, in every slot),
+        // E[final floor] (win = 57) and
         // utility value at the root, and the search result's P(win) and mean utility after the move's search.
         // floorAt = the floor of that root (-1 = never reached).
         std::array<int, 5> floorAt{-1, -1, -1, -1, -1};

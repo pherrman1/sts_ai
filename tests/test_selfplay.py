@@ -1025,12 +1025,13 @@ class SelfplaySmoke(unittest.TestCase):
     def test_heart_log(self):
         """--heart-log 1 (diagnostic): every run that fought the Heart leaves one record in heart_runs.jsonl.gz with
         its entry state and the net's / search's values per act and at the Heart; the count matches the progress
-        counter `heart`."""
+        counter `heart`. One worker, no training (--min-replay above the runs' samples) and a fixed --seed make the
+        play deterministic; in this setting seed 1301 reaches the Heart (review of PR #1111)."""
         sp = load()
-        args = ["--module-dir", os.path.dirname(MODULES[0]), "--device", "cpu", "--workers", "2", "--games", "3",
+        args = ["--module-dir", os.path.dirname(MODULES[0]), "--device", "cpu", "--workers", "1", "--games", "3",
                 "--full-sims", "4", "--fast-sims", "2", "--batch", "32", "--row-buckets", "32", "--pack-step", "32",
                 "--pack-threads", "1", "--min-replay", "1000000", "--train-batch", "32", "--window", "5000",
-                "--report", "1", "--sync-steps", "2", "--seed-base", "1300", "--max-runs", "6",
+                "--report", "1", "--sync-steps", "2", "--seed-base", "1300", "--max-runs", "6", "--seed", "3",
                 "--ascension", "0", "--test-max-hp", "3000", "--utility", "amber", "--value-ema-halflife", "20",
                 "--value-ema-search", "--curriculum", "--force-keys", "curriculum"]
         with tempfile.TemporaryDirectory() as d:
