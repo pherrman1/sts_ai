@@ -914,6 +914,10 @@ class SelfplaySmoke(unittest.TestCase):
             self.assertGreater(last["replay_soft_bytes_mean"], 0)
             self.assertLess(last["replay_soft_bytes_mean"], 57)
             self.assertIn("outcome_ema", last["loss"])
+            rr = last["replay_rings"]
+            self.assertTrue(0 < rr["tok_mean"] <= rr["tok_max"] and 0 < rr["act_mean"] <= rr["act_max"])   # max may
+            # exceed the per-sample ring share (the rings are shared; the mean decides)
+            self.assertTrue(0 < rr["tok_ring_fill"] <= 1 and 0 < rr["act_ring_fill"] <= 1)
 
     def test_savescum(self):
         """--savescum reaches the driver: runs play it and every checked search child equals the real next state; a

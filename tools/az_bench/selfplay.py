@@ -179,6 +179,22 @@ class Replay:
     def __len__(self):
         return self.s_head - self.s_tail
 
+    def ring_stats(self):
+        """Live window: tokens and actions per sample (mean, max) and how full the token / action rings are (share of
+        capacity between the oldest live sample and the head; 1.0 = the ring, not --window, decides eviction)."""
+        with self.lock:
+            n = len(self)
+            if n == 0:
+                return None
+            j = (self.s_tail + np.arange(n)) % self.cs
+            nt, na = self.ntok[j], self.nact[j]
+            t0 = self.idx_start[j[0]] if self.compact else self.tok_start[j[0]]
+            th, tc = (self.i_head, self.ci) if self.compact else (self.t_head, self.ct)
+            return {"tok_mean": round(float(nt.mean()), 2), "tok_max": int(nt.max()),
+                    "act_mean": round(float(na.mean()), 2), "act_max": int(na.max()),
+                    "tok_ring_fill": round(float(th - t0) / tc, 3),
+                    "act_ring_fill": round(float(self.a_head - self.act_start[j[0]]) / self.ca, 3)}
+
     def nbytes(self):
         """Memory of the window's arrays (allocated up front, so the same however full it is)."""
         arrs = [self.a_type, self.a_src, self.a_tgt, self.a_f, self.policy,
@@ -1253,6 +1269,7 @@ def main(argv=None):
                 "death_floors_window": {int(k): int(v) for k, v in enumerate(d_oc) if v and k},
                 "samples_added": replay.added, "replay": len(replay), "replay_gb": round(replay.nbytes() / 2 ** 30, 3),
                 **({"replay_dict_used": replay.store.used} if replay.compact else {}),
+                "replay_rings": replay.ring_stats(),
                 **({"replay_soft_bytes_mean": round(replay.soft_stats[1] / max(1, replay.soft_stats[0]), 2)}
                    if replay.soft_q else {}), "train_steps": counters["step"],
                 "trained_samples": counters["trained"], "loss": lavg, "syncs": infer_stats["syncs"],
