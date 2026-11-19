@@ -277,6 +277,14 @@ namespace sts::azbench {
         // bisection with need = pickTarget * offered runs, so c stays finite. Without it an item offered in fewer than
         // pickTarget of all runs can never reach the target, gets c = infinity and is forced at every offer.
         bool explorePerOffer = false;
+        // exploreAmber variants (2026-11-19, default off; deviations from our reading of Amber Eye's text, Philipp
+        // decides per run). exploreGapSearch: the gap m of an item is taken in the search's final root score
+        // (Gumbel + logit + sigma(completed Q)) below the search's pick, instead of in the net's prior logits.
+        // exploreDeckOnly: only acquisitions (card rewards / shop cards, reward / shop / boss relics, reward / shop
+        // potions) are pick-rate items; deck edits (remove / upgrade / transform), event, campfire, Neow and other
+        // choices are never forced nor tracked.
+        bool exploreGapSearch = false;
+        bool exploreDeckOnly = false;
         // Per-run evaluation cache (2026-11-17, default off): a leaf whose encoded net input (live tokens and legal
         // actions) equals one this run already had evaluated with the current weights (setWeightsVersion) takes
         // that result instead of a new net evaluation. Exact: the net sees only its input, so the cached result is
@@ -501,6 +509,9 @@ namespace sts::azbench {
         // forceKeys: real moves forced by a key backstop [Sapphire (chest opened / key taken), Ruby (Recall), Emerald
         // (route edge / key taken)], and real Act-3 map decisions whose route the Emerald rule narrowed (still a choice).
         std::array<std::int64_t, 3> forcedKeys{};
+        // exploreAmber (always on): forcing attempts and forced picks per item class (kExploreClasses order:
+        // card, deck_edit, relic, potion, event, rest, other_option, other).
+        std::array<std::int64_t, 8> exploreAttemptsByClass{}, forcedByClass{};
         std::int64_t keyRouteMasked = 0;
         // forceRewards: real moves forced [chest opened, relic taken], real card decisions with a card-first relic
         // held back, and card-first relics taken on leaving the screen.

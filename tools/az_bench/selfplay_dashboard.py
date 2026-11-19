@@ -41,7 +41,9 @@ def smooth(xs, k):
 
 
 SETTLE_MINUTES = 5
-RECENT_RUNS = 100_000   # the charts at the top cover the last this many runs
+RECENT_RUNS = 100_000
+# selfplay.py forced_by_class order (RunDriver Stats::forcedByClass)
+EXPLORE_CLASSES = ("card", "deck edit", "relic", "potion", "event", "rest", "other option", "other")   # the charts at the top cover the last this many runs
 
 
 def settling(rows, minutes=SETTLE_MINUTES):
@@ -492,6 +494,10 @@ def page(rows, title, started, subtitle=""):
         tile("Forced picks", f'{last.get("forced_picks", 0):,}',
              f'{last.get("explore_roots", 0):,} of {last.get("ooc_roots", 0):,} OOC roots under target'),
     ] if variant else []) + ([
+        tile("Forced by class", f'{sum(last["forced_by_class"]):,}',
+             " / ".join(f"{n} {v:,}" for n, v in zip(EXPLORE_CLASSES, last["forced_by_class"]) if v)
+             or "none yet"),
+    ] if last.get("forced_by_class") else []) + ([
         tile("Forced key moves", f'{sum(last["force_keys"].get(k, 0) for k in ("sapphire", "ruby", "emerald")):,}',
              f'Sapphire {last["force_keys"].get("sapphire", 0):,} / Ruby {last["force_keys"].get("ruby", 0):,} / '
              f'Emerald {last["force_keys"].get("emerald", 0):,}; routes narrowed {last["force_keys"].get("route_masked", 0):,}; '

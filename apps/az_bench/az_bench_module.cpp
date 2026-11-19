@@ -270,7 +270,8 @@ PYBIND11_MODULE(az_bench_native, m) {
                          bool chanceOnReveal, bool crossCombat, bool simHelp,
                          bool exploreAmber, double exploreT, double searchEmaLambda, bool searchEmaFullOnly,
                          bool forceKeys, std::vector<std::vector<double>> heartArms, int heartReps,
-                         bool savescum, bool compactSamples, double heartLogRate, bool forceRewards, bool explorePerOffer) {
+                         bool savescum, bool compactSamples, double heartLogRate, bool forceRewards, bool explorePerOffer,
+                         bool exploreGapSearch, bool exploreDeckOnly) {
                  azbench::RunConfig c;
                  if (!(heartLogRate >= 0 && heartLogRate <= 1)) throw std::invalid_argument("heart_log_rate: want 0..1");
                  c.heartLogRate = heartLogRate;
@@ -321,6 +322,8 @@ PYBIND11_MODULE(az_bench_native, m) {
                  c.forceKeys = forceKeys;
                  c.forceRewards = forceRewards;
                  c.explorePerOffer = explorePerOffer;
+                 c.exploreGapSearch = exploreGapSearch;
+                 c.exploreDeckOnly = exploreDeckOnly;
                  c.savescum = savescum;
                  c.compactSamples = compactSamples;
                  return std::make_unique<azbench::RunDriver>(c);
@@ -341,7 +344,8 @@ PYBIND11_MODULE(az_bench_native, m) {
              py::arg("force_keys") = false, py::arg("heart_arms") = std::vector<std::vector<double>>{},
              py::arg("heart_reps") = 1, py::arg("savescum") = false,
              py::arg("compact_samples") = false, py::arg("heart_log_rate") = 0.0,
-             py::arg("force_rewards") = false, py::arg("explore_per_offer") = false)
+             py::arg("force_rewards") = false, py::arg("explore_per_offer") = false,
+             py::arg("explore_gap_search") = false, py::arg("explore_deck_only") = false)
         .def("heart_results",
              [](const azbench::RunDriver &d) {
                  py::list out;
@@ -637,6 +641,11 @@ PYBIND11_MODULE(az_bench_native, m) {
             o["savescum_checks"] = s.savescumChecks;
             o["savescum_mismatches"] = s.savescumMismatches;
             o["forced_keys"] = py::make_tuple(s.forcedKeys[0], s.forcedKeys[1], s.forcedKeys[2]);
+            {   // exploreAmber per item class: card, deck_edit, relic, potion, event, rest, other_option, other
+                py::list a, f;
+                for (int k = 0; k < 8; ++k) { a.append(s.exploreAttemptsByClass[k]); f.append(s.forcedByClass[k]); }
+                o["explore_attempts_by_class"] = a; o["forced_by_class"] = f;
+            }
             o["key_route_masked"] = s.keyRouteMasked;
             o["forced_rewards"] = py::make_tuple(s.forcedRewards[0], s.forcedRewards[1], s.rewardRelicDeferred,
                                                  s.rewardRelicOnLeave);

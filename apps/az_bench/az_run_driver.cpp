@@ -422,6 +422,7 @@ namespace sts::azbench {
         int heartJob = -1;                   // heartArms: the current play of the Heart fight (-1 = not there yet)
         int heartSearched = 0;               // heartArms: searched moves of the current play
         std::vector<int> rootKeys;           // pick-rate item bucket per root action (-1 = none), OOC roots
+        std::vector<std::int8_t> rootClass;  // item class per root action (Stats::forcedByClass order)
         std::vector<char> rootUnder;         // exploreAmber: root action is an under-target item (after warm-up)
         std::unordered_map<int, double> gapMin;   // exploreAmber: this run's smallest gap per item
         std::vector<int> pickedKeys;         // exploreAmber: items played in this run (each once)
@@ -761,6 +762,8 @@ namespace sts::azbench {
         for (int i = 0; i < kPickBuckets; ++i) offers_[i].store(0);
         if (cfg_.explorePerOffer && !cfg_.exploreAmber)
             throw std::invalid_argument("run driver: explorePerOffer needs exploreAmber");
+        if ((cfg_.exploreGapSearch || cfg_.exploreDeckOnly) && !cfg_.exploreAmber)
+            throw std::invalid_argument("run driver: exploreGapSearch / exploreDeckOnly need exploreAmber");
         if (!cfg_.encodeCombat) cfg_.encodeCombat = search::amberEncodeCombat;
         if (!cfg_.encodeGame) cfg_.encodeGame = search::amberEncodeGame;
         if (cfg_.utility != Utility::FLOOR_HP && cfg_.utility != Utility::AMBER)
@@ -852,6 +855,10 @@ namespace sts::azbench {
             s.treeFightStarts += p.treeFightStarts; s.treeFightExits += p.treeFightExits; s.autoGold += p.autoGold;
             s.savescumRuns += p.savescumRuns; s.savescumChecks += p.savescumChecks; s.savescumMismatches += p.savescumMismatches;
             for (int k = 0; k < 3; ++k) s.forcedKeys[k] += p.forcedKeys[k];
+            for (int k = 0; k < 8; ++k) {
+                s.exploreAttemptsByClass[k] += p.exploreAttemptsByClass[k];
+                s.forcedByClass[k] += p.forcedByClass[k];
+            }
             s.keyRouteMasked += p.keyRouteMasked;
             s.forcedRewards[0] += p.forcedRewards[0]; s.forcedRewards[1] += p.forcedRewards[1];
             s.rewardRelicDeferred += p.rewardRelicDeferred; s.rewardRelicOnLeave += p.rewardRelicOnLeave;
@@ -1088,11 +1095,39 @@ namespace sts::azbench {
                 if (ni == 0 && (cfg.exploreC > 0 || cfg.exploreAmber)) {
                     // Pick-rate items of the root's actions: hash of the source token's ids.
                     g.rootKeys.assign(gacts.size(), -1);
+                    g.rootClass.assign(gacts.size(), 7);
+                    const auto screen = node.gc->screenState;
                     for (int k = 0; k < g.tokens.nAct; ++k) {
                         const auto &a = g.tokens.act[k];
                         const auto t = static_cast<search::AmberActionType>(a.type);
                         if ((t != search::AmberActionType::CHOOSE_CARD && t != search::AmberActionType::CHOOSE_OPTION)
                             || a.srcSeg == search::kAmberNoSeg) continue;
+                        // Item class (Stats::forcedByClass order): a CARD token is a card reward / offer, or on a
+                        // card-select screen a deck edit; an OPTION by its kind one-hot (f 12-28, AmberGameEncoder.cpp
+                        // OptKind). exploreDeckOnly keeps the acquisitions only: cards, relics, potions.
+                        const auto seg = static_cast<AmberTokenType>(a.srcSeg);
+                        std::int8_t cls = 7;
+                        if (seg == AmberTokenType::CARD) {
+                            cls = screen == ScreenState::CARD_SELECT ? 1 : 0;
+                        } else if (seg == AmberTokenType::OPTION) {
+                            const auto &ot = g.tokens.at(seg, a.srcIdx);
+                            int kind = -1;
+                            for (int c = 12; c <= 28; ++c) if (ot.f[c]) { kind = c - 12; break; }
+                            // REWARD_GOLD 0, REWARD_CARD 1, REWARD_RELIC 2, REWARD_POTION 3, keys 4-5, SINGING_BOWL 6,
+                            // SHOP_CARD 7, SHOP_RELIC 8, SHOP_POTION 9, SHOP_REMOVE 10, BOSS_RELIC 11, REST 12,
+                            // NEOW 13, EVENT 14, MATCH_SLOT 15, CHEST 16
+                            switch (kind) {
+                                case 1: case 7: cls = 0; break;
+                                case 10: cls = 1; break;
+                                case 2: case 8: case 11: cls = 2; break;
+                                case 3: case 9: cls = 3; break;
+                                case 14: case 15: cls = 4; break;
+                                case 12: cls = 5; break;
+                                default: cls = 6; break;
+                            }
+                        }
+                        if (cfg.exploreDeckOnly && cls != 0 && cls != 2 && cls != 3) continue;
+                        if (k < static_cast<int>(g.rootClass.size())) g.rootClass[k] = cls;
                         const auto &tok = g.tokens.at(static_cast<AmberTokenType>(a.srcSeg), a.srcIdx);
                         std::uint64_t h = 0x9e3779b97f4a7c15ull * (a.type + 1);
                         for (int c = 0; c < 2; ++c) h = (h ^ static_cast<std::uint16_t>(tok.ids[c])) * 0x100000001b3ull;
@@ -1574,6 +1609,7 @@ namespace sts::azbench {
             }
             g.path.push_back({r, -1, -1});
             g.rootKeys.clear();
+            g.rootClass.clear();
             g.rootUnder.clear();
             request(g, gi, r);
             if (!g.inBattle && (cfg.exploreC > 0 || cfg.exploreAmber)) {
@@ -1775,10 +1811,14 @@ namespace sts::azbench {
             }
             if (!root.combat && cfg.exploreAmber && !g.rootKeys.empty()) {
                 const int k = std::min(static_cast<int>(g.rootKeys.size()), static_cast<int>(root.edges.size()));
-                // Gap in policy logits (the net's prior logits) below the search's pick, at least 1e-9.
+                // Gap in policy logits (the net's prior logits) below the search's pick, at least 1e-9;
+                // exploreGapSearch: in the search's root score (Gumbel + logit + sigma(completed Q)) instead.
                 const int searchPick = pick;
-                const double top = root.edges[searchPick].logit;
-                auto gap = [&](int i) { return std::max(1e-9, top - static_cast<double>(root.edges[i].logit)); };
+                auto score = [&](int i) {
+                    return cfg.exploreGapSearch ? rootScore(g, root, i, sigma, q) : static_cast<double>(root.edges[i].logit);
+                };
+                const double top = score(searchPick);
+                auto gap = [&](int i) { return std::max(1e-9, top - score(i)); };
                 std::vector<int> under;
                 for (int i = 0; i < k; ++i)
                     if (g.rootKeys[i] >= 0 && i != searchPick && i < static_cast<int>(g.rootUnder.size())
@@ -1788,11 +1828,13 @@ namespace sts::azbench {
                 for (int i : under) {
                     const double m = gap(i);
                     const double c = exploreItemC(g.rootKeys[i], games);
+                    const int cls = i < static_cast<int>(g.rootClass.size()) ? g.rootClass[i] : 7;
                     ++wk.st.exploreAttempts;
+                    ++wk.st.exploreAttemptsByClass[cls];
                     if (c == 0) ++wk.st.exploreCZero;
                     if (std::isinf(c)) ++wk.st.exploreCInf;
                     const double p = std::isinf(c) ? 1.0 : std::min(1.0, c * std::exp(-m / cfg.exploreT));
-                    if (U(wk.rng) < p) { pick = i; ++wk.st.forcedPicks; break; }
+                    if (U(wk.rng) < p) { pick = i; ++wk.st.forcedPicks; ++wk.st.forcedByClass[cls]; break; }
                 }
                 // Log: m = 0 ("natural") only for the search's pick when it is played; a forced item logs its gap, an
                 // overridden search pick 1e-9 (bin 0), every other item its gap.

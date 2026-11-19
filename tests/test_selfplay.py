@@ -742,6 +742,20 @@ class DashboardRecentTest(unittest.TestCase):
         self.assertNotIn('class="tick">101000</text>', top)
         self.assertIn('class="tick">101000</text>', full)
 
+    def test_forced_by_class_tile(self):
+        spec = importlib.util.spec_from_file_location(
+            "selfplay_dashboard", os.path.join(ROOT, "tools", "az_bench", "selfplay_dashboard.py"))
+        dash = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(dash)
+        row = {"time": "2026-11-19 23:00:00", "runs_done": 1000, "samples_added": 1000, "mean_floor_window": 40.0,
+               "win_rate_window": 0.05, "runs_window": 300, "positions_per_s": 140000, "train_steps": 1,
+               "ascension": 1, "forced_picks": 7, "explore_roots": 9, "ooc_roots": 90,
+               "forced_by_class": [3, 0, 2, 0, 1, 1, 0, 0]}
+        page = dash.page([row], "t", "")
+        self.assertIn("Forced by class", page)
+        self.assertIn("card 3 / relic 2 / event 1 / rest 1", page)
+        self.assertNotIn("Forced by class", dash.page([dict(row, forced_by_class=None)], "t", ""))
+
 
 class DashboardSettlingTest(unittest.TestCase):
     def test_restart_windows_left_out(self):
@@ -860,6 +874,9 @@ class SelfplaySmoke(unittest.TestCase):
             self.assertIn("pol_soft.2.weight", torch.load(ck)["net"])
             self.assertGreater(rows[-1]["explore_roots"], 0)
             self.assertGreater(rows[-1]["forced_picks"], 0)
+            # per-class counters (2026-11-19) partition the forced picks
+            self.assertEqual(len(rows[-1]["forced_by_class"]), 8)
+            self.assertEqual(sum(rows[-1]["forced_by_class"]), rows[-1]["forced_picks"])
             ex = rows[-1]["explore_amber"]
             self.assertGreater(ex["attempts"], 0)
             self.assertEqual(ex["natural_unplayed"], 0)   # only items the search played count as natural

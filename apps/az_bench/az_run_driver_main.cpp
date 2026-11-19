@@ -74,6 +74,8 @@ int main(int argc, char **argv) {
         else if (a == "--pick-target") cfg.pickTarget = std::stod(next());
         else if (a == "--explore-amber") cfg.exploreAmber = true;
         else if (a == "--explore-per-offer") cfg.explorePerOffer = true;
+        else if (a == "--explore-gap-search") cfg.exploreGapSearch = true;
+        else if (a == "--explore-deck-only") cfg.exploreDeckOnly = true;
         else if (a == "--no-fast-noise") cfg.fastNoise = false;
         else if (a == "--q-rescale") cfg.qRescale = true;
         else if (a == "--c-scale") cfg.cScale = std::stod(next());
@@ -259,6 +261,21 @@ int main(int argc, char **argv) {
                     static_cast<long long>(s.exploreAttempts), static_cast<long long>(s.exploreCZero),
                     static_cast<long long>(s.exploreCInf), static_cast<long long>(s.exploreNatural),
                     static_cast<long long>(s.exploreNaturalUnplayed), static_cast<long long>(s.moves));
+    if (cfg.exploreAmber) {
+        static const char *kCls[8] = {"card", "deck_edit", "relic", "potion", "event", "rest", "other_option",
+                                      "other"};
+        std::int64_t fSum = 0, aSum = 0;
+        std::printf("amber exploration by class (attempts/forced):");
+        for (int k = 0; k < 8; ++k) {
+            std::printf(" %s %lld/%lld", kCls[k], static_cast<long long>(s.exploreAttemptsByClass[k]),
+                        static_cast<long long>(s.forcedByClass[k]));
+            fSum += s.forcedByClass[k]; aSum += s.exploreAttemptsByClass[k];
+        }
+        std::printf("\n");
+        if (fSum != s.forcedPicks || aSum != s.exploreAttempts) return 1;   // the classes partition the totals
+        if (cfg.exploreDeckOnly && (s.exploreAttemptsByClass[1] + s.exploreAttemptsByClass[4] + s.exploreAttemptsByClass[5]
+                                    + s.exploreAttemptsByClass[6] + s.exploreAttemptsByClass[7]) != 0) return 1;
+    }
     if (s.exploreNaturalUnplayed != 0) return 1;   // an item logged as picked by the search must have been played
     if (explore && (s.forcedPicks == 0 || s.exploreRoots == 0)) return 1;   // exploration must act
     if (!explore && (s.forcedPicks != 0 || s.exploreRoots != 0)) return 1;  // ... and be inert when off

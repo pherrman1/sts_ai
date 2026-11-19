@@ -728,6 +728,12 @@ def main(argv=None):
                     help="with --explore-amber: the --pick-target rate counts the runs that OFFERED the item, not all "
                          "runs, so rarely offered items are no longer forced at every offer (2026-11-19, default off; "
                          "a deviation from Amber Eye's text, Philipp)")
+    ap.add_argument("--explore-gap-search", action="store_true",
+                    help="with --explore-amber: the gap m is taken in the search's final root score (Gumbel + logit + "
+                         "sigma(Q)) instead of the net's prior logits (2026-11-19, default off; Philipp decides)")
+    ap.add_argument("--explore-deck-only", action="store_true",
+                    help="with --explore-amber: only cards, relics and potions are pick-rate items; event / campfire "
+                         "options are never forced (2026-11-19, default off; Philipp decides)")
     ap.add_argument("--eval-cache", action="store_true",
                     help="per-run evaluation cache: a leaf whose net input this run already had evaluated with the "
                          "current inference weights reuses that result (exact; RunConfig::evalCache)")
@@ -946,6 +952,8 @@ def main(argv=None):
         **({"force_keys": True} if force_keys else {}),
         **({"force_rewards": True} if args.force_rewards else {}),
         **({"explore_per_offer": True} if args.explore_per_offer else {}),
+        **({"explore_gap_search": True} if args.explore_gap_search else {}),
+        **({"explore_deck_only": True} if args.explore_deck_only else {}),
         **({"heart_arms": heart_arms, "heart_reps": args.heart_reps} if heart_arms else {}),
         **({"savescum": True} if savescum else {}),
         **({"compact_samples": True} if args.compact_samples else {}),
@@ -1371,6 +1379,9 @@ def main(argv=None):
                 "asc_mean_floor_window": round(a_floors / max(1, a_runs), 2),
                 "asc_win_rate_rolling": round(rolling, 4), "asc_rolling_runs": tot,
                 "ooc_roots": s["ooc_roots"], "explore_roots": s["explore_roots"], "forced_picks": s["forced_picks"],
+                # cumulative per class: card, deck_edit, relic, potion, event, rest, other_option, other
+                "forced_by_class": list(s.get("forced_by_class", [])),
+                "explore_attempts_by_class": list(s.get("explore_attempts_by_class", [])),
                 # [full, fast] cumulative: searched OOC roots, picks off the best visited mean Q, mean visited-Q spread
                 "ooc_searched": list(s["ooc_searched"]), "ooc_not_best_q": list(s["ooc_not_best_q"]),
                 "ooc_q_spread_mean": [round(s["ooc_q_spread_sum"][k] / max(1, s["ooc_q_spread_n"][k]), 5) for k in (0, 1)],
