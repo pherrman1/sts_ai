@@ -37,6 +37,9 @@ int main() {
     check(std::fabs(c1 - 0.5 * std::exp(2.025 / T)) < 1e-9, "single gap hand case");
     // Need above everything logged (3 natural + 1): infinity.
     check(std::isinf(amberExploreC(h, 4.5, T)), "need above all logged runs -> infinity");
+    // explorePerOffer (2026-11-19): runs counts every logged run; need = target * runs is always reachable (finite c).
+    check(h.runs == 4, "runs counts natural and gap runs");
+    check(std::isfinite(amberExploreC(h, 0.99 * static_cast<double>(h.runs), T)), "per-offer need below runs -> finite");
     // Many gaps: the solved c reproduces need, and c grows with need.
     AmberGapHist g;
     for (int i = 0; i < 1000; ++i) g.add(0.013 * i);   // gaps 0 .. 13

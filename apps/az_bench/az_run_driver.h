@@ -127,7 +127,9 @@ namespace sts::azbench {
         static constexpr int kBins = 800;
         std::int64_t natural = 0;              // runs with m = 0
         std::array<std::uint32_t, kBins> n{};  // runs with m > 0, by bin
+        std::int64_t runs = 0;                 // runs in which the item was offered (natural + sum n)
         void add(double m) {
+            ++runs;
             if (m <= 0) { ++natural; return; }
             ++n[std::min(kBins - 1, static_cast<int>(m / kBin))];
         }
@@ -269,6 +271,12 @@ namespace sts::azbench {
         // sample keeps the search policy; the run's labels follow the move played.
         bool exploreAmber = false;
         double exploreT = 4.0;
+        // exploreAmber variant (2026-11-19, default off; a deviation from Amber Eye's text, Philipp): the pick-rate target
+        // counts the runs in which the item was OFFERED, not all runs. An item is under target when it was played in fewer
+        // than pickTarget of the finished runs that offered it (after 1 / pickTarget such runs), and c solves the same
+        // bisection with need = pickTarget * offered runs, so c stays finite. Without it an item offered in fewer than
+        // pickTarget of all runs can never reach the target, gets c = infinity and is forced at every offer.
+        bool explorePerOffer = false;
         // Per-run evaluation cache (2026-11-17, default off): a leaf whose encoded net input (live tokens and legal
         // actions) equals one this run already had evaluated with the current weights (setWeightsVersion) takes
         // that result instead of a new net evaluation. Exact: the net sees only its input, so the cached result is
@@ -583,6 +591,7 @@ namespace sts::azbench {
         std::atomic<std::int64_t> pending_{0};   // samples of unfinished runs, all workers
         static constexpr int kPickBuckets = 1 << 16;
         std::unique_ptr<std::atomic<std::uint32_t>[]> picks_;
+        std::unique_ptr<std::atomic<std::uint32_t>[]> offers_;   // explorePerOffer: finished runs that offered the item
         struct ExploreItem { AmberGapHist hist; double c = 0; std::int64_t stamp = -1; };
         std::mutex exploreM_;                              // exploreItems_ (exploreAmber)
         std::unordered_map<int, ExploreItem> exploreItems_;   // item bucket -> gap log and its c (exploreAmber)

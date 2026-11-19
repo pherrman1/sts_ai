@@ -724,6 +724,10 @@ def main(argv=None):
                          "and are played with probability min(1, c exp(-m / T)), c per item by bisection to hit "
                          "--pick-target of runs; not with --explore-c")
     ap.add_argument("--explore-temp", type=float, default=4.0, help="T of --explore-amber (Amber Eye: 4)")
+    ap.add_argument("--explore-per-offer", action="store_true",
+                    help="with --explore-amber: the --pick-target rate counts the runs that OFFERED the item, not all "
+                         "runs, so rarely offered items are no longer forced at every offer (2026-11-19, default off; "
+                         "a deviation from Amber Eye's text, Philipp)")
     ap.add_argument("--eval-cache", action="store_true",
                     help="per-run evaluation cache: a leaf whose net input this run already had evaluated with the "
                          "current inference weights reuses that result (exact; RunConfig::evalCache)")
@@ -941,6 +945,7 @@ def main(argv=None):
            if ema_search else {}),
         **({"force_keys": True} if force_keys else {}),
         **({"force_rewards": True} if args.force_rewards else {}),
+        **({"explore_per_offer": True} if args.explore_per_offer else {}),
         **({"heart_arms": heart_arms, "heart_reps": args.heart_reps} if heart_arms else {}),
         **({"savescum": True} if savescum else {}),
         **({"compact_samples": True} if args.compact_samples else {}),

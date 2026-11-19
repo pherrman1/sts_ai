@@ -270,7 +270,7 @@ PYBIND11_MODULE(az_bench_native, m) {
                          bool chanceOnReveal, bool crossCombat, bool simHelp,
                          bool exploreAmber, double exploreT, double searchEmaLambda, bool searchEmaFullOnly,
                          bool forceKeys, std::vector<std::vector<double>> heartArms, int heartReps,
-                         bool savescum, bool compactSamples, double heartLogRate, bool forceRewards) {
+                         bool savescum, bool compactSamples, double heartLogRate, bool forceRewards, bool explorePerOffer) {
                  azbench::RunConfig c;
                  if (!(heartLogRate >= 0 && heartLogRate <= 1)) throw std::invalid_argument("heart_log_rate: want 0..1");
                  c.heartLogRate = heartLogRate;
@@ -320,6 +320,7 @@ PYBIND11_MODULE(az_bench_native, m) {
                  c.searchEmaFullOnly = searchEmaFullOnly;
                  c.forceKeys = forceKeys;
                  c.forceRewards = forceRewards;
+                 c.explorePerOffer = explorePerOffer;
                  c.savescum = savescum;
                  c.compactSamples = compactSamples;
                  return std::make_unique<azbench::RunDriver>(c);
@@ -340,7 +341,7 @@ PYBIND11_MODULE(az_bench_native, m) {
              py::arg("force_keys") = false, py::arg("heart_arms") = std::vector<std::vector<double>>{},
              py::arg("heart_reps") = 1, py::arg("savescum") = false,
              py::arg("compact_samples") = false, py::arg("heart_log_rate") = 0.0,
-             py::arg("force_rewards") = false)
+             py::arg("force_rewards") = false, py::arg("explore_per_offer") = false)
         .def("heart_results",
              [](const azbench::RunDriver &d) {
                  py::list out;

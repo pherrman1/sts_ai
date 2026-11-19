@@ -743,7 +743,8 @@ namespace sts::azbench {
         std::lock_guard<std::mutex> l(exploreM_);
         ExploreItem &it = exploreItems_[key];
         if (it.stamp != games) {   // recomputed once per new finished run
-            it.c = amberExploreC(it.hist, cfg_.pickTarget * static_cast<double>(games), cfg_.exploreT);
+            const double base = cfg_.explorePerOffer ? static_cast<double>(it.hist.runs) : static_cast<double>(games);
+            it.c = amberExploreC(it.hist, cfg_.pickTarget * base, cfg_.exploreT);
             it.stamp = games;
         }
         return it.c;
@@ -756,6 +757,10 @@ namespace sts::azbench {
         savescum_.store(cfg_.savescum);
         picks_.reset(new std::atomic<std::uint32_t>[kPickBuckets]);
         for (int i = 0; i < kPickBuckets; ++i) picks_[i].store(0);
+        offers_.reset(new std::atomic<std::uint32_t>[kPickBuckets]);
+        for (int i = 0; i < kPickBuckets; ++i) offers_[i].store(0);
+        if (cfg_.explorePerOffer && !cfg_.exploreAmber)
+            throw std::invalid_argument("run driver: explorePerOffer needs exploreAmber");
         if (!cfg_.encodeCombat) cfg_.encodeCombat = search::amberEncodeCombat;
         if (!cfg_.encodeGame) cfg_.encodeGame = search::amberEncodeGame;
         if (cfg_.utility != Utility::FLOOR_HP && cfg_.utility != Utility::AMBER)
@@ -1282,6 +1287,7 @@ namespace sts::azbench {
             }
             if (cfg.exploreAmber) {   // the run's items: once per run in the rate, smallest gap into the item's log
                 for (int key : g.pickedKeys) picks_[key].fetch_add(1, std::memory_order_relaxed);
+                for (const auto &kv : g.gapMin) offers_[kv.first].fetch_add(1, std::memory_order_relaxed);
                 for (const auto &[key, m] : g.gapMin)
                     if (m <= 0) {
                         ++wk.st.exploreNatural;
@@ -1579,7 +1585,12 @@ namespace sts::azbench {
                     if (cfg.exploreAmber) g.rootUnder.assign(g.rootKeys.size(), 0);
                     for (std::size_t k = 0; k < g.rootKeys.size(); ++k) {
                         const int key = g.rootKeys[k];
-                        if (key >= 0 && picks_[key].load(std::memory_order_relaxed) < cfg.pickTarget * games) {
+                        if (key < 0) continue;
+                        // explorePerOffer: the rate is over the runs that offered the item, after 1 / pickTarget of them
+                        const double base = cfg.explorePerOffer
+                            ? static_cast<double>(offers_[key].load(std::memory_order_relaxed)) : games;
+                        if (base * cfg.pickTarget >= 1.0
+                            && picks_[key].load(std::memory_order_relaxed) < cfg.pickTarget * base) {
                             under = true;
                             if (cfg.exploreAmber) g.rootUnder[k] = 1;
                         }
