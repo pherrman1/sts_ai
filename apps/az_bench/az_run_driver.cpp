@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <cstdlib>
 #include <cstring>
 #include <ctime>
 #include <functional>
@@ -709,11 +710,18 @@ namespace sts::azbench {
             for (int k = 0; k < 3; ++k) s.forcedKeys[k] += p.forcedKeys[k];
             s.keyRouteMasked += p.keyRouteMasked;
             if (p.heartHpMin >= 0 && (s.heartHpMin < 0 || p.heartHpMin < s.heartHpMin)) s.heartHpMin = p.heartHpMin;
+            s.memPoolNodes += p.memPoolNodes; s.memPoolGc += p.memPoolGc; s.memPoolReal += p.memPoolReal;
+            s.memPoolOuter += p.memPoolOuter; s.memPendingCap += p.memPendingCap; s.memMoveDistCap += p.memMoveDistCap;
+            s.memCacheEntries += p.memCacheEntries;
             s.stepCpu += p.stepCpu; s.encodeCpu += p.encodeCpu; s.searchCpu += p.searchCpu;
         }
         s.batches = batches_.load();
         s.batchRows = batchRows_.load();
         s.packSeconds = 1e-9 * static_cast<double>(packNs_.load());
+        {
+            std::lock_guard<std::mutex> l(sampleM_);
+            s.memDone = static_cast<std::int64_t>(done_.size());
+        }
         return s;
     }
 
@@ -742,6 +750,27 @@ namespace sts::azbench {
         std::vector<Action> cacts;
         std::vector<GameAction> gacts;
         double lastPublish = cpuSeconds();
+        double lastMem = lastPublish;
+        const char *trimEnv = std::getenv("STS_AZ_POOL_TRIM");
+        const bool poolTrim = !(trimEnv && std::strcmp(trimEnv, "0") == 0);
+        const std::size_t poolKeep = static_cast<std::size_t>(std::max(cfg.fullSims, cfg.fastSims) +
+                                                              std::max(cfg.fullCandidates, cfg.fastCandidates)) + 2;
+        auto memGauges = [&] {
+            RunStats &st = wk.st;
+            st.memPoolNodes = st.memPoolGc = st.memPoolReal = st.memPoolOuter = 0;
+            st.memPendingCap = st.memMoveDistCap = st.memCacheEntries = 0;
+            for (const Run &g : wk.runs) {
+                st.memPoolNodes += static_cast<std::int64_t>(g.pool.size());
+                for (const Node &n : g.pool) {
+                    st.memPoolGc += n.gc != nullptr;
+                    st.memPoolReal += n.real != nullptr;
+                    st.memPoolOuter += n.outer != nullptr;
+                }
+                st.memPendingCap += static_cast<std::int64_t>(g.pending.capacity());
+                st.memMoveDistCap += static_cast<std::int64_t>(g.moveDist.capacity());
+                st.memCacheEntries += static_cast<std::int64_t>(g.cache.size());
+            }
+        };
 
         auto combatActions = [&](const BattleContext &bc) -> const std::vector<Action> & {
             if (!enumerator) enumerator = std::make_unique<search::SilverSearcher>(bc, search::SilverSearchContext{});
@@ -1166,6 +1195,15 @@ namespace sts::azbench {
             }
             // savescum off (setSavescum(false)): a run in progress plays fair from its next searched move.
             if (g.savescum && !savescum_.load(std::memory_order_relaxed)) g.savescum = false;
+            if (poolTrim) {
+                // Release what the last search left in the run's node slots (2026-11-19 memory creep): the fight-start
+                // game states that crossCombat combat nodes share (otherwise each slot pins a stale copy until it is
+                // reused), and the slots above the usual search size, which only rare large searches (exploreAmber
+                // extra candidates) reach and which otherwise keep their game state / real fight for the run's
+                // lifetime and every later run of the slot. STS_AZ_POOL_TRIM=0 restores the old behaviour.
+                if (g.pool.size() > poolKeep) g.pool.resize(poolKeep);
+                for (auto &n : g.pool) n.outer.reset();
+            }
             g.poolUsed = 0;
             g.spent = 0;
             const HeartArm *arm = g.heartJob >= 0 && g.inBattle
@@ -1876,6 +1914,7 @@ namespace sts::azbench {
             ready.clear();
             wk.st.searchCpu += cpuSeconds() - t0;
             if (t0 - lastPublish > 0.05) {
+                if (t0 - lastMem > 1.0) { memGauges(); lastMem = t0; }
                 std::lock_guard<std::mutex> l(wk.sm);
                 wk.published = wk.st;
                 lastPublish = t0;

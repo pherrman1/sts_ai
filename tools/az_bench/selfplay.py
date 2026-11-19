@@ -1329,6 +1329,8 @@ def main(argv=None):
                 # lowest Heart HP left at the end of any Heart fight so far (None before the first Heart fight);
                 # the per-window histogram is in progress_window (heart_hp_00 .. heart_hp_15, 50-HP bins)
                 "heart_hp_min": None if s.get("heart_hp_min", -1) < 0 else s["heart_hp_min"],
+                # driver memory gauges (current values): node-pool slots and the states they hold, buffer capacities
+                **({"mem": dict(s["mem"])} if "mem" in s else {}),
             }
             if fused is not None:   # rows above the big tile that went through forward_packed (cumulative)
                 row["fused_long_rows"] = fused.long_rows
