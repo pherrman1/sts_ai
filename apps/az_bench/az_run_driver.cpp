@@ -713,7 +713,7 @@ namespace sts::azbench {
             s.keyRouteMasked += p.keyRouteMasked;
             if (p.heartHpMin >= 0 && (s.heartHpMin < 0 || p.heartHpMin < s.heartHpMin)) s.heartHpMin = p.heartHpMin;
             s.memPoolNodes += p.memPoolNodes; s.memPoolGc += p.memPoolGc; s.memPoolReal += p.memPoolReal;
-            s.memPoolOuter += p.memPoolOuter; s.memPendingCap += p.memPendingCap; s.memMoveDistCap += p.memMoveDistCap;
+            s.memPoolOuter += p.memPoolOuter; s.memEdgeCap += p.memEdgeCap; s.memPendingCap += p.memPendingCap; s.memMoveDistCap += p.memMoveDistCap;
             s.memCacheEntries += p.memCacheEntries;
             s.stepCpu += p.stepCpu; s.encodeCpu += p.encodeCpu; s.searchCpu += p.searchCpu;
         }
@@ -757,9 +757,19 @@ namespace sts::azbench {
         const bool poolTrim = !(trimEnv && std::strcmp(trimEnv, "0") == 0);
         const std::size_t poolKeep = static_cast<std::size_t>(std::max(cfg.fullSims, cfg.fastSims) +
                                                               std::max(cfg.fullCandidates, cfg.fastCandidates)) + 2;
+        // Node edge lists (2026-11-19 memory creep): a reused slot's vector keeps the largest capacity it ever had, so
+        // over hours every slot ratchets up to the largest action list it met (jemalloc heap profile: the growing
+        // allocation is Node::edges in request). A list now much smaller than its capacity gets an exact-size
+        // vector. STS_AZ_EDGE_SHRINK=0 restores the old behaviour.
+        const char *shrinkEnv = std::getenv("STS_AZ_EDGE_SHRINK");
+        const bool edgeShrink = !(shrinkEnv && std::strcmp(shrinkEnv, "0") == 0);
+        auto sizeEdges = [edgeShrink](std::vector<Edge> &edges, std::size_t n) {
+            if (edgeShrink && edges.capacity() > 2 * n + 16) std::vector<Edge>(n).swap(edges);
+            else edges.resize(n);
+        };
         auto memGauges = [&] {
             RunStats &st = wk.st;
-            st.memPoolNodes = st.memPoolGc = st.memPoolReal = st.memPoolOuter = 0;
+            st.memPoolNodes = st.memPoolGc = st.memPoolReal = st.memPoolOuter = st.memEdgeCap = 0;
             st.memPendingCap = st.memMoveDistCap = st.memCacheEntries = 0;
             for (const Run &g : wk.runs) {
                 st.memPoolNodes += static_cast<std::int64_t>(g.pool.size());
@@ -767,6 +777,7 @@ namespace sts::azbench {
                     st.memPoolGc += n.gc != nullptr;
                     st.memPoolReal += n.real != nullptr;
                     st.memPoolOuter += n.outer != nullptr;
+                    st.memEdgeCap += static_cast<std::int64_t>(n.edges.capacity());
                 }
                 st.memPendingCap += static_cast<std::int64_t>(g.pending.capacity());
                 st.memMoveDistCap += static_cast<std::int64_t>(g.moveDist.capacity());
@@ -837,7 +848,7 @@ namespace sts::azbench {
             const double t0 = cpuSeconds();
             if (node.combat) {
                 const auto &acts = combatActions(node.bc);
-                node.edges.resize(acts.size());
+                sizeEdges(node.edges, acts.size());
                 for (std::size_t k = 0; k < acts.size(); ++k) node.edges[k] = Edge{acts[k].bits};
                 const double t1 = cpuSeconds();
                 cfg.encodeCombat(node.bc, node.ctx, acts, g.tokens);
@@ -849,7 +860,7 @@ namespace sts::azbench {
                 g.pendingFloor = node.bc.floorNum;
             } else {
                 gacts = oocActions(*node.gc, g.forceKeys);
-                node.edges.resize(gacts.size());
+                sizeEdges(node.edges, gacts.size());
                 for (std::size_t k = 0; k < gacts.size(); ++k) node.edges[k] = Edge{gacts[k].bits};
                 const double t1 = cpuSeconds();
                 cfg.encodeGame(*node.gc, gacts, g.tokens);
