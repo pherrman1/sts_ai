@@ -273,6 +273,13 @@ target_include_directories(az-singing-bowl-test PRIVATE include json/include app
 target_link_libraries(az-singing-bowl-test PRIVATE Threads::Threads)
 add_test(NAME az_singing_bowl_test COMMAND $<TARGET_FILE:az-singing-bowl-test>)
 set_tests_properties(az_singing_bowl_test PROPERTIES LABELS "core;smoke")
+# Out-of-combat potion discards and drinks in the run driver's action list (appendPotionReplacementDiscards, appendOocPotionDrinks).
+add_executable(az-ooc-potion-test apps/az_bench/az_ooc_potion_test.cpp apps/az_bench/az_run_driver.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(az-ooc-potion-test PRIVATE include json/include apps/az_bench)
+target_link_libraries(az-ooc-potion-test PRIVATE Threads::Threads)
+add_test(NAME az_ooc_potion_test COMMAND $<TARGET_FILE:az-ooc-potion-test>)
+set_tests_properties(az_ooc_potion_test PROPERTIES LABELS "core;smoke")
 # Heart-key backstops during the curriculum (--force-keys; 2026-11-18, default off): the ADR-0063 restriction of the
 # out-of-combat actions on synthetic states, and whole runs (one worker: deterministic) in which the backstops act and
 # no run passes the Act-3 boss without the three keys (the same runs without the flag have a keyless Act-3 end).

@@ -579,6 +579,55 @@ namespace sts::azbench {
         return n;
     }
 
+    int appendPotionReplacementDiscards(const GameContext &gc, std::vector<GameAction> &v) {
+        if (gc.outcome != GameOutcome::UNDECIDED || gc.potionCount < gc.potionCapacity
+                || gc.hasRelic(RelicId::SOZU))
+            return 0;
+        bool potionOnOffer = false;
+        if (gc.screenState == ScreenState::REWARDS) {
+            potionOnOffer = gc.info.rewardsContainer.potionCount > 0;
+        } else if (gc.screenState == ScreenState::SHOP_ROOM) {
+            for (int i = 0; i < 3; ++i) {
+                const int price = gc.info.shop.potionPrice(i);
+                potionOnOffer |= price != -1 && gc.gold >= price;
+            }
+        }
+        if (!potionOnOffer) return 0;
+        int added = 0;
+        for (int slot = 0; slot < gc.potionCapacity && slot < 5; ++slot) {
+            const Potion p = gc.potions[slot];
+            if (p == Potion::EMPTY_POTION_SLOT || p == Potion::INVALID) continue;
+            bool duplicate = false;
+            for (int j = 0; j < slot; ++j) duplicate |= gc.potions[j] == p;
+            if (duplicate) continue;   // discarding either copy gives the same state
+            const GameAction discard(0xC0000000u | static_cast<unsigned>(slot));
+            if (!discard.isValidAction(gc)) continue;
+            v.push_back(discard);
+            ++added;
+        }
+        return added;
+    }
+
+    int appendOocPotionDrinks(const GameContext &gc, std::vector<GameAction> &v) {
+        if (gc.outcome != GameOutcome::UNDECIDED || gc.screenState == ScreenState::BATTLE
+                || gc.screenState == ScreenState::CARD_SELECT)
+            return 0;
+        int added = 0;
+        for (int slot = 0; slot < gc.potionCapacity && slot < 5; ++slot) {
+            const Potion p = gc.potions[slot];
+            const bool helps = p == Potion::FRUIT_JUICE || (p == Potion::BLOOD_POTION && gc.curHp < gc.maxHp);
+            if (!helps) continue;
+            bool duplicate = false;
+            for (int j = 0; j < slot; ++j) duplicate |= gc.potions[j] == p;
+            if (duplicate) continue;
+            const GameAction drink(0x80000000u | static_cast<unsigned>(slot));
+            if (!drink.isValidAction(gc)) continue;   // e.g. not on We Meet Again's screen
+            v.push_back(drink);
+            ++added;
+        }
+        return added;
+    }
+
     int keyBackstopActions(const GameContext &gc, std::vector<GameAction> &v) {
         const std::size_t before = v.size();
         if (const auto key = search::heartKeyAction(gc, true)) {
@@ -890,10 +939,19 @@ namespace sts::azbench {
         // STS_AZ_SINGING_BOWL=0 restores the old action list.
         const char *bowlEnv = std::getenv("STS_AZ_SINGING_BOWL");
         const bool singingBowl = !(bowlEnv && std::strcmp(bowlEnv, "0") == 0);
+        // Out-of-combat potion actions: discards that make room for an offered potion and Fruit Juice / Blood Potion
+        // drinks (appendPotionReplacementDiscards, appendOocPotionDrinks), also before the forced rules;
+        // STS_AZ_OOC_POTIONS=0 restores the old list.
+        const char *oocPotionEnv = std::getenv("STS_AZ_OOC_POTIONS");
+        const bool oocPotions = !(oocPotionEnv && std::strcmp(oocPotionEnv, "0") == 0);
         auto oocActions = [&](const GameContext &gc, bool forceKeys, int *keyRule = nullptr,
                               int *rewardRule = nullptr) -> std::vector<GameAction> {
             auto v = GameAction::getAllActionsInState(gc);
             if (singingBowl) appendSingingBowlActions(gc, v);
+            if (oocPotions) {
+                appendPotionReplacementDiscards(gc, v);
+                appendOocPotionDrinks(gc, v);
+            }
             if (cfg.simHelp)
                 v.erase(std::remove_if(v.begin(), v.end(), [&](const GameAction &a) {
                     return !search::isSupportedAutonomousOocAction(gc, a);
@@ -1325,10 +1383,15 @@ namespace sts::azbench {
                     const GameAction a(bits);
                     const auto &r = g.gc.info.rewardsContainer;
                     const Room room = g.gc.curRoom;
-                    switch (g.gc.screenState) {
+                    // A potion action carries no reward / shop item: count it apart (its type bits read as CARD).
+                    if (a.isPotionAction()) ++(a.isPotionDiscard() ? p.oocPotionDiscards : p.oocPotionDrinks);
+                    else switch (g.gc.screenState) {
                         case ScreenState::TREASURE_ROOM:
                             ++p.chests;
-                            if (a.getIdx1() != 0) ++p.chestsSkipped;
+                            if (a.getIdx1() != 0) {
+                                ++p.chestsSkipped;
+                                if (g.gc.relics.has(RelicId::CURSED_KEY)) ++p.chestsSkippedCursedKey;
+                            }
                             break;
                         case ScreenState::REWARDS:
                             if (a.getRewardsActionType() == RT::RELIC)

@@ -144,6 +144,18 @@ namespace sts::azbench {
     // one such action per card reward (the game offers the Bowl on each) and returns how many; else 0.
     int appendSingingBowlActions(const GameContext &gc, std::vector<search::GameAction> &v);
 
+    // Potion discards out of combat (2026-11-19, Philipp's choice "discard where it helps"): with every potion slot
+    // full, no Sozu, and a potion on offer (a reward potion, or a shop potion the gold affords), appends one discard
+    // (bits 0xC0000000 | slot) per distinct held potion, so the net can make room for the offered one; discarding
+    // anywhere else never beats keeping the potion. GameAction::getAllActionsInState lists no potion action. Returns
+    // how many were added.
+    int appendPotionReplacementDiscards(const GameContext &gc, std::vector<search::GameAction> &v);
+
+    // Out-of-combat drinks (2026-11-19, Philipp: "basically only Fruit Juice and Blood Potion", where it helps): on
+    // every out-of-combat decision screen except card selects, one drink (bits 0x80000000 | slot) per distinct held
+    // Fruit Juice (+5 Max HP, always) and Blood Potion (heal, only below Max HP). Returns how many were added.
+    int appendOocPotionDrinks(const GameContext &gc, std::vector<search::GameAction> &v);
+
     // RunConfig::forceKeys: restricts v (the legal out-of-combat actions of gc) by the ADR-0063 key backstops
     // (search::heartKeyAction / heartKeyActionAllowed, keys collected). Returns -1 when nothing was removed, 0 / 1 / 2
     // when a Sapphire / Ruby / Emerald backstop left a single action, 3 when the Emerald rule narrowed the Act-3 route
@@ -423,11 +435,13 @@ namespace sts::azbench {
         // room (elite fight, treasure chest, other: monster, event, boss); shop visits (each ends with leaving) and
         // purchases; boss relic screens skipped; gold gained and lost out of combat (rewards, events, shops).
         std::int64_t chests = 0, chestsSkipped = 0;
+        std::int64_t chestsSkippedCursedKey = 0;   // of chestsSkipped: with Cursed Key (forceRewards leaves them open)
         std::int64_t relicsTakenElite = 0, relicsTakenChest = 0, relicsTakenOther = 0;
         std::int64_t relicsLeftElite = 0, relicsLeftChest = 0, relicsLeftOther = 0;
         std::int64_t shops = 0, shopCards = 0, shopRelics = 0, shopPotions = 0, shopRemoves = 0;
         std::int64_t bossRelicSkips = 0, goldGained = 0, goldLost = 0;
         std::int64_t sapphireRelicForfeits = 0;   // chest relics given up for the Sapphire key (neither taken nor left)
+        std::int64_t oocPotionDiscards = 0, oocPotionDrinks = 0;   // out-of-combat potion actions taken
         RunProgress &operator+=(const RunProgress &o) {
             ruby += o.ruby; emerald += o.emerald; sapphire += o.sapphire; allKeys += o.allKeys;
             campfires += o.campfires; recallOffered += o.recallOffered;
@@ -437,13 +451,14 @@ namespace sts::azbench {
             for (int k = 0; k < kHeartHpBins; ++k) heartHpHist[k] += o.heartHpHist[k];
             heartHpSum += o.heartHpSum; heartEntryHpSum += o.heartEntryHpSum; heartTurnsSum += o.heartTurnsSum;
             relicsSum += o.relicsSum; deckSizeSum += o.deckSizeSum;
-            chests += o.chests; chestsSkipped += o.chestsSkipped;
+            chests += o.chests; chestsSkipped += o.chestsSkipped; chestsSkippedCursedKey += o.chestsSkippedCursedKey;
             relicsTakenElite += o.relicsTakenElite; relicsTakenChest += o.relicsTakenChest;
             relicsTakenOther += o.relicsTakenOther; relicsLeftElite += o.relicsLeftElite;
             relicsLeftChest += o.relicsLeftChest; relicsLeftOther += o.relicsLeftOther;
             shops += o.shops; shopCards += o.shopCards; shopRelics += o.shopRelics; shopPotions += o.shopPotions;
             shopRemoves += o.shopRemoves; bossRelicSkips += o.bossRelicSkips;
             goldGained += o.goldGained; goldLost += o.goldLost; sapphireRelicForfeits += o.sapphireRelicForfeits;
+            oocPotionDiscards += o.oocPotionDiscards; oocPotionDrinks += o.oocPotionDrinks;
             return *this;
         }
     };

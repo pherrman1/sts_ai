@@ -610,6 +610,7 @@ PYBIND11_MODULE(az_bench_native, m) {
                 field("boss_relic_skips", &P::bossRelicSkips);
                 field("gold_gained", &P::goldGained); field("gold_lost", &P::goldLost);
                 field("sapphire_relic_forfeits", &P::sapphireRelicForfeits);
+                field("ooc_potion_discards", &P::oocPotionDiscards); field("ooc_potion_drinks", &P::oocPotionDrinks);
                 for (int b = 0; b < P::kHeartHpBins; ++b) {   // heart_hp_00 .. heart_hp_15: Heart HP left in [50 b, 50 b + 50)
                     std::vector<std::int64_t> v;
                     for (const auto &p : s.progressAsc) v.push_back(p.heartHpHist[b]);

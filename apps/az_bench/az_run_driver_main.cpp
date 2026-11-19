@@ -229,15 +229,17 @@ int main(int argc, char **argv) {
     if (!cfg.forceKeys && (forced != 0 || s.keyRouteMasked != 0)) return 1;
     if (cfg.forceKeys && (forced == 0 || prog.keylessVictories != 0)) return 1;
     // Forced rewards: inert when off; when on, chests are opened and no relic left outside the reviewed list.
-    std::printf("forced rewards: chests %lld relics %lld deferred %lld on_leave %lld; chests_skipped %lld "
+    std::printf("forced rewards: chests %lld relics %lld deferred %lld on_leave %lld; chests_skipped %lld (cursed_key %lld) "
                 "relics_left elite %lld chest %lld other %lld\n",
                 static_cast<long long>(s.forcedRewards[0]), static_cast<long long>(s.forcedRewards[1]),
                 static_cast<long long>(s.rewardRelicDeferred), static_cast<long long>(s.rewardRelicOnLeave),
-                static_cast<long long>(prog.chestsSkipped), static_cast<long long>(prog.relicsLeftElite),
+                static_cast<long long>(prog.chestsSkipped), static_cast<long long>(prog.chestsSkippedCursedKey),
+                static_cast<long long>(prog.relicsLeftElite),
                 static_cast<long long>(prog.relicsLeftChest), static_cast<long long>(prog.relicsLeftOther));
     if (!cfg.forceRewards && (s.forcedRewards[0] + s.forcedRewards[1] + s.rewardRelicDeferred + s.rewardRelicOnLeave) != 0)
         return 1;
-    if (cfg.forceRewards && (s.forcedRewards[1] == 0 || prog.chestsSkipped != 0)) return 1;
+    // A chest may be skipped only with Cursed Key (forcedRewardActions leaves that choice open).
+    if (cfg.forceRewards && (s.forcedRewards[1] == 0 || prog.chestsSkipped != prog.chestsSkippedCursedKey)) return 1;
     // The Amber rules must act when on and be inert when off.
     // savescum replaces the chance rule (no edge is tested or resampled).
     const bool reveal = cfg.chanceOnReveal && !cfg.savescum;
