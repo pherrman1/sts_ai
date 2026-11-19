@@ -27,7 +27,6 @@ namespace sts::azbench {
             ids_.assign(cap_ * kCat, 0);
             f_.assign(cap_ * kFloat, 0);
             ref_.assign(cap_, 0);
-            hash_.assign(cap_, 0);
             indexed_.assign(cap_, 0);
             std::size_t n = 1;
             while (n < 2 * cap_) n <<= 1;
@@ -84,10 +83,9 @@ namespace sts::azbench {
                     tokType_[s] = t;
                     std::memcpy(&ids_[static_cast<std::size_t>(s) * kCat], id, sizeof(std::int16_t) * kCat);
                     std::memcpy(&f_[static_cast<std::size_t>(s) * kFloat], fv, sizeof(std::uint16_t) * kFloat);
-                    hash_[s] = h;
                     indexed_[s] = insert(h, s) ? 1 : 0;   // 0: hash held by other content (stays unshared)
                 }
-                ref_[s] += counts[r];
+                ref_[s] += static_cast<std::int32_t>(counts[r]);
                 slots[r] = s;
             }
         }
@@ -98,7 +96,8 @@ namespace sts::azbench {
                 const std::int32_t s = slots[k];
                 if (s < 0 || static_cast<std::size_t>(s) >= cap_ || ref_[s] <= 0) throw std::runtime_error("TokenStore: bad release");
                 if (--ref_[s] == 0) {
-                    if (indexed_[s]) erase(hash_[s]);
+                    if (indexed_[s])   // the hash is recomputed from the slot's content (not stored)
+                        erase(hashOf(tokType_[s], &ids_[static_cast<std::size_t>(s) * kCat], &f_[static_cast<std::size_t>(s) * kFloat]));
                     indexed_[s] = 0;
                     free_.push_back(s);
                 }
@@ -108,9 +107,9 @@ namespace sts::azbench {
         std::int8_t *tokType() { return tokType_.data(); }
         std::int16_t *ids() { return ids_.data(); }
         std::uint16_t *f() { return f_.data(); }
-        const std::int64_t *refs() const { return ref_.data(); }
+        const std::int32_t *refs() const { return ref_.data(); }
         std::size_t bytes() const {
-            return cap_ * (1 + 2 * kCat + 2 * kFloat + sizeof(std::int64_t) + 8 + 1 + 4) + tabHash_.size() * 12;
+            return cap_ * (1 + 2 * kCat + 2 * kFloat + sizeof(std::int32_t) + 1 + 4) + tabHash_.size() * 12;
         }
 
     private:
@@ -174,8 +173,7 @@ namespace sts::azbench {
         std::vector<std::int8_t> tokType_;
         std::vector<std::int16_t> ids_;
         std::vector<std::uint16_t> f_;
-        std::vector<std::int64_t> ref_;
-        std::vector<std::uint64_t> hash_;
+        std::vector<std::int32_t> ref_;
         std::vector<std::uint8_t> indexed_;
         std::vector<std::uint64_t> tabHash_;
         std::vector<std::int32_t> tabSlot_;
