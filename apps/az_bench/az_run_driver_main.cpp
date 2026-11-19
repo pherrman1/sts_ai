@@ -187,6 +187,12 @@ int main(int argc, char **argv) {
                 samples.size(), withPolicy, combat, bad, static_cast<long long>(s.stalls),
                 static_cast<long long>(s.unsupported), static_cast<long long>(s.knowledgeFailures), static_cast<long long>(s.invalidActions), static_cast<long long>(s.encodeCut), static_cast<long long>(s.encodeCutOoc),
                 static_cast<long long>(s.terminalLeaves), secs);
+    std::printf("memory: pool_nodes %lld pool_gc %lld pool_real %lld pool_outer %lld pending_cap %lld move_dist_cap %lld "
+                "cache_entries %lld done %lld\n",
+                static_cast<long long>(s.memPoolNodes), static_cast<long long>(s.memPoolGc),
+                static_cast<long long>(s.memPoolReal), static_cast<long long>(s.memPoolOuter),
+                static_cast<long long>(s.memPendingCap), static_cast<long long>(s.memMoveDistCap),
+                static_cast<long long>(s.memCacheEntries), static_cast<long long>(s.memDone));
     std::printf("outcomes (class: runs):");
     for (int k = 0; k < azbench::kOutcomeClasses; ++k)
         if (s.outcomes[k]) std::printf(" %d:%lld", k, static_cast<long long>(s.outcomes[k]));
