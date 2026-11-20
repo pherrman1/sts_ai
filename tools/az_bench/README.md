@@ -85,3 +85,14 @@ Every report row of `metrics.jsonl` carries the time split (logging only):
 Each thread's phases add up to about 1000. With a GPU the issuing phases are CPU time of that thread and the `sync` /
 `loss_read` phases are time it waits for the GPU; `--gpu-timing`'s `gpu_ms_per_s` is the elapsed GPU time of each
 stream, and the two streams overlap, so their sum is not the GPU's load.
+
+First reading of the time split (ledger §821, 2026-11-20) and the two fixes that followed, both with unchanged
+results:
+
+- `search_values` built its two constant vectors in every batch, and `floors[0] = 57.0` on a GPU tensor is a
+  synchronous copy that waits for the whole forward on the stream (`out` 4.4 of 10.5 ms per batch, `sync` 0). They are
+  now built once per device (`search_consts`). Expect `out` to fall and `sync` to take over whatever GPU wait is left.
+- The compact replay window tested every live sample at every chunk to find the samples to evict (two passes over
+  a 10M window: `take_add` 58 % of the trainer's time). The scans now read the window from its old end in blocks and
+  stop at the first sample that stays (`Replay._first_keep`, `_soft_bytes_evict`), so `take_add` no longer grows with
+  `--window`.
