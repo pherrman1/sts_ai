@@ -58,3 +58,30 @@ Heart keeps the fight's start state and plays the fight once per arm and rep fro
 budget (moves before the Heart use the normal flags); plays go to `heart_probe.jsonl`. Use a frozen net
 (`--init-net CKPT --min-replay 1000000000000 --keep-full 0`). `heart_probe_report.py heart_probe.jsonl` prints the
 paired per-start damage difference against arm 0. First use: ledger "Heart search probe" (2026-11-18).
+
+## CPU affinity and time split (2026-11-20)
+
+`selfplay.py --pin-inference CPUS` (default off, Linux): the inference thread runs on the given logical CPUs and every
+other thread of the process (workers, trainer, main, library pools) on the remaining ones; the sweep over
+`/proc/self/task` is repeated at every report, so threads started later follow. `CPUS` is a list such as `5,11` or
+`auto` (the SMT siblings of the highest-numbered allowed CPU, one physical core). Give it both siblings of a core:
+the pack threads the inference thread starts inherit its CPUs. It changes scheduling only. Live check on the Stage 1
+run on the 6-core PC (ledger §820, one before/after comparison): moves/s +10.2 %.
+
+Every report row of `metrics.jsonl` carries the time split (logging only):
+
+- `infer_batches_per_s`, `infer_rows_per_batch`: inference batches and their mean rows.
+- `infer_ms_per_s`: wall ms per second of the inference thread by phase. `wait_pack` = `next_flat` (waiting for rows
+  and packing; `pack_s_per_s` is the packing part), `weights` = taking over the trainer's weights, `h2d` = shapes and
+  host-to-GPU copies, `forward` = dtype casts and the net (on a GPU: issuing the kernels), `out` = search values and
+  output copies (issuing), `sync` = waiting for the previous batch on the GPU, `submit` = results to the driver.
+- `train_ms_per_s`: the same for the training thread. `take_add` = finished samples into the window, `idle` =
+  sleeping (window too small or at the replay ratio cap), `sample`, `h2d`, `fwd_bwd` = loss, backward and clipping
+  (issuing), `sync` = the gradient-norm / loss read that waits for the GPU, `opt`, `loss_read` = reading the loss
+  parts (waits for the GPU), `publish` = weights hand-over.
+- `worker_cpu_s_per_s`: CPU seconds per second of all worker threads together. `search` is their whole search loop
+  and contains `step` (simulator steps and expansions) and `encode` (token encoding).
+
+Each thread's phases add up to about 1000. With a GPU the issuing phases are CPU time of that thread and the `sync` /
+`loss_read` phases are time it waits for the GPU; `--gpu-timing`'s `gpu_ms_per_s` is the elapsed GPU time of each
+stream, and the two streams overlap, so their sum is not the GPU's load.
