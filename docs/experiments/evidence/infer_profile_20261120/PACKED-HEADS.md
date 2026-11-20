@@ -30,3 +30,5 @@ dmon after: SM mean 70.8 % (min 33, max 93), mem 44 %. Only desktop apps on GPU.
 PC reading: GPU infer time -16 % and SM util down, but throughput -6 %; CPU side (wait_pack, worker CPU) now the limit. Confounders: --force-potions changes play; before-rows from another phase (A5 rolling 40 % vs 42 %); short window. Clean verdict needs A/B with only --packed-heads toggled.
 State: A5 rolling 42.3 % over 10,143 runs; MemAvail 3.6 GB.
 Raw rows on PC: amber_scratch/pre_1139_1140_rows_20261120.jsonl, post_ph_rows_20261120.jsonl; full profile files infer_profile_ph_20261120.json/.log there.
+
+## CONFIRMATION 22:25 CET (steady, no StS2): moves/s 11,930 (+12 % vs 21:25), pos/s 233,006 (+11 %); gpu infer 659 ms/s; dmon SM 74.1 %. The 22:05 window was low (StS2 closed only ~21:56, run 25 min old, noise). Details + rows in sched-2230.md.
