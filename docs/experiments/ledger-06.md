@@ -28238,7 +28238,7 @@ the GPU is busy 91 % of the time: no single part limits the run any more (Infere
 code (the inference thread is no longer saturated, so its own core may now cost the workers more than it gives).
 **Knowledge impact:** this entry.
 
-## §TBD — Stage 1 inference GPU profile on real states: the varlen attention kernel is 37 % of the GPU time of a batch, and most of that is work on dead blocks (every row runs to the batch's token bucket); row-bounds kernel variant added default off (PC, 2026-11-20)
+## §823 — Stage 1 inference GPU profile on real states: the varlen attention kernel is 37 % of the GPU time of a batch, and most of that is work on dead blocks (every row runs to the batch's token bucket); row-bounds kernel variant added default off (PC, 2026-11-20)
 
 **Question:** after §822 the run is GPU-bound and inference is about 80 % of the GPU load. Why does one net
 evaluation cost about 4.6 µs of GPU time in the run against 1.9 µs in the Stage 0 bench on uniform rows?
