@@ -28141,7 +28141,7 @@ bottleneck, not the Heart's search budget.
 **Decision:** no change to the self-play budget from this probe. `--heart-arms` stays a default-off diagnostic.
 **Knowledge impact:** this entry; `tools/az_bench/README.md`.
 
-## §TBD — CPU affinity for the Stage 1 inference thread (`selfplay.py --pin-inference`): one before/after comparison on the live amber_scratch run, inference thread alone on one physical core (CPUs 5,11), all other threads on the other five cores: 10,405 → 11,462 moves/s (+10.2 %), GPU load 59 → 67 % (PC, 2026-11-20)
+## §820 — CPU affinity for the Stage 1 inference thread (`selfplay.py --pin-inference`): one before/after comparison on the live amber_scratch run, inference thread alone on one physical core (CPUs 5,11), all other threads on the other five cores: 10,405 → 11,462 moves/s (+10.2 %), GPU load 59 → 67 % (PC, 2026-11-20)
 
 **Question (Philipp 2026-11-20 12:46 CET, "wie wir mit möglichst wenig Änderung das training schneller machen
 können"):** what limits the Stage 1 run's speed, and does giving the inference thread its own core help?

@@ -66,7 +66,7 @@ other thread of the process (workers, trainer, main, library pools) on the remai
 `/proc/self/task` is repeated at every report, so threads started later follow. `CPUS` is a list such as `5,11` or
 `auto` (the SMT siblings of the highest-numbered allowed CPU, one physical core). Give it both siblings of a core:
 the pack threads the inference thread starts inherit its CPUs. It changes scheduling only. Live check on the Stage 1
-run on the 6-core PC (ledger §TBD, one before/after comparison): moves/s +10.2 %.
+run on the 6-core PC (ledger §820, one before/after comparison): moves/s +10.2 %.
 
 Every report row of `metrics.jsonl` carries the time split (logging only):
 
