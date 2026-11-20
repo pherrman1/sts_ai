@@ -9,6 +9,13 @@ Input qkv [N, 3 d] as nn.MultiheadAttention's in_proj produces it (q | k | v, he
 Output [N, d] in the layout out_proj expects. Packed rows past seq_off[-1] (bucket padding) are not written.
 Same math as scaled_dot_product_attention with a key padding mask up to float rounding (tests/test_varlen_attn.py,
 TRITON_INTERPRET=1 on a CPU).
+
+Row bounds (2026-11-20, ROW_BOUNDS, default off): the default kernel runs every program's key loop to the batch's
+token bucket (a static bound), for every row. A batch's bucket follows its longest row, so a 30-token row in a
+96-token batch does four block pairs per head where it has keys and queries for one, and so does each padding row
+of the row bucket. With ROW_BOUNDS the key loop ends at the row's own length and a query block past it does
+nothing. The blocks left out are exactly those with no live key (they leave the running maximum, the sum and the
+accumulator unchanged) or no live query (they store nothing): same output values.
 """
 
 import os
@@ -53,6 +60,48 @@ def _attn_kernel(QKV, O, OFF, scale, D: tl.constexpr, DH: tl.constexpr, BM: tl.c
              mask=qmask[:, None])
 
 
+@triton.jit
+def _attn_kernel_rows(QKV, O, OFF, scale, D: tl.constexpr, DH: tl.constexpr, BM: tl.constexpr, BN: tl.constexpr):
+    """_attn_kernel with the row's own bounds: the key loop ends at the row's length n (the blocks past it hold no
+    live key), and a query block past n has an empty loop and stores nothing."""
+    r = tl.program_id(0)
+    h = tl.program_id(1)
+    qb = tl.program_id(2)
+    start = tl.load(OFF + r)
+    n = tl.load(OFF + r + 1) - start
+    offs_m = qb * BM + tl.arange(0, BM)
+    offs_d = tl.arange(0, DH)
+    qmask = offs_m < n
+    q = tl.load(QKV + (start + offs_m)[:, None] * (3 * D) + h * DH + offs_d[None, :], mask=qmask[:, None], other=0.0)
+    m_i = tl.full([BM], float("-inf"), tl.float32)
+    l_i = tl.zeros([BM], tl.float32)
+    acc = tl.zeros([BM, DH], tl.float32)
+    hi = n
+    if qb * BM >= n:   # no live query in this block
+        hi = 0
+    for k0 in range(0, hi, BN):
+        offs_n = k0 + tl.arange(0, BN)
+        kmask = offs_n < n
+        k = tl.load(QKV + (start + offs_n)[None, :] * (3 * D) + D + h * DH + offs_d[:, None], mask=kmask[None, :],
+                    other=0.0)
+        s = tl.dot(q, k) * scale
+        s = tl.where(kmask[None, :], s, float("-inf"))
+        m_new = tl.maximum(tl.maximum(m_i, tl.max(s, 1)), -1e30)
+        p = tl.exp(s - m_new[:, None])
+        alpha = tl.exp(m_i - m_new)
+        l_i = l_i * alpha + tl.sum(p, 1)
+        v = tl.load(QKV + (start + offs_n)[:, None] * (3 * D) + 2 * D + h * DH + offs_d[None, :], mask=kmask[:, None],
+                    other=0.0)
+        acc = acc * alpha[:, None] + tl.dot(p.to(v.dtype), v)
+        m_i = m_new
+    acc = acc / l_i[:, None]
+    tl.store(O + (start + offs_m)[:, None] * D + h * DH + offs_d[None, :], acc.to(O.dtype.element_ty),
+             mask=qmask[:, None])
+
+
+ROW_BOUNDS = False   # True: _attn_kernel_rows (selfplay.py --attn-row-bounds); same output values
+
+
 @torch.library.custom_op("azbench::varlen_attn", mutates_args=())
 def _varlen_attn_op(qkv: torch.Tensor, seq_off: torch.Tensor, heads: int, max_len: int) -> torch.Tensor:
     N, D3 = qkv.shape
@@ -60,6 +109,11 @@ def _varlen_attn_op(qkv: torch.Tensor, seq_off: torch.Tensor, heads: int, max_le
     out = qkv.new_empty(N, D)   # bucket-padding rows past seq_off[-1] stay unwritten; nothing reads them
     R = seq_off.shape[0] - 1
     BM = BN = 32 if max_len <= 32 else int(os.environ.get("AZ_ATTN_BLOCK", "64"))
+    if ROW_BOUNDS:
+        _attn_kernel_rows[(R, heads, triton.cdiv(max_len, BM))](qkv, out, seq_off, (D // heads) ** -0.5, D=D,
+                                                                DH=D // heads, BM=BM, BN=BN,
+                                                                num_warps=int(os.environ.get("AZ_ATTN_WARPS", "4")))
+        return out
     _attn_kernel[(R, heads, triton.cdiv(max_len, BM))](qkv, out, seq_off, (D // heads) ** -0.5, D=D, DH=D // heads,
                                                        BM=BM, BN=BN, MAXLEN=triton.cdiv(max_len, BN) * BN,
                                                        num_warps=int(os.environ.get("AZ_ATTN_WARPS", "4")))

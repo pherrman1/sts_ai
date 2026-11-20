@@ -96,6 +96,12 @@ the GPU to itself: stop the run first. No game seeds are driven.
     python3 tools/az_bench/infer_profile.py --module-dir BUILD_DIR --ckpt RUN/ckpt_N.pt --replay RUN/replay \
         --out prof.json
 
+First profile (ledger §TBD): the varlen attention kernel is 37 % of a batch's GPU time. A batch's token bucket
+follows its longest row (80 or 96 for nearly every batch, at 36 tokens per row), and the kernel runs every row,
+the padding rows of the row bucket included, to that bucket. `selfplay.py --attn-row-bounds` (default off;
+`varlen_attn.py` `ROW_BOUNDS`) ends each row's key loop at the row's own length and skips query blocks past it:
+same output values. On a GPU `infer_profile.py` times both settings and compares their outputs.
+
 Each thread's phases add up to about 1000. With a GPU the issuing phases are CPU time of that thread and the `sync` /
 `loss_read` phases are time it waits for the GPU; `--gpu-timing`'s `gpu_ms_per_s` is the elapsed GPU time of each
 stream, and the two streams overlap, so their sum is not the GPU's load.

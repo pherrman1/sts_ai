@@ -995,6 +995,10 @@ def main(argv=None):
     ap.add_argument("--pack-threads", type=int, default=4)
     ap.add_argument("--fused-layer", action="store_true", help="inference: stage 0's three-kernel layers (d <= 128)")
     ap.add_argument("--compile", action="store_true", help="inference: torch.compile")
+    ap.add_argument("--attn-row-bounds", action="store_true",
+                    help="inference on a GPU: the varlen attention kernel ends each row's key loop at the row's own "
+                         "length and skips query blocks past it, instead of running every row to the batch's token "
+                         "bucket (varlen_attn.py ROW_BOUNDS; same output values)")
     ap.add_argument("--fused-net", action="store_true",
                     help="inference: the whole net as one Triton kernel per batch (tools/az_bench/fused_net.py; same "
                          "math, fp32 residual stream); needs --packed-h2d, not with --compile")
@@ -1129,6 +1133,7 @@ def main(argv=None):
     infer.sdpa = True
     if cuda:
         infer.varlen_attn = amber_net.load_kernel("varlen_attn")
+        sys.modules["az_bench_varlen_attn"].ROW_BOUNDS = bool(args.attn_row_bounds)
         if args.fused_layer:
             infer.fused_layer = amber_net.load_fused_layer()
         infer = infer.half()
