@@ -1246,7 +1246,7 @@ def main(argv=None):
     counters.setdefault("nonfinite_skips", 0)
     nonfinite_run = [0]   # consecutive skipped steps
     gradbox = {"n": 0, "sum": 0.0, "max": 0.0}   # gradient norm (before clipping) of the finite steps since the last report
-    infer_stats = {"batches": 0, "rows": 0, "syncs": 0}
+    infer_stats = {"batches": 0, "rows": 0, "syncs": 0, "tokens": 0}   # tokens: of the rows, packed batches only
     gpu_ms = {"infer": 0.0, "train": 0.0}   # --gpu-timing: cumulative stream busy time
     # Phase timers (logging only): cumulative wall seconds of the inference thread and of the training thread.
     #   inference: wait_pack = next_flat (waiting for rows + packing; the driver's pack_s is the packing part),
@@ -1267,6 +1267,7 @@ def main(argv=None):
         row_b.append(args.batch)
     tok_b = [int(v) for v in args.tok_buckets.split(",")]
     act_b = [int(v) for v in args.act_buckets.split(",")]
+    infer_tok_b = {t: 0 for t in tok_b}   # inference batches per token bucket (the padded length of their rows)
     min_rows = max(1, min(args.batch, args.workers * args.games) // 2)
 
     def guarded(fn):
@@ -1358,6 +1359,7 @@ def main(argv=None):
                         drv.set_weights_version(infer_stats["syncs"])
                     t_ph = lap(infer_s, "weights", t_ph)
                     M = Rp * Tp
+                    nl = 0
                     if args.packed_h2d:
                         # The driver wrote the N live tokens packed, pack_idx [N] and seq_off; entries N..npad of
                         # the packed arrays are trash (stale but valid values), their pack_idx the trash slot M.
@@ -1438,6 +1440,9 @@ def main(argv=None):
                 launched = (ticket, rows, Ap, out, ev, infer_stats["syncs"], ev0)
                 infer_stats["batches"] += 1
                 infer_stats["rows"] += rows
+                infer_stats["tokens"] += max(0, int(nl) - (Rp - rows))   # a padding row has one token (packFlat)
+                if Tp in infer_tok_b:   # fixed keys: the report thread copies this dict
+                    infer_tok_b[Tp] += 1
             if pending is not None:
                 finish(pending)
             pending = launched
@@ -1595,6 +1600,7 @@ def main(argv=None):
     last_floors = last_s["floors_sum"]
     last_gpu = dict(gpu_ms)
     last_infer, last_infer_s, last_train_s = dict(infer_stats), dict(infer_s), dict(train_s)
+    last_tok_b = dict(infer_tok_b)
     asc_hist = []   # (runs, wins) per report window at the current ascension (curriculum)
     print(f"# selfplay net {args.net} ({sum(p.numel() for p in train_net.parameters())} params) workers {args.workers} "
           f"games {args.games} seed_base {seed_base} out {args.out_dir}", flush=True)
@@ -1722,6 +1728,14 @@ def main(argv=None):
             d_b = infer_stats["batches"] - last_infer["batches"]
             row["infer_batches_per_s"] = round(d_b / dt, 1)
             row["infer_rows_per_batch"] = round((infer_stats["rows"] - last_infer["rows"]) / max(1, d_b), 1)
+            # Live tokens per row (0 when the batches are not packed) and batches per token bucket: the padded
+            # length every row of a batch is laid out to (the bucket of its longest row).
+            row["infer_tokens_per_row"] = round((infer_stats["tokens"] - last_infer["tokens"])
+                                                / max(1, infer_stats["rows"] - last_infer["rows"]), 2)
+            now_tok_b = dict(infer_tok_b)
+            row["infer_tok_bucket_batches"] = {str(t): n - last_tok_b[t] for t, n in now_tok_b.items()
+                                               if n - last_tok_b[t]}
+            last_tok_b = now_tok_b
             row["infer_ms_per_s"] = {k: round(1000 * (v - last_infer_s[k]) / dt, 1) for k, v in infer_s.items()}
             row["train_ms_per_s"] = {k: round(1000 * (v - last_train_s[k]) / dt, 1) for k, v in train_s.items()}
             row["worker_cpu_s_per_s"] = {k: round((s[k + "_cpu"] - last_s[k + "_cpu"]) / dt, 3)
