@@ -1800,8 +1800,8 @@ def main(argv=None):
             if args.force_potions:   # real reward potions taken by the rule (cumulative)
                 row["forced_potions"] = s["forced_potions"]
             if args.ooc_canon:   # real card selection screens with a duplicate removed, actions removed (cumulative)
-                oc = s["ooc_canon"]
-                row["ooc_canon"] = {"screens": oc[0], "removed": oc[1]}
+                canon = s["ooc_canon"]
+                row["ooc_canon"] = {"screens": canon[0], "removed": canon[1]}
             if pre_trim is not None:
                 row["rss_gb_pre_trim"] = pre_trim
             row["relics_per_run"], row["deck_per_run"] = per_run_means(pw)
