@@ -28175,3 +28175,32 @@ its next planned restart. Report rows now carry the time split (`infer_ms_per_s`
 `infer_rows_per_batch`, `worker_cpu_s_per_s`) to decide the next steps. Re-measure after savescum goes off (fewer
 cache hits, more GPU work).
 **Knowledge impact:** this entry; `tools/az_bench/README.md`.
+
+## §TBD — Stage 1 time split after the restart with `--pin-inference 5,11` (savescum off): inference thread 10.5 ms per batch of which 4.4 ms in `out` (a hidden GPU wait), trainer 58 % of its time in window-sized eviction scans; pinning not shown to help without savescum, 7,443 vs ~7,800 moves/s (PC, 2026-11-20)
+
+**Question:** where does the time of the inference thread and of the trainer go (§820's open point), and does
+`--pin-inference` hold its gain after the restart?
+**Data:** [ROWS](evidence/selfplay_time_split_20261120/ROWS.md): 10 consecutive report rows 15:45-15:49 CET of the
+amber_scratch run restarted 15:38 CET on main 458f0019 (A0, savescum off, 11 workers x 450 games, 10M window,
+`--pin-inference 5,11`). Read-only; the rows start 7 minutes after the restart, so the comparison with the unpinned
+level before it (about 7,800 moves/s without savescum) is not a clean one.
+**Result:** 7,443 moves/s (6,774-7,852), 142.9k net positions/s, 94.8 batches/s of 1,510 rows.
+Inference thread, ms per batch: wait + pack 2.7 (pack 2.2), h2d 0.4, forward 2.6, out 4.35, sync 0.01, submit 0.4.
+GPU time of the inference stream per batch 6.9 ms = forward + out on the CPU side (6.95 ms).
+Trainer, ms per step (4.13 steps/s): take_add 140, sync 63, fwd_bwd 19, sample 8, opt 6, h2d 4, idle 0.
+Workers: 4.67 CPU s/s in the search loop (step 2.02, encode 1.06).
+**Interpretation:** (1) Read in the code and timed (cloud container, 10M samples: 174 ms + 123 ms per call):
+`Replay._add_compact` and `_set_soft_q` tested every live sample at every chunk to find evictions, which is the
+trainer's `take_add`; the cost grew with `--window` (200k, 2M, now 10M) and left the trainer without idle time.
+(2) **Inference**, not measured directly: `out` is about 30 small operations and five asynchronous copies but costs
+more than the forward, `sync` is zero and the stream's GPU time equals the CPU time between its two events. That
+fits `floors[0] = 57.0` in `search_values`: an item assignment on a GPU tensor copies a CPU scalar synchronously
+(`copy_to` in ATen/TensorIndexing.h, `memcpy_and_sync`), which waits for the batch's whole forward, so the two-deep
+inference pipeline never overlapped packing with GPU work. (3) With the inference thread mostly waiting for the
+GPU, its own core helps it little and costs the workers two logical CPUs, which fits the missing gain here; §820's
++10.2 % was measured with savescum (4x the cache hits, more worker load per net position).
+**Decision:** both costs removed with unchanged results (constants built once; eviction scans from the window's old
+end), Philipp's go by decision card 15:59 CET, restart right after the merge with a 5-15 minute live check. The
+time split then shows whether `out` and `take_add` fell. `--pin-inference` stays default off; compare it again
+after the fix (one start with, one without).
+**Knowledge impact:** this entry; `tools/az_bench/README.md`.

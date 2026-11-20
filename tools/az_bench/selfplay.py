@@ -169,6 +169,8 @@ class Replay:
         self.sq_lo = np.zeros(self.cs if self.soft_q else 0, np.uint8)               # first stored class
         self.sq_len = np.zeros(self.cs if self.soft_q else 0, np.uint8)              # 0: not set yet (final outcome)
         self.q_head = 0
+        # Quantized targets: set in sample order so far (_soft_bytes_evict), and the end of the samples set.
+        self.sq_ordered, self.sq_hi = True, 0
         self.soft_stats = [0, 0]   # (samples, bytes) written by set_soft_outcome, compressed
         # EMA outcome targets (--value-ema-halflife): one distribution per sample, written by set_soft_outcome.
         self.soft_outcome = (np.zeros((self.cs, OUTCOME_CLASSES), np.float16)
@@ -274,6 +276,8 @@ class Replay:
             for k, v in state["scalars"].items():
                 setattr(self, k, v)
             self.soft_stats = list(state["soft_stats"])
+            if self.soft_q:   # the saved window does not say in which order its targets were set: look once
+                self.sq_ordered, self.sq_hi = self._sq_starts_rise(), self.s_head
             self.load_partial = False
         return state["extra"]
 
@@ -298,6 +302,49 @@ class Replay:
         for key in ("tok_type", "ids", "f"):
             out[key] = np.asarray(s[key])[src]
         return out
+
+    SCAN_BLOCK = 4096   # samples read per step of the eviction scans below (tests lower it)
+
+    def _first_keep(self, live, keep):
+        """Number of oldest samples before the first one for which keep(ring rows) holds (live when none does).
+        Reads the window from its old end in blocks and stops at that sample: the same result as testing all live
+        samples, at a cost that does not grow with the window."""
+        k = 0
+        while k < live:
+            n = min(self.SCAN_BLOCK, live - k)
+            ok = keep((self.s_tail + k + np.arange(n)) % self.cs)
+            if ok.any():
+                return k + int(np.argmax(ok))
+            k += n
+        return live
+
+    def _soft_bytes_evict(self, live, limit):
+        """Number of oldest samples to evict so that no live sample's target bytes start before limit (they are
+        about to be overwritten): through the last such sample among the live oldest samples. While targets were
+        set in sample order (sq_ordered) their byte starts rise with the sample index, so the scan stops at the
+        first block holding a set sample at or after limit; otherwise all live samples are tested."""
+        if not self.sq_ordered:
+            j = (self.s_tail + np.arange(live)) % self.cs
+            bad = (self.sq_len[j] > 0) & (self.sq_start[j] < limit)
+            return int(np.flatnonzero(bad)[-1]) + 1 if bad.any() else 0
+        k = m = 0
+        while k < live:
+            n = min(self.SCAN_BLOCK, live - k)
+            j = (self.s_tail + k + np.arange(n)) % self.cs
+            is_set = self.sq_len[j] > 0
+            bad = is_set & (self.sq_start[j] < limit)
+            if bad.any():
+                m = k + int(np.flatnonzero(bad)[-1]) + 1
+            if (is_set & ~bad).any():
+                break
+            k += n
+        return m
+
+    def _sq_starts_rise(self):
+        """True when the byte starts of the live samples with a set target rise with the sample index."""
+        j = (self.s_tail + np.arange(self.s_head - self.s_tail)) % self.cs
+        st = self.sq_start[j][self.sq_len[j] > 0]
+        return bool((np.diff(st) >= 0).all())
 
     def _evict(self, m):
         """Compact: evicts the m oldest samples, releasing their dictionary references (caller holds the lock)."""
@@ -339,13 +386,13 @@ class Replay:
             # Room in the sample, index, action and run rings: the oldest samples whose rows the chunk overwrites go.
             live = self.s_head - self.s_tail
             if live:
-                j = (self.s_tail + np.arange(live)) % self.cs
-                ok = ((self.idx_start[j] >= self.i_head + n_ref - self.ci)
-                      & (self.act_start[j] >= self.a_head + n_act - self.ca))
-                if self.hp_runs:
-                    ok &= self.hp_ref[j] >= self.r_head + n_run - self.cr
-                k = int(np.argmax(ok)) if ok.any() else live
-                self._evict(max(k, live + S - self.cs))
+                def keep(j):
+                    ok = ((self.idx_start[j] >= self.i_head + n_ref - self.ci)
+                          & (self.act_start[j] >= self.a_head + n_act - self.ca))
+                    if self.hp_runs:
+                        ok &= self.hp_ref[j] >= self.r_head + n_run - self.cr
+                    return ok
+                self._evict(max(self._first_keep(live, keep), live + S - self.cs))
             # Room in the dictionary: the oldest samples go until the chunk's new tokens fit.
             # count_new is recomputed after each eviction: an evicted sample can free a token this chunk uses, which
             # it then needs a slot for. Margin 16: count_new may undercount by a hash collision inside the chunk.
@@ -452,12 +499,12 @@ class Replay:
             n = int(ln[k0:].sum())
             data = data[int(ln[:k0].sum()):]
             # The oldest samples whose target bytes are overwritten go (samples not set yet hold no bytes).
+            if lo < self.sq_hi:   # not in sample order: byte starts no longer rise with the sample index
+                self.sq_ordered = False
+            self.sq_hi = max(self.sq_hi, first + len(targets))
             live = lo - self.s_tail
-            if live:
-                j = (self.s_tail + np.arange(live)) % self.cs
-                bad = (self.sq_len[j] > 0) & (self.sq_start[j] < self.q_head + n - self.cq)
-                if bad.any():   # only samples before lo: the chunk's own samples hold no bytes yet
-                    self._evict(int(np.flatnonzero(bad)[-1]) + 1)
+            if live:   # only samples before lo: the chunk's own samples hold no bytes yet
+                self._evict(self._soft_bytes_evict(live, self.q_head + n - self.cq))
             starts = self.q_head + np.concatenate([[0], np.cumsum(ln[k0:])[:-1]]).astype(np.int64)
             self._put(self.sq, self.q_head, data)
             self._put(self.sq_start, lo, starts)
@@ -593,14 +640,31 @@ def ema_outcome_targets(dist, outcome, run, lam):
 
 # --- heads -> search values ----------------------------------------------------------------------------------------
 
+_SEARCH_CONSTS = {}   # (device, dtype) -> (floor value per outcome class, HP per class); see search_values
+
+
+def search_consts(device, dtype):
+    """search_values' two constant vectors on device, built once. Building them per call cost the inference thread
+    a wait for the GPU in every batch: an item assignment on a GPU tensor (floors[0] = 57.0) copies a CPU scalar
+    synchronously, which waits for everything issued on the stream before it (the batch's whole forward)."""
+    key = (device, dtype)
+    c = _SEARCH_CONSTS.get(key)
+    if c is None:
+        with torch.inference_mode(False):   # plain tensors: usable in and outside inference mode
+            floors = torch.arange(OUTCOME_CLASSES, dtype=dtype)
+            floors[0] = 57.0
+            c = (floors.to(device), torch.arange(HP_CLASSES, dtype=dtype).to(device))
+        _SEARCH_CONSTS[key] = c
+    return c
+
+
 def search_values(outcome_logits, hp_logits):
     """F = E[final floor] / 57 (a win counts 57; class 0 = win, f = death on floor f) and E[HP] from the heads."""
     p = torch.softmax(outcome_logits.float(), -1)
-    floors = torch.arange(OUTCOME_CLASSES, device=p.device, dtype=p.dtype)
-    floors[0] = 57.0
+    floors, hp_steps = search_consts(p.device, p.dtype)
     Fv = (p * floors).sum(-1) / 57.0
     ph = torch.softmax(hp_logits.float(), -1)
-    ehp = (ph * torch.arange(HP_CLASSES, device=ph.device, dtype=ph.dtype)).sum(-1)
+    ehp = (ph * hp_steps).sum(-1)
     return Fv, ehp
 
 

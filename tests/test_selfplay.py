@@ -493,6 +493,113 @@ class ReplayTest(unittest.TestCase):
         self.assertLess(cmp_.nbytes(), ref.nbytes())
 
     @unittest.skipUnless(MODULES, "az_bench_native not built")
+    def test_eviction_scans_equal_full_scan(self):
+        """The eviction scans of the compact window read it from its old end in blocks, so their cost does not grow
+        with the window. With tiny blocks and tight rings every call returns what a test of all live samples
+        returns (evictions longer than a block included), and the window ends up identical to one scanned in a
+        single block. Targets set out of sample order switch the byte-ring scan to all live samples (same result);
+        a loaded window finds out from its data whether its targets are in order."""
+        sp = load()
+        TS = native().TokenStore
+        seen = {"keep": 0, "keep_multi": 0, "soft": 0, "soft_multi": 0}
+
+        class Checked(sp.Replay):
+            def _first_keep(self, live, keep):
+                got = super()._first_keep(live, keep)
+                ok = keep((self.s_tail + np.arange(live)) % self.cs)
+                want = int(np.argmax(ok)) if ok.any() else live
+                assert got == want, ("first_keep", got, want)
+                seen["keep"] += want > 0
+                seen["keep_multi"] += want > self.SCAN_BLOCK
+                return got
+
+            def _soft_bytes_evict(self, live, limit):
+                got = super()._soft_bytes_evict(live, limit)
+                j = (self.s_tail + np.arange(live)) % self.cs
+                bad = (self.sq_len[j] > 0) & (self.sq_start[j] < limit)
+                want = int(np.flatnonzero(bad)[-1]) + 1 if bad.any() else 0
+                assert got == want, ("soft_bytes_evict", got, want, self.sq_ordered)
+                seen["soft"] += want > 0
+                seen["soft_multi"] += want > self.SCAN_BLOCK
+                return got
+
+        def hp_chunk(rng, S, first):   # per-floor HP as the driver writes it (one vector per run)
+            c = chunk(rng, S, first)
+            c["run"] = (np.arange(S) // 6 + first).astype(np.uint64)
+            runs = np.asarray(c["run"])
+            vec = {int(r): (rng.integers(0, 120, 56).astype(np.int16), int(rng.integers(0, 40))) for r in runs}
+            c["floor"] = np.array([vec[int(r)][1] + i % 6 for i, r in enumerate(runs)], np.int16)
+            fl = np.clip(c["floor"].astype(np.int64), 1, 56)
+            c["hp_floor"] = np.where(np.arange(1, 57)[None, :] >= fl[:, None],
+                                     np.stack([vec[int(r)][0] for r in runs]), -1).astype(np.int16)
+            return self.compactify(c)
+
+        kw = dict(tokens_per_sample=48, actions_per_sample=12, hp_floors=56, soft_outcome=True, compact=True,
+                  dict_tokens_per_sample=48, token_store=TS, compress_targets=True)
+        rings = [dict(soft_bytes_per_sample=12, hp_runs_per_sample=1.0),    # byte ring tight
+                 dict(soft_bytes_per_sample=60, hp_runs_per_sample=0.05),   # run ring tight
+                 dict(soft_bytes_per_sample=60, hp_runs_per_sample=1.0)]    # sample / index rings
+        for block in (1, 3, 8):
+            Checked.SCAN_BLOCK = block
+            for seed in range(3):
+                rng = np.random.default_rng(100 * block + seed)
+                pairs = [(Checked(300, **kw, **r), sp.Replay(300, **kw, **r)) for r in rings]
+                first = 0
+                for n in range(24):
+                    S = int(rng.integers(20, 56))   # at most 55 * 57 bytes: fits the tight byte ring
+                    cc = hp_chunk(rng, S, first)
+                    t = rng.dirichlet(np.full(57, 0.3), S).astype(np.float32)
+                    for a, b in pairs:
+                        fa, fb = a.add(cc), b.add(cc)
+                        self.assertEqual(fa, fb)
+                        if n % 4 != 3:   # some chunks keep their final-outcome targets
+                            a.set_soft_outcome(fa, t)
+                            b.set_soft_outcome(fb, t)
+                    first += S
+                for a, b in pairs:
+                    self.assertTrue(a.sq_ordered and b.sq_ordered)
+                    self.assertEqual((a.s_tail, a.s_head, a.q_head), (b.s_tail, b.s_head, b.q_head))
+                    ra, rb = a.rows(a.s_tail, len(a)), b.rows(b.s_tail, len(b))
+                    for key in ra:
+                        np.testing.assert_array_equal(ra[key], rb[key], key)
+        self.assertGreater(seen["keep_multi"], 20)   # evictions longer than one block happened in both scans
+        self.assertGreater(seen["soft_multi"], 20)
+        # Out of order: chunk A's targets set after chunk B's. The scan tests all live samples from then on.
+        Checked.SCAN_BLOCK = 2
+        rng = np.random.default_rng(7)
+        a = Checked(300, **kw, **rings[0])
+        fa = a.add(hp_chunk(rng, 30, 0))
+        fb = a.add(hp_chunk(rng, 30, 30))
+        a.set_soft_outcome(fb, rng.dirichlet(np.full(57, 0.3), 30).astype(np.float32))
+        self.assertTrue(a.sq_ordered)
+        a.set_soft_outcome(fa, rng.dirichlet(np.full(57, 0.3), 30).astype(np.float32))
+        self.assertFalse(a.sq_ordered)
+        self.assertFalse(a._sq_starts_rise())
+        first, before = 60, seen["soft"]
+        for n in range(12):
+            S = int(rng.integers(20, 56))
+            f0 = a.add(hp_chunk(rng, S, first))
+            a.set_soft_outcome(f0, rng.dirichlet(np.full(57, 0.3), S).astype(np.float32))
+            first += S
+        self.assertGreater(seen["soft"], before)
+        # Save / load: the flag comes from the loaded data (out-of-order targets long evicted: in order again).
+        with tempfile.TemporaryDirectory() as d:
+            a.save(os.path.join(d, "w"))
+            b = Checked(300, **kw, **rings[0])
+            b.load(os.path.join(d, "w"))
+            self.assertEqual(b.sq_ordered, a._sq_starts_rise())
+            self.assertTrue(b.sq_ordered)
+            self.assertEqual(b.sq_hi, b.s_head)
+            S = 40
+            cc, t = hp_chunk(rng, S, first), rng.dirichlet(np.full(57, 0.3), S).astype(np.float32)
+            a.sq_ordered = True   # same scan in both; Checked compares each with the full scan
+            for r in (a, b):
+                r.set_soft_outcome(r.add(cc), t)
+            ra, rb = a.rows(a.s_tail, len(a)), b.rows(b.s_tail, len(b))
+            for key in ra:
+                np.testing.assert_array_equal(ra[key], rb[key], key)
+
+    @unittest.skipUnless(MODULES, "az_bench_native not built")
     def test_token_store(self):
         """TokenStore (the global dictionary): random intern / release against a model. Equal tokens share a slot
         while referenced, reference counts and used slots match, released slots are reused, a full store throws and
@@ -572,6 +679,37 @@ class HeadsTest(unittest.TestCase):
         self.assertAlmostEqual(float(F[2]), (1 + 56 / 57) / 2, places=5)
         self.assertAlmostEqual(float(ehp[0]), 40.0, places=3)
         self.assertAlmostEqual(float(ehp[2]), 50.0, places=3)
+
+    def test_search_values_constants_built_once(self):
+        """The floor / HP vectors are built once per device and dtype (no item assignment on a device tensor per
+        batch: on a GPU that copy waits for the stream), are plain tensors even when first asked for in inference
+        mode, and give exactly the per-call formula's values."""
+        sp = load()
+        torch.manual_seed(3)
+        out, hp = torch.randn(40, 57), torch.randn(40, 256)
+
+        def reference(outcome_logits, hp_logits):   # the per-call form
+            p = torch.softmax(outcome_logits.float(), -1)
+            floors = torch.arange(57, device=p.device, dtype=p.dtype)
+            floors[0] = 57.0
+            ph = torch.softmax(hp_logits.float(), -1)
+            return (p * floors).sum(-1) / 57.0, (ph * torch.arange(256, device=ph.device, dtype=ph.dtype)).sum(-1)
+        with torch.inference_mode():
+            F1, e1 = sp.search_values(out, hp)
+        c = sp.search_consts(out.device, torch.float32)
+        self.assertFalse(c[0].is_inference() or c[1].is_inference())
+        self.assertEqual(c[0].tolist(), [57.0] + [float(i) for i in range(1, 57)])
+        self.assertEqual(c[1].tolist(), [float(i) for i in range(256)])
+        F2, e2 = sp.search_values(out.half(), hp.half())   # fp16 logits as in inference: cast to fp32 first
+        self.assertIs(sp.search_consts(out.device, torch.float32)[0], c[0])
+        self.assertEqual(len(sp._SEARCH_CONSTS), 1)
+        Fr, er = reference(out, hp)
+        self.assertTrue(torch.equal(F1, Fr) and torch.equal(e1, er))
+        Fh, eh = reference(out.half(), hp.half())
+        self.assertTrue(torch.equal(F2, Fh) and torch.equal(e2, eh))
+        g = out.clone().requires_grad_(True)   # usable under autograd too
+        sp.search_values(g, hp)[0].sum().backward()
+        self.assertTrue(torch.isfinite(g.grad).all())
 
 
 @unittest.skipUnless(HAVE_TORCH, "torch missing")
