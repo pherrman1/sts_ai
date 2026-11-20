@@ -73,6 +73,46 @@ class VarlenAttn(unittest.TestCase):
                 self.assertLess(float((x - y).abs().max()), self.tol, d)
                 self.assertLess(float((x - z).abs().max()), self.tol, d)
 
+    def test_row_bounds_same_values(self):
+        """ROW_BOUNDS (the key loop ends at the row's length, query blocks past it do nothing): the same output
+        values as the default kernel, for rows of 1 token (padding rows), rows at block edges and rows that fill
+        the bucket, in batches of one to four blocks; and the same forward_packed outputs."""
+        import sys
+        A, V = load("amber_net"), load("varlen_attn")
+        mod = sys.modules["az_bench_varlen_attn"]
+        g = torch.Generator().manual_seed(3)
+        try:
+            for T, H, dh, dt in ((20, 2, 32, torch.float32), (64, 4, 16, torch.float32), (96, 4, 16, torch.float16),
+                                 (128, 4, 16, torch.float16), (212, 4, 16, torch.float32)):
+                d = H * dh
+                n = torch.cat([torch.tensor([1, 1, T, min(T, 64), min(T, 65), min(T, 33), 2]),
+                               torch.randint(1, T + 1, (5,), generator=g)])
+                off = torch.cat([torch.zeros(1, dtype=torch.long), n.cumsum(0)]).int().to(self.dev)
+                qkv = torch.randn(int(n.sum()) + 7, 3 * d, generator=g).to(dt).to(self.dev)   # + 7: bucket padding
+                mod.ROW_BOUNDS = False
+                a = V.varlen_attn(qkv, off, H, T)[:int(n.sum())]
+                mod.ROW_BOUNDS = True
+                b = V.varlen_attn(qkv, off, H, T)[:int(n.sum())]
+                self.assertTrue(bool(torch.isfinite(a).all()), T)
+                self.assertTrue(torch.equal(a, b), T)
+            f = A.to_flat(A.synthetic_batch(8, live_frac=0.5, rng=np.random.default_rng(11)))
+            f = {k: v.to(self.dev) for k, v in f.items()}
+            pk, inv = A.pack_index(f["mask"], 16, inverse=True)
+            bt = dict(f, pack_idx=pk, unpack_idx=inv, seq_off=A.seq_offsets(f["mask"]))
+            torch.manual_seed(0)
+            net = A.jitter_1d_params(A.AmberNet(64, 2).eval()).to(self.dev)
+            net.varlen_attn = A.load_kernel("varlen_attn")
+            net.fused_layer = A.load_fused_layer()
+            outs = []
+            for rb in (False, True):
+                mod.ROW_BOUNDS = rb
+                with torch.no_grad():
+                    outs.append(net(bt))
+            for x, y in zip(*outs):
+                self.assertTrue(torch.equal(x, y))
+        finally:
+            mod.ROW_BOUNDS = False
+
     def test_fused_layer_fp16_matches_fp32(self):
         """The --half path of the 471.9k run: fp16 weights through the fused layer kernels stay within 5e-3 of the
         fp32 reference forward (logits, outcome logits)."""

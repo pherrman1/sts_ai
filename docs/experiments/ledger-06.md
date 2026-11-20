@@ -28237,3 +28237,43 @@ the GPU is busy 91 % of the time: no single part limits the run any more (Infere
 **Decision:** kept; the run stays on c6225d67. Open: `--pin-inference` again with and without the flag on this
 code (the inference thread is no longer saturated, so its own core may now cost the workers more than it gives).
 **Knowledge impact:** this entry.
+
+## §823 — Stage 1 inference GPU profile on real states: the varlen attention kernel is 37 % of the GPU time of a batch, and most of that is work on dead blocks (every row runs to the batch's token bucket); row-bounds kernel variant added default off (PC, 2026-11-20)
+
+**Question:** after §822 the run is GPU-bound and inference is about 80 % of the GPU load. Why does one net
+evaluation cost about 4.6 µs of GPU time in the run against 1.9 µs in the Stage 0 bench on uniform rows?
+**Data:** [PROFILE](evidence/infer_profile_20261120/PROFILE.md): `tools/az_bench/infer_profile.py` (PR #1134, main
+02e75f8c) on the PC with the run stopped, checkpoint ckpt_672852, rows drawn from the run's saved 10M window and laid
+out as the driver lays out inference batches (1,314 rows in the 2,048-row bucket), the run's compiled fp16 forward,
+CUDA-event times over 30 batches per variant, one batch in the clean run and two in the first run (which then
+crashed in the `uniform` variant of the tool, fixed here). No game seeds driven. The window holds root states of
+real moves; the run evaluates search leaves of such states. Then three report rows of the restarted run.
+**Result:**
+
+| variant (same rows) | rows bucket | token bucket | GPU ms / batch |
+|---|---|---|---|
+| real | 2,048 | 96 | 5.0-5.5 |
+| real, no empty rows | 1,344 | 96 | 4.0-4.3 |
+| rows of at most 64 tokens (1,296 of 1,314) | 2,048 | 64 | 3.7-4.2 |
+| the same rows | 2,048 | 96 | 5.0-5.35 |
+| uniform rows of 36 tokens | 2,048 | 40 | 3.7 |
+
+Top CUDA kernels of the real batch: `_attn_kernel` 37.3 %, `_ffn_kernel` 20.5 %, compiled elementwise kernels
+15.6 %, one fp16 gemm (4 calls per batch) 10.8 %, `_ln_linear_kernel` 8.4 %. Window: 35.2 tokens per state (median
+35, p99 67, max 107; 1.65 % over 64, none over 128). Live run: 36.4 tokens per evaluated row; of 13,445 batches in
+three reports 6,530 fell into token bucket 80, 6,714 into 96, 188 into 128 and 13 into 64 or less; the action
+bucket of the profiled batches is 96. GPU load 96.7 % at about 10,000 moves/s.
+**Interpretation:** the token bucket of a batch follows its longest row, so nearly every batch is laid out to 80 or
+96 tokens. `varlen_attn.py` launches `ceil(T / 64)` query-block programs per row and head, each with a key loop to
+the static bound `MAXLEN` (128 for these buckets): four block pairs per row and head, where 98 % of the rows have
+keys and queries for one, and the 734 padding rows of the row bucket have one token. The same short rows cost
+about 1.2-1.3 ms per batch more in bucket 96 than in bucket 64, and the empty rows cost 1.0-1.5 ms per batch
+(about half of it attention by the kernel's share, the rest the heads on the padded row and action layout:
+Inference).
+**Decision:** `varlen_attn.py` gets `ROW_BOUNDS` (`selfplay.py --attn-row-bounds`, default off): the key loop
+ends at the row's own length and a query block past it does nothing. The blocks left out have no live key or no
+live query, so the output values are the same (`tests/test_varlen_attn.py::test_row_bounds_same_values`, Triton
+interpreter; both kernels compile for sm_86 with Triton 3.1.0). `infer_profile.py` times both settings on a GPU and
+compares their outputs. GPU check and live test on the PC follow (Philipp's decision card 17:29 CET). Not
+addressed: the heads on the padded row / action layout.
+**Knowledge impact:** this entry; `tools/az_bench/README.md`.

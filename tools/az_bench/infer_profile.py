@@ -12,6 +12,10 @@ Variants on the same rows, to attribute the cost:
   uniform       real's live tokens cut into rows of equal length (the mean), as in the Stage 0 bench
 torch.profiler's top CUDA kernels are printed for `real` (GPU only).
 
+On a GPU every variant is timed with the attention kernel's row bounds off and on (varlen_attn.py ROW_BOUNDS,
+selfplay.py --attn-row-bounds), and the two settings' outputs are compared on the live rows (`row_bounds_equal`,
+`row_bounds_max_diff`).
+
 The window's samples are the root states of real moves; the run's inference batches are search leaves of such
 states, so the lengths are close but not the same population. No game seeds are driven. Needs the GPU to itself
 for clean numbers (stop the run first); on a CPU it runs the padded path as a smoke test.
@@ -61,7 +65,7 @@ def take_rows(r, keep):
 def uniform_rows(r):
     """r's live tokens cut into rows of equal length (the mean); action sources / targets clipped into the row."""
     L = max(2, int(round(float(r["nt"].mean()))))
-    B = len(r["tok_type"]) // L
+    B = min(len(r["nt"]), len(r["tok_type"]) // L)
     out = {"nt": np.full(B, L, np.int64), "na": r["na"][:B]}
     for k in ("tok_type", "ids", "f"):
         out[k] = r[k][:B * L]
@@ -170,8 +174,10 @@ def main(argv=None):
     net.load_state_dict(ck["net"])
     infer = copy.deepcopy(net).to(dev).eval()
     infer.sdpa = True
+    attn_mod = None
     if cuda:
         infer.varlen_attn = amber_net.load_kernel("varlen_attn")
+        attn_mod = sys.modules["az_bench_varlen_attn"]
         if a.get("fused_layer"):
             infer.fused_layer = amber_net.load_fused_layer()
         infer = infer.half()
@@ -245,10 +251,23 @@ def main(argv=None):
                 continue
             h, info = flat_input(rr, rp, tp, apn, step_n)
             x = to_device(h)
+            if attn_mod is not None:
+                attn_mod.ROW_BOUNDS = False
             ms, launch = timed(x, info["rows"], apn)
             res = dict(info, batch=bi, variant=name, ms_per_batch=round(ms, 3), launch_ms=round(launch, 3),
                        us_per_row=round(ms * 1e3 / info["rows"], 3),
                        us_per_token=round(ms * 1e3 / info["live_tokens"], 4))
+            if attn_mod is not None:   # the same batch with the kernel's row bounds: time, and the same outputs
+                ref = [t.clone() for t in step(x, info["rows"], apn)]
+                attn_mod.ROW_BOUNDS = True
+                ms_rb, launch_rb = timed(x, info["rows"], apn)
+                got = step(x, info["rows"], apn)
+                live_a = x["a_mask"][:info["rows"]]
+                pairs = [(ref[0][live_a], got[0][live_a])] + list(zip(ref[1:], got[1:]))
+                res.update(ms_per_batch_row_bounds=round(ms_rb, 3), launch_ms_row_bounds=round(launch_rb, 3),
+                           row_bounds_equal=all(torch.equal(u, w) for u, w in pairs),
+                           row_bounds_max_diff=max(float((u - w).abs().max()) for u, w in pairs))
+                attn_mod.ROW_BOUNDS = False
             print(json.dumps(res), flush=True)
             results.append(res)
             if name == "real" and bi == 0 and cuda:
@@ -266,6 +285,10 @@ def main(argv=None):
         summary[name] = {"ms_per_batch": round(float(np.mean([x["ms_per_batch"] for x in rs])), 3),
                          "us_per_row": round(float(np.mean([x["us_per_row"] for x in rs])), 3),
                          "us_per_token": round(float(np.mean([x["us_per_token"] for x in rs])), 4),
+                         **({"ms_per_batch_row_bounds":
+                             round(float(np.mean([x["ms_per_batch_row_bounds"] for x in rs])), 3),
+                             "row_bounds_equal": all(x["row_bounds_equal"] for x in rs)}
+                            if rs and "ms_per_batch_row_bounds" in rs[0] else {}),
                          "Tp": sorted({x["Tp"] for x in rs}), "rows": round(float(np.mean([x["rows"] for x in rs])))}
     print(json.dumps({"summary": summary}), flush=True)
     if args.out:
