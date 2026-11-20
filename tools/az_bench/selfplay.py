@@ -768,7 +768,7 @@ def main(argv=None):
     ap.add_argument("--utility", choices=("floor-hp", "amber", "amber2"), default="floor-hp",
                     help="H of the search: floor-hp = E[HP end of floor] / max HP; amber = Amber Eye's per-floor H, "
                          "U = F + H; amber2 = Amber Eye's later utility (2026-11-20): out of combat P(win) + 0.25 H, "
-                         "in combat F + 0.5 H, by the evaluated state's kind, both / 1.5 (same net and heads as amber, so a run can "
+                         "in combat F + 0.5 H, by the search root's kind (same net and heads as amber, so a run can "
                          "switch from amber to amber2 on resume)")
     ap.add_argument("--keyless-hp", action="store_true",
                     help="floor-hp: a keyless act 3 victory keeps H = HP / max HP (amber always does)")

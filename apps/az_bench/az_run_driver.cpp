@@ -541,10 +541,10 @@ namespace sts::azbench {
         // Scaled utility (F + w H) / (1 + w) of a state the run cannot continue from. alive: the run ended without
         // a death (a Heart kill, or a keyless act 3 victory).
         float terminalUtility(bool win, bool alive, int floor, int hp, int maxHp, double w, const RunConfig &cfg,
-                              bool stateCombat) {
+                              bool rootCombat) {
             const double F = win ? 1.0 : std::clamp(floor, 1, kOutcomeClasses - 1) / 57.0;
-            if (cfg.utility == Utility::AMBER2) {   // by the state's kind: OOC P(win) + 0.25 H; combat F + 0.5 H
-                return static_cast<float>(amber2Value(stateCombat, F, win ? 1.0 : 0.0, amberTerminalH(win, alive, floor, hp)));
+            if (cfg.utility == Utility::AMBER2) {   // root out of combat: P(win) + 0.25 H; in combat: F + 0.5 H
+                return static_cast<float>(amber2Value(rootCombat, F, win ? 1.0 : 0.0, amberTerminalH(win, alive, floor, hp)));
             }
             double H;
             if (usesAmberH(cfg.utility)) H = amberTerminalH(win, alive, floor, hp);
@@ -552,9 +552,9 @@ namespace sts::azbench {
             return static_cast<float>((F + w * H) / (1.0 + w));
         }
 
-        float terminalUtility(const GameContext &gc, double w, const RunConfig &cfg, bool stateCombat) {
+        float terminalUtility(const GameContext &gc, double w, const RunConfig &cfg, bool rootCombat) {
             return terminalUtility(heartWin(gc), heartWin(gc) || keylessVictory(gc), gc.floorNum, gc.curHp, gc.maxHp,
-                                   w, cfg, stateCombat);
+                                   w, cfg, rootCombat);
         }
 
         // searchEmaLambda > 0: a terminal node's distribution is the one-hot of its outcome class.
@@ -1913,7 +1913,7 @@ namespace sts::azbench {
                     cn.combat = true;
                     useBc(cn) = next;
                     cn.evaluated = cn.terminal = true;
-                    cn.value = terminalUtility(false, false, g.gc.floorNum, 0, 1, cfg.hpWeightCombat, cfg, true);
+                    cn.value = terminalUtility(false, false, g.gc.floorNum, 0, 1, cfg.hpWeightCombat, cfg, g.pool[0].combat);
                     if (emaOn) setOneHot(cn, std::clamp(g.gc.floorNum, 1, kOutcomeClasses - 1));   // death on this floor
                 } else if (next.outcome == Outcome::PLAYER_VICTORY) {
                     // Fight won: the leaf is the state after the fight, valued by the net (out of combat).
@@ -1928,7 +1928,7 @@ namespace sts::azbench {
                     cn.boundary = true;
                     if (cn.gc->outcome != GameOutcome::UNDECIDED) {
                         cn.evaluated = cn.terminal = true;
-                        cn.value = terminalUtility(*cn.gc, cfg.hpWeightOoc, cfg, false);
+                        cn.value = terminalUtility(*cn.gc, cfg.hpWeightOoc, cfg, g.pool[0].combat);
                         if (emaOn) setOneHot(cn, outcomeClass(*cn.gc));
                     }
                 } else {
@@ -1948,7 +1948,7 @@ namespace sts::azbench {
                     if (next.outcome != GameOutcome::UNDECIDED) {
                         setGc(cn, std::move(next));
                         cn.evaluated = cn.terminal = true;
-                        cn.value = terminalUtility(*cn.gc, cfg.hpWeightOoc, cfg, false);
+                        cn.value = terminalUtility(*cn.gc, cfg.hpWeightOoc, cfg, g.pool[0].combat);
                         if (emaOn) setOneHot(cn, outcomeClass(*cn.gc));
                     } else if (next.screenState == ScreenState::BATTLE) {
                         // A fight starts: the leaf is its first state, valued by the net (in combat).
@@ -2057,7 +2057,7 @@ namespace sts::azbench {
                     cn.combat = false;
                     cn.evaluated = cn.terminal = true;
                     const int fl = inCombat ? bc.floorNum : gc.floorNum;
-                    cn.value = terminalUtility(false, false, fl, 0, 1, cfg.hpWeightOoc, cfg, false);
+                    cn.value = terminalUtility(false, false, fl, 0, 1, cfg.hpWeightOoc, cfg, g.pool[0].combat);
                     if (emaOn) setOneHot(cn, std::clamp(fl, 1, kOutcomeClasses - 1));
                     return;
                 }
@@ -2068,7 +2068,7 @@ namespace sts::azbench {
                         useBc(cn) = std::move(bc);
                         cn.evaluated = cn.terminal = true;
                         const int fl = outer ? outer->floorNum : g.gc.floorNum;
-                        cn.value = terminalUtility(false, false, fl, 0, 1, cfg.hpWeightCombat, cfg, true);
+                        cn.value = terminalUtility(false, false, fl, 0, 1, cfg.hpWeightCombat, cfg, g.pool[0].combat);
                         if (emaOn) setOneHot(cn, std::clamp(fl, 1, kOutcomeClasses - 1));   // death on this floor
                         return;
                     }
@@ -2110,7 +2110,7 @@ namespace sts::azbench {
                 if (gc.outcome != GameOutcome::UNDECIDED) {
                     setGc(cn, std::move(gc));
                     cn.evaluated = cn.terminal = true;
-                    cn.value = terminalUtility(*cn.gc, cfg.hpWeightOoc, cfg, false);
+                    cn.value = terminalUtility(*cn.gc, cfg.hpWeightOoc, cfg, g.pool[0].combat);
                     if (emaOn) setOneHot(cn, outcomeClass(*cn.gc));
                     return;
                 }
@@ -2275,8 +2275,8 @@ namespace sts::azbench {
                                      ? amberH(g.pendingFloor, g.resHpf.data())
                                      : std::clamp(static_cast<double>(g.resEhp) / g.pendingMaxHp, 0.0, 1.0);
                 n.evaluated = true;
-                if (cfg.utility == Utility::AMBER2) {   // by the leaf state's kind (Utility::AMBER2)
-                    n.value = static_cast<float>(amber2Value(g.pendingCombat, g.resF, g.resDist[0], H));
+                if (cfg.utility == Utility::AMBER2) {   // by the search root's kind (Utility::AMBER2)
+                    n.value = static_cast<float>(amber2Value(g.pool[0].combat, g.resF, g.resDist[0], H));
                 } else {
                     const double w = g.pendingCombat ? cfg.hpWeightCombat : cfg.hpWeightOoc;
                     n.value = static_cast<float>((std::clamp<double>(g.resF, 0.0, 1.0) + w * H) / (1.0 + w));
