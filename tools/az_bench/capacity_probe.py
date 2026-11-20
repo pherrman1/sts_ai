@@ -227,6 +227,8 @@ def main(argv=None):
     ap.add_argument("--device", default="cpu", help="cpu (default, safe next to a live run) or cuda")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--out", default="capacity_probe.json")
+    ap.add_argument("--save-nets", action="store_true",
+                    help="save each trained net as <out stem>.<net>.pt ({'net': state_dict, ...}; --init-net loadable)")
     args = ap.parse_args(argv)
     if args.threads:
         torch.set_num_threads(args.threads)
@@ -275,6 +277,10 @@ def main(argv=None):
         r = {"net": spec, "d": shape[0], "layers": shape[1], "heads": shape[2], "params": params,
              "init": "scratch", "nonfinite_skips": skipped, "wall_s": round(wall, 1), "curve": curve,
              "final": curve[-1]}
+        if args.save_nets:
+            r["saved"] = os.path.splitext(args.out)[0] + f".{spec}.pt"
+            torch.save({"net": net.state_dict(), "probe": {"net": spec, "d": shape[0], "layers": shape[1],
+                                                          "final": curve[-1]}}, r["saved"])
         if args.infer_bench:
             inf_rows = held_eval[:args.infer_rows]
             r["infer_ms_per_batch"] = infer_bench(net, [rv.batch(inf_rows)], dev, 20)
