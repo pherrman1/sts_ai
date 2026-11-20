@@ -105,6 +105,16 @@ Result on the PC (ledger §824): outputs equal, 4.80 -> 3.56 ms GPU per real bat
 with the GPU load down from 97 to 80 %; where a batch has no dead blocks (bucket 64 or less) the variant is about
 3 % slower. The live run uses the flag.
 
+`selfplay.py --packed-heads` (2026-11-20, default off; needs `--packed-h2d`): what a batch still pays for padding
+after the row bounds is in the heads, which run on the padded `[rows, tokens, d]` and `[rows, actions, d]` layout
+(the row bucket is 2,048 for about 1,300 live rows, the action bucket 32 or 96 for a handful of legal actions per
+row). With the flag the heads run on the packed tokens and on the live actions only (`amber_net.py`
+`_heads_packed`, the row summary through the `row_mean.py` kernel), the policy logits are scattered back into
+`[rows, actions]`, and the padding rows get length 0 in `seq_off`, so the attention and row-mean kernels do nothing
+for them. Same math per row and action up to float rounding (the row mean is accumulated in fp32 and the matrix
+products run on other shapes), not bit-identical. `infer_profile.py` times it and reports the largest output
+difference against the padded heads on real batches.
+
 Each thread's phases add up to about 1000. With a GPU the issuing phases are CPU time of that thread and the `sync` /
 `loss_read` phases are time it waits for the GPU; `--gpu-timing`'s `gpu_ms_per_s` is the elapsed GPU time of each
 stream, and the two streams overlap, so their sum is not the GPU's load.

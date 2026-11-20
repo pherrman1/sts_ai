@@ -1002,6 +1002,13 @@ def main(argv=None):
     ap.add_argument("--pack-step", type=int, default=2048)
     ap.add_argument("--pack-threads", type=int, default=4)
     ap.add_argument("--fused-layer", action="store_true", help="inference: stage 0's three-kernel layers (d <= 128)")
+    ap.add_argument("--packed-heads", action="store_true",
+                    help="inference on a GPU with --packed-h2d: the heads run on the packed tokens and on the live "
+                         "actions only (amber_net.py _heads_packed) instead of the padded [rows, tokens] / [rows, "
+                         "actions] layout, and the padding rows of the row bucket get length 0 for the attention "
+                         "kernel. Same math per row and action up to float rounding; not with --fused-net")
+    ap.add_argument("--act-pack-step", type=int, default=1024,
+                    help="--packed-heads: the list of live actions is padded to a multiple of this")
     ap.add_argument("--compile", action="store_true", help="inference: torch.compile")
     ap.add_argument("--attn-row-bounds", action="store_true",
                     help="inference on a GPU: the varlen attention kernel ends each row's key loop at the row's own "
@@ -1142,6 +1149,11 @@ def main(argv=None):
     if cuda:
         infer.varlen_attn = amber_net.load_kernel("varlen_attn")
         sys.modules["az_bench_varlen_attn"].ROW_BOUNDS = bool(args.attn_row_bounds)
+        if args.packed_heads:
+            if not (args.packed_h2d and args.pack_step) or args.fused_net:
+                ap.error("--packed-heads needs --packed-h2d and --pack-step, and excludes --fused-net")
+            infer.row_mean = amber_net.load_kernel("row_mean")
+            infer.packed_heads = True
         if args.fused_layer:
             infer.fused_layer = amber_net.load_fused_layer()
         infer = infer.half()
@@ -1315,6 +1327,7 @@ def main(argv=None):
                  "a_f": torch.zeros(R * A * 8, dtype=torch.float16, pin_memory=cuda),
                  "a_mask": torch.zeros(R * A, dtype=torch.bool, pin_memory=cuda),
                  "pack_idx": torch.zeros(R * T, dtype=torch.int32, pin_memory=cuda),
+                 "act_idx": torch.zeros(R * A, dtype=torch.int32, pin_memory=cuda),
                  "seq_off": torch.zeros(R + 1, dtype=torch.int32, pin_memory=cuda)}
             out = {"logits": torch.zeros(R * A, dtype=torch.float32, pin_memory=cuda),
                    "F": torch.zeros(R, dtype=torch.float32, pin_memory=cuda),
@@ -1402,6 +1415,17 @@ def main(argv=None):
                     if fused is not None:   # the kernel tiles rows by seq_off; it reads neither mask nor pack_idx
                         shapes.pop("mask")
                         shapes.pop("pack_idx", None)
+                    if infer.packed_heads:
+                        # The live actions of the live rows (the driver gives a padding row one live action; it is
+                        # not listed), padded with the trash slot Rp * Ap; and the padding rows get length 0, so
+                        # the attention and row-mean kernels do nothing for them (their one token becomes a trash
+                        # entry of the packed axis; nothing reads their outputs).
+                        la = np.flatnonzero(views["a_mask"][:rows * Ap])
+                        na = -(-la.size // args.act_pack_step) * args.act_pack_step
+                        views["act_idx"][:la.size] = la
+                        views["act_idx"][la.size:na] = Rp * Ap
+                        shapes["act_idx"] = (na,)
+                        views["seq_off"][rows + 1:Rp + 1] = views["seq_off"][rows]
                     # Host-to-GPU copies (on copy_stream when --copy-stream: the forward waits for them).
                     raw = {}
                     with (torch.cuda.stream(copy_stream) if copy_stream is not None else contextlib.nullcontext()):
@@ -1423,11 +1447,13 @@ def main(argv=None):
                         if fused is not None:
                             x[k] = t   # the kernel reads the driver's int8 / int16 / fp16 arrays as they are
                             continue
-                        if k in ("tok_type", "ids", "a_type", "a_src", "a_tgt", "pack_idx"):
+                        if k in ("tok_type", "ids", "a_type", "a_src", "a_tgt", "pack_idx", "act_idx"):
                             t = t.long()
                         elif t.dtype == torch.float16:
                             t = t.to(infer_dtype)
                         x[k] = t
+                    if args.compile and "act_idx" in x:
+                        torch._dynamo.mark_dynamic(x["act_idx"], 0)
                     if args.compile and "pack_idx" in x:
                         torch._dynamo.mark_dynamic(x["pack_idx"], 0)
                         if args.packed_h2d:
