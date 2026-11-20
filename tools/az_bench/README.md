@@ -120,6 +120,13 @@ on `--force-potions`), GPU load 74 %. After that nothing is saturated (workers 6
 the two wait for each other (ledger §827).
 `worker_cpu_s_per_s.search` contains `step` and `encode`.
 
+`selfplay.py --early-finish` (2026-11-20, default off): the inference loop gathers and launches batch k+1 before it
+collects batch k, so the workers get a batch's results about 6 ms after its launch although the GPU has them after
+about 1.5 ms (ledger §827). With the flag the loop waits for the next rows in 0.2 ms slices
+(`RunDriver.wait_requests`, takes nothing) and hands the previous batch to the workers as soon as its GPU event is
+done. Answers are the same, only earlier; `infer_early_per_batch` in the metrics is the share of batches handed back
+that way.
+
 Each thread's phases add up to about 1000. With a GPU the issuing phases are CPU time of that thread and the `sync` /
 `loss_read` phases are time it waits for the GPU; `--gpu-timing`'s `gpu_ms_per_s` is the elapsed GPU time of each
 stream, and the two streams overlap, so their sum is not the GPU's load.

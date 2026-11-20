@@ -2389,6 +2389,13 @@ namespace sts::azbench {
         return take;
     }
 
+    bool RunDriver::waitRequests(int minRows, int timeoutUs) {
+        std::unique_lock<std::mutex> l(qm_);
+        qcv_.wait_for(l, std::chrono::microseconds(timeoutUs),
+                      [&] { return stop_.load() || static_cast<int>(queue_.size()) >= minRows; });
+        return static_cast<int>(queue_.size()) >= minRows;
+    }
+
     std::vector<std::uint32_t> RunDriver::nextBatchFlat(int maxRows, int minRows, int timeoutMs,
                                                         const std::vector<int> &rowBuckets,
                                                         const std::vector<int> &tokBuckets,

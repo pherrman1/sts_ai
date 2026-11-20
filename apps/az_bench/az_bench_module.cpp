@@ -440,6 +440,9 @@ PYBIND11_MODULE(az_bench_native, m) {
              py::arg("max_rows"), py::arg("min_rows"), py::arg("timeout_ms"), py::arg("row_buckets"),
              py::arg("tok_buckets"), py::arg("act_buckets"), py::arg("bufs"), py::arg("pack_threads") = 1,
              py::arg("packed_tokens") = false)
+        .def("wait_requests", &azbench::RunDriver::waitRequests, py::call_guard<py::gil_scoped_release>(),
+             py::arg("min_rows"), py::arg("timeout_us"),
+             "Waits up to timeout_us for min_rows queued requests without taking any; True when they are there.")
         .def("submit",
              [](azbench::RunDriver &d, py::array_t<std::uint32_t, py::array::c_style | py::array::forcecast> ticket,
                 py::array_t<float, py::array::c_style | py::array::forcecast> logits,

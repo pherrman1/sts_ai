@@ -576,6 +576,9 @@ namespace sts::azbench {
         ~RunDriver();
         void start();
         void stop();
+        // Waits up to timeoutUs for minRows queued requests without taking any; true when they are there (the
+        // caller can do other work between short waits, e.g. hand back a finished batch, and then take the batch).
+        bool waitRequests(int minRows, int timeoutUs);
         // As Driver::nextBatchFlat (az_driver.h): takes up to maxRows requests, packs them into buf.
         std::vector<std::uint32_t> nextBatchFlat(int maxRows, int minRows, int timeoutMs,
                                                  const std::vector<int> &rowBuckets,
