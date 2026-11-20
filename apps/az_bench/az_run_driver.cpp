@@ -633,6 +633,36 @@ namespace sts::azbench {
         return added;
     }
 
+    int canonicalOocSelectActions(const GameContext &gc, std::vector<GameAction> &v) {
+        if (gc.outcome != GameOutcome::UNDECIDED || gc.screenState != ScreenState::CARD_SELECT) return 0;
+        const auto &cards = gc.info.toSelectCards;
+        auto bottled = [&](int i) { const int d = cards[i].deckIdx; return d >= 0 && gc.deck.isCardBottled(d); };
+        auto firstEqual = [&](int i) {   // the first selectable index whose card equals card i
+            for (int j = 0; j < i; ++j)
+                if (cards[j].card == cards[i].card && bottled(j) == bottled(i)) return j;
+            return i;
+        };
+        const std::size_t before = v.size();
+        v.erase(std::remove_if(v.begin(), v.end(), [&](const GameAction &a) {
+            const int i = static_cast<int>(a.getIdx1());
+            return a.bits == static_cast<std::uint32_t>(i) && i >= 0 && i < static_cast<int>(cards.size()) &&
+                   firstEqual(i) != i;
+        }), v.end());
+        return static_cast<int>(before - v.size());
+    }
+
+    int forcedRewardPotionActions(const GameContext &gc, std::vector<GameAction> &v) {
+        using RT = GameAction::RewardsActionType;
+        if (gc.outcome != GameOutcome::UNDECIDED || gc.screenState != ScreenState::REWARDS || v.size() <= 1) return -1;
+        const auto &r = gc.info.rewardsContainer;
+        if (r.potionCount <= 0 || gc.potionCapacity - gc.potionCount < r.potionCount ||
+                gc.hasRelic(RelicId::SOZU)) return -1;
+        const GameAction take(RT::POTION, 0);
+        if (std::none_of(v.begin(), v.end(), [&](const GameAction &x) { return x.bits == take.bits; })) return -1;
+        v.assign(1, take);
+        return 1;
+    }
+
     int keyBackstopActions(const GameContext &gc, std::vector<GameAction> &v) {
         const std::size_t before = v.size();
         if (const auto key = search::heartKeyAction(gc, true)) {
@@ -866,6 +896,8 @@ namespace sts::azbench {
             s.keyRouteMasked += p.keyRouteMasked;
             s.forcedRewards[0] += p.forcedRewards[0]; s.forcedRewards[1] += p.forcedRewards[1];
             s.rewardRelicDeferred += p.rewardRelicDeferred; s.rewardRelicOnLeave += p.rewardRelicOnLeave;
+            s.oocCanonScreens += p.oocCanonScreens; s.oocCanonRemoved += p.oocCanonRemoved;
+            s.forcedPotions += p.forcedPotions;
             if (p.heartHpMin >= 0 && (s.heartHpMin < 0 || p.heartHpMin < s.heartHpMin)) s.heartHpMin = p.heartHpMin;
             s.memPoolNodes += p.memPoolNodes; s.memPoolGc += p.memPoolGc; s.memPoolReal += p.memPoolReal;
             s.memPoolOuter += p.memPoolOuter; s.memEdgeCap += p.memEdgeCap; s.memPoolBc += p.memPoolBc;
@@ -950,7 +982,9 @@ namespace sts::azbench {
 
         // Legal out-of-combat actions; simHelp bans buying Prismatic Shard (Amber Eye's simulator); forceKeys (the
         // run's state) applies the key backstops (keyBackstopActions; its result in *keyRule when given).
-        // forceRewards: then the forced chest / relic choices (forcedRewardActions; its result in *rewardRule).
+        // forceRewards: then the forced chest / relic choices (forcedRewardActions; its result in *rewardRule);
+        // forcePotions: then the reward potion pickup (forcedRewardPotionActions, *potionRule); oocCanon: last, the
+        // duplicate card selections (canonicalOocSelectActions, the number removed in *canonRemoved).
         // Singing Bowl actions (appendSingingBowlActions) come first, so a forced relic restricts them too;
         // STS_AZ_SINGING_BOWL=0 restores the old action list.
         const char *bowlEnv = std::getenv("STS_AZ_SINGING_BOWL");
@@ -961,7 +995,8 @@ namespace sts::azbench {
         const char *oocPotionEnv = std::getenv("STS_AZ_OOC_POTIONS");
         const bool oocPotions = !(oocPotionEnv && std::strcmp(oocPotionEnv, "0") == 0);
         auto oocActions = [&](const GameContext &gc, bool forceKeys, int *keyRule = nullptr,
-                              int *rewardRule = nullptr) -> std::vector<GameAction> {
+                              int *rewardRule = nullptr, int *potionRule = nullptr,
+                              int *canonRemoved = nullptr) -> std::vector<GameAction> {
             auto v = GameAction::getAllActionsInState(gc);
             if (singingBowl) appendSingingBowlActions(gc, v);
             if (oocPotions) {
@@ -976,6 +1011,12 @@ namespace sts::azbench {
             if (keyRule) *keyRule = rule;
             const int rr = cfg.forceRewards ? forcedRewardActions(gc, v) : -1;
             if (rewardRule) *rewardRule = rr;
+            const int pr = cfg.forcePotions ? forcedRewardPotionActions(gc, v) : -1;
+            if (potionRule) *potionRule = pr;
+            if (cfg.oocCanon) {
+                const int removed = canonicalOocSelectActions(gc, v);
+                if (canonRemoved) *canonRemoved = removed;
+            }
             return v;
         };
         // forceRewards: leaving a REWARDS screen (SKIP) first takes the card-first relics held back during the card
@@ -1538,8 +1579,10 @@ namespace sts::azbench {
                     if (legal == 1) only = a[0].bits;
                 } else {
                     if (goldToTake(g.gc)) { ++wk.st.autoGold; applyReal(g, takeGoldBits); continue; }
-                    int keyRule = -1, rewardRule = -1;
-                    gacts = oocActions(g.gc, g.forceKeys, &keyRule, &rewardRule);
+                    int keyRule = -1, rewardRule = -1, potionRule = -1, canonRemoved = 0;
+                    gacts = oocActions(g.gc, g.forceKeys, &keyRule, &rewardRule, &potionRule, &canonRemoved);
+                    if (potionRule > 0) ++wk.st.forcedPotions;
+                    if (canonRemoved > 0) { ++wk.st.oocCanonScreens; wk.st.oocCanonRemoved += canonRemoved; }
                     if (keyRule >= 0 && keyRule < 3) ++wk.st.forcedKeys[keyRule];
                     else if (keyRule == 3) ++wk.st.keyRouteMasked;
                     if (rewardRule == 0 || rewardRule == 1) ++wk.st.forcedRewards[rewardRule];

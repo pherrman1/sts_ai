@@ -96,6 +96,8 @@ int main(int argc, char **argv) {
         else if (a == "--max-pending") cfg.maxPendingSamples = std::stoll(next());
         else if (a == "--force-keys") cfg.forceKeys = true;
         else if (a == "--force-rewards") cfg.forceRewards = true;
+        else if (a == "--force-potions") cfg.forcePotions = true;
+        else if (a == "--ooc-canon") cfg.oocCanon = true;
         else if (a == "--savescum") cfg.savescum = true;
         else if (a == "--sims") { cfg.fullSims = std::stoi(next()); cfg.fastSims = cfg.fullSims; cfg.fullProb = 1.0; }
         else if (a == "--fast") { cfg.fullSims = 8; cfg.fastSims = 4; cfg.fullCandidates = 4; cfg.fastCandidates = 2; }
@@ -256,6 +258,12 @@ int main(int argc, char **argv) {
         return 1;
     // A chest may be skipped only with Cursed Key (forcedRewardActions leaves that choice open).
     if (cfg.forceRewards && (s.forcedRewards[1] == 0 || prog.chestsSkipped != prog.chestsSkippedCursedKey)) return 1;
+    // Reward potions and duplicate card selections: inert when off, acting when on.
+    std::printf("force potions: %lld; ooc canon: screens %lld removed %lld\n",
+                static_cast<long long>(s.forcedPotions), static_cast<long long>(s.oocCanonScreens),
+                static_cast<long long>(s.oocCanonRemoved));
+    if (cfg.forcePotions != (s.forcedPotions > 0)) return 1;
+    if (cfg.oocCanon != (s.oocCanonScreens > 0) || s.oocCanonRemoved < s.oocCanonScreens) return 1;
     // The Amber rules must act when on and be inert when off.
     // savescum replaces the chance rule (no edge is tested or resampled).
     const bool reveal = cfg.chanceOnReveal && !cfg.savescum;
