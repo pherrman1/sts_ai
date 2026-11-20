@@ -28359,3 +28359,8 @@ utility change alters the game mix, the cache hit rate and the share of Heart fi
 **Decision:** INCONCLUSIVE on the size; the run stays without `--pin-inference` (default off, as before). No
 further restart is spent on this.
 **Knowledge impact:** this entry.
+**Correction (same day, 18:55 CET):** the six rows without the flag were not past the start wave: within the block
+moves/s fell from 12,355 to 11,200 while the trainer's idle time fell from 635-696 to 409 ms/s. The run thread's
+steady-state reading at about 18:55 CET is about 11,450 moves/s and 225k positions/s without the flag against
+11,366 and 222.9k with it: no difference beyond the noise of such rows, still with the utility change in between.
+The +5.5 % above is start-wave residue, not an effect of the flag. Decision unchanged.
