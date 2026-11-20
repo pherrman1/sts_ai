@@ -183,6 +183,13 @@ namespace sts::azbench {
     // to the edges that still reach the burning elite.
     int keyBackstopActions(const GameContext &gc, std::vector<search::GameAction> &v);
 
+    // RunConfig::oocCanon: on a CARD_SELECT screen, drops every selection whose card (Card ==, bottle state) equals an
+    // earlier selectable one. Returns the number of actions removed.
+    int canonicalOocSelectActions(const GameContext &gc, std::vector<search::GameAction> &v);
+    // RunConfig::forcePotions: on a REWARDS screen whose offered potions all fit into the free slots, keeps only the
+    // first potion pickup (when v has it and more than one action). Returns 1 when it restricted v, else -1.
+    int forcedRewardPotionActions(const GameContext &gc, std::vector<search::GameAction> &v);
+
     // RunConfig::forceRewards: restricts v (the legal out-of-combat actions of gc) on a treasure room and a REWARDS
     // screen (elites, chests, event fights; not the boss relic screen). Returns -1 when nothing was removed, 0 when only
     // opening the chest is left (no Cursed Key), 1 when only taking a forced relic is left, 2 when a card-first relic
@@ -336,6 +343,16 @@ namespace sts::azbench {
         // Reward gold stays with simHelp (taken first; no reward-pool relic acts on gold). Applied in the real runs
         // and in the search tree; a forced move is the only legal action (played without a search, no sample).
         bool forceRewards = false;
+        // Identical cards on an out-of-combat card selection screen (2026-11-20, default off; Amber Eye canonicalizes
+        // actions, "if multiple Defends are in hand, the simulator only exposes playing the first one"): of several
+        // selectable cards with equal Card (id, upgrade, misc) and bottle state only the first stays legal
+        // (canonicalOocSelectActions). Smith, purge, transform, duplicate, bottle and event selections; the same
+        // multiset of cards results (only the deck position of an upgraded copy can differ).
+        bool oocCanon = false;
+        // Reward potions (2026-11-20, default off; Philipp-approved deviation from Amber Eye): on a REWARDS screen
+        // whose potions all fit into the free slots, the first potion is taken (forcedRewardPotionActions), after the
+        // forceRewards relic rules. Leaving a potion is never better: it can be thrown away later, out of combat too.
+        bool forcePotions = false;
         // Card stacks (2026-11-17, default off; changes the net input, needs its own run): identical cards become one
         // CARD token with a copy count (search::amberMergeCards), ~25-35 % fewer tokens late in a run.
         bool mergeCards = false;
@@ -536,6 +553,9 @@ namespace sts::azbench {
         // held back, and card-first relics taken on leaving the screen.
         std::array<std::int64_t, 2> forcedRewards{};
         std::int64_t rewardRelicDeferred = 0, rewardRelicOnLeave = 0;
+        // oocCanon: real card selection screens with a duplicate removed, and the actions removed there;
+        // forcePotions: real reward potions taken by the rule.
+        std::int64_t oocCanonScreens = 0, oocCanonRemoved = 0, forcedPotions = 0;
         // savescum: runs started with it; searched moves whose played edge's child was a decision state, and of those
         // the ones whose real next decision state differed from it (fingerprint incl. RNG counters; must stay 0).
         std::int64_t savescumRuns = 0, savescumChecks = 0, savescumMismatches = 0;

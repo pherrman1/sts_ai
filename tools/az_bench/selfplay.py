@@ -981,6 +981,14 @@ def main(argv=None):
                          "fights; boss relics stay learned) taken unless on the reviewed list (Bottled x3, Dead Branch, "
                          "Tungsten Rod, Unceasing Top, Juzu Bracelet); Ceramic Fish / eggs / Potion Belt before the "
                          "card reward, Whetstone / War Paint after it")
+    ap.add_argument("--force-potions", action="store_true",
+                    help="reward potions (2026-11-20, default off; a deviation from Amber Eye, Philipp): on a reward "
+                         "screen whose potions all fit into the free slots the potions are taken without a search "
+                         "(after the --force-rewards relic rules)")
+    ap.add_argument("--ooc-canon", action="store_true",
+                    help="identical cards on an out-of-combat card selection screen (smith, purge, transform, events; "
+                         "2026-11-20, default off; Amber Eye canonicalizes actions): only the first of equal cards "
+                         "(id, upgrade, misc, bottle state) stays selectable")
     ap.add_argument("--heart-arms", default="",
                     help="Heart search probe (diagnostic, default off): FULL:FAST:PROB:MFULL:MFAST,... search budgets; "
                          "each run reaching the Heart plays the fight from the same start once per arm and rep "
@@ -1177,6 +1185,8 @@ def main(argv=None):
            if ema_search else {}),
         **({"force_keys": True} if force_keys else {}),
         **({"force_rewards": True} if args.force_rewards else {}),
+        **({"force_potions": True} if args.force_potions else {}),
+        **({"ooc_canon": True} if args.ooc_canon else {}),
         **({"explore_per_offer": True} if args.explore_per_offer else {}),
         **({"explore_gap_search": True} if args.explore_gap_search else {}),
         **({"explore_deck_only": True} if args.explore_deck_only else {}),
@@ -1761,6 +1771,11 @@ def main(argv=None):
             if args.force_rewards:   # real forced moves (cumulative): chests opened, relics taken, card-first relics
                 fr = s["forced_rewards"]   # held back during a card decision / taken on leaving the screen
                 row["force_rewards"] = {"chests": fr[0], "relics": fr[1], "deferred": fr[2], "on_leave": fr[3]}
+            if args.force_potions:   # real reward potions taken by the rule (cumulative)
+                row["forced_potions"] = s["forced_potions"]
+            if args.ooc_canon:   # real card selection screens with a duplicate removed, actions removed (cumulative)
+                oc = s["ooc_canon"]
+                row["ooc_canon"] = {"screens": oc[0], "removed": oc[1]}
             if pre_trim is not None:
                 row["rss_gb_pre_trim"] = pre_trim
             row["relics_per_run"], row["deck_per_run"] = per_run_means(pw)

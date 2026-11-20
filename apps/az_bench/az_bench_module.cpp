@@ -281,7 +281,7 @@ PYBIND11_MODULE(az_bench_native, m) {
                          bool exploreAmber, double exploreT, double searchEmaLambda, bool searchEmaFullOnly,
                          bool forceKeys, std::vector<std::vector<double>> heartArms, int heartReps,
                          bool savescum, bool compactSamples, double heartLogRate, bool forceRewards, bool explorePerOffer,
-                         bool exploreGapSearch, bool exploreDeckOnly) {
+                         bool exploreGapSearch, bool exploreDeckOnly, bool forcePotions, bool oocCanon) {
                  azbench::RunConfig c;
                  if (!(heartLogRate >= 0 && heartLogRate <= 1)) throw std::invalid_argument("heart_log_rate: want 0..1");
                  c.heartLogRate = heartLogRate;
@@ -331,6 +331,8 @@ PYBIND11_MODULE(az_bench_native, m) {
                  c.searchEmaFullOnly = searchEmaFullOnly;
                  c.forceKeys = forceKeys;
                  c.forceRewards = forceRewards;
+                 c.forcePotions = forcePotions;
+                 c.oocCanon = oocCanon;
                  c.explorePerOffer = explorePerOffer;
                  c.exploreGapSearch = exploreGapSearch;
                  c.exploreDeckOnly = exploreDeckOnly;
@@ -355,7 +357,8 @@ PYBIND11_MODULE(az_bench_native, m) {
              py::arg("heart_reps") = 1, py::arg("savescum") = false,
              py::arg("compact_samples") = false, py::arg("heart_log_rate") = 0.0,
              py::arg("force_rewards") = false, py::arg("explore_per_offer") = false,
-             py::arg("explore_gap_search") = false, py::arg("explore_deck_only") = false)
+             py::arg("explore_gap_search") = false, py::arg("explore_deck_only") = false,
+             py::arg("force_potions") = false, py::arg("ooc_canon") = false)
         .def("heart_results",
              [](const azbench::RunDriver &d) {
                  py::list out;
@@ -659,6 +662,8 @@ PYBIND11_MODULE(az_bench_native, m) {
             o["key_route_masked"] = s.keyRouteMasked;
             o["forced_rewards"] = py::make_tuple(s.forcedRewards[0], s.forcedRewards[1], s.rewardRelicDeferred,
                                                  s.rewardRelicOnLeave);
+            o["forced_potions"] = s.forcedPotions;
+            o["ooc_canon"] = py::make_tuple(s.oocCanonScreens, s.oocCanonRemoved);
             o["heart_hp_min"] = s.heartHpMin;
             {   // memory gauges (current values): node-pool slots and their held states, per-run buffer capacities
                 py::dict m;
