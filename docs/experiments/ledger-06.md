@@ -28364,3 +28364,50 @@ moves/s fell from 12,355 to 11,200 while the trainer's idle time fell from 635-6
 steady-state reading at about 18:55 CET is about 11,450 moves/s and 225k positions/s without the flag against
 11,366 and 222.9k with it: no difference beyond the noise of such rows, still with the utility change in between.
 The +5.5 % above is start-wave residue, not an effect of the flag. Decision unchanged.
+
+## §826 — `--packed-heads` on the PC: 3.80 → 2.75 ms GPU per real batch (−28 %), outputs equal up to fp16 rounding; live GPU load 87 → 71 % but no gain in moves/s (10,639 → 10,051, confounded with `--force-potions`): the six CPU cores limit the run (PC, 2026-11-20)
+
+**Question:** §824 left the heads on the padded row / action layout as the remaining padding cost of an inference
+batch. What do heads on the packed tokens and the live actions (PR #1140) give, and do the outputs stay the same?
+**Data:** [PACKED-HEADS](evidence/infer_profile_20261120/PACKED-HEADS.md): `infer_profile.py --batches 3 --variants
+real,real_Rtight,uniform` on main d12d4d2e with the run stopped (ckpt_738152, 1,314 rows per batch from the saved
+10M window; three settings on the same batches: before §824, row bounds, row bounds + packed heads); then
+amber_scratch restarted with `--packed-heads` and, by Philipp's separate choice for PR #1139, `--force-potions` at
+the same restart (21:40 CET; `--ooc-canon` crashed at 21:31 CET and is off). Live rows 22:02:40-22:05:12 CET (22
+minutes after the start, after another program had left the PC at about 21:56 CET) against 21:25:07-21:27:38 CET
+before the restart; means relayed by the run's thread, raw rows on the PC.
+**Result:**
+
+| GPU ms per batch, mean of 3 batches | before §824 | row bounds | + packed heads |
+|---|---|---|---|
+| real | 5.05 | 3.80 | 2.75 (−28 %) |
+| real without the empty rows | 3.77 | 3.12 | 2.58 |
+| uniform rows | 3.39 | 3.48 | 2.64 |
+
+Outputs of the packed heads against the padded heads (row bounds in both), all nine batch variants: finite; the
+best policy action is the same in 99.6-100 % of the rows; largest absolute differences: policy logits 0.0195,
+search value F 0.00031, outcome distribution 0.0016, expected HP 0.032 (of 255), HP per floor 0.0015. Kernel time
+of the real batch (10 batches): 33.0 → 26.8 ms; the compiled elementwise kernels 4.46 → 1.40 ms and the head
+products 1.88 → 0.20 ms; what is left is the FFN kernel 37 %, attention 27 %, LayerNorm + QKV 17 %, the input
+projection 8 %.
+
+| live run | before (no packed heads, no forced potions) | after |
+|---|---|---|
+| moves/s | 10,639 | 10,051 (−5.5 %) |
+| net positions/s | 209.2k | 195.5k |
+| GPU ms/s on the inference stream | 808 | 678 (−16 %) |
+| GPU load (nvidia-smi dmon, 30 s) | 87 % (18:39 CET) | 70.8 % |
+| inference `wait_pack` / `forward`, ms/s | 411 / 331 | 425 / 354 |
+| worker CPU in search, s/s | 6.25 | 5.97 |
+
+**Interpretation:** per batch the packed heads do what the profile variants of §824 promised: the cost of the
+empty rows and of the action bucket is gone (real 2.75 against 2.58 ms without empty rows). The outputs differ by
+fp16 rounding only. In the run the GPU has slack now (71 %), the inference thread waits for rows 42 % of its time,
+and moves/s did not rise: less GPU time per batch no longer buys throughput. The 5.5 % drop cannot be assigned:
+the same restart turned on forced potions, which change the mix of moves, the window is three minutes, and the two
+windows are 37 minutes apart (Inference: the PC's six cores, shared by 11 workers and two Python threads, are the
+limit).
+**Decision:** kept default off; the live run keeps the flag for now (gate passed, GPU time down). NOT SHOWN for
+moves/s. Open: one restart that toggles only this flag, rows at least 25 minutes after the start, to rule out a
+cost on the CPU side.
+**Knowledge impact:** this entry; `tools/az_bench/README.md`.
