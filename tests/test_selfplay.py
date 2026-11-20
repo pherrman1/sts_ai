@@ -915,6 +915,13 @@ class SelfplaySmoke(unittest.TestCase):
                 rows4 = [json.loads(l) for l in f][len(rows) + len(rows2) + len(rows3):]
             self.assertEqual(rows4[0]["replay_loaded"], 0)
 
+    AMBER2_VARIANT = "amber2"
+
+    def test_utility_amber2_root_switch_keeps_replay(self):
+        """--utility amber2-root (2026-11-20): the same switch with the root-kind variant."""
+        self.AMBER2_VARIANT = "amber2-root"
+        self.test_utility_amber2_switch_keeps_replay()
+
     def test_utility_amber2_switch_keeps_replay(self):
         """--utility amber2 (2026-11-20): a run trained with --utility amber resumes with amber2 and its saved replay
         window (same heads and layout), plays and trains."""
@@ -932,7 +939,7 @@ class SelfplaySmoke(unittest.TestCase):
             n_saved = st["scalars"]["s_head"] - st["scalars"]["s_tail"]
             with open(os.path.join(d, "metrics.jsonl")) as f:
                 n0 = len(f.readlines())
-            self.assertEqual(sp.main(common + ["--out-dir", d, "--max-runs", "24", "--utility", "amber2",
+            self.assertEqual(sp.main(common + ["--out-dir", d, "--max-runs", "24", "--utility", self.AMBER2_VARIANT,
                                                "--resume", st["extra"]["checkpoint"], "--replay-load", rep]), 0)
             with open(os.path.join(d, "metrics.jsonl")) as f:
                 rows = [json.loads(l) for l in f][n0:]

@@ -2,7 +2,7 @@
 // training samples (labels filled, policy a distribution over the sample's actions, action sources / targets inside
 // the row). Smoke test and CPU-side throughput probe.
 //
-// usage: az-run-driver [--workers 2] [--games 4] [--runs 8] [--batch 64] [--seed 0] [--seed-base 1] [--fast] [--asc 20] [--sims N] [--const-value] [--test-hp HP] [--max-fight-moves 400] [--explore-c C] [--explore-amber] [--pick-target T] [--no-fast-noise] [--q-rescale] [--c-scale S] [--utility floor-hp|amber|amber2] [--keyless-hp] [--chance-on-reveal] [--cross-combat] [--sim-help] [--max-pending N] [--force-keys] [--savescum] [--compact-samples]
+// usage: az-run-driver [--workers 2] [--games 4] [--runs 8] [--batch 64] [--seed 0] [--seed-base 1] [--fast] [--asc 20] [--sims N] [--const-value] [--test-hp HP] [--max-fight-moves 400] [--explore-c C] [--explore-amber] [--pick-target T] [--no-fast-noise] [--q-rescale] [--c-scale S] [--utility floor-hp|amber|amber2|amber2-root] [--keyless-hp] [--chance-on-reveal] [--cross-combat] [--sim-help] [--max-pending N] [--force-keys] [--savescum] [--compact-samples]
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -84,8 +84,9 @@ int main(int argc, char **argv) {
             const std::string u = next();
             if (u == "amber") cfg.utility = azbench::Utility::AMBER;
             else if (u == "amber2") cfg.utility = azbench::Utility::AMBER2;
+            else if (u == "amber2-root") cfg.utility = azbench::Utility::AMBER2_ROOT;
             else if (u == "floor-hp") cfg.utility = azbench::Utility::FLOOR_HP;
-            else { std::fprintf(stderr, "--utility floor-hp|amber|amber2\n"); return 2; }
+            else { std::fprintf(stderr, "--utility floor-hp|amber|amber2|amber2-root\n"); return 2; }
         }
         else if (a == "--keyless-hp") cfg.keylessHp = true;
         else if (a == "--chance-on-reveal") cfg.chanceOnReveal = true;
@@ -118,7 +119,7 @@ int main(int argc, char **argv) {
     std::uniform_real_distribution<float> U(0.f, 1.f);
     std::vector<float> logits, F, ehp, hpf;
     const bool amber = azbench::usesAmberH(cfg.utility);
-    const bool needDist = cfg.utility == azbench::Utility::AMBER2 || cfg.searchEmaLambda > 0;
+    const bool needDist = azbench::isAmber2(cfg.utility) || cfg.searchEmaLambda > 0;
     std::vector<float> dist;
     std::vector<azbench::Sample> samples;
     const auto t0 = std::chrono::steady_clock::now();

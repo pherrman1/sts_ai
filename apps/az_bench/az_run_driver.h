@@ -89,8 +89,14 @@ namespace sts::azbench {
     // fight-start leaf under an out-of-combat root gets the combat utility. P(win) is the outcome head's class 0, so
     // AMBER2 needs dist in submit. Both are divided by the same 1.5 (in [0, 1]): a constant factor keeps Amber's
     // cross-kind ratios exactly (an out-of-combat state is worth at most 1.25 / 1.5).
-    enum class Utility : int { FLOOR_HP = 0, AMBER = 1, AMBER2 = 2 };
-    inline bool usesAmberH(Utility u) { return u == Utility::AMBER || u == Utility::AMBER2; }
+    // AMBER2_ROOT (2026-11-20): the same two utilities, but the search ROOT's kind picks one for the whole tree
+    // (every leaf and terminal of a tree uses it). With --cross-combat, per-state kinds put a won fight's next
+    // out-of-combat state (P(win) + 0.25 H) far below the fight itself (F + 0.5 H) unless the win rate is ~90 %:
+    // at A12 (~3 % wins) the search stalled fights and runs died on floor 1-2. One utility per tree has no such jump.
+    // Amber's page does not say which; Philipp chose to try the root kind (2026-11-20).
+    enum class Utility : int { FLOOR_HP = 0, AMBER = 1, AMBER2 = 2, AMBER2_ROOT = 3 };
+    inline bool isAmber2(Utility u) { return u == Utility::AMBER2 || u == Utility::AMBER2_ROOT; }
+    inline bool usesAmberH(Utility u) { return u == Utility::AMBER || isAmber2(u); }
     constexpr double kAmber2HpOoc = 0.25, kAmber2HpCombat = 0.5, kAmber2Scale = 1.5;
     // AMBER2 value of a leaf (net) or terminal state: in combat (F + 0.5 H) / 1.5, else (P(win) + 0.25 H) / 1.5.
     inline double amber2Value(bool stateCombat, double F, double pWin, double H) {
