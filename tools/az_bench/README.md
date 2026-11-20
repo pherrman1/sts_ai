@@ -114,7 +114,7 @@ row). With the flag the heads run on the packed tokens and on the live actions o
 for them. Same math per row and action up to float rounding (the row mean is accumulated in fp32 and the matrix
 products run on other shapes), not bit-identical. `infer_profile.py` times it and reports the largest output
 difference against the padded heads on real batches.
-Result on the PC (ledger §TBD): 3.80 -> 2.75 ms GPU per real batch, the best policy action the same in 99.6-100 %
+Result on the PC (ledger §826): 3.80 -> 2.75 ms GPU per real batch, the best policy action the same in 99.6-100 %
 of the rows, largest logit difference 0.02; in the live run the GPU load fell from 87 to 71 % but moves/s did not
 rise (the six CPU cores limit the run).
 

@@ -28365,7 +28365,7 @@ steady-state reading at about 18:55 CET is about 11,450 moves/s and 225k positio
 11,366 and 222.9k with it: no difference beyond the noise of such rows, still with the utility change in between.
 The +5.5 % above is start-wave residue, not an effect of the flag. Decision unchanged.
 
-## §TBD — `--packed-heads` on the PC: 3.80 → 2.75 ms GPU per real batch (−28 %), outputs equal up to fp16 rounding; live GPU load 87 → 71 % but no gain in moves/s (10,639 → 10,051, confounded with `--force-potions`): the six CPU cores limit the run (PC, 2026-11-20)
+## §826 — `--packed-heads` on the PC: 3.80 → 2.75 ms GPU per real batch (−28 %), outputs equal up to fp16 rounding; live GPU load 87 → 71 % but no gain in moves/s (10,639 → 10,051, confounded with `--force-potions`): the six CPU cores limit the run (PC, 2026-11-20)
 
 **Question:** §824 left the heads on the padded row / action layout as the remaining padding cost of an inference
 batch. What do heads on the packed tokens and the live actions (PR #1140) give, and do the outputs stay the same?
