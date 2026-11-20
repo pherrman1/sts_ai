@@ -248,14 +248,20 @@ class Replay:
             shutil.rmtree(path)
         os.replace(tmp, path)
 
-    def load(self, path):
-        """Restores a window saved by save into this (empty) replay; its layout (--window and the ring / compact
-        options) must be the same. Returns state.json's extra."""
+    def check_layout(self, path):
+        """Raises ValueError when the window saved at path has another layout than this replay (--window, ring or
+        compact options changed); returns state.json."""
         with open(os.path.join(path, "state.json")) as fh:
             state = json.load(fh)
         if state["layout"] != self._layout():
             raise ValueError(f"replay load {path}: saved layout differs from this run's (--window, ring or compact "
                              "options changed)")
+        return state
+
+    def load(self, path):
+        """Restores a window saved by save into this (empty) replay; its layout (--window and the ring / compact
+        options) must be the same. Returns state.json's extra."""
+        state = self.check_layout(path)
         with self.lock:
             if len(self) or self.added:
                 raise ValueError("replay load: the window is not empty")
@@ -1063,6 +1069,7 @@ def main(argv=None):
                 saved = json.load(fh)["extra"]
             if saved.get("step") != counters["step"]:
                 raise ValueError(f"saved at step {saved.get('step')}, the resumed checkpoint is at {counters['step']}")
+            replay.check_layout(args.replay_load)   # before any array is touched: the window stays empty and usable
             replay.load(args.replay_load)
             # the replay-ratio cap counts the trained samples since this window's first sample was added
             trained0 = counters["trained"] - int(saved["trained_since_window"])
@@ -1071,6 +1078,8 @@ def main(argv=None):
                   f"{time.time() - t_load:.0f} s", flush=True)
         except Exception as e:   # the run continues with an empty window
             print(f"# replay-load {args.replay_load}: NOT loaded ({e}); the window starts empty", flush=True)
+        if replay_loaded == 0 and (len(replay) or replay.added):   # a load failed part-way: a fresh window
+            del replay
             replay = Replay(args.window, hp_floors=56 if amber else 0, soft_outcome=ema_lam > 0,
                             compact=args.compact_samples, dict_tokens_per_sample=args.replay_dict_tokens,
                             token_store=az_bench_native.TokenStore if args.compact_samples else None,
