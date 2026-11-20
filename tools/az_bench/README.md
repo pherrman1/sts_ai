@@ -71,6 +71,9 @@ run on the 6-core PC (ledger §820, one before/after comparison): moves/s +10.2 
 Every report row of `metrics.jsonl` carries the time split (logging only):
 
 - `infer_batches_per_s`, `infer_rows_per_batch`: inference batches and their mean rows.
+- `infer_tokens_per_row`, `infer_tok_bucket_batches`: live tokens per evaluated row, and the batches of the report
+  window per token bucket. The bucket is the padded length of every row of a batch (the bucket of its longest row);
+  the varlen attention kernel's key loop runs to it for every row (`varlen_attn.py`, `MAXLEN`).
 - `infer_ms_per_s`: wall ms per second of the inference thread by phase. `wait_pack` = `next_flat` (waiting for rows
   and packing; `pack_s_per_s` is the packing part), `weights` = taking over the trainer's weights, `h2d` = shapes and
   host-to-GPU copies, `forward` = dtype casts and the net (on a GPU: issuing the kernels), `out` = search values and
@@ -81,6 +84,17 @@ Every report row of `metrics.jsonl` carries the time split (logging only):
   parts (waits for the GPU), `publish` = weights hand-over.
 - `worker_cpu_s_per_s`: CPU seconds per second of all worker threads together. `search` is their whole search loop
   and contains `step` (simulator steps and expansions) and `encode` (token encoding).
+
+`infer_profile.py` (2026-11-20) breaks the GPU time of the inference path down on real states: it loads a
+checkpoint and the saved window (`--replay-save`) of a run, draws rows, lays them out as the driver does (row /
+token / action buckets, padding rows, packed tokens) and times the run's compiled forward with CUDA events, with
+the top CUDA kernels of torch.profiler. Variants on the same rows separate the cost of the token bucket
+(`short_T64` against `short_Tbig`), of the empty rows of the row bucket (`real_Rtight`) and of mixed lengths
+(`uniform`). The window holds root states of real moves, the run evaluates search leaves of such states. It needs
+the GPU to itself: stop the run first. No game seeds are driven.
+
+    python3 tools/az_bench/infer_profile.py --module-dir BUILD_DIR --ckpt RUN/ckpt_N.pt --replay RUN/replay \
+        --out prof.json
 
 Each thread's phases add up to about 1000. With a GPU the issuing phases are CPU time of that thread and the `sync` /
 `loss_read` phases are time it waits for the GPU; `--gpu-timing`'s `gpu_ms_per_s` is the elapsed GPU time of each

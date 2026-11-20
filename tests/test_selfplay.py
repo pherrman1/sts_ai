@@ -1857,6 +1857,14 @@ class SelfplaySmoke(unittest.TestCase):
             self.assertLess(sum(r["infer_ms_per_s"].values()), 1300)
             self.assertLess(sum(r["train_ms_per_s"].values()), 1300)
             self.assertGreaterEqual(r["pack_s_per_s"], 0)
+            # batches per token bucket and live tokens per row (2026-11-20): only buckets of --tok-buckets, and
+            # batches exactly when rows were evaluated
+            tb = r["infer_tok_bucket_batches"]
+            self.assertLessEqual(set(tb), {"32", "40", "48", "56", "64", "80", "96", "128", "212"})
+            self.assertEqual(sum(tb.values()) > 0, r["infer_rows_per_batch"] > 0)
+            if tb:
+                self.assertGreater(r["infer_tokens_per_row"], 1)
+                self.assertLessEqual(r["infer_tokens_per_row"], max(int(t) for t in tb))
             # "search" is the workers' whole loop and contains the other two
             w = r["worker_cpu_s_per_s"]
             self.assertGreaterEqual(w["search"] + 0.05, w["step"] + w["encode"])
