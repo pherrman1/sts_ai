@@ -1027,6 +1027,10 @@ def main(argv=None):
     ap.add_argument("--copy-stream", action="store_true",
                     help="inference: host-to-GPU copies on their own CUDA stream, overlapping the previous batch's "
                          "forward (same outputs)")
+    ap.add_argument("--early-finish", action="store_true",
+                    help="inference loop: while it waits for the next batch's rows, hand the previous batch's "
+                         "results to the workers as soon as the GPU has them (default: only after the next batch "
+                         "is gathered and launched). Changes when answers arrive, not what they are")
     ap.add_argument("--pin-inference", default="", metavar="CPUS",
                     help="CPU affinity (default off; Linux): the inference thread runs on these logical CPUs (a list "
                          "such as 5,11, or 'auto' = the SMT siblings of the highest-numbered allowed CPU, one "
@@ -1273,7 +1277,8 @@ def main(argv=None):
     counters.setdefault("nonfinite_skips", 0)
     nonfinite_run = [0]   # consecutive skipped steps
     gradbox = {"n": 0, "sum": 0.0, "max": 0.0}   # gradient norm (before clipping) of the finite steps since the last report
-    infer_stats = {"batches": 0, "rows": 0, "syncs": 0, "tokens": 0}   # tokens: of the rows, packed batches only
+    # tokens: of the rows, packed batches only; early: batches handed back before the next one was gathered
+    infer_stats = {"batches": 0, "rows": 0, "syncs": 0, "tokens": 0, "early": 0}
     gpu_ms = {"infer": 0.0, "train": 0.0}   # --gpu-timing: cumulative stream busy time
     # Phase timers (logging only): cumulative wall seconds of the inference thread and of the training thread.
     #   inference: wait_pack = next_flat (waiting for rows + packing; the driver's pack_s is the packing part),
@@ -1358,11 +1363,30 @@ def main(argv=None):
         while not stop.is_set():
             host, views, out = sets[cur]
             t_ph = time.perf_counter()
+            timeout_ms = 5
+            if args.early_finish and pending is not None:
+                # Wait for the rows in short slices. Once the previous batch is done on the GPU (its event; without a
+                # stream it already is), its results go to the workers now: they then work on them while this thread
+                # gathers and launches the next batch, instead of sleeping until that launch is over.
+                t_end = t_ph + 0.005
+                while not stop.is_set():
+                    if pending[4] is None or pending[4].query():
+                        t_ph = lap(infer_s, "wait_pack", t_ph)
+                        finish(pending)
+                        pending = None
+                        infer_stats["early"] += 1
+                        t_ph = time.perf_counter()
+                        break
+                    if drv.wait_requests(min_rows, 200):
+                        break
+                    if time.perf_counter() >= t_end:   # the 5 ms are over: take what is there
+                        timeout_ms = 0
+                        break
             if args.packed_h2d:
-                got = drv.next_flat(args.batch, min_rows, 5, row_b, tok_b, act_b, views, args.pack_threads,
+                got = drv.next_flat(args.batch, min_rows, timeout_ms, row_b, tok_b, act_b, views, args.pack_threads,
                                     packed_tokens=True)
             else:
-                got = drv.next_flat(args.batch, min_rows, 5, row_b, tok_b, act_b, views, args.pack_threads)
+                got = drv.next_flat(args.batch, min_rows, timeout_ms, row_b, tok_b, act_b, views, args.pack_threads)
             t_ph = lap(infer_s, "wait_pack", t_ph)
             launched = None
             if got is not None:
@@ -1777,6 +1801,8 @@ def main(argv=None):
             row["infer_tok_bucket_batches"] = {str(t): n - last_tok_b[t] for t, n in now_tok_b.items()
                                                if n - last_tok_b[t]}
             last_tok_b = now_tok_b
+            # --early-finish: share of the batches whose results went to the workers before the next batch was gathered
+            row["infer_early_per_batch"] = round((infer_stats["early"] - last_infer["early"]) / max(1, d_b), 3)
             row["infer_ms_per_s"] = {k: round(1000 * (v - last_infer_s[k]) / dt, 1) for k, v in infer_s.items()}
             row["train_ms_per_s"] = {k: round(1000 * (v - last_train_s[k]) / dt, 1) for k, v in train_s.items()}
             row["worker_cpu_s_per_s"] = {k: round((s[k + "_cpu"] - last_s[k + "_cpu"]) / dt, 3)

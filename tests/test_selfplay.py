@@ -13,6 +13,7 @@ import json
 import os
 import sys
 import tempfile
+import time
 import unittest
 
 import numpy as np
@@ -1877,6 +1878,7 @@ class SelfplaySmoke(unittest.TestCase):
             self.assertLess(sum(r["infer_ms_per_s"].values()), 1300)
             self.assertLess(sum(r["train_ms_per_s"].values()), 1300)
             self.assertGreaterEqual(r["pack_s_per_s"], 0)
+            self.assertEqual(r["infer_early_per_batch"], 0)   # --early-finish is off by default
             # batches per token bucket and live tokens per row (2026-11-20): only buckets of --tok-buckets, and
             # batches exactly when rows were evaluated
             tb = r["infer_tok_bucket_batches"]
@@ -1896,6 +1898,55 @@ class SelfplaySmoke(unittest.TestCase):
             self.assertGreater(r["infer_ms_per_s"]["forward"], 0)
         self.assertTrue(any(r["train_ms_per_s"]["fwd_bwd"] > 0 for r in rows))
         self.assertTrue(any(r["worker_cpu_s_per_s"]["search"] > 0 for r in rows))
+
+    def test_wait_requests_takes_nothing(self):
+        """RunDriver.wait_requests: True once min_rows requests are queued, False after the timeout otherwise, and it
+        takes none of them (the next next_flat returns the same rows)."""
+        load()
+        import importlib
+        sys.path.insert(0, os.path.dirname(MODULES[0]))
+        nat = importlib.import_module("az_bench_native")
+        drv = nat.RunDriver(workers=1, games=3, seed_base=1960, max_runs=3, ascension=20, full_sims=8, fast_sims=4,
+                            full_candidates=4, fast_candidates=2)
+        R, T, A = 8, 212, 96
+        views = {"tok_type": np.zeros(R * T, np.int8), "ids": np.zeros(R * T * 4, np.int16),
+                 "f": np.zeros(R * T * 64, np.float16), "mask": np.zeros(R * T, np.bool_),
+                 "a_type": np.zeros(R * A, np.int16), "a_src": np.zeros(R * A, np.int16),
+                 "a_tgt": np.zeros(R * A, np.int16), "a_f": np.zeros(R * A * 8, np.float16),
+                 "a_mask": np.zeros(R * A, np.bool_)}
+        drv.start()
+        try:
+            # every game asks for its root: three requests, never four (one pending evaluation per game)
+            self.assertTrue(drv.wait_requests(3, 10_000_000))
+            t0 = time.perf_counter()
+            self.assertFalse(drv.wait_requests(4, 20_000))
+            self.assertGreaterEqual(time.perf_counter() - t0, 0.015)
+            self.assertTrue(drv.wait_requests(3, 0))   # still there
+            got = drv.next_flat(R, 1, 0, [R], [T], [A], views)
+            self.assertEqual(got[1], 3)
+            self.assertFalse(drv.wait_requests(1, 1000))   # taken, and nothing new before the answers
+        finally:
+            drv.stop()
+
+    def test_early_finish_run(self):
+        """--early-finish: finished batches go back to the workers before the next batch is gathered (on the CPU a
+        batch is finished when its forward returns, so every batch with a successor); the run plays and trains."""
+        sp = load()
+        args = ["--module-dir", os.path.dirname(MODULES[0]), "--device", "cpu", "--workers", "2", "--games", "4",
+                "--full-sims", "8", "--fast-sims", "4", "--batch", "32", "--row-buckets", "32", "--pack-step", "32",
+                "--pack-threads", "1", "--min-replay", "50", "--train-batch", "32", "--window", "5000",
+                "--report", "1", "--sync-steps", "2", "--seed-base", "1500", "--max-runs", "16", "--train-packed",
+                "--early-finish"]
+        with tempfile.TemporaryDirectory() as d:
+            self.assertEqual(sp.main(args + ["--out-dir", d]), 0)
+            with open(os.path.join(d, "metrics.jsonl")) as f:
+                rows = [json.loads(l) for l in f]
+        self.assertGreaterEqual(rows[-1]["runs_done"], 16)
+        busy = [r for r in rows if r["infer_batches_per_s"] > 0]
+        self.assertTrue(busy)
+        self.assertTrue(all(0 <= r["infer_early_per_batch"] <= 1.5 for r in rows))
+        self.assertGreater(max(r["infer_early_per_batch"] for r in busy), 0.9)
+        self.assertTrue(any(r["train_ms_per_s"]["fwd_bwd"] > 0 for r in rows))
 
     def test_pin_inference_run(self):
         """--pin-inference: the inference thread runs on the given CPU, every other thread on the rest; the run
