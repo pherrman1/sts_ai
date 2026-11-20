@@ -28411,3 +28411,55 @@ limit).
 moves/s. Open: one restart that toggles only this flag, rows at least 25 minutes after the start, to rule out a
 cost on the CPU side.
 **Knowledge impact:** this entry; `tools/az_bench/README.md`.
+
+**Correction (2026-11-20 22:32 CET):** the live rows above were taken too early (22 minutes after the start, another
+program had left the GPU six minutes before). Six rows 22:25:24-22:27:57 CET, 45 minutes after the start, same
+flags ([SCHED-2230](evidence/infer_profile_20261120/SCHED-2230.md)): **11,930 moves/s against 10,639 before the
+restart (+12 %)**, 233.0k against 209.2k net positions/s, 181 against 160 batches/s, GPU ms/s on the inference
+stream 808 -> 659, GPU load 74.1 %. "No gain in moves/s" and "NOT SHOWN" in the title, the table and the decision
+above do not hold: the packed heads raised the throughput. The size is still confounded with `--force-potions`
+(same restart). The reading "the six cores limit the run" does not hold either, see §827.
+
+## §827 — After the GPU fixes nothing is saturated: workers on CPU 63 %, inference thread 74 %, GPU 74 %, CPU 27 % idle; workers and inference thread wait for each other because a finished batch is handed back only after the next one is launched; worker profile: 12 % of worker CPU is the metrics' own clock call (PC + cloud, 2026-11-20)
+
+**Question:** with `--attn-row-bounds` and `--packed-heads` the GPU has slack. What limits the run now?
+**Data:** live run on the PC at 22:25 CET (A5, 11 workers x 450 games, flags in
+[SCHED-2230](evidence/infer_profile_20261120/SCHED-2230.md)): six metrics rows, `/proc` scheduler statistics of all
+threads over 30.5 s, `nvidia-smi dmon`, `top`; nothing was attached to the process. Cloud: CPU-time sampling of
+`az-run-driver` with a fake net, two state mixes ([WORKER-PROFILE](evidence/infer_profile_20261120/WORKER-PROFILE.md)).
+**Result:**
+
+| live, 22:25 CET | running | waiting for a CPU | sleeping |
+|---|---|---|---|
+| 11 worker threads | 62-64 % | 6.2-6.7 % | 30-32 % |
+| Python inference thread | 73.8 % | 3.8 % | 22.5 % |
+| trainer thread | 41.2 % | 3.3 % | 55.5 % |
+
+GPU load 74 %; the whole CPU 67 % user, 6.5 % system, 27 % idle. `worker_cpu_s_per_s.search` (6.91) is measured
+around the worker's whole ready loop and contains `step` (2.92) and `encode` (1.63): the workers use 6.9 CPU s/s
+together, not 11.5. One inference batch per 5.5 ms (181/s, 1,283 rows): waiting for rows 1.0-1.2 ms, packing 1.45 ms
+(`pack_s_per_s` 0.264), copies to the GPU 0.33, launching the net 1.90, outputs 0.20, wait for the previous batch 0.33,
+handing it to the workers 0.26. Answers per second: 233.0k net + 45.9k cache = 278.9k for 4,950 games, so one game
+waits 17.7 ms per answer, 3.2 batch cycles.
+
+Order in `selfplay.py`'s inference loop: gather batch k+1 (wait for at least 1,024 rows, pack), launch it, and only
+then collect batch k and hand it to the workers. The GPU needs 3.6 ms from the start of a launch to the end of the
+batch (`gpu_ms` 659 / 181), the launch takes 2.1 ms, so batch k is finished about 1.5 ms after its launch; its
+results reach the workers about 6.2 ms after its launch (collect the batch before 0.6 + wait 1.1 + pack 1.45 +
+copies 0.33 + launch 2.1 + collect and submit 0.6). In that time the workers that are done with the previous answers sleep, and the
+inference thread sleeps until they have produced 1,024 rows.
+
+Worker CPU by function (cloud, fake net, share of the samples on worker threads; early floors / late floors):
+thread CPU clock for the metrics (`cpuSeconds`, about 10 calls per evaluation, 171 ns each in the container) 11.1 /
+12.4 %; fight state copy 9.6 / 12.9 %; game step 8.0 / 10.6 %; combat encoder 6.0 / 10.4 %; action enumeration
+5.5 / 6.8 %; malloc + free 11.8 / 9.1 %; shared_ptr counts 6.8 / 3.9 %.
+**Interpretation:** no single part limits the run; the round trip of an answer does. Three small levers, none of
+which changes a game (Inference, sizes not measured): (1) hand a finished batch to the workers as soon as the GPU
+has it, while the inference thread waits for rows: removes up to about 4.5 of the 17.7 ms; workers (63 %), inference
+thread (74 %) and GPU (74 %) each leave room for about a quarter more. (2) A cheaper clock for the workers' step /
+encode split: about 12 % of worker CPU in the container, less on the PC where a system call is cheaper. (3) Packing
+is a quarter of the inference thread's time; it clears and copies the action arrays of all 2,048 rows although the
+packed heads read only the live ones.
+**Decision:** none taken; (1) proposed to Philipp first, one change per restart.
+**Knowledge impact:** this entry; `tools/az_bench/README.md`.
+
