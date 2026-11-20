@@ -83,7 +83,18 @@ namespace sts::azbench {
     //     with E[HP_f] (f = 1..56) from a per-floor HP head (0 after death); past floors count 1 each. A run that
     //     ends alive (Heart kill, or the act 3 boss without the keys) keeps its last HP on its last floor; a Heart
     //     kill also keeps it on the floors after (our choice), a keyless victory has 0 there (the run is over).
-    enum class Utility : int { FLOOR_HP = 0, AMBER = 1 };
+    // AMBER2 (2026-11-20, Amber Eye's later utility, "after a few more hours" once the win rate was significant):
+    // out of combat P(win) + 0.25 H, in combat F + 0.5 H, both with Amber's H; which one applies is the search ROOT's
+    // kind (a fight searched from an out-of-combat root keeps the out-of-combat utility). P(win) is the outcome head's
+    // class 0, so AMBER2 needs dist in submit. Scaled by 1 / (1 + w) into [0, 1] as the other utilities.
+    enum class Utility : int { FLOOR_HP = 0, AMBER = 1, AMBER2 = 2 };
+    inline bool usesAmberH(Utility u) { return u == Utility::AMBER || u == Utility::AMBER2; }
+    constexpr double kAmber2HpOoc = 0.25, kAmber2HpCombat = 0.5;
+    // AMBER2 value of a leaf (net) or terminal state: root in combat (F + 0.5 H) / 1.5, else (P(win) + 0.25 H) / 1.25.
+    inline double amber2Value(bool rootCombat, double F, double pWin, double H) {
+        const double w = rootCombat ? kAmber2HpCombat : kAmber2HpOoc;
+        return (std::clamp(rootCombat ? F : pWin, 0.0, 1.0) + w * H) / (1.0 + w);
+    }
 
     // Amber H of a state on `floor` from per-floor HP predictions hpf[f - 1] = E[HP_f] / 255 (clamped to [0, 1]).
     inline double amberH(int floor, const float *hpf) {

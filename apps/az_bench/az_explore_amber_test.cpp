@@ -52,6 +52,17 @@ int main() {
         check(c > prev, "c increases with need");
         prev = c;
     }
+    // Utility AMBER2 (2026-11-20): out of combat (P(win) + 0.25 H) / 1.25, in combat (F + 0.5 H) / 1.5.
+    check(std::fabs(amber2Value(false, 0.9, 0.2, 0.6) - (0.2 + 0.25 * 0.6) / 1.25) < 1e-12, "amber2 out of combat");
+    check(std::fabs(amber2Value(true, 0.9, 0.2, 0.6) - (0.9 + 0.5 * 0.6) / 1.5) < 1e-12, "amber2 in combat");
+    check(amber2Value(false, 0.0, 1.0, 1.0) == 1.0 && amber2Value(true, 1.0, 0.0, 1.0) == 1.0, "amber2 max 1");
+    check(amber2Value(false, 1.0, 0.0, 0.0) == 0.0, "amber2 out of combat ignores F");
+    // A Heart kill (H of a kill on floor 55 with 60 HP) beats any death out of combat; a later death beats an earlier
+    // one only through H.
+    const double kill = amber2Value(false, 1.0, 1.0, amberTerminalH(true, true, 55, 60));
+    const double die54 = amber2Value(false, 54 / 57.0, 0.0, amberTerminalH(false, false, 54, 0));
+    const double die20 = amber2Value(false, 20 / 57.0, 0.0, amberTerminalH(false, false, 20, 0));
+    check(kill > die54 && die54 > die20, "amber2 terminal order");
     if (fails) return 1;
     std::printf("az explore amber: ok\n");
     return 0;

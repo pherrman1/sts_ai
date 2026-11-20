@@ -765,8 +765,11 @@ def main(argv=None):
     ap.add_argument("--fast-candidates", type=int, default=4, help="Gumbel root candidates m of a fast move")
     ap.add_argument("--hp-weight-combat", type=float, default=1.0)
     ap.add_argument("--hp-weight-ooc", type=float, default=1.0)
-    ap.add_argument("--utility", choices=("floor-hp", "amber"), default="floor-hp",
-                    help="H of the search: floor-hp = E[HP end of floor] / max HP; amber = Amber Eye's per-floor H")
+    ap.add_argument("--utility", choices=("floor-hp", "amber", "amber2"), default="floor-hp",
+                    help="H of the search: floor-hp = E[HP end of floor] / max HP; amber = Amber Eye's per-floor H, "
+                         "U = F + H; amber2 = Amber Eye's later utility (2026-11-20): out of combat P(win) + 0.25 H, "
+                         "in combat F + 0.5 H, by the search root's kind (same net and heads as amber, so a run can "
+                         "switch from amber to amber2 on resume)")
     ap.add_argument("--keyless-hp", action="store_true",
                     help="floor-hp: a keyless act 3 victory keeps H = HP / max HP (amber always does)")
     ap.add_argument("--w-hp-floor", type=float, default=1.0, help="loss weight of the per-floor HP head (amber)")
@@ -934,7 +937,8 @@ def main(argv=None):
         ap.error("--force-keys curriculum needs --curriculum")
     if args.value_ema_search and not args.value_ema_halflife > 0:
         ap.error("--value-ema-search needs --value-ema-halflife > 0")
-    amber = args.utility == "amber"
+    amber = args.utility in ("amber", "amber2")   # Amber's per-floor H (heads, labels)
+    amber2 = args.utility == "amber2"
     hp_floors = 56 if amber else 1
     if not 0.0 <= args.heart_log <= 1.0:
         ap.error("--heart-log: RATE in [0, 1]")
@@ -1020,7 +1024,7 @@ def main(argv=None):
         keep_fast=args.keep_fast, search_seed=args.seed + counters["step"], max_fight_moves=args.max_fight_moves,
         test_max_hp=args.test_max_hp, max_pending=args.max_pending,
         explore_c=args.explore_c, pick_target=args.pick_target, c_visit=args.c_visit, c_scale=args.c_scale,
-        fast_noise=not args.no_fast_noise, q_rescale=args.q_rescale, utility=1 if amber else 0,
+        fast_noise=not args.no_fast_noise, q_rescale=args.q_rescale, utility=2 if amber2 else 1 if amber else 0,
         keyless_hp=args.keyless_hp,
         eval_cache=args.eval_cache, eval_cache_cap=args.eval_cache_cap, merge_cards=args.merge_cards,
         chance_on_reveal=args.chance_on_reveal, cross_combat=args.cross_combat, sim_help=args.sim_help,
@@ -1146,7 +1150,7 @@ def main(argv=None):
                    "ehp": torch.zeros(R, dtype=torch.float32, pin_memory=cuda)}
             if amber:
                 out["hpf"] = torch.zeros(R * 56, dtype=torch.float32, pin_memory=cuda)
-            if ema_search:
+            if ema_search or amber2:   # amber2: P(win) = class 0
                 out["dist"] = torch.zeros(R * OUTCOME_CLASSES, dtype=torch.float32, pin_memory=cuda)
             return h, {k: v.numpy() for k, v in h.items()}, out
 
@@ -1162,7 +1166,7 @@ def main(argv=None):
             drv.submit(ticket, out["logits"][:rows * Ap].numpy().reshape(rows, Ap), out["F"][:rows].numpy(),
                        out["ehp"][:rows].numpy(), out["hpf"][:rows * 56].numpy().reshape(rows, 56) if amber else None,
                        version, out["dist"][:rows * OUTCOME_CLASSES].numpy().reshape(rows, OUTCOME_CLASSES)
-                       if ema_search else None)
+                       if ema_search or amber2 else None)
 
         while not stop.is_set():
             host, views, out = sets[cur]
@@ -1260,7 +1264,7 @@ def main(argv=None):
                     out["ehp"][:rows].copy_(ehp, non_blocking=True)
                     if amber:
                         out["hpf"][:rows * 56].view(rows, 56).copy_(hpf[:rows].float().clamp(0, 1), non_blocking=True)
-                    if ema_search:
+                    if ema_search or amber2:
                         out["dist"][:rows * OUTCOME_CLASSES].view(rows, OUTCOME_CLASSES).copy_(
                             torch.softmax(outcome[:rows].float(), -1), non_blocking=True)
                     ev = None

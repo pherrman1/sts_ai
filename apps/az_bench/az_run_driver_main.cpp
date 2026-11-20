@@ -2,7 +2,7 @@
 // training samples (labels filled, policy a distribution over the sample's actions, action sources / targets inside
 // the row). Smoke test and CPU-side throughput probe.
 //
-// usage: az-run-driver [--workers 2] [--games 4] [--runs 8] [--batch 64] [--seed 0] [--seed-base 1] [--fast] [--asc 20] [--sims N] [--const-value] [--test-hp HP] [--max-fight-moves 400] [--explore-c C] [--explore-amber] [--pick-target T] [--no-fast-noise] [--q-rescale] [--c-scale S] [--utility floor-hp|amber] [--keyless-hp] [--chance-on-reveal] [--cross-combat] [--sim-help] [--max-pending N] [--force-keys] [--savescum] [--compact-samples]
+// usage: az-run-driver [--workers 2] [--games 4] [--runs 8] [--batch 64] [--seed 0] [--seed-base 1] [--fast] [--asc 20] [--sims N] [--const-value] [--test-hp HP] [--max-fight-moves 400] [--explore-c C] [--explore-amber] [--pick-target T] [--no-fast-noise] [--q-rescale] [--c-scale S] [--utility floor-hp|amber|amber2] [--keyless-hp] [--chance-on-reveal] [--cross-combat] [--sim-help] [--max-pending N] [--force-keys] [--savescum] [--compact-samples]
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -83,8 +83,9 @@ int main(int argc, char **argv) {
         else if (a == "--utility") {
             const std::string u = next();
             if (u == "amber") cfg.utility = azbench::Utility::AMBER;
+            else if (u == "amber2") cfg.utility = azbench::Utility::AMBER2;
             else if (u == "floor-hp") cfg.utility = azbench::Utility::FLOOR_HP;
-            else { std::fprintf(stderr, "--utility floor-hp|amber\n"); return 2; }
+            else { std::fprintf(stderr, "--utility floor-hp|amber|amber2\n"); return 2; }
         }
         else if (a == "--keyless-hp") cfg.keylessHp = true;
         else if (a == "--chance-on-reveal") cfg.chanceOnReveal = true;
@@ -116,7 +117,9 @@ int main(int argc, char **argv) {
     std::mt19937_64 rng(7);
     std::uniform_real_distribution<float> U(0.f, 1.f);
     std::vector<float> logits, F, ehp, hpf;
-    const bool amber = cfg.utility == azbench::Utility::AMBER;
+    const bool amber = azbench::usesAmberH(cfg.utility);
+    const bool needDist = cfg.utility == azbench::Utility::AMBER2 || cfg.searchEmaLambda > 0;
+    std::vector<float> dist;
     std::vector<azbench::Sample> samples;
     const auto t0 = std::chrono::steady_clock::now();
     bool timedOut = false;
@@ -138,7 +141,16 @@ int main(int argc, char **argv) {
             hpf.resize(static_cast<std::size_t>(B) * azbench::kFloors);
             for (auto &x : hpf) x = constValue ? 0.f : 0.3f * U(rng);
         }
-        d.submit(tickets.data(), B, shape.actions, logits.data(), F.data(), ehp.data(), amber ? hpf.data() : nullptr);
+        if (needDist) {   // a random outcome softmax per row (class 0 = win)
+            dist.resize(static_cast<std::size_t>(B) * azbench::kOutcomeClasses);
+            for (int r = 0; r < B; ++r) {
+                float sum = 0;
+                for (int k = 0; k < azbench::kOutcomeClasses; ++k) sum += (dist[r * azbench::kOutcomeClasses + k] = U(rng));
+                for (int k = 0; k < azbench::kOutcomeClasses; ++k) dist[r * azbench::kOutcomeClasses + k] /= sum;
+            }
+        }
+        d.submit(tickets.data(), B, shape.actions, logits.data(), F.data(), ehp.data(), amber ? hpf.data() : nullptr, 0,
+                 needDist ? dist.data() : nullptr);
         d.takeSamples(1 << 20, samples);
     }
     d.stop();
