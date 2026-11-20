@@ -28320,8 +28320,9 @@ for 35.
 **Interpretation:** the kernel variant removes the dead blocks: a batch in bucket 80 / 96 now costs what its short
 rows cost in bucket 64 plus the few long rows. Where there are no dead blocks (bucket 64, uniform) it is about 3 %
 slower (the per-row bound). In the run the GPU is no longer the limit: its load fell to 80 % and the inference
-thread waits 47 % of its time for rows and 11 % for the GPU, so the gain in moves/s (+9 to +12 %) is smaller than
-the gain per batch; the workers' CPU is the scarce part again (Inference). What a batch still pays for padding:
+thread waits 11 % of its time for the GPU (23 % before) and spends 47 % in `wait_pack` (38 % before; waiting for
+rows plus packing, packing was 250 ms/s in §822 and is not in these rows), so the gain in moves/s (+9 to +12 %) is
+smaller than the gain per batch; the workers' CPU is the scarce part again (Inference). What a batch still pays for padding:
 the empty rows of the row bucket (3.56 → 2.94 ms without them) and the action bucket (about 1 ms more in bucket
 96 than in 32), both in the heads on the padded row / action layout.
 **Decision:** the run keeps `--attn-row-bounds`; the repository default stays off. Open: `--pin-inference` with
