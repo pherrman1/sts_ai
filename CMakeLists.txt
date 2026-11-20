@@ -202,6 +202,15 @@ set_tests_properties(az_run_driver_explore_variants PROPERTIES LABELS "core;smok
 add_test(NAME az_run_driver_utility_amber2 COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 12 --fast
          --seed-base 1 --seconds 300 --utility amber2 --test-hp 300)
 set_tests_properties(az_run_driver_utility_amber2 PROPERTIES LABELS "core;smoke")
+add_test(NAME az_run_driver_utility_amber2_root COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 12
+         --fast --seed-base 1 --seconds 300 --utility amber2-root --test-hp 300)
+set_tests_properties(az_run_driver_utility_amber2_root PROPERTIES LABELS "core;smoke")
+# amber2-root keeps the floor (per-state amber2 collapses with --cross-combat on a fake net: 2.98 vs 4.56 at 300 runs).
+add_test(NAME az_run_driver_amber2_root_floor COMMAND ${CMAKE_COMMAND}
+         -DDRIVER=$<TARGET_FILE:az-run-driver>
+         "-DARGS=--workers;4;--games;4;--runs;300;--seed-base;778000;--seconds;800;--utility;amber2-root;--cross-combat;--sim-help;--q-rescale;--c-scale;0.1;--asc;0"
+         -DMIN_FLOOR=4.0 -P ${CMAKE_SOURCE_DIR}/cmake/CheckMeanFloor.cmake)
+set_tests_properties(az_run_driver_amber2_root_floor PROPERTIES LABELS "core;smoke")
 # Savescum (RunConfig::savescum): the search's child of every played action is the real next decision state
 # (fingerprint incl. RNG states and draw order), with and without the Amber search rules.
 add_test(NAME az_run_driver_savescum COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 6 --fast
