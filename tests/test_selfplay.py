@@ -900,10 +900,20 @@ class SelfplaySmoke(unittest.TestCase):
             # the saved window is from the first run's final step: resuming the second run's checkpoint skips it
             ck2 = sorted(glob.glob(os.path.join(d, "ckpt_*.pt")), key=os.path.getmtime)[-1]
             self.assertEqual(sp.main(common + ["--out-dir", d, "--max-runs", "24", "--resume", ck2,
-                                               "--replay-load", os.path.join(d, "missing")]), 0)
+                                               "--replay-load", rep]), 0)
             with open(os.path.join(d, "metrics.jsonl")) as f:
                 rows3 = [json.loads(l) for l in f][len(rows) + len(rows2):]
             self.assertEqual(rows3[0]["replay_loaded"], 0)
+            self.assertGreater(rows3[-1]["samples_added"], 0)   # the run trains on with a fresh window
+            # another layout (--window): refused before any array is written
+            ck3 = sorted(glob.glob(os.path.join(d, "ckpt_*.pt")), key=os.path.getmtime)[-1]
+            other = os.path.join(d, "replay_other")
+            sp.Replay(4000).save(other, extra={"step": torch.load(ck3)["counters"]["step"]})
+            self.assertEqual(sp.main(common + ["--out-dir", d, "--max-runs", "28", "--resume", ck3,
+                                               "--replay-load", other]), 0)
+            with open(os.path.join(d, "metrics.jsonl")) as f:
+                rows4 = [json.loads(l) for l in f][len(rows) + len(rows2) + len(rows3):]
+            self.assertEqual(rows4[0]["replay_loaded"], 0)
 
     def test_run_train_resume(self):
         sp = load()
