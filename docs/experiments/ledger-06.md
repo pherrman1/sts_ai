@@ -28329,3 +28329,33 @@ the empty rows of the row bucket (3.56 → 2.94 ms without them) and the action 
 and without the flag (the inference thread now has slack, the workers do not); heads on live rows and actions only
 if the GPU becomes the limit again.
 **Knowledge impact:** this entry; `tools/az_bench/README.md`.
+
+## §TBD — `--pin-inference` again after §822 / §824: INCONCLUSIVE, the start without the flag also changed `--utility` (11,366 → 11,990 moves/s, +5.5 %, confounded); the run stays without pinning (PC, 2026-11-20)
+
+**Question:** §820 measured +10.2 % moves/s for the inference thread's own core with savescum; §821 did not show it
+without savescum. After §822 and §824 the inference thread has slack and the workers do not: is the run faster
+without `--pin-inference`?
+**Data:** amber_scratch on 15887f9a with `--attn-row-bounds`, A0, savescum off: six report rows 18:24:29-18:27:00
+CET with `--pin-inference 5,11`, then the planned restart 18:27:35 CET from ckpt_690157 without the flag, six rows
+18:36:24-18:38:55 CET (means relayed by the run's thread; raw rows on the PC in
+`amber_scratch/pin_rows_before_unpin_20261120.jsonl` and `nopin_rows_20261120.jsonl`). The same restart changed
+`--utility amber` to `amber2-root` (Philipp's switch, 18:26 CET), so the two blocks differ in two things.
+**Result:**
+
+| | with pin, `amber` | without pin, `amber2-root` |
+|---|---|---|
+| moves/s | 11,366 | 11,990 (+5.5 %) |
+| net positions/s | 222.9k | 235.6k (+5.7 %) |
+| inference batches/s x rows | 174.5 x 1,277 | 184.1 x 1,280 |
+| inference `wait_pack` / `forward`, ms/s | 469 / 302 | 436 / 336 |
+| worker CPU, s/s (sum of the three keys) | 10.6 | 11.5 |
+| GPU load (nvidia-smi dmon, 30 s) | not taken | 87.3 % |
+
+Winrate about 28 % before and about 44 % after the switch, with more Heart fights and more cache hits (43.6k/s
+against 24-35k/s typical before).
+**Interpretation:** the run is not slower without pinning, and the workers use more CPU, which is the direction
+expected when two more logical CPUs are open to them (Inference). The size of the effect is not measured: the
+utility change alters the game mix, the cache hit rate and the share of Heart fights in the same step.
+**Decision:** INCONCLUSIVE on the size; the run stays without `--pin-inference` (default off, as before). No
+further restart is spent on this.
+**Knowledge impact:** this entry.
