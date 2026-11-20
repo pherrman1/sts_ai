@@ -241,6 +241,16 @@ PYBIND11_MODULE(az_bench_native, m) {
                  py::gil_scoped_release r;
                  st.release(static_cast<std::size_t>(slots.size()), slots.data());
              })
+        .def("restore",
+             [](azbench::TokenStore &st, py::array_t<std::int8_t, py::array::c_style> t,
+                py::array_t<std::int16_t, py::array::c_style> ids, py::array_t<std::uint16_t, py::array::c_style> f,
+                py::array_t<std::int32_t, py::array::c_style> refs) {
+                 const auto n = static_cast<py::ssize_t>(st.capacity());
+                 if (t.size() != n || ids.size() != n * 4 || f.size() != n * 64 || refs.size() != n)
+                     throw std::invalid_argument("TokenStore.restore: shapes (capacity differs?)");
+                 py::gil_scoped_release r;
+                 st.restore(t.data(), ids.data(), f.data(), refs.data());
+             })
         .def("refs",
              [](py::object self) {
                  auto &st = self.cast<azbench::TokenStore &>();

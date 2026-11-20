@@ -10,6 +10,7 @@
 #pragma once
 
 #include <cstdint>
+#include <algorithm>
 #include <cstring>
 #include <stdexcept>
 #include <vector>
@@ -101,6 +102,25 @@ namespace sts::azbench {
                     indexed_[s] = 0;
                     free_.push_back(s);
                 }
+            }
+        }
+
+        // Restores a saved state (selfplay.py --replay-save / --replay-load): slot contents and reference counts as
+        // tokType() / ids() / f() / refs() held them. Free slots and the lookup table are rebuilt (a 64-bit hash
+        // collision may index the other one of the two tokens than before; both stay correct).
+        void restore(const std::int8_t *type, const std::int16_t *ids, const std::uint16_t *f, const std::int32_t *refs) {
+            std::memcpy(tokType_.data(), type, cap_);
+            std::memcpy(ids_.data(), ids, sizeof(std::int16_t) * cap_ * kCat);
+            std::memcpy(f_.data(), f, sizeof(std::uint16_t) * cap_ * kFloat);
+            std::memcpy(ref_.data(), refs, sizeof(std::int32_t) * cap_);
+            std::fill(tabHash_.begin(), tabHash_.end(), 0);
+            std::fill(tabSlot_.begin(), tabSlot_.end(), -1);
+            free_.clear();
+            for (std::size_t i = cap_; i-- > 0;) {
+                const auto s = static_cast<std::int32_t>(i);
+                if (ref_[i] < 0) throw std::invalid_argument("TokenStore.restore: negative reference count");
+                if (ref_[i] == 0) { indexed_[i] = 0; free_.push_back(s); continue; }
+                indexed_[i] = insert(hashOf(tokType_[i], &ids_[i * kCat], &f_[i * kFloat]), s) ? 1 : 0;
             }
         }
 
