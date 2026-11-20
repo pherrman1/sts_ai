@@ -28204,3 +28204,36 @@ end), Philipp's go by decision card 15:59 CET, restart right after the merge wit
 time split then shows whether `out` and `take_add` fell. `--pin-inference` stays default off; compare it again
 after the fix (one start with, one without).
 **Knowledge impact:** this entry; `tools/az_bench/README.md`.
+
+## §822 — Stage 1 speed after PR #1132 (constants of `search_values` built once; replay eviction scans from the window's old end): 7,364 → 10,117 moves/s (+37 %) on the live amber_scratch run, trainer back at the replay-ratio cap 2.00, GPU load 59-67 → 91 % (PC, 2026-11-20)
+
+**Question:** do §821's two readings hold, and what do the fixes give on the running Stage 1 run?
+**Data:** [ROWS-2](evidence/selfplay_time_split_20261120/ROWS-2.md): 10 consecutive report rows 16:26-16:31 CET of
+amber_scratch resumed 16:16 CET from ckpt_659475 on main c6225d67, 10 minutes after the start (past the ramp), against
+the mean of the rows 16:02-16:07 CET of the same run on 458f0019. Same arguments in both (A0, savescum off, 11 workers
+x 450 games, 10M window loaded, `--pin-inference 5,11`); only the code differs. One before/after pair, not
+randomized; the two windows are 25 minutes apart on the same net.
+**Result:**
+
+| | 458f0019 | c6225d67 |
+|---|---|---|
+| moves/s | 7,364 | 10,117 (+37 %) |
+| net positions/s | 142.6k | 196.3k (+38 %) |
+| inference `out`, ms/s | 383 | 31 |
+| inference `sync`, ms/s | ~1 | 235 |
+| inference batches/s x rows | 94.8 x 1,510 (15:45 rows) | 149.6 x 1,314 |
+| trainer `take_add`, ms/s | 658 | 57 |
+| trainer `idle`, ms/s | 0 | 372 |
+| trained / added samples | ~1.93 | 2.00 (cap) |
+| GPU load (nvidia-smi dmon, 30 s) | 59-67 % | 90.9 % |
+
+Stalls 8, invalid actions 0, knowledge failures 0, non-finite steps 0; gradient norm mean 7.3; losses in their
+usual range.
+**Interpretation:** both readings of §821 hold. `out` fell by 350 ms/s and the wait moved to `sync`, where the
+pipeline is meant to wait, at 235 ms/s: the item assignment was the hidden stream sync. `take_add` fell to a
+tenth and the trainer idles 37 % of the time at the ratio cap. The inference thread now waits 13 % of its time for
+rows (wait + pack 381 ms/s, pack 250) and 23 % for the GPU, the workers use 5.6 CPU s/s in search (4.7 before), and
+the GPU is busy 91 % of the time: no single part limits the run any more (Inference).
+**Decision:** kept; the run stays on c6225d67. Open: `--pin-inference` again with and without the flag on this
+code (the inference thread is no longer saturated, so its own core may now cost the workers more than it gives).
+**Knowledge impact:** this entry.
