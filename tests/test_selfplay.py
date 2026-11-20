@@ -758,6 +758,47 @@ class MallocTrimTest(unittest.TestCase):
         self.assertGreater(sp.rss_gb(), 0)
 
 
+class PinInferenceTest(unittest.TestCase):
+    def test_cpu_list(self):
+        sp = load()
+        self.assertEqual(sp.parse_cpu_list("5,11"), {5, 11})
+        self.assertEqual(sp.parse_cpu_list("0-2, 6\n"), {0, 1, 2, 6})
+        self.assertEqual(sp.parse_cpu_list(""), set())
+
+    def test_choice_and_refusals(self):
+        sp = load()
+        allowed = set(range(12))
+        self.assertEqual(sp.pin_inference_cpus("5,11", allowed), {5, 11})
+        with self.assertRaisesRegex(ValueError, "not in this process"):
+            sp.pin_inference_cpus("5,12", allowed)
+        with self.assertRaisesRegex(ValueError, "no CPU left"):
+            sp.pin_inference_cpus("0-11", allowed)
+        with self.assertRaisesRegex(ValueError, "no CPU given"):
+            sp.pin_inference_cpus(",", allowed)
+        with self.assertRaises(ValueError):
+            sp.pin_inference_cpus("five", allowed)
+
+    def test_auto_is_the_top_cpus_core(self):
+        """auto = the SMT siblings of the highest allowed CPU, as far as they are allowed."""
+        sp = load()
+        if not hasattr(os, "sched_getaffinity"):
+            self.skipTest("Linux only")
+        allowed = os.sched_getaffinity(0)
+        if len(allowed) < 2:
+            self.skipTest("one CPU")
+        top = max(allowed)
+        want = {top}
+        path = f"/sys/devices/system/cpu/cpu{top}/topology/thread_siblings_list"
+        if os.path.exists(path):
+            with open(path) as fh:
+                want = sp.parse_cpu_list(fh.read()) & allowed
+        if not allowed - want:
+            self.skipTest("one core")
+        got = sp.pin_inference_cpus("auto", allowed)
+        self.assertEqual(got, want)
+        self.assertIn(top, got)
+
+
 class DashboardProgressTest(unittest.TestCase):
     def test_panel(self):
         spec = importlib.util.spec_from_file_location(
@@ -1642,6 +1683,120 @@ class SelfplaySmoke(unittest.TestCase):
                 rows = [json.loads(l) for l in f]
             self.assertGreaterEqual(rows[-1]["ascension"], 1)
             self.assertTrue(all(r["force_keys"]["active"] for r in rows))
+
+
+    def test_time_split_metrics_and_no_pinning_by_default(self):
+        """Every report carries the time split (inference batches and rows, phase times of the inference and the
+        training thread, worker CPU); without --pin-inference no affinity is set."""
+        sp = load()
+        args = ["--module-dir", os.path.dirname(MODULES[0]), "--device", "cpu", "--workers", "2", "--games", "4",
+                "--full-sims", "8", "--fast-sims", "4", "--batch", "32", "--row-buckets", "32", "--pack-step", "32",
+                "--pack-threads", "1", "--min-replay", "50", "--train-batch", "32", "--window", "5000",
+                "--report", "1", "--sync-steps", "2", "--seed-base", "1500", "--max-runs", "16", "--train-packed"]
+        calls = []
+        real = getattr(os, "sched_setaffinity", None)
+        if real is not None:
+            os.sched_setaffinity = lambda *a: calls.append(a) or real(*a)
+        try:
+            with tempfile.TemporaryDirectory() as d:
+                self.assertEqual(sp.main(args + ["--out-dir", d]), 0)
+                with open(os.path.join(d, "metrics.jsonl")) as f:
+                    rows = [json.loads(l) for l in f]
+        finally:
+            if real is not None:
+                os.sched_setaffinity = real
+        self.assertEqual(calls, [])
+        infer_keys = {"wait_pack", "weights", "h2d", "forward", "out", "sync", "submit"}
+        train_keys = {"take_add", "idle", "sample", "h2d", "fwd_bwd", "sync", "opt", "loss_read", "publish"}
+        for r in rows:
+            self.assertNotIn("pin_inference", r)
+            self.assertEqual(set(r["infer_ms_per_s"]), infer_keys)
+            self.assertEqual(set(r["train_ms_per_s"]), train_keys)
+            self.assertEqual(set(r["worker_cpu_s_per_s"]), {"search", "step", "encode"})
+            for box in (r["infer_ms_per_s"], r["train_ms_per_s"], r["worker_cpu_s_per_s"]):
+                self.assertTrue(all(v >= 0 for v in box.values()))
+            # one thread each: its phases cannot add up to more than the wall clock (slack: report-time skew)
+            self.assertLess(sum(r["infer_ms_per_s"].values()), 1300)
+            self.assertLess(sum(r["train_ms_per_s"].values()), 1300)
+            self.assertGreaterEqual(r["pack_s_per_s"], 0)
+            # "search" is the workers' whole loop and contains the other two
+            w = r["worker_cpu_s_per_s"]
+            self.assertGreaterEqual(w["search"] + 0.05, w["step"] + w["encode"])
+        busy = [r for r in rows if r["infer_batches_per_s"] > 0]
+        self.assertTrue(busy)
+        for r in busy:
+            self.assertGreater(r["infer_rows_per_batch"], 0)
+            self.assertLessEqual(r["infer_rows_per_batch"], 32)
+            self.assertGreater(r["infer_ms_per_s"]["forward"], 0)
+        self.assertTrue(any(r["train_ms_per_s"]["fwd_bwd"] > 0 for r in rows))
+        self.assertTrue(any(r["worker_cpu_s_per_s"]["search"] > 0 for r in rows))
+
+    def test_pin_inference_run(self):
+        """--pin-inference: the inference thread runs on the given CPU, every other thread on the rest; the run
+        plays and trains; the caller's threads get their CPUs back at the end; a bad list is refused."""
+        sp = load()
+        if not hasattr(os, "sched_setaffinity"):
+            self.skipTest("Linux only")
+        before = os.sched_getaffinity(0)
+        if len(before) < 2:
+            self.skipTest("one CPU")
+        cpu = max(before)
+        rest = before - {cpu}
+        args = ["--module-dir", os.path.dirname(MODULES[0]), "--device", "cpu", "--workers", "2", "--games", "4",
+                "--full-sims", "8", "--fast-sims", "4", "--batch", "32", "--row-buckets", "32", "--pack-step", "32",
+                "--pack-threads", "1", "--min-replay", "50", "--train-batch", "32", "--window", "5000",
+                "--report", "1", "--sync-steps", "2", "--seed-base", "1500", "--max-runs", "16", "--train-packed"]
+        seen = []
+        real = sp.pin_threads
+
+        def spy(infer_tid, infer_cpus, other_cpus):
+            n = real(infer_tid, infer_cpus, other_cpus)
+            if infer_tid:   # a sweep of the run (the restore at the end passes 0)
+                masks = {}
+                for name in os.listdir("/proc/self/task"):
+                    try:
+                        masks[int(name)] = os.sched_getaffinity(int(name))
+                    except OSError:
+                        pass
+                seen.append((infer_tid, masks))
+            return n
+        sp.pin_threads = spy
+        try:
+            with tempfile.TemporaryDirectory() as d:
+                buf = io.StringIO()
+                with contextlib.redirect_stdout(buf):
+                    self.assertEqual(sp.main(args + ["--out-dir", d, "--pin-inference", str(cpu)]), 0)
+                with open(os.path.join(d, "metrics.jsonl")) as f:
+                    rows = [json.loads(l) for l in f]
+            self.assertEqual(os.sched_getaffinity(0), before)
+            for name in os.listdir("/proc/self/task"):   # threads that outlive the run too
+                try:
+                    self.assertEqual(os.sched_getaffinity(int(name)), before)
+                except OSError:
+                    pass
+        finally:
+            sp.pin_threads = real
+            os.sched_setaffinity(0, before)
+        self.assertIn(f"# pin-inference: thread {seen[0][0]} on CPUs [{cpu}]", buf.getvalue())
+        self.assertGreaterEqual(len(seen), 2)   # after the start and at every report
+        for infer_tid, masks in seen:
+            self.assertNotEqual(infer_tid, 0)
+            self.assertEqual(masks[infer_tid], {cpu})
+            others = [m for t, m in masks.items() if t != infer_tid]
+            self.assertGreaterEqual(len(others), 4)   # main, trainer, 2 workers
+            self.assertTrue(all(m == rest for m in others))
+        self.assertGreaterEqual(rows[-1]["runs_done"], 16)
+        self.assertGreater(rows[-1]["train_steps"], 0)
+        for r in rows:
+            self.assertEqual(r["pin_inference"]["cpus"], [cpu])
+            self.assertEqual(r["pin_inference"]["other_cpus"], sorted(rest))
+            self.assertGreaterEqual(r["pin_inference"]["other_threads"], 4)
+        for bad in (str(max(before) + 1000), ",".join(str(c) for c in sorted(before))):
+            with tempfile.TemporaryDirectory() as d, contextlib.redirect_stderr(io.StringIO()) as err:
+                with self.assertRaises(SystemExit):
+                    sp.main(args + ["--out-dir", d, "--pin-inference", bad])
+            self.assertIn("--pin-inference", err.getvalue())
+            self.assertEqual(os.sched_getaffinity(0), before)
 
 
 if __name__ == "__main__":

@@ -28140,3 +28140,38 @@ is lost before search can matter: entry HP and the deck (what the run brings) an
 bottleneck, not the Heart's search budget.
 **Decision:** no change to the self-play budget from this probe. `--heart-arms` stays a default-off diagnostic.
 **Knowledge impact:** this entry; `tools/az_bench/README.md`.
+
+## §TBD — CPU affinity for the Stage 1 inference thread (`selfplay.py --pin-inference`): one before/after comparison on the live amber_scratch run, inference thread alone on one physical core (CPUs 5,11), all other threads on the other five cores: 10,405 → 11,462 moves/s (+10.2 %), GPU load 59 → 67 % (PC, 2026-11-20)
+
+**Question (Philipp 2026-11-20 12:46 CET, "wie wir mit möglichst wenig Änderung das training schneller machen
+können"):** what limits the Stage 1 run's speed, and does giving the inference thread its own core help?
+**Data:** read-only measurements on the running process (build 257ae0b1, A0, savescum on, 11 workers x 450 games,
+Ryzen 5 7500F 6 cores / 12 threads, RTX 3060 Ti) and one live change of thread affinity with `taskset`
+(13:19-13:30 CET; Philipp's go by decision card 13:15 CET). No restart, no code change, no seeds beyond the run's
+own. Before = mean of the 10 report rows (5 min) before the change, after = 10 min after it, first row dropped.
+Not a gate and not randomized: one before/after pair on one run; the run's own state (ascension, savescum) was the
+same in both windows.
+**Result:**
+
+| | before | after |
+|---|---|---|
+| moves/s | 10,405 | 11,462 (+10.2 %) |
+| net positions/s | 136,014 | 149,760 (+10.1 %) |
+| cache hits/s | 97.1k | 108.1k (+11.3 %) |
+| GPU load (nvidia-smi) | 59 % | 67 % |
+| inference thread running / waiting for a CPU | 75.0 / 8.2 % | 87.1 / 3.4 % |
+| worker thread running / waiting for a CPU | 65.1 / 7.6 % | 68.5 / 12.0 % |
+
+Stalls, invalid actions, knowledge failures and savescum mismatches unchanged (137 / 0 / 0 / 0). Before the change:
+GPU load 62.5 % over 30 s (21-87), 162 of 200 W; the 11 workers ran 63 % of the time and waited 8-13 % for a CPU;
+the inference thread 79 % running with 1 % system time; the trainer 3.9 steps/s at a trained/added ratio of 1.93
+(cap 2.0). Going from 400 to 500 games per worker the day before had raised positions/s by 2.4 %.
+**Interpretation (Inference):** the GPU is not the limit of this run; 13 busy threads on 12 logical CPUs are, and
+first of all the Python inference thread, which still runs 87 % of the time on its own core. `--gpu-timing`'s two
+streams overlap, so the sum of `gpu_ms_per_s` (583 + 331) overstated the GPU's load. What the inference thread's
+time per batch goes to (issuing kernels, waiting for the GPU, packing) was not measured.
+**Decision:** `--pin-inference` added, default off (new option, one uncontrolled comparison); the run takes it at
+its next planned restart. Report rows now carry the time split (`infer_ms_per_s`, `train_ms_per_s`,
+`infer_rows_per_batch`, `worker_cpu_s_per_s`) to decide the next steps. Re-measure after savescum goes off (fewer
+cache hits, more GPU work).
+**Knowledge impact:** this entry; `tools/az_bench/README.md`.

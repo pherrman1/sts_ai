@@ -710,6 +710,62 @@ def economy_per_run(pw):
     return {k: round(sum(e[k] for e in pw.values()) / n, 3) for k in ECONOMY_KEYS}
 
 
+def parse_cpu_list(text):
+    """A CPU list as taskset / sysfs write it ("5,11", "0-3", "0-1,6") -> set of ints."""
+    cpus = set()
+    for part in text.strip().split(","):
+        part = part.strip()
+        if not part:
+            continue
+        lo, _, hi = part.partition("-")
+        cpus.update(range(int(lo), int(hi or lo) + 1))
+    return cpus
+
+
+def pin_inference_cpus(spec, allowed):
+    """--pin-inference: the inference thread's logical CPUs. spec is a CPU list or "auto" (the SMT siblings of the
+    highest-numbered allowed CPU: one physical core). They must be allowed CPUs and leave at least one for the other
+    threads."""
+    allowed = set(allowed)
+    if spec == "auto":
+        top = max(allowed)
+        try:
+            with open(f"/sys/devices/system/cpu/cpu{top}/topology/thread_siblings_list") as fh:
+                cpus = parse_cpu_list(fh.read()) & allowed
+        except (OSError, ValueError):
+            cpus = {top}
+    else:
+        cpus = parse_cpu_list(spec)
+    if not cpus:
+        raise ValueError("no CPU given")
+    if not cpus <= allowed:
+        raise ValueError(f"CPUs {sorted(cpus - allowed)} are not in this process's affinity {sorted(allowed)}")
+    if not allowed - cpus:
+        raise ValueError("no CPU left for the other threads")
+    return cpus
+
+
+def pin_threads(infer_tid, infer_cpus, other_cpus):
+    """Sets the CPU affinity of every thread of this process: thread infer_tid (native id) to infer_cpus, all others
+    to other_cpus. Threads that end meanwhile are skipped. Returns the number of other threads set."""
+    n = 0
+    for name in os.listdir("/proc/self/task"):
+        tid = int(name)
+        try:
+            os.sched_setaffinity(tid, infer_cpus if tid == infer_tid else other_cpus)
+            n += tid != infer_tid
+        except OSError:
+            pass
+    return n
+
+
+def lap(box, key, t):
+    """Phase timers: adds the wall time since t to box[key]; returns now."""
+    now = time.perf_counter()
+    box[key] += now - t
+    return now
+
+
 def malloc_trim():
     """glibc malloc_trim(0): hand freed heap memory of all arenas back to the OS (2026-11-18: the C++ workers'
     malloc arenas grew ~0.9 GB/h by fragmentation with all data structures flat). Returns True if it ran."""
@@ -888,6 +944,11 @@ def main(argv=None):
     ap.add_argument("--copy-stream", action="store_true",
                     help="inference: host-to-GPU copies on their own CUDA stream, overlapping the previous batch's "
                          "forward (same outputs)")
+    ap.add_argument("--pin-inference", default="", metavar="CPUS",
+                    help="CPU affinity (default off; Linux): the inference thread runs on these logical CPUs (a list "
+                         "such as 5,11, or 'auto' = the SMT siblings of the highest-numbered allowed CPU, one "
+                         "physical core; the pack threads it starts inherit them) and every other thread of the "
+                         "process on the remaining CPUs. Play and training are unchanged")
     ap.add_argument("--window", type=int, default=500000, help="replay window (samples)")
     ap.add_argument("--min-replay", type=int, default=20000, help="samples before training starts")
     ap.add_argument("--train-batch", type=int, default=1024)
@@ -943,6 +1004,16 @@ def main(argv=None):
     hp_floors = 56 if amber else 1
     if not 0.0 <= args.heart_log <= 1.0:
         ap.error("--heart-log: RATE in [0, 1]")
+    pin_cpus = other_cpus = cpus_before = None
+    if args.pin_inference:
+        if not hasattr(os, "sched_setaffinity"):
+            ap.error("--pin-inference needs os.sched_setaffinity (Linux)")
+        cpus_before = os.sched_getaffinity(0)
+        try:
+            pin_cpus = pin_inference_cpus(args.pin_inference, cpus_before)
+        except ValueError as e:
+            ap.error(f"--pin-inference: {e}")
+        other_cpus = cpus_before - pin_cpus
     heart_arms = [[float(x) for x in a.split(":")] for a in args.heart_arms.split(",") if a]
     if any(len(a) != 5 for a in heart_arms):
         ap.error("--heart-arms: FULL:FAST:PROB:MFULL:MFAST per arm")
@@ -951,6 +1022,9 @@ def main(argv=None):
     import az_bench_native  # noqa: E402
 
     os.makedirs(args.out_dir, exist_ok=True)
+    if pin_cpus:
+        # This thread first: the threads it starts from here on (workers, trainer, torch pools) inherit its CPUs.
+        os.sched_setaffinity(0, other_cpus)
     dev = torch.device(args.device)
     cuda = dev.type == "cuda"
     torch.manual_seed(args.seed)
@@ -1110,6 +1184,19 @@ def main(argv=None):
     gradbox = {"n": 0, "sum": 0.0, "max": 0.0}   # gradient norm (before clipping) of the finite steps since the last report
     infer_stats = {"batches": 0, "rows": 0, "syncs": 0}
     gpu_ms = {"infer": 0.0, "train": 0.0}   # --gpu-timing: cumulative stream busy time
+    # Phase timers (logging only): cumulative wall seconds of the inference thread and of the training thread.
+    #   inference: wait_pack = next_flat (waiting for rows + packing; the driver's pack_s is the packing part),
+    #     weights = taking over the trainer's weights, h2d = shapes and host-to-GPU copies, forward = dtype casts
+    #     and the net (issuing the kernels), out = search values and output copies (issuing), sync = waiting for
+    #     the previous batch on the GPU, submit = results to the driver.
+    #   training: take_add = finished samples into the window, idle = sleeping (window too small or at the replay
+    #     ratio cap), sample = drawing the batch, h2d = copy to the device, fwd_bwd = loss, backward and clipping
+    #     (issuing), sync = the gradient-norm / loss read that waits for the GPU (--nonfinite-skip), opt = optimizer
+    #     step, loss_read = reading the loss parts, publish = weights hand-over (every --sync-steps).
+    infer_s = {k: 0.0 for k in ("wait_pack", "weights", "h2d", "forward", "out", "sync", "submit")}
+    train_s = {k: 0.0 for k in ("take_add", "idle", "sample", "h2d", "fwd_bwd", "sync", "opt", "loss_read",
+                                "publish")}
+    infer_tid = [0]   # native id of the inference thread (--pin-inference)
 
     row_b = [int(v) for v in args.row_buckets.split(",") if int(v) <= args.batch] or [args.batch]
     if row_b[-1] < args.batch:
@@ -1130,6 +1217,9 @@ def main(argv=None):
 
     # ---- inference: two-deep pipeline as stage 0's flat_pipe_loop ----
     def inference_loop():
+        infer_tid[0] = threading.get_native_id()
+        if pin_cpus:
+            os.sched_setaffinity(0, pin_cpus)   # this thread; the pack threads it starts inherit them
         stream = torch.cuda.Stream(dev) if cuda else None
         copy_stream = torch.cuda.Stream(dev) if cuda and args.copy_stream else None
         R, T, A = row_b[-1], tok_b[-1], act_b[-1]
@@ -1160,22 +1250,27 @@ def main(argv=None):
 
         def finish(p):
             ticket, rows, Ap, out, ev, version, ev0 = p
+            t = time.perf_counter()
             if ev is not None:
                 ev.synchronize()
                 if ev0 is not None:
                     gpu_ms["infer"] += ev0.elapsed_time(ev)
+            t = lap(infer_s, "sync", t)
             drv.submit(ticket, out["logits"][:rows * Ap].numpy().reshape(rows, Ap), out["F"][:rows].numpy(),
                        out["ehp"][:rows].numpy(), out["hpf"][:rows * 56].numpy().reshape(rows, 56) if amber else None,
                        version, out["dist"][:rows * OUTCOME_CLASSES].numpy().reshape(rows, OUTCOME_CLASSES)
                        if ema_search or amber2 else None)
+            lap(infer_s, "submit", t)
 
         while not stop.is_set():
             host, views, out = sets[cur]
+            t_ph = time.perf_counter()
             if args.packed_h2d:
                 got = drv.next_flat(args.batch, min_rows, 5, row_b, tok_b, act_b, views, args.pack_threads,
                                     packed_tokens=True)
             else:
                 got = drv.next_flat(args.batch, min_rows, 5, row_b, tok_b, act_b, views, args.pack_threads)
+            t_ph = lap(infer_s, "wait_pack", t_ph)
             launched = None
             if got is not None:
                 ticket, rows, Rp, Tp, Ap = got[:5]
@@ -1197,6 +1292,7 @@ def main(argv=None):
                             fused.refresh()   # the kernel's stacked weight copy, on this stream after the copy
                         # Evaluation cache: results of the old weights are not reused from now on.
                         drv.set_weights_version(infer_stats["syncs"])
+                    t_ph = lap(infer_s, "weights", t_ph)
                     M = Rp * Tp
                     if args.packed_h2d:
                         # The driver wrote the N live tokens packed, pack_idx [N] and seq_off; entries N..npad of
@@ -1240,6 +1336,7 @@ def main(argv=None):
                     if args.gpu_timing and stream is not None:
                         ev0 = torch.cuda.Event(enable_timing=True)
                         ev0.record(stream)
+                    t_ph = lap(infer_s, "h2d", t_ph)
                     x = {}
                     for k, t in raw.items():
                         if fused is not None:
@@ -1259,6 +1356,7 @@ def main(argv=None):
                         lg, outcome, hp, hpf = fused(x, fused_mod.make_tiles(views["seq_off"], rows), rows)
                     else:
                         lg, outcome, hp, hpf = run(x)
+                    t_ph = lap(infer_s, "forward", t_ph)
                     Fv, ehp = search_values(outcome[:rows], hp[:rows])
                     out["logits"][:rows * Ap].view(rows, Ap).copy_(lg[:rows].float(), non_blocking=True)
                     out["F"][:rows].copy_(Fv, non_blocking=True)
@@ -1272,6 +1370,7 @@ def main(argv=None):
                     if stream is not None:
                         ev = torch.cuda.Event(enable_timing=ev0 is not None)
                         ev.record(stream)
+                lap(infer_s, "out", t_ph)
                 launched = (ticket, rows, Ap, out, ev, infer_stats["syncs"], ev0)
                 infer_stats["batches"] += 1
                 infer_stats["rows"] += rows
@@ -1292,6 +1391,7 @@ def main(argv=None):
         last_run = [-1]
         timing = collections.deque()   # --gpu-timing: (start, end) events of steps not yet finished on the GPU
         while not stop.is_set():
+            t_ph = time.perf_counter()
             ch = drv.take_samples(TAKE_CHUNK)   # whole runs only
             if ch is not None:
                 first = replay.add(ch)
@@ -1317,10 +1417,13 @@ def main(argv=None):
                     replay.set_soft_outcome(first, tgt)
                     ema_stats["samples"] += S
                     ema_stats["real_weight"] += float(real_w.sum())
+            t_ph = lap(train_s, "take_add", t_ph)
             if len(replay) < args.min_replay or counters["trained"] - trained0 >= args.replay_ratio * replay.added:
                 time.sleep(0.02)
+                lap(train_s, "idle", t_ph)
                 continue
             b = replay.sample(rng, args.train_batch, args.policy_frac, packed=args.train_packed)
+            t_ph = lap(train_s, "sample", t_ph)
             ctx = torch.cuda.stream(stream) if stream is not None else torch.no_grad()
             with ctx:
                 if args.gpu_timing and stream is not None:
@@ -1330,6 +1433,7 @@ def main(argv=None):
                     e0 = torch.cuda.Event(enable_timing=True)
                     e0.record(stream)
                 bt = to_torch(b, dev)
+                t_ph = lap(train_s, "h2d", t_ph)
                 step = counters["step"]
                 lr = args.lr * min(1.0, (step + 1) / max(1, args.warmup_steps))
                 for g in opt.param_groups:
@@ -1340,10 +1444,12 @@ def main(argv=None):
                 opt.zero_grad(set_to_none=True)
                 loss.backward()
                 gn = torch.nn.utils.clip_grad_norm_(train_net.parameters(), 1.0)   # norm before clipping
+                t_ph = lap(train_s, "fwd_bwd", t_ph)
                 gnorm = None
                 if args.nonfinite_skip:   # one host sync per step (the loss parts below sync anyway)
                     gnorm = float(gn)
                     lval = float(loss.detach())
+                    t_ph = lap(train_s, "sync", t_ph)
                     if not (math.isfinite(gnorm) and math.isfinite(lval)):
                         # A non-finite loss or gradient would write NaN into the weights and Adam's moments: skip it.
                         opt.zero_grad(set_to_none=True)
@@ -1371,10 +1477,12 @@ def main(argv=None):
                     timing.append((e0, e1))
                 counters["step"] += 1
                 counters["trained"] += args.train_batch
+                t_ph = lap(train_s, "opt", t_ph)
                 with lossbox_lock:
                     lossbox["n"] += 1
                     for k, v in parts.items():
                         lossbox[k] += float(v)
+                t_ph = lap(train_s, "loss_read", t_ph)
                 if counters["step"] % args.sync_steps == 0:
                     with torch.no_grad():
                         state = [p.detach().to(infer_dtype).clone() for p in train_net.parameters()]
@@ -1384,6 +1492,7 @@ def main(argv=None):
                         ev.record(stream)
                     with weights_lock:
                         new_weights[0] = (state, ev)
+                lap(train_s, "publish", t_ph)
 
     def save_ckpt(tag, s, now):
         # Runs in flight are dropped on resume; their seeds are not reused.
@@ -1403,6 +1512,16 @@ def main(argv=None):
     for t in threads:
         t.start()
     drv.start()
+    pin_others = 0
+    if pin_cpus:
+        # Threads that existed before the main thread's affinity was set (BLAS pools, ...) and helper threads the
+        # inference thread started so far (they inherited its CPUs) go to the other CPUs. Repeated at every report.
+        t_wait = time.time()
+        while not infer_tid[0] and time.time() - t_wait < 10:
+            time.sleep(0.01)
+        pin_others = pin_threads(infer_tid[0], pin_cpus, other_cpus)
+        print(f"# pin-inference: thread {infer_tid[0]} on CPUs {sorted(pin_cpus)}, {pin_others} other threads on "
+              f"{sorted(other_cpus)}", flush=True)
     t_start = time.time()
     wall0 = counters["wall"]
     last_s, last_t = drv.stats(), time.time()
@@ -1411,6 +1530,7 @@ def main(argv=None):
     last_outcomes = np.array(last_s["outcomes"])
     last_floors = last_s["floors_sum"]
     last_gpu = dict(gpu_ms)
+    last_infer, last_infer_s, last_train_s = dict(infer_stats), dict(infer_s), dict(train_s)
     asc_hist = []   # (runs, wins) per report window at the current ascension (curriculum)
     print(f"# selfplay net {args.net} ({sum(p.numel() for p in train_net.parameters())} params) workers {args.workers} "
           f"games {args.games} seed_base {seed_base} out {args.out_dir}", flush=True)
@@ -1531,6 +1651,23 @@ def main(argv=None):
                 # ms of GPU time per s of wall clock (1000 = that stream busy all the time)
                 row["gpu_ms_per_s"] = {k: round((v - last_gpu[k]) / dt, 1) for k, v in gpu_ms.items()}
                 last_gpu.update(gpu_ms)
+            # Where the time goes (logging only). Inference batches and their mean rows; wall ms per s of wall clock by
+            # phase of the inference thread and of the training thread (each sums to about 1000; see infer_s / train_s
+            # above); CPU s per s of all worker threads together ("search" is their whole search loop and includes
+            # "step" = simulator steps and expansions and "encode" = token encoding) and wall s per s spent packing.
+            d_b = infer_stats["batches"] - last_infer["batches"]
+            row["infer_batches_per_s"] = round(d_b / dt, 1)
+            row["infer_rows_per_batch"] = round((infer_stats["rows"] - last_infer["rows"]) / max(1, d_b), 1)
+            row["infer_ms_per_s"] = {k: round(1000 * (v - last_infer_s[k]) / dt, 1) for k, v in infer_s.items()}
+            row["train_ms_per_s"] = {k: round(1000 * (v - last_train_s[k]) / dt, 1) for k, v in train_s.items()}
+            row["worker_cpu_s_per_s"] = {k: round((s[k + "_cpu"] - last_s[k + "_cpu"]) / dt, 3)
+                                         for k in ("search", "step", "encode")}
+            row["pack_s_per_s"] = round((s["pack_s"] - last_s["pack_s"]) / dt, 4)
+            last_infer, last_infer_s, last_train_s = dict(infer_stats), dict(infer_s), dict(train_s)
+            if pin_cpus:   # threads started since the last report too (they inherit their creator's CPUs)
+                pin_others = pin_threads(infer_tid[0], pin_cpus, other_cpus)
+                row["pin_inference"] = {"cpus": sorted(pin_cpus), "other_cpus": sorted(other_cpus),
+                                        "other_threads": pin_others}
             if args.savescum:   # state for new runs; runs started with it; checks of the search's child vs the real next state
                 row["savescum"] = {"active": drv.savescum(), "runs": s["savescum_runs"],
                                    "checks": s["savescum_checks"], "mismatches": s["savescum_mismatches"]}
@@ -1591,6 +1728,8 @@ def main(argv=None):
             print(f"# replay-save {args.replay_save}: {len(replay):,} samples in {time.time() - t_save:.0f} s",
                   flush=True)
         metrics.close()
+        if pin_cpus:   # in-process callers get their threads' CPUs back
+            pin_threads(0, cpus_before, cpus_before)
     return 1 if errors else 0
 
 
