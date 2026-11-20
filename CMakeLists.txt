@@ -197,6 +197,11 @@ add_test(NAME az_run_driver_explore_variants COMMAND $<TARGET_FILE:az-run-driver
          --seed-base 1 --seconds 300 --explore-amber --explore-per-offer --explore-gap-search --explore-deck-only
          --pick-target 0.5 --test-hp 300)
 set_tests_properties(az_run_driver_explore_variants PROPERTIES LABELS "core;smoke")
+# --utility amber2 (2026-11-20): Amber Eye's later utility (P(win) + 0.25 H out of combat, F + 0.5 H in combat);
+# the fake net passes outcome distributions
+add_test(NAME az_run_driver_utility_amber2 COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 12 --fast
+         --seed-base 1 --seconds 300 --utility amber2 --test-hp 300)
+set_tests_properties(az_run_driver_utility_amber2 PROPERTIES LABELS "core;smoke")
 # Savescum (RunConfig::savescum): the search's child of every played action is the real next decision state
 # (fingerprint incl. RNG states and draw order), with and without the Amber search rules.
 add_test(NAME az_run_driver_savescum COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 6 --fast

@@ -915,6 +915,32 @@ class SelfplaySmoke(unittest.TestCase):
                 rows4 = [json.loads(l) for l in f][len(rows) + len(rows2) + len(rows3):]
             self.assertEqual(rows4[0]["replay_loaded"], 0)
 
+    def test_utility_amber2_switch_keeps_replay(self):
+        """--utility amber2 (2026-11-20): a run trained with --utility amber resumes with amber2 and its saved replay
+        window (same heads and layout), plays and trains."""
+        sp = load()
+        common = ["--module-dir", os.path.dirname(MODULES[0]), "--device", "cpu", "--workers", "2", "--games", "4",
+                  "--full-sims", "8", "--fast-sims", "4", "--batch", "32", "--row-buckets", "32", "--pack-step", "32",
+                  "--pack-threads", "1", "--min-replay", "50", "--train-batch", "32", "--window", "5000",
+                  "--report", "1", "--sync-steps", "2", "--seed-base", "540"]
+        with tempfile.TemporaryDirectory() as d:
+            rep = os.path.join(d, "replay")
+            self.assertEqual(sp.main(common + ["--out-dir", d, "--max-runs", "12", "--utility", "amber",
+                                               "--replay-save", rep]), 0)
+            with open(os.path.join(rep, "state.json")) as f:
+                st = json.load(f)
+            n_saved = st["scalars"]["s_head"] - st["scalars"]["s_tail"]
+            with open(os.path.join(d, "metrics.jsonl")) as f:
+                n0 = len(f.readlines())
+            self.assertEqual(sp.main(common + ["--out-dir", d, "--max-runs", "24", "--utility", "amber2",
+                                               "--resume", st["extra"]["checkpoint"], "--replay-load", rep]), 0)
+            with open(os.path.join(d, "metrics.jsonl")) as f:
+                rows = [json.loads(l) for l in f][n0:]
+            self.assertEqual(rows[0]["replay_loaded"], n_saved)
+            self.assertGreaterEqual(rows[-1]["runs_done"], 24)
+            self.assertGreater(rows[-1]["train_steps"], rows[0]["train_steps"])
+            self.assertTrue(any(r["loss"] and r["loss"].get("hp_floor", 0) > 0 for r in rows))
+
     def test_run_train_resume(self):
         sp = load()
         common = ["--module-dir", os.path.dirname(MODULES[0]), "--device", "cpu", "--workers", "2", "--games", "4",
