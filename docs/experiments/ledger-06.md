@@ -28205,7 +28205,7 @@ time split then shows whether `out` and `take_add` fell. `--pin-inference` stays
 after the fix (one start with, one without).
 **Knowledge impact:** this entry; `tools/az_bench/README.md`.
 
-## §TBD — Stage 1 speed after PR #1132 (constants of `search_values` built once; replay eviction scans from the window's old end): 7,364 → 10,117 moves/s (+37 %) on the live amber_scratch run, trainer back at the replay-ratio cap 2.00, GPU load 59-67 → 91 % (PC, 2026-11-20)
+## §822 — Stage 1 speed after PR #1132 (constants of `search_values` built once; replay eviction scans from the window's old end): 7,364 → 10,117 moves/s (+37 %) on the live amber_scratch run, trainer back at the replay-ratio cap 2.00, GPU load 59-67 → 91 % (PC, 2026-11-20)
 
 **Question:** do §821's two readings hold, and what do the fixes give on the running Stage 1 run?
 **Data:** [ROWS-2](evidence/selfplay_time_split_20261120/ROWS-2.md): 10 consecutive report rows 16:26-16:31 CET of
