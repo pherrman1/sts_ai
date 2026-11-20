@@ -28418,9 +28418,9 @@ flags ([SCHED-2230](evidence/infer_profile_20261120/SCHED-2230.md)): **11,930 mo
 restart (+12 %)**, 233.0k against 209.2k net positions/s, 181 against 160 batches/s, GPU ms/s on the inference
 stream 808 -> 659, GPU load 74.1 %. "No gain in moves/s" and "NOT SHOWN" in the title, the table and the decision
 above do not hold: the packed heads raised the throughput. The size is still confounded with `--force-potions`
-(same restart). The reading "the six cores limit the run" does not hold either, see §TBD.
+(same restart). The reading "the six cores limit the run" does not hold either, see §827.
 
-## §TBD — After the GPU fixes nothing is saturated: workers on CPU 63 %, inference thread 74 %, GPU 74 %, CPU 27 % idle; workers and inference thread wait for each other because a finished batch is handed back only after the next one is launched; worker profile: 12 % of worker CPU is the metrics' own clock call (PC + cloud, 2026-11-20)
+## §827 — After the GPU fixes nothing is saturated: workers on CPU 63 %, inference thread 74 %, GPU 74 %, CPU 27 % idle; workers and inference thread wait for each other because a finished batch is handed back only after the next one is launched; worker profile: 12 % of worker CPU is the metrics' own clock call (PC + cloud, 2026-11-20)
 
 **Question:** with `--attn-row-bounds` and `--packed-heads` the GPU has slack. What limits the run now?
 **Data:** live run on the PC at 22:25 CET (A5, 11 workers x 450 games, flags in

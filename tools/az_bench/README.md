@@ -117,7 +117,7 @@ difference against the padded heads on real batches.
 Result on the PC (ledger §826): 3.80 -> 2.75 ms GPU per real batch, the best policy action the same in 99.6-100 %
 of the rows, largest logit difference 0.02; in the live run 10,639 -> 11,930 moves/s (+12 %, same restart also turned
 on `--force-potions`), GPU load 74 %. After that nothing is saturated (workers 63 % on CPU, inference thread 74 %):
-the two wait for each other (ledger §TBD).
+the two wait for each other (ledger §827).
 `worker_cpu_s_per_s.search` contains `step` and `encode`.
 
 Each thread's phases add up to about 1000. With a GPU the issuing phases are CPU time of that thread and the `sync` /
