@@ -12,9 +12,12 @@ Variants on the same rows, to attribute the cost:
   uniform       real's live tokens cut into rows of equal length (the mean), as in the Stage 0 bench
 torch.profiler's top CUDA kernels are printed for `real` (GPU only).
 
-On a GPU every variant is timed with the attention kernel's row bounds off and on (varlen_attn.py ROW_BOUNDS,
-selfplay.py --attn-row-bounds), and the two settings' outputs are compared on the live rows (`row_bounds_equal`,
-`row_bounds_max_diff`).
+On a GPU every variant is timed in three settings: as it was before 2026-11-20 (`ms_per_batch`), with the
+attention kernel's row bounds (varlen_attn.py ROW_BOUNDS, selfplay.py --attn-row-bounds; `..._row_bounds`), and
+with row bounds plus the packed heads (amber_net.py _heads_packed, selfplay.py --packed-heads; `..._packed_heads`).
+The outputs are compared on the live rows: row bounds against the first setting (`row_bounds_equal`,
+`row_bounds_max_diff`), packed heads against row bounds (`packed_heads_max_diff` per output, and the share of rows
+whose best policy action is the same, `packed_heads_same_argmax`). The kernel table is printed for the last two.
 
 The window's samples are the root states of real moves; the run's inference batches are search leaves of such
 states, so the lengths are close but not the same population. No game seeds are driven. Needs the GPU to itself
@@ -76,7 +79,7 @@ def uniform_rows(r):
     return out
 
 
-def flat_input(r, Rp, Tp, Ap, pack_step):
+def flat_input(r, Rp, Tp, Ap, pack_step, act_step=1024):
     """The inference batch selfplay's loop builds from next_flat(packed_tokens=True): host arrays in the driver's
     dtypes. As az_pack.h packFlat: each padding row (B .. Rp) has one live token (type 0, ids 0, floats 0) and one
     live action; packed entries past the live tokens are trash (slot Rp * Tp)."""
@@ -108,7 +111,14 @@ def flat_input(r, Rp, Tp, Ap, pack_step):
     h["a_mask"][:B, :A] = np.arange(A)[None, :] < na[:, None]
     for k in ("a_type", "a_src", "a_tgt", "a_f"):
         h[k][:B, :A] = r[k][:, :A]
-    return h, {"rows": B, "Rp": Rp, "Tp": Tp, "Ap": Ap, "live_tokens": n, "npad": npad,
+    # --packed-heads, as selfplay.py's inference loop: the live actions of the live rows, padded with the trash
+    # slot Rp * Ap, and seq_off with the padding rows at length 0.
+    la = np.flatnonzero(h["a_mask"][:B].reshape(-1))
+    h["act_idx"] = np.full(-(-la.size // act_step) * act_step, Rp * Ap, np.int32)
+    h["act_idx"][:la.size] = la
+    h["seq_off_live"] = h["seq_off"].copy()
+    h["seq_off_live"][B + 1:] = h["seq_off"][B]
+    return h, {"rows": B, "Rp": Rp, "Tp": Tp, "Ap": Ap, "live_tokens": n, "npad": npad, "live_actions": int(la.size),
                "tokens_mean": round(float(nt.mean()), 1), "tokens_max": int(nt.max()),
                "sum_sq_tokens": int((nt * nt).sum())}
 
@@ -125,6 +135,7 @@ def main(argv=None):
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     ap.add_argument("--no-compile", action="store_true")
+    ap.add_argument("--compile", action="store_true", help="torch.compile even if the run did not use it")
     ap.add_argument("--variants", default="real,real_Rtight,short_T64,short_Tbig,uniform")
     ap.add_argument("--out", default="")
     args = ap.parse_args(argv)
@@ -142,6 +153,8 @@ def main(argv=None):
     ema_lam = 0.5 ** (1.0 / a["value_ema_halflife"]) if a.get("value_ema_halflife", 0) > 0 else 0.0
     dev = torch.device(args.device)
     cuda = dev.type == "cuda"
+    # The Triton kernels: on a GPU, or on a CPU through Triton's interpreter (TRITON_INTERPRET=1, fp32; tests).
+    kernels = cuda or os.environ.get("TRITON_INTERPRET") == "1"
 
     # ---- rows from the saved window (the run's layout, from its flags) ----
     t0 = time.time()
@@ -175,14 +188,16 @@ def main(argv=None):
     infer = copy.deepcopy(net).to(dev).eval()
     infer.sdpa = True
     attn_mod = None
-    if cuda:
+    if kernels:
         infer.varlen_attn = amber_net.load_kernel("varlen_attn")
         attn_mod = sys.modules["az_bench_varlen_attn"]
+        infer.row_mean = amber_net.load_kernel("row_mean")
         if a.get("fused_layer"):
             infer.fused_layer = amber_net.load_fused_layer()
+    if cuda:
         infer = infer.half()
     infer_dtype = torch.float16 if cuda else torch.float32
-    compiled = bool(a.get("compile")) and not args.no_compile
+    compiled = (bool(a.get("compile")) or args.compile) and not args.no_compile
     if compiled:
         import torch._dynamo as dynamo
         dynamo.config.cache_size_limit = 1024
@@ -196,17 +211,19 @@ def main(argv=None):
         x = {}
         for k, v in h.items():
             t = torch.from_numpy(v).to(dev)
-            if k in ("tok_type", "ids", "a_type", "a_src", "a_tgt", "pack_idx"):
+            if k in ("tok_type", "ids", "a_type", "a_src", "a_tgt", "pack_idx", "act_idx"):
                 t = t.long()
             elif t.dtype == torch.float16:
                 t = t.to(infer_dtype)
             x[k] = t
-        if not cuda:   # the CPU path has no varlen kernel: padded attention, as selfplay.py on a CPU
+        act_idx, so_live = x.pop("act_idx"), x.pop("seq_off_live")
+        if not kernels:   # the CPU path has no varlen kernel: padded attention, as selfplay.py on a CPU
             x.pop("seq_off")
         if compiled:
             for k in ("pack_idx", "tok_type", "ids", "f"):
                 torch._dynamo.mark_dynamic(x[k], 0)
-        return x
+            torch._dynamo.mark_dynamic(act_idx, 0)
+        return x, dict(x, act_idx=act_idx, seq_off=so_live)   # the second: the batch as --packed-heads sends it
 
     def step(x, rows, Ap):
         with torch.inference_mode():
@@ -234,8 +251,18 @@ def main(argv=None):
         ms = (time.perf_counter() - t) * 1e3 / args.iters
         return ms, ms
 
+    def kernel_table(x, rows, Ap):
+        if not cuda:
+            return None
+        from torch.profiler import ProfilerActivity, profile
+        with profile(activities=[ProfilerActivity.CUDA]) as prof:
+            for _ in range(10):
+                step(x, rows, Ap)
+            torch.cuda.synchronize()
+        return prof.key_averages().table(sort_by="cuda_time_total", row_limit=40, max_name_column_width=120)
+
     want = args.variants.split(",")
-    results, prof_table = [], None
+    results, prof_tables = [], {}
     for bi, r in enumerate(batches):
         Tp = bucket(tok_b, int(r["nt"].max()))
         Ap = bucket(act_b, int(r["na"].max()))
@@ -249,36 +276,49 @@ def main(argv=None):
             rr, rp, tp, apn = forms[name]
             if not len(rr["nt"]):   # no row of at most 64 tokens in this batch
                 continue
-            h, info = flat_input(rr, rp, tp, apn, step_n)
-            x = to_device(h)
+            h, info = flat_input(rr, rp, tp, apn, step_n, a.get("act_pack_step") or 1024)
+            x, x_ph = to_device(h)
+            rows = info["rows"]
             if attn_mod is not None:
                 attn_mod.ROW_BOUNDS = False
-            ms, launch = timed(x, info["rows"], apn)
+            infer.packed_heads = False
+            ms, launch = timed(x, rows, apn)
             res = dict(info, batch=bi, variant=name, ms_per_batch=round(ms, 3), launch_ms=round(launch, 3),
-                       us_per_row=round(ms * 1e3 / info["rows"], 3),
-                       us_per_token=round(ms * 1e3 / info["live_tokens"], 4))
-            if attn_mod is not None:   # the same batch with the kernel's row bounds: time, and the same outputs
-                ref = [t.clone() for t in step(x, info["rows"], apn)]
+                       us_per_row=round(ms * 1e3 / rows, 3), us_per_token=round(ms * 1e3 / info["live_tokens"], 4))
+            if attn_mod is not None:
+                live_a = x["a_mask"][:rows]
+                ref = [t.clone() for t in step(x, rows, apn)]
+                # the same batch with the kernel's row bounds: time, and the same outputs
                 attn_mod.ROW_BOUNDS = True
-                ms_rb, launch_rb = timed(x, info["rows"], apn)
-                got = step(x, info["rows"], apn)
-                live_a = x["a_mask"][:info["rows"]]
-                pairs = [(ref[0][live_a], got[0][live_a])] + list(zip(ref[1:], got[1:]))
+                ms_rb, launch_rb = timed(x, rows, apn)
+                rb = [t.clone() for t in step(x, rows, apn)]
+                pairs = [(ref[0][live_a], rb[0][live_a])] + list(zip(ref[1:], rb[1:]))
                 res.update(ms_per_batch_row_bounds=round(ms_rb, 3), launch_ms_row_bounds=round(launch_rb, 3),
                            row_bounds_equal=all(torch.equal(u, w) for u, w in pairs),
                            row_bounds_max_diff=max(float((u - w).abs().max()) for u, w in pairs))
+                if name == "real" and bi == 0:
+                    prof_tables["row_bounds"] = kernel_table(x, rows, apn)
+                # row bounds plus the packed heads: time, and the outputs against row bounds
+                infer.packed_heads = True
+                ms_ph, launch_ph = timed(x_ph, rows, apn)
+                ph = step(x_ph, rows, apn)
+                names = ("logits", "F", "ehp", "hp_floor", "outcome_dist")
+                diffs = {"logits": float((rb[0][live_a] - ph[0][live_a]).abs().max())}
+                diffs.update({k: float((u - w).abs().max()) for k, u, w in zip(names[1:], rb[1:], ph[1:])})
+                am = lambda t: t.masked_fill(~live_a, -1e9).argmax(1)   # noqa: E731
+                res.update(ms_per_batch_packed_heads=round(ms_ph, 3), launch_ms_packed_heads=round(launch_ph, 3),
+                           packed_heads_max_diff={k: round(v, 6) for k, v in diffs.items()},
+                           packed_heads_finite=all(bool(torch.isfinite(t).all()) for t in ph[1:]),
+                           packed_heads_same_argmax=round(float((am(rb[0]) == am(ph[0])).float().mean()), 5))
+                if name == "real" and bi == 0:
+                    prof_tables["packed_heads"] = kernel_table(x_ph, rows, apn)
+                infer.packed_heads = False
                 attn_mod.ROW_BOUNDS = False
             print(json.dumps(res), flush=True)
             results.append(res)
-            if name == "real" and bi == 0 and cuda:
-                from torch.profiler import ProfilerActivity, profile
-                with profile(activities=[ProfilerActivity.CUDA]) as prof:
-                    for _ in range(10):
-                        step(x, info["rows"], apn)
-                    torch.cuda.synchronize()
-                prof_table = prof.key_averages().table(sort_by="cuda_time_total", row_limit=40,
-                                                       max_name_column_width=120)
-                print(f"# top CUDA kernels, real, batch 0 (10 batches)\n{prof_table}", flush=True)
+    for k, tab in prof_tables.items():
+        if tab:
+            print(f"# top CUDA kernels, real, batch 0 (10 batches), setting {k}\n{tab}", flush=True)
     summary = {}
     for name in want:
         rs = [x for x in results if x["variant"] == name]
@@ -287,7 +327,12 @@ def main(argv=None):
                          "us_per_token": round(float(np.mean([x["us_per_token"] for x in rs])), 4),
                          **({"ms_per_batch_row_bounds":
                              round(float(np.mean([x["ms_per_batch_row_bounds"] for x in rs])), 3),
-                             "row_bounds_equal": all(x["row_bounds_equal"] for x in rs)}
+                             "row_bounds_equal": all(x["row_bounds_equal"] for x in rs),
+                             "ms_per_batch_packed_heads":
+                             round(float(np.mean([x["ms_per_batch_packed_heads"] for x in rs])), 3),
+                             "packed_heads_max_diff": {k: max(x["packed_heads_max_diff"][k] for x in rs)
+                                                       for k in rs[0]["packed_heads_max_diff"]},
+                             "packed_heads_same_argmax": min(x["packed_heads_same_argmax"] for x in rs)}
                             if rs and "ms_per_batch_row_bounds" in rs[0] else {}),
                          "Tp": sorted({x["Tp"] for x in rs}), "rows": round(float(np.mean([x["rows"] for x in rs])))}
     print(json.dumps({"summary": summary}), flush=True)
@@ -295,7 +340,7 @@ def main(argv=None):
         with open(args.out, "w") as f:
             json.dump({"device": torch.cuda.get_device_name(0) if cuda else "cpu", "torch": torch.__version__,
                        "args": vars(args), "compiled": compiled, "window": lengths, "results": results,
-                       "summary": summary, "profile": prof_table}, f, indent=1)
+                       "summary": summary, "profile": prof_tables}, f, indent=1)
     return 0
 
 

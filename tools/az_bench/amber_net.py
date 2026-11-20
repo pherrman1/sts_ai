@@ -120,6 +120,38 @@ class AmberNet(nn.Module):
             out = out + (self.pol_soft(e).squeeze(-1).masked_fill(~b["a_mask"], -1e4),)
         return out
 
+    def _heads_packed(self, x, b):
+        """_heads on the packed tokens x [N, d] (after out_norm) and on the live actions only, without the padded
+        [B, T, d] token layout and the [B, A] action layout. Needs each row's live tokens in its slots 0 .. n - 1
+        (the driver's layout: packed token seq_off[r] + i is row r's slot i), b["seq_off"] [B + 1], and
+        b["act_idx"] [NA] long: the live slots of the flattened [B * A] action axis, padded with the value B * A
+        (a trash slot). The row summary comes from row_mean (the mean of the row's tokens after the first), and the
+        action embedding, its two token picks and the policy MLP run on the NA listed actions; the policy logits
+        are scattered back into [B, A] (-1e4 elsewhere, as masked_fill writes). Rows of length 0 in seq_off (padding
+        rows) get unspecified outputs. Same math as _heads per row and action, up to float rounding (the mean is
+        accumulated in fp32, the matrix products run on other shapes); tests/test_packed_heads.py."""
+        so = b["seq_off"].long()
+        N, d = x.shape
+        c = x[so[:-1].clamp(max=N - 1)] + self.summary_mlp(self.row_mean(x, b["seq_off"]))
+        B, A = b["a_mask"].shape
+        MA = B * A
+        ai = b["act_idx"]
+        ac = ai.clamp(max=MA - 1)             # trash entries read some slot; their logits go to the trash slot
+        row = torch.div(ac, A, rounding_mode="floor")
+        base = so[row]
+
+        def pick(idx, none):
+            g = x[(base + idx.clamp(min=0)).clamp(max=N - 1)]
+            return torch.where((idx >= 0)[:, None], g, none.to(g.dtype))
+
+        e = (self.a_type(b["a_type"].reshape(MA)[ac]) + self.w_s(pick(b["a_src"].reshape(MA)[ac], self.a_none[0]))
+             + self.w_t(pick(b["a_tgt"].reshape(MA)[ac], self.a_none[1])) + self.w_f(b["a_f"].reshape(MA, -1)[ac])
+             + self.w_c(c)[row])
+        lp = self.pol(e).squeeze(-1)
+        full = lp.new_full((MA + 1,), -1e4)
+        full[ai] = lp
+        return (full[:MA].view(B, A), self.outcome(c), self.hp(c), self.hp_floor(c).squeeze(-1))
+
     def forward_flat(self, b):
         """Flat layout (az_driver nextBatchFlat): one token axis per row, the run token first, the other tokens in
         TOKEN_TYPES order, then padding. b["tok_type"] [B, T] long (index into TOKEN_TYPES), b["ids"] [B, T, 4]
@@ -145,6 +177,8 @@ class AmberNet(nn.Module):
     fused_layer = None   # load_fused_layer(): with varlen_attn, each layer as norm1+QKV / attention / out+FFN kernels
     varlen_attn = None   # load_kernel("varlen_attn"): with b["seq_off"], attention on the packed tokens (no padding)
     fused_ffn = None   # load_fused_ffn(): forward_packed runs each layer's LayerNorm + FFN + residual as one Triton kernel
+    row_mean = None   # load_kernel("row_mean"): with packed_heads, the row summary on the packed tokens
+    packed_heads = False   # True (inference, with row_mean, b["seq_off"], b["act_idx"]): _heads_packed
     attn_math = False   # True: sdpa_trunk / forward_packed attend with plain matmuls + softmax (fp32) instead of SDPA
 
     def _attend(self, q, k, v, keep):
@@ -230,6 +264,9 @@ class AmberNet(nn.Module):
                 x = self.fused_ffn(x.contiguous(), layer)
             else:
                 x = x + layer.linear2(F.gelu(layer.linear1(layer.norm2(x))))
+        if (self.packed_heads and self.row_mean is not None and "seq_off" in b and "act_idx" in b
+                and not (self.pol_soft is not None and self.training)):
+            return self._heads_packed(self.out_norm(x).contiguous(), b)
         return self._heads(unpack(self.out_norm(x)).view(B, T, d), mask, b)
 
     def forward_segments(self, b):

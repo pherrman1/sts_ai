@@ -9,6 +9,7 @@ import glob
 import importlib.util
 import json
 import os
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -108,6 +109,15 @@ class InferProfileSmoke(unittest.TestCase):
             self.assertEqual(len(set(uni["nt"].tolist())), 1)
             self.assertLessEqual(int(uni["a_src"].max()), int(uni["nt"][0]) - 1)
 
+            # --packed-heads inputs: the live actions of the live rows, trash-padded; padding rows at length 0
+            la = np.flatnonzero(h["a_mask"][:24].reshape(-1))
+            self.assertEqual(info["live_actions"], la.size)
+            self.assertEqual(h["act_idx"][:la.size].tolist(), la.tolist())
+            self.assertTrue((h["act_idx"][la.size:] == info["Rp"] * info["Ap"]).all())
+            self.assertEqual(h["act_idx"].size % 1024, 0)
+            self.assertEqual(h["seq_off_live"][:25].tolist(), h["seq_off"][:25].tolist())
+            self.assertTrue((h["seq_off_live"][25:] == n).all())
+
             out = os.path.join(d, "prof.json")
             self.assertEqual(ip.main(["--module-dir", mod_dir, "--ckpt", ck_path, "--replay", rep, "--batches", "2",
                                       "--iters", "2", "--warmup", "1", "--device", "cpu", "--out", out]), 0)
@@ -118,6 +128,26 @@ class InferProfileSmoke(unittest.TestCase):
             for x in res["results"]:
                 self.assertGreater(x["ms_per_batch"], 0)
                 self.assertLessEqual(x["tokens_max"], x["Tp"])
+
+            # The three settings of the kernel path (Triton's interpreter on a CPU, fp32): row bounds give the same
+            # outputs, the packed heads the same up to rounding.
+            if importlib.util.find_spec("triton") is None:
+                return
+            # its own process: triton reads TRITON_INTERPRET when it is first imported
+            run = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "az_bench", "infer_profile.py"),
+                                  "--module-dir", mod_dir, "--ckpt", ck_path, "--replay", rep, "--batches", "1",
+                                  "--iters", "1", "--warmup", "0", "--device", "cpu", "--variants", "real,uniform",
+                                  "--out", out], env=dict(os.environ, TRITON_INTERPRET="1"), capture_output=True,
+                                 text=True)
+            self.assertEqual(run.returncode, 0, run.stderr[-3000:])
+            with open(out) as f:
+                res = json.load(f)
+            self.assertEqual(len(res["results"]), 2)
+            for x in res["results"]:
+                self.assertTrue(x["row_bounds_equal"])
+                self.assertTrue(x["packed_heads_finite"])
+                self.assertLess(max(x["packed_heads_max_diff"].values()), 1e-3)
+                self.assertEqual(x["packed_heads_same_argmax"], 1.0)
 
 
 if __name__ == "__main__":
