@@ -1244,6 +1244,26 @@ class SelfplaySmoke(unittest.TestCase):
             self.assertTrue(a["no_fast_noise"] and a["q_rescale"])
             self.assertEqual(a["c_scale"], 0.1)
 
+    def test_force_potions_ooc_canon_reports(self):
+        """--force-potions / --ooc-canon reach the driver and survive several metrics reports (2026-11-20: the
+        ooc_canon row once overwrote the outcome counts, so the second report crashed)."""
+        sp = load()
+        args = ["--module-dir", os.path.dirname(MODULES[0]), "--device", "cpu", "--workers", "2", "--games", "4",
+                "--full-sims", "8", "--fast-sims", "4", "--batch", "32", "--row-buckets", "32", "--pack-step", "32",
+                "--pack-threads", "1", "--min-replay", "50", "--train-batch", "32", "--window", "5000",
+                "--report", "1", "--sync-steps", "2", "--seed-base", "720", "--max-runs", "24",
+                "--sim-help", "--force-rewards", "--force-potions", "--ooc-canon"]
+        with tempfile.TemporaryDirectory() as d:
+            self.assertEqual(sp.main(args + ["--out-dir", d]), 0)
+            with open(os.path.join(d, "metrics.jsonl")) as f:
+                rows = [json.loads(l) for l in f]
+            rows = [r for r in rows if "ooc_canon" in r]
+            self.assertGreaterEqual(len(rows), 2)
+            last = rows[-1]
+            self.assertGreater(last["forced_potions"], 0)
+            self.assertGreater(last["ooc_canon"]["screens"], 0)
+            self.assertGreaterEqual(last["ooc_canon"]["removed"], last["ooc_canon"]["screens"])
+
     def test_candidate_flags(self):
         """--full-candidates / --fast-candidates reach RunDriver (defaults 16 / 4 when not given)."""
         sp = load()
