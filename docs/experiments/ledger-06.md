@@ -28277,3 +28277,54 @@ interpreter; both kernels compile for sm_86 with Triton 3.1.0). `infer_profile.p
 compares their outputs. GPU check and live test on the PC follow (Philipp's decision card 17:29 CET). Not
 addressed: the heads on the padded row / action layout.
 **Knowledge impact:** this entry; `tools/az_bench/README.md`.
+
+## §TBD — `--attn-row-bounds` on the PC: outputs equal on the GPU, 4.80 → 3.56 ms GPU per real batch (−26 %); live amber_scratch run 10,117 → 11,022-11,355 moves/s (+9 to +12 %), GPU load 97 → 80 %, the inference thread now waits for rows (PC, 2026-11-20)
+
+**Question:** does §823's row-bounds kernel give the same outputs on the GPU, and what does it give in the profile
+and in the running Stage 1 run?
+**Data:** [ROW-BOUNDS](evidence/infer_profile_20261120/ROW-BOUNDS.md): `infer_profile.py --batches 3` on main
+15887f9a with the run stopped (ckpt_677517, 1,314 rows per batch from the saved 10M window, switch off and on on
+the same batches), `tests/test_varlen_attn.py` on the GPU, then amber_scratch restarted 17:37:57 CET from that
+checkpoint with all previous arguments plus `--attn-row-bounds`: six consecutive report rows 17:47:43-17:50:14 CET
+and the run thread's mean over 17:43-17:50 CET, against §822's rows (c6225d67, same arguments without the switch,
+80 minutes earlier on the same run). One before/after pair, not randomized.
+**Result:** outputs equal in all 15 profiled batch variants (`torch.equal` on logits of live actions, outcome, HP
+and HP-per-floor outputs; max abs difference 0.0); GPU tests 4 of 4 OK.
+
+| GPU ms per batch, mean of 3 batches | switch off | switch on |
+|---|---|---|
+| real (2,048-row bucket, token bucket 80 / 96) | 4.80 | 3.56 (−26 %) |
+| real without the empty rows | 3.63 | 2.94 |
+| rows of at most 64 tokens in bucket 64 | 3.19 | 3.29 |
+| the same rows in the batch's bucket | 4.52 | 3.41 |
+| uniform rows, bucket 40 | 3.26 | 3.33 |
+
+Two of the three batches fell into action bucket 32 and one into 96: 4.33-4.65 against 5.41 ms with the switch
+off, 3.14-3.26 against 4.29 ms with it on.
+
+| live run | c6225d67 (§822) | 15887f9a + `--attn-row-bounds` |
+|---|---|---|
+| moves/s | 10,117 | 11,022 (six rows), 11,355 (17:43-17:50) |
+| net positions/s | 196.3k | 215.3k (six rows), 221.2k (17:43-17:50) |
+| inference batches/s x rows | 149.6 x 1,314 | 168.5 x 1,278 |
+| inference `wait_pack`, ms/s | 381 | 468 |
+| inference `sync` (waiting for the GPU), ms/s | 235 | 107 |
+| worker CPU in search, s/s | 5.6 | 6.2 |
+| trainer `idle`, ms/s | 372 | 349 |
+| trained / added samples | 2.00 | 2.00 |
+| GPU load (nvidia-smi dmon, 30 s) | 90.9 % (96.7 % at 17:25 CET) | 80.0 % |
+
+Stalls, invalid actions, knowledge failures and non-finite steps 0 in the live check; losses and gradient norm in
+their usual range. Token buckets of the six rows' 30,606 batches: 80 and 96 for 29,270, 128 for 1,301, 64 or less
+for 35.
+**Interpretation:** the kernel variant removes the dead blocks: a batch in bucket 80 / 96 now costs what its short
+rows cost in bucket 64 plus the few long rows. Where there are no dead blocks (bucket 64, uniform) it is about 3 %
+slower (the per-row bound). In the run the GPU is no longer the limit: its load fell to 80 % and the inference
+thread waits 47 % of its time for rows and 11 % for the GPU, so the gain in moves/s (+9 to +12 %) is smaller than
+the gain per batch; the workers' CPU is the scarce part again (Inference). What a batch still pays for padding:
+the empty rows of the row bucket (3.56 → 2.94 ms without them) and the action bucket (about 1 ms more in bucket
+96 than in 32), both in the heads on the padded row / action layout.
+**Decision:** the run keeps `--attn-row-bounds`; the repository default stays off. Open: `--pin-inference` with
+and without the flag (the inference thread now has slack, the workers do not); heads on live rows and actions only
+if the GPU becomes the limit again.
+**Knowledge impact:** this entry; `tools/az_bench/README.md`.
