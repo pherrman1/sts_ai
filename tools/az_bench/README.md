@@ -101,7 +101,7 @@ follows its longest row (80 or 96 for nearly every batch, at 36 tokens per row),
 the padding rows of the row bucket included, to that bucket. `selfplay.py --attn-row-bounds` (default off;
 `varlen_attn.py` `ROW_BOUNDS`) ends each row's key loop at the row's own length and skips query blocks past it:
 same output values. On a GPU `infer_profile.py` times both settings and compares their outputs.
-Result on the PC (ledger §TBD): outputs equal, 4.80 -> 3.56 ms GPU per real batch, the live run +9 to +12 % moves/s
+Result on the PC (ledger §824): outputs equal, 4.80 -> 3.56 ms GPU per real batch, the live run +9 to +12 % moves/s
 with the GPU load down from 97 to 80 %; where a batch has no dead blocks (bucket 64 or less) the variant is about
 3 % slower. The live run uses the flag.
 

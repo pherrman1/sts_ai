@@ -28278,7 +28278,7 @@ compares their outputs. GPU check and live test on the PC follow (Philipp's deci
 addressed: the heads on the padded row / action layout.
 **Knowledge impact:** this entry; `tools/az_bench/README.md`.
 
-## §TBD — `--attn-row-bounds` on the PC: outputs equal on the GPU, 4.80 → 3.56 ms GPU per real batch (−26 %); live amber_scratch run 10,117 → 11,022-11,355 moves/s (+9 to +12 %), GPU load 97 → 80 %, the inference thread now waits for rows (PC, 2026-11-20)
+## §824 — `--attn-row-bounds` on the PC: outputs equal on the GPU, 4.80 → 3.56 ms GPU per real batch (−26 %); live amber_scratch run 10,117 → 11,022-11,355 moves/s (+9 to +12 %), GPU load 97 → 80 %, the inference thread now waits for rows (PC, 2026-11-20)
 
 **Question:** does §823's row-bounds kernel give the same outputs on the GPU, and what does it give in the profile
 and in the running Stage 1 run?
