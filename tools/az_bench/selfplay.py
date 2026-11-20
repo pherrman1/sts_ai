@@ -265,6 +265,7 @@ class Replay:
         with self.lock:
             if len(self) or self.added:
                 raise ValueError("replay load: the window is not empty")
+            self.load_partial = True   # until the whole window is in (a failure in between leaves it unusable)
             for k, v in self._arrays().items():
                 np.copyto(v, np.load(os.path.join(path, k + ".npy"), mmap_mode="r"))
             if self.compact:
@@ -273,6 +274,7 @@ class Replay:
             for k, v in state["scalars"].items():
                 setattr(self, k, v)
             self.soft_stats = list(state["soft_stats"])
+            self.load_partial = False
         return state["extra"]
 
     @staticmethod
@@ -1078,7 +1080,7 @@ def main(argv=None):
                   f"{time.time() - t_load:.0f} s", flush=True)
         except Exception as e:   # the run continues with an empty window
             print(f"# replay-load {args.replay_load}: NOT loaded ({e}); the window starts empty", flush=True)
-        if replay_loaded == 0 and (len(replay) or replay.added):   # a load failed part-way: a fresh window
+        if replay_loaded == 0 and getattr(replay, "load_partial", False):   # a load failed part-way: a fresh window
             del replay
             replay = Replay(args.window, hp_floors=56 if amber else 0, soft_outcome=ema_lam > 0,
                             compact=args.compact_samples, dict_tokens_per_sample=args.replay_dict_tokens,
