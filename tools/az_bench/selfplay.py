@@ -78,6 +78,7 @@ import importlib.util
 import json
 import math
 import os
+import shutil
 import sys
 import threading
 import time
@@ -205,6 +206,68 @@ class Replay:
         if self.soft_outcome is not None:
             arrs.append(self.soft_outcome)
         return sum(a.nbytes for a in arrs) + (self.store.nbytes if self.compact else 0)
+
+    # Scalar state saved with the arrays (save / load).
+    _SCALARS = ("i_head", "r_head", "q_head", "s_head", "s_tail", "t_head", "a_head", "added")
+    _VIEWS = ("tok_type", "ids", "f")   # compact: views into the token store (saved through the store)
+
+    def _arrays(self):
+        """Name -> array of every ring and per-sample array (compact: without the store views)."""
+        out = {k: v for k, v in vars(self).items() if isinstance(v, np.ndarray)
+               and not (self.compact and k in self._VIEWS)}
+        out.update({"meta." + k: v for k, v in self.meta.items()})
+        return out
+
+    def _layout(self):
+        """What a saved window must match to be loaded: every array's shape and dtype, and the switches."""
+        arr = {k: [list(v.shape), str(v.dtype)] for k, v in sorted(self._arrays().items())}
+        return {"arrays": arr, "compact": self.compact, "compress": self.compress, "hp_runs": self.hp_runs,
+                "soft_q": self.soft_q, "store_capacity": self.store.capacity if self.compact else 0}
+
+    def save(self, path, extra=None):
+        """Writes the window to directory path (one .npy per array, state.json last; written to path + ".tmp" and
+        renamed, so a crash leaves no half-written window at path). extra: JSON-able info kept in state.json."""
+        tmp = path + ".tmp"
+        if os.path.exists(tmp):
+            shutil.rmtree(tmp)
+        os.makedirs(tmp)
+        with self.lock:
+            for k, v in self._arrays().items():
+                np.save(os.path.join(tmp, k + ".npy"), v)
+            if self.compact:
+                t, ids, f = self.store.views()
+                np.save(os.path.join(tmp, "store.tok_type.npy"), t)
+                np.save(os.path.join(tmp, "store.ids.npy"), ids)
+                np.save(os.path.join(tmp, "store.f.npy"), f.view(np.uint16))
+                np.save(os.path.join(tmp, "store.refs.npy"), self.store.refs())
+            state = {"layout": self._layout(), "scalars": {k: int(getattr(self, k)) for k in self._SCALARS},
+                     "soft_stats": list(self.soft_stats), "extra": extra or {}}
+        with open(os.path.join(tmp, "state.json"), "w") as fh:
+            json.dump(state, fh)
+        if os.path.exists(path):
+            shutil.rmtree(path)
+        os.replace(tmp, path)
+
+    def load(self, path):
+        """Restores a window saved by save into this (empty) replay; its layout (--window and the ring / compact
+        options) must be the same. Returns state.json's extra."""
+        with open(os.path.join(path, "state.json")) as fh:
+            state = json.load(fh)
+        if state["layout"] != self._layout():
+            raise ValueError(f"replay load {path}: saved layout differs from this run's (--window, ring or compact "
+                             "options changed)")
+        with self.lock:
+            if len(self) or self.added:
+                raise ValueError("replay load: the window is not empty")
+            for k, v in self._arrays().items():
+                np.copyto(v, np.load(os.path.join(path, k + ".npy"), mmap_mode="r"))
+            if self.compact:
+                ld = lambda n: np.ascontiguousarray(np.load(os.path.join(path, f"store.{n}.npy"), mmap_mode="r"))
+                self.store.restore(ld("tok_type"), ld("ids"), ld("f"), ld("refs"))
+            for k, v in state["scalars"].items():
+                setattr(self, k, v)
+            self.soft_stats = list(state["soft_stats"])
+        return state["extra"]
 
     @staticmethod
     def _put(ring, start, values):
@@ -676,6 +739,13 @@ def main(argv=None):
                          "--curriculum-winrate over its last --curriculum-runs finished runs (up to 20)")
     ap.add_argument("--curriculum-winrate", type=float, default=0.10)
     ap.add_argument("--curriculum-runs", type=int, default=10000)
+    ap.add_argument("--replay-save", default="",
+                    help="directory: at the final stop the replay window is written there (with the final checkpoint's "
+                         "step), so --replay-load can continue with it (2026-11-20, default off)")
+    ap.add_argument("--replay-load", default="",
+                    help="directory of a --replay-save window: loaded at the start when it exists, was saved at the "
+                         "resumed checkpoint's step and has this run's layout (--window, ring and compact options); "
+                         "otherwise a warning and the window starts empty")
     ap.add_argument("--workers", type=int, default=11)
     ap.add_argument("--games", type=int, default=700, help="runs in flight per worker")
     ap.add_argument("--full-sims", type=int, default=64)
@@ -985,6 +1055,31 @@ def main(argv=None):
                     tokens_per_sample=args.replay_tokens_per_sample, actions_per_sample=args.replay_actions_per_sample,
                     compress_targets=args.compress_targets, soft_bytes_per_sample=args.replay_soft_bytes,
                     hp_runs_per_sample=args.replay_hp_runs)
+    replay_loaded = 0
+    if args.replay_load and os.path.exists(os.path.join(args.replay_load, "state.json")):
+        t_load = time.time()
+        try:
+            with open(os.path.join(args.replay_load, "state.json")) as fh:
+                saved = json.load(fh)["extra"]
+            if saved.get("step") != counters["step"]:
+                raise ValueError(f"saved at step {saved.get('step')}, the resumed checkpoint is at {counters['step']}")
+            replay.load(args.replay_load)
+            # the replay-ratio cap counts the trained samples since this window's first sample was added
+            trained0 = counters["trained"] - int(saved["trained_since_window"])
+            replay_loaded = len(replay)
+            print(f"# replay-load {args.replay_load}: {replay_loaded:,} samples ({replay.added:,} added) in "
+                  f"{time.time() - t_load:.0f} s", flush=True)
+        except Exception as e:   # the run continues with an empty window
+            print(f"# replay-load {args.replay_load}: NOT loaded ({e}); the window starts empty", flush=True)
+            replay = Replay(args.window, hp_floors=56 if amber else 0, soft_outcome=ema_lam > 0,
+                            compact=args.compact_samples, dict_tokens_per_sample=args.replay_dict_tokens,
+                            token_store=az_bench_native.TokenStore if args.compact_samples else None,
+                            tokens_per_sample=args.replay_tokens_per_sample,
+                            actions_per_sample=args.replay_actions_per_sample,
+                            compress_targets=args.compress_targets, soft_bytes_per_sample=args.replay_soft_bytes,
+                            hp_runs_per_sample=args.replay_hp_runs)
+    elif args.replay_load:
+        print(f"# replay-load {args.replay_load}: no saved window there; the window starts empty", flush=True)
     ema_stats = {"samples": 0, "real_weight": 0.0}   # mean weight of the final outcome in the EMA targets
     stop = threading.Event()
     errors = []
@@ -1328,6 +1423,23 @@ def main(argv=None):
                 gavg = ({"mean": round(gradbox["sum"] / gradbox["n"], 4), "max": round(gradbox["max"], 4)}
                         if gradbox["n"] else None)
                 gradbox.update({"n": 0, "sum": 0.0, "max": 0.0})
+            asc_file = os.path.join(args.out_dir, "ASCENSION")
+            if os.path.exists(asc_file):   # live ascension: runs started from now on (curriculum continues from it)
+                try:
+                    with open(asc_file) as fh:
+                        want = int(fh.read().strip())
+                    drv.set_ascension(want)
+                    counters["ascension"] = want
+                    if want > args.ascension:
+                        counters["curriculum_stepped"] = True
+                        if args.force_keys == "curriculum" and drv.force_keys():
+                            drv.set_force_keys(False)
+                    asc_hist = []   # the rolling window restarts at the new ascension
+                    print(f"# ascension file: A{want}", flush=True)
+                    os.replace(asc_file, asc_file + ".applied")
+                except (ValueError, OSError) as e:
+                    print(f"# ascension file: ignored ({e})", flush=True)
+                    os.replace(asc_file, asc_file + ".rejected")
             asc = drv.ascension()
             a_runs = s["runs_done_asc"][asc] - last_s["runs_done_asc"][asc]
             a_wins = s["wins_asc"][asc] - last_s["wins_asc"][asc]
@@ -1365,7 +1477,7 @@ def main(argv=None):
                 "mean_floor_window": round((s["floors_sum"] - last_floors) / max(1, d_runs), 2),
                 "wins_total": s["wins"],
                 "death_floors_window": {int(k): int(v) for k, v in enumerate(d_oc) if v and k},
-                "samples_added": replay.added, "replay": len(replay), "replay_gb": round(replay.nbytes() / 2 ** 30, 3),
+                "samples_added": replay.added, "replay": len(replay), "replay_loaded": replay_loaded, "replay_gb": round(replay.nbytes() / 2 ** 30, 3),
                 **({"replay_dict_used": replay.store.used} if replay.compact else {}),
                 "replay_rings": replay.ring_stats(),
                 **({"replay_soft_bytes_mean": round(replay.soft_stats[1] / max(1, replay.soft_stats[0]), 2)}
@@ -1456,6 +1568,12 @@ def main(argv=None):
         drain_heart_log()
         path, c = save_ckpt(counters["step"], drv.stats(), time.time())
         print(json.dumps({"final_checkpoint": path, "errors": errors, "counters": c}), flush=True)
+        if args.replay_save:
+            t_save = time.time()
+            replay.save(args.replay_save, extra={"step": c["step"], "checkpoint": path,
+                                                 "trained_since_window": c["trained"] - trained0})
+            print(f"# replay-save {args.replay_save}: {len(replay):,} samples in {time.time() - t_save:.0f} s",
+                  flush=True)
         metrics.close()
     return 1 if errors else 0
 

@@ -290,6 +290,82 @@ class ReplayTest(unittest.TestCase):
         self.assertLess(big_c.nbytes(), 0.5 * big_p.nbytes())
 
     @unittest.skipUnless(MODULES, "az_bench_native not built")
+    def test_save_load_roundtrip(self):
+        """--replay-save / --replay-load (2026-11-20): a window saved and loaded into a fresh Replay of the same
+        layout gives the same rows, batches and dictionary reference counts, and stays identical while both take
+        more chunks (wrap-around, eviction, reused dictionary slots); a different layout or a non-empty window is
+        refused."""
+        sp = load()
+        TS = native().TokenStore
+        configs = [dict(tokens_per_sample=24, actions_per_sample=12),
+                   dict(tokens_per_sample=24, actions_per_sample=12, compact=True, dict_tokens_per_sample=6,
+                        token_store=TS),
+                   dict(tokens_per_sample=24, actions_per_sample=12, hp_floors=56, soft_outcome=True, compact=True,
+                        dict_tokens_per_sample=6, token_store=TS, compress_targets=True, soft_bytes_per_sample=40,
+                        hp_runs_per_sample=0.5)]
+        for ci, kw in enumerate(configs):
+            rng = np.random.default_rng(40 + ci)
+            pool = 300   # shared tokens across chunks: freed and reused dictionary slots
+            ptt = rng.integers(0, 9, pool).astype(np.int8)
+            pids = rng.integers(0, 50, (pool, 4)).astype(np.int16)
+            pf = rng.normal(0, 1, (pool, 64)).astype(np.float16)
+            state = {"first": 0}
+
+            def mk():
+                S = int(rng.integers(10, 30))
+                first = state["first"]
+                c = chunk(rng, S, first)
+                k = rng.integers(0, pool, len(c["tok_type"]))
+                c["tok_type"], c["ids"], c["f"] = ptt[k], pids[k], pf[k]
+                c["run"] = (np.arange(S) // 5 + first).astype(np.uint64)
+                if kw.get("hp_floors"):
+                    c["floor"] = (np.arange(S) % 5 + 1).astype(np.int16)
+                    fl = c["floor"].astype(np.int64)
+                    hp = rng.integers(0, 80, (S, 56)).astype(np.int16)
+                    for i in range(S):   # one HP vector per run
+                        hp[i] = hp[i - i % 5]
+                    c["hp_floor"] = np.where(np.arange(1, 57)[None, :] >= fl[:, None], hp, -1).astype(np.int16)
+                state["first"] += S
+                t = rng.dirichlet(np.full(57, 0.3), S).astype(np.float32) if kw.get("soft_outcome") else None
+                return (self.compactify(c) if kw.get("compact") else c), t
+
+            def feed(reps, n):
+                for _ in range(n):
+                    c, t = mk()
+                    for r in reps:
+                        f0 = r.add(c)
+                        if t is not None:
+                            r.set_soft_outcome(f0, t)
+
+            def same(a, b):
+                self.assertEqual((a.s_tail, a.s_head, a.added), (b.s_tail, b.s_head, b.added))
+                ra, rb = a.rows(a.s_tail, len(a)), b.rows(b.s_tail, len(b))
+                for key in ra:
+                    np.testing.assert_array_equal(np.asarray(ra[key]), np.asarray(rb[key]), err_msg=f"{ci} {key}")
+                ba = a.sample(np.random.default_rng(7), 32, 0.5)
+                bb = b.sample(np.random.default_rng(7), 32, 0.5)
+                for key in ba:
+                    np.testing.assert_array_equal(np.asarray(ba[key]), np.asarray(bb[key]), err_msg=f"{ci} {key}")
+                if a.compact:
+                    np.testing.assert_array_equal(a.store.refs(), b.store.refs())
+                    self.assertEqual(a.store.used, b.store.used)
+
+            src = sp.Replay(200, **kw)
+            feed([src], 25)   # several times the window: wrapped rings, evicted samples
+            self.assertGreater(src.s_tail, 0)
+            with tempfile.TemporaryDirectory() as d:
+                path = os.path.join(d, "replay")
+                src.save(path, extra={"step": 5})
+                dst = sp.Replay(200, **kw)
+                self.assertEqual(dst.load(path), {"step": 5})
+                same(src, dst)
+                feed([src, dst], 15)   # both continue identically (dictionary free slots and lookups rebuilt)
+                same(src, dst)
+                with self.assertRaises(ValueError):   # loading into a non-empty window
+                    dst.load(path)
+                with self.assertRaises(ValueError):   # another layout (--window)
+                    sp.Replay(150, **kw).load(path)
+
     def test_compact_eviction_fuzz(self):
         """Compact Replay with a small dictionary and tokens drawn from a small pool (heavy sharing across chunks,
         so evicting old samples frees tokens the incoming chunk uses): every add either fits or, only for a chunk
@@ -789,6 +865,46 @@ class DashboardSettlingTest(unittest.TestCase):
 
 @unittest.skipUnless(HAVE_TORCH and MODULES, "torch or the az_bench_native module (cmake target) missing")
 class SelfplaySmoke(unittest.TestCase):
+    def test_replay_save_load_and_ascension_file(self):
+        """--replay-save at the final stop, --replay-load on resume from that checkpoint: the window continues
+        (replay_loaded, samples_added carried on); a window saved at another step is not loaded (empty window, the run
+        continues); an ASCENSION file sets the ascension of later runs and is renamed .applied."""
+        sp = load()
+        common = ["--module-dir", os.path.dirname(MODULES[0]), "--device", "cpu", "--workers", "2", "--games", "4",
+                  "--full-sims", "8", "--fast-sims", "4", "--batch", "32", "--row-buckets", "32", "--pack-step", "32",
+                  "--pack-threads", "1", "--min-replay", "50", "--train-batch", "32", "--window", "5000",
+                  "--report", "1", "--sync-steps", "2", "--seed-base", "520", "--ascension", "1"]
+        with tempfile.TemporaryDirectory() as d:
+            rep = os.path.join(d, "replay")
+            self.assertEqual(sp.main(common + ["--out-dir", d, "--max-runs", "12", "--replay-save", rep]), 0)
+            with open(os.path.join(d, "metrics.jsonl")) as f:
+                rows = [json.loads(l) for l in f]
+            with open(os.path.join(rep, "state.json")) as f:
+                st = json.load(f)
+            ck = st["extra"]["checkpoint"]
+            n_saved = st["scalars"]["s_head"] - st["scalars"]["s_tail"]
+            self.assertGreater(n_saved, 0)
+            with open(os.path.join(d, "ASCENSION"), "w") as f:
+                f.write("3\n")
+            self.assertEqual(sp.main(common + ["--out-dir", d, "--max-runs", "20", "--resume", ck,
+                                               "--replay-load", rep]), 0)
+            with open(os.path.join(d, "metrics.jsonl")) as f:
+                rows2 = [json.loads(l) for l in f][len(rows):]
+            self.assertEqual(rows2[0]["replay_loaded"], n_saved)
+            self.assertGreaterEqual(rows2[0]["samples_added"], st["scalars"]["added"])
+            self.assertTrue(os.path.exists(os.path.join(d, "ASCENSION.applied")))
+            self.assertFalse(os.path.exists(os.path.join(d, "ASCENSION")))
+            self.assertEqual(rows2[-1]["ascension"], 3)
+            self.assertEqual(torch.load(sorted(glob.glob(os.path.join(d, "ckpt_*.pt")),
+                                               key=os.path.getmtime)[-1])["counters"]["ascension"], 3)
+            # the saved window is from the first run's final step: resuming the second run's checkpoint skips it
+            ck2 = sorted(glob.glob(os.path.join(d, "ckpt_*.pt")), key=os.path.getmtime)[-1]
+            self.assertEqual(sp.main(common + ["--out-dir", d, "--max-runs", "24", "--resume", ck2,
+                                               "--replay-load", os.path.join(d, "missing")]), 0)
+            with open(os.path.join(d, "metrics.jsonl")) as f:
+                rows3 = [json.loads(l) for l in f][len(rows) + len(rows2):]
+            self.assertEqual(rows3[0]["replay_loaded"], 0)
+
     def test_run_train_resume(self):
         sp = load()
         common = ["--module-dir", os.path.dirname(MODULES[0]), "--device", "cpu", "--workers", "2", "--games", "4",
