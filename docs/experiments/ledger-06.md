@@ -28330,7 +28330,7 @@ and without the flag (the inference thread now has slack, the workers do not); h
 if the GPU becomes the limit again.
 **Knowledge impact:** this entry; `tools/az_bench/README.md`.
 
-## §TBD — `--pin-inference` again after §822 / §824: INCONCLUSIVE, the start without the flag also changed `--utility` (11,366 → 11,990 moves/s, +5.5 %, confounded); the run stays without pinning (PC, 2026-11-20)
+## §825 — `--pin-inference` again after §822 / §824: INCONCLUSIVE, the start without the flag also changed `--utility` (11,366 → 11,990 moves/s, +5.5 %, confounded); the run stays without pinning (PC, 2026-11-20)
 
 **Question:** §820 measured +10.2 % moves/s for the inference thread's own core with savescum; §821 did not show it
 without savescum. After §822 and §824 the inference thread has slack and the workers do not: is the run faster
