@@ -86,7 +86,7 @@ Each thread's phases add up to about 1000. With a GPU the issuing phases are CPU
 `loss_read` phases are time it waits for the GPU; `--gpu-timing`'s `gpu_ms_per_s` is the elapsed GPU time of each
 stream, and the two streams overlap, so their sum is not the GPU's load.
 
-First reading of the time split (ledger §TBD, 2026-11-20) and the two fixes that followed, both with unchanged
+First reading of the time split (ledger §821, 2026-11-20) and the two fixes that followed, both with unchanged
 results:
 
 - `search_values` built its two constant vectors in every batch, and `floors[0] = 57.0` on a GPU tensor is a

@@ -28176,7 +28176,7 @@ its next planned restart. Report rows now carry the time split (`infer_ms_per_s`
 cache hits, more GPU work).
 **Knowledge impact:** this entry; `tools/az_bench/README.md`.
 
-## §TBD — Stage 1 time split after the restart with `--pin-inference 5,11` (savescum off): inference thread 10.5 ms per batch of which 4.4 ms in `out` (a hidden GPU wait), trainer 58 % of its time in window-sized eviction scans; pinning not shown to help without savescum, 7,443 vs ~7,800 moves/s (PC, 2026-11-20)
+## §821 — Stage 1 time split after the restart with `--pin-inference 5,11` (savescum off): inference thread 10.5 ms per batch of which 4.4 ms in `out` (a hidden GPU wait), trainer 58 % of its time in window-sized eviction scans; pinning not shown to help without savescum, 7,443 vs ~7,800 moves/s (PC, 2026-11-20)
 
 **Question:** where does the time of the inference thread and of the trainer go (§820's open point), and does
 `--pin-inference` hold its gain after the restart?
