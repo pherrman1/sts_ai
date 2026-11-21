@@ -29136,3 +29136,18 @@ torch.compile(infer) with the eager inference net (`infer_compiled`). New test: 
 (runs on the GPU in the PC check). **Next:** on the PC, the test and `--check-enemy-gate --compile` on a window with
 encounter tokens, then arm C again; a live test only if C matches D.
 **Knowledge impact:** this entry.
+
+## §845 — §843 checked on the PC: encounter tokens with `--compile` play right again (frozen arm C2 8.0 % / floor 27.2 vs D 9.7 %, B 9.3 %), but ~3x slower per batch (0.79k moves/s vs B 1.63k) from six graph breaks; the helpers are back in the compiled graph without the break-prone ops → BUILT, default off (cloud, 2026-11-21)
+
+**PC (torch 2.5.1+cu121, triton 3.1.0):** compiled-vs-eager test on CUDA passes; `--check-enemy-gate 20 --compile`
+(ckpt_955864, encounter window): infer_compiled policy 0.063 / outcome 0.125 / HP 0.53 / per-floor 0.013 against the
+fp16 noise floor 0.081 / 0.150 / 0.57 / 0.014; train step 75 vs 63 ms (1.19x). Frozen arm C2 (flags + compile, 300
+games): 24 / 300 = 8.0 %, floor 27.2; 0.79k moves/s, 17 vs 52 batches/s at ~800 rows (B 1.63k, D 1.04k moves/s).
+**Change:** no graph breaks by default (dynamo explain: 1 graph, 0 breaks with both flags, vs 7 graphs with
+§843): the gated row mean now comes from two calls of the row_mean op on [x * other, x * encounter] and on the
+encounter indicator in fp32 ((m_other + g m_enc) / ((1 - f_enc) + g f_enc), no bucketize / index_add on the dynamic
+token count); token classes and the gated varlen_attn call are compiled with the rest; both custom ops make their
+inputs contiguous. `AZ_ENEMY_NO_COMPILE=1` restores §843's graph breaks. The cloud's torch (2.15, CPU) never showed
+the bug, so which part was wrong on the PC's 2.5.1 is still open: the PC check decides. **Next:** on the PC the
+test, `--check-enemy-gate --compile` and frozen arm C3 (play like D, moves/s near B).
+**Knowledge impact:** this entry.

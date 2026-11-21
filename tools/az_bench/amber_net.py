@@ -21,6 +21,8 @@ inputs arrive as one padded segment per token type (an encoder emits tokens grou
 projection is one Linear per segment).
 """
 
+import os
+
 import torch
 import torch.nn as nn
 
@@ -53,35 +55,42 @@ def token_classes(tt, ids, f):
     return cls
 
 
-@torch.compiler.disable
-def _gated_row_mean(x, so, enc, g):
-    """The row mean of _heads_packed with the encounter tokens weighted by the summary gate g (row_mean has no
-    weights). Kept out of torch.compile graphs (as are the other encounter-token helpers): the compiled inference
-    forward with encounter tokens gave wrong outputs on the PC GPU (frozen test, 2026-11-21) while eager was right."""
+# AZ_ENEMY_NO_COMPILE=1: the encounter-token helpers below run outside torch.compile graphs (graph breaks; #1164's
+# defensive fix, ~3x slower compiled inference on the PC). Default: compiled with the rest of the forward; the op
+# inputs are made contiguous inside the custom ops, and the gated row mean uses the row_mean op (no bucketize /
+# index_add with the dynamic token count).
+def _compile_guard(fn):
+    return torch.compiler.disable(fn) if os.environ.get("AZ_ENEMY_NO_COMPILE") == "1" else fn
+
+
+@_compile_guard
+def _gated_row_mean(row_mean, x, so, enc, g):
+    """The row mean of _heads_packed with the encounter tokens weighted by the summary gate g, from row_mean (the
+    plain mean of each row's tokens after the first) on [x * other, x * enc] and on the encounter indicator, in fp32:
+    (S_other + g S_enc) / (n_other + g n_enc) = (m_other + g m_enc) / ((1 - f_enc) + g f_enc), the per-row counts
+    cancel."""
     N, d = x.shape
-    R = so.shape[0] - 1
-    pos = torch.arange(N, device=x.device)
-    row = torch.bucketize(pos, so[1:], right=True).clamp(max=R - 1)
-    w = ((pos < so[-1]) & (pos != so[row])).float()   # fp32 sums, as row_mean accumulates
-    w = w * torch.where(enc, g.float(), torch.ones_like(w))
-    S = x.new_zeros(R, d, dtype=torch.float32).index_add_(0, row, x.float() * w[:, None])
-    n = x.new_zeros(R, dtype=torch.float32).index_add_(0, row, w)
-    return (S / torch.where(n > 0, n, torch.ones_like(n))[:, None]).to(x.dtype)
+    e = enc.float()[:, None]
+    xf = x.float()
+    m = row_mean(torch.cat([xf * (1.0 - e), xf * e], 1).contiguous(), so)
+    f = row_mean(e.expand(N, 16).contiguous(), so)[:, :1]
+    g = g.float()
+    den = (1.0 - f) + g * f
+    return ((m[:, :d] + g * m[:, d:]) / torch.where(den > 0, den, torch.ones_like(den))).to(x.dtype)
 
 
-@torch.compiler.disable
+@_compile_guard
 def _packed_classes(tt_p, ids_p, f_p):
-    """token_classes on packed tokens as int32 (varlen_attn's cls) and the encounter mask, outside torch.compile."""
+    """token_classes on packed tokens and as int32 (varlen_attn's cls)."""
     cls = token_classes(tt_p, ids_p, f_p)
     return cls, cls.to(torch.int32).contiguous()
 
 
-@torch.compiler.disable
+@_compile_guard
 def _enemy_vattn(kernel, qkv, seq_off, heads, max_len, cls_i, tab, gate):
-    """varlen_attn with the encounter inputs, outside torch.compile, all inputs made contiguous."""
-    return kernel(qkv.contiguous(), seq_off.contiguous(), heads, max_len, cls_i.contiguous(),
-                  None if tab is None else tab.float().contiguous(),
-                  None if gate is None else gate.float().reshape(1).contiguous())
+    """varlen_attn with the encounter inputs (the op makes its inputs contiguous)."""
+    return kernel(qkv, seq_off, heads, max_len, cls_i, None if tab is None else tab.float(),
+                  None if gate is None else gate.float().reshape(1))
 
 
 def enc_of(cls):
@@ -264,7 +273,7 @@ class AmberNet(nn.Module):
         so = b["seq_off"].long()
         N, d = x.shape
         if enc is not None and self.enemy_gate is not None:
-            mean = _gated_row_mean(x, so, enc, self._gate(-1))
+            mean = _gated_row_mean(self.row_mean, x, so, enc, self._gate(-1))
         else:
             mean = self.row_mean(x, b["seq_off"])
         c = x[so[:-1].clamp(max=N - 1)] + self.summary_mlp(mean)
