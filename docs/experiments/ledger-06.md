@@ -28491,3 +28491,46 @@ restart of its owner's choosing, with rows before and after. The run switches to
 throughput is not comparable with this entry's.
 **Knowledge impact:** this entry; `tools/az_bench/README.md`.
 
+
+## §829 — `--parallel-nodes` (Amber Eye's virtual visits, built as the linked paper's virtual loss; up to 4 evaluations in flight per root candidate): round trips to the net per searched move 24.7 → 5.1 with the same simulations; off bit-identical; live moves/s not measured yet → BUILT, default off (cloud, 2026-11-21)
+
+**Question:** §827 found the stage-1 run saturated nowhere: an answer's round trip (17.7 ms) limits it, and a run
+has one evaluation in flight. Amber Eye ("Efficient search"): "we additionally allow multiple searches in the same
+game tree using virtual visits. In self-play, up to 4 nodes per candidate move's subtree were allowed to be visited
+in parallel." We did not have that (audit of 2026-11-21). How many round trips does it save?
+**Change:** `RunConfig::parallelNodes` / `selfplay.py --parallel-nodes P` (default 0 = off), described in
+`apps/az_bench/az_run_driver.h` and `tools/az_bench/README.md`. The page says "virtual visits" and links Chaslot, Winands and van den Herik (2008), who
+describe a virtual loss; Philipp chose the virtual loss (decision card, 2026-11-21): a simulation in flight counts
+as a visit of value 0 on its path until its answer is backed up. Our choices where both are silent: a simulation
+that meets a node still in flight waits, and a wave's answers are handled together in start order.
+**Data (cloud, fake nets, no GPU):**
+- Off = main: `az-eval-cache-test` digests (moves, samples, policies, values) of this branch with the flag off equal
+  those of a build of main 56b8fd43 in 7 configurations (`--fast` x {plain, `--utility amber`, `--ema 0.9`,
+  `--amber-search`, `--amber-search --utility amber --ema 0.9 --compact`}, 3 runs each; full budget x {plain,
+  `--amber-search --utility amber --ema 0.9`}, 4 runs each).
+- On, timing independence: the same digest with answers in batches of 1, 8 and 64 rows, with and without the
+  evaluation cache (CTest `az_parallel_nodes`, `az_parallel_nodes_amber`).
+- Round trips (`az-run-driver`, random fake net, 64 / 16 simulations, p(full) 0.25, 32 runs, seeds 1-32):
+
+| candidates full / fast | P | evaluations per searched move | round trips per searched move | evaluations per wave | waiting simulations per 1,000 evaluations |
+|---|---|---|---|---|---|
+| 16 / 8 | 0 | 24.7 | 24.7 | 1 | 0 |
+| 16 / 8 | 4 | 25.4 | 5.05 | 6.02 | 71 |
+| 8 / 4 | 0 | 25.1 | 25.1 | 1 | 0 |
+| 8 / 4 | 4 | 24.5 | 4.88 | 6.05 | 89 |
+
+  With the live run's search flags (`--chance-on-reveal --cross-combat --sim-help --utility amber2-root
+  --explore-amber --force-rewards --force-potions --ooc-canon --compact-samples`, `--test-hp 3000` to reach late
+  floors, 24 runs): 5.13 round trips per searched move, 6.85 evaluations per wave, 0 bad samples, 0 invalid actions.
+- `selfplay.py` on CPU (2 workers x 12 games, `--utility amber`, 24 runs, seeds 1-24; run with the first build,
+  where a simulation in flight counted as a visit without a value): runs through with the flag (24 runs done
+  after 4.5 min); without it no run had finished after 6 min. Not a throughput figure for the PC:
+  the cloud CPU net is ~500x slower and 24 games do not fill a batch.
+**Interpretation:** a searched move needs about a fifth of the round trips. How much of that becomes moves/s on the
+PC is open: with every run offering several evaluations at once the GPU and the workers should saturate, and §827
+measured about 25 % room on each (**Inference**, not measured). Search quality: the simulations of a wave do not
+see each other's values (Amber Eye: a "strength penalty"), not measured here. Memory: a run keeps up to
+P x candidates encoded inputs (~60 KB each; `mem.flights`), so the live run should use fewer games per worker.
+**Decision:** default off. Live test on the PC by the run's owner (5-15 minutes, rows before / after), then a
+decision on the main run.
+**Knowledge impact:** this entry; `tools/az_bench/README.md`; `apps/az_bench/az_run_driver.h` header.

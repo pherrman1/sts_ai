@@ -1038,6 +1038,11 @@ def main(argv=None):
                          "them, hand the previous batch's results to the workers if the GPU has them (default: only "
                          "after the next batch is gathered and launched). Changes when answers arrive, not what "
                          "they are")
+    ap.add_argument("--parallel-nodes", type=int, default=0, metavar="P",
+                    help="search: up to P evaluations in flight per root candidate's subtree, spread by virtual "
+                         "losses (RunConfig::parallelNodes; Amber Eye self-play: 4). Default 0: one evaluation in "
+                         "flight per run. Same simulations per move, far fewer round trips; each run then keeps up "
+                         "to P x candidates encoded inputs (~60 KB each), so fewer games per worker are needed")
     ap.add_argument("--pin-inference", default="", metavar="CPUS",
                     help="CPU affinity (default off; Linux): the inference thread runs on these logical CPUs (a list "
                          "such as 5,11, or 'auto' = the SMT siblings of the highest-numbered allowed CPU, one "
@@ -1210,6 +1215,7 @@ def main(argv=None):
         **({"force_rewards": True} if args.force_rewards else {}),
         **({"force_potions": True} if args.force_potions else {}),
         **({"ooc_canon": True} if args.ooc_canon else {}),
+        **({"parallel_nodes": args.parallel_nodes} if args.parallel_nodes else {}),
         **({"explore_per_offer": True} if args.explore_per_offer else {}),
         **({"explore_gap_search": True} if args.explore_gap_search else {}),
         **({"explore_deck_only": True} if args.explore_deck_only else {}),
@@ -1842,6 +1848,14 @@ def main(argv=None):
                 row["force_rewards"] = {"chests": fr[0], "relics": fr[1], "deferred": fr[2], "on_leave": fr[3]}
             if args.force_potions:   # real reward potions taken by the rule (cumulative)
                 row["forced_potions"] = s["forced_potions"]
+            if args.parallel_nodes:   # evaluations in flight per run and wave; simulations that waited, per 1,000
+                d_w = s["waves"] - last_s["waves"]
+                d_sims = max(1, s["evals"] + s["cache_hits"] - last_s["evals"] - last_s["cache_hits"])
+                row["parallel_nodes"] = {"flights_per_wave": round((s["wave_flights"] - last_s["wave_flights"])
+                                                                   / max(1, d_w), 2),
+                                         "collisions_per_k": round(1000 * (s["sim_collisions"] - last_s["sim_collisions"])
+                                                                   / d_sims, 1),
+                                         "flight_slots": s["mem"]["flights"]}
             if args.ooc_canon:   # real card selection screens with a duplicate removed, actions removed (cumulative)
                 canon = s["ooc_canon"]
                 row["ooc_canon"] = {"screens": canon[0], "removed": canon[1]}
