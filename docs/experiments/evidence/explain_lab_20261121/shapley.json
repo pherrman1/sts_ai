@@ -1,0 +1,1172 @@
+{
+ "ckpt": "ckpt_895975.pt",
+ "ckpt2": null,
+ "replay": "gen/replay",
+ "mode": "shapley",
+ "seed": 0,
+ "report": {
+  "decisions": [
+   {
+    "sample": 14,
+    "kind": "select remove",
+    "best": "remove Defend",
+    "runner_up": "remove Strike",
+    "contrast": 1.6095972061157227,
+    "exact": true,
+    "coalitions": 8,
+    "evals": 8,
+    "efficiency_gap": 0.0,
+    "spearman_loo": NaN,
+    "top": [
+     [
+      "Bash",
+      -0.2694110870361328,
+      -0.20856332778930664
+     ],
+     [
+      "Ascender's Bane",
+      -0.14607000350952148,
+      -0.0737156867980957
+     ],
+     [
+      "Burning Blood",
+      0.10323524475097656,
+      0.09948921203613281
+     ]
+    ]
+   },
+   {
+    "sample": 96,
+    "kind": "select bottle",
+    "best": "bottle Immolate",
+    "runner_up": "bottle Iron Wave",
+    "contrast": 1.8411308526992798,
+    "exact": true,
+    "coalitions": 960,
+    "evals": 960,
+    "efficiency_gap": -8.881784197001252e-16,
+    "spearman_loo": 0.8571428571428573,
+    "top": [
+     [
+      "Strike",
+      0.6408653363034688,
+      0.11710810661315918
+     ],
+     [
+      "Defend",
+      0.43022730276129195,
+      0.07659626007080078
+     ],
+     [
+      "Burning Blood",
+      0.13909916354940616,
+      0.11361527442932129
+     ],
+     [
+      "Rage",
+      0.09262906379732261,
+      0.07690680027008057
+     ],
+     [
+      "Ascender's Bane",
+      0.08619270203433513,
+      0.033580899238586426
+     ]
+    ]
+   },
+   {
+    "sample": 231,
+    "kind": "card reward",
+    "best": "take Pommel Strike",
+    "runner_up": "take Heavy Blade",
+    "contrast": 4.175918936729431,
+    "exact": true,
+    "coalitions": 960,
+    "evals": 960,
+    "efficiency_gap": 3.3306690738754696e-15,
+    "spearman_loo": 0.8928571428571429,
+    "top": [
+     [
+      "Demon Form",
+      -4.622801701879308,
+      -4.171221017837524
+     ],
+     [
+      "Strike",
+      1.477604815134139,
+      0.4519115686416626
+     ],
+     [
+      "Defend",
+      1.0303289487087932,
+      0.3075467348098755
+     ],
+     [
+      "Burning Blood",
+      0.8744680896949719,
+      0.9325200319290161
+     ],
+     [
+      "Ancient Potion",
+      0.1371791776314746,
+      0.05374264717102051
+     ]
+    ]
+   },
+   {
+    "sample": 317,
+    "kind": "Neow",
+    "best": "Neow: Upgrade a card.",
+    "runner_up": "Neow: Obtain 100 gold.",
+    "contrast": 0.18206453323364258,
+    "exact": true,
+    "coalitions": 240,
+    "evals": 240,
+    "efficiency_gap": -8.326672684688674e-17,
+    "spearman_loo": 0.9999999999999999,
+    "top": [
+     [
+      "Bash",
+      -0.15666528920848644,
+      -0.12420785427093506
+     ],
+     [
+      "Burning Blood",
+      0.12124427784486944,
+      0.1366642713546753
+     ],
+     [
+      "Defend",
+      0.038645904335968755,
+      0.004322052001953125
+     ],
+     [
+      "Strike",
+      0.022904046578668756,
+      -0.006771206855773926
+     ],
+     [
+      "Ascender's Bane",
+      -0.005294255179072182,
+      -0.010625958442687988
+     ]
+    ]
+   },
+   {
+    "sample": 643,
+    "kind": "card reward",
+    "best": "take Iron Wave",
+    "runner_up": "skip / leave rewards",
+    "contrast": 0.3753006309270859,
+    "exact": false,
+    "coalitions": 23040,
+    "evals": 1034,
+    "efficiency_gap": 0.0,
+    "spearman_loo": 0.5818181818181819,
+    "top": [
+     [
+      "Reaper",
+      -2.06053054635413,
+      -1.921966552734375
+     ],
+     [
+      "Uppercut+",
+      -1.316418725065887,
+      -1.1197360455989838
+     ],
+     [
+      "Inflame",
+      0.8926268862560391,
+      -0.08883613348007202
+     ],
+     [
+      "Shrug It Off",
+      -0.47150085493922234,
+      -0.3705083727836609
+     ],
+     [
+      "Metallicize",
+      -0.33632621681317687,
+      -0.4470285177230835
+     ]
+    ]
+   },
+   {
+    "sample": 1538,
+    "kind": "card reward",
+    "best": "take Headbutt",
+    "runner_up": "take Clothesline",
+    "contrast": 0.838475227355957,
+    "exact": true,
+    "coalitions": 960,
+    "evals": 960,
+    "efficiency_gap": 2.220446049250313e-16,
+    "spearman_loo": 0.8214285714285715,
+    "top": [
+     [
+      "Spot Weakness",
+      -0.6734605041918379,
+      -0.4204072952270508
+     ],
+     [
+      "Defend",
+      -0.6459006171453966,
+      -0.07212889194488525
+     ],
+     [
+      "Strike",
+      0.22837681156191425,
+      0.022603988647460938
+     ],
+     [
+      "Bash",
+      0.11466799617121316,
+      0.06103372573852539
+     ],
+     [
+      "Burning Blood",
+      -0.044750477729299284,
+      -0.09151530265808105
+     ]
+    ]
+   },
+   {
+    "sample": 2358,
+    "kind": "card reward",
+    "best": "skip / leave rewards",
+    "runner_up": "take Headbutt",
+    "contrast": 0.20471881330013275,
+    "exact": false,
+    "coalitions": 1179648,
+    "evals": 1308,
+    "efficiency_gap": 0.0,
+    "spearman_loo": 0.7523219814241485,
+    "top": [
+     [
+      "Spot Weakness",
+      1.0624569221399724,
+      1.7135049998760223
+     ],
+     [
+      "Strike",
+      -0.6637353170663118,
+      -0.18291425704956055
+     ],
+     [
+      "Burning Blood",
+      -0.6605429030023515,
+      -0.04431283473968506
+     ],
+     [
+      "Disarm",
+      0.5562615471426398,
+      0.4006107449531555
+     ],
+     [
+      "Mercury Hourglass",
+      0.5272934301756322,
+      0.9258659183979034
+     ]
+    ]
+   },
+   {
+    "sample": 2485,
+    "kind": "event",
+    "best": "World of Goop option 0",
+    "runner_up": "World of Goop option 1",
+    "contrast": 1.004299283027649,
+    "exact": true,
+    "coalitions": 1920,
+    "evals": 1920,
+    "efficiency_gap": -4.440892098500626e-16,
+    "spearman_loo": 0.5000000000000001,
+    "top": [
+     [
+      "Anger",
+      0.3605639162753016,
+      0.3098605275154114
+     ],
+     [
+      "Strike",
+      0.1318801122948404,
+      -0.07307851314544678
+     ],
+     [
+      "Ascender's Bane",
+      -0.11682384838473657,
+      -0.1063651442527771
+     ],
+     [
+      "Clothesline",
+      0.07636424579815462,
+      0.10548698902130127
+     ],
+     [
+      "Defend",
+      -0.07613461135971072,
+      -0.052245110273361206
+     ]
+    ]
+   },
+   {
+    "sample": 2746,
+    "kind": "map",
+    "best": "map: monster x5 y0",
+    "runner_up": "map: monster x1 y0",
+    "contrast": 0.06840777397155762,
+    "exact": true,
+    "coalitions": 240,
+    "evals": 240,
+    "efficiency_gap": -1.3877787807814457e-17,
+    "spearman_loo": 0.8999999999999998,
+    "top": [
+     [
+      "Defend",
+      0.033266491944999775,
+      0.0015329718589782715
+     ],
+     [
+      "Bash",
+      -0.02249898318346446,
+      -0.01685798168182373
+     ],
+     [
+      "Burning Blood",
+      -0.01333051295507522,
+      -0.006241142749786377
+     ],
+     [
+      "Strike",
+      -0.01232070851033556,
+      -0.00042891502380371094
+     ],
+     [
+      "Ascender's Bane",
+      -0.0007756195715151481,
+      -0.0014362931251525879
+     ]
+    ]
+   },
+   {
+    "sample": 3695,
+    "kind": "card reward",
+    "best": "take Spot Weakness",
+    "runner_up": "take Ghostly Armor",
+    "contrast": 9.279400825500488,
+    "exact": true,
+    "coalitions": 1920,
+    "evals": 1920,
+    "efficiency_gap": 1.7763568394002505e-15,
+    "spearman_loo": 0.7142857142857144,
+    "top": [
+     [
+      "Defend",
+      2.041568120287556,
+      0.2679429054260254
+     ],
+     [
+      "Strike",
+      0.9042700015207756,
+      0.06676530838012695
+     ],
+     [
+      "Burning Blood",
+      0.7759176468992084,
+      0.673970103263855
+     ],
+     [
+      "Anger",
+      -0.45269570758960964,
+      -0.10262489318847656
+     ],
+     [
+      "Clothesline",
+      -0.23322787292294192,
+      -0.36258745193481445
+     ]
+    ]
+   },
+   {
+    "sample": 4751,
+    "kind": "card reward",
+    "best": "take Barricade",
+    "runner_up": "skip / leave rewards",
+    "contrast": 2.221356898546219,
+    "exact": false,
+    "coalitions": 6039797760,
+    "evals": 2238,
+    "efficiency_gap": 0.0,
+    "spearman_loo": 0.8300492610837437,
+    "top": [
+     [
+      "Impervious",
+      1.2445983262732625,
+      1.445125013589859
+     ],
+     [
+      "Shrug It Off",
+      0.4516595099121332,
+      0.13378052413463593
+     ],
+     [
+      "Feel No Pain",
+      0.40212863264605403,
+      0.294283002614975
+     ],
+     [
+      "True Grit+",
+      0.31514690653420985,
+      0.19892792403697968
+     ],
+     [
+      "Brimstone",
+      -0.2746881493367255,
+      -0.44601836800575256
+     ]
+    ]
+   },
+   {
+    "sample": 4784,
+    "kind": "map",
+    "best": "map: monster x4 y2",
+    "runner_up": "map: shop x2 y2",
+    "contrast": 0.8712344765663147,
+    "exact": false,
+    "coalitions": 20132659200,
+    "evals": 2290,
+    "efficiency_gap": 0.0,
+    "spearman_loo": 0.8169354838709678,
+    "top": [
+     [
+      "Tiny House",
+      0.6204634353052825,
+      0.5292372107505798
+     ],
+     [
+      "The Courier",
+      -0.3342880653217435,
+      -0.29522497951984406
+     ],
+     [
+      "Defend",
+      0.32463425723835826,
+      0.006446123123168945
+     ],
+     [
+      "Burning Blood",
+      0.2509207339026034,
+      0.15266026556491852
+     ],
+     [
+      "Meat On The Bone",
+      0.2158466528635472,
+      0.23933878540992737
+     ]
+    ]
+   },
+   {
+    "sample": 5319,
+    "kind": "campfire",
+    "best": "campfire: rest",
+    "runner_up": "campfire: smith",
+    "contrast": 0.8522124290466309,
+    "exact": false,
+    "coalitions": 7680,
+    "evals": 892,
+    "efficiency_gap": 0.0,
+    "spearman_loo": 0.6848484848484848,
+    "top": [
+     [
+      "Strike",
+      0.20108853466808796,
+      0.04837310314178467
+     ],
+     [
+      "Defend",
+      0.11131218704394996,
+      0.026817619800567627
+     ],
+     [
+      "Happy Flower",
+      -0.10491666267625988,
+      -0.053371697664260864
+     ],
+     [
+      "Anger",
+      0.09119874448515475,
+      0.12234321236610413
+     ],
+     [
+      "Burning Blood",
+      -0.06047315872274339,
+      0.008283287286758423
+     ]
+    ]
+   },
+   {
+    "sample": 5423,
+    "kind": "event",
+    "best": "Cursed Tome option 5",
+    "runner_up": "Cursed Tome option 6",
+    "contrast": 1.6221380233764648,
+    "exact": false,
+    "coalitions": 491520,
+    "evals": 1304,
+    "efficiency_gap": 0.0,
+    "spearman_loo": 0.5735294117647058,
+    "top": [
+     [
+      "Red Skull",
+      -0.42663789982907474,
+      -1.0426568388938904
+     ],
+     [
+      "Defend",
+      0.32511942950077355,
+      0.1286504864692688
+     ],
+     [
+      "Burning Blood",
+      0.14984990865923464,
+      -0.1380653977394104
+     ],
+     [
+      "Anger+",
+      0.13758427882567048,
+      0.07169491052627563
+     ],
+     [
+      "Happy Flower",
+      -0.11357918195426464,
+      -0.37652868032455444
+     ]
+    ]
+   },
+   {
+    "sample": 5478,
+    "kind": "card reward",
+    "best": "skip / leave rewards",
+    "runner_up": "take Pommel Strike",
+    "contrast": 1.3428404331207275,
+    "exact": false,
+    "coalitions": 3932160,
+    "evals": 1510,
+    "efficiency_gap": 0.0,
+    "spearman_loo": 0.8807017543859648,
+    "top": [
+     [
+      "Snecko Eye",
+      1.5438912736717612,
+      2.542481303215027
+     ],
+     [
+      "Perfected Strike",
+      -0.9103411159012467,
+      -0.5010195970535278
+     ],
+     [
+      "Pommel Strike+",
+      0.8571901642717421,
+      0.7694059610366821
+     ],
+     [
+      "Reaper",
+      0.8545458014123142,
+      0.7091579139232635
+     ],
+     [
+      "Happy Flower",
+      -0.48705837596207857,
+      -0.09801691770553589
+     ]
+    ]
+   },
+   {
+    "sample": 5941,
+    "kind": "card reward",
+    "best": "take Pommel Strike",
+    "runner_up": "skip / leave rewards",
+    "contrast": 0.14371371269226074,
+    "exact": false,
+    "coalitions": 157286400,
+    "evals": 1842,
+    "efficiency_gap": 0.0,
+    "spearman_loo": 0.697391304347826,
+    "top": [
+     [
+      "Feed+",
+      -0.5963605132419616,
+      -0.5100243091583252
+     ],
+     [
+      "Fusion Hammer",
+      0.5928648845292628,
+      0.31444545090198517
+     ],
+     [
+      "Feed",
+      -0.49378626863472164,
+      -0.3962213099002838
+     ],
+     [
+      "Offering",
+      -0.4362814826890826,
+      -0.2599194347858429
+     ],
+     [
+      "Kunai",
+      0.42889727535657585,
+      0.11110362410545349
+     ]
+    ]
+   },
+   {
+    "sample": 6333,
+    "kind": "card reward",
+    "best": "take Headbutt",
+    "runner_up": "take Feel No Pain",
+    "contrast": 0.9798460006713867,
+    "exact": true,
+    "coalitions": 960,
+    "evals": 960,
+    "efficiency_gap": 1.9984014443252818e-15,
+    "spearman_loo": 0.8928571428571429,
+    "top": [
+     [
+      "Happy Flower",
+      -2.130572081884464,
+      -1.5010662078857422
+     ],
+     [
+      "Defend",
+      1.9243406344616585,
+      0.4817976951599121
+     ],
+     [
+      "Strike",
+      1.3463412508184889,
+      0.2986183166503906
+     ],
+     [
+      "Power Potion",
+      -1.225520761999628,
+      -0.9373579025268555
+     ],
+     [
+      "Burning Blood",
+      -0.6163202475477292,
+      -0.49253416061401367
+     ]
+    ]
+   },
+   {
+    "sample": 6354,
+    "kind": "card reward",
+    "best": "take Pommel Strike",
+    "runner_up": "take Twin Strike",
+    "contrast": 2.6989096999168396,
+    "exact": true,
+    "coalitions": 3840,
+    "evals": 3840,
+    "efficiency_gap": -6.661338147750939e-16,
+    "spearman_loo": 0.8833333333333333,
+    "top": [
+     [
+      "Happy Flower",
+      0.8788820649399126,
+      0.649965226650238
+     ],
+     [
+      "Burning Blood",
+      0.3427571989017591,
+      0.18033719062805176
+     ],
+     [
+      "Headbutt",
+      -0.34057472175319464,
+      -0.3099774718284607
+     ],
+     [
+      "Bash",
+      -0.14834084942891815,
+      -0.1777516007423401
+     ],
+     [
+      "Twin Strike",
+      -0.1323550965082248,
+      -0.20544582605361938
+     ]
+    ]
+   },
+   {
+    "sample": 6519,
+    "kind": "shop",
+    "best": "buy Fossilized Helix (331 g)",
+    "runner_up": "buy Ghostly Armor (44 g)",
+    "contrast": 2.25624418258667,
+    "exact": false,
+    "coalitions": 11796480,
+    "evals": 1642,
+    "efficiency_gap": 0.0,
+    "spearman_loo": 0.9022556390977443,
+    "top": [
+     [
+      "Runic Pyramid",
+      -0.6700359710957855,
+      -0.594291090965271
+     ],
+     [
+      "Strike",
+      0.5341513827443123,
+      0.06721985340118408
+     ],
+     [
+      "Uppercut+",
+      0.4032425445038825,
+      0.10509729385375977
+     ],
+     [
+      "Defend",
+      0.39853466930799186,
+      0.05493152141571045
+     ],
+     [
+      "Fiend Fire",
+      0.2928887070156634,
+      0.07042086124420166
+     ]
+    ]
+   },
+   {
+    "sample": 6739,
+    "kind": "campfire",
+    "best": "campfire: smith",
+    "runner_up": "campfire: recall",
+    "contrast": 2.421904444694519,
+    "exact": false,
+    "coalitions": 434865438720,
+    "evals": 2672,
+    "efficiency_gap": 0.0,
+    "spearman_loo": 0.466768525592055,
+    "top": [
+     [
+      "Runic Pyramid",
+      0.41838166234083474,
+      -0.3769117593765259
+     ],
+     [
+      "Fiend Fire+",
+      -0.3293917691335082,
+      -0.5116188526153564
+     ],
+     [
+      "Cultist Potion",
+      0.32013447652570903,
+      -0.08462154865264893
+     ],
+     [
+      "Battle Trance",
+      0.28609575564041734,
+      0.018831253051757812
+     ],
+     [
+      "Burning Blood",
+      0.26960869575850666,
+      0.16674268245697021
+     ]
+    ]
+   },
+   {
+    "sample": 7233,
+    "kind": "campfire",
+    "best": "campfire: smith",
+    "runner_up": "campfire: rest",
+    "contrast": 1.6038455963134766,
+    "exact": false,
+    "coalitions": 57982058496,
+    "evals": 2298,
+    "efficiency_gap": 0.0,
+    "spearman_loo": 0.5494652406417113,
+    "top": [
+     [
+      "Runic Pyramid",
+      1.2699524173513055,
+      2.613510012626648
+     ],
+     [
+      "Regen Potion",
+      0.47829038836061954,
+      1.217849612236023
+     ],
+     [
+      "Bludgeon+",
+      -0.1721064681187272,
+      -0.20749950408935547
+     ],
+     [
+      "Defend",
+      0.15422757901251316,
+      -0.0026394128799438477
+     ],
+     [
+      "Warped Tongs",
+      -0.14970532339066267,
+      0.19581663608551025
+     ]
+    ]
+   },
+   {
+    "sample": 7400,
+    "kind": "campfire",
+    "best": "campfire: smith",
+    "runner_up": "campfire: rest",
+    "contrast": 2.710090160369873,
+    "exact": false,
+    "coalitions": 5566277615616,
+    "evals": 2762,
+    "efficiency_gap": 0.0,
+    "spearman_loo": 0.5761133603238867,
+    "top": [
+     [
+      "Runic Pyramid",
+      0.9030295545235276,
+      1.1533014178276062
+     ],
+     [
+      "Reaper",
+      0.7547756121493876,
+      1.029810294508934
+     ],
+     [
+      "Spot Weakness",
+      0.3193660518154502,
+      0.47122281789779663
+     ],
+     [
+      "Burning Blood",
+      0.21711465693078935,
+      0.2461841106414795
+     ],
+     [
+      "Uppercut",
+      0.20478901523165405,
+      0.16382163763046265
+     ]
+    ]
+   },
+   {
+    "sample": 7858,
+    "kind": "card reward",
+    "best": "take Barricade+",
+    "runner_up": "skip / leave rewards",
+    "contrast": 5.288211464881897,
+    "exact": false,
+    "coalitions": 491520,
+    "evals": 1302,
+    "efficiency_gap": 0.0,
+    "spearman_loo": 0.6,
+    "top": [
+     [
+      "Panic Button",
+      3.166066585108638,
+      3.0745484828948975
+     ],
+     [
+      "Strike Dummy",
+      -0.6975601536687464,
+      -0.6320134401321411
+     ],
+     [
+      "Defend",
+      0.5550897566135973,
+      0.08359956741333008
+     ],
+     [
+      "Disarm",
+      0.49749482586048543,
+      0.2328479290008545
+     ],
+     [
+      "Uppercut+",
+      -0.2258296231739223,
+      -0.28560733795166016
+     ]
+    ]
+   },
+   {
+    "sample": 8389,
+    "kind": "shop",
+    "best": "buy Disarm (58 g)",
+    "runner_up": "leave shop",
+    "contrast": 1.9009700417518616,
+    "exact": false,
+    "coalitions": 1803473947459584,
+    "evals": 3334,
+    "efficiency_gap": 0.0,
+    "spearman_loo": 0.6976873265494912,
+    "top": [
+     [
+      "Dark Embrace+",
+      0.8189471827354282,
+      -0.01235547661781311
+     ],
+     [
+      "Feel No Pain+",
+      0.8074021772481501,
+      0.04005765914916992
+     ],
+     [
+      "Burning Blood",
+      0.3859600287396461,
+      0.18893584609031677
+     ],
+     [
+      "Strength Potion",
+      -0.3504954958334565,
+      -0.15830370783805847
+     ],
+     [
+      "Philosophers Stone",
+      0.29121861257590353,
+      0.2517654299736023
+     ]
+    ]
+   },
+   {
+    "sample": 8623,
+    "kind": "reward relic/sapphire key",
+    "best": "take Oddly Smooth Stone (sapphire key pair)",
+    "runner_up": "skip / leave rewards",
+    "contrast": 5.607576847076416,
+    "exact": true,
+    "coalitions": 960,
+    "evals": 960,
+    "efficiency_gap": 3.3306690738754696e-16,
+    "spearman_loo": 0.8928571428571429,
+    "top": [
+     [
+      "Reaper",
+      -1.698680308248977,
+      -1.398114800453186
+     ],
+     [
+      "Burning Blood",
+      1.0608717689675817,
+      0.9541984796524048
+     ],
+     [
+      "Spot Weakness",
+      0.3962247299139384,
+      0.27494096755981445
+     ],
+     [
+      "Strike",
+      0.27783585665442584,
+      -0.0055893659591674805
+     ],
+     [
+      "Ascender's Bane",
+      0.22474692634922247,
+      0.09485924243927002
+     ]
+    ]
+   },
+   {
+    "sample": 8909,
+    "kind": "shop",
+    "best": "buy Strength Potion (56 g)",
+    "runner_up": "buy Bandage Up (91 g)",
+    "contrast": 0.8459144234657288,
+    "exact": false,
+    "coalitions": 8053063680,
+    "evals": 2226,
+    "efficiency_gap": 0.0,
+    "spearman_loo": 0.921690767519466,
+    "top": [
+     [
+      "Reaper",
+      2.1045534596778452,
+      1.472101628780365
+     ],
+     [
+      "Spot Weakness+",
+      -2.0616622045636177,
+      -2.271643877029419
+     ],
+     [
+      "Dark Embrace",
+      -0.5525702321901917,
+      -0.6032782793045044
+     ],
+     [
+      "Corruption",
+      -0.5459248928818852,
+      -0.6781723499298096
+     ],
+     [
+      "Defend+",
+      0.48924200190231204,
+      0.05992269515991211
+     ]
+    ]
+   },
+   {
+    "sample": 9279,
+    "kind": "card reward",
+    "best": "take Limit Break",
+    "runner_up": "skip / leave rewards",
+    "contrast": 5.260042905807495,
+    "exact": false,
+    "coalitions": 13915694039040,
+    "evals": 3008,
+    "efficiency_gap": 0.0,
+    "spearman_loo": 0.6168016194331983,
+    "top": [
+     [
+      "Spot Weakness+",
+      2.4237807074096054,
+      0.03661811351776123
+     ],
+     [
+      "Reaper",
+      1.2987603885121644,
+      1.3500856161117554
+     ],
+     [
+      "Limit Break",
+      -1.036843532929197,
+      -1.6658915281295776
+     ],
+     [
+      "Fusion Hammer",
+      0.5641796356067061,
+      0.3905957341194153
+     ],
+     [
+      "Battle Trance",
+      0.5616244673728943,
+      0.1267414689064026
+     ]
+    ]
+   },
+   {
+    "sample": 9963,
+    "kind": "card reward",
+    "best": "take Battle Trance",
+    "runner_up": "take Juzu Bracelet",
+    "contrast": 0.6995178461074829,
+    "exact": false,
+    "coalitions": 2147483648,
+    "evals": 1828,
+    "efficiency_gap": 0.0,
+    "spearman_loo": 0.9411290322580645,
+    "top": [
+     [
+      "Demon Form+",
+      1.9761284203268588,
+      3.4182156324386597
+     ],
+     [
+      "Battle Trance+",
+      -0.745018052868545,
+      -0.31143462657928467
+     ],
+     [
+      "Reaper",
+      -0.6612921264022589,
+      -0.23347890377044678
+     ],
+     [
+      "Battle Trance",
+      -0.47851052857004106,
+      -0.2668861150741577
+     ],
+     [
+      "Inflame",
+      0.27279619546607137,
+      0.15684449672698975
+     ]
+    ]
+   },
+   {
+    "sample": 10348,
+    "kind": "reward potion",
+    "best": "skip / leave rewards",
+    "runner_up": "take Distilled Chaos",
+    "contrast": 0.12853574752807617,
+    "exact": false,
+    "coalitions": 52776558133248,
+    "evals": 2886,
+    "efficiency_gap": 0.0,
+    "spearman_loo": 0.14996476391825228,
+    "top": [
+     [
+      "Sozu",
+      1.2574286814779043,
+      1.0384379476308823
+     ],
+     [
+      "Reaper",
+      0.09051332902163267,
+      0.07191985845565796
+     ],
+     [
+      "White Beast Statue",
+      -0.06892013968899846,
+      -0.045963287353515625
+     ],
+     [
+      "Disarm+",
+      -0.06540444027632475,
+      0.003174722194671631
+     ],
+     [
+      "Eternal Feather",
+      0.060019023483619094,
+      -0.1432437300682068
+     ]
+    ]
+   },
+   {
+    "sample": 10839,
+    "kind": "map",
+    "best": "map: rest x1 y14",
+    "runner_up": "map: rest x3 y14",
+    "contrast": 0.02463364601135254,
+    "exact": false,
+    "coalitions": 983040,
+    "evals": 1376,
+    "efficiency_gap": 0.0,
+    "spearman_loo": 0.6200980392156864,
+    "top": [
+     [
+      "Heart Of Iron",
+      0.016006866469979286,
+      0.0039691925048828125
+     ],
+     [
+      "Defend",
+      0.014405806548893452,
+      0.0026351213455200195
+     ],
+     [
+      "Spot Weakness",
+      -0.011816301383078098,
+      -0.006888151168823242
+     ],
+     [
+      "Strike",
+      0.008314491249620914,
+      0.004482269287109375
+     ],
+     [
+      "Omamori",
+      0.007608574815094471,
+      0.009989380836486816
+     ]
+    ]
+   }
+  ],
+  "mean_spearman_loo": 0.7315286925122579
+ }
+}

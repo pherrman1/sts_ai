@@ -1,0 +1,217 @@
+{
+ "ckpt": "ckpt_895975.pt",
+ "replay": "gen/replay",
+ "mode": "survey",
+ "seed": 0,
+ "report": {
+  "card reward": {
+   "positions": 489,
+   "n": 60,
+   "items": 18.366666666666667,
+   "share_abs_z_gt3": 0.10880911974073491,
+   "top_item_share": 0.35000356094301915,
+   "flip_rate": 0.2833333333333333,
+   "kl_top": 0.34219076873717286,
+   "abs_dc_top": 1.7689789886275926,
+   "abs_dpwin_top": 0.135848867536212
+  },
+  "map": {
+   "positions": 315,
+   "n": 60,
+   "items": 18.05,
+   "share_abs_z_gt3": 0.0723003340217054,
+   "top_item_share": 0.3001753876442311,
+   "flip_rate": 0.35,
+   "kl_top": 0.04425988311731501,
+   "abs_dc_top": 0.4911455889542898,
+   "abs_dpwin_top": 0.11896955586659412
+  },
+  "event": {
+   "positions": 170,
+   "n": 60,
+   "items": 21.133333333333333,
+   "share_abs_z_gt3": 0.05011257516235371,
+   "top_item_share": 0.26482111320820695,
+   "flip_rate": 0.16666666666666666,
+   "kl_top": 0.06339119718379585,
+   "abs_dc_top": 0.5580171878139178,
+   "abs_dpwin_top": 0.15415761788996557
+  },
+  "campfire": {
+   "positions": 127,
+   "n": 60,
+   "items": 20.75,
+   "share_abs_z_gt3": 0.09915961886325843,
+   "top_item_share": 0.303509337632882,
+   "flip_rate": 0.21666666666666667,
+   "kl_top": 0.17509133680922365,
+   "abs_dc_top": 1.2895934102435906,
+   "abs_dpwin_top": 0.15951545260225733
+  },
+  "shop": {
+   "positions": 115,
+   "n": 60,
+   "items": 22.783333333333335,
+   "share_abs_z_gt3": 0.1101599795853289,
+   "top_item_share": 0.35368253579150516,
+   "flip_rate": 0.4166666666666667,
+   "kl_top": 0.38201605518323306,
+   "abs_dc_top": 1.6127731651067734,
+   "abs_dpwin_top": 0.1410801904896895
+  },
+  "select upgrade": {
+   "positions": 63,
+   "n": 60,
+   "items": 18.4,
+   "share_abs_z_gt3": 0.10325183482822667,
+   "top_item_share": 0.31310299648067397,
+   "flip_rate": 0.35,
+   "kl_top": 0.23865791695273303,
+   "abs_dc_top": 1.3165907581647238,
+   "abs_dpwin_top": 0.15468346464137236
+  },
+  "reward relic/sapphire key": {
+   "positions": 48,
+   "n": 48,
+   "items": 16.0625,
+   "share_abs_z_gt3": 0.08729243270906033,
+   "top_item_share": 0.3026658939936397,
+   "flip_rate": 0.041666666666666664,
+   "kl_top": 0.007698983882265109,
+   "abs_dc_top": 0.48463438854863244,
+   "abs_dpwin_top": 0.13375722888546684
+  },
+  "Neow": {
+   "positions": 32,
+   "n": 32,
+   "items": 5.0,
+   "share_abs_z_gt3": 0.0625,
+   "top_item_share": 0.5034539803409059,
+   "flip_rate": 0.03125,
+   "kl_top": 0.004906598242965117,
+   "abs_dc_top": 0.2105951625853777,
+   "abs_dpwin_top": 0.03747281478717923
+  },
+  "boss relic": {
+   "positions": 31,
+   "n": 31,
+   "items": 21.322580645161292,
+   "share_abs_z_gt3": 0.091943761637595,
+   "top_item_share": 0.261341486503616,
+   "flip_rate": 0.0967741935483871,
+   "kl_top": 0.21852539316329905,
+   "abs_dc_top": 1.777019717520283,
+   "abs_dpwin_top": 0.13395566847776214
+  },
+  "reward potion": {
+   "positions": 30,
+   "n": 30,
+   "items": 24.133333333333333,
+   "share_abs_z_gt3": 0.04750458847739024,
+   "top_item_share": 0.33097195570095095,
+   "flip_rate": 0.43333333333333335,
+   "kl_top": 0.05248881780539046,
+   "abs_dc_top": 0.4450438891847928,
+   "abs_dpwin_top": 0.15139544953902562
+  },
+  "potion discard": {
+   "positions": 20,
+   "n": 20,
+   "items": 21.9,
+   "share_abs_z_gt3": 0.07907919356288923,
+   "top_item_share": 0.2609987799335983,
+   "flip_rate": 0.3,
+   "kl_top": 0.03331578085256838,
+   "abs_dc_top": 0.4859368808567524,
+   "abs_dpwin_top": 0.16565510481595994
+  },
+  "select remove": {
+   "positions": 19,
+   "n": 19,
+   "items": 18.31578947368421,
+   "share_abs_z_gt3": 0.050514979820176546,
+   "top_item_share": 0.2391431718704477,
+   "flip_rate": 0.21052631578947367,
+   "kl_top": 0.034952485994133566,
+   "abs_dc_top": 0.5530029347068385,
+   "abs_dpwin_top": 0.09667142157099749
+  },
+  "reward relic": {
+   "positions": 6,
+   "n": 6,
+   "items": 26.333333333333332,
+   "share_abs_z_gt3": 0.05620991175674377,
+   "top_item_share": 0.22985685939082248,
+   "flip_rate": 0.3333333333333333,
+   "kl_top": 0.018631434234527167,
+   "abs_dc_top": 0.3752763494849205,
+   "abs_dpwin_top": 0.15204597047219673
+  },
+  "select bottle": {
+   "positions": 6,
+   "n": 6,
+   "items": 31.333333333333332,
+   "share_abs_z_gt3": 0.05452857471491011,
+   "top_item_share": 0.20453343001156543,
+   "flip_rate": 0.16666666666666666,
+   "kl_top": 0.009198707696520139,
+   "abs_dc_top": 0.2838442822297414,
+   "abs_dpwin_top": 0.14412629107634226
+  },
+  "select transform": {
+   "positions": 6,
+   "n": 6,
+   "items": 17.666666666666668,
+   "share_abs_z_gt3": 0.11621572871572872,
+   "top_item_share": 0.3041290981685103,
+   "flip_rate": 0.5,
+   "kl_top": 0.1875411086812736,
+   "abs_dc_top": 0.9723514715830485,
+   "abs_dpwin_top": 0.1589311088124911
+  },
+  "reward": {
+   "positions": 3,
+   "n": 3,
+   "items": 21.333333333333332,
+   "share_abs_z_gt3": 0.0791358024691358,
+   "top_item_share": 0.28338523771807544,
+   "flip_rate": 0.3333333333333333,
+   "kl_top": 0.054045133347884224,
+   "abs_dc_top": 0.6793939471244812,
+   "abs_dpwin_top": 0.14139053225517273
+  },
+  "select bonfire_spirits": {
+   "positions": 2,
+   "n": 2,
+   "items": 33.5,
+   "share_abs_z_gt3": 0.12387387387387387,
+   "top_item_share": 0.32336172752255266,
+   "flip_rate": 1.0,
+   "kl_top": 0.6341543471205071,
+   "abs_dc_top": 2.543874502182007,
+   "abs_dpwin_top": 0.20576734468340874
+  },
+  "chest": {
+   "positions": 2,
+   "n": 2,
+   "items": 24.0,
+   "share_abs_z_gt3": 0.060798548094373864,
+   "top_item_share": 0.532221505247179,
+   "flip_rate": 0.0,
+   "kl_top": 0.261545116817563,
+   "abs_dc_top": 2.668372690677643,
+   "abs_dpwin_top": 0.12374920397996902
+  },
+  "select duplicate": {
+   "positions": 1,
+   "n": 1,
+   "items": 43.0,
+   "share_abs_z_gt3": 0.09302325581395349,
+   "top_item_share": 0.23644845501085257,
+   "flip_rate": 1.0,
+   "kl_top": 0.2355234486752824,
+   "abs_dc_top": 1.7817134857177734,
+   "abs_dpwin_top": 0.18281978368759155
+  }
+ }
+}

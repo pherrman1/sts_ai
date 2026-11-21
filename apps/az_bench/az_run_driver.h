@@ -521,6 +521,21 @@ namespace sts::azbench {
         // get one MONSTER token per fight the act can hold (search::amberAppendEncounterTokens: boss, elites, the
         // strong hallway pool), so the net sees which enemies the map's rooms lead to.
         bool enemyTokens = false;
+        // Search from given states (2026-11-21, decision explainability; default empty = off). With probe roots,
+        // runs do not start from seeds: each run takes the next root, searches its decision once with the full
+        // budget (fullSims, fullCandidates; Gumbel draws 0 unless probeNoise, i.e. the top logits are the
+        // candidates and the pick is the best logit + sigma(completed Q), as Amber's noise-free moves), records a
+        // ProbeResult and takes the next root. Nothing is played, no sample is stored. A root whose decision the
+        // driver would not search (fight, game over, no or one legal action after the configured OOC rules, reward
+        // gold taken automatically) is recorded with its status and no search. Out of combat only. Needs
+        // searchEmaLambda > 0 and searchEmaHp (their per-node distributions give each root action's search-backed
+        // P(win) and HP; both change only training targets, not the selection).
+        std::vector<std::shared_ptr<const GameContext>> probeRoots;
+        bool probeNoise = false;
+        // Out-of-combat state capture (2026-11-21, diagnostic, default 0 = off): each searched out-of-combat root
+        // of a normal run is copied (takeCaptures) with this probability, decided by a hash of the run seed and the
+        // move number (not the search RNG), so play is the same as without it.
+        double captureRate = 0;
         CombatEncodeFn encodeCombat = nullptr;   // default: search::amberEncodeCombat
         GameEncodeFn encodeGame = nullptr;       // default: search::amberEncodeGame (stubEncodeGame = placeholder)
     };
@@ -703,6 +718,49 @@ namespace sts::azbench {
         double stepCpu = 0, encodeCpu = 0, searchCpu = 0, packSeconds = 0;
     };
 
+    // RunConfig::probeRoots: one root action's search result. q: mean backed-up value (NaN unvisited); qCompleted:
+    // the completed Q of the root's selection (qRescale: rescaled to [0, 1]); policy: Gumbel's improved policy
+    // softmax(logit + sigma qCompleted); score: the final pick's root score. pWin / ehp / dist: the mean over the
+    // edge's simulations of their leaves' outcome distribution (P(win) = class 0; class f = death on floor f) and
+    // of the expected HP at the end of the root's floor (searchEmaHp leaf entries); NaN / empty when unvisited.
+    struct ProbeEdge {
+        std::uint32_t bits = 0;
+        float logit = 0;
+        std::int32_t n = 0;
+        double q = 0, qCompleted = 0, policy = 0, score = 0;
+        double pWin = 0, ehp = 0;
+        std::vector<float> dist;   // [57]
+        std::vector<float> hpf;    // utility AMBER / AMBER2: mean E[HP_f] / 255 of floors f = 1..56 [56] (0 before the root's floor)
+        bool candidate = false;    // among the search's initial candidates
+    };
+
+    struct ProbeResult {
+        enum Status : int { SEARCHED = 0, FORCED = 1, COMBAT = 2, GAME_OVER = 3, NO_ACTION = 4 };
+        std::int64_t probe = -1;   // index into RunConfig::probeRoots
+        int status = SEARCHED;
+        int floor = 0, act = 0, screen = 0, maxHp = 0, hp = 0;
+        std::uint32_t pickBits = 0;   // the search's pick (FORCED: the only action)
+        int pick = -1;                // its index in edges / the sample's actions
+        // The root's net evaluation: utility value, P(win) outcome head F (search value), expected HP at the end of
+        // the floor, outcome softmax [57], floor HP softmax [256].
+        float rootValue = 0, rootF = 0, rootEhp = 0;
+        std::vector<float> rootDist, rootHpd;
+        // The search: root visits, mean backed-up value, sigma, the root's search-backed outcome distribution [57]
+        // and its expected HP at the end of the floor.
+        std::int32_t rootN = 0;
+        double searchValue = 0, sigma = 0, searchPWin = 0, searchEhp = 0;
+        std::vector<float> searchDist, searchHpf;   // searchHpf: utility AMBER / AMBER2, as ProbeEdge::hpf
+        std::vector<ProbeEdge> edges;
+        Sample sample;   // the root's encoded tokens and actions (copied layout; policy = improved policy)
+    };
+
+    // RunConfig::captureRate: a copied out-of-combat search root of a normal run.
+    struct Capture {
+        std::uint64_t seed = 0;
+        int move = 0, floor = 0;
+        std::shared_ptr<const GameContext> state;
+    };
+
     class RunDriver {
     public:
         explicit RunDriver(RunConfig cfg);
@@ -770,6 +828,22 @@ namespace sts::azbench {
             return out;
         }
 
+        // RunConfig::probeRoots: the results so far (moved out) and the count of roots done (all recorded).
+        std::vector<ProbeResult> takeProbeResults() {
+            std::lock_guard<std::mutex> l(probeM_);
+            std::vector<ProbeResult> out;
+            out.swap(probeResults_);
+            return out;
+        }
+        std::int64_t probesDone() const { return probesDone_.load(); }
+        // RunConfig::captureRate: the captured states since the last call (moved out).
+        std::vector<Capture> takeCaptures() {
+            std::lock_guard<std::mutex> l(probeM_);
+            std::vector<Capture> out;
+            out.swap(captures_);
+            return out;
+        }
+
         struct Node;
         struct Run;
         struct Worker;
@@ -809,6 +883,10 @@ namespace sts::azbench {
         std::vector<HeartResult> heartResults_;
         std::mutex heartLogM_;
         std::vector<HeartRunLog> heartLogs_;
+        std::atomic<std::int64_t> probeNext_{0}, probesDone_{0};
+        std::mutex probeM_;
+        std::vector<ProbeResult> probeResults_;
+        std::vector<Capture> captures_;
     };
 
 }

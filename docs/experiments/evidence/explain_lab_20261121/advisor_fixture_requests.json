@@ -1,0 +1,45 @@
+[
+ {
+  "kind": "hello",
+  "sequence": null,
+  "fixture": null,
+  "provenance": null
+ },
+ {
+  "kind": "observation",
+  "sequence": 1,
+  "fixture": "live_act1_boss_card_reward",
+  "provenance": {
+   "source": "live advisor segfault input, parity canary 2 (ledger \u00a7536), A20 seed 111194451, floor 16 after Hexaghost",
+   "session": "210eefc0ea50d",
+   "sequence": 269,
+   "captureObservationHash": "f34ee89bd81a7ee1238bb99ef2a1d29971c772c02423b7d62fae2f156cbd4689",
+   "originalFileSha256": "9e04ef85389e5f324c47063eb930edfadcc467174a53734791d2e52e7761944d",
+   "note": "only the ooc payload of the observation is kept"
+  }
+ },
+ {
+  "kind": "observation",
+  "sequence": 2,
+  "fixture": null,
+  "provenance": null
+ },
+ {
+  "kind": "observation",
+  "sequence": 3,
+  "fixture": "captured_act3_opening_map",
+  "provenance": {
+   "source": "fresh A0 seed 0 live capture after Automaton",
+   "sourceCommit": "a4fa5ba71506a0c432d4cd60bf4e1547eb941dee",
+   "session": "196ff66563262",
+   "sequence": 4,
+   "captureObservationHash": "2ecd8d0f5dbda228bc22f4907791dc9061b0c41a5a581ab62fa3c5eb718ddcbb"
+  }
+ },
+ {
+  "kind": "observation",
+  "sequence": 4,
+  "fixture": null,
+  "provenance": null
+ }
+]
