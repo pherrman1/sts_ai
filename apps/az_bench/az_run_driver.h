@@ -76,6 +76,8 @@ namespace sts::azbench {
     constexpr int kHpClasses = 256;
     constexpr int kAscensions = 21;
     constexpr int kFloors = 56;           // floors 1..56 of the per-floor HP head (utility AMBER)
+    constexpr int kAuxSlots = 5;          // RunConfig::auxFights: boss, elites 1..3, hallway
+    constexpr int kAuxHallway = 4;        // ... hallway fights per sample (slot 4)
 
     // Utility H of the search (U = (F + w H) / (1 + w), F = E[final floor] / 57, a win counts 57).
     //   FLOOR_HP (stage 1 default): H = E[HP at the end of the current floor] / max HP, from the 256-class HP head.
@@ -497,6 +499,17 @@ namespace sts::azbench {
         // Per-run Heart log (2026-11-19, diagnostic, default 0 = off; HeartRunLog, takeHeartRunLogs): > 0 records every
         // Heart kill and each other run that fought the Heart with this probability. Logging only: play is unchanged.
         double heartLogRate = 0;
+        // Fight-outcome auxiliary targets (2026-11-21, default off; NOT from Amber Eye, whose page lists no such
+        // head: Philipp's choice after an STS2 author's run net "predict[s] fight outcomes of the current boss, all 3
+        // elites, and a random sample of 4 regular encounters"). Every kept out-of-combat sample also stores the
+        // net inputs of fight starts against the act's boss (slot 0), its elites (slots 1..3, MonsterEncounterPool
+        // order; Act 4: Shield and Spear in slot 1) and kAuxHallway hallway fights drawn from the act's strong pool
+        // with its weights (slot 4; none in Act 4): the run's current game state (deck, relics, potions, HP) with
+        // that encounter, in the room it would be in (BOSS / ELITE / MONSTER), as the player's public view at the
+        // fight's first decision; tokens only (no actions, the net's trunk does not see them). The trainer turns
+        // them into labels with the net itself (tools/az_bench/selfplay.py --aux-fights). Drawn with an RNG of the
+        // run seed and move number, and on copies, so play is the same as without it.
+        bool auxFights = false;
         CombatEncodeFn encodeCombat = nullptr;   // default: search::amberEncodeCombat
         GameEncodeFn encodeGame = nullptr;       // default: search::amberEncodeGame (stubEncodeGame = placeholder)
     };
@@ -553,6 +566,15 @@ namespace sts::azbench {
         std::int16_t hpTargetLo = 0;
         std::vector<std::uint8_t> hpTargetQ;
         std::vector<float> hpFloorTarget;
+        // RunConfig::auxFights (out-of-combat samples): fight k's slot auxSlot[k] (kAuxSlots) and its tokens
+        // auxTokOff[k] .. auxTokOff[k + 1] - 1, in the sample's token form: copied (auxTokType / auxIds / auxF) or,
+        // compactSamples, positions in *dict (auxTokIdx). Empty when the flag is off or for a combat sample.
+        std::vector<std::uint8_t> auxSlot;
+        std::vector<std::uint32_t> auxTokOff;
+        std::vector<std::int8_t> auxTokType;
+        std::vector<std::int16_t> auxIds;     // [n][4]
+        std::vector<std::uint16_t> auxF;      // [n][64] float16 bits
+        std::vector<std::uint16_t> auxTokIdx;
     };
 
     // Run progress counters of finished runs (2026-11-17; why A0 runs rarely reach Act 4): keys held at the run's
@@ -627,6 +649,7 @@ namespace sts::azbench {
         // c = infinity; items logged with m = 0 at a run's end, and of those not played in that run (must stay 0).
         std::int64_t exploreAttempts = 0, exploreCZero = 0, exploreCInf = 0, exploreNatural = 0, exploreNaturalUnplayed = 0;
         std::int64_t cacheHits = 0;           // leaves answered by the evaluation cache (not counted in evals)
+        std::int64_t auxFights = 0;           // RunConfig::auxFights: fight starts stored with samples
         // parallelNodes: waves started and the evaluations in them (waveFlights / waves = evaluations in flight per
         // run and wave), and simulations that had to wait for a node whose evaluation was in flight.
         std::int64_t waves = 0, waveFlights = 0, simCollisions = 0;

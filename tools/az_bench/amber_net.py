@@ -68,7 +68,7 @@ def load_fused_layer():
 
 
 class AmberNet(nn.Module):
-    def __init__(self, d=96, layers=3, heads=None, hp_floors=1, soft_policy=False):
+    def __init__(self, d=96, layers=3, heads=None, hp_floors=1, soft_policy=False, aux_slots=0):
         super().__init__()
         heads = heads or max(1, d // 32)
         self.type_emb = nn.Embedding(len(TOKEN_TYPES), d)
@@ -96,6 +96,19 @@ class AmberNet(nn.Module):
         # second action MLP on the same e_a, trained on the flattened policy target p^(1/4). Training only: it is
         # computed (as a 5th output) only in training mode, so inference and eval calls are unchanged.
         self.pol_soft = mlp(d, d, 1) if soft_policy else None
+        # Fight-outcome auxiliary head (tools/az_bench/selfplay.py --aux-fights; not from Amber Eye): per slot (boss,
+        # elites 1..3, hallway) two logits, P(death in the fight) and the HP fraction left after it, on the summary.
+        # Training only: computed in training mode into self.aux_out [B, 2 * aux_slots] (the outputs stay the same
+        # tuple). Defined last, so the other parameters keep their order (optimizer state of a checkpoint without it).
+        self.aux_fight = mlp(d, d, 2 * aux_slots) if aux_slots else None
+        self.aux_out = None
+
+    def load_state_dict(self, state_dict, strict=True, **kw):
+        """A checkpoint's weights; a net without the aux head ignores the checkpoint's aux_fight weights, so tools
+        that build the net without it load checkpoints of --aux-fights runs."""
+        if self.aux_fight is None:
+            state_dict = {k: v for k, v in state_dict.items() if not k.startswith("aux_fight.")}
+        return super().load_state_dict(state_dict, strict=strict, **kw)
 
     def forward(self, b):
         if "tok_type" in b:
@@ -116,6 +129,7 @@ class AmberNet(nn.Module):
              + self.w_t(pick(b["a_tgt"], self.a_none[1])) + self.w_f(b["a_f"]) + self.w_c(c)[:, None])
         logits = self.pol(e).squeeze(-1).masked_fill(~b["a_mask"], -1e4)
         out = (logits, self.outcome(c), self.hp(c), self.hp_floor(c).squeeze(-1))
+        self.aux_out = self.aux_fight(c) if self.aux_fight is not None and self.training else None
         if self.pol_soft is not None and self.training:
             out = out + (self.pol_soft(e).squeeze(-1).masked_fill(~b["a_mask"], -1e4),)
         return out

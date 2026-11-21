@@ -28693,3 +28693,39 @@ owner's go.
 **Evidence:** `docs/experiments/evidence/explain_prior_ablation_20261121/` (`pairs_895975.json`,
 `pairs_791357.json`, `table_895975.json`, checkpoint hashes, the generation run's last metrics row).
 **Knowledge impact:** this entry.
+
+## §TBD — `--aux-fights`: auxiliary head that predicts, at every out-of-combat sample, the fights against the act boss, its three elites and four sampled hallway encounters, labelled by the net's own floor HP head on those fight starts; play unchanged with the flag on, driver CPU cost within noise → BUILT, default off (cloud, 2026-11-21)
+
+**Origin (owner, 2026-11-21):** an STS2 author's run net got its fastest early gain from "auxillary heads to
+predict fight outcomes of the current boss, all 3 elites, and a random sample of 4 regular encounters". Amber
+Eye's page lists five heads (policy, soft policy, outcome, current-floor HP, per-floor HP) and no such head, so
+this is a deviation the owner chose explicitly ("bau punkt 1"), as a flag.
+**What it does:** `RunConfig::auxFights` (`az_run_driver.h`): every kept out-of-combat sample also stores the net
+input of fight starts on a copy of the run's current state (deck, relics, potions, HP), one per encounter: the act
+boss (slot 0), the act's elites in `MonsterEncounterPool` order (slots 1-3; Act 4: Shield and Spear in slot 1),
+four hallway fights drawn from the act's strong pool with its weights (slot 4; none in Act 4), each in its room
+(BOSS / ELITE / MONSTER, off the current map node, so no burning-elite buff), as the player's public view at the
+first decision, tokens only (the trunk does not read actions). The draw uses an RNG of run seed and move number on
+copies, so play is identical with the flag. `selfplay.py --aux-fights` labels each fight start with the training
+net (eval mode, no grad) before the chunk enters the window: P(death) = P(HP class 0 at the end of the floor) and
+E[HP] / max HP from the floor HP head; the four hallway rows are averaged into slot 4. The window stores 10 bytes
+(round(255 x)) and a slot mask per sample; the fight-start tokens are not stored. New head `aux_fight`
+(two-layer MLP on the summary, 10 logits), loss = binary cross-entropy against the soft targets over the present
+slots, weight `--w-aux` (1.0). Our choices (the post says no more): labels from our single net's HP head (he has a
+separate combat net), the hallway slot as the mean over the four draws (no enemy tokens in the input, so the head
+cannot know which four were drawn), two numbers per fight instead of a histogram, strong pool only.
+**Resume:** a checkpoint without the head starts it fresh (its optimizer state is kept for every other parameter;
+the head is a second parameter group); a window saved without the aux arrays loads with mask 0 (its samples do
+not train the head); a checkpoint or window with them loads into a run without the flag (head and arrays
+ignored). Nets built without the head (explain.py, capacity_probe.py, teacher) load such checkpoints.
+**Checks (cloud, fake net, `az-run-driver`, 1 worker, seeds from 1 / 7):** with and without `--aux-fights`
+(copied and compact samples) the same runs, moves (196 / 2,621 / 7,640) and outcomes; 8 fight starts per
+out-of-combat sample, all slots ascending, every boss row holds a MONSTER token; 24 runs with `--test-hp 999`:
+7.47 / 7.72 s without, 7.72 / 7.72 s with (noise). New ctests `az_run_driver_aux_fights`,
+`az_run_driver_aux_fights_compact`; `tests/test_selfplay.py` `AuxFightsTest` (labels, loss mask, optimizer state
+across the aux group, window across the aux arrays) and `SelfplaySmoke.test_aux_fights_resume` (resume from a
+checkpoint and window without the head, labels = driver rows, aux loss > 0, resume without the flag).
+**Not measured:** GPU cost of the labels on the PC (8 trainer-net rows per kept out-of-combat sample, metric
+`aux_fights.label_s`), memory of pending samples (fight-start tokens go into the run dictionary until the run
+ends), any effect on learning. Before it takes over the main run: 5-15 min live test on the PC (project rule).
+**Knowledge impact:** this entry.

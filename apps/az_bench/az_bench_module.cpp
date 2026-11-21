@@ -282,7 +282,7 @@ PYBIND11_MODULE(az_bench_native, m) {
                          bool forceKeys, std::vector<std::vector<double>> heartArms, int heartReps,
                          bool savescum, bool compactSamples, double heartLogRate, bool forceRewards, bool explorePerOffer,
                          bool exploreGapSearch, bool exploreDeckOnly, bool forcePotions, bool oocCanon,
-                         int parallelNodes, bool rngFix, bool searchEmaHp, bool exploreCleanKeys) {
+                         int parallelNodes, bool rngFix, bool searchEmaHp, bool exploreCleanKeys, bool auxFights) {
                  azbench::RunConfig c;
                  if (!(heartLogRate >= 0 && heartLogRate <= 1)) throw std::invalid_argument("heart_log_rate: want 0..1");
                  c.heartLogRate = heartLogRate;
@@ -341,6 +341,7 @@ PYBIND11_MODULE(az_bench_native, m) {
                  c.exploreGapSearch = exploreGapSearch;
                  c.exploreDeckOnly = exploreDeckOnly;
                  c.exploreCleanKeys = exploreCleanKeys;
+                 c.auxFights = auxFights;
                  c.savescum = savescum;
                  c.compactSamples = compactSamples;
                  return std::make_unique<azbench::RunDriver>(c);
@@ -365,7 +366,8 @@ PYBIND11_MODULE(az_bench_native, m) {
              py::arg("explore_gap_search") = false, py::arg("explore_deck_only") = false,
              py::arg("force_potions") = false, py::arg("ooc_canon") = false, py::arg("parallel_nodes") = 0,
              py::arg("rng_fix") = false,
-             py::arg("search_ema_hp") = false, py::arg("explore_clean_keys") = false)
+             py::arg("search_ema_hp") = false, py::arg("explore_clean_keys") = false,
+             py::arg("aux_fights") = false)
         .def("heart_results",
              [](const azbench::RunDriver &d) {
                  py::list out;
@@ -602,6 +604,38 @@ PYBIND11_MODULE(az_bench_native, m) {
                  }
                  const auto nT = static_cast<py::ssize_t>(tokType.size()), nA = static_cast<py::ssize_t>(aType.size());
                  py::dict o;
+                 if (d.config().auxFights) {
+                     // RunConfig::auxFights: sample i's fight starts are rows aux_off[i] .. aux_off[i + 1] - 1; row r
+                     // has slot aux_slot[r] and tokens aux_tok_off[r] .. aux_tok_off[r + 1] - 1 of aux_tok_type /
+                     // aux_ids / aux_f, or (compact) of aux_tok_idx, positions in its sample's dictionary (tok_base).
+                     std::vector<std::int64_t> auxOff(S + 1, 0), auxTokOff(1, 0);
+                     std::vector<std::uint8_t> auxSlot;
+                     std::vector<std::int8_t> auxType;
+                     std::vector<std::int16_t> auxIds;
+                     std::vector<std::uint16_t> auxF, auxIdx;
+                     for (std::size_t i = 0; i < S; ++i) {
+                         const auto &x = v[i];
+                         const std::size_t k = x.auxSlot.size();
+                         if (k && x.auxTokOff.size() != k + 1) throw std::runtime_error("take_samples: bad aux offsets");
+                         for (std::size_t r = 0; r < k; ++r)
+                             auxTokOff.push_back(auxTokOff.back() + static_cast<std::int64_t>(x.auxTokOff[r + 1] - x.auxTokOff[r]));
+                         auxSlot.insert(auxSlot.end(), x.auxSlot.begin(), x.auxSlot.end());
+                         auxType.insert(auxType.end(), x.auxTokType.begin(), x.auxTokType.end());
+                         auxIds.insert(auxIds.end(), x.auxIds.begin(), x.auxIds.end());
+                         auxF.insert(auxF.end(), x.auxF.begin(), x.auxF.end());
+                         auxIdx.insert(auxIdx.end(), x.auxTokIdx.begin(), x.auxTokIdx.end());
+                         auxOff[i + 1] = auxOff[i] + static_cast<std::int64_t>(k);
+                     }
+                     o["aux_off"] = toArray(auxOff); o["aux_slot"] = toArray(auxSlot); o["aux_tok_off"] = toArray(auxTokOff);
+                     if (compact) {
+                         o["aux_tok_idx"] = toArray(auxIdx);
+                     } else {
+                         const auto nX = static_cast<py::ssize_t>(auxType.size());
+                         o["aux_tok_type"] = toArray(auxType);
+                         o["aux_ids"] = toArray(auxIds).reshape({nX, static_cast<py::ssize_t>(search::kAmberCat)});
+                         o["aux_f"] = toArray(auxF).view("float16").reshape({nX, static_cast<py::ssize_t>(search::kAmberFloat)});
+                     }
+                 }
                  o["tok_off"] = toArray(tokOff); o["act_off"] = toArray(actOff);
                  if (compact) { o["tok_idx"] = toArray(tokIdx); o["tok_base"] = toArray(tokBase); }
                  o["tok_type"] = toArray(tokType);
@@ -682,6 +716,7 @@ PYBIND11_MODULE(az_bench_native, m) {
             o["explore_c_inf"] = s.exploreCInf; o["explore_natural"] = s.exploreNatural;
             o["explore_natural_unplayed"] = s.exploreNaturalUnplayed;
             o["cache_hits"] = s.cacheHits;
+            o["aux_fights"] = s.auxFights;
             o["waves"] = s.waves; o["wave_flights"] = s.waveFlights; o["sim_collisions"] = s.simCollisions;
             o["ooc_searched"] = py::make_tuple(s.oocSearched[0], s.oocSearched[1]);
             o["ooc_not_best_q"] = py::make_tuple(s.oocNotBestQ[0], s.oocNotBestQ[1]);
