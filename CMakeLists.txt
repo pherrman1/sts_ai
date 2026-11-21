@@ -238,6 +238,16 @@ add_test(NAME az_eval_cache_ema_amber COMMAND $<TARGET_FILE:az-eval-cache-test> 
 set_tests_properties(az_eval_cache_ema_amber PROPERTIES LABELS "core;smoke")
 add_test(NAME az_eval_cache_ema_all COMMAND $<TARGET_FILE:az-eval-cache-test> --runs 3 --seed-base 1 --fast --ema 0.9 --ema-all)
 set_tests_properties(az_eval_cache_ema_all PROPERTIES LABELS "core;smoke")
+# Parallel search nodes (RunConfig::parallelNodes): waves of several evaluations per run; the games do not depend on
+# how the answers are batched (and, as without it, not on the evaluation cache).
+add_test(NAME az_parallel_nodes COMMAND $<TARGET_FILE:az-eval-cache-test> --runs 3 --seed-base 1 --fast --parallel-nodes 4)
+set_tests_properties(az_parallel_nodes PROPERTIES LABELS "core;smoke")
+add_test(NAME az_parallel_nodes_amber COMMAND $<TARGET_FILE:az-eval-cache-test> --runs 3 --seed-base 1 --fast
+         --parallel-nodes 4 --amber-search --utility amber --ema 0.9 --compact)
+set_tests_properties(az_parallel_nodes_amber PROPERTIES LABELS "core;smoke")
+add_test(NAME az_run_driver_parallel_nodes COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 6
+         --seed-base 1 --seconds 300 --parallel-nodes 4 --savescum --utility amber2-root)
+set_tests_properties(az_run_driver_parallel_nodes PROPERTIES LABELS "core;smoke")
 # Packed tokens (only live tokens to the GPU) carry the same rows as the [R][T] layout.
 add_executable(az-pack-test apps/az_bench/az_pack_test.cpp)
 target_include_directories(az-pack-test PRIVATE include apps/az_bench)

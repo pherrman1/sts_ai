@@ -130,6 +130,22 @@ Live (ledger §828): 11,490 -> 11,887 moves/s (+3.5 %); only 23 % of the batches
 usually arrive before the previous batch is done. Since 2026-11-21 the loop looks a second time right after packing
 (`infer_early_packed_per_batch`); `selfplay.batch_done` is the one place that asks whether a batch is finished.
 
+`selfplay.py --parallel-nodes P` (2026-11-21, default 0 = off; `RunConfig::parallelNodes`): Amber Eye's parallel
+search nodes ("we additionally allow multiple searches in the same game tree using virtual visits. In self-play, up
+to 4 nodes per candidate move's subtree were allowed to be visited in parallel"). Without it a run has one evaluation
+in flight, so a move of 16 / 64 simulations needs 17 / 65 round trips to the net. With it a halving phase's
+simulations start together as a wave, at most P in flight per root candidate; a simulation in flight is a virtual
+loss on its path (a visit of value 0 until its answer is backed up, as in the paper the page links; Philipp's choice
+2026-11-21), which sends the next ones to other edges and chance outcomes. A phase ends with all its answers in, so
+halving, the pick, the policy target and the value targets read finished simulations only.
+Where page and paper are silent (ours): a simulation that reaches a node still being
+evaluated waits for the next wave; a wave's answers are handled together in start order, so the games do not depend
+on answer timing (`az_parallel_nodes` tests). Off is bit-identical to before (digests of `az-eval-cache-test`
+against main 56b8fd43). Cloud, fake net, 64 / 16 simulations: 24.7 -> 5.1 round trips per searched move, 6.0-6.9
+evaluations per wave (ledger §829). Metrics row `parallel_nodes`: `flights_per_wave`, `collisions_per_k` (waiting
+simulations per 1,000 evaluations), `flight_slots` (encoded inputs held, ~60 KB each: a run keeps up to
+P x candidates, so run it with fewer `--games`).
+
 Each thread's phases add up to about 1000. With a GPU the issuing phases are CPU time of that thread and the `sync` /
 `loss_read` phases are time it waits for the GPU; `--gpu-timing`'s `gpu_ms_per_s` is the elapsed GPU time of each
 stream, and the two streams overlap, so their sum is not the GPU's load.

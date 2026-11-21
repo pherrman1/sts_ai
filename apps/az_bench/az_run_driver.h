@@ -17,7 +17,7 @@
 // action executes; combat edges reseed the search RNG as in stage 0. F = E[final floor] / 57 (a win counts 57), H =
 // E[HP at the end of the floor] / max HP; the net's heads are turned into F and E[HP] by the caller, the driver
 // mixes U = F + w H with w = hpWeightCombat or hpWeightOoc and scales by 1 / (1 + w) into [0, 1]. One leaf in flight
-// per run, no tree reuse between moves. The improved policy completes unvisited edges' Q with the net's root value
+// per run (RunConfig::parallelNodes: Amber's several per candidate), no tree reuse between moves. The improved policy completes unvisited edges' Q with the net's root value
 // (not the paper's v_mix; a stage-1 simplification).
 #ifndef STS_AZ_RUN_DRIVER_H
 #define STS_AZ_RUN_DRIVER_H
@@ -425,6 +425,26 @@ namespace sts::azbench {
         // chanceOnReveal). Labels and training are unchanged. Initial state of setSavescum; turning it off reaches runs in
         // progress at their next searched move (samples already taken stay in the replay window).
         bool savescum = false;
+        // Parallel search nodes (2026-11-21, default 0 = off: one evaluation in flight per run). Amber Eye, "Efficient
+        // search": "we additionally allow multiple searches in the same game tree using virtual visits. In
+        // self-play, up to 4 nodes per candidate move's subtree were allowed to be visited in parallel" (4 = Amber's
+        // self-play value; the page says no more about the mechanism). With parallelNodes = P > 0 a halving phase's
+        // simulations start together as a wave, at most P in flight per root candidate (so up to P x candidates
+        // per run). A simulation in flight is a virtual loss on every edge of its path, as in the paper the page
+        // links for "virtual visits" (Chaslot, Winands, van den Herik 2008: "assign one 'virtual loss' when a node
+        // is visited by a thread [...] removed when the thread [...] starts propagating the result"; Philipp's
+        // choice 2026-11-21 over a visit without a value): until its answer is backed up it counts as a visit of
+        // value 0, the lowest utility, in everything that steers the next simulations below the root (the
+        // edge's mean Q and so the completed Q, sigma's visit count, the selection pi' - N / (1 + sum N), the
+        // widening limit and the outcome picked at a chance edge), so they spread over other edges and outcomes.
+        // Every phase ends with all its answers in, so what is read at the root (halving, pick, improved
+        // policy, value targets) holds finished simulations only. Our choices where page and paper are silent: a
+        // simulation that reaches a node whose
+        // evaluation is still in flight waits for that answer (it is tried again in the next wave); a wave's
+        // answers are handled together, in the order the simulations started, so the search does not depend on
+        // answer timing. The same simulations per move; the tree differs from the one-at-a-time search because
+        // later simulations of a wave do not see the earlier ones' values.
+        int parallelNodes = 0;
         // Search-backed EMA outcome targets (2026-11-17, default 0 = off), Amber Eye's value labels: "a combination
         // of the search result and an exponential weighted average of future moves' search outcomes". With
         // searchEmaLambda = lam in (0, 1): every node carries the net's outcome distribution (57 classes; submit needs
@@ -575,6 +595,9 @@ namespace sts::azbench {
         // c = infinity; items logged with m = 0 at a run's end, and of those not played in that run (must stay 0).
         std::int64_t exploreAttempts = 0, exploreCZero = 0, exploreCInf = 0, exploreNatural = 0, exploreNaturalUnplayed = 0;
         std::int64_t cacheHits = 0;           // leaves answered by the evaluation cache (not counted in evals)
+        // parallelNodes: waves started and the evaluations in them (waveFlights / waves = evaluations in flight per
+        // run and wave), and simulations that had to wait for a node whose evaluation was in flight.
+        std::int64_t waves = 0, waveFlights = 0, simCollisions = 0;
         // Search diagnostics of searched out-of-combat roots (always on): per full / fast move, roots, roots whose
         // search pick is not the visited edge of highest mean Q (before a forced pick), and the sum of that root's
         // raw visited-Q spread (max - min mean Q, roots with >= 2 visited edges) and its count.
@@ -610,6 +633,7 @@ namespace sts::azbench {
         // taken: memDone (driver level).
         std::int64_t memPoolNodes = 0, memPoolGc = 0, memPoolReal = 0, memPoolOuter = 0, memEdgeCap = 0, memPoolBc = 0;
         std::int64_t memPendingCap = 0, memMoveDistCap = 0, memCacheEntries = 0, memDone = 0;
+        std::int64_t memFlights = 0;   // allocated flight slots of all runs (one encoded input each, ~60 KB)
         double stepCpu = 0, encodeCpu = 0, searchCpu = 0, packSeconds = 0;
     };
 
@@ -699,7 +723,7 @@ namespace sts::azbench {
         std::atomic<std::int64_t> runsDone_{0};   // finished runs, all workers (pick-rate denominator)   // real picks per item hash (pick-rate exploration)
         mutable std::mutex qm_;
         std::condition_variable qcv_;
-        std::deque<std::uint32_t> queue_;   // ticket = worker << 16 | run
+        std::deque<std::uint32_t> queue_;   // ticket = worker << 26 | flight slot << 16 | run
         mutable std::mutex sampleM_;
         std::deque<Sample> done_;
         std::atomic<std::int64_t> batches_{0}, batchRows_{0}, packNs_{0};
