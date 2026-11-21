@@ -28851,3 +28851,44 @@ with the route x, so a drink can be masked or kept by its slot number.
 **Decision:** engine fix, default on; `STS_AZ_KEY_HOLES=0` restores the old behaviour. Live use after the owner's go
 and a 5-15 minute PC test.
 **Knowledge impact:** this entry.
+
+## §TBD — Self-play stalls: a fight won before its first decision (Neow's Lament + Mercury Hourglass) ended the run as a "no legal action" stall loss; fixed, default on, `STS_AZ_FIGHT_START_END=0` restores; new `--stall-log` (default off) records every stall (cloud, 2026-11-21)
+
+**Question (owner, 2026-11-21):** what are the stage-1 self-play stalls (about 46 per 100k A20 runs; 3 of 1000 in
+the deterministic ckpt_928513 benchmark, seeds 160200000-160200999), should and can they be fixed?
+**Mechanism (code, main 0cad30e1):** `az_run_driver.cpp` has three stall guards, each ends the run as a loss and adds
+to `stalls`: a fight past `--max-fight-moves` (400) real decisions, a run past 50,000 real decisions, and a decision
+state with no legal action. Nothing about the stalled run was logged.
+**Tooling:** `RunConfig::stallLog` (`selfplay.py --stall-log` → `<out-dir>/stall_log.jsonl`; `az-run-driver
+--stall-log PATH`), default off: one JSON record per stalled run with type (`fight_moves`, `run_moves`, `no_legal`),
+seed, ascension, act, floor, room, encounter, fight state (turn, HP, block, energy, piles, monsters with HP and
+dead/escaped), outcome / input state, relics, potions, deck size, gold and the last 30 real decisions as text. The
+per-type counts are always counted (`stalls_by_type` in every selfplay metrics row; `stalls by type` line of
+`az-run-driver`). Logging only: with one worker and one game the driver output is identical with and without the
+flag (fake net, 300 runs, A20, `--test-hp 3000`). The engine's `search::Action::printDesc` reads `monsters[target]`
+for a potion discard (target stored as 0xffff) and segfaulted the logging run after a few thousand runs; the log
+uses its own range-checked text instead (engine unchanged).
+**Repro (cloud, fake net, C++ only):** `az-run-driver --workers 3 --games 16 --runs 40000 --fast --asc 20 --seed-base
+160200000 --force-keys --force-rewards --utility amber --stall-log ...` (replays already used benchmark seeds; run
+order is not deterministic with several workers). Without the fix: 3 `no_legal` stalls (with
+`STS_AZ_FIGHT_START_END=0`, another run: 3 `no_legal` + 1 `fight_moves`); 20,000 runs with 4 workers: 3 `no_legal`. All `no_legal` records: a hallway fight at turn 0 with 0 decisions, every
+monster at 0 HP and dead, fight outcome PLAYER_VICTORY, relics include Neow's Lament and Mercury Hourglass. Lament
+sets the first three fights' monsters to 1 HP, Hourglass deals 3 to all enemies at the start of turn 1, so the fight
+is won inside `BattleContext::init` (as in the game). The driver checked a fight's outcome only after a played
+action, found no legal action and counted the won fight as a stall loss. The one `fight_moves` record is a genuine
+stalemate of the fake net (Pandora's Box deck, only True Grit left, a Green Louse at 1 HP, player at 2 HP for 200
+turns); the 50,000-move guard never fired.
+**Fix (`apps/az_bench/az_run_driver.cpp`, `startMove`):** a real fight already decided before its first decision is
+left like a decided step (`exitBattle`, rewards follow); counter `fights_ended_at_start`. Default on,
+`STS_AZ_FIGHT_START_END=0` restores. Same 40,000-run command: 0 stalls, 1 fight ended at start (counts this small vary between
+runs of the same command). Tests `az_run_driver_fight_start_end` / `_off` (`--test-relic NEOWS_LAMENT --test-relic
+MERCURY_HOURGLASS`, a tests-only start relic option; on: no `no_legal`, fights ended at start > 0; off: `no_legal` > 0
+and stall-log records). The search tree already handles this case with `--cross-combat` (a decided fight start
+exits into the game state); without it the fight-start leaf is valued by the net as before (unchanged).
+**Interpretation:** implementation success for the cloud repro. How many of the real net's 46 per 100k stalls are
+this case is not measured: Lament (a Neow option) plus a Mercury Hourglass found before the third fight is rare but
+reachable; real-net 400-decision stalemates may be the rest. `--stall-log` on the live run (or the 1000-seed
+benchmark) answers it.
+**Decision:** engine fix default on (independent review); `--stall-log` default off. Live use after the owner's go
+and a 5-15 minute PC test.
+**Knowledge impact:** this entry.

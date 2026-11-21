@@ -283,8 +283,9 @@ PYBIND11_MODULE(az_bench_native, m) {
                          bool savescum, bool compactSamples, double heartLogRate, bool forceRewards, bool explorePerOffer,
                          bool exploreGapSearch, bool exploreDeckOnly, bool forcePotions, bool oocCanon,
                          int parallelNodes, bool rngFix, bool searchEmaHp, bool exploreCleanKeys, bool auxFights,
-                         bool enemyTokens) {
+                         bool enemyTokens, bool stallLog) {
                  azbench::RunConfig c;
+                 c.stallLog = stallLog;
                  if (!(heartLogRate >= 0 && heartLogRate <= 1)) throw std::invalid_argument("heart_log_rate: want 0..1");
                  c.heartLogRate = heartLogRate;
                  for (const auto &v : heartArms) {   // [full_sims, fast_sims, full_prob, full_candidates, fast_candidates]
@@ -369,7 +370,7 @@ PYBIND11_MODULE(az_bench_native, m) {
              py::arg("force_potions") = false, py::arg("ooc_canon") = false, py::arg("parallel_nodes") = 0,
              py::arg("rng_fix") = false,
              py::arg("search_ema_hp") = false, py::arg("explore_clean_keys") = false,
-             py::arg("aux_fights") = false, py::arg("enemy_tokens") = false)
+             py::arg("aux_fights") = false, py::arg("enemy_tokens") = false, py::arg("stall_log") = false)
         .def("heart_results",
              [](const azbench::RunDriver &d) {
                  py::list out;
@@ -383,6 +384,12 @@ PYBIND11_MODULE(az_bench_native, m) {
                      o["relics"] = r.relics; o["asc"] = r.asc;
                      out.append(o);
                  }
+                 return out;
+             })
+        .def("take_stall_logs",   // RunConfig::stallLog: the records since the last call, one JSON string each
+             [](azbench::RunDriver &d) {
+                 py::list out;
+                 for (const auto &r : d.takeStallLogs()) out.append(azbench::stallLogJson(r));
                  return out;
              })
         .def("take_heart_run_logs",   // RunConfig::heartLogRate: the records since the last call, as dicts
@@ -672,6 +679,7 @@ PYBIND11_MODULE(az_bench_native, m) {
             o["runs_started"] = s.runsStarted; o["runs_done"] = s.runsDone; o["wins"] = s.wins;
             o["floors_sum"] = s.floorsSum; o["stalls"] = s.stalls; o["terminal_leaves"] = s.terminalLeaves;
             o["encode_cut"] = s.encodeCut; o["encode_cut_ooc"] = s.encodeCutOoc; o["unsupported"] = s.unsupported; o["knowledge_failures"] = s.knowledgeFailures; o["invalid_actions"] = s.invalidActions;
+            o["stalls_fight_moves"] = s.stallsByType[0]; o["stalls_run_moves"] = s.stallsByType[1]; o["stalls_no_legal"] = s.stallsByType[2]; o["fights_ended_at_start"] = s.fightsEndedAtStart;
             o["samples_done"] = s.samplesDone; o["samples_pending"] = s.samplesPending;
             o["batches"] = s.batches; o["batch_rows"] = s.batchRows;
             o["outcomes"] = std::vector<std::int64_t>(s.outcomes.begin(), s.outcomes.end());

@@ -8,6 +8,7 @@
 #include <ctime>
 #include <functional>
 #include <limits>
+#include <sstream>
 #include <stdexcept>
 #include <unordered_map>
 
@@ -327,6 +328,45 @@ namespace sts::azbench {
         return search::nativeSilverSearchRoot(live, knowledge, root);
     }
 
+    std::string stallLogJson(const StallLog &r) {
+        static const char *const screens[] = {"INVALID", "EVENT_SCREEN", "REWARDS", "BOSS_RELIC_REWARDS", "CARD_SELECT",
+                                              "MAP_SCREEN", "TREASURE_ROOM", "REST_ROOM", "SHOP_ROOM", "BATTLE"};
+        auto q = [](const std::string &t) {
+            std::string o = "\"";
+            for (const char c : t) {
+                if (c == '"' || c == '\\') { o += '\\'; o += c; }
+                else if (static_cast<unsigned char>(c) < 0x20) o += ' ';
+                else o += c;
+            }
+            return o + "\"";
+        };
+        std::ostringstream os;
+        os << "{\"type\": " << q(stallTypeName(r.type)) << ", \"seed\": " << r.seed << ", \"asc\": " << r.asc
+           << ", \"act\": " << r.act << ", \"floor\": " << r.floor << ", \"in_battle\": " << r.inBattle
+           << ", \"screen\": " << q(r.screen >= 0 && r.screen < 10 ? screens[r.screen] : "?")
+           << ", \"room\": " << q(roomStrings[r.room]) << ", \"encounter\": " << q(monsterEncounterStrings[r.encounter])
+           << ", \"turn\": " << r.turn << ", \"fight_moves\": " << r.fightMoves << ", \"run_moves\": " << r.runMoves
+           << ", \"hp\": " << r.curHp << ", \"max_hp\": " << r.maxHp << ", \"block\": " << r.block
+           << ", \"energy\": " << r.energy << ", \"hand\": " << r.hand << ", \"draw\": " << r.drawPile
+           << ", \"discard\": " << r.discardPile << ", \"exhaust\": " << r.exhaustPile << ", \"monsters\": [";
+        for (std::size_t k = 0; k < r.monsters.size(); ++k) {
+            const auto &m = r.monsters[k];
+            os << (k ? ", " : "") << "{\"id\": " << q(monsterIdStrings[m[0]]) << ", \"hp\": " << m[1]
+               << ", \"max_hp\": " << m[2] << ", \"block\": " << m[3] << ", \"gone\": " << m[4] << "}";
+        }
+        os << "], \"outcome\": " << r.outcome << ", \"input_state\": " << r.inputState << ", \"deck_size\": " << r.deckSize
+           << ", \"gold\": " << r.gold << ", \"relics\": [";
+        for (std::size_t k = 0; k < r.relics.size(); ++k)
+            os << (k ? ", " : "") << q(getRelicName(static_cast<RelicId>(r.relics[k])));
+        os << "], \"potions\": [";
+        for (std::size_t k = 0; k < r.potions.size(); ++k)
+            os << (k ? ", " : "") << q(getPotionName(static_cast<Potion>(r.potions[k])));
+        os << "], \"last_actions\": [";
+        for (std::size_t k = 0; k < r.lastActions.size(); ++k) os << (k ? ", " : "") << q(r.lastActions[k]);
+        os << "]}";
+        return os.str();
+    }
+
     void stubEncodeGame(const GameContext &gc, const std::vector<GameAction> &actions, AmberTokens &out) {
         out.clear();
         auto &run = out.at(AmberTokenType::RUN, 0);
@@ -525,6 +565,9 @@ namespace sts::azbench {
         RunProgress progress;                // this run's progress counters (added to its ascension at the end)
         search::SilverSearchContext ctx;
         int fightMoves = 0, moves = 0, floor = 0;
+        // RunConfig::stallLog: the last StallLog::kTrail real decisions (ring; trailN written so far).
+        std::array<std::string, StallLog::kTrail> trail;
+        int trailN = 0;
         std::vector<Node> pool;
         int poolUsed = 0;
         int budget = 0, spent = 0, candidates = 0;
@@ -1059,7 +1102,10 @@ namespace sts::azbench {
             const RunStats &p = w->published;
             s.evals += p.evals; s.moves += p.moves; s.searchedMoves += p.searchedMoves;
             s.runsStarted += p.runsStarted; s.runsDone += p.runsDone; s.wins += p.wins; s.floorsSum += p.floorsSum;
-            s.stalls += p.stalls; s.terminalLeaves += p.terminalLeaves; s.encodeCut += p.encodeCut; s.encodeCutOoc += p.encodeCutOoc;
+            s.stalls += p.stalls;
+            for (int k = 0; k < 3; ++k) s.stallsByType[k] += p.stallsByType[k];
+            s.fightsEndedAtStart += p.fightsEndedAtStart;
+            s.terminalLeaves += p.terminalLeaves; s.encodeCut += p.encodeCut; s.encodeCutOoc += p.encodeCutOoc;
             s.unsupported += p.unsupported; s.knowledgeFailures += p.knowledgeFailures; s.invalidActions += p.invalidActions; s.samplesDone += p.samplesDone; s.samplesPending += p.samplesPending;
             for (int k = 0; k < kOutcomeClasses; ++k) s.outcomes[k] += p.outcomes[k];
             for (int k = 0; k < kAscensions; ++k) {
@@ -1198,6 +1244,12 @@ namespace sts::azbench {
         // STS_AZ_OOC_POTIONS=0 restores the old list.
         const char *oocPotionEnv = std::getenv("STS_AZ_OOC_POTIONS");
         const bool oocPotions = !(oocPotionEnv && std::strcmp(oocPotionEnv, "0") == 0);
+        // A real fight can be decided before its first decision: Neow's Lament leaves its monsters at 1 HP and Mercury
+        // Hourglass hits them for 3 at the start of turn 1 (as in the game, the fight is won). The run then leaves the
+        // fight like after a decided step; before 2026-11-21 it found no legal action and the run counted as a stall
+        // loss. STS_AZ_FIGHT_START_END=0 restores the old behaviour.
+        const char *fightStartEnv = std::getenv("STS_AZ_FIGHT_START_END");
+        const bool fightStartEnd = !(fightStartEnv && std::strcmp(fightStartEnv, "0") == 0);
         auto oocActions = [&](const GameContext &gc, bool forceKeys, int *keyRule = nullptr,
                               int *rewardRule = nullptr, int *potionRule = nullptr,
                               int *canonRemoved = nullptr) -> std::vector<GameAction> {
@@ -1624,9 +1676,11 @@ namespace sts::azbench {
             g.expectValid = false;
             g.gc = GameContext(CharacterClass::IRONCLAD, seed, g.asc, cfg.rngFix);
             if (cfg.testMaxHp > 0) g.gc.curHp = g.gc.maxHp = cfg.testMaxHp;
+            for (const RelicId r : cfg.testRelics) g.gc.obtainRelic(r);
             g.inBattle = false;
             g.cache.clear();
             g.moves = g.fightMoves = 0;
+            g.trailN = 0;
             g.floor = g.gc.floorNum;
             g.pending.clear();
             g.dict.reset();   // compactSamples: a new dictionary at the run's first kept sample
@@ -1647,6 +1701,58 @@ namespace sts::azbench {
             g.heartJob = -1;
             ++wk.st.runsStarted;
             startMove(g, gi);
+        };
+
+        // A stall guard ends the run as a loss (type: StallLog::type); with RunConfig::stallLog its record is kept.
+        auto stall = [&](Run &g, int type) {
+            ++wk.st.stalls;
+            ++wk.st.stallsByType[type];
+            if (cfg.stallLog) {
+                StallLog r;
+                r.type = type;
+                r.seed = g.seed;
+                r.asc = g.asc;
+                r.act = g.gc.act;
+                r.floor = g.gc.floorNum;
+                r.inBattle = g.inBattle ? 1 : 0;
+                r.screen = static_cast<int>(g.gc.screenState);
+                r.encounter = static_cast<int>(g.gc.info.encounter);
+                r.room = static_cast<int>(g.gc.curRoom);
+                r.fightMoves = g.fightMoves;
+                r.runMoves = g.moves;
+                r.curHp = g.gc.curHp;
+                r.maxHp = g.gc.maxHp;
+                if (g.inBattle) {
+                    const BattleContext &bc = g.bc;
+                    r.turn = bc.turn;
+                    r.curHp = bc.player.curHp;
+                    r.maxHp = bc.player.maxHp;
+                    r.block = bc.player.block;
+                    r.energy = bc.player.energy;
+                    r.drawPile = bc.cards.drawPile.size();
+                    r.discardPile = static_cast<int>(bc.cards.discardPile.size());
+                    r.exhaustPile = static_cast<int>(bc.cards.exhaustPile.size());
+                    r.hand = bc.cards.cardsInHand;
+                    for (int m = 0; m < bc.monsters.monsterCount; ++m) {
+                        const auto &mo = bc.monsters.arr[m];
+                        r.monsters.push_back({static_cast<int>(mo.id), mo.curHp, mo.maxHp, mo.block,
+                                              mo.isDeadOrEscaped() ? 1 : 0});
+                    }
+                    r.outcome = static_cast<int>(bc.outcome);
+                    r.inputState = static_cast<int>(bc.inputState);
+                }
+                for (const auto &x : g.gc.relics.relics) r.relics.push_back(static_cast<int>(x.id));
+                for (int i = 0; i < std::min(g.gc.potionCapacity, 5); ++i)
+                    if (g.gc.potions[i] != Potion::EMPTY_POTION_SLOT) r.potions.push_back(static_cast<int>(g.gc.potions[i]));
+                r.deckSize = g.gc.deck.size();
+                r.gold = g.gc.gold;
+                const int n = std::min(g.trailN, StallLog::kTrail);
+                for (int k = g.trailN - n; k < g.trailN; ++k) r.lastActions.push_back(g.trail[k % StallLog::kTrail]);
+                std::lock_guard<std::mutex> l(stallLogM_);
+                stallLogs_.push_back(std::move(r));
+            }
+            g.gc.outcome = GameOutcome::PLAYER_LOSS;
+            g.inBattle = false;
         };
 
         auto endRun = [&](Run &g, int gi) {
@@ -1838,13 +1944,64 @@ namespace sts::azbench {
         // Applies a chosen action to the real run; handles fight entry / exit, floor labels and the run's end.
         auto applyRealStep = [&](Run &g, std::uint32_t bits) {
             const double t0 = cpuSeconds();
+            if (cfg.stallLog) {   // the decision as text, before it is played (printDesc reads the state)
+                std::ostringstream os;
+                if (g.inBattle) {
+                    // Not search::Action::printDesc: it reads monsters[target] for a potion discard (target -1 as
+                    // 0xffff) and crashed here. Indices are checked before they are read.
+                    const BattleContext &bc = g.bc;
+                    const Action a(bits);
+                    os << "c f" << bc.floorNum << " t" << bc.turn << " hp" << bc.player.curHp << " e" << bc.player.energy;
+                    const int src = a.getSourceIdx(), tgt = a.getTargetIdx();
+                    auto monster = [&](int t) {
+                        if (t >= 0 && t < bc.monsters.monsterCount) os << " -> " << bc.monsters.arr[t].getName();
+                    };
+                    switch (a.getActionType()) {
+                        case search::ActionType::CARD:
+                            os << " card " << src;
+                            if (src >= 0 && src < bc.cards.cardsInHand) {
+                                const auto &c = bc.cards.hand[src];
+                                os << " " << c.getName() << (c.isUpgraded() ? "+" : "");
+                                if (c.requiresTarget()) monster(tgt);
+                            }
+                            break;
+                        case search::ActionType::POTION:
+                            os << " potion " << src;
+                            if (src >= 0 && src < bc.potionCapacity) {
+                                const Potion p = bc.potions[src];
+                                os << " " << getPotionName(p);
+                                if (tgt >= 0 && tgt < bc.monsters.monsterCount && potionRequiresTarget(p)) monster(tgt);
+                                else if (tgt >= bc.monsters.monsterCount) os << " discard";
+                            }
+                            break;
+                        case search::ActionType::SINGLE_CARD_SELECT: os << " select " << a.getSelectIdx(); break;
+                        case search::ActionType::MULTI_CARD_SELECT: os << " multi-select 0x" << std::hex << bits << std::dec; break;
+                        case search::ActionType::END_TURN: os << " end turn"; break;
+                        default: os << " ? 0x" << std::hex << bits << std::dec; break;
+                    }
+                } else {
+                    // search::GameAction::printDesc prints nothing: the screen, the raw bits and their fields.
+                    static const char *const screens[] = {"INVALID", "EVENT", "REWARDS", "BOSS_RELIC", "CARD_SELECT",
+                                                          "MAP", "TREASURE", "REST", "SHOP", "BATTLE"};
+                    const GameAction a(bits);
+                    const int sc = static_cast<int>(g.gc.screenState);
+                    os << "o f" << g.gc.floorNum << " " << (sc >= 0 && sc < 10 ? screens[sc] : "?");
+                    if (g.gc.screenState == ScreenState::EVENT_SCREEN)
+                        os << "(" << eventIdStrings[static_cast<int>(g.gc.curEvent)] << ")";
+                    os << " bits 0x" << std::hex << bits << std::dec;
+                    if (a.isPotionAction()) os << (a.isPotionDiscard() ? " potion-discard" : " potion-drink");
+                    os << " i1 " << a.getIdx1() << " i2 " << a.getIdx2();
+                    if (g.gc.screenState == ScreenState::REWARDS || g.gc.screenState == ScreenState::SHOP_ROOM)
+                        os << " rt " << static_cast<int>(a.getRewardsActionType());
+                }
+                g.trail[g.trailN % StallLog::kTrail] = os.str();
+                ++g.trailN;
+            }
             if (g.inBattle) {
                 executeObserved(g.bc, bits, *g.knowledge);
                 ++g.fightMoves;
                 if (g.bc.outcome == Outcome::UNDECIDED && g.fightMoves >= cfg.maxMovesPerFight) {
-                    ++wk.st.stalls;
-                    g.gc.outcome = GameOutcome::PLAYER_LOSS;
-                    g.inBattle = false;
+                    stall(g, 0);
                 } else if (g.bc.outcome != Outcome::UNDECIDED) {
                     g.bc.exitBattle(g.gc);
                     g.inBattle = false;
@@ -1936,11 +2093,7 @@ namespace sts::azbench {
             }
             wk.st.stepCpu += cpuSeconds() - t0;
             ++wk.st.moves;
-            if (++g.moves >= kMaxMovesPerRun && g.gc.outcome == GameOutcome::UNDECIDED) {
-                ++wk.st.stalls;
-                g.gc.outcome = GameOutcome::PLAYER_LOSS;
-                g.inBattle = false;
-            }
+            if (++g.moves >= kMaxMovesPerRun && g.gc.outcome == GameOutcome::UNDECIDED) stall(g, 1);
             if (g.gc.floorNum != g.floor) {
                 closeFloor(g, g.gc.curHp);
                 g.floor = g.gc.floorNum;
@@ -1965,6 +2118,12 @@ namespace sts::azbench {
             while (true) {
                 if (!g.active) return;
                 if (g.gc.outcome != GameOutcome::UNDECIDED) { endRun(g, gi); return; }
+                if (fightStartEnd && g.inBattle && g.bc.outcome != Outcome::UNDECIDED) {
+                    ++wk.st.fightsEndedAtStart;
+                    g.bc.exitBattle(g.gc);
+                    g.inBattle = false;
+                    continue;
+                }
                 std::size_t legal;
                 std::uint32_t only = 0;
                 if (g.inBattle) {
@@ -1985,9 +2144,7 @@ namespace sts::azbench {
                     if (legal == 1) only = gacts[0].bits;
                 }
                 if (legal == 0) {   // no decision possible: an engine dead end counts as a loss
-                    ++wk.st.stalls;
-                    g.gc.outcome = GameOutcome::PLAYER_LOSS;
-                    g.inBattle = false;
+                    stall(g, 2);
                     continue;
                 }
                 if (legal > 1) break;
