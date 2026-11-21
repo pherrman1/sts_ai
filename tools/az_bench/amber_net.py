@@ -66,15 +66,17 @@ def _compile_guard(fn):
 @_compile_guard
 def _gated_row_mean(row_mean, x, so, enc, g):
     """The row mean of _heads_packed with the encounter tokens weighted by the summary gate g, from row_mean (the
-    plain mean of each row's tokens after the first) on [x * other, x * enc] and on the encounter indicator, in fp32:
+    plain mean of each row's tokens after the first) on x * other and on x * enc, and exact encounter counts, in fp32:
     (S_other + g S_enc) / (n_other + g n_enc) = (m_other + g m_enc) / ((1 - f_enc) + g f_enc), the per-row counts
     cancel."""
     N, d = x.shape
     e = enc.float()[:, None]
     xf = x.float()
-    m = row_mean(torch.cat([xf * (1.0 - e), xf * e], 1).contiguous(), so)
-    # f_enc from exact counts (prefix sums of the indicator over each row's tokens after the first): row_mean at
-    # width 16 in fp32 gave wrong means on the PC GPU (sm_86, triton 3.1.0; #1166 diagnosis)
+    # two row_mean calls at width d in x's dtype (the configuration the packed heads use without the flags; masking
+    # by 0 / 1 is exact): row_mean in fp32 at widths 16 / 2 d was wrong on the PC GPU (sm_86, triton 3.1.0)
+    m = torch.cat([row_mean((xf * (1.0 - e)).to(x.dtype).contiguous(), so),
+                   row_mean((xf * e).to(x.dtype).contiguous(), so)], 1).float()
+    # f_enc from exact counts (prefix sums of the indicator over each row's tokens after the first)
     c = torch.cat([enc.new_zeros(1, dtype=torch.long), enc.long().cumsum(0)])
     hi = so[1:]
     lo = torch.minimum(so[:-1] + 1, hi)
