@@ -1,7 +1,9 @@
 // Python bridge of the stage 0 end-to-end producer (az_driver.h): tools/az_bench/e2e_bench.py drives the worker
 // threads from Python and evaluates each packed batch with a PyTorch net on the GPU. The GIL is released while
 // C++ waits for or packs a batch and while it posts results; batch arrays are handed to numpy without a copy.
+#include <algorithm>
 #include <fstream>
+#include <limits>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -21,8 +23,12 @@
 #include "constants/Cards.h"
 #include "constants/Potions.h"
 #include "constants/Relics.h"
+#include "sim/search/OocHiddenFuture.h"
 #include "sim/search/SilverWireJson.h"
 #include "sim/search/SilverWireState.h"
+#ifdef STS_AZ_LIVE_IMPORT
+#include "one_combat/live_ooc_state.h"
+#endif
 
 namespace py = pybind11;
 using namespace sts;
@@ -98,12 +104,86 @@ namespace {
         return a;
     }
 
+    // A game state for RunDriver probe roots (RunConfig::probeRoots): a fresh run's start, a captured search root
+    // (RunConfig::captureRate) or, built with STS_AZ_LIVE_IMPORT, a live game's out-of-combat observation (the
+    // importer's transition-capable public-information root; its hidden pools and RNG streams are hypothetical).
+    struct GameStateHandle {
+        std::shared_ptr<const GameContext> gc;
+#ifdef STS_AZ_LIVE_IMPORT
+        std::shared_ptr<const one_combat::advisor::LiveOocStateV1> live;
+#endif
+    };
+
+    // One probe sample (copied token layout) as numpy arrays: the layout of RunDriver.take_samples' rows.
+    py::dict sampleDict(const azbench::Sample &x) {
+        py::dict o;
+        const auto nT = static_cast<py::ssize_t>(x.tokType.size()), nA = static_cast<py::ssize_t>(x.aType.size());
+        o["tok_type"] = toArray(x.tokType);
+        o["ids"] = toArray(x.ids).reshape({nT, static_cast<py::ssize_t>(search::kAmberCat)});
+        o["f"] = toArray(x.f).view("float16").reshape({nT, static_cast<py::ssize_t>(search::kAmberFloat)});
+        o["a_type"] = toArray(x.aType);
+        o["a_src"] = toArray(x.aSrc);
+        o["a_tgt"] = toArray(x.aTgt);
+        o["a_f"] = toArray(x.aF).view("float16").reshape({nA, static_cast<py::ssize_t>(search::kAmberActFeat)});
+        o["policy"] = toArray(x.policy);
+        return o;
+    }
+
+    py::dict probeDict(const azbench::ProbeResult &r) {
+        static const char *kStatus[] = {"searched", "forced", "combat", "game_over", "no_action"};
+        py::dict o;
+        o["probe"] = r.probe;
+        o["status"] = kStatus[std::clamp(r.status, 0, 4)];
+        o["floor"] = r.floor; o["act"] = r.act; o["screen"] = r.screen; o["hp"] = r.hp; o["max_hp"] = r.maxHp;
+        o["pick"] = r.pick; o["pick_bits"] = r.pickBits;
+        if (r.status != azbench::ProbeResult::SEARCHED) return o;
+        o["root_value"] = r.rootValue; o["root_f"] = r.rootF; o["root_ehp"] = r.rootEhp;
+        o["root_dist"] = toArray(r.rootDist);
+        o["root_hpd"] = toArray(r.rootHpd);
+        o["root_n"] = r.rootN; o["search_value"] = r.searchValue; o["sigma"] = r.sigma;
+        o["search_pwin"] = r.searchPWin; o["search_ehp"] = r.searchEhp;
+        o["search_dist"] = toArray(r.searchDist);
+        o["search_hpf"] = toArray(r.searchHpf);
+        const std::size_t k = r.edges.size();
+        std::vector<std::uint32_t> bits(k);
+        std::vector<float> logit(k);
+        std::vector<std::int32_t> n(k);
+        std::vector<double> q(k), qc(k), pol(k), score(k), pwin(k), ehp(k);
+        std::vector<std::uint8_t> cand(k);
+        std::vector<float> dist(k * azbench::kOutcomeClasses, std::numeric_limits<float>::quiet_NaN());
+        const bool perFloor = !r.searchHpf.empty();
+        std::vector<float> hpf(perFloor ? k * azbench::kFloors : 0, std::numeric_limits<float>::quiet_NaN());
+        for (std::size_t i = 0; i < k; ++i) {
+            const auto &e = r.edges[i];
+            bits[i] = e.bits; logit[i] = e.logit; n[i] = e.n; q[i] = e.q; qc[i] = e.qCompleted; pol[i] = e.policy;
+            score[i] = e.score; pwin[i] = e.pWin; ehp[i] = e.ehp; cand[i] = e.candidate ? 1 : 0;
+            if (!e.dist.empty()) std::copy(e.dist.begin(), e.dist.end(), dist.begin() + i * azbench::kOutcomeClasses);
+            if (perFloor && !e.hpf.empty()) std::copy(e.hpf.begin(), e.hpf.end(), hpf.begin() + i * azbench::kFloors);
+        }
+        o["bits"] = toArray(bits); o["logit"] = toArray(logit); o["n"] = toArray(n); o["q"] = toArray(q);
+        o["q_completed"] = toArray(qc); o["policy"] = toArray(pol); o["score"] = toArray(score);
+        o["pwin"] = toArray(pwin); o["ehp"] = toArray(ehp); o["candidate"] = toArray(cand);
+        o["dist"] = toArray(dist).reshape({static_cast<py::ssize_t>(k), static_cast<py::ssize_t>(azbench::kOutcomeClasses)});
+        if (perFloor) o["hpf"] = toArray(hpf).reshape({static_cast<py::ssize_t>(k), static_cast<py::ssize_t>(azbench::kFloors)});
+        o["sample"] = sampleDict(r.sample);
+        return o;
+    }
+
 }
 
-PYBIND11_MODULE(az_bench_native, m) {
+#ifndef AZ_BENCH_MODULE_NAME
+#define AZ_BENCH_MODULE_NAME az_bench_native   // az_bench_live: the same module with the live importer
+#endif
+// az_bench_live registers its classes module-locally, so one process can load it next to az_bench_native.
+#ifdef STS_AZ_LIVE_IMPORT
+#define AZ_LOCAL , py::module_local()
+#else
+#define AZ_LOCAL
+#endif
+PYBIND11_MODULE(AZ_BENCH_MODULE_NAME, m) {
     m.doc() = "Stage 0 end-to-end producer: worker threads with Gumbel searches whose leaves are batched for a net";
 
-    py::class_<azbench::Driver>(m, "Driver")
+    py::class_<azbench::Driver>(m, "Driver" AZ_LOCAL)
         .def(py::init([](const std::string &wires, int workers, int games, int fullSims, int fastSims,
                          double fullProb, int fullCandidates, int fastCandidates, std::uint64_t seed,
                          const std::string &encoder) {
@@ -202,7 +282,7 @@ PYBIND11_MODULE(az_bench_native, m) {
 
     // Global token dictionary of the replay window (selfplay.py --compact-samples, az_token_store.h). Rows are
     // tok_type [n] int8, ids [n, 4] int16, f [n, 64] float16, counts [n] int64 (references to add).
-    py::class_<azbench::TokenStore>(m, "TokenStore")
+    py::class_<azbench::TokenStore>(m, "TokenStore" AZ_LOCAL)
         .def(py::init<std::int64_t>(), py::arg("capacity"))
         .def_property_readonly("capacity", &azbench::TokenStore::capacity)
         .def_property_readonly("free", &azbench::TokenStore::freeSlots)
@@ -270,7 +350,80 @@ PYBIND11_MODULE(az_bench_native, m) {
                  return py::make_tuple(t, ids, f.attr("view")("float16"));
              });
 
-    py::class_<azbench::RunDriver>(m, "RunDriver")
+    py::class_<GameStateHandle>(m, "GameState" AZ_LOCAL)
+        .def_static("new_run", [](std::uint64_t seed, int ascension, bool rngFix) {
+                        GameStateHandle h;
+                        h.gc = std::make_shared<const GameContext>(CharacterClass::IRONCLAD, seed, ascension, rngFix);
+                        return h;
+                    }, py::arg("seed"), py::arg("ascension") = 20, py::arg("rng_fix") = false)
+        .def_static("from_live", [](const std::string &observation) {
+#ifdef STS_AZ_LIVE_IMPORT
+                        // A live out-of-combat observation (the inspector mod's "ooc" payload, as one_combat_advisor
+                        // reads it) -> the importer's transition-capable public-information root.
+                        auto live = std::make_shared<one_combat::advisor::LiveOocStateV1>();
+                        const auto r = one_combat::advisor::importLiveOocStateV1(nlohmann::json::parse(observation), *live);
+                        if (!r.ok) throw std::invalid_argument("live import " + r.code + ": " + r.message);
+                        if (!live->mctsRoot.supported)
+                            throw std::invalid_argument("live import: no search root (" + live->mctsRoot.reason + ")");
+                        GameStateHandle h;
+                        h.gc = std::make_shared<const GameContext>(search::detachedGameCopy(live->mctsRoot.state));
+                        h.live = live;
+                        return h;
+#else
+                        (void)observation;
+                        throw std::runtime_error("az_bench_native was built without STS_AZ_LIVE_IMPORT");
+                        return GameStateHandle{};
+#endif
+                    }, py::arg("observation"))
+        .def_property_readonly_static("live_import", [](py::object) {
+#ifdef STS_AZ_LIVE_IMPORT
+            return true;
+#else
+            return false;
+#endif
+        })
+        .def_property_readonly("floor", [](const GameStateHandle &h) { return h.gc->floorNum; })
+        .def_property_readonly("act", [](const GameStateHandle &h) { return h.gc->act; })
+        .def_property_readonly("ascension", [](const GameStateHandle &h) { return h.gc->ascension; })
+        .def_property_readonly("hp", [](const GameStateHandle &h) { return h.gc->curHp; })
+        .def_property_readonly("max_hp", [](const GameStateHandle &h) { return h.gc->maxHp; })
+        .def_property_readonly("gold", [](const GameStateHandle &h) { return h.gc->gold; })
+        .def_property_readonly("seed", [](const GameStateHandle &h) { return h.gc->seed; })
+        .def_property_readonly("screen", [](const GameStateHandle &h) { return static_cast<int>(h.gc->screenState); })
+        .def_property_readonly("is_live", [](const GameStateHandle &h) {
+#ifdef STS_AZ_LIVE_IMPORT
+            return static_cast<bool>(h.live);
+#else
+            (void)h;
+            return false;
+#endif
+        })
+        // Live states: the live action (JSON text) of a search action's bits, as the advisor answers the mod;
+        // ValueError when the captured screen mapping has no such action.
+        .def("lower_action", [](const GameStateHandle &h, std::uint32_t bits) -> std::string {
+#ifdef STS_AZ_LIVE_IMPORT
+            if (!h.live) throw std::invalid_argument("lower_action: not a live state");
+            try {
+                return one_combat::advisor::lowerLiveOocAction(*h.live, bits).dump();
+            } catch (const std::exception &e) {
+                throw std::invalid_argument(std::string("lower_action: ") + e.what());
+            }
+#else
+            (void)h; (void)bits;
+            throw std::runtime_error("az_bench_native was built without STS_AZ_LIVE_IMPORT");
+#endif
+        }, py::arg("bits"))
+        .def("live_primitive_bits", [](const GameStateHandle &h) -> std::vector<std::uint32_t> {
+#ifdef STS_AZ_LIVE_IMPORT
+            if (!h.live) throw std::invalid_argument("live_primitive_bits: not a live state");
+            return one_combat::advisor::liveOocPrimitiveBits(*h.live);
+#else
+            (void)h;
+            throw std::runtime_error("az_bench_native was built without STS_AZ_LIVE_IMPORT");
+#endif
+        });
+
+    py::class_<azbench::RunDriver>(m, "RunDriver" AZ_LOCAL)
         .def(py::init([](int workers, int games, std::uint64_t seedBase, std::int64_t maxRuns, int ascension,
                          int fullSims, int fastSims, double fullProb, int fullCandidates, int fastCandidates,
                          double hpWeightCombat, double hpWeightOoc, double keepFull, double keepFast,
@@ -283,9 +436,13 @@ PYBIND11_MODULE(az_bench_native, m) {
                          bool savescum, bool compactSamples, double heartLogRate, bool forceRewards, bool explorePerOffer,
                          bool exploreGapSearch, bool exploreDeckOnly, bool forcePotions, bool oocCanon,
                          int parallelNodes, bool rngFix, bool searchEmaHp, bool exploreCleanKeys, bool auxFights,
-                         bool enemyTokens, bool stallLog) {
+                         bool enemyTokens, const std::vector<GameStateHandle> &probeRoots, bool probeNoise,
+                         double captureRate, bool stallLog) {
                  azbench::RunConfig c;
                  c.stallLog = stallLog;
+                 for (const auto &h : probeRoots) c.probeRoots.push_back(h.gc);
+                 c.probeNoise = probeNoise;
+                 c.captureRate = captureRate;
                  if (!(heartLogRate >= 0 && heartLogRate <= 1)) throw std::invalid_argument("heart_log_rate: want 0..1");
                  c.heartLogRate = heartLogRate;
                  for (const auto &v : heartArms) {   // [full_sims, fast_sims, full_prob, full_candidates, fast_candidates]
@@ -370,7 +527,30 @@ PYBIND11_MODULE(az_bench_native, m) {
              py::arg("force_potions") = false, py::arg("ooc_canon") = false, py::arg("parallel_nodes") = 0,
              py::arg("rng_fix") = false,
              py::arg("search_ema_hp") = false, py::arg("explore_clean_keys") = false,
-             py::arg("aux_fights") = false, py::arg("enemy_tokens") = false, py::arg("stall_log") = false)
+             py::arg("aux_fights") = false, py::arg("enemy_tokens") = false,
+             py::arg("probe_roots") = std::vector<GameStateHandle>{},
+             py::arg("probe_noise") = false, py::arg("capture_rate") = 0.0, py::arg("stall_log") = false)
+        .def("take_probe_results",   // RunConfig::probeRoots: the results since the last call, as dicts
+             [](azbench::RunDriver &d) {
+                 const auto v = d.takeProbeResults();
+                 py::list out;
+                 for (const auto &r : v) out.append(probeDict(r));
+                 return out;
+             })
+        .def("probes_done", &azbench::RunDriver::probesDone)
+        .def("take_captures",   // RunConfig::captureRate: the captured states since the last call
+             [](azbench::RunDriver &d) {
+                 py::list out;
+                 for (auto &c : d.takeCaptures()) {
+                     py::dict o;
+                     o["seed"] = c.seed; o["move"] = c.move; o["floor"] = c.floor;
+                     GameStateHandle h;
+                     h.gc = c.state;
+                     o["state"] = h;
+                     out.append(o);
+                 }
+                 return out;
+             })
         .def("heart_results",
              [](const azbench::RunDriver &d) {
                  py::list out;

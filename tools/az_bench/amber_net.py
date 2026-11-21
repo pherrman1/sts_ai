@@ -52,6 +52,40 @@ def token_classes(tt, ids, f):
     cls = torch.where(mp & ((f[..., 9] > 0.5) | (f[..., 18] > 0.5)), torch.full_like(cls, 4), cls)
     return cls
 
+
+def enc_of(cls):
+    """Encounter tokens (classes 1..3) of token_classes output."""
+    return (cls >= 1) & (cls <= 3)
+
+
+def strip_encounters(b):
+    """A flat batch (forward_flat layout: tok_type [B, T], ids, f, mask, actions) without its encounter tokens, as
+    the net without --enemy-tokens sees the states: each row's other tokens keep their order and move up, T shrinks
+    to the longest row (rounded up to 8), action src / tgt are remapped (an action on an encounter token gets none).
+    Keys other than the token and action ones are copied."""
+    cls = token_classes(b["tok_type"], b["ids"], b["f"])
+    keep = b["mask"] & ~enc_of(cls)
+    B = keep.shape[0]
+    pos = keep.long().cumsum(1) - 1
+    Tn = max(8, -(-int(keep.sum(1).max()) // 8) * 8)
+    r, c = torch.nonzero(keep, as_tuple=True)
+    p = pos[r, c]
+    out = dict(b)
+    for k, tail in (("tok_type", ()), ("ids", (b["ids"].shape[-1],)), ("f", (b["f"].shape[-1],))):
+        x = b[k].new_zeros(B, Tn, *tail)
+        x[r, p] = b[k][r, c]
+        out[k] = x
+    m = torch.zeros(B, Tn, dtype=torch.bool, device=keep.device)
+    m[r, p] = True
+    out["mask"] = m
+    remap = torch.where(keep, pos, torch.full_like(pos, -1))
+    for k in ("a_src", "a_tgt"):
+        x = b[k]
+        out[k] = torch.where(x >= 0, torch.gather(remap, 1, x.clamp(min=0)), torch.full_like(x, -1))
+    for k in ("pack_idx", "unpack_idx", "seq_off"):
+        out.pop(k, None)
+    return out
+
 # Sizes chosen to land on the page's three parameter counts (d, layers); heads = d // 32.
 SIZES = {"0.44M": (64, 6), "1.2M": (128, 4), "5.4M": (256, 5)}
 
@@ -89,7 +123,8 @@ def load_fused_layer():
 
 
 class AmberNet(nn.Module):
-    def __init__(self, d=96, layers=3, heads=None, hp_floors=1, soft_policy=False, aux_slots=0, enemy_bias=False):
+    def __init__(self, d=96, layers=3, heads=None, hp_floors=1, soft_policy=False, aux_slots=0, enemy_bias=False,
+                 enemy_gate=False):
         super().__init__()
         heads = heads or max(1, d // 32)
         self.type_emb = nn.Embedding(len(TOKEN_TYPES), d)
@@ -128,6 +163,12 @@ class AmberNet(nn.Module):
         # (token_classes), added to the attention scores of query class i and key class j. Zero at the start, so a
         # net without it computes the same outputs. Defined after the aux head (parameter order of older checkpoints).
         self.enemy_bias = nn.Parameter(torch.zeros(layers, heads, BIAS_CLASSES, BIAS_CLASSES)) if enemy_bias else None
+        # Soft entry of the encounter tokens (selfplay.py --enemy-tokens, 2026-11-21; the owner's choice after the
+        # first live test, where the new tokens shifted every out-of-combat output of the resumed net): per layer a
+        # gate g in [0, 1] (parameter clamped with a straight-through gradient, 0 at the start) mixes the attention with the encounter tokens as keys
+        # (weight g) and without them (1 - g), and a last gate weights them in the summary mean. At g = 0 every
+        # other token computes what the net computes on the state without encounter tokens (up to float rounding).
+        self.enemy_gate = nn.Parameter(torch.zeros(layers + 1)) if enemy_gate else None
 
     def load_state_dict(self, state_dict, strict=True, **kw):
         """A checkpoint's weights; a net without the aux head ignores the checkpoint's aux_fight weights, so tools
@@ -136,6 +177,8 @@ class AmberNet(nn.Module):
             state_dict = {k: v for k, v in state_dict.items() if not k.startswith("aux_fight.")}
         if self.enemy_bias is None:
             state_dict = {k: v for k, v in state_dict.items() if k != "enemy_bias"}
+        if self.enemy_gate is None:
+            state_dict = {k: v for k, v in state_dict.items() if k != "enemy_gate"}
         return super().load_state_dict(state_dict, strict=strict, **kw)
 
     def forward(self, b):
@@ -143,9 +186,24 @@ class AmberNet(nn.Module):
             return self.forward_flat(b)
         return self.forward_segments(b)
 
-    def _heads(self, h, mask, b):
+    @property
+    def enemy_on(self):
+        return self.enemy_bias is not None or self.enemy_gate is not None
+
+    def _gate(self, i):
+        """Gate i, its value clamped to [0, 1] with the gradient passed straight through (a plain clamp has no
+        gradient at 0, where the gate starts)."""
+        p = self.enemy_gate[i]
+        return p + (p.clamp(0.0, 1.0) - p).detach()
+
+    def _heads(self, h, mask, b, enc=None):
         live = mask[:, 1:, None].to(h.dtype)
-        rest = (h[:, 1:] * live).sum(1) / live.sum(1).clamp(min=1)
+        if enc is not None and self.enemy_gate is not None:   # encounter tokens count with the summary gate
+            w = live * torch.where(enc[:, 1:, None], self._gate(-1).to(h.dtype), torch.ones_like(live))
+            n = w.sum(1)
+            rest = (h[:, 1:] * w).sum(1) / torch.where(n > 0, n, torch.ones_like(n))
+        else:
+            rest = (h[:, 1:] * live).sum(1) / live.sum(1).clamp(min=1)
         c = h[:, 0] + self.summary_mlp(rest)
         d = h.shape[-1]
 
@@ -162,7 +220,7 @@ class AmberNet(nn.Module):
             out = out + (self.pol_soft(e).squeeze(-1).masked_fill(~b["a_mask"], -1e4),)
         return out
 
-    def _heads_packed(self, x, b):
+    def _heads_packed(self, x, b, enc=None):
         """_heads on the packed tokens x [N, d] (after out_norm) and on the live actions only, without the padded
         [B, T, d] token layout and the [B, A] action layout. Needs each row's live tokens in its slots 0 .. n - 1
         (the driver's layout: packed token seq_off[r] + i is row r's slot i), b["seq_off"] [B + 1], and
@@ -174,7 +232,19 @@ class AmberNet(nn.Module):
         accumulated in fp32, the matrix products run on other shapes); tests/test_packed_heads.py."""
         so = b["seq_off"].long()
         N, d = x.shape
-        c = x[so[:-1].clamp(max=N - 1)] + self.summary_mlp(self.row_mean(x, b["seq_off"]))
+        if enc is not None and self.enemy_gate is not None:
+            # the row mean with the encounter tokens weighted by the summary gate (row_mean has no weights)
+            R = so.shape[0] - 1
+            pos = torch.arange(N, device=x.device)
+            row = torch.bucketize(pos, so[1:], right=True).clamp(max=R - 1)
+            w = ((pos < so[-1]) & (pos != so[row])).float()   # fp32 sums, as row_mean accumulates
+            w = w * torch.where(enc, self._gate(-1).float(), torch.ones_like(w))
+            S = x.new_zeros(R, d, dtype=torch.float32).index_add_(0, row, x.float() * w[:, None])
+            n = x.new_zeros(R, dtype=torch.float32).index_add_(0, row, w)
+            mean = (S / torch.where(n > 0, n, torch.ones_like(n))[:, None]).to(x.dtype)
+        else:
+            mean = self.row_mean(x, b["seq_off"])
+        c = x[so[:-1].clamp(max=N - 1)] + self.summary_mlp(mean)
         B, A = b["a_mask"].shape
         MA = B * A
         ai = b["act_idx"]
@@ -212,11 +282,11 @@ class AmberNet(nn.Module):
         proj = torch.gather(P, 2, tt[..., None, None].expand(-1, -1, 1, d)).squeeze(2)
         x = self.in_norm(self.type_emb(tt) + self.ids(b["ids"]).sum(2) + proj)
         mask = b["mask"]
-        if self.enemy_bias is not None and not self.sdpa:
-            raise ValueError("enemy_bias needs sdpa = True")
-        cls = token_classes(tt, b["ids"], b["f"]) if self.enemy_bias is not None else None
+        if self.enemy_on and not self.sdpa:
+            raise ValueError("enemy_bias / enemy_gate need sdpa = True")
+        cls = token_classes(tt, b["ids"], b["f"]) if self.enemy_on else None
         h = self.out_norm(self.sdpa_trunk(x, mask, cls) if self.sdpa else self.trunk(x, src_key_padding_mask=~mask))
-        return self._heads(h, mask, b)
+        return self._heads(h, mask, b, None if cls is None else enc_of(cls))
 
     sdpa = False   # True: run the trunk through sdpa_trunk (same weights and math, fused attention kernel)
     fused_layer = None   # load_fused_layer(): with varlen_attn, each layer as norm1+QKV / attention / out+FFN kernels
@@ -226,23 +296,58 @@ class AmberNet(nn.Module):
     packed_heads = False   # True (inference, with row_mean, b["seq_off"], b["act_idx"]): _heads_packed
     attn_math = False   # True: sdpa_trunk / forward_packed attend with plain matmuls + softmax (fp32) instead of SDPA
 
-    def _attend(self, q, k, v, keep, bias=None):
-        """bias (enemy_bias): [B, H, T, T] float added to the scores, -inf where keep is False."""
+    def _attend(self, q, k, v, keep):
         if not self.attn_math:
-            return torch.nn.functional.scaled_dot_product_attention(q, k, v, attn_mask=keep if bias is None else
-                                                                    bias.to(q.dtype))
+            return torch.nn.functional.scaled_dot_product_attention(q, k, v, attn_mask=keep)
         s = (q @ k.transpose(-1, -2)).float() * q.shape[-1] ** -0.5
-        p = torch.softmax(s.masked_fill(~keep, float("-inf")) if bias is None else s + bias.float(), -1)
+        p = torch.softmax(s.masked_fill(~keep, float("-inf")), -1)
         return p.to(v.dtype) @ v
 
-    def _bias_mask(self, layer, cls, keep):
-        """The attention mask of layer `layer` with enemy_bias: cls [B, T] token classes, keep [B, 1, 1, T] ->
-        [B, H, T, T] float, the table entry of (query class, key class), -inf for dead keys."""
-        tab = self.enemy_bias[layer]
-        H, C = tab.shape[0], tab.shape[1]
-        idx = cls[:, :, None] * C + cls[:, None, :]
-        bias = tab.reshape(H, C * C)[:, idx].permute(1, 0, 2, 3)
-        return bias.float().masked_fill(~keep, float("-inf"))
+    def _tab(self, li):
+        """Layer li's bias table, only its entries with an encounter class (query or key) used: the other pairs get
+        no bias, so states without encounter tokens attend as without the flag."""
+        C = self.enemy_bias.shape[-1]
+        e = torch.zeros(C, dtype=torch.bool, device=self.enemy_bias.device)
+        e[1:4] = True
+        return self.enemy_bias[li] * (e[:, None] | e[None, :]).to(self.enemy_bias.dtype)
+
+    def _attend_enemy(self, q, k, v, keep, li, cls, rows):
+        """Attention of layer li with the encounter-token parts (cls [B, T] token classes, rows: the rows that hold
+        encounter tokens). Rows without them attend as without the flag (one pass). Rows with them: g x attention
+        with the encounter keys and the class bias + (1 - g) x attention without the encounter keys (enemy_gate;
+        without a gate: the first part only). The bias goes in as extra q / k columns: q' = [q / sqrt(dh),
+        TAB[h, cls_q, :]], k' = [k, onehot(cls_k)], so q'.k' = q.k / sqrt(dh) + TAB[h, cls_q, cls_k] and
+        scaled_dot_product_attention keeps its fused kernels (a float mask [B, H, T, T] would not: the first live
+        test's trainer ran about 30x slower with it)."""
+        F = torch.nn.functional
+        dh = q.shape[-1]
+
+        def sdpa(q_, k_, v_, m, scale=None):
+            if not self.attn_math:
+                return F.scaled_dot_product_attention(q_, k_, v_, attn_mask=m, scale=scale)
+            s = (q_ @ k_.transpose(-1, -2)).float() * (q_.shape[-1] ** -0.5 if scale is None else scale)
+            return torch.softmax(s.masked_fill(~m, float("-inf")), -1).to(v_.dtype) @ v_
+
+        o = sdpa(q, k, v, keep)
+        if rows.numel() == 0:
+            return o
+        qs, ks, vs, ms, cs = q[rows], k[rows], v[rows], keep[rows], cls[rows]
+        if self.enemy_bias is not None:
+            tab = self._tab(li).to(q.dtype)                              # [H, C, C]
+            C = tab.shape[-1]
+            H = q.shape[1]
+            pad = (-(dh + C)) % 8
+            qx = tab[:, cs].permute(1, 0, 2, 3)                          # [R, H, T, C]: row of the query's class
+            kx = F.one_hot(cs, C).to(q.dtype)[:, None].expand(-1, H, -1, -1)
+            z = qs.new_zeros(*qs.shape[:-1], pad)
+            oa = sdpa(torch.cat([qs * dh ** -0.5, qx, z], -1), torch.cat([ks, kx, z], -1),
+                      torch.cat([vs, vs.new_zeros(*vs.shape[:-1], C + pad)], -1), ms, 1.0)[..., :dh]
+        else:
+            oa = o[rows]
+        if self.enemy_gate is not None:
+            g = self._gate(li).to(o.dtype)
+            oa = g * oa + (1 - g) * sdpa(qs, ks, vs, ms & ~enc_of(cs)[:, None, None, :])
+        return o.index_copy(0, rows, oa.to(o.dtype))
 
     def sdpa_trunk(self, x, mask, cls=None):
         """self.trunk's math (pre-norm encoder layers, key padding mask, exact GELU) written with one QKV matmul and
@@ -252,12 +357,14 @@ class AmberNet(nn.Module):
         F = torch.nn.functional
         B, T, d = x.shape
         keep = mask[:, None, None, :]                      # [B, 1, 1, T], True = attend
+        rows = None if cls is None else torch.nonzero(enc_of(cls).any(1)).squeeze(1)
         for li, layer in enumerate(self.trunk.layers):
             a = layer.self_attn
             H = a.num_heads
             y = layer.norm1(x)
             qkv = F.linear(y, a.in_proj_weight, a.in_proj_bias).view(B, T, 3, H, d // H).permute(2, 0, 3, 1, 4)
-            o = self._attend(qkv[0], qkv[1], qkv[2], keep, None if cls is None else self._bias_mask(li, cls, keep))
+            o = (self._attend(qkv[0], qkv[1], qkv[2], keep) if cls is None
+                 else self._attend_enemy(qkv[0], qkv[1], qkv[2], keep, li, cls, rows))
             x = x + a.out_proj(o.transpose(1, 2).reshape(B, T, d))
             x = x + layer.linear2(F.gelu(layer.linear1(layer.norm2(x))))
         return x
@@ -301,18 +408,21 @@ class AmberNet(nn.Module):
             return full[:M]
 
         varlen = self.varlen_attn is not None and "seq_off" in b
-        cls_p = cls_pad = None
-        if self.enemy_bias is not None:
+        cls_p = cls_pad = cls_i = None
+        if self.enemy_on:
             cls_p = token_classes(tt_p, ids_p, f_p)
             if varlen:
-                cls_p = cls_p.to(torch.int32).contiguous()
+                cls_i = cls_p.to(torch.int32).contiguous()
             else:
                 cls_pad = unpack(cls_p[:, None]).view(B, T)
+                rows = torch.nonzero(enc_of(cls_pad).any(1)).squeeze(1)
 
         def vattn(qkv, li):
-            if cls_p is None:
+            if cls_i is None:
                 return self.varlen_attn(qkv, b["seq_off"], H, T)
-            return self.varlen_attn(qkv, b["seq_off"], H, T, cls_p, self.enemy_bias[li].float().contiguous())
+            tab = None if self.enemy_bias is None else self._tab(li).float().contiguous()
+            gate = None if self.enemy_gate is None else self._gate(li).float().reshape(1)
+            return self.varlen_attn(qkv, b["seq_off"], H, T, cls_i, tab, gate)
 
         for li, layer in enumerate(self.trunk.layers):
             a = layer.self_attn
@@ -329,8 +439,8 @@ class AmberNet(nn.Module):
                 x = x + a.out_proj(vattn(qkv_p.contiguous(), li))
             else:
                 qkv = unpack(qkv_p).view(B, T, 3, H, d // H).permute(2, 0, 3, 1, 4)
-                o = self._attend(qkv[0], qkv[1], qkv[2], keep,
-                                 None if cls_pad is None else self._bias_mask(li, cls_pad, keep))
+                o = (self._attend(qkv[0], qkv[1], qkv[2], keep) if cls_pad is None
+                     else self._attend_enemy(qkv[0], qkv[1], qkv[2], keep, li, cls_pad, rows))
                 x = x + a.out_proj(o.transpose(1, 2).reshape(M, d)[ip])
             if self.fused_ffn is not None:
                 x = self.fused_ffn(x.contiguous(), layer)
@@ -338,8 +448,9 @@ class AmberNet(nn.Module):
                 x = x + layer.linear2(F.gelu(layer.linear1(layer.norm2(x))))
         if (self.packed_heads and self.row_mean is not None and "seq_off" in b and "act_idx" in b
                 and not (self.pol_soft is not None and self.training)):
-            return self._heads_packed(self.out_norm(x).contiguous(), b)
-        return self._heads(unpack(self.out_norm(x)).view(B, T, d), mask, b)
+            return self._heads_packed(self.out_norm(x).contiguous(), b, None if cls_p is None else enc_of(cls_p))
+        return self._heads(unpack(self.out_norm(x)).view(B, T, d), mask, b,
+                           None if cls_p is None else enc_of(unpack(cls_p[:, None]).view(B, T)))
 
     def forward_segments(self, b):
         """b: per token type t in TOKEN_TYPES, b[t + "_ids"] [B, n_t, 4] long, b[t + "_f"] [B, n_t, 64] float,
@@ -347,8 +458,8 @@ class AmberNet(nn.Module):
         b["a_src"], b["a_tgt"] [B, A] long token index into the concatenated segments (-1 = none),
         b["a_f"] [B, A, 8] float, b["a_mask"] [B, A] bool. Returns (policy logits [B, A], outcome logits,
         HP-class logits, per-floor HP)."""
-        if self.enemy_bias is not None:
-            raise ValueError("enemy_bias: forward_segments is not supported (use the flat layout with sdpa)")
+        if self.enemy_on:
+            raise ValueError("enemy_bias / enemy_gate: forward_segments is not supported (use the flat layout with sdpa)")
         toks, masks = [], []
         for i, t in enumerate(TOKEN_TYPES):
             ids = b[t + "_ids"]

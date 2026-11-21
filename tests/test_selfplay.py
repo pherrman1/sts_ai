@@ -1250,6 +1250,8 @@ class DashboardRecentTest(unittest.TestCase):
         eb = {"abs_mean": 0.01, "enemy_to_node": [0.1, 0.0, -0.1], "node_to_enemy": [0.2, 0.0, 0.05]}
         rows = [dict(row, runs_done=1000 * (i + 1), enemy_bias=eb) for i in range(3)]
         self.assertIn("Enemy-map attention bias", dash.page(rows, "t", ""))
+        rows = [dict(r, enemy_gate=[0.0, 0.01, 0.02, 0.0, 0.05]) for r in rows]
+        self.assertIn("Encounter-token gates", dash.page(rows, "t", ""))
         self.assertNotIn("Enemy-map attention bias", dash.page([row], "t", ""))
 
 
@@ -1343,6 +1345,19 @@ class AuxFightsTest(unittest.TestCase):
         n3, o3 = make(False)
         sp.load_opt_state(o3, o2.state_dict())   # with -> without: the aux state is dropped
         self.assertEqual(sorted(o3.state_dict()["state"]), list(range(n_main)))
+        # with aux + an enemy group (own lr_scale) <- with aux only: aux state kept, enemy group fresh, lr_scale kept
+        net4 = an.AmberNet(d=32, layers=1, aux_slots=5, enemy_bias=True, enemy_gate=True)
+        groups = [[p for n, p in net4.named_parameters() if not (n.startswith("aux_fight.") or n.startswith("enemy_"))],
+                  [p for n, p in net4.named_parameters() if n.startswith("aux_fight.")],
+                  [p for n, p in net4.named_parameters() if n.startswith("enemy_")]]
+        o4 = torch.optim.AdamW([{"params": groups[0]}, {"params": groups[1]},
+                                {"params": groups[2], "lr_scale": 0.01, "weight_decay": 0.0}], lr=1e-3)
+        sp.load_opt_state(o4, o2.state_dict())
+        sd4 = o4.state_dict()
+        n_aux = len(groups[1])
+        self.assertEqual(sorted(sd4["state"]), list(range(n_main + n_aux)))
+        self.assertEqual(sd4["param_groups"][2]["lr_scale"], 0.01)
+        self.assertTrue(torch.equal(sd4["state"][n_main]["exp_avg"], o2.state_dict()["state"][n_main]["exp_avg"]))
         # a net without the head loads a checkpoint with it
         n0.load_state_dict(n1.state_dict())
         with self.assertRaises(RuntimeError):
@@ -1420,7 +1435,7 @@ class SelfplaySmoke(unittest.TestCase):
 
     def test_enemy_tokens_and_map_bias_resume(self):
         """--enemy-tokens --enemy-map-bias: a run resumed from a checkpoint without the table (and with the aux head)
-        starts the table fresh, trains it, and the out-of-combat samples carry the encounter tokens; resumed with
+        starts the table and gates fresh (their own optimizer group), and the out-of-combat samples carry the encounter tokens; resumed with
         neither flag, the checkpoint loads again."""
         sp = load()
         common = ["--module-dir", os.path.dirname(MODULES[0]), "--device", "cpu", "--workers", "2", "--games", "4",
@@ -1439,12 +1454,47 @@ class SelfplaySmoke(unittest.TestCase):
                                                "--enemy-tokens", "--enemy-map-bias"]), 0)
             net = torch.load(ckpt(), map_location="cpu", weights_only=False)["net"]
             self.assertIn("enemy_bias", net)
-            self.assertGreater(float(net["enemy_bias"].abs().sum()), 0)   # trained away from zero
+            self.assertIn("enemy_gate", net)
+            # (whether the table moved depends on train steps over rows with encounter tokens: not asserted here;
+            # test_varlen_attn checks the gradients)
             with open(os.path.join(d, "metrics.jsonl")) as f:
-                self.assertTrue(any("enemy_bias" in json.loads(l) for l in f))
+                ms = [json.loads(l) for l in f]
+            self.assertTrue(any("enemy_bias" in m for m in ms))
+            self.assertTrue(any(len(m.get("enemy_gate") or []) == 7 for m in ms))   # 6 layers + summary
             self.assertEqual(sp.main(common + ["--out-dir", d, "--max-runs", "20", "--resume", ckpt()]), 0)
         with self.assertRaises(SystemExit):
             sp.main(common + ["--out-dir", "/nonexistent", "--enemy-map-bias"])
+
+    def test_check_enemy_gate(self):
+        """--check-enemy-gate: a checkpoint without encounter parts on a window with encounter tokens (saved by a
+        later --enemy-tokens run): the gated net (gates 0) equals the net without them on the stripped states."""
+        sp = load()
+        common = ["--module-dir", os.path.dirname(MODULES[0]), "--device", "cpu", "--workers", "2", "--games", "4",
+                  "--full-sims", "8", "--fast-sims", "4", "--batch", "32", "--row-buckets", "32", "--pack-step", "32",
+                  "--pack-threads", "1", "--min-replay", "50", "--train-batch", "32", "--window", "5000",
+                  "--report", "1", "--sync-steps", "2", "--seed-base", "580", "--ascension", "1",
+                  "--compact-samples", "--utility", "amber"]
+        with tempfile.TemporaryDirectory() as d:
+            rep = os.path.join(d, "replay")
+
+            def ckpt():
+                return sorted(glob.glob(os.path.join(d, "ckpt_*.pt")), key=os.path.getmtime)[-1]
+
+            self.assertEqual(sp.main(common + ["--out-dir", d, "--max-runs", "6"]), 0)
+            c0 = ckpt()
+            self.assertEqual(sp.main(common + ["--out-dir", d, "--max-runs", "12", "--resume", c0, "--enemy-tokens",
+                                               "--enemy-map-bias", "--replay-save", rep]), 0)
+            self.assertEqual(sp.main(common + ["--out-dir", d, "--resume", c0, "--enemy-tokens", "--enemy-map-bias",
+                                               "--replay-load", rep, "--check-enemy-gate", "3"]), 0)
+            with open(os.path.join(d, "enemy_gate_check.json")) as f:
+                res = json.load(f)
+        self.assertGreater(res["rows_with_encounter_tokens"], 0)
+        self.assertEqual(set(res["gates"]), {0.0})
+        for tag in ("train_enc_rows", "train_other_rows", "infer_enc_rows", "infer_other_rows"):
+            for k, v in res["max_abs_diff"][tag].items():
+                self.assertLess(v, 1e-4, (tag, k))
+        self.assertIn("with_gates_only", res["train_step_ms"])
+        self.assertGreater(res["train_step_ms"]["with"], 0)
 
     def test_replay_save_load_and_ascension_file(self):
         """--replay-save at the final stop, --replay-load on resume from that checkpoint: the window continues

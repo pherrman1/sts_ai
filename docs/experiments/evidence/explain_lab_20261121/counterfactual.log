@@ -1,0 +1,42 @@
+[select remove] remove Defend: without {Defend} -> remove Strike; HP 79 -> None flips to None; SARFA Defend 0.13, Burning Blood 0.04, Ascender's Bane 0.00, Strike 0.00, Bash 0.00
+[select bottle] bottle Immolate: without {none within 6} -> None; HP 36 -> None flips to None; SARFA Burning Blood 0.08, Strike 0.06, Defend 0.03, Rage 0.03, Ascender's Bane 0.00
+[Neow] Neow: Max Hp +20%. Take 30% Hp damage.: without {none within 6} -> None; HP 68 -> None flips to None; SARFA Burning Blood 0.01, Defend 0.00, Ascender's Bane 0.00, Strike 0.00, Bash 0.00
+[card reward] take Pommel Strike: without {none within 6} -> None; HP 44 -> 4 flips to take Warcry; SARFA Burning Blood 0.05, Strike 0.02, Defend 0.01, Ancient Potion 0.00, Ascender's Bane 0.00
+[Neow] Neow: Upgrade a card.: without {none within 6} -> None; HP 68 -> None flips to None; SARFA Burning Blood 0.06, Defend 0.00, Ascender's Bane 0.00, Strike 0.00, Bash 0.00
+[map] map: elite x2 y7: without {Uppercut+, Explosive Potion} -> map: monster x3 y7; HP 60 -> 37 flips to map: monster x3 y7; SARFA Uppercut+ 0.40, Explosive Potion 0.23, Metallicize 0.09, Burning Blood 0.05, Inflame 0.03
+[map] map: monster x6 y2: without {Defend} -> map: event x5 y2; HP 75 -> 13 flips to map: event x5 y2; SARFA Weak Potion 0.10, Defend 0.04, Strike 0.03, Burning Blood 0.02, Ascender's Bane 0.02
+[reward relic/sapphire key] take Pen Nib (sapphire key pair): without {none within 6} -> None; HP 51 -> None flips to None; SARFA Burning Blood 0.00, Carnage+ 0.00, Battle Trance 0.00, Bash 0.00, Whirlwind+ 0.00
+[map] map: monster x2 y0: without {none within 6} -> None; HP 68 -> 63 flips to map: monster x5 y0; SARFA Burning Blood 0.00, Defend 0.00, Smiling Mask 0.00, Strike 0.00, Ascender's Bane 0.00
+[event] Scrap Ooze option 0: without {none within 6} -> None; HP 61 -> 53 flips to Scrap Ooze option 1; SARFA Burning Blood 0.01, Spot Weakness 0.01, Perfected Strike 0.01, Bash 0.00, Swift Potion 0.00
+[card reward] take Spot Weakness: without {Pummel} -> take Disarm; HP 13 -> None flips to None; SARFA Pummel 0.47, Offering 0.25, Burning Blood 0.24, Dramatic Entrance 0.12, Gremlin Horn 0.09
+[card reward] take Iron Wave: without {Berserk} -> take Clothesline; HP 62 -> 73 flips to take Clothesline; SARFA Berserk 0.12, Bash 0.09, Ascender's Bane 0.00, Strike 0.00, Defend 0.00
+[map] drink Fruit Juice: without {Clockwork Souvenir} -> map: monster x3 y4; HP 75 -> None flips to None; SARFA Clockwork Souvenir 0.18, Bag Of Preparation 0.14, Impervious 0.11, Anger 0.08, Shrug It Off+ 0.07
+[card reward] take Pummel: without {Demon Form} -> take Anger; HP 60 -> None flips to None; SARFA Demon Form 0.60, Uppercut 0.13, Anger 0.10, Clothesline 0.06, Ascender's Bane 0.05
+[card reward] take Clothesline: without {none within 6} -> None; HP 68 -> 5 flips to take Entrench; SARFA Burning Blood 0.05, Defend 0.01, Ascender's Bane 0.01, Strike 0.00, Bash 0.00
+[card reward] take Battle Trance: without {none within 6} -> None; HP 66 -> None flips to None; SARFA Panic Button 0.00, Burning Blood 0.00, Ascender's Bane 0.00, Defend 0.00, Duplication Potion 0.00
+[map] map: shop x0 y2: without {none within 6} -> None; HP 19 -> None flips to None; SARFA The Courier 0.23, Ascender's Bane 0.02, Bash 0.01, Feel No Pain 0.01, Defend 0.01
+[map] map: monster x6 y12: without {Blessing Of The Forge, Feed+, Meat On The Bone} -> map: event x5 y12; HP 58 -> 8 flips to map: event x5 y12; SARFA Blessing Of The Forge 0.15, Feed+ 0.13, Burning Blood 0.10, Meat On The Bone 0.07, Tiny House 0.06
+[boss relic] boss relic Slavers Collar: without {none within 6} -> None; HP 42 -> None flips to None; SARFA Fossilized Helix 0.02, Impervious 0.01, Bag Of Preparation 0.01, Shockwave 0.01, Unceasing Top 0.01
+[card reward] skip / leave rewards: without {Anger, Pommel Strike, Smoke Bomb, Strike, Defend} -> take Heavy Blade; HP 62 -> None flips to None; SARFA Anger 0.20, Pommel Strike 0.08, Smoke Bomb 0.03, Dexterity Potion 0.02, Strike 0.01
+[reward relic/sapphire key] take Red Skull (sapphire key pair): without {none within 6} -> None; HP 63 -> None flips to None; SARFA Burning Blood 0.00, Liquid Bronze 0.00, Defend 0.00, Bash 0.00, Ascender's Bane 0.00
+[select upgrade] upgrade Uppercut: without {none within 6} -> None; HP 39 -> None flips to None; SARFA Burning Blood 0.00, Defend 0.00, Strike 0.00, Ascender's Bane 0.00, Happy Flower 0.00
+[card reward] skip / leave rewards: without {Snecko Eye, Uppercut+, Clothesline} -> take Intimidate; HP 46 -> None flips to None; SARFA Snecko Eye 0.35, Uppercut+ 0.15, Clothesline 0.03, Defend 0.00, Burning Blood 0.00
+[select transform] transform Perfected Strike: without {Brimstone, Fiend Fire} -> transform Strike; HP 64 -> None flips to None; SARFA Brimstone 0.49, Fiend Fire 0.17, Feel No Pain 0.12, Feed+ 0.10, Burning Blood 0.08
+[map] map: elite x3 y12: without {Slavers Collar} -> map: monster x5 y12; HP 41 -> 38 flips to map: monster x5 y12; SARFA Slavers Collar 0.23, Brimstone 0.13, Uppercut+ 0.09, Energy Potion 0.08, Red Skull 0.08
+[event] Mindbloom option 3: without {Dark Embrace+} -> Mindbloom option 0; HP 35 -> 36 flips to Mindbloom option 0; SARFA Dark Embrace+ 0.12, Dark Embrace 0.10, Demon Form 0.09, Slavers Collar 0.06, Offering 0.05
+[card reward] take Battle Trance: without {none within 6} -> None; HP 46 -> None flips to None; SARFA Twin Strike 0.00, Burning Blood 0.00, Spot Weakness 0.00, Metallicize 0.00, Ascender's Bane 0.00
+[map] map: shop x1 y4: without {none within 6} -> None; HP 67 -> None flips to None; SARFA Question Card 0.07, Cultist Potion 0.04, Ascender's Bane 0.02, Strike 0.01, Bash 0.01
+[campfire] campfire: rest: without {none within 6} -> None; HP 36 -> 48 flips to campfire: smith; SARFA Juggernaut 0.09, Spot Weakness 0.05, Ascender's Bane 0.03, Bludgeon+ 0.02, Bash 0.02
+[map] map: monster x3 y0: without {Spot Weakness} -> map: monster x0 y0; HP 62 -> 61 flips to map: monster x0 y0; SARFA Runic Pyramid 0.01, Spot Weakness 0.01, Toxic Egg 0.01, Bag Of Preparation 0.01, Reaper 0.01
+[map] map: treasure x1 y8: without {Uppercut+} -> map: treasure x0 y8; HP 87 -> 71 flips to map: treasure x0 y8; SARFA Uppercut+ 0.03, Regen Potion 0.01, Panic Button 0.01, Disarm 0.00, Strike 0.00
+[map] map: event x3 y13: without {none within 6} -> None; HP 84 -> None flips to None; SARFA The Courier 0.09, Limit Break 0.04, Injury 0.01, Omamori 0.01, Frozen Egg 0.01
+[shop] leave shop: without {Corruption+} -> buy remove a card (60 g); HP 84 -> None flips to None; SARFA Corruption+ 0.41, The Courier 0.15, Philosophers Stone 0.11, Uppercut+ 0.08, Feel No Pain+ 0.06
+[map] map: treasure x2 y8: without {none within 6} -> None; HP 36 -> None flips to None; SARFA Shrug It Off 0.02, Fiend Fire 0.00, Oddly Smooth Stone 0.00, Ascender's Bane 0.00, Bash 0.00
+[card reward] take Battle Trance: without {none within 6} -> None; HP 69 -> None flips to None; SARFA Fiend Fire 0.02, Anger 0.01, Slavers Collar 0.01, Ascender's Bane 0.00, Strike+ 0.00
+[event] Falling option 0 [Warcry]: without {none within 6} -> None; HP 85 -> None flips to None; SARFA Spot Weakness+ 0.02, Corruption 0.00, Ink Bottle 0.00, Limit Break 0.00, Shockwave 0.00
+[campfire] campfire: rest: without {none within 6} -> None; HP 70 -> 78 flips to campfire: toke; SARFA Corruption 0.11, Dark Embrace 0.04, Ascender's Bane 0.03, Slavers Collar 0.02, Evolve 0.02
+[map] map: shop x3 y4: without {Eternal Feather} -> drink Blood Potion; HP 41 -> 35 flips to drink Blood Potion; SARFA Eternal Feather 0.11, Ascender's Bane 0.09, Dual Wield 0.08, Berserk 0.07, Sever Soul 0.04
+[campfire] campfire: smith: without {none within 6} -> None; HP 79 -> 60 flips to campfire: rest; SARFA Burning Blood 0.05, Havoc 0.01, Strawberry 0.01, Battle Trance 0.00, Panic Button 0.00
+[map] map: monster x4 y11: without {Burning Blood, Shockwave} -> map: event x6 y11; HP 10 -> 9 flips to map: event x6 y11; SARFA Burning Blood 0.08, Shockwave 0.03, Strike 0.02, Defend 0.02, Corruption 0.01
+
+{'decisions': 40, 'with_minimal_set': 18, 'mean_set_size': 1.6111111111111112, 'set_size_hist': {1: 12, 2: 3, 3: 2, 5: 1}, 'hp_flip_share': 0.425, 'median_hp_distance': 11.0}

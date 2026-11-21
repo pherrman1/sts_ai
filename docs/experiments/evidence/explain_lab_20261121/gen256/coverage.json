@@ -1,0 +1,113 @@
+{
+ "ckpt": "ckpt_895975.pt",
+ "ckpt2": null,
+ "replay": "gen256/replay",
+ "mode": "coverage",
+ "seed": 0,
+ "report": {
+  "BARRICADE": {
+   "offered": 79,
+   "offer_runs": 69,
+   "picked": 20,
+   "deck_runs": 27,
+   "deck_positions": 665,
+   "runs": 256
+  },
+  "ENTRENCH": {
+   "offered": 122,
+   "offer_runs": 92,
+   "picked": 0,
+   "deck_runs": 6,
+   "deck_positions": 149,
+   "runs": 256
+  },
+  "BODY_SLAM": {
+   "offered": 362,
+   "offer_runs": 183,
+   "picked": 12,
+   "deck_runs": 17,
+   "deck_positions": 438,
+   "runs": 256
+  },
+  "RUPTURE": {
+   "offered": 127,
+   "offer_runs": 96,
+   "picked": 0,
+   "deck_runs": 4,
+   "deck_positions": 124,
+   "runs": 256
+  },
+  "BLOODLETTING": {
+   "offered": 132,
+   "offer_runs": 97,
+   "picked": 20,
+   "deck_runs": 22,
+   "deck_positions": 547,
+   "runs": 256
+  },
+  "OFFERING": {
+   "offered": 92,
+   "offer_runs": 72,
+   "picked": 60,
+   "deck_runs": 58,
+   "deck_positions": 1870,
+   "runs": 256
+  },
+  "CORRUPTION": {
+   "offered": 86,
+   "offer_runs": 69,
+   "picked": 45,
+   "deck_runs": 49,
+   "deck_positions": 1440,
+   "runs": 256
+  },
+  "DARK_EMBRACE": {
+   "offered": 122,
+   "offer_runs": 92,
+   "picked": 52,
+   "deck_runs": 63,
+   "deck_positions": 1584,
+   "runs": 256
+  },
+  "FEEL_NO_PAIN": {
+   "offered": 121,
+   "offer_runs": 81,
+   "picked": 85,
+   "deck_runs": 87,
+   "deck_positions": 2631,
+   "runs": 256
+  },
+  "LIMIT_BREAK": {
+   "offered": 94,
+   "offer_runs": 78,
+   "picked": 25,
+   "deck_runs": 32,
+   "deck_positions": 798,
+   "runs": 256
+  },
+  "INFLAME": {
+   "offered": 124,
+   "offer_runs": 92,
+   "picked": 70,
+   "deck_runs": 72,
+   "deck_positions": 2620,
+   "runs": 256
+  },
+  "SPOT_WEAKNESS": {
+   "offered": 126,
+   "offer_runs": 93,
+   "picked": 107,
+   "deck_runs": 99,
+   "deck_positions": 3205,
+   "runs": 256
+  },
+  "DEMON_FORM": {
+   "offered": 80,
+   "offer_runs": 70,
+   "picked": 48,
+   "deck_runs": 51,
+   "deck_positions": 1757,
+   "runs": 256
+  }
+ }
+}

@@ -1,0 +1,113 @@
+{
+ "ckpt": "ckpt_895975.pt",
+ "ckpt2": null,
+ "replay": "gen/replay",
+ "mode": "coverage",
+ "seed": 0,
+ "report": {
+  "BARRICADE": {
+   "offered": 13,
+   "offer_runs": 10,
+   "picked": 2,
+   "deck_runs": 3,
+   "deck_positions": 86,
+   "runs": 32
+  },
+  "ENTRENCH": {
+   "offered": 17,
+   "offer_runs": 12,
+   "picked": 1,
+   "deck_runs": 1,
+   "deck_positions": 4,
+   "runs": 32
+  },
+  "BODY_SLAM": {
+   "offered": 48,
+   "offer_runs": 26,
+   "picked": 1,
+   "deck_runs": 1,
+   "deck_positions": 10,
+   "runs": 32
+  },
+  "RUPTURE": {
+   "offered": 9,
+   "offer_runs": 9,
+   "picked": 0,
+   "deck_runs": 0,
+   "deck_positions": 0,
+   "runs": 32
+  },
+  "BLOODLETTING": {
+   "offered": 12,
+   "offer_runs": 8,
+   "picked": 0,
+   "deck_runs": 0,
+   "deck_positions": 0,
+   "runs": 32
+  },
+  "OFFERING": {
+   "offered": 13,
+   "offer_runs": 9,
+   "picked": 6,
+   "deck_runs": 6,
+   "deck_positions": 163,
+   "runs": 32
+  },
+  "CORRUPTION": {
+   "offered": 11,
+   "offer_runs": 8,
+   "picked": 5,
+   "deck_runs": 6,
+   "deck_positions": 196,
+   "runs": 32
+  },
+  "DARK_EMBRACE": {
+   "offered": 15,
+   "offer_runs": 11,
+   "picked": 8,
+   "deck_runs": 8,
+   "deck_positions": 288,
+   "runs": 32
+  },
+  "FEEL_NO_PAIN": {
+   "offered": 16,
+   "offer_runs": 13,
+   "picked": 13,
+   "deck_runs": 13,
+   "deck_positions": 433,
+   "runs": 32
+  },
+  "LIMIT_BREAK": {
+   "offered": 12,
+   "offer_runs": 11,
+   "picked": 5,
+   "deck_runs": 5,
+   "deck_positions": 174,
+   "runs": 32
+  },
+  "INFLAME": {
+   "offered": 11,
+   "offer_runs": 10,
+   "picked": 6,
+   "deck_runs": 8,
+   "deck_positions": 250,
+   "runs": 32
+  },
+  "SPOT_WEAKNESS": {
+   "offered": 16,
+   "offer_runs": 11,
+   "picked": 12,
+   "deck_runs": 10,
+   "deck_positions": 473,
+   "runs": 32
+  },
+  "DEMON_FORM": {
+   "offered": 16,
+   "offer_runs": 14,
+   "picked": 10,
+   "deck_runs": 11,
+   "deck_positions": 309,
+   "runs": 32
+  }
+ }
+}

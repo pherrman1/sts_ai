@@ -1,0 +1,5067 @@
+{
+ "ckpt": "ckpt_895975.pt",
+ "replay": "gen/replay",
+ "mode": "table",
+ "seed": 0,
+ "report": [
+  {
+   "kind": "select remove",
+   "floor": 2,
+   "run": 0,
+   "p_win": 0.27251553535461426,
+   "hp": 78.99542918091159,
+   "deck": 11,
+   "relics": 1,
+   "actions": [
+    {
+     "action": 1,
+     "label": "remove Defend",
+     "prior": 0.8149955770663402,
+     "logit": 8.659406661987305,
+     "ref": "remove Strike",
+     "vs_ref": 1.6095976829528809
+    },
+    {
+     "action": 0,
+     "label": "remove Strike",
+     "prior": 0.16297307504033504,
+     "logit": 7.049808979034424,
+     "ref": "remove Defend",
+     "vs_ref": -1.6095976829528809
+    },
+    {
+     "action": 2,
+     "label": "remove Bash",
+     "prior": 0.022031347893325236,
+     "logit": 5.048690319061279,
+     "ref": "remove Defend",
+     "vs_ref": -3.6107163429260254
+    }
+   ],
+   "best": "remove Defend",
+   "runner_up": "remove Strike",
+   "supports": [
+    {
+     "kind": "card",
+     "item": "Defend",
+     "copies": 4,
+     "dC": 0.4118356704711914,
+     "z": 1.8908235617682945,
+     "kl": 0.014618478482909342,
+     "top_without": "remove Defend",
+     "flips": false,
+     "dpwin": -0.008037716150283813,
+     "dhp": -0.0016712062400330296,
+     "dlogpi_best": 0.0924730244366021
+    },
+    {
+     "kind": "relic",
+     "item": "Burning Blood",
+     "copies": 1,
+     "dC": 0.09948921203613281,
+     "z": 0.6744907594765952,
+     "kl": 0.002442966081303304,
+     "top_without": "remove Defend",
+     "flips": false,
+     "dpwin": 0.031235918402671814,
+     "dhp": 0.001861460214570343,
+     "dlogpi_best": 0.02739747183637853
+    },
+    {
+     "kind": "card",
+     "item": "Ascender's Bane",
+     "copies": 1,
+     "dC": -0.0737156867980957,
+     "z": 0.0,
+     "kl": 0.0007663238914586016,
+     "top_without": "remove Defend",
+     "flips": false,
+     "dpwin": -0.019504576921463013,
+     "dhp": 0.0038112073564064985,
+     "dlogpi_best": -0.015908568352227093
+    },
+    {
+     "kind": "card",
+     "item": "Bash",
+     "copies": 1,
+     "dC": -0.20856332778930664,
+     "z": -0.5251207581191982,
+     "kl": 0.002882436078482424,
+     "top_without": "remove Defend",
+     "flips": false,
+     "dpwin": 0.0009418129920959473,
+     "dhp": -0.0003724660808614999,
+     "dlogpi_best": -0.05415115322802677
+    }
+   ],
+   "opposes": [
+    {
+     "kind": "card",
+     "item": "Strike",
+     "copies": 5,
+     "dC": -0.2687368392944336,
+     "z": -0.7594471411986476,
+     "kl": 0.004748615136493594,
+     "top_without": "remove Defend",
+     "flips": false,
+     "dpwin": -0.0065267086029052734,
+     "dhp": -0.0004322742684479408,
+     "dlogpi_best": -0.03753691006342308
+    },
+    {
+     "kind": "card",
+     "item": "Bash",
+     "copies": 1,
+     "dC": -0.20856332778930664,
+     "z": -0.5251207581191982,
+     "kl": 0.002882436078482424,
+     "top_without": "remove Defend",
+     "flips": false,
+     "dpwin": 0.0009418129920959473,
+     "dhp": -0.0003724660808614999,
+     "dlogpi_best": -0.05415115322802677
+    },
+    {
+     "kind": "card",
+     "item": "Ascender's Bane",
+     "copies": 1,
+     "dC": -0.0737156867980957,
+     "z": 0.0,
+     "kl": 0.0007663238914586016,
+     "top_without": "remove Defend",
+     "flips": false,
+     "dpwin": -0.019504576921463013,
+     "dhp": 0.0038112073564064985,
+     "dlogpi_best": -0.015908568352227093
+    }
+   ],
+   "value_items": [
+    {
+     "kind": "relic",
+     "item": "Burning Blood",
+     "copies": 1,
+     "dC": 0.09948921203613281,
+     "z": 0.6744907594765952,
+     "kl": 0.002442966081303304,
+     "top_without": "remove Defend",
+     "flips": false,
+     "dpwin": 0.031235918402671814,
+     "dhp": 0.001861460214570343,
+     "dlogpi_best": 0.02739747183637853
+    },
+    {
+     "kind": "card",
+     "item": "Ascender's Bane",
+     "copies": 1,
+     "dC": -0.0737156867980957,
+     "z": 0.0,
+     "kl": 0.0007663238914586016,
+     "top_without": "remove Defend",
+     "flips": false,
+     "dpwin": -0.019504576921463013,
+     "dhp": 0.0038112073564064985,
+     "dlogpi_best": -0.015908568352227093
+    },
+    {
+     "kind": "card",
+     "item": "Defend",
+     "copies": 4,
+     "dC": 0.4118356704711914,
+     "z": 1.8908235617682945,
+     "kl": 0.014618478482909342,
+     "top_without": "remove Defend",
+     "flips": false,
+     "dpwin": -0.008037716150283813,
+     "dhp": -0.0016712062400330296,
+     "dlogpi_best": 0.0924730244366021
+    },
+    {
+     "kind": "card",
+     "item": "Strike",
+     "copies": 5,
+     "dC": -0.2687368392944336,
+     "z": -0.7594471411986476,
+     "kl": 0.004748615136493594,
+     "top_without": "remove Defend",
+     "flips": false,
+     "dpwin": -0.0065267086029052734,
+     "dhp": -0.0004322742684479408,
+     "dlogpi_best": -0.03753691006342308
+    }
+   ],
+   "flips": [],
+   "sample": 14
+  },
+  {
+   "kind": "select bottle",
+   "floor": 6,
+   "run": 1,
+   "p_win": 0.16958995163440704,
+   "hp": 36.02013444926067,
+   "deck": 14,
+   "relics": 2,
+   "actions": [
+    {
+     "action": 2,
+     "label": "bottle Immolate",
+     "prior": 0.6879470906977694,
+     "logit": 3.5781173706054688,
+     "ref": "bottle Iron Wave",
+     "vs_ref": 1.8411314487457275
+    },
+    {
+     "action": 3,
+     "label": "bottle Iron Wave",
+     "prior": 0.10913443633924134,
+     "logit": 1.7369859218597412,
+     "ref": "bottle Immolate",
+     "vs_ref": -1.8411314487457275
+    },
+    {
+     "action": 0,
+     "label": "bottle Strike",
+     "prior": 0.10792891327512076,
+     "logit": 1.7258782386779785,
+     "ref": "bottle Immolate",
+     "vs_ref": -1.8522391319274902
+    },
+    {
+     "action": 1,
+     "label": "bottle Bash",
+     "prior": 0.09498955968786818,
+     "logit": 1.5981724262237549,
+     "ref": "bottle Immolate",
+     "vs_ref": -1.9799449443817139
+    }
+   ],
+   "best": "bottle Immolate",
+   "runner_up": "bottle Iron Wave",
+   "supports": [
+    {
+     "kind": "card",
+     "item": "Strike",
+     "copies": 5,
+     "dC": 0.11710810661315918,
+     "z": 0.6744907594765952,
+     "kl": 0.0019109395380846658,
+     "top_without": "bottle Immolate",
+     "flips": false,
+     "dpwin": -0.01244935393333435,
+     "dhp": 0.002722733190147153,
+     "dlogpi_best": 0.042880831896836114
+    },
+    {
+     "kind": "relic",
+     "item": "Burning Blood",
+     "copies": 1,
+     "dC": 0.11361527442932129,
+     "z": 0.6163378182143932,
+     "kl": 0.0039803409944529486,
+     "top_without": "bottle Immolate",
+     "flips": false,
+     "dpwin": 0.028350189328193665,
+     "dhp": -0.031394925486516456,
+     "dlogpi_best": 0.05936582685386238
+    },
+    {
+     "kind": "card",
+     "item": "Rage",
+     "copies": 1,
+     "dC": 0.07690680027008057,
+     "z": 0.005170252968874966,
+     "kl": 0.0006400657636021958,
+     "top_without": "bottle Immolate",
+     "flips": false,
+     "dpwin": 0.004596516489982605,
+     "dhp": -0.004297936160760685,
+     "dlogpi_best": 0.023698121350638424
+    },
+    {
+     "kind": "card",
+     "item": "Defend",
+     "copies": 4,
+     "dC": 0.07659626007080078,
+     "z": 0.0,
+     "kl": 0.0006167727265532956,
+     "top_without": "bottle Immolate",
+     "flips": false,
+     "dpwin": -0.011097699403762817,
+     "dhp": 0.0021090809870543126,
+     "dlogpi_best": 0.024106451478785207
+    }
+   ],
+   "opposes": [
+    {
+     "kind": "card",
+     "item": "Bash",
+     "copies": 1,
+     "dC": -0.09229207038879395,
+     "z": -2.8118594436153477,
+     "kl": 0.0007106981578503414,
+     "top_without": "bottle Immolate",
+     "flips": false,
+     "dpwin": 0.006711632013320923,
+     "dhp": -0.00335082475648818,
+     "dlogpi_best": -0.12042180092915888
+    },
+    {
+     "kind": "relic",
+     "item": "Bottled Flame",
+     "copies": 1,
+     "dC": -0.07754671573638916,
+     "z": -2.5663607486137927,
+     "kl": 0.0008516371671053085,
+     "top_without": "bottle Immolate",
+     "flips": false,
+     "dpwin": -0.0028045624494552612,
+     "dhp": -0.0016241658353806088,
+     "dlogpi_best": -0.026721357391588985
+    }
+   ],
+   "value_items": [
+    {
+     "kind": "card",
+     "item": "Immolate",
+     "copies": 1,
+     "dC": NaN,
+     "z": NaN,
+     "kl": 0.024492940475758118,
+     "top_without": "bottle Iron Wave",
+     "flips": false,
+     "dpwin": 0.06933031976222992,
+     "dhp": 0.015976475902945708,
+     "dlogpi_best": NaN
+    },
+    {
+     "kind": "relic",
+     "item": "Burning Blood",
+     "copies": 1,
+     "dC": 0.11361527442932129,
+     "z": 0.6163378182143932,
+     "kl": 0.0039803409944529486,
+     "top_without": "bottle Immolate",
+     "flips": false,
+     "dpwin": 0.028350189328193665,
+     "dhp": -0.031394925486516456,
+     "dlogpi_best": 0.05936582685386238
+    },
+    {
+     "kind": "card",
+     "item": "Ascender's Bane",
+     "copies": 1,
+     "dC": 0.033580899238586426,
+     "z": -0.7161723266932337,
+     "kl": 8.119417944516157e-05,
+     "top_without": "bottle Immolate",
+     "flips": false,
+     "dpwin": -0.026631787419319153,
+     "dhp": 0.005203062225135113,
+     "dlogpi_best": 0.0023179783525040243
+    },
+    {
+     "kind": "card",
+     "item": "Strike",
+     "copies": 5,
+     "dC": 0.11710810661315918,
+     "z": 0.6744907594765952,
+     "kl": 0.0019109395380846658,
+     "top_without": "bottle Immolate",
+     "flips": false,
+     "dpwin": -0.01244935393333435,
+     "dhp": 0.002722733190147153,
+     "dlogpi_best": 0.042880831896836114
+    }
+   ],
+   "flips": [],
+   "sample": 96
+  },
+  {
+   "kind": "map",
+   "floor": 0,
+   "run": 4,
+   "p_win": 0.2820192873477936,
+   "hp": 68.00045231985992,
+   "deck": 11,
+   "relics": 1,
+   "actions": [
+    {
+     "action": 0,
+     "label": "map: monster x0 y0",
+     "prior": 0.3533431357046489,
+     "logit": 0.4412615895271301,
+     "ref": "map: monster x2 y0",
+     "vs_ref": 0.08671635389328003
+    },
+    {
+     "action": 2,
+     "label": "map: monster x2 y0",
+     "prior": 0.32399344584693307,
+     "logit": 0.3545452356338501,
+     "ref": "map: monster x0 y0",
+     "vs_ref": -0.08671635389328003
+    },
+    {
+     "action": 1,
+     "label": "map: monster x1 y0",
+     "prior": 0.32266341844841795,
+     "logit": 0.3504316806793213,
+     "ref": "map: monster x0 y0",
+     "vs_ref": -0.09082990884780884
+    }
+   ],
+   "best": "map: monster x0 y0",
+   "runner_up": "map: monster x2 y0",
+   "supports": [
+    {
+     "kind": "relic",
+     "item": "Burning Blood",
+     "copies": 1,
+     "dC": 0.0598604679107666,
+     "z": 1.1348909139633179,
+     "kl": 0.0003915704454429108,
+     "top_without": "map: monster x0 y0",
+     "flips": false,
+     "dpwin": 0.047546014189720154,
+     "dhp": -8.911085586760237e-06,
+     "dlogpi_best": 0.038338386988164386
+    },
+    {
+     "kind": "card",
+     "item": "Bash",
+     "copies": 1,
+     "dC": 0.008447110652923584,
+     "z": 0.10662376880645752,
+     "kl": 7.672168659208362e-06,
+     "top_without": "map: monster x0 y0",
+     "flips": false,
+     "dpwin": 0.008995920419692993,
+     "dhp": -0.00013378073050773764,
+     "dlogpi_best": 0.0053013682924893946
+    },
+    {
+     "kind": "card",
+     "item": "Strike",
+     "copies": 5,
+     "dC": 0.003115922212600708,
+     "z": 0.0,
+     "kl": 8.538187160107716e-07,
+     "top_without": "map: monster x0 y0",
+     "flips": false,
+     "dpwin": -0.011400848627090454,
+     "dhp": -6.998378633227276e-05,
+     "dlogpi_best": 0.001669798336593642
+    },
+    {
+     "kind": "card",
+     "item": "Defend",
+     "copies": 4,
+     "dC": -0.0036568045616149902,
+     "z": -0.13545453548431396,
+     "kl": 1.1348296304709501e-06,
+     "top_without": "map: monster x0 y0",
+     "flips": false,
+     "dpwin": -0.01765727996826172,
+     "dhp": -0.00019255608815171854,
+     "dlogpi_best": -0.0016796741587659092
+    }
+   ],
+   "opposes": [
+    {
+     "kind": "card",
+     "item": "Ascender's Bane",
+     "copies": 1,
+     "dC": -0.026592224836349487,
+     "z": -0.5941629409790039,
+     "kl": 6.731429411433896e-05,
+     "top_without": "map: monster x0 y0",
+     "flips": false,
+     "dpwin": -0.029901832342147827,
+     "dhp": 0.00012529762713597847,
+     "dlogpi_best": -0.015312764783105504
+    },
+    {
+     "kind": "card",
+     "item": "Defend",
+     "copies": 4,
+     "dC": -0.0036568045616149902,
+     "z": -0.13545453548431396,
+     "kl": 1.1348296304709501e-06,
+     "top_without": "map: monster x0 y0",
+     "flips": false,
+     "dpwin": -0.01765727996826172,
+     "dhp": -0.00019255608815171854,
+     "dlogpi_best": -0.0016796741587659092
+    }
+   ],
+   "value_items": [
+    {
+     "kind": "relic",
+     "item": "Burning Blood",
+     "copies": 1,
+     "dC": 0.0598604679107666,
+     "z": 1.1348909139633179,
+     "kl": 0.0003915704454429108,
+     "top_without": "map: monster x0 y0",
+     "flips": false,
+     "dpwin": 0.047546014189720154,
+     "dhp": -8.911085586760237e-06,
+     "dlogpi_best": 0.038338386988164386
+    },
+    {
+     "kind": "card",
+     "item": "Ascender's Bane",
+     "copies": 1,
+     "dC": -0.026592224836349487,
+     "z": -0.5941629409790039,
+     "kl": 6.731429411433896e-05,
+     "top_without": "map: monster x0 y0",
+     "flips": false,
+     "dpwin": -0.029901832342147827,
+     "dhp": 0.00012529762713597847,
+     "dlogpi_best": -0.015312764783105504
+    },
+    {
+     "kind": "card",
+     "item": "Defend",
+     "copies": 4,
+     "dC": -0.0036568045616149902,
+     "z": -0.13545453548431396,
+     "kl": 1.1348296304709501e-06,
+     "top_without": "map: monster x0 y0",
+     "flips": false,
+     "dpwin": -0.01765727996826172,
+     "dhp": -0.00019255608815171854,
+     "dlogpi_best": -0.0016796741587659092
+    },
+    {
+     "kind": "card",
+     "item": "Strike",
+     "copies": 5,
+     "dC": 0.003115922212600708,
+     "z": 0.0,
+     "kl": 8.538187160107716e-07,
+     "top_without": "map: monster x0 y0",
+     "flips": false,
+     "dpwin": -0.011400848627090454,
+     "dhp": -6.998378633227276e-05,
+     "dlogpi_best": 0.001669798336593642
+    }
+   ],
+   "flips": [],
+   "sample": 318
+  },
+  {
+   "kind": "card reward",
+   "floor": 8,
+   "run": 6,
+   "p_win": 0.3068951964378357,
+   "hp": 30.01033723552201,
+   "deck": 17,
+   "relics": 2,
+   "actions": [
+    {
+     "action": 2,
+     "label": "take Iron Wave",
+     "prior": 0.4964832310550249,
+     "logit": 0.13737761974334717,
+     "ref": "skip / leave rewards",
+     "vs_ref": 0.37530040740966797
+    },
+    {
+     "action": 3,
+     "label": "skip / leave rewards",
+     "prior": 0.34112510989908923,
+     "logit": -0.2379227876663208,
+     "ref": "take Iron Wave",
+     "vs_ref": -0.37530040740966797
+    },
+    {
+     "action": 1,
+     "label": "take Infernal Blade",
+     "prior": 0.13874647106385166,
+     "logit": -1.1375237703323364,
+     "ref": "skip / leave rewards",
+     "vs_ref": -0.8996009826660156
+    },
+    {
+     "action": 0,
+     "label": "take Clash",
+     "prior": 0.02364518798203426,
+     "logit": -2.907012462615967,
+     "ref": "skip / leave rewards",
+     "vs_ref": -2.669089674949646
+    }
+   ],
+   "best": "take Iron Wave",
+   "runner_up": "skip / leave rewards",
+   "supports": [
+    {
+     "kind": "card",
+     "item": "Ascender's Bane",
+     "copies": 1,
+     "dC": 0.1895049512386322,
+     "z": 1.0644724159263745,
+     "kl": 0.0047340573171769165,
+     "top_without": "take Iron Wave",
+     "flips": false,
+     "dpwin": -0.055018991231918335,
+     "dhp": 0.0037038791255987746,
+     "dlogpi_best": 0.06305619554540598
+    },
+    {
+     "kind": "card",
+     "item": "Defend",
+     "copies": 4,
+     "dC": 0.09309674799442291,
+     "z": 0.6744907594765952,
+     "kl": 0.0012339978955675894,
+     "top_without": "take Iron Wave",
+     "flips": false,
+     "dpwin": -0.028112471103668213,
+     "dhp": -0.000605457527360187,
+     "dlogpi_best": 0.04450709254205176
+    },
+    {
+     "kind": "card",
+     "item": "Strike",
+     "copies": 5,
+     "dC": 0.08421196043491364,
+     "z": 0.6385508285053172,
+     "kl": 0.001971277134322087,
+     "top_without": "take Iron Wave",
+     "flips": false,
+     "dpwin": -0.021039515733718872,
+     "dhp": 0.0015689301315688908,
+     "dlogpi_best": 0.054353869838670854
+    },
+    {
+     "kind": "relic",
+     "item": "The Boot",
+     "copies": 1,
+     "dC": -0.0013472288846969604,
+     "z": 0.29245461207815177,
+     "kl": 4.409032962686692e-05,
+     "top_without": "take Iron Wave",
+     "flips": false,
+     "dpwin": 0.0034786462783813477,
+     "dhp": -0.0002766212581768457,
+     "dlogpi_best": -0.002879651309961706
+    }
+   ],
+   "opposes": [
+    {
+     "kind": "card",
+     "item": "Reaper",
+     "copies": 1,
+     "dC": -1.921966552734375,
+     "z": -7.476659219729945,
+     "kl": 0.33459234581004116,
+     "top_without": "take Iron Wave",
+     "flips": false,
+     "dpwin": 0.10233843326568604,
+     "dhp": 0.0015316154233033785,
+     "dlogpi_best": -0.5210203876771186
+    },
+    {
+     "kind": "card",
+     "item": "Uppercut+",
+     "copies": 1,
+     "dC": -1.1197360455989838,
+     "z": -4.231549659553614,
+     "kl": 0.12501206789094005,
+     "top_without": "take Iron Wave",
+     "flips": false,
+     "dpwin": 0.11092448234558105,
+     "dhp": -0.0017725972919606647,
+     "dlogpi_best": -0.2750476611388545
+    },
+    {
+     "kind": "card",
+     "item": "Metallicize",
+     "copies": 1,
+     "dC": -0.4470285177230835,
+     "z": -1.5103746225835386,
+     "kl": 0.023694518876425874,
+     "top_without": "take Iron Wave",
+     "flips": false,
+     "dpwin": 0.05200505256652832,
+     "dhp": 0.0018715206751842572,
+     "dlogpi_best": -0.13108504427508694
+    },
+    {
+     "kind": "card",
+     "item": "Shrug It Off",
+     "copies": 1,
+     "dC": -0.3705083727836609,
+     "z": -1.2008423227266212,
+     "kl": 0.018258361649380453,
+     "top_without": "take Iron Wave",
+     "flips": false,
+     "dpwin": 0.015735268592834473,
+     "dhp": -0.00030215443040049195,
+     "dlogpi_best": -0.1726283585096754
+    }
+   ],
+   "value_items": [
+    {
+     "kind": "card",
+     "item": "Uppercut+",
+     "copies": 1,
+     "dC": -1.1197360455989838,
+     "z": -4.231549659553614,
+     "kl": 0.12501206789094005,
+     "top_without": "take Iron Wave",
+     "flips": false,
+     "dpwin": 0.11092448234558105,
+     "dhp": -0.0017725972919606647,
+     "dlogpi_best": -0.2750476611388545
+    },
+    {
+     "kind": "card",
+     "item": "Reaper",
+     "copies": 1,
+     "dC": -1.921966552734375,
+     "z": -7.476659219729945,
+     "kl": 0.33459234581004116,
+     "top_without": "take Iron Wave",
+     "flips": false,
+     "dpwin": 0.10233843326568604,
+     "dhp": 0.0015316154233033785,
+     "dlogpi_best": -0.5210203876771186
+    },
+    {
+     "kind": "relic",
+     "item": "Burning Blood",
+     "copies": 1,
+     "dC": -0.07364556193351746,
+     "z": 0.0,
+     "kl": 0.004411831440803446,
+     "top_without": "take Iron Wave",
+     "flips": false,
+     "dpwin": 0.07157742977142334,
+     "dhp": -0.01148685667165239,
+     "dlogpi_best": -0.06330612190689211
+    },
+    {
+     "kind": "card",
+     "item": "Ascender's Bane",
+     "copies": 1,
+     "dC": 0.1895049512386322,
+     "z": 1.0644724159263745,
+     "kl": 0.0047340573171769165,
+     "top_without": "take Iron Wave",
+     "flips": false,
+     "dpwin": -0.055018991231918335,
+     "dhp": 0.0037038791255987746,
+     "dlogpi_best": 0.06305619554540598
+    }
+   ],
+   "flips": [],
+   "sample": 643
+  },
+  {
+   "kind": "map",
+   "floor": 2,
+   "run": 12,
+   "p_win": 0.25418779253959656,
+   "hp": 62.0002043516593,
+   "deck": 13,
+   "relics": 2,
+   "actions": [
+    {
+     "action": 0,
+     "label": "map: monster x4 y2",
+     "prior": 0.5799446292963082,
+     "logit": 0.09725704789161682,
+     "ref": "map: shop x5 y2",
+     "vs_ref": 0.3225460946559906
+    },
+    {
+     "action": 1,
+     "label": "map: shop x5 y2",
+     "prior": 0.4200553707036918,
+     "logit": -0.22528904676437378,
+     "ref": "map: monster x4 y2",
+     "vs_ref": -0.3225460946559906
+    }
+   ],
+   "best": "map: monster x4 y2",
+   "runner_up": "map: shop x5 y2",
+   "supports": [
+    {
+     "kind": "relic",
+     "item": "Burning Blood",
+     "copies": 1,
+     "dC": 0.46112462878227234,
+     "z": 2.481805261479167,
+     "kl": 0.02631450692846045,
+     "top_without": "map: shop x5 y2",
+     "flips": true,
+     "dpwin": 0.06088714301586151,
+     "dhp": -0.0002661190382298173,
+     "dlogpi_best": 0.22001238381220012
+    },
+    {
+     "kind": "relic",
+     "item": "Smiling Mask",
+     "copies": 1,
+     "dC": 0.14357969164848328,
+     "z": 0.5508154492417003,
+     "kl": 0.00252820178707671,
+     "top_without": "map: monster x4 y2",
+     "flips": false,
+     "dpwin": -0.006241470575332642,
+     "dhp": 6.033054416576533e-05,
+     "dlogpi_best": 0.06283962238800211
+    },
+    {
+     "kind": "card",
+     "item": "Clothesline",
+     "copies": 1,
+     "dC": 0.10854685306549072,
+     "z": 0.3377808626785501,
+     "kl": 0.001442793945441577,
+     "top_without": "map: monster x4 y2",
+     "flips": false,
+     "dpwin": 0.0016683638095855713,
+     "dhp": -0.00038280166477733246,
+     "dlogpi_best": 0.04703848254858545
+    },
+    {
+     "kind": "card",
+     "item": "Strike",
+     "copies": 5,
+     "dC": 0.06455874443054199,
+     "z": 0.07028930573430109,
+     "kl": 0.0005093249837951706,
+     "top_without": "map: monster x4 y2",
+     "flips": false,
+     "dpwin": -0.016276031732559204,
+     "dhp": 2.4092118920293615e-05,
+     "dlogpi_best": 0.027627572307731385
+    }
+   ],
+   "opposes": [
+    {
+     "kind": "card",
+     "item": "Bash",
+     "copies": 1,
+     "dC": -0.23777537047863007,
+     "z": -1.7682035420841875,
+     "kl": 0.006784746127494037,
+     "top_without": "map: monster x4 y2",
+     "flips": false,
+     "dpwin": 0.0013430118560791016,
+     "dhp": 0.00022152971716593584,
+     "dlogpi_best": -0.09309407526311453
+    },
+    {
+     "kind": "card",
+     "item": "Spot Weakness",
+     "copies": 1,
+     "dC": -0.23224082589149475,
+     "z": -1.7345479930157746,
+     "kl": 0.006475134131599794,
+     "top_without": "map: monster x4 y2",
+     "flips": false,
+     "dpwin": 0.058209747076034546,
+     "dhp": -0.0008014559693663159,
+     "dlogpi_best": -0.09107887208078358
+    },
+    {
+     "kind": "card",
+     "item": "Ascender's Bane",
+     "copies": 1,
+     "dC": -0.07825589179992676,
+     "z": -0.7981660697114901,
+     "kl": 0.0007426435107709822,
+     "top_without": "map: monster x4 y2",
+     "flips": false,
+     "dpwin": -0.03325390815734863,
+     "dhp": 0.00012515042872252025,
+     "dlogpi_best": -0.03212916412899525
+    }
+   ],
+   "value_items": [
+    {
+     "kind": "relic",
+     "item": "Burning Blood",
+     "copies": 1,
+     "dC": 0.46112462878227234,
+     "z": 2.481805261479167,
+     "kl": 0.02631450692846045,
+     "top_without": "map: shop x5 y2",
+     "flips": true,
+     "dpwin": 0.06088714301586151,
+     "dhp": -0.0002661190382298173,
+     "dlogpi_best": 0.22001238381220012
+    },
+    {
+     "kind": "card",
+     "item": "Spot Weakness",
+     "copies": 1,
+     "dC": -0.23224082589149475,
+     "z": -1.7345479930157746,
+     "kl": 0.006475134131599794,
+     "top_without": "map: monster x4 y2",
+     "flips": false,
+     "dpwin": 0.058209747076034546,
+     "dhp": -0.0008014559693663159,
+     "dlogpi_best": -0.09107887208078358
+    },
+    {
+     "kind": "card",
+     "item": "Ascender's Bane",
+     "copies": 1,
+     "dC": -0.07825589179992676,
+     "z": -0.7981660697114901,
+     "kl": 0.0007426435107709822,
+     "top_without": "map: monster x4 y2",
+     "flips": false,
+     "dpwin": -0.03325390815734863,
+     "dhp": 0.00012515042872252025,
+     "dlogpi_best": -0.03212916412899525
+    },
+    {
+     "kind": "card",
+     "item": "Defend",
+     "copies": 4,
+     "dC": 0.04144105315208435,
+     "z": -0.07028930573430109,
+     "kl": 0.00020963027756317094,
+     "top_without": "map: monster x4 y2",
+     "flips": false,
+     "dpwin": -0.01714181900024414,
+     "dhp": -5.224014628879559e-06,
+     "dlogpi_best": 0.01761716722171336
+    }
+   ],
+   "flips": [
+    "Burning Blood"
+   ],
+   "sample": 1539
+  },
+  {
+   "kind": "campfire",
+   "floor": 15,
+   "run": 15,
+   "p_win": 0.4727170467376709,
+   "hp": 46.01751448515166,
+   "deck": 16,
+   "relics": 5,
+   "actions": [
+    {
+     "action": 1,
+     "label": "campfire: smith",
+     "prior": 0.9963206971172488,
+     "logit": 2.904351234436035,
+     "ref": "campfire: rest",
+     "vs_ref": 5.601995944976807
+    },
+    {
+     "action": 0,
+     "label": "campfire: rest",
+     "prior": 0.0036769119130784325,
+     "logit": -2.6976447105407715,
+     "ref": "campfire: smith",
+     "vs_ref": -5.601995944976807
+    },
+    {
+     "action": 2,
+     "label": "campfire: recall",
+     "prior": 2.3909696725783297e-06,
+     "logit": -10.035774230957031,
+     "ref": "campfire: smith",
+     "vs_ref": -12.940125465393066
+    }
+   ],
+   "best": "campfire: smith",
+   "runner_up": "campfire: rest",
+   "supports": [
+    {
+     "kind": "card",
+     "item": "Disarm",
+     "copies": 1,
+     "dC": 2.4577152132987976,
+     "z": 8.428227615419177,
+     "kl": 0.02947445574553327,
+     "top_without": "campfire: smith",
+     "flips": false,
+     "dpwin": 0.038784176111221313,
+     "dhp": -0.13105937946274082,
+     "dlogpi_best": 0.038511299959134604
+    },
+    {
+     "kind": "card",
+     "item": "Spot Weakness",
+     "copies": 1,
+     "dC": 1.0994224548339844,
+     "z": 3.6779217575683707,
+     "kl": 0.003293988068289115,
+     "top_without": "campfire: smith",
+     "flips": false,
+     "dpwin": 0.12184900045394897,
+     "dhp": -0.03773915068742184,
+     "dlogpi_best": 0.0073380836269518745
+    },
+    {
+     "kind": "relic",
+     "item": "Mercury Hourglass",
+     "copies": 1,
+     "dC": 0.5949455499649048,
+     "z": 1.9136337707439814,
+     "kl": 0.0007976915737843319,
+     "top_without": "campfire: smith",
+     "flips": false,
+     "dpwin": 0.08396050333976746,
+     "dhp": -0.052387902008881326,
+     "dlogpi_best": 0.0029832835547938252
+    },
+    {
+     "kind": "potion",
+     "item": "Colorless Potion",
+     "copies": 1,
+     "dC": 0.5132784843444824,
+     "z": 1.6280226329443181,
+     "kl": 0.0005761968861059894,
+     "top_without": "campfire: smith",
+     "flips": false,
+     "dpwin": 0.001513153314590454,
+     "dhp": -0.01431323794783168,
+     "dlogpi_best": 0.002464372876790133
+    }
+   ],
+   "opposes": [
+    {
+     "kind": "card",
+     "item": "Battle Trance",
+     "copies": 1,
+     "dC": -0.29857587814331055,
+     "z": -1.2112449033166421,
+     "kl": 0.00014845012587605446,
+     "top_without": "campfire: smith",
+     "flips": false,
+     "dpwin": 0.03166764974594116,
+     "dhp": 0.002024186944439066,
+     "dlogpi_best": -0.000950352050501202
+    },
+    {
+     "kind": "card",
+     "item": "Ascender's Bane",
+     "copies": 1,
+     "dC": -0.23466014862060547,
+     "z": -0.9877148414294875,
+     "kl": 9.350967358906925e-05,
+     "top_without": "campfire: smith",
+     "flips": false,
+     "dpwin": -0.04129606485366821,
+     "dhp": 0.0037189694704480303,
+     "dlogpi_best": -0.0007688659129527764
+    },
+    {
+     "kind": "relic",
+     "item": "Eternal Feather",
+     "copies": 1,
+     "dC": -0.2122197151184082,
+     "z": -0.9092347626291848,
+     "kl": 7.700322011983567e-05,
+     "top_without": "campfire: smith",
+     "flips": false,
+     "dpwin": 0.007955849170684814,
+     "dhp": 0.005414673567329942,
+     "dlogpi_best": -0.0007035419474035187
+    },
+    {
+     "kind": "card",
+     "item": "Bash",
+     "copies": 1,
+     "dC": -0.1457228660583496,
+     "z": -0.6766778490698168,
+     "kl": 3.708654554027129e-05,
+     "top_without": "campfire: smith",
+     "flips": false,
+     "dpwin": -0.00676766037940979,
+     "dhp": -0.0060784569304814795,
+     "dlogpi_best": -0.0004986932516914955
+    }
+   ],
+   "value_items": [
+    {
+     "kind": "card",
+     "item": "Spot Weakness",
+     "copies": 1,
+     "dC": 1.0994224548339844,
+     "z": 3.6779217575683707,
+     "kl": 0.003293988068289115,
+     "top_without": "campfire: smith",
+     "flips": false,
+     "dpwin": 0.12184900045394897,
+     "dhp": -0.03773915068742184,
+     "dlogpi_best": 0.0073380836269518745
+    },
+    {
+     "kind": "relic",
+     "item": "Mercury Hourglass",
+     "copies": 1,
+     "dC": 0.5949455499649048,
+     "z": 1.9136337707439814,
+     "kl": 0.0007976915737843319,
+     "top_without": "campfire: smith",
+     "flips": false,
+     "dpwin": 0.08396050333976746,
+     "dhp": -0.052387902008881326,
+     "dlogpi_best": 0.0029832835547938252
+    },
+    {
+     "kind": "card",
+     "item": "Offering",
+     "copies": 1,
+     "dC": 0.03350210189819336,
+     "z": -0.04988115163373612,
+     "kl": 2.134762119888162e-06,
+     "top_without": "campfire: smith",
+     "flips": false,
+     "dpwin": 0.05520719289779663,
+     "dhp": -0.0017660702727582134,
+     "dlogpi_best": 0.00012581839691616636
+    },
+    {
+     "kind": "card",
+     "item": "Ascender's Bane",
+     "copies": 1,
+     "dC": -0.23466014862060547,
+     "z": -0.9877148414294875,
+     "kl": 9.350967358906925e-05,
+     "top_without": "campfire: smith",
+     "flips": false,
+     "dpwin": -0.04129606485366821,
+     "dhp": 0.0037189694704480303,
+     "dlogpi_best": -0.0007688659129527764
+    }
+   ],
+   "flips": [],
+   "sample": 2360
+  },
+  {
+   "kind": "shop",
+   "floor": 4,
+   "run": 16,
+   "p_win": 0.14409548044204712,
+   "hp": 35.01924629653284,
+   "deck": 14,
+   "relics": 1,
+   "actions": [
+    {
+     "action": 11,
+     "label": "buy remove a card (75 g)",
+     "prior": 0.46626525888156195,
+     "logit": 1.3105534315109253,
+     "ref": "leave shop",
+     "vs_ref": 3.573801875114441
+    },
+    {
+     "action": 2,
+     "label": "buy Shrug It Off (53 g)",
+     "prior": 0.32623705802435027,
+     "logit": 0.953423023223877,
+     "ref": "leave shop",
+     "vs_ref": 3.2166714668273926
+    },
+    {
+     "action": 10,
+     "label": "buy Swift Potion (53 g)",
+     "prior": 0.09674125606609545,
+     "logit": -0.2621613144874573,
+     "ref": "leave shop",
+     "vs_ref": 2.0010871291160583
+    },
+    {
+     "action": 8,
+     "label": "buy Essence Of Steel (87 g)",
+     "prior": 0.07949415332663091,
+     "logit": -0.45851778984069824,
+     "ref": "leave shop",
+     "vs_ref": 1.8047306537628174
+    },
+    {
+     "action": 12,
+     "label": "leave shop",
+     "prior": 0.01307827978055139,
+     "logit": -2.2632484436035156,
+     "ref": "buy remove a card (75 g)",
+     "vs_ref": -3.573801875114441
+    },
+    {
+     "action": 9,
+     "label": "buy Liquid Bronze (85 g)",
+     "prior": 0.00880674553328197,
+     "logit": -2.6586833000183105,
+     "ref": "leave shop",
+     "vs_ref": -0.3954348564147949
+    },
+    {
+     "action": 1,
+     "label": "buy Fiend Fire (176 g)",
+     "prior": 0.005581784776926111,
+     "logit": -3.1146926879882812,
+     "ref": "leave shop",
+     "vs_ref": -0.8514442443847656
+    },
+    {
+     "action": 3,
+     "label": "buy Havoc (56 g)",
+     "prior": 0.0031470491353119655,
+     "logit": -3.6877360343933105,
+     "ref": "leave shop",
+     "vs_ref": -1.424487590789795
+    },
+    {
+     "action": 7,
+     "label": "buy Orange Pellets (158 g)",
+     "prior": 0.0002784165229671383,
+     "logit": -6.112838268280029,
+     "ref": "leave shop",
+     "vs_ref": -3.8495898246765137
+    },
+    {
+     "action": 0,
+     "label": "buy Sword Boomerang (55 g)",
+     "prior": 0.0002108123064702152,
+     "logit": -6.390988349914551,
+     "ref": "leave shop",
+     "vs_ref": -4.127739906311035
+    },
+    {
+     "action": 5,
+     "label": "buy Purity (96 g)",
+     "prior": 6.545057180272971e-05,
+     "logit": -7.560661315917969,
+     "ref": "leave shop",
+     "vs_ref": -5.297412872314453
+    },
+    {
+     "action": 4,
+     "label": "buy Combust (39 g)",
+     "prior": 5.013603041157704e-05,
+     "logit": -7.827216625213623,
+     "ref": "leave shop",
+     "vs_ref": -5.563968181610107
+    },
+    {
+     "action": 6,
+     "label": "buy Magnetism (191 g)",
+     "prior": 4.3599043638566916e-05,
+     "logit": -7.966921329498291,
+     "ref": "leave shop",
+     "vs_ref": -5.703672885894775
+    }
+   ],
+   "best": "buy remove a card (75 g)",
+   "runner_up": "buy Shrug It Off (53 g)",
+   "supports": [
+    {
+     "kind": "card",
+     "item": "Berserk",
+     "copies": 1,
+     "dC": 1.5815764665603638,
+     "z": 10.40383910359887,
+     "kl": 0.3529972775629647,
+     "top_without": "buy Shrug It Off (53 g)",
+     "flips": true,
+     "dpwin": -0.03482741117477417,
+     "dhp": 0.011963475477962504,
+     "dlogpi_best": 1.2827286499151058
+    },
+    {
+     "kind": "relic",
+     "item": "Burning Blood",
+     "copies": 1,
+     "dC": 0.08642089366912842,
+     "z": 0.7883574021065854,
+     "kl": 0.005586593392377724,
+     "top_without": "buy remove a card (75 g)",
+     "flips": false,
+     "dpwin": 0.0390840619802475,
+     "dhp": -0.031122372467130788,
+     "dlogpi_best": 0.06965058757228881
+    },
+    {
+     "kind": "card",
+     "item": "Defend",
+     "copies": 4,
+     "dC": 0.06650984287261963,
+     "z": 0.6603076204901536,
+     "kl": 0.0006263848311888996,
+     "top_without": "buy remove a card (75 g)",
+     "flips": false,
+     "dpwin": -0.014110013842582703,
+     "dhp": 0.0013324297410193253,
+     "dlogpi_best": 0.021569897235321545
+    },
+    {
+     "kind": "card",
+     "item": "Bash",
+     "copies": 1,
+     "dC": -0.029419541358947754,
+     "z": 0.04337701110188302,
+     "kl": 0.000944280440881196,
+     "top_without": "buy remove a card (75 g)",
+     "flips": false,
+     "dpwin": 0.014236971735954285,
+     "dhp": 0.004673999693650899,
+     "dlogpi_best": -0.03061082558957917
+    }
+   ],
+   "opposes": [
+    {
+     "kind": "card",
+     "item": "Clothesline",
+     "copies": 1,
+     "dC": -0.17430543899536133,
+     "z": -0.8883973960477621,
+     "kl": 0.008446114242965787,
+     "top_without": "buy remove a card (75 g)",
+     "flips": false,
+     "dpwin": 0.025203540921211243,
+     "dhp": -0.007329974011220486,
+     "dlogpi_best": -0.08209372500017587
+    },
+    {
+     "kind": "card",
+     "item": "Ascender's Bane",
+     "copies": 1,
+     "dC": -0.14324951171875,
+     "z": -0.6886738984630368,
+     "kl": 0.002274226923764046,
+     "top_without": "buy remove a card (75 g)",
+     "flips": false,
+     "dpwin": -0.03229805827140808,
+     "dhp": 0.00582109679276499,
+     "dlogpi_best": -0.054223221325399695
+    },
+    {
+     "kind": "card",
+     "item": "Anger",
+     "copies": 1,
+     "dC": -0.13853275775909424,
+     "z": -0.6583400240409866,
+     "kl": 0.018028666020616584,
+     "top_without": "buy remove a card (75 g)",
+     "flips": false,
+     "dpwin": 0.04217573255300522,
+     "dhp": -0.003190352313445999,
+     "dlogpi_best": -0.030966723023893916
+    },
+    {
+     "kind": "card",
+     "item": "Strike",
+     "copies": 5,
+     "dC": -0.042909324169158936,
+     "z": -0.04337701110188302,
+     "kl": 0.00032334780246834447,
+     "top_without": "buy remove a card (75 g)",
+     "flips": false,
+     "dpwin": -0.012449726462364197,
+     "dhp": 0.0007968623530203445,
+     "dlogpi_best": -0.021052487262167574
+    }
+   ],
+   "value_items": [
+    {
+     "kind": "card",
+     "item": "Anger",
+     "copies": 1,
+     "dC": -0.13853275775909424,
+     "z": -0.6583400240409866,
+     "kl": 0.018028666020616584,
+     "top_without": "buy remove a card (75 g)",
+     "flips": false,
+     "dpwin": 0.04217573255300522,
+     "dhp": -0.003190352313445999,
+     "dlogpi_best": -0.030966723023893916
+    },
+    {
+     "kind": "relic",
+     "item": "Burning Blood",
+     "copies": 1,
+     "dC": 0.08642089366912842,
+     "z": 0.7883574021065854,
+     "kl": 0.005586593392377724,
+     "top_without": "buy remove a card (75 g)",
+     "flips": false,
+     "dpwin": 0.0390840619802475,
+     "dhp": -0.031122372467130788,
+     "dlogpi_best": 0.06965058757228881
+    },
+    {
+     "kind": "card",
+     "item": "Berserk",
+     "copies": 1,
+     "dC": 1.5815764665603638,
+     "z": 10.40383910359887,
+     "kl": 0.3529972775629647,
+     "top_without": "buy Shrug It Off (53 g)",
+     "flips": true,
+     "dpwin": -0.03482741117477417,
+     "dhp": 0.011963475477962504,
+     "dlogpi_best": 1.2827286499151058
+    },
+    {
+     "kind": "card",
+     "item": "Ascender's Bane",
+     "copies": 1,
+     "dC": -0.14324951171875,
+     "z": -0.6886738984630368,
+     "kl": 0.002274226923764046,
+     "top_without": "buy remove a card (75 g)",
+     "flips": false,
+     "dpwin": -0.03229805827140808,
+     "dhp": 0.00582109679276499,
+     "dlogpi_best": -0.054223221325399695
+    }
+   ],
+   "flips": [
+    "Berserk"
+   ],
+   "sample": 2487
+  },
+  {
+   "kind": "shop",
+   "floor": 2,
+   "run": 17,
+   "p_win": 0.26942726969718933,
+   "hp": 63.00086936537893,
+   "deck": 12,
+   "relics": 1,
+   "actions": [
+    {
+     "action": 3,
+     "label": "buy Inflame (41 g)",
+     "prior": 0.925120914935852,
+     "logit": 3.4193673133850098,
+     "ref": "leave shop",
+     "vs_ref": 5.108746409416199
+    },
+    {
+     "action": 1,
+     "label": "buy Twin Strike (55 g)",
+     "prior": 0.054910073328849486,
+     "logit": 0.5951396822929382,
+     "ref": "leave shop",
+     "vs_ref": 2.284518778324127
+    },
+    {
+     "action": 5,
+     "label": "buy Skill Potion (54 g)",
+     "prior": 0.005604804705586517,
+     "logit": -1.686932921409607,
+     "ref": "leave shop",
+     "vs_ref": 0.0024461746215820312
+    },
+    {
+     "action": 9,
+     "label": "leave shop",
+     "prior": 0.00559111112982381,
+     "logit": -1.689379096031189,
+     "ref": "buy Inflame (41 g)",
+     "vs_ref": -5.108746409416199
+    },
+    {
+     "action": 8,
+     "label": "buy remove a card (75 g)",
+     "prior": 0.0050011779948463736,
+     "logit": -1.8008836507797241,
+     "ref": "leave shop",
+     "vs_ref": -0.11150455474853516
+    },
+    {
+     "action": 7,
+     "label": "buy Flex Potion (55 g)",
+     "prior": 0.003131964848392678,
+     "logit": -2.2688965797424316,
+     "ref": "leave shop",
+     "vs_ref": -0.5795174837112427
+    },
+    {
+     "action": 6,
+     "label": "buy Ancient Potion (81 g)",
+     "prior": 0.0003928852809208323,
+     "logit": -4.344794750213623,
+     "ref": "leave shop",
+     "vs_ref": -2.655415654182434
+    },
+    {
+     "action": 4,
+     "label": "buy Good Instincts (95 g)",
+     "prior": 0.00023649281633719813,
+     "logit": -4.8523945808410645,
+     "ref": "leave shop",
+     "vs_ref": -3.1630154848098755
+    },
+    {
+     "action": 0,
+     "label": "buy Rampage (76 g)",
+     "prior": 1.0136046003704948e-05,
+     "logit": -8.002214431762695,
+     "ref": "leave shop",
+     "vs_ref": -6.312835335731506
+    },
+    {
+     "action": 2,
+     "label": "buy Dual Wield (86 g)",
+     "prior": 4.3891338719035907e-07,
+     "logit": -11.141765594482422,
+     "ref": "leave shop",
+     "vs_ref": -9.452386498451233
+    }
+   ],
+   "best": "buy Inflame (41 g)",
+   "runner_up": "buy Twin Strike (55 g)",
+   "supports": [
+    {
+     "kind": "card",
+     "item": "Pommel Strike",
+     "copies": 1,
+     "dC": 1.3995292782783508,
+     "z": 17.821800236095932,
+     "kl": 0.07898411319149104,
+     "top_without": "buy Inflame (41 g)",
+     "flips": false,
+     "dpwin": 0.02185109257698059,
+     "dhp": -0.0004794112335702039,
+     "dlogpi_best": 0.1524426769752547
+    },
+    {
+     "kind": "relic",
+     "item": "Burning Blood",
+     "copies": 1,
+     "dC": 0.027586162090301514,
+     "z": 0.250851112230813,
+     "kl": 0.0008630816908219694,
+     "top_without": "buy Inflame (41 g)",
+     "flips": false,
+     "dpwin": 0.05176152288913727,
+     "dhp": -0.0008401549852266044,
+     "dlogpi_best": 0.00641522753775936
+    },
+    {
+     "kind": "card",
+     "item": "Ascender's Bane",
+     "copies": 1,
+     "dC": 0.012158334255218506,
+     "z": 0.05326159501001518,
+     "kl": 0.00010010818687777726,
+     "top_without": "buy Inflame (41 g)",
+     "flips": false,
+     "dpwin": -0.029086291790008545,
+     "dhp": 0.000359043711448237,
+     "dlogpi_best": 0.00211575772095296
+    },
+    {
+     "kind": "card",
+     "item": "Bash",
+     "copies": 1,
+     "dC": 0.0038409829139709473,
+     "z": -0.05326159501001518,
+     "kl": 0.00022934731503602686,
+     "top_without": "buy Inflame (41 g)",
+     "flips": false,
+     "dpwin": 0.0062157511711120605,
+     "dhp": 9.266507419170011e-07,
+     "dlogpi_best": -0.0024411023595831693
+    }
+   ],
+   "opposes": [
+    {
+     "kind": "card",
+     "item": "Defend",
+     "copies": 4,
+     "dC": -0.11150681972503662,
+     "z": -1.5305607248391206,
+     "kl": 0.00033248804038198793,
+     "top_without": "buy Inflame (41 g)",
+     "flips": false,
+     "dpwin": -0.017971187829971313,
+     "dhp": -9.584974350218545e-06,
+     "dlogpi_best": -0.006606838898458811
+    },
+    {
+     "kind": "card",
+     "item": "Strike",
+     "copies": 5,
+     "dC": -0.0777425765991211,
+     "z": -1.0981304067223774,
+     "kl": 0.00017461231673099954,
+     "top_without": "buy Inflame (41 g)",
+     "flips": false,
+     "dpwin": -0.013873487710952759,
+     "dhp": 4.9977816111379525e-05,
+     "dlogpi_best": -0.0036108858698353785
+    }
+   ],
+   "value_items": [
+    {
+     "kind": "relic",
+     "item": "Burning Blood",
+     "copies": 1,
+     "dC": 0.027586162090301514,
+     "z": 0.250851112230813,
+     "kl": 0.0008630816908219694,
+     "top_without": "buy Inflame (41 g)",
+     "flips": false,
+     "dpwin": 0.05176152288913727,
+     "dhp": -0.0008401549852266044,
+     "dlogpi_best": 0.00641522753775936
+    },
+    {
+     "kind": "card",
+     "item": "Ascender's Bane",
+     "copies": 1,
+     "dC": 0.012158334255218506,
+     "z": 0.05326159501001518,
+     "kl": 0.00010010818687777726,
+     "top_without": "buy Inflame (41 g)",
+     "flips": false,
+     "dpwin": -0.029086291790008545,
+     "dhp": 0.000359043711448237,
+     "dlogpi_best": 0.00211575772095296
+    },
+    {
+     "kind": "card",
+     "item": "Pommel Strike",
+     "copies": 1,
+     "dC": 1.3995292782783508,
+     "z": 17.821800236095932,
+     "kl": 0.07898411319149104,
+     "top_without": "buy Inflame (41 g)",
+     "flips": false,
+     "dpwin": 0.02185109257698059,
+     "dhp": -0.0004794112335702039,
+     "dlogpi_best": 0.1524426769752547
+    },
+    {
+     "kind": "card",
+     "item": "Defend",
+     "copies": 4,
+     "dC": -0.11150681972503662,
+     "z": -1.5305607248391206,
+     "kl": 0.00033248804038198793,
+     "top_without": "buy Inflame (41 g)",
+     "flips": false,
+     "dpwin": -0.017971187829971313,
+     "dhp": -9.584974350218545e-06,
+     "dlogpi_best": -0.006606838898458811
+    }
+   ],
+   "flips": [],
+   "sample": 2759
+  },
+  {
+   "kind": "card reward",
+   "floor": 35,
+   "run": 22,
+   "p_win": 0.06892755627632141,
+   "hp": 65.01249077376144,
+   "deck": 26,
+   "relics": 12,
+   "actions": [
+    {
+     "action": 2,
+     "label": "take Second Wind",
+     "prior": 0.9643863174459963,
+     "logit": 3.773639678955078,
+     "ref": "skip / leave rewards",
+     "vs_ref": 3.838932156562805
+    },
+    {
+     "action": 3,
+     "label": "skip / leave rewards",
+     "prior": 0.02075028127506805,
+     "logit": -0.06529247760772705,
+     "ref": "take Second Wind",
+     "vs_ref": -3.838932156562805
+    },
+    {
+     "action": 1,
+     "label": "take Headbutt",
+     "prior": 0.014567414660141184,
+     "logit": -0.41906511783599854,
+     "ref": "skip / leave rewards",
+     "vs_ref": -0.3537726402282715
+    },
+    {
+     "action": 0,
+     "label": "take Dual Wield",
+     "prior": 0.0002959866187945133,
+     "logit": -4.315293312072754,
+     "ref": "skip / leave rewards",
+     "vs_ref": -4.250000834465027
+    }
+   ],
+   "best": "take Second Wind",
+   "runner_up": "skip / leave rewards",
+   "supports": [
+    {
+     "kind": "card",
+     "item": "Barricade",
+     "copies": 1,
+     "dC": 1.1660133302211761,
+     "z": 7.803299884940234,
+     "kl": 0.039234783737199935,
+     "top_without": "take Second Wind",
+     "flips": false,
+     "dpwin": 0.016099322587251663,
+     "dhp": -0.0026917581132153146,
+     "dlogpi_best": 0.0830145374142659
+    },
+    {
+     "kind": "card",
+     "item": "Feel No Pain",
+     "copies": 1,
+     "dC": 0.7937741875648499,
+     "z": 5.320089309423745,
+     "kl": 0.014485648154743968,
+     "top_without": "take Second Wind",
+     "flips": false,
+     "dpwin": 0.018646933138370514,
+     "dhp": -0.0014750004502133152,
+     "dlogpi_best": 0.04310103380906449
+    },
+    {
+     "kind": "relic",
+     "item": "Unceasing Top",
+     "copies": 1,
+     "dC": 0.5709352642297745,
+     "z": 3.8335289033536633,
+     "kl": 0.007558271253788995,
+     "top_without": "take Second Wind",
+     "flips": false,
+     "dpwin": 0.009903065860271454,
+     "dhp": -0.0016589713502810355,
+     "dlogpi_best": 0.02893154963278155
+    },
+    {
+     "kind": "relic",
+     "item": "Bag Of Preparation",
+     "copies": 1,
+     "dC": 0.37505383789539337,
+     "z": 2.526802195491355,
+     "kl": 0.003274620187849235,
+     "top_without": "take Second Wind",
+     "flips": false,
+     "dpwin": 0.028374958783388138,
+     "dhp": -0.0036035333387047785,
+     "dlogpi_best": 0.017733546606554462
+    }
+   ],
+   "opposes": [
+    {
+     "kind": "card",
+     "item": "Anger",
+     "copies": 1,
+     "dC": -0.38095811009407043,
+     "z": -2.516560120108888,
+     "kl": 0.001906446154631057,
+     "top_without": "take Second Wind",
+     "flips": false,
+     "dpwin": -0.0010915696620941162,
+     "dhp": 0.0004753649390067949,
+     "dlogpi_best": -0.01054068277159148
+    },
+    {
+     "kind": "card",
+     "item": "Impervious",
+     "copies": 1,
+     "dC": -0.36784324049949646,
+     "z": -2.429070710367168,
+     "kl": 0.001712284687236506,
+     "top_without": "take Second Wind",
+     "flips": false,
+     "dpwin": 0.02226494625210762,
+     "dhp": -0.004193682500670093,
+     "dlogpi_best": -0.010013930324886733
+    },
+    {
+     "kind": "card",
+     "item": "Sever Soul+",
+     "copies": 1,
+     "dC": -0.3260195553302765,
+     "z": -2.1500645408973273,
+     "kl": 0.0014064780375640943,
+     "top_without": "take Second Wind",
+     "flips": false,
+     "dpwin": 0.004062153398990631,
+     "dhp": -0.0010521241284209282,
+     "dlogpi_best": -0.009201001384605778
+    },
+    {
+     "kind": "card",
+     "item": "True Grit+",
+     "copies": 1,
+     "dC": -0.18162277340888977,
+     "z": -1.1867923460954306,
+     "kl": 0.0005150011230816379,
+     "top_without": "take Second Wind",
+     "flips": false,
+     "dpwin": 0.0056883469223976135,
+     "dhp": -0.0012571582578146945,
+     "dlogpi_best": -0.0058201024265591705
+    }
+   ],
+   "value_items": [
+    {
+     "kind": "relic",
+     "item": "Slavers Collar",
+     "copies": 1,
+     "dC": -0.1754809319972992,
+     "z": -1.1458200683344968,
+     "kl": 0.0005021981264348996,
+     "top_without": "take Second Wind",
+     "flips": false,
+     "dpwin": 0.031397122889757156,
+     "dhp": -0.0008727188012187526,
+     "dlogpi_best": -0.005667209737393097
+    },
+    {
+     "kind": "card",
+     "item": "Shockwave",
+     "copies": 1,
+     "dC": 0.029892027378082275,
+     "z": 0.22422473943821505,
+     "kl": 0.0006466242089958073,
+     "top_without": "take Second Wind",
+     "flips": false,
+     "dpwin": 0.029406089335680008,
+     "dhp": -0.004625909777772108,
+     "dlogpi_best": 0.005457108251061271
+    },
+    {
+     "kind": "relic",
+     "item": "Fossilized Helix",
+     "copies": 1,
+     "dC": 0.02031707763671875,
+     "z": 0.16035016599029372,
+     "kl": 2.6675356262230313e-05,
+     "top_without": "take Second Wind",
+     "flips": false,
+     "dpwin": 0.028596170246601105,
+     "dhp": -0.004989457553747911,
+     "dlogpi_best": 0.0012503351653969652
+    },
+    {
+     "kind": "relic",
+     "item": "Bag Of Preparation",
+     "copies": 1,
+     "dC": 0.37505383789539337,
+     "z": 2.526802195491355,
+     "kl": 0.003274620187849235,
+     "top_without": "take Second Wind",
+     "flips": false,
+     "dpwin": 0.028374958783388138,
+     "dhp": -0.0036035333387047785,
+     "dlogpi_best": 0.017733546606554462
+    }
+   ],
+   "flips": [],
+   "sample": 4781
+  },
+  {
+   "kind": "map",
+   "floor": 0,
+   "run": 23,
+   "p_win": 0.3027203679084778,
+   "hp": 74.99959319887104,
+   "deck": 11,
+   "relics": 1,
+   "actions": [
+    {
+     "action": 2,
+     "label": "map: monster x6 y0",
+     "prior": 0.3506189160636071,
+     "logit": 0.8975542187690735,
+     "ref": "map: monster x1 y0",
+     "vs_ref": 0.073466956615448
+    },
+    {
+     "action": 0,
+     "label": "map: monster x1 y0",
+     "prior": 0.3257834731236694,
+     "logit": 0.8240872621536255,
+     "ref": "map: monster x6 y0",
+     "vs_ref": -0.073466956615448
+    },
+    {
+     "action": 1,
+     "label": "map: monster x3 y0",
+     "prior": 0.32359761081272354,
+     "logit": 0.8173550963401794,
+     "ref": "map: monster x6 y0",
+     "vs_ref": -0.08019912242889404
+    }
+   ],
+   "best": "map: monster x6 y0",
+   "runner_up": "map: monster x1 y0",
+   "supports": [
+    {
+     "kind": "relic",
+     "item": "Burning Blood",
+     "copies": 1,
+     "dC": 0.06676548719406128,
+     "z": 1.493152379989624,
+     "kl": 0.0004299802774933442,
+     "top_without": "map: monster x6 y0",
+     "flips": false,
+     "dpwin": 0.055887237191200256,
+     "dhp": 0.00044455850152758103,
+     "dlogpi_best": 0.03990310338565184
+    },
+    {
+     "kind": "card",
+     "item": "Defend",
+     "copies": 4,
+     "dC": -0.006776571273803711,
+     "z": 0.02231121063232422,
+     "kl": 3.880693097417726e-06,
+     "top_without": "map: monster x6 y0",
+     "flips": false,
+     "dpwin": -0.01646876335144043,
+     "dhp": -0.000105915599817763,
+     "dlogpi_best": -0.0033163800708622126
+    },
+    {
+     "kind": "card",
+     "item": "Strike",
+     "copies": 5,
+     "dC": -0.007892131805419922,
+     "z": 0.0,
+     "kl": 5.6250839674482165e-06,
+     "top_without": "map: monster x6 y0",
+     "flips": false,
+     "dpwin": -0.007575631141662598,
+     "dhp": -0.00010949421573513973,
+     "dlogpi_best": -0.00438521989898355
+    },
+    {
+     "kind": "card",
+     "item": "Ascender's Bane",
+     "copies": 1,
+     "dC": -0.014668583869934082,
+     "z": -0.1355290412902832,
+     "kl": 1.8864898948314172e-05,
+     "top_without": "map: monster x6 y0",
+     "flips": false,
+     "dpwin": -0.030633360147476196,
+     "dhp": -8.244063513984656e-05,
+     "dlogpi_best": -0.00785618791284981
+    }
+   ],
+   "opposes": [
+    {
+     "kind": "card",
+     "item": "Bash",
+     "copies": 1,
+     "dC": -0.018992245197296143,
+     "z": -0.22200226783752441,
+     "kl": 3.160659742540732e-05,
+     "top_without": "map: monster x6 y0",
+     "flips": false,
+     "dpwin": 0.010812878608703613,
+     "dhp": 0.00025848799778316334,
+     "dlogpi_best": -0.01015386892369996
+    },
+    {
+     "kind": "card",
+     "item": "Ascender's Bane",
+     "copies": 1,
+     "dC": -0.014668583869934082,
+     "z": -0.1355290412902832,
+     "kl": 1.8864898948314172e-05,
+     "top_without": "map: monster x6 y0",
+     "flips": false,
+     "dpwin": -0.030633360147476196,
+     "dhp": -8.244063513984656e-05,
+     "dlogpi_best": -0.00785618791284981
+    },
+    {
+     "kind": "card",
+     "item": "Strike",
+     "copies": 5,
+     "dC": -0.007892131805419922,
+     "z": 0.0,
+     "kl": 5.6250839674482165e-06,
+     "top_without": "map: monster x6 y0",
+     "flips": false,
+     "dpwin": -0.007575631141662598,
+     "dhp": -0.00010949421573513973,
+     "dlogpi_best": -0.00438521989898355
+    },
+    {
+     "kind": "card",
+     "item": "Defend",
+     "copies": 4,
+     "dC": -0.006776571273803711,
+     "z": 0.02231121063232422,
+     "kl": 3.880693097417726e-06,
+     "top_without": "map: monster x6 y0",
+     "flips": false,
+     "dpwin": -0.01646876335144043,
+     "dhp": -0.000105915599817763,
+     "dlogpi_best": -0.0033163800708622126
+    }
+   ],
+   "value_items": [
+    {
+     "kind": "relic",
+     "item": "Burning Blood",
+     "copies": 1,
+     "dC": 0.06676548719406128,
+     "z": 1.493152379989624,
+     "kl": 0.0004299802774933442,
+     "top_without": "map: monster x6 y0",
+     "flips": false,
+     "dpwin": 0.055887237191200256,
+     "dhp": 0.00044455850152758103,
+     "dlogpi_best": 0.03990310338565184
+    },
+    {
+     "kind": "card",
+     "item": "Ascender's Bane",
+     "copies": 1,
+     "dC": -0.014668583869934082,
+     "z": -0.1355290412902832,
+     "kl": 1.8864898948314172e-05,
+     "top_without": "map: monster x6 y0",
+     "flips": false,
+     "dpwin": -0.030633360147476196,
+     "dhp": -8.244063513984656e-05,
+     "dlogpi_best": -0.00785618791284981
+    },
+    {
+     "kind": "card",
+     "item": "Defend",
+     "copies": 4,
+     "dC": -0.006776571273803711,
+     "z": 0.02231121063232422,
+     "kl": 3.880693097417726e-06,
+     "top_without": "map: monster x6 y0",
+     "flips": false,
+     "dpwin": -0.01646876335144043,
+     "dhp": -0.000105915599817763,
+     "dlogpi_best": -0.0033163800708622126
+    },
+    {
+     "kind": "card",
+     "item": "Bash",
+     "copies": 1,
+     "dC": -0.018992245197296143,
+     "z": -0.22200226783752441,
+     "kl": 3.160659742540732e-05,
+     "top_without": "map: monster x6 y0",
+     "flips": false,
+     "dpwin": 0.010812878608703613,
+     "dhp": 0.00025848799778316334,
+     "dlogpi_best": -0.01015386892369996
+    }
+   ],
+   "flips": [],
+   "sample": 4823
+  },
+  {
+   "kind": "campfire",
+   "floor": 11,
+   "run": 24,
+   "p_win": 0.25849372148513794,
+   "hp": 58.209489737455655,
+   "deck": 14,
+   "relics": 3,
+   "actions": [
+    {
+     "action": 1,
+     "label": "campfire: smith",
+     "prior": 0.8068322886780215,
+     "logit": 1.8946805000305176,
+     "ref": "campfire: rest",
+     "vs_ref": 1.4373801350593567
+    },
+    {
+     "action": 0,
+     "label": "campfire: rest",
+     "prior": 0.19166243830944832,
+     "logit": 0.4573003649711609,
+     "ref": "campfire: smith",
+     "vs_ref": -1.4373801350593567
+    },
+    {
+     "action": 2,
+     "label": "campfire: recall",
+     "prior": 0.0015052730125301853,
+     "logit": -4.389461040496826,
+     "ref": "campfire: smith",
+     "vs_ref": -6.284141540527344
+    }
+   ],
+   "best": "campfire: smith",
+   "runner_up": "campfire: rest",
+   "supports": [
+    {
+     "kind": "relic",
+     "item": "Red Skull",
+     "copies": 1,
+     "dC": 1.3518500924110413,
+     "z": 4.053833136981008,
+     "kl": 0.17927804555353796,
+     "top_without": "campfire: smith",
+     "flips": false,
+     "dpwin": 0.1457449570298195,
+     "dhp": -3.5365592079926103,
+     "dlogpi_best": 0.43706314724065987
+    },
+    {
+     "kind": "relic",
+     "item": "Happy Flower",
+     "copies": 1,
+     "dC": 0.3375633955001831,
+     "z": 0.877635792650398,
+     "kl": 0.009501637379166908,
+     "top_without": "campfire: smith",
+     "flips": false,
+     "dpwin": 0.05254673957824707,
+     "dhp": -0.4887512476504412,
+     "dlogpi_best": 0.07385158084525179
+    },
+    {
+     "kind": "card",
+     "item": "Pommel Strike+",
+     "copies": 1,
+     "dC": 0.27633219957351685,
+     "z": 0.6858928047114001,
+     "kl": 0.0063875677626124856,
+     "top_without": "campfire: smith",
+     "flips": false,
+     "dpwin": 0.03954210877418518,
+     "dhp": -0.12655276365792645,
+     "dlogpi_best": 0.05874601964069903
+    },
+    {
+     "kind": "relic",
+     "item": "Burning Blood",
+     "copies": 1,
+     "dC": 0.2726910710334778,
+     "z": 0.6744907594765952,
+     "kl": 0.006082221727997069,
+     "top_without": "campfire: smith",
+     "flips": false,
+     "dpwin": 0.03157070279121399,
+     "dhp": -1.195351622032092,
+     "dlogpi_best": 0.05845832879931567
+    }
+   ],
+   "opposes": [
+    {
+     "kind": "card",
+     "item": "Decay",
+     "copies": 1,
+     "dC": -0.421738862991333,
+     "z": -1.5000882022616073,
+     "kl": 0.012885362476533314,
+     "top_without": "campfire: smith",
+     "flips": false,
+     "dpwin": -0.06796762347221375,
+     "dhp": 0.3316978027812354,
+     "dlogpi_best": -0.06721084348647932
+    },
+    {
+     "kind": "card",
+     "item": "Ascender's Bane",
+     "copies": 1,
+     "dC": -0.17706233263015747,
+     "z": -0.733893645712579,
+     "kl": 0.002388437504434438,
+     "top_without": "campfire: smith",
+     "flips": false,
+     "dpwin": -0.03397342562675476,
+     "dhp": 0.3687487726513652,
+     "dlogpi_best": -0.031228650180602724
+    },
+    {
+     "kind": "card",
+     "item": "Anger",
+     "copies": 1,
+     "dC": -0.08929762244224548,
+     "z": -0.4590620421099827,
+     "kl": 0.0006470450245750793,
+     "top_without": "campfire: smith",
+     "flips": false,
+     "dpwin": 0.014226198196411133,
+     "dhp": 0.08729178562501261,
+     "dlogpi_best": -0.016857956312040567
+    },
+    {
+     "kind": "card",
+     "item": "Strike",
+     "copies": 5,
+     "dC": -0.07425960898399353,
+     "z": -0.41197111746749415,
+     "kl": 0.0004648443853010029,
+     "top_without": "campfire: smith",
+     "flips": false,
+     "dpwin": -0.016920536756515503,
+     "dhp": 0.22204505247783146,
+     "dlogpi_best": -0.013437375982100708
+    }
+   ],
+   "value_items": [
+    {
+     "kind": "relic",
+     "item": "Red Skull",
+     "copies": 1,
+     "dC": 1.3518500924110413,
+     "z": 4.053833136981008,
+     "kl": 0.17927804555353796,
+     "top_without": "campfire: smith",
+     "flips": false,
+     "dpwin": 0.1457449570298195,
+     "dhp": -3.5365592079926103,
+     "dlogpi_best": 0.43706314724065987
+    },
+    {
+     "kind": "card",
+     "item": "Decay",
+     "copies": 1,
+     "dC": -0.421738862991333,
+     "z": -1.5000882022616073,
+     "kl": 0.012885362476533314,
+     "top_without": "campfire: smith",
+     "flips": false,
+     "dpwin": -0.06796762347221375,
+     "dhp": 0.3316978027812354,
+     "dlogpi_best": -0.06721084348647932
+    },
+    {
+     "kind": "relic",
+     "item": "Happy Flower",
+     "copies": 1,
+     "dC": 0.3375633955001831,
+     "z": 0.877635792650398,
+     "kl": 0.009501637379166908,
+     "top_without": "campfire: smith",
+     "flips": false,
+     "dpwin": 0.05254673957824707,
+     "dhp": -0.4887512476504412,
+     "dlogpi_best": 0.07385158084525179
+    },
+    {
+     "kind": "card",
+     "item": "Pommel Strike+",
+     "copies": 1,
+     "dC": 0.27633219957351685,
+     "z": 0.6858928047114001,
+     "kl": 0.0063875677626124856,
+     "top_without": "campfire: smith",
+     "flips": false,
+     "dpwin": 0.03954210877418518,
+     "dhp": -0.12655276365792645,
+     "dlogpi_best": 0.05874601964069903
+    }
+   ],
+   "flips": [],
+   "sample": 5323
+  },
+  {
+   "kind": "card reward",
+   "floor": 24,
+   "run": 24,
+   "p_win": 0.3961041569709778,
+   "hp": 33.00181674839706,
+   "deck": 20,
+   "relics": 7,
+   "actions": [
+    {
+     "action": 3,
+     "label": "skip / leave rewards",
+     "prior": 0.4999256119884013,
+     "logit": 0.8378096222877502,
+     "ref": "take Armaments+",
+     "vs_ref": 0.20968514680862427
+    },
+    {
+     "action": 1,
+     "label": "take Armaments+",
+     "prior": 0.40535943385616147,
+     "logit": 0.628124475479126,
+     "ref": "skip / leave rewards",
+     "vs_ref": -0.20968514680862427
+    },
+    {
+     "action": 2,
+     "label": "take Intimidate",
+     "prior": 0.06439333703297445,
+     "logit": -1.2116395235061646,
+     "ref": "skip / leave rewards",
+     "vs_ref": -2.049449145793915
+    },
+    {
+     "action": 0,
+     "label": "take Thunderclap",
+     "prior": 0.03032161712246282,
+     "logit": -1.964788794517517,
+     "ref": "skip / leave rewards",
+     "vs_ref": -2.8025984168052673
+    }
+   ],
+   "best": "skip / leave rewards",
+   "runner_up": "take Armaments+",
+   "supports": [
+    {
+     "kind": "relic",
+     "item": "Snecko Eye",
+     "copies": 1,
+     "dC": 1.2209326028823853,
+     "z": 5.5902892011423395,
+     "kl": 0.19068221226464482,
+     "top_without": "take Armaments+",
+     "flips": true,
+     "dpwin": 0.285782054066658,
+     "dhp": -0.00011078572207168236,
+     "dlogpi_best": 0.816971426698015
+    },
+    {
+     "kind": "card",
+     "item": "Perfected Strike",
+     "copies": 1,
+     "dC": 1.0784468054771423,
+     "z": 4.926284538602131,
+     "kl": 0.13907412750384357,
+     "top_without": "take Armaments+",
+     "flips": true,
+     "dpwin": 0.0358029305934906,
+     "dhp": -4.492172548253848e-05,
+     "dlogpi_best": 0.5879449869402353
+    },
+    {
+     "kind": "relic",
+     "item": "Red Skull",
+     "copies": 1,
+     "dC": 1.0294490456581116,
+     "z": 4.697947809143195,
+     "kl": 0.12438108236531636,
+     "top_without": "take Armaments+",
+     "flips": true,
+     "dpwin": 0.1378372311592102,
+     "dhp": -0.0063739264050184374,
+     "dlogpi_best": 0.5617646745369438
+    },
+    {
+     "kind": "card",
+     "item": "Uppercut+",
+     "copies": 1,
+     "dC": 0.5963284373283386,
+     "z": 2.6795424058644657,
+     "kl": 0.042418868874738905,
+     "top_without": "take Armaments+",
+     "flips": true,
+     "dpwin": 0.06027805805206299,
+     "dhp": 0.0003380037394720148,
+     "dlogpi_best": 0.33004201305266045
+    }
+   ],
+   "opposes": [
+    {
+     "kind": "card",
+     "item": "Reaper",
+     "copies": 1,
+     "dC": -0.3925416171550751,
+     "z": -1.9287367263770736,
+     "kl": 0.017813280494050635,
+     "top_without": "skip / leave rewards",
+     "flips": false,
+     "dpwin": 0.09239092469215393,
+     "dhp": -0.0010647493387168083,
+     "dlogpi_best": -0.14384947739217901
+    },
+    {
+     "kind": "card",
+     "item": "Ascender's Bane",
+     "copies": 1,
+     "dC": -0.38694319128990173,
+     "z": -1.9026472427579575,
+     "kl": 0.016990278328255864,
+     "top_without": "skip / leave rewards",
+     "flips": false,
+     "dpwin": -0.03928929567337036,
+     "dhp": 0.0006242010871702064,
+     "dlogpi_best": -0.14459386207648062
+    },
+    {
+     "kind": "card",
+     "item": "Pommel Strike",
+     "copies": 1,
+     "dC": -0.26201432943344116,
+     "z": -1.3204604685729884,
+     "kl": 0.00800269563338181,
+     "top_without": "skip / leave rewards",
+     "flips": false,
+     "dpwin": 0.006824105978012085,
+     "dhp": -2.055604063144756e-05,
+     "dlogpi_best": -0.10214530035122182
+    },
+    {
+     "kind": "card",
+     "item": "Anger+",
+     "copies": 1,
+     "dC": -0.1484774351119995,
+     "z": -0.7913619298227806,
+     "kl": 0.003156513231795721,
+     "top_without": "skip / leave rewards",
+     "flips": false,
+     "dpwin": -0.046920210123062134,
+     "dhp": 0.0002432882644569645,
+     "dlogpi_best": -0.07119548841609391
+    }
+   ],
+   "value_items": [
+    {
+     "kind": "relic",
+     "item": "Snecko Eye",
+     "copies": 1,
+     "dC": 1.2209326028823853,
+     "z": 5.5902892011423395,
+     "kl": 0.19068221226464482,
+     "top_without": "take Armaments+",
+     "flips": true,
+     "dpwin": 0.285782054066658,
+     "dhp": -0.00011078572207168236,
+     "dlogpi_best": 0.816971426698015
+    },
+    {
+     "kind": "relic",
+     "item": "Red Skull",
+     "copies": 1,
+     "dC": 1.0294490456581116,
+     "z": 4.697947809143195,
+     "kl": 0.12438108236531636,
+     "top_without": "take Armaments+",
+     "flips": true,
+     "dpwin": 0.1378372311592102,
+     "dhp": -0.0063739264050184374,
+     "dlogpi_best": 0.5617646745369438
+    },
+    {
+     "kind": "card",
+     "item": "Reaper",
+     "copies": 1,
+     "dC": -0.3925416171550751,
+     "z": -1.9287367263770736,
+     "kl": 0.017813280494050635,
+     "top_without": "skip / leave rewards",
+     "flips": false,
+     "dpwin": 0.09239092469215393,
+     "dhp": -0.0010647493387168083,
+     "dlogpi_best": -0.14384947739217901
+    },
+    {
+     "kind": "relic",
+     "item": "Enchiridion",
+     "copies": 1,
+     "dC": 0.10800164937973022,
+     "z": 0.40386812852608117,
+     "kl": 0.0018735316550684208,
+     "top_without": "skip / leave rewards",
+     "flips": false,
+     "dpwin": 0.07130712270736694,
+     "dhp": 2.3350300622837494e-05,
+     "dlogpi_best": 0.04095422696783291
+    }
+   ],
+   "flips": [
+    "Pommel Strike+",
+    "Uppercut+",
+    "Perfected Strike",
+    "Red Skull",
+    "Snecko Eye"
+   ],
+   "sample": 5500
+  },
+  {
+   "kind": "reward relic/sapphire key",
+   "floor": 26,
+   "run": 25,
+   "p_win": 0.5225755572319031,
+   "hp": 79.00086124737754,
+   "deck": 23,
+   "relics": 8,
+   "actions": [
+    {
+     "action": 1,
+     "label": "sapphire key",
+     "prior": 0.4953211159556392,
+     "logit": 1.1547163724899292,
+     "ref": "skip / leave rewards",
+     "vs_ref": 0.3418097496032715
+    },
+    {
+     "action": 2,
+     "label": "skip / leave rewards",
+     "prior": 0.3519174115323352,
+     "logit": 0.8129066228866577,
+     "ref": "sapphire key",
+     "vs_ref": -0.3418097496032715
+    },
+    {
+     "action": 0,
+     "label": "take Blue Candle (sapphire key pair)",
+     "prior": 0.15276147251202568,
+     "logit": -0.021612197160720825,
+     "ref": "skip / leave rewards",
+     "vs_ref": -0.8345188200473785
+    }
+   ],
+   "best": "sapphire key",
+   "runner_up": "skip / leave rewards",
+   "supports": [
+    {
+     "kind": "card",
+     "item": "Offering",
+     "copies": 1,
+     "dC": 0.05526566505432129,
+     "z": 1.04805588722229,
+     "kl": 0.0006628446844935444,
+     "top_without": "sapphire key",
+     "flips": false,
+     "dpwin": 0.08219608664512634,
+     "dhp": -5.7037565056816675e-05,
+     "dlogpi_best": 0.03477937943440068
+    },
+    {
+     "kind": "relic",
+     "item": "Fusion Hammer",
+     "copies": 1,
+     "dC": 0.0545157790184021,
+     "z": 1.0330581665039062,
+     "kl": 0.005431850504793477,
+     "top_without": "sapphire key",
+     "flips": false,
+     "dpwin": 0.09894824028015137,
+     "dhp": 0.00015931057750151467,
+     "dlogpi_best": 0.06980151062972739
+    },
+    {
+     "kind": "card",
+     "item": "Uppercut+",
+     "copies": 1,
+     "dC": 0.053498148918151855,
+     "z": 1.0127055644989014,
+     "kl": 0.0016243686167636568,
+     "top_without": "sapphire key",
+     "flips": false,
+     "dpwin": 0.053131163120269775,
+     "dhp": -0.0005233525140369011,
+     "dlogpi_best": 0.04543923283264495
+    },
+    {
+     "kind": "relic",
+     "item": "White Beast Statue",
+     "copies": 1,
+     "dC": 0.027968525886535645,
+     "z": 0.5021131038665771,
+     "kl": 0.00023321140903477013,
+     "top_without": "sapphire key",
+     "flips": false,
+     "dpwin": 0.014856040477752686,
+     "dhp": -2.6718623473698244e-05,
+     "dlogpi_best": 0.004404317549926873
+    }
+   ],
+   "opposes": [
+    {
+     "kind": "relic",
+     "item": "Burning Blood",
+     "copies": 1,
+     "dC": -0.13408148288726807,
+     "z": -2.738887071609497,
+     "kl": 0.0018341643429848203,
+     "top_without": "sapphire key",
+     "flips": false,
+     "dpwin": 0.034955501556396484,
+     "dhp": 4.085383804408593e-05,
+     "dlogpi_best": -0.0535058397052548
+    },
+    {
+     "kind": "potion",
+     "item": "Smoke Bomb",
+     "copies": 1,
+     "dC": -0.07381606101989746,
+     "z": -1.533578634262085,
+     "kl": 0.0005626613770625712,
+     "top_without": "sapphire key",
+     "flips": false,
+     "dpwin": -0.05110049247741699,
+     "dhp": 0.00041697107668881017,
+     "dlogpi_best": -0.028712728903474982
+    },
+    {
+     "kind": "card",
+     "item": "Feed+",
+     "copies": 1,
+     "dC": -0.049238741397857666,
+     "z": -1.042032241821289,
+     "kl": 0.000449041700140213,
+     "top_without": "sapphire key",
+     "flips": false,
+     "dpwin": 0.060300588607788086,
+     "dhp": 0.00012542874334542375,
+     "dlogpi_best": -0.0285137362411767
+    },
+    {
+     "kind": "relic",
+     "item": "Brimstone",
+     "copies": 1,
+     "dC": -0.040514469146728516,
+     "z": -0.867546796798706,
+     "kl": 0.05216813238595265,
+     "top_without": "sapphire key",
+     "flips": false,
+     "dpwin": 0.25521358847618103,
+     "dhp": 0.0003835614541856103,
+     "dlogpi_best": 0.16050699078236597
+    }
+   ],
+   "value_items": [
+    {
+     "kind": "relic",
+     "item": "Brimstone",
+     "copies": 1,
+     "dC": -0.040514469146728516,
+     "z": -0.867546796798706,
+     "kl": 0.05216813238595265,
+     "top_without": "sapphire key",
+     "flips": false,
+     "dpwin": 0.25521358847618103,
+     "dhp": 0.0003835614541856103,
+     "dlogpi_best": 0.16050699078236597
+    },
+    {
+     "kind": "relic",
+     "item": "Self Forming Clay",
+     "copies": 1,
+     "dC": 0.010090887546539307,
+     "z": 0.1445603370666504,
+     "kl": 0.00024572487003670165,
+     "top_without": "sapphire key",
+     "flips": false,
+     "dpwin": 0.13759559392929077,
+     "dhp": 1.5059736838907156e-05,
+     "dlogpi_best": -0.00483642287259034
+    },
+    {
+     "kind": "relic",
+     "item": "Fusion Hammer",
+     "copies": 1,
+     "dC": 0.0545157790184021,
+     "z": 1.0330581665039062,
+     "kl": 0.005431850504793477,
+     "top_without": "sapphire key",
+     "flips": false,
+     "dpwin": 0.09894824028015137,
+     "dhp": 0.00015931057750151467,
+     "dlogpi_best": 0.06980151062972739
+    },
+    {
+     "kind": "card",
+     "item": "Offering",
+     "copies": 1,
+     "dC": 0.05526566505432129,
+     "z": 1.04805588722229,
+     "kl": 0.0006628446844935444,
+     "top_without": "sapphire key",
+     "flips": false,
+     "dpwin": 0.08219608664512634,
+     "dhp": -5.7037565056816675e-05,
+     "dlogpi_best": 0.03477937943440068
+    }
+   ],
+   "flips": [],
+   "sample": 5944
+  },
+  {
+   "kind": "card reward",
+   "floor": 4,
+   "run": 26,
+   "p_win": 0.2991282641887665,
+   "hp": 57.01173983455664,
+   "deck": 14,
+   "relics": 2,
+   "actions": [
+    {
+     "action": 2,
+     "label": "take Headbutt",
+     "prior": 0.7179366686726926,
+     "logit": 2.608581066131592,
+     "ref": "skip / leave rewards",
+     "vs_ref": 2.4837991297245026
+    },
+    {
+     "action": 0,
+     "label": "take Thunderclap",
+     "prior": 0.22214310187742098,
+     "logit": 1.4355214834213257,
+     "ref": "skip / leave rewards",
+     "vs_ref": 1.3107395470142365
+    },
+    {
+     "action": 3,
+     "label": "skip / leave rewards",
+     "prior": 0.059894353200914276,
+     "logit": 0.12478193640708923,
+     "ref": "take Headbutt",
+     "vs_ref": -2.4837991297245026
+    },
+    {
+     "action": 1,
+     "label": "take Searing Blow",
+     "prior": 2.5876248971983263e-05,
+     "logit": -7.622230052947998,
+     "ref": "skip / leave rewards",
+     "vs_ref": -7.747011989355087
+    }
+   ],
+   "best": "take Headbutt",
+   "runner_up": "take Thunderclap",
+   "supports": [
+    {
+     "kind": "card",
+     "item": "Ascender's Bane",
+     "copies": 1,
+     "dC": 0.28271257877349854,
+     "z": 1.2139624600281276,
+     "kl": 0.015349749016268718,
+     "top_without": "take Headbutt",
+     "flips": false,
+     "dpwin": -0.026402324438095093,
+     "dhp": -0.0011719837391908072,
+     "dlogpi_best": 0.11267054151899503
+    },
+    {
+     "kind": "card",
+     "item": "Defend",
+     "copies": 4,
+     "dC": 0.13827192783355713,
+     "z": 0.758009369361266,
+     "kl": 0.00409833752146686,
+     "top_without": "take Headbutt",
+     "flips": false,
+     "dpwin": -0.014178812503814697,
+     "dhp": -0.0005474761472612499,
+     "dlogpi_best": 0.053781438650063684
+    },
+    {
+     "kind": "card",
+     "item": "Strike",
+     "copies": 5,
+     "dC": 0.0882103443145752,
+     "z": 0.5999809086708748,
+     "kl": 0.0009771446861567305,
+     "top_without": "take Headbutt",
+     "flips": false,
+     "dpwin": -0.011900514364242554,
+     "dhp": 0.00011026389618962185,
+     "dlogpi_best": 0.02802429835030651
+    },
+    {
+     "kind": "card",
+     "item": "Bash",
+     "copies": 1,
+     "dC": 0.05854928493499756,
+     "z": 0.5063503994716672,
+     "kl": 0.002137935633365177,
+     "top_without": "take Headbutt",
+     "flips": false,
+     "dpwin": 0.004510164260864258,
+     "dhp": -0.0004005311320582905,
+     "dlogpi_best": 5.6581459672244705e-05
+    }
+   ],
+   "opposes": [
+    {
+     "kind": "card",
+     "item": "Pommel Strike",
+     "copies": 1,
+     "dC": -0.5572649240493774,
+     "z": -1.4375787509151172,
+     "kl": 0.032361134239845796,
+     "top_without": "take Headbutt",
+     "flips": false,
+     "dpwin": 0.012118279933929443,
+     "dhp": 0.0008473670008228851,
+     "dlogpi_best": -0.13391432998894093
+    },
+    {
+     "kind": "card",
+     "item": "Headbutt",
+     "copies": 1,
+     "dC": -0.49387335777282715,
+     "z": -1.2374717839503642,
+     "kl": 0.029730274510479326,
+     "top_without": "take Headbutt",
+     "flips": false,
+     "dpwin": 0.009197086095809937,
+     "dhp": 4.578646311870216e-06,
+     "dlogpi_best": -0.12674513006907828
+    },
+    {
+     "kind": "card",
+     "item": "Twin Strike",
+     "copies": 1,
+     "dC": -0.33913135528564453,
+     "z": -0.7490006102823156,
+     "kl": 0.019766845030432807,
+     "top_without": "take Headbutt",
+     "flips": false,
+     "dpwin": 0.003609001636505127,
+     "dhp": 0.0011776121184112753,
+     "dlogpi_best": -0.1002342669916314
+    },
+    {
+     "kind": "potion",
+     "item": "Power Potion",
+     "copies": 1,
+     "dC": -0.23923182487487793,
+     "z": -0.4336496384433926,
+     "kl": 0.005402462483833446,
+     "top_without": "take Headbutt",
+     "flips": false,
+     "dpwin": 0.007252007722854614,
+     "dhp": 0.0017995069484300075,
+     "dlogpi_best": -0.06085894064966446
+    }
+   ],
+   "value_items": [
+    {
+     "kind": "relic",
+     "item": "Happy Flower",
+     "copies": 1,
+     "dC": -0.04293537139892578,
+     "z": 0.18599569039494956,
+     "kl": 0.005379684835482061,
+     "top_without": "take Headbutt",
+     "flips": false,
+     "dpwin": 0.05626150965690613,
+     "dhp": -0.008476420713655841,
+     "dlogpi_best": -0.032308482281445006
+    },
+    {
+     "kind": "relic",
+     "item": "Burning Blood",
+     "copies": 1,
+     "dC": -0.16077792644500732,
+     "z": -0.18599569039494956,
+     "kl": 0.0025006491982718006,
+     "top_without": "take Headbutt",
+     "flips": false,
+     "dpwin": 0.034098297357559204,
+     "dhp": 0.001677576258401814,
+     "dlogpi_best": -0.028599987011489247
+    },
+    {
+     "kind": "card",
+     "item": "Ascender's Bane",
+     "copies": 1,
+     "dC": 0.28271257877349854,
+     "z": 1.2139624600281276,
+     "kl": 0.015349749016268718,
+     "top_without": "take Headbutt",
+     "flips": false,
+     "dpwin": -0.026402324438095093,
+     "dhp": -0.0011719837391908072,
+     "dlogpi_best": 0.11267054151899503
+    },
+    {
+     "kind": "card",
+     "item": "Defend",
+     "copies": 4,
+     "dC": 0.13827192783355713,
+     "z": 0.758009369361266,
+     "kl": 0.00409833752146686,
+     "top_without": "take Headbutt",
+     "flips": false,
+     "dpwin": -0.014178812503814697,
+     "dhp": -0.0005474761472612499,
+     "dlogpi_best": 0.053781438650063684
+    }
+   ],
+   "flips": [],
+   "sample": 6375
+  },
+  {
+   "kind": "campfire",
+   "floor": 6,
+   "run": 26,
+   "p_win": 0.26080140471458435,
+   "hp": 58.268466978119335,
+   "deck": 15,
+   "relics": 2,
+   "actions": [
+    {
+     "action": 0,
+     "label": "campfire: rest",
+     "prior": 0.6781965785145856,
+     "logit": 2.7154183387756348,
+     "ref": "campfire: smith",
+     "vs_ref": 0.7455229759216309
+    },
+    {
+     "action": 1,
+     "label": "campfire: smith",
+     "prior": 0.3217948429544646,
+     "logit": 1.969895362854004,
+     "ref": "campfire: rest",
+     "vs_ref": -0.7455229759216309
+    },
+    {
+     "action": 2,
+     "label": "campfire: recall",
+     "prior": 8.578530949582679e-06,
+     "logit": -8.562511444091797,
+     "ref": "campfire: rest",
+     "vs_ref": -11.277929782867432
+    }
+   ],
+   "best": "campfire: rest",
+   "runner_up": "campfire: smith",
+   "supports": [
+    {
+     "kind": "card",
+     "item": "Ascender's Bane",
+     "copies": 1,
+     "dC": 0.36377429962158203,
+     "z": 1.2473187576917035,
+     "kl": 0.015008496338109674,
+     "top_without": "campfire: rest",
+     "flips": false,
+     "dpwin": -0.0364556610584259,
+     "dhp": 1.8647752908589155,
+     "dlogpi_best": 0.13207114327284453
+    },
+    {
+     "kind": "card",
+     "item": "Strike",
+     "copies": 5,
+     "dC": 0.20142340660095215,
+     "z": 0.7484840697230047,
+     "kl": 0.0045282635851825875,
+     "top_without": "campfire: rest",
+     "flips": false,
+     "dpwin": -0.01743173599243164,
+     "dhp": 1.1705582882275678,
+     "dlogpi_best": 0.06934719691148361
+    },
+    {
+     "kind": "card",
+     "item": "Defend",
+     "copies": 4,
+     "dC": 0.11516976356506348,
+     "z": 0.48346360504035146,
+     "kl": 0.0014667673879807462,
+     "top_without": "campfire: rest",
+     "flips": false,
+     "dpwin": -0.01927599310874939,
+     "dhp": 0.7062574197246931,
+     "dlogpi_best": 0.03852935135491098
+    },
+    {
+     "kind": "card",
+     "item": "Headbutt",
+     "copies": 2,
+     "dC": 0.02113819122314453,
+     "z": 0.19454489830784888,
+     "kl": 4.899498040301159e-05,
+     "top_without": "campfire: rest",
+     "flips": false,
+     "dpwin": 0.004349470138549805,
+     "dhp": 0.43859595128303397,
+     "dlogpi_best": 0.006849768615728724
+    }
+   ],
+   "opposes": [
+    {
+     "kind": "card",
+     "item": "Pommel Strike",
+     "copies": 1,
+     "dC": -0.9130619764328003,
+     "z": -2.6758516881386663,
+     "kl": 0.0798198267893725,
+     "top_without": "campfire: rest",
+     "flips": false,
+     "dpwin": 0.018817394971847534,
+     "dhp": -4.834101150899201,
+     "dlogpi_best": -0.21398918909271414
+    },
+    {
+     "kind": "potion",
+     "item": "Power Potion",
+     "copies": 1,
+     "dC": -0.8440451622009277,
+     "z": -2.4637926082568264,
+     "kl": 0.06896239023089545,
+     "top_without": "campfire: rest",
+     "flips": false,
+     "dpwin": 0.012532651424407959,
+     "dhp": -2.590835467220849,
+     "dlogpi_best": -0.20264978797521316
+    },
+    {
+     "kind": "relic",
+     "item": "Happy Flower",
+     "copies": 1,
+     "dC": -0.8070971965789795,
+     "z": -2.350267350962672,
+     "kl": 0.06343038260252216,
+     "top_without": "campfire: rest",
+     "flips": false,
+     "dpwin": 0.0948309451341629,
+     "dhp": -4.199508774017161,
+     "dlogpi_best": -0.19628886514926247
+    },
+    {
+     "kind": "relic",
+     "item": "Burning Blood",
+     "copies": 1,
+     "dC": -0.23761653900146484,
+     "z": -0.6004974492301856,
+     "kl": 0.005984648801435245,
+     "top_without": "campfire: rest",
+     "flips": false,
+     "dpwin": 0.046984925866127014,
+     "dhp": -6.464961476029458,
+     "dlogpi_best": -0.07047149505654593
+    }
+   ],
+   "value_items": [
+    {
+     "kind": "relic",
+     "item": "Happy Flower",
+     "copies": 1,
+     "dC": -0.8070971965789795,
+     "z": -2.350267350962672,
+     "kl": 0.06343038260252216,
+     "top_without": "campfire: rest",
+     "flips": false,
+     "dpwin": 0.0948309451341629,
+     "dhp": -4.199508774017161,
+     "dlogpi_best": -0.19628886514926247
+    },
+    {
+     "kind": "relic",
+     "item": "Burning Blood",
+     "copies": 1,
+     "dC": -0.23761653900146484,
+     "z": -0.6004974492301856,
+     "kl": 0.005984648801435245,
+     "top_without": "campfire: rest",
+     "flips": false,
+     "dpwin": 0.046984925866127014,
+     "dhp": -6.464961476029458,
+     "dlogpi_best": -0.07047149505654593
+    },
+    {
+     "kind": "card",
+     "item": "Ascender's Bane",
+     "copies": 1,
+     "dC": 0.36377429962158203,
+     "z": 1.2473187576917035,
+     "kl": 0.015008496338109674,
+     "top_without": "campfire: rest",
+     "flips": false,
+     "dpwin": -0.0364556610584259,
+     "dhp": 1.8647752908589155,
+     "dlogpi_best": 0.13207114327284453
+    },
+    {
+     "kind": "card",
+     "item": "Defend",
+     "copies": 4,
+     "dC": 0.11516976356506348,
+     "z": 0.48346360504035146,
+     "kl": 0.0014667673879807462,
+     "top_without": "campfire: rest",
+     "flips": false,
+     "dpwin": -0.01927599310874939,
+     "dhp": 0.7062574197246931,
+     "dlogpi_best": 0.03852935135491098
+    }
+   ],
+   "flips": [],
+   "sample": 6389
+  },
+  {
+   "kind": "select upgrade",
+   "floor": 21,
+   "run": 26,
+   "p_win": 0.5344634652137756,
+   "hp": 52.89750068827049,
+   "deck": 22,
+   "relics": 7,
+   "actions": [
+    {
+     "action": 8,
+     "label": "upgrade Fiend Fire",
+     "prior": 0.5859687484769942,
+     "logit": 1.7247751951217651,
+     "ref": "upgrade Battle Trance",
+     "vs_ref": 1.1618009805679321
+    },
+    {
+     "action": 7,
+     "label": "upgrade Battle Trance",
+     "prior": 0.18336257509228654,
+     "logit": 0.562974214553833,
+     "ref": "upgrade Fiend Fire",
+     "vs_ref": -1.1618009805679321
+    },
+    {
+     "action": 9,
+     "label": "upgrade Spot Weakness",
+     "prior": 0.08209447916111064,
+     "logit": -0.24062049388885498,
+     "ref": "upgrade Fiend Fire",
+     "vs_ref": -1.9653956890106201
+    },
+    {
+     "action": 5,
+     "label": "upgrade Pommel Strike",
+     "prior": 0.05540337153185091,
+     "logit": -0.6338508129119873,
+     "ref": "upgrade Fiend Fire",
+     "vs_ref": -2.3586260080337524
+    },
+    {
+     "action": 6,
+     "label": "upgrade Metallicize",
+     "prior": 0.027243528509460366,
+     "logit": -1.3436752557754517,
+     "ref": "upgrade Fiend Fire",
+     "vs_ref": -3.068450450897217
+    },
+    {
+     "action": 1,
+     "label": "upgrade Defend",
+     "prior": 0.021038581969486922,
+     "logit": -1.6021332740783691,
+     "ref": "upgrade Fiend Fire",
+     "vs_ref": -3.3269084692001343
+    },
+    {
+     "action": 4,
+     "label": "upgrade Twin Strike",
+     "prior": 0.013746846264785855,
+     "logit": -2.027681827545166,
+     "ref": "upgrade Fiend Fire",
+     "vs_ref": -3.752457022666931
+    },
+    {
+     "action": 2,
+     "label": "upgrade Bash",
+     "prior": 0.013485805939863394,
+     "logit": -2.046853542327881,
+     "ref": "upgrade Fiend Fire",
+     "vs_ref": -3.771628737449646
+    },
+    {
+     "action": 3,
+     "label": "upgrade Headbutt",
+     "prior": 0.009793072215774407,
+     "logit": -2.3668160438537598,
+     "ref": "upgrade Fiend Fire",
+     "vs_ref": -4.091591238975525
+    },
+    {
+     "action": 0,
+     "label": "upgrade Strike",
+     "prior": 0.00786299083838702,
+     "logit": -2.5863242149353027,
+     "ref": "upgrade Fiend Fire",
+     "vs_ref": -4.311099410057068
+    }
+   ],
+   "best": "upgrade Fiend Fire",
+   "runner_up": "upgrade Battle Trance",
+   "supports": [
+    {
+     "kind": "relic",
+     "item": "Runic Pyramid",
+     "copies": 1,
+     "dC": 1.9384422302246094,
+     "z": 6.870726564029842,
+     "kl": 0.3482686847002485,
+     "top_without": "upgrade Battle Trance",
+     "flips": true,
+     "dpwin": 0.3139514625072479,
+     "dhp": 0.07216673025767761,
+     "dlogpi_best": 0.8714394270639212
+    },
+    {
+     "kind": "relic",
+     "item": "Fossilized Helix",
+     "copies": 1,
+     "dC": 0.3765087127685547,
+     "z": 1.342045797799821,
+     "kl": 0.021896386198251912,
+     "top_without": "upgrade Fiend Fire",
+     "flips": false,
+     "dpwin": 0.1786980926990509,
+     "dhp": 0.025836997199839118,
+     "dlogpi_best": 0.04390335869958095
+    },
+    {
+     "kind": "relic",
+     "item": "Burning Blood",
+     "copies": 1,
+     "dC": 0.3658813238143921,
+     "z": 1.3044286775770475,
+     "kl": 0.027230396079071656,
+     "top_without": "upgrade Fiend Fire",
+     "flips": false,
+     "dpwin": 0.01941859722137451,
+     "dhp": 0.02260803815341461,
+     "dlogpi_best": 0.2125397340629278
+    },
+    {
+     "kind": "card",
+     "item": "Pommel Strike",
+     "copies": 1,
+     "dC": 0.2033137083053589,
+     "z": 0.7289980084532213,
+     "kl": 0.0033132576466289266,
+     "top_without": "upgrade Fiend Fire",
+     "flips": false,
+     "dpwin": -0.0027210116386413574,
+     "dhp": 0.0030136459443994568,
+     "dlogpi_best": -0.010394878967005639
+    }
+   ],
+   "opposes": [
+    {
+     "kind": "card",
+     "item": "Spot Weakness+",
+     "copies": 1,
+     "dC": -0.7976691126823425,
+     "z": -2.814119805379771,
+     "kl": 0.5108524520814074,
+     "top_without": "upgrade Spot Weakness",
+     "flips": true,
+     "dpwin": 0.07340404391288757,
+     "dhp": 0.02234234588814843,
+     "dlogpi_best": 0.521659435970899
+    },
+    {
+     "kind": "relic",
+     "item": "Happy Flower",
+     "copies": 1,
+     "dC": -0.46053314208984375,
+     "z": -1.6207801815174003,
+     "kl": 0.02456892530513037,
+     "top_without": "upgrade Fiend Fire",
+     "flips": false,
+     "dpwin": 0.122770756483078,
+     "dhp": 0.036749843994186904,
+     "dlogpi_best": -0.15801194212760006
+    },
+    {
+     "kind": "card",
+     "item": "Spot Weakness",
+     "copies": 1,
+     "dC": -0.24289458990097046,
+     "z": -0.8504182781269598,
+     "kl": 0.00562737631098819,
+     "top_without": "upgrade Fiend Fire",
+     "flips": false,
+     "dpwin": 0.031088531017303467,
+     "dhp": 0.006096164787727787,
+     "dlogpi_best": -0.15951132193366302
+    },
+    {
+     "kind": "card",
+     "item": "Sentinel+",
+     "copies": 1,
+     "dC": -0.21791893243789673,
+     "z": -0.7620134673607871,
+     "kl": 0.004916992761507571,
+     "top_without": "upgrade Fiend Fire",
+     "flips": false,
+     "dpwin": 0.025099098682403564,
+     "dhp": 0.010604562098016856,
+     "dlogpi_best": -0.07803481458123995
+    }
+   ],
+   "value_items": [
+    {
+     "kind": "relic",
+     "item": "Runic Pyramid",
+     "copies": 1,
+     "dC": 1.9384422302246094,
+     "z": 6.870726564029842,
+     "kl": 0.3482686847002485,
+     "top_without": "upgrade Battle Trance",
+     "flips": true,
+     "dpwin": 0.3139514625072479,
+     "dhp": 0.07216673025767761,
+     "dlogpi_best": 0.8714394270639212
+    },
+    {
+     "kind": "relic",
+     "item": "Fossilized Helix",
+     "copies": 1,
+     "dC": 0.3765087127685547,
+     "z": 1.342045797799821,
+     "kl": 0.021896386198251912,
+     "top_without": "upgrade Fiend Fire",
+     "flips": false,
+     "dpwin": 0.1786980926990509,
+     "dhp": 0.025836997199839118,
+     "dlogpi_best": 0.04390335869958095
+    },
+    {
+     "kind": "relic",
+     "item": "Happy Flower",
+     "copies": 1,
+     "dC": -0.46053314208984375,
+     "z": -1.6207801815174003,
+     "kl": 0.02456892530513037,
+     "top_without": "upgrade Fiend Fire",
+     "flips": false,
+     "dpwin": 0.122770756483078,
+     "dhp": 0.036749843994186904,
+     "dlogpi_best": -0.15801194212760006
+    },
+    {
+     "kind": "card",
+     "item": "Fiend Fire",
+     "copies": 1,
+     "dC": NaN,
+     "z": NaN,
+     "kl": 0.04157529550079827,
+     "top_without": "upgrade Battle Trance",
+     "flips": false,
+     "dpwin": 0.10729795694351196,
+     "dhp": 0.05666629113488142,
+     "dlogpi_best": NaN
+    }
+   ],
+   "flips": [
+    "Spot Weakness+",
+    "Runic Pyramid"
+   ],
+   "sample": 6530
+  },
+  {
+   "kind": "card reward",
+   "floor": 46,
+   "run": 26,
+   "p_win": 0.4777236878871918,
+   "hp": 34.1272347123052,
+   "deck": 32,
+   "relics": 15,
+   "actions": [
+    {
+     "action": 1,
+     "label": "take Battle Trance+",
+     "prior": 0.9442513915459957,
+     "logit": 5.0324177742004395,
+     "ref": "skip / leave rewards",
+     "vs_ref": 6.144266128540039
+    },
+    {
+     "action": 0,
+     "label": "take Spot Weakness",
+     "prior": 0.04916970067418469,
+     "logit": 2.077302932739258,
+     "ref": "skip / leave rewards",
+     "vs_ref": 3.1891512870788574
+    },
+    {
+     "action": 2,
+     "label": "take Pommel Strike+",
+     "prior": 0.003884086849683158,
+     "logit": -0.4610867500305176,
+     "ref": "skip / leave rewards",
+     "vs_ref": 0.650761604309082
+    },
+    {
+     "action": 4,
+     "label": "skip / leave rewards",
+     "prior": 0.0020261274412922297,
+     "logit": -1.1118483543395996,
+     "ref": "take Battle Trance+",
+     "vs_ref": -6.144266128540039
+    },
+    {
+     "action": 3,
+     "label": "take Ghostly Armor",
+     "prior": 0.0006686934888439572,
+     "logit": -2.2204041481018066,
+     "ref": "skip / leave rewards",
+     "vs_ref": -1.108555793762207
+    }
+   ],
+   "best": "take Battle Trance+",
+   "runner_up": "take Spot Weakness",
+   "supports": [
+    {
+     "kind": "card",
+     "item": "Spot Weakness+",
+     "copies": 1,
+     "dC": 3.270010471343994,
+     "z": 15.931601327073187,
+     "kl": 0.6464685536301552,
+     "top_without": "take Spot Weakness",
+     "flips": true,
+     "dpwin": 0.0503939688205719,
+     "dhp": 0.015963300939482394,
+     "dlogpi_best": 0.8102121108824294
+    },
+    {
+     "kind": "card",
+     "item": "Spot Weakness",
+     "copies": 1,
+     "dC": 2.6136221885681152,
+     "z": 12.838681207001502,
+     "kl": 0.3545242508821299,
+     "top_without": "take Battle Trance+",
+     "flips": false,
+     "dpwin": 0.01932138204574585,
+     "dhp": 0.003202095173897135,
+     "dlogpi_best": 0.485406494082131
+    },
+    {
+     "kind": "relic",
+     "item": "Coffee Dripper",
+     "copies": 1,
+     "dC": 0.7380504608154297,
+     "z": 4.0009342733247175,
+     "kl": 0.017026346982664538,
+     "top_without": "take Battle Trance+",
+     "flips": false,
+     "dpwin": 0.1056746244430542,
+     "dhp": 0.02371933806165316,
+     "dlogpi_best": 0.05172017305282317
+    },
+    {
+     "kind": "potion",
+     "item": "Cultist Potion",
+     "copies": 1,
+     "dC": 0.6329011917114258,
+     "z": 3.5054679486559546,
+     "kl": 0.011552680036789283,
+     "top_without": "take Battle Trance+",
+     "flips": false,
+     "dpwin": 0.09997478127479553,
+     "dhp": -0.006338496078704736,
+     "dlogpi_best": 0.04438521302230569
+    }
+   ],
+   "opposes": [
+    {
+     "kind": "relic",
+     "item": "Runic Pyramid",
+     "copies": 1,
+     "dC": -2.3723166584968567,
+     "z": -10.65520340702313,
+     "kl": 0.07220285777606093,
+     "top_without": "take Battle Trance+",
+     "flips": false,
+     "dpwin": 0.3655228987336159,
+     "dhp": 0.06630756660770487,
+     "dlogpi_best": -0.04666242597983583
+    },
+    {
+     "kind": "card",
+     "item": "Battle Trance",
+     "copies": 1,
+     "dC": -1.3842896223068237,
+     "z": -5.999592117797286,
+     "kl": 0.032433456437528624,
+     "top_without": "take Battle Trance+",
+     "flips": false,
+     "dpwin": 0.03645738959312439,
+     "dhp": -0.0045220540220398675,
+     "dlogpi_best": -0.041644514163148294
+    },
+    {
+     "kind": "relic",
+     "item": "Fossilized Helix",
+     "copies": 1,
+     "dC": -0.9149765968322754,
+     "z": -3.788175891774295,
+     "kl": 0.015233240168301663,
+     "top_without": "take Battle Trance+",
+     "flips": false,
+     "dpwin": 0.10757437348365784,
+     "dhp": -0.01260748074074769,
+     "dlogpi_best": -0.031411509199382515
+    },
+    {
+     "kind": "card",
+     "item": "Feel No Pain+",
+     "copies": 1,
+     "dC": -0.3563535213470459,
+     "z": -1.15592818863464,
+     "kl": 0.0027708044438583216,
+     "top_without": "take Battle Trance+",
+     "flips": false,
+     "dpwin": 0.11493635177612305,
+     "dhp": -0.008801475779669943,
+     "dlogpi_best": -0.015967534588289922
+    }
+   ],
+   "value_items": [
+    {
+     "kind": "relic",
+     "item": "Runic Pyramid",
+     "copies": 1,
+     "dC": -2.3723166584968567,
+     "z": -10.65520340702313,
+     "kl": 0.07220285777606093,
+     "top_without": "take Battle Trance+",
+     "flips": false,
+     "dpwin": 0.3655228987336159,
+     "dhp": 0.06630756660770487,
+     "dlogpi_best": -0.04666242597983583
+    },
+    {
+     "kind": "relic",
+     "item": "Self Forming Clay",
+     "copies": 1,
+     "dC": -0.2297133207321167,
+     "z": -0.5591959879387763,
+     "kl": 0.001266749155050243,
+     "top_without": "take Battle Trance+",
+     "flips": false,
+     "dpwin": 0.13785645365715027,
+     "dhp": 0.00020328669360480944,
+     "dlogpi_best": -0.011066037021886466
+    },
+    {
+     "kind": "card",
+     "item": "Feel No Pain+",
+     "copies": 1,
+     "dC": -0.3563535213470459,
+     "z": -1.15592818863464,
+     "kl": 0.0027708044438583216,
+     "top_without": "take Battle Trance+",
+     "flips": false,
+     "dpwin": 0.11493635177612305,
+     "dhp": -0.008801475779669943,
+     "dlogpi_best": -0.015967534588289922
+    },
+    {
+     "kind": "card",
+     "item": "Fiend Fire+",
+     "copies": 1,
+     "dC": 0.5004258155822754,
+     "z": 2.8812402361941585,
+     "kl": 0.007122752823573813,
+     "top_without": "take Battle Trance+",
+     "flips": false,
+     "dpwin": 0.1116001307964325,
+     "dhp": 0.021856315300937013,
+     "dlogpi_best": 0.03377592905221327
+    }
+   ],
+   "flips": [
+    "Spot Weakness+"
+   ],
+   "sample": 6809
+  },
+  {
+   "kind": "card reward",
+   "floor": 35,
+   "run": 27,
+   "p_win": 0.37737980484962463,
+   "hp": 62.00197470774423,
+   "deck": 26,
+   "relics": 13,
+   "actions": [
+    {
+     "action": 3,
+     "label": "skip / leave rewards",
+     "prior": 0.8961797014090888,
+     "logit": 1.0221354961395264,
+     "ref": "take Headbutt",
+     "vs_ref": 2.223244309425354
+    },
+    {
+     "action": 1,
+     "label": "take Headbutt",
+     "prior": 0.0970180111328434,
+     "logit": -1.2011088132858276,
+     "ref": "skip / leave rewards",
+     "vs_ref": -2.223244309425354
+    },
+    {
+     "action": 0,
+     "label": "take Hemokinesis+",
+     "prior": 0.005926390356706161,
+     "logit": -3.9965901374816895,
+     "ref": "skip / leave rewards",
+     "vs_ref": -5.018725633621216
+    },
+    {
+     "action": 2,
+     "label": "take Wild Strike",
+     "prior": 0.0008758971013617304,
+     "logit": -5.908512115478516,
+     "ref": "skip / leave rewards",
+     "vs_ref": -6.930647611618042
+    }
+   ],
+   "best": "skip / leave rewards",
+   "runner_up": "take Headbutt",
+   "supports": [
+    {
+     "kind": "relic",
+     "item": "Runic Pyramid",
+     "copies": 1,
+     "dC": 1.5567526370286942,
+     "z": 20.53362458777683,
+     "kl": 0.16567757951372047,
+     "top_without": "skip / leave rewards",
+     "flips": false,
+     "dpwin": 0.3270554766058922,
+     "dhp": -2.2575768056753986e-05,
+     "dlogpi_best": 0.32684005894685386
+    },
+    {
+     "kind": "card",
+     "item": "Spot Weakness",
+     "copies": 1,
+     "dC": 0.6908272504806519,
+     "z": 9.135921964039818,
+     "kl": 0.03281775166284588,
+     "top_without": "skip / leave rewards",
+     "flips": false,
+     "dpwin": 0.1286398470401764,
+     "dhp": 2.7347897201934757e-05,
+     "dlogpi_best": 0.10858141354707729
+    },
+    {
+     "kind": "card",
+     "item": "Reaper",
+     "copies": 1,
+     "dC": 0.2635535001754761,
+     "z": 3.511951099389498,
+     "kl": 0.003422208780781092,
+     "top_without": "skip / leave rewards",
+     "flips": false,
+     "dpwin": 0.12625572085380554,
+     "dhp": 0.000368537809563918,
+     "dlogpi_best": 0.030580050223700583
+    },
+    {
+     "kind": "relic",
+     "item": "Warped Tongs",
+     "copies": 1,
+     "dC": 0.24478501081466675,
+     "z": 3.2649117311547284,
+     "kl": 0.003147936003893615,
+     "top_without": "skip / leave rewards",
+     "flips": false,
+     "dpwin": 0.08872920274734497,
+     "dhp": 6.914901573651377e-05,
+     "dlogpi_best": 0.029097957606133873
+    }
+   ],
+   "opposes": [
+    {
+     "kind": "relic",
+     "item": "Toxic Egg",
+     "copies": 1,
+     "dC": -0.21508300304412842,
+     "z": -2.7880796114663595,
+     "kl": 0.0025602042443754087,
+     "top_without": "skip / leave rewards",
+     "flips": false,
+     "dpwin": 0.03839010000228882,
+     "dhp": 0.00017095477144835058,
+     "dlogpi_best": -0.021639227654725035
+    },
+    {
+     "kind": "card",
+     "item": "Strike",
+     "copies": 1,
+     "dC": -0.12469720840454102,
+     "z": -1.5983807936282888,
+     "kl": 0.0006801455169922893,
+     "top_without": "skip / leave rewards",
+     "flips": false,
+     "dpwin": -0.03655800223350525,
+     "dhp": -7.223426976565861e-06,
+     "dlogpi_best": -0.012049719248624191
+    },
+    {
+     "kind": "card",
+     "item": "Ascender's Bane",
+     "copies": 1,
+     "dC": -0.12199723720550537,
+     "z": -1.5628425483044748,
+     "kl": 0.0006611733056453208,
+     "top_without": "skip / leave rewards",
+     "flips": false,
+     "dpwin": -0.027640312910079956,
+     "dhp": 0.00010668050364159853,
+     "dlogpi_best": -0.011900575524117496
+    },
+    {
+     "kind": "relic",
+     "item": "White Beast Statue",
+     "copies": 1,
+     "dC": -0.10365533828735352,
+     "z": -1.3214181569292256,
+     "kl": 0.0005243085809188419,
+     "top_without": "skip / leave rewards",
+     "flips": false,
+     "dpwin": 0.022216051816940308,
+     "dhp": -0.00023193809843036206,
+     "dlogpi_best": -0.010489312196677147
+    }
+   ],
+   "value_items": [
+    {
+     "kind": "relic",
+     "item": "Runic Pyramid",
+     "copies": 1,
+     "dC": 1.5567526370286942,
+     "z": 20.53362458777683,
+     "kl": 0.16567757951372047,
+     "top_without": "skip / leave rewards",
+     "flips": false,
+     "dpwin": 0.3270554766058922,
+     "dhp": -2.2575768056753986e-05,
+     "dlogpi_best": 0.32684005894685386
+    },
+    {
+     "kind": "relic",
+     "item": "Runic Dome",
+     "copies": 1,
+     "dC": 0.021921873092651367,
+     "z": 0.3314860468997149,
+     "kl": 0.00035151006737304093,
+     "top_without": "skip / leave rewards",
+     "flips": false,
+     "dpwin": 0.13676409423351288,
+     "dhp": -1.552045354458187e-05,
+     "dlogpi_best": 0.004378532058291418
+    },
+    {
+     "kind": "card",
+     "item": "Spot Weakness",
+     "copies": 1,
+     "dC": 0.6908272504806519,
+     "z": 9.135921964039818,
+     "kl": 0.03281775166284588,
+     "top_without": "skip / leave rewards",
+     "flips": false,
+     "dpwin": 0.1286398470401764,
+     "dhp": 2.7347897201934757e-05,
+     "dlogpi_best": 0.10858141354707729
+    },
+    {
+     "kind": "card",
+     "item": "Reaper",
+     "copies": 1,
+     "dC": 0.2635535001754761,
+     "z": 3.511951099389498,
+     "kl": 0.003422208780781092,
+     "top_without": "skip / leave rewards",
+     "flips": false,
+     "dpwin": 0.12625572085380554,
+     "dhp": 0.000368537809563918,
+     "dlogpi_best": 0.030580050223700583
+    }
+   ],
+   "flips": [],
+   "sample": 7304
+  },
+  {
+   "kind": "shop",
+   "floor": 48,
+   "run": 28,
+   "p_win": 0.45545992255210876,
+   "hp": 83.99860422762536,
+   "deck": 44,
+   "relics": 13,
+   "actions": [
+    {
+     "action": 6,
+     "label": "leave shop",
+     "prior": 0.5764559953432026,
+     "logit": 0.8567585349082947,
+     "ref": "buy remove a card (60 g)",
+     "vs_ref": 0.9587658047676086
+    },
+    {
+     "action": 5,
+     "label": "buy remove a card (60 g)",
+     "prior": 0.2209934805511031,
+     "logit": -0.10200726985931396,
+     "ref": "leave shop",
+     "vs_ref": -0.9587658047676086
+    },
+    {
+     "action": 1,
+     "label": "buy Ghostly Armor (63 g)",
+     "prior": 0.0718049033266198,
+     "logit": -1.2261877059936523,
+     "ref": "leave shop",
+     "vs_ref": -2.082946240901947
+    },
+    {
+     "action": 2,
+     "label": "buy Bloodletting (65 g)",
+     "prior": 0.06195650339312651,
+     "logit": -1.373707890510559,
+     "ref": "leave shop",
+     "vs_ref": -2.2304664254188538
+    },
+    {
+     "action": 8,
+     "label": "discard Power Potion",
+     "prior": 0.028965759358043533,
+     "logit": -2.134026050567627,
+     "ref": "leave shop",
+     "vs_ref": -2.9907845854759216
+    },
+    {
+     "action": 0,
+     "label": "buy Sword Boomerang (21 g)",
+     "prior": 0.023270025109123932,
+     "logit": -2.3529744148254395,
+     "ref": "leave shop",
+     "vs_ref": -3.209732949733734
+    },
+    {
+     "action": 4,
+     "label": "buy Dramatic Entrance (74 g)",
+     "prior": 0.009212008482923497,
+     "logit": -3.279632568359375,
+     "ref": "leave shop",
+     "vs_ref": -4.13639110326767
+    },
+    {
+     "action": 7,
+     "label": "discard Strength Potion",
+     "prior": 0.00725008779960306,
+     "logit": -3.5191268920898438,
+     "ref": "leave shop",
+     "vs_ref": -4.375885426998138
+    },
+    {
+     "action": 3,
+     "label": "buy Combust (65 g)",
+     "prior": 9.123663625403162e-05,
+     "logit": -7.894439220428467,
+     "ref": "leave shop",
+     "vs_ref": -8.751197755336761
+    }
+   ],
+   "best": "leave shop",
+   "runner_up": "buy remove a card (60 g)",
+   "supports": [
+    {
+     "kind": "card",
+     "item": "Corruption+",
+     "copies": 1,
+     "dC": 1.561170220375061,
+     "z": 15.88800122484896,
+     "kl": 0.24964133286890114,
+     "top_without": "buy remove a card (60 g)",
+     "flips": true,
+     "dpwin": 0.15376043319702148,
+     "dhp": -0.0005000705210846945,
+     "dlogpi_best": 0.6508415806741707
+    },
+    {
+     "kind": "relic",
+     "item": "The Courier",
+     "copies": 1,
+     "dC": 0.4481516480445862,
+     "z": 4.343095799368865,
+     "kl": 0.024057022976826742,
+     "top_without": "leave shop",
+     "flips": false,
+     "dpwin": 0.0244675874710083,
+     "dhp": -0.00040607562078776027,
+     "dlogpi_best": 0.1518159080215178
+    },
+    {
+     "kind": "card",
+     "item": "Barricade+",
+     "copies": 1,
+     "dC": 0.32778309285640717,
+     "z": 3.094559952442675,
+     "kl": 0.017236022834652358,
+     "top_without": "leave shop",
+     "flips": false,
+     "dpwin": 0.12374362349510193,
+     "dhp": 0.0006748643332059601,
+     "dlogpi_best": 0.051817361635678294
+    },
+    {
+     "kind": "card",
+     "item": "Uppercut+",
+     "copies": 1,
+     "dC": 0.255227729678154,
+     "z": 2.341971606813899,
+     "kl": 0.005588571849386613,
+     "top_without": "leave shop",
+     "flips": false,
+     "dpwin": 0.051981598138809204,
+     "dhp": 5.639271222435127e-05,
+     "dlogpi_best": 0.07480359262422343
+    }
+   ],
+   "opposes": [
+    {
+     "kind": "relic",
+     "item": "Burning Blood",
+     "copies": 1,
+     "dC": -0.34694403409957886,
+     "z": -3.904120089708385,
+     "kl": 0.011319165021588305,
+     "top_without": "leave shop",
+     "flips": false,
+     "dpwin": -0.03535011410713196,
+     "dhp": 0.018597014346440233,
+     "dlogpi_best": -0.05088076221746274
+    },
+    {
+     "kind": "potion",
+     "item": "Power Potion",
+     "copies": 1,
+     "dC": -0.3355254530906677,
+     "z": -3.785679624186736,
+     "kl": 0.012438361433722652,
+     "top_without": "leave shop",
+     "flips": false,
+     "dpwin": 0.04290008544921875,
+     "dhp": -0.0002000657364789049,
+     "dlogpi_best": -0.12035935387814645
+    },
+    {
+     "kind": "potion",
+     "item": "Strength Potion",
+     "copies": 1,
+     "dC": -0.2772894501686096,
+     "z": -3.181620390309445,
+     "kl": 0.01275921104362872,
+     "top_without": "leave shop",
+     "flips": false,
+     "dpwin": 0.06775125861167908,
+     "dhp": -0.00026242532536002727,
+     "dlogpi_best": -0.07013118780996108
+    },
+    {
+     "kind": "relic",
+     "item": "Dollys Mirror",
+     "copies": 1,
+     "dC": -0.18722990155220032,
+     "z": -2.2474679895450502,
+     "kl": 0.0032613296617922598,
+     "top_without": "leave shop",
+     "flips": false,
+     "dpwin": 0.004767417907714844,
+     "dhp": -0.0002545906131672382,
+     "dlogpi_best": -0.05718605619540629
+    }
+   ],
+   "value_items": [
+    {
+     "kind": "card",
+     "item": "Corruption+",
+     "copies": 1,
+     "dC": 1.561170220375061,
+     "z": 15.88800122484896,
+     "kl": 0.24964133286890114,
+     "top_without": "buy remove a card (60 g)",
+     "flips": true,
+     "dpwin": 0.15376043319702148,
+     "dhp": -0.0005000705210846945,
+     "dlogpi_best": 0.6508415806741707
+    },
+    {
+     "kind": "card",
+     "item": "Barricade+",
+     "copies": 1,
+     "dC": 0.32778309285640717,
+     "z": 3.094559952442675,
+     "kl": 0.017236022834652358,
+     "top_without": "leave shop",
+     "flips": false,
+     "dpwin": 0.12374362349510193,
+     "dhp": 0.0006748643332059601,
+     "dlogpi_best": 0.051817361635678294
+    },
+    {
+     "kind": "card",
+     "item": "Feel No Pain+",
+     "copies": 2,
+     "dC": 0.21627260744571686,
+     "z": 1.937905391575606,
+     "kl": 0.004369633237475638,
+     "top_without": "leave shop",
+     "flips": false,
+     "dpwin": 0.09280440211296082,
+     "dhp": -7.560308074516797e-05,
+     "dlogpi_best": 0.058213783670752806
+    },
+    {
+     "kind": "card",
+     "item": "Dark Embrace+",
+     "copies": 2,
+     "dC": 0.22316017746925354,
+     "z": 2.0093474559848357,
+     "kl": 0.012938609794459502,
+     "top_without": "leave shop",
+     "flips": false,
+     "dpwin": 0.07889071106910706,
+     "dhp": 0.0003109645912928727,
+     "dlogpi_best": 0.016321700688780583
+    }
+   ],
+   "flips": [
+    "Corruption+"
+   ],
+   "sample": 8394
+  },
+  {
+   "kind": "card reward",
+   "floor": 6,
+   "run": 29,
+   "p_win": 0.5157047510147095,
+   "hp": 40.999953156126466,
+   "deck": 15,
+   "relics": 3,
+   "actions": [
+    {
+     "action": 0,
+     "label": "take Fiend Fire",
+     "prior": 0.9834556825731017,
+     "logit": 3.5263047218322754,
+     "ref": "skip / leave rewards",
+     "vs_ref": 4.550237536430359
+    },
+    {
+     "action": 3,
+     "label": "skip / leave rewards",
+     "prior": 0.010389908925192431,
+     "logit": -1.0239328145980835,
+     "ref": "take Fiend Fire",
+     "vs_ref": -4.550237536430359
+    },
+    {
+     "action": 1,
+     "label": "take Perfected Strike",
+     "prior": 0.00520106793094581,
+     "logit": -1.715903878211975,
+     "ref": "skip / leave rewards",
+     "vs_ref": -0.6919710636138916
+    },
+    {
+     "action": 2,
+     "label": "take Cleave",
+     "prior": 0.000953340570759675,
+     "logit": -3.412550926208496,
+     "ref": "skip / leave rewards",
+     "vs_ref": -2.3886181116104126
+    }
+   ],
+   "best": "take Fiend Fire",
+   "runner_up": "skip / leave rewards",
+   "supports": [
+    {
+     "kind": "relic",
+     "item": "Burning Blood",
+     "copies": 1,
+     "dC": 0.5694116353988647,
+     "z": 2.581824754805426,
+     "kl": 0.0037125575214265027,
+     "top_without": "take Fiend Fire",
+     "flips": false,
+     "dpwin": 0.06659728288650513,
+     "dhp": -0.0002808796034514671,
+     "dlogpi_best": 0.013679409280540344
+    },
+    {
+     "kind": "card",
+     "item": "Spot Weakness",
+     "copies": 1,
+     "dC": 0.41457629203796387,
+     "z": 1.8188945635221738,
+     "kl": 0.9420514850252244,
+     "top_without": "take Perfected Strike",
+     "flips": true,
+     "dpwin": 0.17815974354743958,
+     "dhp": 3.183071645906921e-05,
+     "dlogpi_best": 0.9783047791649149
+    },
+    {
+     "kind": "card",
+     "item": "Defend",
+     "copies": 4,
+     "dC": 0.07681918144226074,
+     "z": 0.154642129932589,
+     "kl": 0.00019490724931364245,
+     "top_without": "take Fiend Fire",
+     "flips": false,
+     "dpwin": -0.030712127685546875,
+     "dhp": -3.4848299890199996e-07,
+     "dlogpi_best": -0.00042895197491166215
+    },
+    {
+     "kind": "relic",
+     "item": "Ceramic Fish",
+     "copies": 1,
+     "dC": 0.05246567726135254,
+     "z": 0.034643535297446994,
+     "kl": 4.141605691440186e-05,
+     "top_without": "take Fiend Fire",
+     "flips": false,
+     "dpwin": 0.010964512825012207,
+     "dhp": -2.6503666866517506e-05,
+     "dlogpi_best": 0.0008709853150992153
+    }
+   ],
+   "opposes": [
+    {
+     "kind": "card",
+     "item": "Reaper",
+     "copies": 1,
+     "dC": -1.8045778274536133,
+     "z": -9.115686909419862,
+     "kl": 0.01050856669094764,
+     "top_without": "take Fiend Fire",
+     "flips": false,
+     "dpwin": 0.15754318237304688,
+     "dhp": 1.2986862699904123e-05,
+     "dlogpi_best": -0.010711211709591328
+    },
+    {
+     "kind": "card",
+     "item": "Uppercut",
+     "copies": 1,
+     "dC": -0.31880104541778564,
+     "z": -1.7947229749732796,
+     "kl": 0.0049275219172224905,
+     "top_without": "take Fiend Fire",
+     "flips": false,
+     "dpwin": 0.040535569190979004,
+     "dhp": 5.5509614469428925e-06,
+     "dlogpi_best": 0.007619738519380359
+    },
+    {
+     "kind": "card",
+     "item": "Strike",
+     "copies": 5,
+     "dC": -0.1813650131225586,
+     "z": -1.1175255332767309,
+     "kl": 0.0009161914959351911,
+     "top_without": "take Fiend Fire",
+     "flips": false,
+     "dpwin": -0.02987968921661377,
+     "dhp": 7.131773784863071e-06,
+     "dlogpi_best": -0.004176652289689997
+    },
+    {
+     "kind": "card",
+     "item": "Disarm",
+     "copies": 1,
+     "dC": -0.09145188331604004,
+     "z": -0.6744907594765952,
+     "kl": 0.00012098105364202793,
+     "top_without": "take Fiend Fire",
+     "flips": false,
+     "dpwin": 0.03086993098258972,
+     "dhp": -2.7581648893715283e-06,
+     "dlogpi_best": 0.00010127677406401858
+    }
+   ],
+   "value_items": [
+    {
+     "kind": "card",
+     "item": "Spot Weakness",
+     "copies": 1,
+     "dC": 0.41457629203796387,
+     "z": 1.8188945635221738,
+     "kl": 0.9420514850252244,
+     "top_without": "take Perfected Strike",
+     "flips": true,
+     "dpwin": 0.17815974354743958,
+     "dhp": 3.183071645906921e-05,
+     "dlogpi_best": 0.9783047791649149
+    },
+    {
+     "kind": "card",
+     "item": "Reaper",
+     "copies": 1,
+     "dC": -1.8045778274536133,
+     "z": -9.115686909419862,
+     "kl": 0.01050856669094764,
+     "top_without": "take Fiend Fire",
+     "flips": false,
+     "dpwin": 0.15754318237304688,
+     "dhp": 1.2986862699904123e-05,
+     "dlogpi_best": -0.010711211709591328
+    },
+    {
+     "kind": "relic",
+     "item": "Burning Blood",
+     "copies": 1,
+     "dC": 0.5694116353988647,
+     "z": 2.581824754805426,
+     "kl": 0.0037125575214265027,
+     "top_without": "take Fiend Fire",
+     "flips": false,
+     "dpwin": 0.06659728288650513,
+     "dhp": -0.0002808796034514671,
+     "dlogpi_best": 0.013679409280540344
+    },
+    {
+     "kind": "card",
+     "item": "Ascender's Bane",
+     "copies": 1,
+     "dC": 0.05035662651062012,
+     "z": 0.024251473267191608,
+     "kl": 8.850217505101704e-05,
+     "top_without": "take Fiend Fire",
+     "flips": false,
+     "dpwin": -0.05373990535736084,
+     "dhp": 8.047918313991431e-06,
+     "dlogpi_best": -0.0003315866588597949
+    }
+   ],
+   "flips": [
+    "Spot Weakness"
+   ],
+   "sample": 8662
+  },
+  {
+   "kind": "map",
+   "floor": 31,
+   "run": 29,
+   "p_win": 0.72437983751297,
+   "hp": 46.99819111677169,
+   "deck": 31,
+   "relics": 8,
+   "actions": [
+    {
+     "action": 0,
+     "label": "map: rest x3 y14",
+     "prior": 0.5027274069873054,
+     "logit": -0.6139002442359924,
+     "ref": "map: rest x4 y14",
+     "vs_ref": 0.010909736156463623
+    },
+    {
+     "action": 1,
+     "label": "map: rest x4 y14",
+     "prior": 0.4972725930126946,
+     "logit": -0.624809980392456,
+     "ref": "map: rest x3 y14",
+     "vs_ref": -0.010909736156463623
+    }
+   ],
+   "best": "map: rest x3 y14",
+   "runner_up": "map: rest x4 y14",
+   "supports": [
+    {
+     "kind": "card",
+     "item": "Reaper",
+     "copies": 1,
+     "dC": 0.021460115909576416,
+     "z": 0.4118061065673828,
+     "kl": 5.7566500572946155e-05,
+     "top_without": "map: rest x4 y14",
+     "flips": true,
+     "dpwin": 0.11026006937026978,
+     "dhp": 0.0005619146139039799,
+     "dlogpi_best": 0.01072909398528099
+    },
+    {
+     "kind": "card",
+     "item": "Spot Weakness+",
+     "copies": 1,
+     "dC": 0.016241252422332764,
+     "z": 0.30742883682250977,
+     "kl": 3.2971915249582415e-05,
+     "top_without": "map: rest x4 y14",
+     "flips": true,
+     "dpwin": 0.38315704464912415,
+     "dhp": 0.006927619872840296,
+     "dlogpi_best": 0.008109301621076703
+    },
+    {
+     "kind": "relic",
+     "item": "Fusion Hammer",
+     "copies": 1,
+     "dC": 0.014069855213165283,
+     "z": 0.26400089263916016,
+     "kl": 2.4744795862823715e-05,
+     "top_without": "map: rest x4 y14",
+     "flips": true,
+     "dpwin": 0.1506466269493103,
+     "dhp": 0.006976267223365085,
+     "dlogpi_best": 0.007021298181026703
+    },
+    {
+     "kind": "card",
+     "item": "Corruption",
+     "copies": 1,
+     "dC": 0.010750293731689453,
+     "z": 0.19760966300964355,
+     "kl": 1.4445884882105173e-05,
+     "top_without": "map: rest x3 y14",
+     "flips": false,
+     "dpwin": 0.169022798538208,
+     "dhp": 0.0023258388391838025,
+     "dlogpi_best": 0.005360272324487436
+    }
+   ],
+   "opposes": [
+    {
+     "kind": "relic",
+     "item": "Darkstone Periapt",
+     "copies": 1,
+     "dC": -0.010543465614318848,
+     "z": -0.22826552391052246,
+     "kl": 1.3894839198100306e-05,
+     "top_without": "map: rest x3 y14",
+     "flips": false,
+     "dpwin": -0.001124560832977295,
+     "dhp": 0.0006400554332302022,
+     "dlogpi_best": -0.005229081646174416
+    },
+    {
+     "kind": "card",
+     "item": "Ascender's Bane",
+     "copies": 1,
+     "dC": -0.005376636981964111,
+     "z": -0.12492895126342773,
+     "kl": 3.6133809566683047e-06,
+     "top_without": "map: rest x3 y14",
+     "flips": false,
+     "dpwin": -0.029407858848571777,
+     "dhp": 0.0002508179781344211,
+     "dlogpi_best": -0.0026700408327525738
+    },
+    {
+     "kind": "card",
+     "item": "Uppercut",
+     "copies": 1,
+     "dC": -0.002553701400756836,
+     "z": -0.06847023963928223,
+     "kl": 8.151455935309767e-07,
+     "top_without": "map: rest x3 y14",
+     "flips": false,
+     "dpwin": -0.011385798454284668,
+     "dhp": 0.0005479080971255712,
+     "dlogpi_best": -0.0012690705717409712
+    },
+    {
+     "kind": "card",
+     "item": "Bash",
+     "copies": 1,
+     "dC": -0.0017585158348083496,
+     "z": -0.0525665283203125,
+     "kl": 3.8653445520004607e-07,
+     "top_without": "map: rest x3 y14",
+     "flips": false,
+     "dpwin": -0.013114631175994873,
+     "dhp": 0.005020187788915109,
+     "dlogpi_best": -0.0008740751945738312
+    }
+   ],
+   "value_items": [
+    {
+     "kind": "card",
+     "item": "Spot Weakness+",
+     "copies": 1,
+     "dC": 0.016241252422332764,
+     "z": 0.30742883682250977,
+     "kl": 3.2971915249582415e-05,
+     "top_without": "map: rest x4 y14",
+     "flips": true,
+     "dpwin": 0.38315704464912415,
+     "dhp": 0.006927619872840296,
+     "dlogpi_best": 0.008109301621076703
+    },
+    {
+     "kind": "card",
+     "item": "Corruption",
+     "copies": 1,
+     "dC": 0.010750293731689453,
+     "z": 0.19760966300964355,
+     "kl": 1.4445884882105173e-05,
+     "top_without": "map: rest x3 y14",
+     "flips": false,
+     "dpwin": 0.169022798538208,
+     "dhp": 0.0023258388391838025,
+     "dlogpi_best": 0.005360272324487436
+    },
+    {
+     "kind": "relic",
+     "item": "Fusion Hammer",
+     "copies": 1,
+     "dC": 0.014069855213165283,
+     "z": 0.26400089263916016,
+     "kl": 2.4744795862823715e-05,
+     "top_without": "map: rest x4 y14",
+     "flips": true,
+     "dpwin": 0.1506466269493103,
+     "dhp": 0.006976267223365085,
+     "dlogpi_best": 0.007021298181026703
+    },
+    {
+     "kind": "card",
+     "item": "Dark Embrace",
+     "copies": 1,
+     "dC": 0.006162583827972412,
+     "z": 0.10585546493530273,
+     "kl": 4.74708435786687e-06,
+     "top_without": "map: rest x3 y14",
+     "flips": false,
+     "dpwin": 0.13153278827667236,
+     "dhp": 0.0027351631927174935,
+     "dlogpi_best": 0.0030692311241518055
+    }
+   ],
+   "flips": [
+    "Reaper",
+    "Spot Weakness+",
+    "Fusion Hammer"
+   ],
+   "sample": 8959
+  },
+  {
+   "kind": "card reward",
+   "floor": 31,
+   "run": 30,
+   "p_win": 0.6971644759178162,
+   "hp": 29.625222053723895,
+   "deck": 25,
+   "relics": 7,
+   "actions": [
+    {
+     "action": 0,
+     "label": "take Dark Embrace",
+     "prior": 0.809204992353126,
+     "logit": 2.877903461456299,
+     "ref": "skip / leave rewards",
+     "vs_ref": 3.378426730632782
+    },
+    {
+     "action": 2,
+     "label": "take Shockwave",
+     "prior": 0.16307828724526194,
+     "logit": 1.2760815620422363,
+     "ref": "skip / leave rewards",
+     "vs_ref": 1.7766048312187195
+    },
+    {
+     "action": 3,
+     "label": "skip / leave rewards",
+     "prior": 0.027594750190289157,
+     "logit": -0.5005232691764832,
+     "ref": "take Dark Embrace",
+     "vs_ref": -3.378426730632782
+    },
+    {
+     "action": 1,
+     "label": "take Fire Breathing",
+     "prior": 0.0001219702113230643,
+     "logit": -5.9221272468566895,
+     "ref": "skip / leave rewards",
+     "vs_ref": -5.421603977680206
+    }
+   ],
+   "best": "take Dark Embrace",
+   "runner_up": "take Shockwave",
+   "supports": [
+    {
+     "kind": "card",
+     "item": "Shockwave+",
+     "copies": 1,
+     "dC": 5.599616527557373,
+     "z": 21.488433322092583,
+     "kl": 2.862232241652645,
+     "top_without": "take Shockwave",
+     "flips": true,
+     "dpwin": 0.0730440616607666,
+     "dhp": 0.09351362390340512,
+     "dlogpi_best": 3.8061555225466766
+    },
+    {
+     "kind": "card",
+     "item": "Second Wind",
+     "copies": 1,
+     "dC": 0.990546464920044,
+     "z": 3.7187909466706897,
+     "kl": 0.09208520795208827,
+     "top_without": "take Dark Embrace",
+     "flips": false,
+     "dpwin": 0.022322237491607666,
+     "dhp": 0.43402241812778186,
+     "dlogpi_best": 0.28219474670260647
+    },
+    {
+     "kind": "card",
+     "item": "Panic Button",
+     "copies": 1,
+     "dC": 0.44936490058898926,
+     "z": 1.6323390751121223,
+     "kl": 0.01700161724102861,
+     "top_without": "take Dark Embrace",
+     "flips": false,
+     "dpwin": 0.029910147190093994,
+     "dhp": 0.02527075653836519,
+     "dlogpi_best": 0.10264617092499728
+    },
+    {
+     "kind": "card",
+     "item": "Limit Break",
+     "copies": 1,
+     "dC": 0.37061893939971924,
+     "z": 1.328744738331418,
+     "kl": 0.010101737615038615,
+     "top_without": "take Dark Embrace",
+     "flips": false,
+     "dpwin": 0.025433480739593506,
+     "dhp": 0.47167418507349623,
+     "dlogpi_best": 0.07271932512092993
+    }
+   ],
+   "opposes": [
+    {
+     "kind": "card",
+     "item": "Feel No Pain+",
+     "copies": 1,
+     "dC": -0.9376891255378723,
+     "z": -3.7152589576155575,
+     "kl": 0.05172577030760623,
+     "top_without": "take Dark Embrace",
+     "flips": false,
+     "dpwin": 0.09173077344894409,
+     "dhp": 0.26844592655874777,
+     "dlogpi_best": -0.11947682839314755
+    },
+    {
+     "kind": "card",
+     "item": "Demon Form+",
+     "copies": 1,
+     "dC": -0.9189548492431641,
+     "z": -3.6430315049200734,
+     "kl": 0.052529226666648436,
+     "top_without": "take Dark Embrace",
+     "flips": false,
+     "dpwin": 0.0255659818649292,
+     "dhp": 0.1454150193928747,
+     "dlogpi_best": -0.12093532727804357
+    },
+    {
+     "kind": "card",
+     "item": "Demon Form",
+     "copies": 1,
+     "dC": -0.8815903663635254,
+     "z": -3.4989778261322453,
+     "kl": 0.046557415034093,
+     "top_without": "take Dark Embrace",
+     "flips": false,
+     "dpwin": 0.005016148090362549,
+     "dhp": 0.3357768752688983,
+     "dlogpi_best": -0.11510366650127724
+    },
+    {
+     "kind": "card",
+     "item": "Reaper",
+     "copies": 1,
+     "dC": -0.5985395908355713,
+     "z": -2.407714081632006,
+     "kl": 0.021811971214499185,
+     "top_without": "take Dark Embrace",
+     "flips": false,
+     "dpwin": 0.18968307971954346,
+     "dhp": -0.16563632931818972,
+     "dlogpi_best": -0.08388579445543431
+    }
+   ],
+   "value_items": [
+    {
+     "kind": "card",
+     "item": "Reaper",
+     "copies": 1,
+     "dC": -0.5985395908355713,
+     "z": -2.407714081632006,
+     "kl": 0.021811971214499185,
+     "top_without": "take Dark Embrace",
+     "flips": false,
+     "dpwin": 0.18968307971954346,
+     "dhp": -0.16563632931818972,
+     "dlogpi_best": -0.08388579445543431
+    },
+    {
+     "kind": "card",
+     "item": "Feel No Pain+",
+     "copies": 1,
+     "dC": -0.9376891255378723,
+     "z": -3.7152589576155575,
+     "kl": 0.05172577030760623,
+     "top_without": "take Dark Embrace",
+     "flips": false,
+     "dpwin": 0.09173077344894409,
+     "dhp": 0.26844592655874777,
+     "dlogpi_best": -0.11947682839314755
+    },
+    {
+     "kind": "card",
+     "item": "Shockwave+",
+     "copies": 1,
+     "dC": 5.599616527557373,
+     "z": 21.488433322092583,
+     "kl": 2.862232241652645,
+     "top_without": "take Shockwave",
+     "flips": true,
+     "dpwin": 0.0730440616607666,
+     "dhp": 0.09351362390340512,
+     "dlogpi_best": 3.8061555225466766
+    },
+    {
+     "kind": "relic",
+     "item": "Red Skull",
+     "copies": 1,
+     "dC": 0.1659144163131714,
+     "z": 0.5395343079310949,
+     "kl": 0.0034969044048372318,
+     "top_without": "take Dark Embrace",
+     "flips": false,
+     "dpwin": 0.05520075559616089,
+     "dhp": 0.17891522115771608,
+     "dlogpi_best": 0.040332297225063485
+    }
+   ],
+   "flips": [
+    "Shockwave+"
+   ],
+   "sample": 10003
+  },
+  {
+   "kind": "card reward",
+   "floor": 47,
+   "run": 30,
+   "p_win": 0.7823509573936462,
+   "hp": 64.01305363079163,
+   "deck": 35,
+   "relics": 13,
+   "actions": [
+    {
+     "action": 2,
+     "label": "take Pummel+",
+     "prior": 0.38083498499104074,
+     "logit": -0.4645587205886841,
+     "ref": "skip / leave rewards",
+     "vs_ref": 0.22430258989334106
+    },
+    {
+     "action": 4,
+     "label": "skip / leave rewards",
+     "prior": 0.3043150706028659,
+     "logit": -0.6888613104820251,
+     "ref": "take Pummel+",
+     "vs_ref": -0.22430258989334106
+    },
+    {
+     "action": 3,
+     "label": "take Regen Potion",
+     "prior": 0.20912524795933807,
+     "logit": -1.0639915466308594,
+     "ref": "skip / leave rewards",
+     "vs_ref": -0.37513023614883423
+    },
+    {
+     "action": 0,
+     "label": "take Thunderclap+",
+     "prior": 0.06888084811911126,
+     "logit": -2.174546718597412,
+     "ref": "skip / leave rewards",
+     "vs_ref": -1.485685408115387
+    },
+    {
+     "action": 1,
+     "label": "take Reckless Charge",
+     "prior": 0.03684384832764403,
+     "logit": -2.800236225128174,
+     "ref": "skip / leave rewards",
+     "vs_ref": -2.1113749146461487
+    }
+   ],
+   "best": "take Pummel+",
+   "runner_up": "skip / leave rewards",
+   "supports": [
+    {
+     "kind": "card",
+     "item": "Dark Embrace",
+     "copies": 1,
+     "dC": 0.11985713243484497,
+     "z": 2.5665191025728107,
+     "kl": 0.007071160197330801,
+     "top_without": "take Pummel+",
+     "flips": false,
+     "dpwin": 0.032687604427337646,
+     "dhp": 0.0013580694370034507,
+     "dlogpi_best": 0.046614197311260264
+    },
+    {
+     "kind": "card",
+     "item": "Inflame",
+     "copies": 1,
+     "dC": 0.08623248338699341,
+     "z": 1.9763500188771608,
+     "kl": 0.0009589235727480369,
+     "top_without": "take Pummel+",
+     "flips": false,
+     "dpwin": -0.00031685829162597656,
+     "dhp": 0.000855726156316905,
+     "dlogpi_best": 0.05342920172331456
+    },
+    {
+     "kind": "relic",
+     "item": "Eternal Feather",
+     "copies": 1,
+     "dC": 0.0682947039604187,
+     "z": 1.6615118526066137,
+     "kl": 0.0008160291266461218,
+     "top_without": "take Pummel+",
+     "flips": false,
+     "dpwin": 0.009845137596130371,
+     "dhp": 0.0018380771702055654,
+     "dlogpi_best": 0.021029551114537748
+    },
+    {
+     "kind": "card",
+     "item": "Dark Embrace+",
+     "copies": 1,
+     "dC": 0.05875587463378906,
+     "z": 1.4940893716993846,
+     "kl": 0.006911397929659269,
+     "top_without": "take Pummel+",
+     "flips": false,
+     "dpwin": 0.05016690492630005,
+     "dhp": 0.0009268927156398377,
+     "dlogpi_best": 0.013422745539826253
+    }
+   ],
+   "opposes": [
+    {
+     "kind": "relic",
+     "item": "Sozu",
+     "copies": 1,
+     "dC": -1.3606290221214294,
+     "z": -23.418500280533586,
+     "kl": 0.2396917701858995,
+     "top_without": "take Pummel+",
+     "flips": false,
+     "dpwin": 0.06507605314254761,
+     "dhp": -0.06181731447304628,
+     "dlogpi_best": -0.010696746211610875
+    },
+    {
+     "kind": "card",
+     "item": "Reaper",
+     "copies": 1,
+     "dC": -1.263947069644928,
+     "z": -21.72156957884024,
+     "kl": 0.1330476529595719,
+     "top_without": "take Pummel+",
+     "flips": false,
+     "dpwin": 0.11377197504043579,
+     "dhp": -0.010577046796555578,
+     "dlogpi_best": -0.47072082319268793
+    },
+    {
+     "kind": "card",
+     "item": "Limit Break+",
+     "copies": 1,
+     "dC": -0.5822664499282837,
+     "z": -9.756929408507812,
+     "kl": 0.029249518487765455,
+     "top_without": "take Pummel+",
+     "flips": false,
+     "dpwin": 0.05215984582901001,
+     "dhp": -0.003053406012298865,
+     "dlogpi_best": -0.2528250145645029
+    },
+    {
+     "kind": "card",
+     "item": "Shockwave+",
+     "copies": 1,
+     "dC": -0.2537473440170288,
+     "z": -3.9908671535161138,
+     "kl": 0.6563716965072284,
+     "top_without": "take Thunderclap+",
+     "flips": true,
+     "dpwin": 0.11363077163696289,
+     "dhp": -0.0031825333984585313,
+     "dlogpi_best": 0.8298210094742763
+    }
+   ],
+   "value_items": [
+    {
+     "kind": "card",
+     "item": "Reaper",
+     "copies": 1,
+     "dC": -1.263947069644928,
+     "z": -21.72156957884024,
+     "kl": 0.1330476529595719,
+     "top_without": "take Pummel+",
+     "flips": false,
+     "dpwin": 0.11377197504043579,
+     "dhp": -0.010577046796555578,
+     "dlogpi_best": -0.47072082319268793
+    },
+    {
+     "kind": "card",
+     "item": "Shockwave+",
+     "copies": 1,
+     "dC": -0.2537473440170288,
+     "z": -3.9908671535161138,
+     "kl": 0.6563716965072284,
+     "top_without": "take Thunderclap+",
+     "flips": true,
+     "dpwin": 0.11363077163696289,
+     "dhp": -0.0031825333984585313,
+     "dlogpi_best": 0.8298210094742763
+    },
+    {
+     "kind": "relic",
+     "item": "Sozu",
+     "copies": 1,
+     "dC": -1.3606290221214294,
+     "z": -23.418500280533586,
+     "kl": 0.2396917701858995,
+     "top_without": "take Pummel+",
+     "flips": false,
+     "dpwin": 0.06507605314254761,
+     "dhp": -0.06181731447304628,
+     "dlogpi_best": -0.010696746211610875
+    },
+    {
+     "kind": "card",
+     "item": "Feel No Pain+",
+     "copies": 1,
+     "dC": -0.038550496101379395,
+     "z": -0.2138009195211528,
+     "kl": 0.00034618911083367536,
+     "top_without": "take Pummel+",
+     "flips": false,
+     "dpwin": 0.05478769540786743,
+     "dhp": 0.0007936001391470882,
+     "dlogpi_best": -0.027339913591697074
+    }
+   ],
+   "flips": [
+    "Shockwave+"
+   ],
+   "sample": 10399
+  },
+  {
+   "kind": "event",
+   "floor": 19,
+   "run": 31,
+   "p_win": 0.13342811167240143,
+   "hp": 49.326593726316844,
+   "deck": 22,
+   "relics": 3,
+   "actions": [
+    {
+     "action": 0,
+     "label": "Vampires(?) option 1",
+     "prior": 0.7282517951533619,
+     "logit": 2.102234125137329,
+     "ref": "Vampires(?) option 2",
+     "vs_ref": 0.9857709407806396
+    },
+    {
+     "action": 1,
+     "label": "Vampires(?) option 2",
+     "prior": 0.2717482048466379,
+     "logit": 1.1164631843566895,
+     "ref": "Vampires(?) option 1",
+     "vs_ref": -0.9857709407806396
+    }
+   ],
+   "best": "Vampires(?) option 1",
+   "runner_up": "Vampires(?) option 2",
+   "supports": [
+    {
+     "kind": "card",
+     "item": "Ascender's Bane",
+     "copies": 1,
+     "dC": 0.17775356769561768,
+     "z": 1.0952954359437093,
+     "kl": 0.003209312530205795,
+     "top_without": "Vampires(?) option 1",
+     "flips": false,
+     "dpwin": -0.03390610218048096,
+     "dhp": -0.20488689988926723,
+     "dlogpi_best": 0.05151352545657506
+    },
+    {
+     "kind": "card",
+     "item": "Spot Weakness",
+     "copies": 1,
+     "dC": 0.17335915565490723,
+     "z": 1.0734255982481347,
+     "kl": 0.003050689051002496,
+     "top_without": "Vampires(?) option 1",
+     "flips": false,
+     "dpwin": 0.0700114443898201,
+     "dhp": 0.002103722916722006,
+     "dlogpi_best": 0.05016072839395225
+    },
+    {
+     "kind": "card",
+     "item": "Disarm",
+     "copies": 1,
+     "dC": 0.09319925308227539,
+     "z": 0.6744907594765952,
+     "kl": 0.0008715599094830523,
+     "top_without": "Vampires(?) option 1",
+     "flips": false,
+     "dpwin": 0.023989468812942505,
+     "dhp": -0.008329486632227656,
+     "dlogpi_best": 0.026198289627638705
+    },
+    {
+     "kind": "card",
+     "item": "Strike",
+     "copies": 5,
+     "dC": 0.09188663959503174,
+     "z": 0.6679582259642394,
+     "kl": 0.0008470193750070576,
+     "top_without": "Vampires(?) option 1",
+     "flips": false,
+     "dpwin": -0.02577461302280426,
+     "dhp": -0.053978375547075075,
+     "dlogpi_best": 0.02581704873434676
+    }
+   ],
+   "opposes": [
+    {
+     "kind": "relic",
+     "item": "Cursed Key",
+     "copies": 1,
+     "dC": -0.9715802669525146,
+     "z": -4.62463801338376,
+     "kl": 0.07902517360290506,
+     "top_without": "Vampires(?) option 1",
+     "flips": false,
+     "dpwin": 0.06295134872198105,
+     "dhp": 0.6804095245981685,
+     "dlogpi_best": -0.18500001980585834
+    },
+    {
+     "kind": "card",
+     "item": "Carnage",
+     "copies": 1,
+     "dC": -0.29516923427581787,
+     "z": -1.2583174765085245,
+     "kl": 0.00822437345588841,
+     "top_without": "Vampires(?) option 1",
+     "flips": false,
+     "dpwin": 0.014299966394901276,
+     "dhp": 0.07877146112090827,
+     "dlogpi_best": -0.07198733608452201
+    },
+    {
+     "kind": "relic",
+     "item": "Burning Blood",
+     "copies": 1,
+     "dC": -0.2542799711227417,
+     "z": -1.0548223239454426,
+     "kl": 0.006145035292040274,
+     "top_without": "Vampires(?) option 1",
+     "flips": false,
+     "dpwin": 0.04285268485546112,
+     "dhp": 0.16731765049519254,
+     "dlogpi_best": -0.06295509038901992
+    },
+    {
+     "kind": "card",
+     "item": "Impervious",
+     "copies": 2,
+     "dC": -0.24441277980804443,
+     "z": -1.0057158972916678,
+     "kl": 0.00568659783838707,
+     "top_without": "Vampires(?) option 1",
+     "flips": false,
+     "dpwin": 0.028741560876369476,
+     "dhp": 0.11152930209385659,
+     "dlogpi_best": -0.06073213631602581
+    }
+   ],
+   "value_items": [
+    {
+     "kind": "card",
+     "item": "Shockwave",
+     "copies": 1,
+     "dC": -0.13308262825012207,
+     "z": -0.45165489376277324,
+     "kl": 0.001716580081936217,
+     "top_without": "Vampires(?) option 1",
+     "flips": false,
+     "dpwin": 0.07035424560308456,
+     "dhp": 0.49053082222491895,
+     "dlogpi_best": -0.03444838524130711
+    },
+    {
+     "kind": "card",
+     "item": "Spot Weakness",
+     "copies": 1,
+     "dC": 0.17335915565490723,
+     "z": 1.0734255982481347,
+     "kl": 0.003050689051002496,
+     "top_without": "Vampires(?) option 1",
+     "flips": false,
+     "dpwin": 0.0700114443898201,
+     "dhp": 0.002103722916722006,
+     "dlogpi_best": 0.05016072839395225
+    },
+    {
+     "kind": "card",
+     "item": "Corruption",
+     "copies": 1,
+     "dC": -0.15735018253326416,
+     "z": -0.5724281550145928,
+     "kl": 0.0023904160872061063,
+     "top_without": "Vampires(?) option 1",
+     "flips": false,
+     "dpwin": 0.06825082749128342,
+     "dhp": -0.21319408672636087,
+     "dlogpi_best": -0.04036921354849943
+    },
+    {
+     "kind": "relic",
+     "item": "Cursed Key",
+     "copies": 1,
+     "dC": -0.9715802669525146,
+     "z": -4.62463801338376,
+     "kl": 0.07902517360290506,
+     "top_without": "Vampires(?) option 1",
+     "flips": false,
+     "dpwin": 0.06295134872198105,
+     "dhp": 0.6804095245981685,
+     "dlogpi_best": -0.18500001980585834
+    }
+   ],
+   "flips": [],
+   "sample": 10899
+  }
+ ]
+}
