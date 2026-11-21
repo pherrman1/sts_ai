@@ -29090,7 +29090,7 @@ decay); `load_opt_state` keeps any group whose parameter count matches and start
 if it is clean.
 **Knowledge impact:** this entry.
 
-## §TBD — §841's collapse came from `--compile`: frozen net, A20, 300 games per arm, flags + compile 0.7 % / floor 12.4 vs flags without compile 9.7 % / 28.4 (no flags 9.3 % / 29.1); the encounter-token helpers now run outside the compiled graph → BUILT, default off (cloud, 2026-11-21)
+## §843 — §841's collapse came from `--compile`: frozen net, A20, 300 games per arm, flags + compile 0.7 % / floor 12.4 vs flags without compile 9.7 % / 28.4 (no flags 9.3 % / 29.1); the encounter-token helpers now run outside the compiled graph → BUILT, default off (cloud, 2026-11-21)
 
 **Frozen test (PC, run thread)**: ckpt_955864, no training, seeds 160300000-160300299, A20, 64 / 16 sims. A keys
 build (pre-§836) 12.3 % / floor 28.4 / 2.0k moves/s; B main 77039e9b without the flags 9.3 % / 29.1 / 1.6k; C with
