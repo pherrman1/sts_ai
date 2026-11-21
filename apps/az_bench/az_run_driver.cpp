@@ -780,7 +780,7 @@ namespace sts::azbench {
         std::vector<GameAction> kept;
         kept.reserve(before);
         for (const auto &a : v)
-            if (search::heartKeyActionAllowed(gc, true, a) && !(portalBlocked && a.getIdx1() == 0)) kept.push_back(a);
+            if (search::heartKeyActionAllowed(gc, true, a) && !(portalBlocked && a.bits == GameAction(0).bits)) kept.push_back(a);
         if (kept.empty() || kept.size() == before) return -1;
         v.swap(kept);
         return 3;

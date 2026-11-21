@@ -116,6 +116,15 @@ int main() {
     } else {
         require(azbench::keyBackstopActions(gc, v) == -1 && v.size() == 2, "STS_AZ_KEY_HOLES=0: portal open");
     }
+    // A Fruit Juice drink in slot 0 (bits 0x80000000 | 0, idx1 0) is no portal accept and stays.
+    gc.potionCapacity = 3; gc.potionCount = 1; gc.potions[0] = Potion::FRUIT_JUICE;
+    v = GameAction::getAllActionsInState(gc);
+    require(azbench::appendOocPotionDrinks(gc, v) == 1 && v.size() == 3, "portal: Fruit Juice drink offered");
+    if (azbench::keyHolesClosed()) {
+        require(azbench::keyBackstopActions(gc, v) == 3 && v.size() == 2 && v[0].getIdx1() == 1 &&
+                v[1].bits == GameAction(0x80000000u).bits, "portal with Ruby missing: leave and the slot-0 drink");
+    }
+    gc.potionCapacity = 0; gc.potionCount = 0; gc.potions[0] = Potion::EMPTY_POTION_SLOT;
     gc.redKey = true;
     v = GameAction::getAllActionsInState(gc);
     require(azbench::keyBackstopActions(gc, v) == -1 && v.size() == 2, "portal with all keys: a decision");

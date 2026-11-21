@@ -28792,7 +28792,7 @@ so it is counted as a death at that floor and not among the 64.
 **Repro (cloud, fake net, C++ only):** `az-run-driver --workers 4 --games 4 --runs 1500 --fast --asc 20 --test-hp 30000
 --max-fight-moves 4000 --sim-help --force-keys --force-rewards --force-potions --seed-base 910000` with a temporary
 per-run key trace (not committed). Before the fix, 12 keyless victories in one run of 1500 (8 in another): the
-floor-52 ones all had Sapphire and Ruby, lacked Emerald, and used a Smoke Bomb in the burning-elite fight (no
+ones that got past the act-3 boss row (the benchmark's floor-51 class; the driver's floorNum reads 52 there) all had Sapphire and Ruby, lacked Emerald, and used a Smoke Bomb in the burning-elite fight (no
 rewards screen after it); the others accepted the Secret Portal and ended at floors 39-45. With the fix:
 0 keyless victories (all keys 666, act 4 557); with `STS_AZ_KEY_HOLES=0`: 12 again (all keys 671, act 4 573).
 The 30,000 HP test mode gives `bad_samples` > 0 in both arms (HP outside the encoder range), as on main.
@@ -28800,10 +28800,13 @@ The 30,000 HP test mode gives `bad_samples` > 0 in both arms (HP outside the enc
 `escapeForfeitsRun` in its fight context and `combatActions` drops Smoke Bomb there (real moves and search); the net
 input keeps that context flag at 0, as in every fight the net has seen; (2) `keyBackstopActions` removes the Secret
 Portal's accept option in act 3 while a key is missing (counted as `route_masked`). Without `--force-keys` nothing
-changes. Test: `az_force_keys_test` (portal options, escape rule, Smoke Bomb enumeration).
+changes. Test: `az_force_keys_test` (portal options incl. a slot-0 drink, escape rule, Smoke Bomb enumeration).
 **Interpretation:** the 64 floor-51 keyless winners of the benchmark are most likely Smoke Bomb escapes (the only
 mechanism found that reaches floor 51 without a key; not replayed with the real net). Portal runs come on top and
-are hidden among the deaths.
+are hidden among the deaths. Remaining path (review, not closed): N'loth's Hungry Face can empty the act-3 row-8
+chest (GameContext.cpp, chest without relic and key) when the policy has not taken Sapphire earlier; rare. Also
+pre-existing and separate: `heartKeyActionAllowed` (RunGoal.cpp) compares an act-3 map OOC drink's potion slot
+with the route x, so a drink can be masked or kept by its slot number.
 **Decision:** engine fix, default on; `STS_AZ_KEY_HOLES=0` restores the old behaviour. Live use after the owner's go
 and a 5-15 minute PC test.
 **Knowledge impact:** this entry.
