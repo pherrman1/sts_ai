@@ -237,11 +237,11 @@ class AmberNet(nn.Module):
             R = so.shape[0] - 1
             pos = torch.arange(N, device=x.device)
             row = torch.bucketize(pos, so[1:], right=True).clamp(max=R - 1)
-            w = ((pos < so[-1]) & (pos != so[row])).to(x.dtype)
-            w = w * torch.where(enc, self._gate(-1).to(x.dtype), torch.ones_like(w))
-            S = x.new_zeros(R, d).index_add_(0, row, x * w[:, None])
-            n = x.new_zeros(R).index_add_(0, row, w)
-            mean = S / torch.where(n > 0, n, torch.ones_like(n))[:, None]
+            w = ((pos < so[-1]) & (pos != so[row])).float()   # fp32 sums, as row_mean accumulates
+            w = w * torch.where(enc, self._gate(-1).float(), torch.ones_like(w))
+            S = x.new_zeros(R, d, dtype=torch.float32).index_add_(0, row, x.float() * w[:, None])
+            n = x.new_zeros(R, dtype=torch.float32).index_add_(0, row, w)
+            mean = (S / torch.where(n > 0, n, torch.ones_like(n))[:, None]).to(x.dtype)
         else:
             mean = self.row_mean(x, b["seq_off"])
         c = x[so[:-1].clamp(max=N - 1)] + self.summary_mlp(mean)
@@ -303,41 +303,51 @@ class AmberNet(nn.Module):
         p = torch.softmax(s.masked_fill(~keep, float("-inf")), -1)
         return p.to(v.dtype) @ v
 
-    def _attend_enemy(self, q, k, v, keep, li, cls):
-        """Attention of layer li with the encounter-token parts (cls [B, T] token classes): the class bias
-        (enemy_bias) and the gate (enemy_gate: g x attention with the encounter tokens as keys + (1 - g) x without).
-        The bias goes in as extra q / k columns: q' = [q / sqrt(dh), TAB[h, cls_q, :]], k' = [k, onehot(cls_k)], so
-        q'.k' = q.k / sqrt(dh) + TAB[h, cls_q, cls_k] and scaled_dot_product_attention keeps its fused kernels (a
-        float mask [B, H, T, T] would not, and costs B H T^2 memory per layer: the first live test's trainer ran
-        about 30x slower with it)."""
+    def _tab(self, li):
+        """Layer li's bias table, only its entries with an encounter class (query or key) used: the other pairs get
+        no bias, so states without encounter tokens attend as without the flag."""
+        C = self.enemy_bias.shape[-1]
+        e = torch.zeros(C, dtype=torch.bool, device=self.enemy_bias.device)
+        e[1:4] = True
+        return self.enemy_bias[li] * (e[:, None] | e[None, :]).to(self.enemy_bias.dtype)
+
+    def _attend_enemy(self, q, k, v, keep, li, cls, rows):
+        """Attention of layer li with the encounter-token parts (cls [B, T] token classes, rows: the rows that hold
+        encounter tokens). Rows without them attend as without the flag (one pass). Rows with them: g x attention
+        with the encounter keys and the class bias + (1 - g) x attention without the encounter keys (enemy_gate;
+        without a gate: the first part only). The bias goes in as extra q / k columns: q' = [q / sqrt(dh),
+        TAB[h, cls_q, :]], k' = [k, onehot(cls_k)], so q'.k' = q.k / sqrt(dh) + TAB[h, cls_q, cls_k] and
+        scaled_dot_product_attention keeps its fused kernels (a float mask [B, H, T, T] would not: the first live
+        test's trainer ran about 30x slower with it)."""
         F = torch.nn.functional
         dh = q.shape[-1]
+
+        def sdpa(q_, k_, v_, m, scale=None):
+            if not self.attn_math:
+                return F.scaled_dot_product_attention(q_, k_, v_, attn_mask=m, scale=scale)
+            s = (q_ @ k_.transpose(-1, -2)).float() * (q_.shape[-1] ** -0.5 if scale is None else scale)
+            return torch.softmax(s.masked_fill(~m, float("-inf")), -1).to(v_.dtype) @ v_
+
+        o = sdpa(q, k, v, keep)
+        if rows.numel() == 0:
+            return o
+        qs, ks, vs, ms, cs = q[rows], k[rows], v[rows], keep[rows], cls[rows]
         if self.enemy_bias is not None:
-            tab = self.enemy_bias[li].to(q.dtype)                        # [H, C, C]
+            tab = self._tab(li).to(q.dtype)                              # [H, C, C]
             C = tab.shape[-1]
             H = q.shape[1]
             pad = (-(dh + C)) % 8
-            qx = tab[:, cls].permute(1, 0, 2, 3)                         # [B, H, T, C]: row of the query's class
-            kx = F.one_hot(cls, C).to(q.dtype)[:, None].expand(-1, H, -1, -1)
-            z = q.new_zeros(*q.shape[:-1], pad)
-            q = torch.cat([q * dh ** -0.5, qx, z], -1)
-            k = torch.cat([k, kx, z], -1)
-            v = torch.cat([v, v.new_zeros(*v.shape[:-1], C + pad)], -1)
-            scale = 1.0
+            qx = tab[:, cs].permute(1, 0, 2, 3)                          # [R, H, T, C]: row of the query's class
+            kx = F.one_hot(cs, C).to(q.dtype)[:, None].expand(-1, H, -1, -1)
+            z = qs.new_zeros(*qs.shape[:-1], pad)
+            oa = sdpa(torch.cat([qs * dh ** -0.5, qx, z], -1), torch.cat([ks, kx, z], -1),
+                      torch.cat([vs, vs.new_zeros(*vs.shape[:-1], C + pad)], -1), ms, 1.0)[..., :dh]
         else:
-            scale = None
-
-        def run(m):
-            if not self.attn_math:
-                return F.scaled_dot_product_attention(q, k, v, attn_mask=m, scale=scale)[..., :dh]
-            s = (q @ k.transpose(-1, -2)).float() * (q.shape[-1] ** -0.5 if scale is None else scale)
-            return (torch.softmax(s.masked_fill(~m, float("-inf")), -1).to(v.dtype) @ v)[..., :dh]
-
-        o = run(keep)
+            oa = o[rows]
         if self.enemy_gate is not None:
             g = self._gate(li).to(o.dtype)
-            o = g * o + (1 - g) * run(keep & ~enc_of(cls)[:, None, None, :])
-        return o
+            oa = g * oa + (1 - g) * sdpa(qs, ks, vs, ms & ~enc_of(cs)[:, None, None, :])
+        return o.index_copy(0, rows, oa.to(o.dtype))
 
     def sdpa_trunk(self, x, mask, cls=None):
         """self.trunk's math (pre-norm encoder layers, key padding mask, exact GELU) written with one QKV matmul and
@@ -347,13 +357,14 @@ class AmberNet(nn.Module):
         F = torch.nn.functional
         B, T, d = x.shape
         keep = mask[:, None, None, :]                      # [B, 1, 1, T], True = attend
+        rows = None if cls is None else torch.nonzero(enc_of(cls).any(1)).squeeze(1)
         for li, layer in enumerate(self.trunk.layers):
             a = layer.self_attn
             H = a.num_heads
             y = layer.norm1(x)
             qkv = F.linear(y, a.in_proj_weight, a.in_proj_bias).view(B, T, 3, H, d // H).permute(2, 0, 3, 1, 4)
             o = (self._attend(qkv[0], qkv[1], qkv[2], keep) if cls is None
-                 else self._attend_enemy(qkv[0], qkv[1], qkv[2], keep, li, cls))
+                 else self._attend_enemy(qkv[0], qkv[1], qkv[2], keep, li, cls, rows))
             x = x + a.out_proj(o.transpose(1, 2).reshape(B, T, d))
             x = x + layer.linear2(F.gelu(layer.linear1(layer.norm2(x))))
         return x
@@ -404,11 +415,12 @@ class AmberNet(nn.Module):
                 cls_i = cls_p.to(torch.int32).contiguous()
             else:
                 cls_pad = unpack(cls_p[:, None]).view(B, T)
+                rows = torch.nonzero(enc_of(cls_pad).any(1)).squeeze(1)
 
         def vattn(qkv, li):
             if cls_i is None:
                 return self.varlen_attn(qkv, b["seq_off"], H, T)
-            tab = None if self.enemy_bias is None else self.enemy_bias[li].float().contiguous()
+            tab = None if self.enemy_bias is None else self._tab(li).float().contiguous()
             gate = None if self.enemy_gate is None else self._gate(li).float().reshape(1)
             return self.varlen_attn(qkv, b["seq_off"], H, T, cls_i, tab, gate)
 
@@ -428,7 +440,7 @@ class AmberNet(nn.Module):
             else:
                 qkv = unpack(qkv_p).view(B, T, 3, H, d // H).permute(2, 0, 3, 1, 4)
                 o = (self._attend(qkv[0], qkv[1], qkv[2], keep) if cls_pad is None
-                     else self._attend_enemy(qkv[0], qkv[1], qkv[2], keep, li, cls_pad))
+                     else self._attend_enemy(qkv[0], qkv[1], qkv[2], keep, li, cls_pad, rows))
                 x = x + a.out_proj(o.transpose(1, 2).reshape(M, d)[ip])
             if self.fused_ffn is not None:
                 x = self.fused_ffn(x.contiguous(), layer)

@@ -1185,14 +1185,21 @@ def enemy_gate_check(train_net, infer, replay, args, dev, hp_floors):
         base_inf = base_inf.half()
     rng = np.random.default_rng(12345)
     names = ("policy", "outcome", "hp", "hp_floor")
-    diff = {"train": {k: 0.0 for k in names}, "infer": {k: 0.0 for k in names}}
+    # max |difference| per head: train / infer = gated net on the states vs the net without encounter parts on the
+    # stripped states, split by rows with and without encounter tokens; infer_noise = the inference net vs the fp32
+    # training net, both without encounter parts on the stripped states (fp16 noise floor of the comparison)
+    tags = ("train_enc_rows", "train_other_rows", "infer_enc_rows", "infer_other_rows", "infer_noise")
+    diff = {t: {k: 0.0 for k in names} for t in tags}
     rows = enc_rows = 0
 
-    def cmp(tag, a, b_, mask_a):
+    def cmp(tag, a, b_, mask_a, sel=None):
         for k, x, y in zip(names, a, b_):
             x, y = x.float(), y.float()
+            if sel is not None:
+                x, y = x[sel], y[sel]
             if k == "policy":
-                x, y = x[mask_a], y[mask_a]
+                m = mask_a if sel is None else mask_a[sel]
+                x, y = x[m], y[m]
             diff[tag][k] = max(diff[tag][k], float((x - y).abs().max()) if x.numel() else 0.0)
 
     def packed(bt):   # forward_packed's inputs on the flat batch (as the inference thread packs them)
@@ -1206,11 +1213,17 @@ def enemy_gate_check(train_net, infer, replay, args, dev, hp_floors):
             bt = to_torch(replay.sample(rng, args.train_batch), dev)
             st = amber_net.strip_encounters(bt)
             rows += int(bt["mask"].shape[0])
-            enc_rows += int((bt["mask"].sum(1) != st["mask"].sum(1)).sum())
-            cmp("train", train_net(bt), base(st), bt["a_mask"])
+            has = bt["mask"].sum(1) != st["mask"].sum(1)
+            enc_rows += int(has.sum())
+            a_, b_ = train_net(bt), base(st)
+            cmp("train_enc_rows", a_, b_, bt["a_mask"], has)
+            cmp("train_other_rows", a_, b_, bt["a_mask"], ~has)
             hb = {k: (v.half() if cuda and v.is_floating_point() else v) for k, v in bt.items()}
             hs = {k: (v.half() if cuda and v.is_floating_point() else v) for k, v in st.items()}
-            cmp("infer", infer(packed(hb)), base_inf(packed(hs)), bt["a_mask"])
+            ai, bi = infer(packed(hb)), base_inf(packed(hs))
+            cmp("infer_enc_rows", ai, bi, bt["a_mask"], has)
+            cmp("infer_other_rows", ai, bi, bt["a_mask"], ~has)
+            cmp("infer_noise", bi, b_, bt["a_mask"])
     train_net.train()
 
     def step_ms(net, strip):
@@ -1241,6 +1254,12 @@ def enemy_gate_check(train_net, infer, replay, args, dev, hp_floors):
            "gates": [round(float(x), 4) for x in train_net.enemy_gate.detach().float().cpu()],
            "max_abs_diff": diff,
            "train_step_ms": {"without_encounter_parts": step_ms(base, True), "with": step_ms(train_net, False)}}
+    if train_net.enemy_bias is not None:   # the same with the gates only (no class bias)
+        tab, train_net.enemy_bias = train_net.enemy_bias, None
+        try:
+            res["train_step_ms"]["with_gates_only"] = step_ms(train_net, False)
+        finally:
+            train_net.enemy_bias = tab
     train_net.zero_grad(set_to_none=True)
     return res
 
