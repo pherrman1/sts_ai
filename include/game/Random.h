@@ -95,6 +95,32 @@ namespace sts {
             return x;
         }
 
+        // RNG Fix mod (GameContext::rngFix): the raw output number `index` (from 0) of a generator seeded with
+        // `seed`, as the mod's `new Random(Settings.seed).random.nextLong()` chain yields it. `new Random(seed, k)`
+        // followed by one raw nextLong is index k (each counted draw is one raw output; the modulo rejection of
+        // random(999) has probability below 2^-53 and is replayed here all the same). A pure function of the
+        // seed: no draw of a game stream, so the exact-chance script does not see it.
+        static std::uint64_t derivedSeed(std::uint64_t seed, int index) {
+            std::uint64_t a = murmurHash3(seed == 0 ? ONE_IN_MOST_SIGNIFICANT : seed);
+            std::uint64_t b = murmurHash3(a);
+            const auto step = [&]() {
+                std::uint64_t s1 = a;
+                const std::uint64_t s0 = b;
+                a = s0;
+                s1 ^= s1 << 23;
+                b = s1 ^ s0 ^ s1 >> 17 ^ s0 >> 26;
+                return b + s0;
+            };
+            for (int i = 0; i < index; ++i) {
+                for (;;) {   // Random(seed, k) advances with random(999) = nextLong(1000)
+                    const std::uint64_t bits = step() >> 1;
+                    const std::uint64_t value = bits % 1000;
+                    if (static_cast<std::int64_t>(bits - value + 999) >= 0) break;
+                }
+            }
+            return step();
+        }
+
         std::uint64_t nextLong() {
             STS_EXACT_REFUSE("raw nextLong")
             std::uint64_t s1 = seed0;

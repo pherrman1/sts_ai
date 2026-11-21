@@ -263,7 +263,32 @@ namespace sts {
         bool smokeBombUsed = false;
 
         GameContext() = default;
-        GameContext(CharacterClass cc, std::uint64_t seed, int ascensionLevel);
+        GameContext(CharacterClass cc, std::uint64_t seed, int ascensionLevel, bool rngFix = false);
+
+        // RNG Fix mod (Steam workshop 2181005326, source github.com/Nickel-makes/RngFix at 88b5885, the mod the
+        // Amber Eye page names for training and evaluation), off by default. The vanilla game seeds every stream
+        // with the run seed, so their outputs are correlated. With rngFix each stream gets its own seed, raw
+        // output k of Random(seed) (Random::derivedSeed):
+        //   k = 0 monsterRng, 1 eventRng, 2 merchantRng, 3 cardRng, 4 treasureRng, 5 relicRng, 6 potionRng
+        //       (seeded once at the start of the run),
+        //   k = 7 monsterHpRng, 8 aiRng, 9 shuffleRng, 10 cardRandomRng, 11 miscRng
+        //       (reseeded on every floor with derivedSeed(seed, k) + floorNum instead of seed + floorNum),
+        //   k = 13 Neow's generator, k = 14 the generator that picks the event of an event room (advanced to
+        //       eventRng's counter; the vanilla game uses a copy of eventRng there).
+        // The map generator is not changed by the mod. Set by the constructor only; copies keep it.
+        bool rngFix = false;
+        enum FloorStream { FLOOR_MONSTER_HP = 7, FLOOR_AI = 8, FLOOR_SHUFFLE = 9, FLOOR_CARD_RANDOM = 10, FLOOR_MISC = 11 };
+        // The state a per-floor stream is reset to on the current floor.
+        [[nodiscard]] Random floorRng(FloorStream stream) const {
+            return Random((rngFix ? Random::derivedSeed(seed, stream) : seed) + static_cast<std::uint64_t>(floorNum));
+        }
+        // A new floor: reset the per-floor streams the out-of-combat game holds (a combat sets its own in
+        // BattleContext::init).
+        void reseedFloorRngs() {
+            miscRng = floorRng(FLOOR_MISC);
+            shuffleRng = floorRng(FLOOR_SHUFFLE);
+            cardRandomRng = floorRng(FLOOR_CARD_RANDOM);
+        }
 
         void initFromSave(const SaveFile &s);
         void initRelicsFromSave(const SaveFile &s);

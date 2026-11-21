@@ -987,6 +987,12 @@ def main(argv=None):
                          "fights; boss relics stay learned) taken unless on the reviewed list (Bottled x3, Dead Branch, "
                          "Tungsten Rod, Unceasing Top, Juzu Bracelet); Ceramic Fish / eggs / Potion Belt before the "
                          "card reward, Whetstone / War Paint after it")
+    ap.add_argument("--rng-fix", action="store_true",
+                    help="real runs use the seeding of the RNG Fix mod (2026-11-21, default off; Amber Eye trains and "
+                         "evaluates with it): each random stream of the game gets its own seed derived from the run "
+                         "seed instead of all sharing it, so the net cannot learn the game's correlated randomness "
+                         "(for example an uncommon first card reward implying a potion drop). Changes every run of a "
+                         "seed; not restored by --resume (pass it again)")
     ap.add_argument("--force-potions", action="store_true",
                     help="reward potions (2026-11-20, default off; a deviation from Amber Eye, Philipp): on a reward "
                          "screen whose potions all fit into the free slots the potions are taken without a search "
@@ -1209,6 +1215,7 @@ def main(argv=None):
         **({"force_keys": True} if force_keys else {}),
         **({"force_rewards": True} if args.force_rewards else {}),
         **({"force_potions": True} if args.force_potions else {}),
+        **({"rng_fix": True} if args.rng_fix else {}),
         **({"ooc_canon": True} if args.ooc_canon else {}),
         **({"explore_per_offer": True} if args.explore_per_offer else {}),
         **({"explore_gap_search": True} if args.explore_gap_search else {}),

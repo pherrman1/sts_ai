@@ -343,6 +343,12 @@ namespace sts::azbench {
         // Reward gold stays with simHelp (taken first; no reward-pool relic acts on gold). Applied in the real runs
         // and in the search tree; a forced move is the only legal action (played without a search, no sample).
         bool forceRewards = false;
+        // RNG Fix mod for the real runs (2026-11-21, default off; Amber Eye: "Both the training and evaluation
+        // settings use the RNGFix mod"): every run starts as GameContext(..., rngFix = true), so the game's random
+        // streams have one seed each instead of all sharing the run seed (GameContext::rngFix). The search already
+        // draws its futures from independent streams (sampleNoncombatFuture); it keeps the flag through copies, so
+        // the per-floor streams of a sampled future are decoupled too.
+        bool rngFix = false;
         // Identical cards on an out-of-combat card selection screen (2026-11-20, default off; Amber Eye canonicalizes
         // actions, "if multiple Defends are in hand, the simulator only exposes playing the first one"): of several
         // selectable cards with equal Card (id, upgrade, misc) and bottle state only the first stays legal

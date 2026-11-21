@@ -35,23 +35,24 @@ SelectScreenCard::SelectScreenCard(const Card &card) : card(card) {}
 
 SelectScreenCard::SelectScreenCard(const Card &card, int deckIdx) : card(card), deckIdx(deckIdx) {}
 
-GameContext::GameContext(CharacterClass cc, std::uint64_t seed, int ascension)
+GameContext::GameContext(CharacterClass cc, std::uint64_t seed, int ascension, bool rngFix)
     : seed(seed),
-    neowRng(seed),
-    treasureRng(seed),
-    eventRng(seed),
-    relicRng(seed),
-    potionRng(seed),
-    cardRng(seed),
-    cardRandomRng(seed),
-    merchantRng(seed),
-    monsterRng(seed),
-    shuffleRng(seed),
-    miscRng(seed),
+    neowRng(rngFix ? Random::derivedSeed(seed, 13) : seed),
+    treasureRng(rngFix ? Random::derivedSeed(seed, 4) : seed),
+    eventRng(rngFix ? Random::derivedSeed(seed, 1) : seed),
+    relicRng(rngFix ? Random::derivedSeed(seed, 5) : seed),
+    potionRng(rngFix ? Random::derivedSeed(seed, 6) : seed),
+    cardRng(rngFix ? Random::derivedSeed(seed, 3) : seed),
+    cardRandomRng(rngFix ? Random::derivedSeed(seed, FLOOR_CARD_RANDOM) : seed),
+    merchantRng(rngFix ? Random::derivedSeed(seed, 2) : seed),
+    monsterRng(rngFix ? Random::derivedSeed(seed, 0) : seed),
+    shuffleRng(rngFix ? Random::derivedSeed(seed, FLOOR_SHUFFLE) : seed),
+    miscRng(rngFix ? Random::derivedSeed(seed, FLOOR_MISC) : seed),
     mathUtilRng(seed-897897), // uses a time based seed -_-
     cc(cc),
     map(new Map(Map::fromSeed(seed, ascension, 1, true))),
-    ascension(ascension) {
+    ascension(ascension),
+    rngFix(rngFix) {
     eventList.insert(eventList.end(), EventPools::Act1::events.begin(), EventPools::Act1::events.end());
     shrineList.insert(shrineList.end(), EventPools::Act1::shrines.begin(), EventPools::Act1::shrines.end());
     if (ascension < 15) {
@@ -795,10 +796,7 @@ void GameContext::transitionToMapNode(int mapNodeX) {
     ++floorNum;
     ++curMapNodeY;
 
-    const auto r = Random(seed + floorNum);
-    miscRng = r;
-    shuffleRng = r;
-    cardRandomRng = r;
+    reseedFloorRngs();
 
     regainControlAction = [](auto &gs) {
         gs.screenState = ScreenState::MAP_SCREEN;
@@ -816,7 +814,10 @@ void GameContext::transitionToMapNode(int mapNodeX) {
         curRoom = getEventRoomOutcomeHelper(lastRoom == Room::SHOP);
         switch (curRoom) {
             case Room::EVENT:
-                curEvent = generateEvent(eventRng);
+                // RNG Fix mod: EventRoom.onPlayerEntry picks the event with its own generator (raw output 14 of
+                // the run seed) advanced to eventRng's counter, not with a copy of eventRng.
+                curEvent = rngFix ? generateEvent(Random(Random::derivedSeed(seed, 14), eventRng.counter))
+                                  : generateEvent(eventRng);
                 break;
 
             case Room::SHOP:
@@ -1133,10 +1134,7 @@ void GameContext::setupTreasureRoom() {
 
 void GameContext::enterBossTreasureRoom() {
     ++floorNum;
-    Random r(seed+floorNum);
-    miscRng = r;
-    shuffleRng = r;
-    cardRandomRng = r;
+    reseedFloorRngs();
 
     relicsOnEnterRoom(Room::BOSS_TREASURE);
 
@@ -1332,10 +1330,7 @@ void GameContext::afterBattle() {
                 if (ascension >= 20 && info.encounter == boss) {
                     // go to second boss
                     ++floorNum;
-                    const auto r = Random(seed + floorNum);
-                    miscRng = r;
-                    shuffleRng = r;
-                    cardRandomRng = r;
+                    reseedFloorRngs();
                     relicsOnEnterRoom(curRoom);
 
                     regainControlAction = [](GameContext &gc) {

@@ -342,11 +342,11 @@ void BattleContext::init(const GameContext &gc, MonsterEncounter encounterToInit
     floorNum = gc.floorNum;
     encounter = encounterToInit;
 
-    auto startRandom = Random(gc.seed+gc.floorNum);
-    aiRng = startRandom;
-    monsterHpRng = startRandom;
-    shuffleRng = startRandom;
-    cardRandomRng = startRandom;
+    // Vanilla: all four are Random(seed + floorNum). GameContext::rngFix: one seed per stream.
+    aiRng = gc.floorRng(GameContext::FLOOR_AI);
+    monsterHpRng = gc.floorRng(GameContext::FLOOR_MONSTER_HP);
+    shuffleRng = gc.floorRng(GameContext::FLOOR_SHUFFLE);
+    cardRandomRng = gc.floorRng(GameContext::FLOOR_CARD_RANDOM);
     miscRng = gc.miscRng;
     potionRng = gc.potionRng;
     if (encounterToInit == MonsterEncounter::COLOSSEUM_EVENT_NOBS) {

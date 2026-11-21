@@ -341,11 +341,18 @@ bool oocStepRevealsHidden(const OocHiddenSnapshot &before, const GameContext &af
         static_cast<int>(after.uncommonRelicPool.size()), static_cast<int>(after.rareRelicPool.size()),
         static_cast<int>(after.shopRelicPool.size()), static_cast<int>(after.bossRelicPool.size())};
     if (pools != before.relicPoolSizes || after.colorlessCardPool != before.colorless) return true;
-    const sts::Random reseeded(after.seed + after.floorNum);
+    // forStreams order: 1 card-random, 6 misc, 12 shuffle (the three a new floor reseeds out of combat). They share
+    // one state in the vanilla game and have one each with GameContext::rngFix.
+    const sts::Random reseededCardRandom = after.floorRng(GameContext::FLOOR_CARD_RANDOM);
+    const sts::Random reseededMisc = after.floorRng(GameContext::FLOOR_MISC);
+    const sts::Random reseededShuffle = after.floorRng(GameContext::FLOOR_SHUFFLE);
     bool used = false;
     forStreams([&](int i, const sts::Random &r) {
         if (r == before.streams[i]) return;
-        if (r == reseeded) return;   // a new floor's reseed of misc / shuffle / card-random, nothing drawn
+        // a new floor's reseed of misc / shuffle / card-random, nothing drawn
+        if (after.rngFix ? (i == 1 && r == reseededCardRandom) || (i == 6 && r == reseededMisc)
+                               || (i == 12 && r == reseededShuffle)
+                         : r == reseededMisc) return;
         used = true;
     }, after);
     return used;

@@ -96,6 +96,7 @@ int main(int argc, char **argv) {
         else if (a == "--max-pending") cfg.maxPendingSamples = std::stoll(next());
         else if (a == "--force-keys") cfg.forceKeys = true;
         else if (a == "--force-rewards") cfg.forceRewards = true;
+        else if (a == "--rng-fix") cfg.rngFix = true;
         else if (a == "--force-potions") cfg.forcePotions = true;
         else if (a == "--ooc-canon") cfg.oocCanon = true;
         else if (a == "--savescum") cfg.savescum = true;
