@@ -903,6 +903,34 @@ class ValueEmaTest(unittest.TestCase):
                 old.check_layout(os.path.join(d, "w"))   # saved with the option, loaded without: refused
         torch.manual_seed(0)
         net = sp.amber_net.AmberNet(d=32, layers=1, hp_floors=56)
+        # Another byte ring size (--replay-soft-bytes / --replay-hp-bytes changed) loads too: the same rows; a
+        # smaller ring keeps the newest samples that fit; samples added afterwards keep working.
+        with tempfile.TemporaryDirectory() as d:
+            cmp_.save(os.path.join(d, "w"))
+            for sb, hb in ((80, 300), (40, 60), (8, 8)):
+                other = sp.Replay(400, hp_soft=True, soft_bytes_per_sample=sb, hp_bytes_per_sample=hb, **ckw)
+                other.load(os.path.join(d, "w"))
+                self.assertEqual(other.s_head, cmp_.s_head)
+                self.assertTrue(0 < len(other) <= len(cmp_))
+                self.assertEqual(len(other) == len(cmp_), sb + hb >= 100, (sb, hb))
+                x, y = cmp_.rows(other.s_tail, len(other)), other.rows(other.s_tail, len(other))
+                for key in x:
+                    np.testing.assert_array_equal(np.asarray(x[key]), np.asarray(y[key]), key)
+                c = chunk(rng, 30, first)
+                c["run"] = (np.arange(30) // 6 + first).astype(np.uint64)
+                c["floor"] = np.full(30, 2, np.int16)
+                c["hp_floor"] = np.where(np.arange(1, 57)[None, :] >= 2, 40, -1).astype(np.int16) * np.ones((30, 1), np.int16)
+                c["hp_target"] = np.zeros((30, 256), np.uint8)
+                c["hp_target"][:, 50:53] = (60, 135, 60)
+                c["hp_floor_target"] = np.where(np.arange(1, 57)[None, :] >= 2, 0.2, -1.0).astype(np.float32) * np.ones((30, 1), np.float32)
+                f1 = other.add(ReplayTest.compactify(c))
+                other.set_soft_outcome(f1, np.full((30, 57), 1 / 57, np.float32), c["hp_target"])
+                v = other.rows(f1, 30)
+                np.testing.assert_allclose(v["hp_target"][:, 50:53], np.array([60, 135, 60]) / 255.0 * np.ones((30, 1)), atol=1e-6)
+                z = other.rows(other.s_tail, f1 - other.s_tail)   # the loaded samples still live are intact
+                w0 = cmp_.rows(other.s_tail, f1 - other.s_tail)
+                for key in ("hp_target", "soft_outcome", "hp_floor_target"):
+                    np.testing.assert_array_equal(z[key], w0[key], key)
         # A window saved WITHOUT the option loads into a replay with it (other byte ring size): the same rows, the
         # old samples' HP targets are their real labels, and samples added afterwards carry their search targets.
         for okw, nkw in ((dict(soft_bytes_per_sample=60, **ckw), dict(soft_bytes_per_sample=60, hp_bytes_per_sample=30, **ckw)),

@@ -28593,3 +28593,33 @@ the all-runs rule with a trained net (the run's owner reports it).
 **Decision:** default off; the stage-1 run can pass it from the next restart on (the first restart loads the state
 its predecessor saved, so the predecessor must run this code).
 **Knowledge impact:** this entry.
+
+## §TBD — HP heads on search-backed EMA targets: `--hp-ema-search` (default off, #1151) in the stage-1 run; a replay window saved with other target byte sizes now loads (PC + cloud, 2026-11-21)
+
+**Question:** Amber Eye's page does not name the targets of its HP heads; it stores "labels for the outcome and HP
+distributions, per-floor HP" per sample, quantizes value distributions to 8 bit and labels the value with "a
+combination of the search result and an exponential weighted average of future moves' search outcomes". Our HP heads
+trained on the realized HP. The owner decided (2026-11-21 10:50 CET) to put both HP heads (floor HP distribution,
+256 classes; per-floor HP, 56 scalars) on search-backed EMA targets, with two rules where the page is silent: the
+floor HP chain ends with the floor in the real HP and a per-floor target is the real HP once the run left that
+floor; a run-ending leaf counts with its real HP (0 on death).
+**Change (#1151, main a2375cac):** `RunConfig::searchEmaHp` / `selfplay.py --hp-ema-search` (needs
+`--value-ema-search` and the Amber search rules) and `--replay-hp-bytes` (default 96). Losses `hp_ema` /
+`hp_floor_ema` are trained, `hp` / `hp_floor` stay logged against the real labels. Flag off: run digests identical
+to main 56b8fd43. `--replay-load` takes a window saved without the flag (old samples keep the real HP as target).
+**Live observation (owner of the stage-1 run, PC, restart 13:57 CET, A10, 64/16 sims, `--hp-ema-search
+--replay-hp-bytes 96`, started together with `--rng-fix`, `--parallel-nodes 4` and the exploration key fix):** the
+10M window saved without the flag loaded, no errors; replay stays at 10M samples, 11.3 GB, mean 53.8 target bytes
+per sample (outcome + HP); process RSS 21.3-23.3 GB, and 450 games no longer fit beside the parallel nodes (300
+now). Losses after the start: `hp` 2.41-2.43, `hp_ema` 2.43, `hp_floor` 0.015, `hp_floor_ema` 0.010-0.014. Speed
+about 7.6k moves/s against 7.77k before (450 games, none of the four changes): NOT attributable to this flag.
+**Not measured:** the effect on win rate or on the HP heads' accuracy against realized HP over a longer stretch;
+the cost of this flag alone in moves/s and RAM.
+**Follow-up in this PR:** a window saved with `--replay-hp-bytes 96` was refused with 48 (byte ring layout).
+`Replay.load` now re-lays the target bytes of the live samples into a ring of the new size (other
+`--replay-soft-bytes` / `--replay-hp-bytes`); if the new ring is smaller than the stored bytes, the oldest samples
+are evicted. With a mean of 53.8 bytes the ring of 60 + 96 per sample is larger than needed.
+**Checks:** `tests/test_selfplay.py -k hp_soft -k save_load -k compress` (4 tests; windows saved with 60 + 260
+bytes loaded with 80 + 300, 40 + 60 and 8 + 8).
+**Decision:** flag stays default off in the repo; the stage-1 run uses it.
+**Knowledge impact:** this entry.
