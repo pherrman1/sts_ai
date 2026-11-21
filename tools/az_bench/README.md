@@ -126,7 +126,7 @@ about 1.5 ms (ledger §827). With the flag the loop waits for the next rows in 0
 (`RunDriver.wait_requests`, takes nothing) and hands the previous batch to the workers as soon as its GPU event is
 done. Answers are the same, only earlier; `infer_early_per_batch` in the metrics is the share of batches handed back
 that way.
-Live (ledger §TBD): 11,490 -> 11,887 moves/s (+3.5 %); only 23 % of the batches went back early, because the rows
+Live (ledger §828): 11,490 -> 11,887 moves/s (+3.5 %); only 23 % of the batches went back early, because the rows
 usually arrive before the previous batch is done. Since 2026-11-21 the loop looks a second time right after packing
 (`infer_early_packed_per_batch`); `selfplay.batch_done` is the one place that asks whether a batch is finished.
 

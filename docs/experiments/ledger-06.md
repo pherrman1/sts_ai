@@ -28463,7 +28463,7 @@ packed heads read only the live ones.
 **Decision:** none taken; (1) proposed to Philipp first, one change per restart.
 **Knowledge impact:** this entry; `tools/az_bench/README.md`.
 
-## §TBD — `--early-finish` live: 11,490 → 11,887 moves/s (+3.5 %), GPU load 67 → 73 %, workers asleep 32 → 28 %; only 23 % of the batches are handed back early, the rest are not done yet when the next rows arrive → GAIN, small; second hand-back point after packing added (PC, 2026-11-21)
+## §828 — `--early-finish` live: 11,490 → 11,887 moves/s (+3.5 %), GPU load 67 → 73 %, workers asleep 32 → 28 %; only 23 % of the batches are handed back early, the rest are not done yet when the next rows arrive → GAIN, small; second hand-back point after packing added (PC, 2026-11-21)
 
 **Question:** §827 proposed to hand a finished inference batch to the workers while the loop waits for the next
 rows (PR #1144). What does it give in the live run?
