@@ -28730,7 +28730,7 @@ checkpoint and window without the head, labels = driver rows, aux loss > 0, resu
 ends), any effect on learning. Before it takes over the main run: 5-15 min live test on the PC (project rule).
 **Knowledge impact:** this entry.
 
-## §TBD — `--enemy-tokens` + `--enemy-map-bias`: out-of-combat states get one MONSTER token per fight the act can hold (boss, 3 elites, strong hallway pool), and a learned attention bias between those tokens and the map's boss / elite / hallway nodes; zero bias at the start = same outputs → BUILT, default off (cloud, 2026-11-21)
+## §837 — `--enemy-tokens` + `--enemy-map-bias`: out-of-combat states get one MONSTER token per fight the act can hold (boss, 3 elites, strong hallway pool), and a learned attention bias between those tokens and the map's boss / elite / hallway nodes; zero bias at the start = same outputs → BUILT, default off (cloud, 2026-11-21)
 
 **Origin (owner, 2026-11-21):** the STS2 author's second tweak, "attention bias between enemy tokens and map
 nodes". The owner asked whether our net sees the enemies out of combat (it did not: MONSTER tokens existed only in
