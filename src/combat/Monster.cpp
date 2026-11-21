@@ -14,6 +14,11 @@
 #include "game/GameContext.h"
 #include "sim/search/CombatKnowledge.h"
 
+bool sts::monsterPowerSaturateFix() {
+    thread_local CachedFixFlag cache;
+    return cachedFixFlag(cache, "STS_MONSTER_POWER_SATURATE_FIX");
+}
+
 using namespace sts;
 
 void Monster::setRandomHp(Random &hpRng, bool higherHp) {

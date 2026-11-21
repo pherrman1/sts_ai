@@ -611,6 +611,14 @@ add_test(NAME dead_monster_block COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_gua
 set_tests_properties(dead_monster_block PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
+add_executable(monster_power_saturate_test tests/monster_power_saturate_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(monster_power_saturate_test PRIVATE include json/include)
+add_test(NAME monster_power_saturate COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:monster_power_saturate_test>)
+set_tests_properties(monster_power_saturate PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
 add_executable(mugger_death_rng_test tests/mugger_death_rng_test.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(mugger_death_rng_test PRIVATE include json/include)
