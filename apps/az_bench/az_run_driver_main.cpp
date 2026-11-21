@@ -308,11 +308,13 @@ int main(int argc, char **argv) {
     for (const auto &p : s.progressAsc) prog += p;
     const std::int64_t forced = s.forcedKeys[0] + s.forcedKeys[1] + s.forcedKeys[2];
     std::printf("key backstops: forced sapphire %lld ruby %lld emerald %lld route_masked %lld; runs with all keys %lld "
-                "act4 %lld keyless_victories %lld\n",
+                "act4 %lld keyless_victories %lld (no sapphire %lld ruby %lld emerald %lld; hungry face %lld)\n",
                 static_cast<long long>(s.forcedKeys[0]), static_cast<long long>(s.forcedKeys[1]),
                 static_cast<long long>(s.forcedKeys[2]), static_cast<long long>(s.keyRouteMasked),
                 static_cast<long long>(prog.allKeys), static_cast<long long>(prog.act4),
-                static_cast<long long>(prog.keylessVictories));
+                static_cast<long long>(prog.keylessVictories), static_cast<long long>(prog.keylessNoSapphire),
+                static_cast<long long>(prog.keylessNoRuby), static_cast<long long>(prog.keylessNoEmerald),
+                static_cast<long long>(prog.keylessHungryFace));
     if (bad || s.invalidActions || samples.empty() || s.runsDone < cfg.maxRuns) return 1;
     // The key backstops must be inert when off; when on they must act, and a run past the Act-3 boss holds all keys
     // (the treasure row and the last campfire are on every route, the route keeps the burning elite reachable).

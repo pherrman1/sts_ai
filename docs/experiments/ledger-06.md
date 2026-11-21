@@ -28852,6 +28852,34 @@ with the route x, so a drink can be masked or kept by its slot number.
 and a 5-15 minute PC test.
 **Knowledge impact:** this entry.
 
+## §844 — `--force-keys`, second round: N'loth's Hungry Face could empty the act-3 Sapphire chest, and the act-3 route mask read an out-of-combat drink's slot as a map x; both closed, default on, `STS_AZ_KEY_HOLES2=0` restores; keyless victories now logged by missing key (cloud, 2026-11-21)
+
+**Question (owner, 2026-11-21):** after §836 (#1158) the live run still had keyless victories (1 of 7,755 runs
+20:57-21:09 CET, 2 of about 16k after the 21:25 CET restart; 79 of 14,564 before §836). Where do they come from?
+(Note: the "floor 51" endings the run reported first are deaths at the second A20 act-3 boss, floorNum 51; keyless
+victories are the driver counter `keyless_victories`, floorNum 52.)
+**Cause (code, main 0cad30e1):** §836 named the remaining Sapphire path. Face Trader (acts 1-2) trades for a random
+face, which can be N'loth's Hungry Face; charged, it empties the next chest opened, and that chest then offers no
+Sapphire Key (GameContext.cpp, treasure rewards). The ADR-0063 Sapphire rule waits for the act-3 treasure row, so a
+face taken after the act-2 treasure row (or a skipped act-2 chest, e.g. Cursed Key under `--force-rewards`) eats the
+act-3 chest and the run can only end keyless. Separately, `heartKeyActionAllowed` checks every action's idx1 against
+the act-3 route, so an out-of-combat drink (bits 0x80000000 | slot, #1120) was kept or masked by its potion
+slot number (not a key hole, a wrong mask).
+**Fix (`keyBackstopActions`, forceKeys only):** with the Sapphire missing, (a) a treasure room is opened while the face
+is charged (Cursed Key or not), which spends the charge before the act-3 chest; (b) Face Trader's trade is not
+offered in act 2 from row 8 on (no sure chest is left before the act-3 one) unless the face is already held;
+(c) out-of-combat drinks pass the route mask. `STS_AZ_KEY_HOLES2=0` restores §836's behaviour. Not changed: a single
+forced key move still drops the drinks of that screen.
+**Logging:** `RunProgress` counts, among keyless victories, the runs without Sapphire / Ruby / Emerald and those
+without Sapphire holding the Hungry Face (`keyless_no_sapphire`, `keyless_no_ruby`, `keyless_no_emerald`,
+`keyless_hungry_face` in the metrics' progress window); `STS_AZ_KEYLESS_LOG=1` prints one stderr line per keyless
+victory (seed, ascension, floor, keys, face).
+**Check (cloud, fake net):** 3,000 A20 runs as §836's repro (seed base 920000, 30,000 HP): 0 keyless victories, all keys
+1,335, act 4 1,115. The face path is too rare to show in a fake-net run; `az_force_keys_test` covers (a)-(c) on
+synthetic states with and without `STS_AZ_KEY_HOLES2=0`.
+**Interpretation:** this is the last path found in code; whether the live remainder was this one is not known (no
+per-run key data before this entry). The next live check reads the new counters.
+**Decision:** engine fix, default on; live after the owner's go and a 5-15 minute PC test.
 ## §842 — Self-play stalls: a fight won before its first decision (Neow's Lament + Mercury Hourglass) ended the run as a "no legal action" stall loss; fixed, default on, `STS_AZ_FIGHT_START_END=0` restores; new `--stall-log` (default off) records every stall (cloud, 2026-11-21)
 
 **Question (owner, 2026-11-21):** what are the stage-1 self-play stalls (about 46 per 100k A20 runs; 3 of 1000 in
@@ -29136,3 +29164,17 @@ against an Acid Slime M), Awakened One F50 (803 block), Shield and Spear F55 (99
 §842's fake-net case.
 **Decision:** engine fix default on (independent review). Live use after the owner's go and a PC test.
 **Knowledge impact:** this entry; `docs/knowledge-base/operations/environment-variables.md`.
+## §845 — §843 checked on the PC: encounter tokens with `--compile` play right again (frozen arm C2 8.0 % / floor 27.2 vs D 9.7 %, B 9.3 %), but ~3x slower per batch (0.79k moves/s vs B 1.63k) from six graph breaks; the helpers are back in the compiled graph without the break-prone ops → BUILT, default off (cloud, 2026-11-21)
+
+**PC (torch 2.5.1+cu121, triton 3.1.0):** compiled-vs-eager test on CUDA passes; `--check-enemy-gate 20 --compile`
+(ckpt_955864, encounter window): infer_compiled policy 0.063 / outcome 0.125 / HP 0.53 / per-floor 0.013 against the
+fp16 noise floor 0.081 / 0.150 / 0.57 / 0.014; train step 75 vs 63 ms (1.19x). Frozen arm C2 (flags + compile, 300
+games): 24 / 300 = 8.0 %, floor 27.2; 0.79k moves/s, 17 vs 52 batches/s at ~800 rows (B 1.63k, D 1.04k moves/s).
+**Change:** no graph breaks by default (dynamo explain: 1 graph, 0 breaks with both flags, vs 7 graphs with
+§843): the gated row mean now comes from two calls of the row_mean op on [x * other, x * encounter] and on the
+encounter indicator in fp32 ((m_other + g m_enc) / ((1 - f_enc) + g f_enc), no bucketize / index_add on the dynamic
+token count); token classes and the gated varlen_attn call are compiled with the rest; both custom ops make their
+inputs contiguous. `AZ_ENEMY_NO_COMPILE=1` restores §843's graph breaks. The cloud's torch (2.15, CPU) never showed
+the bug, so which part was wrong on the PC's 2.5.1 is still open: the PC check decides. **Next:** on the PC the
+test, `--check-enemy-gate --compile` and frozen arm C3 (play like D, moves/s near B).
+**Knowledge impact:** this entry.

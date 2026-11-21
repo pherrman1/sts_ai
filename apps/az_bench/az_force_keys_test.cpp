@@ -133,6 +133,56 @@ int main() {
     require(azbench::keyBackstopActions(gc, v) == -1 && v.size() == 2, "portal, keys disabled: a decision");
     gc.keysEnabled = true; gc.curEvent = Event::INVALID;
 
+    // N'loth's Hungry Face (STS_AZ_KEY_HOLES2): a charged face empties the next chest, Sapphire missing.
+    const bool holes2 = azbench::keyHoles2Closed();
+    gc.blueKey = false; gc.redKey = true; gc.greenKey = true;
+    gc.screenState = ScreenState::TREASURE_ROOM; gc.act = 2; gc.curMapNodeY = 8;
+    v = GameAction::getAllActionsInState(gc);
+    n = v.size();
+    require(azbench::keyBackstopActions(gc, v) == -1 && v.size() == n, "act-2 chest without the face: a decision");
+    gc.relics.add({RelicId::NLOTHS_HUNGRY_FACE, 1});
+    v = GameAction::getAllActionsInState(gc);
+    if (holes2)
+        require(azbench::keyBackstopActions(gc, v) == 0 && v.size() == 1 && v[0].bits == GameAction(0).bits,
+                "act-2 chest, charged face: opened to spend the charge");
+    else
+        require(azbench::keyBackstopActions(gc, v) == -1 && v.size() == n, "STS_AZ_KEY_HOLES2=0: chest a decision");
+    gc.relics.getRelicValueRef(RelicId::NLOTHS_HUNGRY_FACE) = 0;
+    v = GameAction::getAllActionsInState(gc);
+    require(azbench::keyBackstopActions(gc, v) == -1 && v.size() == n, "spent face: a decision");
+    gc.relics.getRelicValueRef(RelicId::NLOTHS_HUNGRY_FACE) = 1; gc.blueKey = true;
+    v = GameAction::getAllActionsInState(gc);
+    require(azbench::keyBackstopActions(gc, v) == -1 && v.size() == n, "Sapphire owned: a decision");
+    gc.relics.remove(RelicId::NLOTHS_HUNGRY_FACE); gc.blueKey = false;
+    // Face Trader: option 1 (trade for a random face) is not offered after the act-2 treasure row.
+    gc.screenState = ScreenState::EVENT_SCREEN; gc.curEvent = Event::FACE_TRADER; gc.curMapNodeY = 10;
+    gc.gold = 100;
+    v = GameAction::getAllActionsInState(gc);
+    require(has(v, GameAction(1)), "Face Trader offers the trade");
+    n = v.size();
+    if (holes2)
+        require(azbench::keyBackstopActions(gc, v) == 3 && v.size() == n - 1 && !has(v, GameAction(1)),
+                "Face Trader after the act-2 treasure row, Sapphire missing: no trade");
+    gc.curMapNodeY = 5;
+    v = GameAction::getAllActionsInState(gc);
+    require(azbench::keyBackstopActions(gc, v) == -1 && v.size() == n, "Face Trader before the treasure row: a decision");
+    gc.curMapNodeY = 10; gc.blueKey = true;
+    v = GameAction::getAllActionsInState(gc);
+    require(azbench::keyBackstopActions(gc, v) == -1 && v.size() == n, "Face Trader, Sapphire owned: a decision");
+    gc.curEvent = Event::INVALID; gc.redKey = false; gc.greenKey = false; gc.act = 3;
+
+    // Out-of-combat drink on the act-3 map: its slot (idx1) is no map x, the route mask keeps it.
+    gc.screenState = ScreenState::MAP_SCREEN; gc.curMapNodeX = 0; gc.curMapNodeY = 0;
+    gc.map->getNode(0, 1).edges[0] = 1;   // two reaching edges again: x 0 and 1, x 2 misses
+    gc.potionCapacity = 3; gc.potionCount = 1; gc.potions[0] = Potion::EMPTY_POTION_SLOT;
+    gc.potions[2] = Potion::FRUIT_JUICE;  // slot 2 = the missing x
+    v = GameAction::getAllActionsInState(gc);
+    require(azbench::appendOocPotionDrinks(gc, v) == 1 && v.size() == 4, "map offers three edges and a drink");
+    const GameAction drink2(0x80000000u | 2u);
+    require(azbench::keyBackstopActions(gc, v) == 3 && has(v, drink2) == holes2 && v.size() == (holes2 ? 3u : 2u),
+            "route mask: drink kept (STS_AZ_KEY_HOLES2=0: masked by its slot)");
+    gc.potionCapacity = 0; gc.potionCount = 0; gc.potions[2] = Potion::EMPTY_POTION_SLOT;
+
     // Smoke Bomb at the act-3 burning elite (1,2) without the Emerald Key: the fight's context drops the escape.
     gc.screenState = ScreenState::MAP_SCREEN; gc.greenKey = false; gc.curMapNodeX = 1; gc.curMapNodeY = 2;
     gc.curRoom = Room::ELITE;
