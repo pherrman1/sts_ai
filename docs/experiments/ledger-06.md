@@ -28624,7 +28624,7 @@ bytes loaded with 80 + 300, 40 + 60 and 8 + 8).
 **Decision:** flag stays default off in the repo; the stage-1 run uses it.
 **Knowledge impact:** this entry.
 
-## §TBD — Decision explainability, offline prototype: does the stage-1 net's card-reward prior respond to owned synergy partners? Token ablation on 489 card rewards of 32 cloud runs: Corruption and strength pairs YES (interval above the control), Barricade / Body Slam and Rupture pairs NO (cloud, 2026-11-21)
+## §833 — Decision explainability, offline prototype: does the stage-1 net's card-reward prior respond to owned synergy partners? Token ablation on 489 card rewards of 32 cloud runs: Corruption and strength pairs YES (interval above the control), Barricade / Body Slam and Rupture pairs NO (cloud, 2026-11-21)
 
 **Question (owner, 2026-11-21):** explain the agent's decisions in the mod without generated text; among other
 things remove single cards / relics from the state and see how the prior of an offered option changes (his
