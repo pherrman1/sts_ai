@@ -394,6 +394,13 @@ namespace sts::azbench {
         std::int32_t n = 0;
         double w = 0;
         std::vector<float> dist;             // searchEmaLambda > 0: outcome distribution of the node's value [57]
+        // searchEmaHp (RunConfig): the node's floor and the HP with which its path left each floor from the search
+        // root's on (passed[i] = floor rootFloor + i); what its value says about the HP at the end of the root's
+        // floor (hpHot >= 0: the one-hot of that class, else the distribution hpd [256]) and about E[HP_f] / 255 of
+        // every floor from the root's on (hpfv [56], utility AMBER).
+        int nfloor = 0, hpHot = -1;
+        std::vector<std::int16_t> passed;
+        std::vector<float> hpd, hpfv;
         // savescum combat node: the real fight (bc is its public view) and its knowledge tracker (kept allocated
         // across pool reuse; valid while hasReal).
         bool hasReal = false;
@@ -422,6 +429,7 @@ namespace sts::azbench {
         bool hit = false;                    // answered by the cache
         std::array<float, kFloors> resHpf{};   // utility AMBER: E[HP_f] / 255
         std::array<float, kOutcomeClasses> resDist{};   // searchEmaLambda > 0: outcome softmax
+        std::vector<float> resHpd;           // searchEmaHp: floor HP softmax [256]
     };
 
     // Ticket of a request: worker << 26 | flight slot << 16 | run (with slot 0 the pre-parallelNodes ticket).
@@ -474,11 +482,20 @@ namespace sts::azbench {
         int nFlights = 0, waiting = 0;
         // Evaluation cache (RunConfig::evalCache): input hash -> result, all of weights version cacheVersion; emptied
         // at the start of each run, on a weights change and when full.
-        struct CacheEntry { float F = 0, ehp = 0; int nAct = 0; std::vector<float> logits, hpf, dist; };   // hpf: utility AMBER; dist: searchEmaLambda > 0
+        struct CacheEntry { float F = 0, ehp = 0; int nAct = 0; std::vector<float> logits, hpf, dist, hpd; };   // hpf: utility AMBER; dist: searchEmaLambda > 0; hpd: searchEmaHp
         std::unordered_map<std::uint64_t, CacheEntry> cache;
         std::uint32_t cacheVersion = 0;
         std::vector<double> rootDist;          // searchEmaLambda > 0: sum of the backed-up distributions at the root
         std::vector<std::uint16_t> moveDist;   // ... search result of each chain move of the run [M][57], float16
+        // searchEmaHp: the sums of the backed-up floor HP distributions and
+        // per-floor values at the root; the floor HP search results of the current floor's chain moves [m][256]
+        // (floorChain0 = the run's chain moves before this floor); the per-floor search results of the run's chain
+        // moves (float16; move m holds floors moveHpfFloor[m] .. 56).
+        std::vector<double> rootHpd, rootHpf;
+        std::vector<float> floorHpd;
+        int floorChain0 = 0;
+        std::vector<std::uint16_t> moveHpf;
+        std::vector<std::uint8_t> moveHpfFloor;
         std::array<std::int16_t, kFloors + 1> floorHp{};   // utility AMBER: HP at the end of floor f (-1 = not yet)
         std::vector<Sample> pending;
         std::size_t floorStart = 0;          // first pending sample of the current floor
@@ -827,6 +844,10 @@ namespace sts::azbench {
             throw std::invalid_argument("run driver: utility 0 (floor HP), 1 (Amber) or 2 (Amber, later)");
         if (!(cfg_.searchEmaLambda >= 0 && cfg_.searchEmaLambda < 1))
             throw std::invalid_argument("run driver: searchEmaLambda in [0, 1)");
+        if (cfg_.searchEmaHp && !(cfg_.searchEmaLambda > 0))
+            throw std::invalid_argument("run driver: searchEmaHp needs searchEmaLambda > 0");
+        if (cfg_.searchEmaHp && !(cfg_.chanceOnReveal || cfg_.crossCombat || cfg_.simHelp))
+            throw std::invalid_argument("run driver: searchEmaHp needs Amber's search rules (chanceOnReveal, crossCombat or simHelp)");
         if (cfg_.gamesPerWorker > 0xffff) throw std::invalid_argument("run driver: at most 65535 runs per worker");
         if (cfg_.workers > kMaxWorkers) throw std::invalid_argument("run driver: at most 64 workers");
         if (cfg_.parallelNodes < 0 || cfg_.parallelNodes > 255)
@@ -1084,6 +1105,8 @@ namespace sts::azbench {
             n.n = 0;
             n.w = 0;
             n.dist.clear();
+            n.hpHot = -1;
+            n.passed.clear();
             n.hasReal = false;
             n.inFlight = false;
             return g.poolUsed++;
@@ -1247,6 +1270,7 @@ namespace sts::azbench {
                     fl.resEhp = it->second.ehp;
                     if (!it->second.hpf.empty()) std::copy(it->second.hpf.begin(), it->second.hpf.end(), fl.resHpf.begin());
                     if (!it->second.dist.empty()) std::copy(it->second.dist.begin(), it->second.dist.end(), fl.resDist.begin());
+                    if (!it->second.hpd.empty()) fl.resHpd = it->second.hpd;
                     fl.hit = true;
                     ++wk.st.cacheHits;
                     wk.hits.push_back(slot << 16 | gi);
@@ -1258,6 +1282,67 @@ namespace sts::azbench {
         };
 
         const bool emaOn = cfg.searchEmaLambda > 0;
+        const bool hpOn = cfg.searchEmaHp;                    // floor HP distribution targets from the search
+        const bool hpfOn = hpOn && usesAmberH(cfg.utility);   // ... and per-floor HP targets
+        auto hpClass = [](int hp) { return std::clamp(hp, 0, kHpClasses - 1); };
+        // searchEmaHp: the HP entries of a run-ending node. Death (alive false): HP 0 on its floor and after; a
+        // keyless victory: hp on its floor, 0 after; a Heart kill (win): hp on its floor and after (as endRun's
+        // labels). Floors the path left before keep their real HP.
+        auto setHpEnd = [&](Run &g, Node &cn, bool win, bool alive, int hp) {
+            if (!hpOn) return;
+            const int rf = g.pool[0].nfloor, h = alive ? hpClass(hp) : 0;
+            cn.hpd.clear();
+            cn.hpHot = cn.nfloor > rf && !cn.passed.empty() ? hpClass(cn.passed[0]) : h;
+            if (!hpfOn) return;
+            cn.hpfv.assign(kFloors, 0.f);
+            for (int f = std::max(1, rf); f <= kFloors; ++f) {
+                int v = f == cn.nfloor ? h : win ? h : 0;
+                if (f < cn.nfloor) v = f - rf < static_cast<int>(cn.passed.size()) ? hpClass(cn.passed[f - rf]) : 0;
+                cn.hpfv[f - 1] = static_cast<float>(v / 255.0);
+            }
+        };
+        auto setHpDeath = [&](Run &g, Node &cn) { setHpEnd(g, cn, false, false, 0); };
+        auto setHpGameEnd = [&](Run &g, Node &cn) {   // an out-of-combat node whose game is over (cn.gc)
+            const bool win = heartWin(*cn.gc);
+            setHpEnd(g, cn, win, win || (keylessVictory(*cn.gc) && (cfg.keylessHp || usesAmberH(cfg.utility))), cn.gc->curHp);
+        };
+        // searchEmaHp: the HP entries of a node the net evaluated (resHpd / resHpf are its result).
+        auto setHpEval = [&](Run &g, Node &n, const Flight &fl) {
+            const int rf = g.pool[0].nfloor;
+            if (n.nfloor > rf && !n.passed.empty()) {
+                n.hpd.clear();
+                n.hpHot = hpClass(n.passed[0]);
+            } else {
+                n.hpHot = -1;
+                n.hpd = fl.resHpd;
+            }
+            if (!hpfOn) return;
+            n.hpfv.assign(kFloors, 0.f);
+            for (int f = std::max(1, rf); f <= kFloors; ++f) {
+                if (f >= n.nfloor) n.hpfv[f - 1] = std::clamp(fl.resHpf[f - 1], 0.f, 1.f);
+                else if (f - rf < static_cast<int>(n.passed.size())) n.hpfv[f - 1] = static_cast<float>(hpClass(n.passed[f - rf]) / 255.0);
+            }
+        };
+        auto copyHp = [&](Node &cn, const Node &from) {   // a child that keeps its parent's value
+            if (!hpOn) return;
+            cn.hpHot = from.hpHot;
+            cn.hpd = from.hpd;
+            cn.hpfv = from.hpfv;
+        };
+        // searchEmaHp: a node's HP entries added to the root's sums.
+        auto addHp = [&](Run &g, const Node &n) {
+            if (n.hpHot >= 0) g.rootHpd[n.hpHot] += 1.0;
+            else {
+                if (n.hpd.size() != static_cast<std::size_t>(kHpClasses))
+                    throw std::logic_error("run driver: leaf without a floor HP distribution");
+                for (int k = 0; k < kHpClasses; ++k) g.rootHpd[k] += n.hpd[k];
+            }
+            if (hpfOn) {
+                if (n.hpfv.size() != static_cast<std::size_t>(kFloors))
+                    throw std::logic_error("run driver: leaf without per-floor HP values");
+                for (int k = 0; k < kFloors; ++k) g.rootHpf[k] += n.hpfv[k];
+            }
+        };
         // Backs the value v of the path's leaf up along the path. virt: the path holds virtual losses (parallelNodes),
         // which the real visits replace.
         auto backup = [&](Run &g, const std::vector<PathStep> &path, float v, bool virt = false) {
@@ -1266,6 +1351,7 @@ namespace sts::azbench {
                 if (leaf.dist.size() != static_cast<std::size_t>(kOutcomeClasses))
                     throw std::logic_error("run driver: leaf without an outcome distribution");
                 for (int k = 0; k < kOutcomeClasses; ++k) g.rootDist[k] += leaf.dist[k];
+                if (hpOn) addHp(g, leaf);
             }
             for (const auto &p : path) {
                 Node &n = g.pool[p.node];
@@ -1285,6 +1371,38 @@ namespace sts::azbench {
         // Labels of the current floor's samples once the floor is left (or the run ends).
         auto closeFloor = [&](Run &g, int hpEnd) {
             for (std::size_t i = g.floorStart; i < g.pending.size(); ++i) g.pending[i].hpEnd = static_cast<std::int16_t>(hpEnd);
+            if (hpOn) {
+                // The floor's EMA chain of the floor HP distribution, last chain move first, ending in the real HP.
+                const double lam = cfg.searchEmaLambda;
+                std::array<double, kHpClasses> t{};
+                t[hpClass(hpEnd)] = 1.0;
+                const int M = static_cast<int>(g.moveDist.size() / kOutcomeClasses);
+                int si = static_cast<int>(g.pending.size()) - 1;
+                const int s0 = static_cast<int>(g.floorStart);
+                auto give = [&](int m) {   // samples whose chain move is m take the current target, 8-bit fixed point
+                    for (; si >= s0 && g.pending[si].emaMove == m; --si) {
+                        Sample &s = g.pending[si];
+                        int lo = kHpClasses, hi = -1;
+                        std::array<std::uint8_t, kHpClasses> q;
+                        for (int k = 0; k < kHpClasses; ++k) {
+                            q[k] = static_cast<std::uint8_t>(std::clamp<long>(std::lround(255.0 * t[k]), 0, 255));
+                            if (q[k]) { lo = std::min(lo, k); hi = k; }
+                        }
+                        if (hi < 0) throw std::logic_error("run driver: empty floor HP target");
+                        s.hpTargetLo = static_cast<std::int16_t>(lo);
+                        s.hpTargetQ.assign(q.begin() + lo, q.begin() + hi + 1);
+                    }
+                };
+                give(M);   // kept moves after the floor's last chain move: the real HP
+                for (int m = M - 1; m >= g.floorChain0; --m) {
+                    const float *d = g.floorHpd.data() + static_cast<std::size_t>(m - g.floorChain0) * kHpClasses;
+                    for (int k = 0; k < kHpClasses; ++k) t[k] = (1.0 - lam) * d[k] + lam * t[k];
+                    give(m);
+                }
+                if (si >= s0) throw std::logic_error("run driver: kept sample outside its floor's chain");
+                g.floorHpd.clear();
+                g.floorChain0 = M;
+            }
             g.floorStart = g.pending.size();
             if (g.floor >= 1 && g.floor <= kFloors) g.floorHp[g.floor] = static_cast<std::int16_t>(hpEnd);
         };
@@ -1322,6 +1440,10 @@ namespace sts::azbench {
             g.floorStart = 0;
             g.floorHp.fill(-1);
             g.moveDist.clear();
+            g.floorHpd.clear();
+            g.floorChain0 = 0;
+            g.moveHpf.clear();
+            g.moveHpfFloor.clear();
             g.progress = RunProgress{};
             g.hlog = HeartRunLog{};
             // Heart log: a hash of the seed decides (kills are always recorded at the end), not the search RNG.
@@ -1409,6 +1531,38 @@ namespace sts::azbench {
                 for (auto &s : g.pending) {
                     s.hpFloor.resize(kFloors);
                     amberFloorLabels(s.floor, g.floorHp.data(), tail, s.hpFloor.data());
+                }
+                if (hpfOn) {
+                    // Per-floor EMA chain along the run's chain moves, last move first. Move m (on floor fl) holds
+                    // search results for the floors fl .. 56; earlier floors keep the real HP, which is what an
+                    // earlier move's chain then ends in.
+                    const double lam = cfg.searchEmaLambda;
+                    std::array<std::int16_t, kFloors> real;
+                    amberFloorLabels(1, g.floorHp.data(), tail, real.data());
+                    std::array<double, kFloors> t;
+                    for (int k = 0; k < kFloors; ++k) t[k] = hpClass(real[k]) / 255.0;
+                    const int M = static_cast<int>(g.moveHpfFloor.size());
+                    if (M != static_cast<int>(g.moveDist.size() / kOutcomeClasses))
+                        throw std::logic_error("run driver: per-floor HP chain out of step");
+                    std::size_t off = g.moveHpf.size();
+                    int si = static_cast<int>(g.pending.size()) - 1;
+                    auto give = [&](int m) {
+                        for (; si >= 0 && g.pending[si].emaMove == m; --si) {
+                            Sample &s = g.pending[si];
+                            const int fl = std::clamp<int>(s.floor, 1, kFloors);
+                            s.hpFloorTarget.resize(kFloors);
+                            for (int f = 1; f <= kFloors; ++f) s.hpFloorTarget[f - 1] = f < fl ? -1.f : static_cast<float>(t[f - 1]);
+                        }
+                    };
+                    give(M);
+                    for (int m = M - 1; m >= 0; --m) {
+                        const int fl = g.moveHpfFloor[m], len = kFloors - fl + 1;
+                        off -= static_cast<std::size_t>(len);
+                        for (int i = 0; i < len; ++i)
+                            t[fl - 1 + i] = (1.0 - lam) * halfToFloat(g.moveHpf[off + i]) + lam * t[fl - 1 + i];
+                        give(m);
+                    }
+                    if (si >= 0 || off != 0) throw std::logic_error("run driver: per-floor HP chain does not cover the run");
                 }
             }
             if (cfg.exploreAmber) {   // the run's items: once per run in the rate, smallest gap into the item's log
@@ -1681,6 +1835,7 @@ namespace sts::azbench {
             g.nFlights = g.waiting = 0;
             const int r = newNode(g);
             Node &root = g.pool[r];
+            root.nfloor = g.gc.floorNum;
             if (g.inBattle) {
                 root.combat = true;
                 root.ctx = g.ctx;
@@ -1815,6 +1970,20 @@ namespace sts::azbench {
                 for (int k = 0; k < kOutcomeClasses; ++k) moveResult[k] = static_cast<float>(g.rootDist[k] * inv);
                 if (inChain)
                     for (int k = 0; k < kOutcomeClasses; ++k) g.moveDist.push_back(search::amberHalf(moveResult[k]));
+                if (hpOn) {
+                    // Every backed-up leaf gave a distribution: the root's sum is its visit count.
+                    double sum = 0;
+                    for (int k = 0; k < kHpClasses; ++k) sum += g.rootHpd[k];
+                    if (std::abs(sum * inv - 1.0) > 1e-3) throw std::logic_error("run driver: floor HP search result does not sum to 1");
+                    if (inChain) {
+                        for (int k = 0; k < kHpClasses; ++k) g.floorHpd.push_back(static_cast<float>(g.rootHpd[k] / sum));
+                        if (hpfOn) {
+                            const int fl = std::clamp(root.nfloor, 1, kFloors);
+                            g.moveHpfFloor.push_back(static_cast<std::uint8_t>(fl));
+                            for (int f = fl; f <= kFloors; ++f) g.moveHpf.push_back(search::amberHalf(static_cast<float>(g.rootHpf[f - 1] * inv)));
+                        }
+                    }
+                }
             }
             if (cfg.heartLogRate > 0) {   // Heart log: the first searched move of each act and of the Heart fight
                 constexpr int kHeartFloor = 55;   // Act 4: 52 rest, 53 shop, 54 elite, 55 the Heart
@@ -2021,7 +2190,7 @@ namespace sts::azbench {
                     if (cn.gc->outcome != GameOutcome::UNDECIDED) {
                         cn.evaluated = cn.terminal = true;
                         cn.value = terminalUtility(*cn.gc, cfg.hpWeightOoc, cfg, false, g.pool[0].combat);
-                        if (emaOn) setOneHot(cn, outcomeClass(*cn.gc));
+                        if (emaOn) { setOneHot(cn, outcomeClass(*cn.gc)); setHpGameEnd(g, cn); }
                     }
                 } else {
                     cn.combat = true;
@@ -2041,7 +2210,7 @@ namespace sts::azbench {
                         setGc(cn, std::move(next));
                         cn.evaluated = cn.terminal = true;
                         cn.value = terminalUtility(*cn.gc, cfg.hpWeightOoc, cfg, false, g.pool[0].combat);
-                        if (emaOn) setOneHot(cn, outcomeClass(*cn.gc));
+                        if (emaOn) { setOneHot(cn, outcomeClass(*cn.gc)); setHpGameEnd(g, cn); }
                     } else if (next.screenState == ScreenState::BATTLE) {
                         // A fight starts: the leaf is its first state, valued by the net (in combat).
                         cn.combat = true;
@@ -2089,6 +2258,8 @@ namespace sts::azbench {
             combatRng = revealed = false;
             const Node &parent = g.pool[pi];
             Node &cn = g.pool[ci];
+            cn.nfloor = parent.nfloor;
+            if (hpOn) cn.passed = parent.passed;
             // savescum: bc is the real fight (sk its tracker, observing every step), nothing is resampled or tested.
             const bool ss = g.savescum;
             const bool detect = cfg.chanceOnReveal && !resample && !ss;
@@ -2105,13 +2276,21 @@ namespace sts::azbench {
                 cn.evaluated = cn.terminal = true;
                 cn.value = parent.value;
                 if (emaOn) cn.dist = parent.dist;
+                copyHp(cn, parent);
             };
             // One out-of-combat step on gc, tested for hidden information on its own (a later step's new-floor reseed
             // must not hide an earlier draw).
+            // searchEmaHp: a step that leaves the floor records the HP it left with (as the real run's closeFloor).
+            auto noteFloor = [&] {
+                if (gc.floorNum <= cn.nfloor) return;
+                if (hpOn) cn.passed.insert(cn.passed.end(), static_cast<std::size_t>(gc.floorNum - cn.nfloor), static_cast<std::int16_t>(gc.curHp));
+                cn.nfloor = gc.floorNum;
+            };
             auto oocExec = [&](std::uint32_t b) {
-                if (!detect) { execOoc(gc, b); return; }
+                if (!detect) { execOoc(gc, b); noteFloor(); return; }
                 const auto snap = search::captureOocHidden(gc);
                 execOoc(gc, b);
+                noteFloor();
                 revealed = revealed || search::oocStepRevealsHidden(snap, gc);
             };
             // A combat step: under savescum on the real fight with its tracker observing.
@@ -2150,7 +2329,7 @@ namespace sts::azbench {
                     cn.evaluated = cn.terminal = true;
                     const int fl = inCombat ? bc.floorNum : gc.floorNum;
                     cn.value = terminalUtility(false, false, fl, 0, 1, cfg.hpWeightOoc, cfg, false, g.pool[0].combat);
-                    if (emaOn) setOneHot(cn, std::clamp(fl, 1, kOutcomeClasses - 1));
+                    if (emaOn) { setOneHot(cn, std::clamp(fl, 1, kOutcomeClasses - 1)); setHpDeath(g, cn); }
                     return;
                 }
                 if (inCombat) {
@@ -2161,7 +2340,7 @@ namespace sts::azbench {
                         cn.evaluated = cn.terminal = true;
                         const int fl = outer ? outer->floorNum : g.gc.floorNum;
                         cn.value = terminalUtility(false, false, fl, 0, 1, cfg.hpWeightCombat, cfg, true, g.pool[0].combat);
-                        if (emaOn) setOneHot(cn, std::clamp(fl, 1, kOutcomeClasses - 1));   // death on this floor
+                        if (emaOn) { setOneHot(cn, std::clamp(fl, 1, kOutcomeClasses - 1)); setHpDeath(g, cn); }   // death on this floor
                         return;
                     }
                     if (bc.outcome == Outcome::PLAYER_VICTORY) {
@@ -2203,7 +2382,7 @@ namespace sts::azbench {
                     setGc(cn, std::move(gc));
                     cn.evaluated = cn.terminal = true;
                     cn.value = terminalUtility(*cn.gc, cfg.hpWeightOoc, cfg, false, g.pool[0].combat);
-                    if (emaOn) setOneHot(cn, outcomeClass(*cn.gc));
+                    if (emaOn) { setOneHot(cn, outcomeClass(*cn.gc)); setHpGameEnd(g, cn); }
                     return;
                 }
                 if (goldToTake(gc)) { oocExec(takeGoldBits); continue; }
@@ -2431,6 +2610,7 @@ namespace sts::azbench {
                     }
                     for (std::size_t k = 0; k < n.edges.size() && k < fl.resLogits.size(); ++k) n.edges[k].logit = fl.resLogits[k];
                     if (emaOn) n.dist.assign(fl.resDist.begin(), fl.resDist.end());
+                    if (hpOn) setHpEval(g, n, fl);
                     if (fl.hit) {
                         fl.hit = false;
                     } else {
@@ -2446,6 +2626,7 @@ namespace sts::azbench {
                             e.logits = fl.resLogits;
                             if (usesAmberH(cfg.utility)) e.hpf.assign(fl.resHpf.begin(), fl.resHpf.end());
                             if (emaOn || isAmber2(cfg.utility)) e.dist.assign(fl.resDist.begin(), fl.resDist.end());
+                            if (hpOn) e.hpd = fl.resHpd;
                         }
                     }
                     if (fl.node == 0) {   // the root's evaluation (always alone in flight)
@@ -2461,6 +2642,11 @@ namespace sts::azbench {
                         g.pool[0].n = 1;
                         g.pool[0].w = n.value;
                         if (emaOn) g.rootDist.assign(n.dist.begin(), n.dist.end());
+                        if (hpOn) {
+                            g.rootHpd.assign(kHpClasses, 0.0);
+                            g.rootHpf.assign(kFloors, 0.0);
+                            addHp(g, n);
+                        }
                         initRoot(g);
                     } else {
                         backup(g, fl.path, n.value, parallel);
@@ -2522,7 +2708,10 @@ namespace sts::azbench {
     }
 
     void RunDriver::submit(const std::uint32_t *tickets, int rows, int actions, const float *logits, const float *F,
-                           const float *ehp, const float *hpf, std::uint32_t version, const float *dist) {
+                           const float *ehp, const float *hpf, std::uint32_t version, const float *dist,
+                           const float *hpDist) {
+        if (cfg_.searchEmaHp && !hpDist)
+            throw std::invalid_argument("run driver: searchEmaHp needs floor HP distributions (hpDist)");
         if (usesAmberH(cfg_.utility) && !hpf)
             throw std::invalid_argument("run driver: utility AMBER needs per-floor HP results (hpf)");
         if (cfg_.searchEmaLambda > 0 && !dist)
@@ -2546,6 +2735,8 @@ namespace sts::azbench {
                                g.resHpf.begin());
             if (dist) std::copy(dist + static_cast<std::size_t>(r) * kOutcomeClasses,
                                 dist + static_cast<std::size_t>(r + 1) * kOutcomeClasses, g.resDist.begin());
+            if (cfg_.searchEmaHp) g.resHpd.assign(hpDist + static_cast<std::size_t>(r) * kHpClasses,
+                                                  hpDist + static_cast<std::size_t>(r + 1) * kHpClasses);
             per[ticketWorker(t)].push_back(static_cast<int>(t & ((1u << (kTicketRunBits + kTicketSlotBits)) - 1)));
         }
         for (std::size_t w = 0; w < per.size(); ++w) {

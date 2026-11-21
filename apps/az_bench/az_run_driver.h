@@ -423,6 +423,26 @@ namespace sts::azbench {
         // Chain distributions are held as float16 until the run ends (~114 B per chain move).
         double searchEmaLambda = 0;
         bool searchEmaFullOnly = true;
+        // Search-backed EMA targets for the HP heads too (2026-11-21, default off; needs searchEmaLambda > 0 and
+        // Amber's search rules: chanceOnReveal, crossCombat or simHelp). Amber Eye's page does not name the HP heads'
+        // targets; it stores "labels for the outcome and HP distributions" as 8-bit value distributions, and its
+        // value labels are the search / EMA combination (Philipp 2026-11-21: both HP heads). Every node carries, next
+        // to its outcome distribution, what its value says about the search root's HP questions:
+        //   - the distribution of the HP at the end of the ROOT's floor [256]: the net's HP softmax (submit needs
+        //     `hpDist`) while the node is on the root's floor; the one-hot of the HP with which the path left that
+        //     floor once the node is past it; a run-ending leaf: the one-hot of its real HP (0 on death);
+        //   - utility AMBER / AMBER2 only: E[HP_f] / 255 for every floor f from the root's on [56]: the net's
+        //     per-floor prediction from the node's floor on, the path's real HP for the floors it passed, a
+        //     run-ending leaf's real values (death: 0 from its floor on; Heart kill: its HP from its floor on).
+        // The search result of a searched move is the mean over the root evaluation and every simulation's leaf, as
+        // for the outcome distribution. The chains use the same moves and lambda as the outcome's:
+        //   - floor HP distribution: the chain ends with the floor (the head asks about this floor only):
+        //     target = one_hot(real HP at the end of the floor) after the floor's last chain move
+        //     (Sample::hpTargetQ, 8-bit fixed point over its nonzero interval, Amber's stored format);
+        //   - per-floor HP: along the whole run, floor by floor: a floor's target is its real HP once the run has
+        //     left it (Sample::hpFloorTarget, HP / 255, -1 before the sample's floor).
+        // Sample::hpEnd / hpFloor keep the real labels. The selection is unchanged.
+        bool searchEmaHp = false;
         // Heart search probe (2026-11-18, diagnostic, default empty = off). When a run reaches the Heart fight, its
         // game state at the fight's start is stored and the fight is played heartArms.size() x heartReps times from
         // that same state (same game RNG at the start; job j plays arm j % arms, rep j / arms), each with the arm's
@@ -484,6 +504,12 @@ namespace sts::azbench {
         std::vector<float> searchDist, outcomeTarget;
         float emaRealWeight = 0;
         std::int32_t emaMove = -1;
+        // searchEmaHp only: the EMA target of the floor HP distribution as round(255 p) over classes
+        // hpTargetLo .. hpTargetLo + size - 1 (0 elsewhere), and the per-floor targets [56] (utility AMBER; HP / 255,
+        // -1 before this floor).
+        std::int16_t hpTargetLo = 0;
+        std::vector<std::uint8_t> hpTargetQ;
+        std::vector<float> hpFloorTarget;
     };
 
     // Run progress counters of finished runs (2026-11-17; why A0 runs rarely reach Act 4): keys held at the run's
@@ -617,11 +643,12 @@ namespace sts::azbench {
                                                  FlatShape &shape, int packThreads = 1);
         // Results: logits[row][action] (`actions` per row), F[row] in [0, 1] and expected HP at the end of the
         // floor ehp[row] (absolute) for each ticket; utility AMBER also needs hpf[row][56] = E[HP_f] / 255;
-        // searchEmaLambda > 0 needs dist[row][57], the outcome head's softmax (class 0 = win, f = death on floor f).
+        // searchEmaLambda > 0 needs dist[row][57], the outcome head's softmax (class 0 = win, f = death on floor f);
+        // searchEmaHp needs hpDist[row][256], the floor HP head's softmax.
         // version: the weights version (setWeightsVersion) the batch was evaluated with (evaluation cache).
         void submit(const std::uint32_t *tickets, int rows, int actions, const float *logits, const float *F,
                     const float *ehp, const float *hpf = nullptr, std::uint32_t version = 0,
-                    const float *dist = nullptr);
+                    const float *dist = nullptr, const float *hpDist = nullptr);
         // The weights version of evaluations from now on (evaluation cache): set it when the net's weights change,
         // before evaluating the next batch with them. Cached results of other versions are not used.
         void setWeightsVersion(std::uint32_t v) { weightsVersion_.store(v, std::memory_order_release); }
