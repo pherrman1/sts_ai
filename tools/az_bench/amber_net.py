@@ -31,6 +31,27 @@ ACTION_TYPES = 16      # our choice
 OUTCOME_CLASSES = 57   # our choice: win + death on floor 1..56
 HP_CLASSES = 256       # page: current-floor HP as a class, capped at 255
 
+# Encounter tokens (RunDriver enemy_tokens, search::amberAppendEncounterTokens; not from Amber Eye): MONSTER tokens
+# with ids[3] = ENC_KIND_BASE + kind (0 boss, 1 elite, 2 hallway). Must equal kAmberEncounterKindBase (C++
+# static_assert in AmberGameEncoder.cpp).
+ENC_KIND_BASE = 1018
+# Attention-bias token classes (AmberNet(enemy_bias=True)): 0 other, 1..3 encounter token boss / elite / hallway,
+# 4..6 MAP node boss / elite / hallway fight.
+BIAS_CLASSES = 7
+
+
+def token_classes(tt, ids, f):
+    """Attention-bias class per token from tok_type [...], ids [..., 4], f [..., 64] (BIAS_CLASSES). MAP floats
+    3 + Room (AmberGameEncoder.cpp): 6 = ELITE, 7 = MONSTER, 9 = BOSS; 18 = the act boss token after row 14."""
+    mon = tt == TOKEN_TYPES.index("monster")
+    mp = tt == TOKEN_TYPES.index("map")
+    kind = ids[..., 3] - ENC_KIND_BASE
+    cls = torch.where(mon & (kind >= 0) & (kind < 3), 1 + kind, torch.zeros_like(kind))
+    cls = torch.where(mp & (f[..., 7] > 0.5), torch.full_like(cls, 6), cls)
+    cls = torch.where(mp & (f[..., 6] > 0.5), torch.full_like(cls, 5), cls)
+    cls = torch.where(mp & ((f[..., 9] > 0.5) | (f[..., 18] > 0.5)), torch.full_like(cls, 4), cls)
+    return cls
+
 # Sizes chosen to land on the page's three parameter counts (d, layers); heads = d // 32.
 SIZES = {"0.44M": (64, 6), "1.2M": (128, 4), "5.4M": (256, 5)}
 
@@ -68,7 +89,7 @@ def load_fused_layer():
 
 
 class AmberNet(nn.Module):
-    def __init__(self, d=96, layers=3, heads=None, hp_floors=1, soft_policy=False, aux_slots=0):
+    def __init__(self, d=96, layers=3, heads=None, hp_floors=1, soft_policy=False, aux_slots=0, enemy_bias=False):
         super().__init__()
         heads = heads or max(1, d // 32)
         self.type_emb = nn.Embedding(len(TOKEN_TYPES), d)
@@ -102,12 +123,19 @@ class AmberNet(nn.Module):
         # tuple). Defined last, so the other parameters keep their order (optimizer state of a checkpoint without it).
         self.aux_fight = mlp(d, d, 2 * aux_slots) if aux_slots else None
         self.aux_out = None
+        # Attention bias between encounter tokens and map nodes (tools/az_bench/selfplay.py --enemy-map-bias; not
+        # from Amber Eye, after an STS2 author's design): per layer and head a learned table over the token classes
+        # (token_classes), added to the attention scores of query class i and key class j. Zero at the start, so a
+        # net without it computes the same outputs. Defined after the aux head (parameter order of older checkpoints).
+        self.enemy_bias = nn.Parameter(torch.zeros(layers, heads, BIAS_CLASSES, BIAS_CLASSES)) if enemy_bias else None
 
     def load_state_dict(self, state_dict, strict=True, **kw):
         """A checkpoint's weights; a net without the aux head ignores the checkpoint's aux_fight weights, so tools
         that build the net without it load checkpoints of --aux-fights runs."""
         if self.aux_fight is None:
             state_dict = {k: v for k, v in state_dict.items() if not k.startswith("aux_fight.")}
+        if self.enemy_bias is None:
+            state_dict = {k: v for k, v in state_dict.items() if k != "enemy_bias"}
         return super().load_state_dict(state_dict, strict=strict, **kw)
 
     def forward(self, b):
@@ -184,7 +212,10 @@ class AmberNet(nn.Module):
         proj = torch.gather(P, 2, tt[..., None, None].expand(-1, -1, 1, d)).squeeze(2)
         x = self.in_norm(self.type_emb(tt) + self.ids(b["ids"]).sum(2) + proj)
         mask = b["mask"]
-        h = self.out_norm(self.sdpa_trunk(x, mask) if self.sdpa else self.trunk(x, src_key_padding_mask=~mask))
+        if self.enemy_bias is not None and not self.sdpa:
+            raise ValueError("enemy_bias needs sdpa = True")
+        cls = token_classes(tt, b["ids"], b["f"]) if self.enemy_bias is not None else None
+        h = self.out_norm(self.sdpa_trunk(x, mask, cls) if self.sdpa else self.trunk(x, src_key_padding_mask=~mask))
         return self._heads(h, mask, b)
 
     sdpa = False   # True: run the trunk through sdpa_trunk (same weights and math, fused attention kernel)
@@ -195,26 +226,38 @@ class AmberNet(nn.Module):
     packed_heads = False   # True (inference, with row_mean, b["seq_off"], b["act_idx"]): _heads_packed
     attn_math = False   # True: sdpa_trunk / forward_packed attend with plain matmuls + softmax (fp32) instead of SDPA
 
-    def _attend(self, q, k, v, keep):
+    def _attend(self, q, k, v, keep, bias=None):
+        """bias (enemy_bias): [B, H, T, T] float added to the scores, -inf where keep is False."""
         if not self.attn_math:
-            return torch.nn.functional.scaled_dot_product_attention(q, k, v, attn_mask=keep)
+            return torch.nn.functional.scaled_dot_product_attention(q, k, v, attn_mask=keep if bias is None else
+                                                                    bias.to(q.dtype))
         s = (q @ k.transpose(-1, -2)).float() * q.shape[-1] ** -0.5
-        p = torch.softmax(s.masked_fill(~keep, float("-inf")), -1)
+        p = torch.softmax(s.masked_fill(~keep, float("-inf")) if bias is None else s + bias.float(), -1)
         return p.to(v.dtype) @ v
 
-    def sdpa_trunk(self, x, mask):
+    def _bias_mask(self, layer, cls, keep):
+        """The attention mask of layer `layer` with enemy_bias: cls [B, T] token classes, keep [B, 1, 1, T] ->
+        [B, H, T, T] float, the table entry of (query class, key class), -inf for dead keys."""
+        tab = self.enemy_bias[layer]
+        H, C = tab.shape[0], tab.shape[1]
+        idx = cls[:, :, None] * C + cls[:, None, :]
+        bias = tab.reshape(H, C * C)[:, idx].permute(1, 0, 2, 3)
+        return bias.float().masked_fill(~keep, float("-inf"))
+
+    def sdpa_trunk(self, x, mask, cls=None):
         """self.trunk's math (pre-norm encoder layers, key padding mask, exact GELU) written with one QKV matmul and
         F.scaled_dot_product_attention per layer instead of nn.MultiheadAttention, so the attention runs as one
-        fused kernel. Equal to self.trunk up to float rounding (tests/test_amber_net_flat.py)."""
+        fused kernel. Equal to self.trunk up to float rounding (tests/test_amber_net_flat.py). cls [B, T]
+        (enemy_bias): the token classes of the attention bias."""
         F = torch.nn.functional
         B, T, d = x.shape
         keep = mask[:, None, None, :]                      # [B, 1, 1, T], True = attend
-        for layer in self.trunk.layers:
+        for li, layer in enumerate(self.trunk.layers):
             a = layer.self_attn
             H = a.num_heads
             y = layer.norm1(x)
             qkv = F.linear(y, a.in_proj_weight, a.in_proj_bias).view(B, T, 3, H, d // H).permute(2, 0, 3, 1, 4)
-            o = self._attend(qkv[0], qkv[1], qkv[2], keep)
+            o = self._attend(qkv[0], qkv[1], qkv[2], keep, None if cls is None else self._bias_mask(li, cls, keep))
             x = x + a.out_proj(o.transpose(1, 2).reshape(B, T, d))
             x = x + layer.linear2(F.gelu(layer.linear1(layer.norm2(x))))
         return x
@@ -257,22 +300,37 @@ class AmberNet(nn.Module):
             full[idx] = v
             return full[:M]
 
-        for layer in self.trunk.layers:
+        varlen = self.varlen_attn is not None and "seq_off" in b
+        cls_p = cls_pad = None
+        if self.enemy_bias is not None:
+            cls_p = token_classes(tt_p, ids_p, f_p)
+            if varlen:
+                cls_p = cls_p.to(torch.int32).contiguous()
+            else:
+                cls_pad = unpack(cls_p[:, None]).view(B, T)
+
+        def vattn(qkv, li):
+            if cls_p is None:
+                return self.varlen_attn(qkv, b["seq_off"], H, T)
+            return self.varlen_attn(qkv, b["seq_off"], H, T, cls_p, self.enemy_bias[li].float().contiguous())
+
+        for li, layer in enumerate(self.trunk.layers):
             a = layer.self_attn
             H = a.num_heads
-            if self.fused_layer is not None and self.varlen_attn is not None and "seq_off" in b:
+            if self.fused_layer is not None and varlen:
                 # whole layer in three kernels: norm1 + QKV, varlen attention, out_proj + residual + norm2 + FFN
                 ln_qkv, out_ffn = self.fused_layer
                 x = x.contiguous()
-                o = self.varlen_attn(ln_qkv(x, layer), b["seq_off"], H, T)
+                o = vattn(ln_qkv(x, layer), li)
                 x = out_ffn(x, o, layer)
                 continue
             qkv_p = F.linear(layer.norm1(x), a.in_proj_weight, a.in_proj_bias)
-            if self.varlen_attn is not None and "seq_off" in b:
-                x = x + a.out_proj(self.varlen_attn(qkv_p.contiguous(), b["seq_off"], H, T))
+            if varlen:
+                x = x + a.out_proj(vattn(qkv_p.contiguous(), li))
             else:
                 qkv = unpack(qkv_p).view(B, T, 3, H, d // H).permute(2, 0, 3, 1, 4)
-                o = self._attend(qkv[0], qkv[1], qkv[2], keep)
+                o = self._attend(qkv[0], qkv[1], qkv[2], keep,
+                                 None if cls_pad is None else self._bias_mask(li, cls_pad, keep))
                 x = x + a.out_proj(o.transpose(1, 2).reshape(M, d)[ip])
             if self.fused_ffn is not None:
                 x = self.fused_ffn(x.contiguous(), layer)
@@ -289,6 +347,8 @@ class AmberNet(nn.Module):
         b["a_src"], b["a_tgt"] [B, A] long token index into the concatenated segments (-1 = none),
         b["a_f"] [B, A, 8] float, b["a_mask"] [B, A] bool. Returns (policy logits [B, A], outcome logits,
         HP-class logits, per-floor HP)."""
+        if self.enemy_bias is not None:
+            raise ValueError("enemy_bias: forward_segments is not supported (use the flat layout with sdpa)")
         toks, masks = [], []
         for i, t in enumerate(TOKEN_TYPES):
             ids = b[t + "_ids"]

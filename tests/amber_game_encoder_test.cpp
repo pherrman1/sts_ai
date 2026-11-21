@@ -9,6 +9,7 @@
 // Every out-of-combat ScreenState must be visited. Fixed seeds 1..N (no gameplay evaluation, outcomes unused).
 #include "sim/search/AmberEncoder.h"
 
+#include "constants/MonsterEncounters.h"
 #include "game/Map.h"
 #include "game/Neow.h"
 
@@ -276,6 +277,31 @@ int main(int argc, char **argv) {
             std::memset(&b, 0x3c, sizeof(b));
             amberEncodeGame(gc, actions, b);
             check(liveBytes(a) == liveBytes(b), "deterministic", gc);
+
+            {   // encounter tokens (RunConfig::enemyTokens): appended MONSTER tokens only, one per possible fight
+                b = a;
+                amberAppendEncounterTokens(gc, b);
+                const int mi = static_cast<int>(AmberTokenType::MONSTER);
+                const int want = (gc.boss != MonsterEncounter::INVALID)
+                    + (gc.act >= 4 ? 1 : gc.act >= 1 ? 3 + MonsterEncounterPool::strongCount[gc.act - 1] : 0);
+                check(b.n[mi] == want && b.cut == a.cut, "one encounter token per fight of the act", gc);
+                for (int s = 0; s < kAmberTokenTypes; ++s)
+                    if (s != mi) check(b.n[s] == a.n[s], "encounter tokens leave other segments alone", gc);
+                for (int i = 0; i < b.n[mi]; ++i) {
+                    const AmberToken &tok = b.tok[kAmberOff[mi] + i];
+                    const int kind = tok.ids[3] - kAmberEncounterKindBase;
+                    check(kind >= 0 && kind < kAmberEncounterKinds, "encounter kind id", gc);
+                    check(kind == (i == 0 ? 0 : (gc.act >= 4 || i <= 3) ? 1 : 2), "boss, elites, hallway order", gc);
+                    check(tok.ids[0] >= kAmberMonsterBase && tok.ids[0] < kAmberMoveBase, "encounter has a monster", gc);
+                    for (int k = 1; k < 3; ++k)
+                        check(tok.ids[k] == 0 || (tok.ids[k] >= kAmberMonsterBase && tok.ids[k] < kAmberMoveBase),
+                              "encounter ids are monsters", gc);
+                    check(amberHalfToFloat(tok.f[0]) > 0.05f && amberHalfToFloat(tok.f[1]) > 0.1f, "HP and count", gc);
+                }
+                AmberTokens c = a;
+                amberAppendEncounterTokens(gc, c);
+                check(liveBytes(b) == liveBytes(c), "encounter tokens deterministic", gc);
+            }
 
             if (step % 3 == 0) {
                 GameContext priv = gc;

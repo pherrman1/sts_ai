@@ -517,6 +517,10 @@ namespace sts::azbench {
         // them into labels with the net itself (tools/az_bench/selfplay.py --aux-fights). Drawn with an RNG of the
         // run seed and move number, and on copies, so play is the same as without it.
         bool auxFights = false;
+        // Encounter tokens (2026-11-21, default off; not from Amber Eye, Philipp's choice): out-of-combat encodings
+        // get one MONSTER token per fight the act can hold (search::amberAppendEncounterTokens: boss, elites, the
+        // strong hallway pool), so the net sees which enemies the map's rooms lead to.
+        bool enemyTokens = false;
         CombatEncodeFn encodeCombat = nullptr;   // default: search::amberEncodeCombat
         GameEncodeFn encodeGame = nullptr;       // default: search::amberEncodeGame (stubEncodeGame = placeholder)
     };

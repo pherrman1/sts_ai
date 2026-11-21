@@ -54,6 +54,11 @@ namespace sts::search {
                                      - static_cast<int>(Event::NEOW) + 1;
     constexpr int kAmberGameIdEnd = kAmberScreenBase + static_cast<int>(ScreenState::BATTLE);
     static_assert(kAmberGameIdEnd <= kAmberIdVocab, "Amber out-of-combat id ranges overflow the shared vocabulary");
+    // Encounter tokens (amberAppendEncounterTokens, ids[3]): the kind of fight, boss / elite / hallway.
+    constexpr int kAmberEncounterKindBase = kAmberGameIdEnd;
+    constexpr int kAmberEncounterKinds = 3;
+    static_assert(kAmberEncounterKindBase + kAmberEncounterKinds <= kAmberIdVocab,
+                  "Amber encounter kinds overflow the shared vocabulary");
 
     // AmberAction::type values.
     enum class AmberActionType : std::uint8_t {
@@ -94,6 +99,17 @@ namespace sts::search {
     // (bits 0x80000000 | slot, 0xC0000000 | slot) and the Singing Bowl reward (RewardsActionType::CARD, group, 5).
     // No heap allocation. Feature layout: AmberGameEncoder.cpp.
     void amberEncodeGame(const GameContext &gc, const std::vector<GameAction> &actions, AmberTokens &out);
+
+    // Encounter tokens (2026-11-21, optional; RunConfig::enemyTokens, not from Amber Eye: Philipp's choice after an
+    // STS2 author's design): appends one MONSTER token per fight the current act can hold, to an out-of-combat
+    // encoding: the act boss, the act's 3 elites (act 4: Shield and Spear) and every encounter of the act's strong
+    // hallway pool (the weak pool of the first fights is left out), at most 14. All public knowledge (the boss is
+    // on the map, the pools are the game's); no encounter queue. Token: ids[0..2] = up to 3 distinct monsters of the
+    // encounter (first appearance, over 8 sampled compositions for random groups such as the Gremlin Gang),
+    // ids[3] = kAmberEncounterKindBase + kind (0 boss, 1 elite, 2 hallway); floats 0 = mean total max HP / 100 at
+    // the run's ascension, 1 = mean monster count / 5, 2 = the encounter's pool weight (boss 1, elite 1/3).
+    // Tokens past the MONSTER cap are counted in out.cut. Deterministic; no heap allocation after the first call.
+    void amberAppendEncounterTokens(const GameContext &gc, AmberTokens &out);
 
     // Card stacks (2026-11-17, optional; RunConfig::mergeCards): merges CARD tokens that are identical in every id
     // and float (out of combat ignoring the master-deck index, slot 11 of deck cards) into one token, the first

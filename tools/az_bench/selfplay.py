@@ -1167,16 +1167,22 @@ def rss_gb():
     return None
 
 
+def extra_param(name):
+    """Parameters of the optional parts (--aux-fights head, --enemy-map-bias table): the optimizer's second group."""
+    return name.startswith("aux_fight.") or name == "enemy_bias"
+
+
 def load_opt_state(opt, saved):
-    """Loads an optimizer state saved with one parameter group (no --aux-fights) into an optimizer with the aux
-    group (that group starts fresh), or one saved with the aux group into an optimizer without it (its state is
-    dropped); otherwise as opt.load_state_dict."""
+    """Loads an optimizer state saved with one parameter group (no --aux-fights / --enemy-map-bias) into an
+    optimizer with the extra group (that group starts fresh), one saved with the extra group into an optimizer
+    without it (its state is dropped), or one whose extra group holds other parameters (it starts fresh);
+    otherwise as opt.load_state_dict."""
     mine = opt.state_dict()
     ng, sg = len(mine["param_groups"]), len(saved["param_groups"])
-    if ng == sg:
+    if [len(g["params"]) for g in mine["param_groups"]] == [len(g["params"]) for g in saved["param_groups"]]:
         opt.load_state_dict(saved)
         return
-    if not (ng, sg) in ((2, 1), (1, 2)):
+    if not (ng, sg) in ((2, 1), (1, 2), (2, 2)):
         raise ValueError(f"optimizer state: {sg} parameter groups saved, {ng} here")
     n0 = len(saved["param_groups"][0]["params"])
     if n0 != len(mine["param_groups"][0]["params"]):
@@ -1358,6 +1364,14 @@ def main(argv=None):
                          "P(death) and HP left in fights against the act boss, its elites and 4 sampled hallway "
                          "fights, labelled by the net's floor HP head on those fight starts (az_run_driver.h auxFights)")
     ap.add_argument("--w-aux", type=float, default=1.0, help="loss weight of the --aux-fights head")
+    ap.add_argument("--enemy-tokens", action="store_true",
+                    help="encounter tokens (not from Amber Eye; default off): out-of-combat states also get one MONSTER "
+                         "token per fight the act can hold (boss, 3 elites, the strong hallway pool), "
+                         "az_run_driver.h enemyTokens")
+    ap.add_argument("--enemy-map-bias", action="store_true",
+                    help="learned attention bias between encounter tokens and the map's boss / elite / hallway nodes "
+                         "(not from Amber Eye; default off; needs --enemy-tokens, not with --fused-net): "
+                         "amber_net.AmberNet(enemy_bias=True), zero at the start")
     ap.add_argument("--batch", type=int, default=2048)
     ap.add_argument("--row-buckets", default="2048", help="batch rows padded to these (one size keeps compiled shapes few)")
     ap.add_argument("--tok-buckets", default="32,40,48,56,64,80,96,128,212")
@@ -1458,6 +1472,8 @@ def main(argv=None):
         ap.error("--packed-h2d needs --pack-step")
     if args.init_net and args.resume:
         ap.error("--init-net and --resume exclude each other")
+    if args.enemy_map_bias and (not args.enemy_tokens or args.fused_net):
+        ap.error("--enemy-map-bias needs --enemy-tokens and excludes --fused-net")
     if args.init_counters and not args.init_net:
         ap.error("--init-counters needs --init-net")
     if args.kickstart_mix and not args.teacher_ckpt:
@@ -1503,12 +1519,13 @@ def main(argv=None):
     torch.manual_seed(args.seed)
     d, layers = amber_net.SIZES.get(args.net) or tuple(int(x) for x in args.net.split("x")[:2])
     train_net = amber_net.AmberNet(d=d, layers=layers, hp_floors=hp_floors, soft_policy=args.w_soft_policy > 0,
-                                   aux_slots=AUX_SLOTS if args.aux_fights else 0).to(dev)
+                                   aux_slots=AUX_SLOTS if args.aux_fights else 0,
+                                   enemy_bias=args.enemy_map_bias).to(dev)
     train_net.sdpa = True
-    # --aux-fights: the aux head's parameters are a second group, so a checkpoint without them keeps its optimizer
-    # state for the rest (load_opt_state).
-    main_params = [p_ for n_, p_ in train_net.named_parameters() if not n_.startswith("aux_fight.")]
-    aux_params = [p_ for n_, p_ in train_net.named_parameters() if n_.startswith("aux_fight.")]
+    # --aux-fights / --enemy-map-bias: their parameters are a second group, so a checkpoint without them keeps its
+    # optimizer state for the rest (load_opt_state).
+    main_params = [p_ for n_, p_ in train_net.named_parameters() if not extra_param(n_)]
+    aux_params = [p_ for n_, p_ in train_net.named_parameters() if extra_param(n_)]
     opt = torch.optim.AdamW([{"params": main_params}] + ([{"params": aux_params}] if aux_params else []),
                             lr=args.lr, weight_decay=args.weight_decay)
     counters = {"step": 0, "trained": 0, "seeds_used": 0, "runs_done": 0, "wall": 0.0}
@@ -1516,11 +1533,14 @@ def main(argv=None):
     if args.resume:
         ck = torch.load(args.resume, map_location=dev)
         explore_blob = ck.get("explore_state")
-        fresh_aux = args.aux_fights and not any(k.startswith("aux_fight.") for k in ck["net"])
-        train_net.load_state_dict(ck["net"], strict=not fresh_aux)
+        fresh = [k for k in train_net.state_dict() if k not in ck["net"]]
+        if any(not extra_param(k) for k in fresh):
+            raise SystemExit(f"--resume {args.resume}: the checkpoint lacks {fresh}")
+        train_net.load_state_dict(ck["net"], strict=not fresh)
         load_opt_state(opt, ck["opt"])
-        if fresh_aux:
-            print(f"# resume {args.resume}: no aux head in the checkpoint, --aux-fights starts it fresh", flush=True)
+        if fresh:
+            print(f"# resume {args.resume}: not in the checkpoint, starting fresh: "
+                  f"{sorted({k.split('.')[0] for k in fresh})}", flush=True)
         counters.update(ck["counters"])
     if args.init_net:
         src = torch.load(args.init_net, map_location=dev)["net"]
@@ -1629,6 +1649,7 @@ def main(argv=None):
         **({"explore_deck_only": True} if args.explore_deck_only else {}),
         **({"explore_clean_keys": True} if args.explore_clean_keys else {}),
         **({"aux_fights": True} if args.aux_fights else {}),
+        **({"enemy_tokens": True} if args.enemy_tokens else {}),
         **({"heart_arms": heart_arms, "heart_reps": args.heart_reps} if heart_arms else {}),
         **({"savescum": True} if savescum else {}),
         **({"compact_samples": True} if args.compact_samples else {}),
@@ -1742,6 +1763,8 @@ def main(argv=None):
     if row_b[-1] < args.batch:
         row_b.append(args.batch)
     tok_b = [int(v) for v in args.tok_buckets.split(",")]
+    if args.enemy_tokens and tok_b[-1] < 223:   # up to 14 more tokens per row (az AmberTokens kAmberMaxTokens 223)
+        tok_b.append(224)
     act_b = [int(v) for v in args.act_buckets.split(",")]
     infer_tok_b = {t: 0 for t in tok_b}   # inference batches per token bucket (the padded length of their rows)
     min_rows = max(1, min(args.batch, args.workers * args.games) // 2)
@@ -2354,6 +2377,11 @@ def main(argv=None):
                                      "driver_rows": s["aux_fights"], "label_s": round(aux_stats["secs"], 1),
                                      "p_death": [round(float(x), 4) for x in aux_stats["pd"] / n_],
                                      "hp_left": [round(float(x), 4) for x in aux_stats["hp"] / n_]}
+            if args.enemy_map_bias:   # the learned table: mean |entry| and the enemy <-> map node pairs per kind
+                tab = train_net.enemy_bias.detach().float().cpu()
+                row["enemy_bias"] = {"abs_mean": round(float(tab.abs().mean()), 5),
+                                     "enemy_to_node": [round(float(tab[:, :, k, k + 3].mean()), 5) for k in (1, 2, 3)],
+                                     "node_to_enemy": [round(float(tab[:, :, k + 3, k].mean()), 5) for k in (1, 2, 3)]}
             if args.heart_log > 0:
                 drain_heart_log()
                 row["heart_log"] = {"records": heart_logged[0], "kills": heart_logged[1]}

@@ -1356,6 +1356,7 @@ namespace sts::azbench {
                 for (std::size_t k = 0; k < gacts.size(); ++k) node.edges[k] = Edge{gacts[k].bits};
                 const double t1 = cpuSeconds();
                 cfg.encodeGame(*node.gc, gacts, fl.tokens);
+                if (cfg.enemyTokens) search::amberAppendEncounterTokens(*node.gc, fl.tokens);
                 if (cfg.mergeCards) search::amberMergeCards(fl.tokens);
                 if (ni == 0 && (cfg.exploreC > 0 || cfg.exploreAmber)) {
                     // Pick-rate items of the root's actions: hash of the source token's ids.
