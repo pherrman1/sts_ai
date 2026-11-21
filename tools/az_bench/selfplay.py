@@ -67,10 +67,12 @@ E[HP_f] / 255 next to the outcome distribution (a leaf past the root's floor cou
 floor with; a run-ending leaf its real HP, 0 on death). The chains use the outcome chain's moves and half-life. Where
 the page is silent (Philipp 2026-11-21): the floor HP chain ends with the floor in the real HP (the head asks about
 this floor only), and a per-floor target is the real HP once the run has left that floor. The floor HP target is
-kept as round(255 p) over its nonzero interval (the driver rounds; read back renormalised), the per-floor targets as
-float16. Losses: "hp" and "hp_floor" stay the losses against the real labels (comparable across settings, as
+kept as round(255 p) over its nonzero interval (the driver rounds; read back renormalised), the per-floor targets
+as whole HP (round(255 x), one byte per floor). Losses: "hp" and "hp_floor" stay the losses against the real labels (comparable across settings, as
 "outcome"); "hp_ema" (soft cross-entropy) and "hp_floor_ema" (masked MSE) are the trained ones. Inference sends the
-driver 256 more floats per row. A window saved without the flag has another layout (--replay-load starts empty).
+driver 256 more floats per row. --replay-load takes a window saved without the flag: its samples keep the real HP
+labels as their HP targets (one-hot floor HP, real per-floor HP), only new samples get search targets; the reverse
+(a window saved with the flag, loaded without) is refused as another layout.
 Selection is unchanged.
 
 From https://8e9f.github.io/amber_eye/: one net, Gumbel AlphaZero 64 / 16 positions per full / fast move with playout
@@ -182,9 +184,12 @@ class Replay:
         self.hp_ref = np.zeros(self.cs if self.hp_runs else 0, np.int64)            # sample -> its run (absolute)
         self.r_head = 0
         # --hp-ema-search (hp_soft): the floor HP target of a sample [256] as round(255 p) and, with hp_floors, its
-        # per-floor targets [56] (float16, -1 = masked). Both arrive with the chunk ("hp_target", "hp_floor_target").
+        # per-floor targets [56] as round(255 x) (x = HP / 255: whole HP; masked before the sample's floor, as the
+        # labels). Both arrive with the chunk ("hp_target", "hp_floor_target").
         # compress_targets: the floor HP target's nonzero interval (hq_lo, hq_len) follows the sample's outcome bytes
-        # in the byte ring (written by set_soft_outcome); otherwise one dense row per sample.
+        # in the byte ring (written by set_soft_outcome); otherwise one dense row per sample. A sample without a
+        # floor HP target (hq_len 0 / an all-zero row: not set yet, or loaded from a window saved without hp_soft)
+        # reads as the one-hot of its real HP; such a loaded sample's per-floor targets are its real labels.
         self.hp_soft = hp_soft
         self.hq_lo = self.hq_len = None   # no arrays without the option: a saved window's layout stays the same
         if hp_soft and self.soft_q:
@@ -194,7 +199,8 @@ class Replay:
         elif hp_soft:
             self.meta["hp_target"] = np.zeros((self.cs, HP_CLASSES), np.uint8)
         if hp_soft and hp_floors:
-            self.meta["hp_floor_target"] = np.zeros((self.cs, hp_floors), np.float16)
+            self.meta["hp_floor_target"] = np.zeros((self.cs, hp_floors), np.uint8)
+        self.migrated_hp = 0   # samples loaded from a window saved without hp_soft (load)
         self.cq = samples * soft_bytes_per_sample if self.soft_q else 0
         self.sq = np.zeros(self.cq, np.uint8)                                       # quantized targets, byte ring
         self.sq_start = np.zeros(self.cs if self.soft_q else 0, np.int64)
@@ -288,10 +294,27 @@ class Replay:
         compact options changed); returns state.json."""
         with open(os.path.join(path, "state.json")) as fh:
             state = json.load(fh)
-        if state["layout"] != self._layout():
+        if state["layout"] != self._layout() and not self._migrates_hp(state["layout"]):
             raise ValueError(f"replay load {path}: saved layout differs from this run's (--window, ring or compact "
                              "options changed)")
         return state
+
+    _HP_SOFT_ARRAYS = ("hq_lo", "hq_len", "meta.hp_target", "meta.hp_floor_target")
+
+    def _migrates_hp(self, saved):
+        """True when `saved` (a layout) is this replay's layout without hp_soft: the same arrays but for the HP
+        target arrays, with a target byte ring of any size (load then lays the bytes out again)."""
+        if not self.hp_soft:
+            return False
+        mine = self._layout()
+        a = {k: v for k, v in mine["arrays"].items() if k not in self._HP_SOFT_ARRAYS}
+        b = dict(saved.get("arrays", {}))
+        if self.soft_q:
+            if b.get("sq", [None, None])[1] != "uint8":
+                return False
+            a.pop("sq")
+            b.pop("sq")
+        return a == b and all(mine[k] == saved.get(k) for k in mine if k != "arrays")
 
     def load(self, path):
         """Restores a window saved by save into this (empty) replay; its layout (--window and the ring / compact
@@ -301,7 +324,10 @@ class Replay:
             if len(self) or self.added:
                 raise ValueError("replay load: the window is not empty")
             self.load_partial = True   # until the whole window is in (a failure in between leaves it unusable)
+            migrate = state["layout"] != self._layout()   # saved without hp_soft (check_layout allowed it)
             for k, v in self._arrays().items():
+                if migrate and (k in self._HP_SOFT_ARRAYS or k == "sq"):
+                    continue
                 np.copyto(v, np.load(os.path.join(path, k + ".npy"), mmap_mode="r"))
             if self.compact:
                 ld = lambda n: np.ascontiguousarray(np.load(os.path.join(path, f"store.{n}.npy"), mmap_mode="r"))
@@ -309,10 +335,44 @@ class Replay:
             for k, v in state["scalars"].items():
                 setattr(self, k, v)
             self.soft_stats = list(state["soft_stats"])
+            if migrate:
+                self._migrate_hp(path)
             if self.soft_q:   # the saved window does not say in which order its targets were set: look once
                 self.sq_ordered, self.sq_hi = self._sq_starts_rise(), self.s_head
             self.load_partial = False
         return state["extra"]
+
+    def _migrate_hp(self, path, block=1 << 18):
+        """After loading a window saved without hp_soft (caller holds the lock): the live samples' outcome bytes laid
+        out again in this replay's byte ring (its size differs; a smaller ring keeps the newest samples that fit),
+        no floor HP target for them (hq_len 0: read as the real HP) and their per-floor targets set to their real
+        labels."""
+        live = self.s_head - self.s_tail
+        if self.soft_q:
+            old = np.load(os.path.join(path, "sq.npy"), mmap_mode="r")
+            # A smaller byte ring than the saved one: the oldest samples go until the rest's bytes fit.
+            ln_all = self.sq_len[(self.s_tail + np.arange(live)) % self.cs].astype(np.int64)
+            over = np.cumsum(ln_all[::-1])[::-1] > self.cq   # bytes of the samples from this one on
+            if over.any():
+                self._evict(int(np.flatnonzero(over)[-1]) + 1)
+                live = self.s_head - self.s_tail
+            self.hq_len[:] = 0
+            head = 0
+            for k in range(0, live, block):
+                j = (self.s_tail + k + np.arange(min(block, live - k))) % self.cs
+                ln = self.sq_len[j].astype(np.int64)
+                c = np.arange(int(ln.sum())) - np.repeat(np.cumsum(ln) - ln, ln)
+                data = np.asarray(old[(np.repeat(self.sq_start[j], ln) + c) % len(old)]) if len(c) else np.zeros(0, np.uint8)
+                self.sq[head:head + len(data)] = data
+                self.sq_start[j] = head + np.cumsum(ln) - ln
+                head += len(data)
+            self.q_head = head
+        if "hp_floor_target" in self.meta:
+            for k in range(0, live, block):
+                j = (self.s_tail + k + np.arange(min(block, live - k))) % self.cs
+                real = self.hpr[self.hp_ref[j] % self.cr] if self.hp_runs else self.meta["hp_floor"][j]
+                self.meta["hp_floor_target"][j] = np.clip(real, 0, 255).astype(np.uint8)
+        self.migrated_hp = live
 
     @staticmethod
     def _put(ring, start, values):
@@ -486,7 +546,10 @@ class Replay:
         self._put(self.act_start, self.s_head, a0 + s["act_off"][:-1])
         self._put(self.nact, self.s_head, na)
         for k, ring in self.meta.items():
-            self._put(ring, self.s_head, s[k])
+            v = s[k]
+            if k == "hp_floor_target":   # HP / 255 (-1 = masked) -> whole HP
+                v = np.rint(np.clip(np.asarray(v, np.float32), 0.0, 1.0) * 255.0).astype(np.uint8)
+            self._put(ring, self.s_head, v)
         first = self.s_head
         if self.soft_outcome is not None:   # until set_soft_outcome: the final outcome
             oh = np.zeros((S, OUTCOME_CLASSES), np.float16)
@@ -660,8 +723,9 @@ class Replay:
             b["soft_outcome"] = so / so.sum(-1, keepdims=True)
             if self.hq_lo is not None:   # floor HP targets: the bytes after the sample's outcome bytes
                 ht = np.zeros((B, HP_CLASSES), np.float32)
-                ht[unset, b["hp_end"][unset].astype(np.int64).clip(0, HP_CLASSES - 1)] = 1.0   # not set yet: real HP
                 hl = np.where(ln > 0, self.hq_len[j].astype(np.int64), 0)
+                none = np.flatnonzero(hl == 0)   # no floor HP target: the real HP
+                ht[none, b["hp_end"][none].astype(np.int64).clip(0, HP_CLASSES - 1)] = 1.0
                 r = np.repeat(np.arange(B), hl)
                 c = np.arange(int(hl.sum())) - np.repeat(np.cumsum(hl) - hl, hl)
                 ht[r, np.repeat(self.hq_lo[j].astype(np.int64), hl) + c] = (
@@ -669,9 +733,13 @@ class Replay:
                 b["hp_target"] = ht / ht.sum(-1, keepdims=True)
         if "hp_target" in self.meta:   # dense rows of round(255 p)
             ht = b["hp_target"].astype(np.float32)
+            none = np.flatnonzero(ht.sum(-1) == 0)   # no floor HP target: the real HP
+            ht[none, b["hp_end"][none].astype(np.int64).clip(0, HP_CLASSES - 1)] = 1.0
             b["hp_target"] = ht / ht.sum(-1, keepdims=True)
-        if "hp_floor_target" in b:
-            b["hp_floor_target"] = b["hp_floor_target"].astype(np.float32)
+        if "hp_floor_target" in b:   # whole HP -> HP / 255, -1 before the sample's floor
+            t = b["hp_floor_target"].astype(np.float32) / 255.0
+            fl = np.clip(b["floor"].astype(np.int64), 1, t.shape[1])
+            b["hp_floor_target"] = np.where(np.arange(1, t.shape[1] + 1)[None, :] >= fl[:, None], t, -1.0).astype(np.float32)
         return b
 
 
@@ -1346,6 +1414,9 @@ def main(argv=None):
                 raise ValueError(f"saved at step {saved.get('step')}, the resumed checkpoint is at {counters['step']}")
             replay.check_layout(args.replay_load)   # before any array is touched: the window stays empty and usable
             replay.load(args.replay_load)
+            if replay.migrated_hp:
+                print(f"# replay-load: window saved without --hp-ema-search: its {replay.migrated_hp:,} samples keep "
+                      "the real HP labels as HP targets", flush=True)
             # the replay-ratio cap counts the trained samples since this window's first sample was added
             trained0 = counters["trained"] - int(saved["trained_since_window"])
             replay_loaded = len(replay)
