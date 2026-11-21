@@ -29166,5 +29166,5 @@ dtype on x * other and x * enc and takes the encounter fraction from exact prefi
 encounter rows policy 0.016 / outcome 0.063 / HP 0.125 / per-floor 0.005, compiled vs eager 0.063 / 0.125 / 0.47 /
 0.014, fp16 noise 0.081 / 0.150 / 0.57 / 0.014, other rows 0. Frozen C4 (flags + compile, 300 games): 8.0 % / floor
 28.6 (D 9.7 % / 28.4, B 9.3 % / 29.1); 1,091 moves/s vs B 1,630 (0.67x), training step 75.4 vs 63.3 ms. Went live
-23:28 CET with a 30-min watch (roll back on collapse or moves/s more than 15 % below 8.9k).
+00:28 CET (11-22) with a 30-min watch (roll back on collapse or moves/s more than 15 % below 8.9k).
 **Knowledge impact:** this entry; Triton 3.1 on sm_86 needs fp32 kernel checks per width.
