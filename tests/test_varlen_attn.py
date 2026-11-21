@@ -470,5 +470,60 @@ class EnemyBiasKernel(unittest.TestCase):
             self.assertLess(float((x - y).abs().max()), self.tol)
 
 
+    def test_gate_zero_inference_paths_fp16(self):
+        """The inference configuration (fp16 on CUDA, d = 128, varlen attention with and without row bounds, fused
+        layer, packed heads): at gate 0 the gated net on the state equals the net without encounter parts on the
+        stripped state, per path, so a failing path names itself (CUDA diagnosis of #1166)."""
+        import sys
+        A = load("amber_net")
+        mod = sys.modules["az_bench_varlen_attn"] if "az_bench_varlen_attn" in sys.modules else None
+        cuda = self.dev != "cpu"
+        dt = torch.float16 if cuda else torch.float32
+        tol = 0.05 if cuda else self.tol
+        f = gate_batch(A, seed=11)
+        st = strip_encounters(A, {k: v.cpu() for k, v in f.items()})
+
+        def inputs(fb):
+            fb = {k: (v.to(dt) if v.is_floating_point() else v).to(self.dev) for k, v in fb.items()}
+            pk, inv = A.pack_index(fb["mask"], 16, inverse=True)
+            return dict(fb, pack_idx=pk, unpack_idx=inv, seq_off=A.seq_offsets(fb["mask"]),
+                        act_idx=torch.nonzero(fb["a_mask"].reshape(-1)).squeeze(1))
+
+        torch.manual_seed(0)
+        net = A.jitter_1d_params(A.AmberNet(128, 2, enemy_bias=True, enemy_gate=True).eval())
+        with torch.no_grad():
+            keep = torch.zeros_like(net.enemy_bias, dtype=torch.bool)
+            keep[:, :, 1:4] = True
+            keep[:, :, :, 1:4] = True
+            net.enemy_bias.normal_(0, 1.0).mul_(keep)
+            net.enemy_gate.zero_()
+        base = A.AmberNet(128, 2).eval()
+        base.load_state_dict(net.state_dict())
+        net, base = net.to(self.dev).to(dt), base.to(self.dev).to(dt)
+        b, g = inputs(f), inputs(st)
+        live = f["a_mask"].to(self.dev)
+        vk = A.load_kernel("varlen_attn")
+        mod = sys.modules["az_bench_varlen_attn"]
+        try:
+            for name, rb, fused, heads in (("varlen", False, False, False), ("row_bounds", True, False, False),
+                                           ("fused_layer", False, True, False), ("packed_heads", False, False, True),
+                                           ("all", True, True, True)):
+                mod.ROW_BOUNDS = rb
+                for n_ in (net, base):
+                    n_.sdpa = True
+                    n_.varlen_attn = vk
+                    n_.fused_layer = A.load_fused_layer() if fused else None
+                    n_.row_mean = A.load_kernel("row_mean") if heads else None
+                    n_.packed_heads = heads
+                with torch.no_grad():
+                    o, r = net(b), base(g)
+                for k, x, y in zip(("policy", "outcome", "hp", "hp_floor"), o, r):
+                    if x.shape == live.shape:
+                        x, y = x[live], y[live]
+                    self.assertLess(float((x.float() - y.float()).abs().max()), tol, (name, k))
+        finally:
+            mod.ROW_BOUNDS = False
+
+
 if __name__ == "__main__":
     unittest.main()
