@@ -825,6 +825,83 @@ namespace sts::azbench {
         return it.c;
     }
 
+    namespace {
+        constexpr char kExploreMagic[8] = {'S', 'T', 'S', 'E', 'X', 'P', 'L', '1'};
+        template <class T> void putRaw(std::string &s, T v) { s.append(reinterpret_cast<const char *>(&v), sizeof(T)); }
+        template <class T> T getRaw(const std::string &s, std::size_t &pos) {
+            if (pos + sizeof(T) > s.size()) throw std::invalid_argument("run driver: explore state is cut short");
+            T v;
+            std::memcpy(&v, s.data() + pos, sizeof(T));
+            pos += sizeof(T);
+            return v;
+        }
+    }
+
+    std::string RunDriver::exploreState() {
+        std::string s(kExploreMagic, sizeof(kExploreMagic));
+        putRaw<std::int32_t>(s, cfg_.exploreCleanKeys ? 1 : 0);
+        putRaw<std::int64_t>(s, exploreGames());
+        std::uint32_t nb = 0;
+        const std::size_t nbAt = s.size();
+        putRaw<std::uint32_t>(s, 0);
+        for (int k = 0; k < kPickBuckets; ++k) {
+            const std::uint32_t p = picks_[k].load(std::memory_order_relaxed), o = offers_[k].load(std::memory_order_relaxed);
+            if (p == 0 && o == 0) continue;
+            putRaw<std::int32_t>(s, k); putRaw<std::uint32_t>(s, p); putRaw<std::uint32_t>(s, o);
+            ++nb;
+        }
+        std::memcpy(&s[nbAt], &nb, sizeof(nb));
+        std::lock_guard<std::mutex> l(exploreM_);
+        putRaw<std::uint32_t>(s, static_cast<std::uint32_t>(exploreItems_.size()));
+        for (const auto &[key, it] : exploreItems_) {
+            putRaw<std::int32_t>(s, key); putRaw<std::int64_t>(s, it.hist.natural); putRaw<std::int64_t>(s, it.hist.runs);
+            std::uint32_t nz = 0;
+            for (std::uint32_t n : it.hist.n) nz += n != 0;
+            putRaw<std::uint32_t>(s, nz);
+            for (int b = 0; b < AmberGapHist::kBins; ++b)
+                if (it.hist.n[b]) { putRaw<std::uint16_t>(s, static_cast<std::uint16_t>(b)); putRaw<std::uint32_t>(s, it.hist.n[b]); }
+        }
+        return s;
+    }
+
+    void RunDriver::setExploreState(const std::string &s) {
+        if (!threads_.empty()) throw std::logic_error("run driver: setExploreState after start");
+        if (s.size() < sizeof(kExploreMagic) || std::memcmp(s.data(), kExploreMagic, sizeof(kExploreMagic)) != 0)
+            throw std::invalid_argument("run driver: not an explore state");
+        std::size_t pos = sizeof(kExploreMagic);
+        if ((getRaw<std::int32_t>(s, pos) != 0) != cfg_.exploreCleanKeys)
+            throw std::invalid_argument("run driver: explore state is of the other item rule (exploreCleanKeys)");
+        const std::int64_t runs = getRaw<std::int64_t>(s, pos);
+        if (runs < 0) throw std::invalid_argument("run driver: explore state runs < 0");
+        auto bucket = [&](std::int32_t k) {
+            if (k < 0 || k >= kPickBuckets) throw std::invalid_argument("run driver: explore state bucket out of range");
+            return k;
+        };
+        std::vector<std::array<std::uint32_t, 3>> counts(getRaw<std::uint32_t>(s, pos));
+        for (auto &c : counts) {
+            c[0] = static_cast<std::uint32_t>(bucket(getRaw<std::int32_t>(s, pos)));
+            c[1] = getRaw<std::uint32_t>(s, pos); c[2] = getRaw<std::uint32_t>(s, pos);
+        }
+        std::unordered_map<int, ExploreItem> items;
+        const std::uint32_t ni = getRaw<std::uint32_t>(s, pos);
+        for (std::uint32_t i = 0; i < ni; ++i) {
+            ExploreItem &it = items[bucket(getRaw<std::int32_t>(s, pos))];
+            it.hist.natural = getRaw<std::int64_t>(s, pos); it.hist.runs = getRaw<std::int64_t>(s, pos);
+            const std::uint32_t nz = getRaw<std::uint32_t>(s, pos);
+            for (std::uint32_t j = 0; j < nz; ++j) {
+                const std::uint16_t b = getRaw<std::uint16_t>(s, pos);
+                if (b >= AmberGapHist::kBins) throw std::invalid_argument("run driver: explore state bin out of range");
+                it.hist.n[b] = getRaw<std::uint32_t>(s, pos);
+            }
+        }
+        if (pos != s.size()) throw std::invalid_argument("run driver: explore state has trailing bytes");
+        for (int k = 0; k < kPickBuckets; ++k) { picks_[k].store(0); offers_[k].store(0); }
+        for (const auto &c : counts) { picks_[c[0]].store(c[1]); offers_[c[0]].store(c[2]); }
+        std::lock_guard<std::mutex> l(exploreM_);
+        exploreItems_ = std::move(items);
+        exploreRunsBase_.store(runs - runsDone_.load());
+    }
+
     RunDriver::RunDriver(RunConfig cfg) : cfg_(cfg) {
         if (cfg_.ascension < 0 || cfg_.ascension >= kAscensions) throw std::invalid_argument("run driver: ascension 0..20");
         ascension_.store(cfg_.ascension);
@@ -1863,7 +1940,7 @@ namespace sts::azbench {
             }
             if (!g.inBattle && (cfg.exploreC > 0 || cfg.exploreAmber)) {
                 ++wk.st.oocRoots;
-                const double games = static_cast<double>(runsDone_.load(std::memory_order_relaxed));
+                const double games = static_cast<double>(exploreGames());
                 bool under = false;
                 // Rates are over finished runs, after a warm-up of 1 / pickTarget runs (no item is under target before).
                 if (games * cfg.pickTarget >= 1.0) {
@@ -2054,8 +2131,8 @@ namespace sts::azbench {
                 pending_.fetch_add(1, std::memory_order_relaxed);
             }
             if (!root.combat && cfg.exploreC > 0 && !g.rootKeys.empty()) {
-                const bool warm = runsDone_.load(std::memory_order_relaxed) * cfg.pickTarget >= 1.0;
-                const double games = static_cast<double>(runsDone_.load(std::memory_order_relaxed));
+                const double games = static_cast<double>(exploreGames());
+                const bool warm = games * cfg.pickTarget >= 1.0;
                 int worst = -1;
                 double worstRate = cfg.pickTarget;
                 for (int k = 0; k < static_cast<int>(g.rootKeys.size()) && k < static_cast<int>(root.edges.size()); ++k) {
@@ -2087,7 +2164,7 @@ namespace sts::azbench {
                     if (g.rootKeys[i] >= 0 && i != searchPick && i < static_cast<int>(g.rootUnder.size())
                         && g.rootUnder[i]) under.push_back(i);
                 std::shuffle(under.begin(), under.end(), wk.rng);
-                const std::int64_t games = runsDone_.load(std::memory_order_relaxed);
+                const std::int64_t games = exploreGames();
                 for (int i : under) {
                     const double m = gap(i);
                     const double c = exploreItemC(g.rootKeys[i], games);

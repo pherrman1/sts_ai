@@ -1460,6 +1460,25 @@ class SelfplaySmoke(unittest.TestCase):
             with open(os.path.join(d, "metrics.jsonl")) as f:
                 rows = [json.loads(l) for l in f]
             self.assertGreater(rows[-1]["forced_picks"], 0)
+            # --explore-resume (2026-11-21): the checkpoint holds the pick-rate state; a resumed run continues its
+            # finished-run count, and a state of the other item rule is refused.
+            import struct
+            ck = sorted(glob.glob(os.path.join(d, "ckpt_*.pt")), key=os.path.getmtime)[-1]
+            blob = torch.load(ck)["explore_state"]
+            self.assertEqual(blob[:8], b"STSEXPL1")
+            clean, runs0 = struct.unpack_from("<iq", blob, 8)
+            self.assertEqual(clean, 1)
+            self.assertGreaterEqual(runs0, 16)
+            more = [a if a != "16" else "32" for a in common]
+            self.assertEqual(sp.main(more + ["--out-dir", d, "--seed-base", "960", "--resume", ck, "--explore-amber", "--explore-clean-keys",
+                                             "--pick-target", "0.2", "--explore-resume"]), 0)
+            ck2 = sorted(glob.glob(os.path.join(d, "ckpt_*.pt")), key=os.path.getmtime)[-1]
+            self.assertNotEqual(ck2, ck)
+            runs1 = struct.unpack_from("<iq", torch.load(ck2)["explore_state"], 8)[1]
+            self.assertGreater(runs1, runs0)   # base of the loaded state + this process's runs
+            with self.assertRaises(Exception):
+                sp.main(more + ["--out-dir", d, "--seed-base", "960", "--resume", ck, "--explore-amber", "--pick-target", "0.2",
+                                "--explore-resume"])
         with tempfile.TemporaryDirectory() as d, self.assertRaises(Exception):
             sp.main(common + ["--out-dir", d, "--seed-base", "970", "--explore-clean-keys"])
 
