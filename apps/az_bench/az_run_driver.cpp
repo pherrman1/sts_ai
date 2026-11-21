@@ -369,7 +369,7 @@ namespace sts::azbench {
         int child = -1;                  // decision child (deterministic combat edge)
         bool chance = false, tried = false;
         bool realOk = false;             // savescum combat node: realBits is a valid action of the real fight
-        std::uint8_t vn = 0;             // parallelNodes: virtual visits (simulations in flight through this edge)
+        std::uint8_t vn = 0;             // parallelNodes: virtual losses (simulations in flight through this edge)
         std::uint64_t base = 0;          // chance: randomness base
         std::vector<int> outcomes;
         std::vector<std::int32_t> outcomeN;
@@ -501,7 +501,9 @@ namespace sts::azbench {
 
     namespace {
 
-        double q01(const Edge &e, double fallback) { return e.n ? e.w / e.n : fallback; }
+        // Mean value of an edge. parallelNodes: a simulation in flight through it (vn) is a virtual loss, a visit of
+        // value 0 (the lowest utility) until its answer is backed up; vn is 0 whenever the root is read.
+        double q01(const Edge &e, double fallback) { return e.n + e.vn ? e.w / (e.n + e.vn) : fallback; }
 
         // Completed Q of every edge of node into q (completedQValues in az_run_driver.h).
         void completedQ(const RunDriver::Node &node, const RunConfig &cfg, std::vector<double> &q) {
@@ -517,20 +519,20 @@ namespace sts::azbench {
             logit.resize(k);
             n.resize(k);
             w.resize(k);
-            for (int i = 0; i < k; ++i) { logit[i] = node.edges[i].logit; n[i] = node.edges[i].n; w[i] = node.edges[i].w; }
+            for (int i = 0; i < k; ++i) { logit[i] = node.edges[i].logit; n[i] = node.edges[i].n + node.edges[i].vn; w[i] = node.edges[i].w; }
             completedQValues(k, logit.data(), n.data(), w.data(), node.value, true, q.data());
         }
 
         int maxVisits(const RunDriver::Node &node) {
             int maxN = 0;
-            for (const auto &e : node.edges) maxN = std::max(maxN, static_cast<int>(e.n));
+            for (const auto &e : node.edges) maxN = std::max(maxN, static_cast<int>(e.n) + e.vn);
             return maxN;
         }
 
         int selectNonRoot(const RunDriver::Node &node, const RunConfig &cfg) {
             const int k = static_cast<int>(node.edges.size());
-            // parallelNodes: the visit counts that spread the simulations include the virtual visits (vn, simulations
-            // in flight); Q and sigma use finished simulations only.
+            // parallelNodes: a simulation in flight is a virtual loss on its edges (vn): a visit in every count here
+            // (also sigma's) and, through q01 / completedQ, a value of 0.
             double sumN = 0;
             for (const auto &e : node.edges) sumN += e.n + e.vn;
             const double sigma = (cfg.cVisit + maxVisits(node)) * cfg.cScale;
@@ -1256,8 +1258,8 @@ namespace sts::azbench {
         };
 
         const bool emaOn = cfg.searchEmaLambda > 0;
-        // Backs the value v of the path's leaf up along the path. virt: the path holds virtual visits (parallelNodes),
-        // which the real ones replace.
+        // Backs the value v of the path's leaf up along the path. virt: the path holds virtual losses (parallelNodes),
+        // which the real visits replace.
         auto backup = [&](Run &g, const std::vector<PathStep> &path, float v, bool virt = false) {
             if (emaOn) {   // the leaf (last path entry) adds its distribution to the root's sum
                 const Node &leaf = g.pool[path.back().node];
@@ -2329,7 +2331,7 @@ namespace sts::azbench {
                 if (!cn.evaluated) {
                     Flight &f = newFlight(g);
                     f.path = simPath;
-                    if (parallel)   // virtual visits along the path until the answer is backed up
+                    if (parallel)   // virtual losses along the path until the answer is backed up
                         for (const auto &p : f.path)
                             if (p.edge >= 0) ++g.pool[p.node].edges[p.edge].vn;
                     request(g, gi, child, f);
@@ -2349,7 +2351,7 @@ namespace sts::azbench {
         // Runs the move's search on until an evaluation is in flight or the move is played. parallelNodes = P > 0
         // (Amber Eye: "up to 4 nodes per candidate move's subtree were allowed to be visited in parallel"): a wave of
         // the phase's simulations starts together, at most P in flight per root candidate (a root edge's virtual
-        // visits count them); the wave's answers are handled together, in the order the simulations started, so a
+        // losses count them); the wave's answers are handled together, in the order the simulations started, so a
         // search does not depend on the order in which answers arrive.
         std::vector<int> blocked;
         auto advance = [&](Run &g, int gi) {

@@ -1040,7 +1040,7 @@ def main(argv=None):
                          "they are")
     ap.add_argument("--parallel-nodes", type=int, default=0, metavar="P",
                     help="search: up to P evaluations in flight per root candidate's subtree, spread by virtual "
-                         "visits (RunConfig::parallelNodes; Amber Eye self-play: 4). Default 0: one evaluation in "
+                         "losses (RunConfig::parallelNodes; Amber Eye self-play: 4). Default 0: one evaluation in "
                          "flight per run. Same simulations per move, far fewer round trips; each run then keeps up "
                          "to P x candidates encoded inputs (~60 KB each), so fewer games per worker are needed")
     ap.add_argument("--pin-inference", default="", metavar="CPUS",

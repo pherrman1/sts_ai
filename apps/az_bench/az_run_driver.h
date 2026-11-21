@@ -387,12 +387,16 @@ namespace sts::azbench {
         // self-play, up to 4 nodes per candidate move's subtree were allowed to be visited in parallel" (4 = Amber's
         // self-play value; the page says no more about the mechanism). With parallelNodes = P > 0 a halving phase's
         // simulations start together as a wave, at most P in flight per root candidate (so up to P x candidates
-        // per run). A simulation in flight is a virtual visit on every edge of its path: the visit counts that
-        // steer the next simulations (the non-root selection pi' - N / (1 + sum N), the widening limit and the
-        // outcome picked at a chance edge) include it, so they spread over other edges and outcomes; Q, sigma and
-        // everything read at the root (halving, pick, improved policy, value targets) use finished simulations
-        // only, and every phase ends with all its answers in. Our choices where the page is silent: a virtual visit
-        // adds no value (it is not the linked paper's virtual loss); a simulation that reaches a node whose
+        // per run). A simulation in flight is a virtual loss on every edge of its path, as in the paper the page
+        // links for "virtual visits" (Chaslot, Winands, van den Herik 2008: "assign one 'virtual loss' when a node
+        // is visited by a thread [...] removed when the thread [...] starts propagating the result"; Philipp's
+        // choice 2026-11-21 over a visit without a value): until its answer is backed up it counts as a visit of
+        // value 0, the lowest utility, in everything that steers the next simulations below the root (the
+        // edge's mean Q and so the completed Q, sigma's visit count, the selection pi' - N / (1 + sum N), the
+        // widening limit and the outcome picked at a chance edge), so they spread over other edges and outcomes.
+        // Every phase ends with all its answers in, so what is read at the root (halving, pick, improved
+        // policy, value targets) holds finished simulations only. Our choices where page and paper are silent: a
+        // simulation that reaches a node whose
         // evaluation is still in flight waits for that answer (it is tried again in the next wave); a wave's
         // answers are handled together, in the order the simulations started, so the search does not depend on
         // answer timing. The same simulations per move; the tree differs from the one-at-a-time search because

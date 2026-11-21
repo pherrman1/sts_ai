@@ -28492,16 +28492,17 @@ throughput is not comparable with this entry's.
 **Knowledge impact:** this entry; `tools/az_bench/README.md`.
 
 
-## §TBD — `--parallel-nodes` (Amber Eye's virtual visits, up to 4 evaluations in flight per root candidate): round trips to the net per searched move 24.6 → 5.1 with the same simulations; off bit-identical; live moves/s not measured yet → BUILT, default off (cloud, 2026-11-21)
+## §TBD — `--parallel-nodes` (Amber Eye's virtual visits, built as the linked paper's virtual loss; up to 4 evaluations in flight per root candidate): round trips to the net per searched move 24.7 → 5.1 with the same simulations; off bit-identical; live moves/s not measured yet → BUILT, default off (cloud, 2026-11-21)
 
 **Question:** §827 found the stage-1 run saturated nowhere: an answer's round trip (17.7 ms) limits it, and a run
 has one evaluation in flight. Amber Eye ("Efficient search"): "we additionally allow multiple searches in the same
 game tree using virtual visits. In self-play, up to 4 nodes per candidate move's subtree were allowed to be visited
 in parallel." We did not have that (audit of 2026-11-21). How many round trips does it save?
 **Change:** `RunConfig::parallelNodes` / `selfplay.py --parallel-nodes P` (default 0 = off), described in
-`apps/az_bench/az_run_driver.h` and `tools/az_bench/README.md`. Choices where the page is silent: a virtual visit
-counts as a visit only (the page's word; the paper it links describes a virtual loss), a simulation that meets a
-node still in flight waits, and a wave's answers are handled together in start order.
+`apps/az_bench/az_run_driver.h` and `tools/az_bench/README.md`. The page says "virtual visits" and links Chaslot, Winands and van den Herik (2008), who
+describe a virtual loss; Philipp chose the virtual loss (decision card, 2026-11-21): a simulation in flight counts
+as a visit of value 0 on its path until its answer is backed up. Our choices where both are silent: a simulation
+that meets a node still in flight waits, and a wave's answers are handled together in start order.
 **Data (cloud, fake nets, no GPU):**
 - Off = main: `az-eval-cache-test` digests (moves, samples, policies, values) of this branch with the flag off equal
   those of a build of main 56b8fd43 in 7 configurations (`--fast` x {plain, `--utility amber`, `--ema 0.9`,
@@ -28513,16 +28514,17 @@ node still in flight waits, and a wave's answers are handled together in start o
 
 | candidates full / fast | P | evaluations per searched move | round trips per searched move | evaluations per wave | waiting simulations per 1,000 evaluations |
 |---|---|---|---|---|---|
-| 16 / 8 | 0 | 24.6 | 24.6 | 1 | 0 |
-| 16 / 8 | 4 | 24.2 | 5.14 | 5.60 | 93 |
-| 8 / 4 | 0 | 24.6 | 24.6 | 1 | 0 |
-| 8 / 4 | 4 | 24.8 | 5.13 | 5.77 | 104 |
+| 16 / 8 | 0 | 24.7 | 24.7 | 1 | 0 |
+| 16 / 8 | 4 | 25.4 | 5.05 | 6.02 | 71 |
+| 8 / 4 | 0 | 25.1 | 25.1 | 1 | 0 |
+| 8 / 4 | 4 | 24.5 | 4.88 | 6.05 | 89 |
 
   With the live run's search flags (`--chance-on-reveal --cross-combat --sim-help --utility amber2-root
   --explore-amber --force-rewards --force-potions --ooc-canon --compact-samples`, `--test-hp 3000` to reach late
-  floors, 24 runs): 5.26 round trips per searched move, 6.68 evaluations per wave, 0 bad samples, 0 invalid actions.
-- `selfplay.py` on CPU (2 workers x 12 games, `--utility amber`, 24 runs, seeds 1-24): runs through with the flag
-  (24 runs done after 4.5 min); without it no run had finished after 6 min. Not a throughput figure for the PC:
+  floors, 24 runs): 5.13 round trips per searched move, 6.85 evaluations per wave, 0 bad samples, 0 invalid actions.
+- `selfplay.py` on CPU (2 workers x 12 games, `--utility amber`, 24 runs, seeds 1-24; run with the first build,
+  where a simulation in flight counted as a visit without a value): runs through with the flag (24 runs done
+  after 4.5 min); without it no run had finished after 6 min. Not a throughput figure for the PC:
   the cloud CPU net is ~500x slower and 24 games do not fill a batch.
 **Interpretation:** a searched move needs about a fifth of the round trips. How much of that becomes moves/s on the
 PC is open: with every run offering several evaluations at once the GPU and the workers should saturate, and §827

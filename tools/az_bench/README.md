@@ -134,13 +134,14 @@ usually arrive before the previous batch is done. Since 2026-11-21 the loop look
 search nodes ("we additionally allow multiple searches in the same game tree using virtual visits. In self-play, up
 to 4 nodes per candidate move's subtree were allowed to be visited in parallel"). Without it a run has one evaluation
 in flight, so a move of 16 / 64 simulations needs 17 / 65 round trips to the net. With it a halving phase's
-simulations start together as a wave, at most P in flight per root candidate; a simulation in flight counts as a
-visit (not as a value) on its path, which sends the next ones to other edges and chance outcomes. A phase ends with
-all its answers in, so halving, the pick, the policy target and the value targets read finished simulations only.
-Where the page is silent (ours): a virtual visit carries no value; a simulation that reaches a node still being
+simulations start together as a wave, at most P in flight per root candidate; a simulation in flight is a virtual
+loss on its path (a visit of value 0 until its answer is backed up, as in the paper the page links; Philipp's choice
+2026-11-21), which sends the next ones to other edges and chance outcomes. A phase ends with all its answers in, so
+halving, the pick, the policy target and the value targets read finished simulations only.
+Where page and paper are silent (ours): a simulation that reaches a node still being
 evaluated waits for the next wave; a wave's answers are handled together in start order, so the games do not depend
 on answer timing (`az_parallel_nodes` tests). Off is bit-identical to before (digests of `az-eval-cache-test`
-against main 56b8fd43). Cloud, fake net, 64 / 16 simulations: 24.6 -> 5.1 round trips per searched move, 5.6-6.7
+against main 56b8fd43). Cloud, fake net, 64 / 16 simulations: 24.7 -> 5.1 round trips per searched move, 6.0-6.9
 evaluations per wave (ledger §TBD). Metrics row `parallel_nodes`: `flights_per_wave`, `collisions_per_k` (waiting
 simulations per 1,000 evaluations), `flight_slots` (encoded inputs held, ~60 KB each: a run keeps up to
 P x candidates, so run it with fewer `--games`).
