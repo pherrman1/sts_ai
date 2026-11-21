@@ -29,6 +29,7 @@ def _row_mean_kernel(X, O, OFF, D: tl.constexpr, BT: tl.constexpr):
 
 @torch.library.custom_op("azbench::row_mean", mutates_args=())
 def _row_mean_op(x: torch.Tensor, seq_off: torch.Tensor) -> torch.Tensor:
+    x, seq_off = x.contiguous(), seq_off.contiguous()   # the kernel indexes raw pointers
     R = seq_off.shape[0] - 1
     out = x.new_empty(R, x.shape[1])
     _row_mean_kernel[(R,)](x, out, seq_off, D=x.shape[1], BT=32, num_warps=1)
