@@ -28729,3 +28729,49 @@ checkpoint and window without the head, labels = driver rows, aux loss > 0, resu
 `aux_fights.label_s`), memory of pending samples (fight-start tokens go into the run dictionary until the run
 ends), any effect on learning. Before it takes over the main run: 5-15 min live test on the PC (project rule).
 **Knowledge impact:** this entry.
+
+## §TBD — Stage-1 run on the 1.22M net: the GPU is the limit again (98 %), workers asleep 45 %; `--aux-fights` costs about 9 % moves/s (9,451 → 8,581, not isolated) because its labels run on the trainer net; the CPU-side levers of §827 are dropped (PC, 2026-11-21)
+
+**Question:** §827/§828 were measured on the 0.44M net. What limits the run after the switch to 128x4 (1.22M),
+`--parallel-nodes 4` and the other changes of 2026-11-21, and is one of §827's remaining levers (cheaper worker
+clock, lighter packing) still worth building?
+**Data:** [SCHED-1121](evidence/infer_profile_20261120/SCHED-1121.md): live run amber_scratch, main 963ea4bf, A20,
+savescum, 11 workers x 300 games, flags in the file; six metrics rows 19:21-19:24 CET (40 minutes after the start),
+`/proc` scheduler statistics over 30 s, `nvidia-smi dmon`, `top`; ten rows of training counters; six rows of the
+run before it (17:48 CET, 35 minutes after its start, main 8e2440b6, the same flags without `--aux-fights`).
+Nothing was attached to the process.
+**Result:**
+
+| 19:21 CET | running | waiting for a CPU | sleeping |
+|---|---|---|---|
+| 11 worker threads | 47.5 % | 7.9 % | 44.6 % |
+| Python inference thread | 83.9 % | 3.6 % | 12.6 % |
+| trainer thread | 82.8 % | 2.1 % | 15.1 % |
+
+GPU load 98.4 %; CPU 58 % user, 7 % system, 34 % idle. The inference thread waits for the GPU 47 % of its time
+(`sync` 467 ms/s) and for rows only inside `wait_pack` (172 ms/s, 157 of it packing); batches are full (2,035 of
+2,048 rows, 62 per second). 8,130 moves/s, 125.9k net positions/s, 70.7k cache hits/s. `--early-finish` hands back
+3.6 % of the batches while waiting and 1.9 % after packing: with a busy GPU the previous batch is rarely done.
+
+| | without `--aux-fights` (17:48 CET) | with (19:17 CET) |
+|---|---|---|
+| moves/s | 9,451 | 8,581 |
+| net positions/s | 145.1k | 132.8k |
+| train steps/s (trained / added = 2.00 in both) | 4.05 | 3.61 |
+| samples added/s | 2,075 | 1,852 |
+| trainer `take_add`, ms/s | 70 | 187 |
+
+With the flag the trainer labels 2,192 fight starts per second (1.18 per sample) and spends 13.5 % of the wall time
+in it (`aux_fights.label_s`), about 62 µs per row. The kickstart teacher is not evaluated any more (lambda 0 since
+09:15 CET); it only holds GPU memory.
+**Interpretation:** the run is GPU-bound; the workers have room, so a cheaper clock or lighter packing would not
+raise the throughput now, and both are dropped. The 9 % drop with `--aux-fights` is two restarts apart and not an
+A/B, but it fits: the labels are forwards of the trainer net (bf16, padded rows, not compiled) on a saturated GPU.
+Inference: an evaluation on the inference path (fp16, packed, own kernels) costs about 5 µs of GPU per row, so the
+same labels through the inference net would cost a small fraction; that needs a path from the trainer to the
+inference thread and changes the labels' numerics slightly (fp16, weights of the last sync). Not built: whether
+`--aux-fights` stays is open (§834).
+**Decision:** none. NOT PURSUED: §827's levers 2 and 3. Open, for the owner of `--aux-fights`: cheaper labels if the
+flag is kept.
+**Knowledge impact:** this entry.
+
