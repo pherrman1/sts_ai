@@ -28852,6 +28852,34 @@ with the route x, so a drink can be masked or kept by its slot number.
 and a 5-15 minute PC test.
 **Knowledge impact:** this entry.
 
+## §844 — `--force-keys`, second round: N'loth's Hungry Face could empty the act-3 Sapphire chest, and the act-3 route mask read an out-of-combat drink's slot as a map x; both closed, default on, `STS_AZ_KEY_HOLES2=0` restores; keyless victories now logged by missing key (cloud, 2026-11-21)
+
+**Question (owner, 2026-11-21):** after §836 (#1158) the live run still had keyless victories (1 of 7,755 runs
+20:57-21:09 CET, 2 of about 16k after the 21:25 CET restart; 79 of 14,564 before §836). Where do they come from?
+(Note: the "floor 51" endings the run reported first are deaths at the second A20 act-3 boss, floorNum 51; keyless
+victories are the driver counter `keyless_victories`, floorNum 52.)
+**Cause (code, main 0cad30e1):** §836 named the remaining Sapphire path. Face Trader (acts 1-2) trades for a random
+face, which can be N'loth's Hungry Face; charged, it empties the next chest opened, and that chest then offers no
+Sapphire Key (GameContext.cpp, treasure rewards). The ADR-0063 Sapphire rule waits for the act-3 treasure row, so a
+face taken after the act-2 treasure row (or a skipped act-2 chest, e.g. Cursed Key under `--force-rewards`) eats the
+act-3 chest and the run can only end keyless. Separately, `heartKeyActionAllowed` checks every action's idx1 against
+the act-3 route, so an out-of-combat drink (bits 0x80000000 | slot, #1120) was kept or masked by its potion
+slot number (not a key hole, a wrong mask).
+**Fix (`keyBackstopActions`, forceKeys only):** with the Sapphire missing, (a) a treasure room is opened while the face
+is charged (Cursed Key or not), which spends the charge before the act-3 chest; (b) Face Trader's trade is not
+offered in act 2 from row 8 on (no sure chest is left before the act-3 one) unless the face is already held;
+(c) out-of-combat drinks pass the route mask. `STS_AZ_KEY_HOLES2=0` restores §836's behaviour. Not changed: a single
+forced key move still drops the drinks of that screen.
+**Logging:** `RunProgress` counts, among keyless victories, the runs without Sapphire / Ruby / Emerald and those
+without Sapphire holding the Hungry Face (`keyless_no_sapphire`, `keyless_no_ruby`, `keyless_no_emerald`,
+`keyless_hungry_face` in the metrics' progress window); `STS_AZ_KEYLESS_LOG=1` prints one stderr line per keyless
+victory (seed, ascension, floor, keys, face).
+**Check (cloud, fake net):** 3,000 A20 runs as §836's repro (seed base 920000, 30,000 HP): 0 keyless victories, all keys
+1,335, act 4 1,115. The face path is too rare to show in a fake-net run; `az_force_keys_test` covers (a)-(c) on
+synthetic states with and without `STS_AZ_KEY_HOLES2=0`.
+**Interpretation:** this is the last path found in code; whether the live remainder was this one is not known (no
+per-run key data before this entry). The next live check reads the new counters.
+**Decision:** engine fix, default on; live after the owner's go and a 5-15 minute PC test.
 ## §842 — Self-play stalls: a fight won before its first decision (Neow's Lament + Mercury Hourglass) ended the run as a "no legal action" stall loss; fixed, default on, `STS_AZ_FIGHT_START_END=0` restores; new `--stall-log` (default off) records every stall (cloud, 2026-11-21)
 
 **Question (owner, 2026-11-21):** what are the stage-1 self-play stalls (about 46 per 100k A20 runs; 3 of 1000 in
