@@ -2,12 +2,13 @@
 // training samples (labels filled, policy a distribution over the sample's actions, action sources / targets inside
 // the row). Smoke test and CPU-side throughput probe.
 //
-// usage: az-run-driver [--workers 2] [--games 4] [--runs 8] [--batch 64] [--seed 0] [--seed-base 1] [--fast] [--asc 20] [--sims N] [--const-value] [--test-hp HP] [--max-fight-moves 400] [--explore-c C] [--explore-amber] [--pick-target T] [--no-fast-noise] [--q-rescale] [--c-scale S] [--utility floor-hp|amber|amber2|amber2-root] [--keyless-hp] [--chance-on-reveal] [--cross-combat] [--sim-help] [--max-pending N] [--force-keys] [--savescum] [--compact-samples] [--parallel-nodes P] [--candidates C] [--aux-fights] [--enemy-tokens]
+// usage: az-run-driver [--workers 2] [--games 4] [--runs 8] [--batch 64] [--seed 0] [--seed-base 1] [--fast] [--asc 20] [--sims N] [--const-value] [--test-hp HP] [--max-fight-moves 400] [--explore-c C] [--explore-amber] [--pick-target T] [--no-fast-noise] [--q-rescale] [--c-scale S] [--utility floor-hp|amber|amber2|amber2-root] [--keyless-hp] [--chance-on-reveal] [--cross-combat] [--sim-help] [--max-pending N] [--force-keys] [--savescum] [--compact-samples] [--parallel-nodes P] [--candidates C] [--aux-fights] [--enemy-tokens] [--stall-log PATH] [--test-relic ENUM_NAME]...
 #include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <fstream>
 #include <random>
 #include <string>
 #include <vector>
@@ -56,6 +57,7 @@ int main(int argc, char **argv) {
     cfg.keepFast = 0.2;
     int batch = 64;
     double maxSeconds = 600;
+    std::string stallLogPath;   // --stall-log: one JSON line per stalled run (RunConfig::stallLog)
     bool constValue = false;   // F = 0.5, no HP: only terminal leaves steer the search
     for (int i = 1; i < argc; ++i) {
         const std::string a = argv[i];
@@ -69,6 +71,14 @@ int main(int argc, char **argv) {
         else if (a == "--seconds") maxSeconds = std::stod(next());
         else if (a == "--const-value") constValue = true;
         else if (a == "--test-hp") cfg.testMaxHp = std::stoi(next());
+        else if (a == "--test-relic") {   // tests only, repeatable: a relic (RelicId enum name) at each run's start
+            const std::string name = next();
+            int id = -1;
+            for (int r = 0; r < static_cast<int>(RelicId::INVALID); ++r)
+                if (name == relicEnumNames[r]) id = r;
+            if (id < 0) { std::fprintf(stderr, "--test-relic: unknown relic %s\n", name.c_str()); return 2; }
+            cfg.testRelics.push_back(static_cast<RelicId>(id));
+        }
         else if (a == "--max-fight-moves") cfg.maxMovesPerFight = std::stoi(next());
         else if (a == "--explore-c") cfg.exploreC = std::stod(next());
         else if (a == "--pick-target") cfg.pickTarget = std::stod(next());
@@ -100,6 +110,7 @@ int main(int argc, char **argv) {
         else if (a == "--rng-fix") cfg.rngFix = true;
         else if (a == "--aux-fights") cfg.auxFights = true;
         else if (a == "--enemy-tokens") cfg.enemyTokens = true;
+        else if (a == "--stall-log") { stallLogPath = next(); cfg.stallLog = true; }
         else if (a == "--force-potions") cfg.forcePotions = true;
         else if (a == "--ooc-canon") cfg.oocCanon = true;
         else if (a == "--savescum") cfg.savescum = true;
@@ -243,6 +254,15 @@ int main(int argc, char **argv) {
                 samples.size(), withPolicy, combat, bad, static_cast<long long>(s.stalls),
                 static_cast<long long>(s.unsupported), static_cast<long long>(s.knowledgeFailures), static_cast<long long>(s.invalidActions), static_cast<long long>(s.encodeCut), static_cast<long long>(s.encodeCutOoc),
                 static_cast<long long>(s.terminalLeaves), secs);
+    std::printf("stalls by type: fight_moves %lld run_moves %lld no_legal %lld; fights ended at start %lld\n",
+                static_cast<long long>(s.stallsByType[0]), static_cast<long long>(s.stallsByType[1]),
+                static_cast<long long>(s.stallsByType[2]), static_cast<long long>(s.fightsEndedAtStart));
+    if (cfg.stallLog) {
+        std::ofstream out(stallLogPath);
+        std::size_t n = 0;
+        for (const auto &r : d.takeStallLogs()) { out << azbench::stallLogJson(r) << '\n'; ++n; }
+        std::printf("stall log: %zu records -> %s\n", n, stallLogPath.c_str());
+    }
     std::printf("memory: pool_nodes %lld pool_gc %lld pool_bc %lld pool_real %lld pool_outer %lld edge_cap %lld "
                 "pending_cap %lld move_dist_cap %lld cache_entries %lld done %lld\n",
                 static_cast<long long>(s.memPoolNodes), static_cast<long long>(s.memPoolGc),

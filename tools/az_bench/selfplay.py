@@ -1419,6 +1419,11 @@ def main(argv=None):
     ap.add_argument("--sim-help", action="store_true",
                     help="Amber Eye's simulator help: reward gold taken automatically, forced positions skipped also "
                          "inside the search, buying Prismatic Shard banned")
+    ap.add_argument("--stall-log", action="store_true",
+                    help="diagnostic (2026-11-21, default off; play and training unchanged): append one JSON record per "
+                         "run ended by a stall guard (a loss: fight past --max-fight-moves decisions, run past 50,000 "
+                         "decisions, or no legal action) to <out-dir>/stall_log.jsonl: type, seed, floor, encounter, "
+                         "fight state and the last 30 real decisions. The per-type counts are in every metrics row")
     ap.add_argument("--heart-log", type=float, default=0.0, metavar="RATE",
                     help="diagnostic (2026-11-19, default 0 = off; play and training unchanged): append one JSON record "
                          "per finished run that fought the Heart to <out-dir>/heart_runs.jsonl.gz: every kill, other "
@@ -1773,7 +1778,8 @@ def main(argv=None):
         **({"heart_arms": heart_arms, "heart_reps": args.heart_reps} if heart_arms else {}),
         **({"savescum": True} if savescum else {}),
         **({"compact_samples": True} if args.compact_samples else {}),
-        **({"heart_log_rate": args.heart_log} if args.heart_log > 0 else {}))
+        **({"heart_log_rate": args.heart_log} if args.heart_log > 0 else {}),
+        **({"stall_log": True} if args.stall_log else {}))
     explore_on = args.explore_amber or args.explore_c > 0
     if args.explore_resume:
         # the checkpoint's pick-rate state (items' picks / offers / gap logs, finished runs): without it every item
@@ -1800,6 +1806,19 @@ def main(argv=None):
                 f.write(json.dumps(r) + "\n")
         heart_logged[0] += len(recs)
         heart_logged[1] += sum(r["win"] for r in recs)
+    stall_log_path = os.path.join(args.out_dir, "stall_log.jsonl")
+    stall_logged = [0]   # records (this process)
+
+    def drain_stall_log():
+        if not args.stall_log:
+            return
+        recs = drv.take_stall_logs()
+        if not recs:
+            return
+        with open(stall_log_path, "a") as f:
+            for r in recs:
+                f.write(r + "\n")
+        stall_logged[0] += len(recs)
     if args.savescum:
         print(f"# savescum: {'on until a file SAVESCUM_OFF appears in --out-dir' if savescum else 'off (SAVESCUM_OFF seen before this resume)'}",
               flush=True)
@@ -2401,7 +2420,7 @@ def main(argv=None):
                 "trained_samples": counters["trained"], "loss": lavg, "grad_norm": gavg,
                 **({"kickstart_lambda": kick["lam"]} if teacher is not None else {}),
                 "nonfinite_skips": counters["nonfinite_skips"], "syncs": infer_stats["syncs"],
-                "stalls": s["stalls"], "unsupported": s["unsupported"], "knowledge_failures": s["knowledge_failures"], "invalid_actions": s["invalid_actions"], "encode_cut": s["encode_cut"], "encode_cut_ooc": s["encode_cut_ooc"],
+                "stalls": s["stalls"], "stalls_by_type": {k: s["stalls_" + k] for k in ("fight_moves", "run_moves", "no_legal")}, "unsupported": s["unsupported"], "knowledge_failures": s["knowledge_failures"], "invalid_actions": s["invalid_actions"], "encode_cut": s["encode_cut"], "encode_cut_ooc": s["encode_cut_ooc"],
                 "samples_pending": s["samples_pending"], "rss_gb": rss_gb(),
                 "ascension": asc, "asc_runs_window": a_runs,
                 "asc_win_rate_window": round(a_wins / max(1, a_runs), 4),
@@ -2511,6 +2530,9 @@ def main(argv=None):
                 row["enemy_bias"] = {"abs_mean": round(float(tab.abs().mean()), 5),
                                      "enemy_to_node": [round(float(tab[:, :, k, k + 3].mean()), 5) for k in (1, 2, 3)],
                                      "node_to_enemy": [round(float(tab[:, :, k + 3, k].mean()), 5) for k in (1, 2, 3)]}
+            if args.stall_log:
+                drain_stall_log()
+                row["stall_log"] = stall_logged[0]
             if args.heart_log > 0:
                 drain_heart_log()
                 row["heart_log"] = {"records": heart_logged[0], "kills": heart_logged[1]}
@@ -2540,6 +2562,7 @@ def main(argv=None):
             t.join(timeout=60)
         drv.stop()
         drain_heart_log()
+        drain_stall_log()
         path, c = save_ckpt(counters["step"], drv.stats(), time.time())
         print(json.dumps({"final_checkpoint": path, "errors": errors, "counters": c}), flush=True)
         if args.replay_save:

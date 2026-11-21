@@ -437,8 +437,9 @@ PYBIND11_MODULE(AZ_BENCH_MODULE_NAME, m) {
                          bool exploreGapSearch, bool exploreDeckOnly, bool forcePotions, bool oocCanon,
                          int parallelNodes, bool rngFix, bool searchEmaHp, bool exploreCleanKeys, bool auxFights,
                          bool enemyTokens, const std::vector<GameStateHandle> &probeRoots, bool probeNoise,
-                         double captureRate) {
+                         double captureRate, bool stallLog) {
                  azbench::RunConfig c;
+                 c.stallLog = stallLog;
                  for (const auto &h : probeRoots) c.probeRoots.push_back(h.gc);
                  c.probeNoise = probeNoise;
                  c.captureRate = captureRate;
@@ -528,7 +529,7 @@ PYBIND11_MODULE(AZ_BENCH_MODULE_NAME, m) {
              py::arg("search_ema_hp") = false, py::arg("explore_clean_keys") = false,
              py::arg("aux_fights") = false, py::arg("enemy_tokens") = false,
              py::arg("probe_roots") = std::vector<GameStateHandle>{},
-             py::arg("probe_noise") = false, py::arg("capture_rate") = 0.0)
+             py::arg("probe_noise") = false, py::arg("capture_rate") = 0.0, py::arg("stall_log") = false)
         .def("take_probe_results",   // RunConfig::probeRoots: the results since the last call, as dicts
              [](azbench::RunDriver &d) {
                  const auto v = d.takeProbeResults();
@@ -563,6 +564,12 @@ PYBIND11_MODULE(AZ_BENCH_MODULE_NAME, m) {
                      o["relics"] = r.relics; o["asc"] = r.asc;
                      out.append(o);
                  }
+                 return out;
+             })
+        .def("take_stall_logs",   // RunConfig::stallLog: the records since the last call, one JSON string each
+             [](azbench::RunDriver &d) {
+                 py::list out;
+                 for (const auto &r : d.takeStallLogs()) out.append(azbench::stallLogJson(r));
                  return out;
              })
         .def("take_heart_run_logs",   // RunConfig::heartLogRate: the records since the last call, as dicts
@@ -852,6 +859,7 @@ PYBIND11_MODULE(AZ_BENCH_MODULE_NAME, m) {
             o["runs_started"] = s.runsStarted; o["runs_done"] = s.runsDone; o["wins"] = s.wins;
             o["floors_sum"] = s.floorsSum; o["stalls"] = s.stalls; o["terminal_leaves"] = s.terminalLeaves;
             o["encode_cut"] = s.encodeCut; o["encode_cut_ooc"] = s.encodeCutOoc; o["unsupported"] = s.unsupported; o["knowledge_failures"] = s.knowledgeFailures; o["invalid_actions"] = s.invalidActions;
+            o["stalls_fight_moves"] = s.stallsByType[0]; o["stalls_run_moves"] = s.stallsByType[1]; o["stalls_no_legal"] = s.stallsByType[2]; o["fights_ended_at_start"] = s.fightsEndedAtStart;
             o["samples_done"] = s.samplesDone; o["samples_pending"] = s.samplesPending;
             o["batches"] = s.batches; o["batch_rows"] = s.batchRows;
             o["outcomes"] = std::vector<std::int64_t>(s.outcomes.begin(), s.outcomes.end());

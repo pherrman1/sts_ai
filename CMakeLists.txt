@@ -217,6 +217,17 @@ set_tests_properties(az_run_driver_rng_fix PROPERTIES LABELS "core;smoke")
 add_test(NAME az_run_driver_aux_fights COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 6 --fast
          --seed-base 1 --seconds 300 --aux-fights)
 set_tests_properties(az_run_driver_aux_fights PROPERTIES LABELS "core;smoke")
+# A fight decided before its first decision (Neow's Lament + Mercury Hourglass: the monsters start at 1 HP and take 3 at
+# the start of turn 1) is left as won, not counted as a no-legal-action stall; STS_AZ_FIGHT_START_END=0 restores the old
+# stall. Also runs the stall log (--stall-log).
+add_test(NAME az_run_driver_fight_start_end COMMAND $<TARGET_FILE:az-run-driver> --workers 1 --games 2 --runs 6 --fast
+         --test-relic NEOWS_LAMENT --test-relic MERCURY_HOURGLASS --stall-log az_run_driver_fight_start_end.jsonl)
+set_tests_properties(az_run_driver_fight_start_end PROPERTIES LABELS "core;smoke"
+                     PASS_REGULAR_EXPRESSION "no_legal 0; fights ended at start [1-9]")
+add_test(NAME az_run_driver_fight_start_end_off COMMAND $<TARGET_FILE:az-run-driver> --workers 1 --games 2 --runs 6 --fast
+         --test-relic NEOWS_LAMENT --test-relic MERCURY_HOURGLASS --stall-log az_run_driver_fight_start_end_off.jsonl)
+set_tests_properties(az_run_driver_fight_start_end_off PROPERTIES LABELS "core;smoke" ENVIRONMENT "STS_AZ_FIGHT_START_END=0"
+                     PASS_REGULAR_EXPRESSION "no_legal [1-9][0-9]*; fights ended at start 0.*stall log: [1-9]")
 add_test(NAME az_run_driver_aux_fights_compact COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 6 --fast
          --seed-base 1 --seconds 300 --aux-fights --compact-samples)
 set_tests_properties(az_run_driver_aux_fights_compact PROPERTIES LABELS "core;smoke")
