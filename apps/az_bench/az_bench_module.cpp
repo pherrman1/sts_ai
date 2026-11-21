@@ -282,7 +282,8 @@ PYBIND11_MODULE(az_bench_native, m) {
                          bool forceKeys, std::vector<std::vector<double>> heartArms, int heartReps,
                          bool savescum, bool compactSamples, double heartLogRate, bool forceRewards, bool explorePerOffer,
                          bool exploreGapSearch, bool exploreDeckOnly, bool forcePotions, bool oocCanon,
-                         int parallelNodes, bool rngFix, bool searchEmaHp, bool exploreCleanKeys, bool auxFights) {
+                         int parallelNodes, bool rngFix, bool searchEmaHp, bool exploreCleanKeys, bool auxFights,
+                         bool enemyTokens) {
                  azbench::RunConfig c;
                  if (!(heartLogRate >= 0 && heartLogRate <= 1)) throw std::invalid_argument("heart_log_rate: want 0..1");
                  c.heartLogRate = heartLogRate;
@@ -342,6 +343,7 @@ PYBIND11_MODULE(az_bench_native, m) {
                  c.exploreDeckOnly = exploreDeckOnly;
                  c.exploreCleanKeys = exploreCleanKeys;
                  c.auxFights = auxFights;
+                 c.enemyTokens = enemyTokens;
                  c.savescum = savescum;
                  c.compactSamples = compactSamples;
                  return std::make_unique<azbench::RunDriver>(c);
@@ -367,7 +369,7 @@ PYBIND11_MODULE(az_bench_native, m) {
              py::arg("force_potions") = false, py::arg("ooc_canon") = false, py::arg("parallel_nodes") = 0,
              py::arg("rng_fix") = false,
              py::arg("search_ema_hp") = false, py::arg("explore_clean_keys") = false,
-             py::arg("aux_fights") = false)
+             py::arg("aux_fights") = false, py::arg("enemy_tokens") = false)
         .def("heart_results",
              [](const azbench::RunDriver &d) {
                  py::list out;

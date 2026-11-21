@@ -1239,6 +1239,19 @@ class DashboardRecentTest(unittest.TestCase):
         self.assertIn("card 3 / relic 2 / event 1 / rest 1", page)
         self.assertNotIn("Forced by class", dash.page([dict(row, forced_by_class=None)], "t", ""))
 
+    def test_enemy_bias_chart(self):
+        spec = importlib.util.spec_from_file_location(
+            "selfplay_dashboard", os.path.join(ROOT, "tools", "az_bench", "selfplay_dashboard.py"))
+        dash = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(dash)
+        row = {"time": "2026-11-21 21:00:00", "runs_done": 1000, "samples_added": 1000, "mean_floor_window": 40.0,
+               "win_rate_window": 0.05, "runs_window": 300, "positions_per_s": 140000, "train_steps": 1,
+               "ascension": 1}
+        eb = {"abs_mean": 0.01, "enemy_to_node": [0.1, 0.0, -0.1], "node_to_enemy": [0.2, 0.0, 0.05]}
+        rows = [dict(row, runs_done=1000 * (i + 1), enemy_bias=eb) for i in range(3)]
+        self.assertIn("Enemy-map attention bias", dash.page(rows, "t", ""))
+        self.assertNotIn("Enemy-map attention bias", dash.page([row], "t", ""))
+
 
 class DashboardSettlingTest(unittest.TestCase):
     def test_restart_windows_left_out(self):
@@ -1404,6 +1417,34 @@ class SelfplaySmoke(unittest.TestCase):
             r2 = [r for r in rows()[n1:] if "time" in r]
             self.assertGreater(r2[0]["replay_loaded"], 0)
             self.assertNotIn("aux_fights", r2[-1])
+
+    def test_enemy_tokens_and_map_bias_resume(self):
+        """--enemy-tokens --enemy-map-bias: a run resumed from a checkpoint without the table (and with the aux head)
+        starts the table fresh, trains it, and the out-of-combat samples carry the encounter tokens; resumed with
+        neither flag, the checkpoint loads again."""
+        sp = load()
+        common = ["--module-dir", os.path.dirname(MODULES[0]), "--device", "cpu", "--workers", "2", "--games", "4",
+                  "--full-sims", "8", "--fast-sims", "4", "--batch", "32", "--row-buckets", "32", "--pack-step", "32",
+                  "--pack-threads", "1", "--min-replay", "50", "--train-batch", "32", "--window", "5000",
+                  "--report", "1", "--sync-steps", "2", "--seed-base", "560", "--ascension", "1",
+                  "--compact-samples", "--utility", "amber"]
+        with tempfile.TemporaryDirectory() as d:
+            def ckpt():
+                return sorted(glob.glob(os.path.join(d, "ckpt_*.pt")), key=os.path.getmtime)[-1]
+
+            self.assertEqual(sp.main(common + ["--out-dir", d, "--max-runs", "8", "--aux-fights"]), 0)
+            c0 = ckpt()
+            self.assertNotIn("enemy_bias", torch.load(c0, map_location="cpu", weights_only=False)["net"])
+            self.assertEqual(sp.main(common + ["--out-dir", d, "--max-runs", "16", "--resume", c0, "--aux-fights",
+                                               "--enemy-tokens", "--enemy-map-bias"]), 0)
+            net = torch.load(ckpt(), map_location="cpu", weights_only=False)["net"]
+            self.assertIn("enemy_bias", net)
+            self.assertGreater(float(net["enemy_bias"].abs().sum()), 0)   # trained away from zero
+            with open(os.path.join(d, "metrics.jsonl")) as f:
+                self.assertTrue(any("enemy_bias" in json.loads(l) for l in f))
+            self.assertEqual(sp.main(common + ["--out-dir", d, "--max-runs", "20", "--resume", ckpt()]), 0)
+        with self.assertRaises(SystemExit):
+            sp.main(common + ["--out-dir", "/nonexistent", "--enemy-map-bias"])
 
     def test_replay_save_load_and_ascension_file(self):
         """--replay-save at the final stop, --replay-load on resume from that checkpoint: the window continues
@@ -1734,6 +1775,61 @@ class SelfplaySmoke(unittest.TestCase):
             a = torch.load(sorted(glob.glob(os.path.join(d, "ckpt_*.pt")), key=os.path.getmtime)[-1])["args"]
             self.assertTrue(a["chance_on_reveal"] and a["cross_combat"] and a["sim_help"])
             self.assertEqual(a["max_pending"], 0)
+
+    def test_enemy_tokens_driver(self):
+        """RunDriver(enemy_tokens=True): out-of-combat samples carry the encounter tokens (MONSTER, ids[3] =
+        ENC_KIND_BASE + kind, the boss first, then elites, then hallway), combat samples none; without the flag no
+        sample has one."""
+        sp = load()
+        import importlib
+        sys.path.insert(0, os.path.dirname(MODULES[0]))
+        nat = importlib.import_module("az_bench_native")
+        base = sp.amber_net.ENC_KIND_BASE
+        for on in (True, False):
+            drv = nat.RunDriver(workers=1, games=2, seed_base=1990, max_runs=2, ascension=20, full_sims=8,
+                                fast_sims=4, full_candidates=4, fast_candidates=2, max_pending=0, enemy_tokens=on)
+            R, T, A = 8, 224, 96
+            views = {"tok_type": np.zeros(R * T, np.int8), "ids": np.zeros(R * T * 4, np.int16),
+                     "f": np.zeros(R * T * 64, np.float16), "mask": np.zeros(R * T, np.bool_),
+                     "a_type": np.zeros(R * A, np.int16), "a_src": np.zeros(R * A, np.int16),
+                     "a_tgt": np.zeros(R * A, np.int16), "a_f": np.zeros(R * A * 8, np.float16),
+                     "a_mask": np.zeros(R * A, np.bool_)}
+            rng = np.random.default_rng(0)
+            chunks = []
+            drv.start()
+            try:
+                while drv.stats()["runs_done"] < 2:
+                    got = drv.next_flat(R, 1, 5, [R], [T], [A], views)
+                    if got is None:
+                        continue
+                    ticket, rows, _, _, Ap = got
+                    drv.submit(ticket, rng.normal(0, 1, (rows, Ap)).astype(np.float32),
+                               rng.random(rows).astype(np.float32), np.full(rows, 40, np.float32))
+                    c = drv.take_samples()
+                    if c is not None:
+                        chunks.append(c)
+            finally:
+                drv.stop()
+            c = drv.take_samples()
+            if c is not None:
+                chunks.append(c)
+            enc_samples = 0
+            for c in chunks:
+                off = c["tok_off"]
+                ids = c["ids"].reshape(-1, 4)
+                for i in range(len(off) - 1):
+                    tt, kid = c["tok_type"][off[i]:off[i + 1]], ids[off[i]:off[i + 1], 3]
+                    kinds = kid[(tt == 3) & (kid >= base) & (kid < base + 3)] - base
+                    if not len(kinds):
+                        continue
+                    enc_samples += 1
+                    self.assertTrue(on)
+                    self.assertEqual(int(c["combat"][i]), 0)
+                    self.assertEqual(int(kinds[0]), 0)
+                    self.assertGreaterEqual(len(kinds), 2)
+                    self.assertTrue((np.diff(kinds) >= 0).all())
+            if on:
+                self.assertGreater(enc_samples, 0)
 
     def test_compact_samples_run(self):
         """--compact-samples with --max-pending 0: the driver hands out compact chunks (indices inside their run

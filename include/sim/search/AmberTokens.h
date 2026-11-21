@@ -22,9 +22,9 @@ namespace sts::search {
     constexpr int kAmberIdVocab = 1024;    // amber_net.ID_VOCAB; id 0 = none / padding
     constexpr int kAmberActionTypes = 16;  // amber_net.ACTION_TYPES
 
-    constexpr std::array<int, kAmberTokenTypes> kAmberCap = {1, 1, 24, 5, 96, 32, 5, 16, 32};
-    constexpr std::array<int, kAmberTokenTypes> kAmberOff = {0, 1, 2, 26, 31, 127, 159, 164, 180};
-    constexpr int kAmberMaxTokens = 212;   // kAmberOff.back() + kAmberCap.back()
+    constexpr std::array<int, kAmberTokenTypes> kAmberCap = {1, 1, 24, 16, 96, 32, 5, 16, 32};
+    constexpr std::array<int, kAmberTokenTypes> kAmberOff = {0, 1, 2, 26, 42, 138, 170, 175, 191};
+    constexpr int kAmberMaxTokens = 223;   // kAmberOff.back() + kAmberCap.back()
     constexpr int kAmberMaxActions = 96;
     constexpr std::uint8_t kAmberNoSeg = 0xff;
 

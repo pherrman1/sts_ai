@@ -28729,3 +28729,43 @@ checkpoint and window without the head, labels = driver rows, aux loss > 0, resu
 `aux_fights.label_s`), memory of pending samples (fight-start tokens go into the run dictionary until the run
 ends), any effect on learning. Before it takes over the main run: 5-15 min live test on the PC (project rule).
 **Knowledge impact:** this entry.
+
+## §TBD — `--enemy-tokens` + `--enemy-map-bias`: out-of-combat states get one MONSTER token per fight the act can hold (boss, 3 elites, strong hallway pool), and a learned attention bias between those tokens and the map's boss / elite / hallway nodes; zero bias at the start = same outputs → BUILT, default off (cloud, 2026-11-21)
+
+**Origin (owner, 2026-11-21):** the STS2 author's second tweak, "attention bias between enemy tokens and map
+nodes". The owner asked whether our net sees the enemies out of combat (it did not: MONSTER tokens existed only in
+combat states) and chose to build both ("lass versuchen punkt 2 zu bauen, also gegner token und attention bias").
+Amber Eye's page has neither, so both are deviations the owner chose explicitly, as flags.
+**Encounter tokens:** `search::amberAppendEncounterTokens` (`AmberGameEncoder.cpp`), on with
+`RunConfig::enemyTokens` (`az-run-driver --enemy-tokens`, `RunDriver(enemy_tokens=True)`, `selfplay.py
+--enemy-tokens`): after the out-of-combat encoding, one MONSTER token each for the act boss, the act's 3 elites
+(act 4: Shield and Spear) and every encounter of the act's strong hallway pool (10 / 8 / 8; the weak pool of the
+first fights is left out): at most 14. Public knowledge only (boss on the map, the game's pools; no encounter
+queue). ids 0..2 = up to 3 distinct monsters of the encounter (the combat monster ids, so the embeddings are the
+ones combat trains; over 8 sampled compositions for random groups), ids 3 = a new kind id (boss / elite / hallway,
+ids 1018..1020, the last free slots of the 1,024 vocabulary); floats 0 = mean total max HP / 100 at the run's
+ascension, 1 = mean monster count / 5, 2 = pool weight. MONSTER capacity 5 → 16 (`kAmberMaxTokens` 212 → 223;
+combat never has more than 5); `selfplay.py` adds a 224 token bucket with the flag. Our choices: which fights,
+strong pool only, no per-encounter HP / damage features beyond the two numbers (the net learns them from the ids).
+**Attention bias:** `AmberNet(enemy_bias=True)` (`selfplay.py --enemy-map-bias`, needs `--enemy-tokens`, not with
+`--fused-net`): per layer and head a learned table [7, 7] over token classes (`amber_net.token_classes`: other,
+encounter boss / elite / hallway, map node boss (incl. the act boss token) / elite / hallway), added to the scaled
+attention score of (query class, key class). Full table (not only the 3 matching pairs): our choice, the net picks
+which pairs matter. Zero at the start, so enabling it on a checkpoint changes nothing until it trains. Training:
+`sdpa_trunk` with a float attention mask [B, H, T, T]; inference: both Triton kernels of `varlen_attn.py` take
+optional `CLS` / `TAB` (constexpr `HAS_BIAS`; without it the kernels are as before), also inside `--fused-layer`.
+The table is in the optimizer's second group with the aux head (a checkpoint without it resumes, the table starts
+fresh; when the extra group's contents change its Adam state starts fresh). Metrics row `enemy_bias` (mean |entry|,
+enemy → node and node → enemy per kind), dashboard chart "Enemy-map attention bias".
+**Checks (cloud):** `amber_game_encoder_test` 60 runs / 9,447 states: every out-of-combat state gets exactly
+1 + 3 + pool tokens (act 4: 2) in boss / elite / hallway order, other segments untouched, deterministic, ids are
+monsters, no cut. `tests/test_varlen_attn.py` (TRITON_INTERPRET=1): kernel with bias = SDPA with the same float
+mask (both kernels, fp32 1e-4); with a random table, forward_flat (sdpa_trunk), forward_packed padded, varlen and
+fused-layer paths agree; zero table = net without it; the gradient reaches the table. `tests/test_selfplay.py`:
+driver samples carry the tokens only with the flag (out-of-combat only, boss first); a run resumed from a checkpoint
+without the table (with the aux head) trains the table and resumes again without both flags; dashboard chart. New
+ctest `az_run_driver_enemy_tokens`.
+**Not measured:** GPU cost on the PC (+up to 14 tokens per out-of-combat row; float attention mask in training:
+B x H x T x T per layer), any effect on learning. Before it takes over the main run: 5-15 min live test on the PC
+(project rule).
+**Knowledge impact:** this entry.

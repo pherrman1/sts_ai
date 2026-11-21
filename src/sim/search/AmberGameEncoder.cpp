@@ -64,9 +64,13 @@
 #include "sim/search/AmberEncoder.h"
 
 #include <algorithm>
+#include <array>
+#include <memory>
 #include <cstring>
 
+#include "combat/BattleContext.h"
 #include "constants/Events.h"
+#include "constants/MonsterEncounters.h"
 #include "game/Map.h"
 #include "game/Neow.h"
 
@@ -816,6 +820,89 @@ namespace sts::search {
         for (int i = 0; i < keep; ++i) action(e, gc, actions[i], out.act[i]);
         out.nAct = keep;
         out.cut += n - keep;
+    }
+
+    namespace {
+
+        constexpr int kEncounterCount = static_cast<int>(MonsterEncounter::MYSTERIOUS_SPHERE_EVENT) + 1;
+        static_assert(kAmberEncounterKindBase == 1018, "tools/az_bench/amber_net.py ENC_KIND_BASE reads these ids");
+
+        struct EncounterInfo {
+            std::int16_t ids[3] = {0, 0, 0};
+            float hp = 0, count = 0;
+        };
+        using EncounterTable = std::array<std::array<EncounterInfo, kEncounterCount>, 21>;
+
+        // Per ascension and encounter: its monsters over 8 sampled compositions (miscRng / monsterHpRng seeds 1..8).
+        std::unique_ptr<EncounterTable> buildEncounterTable() {
+            auto table = std::make_unique<EncounterTable>();
+            auto bc = std::make_unique<BattleContext>();
+            constexpr int kSamples = 8;
+            for (int asc = 0; asc <= 20; ++asc) {
+                for (int e = 1; e < kEncounterCount; ++e) {
+                    EncounterInfo &in = (*table)[asc][e];
+                    int nIds = 0;
+                    for (int s = 0; s < kSamples; ++s) {
+                        *bc = BattleContext{};
+                        bc->ascension = asc;
+                        bc->miscRng = Random(static_cast<std::uint64_t>(s + 1));
+                        bc->monsterHpRng = Random(static_cast<std::uint64_t>(s + 101));
+                        bc->monsters.createMonsters(*bc, static_cast<MonsterEncounter>(e));
+                        for (int i = 0; i < bc->monsters.monsterCount; ++i) {
+                            const Monster &m = bc->monsters.arr[i];
+                            if (m.id == MonsterId::INVALID) continue;
+                            in.hp += static_cast<float>(m.maxHp);
+                            in.count += 1;
+                            const auto id = static_cast<std::int16_t>(kAmberMonsterBase + static_cast<int>(m.id) - 1);
+                            bool seen = false;
+                            for (int k = 0; k < nIds; ++k) seen = seen || in.ids[k] == id;
+                            if (!seen && nIds < 3) in.ids[nIds++] = id;
+                        }
+                    }
+                    in.hp /= kSamples;
+                    in.count /= kSamples;
+                }
+            }
+            return table;
+        }
+
+        const EncounterInfo &encounterInfo(MonsterEncounter enc, int ascension) {
+            static const std::unique_ptr<EncounterTable> table = buildEncounterTable();   // thread-safe init
+            const int a = ascension < 0 ? 0 : (ascension > 20 ? 20 : ascension);
+            const int e = static_cast<int>(enc);
+            return (*table)[a][e > 0 && e < kEncounterCount ? e : 0];
+        }
+
+        void encounterToken(AmberTokens &out, const GameContext &gc, MonsterEncounter enc, int kind, float weight) {
+            if (enc == MonsterEncounter::INVALID) return;
+            const int si = static_cast<int>(AmberTokenType::MONSTER);
+            if (out.n[si] >= kAmberCap[si]) {
+                ++out.cut;
+                return;
+            }
+            AmberToken &t = out.tok[kAmberOff[si] + out.n[si]++];
+            std::memset(&t, 0, sizeof(t));
+            const EncounterInfo &in = encounterInfo(enc, gc.ascension);
+            for (int k = 0; k < 3; ++k) t.ids[k] = in.ids[k];
+            t.ids[3] = static_cast<std::int16_t>(kAmberEncounterKindBase + kind);
+            t.f[0] = amberHalf(in.hp / 100.0f);
+            t.f[1] = amberHalf(in.count / 5.0f);
+            t.f[2] = amberHalf(weight);
+        }
+
+    }  // namespace
+
+    void amberAppendEncounterTokens(const GameContext &gc, AmberTokens &out) {
+        encounterToken(out, gc, gc.boss, 0, 1.0f);
+        if (gc.act >= 4) {
+            encounterToken(out, gc, MonsterEncounter::SHIELD_AND_SPEAR, 1, 1.0f);
+            return;
+        }
+        if (gc.act < 1) return;
+        const int a = gc.act - 1;
+        for (int k = 0; k < 3; ++k) encounterToken(out, gc, MonsterEncounterPool::elites[a][k], 1, 1.0f / 3.0f);
+        for (int k = 0; k < MonsterEncounterPool::strongCount[a]; ++k)
+            encounterToken(out, gc, MonsterEncounterPool::strongEnemies[a][k], 2, MonsterEncounterPool::strongWeights[a][k]);
     }
 
 }
