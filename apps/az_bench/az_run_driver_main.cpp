@@ -76,6 +76,7 @@ int main(int argc, char **argv) {
         else if (a == "--explore-per-offer") cfg.explorePerOffer = true;
         else if (a == "--explore-gap-search") cfg.exploreGapSearch = true;
         else if (a == "--explore-deck-only") cfg.exploreDeckOnly = true;
+        else if (a == "--explore-clean-keys") cfg.exploreCleanKeys = true;
         else if (a == "--no-fast-noise") cfg.fastNoise = false;
         else if (a == "--q-rescale") cfg.qRescale = true;
         else if (a == "--c-scale") cfg.cScale = std::stod(next());

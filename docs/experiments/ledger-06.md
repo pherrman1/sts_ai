@@ -28491,3 +28491,41 @@ restart of its owner's choosing, with rows before and after. The run switches to
 throughput is not comparable with this entry's.
 **Knowledge impact:** this entry; `tools/az_bench/README.md`.
 
+
+## §TBD — Pick-rate exploration counted one shop item at two prices or in two slots as two items: `--explore-clean-keys` (default off) names an item by what it is; fake net, Amber's all-runs target 1 %: forced picks per run 4.27 → 1.80, attempts with c = ∞ 51 % → 12 % (cloud, 2026-11-21)
+
+**Question:** Amber Eye forces each choice (its page: "card picks, event choices, Neow bonuses, and relics") to be
+picked in 1-3 % of the games and reports that this "only affected ~0.2% of moves". Our all-runs rule forced 9.3
+picks per run with 40 % of the attempts at c = ∞ (2026-11-19); the per-offer rule that replaced it forces 0.061
+picks per run (0.008 % of the moves, live run 2026-11-21 03:14-10:31 CET, 263,117 runs). Why are both so far from
+0.2 %?
+**Finding (code read, main 56b8fd43):** the item of a root action was a hash of its token's two ids and, for an
+OPTION token, of features 12-51. Those hold the kind one-hot, but also the index in the group (30), legal (31),
+price / 100 (32), affordable (33), gold amount (34), upgraded (35) and specialData (38). A shop relic or card is
+a new item at every price, slot and affordability. Under a target over all runs such an item is never offered in
+1 % of the runs, so c = ∞ and it is forced whenever it is offered. Under the per-offer rule it never reaches the
+warm-up of 1 / target offers, so shop items are never explored. Of the Neow bonus one-hot (features 40-58) and
+drawback one-hot (59-63) only 40-51 were hashed: bonuses 12-18 were one item and drawbacks did not count.
+**Change:** `--explore-clean-keys` (`RunConfig::exploreCleanKeys`, default off; `exploreItemHash` in
+`az_run_driver.h`): a CARD token is its card id; an OPTION token is its id, its kind (reward relic, shop relic,
+boss relic, shop card, shop potion stay apart) and by kind the rest option, the Neow bonus + drawback, or the
+event option index. Slot, price, affordability, upgrade and the deck card an event option names are left out.
+**Data:** `az-run-driver --workers 4 --games 16 --runs 6000 --fast --seed-base 1 --explore-amber --pick-target 0.01
+--test-hp 3000` (fake net, mean floor 21, about 660 moves per run), with and without the flag.
+
+| all-runs rule, target 1 % | forced picks per run | of all moves | attempts | with c = ∞ | forced relic picks | forced card picks |
+|---|---|---|---|---|---|---|
+| first item rule | 4.27 | 0.64 % | 36,276 | 18,464 (51 %) | 5,709 | 8,066 |
+| `--explore-clean-keys` | 1.80 | 0.28 % | 30,666 | 3,767 (12 %) | 1,664 | 2,986 |
+
+With `--explore-per-offer` both item rules forced nothing in 6,000 runs: the fake net's priors are close to
+uniform, so every item past the warm-up is already picked in more than 1 % of its offers. That rule cannot be
+judged with the fake net.
+**Interpretation:** the fragments explain the larger part of the forcing under the all-runs rule in this setting.
+The numbers are from a fake net at 6,000 runs (items that are offered in fewer than 1 % of the runs remain at
+c = ∞, 12 %); a trained net has sharper priors and other pick rates. That 1.80 per run is close to Amber's about 2
+per game is no evidence for the live run.
+**Decision:** flag merged default off. Live test on the PC by the owner of the stage-1 run: Amber's all-runs rule
+(without `--explore-per-offer`) with `--explore-clean-keys`, one change per restart; read `explore_*` per run, the
+c = ∞ share and the by-class counts against Amber's 0.2 % of moves.
+**Knowledge impact:** this entry.

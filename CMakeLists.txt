@@ -197,6 +197,10 @@ add_test(NAME az_run_driver_explore_variants COMMAND $<TARGET_FILE:az-run-driver
          --seed-base 1 --seconds 300 --explore-amber --explore-per-offer --explore-gap-search --explore-deck-only
          --pick-target 0.5 --test-hp 300)
 set_tests_properties(az_run_driver_explore_variants PROPERTIES LABELS "core;smoke")
+# --explore-clean-keys (2026-11-21, default off): pick-rate items without shop slot / price / affordability
+add_test(NAME az_run_driver_explore_clean_keys COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 24 --fast
+         --seed-base 1 --seconds 300 --explore-amber --explore-clean-keys --pick-target 0.2 --test-hp 300)
+set_tests_properties(az_run_driver_explore_clean_keys PROPERTIES LABELS "core;smoke")
 # --utility amber2 (2026-11-20): Amber Eye's later utility (P(win) + 0.25 H out of combat, F + 0.5 H in combat);
 # the fake net passes outcome distributions
 add_test(NAME az_run_driver_utility_amber2 COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 12 --fast
