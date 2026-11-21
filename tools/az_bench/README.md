@@ -130,6 +130,22 @@ Live (ledger §828): 11,490 -> 11,887 moves/s (+3.5 %); only 23 % of the batches
 usually arrive before the previous batch is done. Since 2026-11-21 the loop looks a second time right after packing
 (`infer_early_packed_per_batch`); `selfplay.batch_done` is the one place that asks whether a batch is finished.
 
+`selfplay.py --parallel-nodes P` (2026-11-21, default 0 = off; `RunConfig::parallelNodes`): Amber Eye's parallel
+search nodes ("we additionally allow multiple searches in the same game tree using virtual visits. In self-play, up
+to 4 nodes per candidate move's subtree were allowed to be visited in parallel"). Without it a run has one evaluation
+in flight, so a move of 16 / 64 simulations needs 17 / 65 round trips to the net. With it a halving phase's
+simulations start together as a wave, at most P in flight per root candidate; a simulation in flight is a virtual
+loss on its path (a visit of value 0 until its answer is backed up, as in the paper the page links; Philipp's choice
+2026-11-21), which sends the next ones to other edges and chance outcomes. A phase ends with all its answers in, so
+halving, the pick, the policy target and the value targets read finished simulations only.
+Where page and paper are silent (ours): a simulation that reaches a node still being
+evaluated waits for the next wave; a wave's answers are handled together in start order, so the games do not depend
+on answer timing (`az_parallel_nodes` tests). Off is bit-identical to before (digests of `az-eval-cache-test`
+against main 56b8fd43). Cloud, fake net, 64 / 16 simulations: 24.7 -> 5.1 round trips per searched move, 6.0-6.9
+evaluations per wave (ledger §829). Metrics row `parallel_nodes`: `flights_per_wave`, `collisions_per_k` (waiting
+simulations per 1,000 evaluations), `flight_slots` (encoded inputs held, ~60 KB each: a run keeps up to
+P x candidates, so run it with fewer `--games`).
+
 Each thread's phases add up to about 1000. With a GPU the issuing phases are CPU time of that thread and the `sync` /
 `loss_read` phases are time it waits for the GPU; `--gpu-timing`'s `gpu_ms_per_s` is the elapsed GPU time of each
 stream, and the two streams overlap, so their sum is not the GPU's load.
@@ -144,3 +160,27 @@ results:
   a 10M window: `take_add` 58 % of the trainer's time). The scans now read the window from its old end in blocks and
   stop at the first sample that stays (`Replay._first_keep`, `_soft_bytes_evict`), so `take_add` no longer grows with
   `--window`.
+
+## RNG Fix seeding (2026-11-21)
+
+`selfplay.py --rng-fix` (default off; `az-run-driver --rng-fix`, `RunConfig::rngFix`) starts every real run as
+`GameContext(..., rngFix = true)`. The Amber Eye page says "Both the training and evaluation settings use the RNGFix
+mod"; this is that mod's seeding (Steam workshop 2181005326, source `github.com/Nickel-makes/RngFix` at 88b5885,
+insertion points checked with `javap -l` against the pinned `desktop-1.0.jar` cfad868a).
+
+The vanilla game seeds every random stream with the run seed, so their outputs are correlated (first card reward
+rarity and first potion drop, encounter and event rolls, chest type). With the flag each stream has its own seed, raw
+output k of `Random(seed)` (`Random::derivedSeed`):
+
+| k | stream | when |
+| --- | --- | --- |
+| 0-6 | monsterRng, eventRng, merchantRng, cardRng, treasureRng, relicRng, potionRng | once, at the start of the run |
+| 7-11 | monsterHpRng, aiRng, shuffleRng, cardRandomRng, miscRng | every floor: `Random(output k + floorNum)` instead of `Random(seed + floorNum)` |
+| 13 | Neow's generator | at the start of the run |
+| 14 | the generator that picks the event of an event room | advanced to eventRng's counter (vanilla: a copy of eventRng) |
+
+The map generator is unchanged, as in the mod. Not covered: starting a run from a save file (`GameContext(SaveFile)`
+keeps the vanilla seeding). The search is unchanged: it already draws its futures from independent streams
+(`sampleNoncombatFuture`); `oocStepRevealsHidden` knows the per-stream reseed of a new floor. Every run of a seed
+changes with the flag, so results with and without it are not paired. Not restored by `--resume` (pass it again).
+Tests: `ctest -R 'rng_fix|az_run_driver_rng_fix'`.

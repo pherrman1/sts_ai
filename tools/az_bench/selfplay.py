@@ -830,12 +830,41 @@ def soft_policy_target(policy, a_mask):
     return t / t.sum(-1, keepdim=True).clamp(min=1e-12)
 
 
+def kickstart_targets(b, t_out, lam):
+    """--kickstart-mix (Amber Eye "kickstarting": the teacher's prediction mixed into the training labels): the targets
+    of batch b as (1 - lam) * label + lam * teacher prediction on the same sample, t_out = the teacher's
+    (policy logits, outcome logits, HP logits, per-floor HP) on b. Returns a new batch dict: "policy" (rows with a
+    policy target), "soft_outcome" (the EMA target or the final outcome), "hp_soft" (HP classes) and "hp_floor_t"
+    (per-floor HP / 255, masked as the labels) mixed; the original labels stay under their keys for the logged
+    losses ("policy_label", "hp_end", "outcome", "hp_floor")."""
+    tl, to, th, thf = (x.float() for x in t_out[:4])
+    has = b["has_policy"].bool()[:, None]
+    tp = torch.softmax(tl.masked_fill(~b["a_mask"], -1e4), -1) * b["a_mask"]
+    out = dict(b)
+    out["policy_label"] = b["policy"]
+    out["policy"] = torch.where(has, (1 - lam) * b["policy"].float() + lam * tp, b["policy"].float())
+    C = to.shape[-1]
+    base = b["soft_outcome"].float() if "soft_outcome" in b else F.one_hot(
+        b["outcome"].long().clamp(0, C - 1), C).float()
+    out["soft_outcome"] = (1 - lam) * base + lam * torch.softmax(to, -1)
+    H = th.shape[-1]
+    out["hp_soft"] = ((1 - lam) * F.one_hot(b["hp_end"].long().clamp(0, H - 1), H).float()
+                      + lam * torch.softmax(th, -1))
+    if "hp_floor" in b:
+        lab = b["hp_floor"]
+        out["hp_floor_t"] = torch.where(lab >= 0, (1 - lam) * lab.float().clamp(0, 255) / 255.0
+                                        + lam * thf.clamp(0, 1), torch.full_like(thf, -1.0))
+    return out
+
+
 def losses(net, b, w_policy, w_outcome, w_hp, w_hp_floor=0.0, w_soft_policy=0.0):
     logits, outcome, hp, hpf, *soft = net(b)
     logp = torch.log_softmax(logits.float().masked_fill(~b["a_mask"], -1e4), -1)
     has = b["has_policy"].bool()
     pol = -(b["policy"] * logp).sum(-1)
     l_pol = (pol * has).sum() / has.sum().clamp(min=1)
+    kick = "policy_label" in b   # kickstart_targets: train on the mixed targets, log the losses to the labels
+    l_pol_label = ((-(b["policy_label"] * logp).sum(-1) * has).sum() / has.sum().clamp(min=1)) if kick else l_pol
     l_soft = None
     if w_soft_policy > 0:   # --w-soft-policy: soft head (AmberNet(soft_policy=True), training mode) on p^(1/4)
         slogp = torch.log_softmax(soft[0].float().masked_fill(~b["a_mask"], -1e4), -1)
@@ -843,7 +872,9 @@ def losses(net, b, w_policy, w_outcome, w_hp, w_hp_floor=0.0, w_soft_policy=0.0)
         l_soft = (spol * has).sum() / has.sum().clamp(min=1)
     l_out = F.cross_entropy(outcome.float(), b["outcome"].long())
     l_hp = F.cross_entropy(hp.float(), b["hp_end"].long().clamp(0, HP_CLASSES - 1))
-    parts = {"policy": l_pol.detach(), "outcome": l_out.detach(), "hp": l_hp.detach()}
+    parts = {"policy": l_pol_label.detach(), "outcome": l_out.detach(), "hp": l_hp.detach()}
+    if "hp_soft" in b:
+        l_hp = -(b["hp_soft"] * torch.log_softmax(hp.float(), -1)).sum(-1).mean()
     if "soft_outcome" in b:   # --value-ema-halflife: train on the EMA target; "outcome" stays the final-outcome CE
         l_ema = -(b["soft_outcome"] * torch.log_softmax(outcome.float(), -1)).sum(-1).mean()
         parts["outcome_ema"] = l_ema.detach()
@@ -861,7 +892,12 @@ def losses(net, b, w_policy, w_outcome, w_hp, w_hp_floor=0.0, w_soft_policy=0.0)
         if "hp_floor_target" in b:   # --hp-ema-search: train on the search EMA targets; "hp_floor" stays the real one
             l_hpf = hp_floor_target_loss(hpf, b["hp_floor_target"])
             parts["hp_floor_ema"] = l_hpf.detach()
-        total = total + w_hp_floor * l_hpf
+        if "hp_floor_t" in b:   # kickstart: train on the mixed per-floor target, log the loss to the label
+            m = (b["hp_floor_t"] >= 0).float()
+            l_tr = (((hpf.float() - b["hp_floor_t"].clamp(min=0)) ** 2) * m).sum() / m.sum().clamp(min=1)
+            total = total + w_hp_floor * l_tr
+        else:
+            total = total + w_hp_floor * l_hpf
     return total, parts
 
 
@@ -1047,6 +1083,16 @@ def main(argv=None):
                     help="floor-hp: a keyless act 3 victory keeps H = HP / max HP (amber always does)")
     ap.add_argument("--w-hp-floor", type=float, default=1.0, help="loss weight of the per-floor HP head (amber)")
     ap.add_argument("--init-net", help="start from this checkpoint's weights (mismatched heads fresh; new counters)")
+    ap.add_argument("--init-counters", help="with --init-net: take the counters (step, trained, seeds_used, runs_done, "
+                    "ascension, ...) from this checkpoint, so run seeds, the replay window (--replay-load) and the "
+                    "curriculum continue it; the LR warmup counts from this start")
+    ap.add_argument("--teacher-ckpt", help="kickstarting (Amber Eye): a teacher net (checkpoint 'net') whose prediction "
+                    "is mixed into the training labels with weight --kickstart-mix; inference / search unchanged")
+    ap.add_argument("--teacher-net", default="0.44M", help="the teacher's shape (amber_net.SIZES key or DxL)")
+    ap.add_argument("--kickstart-mix", type=float, default=0.0,
+                    help="teacher weight lam in the labels: target = (1 - lam) * label + lam * teacher (policy, "
+                    "outcome, HP, per-floor HP). A file KICKSTART_LAMBDA in --out-dir sets it live (read at every "
+                    "report); 0 stops the teacher forward")
     ap.add_argument("--keep-full", type=float, default=1.0, help="keep probability of a full-search position")
     ap.add_argument("--keep-fast", type=float, default=0.0, help="keep probability of a fast-search position")
     ap.add_argument("--max-fight-moves", type=int, default=400)
@@ -1133,6 +1179,12 @@ def main(argv=None):
                          "fights; boss relics stay learned) taken unless on the reviewed list (Bottled x3, Dead Branch, "
                          "Tungsten Rod, Unceasing Top, Juzu Bracelet); Ceramic Fish / eggs / Potion Belt before the "
                          "card reward, Whetstone / War Paint after it")
+    ap.add_argument("--rng-fix", action="store_true",
+                    help="real runs use the seeding of the RNG Fix mod (2026-11-21, default off; Amber Eye trains and "
+                         "evaluates with it): each random stream of the game gets its own seed derived from the run "
+                         "seed instead of all sharing it, so the net cannot learn the game's correlated randomness "
+                         "(for example an uncommon first card reward implying a potion drop). Changes every run of a "
+                         "seed; not restored by --resume (pass it again)")
     ap.add_argument("--force-potions", action="store_true",
                     help="reward potions (2026-11-20, default off; a deviation from Amber Eye, Philipp): on a reward "
                          "screen whose potions all fit into the free slots the potions are taken without a search "
@@ -1184,6 +1236,11 @@ def main(argv=None):
                          "them, hand the previous batch's results to the workers if the GPU has them (default: only "
                          "after the next batch is gathered and launched). Changes when answers arrive, not what "
                          "they are")
+    ap.add_argument("--parallel-nodes", type=int, default=0, metavar="P",
+                    help="search: up to P evaluations in flight per root candidate's subtree, spread by virtual "
+                         "losses (RunConfig::parallelNodes; Amber Eye self-play: 4). Default 0: one evaluation in "
+                         "flight per run. Same simulations per move, far fewer round trips; each run then keeps up "
+                         "to P x candidates encoded inputs (~60 KB each), so fewer games per worker are needed")
     ap.add_argument("--pin-inference", default="", metavar="CPUS",
                     help="CPU affinity (default off; Linux): the inference thread runs on these logical CPUs (a list "
                          "such as 5,11, or 'auto' = the SMT siblings of the highest-numbered allowed CPU, one "
@@ -1242,6 +1299,12 @@ def main(argv=None):
         ap.error("--packed-h2d needs --pack-step")
     if args.init_net and args.resume:
         ap.error("--init-net and --resume exclude each other")
+    if args.init_counters and not args.init_net:
+        ap.error("--init-counters needs --init-net")
+    if args.kickstart_mix and not args.teacher_ckpt:
+        ap.error("--kickstart-mix needs --teacher-ckpt")
+    if not 0.0 <= args.kickstart_mix <= 1.0:
+        ap.error("--kickstart-mix: lam in [0, 1]")
     if args.force_keys == "curriculum" and not args.curriculum:
         ap.error("--force-keys curriculum needs --curriculum")
     if args.value_ema_search and not args.value_ema_halflife > 0:
@@ -1297,6 +1360,27 @@ def main(argv=None):
         own.update({k: v for k, v in src.items() if k in own and v.shape == own[k].shape})
         train_net.load_state_dict(own)
         print(f"# init-net {args.init_net}: fresh {fresh}", flush=True)
+    warm0 = 0
+    if args.init_counters:
+        counters.update(torch.load(args.init_counters, map_location="cpu", weights_only=False)["counters"])
+        warm0 = counters["step"]
+        print(f"# init-counters {args.init_counters}: step {counters['step']} seeds_used {counters['seeds_used']} "
+              f"runs_done {counters['runs_done']}", flush=True)
+    teacher = None
+    kick = {"lam": args.kickstart_mix}
+    if args.teacher_ckpt:
+        td, tl = amber_net.SIZES.get(args.teacher_net) or tuple(int(x) for x in args.teacher_net.split("x")[:2])
+        teacher = amber_net.AmberNet(d=td, layers=tl, hp_floors=hp_floors, soft_policy=args.w_soft_policy > 0).to(dev)
+        teacher.load_state_dict(torch.load(args.teacher_ckpt, map_location=dev, weights_only=False)["net"])
+        teacher.sdpa = True
+        teacher.eval()
+        for p_ in teacher.parameters():
+            p_.requires_grad_(False)
+        kfile = os.path.join(args.out_dir, "KICKSTART_LAMBDA")
+        if os.path.exists(kfile):
+            with open(kfile) as fh:
+                kick["lam"] = float(fh.read().strip())
+        print(f"# kickstart: teacher {args.teacher_ckpt} ({args.teacher_net}), lambda {kick['lam']}", flush=True)
     # A curriculum checkpoint carries its current ascension; otherwise --ascension.
     ascension = counters.get("ascension", args.ascension) if args.curriculum else args.ascension
     counters["ascension"] = ascension
@@ -1368,7 +1452,9 @@ def main(argv=None):
         **({"force_keys": True} if force_keys else {}),
         **({"force_rewards": True} if args.force_rewards else {}),
         **({"force_potions": True} if args.force_potions else {}),
+        **({"rng_fix": True} if args.rng_fix else {}),
         **({"ooc_canon": True} if args.ooc_canon else {}),
+        **({"parallel_nodes": args.parallel_nodes} if args.parallel_nodes else {}),
         **({"explore_per_offer": True} if args.explore_per_offer else {}),
         **({"explore_gap_search": True} if args.explore_gap_search else {}),
         **({"explore_deck_only": True} if args.explore_deck_only else {}),
@@ -1754,9 +1840,13 @@ def main(argv=None):
                 bt = to_torch(b, dev)
                 t_ph = lap(train_s, "h2d", t_ph)
                 step = counters["step"]
-                lr = args.lr * min(1.0, (step + 1) / max(1, args.warmup_steps))
+                lr = args.lr * min(1.0, (step - warm0 + 1) / max(1, args.warmup_steps))
                 for g in opt.param_groups:
                     g["lr"] = lr
+                lam = kick["lam"]
+                if teacher is not None and lam > 0:
+                    with torch.no_grad(), amp:
+                        bt = kickstart_targets(bt, teacher(bt), lam)
                 with torch.enable_grad(), amp:
                     loss, parts = losses(train_net, bt, args.w_policy, args.w_outcome, args.w_hp, args.w_hp_floor,
                                          args.w_soft_policy)
@@ -1879,6 +1969,17 @@ def main(argv=None):
                 gavg = ({"mean": round(gradbox["sum"] / gradbox["n"], 4), "max": round(gradbox["max"], 4)}
                         if gradbox["n"] else None)
                 gradbox.update({"n": 0, "sum": 0.0, "max": 0.0})
+            if teacher is not None:   # live kickstart weight
+                kfile = os.path.join(args.out_dir, "KICKSTART_LAMBDA")
+                try:
+                    if os.path.exists(kfile):
+                        with open(kfile) as fh:
+                            v = float(fh.read().strip())
+                        if 0.0 <= v <= 1.0 and v != kick["lam"]:
+                            print(f"# kickstart lambda {kick['lam']} -> {v}", flush=True)
+                            kick["lam"] = v
+                except (ValueError, OSError) as e:
+                    print(f"# kickstart lambda file: ignored ({e})", flush=True)
             asc_file = os.path.join(args.out_dir, "ASCENSION")
             if os.path.exists(asc_file):   # live ascension: runs started from now on (curriculum continues from it)
                 try:
@@ -1939,6 +2040,7 @@ def main(argv=None):
                 **({"replay_soft_bytes_mean": round(replay.soft_stats[1] / max(1, replay.soft_stats[0]), 2)}
                    if replay.soft_q else {}), "train_steps": counters["step"],
                 "trained_samples": counters["trained"], "loss": lavg, "grad_norm": gavg,
+                **({"kickstart_lambda": kick["lam"]} if teacher is not None else {}),
                 "nonfinite_skips": counters["nonfinite_skips"], "syncs": infer_stats["syncs"],
                 "stalls": s["stalls"], "unsupported": s["unsupported"], "knowledge_failures": s["knowledge_failures"], "invalid_actions": s["invalid_actions"], "encode_cut": s["encode_cut"], "encode_cut_ooc": s["encode_cut_ooc"],
                 "samples_pending": s["samples_pending"], "rss_gb": rss_gb(),
@@ -2013,6 +2115,14 @@ def main(argv=None):
                 row["force_rewards"] = {"chests": fr[0], "relics": fr[1], "deferred": fr[2], "on_leave": fr[3]}
             if args.force_potions:   # real reward potions taken by the rule (cumulative)
                 row["forced_potions"] = s["forced_potions"]
+            if args.parallel_nodes:   # evaluations in flight per run and wave; simulations that waited, per 1,000
+                d_w = s["waves"] - last_s["waves"]
+                d_sims = max(1, s["evals"] + s["cache_hits"] - last_s["evals"] - last_s["cache_hits"])
+                row["parallel_nodes"] = {"flights_per_wave": round((s["wave_flights"] - last_s["wave_flights"])
+                                                                   / max(1, d_w), 2),
+                                         "collisions_per_k": round(1000 * (s["sim_collisions"] - last_s["sim_collisions"])
+                                                                   / d_sims, 1),
+                                         "flight_slots": s["mem"]["flights"]}
             if args.ooc_canon:   # real card selection screens with a duplicate removed, actions removed (cumulative)
                 canon = s["ooc_canon"]
                 row["ooc_canon"] = {"screens": canon[0], "removed": canon[1]}

@@ -72,8 +72,8 @@ namespace {
 
     // Plays cfg.maxRuns runs with a fake net that is a hash of each row's live input (and of the weights version
     // when versionPerBatch: the version is bumped before every batch).
-    Result play(azbench::RunConfig cfg, bool versionPerBatch, bool distNet = false) {
-        const int T = search::kAmberMaxTokens, A = search::kAmberMaxActions, R = 8;
+    Result play(azbench::RunConfig cfg, bool versionPerBatch, bool distNet = false, int R = 8) {
+        const int T = search::kAmberMaxTokens, A = search::kAmberMaxActions;
         std::vector<std::int8_t> tokType(static_cast<std::size_t>(R) * T);
         std::vector<std::int16_t> ids(static_cast<std::size_t>(R) * T * search::kAmberCat);
         std::vector<std::uint16_t> f(static_cast<std::size_t>(R) * T * search::kAmberFloat);
@@ -256,6 +256,7 @@ int main(int argc, char **argv) {
         else if (a == "--ema-all") cfg.searchEmaFullOnly = false;
         else if (a == "--ema-hp") cfg.searchEmaHp = true;
         else if (a == "--compact") compact = true;
+        else if (a == "--parallel-nodes") cfg.parallelNodes = std::stoi(next());
         else if (a == "--fast") { cfg.fullSims = 8; cfg.fastSims = 4; cfg.fullCandidates = 4; cfg.fastCandidates = 2; }
         else { std::fprintf(stderr, "unknown argument %s\n", a.c_str()); return 2; }
     }
@@ -300,6 +301,25 @@ int main(int argc, char **argv) {
             std::fprintf(stderr, "FAIL: compact samples without a dictionary, or nothing shared\n");
             fail = 1;
         }
+    }
+    if (cfg.parallelNodes > 0) {
+        // Parallel search nodes: waves of several evaluations per run, and the same games whether the answers come
+        // one per batch or many (a wave's answers are handled together, in the order its simulations started).
+        // The games differ from the one-at-a-time search's, so there is no digest to compare with it.
+        const Result one = play(off, false, false, 1), many = play(off, false, false, 64);
+        const double perWave = a.stats.waves ? static_cast<double>(a.stats.waveFlights) / a.stats.waves : 0;
+        std::printf("{\"parallel_nodes\": {\"p\": %d, \"waves\": %lld, \"flights_per_wave\": %.2f, \"collisions\": %lld, "
+                    "\"digest_batch1\": \"%016llx\", \"digest_batch64\": \"%016llx\"}}\n", cfg.parallelNodes,
+                    static_cast<long long>(a.stats.waves), perWave, static_cast<long long>(a.stats.simCollisions),
+                    static_cast<unsigned long long>(one.digest), static_cast<unsigned long long>(many.digest));
+        if (one.digest != a.digest || many.digest != a.digest) {
+            std::fprintf(stderr, "FAIL: parallel search nodes: the games depend on the batching of the answers\n");
+            fail = 1;
+        }
+        if (perWave <= 1.0) { std::fprintf(stderr, "FAIL: parallel search nodes: no wave with several evaluations\n"); fail = 1; }
+    } else if (a.stats.waves != 0 || a.stats.simCollisions != 0) {
+        std::fprintf(stderr, "FAIL: waves without parallel search nodes\n");
+        fail = 1;
     }
     if (cfg.searchEmaLambda > 0) {
         azbench::RunConfig plain = cfg;
