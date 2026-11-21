@@ -714,6 +714,36 @@ class HeadsTest(unittest.TestCase):
 
 
 @unittest.skipUnless(HAVE_TORCH, "torch missing")
+class KickstartTest(unittest.TestCase):
+    def test_targets(self):
+        """kickstart_targets: lam 0 keeps the labels, lam 1 is the teacher's prediction (policy on legal actions of
+        rows with a policy target, outcome, HP, per-floor HP on unmasked floors); losses log against the labels."""
+        sp = load()
+        g = torch.Generator().manual_seed(0)
+        B, A = 3, 4
+        b = {"policy": torch.tensor([[0.5, 0.5, 0, 0], [1.0, 0, 0, 0], [0, 0, 0, 0]]),
+             "a_mask": torch.tensor([[1, 1, 1, 0], [1, 1, 0, 0], [1, 1, 1, 1]], dtype=torch.bool),
+             "has_policy": torch.tensor([1, 1, 0]), "outcome": torch.tensor([0, 5, 30]),
+             "hp_end": torch.tensor([10, 0, 255]),
+             "hp_floor": torch.tensor([[-1] * 2 + [20] * 54, [-1] * 56, [100] * 56])}
+        t = (torch.randn(B, A, generator=g), torch.randn(B, 57, generator=g), torch.randn(B, 256, generator=g),
+             torch.rand(B, 56, generator=g))
+        k0 = sp.kickstart_targets(b, t, 0.0)
+        self.assertTrue(torch.allclose(k0["policy"], b["policy"]))
+        self.assertEqual(int(k0["soft_outcome"].argmax(-1)[1]), 5)
+        self.assertTrue(torch.allclose(k0["hp_floor_t"][0, 2:], torch.full((54,), 20 / 255)))
+        self.assertTrue((k0["hp_floor_t"][1] == -1).all())
+        k1 = sp.kickstart_targets(b, t, 1.0)
+        tp = torch.softmax(t[0].masked_fill(~b["a_mask"], -1e4), -1)
+        self.assertTrue(torch.allclose(k1["policy"][:2], tp[:2], atol=1e-6))
+        self.assertTrue(torch.allclose(k1["policy"][2], b["policy"][2]))   # no policy target: unchanged
+        self.assertEqual(float(k1["policy"][0, 3]), 0.0)                    # illegal action stays 0
+        self.assertTrue(torch.allclose(k1["soft_outcome"], torch.softmax(t[1], -1)))
+        self.assertTrue(torch.allclose(k1["hp_soft"], torch.softmax(t[2], -1)))
+        self.assertTrue(torch.allclose(k1["hp_floor_t"][2], t[3][2]))
+        self.assertTrue(torch.allclose(k1["policy_label"], b["policy"]))
+
+
 class AmberUtilityTest(unittest.TestCase):
     def test_amber_h(self):
         sp = load()
@@ -1191,6 +1221,37 @@ class SelfplaySmoke(unittest.TestCase):
             ck1 = sorted(glob.glob(os.path.join(d1, "ckpt_*.pt")), key=os.path.getmtime)[-1]
             net1 = torch.load(ck1)["net"]
             self.assertEqual(tuple(net1["hp_floor.2.weight"].shape)[0], 56)
+
+    def test_kickstart_run(self):
+        """--teacher-ckpt + --kickstart-mix: a 64x2 student started by --init-net / --init-counters from a 32x2 run
+        trains with the teacher mixed into its labels (lambda logged, counters continued); KICKSTART_LAMBDA 0 is
+        read live."""
+        sp = load()
+        common = ["--module-dir", os.path.dirname(MODULES[0]), "--device", "cpu", "--workers", "2", "--games", "4",
+                  "--full-sims", "8", "--fast-sims", "4", "--batch", "32", "--row-buckets", "32", "--pack-step", "32",
+                  "--pack-threads", "1", "--min-replay", "50", "--train-batch", "32", "--window", "5000",
+                  "--report", "1", "--sync-steps", "2", "--utility", "amber2-root", "--w-soft-policy", "8",
+                  "--value-ema-halflife", "20"]
+        with tempfile.TemporaryDirectory() as d0, tempfile.TemporaryDirectory() as d1:
+            self.assertEqual(sp.main(common + ["--out-dir", d0, "--seed-base", "1000", "--net", "32x2",
+                                               "--max-runs", "12"]), 0)
+            ck0 = sorted(glob.glob(os.path.join(d0, "ckpt_*.pt")), key=os.path.getmtime)[-1]
+            c0 = torch.load(ck0)["counters"]
+            with open(os.path.join(d1, "KICKSTART_LAMBDA"), "w") as fh:
+                fh.write("0.5")
+            self.assertEqual(sp.main(common + ["--out-dir", d1, "--seed-base", "1000", "--net", "64x2",
+                                               "--init-net", ck0, "--init-counters", ck0, "--teacher-ckpt", ck0,
+                                               "--teacher-net", "32x2", "--kickstart-mix", "0.25",
+                                               "--max-runs", str(c0["seeds_used"] + 12)]), 0)
+            with open(os.path.join(d1, "metrics.jsonl")) as f:
+                rows = [json.loads(l) for l in f]
+            self.assertTrue(all(r["kickstart_lambda"] == 0.5 for r in rows))   # the file wins over the flag
+            self.assertTrue(any(r["loss"] for r in rows))
+            ck1 = sorted(glob.glob(os.path.join(d1, "ckpt_*.pt")), key=os.path.getmtime)[-1]
+            c1 = torch.load(ck1)["counters"]
+            self.assertGreater(c1["step"], c0["step"])
+            self.assertGreater(c1["seeds_used"], c0["seeds_used"])
+            self.assertEqual(tuple(torch.load(ck1)["net"]["type_emb.weight"].shape), (9, 64))
 
     def test_soft_policy_and_explore_amber_run(self):
         """--w-soft-policy trains the soft head in a real run (loss logged, head in the checkpoint; the inference copy
