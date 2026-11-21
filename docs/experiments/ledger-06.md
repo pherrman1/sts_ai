@@ -28891,7 +28891,7 @@ test if the outputs match and the step time is close.
 **Knowledge impact:** lesson for any new input token on a resumed net: gate it in at exact identity and compare
 against the state without it, not only the zero-initialised new weights.
 
-## §TBD — §838 PC check FAILED (inference fp16 differences up to 0.31 on HP logits at gate 0, training step 3.1x); fixes: own softmax maximum for the gate's second pass in the kernels, fp32 row mean, second attention pass only on rows with encounter tokens, bias only on encounter-class pairs; the check splits rows and reports the fp16 noise floor → BUILT, default off (cloud, 2026-11-21)
+## §839 — §838 PC check FAILED (inference fp16 differences up to 0.31 on HP logits at gate 0, training step 3.1x); fixes: own softmax maximum for the gate's second pass in the kernels, fp32 row mean, second attention pass only on rows with encounter tokens, bias only on encounter-class pairs; the check splits rows and reports the fp16 noise floor → BUILT, default off (cloud, 2026-11-21)
 
 **PC check of §838** (stage-1 thread, ckpt_943204 + replay_enemy_run_2125, `--check-enemy-gate 20`, 22:0x CET):
 gates 0; training net fp32 max |diff| 2e-5 .. 1.4e-4 (pass); inference net fp16 policy 0.031, outcome 0.094, HP
