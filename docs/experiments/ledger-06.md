@@ -29151,3 +29151,20 @@ inputs contiguous. `AZ_ENEMY_NO_COMPILE=1` restores §843's graph breaks. The cl
 the bug, so which part was wrong on the PC's 2.5.1 is still open: the PC check decides. **Next:** on the PC the
 test, `--check-enemy-gate --compile` and frozen arm C3 (play like D, moves/s near B).
 **Knowledge impact:** this entry.
+
+## §TBD — #1166 failed the PC check: the fp32 row_mean kernel is wrong on the PC GPU (sm_86, triton 3.1.0) at every width but 128 (fp16 right at all widths, so the live packed heads were never affected); fixed with an fp32 one-token-per-step kernel and a gated mean on row_mean at width d in the input dtype; frozen arm C4 8.0 % / floor 28.6 → BUILT, default off (cloud + PC, 2026-11-21)
+
+**PC check of #1166 (§845):** with both flags the inference outputs were off on all rows (outcome 17 vs noise 0.15),
+eager and compiled alike; frozen C3 4.0 %. **GPU diagnosis** (tests/test_varlen_attn.py, diag_row_mean.py on
+the PC, torch 2.5.1+cu121, triton 3.1.0): row_mean with fp32 inputs gives wrong means on every row at widths 16 /
+32 / 64 / 256 (max error 2.3-10.2), right at 128 (3e-7); fp16 right at 16-256 (<= 0.002); int32 / int64 seq_off
+alike. The live flag-off path calls row_mean only in the fp16 inference net at d = 128: not affected. §845's gated
+mean used fp32 row_mean at widths 2 d and 16. **Change:** fp32 inputs use a kernel without the 2-D reduction (one
+token per step; fp16 / bf16 keep the old kernel, bit-equal); the gated mean calls row_mean at width d in the input
+dtype on x * other and x * enc and takes the encounter fraction from exact prefix-sum counts. Still 0 graph breaks.
+**PC check (bfbcab66):** diag fp32 <= 6.4e-7 at all widths; 14 / 14 tests; `--check-enemy-gate 20 --compile`:
+encounter rows policy 0.016 / outcome 0.063 / HP 0.125 / per-floor 0.005, compiled vs eager 0.063 / 0.125 / 0.47 /
+0.014, fp16 noise 0.081 / 0.150 / 0.57 / 0.014, other rows 0. Frozen C4 (flags + compile, 300 games): 8.0 % / floor
+28.6 (D 9.7 % / 28.4, B 9.3 % / 29.1); 1,091 moves/s vs B 1,630 (0.67x), training step 75.4 vs 63.3 ms. Went live
+23:28 CET with a 30-min watch (roll back on collapse or moves/s more than 15 % below 8.9k).
+**Knowledge impact:** this entry; Triton 3.1 on sm_86 needs fp32 kernel checks per width.
