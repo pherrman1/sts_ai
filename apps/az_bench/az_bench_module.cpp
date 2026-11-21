@@ -281,7 +281,8 @@ PYBIND11_MODULE(az_bench_native, m) {
                          bool exploreAmber, double exploreT, double searchEmaLambda, bool searchEmaFullOnly,
                          bool forceKeys, std::vector<std::vector<double>> heartArms, int heartReps,
                          bool savescum, bool compactSamples, double heartLogRate, bool forceRewards, bool explorePerOffer,
-                         bool exploreGapSearch, bool exploreDeckOnly, bool forcePotions, bool oocCanon, bool rngFix) {
+                         bool exploreGapSearch, bool exploreDeckOnly, bool forcePotions, bool oocCanon,
+                         int parallelNodes, bool rngFix) {
                  azbench::RunConfig c;
                  if (!(heartLogRate >= 0 && heartLogRate <= 1)) throw std::invalid_argument("heart_log_rate: want 0..1");
                  c.heartLogRate = heartLogRate;
@@ -333,6 +334,7 @@ PYBIND11_MODULE(az_bench_native, m) {
                  c.forceRewards = forceRewards;
                  c.forcePotions = forcePotions;
                  c.oocCanon = oocCanon;
+                 c.parallelNodes = parallelNodes;
                  c.rngFix = rngFix;
                  c.explorePerOffer = explorePerOffer;
                  c.exploreGapSearch = exploreGapSearch;
@@ -359,7 +361,8 @@ PYBIND11_MODULE(az_bench_native, m) {
              py::arg("compact_samples") = false, py::arg("heart_log_rate") = 0.0,
              py::arg("force_rewards") = false, py::arg("explore_per_offer") = false,
              py::arg("explore_gap_search") = false, py::arg("explore_deck_only") = false,
-             py::arg("force_potions") = false, py::arg("ooc_canon") = false, py::arg("rng_fix") = false)
+             py::arg("force_potions") = false, py::arg("ooc_canon") = false, py::arg("parallel_nodes") = 0,
+             py::arg("rng_fix") = false)
         .def("heart_results",
              [](const azbench::RunDriver &d) {
                  py::list out;
@@ -646,6 +649,7 @@ PYBIND11_MODULE(az_bench_native, m) {
             o["explore_c_inf"] = s.exploreCInf; o["explore_natural"] = s.exploreNatural;
             o["explore_natural_unplayed"] = s.exploreNaturalUnplayed;
             o["cache_hits"] = s.cacheHits;
+            o["waves"] = s.waves; o["wave_flights"] = s.waveFlights; o["sim_collisions"] = s.simCollisions;
             o["ooc_searched"] = py::make_tuple(s.oocSearched[0], s.oocSearched[1]);
             o["ooc_not_best_q"] = py::make_tuple(s.oocNotBestQ[0], s.oocNotBestQ[1]);
             o["ooc_q_spread_n"] = py::make_tuple(s.oocSpreadN[0], s.oocSpreadN[1]);
@@ -675,6 +679,7 @@ PYBIND11_MODULE(az_bench_native, m) {
                 m["pool_real"] = s.memPoolReal;
                 m["pool_outer"] = s.memPoolOuter; m["edge_cap"] = s.memEdgeCap; m["pending_cap"] = s.memPendingCap;
                 m["move_dist_cap"] = s.memMoveDistCap; m["cache_entries"] = s.memCacheEntries; m["done"] = s.memDone;
+                m["flights"] = s.memFlights;
                 o["mem"] = m;
             }
             o["step_cpu"] = s.stepCpu; o["encode_cpu"] = s.encodeCpu; o["search_cpu"] = s.searchCpu;

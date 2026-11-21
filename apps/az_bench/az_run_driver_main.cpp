@@ -2,7 +2,7 @@
 // training samples (labels filled, policy a distribution over the sample's actions, action sources / targets inside
 // the row). Smoke test and CPU-side throughput probe.
 //
-// usage: az-run-driver [--workers 2] [--games 4] [--runs 8] [--batch 64] [--seed 0] [--seed-base 1] [--fast] [--asc 20] [--sims N] [--const-value] [--test-hp HP] [--max-fight-moves 400] [--explore-c C] [--explore-amber] [--pick-target T] [--no-fast-noise] [--q-rescale] [--c-scale S] [--utility floor-hp|amber|amber2|amber2-root] [--keyless-hp] [--chance-on-reveal] [--cross-combat] [--sim-help] [--max-pending N] [--force-keys] [--savescum] [--compact-samples]
+// usage: az-run-driver [--workers 2] [--games 4] [--runs 8] [--batch 64] [--seed 0] [--seed-base 1] [--fast] [--asc 20] [--sims N] [--const-value] [--test-hp HP] [--max-fight-moves 400] [--explore-c C] [--explore-amber] [--pick-target T] [--no-fast-noise] [--q-rescale] [--c-scale S] [--utility floor-hp|amber|amber2|amber2-root] [--keyless-hp] [--chance-on-reveal] [--cross-combat] [--sim-help] [--max-pending N] [--force-keys] [--savescum] [--compact-samples] [--parallel-nodes P] [--candidates C]
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -100,7 +100,9 @@ int main(int argc, char **argv) {
         else if (a == "--force-potions") cfg.forcePotions = true;
         else if (a == "--ooc-canon") cfg.oocCanon = true;
         else if (a == "--savescum") cfg.savescum = true;
+        else if (a == "--parallel-nodes") cfg.parallelNodes = std::stoi(next());
         else if (a == "--sims") { cfg.fullSims = std::stoi(next()); cfg.fastSims = cfg.fullSims; cfg.fullProb = 1.0; }
+        else if (a == "--candidates") { cfg.fullCandidates = std::stoi(next()); cfg.fastCandidates = std::max(1, cfg.fullCandidates / 2); }
         else if (a == "--fast") { cfg.fullSims = 8; cfg.fastSims = 4; cfg.fullCandidates = 4; cfg.fastCandidates = 2; }
         else { std::fprintf(stderr, "unknown argument %s\n", a.c_str()); return 2; }
     }
@@ -215,6 +217,16 @@ int main(int argc, char **argv) {
                 static_cast<long long>(s.memEdgeCap),
                 static_cast<long long>(s.memPendingCap), static_cast<long long>(s.memMoveDistCap),
                 static_cast<long long>(s.memCacheEntries), static_cast<long long>(s.memDone));
+    if (cfg.parallelNodes > 0) {
+        // Round trips to the net per searched move: its root evaluation and its waves (one-at-a-time: one per
+        // evaluation).
+        const double sm = static_cast<double>(std::max<long long>(1, s.searchedMoves));
+        std::printf("parallel_nodes %d: waves %lld, flights_per_wave %.2f, round_trips_per_move %.2f (evals_per_move %.2f), "
+                    "collisions %lld, flight_slots %lld\n", cfg.parallelNodes, static_cast<long long>(s.waves),
+                    s.waves ? static_cast<double>(s.waveFlights) / s.waves : 0.0, (s.searchedMoves + s.waves) / sm,
+                    s.evals / sm, static_cast<long long>(s.simCollisions), static_cast<long long>(s.memFlights));
+        if (s.waves == 0 || s.waveFlights <= s.waves) { std::fprintf(stderr, "parallel nodes: no wave with several evaluations\n"); return 1; }
+    }
     std::printf("outcomes (class: runs):");
     for (int k = 0; k < azbench::kOutcomeClasses; ++k)
         if (s.outcomes[k]) std::printf(" %d:%lld", k, static_cast<long long>(s.outcomes[k]));
