@@ -28594,7 +28594,7 @@ the all-runs rule with a trained net (the run's owner reports it).
 its predecessor saved, so the predecessor must run this code).
 **Knowledge impact:** this entry.
 
-## §TBD — HP heads on search-backed EMA targets: `--hp-ema-search` (default off, #1151) in the stage-1 run; a replay window saved with other target byte sizes now loads (PC + cloud, 2026-11-21)
+## §832 — HP heads on search-backed EMA targets: `--hp-ema-search` (default off, #1151) in the stage-1 run; a replay window saved with other target byte sizes now loads (PC + cloud, 2026-11-21)
 
 **Question:** Amber Eye's page does not name the targets of its HP heads; it stores "labels for the outcome and HP
 distributions, per-floor HP" per sample, quantizes value distributions to 8 bit and labels the value with "a
