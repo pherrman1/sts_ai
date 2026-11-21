@@ -154,6 +154,43 @@ def enemy_batch(A, B=8, seed=5):
     return f
 
 
+def strip_encounters(A, f):
+    """The flat batch f without its encounter tokens (rows re-packed, action src / tgt remapped; an action on an
+    encounter token gets none), as the net without --enemy-tokens sees the state."""
+    cls = A.token_classes(f["tok_type"], f["ids"], f["f"])
+    keep = f["mask"] & ~A.enc_of(cls)
+    B, T = keep.shape
+    n = keep.sum(1)
+    Tn = int(n.max())
+    out = {"tok_type": torch.zeros(B, Tn, dtype=torch.long), "ids": torch.zeros(B, Tn, A.N_CAT, dtype=torch.long),
+           "f": torch.zeros(B, Tn, A.N_FLOAT), "mask": torch.zeros(B, Tn, dtype=torch.bool)}
+    remap = torch.full((B, T), -1, dtype=torch.long)
+    for r in range(B):
+        idx = torch.nonzero(keep[r]).squeeze(1)
+        k = idx.numel()
+        for key in ("tok_type", "ids", "f"):
+            out[key][r, :k] = f[key][r, idx]
+        out["mask"][r, :k] = True
+        remap[r, idx] = torch.arange(k)
+    for key in ("a_src", "a_tgt"):
+        x = f[key]
+        out[key] = torch.where(x >= 0, torch.gather(remap, 1, x.clamp(min=0)), torch.full_like(x, -1))
+    for key in ("a_type", "a_f", "a_mask"):
+        out[key] = f[key]
+    return out
+
+
+def gate_batch(A, seed=5):
+    """enemy_batch with no action on an encounter token (as in the driver's samples)."""
+    f = enemy_batch(A, seed=seed)
+    enc = A.enc_of(A.token_classes(f["tok_type"], f["ids"], f["f"]))
+    for key in ("a_src", "a_tgt"):
+        x = f[key]
+        on = (x >= 0) & torch.gather(enc, 1, x.clamp(min=0))
+        f[key] = torch.where(on, torch.full_like(x, -1), x)
+    return f
+
+
 class EnemyBiasClasses(unittest.TestCase):
     @unittest.skipUnless(HAVE, "needs torch")
     def test_token_classes(self):
@@ -185,6 +222,43 @@ class EnemyBiasClasses(unittest.TestCase):
         out = net(f)
         (out[1].logsumexp(-1).sum() + out[0].sum()).backward()
         self.assertGreater(float(net.enemy_bias.grad.abs().sum()), 0)
+
+    @unittest.skipUnless(HAVE, "needs torch")
+    def test_gate_zero_is_the_old_net(self):
+        """enemy_gate at 0 (the start; with and without a bias on the encounter classes): every output equals the net without
+        the encounter parts on the state without encounter tokens; the flat and packed paths agree for a gate in
+        (0, 1); the gate gets a gradient at 0."""
+        A = load("amber_net")
+        f = gate_batch(A)
+        g = strip_encounters(A, f)
+        torch.manual_seed(0)
+        base = A.jitter_1d_params(A.AmberNet(64, 2).eval())
+        base.sdpa = True
+        with torch.no_grad():
+            ref = base(g)
+        for bias in (False, True):
+            net = A.AmberNet(64, 2, enemy_bias=bias, enemy_gate=True).eval()
+            net.load_state_dict(base.state_dict(), strict=False)
+            net.sdpa = True
+            with torch.no_grad():
+                if bias:   # entries of encounter classes only: the others act on states without them too
+                    r = torch.randn_like(net.enemy_bias)
+                    net.enemy_bias[:, :, 1:4] = r[:, :, 1:4]
+                    net.enemy_bias[:, :, :, 1:4] = r[:, :, :, 1:4]
+                pk, inv = A.pack_index(f["mask"], 16, inverse=True)
+                for out in (net(f), net(dict(f, pack_idx=pk, unpack_idx=inv))):
+                    for x, y in zip(out, ref):
+                        self.assertLess(float((x - y).abs().max()), 1e-4, bias)
+                net.enemy_gate.fill_(0.4)
+                o1, o2 = net(f), net(dict(f, pack_idx=pk, unpack_idx=inv))
+                for x, y in zip(o1, o2):
+                    self.assertLess(float((x - y).abs().max()), 1e-4, bias)
+                self.assertGreater(float((o1[1] - ref[1]).abs().max()), 1e-3)
+                net.enemy_gate.zero_()
+            net.train()
+            out = net(f)
+            (out[1].logsumexp(-1).sum() + out[0].sum()).backward()
+            self.assertGreater(float(net.enemy_gate.grad.abs().min()), 0)
 
 
 @unittest.skipUnless(RUNNABLE, "needs triton and a CUDA GPU or TRITON_INTERPRET=1")
@@ -246,6 +320,91 @@ class EnemyBiasKernel(unittest.TestCase):
             self.assertLess(float((x - y).abs().max()), self.tol)
             self.assertLess(float((x - z).abs().max()), self.tol)
         self.assertGreater(float((o3[1] - o4[1]).abs().max()), 1e-3)   # the table matters
+
+    def test_kernel_gate_matches_sdpa(self):
+        """gate g: g x attention over all keys + (1 - g) x without the encounter keys, with and without the bias,
+        in both kernels."""
+        import sys
+        A, V = load("amber_net"), load("varlen_attn")
+        mod = sys.modules["az_bench_varlen_attn"]
+        g = torch.Generator().manual_seed(2)
+        C = A.BIAS_CLASSES
+        try:
+            for B, T, H, dh in ((5, 20, 2, 32), (3, 90, 4, 32)):
+                d = H * dh
+                n = torch.randint(2, T + 1, (B,), generator=g)
+                mask = torch.arange(T)[None, :] < n[:, None]
+                qkv_pad = torch.randn(B, T, 3 * d, generator=g)
+                cls = torch.randint(0, C, (B, T), generator=g)
+                cls[:, 0] = 0   # the run token: every row has a key that is not an encounter token
+                q, k, v = qkv_pad.view(B, T, 3, H, dh).permute(2, 0, 3, 1, 4)
+                pk = A.pack_index(mask, 1)
+                qkv = qkv_pad.reshape(B * T, -1)[pk].contiguous().to(self.dev)
+                cp = cls.reshape(-1)[pk].to(torch.int32).contiguous().to(self.dev)
+                enc = A.enc_of(cls)
+                for tab in (None, torch.randn(H, C, C, generator=g)):
+                    for gv in (0.0, 0.3, 1.0):
+                        def ref_attn(keys, bias=True):
+                            b_ = torch.zeros(B, H, T, T) if tab is None or not bias else \
+                                tab.reshape(H, C * C)[:, cls[:, :, None] * C + cls[:, None, :]].permute(1, 0, 2, 3)
+                            b_ = b_.masked_fill(~keys[:, None, None, :], float("-inf"))
+                            return torch.nn.functional.scaled_dot_product_attention(q, k, v, attn_mask=b_)
+                        ref = gv * ref_attn(mask) + (1 - gv) * ref_attn(mask & ~enc, bias=False)
+                        ref = ref.transpose(1, 2).reshape(B * T, d)[mask.reshape(-1)]
+                        for rb in (False, True):
+                            mod.ROW_BOUNDS = rb
+                            out = V.varlen_attn(qkv, A.seq_offsets(mask).to(self.dev), H, T, cp,
+                                                None if tab is None else tab.contiguous().to(self.dev),
+                                                torch.tensor([gv], device=self.dev))
+                            self.assertLess(float((out.cpu() - ref).abs().max()), self.tol, (T, gv, rb))
+        finally:
+            mod.ROW_BOUNDS = False
+
+    def test_net_gate_paths_agree(self):
+        """Gate in (0, 1) with a bias: sdpa_trunk, packed padded, varlen and fused-layer paths agree; at gate 0 the
+        varlen path equals the net without encounter parts on the stripped state."""
+        A = load("amber_net")
+        f = {k: v.to(self.dev) for k, v in gate_batch(A, seed=9).items()}
+        pk, inv = A.pack_index(f["mask"], 16, inverse=True)
+        b = dict(f, pack_idx=pk, unpack_idx=inv, seq_off=A.seq_offsets(f["mask"]))
+        torch.manual_seed(0)
+        net = A.jitter_1d_params(A.AmberNet(64, 2, enemy_bias=True, enemy_gate=True).eval()).to(self.dev)
+        net.sdpa = True
+        with torch.no_grad():
+            net.enemy_bias.normal_(0, 1.0)
+            net.enemy_gate.copy_(torch.tensor([0.3, 0.7, 0.5]))
+            o0 = net(f)
+            o1 = net(b)
+            net.varlen_attn = A.load_kernel("varlen_attn")
+            o2 = net(b)
+            net.fused_layer = A.load_fused_layer()
+            o3 = net(b)
+            net.row_mean = A.load_kernel("row_mean")   # packed heads: the summary gate in the weighted row mean
+            net.packed_heads = True
+            bh = dict(b, act_idx=torch.nonzero(f["a_mask"].reshape(-1)).squeeze(1))
+            o5 = net(bh)
+            net.packed_heads = False
+            live = f["a_mask"]
+            for w, x, y, z, u in zip(o0, o1, o2, o3, o5):
+                self.assertLess(float((w - x).abs().max()), self.tol)
+                self.assertLess(float((x - y).abs().max()), self.tol)
+                self.assertLess(float((x - z).abs().max()), self.tol)
+                if u.shape == live.shape:
+                    u, x = u[live], x[live]
+                self.assertLess(float((x - u).abs().max()), self.tol)
+            net.enemy_gate.zero_()
+            keep = torch.zeros_like(net.enemy_bias, dtype=torch.bool)   # only encounter-class entries stay
+            keep[:, :, 1:4] = True
+            keep[:, :, :, 1:4] = True
+            net.enemy_bias.mul_(keep)
+            o4 = net(b)
+            base = A.AmberNet(64, 2).eval().to(self.dev)
+            base.load_state_dict(net.state_dict())
+            base.sdpa = True
+            g = {k: v.to(self.dev) for k, v in strip_encounters(A, {k: v.cpu() for k, v in f.items()}).items()}
+            ref = base(g)
+        for x, y in zip(o4, ref):
+            self.assertLess(float((x - y).abs().max()), self.tol)
 
 
 if __name__ == "__main__":

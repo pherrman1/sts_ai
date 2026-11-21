@@ -1250,6 +1250,8 @@ class DashboardRecentTest(unittest.TestCase):
         eb = {"abs_mean": 0.01, "enemy_to_node": [0.1, 0.0, -0.1], "node_to_enemy": [0.2, 0.0, 0.05]}
         rows = [dict(row, runs_done=1000 * (i + 1), enemy_bias=eb) for i in range(3)]
         self.assertIn("Enemy-map attention bias", dash.page(rows, "t", ""))
+        rows = [dict(r, enemy_gate=[0.0, 0.01, 0.02, 0.0, 0.05]) for r in rows]
+        self.assertIn("Encounter-token gates", dash.page(rows, "t", ""))
         self.assertNotIn("Enemy-map attention bias", dash.page([row], "t", ""))
 
 
@@ -1439,12 +1441,46 @@ class SelfplaySmoke(unittest.TestCase):
                                                "--enemy-tokens", "--enemy-map-bias"]), 0)
             net = torch.load(ckpt(), map_location="cpu", weights_only=False)["net"]
             self.assertIn("enemy_bias", net)
+            self.assertIn("enemy_gate", net)
             self.assertGreater(float(net["enemy_bias"].abs().sum()), 0)   # trained away from zero
             with open(os.path.join(d, "metrics.jsonl")) as f:
-                self.assertTrue(any("enemy_bias" in json.loads(l) for l in f))
+                ms = [json.loads(l) for l in f]
+            self.assertTrue(any("enemy_bias" in m for m in ms))
+            self.assertTrue(any(len(m.get("enemy_gate") or []) == 7 for m in ms))   # 6 layers + summary
             self.assertEqual(sp.main(common + ["--out-dir", d, "--max-runs", "20", "--resume", ckpt()]), 0)
         with self.assertRaises(SystemExit):
             sp.main(common + ["--out-dir", "/nonexistent", "--enemy-map-bias"])
+
+    def test_check_enemy_gate(self):
+        """--check-enemy-gate: a checkpoint without encounter parts on a window with encounter tokens (saved by a
+        later --enemy-tokens run): the gated net (gates 0) equals the net without them on the stripped states."""
+        sp = load()
+        common = ["--module-dir", os.path.dirname(MODULES[0]), "--device", "cpu", "--workers", "2", "--games", "4",
+                  "--full-sims", "8", "--fast-sims", "4", "--batch", "32", "--row-buckets", "32", "--pack-step", "32",
+                  "--pack-threads", "1", "--min-replay", "50", "--train-batch", "32", "--window", "5000",
+                  "--report", "1", "--sync-steps", "2", "--seed-base", "580", "--ascension", "1",
+                  "--compact-samples", "--utility", "amber"]
+        with tempfile.TemporaryDirectory() as d:
+            rep = os.path.join(d, "replay")
+
+            def ckpt():
+                return sorted(glob.glob(os.path.join(d, "ckpt_*.pt")), key=os.path.getmtime)[-1]
+
+            self.assertEqual(sp.main(common + ["--out-dir", d, "--max-runs", "6"]), 0)
+            c0 = ckpt()
+            self.assertEqual(sp.main(common + ["--out-dir", d, "--max-runs", "12", "--resume", c0, "--enemy-tokens",
+                                               "--enemy-map-bias", "--replay-save", rep]), 0)
+            self.assertEqual(sp.main(common + ["--out-dir", d, "--resume", c0, "--enemy-tokens", "--enemy-map-bias",
+                                               "--replay-load", rep, "--check-enemy-gate", "3"]), 0)
+            with open(os.path.join(d, "enemy_gate_check.json")) as f:
+                res = json.load(f)
+        self.assertGreater(res["rows_with_encounter_tokens"], 0)
+        self.assertEqual(set(res["gates"]), {0.0})
+        for tag in ("train_enc_rows", "train_other_rows", "infer_enc_rows", "infer_other_rows"):
+            for k, v in res["max_abs_diff"][tag].items():
+                self.assertLess(v, 1e-4, (tag, k))
+        self.assertIn("with_gates_only", res["train_step_ms"])
+        self.assertGreater(res["train_step_ms"]["with"], 0)
 
     def test_replay_save_load_and_ascension_file(self):
         """--replay-save at the final stop, --replay-load on resume from that checkpoint: the window continues

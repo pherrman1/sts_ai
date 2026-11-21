@@ -28967,4 +28967,61 @@ their analyses 25 min on 2 threads; one live decision 0.25-0.5 s.
 mod prefers the Amber evaluator only when the advisor sends one). The mod test on the PC (CPU only) follows.
 **Evidence:** `docs/experiments/evidence/explain_lab_20261121/` (every mode's log and JSON, the commands, checkpoint
 hashes, the advisor's responses to the four fixtures; `gen256/` for the 256 runs).
+## §838 — §837 live test FAILED (winrate 41.6 % → 1.6 % → ~17 % in 15 min, trainer ~7 instead of ~200 steps / min); second attempt: `--enemy-tokens` now gates the encounter tokens in at 0 (the resumed net computes what it did without them), the bias goes into training as extra q / k columns instead of a float mask, `--check-enemy-gate` checks both offline → BUILT, default off (cloud, 2026-11-21)
+
+**Live test of §837 (PC, stage-1 thread, 21:09-21:25 CET, resumed with `--enemy-tokens --enemy-map-bias
+--aux-fights` and the key-holes fix):** before (key holes only, 20:57-21:09) 41.6 % winrate (savescum), floor
+44.3; after 21:14-21:19 1.6 % / 24.8, 21:19-21:24 10.4 % / 33.8, then ~17 %. No errors or NaNs. Rolled back to
+ckpt_943204 and the window from before (the enemy run is kept as ckpt_943309.pt + replay_enemy_run_2125 on the PC).
+**Causes:** (1) the zero bias table did not make the resumed net the same: the up to 14 new tokens are keys of
+every attention and terms of the summary mean, so every out-of-combat output moved at once (the §837 test "zero
+table = net without it" compared the same tokens with and without the table, not against the state without the
+tokens). (2) The bias in training was a float mask [B, H, T, T] per layer: scaled_dot_product_attention loses its
+fused kernels and B H T^2 memory per layer; the trainer made ~7 instead of ~200 steps per minute.
+**Fix (owner's decision "ja soll bauen", 2026-11-21, a further deviation from Amber Eye):** `AmberNet(enemy_gate=
+True)` (on with `--enemy-tokens`): per layer a gate g (parameter clamped to [0, 1], straight-through gradient, 0 at
+the start) mixes the attention with the encounter tokens as keys (g) and without them (1 - g); a last gate weights
+them in the summary mean (also in the packed heads' row mean). At g = 0 every other token computes what the net
+computes on the state without the encounter tokens (up to float rounding; the encounter tokens' own rows do not
+reach any other token or head). In the varlen Triton kernels the second softmax runs in the same pass (shared
+running maximum, its own sum and accumulator: one more P V product per block). The bias in training is now two
+extra q / k column blocks, q' = [q / sqrt(dh), TAB[h, cls_q, :]], k' = [k, onehot(cls_k)] (padded to a multiple of
+8): same scores, the fused attention kernels stay, no [B, H, T, T] tensor. Gates and table are in the optimizer's
+second group. Metrics row `enemy_gate`, dashboard chart "Encounter-token gates".
+**Offline check `selfplay.py --check-enemy-gate N`** (with the run's arguments, `--enemy-tokens`, `--resume` of a
+checkpoint without encounter parts, `--replay-load` of a window with encounter tokens; the step check of the window
+is skipped in this mode): on N training batches the max |difference| of policy logits (live actions), outcome, HP
+and per-floor HP heads between the gated net and the same weights without encounter parts on the stripped states
+(`amber_net.strip_encounters`), for the fp32 training net and the inference net (fp16 packed, varlen kernels on a
+GPU), and the median training step time (bf16 forward + backward) of both; writes `enemy_gate_check.json`.
+**Checks (cloud, CPU, TRITON_INTERPRET=1):** gate 0 with and without a bias on the encounter classes = the net
+without encounter parts on the stripped batch (flat and packed, 1e-4); gate in (0, 1): sdpa_trunk, packed, varlen,
+fused-layer and packed-heads paths agree; kernel with gate (0, 0.3, 1; with and without bias; both kernels) = the
+SDPA mix; the gates get a gradient at 0. `test_check_enemy_gate`: checkpoint without parts + window of a later
+`--enemy-tokens --enemy-map-bias` run: all differences < 1e-4. Note: a bias table with nonzero entries between
+non-encounter classes (map nodes and the rest) changes states without encounter tokens too; it starts at 0.
+**Not measured:** the PC check (GPU equality in fp16, training step time with vs without), live behaviour. Next:
+the stage-1 thread runs `--check-enemy-gate` on the PC with ckpt_943204 + replay_enemy_run_2125, then a 15 min live
+test if the outputs match and the step time is close.
+**Knowledge impact:** lesson for any new input token on a resumed net: gate it in at exact identity and compare
+against the state without it, not only the zero-initialised new weights.
+
+## §839 — §838 PC check FAILED (inference fp16 differences up to 0.31 on HP logits at gate 0, training step 3.1x); fixes: own softmax maximum for the gate's second pass in the kernels, fp32 row mean, second attention pass only on rows with encounter tokens, bias only on encounter-class pairs; the check splits rows and reports the fp16 noise floor → BUILT, default off (cloud, 2026-11-21)
+
+**PC check of §838** (stage-1 thread, ckpt_943204 + replay_enemy_run_2125, `--check-enemy-gate 20`, 22:0x CET):
+gates 0; training net fp32 max |diff| 2e-5 .. 1.4e-4 (pass); inference net fp16 policy 0.031, outcome 0.094, HP
+0.31, per-floor HP 0.0068 (fail, limit ~2e-2); training step 215.9 ms with vs 69.0 ms without (3.1x, fail), with only
+377 of 20,480 rows holding encounter tokens. **Causes found (no GPU in the cloud to confirm):** (1) the kernels' second
+softmax shared the running maximum of the first: when an encounter key scored highest, the other weights went below
+fp16's normal range before the P V product; it now keeps its own maximum. (2) The summary gate's weighted row mean
+summed fp16 values (row_mean accumulates in fp32); now fp32. (3) Training ran both passes on every row and the
+q / k column bias on every row. Now: one plain pass for all rows (rows without encounter tokens are done), and the
+biased pass and the pass without encounter keys only on the rows that hold encounter tokens. For that the bias acts
+only on pairs with an encounter class (query or key; `AmberNet._tab`), so states without encounter tokens attend
+exactly as without the flag; the gate's second pass has no bias (kernel and training). **Check output** now splits
+the differences into rows with / without encounter tokens, adds `infer_noise` (inference net vs fp32 training net,
+both without encounter parts: the fp16 floor of the comparison) and `train_step_ms.with_gates_only`.
+**Checks (cloud, CPU, TRITON_INTERPRET=1):** test_varlen_attn + test_packed_heads 14 passed (kernel gate = SDPA mix
+with the bias in the first part only; all net paths agree with gate and bias; gate 0 = net without parts on the
+stripped states); test_selfplay enemy / check tests pass. **Not measured:** the PC check again.
 **Knowledge impact:** this entry.
