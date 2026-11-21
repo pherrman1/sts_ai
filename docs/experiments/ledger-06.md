@@ -28852,7 +28852,7 @@ with the route x, so a drink can be masked or kept by its slot number.
 and a 5-15 minute PC test.
 **Knowledge impact:** this entry.
 
-## §TBD — `--force-keys`, second round: N'loth's Hungry Face could empty the act-3 Sapphire chest, and the act-3 route mask read an out-of-combat drink's slot as a map x; both closed, default on, `STS_AZ_KEY_HOLES2=0` restores; keyless victories now logged by missing key (cloud, 2026-11-21)
+## §844 — `--force-keys`, second round: N'loth's Hungry Face could empty the act-3 Sapphire chest, and the act-3 route mask read an out-of-combat drink's slot as a map x; both closed, default on, `STS_AZ_KEY_HOLES2=0` restores; keyless victories now logged by missing key (cloud, 2026-11-21)
 
 **Question (owner, 2026-11-21):** after §836 (#1158) the live run still had keyless victories (1 of 7,755 runs
 20:57-21:09 CET, 2 of about 16k after the 21:25 CET restart; 79 of 14,564 before §836). Where do they come from?
