@@ -1190,6 +1190,7 @@ def enemy_gate_check(train_net, infer, replay, args, dev, hp_floors):
     # training net, both without encounter parts on the stripped states (fp16 noise floor of the comparison)
     tags = ("train_enc_rows", "train_other_rows", "infer_enc_rows", "infer_other_rows", "infer_noise")
     diff = {t: {k: 0.0 for k in names} for t in tags}
+    nonfinite = {"train": 0, "infer": 0}   # non-finite outputs of the gated nets
     rows = enc_rows = 0
 
     def cmp(tag, a, b_, mask_a, sel=None):
@@ -1216,11 +1217,13 @@ def enemy_gate_check(train_net, infer, replay, args, dev, hp_floors):
             has = bt["mask"].sum(1) != st["mask"].sum(1)
             enc_rows += int(has.sum())
             a_, b_ = train_net(bt), base(st)
+            nonfinite["train"] += sum(int((~torch.isfinite(o.float())).sum()) for o in a_[1:4])
             cmp("train_enc_rows", a_, b_, bt["a_mask"], has)
             cmp("train_other_rows", a_, b_, bt["a_mask"], ~has)
             hb = {k: (v.half() if cuda and v.is_floating_point() else v) for k, v in bt.items()}
             hs = {k: (v.half() if cuda and v.is_floating_point() else v) for k, v in st.items()}
             ai, bi = infer(packed(hb)), base_inf(packed(hs))
+            nonfinite["infer"] += sum(int((~torch.isfinite(o.float())).sum()) for o in ai[1:4])
             cmp("infer_enc_rows", ai, bi, bt["a_mask"], has)
             cmp("infer_other_rows", ai, bi, bt["a_mask"], ~has)
             cmp("infer_noise", bi, b_, bt["a_mask"])
@@ -1252,7 +1255,7 @@ def enemy_gate_check(train_net, infer, replay, args, dev, hp_floors):
 
     res = {"batches": args.check_enemy_gate, "rows": rows, "rows_with_encounter_tokens": enc_rows,
            "gates": [round(float(x), 4) for x in train_net.enemy_gate.detach().float().cpu()],
-           "max_abs_diff": diff,
+           "max_abs_diff": diff, "nonfinite_outputs": nonfinite,
            "train_step_ms": {"without_encounter_parts": step_ms(base, True), "with": step_ms(train_net, False)}}
     if train_net.enemy_bias is not None:   # the same with the gates only (no class bias)
         tab, train_net.enemy_bias = train_net.enemy_bias, None
@@ -1271,24 +1274,26 @@ def extra_param(name):
 
 
 def load_opt_state(opt, saved):
-    """Loads an optimizer state saved with one parameter group (no --aux-fights / --enemy-map-bias) into an
-    optimizer with the extra group (that group starts fresh), one saved with the extra group into an optimizer
-    without it (its state is dropped), or one whose extra group holds other parameters (it starts fresh);
-    otherwise as opt.load_state_dict."""
+    """Loads an optimizer state into an optimizer whose groups may differ after the first (the main group): group
+    k > 0 keeps its saved state when the saved state has a group k with as many parameters, otherwise it starts
+    fresh (e.g. the aux head or the --enemy-tokens parts added or dropped); the main group must match. Hyper-
+    parameters of the groups (lr_scale, weight_decay) come from this run's optimizer."""
     mine = opt.state_dict()
-    ng, sg = len(mine["param_groups"]), len(saved["param_groups"])
-    if [len(g["params"]) for g in mine["param_groups"]] == [len(g["params"]) for g in saved["param_groups"]]:
-        opt.load_state_dict(saved)
-        return
-    if not (ng, sg) in ((2, 1), (1, 2), (2, 2)):
-        raise ValueError(f"optimizer state: {sg} parameter groups saved, {ng} here")
-    n0 = len(saved["param_groups"][0]["params"])
-    if n0 != len(mine["param_groups"][0]["params"]):
+    mg, sg = mine["param_groups"], saved["param_groups"]
+    if len(mg[0]["params"]) != len(sg[0]["params"]):
         raise ValueError("optimizer state: the main parameter group differs")
-    st = {"state": {k: v for k, v in saved["state"].items() if int(k) < n0},
-          "param_groups": [saved["param_groups"][0]] + mine["param_groups"][1:]}
-    opt.load_state_dict(st)
-
+    state, groups = {}, []
+    for k, g in enumerate(mg):
+        g = dict(g)
+        if k == 0 or (k < len(sg) and len(sg[k]["params"]) == len(g["params"])):
+            src = sg[k]
+            for a, b in zip(src["params"], g["params"]):
+                if a in saved["state"] or str(a) in saved["state"]:
+                    state[b] = saved["state"].get(a, saved["state"].get(str(a)))
+            if k == 0:
+                g = dict(src, params=g["params"])
+        groups.append(g)
+    opt.load_state_dict({"state": state, "param_groups": groups})
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -1472,6 +1477,10 @@ def main(argv=None):
                     help="learned attention bias between encounter tokens and the map's boss / elite / hallway nodes "
                          "(not from Amber Eye; default off; needs --enemy-tokens, not with --fused-net): "
                          "amber_net.AmberNet(enemy_bias=True), zero at the start")
+    ap.add_argument("--enemy-lr-scale", type=float, default=0.01,
+                    help="--enemy-tokens / --enemy-map-bias: learning rate of the gates and the bias table as a share "
+                         "of --lr (their own optimizer group). Adam moves each by about lr per step whatever the "
+                         "gradient's size, so at --lr the gates opened to 0.31 in 5 minutes of the second live test")
     ap.add_argument("--check-enemy-gate", type=int, default=0, metavar="BATCHES",
                     help="offline check of --enemy-tokens instead of a run (needs --enemy-tokens and --replay-load of a "
                          "window with encounter tokens): on BATCHES training batches, the net with the gates at their "
@@ -1633,8 +1642,11 @@ def main(argv=None):
     # --aux-fights / --enemy-map-bias: their parameters are a second group, so a checkpoint without them keeps its
     # optimizer state for the rest (load_opt_state).
     main_params = [p_ for n_, p_ in train_net.named_parameters() if not extra_param(n_)]
-    aux_params = [p_ for n_, p_ in train_net.named_parameters() if extra_param(n_)]
-    opt = torch.optim.AdamW([{"params": main_params}] + ([{"params": aux_params}] if aux_params else []),
+    aux_params = [p_ for n_, p_ in train_net.named_parameters() if n_.startswith("aux_fight.")]
+    enemy_params = [p_ for n_, p_ in train_net.named_parameters() if n_ in ("enemy_bias", "enemy_gate")]
+    opt = torch.optim.AdamW([{"params": main_params}] + ([{"params": aux_params}] if aux_params else [])
+                            + ([{"params": enemy_params, "lr_scale": args.enemy_lr_scale, "weight_decay": 0.0}]
+                               if enemy_params else []),
                             lr=args.lr, weight_decay=args.weight_decay)
     counters = {"step": 0, "trained": 0, "seeds_used": 0, "runs_done": 0, "wall": 0.0}
     explore_blob = None
@@ -2188,7 +2200,7 @@ def main(argv=None):
                 step = counters["step"]
                 lr = args.lr * min(1.0, (step - warm0 + 1) / max(1, args.warmup_steps))
                 for g in opt.param_groups:
-                    g["lr"] = lr
+                    g["lr"] = lr * g.get("lr_scale", 1.0)
                 lam = kick["lam"]
                 if teacher is not None and lam > 0:
                     with torch.no_grad(), amp:
