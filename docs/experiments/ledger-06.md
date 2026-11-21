@@ -29137,7 +29137,7 @@ torch.compile(infer) with the eager inference net (`infer_compiled`). New test: 
 encounter tokens, then arm C again; a live test only if C matches D.
 **Knowledge impact:** this entry.
 
-## §TBD — Live stall log, first 6 rows (all `fight_moves`): Deca's Plated Armor counter wrapped at 127 to negative (int8) and gave -128 block; fixed, default on, `STS_MONSTER_POWER_SATURATE_FIX=0` restores. The Champ "400 decisions in 8 turns" is a real-game infinite (Havoc+ + Unceasing Top with empty piles), not an engine bug; the rest are huge-block stalemates (PC + cloud, 2026-11-21)
+## §846 — Live stall log, first 6 rows (all `fight_moves`): Deca's Plated Armor counter wrapped at 127 to negative (int8) and gave -128 block; fixed, default on, `STS_MONSTER_POWER_SATURATE_FIX=0` restores. The Champ "400 decisions in 8 turns" is a real-game infinite (Havoc+ + Unceasing Top with empty piles), not an engine bug; the rest are huge-block stalemates (PC + cloud, 2026-11-21)
 
 **Data:** stage-1 run with `--stall-log` (main 5f5c94ae, §842) from 22:48 CET: 6 stalls, all `fight_moves` (no
 `no_legal` after §842's fix, about 25 per 100k runs vs 46 before). Rows (verbatim, with the run command):
