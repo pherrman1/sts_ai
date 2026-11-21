@@ -29137,7 +29137,7 @@ torch.compile(infer) with the eager inference net (`infer_compiled`). New test: 
 encounter tokens, then arm C again; a live test only if C matches D.
 **Knowledge impact:** this entry.
 
-## §TBD — §843 checked on the PC: encounter tokens with `--compile` play right again (frozen arm C2 8.0 % / floor 27.2 vs D 9.7 %, B 9.3 %), but ~3x slower per batch (0.79k moves/s vs B 1.63k) from six graph breaks; the helpers are back in the compiled graph without the break-prone ops → BUILT, default off (cloud, 2026-11-21)
+## §845 — §843 checked on the PC: encounter tokens with `--compile` play right again (frozen arm C2 8.0 % / floor 27.2 vs D 9.7 %, B 9.3 %), but ~3x slower per batch (0.79k moves/s vs B 1.63k) from six graph breaks; the helpers are back in the compiled graph without the break-prone ops → BUILT, default off (cloud, 2026-11-21)
 
 **PC (torch 2.5.1+cu121, triton 3.1.0):** compiled-vs-eager test on CUDA passes; `--check-enemy-gate 20 --compile`
 (ckpt_955864, encounter window): infer_compiled policy 0.063 / outcome 0.125 / HP 0.53 / per-floor 0.013 against the
