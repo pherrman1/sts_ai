@@ -1167,9 +1167,88 @@ def rss_gb():
     return None
 
 
+def enemy_gate_check(train_net, infer, replay, args, dev, hp_floors):
+    """--check-enemy-gate: see its help. Returns the result dict."""
+    if not args.enemy_tokens or len(replay) == 0:
+        raise SystemExit("--check-enemy-gate needs --enemy-tokens and a loaded window (--replay-load)")
+    cuda = dev.type == "cuda"
+    d, layers = train_net.type_emb.weight.shape[1], len(train_net.trunk.layers)
+    base = amber_net.AmberNet(d=d, layers=layers, hp_floors=hp_floors, soft_policy=train_net.pol_soft is not None,
+                              aux_slots=AUX_SLOTS if train_net.aux_fight is not None else 0).to(dev)
+    base.load_state_dict(train_net.state_dict())
+    base.sdpa = True
+    base_inf = copy.deepcopy(base).eval()
+    base_inf.sdpa = True
+    for k in ("varlen_attn", "fused_layer", "row_mean", "packed_heads"):
+        setattr(base_inf, k, getattr(infer, k))
+    if cuda:
+        base_inf = base_inf.half()
+    rng = np.random.default_rng(12345)
+    names = ("policy", "outcome", "hp", "hp_floor")
+    diff = {"train": {k: 0.0 for k in names}, "infer": {k: 0.0 for k in names}}
+    rows = enc_rows = 0
+
+    def cmp(tag, a, b_, mask_a):
+        for k, x, y in zip(names, a, b_):
+            x, y = x.float(), y.float()
+            if k == "policy":
+                x, y = x[mask_a], y[mask_a]
+            diff[tag][k] = max(diff[tag][k], float((x - y).abs().max()) if x.numel() else 0.0)
+
+    def packed(bt):   # forward_packed's inputs on the flat batch (as the inference thread packs them)
+        pk, inv = amber_net.pack_index(bt["mask"], 16, inverse=True)
+        return dict(bt, pack_idx=pk, unpack_idx=inv, seq_off=amber_net.seq_offsets(bt["mask"]),
+                    act_idx=torch.nonzero(bt["a_mask"].reshape(-1)).squeeze(1))
+
+    train_net.eval()
+    with torch.no_grad():
+        for _ in range(args.check_enemy_gate):
+            bt = to_torch(replay.sample(rng, args.train_batch), dev)
+            st = amber_net.strip_encounters(bt)
+            rows += int(bt["mask"].shape[0])
+            enc_rows += int((bt["mask"].sum(1) != st["mask"].sum(1)).sum())
+            cmp("train", train_net(bt), base(st), bt["a_mask"])
+            hb = {k: (v.half() if cuda and v.is_floating_point() else v) for k, v in bt.items()}
+            hs = {k: (v.half() if cuda and v.is_floating_point() else v) for k, v in st.items()}
+            cmp("infer", infer(packed(hb)), base_inf(packed(hs)), bt["a_mask"])
+    train_net.train()
+
+    def step_ms(net, strip):
+        net.train()
+        amp = torch.autocast(dev.type, dtype=torch.bfloat16, enabled=cuda)
+        times = []
+        for i in range(13):
+            bt = to_torch(replay.sample(rng, args.train_batch), dev)
+            if strip:
+                bt = amber_net.strip_encounters(bt)
+            if args.train_packed:
+                bt = dict(bt, pack_idx=amber_net.pack_index(bt["mask"], 16))
+            if cuda:
+                torch.cuda.synchronize()
+            t0 = time.perf_counter()
+            with amp:
+                o = net(bt)
+                loss = o[0].float().masked_fill(~bt["a_mask"], 0).sum() + o[1].float().logsumexp(-1).sum()
+            loss.backward()
+            if cuda:
+                torch.cuda.synchronize()
+            if i >= 3:
+                times.append(1000 * (time.perf_counter() - t0))
+            net.zero_grad(set_to_none=True)
+        return round(float(np.median(times)), 2)
+
+    res = {"batches": args.check_enemy_gate, "rows": rows, "rows_with_encounter_tokens": enc_rows,
+           "gates": [round(float(x), 4) for x in train_net.enemy_gate.detach().float().cpu()],
+           "max_abs_diff": diff,
+           "train_step_ms": {"without_encounter_parts": step_ms(base, True), "with": step_ms(train_net, False)}}
+    train_net.zero_grad(set_to_none=True)
+    return res
+
+
 def extra_param(name):
-    """Parameters of the optional parts (--aux-fights head, --enemy-map-bias table): the optimizer's second group."""
-    return name.startswith("aux_fight.") or name == "enemy_bias"
+    """Parameters of the optional parts (--aux-fights head, --enemy-map-bias table, --enemy-tokens gates): the
+    optimizer's second group."""
+    return name.startswith("aux_fight.") or name in ("enemy_bias", "enemy_gate")
 
 
 def load_opt_state(opt, saved):
@@ -1367,11 +1446,19 @@ def main(argv=None):
     ap.add_argument("--enemy-tokens", action="store_true",
                     help="encounter tokens (not from Amber Eye; default off): out-of-combat states also get one MONSTER "
                          "token per fight the act can hold (boss, 3 elites, the strong hallway pool), "
-                         "az_run_driver.h enemyTokens")
+                         "az_run_driver.h enemyTokens; the net gets gates that start at 0 (AmberNet(enemy_gate=True)), "
+                         "so a resumed net computes what it did without the tokens until the gates train; not with "
+                         "--fused-net")
     ap.add_argument("--enemy-map-bias", action="store_true",
                     help="learned attention bias between encounter tokens and the map's boss / elite / hallway nodes "
                          "(not from Amber Eye; default off; needs --enemy-tokens, not with --fused-net): "
                          "amber_net.AmberNet(enemy_bias=True), zero at the start")
+    ap.add_argument("--check-enemy-gate", type=int, default=0, metavar="BATCHES",
+                    help="offline check of --enemy-tokens instead of a run (needs --enemy-tokens and --replay-load of a "
+                         "window with encounter tokens): on BATCHES training batches, the net with the gates at their "
+                         "checkpoint values vs the same weights without the encounter parts on the states without the "
+                         "tokens (training net fp32, and the inference net), and the training step time of both; "
+                         "writes enemy_gate_check.json to --out-dir and exits")
     ap.add_argument("--batch", type=int, default=2048)
     ap.add_argument("--row-buckets", default="2048", help="batch rows padded to these (one size keeps compiled shapes few)")
     ap.add_argument("--tok-buckets", default="32,40,48,56,64,80,96,128,212")
@@ -1472,8 +1559,10 @@ def main(argv=None):
         ap.error("--packed-h2d needs --pack-step")
     if args.init_net and args.resume:
         ap.error("--init-net and --resume exclude each other")
-    if args.enemy_map_bias and (not args.enemy_tokens or args.fused_net):
-        ap.error("--enemy-map-bias needs --enemy-tokens and excludes --fused-net")
+    if args.enemy_map_bias and not args.enemy_tokens:
+        ap.error("--enemy-map-bias needs --enemy-tokens")
+    if args.enemy_tokens and args.fused_net:
+        ap.error("--enemy-tokens excludes --fused-net")
     if args.init_counters and not args.init_net:
         ap.error("--init-counters needs --init-net")
     if args.kickstart_mix and not args.teacher_ckpt:
@@ -1520,7 +1609,7 @@ def main(argv=None):
     d, layers = amber_net.SIZES.get(args.net) or tuple(int(x) for x in args.net.split("x")[:2])
     train_net = amber_net.AmberNet(d=d, layers=layers, hp_floors=hp_floors, soft_policy=args.w_soft_policy > 0,
                                    aux_slots=AUX_SLOTS if args.aux_fights else 0,
-                                   enemy_bias=args.enemy_map_bias).to(dev)
+                                   enemy_bias=args.enemy_map_bias, enemy_gate=args.enemy_tokens).to(dev)
     train_net.sdpa = True
     # --aux-fights / --enemy-map-bias: their parameters are a second group, so a checkpoint without them keeps its
     # optimizer state for the rest (load_opt_state).
@@ -1699,7 +1788,7 @@ def main(argv=None):
         try:
             with open(os.path.join(args.replay_load, "state.json")) as fh:
                 saved = json.load(fh)["extra"]
-            if saved.get("step") != counters["step"]:
+            if saved.get("step") != counters["step"] and not args.check_enemy_gate:
                 raise ValueError(f"saved at step {saved.get('step')}, the resumed checkpoint is at {counters['step']}")
             replay.check_layout(args.replay_load)   # before any array is touched: the window stays empty and usable
             replay.load(args.replay_load)
@@ -1725,6 +1814,12 @@ def main(argv=None):
                             hp_bytes_per_sample=args.replay_hp_bytes, aux_slots=AUX_SLOTS if args.aux_fights else 0)
     elif args.replay_load:
         print(f"# replay-load {args.replay_load}: no saved window there; the window starts empty", flush=True)
+    if args.check_enemy_gate:
+        res = enemy_gate_check(train_net, infer, replay, args, dev, hp_floors)
+        with open(os.path.join(args.out_dir, "enemy_gate_check.json"), "w") as fh:
+            json.dump(res, fh, indent=1)
+        print(json.dumps(res), flush=True)
+        return 0
     ema_stats = {"samples": 0, "real_weight": 0.0}   # mean weight of the final outcome in the EMA targets
     # --aux-fights: rows labelled, samples with rows, label time, sums of the targets per slot (and their counts)
     aux_stats = {"rows": 0, "samples": 0, "secs": 0.0, "n": np.zeros(AUX_SLOTS), "pd": np.zeros(AUX_SLOTS),
@@ -2377,6 +2472,9 @@ def main(argv=None):
                                      "driver_rows": s["aux_fights"], "label_s": round(aux_stats["secs"], 1),
                                      "p_death": [round(float(x), 4) for x in aux_stats["pd"] / n_],
                                      "hp_left": [round(float(x), 4) for x in aux_stats["hp"] / n_]}
+            if args.enemy_tokens:   # the gates of the encounter tokens (per layer, then the summary), 0 at the start
+                gates = train_net.enemy_gate.detach().float().clamp(0, 1).cpu()
+                row["enemy_gate"] = [round(float(x), 4) for x in gates]
             if args.enemy_map_bias:   # the learned table: mean |entry| and the enemy <-> map node pairs per kind
                 tab = train_net.enemy_bias.detach().float().cpu()
                 row["enemy_bias"] = {"abs_mean": round(float(tab.abs().mean()), 5),
