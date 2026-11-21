@@ -28623,3 +28623,73 @@ are evicted. With a mean of 53.8 bytes the ring of 60 + 96 per sample is larger 
 bytes loaded with 80 + 300, 40 + 60 and 8 + 8).
 **Decision:** flag stays default off in the repo; the stage-1 run uses it.
 **Knowledge impact:** this entry.
+
+## §833 — Decision explainability, offline prototype: does the stage-1 net's card-reward prior respond to owned synergy partners? Token ablation on 489 card rewards of 32 cloud runs: Corruption and strength pairs YES (interval above the control), Barricade / Body Slam and Rupture pairs NO (cloud, 2026-11-21)
+
+**Question (owner, 2026-11-21):** explain the agent's decisions in the mod without generated text; among other
+things remove single cards / relics from the state and see how the prior of an offered option changes (his
+example: Corruption offered with Dark Embrace owned should get a higher prior than without). This entry is the
+first offline check: does the current net show such dependencies in its prior at all. A diagnostic, not a gate.
+**Tool:** `tools/az_bench/explain.py` (new; reads a replay window saved without `--compact-samples`, edits tokens,
+runs `AmberNet` on the CPU; no search, no simulator). Measure for offered card a and owned item k:
+delta = log pi(a | s with k) - log pi(a | s without k), pi = softmax of the policy logits over the legal actions.
+Token edits keep the derived fields consistent (RUN 29 deck size, RUN 30 relic count, CARD 11 deck index, CARD 41
+copies with `--merge-cards`, RELIC 2 order, action source / target indices); remove-then-add of a deck card gives
+the original token set back in 187 of 187 positions checked.
+**Positions:** main beb943e3 (encoder and driver identical to the live run's 8e2440b6; only `selfplay.py` differs),
+checkpoint `ckpt_895975.pt` of `stage1/amber_scratch` (1.2M net 128x4, read-only copy, sha256 c6ac7b20...), 32 A20
+runs on the cloud CPU, seeds 160100000-160100031, the live run's search flags without savescum, exploration and
+EMA targets (`--utility amber2-root --merge-cards --no-fast-noise --rng-fix --parallel-nodes 4 --q-rescale
+--c-scale 0.1 --chance-on-reveal --cross-combat --sim-help --eval-cache --force-keys on --full-candidates 8
+--force-rewards --force-potions --ooc-canon --keep-fast 1.0`, no training). 11,725 searched positions, 2 of 32
+runs won, 489 card rewards (463 with three cards).
+**2x2 design:** in every card reward that neither offers nor owns a or k (2-4 offered cards), one offered card
+(random) is replaced by a; k is added to the deck or not. Control: the same with each of 12 other owned cards
+(Shrug It Off, Pommel Strike, Metallicize, Flame Barrier, Shockwave, Uppercut, Disarm, Battle Trance, Carnage,
+Twin Strike, Armaments, Thunderclap; those the position does not already hold). Specificity = delta of a minus the
+mean delta of the other offered cards. Intervals: 95 %, bootstrap over the 32 runs. Tokens are copied from other
+positions of the window; for Entrench, Body Slam and Bloodletting as owned cards no position held one, so the
+token is the id plus the float pattern every plain deck card of that cost has (one pattern per cost in the window).
+
+| offered < owned | n | prior without | with | delta | control | delta - control | specificity |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Corruption < Dark Embrace | 371 | 0.680 | 0.823 | +0.55 | +0.35 | +0.20 [+0.16, +0.25] | +1.36 [+1.21, +1.56] |
+| Corruption < Feel No Pain | 310 | 0.633 | 0.858 | +0.86 | +0.40 | +0.45 [+0.38, +0.54] | +2.39 [+2.17, +2.64] |
+| Corruption < Dead Branch (relic) | 421 | 0.681 | 0.972 | +1.19 | +0.35 | +0.85 [+0.71, +1.03] | +3.90 [+3.42, +4.49] |
+| Dark Embrace < Corruption | 371 | 0.299 | 0.575 | +1.65 | +0.23 | +1.41 [+1.23, +1.62] | +2.38 [+2.09, +2.70] |
+| Feel No Pain < Corruption | 310 | 0.588 | 0.821 | +1.07 | +0.27 | +0.80 [+0.65, +0.97] | +2.50 [+2.20, +2.83] |
+| Barricade < Entrench | 428 | 0.292 | 0.312 | +0.25 | +0.30 | -0.05 [-0.08, -0.01] | +0.26 [+0.23, +0.29] |
+| Barricade < Body Slam | 399 | 0.289 | 0.286 | +0.06 | +0.30 | -0.23 [-0.28, -0.19] | -0.02 [-0.06, +0.03] |
+| Entrench < Barricade | 428 | 0.015 | 0.020 | +0.40 | +0.07 | +0.33 [+0.27, +0.39] | +0.35 [+0.29, +0.42] |
+| Body Slam < Barricade | 399 | 0.012 | 0.011 | -0.04 | +0.03 | -0.07 [-0.13, -0.02] | -0.13 [-0.18, -0.09] |
+| Limit Break < Inflame | 371 | 0.454 | 0.692 | +1.40 | +0.14 | +1.26 [+1.00, +1.61] | +2.35 [+1.82, +3.05] |
+| Limit Break < Demon Form | 338 | 0.488 | 0.478 | +0.55 | +0.14 | +0.41 [+0.16, +0.68] | +0.04 [-0.42, +0.58] |
+| Limit Break < Spot Weakness | 288 | 0.380 | 0.671 | +1.86 | +0.19 | +1.67 [+1.28, +2.16] | +2.75 [+2.02, +3.65] |
+| Heavy Blade < Inflame | 335 | 0.072 | 0.143 | +0.99 | -0.07 | +1.06 [+0.86, +1.31] | +1.21 [+0.99, +1.50] |
+| Rupture < Bloodletting | 463 | 0.004 | 0.004 | +0.01 | +0.05 | -0.03 [-0.06, -0.01] | -0.02 [-0.04, +0.00] |
+| Rupture < Offering | 410 | 0.004 | 0.004 | +0.01 | +0.04 | -0.03 [-0.08, +0.01] | -0.06 [-0.11, -0.01] |
+
+**Reading:** 10 of 15 pairs lie above the control with an interval that excludes 0: the whole Corruption group
+(both directions, and the relic), the strength pairs, Entrench with Barricade owned. Not shown: Barricade as the
+offered card (Entrench / Body Slam owned do no more than a generic card), Body Slam with Barricade owned, Rupture.
+The control itself is positive for most offered cards (+0.03 to +0.40): one more owned card of any kind raises the
+prior of a strong offered card, so a raw delta without a control overstates a dependency. Corruption's prior is
+already 0.63-0.68 without a partner, which caps its delta (log pi cannot rise above 0).
+`ckpt_791357.pt` (the first 1.2M checkpoint of the same day, sha256 252fa17a...) gives the same picture
+(Corruption and strength pairs above the control; Barricade offered not), so this is not a property of one
+checkpoint; it is not an early net either (kickstarted from the 0.44M net), so nothing is said about when the
+dependencies were learned.
+**Limits:** what the net believes, not what is true; prior only (no search Q, no value interaction: both need
+child states from the simulator); log pi mixes a card's own logit with the other options' (the table mode shows
+large deltas for cards with prior < 0.01 that come from a competitor's logit moving), so the mod should also show
+the logit against Skip; positions come from 32 runs of one checkpoint without savescum (the live run plays with
+it), mostly Act 1-2 decks; the pairs were chosen by hand before the run, the control cards too.
+**Cost:** 32 runs 5.5 min on 4 cloud cores; the pair test (about 30,000 edited positions) under 1 min on 4 threads;
+six full ablation tables (every owned card and relic of a card reward) 1.6 s on one thread including start-up
+and loading.
+**Decision:** none on the agent. The prior ablation is worth building into the mod; next steps (single-state
+binding for exact removal and child values, search from a given state, the advisor's "amber" evaluator) need the
+owner's go.
+**Evidence:** `docs/experiments/evidence/explain_prior_ablation_20261121/` (`pairs_895975.json`,
+`pairs_791357.json`, `table_895975.json`, checkpoint hashes, the generation run's last metrics row).
+**Knowledge impact:** this entry.
