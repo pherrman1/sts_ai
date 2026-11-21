@@ -28852,7 +28852,7 @@ with the route x, so a drink can be masked or kept by its slot number.
 and a 5-15 minute PC test.
 **Knowledge impact:** this entry.
 
-## §TBD — Self-play stalls: a fight won before its first decision (Neow's Lament + Mercury Hourglass) ended the run as a "no legal action" stall loss; fixed, default on, `STS_AZ_FIGHT_START_END=0` restores; new `--stall-log` (default off) records every stall (cloud, 2026-11-21)
+## §842 — Self-play stalls: a fight won before its first decision (Neow's Lament + Mercury Hourglass) ended the run as a "no legal action" stall loss; fixed, default on, `STS_AZ_FIGHT_START_END=0` restores; new `--stall-log` (default off) records every stall (cloud, 2026-11-21)
 
 **Question (owner, 2026-11-21):** what are the stage-1 self-play stalls (about 46 per 100k A20 runs; 3 of 1000 in
 the deterministic ckpt_928513 benchmark, seeds 160200000-160200999), should and can they be fixed?
