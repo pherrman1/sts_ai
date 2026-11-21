@@ -28776,7 +28776,7 @@ flag is kept.
 **Knowledge impact:** this entry.
 
 
-## §TBD — `--force-keys` had two holes: a Smoke Bomb escape from the act-3 burning elite (no Emerald Key) and the act-3 Secret Portal (jumps past chest, last campfire and burning elite); both closed, default on, `STS_AZ_KEY_HOLES=0` restores (cloud, 2026-11-21)
+## §836 — `--force-keys` had two holes: a Smoke Bomb escape from the act-3 burning elite (no Emerald Key) and the act-3 Secret Portal (jumps past chest, last campfire and burning elite); both closed, default on, `STS_AZ_KEY_HOLES=0` restores (cloud, 2026-11-21)
 
 **Question (owner, 2026-11-21):** the 1000-seed A20 benchmark of ckpt_928513 (seeds 160200000-160200999,
 deterministic, `--force-keys on`) has 64 of 321 act-3 boss winners ending at floor 51 without the three keys; in
