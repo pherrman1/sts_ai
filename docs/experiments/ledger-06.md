@@ -28730,7 +28730,7 @@ checkpoint and window without the head, labels = driver rows, aux loss > 0, resu
 ends), any effect on learning. Before it takes over the main run: 5-15 min live test on the PC (project rule).
 **Knowledge impact:** this entry.
 
-## §TBD — Stage-1 run on the 1.22M net: the GPU is the limit again (98 %), workers asleep 45 %; `--aux-fights` costs about 9 % moves/s (9,451 → 8,581, not isolated) because its labels run on the trainer net; the CPU-side levers of §827 are dropped (PC, 2026-11-21)
+## §835 — Stage-1 run on the 1.22M net: the GPU is the limit again (98 %), workers asleep 45 %; `--aux-fights` costs about 9 % moves/s (9,451 → 8,581, not isolated) because its labels run on the trainer net; the CPU-side levers of §827 are dropped (PC, 2026-11-21)
 
 **Question:** §827/§828 were measured on the 0.44M net. What limits the run after the switch to 128x4 (1.22M),
 `--parallel-nodes 4` and the other changes of 2026-11-21, and is one of §827's remaining levers (cheaper worker
