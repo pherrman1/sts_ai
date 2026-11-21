@@ -28685,7 +28685,8 @@ large deltas for cards with prior < 0.01 that come from a competitor's logit mov
 the logit against Skip; positions come from 32 runs of one checkpoint without savescum (the live run plays with
 it), mostly Act 1-2 decks; the pairs were chosen by hand before the run, the control cards too.
 **Cost:** 32 runs 5.5 min on 4 cloud cores; the pair test (about 30,000 edited positions) under 1 min on 4 threads;
-a full ablation table for one card reward (every owned card and relic) well under 0.1 s on one thread.
+six full ablation tables (every owned card and relic of a card reward) 1.6 s on one thread including start-up
+and loading.
 **Decision:** none on the agent. The prior ablation is worth building into the mod; next steps (single-state
 binding for exact removal and child values, search from a given state, the advisor's "amber" evaluator) need the
 owner's go.
