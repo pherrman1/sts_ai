@@ -28571,3 +28571,25 @@ P x candidates encoded inputs (~60 KB each; `mem.flights`), so the live run shou
 **Decision:** default off. Live test on the PC by the run's owner (5-15 minutes, rows before / after), then a
 decision on the main run.
 **Knowledge impact:** this entry; `tools/az_bench/README.md`; `apps/az_bench/az_run_driver.h` header.
+
+## §831 — Pick-rate exploration started empty after every restart: first live minutes of §830's flag with the all-runs rule forced 7-9 picks per run; `--explore-resume` (default off) keeps the state in the checkpoint (PC + cloud, 2026-11-21)
+
+**Observation (owner of the stage-1 run, PC, start 13:57 CET, A10, 64/16 sims, `--explore-amber
+--explore-clean-keys --pick-target 0.01` without `--explore-per-offer`, started together with other changes):** in
+the first 7 minutes forced picks rose from 27,806 to 32,866 over about 4,000 finished runs (7-9 per run), 14,452
+attempts with c = ∞; win rate 0.0 % and mean floor 24.8 in the first 5-minute block (earlier starts: about 40 %
+after 5 minutes).
+**Cause (code read):** the finished-run count, each item's picks / offers and its gap log live in the driver
+process. After a restart the warm-up is 1 / pickTarget = 100 finished runs; from then on every item counts as
+under target until its picks have caught up, and with 4,950 games in flight the picks of the forced choices are
+counted only when their runs finish. Each restart repeats this.
+**Change:** every checkpoint of a run with exploration now holds `explore_state` (finished runs, picks / offers
+per item bucket, gap logs); `--explore-resume` (default off) loads it on `--resume`. A state of the other item
+rule (`--explore-clean-keys` on / off) is refused: its buckets mean other items. Without the flag a run starts
+empty as before.
+**Checks:** `tests/test_selfplay.py` (state in the checkpoint, resumed run continues the run count, other item
+rule refused). Not measured: the forced picks per run of a restart with a loaded state, and the steady state of
+the all-runs rule with a trained net (the run's owner reports it).
+**Decision:** default off; the stage-1 run can pass it from the next restart on (the first restart loads the state
+its predecessor saved, so the predecessor must run this code).
+**Knowledge impact:** this entry.

@@ -415,6 +415,8 @@ PYBIND11_MODULE(az_bench_native, m) {
                  return out;
              })
         .def("set_weights_version", &azbench::RunDriver::setWeightsVersion)
+        .def("explore_state", [](azbench::RunDriver &d) { return py::bytes(d.exploreState()); })
+        .def("set_explore_state", [](azbench::RunDriver &d, const py::bytes &b) { d.setExploreState(std::string(b)); })
         .def("set_ascension", &azbench::RunDriver::setAscension)
         .def("ascension", &azbench::RunDriver::ascension)
         .def("set_force_keys", &azbench::RunDriver::setForceKeys)

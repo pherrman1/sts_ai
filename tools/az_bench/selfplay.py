@@ -1134,6 +1134,10 @@ def main(argv=None):
     ap.add_argument("--explore-deck-only", action="store_true",
                     help="with --explore-amber: only cards, relics and potions are pick-rate items; event / campfire "
                          "options are never forced (2026-11-19, default off; Philipp decides)")
+    ap.add_argument("--explore-resume", action="store_true",
+                    help="with --resume: load the checkpoint's pick-rate exploration state (saved in every checkpoint "
+                         "of a run with exploration since 2026-11-21) instead of starting it empty; refused when the "
+                         "state is of the other item rule (--explore-clean-keys) (default off)")
     ap.add_argument("--explore-clean-keys", action="store_true",
                     help="with --explore-amber / --explore-c: a pick-rate item is the choice itself (card, relic, "
                          "potion, event option, Neow bonus + drawback, rest option; reward / shop / boss kinds apart), "
@@ -1353,8 +1357,10 @@ def main(argv=None):
     train_net.sdpa = True
     opt = torch.optim.AdamW(train_net.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     counters = {"step": 0, "trained": 0, "seeds_used": 0, "runs_done": 0, "wall": 0.0}
+    explore_blob = None
     if args.resume:
         ck = torch.load(args.resume, map_location=dev)
+        explore_blob = ck.get("explore_state")
         train_net.load_state_dict(ck["net"])
         opt.load_state_dict(ck["opt"])
         counters.update(ck["counters"])
@@ -1468,6 +1474,17 @@ def main(argv=None):
         **({"savescum": True} if savescum else {}),
         **({"compact_samples": True} if args.compact_samples else {}),
         **({"heart_log_rate": args.heart_log} if args.heart_log > 0 else {}))
+    explore_on = args.explore_amber or args.explore_c > 0
+    if args.explore_resume:
+        # the checkpoint's pick-rate state (items' picks / offers / gap logs, finished runs): without it every item
+        # counts as under target again after a restart
+        if not explore_on:
+            raise SystemExit("--explore-resume needs --explore-amber or --explore-c")
+        if explore_blob is None:
+            print("# --explore-resume: the checkpoint has no explore_state, exploration starts empty", flush=True)
+        else:
+            drv.set_explore_state(explore_blob)   # raises on a state of the other item rule
+            print(f"# --explore-resume: loaded explore_state ({len(explore_blob)} bytes)", flush=True)
     heart_log_path = os.path.join(args.out_dir, "heart_runs.jsonl.gz")
     heart_logged = [0, 0]   # records, of which kills (this process)
 
@@ -1918,7 +1935,8 @@ def main(argv=None):
             path = os.path.join(args.out_dir, f"ckpt_{tag}_r{c['runs_done']}.pt")   # never overwrite the resume source
         tmp = path + ".tmp"
         torch.save({"net": train_net.state_dict(), "opt": opt.state_dict(), "counters": c,
-                    "args": vars(args), "net_size": [d, layers]}, tmp)
+                    "args": vars(args), "net_size": [d, layers],
+                    **({"explore_state": drv.explore_state()} if explore_on else {})}, tmp)
         os.replace(tmp, path)
         return path, c
 

@@ -707,6 +707,13 @@ namespace sts::azbench {
             ascension_.store(a);
         }
         int ascension() const { return ascension_.load(); }
+        // Pick-rate exploration state (2026-11-21): the finished-run count, each item's picks / offers and its gap
+        // log. It lives in the process, so a restarted run counted every item as under target again and forced
+        // picks until the rates were back (stage 1, 4,950 games in flight: 7-9 forced picks per run in the first
+        // minutes). exploreState() is a blob for a checkpoint; setExploreState() loads one BEFORE start() and
+        // throws on a blob of the other item rule (exploreCleanKeys), whose buckets mean other items.
+        std::string exploreState();
+        void setExploreState(const std::string &blob);
         // Heart-key backstops (RunConfig::forceKeys) for runs started from now on (curriculum: off from the first
         // step-up; runs in progress keep theirs).
         void setForceKeys(bool on);   // throws unless the ADR-0063 default key rules hold (on only)
@@ -749,6 +756,10 @@ namespace sts::azbench {
         std::mutex exploreM_;                              // exploreItems_ (exploreAmber)
         std::unordered_map<int, ExploreItem> exploreItems_;   // item bucket -> gap log and its c (exploreAmber)
         double exploreItemC(int key, std::int64_t games);
+        std::atomic<std::int64_t> exploreRunsBase_{0};   // finished runs of a loaded exploreState
+        std::int64_t exploreGames() const {
+            return runsDone_.load(std::memory_order_relaxed) + exploreRunsBase_.load(std::memory_order_relaxed);
+        }
         std::atomic<int> ascension_{20};
         std::atomic<bool> forceKeys_{false};
         std::atomic<bool> savescum_{false};
