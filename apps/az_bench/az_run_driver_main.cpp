@@ -2,7 +2,7 @@
 // training samples (labels filled, policy a distribution over the sample's actions, action sources / targets inside
 // the row). Smoke test and CPU-side throughput probe.
 //
-// usage: az-run-driver [--workers 2] [--games 4] [--runs 8] [--batch 64] [--seed 0] [--seed-base 1] [--fast] [--asc 20] [--sims N] [--const-value] [--test-hp HP] [--max-fight-moves 400] [--explore-c C] [--explore-amber] [--pick-target T] [--no-fast-noise] [--q-rescale] [--c-scale S] [--utility floor-hp|amber|amber2|amber2-root] [--keyless-hp] [--chance-on-reveal] [--cross-combat] [--sim-help] [--max-pending N] [--force-keys] [--savescum] [--compact-samples] [--parallel-nodes P] [--candidates C]
+// usage: az-run-driver [--workers 2] [--games 4] [--runs 8] [--batch 64] [--seed 0] [--seed-base 1] [--fast] [--asc 20] [--sims N] [--const-value] [--test-hp HP] [--max-fight-moves 400] [--explore-c C] [--explore-amber] [--pick-target T] [--no-fast-noise] [--q-rescale] [--c-scale S] [--utility floor-hp|amber|amber2|amber2-root] [--keyless-hp] [--chance-on-reveal] [--cross-combat] [--sim-help] [--max-pending N] [--force-keys] [--savescum] [--compact-samples] [--parallel-nodes P] [--candidates C] [--aux-fights]
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -98,6 +98,7 @@ int main(int argc, char **argv) {
         else if (a == "--force-keys") cfg.forceKeys = true;
         else if (a == "--force-rewards") cfg.forceRewards = true;
         else if (a == "--rng-fix") cfg.rngFix = true;
+        else if (a == "--aux-fights") cfg.auxFights = true;
         else if (a == "--force-potions") cfg.forcePotions = true;
         else if (a == "--ooc-canon") cfg.oocCanon = true;
         else if (a == "--savescum") cfg.savescum = true;
@@ -166,6 +167,7 @@ int main(int argc, char **argv) {
     const auto s = d.stats();
 
     int bad = 0, withPolicy = 0, combat = 0;
+    long long auxRows = 0, auxSamples = 0;
     for (const auto &x : samples) {
         const int n = static_cast<int>(x.numTokens()), na = static_cast<int>(x.aType.size());
         bool ok = x.outcome >= 0 && x.outcome < azbench::kOutcomeClasses && x.hpEnd >= 0 && n >= 1 && na >= 2;
@@ -197,6 +199,36 @@ int main(int argc, char **argv) {
             for (float p : x.policy) { ok = ok && p >= 0.f; sum += p; }
             ok = ok && static_cast<int>(x.policy.size()) == na && std::fabs(sum - 1.0) < 1e-3;
         }
+        // Fight starts (auxFights, out-of-combat samples only): offsets match the slots, slots ascending in 0..4 with
+        // at most kAuxHallway hallway fights, every row has tokens, compact rows index their sample's dictionary.
+        {
+            const std::size_t k = x.auxSlot.size();
+            if (!cfg.auxFights || x.combat) {
+                ok = ok && k == 0 && x.auxTokOff.empty() && x.auxTokIdx.empty() && x.auxTokType.empty();
+            } else {
+                ok = ok && k >= 1 && x.auxTokOff.size() == k + 1 && x.auxTokOff[0] == 0;
+                int hall = 0;
+                for (std::size_t r = 0; ok && r < k; ++r) {
+                    ok = x.auxSlot[r] < azbench::kAuxSlots && (r == 0 || x.auxSlot[r] >= x.auxSlot[r - 1]) &&
+                         x.auxTokOff[r + 1] > x.auxTokOff[r];
+                    hall += x.auxSlot[r] == 4;
+                }
+                ok = ok && hall <= azbench::kAuxHallway;
+                const std::size_t nt = cfg.compactSamples ? x.auxTokIdx.size() : x.auxTokType.size();
+                ok = ok && x.auxTokOff[k] == nt;
+                if (cfg.compactSamples) for (auto t : x.auxTokIdx) ok = ok && t < x.dict->size();
+                else ok = ok && x.auxIds.size() == nt * search::kAmberCat && x.auxF.size() == nt * search::kAmberFloat;
+                // the first row of a sample is a fight against its act's boss: a MONSTER token in the row
+                bool monster = false;
+                for (std::uint32_t t = 0; ok && t < x.auxTokOff[1]; ++t) {
+                    const int ty = cfg.compactSamples ? x.dict->tokType[x.auxTokIdx[t]] : x.auxTokType[t];
+                    monster = monster || ty == static_cast<int>(search::AmberTokenType::MONSTER);
+                }
+                ok = ok && monster;
+                auxRows += static_cast<long long>(k);
+                ++auxSamples;
+            }
+        }
         combat += x.combat;
         if (!ok) ++bad;
     }
@@ -227,6 +259,11 @@ int main(int argc, char **argv) {
                     s.waves ? static_cast<double>(s.waveFlights) / s.waves : 0.0, (s.searchedMoves + s.waves) / sm,
                     s.evals / sm, static_cast<long long>(s.simCollisions), static_cast<long long>(s.memFlights));
         if (s.waves == 0 || s.waveFlights <= s.waves) { std::fprintf(stderr, "parallel nodes: no wave with several evaluations\n"); return 1; }
+    }
+    if (cfg.auxFights) {
+        std::printf("aux fights: %lld rows over %lld out-of-combat samples (stats %lld)\n", auxRows, auxSamples,
+                    static_cast<long long>(s.auxFights));
+        if (auxSamples == 0 || auxRows != s.auxFights) { std::fprintf(stderr, "aux fights: missing rows\n"); return 1; }
     }
     std::printf("outcomes (class: runs):");
     for (int k = 0; k < azbench::kOutcomeClasses; ++k)

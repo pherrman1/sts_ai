@@ -140,6 +140,38 @@ namespace sts::azbench {
             return heartWin(gc) ? 0 : std::clamp(gc.floorNum, 1, kOutcomeClasses - 1);
         }
 
+        // RunConfig::auxFights: the fight starts of an out-of-combat sample on gc, as (slot, encounter, room): the act
+        // boss, the act's elites, kAuxHallway hallway fights drawn from the act's strong pool with its weights by an
+        // RNG seeded with `seed`. Returns how many it wrote into out.
+        struct AuxFight { std::uint8_t slot; MonsterEncounter enc; Room room; };
+        int auxFightList(const GameContext &gc, std::uint64_t seed, std::array<AuxFight, 1 + 3 + kAuxHallway> &out) {
+            int n = 0;
+            if (gc.boss != MonsterEncounter::INVALID) out[n++] = {0, gc.boss, Room::BOSS};
+            if (gc.act >= 4) {
+                out[n++] = {1, MonsterEncounter::SHIELD_AND_SPEAR, Room::ELITE};
+                return n;
+            }
+            if (gc.act < 1) return n;
+            const int a = gc.act - 1;
+            for (int k = 0; k < 3; ++k)
+                out[n++] = {static_cast<std::uint8_t>(1 + k), MonsterEncounterPool::elites[a][k], Room::ELITE};
+            std::mt19937_64 r(seed);
+            std::uniform_real_distribution<double> u(0.0, 1.0);
+            const int cnt = MonsterEncounterPool::strongCount[a];
+            double tot = 0;
+            for (int k = 0; k < cnt; ++k) tot += MonsterEncounterPool::strongWeights[a][k];
+            for (int h = 0; h < kAuxHallway; ++h) {
+                double x = u(r) * tot;
+                int k = 0;
+                for (; k < cnt - 1; ++k) {
+                    x -= MonsterEncounterPool::strongWeights[a][k];
+                    if (x < 0) break;
+                }
+                out[n++] = {4, MonsterEncounterPool::strongEnemies[a][k], Room::MONSTER};
+            }
+            return n;
+        }
+
         search::SilverSearchContext combatContext(const GameContext &gc) {
             search::SilverSearchContext c;
             c.act = gc.act;
@@ -1007,6 +1039,7 @@ namespace sts::azbench {
             s.exploreAttempts += p.exploreAttempts; s.exploreCZero += p.exploreCZero; s.exploreCInf += p.exploreCInf;
             s.exploreNatural += p.exploreNatural; s.exploreNaturalUnplayed += p.exploreNaturalUnplayed;
             s.cacheHits += p.cacheHits;
+            s.auxFights += p.auxFights;
             s.waves += p.waves; s.waveFlights += p.waveFlights; s.simCollisions += p.simCollisions;
             for (int k = 0; k < 2; ++k) {
                 s.oocSearched[k] += p.oocSearched[k]; s.oocNotBestQ[k] += p.oocNotBestQ[k];
@@ -1484,6 +1517,48 @@ namespace sts::azbench {
         };
 
         std::function<void(Run &, int)> startMove;
+
+        // RunConfig::auxFights: the fight starts of the out-of-combat sample s (the run's current state g.gc) into s's
+        // aux fields. Each start is the public view at the fight's first decision of a copy of g.gc that enters the
+        // encounter in its room (off the current map node, so no burning-elite buff), encoded without actions. A start
+        // whose view cannot be built, or whose tokens went into a new run dictionary (compactSamples), is left out.
+        std::array<AuxFight, 1 + 3 + kAuxHallway> auxList;
+        std::unique_ptr<GameContext> auxGc;
+        BattleContext auxLive, auxView;
+        search::CombatKnowledgeState auxKn;
+        AmberTokens auxTok;
+        Sample auxRow;
+        const std::vector<Action> noActions;
+        auto auxFightStarts = [&](Run &g, Sample &s) {
+            if (!g.gc.map) return;
+            const int n = auxFightList(g.gc, g.seed * 0x9e3779b97f4a7c15ull ^ static_cast<std::uint64_t>(g.moves), auxList);
+            s.auxTokOff.assign(1, 0);
+            for (int k = 0; k < n; ++k) {
+                if (auxGc) *auxGc = g.gc;
+                else auxGc = std::make_unique<GameContext>(g.gc);
+                GameContext &c = *auxGc;
+                c.curRoom = auxList[k].room;
+                c.info.encounter = auxList[k].enc;
+                c.curMapNodeX = -1;
+                initObservedBattle(c, auxLive, auxKn);
+                if (!publicCombatRoot(auxLive, auxKn, auxView).empty()) continue;
+                cfg.encodeCombat(auxView, combatContext(c), noActions, auxTok);
+                if (cfg.mergeCards) search::amberMergeCards(auxTok);
+                if (cfg.compactSamples) {
+                    flattenInto(auxTok, auxRow, &g.dict, &g.dictIndex);
+                    if (auxRow.dict != s.dict) continue;
+                    s.auxTokIdx.insert(s.auxTokIdx.end(), auxRow.tokIdx.begin(), auxRow.tokIdx.end());
+                } else {
+                    flattenInto(auxTok, auxRow);
+                    s.auxTokType.insert(s.auxTokType.end(), auxRow.tokType.begin(), auxRow.tokType.end());
+                    s.auxIds.insert(s.auxIds.end(), auxRow.ids.begin(), auxRow.ids.end());
+                    s.auxF.insert(s.auxF.end(), auxRow.f.begin(), auxRow.f.end());
+                }
+                s.auxSlot.push_back(auxList[k].slot);
+                s.auxTokOff.push_back(static_cast<std::uint32_t>(cfg.compactSamples ? s.auxTokIdx.size() : s.auxTokType.size()));
+                ++wk.st.auxFights;
+            }
+        };
 
         auto enterBattle = [&](Run &g) {
             initObservedBattle(g.gc, g.bc, *g.knowledge);
@@ -2714,6 +2789,7 @@ namespace sts::azbench {
                             g.cur.maxHp = static_cast<std::int16_t>(g.inBattle ? g.bc.player.maxHp : g.gc.maxHp);
                             g.cur.floor = static_cast<std::int16_t>(g.gc.floorNum);
                             g.cur.run = g.seed;
+                            if (cfg.auxFights && !g.inBattle) auxFightStarts(g, g.cur);
                         }
                         g.pool[0].n = 1;
                         g.pool[0].w = n.value;

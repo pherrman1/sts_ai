@@ -10,6 +10,7 @@ import gzip
 import importlib.util
 import io
 import json
+import math
 import os
 import sys
 import tempfile
@@ -1269,8 +1270,141 @@ class DashboardSettlingTest(unittest.TestCase):
         self.assertIn("<h2>Mean final floor per window</h2><p class=\"empty\">No data yet.", page)
 
 
+@unittest.skipUnless(HAVE_TORCH, "torch missing")
+class AuxFightsTest(unittest.TestCase):
+    """--aux-fights: labels from the HP head, the loss, the optimizer state across the aux group and the replay
+    window across the aux arrays."""
+
+    def test_labels(self):
+        sp = load()
+        p = np.zeros((5, 256), np.float32)
+        p[0, 0] = 1.0                 # sample 0 boss: certain death
+        p[1, 40] = 1.0                # sample 0 hallway: 40 HP left
+        p[2, 0], p[2, 80] = 0.5, 0.5  # sample 0 hallway: half death, else 80 HP
+        p[3, 60] = 1.0                # sample 2 elite 2
+        p[4, 200] = 1.0               # sample 2 boss: above max HP -> 1
+        tgt, mask = sp.aux_fight_labels(p, np.array([80, 70, 80]), np.array([0, 0, 0, 2, 2]),
+                                        np.array([0, 4, 4, 2, 0]), 3)
+        self.assertEqual(list(mask), [1 | 16, 0, 1 | 4])
+        self.assertEqual(list(tgt[0, [0, 1]]), [255, 0])
+        self.assertEqual(list(tgt[0, [8, 9]]), [round(255 * 0.25), round(255 * 0.5)])   # mean of the two rows
+        self.assertEqual(list(tgt[1]), [0] * 10)
+        self.assertEqual(list(tgt[2, [4, 5]]), [0, round(255 * 0.75)])
+        self.assertEqual(list(tgt[2, [0, 1]]), [0, 255])
+
+    def test_loss_masks_slots(self):
+        sp = load()
+        out = torch.zeros(2, 10)
+        tgt = torch.zeros(2, 10, dtype=torch.uint8)
+        tgt[0, 1] = 255                        # slot 0 of sample 0: all HP left (logit 0 -> loss log 2 + log 2)
+        mask = torch.tensor([1, 0], dtype=torch.uint8)
+        l = sp.aux_fight_loss(out, tgt, mask)
+        self.assertAlmostEqual(float(l), 2 * math.log(2), places=5)
+        self.assertEqual(float(sp.aux_fight_loss(out, tgt, torch.zeros(2, dtype=torch.uint8))), 0.0)
+
+    def test_optimizer_state_across_aux_group(self):
+        sp = load()
+        an = sp.amber_net
+        torch.manual_seed(0)
+
+        def make(aux):
+            net = an.AmberNet(d=32, layers=1, aux_slots=5 if aux else 0)
+            main = [p for n, p in net.named_parameters() if not n.startswith("aux_fight.")]
+            extra = [p for n, p in net.named_parameters() if n.startswith("aux_fight.")]
+            opt = torch.optim.AdamW([{"params": main}] + ([{"params": extra}] if extra else []), lr=1e-3)
+            for p in net.parameters():
+                p.grad = torch.ones_like(p)
+            opt.step()
+            return net, opt
+
+        n0, o0 = make(False)
+        n1, o1 = make(True)
+        sp.load_opt_state(o1, o0.state_dict())   # without -> with: main state taken, aux group fresh
+        sd = o1.state_dict()
+        self.assertEqual(len(sd["param_groups"]), 2)
+        n_main = len(o0.state_dict()["param_groups"][0]["params"])
+        self.assertEqual(sorted(sd["state"]), list(range(n_main)))
+        for k in range(n_main):
+            self.assertTrue(torch.equal(sd["state"][k]["exp_avg"], o0.state_dict()["state"][k]["exp_avg"]))
+        n2, o2 = make(True)
+        n3, o3 = make(False)
+        sp.load_opt_state(o3, o2.state_dict())   # with -> without: the aux state is dropped
+        self.assertEqual(sorted(o3.state_dict()["state"]), list(range(n_main)))
+        # a net without the head loads a checkpoint with it
+        n0.load_state_dict(n1.state_dict())
+        with self.assertRaises(RuntimeError):
+            n1.load_state_dict(n0.state_dict())   # strict: the head is missing
+        n1.load_state_dict(n0.state_dict(), strict=False)
+
+    def test_replay_window_across_aux_arrays(self):
+        sp = load()
+        rng = np.random.default_rng(3)
+        ch = chunk(rng, 40)
+        with tempfile.TemporaryDirectory() as d:
+            plain = sp.Replay(200)
+            plain.add(ch)
+            plain.save(os.path.join(d, "plain"))
+            aux = sp.Replay(200, aux_slots=5)
+            aux.load(os.path.join(d, "plain"))   # saved without: mask 0
+            self.assertEqual(len(aux), 40)
+            self.assertEqual(int(aux.meta["aux_mask"].sum()), 0)
+            c2 = dict(chunk(rng, 10, first_id=100))
+            c2["aux_target"] = np.full((10, 10), 7, np.uint8)
+            c2["aux_mask"] = np.full(10, 31, np.uint8)
+            aux.add(c2)
+            b = aux.rows(40, 10)
+            self.assertTrue((b["aux_mask"] == 31).all() and (b["aux_target"] == 7).all())
+            aux.save(os.path.join(d, "aux"))
+            back = sp.Replay(200)
+            back.load(os.path.join(d, "aux"))   # saved with, loaded without: aux arrays not read
+            self.assertEqual(len(back), 50)
+            self.assertNotIn("aux_mask", back.rows(0, 5))
+            again = sp.Replay(200, aux_slots=5)
+            again.load(os.path.join(d, "aux"))
+            self.assertTrue((again.rows(40, 10)["aux_mask"] == 31).all())
+
+
 @unittest.skipUnless(HAVE_TORCH and MODULES, "torch or the az_bench_native module (cmake target) missing")
 class SelfplaySmoke(unittest.TestCase):
+    def test_aux_fights_resume(self):
+        """--aux-fights: a run resumed from a checkpoint and window without the head starts it fresh (optimizer
+        state of the rest kept), labels the fight starts and trains the head; resumed without the flag, the window
+        and checkpoint load again."""
+        sp = load()
+        common = ["--module-dir", os.path.dirname(MODULES[0]), "--device", "cpu", "--workers", "2", "--games", "4",
+                  "--full-sims", "8", "--fast-sims", "4", "--batch", "32", "--row-buckets", "32", "--pack-step", "32",
+                  "--pack-threads", "1", "--min-replay", "50", "--train-batch", "32", "--window", "5000",
+                  "--report", "1", "--sync-steps", "2", "--seed-base", "540", "--ascension", "1",
+                  "--compact-samples", "--utility", "amber"]
+        with tempfile.TemporaryDirectory() as d:
+            rep = os.path.join(d, "replay")
+
+            def ckpt():
+                with open(os.path.join(rep, "state.json")) as f:
+                    return json.load(f)["extra"]["checkpoint"]
+
+            def rows():
+                with open(os.path.join(d, "metrics.jsonl")) as f:
+                    return [json.loads(l) for l in f]
+
+            self.assertEqual(sp.main(common + ["--out-dir", d, "--max-runs", "10", "--replay-save", rep]), 0)
+            n0 = len(rows())
+            self.assertEqual(sp.main(common + ["--out-dir", d, "--max-runs", "20", "--resume", ckpt(),
+                                               "--replay-load", rep, "--replay-save", rep, "--aux-fights"]), 0)
+            r1 = [r for r in rows()[n0:] if "time" in r]
+            self.assertGreater(r1[0]["replay_loaded"], 0)
+            a = r1[-1]["aux_fights"]
+            self.assertGreater(a["samples"], 0)
+            self.assertEqual(a["rows"], a["driver_rows"])
+            self.assertTrue(any((r.get("loss") or {}).get("aux", 0) > 0 for r in r1))
+            self.assertIn("aux_fight.0.weight", torch.load(ckpt(), map_location="cpu", weights_only=False)["net"])
+            n1 = len(rows())
+            self.assertEqual(sp.main(common + ["--out-dir", d, "--max-runs", "24", "--resume", ckpt(),
+                                               "--replay-load", rep]), 0)
+            r2 = [r for r in rows()[n1:] if "time" in r]
+            self.assertGreater(r2[0]["replay_loaded"], 0)
+            self.assertNotIn("aux_fights", r2[-1])
+
     def test_replay_save_load_and_ascension_file(self):
         """--replay-save at the final stop, --replay-load on resume from that checkpoint: the window continues
         (replay_loaded, samples_added carried on); a window saved at another step is not loaded (empty window, the run

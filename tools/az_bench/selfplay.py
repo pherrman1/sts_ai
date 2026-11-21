@@ -140,7 +140,8 @@ class Replay:
 
     def __init__(self, samples, tokens_per_sample=48, actions_per_sample=12, hp_floors=0, soft_outcome=False,
                  compact=False, dict_tokens_per_sample=8, token_store=None, compress_targets=False,
-                 soft_bytes_per_sample=64, hp_runs_per_sample=0.125, hp_soft=False, hp_bytes_per_sample=96):
+                 soft_bytes_per_sample=64, hp_runs_per_sample=0.125, hp_soft=False, hp_bytes_per_sample=96,
+                 aux_slots=0):
         if hp_soft and not soft_outcome:
             raise ValueError("replay: hp_soft needs soft_outcome")
         self.cs = samples
@@ -203,6 +204,13 @@ class Replay:
         if hp_soft and hp_floors:
             self.meta["hp_floor_target"] = np.zeros((self.cs, hp_floors), np.uint8)
         self.migrated_hp = 0   # samples loaded from a window saved without hp_soft (load)
+        # --aux-fights: per sample the fight-outcome targets [2 * slots] as round(255 x) (slot k: P(death) at 2 k,
+        # HP fraction left at 2 k + 1) and a bit mask of the slots it has (0: none, e.g. combat samples). A window
+        # saved without them loads with mask 0 (its samples do not train the aux head).
+        if aux_slots:
+            self.meta["aux_target"] = np.zeros((self.cs, 2 * aux_slots), np.uint8)
+            self.meta["aux_mask"] = np.zeros(self.cs, np.uint8)
+        self.missing_aux = False   # load: the saved window had no aux arrays
         self.cq = samples * soft_bytes_per_sample if self.soft_q else 0
         self.sq = np.zeros(self.cq, np.uint8)                                       # quantized targets, byte ring
         self.sq_start = np.zeros(self.cs if self.soft_q else 0, np.int64)
@@ -261,15 +269,20 @@ class Replay:
         out.update({"meta." + k: v for k, v in self.meta.items()})
         return out
 
+    _AUX_ARRAYS = ("meta.aux_target", "meta.aux_mask")
+
     def _layout(self):
-        """What a saved window must match to be loaded: every array's shape and dtype, and the switches."""
-        arr = {k: [list(v.shape), str(v.dtype)] for k, v in sorted(self._arrays().items())}
+        """What a saved window must match to be loaded: every array's shape and dtype, and the switches (without the
+        aux arrays while checking a window saved without them, missing_aux)."""
+        arr = {k: [list(v.shape), str(v.dtype)] for k, v in sorted(self._arrays().items())
+               if not (self.missing_aux and k in self._AUX_ARRAYS)}
         return {"arrays": arr, "compact": self.compact, "compress": self.compress, "hp_runs": self.hp_runs,
                 "soft_q": self.soft_q, "store_capacity": self.store.capacity if self.compact else 0}
 
     def save(self, path, extra=None):
         """Writes the window to directory path (one .npy per array, state.json last; written to path + ".tmp" and
         renamed, so a crash leaves no half-written window at path). extra: JSON-able info kept in state.json."""
+        self.missing_aux = False   # a window is saved with all of its arrays
         tmp = path + ".tmp"
         if os.path.exists(tmp):
             shutil.rmtree(tmp)
@@ -296,6 +309,13 @@ class Replay:
         compact options changed); returns state.json."""
         with open(os.path.join(path, "state.json")) as fh:
             state = json.load(fh)
+        # --aux-fights: a window saved without the aux arrays is compared (and loaded) without them
+        mine_aux = any(k in self._arrays() for k in self._AUX_ARRAYS)
+        saved_arr = state["layout"].get("arrays", {})
+        self.missing_aux = mine_aux and not any(k in saved_arr for k in self._AUX_ARRAYS)
+        if not mine_aux:   # saved with --aux-fights, loaded without: its aux arrays are not read
+            for k in self._AUX_ARRAYS:
+                saved_arr.pop(k, None)
         if (state["layout"] != self._layout() and not self._migrates_hp(state["layout"])
                 and not self._resizes_sq(state["layout"])):
             raise ValueError(f"replay load {path}: saved layout differs from this run's (--window, ring or compact "
@@ -344,6 +364,8 @@ class Replay:
             migrate = state["layout"] != self._layout() and not resize
             for k, v in self._arrays().items():
                 if (migrate and k in self._HP_SOFT_ARRAYS) or ((migrate or resize) and k == "sq"):
+                    continue
+                if self.missing_aux and k in self._AUX_ARRAYS:   # saved without --aux-fights: mask 0
                     continue
                 np.copyto(v, np.load(os.path.join(path, k + ".npy"), mmap_mode="r"))
             if self.compact:
@@ -885,7 +907,79 @@ def kickstart_targets(b, t_out, lam):
     return out
 
 
-def losses(net, b, w_policy, w_outcome, w_hp, w_hp_floor=0.0, w_soft_policy=0.0):
+AUX_SLOTS = 5   # --aux-fights: boss, elites 1..3, hallway (az_run_driver.h kAuxSlots)
+
+
+def aux_fight_rows(ch):
+    """The fight starts of a take_samples chunk (--aux-fights) as (tok_type, ids, f, tok_off, sample, slot): the
+    rows' tokens back to back (compact chunks resolved through each row's sample dictionary), row r's tokens
+    tok_off[r] .. tok_off[r + 1] - 1, its sample and its slot."""
+    off = np.asarray(ch["aux_off"], np.int64)
+    sample = np.repeat(np.arange(len(off) - 1), np.diff(off))
+    tok_off = np.asarray(ch["aux_tok_off"], np.int64)
+    if "aux_tok_idx" in ch:
+        nt = np.diff(tok_off)
+        src = np.repeat(np.asarray(ch["tok_base"], np.int64)[sample], nt) + ch["aux_tok_idx"].astype(np.int64)
+        tt, ids, f = ch["tok_type"][src], ch["ids"][src], ch["f"][src]
+    else:
+        tt, ids, f = ch["aux_tok_type"], ch["aux_ids"], ch["aux_f"]
+    return tt, ids, f, tok_off, sample, np.asarray(ch["aux_slot"], np.int64)
+
+
+def aux_fight_batch(tt, ids, f, tok_off, rows):
+    """forward_flat's layout for the fight-start rows `rows` (one dummy action each: the heads used here do not
+    read actions)."""
+    B = len(rows)
+    nt = (tok_off[rows + 1] - tok_off[rows]).astype(np.int64)
+    T = max(8, -(-int(nt.max()) // 8) * 8)
+    r = np.repeat(np.arange(B), nt)
+    c = np.arange(int(nt.sum())) - np.repeat(np.cumsum(nt) - nt, nt)
+    src = np.repeat(tok_off[rows], nt) + c
+    b = {"tok_type": np.zeros((B, T), np.int64), "ids": np.zeros((B, T, N_CAT), np.int64),
+         "f": np.zeros((B, T, N_FLOAT), np.float16), "mask": np.zeros((B, T), bool),
+         "a_type": np.zeros((B, 1), np.int64), "a_src": np.full((B, 1), -1, np.int64),
+         "a_tgt": np.full((B, 1), -1, np.int64), "a_f": np.zeros((B, 1, N_ACT_FEAT), np.float16),
+         "a_mask": np.ones((B, 1), bool)}
+    b["tok_type"][r, c] = tt[src]
+    b["ids"][r, c] = ids[src]
+    b["f"][r, c] = f[src]
+    b["mask"][r, c] = True
+    return b
+
+
+def aux_fight_labels(hp_probs, max_hp, sample, slot, S):
+    """--aux-fights targets of S samples from the floor HP head's distributions hp_probs [R, 256] of their fight
+    starts (row r of sample sample[r], slot slot[r]): per slot P(death) = P(HP 0 at the end of the floor) and the
+    expected HP left / the sample's max HP, averaged over a slot's rows (the hallway fights), as round(255 x)
+    [S, 2 * AUX_SLOTS] uint8, and the bit mask of the slots present [S] uint8."""
+    p = np.asarray(hp_probs, np.float64)
+    pd = p[:, 0]
+    frac = np.clip((p * np.arange(p.shape[1])).sum(-1) / np.maximum(1, np.asarray(max_hp, np.float64)[sample]), 0, 1)
+    key = sample * AUX_SLOTS + slot
+    n = np.bincount(key, minlength=S * AUX_SLOTS).astype(np.float64)
+    sd = np.bincount(key, pd, minlength=S * AUX_SLOTS)
+    sf = np.bincount(key, frac, minlength=S * AUX_SLOTS)
+    have = n > 0
+    t = np.zeros((S * AUX_SLOTS, 2), np.float64)
+    t[have, 0] = sd[have] / n[have]
+    t[have, 1] = sf[have] / n[have]
+    target = np.rint(np.clip(t, 0, 1) * 255).astype(np.uint8).reshape(S, 2 * AUX_SLOTS)
+    mask = (have.reshape(S, AUX_SLOTS) * (1 << np.arange(AUX_SLOTS))).sum(-1).astype(np.uint8)
+    return target, mask
+
+
+def aux_fight_loss(aux_out, target, mask):
+    """Binary cross-entropy of the aux head's logits [B, 2 * AUX_SLOTS] against the soft targets (uint8 / 255),
+    over the slots each sample has (mask bits); summed over the two outputs, mean over the present slots."""
+    B = aux_out.shape[0]
+    lg = aux_out.float().view(B, AUX_SLOTS, 2)
+    t = target.float().view(B, AUX_SLOTS, 2) / 255.0
+    m = ((mask.long()[:, None] >> torch.arange(AUX_SLOTS, device=mask.device)) & 1).float()
+    l = F.binary_cross_entropy_with_logits(lg, t, reduction="none").sum(-1)
+    return (l * m).sum() / m.sum().clamp(min=1)
+
+
+def losses(net, b, w_policy, w_outcome, w_hp, w_hp_floor=0.0, w_soft_policy=0.0, w_aux=0.0):
     logits, outcome, hp, hpf, *soft = net(b)
     logp = torch.log_softmax(logits.float().masked_fill(~b["a_mask"], -1e4), -1)
     has = b["has_policy"].bool()
@@ -926,6 +1020,10 @@ def losses(net, b, w_policy, w_outcome, w_hp, w_hp_floor=0.0, w_soft_policy=0.0)
             total = total + w_hp_floor * l_tr
         else:
             total = total + w_hp_floor * l_hpf
+    if "aux_mask" in b and getattr(net, "aux_out", None) is not None:   # --aux-fights
+        l_aux = aux_fight_loss(net.aux_out, b["aux_target"], b["aux_mask"])
+        parts["aux"] = l_aux.detach()
+        total = total + w_aux * l_aux
     return total, parts
 
 
@@ -1067,6 +1165,25 @@ def rss_gb():
     except OSError:
         pass
     return None
+
+
+def load_opt_state(opt, saved):
+    """Loads an optimizer state saved with one parameter group (no --aux-fights) into an optimizer with the aux
+    group (that group starts fresh), or one saved with the aux group into an optimizer without it (its state is
+    dropped); otherwise as opt.load_state_dict."""
+    mine = opt.state_dict()
+    ng, sg = len(mine["param_groups"]), len(saved["param_groups"])
+    if ng == sg:
+        opt.load_state_dict(saved)
+        return
+    if not (ng, sg) in ((2, 1), (1, 2)):
+        raise ValueError(f"optimizer state: {sg} parameter groups saved, {ng} here")
+    n0 = len(saved["param_groups"][0]["params"])
+    if n0 != len(mine["param_groups"][0]["params"]):
+        raise ValueError("optimizer state: the main parameter group differs")
+    st = {"state": {k: v for k, v in saved["state"].items() if int(k) < n0},
+          "param_groups": [saved["param_groups"][0]] + mine["param_groups"][1:]}
+    opt.load_state_dict(st)
 
 
 def main(argv=None):
@@ -1236,6 +1353,11 @@ def main(argv=None):
                          "(results in heart_probe.jsonl); use with --min-replay above any sample count (frozen net) "
                          "and --keep-full 0")
     ap.add_argument("--heart-reps", type=int, default=1, help="plays per arm and Heart start (--heart-arms)")
+    ap.add_argument("--aux-fights", action="store_true",
+                    help="fight-outcome aux head (not from Amber Eye; default off): out-of-combat samples also predict "
+                         "P(death) and HP left in fights against the act boss, its elites and 4 sampled hallway "
+                         "fights, labelled by the net's floor HP head on those fight starts (az_run_driver.h auxFights)")
+    ap.add_argument("--w-aux", type=float, default=1.0, help="loss weight of the --aux-fights head")
     ap.add_argument("--batch", type=int, default=2048)
     ap.add_argument("--row-buckets", default="2048", help="batch rows padded to these (one size keeps compiled shapes few)")
     ap.add_argument("--tok-buckets", default="32,40,48,56,64,80,96,128,212")
@@ -1380,17 +1502,25 @@ def main(argv=None):
     cuda = dev.type == "cuda"
     torch.manual_seed(args.seed)
     d, layers = amber_net.SIZES.get(args.net) or tuple(int(x) for x in args.net.split("x")[:2])
-    train_net = amber_net.AmberNet(d=d, layers=layers, hp_floors=hp_floors,
-                                   soft_policy=args.w_soft_policy > 0).to(dev)
+    train_net = amber_net.AmberNet(d=d, layers=layers, hp_floors=hp_floors, soft_policy=args.w_soft_policy > 0,
+                                   aux_slots=AUX_SLOTS if args.aux_fights else 0).to(dev)
     train_net.sdpa = True
-    opt = torch.optim.AdamW(train_net.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+    # --aux-fights: the aux head's parameters are a second group, so a checkpoint without them keeps its optimizer
+    # state for the rest (load_opt_state).
+    main_params = [p_ for n_, p_ in train_net.named_parameters() if not n_.startswith("aux_fight.")]
+    aux_params = [p_ for n_, p_ in train_net.named_parameters() if n_.startswith("aux_fight.")]
+    opt = torch.optim.AdamW([{"params": main_params}] + ([{"params": aux_params}] if aux_params else []),
+                            lr=args.lr, weight_decay=args.weight_decay)
     counters = {"step": 0, "trained": 0, "seeds_used": 0, "runs_done": 0, "wall": 0.0}
     explore_blob = None
     if args.resume:
         ck = torch.load(args.resume, map_location=dev)
         explore_blob = ck.get("explore_state")
-        train_net.load_state_dict(ck["net"])
-        opt.load_state_dict(ck["opt"])
+        fresh_aux = args.aux_fights and not any(k.startswith("aux_fight.") for k in ck["net"])
+        train_net.load_state_dict(ck["net"], strict=not fresh_aux)
+        load_opt_state(opt, ck["opt"])
+        if fresh_aux:
+            print(f"# resume {args.resume}: no aux head in the checkpoint, --aux-fights starts it fresh", flush=True)
         counters.update(ck["counters"])
     if args.init_net:
         src = torch.load(args.init_net, map_location=dev)["net"]
@@ -1498,6 +1628,7 @@ def main(argv=None):
         **({"explore_gap_search": True} if args.explore_gap_search else {}),
         **({"explore_deck_only": True} if args.explore_deck_only else {}),
         **({"explore_clean_keys": True} if args.explore_clean_keys else {}),
+        **({"aux_fights": True} if args.aux_fights else {}),
         **({"heart_arms": heart_arms, "heart_reps": args.heart_reps} if heart_arms else {}),
         **({"savescum": True} if savescum else {}),
         **({"compact_samples": True} if args.compact_samples else {}),
@@ -1540,7 +1671,7 @@ def main(argv=None):
                     tokens_per_sample=args.replay_tokens_per_sample, actions_per_sample=args.replay_actions_per_sample,
                     compress_targets=args.compress_targets, soft_bytes_per_sample=args.replay_soft_bytes,
                     hp_runs_per_sample=args.replay_hp_runs, hp_soft=hp_ema,
-                    hp_bytes_per_sample=args.replay_hp_bytes)
+                    hp_bytes_per_sample=args.replay_hp_bytes, aux_slots=AUX_SLOTS if args.aux_fights else 0)
     replay_loaded = 0
     if args.replay_load and os.path.exists(os.path.join(args.replay_load, "state.json")):
         t_load = time.time()
@@ -1570,17 +1701,21 @@ def main(argv=None):
                             actions_per_sample=args.replay_actions_per_sample,
                             compress_targets=args.compress_targets, soft_bytes_per_sample=args.replay_soft_bytes,
                             hp_runs_per_sample=args.replay_hp_runs, hp_soft=hp_ema,
-                            hp_bytes_per_sample=args.replay_hp_bytes)
+                            hp_bytes_per_sample=args.replay_hp_bytes, aux_slots=AUX_SLOTS if args.aux_fights else 0)
     elif args.replay_load:
         print(f"# replay-load {args.replay_load}: no saved window there; the window starts empty", flush=True)
     ema_stats = {"samples": 0, "real_weight": 0.0}   # mean weight of the final outcome in the EMA targets
+    # --aux-fights: rows labelled, samples with rows, label time, sums of the targets per slot (and their counts)
+    aux_stats = {"rows": 0, "samples": 0, "secs": 0.0, "n": np.zeros(AUX_SLOTS), "pd": np.zeros(AUX_SLOTS),
+                 "hp": np.zeros(AUX_SLOTS)}
     stop = threading.Event()
     errors = []
     weights_lock = threading.Lock()
     new_weights = [None]          # (state tensors on the GPU, event) published by the trainer
     loss_keys = (("policy", "outcome", "hp") + (("hp_floor",) if amber else ())
                  + (("outcome_ema",) if ema_lam > 0 else ()) + (("soft_policy",) if args.w_soft_policy > 0 else ())
-                 + (("hp_ema",) if hp_ema else ()) + (("hp_floor_ema",) if hp_ema and amber else ()))
+                 + (("hp_ema",) if hp_ema else ()) + (("hp_floor_ema",) if hp_ema and amber else ())
+                 + (("aux",) if args.aux_fights else ()))
     lossbox = dict({"n": 0}, **{k: 0.0 for k in loss_keys})
     lossbox_lock = threading.Lock()
     counters.setdefault("nonfinite_skips", 0)
@@ -1850,6 +1985,29 @@ def main(argv=None):
             t_ph = time.perf_counter()
             ch = drv.take_samples(TAKE_CHUNK)   # whole runs only
             if ch is not None:
+                if args.aux_fights:   # the fight starts' labels from the net, before the chunk goes into the window
+                    t_aux = time.perf_counter()
+                    S = len(ch["outcome"])
+                    tt, ids_, f_, tok_off, smp, slot = aux_fight_rows(ch)
+                    R = len(smp)
+                    probs = np.zeros((R, HP_CLASSES), np.float32)
+                    train_net.eval()
+                    ctx = torch.cuda.stream(stream) if stream is not None else torch.no_grad()
+                    with ctx, torch.no_grad(), amp:
+                        for i in range(0, R, args.train_batch):
+                            rows = np.arange(i, min(R, i + args.train_batch))
+                            _, _, hp_l, _ = train_net(to_torch(aux_fight_batch(tt, ids_, f_, tok_off, rows), dev))
+                            probs[rows] = torch.softmax(hp_l.float(), -1).cpu().numpy()
+                    train_net.train()
+                    ch["aux_target"], ch["aux_mask"] = aux_fight_labels(probs, ch["max_hp"], smp, slot, S)
+                    has = (ch["aux_mask"][:, None] >> np.arange(AUX_SLOTS)) & 1
+                    aux_stats["rows"] += R
+                    aux_stats["samples"] += int((ch["aux_mask"] > 0).sum())
+                    aux_stats["n"] += has.sum(0)
+                    tq = ch["aux_target"].reshape(S, AUX_SLOTS, 2).astype(np.float64) / 255.0
+                    aux_stats["pd"] += (tq[:, :, 0] * has).sum(0)
+                    aux_stats["hp"] += (tq[:, :, 1] * has).sum(0)
+                    aux_stats["secs"] += time.perf_counter() - t_aux
                 first = replay.add(ch)
                 if ema_search:   # search-backed EMA targets from the driver (whole runs)
                     replay.set_soft_outcome(first, ch["outcome_target"], ch["hp_target"] if hp_ema else None)
@@ -1900,7 +2058,7 @@ def main(argv=None):
                         bt = kickstart_targets(bt, teacher(bt), lam)
                 with torch.enable_grad(), amp:
                     loss, parts = losses(train_net, bt, args.w_policy, args.w_outcome, args.w_hp, args.w_hp_floor,
-                                         args.w_soft_policy)
+                                         args.w_soft_policy, args.w_aux)
                 opt.zero_grad(set_to_none=True)
                 loss.backward()
                 gn = torch.nn.utils.clip_grad_norm_(train_net.parameters(), 1.0)   # norm before clipping
@@ -2190,6 +2348,12 @@ def main(argv=None):
                                     "moves": args.value_ema_moves if ema_search else None, "hp": hp_ema,
                                     "labelled": ema_stats["samples"],
                                     "real_weight_mean": round(ema_stats["real_weight"] / max(1, ema_stats["samples"]), 4)}
+            if args.aux_fights:   # fight starts labelled so far, their samples, mean P(death) / HP left per slot
+                n_ = np.maximum(1, aux_stats["n"])
+                row["aux_fights"] = {"rows": aux_stats["rows"], "samples": aux_stats["samples"],
+                                     "driver_rows": s["aux_fights"], "label_s": round(aux_stats["secs"], 1),
+                                     "p_death": [round(float(x), 4) for x in aux_stats["pd"] / n_],
+                                     "hp_left": [round(float(x), 4) for x in aux_stats["hp"] / n_]}
             if args.heart_log > 0:
                 drain_heart_log()
                 row["heart_log"] = {"records": heart_logged[0], "kills": heart_logged[1]}

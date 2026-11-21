@@ -462,6 +462,11 @@ def page(rows, title, started, subtitle=""):
     lp = [(r["loss"] or {}).get("policy") if r.get("loss") else None for r in rows]
     lo = [(r["loss"] or {}).get("outcome") if r.get("loss") else None for r in rows]
     lh = [(r["loss"] or {}).get("hp") if r.get("loss") else None for r in rows]
+    # --aux-fights: the aux head's loss and the labels' mean P(death) at the boss / in a hallway fight (cumulative)
+    la = [(r["loss"] or {}).get("aux") if r.get("loss") else None for r in rows]
+    aux_on = any(x is not None for x in la)
+    pd_boss = [100 * r["aux_fights"]["p_death"][0] if r.get("aux_fights") else None for r in rows]
+    pd_hall = [100 * r["aux_fights"]["p_death"][4] if r.get("aux_fights") else None for r in rows]
     # last ~10 windows' death floors
     hist = {}
     for r in rows[-20:]:
@@ -520,6 +525,7 @@ def page(rows, title, started, subtitle=""):
 <section><h2>Mean final floor per window</h2>{chart(runs[i0:], [("mean floor (smoothed)", floor_s[i0:], "--accent")], ymin=0)}</section>
 <section><h2>{"Heart-kill rate, all ascensions (%)" if curriculum else "Self-play win rate (%)"}</h2>{chart(runs[i0:], [("win rate (smoothed)", win_s[i0:], "--good")], ymin=0, yfmt="{:.2f}")}</section>
 <section><h2>Training losses</h2>{chart(runs[i0:], [("policy", lp[i0:], "--accent"), ("outcome", lo[i0:], "--accent2"), ("HP", lh[i0:], "--boss")], yfmt="{:.2f}")}</section>
+{f'<section><h2>Fight-outcome aux head: loss</h2>{chart(runs[i0:], [("aux loss", la[i0:], "--accent")], yfmt="{:.3f}")}</section><section><h2>Aux labels: mean P(death) in the fight (%)</h2>{chart(runs[i0:], [("act boss", pd_boss[i0:], "--boss"), ("hallway", pd_hall[i0:], "--good")], ymin=0, yfmt="{:.1f}")}</section>' if aux_on else ""}
 {f'<section><h2>Curriculum: ascension and Heart-kill rate (%, last 10k runs at it)</h2>{chart(runs[i0:], [("ascension", asc_line[i0:], "--boss"), ("Heart kills % (rolling)", asc_roll[i0:], "--good")], ymin=0, yfmt="{:.0f}")}</section>' if curriculum else ""}
 <section><h2>Positions per second (thousands)</h2>{chart(runs[i0:], [("positions/s", pos[i0:], "--accent2")], ymin=0, yfmt="{:.0f}")}</section>
 {f'<section><h2>Memory: process RSS (GB) and samples pending (millions)</h2>{chart(runs[i0:], [("RSS GB", [r.get("rss_gb") for r in rows[i0:]], "--boss"), ("pending (M)", [r["samples_pending"] / 1e6 if "samples_pending" in r else None for r in rows[i0:]], "--accent")], ymin=0, yfmt="{:.1f}")}</section>' if any(r.get("rss_gb") is not None for r in rows[i0:]) else ""}

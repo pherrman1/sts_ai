@@ -184,6 +184,12 @@ set_tests_properties(az_run_driver_smoke PROPERTIES LABELS "core;smoke")
 add_test(NAME az_run_driver_rng_fix COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 6 --fast
          --seed-base 1 --seconds 300 --rng-fix)
 set_tests_properties(az_run_driver_rng_fix PROPERTIES LABELS "core;smoke")
+add_test(NAME az_run_driver_aux_fights COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 6 --fast
+         --seed-base 1 --seconds 300 --aux-fights)
+set_tests_properties(az_run_driver_aux_fights PROPERTIES LABELS "core;smoke")
+add_test(NAME az_run_driver_aux_fights_compact COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 6 --fast
+         --seed-base 1 --seconds 300 --aux-fights --compact-samples)
+set_tests_properties(az_run_driver_aux_fights_compact PROPERTIES LABELS "core;smoke")
 add_test(NAME az_run_driver_explore COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 24 --fast
          --seed-base 1 --seconds 300 --explore-c 0.5 --pick-target 0.2 --test-hp 300)
 set_tests_properties(az_run_driver_explore PROPERTIES LABELS "core;smoke")
