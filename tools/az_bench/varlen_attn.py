@@ -95,16 +95,23 @@ def _attn_kernel(QKV, O, OFF, CLS, TAB, G, scale, D: tl.constexpr, DH: tl.conste
 
 
 @triton.jit
-def _attn_kernel_rows(QKV, O, OFF, CLS, TAB, G, scale, D: tl.constexpr, DH: tl.constexpr, BM: tl.constexpr,
+def _attn_kernel_rows(QKV, O, OFF, CLS, TAB, G, RF, scale, D: tl.constexpr, DH: tl.constexpr, BM: tl.constexpr,
                       BN: tl.constexpr, HAS_BIAS: tl.constexpr, C: tl.constexpr,
-                      HAS_GATE: tl.constexpr):
+                      HAS_GATE: tl.constexpr, SEL: tl.constexpr):
     """_attn_kernel with the row's own bounds: the key loop ends at the row's length n (the blocks past it hold no
-    live key), and a query block past n has an empty loop and stores nothing."""
+    live key), and a query block past n has an empty loop and stores nothing. SEL 1 / 2: only the
+    rows with RF[r] == 0 / != 0 (RF: the row holds encounter tokens); the others get n = 0 (empty loops, no store)."""
     r = tl.program_id(0)
     h = tl.program_id(1)
     qb = tl.program_id(2)
     start = tl.load(OFF + r)
     n = tl.load(OFF + r + 1) - start
+    if SEL != 0:
+        rf = tl.load(RF + r)
+        if SEL == 1:
+            n = tl.where(rf == 0, n, 0)
+        else:
+            n = tl.where(rf != 0, n, 0)
     offs_m = qb * BM + tl.arange(0, BM)
     offs_d = tl.arange(0, DH)
     qmask = offs_m < n
@@ -162,7 +169,7 @@ ROW_BOUNDS = False   # True: _attn_kernel_rows (selfplay.py --attn-row-bounds); 
 @torch.library.custom_op("azbench::varlen_attn", mutates_args=())
 def _varlen_attn_op(qkv: torch.Tensor, seq_off: torch.Tensor, heads: int, max_len: int,
                     cls: Optional[torch.Tensor] = None, tab: Optional[torch.Tensor] = None,
-                    gate: Optional[torch.Tensor] = None) -> torch.Tensor:
+                    gate: Optional[torch.Tensor] = None, split_enc: bool = False) -> torch.Tensor:
     qkv, seq_off = qkv.contiguous(), seq_off.contiguous()   # the kernels index raw pointers (no-op if contiguous)
     cls = None if cls is None else cls.contiguous()
     tab = None if tab is None else tab.contiguous()
@@ -182,10 +189,26 @@ def _varlen_attn_op(qkv: torch.Tensor, seq_off: torch.Tensor, heads: int, max_le
     if gate is None:
         gate = qkv
     if ROW_BOUNDS:
-        _attn_kernel_rows[(R, heads, triton.cdiv(max_len, BM))](qkv, out, seq_off, cls, tab, gate, (D // heads) ** -0.5,
-                                                                D=D, DH=D // heads, BM=BM, BN=BN,
-                                                                HAS_BIAS=has_bias, C=C, HAS_GATE=has_gate,
-                                                                num_warps=int(os.environ.get("AZ_ATTN_WARPS", "4")))
+        grid = (R, heads, triton.cdiv(max_len, BM))
+        nw = int(os.environ.get("AZ_ATTN_WARPS", "4"))
+        if split_enc and (has_bias or has_gate) and os.environ.get("AZ_ATTN_SPLIT_ENC", "1") != "0":
+            # rows without encounter tokens (most: all combat rows) get the plain kernel, without the bias loads and
+            # the gate's second softmax; the others the full one. Same values when the table has entries only for
+            # pairs with an encounter class (split_enc: the caller says so, AmberNet._tab): on a row without encounter
+            # tokens the bias is then 0 and both softmaxes of the gate are the same. AZ_ATTN_SPLIT_ENC=0: one
+            # full launch for all rows.
+            enc = ((cls >= 1) & (cls <= 3)).long()
+            c = torch.cat([enc.new_zeros(1), enc.cumsum(0)])
+            so = seq_off.long()
+            rf = ((c[so[1:]] - c[so[:-1]]) > 0).to(torch.int32)
+            _attn_kernel_rows[grid](qkv, out, seq_off, cls, tab, gate, rf, (D // heads) ** -0.5, D=D, DH=D // heads,
+                                    BM=BM, BN=BN, HAS_BIAS=False, C=C, HAS_GATE=False, SEL=1, num_warps=nw)
+            _attn_kernel_rows[grid](qkv, out, seq_off, cls, tab, gate, rf, (D // heads) ** -0.5, D=D, DH=D // heads,
+                                    BM=BM, BN=BN, HAS_BIAS=has_bias, C=C, HAS_GATE=has_gate, SEL=2, num_warps=nw)
+            return out
+        _attn_kernel_rows[grid](qkv, out, seq_off, cls, tab, gate, seq_off, (D // heads) ** -0.5,
+                                D=D, DH=D // heads, BM=BM, BN=BN,
+                                HAS_BIAS=has_bias, C=C, HAS_GATE=has_gate, SEL=0, num_warps=nw)
         return out
     _attn_kernel[(R, heads, triton.cdiv(max_len, BM))](qkv, out, seq_off, cls, tab, gate, (D // heads) ** -0.5, D=D,
                                                        DH=D // heads, BM=BM, BN=BN,
@@ -196,14 +219,16 @@ def _varlen_attn_op(qkv: torch.Tensor, seq_off: torch.Tensor, heads: int, max_le
 
 
 @_varlen_attn_op.register_fake
-def _(qkv, seq_off, heads, max_len, cls=None, tab=None, gate=None):
+def _(qkv, seq_off, heads, max_len, cls=None, tab=None, gate=None, split_enc=False):
     return qkv.new_empty(qkv.shape[0], qkv.shape[1] // 3)
 
 
-def varlen_attn(qkv, seq_off, heads, max_len, cls=None, tab=None, gate=None):
+def varlen_attn(qkv, seq_off, heads, max_len, cls=None, tab=None, gate=None, split_enc=False):
     """qkv [N, 3 d] contiguous, seq_off [R + 1] int32 / int64 row starts in the packed axis, max_len >= the longest
     row. Optional attention bias: cls [N] int32 token classes, tab [heads, C, C] fp32 contiguous. Returns the
-    attention output [N, d]. Optional encounter gate: gate [1] fp32 (needs cls; tab may be None)."""
+    attention output [N, d]. Optional encounter gate: gate [1] fp32 (needs cls; tab may be None). split_enc: tab
+    is 0 on every pair without an encounter class (1..3), so with ROW_BOUNDS the rows without encounter tokens run
+    the plain kernel (same values, less work)."""
     if (tab is not None or gate is not None) and cls is None:
         raise ValueError("varlen_attn: tab / gate need cls")
-    return _varlen_attn_op(qkv, seq_off, heads, max_len, cls, tab, gate)
+    return _varlen_attn_op(qkv, seq_off, heads, max_len, cls, tab, gate, split_enc)

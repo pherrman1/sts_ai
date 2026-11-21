@@ -97,7 +97,7 @@ def _packed_classes(tt_p, ids_p, f_p):
 def _enemy_vattn(kernel, qkv, seq_off, heads, max_len, cls_i, tab, gate):
     """varlen_attn with the encounter inputs (the op makes its inputs contiguous)."""
     return kernel(qkv, seq_off, heads, max_len, cls_i, None if tab is None else tab.float(),
-                  None if gate is None else gate.float().reshape(1))
+                  None if gate is None else gate.float().reshape(1), True)   # split_enc: _tab is encounter-only
 
 
 def enc_of(cls):

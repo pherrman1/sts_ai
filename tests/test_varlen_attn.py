@@ -266,6 +266,37 @@ class EnemyBiasKernel(unittest.TestCase):
     dev = VarlenAttn.dev
     tol = VarlenAttn.tol
 
+    def test_split_enc_same_values(self):
+        """split_enc with ROW_BOUNDS (rows without encounter tokens on the plain kernel) gives the values of one full
+        launch, for an encounter-only table and a gate, on a batch where only some rows hold encounter tokens."""
+        import sys
+        A, V = load("amber_net"), load("varlen_attn")
+        mod = sys.modules["az_bench_varlen_attn"]
+        g = torch.Generator().manual_seed(5)
+        B, T, H, dh, C = 9, 70, 4, 32, A.BIAS_CLASSES
+        d = H * dh
+        n = torch.randint(1, T + 1, (B,), generator=g)
+        mask = torch.arange(T)[None, :] < n[:, None]
+        cls = torch.randint(0, C, (B, T), generator=g)
+        cls[::2] = torch.where((cls[::2] >= 1) & (cls[::2] <= 3), torch.zeros_like(cls[::2]), cls[::2])   # no encounters
+        e = torch.zeros(C, dtype=torch.bool)
+        e[1:4] = True
+        tab = torch.randn(H, C, C, generator=g) * (e[:, None] | e[None, :])
+        pk = A.pack_index(mask, 1)
+        qkv = torch.randn(B * T, 3 * d, generator=g)[pk].contiguous().to(self.dev)
+        cp = cls.reshape(-1)[pk].to(torch.int32).contiguous().to(self.dev)
+        so = A.seq_offsets(mask).to(self.dev)
+        gate = torch.tensor([0.4], device=self.dev)
+        try:
+            mod.ROW_BOUNDS = True
+            for tb, gt in ((tab, gate), (tab, None), (None, gate)):
+                tb_ = None if tb is None else tb.contiguous().to(self.dev)
+                one = V.varlen_attn(qkv, so, H, T, cp, tb_, gt)
+                two = V.varlen_attn(qkv, so, H, T, cp, tb_, gt, split_enc=True)
+                self.assertLess(float((one - two).abs().max()), 1e-5, (tb is None, gt is None))
+        finally:
+            mod.ROW_BOUNDS = False
+
     def test_gated_row_mean_matches_reference(self):
         """row_mean at the widths the gated mean uses (16, d, 2 d; fp32 and fp16 inputs) and _gated_row_mean
         against plain torch sums, on packed tokens with long rows and a trash tail (as the inference batches)."""
