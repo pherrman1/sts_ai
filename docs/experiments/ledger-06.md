@@ -28492,7 +28492,7 @@ throughput is not comparable with this entry's.
 **Knowledge impact:** this entry; `tools/az_bench/README.md`.
 
 
-## §TBD — Pick-rate exploration counted one shop item at two prices or in two slots as two items: `--explore-clean-keys` (default off) names an item by what it is; fake net, Amber's all-runs target 1 %: forced picks per run 4.27 → 1.80, attempts with c = ∞ 51 % → 12 % (cloud, 2026-11-21)
+## §830 — Pick-rate exploration counted one shop item at two prices or in two slots as two items: `--explore-clean-keys` (default off) names an item by what it is; fake net, Amber's all-runs target 1 %: forced picks per run 4.27 → 1.80, attempts with c = ∞ 51 % → 12 % (cloud, 2026-11-21)
 
 **Question:** Amber Eye forces each choice (its page: "card picks, event choices, Neow bonuses, and relics") to be
 picked in 1-3 % of the games and reports that this "only affected ~0.2% of moves". Our all-runs rule forced 9.3
