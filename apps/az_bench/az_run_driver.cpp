@@ -1310,7 +1310,7 @@ namespace sts::azbench {
             g.savescum = savescum_.load(std::memory_order_relaxed);
             if (g.savescum) ++wk.st.savescumRuns;
             g.expectValid = false;
-            g.gc = GameContext(CharacterClass::IRONCLAD, seed, g.asc);
+            g.gc = GameContext(CharacterClass::IRONCLAD, seed, g.asc, cfg.rngFix);
             if (cfg.testMaxHp > 0) g.gc.curHp = g.gc.maxHp = cfg.testMaxHp;
             g.inBattle = false;
             g.cache.clear();
