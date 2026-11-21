@@ -28771,4 +28771,83 @@ which the NDEBUG release build has not (not this PR).
 **Not measured:** GPU cost on the PC (+up to 14 tokens per out-of-combat row; float attention mask in training:
 B x H x T x T per layer), any effect on learning. Before it takes over the main run: 5-15 min live test on the PC
 (project rule).
+## §835 — Stage-1 run on the 1.22M net: the GPU is the limit again (98 %), workers asleep 45 %; `--aux-fights` costs about 9 % moves/s (9,451 → 8,581, not isolated) because its labels run on the trainer net; the CPU-side levers of §827 are dropped (PC, 2026-11-21)
+
+**Question:** §827/§828 were measured on the 0.44M net. What limits the run after the switch to 128x4 (1.22M),
+`--parallel-nodes 4` and the other changes of 2026-11-21, and is one of §827's remaining levers (cheaper worker
+clock, lighter packing) still worth building?
+**Data:** [SCHED-1121](evidence/infer_profile_20261120/SCHED-1121.md): live run amber_scratch, main 963ea4bf, A20,
+savescum, 11 workers x 300 games, flags in the file; six metrics rows 19:21-19:24 CET (40 minutes after the start),
+`/proc` scheduler statistics over 30 s, `nvidia-smi dmon`, `top`; ten rows of training counters; six rows of the
+run before it (17:48 CET, 35 minutes after its start, main 8e2440b6, the same flags without `--aux-fights`).
+Nothing was attached to the process.
+**Result:**
+
+| 19:21 CET | running | waiting for a CPU | sleeping |
+|---|---|---|---|
+| 11 worker threads | 47.5 % | 7.9 % | 44.6 % |
+| Python inference thread | 83.9 % | 3.6 % | 12.6 % |
+| trainer thread | 82.8 % | 2.1 % | 15.1 % |
+
+GPU load 98.4 %; CPU 58 % user, 7 % system, 34 % idle. The inference thread waits for the GPU 47 % of its time
+(`sync` 467 ms/s) and for rows only inside `wait_pack` (172 ms/s, 157 of it packing); batches are full (2,035 of
+2,048 rows, 62 per second). 8,130 moves/s, 125.9k net positions/s, 70.7k cache hits/s. `--early-finish` hands back
+3.6 % of the batches while waiting and 1.9 % after packing: with a busy GPU the previous batch is rarely done.
+
+| | without `--aux-fights` (17:48 CET) | with (19:17 CET) |
+|---|---|---|
+| moves/s | 9,451 | 8,581 |
+| net positions/s | 145.1k | 132.8k |
+| train steps/s (trained / added = 2.00 in both) | 4.05 | 3.61 |
+| samples added/s | 2,075 | 1,852 |
+| trainer `take_add`, ms/s | 70 | 187 |
+
+With the flag the trainer labels 2,192 fight starts per second (1.18 per sample) and spends 13.5 % of the wall time
+in it (`aux_fights.label_s`), about 62 µs per row. The kickstart teacher is not evaluated any more (lambda 0 since
+09:15 CET); it only holds GPU memory.
+**Interpretation:** the run is GPU-bound; the workers have room, so a cheaper clock or lighter packing would not
+raise the throughput now, and both are dropped. The 9 % drop with `--aux-fights` is two restarts apart and not an
+A/B, but it fits: the labels are forwards of the trainer net (bf16, padded rows, not compiled) on a saturated GPU.
+Inference: an evaluation on the inference path (fp16, packed, own kernels) costs about 5 µs of GPU per row, so the
+same labels through the inference net would cost a small fraction; that needs a path from the trainer to the
+inference thread and changes the labels' numerics slightly (fp16, weights of the last sync). Not built: whether
+`--aux-fights` stays is open (§834).
+**Decision:** none. NOT PURSUED: §827's levers 2 and 3. Open, for the owner of `--aux-fights`: cheaper labels if the
+flag is kept.
+**Knowledge impact:** this entry.
+
+
+## §836 — `--force-keys` had two holes: a Smoke Bomb escape from the act-3 burning elite (no Emerald Key) and the act-3 Secret Portal (jumps past chest, last campfire and burning elite); both closed, default on, `STS_AZ_KEY_HOLES=0` restores (cloud, 2026-11-21)
+
+**Question (owner, 2026-11-21):** the 1000-seed A20 benchmark of ckpt_928513 (seeds 160200000-160200999,
+deterministic, `--force-keys on`) has 64 of 321 act-3 boss winners ending at floor 51 without the three keys; in
+training about 7 % of all runs. How, when the ADR-0063 backstops force Sapphire (row-8 chest), Ruby (Recall at the
+row-14 campfire) and Emerald (route to the burning elite)?
+**Cause (code, main a1b575a1):** the backstops restrict out-of-combat actions only. (1) The run driver's combat
+enumeration (`combatActions`) used a default `SilverSearchContext`, so Smoke Bomb stays legal at the act-3 burning
+elite; an escape gives no rewards, so no Emerald Key, and no later map has a burning elite. The older Silver backend
+had this rule (`NativeSilverBackend.cpp`, `escapeForfeitsRun`); the stage-1 driver never set it. (2) The Secret Portal
+event is always available in act 3 (`speedrunPace` is never set in our runs); accepting it sets row 14 and enters the
+boss, skipping the treasure row, the last campfire and possibly the burning elite. Such a run ends below floor 51,
+so it is counted as a death at that floor and not among the 64.
+**Repro (cloud, fake net, C++ only):** `az-run-driver --workers 4 --games 4 --runs 1500 --fast --asc 20 --test-hp 30000
+--max-fight-moves 4000 --sim-help --force-keys --force-rewards --force-potions --seed-base 910000` with a temporary
+per-run key trace (not committed). Before the fix, 12 keyless victories in one run of 1500 (8 in another): the
+ones that got past the act-3 boss row (the benchmark's floor-51 class; the driver's floorNum reads 52 there) all had Sapphire and Ruby, lacked Emerald, and used a Smoke Bomb in the burning-elite fight (no
+rewards screen after it); the others accepted the Secret Portal and ended at floors 39-45. With the fix:
+0 keyless victories (all keys 666, act 4 557); with `STS_AZ_KEY_HOLES=0`: 12 again (all keys 671, act 4 573).
+The 30,000 HP test mode gives `bad_samples` > 0 in both arms (HP outside the encoder range), as on main.
+**Fix (`apps/az_bench/az_run_driver.cpp`):** with forceKeys, (1) the burning act-3 elite without the Emerald Key gets
+`escapeForfeitsRun` in its fight context and `combatActions` drops Smoke Bomb there (real moves and search); the net
+input keeps that context flag at 0, as in every fight the net has seen; (2) `keyBackstopActions` removes the Secret
+Portal's accept option in act 3 while a key is missing (counted as `route_masked`). Without `--force-keys` nothing
+changes. Test: `az_force_keys_test` (portal options incl. a slot-0 drink, escape rule, Smoke Bomb enumeration).
+**Interpretation:** the 64 floor-51 keyless winners of the benchmark are most likely Smoke Bomb escapes (the only
+mechanism found that reaches floor 51 without a key; not replayed with the real net). Portal runs come on top and
+are hidden among the deaths. Remaining path (review, not closed): N'loth's Hungry Face can empty the act-3 row-8
+chest (GameContext.cpp, chest without relic and key) when the policy has not taken Sapphire earlier; rare. Also
+pre-existing and separate: `heartKeyActionAllowed` (RunGoal.cpp) compares an act-3 map OOC drink's potion slot
+with the route x, so a drink can be masked or kept by its slot number.
+**Decision:** engine fix, default on; `STS_AZ_KEY_HOLES=0` restores the old behaviour. Live use after the owner's go
+and a 5-15 minute PC test.
 **Knowledge impact:** this entry.
