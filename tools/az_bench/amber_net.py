@@ -73,7 +73,12 @@ def _gated_row_mean(row_mean, x, so, enc, g):
     e = enc.float()[:, None]
     xf = x.float()
     m = row_mean(torch.cat([xf * (1.0 - e), xf * e], 1).contiguous(), so)
-    f = row_mean(e.expand(N, 16).contiguous(), so)[:, :1]
+    # f_enc from exact counts (prefix sums of the indicator over each row's tokens after the first): row_mean at
+    # width 16 in fp32 gave wrong means on the PC GPU (sm_86, triton 3.1.0; #1166 diagnosis)
+    c = torch.cat([enc.new_zeros(1, dtype=torch.long), enc.long().cumsum(0)])
+    hi = so[1:]
+    lo = torch.minimum(so[:-1] + 1, hi)
+    f = ((c[hi] - c[lo]).float() / (hi - lo).clamp(min=1).float())[:, None]
     g = g.float()
     den = (1.0 - f) + g * f
     return ((m[:, :d] + g * m[:, d:]) / torch.where(den > 0, den, torch.ones_like(den))).to(x.dtype)
