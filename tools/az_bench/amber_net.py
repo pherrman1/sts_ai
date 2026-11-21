@@ -53,6 +53,37 @@ def token_classes(tt, ids, f):
     return cls
 
 
+@torch.compiler.disable
+def _gated_row_mean(x, so, enc, g):
+    """The row mean of _heads_packed with the encounter tokens weighted by the summary gate g (row_mean has no
+    weights). Kept out of torch.compile graphs (as are the other encounter-token helpers): the compiled inference
+    forward with encounter tokens gave wrong outputs on the PC GPU (frozen test, 2026-11-21) while eager was right."""
+    N, d = x.shape
+    R = so.shape[0] - 1
+    pos = torch.arange(N, device=x.device)
+    row = torch.bucketize(pos, so[1:], right=True).clamp(max=R - 1)
+    w = ((pos < so[-1]) & (pos != so[row])).float()   # fp32 sums, as row_mean accumulates
+    w = w * torch.where(enc, g.float(), torch.ones_like(w))
+    S = x.new_zeros(R, d, dtype=torch.float32).index_add_(0, row, x.float() * w[:, None])
+    n = x.new_zeros(R, dtype=torch.float32).index_add_(0, row, w)
+    return (S / torch.where(n > 0, n, torch.ones_like(n))[:, None]).to(x.dtype)
+
+
+@torch.compiler.disable
+def _packed_classes(tt_p, ids_p, f_p):
+    """token_classes on packed tokens as int32 (varlen_attn's cls) and the encounter mask, outside torch.compile."""
+    cls = token_classes(tt_p, ids_p, f_p)
+    return cls, cls.to(torch.int32).contiguous()
+
+
+@torch.compiler.disable
+def _enemy_vattn(kernel, qkv, seq_off, heads, max_len, cls_i, tab, gate):
+    """varlen_attn with the encounter inputs, outside torch.compile, all inputs made contiguous."""
+    return kernel(qkv.contiguous(), seq_off.contiguous(), heads, max_len, cls_i.contiguous(),
+                  None if tab is None else tab.float().contiguous(),
+                  None if gate is None else gate.float().reshape(1).contiguous())
+
+
 def enc_of(cls):
     """Encounter tokens (classes 1..3) of token_classes output."""
     return (cls >= 1) & (cls <= 3)
@@ -233,15 +264,7 @@ class AmberNet(nn.Module):
         so = b["seq_off"].long()
         N, d = x.shape
         if enc is not None and self.enemy_gate is not None:
-            # the row mean with the encounter tokens weighted by the summary gate (row_mean has no weights)
-            R = so.shape[0] - 1
-            pos = torch.arange(N, device=x.device)
-            row = torch.bucketize(pos, so[1:], right=True).clamp(max=R - 1)
-            w = ((pos < so[-1]) & (pos != so[row])).float()   # fp32 sums, as row_mean accumulates
-            w = w * torch.where(enc, self._gate(-1).float(), torch.ones_like(w))
-            S = x.new_zeros(R, d, dtype=torch.float32).index_add_(0, row, x.float() * w[:, None])
-            n = x.new_zeros(R, dtype=torch.float32).index_add_(0, row, w)
-            mean = (S / torch.where(n > 0, n, torch.ones_like(n))[:, None]).to(x.dtype)
+            mean = _gated_row_mean(x, so, enc, self._gate(-1))
         else:
             mean = self.row_mean(x, b["seq_off"])
         c = x[so[:-1].clamp(max=N - 1)] + self.summary_mlp(mean)
@@ -410,19 +433,19 @@ class AmberNet(nn.Module):
         varlen = self.varlen_attn is not None and "seq_off" in b
         cls_p = cls_pad = cls_i = None
         if self.enemy_on:
-            cls_p = token_classes(tt_p, ids_p, f_p)
             if varlen:
-                cls_i = cls_p.to(torch.int32).contiguous()
+                cls_p, cls_i = _packed_classes(tt_p, ids_p, f_p)
             else:
+                cls_p = token_classes(tt_p, ids_p, f_p)
                 cls_pad = unpack(cls_p[:, None]).view(B, T)
                 rows = torch.nonzero(enc_of(cls_pad).any(1)).squeeze(1)
 
         def vattn(qkv, li):
             if cls_i is None:
                 return self.varlen_attn(qkv, b["seq_off"], H, T)
-            tab = None if self.enemy_bias is None else self._tab(li).float().contiguous()
-            gate = None if self.enemy_gate is None else self._gate(li).float().reshape(1)
-            return self.varlen_attn(qkv, b["seq_off"], H, T, cls_i, tab, gate)
+            tab = None if self.enemy_bias is None else self._tab(li)
+            gate = None if self.enemy_gate is None else self._gate(li)
+            return _enemy_vattn(self.varlen_attn, qkv, b["seq_off"], H, T, cls_i, tab, gate)
 
         for li, layer in enumerate(self.trunk.layers):
             a = layer.self_attn

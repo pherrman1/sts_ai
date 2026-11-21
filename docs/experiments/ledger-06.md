@@ -29089,3 +29089,22 @@ decay); `load_opt_state` keeps any group whose parameter count matches and start
 (gates 0.31) and window, to see whether the GPU path gives non-finite outputs with trained gates; a live test only
 if it is clean.
 **Knowledge impact:** this entry.
+
+## §843 — §841's collapse came from `--compile`: frozen net, A20, 300 games per arm, flags + compile 0.7 % / floor 12.4 vs flags without compile 9.7 % / 28.4 (no flags 9.3 % / 29.1); the encounter-token helpers now run outside the compiled graph → BUILT, default off (cloud, 2026-11-21)
+
+**Frozen test (PC, run thread)**: ckpt_955864, no training, seeds 160300000-160300299, A20, 64 / 16 sims. A keys
+build (pre-§836) 12.3 % / floor 28.4 / 2.0k moves/s; B main 77039e9b without the flags 9.3 % / 29.1 / 1.6k; C with
+`--enemy-tokens --enemy-map-bias --compile` 0.7 % / 12.4 / 0.4k; D the same without `--compile` 9.7 % / 28.4 /
+1.0k. No non-finite output and no driver error in any arm. So the eager gated net plays like the net without the
+flags at gates 0 (as `--check-enemy-gate` said), and the compiled one is wrong; §841's gate learning rate was not
+the cause (the live collapse was there after 80 s with gates ~0.002). D is ~40 % slower than B.
+**Cloud repro:** none on CPU (Triton interpreter, fp32): compiled vs eager forward with packed tokens, varlen
+attention, packed heads, N marked dynamic, gates 0 / 0.4 and a random bias differ by < 3e-7. The cause on the GPU
+(fp16, inductor CUDA codegen) is not found.
+**Change (defensive):** token classes, the gated varlen_attn call and the gated row mean of the packed heads are
+`torch.compiler.disable` helpers (graph breaks only with the flags on); the varlen_attn op makes its inputs
+contiguous before the kernels read raw pointers. `--check-enemy-gate` with `--compile` also compares
+torch.compile(infer) with the eager inference net (`infer_compiled`). New test: compiled vs eager gated forward
+(runs on the GPU in the PC check). **Next:** on the PC, the test and `--check-enemy-gate --compile` on a window with
+encounter tokens, then arm C again; a live test only if C matches D.
+**Knowledge impact:** this entry.

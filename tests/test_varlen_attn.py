@@ -266,6 +266,38 @@ class EnemyBiasKernel(unittest.TestCase):
     dev = VarlenAttn.dev
     tol = VarlenAttn.tol
 
+    def test_compiled_gated_net_matches_eager(self):
+        """torch.compile of the gated inference forward (packed tokens, varlen_attn, packed heads, N dynamic as
+        selfplay.py --compile marks it) gives the eager outputs: on the PC GPU the compiled forward with encounter
+        tokens was wrong (frozen test 2026-11-21), so the encounter helpers run outside the compiled graph."""
+        import torch._dynamo as dynamo
+        A = load("amber_net")
+        torch.manual_seed(0)
+        net = A.jitter_1d_params(A.AmberNet(64, 2, enemy_bias=True, enemy_gate=True)).eval().to(self.dev)
+        net.sdpa = True
+        net.varlen_attn, net.row_mean, net.packed_heads = A.load_kernel("varlen_attn"), A.load_kernel("row_mean"), True
+        with torch.no_grad():
+            net.enemy_bias.normal_(0, 1)
+            net.enemy_gate.copy_(torch.tensor([0.4, 0.7, 0.3]))
+        run = torch.compile(net)
+        for seed in (3, 4):
+            f = gate_batch(A, seed=seed)
+            M = f["mask"].numel()
+            pk = A.pack_index(f["mask"], 16)
+            ip = pk.clamp(max=M - 1)
+            b = dict(f, pack_idx=pk, seq_off=A.seq_offsets(f["mask"]),
+                     act_idx=torch.nonzero(f["a_mask"].reshape(-1)).squeeze(1),
+                     tok_type=f["tok_type"].reshape(M)[ip], ids=f["ids"].reshape(M, -1)[ip], f=f["f"].reshape(M, -1)[ip])
+            b = {k: v.to(self.dev) for k, v in b.items()}
+            for k in ("act_idx", "pack_idx", "tok_type", "ids", "f"):
+                dynamo.mark_dynamic(b[k], 0)
+            with torch.no_grad():
+                e, c = net(b), run(b)
+            lm = b["a_mask"]
+            for x, y in zip(e, c):
+                d = (x - y).abs()
+                self.assertLess(float((d[lm] if x.shape == lm.shape else d).max()), self.tol, seed)
+
     def test_kernel_bias_matches_sdpa(self):
         import sys
         A, V = load("amber_net"), load("varlen_attn")

@@ -1188,7 +1188,9 @@ def enemy_gate_check(train_net, infer, replay, args, dev, hp_floors):
     # max |difference| per head: train / infer = gated net on the states vs the net without encounter parts on the
     # stripped states, split by rows with and without encounter tokens; infer_noise = the inference net vs the fp32
     # training net, both without encounter parts on the stripped states (fp16 noise floor of the comparison)
-    tags = ("train_enc_rows", "train_other_rows", "infer_enc_rows", "infer_other_rows", "infer_noise")
+    tags = ("train_enc_rows", "train_other_rows", "infer_enc_rows", "infer_other_rows", "infer_noise",
+            "infer_compiled")   # infer_compiled: torch.compile(infer) vs infer, both gated (only with --compile)
+    run_c = torch.compile(copy.deepcopy(infer)) if args.compile else None
     diff = {t: {k: 0.0 for k in names} for t in tags}
     nonfinite = {"train": 0, "infer": 0}   # non-finite outputs of the gated nets
     rows = enc_rows = 0
@@ -1227,6 +1229,13 @@ def enemy_gate_check(train_net, infer, replay, args, dev, hp_floors):
             cmp("infer_enc_rows", ai, bi, bt["a_mask"], has)
             cmp("infer_other_rows", ai, bi, bt["a_mask"], ~has)
             cmp("infer_noise", bi, b_, bt["a_mask"])
+            if run_c is not None:
+                xc = packed(hb)
+                for k in ("act_idx", "pack_idx"):
+                    torch._dynamo.mark_dynamic(xc[k], 0)
+                ci = run_c(xc)
+                nonfinite["infer"] += sum(int((~torch.isfinite(o.float())).sum()) for o in ci[1:4])
+                cmp("infer_compiled", ci, ai, bt["a_mask"])
     train_net.train()
 
     def step_ms(net, strip):
@@ -1490,7 +1499,8 @@ def main(argv=None):
                     help="offline check of --enemy-tokens instead of a run (needs --enemy-tokens and --replay-load of a "
                          "window with encounter tokens): on BATCHES training batches, the net with the gates at their "
                          "checkpoint values vs the same weights without the encounter parts on the states without the "
-                         "tokens (training net fp32, and the inference net), and the training step time of both; "
+                         "tokens (training net fp32, and the inference net), and the training step time of both; with "
+                         "--compile also torch.compile of the inference net vs the eager one (infer_compiled); "
                          "writes enemy_gate_check.json to --out-dir and exits")
     ap.add_argument("--batch", type=int, default=2048)
     ap.add_argument("--row-buckets", default="2048", help="batch rows padded to these (one size keeps compiled shapes few)")
