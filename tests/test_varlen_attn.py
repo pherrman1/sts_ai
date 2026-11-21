@@ -266,6 +266,37 @@ class EnemyBiasKernel(unittest.TestCase):
     dev = VarlenAttn.dev
     tol = VarlenAttn.tol
 
+    def test_gated_row_mean_matches_reference(self):
+        """row_mean at the widths the gated mean uses (16, d, 2 d; fp32 and fp16 inputs) and _gated_row_mean
+        against plain torch sums, on packed tokens with long rows and a trash tail (as the inference batches)."""
+        A = load("amber_net")
+        rm = A.load_kernel("row_mean")
+        g = torch.Generator().manual_seed(7)
+        R, d = 37, 128
+        n = torch.randint(0, 230, (R,), generator=g)
+        so = torch.cat([torch.zeros(1, dtype=torch.long), n.cumsum(0)])
+        N = int(so[-1]) + 21                                   # trash rows past the last live token
+        row = torch.bucketize(torch.arange(N), so[1:], right=True).clamp(max=R - 1)
+        live = (torch.arange(N) < so[-1]) & (torch.arange(N) != so[row])
+        for dt in (torch.float32, torch.float16):
+            for w in (16, d, 2 * d):
+                x = (torch.randn(N, w, generator=g) * 3).to(dt)
+                ref = torch.zeros(R, w).index_add_(0, row, x.float() * live[:, None])
+                cnt = torch.zeros(R).index_add_(0, row, live.float()).clamp(min=1)
+                out = rm(x.to(self.dev), so.to(self.dev)).float().cpu()
+                self.assertLess(float((out - ref / cnt[:, None]).abs().max()), 1e-2 if dt == torch.float16 else 1e-4,
+                                (dt, w))
+            x = (torch.randn(N, d, generator=g) * 3).to(dt)
+            enc = (torch.rand(N, generator=g) < 0.1) & live
+            for gv in (0.0, 0.3, 1.0):
+                w8 = live.float() * torch.where(enc, torch.tensor(gv), torch.tensor(1.0))
+                ref = torch.zeros(R, d).index_add_(0, row, x.float() * w8[:, None])
+                cnt = torch.zeros(R).index_add_(0, row, w8)
+                ref = ref / torch.where(cnt > 0, cnt, torch.ones_like(cnt))[:, None]
+                out = A._gated_row_mean(rm, x.to(self.dev), so.to(self.dev), enc.to(self.dev),
+                                        torch.tensor(gv, dtype=dt, device=self.dev)).float().cpu()
+                self.assertLess(float((out - ref).abs().max()), 1e-2 if dt == torch.float16 else 1e-4, (dt, gv))
+
     def test_compiled_gated_net_matches_eager(self):
         """torch.compile of the gated inference forward (packed tokens, varlen_attn, packed heads, N dynamic as
         selfplay.py --compile marks it) gives the eager outputs: on the PC GPU the compiled forward with encounter
