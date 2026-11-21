@@ -1134,6 +1134,11 @@ def main(argv=None):
     ap.add_argument("--explore-deck-only", action="store_true",
                     help="with --explore-amber: only cards, relics and potions are pick-rate items; event / campfire "
                          "options are never forced (2026-11-19, default off; Philipp decides)")
+    ap.add_argument("--explore-clean-keys", action="store_true",
+                    help="with --explore-amber / --explore-c: a pick-rate item is the choice itself (card, relic, "
+                         "potion, event option, Neow bonus + drawback, rest option; reward / shop / boss kinds apart), "
+                         "without the shop slot, price and affordability that made nearly every shop offer its own "
+                         "item (2026-11-21, default off = the first rule)")
     ap.add_argument("--eval-cache", action="store_true",
                     help="per-run evaluation cache: a leaf whose net input this run already had evaluated with the "
                          "current inference weights reuses that result (exact; RunConfig::evalCache)")
@@ -1458,6 +1463,7 @@ def main(argv=None):
         **({"explore_per_offer": True} if args.explore_per_offer else {}),
         **({"explore_gap_search": True} if args.explore_gap_search else {}),
         **({"explore_deck_only": True} if args.explore_deck_only else {}),
+        **({"explore_clean_keys": True} if args.explore_clean_keys else {}),
         **({"heart_arms": heart_arms, "heart_reps": args.heart_reps} if heart_arms else {}),
         **({"savescum": True} if savescum else {}),
         **({"compact_samples": True} if args.compact_samples else {}),

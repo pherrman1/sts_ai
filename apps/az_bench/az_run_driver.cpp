@@ -836,6 +836,8 @@ namespace sts::azbench {
         for (int i = 0; i < kPickBuckets; ++i) offers_[i].store(0);
         if (cfg_.explorePerOffer && !cfg_.exploreAmber)
             throw std::invalid_argument("run driver: explorePerOffer needs exploreAmber");
+        if (cfg_.exploreCleanKeys && !cfg_.exploreAmber && !(cfg_.exploreC > 0))
+            throw std::invalid_argument("run driver: exploreCleanKeys needs exploreAmber or exploreC");
         if ((cfg_.exploreGapSearch || cfg_.exploreDeckOnly) && !cfg_.exploreAmber)
             throw std::invalid_argument("run driver: exploreGapSearch / exploreDeckOnly need exploreAmber");
         if (!cfg_.encodeCombat) cfg_.encodeCombat = search::amberEncodeCombat;
@@ -1240,12 +1242,9 @@ namespace sts::azbench {
                         if (cfg.exploreDeckOnly && cls != 0 && cls != 2 && cls != 3) continue;
                         if (k < static_cast<int>(g.rootClass.size())) g.rootClass[k] = cls;
                         const auto &tok = fl.tokens.at(static_cast<AmberTokenType>(a.srcSeg), a.srcIdx);
-                        std::uint64_t h = 0x9e3779b97f4a7c15ull * (a.type + 1);
-                        for (int c = 0; c < 2; ++c) h = (h ^ static_cast<std::uint16_t>(tok.ids[c])) * 0x100000001b3ull;
-                        // The OPTION kind one-hot and option index (f 12-51): event / rest options are separate items.
-                        if (static_cast<AmberTokenType>(a.srcSeg) == AmberTokenType::OPTION)
-                            for (int c = 12; c < 52; ++c) h = (h ^ tok.f[c]) * 0x100000001b3ull;
-                        h ^= h >> 29;
+                        // exploreItemHash (az_run_driver.h): the first rule, or exploreCleanKeys.
+                        const std::uint64_t h = exploreItemHash(static_cast<int>(a.type), tok, seg == AmberTokenType::OPTION,
+                                                                cfg.exploreCleanKeys);
                         g.rootKeys[k] = static_cast<int>(h & (kPickBuckets - 1));
                     }
                 }

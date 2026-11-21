@@ -159,6 +159,43 @@ namespace sts::azbench {
     // logged runs. 0 when natural >= need; +infinity when even always picking it falls short. Bisection on log c.
     double amberExploreC(const AmberGapHist &h, double need, double T);
 
+    // Pick-rate item of a root action (exploreC / exploreAmber): a hash of the action type and its source token (a
+    // CARD or an OPTION token of amberEncodeGame); the driver keeps its low bits as the item's bucket.
+    //   clean false (the first rule, 2026-11-17): the token's ids[0], ids[1] and, for an OPTION, its features 12-51.
+    //     Those hold the kind one-hot but also the index within the group (30), legal (31), price (32), affordable
+    //     (33), gold amount (34), upgraded (35), specialData (38): one shop item at two prices or in two slots is
+    //     two items, so most shop offers are items of their own (never offered in pickTarget of the runs), and
+    //     of the Neow bonus one-hot (40-58) and drawback one-hot (59-63) only 40-51 count.
+    //   clean true (RunConfig::exploreCleanKeys, 2026-11-21): what the choice IS. A CARD token: its card id. An
+    //     OPTION: ids[0] (the card / relic / potion / event id), its kind (reward relic, shop card, shop relic,
+    //     shop potion, boss relic, ... stay separate items, as Amber Eye's separate charts) and by kind: REST the
+    //     rest option one-hot (40-46), NEOW the bonus and drawback one-hots (40-63), EVENT the option index one-hot
+    //     (40-51). Not the slot, price, affordability, upgrade, or the deck card / relic an event option names.
+    inline std::uint64_t exploreItemHash(int actionType, const search::AmberToken &tok, bool option, bool clean) {
+        constexpr std::uint64_t kMul = 0x100000001b3ull;
+        std::uint64_t h = 0x9e3779b97f4a7c15ull * static_cast<std::uint64_t>(actionType + 1);
+        if (!clean) {
+            for (int c = 0; c < 2; ++c) h = (h ^ static_cast<std::uint16_t>(tok.ids[c])) * kMul;
+            if (option)
+                for (int c = 12; c < 52; ++c) h = (h ^ tok.f[c]) * kMul;
+            h ^= h >> 29;
+            return h;
+        }
+        h = (h ^ static_cast<std::uint16_t>(tok.ids[0])) * kMul;
+        if (option) {
+            int kind = -1;
+            for (int c = 12; c <= 28; ++c) if (tok.f[c]) { kind = c - 12; break; }
+            h = (h ^ static_cast<std::uint64_t>(kind + 2)) * kMul;
+            int lo = 0, hi = -1;   // OptKind (AmberGameEncoder.cpp): REST 12, NEOW 13, EVENT 14
+            if (kind == 12) { lo = 40; hi = 46; }
+            else if (kind == 13) { lo = 40; hi = 63; }
+            else if (kind == 14) { lo = 40; hi = 51; }
+            for (int c = lo; c <= hi; ++c) h = (h ^ static_cast<std::uint64_t>(tok.f[c] != 0)) * kMul;
+        }
+        h ^= h >> 29;
+        return h;
+    }
+
     // Singing Bowl (+2 Max HP instead of a card reward): the engine accepts and executes RewardsActionType::CARD
     // (group, 5), but GameAction::getAllActionsInState (sts_lightspeed import) never lists it, so the net could not
     // choose it although amberEncodeGame shows the SINGING_BOWL option. On a reward screen with the relic, appends
@@ -311,6 +348,12 @@ namespace sts::azbench {
         // choices are never forced nor tracked.
         bool exploreGapSearch = false;
         bool exploreDeckOnly = false;
+        // exploreC / exploreAmber (2026-11-21, default off = the first rule): a pick-rate item is what the choice is
+        // (exploreItemHash clean), without the shop slot, price and affordability that made nearly every shop offer
+        // an item of its own. Amber Eye sets its target per choice ("card picks, event choices, Neow bonuses, and
+        // relics"); with the first rule and a target over all runs such fragments had c = infinity (forced at every
+        // offer: 9.3 forced picks per run, 2026-11-19), with explorePerOffer they never pass the warm-up.
+        bool exploreCleanKeys = false;
         // Per-run evaluation cache (2026-11-17, default off): a leaf whose encoded net input (live tokens and legal
         // actions) equals one this run already had evaluated with the current weights (setWeightsVersion) takes
         // that result instead of a new net evaluation. Exact: the net sees only its input, so the cached result is
