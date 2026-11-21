@@ -104,6 +104,36 @@ if(Python_Development.Module_FOUND)
         apps/az_bench/az_run_driver.cpp
         $<TARGET_OBJECTS:sts_core_pic_objects>)
     target_include_directories(az_bench_native PRIVATE include json/include apps/az_bench)
+    # The same module with the live out-of-combat importer (GameState.from_live; decision explainability advisor,
+    # tools/az_bench/amber_advisor.py). Built only on request (cmake --build ... --target az_bench_live), so the
+    # self-play module and its build time stay as they are.
+    pybind11_add_module(az_bench_live EXCLUDE_FROM_ALL
+        apps/az_bench/az_bench_module.cpp
+        apps/az_bench/az_driver.cpp
+        apps/az_bench/az_run_driver.cpp
+        apps/one_combat/live_ooc_state.cpp
+        apps/one_combat/live_ooc_importer.cpp
+        apps/one_combat/differential_state.cpp
+        apps/one_combat/live_ooc_policy.cpp
+        apps/one_combat/heart1_policy.cpp
+        apps/one_combat/heart_leaf.cpp
+        apps/one_combat/ooc_v4_encoding.cpp
+        apps/one_combat/run_features.cpp
+        apps/one_combat/ooc_mcts_adapter.cpp
+        apps/one_combat/ooc_tree_rules.cpp
+        apps/one_combat/ooc_native_fallback.cpp
+        apps/one_combat/ooc_checkpoint_policy.cpp
+        apps/one_combat/compact_tree.cpp
+        apps/one_combat/combat_predictor_input.cpp
+        apps/one_combat/combat_transition.cpp
+        apps/one_combat/combat_transition_near_full.cpp
+        apps/one_combat/combat_transition_runtime.cpp
+        apps/one_combat/combat_transition_native_contract.cpp
+        $<TARGET_OBJECTS:sts_core_pic_objects>)
+    target_include_directories(az_bench_live PRIVATE include json/include apps/az_bench apps)
+    target_compile_definitions(az_bench_live PRIVATE STS_AZ_LIVE_IMPORT=1 STS_LIVE_ADVISOR=1
+                               AZ_BENCH_MODULE_NAME=az_bench_live)
+    link_ctm_crypto(az_bench_live)
 else()
     message(WARNING "Python development headers not found; skipping the slaythespire pybind11 module")
 endif()
@@ -187,6 +217,17 @@ set_tests_properties(az_run_driver_rng_fix PROPERTIES LABELS "core;smoke")
 add_test(NAME az_run_driver_aux_fights COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 6 --fast
          --seed-base 1 --seconds 300 --aux-fights)
 set_tests_properties(az_run_driver_aux_fights PROPERTIES LABELS "core;smoke")
+# A fight decided before its first decision (Neow's Lament + Mercury Hourglass: the monsters start at 1 HP and take 3 at
+# the start of turn 1) is left as won, not counted as a no-legal-action stall; STS_AZ_FIGHT_START_END=0 restores the old
+# stall. Also runs the stall log (--stall-log).
+add_test(NAME az_run_driver_fight_start_end COMMAND $<TARGET_FILE:az-run-driver> --workers 1 --games 2 --runs 6 --fast
+         --test-relic NEOWS_LAMENT --test-relic MERCURY_HOURGLASS --stall-log az_run_driver_fight_start_end.jsonl)
+set_tests_properties(az_run_driver_fight_start_end PROPERTIES LABELS "core;smoke"
+                     PASS_REGULAR_EXPRESSION "no_legal 0; fights ended at start [1-9]")
+add_test(NAME az_run_driver_fight_start_end_off COMMAND $<TARGET_FILE:az-run-driver> --workers 1 --games 2 --runs 6 --fast
+         --test-relic NEOWS_LAMENT --test-relic MERCURY_HOURGLASS --stall-log az_run_driver_fight_start_end_off.jsonl)
+set_tests_properties(az_run_driver_fight_start_end_off PROPERTIES LABELS "core;smoke" ENVIRONMENT "STS_AZ_FIGHT_START_END=0"
+                     PASS_REGULAR_EXPRESSION "no_legal [1-9][0-9]*; fights ended at start 0.*stall log: [1-9]")
 add_test(NAME az_run_driver_aux_fights_compact COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 6 --fast
          --seed-base 1 --seconds 300 --aux-fights --compact-samples)
 set_tests_properties(az_run_driver_aux_fights_compact PROPERTIES LABELS "core;smoke")
@@ -1023,6 +1064,8 @@ add_test(NAME live_advisor_protocol COMMAND python3
     ${CMAKE_SOURCE_DIR}/selfplay/models/combat_transition_near_full_except_smoke_v2.native)
 set_tests_properties(live_advisor_protocol PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+add_test(NAME amber_probe COMMAND python3 -m unittest tests.test_amber_probe)
+set_tests_properties(amber_probe PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "tooling;smoke")
 add_test(NAME live_game_runtime COMMAND python3 -m unittest tests.test_live_game_runtime)
 set_tests_properties(live_game_runtime PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "tooling;smoke")

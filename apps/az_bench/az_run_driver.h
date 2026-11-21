@@ -33,6 +33,7 @@
 #include <optional>
 #include <random>
 #include <stdexcept>
+#include <string>
 #include <thread>
 #include <unordered_map>
 #include <vector>
@@ -296,6 +297,29 @@ namespace sts::azbench {
         std::int64_t elites = 0, rest = 0, smith = 0;
     };
 
+    // Stall log (RunConfig::stallLog, 2026-11-21, diagnostic, default off): one record per run ended by a stall guard
+    // (counted as a loss): the fight passed maxMovesPerFight decisions (type 0), the run passed kMaxMovesPerRun
+    // decisions (type 1), or a decision state had no legal action (type 2). Logging only: play is unchanged.
+    struct StallLog {
+        static constexpr int kTrail = 30;        // last real decisions kept
+        int type = 0;                            // 0 fight_moves, 1 run_moves, 2 no_legal
+        std::uint64_t seed = 0;
+        int asc = 0, act = 0, floor = 0, inBattle = 0;
+        int screen = 0;                          // GameContext::screenState
+        int encounter = 0, room = 0;             // gc.info.encounter, gc.curRoom
+        int turn = 0, fightMoves = 0, runMoves = 0;
+        int curHp = 0, maxHp = 0;                // the player's (fight HP while in a fight)
+        int block = 0, energy = 0;               // in a fight
+        int drawPile = 0, discardPile = 0, exhaustPile = 0, hand = 0;
+        int outcome = 0, inputState = 0;        // the fight's Outcome / InputState, in a fight
+        std::vector<std::array<int, 5>> monsters;   // (MonsterId, curHp, maxHp, block, isDeadOrEscaped), in a fight
+        std::vector<int> relics, potions;        // RelicId, Potion (non-empty slots)
+        int deckSize = 0, gold = 0;
+        std::vector<std::string> lastActions;    // oldest first; "c " combat / "o " out of combat
+    };
+    inline const char *stallTypeName(int t) { return t == 0 ? "fight_moves" : t == 1 ? "run_moves" : "no_legal"; }
+    std::string stallLogJson(const StallLog &r);   // one JSON object (no newline), names spelled out
+
     struct RunConfig {
         int workers = 11;
         int gamesPerWorker = 700;
@@ -330,6 +354,7 @@ namespace sts::azbench {
         std::int64_t maxPendingSamples = 300000;
         std::uint64_t searchSeed = 0;   // search / Gumbel / resampling RNG
         int testMaxHp = 0;              // tests only: > 0 sets max / current HP at the run's start (reach late floors)
+        std::vector<RelicId> testRelics;   // tests only: relics obtained at the run's start (az_run_driver_fight_start_end)
         // Pick-rate exploration (from Amber Eye; 2026-11-17, default off): an out-of-combat item (CHOOSE_CARD / CHOOSE_OPTION source token: card reward, event /
         // Neow option, relic, shop item) picked in fewer than pickTarget of all runs so far is under target. A root
         // offering one gets a full search, and with probability min(1, exploreC * (1 - rate / pickTarget)) the most
@@ -511,6 +536,9 @@ namespace sts::azbench {
         // Per-run Heart log (2026-11-19, diagnostic, default 0 = off; HeartRunLog, takeHeartRunLogs): > 0 records every
         // Heart kill and each other run that fought the Heart with this probability. Logging only: play is unchanged.
         double heartLogRate = 0;
+        // Stall log (2026-11-21, diagnostic, default off; StallLog, takeStallLogs): records every run ended by a stall
+        // guard with its last StallLog::kTrail real decisions. Logging only: play is unchanged.
+        bool stallLog = false;
         // Fight-outcome auxiliary targets (2026-11-21, default off; NOT from Amber Eye, whose page lists no such
         // head: Philipp's choice after an STS2 author's run net "predict[s] fight outcomes of the current boss, all 3
         // elites, and a random sample of 4 regular encounters"). Every kept out-of-combat sample also stores the
@@ -526,6 +554,21 @@ namespace sts::azbench {
         // get one MONSTER token per fight the act can hold (search::amberAppendEncounterTokens: boss, elites, the
         // strong hallway pool), so the net sees which enemies the map's rooms lead to.
         bool enemyTokens = false;
+        // Search from given states (2026-11-21, decision explainability; default empty = off). With probe roots,
+        // runs do not start from seeds: each run takes the next root, searches its decision once with the full
+        // budget (fullSims, fullCandidates; Gumbel draws 0 unless probeNoise, i.e. the top logits are the
+        // candidates and the pick is the best logit + sigma(completed Q), as Amber's noise-free moves), records a
+        // ProbeResult and takes the next root. Nothing is played, no sample is stored. A root whose decision the
+        // driver would not search (fight, game over, no or one legal action after the configured OOC rules, reward
+        // gold taken automatically) is recorded with its status and no search. Out of combat only. Needs
+        // searchEmaLambda > 0 and searchEmaHp (their per-node distributions give each root action's search-backed
+        // P(win) and HP; both change only training targets, not the selection).
+        std::vector<std::shared_ptr<const GameContext>> probeRoots;
+        bool probeNoise = false;
+        // Out-of-combat state capture (2026-11-21, diagnostic, default 0 = off): each searched out-of-combat root
+        // of a normal run is copied (takeCaptures) with this probability, decided by a hash of the run seed and the
+        // move number (not the search RNG), so play is the same as without it.
+        double captureRate = 0;
         CombatEncodeFn encodeCombat = nullptr;   // default: search::amberEncodeCombat
         GameEncodeFn encodeGame = nullptr;       // default: search::amberEncodeGame (stubEncodeGame = placeholder)
     };
@@ -656,6 +699,8 @@ namespace sts::azbench {
     struct RunStats {
         std::int64_t evals = 0, moves = 0, searchedMoves = 0, runsStarted = 0, runsDone = 0, wins = 0;
         std::int64_t floorsSum = 0, stalls = 0, terminalLeaves = 0, unsupported = 0;
+        std::array<std::int64_t, 3> stallsByType{};   // StallLog::type order: fight_moves, run_moves, no_legal
+        std::int64_t fightsEndedAtStart = 0;   // real fights decided before their first decision (Neow's Lament + Mercury Hourglass)
         std::int64_t invalidActions = 0;      // chosen actions not valid in the real fight after translation (bug; run lost)
         std::int64_t knowledgeFailures = 0;   // fights whose public view could not be built (run abandoned as a loss)
         std::int64_t encodeCut = 0, encodeCutOoc = 0;   // tokens / actions past capacity (combat, out of combat; MAP keeps the nearest 32 nodes)
@@ -711,6 +756,49 @@ namespace sts::azbench {
         std::int64_t memPendingCap = 0, memMoveDistCap = 0, memCacheEntries = 0, memDone = 0;
         std::int64_t memFlights = 0;   // allocated flight slots of all runs (one encoded input each, ~60 KB)
         double stepCpu = 0, encodeCpu = 0, searchCpu = 0, packSeconds = 0;
+    };
+
+    // RunConfig::probeRoots: one root action's search result. q: mean backed-up value (NaN unvisited); qCompleted:
+    // the completed Q of the root's selection (qRescale: rescaled to [0, 1]); policy: Gumbel's improved policy
+    // softmax(logit + sigma qCompleted); score: the final pick's root score. pWin / ehp / dist: the mean over the
+    // edge's simulations of their leaves' outcome distribution (P(win) = class 0; class f = death on floor f) and
+    // of the expected HP at the end of the root's floor (searchEmaHp leaf entries); NaN / empty when unvisited.
+    struct ProbeEdge {
+        std::uint32_t bits = 0;
+        float logit = 0;
+        std::int32_t n = 0;
+        double q = 0, qCompleted = 0, policy = 0, score = 0;
+        double pWin = 0, ehp = 0;
+        std::vector<float> dist;   // [57]
+        std::vector<float> hpf;    // utility AMBER / AMBER2: mean E[HP_f] / 255 of floors f = 1..56 [56] (0 before the root's floor)
+        bool candidate = false;    // among the search's initial candidates
+    };
+
+    struct ProbeResult {
+        enum Status : int { SEARCHED = 0, FORCED = 1, COMBAT = 2, GAME_OVER = 3, NO_ACTION = 4 };
+        std::int64_t probe = -1;   // index into RunConfig::probeRoots
+        int status = SEARCHED;
+        int floor = 0, act = 0, screen = 0, maxHp = 0, hp = 0;
+        std::uint32_t pickBits = 0;   // the search's pick (FORCED: the only action)
+        int pick = -1;                // its index in edges / the sample's actions
+        // The root's net evaluation: utility value, P(win) outcome head F (search value), expected HP at the end of
+        // the floor, outcome softmax [57], floor HP softmax [256].
+        float rootValue = 0, rootF = 0, rootEhp = 0;
+        std::vector<float> rootDist, rootHpd;
+        // The search: root visits, mean backed-up value, sigma, the root's search-backed outcome distribution [57]
+        // and its expected HP at the end of the floor.
+        std::int32_t rootN = 0;
+        double searchValue = 0, sigma = 0, searchPWin = 0, searchEhp = 0;
+        std::vector<float> searchDist, searchHpf;   // searchHpf: utility AMBER / AMBER2, as ProbeEdge::hpf
+        std::vector<ProbeEdge> edges;
+        Sample sample;   // the root's encoded tokens and actions (copied layout; policy = improved policy)
+    };
+
+    // RunConfig::captureRate: a copied out-of-combat search root of a normal run.
+    struct Capture {
+        std::uint64_t seed = 0;
+        int move = 0, floor = 0;
+        std::shared_ptr<const GameContext> state;
     };
 
     class RunDriver {
@@ -780,6 +868,29 @@ namespace sts::azbench {
             return out;
         }
 
+        // Stall log (RunConfig::stallLog): the records since the last call (moved out).
+        std::vector<StallLog> takeStallLogs() {
+            std::lock_guard<std::mutex> l(stallLogM_);
+            std::vector<StallLog> out;
+            out.swap(stallLogs_);
+            return out;
+        }
+        // RunConfig::probeRoots: the results so far (moved out) and the count of roots done (all recorded).
+        std::vector<ProbeResult> takeProbeResults() {
+            std::lock_guard<std::mutex> l(probeM_);
+            std::vector<ProbeResult> out;
+            out.swap(probeResults_);
+            return out;
+        }
+        std::int64_t probesDone() const { return probesDone_.load(); }
+        // RunConfig::captureRate: the captured states since the last call (moved out).
+        std::vector<Capture> takeCaptures() {
+            std::lock_guard<std::mutex> l(probeM_);
+            std::vector<Capture> out;
+            out.swap(captures_);
+            return out;
+        }
+
         struct Node;
         struct Run;
         struct Worker;
@@ -819,6 +930,12 @@ namespace sts::azbench {
         std::vector<HeartResult> heartResults_;
         std::mutex heartLogM_;
         std::vector<HeartRunLog> heartLogs_;
+        std::mutex stallLogM_;
+        std::vector<StallLog> stallLogs_;
+        std::atomic<std::int64_t> probeNext_{0}, probesDone_{0};
+        std::mutex probeM_;
+        std::vector<ProbeResult> probeResults_;
+        std::vector<Capture> captures_;
     };
 
 }

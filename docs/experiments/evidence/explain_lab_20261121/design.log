@@ -1,0 +1,27 @@
+
+BARRICADE offered; f1 = ENTRENCH, f2 = BODY_SLAM; density SHRUG_IT_OFF+FLAME_BARRIER+GHOSTLY_ARMOR vs POMMEL_STRIKE+TWIN_STRIKE+UPPERCUT: n 72, C(a, Skip) mean +0.69; tokens built for ['BODY_SLAM', 'ENTRENCH']
+   f1                   +0.353 [+0.276, +0.425]
+   f2                   +0.058 [+0.001, +0.119]
+   density              +4.004 [+3.102, +5.045]
+   f1 x f2              -0.009 [-0.013, -0.004]
+   f1 x density         -0.022 [-0.047, +0.007]
+   f2 x density         -0.128 [-0.197, -0.072]
+   f1 x f2 x density    -0.006 [-0.011, -0.002]
+
+CORRUPTION offered; f1 = DARK_EMBRACE, f2 = FEEL_NO_PAIN; density SHRUG_IT_OFF+FLAME_BARRIER+GHOSTLY_ARMOR vs POMMEL_STRIKE+TWIN_STRIKE+UPPERCUT: n 69, C(a, Skip) mean +6.61
+   f1                   +1.371 [+1.253, +1.519]
+   f2                   +2.031 [+1.861, +2.281]
+   density              +2.468 [+2.195, +2.855]
+   f1 x f2              -0.571 [-0.641, -0.515]
+   f1 x density         -0.167 [-0.223, -0.122]
+   f2 x density         -0.742 [-0.867, -0.654]
+   f1 x f2 x density    +0.033 [-0.005, +0.071]
+
+RUPTURE offered; f1 = BLOODLETTING, f2 = OFFERING; density HEMOKINESIS+COMBUST+BRUTALITY vs POMMEL_STRIKE+TWIN_STRIKE+UPPERCUT: n 122, C(a, Skip) mean -6.63; tokens built for ['BLOODLETTING', 'COMBUST', 'HEMOKINESIS']
+   f1                   +0.034 [+0.009, +0.062]
+   f2                   -0.034 [-0.067, +0.007]
+   density              +0.809 [+0.696, +0.946]
+   f1 x f2              -0.004 [-0.006, -0.001]
+   f1 x density         -0.006 [-0.015, +0.002]
+   f2 x density         -0.050 [-0.065, -0.037]
+   f1 x f2 x density    +0.001 [-0.001, +0.003]

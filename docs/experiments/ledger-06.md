@@ -28880,4 +28880,259 @@ synthetic states with and without `STS_AZ_KEY_HOLES2=0`.
 **Interpretation:** this is the last path found in code; whether the live remainder was this one is not known (no
 per-run key data before this entry). The next live check reads the new counters.
 **Decision:** engine fix, default on; live after the owner's go and a 5-15 minute PC test.
+## §842 — Self-play stalls: a fight won before its first decision (Neow's Lament + Mercury Hourglass) ended the run as a "no legal action" stall loss; fixed, default on, `STS_AZ_FIGHT_START_END=0` restores; new `--stall-log` (default off) records every stall (cloud, 2026-11-21)
+
+**Question (owner, 2026-11-21):** what are the stage-1 self-play stalls (about 46 per 100k A20 runs; 3 of 1000 in
+the deterministic ckpt_928513 benchmark, seeds 160200000-160200999), should and can they be fixed?
+**Mechanism (code, main 0cad30e1):** `az_run_driver.cpp` has three stall guards, each ends the run as a loss and adds
+to `stalls`: a fight past `--max-fight-moves` (400) real decisions, a run past 50,000 real decisions, and a decision
+state with no legal action. Nothing about the stalled run was logged.
+**Tooling:** `RunConfig::stallLog` (`selfplay.py --stall-log` → `<out-dir>/stall_log.jsonl`; `az-run-driver
+--stall-log PATH`), default off: one JSON record per stalled run with type (`fight_moves`, `run_moves`, `no_legal`),
+seed, ascension, act, floor, room, encounter, fight state (turn, HP, block, energy, piles, monsters with HP and
+dead/escaped), outcome / input state, relics, potions, deck size, gold and the last 30 real decisions as text. The
+per-type counts are always counted (`stalls_by_type` in every selfplay metrics row; `stalls by type` line of
+`az-run-driver`). Logging only: with one worker and one game the driver output is identical with and without the
+flag (fake net, 300 runs, A20, `--test-hp 3000`). The engine's `search::Action::printDesc` reads `monsters[target]`
+for a potion discard (target stored as 0xffff) and segfaulted the logging run after a few thousand runs; the log
+uses its own range-checked text instead (engine unchanged).
+**Repro (cloud, fake net, C++ only):** `az-run-driver --workers 3 --games 16 --runs 40000 --fast --asc 20 --seed-base
+160200000 --force-keys --force-rewards --utility amber --stall-log ...` (replays already used benchmark seeds; run
+order is not deterministic with several workers). Without the fix: 3 `no_legal` stalls (with
+`STS_AZ_FIGHT_START_END=0`, another run: 3 `no_legal` + 1 `fight_moves`); 20,000 runs with 4 workers: 3 `no_legal`. All `no_legal` records: a hallway fight at turn 0 with 0 decisions, every
+monster at 0 HP and dead, fight outcome PLAYER_VICTORY, relics include Neow's Lament and Mercury Hourglass. Lament
+sets the first three fights' monsters to 1 HP, Hourglass deals 3 to all enemies at the start of turn 1, so the fight
+is won inside `BattleContext::init` (as in the game). The driver checked a fight's outcome only after a played
+action, found no legal action and counted the won fight as a stall loss. The one `fight_moves` record is a genuine
+stalemate of the fake net (Pandora's Box deck, only True Grit left, a Green Louse at 1 HP, player at 2 HP for 200
+turns); the 50,000-move guard never fired.
+**Fix (`apps/az_bench/az_run_driver.cpp`, `startMove`):** a real fight already decided before its first decision is
+left like a decided step (`exitBattle`, rewards follow); counter `fights_ended_at_start`. Default on,
+`STS_AZ_FIGHT_START_END=0` restores. Same 40,000-run command: 0 stalls, 1 fight ended at start (counts this small vary between
+runs of the same command). Tests `az_run_driver_fight_start_end` / `_off` (`--test-relic NEOWS_LAMENT --test-relic
+MERCURY_HOURGLASS`, a tests-only start relic option; on: no `no_legal`, fights ended at start > 0; off: `no_legal` > 0
+and stall-log records). The search tree already handles this case with `--cross-combat` (a decided fight start
+exits into the game state); without it the fight-start leaf is valued by the net as before (unchanged).
+**Interpretation:** implementation success for the cloud repro. How many of the real net's 46 per 100k stalls are
+this case is not measured: Lament (a Neow option) plus a Mercury Hourglass found before the third fight is rare but
+reachable; real-net 400-decision stalemates may be the rest. `--stall-log` on the live run (or the 1000-seed
+benchmark) answers it.
+**Decision:** engine fix default on (independent review); `--stall-log` default off. Live use after the owner's go
+and a 5-15 minute PC test.
+
+## §840 — Decision explainability for every out-of-combat decision, P0-P2: checks of the explanations (deletion curves, weight randomization, checkpoint stability, calibration), constructed 2x2x2 contexts, logit lens, activation patching, probes, and a search-backed live advisor that shows per option prior / visits / Q / P(win) / HP and the owned items behind the prior in the inspector mod → BUILT, diagnostic only, no default changes (cloud, 2026-11-21)
+
+**Question (owner, 2026-11-21, after §833 and the literature review):** build the P0-P2 list for all out-of-combat
+decisions (not only card rewards), without generated text and without methods that need a lot of compute, and
+show it in the mod. Combat decisions later.
+**Tools (all CPU; the PC GPU and the live run are not touched):**
+- `tools/az_bench/explain.py` v2: every out-of-combat decision kind (card rewards, shop, map, campfire, events,
+  Neow, boss / reward relics, chests, card select screens, potions, keys); the measure is the logit contrast
+  C(a, b) = z_a - z_b against one reference b (Skip where it exists, else the best other action) instead of
+  log pi (§833's limit), with a placebo z of each item's effect among all owned items (median / MAD); modes
+  `survey` (per kind), `table` (per position) and `pairs` (§833's pairs with the double difference D2 against
+  strong and filler control cards and against matched offers).
+- `tools/az_bench/explain_lab.py` (new): `coverage`, `design`, `lens`, `patch`, `calibration`, `shapley` (exact
+  over the multiset of item types, else antithetic permutations; efficiency checked), `faithful` (deletion curves /
+  AOPC, method agreement, cascading randomization after Adebayo et al., checkpoint stability), `counterfactual`
+  (minimal removal sets PRINCE-style, SARFA, HP and gold scans), `probe` (linear probes per layer with input and
+  random-init baselines and a shuffled-label control, TCAV, a value GLM), `interact` (k-SII / Faithful-SII via
+  shapiq over the top items).
+- Search from a given state: `RunDriver(probe_roots=[GameState, ...])` searches each root once with the full
+  budget and no root noise (`probe_noise=True` keeps it), plays nothing, and returns per edge bits, logit, visits,
+  Q, completed Q, improved policy, root score, and the backed-up outcome distribution (57 floors), P(win), E[HP]
+  and floor-HP distribution of the subtree; needs `search_ema_lambda > 0` and `search_ema_hp`. `capture_rate`
+  hands out normal runs' out-of-combat roots as probe roots. `GameState.new_run(seed, asc, rng_fix)`.
+- `az_bench_live` (new CMake target, EXCLUDE_FROM_ALL): the same module plus the live importer;
+  `GameState.from_live(observation)` and `lower_action(bits)` (search action → live action JSON).
+- `tools/az_bench/amber_probe.py` (the live run's search flags, 64/16 sims), `explain_live.py` (one decision:
+  per option the items for / against it, for pick vs runner-up LOO, exact Shapley over the 6 strongest items,
+  minimal reversing set, HP reversal, value items), `amber_advisor.py` (proxy around `one_combat_advisor` that
+  adds evaluator `amber_explain_v1` to out-of-combat responses; combat passes through).
+- Mod: `OocOverlay` takes `amber_explain_v1` when present (`oocSource=legacy` restores the old ranking): per
+  option "#rank · P(win) · N" (or the prior when unvisited); a box at the upper right with the pick's prior, Q,
+  E[HP] at the end of the floor and the next floor, the why lines and the pair lines. `AmberOverlayTest`.
+**Positions:** §833's window (32 A20 runs, seeds 160100000-160100031, 11,725 positions, 1,485 out-of-combat
+decisions, 2 wins), `ckpt_895975.pt` and `ckpt_791357.pt` (hashes in the evidence).
+**Results:**
+
+| kind | positions | n | items | share |z|>3 | top item share | single-item flip | |dC| top | |dP(win)| top |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| card reward | 489 | 60 | 18.4 | 0.11 | 0.35 | 0.28 | 1.77 | 0.136 |
+| map | 315 | 60 | 18.1 | 0.07 | 0.30 | 0.35 | 0.49 | 0.119 |
+| event | 170 | 60 | 21.1 | 0.05 | 0.26 | 0.17 | 0.56 | 0.154 |
+| campfire | 127 | 60 | 20.8 | 0.10 | 0.30 | 0.22 | 1.29 | 0.160 |
+| shop | 115 | 60 | 22.8 | 0.11 | 0.35 | 0.42 | 1.61 | 0.141 |
+| select upgrade | 63 | 60 | 18.4 | 0.10 | 0.31 | 0.35 | 1.32 | 0.155 |
+| boss relic | 31 | 31 | 21.3 | 0.09 | 0.26 | 0.10 | 1.78 | 0.134 |
+| Neow | 32 | 32 | 5.0 | 0.06 | 0.50 | 0.03 | 0.21 | 0.038 |
+
+(all 19 kinds in `survey.log`; flip = removing one owned item changes the net's best action.)
+- Faithfulness (30 decisions, contrast best vs runner-up): AOPC over the first 5 deletions LOO 1.52, Shapley 1.60,
+  gate-IG 1.57, attention rollout 0.51, random -0.01. Agreement (Spearman) LOO~Shapley +0.74, LOO~gate-IG +0.78,
+  Shapley~gate-IG +0.90, LOO~rollout +0.11: attention rollout is not a faithful explanation here, the three
+  perturbation / gradient methods agree. Shapley vs LOO per decision: mean Spearman +0.73.
+- Cascading randomization (heads, then top 1-4 layers re-initialised): Spearman of the LOO ranking with the
+  original +0.05, +0.31, -0.16, -0.13, -0.01, i.e. the explanations depend on the trained weights (sanity check
+  passed). Checkpoint stability (`ckpt_791357`): same best action 0.87, Spearman of LOO +0.55.
+- Counterfactuals (40 decisions): 18 have a set of at most 6 owned items whose removal changes the choice, sizes
+  1 (12), 2 (3), 3 (2), 5 (1); in 42.5 % an HP change flips it, median distance 11 HP.
+- Calibration of the outcome head (1,485 positions): mean P(win) 0.349 against a win rate of 0.120, ECE 0.229
+  [0.150, 0.347], E[final floor] +6.8 floors too high (Act 1 +9.7, Act 3 -0.0); the HP head is unbiased (-0.3 HP).
+  The net is overconfident in these runs (replicated on 256 runs below). Likely reason: the live run that trained it
+  played at A10 until 2026-11-21 15:35 CET and at A20 with savescum after that, so its value targets come from
+  easier or retried runs; these runs are A20 without savescum. The mod shows P(win) as the net's number, not as a
+  calibrated probability.
+- Constructed contexts (2x2x2, run-clustered intervals): Corruption offered: Dark Embrace +1.37 [+1.25, +1.52],
+  Feel No Pain +2.03, three block cards instead of three attacks +2.47, Dark Embrace x Feel No Pain -0.57 [-0.64,
+  -0.52] (sub-additive). Barricade offered: Entrench +0.35, Body Slam +0.06, block density +4.00 [+3.10, +5.05]:
+  the net ties Barricade to how much block the deck has, not to the named partners (consistent with §833's null).
+  Rupture offered: Bloodletting +0.03, Offering -0.03, three self-damage cards +0.81 (tokens of cards nobody
+  owned are built, `design.log`).
+- Coverage (the owner's question on the nulls): in 32 runs Rupture and Bloodletting were never owned, Entrench and
+  Body Slam once each (offered 9-48 times); Corruption, Dark Embrace, Feel No Pain, Limit Break, Inflame owned in
+  5-13 runs. The null pairs are pairs the net has hardly seen together.
+- Logit lens / activation patching: the pair effects appear after layer 1 (Corruption < Dark Embrace D2 +0.81 at L1,
+  +1.73 at L2); patching only the offered card's residual from s + k recovers 0.95-1.12 of the effect from layer
+  1 on (Corruption, Limit Break pairs), 0.75 at layer 2 for Barricade < Entrench; the run token carries nothing.
+  The interaction is read into the offered card's token by the first one or two attention layers.
+- Probes (linear, on the run summary, held-out runs): HP ratio reaches it in layer 1 (R² 0.10 before, 0.97 after;
+  random-init net 0.16), gold too (0.80 at layer 1, random init 0.23); act, deck size and relic count are nearly
+  as readable from a random-init net as from the trained one; block share, strength sources and curses are not
+  linearly readable; the 0/1 concepts exhaust engine and has Corruption do not beat the shuffled-label control.
+  TCAV: 1 of 44 tests at p < 0.05 (Limit Break / has Corruption), about what chance gives. Value GLM on 10 readable
+  features: R² 0.55 of logit P(win) (per SD: act -0.48, HP ratio +0.32, deck size +0.28).
+- Live advisor on four captured observations (`tests/fixtures/live_act1_boss_card_reward.json`,
+  `live_du_vu_card_reward.json`, `live_act3_entry.json`, `live_act4_heart_map.json`): floor 16 card reward
+  (net P(win) 0.27; Barricade's prior supported by Shrug It Off and Ghostly Armor, z 4.0 / 3.7), floor 45 card reward
+  (0.93; Heavy Blade+ supported by Flex+, Inflame+, Philosopher's Stone, opposed by Dead Branch z -12.3), floor 34
+  map, floor 55 forced; latency 0.24-0.49 s per decision on 2 threads, 2.4 s with start-up.
+
+**Replication on 256 more runs (owner's go 2026-11-21 21:13 CET; seeds 160100032-160100287, same flags and
+checkpoint; 98,443 positions, 12,549 out-of-combat decisions, 4,203 card rewards; 12 wins = 4.7 %):**
+- Calibration (4,000 sampled positions): mean P(win) 0.360 against 0.080, ECE 0.280 [0.238, 0.319], E[final floor]
+  +6.6, HP head unbiased (-0.06 HP); Act 3 0.533 against 0.172; positions the net puts at 0.85-0.94 win 46 %.
+- Pairs: the same signs and classes as on 32 runs, intervals about three times narrower: D2 against Skip for
+  Corruption < Dark Embrace +1.01 [+0.94, +1.08], Limit Break < Inflame +3.00 [+2.78, +3.24], Barricade < Entrench
+  +0.14 [+0.13, +0.15], Rupture < Bloodletting +0.05 [+0.04, +0.06].
+- 2x2x2: Barricade: block density +4.34 [+4.07, +4.62], Entrench +0.37, Body Slam +0.06; Corruption: Dark Embrace
+  +1.40, Feel No Pain +2.02, Dark Embrace x Feel No Pain -0.59 [-0.61, -0.56]; Rupture: Bloodletting +0.01 [-0.01,
+  +0.02], Offering +0.02, self-damage density +0.76.
+- Coverage: Rupture now owned in 4 runs, Entrench 6, Body Slam 17, Bloodletting 22 (offered 122-362 times); the
+  Barricade and Rupture nulls stay.
+- Survey per kind: the same picture (card reward |dC| top 1.60, single-item flip 0.27; shop flip 0.47; boss relic
+  |dC| top 2.02). Probes: HP ratio 0.41 before layer 1, 0.99 after (random init 0.31); block share and curses not
+  readable; value GLM R² 0.36 (per SD relics +0.64, act -0.45, HP ratio +0.31); TCAV 2 of 44 tests at p < 0.05,
+  about what chance gives.
+**Limits:** explanations of the prior (and the value head); the search part is the searched numbers themselves, not
+an attribution of them. Token removal leaves states the net never saw (placebo z and controls calibrate it, do
+not remove it). Two windows (32 and 256 runs) of one checkpoint at A20 without savescum, mostly Act 1-2. The live advisor's search uses the net's P(win), which is
+overconfident here. Combat decisions are not covered.
+**Cost:** whole offline suite 22 min on 4 cloud threads (`commands.sh`); 256 runs 41 min on about 2 cloud cores,
+their analyses 25 min on 2 threads; one live decision 0.25-0.5 s.
+**Decision:** none on the agent; no defaults change (the probe mode is inert unless `probe_roots` is passed; the
+mod prefers the Amber evaluator only when the advisor sends one). The mod test on the PC (CPU only) follows.
+**Evidence:** `docs/experiments/evidence/explain_lab_20261121/` (every mode's log and JSON, the commands, checkpoint
+hashes, the advisor's responses to the four fixtures; `gen256/` for the 256 runs).
+## §838 — §837 live test FAILED (winrate 41.6 % → 1.6 % → ~17 % in 15 min, trainer ~7 instead of ~200 steps / min); second attempt: `--enemy-tokens` now gates the encounter tokens in at 0 (the resumed net computes what it did without them), the bias goes into training as extra q / k columns instead of a float mask, `--check-enemy-gate` checks both offline → BUILT, default off (cloud, 2026-11-21)
+
+**Live test of §837 (PC, stage-1 thread, 21:09-21:25 CET, resumed with `--enemy-tokens --enemy-map-bias
+--aux-fights` and the key-holes fix):** before (key holes only, 20:57-21:09) 41.6 % winrate (savescum), floor
+44.3; after 21:14-21:19 1.6 % / 24.8, 21:19-21:24 10.4 % / 33.8, then ~17 %. No errors or NaNs. Rolled back to
+ckpt_943204 and the window from before (the enemy run is kept as ckpt_943309.pt + replay_enemy_run_2125 on the PC).
+**Causes:** (1) the zero bias table did not make the resumed net the same: the up to 14 new tokens are keys of
+every attention and terms of the summary mean, so every out-of-combat output moved at once (the §837 test "zero
+table = net without it" compared the same tokens with and without the table, not against the state without the
+tokens). (2) The bias in training was a float mask [B, H, T, T] per layer: scaled_dot_product_attention loses its
+fused kernels and B H T^2 memory per layer; the trainer made ~7 instead of ~200 steps per minute.
+**Fix (owner's decision "ja soll bauen", 2026-11-21, a further deviation from Amber Eye):** `AmberNet(enemy_gate=
+True)` (on with `--enemy-tokens`): per layer a gate g (parameter clamped to [0, 1], straight-through gradient, 0 at
+the start) mixes the attention with the encounter tokens as keys (g) and without them (1 - g); a last gate weights
+them in the summary mean (also in the packed heads' row mean). At g = 0 every other token computes what the net
+computes on the state without the encounter tokens (up to float rounding; the encounter tokens' own rows do not
+reach any other token or head). In the varlen Triton kernels the second softmax runs in the same pass (shared
+running maximum, its own sum and accumulator: one more P V product per block). The bias in training is now two
+extra q / k column blocks, q' = [q / sqrt(dh), TAB[h, cls_q, :]], k' = [k, onehot(cls_k)] (padded to a multiple of
+8): same scores, the fused attention kernels stay, no [B, H, T, T] tensor. Gates and table are in the optimizer's
+second group. Metrics row `enemy_gate`, dashboard chart "Encounter-token gates".
+**Offline check `selfplay.py --check-enemy-gate N`** (with the run's arguments, `--enemy-tokens`, `--resume` of a
+checkpoint without encounter parts, `--replay-load` of a window with encounter tokens; the step check of the window
+is skipped in this mode): on N training batches the max |difference| of policy logits (live actions), outcome, HP
+and per-floor HP heads between the gated net and the same weights without encounter parts on the stripped states
+(`amber_net.strip_encounters`), for the fp32 training net and the inference net (fp16 packed, varlen kernels on a
+GPU), and the median training step time (bf16 forward + backward) of both; writes `enemy_gate_check.json`.
+**Checks (cloud, CPU, TRITON_INTERPRET=1):** gate 0 with and without a bias on the encounter classes = the net
+without encounter parts on the stripped batch (flat and packed, 1e-4); gate in (0, 1): sdpa_trunk, packed, varlen,
+fused-layer and packed-heads paths agree; kernel with gate (0, 0.3, 1; with and without bias; both kernels) = the
+SDPA mix; the gates get a gradient at 0. `test_check_enemy_gate`: checkpoint without parts + window of a later
+`--enemy-tokens --enemy-map-bias` run: all differences < 1e-4. Note: a bias table with nonzero entries between
+non-encounter classes (map nodes and the rest) changes states without encounter tokens too; it starts at 0.
+**Not measured:** the PC check (GPU equality in fp16, training step time with vs without), live behaviour. Next:
+the stage-1 thread runs `--check-enemy-gate` on the PC with ckpt_943204 + replay_enemy_run_2125, then a 15 min live
+test if the outputs match and the step time is close.
+**Knowledge impact:** lesson for any new input token on a resumed net: gate it in at exact identity and compare
+against the state without it, not only the zero-initialised new weights.
+
+## §839 — §838 PC check FAILED (inference fp16 differences up to 0.31 on HP logits at gate 0, training step 3.1x); fixes: own softmax maximum for the gate's second pass in the kernels, fp32 row mean, second attention pass only on rows with encounter tokens, bias only on encounter-class pairs; the check splits rows and reports the fp16 noise floor → BUILT, default off (cloud, 2026-11-21)
+
+**PC check of §838** (stage-1 thread, ckpt_943204 + replay_enemy_run_2125, `--check-enemy-gate 20`, 22:0x CET):
+gates 0; training net fp32 max |diff| 2e-5 .. 1.4e-4 (pass); inference net fp16 policy 0.031, outcome 0.094, HP
+0.31, per-floor HP 0.0068 (fail, limit ~2e-2); training step 215.9 ms with vs 69.0 ms without (3.1x, fail), with only
+377 of 20,480 rows holding encounter tokens. **Causes found (no GPU in the cloud to confirm):** (1) the kernels' second
+softmax shared the running maximum of the first: when an encounter key scored highest, the other weights went below
+fp16's normal range before the P V product; it now keeps its own maximum. (2) The summary gate's weighted row mean
+summed fp16 values (row_mean accumulates in fp32); now fp32. (3) Training ran both passes on every row and the
+q / k column bias on every row. Now: one plain pass for all rows (rows without encounter tokens are done), and the
+biased pass and the pass without encounter keys only on the rows that hold encounter tokens. For that the bias acts
+only on pairs with an encounter class (query or key; `AmberNet._tab`), so states without encounter tokens attend
+exactly as without the flag; the gate's second pass has no bias (kernel and training). **Check output** now splits
+the differences into rows with / without encounter tokens, adds `infer_noise` (inference net vs fp32 training net,
+both without encounter parts: the fp16 floor of the comparison) and `train_step_ms.with_gates_only`.
+**Checks (cloud, CPU, TRITON_INTERPRET=1):** test_varlen_attn + test_packed_heads 14 passed (kernel gate = SDPA mix
+with the bias in the first part only; all net paths agree with gate and bias; gate 0 = net without parts on the
+stripped states); test_selfplay enemy / check tests pass. **Not measured:** the PC check again.
+**Knowledge impact:** this entry.
+
+## §841 — §839 passed the PC check (inference differences below the fp16 noise floor, training step 1.17x) but the live run collapsed again within 5 min and the driver stopped with `empty floor HP target`; gates and bias now get their own optimizer group at 1 % of --lr, the check counts non-finite outputs → BUILT, default off (cloud, 2026-11-21)
+
+**PC check of §839** (gatecheck2_20261121): inference rows with encounter tokens policy 0.016 / outcome 0.063 / HP
+0.125 / per-floor HP 0.004 against the fp16 noise floor 0.045 / 0.168 / 0.494 / 0.015; training net 1.1e-4 on
+those rows, exactly 0 on the others; training step 80.2 vs 68.8 ms (1.17x). **Live 22:15-22:21 CET** (ckpt_952346,
+`--enemy-tokens --enemy-map-bias`, aux fights on) against the 22:06 restart without them, minutes after the start:
+1 min 0 % / floor 7 vs 0 % / 15; 2.5 min 0 % / 14 vs 5 % / 33; 5 min 0-0.5 % / 15 vs 58 % / 50. Gates 0 in the
+first metrics row, 0.31 after 5 min; trainer ~165 steps / min. At ~22:20:50 the driver stopped with
+`std::logic_error: run driver: empty floor HP target` (--hp-ema-search: an HP target with no class >= 1/510 can
+only come from a non-finite HP distribution of the net). Rolled back at 22:21 (attempt checkpoint and window kept).
+**Checks in the cloud since:** the driver's token and action streams with and without `--enemy-tokens` (745 rows of
+the same games, 147 with encounter tokens) are identical except for the new tokens, and every action's source /
+target points at the same token; a CPU self-play smoke with the live flag set (`--hp-ema-search --replay-hp-bytes
+96 --parallel-nodes 4 --aux-fights --savescum`, EMA search, Amber search rules) plus both flags, 60 runs: no error.
+**Reading (not proven):** the first minute's runs are few and short, so its floor gap may be noise; the gates then
+opened fast: Adam moves each parameter by about lr per step whatever the gradient's size, so at --lr 1e-3 a gate
+with a small noisy gradient opens like one with a real gain, and the rest of the net had no time to adapt to the new
+inputs. The non-finite HP output is not explained; it may come from the trained gates / table on the GPU path.
+**Change:** gates and table in their own optimizer group (`--enemy-lr-scale`, default 0.01 of --lr; no weight
+decay); `load_opt_state` keeps any group whose parameter count matches and starts the others fresh.
+`--check-enemy-gate` reports `nonfinite_outputs` of the gated nets. **Next:** the check on the attempt's checkpoint
+(gates 0.31) and window, to see whether the GPU path gives non-finite outputs with trained gates; a live test only
+if it is clean.
+**Knowledge impact:** this entry.
+
+## §843 — §841's collapse came from `--compile`: frozen net, A20, 300 games per arm, flags + compile 0.7 % / floor 12.4 vs flags without compile 9.7 % / 28.4 (no flags 9.3 % / 29.1); the encounter-token helpers now run outside the compiled graph → BUILT, default off (cloud, 2026-11-21)
+
+**Frozen test (PC, run thread)**: ckpt_955864, no training, seeds 160300000-160300299, A20, 64 / 16 sims. A keys
+build (pre-§836) 12.3 % / floor 28.4 / 2.0k moves/s; B main 77039e9b without the flags 9.3 % / 29.1 / 1.6k; C with
+`--enemy-tokens --enemy-map-bias --compile` 0.7 % / 12.4 / 0.4k; D the same without `--compile` 9.7 % / 28.4 /
+1.0k. No non-finite output and no driver error in any arm. So the eager gated net plays like the net without the
+flags at gates 0 (as `--check-enemy-gate` said), and the compiled one is wrong; §841's gate learning rate was not
+the cause (the live collapse was there after 80 s with gates ~0.002). D is ~40 % slower than B.
+**Cloud repro:** none on CPU (Triton interpreter, fp32): compiled vs eager forward with packed tokens, varlen
+attention, packed heads, N marked dynamic, gates 0 / 0.4 and a random bias differ by < 3e-7. The cause on the GPU
+(fp16, inductor CUDA codegen) is not found.
+**Change (defensive):** token classes, the gated varlen_attn call and the gated row mean of the packed heads are
+`torch.compiler.disable` helpers (graph breaks only with the flags on); the varlen_attn op makes its inputs
+contiguous before the kernels read raw pointers. `--check-enemy-gate` with `--compile` also compares
+torch.compile(infer) with the eager inference net (`infer_compiled`). New test: compiled vs eager gated forward
+(runs on the GPU in the PC check). **Next:** on the PC, the test and `--check-enemy-gate --compile` on a window with
+encounter tokens, then arm C again; a live test only if C matches D.
 **Knowledge impact:** this entry.

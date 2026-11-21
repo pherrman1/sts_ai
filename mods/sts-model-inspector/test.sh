@@ -17,6 +17,7 @@ java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.PublicHistory
 java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.QuestionRoomObserverTest
 java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.RelicOfferRecorderTest
 java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.OocOverlayTest
+java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.AmberOverlayTest
 java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.CombatBoundaryTest
 java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.PendingCardQueueCaptureTest
 java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.RunicDomeTrackerTest

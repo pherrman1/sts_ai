@@ -1,0 +1,875 @@
+{
+ "ckpt": "ckpt_895975.pt",
+ "ckpt2": null,
+ "replay": "gen/replay",
+ "mode": "interact",
+ "seed": 0,
+ "report": [
+  {
+   "sample": 96,
+   "kind": "select bottle",
+   "best": "bottle Immolate",
+   "runner_up": "bottle Iron Wave",
+   "players": [
+    "Strike",
+    "Burning Blood",
+    "Bash",
+    "Bottled Flame",
+    "Rage",
+    "Defend",
+    "Ascender's Bane",
+    "Immolate",
+    "Iron Wave"
+   ],
+   "evals": 512,
+   "k-SII": [
+    [
+     "Strike",
+     "Burning Blood",
+     NaN
+    ],
+    [
+     "Strike",
+     "Bash",
+     NaN
+    ],
+    [
+     "Strike",
+     "Bottled Flame",
+     NaN
+    ],
+    [
+     "Strike",
+     "Rage",
+     NaN
+    ],
+    [
+     "Strike",
+     "Defend",
+     NaN
+    ]
+   ],
+   "FSII": [
+    [
+     "Strike",
+     "Burning Blood",
+     NaN
+    ],
+    [
+     "Strike",
+     "Bash",
+     NaN
+    ],
+    [
+     "Strike",
+     "Bottled Flame",
+     NaN
+    ],
+    [
+     "Strike",
+     "Rage",
+     NaN
+    ],
+    [
+     "Strike",
+     "Defend",
+     NaN
+    ]
+   ]
+  },
+  {
+   "sample": 318,
+   "kind": "map",
+   "best": "map: monster x0 y0",
+   "runner_up": "map: monster x2 y0",
+   "players": [
+    "Burning Blood",
+    "Ascender's Bane",
+    "Bash",
+    "Defend",
+    "Strike"
+   ],
+   "evals": 32,
+   "k-SII": [
+    [
+     "Defend",
+     "Strike",
+     -0.035145896176497125
+    ],
+    [
+     "Bash",
+     "Defend",
+     0.017821095883846286
+    ],
+    [
+     "Burning Blood",
+     "Strike",
+     0.01738706479469935
+    ],
+    [
+     "Burning Blood",
+     "Bash",
+     0.01697236051162084
+    ],
+    [
+     "Bash",
+     "Strike",
+     0.01171895116567612
+    ]
+   ],
+   "FSII": [
+    [
+     "Defend",
+     "Strike",
+     -0.0352296203373224
+    ],
+    [
+     "Bash",
+     "Defend",
+     0.01809856891648464
+    ],
+    [
+     "Burning Blood",
+     "Strike",
+     0.01697642505170741
+    ],
+    [
+     "Burning Blood",
+     "Bash",
+     0.01692291796209255
+    ],
+    [
+     "Bash",
+     "Strike",
+     0.012108439207240874
+    ]
+   ]
+  },
+  {
+   "sample": 644,
+   "kind": "reward relic/sapphire key",
+   "best": "take Question Card (sapphire key pair)",
+   "runner_up": "sapphire key",
+   "players": [
+    "Uppercut+",
+    "Reaper",
+    "Burning Blood",
+    "Inflame",
+    "Shrug It Off",
+    "Iron Wave",
+    "Defend",
+    "The Boot",
+    "Ascender's Bane",
+    "Bash"
+   ],
+   "evals": 1024,
+   "k-SII": [
+    [
+     "Uppercut+",
+     "Inflame",
+     -0.16690457687964524
+    ],
+    [
+     "Uppercut+",
+     "Defend",
+     0.10110317070096242
+    ],
+    [
+     "Uppercut+",
+     "Ascender's Bane",
+     0.07165268567937702
+    ],
+    [
+     "Burning Blood",
+     "Defend",
+     0.0697583732209981
+    ],
+    [
+     "Reaper",
+     "Defend",
+     0.061427145989404706
+    ]
+   ],
+   "FSII": [
+    [
+     "Uppercut+",
+     "Inflame",
+     -0.1649528313644912
+    ],
+    [
+     "Uppercut+",
+     "Defend",
+     0.10601404546577561
+    ],
+    [
+     "Burning Blood",
+     "Defend",
+     0.0704482166856008
+    ],
+    [
+     "Uppercut+",
+     "Ascender's Bane",
+     0.06746795120290344
+    ],
+    [
+     "Uppercut+",
+     "Bash",
+     -0.061783834515354505
+    ]
+   ]
+  },
+  {
+   "sample": 1552,
+   "kind": "event",
+   "best": "Scrap Ooze option 0",
+   "runner_up": "Scrap Ooze option 1",
+   "players": [
+    "Smiling Mask",
+    "Ascender's Bane",
+    "Defend",
+    "Strike",
+    "Burning Blood",
+    "Clothesline",
+    "Spot Weakness",
+    "Perfected Strike",
+    "Bash",
+    "Swift Potion"
+   ],
+   "evals": 1024,
+   "k-SII": [
+    [
+     "Defend",
+     "Strike",
+     0.09861485234328683
+    ],
+    [
+     "Burning Blood",
+     "Spot Weakness",
+     0.0769270223343656
+    ],
+    [
+     "Ascender's Bane",
+     "Strike",
+     0.07509244806354959
+    ],
+    [
+     "Burning Blood",
+     "Perfected Strike",
+     0.06611094794103073
+    ],
+    [
+     "Ascender's Bane",
+     "Defend",
+     0.06343542014559131
+    ]
+   ],
+   "FSII": [
+    [
+     "Defend",
+     "Strike",
+     0.10180805448063873
+    ],
+    [
+     "Ascender's Bane",
+     "Strike",
+     0.07864627386089393
+    ],
+    [
+     "Burning Blood",
+     "Spot Weakness",
+     0.06737470515390308
+    ],
+    [
+     "Ascender's Bane",
+     "Defend",
+     0.06573593788902925
+    ],
+    [
+     "Burning Blood",
+     "Perfected Strike",
+     0.05425657813001063
+    ]
+   ]
+  },
+  {
+   "sample": 2393,
+   "kind": "card reward",
+   "best": "take Feed",
+   "runner_up": "take Offering",
+   "players": [
+    "Offering",
+    "Burning Blood",
+    "Colorless Potion",
+    "Battle Trance",
+    "Spot Weakness+",
+    "Mercury Hourglass",
+    "Speed Potion",
+    "Ascender's Bane",
+    "Pummel",
+    "Headbutt"
+   ],
+   "evals": 1024,
+   "k-SII": [
+    [
+     "Spot Weakness+",
+     "Mercury Hourglass",
+     -0.2936344168252415
+    ],
+    [
+     "Offering",
+     "Burning Blood",
+     0.23483816535463375
+    ],
+    [
+     "Offering",
+     "Battle Trance",
+     -0.1795417802556164
+    ],
+    [
+     "Spot Weakness+",
+     "Pummel",
+     0.11622345640309284
+    ],
+    [
+     "Burning Blood",
+     "Battle Trance",
+     0.10391977366710442
+    ]
+   ],
+   "FSII": [
+    [
+     "Spot Weakness+",
+     "Mercury Hourglass",
+     -0.3085472488362606
+    ],
+    [
+     "Offering",
+     "Burning Blood",
+     0.23190232844344266
+    ],
+    [
+     "Offering",
+     "Battle Trance",
+     -0.1857337034605265
+    ],
+    [
+     "Spot Weakness+",
+     "Pummel",
+     0.11396282148149303
+    ],
+    [
+     "Burning Blood",
+     "Battle Trance",
+     0.10058854722888813
+    ]
+   ]
+  },
+  {
+   "sample": 2770,
+   "kind": "card reward",
+   "best": "skip / leave rewards",
+   "runner_up": "take Body Slam",
+   "players": [
+    "Twin Strike",
+    "Pommel Strike",
+    "Ascender's Bane",
+    "Inflame",
+    "Strike",
+    "Defend",
+    "Bash",
+    "Burning Blood"
+   ],
+   "evals": 256,
+   "k-SII": [
+    [
+     "Twin Strike",
+     "Pommel Strike",
+     -0.7368084714881022
+    ],
+    [
+     "Twin Strike",
+     "Defend",
+     -0.5374540349912071
+    ],
+    [
+     "Twin Strike",
+     "Strike",
+     -0.4981636880409148
+    ],
+    [
+     "Twin Strike",
+     "Inflame",
+     0.329592839522021
+    ],
+    [
+     "Inflame",
+     "Burning Blood",
+     0.30743650361185987
+    ]
+   ],
+   "FSII": [
+    [
+     "Twin Strike",
+     "Pommel Strike",
+     -0.7258374434120245
+    ],
+    [
+     "Twin Strike",
+     "Defend",
+     -0.5020453915740305
+    ],
+    [
+     "Twin Strike",
+     "Strike",
+     -0.47142794363092566
+    ],
+    [
+     "Twin Strike",
+     "Inflame",
+     0.3562677049533636
+    ],
+    [
+     "Inflame",
+     "Burning Blood",
+     0.31468040584748935
+    ]
+   ]
+  },
+  {
+   "sample": 4890,
+   "kind": "card reward",
+   "best": "take Anger",
+   "runner_up": "take Twin Strike",
+   "players": [
+    "Warped Tongs",
+    "Nunchaku",
+    "Flex",
+    "Burning Blood",
+    "Headbutt",
+    "Twin Strike",
+    "Pain",
+    "Strike",
+    "Defend",
+    "Bash"
+   ],
+   "evals": 1024,
+   "k-SII": [
+    [
+     "Warped Tongs",
+     "Pain",
+     0.6048057640119215
+    ],
+    [
+     "Warped Tongs",
+     "Strike",
+     0.5613834934811757
+    ],
+    [
+     "Headbutt",
+     "Twin Strike",
+     -0.3465290701401138
+    ],
+    [
+     "Strike",
+     "Defend",
+     -0.2510549760231417
+    ],
+    [
+     "Warped Tongs",
+     "Defend",
+     0.2296123063694398
+    ]
+   ],
+   "FSII": [
+    [
+     "Warped Tongs",
+     "Pain",
+     0.5738861098876561
+    ],
+    [
+     "Warped Tongs",
+     "Strike",
+     0.5256532295826472
+    ],
+    [
+     "Headbutt",
+     "Twin Strike",
+     -0.3369612017592775
+    ],
+    [
+     "Strike",
+     "Defend",
+     -0.27027687735768013
+    ],
+    [
+     "Warped Tongs",
+     "Defend",
+     0.1998184337125981
+    ]
+   ]
+  },
+  {
+   "sample": 6419,
+   "kind": "event",
+   "best": "The Cleric option 0",
+   "runner_up": "The Cleric option 1",
+   "players": [
+    "Happy Flower",
+    "Burning Blood",
+    "Pen Nib",
+    "Uppercut",
+    "Metallicize",
+    "Power Potion",
+    "Ascender's Bane",
+    "Energy Potion",
+    "Strike",
+    "Pommel Strike"
+   ],
+   "evals": 1024,
+   "k-SII": [
+    [
+     "Happy Flower",
+     "Strike",
+     0.2578036077438843
+    ],
+    [
+     "Burning Blood",
+     "Pen Nib",
+     -0.21098806454193947
+    ],
+    [
+     "Burning Blood",
+     "Uppercut",
+     -0.20115411236054354
+    ],
+    [
+     "Happy Flower",
+     "Pen Nib",
+     -0.19370953634617827
+    ],
+    [
+     "Happy Flower",
+     "Burning Blood",
+     -0.18546442132857105
+    ]
+   ],
+   "FSII": [
+    [
+     "Happy Flower",
+     "Strike",
+     0.2663517117627621
+    ],
+    [
+     "Burning Blood",
+     "Pen Nib",
+     -0.21213610238555175
+    ],
+    [
+     "Burning Blood",
+     "Uppercut",
+     -0.20229848352483887
+    ],
+    [
+     "Happy Flower",
+     "Pen Nib",
+     -0.19918254768473334
+    ],
+    [
+     "Happy Flower",
+     "Burning Blood",
+     -0.19059997554800592
+    ]
+   ]
+  },
+  {
+   "sample": 6598,
+   "kind": "card reward",
+   "best": "take Pummel",
+   "runner_up": "skip / leave rewards",
+   "players": [
+    "Fiend Fire+",
+    "Runic Pyramid",
+    "Fossilized Helix",
+    "Happy Flower",
+    "Spot Weakness+",
+    "Uppercut+",
+    "Sentinel+",
+    "Twin Strike",
+    "Spot Weakness",
+    "Question Card"
+   ],
+   "evals": 1024,
+   "k-SII": [
+    [
+     "Spot Weakness+",
+     "Spot Weakness",
+     -2.1171074624927253
+    ],
+    [
+     "Fiend Fire+",
+     "Runic Pyramid",
+     -1.4973432102018869
+    ],
+    [
+     "Fiend Fire+",
+     "Spot Weakness+",
+     -0.3759387815992038
+    ],
+    [
+     "Fiend Fire+",
+     "Spot Weakness",
+     -0.330814871440331
+    ],
+    [
+     "Runic Pyramid",
+     "Uppercut+",
+     -0.14762854994762492
+    ]
+   ],
+   "FSII": [
+    [
+     "Spot Weakness+",
+     "Spot Weakness",
+     -2.171717392255738
+    ],
+    [
+     "Fiend Fire+",
+     "Runic Pyramid",
+     -1.5235203982031829
+    ],
+    [
+     "Fiend Fire+",
+     "Spot Weakness+",
+     -0.4129263907587312
+    ],
+    [
+     "Fiend Fire+",
+     "Spot Weakness",
+     -0.37391180934562585
+    ],
+    [
+     "Runic Pyramid",
+     "Uppercut+",
+     -0.17105772778420758
+    ]
+   ]
+  },
+  {
+   "sample": 8624,
+   "kind": "event",
+   "best": "World of Goop option 0",
+   "runner_up": "World of Goop option 1",
+   "players": [
+    "Spot Weakness",
+    "Reaper",
+    "Burning Blood",
+    "Oddly Smooth Stone",
+    "Ascender's Bane",
+    "Strike",
+    "Bash",
+    "Defend"
+   ],
+   "evals": 256,
+   "k-SII": [
+    [
+     "Spot Weakness",
+     "Reaper",
+     0.5956119629598802
+    ],
+    [
+     "Spot Weakness",
+     "Burning Blood",
+     -0.25968139838604687
+    ],
+    [
+     "Reaper",
+     "Oddly Smooth Stone",
+     -0.20804474027383876
+    ],
+    [
+     "Reaper",
+     "Defend",
+     -0.20606332715778106
+    ],
+    [
+     "Burning Blood",
+     "Defend",
+     -0.13581898929107764
+    ]
+   ],
+   "FSII": [
+    [
+     "Spot Weakness",
+     "Reaper",
+     0.60726822806625
+    ],
+    [
+     "Spot Weakness",
+     "Burning Blood",
+     -0.2566240368146323
+    ],
+    [
+     "Reaper",
+     "Oddly Smooth Stone",
+     -0.20452624431594743
+    ],
+    [
+     "Reaper",
+     "Defend",
+     -0.17896019188109158
+    ],
+    [
+     "Strike",
+     "Defend",
+     0.12527835954582642
+    ]
+   ]
+  },
+  {
+   "sample": 9097,
+   "kind": "event",
+   "best": "match slot Brutality",
+   "runner_up": "match slot Bash",
+   "players": [
+    "Spot Weakness+",
+    "Reaper",
+    "Limit Break",
+    "Ink Bottle",
+    "Dark Embrace",
+    "Bag Of Preparation",
+    "Fusion Hammer",
+    "Burning Blood",
+    "Fiend Fire",
+    "Battle Trance"
+   ],
+   "evals": 1024,
+   "k-SII": [
+    [
+     "Spot Weakness+",
+     "Limit Break",
+     0.05583424089210378
+    ],
+    [
+     "Fusion Hammer",
+     "Battle Trance",
+     -0.05073956714144767
+    ],
+    [
+     "Reaper",
+     "Fusion Hammer",
+     0.050449142445411
+    ],
+    [
+     "Spot Weakness+",
+     "Reaper",
+     0.03814663608514125
+    ],
+    [
+     "Limit Break",
+     "Fusion Hammer",
+     0.037745890305155794
+    ]
+   ],
+   "FSII": [
+    [
+     "Fusion Hammer",
+     "Battle Trance",
+     -0.053205328753160454
+    ],
+    [
+     "Spot Weakness+",
+     "Limit Break",
+     0.05263511162507424
+    ],
+    [
+     "Reaper",
+     "Fusion Hammer",
+     0.045948308174670105
+    ],
+    [
+     "Reaper",
+     "Battle Trance",
+     -0.03633970231448839
+    ],
+    [
+     "Limit Break",
+     "Fusion Hammer",
+     0.034125481262940086
+    ]
+   ]
+  },
+  {
+   "sample": 10191,
+   "kind": "reward potion",
+   "best": "skip / leave rewards",
+   "runner_up": "take Smoke Bomb",
+   "players": [
+    "Reaper",
+    "Shockwave+",
+    "Sozu",
+    "Burning Blood",
+    "Battle Trance+",
+    "Second Wind",
+    "Panic Button",
+    "Havoc+",
+    "Red Skull",
+    "Ascender's Bane"
+   ],
+   "evals": 1024,
+   "k-SII": [
+    [
+     "Reaper",
+     "Sozu",
+     -0.1355590820371626
+    ],
+    [
+     "Sozu",
+     "Panic Button",
+     -0.06627791263754408
+    ],
+    [
+     "Reaper",
+     "Shockwave+",
+     0.05049578573495617
+    ],
+    [
+     "Sozu",
+     "Second Wind",
+     -0.04668040446464029
+    ],
+    [
+     "Shockwave+",
+     "Burning Blood",
+     0.04243416700453032
+    ]
+   ],
+   "FSII": [
+    [
+     "Reaper",
+     "Sozu",
+     -0.13053660930507066
+    ],
+    [
+     "Sozu",
+     "Panic Button",
+     -0.0635894403757112
+    ],
+    [
+     "Reaper",
+     "Shockwave+",
+     0.05406922409077563
+    ],
+    [
+     "Sozu",
+     "Second Wind",
+     -0.04483140130750584
+    ],
+    [
+     "Shockwave+",
+     "Burning Blood",
+     0.04319045364267063
+    ]
+   ]
+  }
+ ]
+}

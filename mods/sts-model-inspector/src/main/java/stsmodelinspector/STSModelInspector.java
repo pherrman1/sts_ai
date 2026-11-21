@@ -172,6 +172,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private volatile boolean showAdvisorPanel = true;
     private volatile boolean showActionRecommendations = true;
     private volatile boolean showSelectedActionSummary = true;
+    // amber_explain_v1 (tools/az_bench/amber_advisor.py): the explanation box of the hovered / recommended choice.
+    private volatile boolean showAmberExplanation = true;
     private volatile String combatEntry = "";
     private volatile String combatEntryHash = "";
     private final LatestPublisher latestPublisher = new LatestPublisher();
@@ -358,6 +360,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         OocOverlay overlay = currentOocOverlay();
         boolean inlineOoc = showActionRecommendations && !combat && renderInlineChoices(sb, overlay, scale);
         if (inlineOoc && (overlay == null || overlay.distribution == null)) {
+            renderAmberExplanation(sb, overlay, scale);
             graphButtonX = 24.0f * scale;
             graphButtonBottom = 50.0f * scale;
             graphButtonLayoutSequence = newest.sequence;
@@ -394,6 +397,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             if (showActionRecommendations) renderSilverActionBadges(sb, scale);
         } else {
             renderNonCombatPanel(sb, x, top, width, bottom, scale, inlineOoc);
+            renderAmberExplanation(sb, overlay, scale);
         }
         graphButtonX = x + (SILVER_BOOST_BUTTON_X + SILVER_BOOST_BUTTON_WIDTH + 10.0f) * scale;
         graphButtonBottom = bottom + SILVER_BOOST_BUTTON_BOTTOM * scale;
@@ -691,6 +695,50 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return Long.toString(simulations);
     }
 
+    /**
+     * The Amber net's explanation (amber_explain_v1) of the hovered choice, else of the recommended one, at the
+     * upper right: its search numbers, the owned items its prior thinks it synergises with (leave-one-out effect
+     * on the logit contrast to its reference, placebo z) and, for the recommendation against the runner-up, the
+     * pair effects, Shapley values, the smallest item set and the HP that reverse the net's prior. Display only.
+     */
+    private void renderAmberExplanation(SpriteBatch sb, OocOverlay view, float scale) {
+        if (!showAmberExplanation || view == null || !OocOverlay.AMBER_POLICY.equals(view.policy)
+                || !"OK".equals(view.status) || view.choices.isEmpty()) return;
+        OocOverlay.Choice shown = hoveredOocChoice;
+        if (shown == null || !view.choices.contains(shown))
+            for (OocOverlay.Choice c : view.choices) if (c.selected) shown = c;
+        if (shown == null) return;
+        List<String> lines = new ArrayList<>();
+        List<Color> colors = new ArrayList<>();
+        lines.add(view.amberRoot); colors.add(MUTED);
+        lines.add((shown.selected ? "▶ " : "") + shown.label); colors.add(shown.selected ? CYAN : WARNING);
+        if (OocOverlay.AMBER_SEMANTICS.equals(shown.valueSemantics)) {
+            lines.add(String.format(Locale.ROOT, "P(win) %s · N %d (%.0f%%) · prior %.1f%% · Q %.3f",
+                    Double.isNaN(shown.pWin) ? "—" : String.format(Locale.ROOT, "%.1f%%", 100 * shown.pWin),
+                    shown.visits, 100 * shown.visitShare, 100 * shown.prior, shown.q));
+            colors.add(Color.WHITE);
+            if (!Double.isNaN(shown.hpFloorEnd) || !Double.isNaN(shown.hpNextFloor)) {
+                lines.add(String.format(Locale.ROOT, "E[HP] end of floor %s · next floor %s",
+                        Double.isNaN(shown.hpFloorEnd) ? "—" : String.format(Locale.ROOT, "%.0f", shown.hpFloorEnd),
+                        Double.isNaN(shown.hpNextFloor) ? "—" : String.format(Locale.ROOT, "%.0f", shown.hpNextFloor)));
+                colors.add(MUTED);
+            }
+            for (String w : shown.why) { lines.add(w); colors.add(w.startsWith("-") ? DEATH : w.startsWith("+") ? CYAN : MUTED); }
+        }
+        if (!view.amberPair.isEmpty()) {
+            for (String w : view.amberPair) { lines.add(w); colors.add(w.startsWith("-") ? DEATH : w.startsWith("+") ? CYAN : MUTED); }
+        }
+        float width = 560 * scale, line = 22 * scale;
+        float height = (18 + 22 * lines.size()) * scale;
+        float x = Settings.WIDTH - width - 24 * scale, top = Settings.HEIGHT - 170 * scale;
+        drawRect(sb, x + 5 * scale, top - height - 5 * scale, width, height, new Color(0f, 0f, 0f, 0.42f));
+        drawRect(sb, x, top - height, width, height, PANEL_BACKGROUND);
+        drawBorder(sb, x, top - height, width, height, CYAN_DIM, 1.5f * scale);
+        for (int i = 0; i < lines.size(); ++i)
+            renderFittedText(sb, lines.get(i), x + 12 * scale, top - 10 * scale - i * line, width - 24 * scale,
+                    colors.get(i), .66f);
+    }
+
     private OocOverlay currentOocOverlay() {
         OocOverlay view = oocOverlay;
         Snapshot snapshot = newest;
@@ -797,7 +845,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         OocOverlay view = currentOocOverlay();
         String subtitle = view == null ? "Waiting for current choices" :
                 (!view.choices.isEmpty() && "forced_no_search".equals(view.choices.get(0).valueSemantics)
-                        ? "Forced choice" : "v4_q".equals(view.policy) ? "V4 action score" : "Mean search value")
+                        ? "Forced choice" : "v4_q".equals(view.policy) ? "V4 action score"
+                        : OocOverlay.AMBER_POLICY.equals(view.policy) ? "Amber search" : "Mean search value")
                 + " · " + capitalize(view.screen.replace('_', ' '));
         renderSmallText(sb, subtitle, x + 16 * scale, top - 69 * scale, MUTED, .78f);
         boolean histogram = view != null && view.distribution != null;
@@ -817,13 +866,16 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     renderFittedText(sb, (choice.selected ? "▶ " : "") + "#" + (rank + 1) + " " + choice.label,
                             x + 23 * scale, rowBottom + 37 * scale, width - 160 * scale,
                             choice.selected ? CYAN : Color.WHITE, .74f);
+                    boolean amber = OocOverlay.AMBER_SEMANTICS.equals(choice.valueSemantics);
                     String value = "forced_no_search".equals(choice.valueSemantics) ? "Forced"
+                            : amber ? choice.visits == 0 || Double.isNaN(choice.pWin) ? "Not searched"
+                            : String.format(Locale.ROOT, "P(win) %.1f%%", 100 * choice.pWin)
                             : "mean_backed_up_value_0_1".equals(choice.valueSemantics)
                             ? choice.visits == 0 ? "No samples" : String.format(Locale.ROOT, "Mean %.3f", choice.q)
                             : String.format(Locale.ROOT, "Score %.3f", choice.q);
                     renderFittedText(sb, value, x + width - 133 * scale, rowBottom + 37 * scale,
                             110 * scale, MUTED, .70f);
-                    if ("mean_backed_up_value_0_1".equals(choice.valueSemantics))
+                    if ("mean_backed_up_value_0_1".equals(choice.valueSemantics) || amber)
                         renderSmallText(sb, String.format(Locale.ROOT, "N %d · visits %.1f%% · prior %.1f%%",
                                 choice.visits, 100 * choice.visitShare, 100 * choice.prior),
                                 x + 23 * scale, rowBottom + 17 * scale, MUTED, .65f);
@@ -4118,6 +4170,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                         p.getProperty("showActionRecommendations", "true").trim());
                 showSelectedActionSummary = Boolean.parseBoolean(
                         p.getProperty("showSelectedActionSummary", "true").trim());
+                showAmberExplanation = Boolean.parseBoolean(
+                        p.getProperty("showAmberExplanation", "true").trim());
+                OocOverlay.preferAmber = !"legacy".equalsIgnoreCase(p.getProperty("oocSource", "amber").trim());
                 String executable = environmentFirst(p, "STS_MODEL_INSPECTOR_ADVISOR", "advisor");
                 if (executable == null) {
                     advisorStatus = "disconnected";

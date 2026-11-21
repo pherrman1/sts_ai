@@ -1,0 +1,239 @@
+{
+ "ckpt": "ckpt_895975.pt",
+ "replay": "gen256/replay",
+ "mode": "survey",
+ "seed": 0,
+ "report": {
+  "card reward": {
+   "positions": 4203,
+   "n": 60,
+   "items": 18.483333333333334,
+   "share_abs_z_gt3": 0.09600905833920162,
+   "top_item_share": 0.3298772797841359,
+   "flip_rate": 0.26666666666666666,
+   "kl_top": 0.23838835852520676,
+   "abs_dc_top": 1.596021770934264,
+   "abs_dpwin_top": 0.13483336477850874
+  },
+  "map": {
+   "positions": 2735,
+   "n": 60,
+   "items": 19.483333333333334,
+   "share_abs_z_gt3": 0.08033754414407482,
+   "top_item_share": 0.29898067985135973,
+   "flip_rate": 0.35,
+   "kl_top": 0.06385473479634392,
+   "abs_dc_top": 0.5556416188677152,
+   "abs_dpwin_top": 0.14919470734894275
+  },
+  "event": {
+   "positions": 1268,
+   "n": 60,
+   "items": 19.216666666666665,
+   "share_abs_z_gt3": 0.06382406625619812,
+   "top_item_share": 0.2658052297471473,
+   "flip_rate": 0.1,
+   "kl_top": 0.0934625705011438,
+   "abs_dc_top": 0.6789161769052346,
+   "abs_dpwin_top": 0.12619589056509237
+  },
+  "shop": {
+   "positions": 1242,
+   "n": 60,
+   "items": 24.883333333333333,
+   "share_abs_z_gt3": 0.09173352346066695,
+   "top_item_share": 0.2957227483953217,
+   "flip_rate": 0.4666666666666667,
+   "kl_top": 0.26325410647339115,
+   "abs_dc_top": 1.2998974286019802,
+   "abs_dpwin_top": 0.16899549235434583
+  },
+  "campfire": {
+   "positions": 1071,
+   "n": 60,
+   "items": 18.083333333333332,
+   "share_abs_z_gt3": 0.09094210987420226,
+   "top_item_share": 0.2988413385090422,
+   "flip_rate": 0.35,
+   "kl_top": 0.18812544973147535,
+   "abs_dc_top": 1.3420847743749618,
+   "abs_dpwin_top": 0.12525854595005512
+  },
+  "select upgrade": {
+   "positions": 566,
+   "n": 60,
+   "items": 16.983333333333334,
+   "share_abs_z_gt3": 0.09743884468464142,
+   "top_item_share": 0.32795383499307823,
+   "flip_rate": 0.35,
+   "kl_top": 0.1938293054963514,
+   "abs_dc_top": 1.2614938199520112,
+   "abs_dpwin_top": 0.1502801753891011
+  },
+  "reward relic/sapphire key": {
+   "positions": 418,
+   "n": 60,
+   "items": 17.616666666666667,
+   "share_abs_z_gt3": 0.07154894877867911,
+   "top_item_share": 0.2776637495372512,
+   "flip_rate": 0.05,
+   "kl_top": 0.01210863884673025,
+   "abs_dc_top": 0.5374038303891818,
+   "abs_dpwin_top": 0.12877410415094345
+  },
+  "boss relic": {
+   "positions": 262,
+   "n": 60,
+   "items": 21.916666666666668,
+   "share_abs_z_gt3": 0.09546072895191947,
+   "top_item_share": 0.26869449530617245,
+   "flip_rate": 0.23333333333333334,
+   "kl_top": 0.40765379114399825,
+   "abs_dc_top": 2.019244597107172,
+   "abs_dpwin_top": 0.14315481446683406
+  },
+  "Neow": {
+   "positions": 256,
+   "n": 60,
+   "items": 5.0,
+   "share_abs_z_gt3": 0.04666666666666667,
+   "top_item_share": 0.4751082891238445,
+   "flip_rate": 0.03333333333333333,
+   "kl_top": 0.004755718597682653,
+   "abs_dc_top": 0.2417059267560641,
+   "abs_dpwin_top": 0.03528942887981733
+  },
+  "select remove": {
+   "positions": 173,
+   "n": 60,
+   "items": 23.733333333333334,
+   "share_abs_z_gt3": 0.08930654222730425,
+   "top_item_share": 0.2845530699663198,
+   "flip_rate": 0.3333333333333333,
+   "kl_top": 0.40125868975142853,
+   "abs_dc_top": 1.2516059100627899,
+   "abs_dpwin_top": 0.168600507453084
+  },
+  "reward potion": {
+   "positions": 87,
+   "n": 60,
+   "items": 20.333333333333332,
+   "share_abs_z_gt3": 0.06279034752531788,
+   "top_item_share": 0.42061142579333366,
+   "flip_rate": 0.31666666666666665,
+   "kl_top": 0.23837554365459077,
+   "abs_dc_top": 0.9665321292976539,
+   "abs_dpwin_top": 0.10893487439025193
+  },
+  "select transform": {
+   "positions": 70,
+   "n": 60,
+   "items": 14.65,
+   "share_abs_z_gt3": 0.06527389173769713,
+   "top_item_share": 0.2801853900065265,
+   "flip_rate": 0.25,
+   "kl_top": 0.0909402688562382,
+   "abs_dc_top": 0.710623674839735,
+   "abs_dpwin_top": 0.1080292877741158
+  },
+  "potion discard": {
+   "positions": 62,
+   "n": 60,
+   "items": 21.133333333333333,
+   "share_abs_z_gt3": 0.0784621256385603,
+   "top_item_share": 0.24898047524545597,
+   "flip_rate": 0.25,
+   "kl_top": 0.026521858133745954,
+   "abs_dc_top": 0.5053831495344638,
+   "abs_dpwin_top": 0.14049210629115502
+  },
+  "reward relic": {
+   "positions": 43,
+   "n": 43,
+   "items": 24.11627906976744,
+   "share_abs_z_gt3": 0.08023792185087195,
+   "top_item_share": 0.27290459961465235,
+   "flip_rate": 0.16279069767441862,
+   "kl_top": 0.07668603469605775,
+   "abs_dc_top": 0.8029200663400251,
+   "abs_dpwin_top": 0.17792402820791617
+  },
+  "select bottle": {
+   "positions": 26,
+   "n": 26,
+   "items": 22.153846153846153,
+   "share_abs_z_gt3": 0.08474502074940872,
+   "top_item_share": 0.25928787752872956,
+   "flip_rate": 0.3076923076923077,
+   "kl_top": 0.0276301661767603,
+   "abs_dc_top": 0.36195529194978565,
+   "abs_dpwin_top": 0.14950498909904406
+  },
+  "select transform_upgrade": {
+   "positions": 18,
+   "n": 18,
+   "items": 24.38888888888889,
+   "share_abs_z_gt3": 0.0810317140932994,
+   "top_item_share": 0.21000381283728517,
+   "flip_rate": 0.0,
+   "kl_top": 0.03274664586396783,
+   "abs_dc_top": 0.5079499085744222,
+   "abs_dpwin_top": 0.09392892755568027
+  },
+  "select bonfire_spirits": {
+   "positions": 15,
+   "n": 15,
+   "items": 15.733333333333333,
+   "share_abs_z_gt3": 0.06537439510187008,
+   "top_item_share": 0.26549342239289864,
+   "flip_rate": 0.3333333333333333,
+   "kl_top": 0.09845687534719691,
+   "abs_dc_top": 0.8505926450093587,
+   "abs_dpwin_top": 0.10240234682957332
+  },
+  "select duplicate": {
+   "positions": 13,
+   "n": 13,
+   "items": 22.692307692307693,
+   "share_abs_z_gt3": 0.1063082478292705,
+   "top_item_share": 0.2694048028667474,
+   "flip_rate": 0.6153846153846154,
+   "kl_top": 0.16565522918400127,
+   "abs_dc_top": 1.2515298173977778,
+   "abs_dpwin_top": 0.15770176459605303
+  },
+  "chest": {
+   "positions": 12,
+   "n": 12,
+   "items": 21.416666666666668,
+   "share_abs_z_gt3": 0.07906866281866282,
+   "top_item_share": 0.19381367639537417,
+   "flip_rate": 0.25,
+   "kl_top": 0.04012015181144538,
+   "abs_dc_top": 0.3831966780126095,
+   "abs_dpwin_top": 0.14381279610097408
+  },
+  "reward": {
+   "positions": 5,
+   "n": 5,
+   "items": 19.6,
+   "share_abs_z_gt3": 0.10702897102897105,
+   "top_item_share": 0.242851694950147,
+   "flip_rate": 0.4,
+   "kl_top": 0.029420064478142473,
+   "abs_dc_top": 0.4759772211313248,
+   "abs_dpwin_top": 0.11601770184934139
+  },
+  "select obtain": {
+   "positions": 4,
+   "n": 4,
+   "items": 23.75,
+   "share_abs_z_gt3": 0.12927807486631016,
+   "top_item_share": 0.2570453500669003,
+   "flip_rate": 1.0,
+   "kl_top": 0.7553770106355768,
+   "abs_dc_top": 2.555204600095749,
+   "abs_dpwin_top": 0.0838213283859659
+  }
+ }
+}

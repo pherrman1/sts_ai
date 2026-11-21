@@ -15,3 +15,18 @@ showAdvisorPanel=true
 showSelectedActionSummary=true
 # Optional Python executable used for graph export (default: python3).
 python=python3
+# Amber net search + explanation of out-of-combat decisions (tools/az_bench/amber_advisor.py, CPU only): point
+# advisor at that file (or at a two-line wrapper that execs it with the Python that has torch) and the
+# amber* keys at the wrapped advisor, a checkpoint and the az_bench_live module directory.
+#advisor=/absolute/path/to/sts_ai/tools/az_bench/amber_advisor.py
+#amberInnerAdvisor=/absolute/path/to/sts_ai/build/linux-gcc-release/one_combat_advisor
+#amberCkpt=/absolute/path/to/ckpt.pt
+#amberModuleDir=/absolute/path/to/sts_ai/build/linux-gcc-release
+#amberThreads=2
+#amberSims=64
+# only = Amber answers out-of-combat requests alone; both = the wrapped advisor's OOC search runs too.
+#amberOoc=only
+# legacy = show the wrapped advisor's OOC ranking even when an Amber answer is there.
+#oocSource=amber
+# Set false to hide the Amber explanation box (upper right).
+#showAmberExplanation=true
