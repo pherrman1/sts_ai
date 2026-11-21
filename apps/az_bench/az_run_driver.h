@@ -227,6 +227,10 @@ namespace sts::azbench {
     // elite without the Emerald Key (keyEscapeForfeitsEmerald: the fight's SilverSearchContext::escapeForfeitsRun,
     // used for the action list only; the net input keeps that flag at 0).
     bool keyHolesClosed();
+    // Second round (2026-11-21, on unless STS_AZ_KEY_HOLES2=0), Sapphire missing: a chest is opened while N'loth's Hungry
+    // Face is charged (before the act-3 treasure row), Face Trader's trade is not offered after the act-2 treasure row,
+    // and the act-3 route mask leaves out-of-combat drinks alone.
+    bool keyHoles2Closed();
     bool keyEscapeForfeitsEmerald(const GameContext &gc, bool forceKeys);
 
     // RunConfig::oocCanon: on a CARD_SELECT screen, drops every selection whose card (Card ==, bottle state) equals an
@@ -601,6 +605,9 @@ namespace sts::azbench {
         std::int64_t act4 = 0;             // runs that entered Act 4
         std::int64_t heart = 0;            // runs that started the Heart fight
         std::int64_t keylessVictories = 0; // runs ended by the Act 3 boss without the three keys (floor 51)
+        // ... of these (2026-11-21, logging only): the key(s) missing, and Sapphire missing with N'loth's Hungry Face held.
+        // STS_AZ_KEYLESS_LOG=1 also prints one stderr line per keyless victory (seed, floor, keys).
+        std::int64_t keylessNoSapphire = 0, keylessNoRuby = 0, keylessNoEmerald = 0, keylessHungryFace = 0;
         // Heart fights (2026-11-18, logging only): the Heart's HP left when the fight ended (0 = killed) as a histogram
         // of 50-HP bins (bin 15 = 750, A0 max HP), its sum, the player's HP entering the fight and the fight's turn
         // count at its end; summed over runs that fought the Heart (divide by `heart`).
@@ -628,6 +635,8 @@ namespace sts::azbench {
             rest += o.rest; smith += o.smith; recall += o.recall; otherCampfire += o.otherCampfire;
             elites += o.elites; burningElites += o.burningElites; act4 += o.act4; heart += o.heart;
             keylessVictories += o.keylessVictories;
+            keylessNoSapphire += o.keylessNoSapphire; keylessNoRuby += o.keylessNoRuby;
+            keylessNoEmerald += o.keylessNoEmerald; keylessHungryFace += o.keylessHungryFace;
             for (int k = 0; k < kHeartHpBins; ++k) heartHpHist[k] += o.heartHpHist[k];
             heartHpSum += o.heartHpSum; heartEntryHpSum += o.heartEntryHpSum; heartTurnsSum += o.heartTurnsSum;
             relicsSum += o.relicsSum; deckSizeSum += o.deckSizeSum;

@@ -692,6 +692,8 @@ PYBIND11_MODULE(az_bench_native, m) {
                 field("recall", &P::recall); field("other_campfire", &P::otherCampfire);
                 field("elites", &P::elites); field("burning_elites", &P::burningElites); field("act4", &P::act4);
                 field("heart", &P::heart); field("keyless_victories", &P::keylessVictories);
+                field("keyless_no_sapphire", &P::keylessNoSapphire); field("keyless_no_ruby", &P::keylessNoRuby);
+                field("keyless_no_emerald", &P::keylessNoEmerald); field("keyless_hungry_face", &P::keylessHungryFace);
                 field("heart_hp_sum", &P::heartHpSum); field("heart_entry_hp_sum", &P::heartEntryHpSum);
                 field("heart_turns_sum", &P::heartTurnsSum);
                 field("relics_sum", &P::relicsSum); field("deck_size_sum", &P::deckSizeSum);

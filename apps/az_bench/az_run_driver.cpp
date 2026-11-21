@@ -37,6 +37,21 @@ namespace sts::azbench {
         return on;
     }
 
+    // STS_AZ_KEY_HOLES2=0 restores the forceKeys behaviour of #1158 (2026-11-21, second round): N'loth's Hungry Face
+    // may eat the act-3 Sapphire chest, and the act-3 route mask reads an out-of-combat drink's slot as a map x.
+    bool keyHoles2Closed() {
+        static const bool on = [] {
+            const char *v = std::getenv("STS_AZ_KEY_HOLES2");
+            return !(v && std::strcmp(v, "0") == 0);
+        }();
+        return on;
+    }
+
+    // N'loth's Hungry Face with its charge left: the next chest opened is empty and offers no Sapphire Key.
+    bool hungryFaceCharged(const GameContext &gc) {
+        return gc.hasRelic(RelicId::NLOTHS_HUNGRY_FACE) && gc.relics.getRelicValue(RelicId::NLOTHS_HUNGRY_FACE) > 0;
+    }
+
     // forceKeys: the act-3 burning elite with the Emerald Key still missing, the last one of the run (a Smoke Bomb
     // escape there forfeits the Emerald Key and so the Heart; NativeSilverBackend's ADR-0041 rule).
     bool keyEscapeForfeitsEmerald(const GameContext &gc, bool forceKeys) {
@@ -777,10 +792,30 @@ namespace sts::azbench {
                                    gc.curEvent == Event::SECRET_PORTAL && gc.keysEnabled && gc.act == 3 &&
                                    gc.outcome == GameOutcome::UNDECIDED &&
                                    !(gc.hasKey(Key::RUBY_KEY) && gc.hasKey(Key::EMERALD_KEY) && gc.hasKey(Key::SAPPHIRE_KEY));
+        // Sapphire against N'loth's Hungry Face (STS_AZ_KEY_HOLES2): a charged face empties the next chest opened, and
+        // the Sapphire waits for the act-3 treasure row. So with the Sapphire missing, (a) a chest before that row is
+        // opened (Cursed Key or not) to spend the charge, and (b) Face Trader's trade (a random face, maybe the hungry
+        // one) is not offered after the act-2 treasure row, from where no sure chest is left before the act-3 one.
+        const bool sapphireOpen = keyHoles2Closed() && gc.keysEnabled && gc.outcome == GameOutcome::UNDECIDED &&
+                                  !gc.hasKey(Key::SAPPHIRE_KEY);
+        if (sapphireOpen && gc.screenState == ScreenState::TREASURE_ROOM && hungryFaceCharged(gc) && before > 1 &&
+                std::any_of(v.begin(), v.end(), [](const GameAction &a) { return a.bits == GameAction(0).bits; })) {
+            v.assign(1, GameAction(0));
+            return 0;
+        }
+        const bool faceTradeBlocked = sapphireOpen && gc.screenState == ScreenState::EVENT_SCREEN &&
+                                      gc.curEvent == Event::FACE_TRADER && gc.act == 2 && gc.curMapNodeY >= 8 &&
+                                      !gc.hasRelic(RelicId::NLOTHS_HUNGRY_FACE);
+        // Out-of-combat drinks (0x80000000 | slot) are no map moves: the Emerald route mask leaves them alone.
+        const bool drinksFree = keyHoles2Closed();
         std::vector<GameAction> kept;
         kept.reserve(before);
-        for (const auto &a : v)
-            if (search::heartKeyActionAllowed(gc, true, a) && !(portalBlocked && a.bits == GameAction(0).bits)) kept.push_back(a);
+        for (const auto &a : v) {
+            if (drinksFree && a.isPotionAction()) { kept.push_back(a); continue; }
+            if (portalBlocked && a.bits == GameAction(0).bits) continue;
+            if (faceTradeBlocked && a.bits == GameAction(1).bits) continue;
+            if (search::heartKeyActionAllowed(gc, true, a)) kept.push_back(a);
+        }
         if (kept.empty() || kept.size() == before) return -1;
         v.swap(kept);
         return 3;
@@ -1790,6 +1825,18 @@ namespace sts::azbench {
                 p.ruby = r; p.emerald = e; p.sapphire = sa; p.allKeys = r && e && sa;
                 p.act4 = g.gc.act == 4;
                 p.keylessVictories = g.gc.outcome == GameOutcome::PLAYER_VICTORY && g.gc.act != 4;
+                if (p.keylessVictories) {
+                    p.keylessNoSapphire = !sa; p.keylessNoRuby = !r; p.keylessNoEmerald = !e;
+                    p.keylessHungryFace = !sa && g.gc.hasRelic(RelicId::NLOTHS_HUNGRY_FACE);
+                    static const bool logKeyless = [] {
+                        const char *v = std::getenv("STS_AZ_KEYLESS_LOG");
+                        return v && std::strcmp(v, "1") == 0;
+                    }();
+                    if (logKeyless)
+                        std::fprintf(stderr, "keyless_victory seed=%llu asc=%d floor=%d sapphire=%d ruby=%d emerald=%d "
+                                     "hungry_face=%d\n", static_cast<unsigned long long>(g.gc.seed), g.gc.ascension,
+                                     g.gc.floorNum, int(sa), int(r), int(e), int(g.gc.hasRelic(RelicId::NLOTHS_HUNGRY_FACE)));
+                }
                 p.relicsSum = g.gc.relics.size();
                 p.deckSizeSum = g.gc.deck.size();
                 if (p.heart) {   // the Heart is the run's last fight, so g.bc still holds it
