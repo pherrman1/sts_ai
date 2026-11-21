@@ -28852,7 +28852,7 @@ with the route x, so a drink can be masked or kept by its slot number.
 and a 5-15 minute PC test.
 **Knowledge impact:** this entry.
 
-## §TBD — §837 live test FAILED (winrate 41.6 % → 1.6 % → ~17 % in 15 min, trainer ~7 instead of ~200 steps / min); second attempt: `--enemy-tokens` now gates the encounter tokens in at 0 (the resumed net computes what it did without them), the bias goes into training as extra q / k columns instead of a float mask, `--check-enemy-gate` checks both offline → BUILT, default off (cloud, 2026-11-21)
+## §838 — §837 live test FAILED (winrate 41.6 % → 1.6 % → ~17 % in 15 min, trainer ~7 instead of ~200 steps / min); second attempt: `--enemy-tokens` now gates the encounter tokens in at 0 (the resumed net computes what it did without them), the bias goes into training as extra q / k columns instead of a float mask, `--check-enemy-gate` checks both offline → BUILT, default off (cloud, 2026-11-21)
 
 **Live test of §837 (PC, stage-1 thread, 21:09-21:25 CET, resumed with `--enemy-tokens --enemy-map-bias
 --aux-fights` and the key-holes fix):** before (key holes only, 20:57-21:09) 41.6 % winrate (savescum), floor
