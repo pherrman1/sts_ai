@@ -28694,7 +28694,7 @@ owner's go.
 `pairs_791357.json`, `table_895975.json`, checkpoint hashes, the generation run's last metrics row).
 **Knowledge impact:** this entry.
 
-## §TBD — `--aux-fights`: auxiliary head that predicts, at every out-of-combat sample, the fights against the act boss, its three elites and four sampled hallway encounters, labelled by the net's own floor HP head on those fight starts; play unchanged with the flag on, driver CPU cost within noise → BUILT, default off (cloud, 2026-11-21)
+## §834 — `--aux-fights`: auxiliary head that predicts, at every out-of-combat sample, the fights against the act boss, its three elites and four sampled hallway encounters, labelled by the net's own floor HP head on those fight starts; play unchanged with the flag on, driver CPU cost within noise → BUILT, default off (cloud, 2026-11-21)
 
 **Origin (owner, 2026-11-21):** an STS2 author's run net got its fastest early gain from "auxillary heads to
 predict fight outcomes of the current boss, all 3 elites, and a random sample of 4 regular encounters". Amber
