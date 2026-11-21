@@ -2,7 +2,9 @@
 // states, the ADR-0063 rules restrict the legal out-of-combat actions. Sapphire: the Act-3 treasure-row chest
 // (row >= 8) offers only the key; Ruby: the last Act-3 campfire (row 14) offers only Recall; Emerald: on the Act-3 map
 // only edges that still reach the burning elite, a single such edge is forced. Elsewhere nothing changes. The driver
-// refuses forceKeys under non-default STS_KEY_* rules.
+// refuses forceKeys under non-default STS_KEY_* rules. Key holes (STS_AZ_KEY_HOLES, default closed): the act-3 Secret
+// Portal offers only its leave option while a key is missing, and Smoke Bomb is not enumerated at the act-3 burning elite
+// without the Emerald Key.
 #include <cstdio>
 #include <cstdlib>
 #include <stdexcept>
@@ -10,6 +12,8 @@
 
 #include "az_run_driver.h"
 #include "sim/search/RunGoal.h"
+#include "sim/search/SilverSearcher.h"
+#include "combat/BattleContext.h"
 
 using namespace sts;
 using search::GameAction;
@@ -100,6 +104,63 @@ int main() {
     gc.act = 3; gc.keysEnabled = false;
     v = GameAction::getAllActionsInState(gc);
     require(azbench::keyBackstopActions(gc, v) == -1 && v.size() == 3, "keys disabled: free route");
+
+    // Secret Portal (act 3): accept (option 0) jumps to the boss; with a key missing only the leave option stays.
+    gc.screenState = ScreenState::EVENT_SCREEN; gc.curEvent = Event::SECRET_PORTAL; gc.keysEnabled = true;
+    gc.act = 3; gc.blueKey = true; gc.redKey = false; gc.greenKey = true;
+    v = GameAction::getAllActionsInState(gc);
+    require(v.size() == 2 && v[0].getIdx1() == 0 && v[1].getIdx1() == 1, "portal offers accept and leave");
+    if (azbench::keyHolesClosed()) {
+        require(azbench::keyBackstopActions(gc, v) == 3 && v.size() == 1 && v[0].getIdx1() == 1,
+                "portal with Ruby missing: only leave");
+    } else {
+        require(azbench::keyBackstopActions(gc, v) == -1 && v.size() == 2, "STS_AZ_KEY_HOLES=0: portal open");
+    }
+    // A Fruit Juice drink in slot 0 (bits 0x80000000 | 0, idx1 0) is no portal accept and stays.
+    gc.potionCapacity = 3; gc.potionCount = 1; gc.potions[0] = Potion::FRUIT_JUICE;
+    v = GameAction::getAllActionsInState(gc);
+    require(azbench::appendOocPotionDrinks(gc, v) == 1 && v.size() == 3, "portal: Fruit Juice drink offered");
+    if (azbench::keyHolesClosed()) {
+        require(azbench::keyBackstopActions(gc, v) == 3 && v.size() == 2 && v[0].getIdx1() == 1 &&
+                v[1].bits == GameAction(0x80000000u).bits, "portal with Ruby missing: leave and the slot-0 drink");
+    }
+    gc.potionCapacity = 0; gc.potionCount = 0; gc.potions[0] = Potion::EMPTY_POTION_SLOT;
+    gc.redKey = true;
+    v = GameAction::getAllActionsInState(gc);
+    require(azbench::keyBackstopActions(gc, v) == -1 && v.size() == 2, "portal with all keys: a decision");
+    gc.redKey = false; gc.keysEnabled = false;
+    v = GameAction::getAllActionsInState(gc);
+    require(azbench::keyBackstopActions(gc, v) == -1 && v.size() == 2, "portal, keys disabled: a decision");
+    gc.keysEnabled = true; gc.curEvent = Event::INVALID;
+
+    // Smoke Bomb at the act-3 burning elite (1,2) without the Emerald Key: the fight's context drops the escape.
+    gc.screenState = ScreenState::MAP_SCREEN; gc.greenKey = false; gc.curMapNodeX = 1; gc.curMapNodeY = 2;
+    gc.curRoom = Room::ELITE;
+    const bool holes = azbench::keyHolesClosed();
+    require(azbench::keyEscapeForfeitsEmerald(gc, true) == holes, "burning act-3 elite, no Emerald: escape forfeits");
+    require(!azbench::keyEscapeForfeitsEmerald(gc, false), "forceKeys off: escape allowed");
+    gc.greenKey = true;
+    require(!azbench::keyEscapeForfeitsEmerald(gc, true), "Emerald owned: escape allowed");
+    gc.greenKey = false; gc.curMapNodeX = 2; gc.curRoom = Room::MONSTER;
+    require(!azbench::keyEscapeForfeitsEmerald(gc, true), "other room: escape allowed");
+    gc.curMapNodeX = 1; gc.curRoom = Room::ELITE; gc.act = 2;
+    require(!azbench::keyEscapeForfeitsEmerald(gc, true), "act-2 burning elite: a later map has one again");
+    gc.act = 3;
+    {   // the enumeration rule itself: a held Smoke Bomb in an elite fight
+        BattleContext bc{};
+        bc.encounter = MonsterEncounter::GREMLIN_LEADER;
+        bc.potionCount = 1; bc.potionCapacity = 3; bc.potions[0] = Potion::SMOKE_BOMB;
+        bc.inputState = InputState::PLAYER_NORMAL;
+        auto smoke = [](const std::vector<search::Action> &acts) {
+            for (const auto &a : acts) if (a.getActionType() == search::ActionType::POTION && a.getSourceIdx() == 0) return true;
+            return false;
+        };
+        search::SilverSearchContext open{}, closed{};
+        closed.escapeForfeitsRun = true;
+        search::SilverSearcher so(bc, open), sc(bc, closed);
+        require(smoke(so.enumerateActions(bc)), "elite fight: Smoke Bomb offered");
+        require(!smoke(sc.enumerateActions(bc)), "escapeForfeitsRun: Smoke Bomb not offered");
+    }
 
     // The driver needs the ADR-0063 default rules.
     azbench::RunConfig cfg;

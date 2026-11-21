@@ -27,6 +27,24 @@ namespace sts::azbench {
     using search::AmberTokenType;
     using search::GameAction;
 
+    // STS_AZ_KEY_HOLES=0 restores the old forceKeys behaviour: Smoke Bomb allowed at the act-3 burning elite and the
+    // act-3 Secret Portal enterable without the three keys (both end the run keyless, 2026-11-21).
+    bool keyHolesClosed() {
+        static const bool on = [] {
+            const char *v = std::getenv("STS_AZ_KEY_HOLES");
+            return !(v && std::strcmp(v, "0") == 0);
+        }();
+        return on;
+    }
+
+    // forceKeys: the act-3 burning elite with the Emerald Key still missing, the last one of the run (a Smoke Bomb
+    // escape there forfeits the Emerald Key and so the Heart; NativeSilverBackend's ADR-0041 rule).
+    bool keyEscapeForfeitsEmerald(const GameContext &gc, bool forceKeys) {
+        return forceKeys && keyHolesClosed() && gc.keysEnabled && gc.act == 3 && gc.curRoom == Room::ELITE &&
+               !gc.hasKey(Key::EMERALD_KEY) && gc.map && gc.map->burningEliteX == gc.curMapNodeX &&
+               gc.map->burningEliteY == gc.curMapNodeY;
+    }
+
     namespace {
 
         double cpuSeconds() {
@@ -172,11 +190,18 @@ namespace sts::azbench {
             return n;
         }
 
-        search::SilverSearchContext combatContext(const GameContext &gc) {
+        // escapeForfeitsRun is only an enumeration rule here: combatActions drops Smoke Bomb, the net input keeps the
+        // flag at 0 (encodeContext), as in every fight the net has been trained on.
+        search::SilverSearchContext combatContext(const GameContext &gc, bool forceKeys) {
             search::SilverSearchContext c;
             c.act = gc.act;
             c.actBossRoom = gc.curRoom == Room::BOSS;
             c.eliteRewards = gc.isEliteTriggerCombat();
+            c.escapeForfeitsRun = keyEscapeForfeitsEmerald(gc, forceKeys);
+            return c;
+        }
+        search::SilverSearchContext encodeContext(search::SilverSearchContext c) {
+            c.escapeForfeitsRun = false;
             return c;
         }
 
@@ -746,10 +771,16 @@ namespace sts::azbench {
                 return gc.screenState == ScreenState::REWARDS && gc.info.rewardsContainer.emeraldKey ? 2 : 0;
             }
         }
+        // The act-3 Secret Portal jumps to the boss past the treasure row, the last campfire and the burning elite: with
+        // a key still missing it is a keyless victory at best, so only its leave option stays (STS_AZ_KEY_HOLES=0: open).
+        const bool portalBlocked = keyHolesClosed() && gc.screenState == ScreenState::EVENT_SCREEN &&
+                                   gc.curEvent == Event::SECRET_PORTAL && gc.keysEnabled && gc.act == 3 &&
+                                   gc.outcome == GameOutcome::UNDECIDED &&
+                                   !(gc.hasKey(Key::RUBY_KEY) && gc.hasKey(Key::EMERALD_KEY) && gc.hasKey(Key::SAPPHIRE_KEY));
         std::vector<GameAction> kept;
         kept.reserve(before);
         for (const auto &a : v)
-            if (search::heartKeyActionAllowed(gc, true, a)) kept.push_back(a);
+            if (search::heartKeyActionAllowed(gc, true, a) && !(portalBlocked && a.bits == GameAction(0).bits)) kept.push_back(a);
         if (kept.empty() || kept.size() == before) return -1;
         v.swap(kept);
         return 3;
@@ -1136,7 +1167,18 @@ namespace sts::azbench {
             }
         };
 
-        auto combatActions = [&](const BattleContext &bc) -> const std::vector<Action> & {
+        std::unique_ptr<search::SilverSearcher> noEscapeEnumerator;   // ctx.escapeForfeitsRun: without Smoke Bomb
+        auto combatActions = [&](const BattleContext &bc, const search::SilverSearchContext &ctx)
+                -> const std::vector<Action> & {
+            if (ctx.escapeForfeitsRun) {
+                if (!noEscapeEnumerator) {
+                    search::SilverSearchContext c;
+                    c.escapeForfeitsRun = true;
+                    noEscapeEnumerator = std::make_unique<search::SilverSearcher>(bc, c);
+                }
+                cacts = noEscapeEnumerator->enumerateActions(bc);
+                return cacts;
+            }
             if (!enumerator) enumerator = std::make_unique<search::SilverSearcher>(bc, search::SilverSearchContext{});
             cacts = enumerator->enumerateActions(bc);
             return cacts;
@@ -1290,7 +1332,7 @@ namespace sts::azbench {
             const double t0 = cpuSeconds();
             if (node.combat) {
                 const BattleContext &view = node.hasReal ? publicView(node) : *node.bc;
-                const auto &acts = combatActions(view);
+                const auto &acts = combatActions(view, node.ctx);
                 sizeEdges(node.edges, acts.size());
                 for (std::size_t k = 0; k < acts.size(); ++k) node.edges[k] = Edge{acts[k].bits};
                 if (node.hasReal) {   // the edges' actions in the real fight's indexing (translated as the real run)
@@ -1301,7 +1343,7 @@ namespace sts::azbench {
                     }
                 }
                 const double t1 = cpuSeconds();
-                cfg.encodeCombat(view, node.ctx, acts, fl.tokens);
+                cfg.encodeCombat(view, encodeContext(node.ctx), acts, fl.tokens);
                 if (cfg.mergeCards) search::amberMergeCards(fl.tokens);
                 wk.st.stepCpu += t1 - t0;
                 wk.st.encodeCpu += cpuSeconds() - t1;
@@ -1542,7 +1584,7 @@ namespace sts::azbench {
                 c.curMapNodeX = -1;
                 initObservedBattle(c, auxLive, auxKn);
                 if (!publicCombatRoot(auxLive, auxKn, auxView).empty()) continue;
-                cfg.encodeCombat(auxView, combatContext(c), noActions, auxTok);
+                cfg.encodeCombat(auxView, combatContext(c, false), noActions, auxTok);
                 if (cfg.mergeCards) search::amberMergeCards(auxTok);
                 if (cfg.compactSamples) {
                     flattenInto(auxTok, auxRow, &g.dict, &g.dictIndex);
@@ -1562,7 +1604,7 @@ namespace sts::azbench {
 
         auto enterBattle = [&](Run &g) {
             initObservedBattle(g.gc, g.bc, *g.knowledge);
-            g.ctx = combatContext(g.gc);
+            g.ctx = combatContext(g.gc, g.forceKeys);
             if (cfg.crossCombat) g.fightOuter = std::make_shared<const GameContext>(search::detachedGameCopy(g.gc));
             g.inBattle = true;
             g.fightMoves = 0;
@@ -1925,7 +1967,7 @@ namespace sts::azbench {
                 std::size_t legal;
                 std::uint32_t only = 0;
                 if (g.inBattle) {
-                    const auto &a = combatActions(g.bc);
+                    const auto &a = combatActions(g.bc, g.ctx);
                     legal = a.size();
                     if (legal == 1) only = a[0].bits;
                 } else {
@@ -2372,7 +2414,7 @@ namespace sts::azbench {
                         initObservedBattle(next, live, k);
                         BattleContext &cbc = useBc(cn);
                         if (!publicCombatRoot(live, k, cbc).empty()) cbc = live;
-                        cn.ctx = combatContext(next);
+                        cn.ctx = combatContext(next, g.forceKeys);
                         cn.boundary = true;
                     } else {
                         setGc(cn, std::move(next));
@@ -2515,7 +2557,7 @@ namespace sts::azbench {
                         continue;
                     }
                     if (cfg.simHelp) {
-                        const auto &a = combatActions(bc);
+                        const auto &a = combatActions(bc, ctx);
                         if (a.size() == 1) { combatExec(a[0].bits); continue; }
                     }
                     combatRng = !ss && (combatRng || search::searchRngCounter(bc) != 0);
@@ -2548,7 +2590,7 @@ namespace sts::azbench {
                     } else if (!publicCombatRoot(live, kn, bc).empty()) {
                         bc = live;
                     }
-                    ctx = combatContext(gc);
+                    ctx = combatContext(gc, g.forceKeys);
                     if (!cfg.crossCombat) {   // the fight's first state is a leaf valued by the net
                         cn.combat = true;
                         cn.ctx = ctx;

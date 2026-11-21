@@ -219,8 +219,15 @@ namespace sts::azbench {
     // RunConfig::forceKeys: restricts v (the legal out-of-combat actions of gc) by the ADR-0063 key backstops
     // (search::heartKeyAction / heartKeyActionAllowed, keys collected). Returns -1 when nothing was removed, 0 / 1 / 2
     // when a Sapphire / Ruby / Emerald backstop left a single action, 3 when the Emerald rule narrowed the Act-3 route
-    // to the edges that still reach the burning elite.
+    // to the edges that still reach the burning elite, or when the act-3 Secret Portal (missing key) lost its accept.
     int keyBackstopActions(const GameContext &gc, std::vector<search::GameAction> &v);
+
+    // Key-hole closures of forceKeys (2026-11-21, on unless STS_AZ_KEY_HOLES=0): an act-3 Secret Portal with a key
+    // missing offers only its leave option (keyBackstopActions), and a Smoke Bomb is not offered at the act-3 burning
+    // elite without the Emerald Key (keyEscapeForfeitsEmerald: the fight's SilverSearchContext::escapeForfeitsRun,
+    // used for the action list only; the net input keeps that flag at 0).
+    bool keyHolesClosed();
+    bool keyEscapeForfeitsEmerald(const GameContext &gc, bool forceKeys);
 
     // RunConfig::oocCanon: on a CARD_SELECT screen, drops every selection whose card (Card ==, bottle state) equals an
     // earlier selectable one. Returns the number of actions removed.
