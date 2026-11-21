@@ -181,6 +181,9 @@ target_link_libraries(az-run-driver PRIVATE Threads::Threads)
 add_test(NAME az_run_driver_smoke COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 6 --fast
          --seed-base 1 --seconds 300)
 set_tests_properties(az_run_driver_smoke PROPERTIES LABELS "core;smoke")
+add_test(NAME az_run_driver_rng_fix COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 6 --fast
+         --seed-base 1 --seconds 300 --rng-fix)
+set_tests_properties(az_run_driver_rng_fix PROPERTIES LABELS "core;smoke")
 add_test(NAME az_run_driver_explore COMMAND $<TARGET_FILE:az-run-driver> --workers 2 --games 3 --runs 24 --fast
          --seed-base 1 --seconds 300 --explore-c 0.5 --pick-target 0.2 --test-hp 300)
 set_tests_properties(az_run_driver_explore PROPERTIES LABELS "core;smoke")
@@ -289,6 +292,15 @@ set_tests_properties(az_run_driver_amber_search PROPERTIES LABELS "core;smoke")
 add_test(NAME az_eval_cache_amber_search COMMAND $<TARGET_FILE:az-eval-cache-test> --runs 3 --seed-base 1 --fast
     --amber-search)
 set_tests_properties(az_eval_cache_amber_search PROPERTIES LABELS "core;smoke")
+add_test(NAME az_eval_cache_ema_hp COMMAND $<TARGET_FILE:az-eval-cache-test> --runs 3 --seed-base 1 --fast
+    --amber-search --ema 0.9 --ema-hp)
+set_tests_properties(az_eval_cache_ema_hp PROPERTIES LABELS "core;smoke")
+add_test(NAME az_eval_cache_ema_hp_amber COMMAND $<TARGET_FILE:az-eval-cache-test> --runs 3 --seed-base 1 --fast
+    --utility amber --amber-search --ema 0.9 --ema-hp --compact)
+set_tests_properties(az_eval_cache_ema_hp_amber PROPERTIES LABELS "core;smoke")
+add_test(NAME az_eval_cache_ema_hp_parallel COMMAND $<TARGET_FILE:az-eval-cache-test> --runs 3 --seed-base 1 --fast
+    --utility amber --amber-search --ema 0.9 --ema-hp --parallel-nodes 4)
+set_tests_properties(az_eval_cache_ema_hp_parallel PROPERTIES LABELS "core;smoke")
 add_test(NAME az_eval_cache_amber_search_ema COMMAND $<TARGET_FILE:az-eval-cache-test> --runs 3 --seed-base 1 --fast
     --amber-search --ema 0.9)
 set_tests_properties(az_eval_cache_amber_search_ema PROPERTIES LABELS "core;smoke")
@@ -555,6 +567,14 @@ target_include_directories(mugger_death_rng_test PRIVATE include json/include)
 add_test(NAME mugger_death_rng COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
     $<TARGET_FILE:mugger_death_rng_test>)
 set_tests_properties(mugger_death_rng PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(rng_fix_test tests/rng_fix_test.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(rng_fix_test PRIVATE include json/include)
+add_test(NAME rng_fix COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:rng_fix_test>)
+set_tests_properties(rng_fix PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
 add_executable(slime_split_rng_test tests/slime_split_rng_test.cpp

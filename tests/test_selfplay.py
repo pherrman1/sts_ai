@@ -818,6 +818,174 @@ class ValueEmaTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             sp.ema_outcome_targets(dist[:3], outcome[:3], np.array([1, 2, 1]), 0.5)
 
+    @unittest.skipUnless(MODULES, "az_bench_native not built")
+    def test_hp_soft_targets(self):
+        """--hp-ema-search (Replay hp_soft): the floor HP targets (round(255 p) rows from the driver) and per-floor
+        targets of a chunk come back per sample, renormalised, from a plain window and from a compressed one (HP
+        bytes after the outcome bytes in the byte ring), also through wrap-around, eviction by a tight byte ring and
+        save / load; before set_soft_outcome a compressed sample's floor HP target is its real HP; without the option
+        a window's layout is the old one; losses: targets equal to the real labels give the real-label losses, other
+        targets change only the trained terms."""
+        sp = load()
+        TS = native().TokenStore
+        rng = np.random.default_rng(77)
+        plain_kw = dict(tokens_per_sample=48, actions_per_sample=12, hp_floors=56, soft_outcome=True)
+        ckw = dict(compact=True, dict_tokens_per_sample=48, token_store=TS, compress_targets=True,
+                   hp_runs_per_sample=1.0, **plain_kw)
+        ref = sp.Replay(400, hp_soft=True, **plain_kw)
+        cmp_ = sp.Replay(400, hp_soft=True, soft_bytes_per_sample=60, hp_bytes_per_sample=260, **ckw)
+        tight = sp.Replay(400, hp_soft=True, soft_bytes_per_sample=12, hp_bytes_per_sample=8, **ckw)
+        old = sp.Replay(400, soft_bytes_per_sample=60, **ckw)
+        self.assertFalse(any(k.startswith("hq_") or "hp_target" in k or "hp_floor_target" in k
+                             for k in old._layout()["arrays"]))
+        self.assertNotEqual(old._layout(), cmp_._layout())
+        with self.assertRaises(ValueError):
+            sp.Replay(100, hp_soft=True, tokens_per_sample=12, actions_per_sample=6)
+        want_hp, want_hpf, first = [], [], 0
+        for n in range(9):
+            S = int(rng.integers(20, 60))
+            c = chunk(rng, S, first)
+            c["run"] = (np.arange(S) // 6 + first).astype(np.uint64)
+            c["floor"] = (np.arange(S) % 6 + 1 + n).astype(np.int16)
+            vec = rng.integers(0, 120, (S, 56)).astype(np.int16)
+            for i in range(S):   # one HP vector per run
+                vec[i] = vec[i - i % 6]
+            keep = np.arange(1, 57)[None, :] >= c["floor"].astype(np.int64)[:, None]
+            c["hp_floor"] = np.where(keep, vec, -1).astype(np.int16)
+            # Floor HP targets as the driver gives them: round(255 p) of a peaked distribution, 0 outside an interval.
+            centre = rng.integers(0, 200, S)
+            p = np.exp(-0.5 * ((np.arange(256)[None, :] - centre[:, None]) / rng.uniform(0.3, 6.0, (S, 1))) ** 2)
+            q = np.rint(255.0 * p / p.sum(-1, keepdims=True)).astype(np.uint8)
+            c["hp_target"] = q
+            c["hp_floor_target"] = np.where(keep, rng.random((S, 56)), -1.0).astype(np.float32)
+            t = rng.dirichlet(np.full(57, 0.3), S).astype(np.float32)
+            cc = ReplayTest.compactify(c)   # keeps the chunk's other keys (the targets)
+            f0 = ref.add(c)
+            ref.set_soft_outcome(f0, t)
+            for r in (cmp_, tight):
+                f1 = r.add(cc)
+                if r is cmp_:   # until set: the real HP at the end of the floor
+                    b = r.rows(f1, S)
+                    np.testing.assert_array_equal(b["hp_target"].argmax(1), c["hp_end"].clip(0, 255))
+                    np.testing.assert_array_equal(b["hp_target"].max(1), 1.0)
+                    with self.assertRaises(ValueError):
+                        r.set_soft_outcome(f1, t)   # the floor HP targets are missing
+                r.set_soft_outcome(f1, t, c["hp_target"])
+            want_hp.append(q.astype(np.float32) / q.astype(np.float32).sum(-1, keepdims=True))
+            want_hpf.append(np.where(keep, np.rint(c["hp_floor_target"].clip(0, 1) * 255.0) / 255.0, -1.0)
+                            .astype(np.float32))   # kept as whole HP
+            first += S
+        want_hp, want_hpf = np.concatenate(want_hp), np.concatenate(want_hpf)
+        for r in (ref, cmp_, tight):
+            v = r.rows(r.s_tail, len(r))
+            np.testing.assert_allclose(v["hp_target"], want_hp[r.s_tail:r.s_head], rtol=0, atol=1e-6)
+            np.testing.assert_allclose(v["hp_floor_target"], want_hpf[r.s_tail:r.s_head], rtol=0, atol=1e-6)
+            np.testing.assert_array_equal(v["hp_floor_target"] < 0, v["hp_floor"] < 0)
+        self.assertEqual(len(ref), len(cmp_))
+        self.assertLess(len(tight), len(ref) // 2)   # the byte ring (20 bytes per sample) decides
+        a, b = ref.rows(ref.s_tail, len(ref)), cmp_.rows(cmp_.s_tail, len(cmp_))
+        for key in ("hp_end", "hp_floor", "floor", "outcome", "policy"):
+            np.testing.assert_array_equal(a[key], b[key], key)
+        # A random batch carries each sample's own targets.
+        bt = cmp_.sample(np.random.default_rng(3), 64)
+        sid = bt["ids"][:, 0, 0].astype(np.int64) + 30000 * bt["ids"][:, 0, 2].astype(np.int64)
+        np.testing.assert_allclose(bt["hp_target"], want_hp[sid], rtol=0, atol=1e-6)
+        np.testing.assert_allclose(bt["hp_floor_target"], want_hpf[sid], rtol=0, atol=1e-6)
+        # save / load keeps them.
+        with tempfile.TemporaryDirectory() as d:
+            cmp_.save(os.path.join(d, "w"))
+            again = sp.Replay(400, hp_soft=True, soft_bytes_per_sample=60, hp_bytes_per_sample=260, **ckw)
+            again.load(os.path.join(d, "w"))
+            c2 = again.rows(again.s_tail, len(again))
+            for key in b:
+                np.testing.assert_array_equal(np.asarray(b[key]), np.asarray(c2[key]), key)
+            with self.assertRaises(ValueError):
+                old.check_layout(os.path.join(d, "w"))   # saved with the option, loaded without: refused
+        torch.manual_seed(0)
+        net = sp.amber_net.AmberNet(d=32, layers=1, hp_floors=56)
+        # A window saved WITHOUT the option loads into a replay with it (other byte ring size): the same rows, the
+        # old samples' HP targets are their real labels, and samples added afterwards carry their search targets.
+        for okw, nkw in ((dict(soft_bytes_per_sample=60, **ckw), dict(soft_bytes_per_sample=60, hp_bytes_per_sample=30, **ckw)),
+                         (dict(soft_bytes_per_sample=60, **ckw), dict(soft_bytes_per_sample=40, hp_bytes_per_sample=8, **ckw)),
+                         (plain_kw, plain_kw)):
+            compact = "compact" in okw
+            src = sp.Replay(400, **okw)
+            mk_first = [0]
+
+            def mk(S):
+                c = chunk(rng, S, mk_first[0])
+                c["run"] = (np.arange(S) // 6 + mk_first[0]).astype(np.uint64)
+                c["floor"] = (np.arange(S) % 6 + 3).astype(np.int16)
+                vec = rng.integers(0, 300, (S, 56)).astype(np.int16)   # HP above 255 too
+                for i in range(S):
+                    vec[i] = vec[i - i % 6]
+                keep = np.arange(1, 57)[None, :] >= c["floor"].astype(np.int64)[:, None]
+                c["hp_floor"] = np.where(keep, vec, -1).astype(np.int16)
+                mk_first[0] += S
+                return c, keep, rng.dirichlet(np.full(57, 0.3), S).astype(np.float32)
+
+            for _ in range(12):   # wraps: the old byte ring's live bytes are spread around it
+                c, _, t = mk(int(rng.integers(30, 60)))
+                src.set_soft_outcome(src.add(ReplayTest.compactify(c) if compact else c), t)
+            with tempfile.TemporaryDirectory() as d:
+                src.save(os.path.join(d, "w"))
+                dst = sp.Replay(400, hp_soft=True, **nkw)
+                dst.load(os.path.join(d, "w"))
+            self.assertEqual(dst.migrated_hp, len(dst))
+            self.assertEqual((dst.s_head, dst.added), (src.s_head, src.added))
+            if nkw.get("soft_bytes_per_sample", 60) + nkw.get("hp_bytes_per_sample", 0) < 57:
+                self.assertTrue(0 < len(dst) < len(src))   # a smaller byte ring keeps the newest samples that fit
+            else:
+                self.assertEqual(len(dst), len(src))
+            a, b = src.rows(dst.s_tail, len(dst)), dst.rows(dst.s_tail, len(dst))
+            for key in a:
+                np.testing.assert_array_equal(np.asarray(a[key]), np.asarray(b[key]), key)
+            np.testing.assert_array_equal(b["hp_target"].argmax(1), a["hp_end"].clip(0, 255))
+            np.testing.assert_array_equal(b["hp_target"].max(1), 1.0)
+            np.testing.assert_allclose(b["hp_floor_target"],
+                                       np.where(a["hp_floor"] >= 0, a["hp_floor"].clip(0, 255) / 255.0, -1.0), atol=1e-6)
+            # real-label targets: the trained HP losses are the real-label losses
+            bt = sp.to_torch(dst.sample(np.random.default_rng(9), 32), "cpu")
+            _, parts = sp.losses(net, bt, 1, 1, 1, 1)
+            self.assertAlmostEqual(float(parts["hp_ema"]), float(parts["hp"]), places=4)
+            self.assertAlmostEqual(float(parts["hp_floor_ema"]), float(parts["hp_floor"]), places=6)
+            # new samples on top
+            c, keep, t = mk(40)
+            centre = rng.integers(0, 200, 40)
+            pq = np.exp(-0.5 * ((np.arange(256)[None, :] - centre[:, None]) / 3.0) ** 2)
+            c["hp_target"] = np.rint(255.0 * pq / pq.sum(-1, keepdims=True)).astype(np.uint8)
+            c["hp_floor_target"] = np.where(keep, rng.random((40, 56)), -1.0).astype(np.float32)
+            f1 = dst.add(ReplayTest.compactify(c) if compact else c)
+            dst.set_soft_outcome(f1, t, c["hp_target"])
+            v = dst.rows(f1, 40)
+            q = c["hp_target"].astype(np.float32)
+            np.testing.assert_allclose(v["hp_target"], q / q.sum(-1, keepdims=True), atol=1e-6)
+            np.testing.assert_allclose(v["hp_floor_target"],
+                                       np.where(keep, np.rint(c["hp_floor_target"].clip(0, 1) * 255.0) / 255.0, -1.0), atol=1e-6)
+            w = dst.rows(dst.s_tail, f1 - dst.s_tail)   # the old samples still live keep their real labels
+            np.testing.assert_array_equal(w["hp_target"].max(1), 1.0)
+            np.testing.assert_array_equal(w["hp_target"].argmax(1), w["hp_end"].clip(0, 255))
+            np.testing.assert_array_equal(w["soft_outcome"], src.rows(dst.s_tail, f1 - dst.s_tail)["soft_outcome"])
+        # Losses.
+        bt = sp.to_torch(cmp_.sample(np.random.default_rng(4), 32), "cpu")
+        base = {k: v for k, v in bt.items() if k not in ("hp_target", "hp_floor_target")}
+        total0, parts0 = sp.losses(net, base, 1, 1, 1, 1)
+        real = dict(base, hp_target=torch.nn.functional.one_hot(bt["hp_end"].long().clamp(0, 255), 256).float(),
+                    hp_floor_target=torch.where(bt["hp_floor"] >= 0, bt["hp_floor"].float().clamp(0, 255) / 255.0,
+                                                torch.full_like(bt["hp_floor"], -1).float()))
+        total1, parts1 = sp.losses(net, real, 1, 1, 1, 1)
+        self.assertAlmostEqual(float(total0.detach()), float(total1.detach()), places=4)
+        self.assertAlmostEqual(float(parts1["hp_ema"]), float(parts1["hp"]), places=4)
+        self.assertAlmostEqual(float(parts1["hp_floor_ema"]), float(parts1["hp_floor"]), places=6)
+        total2, parts2 = sp.losses(net, bt, 1, 1, 1, 1)
+        for k in ("hp", "hp_floor", "outcome", "outcome_ema", "policy"):
+            self.assertAlmostEqual(float(parts2[k]), float(parts1[k]), places=5, msg=k)
+        self.assertNotAlmostEqual(float(parts2["hp_ema"]), float(parts2["hp"]), places=2)
+        self.assertNotAlmostEqual(float(parts2["hp_floor_ema"]), float(parts2["hp_floor"]), places=3)
+        self.assertAlmostEqual(float(total2.detach()),
+                               float(total1.detach() - parts1["hp_ema"] - parts1["hp_floor_ema"]
+                                     + parts2["hp_ema"] + parts2["hp_floor_ema"]), places=4)
+
     def test_replay_soft_ring_and_loss(self):
         sp = load()
         rng = np.random.default_rng(5)
@@ -1546,6 +1714,40 @@ class SelfplaySmoke(unittest.TestCase):
             self.assertTrue(any(r["loss"] and "outcome_ema" in r["loss"] for r in rows))
         with self.assertRaises(SystemExit):   # needs a half-life
             sp.main(args[:args.index("--value-ema-halflife")] + ["--value-ema-search", "--out-dir", "/nonexistent"])
+
+    def test_hp_ema_search_run(self):
+        """--hp-ema-search: the driver hands out floor HP and per-floor HP search targets with every sample, the
+        replay keeps them (plain and compressed window) and the HP heads train on them ("hp_ema", "hp_floor_ema");
+        the flag needs --value-ema-search and Amber's search rules."""
+        sp = load()
+        sp.TAKE_CHUNK = 1
+        args = ["--module-dir", os.path.dirname(MODULES[0]), "--device", "cpu", "--workers", "2", "--games", "4",
+                "--full-sims", "8", "--fast-sims", "4", "--batch", "32", "--row-buckets", "32", "--pack-step", "32",
+                "--pack-threads", "1", "--min-replay", "50", "--train-batch", "32", "--window", "5000",
+                "--report", "1", "--sync-steps", "2", "--max-runs", "16", "--eval-cache", "--merge-cards",
+                "--packed-h2d", "--utility", "amber", "--chance-on-reveal", "--cross-combat", "--sim-help",
+                "--value-ema-halflife", "8", "--value-ema-search", "--hp-ema-search"]
+        for extra in (["--seed-base", "760"],
+                      ["--seed-base", "770", "--compact-samples", "--compress-targets", "--max-pending", "0"]):
+            with self.subTest(extra=extra), tempfile.TemporaryDirectory() as d:
+                self.assertEqual(sp.main(args + extra + ["--out-dir", d]), 0)
+                with open(os.path.join(d, "metrics.jsonl")) as f:
+                    rows = [json.loads(l) for l in f]
+                last = rows[-1]
+                self.assertGreater(last["train_steps"], 0)
+                self.assertTrue(last["value_ema"]["hp"])
+                self.assertEqual(last["value_ema"]["labelled"], last["samples_added"])
+                losses = [r["loss"] for r in rows if r["loss"]]
+                self.assertTrue(losses)
+                for k in ("hp", "hp_ema", "hp_floor", "hp_floor_ema", "outcome_ema"):
+                    self.assertTrue(all(k in l and np.isfinite(l[k]) for l in losses), k)
+                if "--compress-targets" in extra:   # outcome and floor HP bytes together
+                    self.assertGreater(last["replay_soft_bytes_mean"], 2)
+        with self.assertRaises(SystemExit):   # needs --value-ema-search
+            sp.main([a for a in args if a != "--value-ema-search"] + ["--seed-base", "1", "--out-dir", "/nonexistent"])
+        with self.assertRaises(SystemExit):   # needs Amber's search rules
+            sp.main([a for a in args if a not in ("--chance-on-reveal", "--cross-combat", "--sim-help")]
+                    + ["--seed-base", "1", "--out-dir", "/nonexistent"])
 
     def test_value_ema_search_driver(self):
         """Driver level (every searched move kept): the EMA targets are the recursion of ema_outcome_targets over
