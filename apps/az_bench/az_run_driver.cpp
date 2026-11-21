@@ -369,6 +369,7 @@ namespace sts::azbench {
         int child = -1;                  // decision child (deterministic combat edge)
         bool chance = false, tried = false;
         bool realOk = false;             // savescum combat node: realBits is a valid action of the real fight
+        std::uint8_t vn = 0;             // parallelNodes: virtual visits (simulations in flight through this edge)
         std::uint64_t base = 0;          // chance: randomness base
         std::vector<int> outcomes;
         std::vector<std::int32_t> outcomeN;
@@ -388,6 +389,7 @@ namespace sts::azbench {
         std::shared_ptr<const GameContext> outer;   // combat node, crossCombat: the game state at its fight's start
         std::vector<Edge> edges;
         bool evaluated = false, terminal = false, boundary = false;
+        bool inFlight = false;               // its net evaluation is requested and not yet handled
         float value = 0;
         std::int32_t n = 0;
         double w = 0;
@@ -402,6 +404,32 @@ namespace sts::azbench {
     };
 
     struct PathStep { int node; int edge; int outcome; };
+
+    // One net evaluation of a run in flight: the simulation's path to the requested node, the node's encoded input
+    // and, once answered, its result. A run has one in flight at a time (slot 0), or with RunConfig::parallelNodes a
+    // wave of them (slots 0 .. nFlights - 1).
+    struct Flight {
+        std::vector<PathStep> path;
+        int node = -1;
+        bool combat = false;
+        float maxHp = 1;
+        int floor = 0;                       // floor of the requested node
+        AmberTokens tokens;
+        std::vector<float> resLogits;
+        float resF = 0, resEhp = 0;
+        std::uint32_t resVersion = 0;        // weights version of the result (submit)
+        std::uint64_t hash = 0;              // evalCache: hash of the input
+        bool hit = false;                    // answered by the cache
+        std::array<float, kFloors> resHpf{};   // utility AMBER: E[HP_f] / 255
+        std::array<float, kOutcomeClasses> resDist{};   // searchEmaLambda > 0: outcome softmax
+    };
+
+    // Ticket of a request: worker << 26 | flight slot << 16 | run (with slot 0 the pre-parallelNodes ticket).
+    constexpr int kTicketRunBits = 16, kTicketSlotBits = 10;
+    constexpr int kMaxFlights = 1 << kTicketSlotBits, kMaxWorkers = 1 << (32 - kTicketRunBits - kTicketSlotBits);
+    inline std::uint32_t ticketRun(std::uint32_t t) { return t & ((1u << kTicketRunBits) - 1); }
+    inline std::uint32_t ticketSlot(std::uint32_t t) { return (t >> kTicketRunBits) & (kMaxFlights - 1); }
+    inline std::uint32_t ticketWorker(std::uint32_t t) { return t >> (kTicketRunBits + kTicketSlotBits); }
 
     struct RunDriver::Run {
         Run() = default;
@@ -440,26 +468,17 @@ namespace sts::azbench {
         std::vector<double> gumbel;
         std::vector<int> phaseQueue;
         int phasesLeft = 0;
-        std::vector<PathStep> path;
-        int pendingNode = -1;
-        bool pendingCombat = false;
-        float pendingMaxHp = 1;
-        AmberTokens tokens;
-        std::vector<float> resLogits;
-        float resF = 0, resEhp = 0;
-        std::uint32_t resVersion = 0;        // weights version of the result (submit)
+        // Net evaluations in flight (Flight): slots 0 .. nFlights - 1 of fl are this wave's, `waiting` of them not
+        // yet answered. Slots are allocated on first use and kept. fl changes only while nothing of the run is queued.
+        std::vector<std::unique_ptr<Flight>> fl;
+        int nFlights = 0, waiting = 0;
         // Evaluation cache (RunConfig::evalCache): input hash -> result, all of weights version cacheVersion; emptied
         // at the start of each run, on a weights change and when full.
         struct CacheEntry { float F = 0, ehp = 0; int nAct = 0; std::vector<float> logits, hpf, dist; };   // hpf: utility AMBER; dist: searchEmaLambda > 0
         std::unordered_map<std::uint64_t, CacheEntry> cache;
         std::uint32_t cacheVersion = 0;
-        std::uint64_t pendingHash = 0;
-        bool pendingHit = false;             // the pending leaf was answered by the cache
-        std::array<float, kFloors> resHpf{};   // utility AMBER: E[HP_f] / 255 of the pending leaf
-        std::array<float, kOutcomeClasses> resDist{};   // searchEmaLambda > 0: outcome softmax of the pending leaf
         std::vector<double> rootDist;          // searchEmaLambda > 0: sum of the backed-up distributions at the root
         std::vector<std::uint16_t> moveDist;   // ... search result of each chain move of the run [M][57], float16
-        int pendingFloor = 0;                  // floor of the pending leaf
         std::array<std::int16_t, kFloors + 1> floorHp{};   // utility AMBER: HP at the end of floor f (-1 = not yet)
         std::vector<Sample> pending;
         std::size_t floorStart = 0;          // first pending sample of the current floor
@@ -472,8 +491,8 @@ namespace sts::azbench {
     struct RunDriver::Worker {
         std::vector<Run> runs;
         std::mutex im;
-        std::vector<int> inbox;
-        std::vector<int> hits;               // runs whose pending leaf the cache answered (handled like results)
+        std::vector<int> inbox;              // answered flights: slot << 16 | run
+        std::vector<int> hits;               // flights the cache answered (handled like results), same coding
         std::mt19937_64 rng;
         RunStats st;
         mutable std::mutex sm;
@@ -510,8 +529,10 @@ namespace sts::azbench {
 
         int selectNonRoot(const RunDriver::Node &node, const RunConfig &cfg) {
             const int k = static_cast<int>(node.edges.size());
+            // parallelNodes: the visit counts that spread the simulations include the virtual visits (vn, simulations
+            // in flight); Q and sigma use finished simulations only.
             double sumN = 0;
-            for (const auto &e : node.edges) sumN += e.n;
+            for (const auto &e : node.edges) sumN += e.n + e.vn;
             const double sigma = (cfg.cVisit + maxVisits(node)) * cfg.cScale;
             thread_local std::vector<double> s, q;
             completedQ(node, cfg, q);
@@ -526,7 +547,7 @@ namespace sts::azbench {
             int best = 0;
             double bestScore = -1e300;
             for (int i = 0; i < k; ++i) {
-                const double sc = s[i] / z - node.edges[i].n / (1.0 + sumN);
+                const double sc = s[i] / z - (node.edges[i].n + node.edges[i].vn) / (1.0 + sumN);
                 if (sc > bestScore) { bestScore = sc; best = i; }
             }
             return best;
@@ -805,6 +826,9 @@ namespace sts::azbench {
         if (!(cfg_.searchEmaLambda >= 0 && cfg_.searchEmaLambda < 1))
             throw std::invalid_argument("run driver: searchEmaLambda in [0, 1)");
         if (cfg_.gamesPerWorker > 0xffff) throw std::invalid_argument("run driver: at most 65535 runs per worker");
+        if (cfg_.workers > kMaxWorkers) throw std::invalid_argument("run driver: at most 64 workers");
+        if (cfg_.parallelNodes < 0 || cfg_.parallelNodes > 255)
+            throw std::invalid_argument("run driver: parallelNodes 0 (off) .. 255");
         if (cfg_.exploreAmber && cfg_.exploreC > 0)
             throw std::invalid_argument("run driver: exploreAmber and exploreC are exclusive");
         if (cfg_.exploreAmber && !(cfg_.exploreT > 0 && cfg_.pickTarget > 0))
@@ -881,6 +905,7 @@ namespace sts::azbench {
             s.exploreAttempts += p.exploreAttempts; s.exploreCZero += p.exploreCZero; s.exploreCInf += p.exploreCInf;
             s.exploreNatural += p.exploreNatural; s.exploreNaturalUnplayed += p.exploreNaturalUnplayed;
             s.cacheHits += p.cacheHits;
+            s.waves += p.waves; s.waveFlights += p.waveFlights; s.simCollisions += p.simCollisions;
             for (int k = 0; k < 2; ++k) {
                 s.oocSearched[k] += p.oocSearched[k]; s.oocNotBestQ[k] += p.oocNotBestQ[k];
                 s.oocSpreadN[k] += p.oocSpreadN[k]; s.oocSpreadSum[k] += p.oocSpreadSum[k];
@@ -903,6 +928,7 @@ namespace sts::azbench {
             s.memPoolOuter += p.memPoolOuter; s.memEdgeCap += p.memEdgeCap; s.memPoolBc += p.memPoolBc;
             s.memPendingCap += p.memPendingCap; s.memMoveDistCap += p.memMoveDistCap;
             s.memCacheEntries += p.memCacheEntries;
+            s.memFlights += p.memFlights;
             s.stepCpu += p.stepCpu; s.encodeCpu += p.encodeCpu; s.searchCpu += p.searchCpu;
         }
         s.batches = batches_.load();
@@ -958,7 +984,7 @@ namespace sts::azbench {
         auto memGauges = [&] {
             RunStats &st = wk.st;
             st.memPoolNodes = st.memPoolGc = st.memPoolReal = st.memPoolOuter = st.memEdgeCap = st.memPoolBc = 0;
-            st.memPendingCap = st.memMoveDistCap = st.memCacheEntries = 0;
+            st.memPendingCap = st.memMoveDistCap = st.memCacheEntries = st.memFlights = 0;
             for (const Run &g : wk.runs) {
                 st.memPoolNodes += static_cast<std::int64_t>(g.pool.size());
                 for (const Node &n : g.pool) {
@@ -971,6 +997,7 @@ namespace sts::azbench {
                 st.memPendingCap += static_cast<std::int64_t>(g.pending.capacity());
                 st.memMoveDistCap += static_cast<std::int64_t>(g.moveDist.capacity());
                 st.memCacheEntries += static_cast<std::int64_t>(g.cache.size());
+                st.memFlights += static_cast<std::int64_t>(g.fl.size());
             }
         };
 
@@ -1056,6 +1083,7 @@ namespace sts::azbench {
             n.w = 0;
             n.dist.clear();
             n.hasReal = false;
+            n.inFlight = false;
             return g.poolUsed++;
         };
         auto setGc = [](Node &n, GameContext &&gc) {
@@ -1106,9 +1134,22 @@ namespace sts::azbench {
             return ok;
         };
 
-        // Request a net evaluation of node ni (enumerates its actions, encodes it, queues it).
-        auto request = [&](Run &g, int gi, int ni) {
+        // The run's next free flight slot (allocated on first use).
+        auto newFlight = [&](Run &g) -> Flight & {
+            if (g.nFlights >= kMaxFlights) throw std::logic_error("run driver: too many evaluations in flight");
+            if (g.nFlights == static_cast<int>(g.fl.size())) g.fl.push_back(std::make_unique<Flight>());
+            Flight &f = *g.fl[g.nFlights];
+            f.path.clear();
+            return f;
+        };
+
+        // Request a net evaluation of node ni for the flight fl, the run's newest (newFlight; its path is set by the
+        // caller): enumerates the node's actions, encodes it, queues it.
+        auto request = [&](Run &g, int gi, int ni, Flight &fl) {
+            const int slot = g.nFlights++;
+            ++g.waiting;
             Node &node = g.pool[ni];
+            node.inFlight = true;
             const double t0 = cpuSeconds();
             if (node.combat) {
                 const BattleContext &view = node.hasReal ? publicView(node) : *node.bc;
@@ -1123,27 +1164,27 @@ namespace sts::azbench {
                     }
                 }
                 const double t1 = cpuSeconds();
-                cfg.encodeCombat(view, node.ctx, acts, g.tokens);
-                if (cfg.mergeCards) search::amberMergeCards(g.tokens);
+                cfg.encodeCombat(view, node.ctx, acts, fl.tokens);
+                if (cfg.mergeCards) search::amberMergeCards(fl.tokens);
                 wk.st.stepCpu += t1 - t0;
                 wk.st.encodeCpu += cpuSeconds() - t1;
-                g.pendingCombat = true;
-                g.pendingMaxHp = static_cast<float>(std::max<int>(1, view.player.maxHp));
-                g.pendingFloor = view.floorNum;
+                fl.combat = true;
+                fl.maxHp = static_cast<float>(std::max<int>(1, view.player.maxHp));
+                fl.floor = view.floorNum;
             } else {
                 gacts = oocActions(*node.gc, g.forceKeys);
                 sizeEdges(node.edges, gacts.size());
                 for (std::size_t k = 0; k < gacts.size(); ++k) node.edges[k] = Edge{gacts[k].bits};
                 const double t1 = cpuSeconds();
-                cfg.encodeGame(*node.gc, gacts, g.tokens);
-                if (cfg.mergeCards) search::amberMergeCards(g.tokens);
+                cfg.encodeGame(*node.gc, gacts, fl.tokens);
+                if (cfg.mergeCards) search::amberMergeCards(fl.tokens);
                 if (ni == 0 && (cfg.exploreC > 0 || cfg.exploreAmber)) {
                     // Pick-rate items of the root's actions: hash of the source token's ids.
                     g.rootKeys.assign(gacts.size(), -1);
                     g.rootClass.assign(gacts.size(), 7);
                     const auto screen = node.gc->screenState;
-                    for (int k = 0; k < g.tokens.nAct; ++k) {
-                        const auto &a = g.tokens.act[k];
+                    for (int k = 0; k < fl.tokens.nAct; ++k) {
+                        const auto &a = fl.tokens.act[k];
                         const auto t = static_cast<search::AmberActionType>(a.type);
                         if ((t != search::AmberActionType::CHOOSE_CARD && t != search::AmberActionType::CHOOSE_OPTION)
                             || a.srcSeg == search::kAmberNoSeg) continue;
@@ -1155,7 +1196,7 @@ namespace sts::azbench {
                         if (seg == AmberTokenType::CARD) {
                             cls = screen == ScreenState::CARD_SELECT ? 1 : 0;
                         } else if (seg == AmberTokenType::OPTION) {
-                            const auto &ot = g.tokens.at(seg, a.srcIdx);
+                            const auto &ot = fl.tokens.at(seg, a.srcIdx);
                             int kind = -1;
                             for (int c = 12; c <= 28; ++c) if (ot.f[c]) { kind = c - 12; break; }
                             // REWARD_GOLD 0, REWARD_CARD 1, REWARD_RELIC 2, REWARD_POTION 3, keys 4-5, SINGING_BOWL 6,
@@ -1173,7 +1214,7 @@ namespace sts::azbench {
                         }
                         if (cfg.exploreDeckOnly && cls != 0 && cls != 2 && cls != 3) continue;
                         if (k < static_cast<int>(g.rootClass.size())) g.rootClass[k] = cls;
-                        const auto &tok = g.tokens.at(static_cast<AmberTokenType>(a.srcSeg), a.srcIdx);
+                        const auto &tok = fl.tokens.at(static_cast<AmberTokenType>(a.srcSeg), a.srcIdx);
                         std::uint64_t h = 0x9e3779b97f4a7c15ull * (a.type + 1);
                         for (int c = 0; c < 2; ++c) h = (h ^ static_cast<std::uint16_t>(tok.ids[c])) * 0x100000001b3ull;
                         // The OPTION kind one-hot and option index (f 12-51): event / rest options are separate items.
@@ -1185,43 +1226,46 @@ namespace sts::azbench {
                 }
                 wk.st.stepCpu += t1 - t0;
                 wk.st.encodeCpu += cpuSeconds() - t1;
-                g.pendingCombat = false;
-                g.pendingMaxHp = static_cast<float>(std::max(1, node.gc->maxHp));
-                g.pendingFloor = node.gc->floorNum;
+                fl.combat = false;
+                fl.maxHp = static_cast<float>(std::max(1, node.gc->maxHp));
+                fl.floor = node.gc->floorNum;
             }
-            (node.combat ? wk.st.encodeCut : wk.st.encodeCutOoc) += g.tokens.cut;
-            g.pendingNode = ni;
-            g.pendingHit = false;
+            (node.combat ? wk.st.encodeCut : wk.st.encodeCutOoc) += fl.tokens.cut;
+            fl.node = ni;
+            fl.hit = false;
             if (cfg.evalCache) {
                 const std::uint32_t v = weightsVersion_.load(std::memory_order_acquire);
                 if (g.cacheVersion != v) { g.cache.clear(); g.cacheVersion = v; }
-                g.pendingHash = inputHash(g.tokens);
-                const auto it = g.cache.find(g.pendingHash);
-                if (it != g.cache.end() && it->second.nAct == g.tokens.nAct) {
+                fl.hash = inputHash(fl.tokens);
+                const auto it = g.cache.find(fl.hash);
+                if (it != g.cache.end() && it->second.nAct == fl.tokens.nAct) {
                     // Answered as a result would be, in the worker loop's next round (no recursion into advance).
-                    g.resLogits = it->second.logits;
-                    g.resF = it->second.F;
-                    g.resEhp = it->second.ehp;
-                    if (!it->second.hpf.empty()) std::copy(it->second.hpf.begin(), it->second.hpf.end(), g.resHpf.begin());
-                    if (!it->second.dist.empty()) std::copy(it->second.dist.begin(), it->second.dist.end(), g.resDist.begin());
-                    g.pendingHit = true;
+                    fl.resLogits = it->second.logits;
+                    fl.resF = it->second.F;
+                    fl.resEhp = it->second.ehp;
+                    if (!it->second.hpf.empty()) std::copy(it->second.hpf.begin(), it->second.hpf.end(), fl.resHpf.begin());
+                    if (!it->second.dist.empty()) std::copy(it->second.dist.begin(), it->second.dist.end(), fl.resDist.begin());
+                    fl.hit = true;
                     ++wk.st.cacheHits;
-                    wk.hits.push_back(gi);
+                    wk.hits.push_back(slot << 16 | gi);
                     return;
                 }
             }
-            outbox.push_back(static_cast<std::uint32_t>(wi) << 16 | static_cast<std::uint32_t>(gi));
+            outbox.push_back(static_cast<std::uint32_t>(wi) << (kTicketRunBits + kTicketSlotBits) |
+                             static_cast<std::uint32_t>(slot) << kTicketRunBits | static_cast<std::uint32_t>(gi));
         };
 
         const bool emaOn = cfg.searchEmaLambda > 0;
-        auto backup = [&](Run &g, float v) {
+        // Backs the value v of the path's leaf up along the path. virt: the path holds virtual visits (parallelNodes),
+        // which the real ones replace.
+        auto backup = [&](Run &g, const std::vector<PathStep> &path, float v, bool virt = false) {
             if (emaOn) {   // the leaf (last path entry) adds its distribution to the root's sum
-                const Node &leaf = g.pool[g.path.back().node];
+                const Node &leaf = g.pool[path.back().node];
                 if (leaf.dist.size() != static_cast<std::size_t>(kOutcomeClasses))
                     throw std::logic_error("run driver: leaf without an outcome distribution");
                 for (int k = 0; k < kOutcomeClasses; ++k) g.rootDist[k] += leaf.dist[k];
             }
-            for (const auto &p : g.path) {
+            for (const auto &p : path) {
                 Node &n = g.pool[p.node];
                 n.n += 1;
                 n.w += v;
@@ -1229,10 +1273,10 @@ namespace sts::azbench {
                     Edge &e = n.edges[p.edge];
                     e.n += 1;
                     e.w += v;
+                    if (virt) --e.vn;
                     if (p.outcome >= 0) e.outcomeN[p.outcome] += 1;
                 }
             }
-            g.path.clear();
             ++g.spent;
         };
 
@@ -1632,7 +1676,7 @@ namespace sts::azbench {
                                : g.full ? cfg.fullCandidates : cfg.fastCandidates;
             g.cand.clear();
             g.phaseQueue.clear();
-            g.path.clear();
+            g.nFlights = g.waiting = 0;
             const int r = newNode(g);
             Node &root = g.pool[r];
             if (g.inBattle) {
@@ -1645,7 +1689,6 @@ namespace sts::azbench {
                     // No fair view of this fight (an intent pattern the tracker cannot represent): abandon the run.
                     ++wk.st.knowledgeFailures;
                     g.poolUsed = 0;
-                    g.path.clear();
                     g.gc.outcome = GameOutcome::PLAYER_LOSS;
                     g.inBattle = false;
                     endRun(g, gi);
@@ -1654,11 +1697,14 @@ namespace sts::azbench {
             } else {
                 setGc(root, search::detachedGameCopy(g.gc));
             }
-            g.path.push_back({r, -1, -1});
             g.rootKeys.clear();
             g.rootClass.clear();
             g.rootUnder.clear();
-            request(g, gi, r);
+            {
+                Flight &f = newFlight(g);
+                f.path.push_back({r, -1, -1});
+                request(g, gi, r, f);
+            }
             if (!g.inBattle && (cfg.exploreC > 0 || cfg.exploreAmber)) {
                 ++wk.st.oocRoots;
                 const double games = static_cast<double>(runsDone_.load(std::memory_order_relaxed));
@@ -1936,9 +1982,10 @@ namespace sts::azbench {
             const bool first = !edge0.tried;
             if (!first && !edge0.chance) return edge0.child;
             if (!first) {
-                const int cap = static_cast<int>(std::ceil(cfg.wideningC * std::pow(edge0.n + 1.0, cfg.wideningAlpha)));
+                const int visits = edge0.n + edge0.vn;   // vn: simulations in flight (parallelNodes), else 0
+                const int cap = static_cast<int>(std::ceil(cfg.wideningC * std::pow(visits + 1.0, cfg.wideningAlpha)));
                 if (static_cast<int>(edge0.outcomes.size()) >= cap) {
-                    outcome = static_cast<int>(edge0.n % edge0.outcomes.size());
+                    outcome = static_cast<int>(visits % edge0.outcomes.size());
                     return edge0.outcomes[outcome];
                 }
             }
@@ -2201,6 +2248,7 @@ namespace sts::azbench {
             n.dist.clear();
             n.outer.reset();
             n.evaluated = n.terminal = n.boundary = false;
+            n.inFlight = false;
             n.combat = false;
             n.value = 0;
             n.n = 0;
@@ -2215,9 +2263,10 @@ namespace sts::azbench {
             const bool first = !edge0.tried;
             if (!first && !edge0.chance) return edge0.child;
             if (!first) {
-                const int cap = static_cast<int>(std::ceil(cfg.wideningC * std::pow(edge0.n + 1.0, cfg.wideningAlpha)));
+                const int visits = edge0.n + edge0.vn;   // vn: simulations in flight (parallelNodes), else 0
+                const int cap = static_cast<int>(std::ceil(cfg.wideningC * std::pow(visits + 1.0, cfg.wideningAlpha)));
                 if (static_cast<int>(edge0.outcomes.size()) >= cap) {
-                    outcome = static_cast<int>(edge0.n % edge0.outcomes.size());
+                    outcome = static_cast<int>(visits % edge0.outcomes.size());
                     return edge0.outcomes[outcome];
                 }
             }
@@ -2258,6 +2307,51 @@ namespace sts::azbench {
         // fair search after the switch-off is the same as in a process started without savescum.
         const bool amberRules = cfg.chanceOnReveal || cfg.crossCombat || cfg.simHelp;
 
+        // One simulation from the root through its edge `forced`. BACKED: it ended in a leaf that needs no net (backed
+        // up). REQUESTED: its leaf's evaluation is in flight (backed up when the answer is handled). COLLIDED
+        // (parallelNodes only): it reached a node whose evaluation is in flight; nothing changed, it is tried again
+        // once that answer is in.
+        enum class Sim { BACKED, REQUESTED, COLLIDED };
+        const bool parallel = cfg.parallelNodes > 0;
+        std::vector<PathStep> simPath;
+        auto simulate = [&](Run &g, int gi, int forced) -> Sim {
+            simPath.clear();
+            int cur = 0, e = forced;
+            while (true) {
+                int outcome;
+                const double t0 = cpuSeconds();
+                const int child = amberRules || g.savescum ? expandAmber(g, cur, e, outcome) : expand(g, cur, e, outcome);
+                wk.st.stepCpu += cpuSeconds() - t0;
+                Node &cn = g.pool[child];
+                if (!cn.evaluated && cn.inFlight) return Sim::COLLIDED;   // an existing child: expand made no node
+                simPath.push_back({cur, e, outcome});
+                simPath.push_back({child, -1, -1});
+                if (!cn.evaluated) {
+                    Flight &f = newFlight(g);
+                    f.path = simPath;
+                    if (parallel)   // virtual visits along the path until the answer is backed up
+                        for (const auto &p : f.path)
+                            if (p.edge >= 0) ++g.pool[p.node].edges[p.edge].vn;
+                    request(g, gi, child, f);
+                    return Sim::REQUESTED;
+                }
+                if (cn.terminal || cn.boundary || cn.edges.empty()) {
+                    if (cn.terminal) ++wk.st.terminalLeaves;
+                    backup(g, simPath, cn.value);
+                    return Sim::BACKED;
+                }
+                simPath.pop_back();
+                cur = child;
+                e = selectNonRoot(cn, cfg);
+            }
+        };
+
+        // Runs the move's search on until an evaluation is in flight or the move is played. parallelNodes = P > 0
+        // (Amber Eye: "up to 4 nodes per candidate move's subtree were allowed to be visited in parallel"): a wave of
+        // the phase's simulations starts together, at most P in flight per root candidate (a root edge's virtual
+        // visits count them); the wave's answers are handled together, in the order the simulations started, so a
+        // search does not depend on the order in which answers arrive.
+        std::vector<int> blocked;
         auto advance = [&](Run &g, int gi) {
             while (true) {
                 if (g.phaseQueue.empty()) {
@@ -2265,28 +2359,29 @@ namespace sts::azbench {
                     if (g.spent >= g.budget || g.cand.size() <= 1) { finishMove(g, gi); return; }
                     fillPhase(g);
                 }
-                const int forced = g.phaseQueue.back();
-                g.phaseQueue.pop_back();
-                g.path.clear();
-                int cur = 0, e = forced;
-                while (true) {
-                    int outcome;
-                    const double t0 = cpuSeconds();
-                    const int child = amberRules || g.savescum ? expandAmber(g, cur, e, outcome) : expand(g, cur, e, outcome);
-                    wk.st.stepCpu += cpuSeconds() - t0;
-                    g.path.push_back({cur, e, outcome});
-                    Node &cn = g.pool[child];
-                    g.path.push_back({child, -1, -1});
-                    if (!cn.evaluated) { request(g, gi, child); return; }
-                    if (cn.terminal || cn.boundary || cn.edges.empty()) {
-                        if (cn.terminal) ++wk.st.terminalLeaves;
-                        backup(g, cn.value);
-                        break;
-                    }
-                    g.path.pop_back();
-                    cur = child;
-                    e = selectNonRoot(cn, cfg);
+                if (!parallel) {
+                    const int forced = g.phaseQueue.back();
+                    g.phaseQueue.pop_back();
+                    if (simulate(g, gi, forced) == Sim::REQUESTED) return;
+                    continue;
                 }
+                Node &root = g.pool[0];
+                blocked.clear();
+                bool progressed = false;
+                // In the order of the one-at-a-time search (from the back); what cannot start now stays queued.
+                for (int i = static_cast<int>(g.phaseQueue.size()) - 1; i >= 0; --i) {
+                    const int c = g.phaseQueue[i];
+                    if (root.edges[c].vn >= cfg.parallelNodes || g.nFlights >= kMaxFlights
+                        || std::find(blocked.begin(), blocked.end(), c) != blocked.end()) continue;
+                    const Sim r = simulate(g, gi, c);
+                    if (r == Sim::COLLIDED) { ++wk.st.simCollisions; blocked.push_back(c); continue; }
+                    g.phaseQueue[i] = -1;
+                    progressed = true;
+                }
+                g.phaseQueue.erase(std::remove(g.phaseQueue.begin(), g.phaseQueue.end(), -1), g.phaseQueue.end());
+                if (g.nFlights > 0) { ++wk.st.waves; wk.st.waveFlights += g.nFlights; return; }
+                // Nothing in flight: every started simulation ended without the net (and nothing can collide).
+                if (!progressed) throw std::logic_error("run driver: parallel search cannot progress");
             }
         };
 
@@ -2311,58 +2406,65 @@ namespace sts::azbench {
             wk.hits.clear();
             if (ready.empty()) std::this_thread::sleep_for(std::chrono::microseconds(50));
             const double t0 = cpuSeconds();
-            for (int gi : ready) {
+            for (int code : ready) {
+                const int gi = code & 0xffff;
                 Run &g = wk.runs[gi];
-                Node &n = g.pool[g.pendingNode];
-                const double H = usesAmberH(cfg.utility)
-                                     ? amberH(g.pendingFloor, g.resHpf.data())
-                                     : std::clamp(static_cast<double>(g.resEhp) / g.pendingMaxHp, 0.0, 1.0);
-                n.evaluated = true;
-                if (isAmber2(cfg.utility)) {   // AMBER2: the leaf state's kind; AMBER2_ROOT: the search root's
-                    n.value = static_cast<float>(amber2Value(cfg.utility == Utility::AMBER2_ROOT ? g.pool[0].combat : g.pendingCombat, g.resF, g.resDist[0], H));
-                } else {
-                    const double w = g.pendingCombat ? cfg.hpWeightCombat : cfg.hpWeightOoc;
-                    n.value = static_cast<float>((std::clamp<double>(g.resF, 0.0, 1.0) + w * H) / (1.0 + w));
-                }
-                for (std::size_t k = 0; k < n.edges.size() && k < g.resLogits.size(); ++k) n.edges[k].logit = g.resLogits[k];
-                if (emaOn) n.dist.assign(g.resDist.begin(), g.resDist.end());
-                if (g.pendingHit) {
-                    g.pendingHit = false;
-                } else {
-                    ++wk.st.evals;
-                    // Only results of the cache's weights version go in (a batch evaluated before the last
-                    // weights change carries the old version).
-                    if (cfg.evalCache && g.resVersion == g.cacheVersion) {
-                        if (static_cast<int>(g.cache.size()) >= cfg.evalCacheCap) g.cache.clear();
-                        auto &e = g.cache[g.pendingHash];
-                        e.F = g.resF;
-                        e.ehp = g.resEhp;
-                        e.nAct = g.tokens.nAct;
-                        e.logits = g.resLogits;
-                        if (usesAmberH(cfg.utility)) e.hpf.assign(g.resHpf.begin(), g.resHpf.end());
-                        if (emaOn || isAmber2(cfg.utility)) e.dist.assign(g.resDist.begin(), g.resDist.end());
+                // The run's answers are handled together once all are in, in the order their simulations started (one
+                // flight without parallelNodes).
+                if (--g.waiting > 0) continue;
+                const int flights = g.nFlights;
+                for (int slot = 0; slot < flights; ++slot) {
+                    Flight &fl = *g.fl[slot];
+                    Node &n = g.pool[fl.node];
+                    const double H = usesAmberH(cfg.utility)
+                                         ? amberH(fl.floor, fl.resHpf.data())
+                                         : std::clamp(static_cast<double>(fl.resEhp) / fl.maxHp, 0.0, 1.0);
+                    n.evaluated = true;
+                    n.inFlight = false;
+                    if (isAmber2(cfg.utility)) {   // AMBER2: the leaf state's kind; AMBER2_ROOT: the search root's
+                        n.value = static_cast<float>(amber2Value(cfg.utility == Utility::AMBER2_ROOT ? g.pool[0].combat : fl.combat, fl.resF, fl.resDist[0], H));
+                    } else {
+                        const double w = fl.combat ? cfg.hpWeightCombat : cfg.hpWeightOoc;
+                        n.value = static_cast<float>((std::clamp<double>(fl.resF, 0.0, 1.0) + w * H) / (1.0 + w));
+                    }
+                    for (std::size_t k = 0; k < n.edges.size() && k < fl.resLogits.size(); ++k) n.edges[k].logit = fl.resLogits[k];
+                    if (emaOn) n.dist.assign(fl.resDist.begin(), fl.resDist.end());
+                    if (fl.hit) {
+                        fl.hit = false;
+                    } else {
+                        ++wk.st.evals;
+                        // Only results of the cache's weights version go in (a batch evaluated before the last
+                        // weights change carries the old version).
+                        if (cfg.evalCache && fl.resVersion == g.cacheVersion) {
+                            if (static_cast<int>(g.cache.size()) >= cfg.evalCacheCap) g.cache.clear();
+                            auto &e = g.cache[fl.hash];
+                            e.F = fl.resF;
+                            e.ehp = fl.resEhp;
+                            e.nAct = fl.tokens.nAct;
+                            e.logits = fl.resLogits;
+                            if (usesAmberH(cfg.utility)) e.hpf.assign(fl.resHpf.begin(), fl.resHpf.end());
+                            if (emaOn || isAmber2(cfg.utility)) e.dist.assign(fl.resDist.begin(), fl.resDist.end());
+                        }
+                    }
+                    if (fl.node == 0) {   // the root's evaluation (always alone in flight)
+                        if (g.keep) {
+                            g.cur = Sample{};
+                            if (cfg.compactSamples) flattenInto(fl.tokens, g.cur, &g.dict, &g.dictIndex);
+                            else flattenInto(fl.tokens, g.cur);
+                            g.cur.combat = g.inBattle ? 1 : 0;
+                            g.cur.maxHp = static_cast<std::int16_t>(g.inBattle ? g.bc.player.maxHp : g.gc.maxHp);
+                            g.cur.floor = static_cast<std::int16_t>(g.gc.floorNum);
+                            g.cur.run = g.seed;
+                        }
+                        g.pool[0].n = 1;
+                        g.pool[0].w = n.value;
+                        if (emaOn) g.rootDist.assign(n.dist.begin(), n.dist.end());
+                        initRoot(g);
+                    } else {
+                        backup(g, fl.path, n.value, parallel);
                     }
                 }
-                const bool rootEval = g.pendingNode == 0;
-                g.pendingNode = -1;
-                if (rootEval) {
-                    if (g.keep) {
-                        g.cur = Sample{};
-                        if (cfg.compactSamples) flattenInto(g.tokens, g.cur, &g.dict, &g.dictIndex);
-                        else flattenInto(g.tokens, g.cur);
-                        g.cur.combat = g.inBattle ? 1 : 0;
-                        g.cur.maxHp = static_cast<std::int16_t>(g.inBattle ? g.bc.player.maxHp : g.gc.maxHp);
-                        g.cur.floor = static_cast<std::int16_t>(g.gc.floorNum);
-                        g.cur.run = g.seed;
-                    }
-                    g.path.clear();
-                    g.pool[0].n = 1;
-                    g.pool[0].w = n.value;
-                    if (emaOn) g.rootDist.assign(n.dist.begin(), n.dist.end());
-                    initRoot(g);
-                } else {
-                    backup(g, n.value);
-                }
+                g.nFlights = 0;
                 advance(g, gi);
             }
             ready.clear();
@@ -2406,7 +2508,9 @@ namespace sts::azbench {
         if (take.empty()) return take;
         const auto tPack = std::chrono::steady_clock::now();
         packFlat(static_cast<int>(take.size()),
-                 [&](int r) -> const AmberTokens & { return workers_[take[r] >> 16]->runs[take[r] & 0xffff].tokens; },
+                 [&](int r) -> const AmberTokens & {
+                     return workers_[ticketWorker(take[r])]->runs[ticketRun(take[r])].fl[ticketSlot(take[r])]->tokens;
+                 },
                  rowBuckets, tokBuckets, actBuckets, buf, shape, packThreads);
         batches_ += 1;
         batchRows_ += shape.rows;
@@ -2427,7 +2531,9 @@ namespace sts::azbench {
         per.assign(workers_.size(), {});
         for (int r = 0; r < rows; ++r) {
             const std::uint32_t t = tickets[r];
-            Run &g = workers_[t >> 16]->runs[t & 0xffff];
+            // The flight is this ticket's alone until its answer is in the worker's inbox (Run::fl does not change
+            // while a request of the run is out).
+            Flight &g = *workers_[ticketWorker(t)]->runs[ticketRun(t)].fl[ticketSlot(t)];
             const int na = std::min(g.tokens.nAct, actions);
             g.resLogits.assign(logits + static_cast<std::size_t>(r) * actions,
                                logits + static_cast<std::size_t>(r) * actions + na);
@@ -2438,7 +2544,7 @@ namespace sts::azbench {
                                g.resHpf.begin());
             if (dist) std::copy(dist + static_cast<std::size_t>(r) * kOutcomeClasses,
                                 dist + static_cast<std::size_t>(r + 1) * kOutcomeClasses, g.resDist.begin());
-            per[t >> 16].push_back(static_cast<int>(t & 0xffff));
+            per[ticketWorker(t)].push_back(static_cast<int>(t & ((1u << (kTicketRunBits + kTicketSlotBits)) - 1)));
         }
         for (std::size_t w = 0; w < per.size(); ++w) {
             if (per[w].empty()) continue;
