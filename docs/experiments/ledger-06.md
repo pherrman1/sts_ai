@@ -28764,7 +28764,10 @@ mask (both kernels, fp32 1e-4); with a random table, forward_flat (sdpa_trunk), 
 fused-layer paths agree; zero table = net without it; the gradient reaches the table. `tests/test_selfplay.py`:
 driver samples carry the tokens only with the flag (out-of-combat only, boss first); a run resumed from a checkpoint
 without the table (with the aux head) trains the table and resumes again without both flags; dashboard chart. New
-ctest `az_run_driver_enemy_tokens`.
+ctest `az_run_driver_enemy_tokens`. `az-run-driver` (fake net, 1 worker, seeds 1 / 7, `--aux-fights --compact-samples`): with and
+without `--enemy-tokens` the same moves (196 / 252), evaluations and outcomes. Local `ctest -L core` (release):
+180 / 182; `heart1_ppo_python` passes alone (load under -j3), `cardqueue_overflow` expects an assert's SIGABRT,
+which the NDEBUG release build has not (not this PR).
 **Not measured:** GPU cost on the PC (+up to 14 tokens per out-of-combat row; float attention mask in training:
 B x H x T x T per layer), any effect on learning. Before it takes over the main run: 5-15 min live test on the PC
 (project rule).
