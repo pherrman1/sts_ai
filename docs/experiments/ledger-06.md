@@ -28853,7 +28853,7 @@ and a 5-15 minute PC test.
 **Knowledge impact:** this entry.
 
 
-## §TBD — Decision explainability for every out-of-combat decision, P0-P2: checks of the explanations (deletion curves, weight randomization, checkpoint stability, calibration), constructed 2x2x2 contexts, logit lens, activation patching, probes, and a search-backed live advisor that shows per option prior / visits / Q / P(win) / HP and the owned items behind the prior in the inspector mod → BUILT, diagnostic only, no default changes (cloud, 2026-11-21)
+## §840 — Decision explainability for every out-of-combat decision, P0-P2: checks of the explanations (deletion curves, weight randomization, checkpoint stability, calibration), constructed 2x2x2 contexts, logit lens, activation patching, probes, and a search-backed live advisor that shows per option prior / visits / Q / P(win) / HP and the owned items behind the prior in the inspector mod → BUILT, diagnostic only, no default changes (cloud, 2026-11-21)
 
 **Question (owner, 2026-11-21, after §833 and the literature review):** build the P0-P2 list for all out-of-combat
 decisions (not only card rewards), without generated text and without methods that need a lot of compute, and
