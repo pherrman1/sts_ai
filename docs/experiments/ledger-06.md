@@ -28890,3 +28890,23 @@ the stage-1 thread runs `--check-enemy-gate` on the PC with ckpt_943204 + replay
 test if the outputs match and the step time is close.
 **Knowledge impact:** lesson for any new input token on a resumed net: gate it in at exact identity and compare
 against the state without it, not only the zero-initialised new weights.
+
+## §TBD — §838 PC check FAILED (inference fp16 differences up to 0.31 on HP logits at gate 0, training step 3.1x); fixes: own softmax maximum for the gate's second pass in the kernels, fp32 row mean, second attention pass only on rows with encounter tokens, bias only on encounter-class pairs; the check splits rows and reports the fp16 noise floor → BUILT, default off (cloud, 2026-11-21)
+
+**PC check of §838** (stage-1 thread, ckpt_943204 + replay_enemy_run_2125, `--check-enemy-gate 20`, 22:0x CET):
+gates 0; training net fp32 max |diff| 2e-5 .. 1.4e-4 (pass); inference net fp16 policy 0.031, outcome 0.094, HP
+0.31, per-floor HP 0.0068 (fail, limit ~2e-2); training step 215.9 ms with vs 69.0 ms without (3.1x, fail), with only
+377 of 20,480 rows holding encounter tokens. **Causes found (no GPU in the cloud to confirm):** (1) the kernels' second
+softmax shared the running maximum of the first: when an encounter key scored highest, the other weights went below
+fp16's normal range before the P V product; it now keeps its own maximum. (2) The summary gate's weighted row mean
+summed fp16 values (row_mean accumulates in fp32); now fp32. (3) Training ran both passes on every row and the
+q / k column bias on every row. Now: one plain pass for all rows (rows without encounter tokens are done), and the
+biased pass and the pass without encounter keys only on the rows that hold encounter tokens. For that the bias acts
+only on pairs with an encounter class (query or key; `AmberNet._tab`), so states without encounter tokens attend
+exactly as without the flag; the gate's second pass has no bias (kernel and training). **Check output** now splits
+the differences into rows with / without encounter tokens, adds `infer_noise` (inference net vs fp32 training net,
+both without encounter parts: the fp16 floor of the comparison) and `train_step_ms.with_gates_only`.
+**Checks (cloud, CPU, TRITON_INTERPRET=1):** test_varlen_attn + test_packed_heads 14 passed (kernel gate = SDPA mix
+with the bias in the first part only; all net paths agree with gate and bias; gate 0 = net without parts on the
+stripped states); test_selfplay enemy / check tests pass. **Not measured:** the PC check again.
+**Knowledge impact:** this entry.

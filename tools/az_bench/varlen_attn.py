@@ -22,8 +22,10 @@ and TAB [H, C, C] fp32; the score of query i and key j in head h gets TAB[h, CLS
 (as an additive attn_mask of scaled_dot_product_attention).
 
 Encounter gate (2026-11-21, AmberNet enemy_gate, selfplay.py --enemy-tokens): optional G [1] fp32 (needs CLS): the
-output is g x attention over all keys + (1 - g) x attention without the encounter-token keys (CLS 1..3). One pass:
-the second softmax shares the running maximum and keeps its own sum and accumulator (one more P V product).
+output is g x attention over all keys (with the bias) + (1 - g) x attention without the encounter-token keys
+(CLS 1..3) and without the bias. One pass:
+the second softmax keeps its own running maximum, sum and accumulator (one more exp and P V product per block;
+a shared maximum would leave its weights tiny, below fp16's normal range, when an encounter key scores highest).
 """
 
 import os
@@ -53,6 +55,7 @@ def _attn_kernel(QKV, O, OFF, CLS, TAB, G, scale, D: tl.constexpr, DH: tl.conste
     acc = tl.zeros([BM, DH], tl.float32)
     ln = tl.zeros([BM], tl.float32)
     accn = tl.zeros([BM, DH], tl.float32)
+    mn = tl.full([BM], float("-inf"), tl.float32)
     if HAS_BIAS:
         cq = tl.load(CLS + start + offs_m, mask=qmask, other=0)
     for k0 in range(0, MAXLEN, BN):   # static bound (the batch's token bucket); keys past n are masked
@@ -61,6 +64,7 @@ def _attn_kernel(QKV, O, OFF, CLS, TAB, G, scale, D: tl.constexpr, DH: tl.conste
         k = tl.load(QKV + (start + offs_n)[None, :] * (3 * D) + D + h * DH + offs_d[:, None], mask=kmask[None, :],
                     other=0.0)
         s = tl.dot(q, k) * scale
+        s0 = s   # without the class bias (the gate's second softmax)
         if HAS_BIAS or HAS_GATE:
             ck = tl.load(CLS + start + offs_n, mask=kmask, other=0)
         if HAS_BIAS:
@@ -73,10 +77,14 @@ def _attn_kernel(QKV, O, OFF, CLS, TAB, G, scale, D: tl.constexpr, DH: tl.conste
         v = tl.load(QKV + (start + offs_n)[:, None] * (3 * D) + 2 * D + h * DH + offs_d[None, :], mask=kmask[:, None],
                     other=0.0)
         acc = acc * alpha[:, None] + tl.dot(p.to(v.dtype), v)
-        if HAS_GATE:
-            pn = tl.where(((ck >= 1) & (ck <= 3))[None, :], 0.0, p)
-            ln = ln * alpha + tl.sum(pn, 1)
-            accn = accn * alpha[:, None] + tl.dot(pn.to(v.dtype), v)
+        if HAS_GATE:   # the softmax without the encounter keys, with its own running maximum
+            sn = tl.where(((ck >= 1) & (ck <= 3))[None, :] | ~kmask[None, :], float("-inf"), s0)
+            mn_new = tl.maximum(tl.maximum(mn, tl.max(sn, 1)), -1e30)
+            pn = tl.exp(sn - mn_new[:, None])
+            alphan = tl.exp(mn - mn_new)
+            ln = ln * alphan + tl.sum(pn, 1)
+            accn = accn * alphan[:, None] + tl.dot(pn.to(v.dtype), v)
+            mn = mn_new
         m_i = m_new
     acc = acc / l_i[:, None]
     if HAS_GATE:
@@ -106,6 +114,7 @@ def _attn_kernel_rows(QKV, O, OFF, CLS, TAB, G, scale, D: tl.constexpr, DH: tl.c
     acc = tl.zeros([BM, DH], tl.float32)
     ln = tl.zeros([BM], tl.float32)
     accn = tl.zeros([BM, DH], tl.float32)
+    mn = tl.full([BM], float("-inf"), tl.float32)
     if HAS_BIAS:
         cq = tl.load(CLS + start + offs_m, mask=qmask, other=0)
     hi = n
@@ -117,6 +126,7 @@ def _attn_kernel_rows(QKV, O, OFF, CLS, TAB, G, scale, D: tl.constexpr, DH: tl.c
         k = tl.load(QKV + (start + offs_n)[None, :] * (3 * D) + D + h * DH + offs_d[:, None], mask=kmask[None, :],
                     other=0.0)
         s = tl.dot(q, k) * scale
+        s0 = s   # without the class bias (the gate's second softmax)
         if HAS_BIAS or HAS_GATE:
             ck = tl.load(CLS + start + offs_n, mask=kmask, other=0)
         if HAS_BIAS:
@@ -129,10 +139,14 @@ def _attn_kernel_rows(QKV, O, OFF, CLS, TAB, G, scale, D: tl.constexpr, DH: tl.c
         v = tl.load(QKV + (start + offs_n)[:, None] * (3 * D) + 2 * D + h * DH + offs_d[None, :], mask=kmask[:, None],
                     other=0.0)
         acc = acc * alpha[:, None] + tl.dot(p.to(v.dtype), v)
-        if HAS_GATE:
-            pn = tl.where(((ck >= 1) & (ck <= 3))[None, :], 0.0, p)
-            ln = ln * alpha + tl.sum(pn, 1)
-            accn = accn * alpha[:, None] + tl.dot(pn.to(v.dtype), v)
+        if HAS_GATE:   # the softmax without the encounter keys, with its own running maximum
+            sn = tl.where(((ck >= 1) & (ck <= 3))[None, :] | ~kmask[None, :], float("-inf"), s0)
+            mn_new = tl.maximum(tl.maximum(mn, tl.max(sn, 1)), -1e30)
+            pn = tl.exp(sn - mn_new[:, None])
+            alphan = tl.exp(mn - mn_new)
+            ln = ln * alphan + tl.sum(pn, 1)
+            accn = accn * alphan[:, None] + tl.dot(pn.to(v.dtype), v)
+            mn = mn_new
         m_i = m_new
     acc = acc / l_i[:, None]
     if HAS_GATE:

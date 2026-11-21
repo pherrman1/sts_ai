@@ -344,12 +344,12 @@ class EnemyBiasKernel(unittest.TestCase):
                 enc = A.enc_of(cls)
                 for tab in (None, torch.randn(H, C, C, generator=g)):
                     for gv in (0.0, 0.3, 1.0):
-                        def ref_attn(keys):
-                            b_ = torch.zeros(B, H, T, T) if tab is None else \
+                        def ref_attn(keys, bias=True):
+                            b_ = torch.zeros(B, H, T, T) if tab is None or not bias else \
                                 tab.reshape(H, C * C)[:, cls[:, :, None] * C + cls[:, None, :]].permute(1, 0, 2, 3)
                             b_ = b_.masked_fill(~keys[:, None, None, :], float("-inf"))
                             return torch.nn.functional.scaled_dot_product_attention(q, k, v, attn_mask=b_)
-                        ref = gv * ref_attn(mask) + (1 - gv) * ref_attn(mask & ~enc)
+                        ref = gv * ref_attn(mask) + (1 - gv) * ref_attn(mask & ~enc, bias=False)
                         ref = ref.transpose(1, 2).reshape(B * T, d)[mask.reshape(-1)]
                         for rb in (False, True):
                             mod.ROW_BOUNDS = rb
