@@ -29026,7 +29026,7 @@ with the bias in the first part only; all net paths agree with gate and bias; ga
 stripped states); test_selfplay enemy / check tests pass. **Not measured:** the PC check again.
 **Knowledge impact:** this entry.
 
-## §TBD — §839 passed the PC check (inference differences below the fp16 noise floor, training step 1.17x) but the live run collapsed again within 5 min and the driver stopped with `empty floor HP target`; gates and bias now get their own optimizer group at 1 % of --lr, the check counts non-finite outputs → BUILT, default off (cloud, 2026-11-21)
+## §841 — §839 passed the PC check (inference differences below the fp16 noise floor, training step 1.17x) but the live run collapsed again within 5 min and the driver stopped with `empty floor HP target`; gates and bias now get their own optimizer group at 1 % of --lr, the check counts non-finite outputs → BUILT, default off (cloud, 2026-11-21)
 
 **PC check of §839** (gatecheck2_20261121): inference rows with encounter tokens policy 0.016 / outcome 0.063 / HP
 0.125 / per-floor HP 0.004 against the fp16 noise floor 0.045 / 0.168 / 0.494 / 0.015; training net 1.1e-4 on
