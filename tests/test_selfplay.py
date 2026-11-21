@@ -1485,12 +1485,12 @@ class SelfplaySmoke(unittest.TestCase):
             self.assertEqual(sp.main(common + ["--out-dir", d, "--max-runs", "12", "--resume", c0, "--enemy-tokens",
                                                "--enemy-map-bias", "--replay-save", rep]), 0)
             self.assertEqual(sp.main(common + ["--out-dir", d, "--resume", c0, "--enemy-tokens", "--enemy-map-bias",
-                                               "--replay-load", rep, "--check-enemy-gate", "3"]), 0)
+                                               "--replay-load", rep, "--check-enemy-gate", "3", "--compile"]), 0)
             with open(os.path.join(d, "enemy_gate_check.json")) as f:
                 res = json.load(f)
         self.assertGreater(res["rows_with_encounter_tokens"], 0)
         self.assertEqual(set(res["gates"]), {0.0})
-        for tag in ("train_enc_rows", "train_other_rows", "infer_enc_rows", "infer_other_rows"):
+        for tag in ("train_enc_rows", "train_other_rows", "infer_enc_rows", "infer_other_rows", "infer_compiled"):
             for k, v in res["max_abs_diff"][tag].items():
                 self.assertLess(v, 1e-4, (tag, k))
         self.assertIn("with_gates_only", res["train_step_ms"])

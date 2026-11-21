@@ -163,6 +163,10 @@ ROW_BOUNDS = False   # True: _attn_kernel_rows (selfplay.py --attn-row-bounds); 
 def _varlen_attn_op(qkv: torch.Tensor, seq_off: torch.Tensor, heads: int, max_len: int,
                     cls: Optional[torch.Tensor] = None, tab: Optional[torch.Tensor] = None,
                     gate: Optional[torch.Tensor] = None) -> torch.Tensor:
+    qkv, seq_off = qkv.contiguous(), seq_off.contiguous()   # the kernels index raw pointers (no-op if contiguous)
+    cls = None if cls is None else cls.contiguous()
+    tab = None if tab is None else tab.contiguous()
+    gate = None if gate is None else gate.contiguous()
     N, D3 = qkv.shape
     D = D3 // 3
     out = qkv.new_empty(N, D)   # bucket-padding rows past seq_off[-1] stay unwritten; nothing reads them
