@@ -28912,8 +28912,10 @@ decisions, 2 wins), `ckpt_895975.pt` and `ckpt_791357.pt` (hashes in the evidenc
   1 (12), 2 (3), 3 (2), 5 (1); in 42.5 % an HP change flips it, median distance 11 HP.
 - Calibration of the outcome head (1,485 positions): mean P(win) 0.349 against a win rate of 0.120, ECE 0.229
   [0.150, 0.347], E[final floor] +6.8 floors too high (Act 1 +9.7, Act 3 -0.0); the HP head is unbiased (-0.3 HP).
-  The net is overconfident in these runs. One likely reason: the live run plays with savescum (§833), these runs
-  without it. The mod shows P(win) as the net's number, not as a calibrated probability.
+  The net is overconfident in these runs (replicated on 256 runs below). Likely reason: the live run that trained it
+  played at A10 until 2026-11-21 15:35 CET and at A20 with savescum after that, so its value targets come from
+  easier or retried runs; these runs are A20 without savescum. The mod shows P(win) as the net's number, not as a
+  calibrated probability.
 - Constructed contexts (2x2x2, run-clustered intervals): Corruption offered: Dark Embrace +1.37 [+1.25, +1.52],
   Feel No Pain +2.03, three block cards instead of three attacks +2.47, Dark Embrace x Feel No Pain -0.57 [-0.64,
   -0.52] (sub-additive). Barricade offered: Entrench +0.35, Body Slam +0.06, block density +4.00 [+3.10, +5.05]:
@@ -28938,13 +28940,31 @@ decisions, 2 wins), `ckpt_895975.pt` and `ckpt_791357.pt` (hashes in the evidenc
   (net P(win) 0.27; Barricade's prior supported by Shrug It Off and Ghostly Armor, z 4.0 / 3.7), floor 45 card reward
   (0.93; Heavy Blade+ supported by Flex+, Inflame+, Philosopher's Stone, opposed by Dead Branch z -12.3), floor 34
   map, floor 55 forced; latency 0.24-0.49 s per decision on 2 threads, 2.4 s with start-up.
+
+**Replication on 256 more runs (owner's go 2026-11-21 21:13 CET; seeds 160100032-160100287, same flags and
+checkpoint; 98,443 positions, 12,549 out-of-combat decisions, 4,203 card rewards; 12 wins = 4.7 %):**
+- Calibration (4,000 sampled positions): mean P(win) 0.360 against 0.080, ECE 0.280 [0.238, 0.319], E[final floor]
+  +6.6, HP head unbiased (-0.06 HP); Act 3 0.533 against 0.172; positions the net puts at 0.85-0.94 win 46 %.
+- Pairs: the same signs and classes as on 32 runs, intervals about three times narrower: D2 against Skip for
+  Corruption < Dark Embrace +1.01 [+0.94, +1.08], Limit Break < Inflame +3.00 [+2.78, +3.24], Barricade < Entrench
+  +0.14 [+0.13, +0.15], Rupture < Bloodletting +0.05 [+0.04, +0.06].
+- 2x2x2: Barricade: block density +4.34 [+4.07, +4.62], Entrench +0.37, Body Slam +0.06; Corruption: Dark Embrace
+  +1.40, Feel No Pain +2.02, Dark Embrace x Feel No Pain -0.59 [-0.61, -0.56]; Rupture: Bloodletting +0.01 [-0.01,
+  +0.02], Offering +0.02, self-damage density +0.76.
+- Coverage: Rupture now owned in 4 runs, Entrench 6, Body Slam 17, Bloodletting 22 (offered 122-362 times); the
+  Barricade and Rupture nulls stay.
+- Survey per kind: the same picture (card reward |dC| top 1.60, single-item flip 0.27; shop flip 0.47; boss relic
+  |dC| top 2.02). Probes: HP ratio 0.41 before layer 1, 0.99 after (random init 0.31); block share and curses not
+  readable; value GLM R² 0.36 (per SD relics +0.64, act -0.45, HP ratio +0.31); TCAV 2 of 44 tests at p < 0.05,
+  about what chance gives.
 **Limits:** explanations of the prior (and the value head); the search part is the searched numbers themselves, not
 an attribution of them. Token removal leaves states the net never saw (placebo z and controls calibrate it, do
-not remove it). One window of 32 runs, mostly Act 1-2. The live advisor's search uses the net's P(win), which is
+not remove it). Two windows (32 and 256 runs) of one checkpoint at A20 without savescum, mostly Act 1-2. The live advisor's search uses the net's P(win), which is
 overconfident here. Combat decisions are not covered.
-**Cost:** whole offline suite 22 min on 4 cloud threads (`commands.sh`); one live decision 0.25-0.5 s.
+**Cost:** whole offline suite 22 min on 4 cloud threads (`commands.sh`); 256 runs 41 min on about 2 cloud cores,
+their analyses 25 min on 2 threads; one live decision 0.25-0.5 s.
 **Decision:** none on the agent; no defaults change (the probe mode is inert unless `probe_roots` is passed; the
 mod prefers the Amber evaluator only when the advisor sends one). The mod test on the PC (CPU only) follows.
 **Evidence:** `docs/experiments/evidence/explain_lab_20261121/` (every mode's log and JSON, the commands, checkpoint
-hashes, the advisor's responses to the four fixtures).
+hashes, the advisor's responses to the four fixtures; `gen256/` for the 256 runs).
 **Knowledge impact:** this entry.
