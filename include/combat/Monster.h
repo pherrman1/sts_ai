@@ -5,6 +5,8 @@
 #ifndef STS_LIGHTSPEED_MONSTER_H
 #define STS_LIGHTSPEED_MONSTER_H
 
+#include <algorithm>
+#include <cstdint>
 #include <functional>
 #include <random>
 #include <map>
@@ -20,6 +22,19 @@
 
 
 namespace sts {
+
+    // STS_MONSTER_POWER_SATURATE_FIX: unset/1 (default) = a monster's int8 power counters (Artifact, Metallicize,
+    // Plated Armor, Regen) stop at 127 when buffed instead of wrapping to negative values (live stall 2026-11-21,
+    // seed 145220295: Deca's Square of Protection added 3 Plated Armor per cast for ~90 turns, the counter wrapped and
+    // Plated Armor gave Deca -128 block each turn). Java keeps an int (no limit); 127 is the closest the int8 field
+    // can hold. 0 = the legacy engine wraps. Other values are fatal.
+    bool monsterPowerSaturateFix();
+    inline std::int8_t monsterPowerAdd(std::int8_t cur, int amount) {
+        const int v = static_cast<int>(cur) + amount;
+        if (!monsterPowerSaturateFix()) return static_cast<std::int8_t>(v);
+        return static_cast<std::int8_t>(std::clamp(v, -128, 127));
+    }
+
 
     class BattleContext;
 
@@ -551,22 +566,22 @@ namespace sts {
 
         switch (s) {
             case MonsterStatus::ARTIFACT:
-                artifact += amount;
+                artifact = monsterPowerAdd(artifact, amount);
                 setHasStatus<s>(true);
                 return;
 
             case MonsterStatus::METALLICIZE:
-                metallicize += amount;
+                metallicize = monsterPowerAdd(metallicize, amount);
                 setHasStatus<s>(true);
                 return;
 
             case MonsterStatus::PLATED_ARMOR:
-                platedArmor += amount;
+                platedArmor = monsterPowerAdd(platedArmor, amount);
                 setHasStatus<s>(true);
                 return;
 
             case MonsterStatus::REGEN:
-                regen += amount;
+                regen = monsterPowerAdd(regen, amount);
                 setHasStatus<s>(true);
                 return;
 
